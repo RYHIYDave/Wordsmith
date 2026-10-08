@@ -191,3 +191,7 @@ the foot of its pane.
 5. If he says no: delete `TRUE_LEFT`, `frontL`/`backL`/`turn<deg>` in `project`, `ActorArt.left`
    and its two uses, `bladeSeen`, `__dbg.trueLeft`, and this branch's dev files and test. Nothing
    else depends on them.
+
+## Sent to the owner (8 Oct 2026, 02:55, by the art chat)
+
+previews/true_left/knight_true_left.png (a copy is in this folder), with these words: "3 of 4: the knight facing left, as now (his picture turned over, so his sword swaps sides) and turned round for real. Turned for real, walking down-left he shows you his shoulder and his sword is hidden behind him. I'd keep him as he is now. Agree?" **HIS ANSWER: NOT YET IN.** The film of the knight turning through eight views beside four was NOT sent: it is a second question, for after his answer to this one. Before these went, at 00:53 on 8 Oct he wrote "If I’m not around to test phone speed continue on.  Keep going down the list", read as: leave the phone test until he is around and carry on down the art chat's list (decorations, the skeleton on the heroes' bones, true left-facing heroes, the two films of weight). He was told so at 00:54. Nothing of this is in the game; the main chat builds whatever he says yes to.
