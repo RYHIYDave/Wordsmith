@@ -31,7 +31,7 @@ import { createScreen } from './engine/screen';
 import { ARRIVAL_LINES, CLASSES, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
-import { RELIEF } from './game/dungeon';
+import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
@@ -1528,6 +1528,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     cam: () => renderer.cam,
     /** The map-maker's switches for terraces and sunken floor (game/dungeon.ts): pictures of what is not yet in the game switch it on. */
     relief: RELIEF,
+    /** THE MIX (game/dungeon.ts, MIX): OFF in the game until the owner has said yes to it; its pictures and playtests switch it on for the dungeons they lay, and put it back. */
+    mix: MIX,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
     doors: DOORS,
     /**

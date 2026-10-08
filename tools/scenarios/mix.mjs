@@ -100,7 +100,10 @@ export default async function (page, snap) {
     d.god = true; d.autoLevel = false; d.autoWords = false;
     g.updatePractice = () => {};
     g.monsters.length = 0; g.projectiles.length = 0;
+    // (the gate's line is said the first time it is seen from near, which may be the moment the
+    // hall is laid: the lines are cleared here, and it is to be said again, seen on the walk)
     d.fx.messages.length = 0;
+    for (const q of g.level.doors) q.told = false;
     if (look) { clearInterval(window.__lit); window.__lit = setInterval(() => { const q = window.__dbg.game(); if (q) { q.level.explored.fill(1); } }, 50); }
   }, [cls, process.env.LOOK === '1']);
   await page.waitForTimeout(700);
@@ -111,7 +114,9 @@ export default async function (page, snap) {
   await snap('01_the_first_room');
 
   // ---- 2. the gate holds him, and is told of ------------------------------------------------------
-  s = await walkTo(GATE.x - 0.4, GATE.y, null, 7000);
+  // (what is said on the way is heard on the way: a line on the screen does not stay for ever)
+  const listen = (q) => { for (const t of q.said) if (!heard.includes(t)) heard.push(t); return false; };
+  s = await walkTo(GATE.x - 0.4, GATE.y, listen, 7000);
   await hear();
   check('2. the hero walks at the gate with real input: it holds him', s.x < GATE.x - 0.5 && s.x > GATE.x - 1.6, `he stands at ${s.x.toFixed(2)}, the gate's tiles begin at ${GATE.x - 0.5}`);
   check('   and it is down still', s.doors.find((q) => q.kind === 'gate').want === 0);
