@@ -14,8 +14,8 @@ PRECISE, STILLING AND GUARDING.** It is now the main chat's to bring in when the
 are in.
 
 **MYSTICAL (branch `art/mystical`, from `art/new-words` at `31e27c3`):** its colour and rune, drawn
-after the eight at the main chat's ask (the board, 15:31). **HE SAID YES AT 17:59.** See "Mystical"
-below.
+after the eight at the main chat's ask (the board, 15:31), and its looks at work. **HE SAID YES TO
+THE COLOUR AND RUNE AT 17:59, AND TO THE LOOKS AT 18:41.** See "Mystical" below.
 
 ## His words
 
@@ -125,9 +125,23 @@ below.
 - His answer at 17:59 to "Do Mystical's colour and rune work (runes.png, bottom row)? Of every
   colour bright enough to read, this blue is the easiest to tell from all seventeen words, and it
   stays clear of the enemy's pink.": **"Yes (Recommended)"**.
-- Its looks at work (in front, the bigger spell hit; behind, the spell hits that stack) are next
-  from the art chat, pictures to him first. Until then the game can show it as it shows any word:
-  its colour where `WORD_HUE` is used.
+- **ITS LOOKS AT WORK** (`mystical.gif`, the mage with the wand: her familiars' shots strike a
+  cultist with two skeletons beside it). In front, on each spell hit, `mysticHit`: a bigger hit, in
+  moonlight: a crescent of it sweeps round the struck (the rune is a crescent moon), a flash, a soft
+  ring, stardust thrown up that drifts and dims. The splash of a spell that strikes one enemy (the
+  main chat's page: "single-target spells splash nearby enemies"), `mysticSplash`: lines of a
+  constellation run out from the struck to each enemy the splash reaches, a star at each end, and
+  each of them is struck with a small burst. Behind, on each spell hit that lands, `mysticStack`: a
+  star flies from the struck to a little moon at the hero's shoulder, and as each reaches it the
+  moon waxes: a crescent lit on its left at one (the rune's), half at three, full at five, with a
+  halo, and motes of moonlight falling round the hero. The line over the hero counts it, as Power's
+  might is counted: "ARCANA 1" to "FULL ARCANA" (`MYSTIC_NAME`: a stand-in until the main chat names
+  it). A stack only kept up flies no star (the moon already says how much there is). The moon
+  blinks in its last second and is gone when its time is up (`MYSTIC_SECS` 5, `MYSTIC_MAX` 5: the
+  main chat's page). How far the splash reaches in the pictures, `MYSTIC_SPLASH` 1.8 tiles, is a
+  guess: the rules will say.
+- His answer at 18:41 to "Does Mystical at work look right (mystical.gif)? The count over her head
+  reads ARCANA, the way Power's reads MIGHT.": **"Yes (Recommended)"**.
 
 ## In the code
 
@@ -152,8 +166,8 @@ below.
 ```
 node tools/build_to.mjs dist/w3.html
 WORD=pulling node tools/playtest.mjs --file dist/w3.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words3.mjs --out shots/w3/pulling
-   (WORD = pulling | heavy | hexing | frenzied | splitting | precise | stilling | guarding; OFF=1 for the same with the switch off)
-python3 tools/words3_films.py shots/w3 previews/new_words      (the eight moving pictures he saw)
+   (WORD = pulling | heavy | hexing | frenzied | splitting | precise | stilling | guarding | mystical; OFF=1 for the same with the switch off)
+python3 tools/words3_films.py shots/w3 previews/new_words      (the eight moving pictures he saw; add `mystical` for its own)
 python3 tools/words3_runes.py previews/new_words/runes.png     (the rune stones)
 ```
 
@@ -180,6 +194,11 @@ three at once fall seconds behind.
    the shield are the rules' state: feed them from it (or read the monster's and hero's own fields
    in `shift3`, `tint3`, `echoes3`, `drawShell`). Then drop the demo (`demoEvents3`, `demo3`,
    `__dbg.words3`, `W3.copies`, the demo's slowing of shots) and the switch.
+   Mystical: `mysticHit` on each hit of a spell with it in front; `mysticSplash` from that hit
+   to the enemies the rules' splash struck (the splash's own hits do not splash again); and
+   `mysticStack(x, y, n)` on each spell hit that lands with it behind, `n` the stacks the rules say
+   the hero holds (the moon catches up as its stars arrive). The stand-in name `MYSTIC_NAME` takes
+   the rules' name for the stacks.
 3. Heavy's hold sets `fx.freeze` itself; route it through `Fx.hold` (which keeps quick attacks from
    making the game stutter) when it moves into fx.ts. The particles go into `fx.particles` under the
    same limit of 900.
@@ -188,12 +207,14 @@ three at once fall seconds behind.
 
 ## Tested
 
-`tests/words3.test.ts` (19): the switch is off; every call from the renderer is behind it; the
+`tests/words3.test.ts` (21): the switch is off; every call from the renderer is behind it; the
 playtest's hands do nothing until used; Heavy's hold of a tenth of a second; the pull closing in;
 the stagger and the stun that end; the curse and the circle that drain and end; what is left goes
 when its time is up; the frenzy of five and no more; Splitting's three fanned copies and their
 shards; Precise's sight shut by the critical and spent; Stilling's tinge and echoes, and the bubble;
-Guarding's shield, its flare and the ward; no reserved glow colours; every new word's colour (Mystical's
+Guarding's shield, its flare and the ward; Mystical's crescent and splash that go, and its moon
+that waxes as its stars arrive, to five and no further, and wanes when its time is up; no reserved
+glow colours; every new word's colour (Mystical's
 too) as far from every word's and from the reserved glows as Swift's is from Poison's at least
 (CIEDE2000, the measure checked on its published test pairs), and Mystical's from arcane purple and
 a magic item's blue; the runes cut as the nine; the particles within their limit; each look draws,

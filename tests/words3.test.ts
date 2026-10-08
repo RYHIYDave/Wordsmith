@@ -31,9 +31,9 @@ import type { GameEvent, Monster } from '../src/game/state';
 import { Fx } from '../src/render/fx';
 import type { Cam } from '../src/render/fx';
 import {
-  NEW_GLYPH, NEW_RAMP, NEW_WORDS, STAGGER, W3, WORDS3, air3, bubble, clear3, crackedGround, demo3, demoEvents3, echoes3, floor3, frenzyHit, guardOn, guardStruck,
-  heavyHit, hexCircle, hexHit, inside3, lights3, preciseCrit, preciseHit, preciseMark, pullHit, shards, shift3, splitHit, stagger, stillHit, stun, tick3, tint3, vortex,
-  ward,
+  MYSTIC_MAX, MYSTIC_NAME, MYSTIC_SECS, NEW_GLYPH, NEW_RAMP, NEW_WORDS, STAGGER, W3, WORDS3, air3, bubble, clear3, crackedGround, demo3, demoEvents3, echoes3, floor3,
+  frenzyHit, guardOn, guardStruck, heavyHit, hexCircle, hexHit, inside3, lights3, mysticHit, mysticSplash, mysticStack, preciseCrit, preciseHit, preciseMark, pullHit,
+  shards, shift3, splitHit, stagger, stillHit, stun, tick3, tint3, vortex, ward,
 } from '../src/render/words3';
 
 /** A monster as far as the drawing asks: where it stands and who it is. */
@@ -363,6 +363,59 @@ test('Guarding: the shield lasts as long as it was given, flares where it is str
   assert.equal(W3.patches.length, 0);
 });
 
+test('Mystical in front: a crescent sweeps round the struck, and a single-target spell splashes those beside it; both go', () => {
+  clear3();
+  const fx = new Fx();
+  const g = game();
+  mysticHit(fx, 12, 10);
+  assert.equal(W3.sweeps.length, 1);
+  assert.ok(fx.flashes.length >= 1 && fx.particles.length >= 10, 'a flash and stardust');
+  mysticSplash(fx, 12, 10, [{ x: 13, y: 10 }, { x: 12, y: 11.2 }]);
+  assert.equal(W3.links.length, 2, 'a line of the constellation to each the splash reaches');
+  for (let i = 0; i < 20; i++) tick3(0.05, g, fx);
+  assert.equal(W3.sweeps.length + W3.links.length, 0);
+  // (the demo: the hits of a spell with Mystical in front call it up; with the switch off, nothing)
+  W3.front = ['mystical'];
+  W3.single = true;
+  const m = monster(1, 12, 10);
+  const near = monster(2, 13, 10);
+  const far = monster(3, 18, 10);
+  const hit: GameEvent = { t: 'hit', x: 12, y: 10, amount: 10, crit: false, el: 'phys', onHero: false };
+  demoEvents3([hit], game([m, near, far]), fx);
+  assert.equal(W3.sweeps.length, 0, 'switch off: nothing');
+  WORDS3.on = true;
+  try {
+    demoEvents3([hit], game([m, near, far]), fx);
+    assert.equal(W3.sweeps.length, 1);
+    assert.equal(W3.links.length, 1, 'the splash reaches the one beside it, not the one far off, nor the struck');
+  } finally {
+    WORDS3.on = false;
+    W3.front = [];
+    W3.single = false;
+    clear3();
+  }
+});
+
+test('Mystical behind: each spell hit sends a star to the moon, which waxes as they reach it, to five and no further, and wanes when its time is up', () => {
+  clear3();
+  const fx = new Fx();
+  const g = game();
+  for (let i = 0; i < 7; i++) mysticStack(14, 10);
+  assert.equal(W3.mystic.n, MYSTIC_MAX, 'five and no more');
+  assert.equal(W3.mystic.shown, 0, 'the moon waits for the stars');
+  assert.equal(W3.stars.length, MYSTIC_MAX, 'a star for each it has still to show, no more');
+  tick3(0.4, g, fx);
+  assert.equal(W3.stars.length, 0);
+  assert.equal(W3.mystic.shown, MYSTIC_MAX, 'full');
+  assert.ok(fx.floaters.some((f) => f.text === `FULL ${MYSTIC_NAME}`), 'the line over the hero says so');
+  // (kept up when full: no star flies, the moon already says it)
+  mysticStack(14, 10);
+  assert.equal(W3.stars.length, 0);
+  for (let i = 0; i < 2 * MYSTIC_SECS * 10; i++) tick3(0.1, g, fx);
+  assert.equal(W3.mystic.n + W3.mystic.shown, 0, 'gone when its time is up');
+  clear3();
+});
+
 test('nothing piles up: the particles stay within the effects\' own limit', () => {
   clear3();
   const fx = new Fx();
@@ -405,5 +458,22 @@ test('drawn: each look draws something, and with nothing going on nothing is dra
   lights3(() => lit++, cam, g, 1);
   assert.ok(full.drawn() > 200, `${full.drawn()} things drawn`);
   assert.ok(lit >= 7, `${lit} lights`);
+  // Mystical: the crescent, the constellation, the star in flight, and the moon
+  clear3();
+  mysticHit(fx, 12, 10);
+  mysticSplash(fx, 12, 10, [{ x: 13, y: 10 }]);
+  mysticStack(12, 10);
+  tick3(0.1, g, fx);
+  const flying = canvas();
+  air3(flying.g, cam, 1, g, fx);
+  assert.ok(flying.drawn() > 40, `${flying.drawn()} things drawn while the star flies`);
+  tick3(0.3, g, fx);
+  assert.equal(W3.mystic.shown, 1);
+  const moon = canvas();
+  air3(moon.g, cam, 1, g, fx);
+  assert.ok(moon.drawn() >= 30, `${moon.drawn()} things drawn: the moon`);
+  let moonlit = 0;
+  lights3(() => moonlit++, cam, g, 1);
+  assert.ok(moonlit >= 1, 'the moon gives light');
   clear3();
 });

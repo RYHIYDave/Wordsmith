@@ -5,19 +5,23 @@
 // does by hand what the rules will one day do (drag, stun, curse, stagger).
 //   node tools/build_to.mjs dist/w3.html
 //   WORD=pulling node tools/playtest.mjs --file dist/w3.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words3.mjs --out shots/w3/pulling
-//   env: WORD = pulling | heavy | hexing | frenzied | splitting | precise | stilling | guarding
+//   env: WORD = pulling | heavy | hexing | frenzied | splitting | precise | stilling | guarding | mystical
 //        OFF=1: the same, with the switch left off (what the game shows today)
 //        WAIT = milliseconds to let the room settle and the frames be painted first
 // A note beside the pictures (<out>_where.json) says where on the screen the hero stands.
 export default async function (page, snap) {
   const word = process.env.WORD || 'pulling';
   const off = process.env.OFF === '1';
-  const cls = { pulling: 'ranger', heavy: 'warrior', hexing: 'ranger', frenzied: 'warrior', splitting: 'ranger', precise: 'ranger', stilling: 'ranger', guarding: 'warrior' }[word] || 'warrior';
-  await page.evaluate(([cls, off]) => {
+  const cls = { pulling: 'ranger', heavy: 'warrior', hexing: 'ranger', frenzied: 'warrior', splitting: 'ranger', precise: 'ranger', stilling: 'ranger', guarding: 'warrior', mystical: 'mage' }[word] || 'warrior';
+  // (Mystical is a word for spells: the mage, with the wand, whose familiars strike one enemy at a time)
+  const weapon = { mystical: 'wand' }[word] || null;
+  await page.evaluate(([cls, off, weapon]) => {
     const d = window.__dbg; d.saving(false); d.practice(cls, 7); d.autoLevel = false; d.autoWords = false; d.god = true;
     const g = d.game(); g.waveT = 1e9; g.monsters.length = 0; g.projectiles.length = 0;
+    const h = g.hero;
+    if (weapon && g.weapon() !== weapon) { const i = h.bag.findIndex((it) => it && it.weapon === weapon); if (i >= 0) g.equipFromBag(i); }
     d.words3.switch.on = !off; d.words3.clear(); d.words3.listen();
-  }, [cls, off]);
+  }, [cls, off, weapon]);
   await page.waitForTimeout(400);
   // Who stands where, in tiles across and down the screen from the hero (+across: right; +down: toward you).
   const layouts = {
@@ -37,6 +41,8 @@ export default async function (page, snap) {
     stilling: [['skeleton', 4.6, -1.2, 'target'], ['cultist', 4.2, 2.6, 'late'], ['archer', 5.4, 1.2, 'archer']],
     // a brute that will strike at the hero, and a skeleton that strikes while they stand in the ward
     guarding: [['brute', 1.25, -0.3, 'target'], ['skeleton', -1.0, 1.0, 'late']],
+    // a target out in front, and two about it that the splash of a spell on it reaches
+    mystical: [['cultist', 3.0, -0.4, 'target'], ['skeleton', 3.9, 0.7], ['skeleton', 3.6, -1.7]],
   }[word];
   const ids = await page.evaluate((layout) => {
     const d = window.__dbg; const g = d.game(); const h = g.hero;
@@ -153,6 +159,15 @@ export default async function (page, snap) {
         52: () => act(() => { const d = window.__dbg; const h = d.game().hero; d.words3.ward(h.x, h.y, 1.3, 4); }),
         // and a blow struck while they stand in it
         60: () => act((ids) => { const g = window.__dbg.game(); for (const id of [ids.late, ids.target]) { const m = g.monsters.find((q) => q.id === id); if (m) { m.cd = 0; m.state = 'idle'; m.t = 0; } } }, ids),
+      },
+    },
+    mystical: {
+      frames: 150,
+      at: {
+        // the familiars' shots each strike one enemy: a bigger hit, its splash to the two beside it,
+        // and (behind) a star to the moon at her shoulder for each, until it is full
+        3: () => { page.evaluate(() => { const s = window.__dbg.words3.state; s.front = ['mystical']; s.behind = ['mystical']; s.single = true; }); return attack(ids.target); },
+        30: () => attack(ids.target),
       },
     },
   }[word];
