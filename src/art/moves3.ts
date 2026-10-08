@@ -1165,6 +1165,13 @@ function breathing(from: Bones, more: Partial<Bones> = {}): Motion {
   };
 }
 export const MAGE_STAND3: Move3 = { name: 'The mage, standing', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: breathing(MAGE) };
+/**
+ * The mage in town: as she has always stood and run there (her staff her walking stick). Her own
+ * moves, so that in a fight she can have others (MAGE_STANCES); with the switch off they are the
+ * same as MAGE_STAND3 and MAGE_RUN3, picture for picture.
+ */
+export const MAGE_TOWN3: Move3 = { name: 'The mage in town, standing', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: breathing(MAGE) };
+export const MAGE_TOWN_RUN3: Move3 = { name: 'The mage runs in town', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: run(MAGE_GAIT) };
 export const RANGER_STAND3: Move3 = { name: 'The ranger, standing', held: 'bow', build: RANGER_BODY, rest: ARCHER, motion: breathing(ARCHER, { lhz: ARCHER.lhz - 0.4 }) };
 
 // ---------------------------------------------------------------------------------------------
@@ -1368,6 +1375,16 @@ export const RANGER_DRAW3: Move3 = { name: 'The ranger unslings his bow', held: 
  * stood on the ground again. (Low and at her side, her head up: the owner, 6 Oct 2026, 21:04,
  * of moves made with the staff up in front of her, "very obscured by the hat and the robe".)
  */
+/**
+ * THE MAGE'S GUARD: low and side-on, her feet well apart, the staff level in both hands and pointed
+ * at what is ahead, its crystal alight. She comes to it when she is picked (`mageReadies`), and,
+ * with MAGE_STANCES on, it is how she stands in a fight (MAGE_GUARD, below).
+ */
+const MAGE_GUARD_POSE: Partial<Bones> = {
+  px: 0, pz: -3.2, yaw: -30, pitch: 5, roll: 0, twist: -8, bend: 4, side: 0, faceTurn: 0, faceUp: 0,
+  lfx: 7, lfy: 0.5, lfz: 0, lfp: 0, lft: 0, lk: 2, rfx: -7.5, rfy: -1, rft: -46, rk: -32,
+  rhIn: 0, rhx: 2, rhy: 0.5, rhz: -15, re: 0, lhIn: 3, lhx: 11.5, lhy: 0, lhz: 0, le: 0, wAz: 180, wEl: 166,
+};
 function mageReadies(): Motion {
   const lift: Partial<Bones> = { pz: -0.6, yaw: -12, twist: -5, faceUp: 2, rhIn: 0, rhx: 3, rhy: -6, rhz: -2, wAz: 180, wEl: 94, lhIn: 0, lhx: 3.5, lhy: 4, lhz: -10, le: -20 };
   // (its head comes down OUTSIDE her, tipped out to her right as well as forward: straight forward it would cross her face)
@@ -1375,11 +1392,7 @@ function mageReadies(): Motion {
     px: 0, pz: -1.8, yaw: -20, twist: -6, pitch: 2, bend: 2, faceUp: 1, lfx: 3.5, lfz: 1.4, lfp: 6, rfx: -3.5, rft: -34, rk: -24,
     rhIn: 0, rhx: 3.5, rhy: -5, rhz: -9, wAz: 140, wEl: 128, lhIn: 0, lhx: 7, lhy: 0, lhz: -11, le: -10,
   };
-  const guard: Partial<Bones> = {
-    px: 0, pz: -3.2, yaw: -30, pitch: 5, roll: 0, twist: -8, bend: 4, side: 0, faceTurn: 0, faceUp: 0,
-    lfx: 7, lfy: 0.5, lfz: 0, lfp: 0, lft: 0, lk: 2, rfx: -7.5, rfy: -1, rft: -46, rk: -32,
-    rhIn: 0, rhx: 2, rhy: 0.5, rhz: -15, re: 0, lhIn: 3, lhx: 11.5, lhy: 0, lhz: 0, le: 0, wAz: 180, wEl: 166,
-  };
+  const guard = MAGE_GUARD_POSE;
   return {
     keys: [
       { at: 0, pose: {} },
@@ -1461,9 +1474,10 @@ export function gripping(g: Gait, period: number): Gait {
 const GRIP_RUNS: [Move3, () => Gait, number, (m: Motion) => Motion][] = [
   [KNIGHT_RUN3, () => KNIGHT_GAIT, 27 / 60, (m) => m],
   [RANGER_RUN3, () => RANGER_GAIT, 25 / 60, (m) => ready(m)],
-  [MAGE_RUN3, () => MAGE_GAIT, 23 / 60, (m) => m],
+  [MAGE_RUN3, () => (MAGE_STANCES.on ? MAGE_BATTLE_GAIT : MAGE_GAIT), 23 / 60, (m) => m],
   [KNIGHT_TOWN_RUN3, () => KNIGHT_TOWN_GAIT, 27 / 60, (m) => ready(m, { py: 0, stow: 1 })],
   [RANGER_TOWN_RUN3, () => (RANGER_STANCES.on ? RANGER_TOWN_UPRIGHT : RANGER_TOWN_GAIT), 25 / 60, (m) => ready(m, { ...READY, stow: 1 })],
+  [MAGE_TOWN_RUN3, () => MAGE_GAIT, 23 / 60, (m) => m],
 ];
 /**
  * The runs as the two switches have them now. (The ranger's grip with his new stances whether or
@@ -1475,7 +1489,7 @@ const GRIP_RUNS: [Move3, () => Gait, number, (m: Motion) => Motion][] = [
 function remakeRuns(): void {
   for (const [move, gait, period, finish] of GRIP_RUNS) {
     const g = gait();
-    const grips = GRIP.on || (RANGER_STANCES.on && move.held === 'bow');
+    const grips = GRIP.on || stanced(move.held);
     move.motion = finish(grips ? run(gripping(g, period), period) : run(g));
     if (grips) move.stride = GRIP_SPEED * period;
     else delete move.stride;
@@ -1592,9 +1606,9 @@ export function settle(runMove: Move3, phase: number, to: Bones, long = 0.24): M
 }
 /** How many moments of a run there are settles from: the game takes the one nearest the moment the hero stops. */
 export const SETTLES = 8;
-/** The settles from a run into a stance, when there are any (the ranger's, with RANGER_STANCES on): the first from the run's start. */
+/** The settles from a run into a stance, when there are any (the ranger's with RANGER_STANCES on, the mage's with MAGE_STANCES): the first from the run's start. */
 export function settlesOf(runMove: Move3, stance: Move3): Move3[] {
-  if (!RANGER_STANCES.on || runMove.held !== 'bow') return [];
+  if (!stanced(runMove.held)) return [];
   return Array.from({ length: SETTLES }, (_, i) => ({ ...stance, name: `${stance.name}: coming to a stand`, motion: settle(runMove, i / SETTLES, stance.rest) }));
 }
 
@@ -1644,9 +1658,9 @@ export function startOf(runMove: Move3, stance: Bones, n = 9): { motion: Motion;
   }
   return { motion: { keys: out }, phase };
 }
-/** The ranger's way of setting off from his stance into his run, when he has one (RANGER_STANCES on, the run gripping): the move, and the moment of the run it leads into. */
+/** The way of setting off from a stance into the run, for a hero with stances of their own (the ranger, the mage: `stanced`) whose run grips: the move, and the moment of the run it leads into. */
 export function startsOf(runMove: Move3, stance: Move3): { move: Move3; phase: number } | null {
-  if (!RANGER_STANCES.on || runMove.held !== 'bow' || runMove.stride === undefined) return null;
+  if (!stanced(runMove.held) || runMove.stride === undefined) return null;
   const { motion, phase } = startOf(runMove, stance.rest);
   return { move: { ...runMove, name: `${runMove.name}: setting off`, motion }, phase };
 }
@@ -1939,11 +1953,83 @@ export function useRangerStances(on: boolean): void {
   remakeRuns();
 }
 
+// ---------------------------------------------------------------------------------------------
+/**
+ * THE MAGE IN BATTLE AND IN TOWN. A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct
+ * 2026). The owner, 15:38: "Each character should have a battle stance and a town stance." The
+ * warrior has both and the ranger's are made (RANGER_STANCES); the mage had one figure for both,
+ * her staff her walking stick. So, with this switch on: in a dungeon she stands ready for a fight,
+ * in the guard she comes to when she is picked on her class card (MAGE_GUARD_POSE: low and side-on,
+ * the staff level in both hands and pointed at what is ahead, its crystal alight), and the power in
+ * it is only just held (the art rulebook's mage: "only just in control of the power"): the crystal
+ * flares and settles as she breathes, and a wind off it lifts her coat and braids. She runs low, the
+ * staff held ready (MAGE_BATTLE_GAIT). In town she stands and runs as she always has, her weight now
+ * shifting as she stands.
+ */
+export const MAGE_STANCES = { on: false };
+
+/** Whether a hero has stances of their own now, by what they carry: the ranger (the bow) with RANGER_STANCES, the mage (the staff) with MAGE_STANCES. */
+export function stanced(held: Held): boolean {
+  return (held === 'bow' && RANGER_STANCES.on) || (held === 'staff' && MAGE_STANCES.on);
+}
+
+/** How she stands in a fight: her guard, the crystal alight and a wind off it. */
+const MAGE_GUARD: Bones = { ...MAGE, ...MAGE_GUARD_POSE, draw: 1.3, gale: 0.1 };
+
+/**
+ * HER GUARD, ALIVE: two breaths and her weight going over onto the front foot and back, as the
+ * ranger's (`alive`); and twice in the round the power in the crystal surges, flaring and throwing
+ * a gust off it, and is held down again, the second time harder. Two and four tenths of a second round.
+ */
+function mageAlive(g: Bones): Motion {
+  const at = (shift: number, breath: number, draw: number, gale: number): Partial<Bones> => ({
+    px: g.px + 0.5 * shift, py: g.py + 0.4 * shift, roll: g.roll - 1.2 * shift, side: g.side + 1.2 * shift,
+    pz: g.pz - 0.5 * breath, bend: g.bend + 1.4 * breath, draw: g.draw + draw, gale: g.gale + gale,
+  });
+  return {
+    keys: [
+      { at: 0, pose: at(0, 0, 0, 0) },
+      { at: 0.3, pose: at(0.22, 0.5, 0.6, 0.14), ease: 'out' },
+      { at: 0.5, pose: at(0.4, 0.85, 0.1, 0.04), ease: 'io' },
+      { at: 1.2, pose: at(1, 0, 0.25, 0.06), ease: 'io' },
+      { at: 1.6, pose: at(0.7, 0.6, 0.8, 0.2), ease: 'out' },
+      { at: 1.82, pose: at(0.5, 1, 0.05, 0.05), ease: 'io' },
+      { at: 2.4, pose: at(0, 0, 0, 0), ease: 'io' },
+    ],
+    loop: 0,
+  };
+}
+/** And in town: her weight is on her left leg already; it settles further onto it and comes back. */
+const MAGE_TOWN_MOTION = (): Motion => alive(MAGE, { py: 0.4, roll: -1, side: 1.2 });
+
+/** HOW SHE RUNS IN A FIGHT: low and quick, side-on, the staff held ready in both hands as in her guard, its crystal alight, her coat flying. */
+const MAGE_BATTLE_GAIT: Gait = {
+  reach: 8.5, push: 10, kick: 6.5, lean: 6, hunch: 4, sink: 3.2, bob: 0.8, hips: 5, counter: 0.3, yaw: -18, twist: -6, look: 2,
+  arms: (swing, step) => ({
+    rhIn: 0, rhx: 2, rhy: 0.5, rhz: -15 + 0.6 * Math.cos(step * Math.PI * 2), re: 0,
+    lhIn: 3, lhx: 11.5, lhy: 0, lhz: 0, le: 0,
+    wAz: 180, wEl: 160 + swing * 2, draw: 1.2, gale: 0.36,
+  }),
+};
+
+/** As they are with the switch off. */
+const MAGE_TODAY = { stand: MAGE_STAND3.motion, standRest: MAGE_STAND3.rest, town: MAGE_TOWN3.motion, runRest: MAGE_RUN3.rest };
+/** Put the mage's new stances in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
+export function useMageStances(on: boolean): void {
+  MAGE_STANCES.on = on;
+  MAGE_STAND3.rest = on ? MAGE_GUARD : MAGE_TODAY.standRest;
+  MAGE_STAND3.motion = on ? mageAlive(MAGE_GUARD) : MAGE_TODAY.stand;
+  MAGE_TOWN3.motion = on ? MAGE_TOWN_MOTION() : MAGE_TODAY.town;
+  MAGE_RUN3.rest = on ? MAGE_GUARD : MAGE_TODAY.runRest;
+  remakeRuns();
+}
+
 /** Every move there is on the bones so far, by a short name. */
 export const MOVES3: Record<string, Move3> = {
   ktown: KNIGHT_TOWN3, rtown: RANGER_TOWN3, ktownrun: KNIGHT_TOWN_RUN3, rtownrun: RANGER_TOWN_RUN3, kdraw: KNIGHT_DRAW3, rdraw: RANGER_DRAW3, mready: MAGE_READY3,
   klook: KNIGHT_LOOKS3, tsquirrel: RANGER_TOWN_SQUIRREL3, tsighting: RANGER_TOWN_SIGHTING3,
   rstand: RANGER_STAND3, volley: VOLLEY3, shot: SHOT3, rrun: RANGER_RUN3, roll: ROLL3, rreel: RANGER_REEL3, rlurch: RANGER_LURCH3, rfall: RANGER_FALL3, squirrel: SQUIRREL3, sighting: SIGHTING3,
   mstand: MAGE_STAND3, wave: WAVE3, orb: ORB3, beam: BEAM3, beamend: BEAM_END3, mrun: MAGE_RUN3, mreel: MAGE_REEL3, mlurch: MAGE_LURCH3, mfall: MAGE_FALL3, mlight: MAGE_LIGHT3, reading: READING3,
+  mtown: MAGE_TOWN3, mtownrun: MAGE_TOWN_RUN3,
   rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
 };
