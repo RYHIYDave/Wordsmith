@@ -182,3 +182,48 @@ His answers:
    door, round a shrine) as landmarks, not on every wall.
 
 He was told round 4 is the last before a first draft: the mage, monsters, gear and menus.
+
+## Round 4 (asked 07:58, answered 08:03)
+
+The questions, as put to him:
+
+1. "Since movement is per character: how does the mage move?" Commanding ("Calm and upright.
+   Small gestures, huge results. The magic does the heavy lifting."), Wild ("Big sweeping casts,
+   coat flying, only just in control of the power."), Quick and nimble ("Light on her feet,
+   darting between casts.").
+2. "How should monsters feel to fight?" Menacing ("Creepy and threatening. You're a little afraid
+   of them."), Fun to smash ("Big reactions when hit, satisfying to knock around."), By size
+   ("Small ones fun to smash, big ones truly menacing.").
+3. "How much should gear change a hero's look? Rarer gear looks finer in all of these." Weapon
+   only ("The hero always looks the same; only what's in their hands changes."), Weapon and
+   headgear ("What's in the hands and on the head changes. This was the plan of 3 Oct."), Every
+   piece shows ("Armour, cloak, boots and gloves too. More to collect, much more to paint.").
+4. "Menus and lettering: how should they look?" Clean and modern ("Like now: deep blue panels,
+   flat colour, glowing cyan and pink accents."), Part of the world ("Frames of stone, iron and
+   old paper; letters that look carved or inked."), Clean with a touch ("Clean panels with a hint
+   of the world: a carved corner, a rune.").
+
+His answers:
+
+- **The mage:** "Wild".
+- **Monsters:** "By size".
+- **Gear:** "Weapons only for now.  Obviously I’d like everything to change with gear but that’s
+  further on down the road, if ever.  And I’d like to maybe monetize skins"
+- **Menus:** "Clean with a touch".
+
+**How they were read, and told to him at 08:04:**
+
+1. The mage is wild: big sweeping casts, cape and braids flying, only just in control of what she
+   holds. The three heroes move three ways: the soldier heavy but quick, the ranger graceful and
+   quiet, the mage wild.
+2. Monsters by size: small ones fun to smash (big reactions, knocked about, satisfying to break);
+   big ones truly menacing (slow, looming, a wind-up you dread).
+3. WEAPONS ONLY, FOR NOW: each hero keeps one look; only the weapon in hand changes; rarer weapons
+   look finer. Armour and the rest wait, "if ever". SKINS, MAYBE SOLD: a skin is a new outfit over
+   the same bones and moves (the heroes' moves are made on a skeleton apart from what they wear),
+   and that becomes a rule so that the door stays open.
+4. Menus clean with a touch: clean panels as now, with a hint of the world (a carved corner, a
+   rune).
+
+He was told the first draft comes next: the rules in plain words up front, the exact numbers at
+the back for the other chats; then pictures from the game to show each rule.
