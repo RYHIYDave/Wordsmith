@@ -3,7 +3,7 @@
 
 import { FIGURE_SIZE, figureOf, makeBestiary } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
-import { makeHeroArt3 } from './art/heroes3';
+import { TRUE_LEFT, makeHeroArt3 } from './art/heroes3';
 import { makeIconArt } from './art/icons';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
@@ -1530,6 +1530,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     relief: RELIEF,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
     doors: DOORS,
+    /**
+     * TRUE LEFT-FACING HEROES (art/heroes3.ts, `TRUE_LEFT`): a mock-up for the owner, OFF in the
+     * game. Set it, and the heroes painted over the bones are made afresh, with or without frames
+     * of their own for facing left. For playtests that photograph it, who put it back.
+     */
+    trueLeft: (on: boolean) => {
+      TRUE_LEFT.on = on;
+      art.heroes = makeHeroArt3();
+    },
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

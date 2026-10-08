@@ -10,7 +10,7 @@
 // so. One painter serves both of the game's views and every pose: nothing in here knows what
 // move he is making.
 
-import type { Light } from '../engine/px';
+import type { Light, Px } from '../engine/px';
 import type { TailRoot } from '../engine/tails';
 import { KNIGHT_LOOK, blade, bladeLights } from './hero_warrior';
 import type { KnightLook } from './hero_warrior';
@@ -254,7 +254,35 @@ export function paintKnight3(s: Skeleton, q: Posed, view: GameView, kit: Knight3
   blade(sword, gx, gy, deg, len, 2.6, Math.max(2, 9 * seenLong), 4);
   laidAlong(sword, st, add(carried.grip, mul(carried.point, -9)), tip3, 0.4);
   // (its light: not when it is on his back and he is between it and the eye)
-  if (!(away && st.near(s.chest[0]) > 0)) for (const l of bladeLights(gx, gy, deg, len)) lights.push(l);
+  const glow = away && st.near(s.chest[0]) > 0 ? [] : bladeLights(gx, gy, deg, len);
+  const whole = st.whole(kit.rim === undefined ? FRIEND_RIM : kit.rim);
+  // (TRUE LEFT, the mock-up that is not in the game: seen from in front of his left side the blade
+  // can be wholly behind him, which neither of the game's two views ever shows. A light of it
+  // shines only as much as there is of the blade to be seen round it: none through his body.)
+  for (const l of glow) {
+    const k = view === 'front' || view === 'back' ? 1 : bladeSeen(whole, l.x, l.y);
+    if (k >= 1) lights.push(l);
+    else if (k > 0) lights.push({ ...l, a: (l.a ?? 0.5) * k });
+  }
 
-  return { px: st.whole(kit.rim === undefined ? FRIEND_RIM : kit.rim), lights, tails };
+  return { px: whole, lights, tails };
+}
+
+/**
+ * How much of the blade (or its streak) is to be seen round a point of the finished frame, 0 to 1:
+ * none, or a few pixels peeping out, is 0; a good piece of it is 1. (Not the rim round the
+ * figure, which is the blade's own cyan, laid on thin.)
+ */
+function bladeSeen(px: Px, x: number, y: number): number {
+  let n = 0;
+  for (let dy = -3; dy <= 3; dy++) {
+    for (let dx = -3; dx <= 3; dx++) {
+      const xx = Math.round(x) + dx;
+      const yy = Math.round(y) + dy;
+      if (!px.inside(xx, yy) || px.d[(yy * px.w + xx) * 4 + 3] < 255) continue;
+      const c = px.get(xx, yy);
+      if (c !== null && BLADE.includes(c)) n++;
+    }
+  }
+  return n < 4 ? 0 : Math.min(1, n / 18);
 }

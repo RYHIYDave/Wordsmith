@@ -110,9 +110,9 @@ function title(g: CanvasRenderingContext2D, text: string): void {
 }
 // (the two ways the game shows a hero. Nothing here says "in the game": these are pictures to look at,
 // and the owner sees nothing go into the game before he has seen it.)
-const LABELS: Record<GameView, string> = { front: 'Facing you', back: 'Facing away' };
+const LABELS: Record<'front' | 'back', string> = { front: 'Facing you', back: 'Facing away' };
 // (`views=back,front` in the address chooses which are shown, and in what order)
-const VIEWS: { view: GameView; label: string }[] = (new URLSearchParams(raw.split('?')[1] ?? '').get('views') ?? 'front,back').split(',').map((v) => (v === 'back' ? 'back' : 'front') as GameView).map((view) => ({ view, label: LABELS[view] }));
+const VIEWS: { view: GameView; label: string }[] = (new URLSearchParams(raw.split('?')[1] ?? '').get('views') ?? 'front,back').split(',').map((v) => (v === 'back' ? 'back' : 'front') as 'front' | 'back').map((view) => ({ view, label: LABELS[view] }));
 const w = window as unknown as { __ready: boolean; __frames: number; __tickMs: number; __frame: (k: number) => string };
 const times = (arg || '0').split(',').map((v) => Number(v) * FRAME);
 

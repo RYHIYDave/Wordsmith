@@ -11,6 +11,8 @@ import { BOW_BRACE, BOW_HALF, GREAT_BLADE, GREAT_GRIP, MOVES3, STAFF_DOWN, STAFF
 import type { Held } from '../art/moves3';
 import { add, bonesAt, cross, mul, project, solve } from '../art/skeleton';
 import type { Posed, Skeleton, V3, View } from '../art/skeleton';
+/** The three views this page draws (not the true-left ones of the mock-up: skeleton.ts, `View`). */
+type WireView = Extract<View, 'side' | 'front' | 'back'>;
 
 const raw = decodeURIComponent(location.hash.slice(1));
 const [name = 'volley', mode = 'film', arg = '', scaleArg = ''] = raw.split(':');
@@ -149,15 +151,15 @@ function strokesOf(s: Skeleton, held: Held, q: Posed): Stroke[] {
   return out;
 }
 
-const VIEWS: { view: View; label: string }[] = [
+const VIEWS: { view: WireView; label: string }[] = [
   { view: 'side', label: 'From the side' },
   { view: 'front', label: 'In the game, facing you' },
   { view: 'back', label: 'In the game, facing away' },
 ];
 
 /** How much of the picture's plane a move takes up, in each view (so that every frame is drawn at one size and nothing is cut off). */
-function extent(): Record<View, [number, number, number, number]> {
-  const box: Record<View, [number, number, number, number]> = { side: [0, 0, 0, 0], front: [0, 0, 0, 0], back: [0, 0, 0, 0] };
+function extent(): Record<WireView, [number, number, number, number]> {
+  const box: Record<WireView, [number, number, number, number]> = { side: [0, 0, 0, 0], front: [0, 0, 0, 0], back: [0, 0, 0, 0] };
   for (let i = 0; i <= 60; i++) {
     const q = poseAt((END * i) / 60);
     const st = strokesOf(solve(BODY, q), move.held, q);
@@ -187,7 +189,7 @@ function mixc(a: string, b: string, k: number): string {
 }
 
 /** One view of the figure at one moment, in a pane of the canvas. (ox, oy) is where the figure's place on the floor is drawn. */
-function paintView(g: CanvasRenderingContext2D, t: number, view: View, ox: number, oy: number, S: number, bg: string): void {
+function paintView(g: CanvasRenderingContext2D, t: number, view: WireView, ox: number, oy: number, S: number, bg: string): void {
   const q = poseAt(t);
   const s = solve(BODY, q);
   const strokes = strokesOf(s, move.held, q);
@@ -337,7 +339,7 @@ const bottom = Math.max(BOX.side[3], BOX.front[3], BOX.back[3]) + MARGIN;
  * a phone shows comfortably.
  */
 const S = Number(scaleArg) || Math.min(6, 640 / (bottom - top));
-const paneW = (v: View): number => Math.ceil((BOX[v][2] - BOX[v][0] + MARGIN * 2) * S);
+const paneW = (v: WireView): number => Math.ceil((BOX[v][2] - BOX[v][0] + MARGIN * 2) * S);
 const paneH = Math.ceil((bottom - top) * S) + LABEL;
 
 /**
@@ -347,12 +349,12 @@ const paneH = Math.ceil((bottom - top) * S) + LABEL;
  */
 const SMALL = 0.62;
 const S2 = S * SMALL;
-const smallW = (v: View): number => Math.ceil((BOX[v][2] - BOX[v][0] + MARGIN * 2) * S2);
+const smallW = (v: WireView): number => Math.ceil((BOX[v][2] - BOX[v][0] + MARGIN * 2) * S2);
 const smallH = Math.ceil((bottom - top) * S2) + LABEL;
 const colW = Math.max(...VIEWS.map((v) => paneW(v.view)));
 const SHEET_IN = Math.max(paneW('side'), smallW('front') + PAD + smallW('back'));
 const spare = SHEET_IN - (smallW('front') + PAD + smallW('back'));
-const PANES: { view: View; label: string; x: number; y: number; w: number; h: number; s: number; shift: number }[] = [
+const PANES: { view: WireView; label: string; x: number; y: number; w: number; h: number; s: number; shift: number }[] = [
   { view: 'side', label: VIEWS[0].label, x: PAD, y: PAD + HEAD, w: SHEET_IN, h: paneH, s: S, shift: (SHEET_IN - paneW('side')) / 2 },
   { view: 'front', label: VIEWS[1].label, x: PAD, y: PAD + HEAD + paneH + PAD, w: smallW('front') + spare / 2, h: smallH, s: S2, shift: spare / 4 },
   { view: 'back', label: VIEWS[2].label, x: PAD + smallW('front') + spare / 2 + PAD, y: PAD + HEAD + paneH + PAD, w: smallW('back') + spare / 2, h: smallH, s: S2, shift: spare / 4 },

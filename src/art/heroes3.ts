@@ -129,10 +129,27 @@ function outAt(move: Move3, t: number): number {
 /** The pool of light behind a hero, on the painters' canvas (as kit.ts has it on the first heroes'). */
 const AURA3: Light = { x: CANVAS3.ax - 4, y: CANVAS3.ay - 30, r: 46, color: '#28dcf0', a: 0.2 };
 
+/**
+ * TRUE LEFT-FACING FRAMES: A MOCK-UP FOR THE OWNER, NOT IN THE GAME (8 Oct 2026; what it is and
+ * why: docs/mockups/true_left/README.md). OFF, AS IT IS AND MUST STAY UNTIL HE SAYS OTHERWISE: each
+ * figure is painted in the game's two views and the game turns those over for a hero who faces
+ * screen-left, as it always has (so facing left the weapon is in the other hand and the light
+ * falls from the top right). ON: each figure is painted twice more, as the figure itself turned
+ * to face down-left and up-left (skeleton.ts, `frontL` and `backL`), and those are shown facing
+ * left: the weapon in the same hand as facing right, the light from the top left. Read when a
+ * figure is first made (`makeHeroArt3`'s `of`): a page that sets it makes its hero art after.
+ */
+export const TRUE_LEFT = { on: false };
+
+/** Is this one of the true-left views (not in the game)? */
+const isLeft = (view: GameView): boolean => view === 'frontL' || view === 'backL';
+
 /** A frame of a move as the game holds it: cut down to the figure, with its lights, its pool of light and where its tails are fixed. */
 export function spriteOf3(move: Move3, t: number, view: GameView): Sprite {
   const out = outAt(move, t);
-  const pool = out >= 0.98 ? null : out > 0.01 ? { ...AURA3, a: (AURA3.a ?? 1) * (1 - out) } : AURA3;
+  // (facing left, the pool lies where it does behind today's frames turned over: on his other side)
+  const aura = isLeft(view) ? { ...AURA3, x: CANVAS3.ax + 4 } : AURA3;
+  const pool = out >= 0.98 ? null : out > 0.01 ? { ...aura, a: (aura.a ?? 1) * (1 - out) } : aura;
   return toSprite(paintMove3(move, t, view), pool, CANVAS3.ax, CANVAS3.ay);
 }
 
@@ -249,13 +266,15 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
   if (plan.hold) clips.hold = clip(of(plan.hold), CLIP_FPS3);
   if (plan.release) clips.release = clip(of(plan.release), CLIP_FPS3);
   // (a whirlwind on the bones is the hero turning all the way round, seen from one place: the
-  // figure is not to be turned for it as well)
-  if (plan.whirl) clips.whirl = { ...clip(of(plan.whirl), CLIP_FPS3), turns: true };
+  // figure is not to be turned for it as well; so it is seen from the front whichever way the
+  // hero faces, and the true-left views of the mock-up have none)
+  if (plan.whirl && !isLeft(view)) clips.whirl = { ...clip(of(plan.whirl), CLIP_FPS3), turns: true };
   if (plan.fall) clips.fall = clip(of(plan.fall), CLIP_FPS3);
   if (plan.reel) clips.reel = clip(of(plan.reel), CLIP_FPS3);
   if (plan.lurch) clips.lurch = clip(of(plan.lurch), CLIP_FPS3);
-  // (what a hero does when left standing is painted facing the camera only: the game turns them round for it)
-  if (view === 'front') {
+  // (what a hero does when left standing is painted facing the camera only: the game turns them
+  // round for it; and, in the true-left mock-up, facing the camera and to the left as well)
+  if (view === 'front' || view === 'frontL') {
     if (plan.idleA) clips.idleA = clip(of(plan.idleA), GESTURE_FPS3);
     if (plan.idleB) clips.idleB = clip(of(plan.idleB), GESTURE_FPS3);
     if (plan.ready) {
@@ -281,6 +300,8 @@ export function makeHeroArt3(): HeroArt {
     if (!art) {
       const plan = PLANS[cls][place];
       art = { front: animSet3(plan, 'front'), back: animSet3(plan, 'back') };
+      // (the true-left mock-up, not in the game: see TRUE_LEFT. Off, no figure has these.)
+      if (TRUE_LEFT.on) art.left = { front: animSet3(plan, 'frontL'), back: animSet3(plan, 'backL') };
       made.set(key, art);
     }
     return art;
@@ -297,7 +318,7 @@ export function makeHeroArt3(): HeroArt {
         const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.walk, (a) => a.clips?.attack?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
           (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? []];
         for (const pick of picks) {
-          for (const set of [art.front, art.back]) {
+          for (const set of art.left ? [art.front, art.back, art.left.front, art.left.back] : [art.front, art.back]) {
             const frames = pick(set);
             for (let i = 0; i < frames.length; i++) list.push(() => (painted3 = frames[i]));
           }

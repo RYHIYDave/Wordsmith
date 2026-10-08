@@ -3,12 +3,16 @@
 // shown, or ahead of need a few thousandths of a second at a time (Renderer.heroArt): a frame
 // that takes long to paint is a pause in the game the first time it is seen.
 //   node tools/preview.mjs src/dev/measure_paint.ts shots/measure.png 100 100 "warrior"
+// "warrior:trueleft" measures the heroes on the bones with the true-left mock-up switched on for
+// this page (art/heroes3.ts, TRUE_LEFT; not in the game): each figure has twice the views to paint.
 import { makeHeroArt } from '../art/heroes';
 import type { HeroArt, HeroLook } from '../art/heroes';
-import { makeHeroArt3 } from '../art/heroes3';
+import { TRUE_LEFT, makeHeroArt3 } from '../art/heroes3';
 import type { ClassId } from '../game/types';
 
-const cls = (decodeURIComponent(location.hash.slice(1)) || 'warrior') as ClassId;
+const [clsArg, flag] = decodeURIComponent(location.hash.slice(1)).split(':');
+const cls = (clsArg || 'warrior') as ClassId;
+if (flag === 'trueleft') TRUE_LEFT.on = true;
 
 function measure(name: string, art: HeroArt, look: HeroLook): void {
   const times: number[] = [];

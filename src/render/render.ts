@@ -1231,13 +1231,15 @@ export class Renderer {
    */
   private actorSprite(art: ActorArt, anim: string, animT: number, attackFrame: number, fx: number, fy: number, heavy = false, leapK = -1): Sprite {
     const left = fx - fy < 0;
-    const set = fx + fy < -0.2 ? art.back : art.front;
+    // (frames of its own for facing screen-left, where the art has them: a mock-up that no figure in the game has, ActorArt.left)
+    const own = left && art.left ? art.left : art;
+    const set = fx + fy < -0.2 ? own.back : own.front;
     let s: Sprite;
     if (leapK >= 0 && set.leap) s = set.leap[leapK < 0.18 ? 0 : leapK < 0.7 ? 1 : 2];
     else if (anim === 'attack') s = (heavy && set.heavy ? set.heavy : set.attack)[Math.max(0, Math.min(2, attackFrame))];
     else if (anim === 'walk') s = set.walk[Math.floor(animT * (set.walkFps ?? 8)) % set.walk.length];
     else s = set.idle[Math.floor(animT * (set.idleFps ?? 2)) % set.idle.length];
-    return left ? flipSprite(s) : s;
+    return left && !art.left ? flipSprite(s) : s;
   }
 
   /** Which of the figure's two attack animations goes with the attack the hero is making (see attackClip). */

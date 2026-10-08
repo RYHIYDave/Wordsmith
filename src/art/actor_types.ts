@@ -4,7 +4,9 @@ import type { Sprite } from '../engine/px';
 
 /**
  * One facing of a character. Every frame is drawn facing screen-RIGHT; the renderer mirrors
- * frames for screen-left. All frames of one character share the same canvas size and anchor.
+ * frames for screen-left (unless the art has frames of its own for that: `ActorArt.left`, a
+ * mock-up that no figure in the game has). All frames of one character share the same canvas size
+ * and anchor.
  */
 /** A timed animation: frames at a steady rate, played once. */
 export interface Clip {
@@ -98,4 +100,11 @@ export interface ActorArt {
   front: AnimSet;
   /** Facing away (moving up the screen): we see the back. */
   back: AnimSet;
+  /**
+   * TRUE LEFT-FACING FRAMES: A MOCK-UP, NOT IN THE GAME (art/heroes3.ts, `TRUE_LEFT`, which is
+   * off; no figure the game makes has these while it is). Frames of the figure itself turned to
+   * face screen-left, toward the camera and away from it. Where a figure has them, they are shown
+   * for it facing screen-left in place of `front` and `back` turned over (render/figure.ts).
+   */
+  left?: { front: AnimSet; back: AnimSet };
 }

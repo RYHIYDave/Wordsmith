@@ -887,8 +887,19 @@ export function elbowFor(b: Build, q: Posed, left: boolean, want: V3, near = 0):
  * and that picture, turned over, faces up the screen and to the right as it must. (So from behind
  * he holds his sword in the other hand; as he does already whenever the game turns a picture over
  * for one who faces left.) The light is laid on what is seen, so it still falls from the top left.
+ *
+ * TRUE LEFT: A MOCK-UP FOR THE OWNER, NOT IN THE GAME (8 Oct 2026; `TRUE_LEFT` in heroes3.ts is
+ * off, and docs/mockups/true_left/README.md says why it was made). The game shows a figure that
+ * faces screen-left as one of its two pictures turned over: then he holds his weapon in the other
+ * hand and the light falls from the top RIGHT. `frontL` and `backL` are the figure ITSELF turned
+ * on the spot, a quarter of the way round to its right (to face down the screen and to the left)
+ * and half way round (up the screen and to the left), and seen from where the front view is seen
+ * from: his weapon in the hand it is always in, the light from the top left. (`backL` is the view
+ * from behind turned over once more: the same figure seen from the same side, lit from the other.)
+ * `turn<deg>` is the figure turned `deg` degrees to its own left from the way the front view sees
+ * it face (`turn-90` is `frontL`): only for pictures of the in-between views.
  */
-export type View = 'side' | 'front' | 'back';
+export type View = 'side' | 'front' | 'back' | 'frontL' | 'backL' | `turn${number}`;
 
 /** Along the grid, a length is this much across the screen and half as much up or down it, for every one of height. */
 export const GRID = Math.sqrt(2 / 3);
@@ -897,7 +908,26 @@ export const GRID = Math.sqrt(2 / 3);
 export function project(p: V3, view: View): readonly [number, number, number] {
   if (view === 'side') return [p[0], -p[2], -p[1]];
   // (from behind: his left is to the right of the picture and his way forward up it, see above)
-  const a = view === 'front' ? p[0] : p[1];
-  const b = view === 'front' ? p[1] : p[0];
+  let a: number;
+  let b: number;
+  if (view === 'front') {
+    a = p[0];
+    b = p[1];
+  } else if (view === 'back') {
+    a = p[1];
+    b = p[0];
+  } else if (view === 'frontL') {
+    // (true left, see above: the figure turned a quarter of the way round to its right, seen as from in front)
+    a = p[1];
+    b = -p[0];
+  } else if (view === 'backL') {
+    // (... and half way round)
+    a = -p[0];
+    b = -p[1];
+  } else {
+    const t = Number(view.slice(4)) * D;
+    a = p[0] * Math.cos(t) - p[1] * Math.sin(t);
+    b = p[0] * Math.sin(t) + p[1] * Math.cos(t);
+  }
   return [GRID * (a + b), GRID * 0.5 * (a - b) - p[2], 0.612 * (a - b) + 0.5 * p[2]];
 }

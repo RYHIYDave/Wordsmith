@@ -339,7 +339,11 @@ export class Figure {
     // (a hero who turns to strike is round by the time the blow lands)
     const winding = st.anim === 'attack' && st.attackAge < st.attackWind;
     const { left, away } = this.turnTo(want, dt, winding ? Math.min(TURN_TIME, Math.max(0.05, st.attackWind * 0.8)) : TURN_TIME);
-    const set = away ? art.back : art.front;
+    // (TRUE LEFT, a mock-up that is not in the game: a figure with frames of its own for facing
+    // screen-left, `ActorArt.left`, shows those then, not its right-facing frames turned over. No
+    // figure the game makes has them: art/heroes3.ts, TRUE_LEFT.)
+    const own = left && art.left ? art.left : art;
+    const set = away ? own.back : own.front;
     // (a leap that has come down: see `land`. Anything the hero then does but stand ends it. The
     // rules still call the hero walking in the step the leap ends, as they do all through it:
     // that step is not walking off.)
@@ -402,10 +406,10 @@ export class Figure {
         this.stood = 0;
       } else {
         this.sinceLand = -1;
-        s = this.standingFrame(art, away, st.animT, dt, standing && gestures);
+        s = this.standingFrame(own, away, st.animT, dt, standing && gestures);
       }
     }
-    if (left) s = flipSprite(s);
+    if (left && !art.left) s = flipSprite(s);
     // (in a turn the knots the tails hang from close in on the middle with the figure)
     const q = this.squash;
     const roots = q < 1 && s.tails ? s.tails.map((r) => ({ ...r, x: s.ax + (r.x - s.ax) * q })) : s.tails;

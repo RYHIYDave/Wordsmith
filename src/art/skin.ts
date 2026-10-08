@@ -27,10 +27,14 @@ import { Px, rgba } from '../engine/px';
 import { INK, RIM_ALPHA, edge, hash } from './kit';
 import type { Ramp, V } from './kit';
 import { add, cross, dot, lerp3, mul, norm, project, sub } from './skeleton';
-import type { Build, Skeleton, Solid, V3 } from './skeleton';
+import type { Build, Skeleton, Solid, V3, View } from './skeleton';
 
-/** One of the game's two views of a figure (the other two are these in a mirror). */
-export type GameView = 'front' | 'back';
+/**
+ * One of the game's two views of a figure, 'front' and 'back' (the other two are these in a
+ * mirror); or, for the true-left mock-up that is not in the game, a view of the figure turned to
+ * face left, or any way at all (skeleton.ts, `View`).
+ */
+export type GameView = Exclude<View, 'side'>;
 
 /**
  * The canvas a hero on bones is painted on, and where on it the floor under them is. It is
