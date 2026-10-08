@@ -8,7 +8,8 @@ bone archer is today's, unchanged, and the new one is behind a switch that is of
 
 **State of this branch (`mockup/archer-on-bones`):** on top of `mockup/skeleton-on-bones`
 (`5d81df8`, itself on Version 18.8, `4e052cc`), because the archer is painted by the skeleton's
-painter. Made by THE ART CHAT, 8 Oct 2026, from 09:28. The art chat shows him the pictures.
+painter. Made by THE ART CHAT, 8 Oct 2026, from 09:28. **HE HAS SEEN IT AND SAID YES (11:25): THE
+NEW BONE ARCHER REPLACES TODAY'S** (see the end of this file). It is now the main chat's to build.
 
 ## His words
 
@@ -247,3 +248,25 @@ playing here).
 - As it dies the quiver stands upright for a moment (a tenth of a second) as it comes off the back.
 - The face in the hood's shade is a tone or two darker than the skeleton's bare skull: on purpose
   (the hood), but it makes the archer's face less bony than the skeleton's at a glance.
+
+## Sent to the owner (8 Oct 2026, 10:27, by the art chat)
+
+`previews/archer_on_bones_sheet.png` and `previews/archer_on_bones_film.gif`, with the caption "The
+bone archer on the new skeleton's bones, beside today's. Sheet: in the game at phone size (new
+archers next to the new skeletons), then enlarged. Film: standing, walking, shooting, falling
+apart." and these words: "The bone archer is ready to look at: archer_on_bones_sheet.png and
+archer_on_bones_film.gif. Same hooded archer as today, now on the new skeleton's bones, so the two
+match. Two small changes from today's: After a shot he doesn't reach back to his quiver. The arrow
+just appears on the string, as you wanted for the ranger. His quiver sits under his mantle, so from
+behind he's one clean shape with the pink fletchings over his shoulder." Then, as a pop-up (his
+wish of 8 Oct, 08:37: every question to him as a pop-up with options), "Should the new bone archer
+replace today's?", with "Yes (Recommended)" ("It goes to the main chat to put in the game, with the
+new skeleton."), "Close, but change it" and "No, keep today's".
+
+**HIS ANSWER, 8 Oct 2026, 11:25: "Yes (Recommended)". READ AS: THE NEW BONE ARCHER, ON THE
+SKELETON'S BONES, REPLACES TODAY'S.** He was told at 11:25: "Bone archer: yes. It replaces today's
+archer and goes to the main chat to put in the game, together with the new skeleton. I'm adding it
+to the rulebook now." SO THIS IS NOW THE MAIN CHAT'S TO BUILD FOR REAL (`ARCHER3.on`, after
+`SKELETON3.on`: see "For the main chat" above), with the tests of section 8 of the design notes. It
+is in the art rulebook too: monsters, rule 8, "Built on bones" (branch `art/rulebook`). Nothing of
+it is in the game until the main chat puts it there.
