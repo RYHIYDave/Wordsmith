@@ -29,7 +29,7 @@ import { paintRanger3 } from './hero3_ranger';
 import type { HeroArt, HeroLook } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
-import { GREAT_BLADE, MOVES3, STAFF_UP } from './moves3';
+import { COMBO_MENDS, GREAT_BLADE, MOVES3, SLASH3, STAFF_UP, STRIKE3 } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
@@ -116,9 +116,19 @@ export function paintMove3(move: Move3, t: number, view: GameView, opts: Paint3 
       const point = away ? away.point : sk.point;
       trail.push([add(hand, mul(point, hero === 'mage' ? STAFF_UP * 0.5 : 1.3)), add(hand, mul(point, hero === 'mage' ? STAFF_UP : 1.3 + GREAT_BLADE))]);
     }
-    f = hero === 'mage' ? paintMage3(s, q, view, { build, ...kit, ...(opts.mage ? { look: opts.mage } : {}) }, { prev, trail, wind }) : paintKnight3(s, q, view, { build, twoHanded: true, ...kit }, { prev, trail, wind });
+    f = hero === 'mage' ? paintMage3(s, q, view, { build, ...kit, ...(opts.mage ? { look: opts.mage } : {}) }, { prev, trail, wind }) : paintKnight3(s, q, view, { build, twoHanded: true, ...kit }, { prev, trail: streakShown(move, now) ? trail : [], wind });
   }
   return q.out > 0.01 ? lightsOut(f, q.out) : f;
+}
+
+/**
+ * Whether a frame of a move may show the streak its blade leaves. STRIKE'S COMBO MENDED (art/moves3.ts,
+ * COMBO_MENDS, a mock-up behind a switch that is off): the two swings show it only through the cut,
+ * their third to fifth frames, so that the way up and the way back show a clean blade.
+ */
+export function streakShown(move: Move3, t: number): boolean {
+  if (!COMBO_MENDS.on || (move !== STRIKE3 && move !== SLASH3)) return true;
+  return t >= 3 * FRAME - 1e-6 && t <= 5 * FRAME + 1e-6;
 }
 
 /** How far the light has gone out of a hero at a moment of a move (0 = none of it: all but the last of a fall). */
