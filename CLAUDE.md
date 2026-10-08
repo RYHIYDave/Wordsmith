@@ -10,11 +10,18 @@ directs and playtests, and Claude writes and tests everything.
 - `docs/DESIGN_NOTES.md`: every version: what he said about it in his own words, what is in it,
   how it was tested. Its section 7 is the code map and its section 8 the working method.
 - `docs/NEXT_VERSION.md`: the running record, newest at the end.
+- `docs/gameplay/RULEBOOK.md` and `docs/art/RULEBOOK.md`: the game's two rulebooks, his (both
+  approved 8 Oct 2026). Gameplay follows the first and art the second; each changes only with his
+  yes.
 
 ## The owner's standing rules
 
 - He does no coding. Never ask him to run a command or edit a file.
 - Plain language. Short messages. No menus of options where a recommendation will do.
+- Every question to him goes as a pop-up with options to tap, our pick first and marked, his own
+  words always possible; news and finished work go as plain messages. His words, 8 Oct 2026: "I
+  love the way you send the questions and it pops up and give me options to pick.  Can we do that
+  kind of format for everything?"
 - Acknowledge every idea he sends, and say how it was read.
 - PICTURES FIRST: nothing that changes how the game looks goes live until he has seen a picture
   of it and said yes. Until then it may be in the code only behind a switch that is off.
