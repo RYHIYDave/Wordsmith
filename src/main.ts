@@ -1,7 +1,7 @@
 // Entry point: builds the art, then runs the frame loop that ties input, rules, drawing and
 // interface together.
 
-import { FIGURE_SIZE, figureOf, makeBestiary } from './art/bestiary';
+import { FIGURE_SIZE, SKELETON3, figureOf, makeBestiary } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
 import { makeIconArt } from './art/icons';
@@ -1530,6 +1530,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     relief: RELIEF,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
     doors: DOORS,
+    /** THE SKELETON ON THE HEROES' BONES (art/monster_bones3.ts), a mock-up: its switch. OFF in the game: a playtest that photographs it sets it for itself. */
+    skeleton3: SKELETON3,
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

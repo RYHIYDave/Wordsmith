@@ -23,9 +23,18 @@ import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
 import { makeBatArt } from './monster_bat';
 import { makeArcherArt, makeSkeletonArt } from './monster_bones';
+import { makeSkeletonArt3 } from './monster_bones3';
 import { makeBruteArt, makeGuardianArt } from './monster_brute';
 import { makeCultistArt } from './monster_cultist';
 import { makeWardenArt } from './monster_warden';
+
+/**
+ * THE SKELETON ON THE HEROES' BONES (art/monster_bones3.ts): A MOCK-UP, AND OFF. While `on` is
+ * false the skeleton is today's (art/monster_bones.ts) and nothing about the game changes; a dev
+ * page or a playtest that wants pictures of the other one sets it for itself (window.__dbg.skeleton3)
+ * and puts it back. The owner has not seen it: nothing that changes the look goes in before his yes.
+ */
+export const SKELETON3 = { on: false };
 
 /** The figures there are: one for each kind of monster, and the guardian. */
 export type MonsterFigure = MonsterKind | 'guardian';
@@ -70,7 +79,13 @@ export let warmed: Sprite | undefined;
 
 export function makeBestiary(): Bestiary {
   const made = new Map<MonsterFigure, ActorArt>();
+  /** The skeleton on the bones, made the first time it is asked for with its switch on. */
+  let bones3: ActorArt | null = null;
   const of = (figure: MonsterFigure): ActorArt => {
+    if (figure === 'skeleton' && SKELETON3.on) {
+      if (!bones3) bones3 = makeSkeletonArt3();
+      return bones3;
+    }
     let art = made.get(figure);
     if (!art) {
       art =
@@ -90,12 +105,13 @@ export function makeBestiary(): Bestiary {
    * first thing seen of a monster), walking, then its attacks from start to finish. The last of
    * `left` is the next to paint.
    */
-  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number }>();
-  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number } => {
+  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number; art: ActorArt }>();
+  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number; art: ActorArt } => {
+    const art = of(figure);
     let list = todo.get(figure);
-    if (!list) {
-      list = { left: [], done: 0 };
-      const art = of(figure);
+    // (made again if the figure's pictures are others than they were: the skeleton's switch, SKELETON3, was thrown)
+    if (!list || list.art !== art) {
+      list = { left: [], done: 0, art };
       // (and last its death: by the time one of them is killed, how it falls is painted)
       for (const pick of [(a: AnimSet) => a.idle, (a: AnimSet) => a.walk, (a: AnimSet) => a.clips?.attack?.frames ?? a.attack, (a: AnimSet) => a.clips?.heavy?.frames ?? a.heavy ?? [], (a: AnimSet) => a.clips?.die?.frames ?? []]) {
         for (const set of [art.front, art.back]) {
@@ -114,7 +130,7 @@ export function makeBestiary(): Bestiary {
     warm(figures: ReadonlyArray<MonsterFigure>): boolean {
       // Whichever of them has had the fewest painted goes next: so all of them can stand and
       // walk (forty frames each) before any of them has every frame of its attack.
-      let next: { left: (() => Sprite)[]; done: number } | null = null;
+      let next: { left: (() => Sprite)[]; done: number; art: ActorArt } | null = null;
       for (const f of figures) {
         const list = listOf(f);
         if (list.left.length > 0 && (!next || list.done < next.done)) next = list;
