@@ -2,9 +2,9 @@
 
 Oct 8, 2026
 
-> **DRAFT 1, NOT YET APPROVED (8 Oct 2026).** Written by the art chat from the owner's answers (`docs/art/interview.md` has every question and answer in his exact words). The living copy is his doc "Wordsmith Art Rulebook" (https://claude.ai/artifact/Dq343Th9FFbpt9EiKfNyYe); this file is a copy of it for the other chats, refreshed when the doc changes. Nothing here changes the game.
+> **APPROVED BY THE OWNER, 8 Oct 2026, 08:23: "Okay this all sounds good".** Every chat that makes art for Wordsmith follows it; it changes only with his yes. Written by the art chat from his answers (`docs/art/interview.md` has every question and answer in his exact words). The living copy is his doc "Wordsmith Art Rulebook" (https://claude.ai/artifact/Dq343Th9FFbpt9EiKfNyYe); this file is a copy of it for the other chats, refreshed when the doc changes. Nothing here changes the game by itself: what it asks for goes in through the main chat, pictures first.
 
-Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. This is the first draft, built from your answers on 8 Oct; once you say yes, every chat that makes art for the game follows it.
+Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. You said yes to it on 8 Oct, so every chat that makes art for the game follows it, and it changes only with your yes.
 
 ## Pillars
 
@@ -68,6 +68,7 @@ The heroes are stylized and cool, each with a body of their own, built bold so t
 4. **Built for skins.** Every move is made on the hero's skeleton, apart from what they wear, so a skin is a new outfit over the same bones and moves. A skin keeps the hero known at a glance and keeps the friend's cyan.
 5. **Cloth moves.** Scarves, capes, braids and feathers move with every step and blow. In your words: "The scarves and feathers waving, robes and cloaks billowing".
 6. **Clean bodies.** Arms never pass through clothing or the body, in any frame.
+7. **Truly facing left.** A hero facing left is the figure turned round for real, never its picture flipped, so the weapon stays in its hand and the light still falls from the upper left. In your words, 8 Oct: "I like the true left".
 
 ## Monsters
 
@@ -80,6 +81,7 @@ Monsters look natural for what they are, and how they feel depends on their size
 5. **Weapons rest low.** No monster holds its weapon up in the air for no reason. In your words: "Why are their weapons always straight up in the air?"
 6. **Pink is theirs.** Eyes, runes and enemy fire glow hot pink burning to gold, and every living monster has a one-pixel pink edge. Nothing on a monster glows cyan.
 7. **Equal to the heroes.** Monsters are painted as boldly and as finely as the heroes. In your words: "we need the dungeons and mobs brought up to the level of the character models".
+8. **Built on bones.** The skeleton is rebuilt on the heroes' bones, so it moves with the same weight they do. You chose it on 8 Oct; other monsters follow one at a time, each shown to you first.
 
 ## Places
 
@@ -184,7 +186,7 @@ The look in numbers as the game has it in Version 18.8, checked against its code
 | Floor tile | 32 × 16 game pixels | `TW`, `TH`, src/engine/iso.ts |
 | Light | from the upper left; lit above 0.5 of full light, dark below 0.16 | `LIGHT_AT`, `DARK_AT`, src/art/skin.ts |
 | Seam between parts | #0e0c24 | `INK`, src/art/kit.ts |
-| Friend's edge | #22d0e0, 1 picture pixel, 110 of 255 strong | `FRIEND_RIM`, src/art/hero3\_knight.ts; `RIM_ALPHA`, src/art/kit.ts |
+| Friend's edge | #22d0e0, 1 picture pixel, 110 of 255 strong | `FRIEND_RIM`, src/art/hero3_knight.ts; `RIM_ALPHA`, src/art/kit.ts |
 | Enemy's edge | #ff4f8a, 1 picture pixel, living monsters only | `ENEMY_RIM`, src/art/mkit.ts |
 | Friend's glow | #28dcf0, radius 46 picture pixels, 0.2 strong | `AURA`, src/art/kit.ts |
 | Enemy's glow | #ff3a78, radius 40 picture pixels, 0.13 strong | `MENACE`, src/art/mkit.ts |
@@ -199,11 +201,12 @@ The look in numbers as the game has it in Version 18.8, checked against its code
 
 ## Still open
 
-Six things are not decided yet; each answer becomes a rule here.
+Seven things are not decided yet; each answer becomes a rule here.
 
 - [ ] Whether groups of floors take their worlds from old books, and which books ("maybe", "possibly").
 - [ ] Which places come first, and each one's palette: to be set place by place, with pictures.
 - [ ] Skins: whether to sell them, and when.
 - [ ] Gear beyond weapons: "further on down the road, if ever".
 - [ ] The two films of weight you have (a short freeze on a heavy blow; feet that grip the floor): your yes or no decides whether they become rules.
-- [ ] Three more mock-ups waiting for your word: decorations built the way the heroes are, the skeleton on the heroes' bones, and heroes truly facing left.
+- [ ] Decorations built the way the heroes are (a moth-eaten tapestry, a gargoyle head, a missing flagstone, soft shadows under props): waiting for your word.
+- [ ] Whether heroes turn through eight directions instead of four: the next question on true left.

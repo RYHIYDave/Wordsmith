@@ -239,3 +239,23 @@ pictures are the live game (18.8) on a phone: `look145.mjs` with `MONSTERS=1 STO
 He was told at 08:15: "Your **Wordsmith Art Rulebook** is up: the first draft, built from your four
 rounds of answers." and asked one question: "does the top paragraph sound like the game you see in
 your head?" WAITING FOR HIS WORD. Nothing in the game has changed.
+
+## HIS YES (8 Oct, 08:23), and what came with it
+
+His words, two messages at 08:23: "Okay this all sounds good" and "I like the true left, the skeleton,
+and the door". Read as: YES TO THE RULEBOOK AS IT STANDS (the top paragraph included); YES TO THE TRUE
+LEFT-FACING HEROES (over the art chat's suggestion to keep them as they are); YES TO THE SKELETON ON THE
+HEROES' BONES (it replaces today's); and "the door" as THE HOLE KNOCKED IN THE WALL, a yes again (no
+other door was among the art chat's pictures). He was told at 08:25 (every word is in the READMEs of
+`mockup/true-left`, `mockup/skeleton-on-bones` and `mockup/hole-in-wall`, which now carry his answers).
+
+Changed in the rulebook for it: its lead now says he said yes to it; heroes rule 7 "Truly facing left";
+monsters rule 8 "Built on bones"; "Still open" now lists the decorations and the films of weight
+(still unanswered) and the eight-directions question that follows from true left.
+
+FOR THE MAIN CHAT: the rulebook is his. Bring `docs/art/RULEBOOK.md` into `main` with the next
+version, and consider a line under "The owner's standing rules" in `CLAUDE.md`: "Art follows
+`docs/art/RULEBOOK.md`; it changes only with his yes." Three mock-ups are now yours to build for
+real, each behind its switch until it is in: the hole in the wall (`mockup/hole-in-wall`), the true
+left-facing heroes (`mockup/true-left`, `TRUE_LEFT.on`), the skeleton on the heroes' bones
+(`mockup/skeleton-on-bones`, `SKELETON3.on`).
