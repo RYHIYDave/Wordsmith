@@ -47,6 +47,7 @@ import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, wx, wy } from './render/fx';
 import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
 import type { Art } from './render/render';
+import { HITSTOP, STRIDE } from './render/weight';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
 import { guideBanner } from './ui/guide';
@@ -1530,6 +1531,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     relief: RELIEF,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
     doors: DOORS,
+    /**
+     * THE TWO TESTS OF WEIGHT (render/weight.ts: the art chat's mock-ups, 8 Oct 2026), both OFF in
+     * the game: the hold of the picture when a heavy blow lands, and the run played by the ground
+     * it covers. Only the films of them switch them on, for their own page.
+     */
+    weight: { hitstop: HITSTOP, stride: STRIDE },
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

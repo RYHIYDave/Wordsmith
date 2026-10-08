@@ -37,6 +37,7 @@ import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T
 import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
 import { Figure, attackClip, attackFrame, monsterAttackAge, PHASE_APART } from './figure';
+import { HITSTOP, PictureHold } from './weight';
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
@@ -279,6 +280,8 @@ export class Renderer {
   private reelBehind = false;
   private flashWas = 0;
   private lifeWas = 0;
+  /** THE HOLD OF THE PICTURE when a heavy blow lands (render/weight.ts, HITSTOP: the art chat's mock-up, OFF in the game). */
+  private hold = new PictureHold();
   /** Pictures painted once and stamped many times: ground patches, clouds, the pool of light. */
   private kept = new Map<string, HTMLCanvasElement>();
   private labels: Label[] = [];
@@ -1608,17 +1611,36 @@ export class Renderer {
       this.stand(f.x + f.y, shown.sp, sx, sy, null, 0);
       hid?.(f.x, f.y);
     }
+    // THE HOLD OF THE PICTURE (render/weight.ts, HITSTOP: the art chat's mock-up, OFF in the game):
+    // has the hero's heavy blow just landed on something? (Only looked at with the switch on.)
+    if (HITSTOP.on) {
+      const sk = h.skills[h.attackSkill];
+      this.hold.look(h, !!sk && SKILLS[sk.id].kind === 'burst', game.monsters, pace / 60);
+    }
     for (const m of game.monsters) {
       if (m.dead || !m.seen) continue;
       let sx = wx(cam, m.x, m.y);
       let sy = wy(cam, m.x, m.y);
       // (the Warden is twice the height of anything else: he is in the picture from further off)
       if (sx < -60 || sx > W + 60 || sy < -30 || sy > H + (m.boss ? 130 : 80)) continue;
+      // (struck by a heavy blow that is being held: still, white and shaken where it stands, knocked
+      // back while the hold lasts and coming back after it. Only with the switch on: see above.)
+      const stop = HITSTOP.on && m.frozenT <= 0 ? this.hold.victim(m.id) : null;
+      if (stop) {
+        const fdx = (m.x - h.x - (m.y - h.y)) * 16;
+        const fdy = (m.x - h.x + (m.y - h.y)) * 8;
+        const far = Math.hypot(fdx, fdy) || 1;
+        const push = stop.push * (m.boss ? FLINCH_BOSS : FLINCH);
+        sx += Math.round((fdx / far) * push) + stop.shake;
+        sy += Math.round((fdy / far) * push);
+        const fig = figureOf(m);
+        if (!stop.held && m.flash > 0 && (fig === 'skeleton' || fig === 'archer')) sx += Math.floor(t * 40 + m.id) % 2 === 0 ? 1 : -1;
+      }
       // A monster that has just been struck is knocked back from the hero for as long as it
       // flashes, and comes back: a blow that moves nothing has no weight. (Only the picture: it
       // stands where the rules have it. Not one that is frozen solid; the Warden, hardly.) From
       // Version 15.1; the owner, 6 Oct 2026: "I want things to have weight. That's very important".
-      if (m.flash > 0 && m.frozenT <= 0) {
+      else if (m.flash > 0 && m.frozenT <= 0) {
         const fdx = (m.x - h.x - (m.y - h.y)) * 16;
         const fdy = (m.x - h.x + (m.y - h.y)) * 8;
         const far = Math.hypot(fdx, fdy) || 1;
@@ -1629,12 +1651,17 @@ export class Renderer {
         const fig = figureOf(m);
         if (fig === 'skeleton' || fig === 'archer') sx += Math.floor(t * 40 + m.id) % 2 === 0 ? 1 : -1;
       }
-      const sp = this.monsterSprite(m);
+      let sp = this.monsterSprite(m);
+      // (held: the picture it was showing when the blow landed)
+      if (stop && stop.held) {
+        if (stop.still) sp = stop.still;
+        else this.hold.keep(m.id, sp);
+      }
       // (ice gives off no light)
       if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
       let over: Sprite | null = null;
       let overA = 0;
-      if (m.flash > 0) {
+      if (m.flash > 0 || (stop !== null && stop.held)) {
         over = silhouette(sp, P.white);
         overA = 1;
       } else if (m.frozenT > 0) {
@@ -1686,6 +1713,7 @@ export class Renderer {
         this.lifeBar.reset();
         this.reelT = -1;
         this.lifeWas = h.life;
+        this.hold.reset();
       }
       // (left standing, a hero does a little something of their own: not with monsters awake nearby)
       const fight = game.monsters.some((m) => !m.dead && m.state !== 'sleep' && Math.abs(m.x - h.x) + Math.abs(m.y - h.y) < 14);
@@ -1722,7 +1750,11 @@ export class Renderer {
       } else if (this.reelT >= 0) this.reelT = this.reelT + pace / 60 > REEL_TIME ? -1 : this.reelT + pace / 60;
       this.flashWas = h.flash;
       this.lifeWas = h.life;
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      // (THE HOLD OF THE PICTURE, render/weight.ts, HITSTOP, off in the game: while his heavy blow
+      // is held he stands as he was when it landed, his cloth too, and then makes the time up)
+      const still = HITSTOP.on && this.hold.heroStill(h);
+      const age = HITSTOP.on ? this.hold.heroAge(h) : h.attackAge;
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: age, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, x: h.x, y: h.y }, still ? 0 : game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them

@@ -15,6 +15,8 @@ import { Tails } from '../engine/tails';
 import { TUNE } from '../game/defs';
 import type { SkillKind } from '../game/defs';
 import type { ClassId } from '../game/types';
+import { STRIDE, strideFrame } from './weight';
+import type { AnimSet } from '../art/actor_types';
 
 /** What the rules know about the hero that the picture needs. */
 export interface FigureState {
@@ -53,6 +55,13 @@ export interface FigureState {
   reelT?: number;
   /** ... and that the blow came from behind them: they are thrown forward (`clips.lurch`) where one from in front rocks them back. */
   reelBehind?: boolean;
+  /**
+   * Where the hero stands in the world, in tiles. Read only for a run played by the ground it
+   * covers (render/weight.ts, STRIDE: the art chat's mock-up, OFF in the game); without it, or with
+   * the switch off, the run is played by the clock (`animT`), as it always has been.
+   */
+  x?: number;
+  y?: number;
 }
 
 /**
@@ -186,6 +195,12 @@ export class Figure {
   private sinceLand = -1;
   /** How much of the light has gone out of a hero who has fallen, 0..1: what glows on their tails (a feather) goes with it. */
   private gone = 0;
+  /**
+   * A RUN PLAYED BY THE GROUND IT COVERS (render/weight.ts, STRIDE; off in the game): the floor the
+   * hero has covered since the run began, in tiles, and where they stood when last drawn running.
+   */
+  private ground = 0;
+  private ranAt: { x: number; y: number } | null = null;
   /** What was last shown, for the lights. */
   last: Sprite | null = null;
   /** Which thing was begun this frame (1 or 2), for whoever wants to make a sound: 0 otherwise. */
@@ -220,6 +235,8 @@ export class Figure {
     this.sinceHeld = -1;
     this.sinceLand = -1;
     this.gone = 0;
+    this.ground = 0;
+    this.ranAt = null;
     this.view = null;
     this.turnK = 1;
     this.squash = 1;
@@ -311,6 +328,8 @@ export class Figure {
   frame(art: ActorArt, st: FigureState, dt: number, ox: number, oy: number, gestures = true): Sprite {
     this.began = 0;
     let s: Sprite;
+    /** (the run is shown this frame: see runFrame) */
+    let ran = false;
     const down = st.fallT !== undefined && st.fallT >= 0;
     // (rocked back by a blow, for as long as the picture of that lasts: both views' are the same length)
     const rock = art.front.clips?.reel;
@@ -391,7 +410,8 @@ export class Figure {
       this.loopFrom = st.animT;
     } else if (anim === 'walk') {
       this.sinceHeld = -1;
-      s = set.walk[Math.floor(st.animT * (set.walkFps ?? 8)) % set.walk.length];
+      s = this.runFrame(set, st);
+      ran = true;
     } else {
       this.sinceHeld = -1;
       const land = this.sinceLand >= 0 ? set.clips?.land : undefined;
@@ -405,6 +425,11 @@ export class Figure {
         s = this.standingFrame(art, away, st.animT, dt, standing && gestures);
       }
     }
+    // (a run played by the ground it covers begins again from its first picture the next time)
+    if (!ran) {
+      this.ground = 0;
+      this.ranAt = null;
+    }
     if (left) s = flipSprite(s);
     // (in a turn the knots the tails hang from close in on the middle with the figure)
     const q = this.squash;
@@ -412,6 +437,26 @@ export class Figure {
     this.tails.step(dt, roots, s.ax, s.ay, left ? -1 : 1, ox, oy);
     this.last = s;
     return s;
+  }
+
+  /**
+   * The picture of the run for this instant. By the clock, as the game has always played it (so
+   * many pictures a second, however fast the hero goes); or, with STRIDE switched on (the art
+   * chat's mock-up, OFF in the game: render/weight.ts) and the art saying how much floor a turn of
+   * its run covers (`walkGround`), by the ground the hero has covered since the run began, so that
+   * the foot that is down stays where it was put.
+   */
+  private runFrame(set: AnimSet, st: FigureState): Sprite {
+    const n = set.walk.length;
+    if (STRIDE.on && set.walkGround && st.x !== undefined && st.y !== undefined) {
+      const was = this.ranAt;
+      const step = was ? Math.hypot(st.x - was.x, st.y - was.y) : 0;
+      // (a tile or more in one frame is not ground covered at a run: a warp, a new level)
+      if (step < 1) this.ground += step;
+      this.ranAt = { x: st.x, y: st.y };
+      return set.walk[strideFrame(this.ground, set.walkGround, n)];
+    }
+    return set.walk[Math.floor(st.animT * (set.walkFps ?? 8)) % n];
   }
 
   /**

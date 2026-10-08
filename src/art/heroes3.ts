@@ -33,8 +33,16 @@ import { GREAT_BLADE, MOVES3, STAFF_UP } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
-import { add, bonesAt, mul, solve } from './skeleton';
+import { GRID, add, bonesAt, mul, solve } from './skeleton';
 import type { Build, Posed, V3 } from './skeleton';
+
+/**
+ * How many of a figure's own units (picture pixels, as its bones are measured) make a tile of floor
+ * along the grid. A tile is 16 game pixels across the screen and 8 down it (32 and 16 picture
+ * pixels), and a length along the grid is seen GRID times as long across the screen (skeleton.ts,
+ * `project`): so a tile is 32 / GRID, about 39.2.
+ */
+export const UNITS_PER_TILE = 32 / GRID;
 
 export type Hero3 = 'knight' | 'ranger' | 'mage';
 /** Whose move it is: the one who holds what it is made with. */
@@ -234,6 +242,9 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
   const attack = clip(of(plan.attack), CLIP_FPS3);
   const heavy = clip(of(plan.heavy), CLIP_FPS3);
   const set: AnimSet = { idle: round(of(plan.idle), IDLE_FPS3), walk: round(of(plan.walk), RUN_FPS3), attack: three(attack), heavy: three(heavy), idleFps: IDLE_FPS3, walkFps: RUN_FPS3, clips: { attack, heavy } };
+  // (how much floor a turn of the run covers: read only by a run played by the ground it covers, render/weight.ts, STRIDE, off in the game)
+  const ground = groundPerTurn(of(plan.walk));
+  if (ground !== undefined) set.walkGround = ground;
   const clips = set.clips as NonNullable<AnimSet['clips']>;
   if (plan.leap) {
     // (a leap is one move here, the going up and the coming down: the game carries the hero
@@ -264,6 +275,24 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
     }
   }
   return set;
+}
+
+/**
+ * How much floor one turn of a run covers when the foot that is down does not slide, in tiles: how
+ * fast the left foot goes back under the body while it is down (measured on the bones, between a
+ * twentieth and a fifth of the way round, where moves3.ts's `run` has it flat on the floor), times
+ * how long a turn lasts. Undefined for a move that does not go round. Read only by a run played by
+ * the ground it covers (render/weight.ts, STRIDE: the art chat's mock-up, OFF in the game).
+ */
+export function groundPerTurn(move: Move3): number | undefined {
+  const { end, from } = spanOf(move);
+  if (from === undefined || end - from <= 1e-6) return undefined;
+  const long = end - from;
+  const ankle = (t: number): number => solve(move.build, bonesAt(move.motion.keys, move.rest, t)).ankleL[0];
+  const t0 = from + long * 0.05;
+  const t1 = from + long * 0.2;
+  const speed = (ankle(t0) - ankle(t1)) / (t1 - t0);
+  return speed > 0 ? (speed * long) / UNITS_PER_TILE : undefined;
 }
 
 /** The last frame painted ahead of need. Kept only so that the reading of it cannot be optimised away. */

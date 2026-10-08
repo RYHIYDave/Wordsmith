@@ -33,6 +33,12 @@ export interface AnimSet {
   /** Frames per second of the idle loop and of the walk. Absent = 2 and 8. */
   idleFps?: number;
   walkFps?: number;
+  /**
+   * How much floor one turn of the walk covers when the foot that is down does not slide, in
+   * tiles (the heroes on the bones: art/heroes3.ts, `groundPerTurn`). Read only by a run played by
+   * the ground it covers (render/weight.ts, STRIDE: the art chat's mock-up, OFF in the game).
+   */
+  walkGround?: number;
   /** Heroes: 3 frames for the slow attack (a slam, a toss, a nova). Absent = it looks like `attack`. */
   heavy?: Sprite[];
   /** Heroes that leap: 3 frames (pushing off, in the air, coming down). Absent = the walk is shown. */
