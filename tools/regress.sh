@@ -292,6 +292,13 @@ CLS=ranger  run small_phone $P --scenario $S/small.mjs &
 CLS=mage    run small_upright $U --scenario $S/small.mjs &
 CLS=warrior run small_narrow  $U --eval "$N" --scenario $S/small.mjs &
 wait
+# STRIKE'S COMBO (behind its switch, OFF in the game until the owner's yes; the playtest switches it
+# on for itself): two quick taps (clicks, on a PC) are Strike and then the downward slash; a tap
+# long after is Strike again; every swing steps the knight forward until a monster stops him; with
+# the switch off every swing is Strike, as it was, and he does not step.
+run combo_pc     --scenario $S/combo.mjs &
+run combo_phone  $P --scenario $S/combo.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

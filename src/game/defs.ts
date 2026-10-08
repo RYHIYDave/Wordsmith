@@ -493,6 +493,18 @@ export const PRACTICE = {
   refillAt: 3,
 };
 
+/**
+ * STRIKE, A TWO-HIT COMBO, AND A STEP FORWARD WITH EVERY SWING. The owner, 7 Oct 2026, 23:18: "I’d
+ * like STRIKE to have two animations.  The first is the strike we have now.  That one always plays
+ * first.  If the player taps again quickly, then the second animation, [a] downward slash, plays.
+ * Back to the first if they tap again.  If it’s not tapped for a set duration, it goes back to the
+ * first animation.  Like a two hit combo if you tap twice"; 23:18: "And I want him to move forward
+ * a little every swing"; 23:19: "Not much, but some". OFF until he has seen it moving and said yes
+ * (told him at 23:18: "I'll send you a moving picture of the two before it goes in"). The numbers
+ * are `TUNE.comboWindow`, `swingStep`, `swingStepTime`: the two swings do the same harm.
+ */
+export const COMBO = { on: false };
+
 export const TUNE = {
   heroRadius: 0.3,
   heroSpeed: 4.6, // tiles per second
@@ -528,6 +540,15 @@ export const TUNE = {
   attackSlowTime: 0.18,
   /** With the quick attack held, a slow attack's follow-through is seen out until this little of it is left (seconds). */
   attackCut: 0.12,
+  /**
+   * STRIKE, A TWO-HIT COMBO (`COMBO`). After a strike, the next is the SECOND SWING, the downward
+   * slash, if it is begun within this many seconds of the moment it could first be begun (the
+   * weapon's own time between blows); otherwise the first swing again. His "set duration".
+   */
+  comboWindow: 0.5,
+  /** And every swing of Strike steps the hero forward this far, in tiles, over this many seconds from when it is begun (walls and monsters stop it as they stop him). */
+  swingStep: 0.33,
+  swingStepTime: 0.12,
   bagSize: 24,
   /** The stash in town: gear kept for later characters. */
   stashSize: 36,

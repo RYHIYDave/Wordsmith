@@ -145,6 +145,14 @@ export interface Hero {
   /** Which of the hero's abilities that animation is for: 0 the quick attack, 1 the slow one. Only the picture cares. */
   attackSkill: number;
   /**
+   * STRIKE'S COMBO (defs.ts, COMBO): which swing the strike being made is (0 the first, 1 the
+   * second, the downward slash), and for how many seconds more the next may still be the second.
+   */
+  combo: number;
+  comboT: number;
+  /** A swing's step forward that is not yet over: how far it has still to go along x and along y, and the seconds it has left. */
+  step: { dx: number; dy: number; t: number } | null;
+  /**
    * An attack takes a moment to make (since Version 11: the owner asked that "spells have a cast
    * time even if they are really short"). `attackAge` is how long ago the one being made was
    * begun, and `attackWind` how long its wind-up is: the blow lands, the arrow leaves, the spell

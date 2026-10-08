@@ -144,6 +144,8 @@ export interface Plan {
   idle: string;
   walk: string;
   attack: string;
+  /** (Strike's combo) the second swing, where the hero has one. */
+  attack2?: string;
   heavy: string;
   /** A leap and its landing, as one move (its `arc.until` is where the one ends and the other begins). */
   leap?: string;
@@ -161,7 +163,7 @@ export interface Plan {
   ready?: string;
 }
 
-const KNIGHT: Plan = { idle: 'rear', walk: 'krun', attack: 'strike', heavy: 'slam', leap: 'leap', whirl: 'whirl', fall: 'kfall', reel: 'kreel', lurch: 'klurch' };
+const KNIGHT: Plan = { idle: 'rear', walk: 'krun', attack: 'strike', attack2: 'kslash', heavy: 'slam', leap: 'leap', whirl: 'whirl', fall: 'kfall', reel: 'kreel', lurch: 'klurch' };
 const RANGER: Plan = { idle: 'rstand', walk: 'rrun', attack: 'shot', heavy: 'volley', roll: 'roll', fall: 'rfall', reel: 'rreel', lurch: 'rlurch', idleA: 'squirrel', idleB: 'sighting' };
 const MAGE: Plan = { idle: 'mstand', walk: 'mrun', attack: 'wave', heavy: 'orb', hold: 'beam', release: 'beamend', fall: 'mfall', reel: 'mreel', lurch: 'mlurch', idleA: 'mlight', idleB: 'reading' };
 /**
@@ -232,9 +234,12 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
     return lazyFrames(3, (i) => c.frames[picks[i]]);
   };
   const attack = clip(of(plan.attack), CLIP_FPS3);
+  // (Strike's combo: the second swing, where there is one)
+  const attack2 = plan.attack2 ? clip(of(plan.attack2), CLIP_FPS3) : undefined;
   const heavy = clip(of(plan.heavy), CLIP_FPS3);
   const set: AnimSet = { idle: round(of(plan.idle), IDLE_FPS3), walk: round(of(plan.walk), RUN_FPS3), attack: three(attack), heavy: three(heavy), idleFps: IDLE_FPS3, walkFps: RUN_FPS3, clips: { attack, heavy } };
   const clips = set.clips as NonNullable<AnimSet['clips']>;
+  if (attack2) clips.attack2 = attack2;
   if (plan.leap) {
     // (a leap is one move here, the going up and the coming down: the game carries the hero
     // through the air for the first of it, and shows the rest if they are left standing where they land)
@@ -294,7 +299,7 @@ export function makeHeroArt3(): HeroArt {
         list = [];
         // (standing and running first, then the attacks from start to finish, then the rest; what
         // a hero does when left standing is painted as it is shown, which is slowly enough)
-        const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.walk, (a) => a.clips?.attack?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
+        const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.walk, (a) => a.clips?.attack?.frames ?? [], (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
           (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? []];
         for (const pick of picks) {
           for (const set of [art.front, art.back]) {

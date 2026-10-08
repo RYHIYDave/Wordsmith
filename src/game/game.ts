@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CLASSES, FIRST_WORD, GAMBLE_KINDS, GUIDE, LIMITS, MANA_MODE, MONSTERS, MSG, PRACTICE, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
+import { CLASSES, COMBO, FIRST_WORD, GAMBLE_KINDS, GUIDE, LIMITS, MANA_MODE, MONSTERS, MSG, PRACTICE, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -635,7 +635,7 @@ export class Game {
     for (let i = 0; i < TUNE.bagSize; i++) bag.push(null);
     return {
       cls, level: 1, xp: 0, pending: 0, attrs, life: d.maxLife, mana: d.maxMana,
-      x: 0, y: 0, fx: 0.7071, fy: 0.7071, anim: 'idle', animT: 0, attackT: 0, attackSkill: 0, attackAge: 0, attackWind: 0, windup: null, channel: null, queued: null, swingT: 0, flash: 0, invuln: 0,
+      x: 0, y: 0, fx: 0.7071, fy: 0.7071, anim: 'idle', animT: 0, attackT: 0, attackSkill: 0, combo: 0, comboT: 0, step: null, attackAge: 0, attackWind: 0, windup: null, channel: null, queued: null, swingT: 0, flash: 0, invuln: 0,
       gear, bag, words, skills, gold: 0, potions: TUNE.potionMax, potionKills: 0,
       might: 0, mightT: 0, haste: 0, hasteT: 0, burnT: 0, burnDps: 0, chillT: 0, chill: 0, shockT: 0, poisonT: 0, poisonDps: 0,
       move: null, d,
@@ -739,6 +739,9 @@ export class Game {
     h.windup = null;
     h.channel = null;
     h.queued = null;
+    h.combo = 0;
+    h.comboT = 0;
+    h.step = null;
     for (const s of h.skills) {
       s.cd = 0;
       s.charges = s.maxCharges;
@@ -1631,6 +1634,11 @@ export class Game {
     h.flash = Math.max(0, h.flash - dt);
     h.invuln = Math.max(0, h.invuln - dt);
     h.swingT = Math.max(0, h.swingT - dt);
+    // (Strike's combo: the time in which the next swing may still be the second runs out; then the next is the first)
+    if (h.comboT > 0) {
+      h.comboT = Math.max(0, h.comboT - dt);
+      if (h.comboT <= 0) h.combo = 0;
+    }
     if (h.attackT > 0) {
       h.attackAge += dt;
       h.attackT = Math.max(0, h.attackT - dt);
@@ -1695,6 +1703,19 @@ export class Game {
         h.queued = null;
         this.useSkill(1, q.tx, q.ty);
       }
+    }
+
+    // (a swing's step forward: walls stop it, and monsters part from him after it as after any step)
+    if (h.step) {
+      const st = h.step;
+      const k = Math.min(1, dt / Math.max(1e-6, st.t));
+      const sx = st.dx * k;
+      const sy = st.dy * k;
+      this.slide(h, TUNE.heroRadius, sx, sy, this.level.walk);
+      st.dx -= sx;
+      st.dy -= sy;
+      st.t -= dt;
+      if (st.t <= 0) h.step = null;
     }
 
     let mx = c.mx;
@@ -1808,6 +1829,13 @@ export class Game {
     this.face(tx, ty);
     // (a fast weapon's wind-up is never more than two fifths of the time between its blows)
     const wind = Math.min(def.windup, 0.4 / rate);
+    // STRIKE, A TWO-HIT COMBO (defs.ts, COMBO): the second swing if this one comes soon enough
+    // after a first, else the first; and a small step forward with either.
+    if (COMBO.on && def.kind === 'melee') {
+      h.combo = h.combo === 0 && h.comboT > 0 ? 1 : 0;
+      h.comboT = 1 / rate + TUNE.comboWindow;
+      h.step = { dx: h.fx * TUNE.swingStep, dy: h.fy * TUNE.swingStep, t: TUNE.swingStepTime };
+    } else h.combo = 0;
     this.begin(0, tx, ty, wind);
   }
 
@@ -1849,6 +1877,11 @@ export class Game {
    */
   private begin(i: number, tx: number, ty: number, wind: number): void {
     const h = this.hero;
+    // (Strike's combo, defs.ts COMBO: anything but Strike between two Strikes makes the second the first swing again)
+    if (i !== 0) {
+      h.combo = 0;
+      h.comboT = 0;
+    }
     h.attackSkill = i;
     h.attackAge = 0;
     h.attackWind = wind;
@@ -2179,6 +2212,10 @@ export class Game {
     h.channel = null;
     h.queued = null;
     h.attackT = 0;
+    // (and Strike's combo with it: the next Strike is the first swing; a swing's step is over)
+    h.combo = 0;
+    h.comboT = 0;
+    h.step = null;
     this.face(tx, ty);
     this.sfx('dodge');
     // The words on it (Version 12.2: the evasive moves take words as the attacks do). In front

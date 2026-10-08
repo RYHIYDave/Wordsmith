@@ -28,7 +28,7 @@ import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
+import { ARRIVAL_LINES, CLASSES, COMBO, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
 import { RELIEF } from './game/dungeon';
@@ -220,6 +220,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let wasOpen: string = 'none';
   /** Touch: the attack a tap asked for, kept until it has been carried out (or given up on). */
   let order: { id: number | null; x: number; y: number; t: number; uses: number } | null = null;
+  /** (Strike's combo, game/defs.ts COMBO) ON A PC: a click on a monster made in the middle of a swing, waiting its turn as a tap does. */
+  let click: { id: number | null; x: number; y: number; t: number; uses: number } | null = null;
   /** Touch: how often the slow ability had been used when the current hold began (-1 = no hold). One use per hold. */
   let holdUses = -1;
   /**
@@ -707,6 +709,30 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         c.aimX = target.x;
         c.aimY = target.y;
       }
+      // STRIKE'S COMBO (game/defs.ts, COMBO): A CLICK MADE IN THE MIDDLE OF A SWING WAITS ITS TURN, as a
+      // tap does on a phone (the touch controls below, `order`), so that two quick clicks are the two
+      // swings and not one. Only a click that attacks (on a monster, with Shift, or walking); it is
+      // given up when the swing it waited for has landed, after 1.2 seconds, or if its monster dies.
+      if (COMBO.on && SKILLS[h.skills[0].id].kind === 'melee') {
+        if (input.lpress && (target || moving || shift)) {
+          // (a swing already wound up lands without it: it waits for the one after)
+          const under = h.windup !== null && h.windup.skill === 0 ? 1 : 0;
+          click = { id: target ? target.id : null, x: c.aimX, y: c.aimY, t: 0, uses: h.skills[0].uses + under };
+        }
+        if (click) {
+          const o = click;
+          o.t += dt;
+          const was = o.id === null ? null : g.monsters.find((m) => m.id === o.id && !m.dead) ?? null;
+          if (h.skills[0].uses > o.uses || o.t > 1.2 || (o.id !== null && !was)) click = null;
+          else if (!input.lmb) {
+            const a = was ?? o;
+            c.aimX = a.x;
+            c.aimY = a.y;
+            c.fire = true;
+            c.approach = !!was && !moving;
+          }
+        }
+      } else click = null;
       if (input.lmb) {
         if (target || moving || shift) {
           c.fire = true;
@@ -1528,8 +1554,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     cam: () => renderer.cam,
     /** The map-maker's switches for terraces and sunken floor (game/dungeon.ts): pictures of what is not yet in the game switch it on. */
     relief: RELIEF,
-    /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
+    /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them, and the share of rooms that have a door. Playtests that change them put them back. */
     doors: DOORS,
+    /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
+    combo: COMBO,
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

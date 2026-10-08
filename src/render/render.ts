@@ -1244,7 +1244,7 @@ export class Renderer {
   private clipOf(game: Game): number {
     const h = game.hero;
     const s = h.skills[h.attackSkill];
-    return s ? attackClip(h.cls, h.attackSkill, SKILLS[s.id].kind) : h.attackSkill;
+    return s ? attackClip(h.cls, h.attackSkill, SKILLS[s.id].kind, h.combo) : h.attackSkill;
   }
 
   /** How long the hero has been holding an attack (a beam, a whirlwind), in seconds, or -1 when they are not; and which. */

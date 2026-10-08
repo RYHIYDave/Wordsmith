@@ -546,6 +546,42 @@ function strike(): Motion {
 
 export const STRIKE3: Move3 = { name: 'Strike, great sword', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: strike(), at: 'the moment it lands' };
 
+/**
+ * STRIKE, THE SECOND SWING: A DOWNWARD SLASH (the owner, 7 Oct 2026, 23:18: "If the player taps
+ * again quickly, then the second animation, [a] downward slash, plays"). From the rear stance the
+ * hilt goes up over his right shoulder, the blade standing up behind him (as at the top of a slam,
+ * lower and quicker); then he steps in and the blade comes OVER and down across the front of him,
+ * through whatever is there at the height of a chest (the fourth frame, the rules' own, as the
+ * strike's is), and on down to low on his left; he stays low under it a moment, and it is carried
+ * round his right side, low, into the stance again (as the slam's is).
+ */
+function slash(): Motion {
+  // (wAz -165: behind him and to his right; going OVER, past straight up, it comes down in front of him a little to his left)
+  const top: Partial<Bones> = { pz: -2.5, yaw: -20, twist: -12, pitch: 0, bend: 0, faceUp: -8, rhIn: 0, rhx: 2, rhy: 2, rhz: 16, wAz: -165, wEl: 62 };
+  // (struck: the front foot a stride further out, the back foot on its ball, as in the strike)
+  const struck: Partial<Bones> = { px: 9, lfx: 18.5, lfy: 0.5, lfz: 0, lft: 2, lk: 2, rfx: -7, rfy: -1, rfz: 2.2, rfp: 30, rft: -8, rk: -6 };
+  // (down: the blade has come over and across, 205 degrees up from pointing behind him is 25 below level in front, to his left)
+  const low: Partial<Bones> = { ...struck, pz: -6.5, yaw: 18, pitch: 8, twist: 14, bend: 16, faceUp: -20, rhIn: 2, rhx: 17, rhy: 4, rhz: 22, wAz: -165, wEl: 205 };
+  return {
+    hit: 4 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 2 * FR, pose: top, ease: 'out' },
+      { at: 3 * FR, pose: { ...top, ...struck, px: 4, lfx: 14, lfz: 2.5, pz: -3.5, rhx: 8, rhy: 3, rhz: 14, wEl: 110 }, ease: 'in' },
+      // (the blow: the blade nearly level in front of him at the height of a chest, going down)
+      { at: 4 * FR, pose: { ...struck, pz: -5, yaw: 10, pitch: 6, twist: 8, bend: 10, faceUp: -10, rhIn: 0, rhx: 14, rhy: 6, rhz: -2, wAz: -165, wEl: 168 }, ease: 'in' },
+      { at: 6 * FR, pose: low, ease: 'out' },
+      // (he stays low under it a moment; then it is carried round his right side, low, into the stance again)
+      { at: 8 * FR, pose: { ...low, pz: -6.4, pitch: 8, bend: 14 }, ease: 'out', as: { wAz: 15, wEl: -25 } },
+      // (round his right side, low: the hands out in front of him as it goes, the blade trailing)
+      { at: 10 * FR, pose: { ...struck, px: 6, pz: -6, yaw: -15, pitch: 8, twist: -15, bend: 14, faceUp: -12, rhIn: 2, rhx: 13, rhy: 0, rhz: 22, wAz: -60, wEl: -35 }, ease: 'io' },
+      { at: 13 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+export const SLASH3: Move3 = { name: 'Strike, the second swing: a downward slash', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: slash(), at: 'the moment it lands' };
+
 /** A foot standing on its toes: the heel up by `deg`, the ball still on the floor (the ankle is that much higher). */
 function onToes(deg: number): number {
   const a = (deg * Math.PI) / 180;
@@ -1302,5 +1338,5 @@ export const MOVES3: Record<string, Move3> = {
   klook: KNIGHT_LOOKS3, tsquirrel: RANGER_TOWN_SQUIRREL3, tsighting: RANGER_TOWN_SIGHTING3,
   rstand: RANGER_STAND3, volley: VOLLEY3, shot: SHOT3, rrun: RANGER_RUN3, roll: ROLL3, rreel: RANGER_REEL3, rlurch: RANGER_LURCH3, rfall: RANGER_FALL3, squirrel: SQUIRREL3, sighting: SIGHTING3,
   mstand: MAGE_STAND3, wave: WAVE3, orb: ORB3, beam: BEAM3, beamend: BEAM_END3, mrun: MAGE_RUN3, mreel: MAGE_REEL3, mlurch: MAGE_LURCH3, mfall: MAGE_FALL3, mlight: MAGE_LIGHT3, reading: READING3,
-  rear: REAR3, strike: STRIKE3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
+  rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
 };

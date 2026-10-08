@@ -45,6 +45,8 @@ export interface AnimSet {
    */
   clips?: {
     attack?: Clip;
+    /** (Strike's combo) the second swing: the downward slash. Absent: the second swing looks like the first. */
+    attack2?: Clip;
     heavy?: Clip;
     leap?: Clip;
     idleA?: Clip;

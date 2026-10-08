@@ -115,7 +115,9 @@ function frameOf(c: Clip, seconds: number): Sprite {
  * And a whirlwind, whoever spins it, is the first animation's blow held and carried round.
  * `slot`: 0 the quick attack, 1 the slow one. `kind`: how that attack is delivered.
  */
-export function attackClip(cls: ClassId, slot: number, kind: SkillKind): 0 | 1 {
+/** Which clip a hero's attack is shown with: 0 the quick attack's, 1 the slow one's, 2 (Strike's combo) the second swing's, where there is one. */
+export function attackClip(cls: ClassId, slot: number, kind: SkillKind, combo = 0): 0 | 1 | 2 {
+  if (slot === 0 && kind === 'melee' && combo === 1) return 2;
   if (cls === 'mage' && kind === 'beam') return 0;
   // (a whirlwind is the swing held out and carried round, not the blow brought down)
   if (kind === 'whirl') return 0;
@@ -363,7 +365,7 @@ export class Figure {
       const c = set.clips?.leap;
       s = c ? c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(st.leapK * c.frames.length)))] : (set.leap as Sprite[])[st.leapK < 0.18 ? 0 : st.leapK < 0.7 ? 1 : 2];
     } else if (anim === 'attack') {
-      const c = (st.attackSkill === 1 ? set.clips?.heavy : undefined) ?? set.clips?.attack;
+      const c = (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? set.clips?.attack;
       const holding = st.holdT !== undefined && st.holdT >= 0;
       const kind = st.holdAs ?? 'beam';
       const held = holding ? (kind === 'whirl' ? set.clips?.whirl : set.clips?.hold) : undefined;
