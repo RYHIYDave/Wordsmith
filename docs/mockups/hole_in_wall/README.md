@@ -20,7 +20,7 @@ carries on past the hole; the last picture is the other way, for comparison." **
 the wall carrying on past the hole); he was told so at 00:54: "Great. I read that as yes to the top
 look, with the wall carrying on past the hole. Your yes is noted on the hole's branch, and the main
 chat puts it in the game." (Earlier, at 00:36, to being told the art chat was starting on the hole:
-"Sounds good.") SO THIS IS NOW THE MAIN CHAT'S TO BUILD FOR REAL, behind a switch until it is in.
+"Sounds good.") SO THIS IS NOW THE MAIN CHAT'S TO BUILD FOR REAL, behind a switch until it is in. **AND AGAIN, 8 Oct, 08:23**, of the art chat's mock-ups: "I like the true left, the skeleton, and the door". "The door" was read as THIS HOLE (no other door was among the art chat's pictures), a yes again; he was told at 08:25: "**The door:** I read that as the hole knocked in the wall, your yes again. Say if you meant a different door."
 
 **What the art chat changed from the paper version** (every piece still marked MOCK-UP in the code):
 
