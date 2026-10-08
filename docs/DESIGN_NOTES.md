@@ -4386,6 +4386,89 @@ PAPER" to "VERSION 18.9 IS LIVE").
 - NOT CHECKED: a real phone. How the mix PLAYS (a gate to find the lever for, a room that shuts
   him in with an elite pack) is his to find.
 
+### Version 19.0: the traps: spike floors, dart walls and sealed vaults
+
+**What he said.** 4 Oct 2026, 20:23: "And let's add some puzzles and traps in the dungeons when the
+dungeons get overhauled" (a list of six went to him with Version 14.1; he picked none, and was told
+that the spike floor, the dart wall and the word door would be first). His gameplay rulebook,
+approved 8 Oct, 10:33 (`docs/gameplay/RULEBOOK.md`): "Traps and puzzles: the spike floor, the dart
+wall, and the word door, which opens only to an attack carrying its word. These are next on the
+list to build." And his order of that morning: the traps, then Normal mode. He was sent their
+pictures at 11:27 (traps_spikes.gif, traps_pack.gif, traps_darts.gif, traps_door.gif,
+traps_stills.png: the hall laid by hand for them, filmed in the game), with "Put the traps into
+the dungeons, as in the pictures?" (One or two of each in every dungeon from the second on,
+tested, then a new version.) **HIS ANSWER, 11:36: "Yes, as they are (Recommended)".**
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "THE TRAPS, PICTURES FIRST" to
+"VERSION 19.0 IS LIVE"; the rules in `src/game/traps.ts`, their pictures in `src/art/hazards.ts`).
+
+- **THE SPIKE FLOOR** (`SPIKE`, `spikeAt`; `stepSpikes` in `src/game/game.ts`): a patch of floor
+  whose holes are always to be seen; on a beat of 1.6 seconds down, 0.3 of warning (the holes
+  glint) and 0.6 up. Up, it hurts whatever walks on it once each time it rises: a sixth of the
+  hero's life (before armour; not while rolling or leaping, nor while nothing can hurt them), and a
+  sixth of a monster's own (so a pack can be led over it); a bat flies over it; no boss meets one.
+  The spikes are iron catching the light, not a glow.
+- **THE DART WALL** (`DART`; `stepDarts`, `fireDart`): a plate of iron in the floor and a slot in
+  a wall. The hero on the plate (a monster does not set it off): it clicks, and three darts leave
+  the slot 0.25, 0.45 and 0.65 seconds later, ALL AT THE PLACE WHERE THE HERO STOOD AS IT CLICKED:
+  the click is the warning, and who moves is missed. Each takes twelve hundredths of the life of
+  what it meets, hero (before armour) or monster. Ready again three seconds after the click. A dart
+  has no light, and no friend's or enemy's colour.
+- **THE SEALED DOOR** (a door kind, `'worddoor'`, `src/game/doors.ts`; `unseal` in game.ts): a
+  door's frame and size, its leaf a studded slab with THE RUNE OF ITS WORD in the word's own colour
+  (`makeSealLeaf`, `src/art/gates.ts`), alight until it is opened. It opens to nobody who comes near:
+  only to a hit from an attack that carries its word, in front or behind (a blow, a blast, a shot
+  that meets it, what burns on the ground); then it swings open as a door does. The first time it
+  is seen from near: "A sealed door. It wants FLAME." (its word); as it opens: "The FLAME seal
+  breaks." Until then its tile is wall to whatever walks, flies, is shot or looks, and what is in
+  the vault is out of reach.
+- **THE MAP-MAKER** (`TRAPS.on`, `TRAPS_FROM`; `sealVault`, `unsealDoorless`, `layHazards`, called
+  from `generateFloor` in `src/game/dungeon.ts` with dice of their own, so a dungeon's tiles, rooms,
+  packs and props are what they were): FROM THE SECOND DUNGEON ON (the first is a new player's
+  lesson, and is laid as it always was), one or two spike floors (across a corridor, two long and
+  its whole width of three with wall on both sides, so that it cannot be walked round; or four by
+  four, three by three in a small room, clear of where the room's pack stands), one or two dart
+  walls (the plate one step inside a way out on a side toward the eye; the slot straight across
+  the room, in a wall that faces the eye; the floor between clear and level), and one treasure
+  vault sealed with a word (any of the nine), where the vault has a doorway for the door. Never
+  in the first room, the boss's hall, a vault, a lair or a nook; never on a doorway or a
+  corridor's tile beside a room, a prop, a lever, a stair, raised, sunken or cut floor; five tiles
+  apart. Over 660 dungeons (depths 2 to 12, sixty seeds) every one had a spike floor and a dart
+  wall, and 583 a sealed vault.
+- **THE TEST PLAYER** (`minded` in `src/dev/bot.ts`): it waits at a spike floor's edge while its
+  spikes are up, or will be before it could cross; it gets off one that is about to rise; once a
+  plate has clicked it steps across the darts' line, to the side with the more floor.
+- **THE HALL** laid by hand for them (`#hall=traps`, `makeTrapHall` in `src/game/level.ts`): the
+  corridor's spike floor, the room's, the dart run, and the vault sealed with FLAME.
+
+**How it was tested.**
+
+- `tsc` clean; `tests/traps.test.ts` (13: the switch and the first dungeon; the beat; the hall;
+  once a rise, a sixth of life; monsters and a bat; the plate, the darts at the click's place, the
+  re-arming; what a dart takes; the sealed door to its word in front or behind, the lines, the
+  vault in reach; an arrow that meets it; the test player past them unhurt; the map-maker's count,
+  rules and dice). The tests of doors, of the map-maker's doorways and of the mix's fingerprints
+  lay their dungeons without the traps where they ask about something else (and a sealed door
+  counts as a door where a door's shape is asked of); the terraces' test counts it as a way on foot.
+  THE WHOLE UNIT SUITE 646 OF 646 (11:56 to 11:59), and again in the frozen copy after the
+  regression (646 of 646, 12:56 to 12:59).
+- THE PRE-FLIGHT (a dev page built from the tree, 12:01 to 12:09): 24 playtests, among them the
+  traps' own, the doors' in four layouts, the dungeon on a PC and a phone, the boss, the soak and
+  two monkeys: all clean.
+- **The regression** on a copy frozen at 12:11 (the scratchpad's `v190a/arpg_frozen`,
+  12:11 to 12:55, two at a time, nothing else running): **146 OF 146 PLAYTESTS
+  FINISHED CLEAN**, among them the traps' own on a PC and a phone.
+  Speed: 59.6 frames a second, longest frame 33.4 ms; the slowest fights of the four word-pair runs 56.7 to 59.2 frames a second (18.9's: 58.6, and 56.7 to 58.2).
+- THE RELEASE BUILD, made in the copy at 13:01: `Play.html` 874,891 bytes and
+  `dist/artifact.html` 874,569, both saying V19.0; kept in the scratchpad's
+  `v190a/release/`.
+- **The published page itself** (`wrap190.sh` in the scratchpad, 13:01 to 13:19): **64
+  of 64 playtests clean.** The 62 of 18.9, and the traps' own on a PC and a phone. Published at 13:19 ("Version 44", version
+  id `1791479984-affa`); the file published is the kept copy, `v190a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone. How the traps PLAY in a run (how much they hurt at each depth, and
+  whether a sealed vault's word is one a player carries) is his to find.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4470,7 +4553,11 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               iron: a door's post, lintel and one leaf of bars in each of 8 steps of its swing;
               the gate's pillar, round arch and portcullis; the mark carved in the boss's arch,
               in embers and alight. What is flat in a wall's plane is cut into STRIPS a quarter
-              of a tile wide, `Flat.strips`; `makeGateArt` keeps what has been painted),
+              of a tile wide, `Flat.strips`; `makeGateArt` keeps what has been painted; 19.0:
+              a sealed door's leaf, a studded slab with the rune of its word, `makeSealLeaf`),
+              hazards (19.0: THE TRAPS' PICTURES: a spike floor's holes and its spikes, a dart
+              wall's plate and its slot; render.ts draws them, `standHazards`, and the darts in
+              flight with the other shots),
               props (14.1: what stands and lies in a dungeon, and the fallen wordsmith);
               town (14.4: the town's own things: smithy, bazaar, the wordsmith's ring, the
               Lexicon, the stash), townsfolk (14.4: its four people, each a loop and
@@ -4505,7 +4592,13 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               by hand for them, `makeMixHall` in level.ts), Strike's combo (18.9, `COMBO` and
               `TUNE.comboWindow`, `swingStep` in defs.ts; `useBasic`; the slash, `SLASH3` in
               art/moves3.ts, chosen by `attackClip` in render/figure.ts; a PC's click that waits
-              its turn, `click` in main.ts)
+              its turn, `click` in main.ts),
+              traps (19.0: THE TRAPS, `TRAPS.on`, from the second dungeon, `TRAPS_FROM`: a
+              spike floor's beat, `SPIKE`, `spikeAt`; a dart wall, `DART`, `slotMouth`; the
+              map-maker's `sealVault`, `unsealDoorless`, `layHazards`; their rules in game.ts,
+              `stepSpikes`, `stepDarts`, `fireDart`, and the sealed door's, `unseal`; the
+              sealed door is a door kind, 'worddoor', in doors.ts; the hall laid by hand for
+              them, `makeTrapHall` in level.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -4522,7 +4615,7 @@ src/ui/       ui (immediate-mode kit), hud (globes, the attacks as phrases, the 
               game's half), lexicon (the book of words),
               guide (what the first dungeon's prompts say), words (word tiles and attack names),
               panels (starting screen, level-up, pause, death, item cards), town (gate, vendor, stash)
-src/dev/      bot (test player), preview_*.ts (art sheets), sheet;
+src/dev/      bot (test player; 19.0: it minds the traps, `minded`), preview_*.ts (art sheets), sheet;
               preview_hero (every frame of a rig) and preview_hero_gif (a moving picture of it);
               styles + styles_cast + preview_styles = the art-style samples (style 6 = NEON):
               concept art today, the starting point for the redraw;
@@ -4578,7 +4671,10 @@ tests/        dungeon, items, town (every service's rules), sim (bots play whole
               stops it; the same harm; what breaks it off; the picture),
               mix (18.9: the hall's lever, gate and locking room; the map-maker's mix from the
               second dungeon, the first as it was; nothing shut in can come at the hero; the
-              playtests' own player and the lever)
+              playtests' own player and the lever),
+              traps (19.0: the beat; once a rise; monsters and a bat; the plate and its darts; the
+              sealed door to its word; the test player past them; the map-maker's traps, their
+              rules and their dice)
 tools/        build, preview, playtest + scenarios/, regress.sh (every browser playtest),
               town_gif.mjs (a moving picture of the town's hall, or of one place in it),
               hero_gif.mjs + hero_gif.py (a hero's moving picture), crop_heroes.py,
@@ -4725,6 +4821,10 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.0: the traps: spike floors, dart walls and sealed vaults
+node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/traps_look.mjs --out shots/trapslook/pc   # the hall of the traps, lit, in eight pictures (in the regression: traps_pc, traps_phone)
+FILM=spikes node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/traps_film.mjs --out shots/trapsfilm/x   # a trap filmed in the game, slowed (FILM=spikes|darts|door|pack): frames in shots/trapsfilm/<film>/, joined by tools/hero_gif.py
+DEPTH=4 SEED=9 node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/traps_dungeon.mjs --out shots/trapsdungeon/d4   # the map-maker's traps of one real dungeon, each photographed
 # Version 18.9: Strike's combo and a step with every swing; the mix inside each dungeon
 node tools/page_gif.mjs src/dev/preview_combo.ts "4" previews/strike_combo.gif 5         # the combo's moving picture: the game's own rules, a phone's taps, the game's own figure and paintings
 sh tools/look_moves3.sh kslash 0,2,3,4 a                                                  # the slash, frame by frame (and tsx tools/audit_moves3.ts: its hands and arms)
