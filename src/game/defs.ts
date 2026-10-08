@@ -188,6 +188,16 @@ const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
 /** The attribute a weapon's attacks grow with, whoever holds it: a sword with Strength, a bow with Dexterity, a staff or a wand with Intelligence. */
 export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int' };
 
+/**
+ * ATTACKS AND SPELLS (the doc "Wordsmith: The New Words", his yes at 16:53 on 8 Oct 2026): the
+ * weapon decides, a sword, a great sword or a bow making attacks and a staff or a wand spells; the
+ * evasive moves go with their class (Leap and Trap attacks, Warp a spell).
+ */
+export const SPELL_SKILLS: ReadonlySet<SkillId> = new Set<SkillId>(['wave', 'orb', 'familiar', 'beam', 'warp']);
+export function isSpell(id: SkillId): boolean {
+  return SPELL_SKILLS.has(id);
+}
+
 /** The quick attack of a hand that holds that weapon. */
 export function tapSkill(weapon: WeaponKind | null): SkillId {
   return (weapon ? WEAPON_SKILLS[weapon] : BARE_SKILLS)[0];
@@ -230,8 +240,19 @@ export const ATTR_GIVES = {
 // Power words. The rule: a word in FRONT of an ability changes the hit; a word BEHIND it changes
 // what the ability leaves behind. The exact numbers are in words.ts.
 
+/**
+ * THE TWO KINDS OF WORD (his words, 5 Oct 2026: "I really like the distinction of Shape and
+ * Damage"; 8 Oct, 10:54 and 11:27: Leech, Volatile, Swift and Twin are shaping words). A DAMAGE word
+ * adds damage of a kind; a SHAPING word changes the hit, or what it leaves behind. An attack takes
+ * ONE DAMAGE WORD ON EACH SIDE (his answer, 8 Oct, 16:53: "Yes, one a side (Recommended)"): the doc
+ * "Wordsmith: The New Words".
+ */
+export type WordKind = 'damage' | 'shape';
+
 export interface WordDef {
   id: WordId;
+  /** Damage or shaping (see WordKind). */
+  kind: WordKind;
   /** The word itself, as it drops. */
   name: string;
   /** How it reads in front of an ability: "Flame" Orb. */
@@ -255,15 +276,15 @@ export interface WordDef {
 }
 
 export const WORDS: Record<WordId, WordDef> = {
-  power: { id: 'power', name: 'Power', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'The word of force.', frontText: 'More damage and a bigger hit.', behindText: 'Each hit that lands builds a short damage bonus.', monsterText: 'Hits harder and has more life.' },
-  leech: { id: 'leech', name: 'Leech', front: 'Leeching', behind: 'of Leeching', attr: 'str', element: null, about: 'The word of hunger. It takes life from what it touches.', frontText: 'Heals you for every enemy hit.', behindText: 'Enemies it kills drop life orbs.', monsterText: 'Heals when it hits you.' },
-  swift: { id: 'swift', name: 'Swift', front: 'Swift', behind: 'of Swiftness', attr: 'dex', element: null, about: 'The word of speed.', frontText: 'Faster to use again.', behindText: 'Each use gives you a burst of speed.', monsterText: 'Moves and attacks faster.' },
-  twin: { id: 'twin', name: 'Twin', front: 'Twin', behind: 'of Echoes', attr: 'dex', element: null, about: 'The word of doubling. Two of a thing, each the weaker for it.', frontText: 'Strikes, fires or bursts twice, each time weaker.', behindText: 'Repeats itself a moment later, weaker.', monsterText: 'Attacks twice.' },
-  fire: { id: 'fire', name: 'Flame', front: 'Flame', behind: 'of Flame', attr: 'int', element: 'fire', about: 'The word of fire.', frontText: 'Fire damage. Explodes and sets enemies burning.', behindText: 'Passes through, hits softer, leaves burning ground.', monsterText: 'Deals fire damage and sets you burning.' },
-  frost: { id: 'frost', name: 'Frost', front: 'Frost', behind: 'of Frost', attr: 'int', element: 'frost', about: 'The word of cold.', frontText: 'Frost damage. Chills, then freezes.', behindText: 'Passes through, hits softer, leaves ice that slows.', monsterText: 'Deals frost damage and slows you.' },
-  lightning: { id: 'lightning', name: 'Lightning', front: 'Lightning', behind: 'of Lightning', attr: 'int', element: 'lightning', about: 'The word of storms.', frontText: 'Lightning damage. Arcs to nearby enemies.', behindText: 'Passes through, hits softer, leaves a storm that strikes.', monsterText: 'Deals lightning damage and shocks you.' },
-  volatile: { id: 'volatile', name: 'Volatile', front: 'Volatile', behind: 'of Ruin', attr: 'int', element: null, about: 'The word of ruin. Things burst.', frontText: 'Enemies it kills explode.', behindText: 'Leaves a rune that detonates a moment later.', monsterText: 'Explodes when it dies.' },
-  poison: { id: 'poison', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
+  power: { id: 'power', kind: 'damage', name: 'Power', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'The word of force.', frontText: 'More damage and a bigger hit.', behindText: 'Each hit that lands builds a short damage bonus.', monsterText: 'Hits harder and has more life.' },
+  leech: { id: 'leech', kind: 'shape', name: 'Leech', front: 'Leeching', behind: 'of Leeching', attr: 'str', element: null, about: 'The word of hunger. It takes life from what it touches.', frontText: 'Heals you for every enemy hit.', behindText: 'Enemies it kills drop life orbs.', monsterText: 'Heals when it hits you.' },
+  swift: { id: 'swift', kind: 'shape', name: 'Swift', front: 'Swift', behind: 'of Swiftness', attr: 'dex', element: null, about: 'The word of speed.', frontText: 'Faster to use again.', behindText: 'Each use gives you a burst of speed.', monsterText: 'Moves and attacks faster.' },
+  twin: { id: 'twin', kind: 'shape', name: 'Twin', front: 'Twin', behind: 'of Echoes', attr: 'dex', element: null, about: 'The word of doubling. Two of a thing, each the weaker for it.', frontText: 'Strikes, fires or bursts twice, each time weaker.', behindText: 'Repeats itself a moment later, weaker.', monsterText: 'Attacks twice.' },
+  fire: { id: 'fire', kind: 'damage', name: 'Flame', front: 'Flame', behind: 'of Flame', attr: 'int', element: 'fire', about: 'The word of fire.', frontText: 'Fire damage. Explodes and sets enemies burning.', behindText: 'Passes through, hits softer, leaves burning ground.', monsterText: 'Deals fire damage and sets you burning.' },
+  frost: { id: 'frost', kind: 'damage', name: 'Frost', front: 'Frost', behind: 'of Frost', attr: 'int', element: 'frost', about: 'The word of cold.', frontText: 'Frost damage. Chills, then freezes.', behindText: 'Passes through, hits softer, leaves ice that slows.', monsterText: 'Deals frost damage and slows you.' },
+  lightning: { id: 'lightning', kind: 'damage', name: 'Lightning', front: 'Lightning', behind: 'of Lightning', attr: 'int', element: 'lightning', about: 'The word of storms.', frontText: 'Lightning damage. Arcs to nearby enemies.', behindText: 'Passes through, hits softer, leaves a storm that strikes.', monsterText: 'Deals lightning damage and shocks you.' },
+  volatile: { id: 'volatile', kind: 'shape', name: 'Volatile', front: 'Volatile', behind: 'of Ruin', attr: 'int', element: null, about: 'The word of ruin. Things burst.', frontText: 'Enemies it kills explode.', behindText: 'Leaves a rune that detonates a moment later.', monsterText: 'Explodes when it dies.' },
+  poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
 };
 
 // ---------------------------------------------------------------------------------------------

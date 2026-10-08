@@ -712,6 +712,17 @@ export class Game {
           const w = side.pop();
           if (w) h.words[w]++;
         }
+        // (ONE DAMAGE WORD A SIDE, since Version 19.3: a character saved with two keeps the first,
+        // and the other goes back to the pouch)
+        let damage = false;
+        for (let k = 0; k < side.length; k++) {
+          const w = side[k];
+          if (!w || WORDS[w].kind !== 'damage') continue;
+          if (damage) {
+            side[k] = null;
+            h.words[w]++;
+          } else damage = true;
+        }
       }
       s.r = resolveSkill(def, s.front, s.behind, i < 2 ? weaponAttr(weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
       // (the roll's two charges are a thing of cooldowns: when mana is the limit, mana is)
@@ -4701,7 +4712,8 @@ export class Game {
     after[to.idx] = word;
     const ws = after.filter((w): w is WordId => w !== null);
     if (new Set(ws).size !== ws.length) return 'Already there';
-    if (ws.filter((w) => WORDS[w].element).length > 1) return 'One element per side';
+    // (ONE DAMAGE WORD A SIDE: his answer, 8 Oct 2026, 16:53; before Version 19.3, one element a side)
+    if (ws.filter((w) => WORDS[w].kind === 'damage').length > 1) return 'One damage word per side';
     return null;
   }
 

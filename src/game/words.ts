@@ -19,7 +19,8 @@ function attrOf(word: WordId, d: Derived): number {
 export function socketProblem(group: readonly (WordId | null)[], word: WordId): string | null {
   if (!group.includes(null)) return 'No free socket';
   if (group.includes(word)) return 'Already there';
-  if (WORDS[word].element && group.some((w) => w !== null && WORDS[w].element)) return 'One element per side';
+  // ONE DAMAGE WORD A SIDE (his answer, 8 Oct 2026, 16:53: "Yes, one a side (Recommended)"; before, one element a side)
+  if (WORDS[word].kind === 'damage' && group.some((w) => w !== null && WORDS[w].kind === 'damage')) return 'One damage word per side';
   return null;
 }
 

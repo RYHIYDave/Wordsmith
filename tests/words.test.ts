@@ -1,11 +1,12 @@
 // Power word combinations, tested exhaustively.
 //
 // An attack ability holds up to two words in front and two behind. A side may hold any one word or
-// any two different words, except two elements ("one element per side"): 43 ways to fill a side,
-// 43 x 43 = 1,849 loadouts for an ability, and there are twelve abilities that take words (since
+// any two different words, except two DAMAGE words (since Version 19.3, "one damage word per side",
+// his answer of 8 Oct 2026, 16:53; before it, one element a side): 36 ways to fill a side,
+// 36 x 36 = 1,296 loadouts for an ability, and there are twelve abilities that take words (since
 // Version 12.2: the nine attacks the weapons give, Strike, Slam, Whirlwind, Shot, Volley, Wave,
 // Orb, Familiar and Beam, and the three evasive moves, Leap, Trap and Warp). Every one of those
-// 22,188 loadouts is built and used here, on monsters, in the practice room:
+// 15,552 loadouts is built and used here, on monsters, in the practice room:
 //   - its numbers must be exactly what its words give one at a time (no word disturbs another);
 //   - when used, every word on it must be seen to act (the hit, the wake, the echo, the rune...);
 //   - nothing may go wrong: no error, no number that is not a number, nothing past its cap,
@@ -37,7 +38,7 @@ function sides(): WordId[][] {
   for (const w of WORD_IDS) out.push([w]);
   for (let i = 0; i < WORD_IDS.length; i++) {
     for (let j = i + 1; j < WORD_IDS.length; j++) {
-      if (isElement(WORD_IDS[i]) && isElement(WORD_IDS[j])) continue;
+      if (WORDS[WORD_IDS[i]].kind === 'damage' && WORDS[WORD_IDS[j]].kind === 'damage') continue;
       out.push([WORD_IDS[i], WORD_IDS[j]]);
     }
   }
@@ -410,14 +411,14 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
 
 // ---------------------------------------------------------------------------------------------
 
-test('the rule of the sockets: any word or any two different words to a side, but never two elements', () => {
+test('the rule of the sockets: any word or any two different words to a side, but never two damage words', () => {
   const all = sides();
-  assert.equal(all.length, 43);
+  assert.equal(all.length, 36);
   for (const a of WORD_IDS) {
     for (const b of WORD_IDS) {
       const why = socketProblem([a, null], b);
       if (a === b) assert.equal(why, 'Already there');
-      else if (isElement(a) && isElement(b)) assert.equal(why, 'One element per side');
+      else if (WORDS[a].kind === 'damage' && WORDS[b].kind === 'damage') assert.equal(why, 'One damage word per side');
       else assert.equal(why, null, `${a} and ${b} share a side`);
     }
     assert.equal(socketProblem([a, 'power' === a ? 'swift' : 'power'], 'leech' === a ? 'twin' : 'leech'), 'No free socket');
@@ -471,7 +472,7 @@ for (const { cls, weapon, skill } of CASES) {
         }
       }
     }
-    assert.equal(loadouts, 43 * 43);
+    assert.equal(loadouts, sides().length ** 2);
     console.log(`${cls} ${def.name}: ${loadouts} loadouts, ${uses} uses, all in order`);
   });
 }
