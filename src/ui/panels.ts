@@ -9,6 +9,8 @@ import type { Sprite } from '../engine/px';
 import { ATTR_GIVES, ATTR_NAME, CLASSES, SKILLS, TUNE, WORDS, holdSkill, skillsFor, tapSkill } from '../game/defs';
 import type { Limit } from '../game/defs';
 import type { Game } from '../game/game';
+import { MODE_LINE } from '../game/modes';
+import type { HeroMode } from '../game/modes';
 import type { AimMode, Station, VendorId } from '../game/state';
 import { ITEM_ROOM, itemRoom, modLines } from '../game/items';
 import type { TitleArt } from '../art/title';
@@ -264,6 +266,8 @@ export interface TitleOut {
   aim: boolean;
   /** The class cards' voice switch was pressed. */
   voice: boolean;
+  /** The class cards' switch between Normal and Hardcore was pressed (game/modes.ts). */
+  mode: boolean;
 }
 
 export interface TitleIn {
@@ -282,6 +286,8 @@ export interface TitleIn {
   muted: boolean;
   /** The voice the next character will speak with, and the class whose voice is being tried out just now (or null). */
   voice: VoiceId;
+  /** NORMAL OR HARDCORE (game/modes.ts): the mode the next hero is made in, or null where the cards do not offer it (the switch off; the practice room). */
+  mode?: HeroMode | null;
   speaking: ClassId | null;
   /**
    * A hero has been picked and is MAKING READY on their card before the run begins: who, and for
@@ -538,7 +544,7 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   const W = ui.w;
   const H = ui.h;
   const T = ui.touch;
-  const out: TitleOut = { pick: null, resume: false, lexicon: false, turn: false, mute: false, limit: false, guide: false, aim: false, voice: false };
+  const out: TitleOut = { pick: null, resume: false, lexicon: false, turn: false, mute: false, limit: false, guide: false, aim: false, voice: false, mode: false };
   g.fillStyle = smith ? SMITH_NIGHT : P.black;
   g.fillRect(0, 0, W, H);
   ui.claim(0, 0, W, H); // the whole starting screen is interface
@@ -654,6 +660,14 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   const voiceW = Math.max(ui.width('VOICE: FEMALE'), ui.width('VOICE: MALE')) + 16;
   const voiceR: Rect = { x: W - 4 - voiceW, y: H - 22, w: voiceW, h: 18 };
   if (!entering && ui.pressIn(voiceR.x, voiceR.y, voiceR.w, voiceR.h)) out.voice = true;
+  // NORMAL OR HARDCORE (game/modes.ts): the mode the hero is made in, kept for life. Its button
+  // stands between BACK and VOICE, or above them where the three will not fit side by side.
+  const heroMode = opt.mode ?? null;
+  const modeLabel = heroMode === 'hardcore' ? 'MODE: HARDCORE' : 'MODE: NORMAL';
+  const modeW = Math.max(ui.width('MODE: HARDCORE'), ui.width('MODE: NORMAL')) + 16;
+  const modeBeside = backW + modeW + voiceW + 24 <= W;
+  const modeR: Rect = { x: Math.floor((W - modeW) / 2), y: modeBeside ? H - 22 : H - 44, w: modeW, h: 18 };
+  if (heroMode && !entering && ui.pressIn(modeR.x, modeR.y, modeR.w, modeR.h)) out.mode = true;
   drawText(g, title, Math.floor(W / 2), 6, THEME.text, { align: 'center', scale: big, shadow: THEME.call });
   const pitch = st.practice ? 'Practice room: choose a class' : 'Choose a class';
   drawText(g, pitch, Math.floor(W / 2), 6 + 9 * big + 1, st.practice ? THEME.accent : THEME.text, { align: 'center', font: ui.width(pitch) <= W - 8 ? 'normal' : 'small' });
@@ -745,9 +759,22 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   let hy = y0 + ch + 5;
   ui.drawButton(backR.x, backR.y, backR.w, backR.h, 'BACK', {});
   ui.drawButton(voiceR.x, voiceR.y, voiceR.w, voiceR.h, voiceLabel, { lit: opt.speaking !== null });
+  if (heroMode) {
+    // (Hardcore's in the colour of what is lost; and under the cards, what the mode means, unless
+    // the warning about a saved hero is up: that is said there instead, above the buttons)
+    ui.drawButton(modeR.x, modeR.y, modeR.w, modeR.h, modeLabel, { color: heroMode === 'hardcore' ? THEME.bad : undefined });
+    const room = modeR.y - 2;
+    for (const part of opt.note ? [] : wrapText(MODE_LINE[heroMode], W - 16, 'small')) {
+      if (hy + 6 > room) break;
+      drawText(g, part, Math.floor(W / 2), hy, heroMode === 'hardcore' ? THEME.bad : THEME.dim, { align: 'center', font: 'small' });
+      hy += 6;
+    }
+  }
   if (opt.note) {
-    for (const part of wrapText(opt.note, W - 16 - 2 * (Math.max(backW, voiceW) + 8), 'small')) {
-      drawText(g, part, Math.floor(W / 2), Math.min(H - 7, hy + 2), THEME.bad, { align: 'center', font: 'small' });
+    // (beside the buttons at the foot; or, where the mode's button stands between them, above them)
+    const across = heroMode ? W - 16 : W - 16 - 2 * (Math.max(backW, voiceW) + 8);
+    for (const part of wrapText(opt.note, across, 'small')) {
+      drawText(g, part, Math.floor(W / 2), heroMode ? hy + 2 : Math.min(H - 7, hy + 2), THEME.bad, { align: 'center', font: 'small' });
       hy += 6;
     }
   }
@@ -824,38 +851,72 @@ export function drawPause(ui: Ui, muted: boolean, turn: string | null, limit: Li
   return out;
 }
 
+/**
+ * NORMAL MODE (game/modes.ts): what a death cost, in a line, for the death screen and the town:
+ * what was found in the dungeon (`Game.losses`), and the share of the gold carried in.
+ */
+export function wakeLine(lost: { items: number; words: number; gold: number; share: number }, depth: number): string {
+  const found: string[] = [];
+  if (lost.items) found.push(`${lost.items} item${lost.items === 1 ? '' : 's'}`);
+  if (lost.words) found.push(`${lost.words} word${lost.words === 1 ? '' : 's'}`);
+  if (lost.gold) found.push(`${lost.gold} gold`);
+  const parts: string[] = [];
+  if (found.length) parts.push(`what you found in dungeon ${depth} (${found.join(', ')})`);
+  if (lost.share) parts.push(`${lost.share} of your own gold`);
+  return parts.length ? `Lost: ${parts.join(', and ')}.` : 'Nothing was lost.';
+}
+
 export function drawDeath(ui: Ui, game: Game): boolean {
   const h = game.hero;
+  // NORMAL MODE (game/modes.ts): a Normal hero is not lost. They fell, and wake in town; the
+  // screen says what the death cost, and its button takes them there.
+  const lost = game.wakes ? game.losses() : null;
   const pw = Math.min(ui.w - 8, 220);
-  const ph = (ui.touch ? 128 : 124) + (game.slainBy ? 10 : 0);
+  const mins = Math.floor(game.runTime / 60);
+  const secs = Math.floor(game.runTime % 60);
+  const rows = lost
+    ? [`${CLASSES[h.cls].name}, level ${h.level}`, `Fell in dungeon ${game.depth}`]
+    : [
+        `${CLASSES[h.cls].name}, level ${h.level}`,
+        `Fell in dungeon ${game.depth}`,
+        `${game.cleared} dungeon${game.cleared === 1 ? '' : 's'} cleared, ${game.kills} monsters slain`,
+        `${mins}m ${secs < 10 ? '0' : ''}${secs}s in the dark`,
+      ];
+  // what dealt the last blow (a long name drops to the small letters so it still fits)
+  if (game.slainBy) rows.splice(1, 0, `Slain by ${game.slainBy}`);
+  let after: string[];
+  if (lost) after = wrapText(wakeLine(lost, game.depth), pw - 14, 'small');
+  else {
+    const words = WORD_IDS.reduce((n, w) => n + game.meta.lexicon[w], 0);
+    const kept = game.meta.stash.filter((it) => it !== null).length;
+    after = [`The Lexicon keeps ${words} word${words === 1 ? '' : 's'}, the stash ${kept} item${kept === 1 ? '' : 's'}`];
+  }
+  // (the panel as it always was for four rows and one line under them; more or fewer, taller or lower)
+  const ph = (ui.touch ? 128 : 124) + (rows.length - 4) * 10 + (lost ? 11 : 0) + (after.length - 1) * 7;
   const px = Math.floor((ui.w - pw) / 2);
   const py = Math.max(3, Math.floor((ui.h - ph) / 2));
   const dbh = ui.touch ? 18 : 14;
+  const label = lost ? 'Back to town' : 'New run';
   const again = ui.pressIn(px + 40, py + ph - dbh - 6, pw - 80, dbh);
   ui.shade(0.7);
   ui.panel(px, py, pw, ph);
-  drawText(ui.g, 'YOU DIED', px + Math.floor(pw / 2), py + 8, THEME.bad, { align: 'center', scale: 2, shadow: THEME.lifeLo });
-  const mins = Math.floor(game.runTime / 60);
-  const secs = Math.floor(game.runTime % 60);
-  const rows = [
-    `${CLASSES[h.cls].name}, level ${h.level}`,
-    `Fell in dungeon ${game.depth}`,
-    `${game.cleared} dungeon${game.cleared === 1 ? '' : 's'} cleared, ${game.kills} monsters slain`,
-    `${mins}m ${secs < 10 ? '0' : ''}${secs}s in the dark`,
-  ];
-  // what dealt the last blow (a long name drops to the small letters so it still fits)
-  if (game.slainBy) rows.splice(1, 0, `Slain by ${game.slainBy}`);
-  const words = WORD_IDS.reduce((n, w) => n + game.meta.lexicon[w], 0);
-  const kept = game.meta.stash.filter((it) => it !== null).length;
-  const legacy = `The Lexicon keeps ${words} word${words === 1 ? '' : 's'}, the stash ${kept} item${kept === 1 ? '' : 's'}`;
+  drawText(ui.g, lost ? 'YOU FELL' : 'YOU DIED', px + Math.floor(pw / 2), py + 8, THEME.bad, { align: 'center', scale: 2, shadow: THEME.lifeLo });
   let y = py + 34;
   for (const r of rows) {
     const small = ui.width(r) > pw - 10;
     ui.text(r, px + Math.floor(pw / 2), y + (small ? 1 : 0), r.startsWith('Slain by') ? THEME.bad : THEME.text, 'center', small);
     y += 10;
   }
-  ui.text(legacy, px + Math.floor(pw / 2), y + 3, THEME.accent, 'center', true);
-  ui.drawButton(px + 40, py + ph - dbh - 6, pw - 80, dbh, 'New run', { primary: true, lit: true });
+  if (lost) {
+    // (where they will be: said plainly, in the letters of the rows)
+    ui.text('You wake in town.', px + Math.floor(pw / 2), y + 1, THEME.text, 'center');
+    y += 11;
+  }
+  for (const part of after) {
+    ui.text(part, px + Math.floor(pw / 2), y + 3, THEME.accent, 'center', true);
+    y += 7;
+  }
+  ui.drawButton(px + 40, py + ph - dbh - 6, pw - 80, dbh, label, { primary: true, lit: true });
   return again;
 }
 

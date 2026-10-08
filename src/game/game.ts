@@ -13,6 +13,8 @@ import { alongCut, bodyInWall, inWall } from './cut';
 import { DOOR_HELP, GATE_INSIDE, LEVER_NEAR, LOCK_CLEAR, PIER_HOLD, doorMiddle, doorTiles, doorWay, insideBy, stepDoors } from './doors';
 import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
+import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
+import type { HeroMode } from './modes';
 import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -70,6 +72,8 @@ export interface RunSave {
   guide?: Guide | null;
   /** Which of the wordsmith's words for sale on this visit have been bought (their places on his shelf; absent in older saves). */
   wordsBought?: number[];
+  /** NORMAL OR HARDCORE (game/modes.ts), kept for life. Absent in a save from before there were modes (MODE_BEFORE), and while MODES.on is false. */
+  mode?: HeroMode;
 }
 
 /** Nothing known of a word yet. */
@@ -87,7 +91,7 @@ export function newMeta(): Meta {
   }
   const stash: (Item | null)[] = [];
   for (let i = 0; i < TUNE.stashSize; i++) stash.push(null);
-  return { lexicon, known, stash, deaths: 0, bestDepth: 0, taught: false, limit: 'cooldown', voice: 'male', aim: 'auto', aimChosen: false };
+  return { lexicon, known, stash, deaths: 0, bestDepth: 0, taught: false, limit: 'cooldown', voice: 'male', aim: 'auto', aimChosen: false, mode: 'normal' };
 }
 
 /** A new player's place in the first dungeon's prompts. */
@@ -121,6 +125,7 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   out.taught = m.taught === true;
   out.limit = LIMITS.includes(m.limit as Limit) ? (m.limit as Limit) : 'cooldown';
   out.voice = VOICE_IDS.includes(m.voice as VoiceId) ? (m.voice as VoiceId) : 'male';
+  out.mode = HERO_MODES.includes(m.mode as HeroMode) ? (m.mode as HeroMode) : 'normal';
   // Attacks are aimed for the player (auto aim) unless they have switched to another way, and
   // the switch leaves its mark (`aimChosen`). A device that saved before Version 12.2.1 has no
   // mark either way: it holds 'tap' whether that was chosen or not (it was the default, and is
@@ -155,6 +160,18 @@ export class Game {
   slainBy = '';
   /** How this character sounds when they speak: chosen on the class cards, and kept with the character. */
   voice: VoiceId = 'male';
+  /**
+   * NORMAL OR HARDCORE (game/modes.ts): picked on the class cards, kept for life. A hero made any
+   * other way (the playtests' runs, the practice room) is Hardcore, the game's old rule; and while
+   * MODES.on is false nobody is anything else.
+   */
+  mode: HeroMode = 'hardcore';
+  /**
+   * The hero as they went into this dungeon (a save, `save()`, taken as they stepped in, after the
+   * gate's words were burned): what a Normal death goes back to. Null in town before the first
+   * dungeon, and in the practice room.
+   */
+  entry: RunSave | null = null;
   /** The hero's lines on big kills: the ones said so far, when the last was said, and dice of their own. */
   private quipSaid = new Set<string>();
   private quipAt = -1e9;
@@ -542,6 +559,8 @@ export class Game {
       voice: this.voice,
       guide: this.guide ? { ...this.guide, set: this.guide.set ? { ...this.guide.set } : null } : null,
       wordsBought: this.wordStock.flatMap((w, i) => (w === null ? [i] : [])),
+      // (nothing of the modes is written while their switch is off: a hero made before then is MODE_BEFORE)
+      ...(MODES.on ? { mode: this.mode } : {}),
     };
   }
 
@@ -572,6 +591,7 @@ export class Game {
     g.cleared = Math.max(0, Math.floor(num(s.cleared, 0)));
     g.kills = Math.max(0, Math.floor(num(s.kills, 0)));
     if (VOICE_IDS.includes(s.voice as VoiceId)) g.voice = s.voice as VoiceId;
+    g.mode = HERO_MODES.includes(s.mode as HeroMode) ? (s.mode as HeroMode) : MODE_BEFORE;
     g.runTime = Math.max(0, num(s.runTime, 0));
     if (Array.isArray(s.plan)) {
       for (const w of s.plan) if (WORD_IDS.includes(w) && g.plan.length < TUNE.planMax && !g.plan.includes(w)) g.plan.push(w);
@@ -833,6 +853,9 @@ export class Game {
     this.msg(`Dungeon ${this.depth}`, MSG.head);
     if (this.dungeonWords.length) this.msg(`Burned in: ${this.dungeonWords.map((w) => WORDS[w].name).join(', ')}`, MSG.word);
     this.sfx('portal');
+    // NORMAL MODE (game/modes.ts): the hero as they came in, for a death to go back to. (A copy
+    // through JSON: nothing found or changed in here can reach it.)
+    this.entry = JSON.parse(JSON.stringify(this.save())) as RunSave;
   }
 
   private spawnMonsters(seed: number): void {
@@ -3187,8 +3210,71 @@ export class Game {
     // rules stop here, so nothing else would end it, and the picture of it would stand over
     // them as they fall.)
     this.hero.channel = null;
-    this.meta.deaths++;
+    // (a Normal hero is not lost: they will wake in town, `wakeSave`. The Lexicon counts the lost.)
+    if (!this.wakes) this.meta.deaths++;
     this.sfx('death');
+  }
+
+  /**
+   * NORMAL MODE (game/modes.ts): this hero, fallen or not, would wake in town from a death here.
+   * Only with the switch on, for a Normal hero, in a dungeon gone into (not the practice room).
+   */
+  get wakes(): boolean {
+    return MODES.on && this.mode === 'normal' && this.inDungeon && !this.practice && this.entry !== null;
+  }
+
+  /**
+   * NORMAL MODE: the hero as they wake in town after a death in this dungeon, as a save to be
+   * brought back (`Game.restore`): as they went in (the gear worn in, the bag, the words and where
+   * they were set, the gold, the fallen wordsmith's satchel), less a share of the gold carried in
+   * (NORMAL.goldShare); with all that was found in the dungeon gone; but with the level, the
+   * points and what they were spent on, the kills and the time as they are now. Facing the same
+   * dungeon (the depth and the dungeons cleared are as they were). Null where nobody wakes.
+   */
+  wakeSave(): RunSave | null {
+    if (!this.wakes || !this.entry) return null;
+    const now = this.save();
+    const e = JSON.parse(JSON.stringify(this.entry)) as RunSave;
+    e.level = now.level;
+    e.xp = now.xp;
+    e.pending = now.pending;
+    e.attrs = { ...now.attrs };
+    e.kills = now.kills;
+    e.runTime = now.runTime;
+    e.potionKills = now.potionKills;
+    e.voice = now.voice;
+    // (the first dungeon's prompts as they are now: they are not begun again)
+    e.guide = now.guide;
+    e.gold = Math.max(0, e.gold - this.goldShare());
+    e.maxUid = Math.max(e.maxUid, now.maxUid);
+    e.mode = 'normal';
+    return e;
+  }
+
+  /** The part of the gold carried into this dungeon that a Normal death costs. */
+  private goldShare(): number {
+    return this.entry ? Math.floor(Math.max(0, this.entry.gold) * NORMAL.goldShare) : 0;
+  }
+
+  /**
+   * NORMAL MODE: what a death here costs, for the death screen and the line in town: the pieces
+   * of gear, the words and the gold found in this dungeon, and the share of the gold carried in.
+   * Null where nobody wakes.
+   */
+  losses(): { items: number; words: number; gold: number; share: number } | null {
+    if (!this.wakes || !this.entry) return null;
+    const e = this.entry;
+    const h = this.hero;
+    const had = new Set<number>();
+    for (const it of [...EQUIP_SLOTS.map((s) => e.gear[s]), ...e.bag]) if (it) had.add(it.uid);
+    const items = [...EQUIP_SLOTS.map((s) => h.gear[s]), ...h.bag].filter((it) => it && !had.has(it.uid)).length;
+    // (a word is counted wherever it is: in the pouch, or set in an attack)
+    const count = (words: Record<WordId, number>, sockets: { front: (WordId | null)[]; behind: (WordId | null)[] }[], w: WordId): number =>
+      (words[w] ?? 0) + sockets.reduce((n, so) => n + [...so.front, ...so.behind].filter((x) => x === w).length, 0);
+    const nowSockets = h.skills.map((sk) => ({ front: sk.front, behind: sk.behind }));
+    let words = 0;
+    for (const w of WORD_IDS) words += Math.max(0, count(h.words, nowSockets, w) - count(e.words, e.sockets, w));
+    return { items, words, gold: Math.max(0, h.gold - e.gold), share: this.goldShare() };
   }
 
   // ===========================================================================================

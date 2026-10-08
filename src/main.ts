@@ -11,6 +11,7 @@ import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } fro
 import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
+import { MODES } from './game/modes';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { makeTownProps } from './art/town';
@@ -55,7 +56,7 @@ import { guideBanner } from './ui/guide';
 import { drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
-import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi } from './ui/panels';
+import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
 import type { SmithPicture } from './ui/panels';
 import { gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
@@ -341,7 +342,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const writeSave = (): void => {
     if (!saving) return;
     // (the practice room is never saved)
-    if (game && mode === 'play' && !game.practice) saved = game.over ? null : game.save();
+    // (a fallen hero is gone, unless they are a Normal hero (game/modes.ts): then what is kept is the
+    // hero as they will wake in town, so that closing the page on the death screen changes nothing)
+    if (game && mode === 'play' && !game.practice) saved = game.over ? game.wakeSave() : game.save();
     try {
       const file: SaveFile = { v: 2, run: saved, meta };
       localStorage.setItem(SAVE_KEY, JSON.stringify(file));
@@ -423,6 +426,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const newRun = (cls: ClassId, seed?: number, guide = false): void => {
     const sd = seed ?? ((Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0);
     const g = guide ? Game.forFirstRun(cls, sd, meta) : new Game(cls, sd, meta);
+    // (NORMAL OR HARDCORE, as the cards had it: game/modes.ts. Without the switch, the old rule.)
+    if (MODES.on) g.mode = meta.mode;
     begin(g);
     if (!guide) welcome(g);
     writeSave();
@@ -493,6 +498,28 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     } catch {
       clearSave();
     }
+  };
+
+  /**
+   * NORMAL MODE (game/modes.ts): the fallen hero wakes in town, as they went into the dungeon but
+   * for what was found there and a share of their gold; the same dungeon waits beyond the gate.
+   */
+  const wake = (g: Game): void => {
+    const run = g.wakeSave();
+    const lost = g.losses();
+    const depth = g.depth;
+    if (!run) return;
+    let w: Game;
+    try {
+      w = Game.restore(run, meta);
+    } catch {
+      return;
+    }
+    begin(w);
+    // (one line, so that it reads the same where the newest line is at the top, as on a phone)
+    w.msg(`You wake in town. ${lost ? wakeLine(lost, depth) : ''}`.trim(), THEME.text);
+    writeSave();
+    sfx('portal');
   };
 
   /** Open the panel for a town service the hero is standing at. */
@@ -1117,13 +1144,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (titleLex) ui.press = null;
       const res = drawTitle(ui, art, titleArt, clock, TITLE, titleUi, {
         turn: turnLabel(),
-        resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, dungeon ${saved.depth}` : null,
+        resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, dungeon ${saved.depth}${MODES.on && saved.mode === 'hardcore' ? ', Hardcore' : ''}` : null,
         note: saved && confirm && !titleUi.practice ? `${input.touchMode ? 'Tap' : 'Choose'} ${CLASSES[confirm.cls].name} again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.` : null,
         guide: guideOn,
         limit: meta.limit,
         aim: scr.touch ? meta.aim : null,
         muted: isMuted(),
         voice: meta.voice,
+        mode: MODES.on && !titleUi.practice ? meta.mode : null,
         speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? CLASS_IDS[voiceTry.i - 1] : null,
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
       }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
@@ -1160,6 +1188,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           meta.voice = meta.voice === 'female' ? 'male' : 'female';
           writeSave();
           voiceTry = { i: 0, at: clock + 0.05 };
+          sfx('click');
+        }
+        if (res.mode) {
+          // NORMAL OR HARDCORE for the next hero (game/modes.ts); the cards remember it
+          meta.mode = meta.mode === 'hardcore' ? 'normal' : 'hardcore';
+          writeSave();
           sfx('click');
         }
         if (res.turn) flipTurn();
@@ -1239,10 +1273,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
       }
       wasPaused = paused;
-      // death ends the run: nothing is left to continue, but the Lexicon and stash are kept
+      // death ends the run: nothing is left to continue, but the Lexicon and stash are kept. A
+      // NORMAL hero (game/modes.ts) is not lost: the save becomes the hero as they will wake in town.
       if (g.over && !deathSaved) {
         deathSaved = true;
-        clearSave();
+        if (g.wakes) writeSave();
+        else clearSave();
       }
       // what was done inside a panel last frame (a word set, a thing bought) is heard at once
       if (paused) drain(g);
@@ -1375,11 +1411,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
             input.eat('Enter', 'Space');
           }
         } else if (drawDeath(ui, g) || input.pressed('Enter')) {
-          // straight to the class cards: one more go
-          mode = 'title';
-          game = null;
-          titleUi.page = 'class';
-          titleUi.practice = false;
+          if (g.wakes) wake(g);
+          else {
+            // straight to the class cards: one more go
+            mode = 'title';
+            game = null;
+            titleUi.page = 'class';
+            titleUi.practice = false;
+          }
         }
       } else if (panels.open === 'wordsmith' && !TUNE.tradesOpen) openInventory();
       else if (withInventory(panels.open)) {
@@ -1464,6 +1503,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     },
     /** The inventory, as the HUD opens it. */
     inv: (focus = -1) => openInventory(focus),
+    /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
+    modes: MODES,
     /**
      * A third word slot a side, switched on or off (the owner's idea, not in the game: see
      * SLOT_OPENS in game/defs.ts). For pictures of how the menus and the game screen hold it.

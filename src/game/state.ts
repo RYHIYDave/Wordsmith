@@ -5,6 +5,7 @@ import type { Sfx } from '../engine/audio';
 import type { Limit, SkillId, SkillKind } from './defs';
 import type { DoorInst } from './doors';
 import type { HazardInst } from './traps';
+import type { HeroMode } from './modes';
 import type { Attr, ClassId, Element, EquipSlot, Floor, Item, MonsterKind, PropKind, Stats, VoiceId, WordId } from './types';
 
 /** Everything worked out from class, level, attributes and gear. Rebuilt whenever one of those changes. */
@@ -570,6 +571,8 @@ export interface Meta {
    * every device that had saved anything held that without having chosen it).
    */
   aimChosen: boolean;
+  /** The mode last picked on the class cards (game/modes.ts): the next hero is made in it unless it is changed there. */
+  mode: HeroMode;
 }
 
 /**
