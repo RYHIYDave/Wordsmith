@@ -292,7 +292,7 @@ test('with the switch on: a shadow at the foot of every standing thing, none und
 
 paintWithoutCanvas();
 
-test('the pictures: at the heroes\' grain; a tapestry in strips over its two blocks, within the solid part of the wall, moth-eaten; a gargoyle out of its wall at a hero\'s height, built for each wall; a broken flagstone at its stone\'s corner', () => {
+test('the pictures: at the heroes\' grain; a tapestry in strips over its two blocks, within the solid part of the wall, torn and burnt; a gargoyle out of its wall high up and small (his word of 8 Oct), built for each wall; a broken flagstone at its stone\'s corner', () => {
   const A = makeDecorArt(VAULT);
   assert.equal(TAPESTRY_WIDE, TAPESTRY_BLOCKS * 32, 'a tapestry is as wide as the blocks the map-maker hangs it over');
   for (let v = 0; v < TAPESTRY_KINDS; v++) {
@@ -337,8 +337,8 @@ test('the pictures: at the heroes\' grain; a tapestry in strips over its two blo
         low = Math.max(low, yy);
       }
       const ay = s.ay * GRAIN;
-      assert.ok(ay - top <= 62 && ay - low >= 12, `out of the wall high up: from ${ay - low} to ${ay - top} picture pixels over the floor`);
-      assert.ok(low - top > 30 && p.w >= 28, 'big enough to read');
+      assert.ok(ay - top <= 62 && ay - low >= 28, `out of the wall high up, in the top half of its solid part ("too low on the wall", 8 Oct): from ${ay - low} to ${ay - top} picture pixels over the floor`);
+      assert.ok(low - top > 20 && low - top < 32 && p.w >= 20, `big enough to read, and smaller than first shown ("too big", 8 Oct): ${low - top} tall`);
     }
     // (one is not the other turned over: each is built for its own wall, so the light stays on the upper left)
     const flipped = y.flipX();

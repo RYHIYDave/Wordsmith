@@ -141,6 +141,99 @@ const CLOTHS: readonly Cloth[] = [
 
 export const TAPESTRY_KINDS = CLOTHS.length;
 
+/**
+ * (MOCK-UP) THE OWNER'S CHOICE, 8 Oct 2026, 08:40, of the first pictures: the tapestry "Close, but change
+ * it", "A different look", and of the looks offered: "Torn and burnt" ("Hanging in strips, scorched
+ * holes, clearly old."). `burnt: false` gives the moth-eaten cloth of the first pictures, for comparison.
+ */
+export const TAPESTRY_LOOK = { burnt: true };
+/** Soot and char: from the black of a burnt edge to the brown of singed cloth. */
+const CHAR: Ramp = ['#0b0706', '#1a0f0b', '#2b1a12', '#3e2719', '#523621'];
+/** Below this row the burnt cloth hangs in strips. */
+const STRIPS_FROM = CLOTH_HEM + 14;
+
+/** How a burnt cloth is: the lowest row of it in each column (by the column's own u), how many rows of that column's end are charred, its holes (keyed v * 128 + u: 1 burnt through, 2 its charred rim, 3 singed round it), and the few moth holes left. */
+interface Burn {
+  low: number[];
+  tip: number[];
+  holes: Map<number, 1 | 2 | 3>;
+  moth: Set<number>;
+}
+
+function burnOf(c: Cloth): Burn {
+  const low: number[] = [];
+  const tip: number[] = [];
+  // THE STRIPS: three to five columns wide, a slit between most of them; some hang lower than the
+  // hem was, most end about where it was, some are burnt short; most ends are charred
+  let u = CLOTH_L;
+  for (let k = 0; u <= CLOTH_R; k++) {
+    const w = 3 + Math.floor(hash(k, c.seed, 81) * 3);
+    const r = hash(k, c.seed, 82);
+    const end = r < 0.3 ? CLOTH_HEM - 3 - Math.floor(hash(k, c.seed, 83) * 4) : r < 0.72 ? CLOTH_HEM + Math.floor(hash(k, c.seed, 84) * 4) : CLOTH_HEM + 6 + Math.floor(hash(k, c.seed, 85) * 7);
+    const charred = hash(k, c.seed, 86) < 0.7;
+    for (let i = 0; i < w && u <= CLOTH_R; i++, u++) {
+      // (a strip's end is ragged, its corners worn a little higher)
+      const rag = i === 0 || i === w - 1 ? 1 + Math.floor(hash(u, c.seed, 87) * 2) : Math.floor(hash(u, c.seed, 88) * 2);
+      low[u] = end + rag;
+      tip[u] = charred ? 2 : 0;
+    }
+    if (u <= CLOTH_R && hash(k, c.seed, 89) < 0.7) {
+      low[u] = STRIPS_FROM + Math.floor(hash(k, c.seed, 90) * 4);
+      tip[u] = 1;
+      u++;
+    }
+  }
+  // A CORNER BURNT AWAY, up and across (where the first cloth had its torn corner)
+  for (let uu = CLOTH_L; uu <= CLOTH_R; uu++) {
+    const fromEnd = c.torn === 'end' ? CLOTH_R - uu : uu - CLOTH_L;
+    if (fromEnd < 11) {
+      const v = CLOTH_HEM + 9 + Math.round((11 - fromEnd) * 1.7) + Math.floor(hash(uu, c.seed, 91) * 2);
+      if (v > low[uu]) {
+        low[uu] = v;
+        tip[uu] = 2;
+      }
+    }
+  }
+  // THREE HOLES BURNT THROUGH: ragged, a charred rim round each, the cloth singed round that and
+  // stained above it by the smoke that went up
+  const holes = new Map<number, 1 | 2 | 3>();
+  const mark = (uu: number, v: number, kind: 1 | 2 | 3): void => {
+    const key = v * 128 + uu;
+    const was = holes.get(key);
+    if (was === undefined || kind < was) holes.set(key, kind);
+  };
+  for (let h = 0; h < 3; h++) {
+    // (one in each third of the cloth, at a height of its own)
+    const third = (CLOTH_R - CLOTH_L - 8) / 3;
+    const cu = CLOTH_L + 4 + Math.floor(third * h + hash(h, c.seed, 92) * third);
+    const cv = STRIPS_FROM + 2 + Math.floor(hash(h, c.seed, 93) * (SLEEVE - STRIPS_FROM - 9));
+    const rx = 2.2 + hash(h, c.seed, 94) * 2.4;
+    const rv = 1.8 + hash(h, c.seed, 95) * 1.6;
+    const m = Math.min(rx, rv);
+    for (let dv = -7; dv <= 7; dv++) {
+      for (let du = -8; du <= 8; du++) {
+        const e = Math.hypot(du / rx, dv / rv) + (hash(cu + du, cv + dv, c.seed + 96) - 0.5) * 0.35;
+        if (e < 1) mark(cu + du, cv + dv, 1);
+        else if (e < 1 + 1.15 / m) mark(cu + du, cv + dv, 2);
+        else if (e < 1 + 2.4 / m && hash(cu + du, cv + dv, c.seed + 97) < 0.8) mark(cu + du, cv + dv, 3);
+      }
+    }
+    // (the smoke's stain: a few rows over it, narrowing and fading as it goes up)
+    for (let dv = 1; dv <= 5; dv++) {
+      const half = rx * (1 - dv / 7);
+      for (let du = -Math.ceil(half); du <= Math.ceil(half); du++) if (Math.abs(du) <= half && hash(cu + du, cv + dv, c.seed + 98) < 0.75 - dv * 0.1) mark(cu + du, Math.round(cv + rv + dv), 3);
+    }
+  }
+  // A FEW SMALL MOTH HOLES are left, from before it burnt
+  const moth = new Set<number>();
+  for (let k = 0; k < 6; k++) {
+    const mu = CLOTH_L + 3 + Math.floor(hash(k, c.seed, 51) * (CLOTH_R - CLOTH_L - 5));
+    const mv = STRIPS_FROM + 2 + Math.floor(hash(k, c.seed, 52) * (SLEEVE - STRIPS_FROM - 5));
+    moth.add(mv * 128 + mu);
+  }
+  return { low, tip, holes, moth };
+}
+
 /** The cloth at one column: the lowest row of it (its hem), by its folds, its rags, its tear and its torn corner; or Infinity where there is none (the tear). */
 function hemAt(c: Cloth, u: number): number {
   const s = u - CLOTH_L;
@@ -204,10 +297,12 @@ export function makeTapestry(theme: Theme, alongX: boolean, variant: number): St
   const iron: Ramp = alongX ? IRON : [IRON[0], IRON[0], IRON[0], IRON[2], IRON[3]];
   /** How far along the screen to the right a column is, from the cloth's own screen-left edge: its folds and its light go by the screen, which a plane along +y runs the other way. */
   const rightward = (u: number): number => (alongX ? u - CLOTH_L : CLOTH_R - u);
-  const holes = holesOf(c);
+  const burn = TAPESTRY_LOOK.burnt ? burnOf(c) : null;
+  const holes = burn ? burn.moth : holesOf(c);
   const tearU = CLOTH_L + c.tear;
   const inCloth = (u: number, v: number): boolean => {
     if (u < CLOTH_L || u > CLOTH_R || v > CLOTH_TOP) return false;
+    if (burn) return v >= burn.low[u];
     if (u === tearU && v < CLOTH_HEM + TEAR_UP) return false;
     return v >= Math.min(hemAt(c, u), CLOTH_HEM + 30);
   };
@@ -239,17 +334,33 @@ export function makeTapestry(theme: Theme, alongX: boolean, variant: number): St
       else {
         // (worn: the design gone in patches, the cloth showing; the border more than the figure in the middle)
         const m = motifAt(u, v);
-        const worn = hash(u >> 1, v >> 1, 60 + c.seed) < (m > 0 ? 0.06 : 0.16);
+        const worn = hash(u >> 1, v >> 1, 60 + c.seed) < (m > 0 ? (burn ? 0.14 : 0.06) : burn ? 0.3 : 0.16);
         // (the thread of the design keeps its tone over a fold's lit flank, and goes a tone darker in its shade)
         if ((m > 0 || border(u, v)) && !worn) col = m === 2 || fold < 0 ? dd : db;
         // (the hem, and the cloth by the tear: the edge curls, a tone darker)
-        if (v === hemAt(c, u) || (Math.abs(u - tearU) === 1 && v < CLOTH_HEM + TEAR_UP + 1)) col = fold > 0 ? fb : fd;
+        if (!burn && (v === hemAt(c, u) || (Math.abs(u - tearU) === 1 && v < CLOTH_HEM + TEAR_UP + 1))) col = fold > 0 ? fb : fd;
+      }
+      if (burn) {
+        // (on the face in shade, the char is a tone darker too)
+        const ch = (i: number): string => CHAR[Math.max(0, alongX ? i : i - 1)];
+        const h = burn.holes.get(v * 128 + u);
+        if (h === 1) {
+          if (alongX) F.set(u, v, BEYOND, WALL_SHADOW + 40);
+          continue;
+        }
+        if (h === 2) col = ch(hash(u, v, c.seed + 99) < 0.5 ? 1 : 2);
+        else if (h === 3) col = mix(col, ch(2), 0.55);
+        // (the end of a strip: charred black at its very end, singed brown above that; a slit's edges curl, a tone darker)
+        const end = v - burn.low[u];
+        if (burn.tip[u] === 2 && end === 0) col = ch(hash(u, c.seed, 100) < 0.6 ? 0 : 1);
+        else if (burn.tip[u] === 2 && end === 1) col = mix(col, ch(2), 0.6);
+        else if (burn.tip[u] === 1 && end < 2) col = fold > 0 ? fb : fd;
       }
       F.set(u, v, col);
     }
   }
-  // what is left of a fringe along the hem: threads every other column, some gone
-  for (let u = CLOTH_L; u <= CLOTH_R; u += 2) {
+  // what is left of a fringe along the hem: threads every other column, some gone (none on the burnt cloth)
+  for (let u = CLOTH_L; u <= CLOTH_R && !burn; u += 2) {
     const low = hemAt(c, u);
     if (!Number.isFinite(low) || low > CLOTH_HEM + 3 || hash(u, c.seed, 71) < 0.3) continue;
     const n = 1 + Math.floor(hash(u, c.seed, 72) * 3);
@@ -307,10 +418,19 @@ export function makeTapestry(theme: Theme, alongX: boolean, variant: number): St
 // runs between the brow and the skull): the seam goes round it, and round its mouth and fangs.
 // What would be behind the face of the wall is cut away.
 
-/** How high the middle of the head is, over the floor at the foot of its wall, in picture pixels (the wall's solid part is 56). */
+/** How high the middle of the head is, over the floor at the foot of its wall, in picture pixels (the wall's solid part is 56): as first shown, and as the owner asked for it. */
 export const GARGOYLE_MOUNT = 35;
-/** How much bigger than its own measure below the head is built. */
-const HEAD = 1.15;
+const GARGOYLE_MOUNT_HIGH = 42;
+/** How much bigger than its own measure below the head is built: as first shown, and as asked for. */
+const HEAD_FIRST = 1.15;
+const HEAD_SMALL = 0.75;
+/**
+ * (MOCK-UP) THE OWNER, 8 Oct 2026, 08:40, of the first pictures' gargoyle: "It’s too big and too low on
+ * the wall." `small: true` builds it at about two thirds of its first size, its middle 7 picture
+ * pixels higher, so that it sits in the top half of the wall's solid part and no higher than it.
+ * `small: false` gives the first one, for comparison.
+ */
+export const GARGOYLE_LOOK = { small: true };
 /** The heroes' light as the figure's own space has it (skin.ts: from the upper left of the screen and a little toward the eye). */
 function lightIn(st: Stage): V3 {
   const L: V3 = [-0.52, -0.62, 0.59];
@@ -383,11 +503,13 @@ export function makeGargoyle(theme: Theme, alongX: boolean, variant: number): Sp
   const ax = 88;
   const ay = 150;
   const st = stage('front', ax, ay);
+  const MOUNT = GARGOYLE_LOOK.small ? GARGOYLE_MOUNT_HIGH : GARGOYLE_MOUNT;
+  const HEAD = GARGOYLE_LOOK.small ? HEAD_SMALL : HEAD_FIRST;
   // the head's own forward, left and up, in the figure's space (the world's x, minus the world's y, up)
   const fwd: V3 = alongX ? [0, -1, 0] : [1, 0, 0];
   const up: V3 = [0, 0, 1];
   const left = cross(up, fwd);
-  const at = (q: T3): V3 => add(add(add([0, 0, GARGOYLE_MOUNT], mul(fwd, q[0] * HEAD)), mul(left, q[1] * HEAD)), mul(up, q[2] * HEAD));
+  const at = (q: T3): V3 => add(add(add([0, 0, MOUNT], mul(fwd, q[0] * HEAD)), mul(left, q[1] * HEAD)), mul(up, q[2] * HEAD));
   const out = (p: V3): number => dot(p, fwd);
   const parts = headParts(variant);
   // (all of its stone is one solid: one part, the nearer skin winning within it)
@@ -408,7 +530,7 @@ export function makeGargoyle(theme: Theme, alongX: boolean, variant: number): Sp
         // (what would be behind the face of the wall is not there)
         if (out(p) < 0) return null;
         if (q.is === 'skull') {
-          const local: V3 = [out(p) / HEAD, dot(p, left) / HEAD, (p[2] - GARGOYLE_MOUNT) / HEAD];
+          const local: V3 = [out(p) / HEAD, dot(p, left) / HEAD, (p[2] - MOUNT) / HEAD];
           const eye = eyeAt(local);
           if (eye === 2) return stone[1];
           if (eye === 1) return DEEP[Math.min(tone, 2)];
