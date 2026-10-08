@@ -171,7 +171,7 @@ export function doorTiles(f: Floor, d: DoorSpot): number[] {
 /** The tiles of it that are passed through: a door's one, the three of the boss's gate. */
 export function doorWay(f: Floor, d: DoorSpot): number[] {
   const tiles = doorTiles(f, d);
-  return d.kind === 'door' ? [tiles[1]] : tiles;
+  return d.kind === 'bossgate' ? tiles : [tiles[1]];
 }
 
 /** The stone on either side of a door: the first and the last of its doorway's three tiles. (The boss's gate has none: its pillars stand outside the doorway.) */
@@ -203,7 +203,7 @@ export interface DoorInst {
 
 /** The doors of a level as a run begins: every door shut, the boss's gate up. */
 export function makeDoors(f: Floor): DoorInst[] {
-  return (f.doors ?? []).map((spot) => (spot.kind === 'bossgate' ? { spot, open: 1, want: 1 } : { spot, open: 0, want: 0 }));
+  return (f.doors ?? []).map((spot) => (spot.kind === 'door' ? { spot, open: 0, want: 0 } : { spot, open: 1, want: 1 }));
 }
 
 /** The piers of a level's doors, as a grid: 1 where the stone on either side of a door stands (null: the level has none). For the rule of `PIER_HOLD`. */

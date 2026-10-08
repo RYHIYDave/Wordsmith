@@ -31,6 +31,7 @@ import { createScreen } from './engine/screen';
 import { ARRIVAL_LINES, CLASSES, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
+import { HOLE_LOOK } from './render/walls';
 import { RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import type { RunSave } from './game/game';
@@ -442,7 +443,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (LEDGES AND STAIRS, not in any dungeon yet: a page opened with #hall=ledges has the practice
   // room in the hall built for them, with its terrace, two flights of stairs, a pit and a gap)
   const hallAsked = new URLSearchParams(location.hash.slice(1)).get('hall');
-  const PRACTICE_HALL: Hall = hallAsked === 'ledges' || hallAsked === 'steps' ? hallAsked : hallAsked !== null && SHAPES.some((k) => hallAsked === `shape:${k}`) ? (hallAsked as Hall) : 'arena';
+  const PRACTICE_HALL: Hall = hallAsked === 'ledges' || hallAsked === 'steps' || hallAsked === 'holes' ? hallAsked : hallAsked !== null && SHAPES.some((k) => hallAsked === `shape:${k}`) ? (hallAsked as Hall) : 'arena';
 
   /** The practice room: a throwaway character with every word. It leaves the saved run, the Lexicon and the stash alone. */
   const startPractice = (cls: ClassId, seed?: number, hall: Hall = PRACTICE_HALL): void => {
@@ -1530,6 +1531,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     relief: RELIEF,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
     doors: DOORS,
+    /** (MOCK-UP) How the wall beside a hole knocked in it is shown: render/walls.ts. */
+    holeLook: HOLE_LOOK,
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

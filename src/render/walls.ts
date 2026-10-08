@@ -6,9 +6,9 @@
 // The geometry behind both (engine/iso.ts): a tile's diamond is 32 by 16 pixels on the screen, and
 // a tile straight behind another lies 16 pixels up the screen.
 import type { WallLook } from '../art/ground';
-import { doorPiers } from '../game/doors';
+import { doorLine, doorPiers } from '../game/doors';
 import { CUT_FAR, CUT_LEFT, CUT_RIGHT, T_FLOOR, T_PIT, T_WALL } from '../game/types';
-import type { Floor } from '../game/types';
+import type { DoorSpot, Floor } from '../game/types';
 
 /**
  * WHICH WALLS ARE LEFT OUT (1 in the grid): every wall that, standing whole, would hide floor
@@ -55,7 +55,28 @@ export function wallsAway(f: Floor, look: WallLook): Uint8Array {
   // door's frame. The other one, and both on a side toward the eye, go by the rule above: each has
   // floor right beside it or behind it, and is left out.
   for (const d of f.doors ?? []) if (d.kind === 'door' && !d.near) out[doorPiers(f, d)[0]] = 0;
+  // (MOCK-UP: a hole knocked in a wall, shown in a wall that is WHOLE: the two blocks after it stand too)
+  if (HOLE_LOOK.whole) for (const d of f.doors ?? []) if (d.kind === 'hole') for (const i of holeNotch(f, d)) out[i] = 0;
   return out;
+}
+
+/**
+ * (MOCK-UP, NOT IN THE GAME) HOW THE WALL BESIDE A HOLE KNOCKED IN IT IS SHOWN. `whole` false: the
+ * two blocks after the hole, which would hide the way through, are left out, as beside every
+ * doorway in a back wall (a dark notch). `whole` true: they stand, so that the hole is a hole in a
+ * wall that goes on to either side of it, and are SEEN THROUGH while the hero is in the way behind
+ * them (render.ts).
+ */
+export const HOLE_LOOK = { whole: false };
+/** (MOCK-UP) The two wall blocks after a hole's tile along its wall. */
+export function holeNotch(f: Floor, d: DoorSpot): number[] {
+  const line = doorLine(d);
+  return [2, 3].map((k) => (d.alongX ? line * f.w + d.a + k : (d.a + k) * f.w + line));
+}
+/** (MOCK-UP) The tiles of the way through a hole: its own, and the two behind it. */
+export function holeWay(f: Floor, d: DoorSpot): number[] {
+  const line = doorLine(d);
+  return [0, 1, 2].map((k) => (d.alongX ? (line + d.out * k) * f.w + d.a + 1 : (d.a + 1) * f.w + line + d.out * k));
 }
 
 /** The face of a wall block that is turned to screen-left (it hangs from the block's lower-left edge), and the one turned to screen-right. */

@@ -14,7 +14,7 @@ import type { SpellArt } from '../art/spells';
 import { GATE_UP, PILLAR, POST, STRIP, SWING_STEPS } from '../art/gates';
 import type { GateArt, Strip } from '../art/gates';
 import { WALL_LOOK } from '../art/ground';
-import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from './walls';
+import { FACE_LEFT, FACE_RIGHT, HOLE_LOOK, holeNotch, holeWay, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
 import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
@@ -327,7 +327,7 @@ export class Renderer {
    */
   private lowWalls(L: Game['level']): Uint8Array {
     if (!WALL_LOOK.away) return L.low;
-    const key = WALL_LOOK.tall * 1000 + WALL_LOOK.fade * 2 + (WALL_LOOK.faces ? 1 : 0);
+    const key = WALL_LOOK.tall * 1000 + WALL_LOOK.fade * 2 + (WALL_LOOK.faces ? 1 : 0) + (HOLE_LOOK.whole ? 100000 : 0);
     if (this.awayGrid && this.awayFor === L && this.awayKey === key) return this.awayGrid;
     this.awayGrid = wallsAway(L.floor, WALL_LOOK);
     this.awayFor = L;
@@ -377,6 +377,11 @@ export class Renderer {
           put(x + y + STRIP / 64, q.s, x, y);
         }
       };
+      if (s.kind === 'hole') {
+        // (MOCK-UP) the piece of wall over the middle tile of the three, with the hole through it
+        strips(A.breach(s.alongX), 1, 0);
+        continue;
+      }
       if (s.kind === 'bossgate') {
         const wide = PILLAR / 32;
         const pillar = A.pillar(true);
@@ -1397,6 +1402,16 @@ export class Renderer {
     this.monsterLit.length = 0;
     this.propLit.length = 0;
     const lowGrid = this.lowWalls(L);
+    // (MOCK-UP: which wall blocks are seen through this frame: those beside a hole whose way the hero is in)
+    let holeThin: Set<number> | null = null;
+    if (HOLE_LOOK.whole) {
+      const at = Math.floor(game.hero.y) * L.floor.w + Math.floor(game.hero.x);
+      for (const d of L.doors) {
+        if (d.spot.kind !== 'hole' || !holeWay(L.floor, d.spot).includes(at)) continue;
+        holeThin = holeThin ?? new Set<number>();
+        for (const i of holeNotch(L.floor, d.spot)) holeThin.add(i);
+      }
+    }
     this.lowNow = lowGrid;
     // (THE WALLS' LOOK: where the hero is on the screen, for the walls that are seen through while they stand over them)
     this.wallHero = { x: wx(cam, h.x, h.y), y: wy(cam, h.x, h.y), d: h.x + h.y };
@@ -1477,13 +1492,15 @@ export class Renderer {
             // Which of a block's two faces have floor before them: render/walls.ts, `wallFaces`.)
             const which = wallFaces(f, idx);
             const n = art.ground.faceLeft.length;
+            // (MOCK-UP: the wall beside a hole is seen through while the hero is in the way behind it)
+            const thin = holeThin !== null && holeThin.has(idx) ? SEEN_THROUGH : 1;
             // (`hide` marks the stand just made: raised floor at a face's foot hides the foot of it)
             if (which & FACE_LEFT) {
-              this.stand(s + 1, art.ground.faceLeft[v % n], px, py);
+              this.stand(s + 1, art.ground.faceLeft[v % n], px, py, null, 0, 1, thin);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             if (which & FACE_RIGHT) {
-              this.stand(s + 1, art.ground.faceRight[v % n], px, py);
+              this.stand(s + 1, art.ground.faceRight[v % n], px, py, null, 0, 1, thin);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
           } else if (!(lowGrid[idx] && WALL_LOOK.front === 'none')) {

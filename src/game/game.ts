@@ -7,7 +7,7 @@ import { CLASSES, FIRST_WORD, GAMBLE_KINDS, GUIDE, LIMITS, MANA_MODE, MONSTERS, 
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
-import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeShapeRoom, makeStepHall, makeTown } from './level';
+import { ARENA, SHAPES, makeArena, makeDungeon, makeHoleHall, makeLedgeHall, makeShapeRoom, makeStepHall, makeTown } from './level';
 import type { Hall } from './level';
 import { alongCut, bodyInWall, inWall } from './cut';
 import { DOOR_HELP, GATE_INSIDE, PIER_HOLD, doorMiddle, doorTiles, insideBy, stepDoors } from './doors';
@@ -318,7 +318,7 @@ export class Game {
     this.refresh();
     this.clearLevel();
     const shape = SHAPES.find((k) => hall === `shape:${k}`);
-    this.level = shape ? makeShapeRoom(shape, this.seed) : hall === 'ledges' ? makeLedgeHall(this.seed) : hall === 'steps' ? makeStepHall(this.seed) : makeArena(this.seed);
+    this.level = shape ? makeShapeRoom(shape, this.seed) : hall === 'holes' ? makeHoleHall(this.seed) : hall === 'ledges' ? makeLedgeHall(this.seed) : hall === 'steps' ? makeStepHall(this.seed) : makeArena(this.seed);
     this.inDungeon = true;
     this.dungeonWords = [];
     const f = this.level.floor;

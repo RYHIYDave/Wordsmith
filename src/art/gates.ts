@@ -32,7 +32,7 @@
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { VAULT } from './ground';
+import { VAULT, wallSolid, wallStone, wallTall } from './ground';
 import type { Theme } from './ground';
 import { GRAIN } from './kit';
 import { FLAME, IRON } from './mkit';
@@ -493,6 +493,124 @@ export function makePortcullis(alongX: boolean, a: ArchShape, raise: number, hea
 
 
 // =================================================================================================
+// (MOCK-UP, NOT IN THE GAME) A HOLE KNOCKED IN A WALL
+//
+// The owner, 7 Oct 2026, 17:53: "I'd also like another doorway that is just like somebody knocked a
+// hole in a wall, all crumbly from one room to another."
+//
+// THE PIECE OF WALL OVER ONE TILE, WITH A RAGGED HOLE THROUGH IT: the wall's own stonework (its
+// courses, its tones, fading out at the top as every wall does), from which stones are broken out
+// course by course; what fell lies heaped at its foot on either side. u = 0 where the tile begins
+// along the wall (the wall runs on before it; after it the two blocks that would hide the way
+// through are left out, as beside every doorway in a back wall).
+
+/** How high the hole is at its highest, in picture pixels: a last stone is out of the course above the three it goes through. */
+export const HOLE_HIGH = 54;
+/** The dark beyond the walls (art/ground.ts). */
+const BEYOND = '#07050a';
+
+function chance(a: number, b: number): number {
+  let n = (Math.imul(a, 374761393) + Math.imul(b, 668265263)) ^ 0x5bd1e995;
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+}
+
+/**
+ * THE HOLE, course by course of the wall's stones from the floor (16 rows each): where it begins
+ * and ends along the wall. It begins where the wall that runs on ends (that wall's own side is
+ * its near jamb), is widest a course up, and draws in to its top; a stone or two jut into it.
+ * What is left of the tile after it is a ragged jamb about as wide as a door's post.
+ */
+const HOLE_SPANS = [[3, 22], [1, 24], [4, 22]] as const;
+export function inHole(u: number, v: number): boolean {
+  if (v < 0 || v >= HOLE_HIGH) return false;
+  let lo: number;
+  let hi: number;
+  if (v < 48) {
+    [lo, hi] = HOLE_SPANS[Math.floor(v / 16)];
+    // (a stone that is broken off is not broken off straight)
+    if (chance(v, 1) < 0.35) lo++;
+    if (chance(v, 2) < 0.35) hi--;
+    // the top of the hole draws in
+    if (v >= 38) {
+      lo += Math.round((v - 37) * 0.7);
+      hi -= Math.round((v - 37) * 0.6);
+    }
+  } else {
+    // one stone more is out of the course above
+    lo = 10 + (v - 48);
+    hi = 16 - Math.floor((v - 48) / 3);
+  }
+  return u >= lo && u <= hi;
+}
+/** Stones knocked out of the wall that runs on, beside the hole (u < 1): the end of one a course up, a chip of the next. */
+function inBite(u: number, v: number): boolean {
+  if (u > 0) return false;
+  if (v >= 17 && v <= 30) return u >= -6 + (chance(v, 7) < 0.3 ? 1 : 0);
+  if (v >= 33 && v <= 41) return u >= -2;
+  return false;
+}
+
+export function makeBreach(theme: Theme, alongX: boolean): Strip[] {
+  const tall = wallTall();
+  const F = new Flat(-8, 32, tall);
+  const stone = wallStone(theme, alongX, 0);
+  const [joint, lo, usual, , hi] = alongX ? theme.lit : theme.shade;
+  // (the wall's own column, 0..30 left to right on the screen: a plane along +x runs that way, one along +y the
+  // other. A wall's face is 31 pixels of a tile's 32: the first of them is the seam between two blocks, and bare)
+  const col = (u: number): number => (alongX ? u - 1 : 31 - u);
+  // (a crack up the jamb from the shoulder of the hole, and one up from its top)
+  const crack = new Set<number>();
+  for (const [u0, v0, n, seed] of [[27, 44, 22, 3], [13, 55, 12, 9]] as const) {
+    let u = u0;
+    for (let k = 0; k < n; k++) {
+      crack.add((v0 + k) * 64 + u);
+      const r = chance(k, seed);
+      u += r < 0.3 ? -1 : r > 0.72 ? 1 : 0;
+      u = Math.max(24 - (seed === 9 ? 14 : 0), Math.min(30 - (seed === 9 ? 12 : 0), u));
+    }
+  }
+  for (let v = 0; v < tall; v++) {
+    const k = tall - 1 - v;
+    for (let u = -8; u < 32; u++) {
+      if (u < 1) {
+        // the wall that runs on is its own picture: here only what is knocked out of it, as the dark, and the edge of that
+        if (inBite(u, v)) F.set(u, v, BEYOND);
+        else if (inBite(u + 1, v) || inBite(u, v - 1) || inBite(u, v + 1)) F.set(u, v, inBite(u + 1, v) ? (alongX ? lo : hi) : joint);
+        continue;
+      }
+      if (inHole(u, v)) continue;
+      let c = stone(col(u), k);
+      // the broken edge: dark where the stone ends, and the end of a stone lit or in shade by the side it is on
+      // (light from the upper left of the screen)
+      if (inHole(u + 1, v) || inHole(u - 1, v) || inHole(u, v - 1)) c = joint;
+      else if (inHole(u + 2, v)) c = alongX ? lo : hi;
+      else if (inHole(u - 2, v)) c = alongX ? hi : lo;
+      else if (inHole(u, v - 2)) c = lo;
+      else if (crack.has(v * 64 + u)) c = joint;
+      else if (crack.has(v * 64 + u - 1)) c = hi;
+      F.set(u, v, c, wallSolid(k));
+    }
+  }
+  // WHAT FELL: stones heaped at the foot of the hole on either side, and a few between
+  const heap = (u0: number, wide: number, high: number, seed: number): void => {
+    for (let u = u0; u < u0 + wide; u++) {
+      const t = (u - u0 + 0.5) / wide;
+      const top = Math.max(1, Math.round(high * (1 - Math.abs(t * 2 - 1) ** 1.6) + (chance(u, seed) < 0.4 ? 1 : 0)));
+      for (let v = 0; v < top; v++) {
+        // (stones about three pixels across: a dark line between two, a lit top)
+        const edge = (u + seed) % 4 === 0 || (v > 0 && (v + Math.floor(u / 4) + seed) % 3 === 0 && chance(u + v, seed) < 0.5);
+        F.set(u, v, v === top - 1 ? hi : edge ? joint : chance(u * 7 + v, seed) < 0.3 ? lo : usual);
+      }
+    }
+  };
+  heap(-5, 12, 7, 3);
+  heap(20, 12, 6, 8);
+  heap(9, 7, 2, 5);
+  return F.strips(alongX);
+}
+
+// =================================================================================================
 
 /** How many steps a door's swing is painted in. */
 export const SWING_STEPS = 8;
@@ -510,6 +628,8 @@ export interface GateArt {
   arch(alongX: boolean, boss: boolean, lit: boolean): Strip[];
   /** A gate's portcullis, `raise` picture pixels off the floor (0 to GATE_UP: an even number of them). */
   portcullis(alongX: boolean, boss: boolean, raise: number): Strip[];
+  /** (MOCK-UP) A hole knocked in a wall: the piece of wall over its tile. */
+  breach(alongX: boolean): Strip[];
 }
 
 export function makeGateArt(theme: Theme = VAULT): GateArt {
@@ -518,8 +638,15 @@ export function makeGateArt(theme: Theme = VAULT): GateArt {
   const pillars = new Map<number, Sprite>();
   const arches = new Map<number, Strip[]>();
   const gates = new Map<number, Strip[]>();
+  const breaches = new Map<number, Strip[]>();
   const shape = (boss: boolean): ArchShape => (boss ? ARCH_BOSS : ARCH);
   return {
+    breach(alongX) {
+      const key = alongX ? 1 : 0;
+      let s = breaches.get(key);
+      if (!s) breaches.set(key, (s = makeBreach(theme, alongX)));
+      return s;
+    },
     post: makePillar(theme, DOOR_HIGH, POST),
     lintel(alongX) {
       const key = alongX ? 1 : 0;

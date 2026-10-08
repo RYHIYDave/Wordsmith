@@ -350,7 +350,7 @@ export function makeLedgeHall(seed: number): Level {
 }
 
 /** The practice room's halls: the room itself, and the two built by hand for trying height in. */
-export type Hall = 'arena' | 'ledges' | 'steps' | `shape:${Shape}`;
+export type Hall = 'arena' | 'ledges' | 'steps' | 'holes' | `shape:${Shape}`;
 
 /**
  * A HALL WITH FLOOR ONE LEVEL UP AND FLOOR ONE LEVEL DOWN, built by hand (the owner, 7 Oct 2026,
@@ -554,6 +554,106 @@ export function makeShapeRoom(kind: Shape, seed: number): Level {
     boss: { ...ARENA.start },
     packs: [],
     props,
+  };
+  const level = finish(floor, false, null);
+  level.explored.fill(1);
+  return level;
+}
+
+/**
+ * (MOCK-UP, NOT IN THE GAME.) A HOLE KNOCKED IN A WALL: the owner, 7 Oct 2026, 17:53: "I'd also
+ * like another doorway that is just like somebody knocked a hole in a wall, all crumbly from one
+ * room to another." Three rooms laid by hand in the practice room's place, to photograph it:
+ *   the front room  in the middle; its two back walls each have a hole in them
+ *   one room        behind its right-hand back wall (up the screen to the right)
+ *   another         behind its left-hand back wall (up the screen to the left)
+ * The rock between two rooms is THREE tiles thick, and the way through it one tile wide: so the
+ * front room's back wall stands by the walls' own rule (render/walls.ts: nothing it would hide
+ * lies within two tiles behind it), all but the two blocks beside the hole that would hide the
+ * way through.
+ */
+export const HOLE_HALL = {
+  front: { x0: 10, y0: 14, x1: 20, y1: 22 },
+  right: { x0: 11, y0: 4, x1: 19, y1: 10 },
+  left: { x0: 2, y0: 15, x1: 6, y1: 21 },
+  /** The ways through: three tiles each, from the front room's wall back to the other room. */
+  wayRight: [{ x: 15, y: 13 }, { x: 15, y: 12 }, { x: 15, y: 11 }],
+  wayLeft: [{ x: 9, y: 18 }, { x: 8, y: 18 }, { x: 7, y: 18 }],
+};
+
+export function makeHoleHall(seed: number): Level {
+  const rng = new RNG(seed ^ 0x51ed270b);
+  const { w, h } = ARENA;
+  const tiles = new Uint8Array(w * h).fill(T_VOID);
+  const variant = new Uint8Array(w * h);
+  for (let i = 0; i < variant.length; i++) variant[i] = rng.int(0, 255);
+  const H = HOLE_HALL;
+  for (const r of [H.front, H.right, H.left]) for (let y = r.y0; y <= r.y1; y++) for (let x = r.x0; x <= r.x1; x++) tiles[y * w + x] = T_FLOOR;
+  for (const t of [...H.wayRight, ...H.wayLeft]) tiles[t.y * w + t.x] = T_FLOOR;
+  // (wall wherever nothing lies beside floor, as the map-maker has it)
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (tiles[y * w + x] !== T_VOID) continue;
+      let beside = false;
+      for (let dy = -1; dy <= 1 && !beside; dy++) {
+        for (let dx = -1; dx <= 1 && !beside; dx++) {
+          const nx = x + dx;
+          const ny = y + dy;
+          beside = nx >= 0 && ny >= 0 && nx < w && ny < h && tiles[ny * w + nx] === T_FLOOR;
+        }
+      }
+      if (beside) tiles[y * w + x] = T_WALL;
+    }
+  }
+  const props: PropSpot[] = [
+    // the front room: a fire to each side of each hole, and one at its near corner
+    { kind: 'brazier', x: 12, y: 14 },
+    { kind: 'brazier', x: 19, y: 14 },
+    { kind: 'brazier', x: 10, y: 15 },
+    { kind: 'brazier', x: 10, y: 21 },
+    { kind: 'brazier', x: 20, y: 22 },
+    { kind: 'barrel', x: 11, y: 14 },
+    { kind: 'urn', x: 20, y: 15 },
+    { kind: 'bones', x: 17, y: 19 },
+    // what fell out of the wall
+    { kind: 'rubble', x: 14, y: 14 },
+    { kind: 'rubble', x: 16, y: 15 },
+    { kind: 'rubble', x: 15, y: 12 },
+    { kind: 'rubble', x: 10, y: 17 },
+    { kind: 'rubble', x: 11, y: 19 },
+    { kind: 'rubble', x: 8, y: 18 },
+    // the room behind the right-hand wall
+    { kind: 'brazier', x: 11, y: 4 },
+    { kind: 'brazier', x: 19, y: 4 },
+    { kind: 'brazier', x: 11, y: 10 },
+    { kind: 'chest', x: 15, y: 5 },
+    { kind: 'urn', x: 18, y: 4 },
+    { kind: 'bones', x: 13, y: 8 },
+    // the room behind the left-hand wall
+    { kind: 'brazier', x: 2, y: 15 },
+    { kind: 'brazier', x: 2, y: 21 },
+    { kind: 'chest', x: 3, y: 18 },
+    { kind: 'barrel', x: 4, y: 15 },
+    { kind: 'barrel', x: 5, y: 15 },
+  ];
+  const room = (id: number, r: { x0: number; y0: number; x1: number; y1: number }, kind: 'start' | 'normal'): Floor['rooms'][number] => ({ id, x: r.x0, y: r.y0, w: r.x1 - r.x0 + 1, h: r.y1 - r.y0 + 1, kind, path: id });
+  const floor: Floor = {
+    depth: 0,
+    seed,
+    w,
+    h,
+    tiles,
+    variant,
+    rooms: [room(0, H.front, 'start'), room(1, H.right, 'normal'), room(2, H.left, 'normal')],
+    start: { x: 15.5, y: 18.5 },
+    boss: { x: 15.5, y: 18.5 },
+    packs: [],
+    props,
+    // (a hole is a doorway of the front room, in the middle tile of three: the first of the three, and the line the room's floor ends on)
+    doors: [
+      { kind: 'hole', room: 0, alongX: true, near: false, a: 14, plane: 14, out: -1 },
+      { kind: 'hole', room: 0, alongX: false, near: false, a: 17, plane: 10, out: -1 },
+    ],
   };
   const level = finish(floor, false, null);
   level.explored.fill(1);

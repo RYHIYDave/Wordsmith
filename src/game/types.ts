@@ -260,7 +260,7 @@ export interface PackSpot {
  *   'bossgate'  the portcullis of the boss's hall: up until the hero is inside, then down, and
  *               nothing passes it (nor a shot) until the boss is dead.
  */
-export type DoorKind = 'door' | 'bossgate';
+export type DoorKind = 'door' | 'bossgate' | 'hole';
 
 export interface DoorSpot {
   kind: DoorKind;

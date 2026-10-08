@@ -336,6 +336,25 @@ function wallFace(theme: Theme, spec: WallSpec, left: boolean, height: number): 
   };
 }
 
+/**
+ * (MOCK-UP: a hole knocked in a wall.) THE STONEWORK OF A WHOLE WALL'S FACE, for whatever is painted
+ * as a piece of wall elsewhere (art/gates.ts): the colour at column u (0..30, left to right on the
+ * screen) and `k` rows below the wall's top; and how solid a wall is k rows below its top (255, or
+ * less in the rows that fade out).
+ */
+export function wallStone(theme: Theme, left: boolean, variant = 0): (u: number, k: number) => string {
+  return wallFace(theme, WALLS[variant % WALLS.length], left, TALL);
+}
+export function wallSolid(k: number): number {
+  const rows = WALL_LOOK.fade * GRAIN;
+  if (!WALL_LOOK.faces || rows <= 0 || k >= rows) return 255;
+  return Math.round(255 * [0.14, 0.38, 0.62, 0.84][Math.floor((k * 4) / rows)]);
+}
+/** How high a whole wall's face is, in picture pixels. */
+export function wallTall(): number {
+  return TALL;
+}
+
 function makeWall(theme: Theme, spec: WallSpec, height: number, which: 'both' | 'left' | 'right' = 'both'): Sprite {
   // (`which`: both faces under the top, as a wall block is; or ONE FACE ALONE and no top: for the look in which a wall is its faces)
   const p = new Px(TW, TH + height);
