@@ -204,4 +204,37 @@ python3 tools/sheet_shots.py previews/decorations_fire_darker.png "A separate id
 
 ## Sent to the owner (8 Oct 2026, 02:55, by the art chat)
 
-previews/decorations_mockup.png (from this branch's worktree), with these words: "1 of 4: decorations, a mock-up, not in the game. A real room as it is now, then with them: a moth-eaten tapestry, a gargoyle head built like the heroes, a missing flagstone, and soft shadows under barrels, urns and fires. Is this what you meant by tapestries, gargoyle heads and broken floor tiles?" **HIS ANSWER: NOT YET IN.** The sheet of the darker figure in front of a fire (`previews/decorations_fire_darker.png`) was NOT sent: he did not ask for it. Before these went, at 00:53 on 8 Oct he wrote "If I’m not around to test phone speed continue on.  Keep going down the list", read as: leave the phone test until he is around and carry on down the art chat's list (decorations, the skeleton on the heroes' bones, true left-facing heroes, the two films of weight). He was told so at 00:54. Nothing of this is in the game; the main chat builds whatever he says yes to.
+previews/decorations_mockup.png (from this branch's worktree), with these words: "1 of 4: decorations, a mock-up, not in the game. A real room as it is now, then with them: a moth-eaten tapestry, a gargoyle head built like the heroes, a missing flagstone, and soft shadows under barrels, urns and fires. Is this what you meant by tapestries, gargoyle heads and broken floor tiles?" **HIS ANSWERS: see "The second look" below; IN SHORT, YES (08:55) TO THE SECOND LOOK.** The sheet of the darker figure in front of a fire (`previews/decorations_fire_darker.png`) was NOT sent: he did not ask for it. Before these went, at 00:53 on 8 Oct he wrote "If I’m not around to test phone speed continue on.  Keep going down the list", read as: leave the phone test until he is around and carry on down the art chat's list (decorations, the skeleton on the heroes' bones, true left-facing heroes, the two films of weight). He was told so at 00:54. Nothing of this is in the game; the main chat builds whatever he says yes to.
+
+## The second look, and his yes (8 Oct 2026, 08:38 to 08:55, by the art chat)
+
+**Asked again at 08:38**, as a pop-up (his wish of 08:37 is that every question comes that way): "Decorations
+(decorations_mockup.png, sent last night): is this what you meant by tapestries, gargoyle heads and broken floor
+tiles?" **08:42: "Close, but change it".** Asked at 08:42 which and how: **08:43: "The tapestry,The gargoyle head"**
+and **"A different look"**. Asked at 08:43 what look, with four offered for each: **08:44: the tapestry "Torn and
+burnt"** (offered as "Hanging in strips, scorched holes, clearly old."), and of the gargoyle, in his own words,
+**"It’s too big and too low on the wall."** Read as: the tapestry torn and burnt; the same gargoyle, smaller and
+higher; the broken floor and the shadows as they were. He was told so at 08:44.
+
+**What changed** (`src/art/decor.ts`, all still MOCK-UP behind `DECOR.on`, which is off):
+
+- `TAPESTRY_LOOK = { burnt: true }`: the cloth hangs in strips below row 30 (three to five columns each, a slit
+  between most; some hang lower than the old hem, most end about where it was, some are burnt short; most ends
+  charred black, singed brown above), a corner burnt away, three holes burnt through with a charred rim, the
+  cloth singed round each and stained above it by the smoke, six small moth holes left, no fringe, the design
+  more worn. `CHAR` is the soot. `burnt: false` gives the first cloth.
+- `GARGOYLE_LOOK = { small: true }`: the head built at 0.75 of its measure (it was 1.15), its middle at 42 picture
+  pixels over the floor (it was 35): it now stands from 30 to 58 picture pixels over the floor, 25 to 28 tall
+  (measured), in the top half of the wall's solid part. `small: false` gives the first one.
+- `tests/decor.test.ts`: the picture test now asks the gargoyle to be out of its wall from 28 picture pixels up
+  and between 20 and 32 tall; 7 of 7 pass.
+
+**The sheet, sent at 08:51**: `previews/decorations_second_look.png` (in this worktree; not in the repository),
+from the same three sets of stills as the first sheet taken again into `shots/decor/v2/` (the commands in "How to
+see it", with `--out shots/decor/v2/a`, `.../b`, `.../c`), the close-ups cut by `second_look.py` in this folder
+(`python3 docs/mockups/decorations/second_look.py shots/decor/final shots/decor/v2 <out>`: the first stills beside
+the new), laid out by `tools/sheet_shots.py` under the title "Decorations, second look". Asked at 08:51:
+"Decorations, second look: is this it now?" **HIS ANSWER, 08:55: "Yes, that's it (Recommended)"**, offered as
+"The main chat puts them in: tapestry, gargoyle, broken floor and shadows." SO ALL FOUR ARE NOW THE MAIN CHAT'S TO
+BUILD FOR REAL, behind `DECOR.on` until they are in. The separate idea of the darker figure in front of a fire
+(`DECOR.near`) was never shown to him: it is not part of his yes.
