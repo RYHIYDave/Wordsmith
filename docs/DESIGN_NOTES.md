@@ -4288,6 +4288,104 @@ picture; what the heroes do in town now is what they do on a class card, which h
   for byte with the kept copy before and after.
 - NOT CHECKED: a real phone.
 
+### Version 18.9: Strike, a two-hit combo with a step forward; and the mix inside each dungeon
+
+**What he said.** Of the combo, 7 Oct 2026, 23:18: **"I’d like STRIKE to have two animations.  The
+first is the strike we have now.  That one always plays first.  If the player taps again quickly,
+then the second animation, I downward slash, plays.  Back to the first if they tap again.  If it’s
+not tapped for a set duration, it goes back to the first animation.  Like a two hit combo if you
+tap twice"**; 23:18: **"And I want him to move forward a little every swing"**; 23:19: **"Not
+much, but some"** ("I downward slash" read as "a downward slash", his dictation). Of the mix, 7 Oct,
+14:01: "They can be closed with levers or switches nearby to open them."; 17:51: "I want different
+room and hallway configurations within each dungeon. So when you're populating a dungeon, it doesn't
+have to go room, hallway. We can mix it up with the doors and the gates to make more different and
+interesting layouts for the whole dungeon."; and to it as this chat's next job, 21:13: "thats fine".
+He was sent, on 8 Oct, a moving picture of the combo at 00:42 (strike_combo.gif: two quick taps,
+a second tap after the set time, the button held; facing you and facing away), with "Put it in as
+it is?", and three pictures of the mix in a real dungeon at 01:06 (mix_1_rooms_next_door.png,
+mix_2_gate_and_lever.png, mix_3_room_that_locks.png), with "Put the mix in?". **HIS ANSWER, 8 Oct,
+07:32: "Yeah looks good".** Read as yes to both, and told so at 07:34: "Great. I read that as yes
+to both: the Strike combo and the mix. They'll go out together as Version 18.9. / This is the first
+full test run with the mix switched on, so expect a few fixes along the way. I'd say around 11:00."
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "STRIKE'S COMBO, WRITTEN ON
+PAPER" to "VERSION 18.9 IS LIVE").
+
+- **STRIKE IS TWO SWINGS** (`COMBO` and `TUNE.comboWindow` in `src/game/defs.ts`; `useBasic` in
+  `src/game/game.ts`). The first is always the strike he had; the next is THE DOWNWARD SLASH if it
+  is begun within half a second of the moment it could first be begun (the weapon's time between
+  blows: 0.95 seconds with a plain great sword, so a tap within about a second and a half of the
+  first swing), and then the strike again; left longer, the next is the strike. Anything else
+  between two Strikes, the slow attack or an evasive move, makes the next the strike again. THE TWO
+  DO THE SAME HARM.
+- **EVERY SWING STEPS HIM FORWARD A THIRD OF A TILE** (`TUNE.swingStep`, 0.33, over
+  `swingStepTime`, 0.12 seconds, from when the swing is begun), along the way he faces; walls and
+  monsters stop it as they stop him.
+- **THE SLASH** (`SLASH3`, "kslash", in `src/art/moves3.ts`; the knight's `attack2` in
+  `src/art/heroes3.ts`; `attackClip` in `src/render/figure.ts`): from the rear stance the hilt goes
+  up over his right shoulder, he steps in, and the blade comes over and down across the front of him
+  at the height of a chest (the fourth frame, the rules' own, as the strike's is), on down to low on
+  his left; it is carried round his right side into the stance again, in thirteen frames, as the
+  strike is. Mended by `tools/audit_moves3.ts` before it was shown in the game: no hand short of
+  the hilt, no arm through the body.
+- **ON A PC, A CLICK MADE IN THE MIDDLE OF A SWING WAITS ITS TURN** (`click` in `src/main.ts`), as a
+  tap on a phone always has (`order`): without it two quick clicks are one swing. Only a click that
+  attacks (on a monster, with Shift, or walking); given up after 1.2 seconds.
+- **THE MIX INSIDE EACH DUNGEON, FROM THE SECOND DUNGEON ON** (`MIX` in `src/game/dungeon.ts`; the
+  first dungeon, a new player's lesson, is laid as it always was): (1) **TWO ROOMS NEXT DOOR**,
+  three tiles apart with only a door between them, which is always there (`Room.nextDoor`,
+  `hasDoor`): about one room in seven; (2) **A GATE ACROSS THE WAY, ITS LEVER NEARBY**: the way in of
+  one room of the main path is barred by a gate, down, and the lever stands in a small room at a dead
+  end off the room before it (the NOOK); the hero pulls it by walking up to it (`LEVER_NEAR`, a
+  tile and a half), the gate rises and stays up; no monster pulls one; a line says "A gate bars the
+  way. Its lever is near." the first time it is seen from near, and "A gate rises." when it does;
+  what is behind a gate that is down is out of the hero's reach, as behind a shut door; every
+  dungeon from the second has one; (3) **A ROOM THAT LOCKS**: one of the main path's elite rooms
+  has a gate in every doorway, up; when the hero is `LOCK_CLEAR` (2.7 tiles) inside with a living
+  monster of the room's own pack they fall ("The gates fall."), hold him in and everything else out,
+  and rise when none of that pack is left alive in the room ("The gates rise."); most dungeons have
+  one. The map marks a lever that has been seen and not yet pulled, and a gate that is down. The
+  playtests' own player goes for what it can come to, then the lever, then on.
+
+**How it was tested.**
+
+- `tsc` clean; THE WHOLE UNIT SUITE WITH BOTH ON, 633 OF 633 (07:38 to 07:41), and again in the
+  frozen copy after the regression (633 of 633, 08:42 to 08:45). `tests/combo.test.ts` (8) and
+  `tests/mix.test.ts` (12) are new; the tests of doors, of the map-maker and of terraces lay their
+  own dungeons without the mix where they ask about something else (and a lever's gate counts as a
+  way on foot once pulled), and the mix's tests hold the same things for its dungeons, among them
+  that nothing shut in behind a shut door or a gate that is down can come at the hero.
+- Before the regression, 49 playtests two at a time on a dev page built from the tree (07:42 to 07:57),
+  among them the combo's and the mix's own, the doors in four layouts, the dungeon, the side paths,
+  the boss, the sunken floors, the terraces, two monkeys and the soak: all clean but the doors in
+  four layouts, which were the playtest's own (it reads its doors off the canvas in the dungeon it
+  has always laid, and with the mix on the dungeon of that seed is another): it lays its dungeon
+  without the mix now, and run again all four were clean.
+- **The regression** on a copy frozen at 07:57 (the scratchpad's `v189a/arpg_frozen`,
+  07:57 to 08:41, two at a time, nothing else running): **144 OF 144 PLAYTESTS
+  FINISHED CLEAN**, among them the combo's and the mix's own on a PC and a phone.
+  Speed: 58.6 frames a second, longest frame 50 ms; the slowest fights of the four
+  word-pair runs 56.7 to 58.2 frames a second. Lower than 18.8's at midnight, so the 18.8 and the
+  18.9 pages were measured again side by side, each alone, one after the other (10:26 to 10:31):
+  the speed test 58.8 and 60.0 frames a second for 18.8, 58.2 and 59.2 for 18.9, longest frames of
+  33 to 67 ms on both; the ranger's slowest fights 58.2 and 57.8 against 57.5 and 58.3; the
+  warrior's 58.5 and 58.8 against 57.5 and 58.2. The machine was slower than at midnight; 18.9 is
+  within a frame a second of 18.8.
+- THE RELEASE BUILD, made in the copy at 08:45: `Play.html` 860,648 bytes and
+  `dist/artifact.html` 860,326, both saying V18.9; kept in the scratchpad's
+  `v189a/release/`.
+- **The published page itself** (`wrap189.sh` in the scratchpad, 10:04 to 10:21): **61
+  of 62 playtests clean.** The 58 of 18.8, and the combo's and the mix's own on a PC and a phone. The one
+  that was not, `town` (a PC's window), had one press at the wordsmith not taken (SELL, while two
+  pages played at once); run again alone at 10:25 it finished clean, the sale and the buying back
+  as ever. (A first run, begun after the build, stopped after nine at 08:48, when the machine
+  paused and was restarted.) Published at 10:31 ("Version 43", version
+  id `1791469898-b23c`); the file published is the kept copy, `v189a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html` (compared before the page's playtests and again
+  after publishing).
+- NOT CHECKED: a real phone. How the mix PLAYS (a gate to find the lever for, a room that shuts
+  him in with an elite pack) is his to find.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4400,7 +4498,14 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               `DOORS.share`: every vault and lair, and about one in five of the rest), the gate
               in the boss hall's, and the tile on either side of a door made wall; where a door's line, face, way and
               piers are; `stepDoors`: a door opens for the hero when he comes near, and
-              since 18.7 for nobody else; `shutGrid`: where a door is still shut)
+              since 18.7 for nobody else; `shutGrid`: where a door is still shut),
+              the mix (18.9, `MIX` in dungeon.ts: two rooms next door, `Room.nextDoor`; a
+              lever's `gate` and its nook, `LEVER_NEAR`; a room that locks, its `trapgate`s,
+              `LOCK_CLEAR`; their rules in game.ts, `pullLever`, `updateLocks`; the hall laid
+              by hand for them, `makeMixHall` in level.ts), Strike's combo (18.9, `COMBO` and
+              `TUNE.comboWindow`, `swingStep` in defs.ts; `useBasic`; the slash, `SLASH3` in
+              art/moves3.ts, chosen by `attackClip` in render/figure.ts; a PC's click that waits
+              its turn, `click` in main.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -4468,7 +4573,12 @@ tests/        dungeon, items, town (every service's rules), sim (bots play whole
               of the hero's reach and cannot come at him, the risen dead rise on his side;
               and 18.8: where doors stand, a vault's and a lair's and about one in five others),
               gates (18.5: the pictures: frame, leaf, gate and arch, the mark, the portcullis),
-              small (18.6: a ranged monster holds its ground; the pick-up range; a brute's life)
+              small (18.6: a ranged monster holds its ground; the pick-up range; a brute's life),
+              combo (18.9: the switch; Strike, slash, Strike; the set time; the step and what
+              stops it; the same harm; what breaks it off; the picture),
+              mix (18.9: the hall's lever, gate and locking room; the map-maker's mix from the
+              second dungeon, the first as it was; nothing shut in can come at the hero; the
+              playtests' own player and the lever)
 tools/        build, preview, playtest + scenarios/, regress.sh (every browser playtest),
               town_gif.mjs (a moving picture of the town's hall, or of one place in it),
               hero_gif.mjs + hero_gif.py (a hero's moving picture), crop_heroes.py,
@@ -4615,6 +4725,10 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 18.9: Strike's combo and a step with every swing; the mix inside each dungeon
+node tools/page_gif.mjs src/dev/preview_combo.ts "4" previews/strike_combo.gif 5         # the combo's moving picture: the game's own rules, a phone's taps, the game's own figure and paintings
+sh tools/look_moves3.sh kslash 0,2,3,4 a                                                  # the slash, frame by frame (and tsx tools/audit_moves3.ts: its hands and arms)
+DEPTH=5 SEED=372602855 node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/mix_look.mjs --out shots/mixlook/pc   # the mix in a real dungeon, for pictures
 # Version 18.8: a door on some rooms only; no battle stance as an idle in town
 tsx <scratchpad>/v187/try/doorshare.ts                                            # (history: 240 dungeons: some six doors a dungeon; every vault and lair with a way in has one, 18 in a hundred of the other rooms)
 # Version 18.7: monsters do not open doors; what is shut in a room is out of reach; a brute's life
