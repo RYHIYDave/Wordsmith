@@ -31,7 +31,7 @@ import { BLOOD as M_BLOOD, FLAME as M_FLAME, FLESH, FUR, GLOOM, GORE, IRON, WING
 import { ELEMENT_RAMP, P } from '../art/palette';
 import type { Sfx } from '../engine/audio';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { WORDS } from '../game/defs';
+import { RANGER_ARROW, WORDS } from '../game/defs';
 import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
 
@@ -1609,15 +1609,18 @@ export class Fx {
           const n = e.echo ? 3 : 6;
           // (they leave from the bow, which is held up on the figure's right as the screen shows
           // it, whichever way the figure faces: ten pixels to the right of the feet, a head higher)
-          const bx = e.x + 10 / 32;
-          const by = e.y - 10 / 32;
+          // (with the ranger's new pictures, from where his bow is when they go: game/defs.ts, RANGER_ARROW)
+          const along = Math.hypot(dx, dy) || 1;
+          const bx = RANGER_ARROW.on ? e.x + (dx / along) * RANGER_ARROW.volleyFrom : e.x + 10 / 32;
+          const by = RANGER_ARROW.on ? e.y + (dy / along) * RANGER_ARROW.volleyFrom : e.y - 10 / 32;
+          const bz = RANGER_ARROW.on ? RANGER_ARROW.volleyHeight : 27;
           for (let i = 0; i < n; i++) {
             this.add({
-              x: bx + rnd(-0.1, 0.1), y: by + rnd(-0.1, 0.1), z: 27 + rnd(-2, 2), vx: dx * 0.5 + rnd(-0.5, 0.5), vy: dy * 0.5 + rnd(-0.5, 0.5), vz: ARROW_FALL * rnd(0.85, 1.1),
+              x: bx + rnd(-0.1, 0.1), y: by + rnd(-0.1, 0.1), z: bz + rnd(-2, 2), vx: dx * 0.5 + rnd(-0.5, 0.5), vy: dy * 0.5 + rnd(-0.5, 0.5), vz: ARROW_FALL * rnd(0.85, 1.1),
               life: 0.34 + i * 0.015, color: colors[Math.min(colors.length - 1, 1 + (i % 2))], size: 1, grav: 0, streak: 9,
             });
           }
-          this.flashes.push({ x: bx, y: by, z: 28, r: has(e.words, 'power') ? 0.34 : 0.22, t: 0, dur: 0.09, colors });
+          this.flashes.push({ x: bx, y: by, z: bz + 1, r: has(e.words, 'power') ? 0.34 : 0.22, t: 0, dur: 0.09, colors });
           break;
         }
         case 'volleyDrop': {

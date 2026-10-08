@@ -14,6 +14,7 @@ import type { Sprite } from '../../src/engine/px';
 import { SKILLS } from '../../src/game/defs';
 import { Game } from '../../src/game/game';
 import { emptyControls } from '../../src/game/state';
+import type { GameEvent } from '../../src/game/state';
 import type { Controls } from '../../src/game/state';
 import type { ClassId } from '../../src/game/types';
 import { Figure, attackClip } from '../../src/render/figure';
@@ -200,6 +201,7 @@ export function scenariosOf(cls: ClassId): Scenario[] {
     { name: 'runs a little off the way he faces', cls, seconds: 1.4, face: [Math.cos(0.3), Math.sin(0.3)], step: (x) => walk(x, 0, 9, Math.cos(0.3), Math.sin(0.3)) },
     { name: 'starts and stops', cls, seconds: 2, face: front, step: (x) => walk(x, 0.5, 1.2, 1, 0) },
     { name: 'starts and stops in town', cls, seconds: 2, face: front, place: 'town', step: (x) => walk(x, 0.5, 1.2, 1, 0) },
+    { name: 'runs, stops and shoots', cls, seconds: 2.2, face: front, step: (x) => { walk(x, 0.2, 0.75, 1, 0); tapAt(x, 1.05); } },
     { name: 'stops, starts and stops', cls, seconds: 2.6, face: front, step: (x) => { walk(x, 0, 0.62, 1, 0); walk(x, 1.2, 1.75, 1, 0); } },
     { name: 'quick attack, standing', cls, seconds: 1.3, face: front, step: (x) => tapAt(x, 0.2) },
     { name: 'quick attack, walking', cls, seconds: 1.2, face: front, step: (x) => { walk(x, 0, 9, 1, 0); tapAt(x, 0.3); } },
@@ -247,6 +249,9 @@ export interface Shown {
   x: number;
   y: number;
   lift: number;
+  /** The game's own arrows in flight after this step (where they are on the screen, game px; which way they go, tiles a second; how long they have flown), and what the game told of in it. */
+  arrows: { x: number; y: number; vx: number; vy: number; age: number; hostile: boolean }[];
+  events: GameEvent[];
 }
 
 export function play(sc: Scenario): Shown[] {
@@ -294,7 +299,8 @@ export function play(sc: Scenario): Shown[] {
     const left = typeof img !== 'string';
     const [key, mt, view] = (typeof img === 'string' ? img : img.src).split('|');
     const lift = leapK >= 0 ? Math.sin(leapK * Math.PI) * 24 : 0;
-    out.push({ t, key, mt: Number(mt), view: view as View, left, x: (h.x - h.y) * 16, y: (h.x + h.y) * 8, lift });
+    const arrows = game.projectiles.filter((q) => q.look === 'arrow').map((q) => ({ x: (q.x - q.y) * 16, y: (q.x + q.y) * 8, vx: q.vx, vy: q.vy, age: q.age, hostile: q.hostile }));
+    out.push({ t, key, mt: Number(mt), view: view as View, left, x: (h.x - h.y) * 16, y: (h.x + h.y) * 8, lift, arrows, events: game.events.splice(0) });
   }
   return out;
 }

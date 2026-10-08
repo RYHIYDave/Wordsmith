@@ -28,7 +28,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, SKILLS, TUNE, WORDS } from '../game/defs';
+import { MONSTERS, RANGER_ARROW, SKILLS, TUNE, WORDS } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
@@ -2036,8 +2036,11 @@ export class Renderer {
 
     // arrows are drawn as short lines so they can point any way; a Swift orb gets its tail here too
     for (const p of game.projectiles) {
+      // (a hero's arrow, with the ranger's new pictures: from where the arrow on his string was, at its height: game/defs.ts, RANGER_ARROW)
+      const lifted = RANGER_ARROW.on && p.look === 'arrow' && !p.hostile;
+      if (lifted && 0.4 + p.age * Math.hypot(p.vx, p.vy) < RANGER_ARROW.from) continue;
       const sx = wx(cam, p.x, p.y);
-      const sy = wy(cam, p.x, p.y) - 10;
+      const sy = wy(cam, p.x, p.y) - (lifted ? Math.round(RANGER_ARROW.height) : 10);
       const dx = (p.vx - p.vy) * 16;
       const dy = (p.vx + p.vy) * 8;
       const len = Math.hypot(dx, dy) || 1;
@@ -2138,7 +2141,7 @@ export class Renderer {
       const flick = Math.floor(t * 20) % 2 === 0;
       // Swift: a long pale streak behind the arrow
       if (swift) pline(g, sx - ux * 24, sy - uy * 24, sx - ux * 6, sy - uy * 6, twin ? P.tl3 : P.gn4);
-      const body = power ? 10 : swift ? 9 : leech || volatile || twin ? 8 : 6;
+      const body = (power ? 10 : swift ? 9 : leech || volatile || twin ? 8 : 6) + (lifted ? RANGER_ARROW.long - 6 : 0);
       // the shaft takes the colour of the word it carries
       const shaft = p.hostile ? P.bn3 : twin ? P.tl4 : power ? P.fr5 : swift ? P.gn5 : leech ? P.bl4 : volatile ? (flick ? P.pu5 : P.pu4) : P.wd5;
       const jx = volatile ? Math.round((Math.random() - 0.5) * 2) : 0;
@@ -2149,7 +2152,7 @@ export class Renderer {
       else g.fillRect(Math.round(sx) + jx, Math.round(sy) + jy, 2, 2);
       g.fillStyle = P.black;
       g.globalAlpha = 0.35;
-      g.fillRect(Math.round(sx - 2), Math.round(sy + 10), 4, 1);
+      g.fillRect(Math.round(sx - 2), Math.round(sy + (lifted ? Math.round(RANGER_ARROW.height) : 10)), 4, 1);
       g.globalAlpha = 1;
     }
 

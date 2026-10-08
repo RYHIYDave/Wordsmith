@@ -16,7 +16,8 @@ import { SQ_BUNCH, SQ_FLICK, SQ_RUN, SQ_SIT, squirrel } from './hero_ranger';
 import { BROWN, CYAN, INDIGO, INK, LEAF, MAIL, PINK, PLUM, SKIN4, STEEL, TEAL, dim } from './kit';
 import type { Painted, Ramp } from './kit';
 import { onBack } from './carried';
-import { BOW_BRACE, BOW_HALF } from './moves3';
+import { ARROW_LONG, BOW_BRACE, BOW_HALF, RANGER_STANCES } from './moves3';
+import { P } from './palette';
 import { ball, band, cloth, eyesToward, faces, girdle, mid, off, rod, sided, skirtOf, stage, thread, trunkBalls, wornOn } from './skin';
 import type { GameView, Ring } from './skin';
 import { add, cross, dot, heading, lerp3, mul, norm, sub, trunkOf } from './skeleton';
@@ -262,6 +263,26 @@ export function paintRanger3(s: Skeleton, q: Posed, view: GameView, kit: { build
   const strung = !away && q.draw >= 0.2;
   const line = st.part(grip);
   const arrow = (from: V3, to: V3): void => {
+    if (RANGER_STANCES.on) {
+      // AS THE GAME DRAWS ITS OWN ARROW IN FLIGHT (render/render.ts), so that the one on his string
+      // and the one that flies are the same arrow: a shaft of light wood a game pixel thick and a
+      // pale steel head two game pixels square, with no light of its own
+      const [x0, y0] = st.at(from);
+      const [x1, y1] = st.at(to);
+      const za = st.near(from) + 0.4;
+      const zb = st.near(to) + 0.4;
+      const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
+      for (let i = 0; i <= n; i++) {
+        const k = i / n;
+        const x = Math.round(x0 + (x1 - x0) * k - 1);
+        const y = Math.round(y0 + (y1 - y0) * k - 1);
+        for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) line.put(x + dx, y + dy, P.wd5, za + (zb - za) * k);
+      }
+      const hx = Math.round(x1 - 2);
+      const hy = Math.round(y1 - 2);
+      for (let dx = 0; dx < 4; dx++) for (let dy = 0; dy < 4; dy++) line.put(hx + dx, hy + dy, P.sl5, zb + 0.1);
+      return;
+    }
     thread(line, st, from, to, SHAFT, 0.2);
     const [x1, y1] = st.at(to);
     const [x0, y0] = st.at(from);
@@ -273,7 +294,7 @@ export function paintRanger3(s: Skeleton, q: Posed, view: GameView, kit: { build
   if (strung) {
     thread(line, st, tipOf(1), s.handR, CYAN[3]);
     thread(line, st, s.handR, tipOf(-1), CYAN[3]);
-    arrow(s.handR, add(s.handR, mul(p3, 0.43 * B.tall)));
+    arrow(s.handR, add(s.handR, mul(p3, ARROW_LONG * B.tall)));
   } else thread(line, st, tipOf(1), tipOf(-1), CYAN[3]);
   // what has just been loosed: one arrow (prop 3) or a fan of them (prop 4), going the way it points; `pt` is how far gone
   if (!away && (q.prop === 3 || q.prop === 4) && q.pt < 0.999) {

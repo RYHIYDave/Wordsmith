@@ -8,7 +8,8 @@
 
 import { holdOnBack } from './carried';
 import { add, bonesAt, buildOf, dot, elbowFor, GRID, heading, len, mul, solve, standing, sub } from './skeleton';
-import type { Bones, Build, Key3, Motion, Posed } from './skeleton';
+import type { Bones, Build, Key3, Motion, Posed, V3 } from './skeleton';
+import { RANGER_ARROW } from '../game/defs';
 
 /** The usual body: 57 picture pixels tall, built like a grown person. What a weapon's length is a share of, and what the moves were first written on. */
 export const BODY: Build = buildOf(57);
@@ -236,8 +237,8 @@ function drawn(body: Partial<Bones>, el: number, pull: number, rest: Bones = STA
  * the hand (`rock` degrees). The face does not move: an archer looks at the mark until the arrow
  * is in it.
  */
-function loosed(body: Partial<Bones>, el: number, back: number, kick: number, rock: number): Partial<Bones> {
-  const d = drawn(body, el, 1);
+function loosed(body: Partial<Bones>, el: number, back: number, kick: number, rock: number, rest: Bones = STANCE): Partial<Bones> {
+  const d = drawn(body, el, 1, rest);
   const aim = heading(0, el);
   return {
     ...d,
@@ -1557,14 +1558,91 @@ export function startsOf(runMove: Move3, stance: Move3): { move: Move3; phase: n
   return { move: { ...runMove, name: `${runMove.name}: setting off`, motion }, phase };
 }
 
+/**
+ * HIS SHOT, FROM THE CROUCH (the owner, 15:38: "his shot animation is upright so when you shoot an
+ * arrow you pop up and down to the crouch"). He stays as low as he stands, his feet where they are:
+ * the bow comes up from low to level as his body turns side-on to the mark over his front foot and
+ * his chest comes up off the crouch, and the string is drawn to his jaw; then it goes. THE ARROW IS
+ * GONE FROM THE STRING IN THE PICTURE OF THE MOMENT IT GOES, and the game's own arrow carries on
+ * from where its point was (SHOT_TIP, the game's RANGER_ARROW: the owner, "the arrow that fires in
+ * the animation for shot doesn’t match the actual projectile that comes out for shot"); no streak
+ * of the picture's own flies with it. The string hand flies back, the bow rocks forward; he holds
+ * it a moment, and the bow comes down into his stance with the next arrow on the string.
+ */
+const SHOT_EL = 0;
+const SHOT_SET: Partial<Bones> = {
+  lfx: CROUCH.lfx, lfy: CROUCH.lfy, lfz: 0, lfp: 0, lft: CROUCH.lft, lk: CROUCH.lk,
+  rfx: CROUCH.rfx, rfy: CROUCH.rfy, rfz: 0, rfp: 0, rft: CROUCH.rft, rk: CROUCH.rk,
+  px: 0.3, py: 0, pz: -5.7, yaw: -46, pitch: 7, roll: 0, twist: -34, bend: -1, side: 0, faceTurn: 0, faceUp: 0, faceTilt: 0,
+};
+const LOW: Bones = { ...ARCHER, ...CROUCH };
+function shotLow(): Motion {
+  const set = SHOT_SET;
+  return {
+    hit: 5 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 2 * FR, pose: drawn({ ...set, pz: -6, yaw: -40, twist: -24, bend: 3 }, -9, 0.55, LOW), ease: 'out' },
+      { at: 4 * FR, pose: drawn(set, SHOT_EL, 1, LOW), ease: 'out' },
+      { at: 4.7 * FR, pose: drawn({ ...set, twist: -36 }, SHOT_EL, 1, LOW), ease: 'lin' },
+      // (loosed: the arrow has gone from the string)
+      { at: 5 * FR, pose: loosed({ ...set, bend: -2, twist: -41 }, SHOT_EL, 3.4, 1.4, 14, LOW), ease: 'lin' },
+      { at: 7 * FR, pose: loosed({ ...set, twist: -39 }, SHOT_EL, 3.8, 0.8, 10, LOW), ease: 'lin' },
+      { at: 9 * FR, pose: loosed({ ...set, twist: -39 }, SHOT_EL, 3.8, 0.8, 10, LOW), ease: 'out' },
+      { at: 15 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/**
+ * HIS VOLLEY, FROM THE CROUCH: down onto his knee from low ("The rogue drops to a knee when he
+ * fires Volley"), the lean back and the loose as they were, and up into his stance again. The fan
+ * of arrows is the game's own (render/fx.ts, `volleyUp`), from where his bow is when they go
+ * (VOLLEY_TIP): the picture has none of its own.
+ */
+function volleyLow(): Motion {
+  const down: Partial<Bones> = { ...KNEEL, pz: -14.5 };
+  const full: Partial<Bones> = { ...down, px: 2.5, yaw: -50, pitch: -10, twist: -38, bend: -30, faceUp: 50 };
+  const keys: Key3[] = [
+    { at: 0, pose: {} },
+    // (from low he is half way down already: the knee goes down and the front foot out as the eyes go up)
+    { at: 2 * FR, pose: drawn({ pz: -9.5, px: 1, yaw: -36, pitch: 6, twist: -20, bend: 6, faceUp: 28, lfx: 10.5, lfz: 2.4, lfp: -12, lft: 0, rfx: -8.5, rfz: 1.4, rfp: 28, rk: 0, lk: 3 }, 26, 0.35, LOW), ease: 'in' },
+    { at: 3 * FR, pose: drawn({ ...down, pz: -15.6, px: 1.6, yaw: -47, pitch: -2, twist: -32, bend: -6, faceUp: 40 }, 38, 0.6, LOW), ease: 'out' },
+    { at: 5 * FR, pose: drawn(full, 50, 1, LOW), ease: 'out' },
+    { at: 5.6 * FR, pose: drawn({ ...full, bend: -31 }, 50, 1, LOW), ease: 'lin' },
+    // (loosed, in the picture of the moment they go: the arrows are the game's own from here)
+    { at: 6 * FR, pose: loosed({ ...full, bend: -33, twist: -45 }, 50, 3.4, 1.4, 16, LOW), ease: 'lin' },
+    { at: 8 * FR, pose: loosed({ ...full, bend: -31, twist: -43, faceUp: 52 }, 50, 3.8, 0.8, 11, LOW), ease: 'lin' },
+    // (watching them go, he comes forward off the lean, and up off his knee into his stance)
+    { at: 12 * FR, pose: { ...down, px: 1.5, yaw: -40, pitch: -3, twist: -22, bend: -8, faceUp: 30, lhIn: 0, lhx: 9, lhy: 4, lhz: -8, rhIn: 0, rhx: 3, rhy: -1, rhz: -17, wEl: 8 } },
+    // (up off the knee: the front foot is lifted and drawn back under him, the back one comes up and forward, each set down where he stands)
+    { at: 14.5 * FR, pose: { pz: -10, px: 0.6, yaw: -34, pitch: 6, twist: -16, bend: 2, faceUp: 14, lfx: 10.5, lfy: 0.6, lfz: 2.6, lfp: -8, lft: 6, lk: 8, rfx: -9, rfy: -0.6, rfz: 2.2, rfp: 18, rft: -18, rk: -10, lhIn: 0, lhx: 9, lhy: 4, lhz: -10, rhIn: 0, rhx: 3, rhy: -1, rhz: -17, wEl: -10 }, ease: 'io' },
+    { at: 17 * FR, pose: {}, ease: 'io' },
+  ];
+  return { keys: keys.map((k, i) => (i === 0 || i === keys.length - 1 ? k : { ...k, pose: { ...READY, ...k.pose } })), hit: 6 * FR };
+}
+/** The tip of the arrow on the string of a move at a moment, in the figure's own space (forward, to his left, up; picture pixels from where he stands): where the painter draws it (hero3_ranger.ts). */
+export function arrowTip(m: Move3, t: number): V3 {
+  const q = bonesAt(m.motion.keys, m.rest, t);
+  const s = solve(m.build, q);
+  return add(s.handR, mul(heading(q.wAz, q.wEl), ARROW_LONG * m.build.tall));
+}
+/** How long the arrow on his string is, as a share of his height. */
+export const ARROW_LONG = 0.43;
+
 /** As they are with the switch off. */
-const RANGER_TODAY = { stand: RANGER_STAND3.motion, standRest: RANGER_STAND3.rest, town: RANGER_TOWN3.motion };
+const RANGER_TODAY = { stand: RANGER_STAND3.motion, standRest: RANGER_STAND3.rest, town: RANGER_TOWN3.motion, shot: SHOT3.motion, shotRest: SHOT3.rest, volley: VOLLEY3.motion, volleyRest: VOLLEY3.rest };
 /** Put the ranger's new stances in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
 export function useRangerStances(on: boolean): void {
   RANGER_STANCES.on = on;
   RANGER_STAND3.rest = on ? BATTLE : RANGER_TODAY.standRest;
   RANGER_STAND3.motion = on ? RANGER_BATTLE_MOTION() : RANGER_TODAY.stand;
   RANGER_TOWN3.motion = on ? RANGER_TOWN_MOTION() : RANGER_TODAY.town;
+  SHOT3.rest = on ? BATTLE : RANGER_TODAY.shotRest;
+  SHOT3.motion = on ? shotLow() : RANGER_TODAY.shot;
+  VOLLEY3.rest = on ? BATTLE : RANGER_TODAY.volleyRest;
+  VOLLEY3.motion = on ? volleyLow() : RANGER_TODAY.volley;
+  // (and the game's own arrows, from where the picture's are: game/defs.ts, RANGER_ARROW)
+  RANGER_ARROW.on = on;
   remakeRuns();
 }
 

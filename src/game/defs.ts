@@ -506,6 +506,21 @@ export const PRACTICE = {
  */
 export const COMBO = { on: true };
 
+/**
+ * THE RANGER'S ARROWS LEAVE FROM WHERE HIS PICTURE HAS THEM (the art chat, 8 Oct 2026; the owner,
+ * 15:38: "the arrow that fires in the animation for shot doesn’t match the actual projectile that
+ * comes out for shot"). A MOCK-UP BEHIND A SWITCH THAT IS OFF, switched with the ranger's new
+ * stances (art/moves3.ts, useRangerStances). With it on, a hero's arrow is drawn from where the
+ * point of the arrow on his string was the moment before it went (`from` tiles ahead of him: it is
+ * not seen before it gets there, as it is still on the bow; `height` game pixels off the floor, at
+ * which it flies), as long as that arrow (`long` game pixels, where it was 6); and a Volley's
+ * arrows go up from where his bow is (`volleyFrom` tiles ahead of him, `volleyHeight` up). The
+ * rules are not changed: an arrow still starts 0.4 tiles ahead of him and hits what it hits.
+ * With it off, as before: drawn from the start, 10 pixels up, 6 long; a volley from 10 pixels to
+ * the right of the feet, 27 up. (tests/ranger_stances.test.ts holds the numbers to the picture's.)
+ */
+export const RANGER_ARROW = { on: false, from: 0.796, height: 22.5, long: 11, volleyFrom: 0.291, volleyHeight: 27.6 };
+
 export const TUNE = {
   heroRadius: 0.3,
   heroSpeed: 4.6, // tiles per second

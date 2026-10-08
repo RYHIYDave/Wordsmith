@@ -14,6 +14,9 @@ import { MAGE_TAILS } from '../art/hero_mage';
 import { RANGER_TAILS } from '../art/hero_ranger';
 import { WARRIOR_TAILS } from '../art/hero_warrior';
 import { Tails } from '../engine/tails';
+import { P } from '../art/palette';
+import { RANGER_ARROW } from '../game/defs';
+import { Fx, pline } from '../render/fx';
 import type { ClassId } from '../game/types';
 import { moveOf, place, play, scenariosOf } from '../../tools/review_heroes/sim';
 import type { Shown } from '../../tools/review_heroes/sim';
@@ -57,6 +60,9 @@ interface Panel {
   /** The flying ends, and the last step they were moved on to. */
   tails: Tails;
   tailsAt: number;
+  /** The game's effects (a Volley's arrows going up), fed what the game told of, step by step, and the last step fed. */
+  fx: Fx;
+  fxAt: number;
   x0: number;
   y0: number;
   w: number;
@@ -69,14 +75,16 @@ const panels: Panel[] = list.split('|').map((item) => {
   const sc = scenariosOf(cls).find((s) => s.name === name);
   if (!sc) throw new Error(`no scenario "${name}" for ${cls}`);
   const shown = play(sc);
-  const xs = shown.map((s) => s.x);
-  const ys = shown.map((s) => s.y - s.lift);
+  // (and room for the game's own arrows for the first of their flight)
+  const flying = shown.flatMap((s) => s.arrows.filter((a) => a.age < 0.3));
+  const xs = [...shown.map((s) => s.x), ...flying.map((a) => a.x)];
+  const ys = [...shown.map((s) => s.y - s.lift), ...flying.map((a) => a.y - 24)];
   const x0 = Math.min(...xs) - 34;
   const x1 = Math.max(...xs) + 34;
   const y0 = Math.min(...ys) - 50;
   const y1 = Math.max(...shown.map((s) => s.y)) + 10;
   const tails = new Tails(cls === 'ranger' ? RANGER_TAILS : cls === 'mage' ? MAGE_TAILS : WARRIOR_TAILS);
-  return { cls, name: label ?? `${NAMES[cls]}: ${name}`, shown, tails, tailsAt: -1, x0, y0, w: x1 - x0, h: y1 - y0 };
+  return { cls, name: label ?? `${NAMES[cls]}: ${name}`, shown, tails, tailsAt: -1, fx: new Fx(), fxAt: -1, x0, y0, w: x1 - x0, h: y1 - y0 };
 });
 const PAD = 8;
 const HEAD = 30;
@@ -181,6 +189,41 @@ function draw(k: number): string {
     g.drawImage(pic, -(CANVAS3.ax / 2) * S, -(CANVAS3.ay / 2) * S, (CANVAS3.w / 2) * S, (CANVAS3.h / 2) * S);
     g.restore();
     if (!sh.left) p.tails.draw(g, fx, fy, true, S);
+    g.restore();
+    // THE GAME'S OWN ARROWS, as render/render.ts draws a hero's plain one (a shaft of light wood
+    // and a pale steel head, and its shadow on the floor): from where RANGER_ARROW says, when on
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, p.w * S, p.h * S);
+    g.clip();
+    for (const a of sh.arrows) {
+      const lifted = RANGER_ARROW.on && !a.hostile;
+      if (lifted && 0.4 + a.age * Math.hypot(a.vx, a.vy) < RANGER_ARROW.from) continue;
+      const up = lifted ? Math.round(RANGER_ARROW.height) : 10;
+      const dx = (a.vx - a.vy) * 16;
+      const dy = (a.vx + a.vy) * 8;
+      const len = Math.hypot(dx, dy) || 1;
+      const body = lifted ? RANGER_ARROW.long : 6;
+      g.save();
+      g.translate(ox - p.x0 * S, oy - p.y0 * S);
+      g.scale(S, S);
+      pline(g, a.x - (dx / len) * body, a.y - up - (dy / len) * body, a.x, a.y - up, P.wd5);
+      g.fillStyle = P.sl5;
+      g.fillRect(Math.round(a.x), Math.round(a.y - up), 2, 2);
+      g.fillStyle = P.black;
+      g.globalAlpha = 0.35;
+      g.fillRect(Math.round(a.x - 2), Math.round(a.y), 4, 1);
+      g.restore();
+    }
+    // and the game's effects (a Volley's arrows), fed and moved on step by step up to this one
+    for (let j = p.fxAt + 1; j <= i; j++) {
+      p.fx.handle(p.shown[j].events, () => {});
+      p.fx.update(1 / 60);
+    }
+    p.fxAt = Math.max(p.fxAt, i);
+    g.translate(ox - p.x0 * S, oy - p.y0 * S);
+    g.scale(S, S);
+    p.fx.drawAir(g, { ox: 0, oy: 0 });
     g.restore();
     // the rings and the lines: where a foot came down, and where it has slid to
     g.save();
