@@ -201,3 +201,7 @@ python3 tools/sheet_shots.py previews/decorations_fire_darker.png "A separate id
 - The tapestry's faded design (the sun, the tree) is small at phone size. It reads as old patterned cloth, and the design shows only close.
 - At phone size, the gargoyle with horns and the one with ears look much alike.
 - Something in 84% of rooms may be more, or less, than he wants. The odds are two lists in `layDecor`, easy to change.
+
+## Sent to the owner (8 Oct 2026, 02:55, by the art chat)
+
+previews/decorations_mockup.png (from this branch's worktree), with these words: "1 of 4: decorations, a mock-up, not in the game. A real room as it is now, then with them: a moth-eaten tapestry, a gargoyle head built like the heroes, a missing flagstone, and soft shadows under barrels, urns and fires. Is this what you meant by tapestries, gargoyle heads and broken floor tiles?" **HIS ANSWER: NOT YET IN.** The sheet of the darker figure in front of a fire (`previews/decorations_fire_darker.png`) was NOT sent: he did not ask for it. Before these went, at 00:53 on 8 Oct he wrote "If I’m not around to test phone speed continue on.  Keep going down the list", read as: leave the phone test until he is around and carry on down the art chat's list (decorations, the skeleton on the heroes' bones, true left-facing heroes, the two films of weight). He was told so at 00:54. Nothing of this is in the game; the main chat builds whatever he says yes to.
