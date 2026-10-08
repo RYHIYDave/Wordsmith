@@ -130,3 +130,55 @@ His answers:
 He was also told: Hyper Light Drifter is spare, with few details, but on 3 Oct he asked for more
 detail than the first art had (`docs/DESIGN_NOTES.md`, section 1: "the art is too basic; wants
 more detail", the notes' words, not his); round 3 starts there, then movement, effects and words.
+
+## Round 3 (asked 07:49, answered 07:56)
+
+The questions, as put to him:
+
+1. "How much detail? Hyper Light Drifter is spare, Dead Cells is rich." Bold and spare ("Big
+   clean shapes, few small marks. Everything reads at a glance on a phone."), Rich everywhere
+   ("Rivets, cracks, stitching, moss. Lots to look at up close."), Bold figures, rich places
+   ("Figures clean so they pop; the world behind them full of detail."), Rich figures, quiet
+   places ("Detail on heroes and monsters; the world kept simple so they stand out.").
+2. "How should things move?" Fast and punchy ("Quick wind-ups, hits that land hard with a tiny
+   freeze, quick recovery."), Smooth and graceful ("Flowing arcs and trailing cloth. Nothing
+   jerky, a touch slower."), Slow and heavy ("Deliberate. Every swing is a commitment you can see
+   coming.").
+3. "How big should spells and hits be on screen?" Big and wild ("Screen-filling magic, sparks
+   everywhere, the screen shakes on big hits."), Bold but clear ("Bright and punchy, but you can
+   always see the fight through it."), Small and tidy ("Little flashes. The figures' moves do the
+   talking.").
+4. "Wordsmithing is the heart of the game. Should letters show in the world itself?" Everywhere
+   ("Letters carved in walls and doors, glowing on gear, drifting off monsters that carry a
+   word."), Only where a word works ("Letters glow only on things with a word in them: gear in
+   hand, monsters carrying one."), Menus only ("No writing in the world. Words live in the menus
+   and in what they do.").
+
+His answers:
+
+- **Detail:** "Bold figures, rich places".
+- **Movement:** "I think this is very dependent.  And maybe this sort of thing could be asked when
+  designing a new character.  I want the soldier to be heavy but quick as he’s trained with a
+  sword his whole life.  But the ranger is graceful, needs to be to stay quiet in the forest"
+- **Effects:** "My heart says big and wild, but my brain says bold but clear.  So maybe somewhere
+  in the middle"
+- **Words:** "Somewhere between 1 and 2" (1 = Everywhere, 2 = Only where a word works).
+
+**How they were read, and told to him at 07:58:**
+
+1. Bold figures, rich places: heroes and monsters clean and bold (big shapes, few small marks) so
+   they pop; the places carry the detail (cracks, moss, carvings, clutter), kept a step quieter so
+   the eye lands on the fight first.
+2. MOVEMENT IS PER CHARACTER, and his idea becomes a rule: every new character gets a short brief,
+   and "how does it move?" is one of its questions, answered by him. The soldier (the warrior):
+   heavy but quick, a lifetime with the sword, no wasted motion, his weight behind every swing.
+   The ranger: graceful and quiet, light on his feet, never a clatter. Weight stays the test for
+   all of them.
+3. Effects in the middle: WILD FOR AN INSTANT, THEN CLEAR. A big hit or a big spell can flare
+   large, but it peaks fast and fades fast, and nothing hides the hero or a warning for more than
+   a blink. Everyday hits stay bold but clean. The screen shakes only on the biggest blows.
+4. Words between the two: anything with a word in it shows its letters, glowing (gear in hand, a
+   monster carrying one); and the places have writing in them here and there (carved over a
+   door, round a shrine) as landmarks, not on every wall.
+
+He was told round 4 is the last before a first draft: the mage, monsters, gear and menus.
