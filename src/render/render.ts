@@ -13,6 +13,8 @@ import { SPELL_TONES } from '../art/spells';
 import type { SpellArt } from '../art/spells';
 import { GATE_UP, PILLAR, POST, STRIP, SWING_STEPS } from '../art/gates';
 import type { GateArt, Strip } from '../art/gates';
+import type { DecorArt } from '../art/decor';
+import { DECOR, decorTile, footShadow, nearSide, slabCorner, wallPoint } from '../game/decor';
 import { WALL_LOOK } from '../art/ground';
 import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
@@ -59,6 +61,8 @@ export interface Art {
   props: DungeonProps;
   /** Its doors and gates (art/gates.ts): drawn only where a level has any (game/doors.ts). */
   gates: GateArt;
+  /** (MOCK-UP, NOT IN THE GAME) Its decorations (art/decor.ts): drawn only with the switch on (game/decor.ts, DECOR: off), where a level has any. */
+  decor: DecorArt;
   /** The town's own things (art/town.ts) and its people (art/townsfolk.ts): Version 14.4. */
   town: TownProps;
   folk: Townsfolk;
@@ -96,6 +100,14 @@ const WARM_ENTER_MS = 90;
 /** A light on a monster's picture lights the floor too if it is at least this big, in game pixels. */
 const MONSTER_LIGHT_MIN = 7;
 
+/**
+ * (MOCK-UP, NOT IN THE GAME: game/decor.ts, `DECOR.near`) A FIGURE BETWEEN A FIRE AND THE EYE is
+ * drawn this much darker, at the most (a flat-colour copy of it in this colour laid over it), as
+ * we see the side of it the fire does not light.
+ */
+const NEAR_SIDE = 0.4;
+const NEAR_SIDE_DARK = '#07050e';
+
 /** How far above the floor a familiar hangs, in game pixels (about the height of a hero's shoulder). */
 const FAMILIAR_HOVER = 19;
 
@@ -114,6 +126,8 @@ interface Stand {
   alpha: number;
   /** The hero: the scarf and the feather that fly from the figure are drawn with it, behind and in front. */
   figure: Figure | null;
+  /** (MOCK-UP: `DECOR.near`) How strongly those are darkened with the figure, in front of a fire (absent: not at all). */
+  tailsDark?: number;
   /**
    * How far the figure is OUT OF PHASE, 0 (whole) to 1 (gone): it is drawn in thin slices that are
    * pulled apart sideways, each the other way from the last (a warp: see PHASE_OUT).
@@ -397,6 +411,50 @@ export class Renderer {
       const [hx, hy] = at(1);
       put(hx + hy + 0.5 * along - 0.2 * back, A.leaf(Math.round(32 * (dx - dy)), Math.round(16 * (dx + dy))), hx, hy);
     }
+  }
+
+  /**
+   * (MOCK-UP, NOT IN THE GAME: game/decor.ts, `DECOR`, which is off) WHAT HANGS ON THE WALLS: a
+   * tapestry's strips, each stood in the plane of its wall's face as a door's lintel is (a figure is
+   * in front of the part it is in front of), and a gargoyle's head, stood where the face is under
+   * its middle, a little out from it (it juts out). Nothing with the switch off.
+   */
+  private standDecor(L: Game['level'], cam: Cam): void {
+    const list = L.floor.decor;
+    if (!DECOR.on || !list) return;
+    const A = this.art.decor;
+    const R = this.relief;
+    const put = (depth: number, sp: Sprite, x: number, y: number): void => {
+      this.stand(depth, sp, wx(cam, x, y), wy(cam, x, y));
+      if (R) this.hide(x, y, R.lift(x, y));
+    };
+    for (const d of list) {
+      if (d.kind !== 'tapestry' && d.kind !== 'gargoyle') continue;
+      if (!L.explored[decorTile(L.floor, d)]) continue;
+      if (d.kind === 'tapestry') {
+        // (each strip just after the block of wall it hangs on: whatever stands in the room is in
+        // front of it, as it is in front of the wall, and the next block does not cover it)
+        for (const q of A.tapestry(d.alongX, d.variant)) {
+          const x = d.alongX ? d.x + q.t : d.x + 1;
+          const y = d.alongX ? d.y + 1 : d.y + q.t;
+          put((d.alongX ? Math.floor(x + 1e-6) + d.y : d.x + Math.floor(y + 1e-6)) + 1.01, q.s, x, y);
+        }
+      } else {
+        // (half a tile after its block: it juts out, and a figure beside it and nearer the wall is behind its snout)
+        const p = wallPoint(d);
+        put(p.x + p.y + 0.1, A.gargoyle(d.alongX, d.variant), p.x, p.y);
+      }
+    }
+  }
+
+  /** (MOCK-UP: `DECOR.near`) The fires of this level that a figure may stand in front of: this frame's (none, unless the switch and `near` are on). */
+  private fires: { x: number; y: number }[] = [];
+
+  /** (MOCK-UP: `DECOR.near`) A flat-colour copy of a figure's picture to lay over it, and how strongly, if it stands between a fire and the eye; else nothing. */
+  private nearDark(sp: Sprite, x: number, y: number): [Sprite | null, number] {
+    if (this.fires.length === 0) return [null, 0];
+    const k = nearSide(x, y, this.fires);
+    return k > 0 ? [silhouette(sp, NEAR_SIDE_DARK), NEAR_SIDE * k] : [null, 0];
   }
 
   /** (THE WALLS' LOOK) This frame's walls toward the eye (`lowWalls`), for the painters of single tiles. */
@@ -983,6 +1041,20 @@ export class Renderer {
       // (sunken floor and the flights down into it; raised floor and the flights up to it; the room's own floor)
       return (hs && hs[i] < 0 ? 2 : top[i] > 0 ? 1 : 0) === pass;
     };
+    // (MOCK-UP, NOT IN THE GAME: game/decor.ts, DECOR, which is off) BROKEN FLAGSTONES, laid on the
+    // floor's own stones, under whatever lies or stands on them
+    if (DECOR.on && f.decor) {
+      for (const d of f.decor) {
+        if (d.kind !== 'crack' && d.kind !== 'hole') continue;
+        const c = slabCorner(d);
+        if (!L.explored[decorTile(f, d)] || !here(c.x + 0.3, c.y + 0.3)) continue;
+        const sx = Math.round(wx(cam, c.x, c.y));
+        const sy = Math.round(wy(cam, c.x, c.y));
+        if (sx < -60 || sx > W + 60 || sy < -30 || sy > H + 30) continue;
+        const sp = art.decor.slab(d.kind, d.variant);
+        g.drawImage(sp.img, sx - sp.ax, sy - sp.ay, sp.w, sp.h);
+      }
+    }
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] || !here(p.x, p.y)) continue;
       const sx = wx(cam, p.x, p.y);
@@ -1203,6 +1275,15 @@ export class Renderer {
     // (the effects that lie flat are drawn once, over the last floor to be drawn)
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) fx.drawGround(g, cam);
 
+    // (MOCK-UP, NOT IN THE GAME: game/decor.ts, DECOR, which is off) THE SOFT DARK AT THE FOOT OF
+    // EVERY STANDING THING, as under a figure: a brazier, a barrel, an urn, a chest, a pillar
+    if (DECOR.on && !L.town) {
+      for (const p of L.props) {
+        const fs = footShadow(p.kind, p.state);
+        if (!fs || !L.explored[p.ty * f.w + p.tx] || !here(p.x, p.y)) continue;
+        this.shadow(g, wx(cam, p.x, p.y), wy(cam, p.x, p.y), fs.r, fs.a);
+      }
+    }
     // shadows, and the rings that mark elites
     for (const m of game.monsters) {
       if (m.dead || !m.seen || !here(m.x, m.y)) continue;
@@ -1396,6 +1477,9 @@ export class Renderer {
     this.marks.length = 0;
     this.monsterLit.length = 0;
     this.propLit.length = 0;
+    // (MOCK-UP: the fires a figure may stand in front of, only with the decorations' switch and `near` on)
+    this.fires.length = 0;
+    if (DECOR.on && DECOR.near && !L.town) for (const p of L.props) if (p.kind === 'brazier' && L.explored[p.ty * f.w + p.tx]) this.fires.push(p);
     const lowGrid = this.lowWalls(L);
     this.lowNow = lowGrid;
     // (THE WALLS' LOOK: where the hero is on the screen, for the walls that are seen through while they stand over them)
@@ -1560,6 +1644,7 @@ export class Renderer {
       }
     }
     this.standDoors(L, cam);
+    this.standDecor(L, cam);
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
       const lift = NAME_LIFT[st.kind];
@@ -1653,7 +1738,7 @@ export class Renderer {
         // poisoned: it goes a sick green, the sicker the more doses it carries
         over = silhouette(sp, P.vn4);
         overA = Math.min(0.5, 0.2 + m.poisonN * 0.04) + 0.06 * Math.sin(t * 6 + m.id);
-      }
+      } else if (this.fires.length) [over, overA] = this.nearDark(sp, m.x, m.y);
       this.stand(m.x + m.y, sp, sx, sy, over, overA);
       hid?.(m.x, m.y);
       if (m.burnT > 0 && Math.random() < 0.55 * amb) fx.flames(m.x, m.y, 0.22, 1, 0.9);
@@ -1725,6 +1810,7 @@ export class Renderer {
       const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
+      let tailsDark = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them
       // for good: it is shown for as long as a flash lasts, and then nothing tints the fallen)
       if (h.flash > 0 && this.fallT < 0.15) {
@@ -1738,6 +1824,10 @@ export class Renderer {
       } else if (h.poisonT > 0) {
         over = silhouette(sp, P.vn4);
         overA = 0.3;
+      } else if (this.fires.length) {
+        [over, overA] = this.nearDark(sp, h.x, h.y);
+        // (MOCK-UP: `DECOR.near`) the scarf and the feather darkened with the figure
+        if (over) tailsDark = overA;
       }
       // A warp: the figure the mage was phases out where they stood, and the mage phases in here.
       const wp = fx.warp;
@@ -1753,6 +1843,7 @@ export class Renderer {
       this.heroLit = null;
       if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
         this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, coming > 0 ? 1 - coming * coming * 0.85 : 1, fig, coming);
+        if (tailsDark > 0) this.stands[this.stands.length - 1].tailsDark = tailsDark;
         if (relief && !h.move) this.hide(h.x, h.y, heroLift);
         this.heroLit = { x: Math.round(sx), y: Math.round(sy) };
       }
@@ -1916,7 +2007,9 @@ export class Renderer {
       }
       // (the size is given so that art at the finer grain is laid down at its size in game pixels)
       if (s.aura && st.alpha === 1) drawAura(g, s, st.x, st.y);
-      if (st.figure) st.figure.tails.draw(g, st.x, st.y, false);
+      // (MOCK-UP: `DECOR.near`, off: none) the scarf and the feather darkened with the figure
+      const tailsDark = st.tailsDark && st.phase <= 0 ? { color: NEAR_SIDE_DARK, a: st.tailsDark } : null;
+      if (st.figure) st.figure.tails.draw(g, st.x, st.y, false, 1, tailsDark);
       // (the hero in the middle of a turn is drawn narrower: see Figure)
       const [left, wide] = st.figure ? st.figure.span(s, st.x) : [st.x - s.ax, s.w];
       if (st.phase > 0) {
@@ -1940,7 +2033,7 @@ export class Renderer {
         g.drawImage(st.over.img, left, st.y - s.ay, wide, s.h);
         g.globalAlpha = 1;
       }
-      if (st.figure) st.figure.tails.draw(g, st.x, st.y, true);
+      if (st.figure) st.figure.tails.draw(g, st.x, st.y, true, 1, tailsDark);
       g.globalAlpha = 1;
     }
     if (cut) g.restore();

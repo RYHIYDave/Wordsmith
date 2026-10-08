@@ -514,8 +514,8 @@ function makeBones(theme: Theme, variant: number): Sprite {
   return p.sprite(FW / 2, FH / 2, GRAIN);
 }
 
-/** A lump of something broken: a shape with corners, lit and shaded like the figures, its shadow under it. */
-function lump(p: Px, ramp: Ramp, shadow: string, x: number, y: number, w: number, h: number, k: number): void {
+/** A lump of something broken: a shape with corners, lit and shaded like the figures, its shadow under it. (Exported for the mock-up of decorations, art/decor.ts: the bits about a broken flagstone.) */
+export function lump(p: Px, ramp: Ramp, shadow: string, x: number, y: number, w: number, h: number, k: number): void {
   const a = 1 + Math.round(hash(k, 1, 3) * (w / 3));
   const b = 1 + Math.round(hash(k, 2, 3) * (w / 4));
   const c = Math.round(hash(k, 3, 3) * (h / 3));

@@ -407,9 +407,11 @@ export class Tails {
 
   /**
    * Draw the tails that go behind the figure (`over` false) or in front of it (`over` true), with
-   * the figure's feet at (x, y) and each game pixel `scale` units wide.
+   * the figure's feet at (x, y) and each game pixel `scale` units wide. (MOCK-UP, `DECOR.near` in
+   * src/game/decor.ts, off: `dark` lays a flat colour over them, as the renderer lays one over the
+   * figure it darkens.)
    */
-  draw(g: CanvasRenderingContext2D, x: number, y: number, over: boolean, scale = 1): void {
+  draw(g: CanvasRenderingContext2D, x: number, y: number, over: boolean, scale = 1, dark: { color: string; a: number } | null = null): void {
     let any = false;
     for (const c of this.chains.values()) if (c.over === over) any = true;
     if (!any) return;
@@ -427,6 +429,14 @@ export class Tails {
     const h = box.y1 - box.y0 + 1;
     const cg = this.cg as CanvasRenderingContext2D;
     cg.putImageData(buf, 0, 0, box.x0, box.y0, w, h);
+    if (dark && dark.a > 0) {
+      cg.save();
+      cg.globalCompositeOperation = 'source-atop';
+      cg.globalAlpha = dark.a;
+      cg.fillStyle = dark.color;
+      cg.fillRect(box.x0, box.y0, w, h);
+      cg.restore();
+    }
     g.drawImage(this.cv as HTMLCanvasElement, box.x0, box.y0, w, h, x + ((box.x0 - HW) / 2) * scale, y + ((box.y0 - UP) / 2) * scale, (w / 2) * scale, (h / 2) * scale);
   }
 }

@@ -8,6 +8,7 @@ import { makeIconArt } from './art/icons';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
 import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
+import { makeDecorArt } from './art/decor';
 import { makeGateArt } from './art/gates';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
@@ -30,6 +31,7 @@ import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
 import { ARRIVAL_LINES, CLASSES, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
 import type { Limit } from './game/defs';
+import { DECOR } from './game/decor';
 import { DOORS } from './game/doors';
 import { RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
@@ -151,6 +153,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     ground: makeGroundArt(),
     props: makeDungeonProps(),
     gates: makeGateArt(),
+    // (MOCK-UP, NOT IN THE GAME: its pictures are painted only when first asked for, which they are
+    // not while the decorations' switch is off: game/decor.ts, DECOR)
+    decor: makeDecorArt(),
     town: makeTownProps(),
     folk: makeTownsfolk(),
     // THE HEROES PAINTED OVER THE BONES (art/heroes3.ts) ARE THE GAME'S from Version 16: the
@@ -1530,6 +1535,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     relief: RELIEF,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
     doors: DOORS,
+    /**
+     * (MOCK-UP, NOT IN THE GAME) DECORATIONS (game/decor.ts): their switch, OFF in the game. A
+     * page that photographs them sets `on` (and `near`) before it lays a dungeon, and may set it
+     * off again to photograph the same room as it is in the game.
+     */
+    decor: DECOR,
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

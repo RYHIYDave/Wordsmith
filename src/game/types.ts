@@ -285,6 +285,34 @@ export interface DoorSpot {
   out: 1 | -1;
 }
 
+/**
+ * (MOCK-UP, NOT IN THE GAME: game/decor.ts, `DECOR`, which is off) DECORATIONS (the owner, 5 Oct
+ * 2026, 12:43: "more doodads around like molted tapestries or gargoyle heads or missing broken
+ * floors tiles"). Nothing in the rules knows of them: they are seen, and that is all.
+ *   'tapestry'  cloth hung from an iron rod on a room's back wall, in the wall's plane
+ *   'gargoyle'  a stone head jutting out of a room's back wall, high up
+ *   'crack'     a flagstone of a room's floor cracked across, a piece of it sunk
+ *   'hole'      a flagstone gone, the dark under it showing
+ */
+export type DecorKind = 'tapestry' | 'gargoyle' | 'crack' | 'hole';
+
+export interface DecorSpot {
+  kind: DecorKind;
+  /** The room it is in (Room.id). */
+  room: number;
+  /**
+   * A wall piece: the wall block (tile) it hangs on. A floor piece: the flagstone it is, counted
+   * in flagstones from the level's corner (the floor has `Theme.slabs` of them to a tile's side:
+   * art/ground.ts).
+   */
+  x: number;
+  y: number;
+  /** A wall piece: its face is in a plane along +x (it looks to +y: the back wall that runs down the screen to the right); else along +y (it looks to +x). */
+  alongX: boolean;
+  /** Which of its pictures. */
+  variant: number;
+}
+
 export interface Floor {
   depth: number;
   seed: number;
@@ -322,6 +350,8 @@ export interface Floor {
   props: PropSpot[];
   /** DOORS AND GATES: what stands in the doorways; absent where the map-maker lays none (game/doors.ts, DOORS). */
   doors?: DoorSpot[];
+  /** (MOCK-UP) DECORATIONS: absent unless the map-maker lays them (game/decor.ts, DECOR: off). */
+  decor?: DecorSpot[];
 }
 
 /**

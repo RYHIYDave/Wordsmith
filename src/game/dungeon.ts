@@ -31,6 +31,7 @@
 //     the design rules out again and will fail if a change breaks one.
 
 import { RNG } from '../engine/rng';
+import { DECOR, layDecor } from './decor';
 import { DOORS, layDoors } from './doors';
 import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
@@ -1688,6 +1689,9 @@ export function generateFloor(depth: number, seed: number): Floor {
   // Step 6: DOORS AND GATES (doors.ts), if the map-maker lays them (`DOORS.on`: off). They take no
   // dice: a door stands in every doorway the level has, and the boss's gate in the boss hall's.
   if (DOORS.on) floor.doors = layDoors(floor);
+  // Step 7 (MOCK-UP, NOT IN THE GAME): DECORATIONS (decor.ts), if the map-maker lays them
+  // (`DECOR.on`: OFF). By dice of their own, after the doors: the dungeon is the one it was, but for them.
+  if (DECOR.on) floor.decor = layDecor(floor, new RNG((mixSeed(d, seed) ^ 0x0dec0a7e) >>> 0));
   return floor;
 }
 

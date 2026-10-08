@@ -69,8 +69,9 @@ function mix(a: string, b: string, t: number): string {
  * where the thing begins (u0 and u1, its ends, are multiples of STRIP), v up from the floor.
  * On the screen a plane along +x runs down to the right and one along +y down to the left, and a
  * row of the thing drops a pixel in every two as the walls' faces do (art/ground.ts, `bottomRow`).
+ * (Exported for the mock-up of decorations, art/decor.ts: a tapestry is painted on one.)
  */
-class Flat {
+export class Flat {
   private readonly col: (string | undefined)[];
   private readonly alpha: Uint8Array;
   readonly wide: number;
