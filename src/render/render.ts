@@ -41,6 +41,8 @@ import type { ClassId, Element, WordId } from '../game/types';
 import { Figure, attackClip, attackFrame, monsterAttackAge, PHASE_APART } from './figure';
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
+import { LetterSparks, WORDS_LOOK, letterRing } from './words_world';
+import { makeCarvingArt } from '../art/carving';
 import { pline, wx, wy, wyFlat } from './fx';
 import type { Cam, Fallen, Fx } from './fx';
 
@@ -419,6 +421,28 @@ export class Renderer {
    * in front of the part it is in front of), and a gargoyle's head, stood where the face is under
    * its middle, a little out from it (it juts out). Nothing with the switch off.
    */
+  /**
+   * (MOCK-UP: words in the world, `WORDS_LOOK`) THE LETTERS OF THE WORDS THINGS CARRY, drawn over the
+   * darkness, as what glows is: off the hero's weapon, the first word burned into it, rising off
+   * the blade. (A monster's word is the ring of letters on the floor under it, drawn with the rings.)
+   */
+  private drawWordsWorld(g: CanvasRenderingContext2D, game: Game, t: number): void {
+    const cam = this.cam;
+    const at = (x: number, y: number): readonly [number, number] => [wx(cam, x, y), wy(cam, x, y)];
+    this.wordsT = t;
+    const h = game.hero;
+    const weapon = h.gear.mainhand;
+    const words = weapon ? weapon.imbues.map((i) => i.word) : [];
+    const s = this.figure.last;
+    if (words.length && this.heroLit && s && WORDS_LOOK.gear === 'rise') {
+      // off the middle of the blade's lit points (a crystal's light, or else the figure's middle)
+      const pts: [number, number][] = s.lights && s.lights.length ? s.lights.map((l) => [l.x - s.ax, l.y - s.ay]) : [[0, -16]];
+      const mid = pts[Math.floor(pts.length / 2)];
+      this.sparks.emit('hero', h.x, h.y, mid[0], mid[1], words[0], t);
+    }
+    this.sparks.draw(g, at, t);
+  }
+
   private standDecor(L: Game['level'], cam: Cam): void {
     const list = L.floor.decor;
     if (!DECOR.on || !list) return;
@@ -434,7 +458,9 @@ export class Renderer {
       if (d.kind === 'tapestry') {
         // (each strip just after the block of wall it hangs on: whatever stands in the room is in
         // front of it, as it is in front of the wall, and the next block does not cover it)
-        for (const q of A.tapestry(d.alongX, d.variant)) {
+        // (MOCK-UP: words in the world) with `WORDS_LOOK.carved`, a word cut into the wall in its place
+        const carved = WORDS_LOOK.on && WORDS_LOOK.carved !== 'off';
+        for (const q of carved ? this.carve.carving(d.alongX, d.variant, WORDS_LOOK.carved === 'glow') : A.tapestry(d.alongX, d.variant)) {
           const x = d.alongX ? d.x + q.t : d.x + 1;
           const y = d.alongX ? d.y + 1 : d.y + q.t;
           put((d.alongX ? Math.floor(x + 1e-6) + d.y : d.x + Math.floor(y + 1e-6)) + 1.01, q.s, x, y);
@@ -446,6 +472,11 @@ export class Renderer {
       }
     }
   }
+
+  /** (MOCK-UP: words in the world, `WORDS_LOOK`) Letters rising off what carries a word; the carved words; the time of the last frame they were moved. */
+  private sparks = new LetterSparks();
+  private carve = makeCarvingArt();
+  private wordsT = -1;
 
   /** (MOCK-UP: `DECOR.near`) The fires of this level that a figure may stand in front of: this frame's (none, unless the switch and `near` are on). */
   private fires: { x: number; y: number }[] = [];
@@ -1291,7 +1322,9 @@ export class Renderer {
       const cy = wy(cam, m.x, m.y);
       if (m.elite || m.boss) {
         const col = m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
-        ringDots(g, cx, cy, m.r * (1.5 + 0.12 * Math.sin(t * 5)), col);
+        // (MOCK-UP: words in the world) the ring written in its word
+        if (WORDS_LOOK.on && WORDS_LOOK.monster === 'ring' && m.words.length) letterRing(g, (x, y) => [wx(cam, x, y), wy(cam, x, y)], m.x, m.y, Math.max(0.85, m.r * 2.4), m.words[0], t);
+        else ringDots(g, cx, cy, m.r * (1.5 + 0.12 * Math.sin(t * 5)), col);
       }
       if (m.id === this.lockId) lockRing(g, cx, cy, Math.max(0.62, m.r * 1.9), t);
       this.shadow(g, cx, cy, m.r * 0.75, SHADOW);
@@ -2166,6 +2199,12 @@ export class Renderer {
     for (const q of this.monsterLit) drawLights(g, q.s, q.x, q.y);
     // and on what stands in the dungeon: a brazier's fire, an open portal
     for (const q of this.propLit) drawLights(g, q.s, q.x, q.y);
+    // (MOCK-UP: words in the world) the letters of the words that things carry
+    if (WORDS_LOOK.on) this.drawWordsWorld(g, game, t);
+    else if (this.wordsT >= 0) {
+      this.sparks.clear();
+      this.wordsT = -1;
+    }
     // A beam that is being held (the owner: "Fires towards your finger ... You can move the beam
     // around in different directions as long as you hold down"). The rules bite along it five
     // times a second; the picture of it is told where it runs every frame, so it turns with the

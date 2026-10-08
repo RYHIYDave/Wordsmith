@@ -32,6 +32,7 @@ import { createScreen } from './engine/screen';
 import { ARRIVAL_LINES, CLASSES, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
 import type { Limit } from './game/defs';
 import { DECOR } from './game/decor';
+import { WORDS_LOOK } from './render/words_world';
 import { DOORS } from './game/doors';
 import { RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
@@ -1541,6 +1542,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      * off again to photograph the same room as it is in the game.
      */
     decor: DECOR,
+    /**
+     * (MOCK-UP, NOT IN THE GAME) WORDS IN THE WORLD (render/words_world.ts): its switch, OFF in the
+     * game, and which look of each part is drawn when it is on. For the pages that photograph it.
+     */
+    words: WORDS_LOOK,
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is
