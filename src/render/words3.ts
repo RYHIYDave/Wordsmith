@@ -1,4 +1,5 @@
-// THE NEW WORDS AT WORK (a mock-up: NOT IN THE GAME). The owner chose eight new words on 8 Oct 2026
+// THE NEW WORDS AT WORK (since Version 19.3, four of them in the game: see WORDS3, and events3 at
+// the foot of this file; the rest of what follows was the mock-up). The owner chose eight new words on 8 Oct 2026
 // at 12:26 ("Let the other agent know which words I’ve chosen and to add them to the game", 12:27):
 // Pulling, Splitting, Heavy, Precise, Hexing, Stilling, Frenzied and Guarding. Their rules are the
 // words chat's to write; this is how each one LOOKS at work, in front (on the hit) and behind (what
@@ -16,8 +17,14 @@ import type { GameEvent, Monster } from '../game/state';
 import type { Cam, Fx } from './fx';
 import { pline, wx, wy } from './fx';
 
-/** The switch. Off: nothing here is drawn or called, and the game is as it was. */
-export const WORDS3 = { on: false };
+/**
+ * The switch. Off: nothing here is drawn or called, and the game is as it was. ON SINCE VERSION
+ * 19.3, for the four of the eight that are in the game (Heavy, Precise, Frenzied, Guarding: their
+ * looks called up by the rules, `events3`), on the owner's yes to pictures of them at work in the
+ * game (8 Oct 2026, 18:23: "Yes, as they are (Recommended)"). The other four are not in the game:
+ * their looks are still the demo's, for the playtest's page alone.
+ */
+export const WORDS3 = { on: true };
 
 export type NewWord = 'pulling' | 'splitting' | 'heavy' | 'precise' | 'hexing' | 'stilling' | 'frenzied' | 'guarding';
 export const NEW_WORDS: readonly NewWord[] = ['pulling', 'splitting', 'heavy', 'precise', 'hexing', 'stilling', 'frenzied', 'guarding'];

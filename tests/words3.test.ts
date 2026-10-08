@@ -60,8 +60,10 @@ function canvas(): { g: CanvasRenderingContext2D; drawn: () => number } {
 const cam: Cam = { ox: 200, oy: 100, lift: null } as unknown as Cam;
 const everywhere = (): boolean => true;
 
-test('the switch is off: the game draws as it did', () => {
-  assert.equal(WORDS3.on, false);
+// (Version 19.3: on, for the four words in the game, on his yes of 8 Oct 2026, 18:23, to pictures
+// of them at work: "Yes, as they are (Recommended)". Until then it was off.)
+test('the switch is on since Version 19.3, for the four words in the game', () => {
+  assert.equal(WORDS3.on, true);
 });
 
 test('everything the renderer asks of the new words is behind the switch', () => {
@@ -87,8 +89,11 @@ test("the playtest's hands do nothing until a playtest uses them", () => {
   const handle = fx.handle;
   const hands = demo3(fx, () => null);
   assert.equal(fx.handle, handle, 'making the hands does not touch the effects');
-  assert.equal(hands.switch.on, false);
+  assert.equal(hands.switch, WORDS3, 'the hands hold the switch itself');
+  assert.equal(W3.demo, false, 'nobody is listening: the demo does nothing of the rules\' share');
   // and with the switch off, the game's own events call up nothing, even when told to listen
+  const was = WORDS3.on;
+  WORDS3.on = false;
   clear3();
   W3.front = ['heavy', 'pulling', 'hexing', 'frenzied'];
   W3.behind = ['heavy', 'pulling', 'hexing', 'frenzied'];
@@ -103,6 +108,7 @@ test("the playtest's hands do nothing until a playtest uses them", () => {
   assert.equal(W3.patches.length + W3.marks.size + W3.drags.length + W3.frenzy.n, 0);
   W3.front = [];
   W3.behind = [];
+  WORDS3.on = was;
 });
 
 test('Heavy: everything holds for a tenth of a second, and the screen kicks (Movement 7)', () => {

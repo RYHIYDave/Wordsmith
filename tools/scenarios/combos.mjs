@@ -12,8 +12,9 @@
 //          words joined by '+', e.g. "power+fire|twin+volatile/twin+frost|leech+lightning"
 import { makeHands, log } from './lib.mjs';
 
-const WORDS = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile'];
-const ELEMENTS = ['fire', 'frost', 'lightning'];
+// (since Version 19.3: the four new words too, and the rule of one DAMAGE word a side, where it was one element)
+const WORDS = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'heavy', 'precise', 'frenzied', 'guarding'];
+const DAMAGE = ['power', 'fire', 'frost', 'lightning', 'poison'];
 
 function rng(seed) {
   let a = seed >>> 0;
@@ -27,8 +28,8 @@ export default async function (page, snap) {
   const rand = rng(Number(process.env.SEED || 1) * 7919 + cls.length);
   const side = () => {
     for (;;) {
-      const a = WORDS[Math.floor(rand() * 8)]; const b = WORDS[Math.floor(rand() * 8)];
-      if (a !== b && !(ELEMENTS.includes(a) && ELEMENTS.includes(b))) return [a, b];
+      const a = WORDS[Math.floor(rand() * WORDS.length)]; const b = WORDS[Math.floor(rand() * WORDS.length)];
+      if (a !== b && !(DAMAGE.includes(a) && DAMAGE.includes(b))) return [a, b];
     }
   };
   const parse = (s) => { const [f, b] = s.split('|'); return { front: (f || '').split('+').filter(Boolean), behind: (b || '').split('+').filter(Boolean) }; };
