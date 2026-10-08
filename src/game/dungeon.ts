@@ -1779,6 +1779,7 @@ export function generateFloor(depth: number, seed: number): Floor {
   if (lay.gated >= 0) rooms[lay.gated].gated = true;
   if (lay.gated >= 0 && lay.nook >= 0) rooms[lay.nook].nook = true;
   if (lay.locks >= 0) rooms[lay.locks].locks = true;
+  for (const c of lay.corridors) if (c.pair) rooms[c.b].nextDoor = true;
   const floor: Floor = {
     depth: d,
     seed,

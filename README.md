@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (7 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 18.7).**
+**Status (8 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 18.8).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -142,6 +142,11 @@ Version 18.7: monsters do not open doors. A door opens for you alone. Shut, it h
 back, and stops arrows, spells and sight both ways; nothing behind a shut door can be hurt, and
 nothing in a room wakes or fights until you open its door. So a room's fight begins when you
 choose. And every kind of brute (plain, elite, guardian) has 30% less life than it had.
+Version 18.8: not every room has a door. Treasure vaults and guardian lairs have one, and about
+one room in five of the rest; the others are open again, as they were before doors, so what is
+in them sees you coming and comes out to meet you. And in town the heroes no longer draw their
+weapons into the battle stance when they are left standing: they pass the time as they do on a
+class card.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which

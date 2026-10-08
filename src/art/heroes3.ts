@@ -165,25 +165,26 @@ const KNIGHT: Plan = { idle: 'rear', walk: 'krun', attack: 'strike', heavy: 'sla
 const RANGER: Plan = { idle: 'rstand', walk: 'rrun', attack: 'shot', heavy: 'volley', roll: 'roll', fall: 'rfall', reel: 'rreel', lurch: 'rlurch', idleA: 'squirrel', idleB: 'sighting' };
 const MAGE: Plan = { idle: 'mstand', walk: 'mrun', attack: 'wave', heavy: 'orb', hold: 'beam', release: 'beamend', fall: 'mfall', reel: 'mreel', lurch: 'mlurch', idleA: 'mlight', idleB: 'reading' };
 /**
- * In town: how they stand and run with their weapons on their backs, and the idle the owner asked
- * for there (21:34: "then you can add as another idle animation them drawing their weapons and
- * getting into their battle stance"). What a hero does in a fight is the same wherever they are
- * (there is nothing to fight in town). The mage has no other figure: her staff is her walking
- * stick; in town she makes ready with it as well as what she does anywhere.
+ * In town: how they stand and run with their weapons on their backs, and what they do there when
+ * left standing. What a hero does in a fight is the same wherever they are (there is nothing to
+ * fight in town). The mage has no other figure: her staff is her walking stick.
+ *   DRAWING THE WEAPON INTO THE BATTLE STANCE IS NOT ONE OF THE THINGS THEY DO TO PASS THE TIME
+ *   IN TOWN, since Version 18.8 (the owner, 7 Oct 2026, 23:09: "Don’t use the battle stance as
+ *   an idle animations while in town stance"), as it is not on a class card (6 Oct, 22:58:
+ *   "lets not have the battle stance be an idle animation during the character select screen.
+ *   that way its something different when you select them"). Until 18.8 it was the first of
+ *   their two in town (6 Oct, 21:34: "then you can add as another idle animation them drawing
+ *   their weapons and getting into their battle stance"). It is kept for the moment they are
+ *   picked (`ready`).
  */
-const KNIGHT_TOWN: Plan = { ...KNIGHT, idle: 'ktown', walk: 'ktownrun', idleA: 'kdraw', idleB: 'klook', ready: 'kdraw' };
-const RANGER_TOWN: Plan = { ...RANGER, idle: 'rtown', walk: 'rtownrun', idleA: 'rdraw', idleB: 'tsquirrel', ready: 'rdraw' };
-const MAGE_TOWN: Plan = { ...MAGE, idleA: 'mready', idleB: 'mlight', ready: 'mready' };
-/**
- * `card`: ON A CLASS CARD they are as in town, but DRAWING THE WEAPON IS NOT ONE OF THE THINGS
- * THEY DO TO PASS THE TIME THERE (the owner, 22:58: "lets not have the battle stance be an idle
- * animation during the character select screen.  that way its something different when you
- * select them"): it is kept for the moment they are picked (`ready`).
- */
+const KNIGHT_TOWN: Plan = { ...KNIGHT, idle: 'ktown', walk: 'ktownrun', idleA: 'klook', idleB: undefined, ready: 'kdraw' };
+const RANGER_TOWN: Plan = { ...RANGER, idle: 'rtown', walk: 'rtownrun', idleA: 'tsquirrel', idleB: 'tsighting', ready: 'rdraw' };
+const MAGE_TOWN: Plan = { ...MAGE, idleA: 'mlight', idleB: 'reading', ready: 'mready' };
+/** `card`: ON A CLASS CARD they are as in town (since 18.8 they pass the time there as in town as well). */
 export const PLANS: Record<ClassId, { dungeon: Plan; town: Plan; card: Plan }> = {
-  warrior: { dungeon: KNIGHT, town: KNIGHT_TOWN, card: { ...KNIGHT_TOWN, idleA: 'klook', idleB: undefined } },
-  ranger: { dungeon: RANGER, town: RANGER_TOWN, card: { ...RANGER_TOWN, idleA: 'tsquirrel', idleB: 'tsighting' } },
-  mage: { dungeon: MAGE, town: MAGE_TOWN, card: { ...MAGE_TOWN, idleA: 'mlight', idleB: 'reading' } },
+  warrior: { dungeon: KNIGHT, town: KNIGHT_TOWN, card: { ...KNIGHT_TOWN } },
+  ranger: { dungeon: RANGER, town: RANGER_TOWN, card: { ...RANGER_TOWN } },
+  mage: { dungeon: MAGE, town: MAGE_TOWN, card: { ...MAGE_TOWN } },
 };
 
 /** Frames a second: of a standing loop, a run, anything played once, and what a hero does when left standing. */

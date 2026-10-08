@@ -50,7 +50,7 @@ import nodeAssert from 'node:assert/strict';
 import { WALLS_FADING } from '../src/art/ground';
 import type { RNG } from '../src/engine/rng';
 import { MONSTERS, TUNE } from '../src/game/defs';
-import { DOORS, DOOR_NEAR, DOOR_SWING, GATE_FALL, GATE_INSIDE, GATE_RISE, PIER_HOLD, doorFace, doorLine, doorMiddle, doorPiers, doorTiles, doorWay, doorways, insideBy, makeDoors, pierGrid, shutGrid, stepDoors } from '../src/game/doors';
+import { DOORS, DOOR_NEAR, DOOR_SWING, GATE_FALL, GATE_INSIDE, GATE_RISE, PIER_HOLD, doorFace, doorLine, doorMiddle, doorPiers, doorTiles, doorWay, doorways, hasDoor, insideBy, makeDoors, pierGrid, shutGrid, stepDoors } from '../src/game/doors';
 import type { DoorInst } from '../src/game/doors';
 import { generateFloor } from '../src/game/dungeon';
 import { Game } from '../src/game/game';
@@ -71,14 +71,19 @@ const assert: Assert = nodeAssert;
 
 const DT = 1 / 60;
 
-/** The map-maker's switch for doors, set for the length of a test and put back. */
-function doorsSet<T>(on: boolean, run: () => T): T {
+/** The share of rooms other than vaults and lairs that have a door, as the game has it (Version 18.8). */
+const SHARE = DOORS.share;
+/** The map-maker's switch for doors, set for the length of a test and put back; and the share of rooms that have one (as in the game, unless a test asks for every room to have one, as until 18.8: what a door does is asked so). */
+function doorsSet<T>(on: boolean, run: () => T, share = SHARE): T {
   const was = DOORS.on;
+  const wasShare = DOORS.share;
   DOORS.on = on;
+  DOORS.share = share;
   try {
     return run();
   } finally {
     DOORS.on = was;
+    DOORS.share = wasShare;
   }
 }
 
@@ -95,7 +100,7 @@ type Inner = {
 };
 const inner = (g: Game): Inner => g as unknown as Inner;
 
-/** A run in dungeon number `depth`, laid with doors; nothing in it but the boss, who sleeps; a hero nothing can hurt. */
+/** A run in dungeon number `depth`, laid with A DOOR IN EVERY ROOM'S WAY IN (as until Version 18.8: what a door does is asked of it); nothing in it but the boss, who sleeps; a hero nothing can hurt. */
 function dungeon(seed: number, depth: number, cls: 'warrior' | 'ranger' | 'mage' = 'warrior'): Game {
   return doorsSet(true, () => {
     const g = new Game(cls, seed);
@@ -104,7 +109,7 @@ function dungeon(seed: number, depth: number, cls: 'warrior' | 'ranger' | 'mage'
     g.monsters = g.monsters.filter((m) => m.boss);
     g.hero.invuln = 1e9;
     return g;
-  });
+  }, 1);
 }
 /** Steps of the game with nobody at the controls; the events of all of them. */
 function steps(g: Game, n: number): GameEvent[] {
@@ -146,12 +151,13 @@ function passage(f: Floor, d: DoorSpot): { mid: number; within: number } {
 
 test('the switch is on in the game: a dungeon has doors and the town has none; with it off no dungeon has a door, and no level keeps one', () => {
   assert.equal(DOORS.on, true, 'on the owner\'s word of 7 Oct 2026 about its pictures (17:54, and 18:02)');
+  assert.equal(DOORS.share, 0.2, 'not every room has a door: the owner, 7 Oct 2026, 23:12, "Every room doesn’t have to have a door"');
   for (const [depth, seed] of [[1, 3], [2, 6], [7, 41]]) {
     const doors = generateFloor(depth, seed).doors ?? [];
-    assert.ok(doors.length >= 5 && doors.filter((d) => d.kind === 'bossgate').length === 1, `dungeon ${depth}, seed ${seed}: ${doors.length} doors and gates, one of them the boss's`);
+    assert.ok(doors.length >= 2 && doors.filter((d) => d.kind === 'bossgate').length === 1, `dungeon ${depth}, seed ${seed}: ${doors.length} doors and gates, one of them the boss's`);
   }
   const lit = makeDungeon(2, 6);
-  assert.ok(lit.doors.length >= 5 && lit.pier !== null);
+  assert.ok(lit.doors.length >= 2 && lit.pier !== null);
   assert.deepEqual(makeTown(7).doors, [], 'the town has none either way');
   assert.equal(makeTown(7).pier, null);
   doorsSet(false, () => {
@@ -236,7 +242,8 @@ test('laying doors takes no dice: with the switch on a dungeon is the dungeon it
     }
   }
   console.log(`(${same} dungeons the same with doors as without, but for ${piers} tiles of stone beside doors, from under which ${cleared} things were taken; ${moved} whose boss hall was come into at a corner, and is set down again)`);
-  assert.ok(same > 100 && moved > 0 && moved < 20 && piers > same * 20, `${same} the same, ${moved} with the hall set down again, ${piers} tiles of stone`);
+  // (two tiles of stone to a door; since Version 18.8 a dungeon has some six doors, not one to every room)
+  assert.ok(same > 100 && moved > 0 && moved < 20 && piers > same * 8, `${same} the same, ${moved} with the hall set down again, ${piers} tiles of stone`);
 });
 
 const SAMPLES: { depth: number; seed: number; f: Floor; off: Floor }[] = [];
@@ -247,8 +254,12 @@ for (const depth of [1, 2, 3, 5, 8, 12]) {
   }
 }
 
-test('every room but the first has one way in, the doorway toward the start, and a door stands in it; the doorways that lead on are open; a door is one tile wide with wall on either side', () => {
+test('every room but the first has one way in, the doorway toward the start; a door stands in it in every vault and lair and in about one in five of the other rooms, the others are open; the doorways that lead on are open; a door is one tile wide with wall on either side', () => {
   let doors = 0;
+  let rewards = 0;
+  let rewardDoors = 0;
+  let others = 0;
+  let otherDoors = 0;
   let gates = 0;
   let onward = 0;
   let cornered = 0;
@@ -279,9 +290,19 @@ test('every room but the first has one way in, the doorway toward the start, and
           cornered++;
           assert.ok(r.kind !== 'boss', `${what}: the boss hall is never come into at a corner`);
         } else assert.equal(inWays.length, 1, `${what}: room ${r.id} has one way in`);
-        for (const d of inWays) want.push({ ...d, kind: r.kind === 'boss' ? 'bossgate' : 'door' });
+        // (Version 18.8: NOT EVERY ROOM HAS A DOOR. The owner, 7 Oct 2026, 23:12: "Every room doesn’t have to have a door.  It’s just a cool little interactive thing that gets you immersed.  It’s not to force little contained battles in each room")
+        const reward = r.kind === 'treasure' || r.kind === 'guardian';
+        const door = r.kind !== 'boss' && hasDoor(before, r);
+        if (inWays.length === 1 && reward) {
+          rewards++;
+          if (door) rewardDoors++;
+        } else if (inWays.length === 1 && r.kind !== 'boss') {
+          others++;
+          if (door) otherDoors++;
+        }
+        for (const d of inWays) if (r.kind === 'boss' || door) want.push({ ...d, kind: r.kind === 'boss' ? 'bossgate' : 'door' });
       }
-      assert.deepEqual(all, want, `${what}: a door in every room's way in, the gate in the boss hall's, and nowhere else`);
+      assert.deepEqual(all, want, `${what}: a door in the way in of the rooms that have one, the gate in the boss hall's, and nowhere else`);
     }
     // (a dungeon whose boss hall was set down again with doors is another dungeon: what follows is asked of it all the same)
     for (const d of all) {
@@ -343,8 +364,11 @@ test('every room but the first has one way in, the doorway toward the start, and
     }
     assert.ok(reach[Math.floor(f.boss.y) * f.w + Math.floor(f.boss.x)] >= 0, `${what}: the boss is reached`);
   }
+  assert.equal(rewardDoors, rewards, `every vault and lair with a way in has a door in it (${rewardDoors} of ${rewards})`);
+  assert.ok(otherDoors >= others * 0.1 && otherDoors <= others * 0.3, `about one in five of the other rooms has one (${otherDoors} of ${others})`);
   console.log(`(${rooms} rooms: ${doors} doors and ${gates} boss's gates in their ways in; ${onward} doorways that lead on, open as ever; ${cornered} rooms come into at a corner, with no door)`);
-  assert.ok(doors > rooms * 0.6 && gates === SAMPLES.length && onward > doors * 0.8, `${doors} doors, ${gates} gates, ${onward} open doorways in ${rooms} rooms`);
+  // (since Version 18.8 about a third of the rooms have a door: every vault and lair, and one in five of the rest)
+  assert.ok(doors > rooms * 0.25 && doors < rooms * 0.5 && gates === SAMPLES.length && onward > doors * 0.8, `${doors} doors, ${gates} gates, ${onward} open doorways in ${rooms} rooms`);
 });
 
 test('the boss hall has one way in, a doorway, and the boss\'s gate stands in it', () => {
@@ -680,7 +704,7 @@ test('whatever is shut in cannot come at the hero: in real dungeons with all the
       q.enterDungeon();
       q.hero.invuln = 1e9;
       return q;
-    });
+    }, 1);
     const L = g.level;
     const f = L.floor;
     const h = g.hero;
@@ -751,7 +775,7 @@ test('the dead that rise for a new player\'s first word rise where they can come
   for (const seed of [6, 9, 13]) {
     for (const out of [-6.3, -5.9, -5.5]) {
       for (const mended of [true, false]) {
-        const g = doorsSet(true, () => Game.forFirstRun('warrior', seed));
+        const g = doorsSet(true, () => Game.forFirstRun('warrior', seed), 1);
         const L = g.level;
         const h = g.hero;
         g.monsters.length = 0;

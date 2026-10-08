@@ -376,7 +376,7 @@ const tilesOf = (f: Floor, d: DoorSpot): number[] => {
 const middleOf = (f: Floor, r: Room): number => Math.floor(r.y + r.h / 2) * f.w + Math.floor(r.x + r.w / 2);
 const apart = (a: Room, b: Room): number => Math.max(Math.max(b.x - (a.x + a.w - 1), a.x - (b.x + b.w - 1)) - 1, Math.max(b.y - (a.y + a.h - 1), a.y - (b.y + b.h - 1)) - 1);
 
-/** A dungeon's fingerprint: everything of the Floor the map-maker lays, in a fixed order (the scratchpad's mix/fingerprint.ts took 18.7's with the same). */
+/** A dungeon's fingerprint: everything of the Floor the map-maker lays, in a fixed order (the scratchpad's mix/fingerprint.ts took 18.8's with the same). */
 function fingerprint(f: Floor): string {
   let h = 0x811c9dc5;
   const add = (n: number): void => {
@@ -414,7 +414,7 @@ function fingerprint(f: Floor): string {
     add(r.h);
     str(r.kind);
     add(r.path);
-    add((r.gated ? 1 : 0) + (r.locks ? 2 : 0) + (r.nook ? 4 : 0));
+    add((r.gated ? 1 : 0) + (r.locks ? 2 : 0) + (r.nook ? 4 : 0) + (r.nextDoor ? 8 : 0));
   }
   add(Math.round(f.start.x * 2));
   add(Math.round(f.start.y * 2));
@@ -449,22 +449,23 @@ function fingerprint(f: Floor): string {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
-test('with the switch off a dungeon is Version 18.7\'s to the letter: the fingerprints of nine of them, taken from 18.7 as it was frozen for release', () => {
-  // (depth, seed, the fingerprint 18.7 gave: everything of the Floor, its tiles, heights, cuts, art
-  // dice, rooms, packs, props and doors. Taken on 7 Oct 2026 at 23:05 from the frozen copy of 18.7.)
+test('with the switch off a dungeon is Version 18.8\'s to the letter: the fingerprints of nine of them, taken from 18.8 as it was frozen for release', () => {
+  // (depth, seed, the fingerprint 18.8 gave: everything of the Floor, its tiles, heights, cuts, art
+  // dice, rooms, packs, props and doors. Taken on 8 Oct 2026 at 00:55 from the frozen copy of 18.8;
+  // until then 18.7's, from its frozen copy, which the same tool still gives for that copy.)
   const was: ReadonlyArray<readonly [number, number, string]> = [
-    [1, 3, '4e2c3270'],
-    [1, 104877239, 'caccbe6f'],
-    [2, 6, '0bba0156'],
-    [3, 11, '4da8b5da'],
-    [4, 14, '400b6ac7'],
-    [5, 21, 'c1bfbed5'],
-    [6, 8, 'a86b0fd3'],
-    [9, 4242, 'a43e0686'],
-    [12, 7, 'b053ac19'],
+    [1, 3, '41394156'],
+    [1, 104877239, 'b7ec0d05'],
+    [2, 6, 'f1935dc1'],
+    [3, 11, '33d85f2c'],
+    [4, 14, '7d5bb30a'],
+    [5, 21, '068c4bd2'],
+    [6, 8, '2d877563'],
+    [9, 4242, 'c815fa35'],
+    [12, 7, '78c5a287'],
   ];
   mixed(false, () => {
-    for (const [depth, seed, print] of was) assert.equal(fingerprint(generateFloor(depth, seed)), print, `dungeon ${depth}, seed ${seed} is the dungeon 18.7 laid`);
+    for (const [depth, seed, print] of was) assert.equal(fingerprint(generateFloor(depth, seed)), print, `dungeon ${depth}, seed ${seed} is the dungeon 18.8 laid`);
   });
   // and with it on, from the second dungeon on, every one of them is another
   mixed(true, () => {
@@ -576,6 +577,10 @@ test('with the mix on, in every dungeon from the second: the lever can be come t
             if (gap !== 3) continue;
             pairs++;
             assert.ok(!a.locks && !b.locks, `${where}: a room that locks has no room next door`);
+            // (and the door between them is always there, whatever the share of rooms with a door: Version 18.8's `hasDoor`)
+            const far = b.nextDoor ? b : a.nextDoor ? a : null;
+            assert.ok(far !== null, `${where}: of rooms ${a.id} and ${b.id}, next door, the later is marked as set down next door`);
+            assert.ok((f.doors ?? []).some((d) => far !== null && d.room === far.id && d.kind === 'door'), `${where}: a door stands between rooms ${a.id} and ${b.id}`);
           }
         }
         joints += f.rooms.length - 1;

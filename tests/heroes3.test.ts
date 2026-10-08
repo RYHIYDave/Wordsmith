@@ -172,16 +172,20 @@ test('making ready: a hero in town has the picture of it, and it ends in another
   }
 });
 
-test('on a class card no hero passes the time by drawing their weapon: that is kept for when they are picked', () => {
+test('on a class card, and in town, no hero passes the time by drawing their weapon into the battle stance: that is kept for when they are picked', () => {
   // The owner, 6 Oct 2026, 22:58: "lets not have the battle stance be an idle animation during
-  // the character select screen.  that way its something different when you select them".
+  // the character select screen.  that way its something different when you select them". And
+  // of town, 7 Oct 2026, 23:09: "Don’t use the battle stance as an idle animations while in town
+  // stance" (until Version 18.8 it was the first of their two things to do in town).
   const CARD: HeroLook = { twoHanded: true, town: true, card: true };
   for (const cls of CLASS_IDS) {
     const plan = PLANS[cls].card;
     assert.ok(plan.ready !== undefined, `${cls}: nothing to play when they are picked`);
     assert.ok(plan.idleA !== plan.ready && plan.idleB !== plan.ready, `${cls}: on their card they draw their weapon to pass the time`);
-    // (in town itself it is still one of the things they do)
-    assert.ok(PLANS[cls].town.idleA === PLANS[cls].town.ready, `${cls}: in town they no longer draw their weapon when left standing`);
+    const inTown = PLANS[cls].town;
+    assert.ok(inTown.ready === plan.ready, `${cls}: in town they make ready as on their card`);
+    assert.ok(inTown.idleA !== inTown.ready && inTown.idleB !== inTown.ready, `${cls}: in town they draw their weapon to pass the time`);
+    assert.ok(inTown.idleA !== undefined, `${cls}: nothing at all to do in town`);
     const card = art.of(cls, CARD);
     const town = art.of(cls, TOWN);
     assert.ok(card !== town, `${cls}: the card's figure is the town's`);
@@ -193,9 +197,9 @@ test('on a class card no hero passes the time by drawing their weapon: that is k
     // whatever they do on a card, they never come to the stance that making ready ends in
     if (!ready) continue;
     const stance = ready.frames[ready.frames.length - 1];
-    for (const c of [card.front.clips?.idleA, card.front.clips?.idleB]) {
+    for (const [where, c] of [['card', card.front.clips?.idleA], ['card', card.front.clips?.idleB], ['town', town.front.clips?.idleA], ['town', town.front.clips?.idleB]] as const) {
       if (!c) continue;
-      for (let i = 0; i < c.frames.length; i += 4) assert.ok(unlike(c.frames[i], stance) > 150, `${cls}: frame ${i} of a thing done on the card is the battle stance`);
+      for (let i = 0; i < c.frames.length; i += 4) assert.ok(unlike(c.frames[i], stance) > 150, `${cls}: frame ${i} of a thing done ${where === 'card' ? 'on the card' : 'in town'} is the battle stance`);
     }
   }
   // (each has something to do there, all the same)

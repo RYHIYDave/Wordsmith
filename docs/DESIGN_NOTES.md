@@ -4222,6 +4222,72 @@ THINGS" to "VERSION 18.7 IS LIVE").
   is his to find: it is a bigger change to every fight than its few lines look. (Nothing comes
   out of a room to meet him any more; he chooses when each room's fight begins.)
 
+### Version 18.8: a door on some rooms only, and no battle stance as an idle in town
+
+**What he said.** 7 Oct 2026, ten and thirteen minutes after Version 18.7 went out with a door in
+every room's way in and the words "So each room's fight now starts when you open its door. Nothing
+comes out to meet you.": at 23:09, **"Don’t use the battle stance as an idle animations while in
+town stance"**; at 23:12, **"Every room doesn’t have to have a door.  It’s just a cool little
+interactive thing that gets you immersed.  It’s not to force little contained battles in each
+room"**. He was told at 23:12: "Got it. In town the heroes will stop drawing their weapons into the
+battle stance when left idle. They'll pass the time the way they do on the class card instead. The
+battle stance stays for the moment you pick them. / It goes out as Version 18.8 tonight, around
+12:45."; and at 23:14: "Got it: doors are for flavour, not to wall off every fight. Most rooms will
+be open again, as before doors, so monsters see you and come out to meet you. / Doors will stay on
+treasure vaults and guardian lairs, and on about one in five other rooms, so they still turn up.
+Monsters still won't open the ones there are. / I'll fold this into 18.8 with the town idle. That
+moves 18.8 to around 1:45." Both are his direct words about what is seen and played: no new
+picture; what the heroes do in town now is what they do on a class card, which he has seen.
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "HIS WORD AFTER 18.7 WENT OUT" to
+"VERSION 18.8 IS LIVE").
+
+- **NOT EVERY ROOM HAS A DOOR** (`DOORS.share`, 0.2, and `hasDoor` in `src/game/doors.ts`;
+  `layDoors`). A door stands in the way in of every TREASURE VAULT and every GUARDIAN'S LAIR, and
+  of about ONE IN FIVE OF THE OTHER ROOMS; the rest are open, as they were before there were
+  doors, so what is in them sees the hero coming and comes out to meet him. Which rooms is drawn
+  by a lot of each room's own (the level's seed, its depth and the room's number): NO DICE OF THE
+  MAP-MAKER'S ARE THROWN FOR IT, so a dungeon is 18.7's but for the doors it no longer has (and
+  the stone beside them, which is floor again). Measured in 240 dungeons: some six doors a
+  dungeon (one to twelve); 918 of the 990 vaults and lairs have one (the others are come into at
+  a corner, where no door can stand); 539 of the 3,012 other rooms (18 in a hundred). The boss's
+  hall has its gate as ever. WHAT A DOOR DOES IS 18.7's: it opens for the hero alone, and shut it
+  holds monsters and stops sight, shots and blasts.
+- **IN TOWN NO HERO DRAWS INTO THE BATTLE STANCE TO PASS THE TIME** (`PLANS` in
+  `src/art/heroes3.ts`). Left standing in town, the knight looks about him; the ranger has the
+  squirrel and the sighting; the mage her light and her reading: what they do on a class card.
+  Until 18.8 drawing the weapon into the battle stance was the first of their two things in town
+  (his word of 6 Oct, 21:34: "then you can add as another idle animation them drawing their
+  weapons and getting into their battle stance"); on a class card it has not been one since 6
+  Oct, 22:58. It is kept for the moment a hero is picked.
+
+**How it was tested.**
+
+- `tsc` clean; the unit suite in the working tree, 613 of 613 (23:20 to 23:23), and again in the frozen copy
+  after the regression (613 of 613, 00:15 to 00:18). Restated: in `tests/heroes3.test.ts`, that on a class card
+  AND IN TOWN no hero passes the time by drawing their weapon, and that nothing they do there
+  comes to the battle stance; in `tests/doors.test.ts`, the test of where doors stand (a door in
+  the way in of every vault and lair with one, about one in five of the others, the boss's gate,
+  and nothing else; every room still reached), and two of its counts; the tests of what a door
+  does lay a door in every room for themselves, as `tools/scenarios/doors.mjs` does for its
+  dungeon.
+- Before the regression, 27 playtests two at a time on a dev page built from the tree (23:23 to 23:32: the town in
+  four layouts, its looks and taps, the class cards in four, the doors in four, the walls on the
+  PC and a phone, a dungeon, two of the first dungeon's lessons, the monsters, the side paths,
+  the boss, a monkey, the quips, the soak): all clean.
+- **The regression** on a copy frozen at 23:33 (the scratchpad's `v188a/arpg_frozen`,
+  23:33 to 00:14, two at a time, nothing else running): **140 OF 140 PLAYTESTS FINISHED
+  CLEAN.** Speed: 60.3 frames a second, longest frame 16.8 ms; the slowest fights of the four
+  word-pair runs 59.4 to 59.7 frames a second.
+- THE RELEASE BUILD, made in the copy at 00:18: `Play.html` 851,838 bytes and
+  `dist/artifact.html` 851,516, both saying V18.8; kept in the scratchpad's
+  `v188a/release/`.
+- **The published page itself** (`wrap188.sh` in the scratchpad, 00:18 to 00:34): **58
+  of 58 playtests clean.** The same 58 as 18.7's. Published at 00:34 ("Version 42", version
+  id `1791434083-5584`); the file published is the frozen copy's `dist/artifact.html`, compared byte
+  for byte with the kept copy before and after.
+- NOT CHECKED: a real phone.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4330,8 +4396,9 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               them by `cutClean` in dungeon.ts, `RELIEF.cuts`; and since 18.3 the corridors
               straight across the screen, `Across` and `cutBands`, `RELIEF.across`),
               doors (18.5: DOORS AND THE BOSS'S GATE: `DOORS.on`; `layDoors`, the map-maker's
-              last step: a door in each room's way in, the gate in the boss hall's, and the
-              tile on either side of a door made wall; where a door's line, face, way and
+              last step: a door in the way in of each room that has one (since 18.8 `hasDoor`,
+              `DOORS.share`: every vault and lair, and about one in five of the rest), the gate
+              in the boss hall's, and the tile on either side of a door made wall; where a door's line, face, way and
               piers are; `stepDoors`: a door opens for the hero when he comes near, and
               since 18.7 for nobody else; `shutGrid`: where a door is still shut)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
@@ -4398,7 +4465,8 @@ tests/        dungeon, items, town (every service's rules), sim (bots play whole
               reaches it; a brute through a door; the hero eased into a door; the walls beside
               one; the gate falls, holds and rises; and 18.7: no monster opens a door, a
               shut one holds monsters and stops sight and shots, what is shut in a room is out
-              of the hero's reach and cannot come at him, the risen dead rise on his side),
+              of the hero's reach and cannot come at him, the risen dead rise on his side;
+              and 18.8: where doors stand, a vault's and a lair's and about one in five others),
               gates (18.5: the pictures: frame, leaf, gate and arch, the mark, the portcullis),
               small (18.6: a ranged monster holds its ground; the pick-up range; a brute's life)
 tools/        build, preview, playtest + scenarios/, regress.sh (every browser playtest),
@@ -4438,7 +4506,9 @@ Contracts worth knowing:
 - **Doors (since Version 18.5; `game/doors.ts`):** a DOORWAY is three tiles of corridor floor in
   the row of wall along a room's side. Every room but the first has one WAY IN (the doorway from
   which a step into the room is a step further from the level's start); `layDoors` puts a door
-  there, or in the boss hall's the boss's gate, and nothing in doorways that lead on. A DOOR IS
+  there in the rooms that have one (`hasDoor`: since Version 18.8 every vault and lair, and about
+  one in five of the other rooms, `DOORS.share`, by a lot of each room's own; until then every
+  room), or in the boss hall's the boss's gate, and nothing in doorways that lead on. A DOOR IS
   ONE TILE WIDE, the middle of its doorway's three: the tile on either side becomes `T_WALL` in
   the level itself (its PIERS; `Level.pier` marks them), so walking, sight, shots, way-finding
   and the map need nothing more. `free` holds a body off a pier by no more than `PIER_HOLD` (0.4
@@ -4545,6 +4615,8 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 18.8: a door on some rooms only; no battle stance as an idle in town
+tsx <scratchpad>/v187/try/doorshare.ts                                            # (history: 240 dungeons: some six doors a dungeon; every vault and lair with a way in has one, 18 in a hundred of the other rooms)
 # Version 18.7: monsters do not open doors; what is shut in a room is out of reach; a brute's life
 tsx --test tests/doors.test.ts                                                    # 17 tests; seven are of 18.7 (a shut door holds, stops sight and shots; shut in is out of reach, by the real buttons too; the risen dead)
 tsx <scratchpad>/v187/try/where.ts                                                # (history: 240 dungeons, 3,444 doors: at 485 of them a monster stands within a blast's reach of the door as the run begins)

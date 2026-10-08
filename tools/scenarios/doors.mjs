@@ -117,11 +117,16 @@ export default async function (page, snap) {
   const begun = await page.evaluate(([cls, seed, depth]) => {
     const d = window.__dbg; d.saving(false);
     const was = d.doors.on;
+    const wasShare = d.doors.share;
     d.doors.on = true;
+    // (A DOOR IN EVERY ROOM'S WAY IN, as until Version 18.8, for the dungeon this playtest lays: what a door does and how it
+    // looks is asked of it here. In the game since 18.8 every vault and lair has one, and about one in five of the other rooms.)
+    d.doors.share = 1;
     d.run(cls, seed);
     const g = d.game();
     g.depth = depth; g.enterDungeon();
     d.doors.on = was;
+    d.doors.share = wasShare;
     d.autoLevel = false; d.autoWords = false; d.god = true;
     g.wakeUp = () => {};
     g.monsters = g.monsters.filter((m) => m.boss);

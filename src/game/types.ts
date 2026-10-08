@@ -225,11 +225,14 @@ export interface Room {
    * THE MIX (game/dungeon.ts, MIX; absent on every room where the map-maker does not mix):
    * `gated`: a gate stands in its way in, down until its lever is pulled. `locks`: a gate hangs
    * in every one of its doorways, and they fall while the hero is inside with its pack.
-   * `nook`: the small room at a dead end where a lever stands.
+   * `nook`: the small room at a dead end where a lever stands. `nextDoor`: set down next door to
+   * the room before it, with only a door between them: that door is always there, whatever the
+   * share of rooms with a door (doors.ts, `hasDoor`).
    */
   gated?: boolean;
   locks?: boolean;
   nook?: boolean;
+  nextDoor?: boolean;
 }
 
 export type PropKind = 'brazier' | 'chest' | 'barrel' | 'urn' | 'pillar' | 'bones' | 'rubble' | 'lever';

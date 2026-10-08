@@ -2,7 +2,7 @@
 
 import { RNG } from '../engine/rng';
 import { TUNE } from './defs';
-import { doorTiles, layDoors, makeDoors, pierGrid, shutGrid } from './doors';
+import { DOORS, doorTiles, layDoors, makeDoors, pierGrid, shutGrid } from './doors';
 import { generateFloor } from './dungeon';
 import { STAIR_N, STAIR_W, stepGrid } from './height';
 import { buildOpenGrid, buildWalkGrid } from './nav';
@@ -449,7 +449,11 @@ export function makeMixHall(seed: number): Level {
     props,
     levers: [{ ...lever }],
   };
+  // (the hall shows every piece of the mix, and the doors with them: a door in every room's way in, whatever the share of rooms with one)
+  const share = DOORS.share;
+  DOORS.share = 1;
   floor.doors = layDoors(floor);
+  DOORS.share = share;
   return finish(floor, false, null);
 }
 
