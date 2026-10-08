@@ -585,7 +585,7 @@ export function ward(x: number, y: number, r: number, dur = 4.5): void {
   W3.patches.push({ kind: 'ward', x, y, r, t: 0, dur, seed: Math.floor(Math.random() * 1e6) });
 }
 
-/** What the line over the hero calls Mystical's stacks, as Power's are MIGHT: a name for the main chat to settle (until then, this). */
+/** What the line over the hero calls Mystical's stacks, as Power's are MIGHT: his answer in the main chat at 18:23, “Arcana (Recommended)”. */
 export const MYSTIC_NAME = 'ARCANA';
 /** How long Mystical's stacks last, and how many there may be (the main chat's page: 5 seconds, up to 5). */
 export const MYSTIC_SECS = 5;

@@ -135,8 +135,8 @@ THE COLOUR AND RUNE AT 17:59, AND TO THE LOOKS AT 18:41.** See "Mystical" below.
   star flies from the struck to a little moon at the hero's shoulder, and as each reaches it the
   moon waxes: a crescent lit on its left at one (the rune's), half at three, full at five, with a
   halo, and motes of moonlight falling round the hero. The line over the hero counts it, as Power's
-  might is counted: "ARCANA 1" to "FULL ARCANA" (`MYSTIC_NAME`: a stand-in until the main chat names
-  it). A stack only kept up flies no star (the moon already says how much there is). The moon
+  might is counted: "ARCANA 1" to "FULL ARCANA" (`MYSTIC_NAME`; the name is his: in the main chat
+  at 18:23, “Arcana (Recommended)”). A stack only kept up flies no star (the moon already says how much there is). The moon
   blinks in its last second and is gone when its time is up (`MYSTIC_SECS` 5, `MYSTIC_MAX` 5: the
   main chat's page). How far the splash reaches in the pictures, `MYSTIC_SPLASH` 1.8 tiles, is a
   guess: the rules will say.
@@ -197,8 +197,8 @@ three at once fall seconds behind.
    Mystical: `mysticHit` on each hit of a spell with it in front; `mysticSplash` from that hit
    to the enemies the rules' splash struck (the splash's own hits do not splash again); and
    `mysticStack(x, y, n)` on each spell hit that lands with it behind, `n` the stacks the rules say
-   the hero holds (the moon catches up as its stars arrive). The stand-in name `MYSTIC_NAME` takes
-   the rules' name for the stacks.
+   the hero holds (the moon catches up as its stars arrive). The stacks' name, ARCANA, is his
+   (`MYSTIC_NAME`).
 3. Heavy's hold sets `fx.freeze` itself; route it through `Fx.hold` (which keeps quick attacks from
    making the game stutter) when it moves into fx.ts. The particles go into `fx.particles` under the
    same limit of 900.
