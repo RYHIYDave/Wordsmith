@@ -1607,7 +1607,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     traps: TRAPS,
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
-    /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): a mock-up behind a switch that is off; its pictures put the mended swings in and paint the heroes again (false: today's back). */
+    /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
     comboMends: (on: boolean) => {
       useComboMends(on);
       art.heroes = makeHeroArt3();

@@ -123,7 +123,7 @@ export function paintMove3(move: Move3, t: number, view: GameView, opts: Paint3 
 
 /**
  * Whether a frame of a move may show the streak its blade leaves. STRIKE'S COMBO MENDED (art/moves3.ts,
- * COMBO_MENDS, a mock-up behind a switch that is off): the two swings show it only through the cut,
+ * COMBO_MENDS, on since Version 19.2, on his yes): the two swings show it only through the cut,
  * their third to fifth frames, so that the way up and the way back show a clean blade.
  */
 export function streakShown(move: Move3, t: number): boolean {

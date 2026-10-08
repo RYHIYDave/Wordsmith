@@ -603,10 +603,15 @@ export const SLASH3: Move3 = { name: 'Strike, the second swing: a downward slash
  *      the tenth frame without stopping there.
  *   E  A BLADE THAT STAYS A BLADE (Effects 3, "a bright crescent"): the streak is drawn only through
  *      the cut, its third to fifth frames (art/heroes3.ts, `paintMove3`).
- * With the switch off the swings are today's. `useComboMends` puts the mended ones in their place
- * (the art must then be painted again: main.ts, `__dbg.comboMends`).
+ * His yes to them, 8 Oct 2026: in the art chat at 14:05 ("Yes, the mended one (Recommended)"; of
+ * the shorter stance at the blow, "Yes, shorter is fine (Recommended)"), and in the main chat at
+ * 15:04, of "Put the art chat's mended Strike ... into the game as Version 19.2?": "Yes
+ * (Recommended)". SO THE SWITCH IS ON, from Version 19.2: the mended swings are the game's own
+ * (put in place as this file loads, below `useComboMends`). Switched off, `useComboMends(false)`
+ * gives the swings as they were before, for pictures beside them (the art must then be painted
+ * again: main.ts, `__dbg.comboMends`).
  */
-export const COMBO_MENDS = { on: false };
+export const COMBO_MENDS = { on: true };
 
 /** Where the back foot stands at and after the blow (A): its ball where the stance has it, turned -8, on its toes 36. */
 function backFoot(): Partial<Bones> {
@@ -657,6 +662,8 @@ export function useComboMends(on: boolean): void {
   STRIKE3.motion = on ? strikeMended() : strike();
   SLASH3.motion = on ? slashMended() : slash();
 }
+// (the game's own swings: the mended ones, since Version 19.2)
+useComboMends(COMBO_MENDS.on);
 
 /** A foot standing on its toes: the heel up by `deg`, the ball still on the floor (the ankle is that much higher). */
 function onToes(deg: number): number {

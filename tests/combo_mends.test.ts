@@ -1,9 +1,11 @@
 // STRIKE'S COMBO MENDED (src/art/moves3.ts, COMBO_MENDS; src/art/heroes3.ts, streakShown): the five
-// mends of the art chat's review (docs/requests/strike_combo_review_answer.md), behind a switch that
-// is off. The owner saw today's beside the mended (strike_combo_mended.gif) on 8 Oct 2026 at 14:02
-// and said at 14:05 "Yes, the mended one (Recommended)", and of the shorter stance at the blow,
-// "Yes, shorter is fine (Recommended)". These tests hold what he was shown:
-//   - the switch: off, and switching it back gives today's swings exactly;
+// mends of the art chat's review (docs/requests/strike_combo_review_answer.md). The owner saw the
+// swings as they were beside the mended (strike_combo_mended.gif) on 8 Oct 2026 at 14:02 and said at
+// 14:05 "Yes, the mended one (Recommended)", and of the shorter stance at the blow, "Yes, shorter is
+// fine (Recommended)"; and in the main chat at 15:04, of putting them in as Version 19.2, "Yes
+// (Recommended)". SO THE SWITCH IS ON: the mended swings are the game's own. These tests hold what
+// he was shown ("today's" below is the swings as they were before, the switch off):
+//   - the switch: on, and switching it off and on gives the old swings and the mended exactly;
 //   - A, feet that grip the floor: played by the game at 60 steps a second, its own step included,
 //     no foot on the floor moves a whole game pixel, from in front or behind; the legs reach;
 //   - B, clean bodies: no arm goes into the head in either swing;
@@ -27,7 +29,11 @@ const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const len = (v: V3): number => Math.hypot(v[0], v[1], v[2]);
 const ang = (a: V3, b: V3): number => (Math.acos(Math.max(-1, Math.min(1, dot(a, b)))) * 180) / Math.PI;
 const FR = 1 / 30;
+// (the swings as the game has them: the mended, since Version 19.2; and as they were before)
+const MENDED = JSON.stringify([STRIKE3.motion, SLASH3.motion]);
+useComboMends(false);
 const TODAY = JSON.stringify([STRIKE3.motion, SLASH3.motion]);
+useComboMends(true);
 
 /** The game plays the combo (two taps) at 60 steps a second; how far the feet move on the floor, in game pixels, and how short a leg falls. */
 function feet(view: 'front' | 'back'): { slide: number; short: number; swings: number } {
@@ -132,13 +138,14 @@ function slashTurns(): { hips: number; chest: number; blade: number }[] {
   return out;
 }
 
-test('the switch is off, and switching it back gives today\'s swings exactly', () => {
-  assert.equal(COMBO_MENDS.on, false);
-  useComboMends(true);
-  assert.notEqual(JSON.stringify([STRIKE3.motion, SLASH3.motion]), TODAY);
+test('the switch is on, on his yes: the mended swings are the game\'s own; off gives the old ones exactly, and on again the mended', () => {
+  assert.equal(COMBO_MENDS.on, true);
+  assert.notEqual(MENDED, TODAY);
   useComboMends(false);
   assert.equal(JSON.stringify([STRIKE3.motion, SLASH3.motion]), TODAY);
-  assert.equal(COMBO_MENDS.on, false);
+  useComboMends(true);
+  assert.equal(JSON.stringify([STRIKE3.motion, SLASH3.motion]), MENDED);
+  assert.equal(COMBO_MENDS.on, true);
 });
 
 test('A: mended, no foot on the floor moves a whole game pixel as the game plays the combo, and the legs reach', () => {
@@ -155,7 +162,7 @@ test('A: mended, no foot on the floor moves a whole game pixel as the game plays
     useComboMends(false);
     assert.ok(feet('front').slide > 5);
   } finally {
-    useComboMends(false);
+    useComboMends(true);
   }
 });
 
@@ -164,9 +171,14 @@ test('B: mended, no arm goes into his head in either swing', () => {
   try {
     for (const key of ['strike', 'kslash']) assert.ok(armInHead(key) >= 1, `${key}: ${armInHead(key).toFixed(2)}`);
   } finally {
-    useComboMends(false);
+    useComboMends(true);
   }
-  assert.ok(armInHead('kslash') < 1, "(today's slash: the arm the review found in his head)");
+  useComboMends(false);
+  try {
+    assert.ok(armInHead('kslash') < 1, "(today's slash: the arm the review found in his head)");
+  } finally {
+    useComboMends(true);
+  }
 });
 
 test('C and D: mended, the slash turns hips first, its raise is even, and its way back has no hitch', () => {
@@ -183,7 +195,7 @@ test('C and D: mended, the slash turns hips first, its raise is even, and its wa
     for (let i = 1; i <= top; i++) assert.ok(back[i] >= back[i - 1], `the way back rises: ${back.map((b) => b.toFixed(0))}`);
     for (let i = top + 1; i < back.length; i++) assert.ok(back[i] <= back[i - 1], `and falls: ${back.map((b) => b.toFixed(0))}`);
   } finally {
-    useComboMends(false);
+    useComboMends(true);
   }
 });
 
@@ -195,7 +207,12 @@ test('E: mended, the swings show their streak only through the cut (frames 3 to 
     }
     assert.equal(streakShown(MOVES3.slam, 2 * FR), true);
   } finally {
-    useComboMends(false);
+    useComboMends(true);
   }
-  for (let f = 0; f <= 13; f++) assert.equal(streakShown(STRIKE3, f * FR), true);
+  useComboMends(false);
+  try {
+    for (let f = 0; f <= 13; f++) assert.equal(streakShown(STRIKE3, f * FR), true);
+  } finally {
+    useComboMends(true);
+  }
 });
