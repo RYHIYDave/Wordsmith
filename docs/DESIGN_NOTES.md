@@ -4588,6 +4588,106 @@ head, the shorter stance) into the game as Version 19.2?": **"Yes (Recommended)"
   byte the frozen copy's `dist/artifact.html`.
 - NOT CHECKED: a real phone; how the shorter stance feels in a fight is his to find.
 
+### Version 19.3: Heavy, Precise, Frenzied and Guarding
+
+**What he said.** 8 Oct 2026, 10:54, to this chat: "After the changes to normal mode I want to get
+more words into the game.  I’d like to add a word MYSTICAL, which increases spell damage in the same
+vein as PHYSICAL for attack damage, I’d like leech and volitile moved to shaping words, then I’d like
+4 more shaping words added." 10:58: "Sorry keep power’s name the same.  I meant power". 11:27: "Swift
+and twin are also shaping words into". At 12:26, to the art chat, he chose the eight (Pulling,
+Splitting, Heavy, Precise, Hexing, Stilling, Frenzied, Guarding), and said yes to their looks there
+(13:15 and 13:43, as it reports them). Here, 15:21: "Did you put the new words in?"; 15:25, "Yes,
+words first (Recommended)". The plan, his doc "Wordsmith: The New Words"
+(https://claude.ai/code/artifact/4ef13dd1-6b9e-4577-8342-129f6cd213bd): **his yes at 16:53, "Yes, as it
+is (Recommended)"**, and to its questions, "Nothing (Recommended)" (a word on the wrong kind of
+ability), "Yes, one a side (Recommended)" (one damage word on each side), "Yes (Recommended)"
+(Volatile's hidden bomb). The first four in, whose looks were ready (the art chat draws Mystical's
+after the ranger: he was told after 16:55). Pictures of them at work in the game, and of the screens,
+at 18:14; **his yes at 18:23: "Yes, as they are (Recommended)"**; and "Arcana (Recommended)"
+(Mystical's stack, to come) and "Later (Recommended)" (Mystified).
+
+**What is in it.**
+
+- **THE TWO KINDS OF WORD** (`WordKind` in `src/game/defs.ts`): DAMAGE words (Power, Flame, Frost,
+  Lightning, Poison; Mystical to come) and SHAPING words (Swift, Twin, Leech, Volatile, and the
+  new ones). **One damage word on each side** of an ability (`socketProblem`, `placeProblem`: "One
+  damage word per side"); a save from before with two on a side keeps the first, and the other goes
+  back to the pouch (`refresh`). Abilities are attacks or spells (`SPELL_SKILLS`, `isSpell`: the
+  staff's and the wand's, and Warp), for Mystical and Power to come.
+- **HEAVY** (Strength; `HEAVY`). In front: slower to use (cooldowns 1.25 times, a quick attack's
+  speed over 1.25), much harder (+50%, and half a percent more for each point of Strength), and what it hits is
+  **stunned** for 0.8 s (an elite, a guardian too, for half; a boss never): it cannot move or attack,
+  and a blow it was winding up is broken off, with its warning on the floor (`stunMonster`,
+  `breakOff`, `Zone.src`). Behind, "of Quakes": **cracked ground** for 4 s where it lands; a monster
+  that walks onto it is **staggered**, its attack broken off, for 0.55 s, and the same ground leaves it
+  be for 1.5 s after (`staggerMonster`; bats fly over it, bosses stand firm). Burned into gear: on
+  the weapon, gloves, a ring or the amulet a chance to stun (the stat `stunChance`; all the gear's
+  together at most 50%, `HEAVY.stunCap`) or Strength; on the rest armour or Strength. On a
+  monster: its blows knock the hero back 0.6 of a tile (`knockHero`, through the step that Strike's
+  combo uses: walls stop it).
+- **PRECISE** (Dexterity; `PRECISE`). In front: more damage (+30%, and half a percent more for each point
+  of Dexterity), an area 30% smaller (his change of 5 Oct: damage, not a critical chance). Behind, "of
+  the Mark": the first enemy each use hits is **marked** for 5 s; the hero's next hit on it is a
+  **certain critical**, and spends the mark (a hit that spends one marks nothing). Burned into gear:
+  critical chance or Dexterity (the weapon, gloves, rings, amulet); a critical's harm or Dexterity
+  (the rest). On a monster: its blows ignore half the hero's armour.
+- **FRENZIED** (Strength; `FRENZY`). In front: each use adds a stack of **frenzy**, up to five, each
+  8% faster for the quick attack and for the recovery of every cooldown (`frenzyPace`); it fades,
+  all at once, 3 s after the last use. Behind, "of Frenzy": a kill by the ability adds a stack and
+  holds the frenzy 3 s more, to 9 s at most. Burned into gear: attack speed or Strength (the weapon,
+  gloves, rings, amulet); running speed or Strength (the rest). On a monster: up to 50% faster as it
+  is hurt (moving, and coming round to its next blow).
+- **GUARDING** (Strength; `GUARD`). In front: each use gives a **shield** of a tenth of life (and a
+  tenth of a percent more for each point of Strength, to a fifth) for 3 s, which takes blows before life does;
+  a new one is never weaker than what is left of the last. Behind, "of Warding": a **ward circle** for
+  4 s where it lands, inside which the hero takes 30% less (and a fifth of a percent more for each point of Strength, to half). Burned
+  into gear, on any piece: a chance to block a blow, which then does nothing at all ("Blocked"; the
+  stat `blockChance`, all the gear's together at most 50%, `GUARD.blockCap`), or Strength. On a
+  monster: a shield of a fifth of its life, which takes harm first.
+- **THEIR LOOKS**, the art chat's (`src/render/words3.ts`, from `art/new-words` at `31e27c3`, his yes
+  in the art chat at 13:15 and 13:43): `WORDS3.on` true, and called up by the rules' own events
+  (`events3`; the events 'heavy', 'stun', 'stagger', 'markOn', 'markSpent', 'frenzy', 'frenzyFed',
+  'shield', 'guarded', 'blocked', and the 'zone' of cracks and wards): the heavy blow's freeze and
+  ring, the stars of a stun, the knock of a stagger, the cracked ground; the sight that closes on a
+  marked enemy and snaps shut on the critical; the ring of frenzy at the hero's feet; the shield's
+  shell, its flare where a blow is turned, and the ward circle. The demo of the other four (Pulling,
+  Splitting, Hexing, Stilling) does its share of the rules only on a page that listens (`W3.demo`).
+- **ROOM FOR THIRTEEN WORDS:** the Lexicon in town lays its stones in rows as even as they can be
+  (seven and six: `lexLayout`); the start screen's Lexicon takes two columns where one would run off
+  the panel; a pouch with more words than its stones have room for lays them narrower, a pixel apart
+  (`layPouch`, `NARROW_STONE`: all thirteen in one line of a phone's half).
+
+**How it was tested.**
+
+- `tsc` clean; `tests/new_words.test.ts` (20, new: each word in front and behind, on gear and on a
+  monster, and their looks called up by the rules, and nothing with the switch off);
+  `tests/word_kinds.test.ts` (4); `tests/words.test.ts`: every loadout of the first nine words, as
+  before, and every side holding a newer word against the empty side and each single word (2,568
+  loadouts an ability; all of them would be 6,724), each word seen to act; the art chat's
+  `tests/words3.test.ts`, the switch on. THE WHOLE UNIT SUITE 704 OF 704 (18:09 to 18:13), and again in
+  the frozen copy after the regression (704 of 704, 19:24 to 19:28).
+- THE PICTURES: `tools/scenarios/words193.mjs` (the four at work in the practice room by the game's
+  own rules, a frame every thirtieth of a second) and `tools/scenarios/words193_look.mjs` (the
+  inventory, the Lexicon in town and on the start screen, with all thirteen words).
+- THE PRE-FLIGHT (a dev page built from the tree, 18:24 to 18:32): 14 playtests, among them the
+  words for all three classes (the four new ones with them), the speed, the soak, a monkey, and the
+  word combinations for the warrior and on a phone (the four new among them, and the rule of one
+  damage word a side): all clean once the combos playtest knew the rule.
+- **The regression** on a copy frozen at 18:34 (the scratchpad's `v193a/arpg_frozen`,
+  18:34 to 19:20, two at a time, nothing else running): **147 OF 148 PLAYTESTS
+  FINISHED CLEAN**. The one: `guide_early_word_phone` (a ranger on a phone, a word dropped at his feet early), whose dungeon (seed 621620090) let him use all three attacks before any monster came near, so the fight prompt never showed; replayed with the same dungeon it does the same on 19.3's page, twice (19:21 and 19:22), and on 19.2's frozen page (19:23): the playtest's random dungeon, not this version.
+  Speed: 58.5 frames a second, longest frame 50 ms; the slowest fights of the four word-combination runs, the new words among them, 57.0 to 58.8 frames a second (19.2's: 59.4, and 58.7 to 59.3).
+- THE RELEASE BUILD, made in the copy at 19:28: `Play.html` 921,898 bytes and
+  `dist/artifact.html` 921,576, both saying V19.3; kept in the scratchpad's
+  `v193a/release/`.
+- **The published page itself** (`wrap193.sh` in the scratchpad, 19:39 to 19:57): **68
+  of 68 playtests clean.** The 66 of 19.2's, and the words for a warrior and for a ranger on a phone. (A first run from 19:28 was cut off after 38, all clean, by the ten minutes a command may run in the foreground; it was run again whole, in the background.) Published at 19:57 ("Version 47", version
+  id `1791503852-8b12`); the file published is the kept copy, `v193a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone; the numbers are the doc's starting points, to be tuned once he has
+  played them (a Guarding quick attack renews its shield with every swing; a Heavy one keeps a
+  plain monster all but stunned).
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4731,7 +4831,10 @@ src/render/   render (world: tiles, actors, ground patches, statuses, shots, lig
               standing: the game and the class cards both use it, Version 11; and how far into
               its attack a monster is by the rules' clock, Version 14),
               lifebar (the hero's life over their head: when it is there, what it shows, 11.2),
-              fx (everything that flies or flashes: each word's sign, numbers, shake, messages)
+              fx (everything that flies or flashes: each word's sign, numbers, shake, messages),
+              words3 (the new words' looks, the art chat's: since Version 19.3 Heavy's, Precise's,
+              Frenzied's and Guarding's in the game, called up by the rules' events, `events3`;
+              the other four a demo for its playtest's page, `demo3`, `W3.demo`)
 src/ui/       ui (immediate-mode kit), hud (globes, the attacks as phrases, the prompts' banner),
               inventory (Version 13.1: three pages, GEAR on the hero, ATTACKS, STATS, over the
               bag and the words; 14.2: on half the screen, what is read on a card over the
@@ -4751,7 +4854,10 @@ src/dev/      bot (test player; 19.0: it minds the traps, `minded`), preview_*.t
               striking, pacing out and back, or turning on the spot), preview_props
 src/main.ts   boot, frame loop, controls, saving, test hooks
 tests/        dungeon, items, town (every service's rules), sim (bots play whole runs headless),
-              words (every legal word loadout on every attack ability; random loadouts in live fights),
+              words (every legal word loadout on every attack ability; random loadouts in live fights;
+              since 19.3 the newer words' sides against the empty side and every single word),
+              new_words (19.3: Heavy, Precise, Frenzied, Guarding at work, on gear and on monsters,
+              and their looks called up), word_kinds (19.3: damage and shaping, attacks and spells),
               guide (Version 9: the prompts, the body and the first word, words lent and spent,
               the trap, Poison, Twin, cooldowns or mana, the Lexicon, kill lines, voices),
               economy (how scarce words are, and that a rune is a promise),
@@ -4949,6 +5055,10 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.3: Heavy, Precise, Frenzied and Guarding (their looks, the art chat's render/words3.ts, called up by the rules: events3)
+WORD=heavy node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words193.mjs --out shots/w193f/heavy   # a word at work by the game's own rules, a frame every thirtieth of a second (WORD=precise, frenzied, guarding; OFF=1: the looks off); its log says what the rules did
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words193_look.mjs --out shots/w193/ph   # the inventory, the Lexicon in town and on the start screen, with all thirteen words
+WORD=heavy node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words3.mjs --out shots/w3/heavy   # the art chat's demo of any of the eight (the four still to come: pulling, splitting, hexing, stilling)
 # Version 19.2: Strike's two swings mended (the art chat's, art/strike-combo-mends)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/combo_mends.mjs --out shots/mends/old   # the swings as they were (MENDS=1: the mended, the game's own); tools/combo_mends_film.py joins two such runs side by side
 node node_modules/tsx/dist/cli.mjs tools/combo_mends_check.ts mend   # the feet's slide and the arms against the head, measured on the bones (without "mend": the old swings)

@@ -99,10 +99,12 @@ between the jumps.
 - **Forging:** three of the same word forge into one stronger word at the wordsmith, up to rank V.
 - **The gate word belongs to the endless depth:** there, words laid on the gate make the next
   dungeon harder and richer.
-- **Nine words today:** Power, Leech, Swift, Twin, Flame, Frost, Lightning, Volatile and Poison.
-  More are planned: the eight you chose on 8 Oct (Pulling, Splitting, Heavy, Precise, Hexing,
-  Stilling, Frenzied and Guarding), and Mystical, which does for spells what Power does for
-  attacks.
+- **Thirteen words today, of two kinds (since Version 19.3):** damage words add damage of a kind
+  (Power, Flame, Frost, Lightning, Poison); shaping words change what the attack does (Swift, Twin,
+  Leech, Volatile, Heavy, Precise, Frenzied, Guarding). An attack takes one damage word on each
+  side. Still to come, in the plan you said yes to on 8 Oct: Mystical, which does for spells what
+  Power does for attacks (its stack shows as ARCANA), with Power for attacks only and Volatile's
+  hidden bomb; then Pulling, Splitting, Hexing and Stilling. Mystified comes later.
 
 ## Builds
 
@@ -235,6 +237,7 @@ it goes in.
 | The rule | The game now | What it takes |
 | --- | --- | --- |
 | Normal and Hardcore | Both, since Version 19.1 | Done |
+| The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
 | Five lands of ten, the final boss at 50 | One dungeon after another, with no end | Five lands, each its own look and monsters (with the art chat); a final boss |
 | Small, medium and big bosses | A boss in every dungeon; a Greater boss every fifth | A medium boss at 5, 15, 25…; a big boss at 10, 20, 30… |
 | A world map | The gate in town, one dungeon deeper each time | The map; going back to beaten dungeons |
@@ -250,11 +253,14 @@ it goes in.
 
 The order, as you set it on 8 Oct: after the traps, Normal mode, since it is small and changes
 every death. (His answer, 10:33: "Normal mode (Recommended)".) Both are in the game (Versions 19.0
-and 19.1); what comes next is yours to pick.
+and 19.1). Next the new words, before the talent tree (your answer, 15:25: "Yes, words first
+(Recommended)"): the first four are in since Version 19.3. Then the talent tree (15:04: "The talent
+tree (Recommended)").
 
 ## Still open
 
-- [ ] How many talent points a hero gets, and what is in each tree.
+- [ ] What is in each talent tree. (How many points is settled: ten, one every five levels, your
+  answer of 8 Oct, 15:16: "10, one every 5 levels (Recommended)".)
 - [ ] The table of ranks for forging, sent to you on 5 Oct.
 - [ ] The price of re-picking talents. (What a Normal death costs is settled: a quarter of the
   gold carried in, his answer of 8 Oct, 13:35: "A quarter (Recommended)".)
