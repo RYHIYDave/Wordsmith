@@ -273,3 +273,15 @@ down-left he shows his shoulder and hides his sword."). **HIS ANSWER, 08:34: "Ei
 Read as: the heroes turn through eight directions, each turned for real, AFTER A SPEED TEST ON HIS
 PHONE. Heroes rule 7 of the rulebook now says so ("Truly turned, eight ways"), and the eight-directions
 line is gone from "Still open".
+
+## FOR THE MAIN CHAT TOO: HOW TO ASK HIM THINGS (8 Oct, 08:37)
+
+His words: "I love the way you send the questions and it pops up and give me options to pick.  Can
+we do that kind of format for everything?" Read as a standing rule for every chat: WHENEVER WE NEED
+AN ANSWER FROM HIM, IT GOES AS A POP-UP WITH OPTIONS TO TAP (the multiple-choice question tool), our
+recommendation first and marked, his own words always possible; news and finished work stay plain
+messages. (It sits with "No menus of options where a recommendation will do": the pop-up carries
+the recommendation.) He was told at 08:38: "Yes. From now on, whenever I need an answer from you, it
+comes as a pop-up like that: a few options to tap, my pick marked first, and you can always type
+your own. News and finished work still come as normal messages. I'll leave a note so the main chat
+does the same." Consider a line for it under "The owner's standing rules" in `CLAUDE.md`.
