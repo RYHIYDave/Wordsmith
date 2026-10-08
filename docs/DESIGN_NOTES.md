@@ -3983,6 +3983,90 @@ IS WITH HIM" to "VERSION 18.5 IS LIVE").
   mark alight.
 - NOT CHECKED: a real phone.
 
+### Version 18.6: three small things (ranged monsters hold their ground, the pick-up range, guardians' life)
+
+**What he said.** 7 Oct 2026, 19:13, while Version 18.5 was in its playtests: "Some small things,
+I need the ranged enemies to not run away from you, and I need the pick up range increased
+slightly." And at 19:35: "Also the larger guardian mobs are just big damage sponges and could
+use at least a 30% reduction in HP". He was told at 19:17 that archers and cultists "will stand
+and shoot. No more backing away from you", that the pick-up range would be "a bit bigger, for
+gold, orbs, words and gear", and that both would follow doors as the next version; and at 19:35:
+"Got it. Guardians get 30% less life." THESE ARE HIS DIRECT REQUESTS ABOUT THE RULES, not looks:
+no picture went to him first. The numbers are mine, and he was told them with the version
+(21:10): "**Ranged enemies** stand and shoot. They no longer back away. / **Pick-up range:**
+gold, orbs and words fly to you from 3.2 tiles (was 2.6). Gear is picked up from a full tile away
+(was three quarters of one). / **Guardians** have 30% less life."
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "HIS TWO SMALL THINGS" to
+"VERSION 18.6 IS LIVE").
+
+- **A RANGED MONSTER HOLDS ITS GROUND** (the monsters' turn in `src/game/game.ts`; `MONSTERS` in
+  `src/game/defs.ts`). The Bone Archer and the Cultist shoot whenever they see the hero within
+  their range and their wait is over, and walk toward a hero they cannot see or who is further
+  off than the distance they keep (`keepMax`: 7 tiles and 6.5). Until 18.5 each also BACKED
+  STRAIGHT AWAY from a hero nearer than its `keepMin` (4.5 tiles and 4): a hero with a sword
+  chased them round the room. That is taken out, and `keepMin` with it: within the distance it
+  keeps, a ranged monster stands where it is and shoots, however near the hero comes. Nothing
+  else of them is changed (their range, their damage, their waits).
+- **THINGS ARE PICKED UP FROM A LITTLE FURTHER** (`updateDrops` in `game.ts`; `TUNE` in
+  `defs.ts`). Gold, an orb and a word come to a hero who is within `dropPull` of them, now 3.2
+  tiles (it was 2.6), and are taken when they reach him (`dropTake`, 0.75 as it was: they are
+  seen to arrive). A PIECE OF GEAR, WHICH LIES WHERE IT FELL, IS TAKEN FROM A FULL TILE AWAY
+  (`gearTake` 1.1; it was 0.75, which meant all but stepping on it). A chest still opens from a
+  tile and a half and the fallen wordsmith is searched from 1.3: those were not what he meant
+  and are as they were.
+- **A GUARDIAN HAS 30% LESS LIFE** (`TUNE.guardianLife` 3.5; it was 5). A guardian (the powerful
+  monster at the end of a side branch) is always a brute, 1.25 times a brute's size and
+  damage, and had five times a brute's life at its depth; it has three and a half times. KNOWN,
+  AND LEFT: an ELITE brute, at four times (`TUNE.eliteLife`), now has more life than a guardian.
+  He asked about guardians ("the larger guardian mobs"); he was told of it with the version
+  (21:10: "One thing to know: an elite brute now has a bit more life than a guardian. Want elites
+  cut too?") and answered at once: "yes, every interation of that mob type". VERSION 18.7 GIVES
+  EVERY KIND OF BRUTE 30% LESS LIFE (the brute's own 70 becomes 49, and this number goes back
+  to 5): for a guardian that is the life it has here.
+- **AND, FOUND BY 18.5's PLAYTESTS OF ITS PUBLISHED PAGE, TWO PLAYTESTS MENDED:**
+  `tools/scenarios/input.mjs` waits for the starting screen's OPTIONS button before it presses it
+  (the page says it is ready before its first frame is drawn); `tools/scenarios/doors.mjs` notes
+  ON THE PAGE, after every step of the game, how far off the hero is when a door first stands
+  open (looked at from outside about twenty times a second, a late look saw it late), and asks
+  for more than 0.8 tiles as the unit test does. The comment over `DoorKind` in
+  `src/game/types.ts`, which still spoke of the first look's doors, is put right.
+
+**How it was tested.**
+
+- `tsc` clean; the unit suite in the working tree, 606 of 606 (19:54 to 19:57), and again in the
+  frozen copy after the regression (20:51 to 20:53). SIX ARE NEW (`tests/small.test.ts`): an archer
+  and a cultist, awake, with the hero 1.2, 2.5 and 3.9 tiles from them, do not move in eight
+  seconds and shoot twice and more; from three tiles beyond the distance it keeps each comes to
+  that distance and no nearer, and stands when the hero comes up to it; the three numbers; gold,
+  an orb and a word three tiles off come to the hero and are his, and just beyond the pull they
+  lie where they are; a piece of gear just inside its range is taken and just outside it lies; a
+  guardian has three and a half times a brute's life at its depth. None of the 600 before them
+  had to be restated.
+- Before the regression, 24 playtests two at a time on a dev page built from the tree (19:58 to 20:06): all clean.
+  `small`, changed after its four runs to give a cultist's second shot more time, was run again
+  in its four layouts: clean.
+- **The regression** on a copy frozen at 20:08 (the scratchpad's `v186a/arpg_frozen`,
+  20:08 to 20:50, two at a time, nothing else running): **140 OF 140 PLAYTESTS FINISHED
+  CLEAN.** Four are new, `small` in the four layouts (`tools/scenarios/small.mjs`), on
+  the page itself in the practice room: an archer and a cultist two tiles from the hero stand
+  where they stood for seven seconds and more, and shoot; WITH REAL INPUT the hero walks at an
+  archer from five tiles off and reaches it, and it is where it was; a piece of gear a full tile
+  from the hero is taken where he stands and one a tile and a half off lies; gold three tiles off
+  comes to him and gold four tiles off lies. Speed: 60.2 frames a second, longest frame 16.8 ms; the slowest fights of the
+  four word-pair runs 59.0 to 59.6 frames a second.
+- The unit suite again in the frozen copy, 606 of 606 (20:51 to 20:53). THE RELEASE BUILD, made in
+  the copy at 20:53: `Play.html` 850,327 bytes and `dist/artifact.html`
+  850,005, both saying V18.6; kept in the scratchpad's `v186a/release/`.
+- **The published page itself** (the fragment wrapped as the site serves it; `wrap186.sh` in the
+  scratchpad, 20:53 to 21:09, two at a time): **56 of 56 playtests clean**: the 50 of 18.5, `small`
+  in four layouts, and the monsters on the PC and a phone. `input` and `doors`, the two that the
+  published page of 18.5 had flagged for their own timing, were clean with their mends. Published at 21:10
+  ("Version 40", version id `1791421797-3268`); the file published is the frozen copy's
+  `dist/artifact.html`, compared byte for byte with the kept copy before and after.
+- NOT CHECKED: a real phone. And nobody has yet said how the fights FEEL with archers that stand:
+  that is his to find.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4157,7 +4241,8 @@ tests/        dungeon, items, town (every service's rules), sim (bots play whole
               no dice; one way in to a room; the boss hall's gate; a door opens before the hero
               reaches it; a brute through a door; the hero eased into a door; the walls beside
               one; the gate falls, holds and rises),
-              gates (18.5: the pictures: frame, leaf, gate and arch, the mark, the portcullis)
+              gates (18.5: the pictures: frame, leaf, gate and arch, the mark, the portcullis),
+              small (18.6: a ranged monster holds its ground; the pick-up range; a brute's life)
 tools/        build, preview, playtest + scenarios/, regress.sh (every browser playtest),
               town_gif.mjs (a moving picture of the town's hall, or of one place in it),
               hero_gif.mjs + hero_gif.py (a hero's moving picture), crop_heroes.py,
@@ -4293,6 +4378,8 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 18.6: three small things
+CLS=warrior node tools/playtest.mjs --scenario tools/scenarios/small.mjs --out shots/small/pc     # the regression's playtest of them (four layouts), in the practice room: an archer and a cultist stand and shoot, the hero walks up to an archer, gear and gold are picked up from where they should be
 # Version 18.5: doors and the boss's gate
 CLS=warrior node tools/playtest.mjs --scenario tools/scenarios/doors.mjs --out shots/doors/pc     # the regression's playtest of doors and the gate (four layouts): reads the canvas, walks through a door each way, a brute through one, the gate down and up
 LEAST=1 CLS=warrior node tools/playtest.mjs --scenario tools/scenarios/doors.mjs --out shots/doors/least   # the same, keeping a picture of the moment the hero is seen least on his way through each door

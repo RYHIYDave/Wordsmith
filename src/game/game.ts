@@ -3036,13 +3036,14 @@ export class Game {
           this.startWindup(m, def);
           continue;
         }
+        // (A RANGED MONSTER HOLDS ITS GROUND, since Version 18.6: it comes within `keepMax` of a
+        // hero it can see, and there it stands and shoots, however near the hero comes. Until
+        // then it backed straight away from a hero nearer than its `keepMin`. The owner, 7 Oct
+        // 2026, 19:13: "I need the ranged enemies to not run away from you".)
         if (!los || dist > def.keepMax) {
           const v = flowDir(this.flow, L.walk, f.w, f.h, m.x, m.y, this.tmp, L.step);
           mvx = v.x;
           mvy = v.y;
-        } else if (dist < def.keepMin && dist > 0.01) {
-          mvx = -dx / dist;
-          mvy = -dy / dist;
         } else moving = false;
       } else {
         if (!m.boss && los && dist <= reach + TUNE.heroRadius && m.cd <= 0) {
@@ -3680,12 +3681,12 @@ export class Game {
       const dx = h.x - dr.x;
       const dy = h.y - dr.y;
       const dist = Math.hypot(dx, dy);
-      if (dr.kind !== 'item' && dist < 2.6 && dist > 0.01) {
+      if (dr.kind !== 'item' && dist < TUNE.dropPull && dist > 0.01) {
         const sp = Math.min(dist, 9 * dt);
         dr.x += (dx / dist) * sp;
         dr.y += (dy / dist) * sp;
       }
-      if (dist > 0.75) continue;
+      if (dist > (dr.kind === 'item' ? TUNE.gearTake : TUNE.dropTake)) continue;
       if (dr.kind === 'gold') {
         const got = Math.round(dr.gold * (1 + h.d.stats.goldFind / 100));
         h.gold += got;

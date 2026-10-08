@@ -26,6 +26,10 @@ export default async function (page, snap) {
   }, name);
   const clickMark = async (name, button = 'left') => { const c = await markAt(name); if (!c) { console.log('  !! nothing on screen called', name); return false; } await page.mouse.click(c.x, c.y, { button }); await page.waitForTimeout(150); return true; };
   const bad = (msg) => console.log('  !! ' + msg);
+  // (The page says it is ready before its first frame is drawn, and the starting screen's buttons are
+  // there from that frame on. On a busy machine this playtest once began a moment too early, and found
+  // no OPTIONS button: the published page of Version 18.5, 7 Oct 2026. It waits for the button now.)
+  await page.waitForFunction(() => [...window.__dbg.ui.marks.keys()].some((k) => k.startsWith('button:OPTIONS')), null, { timeout: 8000 }).catch(() => {});
   await clickMark('button:OPTIONS');
   await clickMark('button:PROMPTS: ON');
   log('prompts switched off', String(!!(await markAt('button:PROMPTS: OFF'))));

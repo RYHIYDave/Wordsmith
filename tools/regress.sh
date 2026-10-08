@@ -283,6 +283,15 @@ CLS=ranger  run doors_phone   $P --scenario $S/doors.mjs &
 CLS=mage    run doors_upright $U --scenario $S/doors.mjs &
 CLS=warrior run doors_narrow  $U --eval "$N" --scenario $S/doors.mjs &
 wait
+# TWO SMALL THINGS (Version 18.6): a ranged monster holds its ground (an archer and a cultist with
+# the hero two tiles off stand and shoot; the hero walks up to an archer with real input, and it
+# is where it was), and things on the floor are picked up from a little further (a piece of gear
+# from a full tile off; gold comes from three tiles).
+CLS=warrior run small_pc    --scenario $S/small.mjs &
+CLS=ranger  run small_phone $P --scenario $S/small.mjs &
+CLS=mage    run small_upright $U --scenario $S/small.mjs &
+CLS=warrior run small_narrow  $U --eval "$N" --scenario $S/small.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

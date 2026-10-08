@@ -233,11 +233,25 @@ export default async function (page, snap) {
       seen.push(z.glow);
       if (process.env.LEAST === '1' && z.glow < least) { least = z.glow; await snap(`${n}_least_seen_${name}`); log('   (seen least so far)', `${z.glow} at ${z.inside.toFixed(2)} inside`); }
     };
-    let q = await walkTo(out.x, out.y, site.i, (z) => z.inside <= -3.2, 9000, async (z) => { await look(z); if (openAt < 0 && z.open === 1) openAt = Math.hypot(z.x - site.mid.x, z.y - site.mid.y); });
+    // (HOW FAR OFF HE IS WHEN IT FIRST STANDS OPEN IS NOTED ON THE PAGE, after every step of the game. Looked at from
+    // outside, about twenty times a second at best, a late look saw the open door late: the playtests of Version
+    // 18.5's published page read 0.53 tiles once, on a busy machine, where the game's own clock has about 1.1.)
+    await page.evaluate(([i, mx, my]) => {
+      const g = window.__dbg.game();
+      window.__openAt = -1;
+      const step = g.update.bind(g);
+      g.update = (dt, c) => {
+        step(dt, c);
+        const d = g.level.doors[i];
+        if (window.__openAt < 0 && d && d.open === 1) window.__openAt = Math.hypot(g.hero.x - mx, g.hero.y - my);
+      };
+    }, [site.i, site.mid.x, site.mid.y]);
+    let q = await walkTo(out.x, out.y, site.i, (z) => z.inside <= -3.2, 9000, look);
+    openAt = await page.evaluate(() => { const g = window.__dbg.game(); delete g.update; return window.__openAt; });
     const outAt = q.inside;
     ds = await doorState(site.i);
     check('   with real input the hero walks out through it', outAt <= -3 && ds.open === 1, `he is ${(-outAt).toFixed(2)} tiles out in the corridor`);
-    check('   it stood open before he reached it', openAt > 0.6 && openAt < DOOR_NEAR + 0.6, `open when he was ${openAt.toFixed(2)} tiles from the middle of it`);
+    check('   it stood open before he reached it', openAt > 0.8 && openAt < DOOR_NEAR, `open when he was ${openAt.toFixed(2)} tiles from the middle of it`);
     // back in, to where its opening is read again: open
     q = await walkTo(from.x, from.y, site.i, (z) => z.inside >= 3.2, 9000, look);
     const sorted = [...seen].sort((a, b) => a - b);

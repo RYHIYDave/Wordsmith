@@ -288,8 +288,12 @@ export interface MonsterDef {
   xp: number;
   ranged: boolean;
   projSpeed: number;
-  /** Ranged monsters try to stay between these distances from the hero. */
-  keepMin: number;
+  /**
+   * A ranged monster comes this near a hero it can see and no nearer: there it stands, and shoots
+   * (0 for the others). IT DOES NOT BACK AWAY, however near the hero comes. Until Version 18.5 it
+   * did, from a hero nearer than its `keepMin` (4.5 tiles for the Bone Archer, 4 for the Cultist).
+   * The owner, 7 Oct 2026, 19:13: "I need the ranged enemies to not run away from you".
+   */
   keepMax: number;
   element: Element;
   /** Radius of a telegraphed ground attack, or 0 for an ordinary hit. */
@@ -300,12 +304,12 @@ export interface MonsterDef {
 }
 
 export const MONSTERS: Record<MonsterKind, MonsterDef> = {
-  skeleton: { kind: 'skeleton', name: 'Skeleton', life: 22, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.32, range: 1.25, windup: 0.4, cooldown: 1.2, xp: 6, ranged: false, projSpeed: 0, keepMin: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 5 },
-  archer: { kind: 'archer', name: 'Bone Archer', life: 16, dmgMin: 4, dmgMax: 7, speed: 2.8, radius: 0.32, range: 8, windup: 0.55, cooldown: 2.0, xp: 7, ranged: true, projSpeed: 10, keepMin: 4.5, keepMax: 7, element: 'phys', aoe: 0, minDepth: 1, weight: 2 },
-  cultist: { kind: 'cultist', name: 'Cultist', life: 18, dmgMin: 6, dmgMax: 10, speed: 2.6, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMin: 4, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 2, weight: 2 },
-  bat: { kind: 'bat', name: 'Cave Bat', life: 9, dmgMin: 3, dmgMax: 5, speed: 4.8, radius: 0.26, range: 0.95, windup: 0.22, cooldown: 1.0, xp: 4, ranged: false, projSpeed: 0, keepMin: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 3 },
-  brute: { kind: 'brute', name: 'Brute', life: 70, dmgMin: 14, dmgMax: 20, speed: 2.2, radius: 0.55, range: 1.7, windup: 0.85, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMin: 0, keepMax: 0, element: 'phys', aoe: 1.7, minDepth: 3, weight: 1 },
-  warden: { kind: 'warden', name: 'Warden', life: 420, dmgMin: 18, dmgMax: 26, speed: 2.5, radius: 0.8, range: 2.6, windup: 0.95, cooldown: 2.4, xp: 150, ranged: false, projSpeed: 8, keepMin: 0, keepMax: 0, element: 'phys', aoe: 2.4, minDepth: 99, weight: 0 },
+  skeleton: { kind: 'skeleton', name: 'Skeleton', life: 22, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.32, range: 1.25, windup: 0.4, cooldown: 1.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 5 },
+  archer: { kind: 'archer', name: 'Bone Archer', life: 16, dmgMin: 4, dmgMax: 7, speed: 2.8, radius: 0.32, range: 8, windup: 0.55, cooldown: 2.0, xp: 7, ranged: true, projSpeed: 10, keepMax: 7, element: 'phys', aoe: 0, minDepth: 1, weight: 2 },
+  cultist: { kind: 'cultist', name: 'Cultist', life: 18, dmgMin: 6, dmgMax: 10, speed: 2.6, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 2, weight: 2 },
+  bat: { kind: 'bat', name: 'Cave Bat', life: 9, dmgMin: 3, dmgMax: 5, speed: 4.8, radius: 0.26, range: 0.95, windup: 0.22, cooldown: 1.0, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 3 },
+  brute: { kind: 'brute', name: 'Brute', life: 70, dmgMin: 14, dmgMax: 20, speed: 2.2, radius: 0.55, range: 1.7, windup: 0.85, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.7, minDepth: 3, weight: 1 },
+  warden: { kind: 'warden', name: 'Warden', life: 420, dmgMin: 18, dmgMax: 26, speed: 2.5, radius: 0.8, range: 2.6, windup: 0.95, cooldown: 2.4, xp: 150, ranged: false, projSpeed: 8, keepMax: 0, element: 'phys', aoe: 2.4, minDepth: 99, weight: 0 },
 };
 
 export function scaleLife(depth: number): number {
@@ -573,8 +577,14 @@ export const TUNE = {
   /** Elite monsters: how much tougher than a normal one. */
   eliteLife: 4,
   eliteDmg: 1.4,
-  /** Guardians (the powerful monster at the end of a side branch): tougher again, and bigger. */
-  guardianLife: 5,
+  /**
+   * Guardians (the powerful monster at the end of a side branch): tougher, and bigger. THREE AND A
+   * HALF TIMES THE LIFE of a monster of their kind since Version 18.6; five times until then. The
+   * owner, 7 Oct 2026, 19:35: "the larger guardian mobs are just big damage sponges and could use
+   * at least a 30% reduction in HP". (A guardian is a brute. An ELITE brute, at four times, now
+   * has more life than a guardian has: he asked about guardians, and elites are as they were.)
+   */
+  guardianLife: 3.5,
   guardianDmg: 1.25,
   guardianSize: 1.25,
   /**
@@ -640,6 +650,17 @@ export const TUNE = {
   keepCost: 150,
   /** A word on the floor stands in its light this long before it can be taken. */
   wordStands: 1.0,
+  /**
+   * PICKING THINGS UP, in tiles from the hero. The owner, 7 Oct 2026, 19:13: "I need the pick up
+   * range increased slightly".
+   *   dropPull   gold, an orb or a word this near comes to the hero (2.6 until Version 18.5);
+   *   dropTake   and is taken when it has come this near (as it always was: it is seen to arrive);
+   *   gearTake   a piece of gear, which lies where it fell, is taken from this near (0.75 until
+   *              18.5: it had to be all but stepped on).
+   */
+  dropPull: 3.2,
+  dropTake: 0.75,
+  gearTake: 1.1,
   /**
    * A trap (the ranger's roll leaves one where it began): seconds to arm once it is down, how near
    * a monster must step to set it off (its own size added), how long it waits, and how many may
