@@ -4,7 +4,7 @@
 import { FIRST_WORD, SKILLS } from '../game/defs';
 import type { Game } from '../game/game';
 import { placedAim } from '../game/lock';
-import { flowDir, flowField, lineOfSight } from '../game/nav';
+import { UNREACHABLE, flowDir, flowField, lineOfSight } from '../game/nav';
 import type { Controls, Monster } from '../game/state';
 import { WORD_IDS } from '../game/types';
 
@@ -20,6 +20,9 @@ export interface BotState {
   gearUp: boolean;
   /** Step out of attacks that show a warning on the ground, as any person would. */
   dodge: boolean;
+  /** (THE MIX) With a gate down: how far every tile is from the hero by the way one walks, and when it was last worked out. */
+  reach?: Uint16Array | null;
+  reachT?: number;
 }
 
 export function newBot(gearUp = true, dodge = true): BotState {
@@ -83,11 +86,27 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     }
   }
 
+  // (THE MIX) A GATE THAT IS DOWN SHUTS OFF WHAT IS BEHIND IT: the nearest monster by the straight
+  // line may be one there is no way to, and a player who walked at it would stand at a wall for
+  // good. So while any gate is down, only what can be come to is gone for: a field of distances
+  // from where the hero stands says what that is. (And when nothing that can be come to is left,
+  // the lever: below.)
+  let reach: Uint16Array | null = null;
+  if (L.doors.some((d) => d.spot.kind !== 'door' && d.want === 0)) {
+    st.reachT = (st.reachT ?? 0) - dt;
+    if (!st.reach || st.reachT <= 0) {
+      st.reachT = 0.5;
+      st.reach = flowField(L.walk, f.w, f.h, Math.floor(h.x), Math.floor(h.y), Infinity, st.reach ?? undefined, L.step);
+    }
+    reach = st.reach;
+  } else st.reach = null;
+  const canReach = (o: { x: number; y: number }): boolean => !reach || reach[Math.floor(o.y) * f.w + Math.floor(o.x)] !== UNREACHABLE;
+
   // nearest monster that is awake
   let target: Monster | null = null;
   let best = 1e9;
   for (const m of g.monsters) {
-    if (m.dead || m.state === 'sleep') continue;
+    if (m.dead || m.state === 'sleep' || !canReach(m)) continue;
     const d = Math.hypot(m.x - h.x, m.y - h.y);
     if (d < best) {
       best = d;
@@ -165,7 +184,7 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     return;
   }
   let goal: { x: number; y: number } | null = null;
-  const kept = g.monsters.find((m) => m.id === st.goalId && !m.dead && !m.boss);
+  const kept = g.monsters.find((m) => m.id === st.goalId && !m.dead && !m.boss && canReach(m));
   // a character's first dungeon: the fallen wordsmith comes first (walking over them searches the satchel)
   const body = L.body && L.body.state === 0 ? L.body : null;
   if (body) goal = body;
@@ -173,7 +192,7 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
   else {
     let gd = 1e9;
     for (const m of g.monsters) {
-      if (m.dead || m.boss) continue;
+      if (m.dead || m.boss || !canReach(m)) continue;
       const d = Math.hypot(m.x - h.x, m.y - h.y);
       if (d < gd) {
         gd = d;
@@ -182,7 +201,21 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
       }
     }
   }
-  if (!goal && g.boss) goal = g.boss;
+  // (THE MIX) nothing left that can be come to, and a lever not yet pulled: go and pull it (walking up to it does)
+  if (!goal && reach) {
+    for (const p of L.props) {
+      if (p.kind !== 'lever' || p.state !== 0) continue;
+      for (const [dx, dy] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+        const tx = p.tx + dx;
+        const ty = p.ty + dy;
+        if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h || L.walk[ty * f.w + tx] !== 1 || reach[ty * f.w + tx] === UNREACHABLE) continue;
+        goal = { x: tx + 0.5, y: ty + 0.5 };
+        break;
+      }
+      if (goal) break;
+    }
+  }
+  if (!goal && g.boss && canReach(g.boss)) goal = g.boss;
   if (!goal && portal) {
     goal = { x: portal.x, y: portal.y + 0.8 };
     c.interact = g.interactHint() !== null;

@@ -15,6 +15,7 @@ import { ELEMENT_RAMP, P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import type { Input } from '../engine/input';
 import { SKILLS, WORDS, xpToNext } from '../game/defs';
+import { doorTiles } from '../game/doors';
 import type { Game } from '../game/game';
 import type { Hero, Level } from '../game/state';
 import { T_FLOOR, T_WALL, WORD_IDS } from '../game/types';
@@ -132,6 +133,13 @@ function minimap(g: CanvasRenderingContext2D, x: number, y: number, w: number, h
     if (c.kind === 'chest' && c.state === 0 && L.explored[c.ty * f.w + c.tx]) put(c.tx, c.ty, P.gd4, 2);
     // (and the fallen wordsmith, until the satchel has been searched)
     else if (c.kind === 'body' && c.state === 0 && L.explored[c.ty * f.w + c.tx]) put(c.tx, c.ty, P.tl5, 3);
+    // (THE MIX: and a lever that has been seen and not yet pulled)
+    else if (c.kind === 'lever' && c.state === 0 && L.explored[c.ty * f.w + c.tx]) put(c.tx, c.ty, P.tl5, 3);
+  }
+  // (THE MIX: a gate that is down, across its doorway, so that the way it bars can be found again)
+  for (const d of L.doors) {
+    if ((d.spot.kind !== 'gate' && d.spot.kind !== 'trapgate') || d.want !== 0) continue;
+    for (const i of doorTiles(f, d.spot)) if (L.explored[i]) put(i % f.w, Math.floor(i / f.w), P.sl3, 1);
   }
   for (const m of game.monsters) {
     if (m.dead || !m.seen) continue;
@@ -236,6 +244,11 @@ export function drawMap(ui: Ui, game: Game, t: number): boolean {
   for (const ch of L.props) {
     if (ch.kind === 'chest' && ch.state === 0 && L.explored[ch.ty * f.w + ch.tx]) put(ch.tx, ch.ty, P.gd4, 3);
     else if (ch.kind === 'body' && ch.state === 0 && L.explored[ch.ty * f.w + ch.tx]) put(ch.tx, ch.ty, P.tl5, 4);
+    else if (ch.kind === 'lever' && ch.state === 0 && L.explored[ch.ty * f.w + ch.tx]) put(ch.tx, ch.ty, P.tl5, 4);
+  }
+  for (const d of L.doors) {
+    if ((d.spot.kind !== 'gate' && d.spot.kind !== 'trapgate') || d.want !== 0) continue;
+    for (const i of doorTiles(f, d.spot)) if (L.explored[i]) put(i % f.w, Math.floor(i / f.w), P.sl3, 2);
   }
   for (const m of game.monsters) {
     if (m.dead || !m.seen) continue;

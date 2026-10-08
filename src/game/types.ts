@@ -221,12 +221,21 @@ export interface Room {
   kind: RoomKind;
   /** Place along the main path: 0 is the start room, the highest is the boss hall. -1 on a side branch. */
   path: number;
+  /**
+   * THE MIX (game/dungeon.ts, MIX; absent on every room where the map-maker does not mix):
+   * `gated`: a gate stands in its way in, down until its lever is pulled. `locks`: a gate hangs
+   * in every one of its doorways, and they fall while the hero is inside with its pack.
+   * `nook`: the small room at a dead end where a lever stands.
+   */
+  gated?: boolean;
+  locks?: boolean;
+  nook?: boolean;
 }
 
-export type PropKind = 'brazier' | 'chest' | 'barrel' | 'urn' | 'pillar' | 'bones' | 'rubble';
+export type PropKind = 'brazier' | 'chest' | 'barrel' | 'urn' | 'pillar' | 'bones' | 'rubble' | 'lever';
 
 /** Props that block movement. 'bones' and 'rubble' are flat decoration. */
-export const SOLID_PROPS: readonly PropKind[] = ['brazier', 'chest', 'barrel', 'urn', 'pillar'];
+export const SOLID_PROPS: readonly PropKind[] = ['brazier', 'chest', 'barrel', 'urn', 'pillar', 'lever'];
 
 export interface PropSpot {
   kind: PropKind;
@@ -263,8 +272,22 @@ export interface PackSpot {
  *   'bossgate'  the portcullis of the boss's hall, the whole doorway wide under its arch: up
  *               until the hero is well inside, then down, and nothing passes it (nor a shot)
  *               until the boss is dead.
+ *   'gate'      (THE MIX) a portcullis under a plain arch across the way in of a room: DOWN,
+ *               and nothing passes it, until its lever is pulled (the owner, 7 Oct 2026, 14:01:
+ *               "They can be closed with levers or switches nearby to open them."). The lever
+ *               stands in a small room at a dead end nearby: `Floor.levers`.
+ *   'trapgate'  (THE MIX) the same gate in EVERY doorway of a room that locks: up, until the
+ *               hero is well inside with the room's pack; then down, until none of that pack
+ *               is left alive in the room.
  */
-export type DoorKind = 'door' | 'bossgate';
+export type DoorKind = 'door' | 'bossgate' | 'gate' | 'trapgate';
+
+/** (THE MIX) A LEVER: the tile it stands on (a prop of kind 'lever' stands there), and the room whose way in its gate bars. */
+export interface LeverSpot {
+  x: number;
+  y: number;
+  room: number;
+}
 
 export interface DoorSpot {
   kind: DoorKind;
@@ -322,6 +345,8 @@ export interface Floor {
   props: PropSpot[];
   /** DOORS AND GATES: what stands in the doorways; absent where the map-maker lays none (game/doors.ts, DOORS). */
   doors?: DoorSpot[];
+  /** (THE MIX) The levers of the level's gates; absent where there are none. */
+  levers?: LeverSpot[];
 }
 
 /**

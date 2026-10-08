@@ -348,6 +348,8 @@ export class Renderer {
    *   THE BOSS'S GATE: a pillar just outside each end of the doorway, the arch from the one to the
    *   other, and the portcullis at the back of the arch, raised as far as the gate is open. Once it
    *   has fallen the mark carved in the arch is alight.
+   *   (THE MIX) A LEVER'S GATE, AND A LOCKING ROOM'S: the same, lower and lighter, under a plain
+   *   arch with no mark.
    * (The stone on either side of a door is wall, and the walls' own rules draw it or leave it out:
    * render/walls.ts.)
    */
@@ -377,12 +379,14 @@ export class Renderer {
           put(x + y + STRIP / 64, q.s, x, y);
         }
       };
-      if (s.kind === 'bossgate') {
+      if (s.kind !== 'door') {
+        // (the boss's, heavy and carved; or a plain one: a lever's, a locking room's)
+        const boss = s.kind === 'bossgate';
         const wide = PILLAR / 32;
-        const pillar = A.pillar(true);
+        const pillar = A.pillar(boss);
         for (const [x, y] of [at(0), at(3 + wide)]) put(x + y - wide, pillar, x, y);
-        strips(A.portcullis(s.alongX, true, d.open * GATE_UP), -wide, wide);
-        strips(A.arch(s.alongX, true, d.want === 0), -wide, 0);
+        strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide);
+        strips(A.arch(s.alongX, boss, boss && d.want === 0), -wide, 0);
         continue;
       }
       const wide = POST / 32;
@@ -1542,6 +1546,8 @@ export class Renderer {
         case 'barrel': sp = p.state === 0 ? art.props.barrel : null; break;
         case 'urn': sp = p.state === 0 ? art.props.urn : null; break;
         case 'pillar': sp = art.props.pillar; break;
+        // (THE MIX: a lever, as it stands or pulled)
+        case 'lever': sp = art.gates.lever(p.state === 1); break;
         case 'portal': sp = p.state === 1 ? art.props.portal[Math.floor(t * 7) % 4] : art.props.portalOff; break;
         // (the town's own things and its people: art/townscene.ts says which picture each shows)
         default:

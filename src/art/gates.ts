@@ -34,7 +34,7 @@ import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { VAULT } from './ground';
 import type { Theme } from './ground';
-import { GRAIN } from './kit';
+import { GRAIN, SPARK } from './kit';
 import { FLAME, IRON } from './mkit';
 
 /**
@@ -494,6 +494,46 @@ export function makePortcullis(alongX: boolean, a: ArchShape, raise: number, hea
 
 // =================================================================================================
 
+/**
+ * (THE MIX) A LEVER on a stone foot. Not yet pulled, its handle leans to screen-left and its grip
+ * glows the cyan of what is the player's to use; pulled, it leans right and the grip is plain
+ * iron. (As it was painted for the doors' second look, which the owner said yes to.)
+ */
+export function makeLever(theme: Theme, pulled: boolean): Sprite {
+  const p = new Px(44, 56);
+  const cx = 22;
+  const base = 46;
+  // the foot: a low block, lit on the left, in shade on the right, a slab on top
+  for (let up = 0; up < 10; up++) {
+    for (let dx = -12; dx < 12; dx++) {
+      const y = base - up - Math.floor(Math.abs(dx + 0.5) / 2) + 6;
+      p.set(cx + dx, y, dx < 0 ? (up % 5 === 0 ? theme.lit[0] : theme.lit[2]) : up % 5 === 0 ? theme.shade[0] : theme.shade[2]);
+    }
+  }
+  for (let y = -6; y <= 6; y++) {
+    const hw = 12 - Math.abs(y) * 2;
+    for (let dx = -hw; dx < hw; dx++) p.set(cx + dx, base - 10 + y, y > 3 ? theme.lit[3] : theme.lit[4]);
+  }
+  // the slot it moves in, and the handle
+  p.hline(cx - 5, base - 10, 10, DARK);
+  const lean = pulled ? 9 : -9;
+  for (let k = 0; k <= 24; k++) {
+    const x = cx + Math.round((lean * k) / 24);
+    const y = base - 10 - k;
+    p.set(x, y, LIT);
+    p.set(x + 1, y, BODY);
+    p.set(x + 2, y, DARK);
+  }
+  // the grip
+  const gx = cx + lean;
+  const gy = base - 36;
+  const grip = pulled ? [BODY, LIT, GLINT] : [SPARK[1], SPARK[2], SPARK[3]];
+  p.ellipse(gx + 1, gy, 3, 3, grip[0]);
+  p.ellipse(gx + 1, gy, 2, 2, grip[1]);
+  p.set(gx, gy - 1, grip[2]);
+  return p.sprite(cx, base, GRAIN);
+}
+
 /** How many steps a door's swing is painted in. */
 export const SWING_STEPS = 8;
 
@@ -510,6 +550,8 @@ export interface GateArt {
   arch(alongX: boolean, boss: boolean, lit: boolean): Strip[];
   /** A gate's portcullis, `raise` picture pixels off the floor (0 to GATE_UP: an even number of them). */
   portcullis(alongX: boolean, boss: boolean, raise: number): Strip[];
+  /** (THE MIX) A lever: as it stands, or pulled. */
+  lever(pulled: boolean): Sprite;
 }
 
 export function makeGateArt(theme: Theme = VAULT): GateArt {
@@ -518,8 +560,13 @@ export function makeGateArt(theme: Theme = VAULT): GateArt {
   const pillars = new Map<number, Sprite>();
   const arches = new Map<number, Strip[]>();
   const gates = new Map<number, Strip[]>();
+  const levers: (Sprite | null)[] = [null, null];
   const shape = (boss: boolean): ArchShape => (boss ? ARCH_BOSS : ARCH);
   return {
+    lever(pulled) {
+      const k = pulled ? 1 : 0;
+      return levers[k] ?? (levers[k] = makeLever(theme, pulled));
+    },
     post: makePillar(theme, DOOR_HIGH, POST),
     lintel(alongX) {
       const key = alongX ? 1 : 0;
