@@ -285,3 +285,64 @@ the recommendation.) He was told at 08:38: "Yes. From now on, whenever I need an
 comes as a pop-up like that: a few options to tap, my pick marked first, and you can always type
 your own. News and finished work still come as normal messages. I'll leave a note so the main chat
 does the same." Consider a line for it under "The owner's standing rules" in `CLAUDE.md`.
+
+## The weight films and the decorations (8 Oct, 08:38 to 08:55), asked the new way
+
+At 08:38, three pop-ups at once: the decorations ("is this what you meant by tapestries, gargoyle
+heads and broken floor tiles?"), weight film 1 (the freeze on a heavy blow) and weight film 2 (feet
+that stay where they land). **08:42: "Close, but change it"; "Yes (Recommended)"; "Yes
+(Recommended)".** Told at 08:42: "Both weight films: yes. Heavy blows freeze for a tenth of a second
+as they land, and the heroes' feet stay where they land. Both go to the main chat and into the
+rulebook." Then which decorations and how: **08:43: "The tapestry,The gargoyle head"; "A different
+look"**; then what look: **08:44: "Torn and burnt"** for the tapestry, and of the gargoyle **"It’s too
+big and too low on the wall."** Told at 08:44 the two would be redone. The second look went to him at
+08:51 (`mockup/decorations`, `docs/mockups/decorations/README.md`, "The second look"); asked "is this
+it now?": **08:55: "Yes, that's it (Recommended)".**
+
+Changed in the rulebook for them: "Movement" rule 7 (heavy blows land with a freeze) and rule 8 (feet
+grip the floor); "Places" rule 7 (old, broken and burnt: the decorations as chosen); "Still open" is
+down to four (books, places and their palettes, skins, gear beyond weapons).
+
+FOR THE MAIN CHAT: add these two to the list of what is now yours to build for real, each behind its
+switch until it is in: the two films of weight (`mockup/weight-films`: `HITSTOP`, `STRIDE` in
+`src/render/weight.ts`) and the decorations as in their second look (`mockup/decorations`: `DECOR.on`;
+not `DECOR.near`, the darker figure by a fire, which he never saw).
+
+## Words in the world (8 Oct, 08:58 to 09:21)
+
+Asked at 08:58 what the art chat should take up next (words in the world, recommended; a place with
+its own colours; the next monster on bones; the phone speed test): **"Words in the world
+(Recommended)".** The mock-up is the branch `mockup/words-in-world` (on top of `mockup/decorations`);
+its README has every word. The pictures went at 09:15 with three pop-ups; **09:21: the ring written
+in the word, "Yes (Recommended)"; the word rising off the blade, "Yes (Recommended)"; carved words,
+"No carved words".** Told at 09:22.
+
+Changed in the rulebook for it: "Words in the world" now has the two looks he chose as rules 1 and 2
+and "No carved words" as rule 3; its lead says letters show only on the monsters and weapons that
+carry a word; "Places" lost "Writing as landmarks" (it came from reading "Somewhere between 1 and 2"
+as some carved writing too; his answer of 09:21 settles it the other way).
+
+FOR THE MAIN CHAT: add to what is now yours to build for real, behind its switch until it is in:
+words in the world as he chose them (`mockup/words-in-world`: `WORDS_LOOK.on`, the ring written in
+the word and the word rising off the blade; no carvings).
+
+## The bone archer on bones (8 Oct, 09:27 to 11:25)
+
+Asked at 09:27, as a pop-up, "What should the art chat take up next?" ("Bone archer on bones
+(Recommended)": "He's a skeleton too. Same new bones, so he matches the new skeleton."; "A place's
+own colours": "The same room painted as two or three places, for you to pick from."; "Phone speed
+test": "Five minutes with your phone. Eight directions wait on it."). His answer, 09:28: "Bone
+archer on bones (Recommended)". Told at 09:28: "Bone archer it is. I'll put him on the same new
+bones as the skeleton, bow in hand, and send you pictures of him beside today's archer."
+
+Sent at 10:27: `previews/archer_on_bones_sheet.png` and `previews/archer_on_bones_film.gif` (branch
+`mockup/archer-on-bones`), and, as a pop-up, "Should the new bone archer replace today's?" ("Yes
+(Recommended)": "It goes to the main chat to put in the game, with the new skeleton."; "Close, but
+change it"; "No, keep today's"). His answer, 11:25: "Yes (Recommended)". Told at 11:25: "Bone
+archer: yes. It replaces today's archer and goes to the main chat to put in the game, together with
+the new skeleton. I'm adding it to the rulebook now." Rule 8 of the monsters ("Built on bones") now
+names the skeleton and the bone archer, and that he chose both on 8 Oct.
+
+FOR THE MAIN CHAT: add to what is now yours to build for real, behind its switch until it is in:
+the bone archer on bones (`mockup/archer-on-bones`, on top of `mockup/skeleton-on-bones`:
+`ARCHER3.on`, after `SKELETON3.on`; its README says what changes in the tests).

@@ -81,7 +81,7 @@ Monsters look natural for what they are, and how they feel depends on their size
 5. **Weapons rest low.** No monster holds its weapon up in the air for no reason. In your words: "Why are their weapons always straight up in the air?"
 6. **Pink is theirs.** Eyes, runes and enemy fire glow hot pink burning to gold, and every living monster has a one-pixel pink edge. Nothing on a monster glows cyan.
 7. **Equal to the heroes.** Monsters are painted as boldly and as finely as the heroes. In your words: "we need the dungeons and mobs brought up to the level of the character models".
-8. **Built on bones.** The skeleton is rebuilt on the heroes' bones, so it moves with the same weight they do. You chose it on 8 Oct; other monsters follow one at a time, each shown to you first.
+8. **Built on bones.** The skeleton and the bone archer are rebuilt on the heroes' bones, so they move with the same weight the heroes do. You chose both on 8 Oct; other monsters follow one at a time, each shown to you first.
 
 ## Places
 
@@ -91,8 +91,8 @@ The places carry the detail, always a step quieter than the fight. In your words
 2. **A step quieter.** Places use less contrast and duller colour than the figures in them, so the eye lands on the fight first.
 3. **Each place its own.** Every area has its own palette, stone, props and decoration. Two areas are never mistaken for each other.
 4. **Solid, not flat.** Walls are upright faces lit as the light falls, the left face lighter than the right, fading into the dark at the top. Props stand up off the floor with soft shadows. Steps and ledges are part of the world: "steps are a must include".
-5. **Writing as landmarks.** Here and there a place has words carved into it: over a door, round a shrine, on a boss's gate. Never on every wall.
-6. **Books may give worlds.** A group of floors may take its world from an old book, drawn only from the book itself and only from books out of copyright. The heroes never change their look for a book.
+5. **Books may give worlds.** A group of floors may take its world from an old book, drawn only from the book itself and only from books out of copyright. The heroes never change their look for a book.
+6. **Old, broken and burnt.** Decorations show age: a tapestry torn and burnt, hanging in strips; a gargoyle head small and high on the wall; flagstones cracked or gone; a soft shadow at the foot of everything that stands. In your words, of the first gargoyle: "It’s too big and too low on the wall."
 
 ## Movement
 
@@ -108,6 +108,8 @@ Weight is the test for every animation, and every character moves its own way. I
 4. **Loose things follow.** Cloth and hair trail the body and settle after it stops, and a blast or a beam blows them back.
 5. **Slick.** Smooth, plenty of frames, nothing jerky. In your words: "I want the animations to be really slick".
 6. **Alive when still.** A figure left standing breathes, shifts its weight and has small habits of its own.
+7. **Heavy blows land with a freeze.** The moment a heavy blow lands, everything holds for a tenth of a second. You chose it on 8 Oct.
+8. **Feet grip the floor.** A foot stays where it lands; a running figure moves its legs faster rather than slide. You chose it on 8 Oct.
 
 ## Hits, blood and deaths
 
@@ -131,12 +133,13 @@ Wild for an instant, then clear: big moments flare, and nothing hides the fight 
 
 ## Words in the world
 
-Letters show wherever a word is at work, and now and then in the places themselves. In your words: "Wordsmithing is the strongest mechanic. Everything revolves around the wordsmithing first and foremost."
+Letters show wherever a word is at work: on the monsters and the weapons that carry one, and nowhere else. In your words: "Wordsmithing is the strongest mechanic. Everything revolves around the wordsmithing first and foremost."
 
-1. **A word shows its letters.** Gear with a word burned into it, and a monster carrying one, show glowing letters in that word's colour.
-2. **Carved words as landmarks.** Some places have writing cut into them, rare enough to notice (see Places).
-3. **The game's own letter.** Carved or glowing, the letters are the game's own lettering, never a font or script borrowed from elsewhere.
-4. **The words win.** When a word is picked up, burned in or used, it is the brightest, clearest thing on the screen for that moment.
+1. **A monster's ring is written in its word.** Under a named monster with a word, the ring on the floor is the word itself, round and round, turning slowly. You chose it on 8 Oct.
+2. **A weapon's word rises off it.** A weapon with a word burned in spells the word upward off the blade, letter by letter; the whole word holds a moment, fades, and comes again. You chose it on 8 Oct.
+3. **No carved words.** The walls stay with the decorations. In your words: "No carved words".
+4. **The game's own letter.** The letters are always the game's own lettering, never a font or script borrowed from elsewhere.
+5. **The words win.** When a word is picked up, burned in or used, it is the brightest, clearest thing on the screen for that moment.
 
 ## Menus and lettering
 
@@ -201,11 +204,9 @@ The look in numbers as the game has it in Version 18.8, checked against its code
 
 ## Still open
 
-Six things are not decided yet; each answer becomes a rule here.
+Four things are not decided yet; each answer becomes a rule here.
 
 - [ ] Whether groups of floors take their worlds from old books, and which books ("maybe", "possibly").
 - [ ] Which places come first, and each one's palette: to be set place by place, with pictures.
 - [ ] Skins: whether to sell them, and when.
 - [ ] Gear beyond weapons: "further on down the road, if ever".
-- [ ] The two films of weight you have (a short freeze on a heavy blow; feet that grip the floor): your yes or no decides whether they become rules.
-- [ ] Decorations built the way the heroes are (a moth-eaten tapestry, a gargoyle head, a missing flagstone, soft shadows under props): waiting for your word.
