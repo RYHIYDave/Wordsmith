@@ -100,7 +100,9 @@ between the jumps.
 - **The gate word belongs to the endless depth:** there, words laid on the gate make the next
   dungeon harder and richer.
 - **Nine words today:** Power, Leech, Swift, Twin, Flame, Frost, Lightning, Volatile and Poison.
-  Three more are planned: Pulling, Heavy and Hexing.
+  More are planned: the eight you chose on 8 Oct (Pulling, Splitting, Heavy, Precise, Hexing,
+  Stilling, Frenzied and Guarding), and Mystical, which does for spells what Power does for
+  attacks.
 
 ## Builds
 
@@ -115,13 +117,13 @@ Two heroes of the same class differ by the talents they pick and the words in th
 
 ## Heroes, death and the two modes
 
-Every hero is made in one of two modes, picked at the start and kept for life. Today the game has
-only Hardcore’s rule.
+Every hero is made in one of two modes, picked at the start and kept for life: the MODE button on
+the class cards, in the game since Version 19.1. A hero saved before there were modes is Normal.
 
 | When the hero dies | Normal | Hardcore |
 | --- | --- | --- |
 | What happens | The hero wakes in town | The hero is gone |
-| What is lost | What was found in that dungeon, and a share of the gold | The hero and all they carry |
+| What is lost | What was found in that dungeon, and a quarter of the gold carried in | The hero and all they carry |
 | What stays | The hero’s level, the gear worn in, the words, the talents | The Lexicon, the stash and the unlocks, for the next hero |
 
 - **Every new hero starts at dungeon 1.** What earlier heroes left makes the early lands quick: the
@@ -137,8 +139,9 @@ A dungeon is one long level of rooms, laid fresh each time, ending in its boss�
 monsters it holds all four of these:
 
 - **Elites with words:** named monsters carrying a word you can win, as now.
-- **Traps and puzzles:** the spike floor, the dart wall, and the word door, which opens only to an
-  attack carrying its word. These are next on the list to build.
+- **Traps and puzzles:** the spike floor, the dart wall, and the word door (a sealed door), which
+  opens only to an attack carrying its word: in the game from the second dungeon on since Version
+  19.0.
 - **Events:** a choice with a risk, such as a shrine, a cursed chest or a trapped treasure room.
 - **Secrets:** hidden rooms behind cracked walls.
 
@@ -231,7 +234,7 @@ it goes in.
 
 | The rule | The game now | What it takes |
 | --- | --- | --- |
-| Normal and Hardcore | Hardcore only | A mode picked when a hero is made; Normal’s way of dying |
+| Normal and Hardcore | Both, since Version 19.1 | Done |
 | Five lands of ten, the final boss at 50 | One dungeon after another, with no end | Five lands, each its own look and monsters (with the art chat); a final boss |
 | Small, medium and big bosses | A boss in every dungeon; a Greater boss every fifth | A medium boss at 5, 15, 25…; a big boss at 10, 20, 30… |
 | A world map | The gate in town, one dungeon deeper each time | The map; going back to beaten dungeons |
@@ -239,20 +242,22 @@ it goes in.
 | Forging three words into one | Not built | The table of ranks you were sent on 5 Oct, still waiting on your say |
 | A third slot a side | Built, switch off | Tests and balance for six words on one attack |
 | Gate words for the endless depth | Gate words on any dungeon | Moved to past the final boss |
-| Traps, puzzles, events, secrets | The mix (Version 18.9) | Traps first: next on the list |
+| Traps, puzzles, events, secrets | The mix (Version 18.9) and the traps (Version 19.0) | Puzzles beyond the word door, events and secrets |
 | Quests from townsfolk | None | The quests, and who gives them |
 | A free game with a shop | Played free as a web page | A store on phone and PC; the four classes later |
 | A board of best depths | None | The game online |
 | Co-op | None | After release |
 
 The order, as you set it on 8 Oct: after the traps, Normal mode, since it is small and changes
-every death. (His answer, 10:33: "Normal mode (Recommended)".)
+every death. (His answer, 10:33: "Normal mode (Recommended)".) Both are in the game (Versions 19.0
+and 19.1); what comes next is yours to pick.
 
 ## Still open
 
 - [ ] How many talent points a hero gets, and what is in each tree.
 - [ ] The table of ranks for forging, sent to you on 5 Oct.
-- [ ] How much gold a Normal death costs, and the price of re-picking talents.
+- [ ] The price of re-picking talents. (What a Normal death costs is settled: a quarter of the
+  gold carried in, his answer of 8 Oct, 13:35: "A quarter (Recommended)".)
 - [ ] Which words and places earlier heroes unlock, and for what deeds.
 - [ ] What quests give.
 - [ ] Each land’s look and monsters, with the art chat.

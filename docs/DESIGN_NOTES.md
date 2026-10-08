@@ -4469,6 +4469,71 @@ tested, then a new version.) **HIS ANSWER, 11:36: "Yes, as they are (Recommended
 - NOT CHECKED: a real phone. How the traps PLAY in a run (how much they hurt at each depth, and
   whether a sealed vault's word is one a player carries) is his to find.
 
+### Version 19.1: Normal mode
+
+**What he said.** His gameplay rulebook, approved 8 Oct 2026, 10:33 (`docs/gameplay/RULEBOOK.md`,
+"Heroes, death and the two modes"): "Every hero is made in one of two modes, picked at the start
+and kept for life." Normal: "The hero wakes in town", losing "What was found in that dungeon, and a
+share of the gold", keeping "The hero’s level, the gear worn in, the words, the talents"; Hardcore:
+"The hero is gone". And his order of that morning: after the traps, "Normal mode (Recommended)". He
+was sent its pictures at 13:34 (normal_cards.png, normal_fell.png, normal_town.png: the game on a
+phone), with "Put Normal mode into the game, as in the pictures?" and "How much of your own gold
+should a Normal death cost? (On top of everything found in that dungeon.)". **HIS ANSWERS, 13:35:
+"Yes, as it is (Recommended)" and "A quarter (Recommended)".**
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "NORMAL MODE, PICTURES FIRST" to
+"VERSION 19.1 IS LIVE"; the rules in `src/game/modes.ts`).
+
+- **THE MODE ON THE CLASS CARDS** (`drawTitle` in `src/ui/panels.ts`): a button between BACK and
+  VOICE, MODE: NORMAL (the one they open with) or MODE: HARDCORE (in red), and under the cards
+  what it means (`MODE_LINE`): "Normal: a death sends the hero back to town, without what was found
+  in that dungeon." / "Hardcore: a death is the end of the hero. The Lexicon and the stash stay."
+  The cards remember the last (`Meta.mode`). Not in the practice room. Continue's line says
+  "Hardcore" of a Hardcore hero.
+- **KEPT FOR LIFE** (`Game.mode`, `RunSave.mode`): a hero saved before there were modes is Normal
+  (`MODE_BEFORE`): nobody loses a hero to a rule they never picked. A hero made any way but the
+  cards (the playtests' runs) is Hardcore, the old rule.
+- **A NORMAL DEATH** (`wakes`, `wakeSave`, `losses` in `src/game/game.ts`; `wake` in `src/main.ts`):
+  the hero falls as ever; the death screen says YOU FELL, what killed them, "You wake in town." and
+  what it cost ("Lost: what you found in dungeon 4 (2 items, 1 word, 140 gold), and 60 of your own
+  gold.", `wakeLine`), and its button is "Back to town". THE HERO AS THEY WENT IN is kept from the
+  moment they step into a dungeon (`Game.entry`, a save taken then): they wake in town with the
+  gear they wore in, the bag, the words and where they were set, and the fallen wordsmith's
+  satchel as they were; at the level, points and spending they had reached; with a QUARTER OF THE
+  GOLD CARRIED IN gone (`NORMAL.goldShare`, his answer) and all that was found in the dungeon;
+  the same dungeon beyond the gate. One line in town says so. The save becomes the woken hero at
+  the moment of the death (`writeSave`), so closing the page on the death screen changes nothing.
+  The Lexicon counts lost heroes only (`Meta.deaths`).
+- **A HARDCORE DEATH** is as it always was: YOU DIED, New run, the Lexicon and the stash kept.
+
+**How it was tested.**
+
+- `tsc` clean; `tests/modes.test.ts` (11: the switch on and the quarter; with the switch off,
+  every hero made and dying as before and nothing written of the modes; a Normal death loses no
+  hero; waking: the gear worn in and not what was put on, the bag, the words found gone and those
+  carried in kept, the level, the gold, the same dungeon tile for tile; a word set in the dungeon
+  goes and one set before stays; a Hardcore death; the first dungeon's satchel back on its body
+  and its prompts not begun again; nobody wakes in the practice room or while the prompts run; a
+  save from before the modes is Normal; the cards remember; no gold carried in, none of it lost).
+  THE WHOLE UNIT SUITE 657 OF 657 (13:37 to 13:41), and again in the frozen copy after the
+  regression (657 of 657, 14:36 to 14:39). The save playtest dies twice with its Ranger, Normal and then
+  Hardcore; the monkeys press Back to town where there is no New run.
+- THE PRE-FLIGHT (a dev page built from the tree, 13:41 to 13:50): 25 playtests, among them
+  Normal mode's own on a PC and a phone, the save's, the looks in four layouts, the touch, the way
+  in, the first dungeon, four monkeys and the soak: all clean.
+- **The regression** on a copy frozen at 13:50 (the scratchpad's `v191a/arpg_frozen`,
+  13:51 to 14:35, two at a time, nothing else running): **148 OF 148 PLAYTESTS
+  FINISHED CLEAN**, among them Normal mode's own on a PC and a phone.
+  Speed: 59.5 frames a second, longest frame 33.4 ms; the slowest fights of the four word-pair runs 57.2 to 58.8 frames a second (19.0's: 59.6, and 56.7 to 59.2).
+- THE RELEASE BUILD, made in the copy at 14:41: `Play.html` 878,093 bytes and
+  `dist/artifact.html` 877,771, both saying V19.1; kept in the scratchpad's
+  `v191a/release/`.
+- **The published page itself** (`wrap191.sh` in the scratchpad, 14:41 to 14:58): **66
+  of 66 playtests clean.** The 64 of 19.0, and Normal mode's own on a PC and a phone. Published at 14:59 ("Version 45", version
+  id `1791485997-90a7`); the file published is the kept copy, `v191a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone; whether a quarter feels right over many deaths is his to find.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4598,7 +4663,11 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               map-maker's `sealVault`, `unsealDoorless`, `layHazards`; their rules in game.ts,
               `stepSpikes`, `stepDarts`, `fireDart`, and the sealed door's, `unseal`; the
               sealed door is a door kind, 'worddoor', in doors.ts; the hall laid by hand for
-              them, `makeTrapHall` in level.ts)
+              them, `makeTrapHall` in level.ts),
+              modes (19.1: NORMAL AND HARDCORE, `MODES.on`, `NORMAL.goldShare`, `MODE_BEFORE`,
+              `MODE_LINE`; in game.ts `Game.mode`, `entry` (the hero as they went into the
+              dungeon), `wakes`, `wakeSave`, `losses`; `RunSave.mode`, `Meta.mode`; waking in
+              town, `wake` in main.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -4614,7 +4683,9 @@ src/ui/       ui (immediate-mode kit), hud (globes, the attacks as phrases, the 
               bag and the words; 14.2: on half the screen, what is read on a card over the
               game's half), lexicon (the book of words),
               guide (what the first dungeon's prompts say), words (word tiles and attack names),
-              panels (starting screen, level-up, pause, death, item cards), town (gate, vendor, stash)
+              panels (starting screen, level-up, pause, death, item cards; 19.1: the cards'
+              MODE, and a Normal death's YOU FELL and Back to town, `wakeLine`), town (gate,
+              vendor, stash)
 src/dev/      bot (test player; 19.0: it minds the traps, `minded`), preview_*.ts (art sheets), sheet;
               preview_hero (every frame of a rig) and preview_hero_gif (a moving picture of it);
               styles + styles_cast + preview_styles = the art-style samples (style 6 = NEON):
@@ -4674,7 +4745,10 @@ tests/        dungeon, items, town (every service's rules), sim (bots play whole
               playtests' own player and the lever),
               traps (19.0: the beat; once a rise; monsters and a bat; the plate and its darts; the
               sealed door to its word; the test player past them; the map-maker's traps, their
-              rules and their dice)
+              rules and their dice),
+              modes (19.1: Normal and Hardcore; waking without what was found, at the level
+              reached, a quarter of the gold carried in gone, the same dungeon; old saves
+              Normal)
 tools/        build, preview, playtest + scenarios/, regress.sh (every browser playtest),
               town_gif.mjs (a moving picture of the town's hall, or of one place in it),
               hero_gif.mjs + hero_gif.py (a hero's moving picture), crop_heroes.py,
@@ -4821,6 +4895,8 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.1: Normal mode
+node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/modes_look.mjs --out shots/modeslook/pc   # the cards' MODE, a Normal death and waking in town, in four pictures (in the regression: modes_pc, modes_phone)
 # Version 19.0: the traps: spike floors, dart walls and sealed vaults
 node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/traps_look.mjs --out shots/trapslook/pc   # the hall of the traps, lit, in eight pictures (in the regression: traps_pc, traps_phone)
 FILM=spikes node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/traps_film.mjs --out shots/trapsfilm/x   # a trap filmed in the game, slowed (FILM=spikes|darts|door|pack): frames in shots/trapsfilm/<film>/, joined by tools/hero_gif.py
