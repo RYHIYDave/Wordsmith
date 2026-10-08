@@ -379,7 +379,10 @@ export class Renderer {
       };
       if (s.kind === 'hole') {
         // (MOCK-UP) the piece of wall over the middle tile of the three, with the hole through it
-        strips(A.breach(s.alongX), 1, 0);
+        strips(A.breach(s.alongX, HOLE_LOOK.whole), 1, 0);
+        // (what fell out of the wall, heaped at the foot of the hole and out into the room: in front of the piece)
+        const [hx, hy] = s.alongX ? [s.a + 1.5, face + 0.4] : [face + 0.4, s.a + 1.5];
+        put(hx + hy, A.heap(s.alongX), hx, hy);
         continue;
       }
       if (s.kind === 'bossgate') {

@@ -34,7 +34,8 @@ import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { VAULT, wallSolid, wallStone, wallTall } from './ground';
 import type { Theme } from './ground';
-import { GRAIN } from './kit';
+import { GRAIN, INK, hash, lit } from './kit';
+import { stoneOf } from './props';
 import { FLAME, IRON } from './mkit';
 
 /**
@@ -499,13 +500,19 @@ export function makePortcullis(alongX: boolean, a: ArchShape, raise: number, hea
 // hole in a wall, all crumbly from one room to another."
 //
 // THE PIECE OF WALL OVER ONE TILE, WITH A RAGGED HOLE THROUGH IT: the wall's own stonework (its
-// courses, its tones, fading out at the top as every wall does), from which stones are broken out
-// course by course; what fell lies heaped at its foot on either side. u = 0 where the tile begins
-// along the wall (the wall runs on before it; after it the two blocks that would hide the way
-// through are left out, as beside every doorway in a back wall).
+// courses, its tones, fading out at the top as every wall does), broken out stone by stone. u = 0
+// where the hole's own tile begins along the wall; the piece reaches half a tile back over the end
+// of the wall that runs on before it (u < 0), which the hole bites into. THROUGH THE HOLE: the dark,
+// and the floor of the way. Its near side shows THE THICKNESS OF THE WALL, a band of broken stone in
+// shadow (the side of the stone beside the hole, which would fill it, is not painted: render/walls.ts,
+// `wallFaces`). WHAT FELL lies heaped at its foot: in it, and on either side.
 
-/** How high the hole is at its highest, in picture pixels: a last stone is out of the course above the three it goes through. */
+/** How high the hole is at its highest, in picture pixels (of the 56 of a wall that are solid). */
 export const HOLE_HIGH = 54;
+/** How far back over the wall that runs on before it the piece reaches, in picture pixels (a multiple of STRIP). */
+export const HOLE_BACK = 16;
+/** How wide the thickness of the wall shows at the hole's near side, in picture pixels. */
+const HOLE_DEEP = 6;
 /** The dark beyond the walls (art/ground.ts). */
 const BEYOND = '#07050a';
 
@@ -516,98 +523,179 @@ function chance(a: number, b: number): number {
 }
 
 /**
- * THE HOLE, course by course of the wall's stones from the floor (16 rows each): where it begins
- * and ends along the wall. It begins where the wall that runs on ends (that wall's own side is
- * its near jamb), is widest a course up, and draws in to its top; a stone or two jut into it.
- * What is left of the tile after it is a ragged jamb about as wide as a door's post.
+ * THE HOLE, row by row from the floor: where it begins and ends along the wall, or null above it.
+ * Broken out stone by stone: its edges step where two courses meet (every 16 rows from the top of
+ * the wall: art/ground.ts, COURSE, so at rows 15, 31 and 47 from the floor), and wander a pixel or
+ * two within a course. It is widest a course up, where it bites into the wall on either side of its
+ * tile (`whole`: the wall stands on after it too; else what is left of the tile after it is a jamb);
+ * a corner of a stone juts into it on either side; its top is broken higher on the near side.
  */
-const HOLE_SPANS = [[3, 22], [1, 24], [4, 22]] as const;
-export function inHole(u: number, v: number): boolean {
-  if (v < 0 || v >= HOLE_HIGH) return false;
+function holeSpan(v: number, whole: boolean): readonly [number, number] | null {
+  if (v < 0 || v > HOLE_HIGH) return null;
   let lo: number;
   let hi: number;
-  if (v < 48) {
-    [lo, hi] = HOLE_SPANS[Math.floor(v / 16)];
-    // (a stone that is broken off is not broken off straight)
-    if (chance(v, 1) < 0.35) lo++;
-    if (chance(v, 2) < 0.35) hi--;
-    // the top of the hole draws in
-    if (v >= 38) {
-      lo += Math.round((v - 37) * 0.7);
-      hi -= Math.round((v - 37) * 0.6);
-    }
-  } else {
-    // one stone more is out of the course above
-    lo = 10 + (v - 48);
-    hi = 16 - Math.floor((v - 48) / 3);
-  }
-  return u >= lo && u <= hi;
+  if (v <= 15) [lo, hi] = [1, 30];
+  else if (v < 31) [lo, hi] = [-4, 34];
+  else if (v < 40) [lo, hi] = [2, 29];
+  else if (v < 47) [lo, hi] = [6, 28];
+  else if (v < 51) [lo, hi] = [8, 24];
+  else [lo, hi] = [11, 19];
+  // (a stone broken off is not broken off straight: a pixel in or out, three rows at a time)
+  const band = Math.floor(v / 3);
+  const a = chance(band, 11);
+  const b = chance(band, 23);
+  lo += a < 0.3 ? 1 : a > 0.82 ? -1 : 0;
+  hi += b < 0.3 ? -1 : b > 0.82 ? 1 : 0;
+  // (the corner of a stone left jutting into the hole, on either side)
+  if (v >= 20 && v <= 24) hi -= 3;
+  if (v >= 5 && v <= 8) lo += 2;
+  // (with no wall after its tile, a jamb of the tile's own stone is left standing at its far side)
+  if (!whole) hi = Math.min(hi, 25);
+  return [lo, hi];
 }
-/** Stones knocked out of the wall that runs on, beside the hole (u < 1): the end of one a course up, a chip of the next. */
-function inBite(u: number, v: number): boolean {
-  if (u > 0) return false;
-  if (v >= 17 && v <= 30) return u >= -6 + (chance(v, 7) < 0.3 ? 1 : 0);
-  if (v >= 33 && v <= 41) return u >= -2;
-  return false;
+export function inHole(u: number, v: number, whole = true): boolean {
+  const s = holeSpan(v, whole);
+  return s !== null && u >= s[0] && u <= s[1];
 }
 
-export function makeBreach(theme: Theme, alongX: boolean): Strip[] {
+export function makeBreach(theme: Theme, alongX: boolean, whole: boolean): Strip[] {
   const tall = wallTall();
-  const F = new Flat(-8, 32, tall);
+  // (the piece reaches back over the end of the wall that runs on before the hole's tile, and on over the
+  // start of the wall after it when that stands)
+  const F = new Flat(-HOLE_BACK, whole ? 32 + STRIP : 32, tall);
   const stone = wallStone(theme, alongX, 0);
-  const [joint, lo, usual, , hi] = alongX ? theme.lit : theme.shade;
+  const hole = (u: number, v: number): boolean => inHole(u, v, whole);
+  const [joint, lo, , , hi] = alongX ? theme.lit : theme.shade;
+  // (the thickness of the wall, seen from the side in the hole: a face turned the other way, and deep in shadow)
+  const deep = alongX ? theme.shade : theme.lit;
+  const deepBody = alongX ? deep[1] : deep[0];
+  const deepEdge = alongX ? deep[2] : deep[1];
+  // (what fell: stones lying in the light from above, lighter on top than any face)
+  const rubTop = theme.cap[2];
+  const rubLit = theme.lit[3];
+  const rubBody = theme.lit[2];
+  const rubSide = theme.lit[1];
+  const rubGap = theme.lit[0];
   // (the wall's own column, 0..30 left to right on the screen: a plane along +x runs that way, one along +y the
-  // other. A wall's face is 31 pixels of a tile's 32: the first of them is the seam between two blocks, and bare)
-  const col = (u: number): number => (alongX ? u - 1 : 31 - u);
-  // (a crack up the jamb from the shoulder of the hole, and one up from its top)
+  // other. A wall's face is 31 pixels of a tile's 32: the first of them is the seam between two blocks, and bare.
+  // Before the hole's tile and after it, the faces of the walls there)
+  const col = (u: number): number => {
+    const w = u < 0 ? u + 32 : u >= 32 ? u - 32 : u;
+    return alongX ? w - 1 : 31 - w;
+  };
+  // CRACKS running out from the hole: up from its far shoulder, back along the wall that runs on from where
+  // the hole bites deepest, and up from its top into the stone over it
   const crack = new Set<number>();
-  for (const [u0, v0, n, seed] of [[27, 44, 22, 3], [13, 55, 12, 9]] as const) {
-    let u: number = u0;
+  const cracks: ReadonlyArray<readonly [number, number, number, number, number, number]> = [
+    // u, v, rows, drift (-1 back along the wall, +1 on), seed, how far it may wander from where it began
+    [26, 47, 14, 1, 3, 4],
+    [-6, 27, 12, -1, 9, 5],
+    [14, 55, 7, 0, 5, 2],
+  ];
+  for (const [u0, v0, n, drift, seed, wander] of cracks) {
+    let u = u0;
     for (let k = 0; k < n; k++) {
-      crack.add((v0 + k) * 64 + u);
+      crack.add((v0 + k) * 64 + (u + 32));
       const r = chance(k, seed);
-      u += r < 0.3 ? -1 : r > 0.72 ? 1 : 0;
-      u = Math.max(24 - (seed === 9 ? 14 : 0), Math.min(30 - (seed === 9 ? 12 : 0), u));
+      u += r < 0.28 ? -1 : r > 0.66 ? 1 : 0;
+      if (drift !== 0 && chance(k, seed + 1) < 0.35) u += drift;
+      u = Math.max(u0 - wander, Math.min(u0 + wander, u));
     }
   }
+  const cracked = (u: number, v: number): boolean => crack.has(v * 64 + (u + 32));
+  // CHIPS: small pieces knocked off the stones round the edge of the hole
+  const chips: ReadonlyArray<readonly [number, number, number, number]> = [
+    [-8, 12, 3, 2],
+    [whole ? 35 : 26, 33, 2, 3],
+    [-6, 34, 2, 2],
+    [24, 50, 3, 2],
+  ];
+  const chipped = (u: number, v: number): boolean => chips.some(([cu, cv, w, h]) => u >= cu && u < cu + w && v >= cv && v < cv + h);
+  const u1 = whole ? 32 + STRIP : 32;
   for (let v = 0; v < tall; v++) {
     const k = tall - 1 - v;
-    for (let u = -8; u < 32; u++) {
-      if (u < 1) {
-        // the wall that runs on is its own picture: here only what is knocked out of it, as the dark, and the edge of that
-        if (inBite(u, v)) F.set(u, v, BEYOND);
-        else if (inBite(u + 1, v) || inBite(u, v - 1) || inBite(u, v + 1)) F.set(u, v, inBite(u + 1, v) ? (alongX ? lo : hi) : joint);
+    const span = holeSpan(v, whole);
+    for (let u = -HOLE_BACK; u < u1; u++) {
+      if (hole(u, v)) {
+        // THE THICKNESS OF THE WALL at the near side: a band receding from the edge at the slant of the floor
+        // (a line straight back from the wall rises a pixel for each pixel along it, in a plane's own u and v)
+        const d = span ? u - span[0] : HOLE_DEEP;
+        if (d < HOLE_DEEP && v >= d) {
+          // (the joints between the courses run back across it; its far edge is ragged)
+          const back = v - d;
+          if (d === HOLE_DEEP - 1 && chance(v, 31) < 0.5) continue;
+          let c = deepBody;
+          if (back === 15 || back === 31 || back === 47) c = deep[0];
+          else if (d === 0) c = deepEdge;
+          else if (chance(u * 7 + v, 41) < 0.08) c = deep[0];
+          F.set(u, v, c);
+        } else if (u < 0 || u >= 32) {
+          // (where the hole bites into the wall before its tile or after it, that wall's own picture is under
+          // the piece: the dark beyond is painted over it)
+          F.set(u, v, BEYOND);
+        }
         continue;
       }
-      if (inHole(u, v)) continue;
+      const near = hole(u + 1, v) || hole(u - 1, v) || hole(u, v - 1) || hole(u, v + 1);
+      const close = near || hole(u + 2, v) || hole(u - 2, v) || hole(u, v - 2);
+      const mark = cracked(u, v) || cracked(u - 1, v) || chipped(u, v);
+      // the walls before the hole's tile and after it are their own pictures: over them only the broken
+      // edge, the cracks and the chips
+      if ((u < 0 || u >= 32) && !close && !mark) continue;
       let c = stone(col(u), k);
       // the broken edge: dark where the stone ends, and the end of a stone lit or in shade by the side it is on
       // (light from the upper left of the screen)
-      if (inHole(u + 1, v) || inHole(u - 1, v) || inHole(u, v - 1)) c = joint;
-      else if (inHole(u + 2, v)) c = alongX ? lo : hi;
-      else if (inHole(u - 2, v)) c = alongX ? hi : lo;
-      else if (inHole(u, v - 2)) c = lo;
-      else if (crack.has(v * 64 + u)) c = joint;
-      else if (crack.has(v * 64 + u - 1)) c = hi;
+      if (near) c = joint;
+      else if (chipped(u, v)) c = chipped(u, v + 1) && chipped(u + 1, v) ? BEYOND : joint;
+      else if (hole(u + 2, v)) c = alongX ? lo : hi;
+      else if (hole(u - 2, v)) c = alongX ? hi : lo;
+      else if (hole(u, v - 2)) c = lo;
+      else if (cracked(u, v)) c = joint;
+      else if (cracked(u - 1, v) && v % 2 === 0) c = hi;
       F.set(u, v, c, wallSolid(k));
     }
   }
-  // WHAT FELL: stones heaped at the foot of the hole on either side, and a few between
-  const heap = (u0: number, wide: number, high: number, seed: number): void => {
-    for (let u = u0; u < u0 + wide; u++) {
-      const t = (u - u0 + 0.5) / wide;
-      const top = Math.max(1, Math.round(high * (1 - Math.abs(t * 2 - 1) ** 1.6) + (chance(u, seed) < 0.4 ? 1 : 0)));
-      for (let v = 0; v < top; v++) {
-        // (stones about three pixels across: a dark line between two, a lit top)
-        const edge = (u + seed) % 4 === 0 || (v > 0 && (v + Math.floor(u / 4) + seed) % 3 === 0 && chance(u + v, seed) < 0.5);
-        F.set(u, v, v === top - 1 ? hi : edge ? joint : chance(u * 7 + v, seed) < 0.3 ? lo : usual);
-      }
-    }
-  };
-  heap(-5, 12, 7, 3);
-  heap(20, 12, 6, 8);
-  heap(9, 7, 2, 5);
   return F.strips(alongX);
+}
+
+/**
+ * (MOCK-UP) WHAT FELL OUT OF THE WALL: a heap of broken stones at the foot of the hole, standing out
+ * into the room, stood in front of the wall's piece as a thing of its own (render.ts, `standDoors`).
+ * Stones as the floor's rubble is painted (art/props.ts, `makeRubble`), more of them and piled up:
+ * the biggest low down at the back, smaller ones spilt forward and along the wall.
+ */
+const HEAP: ReadonlyArray<readonly [number, number, number, number]> = [
+  // [x, y, width, height], from the back of the heap to the front (a plane along +x: the wall runs down to the right)
+  [12, 3, 9, 7],
+  [20, 2, 12, 9],
+  [31, 6, 9, 7],
+  [6, 9, 10, 8],
+  [15, 9, 13, 10],
+  [28, 11, 11, 8],
+  [39, 12, 7, 6],
+  [3, 16, 7, 5],
+  [11, 17, 9, 7],
+  [22, 18, 10, 6],
+  [33, 18, 8, 6],
+  [43, 18, 5, 4],
+  [18, 24, 5, 3],
+  [29, 24, 4, 3],
+];
+export const HEAP_W = 52;
+export const HEAP_H = 32;
+export function makeHoleHeap(theme: Theme, alongX: boolean): Sprite {
+  const p = new Px(HEAP_W, HEAP_H);
+  const stone = stoneOf(theme);
+  HEAP.forEach(([x0, y, w, h], k) => {
+    // (along +y the wall runs down to the left: the heap the other way round)
+    const x = alongX ? x0 : HEAP_W - x0 - w;
+    const a = 1 + Math.round(hash(k, 1, 5) * (w / 3));
+    const b = 1 + Math.round(hash(k, 2, 5) * (w / 4));
+    const c = Math.round(hash(k, 3, 5) * (h / 3));
+    p.ellipse(x + w / 2 + 1, y + h, w / 2 + 1, 1.6, theme.mortar);
+    lit(p, stone, [1, 2], [0, 2], (l) => l.poly([[x, y + 1 + c], [x + a, y], [x + w - b, y], [x + w, y + 2], [x + w - 1, y + h], [x + 1, y + h]], INK));
+  });
+  return p.sprite(HEAP_W / 2, HEAP_H - 6, GRAIN);
 }
 
 // =================================================================================================
@@ -628,8 +716,10 @@ export interface GateArt {
   arch(alongX: boolean, boss: boolean, lit: boolean): Strip[];
   /** A gate's portcullis, `raise` picture pixels off the floor (0 to GATE_UP: an even number of them). */
   portcullis(alongX: boolean, boss: boolean, raise: number): Strip[];
-  /** (MOCK-UP) A hole knocked in a wall: the piece of wall over its tile. */
-  breach(alongX: boolean): Strip[];
+  /** (MOCK-UP) A hole knocked in a wall: the piece of wall over its tile (`whole`: the wall stands on after it). */
+  breach(alongX: boolean, whole: boolean): Strip[];
+  /** (MOCK-UP) What fell out of a wall with a hole knocked in it, heaped at its foot. */
+  heap(alongX: boolean): Sprite;
 }
 
 export function makeGateArt(theme: Theme = VAULT): GateArt {
@@ -639,12 +729,19 @@ export function makeGateArt(theme: Theme = VAULT): GateArt {
   const arches = new Map<number, Strip[]>();
   const gates = new Map<number, Strip[]>();
   const breaches = new Map<number, Strip[]>();
+  const heaps = new Map<number, Sprite>();
   const shape = (boss: boolean): ArchShape => (boss ? ARCH_BOSS : ARCH);
   return {
-    breach(alongX) {
-      const key = alongX ? 1 : 0;
+    breach(alongX, whole) {
+      const key = (alongX ? 1 : 0) + (whole ? 2 : 0);
       let s = breaches.get(key);
-      if (!s) breaches.set(key, (s = makeBreach(theme, alongX)));
+      if (!s) breaches.set(key, (s = makeBreach(theme, alongX, whole)));
+      return s;
+    },
+    heap(alongX) {
+      const key = alongX ? 1 : 0;
+      let s = heaps.get(key);
+      if (!s) heaps.set(key, (s = makeHoleHeap(theme, alongX)));
       return s;
     },
     post: makePillar(theme, DOOR_HIGH, POST),

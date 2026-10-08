@@ -6,12 +6,58 @@ through. A hole knocked in the wall between two rooms that sit side by side: rou
 rubble on the floor, no door. / I'll mock it up and show you before it goes in."
 
 **State of this branch (`mockup/hole-in-wall`, on top of Version 18.5):** written by the main chat
-on paper, while its machine was taken up by playtests. IT HAS NEVER BEEN COMPILED OR SEEN. Expect
-type errors and a first picture that needs work.
+on paper, then made to compile, looked at and finished by THE ART CHAT (8 Oct 2026). Still a
+mock-up: NOTHING OF IT IS IN THE GAME.
 
-**8 Oct 2026, 00:23: THE ART CHAT HAS TAKEN THIS BRANCH UP.** It compiles (one fix: the crack's
-column in `makeBreach` was typed as a constant) and `dist/hole.html` builds. Pictures next; the
-owner gets them from the art chat. The main chat need not draw the hole.
+**8 Oct 2026, 00:49: THE PICTURES WENT TO HIM, from the art chat, with the one question "Is this
+the hole you meant?"** The sheet, `previews/hole_in_wall_mockup.png` (not in the repository: made
+by `tools/sheet_shots.py` from the stills of `tools/scenarios/hole.mjs` with `WHOLE=1`, and the
+last from the stills without it): the room with a hole in each back wall; a close-up; the hero
+walking through; the hole seen from the room it leads to; and, for comparison, the same hole with
+the wall beside it left out. He was told with it: "I'd use the look at the top, where the wall
+carries on past the hole; the last picture is the other way, for comparison." **HIS ANSWER: NOT
+YET IN.** (Earlier, at 00:36, to being told the art chat was starting on the hole: "Sounds good.")
+
+**What the art chat changed from the paper version** (every piece still marked MOCK-UP in the code):
+
+- It compiles: the crack's column in `makeBreach` was typed as a constant.
+- THE HOLE IS CENTRED ON ITS TILE AND BROKEN OUT STONE BY STONE (`holeSpan` in
+  `src/art/gates.ts`): its edges step where the courses meet (rows 15, 31 and 47 from the floor) and
+  wander a pixel within a course; it is widest a course up, where it bites 4 pixels into the wall on
+  either side of its tile; its top is broken higher on the near side. With the wall after it left
+  out (`whole: false`) a jamb of the tile's own stone, 6 pixels, is left at its far side.
+- THE SIDE OF THE STONE BESIDE THE HOLE IS NOT PAINTED (`holeSides`, used by `wallFaces` in
+  `src/render/walls.ts`). Seen from the room, that side, a whole tile deep, filled the hole: it
+  showed a face of stone and not the dark. In its place the piece paints THE THICKNESS OF THE WALL:
+  a band 6 pixels wide inside the hole's near edge, receding at the slant of the floor, the joints
+  of the courses running back across it (`HOLE_DEEP`).
+- Where the hole bites past its tile into the walls on either side, the dark is painted over
+  their pictures (`BEYOND`): the piece cannot cut a hole in another block's picture.
+- Shorter cracks; small chips knocked off round the edge.
+- WHAT FELL is no longer painted flat in the wall's plane (it read as a row of teeth). It is A HEAP
+  OF STONES standing in front of the hole as a thing of its own, painted as the floor's rubble is
+  (`makeHoleHeap`, `GateArt.heap`), stood by `standDoors` (`src/render/render.ts`) at the middle of
+  the hole's tile, 0.4 of a tile out into the room.
+- `GateArt.breach(alongX, whole)`: the piece differs with `HOLE_LOOK.whole` (the bite past the tile,
+  or the jamb).
+
+**THE TWO WAYS TO SHOW THE WALL BESIDE THE HOLE, compared by eye.** `whole: true`, the wall carries
+on past the hole (seen through while the hero is in the way behind it): it reads as a hole knocked
+in a wall. `whole: false`, the two blocks after it left out as beside every doorway in a back
+wall: it reads as a gap beside a broken jamb. THE ART CHAT RECOMMENDS `whole: true` AND TOLD HIM
+SO. What it costs, for whoever builds it: it breaks the rule of 18.4 that no wall stands over floor,
+for those two blocks. Their top, which fades, shows the floor of the room behind through it (seen
+in the close-up, to the right of the hole), and `tests/walls.test.ts` will need them excepted as it
+excepts the stone beside a door.
+
+**Checked on this branch:** `tsc --noEmit` clean; `node tools/build_to.mjs dist/hole.html`; the unit
+suite, 600 of 600 (the only code the game itself runs that changed does nothing on a level with no
+hole: `wallFaces`, `doorWay`, `makeDoors`); the stills, looked at one by one.
+
+**From the main chat's handoff (7 Oct, 23:00), for whoever builds it for real:** 18.7's `shutIn`
+rests on a room having one way in, so a hole that gave a room a SECOND way in would break it ("whatever
+is shut in cannot come at the hero" in `tests/doors.test.ts` fails by name). As below, the hole
+stands for an ordinary joint between two rooms to begin with.
 
 **The job:** make it compile, look at it, make it look right, and send the owner a sheet of
 pictures marked as a mock-up, with ONE question ("Is this the hole you meant?"). Nothing of it
@@ -30,6 +76,8 @@ same wall is on a side toward the eye, where nothing is drawn. So there is one p
 in each of the two kinds of back wall, not four.
 
 ## What is here (every piece is marked MOCK-UP in the code)
+
+(As the main chat wrote it on paper. Where this differs from the art chat's changes listed above, those win.)
 
 - `src/game/types.ts`: `DoorKind` has `'hole'`.
 - `src/game/level.ts`: `HOLE_HALL`, `makeHoleHall`: three rooms laid by hand in the practice

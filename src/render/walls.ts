@@ -99,5 +99,31 @@ export function wallFaces(f: Floor, idx: number): number {
   let out = 0;
   if (ty + 1 < f.h && open(idx + f.w, CUT_RIGHT)) out += FACE_LEFT;
   if (tx + 1 < f.w && open(idx + 1, CUT_LEFT)) out += FACE_RIGHT;
-  return out;
+  const hole = holeSides(f);
+  return hole === null ? out : out & ~(hole.get(idx) ?? 0);
+}
+
+/**
+ * (MOCK-UP, NOT IN THE GAME) THE SIDE OF THE STONE A HOLE IS KNOCKED BESIDE, turned into the hole,
+ * IS NOT PAINTED. The wall that runs on ends at the hole, and its side, a whole tile deep, would
+ * fill the hole as seen from the room: the hole would show a face of stone and not the dark. The
+ * hole's own piece (art/gates.ts, `makeBreach`) paints a band of that thickness instead. Of each
+ * stone beside a hole: the face not to paint (null: the level has no hole).
+ */
+const holeSidesOf = new WeakMap<Floor, Map<number, number>>();
+function holeSides(f: Floor): Map<number, number> | null {
+  if (!f.doors || !f.doors.some((d) => d.kind === 'hole')) return null;
+  let m = holeSidesOf.get(f);
+  if (!m) {
+    m = new Map<number, number>();
+    for (const d of f.doors) {
+      if (d.kind !== 'hole') continue;
+      // (the first of the doorway's three tiles: the stone the wall runs on in, beside the hole's tile)
+      const line = doorLine(d);
+      const near = d.alongX ? line * f.w + d.a : d.a * f.w + line;
+      m.set(near, (m.get(near) ?? 0) | (d.alongX ? FACE_RIGHT : FACE_LEFT));
+    }
+    holeSidesOf.set(f, m);
+  }
+  return m;
 }
