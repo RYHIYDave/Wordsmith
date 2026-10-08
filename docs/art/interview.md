@@ -227,3 +227,15 @@ His answers:
 
 He was told the first draft comes next: the rules in plain words up front, the exact numbers at
 the back for the other chats; then pictures from the game to show each rule.
+
+## The first draft (sent 08:15)
+
+`docs/art/RULEBOOK.md` on this branch is a copy of it; the living copy is his doc "Wordsmith Art
+Rulebook" (https://claude.ai/artifact/Dq343Th9FFbpt9EiKfNyYe). Every quotation in it was checked by
+machine against this file and `docs/DESIGN_NOTES.md`, `docs/NEXT_VERSION.md` and `docs/handoff.md`
+before it went out; every number in "The numbers" was read from the code of Version 18.8. Its three
+pictures are the live game (18.8) on a phone: `look145.mjs` with `MONSTERS=1 STOPS=4`.
+
+He was told at 08:15: "Your **Wordsmith Art Rulebook** is up: the first draft, built from your four
+rounds of answers." and asked one question: "does the top paragraph sound like the game you see in
+your head?" WAITING FOR HIS WORD. Nothing in the game has changed.
