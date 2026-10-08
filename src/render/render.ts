@@ -40,6 +40,7 @@ import { Figure, attackClip, attackFrame, monsterAttackAge, PHASE_APART } from '
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
+import { WORDS3, air3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import type { Cam, Fallen, Fx } from './fx';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
@@ -1137,6 +1138,8 @@ export class Renderer {
         }
       }
     }
+    // (THE NEW WORDS, a mock-up behind a switch that is off: what they leave on the floor)
+    if (WORDS3.on && !this.skip.has('ground')) floor3(g, cam, t, game, here);
     for (const tr of game.traps) {
       if (!here(tr.x, tr.y)) continue;
       const frames = art.icons.trap[tr.element];
@@ -1374,6 +1377,8 @@ export class Renderer {
     const held = game.weapon();
     const arcane = h.cls === 'mage' || held === 'staff' || held === 'wand';
     fx.arcane = arcane;
+    // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
+    if (WORDS3.on) tick3(pace / 60, game, fx);
     const cam = this.cam;
     // Where on the screen the hero stands: the middle, or the middle of the part left to the world.
     // The picture glides from the one to the other, by the wall clock (the world may be standing
@@ -1635,6 +1640,12 @@ export class Renderer {
         const fig = figureOf(m);
         if (fig === 'skeleton' || fig === 'archer') sx += Math.floor(t * 40 + m.id) % 2 === 0 ? 1 : -1;
       }
+      // (THE NEW WORDS, a mock-up behind a switch that is off: knocked back a step by a stagger, swaying while stunned)
+      if (WORDS3.on) {
+        const [ox, oy] = shift3(m, t);
+        sx += ox;
+        sy += oy;
+      }
       const sp = this.monsterSprite(m);
       // (ice gives off no light)
       if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
@@ -1659,6 +1670,14 @@ export class Renderer {
         // poisoned: it goes a sick green, the sicker the more doses it carries
         over = silhouette(sp, P.vn4);
         overA = Math.min(0.5, 0.2 + m.poisonN * 0.04) + 0.06 * Math.sin(t * 6 + m.id);
+      }
+      // (THE NEW WORDS, a mock-up behind a switch that is off: the cursed, and what stands in a hex circle, drained grey)
+      if (WORDS3.on && (!over || m.flash <= 0)) {
+        const tn = tint3(m, t);
+        if (tn && (!over || tn[1] > overA)) {
+          over = silhouette(sp, tn[0]);
+          overA = tn[1];
+        }
       }
       this.stand(m.x + m.y, sp, sx, sy, over, overA);
       hid?.(m.x, m.y);
@@ -1759,6 +1778,9 @@ export class Renderer {
       this.heroLit = null;
       if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
         this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, coming > 0 ? 1 - coming * coming * 0.85 : 1, fig, coming);
+        // (THE NEW WORDS, a mock-up behind a switch that is off: a frenzy of three or more shivers the hero in its colour)
+        const copies = WORDS3.on ? heroCopies3(t) : null;
+        if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
         if (relief && !h.move) this.hide(h.x, h.y, heroLift);
         this.heroLit = { x: Math.round(sx), y: Math.round(sy) };
       }
@@ -2187,6 +2209,8 @@ export class Renderer {
       }
       g.globalAlpha = 1;
     }
+    // (THE NEW WORDS, a mock-up behind a switch that is off: what glows over the dark)
+    if (WORDS3.on && !this.skip.has('fx')) air3(g, cam, t, game, fx);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
     this.drawWordDrops(g, W, H, game, t);
     this.drawBeacon(g, game, t);
@@ -2375,6 +2399,8 @@ export class Renderer {
       else if (d.kind === 'orb' || (d.kind === 'item' && d.item && d.item.rarity >= 2)) spot(wx(cam, d.x, d.y), wy(cam, d.x, d.y) - 4, 18, 0.7);
     }
 
+    // (THE NEW WORDS, a mock-up behind a switch that is off)
+    if (WORDS3.on) lights3(spot, cam, game, t);
     // a burst of fire or a bolt of lightning lights up the room for a moment
     for (const l of fx.glows) spot(wx(cam, l.x, l.y), wy(cam, l.x, l.y) - 8, l.r, 0.9 * (1 - l.t / l.dur));
     for (const m of game.monsters) {

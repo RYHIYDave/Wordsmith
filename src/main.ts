@@ -58,6 +58,7 @@ import type { SmithPicture } from './ui/panels';
 import { gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
 import { THEME, Ui } from './ui/ui';
+import { demo3 } from './render/words3';
 
 declare const __BUILD__: string;
 
@@ -1558,6 +1559,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     mix: MIX,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them, and the share of rooms that have a door. Playtests that change them put them back. */
     doors: DOORS,
+    /** THE NEW WORDS (render/words3.ts): how the eight words he chose on 8 Oct look at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
+    words3: demo3(fx, () => game),
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /**

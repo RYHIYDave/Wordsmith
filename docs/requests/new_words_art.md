@@ -14,6 +14,12 @@ in every group. The questions and his answers, exactly:
 - "Which control words do you want?": "Hexing (Recommended),Stilling"
 - "Which pace or reward words do you want?": "Frenzied (Recommended),Guarding"
 
+**HIS YES, 13:15: the looks of the first four (Pulling, Heavy, Hexing, Frenzied) and the colours
+and rune stones of all eight** ("Yes, all four (Recommended)"; "Yes (Recommended)"). The looks are
+on this branch behind a switch that is off; `docs/mockups/new_words/README.md` says what each is and
+how the main chat joins them to your rules. The other four (Splitting, Precise, Stilling, Guarding)
+follow, pictures to him first.
+
 These eight take the place of the three that were planned (Pulling, Heavy and Hexing are among
 them). The chats cannot message one another, so this note is here, on the art chat's branch
 `art/new-words`, and the same is in the project's doc `claude/new_words.md`. Whatever you send back
@@ -101,9 +107,10 @@ is further from the enemy's gold than Swift is from Poison):
 | Splitting | `#dcaaf6` amethyst | shards of crystal |
 | Heavy | `#ac8753` bronze | weight, stone and metal (it was `#c08a55` in the first note: moved away from Fire and the enemy's gold) |
 | Precise | `#eef4fa` steel white | a bright, exact point |
-| Hexing | `#a89cb4` ash | a curse that drains the colour out of what it touches (it was `P.sl4` in the first note: too near Precise's white) |
+| Hexing | `#b8b4c8` ash | a curse that drains the colour out of what it touches (it was `P.sl4` in the first note: too near Precise's white; then `#a89cb4`, too dark to show on the rune stone) |
 | Stilling | `#86eaae` still-water mint | time held still, like water |
 | Frenzied | `#ff5c33` blood orange | the rush of a frenzy |
 | Guarding | `#30a868` emerald | a ward; away from the blues |
 
-The pictures will settle them, and his word on the pictures will be written here.
+HE SAID YES TO THESE COLOURS AND TO THE RUNE STONES at 13:15. The glyphs are `NEW_GLYPH` in
+`src/render/words3.ts`; each word's six tones are `NEW_RAMP` (its colour at index 3, its glow at 4).
