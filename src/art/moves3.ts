@@ -8,7 +8,7 @@
 
 import { holdOnBack } from './carried';
 import { add, bonesAt, buildOf, dot, elbowFor, GRID, heading, len, mul, solve, standing, sub } from './skeleton';
-import type { Bones, Build, Key3, Motion } from './skeleton';
+import type { Bones, Build, Key3, Motion, Posed } from './skeleton';
 
 /** The usual body: 57 picture pixels tall, built like a grown person. What a weapon's length is a share of, and what the moves were first written on. */
 export const BODY: Build = buildOf(57);
@@ -1370,22 +1370,202 @@ export function gripping(g: Gait, period: number): Gait {
   // (and sitting a little lower in it, so that the legs reach the longer step)
   return { ...g, reach: g.reach * k, push: g.push * k, kick: g.kick * Math.sqrt(k), bob: g.bob * Math.sqrt(k), sink: g.sink + Math.max(0, k - 1) * 4.5 };
 }
-/** Each run: its move, its gait, how long a turn of it takes when it grips, and how its keys are finished. */
-const GRIP_RUNS: [Move3, Gait, number, (m: Motion) => Motion][] = [
-  [KNIGHT_RUN3, KNIGHT_GAIT, 27 / 60, (m) => m],
-  [RANGER_RUN3, RANGER_GAIT, 25 / 60, (m) => ready(m)],
-  [MAGE_RUN3, MAGE_GAIT, 23 / 60, (m) => m],
-  [KNIGHT_TOWN_RUN3, KNIGHT_TOWN_GAIT, 27 / 60, (m) => ready(m, { py: 0, stow: 1 })],
-  [RANGER_TOWN_RUN3, RANGER_TOWN_GAIT, 25 / 60, (m) => ready(m, { ...READY, stow: 1 })],
+/** Each run: its move, its gait (as it is now: the ranger's in town changes with RANGER_STANCES, below), how long a turn of it takes when it grips, and how its keys are finished. */
+const GRIP_RUNS: [Move3, () => Gait, number, (m: Motion) => Motion][] = [
+  [KNIGHT_RUN3, () => KNIGHT_GAIT, 27 / 60, (m) => m],
+  [RANGER_RUN3, () => RANGER_GAIT, 25 / 60, (m) => ready(m)],
+  [MAGE_RUN3, () => MAGE_GAIT, 23 / 60, (m) => m],
+  [KNIGHT_TOWN_RUN3, () => KNIGHT_TOWN_GAIT, 27 / 60, (m) => ready(m, { py: 0, stow: 1 })],
+  [RANGER_TOWN_RUN3, () => (RANGER_STANCES.on ? RANGER_TOWN_UPRIGHT : RANGER_TOWN_GAIT), 25 / 60, (m) => ready(m, { ...READY, stow: 1 })],
 ];
+/** The runs as the two switches have them now. */
+function remakeRuns(): void {
+  for (const [move, gait, period, finish] of GRIP_RUNS) {
+    const g = gait();
+    move.motion = finish(GRIP.on ? run(gripping(g, period), period) : run(g));
+    if (GRIP.on) move.stride = GRIP_SPEED * period;
+    else delete move.stride;
+  }
+}
 /** Put the gripping runs in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
 export function useGrippingRuns(on: boolean): void {
   GRIP.on = on;
-  for (const [move, g, period, finish] of GRIP_RUNS) {
-    move.motion = finish(on ? run(gripping(g, period), period) : run(g));
-    if (on) move.stride = GRIP_SPEED * period;
-    else delete move.stride;
+  remakeRuns();
+}
+
+// ---------------------------------------------------------------------------------------------
+/**
+ * THE RANGER IN BATTLE AND IN TOWN. A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct
+ * 2026). The owner, 15:31: "Wait I need the rangers animations fixed"; and at 15:38, asked which
+ * of them: "All of that, but more.  Each character should have a battle stance and a town
+ * stance.  When you run, the ranger is crouched, but when you stop he pops back up.  I want him to
+ * stay crouched when he stops in battle.  Once he’s in town he stands upright, and he’ll need a
+ * movement animation for town as well.  Also his shot animation is upright so when you shoot an
+ * arrow you pop up and down to the crouch.  I want the battle stance to have the bow out and arrow
+ * knocked.  And the arrow that fires in the animation for shot doesn’t match the actual
+ * projectile that comes out for shot.  I need all that fixed".
+ *   So, with the switch on: in a dungeon he stands as he runs, low (BATTLE: crouched, the bow out
+ *   in front of him and down, an arrow on the string); in town he stands upright as he always has
+ *   (RANGER_TOWN) and runs upright (RANGER_TOWN_UPRIGHT). Each stance breathes and shifts its weight
+ *   (Movement 6, "A figure left standing breathes, shifts its weight and has small habits of its own").
+ */
+export const RANGER_STANCES = { on: false };
+
+/** HOW LOW HE IS IN A FIGHT: as low as he runs, his weight between his feet, side-on to what is ahead, his head up and watching it. */
+const CROUCH: Partial<Bones> = {
+  px: -0.6, py: 0, pz: -6.2, yaw: -28, pitch: 12, roll: 1, twist: -10, bend: 8, side: -2,
+  lfx: 6.8, lfy: 1, lfz: 0, lfp: 0, lft: 10, lk: 12,
+  rfx: -5.2, rfy: -1.4, rfz: 0, rfp: 0, rft: -30, rk: -20,
+  faceTurn: 0, faceUp: 4, faceTilt: 0,
+};
+/** AND READY TO SHOOT: the bow held out in front of him and down, a little laid over, an arrow on the string and the string hand on it. */
+const BATTLE_AIM = -30;
+const BATTLE_PULL = 0.3;
+const BATTLE: Bones = { ...ARCHER, ...CROUCH, ...drawn(CROUCH, BATTLE_AIM, BATTLE_PULL, { ...ARCHER, ...CROUCH }), wRoll: 18 };
+
+/**
+ * A STANCE THAT IS ALIVE: two breaths, and the weight going over onto the front foot and back
+ * between them; the hands go with the body (they are measured from the shoulders), so the bow
+ * rises and falls a little with each breath. Two and four tenths of a second round.
+ */
+function alive(from: Bones, shift: Partial<Bones>): Motion {
+  const breath = (k: number): Partial<Bones> => ({ pz: from.pz - 0.5 * k, bend: from.bend + 1.4 * k });
+  const over: Partial<Bones> = {};
+  for (const [key, v] of Object.entries(shift)) (over as Record<string, number>)[key] = (from as unknown as Record<string, number>)[key] + (v as number);
+  const half: Partial<Bones> = {};
+  for (const [key, v] of Object.entries(shift)) (half as Record<string, number>)[key] = (from as unknown as Record<string, number>)[key] + (v as number) / 2;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.6, pose: { ...half, ...breath(1) }, ease: 'io' },
+      { at: 1.2, pose: { ...over }, ease: 'io' },
+      { at: 1.8, pose: { ...half, ...breath(1) }, ease: 'io' },
+      { at: 2.4, pose: {}, ease: 'io' },
+    ],
+    loop: 0,
+  };
+}
+/** The battle stance as a move: in a fight he is left standing in it. */
+const RANGER_BATTLE_MOTION = (): Motion => alive(BATTLE, { px: 0.7, py: 0.5, roll: -1.5, side: 1.5 });
+/** And in town: his weight is on his right leg already; it settles further onto it and comes back. */
+const RANGER_TOWN_MOTION = (): Motion => alive(RANGER_TOWN, { py: -0.4, roll: -1.2, side: 1.2 });
+
+/** HOW HE RUNS IN TOWN: upright, his head up, at his ease, both arms swinging loose and the bow on his back. */
+const RANGER_TOWN_UPRIGHT: Gait = {
+  reach: 11, push: 14.5, kick: 9.5, lean: 4, hunch: 0, sink: 2, bob: 1.4, hips: 10, counter: 0.85, yaw: 0, twist: 0, look: 1,
+  arms: (swing) => looseArms(RANGER_BODY, swing, 0.5, 0.3),
+};
+
+/**
+ * COMING TO A STAND OUT OF A RUN, in two quick steps: from the run as it is at `phase` of its
+ * turn (0 to 1), the foot that is off the floor is set down where the stance has it, and then the
+ * other is lifted and set down where the stance has it (if it is not there already), while the
+ * body settles into the stance over both: low into low, upright into upright, the bow coming up
+ * from his side to the front. It ends on the stance's own first pose, where its loop takes up.
+ */
+export function settle(runMove: Move3, phase: number, to: Bones, long = 0.24): Motion {
+  const { keys, loop } = runMove.motion;
+  const span = keys[keys.length - 1].at - (loop ?? 0);
+  const p = bonesAt(keys, runMove.rest, (loop ?? 0) + span * (((phase % 1) + 1) % 1)) as Posed;
+  const from: Partial<Bones> = { ...p };
+  for (const k of ['from', 'to', 'mixK', 'lh2', 'rh2']) delete (from as Record<string, unknown>)[k];
+  // (which foot is down: the lower; the other steps first)
+  const leftFirst = p.lfz > p.rfz;
+  const foot = (left: boolean, where: 'run' | 'up' | 'stance'): Partial<Bones> => {
+    if (where === 'run') return left ? { lfx: p.lfx, lfy: p.lfy, lfz: p.lfz, lfp: p.lfp, lft: p.lft } : { rfx: p.rfx, rfy: p.rfy, rfz: p.rfz, rfp: p.rfp, rft: p.rft };
+    if (where === 'stance') return left ? { lfx: to.lfx, lfy: to.lfy, lfz: to.lfz, lfp: to.lfp, lft: to.lft } : { rfx: to.rfx, rfy: to.rfy, rfz: to.rfz, rfp: to.rfp, rft: to.rft };
+    // (lifted, half way from where it was in the run to where it goes)
+    const half = (a: number, b: number): number => (a + b) / 2;
+    return left
+      ? { lfx: half(p.lfx, to.lfx), lfy: half(p.lfy, to.lfy), lfz: Math.max(p.lfz, 3.2), lfp: 10, lft: half(p.lft, to.lft) }
+      : { rfx: half(p.rfx, to.rfx), rfy: half(p.rfy, to.rfy), rfz: Math.max(p.rfz, 3.2), rfp: 10, rft: half(p.rft, to.rft) };
+  };
+  const first = leftFirst;
+  const second = !leftFirst;
+  // (the second foot steps only if it has somewhere to go)
+  const far = Math.hypot((second ? p.lfx : p.rfx) - (second ? to.lfx : to.rfx), (second ? p.lfy : p.rfy) - (second ? to.lfy : to.rfy)) > 1.5;
+  // (the body half way into the stance)
+  const mid: Partial<Bones> = {};
+  for (const f of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'faceTurn', 'faceUp', 'faceTilt'] as const) mid[f] = (p[f] + to[f]) / 2;
+  const steps: Key3[] = [
+    { at: 0, pose: from },
+    { at: long * 0.22, pose: { ...from, ...foot(first, 'up'), ...foot(second, 'run') }, ease: 'out' },
+    { at: long * 0.45, pose: { ...mid, ...foot(first, 'stance'), ...foot(second, 'run') }, ease: 'io' },
+  ];
+  if (far) steps.push({ at: long * 0.7, pose: { ...foot(first, 'stance'), ...foot(second, 'up') }, ease: 'io' });
+  steps.push({ at: long, pose: {}, ease: 'io' });
+  return { keys: steps };
+}
+/** How many moments of a run there are settles from: the game takes the one nearest the moment the hero stops. */
+export const SETTLES = 8;
+/** The settles from a run into a stance, when there are any (the ranger's, with RANGER_STANCES on): the first from the run's start. */
+export function settlesOf(runMove: Move3, stance: Move3): Move3[] {
+  if (!RANGER_STANCES.on || runMove.held !== 'bow') return [];
+  return Array.from({ length: SETTLES }, (_, i) => ({ ...stance, name: `${stance.name}: coming to a stand`, motion: settle(runMove, i / SETTLES, stance.rest) }));
+}
+
+/**
+ * SETTING OFF FROM A STANCE INTO THE RUN. The run takes up from the moment of its turn whose feet
+ * are nearest the stance's (`phase`); over its first `n` pictures (sixty to a second of the run,
+ * chosen by how far the hero has gone, as the run's are) the legs go from the stance's into the
+ * run's in the first three, and the body, the arms and the bow go from the stance's into the run's
+ * over all of them (the hands by where they are: the stance and the run measure them differently).
+ */
+export function startOf(runMove: Move3, stance: Bones, n = 9): { motion: Motion; phase: number } {
+  const { keys, loop } = runMove.motion;
+  const t0 = loop ?? 0;
+  const span = keys[keys.length - 1].at - t0;
+  const poseAt = (ph: number): Posed => bonesAt(keys, runMove.rest, t0 + span * (((ph % 1) + 1) % 1));
+  // (the moment of the run whose feet are nearest the stance's: both feet, and how far each is off the floor)
+  let phase = 0;
+  let best = Infinity;
+  for (let i = 0; i < 120; i++) {
+    const p = poseAt(i / 120);
+    const d = Math.hypot(p.lfx - stance.lfx, p.lfy - stance.lfy, p.lfz - stance.lfz) + Math.hypot(p.rfx - stance.rfx, p.rfy - stance.rfy, p.rfz - stance.rfz);
+    if (d < best) {
+      best = d;
+      phase = i / 120;
+    }
   }
+  const build = runMove.build;
+  const S = solve(build, stance);
+  const LEGS = ['lfx', 'lfy', 'lfz', 'lfp', 'lft', 'rfx', 'rfy', 'rfz', 'rfp', 'rft', 'lk', 'rk', 'px', 'py', 'pz'] as const;
+  const UPPER = ['yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'faceTurn', 'faceUp', 'faceTilt', 'le', 're', 'wAz', 'wEl', 'wRoll', 'draw'] as const;
+  const ease = (k: number): number => k * k * (3 - 2 * k);
+  const out: Key3[] = [];
+  for (let i = 0; i < n; i++) {
+    const p = poseAt(phase + i / (span * 60));
+    const R = solve(build, p);
+    const wl = ease(Math.min(1, i / 3));
+    const w = ease(i / (n - 1));
+    const pose: Partial<Bones> = { ...p };
+    for (const k of ['from', 'to', 'mixK', 'lh2', 'rh2']) delete (pose as Record<string, unknown>)[k];
+    for (const f of LEGS) pose[f] = stance[f] + (p[f] - stance[f]) * wl;
+    for (const f of UPPER) pose[f] = stance[f] + (p[f] - stance[f]) * w;
+    // (the hands by where they are in the figure's own space, from where the stance has them to where the run does)
+    const l = add(S.handL, mul(sub(R.handL, S.handL), w));
+    const r = add(S.handR, mul(sub(R.handR, S.handR), w));
+    Object.assign(pose, { lhIn: 2, lhx: l[0], lhy: l[1], lhz: l[2], rhIn: 2, rhx: r[0], rhy: r[1], rhz: r[2] });
+    out.push({ at: i / 60, pose, ease: 'lin' });
+  }
+  return { motion: { keys: out }, phase };
+}
+/** The ranger's way of setting off from his stance into his run, when he has one (RANGER_STANCES on, the run gripping): the move, and the moment of the run it leads into. */
+export function startsOf(runMove: Move3, stance: Move3): { move: Move3; phase: number } | null {
+  if (!RANGER_STANCES.on || runMove.held !== 'bow' || runMove.stride === undefined) return null;
+  const { motion, phase } = startOf(runMove, stance.rest);
+  return { move: { ...runMove, name: `${runMove.name}: setting off`, motion }, phase };
+}
+
+/** As they are with the switch off. */
+const RANGER_TODAY = { stand: RANGER_STAND3.motion, standRest: RANGER_STAND3.rest, town: RANGER_TOWN3.motion };
+/** Put the ranger's new stances in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
+export function useRangerStances(on: boolean): void {
+  RANGER_STANCES.on = on;
+  RANGER_STAND3.rest = on ? BATTLE : RANGER_TODAY.standRest;
+  RANGER_STAND3.motion = on ? RANGER_BATTLE_MOTION() : RANGER_TODAY.stand;
+  RANGER_TOWN3.motion = on ? RANGER_TOWN_MOTION() : RANGER_TODAY.town;
+  remakeRuns();
 }
 
 /** Every move there is on the bones so far, by a short name. */

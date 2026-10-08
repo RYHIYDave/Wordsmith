@@ -188,6 +188,14 @@ export class Figure {
   private heldAs: 'beam' | 'whirl' = 'beam';
   /** How long ago a leap came down, in seconds, while the hero has stood there since (-1: not so). */
   private sinceLand = -1;
+  /** Where in its turn the run was when it was last shown (0 to 1), or -1 if what was last shown was not the run. */
+  private runAt = -1;
+  /** How long ago the hero came to a stand out of the run (AnimSet.stops), while standing there since (-1: not so); and which of the stops it is. */
+  private sinceStop = -1;
+  private stopOf = 0;
+  /** Whether what was last shown was the hero standing (or nothing yet), and how far the hero had gone (FigureState.walked) when they last set off from a stand. */
+  private stoodLast = true;
+  private runFrom = 0;
   /** How much of the light has gone out of a hero who has fallen, 0..1: what glows on their tails (a feather) goes with it. */
   private gone = 0;
   /** What was last shown, for the lights. */
@@ -223,6 +231,10 @@ export class Figure {
     this.loopFrom = 0;
     this.sinceHeld = -1;
     this.sinceLand = -1;
+    this.runAt = -1;
+    this.sinceStop = -1;
+    this.stoodLast = true;
+    this.runFrom = 0;
     this.gone = 0;
     this.view = null;
     this.turnK = 1;
@@ -348,6 +360,10 @@ export class Figure {
     // rules still call the hero walking in the step the leap ends, as they do all through it:
     // that step is not walking off.)
     const justDown = this.sinceLand >= 0 && this.sinceLand < 0.06;
+    // (the run as it was last shown, if it was: the hero who stops now comes to a stand from there)
+    const ranAt = this.runAt;
+    this.runAt = -1;
+    let stands = false;
     const anim = st.anim === 'walk' && st.leapK < 0 && justDown ? 'idle' : st.anim;
     if (st.leapK >= 0) this.sinceLand = 0;
     else if (this.sinceLand >= 0) this.sinceLand = anim === 'idle' ? this.sinceLand + dt : -1;
@@ -399,20 +415,50 @@ export class Figure {
       // so that a step's worth that falls a hair short does not show the picture before; any other by the clock)
       const n = set.walk.length;
       const at = set.walkStride !== undefined && st.walked !== undefined ? Math.round((st.walked / set.walkStride) * n) : Math.floor(st.animT * (set.walkFps ?? 8));
-      s = set.walk[((at % n) + n) % n];
+      let i = ((at % n) + n) % n;
+      s = set.walk[i];
+      // SETTING OFF FROM A STAND (AnimSet.start): its pictures by how far the hero has gone since,
+      // and then the run from the place in its turn they lead into
+      if (set.start && set.walkStride !== undefined && st.walked !== undefined) {
+        if (this.stoodLast) this.runFrom = st.walked;
+        const k = Math.max(0, Math.round(((st.walked - this.runFrom) / set.walkStride) * n));
+        i = (Math.round((set.startAt ?? 0) * n) + k) % n;
+        s = k < set.start.frames.length ? set.start.frames[k] : set.walk[i];
+      }
+      this.runAt = i / n;
+      this.sinceStop = -1;
     } else {
+      stands = true;
       this.sinceHeld = -1;
       const land = this.sinceLand >= 0 ? set.clips?.land : undefined;
+      // COMING TO A STAND OUT OF THE RUN (AnimSet.stops): the stop from the moment of the run
+      // nearest where it was, played from the first step the hero stands
+      const stops = set.stops;
+      if (ranAt >= 0 && stops && stops.length > 0) {
+        this.sinceStop = 0;
+        this.stopOf = Math.round(ranAt * stops.length) % stops.length;
+      } else if (this.sinceStop >= 0) this.sinceStop += dt;
+      const stop = this.sinceStop >= 0 && stops ? stops[this.stopOf] : undefined;
       if (land && this.sinceLand < (land.frames.length - 1) / land.fps) {
         s = frameOf(land, this.sinceLand);
         // (the standing loop takes up from its first frame when he is up)
         this.loopFrom = st.animT;
         this.stood = 0;
+        this.sinceStop = -1;
+      } else if (stop && this.sinceStop < (stop.frames.length - 1) / stop.fps) {
+        s = frameOf(stop, this.sinceStop);
+        // (and from its first frame when he stands in it)
+        this.loopFrom = st.animT;
+        this.stood = 0;
       } else {
         this.sinceLand = -1;
+        this.sinceStop = -1;
         s = this.standingFrame(art, away, st.animT, dt, standing && gestures);
       }
     }
+    // (anything but standing ends coming to a stand)
+    if (!stands) this.sinceStop = -1;
+    this.stoodLast = stands;
     if (left) s = flipSprite(s);
     // (in a turn the knots the tails hang from close in on the middle with the figure)
     const q = this.squash;

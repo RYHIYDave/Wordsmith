@@ -3,14 +3,19 @@
 // the game's own chooser picks each frame (tools/review_heroes/sim.ts); each frame is painted by the
 // game's own painter (art/heroes3.ts, paintMove3) and stood on a floor that does not move, so that a
 // foot that slides is seen to slide: a white ring where each foot came down, and a line to where it
-// has got to while it stays down. (The scarf's and the feather's flying ends are left out.)
+// has got to while it stays down. The scarf's and the feather's flying ends go as the game moves them
+// (but for a figure facing screen-left, which is drawn without them).
 //   node tools/page_gif.mjs src/dev/preview_play.ts "3:1:warrior/quick attack, walking|ranger/quick attack, walking" previews/x.gif
 //   hash = <screen pixels to a game pixel>:<slowed how many times>:[grip!][slid<n>!]<class>/<scenario>[=<label>]|<class>/<scenario>...
 import { paintMove3 } from '../art/heroes3';
-import { MOVES3, useGrippingRuns } from '../art/moves3';
+import { useGrippingRuns, useRangerStances } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
+import { MAGE_TAILS } from '../art/hero_mage';
+import { RANGER_TAILS } from '../art/hero_ranger';
+import { WARRIOR_TAILS } from '../art/hero_warrior';
+import { Tails } from '../engine/tails';
 import type { ClassId } from '../game/types';
-import { place, play, scenariosOf } from '../../tools/review_heroes/sim';
+import { moveOf, place, play, scenariosOf } from '../../tools/review_heroes/sim';
 import type { Shown } from '../../tools/review_heroes/sim';
 
 // (the chooser mirrors the picture of a figure facing screen-left on a canvas of its own: the
@@ -34,9 +39,10 @@ let list = list0;
 let GRIPPING = false;
 let SLID = 1;
 for (;;) {
-  const m = list.match(/^(grip|slid([0-9.]+))!/);
+  const m = list.match(/^(grip|ranger|slid([0-9.]+))!/);
   if (!m) break;
   if (m[1] === 'grip') GRIPPING = true;
+  else if (m[1] === 'ranger') useRangerStances(true);
   else SLID = Number(m[2]);
   list = list.slice(m[0].length);
 }
@@ -48,6 +54,9 @@ interface Panel {
   cls: ClassId;
   name: string;
   shown: Shown[];
+  /** The flying ends, and the last step they were moved on to. */
+  tails: Tails;
+  tailsAt: number;
   x0: number;
   y0: number;
   w: number;
@@ -66,7 +75,8 @@ const panels: Panel[] = list.split('|').map((item) => {
   const x1 = Math.max(...xs) + 34;
   const y0 = Math.min(...ys) - 50;
   const y1 = Math.max(...shown.map((s) => s.y)) + 10;
-  return { cls, name: label ?? `${NAMES[cls]}: ${name}`, shown, x0, y0, w: x1 - x0, h: y1 - y0 };
+  const tails = new Tails(cls === 'ranger' ? RANGER_TAILS : cls === 'mage' ? MAGE_TAILS : WARRIOR_TAILS);
+  return { cls, name: label ?? `${NAMES[cls]}: ${name}`, shown, tails, tailsAt: -1, x0, y0, w: x1 - x0, h: y1 - y0 };
 });
 const PAD = 8;
 const HEAD = 30;
@@ -141,8 +151,17 @@ function draw(k: number): string {
       }
     }
     const sh = p.shown[i];
-    const f = paintMove3(MOVES3[sh.key], sh.mt, sh.view);
+    const f = paintMove3(moveOf(sh.key), sh.mt, sh.view);
     const pic = f.px.toCanvas();
+    // (the flying ends moved on a step at a time, as the game moves them, up to this step)
+    for (let j = p.tailsAt + 1; j <= i; j++) {
+      const sj = p.shown[j];
+      const fj = j === i ? f : paintMove3(moveOf(sj.key), sj.mt, sj.view);
+      const roots = (fj.tails ?? []).map((r) => ({ ...r, x: r.x / 2, y: r.y / 2 }));
+      if (j === 0) for (let w = 0; w < 60; w++) p.tails.step(1 / 60, roots, CANVAS3.ax / 2, CANVAS3.ay / 2, 1, sj.x, sj.y - sj.lift);
+      p.tails.step(1 / 60, roots, CANVAS3.ax / 2, CANVAS3.ay / 2, 1, sj.x, sj.y - sj.lift);
+    }
+    p.tailsAt = Math.max(p.tailsAt, i);
     g.save();
     g.beginPath();
     g.rect(ox, oy, p.w * S, p.h * S);
@@ -155,9 +174,13 @@ function draw(k: number): string {
     g.beginPath();
     g.ellipse(ox + (sh.x - p.x0) * S, oy + (sh.y - p.y0) * S, 9 * S, 4.5 * S, 0, 0, Math.PI * 2);
     g.fill();
+    if (!sh.left) p.tails.draw(g, fx, fy, false, S);
+    g.save();
     g.translate(fx, fy);
     if (sh.left) g.scale(-1, 1);
     g.drawImage(pic, -(CANVAS3.ax / 2) * S, -(CANVAS3.ay / 2) * S, (CANVAS3.w / 2) * S, (CANVAS3.h / 2) * S);
+    g.restore();
+    if (!sh.left) p.tails.draw(g, fx, fy, true, S);
     g.restore();
     // the rings and the lines: where a foot came down, and where it has slid to
     g.save();

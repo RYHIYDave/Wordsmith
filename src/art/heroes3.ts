@@ -29,7 +29,7 @@ import { paintRanger3 } from './hero3_ranger';
 import type { HeroArt, HeroLook } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
-import { GREAT_BLADE, MOVES3, STAFF_UP } from './moves3';
+import { GREAT_BLADE, MOVES3, SETTLES, STAFF_UP, settlesOf, startsOf } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
@@ -244,6 +244,15 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
   const walkFps = walkStride !== undefined ? GRIP_FPS3 : RUN_FPS3;
   const set: AnimSet = { idle: round(of(plan.idle), IDLE_FPS3), walk: round(of(plan.walk), walkFps), attack: three(attack), heavy: three(heavy), idleFps: IDLE_FPS3, walkFps, clips: { attack, heavy } };
   if (walkStride !== undefined) set.walkStride = walkStride;
+  // (coming to a stand out of the run, where the hero has that: moves3.ts, settlesOf)
+  const stops = settlesOf(of(plan.walk), of(plan.idle));
+  if (stops.length) set.stops = stops.map((m) => clip(m, CLIP_FPS3));
+  // (and setting off from the stance into it: moves3.ts, startsOf)
+  const start = startsOf(of(plan.walk), of(plan.idle));
+  if (start) {
+    set.start = clip(start.move, GRIP_FPS3);
+    set.startAt = start.phase;
+  }
   const clips = set.clips as NonNullable<AnimSet['clips']>;
   if (attack2) clips.attack2 = attack2;
   if (plan.leap) {
@@ -305,7 +314,7 @@ export function makeHeroArt3(): HeroArt {
         list = [];
         // (standing and running first, then the attacks from start to finish, then the rest; what
         // a hero does when left standing is painted as it is shown, which is slowly enough)
-        const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.walk, (a) => a.clips?.attack?.frames ?? [], (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
+        const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
           (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? []];
         for (const pick of picks) {
           for (const set of [art.front, art.back]) {

@@ -6,7 +6,7 @@
 import type { ActorArt, AnimSet, Clip } from '../../src/art/actor_types';
 import { PLANS } from '../../src/art/heroes3';
 import type { Plan } from '../../src/art/heroes3';
-import { MOVES3 } from '../../src/art/moves3';
+import { MOVES3, settlesOf, startsOf } from '../../src/art/moves3';
 import type { Move3 } from '../../src/art/moves3';
 import { lerp3 } from '../../src/art/skeleton';
 import type { V3 } from '../../src/art/skeleton';
@@ -35,6 +35,18 @@ export const LEAP_FRAMES3 = 16;
 export const ROLL_FRAMES3 = 14;
 
 const keyOf = new Map<Move3, string>(Object.entries(MOVES3).map(([k, m]) => [m, k]));
+/** A move by the name its stand-in carries: one of MOVES3, or a coming to a stand out of a run (`stop:<run>:<stance>:<which>`, moves3.ts settlesOf). */
+export function moveOf(key: string): Move3 {
+  if (key.startsWith('stop:')) {
+    const [, run, stance, k] = key.split(':');
+    return settlesOf(MOVES3[run], MOVES3[stance])[Number(k)];
+  }
+  if (key.startsWith('start:')) {
+    const [, run, stance] = key.split(':');
+    return (startsOf(MOVES3[run], MOVES3[stance]) as { move: Move3 }).move;
+  }
+  return MOVES3[key];
+}
 const span = (m: Move3): { end: number; from: number | undefined } => ({ end: endOf(m), from: m.motion.loop });
 function standIn(m: Move3, t: number, view: View): Sprite {
   return { img: `${keyOf.get(m)}|${t}|${view}` as unknown as HTMLCanvasElement, w: 1, h: 1, ax: 0, ay: 0 };
@@ -71,6 +83,15 @@ function animSet(plan: Plan, view: View): AnimSet {
   const walkFps = walkStride !== undefined ? GRIP_FPS3 : RUN_FPS3;
   const set: AnimSet = { idle: round(of(plan.idle), IDLE_FPS3), walk: round(of(plan.walk), walkFps), attack: three(attack), heavy: three(heavy), idleFps: IDLE_FPS3, walkFps, clips: { attack, heavy } };
   if (walkStride !== undefined) set.walkStride = walkStride;
+  const stops = settlesOf(of(plan.walk), of(plan.idle));
+  stops.forEach((m, k) => keyOf.set(m, `stop:${plan.walk}:${plan.idle}:${k}`));
+  if (stops.length) set.stops = stops.map((m) => clip(m, CLIP_FPS3));
+  const start = startsOf(of(plan.walk), of(plan.idle));
+  if (start) {
+    keyOf.set(start.move, `start:${plan.walk}:${plan.idle}`);
+    set.start = clip(start.move, GRIP_FPS3);
+    set.startAt = start.phase;
+  }
   const clips = set.clips as NonNullable<AnimSet['clips']>;
   if (attack2) clips.attack2 = attack2;
   if (plan.leap) {
@@ -117,6 +138,8 @@ export interface Scenario {
   face: [number, number];
   /** Before the first step: change the hero's gear, say. */
   setup?: (g: Game) => void;
+  /** In town (the heroes' town figures), or (if not said) in a dungeon. */
+  place?: 'dungeon' | 'town';
   /** Each step: set the thumbs. */
   step: (x: Ctx) => void;
   /** When a heavy blow rocks the hero (seconds from the start), if one does. */
@@ -176,6 +199,8 @@ export function scenariosOf(cls: ClassId): Scenario[] {
     { name: 'runs up the screen', cls, seconds: 0.9, face: [-Math.SQRT1_2 + 0.01, -Math.SQRT1_2 - 0.01], step: (x) => walk(x, 0, 9, -Math.SQRT1_2 + 0.01, -Math.SQRT1_2 - 0.01) },
     { name: 'runs a little off the way he faces', cls, seconds: 1.4, face: [Math.cos(0.3), Math.sin(0.3)], step: (x) => walk(x, 0, 9, Math.cos(0.3), Math.sin(0.3)) },
     { name: 'starts and stops', cls, seconds: 2, face: front, step: (x) => walk(x, 0.5, 1.2, 1, 0) },
+    { name: 'starts and stops in town', cls, seconds: 2, face: front, place: 'town', step: (x) => walk(x, 0.5, 1.2, 1, 0) },
+    { name: 'stops, starts and stops', cls, seconds: 2.6, face: front, step: (x) => { walk(x, 0, 0.62, 1, 0); walk(x, 1.2, 1.75, 1, 0); } },
     { name: 'quick attack, standing', cls, seconds: 1.3, face: front, step: (x) => tapAt(x, 0.2) },
     { name: 'quick attack, walking', cls, seconds: 1.2, face: front, step: (x) => { walk(x, 0, 9, 1, 0); tapAt(x, 0.3); } },
     { name: 'quick attack, from behind', cls, seconds: 1.3, face: back, step: (x) => tapAt(x, 0.2) },
@@ -234,7 +259,7 @@ export function play(sc: Scenario): Shown[] {
   h.y = 15.5;
   h.fx = sc.face[0];
   h.fy = sc.face[1];
-  const art = artOf(sc.cls, 'dungeon');
+  const art = artOf(sc.cls, sc.place ?? 'dungeon');
   const fig = new Figure();
   const out: Shown[] = [];
   const dt = 1 / 60;
@@ -285,7 +310,7 @@ export interface Placed {
   floating: number;
 }
 export function place(sh: Shown): Placed {
-  const m = MOVES3[sh.key];
+  const m = moveOf(sh.key);
   const { s } = at(m, sh.mt);
   const pts: Record<string, [number, number]> = {};
   const mirror = sh.left ? -1 : 1;

@@ -3,6 +3,7 @@
 src/dev/preview_play.ts (the same scenarios, the switch off and on), side by side under a heading
 and a few plain lines, at the game's speed and then slowed.
    python3 tools/review_heroes/pair.py <today frames dir> <mended frames dir> <out.gif> <slow> "<heading>" "<line>" ...
+(RIGHT="NEW" in the environment: what the right-hand side is called, MENDED if not said)
 """
 import glob, os, subprocess, sys, tempfile
 from PIL import Image, ImageDraw, ImageFont
@@ -34,7 +35,7 @@ def card(i, note):
     for j, l in enumerate(hl): d.text((14, 10 + j * 32), l, font=big, fill=GOLD)
     for j, l in enumerate(ll): d.text((14, 14 + len(hl) * 32 + j * 25), l, font=mid, fill=PALE)
     d.text((14, top - 26), 'TODAY', font=cap, fill=GREY)
-    d.text((w0 + 20, top - 26), 'MENDED', font=cap, fill=GOLD)
+    d.text((w0 + 20, top - 26), os.environ.get('RIGHT', 'MENDED'), font=cap, fill=GOLD)
     c.paste(Image.open(A[i]).convert('RGB').crop((0, 30, w0, h0)), (0, top))
     c.paste(Image.open(Bf[i]).convert('RGB').crop((0, 30, w0, h0)), (w0 + 6, top))
     d.text((14, top + h0 - 30 + 6), note, font=small, fill=GREY)
