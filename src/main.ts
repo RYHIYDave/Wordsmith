@@ -4,6 +4,7 @@
 import { FIGURE_SIZE, figureOf, makeBestiary } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
+import { useComboMends } from './art/moves3';
 import { makeIconArt } from './art/icons';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
@@ -1565,6 +1566,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     traps: TRAPS,
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
+    /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): a mock-up behind a switch that is off; its pictures put the mended swings in and paint the heroes again (false: today's back). */
+    comboMends: (on: boolean) => {
+      useComboMends(on);
+      art.heroes = makeHeroArt3();
+    },
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is
