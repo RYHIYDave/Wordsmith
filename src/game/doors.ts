@@ -27,6 +27,10 @@
 // corridor straight across the screen comes in at a corner, two tiles on each of two sides: it is
 // no doorway). EVERY ROOM BUT THE FIRST HAS ONE WAY IN, the doorway that lies toward the start of
 // the level, and that is where something stands:
+//   (NOT EVERY ROOM HAS ONE, since Version 18.8: every treasure vault and guardian's lair, and
+//   about one in five of the other rooms: `hasDoor`. The owner, 7 Oct 2026, 23:12: "It’s just a
+//   cool little interactive thing that gets you immersed.  It’s not to force little contained
+//   battles in each room".)
 //   A DOOR: ONE TILE WIDE, the middle one of the three; THE TILE ON EITHER SIDE OF IT IS WALL (its
 //   two PIERS: the map-maker makes them so). Round the opening a frame of stone, and in it one
 //   leaf of iron bars. IT SWINGS OPEN FOR THE HERO when he comes near, and stays open. NO MONSTER
@@ -45,8 +49,33 @@
 import { T_FLOOR, T_WALL } from './types';
 import type { DoorSpot, Floor, Room, Vec } from './types';
 
-/** Whether the map-maker lays doors (and the boss's gate). ON since Version 18.5: see the head of this file. (Off, a dungeon is Version 18.4's to the letter: the tests hold that.) */
-export const DOORS = { on: true };
+/**
+ * Whether the map-maker lays doors (and the boss's gate). ON since Version 18.5: see the head of
+ * this file. (Off, a dungeon is Version 18.4's to the letter: the tests hold that.)
+ * `share`: NOT EVERY ROOM HAS A DOOR, since Version 18.8. The owner, 7 Oct 2026, 23:12, of doors
+ * in every room's way in, as 18.5 to 18.7 had them: "Every room doesn’t have to have a door.
+ * It’s just a cool little interactive thing that gets you immersed.  It’s not to force little
+ * contained battles in each room". So a door stands in the way in of every treasure vault and
+ * every guardian's lair, and of this share of the other rooms (`hasDoor`); the rest are open, as
+ * they were before there were doors. (The tests and playtests of what a door does set it to 1 for
+ * the dungeons they lay, and put it back.)
+ */
+export const DOORS = { on: true, share: 0.2 };
+
+/**
+ * Has this room a door in its way in (Version 18.8)? Every treasure vault and every guardian's
+ * lair has; of the other rooms, about `DOORS.share`, by a lot of each room's own (the level's
+ * seed and depth, and the room's number): NO DICE OF THE MAP-MAKER'S ARE THROWN FOR IT, so a
+ * dungeon is the dungeon it was but for its doors. (The boss's hall has its gate whatever this
+ * says; the first room has no way in.)
+ */
+export function hasDoor(f: Floor, r: Room): boolean {
+  if (r.kind === 'treasure' || r.kind === 'guardian') return true;
+  let h = (Math.imul(f.seed | 0, 0x9e3779b1) ^ Math.imul(f.depth | 0, 0x85ebca6b) ^ Math.imul((r.id + 1) | 0, 0xc2b2ae35)) | 0;
+  h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+  h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296 < DOORS.share;
+}
 
 /** The hero this near the middle of a door's opening, in tiles, opens it. (No monster does: see the head of this file.) */
 export const DOOR_NEAR = 2.6;
@@ -122,10 +151,12 @@ function stepsFromStart(f: Floor): Int32Array {
 }
 
 /**
- * LAY THE DOORS OF A LEVEL (the map-maker's last step, if `DOORS.on`): in the way in of every room
- * but the first, a door; in the boss hall's, the boss's gate. A room's way in is the doorway that
- * lies toward the start: the one from which a step into the room is a step further from the start.
- * (A room come into at a corner has none.) In the order of the rooms. Takes no dice.
+ * LAY THE DOORS OF A LEVEL (the map-maker's last step, if `DOORS.on`): in the way in of a room
+ * that has one (`hasDoor`: every vault and lair, and about one in five of the rest, since Version
+ * 18.8; until then every room but the first), a door; in the boss hall's, the boss's gate. A
+ * room's way in is the doorway that lies toward the start: the one from which a step into the room
+ * is a step further from the start. (A room come into at a corner has none.) In the order of the
+ * rooms. Takes no dice.
  *
  * IT CHANGES THE LEVEL: the tile on either side of a door becomes WALL, and what lay on those two
  * tiles (rubble, bones) is taken away.
@@ -142,6 +173,7 @@ export function layDoors(f: Floor): DoorSpot[] {
       const within = d.alongX ? (line - d.out) * f.w + d.a + 1 : (d.a + 1) * f.w + (line - d.out);
       if (far[mid] < 0 || far[within] <= far[mid]) continue; // (it leads on, or nowhere: open as it always was)
       if (r.kind === 'boss') d.kind = 'bossgate';
+      else if (!hasDoor(f, r)) continue; // (a room with no door: its way in is open, as before there were doors)
       out.push(d);
     }
   }
