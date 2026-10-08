@@ -594,6 +594,89 @@ function slash(): Motion {
 
 export const SLASH3: Move3 = { name: 'Strike, the second swing: a downward slash', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: slash(), at: 'the moment it lands' };
 
+/**
+ * STRIKE'S COMBO MENDED: A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The
+ * owner asked the main chat at 08:35 to "Send the strike combo to the art agent and have them review
+ * it to the rules"; the review (docs/requests/strike_combo_review_answer.md) found five things that
+ * break the art rulebook, and these are its mends, as tested there:
+ *   A  FEET THAT GRIP THE FLOOR (Movement 8, "A foot stays where it lands"; Movement 1, "A blow
+ *      plants the feet"). The game's step carries him a third of a tile while the old swings kept
+ *      both feet planted, so they slid. Now both feet leave the floor while the step carries him
+ *      (the front foot lifting, the back foot pushing off its ball) and land in his stance's places
+ *      at the blow, the front foot flat and the back foot on its ball; the lunge is his hips over
+ *      the front foot, not a longer stance; and in the recovery nothing moves on the floor but the
+ *      back heel coming down about the ball.
+ *   B  NO ARM THROUGH HIS HEAD (Heroes 6, "Clean bodies"). At the top of the slash the hilt is
+ *      further forward and lower, and his head is laid toward his left shoulder.
+ *   C  HIPS FIRST (moves3's own rule for a swing: "hips first, then the trunk, then the arms, then
+ *      the blade"). At the slash's third frame the hips have turned, the chest is still back, and
+ *      the blade is only just past upright.
+ *   D  NOTHING JERKY (Movement 5). The slash's raise eases in and out; its recovery runs on through
+ *      the tenth frame without stopping there.
+ *   E  A BLADE THAT STAYS A BLADE (Effects 3, "a bright crescent"): the streak is drawn only through
+ *      the cut, its third to fifth frames (art/heroes3.ts, `paintMove3`).
+ * His yes to them, 8 Oct 2026: in the art chat at 14:05 ("Yes, the mended one (Recommended)"; of
+ * the shorter stance at the blow, "Yes, shorter is fine (Recommended)"), and in the main chat at
+ * 15:04, of "Put the art chat's mended Strike ... into the game as Version 19.2?": "Yes
+ * (Recommended)". SO THE SWITCH IS ON, from Version 19.2: the mended swings are the game's own
+ * (put in place as this file loads, below `useComboMends`). Switched off, `useComboMends(false)`
+ * gives the swings as they were before, for pictures beside them (the art must then be painted
+ * again: main.ts, `__dbg.comboMends`).
+ */
+export const COMBO_MENDS = { on: true };
+
+/** Where the back foot stands at and after the blow (A): its ball where the stance has it, turned -8, on its toes 36. */
+function backFoot(): Partial<Bones> {
+  const B = KNIGHT_BODY;
+  const a36 = (36 * Math.PI) / 180;
+  const t8 = (-8 * Math.PI) / 180;
+  const ballX = -5.5;
+  const ballY = -10.9;
+  const ankX = ballX - B.ball * Math.cos(a36) * Math.cos(t8);
+  const ankY = ballY - B.ball * Math.cos(a36) * Math.sin(t8);
+  return { rfx: ankX, rfy: ankY + B.stance, rfp: 36, rfz: onToes(36), rft: -8 };
+}
+
+/** The feet of both swings, mended (A): light at the coil, in the air at the third frame, down in the stance's places from the blow on. */
+function mendFeet(keys: readonly Key3[], hitKeys: number[]): Key3[] {
+  const back = backFoot();
+  const out = keys.map((k) => ({ ...k, pose: { ...k.pose } }));
+  out[1].pose = { ...out[1].pose, lfx: 11, lfz: 2.0, lfp: -10, rfx: -9, rfp: 30, rfz: onToes(30) + 1.2, rft: -30 };
+  out[2].pose = { ...out[2].pose, px: 0.5, lfx: 11.5, lfz: 2.4, lfp: -14, rfx: back.rfx as number, rfy: back.rfy as number, rfp: 32, rfz: onToes(32) + 0.8, rft: -12 };
+  const struck: Partial<Bones> = { px: 4, lfx: 10.5, lfy: 0.5, lfz: 0, lfp: 0, lft: 2, lk: 2, ...back, rk: -6 };
+  for (const i of hitKeys) out[i].pose = { ...out[i].pose, ...struck };
+  return out;
+}
+
+function strikeMended(): Motion {
+  const m = strike();
+  return { ...m, keys: mendFeet(m.keys, [3, 4, 5]) };
+}
+
+function slashMended(): Motion {
+  const m = slash();
+  const k = mendFeet(m.keys, [3, 4, 5, 6]);
+  // B and D: the top, the hilt forward and lower, the head laid toward the left shoulder, reached evenly
+  // (and, the raise being eased in, the back foot pushes off a little higher, so that it is clear of
+  // the floor by the first frame, when the game's step has begun to carry him)
+  k[1] = { ...k[1], ease: 'io', pose: { ...k[1].pose, rhx: 6, rhy: 2, rhz: 12, faceTilt: -10, rfz: onToes(30) + 2.4 } };
+  // B and C: the third frame, the hips gone round first, the chest still back, the blade only just past upright
+  k[2] = { ...k[2], pose: { ...k[2].pose, yaw: 0, twist: -32, rhx: 12, rhy: 6, rhz: 9, wEl: 85, faceTilt: -10 } };
+  // D: on through the tenth frame without stopping at it (and his hips a little forward of the stance as the blade is carried round, over the planted feet)
+  k[6] = { ...k[6], ease: 'in', pose: { ...k[6].pose, px: 5 } };
+  k[7] = { ...k[7], ease: 'out' };
+  return { ...m, keys: k };
+}
+
+/** Put the mended swings in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
+export function useComboMends(on: boolean): void {
+  COMBO_MENDS.on = on;
+  STRIKE3.motion = on ? strikeMended() : strike();
+  SLASH3.motion = on ? slashMended() : slash();
+}
+// (the game's own swings: the mended ones, since Version 19.2)
+useComboMends(COMBO_MENDS.on);
+
 /** A foot standing on its toes: the heel up by `deg`, the ball still on the floor (the ankle is that much higher). */
 function onToes(deg: number): number {
   const a = (deg * Math.PI) / 180;

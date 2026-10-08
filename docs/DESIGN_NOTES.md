@@ -4534,6 +4534,60 @@ should a Normal death cost? (On top of everything found in that dungeon.)". **HI
   byte the frozen copy's `dist/artifact.html`.
 - NOT CHECKED: a real phone; whether a quarter feels right over many deaths is his to find.
 
+### Version 19.2: Strike's two swings mended
+
+**What he said.** 8 Oct 2026, 08:35, to this chat: "Send the strike combo to the art agent and have
+them review it to the rules". The art chat's review (`docs/requests/strike_combo_review_answer.md`,
+12:11) found five faults against the art rulebook, each with a tested mend; it made them on its
+branch `art/strike-combo-mends` behind a switch that was off, and sent him a moving picture at 14:02
+(`strike_combo_mended.gif`: the swings as they were beside the mended). His answers there, 14:05, as
+the art chat reports them (`docs/mockups/strike_combo_mends/README.md`): "Yes, the mended one
+(Recommended)" and, of the shorter stance at the blow, "Yes, shorter is fine (Recommended)". And in
+this chat, 15:04, to "Put the art chat's mended Strike (feet that grip the floor, no arm through his
+head, the shorter stance) into the game as Version 19.2?": **"Yes (Recommended)".**
+
+**What is in it** (the art chat's work, brought in whole: `src/art/moves3.ts`, `strikeMended`,
+`slashMended`, `mendFeet`, `backFoot`; `src/art/heroes3.ts`, `streakShown`; the record in
+`docs/NEXT_VERSION.md` from "AFTER 19.1 WENT OUT" to "VERSION 19.2 IS LIVE").
+
+- **FEET THAT GRIP THE FLOOR** (the art rulebook's Movement 8 and 1): both feet leave the floor while
+  the game's step carries him, and land at the blow in his stance's places; a foot on the floor now
+  moves at most 0.8 of a game pixel (before, up to 8.7). The lunge is his hips over the front foot:
+  THE SHORTER STANCE he said yes to.
+- **NO ARM THROUGH HIS HEAD** at the top of the slash (Heroes 6): the hilt further forward and lower,
+  his head laid toward his left shoulder.
+- **HIPS FIRST** in the slash, then the chest, then the blade; **NOTHING JERKY** in its raise or its
+  way back.
+- **THE STREAK ONLY THROUGH THE CUT** (the third to fifth frames of each swing): the way up and the
+  way back show a clean blade.
+- `COMBO_MENDS.on` TRUE: the mended swings are put in place as `moves3.ts` loads (`useComboMends`);
+  switched off they are the swings as they were, for pictures beside them (`__dbg.comboMends`).
+  Nothing of the rules changes: the same harm, the same timing, the same step.
+
+**How it was tested.**
+
+- `tsc` clean; `tests/combo_mends.test.ts` (5, the art chat's, now holding the mended swings as the
+  game's own: the switch on, and off and on again giving the old swings and the mended exactly;
+  feet that grip as the game plays the combo at 60 steps a second, the legs reaching; no arm in his
+  head; hips first and nothing jerky; the streak only through the cut). THE WHOLE UNIT SUITE 662 OF
+  662 (15:06 to 15:10), and again in the frozen copy after the regression (662 of 662, 16:11 to 16:14).
+- THE PRE-FLIGHT (a dev page built from the tree, 15:18 to 15:24): 21 playtests, among them the
+  combo's own on a PC and a phone, the looks, a warrior's words, his auto aim and melee, the facing,
+  the first dungeon for a warrior, the way in, two monkeys, the soak, the boss, the speed and the
+  warrior's word combinations: all clean.
+- **The regression** on a copy frozen at 15:26 (the scratchpad's `v192a/arpg_frozen`,
+  15:26 to 16:10, two at a time, nothing else running): **148 OF 148 PLAYTESTS
+  FINISHED CLEAN**.
+  Speed: 59.4 frames a second, longest frame 50 ms; the slowest fights of the four word-pair runs 58.7 to 59.3 frames a second (19.1's: 59.5, and 57.2 to 58.8).
+- THE RELEASE BUILD, made in the copy at 16:15: `Play.html` 879,262 bytes and
+  `dist/artifact.html` 878,940, both saying V19.2; kept in the scratchpad's
+  `v192a/release/`.
+- **The published page itself** (`wrap192.sh` in the scratchpad, 16:15 to 16:32): **66
+  of 66 playtests clean.** The same 66 as 19.1's. Published at 16:33 ("Version 46", version
+  id `1791491603-4d96`); the file published is the kept copy, `v192a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone; how the shorter stance feels in a fight is his to find.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4895,6 +4949,9 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.2: Strike's two swings mended (the art chat's, art/strike-combo-mends)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/combo_mends.mjs --out shots/mends/old   # the swings as they were (MENDS=1: the mended, the game's own); tools/combo_mends_film.py joins two such runs side by side
+node node_modules/tsx/dist/cli.mjs tools/combo_mends_check.ts mend   # the feet's slide and the arms against the head, measured on the bones (without "mend": the old swings)
 # Version 19.1: Normal mode
 node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/modes_look.mjs --out shots/modeslook/pc   # the cards' MODE, a Normal death and waking in town, in four pictures (in the regression: modes_pc, modes_phone)
 # Version 19.0: the traps: spike floors, dart walls and sealed vaults

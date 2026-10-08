@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (8 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.1).**
+**Status (8 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.2).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -160,6 +160,9 @@ Version 19.1: Normal mode. A hero is made Normal or Hardcore on the class cards,
 A Normal hero who dies wakes in town at the level they had reached, with the gear and words they
 went in with, but without what they found in that dungeon and a quarter of the gold they carried
 in; the same dungeon waits. A Hardcore hero who dies is gone, as before.
+Version 19.2: Strike's two swings mended to the art rulebook. His feet grip the floor (they no
+longer slide as he steps into the blow), no arm passes through his head, the slash turns hips
+first and runs smoothly, and the streak shows only through the cut.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
