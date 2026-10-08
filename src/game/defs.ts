@@ -499,11 +499,12 @@ export const PRACTICE = {
  * first.  If the player taps again quickly, then the second animation, [a] downward slash, plays.
  * Back to the first if they tap again.  If it’s not tapped for a set duration, it goes back to the
  * first animation.  Like a two hit combo if you tap twice"; 23:18: "And I want him to move forward
- * a little every swing"; 23:19: "Not much, but some". OFF until he has seen it moving and said yes
- * (told him at 23:18: "I'll send you a moving picture of the two before it goes in"). The numbers
- * are `TUNE.comboWindow`, `swingStep`, `swingStepTime`: the two swings do the same harm.
+ * a little every swing"; 23:19: "Not much, but some". ON SINCE VERSION 18.9: he saw it moving
+ * (strike_combo.gif, 8 Oct 2026, 00:42, with "Put it in as it is?") and said, 07:32: "Yeah looks
+ * good". The numbers are `TUNE.comboWindow`, `swingStep`, `swingStepTime`: the two swings do the
+ * same harm. (Off, Strike is the one swing it was, with no step: tests/combo.test.ts.)
  */
-export const COMBO = { on: false };
+export const COMBO = { on: true };
 
 export const TUNE = {
   heroRadius: 0.3,

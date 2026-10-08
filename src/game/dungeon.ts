@@ -70,12 +70,13 @@ const ACROSS_MAX = 8; // ... (five leaves the rooms ROOM_GAP apart)
  *             the lever;
  *   `locks`   A ROOM THAT LOCKS: one of the main path's elite rooms has a gate in every doorway,
  *             and they fall while the hero is inside with its pack.
- * `on`: OFF. NOTHING OF IT IS IN THE GAME until he has seen it in real dungeons and said yes
- * (told at 21:16 on the 7th: "you'll get pictures of those before any of it goes live"). OFF, A
- * DUNGEON IS WHAT IT WAS: the mix's dice are thrown only when it is on. ON, every dungeon is a new
- * dungeon, for a room set down next door moves every room after it.
+ * `on`: ON SINCE VERSION 18.9. He saw it in a real dungeon (three pictures, 8 Oct 2026, 01:06,
+ * with "Put the mix in?") and said, 07:32: "Yeah looks good". ON, every dungeon from the second
+ * is a new dungeon, for a room set down next door moves every room after it; the first, a new
+ * player's lesson, is laid as it always was. OFF, A DUNGEON IS WHAT IT WAS IN VERSION 18.8: the
+ * mix's dice are thrown only when it is on.
  */
-export const MIX = { on: false, pairs: true, levers: true, locks: true };
+export const MIX = { on: true, pairs: true, levers: true, locks: true };
 const PAIR_SHARE = 1 / 6; // share of joints that are two rooms next door
 const PAIR_GAP = 3; // tiles of rock between two rooms next door: the least that lets the nearer room's back wall stand (render/walls.ts)
 const MIX_FROM = 2; // the first dungeon with any of the mix: a lever's gate, a room that locks, two rooms next door (Dungeon 1 is a new player's lesson, and is laid as it always was)

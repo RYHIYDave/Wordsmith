@@ -1,8 +1,9 @@
 // THE MIX INSIDE EACH DUNGEON: THE RULES of a lever and its gate, and of a room that locks
 // (src/game/doors.ts, game.ts: `pullLever`, `updateLocks`; the hall laid by hand for them,
 // level.ts: `makeMixHall`), and THE MAP-MAKER that lays them and two rooms next door in real
-// dungeons (game/dungeon.ts). BEHIND ITS SWITCH, `MIX.on`, OFF IN THE GAME until the owner says yes
-// to its pictures (sent 8 Oct 2026, 01:06): these tests switch it on for themselves and put it back.
+// dungeons (game/dungeon.ts). ITS SWITCH, `MIX.on`, IS ON IN THE GAME SINCE VERSION 18.9 (his yes to
+// its pictures, 8 Oct 2026, 07:32: "Yeah looks good"): these tests set it for themselves where they
+// ask about a dungeon with it or without it, and put it back.
 //
 // The owner, 7 Oct 2026, 14:01: "[...] that same bar style for gates going up and down with the
 // spikes on the bottom. Classic castle style. Implementing this should also affect level design
@@ -479,16 +480,22 @@ test('with the switch off a dungeon is Version 18.8\'s to the letter: the finger
   });
 });
 
-test('the switch is off in the game: no dungeon has a gate with a lever, a room that locks or two rooms next door', () => {
-  assert.equal(MIX.on, false, 'the mix is not in the game until the owner has seen it in real dungeons and said yes');
-  for (const [depth, seed] of [[1, 3], [2, 6], [4, 11], [7, 21]] as const) {
+test('the switch is on in the game (Version 18.9): from the second dungeon a gate with its lever; and with it off no dungeon has a gate with a lever, a room that locks or two rooms next door', () => {
+  assert.equal(MIX.on, true, 'the owner, 8 Oct 2026, 07:32, of its pictures in a real dungeon: "Yeah looks good"');
+  for (const [depth, seed] of [[2, 6], [4, 11], [7, 21]] as const) {
     const f = generateFloor(depth, seed);
-    assert.equal(f.levers, undefined);
-    assert.ok(!f.rooms.some((r) => r.gated || r.locks || r.nook));
-    assert.ok(!(f.doors ?? []).some((d) => d.kind === 'gate' || d.kind === 'trapgate'));
-    assert.ok(!f.props.some((p) => p.kind === 'lever'));
-    for (const a of f.rooms) for (const b of f.rooms) if (a.id < b.id) assert.ok(apart(a, b) >= 4, 'rooms are four tiles apart and more');
+    assert.ok(f.levers !== undefined && f.levers.length === 1 && (f.doors ?? []).some((d) => d.kind === 'gate'), `dungeon ${depth}, seed ${seed}: a gate and its lever`);
   }
+  mixed(false, () => {
+    for (const [depth, seed] of [[1, 3], [2, 6], [4, 11], [7, 21]] as const) {
+      const f = generateFloor(depth, seed);
+      assert.equal(f.levers, undefined);
+      assert.ok(!f.rooms.some((r) => r.gated || r.locks || r.nook || r.nextDoor));
+      assert.ok(!(f.doors ?? []).some((d) => d.kind === 'gate' || d.kind === 'trapgate'));
+      assert.ok(!f.props.some((p) => p.kind === 'lever'));
+      for (const a of f.rooms) for (const b of f.rooms) if (a.id < b.id) assert.ok(apart(a, b) >= 4, 'rooms are four tiles apart and more');
+    }
+  });
 });
 
 test('with the mix on, in every dungeon from the second: the lever can be come to with its gate down and the gated room cannot; the room that locks holds; rooms next door are three apart with a door between; and the first dungeon has none of it', () => {

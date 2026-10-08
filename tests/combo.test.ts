@@ -1,7 +1,7 @@
 // STRIKE, A TWO-HIT COMBO, AND A STEP FORWARD WITH EVERY SWING (game/defs.ts, COMBO; game/game.ts,
-// useBasic; the picture: render/figure.ts, attackClip, and art/moves3.ts, SLASH3). OFF in the game
-// until the owner has seen it moving and said yes: these tests switch it on for themselves and put
-// it back.
+// useBasic; the picture: render/figure.ts, attackClip, and art/moves3.ts, SLASH3). ON IN THE GAME
+// SINCE VERSION 18.9 (his yes to its moving picture, 8 Oct 2026, 07:32: "Yeah looks good"): these
+// tests set the switch for themselves and put it back.
 //
 // The owner, 7 Oct 2026, 23:18: "I’d like STRIKE to have two animations.  The first is the strike
 // we have now.  That one always plays first.  If the player taps again quickly, then the second
@@ -10,7 +10,7 @@
 // 23:18: "And I want him to move forward a little every swing"; 23:19: "Not much, but some".
 //
 // What is held here:
-//   1. with the switch off, Strike is as it was: one swing, the same one, and no step;
+//   1. the switch is on in the game; with it off, Strike is as it was: one swing, the same one, and no step;
 //   2. Strike first; the next, if it comes soon enough, the downward slash; then Strike again;
 //   3. a tap that comes after the set time is the first swing again, and one just inside it the second;
 //   4. every swing steps him forward a third of a tile along the way he faces, and only that way;
@@ -123,8 +123,8 @@ function timing(g: Game): { between: number; wind: number } {
   return { between: 1 / rate, wind: Math.min(SKILLS[s.id].windup, 0.4 / rate) };
 }
 
-test('THE SWITCH IS OFF IN THE GAME, and with it off Strike is as it was: the same swing every time, and no step', () => {
-  assert.equal(COMBO.on, false, 'the combo is not in the game until he has said yes to it');
+test('THE SWITCH IS ON IN THE GAME (Version 18.9), and with it off Strike is as it was: the same swing every time, and no step', () => {
+  assert.equal(COMBO.on, true, 'the owner, 8 Oct 2026, 07:32, of its moving picture: "Yeah looks good"');
   combo(false, () => {
     const g = room();
     const h = g.hero;
