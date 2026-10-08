@@ -325,3 +325,24 @@ as some carved writing too; his answer of 09:21 settles it the other way).
 FOR THE MAIN CHAT: add to what is now yours to build for real, behind its switch until it is in:
 words in the world as he chose them (`mockup/words-in-world`: `WORDS_LOOK.on`, the ring written in
 the word and the word rising off the blade; no carvings).
+
+## The bone archer on bones (8 Oct, 09:27 to 11:25)
+
+Asked at 09:27, as a pop-up, "What should the art chat take up next?" ("Bone archer on bones
+(Recommended)": "He's a skeleton too. Same new bones, so he matches the new skeleton."; "A place's
+own colours": "The same room painted as two or three places, for you to pick from."; "Phone speed
+test": "Five minutes with your phone. Eight directions wait on it."). His answer, 09:28: "Bone
+archer on bones (Recommended)". Told at 09:28: "Bone archer it is. I'll put him on the same new
+bones as the skeleton, bow in hand, and send you pictures of him beside today's archer."
+
+Sent at 10:27: `previews/archer_on_bones_sheet.png` and `previews/archer_on_bones_film.gif` (branch
+`mockup/archer-on-bones`), and, as a pop-up, "Should the new bone archer replace today's?" ("Yes
+(Recommended)": "It goes to the main chat to put in the game, with the new skeleton."; "Close, but
+change it"; "No, keep today's"). His answer, 11:25: "Yes (Recommended)". Told at 11:25: "Bone
+archer: yes. It replaces today's archer and goes to the main chat to put in the game, together with
+the new skeleton. I'm adding it to the rulebook now." Rule 8 of the monsters ("Built on bones") now
+names the skeleton and the bone archer, and that he chose both on 8 Oct.
+
+FOR THE MAIN CHAT: add to what is now yours to build for real, behind its switch until it is in:
+the bone archer on bones (`mockup/archer-on-bones`, on top of `mockup/skeleton-on-bones`:
+`ARCHER3.on`, after `SKELETON3.on`; its README says what changes in the tests).

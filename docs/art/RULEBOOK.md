@@ -81,7 +81,7 @@ Monsters look natural for what they are, and how they feel depends on their size
 5. **Weapons rest low.** No monster holds its weapon up in the air for no reason. In your words: "Why are their weapons always straight up in the air?"
 6. **Pink is theirs.** Eyes, runes and enemy fire glow hot pink burning to gold, and every living monster has a one-pixel pink edge. Nothing on a monster glows cyan.
 7. **Equal to the heroes.** Monsters are painted as boldly and as finely as the heroes. In your words: "we need the dungeons and mobs brought up to the level of the character models".
-8. **Built on bones.** The skeleton is rebuilt on the heroes' bones, so it moves with the same weight they do. You chose it on 8 Oct; other monsters follow one at a time, each shown to you first.
+8. **Built on bones.** The skeleton and the bone archer are rebuilt on the heroes' bones, so they move with the same weight the heroes do. You chose both on 8 Oct; other monsters follow one at a time, each shown to you first.
 
 ## Places
 
