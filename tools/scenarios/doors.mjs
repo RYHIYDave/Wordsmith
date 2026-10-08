@@ -122,11 +122,16 @@ export default async function (page, snap) {
     // (A DOOR IN EVERY ROOM'S WAY IN, as until Version 18.8, for the dungeon this playtest lays: what a door does and how it
     // looks is asked of it here. In the game since 18.8 every vault and lair has one, and about one in five of the other rooms.)
     d.doors.share = 1;
+    // (AND WITHOUT THE MIX, game/dungeon.ts, MIX, in the game since Version 18.9: this playtest asks about doors,
+    // and reads them off the canvas in the dungeon it has always laid. The mix's own gates have tools/scenarios/mix.mjs.)
+    const wasMix = d.mix.on;
+    d.mix.on = false;
     d.run(cls, seed);
     const g = d.game();
     g.depth = depth; g.enterDungeon();
     d.doors.on = was;
     d.doors.share = wasShare;
+    d.mix.on = wasMix;
     d.autoLevel = false; d.autoWords = false; d.god = true;
     g.wakeUp = () => {};
     g.monsters = g.monsters.filter((m) => m.boss);
