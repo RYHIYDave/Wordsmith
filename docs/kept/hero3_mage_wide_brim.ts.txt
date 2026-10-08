@@ -1,0 +1,318 @@
+// THE MAGE, PAINTED OVER THE BONES (begun 6 Oct 2026, painted again that evening; NOT IN THE
+// GAME: the game's mage is still hero_mage.ts, until the owner has seen this one and said so).
+//
+// SHE IS A WOMAN (the owner, 6 Oct 2026, 19:26: "And make the mage female"). The same wanderer he
+// picked ("Wide Brim, Long Scarf": a traveller's hat far wider than her shoulders with a feather
+// in its band, a teal scarf up to the eyes with one end flying, a long purple coat with a glowing
+// hem, a satchel of books, and a staff whose fork holds a cut crystal), on a body of her own
+// (moves3.ts, MAGE_BODY: the shortest of the three, narrow in the shoulder, a small waist, hips
+// wider than it). What says so at this size: the coat is fitted to her waist and flares from it
+// over her hips to a wide hem; her sleeves bell at the wrist; and her hair is long, a rope of it
+// down her back and a lock in front of each shoulder.
+//
+// Everything of her is a solid (skin.ts), lit by the way its skin faces. The coat's skirts hang
+// from her waist round wherever her legs have gone, so a lunge spreads them and a crouch pools
+// them on the floor. THE BRIM OF THE HAT is a real plate on a head that turns, so looking down
+// hides her face under it and looking up shows it; but it is always tipped a little from the eye
+// (the game looks down on its figures: a level brim that wide would hide her eyes whenever she
+// looked straight ahead, and from behind would be a great round lid).
+
+import type { Light } from '../engine/px';
+import type { TailRoot } from '../engine/tails';
+import { book, bookShut, mageLight } from './hero_mage';
+import { CYAN, GLINT, INDIGO, MAIL, PLUM, ROBE, SKIN4, SPARK, TEAL, dim, hash } from './kit';
+import type { Painted, Ramp } from './kit';
+import { STAFF_UP, STAFF_DOWN } from './moves3';
+import { ball, band, cloth, faces, girdle, hidden, mid, off, onCloth, rod, sided, skirtOf, stage, tippedFrom, trunkBalls } from './skin';
+import type { GameView, Sheet } from './skin';
+import { add, cross, dot, lerp3, mul, norm, sub, trunkOf } from './skeleton';
+import type { Build, Posed, Skeleton, V3 } from './skeleton';
+import { FRIEND_RIM } from './hero3_knight';
+import type { Around } from './hero3_knight';
+
+/** A face under a hat: in shadow. */
+const SKIN: Ramp = [SKIN4[0], SKIN4[0], SKIN4[1], SKIN4[2], SKIN4[3]];
+/** Her hands: in the light. */
+const HAND: Ramp = [SKIN4[1], SKIN4[1], SKIN4[2], SKIN4[3], SKIN4[3]];
+/** Her hair: a warm brown, the plum of the heroes' leather. */
+const HAIR: Ramp = PLUM;
+const WOOD = INDIGO;
+/** How wide the brim of her hat is, from its middle to its edge, as a share of her height. */
+const BRIM = 0.268;
+
+export function paintMage3(s: Skeleton, q: Posed, view: GameView, kit: { build: Build; rim?: string | null }, around: Around = {}): Painted {
+  const st = stage(view);
+  const B = kit.build;
+  const lights: Light[] = [];
+  const wind = (around.wind ?? 0) * Math.PI * 2;
+  const come: V3 = around.prev ? sub(s.pelvis, around.prev.pelvis) : [0, 0, 0];
+  const lag = mul(come, -0.9);
+  const gale = Math.max(0, q.gale);
+  const mine = (ramp: Ramp, p: V3): Ramp => sided(st, s, ramp, p);
+  const trunk = trunkOf(B, s);
+  const [aS, aE, aW] = B.armR;
+  const [lH, lK, lA] = B.legR;
+  const fromBehind = st.near(s.chest[0]) < 0;
+  const hipH = B.ankle + B.shank + B.thigh;
+
+  // --- the legs: dark hose and soft boots (only the boots are seen, under the coat) ---
+  const legs: Sheet[] = [];
+  for (const side of ['L', 'R'] as const) {
+    const hip = side === 'L' ? s.hipL : s.hipR;
+    const knee = side === 'L' ? s.kneeL : s.kneeR;
+    const ankle = side === 'L' ? s.ankleL : s.ankleR;
+    const heel = side === 'L' ? s.heelL : s.heelR;
+    const toe = side === 'L' ? s.toeL : s.toeR;
+    const thigh = st.part(mid(hip, knee));
+    rod(thigh, st, hip, knee, lH, lK + 0.2, mine(MAIL, knee), { shade: 0.15 });
+    const shin = st.part(mid(knee, ankle));
+    const boot = mine(PLUM, ankle);
+    rod(shin, st, add(heel, [0, 0, 1.7]), add(toe, [0, 0, 1.3]), 1.9, 1.5, boot, { shade: 0.15 });
+    rod(shin, st, knee, ankle, lK + 0.3, lA + 0.6, boot);
+    legs.push(thigh, shin);
+  }
+
+  // --- the coat. Its bodice is fitted: her ribs, and the small of her waist under them. ---
+  const body = st.part(s.ribs);
+  const balls = trunkBalls(trunk, 0.6);
+  ball(body, st, balls[0].c, balls[0].axes, ROBE);
+  ball(body, st, balls[1].c, balls[1].axes, ROBE);
+  rod(body, st, off(s.shoulderL, s.chest, 0, -0.8, 0.2), off(s.shoulderR, s.chest, 0, 0.8, 0.2), 2.1, 2.1, ROBE);
+  ball(body, st, off(trunk[0].c, s.chest, B.ribDeep * 0.5, 0, 0.4), [mul(s.chest[0], 2.5), mul(s.chest[1], B.ribHalf * 0.9), mul(s.chest[2], 2.4)], ROBE);
+  if (!fromBehind) {
+    // the line it closes on, glowing, down the front
+    const a = st.at(off(s.neck, s.chest, B.ribDeep + 0.4, 0, -2.5));
+    const b = st.at(off(s.waist, s.hips, B.waistDeep + 0.6, 0, 1.5));
+    const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1])));
+    for (let i = 0; i <= n; i++) body.mark(a[0] + ((b[0] - a[0]) * i) / n - 0.5, a[1] + ((b[1] - a[1]) * i) / n - 0.5, CYAN[2]);
+  }
+
+  // --- its skirts: from her waist out over her hips and down to a wide hem a little off the
+  // floor, round wherever her legs are (it pools on the floor when she crouches), stirred by the
+  // wind, left behind by movement, and streaming back from a blast in her face ---
+  const skirts = st.part(s.pelvis);
+  const coat = skirtOf(s, B, { top: girdle(trunk[1], -0.15, 0.7), drop: hipH - 2.4, wide: B.pelvisHalf + 5.8, deep: B.pelvisDeep + 4.8, lag, wind: around.wind ?? 0, gale });
+  cloth(skirts, st, coat, ROBE, { hem: CYAN, folds: [0, 180] });
+  // (her legs are inside it: only what is below its hem is seen)
+  hidden(legs, skirts);
+  // (a glint here and there on the cloth, as on the one he picked)
+  {
+    const [wx, wy] = st.at(s.pelvis);
+    for (let k = 0; k < 5; k++) {
+      const x = Math.round(wx + (hash(k, 3, 41) - 0.5) * 12);
+      const y = Math.round(wy + 4 + hash(k, 5, 43) * 16);
+      if (hash(k, Math.floor(wind * 2), 47) > 0.5) skirts.mark(x, y, CYAN[3]);
+    }
+  }
+  const sash = st.part(s.waist);
+  const waist = girdle(trunk[1], -0.1, 1.0);
+  band(sash, st, waist, PLUM, 2);
+  if (!fromBehind) {
+    const at = add(waist.c, waist.u);
+    const [bx, by] = st.at(at);
+    for (let j = -1; j <= 0; j++) for (let i = -1; i <= 0; i++) sash.put(Math.round(bx) + i, Math.round(by) + j, i + j < -1 ? CYAN[4] : CYAN[2], st.near(at) + 0.6);
+  }
+
+  // --- the satchel of books, on her left hip outside the coat, and its strap across her ---
+  {
+    // (it lies ON the coat, wherever her legs have pushed the coat out to: not at a fixed place by her hip, where a stride swallowed it)
+    const bag = onCloth(coat, off(s.hipL, s.hips, 2.6, B.pelvisHalf * 0.55 + 4.2, -3.2), 1.5);
+    const layer = st.part(bag);
+    ball(layer, st, bag, [mul(s.hips[0], 3.9), mul(s.hips[1], 2.7), [0, 0, 3.7]], PLUM);
+    const [bx, by] = st.at(add(bag, [0, 0, 1.2]));
+    for (let i = -2; i <= 1; i++) layer.mark(Math.round(bx) + i, Math.round(by), PLUM[3]);
+    layer.mark(Math.round(bx), Math.round(by) + 2, CYAN[3]);
+    // (the strap: from the bag up over the right shoulder, drawn on whichever of her chest or her back is seen)
+    const top = off(s.shoulderR, s.chest, 0, 2.4, 1.2);
+    const mids = fromBehind ? off(trunk[0].c, s.chest, -B.ribDeep - 0.6, 0, 0) : off(trunk[0].c, s.chest, B.ribDeep + 0.6, 0, 0);
+    for (const [a, b] of [[top, mids], [mids, add(bag, [0, 0, 3])]] as [V3, V3][]) {
+      const [x0, y0] = st.at(a);
+      const [x1, y1] = st.at(b);
+      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+      for (let i = 0; i <= n; i++) {
+        const x = Math.round(x0 + ((x1 - x0) * i) / n - 0.5);
+        const y = Math.round(y0 + ((y1 - y0) * i) / n - 0.5);
+        body.mark(x, y, PLUM[1]);
+        body.mark(x + 1, y, PLUM[2]);
+      }
+    }
+  }
+
+  // --- her hair: a rope of it down her back to her waist, left behind a little as she moves, and a lock in front of each shoulder ---
+  {
+    const [hf, hl, hu] = s.face;
+    const R = B.headR;
+    const nape = off(s.head, s.face, -R[0] * 0.7, 0, -R[2] * 0.25);
+    const back = add(off(s.neck, s.chest, -B.ribDeep - 1.5, 0, -4.2), mul(lag, 0.35));
+    const end = add(add(back, [0, 0, -8.5 - Math.sin(wind) * 0.4]), add(mul(s.chest[0], -1.2 - gale * 6), mul(lag, 0.9)));
+    const rope = st.part(back);
+    rod(rope, st, nape, back, 3.1, 2.5, HAIR);
+    rod(rope, st, back, end, 2.3, 1.1, HAIR);
+    for (const side of [1, -1]) {
+      const a = add(add(s.head, mul(hl, side * R[1] * 0.92)), add(mul(hf, R[0] * 0.15), mul(hu, -R[2] * 0.3)));
+      const b = add(off(side > 0 ? s.shoulderL : s.shoulderR, s.chest, B.ribDeep * 0.6, -side * 2.2, -3.8), mul(lag, 0.3));
+      const lock = st.part(mid(a, b));
+      rod(lock, st, a, b, 1.5, 1.0, mine(HAIR, b));
+    }
+  }
+
+  // --- the arms: the coat's sleeves, belled at the wrist, and her hands ---
+  for (const side of ['L', 'R'] as const) {
+    const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+    const el = side === 'L' ? s.elbowL : s.elbowR;
+    const hand = side === 'L' ? s.handL : s.handR;
+    const upper = st.part(mid(sh, el));
+    rod(upper, st, sh, el, aS + 0.5, aE + 0.5, mine(ROBE, el));
+    const fore = st.part(mid(el, hand, 0.6));
+    rod(fore, st, el, lerp3(el, hand, 0.84), aE + 0.5, aW + 1.7, mine(ROBE, hand));
+    const palm = st.part(st.near(hand) + 0.2);
+    ball(palm, st, hand, [[aW + 0.6, 0, 0], [0, aW + 0.6, 0], [0, 0, aW + 0.6]], mine(HAND, hand));
+  }
+
+  // --- the head; the scarf wound up to her eyes, one end of it hanging down her front; the hat over them ---
+  const [hf, hl, hu] = s.face;
+  const R = B.headR;
+  const head = st.part(st.near(s.head) + 0.3);
+  rod(head, st, s.neck, s.skull, 1.7, 1.7, TEAL);
+  ball(head, st, s.head, [mul(hf, R[0]), mul(hl, R[1]), mul(hu, R[2])], (u, tone) => {
+    const [f, l, up] = u;
+    if (up < -0.16) return TEAL[Math.max(1, tone)];
+    if (f < 0.12 || Math.abs(l) > 0.8) return HAIR[tone];
+    return SKIN[tone];
+  }, 0.25);
+  const wrap = st.part(st.near(s.neck) + 0.5);
+  ball(wrap, st, add(lerp3(s.neck, s.head, 0.26), mul(s.chest[0], 0.4)), [mul(s.chest[0], 3.6), mul(s.chest[1], 4.5), mul(hu, 2.6)], TEAL);
+  if (!fromBehind) {
+    const a = off(s.neck, s.chest, B.ribDeep + 0.7, 1.4, -1.2);
+    const b = add(off(s.waist, s.hips, B.waistDeep + 1.2, 1.1, 2.2), add(mul(lag, 0.5), [0, Math.sin(wind + 1) * 0.5, 0]));
+    rod(wrap, st, a, b, 1.6, 1.2, TEAL);
+  }
+  // (her eyes, over the scarf: what glows on a hero is cyan. The hat, next, hides them when she looks down.)
+  for (const turn of [-30, 30]) {
+    if (!faces(st, s, turn)) continue;
+    const a = (turn * Math.PI) / 180;
+    const eye = add(s.head, add(add(mul(hf, Math.cos(a) * R[0] * 0.97), mul(hl, Math.sin(a) * R[1] * 0.97)), mul(hu, 0.1 * R[2])));
+    const [x, y] = st.at(eye);
+    head.mark(Math.round(x - 0.5), Math.round(y - 0.5), GLINT);
+  }
+  const hat = st.part(st.near(s.head) + 0.8);
+  const brimU = tippedFrom(st, hu, 20);
+  const brimF = norm(sub(hf, mul(brimU, dot(hf, brimU))), hf);
+  const brimL = cross(brimU, brimF);
+  const brimC = add(s.head, mul(hu, R[2] * 0.82));
+  const wide = BRIM * B.tall;
+  ball(hat, st, brimC, [mul(brimF, wide), mul(brimL, wide), mul(brimU, 1.0)], ROBE);
+  const crown = { c: add(brimC, mul(brimU, 0.9)), u: mul(brimF, R[0] * 1.42), v: mul(brimL, R[1] * 1.62) };
+  ball(hat, st, add(brimC, mul(brimU, R[2] * 0.45)), [crown.u, crown.v, mul(brimU, R[2] * 1.0)], ROBE);
+  band(hat, st, crown, CYAN, 2, 0.5);
+  // (what flies from her: the loose end of the scarf, from the side of the neck, and the feather in the hat's band)
+  const knot = add(lerp3(s.neck, s.head, 0.42), add(mul(s.chest[0], -3.0), mul(s.chest[1], 2.6)));
+  const [kx, ky] = st.at(knot);
+  const plume = st.at(add(add(brimC, mul(brimU, R[2] * 0.5)), add(mul(brimF, -R[0] * 0.3), mul(brimL, R[1] * 1.4))));
+  const tails: TailRoot[] = [
+    { id: 'm-scarf', x: kx, y: ky, over: st.near(knot) >= st.near(s.neck), blast: gale > 0.02 ? gale * 2.2 : 0 },
+    { id: 'm-feather', x: plume[0], y: plume[1], over: true, blast: gale > 0.02 ? gale : 0 },
+  ];
+
+  // --- the staff, in the right hand: the pole, the fork at its head, the crystal in the fork ---
+  const p3 = s.point;
+  const foot = add(s.handR, mul(p3, -STAFF_DOWN));
+  const neck3 = add(s.handR, mul(p3, STAFF_UP - 5.5));
+  const tip3 = add(s.handR, mul(p3, STAFF_UP));
+  const pole = st.part(mid(foot, tip3, 0.55));
+  rod(pole, st, foot, neck3, 1.05, 1.05, WOOD);
+  for (const side of [-1, 1]) {
+    const out = add(neck3, add(mul(p3, 3.2), mul(s.across, side * 2.6)));
+    rod(pole, st, neck3, out, 0.9, 0.8, WOOD);
+    rod(pole, st, out, add(out, mul(p3, 2.4)), 0.8, 0.6, WOOD);
+  }
+  const [tx, ty] = st.at(tip3);
+  const [nx, ny] = st.at(neck3);
+  let ux = tx - nx;
+  let uy = ty - ny;
+  const ul = Math.hypot(ux, uy) || 1;
+  ux /= ul;
+  uy /= ul;
+  // how hot the crystal burns: 1 at rest, 2 gathering, 3 let go (a beam that is held burns its hottest)
+  const burn = Math.max(1 + q.draw, gale > 0.6 ? 3 : 1);
+  // (where the crystal has just been: a streak of its light, when the staff is swung)
+  if (around.trail && around.trail.length > 1) {
+    const n = around.trail.length;
+    const moved = Math.hypot(...sub(around.trail[0][1], around.trail[n - 1][1]));
+    if (moved > 8) {
+      const fan = st.part(st.near(tip3) - 0.5);
+      const inner = (e: readonly [V3, V3], age: number): V3 => mid(e[0], e[1], 0.55 + 0.42 * Math.pow(age, 0.7));
+      for (let i = n - 1; i >= 1; i--) {
+        const a = around.trail[i];
+        const b = around.trail[i - 1];
+        const age = (i - 0.5) / (n - 1);
+        fan.poly([inner(a, i / (n - 1)), a[1], b[1], inner(b, (i - 1) / (n - 1))].map((p) => st.at(p)), age < 0.3 ? SPARK[3] : age < 0.62 ? SPARK[2] : SPARK[1]);
+      }
+      const old = st.at(around.trail[n - 1][1]);
+      const far = Math.hypot(old[0] - tx, old[1] - ty) || 1;
+      for (let y = 0; y < fan.h; y++) for (let x = 0; x < fan.w; x++) {
+        if (!fan.has(x, y)) continue;
+        const k = 1 - Math.hypot(x - old[0], y - old[1]) / far;
+        if (k > 0.35 && hash(x, y, 9) < (k - 0.35) * 1.5) fan.erase(x, y);
+      }
+    }
+  }
+  // the crystal: a cut stone, long the way the staff points, as near the eye as the staff's head is
+  const gem = st.part(st.near(tip3) + 0.6);
+  for (let y = Math.floor(ty - 8); y <= Math.ceil(ty + 8); y++) {
+    for (let x = Math.floor(tx - 8); x <= Math.ceil(tx + 8); x++) {
+      const dx = x + 0.5 - tx;
+      const dy = y + 0.5 - ty;
+      const a = -dx * uy + dy * ux;
+      const b = dx * ux + dy * uy;
+      if (Math.abs(a) / 3.2 + Math.abs(b) / 6.4 > 1) continue;
+      const tone = dx < 0 ? (dy < 0 ? '#ffffff' : SPARK[3]) : dy < 0 ? SPARK[3] : SPARK[2];
+      gem.put(x, y, burn >= 3 ? (dx + dy < 2 ? '#ffffff' : SPARK[3]) : tone, st.near(tip3) + 0.6);
+    }
+  }
+  if (burn >= 1.5) {
+    const long = Math.max(1, Math.min(6, Math.round((burn - 1) * 3)));
+    for (let k = 2; k <= long + 4; k++) {
+      const c = k <= long ? '#ffffff' : SPARK[2];
+      for (const [rx, ry] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        const far = (rx !== 0 ? 3 : 6) + k;
+        if (k > long + (rx !== 0 ? 2 : 0)) continue;
+        st.over.set(Math.round(tx - 0.5 + rx * far), Math.round(ty - 0.5 + ry * far), c);
+      }
+    }
+  }
+  const hot = Math.max(0, Math.min(2, burn - 1));
+  const pulse = hot > 0.5 ? 0 : Math.sin(wind);
+  lights.push({ x: tx, y: ty, r: 21 + hot * 6.5 + pulse * 1.5, color: SPARK[3], a: 0.38 + hot * 0.185 + pulse * 0.07 });
+
+  // --- the staff brought down on the floor (prop 5; `pt` is 1 in the frame it strikes, 0 when the ring has gone) ---
+  if (q.prop === 5 && q.pt > 0.02) {
+    const k = Math.min(1, q.pt);
+    const r = 4.5 + (1 - k) * 15;
+    for (let i = 0; i < 30; i++) {
+      if (k < 0.6 && i % 2 === 0) continue;
+      const a = (i / 30) * Math.PI * 2;
+      const [x, y] = st.at([foot[0] + Math.cos(a) * r, foot[1] + Math.sin(a) * r, 0]);
+      st.over.set(Math.round(x), Math.round(y), k > 0.5 ? '#ffffff' : SPARK[3]);
+      if (k > 0.75) st.over.set(Math.round(x), Math.round(y) - 1, SPARK[3]);
+    }
+    const [fx, fy] = st.at([foot[0], foot[1], 0]);
+    if (k > 0.4) for (const [dx, dy] of [[-5, -4], [4, -6], [-2, -8], [7, -3]] as const) st.over.set(Math.round(fx + dx * (1.6 - k)), Math.round(fy + dy * (1.6 - k)), '#ffffff');
+    lights.push({ x: fx, y: fy, r: 12 + (1 - k) * 8, color: SPARK[3], a: 0.55 * k });
+  }
+
+  // --- what she does when left standing: a mage light over the open hand, or a book ---
+  if (q.prop === 1) {
+    const [lx, ly] = st.at(s.handL);
+    mageLight(st.over, lx, ly, q.pt, lights);
+  }
+  if (q.prop === 2) {
+    const [lx, ly] = st.at(s.handL);
+    const layer = st.part(st.near(s.handL) + 2.5);
+    // (shut, as it is lifted out of the satchel or put back; open in front of the chest)
+    if (s.handL[2] < s.waist[2] + 2) bookShut(layer, lx, ly - 1);
+    else book(layer, st.over, lx + 1, ly - 2, q.pt > 0.12 && q.pt < 0.88 ? ((q.pt - 0.12) / 0.76) % 1 : 0, lights);
+  }
+
+  return { px: st.whole(kit.rim === undefined ? FRIEND_RIM : kit.rim), lights, tails };
+}

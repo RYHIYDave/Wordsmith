@@ -1,0 +1,70 @@
+--- /tmp/claude-0/-home-claude/813a5084-457b-5ed6-b88f-81ed4ee83594/scratchpad/v144/arpg/src/main.ts	2026-10-05 11:36:14.000000000 -0400
++++ src/main.ts	2026-10-05 14:25:44.309877157 -0400
+@@ -41,8 +41,17 @@
+ import { drawDeath, drawLevelUp, drawPause, drawTitle, newPanels, newTitleUi } from './ui/panels';
+ import { gateSide, stashSide, vendorSide } from './ui/town';
+ import { THEME, Ui } from './ui/ui';
++import { TOP3D, World3D } from './gl/world';
+ 
+ declare const __BUILD__: string;
++/**
++ * Set by the build of the 3D test page (tools/build_game3d.mjs); not set at all in the game's own
++ * build. With it, or with "3d" after the # of the page's address, the world of a dungeon is drawn
++ * in low-poly 3D (gl/world.ts) wherever the browser can, and L (or the pause menu) switches
++ * between that and the pixel look.
++ */
++declare const __LOOK3D__: boolean | undefined;
++const WANT_3D = (typeof __LOOK3D__ !== 'undefined' && __LOOK3D__ === true) || /(^|[#,&])3d\b/.test(location.hash);
+ 
+ /** Working title only. Change it here. */
+ // (the owner, 4 Oct 2026: "Let's try Wordsmith for now"; before that it was Wordhoard)
+@@ -103,8 +112,12 @@
+ const withInventory = (open: string): boolean => open === 'inv' || TOWN_PANELS.includes(open);
+ 
+ function start(carried: unknown, hot: HotHook | undefined): void {
+-  const scr = createScreen();
++  const scr = createScreen(WANT_3D);
+   scr.canvas.style.cursor = 'crosshair';
++  /** The world in low-poly 3D, on a canvas under the game's (null: not asked for, or this browser cannot). */
++  const world3d = WANT_3D ? World3D.make(scr.canvas) : null;
++  /** Whether it is being used: the player can go back to the pixel look and forth while the game runs. */
++  let look3d = world3d !== null;
+   const art: Art = {
+     ground: makeGroundArt(),
+     props: makeDungeonProps(),
+@@ -923,6 +936,7 @@
+     ui.release = input.uiRelease;
+ 
+     if (mode === 'title' || !game) {
++      if (world3d) world3d.hide();
+       if (confirm && clock - confirm.t >= 5) confirm = null;
+       // (while the Lexicon lies open over the menu, the menu does not listen)
+       const press = ui.press;
+@@ -1079,7 +1093,14 @@
+         fx.shakeX = 0;
+         fx.shakeY = 0;
+       }
++      // (stage 1 of the 3D look: dungeons and the practice room. The town is still drawn in pixels.)
++      const in3d = world3d !== null && look3d && !g.level.town;
++      renderer.look3d = in3d ? TOP3D : null;
+       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
++      if (world3d) {
++        if (in3d) world3d.draw(g, renderer.cam, scr.w, scr.h, scr.scale, fx, clock, paused ? 0 : gdt);
++        else world3d.hide();
++      }
+ 
+       // the HUD is always drawn, but only listens when nothing is open on top of it
+       const press = ui.press;
+@@ -1318,6 +1339,12 @@
+     slowmo: 1,
+     /** The world's painter (its `skip` set leaves parts of the picture out, for measuring). */
+     renderer,
++    /** The world in low-poly 3D, if this page has one; and the switch between it and the pixel look. */
++    world3d,
++    look3d: (on?: boolean): boolean => {
++      if (on !== undefined) look3d = on && world3d !== null;
++      return look3d;
++    },
+     /** The level-up choice opens by itself in a quiet moment. Tests that need an uninterrupted fight switch this off. */
+     autoLevel: true,
+     /** The inventory opens by itself for a new word that has somewhere to go. Likewise. */

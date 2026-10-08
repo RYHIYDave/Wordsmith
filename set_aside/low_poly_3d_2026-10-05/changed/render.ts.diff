@@ -1,0 +1,451 @@
+--- /tmp/claude-0/-home-claude/813a5084-457b-5ed6-b88f-81ed4ee83594/scratchpad/v144/arpg/src/render/render.ts	2026-10-05 11:37:53.000000000 -0400
++++ src/render/render.ts	2026-10-05 14:25:44.308547627 -0400
+@@ -18,14 +18,14 @@
+ import type { Townsfolk } from '../art/townsfolk';
+ import { drawText, textWidth } from '../engine/font';
+ import { WALL_H } from '../engine/iso';
+-import { drawAura, drawLights, flipSprite, silhouette } from '../engine/px';
++import { drawAura, drawLights, drawPool, flipSprite, glowOf, silhouette } from '../engine/px';
+ import type { Sprite } from '../engine/px';
+ import { hash2 } from '../engine/rng';
+ import { MONSTERS, SKILLS, TUNE, WORDS } from '../game/defs';
+ import { kindName } from '../game/items';
+ import type { Game } from '../game/game';
+ import { TOWN } from '../game/level';
+-import type { Monster, Station } from '../game/state';
++import type { Monster, PropType, Station } from '../game/state';
+ import { T_FLOOR, T_WALL } from '../game/types';
+ import type { ClassId, Element, WordId } from '../game/types';
+ import { Figure, attackClip, attackFrame, monsterAttackAge } from './figure';
+@@ -66,6 +66,34 @@
+ /** How far above the floor a familiar hangs, in game pixels (about the height of a hero's shoulder). */
+ const FAMILIAR_HOVER = 19;
+ 
++/** The colour an honest fire throws on what is round it (art/props.ts, EMBER). */
++const FIRE_LIGHT = '#ff8a2a';
++/** The colour of the light the hero carries: pale, and cool beside a fire's. */
++const HERO_LIGHT = '#8f8cf0';
++
++/**
++ * A fire that lights what is round it (a brazier, a torch on a wall, a forge): where it burns in
++ * the world, how high over the floor (game pixels), and how many tiles its light carries.
++ */
++interface Fire {
++  x: number;
++  y: number;
++  lift: number;
++  reach: number;
++  color: string;
++  seed: number;
++}
++
++/**
++ * What throws a shadow on the floor, of the things that stand in a place: how wide it is at the
++ * foot and how tall, in tiles. (A brazier throws none: it is the fire.)
++ */
++const CASTS: Partial<Record<PropType, readonly [number, number]>> = {
++  pillar: [0.34, 2.4], barrel: [0.3, 0.9], urn: [0.24, 0.8], chest: [0.4, 0.7],
++  lexicon: [0.3, 1.2], stash: [0.4, 0.7], anvil: [0.3, 0.6], rack: [0.4, 1.6], runeStone: [0.22, 1.6],
++  armourer: [0.28, 1.6], mystic: [0.28, 1.6], wordsmith: [0.28, 1.8], stranger: [0.26, 1.6],
++};
++
+ /** One upright thing to draw, with its depth for back-to-front sorting. */
+ interface Stand {
+   d: number;
+@@ -181,6 +209,13 @@
+   private monsterLit: { s: Sprite; x: number; y: number }[] = [];
+   /** A brazier's fire, an open portal: what glows on a thing that stands in the dungeon. */
+   private propLit: { s: Sprite; x: number; y: number }[] = [];
++  /** The fires in sight this frame: each warms the stone round it and throws the shadows of what stands near. */
++  private fires: Fire[] = [];
++  /** What throws a shadow this frame, four numbers each: where it stands, how wide at the foot, how tall (tiles). */
++  private casters: number[] = [];
++  /** Where one pool of light is painted and its shadows cut out of it, before it is laid on the floor. */
++  private scratch: HTMLCanvasElement;
++  private sg: CanvasRenderingContext2D;
+   /** The figures in this dungeon, for painting their frames ahead of need (see Bestiary.warm). */
+   private figures: MonsterFigure[] = [];
+   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
+@@ -224,10 +259,30 @@
+    * patches, 'zlight' = their light, 'cloud' = thunderclouds, 'fx' = everything in fx.ts.
+    */
+   skip = new Set<string>();
++  /**
++   * The world is being drawn in low-poly 3D on a canvas under this one (gl/world.ts). Then this
++   * painter leaves its own canvas clear and draws on it only what is not solid there: it leaves
++   * out the floor and the walls, what stands in the place, the figures, the darkness and the
++   * lights (the 3D world has real ones), and goes on drawing the effects, the shots, what lies to
++   * be picked up, and every name and bar, with the same camera. It is given how high the 3D
++   * figures' heads stand, in game pixels, for what hangs over them.
++   * null: this painter draws the whole world, as it always has.
++   */
++  look3d: { monster: Record<string, number>; hero: Record<ClassId, number> } | null = null;
++
++  /** How high a monster's head is over its floor point, in game pixels, in the look being drawn. */
++  private topOf(m: Monster): number {
++    const fig = figureOf(m);
++    return this.look3d ? this.look3d.monster[fig] ?? FIGURE_SIZE[fig].top : FIGURE_SIZE[fig].top;
++  }
+ 
+   constructor(private art: Art) {
+     this.dark = document.createElement('canvas');
+     this.dg = this.dark.getContext('2d') as CanvasRenderingContext2D;
++    this.scratch = document.createElement('canvas');
++    this.scratch.width = 280;
++    this.scratch.height = 160;
++    this.sg = this.scratch.getContext('2d') as CanvasRenderingContext2D;
+   }
+ 
+   /**
+@@ -392,15 +447,18 @@
+     this.monsterLit.length = 0;
+     this.propLit.length = 0;
+ 
+-    g.fillStyle = P.black;
+-    g.fillRect(0, 0, W, H);
++    const solid = this.look3d === null;
++    if (solid) {
++      g.fillStyle = P.black;
++      g.fillRect(0, 0, W, H);
++    } else g.clearRect(0, 0, W, H);
+ 
+     // ---- floor, and collect walls -------------------------------------------------------------
+     const dmin = Math.floor(-cam.ox / 16) - 2;
+     const dmax = Math.ceil((W - cam.ox) / 16) + 2;
+     const smin = Math.floor(-cam.oy / 8) - 3;
+     const smax = Math.ceil((H - cam.oy + WALL_H) / 8) + 2;
+-    for (let s = smin; s <= smax; s++) {
++    for (let s = smin; solid && s <= smax; s++) {
+       for (let df = dmin; df <= dmax; df++) {
+         if ((s + df) & 1) continue;
+         const tx = (s + df) >> 1;
+@@ -437,12 +495,30 @@
+       }
+     }
+ 
++    // ---- the fires of the place (they are asked for twice below: for shadows, and for warmth) ----
++    const fires = this.fires;
++    fires.length = 0;
++    for (const p of L.props) {
++      if (!solid) break;
++      if (p.kind !== 'brazier' && p.kind !== 'forge') continue;
++      if (!L.explored[p.ty * f.w + p.tx]) continue;
++      const sx = wx(cam, p.x, p.y);
++      const sy = wy(cam, p.x, p.y);
++      if (sx < -140 || sx > W + 140 || sy < -110 || sy > H + 130) continue;
++      fires.push(p.kind === 'brazier' ? { x: p.x, y: p.y, lift: 14, reach: 6, color: FIRE_LIGHT, seed: p.variant } : { x: p.x, y: p.y + 0.4, lift: 6, reach: 5, color: FIRE_LIGHT, seed: 3 });
++    }
++
+     // ---- things lying on the floor ------------------------------------------------------------
+     for (const p of L.props) {
+       if (!L.explored[p.ty * f.w + p.tx]) continue;
+       const sx = wx(cam, p.x, p.y);
+       const sy = wy(cam, p.x, p.y);
+       if (sx < -60 || sx > W + 60 || sy < -30 || sy > H + 60) continue;
++      if (!solid) {
++        // (in 3D the body is the other painter's; the air round it still stirs)
++        if (p.kind === 'body' && p.state === 0 && Math.random() < 0.2 * amb) fx.mote(p.x, p.y, [P.tl5, P.tl4, P.white]);
++        continue;
++      }
+       if (p.kind === 'bones' || p.kind === 'rubble' || ((p.kind === 'barrel' || p.kind === 'urn') && p.state === 1)) {
+         // (what is left of a barrel is staves and a hoop; of an urn, shards)
+         const list = p.kind === 'bones' ? art.props.bones : p.kind === 'barrel' ? art.props.staves : p.kind === 'urn' ? art.props.shards : art.props.rubble;
+@@ -644,14 +720,17 @@
+         ringDots(g, cx, cy, m.r * (1.5 + 0.12 * Math.sin(t * 5)), col);
+       }
+       if (m.id === this.lockId) lockRing(g, cx, cy, Math.max(0.62, m.r * 1.9), t);
+-      ellipse(g, cx, cy, m.r * 0.75, P.black, 0.4);
++      // (in 3D a figure throws a real shadow)
++      if (solid) ellipse(g, cx, cy, m.r * 0.75, P.black, 0.4);
+     }
+-    ellipse(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.28, P.black, 0.45);
++    if (solid) ellipse(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.28, P.black, 0.45);
+     for (const o of game.orbs) ellipse(g, wx(cam, o.x, o.y), wy(cam, o.x, o.y), 0.42, P.black, 0.4);
+     for (const q of game.familiars) ellipse(g, wx(cam, q.x, q.y), wy(cam, q.x, q.y), 0.14, P.black, 0.3);
++    if (solid && !this.skip.has('cast')) this.floorLight(g, W, H, game, t);
+ 
+     // ---- everything that stands up ------------------------------------------------------------
+     for (const p of L.props) {
++      if (!solid) break;
+       if (!L.explored[p.ty * f.w + p.tx]) continue;
+       const sx = wx(cam, p.x, p.y);
+       const sy = wy(cam, p.x, p.y);
+@@ -715,32 +794,35 @@
+       const sy = wy(cam, m.x, m.y);
+       // (the Warden is twice the height of anything else: he is in the picture from further off)
+       if (sx < -60 || sx > W + 60 || sy < -30 || sy > H + (m.boss ? 130 : 80)) continue;
+-      const sp = this.monsterSprite(m);
+-      // (ice gives off no light)
+-      if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
+-      let over: Sprite | null = null;
+-      let overA = 0;
+-      if (m.flash > 0) {
+-        over = silhouette(sp, P.white);
+-        overA = 1;
+-      } else if (m.frozenT > 0) {
+-        // frozen solid: a block of pale ice
+-        over = silhouette(sp, P.bu5);
+-        overA = 0.78;
+-        this.marks.push({ x: sx, y: sy, kind: 'ice', seed: m.id });
+-      } else if (m.chillT > 0) {
+-        over = silhouette(sp, P.bu4);
+-        overA = 0.34;
+-      } else if (m.burnT > 0) {
+-        // on fire: it flickers orange under the flames
+-        over = silhouette(sp, P.fr4);
+-        overA = 0.16 + 0.14 * Math.abs(Math.sin(t * 17 + m.id));
+-      } else if (m.poisonT > 0) {
+-        // poisoned: it goes a sick green, the sicker the more doses it carries
+-        over = silhouette(sp, P.vn4);
+-        overA = Math.min(0.5, 0.2 + m.poisonN * 0.04) + 0.06 * Math.sin(t * 6 + m.id);
++      // (in 3D the figure itself, and the colour of what ails it, are the other painter's)
++      if (solid) {
++        const sp = this.monsterSprite(m);
++        // (ice gives off no light)
++        if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
++        let over: Sprite | null = null;
++        let overA = 0;
++        if (m.flash > 0) {
++          over = silhouette(sp, P.white);
++          overA = 1;
++        } else if (m.frozenT > 0) {
++          // frozen solid: a block of pale ice
++          over = silhouette(sp, P.bu5);
++          overA = 0.78;
++          this.marks.push({ x: sx, y: sy, kind: 'ice', seed: m.id });
++        } else if (m.chillT > 0) {
++          over = silhouette(sp, P.bu4);
++          overA = 0.34;
++        } else if (m.burnT > 0) {
++          // on fire: it flickers orange under the flames
++          over = silhouette(sp, P.fr4);
++          overA = 0.16 + 0.14 * Math.abs(Math.sin(t * 17 + m.id));
++        } else if (m.poisonT > 0) {
++          // poisoned: it goes a sick green, the sicker the more doses it carries
++          over = silhouette(sp, P.vn4);
++          overA = Math.min(0.5, 0.2 + m.poisonN * 0.04) + 0.06 * Math.sin(t * 6 + m.id);
++        }
++        this.stand(m.x + m.y, sp, sx, sy, over, overA);
+       }
+-      this.stand(m.x + m.y, sp, sx, sy, over, overA);
+       if (m.burnT > 0 && Math.random() < 0.55 * amb) fx.flames(m.x, m.y, 0.22, 1, 0.9);
+       if (m.chillT > 0 && m.frozenT <= 0 && Math.random() < 0.12 * amb) fx.mote(m.x + (Math.random() - 0.5) * 0.5, m.y + (Math.random() - 0.5) * 0.5, [P.white, P.bu5]);
+       if (m.poisonT > 0 && Math.random() < Math.min(0.5, 0.12 + m.poisonN * 0.05) * amb) fx.bubbles(m.x, m.y, 0.25, 1);
+@@ -748,10 +830,15 @@
+       if (m.champion && m.words.length && Math.random() < 0.25 * amb) fx.mote(m.x + (Math.random() - 0.5) * 0.8, m.y + (Math.random() - 0.5) * 0.8, [WORD_COLOR[m.words[0]], P.white]);
+     }
+ 
+-    {
++    hero: {
+       const sx = wx(cam, h.x, h.y);
+       let sy = wy(cam, h.x, h.y);
+       if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 24;
++      if (this.look3d) {
++        // In 3D the figure is the other painter's. What hangs over it is still drawn here.
++        this.heroOver(game, fx, sx, sy, this.look3d.hero[h.cls], pace, amb, live);
++        break hero;
++      }
+       const heroArt = this.heroArt(game);
+       const leapK = h.move && h.move.kind === 'leap' ? Math.min(1, h.move.t / h.move.dur) : -1;
+       // The figure: the frame for what the hero is doing, with the scarf and the feather moved on.
+@@ -1058,8 +1145,24 @@
+     }
+ 
+     // ---- darkness, with holes cut by every light ----------------------------------------------
+-    this.light(W, H, game, t, fx);
+-    g.drawImage(this.dark, 0, 0);
++    // (in 3D the dark is real: what no light reaches is dark there already)
++    if (solid) {
++      this.light(W, H, game, t, fx);
++      g.drawImage(this.dark, 0, 0);
++    }
++
++    // ---- the warmth of every fire: on the floor round it, on the wall behind it, on whoever stands near
++    if (solid && !this.skip.has('warm')) {
++      for (const q of fires) {
++        const sx = wx(cam, q.x, q.y);
++        const sy = wy(cam, q.x, q.y);
++        // (a fire is never still: its light breathes with it)
++        const beat = 1 + 0.045 * Math.sin(t * 9 + q.seed) + 0.03 * Math.sin(t * 23 + q.seed * 1.7);
++        const r = q.reach * 10 * beat;
++        drawPool(g, sx, sy - 1, r, r * 0.54, q.color, 0.14);
++        drawPool(g, sx, sy - q.lift - 8, r * 0.6, r * 0.6, q.color, 0.14);
++      }
++    }
+ 
+     // ---- things that glow, then text ----------------------------------------------------------
+     // what shines on the hero (a lit blade, a crystal, a feather)
+@@ -1171,6 +1274,155 @@
+     return cam;
+   }
+ 
++  /**
++   * The hero, when the figure itself is drawn in 3D by the other painter: where the bar of their
++   * life hangs and how full it is, where the line they speak is written, and the motes and the
++   * wake that the pixel painter throws off them.
++   */
++  private heroOver(game: Game, fx: Fx, sx: number, sy: number, head: number, pace: number, amb: number, live: boolean): void {
++    const h = game.hero;
++    const who = `${h.cls}:${game.seed}`;
++    if (who !== this.figureOf) {
++      this.figureOf = who;
++      this.figure.reset();
++      this.lifeBar.reset();
++    }
++    const fight = game.monsters.some((m) => !m.dead && m.state !== 'sleep' && Math.abs(m.x - h.x) + Math.abs(m.y - h.y) < 14);
++    const top = head + (game.meta.limit === 'mana' ? 2 : 0);
++    this.heroAt = { x: Math.round(sx), y: Math.round(sy), top };
++    fx.headroom = top;
++    this.lifeBar.update(h.life / Math.max(1, h.d.maxLife), fight, game.over || !!game.level.town, pace / 60);
++    this.heroLit = null;
++    if (h.burnT > 0 && Math.random() < 0.4 * amb) fx.mote(h.x, h.y, ELEMENT_RAMP.fire);
++    if (h.hasteT > 0 && live && Math.hypot(h.x - this.blurAt.x, h.y - this.blurAt.y) > 0.32) {
++      this.blurAt.x = h.x;
++      this.blurAt.y = h.y;
++      fx.hasteWake(h.x, h.y, h.fx, h.fy);
++    }
++    // (the phantoms are pictures of the pixel figure: there are none in 3D yet)
++    fx.ghostAsks.length = 0;
++    this.ghosts.length = 0;
++  }
++
++  /**
++   * The light that lies on the floor, and the shadows in it. The owner, 5 Oct 2026: "And everything
++   * looks too flat". Every fire throws a pool of its colour on the floor round it, and the hero
++   * carries a paler one (theirs is the light a room is mostly seen by); and whatever stands up in
++   * a pool keeps the light off the floor behind it. So the pillars throw shadows that turn as the
++   * hero walks past them, and whatever comes out of the dark comes with its shadow before it.
++   *
++   * Each pool is painted by itself on a scratch picture, the shadows that belong to THAT light are
++   * cut out of it (two flat steps: the whole shadow, and a deeper part next to what throws it),
++   * and the result is added to the floor. This is done before anything that stands is drawn: a
++   * shadow is a thing of the floor, and must not fall across the pillar that throws it. (What
++   * stands is warmed after the darkness is laid down: see `draw`.) A shadow stops at the foot of
++   * a wall.
++   */
++  private floorLight(g: CanvasRenderingContext2D, W: number, H: number, game: Game, t: number): void {
++    const cam = this.cam;
++    const L = game.level;
++    const f = L.floor;
++    const h = game.hero;
++    const floorAt = (x: number, y: number): boolean => {
++      const tx = Math.floor(x);
++      const ty = Math.floor(y);
++      return tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && f.tiles[ty * f.w + tx] === T_FLOOR;
++    };
++    // what throws a shadow: [x, y, how wide at the foot, how tall], in tiles
++    const casters = this.casters;
++    casters.length = 0;
++    const seen = (x: number, y: number): boolean => {
++      const sx = wx(cam, x, y);
++      const sy = wy(cam, x, y);
++      return sx > -90 && sx < W + 90 && sy > -70 && sy < H + 70;
++    };
++    for (const p of L.props) {
++      const c = CASTS[p.kind];
++      if (!c || !L.explored[p.ty * f.w + p.tx] || !seen(p.x, p.y)) continue;
++      // (what has been broken throws nothing: its pieces lie flat)
++      if ((p.kind === 'barrel' || p.kind === 'urn') && p.state === 1) continue;
++      casters.push(p.x, p.y, c[0], c[1]);
++    }
++    for (const m of game.monsters) {
++      if (m.dead || !m.seen || !seen(m.x, m.y)) continue;
++      casters.push(m.x, m.y, Math.max(0.2, m.r * 0.75), FIGURE_SIZE[figureOf(m)].top / 16);
++    }
++    const others = casters.length;
++    casters.push(h.x, h.y, 0.24, 1.7);
++
++    const sc = this.scratch;
++    const sg = this.sg;
++    /** One pool: at (lx, ly), `rx` game pixels to either side, reaching `reach` tiles; `n` of the casters stand in it. */
++    const pool = (lx: number, ly: number, rx: number, reach: number, color: string, a: number, n: number): void => {
++      const cx = wx(cam, lx, ly);
++      const cy = wy(cam, lx, ly);
++      const ry = rx * 0.54;
++      if (cx < -rx || cx > W + rx || cy < -ry || cy > H + ry) return;
++      const sw = Math.ceil(rx * 2);
++      const sh = Math.ceil(ry * 2);
++      if (sc.width < sw || sc.height < sh) {
++        sc.width = Math.max(sc.width, sw);
++        sc.height = Math.max(sc.height, sh);
++      }
++      const x0 = Math.round(cx - rx);
++      const y0 = Math.round(cy - ry);
++      sg.setTransform(1, 0, 0, 1, 0, 0);
++      sg.globalCompositeOperation = 'source-over';
++      sg.globalAlpha = 1;
++      sg.clearRect(0, 0, sw, sh);
++      sg.drawImage(glowOf(color), 0, 0, sw, sh);
++      sg.globalCompositeOperation = 'destination-out';
++      sg.fillStyle = '#000';
++      sg.translate(-x0, -y0);
++      for (let i = 0; i < n; i += 4) {
++        const px = casters[i];
++        const py = casters[i + 1];
++        const wide = casters[i + 2];
++        const tall = casters[i + 3];
++        const dx = px - lx;
++        const dy = py - ly;
++        const d = Math.hypot(dx, dy);
++        if (d < 0.3 || d >= reach) continue;
++        const ux = dx / d;
++        const uy = dy / d;
++        // (the farther from the light, the longer; and a tall thing throws a longer one than a low one)
++        let len = Math.min(0.9 + 1.0 * tall, 0.5 + 0.5 * d);
++        let run = 0;
++        while (run < len && floorAt(px + ux * (run + 0.3), py + uy * (run + 0.3))) run += 0.2;
++        len = Math.min(len, run + 0.15);
++        if (len < 0.25) continue;
++        const qx = -uy;
++        const qy = ux;
++        const quad = (l1: number, w1: number, alpha: number): void => {
++          const l0 = -wide * 0.3;
++          sg.globalAlpha = alpha;
++          sg.beginPath();
++          sg.moveTo(wx(cam, px + ux * l0 + qx * wide, py + uy * l0 + qy * wide), wy(cam, px + ux * l0 + qx * wide, py + uy * l0 + qy * wide));
++          sg.lineTo(wx(cam, px + ux * l1 + qx * w1, py + uy * l1 + qy * w1), wy(cam, px + ux * l1 + qx * w1, py + uy * l1 + qy * w1));
++          sg.lineTo(wx(cam, px + ux * l1 - qx * w1, py + uy * l1 - qy * w1), wy(cam, px + ux * l1 - qx * w1, py + uy * l1 - qy * w1));
++          sg.lineTo(wx(cam, px + ux * l0 - qx * wide, py + uy * l0 - qy * wide), wy(cam, px + ux * l0 - qx * wide, py + uy * l0 - qy * wide));
++          sg.closePath();
++          sg.fill();
++        };
++        quad(len, wide * 1.4, 0.55);
++        quad(len * 0.55, wide * 1.2, 0.8);
++      }
++      sg.setTransform(1, 0, 0, 1, 0, 0);
++      const before = g.globalCompositeOperation;
++      g.globalCompositeOperation = 'lighter';
++      g.globalAlpha = a;
++      g.drawImage(sc, 0, 0, sw, sh, x0, y0, sw, sh);
++      g.globalAlpha = 1;
++      g.globalCompositeOperation = before;
++    };
++    // the hero's own light: pale, and it throws the shadows of everything but the hero
++    pool(h.x, h.y, 132, 8.5, HERO_LIGHT, 0.2, others);
++    for (const q of this.fires) {
++      const beat = 1 + 0.045 * Math.sin(t * 9 + q.seed) + 0.03 * Math.sin(t * 23 + q.seed * 1.7);
++      pool(q.x, q.y, q.reach * 11 * beat, q.reach + 0.5, q.color, 0.34, casters.length);
++    }
++  }
++
+   /** A shaft of light standing on a point of the floor: bright at its foot, thinning as it climbs. */
+   private shaft(g: CanvasRenderingContext2D, sx: number, sy: number, tall: number, color: string, t: number, grow: number): void {
+     for (let i = 0; i < tall * grow; i += 2) {
+@@ -1363,7 +1615,7 @@
+       if (m.barT <= 0 && !m.elite && m.id !== this.lockId) continue;
+       // (over its head as it stands: a club or a sword raised above it passes in front of the bar)
+       const sx = Math.round(wx(cam, m.x, m.y));
+-      const sy = Math.round(wy(cam, m.x, m.y)) - FIGURE_SIZE[figureOf(m)].top - 5;
++      const sy = Math.round(wy(cam, m.x, m.y)) - this.topOf(m) - 5;
+       const w = m.champion ? 34 : m.elite ? 24 : 16;
+       g.fillStyle = P.ink;
+       g.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 4);
+@@ -1419,7 +1671,7 @@
+       const carried = game.wordsCarried(m);
+       if (!carried.length) continue;
+       const sx = Math.round(wx(cam, m.x, m.y));
+-      const top = Math.round(wy(cam, m.x, m.y)) - FIGURE_SIZE[figureOf(m)].top - (m.boss ? 6 : 15);
++      const top = Math.round(wy(cam, m.x, m.y)) - this.topOf(m) - (m.boss ? 6 : 15);
+       const bob = Math.round(Math.sin(t * 3 + m.id) * 1.5);
+       carried.forEach((w, i) => {
+         const icon = this.art.icons.word[w];

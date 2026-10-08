@@ -1,0 +1,149 @@
+// DOORS AND GATES, THE SECOND LOOK: MOCK-UPS, photographed (a scratch copy: NOT THE GAME; no door
+// exists in the rules). The owner, 7 Oct 2026, 16:57, of the first look: a stone arch over the
+// gates, an emblem in the middle of the boss's, a stone frame round the doors that makes them
+// narrower than the hallway, and one leaf that opens from one side.
+// Begins a run, goes into dungeon number DEPTH, and in the room asked for stands the pictures of
+// art/gates2.ts in its doorways (render.ts, `mock`), the dungeon lit and asleep.
+//   ROOM=5        the room, by number (LIST=1 says what rooms there are and where their doorways are)
+//   AT='6.5,7'    where the hero stands, in tiles from the room's back corner (else its middle)
+//   FACE='1,0'    which way the hero looks (world x, y)
+//   PUT='fr:door:shut;nr:gate:0:lever'   what stands in the doorways of each side:
+//        sides   fr far-right (the back wall that runs down the screen to the right), fl far-left,
+//                nl near-left (the side toward the eye that runs down to the right), nr near-right
+//        door:shut | door:open [:bare]    a door in its frame of two posts and a lintel, the tile on either side
+//                                         of it wall (bare: on a back wall, the wall does not run on to the frame)
+//        gate:<raise>[:lever][:pulled]    a gate under its arch, <raise> PICTURE pixels off the floor
+//        boss:<raise>[:lit]               the boss's gate (lit: the emblem's eyes alight)
+//   NOMON=1       no monsters
+import { log } from './lib.mjs';
+
+export default async function (page, snap) {
+  const cls = process.env.CLS || 'warrior';
+  const seed = Number(process.env.SEED || 6);
+  const depth = Number(process.env.DEPTH || 2);
+  const want = Number(process.env.ROOM || 5);
+  const put = (process.env.PUT || '').split(';').filter(Boolean).map((s) => s.split(':'));
+  const info = await page.evaluate(([cls, seed, depth, want, put, nomon, at, facing]) => {
+    const d = window.__dbg; d.saving(false);
+    d.run(cls, seed);
+    const g = d.game();
+    g.depth = depth; g.enterDungeon();
+    d.autoLevel = false; d.autoWords = false; d.god = true;
+    g.wakeUp = () => {};
+    if (nomon) g.monsters.length = 0;
+    const f = g.level.floor;
+    clearInterval(window.__still);
+    window.__still = setInterval(() => { const h = g.hero; for (const m of g.monsters) { m.state = 'sleep'; m.seen = true; } h.invuln = 1; h.flash = 0; g.level.explored.fill(1); g.level.visible.fill(1); window.__dbg.fx.messages.length = 0; }, 3);
+    const inRoom = (x, y) => f.rooms.some((q) => x >= q.x && y >= q.y && x < q.x + q.w && y < q.y + q.h);
+    const corr = (x, y) => x >= 0 && y >= 0 && x < f.w && y < f.h && f.tiles[y * f.w + x] === 1 && !(f.cut && f.cut[y * f.w + x]) && !inRoom(x, y);
+    // the doorways of a room: on each side, the runs of three tiles of corridor floor in the wall's row
+    const doorways = (r) => {
+      const sides = { fr: [r.x, r.y - 1, 1, 0, r.w], nr: [r.x + r.w, r.y, 0, 1, r.h], nl: [r.x, r.y + r.h, 1, 0, r.w], fl: [r.x - 1, r.y, 0, 1, r.h] };
+      const out = [];
+      for (const [side, [x, y, dx, dy, len]] of Object.entries(sides)) {
+        let run = 0;
+        for (let k = 0; k <= len; k++) {
+          if (k < len && corr(x + dx * k, y + dy * k)) run++;
+          else { if (run === 3) out.push({ side, at: k - 3 }); run = 0; }
+        }
+      }
+      return out;
+    };
+    const rooms = f.rooms.map((r) => ({ id: r.id, kind: r.kind, x: r.x, y: r.y, w: r.w, h: r.h, doors: doorways(r).map((q) => `${q.side}@${q.at}`).join(' ') }));
+    const r = f.rooms.find((q) => q.id === want);
+    if (!r) return { rooms, stood: null, placed: [] };
+    const R = d.renderer;
+    const G = d.gates2;
+    const mock = [];
+    const placed = [];
+    R.keep.clear(); R.thin.clear();
+    for (const dw of doorways(r)) {
+      const what = put.find((q) => q[0] === dw.side);
+      if (!what) continue;
+      const alongX = dw.side === 'fr' || dw.side === 'nl';
+      const near = dw.side === 'nl' || dw.side === 'nr';
+      // the row (or column) of wall the doorway is in; the plane of that wall's face that is turned to the eye
+      const line = dw.side === 'fr' ? r.y - 1 : dw.side === 'nl' ? r.y + r.h : dw.side === 'fl' ? r.x - 1 : r.x + r.w;
+      const face = line + 1;
+      const a = (alongX ? r.x : r.y) + dw.at;
+      // (a place t tiles along that plane from where the doorway begins, `back` tiles behind it)
+      const on = (t, back = 0) => (alongX ? [a + t, face - back] : [face - back, a + t]);
+      const thin = what.includes('thin') ? 0.38 : 1;
+      const strips = (list, t0, back) => { for (const st of list) { const [x, y] = on(t0 + st.t, back); mock.push({ s: st.s, x, y, d: x + y + 0.125, a: thin }); } };
+      if (what[1] === 'door') {
+        // THE DOOR: a tile wide, in the middle of the three. The tile on either side of it is WALL: drawn or
+        // left out as the walls' own look has it (none toward the eye, none that would hide floor), but the
+        // one on a back wall that the wall runs on into, which stands.
+        for (const k of [0, 2]) {
+          const [tx, ty] = alongX ? [a + k, line] : [line, a + k];
+          const i = ty * f.w + tx;
+          f.tiles[i] = 2;
+          g.level.walk[i] = 0;
+          if (!near && k === 0 && !what.includes('bare')) R.keep.add(i);
+        }
+        // its frame: a post at each side of the opening, and the lintel across their heads
+        const PW = G.postWide / 32;
+        const post = G.post();
+        for (const p of [on(1), on(2 + PW)]) mock.push({ s: post, x: p[0], y: p[1], d: p[0] + p[1] - PW, a: 1 });
+        strips(G.lintel(alongX), 1, 0);
+        // its one leaf, hung on the post the doorway begins at: shut, across the opening; open, swung back into the way through
+        const open = what[2] === 'open';
+        const [hx, hy] = on(1);
+        const end = alongX ? (open ? [32, -16] : [32, 16]) : open ? [-32, -16] : [-32, 16];
+        mock.push({ s: G.leaf(end[0], end[1]), x: hx, y: hy, d: hx + hy + (open ? -0.2 : 0.5), a: 1 });
+        placed.push(`${dw.side}: a door, ${open ? 'open' : 'shut'}, hinge at ${hx},${hy}`);
+      } else {
+        // A GATE: the whole doorway wide, between two pillars that carry its arch. THE BOSS'S: taller, heavier, with the emblem.
+        const boss = what[1] === 'boss';
+        const raise = Number(what[2] || 0);
+        const opts = what.slice(3);
+        const PW = G.pillarWide / 32;
+        const pil = G.pillar(boss);
+        for (const p of [on(0), on(3 + PW)]) mock.push({ s: pil, x: p[0], y: p[1], d: p[0] + p[1] - PW, a: 1 });
+        // (the portcullis stands at the back of the arch, and runs up behind its stones)
+        strips(G.gate(alongX, boss, raise), -PW, PW);
+        const arch = G.arch(alongX, boss, boss ? (opts.includes('lit') ? 'lit' : 'dim') : 'none');
+        if (boss && opts.includes('lit')) {
+          // (the light of the emblem's eyes, on the strip that has the middle of the arch)
+          const mid = arch.find((st) => Math.abs(st.t * 32 - (48 + G.pillarWide - 4)) < 1);
+          if (mid) mid.s.lights = [{ x: 2, y: (mid.s.h * 2 - 4 - G.eyes(true)) / 2, r: 20, color: '#ff4f8a', a: 0.28 }];
+        }
+        strips(arch, -PW, 0);
+        const plane = dw.side === 'fr' ? r.y : dw.side === 'nl' ? r.y + r.h : dw.side === 'fl' ? r.x : r.x + r.w;
+        const inward = near ? -1 : 1;
+        if (opts.includes('lever')) {
+          // (of four places beside the doorway, inside the room, the one furthest from anything else that stands there)
+          const cand = [];
+          for (const side of [a - 1.2, a + 3 + 1.2]) for (const deep of [1.7, 2.7]) cand.push(alongX ? [side, plane + inward * deep] : [plane + inward * deep, side]);
+          const room = (q) => Math.min(9, ...g.level.props.map((o) => Math.hypot(o.x - q[0], o.y - q[1])));
+          const ok = cand.filter(([x, y]) => g.free(g.level.walk, x, y, 0.3)).sort((p1, p2) => room(p2) - room(p1));
+          const [x, y] = ok[0] || cand[0];
+          mock.push({ s: d.gates.lever(opts.includes('pulled')), x, y, d: x + y, a: 1 });
+        }
+        placed.push(`${dw.side}: ${boss ? "the boss's gate" : 'a gate'} ${raise} up, from ${on(0)} to ${on(3)}${opts.includes('lever') ? ', a lever' : ''}`);
+      }
+    }
+    R.forget();
+    R.mock = mock;
+    // the hero
+    const h = g.hero;
+    const c = at ? [r.x + at[0], r.y + at[1]] : [r.x + r.w / 2, r.y + r.h / 2];
+    let best = null; let bd = 1e9;
+    for (let y = c[1] - 3; y <= c[1] + 3; y += 0.25) for (let x = c[0] - 3; x <= c[0] + 3; x += 0.25) {
+      if (!g.free(g.level.walk, x, y, 0.3)) continue;
+      let nearM = 1e9;
+      for (const m of g.monsters) nearM = Math.min(nearM, Math.hypot(m.x - x, m.y - y));
+      const dd = Math.hypot(x - c[0], y - c[1]) + (nearM < 1.6 ? 50 : 0);
+      if (dd < bd) { bd = dd; best = [x, y]; }
+    }
+    if (best) { h.x = best[0]; h.y = best[1]; }
+    h.fx = facing ? facing[0] : 0.7; h.fy = facing ? facing[1] : 0.7; h.move = null;
+    return { rooms, stood: best, placed };
+  }, [cls, seed, depth, want, put, process.env.NOMON === '1', process.env.AT ? process.env.AT.split(',').map(Number) : null, process.env.FACE ? process.env.FACE.split(',').map(Number) : null]);
+  log('rooms', info.rooms.map((r) => `${r.id}:${r.kind} ${r.w}x${r.h} at ${r.x},${r.y} [${r.doors}]`).join(' | '));
+  if (process.env.LIST === '1') return;
+  for (const p of info.placed) log('placed', p);
+  log('the hero stands at', String(info.stood));
+  await page.waitForTimeout(1000);
+  await snap(process.env.NAME || `room${want}`);
+}

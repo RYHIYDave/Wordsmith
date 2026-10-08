@@ -1,0 +1,14 @@
+# Your monster: THE CULTIST
+
+File: `src/art/monster_cultist.ts`. It exports `paintCultist(q, back)` (a `Rig`) and `makeCultistArt()`. Preview: `src/dev/preview_m_cultist.ts`.
+
+Concept painting: `cultist(L)` in `src/dev/styles_cast.ts` (with `flame`, `frame` and `inEllipse` in the same file), in the look `NEON` at the bottom of `src/dev/styles.ts`. It is the second monster on the lower half of the style sheet. NOTE: the concept faces screen-LEFT (it was painted facing the hero). Yours faces screen-RIGHT: mirror it. `previews/monsters.png` shows the cultist as the game has it today (old, coarse art).
+
+What the owner said yes to: a figure in a long robe of dark violet (`GLOOM`) that flares to the floor, no feet showing; a deep cowl with a point, its opening pure `INK` with two eyes of `SOCKET` in it and a lighter rim on the lit side; a stole (a strip of cloth down the front) in `PINK`, with a sign on it in `FLAME`; a rope of `BONE` round the waist with one end hanging; pale hands of `BONE`; the near arm raised, palm up, with a FLAME standing over the palm (`FLAME`: a teardrop with a bright heart), the wide sleeve hanging open below the forearm; the far hand low, holding a crooked knife point down (`STEEL`).
+
+- Size: the tip of the cowl about 58 picture pixels above the floor (the knight's helm comes to 66), narrower than the knight at the shoulder, wide at the hem.
+- It gives off light. The flame is a `Light` in the frame's `lights` (colour `FLAME[3]`, r about 22, a about 0.55 at rest), and the eyes are two small ones (r about 5).
+- Standing: the flame is alive. Its shape and its lean change with `wind` (at least four clearly different flames round the loop) and its light breathes with it; the cowl dips slowly; the hem and the open sleeve stir.
+- Walking: it glides, but it is a person in a robe, not a ghost. The hem swings from side to side and kicks out ahead with each step (`near`, `far`), the tip of a foot may show under it, the body bobs, the flame streams back (`drag`), the knife hand swings.
+- Attack: `hit` = 0.75. It throws fire. Wound up: the flame hand lifted high over the cowl and the flame SWELLING to three times its size, white-gold at the heart, with a much bigger and brighter light (this is the warning, and it should be seen from across the screen); the body arched back, the sleeve fallen to the elbow, the knife hand flung wide. Use `act` for how big the flame is. Blow: the arm whipped forward and down to point at the hero, the hand EMPTY (the game draws the bolt that flies), a last lick of flame at the fingertips. After: bent forward over the outstretched arm; then it straightens and a small new flame kindles in the palm, so that the last frame matches the standing pose.
+- From behind: the back of the cowl with its point and the folds falling from it, no stole (perhaps its two ends over the shoulders), the rope's knot, and the flame seen past the shoulder on the side it is held, its light still showing.

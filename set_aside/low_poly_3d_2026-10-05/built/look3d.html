@@ -1,0 +1,1940 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>look3d</title>
+<style>
+:root{--bg:#07050a;--fg:#d8d0c6;color-scheme:dark}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+<script>
+"use strict";
+(() => {
+  // src/gl/vec.ts
+  var sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  var dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  var cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  var len = (a) => Math.hypot(a[0], a[1], a[2]);
+  var norm = (a) => {
+    const l = len(a) || 1;
+    return [a[0] / l, a[1] / l, a[2] / l];
+  };
+  function ident() {
+    const m = new Float32Array(16);
+    m[0] = m[5] = m[10] = m[15] = 1;
+    return m;
+  }
+  function mmul(a, b) {
+    const o = new Float32Array(16);
+    for (let c = 0; c < 4; c++) {
+      for (let r = 0; r < 4; r++) {
+        o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+      }
+    }
+    return o;
+  }
+  function mats(...ms) {
+    let o = ms[0];
+    for (let i = 1; i < ms.length; i++) o = mmul(o, ms[i]);
+    return o;
+  }
+  function translate(x, y, z) {
+    const m = ident();
+    m[12] = x;
+    m[13] = y;
+    m[14] = z;
+    return m;
+  }
+  function scale(x, y = x, z = x) {
+    const m = ident();
+    m[0] = x;
+    m[5] = y;
+    m[10] = z;
+    return m;
+  }
+  function rotX(deg) {
+    const a = deg * Math.PI / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const m = ident();
+    m[5] = c;
+    m[6] = s;
+    m[9] = -s;
+    m[10] = c;
+    return m;
+  }
+  function rotY(deg) {
+    const a = deg * Math.PI / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const m = ident();
+    m[0] = c;
+    m[2] = -s;
+    m[8] = s;
+    m[10] = c;
+    return m;
+  }
+  function rotZ(deg) {
+    const a = deg * Math.PI / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const m = ident();
+    m[0] = c;
+    m[1] = s;
+    m[4] = -s;
+    m[5] = c;
+    return m;
+  }
+  function apply(m, p) {
+    return [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]];
+  }
+  function lookAt(eye, at2, up) {
+    const f = norm(sub(at2, eye));
+    const r = norm(cross(f, up));
+    const u = cross(r, f);
+    const m = ident();
+    m[0] = r[0];
+    m[4] = r[1];
+    m[8] = r[2];
+    m[1] = u[0];
+    m[5] = u[1];
+    m[9] = u[2];
+    m[2] = -f[0];
+    m[6] = -f[1];
+    m[10] = -f[2];
+    m[12] = -dot(r, eye);
+    m[13] = -dot(u, eye);
+    m[14] = dot(f, eye);
+    return m;
+  }
+  function ortho(hw, hh, near, far) {
+    const m = ident();
+    m[0] = 1 / hw;
+    m[5] = 1 / hh;
+    m[10] = -2 / (far - near);
+    m[14] = -(far + near) / (far - near);
+    return m;
+  }
+  function perspective(fovy, aspect, near, far) {
+    const f = 1 / Math.tan(fovy * Math.PI / 360);
+    const m = new Float32Array(16);
+    m[0] = f / aspect;
+    m[5] = f;
+    m[10] = (far + near) / (near - far);
+    m[11] = -1;
+    m[14] = 2 * far * near / (near - far);
+    return m;
+  }
+
+  // src/gl/mesh.ts
+  var toLinear = (c) => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  function hex(c) {
+    const n = (i) => toLinear(parseInt(c.slice(1 + i * 2, 3 + i * 2), 16) / 255);
+    return [n(0), n(1), n(2)];
+  }
+  var tone = (c, k2) => [c[0] * k2, c[1] * k2, c[2] * k2];
+  var blend = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  function rnd(a, b = 0, c = 0) {
+    let h = Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263) + Math.imul(c | 0, 2147483647) | 0;
+    h = Math.imul(h ^ h >>> 13, 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  }
+  var STRIDE = 7;
+  var Mesh = class {
+    constructor() {
+      this.data = [];
+    }
+    get triangles() {
+      return this.data.length / (STRIDE * 3);
+    }
+    tri(a, b, c, col, glow = 0) {
+      this.data.push(a[0], a[1], a[2], col[0], col[1], col[2], glow, b[0], b[1], b[2], col[0], col[1], col[2], glow, c[0], c[1], c[2], col[0], col[1], col[2], glow);
+      return this;
+    }
+    /** Four corners in order round the face (counter-clockwise from outside). */
+    quad(a, b, c, d, col, glow = 0) {
+      return this.tri(a, b, c, col, glow).tri(a, c, d, col, glow);
+    }
+    /** A flat face of any number of corners (it must bulge nowhere inward), in order round it. */
+    face(pts, col, glow = 0) {
+      for (let i = 1; i < pts.length - 1; i++) this.tri(pts[0], pts[i], pts[i + 1], col, glow);
+      return this;
+    }
+    /** Seen from both sides (cloth, a wing, a leaf). */
+    sheet(pts, col, back = col, glow = 0) {
+      this.face(pts, col, glow);
+      return this.face([...pts].reverse(), back, glow);
+    }
+    /**
+     * For a solid that bulges nowhere inward: turn every triangle to face away from the point `c`
+     * inside it. (So its faces can be written down in any order.)
+     */
+    outward(c) {
+      const d = this.data;
+      for (let t = 0; t < d.length; t += STRIDE * 3) {
+        const a = [d[t], d[t + 1], d[t + 2]];
+        const b = [d[t + STRIDE], d[t + STRIDE + 1], d[t + STRIDE + 2]];
+        const e = [d[t + STRIDE * 2], d[t + STRIDE * 2 + 1], d[t + STRIDE * 2 + 2]];
+        const n = cross(sub(b, a), sub(e, a));
+        const mid = [(a[0] + b[0] + e[0]) / 3 - c[0], (a[1] + b[1] + e[1]) / 3 - c[1], (a[2] + b[2] + e[2]) / 3 - c[2]];
+        if (n[0] * mid[0] + n[1] * mid[1] + n[2] * mid[2] >= 0) continue;
+        for (let k2 = 0; k2 < STRIDE; k2++) {
+          const s = d[t + STRIDE + k2];
+          d[t + STRIDE + k2] = d[t + STRIDE * 2 + k2];
+          d[t + STRIDE * 2 + k2] = s;
+        }
+      }
+      return this;
+    }
+    /** Another mesh, moved by `m`, and tinted. */
+    add(o, m, tint) {
+      const d = o.data;
+      for (let i = 0; i < d.length; i += STRIDE) {
+        const p = m ? apply(m, [d[i], d[i + 1], d[i + 2]]) : [d[i], d[i + 1], d[i + 2]];
+        if (tint) this.data.push(p[0], p[1], p[2], d[i + 3] * tint[0], d[i + 4] * tint[1], d[i + 5] * tint[2], d[i + 6]);
+        else this.data.push(p[0], p[1], p[2], d[i + 3], d[i + 4], d[i + 5], d[i + 6]);
+      }
+      if (m && det3(m) < 0) {
+        const n = this.data.length;
+        for (let t = n - o.data.length; t < n; t += STRIDE * 3) {
+          for (let k2 = 0; k2 < STRIDE; k2++) {
+            const s = this.data[t + STRIDE + k2];
+            this.data[t + STRIDE + k2] = this.data[t + STRIDE * 2 + k2];
+            this.data[t + STRIDE * 2 + k2] = s;
+          }
+        }
+      }
+      return this;
+    }
+  };
+  function det3(m) {
+    return m[0] * (m[5] * m[10] - m[6] * m[9]) - m[4] * (m[1] * m[10] - m[2] * m[9]) + m[8] * (m[1] * m[6] - m[2] * m[5]);
+  }
+  var paintOf = (p) => Array.isArray(p) ? { side: p } : p;
+  var varied = (c, p, i) => p.vary ? tone(c, 1 + (rnd(i, p.seed ?? 0, 7) - 0.5) * 2 * p.vary) : c;
+  function box(x0, y0, z0, x1, y1, z1, paint2) {
+    const p = paintOf(paint2);
+    const m = new Mesh();
+    const g = p.glow ?? 0;
+    m.quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], varied(p.top ?? p.side, p, 0), g);
+    m.quad([x0, y1, z0], [x1, y1, z0], [x1, y0, z0], [x0, y0, z0], varied(p.bottom ?? p.side, p, 1), g);
+    m.quad([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], varied(p.side, p, 2), g);
+    m.quad([x1, y1, z0], [x0, y1, z0], [x0, y1, z1], [x1, y1, z1], varied(p.side, p, 3), g);
+    m.quad([x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1], varied(p.side, p, 4), g);
+    m.quad([x0, y1, z0], [x0, y0, z0], [x0, y0, z1], [x0, y1, z1], varied(p.side, p, 5), g);
+    return m;
+  }
+  function lathe(rings, n, paint2, turn = 0) {
+    const p = paintOf(paint2);
+    const m = new Mesh();
+    const g = p.glow ?? 0;
+    const at2 = (ring, i) => {
+      const a = (turn + i * 360 / n) * Math.PI / 180;
+      const rx = ring[0];
+      const ry = ring.length > 2 ? ring[1] : ring[0];
+      return [Math.cos(a) * rx, Math.sin(a) * ry, ring[ring.length - 1]];
+    };
+    for (let k2 = 0; k2 < rings.length - 1; k2++) {
+      for (let i = 0; i < n; i++) {
+        const a = at2(rings[k2], i);
+        const b = at2(rings[k2], i + 1);
+        const c = at2(rings[k2 + 1], i + 1);
+        const d = at2(rings[k2 + 1], i);
+        const col = varied(p.side, p, k2 * 31 + i);
+        if (rings[k2 + 1][0] === 0) m.tri(a, b, c, col, g);
+        else if (rings[k2][0] === 0) m.tri(a, c, d, col, g);
+        else m.quad(a, b, c, d, col, g);
+      }
+    }
+    const first = rings[0];
+    const last = rings[rings.length - 1];
+    if (first[0] > 0) m.face(Array.from({ length: n }, (_, i) => at2(first, n - i)), varied(p.bottom ?? p.side, p, 901), g);
+    if (last[0] > 0) m.face(Array.from({ length: n }, (_, i) => at2(last, i)), varied(p.top ?? p.side, p, 902), g);
+    return m;
+  }
+  function ball(rx, ry, rz, paint2, fine = false) {
+    const p = paintOf(paint2);
+    const m = new Mesh();
+    const t = (1 + Math.sqrt(5)) / 2;
+    const vs = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]].map(norm);
+    const fs = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+    let tris = fs.map((f) => [vs[f[0]], vs[f[1]], vs[f[2]]]);
+    if (fine) {
+      const out = [];
+      for (const [a, b, c] of tris) {
+        const ab = norm([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]);
+        const bc = norm([(b[0] + c[0]) / 2, (b[1] + c[1]) / 2, (b[2] + c[2]) / 2]);
+        const ca = norm([(c[0] + a[0]) / 2, (c[1] + a[1]) / 2, (c[2] + a[2]) / 2]);
+        out.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]);
+      }
+      tris = out;
+    }
+    const s = (v) => [v[0] * rx, v[1] * ry, v[2] * rz];
+    tris.forEach(([a, b, c], i) => {
+      const out = cross(sub(b, a), sub(c, a));
+      const facesOut = out[0] * a[0] + out[1] * a[1] + out[2] * a[2] > 0;
+      const col = varied(a[2] + b[2] + c[2] > 1.8 && p.top ? p.top : p.side, p, i);
+      if (facesOut) m.tri(s(a), s(b), s(c), col, p.glow ?? 0);
+      else m.tri(s(a), s(c), s(b), col, p.glow ?? 0);
+    });
+    return m;
+  }
+  function slab(outline, thick, paint2) {
+    const p = paintOf(paint2);
+    const m = new Mesh();
+    const g = p.glow ?? 0;
+    const h = thick / 2;
+    let area = 0;
+    for (let i = 0; i < outline.length; i++) {
+      const [x0, z0] = outline[i];
+      const [x1, z1] = outline[(i + 1) % outline.length];
+      area += x0 * z1 - x1 * z0;
+    }
+    if (area < 0) outline = [...outline].reverse();
+    const front = outline.map(([x, z]) => [x, -h, z]);
+    const back = outline.map(([x, z]) => [x, h, z]);
+    m.face(front, varied(p.side, p, 0), g);
+    m.face([...back].reverse(), varied(p.side, p, 1), g);
+    for (let i = 0; i < outline.length; i++) {
+      const j = (i + 1) % outline.length;
+      m.quad(front[j], front[i], back[i], back[j], varied(p.top ?? p.side, p, 2 + i), g);
+    }
+    return m;
+  }
+
+  // src/gl/gl.ts
+  var MAX_LIGHTS = 16;
+  var f32 = (a) => new Float32Array(a);
+  var VS = `#version 300 es
+layout(location=0) in vec3 aPos;
+layout(location=1) in vec3 aCol;
+layout(location=2) in float aGlow;
+uniform mat4 uModel;
+uniform mat4 uViewProj;
+uniform mat4 uMoonMat;
+uniform mat4 uFireMat;
+out vec3 vWorld;
+out vec3 vCol;
+out float vGlow;
+out vec4 vMoon;
+out vec4 vFire;
+void main() {
+  vec4 w = uModel * vec4(aPos, 1.0);
+  vWorld = w.xyz;
+  vCol = aCol;
+  vGlow = aGlow;
+  vMoon = uMoonMat * w;
+  vFire = uFireMat * w;
+  gl_Position = uViewProj * w;
+}`;
+  var FS = `#version 300 es
+precision highp float;
+precision highp sampler2DShadow;
+in vec3 vWorld;
+in vec3 vCol;
+in float vGlow;
+in vec4 vMoon;
+in vec4 vFire;
+uniform vec3 uCamPos;
+uniform vec3 uCamDir;
+uniform float uOrtho;
+uniform vec3 uSky;
+uniform vec3 uGround;
+uniform vec3 uMoonDir;
+uniform vec3 uMoonCol;
+uniform sampler2DShadow uMoonMap;
+uniform float uMoonTexel;
+uniform float uFireOn;
+uniform vec3 uFirePos;
+uniform vec3 uFireCol;
+uniform float uFireReach;
+uniform float uFireShade;
+uniform sampler2DShadow uFireMap;
+uniform float uFireTexel;
+uniform int uCount;
+uniform vec4 uLightPos[${MAX_LIGHTS}];
+uniform vec3 uLightCol[${MAX_LIGHTS}];
+uniform vec2 uView;
+uniform float uVignette;
+uniform vec3 uMistCol;
+uniform vec3 uMistAt;
+uniform vec3 uMistRange;
+uniform vec4 uTint;
+uniform sampler2D uSeen;
+uniform vec3 uSeenSize;
+out vec4 outColor;
+
+// Light in flat steps, as a cartoon has it: dark, half, full. (The edges of the steps are a
+// little soft, so that a facet turning through one does not flicker.)
+float steps(float d) {
+  return smoothstep(0.02, 0.10, d) * 0.5 + smoothstep(0.42, 0.52, d) * 0.5;
+}
+
+float shadowOf(sampler2DShadow map, vec4 s, float spread) {
+  vec3 p = s.xyz / s.w * 0.5 + 0.5;
+  if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || p.z > 1.0 || s.w <= 0.0) return 1.0;
+  float sum = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) sum += texture(map, vec3(p.xy + vec2(float(x), float(y)) * spread, p.z));
+  return sum / 9.0;
+}
+
+void main() {
+  // what has never been seen is not there; at the edge of what has, it falls away into the dark
+  float known = 1.0;
+  if (uSeenSize.z > 0.5) {
+    known = smoothstep(0.0, 0.5, texture(uSeen, vWorld.yx / uSeenSize.xy).r);
+    if (known < 0.004) discard;
+  }
+  vec3 toCam = uOrtho > 0.5 ? -uCamDir : normalize(uCamPos - vWorld);
+  vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
+  if (dot(n, toCam) < 0.0) n = -n;
+
+  vec3 light = mix(uGround, uSky, n.z * 0.5 + 0.5);
+  float moonLit = shadowOf(uMoonMap, vMoon, uMoonTexel);
+  light += uMoonCol * steps(max(dot(n, uMoonDir), 0.0)) * moonLit;
+
+  if (uFireOn > 0.5) {
+    vec3 L = uFirePos - vWorld;
+    float d = length(L);
+    float att = clamp(1.0 - d / uFireReach, 0.0, 1.0);
+    att *= att;
+    float lit = mix(1.0, shadowOf(uFireMap, vFire, uFireTexel * 1.5), uFireShade);
+    light += uFireCol * steps(max(dot(n, L / d), 0.0)) * att * lit;
+  }
+  for (int i = 0; i < uCount; i++) {
+    vec3 L = uLightPos[i].xyz - vWorld;
+    float d = length(L);
+    float att = clamp(1.0 - d / uLightPos[i].w, 0.0, 1.0);
+    att *= att;
+    light += uLightCol[i] * steps(max(dot(n, L / d), 0.0)) * att;
+  }
+
+  vec3 c = vCol * light + vCol * vGlow;
+  // distance takes the colour out of things
+  float far = clamp((length(vWorld.xy - uMistAt.xy) - uMistRange.x) / max(0.001, uMistRange.y - uMistRange.x), 0.0, 1.0);
+  c = mix(c, uMistCol, far * far * uMistRange.z * (1.0 - min(1.0, vGlow)));
+  c = mix(c, uTint.rgb, uTint.a) * known;
+  // the corners of the picture fall away into the dark
+  vec2 uv = gl_FragCoord.xy / uView - 0.5;
+  c *= 1.0 - uVignette * smoothstep(0.35, 0.95, length(uv * vec2(1.0, 0.9)) * 1.5);
+  // bright things roll off instead of clipping, then to the screen's own curve
+  c = c / (1.0 + c * 0.35);
+  outColor = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
+}`;
+  var SHADOW_VS = `#version 300 es
+layout(location=0) in vec3 aPos;
+uniform mat4 uModel;
+uniform mat4 uMat;
+void main() { gl_Position = uMat * (uModel * vec4(aPos, 1.0)); }`;
+  var SHADOW_FS = `#version 300 es
+precision highp float;
+void main() {}`;
+  function program(gl, vs, fs) {
+    const make2 = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(`shader: ${gl.getShaderInfoLog(s)}`);
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, make2(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, make2(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`program: ${gl.getProgramInfoLog(p)}`);
+    return p;
+  }
+  function depthTarget(gl, size) {
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, size, size);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tex, 0);
+    gl.drawBuffers([gl.NONE]);
+    gl.readBuffer(gl.NONE);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return { fb, tex, size };
+  }
+  var Painter = class {
+    /** `still`: the picture is kept after it is painted, so that it can be read back (a moving picture does not want that: it costs a copy every frame). */
+    constructor(canvas, moonSize = 2048, fireSize = 1024, still = false) {
+      this.canvas = canvas;
+      this.uni = /* @__PURE__ */ new Map();
+      /** Everything kept with the rest, and how much of it has been sent to the card. */
+      this.kept = [];
+      this.sent = 0;
+      /** The picture of what has been seen (see Look.seen), once one has been handed over. */
+      this.seenTex = null;
+      this.seenSize = { w: 0, h: 0 };
+      /** The camera's matrix of the last frame painted: for laying flat things (names, bars) over the picture. */
+      this.viewProj = ident();
+      /** Triangles drawn in the last frame (the picture's own pass). */
+      this.drawn = 0;
+      const gl = canvas.getContext("webgl2", { antialias: true, preserveDrawingBuffer: still, alpha: false, powerPreference: "high-performance" });
+      if (!gl) throw new Error("this browser has no WebGL2");
+      this.gl = gl;
+      this.prog = program(gl, VS, FS);
+      this.shadowProg = program(gl, SHADOW_VS, SHADOW_FS);
+      this.buf = gl.createBuffer();
+      this.vao = this.layout(this.buf);
+      this.moonMap = depthTarget(gl, moonSize);
+      this.fireMap = depthTarget(gl, fireSize);
+    }
+    /** How a buffer of vertices is read: where, what colour, how much it shines by itself. */
+    layout(buf) {
+      const gl = this.gl;
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, STRIDE * 4, 0);
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 3, gl.FLOAT, false, STRIDE * 4, 12);
+      gl.enableVertexAttribArray(2);
+      gl.vertexAttribPointer(2, 1, gl.FLOAT, false, STRIDE * 4, 24);
+      gl.bindVertexArray(null);
+      return vao;
+    }
+    /** Other sizes for the two shadow pictures (smaller is quicker and coarser). */
+    shadows(moonSize, fireSize) {
+      const gl = this.gl;
+      if (this.moonMap.size === moonSize && this.fireMap.size === fireSize) return;
+      for (const t of [this.moonMap, this.fireMap]) {
+        gl.deleteFramebuffer(t.fb);
+        gl.deleteTexture(t.tex);
+      }
+      this.moonMap = depthTarget(gl, moonSize);
+      this.fireMap = depthTarget(gl, fireSize);
+    }
+    /**
+     * Take a mesh in: from now on it is a part, to be drawn wherever a matrix puts it. Parts taken
+     * in this way are kept together and for good (a figure's solids, a brazier, a flame).
+     */
+    keep(mesh) {
+      const first = this.kept.length / STRIDE;
+      for (let i = 0; i < mesh.data.length; i++) this.kept.push(mesh.data[i]);
+      return { first, count: mesh.data.length / STRIDE };
+    }
+    /**
+     * Take a mesh in by itself: a piece of a place, which is wanted only while the hero is in that
+     * place and is given up afterwards (`drop`). Sent to the card at once.
+     */
+    own(mesh) {
+      const gl = this.gl;
+      const buf = gl.createBuffer();
+      const vao = this.layout(buf);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mesh.data), gl.STATIC_DRAW);
+      return { first: 0, count: mesh.data.length / STRIDE, own: { vao, buf } };
+    }
+    drop(part) {
+      if (!part.own) return;
+      this.gl.deleteVertexArray(part.own.vao);
+      this.gl.deleteBuffer(part.own.buf);
+      part.own = void 0;
+      part.count = 0;
+    }
+    /**
+     * What has been seen of the place (see Look.seen): `data` holds a number for each tile, row by
+     * row, 0 for what has not been seen and anything else for what has.
+     */
+    seen(w, h, data) {
+      const gl = this.gl;
+      if (!this.seenTex || this.seenSize.w !== w || this.seenSize.h !== h) {
+        if (this.seenTex) gl.deleteTexture(this.seenTex);
+        this.seenTex = gl.createTexture();
+        this.seenSize = { w, h };
+        gl.bindTexture(gl.TEXTURE_2D, this.seenTex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
+      gl.bindTexture(gl.TEXTURE_2D, this.seenTex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, data);
+    }
+    u(name2) {
+      let l = this.uni.get(name2);
+      if (l === void 0) {
+        l = this.gl.getUniformLocation(this.prog, name2);
+        this.uni.set(name2, l);
+      }
+      return l;
+    }
+    paint(look, draws) {
+      const gl = this.gl;
+      const W = this.canvas.width;
+      const H2 = this.canvas.height;
+      if (this.sent !== this.kept.length) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.kept), gl.STATIC_DRAW);
+        this.sent = this.kept.length;
+      }
+      const cam = look.cam;
+      const view = lookAt(cam.eye, cam.at, [0, 0, 1]);
+      const dist = Math.hypot(cam.eye[0] - cam.at[0], cam.eye[1] - cam.at[1], cam.eye[2] - cam.at[2]);
+      const proj = cam.fov ? perspective(cam.fov, W / H2, 0.5, dist * 4) : ortho((cam.half ?? 6) * W / H2, cam.half ?? 6, 0.1, dist * 3);
+      const viewProj = mmul(proj, view);
+      this.viewProj = viewProj;
+      const camDir = norm(sub(cam.at, cam.eye));
+      const moonDir = norm(look.moonFrom);
+      const b = look.bounds;
+      const texel = b.half * 2 / this.moonMap.size;
+      const mr = norm(cross(moonDir, [0, 0, 1]));
+      const mu = cross(mr, moonDir);
+      const snap = (axis) => {
+        const d = b.at[0] * axis[0] + b.at[1] * axis[1] + b.at[2] * axis[2];
+        return Math.round(d / texel) * texel - d;
+      };
+      const sr = snap(mr);
+      const su = snap(mu);
+      const mid = [b.at[0] + mr[0] * sr + mu[0] * su, b.at[1] + mr[1] * sr + mu[1] * su, b.at[2] + mr[2] * sr + mu[2] * su];
+      const moonEye = [mid[0] + moonDir[0] * b.half * 2, mid[1] + moonDir[1] * b.half * 2, mid[2] + moonDir[2] * b.half * 2];
+      const moonMat = mmul(ortho(b.half, b.half, 0.1, b.half * 4), lookAt(moonEye, mid, [0, 0, 1]));
+      const fire2 = look.fire;
+      let fireMat = moonMat;
+      if (fire2) {
+        const fd = norm(sub(fire2.toward, fire2.at));
+        fireMat = mmul(perspective(fire2.spread ?? 118, 1, 0.12, fire2.reach * 1.5), lookAt(fire2.at, fire2.toward, Math.abs(fd[2]) > 0.97 ? [0, 1, 0] : [0, 0, 1]));
+      }
+      gl.useProgram(this.shadowProg);
+      gl.enable(gl.DEPTH_TEST);
+      gl.disable(gl.CULL_FACE);
+      gl.enable(gl.POLYGON_OFFSET_FILL);
+      const sModel = gl.getUniformLocation(this.shadowProg, "uModel");
+      const sMat = gl.getUniformLocation(this.shadowProg, "uMat");
+      const passes = [[this.moonMap, moonMat, 2.5]];
+      if (fire2 && (fire2.shade ?? 1) > 0.01) passes.push([this.fireMap, fireMat, 3.5]);
+      let bound = null;
+      const use = (part) => {
+        const vao = part.own ? part.own.vao : this.vao;
+        if (vao !== bound) {
+          gl.bindVertexArray(vao);
+          bound = vao;
+        }
+      };
+      for (const [target, mat, slope] of passes) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, target.fb);
+        gl.viewport(0, 0, target.size, target.size);
+        gl.clearDepth(1);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        gl.polygonOffset(slope, 4);
+        gl.uniformMatrix4fv(sMat, false, mat);
+        for (const d of draws) {
+          if (d.bright || d.part.count === 0) continue;
+          use(d.part);
+          gl.uniformMatrix4fv(sModel, false, d.m);
+          gl.drawArrays(gl.TRIANGLES, d.part.first, d.part.count);
+        }
+      }
+      gl.disable(gl.POLYGON_OFFSET_FILL);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, W, H2);
+      gl.clearColor(4e-3, 3e-3, 0.012, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.CULL_FACE);
+      gl.cullFace(gl.BACK);
+      gl.useProgram(this.prog);
+      gl.uniformMatrix4fv(this.u("uViewProj"), false, viewProj);
+      gl.uniformMatrix4fv(this.u("uMoonMat"), false, moonMat);
+      gl.uniformMatrix4fv(this.u("uFireMat"), false, fireMat);
+      gl.uniform3fv(this.u("uCamPos"), f32(cam.eye));
+      gl.uniform3fv(this.u("uCamDir"), f32(camDir));
+      gl.uniform1f(this.u("uOrtho"), cam.fov ? 0 : 1);
+      gl.uniform3fv(this.u("uSky"), f32(look.sky));
+      gl.uniform3fv(this.u("uGround"), f32(look.ground));
+      gl.uniform3fv(this.u("uMoonDir"), f32(moonDir));
+      gl.uniform3fv(this.u("uMoonCol"), f32(look.moon));
+      gl.uniform1f(this.u("uMoonTexel"), 1 / this.moonMap.size);
+      gl.uniform1f(this.u("uFireOn"), fire2 ? 1 : 0);
+      gl.uniform1f(this.u("uFireTexel"), 1 / this.fireMap.size);
+      if (fire2) {
+        gl.uniform3fv(this.u("uFirePos"), f32(fire2.at));
+        gl.uniform3fv(this.u("uFireCol"), f32(fire2.color));
+        gl.uniform1f(this.u("uFireReach"), fire2.reach);
+        gl.uniform1f(this.u("uFireShade"), fire2.shade ?? 1);
+      }
+      const n = Math.min(MAX_LIGHTS, look.lights.length);
+      const pos = new Float32Array(MAX_LIGHTS * 4);
+      const col = new Float32Array(MAX_LIGHTS * 3);
+      for (let i = 0; i < n; i++) {
+        const l = look.lights[i];
+        pos.set([l.at[0], l.at[1], l.at[2], l.reach], i * 4);
+        col.set(l.color, i * 3);
+      }
+      gl.uniform1i(this.u("uCount"), n);
+      gl.uniform4fv(this.u("uLightPos"), pos);
+      gl.uniform3fv(this.u("uLightCol"), col);
+      gl.uniform2f(this.u("uView"), W, H2);
+      gl.uniform1f(this.u("uVignette"), look.vignette ?? 0);
+      const mist = look.mist ?? { color: [0, 0, 0], at: cam.at, near: 1e6, far: 2e6 };
+      gl.uniform3fv(this.u("uMistCol"), f32(mist.color));
+      gl.uniform3fv(this.u("uMistAt"), f32(mist.at));
+      gl.uniform3f(this.u("uMistRange"), mist.near, mist.far, mist.most ?? 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.moonMap.tex);
+      gl.uniform1i(this.u("uMoonMap"), 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, this.fireMap.tex);
+      gl.uniform1i(this.u("uFireMap"), 1);
+      const seen = look.seen && this.seenTex ? look.seen : null;
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, seen ? this.seenTex : null);
+      gl.uniform1i(this.u("uSeen"), 2);
+      gl.uniform3f(this.u("uSeenSize"), seen ? seen.w : 1, seen ? seen.h : 1, seen ? 1 : 0);
+      const uModel = this.u("uModel");
+      const uTint = this.u("uTint");
+      let tinted = true;
+      let tris = 0;
+      for (const d of draws) {
+        if (d.part.count === 0) continue;
+        use(d.part);
+        if (d.tint) {
+          gl.uniform4f(uTint, d.tint[0], d.tint[1], d.tint[2], d.tint[3]);
+          tinted = true;
+        } else if (tinted) {
+          gl.uniform4f(uTint, 0, 0, 0, 0);
+          tinted = false;
+        }
+        gl.uniformMatrix4fv(uModel, false, d.m);
+        gl.drawArrays(gl.TRIANGLES, d.part.first, d.part.count);
+        tris += d.part.count / 3;
+      }
+      gl.bindVertexArray(null);
+      this.drawn = tris;
+    }
+  };
+  function paint(canvas, scene2) {
+    const p = new Painter(canvas, 2048, 1024, true);
+    const part = p.keep(scene2.mesh);
+    p.paint(scene2, [{ part, m: ident() }]);
+    p.gl.finish();
+    return p;
+  }
+
+  // src/gl/kit3.ts
+  var C = {
+    // the vault's stone: floor, wall, dressed stone (pillars, steps, tombs), the dark between stones
+    floor: [hex("#35327f"), hex("#3f3c8e"), hex("#4a479c"), hex("#5653aa")],
+    wall: [hex("#463f96"), hex("#5049a4"), hex("#5a53b0"), hex("#655ebc")],
+    dressed: [hex("#6660bf"), hex("#746ecb"), hex("#827cd6")],
+    gap: hex("#100e2a"),
+    earth: hex("#1c1630"),
+    // iron, wood (the plum of the heroes' leather), gold, bone, clay
+    iron: hex("#4a4a66"),
+    ironDark: hex("#2c2c44"),
+    wood: hex("#6a3a5c"),
+    woodDark: hex("#4a2644"),
+    gold: hex("#e0a828"),
+    goldLight: hex("#ffd866"),
+    bone: hex("#e8e0d0"),
+    boneShade: hex("#b0a4b8"),
+    clay: hex("#8a7abc"),
+    // fire: its bed, its body, its heart
+    coal: hex("#5a1c1c"),
+    ember: hex("#ff7a22"),
+    flame: hex("#ffc24a"),
+    heart: hex("#fff0a8"),
+    // cloth
+    crimson: hex("#a02a4a"),
+    crimsonDark: hex("#6a1a38"),
+    teal: hex("#22b0a0"),
+    tealDark: hex("#13706e"),
+    // what is the player's glows cyan; what is an enemy's, pink
+    spark: hex("#5fe8f0"),
+    sparkWhite: hex("#d8fffa"),
+    foe: hex("#ff4a90"),
+    moss: hex("#3f8a5a"),
+    water: hex("#3a78c8")
+  };
+  var at = (x, y, z = 0, turn = 0) => turn ? mats(translate(x, y, z), rotZ(turn)) : translate(x, y, z);
+  function stone(x0, y0, z0, x1, y1, z1, bevel, paint2) {
+    const m = new Mesh();
+    const b = Math.min(bevel, (x1 - x0) / 3, (y1 - y0) / 3);
+    const zt = z1 - b;
+    const top = paint2.top ?? paint2.side;
+    const lip = blend(top, [1, 1, 1], 0.08);
+    m.quad([x0 + b, y0 + b, z1], [x1 - b, y0 + b, z1], [x1 - b, y1 - b, z1], [x0 + b, y1 - b, z1], top);
+    m.quad([x0, y0, zt], [x1, y0, zt], [x1 - b, y0 + b, z1], [x0 + b, y0 + b, z1], lip);
+    m.quad([x1, y1, zt], [x0, y1, zt], [x0 + b, y1 - b, z1], [x1 - b, y1 - b, z1], lip);
+    m.quad([x1, y0, zt], [x1, y1, zt], [x1 - b, y1 - b, z1], [x1 - b, y0 + b, z1], lip);
+    m.quad([x0, y1, zt], [x0, y0, zt], [x0 + b, y0 + b, z1], [x0 + b, y1 - b, z1], lip);
+    m.quad([x0, y0, z0], [x1, y0, z0], [x1, y0, zt], [x0, y0, zt], paint2.side);
+    m.quad([x1, y1, z0], [x0, y1, z0], [x0, y1, zt], [x1, y1, zt], paint2.side);
+    m.quad([x1, y0, z0], [x1, y1, z0], [x1, y1, zt], [x1, y0, zt], paint2.side);
+    m.quad([x0, y1, z0], [x0, y0, z0], [x0, y0, zt], [x0, y1, zt], paint2.side);
+    return m;
+  }
+  var pick = (tones, a, b, c = 0) => tones[Math.floor(rnd(a, b, c) * tones.length) % tones.length];
+  function floor(x0, y0, x1, y1, o = {}) {
+    const m = new Mesh();
+    const z = o.z ?? 0;
+    const seed = o.seed ?? 1;
+    const tones = o.tones ?? C.floor;
+    const GAP = 0.035;
+    for (let y = y0; y < y1; y++) {
+      let x = x0;
+      while (x < x1) {
+        const two = x + 1 < x1 && rnd(x, y, seed) < 0.34 && !(o.skip && (o.skip(x, y) || o.skip(x + 1, y)));
+        const w = two ? 2 : 1;
+        if (o.skip && o.skip(x, y)) {
+          x += 1;
+          continue;
+        }
+        const r = rnd(x, y, seed + 11);
+        const col = pick(tones, x, y, seed + 3);
+        const lift = (rnd(x, y, seed + 5) - 0.5) * 0.05;
+        if (r < (o.gone ?? 0)) {
+          m.add(box(x + GAP, y + GAP, z - 0.3, x + w - GAP, y + 1 - GAP, z - 0.12, { side: C.earth, top: C.earth }));
+          m.add(rock(0.2, col, x * 7 + y), mats(translate(x + 0.3 + rnd(x, y, 21) * 0.3, y + 0.3 + rnd(x, y, 22) * 0.4, z - 0.12), rotZ(rnd(x, y, 23) * 360)));
+          if (w === 2 || rnd(x, y, 24) < 0.5) m.add(rock(0.14, tone(col, 0.9), x * 3 + y * 5), mats(translate(x + w - 0.4, y + 0.6, z - 0.12), rotZ(rnd(x, y, 25) * 360)));
+        } else if (r < (o.gone ?? 0) + (o.cracked ?? 0)) {
+          const cut = 0.35 + rnd(x, y, seed + 13) * 0.3;
+          m.add(stone(x + GAP, y + GAP, z - 0.3, x + w * cut - GAP * 0.4, y + 1 - GAP, z + lift, 0.03, { side: tone(col, 0.6), top: col }));
+          const sunk = stone(-w * (1 - cut) * 0.5 + GAP * 0.4, -0.5 + GAP, -0.3, w * (1 - cut) * 0.5 - GAP, 0.5 - GAP, 0, 0.03, { side: tone(col, 0.6), top: tone(col, 0.92) });
+          m.add(sunk, mats(translate(x + w * cut + w * (1 - cut) * 0.5, y + 0.5, z - 0.05), rotY((rnd(x, y, 31) - 0.5) * 9), rotX((rnd(x, y, 32) - 0.5) * 9)));
+        } else {
+          m.add(stone(x + GAP, y + GAP, z - 0.3, x + w - GAP, y + 1 - GAP, z + lift, 0.03, { side: tone(col, 0.6), top: col }));
+        }
+        x += w;
+      }
+    }
+    m.add(box(x0, y0, z - 0.34, x1, y1, z - 0.07, { side: C.gap, top: C.gap }));
+    return m;
+  }
+  function rock(r, col, seed) {
+    const m = new Mesh();
+    m.add(ball(r * (0.8 + rnd(seed, 1) * 0.5), r * (0.7 + rnd(seed, 2) * 0.5), r * (0.45 + rnd(seed, 3) * 0.3), { side: col, vary: 0.14, seed }), translate(0, 0, r * 0.3));
+    return m;
+  }
+  function wall(long, o = {}) {
+    const m = new Mesh();
+    const seed = o.seed ?? 1;
+    const thick = o.thick ?? 0.7;
+    const high = o.high ?? 2.3;
+    const tones = o.tones ?? C.wall;
+    const course = 0.46;
+    const rows = Math.round(high / course);
+    for (let r = 0; r < rows; r++) {
+      const z0 = r * course;
+      const z1 = Math.min(high, z0 + course);
+      let x = 0;
+      let first = true;
+      while (x < long - 0.01) {
+        let w = first && r % 2 === 1 ? 0.45 + rnd(r, seed, 2) * 0.2 : 0.75 + rnd(Math.round(x * 10), r, seed) * 0.6;
+        if (x + w > long - 0.3) w = long - x;
+        first = false;
+        const out = (r === 0 ? 0.07 : 0) + (rnd(Math.round(x * 10), r, seed + 5) - 0.5) * 0.05;
+        const col = pick(tones, Math.round(x * 10), r, seed + 9);
+        const g = 0.018;
+        m.add(block(w - g * 2, z1 - z0 - g * 2, thick + out, 0.03, col), translate(x + g, out, z0 + g));
+        x += w;
+      }
+    }
+    m.add(box(0, -thick + 0.02, 0, long, -0.03, high - 0.02, { side: C.gap }));
+    if (!o.plain) {
+      let x = 0;
+      while (x < long - 0.01) {
+        let w = 0.9 + rnd(Math.round(x * 10), 77, seed) * 0.5;
+        if (x + w > long - 0.4) w = long - x;
+        const col = pick(C.dressed, Math.round(x * 10), 78, seed);
+        m.add(stone(x + 0.015, -thick - 0.04, high, x + w - 0.015, 0.09, high + 0.16, 0.04, { side: tone(col, 0.8), top: tone(col, 0.55) }));
+        x += w;
+      }
+    }
+    return m;
+  }
+  function block(w, h, d, bevel, col) {
+    const m = new Mesh();
+    const b = bevel;
+    const lip = blend(col, [1, 1, 1], 0.07);
+    const dark = tone(col, 0.72);
+    m.quad([b, 0, b], [w - b, 0, b], [w - b, 0, h - b], [b, 0, h - b], col);
+    m.quad([0, -b, h], [b, 0, h - b], [w - b, 0, h - b], [w, -b, h], lip);
+    m.quad([0, -b, 0], [w, -b, 0], [w - b, 0, b], [b, 0, b], dark);
+    m.quad([0, -b, 0], [b, 0, b], [b, 0, h - b], [0, -b, h], lip);
+    m.quad([w, -b, 0], [w, -b, h], [w - b, 0, h - b], [w - b, 0, b], dark);
+    m.quad([0, -d, h], [0, -b, h], [w, -b, h], [w, -d, h], tone(col, 0.5));
+    m.quad([0, -d, 0], [0, -d, h], [0, -b, h], [0, -b, 0], tone(col, 0.85));
+    m.quad([w, -b, 0], [w, -b, h], [w, -d, h], [w, -d, 0], tone(col, 0.7));
+    m.quad([w, -d, 0], [w, -d, h], [0, -d, h], [0, -d, 0], tone(col, 0.6));
+    return m.outward([w / 2, -d / 2, h / 2]);
+  }
+  function steps(n, wide, rise, run, seed = 1) {
+    const m = new Mesh();
+    for (let i = 0; i < n; i++) {
+      const col = pick(C.dressed, i, seed, 3);
+      let x = 0;
+      while (x < wide - 0.01) {
+        let w = 0.9 + rnd(i, Math.round(x * 10), seed) * 0.7;
+        if (x + w > wide - 0.4) w = wide - x;
+        const c = tone(col, 0.94 + rnd(i, Math.round(x * 10), seed + 1) * 0.12);
+        m.add(stone(x + 0.012, i * run, 0, x + w - 0.012, n * run, (i + 1) * rise, 0.035, { side: tone(c, 0.7), top: c }));
+        x += w;
+      }
+    }
+    return m;
+  }
+  function fire(r, h, seed = 1) {
+    const m = new Mesh();
+    const tongue = (dx, dy, rr, hh, col, glow, turn, tip) => {
+      m.add(lathe([[rr * 0.7, 0], [rr, hh * 0.2], [rr * 0.72, hh * 0.5], [rr * 0.3, hh * 0.8], [0, hh]], 6, { side: col, glow, vary: 0.12, seed: seed + turn }, turn), mats(translate(dx, dy, 0), rotX((rnd(seed, turn) - 0.5) * tip), rotY((rnd(seed, turn + 1) - 0.5) * tip)));
+    };
+    tongue(0, 0, r, h, C.ember, 1.3, 10, 16);
+    tongue(r * 0.62, r * 0.25, r * 0.5, h * 0.62, C.ember, 1.3, 100, 30);
+    tongue(-r * 0.6, -r * 0.3, r * 0.46, h * 0.52, C.ember, 1.3, 130, 30);
+    tongue(-r * 0.2, r * 0.6, r * 0.4, h * 0.44, C.ember, 1.3, 160, 30);
+    tongue(r * 0.42, r * 0.42, r * 0.7, h * 0.74, C.flame, 2.6, 40, 12);
+    tongue(r * 0.72, r * 0.72, r * 0.42, h * 0.44, C.heart, 4.2, 70, 8);
+    return m;
+  }
+  function brazier(seed = 1, lit = true) {
+    const m = new Mesh();
+    for (let i = 0; i < 3; i++) {
+      const leg = lathe([[0.035, 0], [0.04, 0.62]], 4, { side: C.iron, vary: 0.1 });
+      m.add(leg, mats(rotZ(i * 120 + 30), translate(0.3, 0, 0), rotY(-22)));
+    }
+    m.add(lathe([[0.2, 0.3], [0.21, 0.33]], 8, { side: C.ironDark }), void 0);
+    m.add(lathe([[0.1, 0.55], [0.3, 0.68], [0.4, 0.82], [0.42, 0.86]], 8, { side: C.iron, top: C.coal, vary: 0.08 }));
+    m.add(lathe([[0.34, 0.86], [0.2, 0.92]], 8, { side: C.coal, top: C.ember, glow: 0.7, vary: 0.2 }));
+    if (lit) m.add(fire(0.24, 0.62, seed), translate(0, 0, 0.88));
+    return m;
+  }
+  function pillar(high = 2.9, broken = 0, seed = 1) {
+    const m = new Mesh();
+    const col = pick(C.dressed, seed, 1);
+    m.add(stone(-0.46, -0.46, 0, 0.46, 0.46, 0.2, 0.05, { side: tone(col, 0.8), top: col }));
+    m.add(lathe([[0.4, 0.2], [0.4, 0.3], [0.33, 0.36]], 8, { side: col, vary: 0.06, seed }, 22.5));
+    const top = broken > 0 ? broken : high - 0.4;
+    const drum2 = 0.62;
+    let z = 0.36;
+    let k2 = 0;
+    while (z < top - 0.01) {
+      const z1 = Math.min(top, z + drum2);
+      const r0 = 0.3 - 0.03 * ((z - 0.36) / high);
+      m.add(lathe([[r0, z + 0.012], [r0 - 8e-3, z1 - 0.012]], 8, { side: tone(col, 0.96 + rnd(seed, k2) * 0.1), vary: 0.07, seed: seed + k2 }, 22.5));
+      m.add(lathe([[r0 - 0.03, z1 - 0.012], [r0 - 0.03, z1 + 0.012]], 8, { side: C.gap }, 22.5));
+      z = z1;
+      k2++;
+    }
+    if (broken > 0) {
+      m.add(lathe([[0.28, broken - 0.01], [0.2, 0.25, broken + 0.16], [0, broken + 0.2]], 6, { side: tone(col, 0.85), vary: 0.2, seed }, 10), mats(translate(0.04, 0, 0), rotX(7)));
+    } else {
+      m.add(lathe([[0.3, high - 0.4], [0.42, high - 0.26], [0.42, high - 0.2]], 8, { side: col, vary: 0.06, seed }, 22.5));
+      m.add(stone(-0.48, -0.48, high - 0.2, 0.48, 0.48, high, 0.04, { side: tone(col, 0.85), top: tone(col, 0.6) }));
+    }
+    return m;
+  }
+  function drum(long = 0.6, seed = 1) {
+    const col = pick(C.dressed, seed, 2);
+    const m = new Mesh();
+    m.add(lathe([[0.29, 0], [0.28, long]], 8, { side: col, vary: 0.08, seed, top: tone(col, 0.8), bottom: tone(col, 0.8) }, 22.5), mats(translate(-long / 2, 0, 0.27), rotY(90)));
+    return m;
+  }
+  function sarcophagus(lit = true, ajar = false, seed = 1) {
+    const m = new Mesh();
+    const col = pick(C.dressed, seed, 4);
+    m.add(stone(-1.15, -0.62, 0, 1.15, 0.62, 0.16, 0.05, { side: tone(col, 0.75), top: tone(col, 0.9) }));
+    m.add(stone(-1, -0.48, 0.16, 1, 0.48, 0.78, 0.03, { side: col, top: C.gap }));
+    for (const x of [-0.62, 0, 0.62]) m.add(box(x - 0.05, -0.5, 0.2, x + 0.05, 0.5, 0.74, { side: tone(col, 1.18) }));
+    const lid = new Mesh();
+    lid.add(stone(-1.06, -0.54, 0, 1.06, 0.54, 0.12, 0.04, { side: tone(col, 0.9), top: tone(col, 1.05) }));
+    lid.add(lathe([[0.98, 0.42, 0.12], [0.8, 0.26, 0.24]], 4, { side: tone(col, 1.1), top: tone(col, 1.2) }, 45), scale(1.05, 1, 1));
+    const glow = lit ? 2.2 : 0;
+    const rc = lit ? C.spark : tone(col, 0.5);
+    lid.add(box(-0.5, -0.025, 0.24, 0.5, 0.025, 0.255, { side: rc, glow }));
+    lid.add(box(-0.3, -0.16, 0.24, -0.25, 0.16, 0.255, { side: rc, glow }));
+    lid.add(box(0.15, -0.12, 0.24, 0.2, 0.12, 0.255, { side: rc, glow }));
+    m.add(lid, ajar ? mats(translate(0.12, 0.3, 0.78), rotZ(14), rotX(-6)) : translate(0, 0, 0.78));
+    return m;
+  }
+  function chest() {
+    const m = new Mesh();
+    m.add(box(-0.4, -0.27, 0.04, 0.4, 0.27, 0.42, { side: C.wood, vary: 0.08 }));
+    const lid = lathe([[0.3, 0.27, -0.42], [0.3, 0.27, 0.42]], 8, { side: C.wood, top: C.woodDark, bottom: C.woodDark, vary: 0.06 }, 22.5);
+    m.add(lid, mats(translate(0, 0, 0.42), rotY(90), scale(0.62, 1, 1)));
+    for (const x of [-0.3, 0.3]) {
+      m.add(box(x - 0.05, -0.285, 0.02, x + 0.05, 0.285, 0.44, { side: C.gold }));
+      m.add(lathe([[0.31, 0.285, -0.05], [0.31, 0.285, 0.05]], 8, { side: C.gold, top: C.gold, bottom: C.gold }, 22.5), mats(translate(x, 0, 0.42), rotY(90), scale(0.63, 1, 1)));
+    }
+    m.add(box(-0.07, 0.27, 0.34, 0.07, 0.31, 0.5, { side: C.goldLight }));
+    for (const [x, y] of [[-0.36, -0.23], [0.36, -0.23], [-0.36, 0.23], [0.36, 0.23]]) m.add(box(x - 0.05, y - 0.05, 0, x + 0.05, y + 0.05, 0.06, { side: C.gold }));
+    return m;
+  }
+  function urn(seed = 1) {
+    const col = tone(C.clay, 0.9 + rnd(seed, 3) * 0.25);
+    const m = lathe([[0.1, 0], [0.2, 0.12], [0.24, 0.3], [0.18, 0.5], [0.09, 0.6], [0.13, 0.68]], 7, { side: col, vary: 0.07, seed, top: C.gap });
+    m.add(lathe([[0.245, 0.27], [0.245, 0.31]], 7, { side: tone(col, 1.35) }));
+    return m;
+  }
+  function barrel() {
+    const m = lathe([[0.21, 0], [0.27, 0.22], [0.27, 0.42], [0.21, 0.64]], 9, { side: C.wood, vary: 0.1, top: C.woodDark });
+    for (const z of [0.14, 0.5]) m.add(lathe([[0.262, z - 0.03], [0.262, z + 0.03]], 9, { side: C.iron }));
+    return m;
+  }
+  function bones(seed = 1) {
+    const m = new Mesh();
+    for (let i = 0; i < 3; i++) {
+      const b = lathe([[0.035, 0], [0.02, 0.05], [0.02, 0.3], [0.035, 0.35]], 4, { side: C.bone, vary: 0.08 });
+      m.add(b, mats(translate((rnd(seed, i) - 0.5) * 0.5, (rnd(seed, i + 9) - 0.5) * 0.5, 0.03), rotZ(rnd(seed, i + 5) * 360), rotY(90)));
+    }
+    m.add(skull(0.13), mats(translate(0.12, -0.1, 0.1), rotZ(40 + rnd(seed, 30) * 200)));
+    return m;
+  }
+  function skull(r, eyes2 = null) {
+    const m = new Mesh();
+    m.add(ball(r, r * 1.08, r * 0.95, { side: C.bone, vary: 0.05 }, true));
+    m.add(box(-r * 0.6, r * 0.2, -r * 1.35, r * 0.6, r * 1, -r * 0.62, { side: C.boneShade, top: C.boneShade }));
+    for (const sx of [-1, 1]) {
+      m.add(box(sx * r * 0.2, r * 0.82, -r * 0.3, sx * r * 0.68, r * 1.03, r * 0.16, { side: C.gap }));
+      if (eyes2) m.add(box(sx * r * 0.34, r * 0.98, -r * 0.16, sx * r * 0.54, r * 1.06, r * 0.04, { side: eyes2, glow: 3 }));
+    }
+    m.add(box(-r * 0.09, r * 0.9, -r * 0.6, r * 0.09, r * 1.06, -r * 0.36, { side: C.gap }));
+    for (let i = -2; i <= 2; i++) m.add(box(i * r * 0.22 - r * 0.07, r * 0.98, -r * 0.98, i * r * 0.22 + r * 0.07, r * 1.04, -r * 0.7, { side: C.bone }));
+    return m;
+  }
+  function hanging(wide, long, col, dark, device, torn = 0.4, seed = 1) {
+    const m = new Mesh();
+    m.add(lathe([[0.03, -wide / 2 - 0.1], [0.03, wide / 2 + 0.1]], 5, { side: C.iron }), mats(translate(0, 0.05, 0.02), rotY(90)));
+    const strips = 6;
+    const sw = wide / strips;
+    for (let i = 0; i < strips; i++) {
+      const xa = -wide / 2 + i * sw;
+      const xb = xa + sw;
+      const la = long * (1 - torn * rnd(seed, i) * 0.55);
+      const lb = long * (1 - torn * rnd(seed, i + 1) * 0.55);
+      const rows = 4;
+      for (let r = 0; r < rows; r++) {
+        const t02 = r / rows;
+        const t12 = (r + 1) / rows;
+        const wave = (t, x) => 0.04 + Math.sin(t * 3.1 + x * 4 + seed) * 0.025 * t;
+        const c = r === 0 ? dark : i === 0 || i === strips - 1 ? dark : col;
+        m.sheet([[xa, wave(t12, xa), -la * t12], [xb, wave(t12, xb), -lb * t12], [xb, wave(t02, xb), -lb * t02], [xa, wave(t02, xa), -la * t02]], tone(c, 0.92 + rnd(seed, i * 9 + r) * 0.16));
+      }
+    }
+    const mid = -long * 0.42;
+    m.sheet([[0, 0.075, mid + wide * 0.3], [-wide * 0.2, 0.075, mid], [0, 0.075, mid - wide * 0.3], [wide * 0.2, 0.075, mid]], device);
+    m.sheet([[-wide * 0.26, 0.075, mid + wide * 0.44], [-wide * 0.26, 0.075, mid + wide * 0.38], [wide * 0.26, 0.075, mid + wide * 0.38], [wide * 0.26, 0.075, mid + wide * 0.44]], device);
+    return m;
+  }
+  function gargoyle(water = false, seed = 1) {
+    const m = new Mesh();
+    const col = pick(C.dressed, seed, 8);
+    m.add(stone(-0.3, -0.05, -0.28, 0.3, 0.1, 0.3, 0.04, { side: tone(col, 0.8), top: tone(col, 0.7) }));
+    m.add(ball(0.25, 0.24, 0.22, { side: col, vary: 0.08, seed }), translate(0, 0.26, 0.02));
+    m.add(box(-0.13, 0.36, -0.1, 0.13, 0.62, 0.06, { side: tone(col, 1.06), top: tone(col, 1.15) }));
+    m.add(box(-0.11, 0.34, -0.22, 0.11, 0.56, -0.15, { side: tone(col, 0.9) }));
+    m.add(box(-0.09, 0.4, -0.15, 0.09, 0.56, -0.1, { side: C.gap }));
+    m.add(box(-0.24, 0.3, 0.1, 0.24, 0.46, 0.16, { side: tone(col, 1.12) }));
+    for (const sx of [-1, 1]) {
+      m.add(lathe([[0.06, 0], [0.035, 0.16], [0, 0.3]], 4, { side: tone(col, 0.92) }), mats(translate(sx * 0.17, 0.18, 0.16), rotY(sx * 24), rotX(38)));
+      m.add(box(sx * 0.08, 0.44, 0.03, sx * 0.17, 0.47, 0.09, { side: C.gap }));
+      m.add(lathe([[0.02, 0], [0, 0.07]], 3, { side: C.bone }), mats(translate(sx * 0.085, 0.58, -0.1), rotX(180)));
+    }
+    if (water) {
+      for (let i = 0; i < 5; i++) m.add(box(-0.03, 0.56 + i * 0.012, -0.12 - (i + 1) * 0.22, 0.03, 0.6 + i * 0.012, -0.12 - i * 0.22, { side: C.water, glow: 0.5 }));
+    }
+    return m;
+  }
+  function sconce(seed = 1) {
+    const m = new Mesh();
+    m.add(box(-0.06, 0, -0.16, 0.06, 0.05, 0.1, { side: C.ironDark }));
+    m.add(lathe([[0.04, 0], [0.05, 0.42]], 5, { side: C.wood }), mats(translate(0, 0.06, -0.14), rotX(-32)));
+    m.add(lathe([[0.07, 0], [0.09, 0.08]], 6, { side: C.iron }), mats(translate(0, 0.26, 0.17), rotX(-32)));
+    m.add(fire(0.09, 0.3, seed), translate(0, 0.29, 0.24));
+    return m;
+  }
+  function candles(seed = 1) {
+    const m = new Mesh();
+    const n = 3 + Math.floor(rnd(seed, 1) * 3);
+    for (let i = 0; i < n; i++) {
+      const a = rnd(seed, i + 2) * 6.28;
+      const d = i === 0 ? 0 : 0.1 + rnd(seed, i + 12) * 0.14;
+      const h = 0.12 + rnd(seed, i + 22) * 0.22;
+      const x = Math.cos(a) * d;
+      const y = Math.sin(a) * d;
+      m.add(lathe([[0.045, 0], [0.04, h]], 5, { side: C.bone, top: tone(C.bone, 0.8), vary: 0.05 }), translate(x, y, 0));
+      m.add(lathe([[0.02, 0], [0.028, 0.03], [0, 0.09]], 4, { side: C.flame, glow: 3 }), translate(x, y, h + 0.01));
+    }
+    m.add(lathe([[0.2, 0], [0.12, 0.02]], 7, { side: tone(C.bone, 0.85) }));
+    return m;
+  }
+  function rubble(r, n, seed = 1) {
+    const m = new Mesh();
+    for (let i = 0; i < n; i++) {
+      const a = rnd(seed, i) * 6.28;
+      const d = Math.sqrt(rnd(seed, i + 40)) * r;
+      const s = 0.07 + rnd(seed, i + 80) * 0.16;
+      m.add(rock(s, pick(C.wall, seed, i, 5), seed * 13 + i), mats(translate(Math.cos(a) * d, Math.sin(a) * d, 0), rotZ(rnd(seed, i + 120) * 360)));
+    }
+    return m;
+  }
+  function moss(r, n, seed = 1) {
+    const m = new Mesh();
+    for (let i = 0; i < n; i++) {
+      const a = rnd(seed, i) * 6.28;
+      const d = Math.sqrt(rnd(seed, i + 40)) * r;
+      const s = 0.05 + rnd(seed, i + 80) * 0.09;
+      m.add(ball(s * 1.3, s * 1.3, s * 0.5, { side: tone(C.moss, 0.7 + rnd(seed, i + 3) * 0.6), vary: 0.15, seed: seed + i }), translate(Math.cos(a) * d, Math.sin(a) * d, s * 0.2));
+    }
+    return m;
+  }
+
+  // src/gl/figures.ts
+  function limb(len2, r0, r1, paint2, n = 6) {
+    return lathe([[r1, -len2], [r0 * 1.02, -len2 * 0.35], [r0, 0]], n, paint2, 30);
+  }
+  function joints(b, p = {}) {
+    const out = [];
+    const legR = p.legR ?? [0, 0];
+    const legL = p.legL ?? [0, 0];
+    const rad = Math.PI / 180;
+    const reach = (l) => b.thigh * Math.cos(l[0] * rad) + b.shin * Math.cos((l[0] - l[1]) * rad);
+    const pelvisZ = b.footH + Math.max(reach(legR), reach(legL)) + (p.lift ?? 0);
+    const pelvis = translate(0, 0, pelvisZ);
+    out.push({ mesh: b.parts.pelvis, m: pelvis });
+    const torso = mats(pelvis, translate(0, 0, b.pelvisH), rotZ(p.twist ?? 0), rotX(-(p.lean ?? 0)));
+    out.push({ mesh: b.parts.torso, m: torso });
+    out.push({ mesh: b.parts.head, m: mats(torso, translate(0, 0, b.neckZ), rotZ(p.headYaw ?? 0), rotX(-(p.headPitch ?? 0))) });
+    const upright = (j) => mats(translate(j[12], j[13], j[14]), rotZ(p.twist ?? 0));
+    const arm = (side, a, wrist, held, plant, onArm, grow) => {
+      const shoulder = mats(torso, translate(side * b.shoulderW / 2, 0, b.shoulderZ), rotY(-side * a[1]), rotX(a[0]));
+      out.push({ mesh: b.parts.upper, m: shoulder });
+      const elbow = mats(shoulder, translate(0, 0, -b.upper), rotX(a[2]));
+      out.push({ mesh: b.parts.fore, m: elbow });
+      if (onArm) out.push({ mesh: onArm, m: upright(mats(elbow, translate(0, 0, -b.fore * 0.5))) });
+      const hand = mats(elbow, translate(0, 0, -b.fore));
+      out.push({ mesh: b.parts.hand, m: hand });
+      const grip = mats(hand, translate(0, 0, -0.05));
+      if (held) {
+        let m = plant >= 1 ? upright(grip) : plant <= 0 ? mats(grip, rotX(wrist)) : turnBetween(mats(grip, rotX(wrist)), upright(grip), plant);
+        if (grow !== 1) m = mats(m, scale(grow));
+        out.push({ mesh: held, m });
+      }
+    };
+    const part = (v) => typeof v === "number" ? v : v ? 1 : 0;
+    arm(1, p.armR ?? [0, 8, 6], p.wristR ?? -90, b.right, part(p.plantR), void 0, p.growR ?? 1);
+    arm(-1, p.armL ?? [0, 8, 6], p.wristL ?? -90, b.left, part(p.plantL), b.leftArm, 1);
+    const leg = (side, l) => {
+      const hip = mats(pelvis, translate(side * b.hipW / 2, 0, 0), rotX(l[0]));
+      out.push({ mesh: b.parts.thigh, m: hip });
+      const knee = mats(hip, translate(0, 0, -b.thigh), rotX(-l[1]));
+      out.push({ mesh: b.parts.shin, m: knee });
+      out.push({ mesh: b.parts.foot, m: mats(knee, translate(0, 0, -b.shin), rotX(l[1] - l[0])) });
+    };
+    leg(1, legR);
+    leg(-1, legL);
+    return out;
+  }
+  function turnBetween(a, b, t) {
+    const mix = (i) => [a[i] + (b[i] - a[i]) * t, a[i + 1] + (b[i + 1] - a[i + 1]) * t, a[i + 2] + (b[i + 2] - a[i + 2]) * t];
+    const unit = (v) => {
+      const l = Math.hypot(v[0], v[1], v[2]) || 1;
+      return [v[0] / l, v[1] / l, v[2] / l];
+    };
+    const z = unit(mix(8));
+    const x0 = mix(0);
+    const d = x0[0] * z[0] + x0[1] * z[1] + x0[2] * z[2];
+    const x = unit([x0[0] - z[0] * d, x0[1] - z[1] * d, x0[2] - z[2] * d]);
+    const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+    const m = new Float32Array(16);
+    m.set([x[0], x[1], x[2], 0, y[0], y[1], y[2], 0, z[0], z[1], z[2], 0, a[12], a[13], a[14], 1]);
+    return m;
+  }
+  function figure(b, p = {}) {
+    const m = new Mesh();
+    for (const j of joints(b, p)) m.add(j.mesh, j.m);
+    return m;
+  }
+  var H = {
+    steel: hex("#9a94e0"),
+    steelLight: hex("#c4c0f4"),
+    steelDark: hex("#5a54ac"),
+    teal: hex("#24b4a8"),
+    tealDark: hex("#127a80"),
+    tealDeep: hex("#0c5664"),
+    red: hex("#ff4672"),
+    redDark: hex("#c02858"),
+    face: hex("#16142e"),
+    green: hex("#34a644"),
+    greenLight: hex("#86dc46"),
+    greenDark: hex("#1e7038"),
+    purple: hex("#8444e0"),
+    purpleLight: hex("#b07af4"),
+    purpleDark: hex("#522a9c"),
+    plum: hex("#84405e"),
+    plumDark: hex("#562646"),
+    indigo: hex("#5a54c4"),
+    indigoDark: hex("#38348a"),
+    skin: hex("#b0a8e8")
+  };
+  function eyes(r, y, z, col, wide = 0.42) {
+    const m = new Mesh();
+    for (const s of [-1, 1]) m.add(box(s * r * wide - r * 0.17, y, z - r * 0.16, s * r * wide + r * 0.17, y + 0.02, z + r * 0.16, { side: col, glow: 2.6 }));
+    return m;
+  }
+  function streamer(long, wide, col, dark, n = 5, seed = 0) {
+    const m = new Mesh();
+    let y0 = 0;
+    let z0 = 0;
+    for (let i = 0; i < n; i++) {
+      const t = (i + 1) / n;
+      const y1 = -long * t;
+      const z1 = Math.sin(t * 5.2 + seed) * 0.07 * (0.4 + t) + t * 0.05;
+      const w0 = wide * (1 - i / n * 0.45) / 2;
+      const w1 = wide * (1 - t * 0.45) / 2;
+      m.sheet([[-w0, y0, z0], [w0, y0, z0], [w1, y1, z1], [-w1, y1, z1]], i % 2 === 0 ? col : tone(col, 0.86), dark);
+      y0 = y1;
+      z0 = z1;
+    }
+    m.sheet([[-wide * 0.27, y0, z0], [0, y0, z0], [-wide * 0.2, y0 - long * 0.16, z0 + 0.03]], col, dark);
+    m.sheet([[0, y0, z0], [wide * 0.27, y0, z0], [wide * 0.2, y0 - long * 0.14, z0 - 0.02]], col, dark);
+    return m;
+  }
+  function sword(len2, blade, glow, broad = 1) {
+    const m = new Mesh();
+    m.add(lathe([[0.03, -0.1 * broad], [0.026, 0.1]], 5, { side: H.plumDark }));
+    m.add(ball(0.045 * broad, 0.045 * broad, 0.045 * broad, { side: C.goldLight }), translate(0, 0, -0.1 * broad - 0.03));
+    m.add(box(-0.17 * broad, -0.035, 0.1, 0.17 * broad, 0.035, 0.15, { side: C.gold }));
+    const w = 0.075 * broad;
+    m.add(slab([[-w, 0.15], [w, 0.15], [w * 0.92, len2 * 0.82], [0, len2], [-w * 0.92, len2 * 0.82]], 0.035, { side: blade, top: tone(blade, 1.2), glow }));
+    m.add(slab([[-0.014, 0.16], [0.014, 0.16], [0.014, len2 * 0.9], [-0.014, len2 * 0.9]], 0.05, { side: C.sparkWhite, glow: glow * 1.5 }));
+    return m;
+  }
+  function kiteShield() {
+    const m = new Mesh();
+    const face = slab([[-0.3, 0.34], [0.3, 0.34], [0.33, 0.05], [0.2, -0.3], [0, -0.52], [-0.2, -0.3], [-0.33, 0.05]], 0.06, { side: H.steel, top: H.steelLight });
+    const dev = new Mesh();
+    dev.add(slab([[-0.24, 0.02], [0, 0.2], [0, 0.1], [-0.24, -0.08]], 0.075, { side: H.red }));
+    dev.add(slab([[0, 0.2], [0.24, 0.02], [0.24, -0.08], [0, 0.1]], 0.075, { side: H.red }));
+    m.add(face).add(dev);
+    m.add(slab([[-0.3, 0.34], [0.3, 0.34], [0.3, 0.29], [-0.3, 0.29]], 0.08, { side: H.steelLight }));
+    const out = new Mesh();
+    out.add(m, mats(translate(-0.1, 0.1, -0.06), rotZ(20)));
+    return out;
+  }
+  function knightBuild(twoHanded = false) {
+    const head = new Mesh();
+    head.add(lathe([[0.17, 0], [0.225, 0.08], [0.235, 0.26], [0.19, 0.38], [0.09, 0.52], [0, 0.66]], 8, { side: H.steel, vary: 0.07 }, 22.5));
+    head.add(lathe([[0.242, 0.235], [0.242, 0.285]], 8, { side: H.teal }, 22.5));
+    head.add(box(-0.165, 0.12, 0.09, 0.165, 0.238, 0.225, { side: H.face }));
+    head.add(eyes(0.2, 0.238, 0.175, C.spark));
+    head.add(lathe([[0.2, -0.04], [0.245, 0.02], [0.25, 0.1], [0.2, 0.14]], 8, { side: H.red, vary: 0.08 }, 22.5));
+    head.add(streamer(0.95, 0.2, H.red, H.redDark, 6, 0.4), mats(translate(0.12, -0.19, 0.07), rotZ(58), rotX(4)));
+    head.add(streamer(0.7, 0.16, H.red, H.redDark, 5, 2.1), mats(translate(0.08, -0.2, 0.03), rotZ(38), rotX(14)));
+    const torso = new Mesh();
+    torso.add(lathe([[0.17, 0.125, 0], [0.235, 0.16, 0.24], [0.225, 0.15, 0.36], [0.1, 0.09, 0.4]], 6, { side: H.teal, vary: 0.07 }));
+    torso.add(slab([[-0.11, 0.31], [0, 0.2], [0.11, 0.31]], 0.02, { side: C.spark, glow: 0.8 }), translate(0, 0.165, 0));
+    for (const s of [-1, 1]) torso.add(ball(0.125, 0.12, 0.1, { side: H.steel, top: H.steelLight, vary: 0.06 }), translate(s * 0.27, 0, 0.35));
+    const pelvis = new Mesh();
+    pelvis.add(box(-0.17, -0.11, -0.02, 0.17, 0.11, 0.1, { side: H.plum }));
+    pelvis.add(box(-0.04, 0.1, 0.01, 0.04, 0.125, 0.08, { side: C.goldLight }));
+    pelvis.add(lathe([[0.26, 0.19, -0.2], [0.18, 0.13, 0.02]], 6, { side: H.tealDark, vary: 0.1 }));
+    const build = {
+      thigh: 0.2,
+      shin: 0.24,
+      footH: 0.1,
+      pelvisH: 0.1,
+      shoulderZ: 0.33,
+      neckZ: 0.4,
+      hipW: 0.19,
+      shoulderW: 0.5,
+      upper: 0.19,
+      fore: 0.19,
+      parts: {
+        pelvis,
+        torso,
+        head,
+        thigh: limb(0.2, 0.085, 0.075, { side: H.tealDeep }),
+        shin: limb(0.24, 0.085, 0.07, { side: H.steel, vary: 0.06 }),
+        foot: box(-0.075, -0.09, -0.1, 0.075, 0.17, 0, { side: H.steelDark, top: H.steel }),
+        upper: limb(0.19, 0.07, 0.062, { side: H.tealDark }),
+        fore: limb(0.19, 0.07, 0.06, { side: H.steel, vary: 0.06 }),
+        hand: box(-0.05, -0.05, -0.1, 0.05, 0.05, 0, { side: H.plumDark })
+      },
+      right: twoHanded ? sword(1.12, C.spark, 1.5, 1.25) : sword(0.78, C.spark, 1.5),
+      leftArm: twoHanded ? void 0 : kiteShield()
+    };
+    return build;
+  }
+  var knight = (p = {}) => figure(knightBuild(), p);
+  function bow() {
+    const m = new Mesh();
+    const pts = [[0, -0.46], [0.1, -0.3], [0.13, -0.1], [0.13, 0.1], [0.1, 0.3], [0, 0.46]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [y0, z0] = pts[i];
+      const [y1, z1] = pts[i + 1];
+      const len2 = Math.hypot(y1 - y0, z1 - z0);
+      const ang = Math.atan2(y1 - y0, z1 - z0) * 180 / Math.PI;
+      m.add(lathe([[0.03, 0], [0.03, len2]], 5, { side: i === 2 ? H.plumDark : H.indigo, vary: 0.1 }), mats(translate(0, y0, z0), rotX(-ang)));
+    }
+    m.add(box(-6e-3, -6e-3, -0.46, 6e-3, 6e-3, 0.46, { side: C.sparkWhite, glow: 0.8 }));
+    const out = new Mesh();
+    out.add(m, rotZ(90));
+    return out;
+  }
+  function rangerBuild() {
+    const head = new Mesh();
+    head.add(ball(0.2, 0.2, 0.2, { side: H.skin, vary: 0.05 }, true), translate(0, 0, 0.19));
+    head.add(box(-0.15, 0.13, 0.13, 0.15, 0.205, 0.25, { side: H.face }));
+    head.add(eyes(0.18, 0.205, 0.19, C.sparkWhite));
+    head.add(lathe([[0.235, 0.24], [0.25, 0.3], [0.2, 0.4], [0.06, 0.46]], 8, { side: H.teal, vary: 0.08 }, 22.5), mats(translate(0.01, -0.02, 0), rotX(8)));
+    head.add(lathe([[0.27, 0.24], [0.25, 0.27]], 8, { side: H.tealDark }, 22.5), mats(translate(0.01, -0.02, 0), rotX(8)));
+    const feather = new Mesh();
+    const fp = [[0, 0, 0.04], [-0.06, 0.16, 0.085], [-0.2, 0.34, 0.1], [-0.4, 0.46, 0.085], [-0.6, 0.48, 0.05], [-0.74, 0.42, 0.012]];
+    for (let i = 0; i < fp.length - 1; i++) {
+      const [y0, z0, w0] = fp[i];
+      const [y1, z1, w1] = fp[i + 1];
+      feather.sheet([[-w0, y0, z0], [w0, y0, z0], [w1, y1, z1], [-w1, y1, z1]], i % 2 ? C.spark : tone(C.spark, 0.85), tone(C.spark, 0.7), 0.5);
+    }
+    head.add(feather, mats(translate(0.12, 0.02, 0.36), rotZ(12), scale(0.82)));
+    head.add(lathe([[0.17, -0.03], [0.21, 0.03], [0.18, 0.09]], 7, { side: H.red, vary: 0.08 }));
+    head.add(slab([[-0.09, 0.02], [0.09, 0.02], [0, -0.15]], 0.03, { side: H.red }), translate(0, 0.17, 0));
+    const torso = new Mesh();
+    torso.add(lathe([[0.15, 0.11, 0], [0.2, 0.14, 0.24], [0.19, 0.13, 0.34], [0.09, 0.08, 0.38]], 6, { side: H.green, vary: 0.08 }));
+    torso.add(box(-0.2, 0.1, 0.1, 0.2, 0.15, 0.15, { side: H.plum }), mats(translate(0, 0, 0.08), rotY(28)));
+    const cloak = new Mesh();
+    for (let i = 0; i < 4; i++) {
+      const x0 = -0.2 + i * 0.1;
+      const fall = 0.62 + i % 2 * 0.08;
+      cloak.sheet([[x0, 0, 0], [x0 + 0.1, 0, 0], [x0 + 0.13 + (i - 1.5) * 0.02, -0.18, -fall], [x0 - 0.02 + (i - 1.5) * 0.02, -0.16, -fall + 0.05]], i % 2 ? H.teal : H.tealDark, H.tealDeep);
+    }
+    torso.add(cloak, translate(0, -0.13, 0.36));
+    torso.add(lathe([[0.06, 0], [0.07, 0.4]], 6, { side: H.plum, top: H.plumDark }), mats(translate(0.12, -0.17, 0.08), rotY(-18), rotX(-10)));
+    for (let i = 0; i < 3; i++) torso.add(box(-0.012, -0.012, 0, 0.012, 0.012, 0.14, { side: C.sparkWhite }), mats(translate(0.2 + i * 0.03, -0.2 - i * 0.02, 0.46), rotY(-18)));
+    const pelvis = new Mesh();
+    pelvis.add(box(-0.15, -0.1, -0.02, 0.15, 0.1, 0.09, { side: H.plum }));
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * Math.PI * 2;
+      const b2 = (i + 1) / 8 * Math.PI * 2;
+      const r0 = 0.17;
+      const r1 = 0.25;
+      const mid = (a + b2) / 2;
+      pelvis.sheet([[Math.cos(a) * r0, Math.sin(a) * r0 * 0.75, 0.03], [Math.cos(b2) * r0, Math.sin(b2) * r0 * 0.75, 0.03], [Math.cos(mid) * r1, Math.sin(mid) * r1 * 0.75, -0.2 - i % 2 * 0.04]], i % 2 ? H.greenLight : tone(H.greenLight, 0.85), H.greenDark);
+    }
+    const build = {
+      thigh: 0.21,
+      shin: 0.25,
+      footH: 0.09,
+      pelvisH: 0.09,
+      shoulderZ: 0.31,
+      neckZ: 0.38,
+      hipW: 0.17,
+      shoulderW: 0.42,
+      upper: 0.19,
+      fore: 0.19,
+      parts: {
+        pelvis,
+        torso,
+        head,
+        thigh: limb(0.21, 0.075, 0.065, { side: H.indigoDark }),
+        shin: limb(0.25, 0.08, 0.07, { side: H.plum, vary: 0.06 }),
+        foot: box(-0.07, -0.08, -0.09, 0.07, 0.17, 0, { side: H.plumDark, top: H.plum }),
+        upper: limb(0.19, 0.06, 0.055, { side: H.greenDark }),
+        fore: limb(0.19, 0.06, 0.05, { side: H.green }),
+        hand: box(-0.045, -0.045, -0.09, 0.045, 0.045, 0, { side: H.plum })
+      },
+      left: bow()
+    };
+    return build;
+  }
+  var ranger = (p = {}) => figure(rangerBuild(), p);
+  function staff() {
+    const m = new Mesh();
+    m.add(lathe([[0.028, -0.75], [0.024, 0.62]], 5, { side: H.indigo, vary: 0.08 }));
+    for (const s of [-1, 1]) m.add(lathe([[0.024, 0], [0.012, 0.2]], 4, { side: H.indigoDark }), mats(translate(s * 0.02, 0, 0.6), rotY(s * 26)));
+    m.add(lathe([[0, 0], [0.075, 0.1], [0, 0.26]], 4, { side: C.sparkWhite, glow: 4 }, 45), translate(0, 0, 0.7));
+    return m;
+  }
+  function mageBuild() {
+    const head = new Mesh();
+    head.add(ball(0.19, 0.19, 0.19, { side: H.face }, true), translate(0, 0, 0.18));
+    head.add(eyes(0.18, 0.185, 0.2, C.sparkWhite));
+    const hat = new Mesh();
+    hat.add(lathe([[0.47, 0.42, 0], [0.45, 0.4, 0.03], [0.22, 0.2, 0.06]], 10, { side: H.purple, vary: 0.07, bottom: H.purpleDark }));
+    hat.add(lathe([[0.215, 0.05], [0.2, 0.2], [0.12, 0.32], [0.03, 0.4]], 8, { side: H.purpleLight, vary: 0.08 }, 22.5), mats(translate(0, -0.03, 0), rotX(10)));
+    hat.add(lathe([[0.222, 0.06], [0.215, 0.12]], 8, { side: C.gold }, 22.5));
+    head.add(hat, mats(translate(0, -0.05, 0.3), rotX(24)));
+    const feather = new Mesh();
+    const fp = [[0, 0, 0.03], [-0.1, 0.12, 0.06], [-0.26, 0.2, 0.06], [-0.44, 0.2, 0.03], [-0.56, 0.15, 8e-3]];
+    for (let i = 0; i < fp.length - 1; i++) feather.sheet([[-fp[i][2], fp[i][0], fp[i][1]], [fp[i][2], fp[i][0], fp[i][1]], [fp[i + 1][2], fp[i + 1][0], fp[i + 1][1]], [-fp[i + 1][2], fp[i + 1][0], fp[i + 1][1]]], C.spark, tone(C.spark, 0.7), 0.5);
+    head.add(feather, mats(translate(0.14, -0.04, 0.4), rotZ(14)));
+    head.add(lathe([[0.19, -0.05], [0.235, 0.02], [0.235, 0.12], [0.2, 0.16]], 8, { side: H.teal, vary: 0.08 }, 22.5));
+    head.add(streamer(1.05, 0.22, H.teal, H.tealDark, 6, 1.2), mats(translate(0.13, -0.17, 0.06), rotZ(62), rotX(6)));
+    const torso = new Mesh();
+    torso.add(lathe([[0.17, 0.13, 0], [0.2, 0.14, 0.2], [0.18, 0.125, 0.32], [0.09, 0.08, 0.37]], 6, { side: H.purple, vary: 0.07 }));
+    for (let i = 0; i < 3; i++) torso.add(box(-0.018, 0.13, 0.05 + i * 0.09, 0.018, 0.15, 0.085 + i * 0.09, { side: C.sparkWhite, glow: 0.5 }));
+    const pelvis = new Mesh();
+    pelvis.add(lathe([[0.3, 0.25, -0.5], [0.3, 0.25, -0.46]], 8, { side: H.purpleLight }, 22.5));
+    pelvis.add(lathe([[0.29, 0.24, -0.46], [0.22, 0.17, -0.2], [0.17, 0.13, 0.1]], 8, { side: H.purple, vary: 0.08 }, 22.5));
+    for (let i = 0; i < 4; i++) pelvis.add(box(-0.018, 0.17 + (3 - i) * 0.022, -0.4 + i * 0.1, 0.018, 0.2 + (3 - i) * 0.022, -0.365 + i * 0.1, { side: C.sparkWhite, glow: 0.5 }));
+    pelvis.add(box(-0.3, -0.06, -0.12, -0.2, 0.1, 0.04, { side: H.plum, top: H.plumDark }));
+    pelvis.add(box(-0.31, -0.04, -0.02, -0.19, 0.08, 0.05, { side: H.plumDark }));
+    const build = {
+      thigh: 0.2,
+      shin: 0.22,
+      footH: 0.09,
+      pelvisH: 0.1,
+      shoulderZ: 0.3,
+      neckZ: 0.37,
+      hipW: 0.16,
+      shoulderW: 0.42,
+      upper: 0.19,
+      fore: 0.19,
+      parts: {
+        pelvis,
+        torso,
+        head,
+        thigh: limb(0.2, 0.07, 0.06, { side: H.purpleDark }),
+        shin: limb(0.22, 0.07, 0.06, { side: H.purpleDark }),
+        foot: box(-0.07, -0.08, -0.09, 0.07, 0.17, 0, { side: H.plumDark, top: H.plum }),
+        // (wide sleeves)
+        upper: limb(0.19, 0.07, 0.075, { side: H.purple }),
+        fore: lathe([[0.1, -0.19], [0.07, 0]], 6, { side: H.purpleLight, bottom: H.purpleDark }, 30),
+        hand: box(-0.04, -0.04, -0.08, 0.04, 0.04, 0, { side: H.skin })
+      },
+      right: staff()
+    };
+    return build;
+  }
+  var mage = (p = {}) => figure(mageBuild(), p);
+  var M = {
+    bone: hex("#e4dcf0"),
+    boneDark: hex("#a89cc8"),
+    rag: hex("#1c8a8a"),
+    rose: hex("#f04a8a"),
+    roseDark: hex("#a82a66"),
+    robe: hex("#3a2060"),
+    robeDark: hex("#241440"),
+    bat: hex("#6a3aa8"),
+    batDark: hex("#40246e"),
+    hide: hex("#6a82c0"),
+    hideDark: hex("#42548c"),
+    hideLight: hex("#8ea6dc")
+  };
+  function skeletonBuild(hood = null, held = "blade") {
+    const head = new Mesh();
+    head.add(skull(0.19, C.foe), mats(translate(0, 0.01, 0.2), rotX(0)));
+    if (hood) {
+      head.add(lathe([[0.19, 0.19, -0.03], [0.225, 0.21, 0.12], [0.22, 0.21, 0.3], [0.13, 0.14, 0.42], [0, 0.47]], 8, { side: hood, vary: 0.08 }, 22.5), translate(0, -0.085, 0));
+      head.add(lathe([[0.21, 0.2, -0.06], [0.25, 0.23, 0.04]], 8, { side: tone(hood, 0.8) }, 22.5), translate(0, -0.04, 0));
+    }
+    const torso = new Mesh();
+    torso.add(lathe([[0.035, 0], [0.03, 0.36]], 5, { side: M.boneDark }));
+    for (let i = 0; i < 3; i++) torso.add(lathe([[0.15 - i * 0.012, 0.11, 0.1 + i * 0.085], [0.155 - i * 0.012, 0.115, 0.14 + i * 0.085]], 7, { side: M.bone, vary: 0.06, top: M.boneDark, bottom: M.boneDark }));
+    torso.add(box(-0.2, -0.03, 0.33, 0.2, 0.03, 0.37, { side: M.bone }));
+    const pelvis = new Mesh();
+    pelvis.add(lathe([[0.1, 0.07, -0.02], [0.15, 0.09, 0.07], [0.06, 0.05, 0.1]], 6, { side: M.bone, vary: 0.07 }));
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * Math.PI * 2;
+      const b2 = (i + 1) / 6 * Math.PI * 2;
+      pelvis.sheet([[Math.cos(a) * 0.14, Math.sin(a) * 0.1, 0.04], [Math.cos(b2) * 0.14, Math.sin(b2) * 0.1, 0.04], [Math.cos((a + b2) / 2) * 0.17, Math.sin((a + b2) / 2) * 0.12, -0.12 - i % 3 * 0.05]], i % 2 ? M.rag : tone(M.rag, 0.75), tone(M.rag, 0.5));
+    }
+    const blade = new Mesh();
+    blade.add(lathe([[0.025, -0.09], [0.022, 0.08]], 4, { side: M.boneDark }));
+    blade.add(box(-0.1, -0.025, 0.08, 0.1, 0.025, 0.11, { side: M.roseDark }));
+    blade.add(slab([[-0.06, 0.11], [0.06, 0.11], [0.075, 0.5], [0.02, 0.68], [-0.05, 0.56]], 0.03, { side: M.rose, top: tone(M.rose, 1.2), glow: 0.5 }));
+    const build = {
+      thigh: 0.2,
+      shin: 0.23,
+      footH: 0.05,
+      pelvisH: 0.1,
+      shoulderZ: 0.35,
+      neckZ: 0.39,
+      hipW: 0.16,
+      shoulderW: 0.4,
+      upper: 0.2,
+      fore: 0.2,
+      parts: {
+        pelvis,
+        torso,
+        head,
+        thigh: limb(0.2, 0.035, 0.03, { side: M.bone }, 5),
+        shin: limb(0.23, 0.034, 0.026, { side: M.bone }, 5),
+        foot: box(-0.045, -0.05, -0.05, 0.045, 0.15, 0, { side: M.boneDark, top: M.bone }),
+        upper: limb(0.2, 0.03, 0.026, { side: M.bone }, 5),
+        fore: limb(0.2, 0.03, 0.024, { side: M.bone }, 5),
+        hand: box(-0.035, -0.035, -0.08, 0.035, 0.035, 0, { side: M.bone })
+      },
+      right: held === "blade" ? blade : void 0,
+      left: held === "bow" ? bow() : void 0
+    };
+    return build;
+  }
+  var skeleton = (p = {}, hood = null, held = "blade") => figure(skeletonBuild(hood, held), p);
+  function cultistBuild() {
+    const head = new Mesh();
+    head.add(ball(0.17, 0.17, 0.18, { side: H.face }, true), translate(0, 0.02, 0.18));
+    head.add(eyes(0.17, 0.185, 0.19, C.foe));
+    head.add(lathe([[0.2, 0.22, -0.04], [0.25, 0.25, 0.1], [0.25, 0.26, 0.28], [0.15, 0.18, 0.44], [0.02, 0.05, 0.56]], 8, { side: M.robe, vary: 0.1 }, 22.5), mats(translate(0, -0.06, 0), rotX(6)));
+    const torso = new Mesh();
+    torso.add(lathe([[0.19, 0.14, 0], [0.22, 0.15, 0.2], [0.2, 0.13, 0.33], [0.1, 0.08, 0.38]], 6, { side: M.robe, vary: 0.08 }));
+    torso.add(box(-0.05, 0.12, 0, 0.05, 0.16, 0.36, { side: M.rose }));
+    const pelvis = new Mesh();
+    pelvis.add(lathe([[0.31, 0.26, -0.5], [0.23, 0.18, -0.2], [0.19, 0.14, 0.1]], 8, { side: M.robe, vary: 0.09, bottom: M.robeDark }, 22.5));
+    pelvis.add(box(-0.05, 0.16, -0.48, 0.05, 0.26, 0.1, { side: M.rose }), mats(rotX(-9)));
+    const flame = new Mesh();
+    flame.add(lathe([[0.05, 0], [0.085, 0.07], [0.05, 0.2], [0, 0.34]], 5, { side: M.rose, glow: 2.2 }));
+    flame.add(lathe([[0.03, 0.02], [0.045, 0.08], [0, 0.22]], 4, { side: hex("#ffd0e4"), glow: 4 }));
+    const build = {
+      thigh: 0.2,
+      shin: 0.22,
+      footH: 0.08,
+      pelvisH: 0.1,
+      shoulderZ: 0.31,
+      neckZ: 0.38,
+      hipW: 0.16,
+      shoulderW: 0.44,
+      upper: 0.19,
+      fore: 0.19,
+      parts: {
+        pelvis,
+        torso,
+        head,
+        thigh: limb(0.2, 0.07, 0.06, { side: M.robeDark }),
+        shin: limb(0.22, 0.07, 0.06, { side: M.robeDark }),
+        foot: box(-0.07, -0.08, -0.08, 0.07, 0.16, 0, { side: M.robeDark }),
+        upper: limb(0.19, 0.075, 0.08, { side: M.robe }),
+        fore: lathe([[0.11, -0.19], [0.075, 0]], 6, { side: M.robe, bottom: M.robeDark }, 30),
+        hand: box(-0.04, -0.04, -0.08, 0.04, 0.04, 0, { side: M.boneDark })
+      },
+      right: flame
+    };
+    return build;
+  }
+  var cultist = (p = {}) => figure(cultistBuild(), p);
+  function batParts() {
+    const body = new Mesh();
+    body.add(ball(0.16, 0.2, 0.17, { side: M.bat, vary: 0.1 }, true));
+    body.add(ball(0.13, 0.13, 0.13, { side: M.bat, vary: 0.1 }), translate(0, 0.17, 0.08));
+    for (const s of [-1, 1]) {
+      body.add(lathe([[0.055, 0], [0, 0.2]], 4, { side: M.batDark }), mats(translate(s * 0.08, 0.15, 0.17), rotY(s * 16)));
+      body.add(box(s * 0.05 - 0.025, 0.285, 0.07, s * 0.05 + 0.025, 0.305, 0.115, { side: C.foe, glow: 3 }));
+    }
+    const w = new Mesh();
+    const a = [0, 0, 0];
+    const b = [0.36, 0.04, 0.16];
+    const c = [0.72, -0.04, 0.05];
+    const tips = [[0.14, -0.2, -0.16], [0.42, -0.24, -0.2], [0.66, -0.2, -0.14]];
+    w.sheet([a, b, tips[0]], M.rose, M.roseDark);
+    w.sheet([b, tips[1], tips[0]], tone(M.rose, 0.88), M.roseDark);
+    w.sheet([b, c, tips[1]], M.rose, M.roseDark);
+    w.sheet([c, tips[2], tips[1]], tone(M.rose, 0.88), M.roseDark);
+    for (const [p0, p1] of [[a, b], [b, c]]) {
+      const len2 = Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]);
+      const yaw = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]) * 180 / Math.PI;
+      const pitch = Math.asin((p1[2] - p0[2]) / len2) * 180 / Math.PI;
+      w.add(lathe([[0.022, 0], [0.016, len2]], 4, { side: M.batDark }), mats(translate(p0[0], p0[1], p0[2]), rotZ(yaw), rotY(90 - pitch)));
+    }
+    const wingL = new Mesh();
+    wingL.add(w, scale(-1, 1, 1));
+    return { body, wingR: w, wingL };
+  }
+  function batJoints(parts, flap) {
+    const up = flap * 34;
+    return [
+      { mesh: parts.body, m: translate(0, 0, 0) },
+      { mesh: parts.wingR, m: mats(translate(0.1, 0, 0.06), rotY(-up)) },
+      { mesh: parts.wingL, m: mats(translate(-0.1, 0, 0.06), rotY(up)) }
+    ];
+  }
+  function bat(flap = 0.4) {
+    const m = new Mesh();
+    for (const j of batJoints(batParts(), flap)) m.add(j.mesh, j.m);
+    return m;
+  }
+  function bruteBuild(guardian = false) {
+    const K = guardian ? { ...M, hide: hex("#b83a5a"), hideDark: hex("#7a2244"), hideLight: hex("#d85a72") } : M;
+    const head = new Mesh();
+    head.add(ball(0.2, 0.22, 0.19, { side: K.hide, vary: 0.08 }, true), translate(0, 0.02, 0.15));
+    head.add(box(-0.2, 0.12, 0.2, 0.2, 0.27, 0.26, { side: K.hideDark }));
+    head.add(eyes(0.17, 0.245, 0.165, hex("#ffe060"), 0.5));
+    head.add(box(-0.15, 0.1, 0, 0.15, 0.27, 0.09, { side: K.hideLight }));
+    for (const s of [-1, 1]) head.add(lathe([[0.03, 0], [0, 0.1]], 4, { side: K.bone }), translate(s * 0.1, 0.24, 0.08));
+    const torso = new Mesh();
+    torso.add(lathe([[0.33, 0.27, 0], [0.44, 0.32, 0.2], [0.46, 0.3, 0.42], [0.2, 0.16, 0.54]], 7, { side: K.hide, vary: 0.08 }));
+    torso.add(box(-0.46, 0.1, 0.16, 0.46, 0.33, 0.22, { side: H.plumDark }), mats(rotY(20)));
+    const pelvis = new Mesh();
+    pelvis.add(lathe([[0.36, 0.28, -0.16], [0.33, 0.27, 0.1]], 7, { side: H.plum, vary: 0.1 }));
+    const club = new Mesh();
+    club.add(lathe([[0.05, -0.12], [0.06, 0.3], [0.13, 0.4], [0.16, 0.72], [0.1, 0.84]], 7, { side: H.indigo, vary: 0.1 }));
+    for (let i = 0; i < 8; i++) club.add(lathe([[0.03, 0], [0, 0.07]], 4, { side: H.steelLight }), mats(rotZ(i * 45 + i % 2 * 20), translate(0.14, 0, 0.48 + i % 3 * 0.1), rotY(90)));
+    const build = {
+      thigh: 0.2,
+      shin: 0.2,
+      footH: 0.1,
+      pelvisH: 0.1,
+      shoulderZ: 0.4,
+      neckZ: 0.5,
+      hipW: 0.34,
+      shoulderW: 0.98,
+      upper: 0.3,
+      fore: 0.3,
+      parts: {
+        pelvis,
+        torso,
+        head,
+        thigh: limb(0.2, 0.14, 0.12, { side: K.hide, vary: 0.06 }),
+        shin: limb(0.2, 0.13, 0.11, { side: K.hide, vary: 0.06 }),
+        foot: box(-0.13, -0.12, -0.1, 0.13, 0.22, 0, { side: K.hideDark, top: K.hide }),
+        upper: limb(0.3, 0.17, 0.14, { side: K.hide, vary: 0.06 }),
+        fore: limb(0.3, 0.14, 0.16, { side: K.hideLight, vary: 0.06 }),
+        hand: ball(0.15, 0.15, 0.14, { side: K.hide, vary: 0.08 })
+      },
+      right: club
+    };
+    if (guardian) {
+      head.add(lathe([[0.215, 0.235, 0.2], [0.2, 0.22, 0.3], [0.1, 0.11, 0.37], [0, 0.46]], 7, { side: C.iron, vary: 0.08 }), translate(0, 0.01, 0));
+      for (const s2 of [-1, 1]) {
+        torso.add(ball(0.2, 0.19, 0.13, { side: C.iron, top: H.steel, vary: 0.08 }), translate(s2 * 0.47, 0, 0.46));
+        torso.add(lathe([[0.045, 0], [0, 0.16]], 4, { side: H.steelLight }), mats(translate(s2 * 0.52, 0, 0.55), rotY(s2 * 28)));
+      }
+      build.parts.fore = new Mesh().add(build.parts.fore).add(lathe([[0.168, -0.2], [0.16, -0.1]], 6, { side: C.iron }, 30));
+    }
+    return build;
+  }
+  var brute = (p = {}) => figure(bruteBuild(), p);
+  function wardenBuild() {
+    const iron = hex("#4a4870");
+    const ironDark = hex("#2e2c4c");
+    const ironLight = hex("#6a68a0");
+    const head = new Mesh();
+    head.add(skull(0.17, C.foe), translate(0, 0.03, 0.19));
+    head.add(lathe([[0.2, 0.21, 0.2], [0.225, 0.235, 0.3], [0.19, 0.2, 0.42], [0.08, 0.09, 0.5]], 8, { side: iron, vary: 0.08 }, 22.5), translate(0, -0.015, 0));
+    head.add(box(-0.215, -0.2, 0.02, 0.215, 0.05, 0.3, { side: iron }));
+    head.add(box(-0.03, -0.2, 0.3, 0.03, 0.22, 0.54, { side: ironLight }));
+    for (const sd of [-1, 1]) {
+      head.add(box(sd * 0.215 - 0.03, -0.06, -0.02, sd * 0.215 + 0.03, 0.2, 0.26, { side: ironDark }));
+      const horn = new Mesh();
+      horn.add(lathe([[0.07, 0], [0.055, 0.14]], 5, { side: M.bone, vary: 0.08 }));
+      horn.add(lathe([[0.055, 0], [0.03, 0.14]], 5, { side: M.bone, vary: 0.08 }), mats(translate(0, 0, 0.13), rotY(sd * 34)));
+      horn.add(lathe([[0.03, 0], [0, 0.16]], 5, { side: M.boneDark }), mats(translate(sd * 0.075, 0, 0.24), rotY(sd * 58)));
+      head.add(horn, mats(translate(sd * 0.2, -0.02, 0.33), rotY(sd * 52)));
+    }
+    const torso = new Mesh();
+    torso.add(lathe([[0.2, 0.15, 0], [0.3, 0.2, 0.26], [0.3, 0.19, 0.4], [0.13, 0.11, 0.47]], 7, { side: iron, vary: 0.08 }));
+    torso.add(slab([[0, 0.34], [-0.08, 0.25], [0, 0.16], [0.08, 0.25]], 0.02, { side: M.rose, glow: 2.2 }), translate(0, 0.2, 0));
+    torso.add(box(-0.12, 0.195, 0.24, 0.12, 0.215, 0.262, { side: M.rose, glow: 2.2 }));
+    for (const sd of [-1, 1]) {
+      torso.add(ball(0.17, 0.16, 0.13, { side: ironLight, top: ironLight, vary: 0.08 }, true), translate(sd * 0.36, 0, 0.42));
+      torso.add(lathe([[0.05, 0], [0, 0.17]], 4, { side: ironDark }), mats(translate(sd * 0.42, 0, 0.5), rotY(sd * 30)));
+    }
+    const cloak = new Mesh();
+    const strips = 6;
+    for (let i = 0; i < strips; i++) {
+      const x0 = -0.36 + i * 0.72 / strips;
+      const x1 = x0 + 0.72 / strips;
+      const fall = 1.02 + i * 7 % 3 * 0.07;
+      const out = 0.2 + Math.abs(i - 2.5) * 0.015;
+      cloak.sheet([[x0, 0, 0], [x1, 0, 0], [x1 * 1.2, -out * 0.6, -fall * 0.5], [x0 * 1.2, -out * 0.6, -fall * 0.5]], i % 2 ? C.crimson : tone(C.crimson, 0.86), C.crimsonDark);
+      cloak.sheet([[x0 * 1.2, -out * 0.6, -fall * 0.5], [x1 * 1.2, -out * 0.6, -fall * 0.5], [(x0 + x1) * 0.66, -out, -fall]], i % 2 ? tone(C.crimson, 0.9) : tone(C.crimson, 0.78), C.crimsonDark);
+    }
+    torso.add(cloak, translate(0, -0.15, 0.43));
+    const pelvis = new Mesh();
+    pelvis.add(lathe([[0.3, 0.22, -0.2], [0.21, 0.16, 0.12]], 7, { side: ironDark, vary: 0.1 }));
+    pelvis.add(box(-0.22, -0.16, 0.04, 0.22, 0.17, 0.11, { side: H.plumDark }));
+    pelvis.add(box(-0.045, 0.16, 0.03, 0.045, 0.19, 0.12, { side: C.goldLight }));
+    for (let i = 0; i < 3; i++) pelvis.add(box(-0.012, -0.012, -0.16 - i * 0.02, 0.012, 0.012, 0, { side: C.gold }), mats(translate(0.2, 0.12, 0.03), rotY(-14 + i * 14), rotX(8)));
+    const maul = new Mesh();
+    maul.add(lathe([[0.035, -0.42], [0.03, 0.78]], 6, { side: H.plumDark, vary: 0.08 }));
+    maul.add(lathe([[0.05, -0.46], [0.05, -0.4]], 6, { side: C.gold }));
+    const hd = new Mesh();
+    hd.add(box(-0.26, -0.14, -0.15, 0.26, 0.14, 0.15, { side: iron, vary: 0.1 }));
+    hd.add(box(-0.3, -0.16, -0.17, -0.2, 0.16, 0.17, { side: ironLight }));
+    hd.add(box(0.2, -0.16, -0.17, 0.3, 0.16, 0.17, { side: ironLight }));
+    for (const sd of [-1, 1]) hd.add(lathe([[0.08, 0], [0, 0.16]], 4, { side: ironDark }), mats(translate(sd * 0.3, 0, 0), rotY(sd * 90)));
+    for (const fy of [-1, 1]) {
+      hd.add(slab([[0, 0.09], [-0.09, 0], [0, -0.09], [0.09, 0]], 0.02, { side: M.rose, glow: 2.6 }), translate(0, fy * 0.145, 0));
+    }
+    maul.add(hd, translate(0, 0, 0.82));
+    const build = {
+      thigh: 0.26,
+      shin: 0.3,
+      footH: 0.1,
+      pelvisH: 0.13,
+      shoulderZ: 0.4,
+      neckZ: 0.47,
+      hipW: 0.24,
+      shoulderW: 0.68,
+      upper: 0.25,
+      fore: 0.25,
+      parts: {
+        pelvis,
+        torso,
+        head,
+        thigh: limb(0.26, 0.11, 0.095, { side: ironDark, vary: 0.06 }),
+        shin: limb(0.3, 0.11, 0.09, { side: iron, vary: 0.06 }),
+        foot: box(-0.1, -0.11, -0.1, 0.1, 0.22, 0, { side: ironDark, top: iron }),
+        upper: limb(0.25, 0.095, 0.085, { side: ironDark, vary: 0.06 }),
+        fore: limb(0.25, 0.095, 0.08, { side: iron, vary: 0.06 }),
+        hand: box(-0.065, -0.065, -0.12, 0.065, 0.065, 0, { side: ironDark })
+      },
+      right: maul
+    };
+    return build;
+  }
+  var warden = (p = {}) => figure(wardenBuild(), p);
+  function fallen(searched) {
+    const m = new Mesh();
+    const hood = searched ? tone(H.teal, 0.7) : H.teal;
+    m.add(lathe([[0.2, 0.13, -0.1], [0.23, 0.15, 0.2], [0.2, 0.14, 0.42], [0.3, 0.17, 0.8], [0.36, 0.14, 1.02]], 7, { side: H.plum, vary: 0.1, top: H.plumDark }), mats(translate(-0.42, 0, 0.14), rotY(90)));
+    m.add(lathe([[0.215, 0.155, 0.3], [0.215, 0.155, 0.36]], 7, { side: hood }), mats(translate(-0.42, 0, 0.14), rotY(90)));
+    for (const sd of [-1, 1]) {
+      m.add(limb(0.3, 0.07, 0.06, { side: H.plumDark }), mats(translate(0.52, sd * 0.11, 0.1), rotZ(sd * 16), rotY(-92)));
+      m.add(box(-0.06, -0.07, -0.09, 0.09, 0.07, 0.05, { side: C.iron }), mats(translate(0.84, sd * 0.2, 0.1), rotZ(sd * 20)));
+    }
+    m.add(ball(0.2, 0.2, 0.16, { side: hood, vary: 0.08 }, true), translate(-0.62, 0, 0.17));
+    m.add(ball(0.26, 0.24, 0.13, { side: hood, vary: 0.08 }), translate(-0.4, 0, 0.19));
+    m.add(limb(0.42, 0.075, 0.06, { side: H.plum }), mats(translate(-0.42, 0.2, 0.1), rotZ(118), rotY(-90)));
+    m.add(ball(0.05, 0.05, 0.04, { side: H.skin }), translate(-0.63, 0.57, 0.08));
+    m.add(limb(0.3, 0.07, 0.06, { side: H.plumDark }), mats(translate(-0.3, -0.22, 0.1), rotZ(-70), rotY(-90)));
+    const book = new Mesh();
+    if (searched) {
+      book.add(box(-0.2, -0.14, 0, 0, 0.14, 0.035, { side: M.bone, top: tone(M.bone, 1.05) }), rotY(8));
+      book.add(box(0, -0.14, 0, 0.2, 0.14, 0.035, { side: M.bone, top: tone(M.bone, 0.94) }), rotY(-8));
+      book.add(box(-0.01, -0.15, -0.01, 0.01, 0.15, 0.02, { side: hood }));
+    } else {
+      book.add(box(-0.13, -0.17, 0, 0.13, 0.17, 0.08, { side: H.teal, top: H.teal, vary: 0.06 }));
+      book.add(box(-0.12, -0.16, 0.01, 0.135, 0.16, 0.07, { side: M.bone }));
+      book.add(slab([[0, 0.07], [-0.05, 0], [0, -0.07], [0.05, 0]], 0.012, { side: C.sparkWhite, glow: 3 }), mats(translate(0, 0, 0.086), rotX(90)));
+    }
+    m.add(book, mats(translate(-0.82, 0.62, 0.02), rotZ(24)));
+    return m;
+  }
+  function stand(m, x, y, z, turn, size = 1) {
+    const o = new Mesh();
+    o.add(m, mats(translate(x, y, z), rotZ(turn), scale(size)));
+    return o;
+  }
+
+  // src/gl/scenes.ts
+  function gameCam(look, half) {
+    const e = 30 * Math.PI / 180;
+    const d = 60;
+    const k2 = d * Math.cos(e) / Math.SQRT2;
+    return { at: look, eye: [look[0] + k2, look[1] + k2, look[2] + d * Math.sin(e)], half };
+  }
+  var WARM = [3, 1.35, 0.42];
+  var k = (c, s) => [c[0] * s, c[1] * s, c[2] * s];
+  var wallX = (x, y0, y1, high, seed, plain = false, thick = 0.7) => [wall(y1 - y0, { high, seed, plain, thick }), mats(translate(x, y1, 0), rotZ(-90))];
+  var wallY = (y, x0, x1, high, seed, plain = false, thick = 0.7) => [wall(x1 - x0, { high, seed, plain, thick }), translate(x0, y, 0)];
+  var TOMB = { up: 0.9, braziers: [[7.7, 6.3], [7.7, 10.7]] };
+  function tomb(variant2, _aspect) {
+    const m = new Mesh();
+    const UP = TOMB.up;
+    const HIGH = 3.5;
+    const onSteps = (x, y) => x >= 5 && x < 7 && y >= 7 && y < 10;
+    m.add(floor(5, 0, 14, 15, { skip: onSteps, seed: 3, cracked: 0.1, gone: 0.045 }));
+    m.add(floor(0, 0, 5, 15, { z: UP, seed: 8, cracked: 0.06, gone: 0, tones: C.wall }));
+    m.add(box(0, 0, 0, 4.96, 15, UP - 0.3, { side: C.gap }));
+    m.add(steps(4, 3, UP / 4, 0.5, 2), mats(translate(7, 7, 0), rotZ(90)));
+    m.add(...wallX(5, 0, 7, UP, 21, false, 0.5));
+    m.add(...wallX(5, 10, 15, UP, 22, false, 0.5));
+    m.add(...wallX(0, 0, 15, HIGH, 5));
+    m.add(...wallY(0, 0, 14, HIGH, 6));
+    m.add(box(-0.7, -0.7, 0, 0.02, 0.02, HIGH + 0.16, { side: tone(C.wall[1], 0.8), top: tone(C.dressed[0], 0.55) }));
+    for (const y of [2.5, 6.5, 10.5, 14.2]) {
+      m.add(stone(0, y - 0.4, 0, 0.32, y + 0.4, HIGH + 0.02, 0.05, { side: C.dressed[0], top: tone(C.dressed[0], 0.6) }));
+      m.add(stone(0, y - 0.5, HIGH - 0.4, 0.42, y + 0.5, HIGH + 0.1, 0.05, { side: C.dressed[1], top: tone(C.dressed[0], 0.6) }));
+    }
+    for (const x of [5, 9.5, 13.6]) {
+      m.add(stone(x - 0.4, 0, 0, x + 0.4, 0.32, HIGH + 0.02, 0.05, { side: tone(C.dressed[0], 0.9), top: tone(C.dressed[0], 0.6) }));
+      m.add(stone(x - 0.5, 0, HIGH - 0.4, x + 0.5, 0.42, HIGH + 0.1, 0.05, { side: tone(C.dressed[1], 0.9), top: tone(C.dressed[0], 0.6) }));
+    }
+    m.add(box(14, 0, 0, 14.5, 15.5, 0.36, { side: tone(C.wall[0], 0.7), top: tone(C.wall[0], 0.5) }));
+    m.add(box(0, 15, 0, 14.5, 15.5, 0.36, { side: tone(C.wall[0], 0.7), top: tone(C.wall[0], 0.5) }));
+    m.add(box(0, 15, 0, 5, 15.5, UP + 0.36, { side: tone(C.wall[0], 0.7), top: tone(C.wall[0], 0.5) }));
+    m.add(sarcophagus(true, false, 4), mats(translate(2.3, 4.5, UP), rotZ(90)));
+    m.add(candles(3), at(3.5, 3.2, UP));
+    m.add(candles(7), at(3.6, 5.9, UP));
+    m.add(candles(5), at(1, 6.3, UP));
+    m.add(hanging(1.5, 2.1, C.crimson, C.crimsonDark, C.goldLight, 0.5, 2), mats(translate(0.36, 4.5, HIGH - 0.35), rotZ(-90)));
+    m.add(hanging(1, 1.7, C.tealDark, hex("#0a4450"), C.sparkWhite, 0.7, 5), mats(translate(0.06, 8.5, HIGH - 0.4), rotZ(-90)));
+    m.add(hanging(1, 1.7, C.tealDark, hex("#0a4450"), C.sparkWhite, 0.35, 9), mats(translate(0.06, 12.4, HIGH - 0.4), rotZ(-90)));
+    m.add(urn(2), at(0.9, 13.9, UP));
+    m.add(urn(5), at(1.5, 14.3, UP));
+    m.add(bones(4), at(3.9, 12.6, UP));
+    m.add(moss(0.5, 7, 3), at(0.5, 0.6, UP));
+    const bare = variant2 === "bare";
+    m.add(brazier(1, !bare), at(TOMB.braziers[0][0], TOMB.braziers[0][1], 0));
+    m.add(brazier(2, !bare), at(TOMB.braziers[1][0], TOMB.braziers[1][1], 0));
+    m.add(pillar(3.2, 0, 1), at(9, 3, 0));
+    m.add(pillar(3.2, 0, 2), at(12.4, 3, 0));
+    m.add(pillar(3.2, 1.25, 3), at(12.4, 12, 0));
+    m.add(drum(0.62, 4), mats(translate(11.2, 13.3, 0), rotZ(28)));
+    m.add(drum(0.5, 6), mats(translate(12.6, 13.9, 0), rotZ(-50)));
+    m.add(rubble(0.9, 12, 5), at(12, 13, 0));
+    m.add(rubble(0.5, 6, 9), at(5.8, 13.6, 0));
+    m.add(bones(2), at(10.3, 11.4, 0));
+    m.add(bones(8), at(6.2, 2.6, 0));
+    m.add(chest(), mats(translate(13.1, 1, 0), rotZ(-30)));
+    m.add(urn(1), at(5.7, 0.9, 0));
+    m.add(urn(3), at(6.4, 0.75, 0));
+    m.add(barrel(), at(5.75, 1.75, 0));
+    m.add(moss(0.6, 9, 1), at(5.6, 14.4, 0));
+    m.add(moss(0.5, 6, 2), at(13.4, 0.6, 0));
+    m.add(hanging(1.1, 1.9, C.crimson, C.crimsonDark, C.goldLight, 0.75, 11), translate(7.2, 0.06, HIGH - 0.45));
+    m.add(hanging(1.1, 1.9, C.crimson, C.crimsonDark, C.goldLight, 0.3, 14), translate(11.6, 0.06, HIGH - 0.45));
+    m.add(gargoyle(true, 2), mats(translate(9.5, 0.33, 1.9), scale(1.5)));
+    m.add(lathe([[0.5, 0.36, 0], [0.56, 0.42, 0.34]], 8, { side: C.dressed[0], vary: 0.06, top: C.gap }, 22.5), translate(9.5, 0.86, 0));
+    m.add(lathe([[0.46, 0.33, 0.24], [0.46, 0.33, 0.27]], 8, { side: C.water, top: tone(C.water, 1.3), glow: 0.25 }, 22.5), translate(9.5, 0.86, 0));
+    m.add(sconce(1), translate(8.35, 0.03, 2));
+    m.add(sconce(2), translate(12.6, 0.03, 2));
+    m.add(sconce(3), mats(translate(0.03, 10.5, UP + 1.9), rotZ(-90)));
+    m.add(sconce(4), mats(translate(0.33, 2.5, UP + 1.5), rotZ(-90)));
+    const heroAt = [9.3, 8.5, 0];
+    const BIG = 1.22;
+    if (variant2 !== "empty" && !bare) {
+      m.add(stand(knight({ lean: 8, twist: -14, headYaw: 10, armR: [150, 24, 34], wristR: -146, armL: [44, 24, 70], legR: [30, 16], legL: [-26, 30] }), heroAt[0], heroAt[1], 0, -72, BIG));
+      m.add(stand(skeleton({ lean: 12, twist: 20, armR: [150, 16, 26], wristR: -130, armL: [-20, 22, 40], legR: [-20, 26], legL: [30, 12] }), 11.3, 7.3, 0, 76, BIG));
+      m.add(stand(skeleton({ lean: 6, armR: [70, 30, 60], wristR: -110, armL: [30, 14, 50], legR: [22, 10], legL: [-18, 22], headYaw: -14 }), 11.6, 10, 0, 122, BIG));
+      m.add(stand(skeleton({ lean: 4, armR: [30, 10, 80], armL: [14, 30, 8], plantL: true, legR: [6, 4], legL: [-6, 6] }, hex("#b02a4a"), "bow"), 12.7, 5.3, 0, 64, BIG));
+      m.add(stand(bat(0.7), 8.1, 4.6, 2, -20, BIG));
+      m.add(stand(cultist({ armR: [84, 30, 44], plantR: true, armL: [18, 20, 36], headPitch: -6, legR: [8, 4], legL: [-8, 8] }), 4.1, 8.5, UP, -90, BIG));
+    }
+    const lights = [
+      // (the left-hand brazier; the right-hand one is the fire that throws shadows. A page that moves lights both itself.)
+      ...variant2 === "bare" ? [] : [{ at: [7.7, 6.3, 1.3], color: k(WARM, 0.85), reach: 6.5 }],
+      { at: [8.5, 0.5, 2.4], color: k(WARM, 0.5), reach: 4.5 },
+      { at: [12.6, 0.5, 2.4], color: k(WARM, 0.5), reach: 4.5 },
+      { at: [0.5, 10.5, UP + 2.3], color: k(WARM, 0.5), reach: 4.5 },
+      { at: [0.6, 2.5, UP + 1.9], color: k(WARM, 0.45), reach: 4 },
+      { at: [2.3, 4.5, UP + 1.5], color: [0.25, 1.1, 1.2], reach: 3.6 },
+      { at: [3.5, 3.2, UP + 0.5], color: k(WARM, 0.3), reach: 2.4 },
+      { at: [3.6, 5.9, UP + 0.5], color: k(WARM, 0.3), reach: 2.4 },
+      { at: [1, 6.3, UP + 0.5], color: k(WARM, 0.3), reach: 2.4 }
+    ];
+    if (variant2 !== "empty" && !bare) {
+      lights.push({ at: [heroAt[0] + 0.7, heroAt[1] - 0.1, 1.2], color: [0.35, 1.3, 1.45], reach: 3.4 });
+      lights.push({ at: [4.5, 8.9, UP + 1.5], color: [1.6, 0.3, 0.8], reach: 3.6 });
+    }
+    const cam = variant2 === "game" ? gameCam([heroAt[0], heroAt[1], 0.55], 7.29) : variant2 === "steps" ? gameCam([6.6, 8.3, 0.9], 3.1) : gameCam([7, 7.4, 0.9], 6.3);
+    return {
+      mesh: m,
+      cam,
+      sky: [0.105, 0.11, 0.24],
+      ground: [0.035, 0.032, 0.08],
+      moonFrom: [0.75, -0.55, 1.15],
+      moon: [0.38, 0.42, 0.72],
+      fire: { at: [7.7, 10.7, 1.25], toward: [9.5, 7.5, 0.2], color: k(WARM, 1), reach: 9.5 },
+      lights,
+      bounds: { at: [7, 7.5, 1.2], half: 13 },
+      vignette: 0.55,
+      mist: { color: [4e-3, 3e-3, 0.014], at: [7.5, 7.5, 0], near: 9, far: 15 }
+    };
+  }
+  function stage(m, wide) {
+    m.add(floor(-4, -4, wide + 4, wide + 4, { seed: 4, cracked: 0.05, gone: 0 }));
+    m.add(...wallY(-4, -4, wide + 4, 2.6, 9));
+    m.add(...wallX(-4, -4, wide + 4, 2.6, 12));
+  }
+  function heroes(_variant, _aspect) {
+    const m = new Mesh();
+    stage(m, 6);
+    const face = -45;
+    const place = (i) => [3.4 - i * 1.25, 0.2 + i * 1.25];
+    m.add(stand(knight({ lean: 2, armR: [16, 52, 28], plantR: true, armL: [30, 22, 62], legR: [6, 4], legL: [-6, 6], headYaw: -10 }), ...place(0), 0, face));
+    m.add(stand(ranger({ armL: [16, 36, 12], plantL: true, armR: [20, 12, 50], legR: [8, 4], legL: [-8, 8], headYaw: -12 }), ...place(1), 0, face));
+    m.add(stand(mage({ armR: [34, 30, 28], plantR: true, armL: [14, 14, 34], legR: [4, 2], legL: [-4, 4], headYaw: 12 }), ...place(2), 0, face));
+    m.add(brazier(3), at(4.6, -1.6, 0));
+    m.add(urn(4), at(-0.9, 3.4, 0));
+    const mid = [2.2, 1.4, 0.75];
+    return {
+      mesh: m,
+      cam: gameCam(mid, 1.62),
+      sky: [0.12, 0.125, 0.26],
+      ground: [0.04, 0.038, 0.09],
+      moonFrom: [0.75, -0.5, 1.1],
+      moon: [0.42, 0.46, 0.78],
+      fire: { at: [4.6, -1.6, 1.25], toward: [2.2, 1.4, 0.4], color: k(WARM, 0.85), reach: 9 },
+      lights: [{ at: [3.4, 1.4, 1.5], color: [0.35, 1, 1.1], reach: 3 }, { at: [0.4, 3.2, 2.3], color: [0.6, 0.95, 1.1], reach: 3 }],
+      bounds: { at: [2, 1.5, 1], half: 8 },
+      vignette: 0.45
+    };
+  }
+  function monsters(_variant, _aspect) {
+    const m = new Mesh();
+    stage(m, 7);
+    const face = -45;
+    const place = (i) => [4.5 - i * 1.12, 0 + i * 1.12];
+    m.add(stand(skeleton({ lean: 6, armR: [70, 60, 40], wristR: -100, armL: [10, 16, 40], legR: [14, 8], legL: [-12, 14] }), ...place(0), 0, face));
+    m.add(stand(skeleton({ armL: [16, 36, 12], plantL: true, armR: [40, 10, 90], legR: [6, 4], legL: [-6, 6] }, hex("#b02a4a"), "bow"), ...place(1), 0, face));
+    m.add(stand(cultist({ armR: [84, 30, 44], plantR: true, armL: [16, 16, 36], legR: [4, 2], legL: [-4, 4] }), ...place(2), 0, face));
+    m.add(stand(bat(0.6), ...place(3), 1.3, face));
+    m.add(stand(brute({ lean: 10, armR: [140, 30, 30], wristR: -150, armL: [20, 26, 40], legR: [10, 6], legL: [-10, 10] }), place(4)[0] - 0.35, place(4)[1] + 0.35, 0, face));
+    const mid = [1.85, 2.65, 0.75];
+    return {
+      mesh: m,
+      cam: gameCam(mid, 2.4),
+      sky: [0.11, 0.11, 0.25],
+      ground: [0.04, 0.035, 0.09],
+      moonFrom: [0.75, -0.5, 1.1],
+      moon: [0.4, 0.42, 0.75],
+      fire: { at: [5.8, 1.2, 1.7], toward: [2, 2.4, 0.4], color: k(WARM, 0.7), reach: 12 },
+      lights: [{ at: [2.6, 2.6, 1.9], color: [1.2, 0.25, 0.6], reach: 3 }],
+      bounds: { at: [2, 2, 1], half: 9 },
+      vignette: 0.45
+    };
+  }
+  function more(_variant, _aspect) {
+    const m = new Mesh();
+    stage(m, 8);
+    const face = -45;
+    m.add(stand(figure(knightBuild(true), { lean: 4, armR: [40, 30, 50], wristR: -40, armL: [50, -20, 70], legR: [8, 4], legL: [-8, 8] }), 5.2, -0.4, 0, face, 1.22));
+    m.add(stand(brute({ lean: 10, armR: [140, 30, 30], wristR: -150, armL: [20, 26, 40], legR: [10, 6], legL: [-10, 10] }), 3.9, 0.9, 0, face, 1.22));
+    m.add(stand(figure(bruteBuild(true), { lean: 8, armR: [60, 30, 40], wristR: -80, armL: [20, 26, 40], legR: [10, 6], legL: [-10, 10] }), 2.3, 2.5, 0, face, 1.22 * 1.33));
+    m.add(stand(warden({ lean: 3, armR: [30, 26, 50], wristR: -30, armL: [14, 18, 30], legR: [6, 3], legL: [-6, 6] }), 0.2, 4.6, 0, face, 1.22 * 1.48));
+    m.add(fallen(false), mats(translate(4.6, 2.6, 0), rotZ(30)));
+    m.add(fallen(true), mats(translate(2.6, 4.8, 0), rotZ(-20)));
+    const mid = [2.6, 2.4, 1.2];
+    return {
+      mesh: m,
+      cam: gameCam(mid, 3.3),
+      sky: [0.11, 0.11, 0.25],
+      ground: [0.04, 0.035, 0.09],
+      moonFrom: [0.75, -0.5, 1.1],
+      moon: [0.4, 0.42, 0.75],
+      fire: { at: [6.4, 1.6, 2], toward: [2.4, 2.6, 0.5], color: k(WARM, 0.7), reach: 13 },
+      lights: [{ at: [2.6, 3.6, 2.2], color: [1.2, 0.25, 0.6], reach: 3.4 }],
+      bounds: { at: [2.5, 2.5, 1.2], half: 10 },
+      vignette: 0.45
+    };
+  }
+  var SCENES = { room: tomb, tomb, heroes, monsters, more };
+
+  // src/dev/look3d.ts
+  var [name = "room", variant = ""] = decodeURIComponent(location.hash.slice(1)).split(":");
+  var cv = document.createElement("canvas");
+  cv.width = window.innerWidth;
+  cv.height = window.innerHeight;
+  cv.style.position = "static";
+  cv.style.display = "block";
+  document.body.style.margin = "0";
+  document.body.style.background = "#000";
+  document.body.appendChild(cv);
+  var make = SCENES[name] ?? SCENES.room;
+  var t0 = performance.now();
+  var scene = make(variant, cv.width / cv.height);
+  var t1 = performance.now();
+  paint(cv, scene);
+  console.log(`${name}: ${scene.mesh.triangles} triangles, built in ${Math.round(t1 - t0)} ms, painted in ${Math.round(performance.now() - t1)} ms`);
+  window.__ready = true;
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "arpg",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pixel-art isometric ARPG with roguelike runs. Working title: Wordhoard.",
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test tests/*.test.ts",
+    "playtest": "node tools/playtest.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "playwright": "^1.56.0",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.0"
+  }
+}

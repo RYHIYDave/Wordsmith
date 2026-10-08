@@ -1,0 +1,25 @@
+--- /tmp/claude-0/-home-claude/813a5084-457b-5ed6-b88f-81ed4ee83594/scratchpad/v144/arpg/src/engine/screen.ts	2026-10-04 11:37:05.000000000 -0400
++++ src/engine/screen.ts	2026-10-05 14:25:44.309072585 -0400
+@@ -55,7 +55,12 @@
+   return matchMedia('(any-pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+ }
+ 
+-export function createScreen(): Screen {
++/**
++ * `clear`: the canvas can be seen through where nothing is drawn on it. (The world in low-poly 3D
++ * is drawn on a canvas of its own that lies under this one: gl/world.ts. A canvas that cannot be
++ * seen through is a little quicker to put on the screen, so the pixel game keeps that.)
++ */
++export function createScreen(clear = false): Screen {
+   // The stage is the part of the window the game may use: everything inside the phone's notch,
+   // rounded corners and home bar.
+   const stage = document.createElement('div');
+@@ -70,7 +75,7 @@
+     'display:block;position:absolute;left:0;top:0;transform-origin:0 0;outline:none;touch-action:none;' +
+     'image-rendering:pixelated;image-rendering:crisp-edges';
+   stage.appendChild(canvas);
+-  const g = canvas.getContext('2d', { alpha: false }) as CanvasRenderingContext2D;
++  const g = canvas.getContext('2d', { alpha: clear }) as CanvasRenderingContext2D;
+ 
+   let saved: TurnMode = 'auto';
+   try {

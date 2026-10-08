@@ -1,0 +1,72 @@
+--- /home/claude/arpg/src/main.ts	2026-10-07 16:52:27.983093417 -0400
++++ src/main.ts	2026-10-07 17:39:46.332893951 -0400
+@@ -7,8 +7,9 @@
+ import { makeIconArt } from './art/icons';
+ import { PAINTING } from './art/kit';
+ import { makeSpellArt } from './art/spells';
+-import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
+-import { makeGateArt } from './art/gates';
++import { VAULT, WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
++import { makeGate, makeLeaf, makeLever, makePlate, makePost } from './art/gates';
++import { ARCH, ARCH_BOSS, DOOR_HIGH, PILLAR, POST, emblemMiddle, makeArch, makeDoorLeaf, makeLintel, makePillar, makePortcullis } from './art/gates2';
+ import type { WallLook } from './art/ground';
+ import { makeDungeonProps } from './art/props';
+ import { makeTownProps } from './art/town';
+@@ -30,7 +31,6 @@
+ import { createScreen } from './engine/screen';
+ import { ARRIVAL_LINES, CLASSES, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
+ import type { Limit } from './game/defs';
+-import { DOORS } from './game/doors';
+ import { RELIEF } from './game/dungeon';
+ import { Game, cleanMeta } from './game/game';
+ import type { RunSave } from './game/game';
+@@ -150,7 +150,6 @@
+   const art: Art = {
+     ground: makeGroundArt(),
+     props: makeDungeonProps(),
+-    gates: makeGateArt(),
+     town: makeTownProps(),
+     folk: makeTownsfolk(),
+     // THE HEROES PAINTED OVER THE BONES (art/heroes3.ts) ARE THE GAME'S from Version 16: the
+@@ -1528,8 +1527,6 @@
+     cam: () => renderer.cam,
+     /** The map-maker's switches for terraces and sunken floor (game/dungeon.ts): pictures of what is not yet in the game switch it on. */
+     relief: RELIEF,
+-    /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
+-    doors: DOORS,
+     /**
+      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
+      * playtests that photograph a look, who put back the one they found; the game's own is
+@@ -1538,11 +1535,30 @@
+     walls: (look: Partial<WallLook>) => {
+       setWallLook(look);
+       art.ground = makeGroundArt();
+-      // (a gate's post is as tall as the walls, and it fades as they do)
+-      art.gates = makeGateArt();
+     },
+     wallLook: (): WallLook => ({ ...WALL_LOOK }),
+     wallLooks: { blocks: WALLS_BLOCKS, fading: WALLS_FADING },
++    /** (DOORS AND GATES: MOCK-UPS for pictures.) The pictures of art/gates.ts, for a playtest to stand in the world through `renderer.mock`. */
++    gates: {
++      leaf: makeLeaf,
++      gate: makeGate,
++      post: (high: number, fades = false) => makePost(VAULT, high, fades),
++      lever: (pulled: boolean) => makeLever(VAULT, pulled),
++      plate: makePlate,
++    },
++    /** (DOORS AND GATES, THE SECOND LOOK: MOCK-UPS for pictures: art/gates2.ts.) */
++    gates2: {
++      lintel: (alongX: boolean) => makeLintel(VAULT, alongX),
++      post: () => makePillar(VAULT, DOOR_HIGH, POST),
++      postWide: POST,
++      leaf: makeDoorLeaf,
++      pillar: (boss: boolean) => makePillar(VAULT, (boss ? ARCH_BOSS : ARCH).spring),
++      arch: (alongX: boolean, boss: boolean, emblem: 'none' | 'dim' | 'lit') => makeArch(VAULT, alongX, boss ? ARCH_BOSS : ARCH, emblem),
++      gate: (alongX: boolean, boss: boolean, raise: number) => makePortcullis(alongX, boss ? ARCH_BOSS : ARCH, raise, boss),
++      eyes: (boss: boolean) => emblemMiddle(boss ? ARCH_BOSS : ARCH),
++      pillarWide: PILLAR,
++      doorHigh: DOOR_HIGH,
++    },
+     /** Where a world point is on screen, in game pixels (playtests press things in the world). */
+     at: (x: number, y: number) => ({ x: wx(renderer.cam, x, y), y: wy(renderer.cam, x, y) }),
+     errand: () => (errand ? errand.kind : null),

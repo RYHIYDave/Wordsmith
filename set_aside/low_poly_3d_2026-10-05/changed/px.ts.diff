@@ -1,0 +1,32 @@
+--- /tmp/claude-0/-home-claude/813a5084-457b-5ed6-b88f-81ed4ee83594/scratchpad/v144/arpg/src/engine/px.ts	2026-10-05 06:39:34.000000000 -0400
++++ src/engine/px.ts	2026-10-05 13:15:40.422783178 -0400
+@@ -340,7 +340,7 @@
+ const glows = new Map<string, HTMLCanvasElement>();
+ 
+ /** A soft round pool of one colour, painted once: every light of that colour is this picture, stretched. */
+-function glowOf(color: string): HTMLCanvasElement {
++export function glowOf(color: string): HTMLCanvasElement {
+   let cv = glows.get(color);
+   if (cv) return cv;
+   cv = document.createElement('canvas');
+@@ -387,6 +387,20 @@
+   g.globalAlpha = 1;
+   g.globalCompositeOperation = before;
+ }
++
++/**
++ * The light a fire throws on what is round it: a pool of its colour, `rx` to either side and `ry`
++ * up and down (a pool on the floor is seen from above, so about half as deep as it is wide).
++ * Added to the picture, so it warms the stone it falls on and whoever stands in it.
++ */
++export function drawPool(g: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, color: string, a: number): void {
++  const before = g.globalCompositeOperation;
++  g.globalCompositeOperation = 'lighter';
++  g.globalAlpha = Math.max(0, Math.min(1, a));
++  g.drawImage(glowOf(color), x - rx, y - ry, rx * 2, ry * 2);
++  g.globalAlpha = 1;
++  g.globalCompositeOperation = before;
++}
+ 
+ /** The pool of light behind a figure, if it has one. Call it just before the sprite is drawn. */
+ export function drawAura(g: CanvasRenderingContext2D, s: Sprite, x: number, y: number, scale = 1, strength = 1): void {

@@ -1,0 +1,2436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>level3d</title>
+<style>
+:root{--bg:#07050a;--fg:#d8d0c6;color-scheme:dark}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);overflow:hidden;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+</style>
+</head>
+<body>
+<script>
+"use strict";
+(() => {
+  // src/gl/vec.ts
+  var sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  var dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  var cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  var len = (a) => Math.hypot(a[0], a[1], a[2]);
+  var norm = (a) => {
+    const l = len(a) || 1;
+    return [a[0] / l, a[1] / l, a[2] / l];
+  };
+  function ident() {
+    const m = new Float32Array(16);
+    m[0] = m[5] = m[10] = m[15] = 1;
+    return m;
+  }
+  function mmul(a, b) {
+    const o = new Float32Array(16);
+    for (let c = 0; c < 4; c++) {
+      for (let r = 0; r < 4; r++) {
+        o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+      }
+    }
+    return o;
+  }
+  function mats(...ms) {
+    let o = ms[0];
+    for (let i = 1; i < ms.length; i++) o = mmul(o, ms[i]);
+    return o;
+  }
+  function translate(x, y, z) {
+    const m = ident();
+    m[12] = x;
+    m[13] = y;
+    m[14] = z;
+    return m;
+  }
+  function scale(x, y = x, z = x) {
+    const m = ident();
+    m[0] = x;
+    m[5] = y;
+    m[10] = z;
+    return m;
+  }
+  function rotX(deg) {
+    const a = deg * Math.PI / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const m = ident();
+    m[5] = c;
+    m[6] = s;
+    m[9] = -s;
+    m[10] = c;
+    return m;
+  }
+  function rotY(deg) {
+    const a = deg * Math.PI / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const m = ident();
+    m[0] = c;
+    m[2] = -s;
+    m[8] = s;
+    m[10] = c;
+    return m;
+  }
+  function rotZ(deg) {
+    const a = deg * Math.PI / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const m = ident();
+    m[0] = c;
+    m[1] = s;
+    m[4] = -s;
+    m[5] = c;
+    return m;
+  }
+  function apply(m, p) {
+    return [m[0] * p[0] + m[4] * p[1] + m[8] * p[2] + m[12], m[1] * p[0] + m[5] * p[1] + m[9] * p[2] + m[13], m[2] * p[0] + m[6] * p[1] + m[10] * p[2] + m[14]];
+  }
+  function lookAt(eye, at2, up) {
+    const f2 = norm(sub(at2, eye));
+    const r = norm(cross(f2, up));
+    const u = cross(r, f2);
+    const m = ident();
+    m[0] = r[0];
+    m[4] = r[1];
+    m[8] = r[2];
+    m[1] = u[0];
+    m[5] = u[1];
+    m[9] = u[2];
+    m[2] = -f2[0];
+    m[6] = -f2[1];
+    m[10] = -f2[2];
+    m[12] = -dot(r, eye);
+    m[13] = -dot(u, eye);
+    m[14] = dot(f2, eye);
+    return m;
+  }
+  function ortho(hw, hh, near2, far) {
+    const m = ident();
+    m[0] = 1 / hw;
+    m[5] = 1 / hh;
+    m[10] = -2 / (far - near2);
+    m[14] = -(far + near2) / (far - near2);
+    return m;
+  }
+  function perspective(fovy, aspect, near2, far) {
+    const f2 = 1 / Math.tan(fovy * Math.PI / 360);
+    const m = new Float32Array(16);
+    m[0] = f2 / aspect;
+    m[5] = f2;
+    m[10] = (far + near2) / (near2 - far);
+    m[11] = -1;
+    m[14] = 2 * far * near2 / (near2 - far);
+    return m;
+  }
+
+  // src/gl/mesh.ts
+  var toLinear = (c) => c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  function hex(c) {
+    const n = (i) => toLinear(parseInt(c.slice(1 + i * 2, 3 + i * 2), 16) / 255);
+    return [n(0), n(1), n(2)];
+  }
+  var tone = (c, k) => [c[0] * k, c[1] * k, c[2] * k];
+  var blend = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  function rnd(a, b = 0, c = 0) {
+    let h = Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263) + Math.imul(c | 0, 2147483647) | 0;
+    h = Math.imul(h ^ h >>> 13, 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  }
+  var STRIDE = 7;
+  var Mesh = class {
+    constructor() {
+      this.data = [];
+    }
+    get triangles() {
+      return this.data.length / (STRIDE * 3);
+    }
+    tri(a, b, c, col, glow = 0) {
+      this.data.push(a[0], a[1], a[2], col[0], col[1], col[2], glow, b[0], b[1], b[2], col[0], col[1], col[2], glow, c[0], c[1], c[2], col[0], col[1], col[2], glow);
+      return this;
+    }
+    /** Four corners in order round the face (counter-clockwise from outside). */
+    quad(a, b, c, d, col, glow = 0) {
+      return this.tri(a, b, c, col, glow).tri(a, c, d, col, glow);
+    }
+    /** A flat face of any number of corners (it must bulge nowhere inward), in order round it. */
+    face(pts, col, glow = 0) {
+      for (let i = 1; i < pts.length - 1; i++) this.tri(pts[0], pts[i], pts[i + 1], col, glow);
+      return this;
+    }
+    /** Seen from both sides (cloth, a wing, a leaf). */
+    sheet(pts, col, back = col, glow = 0) {
+      this.face(pts, col, glow);
+      return this.face([...pts].reverse(), back, glow);
+    }
+    /**
+     * For a solid that bulges nowhere inward: turn every triangle to face away from the point `c`
+     * inside it. (So its faces can be written down in any order.)
+     */
+    outward(c) {
+      const d = this.data;
+      for (let t = 0; t < d.length; t += STRIDE * 3) {
+        const a = [d[t], d[t + 1], d[t + 2]];
+        const b = [d[t + STRIDE], d[t + STRIDE + 1], d[t + STRIDE + 2]];
+        const e = [d[t + STRIDE * 2], d[t + STRIDE * 2 + 1], d[t + STRIDE * 2 + 2]];
+        const n = cross(sub(b, a), sub(e, a));
+        const mid = [(a[0] + b[0] + e[0]) / 3 - c[0], (a[1] + b[1] + e[1]) / 3 - c[1], (a[2] + b[2] + e[2]) / 3 - c[2]];
+        if (n[0] * mid[0] + n[1] * mid[1] + n[2] * mid[2] >= 0) continue;
+        for (let k = 0; k < STRIDE; k++) {
+          const s = d[t + STRIDE + k];
+          d[t + STRIDE + k] = d[t + STRIDE * 2 + k];
+          d[t + STRIDE * 2 + k] = s;
+        }
+      }
+      return this;
+    }
+    /** Another mesh, moved by `m`, and tinted. */
+    add(o, m, tint) {
+      const d = o.data;
+      for (let i = 0; i < d.length; i += STRIDE) {
+        const p = m ? apply(m, [d[i], d[i + 1], d[i + 2]]) : [d[i], d[i + 1], d[i + 2]];
+        if (tint) this.data.push(p[0], p[1], p[2], d[i + 3] * tint[0], d[i + 4] * tint[1], d[i + 5] * tint[2], d[i + 6]);
+        else this.data.push(p[0], p[1], p[2], d[i + 3], d[i + 4], d[i + 5], d[i + 6]);
+      }
+      if (m && det3(m) < 0) {
+        const n = this.data.length;
+        for (let t = n - o.data.length; t < n; t += STRIDE * 3) {
+          for (let k = 0; k < STRIDE; k++) {
+            const s = this.data[t + STRIDE + k];
+            this.data[t + STRIDE + k] = this.data[t + STRIDE * 2 + k];
+            this.data[t + STRIDE * 2 + k] = s;
+          }
+        }
+      }
+      return this;
+    }
+  };
+  function det3(m) {
+    return m[0] * (m[5] * m[10] - m[6] * m[9]) - m[4] * (m[1] * m[10] - m[2] * m[9]) + m[8] * (m[1] * m[6] - m[2] * m[5]);
+  }
+  var paintOf = (p) => Array.isArray(p) ? { side: p } : p;
+  var varied = (c, p, i) => p.vary ? tone(c, 1 + (rnd(i, p.seed ?? 0, 7) - 0.5) * 2 * p.vary) : c;
+  function box(x0, y0, z0, x1, y1, z1, paint2) {
+    const p = paintOf(paint2);
+    const m = new Mesh();
+    const g = p.glow ?? 0;
+    m.quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], varied(p.top ?? p.side, p, 0), g);
+    m.quad([x0, y1, z0], [x1, y1, z0], [x1, y0, z0], [x0, y0, z0], varied(p.bottom ?? p.side, p, 1), g);
+    m.quad([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], varied(p.side, p, 2), g);
+    m.quad([x1, y1, z0], [x0, y1, z0], [x0, y1, z1], [x1, y1, z1], varied(p.side, p, 3), g);
+    m.quad([x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1], varied(p.side, p, 4), g);
+    m.quad([x0, y1, z0], [x0, y0, z0], [x0, y0, z1], [x0, y1, z1], varied(p.side, p, 5), g);
+    return m;
+  }
+  function lathe(rings, n, paint2, turn = 0) {
+    const p = paintOf(paint2);
+    const m = new Mesh();
+    const g = p.glow ?? 0;
+    const at2 = (ring, i) => {
+      const a = (turn + i * 360 / n) * Math.PI / 180;
+      const rx = ring[0];
+      const ry = ring.length > 2 ? ring[1] : ring[0];
+      return [Math.cos(a) * rx, Math.sin(a) * ry, ring[ring.length - 1]];
+    };
+    for (let k = 0; k < rings.length - 1; k++) {
+      for (let i = 0; i < n; i++) {
+        const a = at2(rings[k], i);
+        const b = at2(rings[k], i + 1);
+        const c = at2(rings[k + 1], i + 1);
+        const d = at2(rings[k + 1], i);
+        const col = varied(p.side, p, k * 31 + i);
+        if (rings[k + 1][0] === 0) m.tri(a, b, c, col, g);
+        else if (rings[k][0] === 0) m.tri(a, c, d, col, g);
+        else m.quad(a, b, c, d, col, g);
+      }
+    }
+    const first = rings[0];
+    const last = rings[rings.length - 1];
+    if (first[0] > 0) m.face(Array.from({ length: n }, (_, i) => at2(first, n - i)), varied(p.bottom ?? p.side, p, 901), g);
+    if (last[0] > 0) m.face(Array.from({ length: n }, (_, i) => at2(last, i)), varied(p.top ?? p.side, p, 902), g);
+    return m;
+  }
+  function ball(rx, ry, rz, paint2, fine = false) {
+    const p = paintOf(paint2);
+    const m = new Mesh();
+    const t = (1 + Math.sqrt(5)) / 2;
+    const vs = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]].map(norm);
+    const fs = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8], [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+    let tris = fs.map((f2) => [vs[f2[0]], vs[f2[1]], vs[f2[2]]]);
+    if (fine) {
+      const out = [];
+      for (const [a, b, c] of tris) {
+        const ab = norm([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2]);
+        const bc = norm([(b[0] + c[0]) / 2, (b[1] + c[1]) / 2, (b[2] + c[2]) / 2]);
+        const ca = norm([(c[0] + a[0]) / 2, (c[1] + a[1]) / 2, (c[2] + a[2]) / 2]);
+        out.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]);
+      }
+      tris = out;
+    }
+    const s = (v) => [v[0] * rx, v[1] * ry, v[2] * rz];
+    tris.forEach(([a, b, c], i) => {
+      const out = cross(sub(b, a), sub(c, a));
+      const facesOut = out[0] * a[0] + out[1] * a[1] + out[2] * a[2] > 0;
+      const col = varied(a[2] + b[2] + c[2] > 1.8 && p.top ? p.top : p.side, p, i);
+      if (facesOut) m.tri(s(a), s(b), s(c), col, p.glow ?? 0);
+      else m.tri(s(a), s(c), s(b), col, p.glow ?? 0);
+    });
+    return m;
+  }
+
+  // src/gl/gl.ts
+  var MAX_LIGHTS = 16;
+  var f32 = (a) => new Float32Array(a);
+  var VS = `#version 300 es
+layout(location=0) in vec3 aPos;
+layout(location=1) in vec3 aCol;
+layout(location=2) in float aGlow;
+uniform mat4 uModel;
+uniform mat4 uViewProj;
+uniform mat4 uMoonMat;
+uniform mat4 uFireMat;
+out vec3 vWorld;
+out vec3 vCol;
+out float vGlow;
+out vec4 vMoon;
+out vec4 vFire;
+void main() {
+  vec4 w = uModel * vec4(aPos, 1.0);
+  vWorld = w.xyz;
+  vCol = aCol;
+  vGlow = aGlow;
+  vMoon = uMoonMat * w;
+  vFire = uFireMat * w;
+  gl_Position = uViewProj * w;
+}`;
+  var FS = `#version 300 es
+precision highp float;
+precision highp sampler2DShadow;
+in vec3 vWorld;
+in vec3 vCol;
+in float vGlow;
+in vec4 vMoon;
+in vec4 vFire;
+uniform vec3 uCamPos;
+uniform vec3 uCamDir;
+uniform float uOrtho;
+uniform vec3 uSky;
+uniform vec3 uGround;
+uniform vec3 uMoonDir;
+uniform vec3 uMoonCol;
+uniform sampler2DShadow uMoonMap;
+uniform float uMoonTexel;
+uniform float uFireOn;
+uniform vec3 uFirePos;
+uniform vec3 uFireCol;
+uniform float uFireReach;
+uniform float uFireShade;
+uniform sampler2DShadow uFireMap;
+uniform float uFireTexel;
+uniform int uCount;
+uniform vec4 uLightPos[${MAX_LIGHTS}];
+uniform vec3 uLightCol[${MAX_LIGHTS}];
+uniform vec2 uView;
+uniform float uVignette;
+uniform vec3 uMistCol;
+uniform vec3 uMistAt;
+uniform vec3 uMistRange;
+uniform vec4 uTint;
+uniform sampler2D uSeen;
+uniform vec3 uSeenSize;
+out vec4 outColor;
+
+// Light in flat steps, as a cartoon has it: dark, half, full. (The edges of the steps are a
+// little soft, so that a facet turning through one does not flicker.)
+float steps(float d) {
+  return smoothstep(0.02, 0.10, d) * 0.5 + smoothstep(0.42, 0.52, d) * 0.5;
+}
+
+float shadowOf(sampler2DShadow map, vec4 s, float spread) {
+  vec3 p = s.xyz / s.w * 0.5 + 0.5;
+  if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || p.z > 1.0 || s.w <= 0.0) return 1.0;
+  float sum = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) sum += texture(map, vec3(p.xy + vec2(float(x), float(y)) * spread, p.z));
+  return sum / 9.0;
+}
+
+void main() {
+  // what has never been seen is not there; at the edge of what has, it falls away into the dark
+  float known = 1.0;
+  if (uSeenSize.z > 0.5) {
+    known = smoothstep(0.0, 0.5, texture(uSeen, vWorld.yx / uSeenSize.xy).r);
+    if (known < 0.004) discard;
+  }
+  vec3 toCam = uOrtho > 0.5 ? -uCamDir : normalize(uCamPos - vWorld);
+  vec3 n = normalize(cross(dFdx(vWorld), dFdy(vWorld)));
+  if (dot(n, toCam) < 0.0) n = -n;
+
+  vec3 light = mix(uGround, uSky, n.z * 0.5 + 0.5);
+  float moonLit = shadowOf(uMoonMap, vMoon, uMoonTexel);
+  light += uMoonCol * steps(max(dot(n, uMoonDir), 0.0)) * moonLit;
+
+  if (uFireOn > 0.5) {
+    vec3 L = uFirePos - vWorld;
+    float d = length(L);
+    float att = clamp(1.0 - d / uFireReach, 0.0, 1.0);
+    att *= att;
+    float lit = mix(1.0, shadowOf(uFireMap, vFire, uFireTexel * 1.5), uFireShade);
+    light += uFireCol * steps(max(dot(n, L / d), 0.0)) * att * lit;
+  }
+  for (int i = 0; i < uCount; i++) {
+    vec3 L = uLightPos[i].xyz - vWorld;
+    float d = length(L);
+    float att = clamp(1.0 - d / uLightPos[i].w, 0.0, 1.0);
+    att *= att;
+    light += uLightCol[i] * steps(max(dot(n, L / d), 0.0)) * att;
+  }
+
+  vec3 c = vCol * light + vCol * vGlow;
+  // distance takes the colour out of things
+  float far = clamp((length(vWorld.xy - uMistAt.xy) - uMistRange.x) / max(0.001, uMistRange.y - uMistRange.x), 0.0, 1.0);
+  c = mix(c, uMistCol, far * far * uMistRange.z * (1.0 - min(1.0, vGlow)));
+  c = mix(c, uTint.rgb, uTint.a) * known;
+  // the corners of the picture fall away into the dark
+  vec2 uv = gl_FragCoord.xy / uView - 0.5;
+  c *= 1.0 - uVignette * smoothstep(0.35, 0.95, length(uv * vec2(1.0, 0.9)) * 1.5);
+  // bright things roll off instead of clipping, then to the screen's own curve
+  c = c / (1.0 + c * 0.35);
+  outColor = vec4(pow(c, vec3(1.0 / 2.2)), 1.0);
+}`;
+  var SHADOW_VS = `#version 300 es
+layout(location=0) in vec3 aPos;
+uniform mat4 uModel;
+uniform mat4 uMat;
+void main() { gl_Position = uMat * (uModel * vec4(aPos, 1.0)); }`;
+  var SHADOW_FS = `#version 300 es
+precision highp float;
+void main() {}`;
+  function program(gl, vs, fs) {
+    const make = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(`shader: ${gl.getShaderInfoLog(s)}`);
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, make(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, make(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`program: ${gl.getProgramInfoLog(p)}`);
+    return p;
+  }
+  function depthTarget(gl, size) {
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, gl.DEPTH_COMPONENT24, size, size);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_MODE, gl.COMPARE_REF_TO_TEXTURE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_COMPARE_FUNC, gl.LEQUAL);
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tex, 0);
+    gl.drawBuffers([gl.NONE]);
+    gl.readBuffer(gl.NONE);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return { fb, tex, size };
+  }
+  var Painter = class {
+    /** `still`: the picture is kept after it is painted, so that it can be read back (a moving picture does not want that: it costs a copy every frame). */
+    constructor(canvas, moonSize = 2048, fireSize = 1024, still = false) {
+      this.canvas = canvas;
+      this.uni = /* @__PURE__ */ new Map();
+      /** Everything kept with the rest, and how much of it has been sent to the card. */
+      this.kept = [];
+      this.sent = 0;
+      /** The picture of what has been seen (see Look.seen), once one has been handed over. */
+      this.seenTex = null;
+      this.seenSize = { w: 0, h: 0 };
+      /** The camera's matrix of the last frame painted: for laying flat things (names, bars) over the picture. */
+      this.viewProj = ident();
+      /** Triangles drawn in the last frame (the picture's own pass). */
+      this.drawn = 0;
+      const gl = canvas.getContext("webgl2", { antialias: true, preserveDrawingBuffer: still, alpha: false, powerPreference: "high-performance" });
+      if (!gl) throw new Error("this browser has no WebGL2");
+      this.gl = gl;
+      this.prog = program(gl, VS, FS);
+      this.shadowProg = program(gl, SHADOW_VS, SHADOW_FS);
+      this.buf = gl.createBuffer();
+      this.vao = this.layout(this.buf);
+      this.moonMap = depthTarget(gl, moonSize);
+      this.fireMap = depthTarget(gl, fireSize);
+    }
+    /** How a buffer of vertices is read: where, what colour, how much it shines by itself. */
+    layout(buf) {
+      const gl = this.gl;
+      const vao = gl.createVertexArray();
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.enableVertexAttribArray(0);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, STRIDE * 4, 0);
+      gl.enableVertexAttribArray(1);
+      gl.vertexAttribPointer(1, 3, gl.FLOAT, false, STRIDE * 4, 12);
+      gl.enableVertexAttribArray(2);
+      gl.vertexAttribPointer(2, 1, gl.FLOAT, false, STRIDE * 4, 24);
+      gl.bindVertexArray(null);
+      return vao;
+    }
+    /** Other sizes for the two shadow pictures (smaller is quicker and coarser). */
+    shadows(moonSize, fireSize) {
+      const gl = this.gl;
+      if (this.moonMap.size === moonSize && this.fireMap.size === fireSize) return;
+      for (const t of [this.moonMap, this.fireMap]) {
+        gl.deleteFramebuffer(t.fb);
+        gl.deleteTexture(t.tex);
+      }
+      this.moonMap = depthTarget(gl, moonSize);
+      this.fireMap = depthTarget(gl, fireSize);
+    }
+    /**
+     * Take a mesh in: from now on it is a part, to be drawn wherever a matrix puts it. Parts taken
+     * in this way are kept together and for good (a figure's solids, a brazier, a flame).
+     */
+    keep(mesh2) {
+      const first = this.kept.length / STRIDE;
+      for (let i = 0; i < mesh2.data.length; i++) this.kept.push(mesh2.data[i]);
+      return { first, count: mesh2.data.length / STRIDE };
+    }
+    /**
+     * Take a mesh in by itself: a piece of a place, which is wanted only while the hero is in that
+     * place and is given up afterwards (`drop`). Sent to the card at once.
+     */
+    own(mesh2) {
+      const gl = this.gl;
+      const buf = gl.createBuffer();
+      const vao = this.layout(buf);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(mesh2.data), gl.STATIC_DRAW);
+      return { first: 0, count: mesh2.data.length / STRIDE, own: { vao, buf } };
+    }
+    drop(part) {
+      if (!part.own) return;
+      this.gl.deleteVertexArray(part.own.vao);
+      this.gl.deleteBuffer(part.own.buf);
+      part.own = void 0;
+      part.count = 0;
+    }
+    /**
+     * What has been seen of the place (see Look.seen): `data` holds a number for each tile, row by
+     * row, 0 for what has not been seen and anything else for what has.
+     */
+    seen(w, h, data) {
+      const gl = this.gl;
+      if (!this.seenTex || this.seenSize.w !== w || this.seenSize.h !== h) {
+        if (this.seenTex) gl.deleteTexture(this.seenTex);
+        this.seenTex = gl.createTexture();
+        this.seenSize = { w, h };
+        gl.bindTexture(gl.TEXTURE_2D, this.seenTex);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      }
+      gl.bindTexture(gl.TEXTURE_2D, this.seenTex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, w, h, 0, gl.RED, gl.UNSIGNED_BYTE, data);
+    }
+    u(name) {
+      let l = this.uni.get(name);
+      if (l === void 0) {
+        l = this.gl.getUniformLocation(this.prog, name);
+        this.uni.set(name, l);
+      }
+      return l;
+    }
+    paint(look, draws) {
+      const gl = this.gl;
+      const W = this.canvas.width;
+      const H3 = this.canvas.height;
+      if (this.sent !== this.kept.length) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.kept), gl.STATIC_DRAW);
+        this.sent = this.kept.length;
+      }
+      const cam = look.cam;
+      const view = lookAt(cam.eye, cam.at, [0, 0, 1]);
+      const dist = Math.hypot(cam.eye[0] - cam.at[0], cam.eye[1] - cam.at[1], cam.eye[2] - cam.at[2]);
+      const proj = cam.fov ? perspective(cam.fov, W / H3, 0.5, dist * 4) : ortho((cam.half ?? 6) * W / H3, cam.half ?? 6, 0.1, dist * 3);
+      const viewProj = mmul(proj, view);
+      this.viewProj = viewProj;
+      const camDir = norm(sub(cam.at, cam.eye));
+      const moonDir = norm(look.moonFrom);
+      const b = look.bounds;
+      const texel = b.half * 2 / this.moonMap.size;
+      const mr = norm(cross(moonDir, [0, 0, 1]));
+      const mu = cross(mr, moonDir);
+      const snap = (axis) => {
+        const d = b.at[0] * axis[0] + b.at[1] * axis[1] + b.at[2] * axis[2];
+        return Math.round(d / texel) * texel - d;
+      };
+      const sr = snap(mr);
+      const su = snap(mu);
+      const mid = [b.at[0] + mr[0] * sr + mu[0] * su, b.at[1] + mr[1] * sr + mu[1] * su, b.at[2] + mr[2] * sr + mu[2] * su];
+      const moonEye = [mid[0] + moonDir[0] * b.half * 2, mid[1] + moonDir[1] * b.half * 2, mid[2] + moonDir[2] * b.half * 2];
+      const moonMat = mmul(ortho(b.half, b.half, 0.1, b.half * 4), lookAt(moonEye, mid, [0, 0, 1]));
+      const fire2 = look.fire;
+      let fireMat = moonMat;
+      if (fire2) {
+        const fd = norm(sub(fire2.toward, fire2.at));
+        fireMat = mmul(perspective(fire2.spread ?? 118, 1, 0.12, fire2.reach * 1.5), lookAt(fire2.at, fire2.toward, Math.abs(fd[2]) > 0.97 ? [0, 1, 0] : [0, 0, 1]));
+      }
+      gl.useProgram(this.shadowProg);
+      gl.enable(gl.DEPTH_TEST);
+      gl.disable(gl.CULL_FACE);
+      gl.enable(gl.POLYGON_OFFSET_FILL);
+      const sModel = gl.getUniformLocation(this.shadowProg, "uModel");
+      const sMat = gl.getUniformLocation(this.shadowProg, "uMat");
+      const passes = [[this.moonMap, moonMat, 2.5]];
+      if (fire2 && (fire2.shade ?? 1) > 0.01) passes.push([this.fireMap, fireMat, 3.5]);
+      let bound = null;
+      const use = (part) => {
+        const vao = part.own ? part.own.vao : this.vao;
+        if (vao !== bound) {
+          gl.bindVertexArray(vao);
+          bound = vao;
+        }
+      };
+      for (const [target, mat, slope] of passes) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, target.fb);
+        gl.viewport(0, 0, target.size, target.size);
+        gl.clearDepth(1);
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+        gl.polygonOffset(slope, 4);
+        gl.uniformMatrix4fv(sMat, false, mat);
+        for (const d of draws) {
+          if (d.bright || d.part.count === 0) continue;
+          use(d.part);
+          gl.uniformMatrix4fv(sModel, false, d.m);
+          gl.drawArrays(gl.TRIANGLES, d.part.first, d.part.count);
+        }
+      }
+      gl.disable(gl.POLYGON_OFFSET_FILL);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, W, H3);
+      gl.clearColor(4e-3, 3e-3, 0.012, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.enable(gl.CULL_FACE);
+      gl.cullFace(gl.BACK);
+      gl.useProgram(this.prog);
+      gl.uniformMatrix4fv(this.u("uViewProj"), false, viewProj);
+      gl.uniformMatrix4fv(this.u("uMoonMat"), false, moonMat);
+      gl.uniformMatrix4fv(this.u("uFireMat"), false, fireMat);
+      gl.uniform3fv(this.u("uCamPos"), f32(cam.eye));
+      gl.uniform3fv(this.u("uCamDir"), f32(camDir));
+      gl.uniform1f(this.u("uOrtho"), cam.fov ? 0 : 1);
+      gl.uniform3fv(this.u("uSky"), f32(look.sky));
+      gl.uniform3fv(this.u("uGround"), f32(look.ground));
+      gl.uniform3fv(this.u("uMoonDir"), f32(moonDir));
+      gl.uniform3fv(this.u("uMoonCol"), f32(look.moon));
+      gl.uniform1f(this.u("uMoonTexel"), 1 / this.moonMap.size);
+      gl.uniform1f(this.u("uFireOn"), fire2 ? 1 : 0);
+      gl.uniform1f(this.u("uFireTexel"), 1 / this.fireMap.size);
+      if (fire2) {
+        gl.uniform3fv(this.u("uFirePos"), f32(fire2.at));
+        gl.uniform3fv(this.u("uFireCol"), f32(fire2.color));
+        gl.uniform1f(this.u("uFireReach"), fire2.reach);
+        gl.uniform1f(this.u("uFireShade"), fire2.shade ?? 1);
+      }
+      const n = Math.min(MAX_LIGHTS, look.lights.length);
+      const pos = new Float32Array(MAX_LIGHTS * 4);
+      const col = new Float32Array(MAX_LIGHTS * 3);
+      for (let i = 0; i < n; i++) {
+        const l = look.lights[i];
+        pos.set([l.at[0], l.at[1], l.at[2], l.reach], i * 4);
+        col.set(l.color, i * 3);
+      }
+      gl.uniform1i(this.u("uCount"), n);
+      gl.uniform4fv(this.u("uLightPos"), pos);
+      gl.uniform3fv(this.u("uLightCol"), col);
+      gl.uniform2f(this.u("uView"), W, H3);
+      gl.uniform1f(this.u("uVignette"), look.vignette ?? 0);
+      const mist = look.mist ?? { color: [0, 0, 0], at: cam.at, near: 1e6, far: 2e6 };
+      gl.uniform3fv(this.u("uMistCol"), f32(mist.color));
+      gl.uniform3fv(this.u("uMistAt"), f32(mist.at));
+      gl.uniform3f(this.u("uMistRange"), mist.near, mist.far, mist.most ?? 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.moonMap.tex);
+      gl.uniform1i(this.u("uMoonMap"), 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, this.fireMap.tex);
+      gl.uniform1i(this.u("uFireMap"), 1);
+      const seen = look.seen && this.seenTex ? look.seen : null;
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, seen ? this.seenTex : null);
+      gl.uniform1i(this.u("uSeen"), 2);
+      gl.uniform3f(this.u("uSeenSize"), seen ? seen.w : 1, seen ? seen.h : 1, seen ? 1 : 0);
+      const uModel = this.u("uModel");
+      const uTint = this.u("uTint");
+      let tinted = true;
+      let tris = 0;
+      for (const d of draws) {
+        if (d.part.count === 0) continue;
+        use(d.part);
+        if (d.tint) {
+          gl.uniform4f(uTint, d.tint[0], d.tint[1], d.tint[2], d.tint[3]);
+          tinted = true;
+        } else if (tinted) {
+          gl.uniform4f(uTint, 0, 0, 0, 0);
+          tinted = false;
+        }
+        gl.uniformMatrix4fv(uModel, false, d.m);
+        gl.drawArrays(gl.TRIANGLES, d.part.first, d.part.count);
+        tris += d.part.count / 3;
+      }
+      gl.bindVertexArray(null);
+      this.drawn = tris;
+    }
+  };
+  function paint(canvas, scene2) {
+    const p = new Painter(canvas, 2048, 1024, true);
+    const part = p.keep(scene2.mesh);
+    p.paint(scene2, [{ part, m: ident() }]);
+    p.gl.finish();
+    return p;
+  }
+
+  // src/game/types.ts
+  var T_VOID = 0;
+  var T_FLOOR = 1;
+  var T_WALL = 2;
+  var SOLID_PROPS = ["brazier", "chest", "barrel", "urn", "pillar"];
+
+  // src/gl/kit3.ts
+  var C = {
+    // the vault's stone: floor, wall, dressed stone (pillars, steps, tombs), the dark between stones
+    floor: [hex("#35327f"), hex("#3f3c8e"), hex("#4a479c"), hex("#5653aa")],
+    wall: [hex("#463f96"), hex("#5049a4"), hex("#5a53b0"), hex("#655ebc")],
+    dressed: [hex("#6660bf"), hex("#746ecb"), hex("#827cd6")],
+    gap: hex("#100e2a"),
+    earth: hex("#1c1630"),
+    // iron, wood (the plum of the heroes' leather), gold, bone, clay
+    iron: hex("#4a4a66"),
+    ironDark: hex("#2c2c44"),
+    wood: hex("#6a3a5c"),
+    woodDark: hex("#4a2644"),
+    gold: hex("#e0a828"),
+    goldLight: hex("#ffd866"),
+    bone: hex("#e8e0d0"),
+    boneShade: hex("#b0a4b8"),
+    clay: hex("#8a7abc"),
+    // fire: its bed, its body, its heart
+    coal: hex("#5a1c1c"),
+    ember: hex("#ff7a22"),
+    flame: hex("#ffc24a"),
+    heart: hex("#fff0a8"),
+    // cloth
+    crimson: hex("#a02a4a"),
+    crimsonDark: hex("#6a1a38"),
+    teal: hex("#22b0a0"),
+    tealDark: hex("#13706e"),
+    // what is the player's glows cyan; what is an enemy's, pink
+    spark: hex("#5fe8f0"),
+    sparkWhite: hex("#d8fffa"),
+    foe: hex("#ff4a90"),
+    moss: hex("#3f8a5a"),
+    water: hex("#3a78c8")
+  };
+  function stone(x0, y0, z0, x1, y1, z1, bevel, paint2) {
+    const m = new Mesh();
+    const b = Math.min(bevel, (x1 - x0) / 3, (y1 - y0) / 3);
+    const zt = z1 - b;
+    const top = paint2.top ?? paint2.side;
+    const lip = blend(top, [1, 1, 1], 0.08);
+    m.quad([x0 + b, y0 + b, z1], [x1 - b, y0 + b, z1], [x1 - b, y1 - b, z1], [x0 + b, y1 - b, z1], top);
+    m.quad([x0, y0, zt], [x1, y0, zt], [x1 - b, y0 + b, z1], [x0 + b, y0 + b, z1], lip);
+    m.quad([x1, y1, zt], [x0, y1, zt], [x0 + b, y1 - b, z1], [x1 - b, y1 - b, z1], lip);
+    m.quad([x1, y0, zt], [x1, y1, zt], [x1 - b, y1 - b, z1], [x1 - b, y0 + b, z1], lip);
+    m.quad([x0, y1, zt], [x0, y0, zt], [x0 + b, y0 + b, z1], [x0 + b, y1 - b, z1], lip);
+    m.quad([x0, y0, z0], [x1, y0, z0], [x1, y0, zt], [x0, y0, zt], paint2.side);
+    m.quad([x1, y1, z0], [x0, y1, z0], [x0, y1, zt], [x1, y1, zt], paint2.side);
+    m.quad([x1, y0, z0], [x1, y1, z0], [x1, y1, zt], [x1, y0, zt], paint2.side);
+    m.quad([x0, y1, z0], [x0, y0, z0], [x0, y0, zt], [x0, y1, zt], paint2.side);
+    return m;
+  }
+  var pick = (tones, a, b, c = 0) => tones[Math.floor(rnd(a, b, c) * tones.length) % tones.length];
+  function floor(x0, y0, x1, y1, o = {}) {
+    const m = new Mesh();
+    const z = o.z ?? 0;
+    const seed = o.seed ?? 1;
+    const tones = o.tones ?? C.floor;
+    const GAP = 0.035;
+    for (let y = y0; y < y1; y++) {
+      let x = x0;
+      while (x < x1) {
+        const two = x + 1 < x1 && rnd(x, y, seed) < 0.34 && !(o.skip && (o.skip(x, y) || o.skip(x + 1, y)));
+        const w = two ? 2 : 1;
+        if (o.skip && o.skip(x, y)) {
+          x += 1;
+          continue;
+        }
+        const r = o.whole && (o.whole(x, y) || two && o.whole(x + 1, y)) ? 1 : rnd(x, y, seed + 11);
+        const col = pick(tones, x, y, seed + 3);
+        const lift = (rnd(x, y, seed + 5) - 0.5) * 0.05;
+        if (r < (o.gone ?? 0)) {
+          m.add(box(x + GAP, y + GAP, z - 0.3, x + w - GAP, y + 1 - GAP, z - 0.12, { side: C.earth, top: C.earth }));
+          m.add(rock(0.2, col, x * 7 + y), mats(translate(x + 0.3 + rnd(x, y, 21) * 0.3, y + 0.3 + rnd(x, y, 22) * 0.4, z - 0.12), rotZ(rnd(x, y, 23) * 360)));
+          if (w === 2 || rnd(x, y, 24) < 0.5) m.add(rock(0.14, tone(col, 0.9), x * 3 + y * 5), mats(translate(x + w - 0.4, y + 0.6, z - 0.12), rotZ(rnd(x, y, 25) * 360)));
+        } else if (r < (o.gone ?? 0) + (o.cracked ?? 0)) {
+          const cut = 0.35 + rnd(x, y, seed + 13) * 0.3;
+          m.add(stone(x + GAP, y + GAP, z - 0.3, x + w * cut - GAP * 0.4, y + 1 - GAP, z + lift, 0.03, { side: tone(col, 0.6), top: col }));
+          const sunk = stone(-w * (1 - cut) * 0.5 + GAP * 0.4, -0.5 + GAP, -0.3, w * (1 - cut) * 0.5 - GAP, 0.5 - GAP, 0, 0.03, { side: tone(col, 0.6), top: tone(col, 0.92) });
+          m.add(sunk, mats(translate(x + w * cut + w * (1 - cut) * 0.5, y + 0.5, z - 0.05), rotY((rnd(x, y, 31) - 0.5) * 9), rotX((rnd(x, y, 32) - 0.5) * 9)));
+        } else {
+          m.add(stone(x + GAP, y + GAP, z - 0.3, x + w - GAP, y + 1 - GAP, z + lift, 0.03, { side: tone(col, 0.6), top: col }));
+        }
+        x += w;
+      }
+    }
+    if (!o.bare) m.add(box(x0, y0, z - 0.34, x1, y1, z - 0.07, { side: C.gap, top: C.gap }));
+    return m;
+  }
+  function rock(r, col, seed) {
+    const m = new Mesh();
+    m.add(ball(r * (0.8 + rnd(seed, 1) * 0.5), r * (0.7 + rnd(seed, 2) * 0.5), r * (0.45 + rnd(seed, 3) * 0.3), { side: col, vary: 0.14, seed }), translate(0, 0, r * 0.3));
+    return m;
+  }
+  function wall(long, o = {}) {
+    const m = new Mesh();
+    const seed = o.seed ?? 1;
+    const thick = o.thick ?? 0.7;
+    const high = o.high ?? 2.3;
+    const tones = o.tones ?? C.wall;
+    const rows = Math.max(1, Math.round(high / 0.46));
+    const course = high / rows;
+    for (let r = 0; r < rows; r++) {
+      const z0 = r * course;
+      const z1 = Math.min(high, z0 + course);
+      let x = 0;
+      let first = true;
+      while (x < long - 0.01) {
+        let w = first && r % 2 === 1 ? 0.45 + rnd(r, seed, 2) * 0.2 : 0.75 + rnd(Math.round(x * 10), r, seed) * 0.6;
+        if (x + w > long - 0.3) w = long - x;
+        first = false;
+        const out = (r === 0 ? 0.07 : 0) + (rnd(Math.round(x * 10), r, seed + 5) - 0.5) * 0.05;
+        const col = pick(tones, Math.round(x * 10), r, seed + 9);
+        const g = 0.018;
+        m.add(block(w - g * 2, z1 - z0 - g * 2, thick + out, 0.03, col), translate(x + g, out, z0 + g));
+        x += w;
+      }
+    }
+    m.add(box(0, -thick + 0.02, 0, long, -0.03, high - 0.02, { side: C.gap }));
+    if (!o.plain) {
+      let x = 0;
+      while (x < long - 0.01) {
+        let w = 0.9 + rnd(Math.round(x * 10), 77, seed) * 0.5;
+        if (x + w > long - 0.4) w = long - x;
+        const col = pick(C.dressed, Math.round(x * 10), 78, seed);
+        m.add(stone(x + 0.015, -thick - 0.04, high, x + w - 0.015, 0.09, high + 0.16, 0.04, { side: tone(col, 0.8), top: tone(col, 0.55) }));
+        x += w;
+      }
+    }
+    return m;
+  }
+  function block(w, h, d, bevel, col) {
+    const m = new Mesh();
+    const b = bevel;
+    const lip = blend(col, [1, 1, 1], 0.07);
+    const dark = tone(col, 0.72);
+    m.quad([b, 0, b], [w - b, 0, b], [w - b, 0, h - b], [b, 0, h - b], col);
+    m.quad([0, -b, h], [b, 0, h - b], [w - b, 0, h - b], [w, -b, h], lip);
+    m.quad([0, -b, 0], [w, -b, 0], [w - b, 0, b], [b, 0, b], dark);
+    m.quad([0, -b, 0], [b, 0, b], [b, 0, h - b], [0, -b, h], lip);
+    m.quad([w, -b, 0], [w, -b, h], [w - b, 0, h - b], [w - b, 0, b], dark);
+    m.quad([0, -d, h], [0, -b, h], [w, -b, h], [w, -d, h], tone(col, 0.5));
+    m.quad([0, -d, 0], [0, -d, h], [0, -b, h], [0, -b, 0], tone(col, 0.85));
+    m.quad([w, -b, 0], [w, -b, h], [w, -d, h], [w, -d, 0], tone(col, 0.7));
+    m.quad([w, -d, 0], [w, -d, h], [0, -d, h], [0, -d, 0], tone(col, 0.6));
+    return m.outward([w / 2, -d / 2, h / 2]);
+  }
+  function fire(r, h, seed = 1) {
+    const m = new Mesh();
+    const tongue = (dx, dy, rr, hh, col, glow, turn, tip) => {
+      m.add(lathe([[rr * 0.7, 0], [rr, hh * 0.2], [rr * 0.72, hh * 0.5], [rr * 0.3, hh * 0.8], [0, hh]], 6, { side: col, glow, vary: 0.12, seed: seed + turn }, turn), mats(translate(dx, dy, 0), rotX((rnd(seed, turn) - 0.5) * tip), rotY((rnd(seed, turn + 1) - 0.5) * tip)));
+    };
+    tongue(0, 0, r, h, C.ember, 1.3, 10, 16);
+    tongue(r * 0.62, r * 0.25, r * 0.5, h * 0.62, C.ember, 1.3, 100, 30);
+    tongue(-r * 0.6, -r * 0.3, r * 0.46, h * 0.52, C.ember, 1.3, 130, 30);
+    tongue(-r * 0.2, r * 0.6, r * 0.4, h * 0.44, C.ember, 1.3, 160, 30);
+    tongue(r * 0.42, r * 0.42, r * 0.7, h * 0.74, C.flame, 2.6, 40, 12);
+    tongue(r * 0.72, r * 0.72, r * 0.42, h * 0.44, C.heart, 4.2, 70, 8);
+    return m;
+  }
+  function pillar(high = 2.9, broken = 0, seed = 1) {
+    const m = new Mesh();
+    const col = pick(C.dressed, seed, 1);
+    m.add(stone(-0.46, -0.46, 0, 0.46, 0.46, 0.2, 0.05, { side: tone(col, 0.8), top: col }));
+    m.add(lathe([[0.4, 0.2], [0.4, 0.3], [0.33, 0.36]], 8, { side: col, vary: 0.06, seed }, 22.5));
+    const top = broken > 0 ? broken : high - 0.4;
+    const drum2 = 0.62;
+    let z = 0.36;
+    let k = 0;
+    while (z < top - 0.01) {
+      const z1 = Math.min(top, z + drum2);
+      const r0 = 0.3 - 0.03 * ((z - 0.36) / high);
+      m.add(lathe([[r0, z + 0.012], [r0 - 8e-3, z1 - 0.012]], 8, { side: tone(col, 0.96 + rnd(seed, k) * 0.1), vary: 0.07, seed: seed + k }, 22.5));
+      m.add(lathe([[r0 - 0.03, z1 - 0.012], [r0 - 0.03, z1 + 0.012]], 8, { side: C.gap }, 22.5));
+      z = z1;
+      k++;
+    }
+    if (broken > 0) {
+      m.add(lathe([[0.28, broken - 0.01], [0.2, 0.25, broken + 0.16], [0, broken + 0.2]], 6, { side: tone(col, 0.85), vary: 0.2, seed }, 10), mats(translate(0.04, 0, 0), rotX(7)));
+    } else {
+      m.add(lathe([[0.3, high - 0.4], [0.42, high - 0.26], [0.42, high - 0.2]], 8, { side: col, vary: 0.06, seed }, 22.5));
+      m.add(stone(-0.48, -0.48, high - 0.2, 0.48, 0.48, high, 0.04, { side: tone(col, 0.85), top: tone(col, 0.6) }));
+    }
+    return m;
+  }
+  function bones(seed = 1) {
+    const m = new Mesh();
+    for (let i = 0; i < 3; i++) {
+      const b = lathe([[0.035, 0], [0.02, 0.05], [0.02, 0.3], [0.035, 0.35]], 4, { side: C.bone, vary: 0.08 });
+      m.add(b, mats(translate((rnd(seed, i) - 0.5) * 0.5, (rnd(seed, i + 9) - 0.5) * 0.5, 0.03), rotZ(rnd(seed, i + 5) * 360), rotY(90)));
+    }
+    m.add(skull(0.13), mats(translate(0.12, -0.1, 0.1), rotZ(40 + rnd(seed, 30) * 200)));
+    return m;
+  }
+  function skull(r, eyes = null) {
+    const m = new Mesh();
+    m.add(ball(r, r * 1.08, r * 0.95, { side: C.bone, vary: 0.05 }, true));
+    m.add(box(-r * 0.6, r * 0.2, -r * 1.35, r * 0.6, r * 1, -r * 0.62, { side: C.boneShade, top: C.boneShade }));
+    for (const sx of [-1, 1]) {
+      m.add(box(sx * r * 0.2, r * 0.82, -r * 0.3, sx * r * 0.68, r * 1.03, r * 0.16, { side: C.gap }));
+      if (eyes) m.add(box(sx * r * 0.34, r * 0.98, -r * 0.16, sx * r * 0.54, r * 1.06, r * 0.04, { side: eyes, glow: 3 }));
+    }
+    m.add(box(-r * 0.09, r * 0.9, -r * 0.6, r * 0.09, r * 1.06, -r * 0.36, { side: C.gap }));
+    for (let i = -2; i <= 2; i++) m.add(box(i * r * 0.22 - r * 0.07, r * 0.98, -r * 0.98, i * r * 0.22 + r * 0.07, r * 1.04, -r * 0.7, { side: C.bone }));
+    return m;
+  }
+  function hanging(wide, long, col, dark, device, torn = 0.4, seed = 1) {
+    const m = new Mesh();
+    m.add(lathe([[0.03, -wide / 2 - 0.1], [0.03, wide / 2 + 0.1]], 5, { side: C.iron }), mats(translate(0, 0.05, 0.02), rotY(90)));
+    const strips = 6;
+    const sw = wide / strips;
+    for (let i = 0; i < strips; i++) {
+      const xa = -wide / 2 + i * sw;
+      const xb = xa + sw;
+      const la = long * (1 - torn * rnd(seed, i) * 0.55);
+      const lb = long * (1 - torn * rnd(seed, i + 1) * 0.55);
+      const rows = 4;
+      for (let r = 0; r < rows; r++) {
+        const t02 = r / rows;
+        const t12 = (r + 1) / rows;
+        const wave = (t, x) => 0.04 + Math.sin(t * 3.1 + x * 4 + seed) * 0.025 * t;
+        const c = r === 0 ? dark : i === 0 || i === strips - 1 ? dark : col;
+        m.sheet([[xa, wave(t12, xa), -la * t12], [xb, wave(t12, xb), -lb * t12], [xb, wave(t02, xb), -lb * t02], [xa, wave(t02, xa), -la * t02]], tone(c, 0.92 + rnd(seed, i * 9 + r) * 0.16));
+      }
+    }
+    const mid = -long * 0.42;
+    m.sheet([[0, 0.075, mid + wide * 0.3], [-wide * 0.2, 0.075, mid], [0, 0.075, mid - wide * 0.3], [wide * 0.2, 0.075, mid]], device);
+    m.sheet([[-wide * 0.26, 0.075, mid + wide * 0.44], [-wide * 0.26, 0.075, mid + wide * 0.38], [wide * 0.26, 0.075, mid + wide * 0.38], [wide * 0.26, 0.075, mid + wide * 0.44]], device);
+    return m;
+  }
+  function gargoyle(water = false, seed = 1) {
+    const m = new Mesh();
+    const col = pick(C.dressed, seed, 8);
+    m.add(stone(-0.3, -0.05, -0.28, 0.3, 0.1, 0.3, 0.04, { side: tone(col, 0.8), top: tone(col, 0.7) }));
+    m.add(ball(0.25, 0.24, 0.22, { side: col, vary: 0.08, seed }), translate(0, 0.26, 0.02));
+    m.add(box(-0.13, 0.36, -0.1, 0.13, 0.62, 0.06, { side: tone(col, 1.06), top: tone(col, 1.15) }));
+    m.add(box(-0.11, 0.34, -0.22, 0.11, 0.56, -0.15, { side: tone(col, 0.9) }));
+    m.add(box(-0.09, 0.4, -0.15, 0.09, 0.56, -0.1, { side: C.gap }));
+    m.add(box(-0.24, 0.3, 0.1, 0.24, 0.46, 0.16, { side: tone(col, 1.12) }));
+    for (const sx of [-1, 1]) {
+      m.add(lathe([[0.06, 0], [0.035, 0.16], [0, 0.3]], 4, { side: tone(col, 0.92) }), mats(translate(sx * 0.17, 0.18, 0.16), rotY(sx * 24), rotX(38)));
+      m.add(box(sx * 0.08, 0.44, 0.03, sx * 0.17, 0.47, 0.09, { side: C.gap }));
+      m.add(lathe([[0.02, 0], [0, 0.07]], 3, { side: C.bone }), mats(translate(sx * 0.085, 0.58, -0.1), rotX(180)));
+    }
+    if (water) {
+      for (let i = 0; i < 5; i++) m.add(box(-0.03, 0.56 + i * 0.012, -0.12 - (i + 1) * 0.22, 0.03, 0.6 + i * 0.012, -0.12 - i * 0.22, { side: C.water, glow: 0.5 }));
+    }
+    return m;
+  }
+  var SCONCE_FLAME = [0, 0.29, 0.24];
+  function sconce(seed = 1, lit = true) {
+    const m = new Mesh();
+    m.add(box(-0.06, 0, -0.16, 0.06, 0.05, 0.1, { side: C.ironDark }));
+    m.add(lathe([[0.04, 0], [0.05, 0.42]], 5, { side: C.wood }), mats(translate(0, 0.06, -0.14), rotX(-32)));
+    m.add(lathe([[0.07, 0], [0.09, 0.08]], 6, { side: C.iron }), mats(translate(0, 0.26, 0.17), rotX(-32)));
+    if (lit) m.add(fire(0.09, 0.3, seed), translate(SCONCE_FLAME[0], SCONCE_FLAME[1], SCONCE_FLAME[2]));
+    else m.add(lathe([[0.06, 0], [0.03, 0.04]], 6, { side: C.coal, top: C.ember, glow: 0.8 }), translate(SCONCE_FLAME[0], SCONCE_FLAME[1] - 0.01, SCONCE_FLAME[2] - 0.02));
+    return m;
+  }
+  function rubble(r, n, seed = 1) {
+    const m = new Mesh();
+    for (let i = 0; i < n; i++) {
+      const a = rnd(seed, i) * 6.28;
+      const d = Math.sqrt(rnd(seed, i + 40)) * r;
+      const s = 0.07 + rnd(seed, i + 80) * 0.16;
+      m.add(rock(s, pick(C.wall, seed, i, 5), seed * 13 + i), mats(translate(Math.cos(a) * d, Math.sin(a) * d, 0), rotZ(rnd(seed, i + 120) * 360)));
+    }
+    return m;
+  }
+  function moss(r, n, seed = 1) {
+    const m = new Mesh();
+    for (let i = 0; i < n; i++) {
+      const a = rnd(seed, i) * 6.28;
+      const d = Math.sqrt(rnd(seed, i + 40)) * r;
+      const s = 0.05 + rnd(seed, i + 80) * 0.09;
+      m.add(ball(s * 1.3, s * 1.3, s * 0.5, { side: tone(C.moss, 0.7 + rnd(seed, i + 3) * 0.6), vary: 0.15, seed: seed + i }), translate(Math.cos(a) * d, Math.sin(a) * d, s * 0.2));
+    }
+    return m;
+  }
+
+  // src/gl/level3.ts
+  var CHUNK = 8;
+  var KERB = 0.41;
+  var WALL_MAX = 2.6;
+  var HIDE_PX = 8;
+  var PX_HIGH = 19.6;
+  var SWAP = (() => {
+    const m = new Float32Array(16);
+    m[1] = 1;
+    m[4] = 1;
+    m[10] = 1;
+    m[15] = 1;
+    return m;
+  })();
+  function wallHeights(L2) {
+    const f2 = L2.floor;
+    const H3 = new Float32Array(f2.w * f2.h);
+    const isFloor = (x, y) => x >= 0 && y >= 0 && x < f2.w && y < f2.h && f2.tiles[y * f2.w + x] === T_FLOOR;
+    for (let y = 0; y < f2.h; y++) {
+      for (let x = 0; x < f2.w; x++) {
+        if (f2.tiles[y * f2.w + x] !== T_WALL) continue;
+        let lim = WALL_MAX;
+        for (let a = 0; a <= 6; a++) {
+          for (let b = Math.max(0, a - 1); b <= Math.min(6, a + 1); b++) {
+            if (a + b === 0 || !isFloor(x - a, y - b)) continue;
+            lim = Math.min(lim, (8 * (a + b) - (a === b ? 16 : 8) + HIDE_PX) / PX_HIGH);
+          }
+        }
+        H3[y * f2.w + x] = Math.max(KERB, lim);
+      }
+    }
+    const kind = (i) => H3[i] <= KERB + 0.2 ? 0 : H3[i] < 1.7 ? 1 : 2;
+    for (let pass = 0; pass < 2; pass++) {
+      for (const along of [true, false]) {
+        const lines = along ? f2.h : f2.w;
+        const long = along ? f2.w : f2.h;
+        for (let line = 0; line < lines; line++) {
+          const at2 = (j) => along ? line * f2.w + j : j * f2.w + line;
+          let k = 0;
+          while (k < long) {
+            const what = kind(at2(k));
+            if (what === 0) {
+              k++;
+              continue;
+            }
+            let e = k;
+            let low = WALL_MAX;
+            while (e < long && kind(at2(e)) === what) low = Math.min(low, H3[at2(e++)]);
+            for (let j = k; j < e; j++) H3[at2(j)] = low;
+            k = e;
+          }
+        }
+      }
+    }
+    return H3;
+  }
+  var pick2 = (tones, a, b, c = 0) => tones[Math.floor(rnd(a, b, c) * tones.length) % tones.length];
+  function buildPiece(L2, H3, cx, cy) {
+    const f2 = L2.floor;
+    const m = new Mesh();
+    const flames = [];
+    const x0 = cx * CHUNK;
+    const y0 = cy * CHUNK;
+    const x1 = Math.min(f2.w, x0 + CHUNK);
+    const y1 = Math.min(f2.h, y0 + CHUNK);
+    const inside = (x, y) => x >= 0 && y >= 0 && x < f2.w && y < f2.h;
+    const isFloor = (x, y) => inside(x, y) && f2.tiles[y * f2.w + x] === T_FLOOR;
+    const high = (x, y) => inside(x, y) ? H3[y * f2.w + x] : 0;
+    const seed = f2.seed % 9973 + 1;
+    const stood = /* @__PURE__ */ new Set();
+    for (const p of L2.props) if (p.solid || p.kind === "portal" || p.kind === "body") stood.add(p.ty * f2.w + p.tx);
+    let any = false;
+    for (let y = y0; y < y1 && !any; y++) for (let x = x0; x < x1; x++) if (f2.tiles[y * f2.w + x] !== 0) any = true;
+    if (!any) return { mesh: m, flames };
+    m.add(floor(x0, y0, x1, y1, { skip: (x, y) => !isFloor(x, y), seed, cracked: 0.07, gone: 0.022, bare: true, whole: (x, y) => stood.has(y * f2.w + x) }));
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        if (!isFloor(x, y)) continue;
+        m.quad([x, y, -0.07], [x + 1, y, -0.07], [x + 1, y + 1, -0.07], [x, y + 1, -0.07], C.gap);
+      }
+    }
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const h = high(x, y);
+        if (h <= 0) continue;
+        if (h <= KERB + 0.2) {
+          const col2 = tone(pick2(C.wall, x, y, seed + 40), 0.72);
+          m.add(stone(x + 0.012, y + 0.012, -0.05, x + 0.988, y + 0.988, h + (rnd(x, y, seed + 41) - 0.5) * 0.05, 0.06, { side: tone(col2, 0.92), top: tone(col2, 0.74) }));
+          continue;
+        }
+        const col = pick2(C.dressed, x, y, seed + 42);
+        const fx = high(x + 1, y) < h - 0.01 ? 0.08 : -0.012;
+        const fy = high(x, y + 1) < h - 0.01 ? 0.08 : -0.012;
+        m.add(stone(x + 0.012, y + 0.012, h, x + 1 + fx, y + 1 + fy, h + 0.16, 0.04, { side: tone(col, 0.8), top: tone(col, 0.55) }));
+        m.add(box(x + 0.03, y + 0.03, 0, x + 0.97, y + 0.97, h, { side: C.gap }));
+      }
+    }
+    const faces = (toY) => {
+      const lines = toY ? [y0, y1] : [x0, x1];
+      const span = toY ? [x0, x1] : [y0, y1];
+      const tile = (line, k) => toY ? [k, line] : [line, k];
+      const shows = (line, k) => {
+        const [x, y] = tile(line, k);
+        const h = high(x, y);
+        if (h <= KERB + 0.2) return 0;
+        return (toY ? high(x, y + 1) : high(x + 1, y)) < h - 0.01 ? h : 0;
+      };
+      for (let line = lines[0]; line < lines[1]; line++) {
+        let k = span[0];
+        while (k < span[1]) {
+          const h = shows(line, k);
+          if (h === 0) {
+            k++;
+            continue;
+          }
+          let e = k + 1;
+          while (e < span[1] && shows(line, e) === h) e++;
+          const long = e - k;
+          const put = toY ? translate(k, line + 1, 0) : mats(translate(line + 1, e, 0), rotZ(-90));
+          const ws = (line * 131 + k * 17 + (toY ? 1 : 2) * 7919 + seed) % 1e5;
+          m.add(wall(long, { high: h, thick: 0.25, plain: true, seed: ws }), put);
+          for (let j = 0; j < long; j++) {
+            const along = toY ? k + j : e - 1 - j;
+            const [tx, ty] = tile(line, along);
+            const front = toY ? isFloor(tx, ty + 1) : isFloor(tx + 1, ty);
+            if (!front) continue;
+            const u = j + 0.5;
+            const joint = along + 1;
+            if (joint % 4 === 0 && shows(line, along + 1) === h && (toY ? isFloor(tx + 1, ty + 1) : isFloor(tx + 1, ty + 1))) {
+              const pu = toY ? j + 1 : j;
+              const pc = pick2(C.dressed, line, joint, seed + 50);
+              m.add(stone(pu - 0.36, 0, 0, pu + 0.36, 0.28, h + 0.03, 0.05, { side: tone(pc, 0.92), top: tone(pc, 0.6) }), put);
+              m.add(stone(pu - 0.45, 0, h - 0.34, pu + 0.45, 0.37, h + 0.1, 0.05, { side: pc, top: tone(pc, 0.6) }), put);
+              m.add(stone(pu - 0.45, 0, 0, pu + 0.45, 0.37, 0.2, 0.05, { side: tone(pc, 0.85), top: tone(pc, 0.7) }), put);
+            }
+            const r = rnd(tx, ty, seed + (toY ? 61 : 62));
+            const edge = joint % 4 === 0 || along % 4 === 0;
+            if (!edge && r < 0.11 && h >= 1.9) {
+              const red = rnd(tx, ty, seed + 63) < 0.6;
+              const longH = Math.min(1.7, h - 0.75);
+              m.add(hanging(0.74, longH, red ? C.crimson : C.tealDark, red ? C.crimsonDark : hex("#0a4450"), red ? C.goldLight : C.sparkWhite, 0.3 + rnd(tx, ty, seed + 64) * 0.5, (tx * 7 + ty * 13) % 50), mats(put, translate(u, 0.07, h - 0.22)));
+            } else if (!edge && r < 0.19) {
+              const sz = Math.min(1.55, h - 0.5);
+              m.add(sconce((tx * 5 + ty * 3) % 40, false), mats(put, translate(u, 0.03, sz)));
+              const fl = toY ? [k + u, line + 1 + 0.03 + SCONCE_FLAME[1]] : [line + 1 + 0.03 + SCONCE_FLAME[1], e - u];
+              flames.push({ x: fl[0], y: fl[1], z: sz + SCONCE_FLAME[2], size: 0.4, seed: (tx * 31 + ty * 17) % 97 });
+            } else if (!edge && r < 0.205 && h >= 1.9) {
+              m.add(gargoyle(false, (tx + ty) % 9), mats(put, translate(u, 0.02, h - 0.62), scale(1.15)));
+            }
+            if (rnd(tx, ty, seed + 65) < 0.13) m.add(moss(0.3, 5, (tx * 3 + ty) % 60), mats(put, translate(u, 0.2, 0)));
+          }
+          k = e;
+        }
+      }
+    };
+    faces(true);
+    faces(false);
+    for (const p of L2.props) {
+      if (p.tx < x0 || p.tx >= x1 || p.ty < y0 || p.ty >= y1) continue;
+      if (p.kind === "pillar") {
+        const broken = rnd(p.tx, p.ty, seed + 70) < 0.22 ? 0.8 + rnd(p.tx, p.ty, seed + 71) * 0.7 : 0;
+        m.add(pillar(2.5, broken, (p.tx * 7 + p.ty) % 30), translate(p.x, p.y, 0));
+        if (broken) m.add(rubble(0.55, 6, (p.tx + p.ty * 5) % 40), translate(p.x + 0.3, p.y + 0.35, 0));
+      } else if (p.kind === "bones") m.add(bones(p.variant + 1), mats(translate(p.x, p.y, 0), rotZ(p.variant * 37)));
+      else if (p.kind === "rubble") m.add(rubble(0.4, 7, p.variant + 1), translate(p.x, p.y, 0));
+    }
+    const out = new Mesh();
+    out.add(m, SWAP);
+    return { mesh: out, flames };
+  }
+
+  // src/gl/figures.ts
+  var H = {
+    steel: hex("#9a94e0"),
+    steelLight: hex("#c4c0f4"),
+    steelDark: hex("#5a54ac"),
+    teal: hex("#24b4a8"),
+    tealDark: hex("#127a80"),
+    tealDeep: hex("#0c5664"),
+    red: hex("#ff4672"),
+    redDark: hex("#c02858"),
+    face: hex("#16142e"),
+    green: hex("#34a644"),
+    greenLight: hex("#86dc46"),
+    greenDark: hex("#1e7038"),
+    purple: hex("#8444e0"),
+    purpleLight: hex("#b07af4"),
+    purpleDark: hex("#522a9c"),
+    plum: hex("#84405e"),
+    plumDark: hex("#562646"),
+    indigo: hex("#5a54c4"),
+    indigoDark: hex("#38348a"),
+    skin: hex("#b0a8e8")
+  };
+  var M = {
+    bone: hex("#e4dcf0"),
+    boneDark: hex("#a89cc8"),
+    rag: hex("#1c8a8a"),
+    rose: hex("#f04a8a"),
+    roseDark: hex("#a82a66"),
+    robe: hex("#3a2060"),
+    robeDark: hex("#241440"),
+    bat: hex("#6a3aa8"),
+    batDark: hex("#40246e"),
+    hide: hex("#6a82c0"),
+    hideDark: hex("#42548c"),
+    hideLight: hex("#8ea6dc")
+  };
+
+  // src/gl/scenes.ts
+  function gameCam(look, half2) {
+    const e = 30 * Math.PI / 180;
+    const d = 60;
+    const k = d * Math.cos(e) / Math.SQRT2;
+    return { at: look, eye: [look[0] + k, look[1] + k, look[2] + d * Math.sin(e)], half: half2 };
+  }
+
+  // src/engine/rng.ts
+  var RNG = class _RNG {
+    constructor(seed) {
+      this.s = seed >>> 0 || 2654435769;
+    }
+    /** Float in [0, 1). (mulberry32) */
+    next() {
+      let t = this.s += 1831565813;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+    /** Integer in [lo, hi] inclusive. */
+    int(lo, hi) {
+      return lo + Math.floor(this.next() * (hi - lo + 1));
+    }
+    /** Float in [lo, hi). */
+    range(lo, hi) {
+      return lo + this.next() * (hi - lo);
+    }
+    chance(p) {
+      return this.next() < p;
+    }
+    pick(arr) {
+      return arr[Math.floor(this.next() * arr.length)];
+    }
+    /** Pick an index by weight. Weights need not sum to 1. */
+    weightedIndex(weights) {
+      let total = 0;
+      for (const w of weights) total += Math.max(0, w);
+      let r = this.next() * total;
+      for (let i = 0; i < weights.length; i++) {
+        r -= Math.max(0, weights[i]);
+        if (r < 0) return i;
+      }
+      return weights.length - 1;
+    }
+    weighted(items, weight) {
+      return items[this.weightedIndex(items.map(weight))];
+    }
+    shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(this.next() * (i + 1));
+        const t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
+      }
+      return arr;
+    }
+    /** A new independent generator derived from this one. */
+    fork() {
+      return new _RNG(Math.floor(this.next() * 4294967296));
+    }
+  };
+
+  // src/game/nav.ts
+  var UNREACHABLE = 65535;
+  var STEP_ORTH = 10;
+  var STEP_DIAG = 14;
+  function buildOpenGrid(f2) {
+    const n = f2.w * f2.h;
+    const grid = new Uint8Array(n);
+    for (let i = 0; i < n; i++) grid[i] = f2.tiles[i] === T_FLOOR ? 1 : 0;
+    return grid;
+  }
+  function buildWalkGrid(f2) {
+    const grid = buildOpenGrid(f2);
+    for (const p of f2.props) {
+      if (!SOLID_PROPS.includes(p.kind)) continue;
+      if (p.x < 0 || p.y < 0 || p.x >= f2.w || p.y >= f2.h) continue;
+      grid[p.y * f2.w + p.x] = 0;
+    }
+    return grid;
+  }
+  var qOrthTile = new Int32Array(0);
+  var qOrthCost = new Uint16Array(0);
+  var qDiagTile = new Int32Array(0);
+  var qDiagCost = new Uint16Array(0);
+  function ensureQueues(n) {
+    const need = n * 4 + 1;
+    if (qOrthTile.length >= need) return;
+    qOrthTile = new Int32Array(need);
+    qOrthCost = new Uint16Array(need);
+    qDiagTile = new Int32Array(need);
+    qDiagCost = new Uint16Array(need);
+  }
+  function flowField(walk, w, h, tx, ty, maxDist = Infinity, out) {
+    const n = w * h;
+    const dist = out && out.length === n ? out : new Uint16Array(n);
+    dist.fill(UNREACHABLE);
+    tx = Math.floor(tx);
+    ty = Math.floor(ty);
+    if (tx < 0 || ty < 0 || tx >= w || ty >= h) return dist;
+    const limit = maxDist * STEP_ORTH < UNREACHABLE ? Math.floor(maxDist * STEP_ORTH) : UNREACHABLE - 1;
+    ensureQueues(n);
+    const oT = qOrthTile;
+    const oC = qOrthCost;
+    const dT = qDiagTile;
+    const dC = qDiagCost;
+    let oHead = 0;
+    let oTail = 0;
+    let dHead = 0;
+    let dTail = 0;
+    const target = ty * w + tx;
+    dist[target] = 0;
+    oT[oTail] = target;
+    oC[oTail++] = 0;
+    while (oHead < oTail || dHead < dTail) {
+      let i;
+      let cost;
+      if (dHead >= dTail || oHead < oTail && oC[oHead] <= dC[dHead]) {
+        i = oT[oHead];
+        cost = oC[oHead++];
+      } else {
+        i = dT[dHead];
+        cost = dC[dHead++];
+      }
+      if (cost !== dist[i]) continue;
+      const x = i % w;
+      const y = (i - x) / w;
+      const left = x > 0 && walk[i - 1] === 1;
+      const right = x < w - 1 && walk[i + 1] === 1;
+      const up = y > 0 && walk[i - w] === 1;
+      const down = y < h - 1 && walk[i + w] === 1;
+      const c1 = cost + STEP_ORTH;
+      if (c1 <= limit) {
+        if (left && dist[i - 1] > c1) {
+          dist[i - 1] = c1;
+          oT[oTail] = i - 1;
+          oC[oTail++] = c1;
+        }
+        if (right && dist[i + 1] > c1) {
+          dist[i + 1] = c1;
+          oT[oTail] = i + 1;
+          oC[oTail++] = c1;
+        }
+        if (up && dist[i - w] > c1) {
+          dist[i - w] = c1;
+          oT[oTail] = i - w;
+          oC[oTail++] = c1;
+        }
+        if (down && dist[i + w] > c1) {
+          dist[i + w] = c1;
+          oT[oTail] = i + w;
+          oC[oTail++] = c1;
+        }
+      }
+      const c2 = cost + STEP_DIAG;
+      if (c2 <= limit) {
+        let j;
+        if (left && up) {
+          j = i - w - 1;
+          if (walk[j] === 1 && dist[j] > c2) {
+            dist[j] = c2;
+            dT[dTail] = j;
+            dC[dTail++] = c2;
+          }
+        }
+        if (right && up) {
+          j = i - w + 1;
+          if (walk[j] === 1 && dist[j] > c2) {
+            dist[j] = c2;
+            dT[dTail] = j;
+            dC[dTail++] = c2;
+          }
+        }
+        if (left && down) {
+          j = i + w - 1;
+          if (walk[j] === 1 && dist[j] > c2) {
+            dist[j] = c2;
+            dT[dTail] = j;
+            dC[dTail++] = c2;
+          }
+        }
+        if (right && down) {
+          j = i + w + 1;
+          if (walk[j] === 1 && dist[j] > c2) {
+            dist[j] = c2;
+            dT[dTail] = j;
+            dC[dTail++] = c2;
+          }
+        }
+      }
+    }
+    return dist;
+  }
+  var seenScratch = new Uint8Array(0);
+
+  // src/game/dungeon.ts
+  var PATH_MIN = 11;
+  var PATH_MAX = 15;
+  var SPAN_MAX = 160;
+  var EDGE = 2;
+  var ROOM_GAP = 4;
+  var CLEAR = 3;
+  var GROW_TRIES = 60;
+  var MAX_ATTEMPTS = 500;
+  var LONG_CORRIDOR = 0.15;
+  var ELBOW_SHARE = 0.2;
+  var TWO_ROOM_BRANCH = 0.5;
+  var PACK_START_DIST = 10;
+  var PACK_SPACING = 4;
+  var BOSS_CLEAR_RADIUS = 5;
+  var CORRIDOR_PACK_MIN_LEN = 11;
+  var CORRIDOR_PACKS_MAX = 4;
+  function pathRoomCount(depth) {
+    return Math.min(PATH_MAX, PATH_MIN + (Math.max(1, depth) - 1 >> 1));
+  }
+  function branchCount(depth) {
+    return depth <= 2 ? 3 : depth <= 5 ? 4 : 5;
+  }
+  function monsterBudget(depth) {
+    return Math.min(230, 120 + 8 * (Math.max(1, depth) - 1));
+  }
+  function packSizeRange(depth) {
+    const grow2 = Math.floor((Math.max(1, depth) - 1) / 3);
+    return { min: Math.min(7, 3 + grow2), max: Math.min(9, 6 + grow2) };
+  }
+  var ELITE_PACK_MIN = 3;
+  var ELITE_PACK_MAX = 5;
+  var CHAMPION_PACK_MIN = 3;
+  var CHAMPION_PACK_MAX = 5;
+  function eliteRoomCount(depth) {
+    return depth <= 2 ? 2 : depth <= 5 ? 3 : 4;
+  }
+  function near(a, b, pad) {
+    return a.x0 - pad <= b.x1 && a.x1 + pad >= b.x0 && a.y0 - pad <= b.y1 && a.y1 + pad >= b.y0;
+  }
+  function gapBetween(a, b) {
+    const gx2 = Math.max(b.x0 - a.x1, a.x0 - b.x1) - 1;
+    const gy2 = Math.max(b.y0 - a.y1, a.y0 - b.y1) - 1;
+    return Math.max(gx2, gy2);
+  }
+  function makeRoom(id, x, y, w, h, role, path) {
+    return { id, x0: x, y0: y, x1: x + w - 1, y1: y + h - 1, w, h, role, path };
+  }
+  function mixSeed(depth, seed) {
+    let h = Math.imul(seed | 0, 2654435761) ^ Math.imul(depth | 0, 2246822507) | 0;
+    h = Math.imul(h ^ h >>> 15, 739982445);
+    h = Math.imul(h ^ h >>> 12, 695872825);
+    return (h ^ h >>> 15) >>> 0;
+  }
+  function rollSize(rng, cls) {
+    let long;
+    let short;
+    if (cls === "hall") {
+      long = rng.int(13, 14);
+      short = 12;
+    } else if (cls === "small") {
+      long = rng.int(7, 9);
+      short = rng.int(7, Math.min(8, long));
+    } else if (cls === "lair") {
+      long = rng.int(10, 12);
+      short = rng.int(9, Math.min(11, long));
+    } else {
+      long = rng.int(9, 12);
+      short = rng.int(8, Math.min(11, long));
+    }
+    return rng.chance(0.5) ? { w: long, h: short } : { w: short, h: long };
+  }
+  function freshSize(rng, cls, used) {
+    let size = rollSize(rng, cls);
+    for (let tries = 0; tries < 4 && used.has(size.w * 100 + size.h); tries++) size = rollSize(rng, cls);
+    used.add(size.w * 100 + size.h);
+    return size;
+  }
+  function pathSizeClasses(rng, count) {
+    const inner = count - 2;
+    const halls = count >= 13 ? 3 : 2;
+    const small = Math.round(inner * 0.3);
+    const mix = [];
+    for (let i = 0; i < inner; i++) mix.push(i < halls ? "hall" : i < halls + small ? "small" : "medium");
+    rng.shuffle(mix);
+    return ["medium", ...mix, "hall"];
+  }
+  function legAllowed(leg, rooms, corridors) {
+    for (const r of rooms) {
+      if (r.id === leg.roomA || r.id === leg.roomB) continue;
+      if (near(leg, r, CLEAR)) return false;
+    }
+    for (const c of corridors) {
+      for (const e of c.legs) if (near(leg, e, CLEAR)) return false;
+    }
+    return true;
+  }
+  function centredOrder(rng, lo, hi) {
+    const mid = (lo + hi) / 2;
+    const keyed = [];
+    for (let v = lo; v <= hi; v++) keyed.push({ v, k: Math.abs(v - mid) + rng.range(0, 2.5) });
+    keyed.sort((p, q) => p.k - q.k);
+    return keyed.map((p) => p.v);
+  }
+  function straightOptions(rng, a, b) {
+    const options = [];
+    if (a.x1 < b.x0 || b.x1 < a.x0) {
+      const l = a.x1 < b.x0 ? a : b;
+      const r = l === a ? b : a;
+      const lo = Math.max(l.y0, r.y0) + 1;
+      const hi = Math.min(l.y1, r.y1) - 1;
+      for (const lane of centredOrder(rng, lo, hi)) {
+        options.push([{ x0: l.x1 + 1, x1: r.x0 - 1, y0: lane - 1, y1: lane + 1, horiz: true, lane, roomA: l.id, roomB: r.id }]);
+      }
+    }
+    if (a.y1 < b.y0 || b.y1 < a.y0) {
+      const t = a.y1 < b.y0 ? a : b;
+      const u = t === a ? b : a;
+      const lo = Math.max(t.x0, u.x0) + 1;
+      const hi = Math.min(t.x1, u.x1) - 1;
+      for (const lane of centredOrder(rng, lo, hi)) {
+        options.push([{ x0: lane - 1, x1: lane + 1, y0: t.y1 + 1, y1: u.y0 - 1, horiz: false, lane, roomA: t.id, roomB: u.id }]);
+      }
+    }
+    return options;
+  }
+  function elbowOptions(rng, hr, vr, limit) {
+    const options = [];
+    let rowLo = hr.y0 + 1;
+    let rowHi = hr.y1 - 1;
+    let vrBelow;
+    if (vr.y0 - CLEAR - 2 >= rowLo) {
+      vrBelow = true;
+      rowHi = Math.min(rowHi, vr.y0 - CLEAR - 2);
+    } else if (vr.y1 + CLEAR + 2 <= rowHi) {
+      vrBelow = false;
+      rowLo = Math.max(rowLo, vr.y1 + CLEAR + 2);
+    } else return options;
+    let colLo = vr.x0 + 1;
+    let colHi = vr.x1 - 1;
+    let goEast;
+    if (hr.x1 + CLEAR + 2 <= colHi) {
+      goEast = true;
+      colLo = Math.max(colLo, hr.x1 + CLEAR + 2);
+    } else if (hr.x0 - CLEAR - 2 >= colLo) {
+      goEast = false;
+      colHi = Math.min(colHi, hr.x0 - CLEAR - 2);
+    } else return options;
+    const rows = centredOrder(rng, rowLo, rowHi);
+    const cols = centredOrder(rng, colLo, colHi);
+    for (let sum = 0; sum < rows.length + cols.length - 1 && options.length < limit; sum++) {
+      for (let i = 0; i <= sum && options.length < limit; i++) {
+        const j = sum - i;
+        if (i >= rows.length || j >= cols.length) continue;
+        const row = rows[i];
+        const col = cols[j];
+        const hLeg = goEast ? { x0: hr.x1 + 1, x1: col + 1, y0: row - 1, y1: row + 1, horiz: true, lane: row, roomA: hr.id, roomB: -1 } : { x0: col - 1, x1: hr.x0 - 1, y0: row - 1, y1: row + 1, horiz: true, lane: row, roomA: hr.id, roomB: -1 };
+        const vLeg = vrBelow ? { x0: col - 1, x1: col + 1, y0: row - 1, y1: vr.y0 - 1, horiz: false, lane: col, roomA: vr.id, roomB: -1 } : { x0: col - 1, x1: col + 1, y0: vr.y1 + 1, y1: row + 1, horiz: false, lane: col, roomA: vr.id, roomB: -1 };
+        options.push([hLeg, vLeg]);
+      }
+    }
+    return options;
+  }
+  function planCorridor(rng, rooms, corridors, a, b) {
+    for (const legs of straightOptions(rng, a, b)) {
+      if (legAllowed(legs[0], rooms, corridors)) return legs;
+    }
+    const elbows = rng.chance(0.5) ? elbowOptions(rng, a, b, 10).concat(elbowOptions(rng, b, a, 10)) : elbowOptions(rng, b, a, 10).concat(elbowOptions(rng, a, b, 10));
+    for (const legs of elbows) {
+      if (legAllowed(legs[0], rooms, corridors) && legAllowed(legs[1], rooms, corridors)) return legs;
+    }
+    return null;
+  }
+  var SIDE_DX = [1, 0, -1, 0];
+  function pickSide(rng, heading) {
+    if (heading < 0) return rng.int(0, 3);
+    const roll = rng.next();
+    return roll < 0.46 ? heading : roll < 0.73 ? (heading + 1) % 4 : (heading + 3) % 4;
+  }
+  function grow(rng, rooms, corridors, from, size, role, path, heading) {
+    let bx0 = Infinity;
+    let by0 = Infinity;
+    let bx1 = -Infinity;
+    let by1 = -Infinity;
+    for (const r of rooms) {
+      bx0 = Math.min(bx0, r.x0);
+      by0 = Math.min(by0, r.y0);
+      bx1 = Math.max(bx1, r.x1);
+      by1 = Math.max(by1, r.y1);
+    }
+    const span = SPAN_MAX - 2 * EDGE;
+    for (let tries = 0; tries < GROW_TRIES; tries++) {
+      const side = pickSide(rng, heading);
+      const gap = rng.chance(LONG_CORRIDOR) ? rng.int(9, 13) : rng.int(ROOM_GAP, 8);
+      const elbow = rng.chance(ELBOW_SHARE);
+      let x;
+      let y;
+      if (SIDE_DX[side] !== 0) {
+        x = side === 0 ? from.x1 + 1 + gap : from.x0 - gap - size.w;
+        if (elbow) {
+          const past = rng.int(-2, 5);
+          y = rng.chance(0.5) ? from.y1 + 1 + past : from.y0 - past - size.h;
+        } else y = rng.int(from.y0 - size.h + 3, from.y1 - 2);
+      } else {
+        y = side === 1 ? from.y1 + 1 + gap : from.y0 - gap - size.h;
+        if (elbow) {
+          const past = rng.int(-2, 5);
+          x = rng.chance(0.5) ? from.x1 + 1 + past : from.x0 - past - size.w;
+        } else x = rng.int(from.x0 - size.w + 3, from.x1 - 2);
+      }
+      const cand = makeRoom(rooms.length, x, y, size.w, size.h, role, path);
+      if (Math.max(bx1, cand.x1) - Math.min(bx0, cand.x0) + 1 > span) continue;
+      if (Math.max(by1, cand.y1) - Math.min(by0, cand.y0) + 1 > span) continue;
+      if (rooms.some((r) => gapBetween(cand, r) < ROOM_GAP)) continue;
+      if (corridors.some((c) => c.legs.some((leg) => near(leg, cand, CLEAR)))) continue;
+      rooms.push(cand);
+      const legs = planCorridor(rng, rooms, corridors, from, cand);
+      if (!legs) {
+        rooms.pop();
+        continue;
+      }
+      corridors.push({ a: from.id, b: cand.id, legs });
+      return side;
+    }
+    return -1;
+  }
+  function growBranch(rng, rooms, corridors, hosts, reward, used) {
+    const twoRooms = rng.chance(TWO_ROOM_BRANCH);
+    const crossSize = freshSize(rng, rng.chance(0.5) ? "small" : "medium", used);
+    const rewardSize = freshSize(rng, reward === "lair" ? "lair" : "small", used);
+    for (const host of hosts) {
+      const roomMark = rooms.length;
+      const corridorMark = corridors.length;
+      let from = rooms[host];
+      let heading = -1;
+      if (twoRooms) {
+        heading = grow(rng, rooms, corridors, from, crossSize, "side", -1, -1);
+        if (heading < 0) continue;
+        from = rooms[rooms.length - 1];
+      }
+      if (grow(rng, rooms, corridors, from, rewardSize, reward, -1, heading) >= 0) return true;
+      rooms.length = roomMark;
+      corridors.length = corridorMark;
+    }
+    return false;
+  }
+  function planLevel(rng, depth) {
+    const pathLen = pathRoomCount(depth);
+    const used = /* @__PURE__ */ new Set();
+    const rooms = [];
+    const corridors = [];
+    const classes = pathSizeClasses(rng, pathLen);
+    const first = freshSize(rng, classes[0], used);
+    rooms.push(makeRoom(0, 0, 0, first.w, first.h, "start", 0));
+    let heading = -1;
+    for (let i = 1; i < pathLen; i++) {
+      const size = freshSize(rng, classes[i], used);
+      heading = grow(rng, rooms, corridors, rooms[i - 1], size, i === pathLen - 1 ? "boss" : "path", i, heading);
+      if (heading < 0) return null;
+    }
+    const want = branchCount(depth);
+    const later = ["lair"];
+    while (later.length < want - 1) later.push(rng.chance(0.5) ? "vault" : "lair");
+    const rewards = ["vault", ...rng.shuffle(later)];
+    const inner = pathLen - 2;
+    for (let b = 0; b < want; b++) {
+      const lo = 1 + Math.floor(b * inner / want);
+      const hi = Math.floor((b + 1) * inner / want);
+      const hosts = [];
+      for (let i = lo; i <= hi; i++) hosts.push(i);
+      if (!growBranch(rng, rooms, corridors, rng.shuffle(hosts), rewards[b], used)) return null;
+    }
+    return { rooms, corridors, pathLen };
+  }
+  function carve(size, rooms, corridors, tiles, corr) {
+    tiles.fill(T_VOID);
+    corr.fill(0);
+    for (const c of corridors) {
+      for (const leg of c.legs) {
+        for (let y = leg.y0; y <= leg.y1; y++) {
+          for (let x = leg.x0; x <= leg.x1; x++) {
+            tiles[y * size + x] = T_FLOOR;
+            corr[y * size + x] = 1;
+          }
+        }
+      }
+    }
+    for (const r of rooms) {
+      for (let y = r.y0; y <= r.y1; y++) {
+        for (let x = r.x0; x <= r.x1; x++) {
+          tiles[y * size + x] = T_FLOOR;
+          corr[y * size + x] = 0;
+        }
+      }
+    }
+  }
+  function clipCorners(rng, size, rooms, tiles, corr) {
+    for (const r of rooms) {
+      const shortSide = Math.min(r.w, r.h);
+      if (shortSide < 8 || !rng.chance(0.4)) continue;
+      const clip = rng.int(1, shortSide >= 10 ? 3 : 2);
+      const corners = [
+        { x: r.x0, y: r.y0, sx: 1, sy: 1 },
+        { x: r.x1, y: r.y0, sx: -1, sy: 1 },
+        { x: r.x0, y: r.y1, sx: 1, sy: -1 },
+        { x: r.x1, y: r.y1, sx: -1, sy: -1 }
+      ];
+      for (const c of corners) {
+        let doorNearby = false;
+        const reach2 = clip + 1;
+        for (let y = c.y - reach2; y <= c.y + reach2 && !doorNearby; y++) {
+          for (let x = c.x - reach2; x <= c.x + reach2; x++) {
+            if (x >= 0 && y >= 0 && x < size && y < size && corr[y * size + x] === 1) {
+              doorNearby = true;
+              break;
+            }
+          }
+        }
+        if (doorNearby) continue;
+        for (let dy = 0; dy < clip; dy++) {
+          for (let dx = 0; dx + dy < clip; dx++) tiles[(c.y + dy * c.sy) * size + c.x + dx * c.sx] = T_VOID;
+        }
+      }
+    }
+  }
+  function growWalls(size, tiles) {
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const i = y * size + x;
+        if (tiles[i] !== T_VOID) continue;
+        let touches = false;
+        for (let dy = -1; dy <= 1 && !touches; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && ny >= 0 && nx < size && ny < size && tiles[ny * size + nx] === T_FLOOR) {
+              touches = true;
+              break;
+            }
+          }
+        }
+        if (touches) tiles[i] = T_WALL;
+      }
+    }
+  }
+  function hasThinWall(size, tiles) {
+    for (let y = 1; y < size - 1; y++) {
+      for (let x = 1; x < size - 1; x++) {
+        const i = y * size + x;
+        if (tiles[i] === T_FLOOR) continue;
+        if (tiles[i - 1] === T_FLOOR && tiles[i + 1] === T_FLOOR) return true;
+        if (tiles[i - size] === T_FLOOR && tiles[i + size] === T_FLOOR) return true;
+      }
+    }
+    return false;
+  }
+  function countLoops(size, tiles) {
+    const seen = new Uint8Array(size * size);
+    const stack = [];
+    let regions = 0;
+    for (let s = 0; s < seen.length; s++) {
+      if (seen[s] === 1 || tiles[s] === T_FLOOR) continue;
+      regions++;
+      seen[s] = 1;
+      stack.push(s);
+      while (stack.length > 0) {
+        const i = stack.pop();
+        const x = i % size;
+        const y = (i - x) / size;
+        for (let ny = Math.max(0, y - 1); ny <= Math.min(size - 1, y + 1); ny++) {
+          for (let nx = Math.max(0, x - 1); nx <= Math.min(size - 1, x + 1); nx++) {
+            const j = ny * size + nx;
+            if (seen[j] === 0 && tiles[j] !== T_FLOOR) {
+              seen[j] = 1;
+              stack.push(j);
+            }
+          }
+        }
+      }
+    }
+    return regions - 1;
+  }
+  function centreX(r) {
+    return r.x0 + (r.w >> 1);
+  }
+  function centreY(r) {
+    return r.y0 + (r.h >> 1);
+  }
+  function settle(plan) {
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (const r of plan.rooms) {
+      x0 = Math.min(x0, r.x0);
+      y0 = Math.min(y0, r.y0);
+      x1 = Math.max(x1, r.x1);
+      y1 = Math.max(y1, r.y1);
+    }
+    const w = x1 - x0 + 1;
+    const h = y1 - y0 + 1;
+    const size = Math.max(w, h) + 2 * EDGE;
+    const dx = (size - w >> 1) - x0;
+    const dy = (size - h >> 1) - y0;
+    const move = (r) => {
+      r.x0 += dx;
+      r.x1 += dx;
+      r.y0 += dy;
+      r.y1 += dy;
+    };
+    plan.rooms.forEach(move);
+    for (const c of plan.corridors) {
+      for (const leg of c.legs) {
+        move(leg);
+        leg.lane += leg.horiz ? dy : dx;
+      }
+    }
+    return size;
+  }
+  function tryLayout(rng, depth) {
+    const plan = planLevel(rng, depth);
+    if (!plan) return null;
+    const size = settle(plan);
+    const { rooms, corridors, pathLen } = plan;
+    const tiles = new Uint8Array(size * size);
+    const corr = new Uint8Array(size * size);
+    carve(size, rooms, corridors, tiles, corr);
+    clipCorners(rng, size, rooms, tiles, corr);
+    growWalls(size, tiles);
+    if (hasThinWall(size, tiles) || countLoops(size, tiles) !== 0) return null;
+    const open = new Uint8Array(size * size);
+    for (let i = 0; i < open.length; i++) open[i] = tiles[i] === T_FLOOR ? 1 : 0;
+    const field = flowField(open, size, size, centreX(rooms[0]), centreY(rooms[0]));
+    for (const r of rooms) if (field[centreY(r) * size + centreX(r)] === UNREACHABLE) return null;
+    return { size, rooms, corridors, pathLen, tiles, corr };
+  }
+  function assignKinds(rng, depth, lay) {
+    const kinds = lay.rooms.map(
+      (r) => r.role === "start" ? "start" : r.role === "boss" ? "boss" : r.role === "vault" ? "treasure" : r.role === "lair" ? "guardian" : "normal"
+    );
+    const free = lay.rooms.filter((r) => r.role === "path" && r.path >= 2);
+    rng.shuffle(free);
+    free.sort((p, q) => (p.w * p.h >= 72 ? 0 : 1) - (q.w * q.h >= 72 ? 0 : 1));
+    const want = Math.min(eliteRoomCount(depth), Math.max(0, free.length - 1));
+    const chosen = [];
+    for (const apart of [2, 1]) {
+      for (const r of free) {
+        if (chosen.length >= want) break;
+        if (chosen.includes(r) || chosen.some((c) => Math.abs(c.path - r.path) < apart)) continue;
+        chosen.push(r);
+      }
+    }
+    for (const r of chosen) kinds[r.id] = "elite";
+    return kinds;
+  }
+  function wallClearance(size, tiles) {
+    const c = new Uint8Array(size * size);
+    const at2 = (x, y) => x < 0 || y < 0 || x >= size || y >= size ? 0 : c[y * size + x];
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        if (tiles[y * size + x] !== T_FLOOR) continue;
+        c[y * size + x] = Math.min(250, 1 + Math.min(at2(x - 1, y), at2(x - 1, y - 1), at2(x, y - 1), at2(x + 1, y - 1)));
+      }
+    }
+    for (let y = size - 1; y >= 0; y--) {
+      for (let x = size - 1; x >= 0; x--) {
+        const i = y * size + x;
+        if (c[i] === 0) continue;
+        c[i] = Math.min(c[i], 1 + Math.min(at2(x + 1, y), at2(x + 1, y + 1), at2(x, y + 1), at2(x - 1, y + 1)));
+      }
+    }
+    return c;
+  }
+  function spread(size, src, radius) {
+    const out = new Uint8Array(size * size);
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        if (src[y * size + x] !== 1) continue;
+        for (let ny = Math.max(0, y - radius); ny <= Math.min(size - 1, y + radius); ny++) {
+          for (let nx = Math.max(0, x - radius); nx <= Math.min(size - 1, x + radius); nx++) out[ny * size + nx] = 1;
+        }
+      }
+    }
+    return out;
+  }
+  function solidAllowed(st, i, bulky) {
+    if (st.tiles[i] !== T_FLOOR || st.taken[i] === 1 || st.noSolid[i] === 1 || st.keepOut[i] === 1) return false;
+    return !(bulky && st.doorstep[i] === 1);
+  }
+  function addProp(st, kind, i) {
+    st.taken[i] = 1;
+    st.props.push({ kind, x: i % st.size, y: Math.floor(i / st.size) });
+  }
+  function tileDist2(size, a, b) {
+    const dx = a % size - b % size;
+    const dy = Math.floor(a / size) - Math.floor(b / size);
+    return dx * dx + dy * dy;
+  }
+  function placePillars(st) {
+    const { rng, size } = st;
+    for (const r of st.rooms) {
+      if (!(r.w >= 11 && r.h >= 10 || r.w >= 10 && r.h >= 11)) continue;
+      const boss = st.kinds[r.id] === "boss";
+      const insetsX = boss ? [2] : rng.shuffle(r.w >= 12 ? [3, 3, 2] : [2, 3]);
+      const insetsY = boss ? [2] : rng.shuffle(r.h >= 12 ? [3, 3, 2] : [2, 3]);
+      const pair = !boss && rng.chance(0.4);
+      const insets = [];
+      for (const qx of insetsX) for (const qy of insetsY) insets.push([qx, qy]);
+      for (const [qx, qy] of insets) {
+        let spots;
+        if (pair && r.w >= r.h && r.h % 2 === 1) {
+          spots = [centreY(r) * size + r.x0 + qx, centreY(r) * size + r.x1 - qx];
+        } else if (pair && r.h > r.w && r.w % 2 === 1) {
+          spots = [(r.y0 + qy) * size + centreX(r), (r.y1 - qy) * size + centreX(r)];
+        } else {
+          spots = [
+            (r.y0 + qy) * size + r.x0 + qx,
+            (r.y0 + qy) * size + r.x1 - qx,
+            (r.y1 - qy) * size + r.x0 + qx,
+            (r.y1 - qy) * size + r.x1 - qx
+          ];
+        }
+        const fits = spots.every(
+          (i) => solidAllowed(st, i, true) && (!boss || tileDist2(size, i, st.bossTile) >= BOSS_CLEAR_RADIUS * BOSS_CLEAR_RADIUS)
+        );
+        if (!fits) continue;
+        for (const i of spots) addProp(st, "pillar", i);
+        break;
+      }
+    }
+  }
+  function placeTreasureChests(st) {
+    for (const r of st.rooms) {
+      if (st.kinds[r.id] !== "treasure") continue;
+      const c = centreY(r) * st.size + centreX(r);
+      const along = r.w >= r.h ? 1 : st.size;
+      let placed = 0;
+      for (const i of [c - along, c + along]) {
+        if (!solidAllowed(st, i, true)) continue;
+        addProp(st, "chest", i);
+        placed++;
+      }
+      if (placed === 0 && solidAllowed(st, c, false)) addProp(st, "chest", c);
+    }
+  }
+  function spreadPick(size, cands, count, minSep) {
+    if (cands.length === 0 || count <= 0) return [];
+    const picked = [cands[0]];
+    while (picked.length < count) {
+      let best = -1;
+      let bestD = -1;
+      for (const c of cands) {
+        let d = Infinity;
+        for (const p of picked) d = Math.min(d, tileDist2(size, c, p));
+        if (d > bestD) {
+          bestD = d;
+          best = c;
+        }
+      }
+      if (best < 0 || bestD < minSep * minSep) break;
+      picked.push(best);
+    }
+    return picked;
+  }
+  function pickPackTiles(st, cands, count, cornerFirst) {
+    const { rng, size } = st;
+    if (count <= 1) return [rng.pick(cands)];
+    for (let tries = 0; tries < 24; tries++) {
+      const picked = [rng.pick(cands)];
+      let ok = true;
+      while (picked.length < count && ok) {
+        let pool = [];
+        for (const sep of [PACK_SPACING + 1, PACK_SPACING]) {
+          pool = cands.filter((c) => picked.every((p) => tileDist2(size, c, p) >= sep * sep));
+          if (pool.length > 0) break;
+        }
+        if (pool.length === 0) ok = false;
+        else picked.push(rng.pick(pool));
+      }
+      if (ok) return picked;
+    }
+    return spreadPick(size, cornerFirst, count, 0);
+  }
+  function placePacks(st, lay) {
+    const { rng, size, rooms, kinds, depth } = st;
+    const startTile = st.startTile;
+    const farFromStart = (i) => tileDist2(size, i, startTile) >= PACK_START_DIST * PACK_START_DIST;
+    const nearSolid = spread(size, st.taken, 1);
+    const cands = [];
+    const cornerFirst = [];
+    const capacity = [];
+    const tilesWith = (r, clearance, blocked) => {
+      const list = [];
+      for (let y = r.y0; y <= r.y1; y++) {
+        for (let x = r.x0; x <= r.x1; x++) {
+          const i = y * size + x;
+          if (st.clear[i] >= clearance && blocked[i] === 0 && farFromStart(i)) list.push(i);
+        }
+      }
+      return list;
+    };
+    for (const r of rooms) {
+      let list = [];
+      for (const clearance of [3, 2, 1]) {
+        list = tilesWith(r, clearance, nearSolid);
+        if (list.length === 0) list = tilesWith(r, clearance, st.taken);
+        if (list.length > 0) break;
+      }
+      const centre = centreY(r) * size + centreX(r);
+      const sorted = list.slice().sort((p, q) => tileDist2(size, q, centre) - tileDist2(size, p, centre) || p - q);
+      cands.push(list);
+      cornerFirst.push(sorted);
+      capacity.push(spreadPick(size, sorted, 3, PACK_SPACING).length);
+    }
+    const corridorSpots = [];
+    for (const c of lay.corridors) {
+      for (const leg of c.legs) {
+        const len2 = leg.horiz ? leg.x1 - leg.x0 + 1 : leg.y1 - leg.y0 + 1;
+        if (len2 < CORRIDOR_PACK_MIN_LEN) continue;
+        const off = rng.int(5, len2 - 6);
+        const i = leg.horiz ? leg.lane * size + leg.x0 + off : (leg.y0 + off) * size + leg.lane;
+        if (st.clear[i] >= 2 && farFromStart(i)) corridorSpots.push(i);
+      }
+    }
+    rng.shuffle(corridorSpots);
+    const range = packSizeRange(depth);
+    const goal = Math.round(monsterBudget(depth) * rng.range(0.93, 1.07));
+    const normalIn = rooms.map(() => 0);
+    let eliteRooms = 0;
+    let lairs = 0;
+    for (const r of rooms) {
+      if (capacity[r.id] === 0) continue;
+      const kind = kinds[r.id];
+      if (kind === "normal") {
+        const area = r.w * r.h;
+        normalIn[r.id] = Math.min(capacity[r.id], area < 72 ? 1 : area < 121 ? 2 : 3);
+      } else if (kind === "treasure") normalIn[r.id] = 1;
+      else if (kind === "elite") {
+        eliteRooms++;
+        if (capacity[r.id] >= 2 && rng.chance(0.5)) normalIn[r.id] = 1;
+      } else if (kind === "guardian") lairs++;
+    }
+    const maxCorridorPacks = Math.min(CORRIDOR_PACKS_MAX, corridorSpots.length);
+    let corridorPacks = rng.int(0, maxCorridorPacks);
+    const fixedShare = eliteRooms * ((ELITE_PACK_MIN + ELITE_PACK_MAX) / 2) + lairs * ((CHAMPION_PACK_MIN + CHAMPION_PACK_MAX) / 2);
+    const normalPacks = () => normalIn.reduce((a, b) => a + b, 0) + corridorPacks;
+    const averageSize = () => (goal - fixedShare) / Math.max(1, normalPacks());
+    for (let guard = 0; guard < 60 && averageSize() > range.max - 0.75; guard++) {
+      const options = [];
+      for (const r of rooms) {
+        const kind = kinds[r.id];
+        if (kind === "normal" && normalIn[r.id] < capacity[r.id]) options.push(r.id);
+        if (kind === "elite" && normalIn[r.id] === 0 && capacity[r.id] >= 2) options.push(r.id);
+      }
+      if (corridorPacks < maxCorridorPacks) options.push(-1);
+      if (options.length === 0) break;
+      const pick3 = rng.pick(options);
+      if (pick3 < 0) corridorPacks++;
+      else normalIn[pick3]++;
+    }
+    for (let guard = 0; guard < 60 && averageSize() < range.min + 0.75; guard++) {
+      const options = [];
+      for (const r of rooms) {
+        const kind = kinds[r.id];
+        if (kind === "normal" && normalIn[r.id] > 1) options.push(r.id);
+        if (kind === "elite" && normalIn[r.id] > 0) options.push(r.id);
+      }
+      if (corridorPacks > 0) options.push(-1);
+      if (options.length === 0) break;
+      const pick3 = rng.pick(options);
+      if (pick3 < 0) corridorPacks--;
+      else normalIn[pick3]--;
+    }
+    const drafts = [];
+    for (const r of rooms) {
+      const kind = kinds[r.id];
+      const list = cands[r.id];
+      if (list.length === 0) continue;
+      if (kind === "elite" || kind === "guardian") {
+        const centre = centreY(r) * size + centreX(r);
+        const nearestCentreFirst = (p, q) => tileDist2(size, p, centre) - tileDist2(size, q, centre) || p - q;
+        const spots = normalIn[r.id] > 0 ? pickPackTiles(st, list, 2, cornerFirst[r.id]) : list.slice();
+        spots.sort(nearestCentreFirst);
+        if (kind === "elite") drafts.push({ tile: spots[0], roomId: r.id, tier: "elite", min: ELITE_PACK_MIN, max: ELITE_PACK_MAX, size: ELITE_PACK_MIN });
+        else drafts.push({ tile: spots[0], roomId: r.id, tier: "champion", min: CHAMPION_PACK_MIN, max: CHAMPION_PACK_MAX, size: CHAMPION_PACK_MIN });
+        if (normalIn[r.id] > 0 && spots.length > 1) {
+          drafts.push({ tile: spots[1], roomId: r.id, tier: "normal", min: range.min, max: range.max, size: range.min });
+        }
+      } else if (normalIn[r.id] > 0) {
+        for (const tile of pickPackTiles(st, list, normalIn[r.id], cornerFirst[r.id])) {
+          drafts.push({ tile, roomId: r.id, tier: "normal", min: range.min, max: range.max, size: range.min });
+        }
+      }
+    }
+    for (const tile of corridorSpots) {
+      if (corridorPacks <= 0) break;
+      if (drafts.some((d) => tileDist2(size, d.tile, tile) < 36)) continue;
+      drafts.push({ tile, roomId: -1, tier: "normal", min: range.min, max: range.min + 1, size: range.min });
+      corridorPacks--;
+    }
+    let left = goal - drafts.reduce((a, d) => a + d.size, 0);
+    while (left > 0) {
+      const open = drafts.filter((d) => d.size < d.max);
+      if (open.length === 0) break;
+      rng.pick(open).size++;
+      left--;
+    }
+    return drafts.map((d) => ({
+      x: d.tile % size + 0.5,
+      y: Math.floor(d.tile / size) + 0.5,
+      roomId: d.roomId,
+      size: d.size,
+      tier: d.tier
+    }));
+  }
+  function wallsAround(size, tiles, i) {
+    const x = i % size;
+    const y = Math.floor(i / size);
+    let n = 0;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= size || ny >= size || tiles[ny * size + nx] !== T_FLOOR) n++;
+      }
+    }
+    return n;
+  }
+  function againstWall(size, tiles, i) {
+    return tiles[i - 1] !== T_FLOOR || tiles[i + 1] !== T_FLOOR || tiles[i - size] !== T_FLOOR || tiles[i + size] !== T_FLOOR;
+  }
+  function wallTiles(st, r) {
+    const list = [];
+    for (let y = r.y0; y <= r.y1; y++) {
+      for (let x = r.x0; x <= r.x1; x++) {
+        const i = y * st.size + x;
+        if (st.tiles[i] === T_FLOOR && againstWall(st.size, st.tiles, i)) list.push(i);
+      }
+    }
+    return list;
+  }
+  function placeBraziers(st) {
+    const { rng, size } = st;
+    for (const r of st.rooms) {
+      const boss = st.kinds[r.id] === "boss";
+      const want = boss ? rng.int(4, 6) : rng.int(2, 4);
+      const midX = centreX(r);
+      const midY = centreY(r);
+      const scored = wallTiles(st, r).filter((i) => solidAllowed(st, i, false) && (!boss || tileDist2(size, i, st.bossTile) >= BOSS_CLEAR_RADIUS * BOSS_CLEAR_RADIUS)).map((i) => {
+        const mid = i % size === midX || Math.floor(i / size) === midY ? 0.5 : 0;
+        return { i, score: wallsAround(size, st.tiles, i) + mid + rng.next() * 0.4 };
+      }).sort((p, q) => q.score - p.score || p.i - q.i);
+      const placed = [];
+      for (const sep of [4, 2]) {
+        for (const c of scored) {
+          if (placed.length >= want) break;
+          if (st.taken[c.i] === 1) continue;
+          if (placed.some((p) => tileDist2(size, p, c.i) < sep * sep)) continue;
+          placed.push(c.i);
+          addProp(st, "brazier", c.i);
+        }
+      }
+    }
+  }
+  function placeClusters(st) {
+    const { rng, size } = st;
+    for (const r of st.rooms) {
+      if (!rng.chance(0.5)) continue;
+      const clusters = r.w * r.h >= 120 && rng.chance(0.4) ? 2 : 1;
+      const boss = st.kinds[r.id] === "boss";
+      const allowed = (i) => solidAllowed(st, i, true) && (!boss || tileDist2(size, i, st.bossTile) >= BOSS_CLEAR_RADIUS * BOSS_CLEAR_RADIUS);
+      for (let k = 0; k < clusters; k++) {
+        const anchors = wallTiles(st, r).filter(allowed);
+        if (anchors.length === 0) break;
+        const want = rng.int(2, 4);
+        const cluster = [rng.pick(anchors)];
+        while (cluster.length < want) {
+          const options = [];
+          for (const c of cluster) {
+            for (const n of [c - 1, c + 1, c - size, c + size]) {
+              if (cluster.includes(n) || !allowed(n)) continue;
+              const x = n % size;
+              const y = Math.floor(n / size);
+              if (x < r.x0 || x > r.x1 || y < r.y0 || y > r.y1 || st.clear[n] > 2) continue;
+              options.push(n);
+              if (st.clear[n] === 1) options.push(n, n);
+            }
+          }
+          if (options.length === 0) break;
+          cluster.push(rng.pick(options));
+        }
+        if (cluster.length < 2) continue;
+        const mostly = rng.chance(0.5) ? "barrel" : "urn";
+        const other = mostly === "barrel" ? "urn" : "barrel";
+        for (const i of cluster) addProp(st, rng.chance(0.75) ? mostly : other, i);
+      }
+    }
+  }
+  function placeBonusChest(st) {
+    const { rng, size } = st;
+    if (!rng.chance(0.3)) return;
+    const normals = st.rooms.filter((r2) => st.kinds[r2.id] === "normal");
+    if (normals.length === 0) return;
+    const r = rng.pick(normals);
+    const spots = wallTiles(st, r).filter((i) => solidAllowed(st, i, true));
+    if (spots.length === 0) return;
+    const flat = spots.filter((i) => wallsAround(size, st.tiles, i) === 3);
+    addProp(st, "chest", rng.pick(flat.length > 0 ? flat : spots));
+  }
+  function placeLitter(st) {
+    const { rng } = st;
+    const floor2 = [];
+    for (let i = 0; i < st.tiles.length; i++) if (st.tiles[i] === T_FLOOR) floor2.push(i);
+    let want = Math.round(floor2.length / 40);
+    for (let tries = want * 6; tries > 0 && want > 0; tries--) {
+      const i = rng.pick(floor2);
+      if (st.taken[i] === 1 || st.keepOut[i] === 1) continue;
+      addProp(st, rng.chance(0.5) ? "bones" : "rubble", i);
+      want--;
+    }
+  }
+  function unblockProps(st, packs) {
+    const { size, tiles } = st;
+    const n = size * size;
+    const targets = [st.bossTile, ...packs.map((p) => Math.floor(p.y) * size + Math.floor(p.x))];
+    const solidAt = new Int32Array(n).fill(-1);
+    const walk = new Uint8Array(n);
+    const seen = new Uint8Array(n);
+    for (let round = 0; round < 50; round++) {
+      solidAt.fill(-1);
+      st.props.forEach((p, k) => {
+        if (SOLID_PROPS.includes(p.kind)) solidAt[p.y * size + p.x] = k;
+      });
+      for (let i = 0; i < n; i++) walk[i] = tiles[i] === T_FLOOR && solidAt[i] < 0 ? 1 : 0;
+      seen.fill(0);
+      const queue = [st.startTile];
+      seen[st.startTile] = 1;
+      for (let head = 0; head < queue.length; head++) {
+        const i = queue[head];
+        for (const j of [i - 1, i + 1, i - size, i + size]) {
+          if (walk[j] === 1 && seen[j] === 0) {
+            seen[j] = 1;
+            queue.push(j);
+          }
+        }
+      }
+      const lost = targets.find((t) => seen[t] === 0);
+      if (lost === void 0) return;
+      const cost = new Int32Array(n).fill(-1);
+      const from = new Int32Array(n).fill(-1);
+      const deque = [lost];
+      cost[lost] = solidAt[lost] >= 0 ? 1 : 0;
+      let goal = -1;
+      while (deque.length > 0) {
+        const i = deque.shift();
+        if (seen[i] === 1) {
+          goal = i;
+          break;
+        }
+        for (const j of [i - 1, i + 1, i - size, i + size]) {
+          if (tiles[j] !== T_FLOOR) continue;
+          const step = solidAt[j] >= 0 ? 1 : 0;
+          if (cost[j] >= 0 && cost[j] <= cost[i] + step) continue;
+          cost[j] = cost[i] + step;
+          from[j] = i;
+          if (step === 0) deque.unshift(j);
+          else deque.push(j);
+        }
+      }
+      if (goal < 0) return;
+      const remove = /* @__PURE__ */ new Set();
+      for (let i = goal; i >= 0; i = from[i]) if (solidAt[i] >= 0) remove.add(solidAt[i]);
+      if (remove.size === 0) return;
+      st.props = st.props.filter((_, k) => !remove.has(k));
+    }
+  }
+  function generateFloor(depth, seed) {
+    const d = Math.max(1, Math.floor(depth) || 1);
+    const rng = new RNG(mixSeed(d, seed));
+    let lay = null;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS && !lay; attempt++) lay = tryLayout(rng, d);
+    if (!lay) throw new Error(`generateFloor: no layout found for depth ${depth}, seed ${seed}`);
+    const size = lay.size;
+    const start = lay.rooms[0];
+    const boss = lay.rooms[lay.pathLen - 1];
+    const startTile = centreY(start) * size + centreX(start);
+    const bossTile = centreY(boss) * size + centreX(boss);
+    const kinds = assignKinds(rng, d, lay);
+    const special = new Uint8Array(size * size);
+    special[startTile] = 1;
+    special[bossTile] = 1;
+    const st = {
+      rng,
+      depth: d,
+      size,
+      tiles: lay.tiles,
+      rooms: lay.rooms,
+      kinds,
+      startTile,
+      bossTile,
+      clear: wallClearance(size, lay.tiles),
+      taken: new Uint8Array(size * size),
+      noSolid: spread(size, lay.corr, 1),
+      doorstep: spread(size, lay.corr, 2),
+      keepOut: spread(size, special, 2),
+      props: []
+    };
+    placePillars(st);
+    placeTreasureChests(st);
+    const packs = placePacks(st, lay);
+    const packTiles = new Uint8Array(size * size);
+    for (const p of packs) packTiles[Math.floor(p.y) * size + Math.floor(p.x)] = 1;
+    const nearPack = spread(size, packTiles, 1);
+    for (let i = 0; i < nearPack.length; i++) if (nearPack[i] === 1) st.noSolid[i] = 1;
+    placeBraziers(st);
+    placeClusters(st);
+    placeBonusChest(st);
+    placeLitter(st);
+    unblockProps(st, packs);
+    const variant = new Uint8Array(size * size);
+    for (let i = 0; i < variant.length; i++) variant[i] = rng.int(0, 255);
+    const rooms = lay.rooms.map((r) => ({ id: r.id, x: r.x0, y: r.y0, w: r.w, h: r.h, kind: kinds[r.id], path: r.path }));
+    return {
+      depth: d,
+      seed,
+      w: size,
+      h: size,
+      tiles: lay.tiles,
+      variant,
+      rooms,
+      start: { x: centreX(start) + 0.5, y: centreY(start) + 0.5 },
+      boss: { x: centreX(boss) + 0.5, y: centreY(boss) + 0.5 },
+      packs,
+      props: st.props
+    };
+  }
+
+  // src/game/level.ts
+  function lowWalls(f2) {
+    const low = new Uint8Array(f2.w * f2.h);
+    const isFloor = (x, y) => x >= 0 && y >= 0 && x < f2.w && y < f2.h && f2.tiles[y * f2.w + x] === T_FLOOR;
+    for (let y = 0; y < f2.h; y++) {
+      for (let x = 0; x < f2.w; x++) {
+        if (f2.tiles[y * f2.w + x] !== T_WALL) continue;
+        if (isFloor(x - 1, y) || isFloor(x, y - 1) || isFloor(x - 1, y - 1)) low[y * f2.w + x] = 1;
+      }
+    }
+    return low;
+  }
+  function propFromSpot(f2, s) {
+    return { kind: s.kind, tx: s.x, ty: s.y, x: s.x + 0.5, y: s.y + 0.5, solid: SOLID_PROPS.includes(s.kind), state: 0, variant: f2.variant[s.y * f2.w + s.x] };
+  }
+  function portalAt(x, y, active) {
+    return { kind: "portal", tx: Math.floor(x), ty: Math.floor(y), x, y, solid: false, state: active ? 1 : 0, variant: 0 };
+  }
+  function finish(f2, town, portal) {
+    const n = f2.w * f2.h;
+    const level = {
+      town,
+      floor: f2,
+      walk: buildWalkGrid(f2),
+      open: buildOpenGrid(f2),
+      low: lowWalls(f2),
+      explored: new Uint8Array(n),
+      visible: new Uint8Array(n),
+      props: f2.props.map((s) => propFromSpot(f2, s)),
+      portal,
+      body: null,
+      stations: []
+    };
+    if (portal) level.props.push(portal);
+    if (town) {
+      level.explored.fill(1);
+      level.visible.fill(1);
+    }
+    return level;
+  }
+  function makeDungeon(depth, seed) {
+    const floor2 = generateFloor(depth, seed);
+    return finish(floor2, false, portalAt(floor2.boss.x, floor2.boss.y, false));
+  }
+
+  // src/dev/level3d.ts
+  var arg = new Map(decodeURIComponent(location.hash.slice(1)).split(",").map((kv) => kv.split("=")));
+  var num = (k, d) => arg.has(k) ? Number(arg.get(k)) : d;
+  var L = makeDungeon(num("depth", 1), num("seed", 7));
+  var f = L.floor;
+  var room = f.rooms[Math.min(f.rooms.length - 1, num("room", 0))];
+  var gx = num("x", room.x + room.w / 2);
+  var gy = num("y", room.y + room.h / 2);
+  var half = num("half", 9);
+  var cv = document.createElement("canvas");
+  cv.width = window.innerWidth;
+  cv.height = window.innerHeight;
+  cv.style.display = "block";
+  document.body.style.margin = "0";
+  document.body.style.background = "#000";
+  document.body.appendChild(cv);
+  var t0 = performance.now();
+  var H2 = wallHeights(L);
+  var t1 = performance.now();
+  var mesh = new Mesh();
+  var reach = Math.ceil(half * 2.6 / CHUNK) + 1;
+  var pieces = 0;
+  var lights = [];
+  for (let cy = Math.floor(gy / CHUNK) - reach; cy <= Math.floor(gy / CHUNK) + reach; cy++) {
+    for (let cx = Math.floor(gx / CHUNK) - reach; cx <= Math.floor(gx / CHUNK) + reach; cx++) {
+      if (cx < 0 || cy < 0 || cx * CHUNK >= f.w || cy * CHUNK >= f.h) continue;
+      const p = buildPiece(L, H2, cx, cy);
+      if (p.mesh.data.length === 0) continue;
+      mesh.add(p.mesh);
+      pieces++;
+      for (const fl of p.flames) if (lights.length < 12 && Math.hypot(fl.x - gx, fl.y - gy) < half * 1.6) lights.push({ at: [fl.y, fl.x, fl.z + 0.2], color: [1.5, 0.67, 0.21], reach: 4.5 });
+    }
+  }
+  var t2 = performance.now();
+  var scene = {
+    mesh,
+    cam: gameCam([gy, gx, 0.5], half),
+    sky: [0.105, 0.11, 0.24],
+    ground: [0.035, 0.032, 0.08],
+    moonFrom: [0.75, -0.55, 1.15],
+    moon: [0.38, 0.42, 0.72],
+    lights: [{ at: [gy + 0.6, gx + 0.6, 2.2], color: [0.5, 0.55, 1], reach: 9 }, ...lights],
+    bounds: { at: [gy, gx, 1], half: half * 2 },
+    vignette: 0.4
+  };
+  paint(cv, scene);
+  var hs = /* @__PURE__ */ new Map();
+  for (let i = 0; i < H2.length; i++) if (H2[i] > 0) hs.set(H2[i].toFixed(2), (hs.get(H2[i].toFixed(2)) ?? 0) + 1);
+  console.log(`level ${f.w}x${f.h}, ${f.rooms.length} rooms; heights ${[...hs].sort().map(([k, v]) => `${k}:${v}`).join(" ")}`);
+  console.log(`heights in ${Math.round(t1 - t0)} ms; ${pieces} pieces, ${mesh.triangles} triangles in ${Math.round(t2 - t1)} ms (${((t2 - t1) / Math.max(1, pieces)).toFixed(1)} each)`);
+  window.__ready = true;
+})();
+
+</script>
+</body>
+</html>
