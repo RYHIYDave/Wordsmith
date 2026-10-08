@@ -262,13 +262,23 @@ export const HEAVY = {
   staggerAgain: 1.5,
   /** On a monster: its blows knock the hero this far back (tiles). */
   knock: 0.6,
+  /** On gear: the most that a hero's gear together gives of a chance to stun (%). */
+  stunCap: 50,
 };
 /** PRECISE: in front, the area this much the size; behind, a mark lasts this many seconds. On a monster: its hits ignore this much of the hero's armour. */
 export const PRECISE = { area: 0.7, markTime: 5, armourIgnored: 0.5 };
 /** FRENZIED: each stack this much faster (attacks, and cooldowns recovering), up to `max`; the stacks fade `hold` seconds after the last use. On a monster: up to `monster` faster near death. */
 export const FRENZY = { each: 0.08, max: 5, hold: 3, monster: 0.5 };
 /** GUARDING: in front a shield of this fraction of life for `shieldTime` s; behind a ward that takes `ward` off the damage inside it, for `wardTime` s. On a monster: a shield of `monster` of its life. */
-export const GUARD = { shield: 0.1, shieldTime: 3, ward: 0.3, wardTime: 4, monster: 0.2 };
+export const GUARD = {
+  shield: 0.1,
+  shieldTime: 3,
+  ward: 0.3,
+  wardTime: 4,
+  monster: 0.2,
+  /** On gear: the most that a hero's gear together gives of a chance to block (%). */
+  blockCap: 50,
+};
 
 export interface WordDef {
   id: WordId;
@@ -930,7 +940,7 @@ export const QUIPS: {
     volatile: ['Boom.', 'Mind the mess.', 'Handle with care.'],
     poison: ['Pick your poison.', 'Something you ate?', 'Bad for your health.'],
     heavy: ['Down you go.', 'Feel that?', 'Heavy hitter.'],
-    precise: ['Right there.', 'Clean.', 'Through the gap.'],
+    precise: ['Right there.', 'Dead centre.', 'Through the gap.'],
     frenzied: ['More!', "Can't stop now.", 'Faster.'],
     guarding: ['Not today.', 'You missed.', 'Hold the line.'],
   },

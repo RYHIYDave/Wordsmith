@@ -205,6 +205,12 @@ export interface Hero {
   /** "of Swiftness" bonus (%) and its timer. */
   haste: number;
   hasteT: number;
+  /** Frenzied (Version 19.3): stacks of frenzy, each making the hero's attacks and the recovery of their cooldowns faster (FRENZY), and the seconds before they fade. */
+  frenzy: number;
+  frenzyT: number;
+  /** Guarding in front: what the shield will still take before the hero's life does, and its seconds left. */
+  shield: number;
+  shieldT: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -263,6 +269,17 @@ export interface Monster {
   poisonT: number;
   poisonDps: number;
   poisonN: number;
+  /**
+   * Heavy (Version 19.3): seconds it is stunned for (it cannot move or attack) and staggered for
+   * (its attack broken off), and the seconds before cracked ground may stagger it again.
+   */
+  stunT: number;
+  staggerT: number;
+  staggerCd: number;
+  /** Precise behind: seconds the mark on it has left (the hero's next hit on it is a certain critical). */
+  markT: number;
+  /** Guarding: what is left of the shield it carries, which takes damage before its life does. */
+  shield: number;
   /** Which hero ability last hurt it (for effects that trigger on a kill), or -1. */
   lastSkill: number;
   /** True while the hero can see it. */
@@ -313,6 +330,8 @@ export interface Projectile {
   clouded: boolean;
   /** It has given its "of Power" stack (one for each shot that lands, however many it goes through). */
   mighted?: boolean;
+  /** It has left its cracked ground or its ward (Heavy or Guarding behind): one for each shot, where it first hits or ends. */
+  left?: boolean;
   age: number;
   /** Hostile shots: the name of the monster that fired it (for "slain by"). */
   from: string;
@@ -325,7 +344,8 @@ export interface Projectile {
   trap?: boolean;
 }
 
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn';
+/** 'cracks': Heavy behind, cracked ground that staggers; 'ward': Guarding behind, a circle the hero takes less harm in (Version 19.3). */
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward';
 
 export interface Zone {
   x: number;
@@ -335,7 +355,7 @@ export interface Zone {
   dur: number;
   kind: ZoneKind;
   element: Element;
-  /** Damage per tick (ground patches), or the blast damage (rune, warn). */
+  /** Damage per tick (ground patches), the blast damage (rune, warn), or the share of harm a ward takes off (ward). */
   dmg: number;
   slow: number;
   tick: number;
@@ -345,6 +365,8 @@ export interface Zone {
   words: WordId[];
   /** Hostile zones: the name of the monster that made it (for "slain by"). */
   from: string;
+  /** A warning laid by a monster's wind-up: that monster's id (a stun or a stagger breaks the attack off, and its warning with it). */
+  src?: number;
 }
 
 /**
@@ -729,8 +751,29 @@ export type GameEvent =
   | { t: 'buff'; kind: 'might' | 'haste'; x: number; y: number; stacks: number }
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
   | { t: 'echo'; x: number; y: number; dx: number; dy: number; kind: SkillKind; delay: number }
-  /** A patch of ground or a rune has just been laid. */
-  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune'; x: number; y: number; r: number; el: Element }
+  /** A patch of ground or a rune has just been laid. (`dur`: cracks and wards, its seconds; laid again where one already is, it lasts that long from now.) */
+  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward'; x: number; y: number; r: number; el: Element; dur?: number }
+  /**
+   * THE NEW WORDS AT WORK (Version 19.3), for their looks (render/words3.ts): a Heavy hit lands
+   * (`big`: an area ability's, out to `r`); monster `id` is stunned for `secs` / staggered by a blow
+   * from (fromX, fromY) / marked by Precise for `secs` / struck on its mark (a certain critical,
+   * from the way (dx, dy)).
+   */
+  | { t: 'heavy'; x: number; y: number; r: number; big: boolean }
+  | { t: 'stun'; id: number; x: number; y: number; secs: number }
+  | { t: 'stagger'; id: number; x: number; y: number; fromX: number; fromY: number }
+  | { t: 'markOn'; id: number; x: number; y: number; secs: number }
+  | { t: 'markSpent'; id: number; x: number; y: number; dx: number; dy: number }
+  /**
+   * Frenzied: a use adds a stack (`n` now held), going the way (dx, dy) / a kill feeds the frenzy,
+   * from (x, y). Guarding: a use gives the hero a shield for `secs` / a blow from (fromX, fromY) is
+   * turned by the shield or softened by a ward. A blow is blocked (the gear's chance to block).
+   */
+  | { t: 'frenzy'; x: number; y: number; dx: number; dy: number; n: number }
+  | { t: 'frenzyFed'; x: number; y: number }
+  | { t: 'shield'; x: number; y: number; secs: number }
+  | { t: 'guarded'; x: number; y: number; fromX: number; fromY: number }
+  | { t: 'blocked'; x: number; y: number; fromX: number; fromY: number }
   /** Life drawn out of a monster at (x, y) and into the hero. */
   | { t: 'leech'; x: number; y: number; n: number }
   /** "of Leeching" hits something: it is marked (it will leave a life orb if this ability kills it). */

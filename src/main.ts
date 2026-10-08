@@ -62,7 +62,7 @@ import type { SmithPicture } from './ui/panels';
 import { gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
 import { THEME, Ui } from './ui/ui';
-import { demo3 } from './render/words3';
+import { WORDS3, demo3, events3 } from './render/words3';
 
 declare const __BUILD__: string;
 
@@ -1106,6 +1106,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
     const levelled = g.events.some((e) => e.t === 'levelup');
     fx.handle(g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
+    // (the new words' looks, called up by what the rules say happened: render/words3.ts)
+    if (WORDS3.on) events3(g.events, g, fx);
     g.events.length = 0;
     if (levelled) fx.celebrate(g.hero.x, g.hero.y);
   };

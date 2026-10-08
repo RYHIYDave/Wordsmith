@@ -64,18 +64,23 @@ test('the vendor\'s shelves and the stash go into their half, with room under th
   }
 });
 
-test('the Lexicon in its half: a row of rune stones, the page, and the shelf of kept words, one under another', () => {
+test('the Lexicon in its half: rows of rune stones, the page, and the shelf of kept words, one under another', () => {
   for (const s of SCREENS) {
     const side = gameRect(s.w, s.h);
     const body = sideBody(side, s.w, s.h);
     // (where the inventory lies under the service, the foot of the service's half is left to what is read)
     assert.equal(body.h, s.h > s.w ? side.h - CARD_ROOM : side.h, s.name);
     const lay = lexLayout(body, s.touch);
-    assert.ok(lay.x0 + (WORD_IDS.length - 1) * lay.pitch + CELL <= side.x + side.w - SIDE_M, `${s.name}: every word's stone is inside the half`);
-    assert.ok(lay.bodyY + CELL <= lay.pageY, `${s.name}: the page starts under the stones`);
+    // (thirteen words, since Version 19.3: in one row where they fit, else in rows as even as can be)
+    assert.ok(lay.perRow * lay.rows >= WORD_IDS.length && lay.perRow * (lay.rows - 1) < WORD_IDS.length, `${s.name}: every word has its place, and no row is empty`);
+    assert.ok(lay.x0 + (lay.perRow - 1) * lay.pitch + CELL <= side.x + side.w - SIDE_M, `${s.name}: every word's stone is inside the half`);
+    assert.ok(lay.pitch >= CELL, `${s.name}: the stones do not overlap`);
+    assert.ok(lay.bodyY + lay.rows * (CELL + 2) - 2 <= lay.pageY, `${s.name}: the page starts under the stones`);
     assert.ok(lay.pageY + lay.pageH <= lay.shelfY, `${s.name}: and ends over the shelf`);
     assert.ok(lay.keptY + CELL <= body.y + body.h, `${s.name}: the kept words are inside the part the service keeps`);
-    assert.ok(lay.pageH >= 120, `${s.name}: the page has room (${lay.pageH})`);
+    // (since Version 19.3's second row of stones, a phone held sideways has 110: the tallest page,
+    // Twin's, is 103 there, and the next test reads every page whole on every screen)
+    assert.ok(lay.pageH >= 108, `${s.name}: the page has room (${lay.pageH})`);
   }
 });
 

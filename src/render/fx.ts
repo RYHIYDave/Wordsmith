@@ -550,8 +550,8 @@ export class Fx {
     return n <= AMBIENT_EASY ? 1 : Math.max(0, 1 - (n - AMBIENT_EASY) / (AMBIENT_FULL - AMBIENT_EASY));
   }
 
-  /** Ask for the game to hold still for a moment (at most a few times a second). */
-  private hold(sec: number): void {
+  /** Ask for the game to hold still for a moment (at most a few times a second). (Heavy's look asks too: words3.ts.) */
+  hold(sec: number): void {
     if (this.sinceHold < 0.2) return;
     this.sinceHold = 0;
     this.freeze = Math.max(this.freeze, sec);
@@ -1394,8 +1394,8 @@ export class Fx {
             // the cloud billows out from where the attack hit
             this.rings.push({ x: e.x, y: e.y, r: e.r, t: 0, dur: 0.4, colors: VENOM.slice(1), fill: true });
             this.bubbles(e.x, e.y, e.r * 0.8, Math.min(16, Math.round(6 + e.r * 4)));
-          } else {
-            // a rune is written
+          } else if (e.kind === 'rune') {
+            // a rune is written (cracked ground and a ward are the new words' looks: words3.ts)
             this.rings.push({ x: e.x, y: e.y, r: 1.0, t: 0, dur: 0.22, colors: VIOLET, fill: false, closing: true });
             this.crackle(e.x, e.y, 0.5, 4);
           }

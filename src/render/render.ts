@@ -1072,6 +1072,8 @@ export class Renderer {
       const cy = wy(cam, z.x, z.y);
       const k = z.t / z.dur;
       if (z.kind !== 'warn' && this.skip.has('ground')) continue;
+      // (Heavy's cracked ground and Guarding's ward are drawn with the new words' looks: words3.ts, floor3)
+      if (z.kind === 'cracks' || z.kind === 'ward') continue;
       if (z.kind === 'warn') {
         ellipse(g, cx, cy, z.r, P.bl3, 0.16 + 0.3 * k);
         ellipse(g, cx, cy, z.r * k, P.bl4, 0.3);

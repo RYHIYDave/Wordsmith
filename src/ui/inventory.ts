@@ -355,28 +355,30 @@ const sameSel = (a: Sel | null, b: Sel): boolean => !!a && a.kind === b.kind && 
 /**
  * The spare words as tiles, in lines `maxW` wide. If they do not go into `room` lines with their
  * rune stones they are laid out without (`bare`); if they do not go in even so, as their rune
- * stones alone (`stones`: a tile the size of a bag's cell, the word read when it is pressed).
- * Whatever still does not fit is left out, and `hidden` says how many words that is.
+ * stones alone (`stones`: a tile the size of a bag's cell, the word read when it is pressed); and
+ * failing that, as narrower stones a pixel apart (`narrow`, since Version 19.3: thirteen words in
+ * one line of a phone's half). Whatever still does not fit is left out, and `hidden` says how many.
  */
-export function layPouch(words: readonly WordId[], count: (w: WordId) => number, maxW: number, room: number, gap: number): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number; bare: boolean; stones: boolean; hidden: number } {
-  const lay = (how: 'full' | 'bare' | 'stones'): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number } => {
+export function layPouch(words: readonly WordId[], count: (w: WordId) => number, maxW: number, room: number, gap: number): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number; bare: boolean; stones: boolean; narrow: boolean; hidden: number } {
+  const lay = (how: 'full' | 'bare' | 'stones' | 'narrow'): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number } => {
     const cells: { word: WordId; x: number; line: number; w: number }[] = [];
     let x = 0;
     let line = 0;
     for (const w of words) {
-      const tw = how === 'stones' ? CELL : Math.min(maxW, tileWidth(w, 'name', count(w), how === 'bare'));
+      const tw = how === 'stones' ? CELL : how === 'narrow' ? NARROW_STONE : Math.min(maxW, tileWidth(w, 'name', count(w), how === 'bare'));
       if (x > 0 && x + tw > maxW) {
         x = 0;
         line++;
       }
       cells.push({ word: w, x, line, w: tw });
-      x += tw + gap;
+      x += tw + (how === 'narrow' ? 1 : gap);
     }
     return { cells, lines: cells.length ? cells[cells.length - 1].line + 1 : 1 };
   };
   let out = lay('full');
   let bare = false;
   let stones = false;
+  let narrow = false;
   if (out.lines > room) {
     out = lay('bare');
     bare = true;
@@ -385,9 +387,19 @@ export function layPouch(words: readonly WordId[], count: (w: WordId) => number,
     out = lay('stones');
     stones = true;
   }
+  if (out.lines > room) {
+    out = lay('narrow');
+    narrow = true;
+  }
   const shown = out.cells.filter((c) => c.line < room);
-  return { cells: shown, lines: Math.min(out.lines, room), bare, stones, hidden: out.cells.length - shown.length };
+  return { cells: shown, lines: Math.min(out.lines, room), bare, stones, narrow, hidden: out.cells.length - shown.length };
 }
+
+/**
+ * A rune stone in a pouch with more words than its stones have room for (Version 19.3's thirteen,
+ * on a phone held sideways): the stone itself (14 pixels) in a tile only just wider, a pixel apart.
+ */
+export const NARROW_STONE = 16;
 
 /** How an attack is limited, said short ("1.74/S", "5.0 S", "14 MANA") and long. */
 function paceText(game: Game, s: number): { short: string; long: string } {

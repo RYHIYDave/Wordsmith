@@ -1092,6 +1092,16 @@ test('imbueOptions matches the word x slot table and is never empty', () => {
   }
 });
 
+/**
+ * What only a burned word gives (Version 19.3: Heavy's chance to stun, Guarding's chance to block):
+ * their families never roll on gear by themselves, and these are their ranges (the doc "Wordsmith:
+ * The New Words": "A 5 to 15% chance").
+ */
+const IMBUE_ONLY: Record<string, { at1: [number, number]; at15: [number, number] }> = {
+  stunChance: { at1: [3, 5], at15: [8, 12] },
+  blockChance: { at1: [3, 5], at15: [8, 12] },
+};
+
 test('imbues are a little stronger than a same-level affix and scale with item level', () => {
   for (const word of WORD_IDS) {
     for (const slot of SLOTS) {
@@ -1099,7 +1109,9 @@ test('imbues are a little stronger than a same-level affix and scale with item l
       const high = imbueOptions(word, slot, 15);
       low.forEach((o, i) => {
         const where = `${word} on ${slot}: ${o.stat}`;
-        for (const [option, range] of [[o, AFFIX_SPEC[o.stat].at1], [high[i], AFFIX_SPEC[o.stat].at15]] as const) {
+        const spec = AFFIX_SPEC[o.stat] ?? IMBUE_ONLY[o.stat];
+        assert.ok(spec, `${where}: a range for it`);
+        for (const [option, range] of [[o, spec.at1], [high[i], spec.at15]] as const) {
           const affixMid = (range[0] + range[1]) / 2;
           const imbueMid = (option.min + option.max) / 2;
           assert.ok(option.min >= range[0] && option.max > range[1], `${where}: ${option.min}-${option.max} vs affix ${range[0]}-${range[1]}`);

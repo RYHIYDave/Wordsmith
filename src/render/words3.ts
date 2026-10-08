@@ -173,6 +173,8 @@ export const W3 = {
   /** The demo: the words the hero's attacks are taken to carry, in front and behind (`demo3`). */
   front: [] as NewWord[],
   behind: [] as NewWord[],
+  /** The demo is listening (a playtest's page): only then does `tick3` do the rules' share by hand. */
+  demo: false,
 };
 
 const MAX_PARTICLES = 900;
@@ -286,7 +288,8 @@ export function pullHit(fx: Fx, x: number, y: number, r: number): void {
  */
 export function heavyHit(fx: Fx, x: number, y: number, r: number, big: boolean): void {
   const C = NEW_RAMP.heavy;
-  fx.freeze = Math.max(fx.freeze, 0.1);
+  // (through the effects' own hold, which keeps quick blows from making the game stutter)
+  fx.hold(0.1);
   fx.shake = Math.max(fx.shake, big ? 6 : 4.5);
   const rr = big ? r : Math.max(0.9, r);
   fx.rings.push({ x, y, r: rr * 1.15, t: 0, dur: 0.3, colors: [C[5], C[4], C[3], C[2]], fill: false, heavy: true });
@@ -650,7 +653,7 @@ export function tick3(dt: number, game: Game, fx: Fx): void {
   }
   for (const id of W3.trails.keys()) if (!byId.has(id)) W3.trails.delete(id);
   // (the demo: enemy shots crawl in a bubble)
-  for (const q of game.projectiles) {
+  for (const q of W3.demo ? game.projectiles : []) {
     if (!q.hostile) continue;
     const isIn = inside3('bubble', q.x, q.y);
     const was = slowedShots.has(q);
@@ -687,7 +690,8 @@ export function tick3(dt: number, game: Game, fx: Fx): void {
     }
     if (k >= 1) W3.drags.splice(i, 1);
   }
-  for (const p of W3.patches) {
+  // (the demo: a vortex pulls, cracked ground staggers; in the game, the rules do: events3)
+  for (const p of W3.demo ? W3.patches : []) {
     if (p.kind === 'vortex' && p.dur > 1) {
       // it keeps pulling: what stands in it creeps in toward the middle
       for (const m of byId.values()) {
@@ -1518,6 +1522,72 @@ export function lights3(spot: (x: number, y: number, r: number, a: number) => vo
 // `W3.front` / `W3.behind`, the hero's real attacks call up the words' looks from the game's own
 // events, and the demo does the rules' share by hand (it drags, stuns, curses and staggers).
 
+// =============================================================================================
+// THE GAME'S OWN WORDS AT WORK (Version 19.3): Heavy, Precise, Frenzied and Guarding, called up by
+// what the rules say happened (game.ts: the events 'heavy', 'stun', 'stagger', 'markOn',
+// 'markSpent', 'frenzy', 'frenzyFed', 'shield', 'guarded', 'blocked', and the 'zone' of cracks and
+// wards). main.ts calls it every frame, with that frame's events, while WORDS3.on. The other four
+// words (Pulling, Splitting, Hexing, Stilling) are still the demo's, below, until their rules are in.
+
+let joinedLevel: unknown = null;
+/** The patches the rules laid (not a Heavy blow's own short cracks): one laid again where it lies lasts longer. */
+const laid = new WeakSet<Patch>();
+
+export function events3(events: readonly GameEvent[], game: Game, fx: Fx): void {
+  if (!WORDS3.on) return;
+  const h = game.hero;
+  // (a new level: what was left on the last floor is gone)
+  if (game.level !== joinedLevel) {
+    joinedLevel = game.level;
+    if (!W3.demo) clear3();
+  }
+  const byId = (id: number): Monster | undefined => game.monsters.find((m) => m.id === id && !m.dead);
+  // (a hit that spends a mark shows the critical, not the plain Precise hit)
+  const spent = new Set<string>();
+  for (const e of events) if (e.t === 'markSpent') spent.add(`${e.x},${e.y}`);
+  for (const e of events) {
+    if (e.t === 'heavy') heavyHit(fx, e.x, e.y, e.r, e.big);
+    else if (e.t === 'stun') {
+      const m = byId(e.id);
+      if (m) stun(m, e.secs);
+    } else if (e.t === 'stagger') {
+      const m = byId(e.id);
+      if (m) {
+        stagger(m, e.fromX, e.fromY, game);
+        grit(fx, m.x, m.y, 6);
+      }
+    } else if (e.t === 'markOn') {
+      const m = byId(e.id);
+      if (m) preciseMark(m, e.secs);
+    } else if (e.t === 'markSpent') {
+      const m = byId(e.id) ?? game.monsters.find((q) => q.id === e.id);
+      if (m) preciseCrit(fx, m, e.dx, e.dy);
+    } else if (e.t === 'hit') {
+      if (!e.onHero && e.words && e.words.includes('precise') && !spent.has(`${e.x},${e.y}`)) preciseHit(fx, e.x, e.y, e.x - h.x, e.y - h.y);
+    } else if (e.t === 'frenzy') frenzyHit(fx, e.x, e.y, e.dx, e.dy);
+    else if (e.t === 'frenzyFed') frenzyFed(e.x, e.y);
+    else if (e.t === 'shield') guardOn(fx, e.x, e.y, e.secs);
+    else if (e.t === 'guarded' || e.t === 'blocked') guardStruck(fx, e.x, e.y, e.fromX, e.fromY);
+    else if (e.t === 'zone' && (e.kind === 'cracks' || e.kind === 'ward')) {
+      // (laid again where one already lies, that one lasts as long again: they do not pile up)
+      const dur = e.dur ?? 4;
+      const old = W3.patches.find((p) => laid.has(p) && p.kind === e.kind && Math.hypot(p.x - e.x, p.y - e.y) < 0.6 && p.r >= e.r - 0.1);
+      if (old) old.dur = old.t + dur;
+      else {
+        if (e.kind === 'cracks') crackedGround(e.x, e.y, e.r, dur);
+        else ward(e.x, e.y, e.r, dur);
+        laid.add(W3.patches[W3.patches.length - 1]);
+      }
+    }
+  }
+  // (the frenzy and the shield are shown as the hero has them)
+  if (!W3.demo) {
+    W3.frenzy.n = h.frenzy;
+    W3.frenzy.t = h.frenzyT;
+    W3.guard.t = h.shieldT;
+  }
+}
+
 /** How far a Pulling hit reaches, in tiles (a guess for the pictures: the rules will say). */
 const PULL_REACH = 2.2;
 
@@ -1614,6 +1684,7 @@ export function demo3(fx: Fx, getGame: () => Game | null) {
     listen(): void {
       if (listening) return;
       listening = true;
+      W3.demo = true;
       const run = fx.handle.bind(fx);
       fx.handle = (events, play) => {
         const g = getGame();
