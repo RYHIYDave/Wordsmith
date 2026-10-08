@@ -13,7 +13,7 @@ import sys
 from PIL import Image, ImageDraw, ImageFont
 
 src, out = sys.argv[1], sys.argv[2]
-words = sys.argv[3:] or ['pulling', 'heavy', 'hexing', 'frenzied']
+words = sys.argv[3:] or ['pulling', 'heavy', 'hexing', 'frenzied', 'splitting', 'precise', 'stilling', 'guarding']
 B = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
 R = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
 K = 5  # screen pixels to a game pixel in the frames
@@ -27,6 +27,10 @@ FILMS = {
     'heavy': {'box': (192, 52, 196, 112), 'colour': (0xac, 0x87, 0x53), 'lines': ['In front: a heavy blow. Everything holds for a tenth', 'of a second; it stuns, and knocks them back a step.', 'Behind: cracked ground that staggers what walks in.']},
     'hexing': {'box': (226, 40, 196, 118), 'colour': (0xb8, 0xb4, 0xc8), 'lines': ['In front: a curse. Its sign hangs over the cursed,', 'and every hit on it flares.', 'Behind: a hex circle. What stands in it is drained grey.']},
     'frenzied': {'box': (190, 56, 156, 102), 'colour': (0xff, 0x5c, 0x33), 'lines': ['In front: every attack adds to the frenzy, up to five.', 'The ring at his feet fills; from three he shivers in it.', 'Behind: a kill sends a spark back and keeps it going.']},
+    'splitting': {'box': (236, 48, 210, 112), 'colour': (0xdc, 0xaa, 0xf6), 'lines': ['In front: on its first hit it breaks into three', 'smaller copies that fly on.', 'Behind: where it ends, shards scatter and lie glinting.']},
+    'precise': {'box': (236, 42, 180, 116), 'colour': (0xee, 0xf4, 0xfa), 'lines': ['In front: a narrow, exact hit: a needle of light', 'and a small bright star.', 'Behind: a sight closes on the enemy; the next hit', 'on it is a certain critical.']},
+    'stilling': {'box': (228, 35, 214, 140), 'colour': (0x86, 0xea, 0xae), 'lines': ['In front: time slows for what it hits: a ripple, a clock', 'at its feet, and its echoes linger as it moves.', 'Behind: a bubble where enemies and their shots crawl.']},
+    'guarding': {'box': (196, 48, 140, 108), 'colour': (0x30, 0xa8, 0x68), 'lines': ['In front: using it gives a brief shield, a shell round', 'the hero that flares where a blow lands.', 'Behind: a ward circle; the hero takes less damage inside.']},
 }
 
 os.makedirs(out, exist_ok=True)

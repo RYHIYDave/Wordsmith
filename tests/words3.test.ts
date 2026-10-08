@@ -1,12 +1,14 @@
 // THE NEW WORDS AT WORK (src/render/words3.ts): a mock-up behind a switch that is off. The owner
 // chose eight new words on 8 Oct 2026 at 12:26; at 13:15 he said yes to the looks of the first four
-// (Pulling, Heavy, Hexing, Frenzied) and to all eight colours and runes. Their rules are another
-// chat's to write. These tests hold:
+// (Pulling, Heavy, Hexing, Frenzied) and to all eight colours and runes, and at 13:43 to the looks of
+// the other four (Splitting, Precise, Stilling, Guarding). Their rules are another chat's to write.
+// These tests hold:
 //   - the switch: it is off, everything the renderer asks of the module is behind it, and the
 //     playtest's hands do nothing until a playtest uses them;
 //   - what he was shown: the heavy blow's freeze (the art rulebook, Movement 7), the pull closing
 //     in, the stagger and the stun that end, what is left on the floor going when its time is up,
-//     the frenzy of five and no more;
+//     the frenzy of five and no more, the three copies and their shards, the sight that a critical
+//     shuts, time slowed and its echoes, the shield and the ward;
 //   - the rulebook's colours: no new word glows in the friend's cyan or the enemy's pink and gold;
 //   - the runes, cut as the nine are;
 //   - nothing piling up: the particles stay within the effects' own limit.
@@ -23,8 +25,9 @@ import type { GameEvent, Monster } from '../src/game/state';
 import { Fx } from '../src/render/fx';
 import type { Cam } from '../src/render/fx';
 import {
-  NEW_GLYPH, NEW_RAMP, NEW_WORDS, STAGGER, W3, WORDS3, air3, clear3, crackedGround, demo3, demoEvents3, floor3, frenzyHit, heavyHit, hexCircle, hexHit, lights3,
-  pullHit, shift3, stagger, stun, tick3, tint3, vortex,
+  NEW_GLYPH, NEW_RAMP, NEW_WORDS, STAGGER, W3, WORDS3, air3, bubble, clear3, crackedGround, demo3, demoEvents3, echoes3, floor3, frenzyHit, guardOn, guardStruck,
+  heavyHit, hexCircle, hexHit, inside3, lights3, preciseCrit, preciseHit, preciseMark, pullHit, shards, shift3, splitHit, stagger, stillHit, stun, tick3, tint3, vortex,
+  ward,
 } from '../src/render/words3';
 
 /** A monster as far as the drawing asks: where it stands and who it is. */
@@ -34,7 +37,7 @@ function monster(id: number, x: number, y: number): Monster {
 
 /** A game as far as the module asks: its hero and its monsters. */
 function game(monsters: Monster[] = []): Game {
-  return { hero: { x: 10, y: 10, fx: 1, fy: 0 }, monsters } as unknown as Game;
+  return { hero: { x: 10, y: 10, fx: 1, fy: 0 }, monsters, projectiles: [] } as unknown as Game;
 }
 
 /** A canvas that counts what is drawn on it. */
@@ -64,7 +67,7 @@ test('the switch is off: the game draws as it did', () => {
 test('everything the renderer asks of the new words is behind the switch', () => {
   const src = readFileSync(new URL('../src/render/render.ts', import.meta.url), 'utf8') as string;
   const lines = src.split('\n');
-  const calls = ['tick3(', 'floor3(', 'shift3(', 'tint3(', 'heroCopies3(', 'air3(', 'lights3('];
+  const calls = ['tick3(', 'floor3(', 'shift3(', 'tint3(', 'heroCopies3(', 'air3(', 'lights3(', 'echoes3('];
   let found = 0;
   lines.forEach((line, i) => {
     if (line.trimStart().startsWith('import')) return;
@@ -211,6 +214,82 @@ test('the runes are cut as the nine are: 6 by 6, or 7 by 7 with a middle, each w
   }
 });
 
+test('Splitting: three copies fly on from the first hit, fanned out, and end in shards that lie a moment', () => {
+  clear3();
+  const fx = new Fx();
+  const g = game();
+  W3.behind = ['splitting'];
+  splitHit(fx, 5, 5, 1, 0);
+  assert.equal(W3.copies.length, 3);
+  const ways = W3.copies.map((c) => Math.atan2(c.vy, c.vx)).sort((a, b) => a - b);
+  assert.ok(ways[0] < -0.2 && Math.abs(ways[1]) < 0.01 && ways[2] > 0.2, `fanned: ${ways.map((w) => w.toFixed(2))}`);
+  for (let i = 0; i < 10; i++) tick3(0.05, g, fx);
+  assert.equal(W3.copies.length, 0);
+  assert.equal(W3.patches.filter((p) => p.kind === 'shards').length, 3, 'each copy scatters its shards where it ends');
+  for (let i = 0; i < 40; i++) tick3(0.05, g, fx);
+  assert.equal(W3.patches.length, 0, 'and they are gone in a moment');
+  W3.behind = [];
+});
+
+test('Precise: the sight on a marked enemy shuts when the next hit is a certain critical, and the mark is spent', () => {
+  clear3();
+  const fx = new Fx();
+  const m = monster(11, 12, 10);
+  const g = game([m]);
+  preciseHit(fx, 12, 10, 1, 0);
+  assert.ok(W3.pins.some((p) => !p.crit), 'a needle and a star');
+  preciseMark(m, 5);
+  tick3(0.3, g, fx);
+  assert.ok((W3.marks.get(11)?.aim ?? 0) > 0);
+  preciseCrit(fx, m, 1, 0);
+  const k = W3.marks.get(11);
+  assert.ok(k && k.aim <= 0 && k.shut > 0, 'the sight snaps shut');
+  assert.ok(W3.pins.some((p) => p.crit), 'a critical star');
+  for (let i = 0; i < 10; i++) tick3(0.05, g, fx);
+  assert.equal(W3.marks.has(11), false, 'and the mark is spent');
+});
+
+test('Stilling: the slowed are tinged, leave echoes when they move, and a bubble does the same; both end', () => {
+  clear3();
+  const fx = new Fx();
+  const slowed = monster(12, 10, 10);
+  const walker = monster(13, 20, 20);
+  const g = game([slowed, walker]);
+  stillHit(fx, slowed, 1);
+  bubble(20, 20, 1.5, 1);
+  assert.ok(inside3('bubble', 20.5, 20));
+  for (let i = 0; i < 8; i++) {
+    slowed.x += 0.1;
+    walker.x += 0.1;
+    tick3(0.05, g, fx);
+  }
+  assert.ok(tint3(slowed, 0));
+  assert.ok(tint3(walker, 0));
+  assert.ok(echoes3(slowed).length >= 1, 'echoes linger after it');
+  assert.ok(echoes3(walker).length >= 1);
+  for (let i = 0; i < 22; i++) tick3(0.05, g, fx);
+  assert.equal(tint3(slowed, 0), null);
+  assert.equal(echoes3(slowed).length, 0);
+  assert.equal(W3.patches.length, 0);
+});
+
+test('Guarding: the shield lasts as long as it was given, flares where it is struck, and the ward knows who stands in it', () => {
+  clear3();
+  const fx = new Fx();
+  const g = game();
+  guardOn(fx, 10, 10, 1);
+  assert.ok(W3.guard.t > 0);
+  guardStruck(fx, 10, 10, 11, 10);
+  assert.equal(W3.guard.struck, 0);
+  assert.ok(W3.guard.fx > 0.9, 'the side the blow came from');
+  ward(10, 10, 1.3, 1);
+  assert.ok(inside3('ward', 10.5, 10));
+  assert.equal(inside3('ward', 13, 10), false);
+  for (let i = 0; i < 22; i++) tick3(0.05, g, fx);
+  assert.equal(W3.guard.t, 0);
+  assert.equal(W3.patches.length, 0);
+});
+
 test('nothing piles up: the particles stay within the effects\' own limit', () => {
   clear3();
   const fx = new Fx();
@@ -236,15 +315,22 @@ test('drawn: each look draws something, and with nothing going on nothing is dra
   vortex(5, 5, 1.5);
   crackedGround(8, 8, 1.5);
   hexCircle(11, 11, 1.5);
+  bubble(14, 14, 1.5);
+  ward(17, 17, 1.5);
+  shards(fx, 20, 20);
   stun(m, 2);
   hexHit(fx, m, 3);
+  preciseMark(m, 3);
+  stillHit(fx, m, 3);
+  splitHit(fx, 12, 10, 1, 0);
+  guardOn(fx, 10, 10);
   frenzyHit(fx, 10, 10, 1, 0);
   tick3(0.4, g, fx);
   const full = canvas();
   floor3(full.g, cam, 1, g, everywhere);
   air3(full.g, cam, 1, g, fx);
   lights3(() => lit++, cam, g, 1);
-  assert.ok(full.drawn() > 100, `${full.drawn()} things drawn`);
-  assert.ok(lit >= 4, `${lit} lights`);
+  assert.ok(full.drawn() > 200, `${full.drawn()} things drawn`);
+  assert.ok(lit >= 7, `${lit} lights`);
   clear3();
 });

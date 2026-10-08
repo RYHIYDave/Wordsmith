@@ -40,7 +40,7 @@ import { Figure, attackClip, attackFrame, monsterAttackAge, PHASE_APART } from '
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
-import { WORDS3, air3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
+import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import type { Cam, Fallen, Fx } from './fx';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
@@ -1680,6 +1680,8 @@ export class Renderer {
         }
       }
       this.stand(m.x + m.y, sp, sx, sy, over, overA);
+      // (THE NEW WORDS, a mock-up behind a switch that is off: a slowed monster's echoes linger after it)
+      if (WORDS3.on) for (const e of echoes3(m)) this.stand(e.x + e.y - 0.02, silhouette(sp, e.color), wx(cam, e.x, e.y), wy(cam, e.x, e.y), null, 0, 1, e.alpha);
       hid?.(m.x, m.y);
       if (m.burnT > 0 && Math.random() < 0.55 * amb) fx.flames(m.x, m.y, 0.22, 1, 0.9);
       if (m.chillT > 0 && m.frozenT <= 0 && Math.random() < 0.12 * amb) fx.mote(m.x + (Math.random() - 0.5) * 0.5, m.y + (Math.random() - 0.5) * 0.5, [P.white, P.bu5]);

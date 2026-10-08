@@ -5,14 +5,14 @@
 // does by hand what the rules will one day do (drag, stun, curse, stagger).
 //   node tools/build_to.mjs dist/w3.html
 //   WORD=pulling node tools/playtest.mjs --file dist/w3.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words3.mjs --out shots/w3/pulling
-//   env: WORD = pulling | heavy | hexing | frenzied
+//   env: WORD = pulling | heavy | hexing | frenzied | splitting | precise | stilling | guarding
 //        OFF=1: the same, with the switch left off (what the game shows today)
 //        WAIT = milliseconds to let the room settle and the frames be painted first
 // A note beside the pictures (<out>_where.json) says where on the screen the hero stands.
 export default async function (page, snap) {
   const word = process.env.WORD || 'pulling';
   const off = process.env.OFF === '1';
-  const cls = { pulling: 'ranger', heavy: 'warrior', hexing: 'ranger', frenzied: 'warrior' }[word] || 'warrior';
+  const cls = { pulling: 'ranger', heavy: 'warrior', hexing: 'ranger', frenzied: 'warrior', splitting: 'ranger', precise: 'ranger', stilling: 'ranger', guarding: 'warrior' }[word] || 'warrior';
   await page.evaluate(([cls, off]) => {
     const d = window.__dbg; d.saving(false); d.practice(cls, 7); d.autoLevel = false; d.autoWords = false; d.god = true;
     const g = d.game(); g.waveT = 1e9; g.monsters.length = 0; g.projectiles.length = 0;
@@ -29,6 +29,14 @@ export default async function (page, snap) {
     hexing: [['cultist', 3.3, -0.5, 'target'], ['skeleton', 4.3, 0.5], ['skeleton', 4.2, -1.5]],
     // one in reach for the frenzy, and one to be killed by it
     frenzied: [['brute', 1.3, -0.3, 'target'], ['skeleton', 1.9, 1.3, 'victim']],
+    // a target out in front; the copies fly on past it
+    splitting: [['skeleton', 2.6, -0.3, 'target'], ['cultist', 5.4, 0.9]],
+    // two out in front: the first is marked, then struck for a certain critical
+    precise: [['cultist', 3.2, -0.4, 'target'], ['skeleton', 3.5, 1.3, 'second']],
+    // one walking in, struck and slowed; one that walks through the bubble; an archer that shoots through it
+    stilling: [['skeleton', 4.6, -1.2, 'target'], ['cultist', 4.2, 2.6, 'late'], ['archer', 5.4, 1.2, 'archer']],
+    // a brute that will strike at the hero, and a skeleton that strikes while they stand in the ward
+    guarding: [['brute', 1.25, -0.3, 'target'], ['skeleton', -1.0, 1.0, 'late']],
   }[word];
   const ids = await page.evaluate((layout) => {
     const d = window.__dbg; const g = d.game(); const h = g.hero;
@@ -106,6 +114,47 @@ export default async function (page, snap) {
         72: () => act((ids) => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.id === ids.victim); if (m) g.kill(m); }, ids),
       },
     },
+    splitting: {
+      frames: 72,
+      at: {
+        3: () => { page.evaluate(() => { const s = window.__dbg.words3.state; s.front = ['splitting']; s.behind = ['splitting']; }); return attack(ids.target); },
+        40: () => attack(ids.target),
+      },
+    },
+    precise: {
+      frames: 92,
+      at: {
+        3: () => { page.evaluate(() => { const s = window.__dbg.words3.state; s.front = ['precise']; s.behind = ['precise']; }); return attack(ids.target); },
+        // the marked one again: the sight snaps shut, a certain critical
+        34: () => attack(ids.target),
+        // and the other, marked in its turn
+        62: () => attack(ids.second),
+      },
+    },
+    stilling: {
+      frames: 110,
+      at: {
+        0: () => act((ids) => { const g = window.__dbg.game(); const h = g.hero; const m = g.monsters.find((q) => q.id === ids.target); if (m) { m.anim = 'walk'; m.walkTo = { x: h.x + (m.x - h.x) * 0.25, y: h.y + (m.y - h.y) * 0.25 }; } }, ids),
+        6: () => { page.evaluate(() => { window.__dbg.words3.state.front = ['stilling']; }); return attack(ids.target); },
+        // what it leaves: a bubble, where enemies and their shots crawl
+        36: () => act((ids) => { const d = window.__dbg; const g = d.game(); const h = g.hero; const a = g.monsters.find((q) => q.id === ids.archer); if (!a) return; d.words3.bubble(h.x + (a.x - h.x) * 0.5, h.y + (a.y - h.y) * 0.5, 1.5, 4); }, ids),
+        40: () => act((ids) => { const g = window.__dbg.game(); const h = g.hero; const m = g.monsters.find((q) => q.id === ids.late); if (m) { m.anim = 'walk'; m.walkTo = { x: h.x + (m.x - h.x) * 0.1 + (h.y - m.y) * 0.1, y: h.y + (m.y - h.y) * 0.1 }; } }, ids),
+        // the archer shoots through it
+        48: () => act((ids) => { const g = window.__dbg.game(); const a = g.monsters.find((q) => q.id === ids.archer); if (a) { a.cd = 0; a.state = 'idle'; a.t = 0; } }, ids),
+      },
+    },
+    guarding: {
+      frames: 104,
+      at: {
+        3: () => { page.evaluate(() => { window.__dbg.words3.state.front = ['guarding']; }); return attack(ids.target); },
+        // the brute strikes back at the shielded hero
+        6: () => act((ids) => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.id === ids.target); if (m) { m.cd = 0; m.state = 'idle'; m.t = 0; } }, ids),
+        // what it leaves: a ward circle where the hero stands
+        52: () => act(() => { const d = window.__dbg; const h = d.game().hero; d.words3.ward(h.x, h.y, 1.3, 4); }),
+        // and a blow struck while they stand in it
+        60: () => act((ids) => { const g = window.__dbg.game(); for (const id of [ids.late, ids.target]) { const m = g.monsters.find((q) => q.id === id); if (m) { m.cd = 0; m.state = 'idle'; m.t = 0; } } }, ids),
+      },
+    },
   }[word];
 
   const slow = 0.08;
@@ -123,7 +172,7 @@ export default async function (page, snap) {
         if (!m.walkTo || m.dead) continue;
         const dx = m.walkTo.x - m.x; const dy = m.walkTo.y - m.y; const d = Math.hypot(dx, dy);
         if (d < 0.05) { m.walkTo = null; m.anim = 'idle'; continue; }
-        const s = Math.min(d, 0.035); m.x += (dx / d) * s; m.y += (dy / d) * s; m.fx = dx / d; m.fy = dy / d;
+        const s = Math.min(d, 0.035 * window.__dbg.words3.pace(m.id)); m.x += (dx / d) * s; m.y += (dy / d) * s; m.fx = dx / d; m.fy = dy / d;
       }
     });
     await snap(`f${String(i).padStart(3, '0')}`);

@@ -68,7 +68,7 @@ export const NEW_GLYPH: Record<NewWord, readonly string[]> = {
 
 /** What a word has left on the floor. */
 interface Patch {
-  kind: 'vortex' | 'cracks' | 'hex';
+  kind: 'vortex' | 'cracks' | 'hex' | 'shards' | 'bubble' | 'ward';
   x: number;
   y: number;
   r: number;
@@ -77,6 +77,8 @@ interface Patch {
   seed: number;
   /** Cracks: the lines of them, world offsets from the middle, x0, y0, x1, y1 ... (the first of each is a spoke). */
   lines?: number[][];
+  /** Shards: where each one came to rest, world offsets from the middle, x, y ... */
+  pts?: number[];
 }
 
 /** What a word has done to one monster, in seconds left (or since). */
@@ -94,6 +96,34 @@ interface Marked {
   sy: number;
   /** The cracked ground that last staggered it (it staggers once for each patch it walks into). */
   cracked: number;
+  /** Precise behind: the sight on it (seconds left, seconds since it came), and the moment it snaps shut on the critical hit. */
+  aim: number;
+  aim0: number;
+  shut: number;
+  /** Stilling: seconds of slowed time left, and since it began. */
+  still: number;
+  still0: number;
+}
+
+/** Splitting: one of the three smaller copies an attack breaks into, flying on (the rules make the real ones). */
+interface Copy {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  t: number;
+  dur: number;
+}
+
+/** Precise: the needle of light through what it hits, and the star where it hits; `crit`: the star of a certain critical. */
+interface Pin {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  t: number;
+  dur: number;
+  crit: boolean;
 }
 
 interface Drag {
@@ -131,6 +161,12 @@ export const W3 = {
   later: [] as { t: number; fn: () => void }[],
   /** Frenzied: stacks held (0 to 5), seconds they have left, seconds since the last was gained. */
   frenzy: { n: 0, t: 0, since: 9 },
+  copies: [] as Copy[],
+  pins: [] as Pin[],
+  /** Where each slowed monster has just been (Stilling's echoes of it), newest last. */
+  trails: new Map<number, { x: number; y: number }[]>(),
+  /** Guarding: the shield on the hero (seconds left, and how long it was given), and the last blow it turned (seconds since, and from where). */
+  guard: { t: 0, dur: 0, struck: 9, fx: 0, fy: 0 },
   /** The clock these are drawn by (game seconds), and its last step (what is given off is given off at so many a second, not so many a frame). */
   clock: 0,
   dt: 0,
@@ -146,7 +182,7 @@ const pick = (list: readonly string[]): string => list[Math.floor(Math.random() 
 function markOf(id: number): Marked {
   let m = W3.marks.get(id);
   if (!m) {
-    m = { stun: 0, stun0: 0, hex: 0, hex0: 0, flare: 0, stag: -1, sx: 0, sy: 0, cracked: -1 };
+    m = { stun: 0, stun0: 0, hex: 0, hex0: 0, flare: 0, stag: -1, sx: 0, sy: 0, cracked: -1, aim: 0, aim0: 0, shut: 0, still: 0, still0: 0 };
     W3.marks.set(id, m);
   }
   return m;
@@ -163,6 +199,12 @@ export function clear3(): void {
   W3.frenzy.n = 0;
   W3.frenzy.t = 0;
   W3.frenzy.since = 9;
+  W3.copies.length = 0;
+  W3.pins.length = 0;
+  W3.trails.clear();
+  W3.guard.t = 0;
+  W3.guard.dur = 0;
+  W3.guard.struck = 9;
 }
 
 // =============================================================================================
@@ -304,6 +346,123 @@ export function frenzyFed(x: number, y: number): void {
   W3.flights.push({ x0: x, y0: y, t: 0, dur: 0.38, bend: Math.random() < 0.5 ? -0.8 : 0.8 });
 }
 
+/** How far a Splitting copy flies, in tiles, and for how long (a guess for the pictures: the rules will say). */
+const SPLIT_REACH = 3.2;
+const SPLIT_TIME = 0.36;
+
+/**
+ * SPLITTING, on its first hit at (x, y), going along (dx, dy): the attack cracks like a crystal
+ * and breaks into three smaller copies that fly on, fanned out (the rules make the real copies; for
+ * the pictures, `copies` draws three). Splinters fall where it broke.
+ */
+export function splitHit(fx: Fx, x: number, y: number, dx: number, dy: number, copies = true): void {
+  const C = NEW_RAMP.splitting;
+  const len = Math.hypot(dx, dy) || 1;
+  const a0 = Math.atan2(dy / len, dx / len);
+  fx.flashes.push({ x, y, z: 10, r: 0.42, t: 0, dur: 0.1, colors: [C[5], C[4], C[3]] });
+  fx.rings.push({ x, y, r: 0.55, t: 0, dur: 0.16, colors: [C[5], C[4], C[3]], fill: false, double: true });
+  for (let i = 0; i < 7; i++) {
+    const a = a0 + rnd(-1.4, 1.4);
+    const s = rnd(1.2, 2.6);
+    add(fx, { x, y, z: rnd(8, 13), vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: rnd(30, 70), life: rnd(0.35, 0.55), color: pick([C[3], C[4], C[5]]), size: 1, grav: 300, streak: 2 });
+  }
+  if (!copies) return;
+  for (const k of [-1, 0, 1]) {
+    const a = a0 + k * 0.42;
+    W3.copies.push({ x, y, vx: (Math.cos(a) * SPLIT_REACH) / SPLIT_TIME, vy: (Math.sin(a) * SPLIT_REACH) / SPLIT_TIME, t: 0, dur: SPLIT_TIME * (k === 0 ? 1 : 0.9) });
+  }
+}
+
+/** SPLITTING behind: where it ends, shards scatter in every direction and lie glinting a moment. */
+export function shards(fx: Fx, x: number, y: number, r = 1.1): void {
+  const C = NEW_RAMP.splitting;
+  const seed = Math.floor(Math.random() * 1e6);
+  const n = 9;
+  const pts: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + (hash2(seed, i, 1) - 0.5) * 0.5;
+    const d = r * (0.45 + hash2(seed, i, 2) * 0.55);
+    pts.push(Math.cos(a) * d, Math.sin(a) * d);
+    // each flies out to where it will lie: up, over and down
+    const life = 0.3;
+    add(fx, { x, y, z: 6, vx: (Math.cos(a) * d) / life, vy: (Math.sin(a) * d) / life, vz: 55, life, color: pick([C[4], C[5], C[3]]), size: 1, grav: 360, streak: 3 });
+  }
+  fx.flashes.push({ x, y, z: 6, r: 0.3, t: 0, dur: 0.08, colors: [C[5], C[4]] });
+  W3.patches.push({ kind: 'shards', x, y, r, t: 0, dur: 1.7, seed, pts });
+}
+
+/**
+ * PRECISE, on the hit at (x, y), from the way (dx, dy): narrow and exact. A needle of white light
+ * through the point, a small star with long thin rays where it struck, a tight ring. No dust, no
+ * kick: the opposite of Heavy.
+ */
+export function preciseHit(fx: Fx, x: number, y: number, dx: number, dy: number): void {
+  const C = NEW_RAMP.precise;
+  const len = Math.hypot(dx, dy) || 1;
+  W3.pins.push({ x, y, dx: dx / len, dy: dy / len, t: 0, dur: 0.16, crit: false });
+  fx.rings.push({ x, y, r: 0.32, t: 0, dur: 0.14, colors: [C[5], C[3], C[2]], fill: false });
+  streaks(fx, x, y, 4, [C[4], C[3]], 2.2, 2, { dx: dx / len, dy: dy / len, spread: 0.25, z: 11, life: 0.12 });
+}
+
+/** PRECISE behind: a sight closes on the enemy it marks; the next hit on it will be a certain critical. */
+export function preciseMark(m: Monster, secs = 5): void {
+  const k = markOf(m.id);
+  k.aim = secs;
+  k.aim0 = 0;
+}
+
+/** The marked enemy is struck: the sight snaps shut on it and a critical star bursts. */
+export function preciseCrit(fx: Fx, m: Monster, dx = 1, dy = 0): void {
+  const C = NEW_RAMP.precise;
+  const k = markOf(m.id);
+  k.aim = 0;
+  k.shut = 0.2;
+  const len = Math.hypot(dx, dy) || 1;
+  W3.pins.push({ x: m.x, y: m.y, dx: dx / len, dy: dy / len, t: 0, dur: 0.26, crit: true });
+  fx.flashes.push({ x: m.x, y: m.y, z: 13, r: 0.55, t: 0, dur: 0.12, colors: [C[5], C[4], C[3]] });
+  fx.rings.push({ x: m.x, y: m.y, r: 0.7, t: 0, dur: 0.2, colors: [C[5], C[4], C[3]], fill: false, heavy: true });
+  streaks(fx, m.x, m.y, 10, [C[4], C[5]], 3.5, 3, { z: 13, life: 0.16 });
+  if (fx.glows.length < 24) fx.glows.push({ x: m.x, y: m.y, r: 36, t: 0, dur: 0.2 });
+}
+
+/**
+ * STILLING, on the hit: time slows for what it struck. A ripple runs out from its feet as from a
+ * drop in still water; a ring of ticks like a clock's face stands round its feet, its hand creeping;
+ * it is tinged the word's mint, and as it moves, the moments it has just left linger after it.
+ */
+export function stillHit(fx: Fx, m: Monster, secs = 3): void {
+  const C = NEW_RAMP.stilling;
+  const k = markOf(m.id);
+  if (k.still <= 0) k.still0 = 0;
+  k.still = Math.max(k.still, secs);
+  fx.rings.push({ x: m.x, y: m.y, r: 1.1, t: 0, dur: 0.6, colors: [C[4], C[3], C[2]], fill: false });
+  fx.rings.push({ x: m.x, y: m.y, r: 0.8, t: 0, dur: 0.6, colors: [C[4], C[3], C[2]], fill: false, delay: 0.16 });
+  fx.flashes.push({ x: m.x, y: m.y, z: 12, r: 0.32, t: 0, dur: 0.12, colors: [C[5], C[4], C[3]] });
+}
+
+/**
+ * GUARDING, on use: a brief shield on the hero, a shell of the word's emerald round them, lit from
+ * the upper left; it snaps on with a ring at their feet.
+ */
+export function guardOn(fx: Fx, hx: number, hy: number, secs = 2.2): void {
+  const C = NEW_RAMP.guarding;
+  W3.guard.t = secs;
+  W3.guard.dur = secs;
+  fx.rings.push({ x: hx, y: hy, r: 0.8, t: 0, dur: 0.22, colors: [C[5], C[4], C[3]], fill: false, heavy: true });
+}
+
+/** A blow from (fromX, fromY) is turned by the shield, or softened by a ward: the side it struck flares and sparks fly off. */
+export function guardStruck(fx: Fx, hx: number, hy: number, fromX: number, fromY: number): void {
+  const C = NEW_RAMP.guarding;
+  const dx = fromX - hx;
+  const dy = fromY - hy;
+  const len = Math.hypot(dx, dy) || 1;
+  W3.guard.struck = 0;
+  W3.guard.fx = dx / len;
+  W3.guard.fy = dy / len;
+  streaks(fx, hx + (dx / len) * 0.35, hy + (dy / len) * 0.35, 9, [C[4], C[5], C[3]], 3, 3, { dx: dx / len, dy: dy / len, spread: 1.1, z: 14, life: 0.2 });
+}
+
 // =============================================================================================
 // BEHIND: what is left.
 
@@ -320,6 +479,21 @@ export function crackedGround(x: number, y: number, r: number, dur = 4): void {
 /** HEXING behind: a hex circle at (x, y) that weakens what stands in it. */
 export function hexCircle(x: number, y: number, r: number, dur = 4.5): void {
   W3.patches.push({ kind: 'hex', x, y, r, t: 0, dur, seed: Math.floor(Math.random() * 1e6) });
+}
+
+/** STILLING behind: a bubble at (x, y) where enemies and their shots crawl. */
+export function bubble(x: number, y: number, r: number, dur = 4): void {
+  W3.patches.push({ kind: 'bubble', x, y, r, t: 0, dur, seed: Math.floor(Math.random() * 1e6) });
+}
+
+/** GUARDING behind: a ward circle at (x, y); the hero takes less damage inside it. */
+export function ward(x: number, y: number, r: number, dur = 4.5): void {
+  W3.patches.push({ kind: 'ward', x, y, r, t: 0, dur, seed: Math.floor(Math.random() * 1e6) });
+}
+
+/** Whether (x, y) is inside a patch of this kind now. */
+export function inside3(kind: Patch['kind'], x: number, y: number): boolean {
+  return W3.patches.some((p) => p.kind === kind && Math.hypot(x - p.x, y - p.y) < p.r);
 }
 
 /** The lines of a web of cracks: spokes from the middle out to the edge, and breaks across them. */
@@ -403,7 +577,16 @@ export function tick3(dt: number, game: Game, fx: Fx): void {
       k.stag += dt;
       if (k.stag > STAGGER) k.stag = -1;
     }
-    if (k.stun <= 0 && k.hex <= 0 && k.flare <= 0 && k.stag < 0 && !W3.patches.some((p) => p.seed === k.cracked)) W3.marks.delete(id);
+    if (k.aim > 0) {
+      k.aim -= dt;
+      k.aim0 += dt;
+    }
+    if (k.shut > 0) k.shut -= dt;
+    if (k.still > 0) {
+      k.still -= dt;
+      k.still0 += dt;
+    }
+    if (k.stun <= 0 && k.hex <= 0 && k.flare <= 0 && k.stag < 0 && k.aim <= 0 && k.shut <= 0 && k.still <= 0 && !W3.patches.some((p) => p.seed === k.cracked)) W3.marks.delete(id);
   }
   for (let i = W3.snaps.length - 1; i >= 0; i--) {
     W3.snaps[i].t += dt;
@@ -428,9 +611,59 @@ export function tick3(dt: number, game: Game, fx: Fx): void {
     f.t -= dt;
     if (f.t <= 0) f.n = 0;
   }
+  for (let i = W3.copies.length - 1; i >= 0; i--) {
+    const c = W3.copies[i];
+    c.t += dt;
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
+    if (c.t >= c.dur) {
+      W3.copies.splice(i, 1);
+      // (the demo: a copy that ends, with Splitting behind, scatters its shards)
+      if (W3.behind.includes('splitting')) shards(fx, c.x, c.y, 0.9);
+    }
+  }
+  for (let i = W3.pins.length - 1; i >= 0; i--) {
+    W3.pins[i].t += dt;
+    if (W3.pins[i].t >= W3.pins[i].dur) W3.pins.splice(i, 1);
+  }
+  const gd = W3.guard;
+  if (gd.t > 0) gd.t = Math.max(0, gd.t - dt);
+  gd.struck += dt;
   // (the demo: the rules' share, done by hand)
   const byId = new Map<number, Monster>();
   for (const m of game.monsters) if (!m.dead) byId.set(m.id, m);
+  // Stilling: where each slowed monster has just been, for the echoes of it that linger
+  for (const m of byId.values()) {
+    const k = W3.marks.get(m.id);
+    const slowed = (k !== undefined && k.still > 0) || inside3('bubble', m.x, m.y);
+    let tr = W3.trails.get(m.id);
+    if (!slowed) {
+      if (tr) W3.trails.delete(m.id);
+      continue;
+    }
+    if (!tr) W3.trails.set(m.id, (tr = []));
+    const last = tr[tr.length - 1];
+    if (!last || Math.hypot(m.x - last.x, m.y - last.y) > 0.05) {
+      tr.push({ x: m.x, y: m.y });
+      if (tr.length > 12) tr.shift();
+    }
+  }
+  for (const id of W3.trails.keys()) if (!byId.has(id)) W3.trails.delete(id);
+  // (the demo: enemy shots crawl in a bubble)
+  for (const q of game.projectiles) {
+    if (!q.hostile) continue;
+    const isIn = inside3('bubble', q.x, q.y);
+    const was = slowedShots.has(q);
+    if (isIn && !was) {
+      slowedShots.add(q);
+      q.vx *= 0.22;
+      q.vy *= 0.22;
+    } else if (!isIn && was) {
+      slowedShots.delete(q);
+      q.vx /= 0.22;
+      q.vy /= 0.22;
+    }
+  }
   for (let i = W3.drags.length - 1; i >= 0; i--) {
     const d = W3.drags[i];
     d.t += dt;
@@ -481,6 +714,9 @@ export function tick3(dt: number, game: Game, fx: Fx): void {
     }
   }
 }
+
+/** The enemy shots slowed by a bubble, in the demo. */
+const slowedShots = new WeakSet<object>();
 
 /** How long a stagger lasts, in seconds: knocked back, a moment off balance, and back. */
 export const STAGGER = 0.55;
@@ -542,7 +778,25 @@ export function tint3(m: Monster, t: number): [string, number] | null {
   if (k && k.hex > 0) a = 0.26 + 0.08 * Math.sin(t * 4 + m.id);
   for (const p of W3.patches) if (p.kind === 'hex' && Math.hypot(m.x - p.x, m.y - p.y) < p.r) a = Math.max(a, 0.5 * fadeOf(p));
   if (k && k.flare > 0) return [C[5], 0.55];
-  return a > 0 ? [C[3], a] : null;
+  if (a > 0) return [C[3], a];
+  const still = (k !== undefined && k.still > 0) || inside3('bubble', m.x, m.y);
+  return still ? [NEW_RAMP.stilling[3], 0.24 + 0.05 * Math.sin(t * 2 + m.id)] : null;
+}
+
+/**
+ * Stilling's echoes of a slowed monster: where it was a moment ago, lingering after it in the
+ * word's mint, the older the fainter (the renderer draws its picture there).
+ */
+export function echoes3(m: Monster): { x: number; y: number; alpha: number; color: string }[] {
+  const tr = W3.trails.get(m.id);
+  if (!tr || tr.length < 2) return [];
+  const out: { x: number; y: number; alpha: number; color: string }[] = [];
+  const C = NEW_RAMP.stilling;
+  for (const [back, alpha] of [[3, 0.32], [6, 0.18]] as const) {
+    const q = tr[tr.length - 1 - back];
+    if (q && Math.hypot(q.x - m.x, q.y - m.y) > 0.12) out.push({ x: q.x, y: q.y, alpha, color: C[3] });
+  }
+  return out;
 }
 
 function fadeOf(p: Patch): number {
@@ -575,7 +829,15 @@ export function floor3(g: CanvasRenderingContext2D, cam: Cam, t: number, game: G
     if (!here(p.x, p.y)) continue;
     if (p.kind === 'vortex') drawVortex(g, cam, p, t);
     else if (p.kind === 'cracks') drawCracks(g, cam, p);
-    else drawHexCircle(g, cam, p, t);
+    else if (p.kind === 'hex') drawHexCircle(g, cam, p, t);
+    else if (p.kind === 'shards') drawShards(g, cam, p, t);
+    else if (p.kind === 'bubble') drawBubble(g, cam, p, t);
+    else drawWard(g, cam, p, t, game);
+  }
+  for (const m of game.monsters) {
+    if (m.dead || !m.seen || !here(m.x, m.y)) continue;
+    const k = W3.marks.get(m.id);
+    if (k && k.still > 0) drawClock(g, wx(cam, m.x, m.y), wy(cam, m.x, m.y), 0.42, t, Math.min(1, k.still0 / 0.2, k.still / 0.3), NEW_RAMP.stilling);
   }
   const f = W3.frenzy;
   if (f.n > 0 && here(game.hero.x, game.hero.y)) drawFrenzyRing(g, cam, game.hero.x, game.hero.y, t);
@@ -615,6 +877,110 @@ function drawVortex(g: CanvasRenderingContext2D, cam: Cam, p: Patch, t: number):
   ringOf(g, cx, cy, R * 0.32, Math.sin(t * 9 + p.seed) > 0 ? C[5] : C[4], 1);
   g.globalAlpha = fade * 0.8;
   ringOf(g, cx, cy, R, C[3], 3);
+  g.globalAlpha = 1;
+}
+
+/** Shards lying where they fell: small crystals, white at the top, with a dark pixel under; now and then one glints. */
+function drawShards(g: CanvasRenderingContext2D, cam: Cam, p: Patch, t: number): void {
+  const C = NEW_RAMP.splitting;
+  const pts = p.pts ?? [];
+  // (they land a moment after they are thrown)
+  if (p.t < 0.28) return;
+  const fade = Math.min(1, (p.dur - p.t) / 0.5);
+  g.globalAlpha = fade;
+  for (let i = 0; i + 1 < pts.length; i += 2) {
+    const x = Math.round(wx(cam, p.x + pts[i], p.y + pts[i + 1]));
+    const y = Math.round(wy(cam, p.x + pts[i], p.y + pts[i + 1]));
+    g.fillStyle = '#0c0614';
+    g.fillRect(x - 1, y + 1, 3, 1);
+    g.fillStyle = C[2];
+    g.fillRect(x + 1, y - 1, 1, 2);
+    g.fillStyle = C[3];
+    g.fillRect(x, y - 2, 1, 3);
+    g.fillStyle = C[5];
+    g.fillRect(x, y - 2, 1, 1);
+    if (hash2(p.seed + i, Math.floor(t * 8), 3) < 0.12) {
+      g.fillStyle = C[5];
+      g.fillRect(x - 1, y - 3, 3, 1);
+      g.fillRect(x, y - 4, 1, 3);
+    }
+  }
+  g.globalAlpha = 1;
+}
+
+/** A ring of twelve ticks like a clock's face round (cx, cy), radius r tiles, its hand creeping round a step at a time (Stilling). */
+function drawClock(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, t: number, alpha: number, C: readonly string[], step = 0.55): void {
+  const hand = Math.floor(t / step) % 12;
+  g.globalAlpha = alpha;
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 - Math.PI * 0.75;
+    const px = Math.round(cx + (Math.cos(a) - Math.sin(a)) * 16 * r);
+    const py = Math.round(cy + (Math.cos(a) + Math.sin(a)) * 8 * r);
+    g.fillStyle = i === hand ? C[5] : i % 3 === 0 ? C[4] : C[3];
+    g.fillRect(px, py, i === hand || i % 3 === 0 ? 2 : 1, 1);
+  }
+  g.globalAlpha = 1;
+}
+
+/** Stilling behind: the floor of the bubble, its rim lit at the upper left, slow ripples, the clock's ticks round its edge. */
+function drawBubble(g: CanvasRenderingContext2D, cam: Cam, p: Patch, t: number): void {
+  const C = NEW_RAMP.stilling;
+  const fade = fadeOf(p);
+  const born = Math.min(1, p.t / 0.25);
+  const R = p.r * (0.55 + 0.45 * born);
+  const cx = wx(cam, p.x, p.y);
+  const cy = wy(cam, p.x, p.y);
+  ellipse(g, cx, cy, R, C[1], 0.2 * fade);
+  // ripples, slow, as on still water
+  for (let i = 0; i < 2; i++) {
+    const q = (p.t / 2.6 + i * 0.5) % 1;
+    g.globalAlpha = fade * 0.6 * (1 - q);
+    ringOf(g, cx, cy, R * (0.15 + 0.8 * q), C[3], 2);
+  }
+  g.globalAlpha = fade;
+  ringOf(g, cx, cy, R, C[3], 1);
+  // the rim catches the light at the upper left
+  ringOf(g, cx, cy, R, C[5], 1, Math.PI * 1.05, Math.PI * 0.45);
+  g.globalAlpha = 1;
+  drawClock(g, cx, cy, R * 0.86, t, fade, C, 0.7);
+}
+
+/** Guarding behind: the ward circle, its ring doubled, a shield cut at each quarter, brighter while the hero stands in it. */
+function drawWard(g: CanvasRenderingContext2D, cam: Cam, p: Patch, t: number, game: Game): void {
+  const C = NEW_RAMP.guarding;
+  const fade = fadeOf(p);
+  const drawn = Math.min(1, p.t / 0.3);
+  const cx = wx(cam, p.x, p.y);
+  const cy = wy(cam, p.x, p.y);
+  const inIt = Math.hypot(game.hero.x - p.x, game.hero.y - p.y) < p.r;
+  ellipse(g, cx, cy, p.r, C[1], (inIt ? 0.24 : 0.16) * fade);
+  g.globalAlpha = fade;
+  ringOf(g, cx, cy, p.r, inIt ? C[4] : C[3], 1, -Math.PI / 2, Math.PI * 2 * drawn);
+  ringOf(g, cx, cy, p.r * 0.96, C[2], 1, -Math.PI / 2, Math.PI * 2 * drawn);
+  ringOf(g, cx, cy, p.r * 0.7, C[2], 3, -Math.PI / 2, Math.PI * 2 * drawn);
+  // a shield at each quarter, on the ring
+  const rows = NEW_GLYPH.guarding;
+  for (let q = 0; q < 4; q++) {
+    const a = (q / 4) * Math.PI * 2 + Math.PI / 4;
+    if (q / 4 > drawn) continue;
+    const px = Math.round(cx + (Math.cos(a) - Math.sin(a)) * 16 * p.r) - 3;
+    const py = Math.round(cy + (Math.cos(a) + Math.sin(a)) * 8 * p.r) - 3;
+    for (let r = 0; r < rows.length; r++) {
+      for (let c = 0; c < rows[r].length; c++) {
+        if (rows[r][c] === '.') continue;
+        g.fillStyle = '#06140c';
+        g.fillRect(px + c, py + r + 1, 1, 1);
+      }
+    }
+    for (let r = 0; r < rows.length; r++) {
+      for (let c = 0; c < rows[r].length; c++) {
+        const ch = rows[r][c];
+        if (ch === '.') continue;
+        g.fillStyle = ch === 'o' ? (inIt && Math.sin(t * 4 + q) > 0 ? C[5] : C[4]) : r === 0 ? C[4] : C[3];
+        g.fillRect(px + c, py + r, 1, 1);
+      }
+    }
+  }
   g.globalAlpha = 1;
 }
 
@@ -879,11 +1245,175 @@ export function air3(g: CanvasRenderingContext2D, cam: Cam, t: number, game: Gam
     g.fillStyle = C[5];
     g.fillRect(Math.round(hx), Math.round(hy), 1, 1);
   }
+  // Splitting: the three copies flying on, each a small bright shard of the attack with a tail
+  for (const c of W3.copies) {
+    const C = NEW_RAMP.splitting;
+    const sp = Math.hypot(c.vx, c.vy) || 1;
+    const ux = c.vx / sp;
+    const uy = c.vy / sp;
+    const x0 = wx(cam, c.x, c.y);
+    const y0 = wy(cam, c.x, c.y) - 10;
+    const x1 = wx(cam, c.x - ux * 0.55, c.y - uy * 0.55);
+    const y1 = wy(cam, c.x - ux * 0.55, c.y - uy * 0.55) - 10;
+    const x2 = wx(cam, c.x - ux * 0.25, c.y - uy * 0.25);
+    const y2 = wy(cam, c.x - ux * 0.25, c.y - uy * 0.25) - 10;
+    pline(g, x1, y1 + 1, x0, y0 + 1, C[1]);
+    pline(g, x1, y1, x0, y0, C[2]);
+    pline(g, x2, y2, x0, y0, C[3]);
+    pline(g, x2, y2 + 1, x0, y0 + 1, C[2]);
+    g.fillStyle = C[5];
+    g.fillRect(Math.round(x0) - 1, Math.round(y0), 3, 2);
+  }
+  // Precise: the needle of light through the struck, and the star where it struck
+  for (const q of W3.pins) {
+    const C = NEW_RAMP.precise;
+    const k = q.t / q.dur;
+    const x = Math.round(wx(cam, q.x, q.y));
+    const y = Math.round(wy(cam, q.x, q.y)) - 12;
+    if (!q.crit && k < 0.6) {
+      const bx = wx(cam, q.x - q.dx * 1.1, q.y - q.dy * 1.1);
+      const by = wy(cam, q.x - q.dx * 1.1, q.y - q.dy * 1.1) - 12;
+      const fx2 = wx(cam, q.x + q.dx * 0.7, q.y + q.dy * 0.7);
+      const fy2 = wy(cam, q.x + q.dx * 0.7, q.y + q.dy * 0.7) - 12;
+      g.globalAlpha = 1 - k / 0.6;
+      pline(g, bx, by, fx2, fy2, k < 0.25 ? C[5] : C[3]);
+      g.globalAlpha = 1;
+    }
+    const grow = q.crit ? 1 : 1 - k;
+    const h = Math.round((q.crit ? 18 : 11) * grow);
+    const v = Math.round((q.crit ? 11 : 6) * grow);
+    if (h <= 0) continue;
+    g.fillStyle = C[2];
+    g.fillRect(x - h, y, h * 2 + 1, 1);
+    g.fillRect(x, y - v, 1, v * 2 + 1);
+    g.fillStyle = C[4];
+    g.fillRect(x - Math.round(h * 0.6), y, Math.round(h * 1.2) + 1, 1);
+    g.fillRect(x, y - Math.round(v * 0.6), 1, Math.round(v * 1.2) + 1);
+    if (q.crit) {
+      // a certain critical: the star has eight rays, and a white heart
+      const d = Math.round(6 * (1 - k * 0.5));
+      for (let i = 1; i <= d; i++) {
+        g.fillStyle = i < d * 0.6 ? C[4] : C[2];
+        g.fillRect(x - i, y - i, 1, 1);
+        g.fillRect(x + i, y - i, 1, 1);
+        g.fillRect(x - i, y + i, 1, 1);
+        g.fillRect(x + i, y + i, 1, 1);
+      }
+    }
+    g.fillStyle = C[5];
+    g.fillRect(x - 1, y - 1, 3, 3);
+  }
+  // Precise behind: the sight on a marked enemy (four corners that close in on it, and hold, breathing)
+  for (const m of game.monsters) {
+    if (m.dead || !m.seen) continue;
+    const k = W3.marks.get(m.id);
+    if (!k || (k.aim <= 0 && k.shut <= 0)) continue;
+    const [ox, oy] = shift3(m, t);
+    const sx = Math.round(wx(cam, m.x, m.y)) + ox;
+    const sy = Math.round(wy(cam, m.x, m.y)) + oy;
+    const fs = FIGURE_SIZE[figureOf(m)];
+    const shut = k.shut > 0;
+    const close = shut ? -2 : Math.round(9 * Math.max(0, 1 - k.aim0 / 0.25)) + (Math.sin(t * 7) > 0 ? 1 : 0);
+    const going = shut ? Math.min(1, k.shut / 0.12) : Math.min(1, k.aim / 0.25);
+    drawSight(g, sx - fs.half - 2 - close, sy - fs.top - 3 - close, sx + fs.half + 2 + close, sy + 2 + close, shut ? NEW_RAMP.precise[5] : NEW_RAMP.precise[3], going);
+  }
+  // Stilling behind: the dome of the bubble, a thin glass over it, glinting at the upper left
+  for (const p of W3.patches) {
+    if (p.kind !== 'bubble') continue;
+    const C = NEW_RAMP.stilling;
+    const fade = fadeOf(p);
+    const born = Math.min(1, p.t / 0.25);
+    const R = p.r * (0.55 + 0.45 * born);
+    const cx = wx(cam, p.x, p.y);
+    const cy = wy(cam, p.x, p.y);
+    const n = Math.round(R * 40);
+    for (let i = 0; i <= n; i++) {
+      const a = (i / n) * Math.PI;
+      const lit = a > Math.PI * 0.55 && a < Math.PI * 0.86;
+      if (!lit && i % 3 !== 0) continue;
+      g.globalAlpha = fade * (lit ? 0.75 : 0.35);
+      g.fillStyle = lit ? C[5] : C[4];
+      g.fillRect(Math.round(cx + Math.cos(a) * R * 22.6), Math.round(cy - Math.sin(a) * R * 17), 1, 1);
+    }
+    g.globalAlpha = 1;
+  }
+  // Guarding behind: motes of emerald rising from the ward, more while the hero stands in it
+  for (const p of W3.patches) {
+    if (p.kind !== 'ward') continue;
+    const C = NEW_RAMP.guarding;
+    const fade = fadeOf(p);
+    const inIt = Math.hypot(game.hero.x - p.x, game.hero.y - p.y) < p.r;
+    const n = inIt ? 12 : 6;
+    for (let i = 0; i < n; i++) {
+      const q = (t * 0.6 + hash2(p.seed, i, 51)) % 1;
+      const a = hash2(p.seed, i, 52) * Math.PI * 2;
+      const d = Math.sqrt(hash2(p.seed, i, 53)) * p.r * 0.9;
+      g.globalAlpha = fade * (q < 0.2 ? q / 0.2 : 1 - (q - 0.2) / 0.8);
+      dot(g, cam, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, i % 3 === 0 ? C[5] : C[4], Math.round(2 + q * 22));
+    }
+    g.globalAlpha = 1;
+  }
+  // Guarding in front: the shell of the shield round the hero
+  if (W3.guard.t > 0) drawShell(g, cam, game, fx, t);
   // a full frenzy gives off heat
   if (W3.frenzy.n >= 5 && Math.random() < 30 * W3.dt * fx.room()) {
     const C = NEW_RAMP.frenzied;
     add(fx, { x: h.x + rnd(-0.35, 0.35), y: h.y + rnd(-0.35, 0.35), z: rnd(4, 20), vx: 0, vy: 0, vz: rnd(30, 55), life: rnd(0.15, 0.3), color: pick([C[3], C[4]]), size: 1, grav: 0, streak: 3 });
   }
+}
+
+/** Four corners of a sight round (x0, y0) to (x1, y1), with a dark pixel outside each (Precise). */
+function drawSight(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, color: string, alpha: number): void {
+  const L = 4;
+  g.globalAlpha = alpha;
+  for (const [cx, cy, sx, sy] of [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]] as const) {
+    g.fillStyle = '#0a0c14';
+    g.fillRect(Math.min(cx - sx, cx - sx + sx * L), cy - sy, L + 1, 1);
+    g.fillRect(cx - sx, Math.min(cy - sy, cy - sy + sy * L), 1, L + 1);
+    g.fillStyle = color;
+    g.fillRect(Math.min(cx, cx + sx * (L - 1)), cy, L, 1);
+    g.fillRect(cx, Math.min(cy, cy + sy * (L - 1)), 1, L);
+  }
+  g.globalAlpha = 1;
+}
+
+/** The shield on the hero: a shell of emerald points round them, lit at the upper left; it flares on the side a blow strikes. */
+function drawShell(g: CanvasRenderingContext2D, cam: Cam, game: Game, fx: Fx, t: number): void {
+  const C = NEW_RAMP.guarding;
+  const gd = W3.guard;
+  const h = game.hero;
+  const cx = wx(cam, h.x, h.y);
+  const top = fx.headroom || 32;
+  const cy = wy(cam, h.x, h.y) - top * 0.52;
+  const rx = 13;
+  const ry = Math.round(top * 0.62);
+  const age = gd.dur - gd.t;
+  const fade = Math.min(1, gd.t / 0.4) * (gd.t < 0.4 && Math.floor(t * 14) % 2 === 0 ? 0.5 : 1);
+  const snap = age < 0.12;
+  const struck = gd.struck < 0.25;
+  // the way the blow came, on screen
+  const bx = (gd.fx - gd.fy) * 16;
+  const by = (gd.fx + gd.fy) * 8;
+  const bl = Math.hypot(bx, by) || 1;
+  g.globalAlpha = 0.14 * fade;
+  g.fillStyle = C[3];
+  g.beginPath();
+  g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  g.fill();
+  const n = 52;
+  const run = Math.floor(t * 30) % n;
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const ex = Math.cos(a);
+    const ey = Math.sin(a);
+    const lit = ex < -0.15 && ey < -0.15;
+    const hit = struck && (ex * bx + ey * by) / bl > 0.55;
+    g.globalAlpha = fade * (hit || snap || lit ? 1 : 0.8);
+    g.fillStyle = hit || snap || i === run || i === (run + n / 2) % n ? C[5] : lit ? C[4] : C[3];
+    const push = hit ? 1 : 0;
+    g.fillRect(Math.round(cx + ex * (rx + push)), Math.round(cy + ey * (ry + push)), hit || lit ? 2 : 1, 1);
+  }
+  g.globalAlpha = 1;
 }
 
 /** The stun: three bronze sparks going round over the head, the near ones bright, the far ones dim. */
@@ -970,14 +1500,16 @@ export function lights3(spot: (x: number, y: number, r: number, a: number) => vo
     const y = wy(cam, p.x, p.y);
     if (p.kind === 'vortex') spot(x, y - 4, 20 + p.r * 16, 0.65 * fade);
     else if (p.kind === 'cracks') spot(x, y - 2, 18 + p.r * 14, (p.t < 0.4 ? 0.8 : 0.5) * Math.min(1, (p.dur - p.t) / 0.6));
+    else if (p.kind === 'shards') spot(x, y - 2, 16 + p.r * 10, 0.4 * Math.min(1, (p.dur - p.t) / 0.5));
     else spot(x, y - 4, 20 + p.r * 14, 0.7 * fade);
   }
   for (const m of game.monsters) {
     if (m.dead || !m.seen) continue;
     const k = W3.marks.get(m.id);
-    if (!k || (k.stun <= 0 && k.hex <= 0)) continue;
-    spot(wx(cam, m.x, m.y), wy(cam, m.x, m.y) - FIGURE_SIZE[figureOf(m)].top - 6, 16, 0.55);
+    if (!k || (k.stun <= 0 && k.hex <= 0 && k.aim <= 0 && k.still <= 0)) continue;
+    spot(wx(cam, m.x, m.y), wy(cam, m.x, m.y) - (k.stun > 0 || k.hex > 0 ? FIGURE_SIZE[figureOf(m)].top + 6 : 10), k.aim > 0 ? 26 : 16, 0.55);
   }
+  if (W3.guard.t > 0) spot(wx(cam, game.hero.x, game.hero.y), wy(cam, game.hero.x, game.hero.y) - 16, 34, 0.6);
   void t;
 }
 
@@ -994,8 +1526,35 @@ export function demoEvents3(events: readonly GameEvent[], game: Game, fx: Fx): v
   const h = game.hero;
   const near = (x: number, y: number, r: number): Monster[] => game.monsters.filter((m) => !m.dead && Math.hypot(m.x - x, m.y - y) <= r);
   for (const e of events) {
+    if (e.t === 'hit' && e.onHero) {
+      // a blow on the hero, turned by the shield or softened by a ward
+      if (W3.guard.t > 0 || inside3('ward', h.x, h.y)) {
+        const from = near(h.x, h.y, 2.5).sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y))[0];
+        guardStruck(fx, h.x, h.y, from ? from.x : h.x + h.fx, from ? from.y : h.y + h.fy);
+      }
+      continue;
+    }
+    if (e.t === 'cast' && !e.echo) {
+      if (W3.front.includes('guarding')) guardOn(fx, h.x, h.y);
+      continue;
+    }
     if (e.t === 'hit' && !e.onHero) {
       const struck = near(e.x, e.y, 0.35)[0];
+      const dx = e.x - h.x;
+      const dy = e.y - h.y;
+      if (W3.front.includes('splitting') && W3.clock - lastSplit > 0.3) {
+        lastSplit = W3.clock;
+        splitHit(fx, e.x, e.y, dx, dy);
+      }
+      if (W3.front.includes('precise') || W3.behind.includes('precise')) {
+        const k = struck ? W3.marks.get(struck.id) : undefined;
+        if (struck && k && k.aim > 0) preciseCrit(fx, struck, dx, dy);
+        else {
+          if (W3.front.includes('precise')) preciseHit(fx, e.x, e.y, dx, dy);
+          if (struck && W3.behind.includes('precise')) preciseMark(struck);
+        }
+      }
+      if (W3.front.includes('stilling') && struck) stillHit(fx, struck);
       if (W3.front.includes('heavy')) {
         heavyHit(fx, e.x, e.y, 1.1, false);
         if (struck) {
@@ -1020,6 +1579,8 @@ export function demoEvents3(events: readonly GameEvent[], game: Game, fx: Fx): v
       } else if (struck) hexFlare(fx, struck);
     } else if (e.t === 'swing' && !e.echo && (e.n ?? 0) === 0) {
       if (W3.front.includes('frenzied')) frenzyHit(fx, h.x, h.y, e.dx, e.dy);
+      // (a sword's swing is an ability used: a cast is only told of when the ability carries words of the game's own)
+      if (W3.front.includes('guarding')) guardOn(fx, h.x, h.y);
       const ax = e.x + e.dx * e.reach * 0.75;
       const ay = e.y + e.dy * e.reach * 0.75;
       leaveBehind(ax, ay, 1.5);
@@ -1031,10 +1592,14 @@ export function demoEvents3(events: readonly GameEvent[], game: Game, fx: Fx): v
   }
 }
 
+let lastSplit = -9;
+
 function leaveBehind(x: number, y: number, r: number): void {
   if (W3.behind.includes('pulling')) vortex(x, y, r);
   if (W3.behind.includes('heavy')) crackedGround(x, y, r);
   if (W3.behind.includes('hexing')) hexCircle(x, y, r);
+  if (W3.behind.includes('stilling')) bubble(x, y, r);
+  if (W3.behind.includes('guarding')) ward(x, y, r);
 }
 
 /** The playtest's hands: `window.__dbg.words3` (main.ts). Nothing here runs unless a playtest calls it. */
@@ -1085,6 +1650,30 @@ export function demo3(fx: Fx, getGame: () => Game | null) {
     drag: (id: number, x1: number, y1: number, dur = 0.24) => {
       const m = monster(id);
       if (m) W3.drags.push({ id, x0: m.x, y0: m.y, x1, y1, t: 0, dur });
+    },
+    splitHit: (x: number, y: number, dx: number, dy: number) => splitHit(fx, x, y, dx, dy),
+    shards: (x: number, y: number, r?: number) => shards(fx, x, y, r),
+    preciseHit: (x: number, y: number, dx: number, dy: number) => preciseHit(fx, x, y, dx, dy),
+    preciseMark: (id: number, secs?: number) => {
+      const m = monster(id);
+      if (m) preciseMark(m, secs);
+    },
+    stillHit: (id: number, secs?: number) => {
+      const m = monster(id);
+      if (m) stillHit(fx, m, secs);
+    },
+    bubble,
+    ward,
+    guardOn: (secs?: number) => {
+      const g = getGame();
+      if (g) guardOn(fx, g.hero.x, g.hero.y, secs);
+    },
+    /** How fast a monster may move now, for the playtest's walkers: slowed by Stilling. */
+    pace: (id: number) => {
+      const m = monster(id);
+      if (!m) return 1;
+      const k = W3.marks.get(id);
+      return (k && k.still > 0) || inside3('bubble', m.x, m.y) ? 0.3 : 1;
     },
   };
 }

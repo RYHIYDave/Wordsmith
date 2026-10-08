@@ -14,11 +14,12 @@ in every group. The questions and his answers, exactly:
 - "Which control words do you want?": "Hexing (Recommended),Stilling"
 - "Which pace or reward words do you want?": "Frenzied (Recommended),Guarding"
 
-**HIS YES, 13:15: the looks of the first four (Pulling, Heavy, Hexing, Frenzied) and the colours
-and rune stones of all eight** ("Yes, all four (Recommended)"; "Yes (Recommended)"). The looks are
-on this branch behind a switch that is off; `docs/mockups/new_words/README.md` says what each is and
-how the main chat joins them to your rules. The other four (Splitting, Precise, Stilling, Guarding)
-follow, pictures to him first.
+**HIS YES: at 13:15 to the looks of the first four (Pulling, Heavy, Hexing, Frenzied) and the
+colours and rune stones of all eight** ("Yes, all four (Recommended)"; "Yes (Recommended)"); **at
+13:43 to the looks of the other four (Splitting, Precise, Stilling, Guarding)** ("Yes, all four
+(Recommended)"). The looks are on this branch behind a switch that is off;
+`docs/mockups/new_words/README.md` says what each is and how the main chat joins them to your
+rules.
 
 These eight take the place of the three that were planned (Pulling, Heavy and Hexing are among
 them). The chats cannot message one another, so this note is here, on the art chat's branch
