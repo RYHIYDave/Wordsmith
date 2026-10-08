@@ -33,6 +33,8 @@ export interface AnimSet {
   /** Frames per second of the idle loop and of the walk. Absent = 2 and 8. */
   idleFps?: number;
   walkFps?: number;
+  /** A walk whose feet grip the floor: how many tiles the figure goes in one turn of it. Its frame is then chosen by how far the hero has gone (FigureState.walked), not by the clock. */
+  walkStride?: number;
   /** Heroes: 3 frames for the slow attack (a slam, a toss, a nova). Absent = it looks like `attack`. */
   heavy?: Sprite[];
   /** Heroes that leap: 3 frames (pushing off, in the air, coming down). Absent = the walk is shown. */

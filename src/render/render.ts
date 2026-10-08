@@ -281,6 +281,9 @@ export class Renderer {
    * and how much it took.
    */
   private reelT = -1;
+  /** How far the hero has walked, in tiles, all told, and where they were a frame ago (a walk whose feet grip the floor is shown by it: art/moves3.ts, GRIP). */
+  private walked = 0;
+  private walkedFrom: [number, number] | null = null;
   private reelBehind = false;
   private flashWas = 0;
   private lifeWas = 0;
@@ -1786,7 +1789,13 @@ export class Renderer {
       } else if (this.reelT >= 0) this.reelT = this.reelT + pace / 60 > REEL_TIME ? -1 : this.reelT + pace / 60;
       this.flashWas = h.flash;
       this.lifeWas = h.life;
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      // (how far the hero has walked: a leap, a roll or a warp carries them, and is not walking)
+      if (this.walkedFrom && !h.move) {
+        const d = Math.hypot(h.x - this.walkedFrom[0], h.y - this.walkedFrom[1]);
+        if (d < 1) this.walked += d;
+      }
+      this.walkedFrom = [h.x, h.y];
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them

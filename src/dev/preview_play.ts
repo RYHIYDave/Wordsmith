@@ -5,9 +5,9 @@
 // foot that slides is seen to slide: a white ring where each foot came down, and a line to where it
 // has got to while it stays down. (The scarf's and the feather's flying ends are left out.)
 //   node tools/page_gif.mjs src/dev/preview_play.ts "3:1:warrior/quick attack, walking|ranger/quick attack, walking" previews/x.gif
-//   hash = <screen pixels to a game pixel>:<slowed how many times>:<class>/<scenario>|<class>/<scenario>...
+//   hash = <screen pixels to a game pixel>:<slowed how many times>:[grip!][slid<n>!]<class>/<scenario>[=<label>]|<class>/<scenario>...
 import { paintMove3 } from '../art/heroes3';
-import { MOVES3 } from '../art/moves3';
+import { MOVES3, useGrippingRuns } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
 import type { ClassId } from '../game/types';
 import { place, play, scenariosOf } from '../../tools/review_heroes/sim';
@@ -27,7 +27,20 @@ CanvasRenderingContext2D.prototype.drawImage = function (this: CanvasRenderingCo
 const HASH = decodeURIComponent(location.hash.slice(1)).split(':');
 const [sArg = '3', slowArg = '1'] = HASH;
 // (the list may have colons of its own, in what the panels are called)
-const list = HASH.slice(2).join(':') || 'warrior/runs, seen from in front';
+const list0 = HASH.slice(2).join(':') || 'warrior/runs, seen from in front';
+// (before the list, `grip!`: with the gripping runs, art/moves3.ts GRIP; `slid<n>!`: a foot is
+// marked as slid once it has gone n game px from where it came down, where it is 1 otherwise)
+let list = list0;
+let GRIPPING = false;
+let SLID = 1;
+for (;;) {
+  const m = list.match(/^(grip|slid([0-9.]+))!/);
+  if (!m) break;
+  if (m[1] === 'grip') GRIPPING = true;
+  else SLID = Number(m[2]);
+  list = list.slice(m[0].length);
+}
+if (GRIPPING) useGrippingRuns(true);
 const S = Number(sArg) || 3;
 const SLOW = Number(slowArg) || 1;
 const NAMES: Record<string, string> = { warrior: 'Warrior', ranger: 'Ranger', mage: 'Mage' };
@@ -155,11 +168,11 @@ function draw(k: number): string {
       const nx = ox + (r.now[0] - p.x0) * S;
       const ny = oy + (r.now[1] - p.y0) * S;
       const slid = Math.hypot(r.now[0] - r.at[0], r.now[1] - r.at[1]);
-      g.strokeStyle = slid >= 1 ? '#ffd866' : '#ffffff';
+      g.strokeStyle = slid >= SLID ? '#ffd866' : '#ffffff';
       g.beginPath();
       g.arc(ax, ay, 2.2 * S, 0, Math.PI * 2);
       g.stroke();
-      if (slid >= 1) {
+      if (slid >= SLID) {
         g.beginPath();
         g.moveTo(ax, ay);
         g.lineTo(nx, ny);

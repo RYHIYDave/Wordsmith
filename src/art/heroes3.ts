@@ -192,6 +192,8 @@ export const PLANS: Record<ClassId, { dungeon: Plan; town: Plan; card: Plan }> =
 /** Frames a second: of a standing loop, a run, anything played once, and what a hero does when left standing. */
 const IDLE_FPS3 = 10;
 const RUN_FPS3 = 30;
+/** A run whose feet grip (moves3.ts GRIP): a picture for each of the game's steps, on a phone at sixty a second. */
+const GRIP_FPS3 = 60;
 const CLIP_FPS3 = 30;
 const GESTURE_FPS3 = 20;
 /** How long the stance is held at the end of making ready (`clips.ready`), in seconds; and the least the whole of it lasts (one who is quickly ready holds the stance longer, so that it is seen). */
@@ -237,7 +239,11 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
   // (Strike's combo: the second swing, where there is one)
   const attack2 = plan.attack2 ? clip(of(plan.attack2), CLIP_FPS3) : undefined;
   const heavy = clip(of(plan.heavy), CLIP_FPS3);
-  const set: AnimSet = { idle: round(of(plan.idle), IDLE_FPS3), walk: round(of(plan.walk), RUN_FPS3), attack: three(attack), heavy: three(heavy), idleFps: IDLE_FPS3, walkFps: RUN_FPS3, clips: { attack, heavy } };
+  // (a run whose feet grip the floor, moves3.ts GRIP: its frame by how far the hero has gone)
+  const walkStride = of(plan.walk).stride;
+  const walkFps = walkStride !== undefined ? GRIP_FPS3 : RUN_FPS3;
+  const set: AnimSet = { idle: round(of(plan.idle), IDLE_FPS3), walk: round(of(plan.walk), walkFps), attack: three(attack), heavy: three(heavy), idleFps: IDLE_FPS3, walkFps, clips: { attack, heavy } };
+  if (walkStride !== undefined) set.walkStride = walkStride;
   const clips = set.clips as NonNullable<AnimSet['clips']>;
   if (attack2) clips.attack2 = attack2;
   if (plan.leap) {

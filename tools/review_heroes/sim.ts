@@ -26,6 +26,7 @@ import type { View } from './lib';
 // play.ts holds the numbers to heroes3.ts's own before it plays.
 export const IDLE_FPS3 = 10;
 export const RUN_FPS3 = 30;
+export const GRIP_FPS3 = 60;
 export const CLIP_FPS3 = 30;
 export const GESTURE_FPS3 = 20;
 export const READY_HELD3 = 0.3;
@@ -66,7 +67,10 @@ function animSet(plan: Plan, view: View): AnimSet {
   const attack = clip(of(plan.attack), CLIP_FPS3);
   const attack2 = plan.attack2 ? clip(of(plan.attack2), CLIP_FPS3) : undefined;
   const heavy = clip(of(plan.heavy), CLIP_FPS3);
-  const set: AnimSet = { idle: round(of(plan.idle), IDLE_FPS3), walk: round(of(plan.walk), RUN_FPS3), attack: three(attack), heavy: three(heavy), idleFps: IDLE_FPS3, walkFps: RUN_FPS3, clips: { attack, heavy } };
+  const walkStride = of(plan.walk).stride;
+  const walkFps = walkStride !== undefined ? GRIP_FPS3 : RUN_FPS3;
+  const set: AnimSet = { idle: round(of(plan.idle), IDLE_FPS3), walk: round(of(plan.walk), walkFps), attack: three(attack), heavy: three(heavy), idleFps: IDLE_FPS3, walkFps, clips: { attack, heavy } };
+  if (walkStride !== undefined) set.walkStride = walkStride;
   const clips = set.clips as NonNullable<AnimSet['clips']>;
   if (attack2) clips.attack2 = attack2;
   if (plan.leap) {
@@ -164,6 +168,13 @@ export function scenariosOf(cls: ClassId): Scenario[] {
     { name: 'stands', cls, seconds: 3, face: front, step: () => {} },
     { name: 'runs, seen from in front', cls, seconds: 1.4, face: front, step: (x) => walk(x, 0, 9, 1, 0) },
     { name: 'runs, seen from behind', cls, seconds: 1.4, face: back, step: (x) => walk(x, 0, 9, 0, -1) },
+    { name: 'runs a short way', cls, seconds: 0.9, face: front, step: (x) => walk(x, 0, 9, 1, 0) },
+    // (between two of the four ways a figure is drawn facing: straight across the screen, and straight down it)
+    { name: 'runs across the screen', cls, seconds: 1.4, face: [Math.SQRT1_2, -Math.SQRT1_2], step: (x) => walk(x, 0, 9, Math.SQRT1_2, -Math.SQRT1_2) },
+    // (0.9 seconds: much further and the practice room's wall stops him)
+    { name: 'runs down the screen', cls, seconds: 0.9, face: [Math.SQRT1_2 + 0.01, Math.SQRT1_2 - 0.01], step: (x) => walk(x, 0, 9, Math.SQRT1_2 + 0.01, Math.SQRT1_2 - 0.01) },
+    { name: 'runs up the screen', cls, seconds: 0.9, face: [-Math.SQRT1_2 + 0.01, -Math.SQRT1_2 - 0.01], step: (x) => walk(x, 0, 9, -Math.SQRT1_2 + 0.01, -Math.SQRT1_2 - 0.01) },
+    { name: 'runs a little off the way he faces', cls, seconds: 1.4, face: [Math.cos(0.3), Math.sin(0.3)], step: (x) => walk(x, 0, 9, Math.cos(0.3), Math.sin(0.3)) },
     { name: 'starts and stops', cls, seconds: 2, face: front, step: (x) => walk(x, 0.5, 1.2, 1, 0) },
     { name: 'quick attack, standing', cls, seconds: 1.3, face: front, step: (x) => tapAt(x, 0.2) },
     { name: 'quick attack, walking', cls, seconds: 1.2, face: front, step: (x) => { walk(x, 0, 9, 1, 0); tapAt(x, 0.3); } },
@@ -227,6 +238,9 @@ export function play(sc: Scenario): Shown[] {
   const fig = new Figure();
   const out: Shown[] = [];
   const dt = 1 / 60;
+  // (how far the hero has walked, as the renderer counts it)
+  let walked = 0;
+  let from: [number, number] | null = null;
   for (let i = 0; i * dt < sc.seconds; i++) {
     const t = i * dt;
     const c = emptyControls();
@@ -244,6 +258,12 @@ export function play(sc: Scenario): Shown[] {
       holdAs: h.channel && SKILLS[h.skills[h.channel.skill].id].kind === 'whirl' ? 'whirl' : 'beam',
       rollK, fallT: -1, reelT, reelBehind: sc.reelBehind ?? false,
     };
+    if (from && !h.move) {
+      const d = Math.hypot(h.x - from[0], h.y - from[1]);
+      if (d < 1) walked += d;
+    }
+    from = [h.x, h.y];
+    st.walked = walked;
     const sp = fig.frame(art, st, dt, 0, 0, true);
     const img = sp.img as unknown as string | { src: string };
     const left = typeof img !== 'string';

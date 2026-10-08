@@ -11,6 +11,7 @@
 //   node node_modules/tsx/dist/cli.mjs tools/review_heroes/play.ts [scenario ...] [--trace]
 // @ts-ignore - node typings are not part of this project
 import { readFileSync } from 'node:fs';
+import { useGrippingRuns } from '../../src/art/moves3';
 import { COMBO } from '../../src/game/defs';
 import type { ClassId } from '../../src/game/types';
 import * as sim from './sim';
@@ -35,7 +36,7 @@ const asked = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 // (the stand-in art lays its frames out as the game's does: the numbers it uses are heroes3.ts's)
 {
   const src = String(readFileSync(new URL('../../src/art/heroes3.ts', import.meta.url)));
-  for (const [name, v] of Object.entries({ IDLE_FPS3: sim.IDLE_FPS3, RUN_FPS3: sim.RUN_FPS3, CLIP_FPS3: sim.CLIP_FPS3, GESTURE_FPS3: sim.GESTURE_FPS3, READY_HELD3: sim.READY_HELD3, READY_LEAST3: sim.READY_LEAST3, LEAP_FRAMES3: sim.LEAP_FRAMES3, ROLL_FRAMES3: sim.ROLL_FRAMES3 })) {
+  for (const [name, v] of Object.entries({ IDLE_FPS3: sim.IDLE_FPS3, RUN_FPS3: sim.RUN_FPS3, GRIP_FPS3: sim.GRIP_FPS3, CLIP_FPS3: sim.CLIP_FPS3, GESTURE_FPS3: sim.GESTURE_FPS3, READY_HELD3: sim.READY_HELD3, READY_LEAST3: sim.READY_LEAST3, LEAP_FRAMES3: sim.LEAP_FRAMES3, ROLL_FRAMES3: sim.ROLL_FRAMES3 })) {
     const m = src.match(new RegExp(`const ${name} = ([0-9.]+);`));
     if (!m || Number(m[1]) !== v) throw new Error(`heroes3.ts's ${name} is ${m ? m[1] : 'gone'}, the review's stand-ins have ${v}: bring sim.ts in line`);
   }
@@ -116,6 +117,8 @@ function judge(sc: Scenario, shown: Shown[]): string[] {
 }
 
 COMBO.on = true;
+// (--grip: with the gripping runs, art/moves3.ts GRIP)
+if (process.argv.includes('--grip')) useGrippingRuns(true);
 for (const cls of ['warrior', 'ranger', 'mage'] as ClassId[]) {
   for (const sc of scenariosOf(cls)) {
     const name = `${cls}: ${sc.name}`;
