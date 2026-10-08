@@ -259,3 +259,17 @@ version, and consider a line under "The owner's standing rules" in `CLAUDE.md`: 
 real, each behind its switch until it is in: the hole in the wall (`mockup/hole-in-wall`), the true
 left-facing heroes (`mockup/true-left`, `TRUE_LEFT.on`), the skeleton on the heroes' bones
 (`mockup/skeleton-on-bones`, `SKELETON3.on`).
+
+## Eight directions (08:32 to 08:34)
+
+At 08:32 he was sent `docs/mockups/true_left/knight_turning_true_4_and_8.gif` (branch
+`mockup/true-left`: the knight turning on the spot, the four views turned for real beside eight),
+captioned "Mock-up, not in the game. The knight turning on the spot. Left: four directions, turned
+for real, as you chose. Right: eight directions.", and asked at 08:33: "Watch the turning film.
+Should the heroes turn through eight directions, or stay with four?" (Eight, recommended: "Smoother
+turns, as you once asked for, and he faces the way he walks. Two of the eight are side-on. Twice
+the pictures, so a phone speed test comes first."; Four: "As you just chose. Fewer pictures. Facing
+down-left he shows his shoulder and hides his sword."). **HIS ANSWER, 08:34: "Eight (Recommended)".**
+Read as: the heroes turn through eight directions, each turned for real, AFTER A SPEED TEST ON HIS
+PHONE. Heroes rule 7 of the rulebook now says so ("Truly turned, eight ways"), and the eight-directions
+line is gone from "Still open".

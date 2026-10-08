@@ -68,7 +68,7 @@ The heroes are stylized and cool, each with a body of their own, built bold so t
 4. **Built for skins.** Every move is made on the hero's skeleton, apart from what they wear, so a skin is a new outfit over the same bones and moves. A skin keeps the hero known at a glance and keeps the friend's cyan.
 5. **Cloth moves.** Scarves, capes, braids and feathers move with every step and blow. In your words: "The scarves and feathers waving, robes and cloaks billowing".
 6. **Clean bodies.** Arms never pass through clothing or the body, in any frame.
-7. **Truly facing left.** A hero facing left is the figure turned round for real, never its picture flipped, so the weapon stays in its hand and the light still falls from the upper left. In your words, 8 Oct: "I like the true left".
+7. **Truly turned, eight ways.** A hero turns through eight directions, each the figure turned round for real, never its picture flipped, so the weapon stays in its hand and the light still falls from the upper left. In your words, 8 Oct: "I like the true left". You chose eight directions over four the same morning; a speed test on your phone comes before it goes in.
 
 ## Monsters
 
@@ -201,7 +201,7 @@ The look in numbers as the game has it in Version 18.8, checked against its code
 
 ## Still open
 
-Seven things are not decided yet; each answer becomes a rule here.
+Six things are not decided yet; each answer becomes a rule here.
 
 - [ ] Whether groups of floors take their worlds from old books, and which books ("maybe", "possibly").
 - [ ] Which places come first, and each one's palette: to be set place by place, with pictures.
@@ -209,4 +209,3 @@ Seven things are not decided yet; each answer becomes a rule here.
 - [ ] Gear beyond weapons: "further on down the road, if ever".
 - [ ] The two films of weight you have (a short freeze on a heavy blow; feet that grip the floor): your yes or no decides whether they become rules.
 - [ ] Decorations built the way the heroes are (a moth-eaten tapestry, a gargoyle head, a missing flagstone, soft shadows under props): waiting for your word.
-- [ ] Whether heroes turn through eight directions instead of four: the next question on true left.
