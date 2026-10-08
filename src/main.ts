@@ -10,6 +10,7 @@ import { makeSpellArt } from './art/spells';
 import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
 import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
+import { TRAPS } from './game/traps';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { makeTownProps } from './art/town';
@@ -1560,6 +1561,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     mix: MIX,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them, and the share of rooms that have a door. Playtests that change them put them back. */
     doors: DOORS,
+    /** THE TRAPS (game/traps.ts, TRAPS): ON in the game since the owner's yes (8 Oct 2026, 11:36); playtests that lay a dungeon without them set it for themselves and put it back. */
+    traps: TRAPS,
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /**

@@ -32,6 +32,7 @@
 
 import { RNG } from '../engine/rng';
 import { DOORS, layDoors } from './doors';
+import { TRAPS, TRAPS_FROM, layHazards, sealVault, unsealDoorless } from './traps';
 import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
@@ -1806,9 +1807,19 @@ export function generateFloor(depth: number, seed: number): Floor {
   if (RELIEF.on) layTerraces(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x7e44ace5) >>> 0));
   // (sunken floor, with dice of its own, after the terraces: a dungeon's terraces are the ones it had before there was any)
   if (RELIEF.on && RELIEF.sunken) laySunken(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x051d0e11) >>> 0));
+  // (THE TRAPS, traps.ts: from the second dungeon, by dice of their own. A treasure vault is sealed
+  // with a word before the doors are laid, so that a sealed door stands in its way in.)
+  const traps = TRAPS.on && DOORS.on && d >= TRAPS_FROM ? new RNG((mixSeed(d, seed) ^ 0x51ce7a95) >>> 0) : null;
+  if (traps) sealVault(floor, traps);
   // Step 6: DOORS AND GATES (doors.ts), if the map-maker lays them (`DOORS.on`: off). They take no
   // dice: a door stands in every doorway the level has, and the boss's gate in the boss hall's.
   if (DOORS.on) floor.doors = layDoors(floor);
+  // Step 7: THE TRAPS (traps.ts): one or two spike floors and one or two dart walls, after the doors.
+  if (traps) {
+    unsealDoorless(floor);
+    const hazards = layHazards(floor, traps);
+    if (hazards.length > 0) floor.hazards = hazards;
+  }
   return floor;
 }
 

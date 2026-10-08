@@ -39,6 +39,7 @@ import type { RNG } from '../src/engine/rng';
 import { DOORS, GATE_RISE, LEVER_NEAR, LOCK_CLEAR, doorMiddle, doorTiles, doorways } from '../src/game/doors';
 import type { DoorInst } from '../src/game/doors';
 import { MIX, generateFloor } from '../src/game/dungeon';
+import { TRAPS } from '../src/game/traps';
 import { Game } from '../src/game/game';
 import { MIX_HALL } from '../src/game/level';
 import { UNREACHABLE, flowField } from '../src/game/nav';
@@ -467,6 +468,10 @@ test('with the switch off a dungeon is Version 18.8\'s to the letter: the finger
     [9, 4242, 'c815fa35'],
     [12, 7, '78c5a287'],
   ];
+  // (and with the traps off: game/traps.ts lays its sealed vaults and its spike floors and dart walls from the second dungeon, since his yes of 8 Oct, 11:36)
+  const wasTraps = TRAPS.on;
+  TRAPS.on = false;
+  try {
   mixed(false, () => {
     for (const [depth, seed, print] of was) assert.equal(fingerprint(generateFloor(depth, seed)), print, `dungeon ${depth}, seed ${seed} is the dungeon 18.8 laid`);
   });
@@ -478,6 +483,9 @@ test('with the switch off a dungeon is Version 18.8\'s to the letter: the finger
       else assert.equal(fingerprint(generateFloor(depth, seed)), print, `with the mix on, the first dungeon of seed ${seed} is the dungeon it was`);
     }
   });
+  } finally {
+    TRAPS.on = wasTraps;
+  }
 });
 
 test('the switch is on in the game (Version 18.9): from the second dungeon a gate with its lever; and with it off no dungeon has a gate with a lever, a room that locks or two rooms next door', () => {

@@ -1,11 +1,12 @@
 // A crude automatic player, used only for testing: it lets the game be played end to end without
 // a person, in the headless tests and in browser screenshots. It is not part of the game.
 
-import { FIRST_WORD, SKILLS } from '../game/defs';
+import { FIRST_WORD, SKILLS, TUNE } from '../game/defs';
 import type { Game } from '../game/game';
 import { placedAim } from '../game/lock';
 import { UNREACHABLE, flowDir, flowField, lineOfSight } from '../game/nav';
 import type { Controls, Monster } from '../game/state';
+import { SPIKE, onHazard, slotMouth, spikeAt } from '../game/traps';
 import { WORD_IDS } from '../game/types';
 
 export interface BotState {
@@ -31,6 +32,8 @@ export function newBot(gearUp = true, dodge = true): BotState {
 
 export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
   think(g, c, st, dt);
+  // (THE TRAPS, as a person soon learns them: it does that whether or not it steps out of attacks)
+  minded(g, c);
   if (!st.dodge) return;
   // An attack is about to land where the hero stands: walk straight out of it.
   const h = g.hero;
@@ -222,3 +225,67 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
   }
   if (goal) walkTo(goal.x, goal.y);
 }
+
+/**
+ * (THE TRAPS, game/traps.ts) WHAT A PLAYER SOON LEARNS OF THEM. A SPIKE FLOOR: it is not stepped
+ * onto while its spikes are up, or will be before it is crossed (the bot waits at its edge); one
+ * stood on as its spikes are about to rise is got off. A DART WALL: once its plate has clicked,
+ * the hero steps across the darts' line, out of the way of where they are going. (A sealed vault
+ * needs nothing: what is shut in it cannot be come to, and is not gone for.)
+ */
+function minded(g: Game, c: Controls): void {
+  const L = g.level;
+  if (L.hazards.length === 0) return;
+  const h = g.hero;
+  const f = L.floor;
+  for (const z of L.hazards) {
+    const s = z.spot;
+    if (s.kind === 'darts') {
+      const flying = g.projectiles.some((p) => p.trap);
+      if ((z.left <= 0 && !flying) || Math.hypot(h.x - z.aimX, h.y - z.aimY) > 1.3) continue;
+      const o = slotMouth(s);
+      let dx = z.aimX - o.x;
+      let dy = z.aimY - o.y;
+      const n = Math.hypot(dx, dy) || 1;
+      dx /= n;
+      dy /= n;
+      // (across the line, to the side with the more floor beside the place they fly at: chosen from that place, which does not move, so it is not changed its mind about)
+      const room = (side: number): number => {
+        let n = 0;
+        for (const r of [0.8, 1.6]) {
+          const tx = Math.floor(z.aimX - dy * side * r);
+          const ty = Math.floor(z.aimY + dx * side * r);
+          if (tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && L.walk[ty * f.w + tx] === 1) n++;
+          else break;
+        }
+        return n;
+      };
+      const side = room(1) >= room(-1) ? 1 : -1;
+      if (room(side) === 0) continue;
+      c.mx = -dy * side;
+      c.my = dx * side;
+      return;
+    }
+    const { at, k } = spikeAt(s, g.time);
+    // (how long it takes to cross, and how long until its spikes rise)
+    const cross = (Math.max(s.w, s.h) + 1) / TUNE.heroSpeed + 0.15;
+    const toRise = at === 'down' ? (1 - k) * SPIKE.down + SPIKE.warn : 0;
+    if (at === 'down' && toRise >= cross) continue;
+    if (onHazard(s, h.x, h.y)) {
+      // (on it as they are about to rise: off, the way it was going, or else straight away from its middle)
+      if (c.mx === 0 && c.my === 0) {
+        const mx = h.x - (s.x + s.w / 2);
+        const my = h.y - (s.y + s.h / 2);
+        const m = Math.hypot(mx, my) || 1;
+        c.mx = mx / m;
+        c.my = my / m;
+      }
+      continue;
+    }
+    if (onHazard(s, h.x + c.mx * 0.75, h.y + c.my * 0.75)) {
+      c.mx = 0;
+      c.my = 0;
+    }
+  }
+}
+

@@ -126,12 +126,16 @@ export default async function (page, snap) {
     // and reads them off the canvas in the dungeon it has always laid. The mix's own gates have tools/scenarios/mix.mjs.)
     const wasMix = d.mix.on;
     d.mix.on = false;
+    // (and without the traps, game/traps.ts, in the game since the owner's yes of 8 Oct 2026: a sealed vault's door is asked of in tools/scenarios/traps_look.mjs)
+    const wasTraps = d.traps.on;
+    d.traps.on = false;
     d.run(cls, seed);
     const g = d.game();
     g.depth = depth; g.enterDungeon();
     d.doors.on = was;
     d.doors.share = wasShare;
     d.mix.on = wasMix;
+    d.traps.on = wasTraps;
     d.autoLevel = false; d.autoWords = false; d.god = true;
     g.wakeUp = () => {};
     g.monsters = g.monsters.filter((m) => m.boss);

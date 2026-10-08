@@ -16,7 +16,7 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 
 import { RNG } from '../src/engine/rng';
-import { doorPiers, doorWay } from '../src/game/doors';
+import { doorPiers, doorWay, isLeaf } from '../src/game/doors';
 import { MIX, generateFloor, tileAt } from '../src/game/dungeon';
 import { buildOpenGrid, buildWalkGrid, flowDir, flowField, lineOfSight, scatter } from '../src/game/nav';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from '../src/game/types';
@@ -419,7 +419,8 @@ test('no passage is narrower than 3 tiles and no wall between two floor areas is
     const way = new Set<number>();
     const stone = new Set<number>();
     for (const d of f.doors ?? []) {
-      if (d.kind !== 'door') continue;
+      // (THE TRAPS: a sealed vault's door is a door's size, between its two piers, as a door is)
+      if (!isLeaf(d.kind)) continue;
       doors++;
       for (const i of doorWay(f, d)) way.add(i);
       for (const i of doorPiers(f, d)) stone.add(i);
@@ -467,7 +468,7 @@ test('every room has a doorway, and doorways are exactly 3 tiles wide, or one wh
       const doors = doorways(f, r);
       assert.ok(doors.length >= 1, `${tag}: room ${r.id} has no doorway`);
       // (DOORS, Version 18.5: a room's way in has a door in it, one tile wide; the boss hall's has the gate, all three)
-      const own = (f.doors ?? []).filter(d => d.room === r.id && d.kind === 'door').length;
+      const own = (f.doors ?? []).filter(d => d.room === r.id && isLeaf(d.kind)).length;
       let narrow = 0;
       for (const width of doors) {
         if (width === ACROSS_DOOR) here++;

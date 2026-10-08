@@ -305,6 +305,12 @@ wait
 CLS=warrior run mix_pc    --scenario $S/mix.mjs &
 CLS=ranger  run mix_phone $P --scenario $S/mix.mjs &
 wait
+# THE TRAPS, in the hall laid for them: a spike floor's beat and what it does to monsters on it; a
+# dart wall's plate and its darts; a sealed door that says what it wants and opens to a Strike that
+# carries its word (and the vault behind it unseen until then).
+run traps_pc     --scenario $S/traps_look.mjs &
+run traps_phone  $P --scenario $S/traps_look.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

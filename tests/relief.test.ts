@@ -26,7 +26,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { botStep, newBot } from '../src/dev/bot';
 import type { RNG } from '../src/engine/rng';
-import { doorTiles } from '../src/game/doors';
+import { doorTiles, doorWay } from '../src/game/doors';
 import { MIX, RELIEF, generateFloor } from '../src/game/dungeon';
 import { Game } from '../src/game/game';
 import { STAIR_N, STAIR_W, canStep, levelAt } from '../src/game/height';
@@ -260,6 +260,8 @@ test('a played dungeon with terraces: every monster has a way on foot to where t
     // (THE MIX, game/dungeon.ts: a lever's gate that is down is a way on foot once its lever is pulled)
     const walk = L.walk.slice();
     for (const d of L.doors) if (d.spot.kind === 'gate') for (const i of doorTiles(f, d.spot)) walk[i] = 1;
+    // (THE TRAPS, game/traps.ts: and so is a sealed vault's door, once a blow that carries its word has opened it)
+    for (const d of L.doors) if (d.spot.kind === 'worddoor') for (const i of doorWay(f, d.spot)) walk[i] = 1;
     const dist = flowField(walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, L.step);
     for (const m of g.monsters) {
       const i = Math.floor(m.y) * f.w + Math.floor(m.x);
