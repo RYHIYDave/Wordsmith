@@ -19,13 +19,25 @@ import { pline, wx, wy } from './fx';
 /** The switch. Off: nothing here is drawn or called, and the game is as it was. */
 export const WORDS3 = { on: false };
 
-export type NewWord = 'pulling' | 'splitting' | 'heavy' | 'precise' | 'hexing' | 'stilling' | 'frenzied' | 'guarding';
-export const NEW_WORDS: readonly NewWord[] = ['pulling', 'splitting', 'heavy', 'precise', 'hexing', 'stilling', 'frenzied', 'guarding'];
+/**
+ * The eight he chose at 12:26, and MYSTICAL: his own word, 8 Oct 2026, 10:54: "I’d like to add a
+ * word MYSTICAL, which increases spell damage in the same vein as PHYSICAL for attack damage" (and
+ * 10:58: "Sorry keep power’s name the same.  I meant power"). The main chat writes its rules (a
+ * damage word for spells, as Power is for attacks, growing with Intelligence); its colour and rune
+ * are drawn here by the art chat, behind the same switch, pictures to him first.
+ */
+export type NewWord = 'pulling' | 'splitting' | 'heavy' | 'precise' | 'hexing' | 'stilling' | 'frenzied' | 'guarding' | 'mystical';
+export const NEW_WORDS: readonly NewWord[] = ['pulling', 'splitting', 'heavy', 'precise', 'hexing', 'stilling', 'frenzied', 'guarding', 'mystical'];
 
 /**
  * Each word's colours, darkest to brightest (the last is its white-hot). Index 3 is the word's
  * own colour (WORD_COLOR, WORD_HUE), index 4 its glow (WORD_GLOW). Chosen to be told apart from the
  * nine words' colours and from the friend's cyan and the enemy's pink and gold (the note says how).
+ * Mystical's is the pale blue of moonlight: of all the colours bright enough to read on the game's
+ * deep blue, the one furthest from every word's, from the friend's cyan and the enemy's pink and
+ * gold, from the purple the game draws arcane magic in (the spells it will most often ride on) and
+ * from the blue of a magic item's name (tests/words3.test.ts measures it). The open magentas were
+ * further still from the words, but are the enemy's hot pink to the eye.
  */
 export const NEW_RAMP: Record<NewWord, readonly string[]> = {
   pulling: ['#16123e', '#2a2672', '#4844ae', '#7a76e0', '#c4c2ff', '#f4f2ff'],
@@ -36,6 +48,7 @@ export const NEW_RAMP: Record<NewWord, readonly string[]> = {
   stilling: ['#0c3024', '#1a5e46', '#3ea27a', '#86eaae', '#d0fce4', '#ffffff'],
   frenzied: ['#380a06', '#7c1a0c', '#c03616', '#ff5c33', '#ff9670', '#fff0e8'],
   guarding: ['#0a2a1c', '#124e32', '#1e8048', '#30a868', '#8ae4ac', '#eafff2'],
+  mystical: ['#141a3e', '#283672', '#5262b4', '#acbcfe', '#e2e8ff', '#ffffff'],
 };
 export const NEW_COLOR = Object.fromEntries(NEW_WORDS.map((w) => [w, NEW_RAMP[w][3]])) as Record<NewWord, string>;
 export const NEW_GLOW = Object.fromEntries(NEW_WORDS.map((w) => [w, NEW_RAMP[w][4]])) as Record<NewWord, string>;
@@ -61,6 +74,8 @@ export const NEW_GLYPH: Record<NewWord, readonly string[]> = {
   frenzied: ['X..X..', 'X..X..', '.X..X.', '.X..X.', '..X..X', '..o..o'],
   // a shield
   guarding: ['XXXXXX', 'X.oo.X', 'X.oo.X', 'X....X', '.X..X.', '..XX..'],
+  // a crescent moon and a star
+  mystical: ['...XX..', '..XX.o.', '.XXX...', '.XXX...', '.XXX...', '..XXX..', '...XXX.'],
 };
 
 // =============================================================================================

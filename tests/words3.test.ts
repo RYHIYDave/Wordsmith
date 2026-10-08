@@ -10,6 +10,10 @@
 //     the frenzy of five and no more, the three copies and their shards, the sight that a critical
 //     shuts, time slowed and its echoes, the shield and the ward;
 //   - the rulebook's colours: no new word glows in the friend's cyan or the enemy's pink and gold;
+//   - every new word's colour told apart from every word's, as the eye sees colour (CIEDE2000), at
+//     least as well as today's two closest, Swift and Poison; and Mystical's (his word for spell
+//     damage, its colour and rune drawn after the eight) from arcane magic's purple and a magic
+//     item's blue;
 //   - the runes, cut as the nine are;
 //   - nothing piling up: the particles stay within the effects' own limit.
 // @ts-ignore - node typings are not part of this project
@@ -19,7 +23,9 @@ import assert from 'node:assert/strict';
 // @ts-ignore
 import { readFileSync } from 'node:fs';
 import { FRIEND_RIM } from '../src/art/hero3_knight';
+import { WORD_COLOR } from '../src/art/icons';
 import { ENEMY_RIM, FLAME, MENACE } from '../src/art/mkit';
+import { ELEMENT_RAMP, RARITY_COLOR } from '../src/art/palette';
 import type { Game } from '../src/game/game';
 import type { GameEvent, Monster } from '../src/game/state';
 import { Fx } from '../src/render/fx';
@@ -200,6 +206,73 @@ test("no new word glows in the friend's cyan or the enemy's pink and gold (the r
     assert.equal(NEW_RAMP[w].length, 6, `${w} has its six tones`);
     for (const c of NEW_RAMP[w]) assert.ok(!reserved.has(c.toLowerCase()), `${w}'s ${c} is a reserved glow`);
   }
+});
+
+type Lab = readonly [number, number, number];
+/** A colour as CIELAB (D65), from its sRGB. */
+function labOf(h: string): Lab {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = parseInt(h.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  const f = (t: number): number => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  const X = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047);
+  const Y = f(0.2126 * r + 0.7152 * g + 0.0722 * b);
+  const Z = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+  return [116 * Y - 16, 500 * (X - Y), 200 * (Y - Z)];
+}
+/** How far apart two colours look to the eye: CIEDE2000. */
+function apart([L1, a1, b1]: Lab, [L2, a2, b2]: Lab): number {
+  const rad = Math.PI / 180;
+  const Cb = (Math.hypot(a1, b1) + Math.hypot(a2, b2)) / 2;
+  const G = 0.5 * (1 - Math.sqrt(Cb ** 7 / (Cb ** 7 + 25 ** 7)));
+  const a1p = (1 + G) * a1;
+  const a2p = (1 + G) * a2;
+  const C1 = Math.hypot(a1p, b1);
+  const C2 = Math.hypot(a2p, b2);
+  const h1p = ((Math.atan2(b1, a1p) / rad) % 360 + 360) % 360;
+  const h2p = ((Math.atan2(b2, a2p) / rad) % 360 + 360) % 360;
+  let dh = h2p - h1p;
+  if (C1 * C2 === 0) dh = 0;
+  else if (dh > 180) dh -= 360;
+  else if (dh < -180) dh += 360;
+  const dH = 2 * Math.sqrt(C1 * C2) * Math.sin((dh / 2) * rad);
+  const Lm = (L1 + L2) / 2;
+  const Cm = (C1 + C2) / 2;
+  let hm = h1p + h2p;
+  if (C1 * C2 !== 0) hm = Math.abs(h1p - h2p) <= 180 ? hm / 2 : hm < 360 ? (hm + 360) / 2 : (hm - 360) / 2;
+  const T = 1 - 0.17 * Math.cos((hm - 30) * rad) + 0.24 * Math.cos(2 * hm * rad) + 0.32 * Math.cos((3 * hm + 6) * rad) - 0.2 * Math.cos((4 * hm - 63) * rad);
+  const turn = 30 * Math.exp(-(((hm - 275) / 25) ** 2));
+  const Rc = 2 * Math.sqrt(Cm ** 7 / (Cm ** 7 + 25 ** 7));
+  const Sl = 1 + (0.015 * (Lm - 50) ** 2) / Math.sqrt(20 + (Lm - 50) ** 2);
+  const Sc = 1 + 0.045 * Cm;
+  const Sh = 1 + 0.015 * Cm * T;
+  const Rt = -Math.sin(2 * turn * rad) * Rc;
+  const dL = (L2 - L1) / Sl;
+  const dC = (C2 - C1) / Sc;
+  const dHs = dH / Sh;
+  return Math.sqrt(dL * dL + dC * dC + dHs * dHs + Rt * dC * dHs);
+}
+const seen = (h1: string, h2: string): number => apart(labOf(h1), labOf(h2));
+
+test('every new word is told apart from every word, as far as Swift is from Poison at least, and from the glows that are not ours (CIEDE2000)', () => {
+  // (the measure, on pairs from the published test data for CIEDE2000: Sharma, Wu and Dalal, 2005)
+  const pairs: [Lab, Lab, number][] = [
+    [[50, 2.6772, -79.7751], [50, 0, -82.7485], 2.0425],
+    [[50, 0, 0], [50, -1, 2], 2.3669],
+    [[60.2574, -34.0099, 36.2677], [60.4626, -34.1751, 39.4387], 1.2644],
+  ];
+  for (const [p, q, d] of pairs) assert.ok(Math.abs(apart(p, q) - d) < 5e-5, `${apart(p, q)} for ${d}`);
+  const colour = (w: string): string => (NEW_RAMP as Record<string, readonly string[]>)[w]?.[3] ?? (WORD_COLOR as Record<string, string>)[w];
+  const all = [...Object.keys(WORD_COLOR), ...NEW_WORDS];
+  const least = seen(WORD_COLOR.swift, WORD_COLOR.poison);
+  const glows = [FRIEND_RIM, '#28dcf0', ENEMY_RIM, MENACE.color, ...FLAME];
+  for (const w of NEW_WORDS) {
+    for (const o of all) if (o !== w) assert.ok(seen(colour(w), colour(o)) >= least, `${w} is as near ${o} as ${seen(colour(w), colour(o)).toFixed(1)}, under Swift and Poison's ${least.toFixed(1)}`);
+    for (const c of glows) assert.ok(seen(colour(w), c) >= least, `${w} is as near the glow ${c} as ${seen(colour(w), c).toFixed(1)}`);
+  }
+  // (Mystical, the word of spells: apart from the purple arcane magic is drawn in, and from a magic item's blue)
+  for (const c of [...ELEMENT_RAMP.arcane.slice(1, 4), RARITY_COLOR[1]]) assert.ok(seen(colour('mystical'), c) >= least, `Mystical is as near ${c} as ${seen(colour('mystical'), c).toFixed(1)}`);
 });
 
 test('the runes are cut as the nine are: 6 by 6, or 7 by 7 with a middle, each with its glowing core', () => {

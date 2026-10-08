@@ -13,6 +13,10 @@ FRENZIED AND TO THE COLOURS AND RUNE STONES OF ALL EIGHT; AT 13:43 TO THE LOOKS 
 PRECISE, STILLING AND GUARDING.** It is now the main chat's to bring in when the words chat's rules
 are in.
 
+**MYSTICAL (branch `art/mystical`, from `art/new-words` at `31e27c3`):** its colour and rune, drawn
+after the eight at the main chat's ask (the board, 15:31). **HE SAID YES AT 17:59.** See "Mystical"
+below.
+
 ## His words
 
 - 11:26: "I’ve tasked the other agent to adding new words.  Can you communicate with the other
@@ -100,6 +104,31 @@ are in.
   Hexing's was made paler (`#a89cb4` to `#b8b4c8`) before he saw them, so that its rune shows on
   the grey stone.
 
+## Mystical
+
+- His words, as the main chat has them (the board, 13:01): 10:54, "I’d like to add a word
+  MYSTICAL, which increases spell damage in the same vein as PHYSICAL for attack damage"; 10:58,
+  "Sorry keep power’s name the same.  I meant power". The main chat's ask of the art chat (the
+  board, 15:31): "MYSTICAL needs its colour and rune (a damage word for spells, as Power is for
+  attacks; it grows with Intelligence; in front a bigger spell hit, behind spell hits that stack a
+  damage bonus, the way Power's do)".
+- **THE COLOUR** (`NEW_RAMP.mystical`, `#acbcfe`, moonlight blue; its glow `#e2e8ff`). The
+  colours bright enough to read on the game's deep blue were searched (sRGB, two steps a channel)
+  for the one furthest, as the eye sees colour (CIEDE2000), from all seventeen words, the friend's
+  cyan, the enemy's pink and gold, the purple the game draws arcane magic in (`ELEMENT_RAMP.arcane`:
+  the spells it will most often ride on) and the blue of a magic item's name (`RARITY_COLOR[1]`).
+  The nearest is Hexing, 14.3 apart; today's two closest words, Swift and Poison, are 10.5. The open
+  magentas were further from the words still, but to the eye they are the enemy's hot pink, which
+  the rulebook keeps for the enemy.
+- **THE RUNE** (`NEW_GLYPH.mystical`): a crescent moon and a star, 7 by 7, the star its glowing
+  core. Beside Power on `runes.png` (Power: red, for attacks; Mystical: moonlight blue, for spells).
+- His answer at 17:59 to "Do Mystical's colour and rune work (runes.png, bottom row)? Of every
+  colour bright enough to read, this blue is the easiest to tell from all seventeen words, and it
+  stays clear of the enemy's pink.": **"Yes (Recommended)"**.
+- Its looks at work (in front, the bigger spell hit; behind, the spell hits that stack) are next
+  from the art chat, pictures to him first. Until then the game can show it as it shows any word:
+  its colour where `WORD_HUE` is used.
+
 ## In the code
 
 - `src/render/words3.ts`: everything. `WORDS3 = { on: false }`. The colours and glyphs. The
@@ -137,7 +166,8 @@ three at once fall seconds behind.
 
 1. The colours and glyphs into the four tables keyed by `WordId` (`WORD_COLOR`, `WORD_GLOW`,
    `GLYPH` in `src/art/icons.ts`; `WORD_HUE` in `src/render/fx.ts`) from `NEW_RAMP[w][3]`,
-   `NEW_RAMP[w][4]` and `NEW_GLYPH`.
+   `NEW_RAMP[w][4]` and `NEW_GLYPH`. Mystical's the same way (`w = 'mystical'`): `#acbcfe`,
+   `#e2e8ff`, the crescent and star.
 2. Call the looks from the words' events (`Fx.handle`): a hit with Pulling, Heavy or Hexing in
    front, `pullHit` / `heavyHit` / `hexHit` (and `hexFlare` for any hit on a cursed monster); each
    use of an ability with Frenzied in front, `frenzyHit`, and a kill by one with it behind,
@@ -158,11 +188,14 @@ three at once fall seconds behind.
 
 ## Tested
 
-`tests/words3.test.ts` (18): the switch is off; every call from the renderer is behind it; the
+`tests/words3.test.ts` (19): the switch is off; every call from the renderer is behind it; the
 playtest's hands do nothing until used; Heavy's hold of a tenth of a second; the pull closing in;
 the stagger and the stun that end; the curse and the circle that drain and end; what is left goes
 when its time is up; the frenzy of five and no more; Splitting's three fanned copies and their
 shards; Precise's sight shut by the critical and spent; Stilling's tinge and echoes, and the bubble;
-Guarding's shield, its flare and the ward; no reserved glow colours; the runes cut as the nine; the
-particles within their limit; each look draws, and nothing draws with nothing going on.
+Guarding's shield, its flare and the ward; no reserved glow colours; every new word's colour (Mystical's
+too) as far from every word's and from the reserved glows as Swift's is from Poison's at least
+(CIEDE2000, the measure checked on its published test pairs), and Mystical's from arcane purple and
+a magic item's blue; the runes cut as the nine; the particles within their limit; each look draws,
+and nothing draws with nothing going on.
 `tsc --noEmit` clean; the whole unit suite (see the commit).
