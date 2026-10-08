@@ -14,7 +14,12 @@
 //      its opening and the stone of its lintel over it (read off the canvas); WITH REAL INPUT the
 //      hero walks out through it and back in: it is open before he reaches it, he is seen all the
 //      way, and open its opening is clear of bars;
-//   4. A BRUTE, who is more than a tile across, comes through a door after the hero;
+//   4. A BRUTE, who is more than a tile across, comes through a door after the hero; and NO
+//      MONSTER OPENS A DOOR (the owner, 7 Oct 2026, 20:16: "I don’t want monsters to open doors"):
+//      a skeleton awake behind a door that is still shut waits there, the door shut, until the
+//      hero has walked near with real input: then it opens, and the skeleton comes through; and
+//      while it is shut in, a blast set off against the door leaves it whole (what is shut in a
+//      room is out of the hero's reach: game.ts, `shutIn`), and with the door open hurts it;
 //   5. THE BOSS'S GATE: up, its doorway is clear and the mark in its arch is in embers; the hero
 //      goes well inside and it falls: bars across the doorway, the mark alight; with real input
 //      he walks at it and is held; the boss dies and it rises; he walks out under it;
@@ -293,6 +298,68 @@ export default async function (page, snap) {
     await snap('4_a_brute_comes_through');
     check(`4. a brute (${r} of a tile from its middle to its side: more than a tile across) comes through a door after the hero`, through !== null, through !== null ? `in ${through.toFixed(1)} seconds` : 'not in 12 seconds');
     await page.evaluate(() => { const g = window.__dbg.game(); g.monsters = g.monsters.filter((m) => m.boss); g.wakeUp = () => {}; });
+  }
+
+  // ---- 4b. a monster does not open a door: it waits behind one that is shut ---------------------------------
+  {
+    // (a door that is shut still, with a clear way to it: the two above have been walked through)
+    const site = await page.evaluate(([used]) => {
+      const g = window.__dbg.game(); const L = g.level; const f = L.floor;
+      const line = (s) => (s.out > 0 ? s.plane : s.plane - 1);
+      const mid = (s) => (s.alongX ? { x: s.a + 1.5, y: line(s) + 0.5 } : { x: line(s) + 0.5, y: s.a + 1.5 });
+      const inLine = (s, by) => (s.alongX ? { x: mid(s).x, y: s.plane - s.out * by } : { x: s.plane - s.out * by, y: mid(s).y });
+      const clearWay = (s) => { for (let by = -6; by <= 4.5; by += 0.5) { const p = inLine(s, by); if (L.walk[Math.floor(p.y) * f.w + Math.floor(p.x)] !== 1 || !g.free(L.walk, p.x, p.y, 0.45)) return false; } return true; };
+      const i = L.doors.findIndex((q, k) => q.spot.kind === 'door' && !used.includes(k) && q.open === 0 && q.want === 0 && clearWay(q.spot));
+      return i < 0 ? null : { i, spot: L.doors[i].spot, mid: mid(L.doors[i].spot) };
+    }, [[begun.back.i, begun.near.i]]);
+    check('4b. a third door, shut still, with a clear way to it', !!site, site ? `door ${site.i}` : 'none');
+    if (site) {
+      const s = site.spot;
+      const far = inLine(s, -5);
+      const inside = inLine(s, 1.5);
+      await place(far.x, far.y);
+      await page.evaluate(([x, y]) => {
+        const g = window.__dbg.game();
+        delete g.wakeUp;
+        const m = g.spawn('skeleton', x, y, 902, 0, false, g.rng);
+        g.wakeUp(m);
+        window.__waiter = m;
+      }, [inside.x, inside.y]);
+      const inBy = () => page.evaluate((sp) => { const m = window.__waiter; return ((sp.alongX ? m.y : m.x) - sp.plane) * -sp.out; }, s);
+      let nearest = 9;
+      const t0 = Date.now();
+      while (Date.now() - t0 < 4000) { nearest = Math.min(nearest, await inBy()); await page.waitForTimeout(100); }
+      let ds = await doorState(site.i);
+      await snap('4b_a_skeleton_waits_behind_a_shut_door');
+      check('    a skeleton awake behind it waits there for four seconds: the door stays shut', ds.open === 0 && ds.want === 0, `open ${ds.open}`);
+      check('    and it has not come through', nearest > 0.2 && nearest < 1.5, `the nearest it came is ${nearest.toFixed(2)} tiles inside the door's line`);
+      // (and SHUT IN, IT IS OUT OF THE HERO'S REACH: a blast set off against the face of the door, wide enough to take it in, leaves it whole)
+      const face = inLine(s, -1.2);
+      const blast = await page.evaluate(([cx, cy]) => {
+        const g = window.__dbg.game(); const m = window.__waiter;
+        const was = m.life;
+        const shutIn = g.shutIn(m);
+        g.blast(0, cx, cy, 3, 1, 'blast');
+        return { shutIn, was, now: m.life, dist: Math.hypot(m.x - cx, m.y - cy) };
+      }, [face.x, face.y]);
+      check('    shut in, it is out of the hero\'s reach: a blast against the door leaves it whole', blast.shutIn === true && blast.now === blast.was && blast.dist < 3, `${blast.dist.toFixed(2)} tiles from the middle of a blast three tiles wide, life ${blast.was} > ${blast.now}`);
+      // the hero walks near with real input: it opens for him, and the skeleton comes through
+      const near = inLine(s, -2.2);
+      await walkTo(near.x, near.y, site.i, (z) => z.inside >= -2.3, 6000);
+      let through = null;
+      const t1 = Date.now();
+      while (Date.now() - t1 < 8000 && through === null) {
+        if ((await inBy()) < -0.3) through = (Date.now() - t1) / 1000;
+        else await page.waitForTimeout(80);
+      }
+      ds = await doorState(site.i);
+      await snap('4b_the_hero_came_near_and_it_opened');
+      check('    the hero walks near with real input: the door opens for him', ds.open === 1, `open ${ds.open}`);
+      check('    and the skeleton comes through', through !== null, through !== null ? `in ${through.toFixed(1)} seconds` : 'not in 8 seconds');
+      const free = await page.evaluate(() => { const g = window.__dbg.game(); const m = window.__waiter; const was = m.life; const shutIn = g.shutIn(m); g.blast(0, m.x, m.y, 1, 1, 'blast'); return { shutIn, was, now: m.life }; });
+      check('    and with the door open it is in reach again: a blast hurts it', free.shutIn === false && free.now < free.was, `life ${free.was} > ${free.now}`);
+      await page.evaluate(() => { const g = window.__dbg.game(); g.monsters = g.monsters.filter((m) => m.boss); g.wakeUp = () => {}; });
+    }
   }
 
   // ---- 5. the boss's gate -------------------------------------------------------------------------------

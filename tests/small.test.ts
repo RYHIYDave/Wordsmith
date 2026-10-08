@@ -2,7 +2,8 @@
 // ranged enemies to not run away from you, and I need the pick up range increased slightly."
 //
 // And at 19:35: "Also the larger guardian mobs are just big damage sponges and could use at least
-// a 30% reduction in HP".
+// a 30% reduction in HP". And at 21:10, asked whether elite brutes should be cut too: "yes, every
+// interation of that mob type".
 //
 // What is held here:
 //   - A RANGED MONSTER HOLDS ITS GROUND. Awake, with the hero right beside it, a Bone Archer and a
@@ -12,8 +13,8 @@
 //   - THINGS ARE PICKED UP FROM A LITTLE FURTHER. Gold, an orb and a word come to a hero within
 //     `TUNE.dropPull` (3.2 tiles; 2.6 until 18.5) and are taken when they reach him; a piece of
 //     gear, which lies where it fell, is taken from `TUNE.gearTake` (1.1 tiles; 0.75 until 18.5).
-//   - A GUARDIAN HAS 30% LESS LIFE: three and a half times a brute's at its depth, where it was
-//     five times.
+//   - EVERY KIND OF BRUTE HAS 30% LESS LIFE (Version 18.7; 18.6 had cut the guardian alone): a
+//     brute 49 where it was 70, an elite brute four times that, a guardian five times.
 //   run: tsx --test tests/small.test.ts
 
 // @ts-ignore
@@ -173,20 +174,28 @@ test('a piece of gear lies where it fell, and is taken from a full tile away: ju
   assert.ok(h.bag.includes(it) || Object.values(h.gear).includes(it), 'and is the hero\'s again');
 });
 
-test('a guardian has 30% less life than it had: three and a half times a brute\'s at its depth, for five times', () => {
-  assert.equal(TUNE.guardianLife, 3.5);
-  assert.ok(Math.abs(TUNE.guardianLife / 5 - 0.7) < 1e-9, 'which is 30% less than five times');
+test('every kind of brute has 30% less life than it had: a brute 49 for 70, an elite four times that, a guardian five times', () => {
+  // (The owner, 7 Oct 2026, 19:35, of guardians: "could use at least a 30% reduction in HP"; 21:10, of elite brutes:
+  // "yes, every interation of that mob type". Version 18.6 had cut the guardian alone, by its own number.)
+  assert.equal(MONSTERS.brute.life, 49);
+  assert.ok(Math.abs(MONSTERS.brute.life / 70 - 0.7) < 1e-9, 'which is 30% less than 70');
+  assert.equal(TUNE.guardianLife, 5);
+  assert.equal(TUNE.eliteLife, 4);
   const g = room();
   const h = g.hero;
-  const brute = inner(g).spawn('brute', h.x + 4, h.y, 900, 0, false, inner(g).rng);
-  const guardian = inner(g).spawn('brute', h.x - 4, h.y, 901, 2, false, inner(g).rng);
-  assert.ok(guardian.champion && !brute.champion && !brute.elite);
-  const plain = MONSTERS.brute.life * scaleLife(g.depth);
-  // (a monster's life is a whole number)
-  assert.ok(Math.abs(brute.maxLife - plain * (brute.words.includes('power') ? 1.3 : 1)) <= 0.5, `a brute here has ${brute.maxLife} of life`);
-  // (a guardian carries words, and "power" on a monster is 30% more life)
-  const want = plain * TUNE.guardianLife * (guardian.words.includes('power') ? 1.3 : 1);
-  assert.ok(Math.abs(guardian.maxLife - want) <= 0.5, `a guardian here has ${guardian.maxLife} of life: ${want} is three and a half times a brute's`);
-  assert.ok(guardian.maxLife < plain * 5 * (guardian.words.includes('power') ? 1.3 : 1) * 0.71, 'and that is 30% less than five times');
-  assert.equal(guardian.life, guardian.maxLife);
+  const spawn = (rank: number, dx: number): Monster => inner(g).spawn('brute', h.x + dx, h.y, 900 + rank, rank, false, inner(g).rng);
+  const brute = spawn(0, 4);
+  const elite = spawn(1, -4);
+  const guardian = spawn(2, 6);
+  assert.ok(guardian.champion && elite.elite && !brute.champion && !brute.elite);
+  // (a monster's life is a whole number; an elite and a guardian carry words, and "power" on a monster is 30% more life)
+  const was = 70 * scaleLife(g.depth);
+  const of = (m: Monster, times: number): number => MONSTERS.brute.life * scaleLife(g.depth) * times * (m.words.includes('power') ? 1.3 : 1);
+  for (const [m, times, name] of [[brute, 1, 'a brute'], [elite, TUNE.eliteLife, 'an elite brute'], [guardian, TUNE.guardianLife, 'a guardian']] as const) {
+    assert.ok(Math.abs(m.maxLife - of(m, times)) <= 0.5, `${name} here has ${m.maxLife} of life`);
+    const before = was * times * (m.words.includes('power') ? 1.3 : 1);
+    assert.ok(Math.abs(m.maxLife / before - 0.7) < 0.01, `which is 30% less than the ${before.toFixed(1)} it had`);
+    assert.equal(m.life, m.maxLife);
+  }
+  assert.ok(guardian.maxLife / (guardian.words.includes('power') ? 1.3 : 1) > elite.maxLife / (elite.words.includes('power') ? 1.3 : 1), 'and a guardian has more life than an elite brute again');
 });

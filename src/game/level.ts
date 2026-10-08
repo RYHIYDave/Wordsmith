@@ -2,7 +2,7 @@
 
 import { RNG } from '../engine/rng';
 import { TUNE } from './defs';
-import { makeDoors, pierGrid } from './doors';
+import { makeDoors, pierGrid, shutGrid } from './doors';
 import { generateFloor } from './dungeon';
 import { STAIR_N, STAIR_W, stepGrid } from './height';
 import { buildOpenGrid, buildWalkGrid } from './nav';
@@ -52,7 +52,11 @@ function finish(f: Floor, town: boolean, portal: PropInst | null): Level {
     stations: [],
     doors: makeDoors(f),
     pier: pierGrid(f),
+    shut: shutGrid(f),
   };
+  // (DOORS: a shut door stops sight and shots as it holds monsters: its tile is shut in the grid they go by
+  // until the door begins to open. It stays open to walking: the hero is never held by one. game.ts, `updateDoors`)
+  if (level.shut) for (let i = 0; i < n; i++) if (level.shut[i] === 1) level.open[i] = 0;
   if (portal) level.props.push(portal);
   if (town) {
     level.explored.fill(1);

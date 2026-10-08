@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (7 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 18.6).**
+**Status (7 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 18.7).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -127,7 +127,8 @@ corridor behind it is never hidden. (The low wall along the near side of an 18.3
 with the rest.) The look the game had is kept in the code.
 Version 18.5: doors, and the boss's gate. Every room after the first has a door on its way in:
 one tile wide, in a frame of stone, with one leaf of iron bars that swings open as you come near
-and stays open. It stops nothing: monsters open doors too, and the biggest of them fit through.
+and stays open. Open, it stops nothing, and the biggest monsters fit through. (Until 18.7
+monsters opened doors too.)
 The boss's hall has a gate instead, the whole doorway wide under a round arch of stone: it drops
 behind you once you are well inside and rises when the boss is dead, and the mark carved in the
 middle of its arch is alight while it is down. A room's other doorways, which lead on, are open
@@ -137,6 +138,10 @@ ground: they no longer back away when you come at them, they stand and shoot. Th
 up from a little further: gold, orbs and words fly to you from 3.2 tiles (it was 2.6), and a
 piece of gear is taken from a full tile away (it was three quarters of one). A guardian, the big
 brute at the end of a side path, has 30% less life.
+Version 18.7: monsters do not open doors. A door opens for you alone. Shut, it holds monsters
+back, and stops arrows, spells and sight both ways; nothing behind a shut door can be hurt, and
+nothing in a room wakes or fights until you open its door. So a room's fight begins when you
+choose. And every kind of brute (plain, elite, guardian) has 30% less life than it had.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which

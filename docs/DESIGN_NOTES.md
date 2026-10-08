@@ -4067,6 +4067,161 @@ gold, orbs and words fly to you from 3.2 tiles (was 2.6). Gear is picked up from
 - NOT CHECKED: a real phone. And nobody has yet said how the fights FEEL with archers that stand:
   that is his to find.
 
+### Version 18.7: monsters do not open doors (a shut door is shut), and every kind of brute has 30% less life
+
+**What he said.** 7 Oct 2026, 20:16, twenty-three minutes after Version 18.5 went out with doors
+that opened "for whoever comes near" and the words "Three things that are mine. Say if you want
+any changed: / - Monsters open doors too. [...]": **"I don’t want monsters to open doors"**. He
+was told at 20:17: "Got it. Monsters won't open doors. / So a shut door will hold them back: they
+wait behind it until you come near and it opens. Arrows and spells still pass through the bars."
+And at 20:23, corrected: "One change to what I just said about doors. / A shut door will also
+stop arrows, spells and sight, both ways. Otherwise you could stand back and shoot a whole room
+dead through the bars while they wait behind the door. / So nothing in a room wakes or fights
+until you open its door. Say if you'd rather be able to shoot through the bars." (As it went out he had not answered that.)
+His word is that monsters do not open doors; what follows from it (that a shut door holds them,
+stops shots and sight, and puts what is behind it out of reach) is mine, and was told to him
+before it went out.
+
+And at 21:10, told with Version 18.6 that "an elite brute now has a bit more life than a
+guardian. Want elites cut too?": **"yes, every interation of that mob type"**. Read as: every
+kind of BRUTE (a guardian is one). He was told at 21:11: "Got it. Every kind of brute gets 30%
+less life: plain, elite and guardian. (Guardians already have it as of 18.6, so they stay where
+they are now.) / It goes in with the doors change, around 10:30." THESE ARE HIS DIRECT REQUESTS
+ABOUT THE RULES, not looks: no picture went to him first. (A door looks as it did; what stands
+behind a shut one is not seen until it opens.)
+
+It went out later than "around 10:30", and he was told why at 21:34: "Version 18.7 will be about
+20 minutes later than I said: close to 11. / Testing found a gap. An area attack (the rain of
+arrows, the orb) aimed at a shut door still hit monsters standing just behind it. They woke,
+crowded the door, and could be killed safely. / I've closed it: nothing behind a shut door can be
+hurt until the door opens."
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "HIS ANSWER TO ONE OF THE THREE
+THINGS" to "VERSION 18.7 IS LIVE").
+
+- **A DOOR OPENS FOR THE HERO, AND FOR NOBODY ELSE** (`updateDoors` in `src/game/game.ts`:
+  `stepDoors` is given the hero alone). Until 18.6 it opened for any monster that was awake within
+  2.6 tiles of it too. It still opens when the hero is within 2.6 tiles of the middle of its
+  opening, in a third of a second, and still never shuts again.
+- **A SHUT DOOR HOLDS MONSTERS** (`Level.shut`, a grid with 1 on the tile of every door that is
+  still shut: `shutGrid` in `src/game/doors.ts`; `free` and `slide` in `game.ts` take one more
+  word, `held`). A monster's own step, and the steps by which monsters are kept apart and out of
+  the hero, are `held`: a held body may not lie over a shut door's tile, whether it walks or
+  flies. So a monster that is awake behind a shut door comes up to it and STANDS there (it does
+  not walk on the spot). THE HERO IS NEVER HELD: the level's `walk` grid is as it was, a door is
+  open before he reaches it, and the playtests' own player finds its way as before. A monster set
+  down already over a shut door's tile is not held in it: it walks out (`overShut`).
+- **IT STOPS SIGHT AND SHOTS, BOTH WAYS, UNTIL IT BEGINS TO OPEN** (`finish` in
+  `src/game/level.ts` shuts a shut door's tile in the level's `open` grid, by which sight, shots
+  and whatever flies go; `updateDoors` opens it as the door begins to open, and has the hero look
+  round at once). WHY, though it is bars: with monsters held behind a door and shots passing it,
+  a hero with a bow or a staff stood three tiles from every door and shot the room dead through
+  it. The first room, a room come into at a corner, and whatever stands in a hallway have no door
+  before them and are as they were.
+- **AND WHAT IS SHUT IN A ROOM IS OUT OF THE HERO'S REACH ALTOGETHER** (`shutIn` in `game.ts`: a
+  monster inside a room whose door is still shut, with the hero outside that room). FOUND BY
+  READING THE CODE WHILE THE FIRST PRE-FLIGHT RAN: a blast goes by its radius and asks no wall's
+  leave, and an attack that is set down at a distance (the ranger's Volley, the mage's Orb) is set
+  down at the furthest place toward the aim that the hero can see, which is against the face of
+  the door; its 2.2 tiles reach a tile and more into the room. Whatever stood there was struck,
+  woke its pack, the pack came to the door, was held, and could be killed where it stood at no
+  risk: the very thing a shut door is shut to prevent. MEASURED in 240 dungeons: at 485 of 3,444
+  doors (14 in a hundred) a monster stands within such a blast's reach of the door as the run
+  begins. SO: no blow, no blast, no arc of lightning and nothing that burns on the ground touches
+  a monster that is shut in (`hitMonster` and `damageMonster`, through which every harm goes,
+  leave it; the four places that count what a blast hits do not count it, so no blow is heard to
+  land); it does not wake; and it is no fight (`inFight`, which the first dungeon's prompts ask).
+  A monster wakes when it is seen within nine tiles or struck, and behind a shut door neither can
+  happen now: NOTHING IN A ROOM WAKES, FIGHTS OR IS HURT UNTIL ITS DOOR IS OPENED, and a room is
+  not seen (nor on the map) until then.
+  THE RULE RESTS ON THIS: A ROOM HAS ONE WAY IN, and its door stands in it, so what is in a room
+  whose door is shut cannot come at the hero, and he cannot have come in. **SHOULD A ROOM EVER
+  HAVE A SECOND WAY IN (the mix: a hole in a wall, rooms side by side), `shutIn` ASKS THE WRONG
+  THING**, for a monster that can come at him must be one he can hurt. A unit test holds the two
+  together in real dungeons and will say so by name. (A hero set down inside a room whose door is
+  shut, as a playtest does and nothing in the game does, fights what is in it as ever.)
+- **THE FIRST DUNGEON'S LESSON KNOWS OF SHUT DOORS** (`rise` in `game.ts`). FOUND BY THE FIRST
+  PRE-FLIGHT (`guide_ambush_phone`: "2 of the risen dead were still up after two minutes"): the
+  six dead that rise for a new player's first word are set down by spreading over ground that can
+  be walked, from a spot the hero sees, and a shut door can be walked (by the hero): two rose
+  beyond one, were held there, and the lesson, which ends when they are dead, waited on them out
+  of sight. They rise now on ground that has a shut door's tile shut: none in a shut door, none
+  beyond one.
+- **THE BOSS'S GATE** is as it was.
+- **EVERY KIND OF BRUTE HAS 30% LESS LIFE** (`MONSTERS` and `TUNE` in `src/game/defs.ts`). The
+  brute's own life is 49 where it was 70, and `TUNE.guardianLife` is 5 again (18.6 alone had it
+  at 3.5, with the brute at 70). So before the dungeon's depth is counted in, a plain brute has
+  49 where it had 70; an ELITE brute, at four times (`eliteLife`), 196 where it had 280; a
+  GUARDIAN, at five times, 245: the life 18.6 gave it (70 times 3.5), and more than an elite's
+  again. Nothing else of the brute is changed (its size, its damage, its blow), nor any other
+  monster.
+
+**How it was tested.**
+
+- `tsc` clean; the unit suite in the working tree, 613 of 613 (21:34 to 21:37), and again in the
+  frozen copy after the regression (22:38 to 22:41). SEVEN ARE NEW AND THREE RESTATED, all in
+  `tests/doors.test.ts` (17 tests) but the last. New: (1) a skeleton, a brute and a bat, awake
+  behind a shut door, do not pass it in six seconds with the hero five tiles out, and are through
+  it once he has come within its range and it has begun to open; (2) a monster set down over a
+  shut door's tile walks out of it; (3) a shut door's tile is shut to sight and shots and open to
+  walking, the hero in the corridor and a place two tiles inside do not see each other, a
+  skeleton asleep there sleeps on and the room is not seen, and as the door begins to open all of
+  that is undone and the skeleton wakes; (4) what is shut in is not touched by a blast set off
+  against its door (which hurts and wakes a monster in the corridor beside it), nor by a blow, an
+  arc or a fire, sleeps on, and awake is no fight; once the door has begun to open the same blast
+  hurts it; and a hero set down inside a room whose door is shut fights what is in it; (5) BY
+  THEIR OWN BUTTONS a ranger's Volley and a mage's Orb, pointed three times at a skeleton just
+  behind a shut door, do not hurt it nor wake the room, and in the game as it was before the rule
+  they did both; (6) in six real dungeons with all their monsters, nothing that is shut in can
+  come to the hero but through a shut door, as the run begins and with door after door opened,
+  every monster in a room whose door is shut is shut in, and every door stands where its room's
+  floor ends; (7) the six risen dead rise on the hero's side of a shut door in nine places and
+  all reach him within eight seconds, and as the game was some rose in the door or beyond it.
+  Restated: "a monster opens none, asleep or awake" (it was: an awake one opens it); the brute
+  that fits through a door comes through one the hero has opened; and in `tests/small.test.ts`
+  the guardian's test holds all three kinds of brute (49 for 70, an elite four times that, a
+  guardian five). THE FIRST RUN OF THE DOOR TESTS, with the first part alone, WAS 11 OF 13, and
+  both that failed were the tests' own (the brute had no need to come through to strike a hero a
+  tile and a half inside; a monster that waits at the door is through it while the leaf still
+  swings).
+- **Before the regression, two pre-flights** (the scratchpad's `pre187.sh`, two at a time, on a
+  dev page built from the tree). The first, of the first part alone (21:19 to 21:29): 23 of 24
+  playtests clean, and the one flagged, `guide_ambush_phone`, was the fault of the risen dead
+  told of above. The second, of all of it (21:37 to 21:42): 11 of 12 clean, and the one flagged,
+  `guide_pc_ranger`, was the playtest's own: its script, going on to the next pack, asks for a
+  place to stand 5 to 7 tiles from it in sight of it, and a pack in a small room whose door is
+  shut has none, since sight stops at the door. `nearPack` in `tools/scenarios/guide.mjs` now
+  looks nearer when there is no such place. That dungeon again three times as the script was
+  and once mended, and a mage's lesson on a phone: clean.
+- **The regression** on a copy frozen at 21:52 (the scratchpad's `v187a/arpg_frozen`,
+  21:52 to 22:36, two at a time, nothing else running): **139 OF 140 PLAYTESTS FINISHED
+  CLEAN.** The one flagged, `guide_ambush_phone`, was the playtest's own: with `AMBUSH=1`
+  its script sets three bats on the hero at any place 6 to 8 tiles off that can be stood on; the
+  hero is set down in that room by the script, so the room's own door is shut behind him, and a
+  bat set down beyond it is held there, awake, while the playtest waits for the quiet moment (a
+  ranger, seed 104877239: "183 attacks"). In the game nothing sets an awake monster down beyond a
+  shut door. Mended in the tree while the regression ran (the bats are set down in sight of the
+  hero; in a small room, nearer), brought into the frozen copy when it had finished (the one file
+  by which the copy and the tree then differed), and run again alone on the same frozen page:
+  that dungeon and one more, clean. `doors` in its four layouts has a new part (4b): on the page itself, in a
+  real dungeon, a skeleton awake a tile and a half inside a third door waits there four seconds
+  with the door shut; a blast three tiles wide set off against the door leaves it whole; WITH
+  REAL INPUT the hero walks to within the door's range, it opens, the skeleton is through it
+  within eight seconds, and a blast on it then hurts it. Speed: 59.8 frames a second, longest frame 33.3 ms; the slowest fights of the four
+  word-pair runs 59.3 to 59.8 frames a second.
+- THE RELEASE BUILD, made in the copy at 22:41: `Play.html` 851,602 bytes and
+  `dist/artifact.html` 851,280, both saying V18.7; kept in the scratchpad's
+  `v187a/release/`.
+- **The published page itself** (the fragment wrapped as the site serves it; `wrap187.sh` in the
+  scratchpad, 22:41 to 22:58, two at a time): **58 of 58 playtests clean**: the 56 of 18.6,
+  and the first dungeon's lesson with the dead that rise, on a phone, for a ranger and a
+  mage. Published at 22:58 ("Version 41", version id `1791428328-1c39`); the
+  file published is the frozen copy's `dist/artifact.html`, compared byte for byte with the kept
+  copy before and after.
+- NOT CHECKED: a real phone. And how the dungeon PLAYS with rooms that wait behind their doors
+  is his to find: it is a bigger change to every fight than its few lines look. (Nothing comes
+  out of a room to meet him any more; he chooses when each room's fight begins.)
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4177,7 +4332,8 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               doors (18.5: DOORS AND THE BOSS'S GATE: `DOORS.on`; `layDoors`, the map-maker's
               last step: a door in each room's way in, the gate in the boss hall's, and the
               tile on either side of a door made wall; where a door's line, face, way and
-              piers are; `stepDoors`: a door opens for whoever comes near)
+              piers are; `stepDoors`: a door opens for the hero when he comes near, and
+              since 18.7 for nobody else; `shutGrid`: where a door is still shut)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -4240,7 +4396,9 @@ tests/        dungeon, items, town (every service's rules), sim (bots play whole
               doors (18.5: the switch, and with it off a dungeon is 18.4's; laying doors takes
               no dice; one way in to a room; the boss hall's gate; a door opens before the hero
               reaches it; a brute through a door; the hero eased into a door; the walls beside
-              one; the gate falls, holds and rises),
+              one; the gate falls, holds and rises; and 18.7: no monster opens a door, a
+              shut one holds monsters and stops sight and shots, what is shut in a room is out
+              of the hero's reach and cannot come at him, the risen dead rise on his side),
               gates (18.5: the pictures: frame, leaf, gate and arch, the mark, the portcullis),
               small (18.6: a ranged monster holds its ground; the pick-up range; a brute's life)
 tools/        build, preview, playtest + scenarios/, regress.sh (every browser playtest),
@@ -4285,8 +4443,17 @@ Contracts worth knowing:
   the level itself (its PIERS; `Level.pier` marks them), so walking, sight, shots, way-finding
   and the map need nothing more. `free` holds a body off a pier by no more than `PIER_HOLD` (0.4
   of a tile), so a brute fits; `intoDoor` eases a hero who walks at a pier into the door. A door
-  (`DoorInst`: `open` 0 to 1, `want`) opens for any body awake within `DOOR_NEAR` and stays open;
-  it stops nothing. The gate is up until the hero is `GATE_INSIDE` tiles inside the hall with
+  (`DoorInst`: `open` 0 to 1, `want`) opens for THE HERO within `DOOR_NEAR` and stays open. NO
+  MONSTER OPENS ONE (since Version 18.7; the owner: "I don’t want monsters to open doors"), and A
+  SHUT DOOR IS SHUT: `Level.shut` has 1 on its tile until it begins to open; a monster's steps
+  are `held` (`free`, `slide`) and may not lie over that tile, walking or flying; the tile is
+  shut in `Level.open`, so sight and shots stop at it both ways; and a monster inside a room
+  whose door is shut, with the hero outside the room, is out of his reach altogether (`shutIn`:
+  no blow, blast, arc or fire touches it, it does not wake, it is no fight). The hero is never
+  held: `Level.walk` has the door open. THIS RESTS ON A ROOM HAVING ONE WAY IN: give a room a
+  second and `shutIn` must ask something else (tests/doors.test.ts says so by name). Whatever is
+  set down among doors while a run goes on (the risen dead of the first dungeon's lesson) is set
+  down on ground with the shut doors' tiles shut. Open, a door stops nothing. The gate is up until the hero is `GATE_INSIDE` tiles inside the hall with
   the boss alive; fallen, its three tiles are shut in `Level.walk` and `Level.open` until the
   boss is dead. EVERYTHING OF A DOOR OR GATE IS DRAWN IN THE PLANE OF ITS WALL'S FACE THAT IS
   TURNED TO THE EYE (`doorFace` = `doorLine` + 1), by `standDoors` in render.ts; what is flat in
@@ -4378,6 +4545,9 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 18.7: monsters do not open doors; what is shut in a room is out of reach; a brute's life
+tsx --test tests/doors.test.ts                                                    # 17 tests; seven are of 18.7 (a shut door holds, stops sight and shots; shut in is out of reach, by the real buttons too; the risen dead)
+tsx <scratchpad>/v187/try/where.ts                                                # (history: 240 dungeons, 3,444 doors: at 485 of them a monster stands within a blast's reach of the door as the run begins)
 # Version 18.6: three small things
 CLS=warrior node tools/playtest.mjs --scenario tools/scenarios/small.mjs --out shots/small/pc     # the regression's playtest of them (four layouts), in the practice room: an archer and a cultist stand and shoot, the hero walks up to an archer, gear and gold are picked up from where they should be
 # Version 18.5: doors and the boss's gate

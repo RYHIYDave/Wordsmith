@@ -308,7 +308,10 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   archer: { kind: 'archer', name: 'Bone Archer', life: 16, dmgMin: 4, dmgMax: 7, speed: 2.8, radius: 0.32, range: 8, windup: 0.55, cooldown: 2.0, xp: 7, ranged: true, projSpeed: 10, keepMax: 7, element: 'phys', aoe: 0, minDepth: 1, weight: 2 },
   cultist: { kind: 'cultist', name: 'Cultist', life: 18, dmgMin: 6, dmgMax: 10, speed: 2.6, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 2, weight: 2 },
   bat: { kind: 'bat', name: 'Cave Bat', life: 9, dmgMin: 3, dmgMax: 5, speed: 4.8, radius: 0.26, range: 0.95, windup: 0.22, cooldown: 1.0, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 3 },
-  brute: { kind: 'brute', name: 'Brute', life: 70, dmgMin: 14, dmgMax: 20, speed: 2.2, radius: 0.55, range: 1.7, windup: 0.85, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.7, minDepth: 3, weight: 1 },
+  // (THE BRUTE: 49 of life since Version 18.7; 70 until then. The owner, 7 Oct 2026, of guardians, which are brutes, 19:35:
+  // "just big damage sponges and could use at least a 30% reduction in HP"; and of elite brutes, 21:10: "yes, every
+  // interation of that mob type". So every kind of brute, plain, elite and guardian, has 30% less life than it had.)
+  brute: { kind: 'brute', name: 'Brute', life: 49, dmgMin: 14, dmgMax: 20, speed: 2.2, radius: 0.55, range: 1.7, windup: 0.85, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.7, minDepth: 3, weight: 1 },
   warden: { kind: 'warden', name: 'Warden', life: 420, dmgMin: 18, dmgMax: 26, speed: 2.5, radius: 0.8, range: 2.6, windup: 0.95, cooldown: 2.4, xp: 150, ranged: false, projSpeed: 8, keepMax: 0, element: 'phys', aoe: 2.4, minDepth: 99, weight: 0 },
 };
 
@@ -578,13 +581,15 @@ export const TUNE = {
   eliteLife: 4,
   eliteDmg: 1.4,
   /**
-   * Guardians (the powerful monster at the end of a side branch): tougher, and bigger. THREE AND A
-   * HALF TIMES THE LIFE of a monster of their kind since Version 18.6; five times until then. The
-   * owner, 7 Oct 2026, 19:35: "the larger guardian mobs are just big damage sponges and could use
-   * at least a 30% reduction in HP". (A guardian is a brute. An ELITE brute, at four times, now
-   * has more life than a guardian has: he asked about guardians, and elites are as they were.)
+   * Guardians (the powerful monster at the end of a side branch): tougher again than an elite, and
+   * bigger. Five times the life of a monster of their kind. (A guardian is a brute, and EVERY KIND
+   * OF BRUTE HAS 30% LESS LIFE SINCE VERSION 18.7: 49 where it was 70, see `MONSTERS`. The owner, 7
+   * Oct 2026, 19:35: "the larger guardian mobs are just big damage sponges and could use at least
+   * a 30% reduction in HP"; and at 21:10, asked whether elite brutes, which Version 18.6 had left
+   * with more life than a guardian, should be cut too: "yes, every interation of that mob type".
+   * Version 18.6 alone had this number at 3.5, with the brute at 70: for a guardian the same life.)
    */
-  guardianLife: 3.5,
+  guardianLife: 5,
   guardianDmg: 1.25,
   guardianSize: 1.25,
   /**

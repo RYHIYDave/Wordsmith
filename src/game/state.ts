@@ -623,6 +623,8 @@ export interface Level {
   doors: DoorInst[];
   /** (and where the stone on either side of a door stands, 1 in the grid: null on a level with no doors. For the rule that it holds a big body off no further than a small one: game.ts, `free`.) */
   pier: Uint8Array | null;
+  /** (and where a door is still shut, 1 in the grid; null on a level with no door. A shut door holds monsters, and its tile is shut in `open`: game/doors.ts, `shutGrid`.) */
+  shut: Uint8Array | null;
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */

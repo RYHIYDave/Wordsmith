@@ -29,8 +29,14 @@
 // the level, and that is where something stands:
 //   A DOOR: ONE TILE WIDE, the middle one of the three; THE TILE ON EITHER SIDE OF IT IS WALL (its
 //   two PIERS: the map-maker makes them so). Round the opening a frame of stone, and in it one
-//   leaf of iron bars. It stops nothing and nobody: it swings open for whoever comes near (the
-//   hero, or a monster that is awake), and stays open.
+//   leaf of iron bars. IT SWINGS OPEN FOR THE HERO when he comes near, and stays open. NO MONSTER
+//   OPENS A DOOR (the owner, 7 Oct 2026, 20:16, of doors that opened for monsters too, as Version
+//   18.5 had them: "I don’t want monsters to open doors"). SO A SHUT DOOR IS SHUT: it holds
+//   monsters, walking or flying, and it stops sight and shots both ways, as a wall does, though
+//   it is bars: were it not so, a hero with a bow could shoot a whole room dead through it while
+//   the room waited behind it. Nothing in a room wakes or fights until its door is opened: and
+//   WHAT IS SHUT IN A ROOM IS OUT OF THE HERO'S REACH ALTOGETHER (game.ts, `shutIn`), for a blast
+//   goes by its radius and asks no wall's leave.
 //   THE BOSS'S GATE, in the boss hall's: the whole doorway wide, a portcullis under an arch. It is
 //   up until the hero is well inside the hall with the boss alive; then it falls, and nothing
 //   passes it, nor a shot, until the boss is dead (game.ts).
@@ -42,7 +48,7 @@ import type { DoorSpot, Floor, Room, Vec } from './types';
 /** Whether the map-maker lays doors (and the boss's gate). ON since Version 18.5: see the head of this file. (Off, a dungeon is Version 18.4's to the letter: the tests hold that.) */
 export const DOORS = { on: true };
 
-/** A body this near the middle of a door's opening, in tiles, opens it. */
+/** The hero this near the middle of a door's opening, in tiles, opens it. (No monster does: see the head of this file.) */
 export const DOOR_NEAR = 2.6;
 /** Seconds a door takes to swing open. */
 export const DOOR_SWING = 0.32;
@@ -219,9 +225,28 @@ export function pierGrid(f: Floor): Uint8Array | null {
 }
 
 /**
+ * WHERE A DOOR IS SHUT: 1 on the tile of every door that is shut (null: the level has no door).
+ * The game clears a door's tile as the door begins to open. A shut door holds monsters (game.ts,
+ * `free` and `slide`: the hero is never held, a door is open before he reaches it), and its tile
+ * is shut in the level's `open` grid, by which sight and shots go (game/level.ts, `finish`).
+ */
+export function shutGrid(f: Floor): Uint8Array | null {
+  let out: Uint8Array | null = null;
+  for (const d of f.doors ?? []) {
+    if (d.kind !== 'door') continue;
+    for (const i of doorWay(f, d)) {
+      if (!out) out = new Uint8Array(f.w * f.h);
+      out[i] = 1;
+    }
+  }
+  return out;
+}
+
+/**
  * A step of time for the doors of a level. A shut door that has a body near the middle of its
  * opening begins to open; every door and gate moves on toward what it is on its way to. `bodies`:
- * the hero and the monsters that are awake. Returns the doors that began to open in this step.
+ * whoever doors open for: in the game THE HERO ALONE, since Version 18.7 (the owner: "I don’t want
+ * monsters to open doors"). Returns the doors that began to open in this step.
  */
 export function stepDoors(doors: DoorInst[], bodies: ReadonlyArray<Vec>, dt: number): DoorInst[] {
   const began: DoorInst[] = [];

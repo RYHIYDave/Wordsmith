@@ -10,7 +10,7 @@ import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeShapeRoom, makeStepHall, makeTown } from './level';
 import type { Hall } from './level';
 import { alongCut, bodyInWall, inWall } from './cut';
-import { DOOR_HELP, GATE_INSIDE, PIER_HOLD, doorMiddle, doorTiles, insideBy, stepDoors } from './doors';
+import { DOOR_HELP, GATE_INSIDE, PIER_HOLD, doorMiddle, doorTiles, doorWay, insideBy, stepDoors } from './doors';
 import type { DoorInst } from './doors';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -386,10 +386,10 @@ export class Game {
   // interface says it (ui/guide.ts, ui/hud.ts, ui/inventory.ts). Nothing waits on the player: the
   // dungeon is a real one, and a prompt is only ever a line on the screen.
 
-  /** Is there a fight on: something awake within reach of the hero? */
+  /** Is there a fight on: something awake within reach of the hero? (What is shut in a room behind its door is not within reach, awake or not: `shutIn`.) */
   inFight(): boolean {
     const h = this.hero;
-    for (const m of this.monsters) if (!m.dead && m.state !== 'sleep' && Math.hypot(m.x - h.x, m.y - h.y) < GUIDE.near) return true;
+    for (const m of this.monsters) if (!m.dead && m.state !== 'sleep' && Math.hypot(m.x - h.x, m.y - h.y) < GUIDE.near && !this.shutIn(m)) return true;
     return false;
   }
 
@@ -488,7 +488,18 @@ export class Game {
     }
     const life = Math.max(2, Math.round(this.bareHit() * GUIDE.risenHits));
     const def = MONSTERS.skeleton;
-    for (const spot of scatter(this.level.walk, f.w, f.h, cx, cy, GUIDE.risen, this.rng)) {
+    // (DOORS: THEY RISE WHERE THEY CAN COME AT THE HERO, not beyond a door that is still shut. The
+    // spots are found by spreading over the ground that can be walked, and a shut door can be
+    // walked by the hero: so two of the six rose behind one, were held there since no monster
+    // opens a door, and the lesson waited on them out of sight. A shut door's tile is no ground
+    // for this.)
+    let ground = this.level.walk;
+    const shut = this.level.shut;
+    if (shut && shut.includes(1)) {
+      ground = ground.slice();
+      for (let i = 0; i < ground.length; i++) if (shut[i] === 1) ground[i] = 0;
+    }
+    for (const spot of scatter(ground, f.w, f.h, cx, cy, GUIDE.risen, this.rng)) {
       const m = this.spawn('skeleton', spot.x, spot.y, RISEN_PACK, 0, false, this.rng);
       m.speed = GUIDE.risenSpeed;
       m.maxLife = life;
@@ -1030,10 +1041,18 @@ export class Game {
     const L = this.level;
     if (L.doors.length === 0) return;
     const h = this.hero;
-    // (a door opens for whoever comes near: the hero, or a monster that is awake)
-    const bodies: { x: number; y: number }[] = [h];
-    for (const m of this.monsters) if (!m.dead && m.state !== 'sleep') bodies.push(m);
-    for (const d of stepDoors(L.doors, bodies, dt)) {
+    // (A DOOR OPENS FOR THE HERO when he comes near, and for nobody else. Until Version 18.6 it opened
+    // for a monster that was awake too; the owner, 7 Oct 2026, 20:16: "I don’t want monsters to open
+    // doors". As it begins to open it holds monsters no longer, and sight and shots pass it.)
+    for (const d of stepDoors(L.doors, [h], dt)) {
+      if (L.shut) {
+        for (const i of doorWay(L.floor, d.spot)) {
+          L.shut[i] = 0;
+          L.open[i] = 1;
+        }
+        // (and what lies beyond it is seen at once, not at the next look round)
+        this.visionT = 0;
+      }
       const at = doorMiddle(d.spot);
       this.emit({ t: 'door', x: at.x, y: at.y, kind: 'open' });
       this.sfx('door', 0.5);
@@ -1045,6 +1064,33 @@ export class Game {
       if (d.want === 1 && alive && this.wellInside(d, h.x, h.y)) this.dropGate(d);
       else if (d.want === 0 && !alive) this.raiseGate(d);
     }
+  }
+
+  /**
+   * IS THIS MONSTER SHUT IN: inside a room whose door is still shut, with the hero outside that
+   * room? THEN NOTHING OF THE HERO'S REACHES IT: no blow, no blast, no arc of lightning, nothing
+   * that burns on the ground. (Since Version 18.7. A shut door stops a shot and sight because its
+   * tile is shut in the level's `open` grid: but a blast goes by its radius and asks no wall's
+   * leave, and one set off against the door, a rain of arrows or an orb's wave, reached what
+   * stood just behind it. Struck, the pack woke, came to the door, was held there, and could be
+   * killed where it stood: the very thing a shut door is shut to prevent.) So nothing in a room
+   * is hurt or woken until its door is opened.
+   *   A room has ONE WAY IN, and its door stands in it: what is in a room whose door is shut
+   *   cannot come at the hero, and he cannot have come in. SHOULD A ROOM EVER HAVE A SECOND WAY
+   *   IN, THIS ASKS THE WRONG THING (a monster that can come at him must be one he can hurt):
+   *   tests/doors.test.ts holds the two together, and will say so.
+   */
+  private shutIn(m: { x: number; y: number }): boolean {
+    const L = this.level;
+    if (!L.shut) return false;
+    const h = this.hero;
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'door' || d.want !== 0) continue;
+      const r = L.floor.rooms.find((q) => q.id === d.spot.room);
+      if (!r || m.x < r.x || m.y < r.y || m.x >= r.x + r.w || m.y >= r.y + r.h) continue;
+      if (h.x < r.x || h.y < r.y || h.x >= r.x + r.w || h.y >= r.y + r.h) return true;
+    }
+    return false;
   }
 
   /** Is this place in the room a gate is the doorway of, and far enough past the gate's line that it may fall behind whoever stands there? */
@@ -1132,8 +1178,10 @@ export class Game {
    * is on. So a ledge is as solid to it as a wall, and a flight of stairs is entered at its ends.
    * Whatever flies goes by the open grid, and is not asked.
    */
-  private free(grid: Uint8Array, x: number, y: number, r: number, flat = false): boolean {
+  private free(grid: Uint8Array, x: number, y: number, r: number, flat = false, held = false): boolean {
     const f = this.level.floor;
+    // (DOORS: `held` is a monster's step. A shut door holds a monster, walking or flying; nobody else. game/doors.ts)
+    const shut = held ? this.level.shut : null;
     const x0 = Math.floor(x - r);
     const x1 = Math.floor(x + r);
     const y0 = Math.floor(y - r);
@@ -1150,6 +1198,7 @@ export class Game {
       for (let tx = x0; tx <= x1; tx++) {
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) return false;
         const i = ty * f.w + tx;
+        if (shut && shut[i] === 1) return false;
         if (pier && pier[i] === 1 && (tx < Math.floor(x - PIER_HOLD) || tx > Math.floor(x + PIER_HOLD) || ty < Math.floor(y - PIER_HOLD) || ty > Math.floor(y + PIER_HOLD))) continue;
         // (a tile cut corner to corner: its floor half may be stood on, though the walk grid has
         // it shut; its wall half holds a body off by the body's own half width: game/cut.ts)
@@ -1242,7 +1291,7 @@ export class Game {
    * The step (dx, dy), which a wall has refused: if a tile cut corner to corner is what the body
    * would have run into, the part of the step that runs along its cut is taken instead.
    */
-  private slideAlongCut(b: { x: number; y: number }, r: number, dx: number, dy: number, grid: Uint8Array): void {
+  private slideAlongCut(b: { x: number; y: number }, r: number, dx: number, dy: number, grid: Uint8Array, held = false): void {
     const f = this.level.floor;
     const cut = f.cut;
     if (!cut) return;
@@ -1266,25 +1315,45 @@ export class Game {
     if (Math.abs(along) < 1e-9) return;
     const sx = a.x * along;
     const sy = a.y * along;
-    if (this.free(grid, b.x + sx, b.y + sy, r)) {
+    if (this.free(grid, b.x + sx, b.y + sy, r, false, held)) {
       b.x += sx;
       b.y += sy;
     }
   }
 
-  /** Move a body, sliding along walls. */
-  private slide(b: { x: number; y: number }, r: number, dx: number, dy: number, grid: Uint8Array): void {
-    const okX = dx !== 0 && this.free(grid, b.x + dx, b.y, r);
+  /** DOORS: does a body lie over the tile of a door that is shut? */
+  private overShut(shut: Uint8Array, x: number, y: number, r: number): boolean {
+    const f = this.level.floor;
+    for (let ty = Math.floor(y - r); ty <= Math.floor(y + r); ty++) {
+      for (let tx = Math.floor(x - r); tx <= Math.floor(x + r); tx++) {
+        if (tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && shut[ty * f.w + tx] === 1) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Move a body, sliding along walls. `held`: the body is a monster, which a shut door holds (the
+   * hero, and whatever else is moved, is not held by one: a door opens before he reaches it). A
+   * monster that already lies over a shut door's tile, set down there by the dice, is not held:
+   * it walks out of it, either way.
+   */
+  private slide(b: { x: number; y: number }, r: number, dx: number, dy: number, grid: Uint8Array, held = false): void {
+    if (held) {
+      const shut = this.level.shut;
+      held = shut !== null && !this.overShut(shut, b.x, b.y, r);
+    }
+    const okX = dx !== 0 && this.free(grid, b.x + dx, b.y, r, false, held);
     if (okX) b.x += dx;
-    const okY = dy !== 0 && this.free(grid, b.x, b.y + dy, r);
+    const okY = dy !== 0 && this.free(grid, b.x, b.y + dy, r, false, held);
     if (okY) b.y += dy;
     if ((okX || dx === 0) && (okY || dy === 0)) return;
     // A WALL THAT SLANTS (a tile cut corner to corner) IS SLID ALONG: the step it refused is taken
     // along the cut instead, at the pace the step had along it (a wall that runs along the grid
     // needs none of this: the other half of the step slides along it by itself).
     if (this.level.floor.cut) {
-      if (dx !== 0 && !okX) this.slideAlongCut(b, r, dx, 0, grid);
-      if (dy !== 0 && !okY) this.slideAlongCut(b, r, 0, dy, grid);
+      if (dx !== 0 && !okX) this.slideAlongCut(b, r, dx, 0, grid, held);
+      if (dy !== 0 && !okY) this.slideAlongCut(b, r, 0, dy, grid, held);
     }
     // A BODY ASTRIDE A LEDGE IS NOT HELD THERE. Nothing in the game puts one there (a body walks
     // onto ground of one height, a swipe lands on it, a monster is put down on the middle of a
@@ -1292,8 +1361,8 @@ export class Game {
     // step at all, every step from there being astride still. It walks as if the floor were all
     // of one height until it is on ground of one height again.
     if (!this.level.step || grid === this.level.open || this.free(grid, b.x, b.y, r) || !this.free(grid, b.x, b.y, r, true)) return;
-    if (dx !== 0 && !okX && this.free(grid, b.x + dx, b.y, r, true)) b.x += dx;
-    if (dy !== 0 && !okY && this.free(grid, b.x, b.y + dy, r, true)) b.y += dy;
+    if (dx !== 0 && !okX && this.free(grid, b.x + dx, b.y, r, true, held)) b.x += dx;
+    if (dy !== 0 && !okY && this.free(grid, b.x, b.y + dy, r, true, held)) b.y += dy;
   }
 
   /**
@@ -2410,7 +2479,7 @@ export class Game {
       this.emit({ t: 'burst', x: tx, y: ty, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words, n, echo });
       for (const o of this.monsters) {
         if (o.dead || o === best) continue;
-        if (Math.hypot(o.x - tx, o.y - ty) <= rad + o.r) this.hitMonster(o, i, frac * r.splashDmg, true);
+        if (Math.hypot(o.x - tx, o.y - ty) <= rad + o.r && !this.shutIn(o)) this.hitMonster(o, i, frac * r.splashDmg, true);
       }
     }
     this.wake(i, tx, ty, 1.0, frac);
@@ -2426,7 +2495,8 @@ export class Game {
     let hits = 0;
     for (const m of this.monsters) {
       if (m.dead) continue;
-      if (Math.hypot(m.x - cx, m.y - cy) <= rad + m.r) {
+      // (what is shut in a room is out of a blast's reach, and is not counted as hit: `shutIn`)
+      if (Math.hypot(m.x - cx, m.y - cy) <= rad + m.r && !this.shutIn(m)) {
         this.hitMonster(m, i, frac, hits >= 3);
         hits++;
       }
@@ -2625,7 +2695,8 @@ export class Game {
 
   /** One hit of ability `i` on a monster, with everything a word in front adds to it. */
   private hitMonster(m: Monster, i: number, frac: number, quiet: boolean): void {
-    if (m.dead) return;
+    // (what is shut in a room is out of reach: `shutIn`)
+    if (m.dead || this.shutIn(m)) return;
     const h = this.hero;
     const d = h.d;
     const r = h.skills[i].r;
@@ -2699,7 +2770,8 @@ export class Game {
 
   /** `poison`: the harm is poison working (its number is drawn in poison's colour, and it does not flash the monster). */
   private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false): void {
-    if (m.dead) return;
+    // (what is shut in a room is out of reach, of an arc of lightning and of what burns on the ground too: `shutIn`)
+    if (m.dead || this.shutIn(m)) return;
     m.life -= dmg;
     if (!poison) m.flash = heavy ? 0.2 : 0.12;
     m.barT = 4;
@@ -3080,10 +3152,13 @@ export class Game {
       }
       if (moving && (mvx !== 0 || mvy !== 0)) {
         const sp = m.speed * slow * dt;
-        this.slide(m, Math.min(m.r, 0.42), mvx * sp, mvy * sp, m.kind === 'bat' ? L.open : L.walk);
+        const atX = m.x;
+        const atY = m.y;
+        this.slide(m, Math.min(m.r, 0.42), mvx * sp, mvy * sp, m.kind === 'bat' ? L.open : L.walk, true);
         m.fx = mvx;
         m.fy = mvy;
-        m.anim = 'walk';
+        // (DOORS: a monster that a shut door holds stands at it; it does not walk on the spot)
+        m.anim = m.x === atX && m.y === atY && L.shut !== null && this.overShut(L.shut, m.x + mvx * 0.5, m.y + mvy * 0.5, Math.min(m.r, 0.42)) ? 'idle' : 'walk';
       } else {
         m.anim = 'idle';
         if (dist > 0.01) {
@@ -3108,8 +3183,8 @@ export class Game {
         const nx = d > 1e-4 ? dx / d : 1;
         const ny = d > 1e-4 ? dy / d : 0;
         const push = (min - d) * 0.5;
-        this.slide(a, Math.min(a.r, 0.42), -nx * push, -ny * push, ga);
-        this.slide(b, Math.min(b.r, 0.42), nx * push, ny * push, b.kind === 'bat' ? L.open : L.walk);
+        this.slide(a, Math.min(a.r, 0.42), -nx * push, -ny * push, ga, true);
+        this.slide(b, Math.min(b.r, 0.42), nx * push, ny * push, b.kind === 'bat' ? L.open : L.walk, true);
       }
       // (not while the hero leaps or rolls over them, nor while a whirlwind carries the hero through)
       if (a.kind !== 'bat' && !h.move && !this.whirling()) {
@@ -3117,7 +3192,7 @@ export class Game {
         const dy = a.y - h.y;
         const min = a.r * 0.8 + TUNE.heroRadius;
         const d = Math.hypot(dx, dy);
-        if (d < min && d > 1e-4) this.slide(a, Math.min(a.r, 0.42), (dx / d) * (min - d), (dy / d) * (min - d), ga);
+        if (d < min && d > 1e-4) this.slide(a, Math.min(a.r, 0.42), (dx / d) * (min - d), (dy / d) * (min - d), ga, true);
       }
     }
   }
@@ -3308,7 +3383,7 @@ export class Game {
         // (one of a volley: what another shot of it has already hurt is left alone, and what this
         // one's blast hurts, the others will leave alone)
         if (p.volley && p.hit.includes(o.id)) continue;
-        if (Math.hypot(o.x - x, o.y - y) > rad + o.r) continue;
+        if (Math.hypot(o.x - x, o.y - y) > rad + o.r || this.shutIn(o)) continue;
         if (p.volley) p.hit.push(o.id);
         this.hitMonster(o, p.skill, p.dmg * r.splashDmg, true);
       }
@@ -3427,7 +3502,7 @@ export class Game {
           const ay = at.y;
           let hits = 0;
           for (const m of this.monsters) {
-            if (m.dead || Math.hypot(m.x - ax, m.y - ay) > reach + m.r) continue;
+            if (m.dead || Math.hypot(m.x - ax, m.y - ay) > reach + m.r || this.shutIn(m)) continue;
             this.hitMonster(m, v.skill, v.frac, hits >= 3);
             hits++;
           }

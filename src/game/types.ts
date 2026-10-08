@@ -257,8 +257,9 @@ export interface PackSpot {
  * three tiles of floor in a wall's row through which a corridor comes into a room. (game/doors.ts
  * finds the doorways and has the rules; in the game since Version 18.5.)
  *   'door'      one tile wide, the middle of the three, the tile on either side of it wall: one
- *               leaf of iron bars in a frame of stone. It stops nothing: it swings open for
- *               whoever comes near, and stays open.
+ *               leaf of iron bars in a frame of stone. It swings open for the hero when he
+ *               comes near, and stays open; shut, it holds monsters and stops sight and
+ *               shots (Version 18.7: no monster opens a door).
  *   'bossgate'  the portcullis of the boss's hall, the whole doorway wide under its arch: up
  *               until the hero is well inside, then down, and nothing passes it (nor a shot)
  *               until the boss is dead.

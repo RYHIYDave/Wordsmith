@@ -27,8 +27,15 @@
 //     further than a small one, and a brute comes through;
 //   - a hero who walks at the stone beside a door is eased into the door, from anywhere across
 //     the hallway, by the stick or by the keys; and at no other wall;
-//   - a door opens for whoever comes near (the hero, a monster that is awake), in a third of a
-//     second, and stays open; it stops nobody;
+//   - a door opens for the hero when he comes near, in a third of a second, and stays open; NO
+//     MONSTER OPENS ONE, asleep or awake (the owner, 7 Oct 2026, 20:16: "I don’t want monsters to
+//     open doors"), and a shut door holds a monster that walks and one that flies, and stops
+//     sight and shots both ways, so that nothing behind it wakes; open, it stops nothing;
+//   - WHAT IS SHUT IN A ROOM IS OUT OF THE HERO'S REACH: a blast set off against the door, a rain
+//     of arrows or an orb aimed past it, an arc, a fire on the ground do not touch what stands
+//     behind it, and it is no fight; and whatever is shut in cannot come at the hero (should a
+//     room ever have a second way in, the test of that says so);
+//   - the dead that rise for a new player's first word rise on the hero's side of a shut door;
 //   - of the walls beside a door, the one a back wall runs on into stands, and the others are
 //     left out as the walls' own rule has it;
 //   - the boss's gate is up until the hero is well inside the hall, then down, and nothing passes
@@ -43,7 +50,7 @@ import nodeAssert from 'node:assert/strict';
 import { WALLS_FADING } from '../src/art/ground';
 import type { RNG } from '../src/engine/rng';
 import { MONSTERS, TUNE } from '../src/game/defs';
-import { DOORS, DOOR_NEAR, DOOR_SWING, GATE_FALL, GATE_INSIDE, GATE_RISE, PIER_HOLD, doorFace, doorLine, doorMiddle, doorPiers, doorTiles, doorWay, doorways, insideBy, makeDoors, pierGrid, stepDoors } from '../src/game/doors';
+import { DOORS, DOOR_NEAR, DOOR_SWING, GATE_FALL, GATE_INSIDE, GATE_RISE, PIER_HOLD, doorFace, doorLine, doorMiddle, doorPiers, doorTiles, doorWay, doorways, insideBy, makeDoors, pierGrid, shutGrid, stepDoors } from '../src/game/doors';
 import type { DoorInst } from '../src/game/doors';
 import { generateFloor } from '../src/game/dungeon';
 import { Game } from '../src/game/game';
@@ -81,13 +88,17 @@ type Inner = {
   wakeUp: (m: Monster) => void;
   free: (grid: Uint8Array, x: number, y: number, r: number) => boolean;
   damageMonster: (m: Monster, dmg: number, el: Element, crit: boolean, skill: number) => void;
+  hitMonster: (m: Monster, i: number, frac: number, quiet: boolean) => void;
+  blast: (i: number, cx: number, cy: number, rad: number, frac: number, style: 'blast') => void;
+  shutIn: (m: { x: number; y: number }) => boolean;
+  rise: () => void;
 };
 const inner = (g: Game): Inner => g as unknown as Inner;
 
 /** A run in dungeon number `depth`, laid with doors; nothing in it but the boss, who sleeps; a hero nothing can hurt. */
-function dungeon(seed: number, depth: number): Game {
+function dungeon(seed: number, depth: number, cls: 'warrior' | 'ranger' | 'mage' = 'warrior'): Game {
   return doorsSet(true, () => {
-    const g = new Game('warrior', seed);
+    const g = new Game(cls, seed);
     g.depth = depth;
     g.enterDungeon();
     g.monsters = g.monsters.filter((m) => m.boss);
@@ -428,7 +439,7 @@ function doorToWalkAt(g: Game, but: readonly DoorInst[] = []): DoorInst {
   throw new Error('no door with a straight way to it');
 }
 
-test('in a dungeon a door is open before the hero reaches it, and he walks through; a sleeping monster opens none, and one that wakes does', () => {
+test('in a dungeon a door is open before the hero reaches it, and he walks through; a monster opens none, asleep or awake', () => {
   const g = dungeon(6, 2);
   const L = g.level;
   const h = g.hero;
@@ -460,7 +471,7 @@ test('in a dungeon a door is open before the hero reaches it, and he walks throu
   assert.ok(events.some((e) => e.t === 'sfx' && e.name === 'door'), 'and was heard');
   // every door he did not come near is still shut
   assert.ok(L.doors.filter((q) => q.spot.kind === 'door' && q.open === 0).length >= L.doors.length - 3);
-  // A MONSTER: asleep by a shut door it opens nothing; awake, the door opens for it
+  // A MONSTER OPENS NO DOOR: asleep by a shut door, and awake by it
   const far = L.doors.find((q) => q.spot.kind === 'door' && q.open === 0 && Math.hypot(doorMiddle(q.spot).x - h.x, doorMiddle(q.spot).y - h.y) > 30);
   assert.ok(far);
   if (!far) return;
@@ -470,8 +481,309 @@ test('in a dungeon a door is open before the hero reaches it, and he walks throu
   steps(g, 60);
   assert.deepEqual([far.open, far.want], [0, 0], 'a sleeping monster a tile from a door leaves it shut');
   inner(g).wakeUp(sk);
-  steps(g, 3);
-  assert.equal(far.want, 1, 'awake, it opens the door it stands by');
+  assert.equal(sk.state, 'chase');
+  steps(g, 180);
+  assert.deepEqual([far.open, far.want], [0, 0], 'and so does one that is awake, in three seconds beside it: no monster opens a door');
+});
+
+test('a shut door holds monsters: one that walks, a big one and one that flies wait behind it, and come through once the hero has come near and it has opened', () => {
+  for (const kind of ['skeleton', 'brute', 'bat'] as const) {
+    const g = dungeon(6, 2);
+    const L = g.level;
+    const f = L.floor;
+    const h = g.hero;
+    const d = doorToWalkAt(g);
+    const way = doorWay(f, d.spot);
+    assert.ok(L.shut !== null && way.every((i) => (L.shut as Uint8Array)[i] === 1), 'the tile of a shut door is marked as holding monsters');
+    assert.deepEqual(Array.from(shutGrid(f) as Uint8Array).reduce((n, v) => n + v, 0), L.doors.filter((q) => q.spot.kind === 'door').length, 'one tile to a door, none for the gate');
+    // the hero out in the corridor, five tiles short of the room, in line with the door; the monster awake a tile and a half inside
+    Object.assign(h, inLine(d.spot, -5));
+    const at = inLine(d.spot, 1.5);
+    const m = inner(g).spawn(kind, at.x, at.y, 900, 0, false, inner(g).rng);
+    inner(g).wakeUp(m);
+    let nearest = Infinity;
+    for (let k = 0; k < 60 * 6; k++) {
+      g.update(DT, emptyControls());
+      nearest = Math.min(nearest, insideBy(d.spot, m.x, m.y));
+    }
+    assert.deepEqual([d.open, d.want], [0, 0], `six seconds on the door is shut still: a ${kind} does not open it`);
+    assert.ok(nearest > 0.2, `and has not passed it, nor stood in it (the nearest it came is ${nearest.toFixed(2)} tiles inside its line)`);
+    assert.ok(nearest < 1.3, `it came up to the door, and waits there (${nearest.toFixed(2)})`);
+    assert.ok(way.every((i) => (L.shut as Uint8Array)[i] === 1));
+    // the hero comes near: it opens for him, holds nothing, and the monster comes through
+    Object.assign(h, inLine(d.spot, -3));
+    assert.ok(Math.hypot(h.x - doorMiddle(d.spot).x, h.y - doorMiddle(d.spot).y) < DOOR_NEAR);
+    let through = -1;
+    for (let k = 0; k < 60 * 8 && through < 0; k++) {
+      g.update(DT, emptyControls());
+      if (insideBy(d.spot, m.x, m.y) < -0.3) through = k * DT;
+    }
+    assert.equal(d.want, 1, 'the hero came within its reach, and it began to open');
+    assert.ok(way.every((i) => (L.shut as Uint8Array)[i] === 0), 'and from then its tile holds nobody');
+    assert.ok(through >= 0, `and the ${kind} came through to him (after eight seconds it is ${insideBy(d.spot, m.x, m.y).toFixed(2)} tiles inside the door's line)`);
+    steps(g, 30);
+    assert.equal(d.open, 1, 'and it stands open');
+  }
+});
+
+test('a monster the dice set down in a shut door is not held in it: it walks out', () => {
+  const g = dungeon(6, 2);
+  const L = g.level;
+  const h = g.hero;
+  const d = doorToWalkAt(g);
+  // the hero five tiles out in the corridor; a skeleton awake in the middle of the door's own tile
+  Object.assign(h, inLine(d.spot, -5));
+  const mid = doorMiddle(d.spot);
+  const m = inner(g).spawn('skeleton', mid.x, mid.y, 900, 0, false, inner(g).rng);
+  inner(g).wakeUp(m);
+  let out = false;
+  for (let k = 0; k < 60 * 4 && !out; k++) {
+    g.update(DT, emptyControls());
+    out = insideBy(d.spot, m.x, m.y) < -1.05;
+  }
+  assert.ok(out, `it walked out of the doorway toward him (it is ${insideBy(d.spot, m.x, m.y).toFixed(2)} tiles inside the door's line)`);
+  assert.deepEqual([d.open, d.want], [0, 0], 'and the door is shut still');
+  assert.ok(L.shut !== null);
+});
+
+test('a shut door stops sight and shots both ways, and nothing behind it wakes; as it opens it stops neither, and what is behind it wakes', () => {
+  const g = dungeon(6, 2);
+  const L = g.level;
+  const f = L.floor;
+  const h = g.hero;
+  const d = doorToWalkAt(g);
+  const way = doorWay(f, d.spot);
+  assert.ok(way.every((i) => L.open[i] === 0 && L.walk[i] === 1), 'shut: its tile is shut to sight and shots, and open to walking');
+  // every other door of the level too, and the gate's doorway not (it is up)
+  for (const q of L.doors) for (const i of doorWay(f, q.spot)) assert.equal(L.open[i], q.spot.kind === 'door' ? 0 : 1);
+  Object.assign(h, inLine(d.spot, -5));
+  const at = inLine(d.spot, 2);
+  assert.ok(!g.sees(h.x, h.y, at.x, at.y) && !g.sees(at.x, at.y, h.x, h.y), 'the hero five tiles out in the corridor and a place two tiles inside the room do not see each other');
+  // a skeleton asleep two tiles inside, the hero standing in line with it for three seconds: it sleeps on
+  const sk = inner(g).spawn('skeleton', at.x, at.y, 900, 0, false, inner(g).rng);
+  steps(g, 180);
+  assert.equal(sk.state, 'sleep', 'a monster asleep behind a shut door does not wake for a hero out in the corridor');
+  assert.equal(L.visible[Math.floor(at.y) * f.w + Math.floor(at.x)], 0, 'nor is the room behind it seen');
+  // the hero comes within its reach: it begins to open, they see each other, and the skeleton wakes
+  Object.assign(h, inLine(d.spot, -3));
+  steps(g, 2);
+  assert.equal(d.want, 1);
+  assert.ok(way.every((i) => L.open[i] === 1), 'as it begins to open, its tile is open to sight and shots');
+  assert.ok(g.sees(h.x, h.y, at.x, at.y), 'and the two places see each other');
+  steps(g, 60);
+  assert.ok(sk.state !== 'sleep', 'and the monster behind it has woken');
+});
+
+test('what is shut in a room is out of the hero\'s reach: a blast set off against its door, a blow, an arc and a fire do not touch what stands behind it, it sleeps on, and it is no fight; once the door has begun to open, they do', () => {
+  const g = dungeon(6, 2);
+  const h = g.hero;
+  const d = doorToWalkAt(g);
+  // the hero four and a half tiles out in the corridor: the door is shut. A skeleton asleep just inside the door, one of its pack further in, and one of another pack out in the corridor
+  Object.assign(h, inLine(d.spot, -4.5));
+  const a = inLine(d.spot, 0.6);
+  const b = inLine(d.spot, 3.2);
+  const o = inLine(d.spot, -2);
+  const sk = inner(g).spawn('skeleton', a.x, a.y, 900, 0, false, inner(g).rng);
+  const mate = inner(g).spawn('skeleton', b.x, b.y, 900, 0, false, inner(g).rng);
+  const loose = inner(g).spawn('skeleton', o.x, o.y, 901, 0, false, inner(g).rng);
+  assert.deepEqual([d.open, d.want], [0, 0]);
+  assert.ok(inner(g).shutIn(sk) && inner(g).shutIn(mate), 'the two in the room are shut in');
+  assert.ok(!inner(g).shutIn(loose), 'the one out in the corridor is not');
+  assert.ok(!inner(g).shutIn(inLine(d.spot, -0.5)), 'nor is whatever stands in the door itself');
+  const life = [sk.life, mate.life];
+  // a blast against the face of the door, wide enough to take in the one just behind it
+  const c = inLine(d.spot, -1.2);
+  assert.ok(Math.hypot(sk.x - c.x, sk.y - c.y) < 2.4 && Math.hypot(loose.x - c.x, loose.y - c.y) < 2.4);
+  g.events.length = 0;
+  inner(g).blast(0, c.x, c.y, 2.4, 1, 'blast');
+  assert.ok(loose.life < loose.maxLife && loose.state !== 'sleep', 'the blast is a real one: it hurt the one in the corridor, and woke it');
+  assert.deepEqual([sk.life, mate.life], life, 'and it did not touch the one behind the shut door');
+  assert.deepEqual([sk.state, mate.state], ['sleep', 'sleep'], 'which sleeps on, and its pack with it');
+  assert.equal(g.events.filter((e) => e.t === 'hit' && !e.onHero).length, 1, 'one was hit, and one is shown as hit');
+  // a blow that would land on it; an arc of lightning that would jump to it; a fire it would stand in
+  inner(g).hitMonster(sk, 0, 1, false);
+  inner(g).damageMonster(sk, 7, 'lightning', false, 0);
+  inner(g).damageMonster(sk, 3, 'fire', false, 0);
+  assert.deepEqual([sk.life, mate.life], life, 'none of them reaches it');
+  assert.deepEqual([sk.state, mate.state], ['sleep', 'sleep']);
+  // AWAKE BEHIND ITS DOOR IT IS NO FIGHT (the first dungeon's prompts ask whether one is on): the one in the corridor is
+  assert.equal(g.inFight(), true, 'the one awake in the corridor is a fight');
+  loose.dead = true;
+  inner(g).wakeUp(sk);
+  assert.ok(sk.state !== 'sleep' && mate.state !== 'sleep');
+  assert.equal(g.inFight(), false, 'two awake behind a shut door, five tiles off, are none');
+  // THE HERO COMES NEAR: the door begins to open, and from then the same blast lands
+  Object.assign(h, inLine(d.spot, -3));
+  steps(g, 2);
+  assert.equal(d.want, 1);
+  assert.ok(!inner(g).shutIn(sk) && !inner(g).shutIn(mate), 'as the door begins to open, nothing in the room is shut in');
+  assert.equal(g.inFight(), true, 'and the fight is on');
+  inner(g).blast(0, c.x, c.y, 2.4, 1, 'blast');
+  assert.ok(sk.life < life[0], 'the same blast now hurts the one behind the door');
+
+  // A HERO SET DOWN INSIDE A ROOM WHOSE DOOR IS STILL SHUT (a playtest does that; nothing in the game does) fights what is in it as ever
+  const g2 = dungeon(6, 2);
+  const d2 = doorToWalkAt(g2);
+  Object.assign(g2.hero, inLine(d2.spot, 4));
+  const at = inLine(d2.spot, 2);
+  const m2 = inner(g2).spawn('skeleton', at.x, at.y, 900, 0, false, inner(g2).rng);
+  steps(g2, 2);
+  assert.deepEqual([d2.open, d2.want], [0, 0], 'four tiles inside he is out of the door\'s reach: it is shut behind him');
+  assert.ok(!inner(g2).shutIn(m2), 'what is in the room with him is not shut in');
+  inner(g2).blast(0, at.x + 0.5, at.y, 1.5, 1, 'blast');
+  assert.ok(m2.life < m2.maxLife, 'and his blast hurts it');
+});
+
+test('a rain of arrows and an orb, aimed past a shut door by their own buttons, do not reach what stands just behind it; as the game was before this rule, they did', () => {
+  for (const cls of ['ranger', 'mage'] as const) {
+    for (const rule of [true, false]) {
+      const g = dungeon(6, 2, cls);
+      const h = g.hero;
+      const d = doorToWalkAt(g);
+      Object.assign(h, inLine(d.spot, -4.5));
+      const a = inLine(d.spot, 0.6);
+      const b = inLine(d.spot, 3.2);
+      const sk = inner(g).spawn('skeleton', a.x, a.y, 900, 0, false, inner(g).rng);
+      const mate = inner(g).spawn('skeleton', b.x, b.y, 900, 0, false, inner(g).rng);
+      // (the game as it was: nothing is ever shut in. To see that these attacks do reach behind a door.)
+      if (!rule) inner(g).shutIn = () => false;
+      const life = sk.life;
+      const c = emptyControls();
+      c.castX = c.aimX = sk.x;
+      c.castY = c.aimY = sk.y;
+      // the slow attack, pointed at the monster itself, three times in fifteen seconds
+      for (let k = 0; k < 60 * 15; k++) {
+        c.cast = k % 360 === 10;
+        if (c.cast) h.mana = h.d.maxMana;
+        g.update(DT, c);
+      }
+      const name = h.skills[1].r.name;
+      assert.ok(h.skills[1].uses >= 2, `${cls}: ${name} was made (${h.skills[1].uses} times)`);
+      assert.deepEqual([d.open, d.want], [0, 0], `${cls}: the door is shut throughout`);
+      if (rule) {
+        assert.equal(sk.life, life, `${cls}: ${name}, pointed past a shut door, did not hurt the monster just behind it`);
+        assert.deepEqual([sk.state, mate.state], ['sleep', 'sleep'], `${cls}: and nothing in the room woke`);
+      } else {
+        assert.ok(sk.dead || sk.life < life, `${cls}: before the rule ${name} reached it (it has ${sk.life} of ${life})`);
+        assert.ok(mate.state !== 'sleep', `${cls}: and the pack woke, to be held at the door`);
+      }
+    }
+  }
+});
+
+test('whatever is shut in cannot come at the hero: in real dungeons with all their monsters, nothing the rule puts out of his reach can reach him but through a shut door; and every door stands where its room\'s floor ends', () => {
+  let asked = 0;
+  for (const [seed, depth] of [[3, 1], [6, 2], [11, 3], [14, 4], [21, 5], [8, 6]] as const) {
+    const g = doorsSet(true, () => {
+      const q = new Game('warrior', seed);
+      q.depth = depth;
+      q.enterDungeon();
+      q.hero.invuln = 1e9;
+      return q;
+    });
+    const L = g.level;
+    const f = L.floor;
+    const h = g.hero;
+    const within = (r: { x: number; y: number; w: number; h: number }, p: { x: number; y: number }): boolean => p.x >= r.x && p.y >= r.y && p.x < r.x + r.w && p.y < r.y + r.h;
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'door') continue;
+      const r = f.rooms.find((q) => q.id === d.spot.room);
+      assert.ok(r && within(r, inLine(d.spot, 0.3)) && !within(r, inLine(d.spot, -0.5)), 'a door stands where the floor of its room ends: a step inside its line is in the room, and the door itself is not');
+    }
+    // every tile a body can be on (walked, or flown over) that can be come to from the hero without passing a shut door
+    const reached = (): Uint8Array => {
+      const out = new Uint8Array(f.w * f.h);
+      const ok = (i: number): boolean => (L.walk[i] === 1 || L.open[i] === 1) && !(L.shut && L.shut[i] === 1);
+      const queue = [Math.floor(h.y) * f.w + Math.floor(h.x)];
+      out[queue[0]] = 1;
+      for (let q = 0; q < queue.length; q++) {
+        const i = queue[q];
+        for (const j of [i + 1, i - 1, i + f.w, i - f.w]) {
+          if (j < 0 || j >= out.length || out[j] === 1 || !ok(j)) continue;
+          out[j] = 1;
+          queue.push(j);
+        }
+      }
+      return out;
+    };
+    const check = (when: string): number => {
+      const can = reached();
+      let n = 0;
+      for (const m of g.monsters) {
+        if (m.dead) continue;
+        const i = Math.floor(m.y) * f.w + Math.floor(m.x);
+        const room = f.rooms.find((r) => within(r, m));
+        const door = room ? L.doors.find((q) => q.spot.kind === 'door' && q.spot.room === room.id) : undefined;
+        if (inner(g).shutIn(m)) {
+          n++;
+          assert.equal(can[i], 0, `dungeon ${depth}, seed ${seed}, ${when}: a ${m.kind} at ${m.x.toFixed(1)}, ${m.y.toFixed(1)} is out of the hero's reach, and could walk to him without passing a shut door: A ROOM HAS A SECOND WAY IN, and \`shutIn\` in game.ts must ask something else`);
+        } else if (room && door && door.want === 0 && !within(room, h)) {
+          assert.ok(false, `dungeon ${depth}, seed ${seed}, ${when}: a ${m.kind} in a room whose door is shut is not shut in`);
+        }
+      }
+      return n;
+    };
+    const first = check('as the run begins');
+    assert.ok(first > 10, `dungeon ${depth}: ${first} of ${g.monsters.length} monsters are shut in as the run begins`);
+    asked += first;
+    // the hero is set down before one door after another: each opens, and what is in its room is shut in no longer
+    let opened = 0;
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'door' || opened >= 4) continue;
+      const p = inLine(d.spot, -2);
+      if (L.walk[Math.floor(p.y) * f.w + Math.floor(p.x)] !== 1) continue;
+      Object.assign(h, p);
+      steps(g, 2);
+      assert.equal(d.want, 1);
+      const room = f.rooms.find((r) => r.id === d.spot.room);
+      for (const m of g.monsters) if (room && within(room, m)) assert.ok(!inner(g).shutIn(m), 'what is in a room whose door has begun to open is shut in no longer');
+      asked += check(`with ${opened + 1} of its doors opened`);
+      opened++;
+    }
+    assert.ok(opened >= 3);
+  }
+  assert.ok(asked > 300, `${asked} monsters asked about`);
+});
+
+test('the dead that rise for a new player\'s first word rise where they can come at the hero: none in or beyond a door that is still shut, and all six reach him', () => {
+  let asItWas = 0;
+  let places = 0;
+  for (const seed of [6, 9, 13]) {
+    for (const out of [-6.3, -5.9, -5.5]) {
+      for (const mended of [true, false]) {
+        const g = doorsSet(true, () => Game.forFirstRun('warrior', seed));
+        const L = g.level;
+        const h = g.hero;
+        g.monsters.length = 0;
+        h.invuln = 1e9;
+        const d = doorToWalkAt(g);
+        // out in the corridor, turned to the door, with the best place for them to rise a step or two short of it
+        Object.assign(h, inLine(d.spot, out));
+        h.fx = d.spot.alongX ? 0 : -d.spot.out;
+        h.fy = d.spot.alongX ? -d.spot.out : 0;
+        // (the game as it was: a shut door's tile was ground for them like any other)
+        const shut = L.shut;
+        if (!mended) L.shut = null;
+        inner(g).rise();
+        L.shut = shut;
+        const risen = g.monsters.filter((m) => m.packId === -7);
+        assert.equal(risen.length, 6);
+        const beyond = risen.filter((m) => insideBy(d.spot, m.x, m.y) > -1);
+        if (!mended) {
+          asItWas += beyond.length;
+          places++;
+          continue;
+        }
+        assert.equal(beyond.length, 0, `seed ${seed}, ${-out} tiles out: none rose in the door or beyond it`);
+        for (let k = 0; k < 60 * 8; k++) g.update(DT, emptyControls());
+        assert.deepEqual([d.open, d.want], [0, 0], 'the door is shut still');
+        const far = risen.filter((m) => Math.hypot(m.x - h.x, m.y - h.y) > 2.5);
+        assert.equal(far.length, 0, `seed ${seed}, ${-out} tiles out: eight seconds on, all six have come to him (${far.length} have not)`);
+      }
+    }
+  }
+  // (and these are places where they would have: as the game was, some of them rose in the door or beyond it)
+  assert.ok(asItWas >= 3, `as it was, ${asItWas} of the ${places * 6} rose in the door or beyond it`);
 });
 
 test('a door is as wide for a brute as for anybody: the stone beside it holds a big body off no further than a small one, and a brute comes through', () => {
@@ -507,7 +819,11 @@ test('a door is as wide for a brute as for anybody: the stone beside it holds a 
     const off = (by: number): { x: number; y: number } => (d.spot.alongX ? { x: p.x + by, y: p.y } : { x: p.x, y: p.y + by });
     assert.ok(fits(off(1.5 - brute - 0.02), brute) && !fits(off(1.5 - brute + 0.02), brute), 'a corridor\'s wall holds a brute off by its whole half width');
   }
-  // A BRUTE COMES THROUGH: the hero two and a half tiles inside the room, the brute awake out in the corridor
+  // A BRUTE COMES THROUGH A DOOR THE HERO HAS OPENED: the hero a tile and a half inside the room for half a second
+  // (the door opens for him: no monster opens one), then two and a half tiles inside; the brute awake out in the corridor
+  Object.assign(h, inLine(d.spot, 1.5));
+  steps(g, 30);
+  assert.equal(d.open, 1, 'the door opened for the hero');
   Object.assign(h, inLine(d.spot, 2.5));
   const from = inLine(d.spot, -3.5);
   const b = inner(g).spawn('brute', from.x, from.y, 901, 0, false, inner(g).rng);
@@ -519,7 +835,7 @@ test('a door is as wide for a brute as for anybody: the stone beside it holds a 
     if (insideBy(d.spot, b.x, b.y) > 0.3) through = k * DT;
   }
   assert.ok(through > 0, `the brute came through the door (after 12 seconds it is ${insideBy(d.spot, b.x, b.y).toFixed(2)} tiles inside its line)`);
-  assert.equal(d.open, 1, 'which opened for it');
+  assert.equal(d.open, 1, 'which stood open for the hero');
 });
 
 test('a hero who walks at the stone beside a door is eased into the door: from anywhere across the hallway, by the stick or by the keys; and at no other wall', () => {

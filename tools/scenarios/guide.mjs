@@ -307,7 +307,12 @@ export default async function (page, snap) {
     const g = window.__dbg.game(); const h = g.hero; const f = g.level.floor;
     let best = null; let bd = 1e9;
     for (const m of g.monsters) { if (m.dead || m.elite || m.boss) continue; const dd = Math.hypot(m.x - f.start.x, m.y - f.start.y); if (dd < bd) { bd = dd; best = m; } }
-    for (let r = 5; r <= 7 && best; r += 0.5) for (let k = 0; k < 16; k++) {
+    // (five to seven tiles off, in sight of it; and if there is no such place, nearer. Since Version
+    // 18.7 sight stops at a shut door: a pack in a small room, whose door is shut since the hero is
+    // set down here and has not walked in, has no place that far off that sees it. The pre-flight
+    // of 18.7 met that: a ranger, seed 869691369, whose first two packs died before the rain of
+    // arrows had landed; the third stood in a room of eight tiles by seven.)
+    for (const r of [5, 5.5, 6, 6.5, 7, 4, 3, 2.5]) for (let k = 0; k < 16 && best; k++) {
       const a = (k / 16) * Math.PI * 2; const x = best.x + Math.cos(a) * r; const y = best.y + Math.sin(a) * r;
       if (g.level.walk[Math.floor(y) * f.w + Math.floor(x)] === 1 && g.free(g.level.walk, x, y, 0.45) && g.sees(x, y, best.x, best.y)) { h.x = x; h.y = y; return true; }
     }
@@ -441,10 +446,16 @@ export default async function (page, snap) {
     const came = await page.evaluate(() => {
       const g = window.__dbg.game(); const h = g.hero; const walk = g.level.walk;
       let n = 0;
-      for (let k = 0; k < 40 && n < 3; k++) {
-        const a = (k / 40) * Math.PI * 2 + 0.9; const r = 6 + (k % 3);
+      // (six to eight tiles off; and if the room is too small to have three such places in sight, three to five)
+      for (const base of [6, 3]) for (let k = 0; k < 40 && n < 3; k++) {
+        const a = (k / 40) * Math.PI * 2 + 0.9; const r = base + (k % 3);
         const x = h.x + Math.cos(a) * r; const y = h.y + Math.sin(a) * r;
-        if (!g.free(walk, x, y, 0.45)) continue;
+        // (IN SIGHT OF THE HERO: since Version 18.7 no monster opens a door, and a bat set down
+        // beyond a shut one is held there, awake, for as long as this playtest cares to wait. The
+        // hero is set down in this room by the script and has not walked in: its own door is shut
+        // behind him. Version 18.7's regression met that: a ranger, seed 104877239, 183 attacks at
+        // a bat behind a door, and the quiet moment never came.)
+        if (!g.free(walk, x, y, 0.45) || !g.sees(h.x, h.y, x, y)) continue;
         const m = g.spawn('bat', x, y, 950, 0, false, g.rng); m.xp = 0; m.seen = true; g.wakeUp(m); n++;
       }
       return n;
