@@ -330,7 +330,7 @@ const ARROW: readonly string[] = [P.white, P.sl5, P.wd5, P.wd4];
 const ARROW_FALL = 560;
 const BUBBLE: readonly string[] = [P.vn5, P.vn4, P.vn4, P.vn3];
 /** The colour each word's name is shown in when it joins an ability. */
-export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, twin: P.tl4, fire: P.fr4, frost: P.bu4, lightning: P.lt3, leech: P.bl5, volatile: P.pu4, poison: P.vn4 };
+export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, twin: P.tl4, fire: P.fr4, frost: P.bu4, lightning: P.lt3, leech: P.bl5, volatile: P.pu4, poison: P.vn4, heavy: '#ac8753', precise: '#eef4fa', frenzied: '#ff5c33', guarding: '#30a868' };
 
 /** No more particles than this are ever alive: past it, new ones are simply not made. */
 const MAX_PARTICLES = 900;

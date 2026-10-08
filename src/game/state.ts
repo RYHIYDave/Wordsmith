@@ -74,6 +74,14 @@ export interface Resolved {
   volatile: number;
   /** Poison: each hit adds a dose that deals this fraction of the hit every second while it lasts. 0 = none. */
   poison: number;
+  /** HEAVY in front (Version 19.3): seconds a hit stuns for (0 = none). It also hits harder and is slower: dmgMult, rate, cooldown. */
+  stun: number;
+  /** PRECISE in front: a narrow, exact hit (more damage, a smaller area: dmgMult, size); the flag is for its look. */
+  precise: boolean;
+  /** FRENZIED in front: each use adds a stack of speed (up to FRENZY.max). */
+  frenzy: boolean;
+  /** GUARDING in front: each use gives the hero a shield of this fraction of their life (0 = none). */
+  shield: number;
   // --- behind: the wake ---
   /** Each use adds this % damage for a few seconds (stacks). */
   might: number;
@@ -89,6 +97,14 @@ export interface Resolved {
   rune: number;
   /** A cloud of poison left at the impact: this fraction of the hit every second to whatever stands in it. 0 = none. */
   cloud: number;
+  /** HEAVY behind (Version 19.3): cracked ground left where it hits, for this many seconds; an enemy walking onto it is staggered. 0 = none. */
+  cracks: number;
+  /** PRECISE behind: the first enemy each use hits is marked: the hero's next hit on it is a certain critical. */
+  mark: boolean;
+  /** FRENZIED behind: a kill by it adds a stack and holds the frenzy longer. */
+  frenzyFeed: boolean;
+  /** GUARDING behind: a ward circle left where it hits; inside it the hero takes this fraction less damage. 0 = none. */
+  ward: number;
   /** Plain-language lines for the character panel. */
   lines: string[];
 }

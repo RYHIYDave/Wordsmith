@@ -165,6 +165,15 @@ function expectedImbue(word: WordId, slot: Slot): ImbuePick[] {
       return offence ? [['prefix', 'areaPct'], ['suffix', 'int']] : [['prefix', 'maxMana'], ['suffix', 'int']];
     case 'poison':
       return offence ? [['prefix', 'dmgPct'], ['suffix', 'dex']] : [['prefix', 'maxLife'], ['suffix', 'dex']];
+    // (the new words, Version 19.3: his doc "Wordsmith: The New Words")
+    case 'heavy':
+      return offence ? [['prefix', 'stunChance'], ['suffix', 'str']] : [['prefix', 'armor'], ['suffix', 'str']];
+    case 'precise':
+      return offence ? [['prefix', 'critChance'], ['suffix', 'dex']] : [['prefix', 'critMult'], ['suffix', 'dex']];
+    case 'frenzied':
+      return offence ? [['prefix', 'atkSpeed'], ['suffix', 'str']] : [['prefix', 'moveSpeed'], ['suffix', 'str']];
+    case 'guarding':
+      return [['prefix', 'blockChance'], ['suffix', 'str']];
   }
 }
 
