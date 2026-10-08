@@ -113,7 +113,7 @@ const TEETH_SPAN = 42;
  * The crack in the crown: points on the cranium (along its forward, left, up), from the top down
  * the back, where the light falls on the skull seen from behind (as today's is).
  */
-const CRACK: readonly V3[] = [[-0.3, 0.12, 0.95], [-0.5, 0.32, 0.8], [-0.66, 0.16, 0.66], [-0.78, 0.36, 0.46], [-0.86, 0.22, 0.3]];
+const CRACK: readonly V3[] = [[-0.12, 0.3, 1.0], [-0.3, 0.5, 0.92], [-0.5, 0.36, 0.8], [-0.62, 0.56, 0.62], [-0.78, 0.42, 0.44], [-0.86, 0.6, 0.24], [-0.94, 0.46, 0.04]];
 /** How far the jaw drops open at `draw` 1, in degrees about its hinge. */
 const GAPE = 34;
 /** How far the skull is tipped back from the eye (the heroes' headgear is tipped TIPPED, 20 degrees: skin.ts). */
@@ -555,7 +555,7 @@ function paintBits(st: Stage, bits: ReadonlyArray<Bit>, ref: V3): void {
       for (const [x, y] of row) p.mark(x, y, (x - x0) % 2 === 0 ? BONE3[3] : INK);
     } else if (sh.k === 'crack') {
       for (let i = 1; i < sh.pts.length; i++) {
-        if (dot(norm(sh.facing[i - 1]), st.eye) < 0.2 || dot(norm(sh.facing[i]), st.eye) < 0.2) continue;
+        if (dot(norm(sh.facing[i - 1]), st.eye) < 0.1 || dot(norm(sh.facing[i]), st.eye) < 0.1) continue;
         const [xa, ya] = st.at(sh.pts[i - 1]);
         const [xb, yb] = st.at(sh.pts[i]);
         const n = Math.max(1, Math.ceil(Math.max(Math.abs(xb - xa), Math.abs(yb - ya))));
