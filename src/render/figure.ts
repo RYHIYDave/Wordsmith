@@ -37,6 +37,8 @@ export interface FigureState {
    */
   holdT?: number;
   holdAs?: 'beam' | 'whirl';
+  /** The attack being wound up now is one that will be HELD (a beam): a figure with a picture of its own for that beginning (`clips.holdStart`) shows it, in place of the attack's own. */
+  holdSoon?: boolean;
   /** How far through a roll, 0..1, or absent or -1 when not rolling. A figure with a picture of its own for it (`clips.roll`) shows that. */
   rollK?: number;
   /**
@@ -421,8 +423,11 @@ export class Figure {
       else if (this.sinceHeld >= 0) this.sinceHeld = st.attackAge < this.lastAge ? -1 : this.sinceHeld + dt;
       this.lastAge = st.attackAge;
       const letGo = this.sinceHeld >= 0 && !holding ? (this.heldAs === 'whirl' ? set.clips?.whirlEnd : set.clips?.release) : undefined;
+      // (the beginning of a held attack, while the rules wind it up, where the art has one)
+      const begun = !holding && st.holdSoon ? set.clips?.holdStart : undefined;
       if (held && held.frames.length > 1) s = heldFrame(held, st.holdT as number);
       else if (letGo) s = frameOf(letGo, this.sinceHeld);
+      else if (begun) s = attackFrame(begun, st.attackAge, st.attackWind);
       else if (c) s = attackFrame(c, st.attackAge, st.attackWind);
       else {
         const list = st.attackSkill === 1 && set.heavy ? set.heavy : set.attack;

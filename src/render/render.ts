@@ -1316,6 +1316,12 @@ export class Renderer {
     const ch = game.hero.channel;
     return ch ? ch.t : -1;
   }
+  /** The attack being wound up now is one that will be held (a beam, a whirlwind): it has a `channel`. */
+  private holdSoon(game: Game): boolean {
+    const w = game.hero.windup;
+    const s = w ? game.hero.skills[w.skill] : null;
+    return !!s && SKILLS[s.id].channel !== undefined;
+  }
   private heldAs(game: Game): 'beam' | 'whirl' {
     const ch = game.hero.channel;
     const s = ch ? game.hero.skills[ch.skill] : null;
@@ -1799,7 +1805,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them

@@ -89,6 +89,12 @@ export interface AnimSet {
      * blast arriving); from there it goes round and round.
      */
     hold?: Clip;
+    /**
+     * What the figure does while a held attack is wound up, before it is held (the mage's beam,
+     * with her stances: art/moves3.ts MAGE_STANCES): played over the rules' wind-up, its last frame
+     * the hold's first. Absent: the attack's own picture is shown then, as before.
+     */
+    holdStart?: Clip;
     /** What the figure does when a held attack is let go, in place of the rest of the attack. */
     release?: Clip;
     /** The same two for a WHIRLWIND, which is held too: the spin, round and round, and coming out of it. */

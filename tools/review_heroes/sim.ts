@@ -6,7 +6,7 @@
 import type { ActorArt, AnimSet, Clip } from '../../src/art/actor_types';
 import { PLANS } from '../../src/art/heroes3';
 import type { Plan } from '../../src/art/heroes3';
-import { MOVES3, runWaysOf, settlesOf, startsOf, walkingOf } from '../../src/art/moves3';
+import { MOVES3, holdStartOf, runWaysOf, settlesOf, startsOf, walkingOf } from '../../src/art/moves3';
 import type { Move3 } from '../../src/art/moves3';
 import { lerp3 } from '../../src/art/skeleton';
 import type { V3 } from '../../src/art/skeleton';
@@ -129,7 +129,11 @@ function animSet(plan: Plan, view: View): AnimSet {
     clips.roll = spread(m, ROLL_FRAMES3, 0, until);
     if (m.tumble !== undefined && span(m).end > until + 1e-6) clips.land = clip(m, CLIP_FPS3, until);
   }
-  if (plan.hold) clips.hold = clip(of(plan.hold), CLIP_FPS3);
+  if (plan.hold) {
+    clips.hold = clip(of(plan.hold), CLIP_FPS3);
+    const begun = holdStartOf(of(plan.hold));
+    if (begun) clips.holdStart = clip(begun, CLIP_FPS3);
+  }
   if (plan.release) clips.release = clip(of(plan.release), CLIP_FPS3);
   if (plan.whirl) clips.whirl = { ...clip(of(plan.whirl), CLIP_FPS3), turns: true };
   if (plan.fall) clips.fall = clip(of(plan.fall), CLIP_FPS3);
@@ -321,6 +325,7 @@ export function play(sc: Scenario): Shown[] {
       attackAge: h.attackAge, attackWind: h.attackWind, leapK,
       holdT: h.channel ? h.channel.t : -1,
       holdAs: h.channel && SKILLS[h.skills[h.channel.skill].id].kind === 'whirl' ? 'whirl' : 'beam',
+      holdSoon: !!h.windup && SKILLS[h.skills[h.windup.skill].id].channel !== undefined,
       rollK, fallT: -1, reelT, reelBehind: sc.reelBehind ?? false,
     };
     let moved: [number, number] = [0, 0];

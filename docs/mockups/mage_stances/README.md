@@ -7,8 +7,8 @@ game is today's exactly (tests check it).
 **State of this branch (`art/mage-stances`), 8 Oct 2026:** from `art/ranger-stances` at `cf9f09f`
 (the ranger's stances, which the main chat brings in as Version 19.4, and main at 19.2), because
 the mage's stops and setting off are made by the same means as his. **WORK IN PROGRESS: her stance
-and her runs have his yes (19:01); her casts, hits and fall from the stance come next, pictures
-first.**
+and her runs have his yes (19:01), and her casts from it (19:19); her hits, fall and habits come
+next, pictures first.**
 
 ## His words
 
@@ -18,6 +18,7 @@ first.**
 - 19:01, to `mage_stances.png` and `mage_stances.gif`: "Yes, this stance (Recommended)" (her guard,
   the one she comes to when she is picked on her class card); and of her run in a fight, "Yes, low
   (Recommended)".
+- 19:19, of `mage_casts.gif` (her Wave, Orb and Beam from her guard): "Yes looks right".
 
 ## What changes, with the switch on
 
@@ -36,9 +37,19 @@ first.**
   she sets off or stops (today 9.1).
 - **In town she stands and runs as today** (her own moves now, `mtown`, `mtownrun`, the same
   pictures as today's with the switch off), and as she stands her weight shifts.
-- Not yet: her casts (Wave, Orb, Beam), being hit and her fall, her habits in a fight, her casts
-  made walking. Until they are made from her guard they begin and end upright: the picture jumps
-  3.3 to 3.5 px there, the staff's end 23 to 25.
+- **Her casts start and end in her guard, her feet where it has them** (`waveFromGuard`,
+  `orbFromGuard`; the Beam's rest is her guard, and `beamLetGoToGuard`): a foot moves at most 0.5 in
+  the Wave (today 3.6), 0.2 in the Orb (today 3.0), 0.7 in the Beam (today 7.4). The Wave swings up
+  from the guard, over and down, and back; the Orb lifts the staff high and drives it down deep in her
+  wide stance; for the Beam her back foot steps back (lifted) to brace against the push, and steps up
+  again when it is let go.
+- **The Beam no longer jumps in from a piece of the Wave** (today 5.8 px, the staff's end 47): while
+  the rules wind it up she brings the staff level at her mark (`beamStartsFromGuard`, `BEAM_START3`,
+  `beamstart`), shown by the figure in place of the Wave's picture (`clips.holdStart`, made by
+  `holdStartOf`; `FigureState.holdSoon`, from the renderer: the attack wound up is one that is held).
+  He saw `mage_casts.gif` (the pop-up came back without a choice) and wrote at 19:19: "Yes looks
+  right".
+- Not yet: being hit and her fall, her habits in a fight, her casts made walking.
 
 ## Tests
 

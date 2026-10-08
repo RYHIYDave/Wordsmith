@@ -2012,8 +2012,121 @@ const MAGE_BATTLE_GAIT: Gait = {
   }),
 };
 
+/** Her feet in her guard, and the back one pivoting on its ball as her hips come round (the ball stays where it is). */
+const GUARD_FEET: Partial<Bones> = { lfx: 7, lfy: 0.5, lfz: 0, lfp: 0, lft: 0, lk: 2, rfx: -7.5, rfy: -1, rfz: 0, rfp: 0, rft: -46, rk: -32 };
+const GUARD_PIVOT: Partial<Bones> = { ...GUARD_FEET, rfp: 24, rfz: onToes(24), rft: -22, rk: -14 };
+const freeHand = (x: number, y: number, z: number, le = -8): Partial<Bones> => ({ lhIn: 0, lhx: x, lhy: y, lhz: z, le });
+const staffHand = (x: number, y: number, z: number): Partial<Bones> => ({ rhIn: 0, rhx: x, rhy: y, rhz: z });
+
+/**
+ * HER WAVE, FROM HER GUARD. Her feet stay where her guard has them. Her left hand lets go of the
+ * staff and goes out ahead of her as the staff swings up and back at her right and she coils onto
+ * the back foot; then the hips come round, the back foot turning on its ball, the chest after them,
+ * and the staff comes OVER and down through the air in front (the wave goes on the sixth frame, as
+ * the rules have it); it is held low a moment; and her left hand takes the staff again and it comes
+ * up level into her guard. A bigger cast than standing tall, as the art rulebook has her: "Big
+ * sweeping casts".
+ */
+function waveFromGuard(): Motion {
+  const G = MAGE_GUARD;
+  const back: Partial<Bones> = { ...GUARD_FEET, px: -1.6, pz: G.pz + 0.6, yaw: -40, twist: -24, pitch: 2, bend: -3, lfz: 0, ...staffHand(-3.5, -6, 7), ...freeHand(9, 1.5, -2), wAz: 168, wEl: 38, draw: 1.9, gale: 0.3 };
+  const down: Partial<Bones> = { ...GUARD_PIVOT, px: 2.6, pz: G.pz - 0.8, yaw: 8, pitch: 6, twist: 14, bend: 9, faceUp: 0, ...staffHand(11, -5, -7), ...freeHand(-3, 7, -9, -30), wAz: 172, wEl: 170, draw: 2.3, gale: 0.5 };
+  const held: Partial<Bones> = { ...GUARD_PIVOT, px: 2.2, pz: G.pz - 1, yaw: 10, pitch: 6, twist: 17, bend: 10, faceUp: 0, ...staffHand(10.5, -5, -9.5), ...freeHand(-3, 7.5, -10, -30), wAz: 172, wEl: 188, draw: 1.5, gale: 0.25 };
+  return {
+    hit: 5 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 2 * FR, pose: { ...GUARD_FEET, px: -1, pz: G.pz + 0.4, yaw: -36, twist: -16, bend: 0, ...staffHand(-1, -5.5, 5.5), ...freeHand(8, 2, -3.5), wAz: 170, wEl: 70, draw: 1.6, gale: 0.2 }, ease: 'out' },
+      { at: 4 * FR, pose: back, ease: 'out' },
+      // (THE STAFF COMES OVER: her hand goes up and round in an arc, as a swing's does)
+      { at: 4.5 * FR, pose: { ...partWay(G, back, down, 0.25), ...staffHand(3, -6.5, 9), ...freeHand(6, 4, -5) }, ease: 'in' },
+      { at: 5 * FR, pose: down, ease: 'lin' },
+      { at: 6 * FR, pose: { ...down, pz: G.pz - 1.2, yaw: 11, twist: 19, bend: 11, ...staffHand(11, -5, -10), ...freeHand(-3.5, 7.5, -10, -30), wEl: 192, draw: 2.1 }, ease: 'lin' },
+      { at: 9 * FR, pose: held, ease: 'out' },
+      // (her left hand comes back to the staff, and it is brought up level into her guard)
+      { at: 12 * FR, pose: { ...partWay(G, held, {}, 0.55), ...staffHand(5, -2, -13), ...freeHand(6, 3, -9, -12) }, ease: 'in' },
+      { at: 15 * FR, pose: {}, ease: 'out' },
+    ],
+  };
+}
+
+/**
+ * HER ORB, FROM HER GUARD (the owner: "Slam the staff down on the ground and a little pulse aura
+ * goes out around the character then the orb appears where you tapped"). Her feet stay where her
+ * guard has them. The staff comes up off the level to stand straight up at her right and is raised
+ * high as she rises out of her crouch, her free hand going up and out the other side; a beat at the
+ * top; and it is driven onto the floor, her knees giving deep in her wide stance and her free hand
+ * thrust down at the spot (the ninth frame, the rules' own). That is held; her left hand takes the
+ * staff, and it comes up level into her guard.
+ */
+function orbFromGuard(): Motion {
+  const G = MAGE_GUARD;
+  const lift: Partial<Bones> = { ...GUARD_FEET, pz: G.pz + 1, yaw: -22, twist: -6, pitch: 2, bend: 1, faceUp: 0, ...staffHand(3, -6, -1), ...freeHand(3, 4.5, -8, -20), wAz: 180, wEl: 92 };
+  const top: Partial<Bones> = { ...GUARD_FEET, pz: G.pz + 2.6, yaw: -16, twist: -6, pitch: -2, bend: -5, faceUp: -2, ...staffHand(2.5, -6.5, 9.5), ...freeHand(4.5, 11, 1.5, 10), wAz: 180, wEl: 94 };
+  const low: Partial<Bones> = {
+    ...GUARD_FEET, px: 1.5, pz: G.pz - 1.8, yaw: -14, twist: -8, pitch: 5, bend: 9, faceUp: -3, lk: 10, rk: -36,
+    rhIn: 2, rhx: 4.5, rhy: -15.5, rhz: STAFF_DOWN, wAz: 180, wEl: 90, ...freeHand(7.5, 3.5, -9, -12),
+  };
+  return {
+    hit: 8 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      // (the crystal gathers as it rises; prop 5 is the ring of light that runs out along the floor from where it strikes, `pt` 1 as it lands)
+      { at: 3 * FR, pose: { ...lift, draw: 1.5, gale: 0.2 }, ease: 'out' },
+      { at: 6 * FR, pose: { ...top, draw: 2, gale: 0.3 }, ease: 'out' },
+      { at: 7 * FR, pose: { ...top, rhz: 10.2, lhz: 2.4, bend: -6, draw: 2.2 }, ease: 'lin' },
+      { at: 8 * FR, pose: { ...low, prop: 5, pt: 1, draw: 2.5, gale: 0.6 }, ease: 'in' },
+      { at: 10 * FR, pose: { ...low, pz: G.pz - 2.6, bend: 11, lhz: -10, prop: 5, pt: 0.35, draw: 2.1, gale: 0.4 }, ease: 'out' },
+      { at: 14 * FR, pose: { ...low, pz: G.pz - 1.2, bend: 7, faceUp: -1, ...freeHand(6, 2, -10.5, -12), draw: 1.5, gale: 0.2 }, ease: 'out' },
+      // (her left hand comes to the staff as it comes up out of the floor, and it is brought level into her guard)
+      { at: 17 * FR, pose: { ...GUARD_FEET, pz: G.pz - 0.4, yaw: -24, twist: -8, pitch: 4, bend: 4, ...staffHand(3, -3, -9), ...freeHand(7, 2, -9, -10), wAz: 180, wEl: 128, draw: 1.4 }, ease: 'io' },
+      { at: 20 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/**
+ * THE BEAM BEGINS, FROM HER GUARD: in the moment the rules wind it up she brings the staff level
+ * at her mark, the crystal gathering, and sets her back foot ready for the push (the hold's own
+ * first picture is where this ends). Shown in place of a picture of the Wave, which the beam's
+ * winding up showed until now (render/figure.ts, `clips.holdStart`).
+ */
+function beamStartsFromGuard(): Motion {
+  const first: Partial<Bones> = { ...BRACED, px: 3, pz: -3.4, pitch: 9, gale: 0.3 };
+  return {
+    hit: 4 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      // (her back foot steps back for the push: lifted as it goes)
+      { at: 2 * FR, pose: { ...partWay(MAGE_GUARD, {}, first, 0.5), rfz: 2.2, rfp: 12, draw: 1.8, gale: 0.2 }, ease: 'io' },
+      { at: 4 * FR, pose: first, ease: 'io' },
+    ],
+  };
+}
+/** THE BEAM LET GO, INTO HER GUARD: the push is gone and she comes forward off the lean, the staff still level, and settles into her guard. */
+function beamLetGoToGuard(): Motion {
+  return {
+    keys: [
+      { at: 0, pose: { ...BRACED } },
+      { at: 2 * FR, pose: { ...BRACED, px: 0.5, pz: -4, pitch: 15, bend: 11, gale: 0.15 }, ease: 'out' },
+      // (her back foot steps up into her guard: lifted as it comes)
+      { at: 4 * FR, pose: { ...partWay(MAGE_GUARD, { ...BRACED, px: 0.5, pz: -4, pitch: 15, bend: 11 }, {}, 0.6), rfz: 2.2, rfp: 12, draw: 1.4, gale: 0.12 }, ease: 'io' },
+      { at: 7 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** The beam's beginning as a move of its own (with MAGE_STANCES on), for `clips.holdStart`. */
+export const BEAM_START3: Move3 = { name: 'Beam, begun from her guard', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: { keys: [{ at: 0, pose: {} }] } };
+/** The beginning of a held attack, for a hero who has one (the mage's beam, with MAGE_STANCES on): otherwise none. */
+export function holdStartOf(hold: Move3): Move3 | null {
+  return MAGE_STANCES.on && hold === BEAM3 ? BEAM_START3 : null;
+}
+
 /** As they are with the switch off. */
-const MAGE_TODAY = { stand: MAGE_STAND3.motion, standRest: MAGE_STAND3.rest, town: MAGE_TOWN3.motion, runRest: MAGE_RUN3.rest };
+const MAGE_TODAY = {
+  stand: MAGE_STAND3.motion, standRest: MAGE_STAND3.rest, town: MAGE_TOWN3.motion, runRest: MAGE_RUN3.rest,
+  wave: WAVE3.motion, waveRest: WAVE3.rest, orb: ORB3.motion, orbRest: ORB3.rest, beamRest: BEAM3.rest, beamEnd: BEAM_END3.motion, beamEndRest: BEAM_END3.rest,
+};
 /** Put the mage's new stances in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
 export function useMageStances(on: boolean): void {
   MAGE_STANCES.on = on;
@@ -2021,6 +2134,16 @@ export function useMageStances(on: boolean): void {
   MAGE_STAND3.motion = on ? mageAlive(MAGE_GUARD) : MAGE_TODAY.stand;
   MAGE_TOWN3.motion = on ? MAGE_TOWN_MOTION() : MAGE_TODAY.town;
   MAGE_RUN3.rest = on ? MAGE_GUARD : MAGE_TODAY.runRest;
+  // (her casts, from her guard and back into it)
+  WAVE3.rest = on ? MAGE_GUARD : MAGE_TODAY.waveRest;
+  WAVE3.motion = on ? waveFromGuard() : MAGE_TODAY.wave;
+  ORB3.rest = on ? MAGE_GUARD : MAGE_TODAY.orbRest;
+  ORB3.motion = on ? orbFromGuard() : MAGE_TODAY.orb;
+  BEAM3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamRest;
+  BEAM_END3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamEndRest;
+  BEAM_END3.motion = on ? beamLetGoToGuard() : MAGE_TODAY.beamEnd;
+  BEAM_START3.rest = MAGE_GUARD;
+  BEAM_START3.motion = beamStartsFromGuard();
   remakeRuns();
 }
 
@@ -2030,6 +2153,6 @@ export const MOVES3: Record<string, Move3> = {
   klook: KNIGHT_LOOKS3, tsquirrel: RANGER_TOWN_SQUIRREL3, tsighting: RANGER_TOWN_SIGHTING3,
   rstand: RANGER_STAND3, volley: VOLLEY3, shot: SHOT3, rrun: RANGER_RUN3, roll: ROLL3, rreel: RANGER_REEL3, rlurch: RANGER_LURCH3, rfall: RANGER_FALL3, squirrel: SQUIRREL3, sighting: SIGHTING3,
   mstand: MAGE_STAND3, wave: WAVE3, orb: ORB3, beam: BEAM3, beamend: BEAM_END3, mrun: MAGE_RUN3, mreel: MAGE_REEL3, mlurch: MAGE_LURCH3, mfall: MAGE_FALL3, mlight: MAGE_LIGHT3, reading: READING3,
-  mtown: MAGE_TOWN3, mtownrun: MAGE_TOWN_RUN3,
+  mtown: MAGE_TOWN3, mtownrun: MAGE_TOWN_RUN3, beamstart: BEAM_START3,
   rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
 };

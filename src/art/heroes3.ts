@@ -29,7 +29,7 @@ import { paintRanger3 } from './hero3_ranger';
 import type { HeroArt, HeroLook } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
-import { COMBO_MENDS, GREAT_BLADE, MOVES3, SETTLES, SLASH3, STAFF_UP, STRIKE3, WALKS, runWaysOf, settlesOf, startsOf, walkingOf } from './moves3';
+import { COMBO_MENDS, GREAT_BLADE, MOVES3, SETTLES, SLASH3, STAFF_UP, STRIKE3, WALKS, holdStartOf, runWaysOf, settlesOf, startsOf, walkingOf } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
@@ -295,7 +295,12 @@ function animSet3(plan: Plan, view: GameView, fights = true): AnimSet {
     clips.roll = spread(m, ROLL_FRAMES3, 0, until);
     if (m.tumble !== undefined && spanOf(m).end > until + 1e-6) clips.land = clip(m, CLIP_FPS3, until);
   }
-  if (plan.hold) clips.hold = clip(of(plan.hold), CLIP_FPS3);
+  if (plan.hold) {
+    clips.hold = clip(of(plan.hold), CLIP_FPS3);
+    // (and its beginning, where the hero has one: moves3.ts, holdStartOf; only where there is fighting)
+    const begun = fights ? holdStartOf(of(plan.hold)) : null;
+    if (begun) clips.holdStart = clip(begun, CLIP_FPS3);
+  }
   if (plan.release) clips.release = clip(of(plan.release), CLIP_FPS3);
   // (a whirlwind on the bones is the hero turning all the way round, seen from one place: the
   // figure is not to be turned for it as well)
@@ -353,7 +358,7 @@ export function makeHeroArt3(): HeroArt {
         // (standing and running first, then the attacks from start to finish, then the rest; what
         // a hero does when left standing is painted as it is shown, which is slowly enough)
         const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
-          (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? [])];
+          (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.holdStart?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? [])];
         for (const pick of picks) {
           for (const set of [art.front, art.back]) {
             const frames = pick(set);
