@@ -4,6 +4,7 @@
 import type { Sfx } from '../engine/audio';
 import type { Limit, SkillId, SkillKind } from './defs';
 import type { DoorInst } from './doors';
+import type { HazardInst } from './traps';
 import type { Attr, ClassId, Element, EquipSlot, Floor, Item, MonsterKind, PropKind, Stats, VoiceId, WordId } from './types';
 
 /** Everything worked out from class, level, attributes and gear. Rebuilt whenever one of those changes. */
@@ -275,7 +276,7 @@ export interface Projectile {
   dmg: number;
   element: Element;
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave';
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart';
   pierce: boolean;
   /**
    * Ids of monsters already hit, so a piercing shot hits each once. The shots of one use share one
@@ -300,6 +301,11 @@ export interface Projectile {
   from: string;
   /** Hero shots: 0 for the first of a cast, 1 for its twin. */
   n: number;
+  /**
+   * (THE TRAPS) A dart of a dart wall: the dungeon's, not a monster's. It hurts the hero and the
+   * monsters alike, and `dmg` is the share of the life of whatever it meets.
+   */
+  trap?: boolean;
 }
 
 export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn';
@@ -633,6 +639,8 @@ export interface Level {
   pier: Uint8Array | null;
   /** (and where a door is still shut, 1 in the grid; null on a level with no door. A shut door holds monsters, and its tile is shut in `open`: game/doors.ts, `shutGrid`.) */
   shut: Uint8Array | null;
+  /** (THE TRAPS, game/traps.ts) The level's spike floors and dart walls, and where each is in its beat. None unless laid. */
+  hazards: HazardInst[];
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */

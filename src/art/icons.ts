@@ -886,7 +886,7 @@ export function abilityIconsWas(): Record<string, Sprite> {
 // Power-word runes: a carved stone tablet carrying one glowing glyph.
 
 /** Glyphs, 6x6 (frost is 7x7). 'X' = the word's colour (WORD_COLOR), 'o' = its lighter glowing core. */
-const GLYPH: Record<WordId, readonly string[]> = {
+export const GLYPH: Record<WordId, readonly string[]> = {
   // two stacked chevrons pointing up
   power: ['..oo..', '.XXXX.', 'XX..XX', '..oo..', '.XXXX.', 'XX..XX'],
   // double arrow >>
@@ -908,7 +908,7 @@ const GLYPH: Record<WordId, readonly string[]> = {
 };
 
 /** The lighter tone used for each glyph's glowing core. */
-const WORD_GLOW: Record<WordId, string> = {
+export const WORD_GLOW: Record<WordId, string> = {
   power: P.bl5,
   swift: P.gn5,
   twin: P.tl5,

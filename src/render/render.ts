@@ -13,6 +13,8 @@ import { SPELL_TONES } from '../art/spells';
 import type { SpellArt } from '../art/spells';
 import { GATE_UP, PILLAR, POST, STRIP, SWING_STEPS } from '../art/gates';
 import type { GateArt, Strip } from '../art/gates';
+import { SPIKE_SPOTS, SPIKE_STEPS } from '../art/hazards';
+import type { HazardArt } from '../art/hazards';
 import { WALL_LOOK } from '../art/ground';
 import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
@@ -31,7 +33,8 @@ import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
 import type { Monster, Station } from '../game/state';
-import { doorFace, doorTiles } from '../game/doors';
+import { doorFace, doorTiles, isLeaf } from '../game/doors';
+import { spikeAt, spikeHeight } from '../game/traps';
 import { STAIR_N, STAIR_W, levelAt } from '../game/height';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
@@ -59,6 +62,8 @@ export interface Art {
   props: DungeonProps;
   /** Its doors and gates (art/gates.ts): drawn only where a level has any (game/doors.ts). */
   gates: GateArt;
+  /** (THE TRAPS) Its spike floors and dart walls (art/hazards.ts): drawn only where a level has any (game/traps.ts). */
+  hazards: HazardArt;
   /** The town's own things (art/town.ts) and its people (art/townsfolk.ts): Version 14.4. */
   town: TownProps;
   folk: Townsfolk;
@@ -379,7 +384,7 @@ export class Renderer {
           put(x + y + STRIP / 64, q.s, x, y);
         }
       };
-      if (s.kind !== 'door') {
+      if (!isLeaf(s.kind)) {
         // (the boss's, heavy and carved; or a plain one: a lever's, a locking room's)
         const boss = s.kind === 'bossgate';
         const wide = PILLAR / 32;
@@ -399,7 +404,48 @@ export class Renderer {
       const dx = s.alongX ? along : -back;
       const dy = s.alongX ? -back : along;
       const [hx, hy] = at(1);
-      put(hx + hy + 0.5 * along - 0.2 * back, A.leaf(Math.round(32 * (dx - dy)), Math.round(16 * (dx + dy))), hx, hy);
+      const ex = Math.round(32 * (dx - dy));
+      const ey = Math.round(16 * (dx + dy));
+      // (THE TRAPS: a sealed door's leaf is a slab with the rune of its word, alight until the door is opened)
+      put(hx + hy + 0.5 * along - 0.2 * back, s.kind === 'worddoor' && s.word ? A.seal(ex, ey, s.word, d.want === 0) : A.leaf(ex, ey), hx, hy);
+    }
+  }
+
+  /**
+   * (THE TRAPS, game/traps.ts; their pictures: art/hazards.ts) What of a level's traps stands up:
+   * a spike floor's spikes, while they are up, one in each of its holes, each at its own depth; and
+   * a dart wall's slot, in the face of its wall. (The holes and a plate lie flat on the floor: they
+   * are drawn with the ground.)
+   */
+  private standHazards(game: Game, cam: Cam): void {
+    const L = game.level;
+    if (L.hazards.length === 0) return;
+    const f = L.floor;
+    const A = this.art.hazards;
+    for (const z of L.hazards) {
+      const s = z.spot;
+      if (s.kind === 'spikes') {
+        const k = Math.round(spikeHeight(s, game.time) * SPIKE_STEPS);
+        if (k <= 0) continue;
+        const sp = A.spike(k);
+        for (let ty = s.y; ty < s.y + s.h; ty++) {
+          for (let tx = s.x; tx < s.x + s.w; tx++) {
+            if (!L.explored[ty * f.w + tx]) continue;
+            for (const [u, v] of SPIKE_SPOTS) {
+              const x = tx + 0.5 + u;
+              const y = ty + 0.5 + v;
+              this.stand(x + y, sp, wx(cam, x, y), wy(cam, x, y));
+            }
+          }
+        }
+      } else if (s.slot) {
+        const q = s.slot;
+        // (seen once the floor in front of it has been)
+        if (!L.explored[(q.y + q.dy) * f.w + q.x + q.dx]) continue;
+        const x = q.x + 0.5 + q.dx * 0.5;
+        const y = q.y + 0.5 + q.dy * 0.5;
+        this.stand(x + y + STRIP / 64, A.slot(q.dy !== 0), wx(cam, x, y), wy(cam, x, y));
+      }
     }
   }
 
@@ -1008,6 +1054,17 @@ export class Renderer {
         if (p.state === 0 && Math.random() < 0.2 * amb) fx.mote(p.x, p.y, [P.tl5, P.tl4, P.white]);
       }
     }
+    // (THE TRAPS) a spike floor's holes, glinting in the moment before its spikes come up; a dart wall's plate
+    for (const z of L.hazards) {
+      const s = z.spot;
+      const sp = s.kind === 'spikes' ? art.hazards.holes(spikeAt(s, game.time).at === 'warn') : art.hazards.plate(z.pressed > 0);
+      for (let ty = s.y; ty < s.y + s.h; ty++) {
+        for (let tx = s.x; tx < s.x + s.w; tx++) {
+          if (!L.explored[ty * f.w + tx] || !here(tx + 0.5, ty + 0.5)) continue;
+          g.drawImage(sp.img, Math.round(wx(cam, tx + 0.5, ty + 0.5)) - sp.ax, Math.round(wy(cam, tx + 0.5, ty + 0.5)) - sp.ay, sp.w, sp.h);
+        }
+      }
+    }
     for (const z of game.zones) {
       if (!here(z.x, z.y)) continue;
       const cx = wx(cam, z.x, z.y);
@@ -1565,6 +1622,7 @@ export class Renderer {
         if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
       }
     }
+    this.standHazards(game, cam);
     this.standDoors(L, cam);
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
@@ -1842,8 +1900,8 @@ export class Renderer {
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
-      if (p.look !== 'arrow' && p.look !== 'wave') {
-        // (a familiar's bolt is a small bright mote; anything else that is not an arrow is a ball of light)
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart') {
+        // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];
         // a shot carrying Power is drawn large, whatever its size in the rules
@@ -2037,6 +2095,24 @@ export class Renderer {
             pline(g, wx(cam, tx0 - fwx * 1.1, ty0 - fwy * 1.1), wy(cam, tx0 - fwx * 1.1, ty0 - fwy * 1.1) - 2, wx(cam, tx0 - fwx * 0.3, ty0 - fwy * 0.3), wy(cam, tx0 - fwx * 0.3, ty0 - fwy * 0.3) - 2, twin ? P.tl3 : P.gn4);
           }
         }
+        continue;
+      }
+      if (p.look === 'dart') {
+        // (THE TRAPS) a dart of a dart wall: a short iron shaft with a pale point, at the height of the
+        // slot it left; no light of its own, and no colour of a friend's or an enemy's
+        const hy = sy - 3;
+        // (a faint streak where it has just been, the shaft, and its point)
+        g.globalAlpha = 0.35;
+        pline(g, sx - ux * 16, hy - uy * 16, sx - ux * 9, hy - uy * 9, P.sl4);
+        g.globalAlpha = 1;
+        pline(g, sx - ux * 9, hy - uy * 9, sx, hy, P.sl4);
+        pline(g, sx - ux * 9, hy - uy * 9 + 1, sx - ux * 2, hy - uy * 2 + 1, P.sl2);
+        g.fillStyle = P.white;
+        g.fillRect(Math.round(sx), Math.round(hy) - 1, 2, 2);
+        g.fillStyle = P.black;
+        g.globalAlpha = 0.3;
+        g.fillRect(Math.round(sx - 3), Math.round(sy + 10), 5, 1);
+        g.globalAlpha = 1;
         continue;
       }
       if (p.look !== 'arrow') {
@@ -2324,7 +2400,7 @@ export class Renderer {
       else if (p.kind === 'tentTable') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 18, 56, 0.8);
       else if (p.kind === 'runeSlab') spot(wx(cam, p.x, p.y) + 8, wy(cam, p.x, p.y) - 12, 64 + Math.sin(t * 2) * 3, 0.75);
     }
-    for (const p of game.projectiles) spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? 34 : 26, 0.8);
+    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? 34 : 26, 0.8);
     // What a monster's own fire lights: the floor round a cultist's flame (and far more of it as
     // the flame swells before it is thrown), the Warden's maul going hot. Eyes glow, and light
     // nothing.

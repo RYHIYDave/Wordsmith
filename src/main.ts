@@ -9,6 +9,7 @@ import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
 import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
 import { makeGateArt } from './art/gates';
+import { makeHazardArt } from './art/hazards';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { makeTownProps } from './art/town';
@@ -151,6 +152,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     ground: makeGroundArt(),
     props: makeDungeonProps(),
     gates: makeGateArt(),
+    hazards: makeHazardArt(),
     town: makeTownProps(),
     folk: makeTownsfolk(),
     // THE HEROES PAINTED OVER THE BONES (art/heroes3.ts) ARE THE GAME'S from Version 16: the
@@ -444,7 +446,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (LEDGES AND STAIRS, not in any dungeon yet: a page opened with #hall=ledges has the practice
   // room in the hall built for them, with its terrace, two flights of stairs, a pit and a gap)
   const hallAsked = new URLSearchParams(location.hash.slice(1)).get('hall');
-  const PRACTICE_HALL: Hall = hallAsked === 'ledges' || hallAsked === 'steps' || hallAsked === 'mix' ? hallAsked : hallAsked !== null && SHAPES.some((k) => hallAsked === `shape:${k}`) ? (hallAsked as Hall) : 'arena';
+  const PRACTICE_HALL: Hall = hallAsked === 'ledges' || hallAsked === 'steps' || hallAsked === 'mix' || hallAsked === 'traps' ? hallAsked : hallAsked !== null && SHAPES.some((k) => hallAsked === `shape:${k}`) ? (hallAsked as Hall) : 'arena';
 
   /** The practice room: a throwaway character with every word. It leaves the saved run, the Lexicon and the stash alone. */
   const startPractice = (cls: ClassId, seed?: number, hall: Hall = PRACTICE_HALL): void => {

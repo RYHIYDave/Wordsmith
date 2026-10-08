@@ -56,9 +56,19 @@
 //   door, and each that leads on): up, until the hero is inside the room, clear of every doorway
 //   of it, with its pack; then they fall, and rise when none of that pack is left alive in the
 //   room.
+//
+// THE TRAPS (game/traps.ts). A SEALED DOOR ('worddoor') stands where a door would, a door's frame
+// and size, its leaf a slab with the rune of a word: it opens to nobody who comes near, only to a
+// hit from an attack carrying its word (game.ts, `unseal`); then it swings open as a door does.
+// Sealed, its tile is wall to whatever walks, flies, is shot or looks (game/level.ts, `finish`).
 
 import { T_FLOOR, T_WALL } from './types';
-import type { DoorSpot, Floor, Room, Vec } from './types';
+import type { DoorKind, DoorSpot, Floor, Room, Vec } from './types';
+
+/** A door, or (THE TRAPS) a sealed door: a tile wide, between two piers of stone, with one leaf that swings. (The rest are gates, the doorway wide.) */
+export function isLeaf(kind: DoorKind): boolean {
+  return kind === 'door' || kind === 'worddoor';
+}
 
 /**
  * Whether the map-maker lays doors (and the boss's gate). ON since Version 18.5: see the head of
@@ -194,7 +204,11 @@ export function layDoors(f: Floor): DoorSpot[] {
       if (far[mid] < 0 || far[within] <= far[mid]) continue; // (it leads on, or nowhere: open as it always was)
       if (r.kind === 'boss') d.kind = 'bossgate';
       else if (r.gated) d.kind = 'gate'; // (THE MIX: a gate, down until its lever is pulled, where the door would stand)
-      else if (!hasDoor(f, r)) continue; // (a room with no door: its way in is open, as before there were doors)
+      else if (r.sealed) {
+        // (THE TRAPS: a sealed door, whatever the share of rooms with a door)
+        d.kind = 'worddoor';
+        d.word = r.sealed;
+      } else if (!hasDoor(f, r)) continue; // (a room with no door: its way in is open, as before there were doors)
       out.push(d);
     }
   }
@@ -227,15 +241,15 @@ export function doorTiles(f: Floor, d: DoorSpot): number[] {
   return out;
 }
 
-/** The tiles of it that are passed through: a door's one, the three of a gate (the boss's, a lever's, a locking room's). */
+/** The tiles of it that are passed through: a door's one (a sealed door's too), the three of a gate (the boss's, a lever's, a locking room's). */
 export function doorWay(f: Floor, d: DoorSpot): number[] {
   const tiles = doorTiles(f, d);
-  return d.kind === 'door' ? [tiles[1]] : tiles;
+  return isLeaf(d.kind) ? [tiles[1]] : tiles;
 }
 
-/** The stone on either side of a door: the first and the last of its doorway's three tiles. (The boss's gate has none: its pillars stand outside the doorway.) */
+/** The stone on either side of a door (and of a sealed door): the first and the last of its doorway's three tiles. (The boss's gate has none: its pillars stand outside the doorway.) */
 export function doorPiers(f: Floor, d: DoorSpot): number[] {
-  if (d.kind !== 'door') return [];
+  if (!isLeaf(d.kind)) return [];
   const tiles = doorTiles(f, d);
   return [tiles[0], tiles[2]];
 }
@@ -258,7 +272,7 @@ export interface DoorInst {
   open: number;
   /** What it is on its way to: 0 or 1. */
   want: 0 | 1;
-  /** (THE MIX) A lever's gate: the hero has been told of it (a line on the screen, the first time it is seen from near). */
+  /** (THE MIX) A lever's gate, and (THE TRAPS) a sealed door: the hero has been told of it (a line on the screen, the first time it is seen from near). */
   told?: boolean;
 }
 
@@ -326,7 +340,7 @@ export function stepDoors(doors: DoorInst[], bodies: ReadonlyArray<Vec>, dt: num
       }
     }
     if (d.open === d.want) continue;
-    const time = d.spot.kind === 'door' ? DOOR_SWING : d.want === 1 ? GATE_RISE : GATE_FALL;
+    const time = isLeaf(d.spot.kind) ? DOOR_SWING : d.want === 1 ? GATE_RISE : GATE_FALL;
     d.open = d.want === 1 ? Math.min(1, d.open + dt / time) : Math.max(0, d.open - dt / time);
   }
   return began;

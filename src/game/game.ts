@@ -7,11 +7,13 @@ import { CLASSES, COMBO, FIRST_WORD, GAMBLE_KINDS, GUIDE, LIMITS, MANA_MODE, MON
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
-import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown } from './level';
+import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
 import type { Hall } from './level';
 import { alongCut, bodyInWall, inWall } from './cut';
 import { DOOR_HELP, GATE_INSIDE, LEVER_NEAR, LOCK_CLEAR, PIER_HOLD, doorMiddle, doorTiles, doorWay, insideBy, stepDoors } from './doors';
 import type { DoorInst } from './doors';
+import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
+import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
@@ -318,7 +320,7 @@ export class Game {
     this.refresh();
     this.clearLevel();
     const shape = SHAPES.find((k) => hall === `shape:${k}`);
-    this.level = shape ? makeShapeRoom(shape, this.seed) : hall === 'ledges' ? makeLedgeHall(this.seed) : hall === 'steps' ? makeStepHall(this.seed) : hall === 'mix' ? makeMixHall(this.seed) : makeArena(this.seed);
+    this.level = shape ? makeShapeRoom(shape, this.seed) : hall === 'ledges' ? makeLedgeHall(this.seed) : hall === 'steps' ? makeStepHall(this.seed) : hall === 'mix' ? makeMixHall(this.seed) : hall === 'traps' ? makeTrapHall(this.seed) : makeArena(this.seed);
     this.inDungeon = true;
     this.dungeonWords = [];
     const f = this.level.floor;
@@ -1020,6 +1022,7 @@ export class Game {
     const walked = this.hero.move ? 0 : Math.min(0.5, Math.hypot(this.hero.x - px, this.hero.y - py));
     this.updateVision(dt);
     this.updateDoors(dt);
+    this.updateHazards(dt);
     this.updateFlow(dt);
     this.updateMonsters(dt);
     this.updateProjectiles(dt);
@@ -1075,7 +1078,130 @@ export class Game {
       d.told = true;
       this.msg('A gate bars the way. Its lever is near.', MSG.omen);
     }
+    // (THE TRAPS) A SEALED DOOR: the first time one is seen from near, a line says what it wants
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'worddoor' || d.want !== 0 || d.told || !d.spot.word) continue;
+      const at = doorMiddle(d.spot);
+      if (Math.hypot(at.x - h.x, at.y - h.y) > TUNE.aggroRadius || !doorTiles(L.floor, d.spot).some((i) => L.visible[i] === 1)) continue;
+      d.told = true;
+      this.msg(`A sealed door. It wants ${WORDS[d.spot.word].name.toUpperCase()}.`, MSG.omen);
+    }
     this.updateLocks();
+  }
+
+  /**
+   * (THE TRAPS) A HIT FROM ABILITY `skill` reaches everything within `rad` of (x, y): A SEALED DOOR
+   * in its reach opens if the ability carries the door's word, in front or behind. (Called where
+   * a blow, a blast, a shot or what burns on the ground breaks barrels and urns: `breakProps`; and
+   * where a shot of the hero's meets a wall.) It swings open as a door does, and stays open; from
+   * then on its tile is open to whatever walks, flies, is shot or looks.
+   */
+  private unseal(skill: number, x: number, y: number, rad: number): void {
+    const L = this.level;
+    if (L.doors.length === 0 || skill < 0) return;
+    for (const d of L.doors) {
+      const w = d.spot.word;
+      if (d.spot.kind !== 'worddoor' || d.want !== 0 || !w) continue;
+      const at = doorMiddle(d.spot);
+      // (the door's tile: a tile across, so a hit that reaches within half a tile of its middle, and a little more, is on it)
+      if (Math.hypot(at.x - x, at.y - y) > rad + 0.65) continue;
+      if (!this.fronts(skill).includes(w) && !this.behinds(skill).includes(w)) continue;
+      d.want = 1;
+      d.told = true;
+      for (const i of doorWay(L.floor, d.spot)) {
+        L.walk[i] = 1;
+        L.open[i] = 1;
+      }
+      this.visionT = 0;
+      this.emit({ t: 'door', x: at.x, y: at.y, kind: 'open' });
+      this.emit({ t: 'spark', x: at.x, y: at.y, el: WORDS[w].element ?? 'phys', n: 10 });
+      this.sfx('door', 0.8);
+      this.sfx('word', 0.6);
+      this.msg(`The ${WORDS[w].name.toUpperCase()} seal breaks.`, MSG.word);
+    }
+  }
+
+  // ===========================================================================================
+  // (THE TRAPS, game/traps.ts) Spike floors and dart walls. A level has none unless they were laid.
+
+  private updateHazards(dt: number): void {
+    const L = this.level;
+    if (L.hazards.length === 0) return;
+    const h = this.hero;
+    for (const z of L.hazards) {
+      if (z.spot.kind === 'spikes') this.stepSpikes(z, h);
+      else this.stepDarts(z, h, dt);
+    }
+  }
+
+  /**
+   * A SPIKE FLOOR: up, its spikes hurt whatever walks on the patch, once each time they rise: the
+   * hero (a share of their life, before armour; not while leaping or rolling, nor while nothing
+   * can hurt them), and every monster but a bat, which flies over (a share of its own life). A
+   * boss is never hurt by one: none is laid in a boss's hall.
+   */
+  private stepSpikes(z: HazardInst, h: Hero): void {
+    const up = spikeAt(z.spot, this.time).at === 'up';
+    if (up && !z.wasUp) {
+      z.hit.length = 0;
+      const tx = z.spot.x + z.spot.w / 2;
+      const ty = z.spot.y + z.spot.h / 2;
+      if (Math.hypot(tx - h.x, ty - h.y) < 9) this.sfx('trapSet', 0.35);
+    }
+    z.wasUp = up;
+    if (!up || this.over) return;
+    if (!z.hit.includes(-1) && !h.move && h.invuln <= 0 && onHazard(z.spot, h.x, h.y)) {
+      z.hit.push(-1);
+      this.hurtHero(h.d.maxLife * SPIKE.share, 'phys', [], null, 'spikes');
+    }
+    for (const m of this.monsters) {
+      if (m.dead || m.kind === 'bat' || m.boss || z.hit.includes(m.id) || !onHazard(z.spot, m.x, m.y)) continue;
+      z.hit.push(m.id);
+      this.damageMonster(m, Math.max(1, Math.round(m.maxLife * SPIKE.share)), 'phys', false, -1);
+    }
+  }
+
+  /**
+   * A DART WALL: the hero steps on the plate, and if it is ready it clicks; a moment later the
+   * first of three darts leaves the slot, all of them at the place where the hero stood as it
+   * clicked (the click is the warning: who moves at once is missed). Ready again `DART.rearm`
+   * seconds after the click. (A monster on the plate does not set it off.)
+   */
+  private stepDarts(z: HazardInst, h: Hero, dt: number): void {
+    z.ready = Math.max(0, z.ready - dt);
+    z.pressed = Math.max(0, z.pressed - dt);
+    if (z.left > 0) {
+      z.next -= dt;
+      if (z.next <= 0) {
+        this.fireDart(z);
+        z.left--;
+        z.next = DART.gap;
+      }
+    }
+    if (this.over || z.ready > 0 || z.left > 0 || !onHazard(z.spot, h.x, h.y)) return;
+    z.left = DART.count;
+    z.next = DART.first;
+    z.ready = DART.rearm;
+    z.pressed = 0.6;
+    z.aimX = h.x;
+    z.aimY = h.y;
+    this.sfx('click', 0.9);
+  }
+
+  /** One dart leaves a dart wall's slot, at the place the hero stood as the plate clicked. */
+  private fireDart(z: HazardInst): void {
+    const o = slotMouth(z.spot);
+    let dx = z.aimX - o.x;
+    let dy = z.aimY - o.y;
+    const n = Math.hypot(dx, dy) || 1;
+    dx /= n;
+    dy /= n;
+    this.projectiles.push({
+      x: o.x, y: o.y, vx: dx * DART.speed, vy: dy * DART.speed, r: DART.r, dist: DART.reach,
+      hostile: true, trap: true, dmg: DART.share, element: 'phys', look: 'dart', pierce: false, hit: [],
+      volley: false, skill: -1, trail: 0, words: [], runed: false, clouded: false, age: 0, from: 'a dart', n: 0,
+    });
+    this.sfx('shot', 0.5);
   }
 
   /**
@@ -1156,7 +1282,7 @@ export class Game {
     const h = this.hero;
     for (const d of L.doors) {
       // (a door that is shut; and THE MIX: a lever's gate that is down. Not the boss's gate, nor a locking room's: when those are down the hero is inside)
-      if ((d.spot.kind !== 'door' && d.spot.kind !== 'gate') || d.want !== 0) continue;
+      if ((d.spot.kind !== 'door' && d.spot.kind !== 'gate' && d.spot.kind !== 'worddoor') || d.want !== 0) continue;
       const r = L.floor.rooms.find((q) => q.id === d.spot.room);
       if (!r || m.x < r.x || m.y < r.y || m.x >= r.x + r.w || m.y >= r.y + r.h) continue;
       if (h.x < r.x || h.y < r.y || h.x >= r.x + r.w || h.y >= r.y + r.h) return true;
@@ -2182,7 +2308,7 @@ export class Game {
         hits++;
       }
       if (line.length) this.landed(i);
-      for (let d = 0.5; d < end.len; d += 1) this.breakProps(sx + dx * d, sy + dy * d, half + 0.25);
+      for (let d = 0.5; d < end.len; d += 1) this.breakProps(sx + dx * d, sy + dy * d, half + 0.25, i);
       if (k === 0 && leaves) {
         // what it leaves: ground along the line; a rune and a cloud where it first struck, or
         // failing that near its far end
@@ -2565,7 +2691,7 @@ export class Game {
         best = m;
       }
     }
-    this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9);
+    this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9, i);
     if (!best) {
       // a swing that meets nothing still leaves its wake where the blade passed, as a shot does where it ends
       const wx = ox + dx * reach * 0.75;
@@ -2610,7 +2736,7 @@ export class Game {
       this.landed(i);
       this.sfx(r.element === 'fire' ? 'fire' : r.element === 'frost' ? 'frost' : r.element === 'lightning' ? 'zap' : 'hit', 0.8);
     }
-    this.breakProps(cx, cy, rad);
+    this.breakProps(cx, cy, rad, i);
     if (leaves) this.wake(i, cx, cy, rad, frac);
   }
 
@@ -3421,6 +3547,8 @@ export class Game {
         const nx = p.x + (p.vx / sp) * step;
         const ny = p.y + (p.vy / sp) * step;
         if (!this.isOpen(nx, ny)) {
+          // (THE TRAPS: what the hero shoots may meet a sealed door, and open it)
+          if (!p.hostile) this.unseal(p.skill, nx, ny, 0.1);
           this.endProjectile(p);
           dead = true;
           break;
@@ -3430,16 +3558,27 @@ export class Game {
         p.dist -= step;
         if (p.hostile) {
           if (!h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
-            this.hurtHero(p.dmg, p.element, p.words, null, p.from);
+            // (THE TRAPS: a dart's harm is a share of the life of what it meets)
+            this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from);
             this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 5 });
             dead = true;
+          }
+          // (THE TRAPS: a dart is the dungeon's, and hurts a monster it meets as it would the hero)
+          if (!dead && p.trap) {
+            for (const m of this.monsters) {
+              if (m.dead || m.boss || Math.hypot(m.x - p.x, m.y - p.y) > p.r + m.r) continue;
+              this.damageMonster(m, Math.max(1, Math.round(m.maxLife * p.dmg)), 'phys', false, -1);
+              this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 5 });
+              dead = true;
+              break;
+            }
           }
         } else {
           const r = h.skills[p.skill].r;
           // Whatever the hero sends flying breaks the barrels and urns it passes, and flies on: it
           // is not spent on one, so a shot aimed at a monster still gets there. (The owner, with
           // Version 12: "can't be broken by projectile attacks. That needs to be fixed".)
-          this.breakProps(p.x, p.y, p.r);
+          this.breakProps(p.x, p.y, p.r, p.skill);
           for (const m of this.monsters) {
             if (m.dead || p.hit.includes(m.id)) continue;
             if (Math.hypot(m.x - p.x, m.y - p.y) > p.r + m.r) continue;
@@ -3492,7 +3631,7 @@ export class Game {
         if (p.volley) p.hit.push(o.id);
         this.hitMonster(o, p.skill, p.dmg * r.splashDmg, true);
       }
-      this.breakProps(x, y, rad);
+      this.breakProps(x, y, rad, p.skill);
     }
     if (r.rune > 0 && !p.runed) {
       p.runed = true;
@@ -3612,7 +3751,7 @@ export class Game {
             hits++;
           }
           if (hits > 0) this.landed(v.skill);
-          this.breakProps(ax, ay, reach * 0.6);
+          this.breakProps(ax, ay, reach * 0.6, v.skill);
           this.emit({ t: 'volleyFall', x: ax, y: ay, el: v.element, words, n: c, echo: v.echo, hits });
           // (ten arrows a second: the ones that hit are heard, and every other one that does not)
           if (hits > 0) this.sfx('hit', 0.45);
@@ -3651,7 +3790,7 @@ export class Game {
           for (const m of this.monsters) {
             if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r) this.damageMonster(m, Math.max(1, Math.round(z.dmg)), z.element, false, z.skill);
           }
-          this.breakProps(z.x, z.y, z.r);
+          this.breakProps(z.x, z.y, z.r, z.skill);
         }
         continue;
       }
@@ -3926,7 +4065,9 @@ export class Game {
   // ===========================================================================================
   // Props and the portal
 
-  private breakProps(x: number, y: number, rad: number): void {
+  /** `skill`: the ability whose hit it is (THE TRAPS: a sealed door in reach opens to one that carries its word: `unseal`). */
+  private breakProps(x: number, y: number, rad: number, skill = -1): void {
+    this.unseal(skill, x, y, rad);
     const f = this.level.floor;
     for (const p of this.level.props) {
       if (p.state !== 0 || (p.kind !== 'barrel' && p.kind !== 'urn')) continue;

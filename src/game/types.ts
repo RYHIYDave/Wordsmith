@@ -233,6 +233,11 @@ export interface Room {
   locks?: boolean;
   nook?: boolean;
   nextDoor?: boolean;
+  /**
+   * (THE TRAPS, game/traps.ts) A SEALED DOOR stands in its way in, a rune of this word on it: it
+   * opens only to a hit from an attack that carries the word (`DoorSpot.word`).
+   */
+  sealed?: WordId;
 }
 
 export type PropKind = 'brazier' | 'chest' | 'barrel' | 'urn' | 'pillar' | 'bones' | 'rubble' | 'lever';
@@ -282,8 +287,12 @@ export interface PackSpot {
  *   'trapgate'  (THE MIX) the same gate in EVERY doorway of a room that locks: up, until the
  *               hero is well inside with the room's pack; then down, until none of that pack
  *               is left alive in the room.
+ *   'worddoor'  (THE TRAPS, game/traps.ts) A SEALED DOOR: a door's frame and size, its leaf a
+ *               slab with the rune of a word on it (`word`). It opens to nobody who comes near:
+ *               only to a hit from an attack that carries its word; then it swings open as a
+ *               door does, and stays open. Sealed, nothing passes it, nor a shot, nor sight.
  */
-export type DoorKind = 'door' | 'bossgate' | 'gate' | 'trapgate';
+export type DoorKind = 'door' | 'bossgate' | 'gate' | 'trapgate' | 'worddoor';
 
 /** (THE MIX) A LEVER: the tile it stands on (a prop of kind 'lever' stands there), and the room whose way in its gate bars. */
 export interface LeverSpot {
@@ -309,6 +318,32 @@ export interface DoorSpot {
   plane: number;
   /** Which way the corridor lies from that line, and so which way its leaves swing: +1 toward greater y (or x), -1 toward lesser. */
   out: 1 | -1;
+  /** (THE TRAPS) A sealed door's word: the one an attack must carry to open it. */
+  word?: WordId;
+}
+
+/**
+ * (THE TRAPS, game/traps.ts) WHAT THE DUNGEON ITSELF HAS LAID FOR THE HERO.
+ *   'spikes'  A PATCH OF FLOOR whose spikes come up on a beat (`x`, `y`, `w`, `h`: its tiles;
+ *             `phase`: seconds into its beat as the level begins). Up, they hurt whatever
+ *             walks on the patch, hero and monster alike, once each time they rise.
+ *   'darts'   A PLATE in a corridor's floor (the tile `x`, `y`; `w` = `h` = 1) and a SLOT in the
+ *             wall at the end of the corridor (`slot`: the wall's tile, and the way the darts
+ *             leave it, `dx`, `dy`: a step along x or along y). The hero steps on the plate:
+ *             it clicks, and three darts leave the slot one after another, all at the place the
+ *             hero stood as it clicked; they hurt what they meet, hero or monster. The plate is
+ *             ready again a few seconds later.
+ */
+export type HazardKind = 'spikes' | 'darts';
+
+export interface HazardSpot {
+  kind: HazardKind;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  phase?: number;
+  slot?: { x: number; y: number; dx: number; dy: number };
 }
 
 export interface Floor {
@@ -350,6 +385,8 @@ export interface Floor {
   doors?: DoorSpot[];
   /** (THE MIX) The levers of the level's gates; absent where there are none. */
   levers?: LeverSpot[];
+  /** (THE TRAPS) The spike floors and dart walls of the level; absent where there are none (game/traps.ts). */
+  hazards?: HazardSpot[];
 }
 
 /**
