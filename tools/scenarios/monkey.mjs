@@ -218,7 +218,8 @@ export default async function (page, snap) {
     for (const x of (c.log || '').split(' ')) if (x) prompts.add(x);
     // at the starting screen its own menu is pressed for a while (NEW GAME, CONTINUE, LEXICON, OPTIONS, the class cards); now and then a character is simply started
     if (c.title) { if (rnd() < 0.3) { await begin(pick(['warrior', 'ranger', 'mage']), 5, guided && rnd() < 0.7); await page.waitForTimeout(80); } }
-    else if (c.over) { if (await hands.mark('button:New run')) await hands.press('button:New run'); }
+    // (a Hardcore hero's death has New run; a Normal hero's, Back to town: Version 19.1, game/modes.ts)
+    else if (c.over) { if (await hands.mark('button:New run')) await hands.press('button:New run'); else if (await hands.mark('button:Back to town')) await hands.press('button:Back to town'); }
     else if (!c.town && rnd() < 0.5) { await page.evaluate(() => { const g = window.__dbg.game(); if (g && !g.level.town && !g.over && !g.guide && !g.practice) g.enterTown(); }); }
   }
   const end = await page.evaluate(() => { const d = window.__dbg; return { log: d.guideLog.join(' '), taught: d.meta().taught, missing: d.missing() }; });

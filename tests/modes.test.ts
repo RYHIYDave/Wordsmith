@@ -2,8 +2,10 @@
 // (the owner's gameplay rulebook, approved 8 Oct 2026, 10:33, "Heroes, death and the two modes").
 // A NORMAL death wakes the hero in town, without what was found in that dungeon and a share of the
 // gold carried in; the level, the gear worn in and the words stay. HARDCORE is the game as it was.
-// PICTURES FIRST: the switch (MODES.on) is off in the game until his yes; these tests hold it on
-// where they ask about Normal mode, and off where they ask that nothing has changed.
+// PICTURES FIRST: its pictures went to him at 13:34; his answers at 13:35, "Yes, as it is
+// (Recommended)" and, of the gold, "A quarter (Recommended)". The switch (MODES.on) is on from
+// Version 19.1; these tests hold it on where they ask about Normal mode, and off where they ask
+// that the game without it is as it was.
 //   run: tsx --test tests/modes.test.ts
 
 // @ts-ignore
@@ -57,6 +59,11 @@ const killed = (g: Game): void => {
   g.hurtHero(1e9, 'phys', [], null, 'a test');
 };
 const tiles = (g: Game): string => Array.from(g.level.floor.tiles).join('');
+
+test('the switch is on, on his yes, and a Normal death costs a quarter of the gold carried in', () => {
+  assert.equal(MODES.on, true);
+  assert.equal(NORMAL.goldShare, 0.25);
+});
 
 test('the switch is off: every hero is made, and dies, as before', () => {
   modes(false, () => {

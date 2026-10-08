@@ -1,4 +1,5 @@
-// NORMAL MODE, FOR PICTURES (game/modes.ts; behind `MODES.on`, switched on here for the page alone):
+// NORMAL MODE (game/modes.ts, `MODES.on`, on since Version 19.1), its pictures and its playtest (in the
+// regression: modes_pc, modes_phone):
 //   1. the class cards with the mode's button, as they open (Normal), and pressed (Hardcore);
 //   2. a Normal warrior falls in dungeon 4, with what he found there in his bag: YOU FELL, what it
 //      cost, and "Back to town";
@@ -87,6 +88,5 @@ export default async function (page, snap) {
   });
   check('3. he wakes in town, at his level, the same dungeon waiting, 180 gold, nothing he found', woke.town && !woke.over && woke.level === set.level && woke.depth === 4 && woke.gold === 180 && woke.frost === 0 && woke.bag === 0, JSON.stringify(woke));
   check('   and the line says so', /You wake in town\. Lost: what you found in dungeon 4 \(2 items, 1 word, 140 gold\), and 60 of your own gold\./.test(woke.said), woke.said);
-  await page.evaluate(() => { window.__dbg.modes.on = false; });
   log(fails === 0 ? 'finished clean' : `${fails} failed`);
 }

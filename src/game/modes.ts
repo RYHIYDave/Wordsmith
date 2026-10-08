@@ -6,20 +6,23 @@
 //   HARDCORE  a death loses the hero; the Lexicon, the stash and the unlocks stay for the next.
 //             Until now the game's only rule (`die` in game/game.ts).
 // His order, 8 Oct, 10:33: after the traps, "Normal mode (Recommended)".
-// PICTURES FIRST (CLAUDE.md): nothing of this is in the game until he has seen it and said yes.
-// With MODES.on false every hero is made, and dies, as before.
+// PICTURES FIRST (CLAUDE.md): he was sent its pictures at 13:34 (normal_cards.png, normal_fell.png,
+// normal_town.png, made by tools/scenarios/modes_look.mjs), with "Put Normal mode into the game, as
+// in the pictures?" and "How much of your own gold should a Normal death cost? (On top of
+// everything found in that dungeon.)". HIS ANSWERS, 13:35: "Yes, as it is (Recommended)" and "A
+// quarter (Recommended)". In the game from Version 19.1. With MODES.on false every hero is made,
+// and dies, as before.
 
 export type HeroMode = 'normal' | 'hardcore';
 export const HERO_MODES: readonly HeroMode[] = ['normal', 'hardcore'];
 
-/** The switch: the class cards offer the two modes, and a Normal hero who dies wakes in town. */
-export const MODES = { on: false };
+/** The switch: the class cards offer the two modes, and a Normal hero who dies wakes in town. On, on his yes (13:35). */
+export const MODES = { on: true };
 
 export const NORMAL = {
   /**
    * The share of the gold carried INTO the dungeon that a Normal death costs, besides all that was
-   * found there (gold too). Still open in his rulebook ("How much gold a Normal death costs"): to
-   * be asked of him with the pictures.
+   * found there (gold too). His answer, 8 Oct 2026, 13:35: "A quarter (Recommended)".
    */
   goldShare: 0.25,
 };

@@ -311,6 +311,12 @@ wait
 run traps_pc     --scenario $S/traps_look.mjs &
 run traps_phone  $P --scenario $S/traps_look.mjs &
 wait
+# NORMAL MODE (Version 19.1): the class cards' mode, Normal and then Hardcore; a Normal warrior
+# falls in dungeon 4 with what he found there (YOU FELL, what it cost, Back to town); he wakes in
+# town without it, a quarter of his gold gone, the same dungeon waiting.
+run modes_pc     --scenario $S/modes_look.mjs &
+run modes_phone  $P --scenario $S/modes_look.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &
