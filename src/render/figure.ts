@@ -53,6 +53,8 @@ export interface FigureState {
   reelT?: number;
   /** ... and that the blow came from behind them: they are thrown forward (`clips.lurch`) where one from in front rocks them back. */
   reelBehind?: boolean;
+  /** How far the hero has walked, in tiles, all told: a walk whose feet grip the floor (`AnimSet.walkStride`) is shown by it. */
+  walked?: number;
 }
 
 /**
@@ -393,7 +395,11 @@ export class Figure {
       this.loopFrom = st.animT;
     } else if (anim === 'walk') {
       this.sinceHeld = -1;
-      s = set.walk[Math.floor(st.animT * (set.walkFps ?? 8)) % set.walk.length];
+      // (a walk whose feet grip the floor goes by how far the hero has gone, to the nearest picture,
+      // so that a step's worth that falls a hair short does not show the picture before; any other by the clock)
+      const n = set.walk.length;
+      const at = set.walkStride !== undefined && st.walked !== undefined ? Math.round((st.walked / set.walkStride) * n) : Math.floor(st.animT * (set.walkFps ?? 8));
+      s = set.walk[((at % n) + n) % n];
     } else {
       this.sinceHeld = -1;
       const land = this.sinceLand >= 0 ? set.clips?.land : undefined;

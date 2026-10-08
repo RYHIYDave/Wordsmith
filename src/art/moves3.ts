@@ -7,7 +7,7 @@
 // Each move keeps the game's own timing: its blow lands (`hit`) when the rules say it does.
 
 import { holdOnBack } from './carried';
-import { add, bonesAt, buildOf, dot, elbowFor, heading, len, mul, solve, standing, sub } from './skeleton';
+import { add, bonesAt, buildOf, dot, elbowFor, GRID, heading, len, mul, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion } from './skeleton';
 
 /** The usual body: 57 picture pixels tall, built like a grown person. What a weapon's length is a share of, and what the moves were first written on. */
@@ -53,6 +53,11 @@ export interface Move3 {
   arc?: { until: number; high: number };
   /** For a move in which a weapon is drawn: the moment, in seconds from its start, at which the hero stands ready with it (the stance is then held a while). */
   ready?: number;
+  /**
+   * For a run whose feet grip the floor (GRIP, below): how many tiles the hero goes in one turn of
+   * it. The game then chooses its frame by how far the hero has gone, not by the clock.
+   */
+  stride?: number;
 }
 
 const FR = 1 / 30;
@@ -88,9 +93,12 @@ export interface Gait {
   arms: (swing: number, step: number) => Partial<Bones>;
 }
 
+/** How much of a run's stride each foot is on the floor. */
+export const RUN_STANCE = 0.36;
+
 /** Two steps of a run (the left foot comes down at the start, the right half way), which then goes round. It takes `period` seconds. */
 export function run(g: Gait, period = 0.5, n = 16): Motion {
-  const STANCE = 0.36;
+  const STANCE = RUN_STANCE;
   const foot = (phase: number): { x: number; z: number; pitch: number } => {
     const ph = ((phase % 1) + 1) % 1;
     if (ph < STANCE) {
@@ -1331,6 +1339,54 @@ export const KNIGHT_LOOKS3: Move3 = { name: 'The knight looks about him', held: 
 /** The ranger's two (his squirrel; an arrow held before his eye) as he does them in town, the bow on his back: neither needs it in his hand. */
 export const RANGER_TOWN_SQUIRREL3: Move3 = { ...SQUIRREL3, name: 'The ranger and his squirrel, in town', rest: RANGER_TOWN };
 export const RANGER_TOWN_SIGHTING3: Move3 = { ...SIGHTING3, name: 'The ranger sights along an arrow, in town', rest: RANGER_TOWN };
+
+/**
+ * FEET THAT GRIP: THE RUNS. A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The
+ * owner asked at 14:20, "I want you to go through all animations for the three characters and see
+ * if they pass our ruleset", and the review (docs/requests/hero_moves_review.md, A) found that every
+ * run slides its feet: the game carries a hero 4.6 tiles a second, and a run's foot on the floor
+ * goes back under the body more slowly than that (the warrior's would have to be played 1.46
+ * times as fast, the ranger's 1.22, the mage's 1.79). Movement 8: "Feet grip the floor. A foot
+ * stays where it lands; a running figure moves its legs faster rather than slide." Asked at 15:00
+ * in what order to mend it all (the feet first), he gave no preference.
+ *   So, with the switch on: each run steps faster (a turn of it in `period` seconds at the game's
+ *   own speed, where it was half a second) and further (its reach and push grown so that a foot on
+ *   the floor goes back exactly as fast as the hero goes forward; its kick and bob a little, with
+ *   the longer step); and the game chooses its frame by how far the hero has gone (`Move3.stride`,
+ *   render/figure.ts), so that the feet grip at any speed: hasted, chilled, slowed by an attack.
+ *   It is painted in sixty pictures a second of it (art/heroes3.ts), one for each step the game
+ *   takes on a phone, so that a foot on the floor stays put between one picture and the next; and
+ *   a turn of it takes a whole number of sixtieths of a second (27, 25 and 23 of them).
+ *   The warrior steps at 4.4 a second, heavy; the ranger at 4.8, light; the mage at 5.2, quick.
+ */
+export const GRIP = { on: false };
+/** The game's own speed for a hero, tiles a second (TUNE.heroSpeed in game/defs.ts: a test holds them the same). */
+export const GRIP_SPEED = 4.6;
+/** Figure units (picture pixels along the way he faces) in a tile: a tile is 32 game pixels across, a unit forward GRID/2 of one. */
+export const UNITS_PER_TILE = 32 / GRID;
+/** A gait whose feet grip at the game's speed when a turn of it takes `period` seconds. */
+export function gripping(g: Gait, period: number): Gait {
+  const k = (GRIP_SPEED * UNITS_PER_TILE * RUN_STANCE * period) / (g.reach + g.push);
+  // (and sitting a little lower in it, so that the legs reach the longer step)
+  return { ...g, reach: g.reach * k, push: g.push * k, kick: g.kick * Math.sqrt(k), bob: g.bob * Math.sqrt(k), sink: g.sink + Math.max(0, k - 1) * 4.5 };
+}
+/** Each run: its move, its gait, how long a turn of it takes when it grips, and how its keys are finished. */
+const GRIP_RUNS: [Move3, Gait, number, (m: Motion) => Motion][] = [
+  [KNIGHT_RUN3, KNIGHT_GAIT, 27 / 60, (m) => m],
+  [RANGER_RUN3, RANGER_GAIT, 25 / 60, (m) => ready(m)],
+  [MAGE_RUN3, MAGE_GAIT, 23 / 60, (m) => m],
+  [KNIGHT_TOWN_RUN3, KNIGHT_TOWN_GAIT, 27 / 60, (m) => ready(m, { py: 0, stow: 1 })],
+  [RANGER_TOWN_RUN3, RANGER_TOWN_GAIT, 25 / 60, (m) => ready(m, { ...READY, stow: 1 })],
+];
+/** Put the gripping runs in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
+export function useGrippingRuns(on: boolean): void {
+  GRIP.on = on;
+  for (const [move, g, period, finish] of GRIP_RUNS) {
+    move.motion = finish(on ? run(gripping(g, period), period) : run(g));
+    if (on) move.stride = GRIP_SPEED * period;
+    else delete move.stride;
+  }
+}
 
 /** Every move there is on the bones so far, by a short name. */
 export const MOVES3: Record<string, Move3> = {
