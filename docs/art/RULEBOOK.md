@@ -93,6 +93,7 @@ The places carry the detail, always a step quieter than the fight. In your words
 4. **Solid, not flat.** Walls are upright faces lit as the light falls, the left face lighter than the right, fading into the dark at the top. Props stand up off the floor with soft shadows. Steps and ledges are part of the world: "steps are a must include".
 5. **Writing as landmarks.** Here and there a place has words carved into it: over a door, round a shrine, on a boss's gate. Never on every wall.
 6. **Books may give worlds.** A group of floors may take its world from an old book, drawn only from the book itself and only from books out of copyright. The heroes never change their look for a book.
+7. **Old, broken and burnt.** Decorations show age: a tapestry torn and burnt, hanging in strips; a gargoyle head small and high on the wall; flagstones cracked or gone; a soft shadow at the foot of everything that stands. In your words, of the first gargoyle: "It’s too big and too low on the wall."
 
 ## Movement
 
@@ -108,6 +109,8 @@ Weight is the test for every animation, and every character moves its own way. I
 4. **Loose things follow.** Cloth and hair trail the body and settle after it stops, and a blast or a beam blows them back.
 5. **Slick.** Smooth, plenty of frames, nothing jerky. In your words: "I want the animations to be really slick".
 6. **Alive when still.** A figure left standing breathes, shifts its weight and has small habits of its own.
+7. **Heavy blows land with a freeze.** The moment a heavy blow lands, everything holds for a tenth of a second. You chose it on 8 Oct.
+8. **Feet grip the floor.** A foot stays where it lands; a running figure moves its legs faster rather than slide. You chose it on 8 Oct.
 
 ## Hits, blood and deaths
 
@@ -201,11 +204,9 @@ The look in numbers as the game has it in Version 18.8, checked against its code
 
 ## Still open
 
-Six things are not decided yet; each answer becomes a rule here.
+Four things are not decided yet; each answer becomes a rule here.
 
 - [ ] Whether groups of floors take their worlds from old books, and which books ("maybe", "possibly").
 - [ ] Which places come first, and each one's palette: to be set place by place, with pictures.
 - [ ] Skins: whether to sell them, and when.
 - [ ] Gear beyond weapons: "further on down the road, if ever".
-- [ ] The two films of weight you have (a short freeze on a heavy blow; feet that grip the floor): your yes or no decides whether they become rules.
-- [ ] Decorations built the way the heroes are (a moth-eaten tapestry, a gargoyle head, a missing flagstone, soft shadows under props): waiting for your word.

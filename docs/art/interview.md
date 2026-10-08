@@ -285,3 +285,25 @@ the recommendation.) He was told at 08:38: "Yes. From now on, whenever I need an
 comes as a pop-up like that: a few options to tap, my pick marked first, and you can always type
 your own. News and finished work still come as normal messages. I'll leave a note so the main chat
 does the same." Consider a line for it under "The owner's standing rules" in `CLAUDE.md`.
+
+## The weight films and the decorations (8 Oct, 08:38 to 08:55), asked the new way
+
+At 08:38, three pop-ups at once: the decorations ("is this what you meant by tapestries, gargoyle
+heads and broken floor tiles?"), weight film 1 (the freeze on a heavy blow) and weight film 2 (feet
+that stay where they land). **08:42: "Close, but change it"; "Yes (Recommended)"; "Yes
+(Recommended)".** Told at 08:42: "Both weight films: yes. Heavy blows freeze for a tenth of a second
+as they land, and the heroes' feet stay where they land. Both go to the main chat and into the
+rulebook." Then which decorations and how: **08:43: "The tapestry,The gargoyle head"; "A different
+look"**; then what look: **08:44: "Torn and burnt"** for the tapestry, and of the gargoyle **"It’s too
+big and too low on the wall."** Told at 08:44 the two would be redone. The second look went to him at
+08:51 (`mockup/decorations`, `docs/mockups/decorations/README.md`, "The second look"); asked "is this
+it now?": **08:55: "Yes, that's it (Recommended)".**
+
+Changed in the rulebook for them: "Movement" rule 7 (heavy blows land with a freeze) and rule 8 (feet
+grip the floor); "Places" rule 7 (old, broken and burnt: the decorations as chosen); "Still open" is
+down to four (books, places and their palettes, skins, gear beyond weapons).
+
+FOR THE MAIN CHAT: add these two to the list of what is now yours to build for real, each behind its
+switch until it is in: the two films of weight (`mockup/weight-films`: `HITSTOP`, `STRIDE` in
+`src/render/weight.ts`) and the decorations as in their second look (`mockup/decorations`: `DECOR.on`;
+not `DECOR.near`, the darker figure by a fire, which he never saw).
