@@ -19,7 +19,8 @@
 //   turn:  node tools/true_left_gif.mjs (it collects this page's frames).
 //     `turn:<scale>`: the knight standing and turning on the spot, round once: with the game's four
 //     views as now, beside himself turning the same way with eight views, each the figure itself
-//     turned. window.__frame(i) draws frame i.
+//     turned. window.__frame(i) draws frame i. `turn:<scale>:true4`: the four views turned for real
+//     (his yes of 8 Oct, 08:23) beside the eight: node tools/true_left_gif.mjs <out.gif> 5 20 true4
 import type { ActorArt } from '../art/actor_types';
 import { makeGroundArt } from '../art/ground';
 import { HERO_TAILS } from '../art/heroes';
@@ -34,7 +35,9 @@ import { Tails } from '../engine/tails';
 import { Figure } from '../render/figure';
 import type { FigureState } from '../render/figure';
 
-const [mode = 'cells', scaleArg = '4'] = decodeURIComponent(location.hash.slice(1)).split(':');
+const [mode = 'cells', scaleArg = '4', variant = ''] = decodeURIComponent(location.hash.slice(1)).split(':');
+/** `turn:<scale>:true4`: the left pane shows the four views TURNED FOR REAL (the switch on, as the owner chose on 8 Oct 2026), not the four as now. */
+const TRUE4 = variant === 'true4';
 const S = Number(scaleArg) || 4;
 const DUNGEON = { twoHanded: true };
 
@@ -357,7 +360,7 @@ if (mode === 'turn') {
       const w = way(((k % frames) + frames) % frames);
       bearing = w.b;
       const t = (k + frames * 2) / FPS;
-      a = now.frame(today, { anim: 'idle', animT: t, fx: w.fx, fy: w.fy, attackSkill: 0, attackAge: 0, attackWind: 0, leapK: -1 }, 1 / FPS, 0, 0, false);
+      a = now.frame(TRUE4 ? turned : today, { anim: 'idle', animT: t, fx: w.fx, fy: w.fy, attackSkill: 0, attackAge: 0, attackWind: 0, leapK: -1 }, 1 / FPS, 0, 0, false);
       // the nearest of the eight ways, and his stance in it at the moment the game's own loop is at (ten frames a second)
       const k8 = Math.round((((w.b - 135) % 360) + 360) % 360 / 45) % 8;
       b = looseFrame(EIGHT[k8][1], Math.floor(t * 10) % 20);
@@ -369,7 +372,7 @@ if (mode === 'turn') {
     g.fillRect(0, 0, cv.width, cv.height);
     const sa = a as Sprite;
     const sb = b as Sprite;
-    pane(GAPX, 'NOW: 4 views', 'two are the other two turned over', () => {
+    pane(GAPX, TRUE4 ? '4 views, turned for real' : 'NOW: 4 views', TRUE4 ? 'as you chose: the game with true left' : 'two are the other two turned over', () => {
       now.draw(g, sa, PX, PY, 1);
       now.lights(g, PX, PY, 1);
     }, bearing);
