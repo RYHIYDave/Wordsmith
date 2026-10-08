@@ -142,8 +142,8 @@ const CLOTHS: readonly Cloth[] = [
 export const TAPESTRY_KINDS = CLOTHS.length;
 
 /**
- * (MOCK-UP) THE OWNER'S CHOICE, 8 Oct 2026, 08:40, of the first pictures: the tapestry "Close, but change
- * it", "A different look", and of the looks offered: "Torn and burnt" ("Hanging in strips, scorched
+ * (MOCK-UP) THE OWNER'S CHOICE, 8 Oct 2026, of the first pictures: the decorations "Close, but change
+ * it" (08:42), the tapestry "A different look" (08:43), and of the looks offered: "Torn and burnt" (08:44) ("Hanging in strips, scorched
  * holes, clearly old."). `burnt: false` gives the moth-eaten cloth of the first pictures, for comparison.
  */
 export const TAPESTRY_LOOK = { burnt: true };
@@ -425,7 +425,7 @@ const GARGOYLE_MOUNT_HIGH = 42;
 const HEAD_FIRST = 1.15;
 const HEAD_SMALL = 0.75;
 /**
- * (MOCK-UP) THE OWNER, 8 Oct 2026, 08:40, of the first pictures' gargoyle: "It’s too big and too low on
+ * (MOCK-UP) THE OWNER, 8 Oct 2026, 08:44, of the first pictures' gargoyle: "It’s too big and too low on
  * the wall." `small: true` builds it at about two thirds of its first size, its middle 7 picture
  * pixels higher, so that it sits in the top half of the wall's solid part and no higher than it.
  * `small: false` gives the first one, for comparison.
