@@ -43,6 +43,8 @@ const PROP_COLOUR: Record<PropKind, string> = {
   pillar: '#15131a',
   bones: '#b9b4a6',
   rubble: '#8d8791',
+  // (THE MIX: a lever, in the cyan of what is the player's to use)
+  lever: '#7af8f0',
 };
 
 function drawFloor(g: CanvasRenderingContext2D, f: Floor, ox: number, oy: number): void {

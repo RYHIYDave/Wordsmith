@@ -52,7 +52,7 @@ import type { RNG } from '../src/engine/rng';
 import { MONSTERS, TUNE } from '../src/game/defs';
 import { DOORS, DOOR_NEAR, DOOR_SWING, GATE_FALL, GATE_INSIDE, GATE_RISE, PIER_HOLD, doorFace, doorLine, doorMiddle, doorPiers, doorTiles, doorWay, doorways, hasDoor, insideBy, makeDoors, pierGrid, shutGrid, stepDoors } from '../src/game/doors';
 import type { DoorInst } from '../src/game/doors';
-import { generateFloor } from '../src/game/dungeon';
+import { MIX, generateFloor } from '../src/game/dungeon';
 import { Game } from '../src/game/game';
 import { makeDungeon, makeTown } from '../src/game/level';
 import { emptyControls } from '../src/game/state';
@@ -73,17 +73,26 @@ const DT = 1 / 60;
 
 /** The share of rooms other than vaults and lairs that have a door, as the game has it (Version 18.8). */
 const SHARE = DOORS.share;
-/** The map-maker's switch for doors, set for the length of a test and put back; and the share of rooms that have one (as in the game, unless a test asks for every room to have one, as until 18.8: what a door does is asked so). */
+/**
+ * The map-maker's switch for doors, set for the length of a test and put back; and the share of
+ * rooms that have one (as in the game, unless a test asks for every room to have one, as until
+ * 18.8: what a door does is asked so). THE DUNGEONS LAID HERE ARE WITHOUT THE MIX (game/dungeon.ts,
+ * MIX: its gates, its locking rooms and its rooms next door are asked of in tests/mix.test.ts):
+ * here a door is asked of in the dungeons that have only doors.
+ */
 function doorsSet<T>(on: boolean, run: () => T, share = SHARE): T {
   const was = DOORS.on;
   const wasShare = DOORS.share;
+  const wasMix = MIX.on;
   DOORS.on = on;
   DOORS.share = share;
+  MIX.on = false;
   try {
     return run();
   } finally {
     DOORS.on = was;
     DOORS.share = wasShare;
+    MIX.on = wasMix;
   }
 }
 

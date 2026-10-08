@@ -31,7 +31,7 @@ import { createScreen } from './engine/screen';
 import { ARRIVAL_LINES, CLASSES, COMBO, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
-import { RELIEF } from './game/dungeon';
+import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
@@ -444,7 +444,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (LEDGES AND STAIRS, not in any dungeon yet: a page opened with #hall=ledges has the practice
   // room in the hall built for them, with its terrace, two flights of stairs, a pit and a gap)
   const hallAsked = new URLSearchParams(location.hash.slice(1)).get('hall');
-  const PRACTICE_HALL: Hall = hallAsked === 'ledges' || hallAsked === 'steps' ? hallAsked : hallAsked !== null && SHAPES.some((k) => hallAsked === `shape:${k}`) ? (hallAsked as Hall) : 'arena';
+  const PRACTICE_HALL: Hall = hallAsked === 'ledges' || hallAsked === 'steps' || hallAsked === 'mix' ? hallAsked : hallAsked !== null && SHAPES.some((k) => hallAsked === `shape:${k}`) ? (hallAsked as Hall) : 'arena';
 
   /** The practice room: a throwaway character with every word. It leaves the saved run, the Lexicon and the stash alone. */
   const startPractice = (cls: ClassId, seed?: number, hall: Hall = PRACTICE_HALL): void => {
@@ -1554,6 +1554,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     cam: () => renderer.cam,
     /** The map-maker's switches for terraces and sunken floor (game/dungeon.ts): pictures of what is not yet in the game switch it on. */
     relief: RELIEF,
+    /** THE MIX (game/dungeon.ts, MIX): ON in the game since Version 18.9; playtests that lay a dungeon without it (or with it) set it for themselves and put it back. */
+    mix: MIX,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them, and the share of rooms that have a door. Playtests that change them put them back. */
     doors: DOORS,
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */

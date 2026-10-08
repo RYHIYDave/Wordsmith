@@ -45,6 +45,17 @@
 //   up until the hero is well inside the hall with the boss alive; then it falls, and nothing
 //   passes it, nor a shot, until the boss is dead (game.ts).
 // A room's other doorways, which lead on, are open as they always were.
+//
+// THE MIX (where the map-maker mixes: game/dungeon.ts, MIX). Two more things stand in doorways,
+// both the gate of the pictures under its plain arch:
+//   A GATE WITH A LEVER, in the way in of one room of the main path instead of its door: DOWN as
+//   the run begins, and nothing passes it, nor a shot, nor sight. Its lever stands nearby, in a
+//   small room at a dead end off the room before; the hero pulls it by walking up to it, and the
+//   gate rises and stays up.
+//   THE GATES OF A ROOM THAT LOCKS, one in EVERY doorway of it (its way in, which then has no
+//   door, and each that leads on): up, until the hero is inside the room, clear of every doorway
+//   of it, with its pack; then they fall, and rise when none of that pack is left alive in the
+//   room.
 
 import { T_FLOOR, T_WALL } from './types';
 import type { DoorSpot, Floor, Room, Vec } from './types';
@@ -67,10 +78,13 @@ export const DOORS = { on: true, share: 0.2 };
  * lair has; of the other rooms, about `DOORS.share`, by a lot of each room's own (the level's
  * seed and depth, and the room's number): NO DICE OF THE MAP-MAKER'S ARE THROWN FOR IT, so a
  * dungeon is the dungeon it was but for its doors. (The boss's hall has its gate whatever this
- * says; the first room has no way in.)
+ * says; the first room has no way in. THE MIX: a room set down next door to the one before it
+ * always has its door, and a gated room and a room that locks have their gates, whatever this
+ * says.)
  */
 export function hasDoor(f: Floor, r: Room): boolean {
-  if (r.kind === 'treasure' || r.kind === 'guardian') return true;
+  // (and THE MIX's two rooms next door: the door between them is what they are)
+  if (r.kind === 'treasure' || r.kind === 'guardian' || r.nextDoor) return true;
   let h = (Math.imul(f.seed | 0, 0x9e3779b1) ^ Math.imul(f.depth | 0, 0x85ebca6b) ^ Math.imul((r.id + 1) | 0, 0xc2b2ae35)) | 0;
   h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
   h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
@@ -171,8 +185,15 @@ export function layDoors(f: Floor): DoorSpot[] {
       const line = doorLine(d);
       const mid = d.alongX ? line * f.w + d.a + 1 : (d.a + 1) * f.w + line;
       const within = d.alongX ? (line - d.out) * f.w + d.a + 1 : (d.a + 1) * f.w + (line - d.out);
+      // (THE MIX: a room that locks has a gate in every doorway of it, those that lead on too)
+      if (r.locks && far[mid] >= 0) {
+        d.kind = 'trapgate';
+        out.push(d);
+        continue;
+      }
       if (far[mid] < 0 || far[within] <= far[mid]) continue; // (it leads on, or nowhere: open as it always was)
       if (r.kind === 'boss') d.kind = 'bossgate';
+      else if (r.gated) d.kind = 'gate'; // (THE MIX: a gate, down until its lever is pulled, where the door would stand)
       else if (!hasDoor(f, r)) continue; // (a room with no door: its way in is open, as before there were doors)
       out.push(d);
     }
@@ -206,7 +227,7 @@ export function doorTiles(f: Floor, d: DoorSpot): number[] {
   return out;
 }
 
-/** The tiles of it that are passed through: a door's one, the three of the boss's gate. */
+/** The tiles of it that are passed through: a door's one, the three of a gate (the boss's, a lever's, a locking room's). */
 export function doorWay(f: Floor, d: DoorSpot): number[] {
   const tiles = doorTiles(f, d);
   return d.kind === 'door' ? [tiles[1]] : tiles;
@@ -237,12 +258,24 @@ export interface DoorInst {
   open: number;
   /** What it is on its way to: 0 or 1. */
   want: 0 | 1;
+  /** (THE MIX) A lever's gate: the hero has been told of it (a line on the screen, the first time it is seen from near). */
+  told?: boolean;
 }
 
-/** The doors of a level as a run begins: every door shut, the boss's gate up. */
+/** The doors of a level as a run begins: every door shut, the boss's gate up; (THE MIX) a lever's gate down, the gates of a room that locks up. */
 export function makeDoors(f: Floor): DoorInst[] {
-  return (f.doors ?? []).map((spot) => (spot.kind === 'bossgate' ? { spot, open: 1, want: 1 } : { spot, open: 0, want: 0 }));
+  return (f.doors ?? []).map((spot) => (spot.kind === 'bossgate' || spot.kind === 'trapgate' ? { spot, open: 1, want: 1 } : { spot, open: 0, want: 0 }));
 }
+
+/**
+ * (THE MIX) The hero this near a lever, in tiles, pulls it: as near as a chest opens from. (So
+ * standing on any tile beside it is near enough; at 1.3, as near as the fallen wordsmith is
+ * searched from, a hero who came up to it and stopped a step short, on the tile before it, did not
+ * pull it: the playtests' own player did just that.)
+ */
+export const LEVER_NEAR = 1.5;
+/** (THE MIX) A room that locks: its gates fall once the hero is inside it and this far, in tiles, from the middle of every one of its doorways (game.ts, `updateLocks`). */
+export const LOCK_CLEAR = 2.7;
 
 /** The piers of a level's doors, as a grid: 1 where the stone on either side of a door stands (null: the level has none). For the rule of `PIER_HOLD`. */
 export function pierGrid(f: Floor): Uint8Array | null {

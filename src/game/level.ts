@@ -2,13 +2,13 @@
 
 import { RNG } from '../engine/rng';
 import { TUNE } from './defs';
-import { makeDoors, pierGrid, shutGrid } from './doors';
+import { DOORS, doorTiles, layDoors, makeDoors, pierGrid, shutGrid } from './doors';
 import { generateFloor } from './dungeon';
 import { STAIR_N, STAIR_W, stepGrid } from './height';
 import { buildOpenGrid, buildWalkGrid } from './nav';
 import type { Level, PropInst } from './state';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_PIT, T_VOID, T_WALL } from './types';
-import type { Floor, PropSpot } from './types';
+import type { Floor, PackSpot, PropSpot, Room } from './types';
 
 /**
  * A wall tile is drawn cut down low when floor lies behind it (up-screen), so walls never hide
@@ -57,6 +57,15 @@ function finish(f: Floor, town: boolean, portal: PropInst | null): Level {
   // (DOORS: a shut door stops sight and shots as it holds monsters: its tile is shut in the grid they go by
   // until the door begins to open. It stays open to walking: the hero is never held by one. game.ts, `updateDoors`)
   if (level.shut) for (let i = 0; i < n; i++) if (level.shut[i] === 1) level.open[i] = 0;
+  // (THE MIX: A LEVER'S GATE BEGINS DOWN. Its doorway is wall to whatever walks, flies, is shot or
+  // looks, as the boss's is once it has fallen, until the lever is pulled: game.ts, `pullLever`.)
+  for (const d of level.doors) {
+    if (d.spot.kind !== 'gate') continue;
+    for (const i of doorTiles(f, d.spot)) {
+      level.walk[i] = 0;
+      level.open[i] = 0;
+    }
+  }
   if (portal) level.props.push(portal);
   if (town) {
     level.explored.fill(1);
@@ -353,8 +362,100 @@ export function makeLedgeHall(seed: number): Level {
   return level;
 }
 
-/** The practice room's halls: the room itself, and the two built by hand for trying height in. */
-export type Hall = 'arena' | 'ledges' | 'steps' | `shape:${Shape}`;
+/** The practice room's halls: the room itself, the two built by hand for trying height in, the rooms of each shape, and (THE MIX) the one with a lever, its gate and a room that locks. */
+export type Hall = 'arena' | 'ledges' | 'steps' | 'mix' | `shape:${Shape}`;
+
+/**
+ * (THE MIX) FIVE ROOMS LAID BY HAND, WITH A LEVER, ITS GATE AND A ROOM THAT LOCKS: where the rules
+ * of the mix are tried and photographed before the map-maker lays any of it in a dungeon
+ * (`#hall=mix`). Unlike the other halls it is dark until walked, as a dungeon is.
+ *
+ *   the first room   ten tiles by ten: the hero begins in it
+ *   the nook         five by five, up a short way from the first room's far-right side, behind a
+ *                    door: the LEVER stands against its far wall
+ *   the gated room   eight by eleven, down the screen to the right of the first room: THE GATE
+ *                    stands in its way in, down until the lever is pulled
+ *   the room that    ten by twelve, on from the gated room: a gate hangs in each of its two
+ *   locks            doorways (its way in, and the way on), up until the hero is well inside
+ *                    with its pack
+ *   the last room    nine by six, on from that, behind a door
+ */
+export const MIX_HALL = {
+  w: 50,
+  h: 38,
+  rooms: [
+    { id: 0, x: 6, y: 12, w: 10, h: 10, kind: 'start', path: 0 },
+    { id: 1, x: 21, y: 11, w: 8, h: 11, kind: 'normal', path: 1, gated: true },
+    { id: 2, x: 8, y: 3, w: 5, h: 5, kind: 'normal', path: -1, nook: true },
+    { id: 3, x: 34, y: 10, w: 10, h: 12, kind: 'elite', path: 2, locks: true },
+    { id: 4, x: 35, y: 26, w: 9, h: 6, kind: 'normal', path: 3 },
+  ] as Room[],
+  /** The ways between them, each three tiles wide: x0, y0, x1, y1. */
+  ways: [
+    [16, 15, 20, 17],
+    [9, 8, 11, 11],
+    [29, 15, 33, 17],
+    [38, 22, 40, 25],
+  ] as ReadonlyArray<readonly [number, number, number, number]>,
+  start: { x: 10.5, y: 16.5 },
+  lever: { x: 10, y: 3, room: 1 },
+  /** Where the packs of the gated room and of the room that locks stand (a test, or a playtest, sets monsters down there: a practice hall has none of its own). */
+  packs: [
+    { x: 25.5, y: 16.5, roomId: 1, size: 3, tier: 'normal' },
+    { x: 39.5, y: 15.5, roomId: 3, size: 4, tier: 'elite' },
+  ] as PackSpot[],
+};
+
+export function makeMixHall(seed: number): Level {
+  const rng = new RNG(seed ^ 0x2545f491);
+  const { w, h } = MIX_HALL;
+  const tiles = new Uint8Array(w * h).fill(T_VOID);
+  const variant = new Uint8Array(w * h);
+  for (let i = 0; i < variant.length; i++) variant[i] = rng.int(0, 255);
+  for (const r of MIX_HALL.rooms) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) tiles[y * w + x] = T_FLOOR;
+  for (const [x0, y0, x1, y1] of MIX_HALL.ways) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) tiles[y * w + x] = T_FLOOR;
+  // (wall wherever nothing is and floor is beside it, corner to corner too)
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      if (tiles[y * w + x] !== T_VOID) continue;
+      let beside = false;
+      for (let dy = -1; dy <= 1 && !beside; dy++) for (let dx = -1; dx <= 1 && !beside; dx++) beside = tiles[(y + dy) * w + x + dx] === T_FLOOR;
+      if (beside) tiles[y * w + x] = T_WALL;
+    }
+  }
+  const lever = MIX_HALL.lever;
+  const props: PropSpot[] = [
+    { kind: 'brazier', x: 6, y: 12 },
+    { kind: 'brazier', x: 15, y: 21 },
+    { kind: 'brazier', x: 21, y: 11 },
+    { kind: 'brazier', x: 28, y: 21 },
+    { kind: 'brazier', x: 8, y: 3 },
+    { kind: 'brazier', x: 34, y: 10 },
+    { kind: 'brazier', x: 43, y: 21 },
+    { kind: 'brazier', x: 35, y: 26 },
+    { kind: 'lever', x: lever.x, y: lever.y },
+  ];
+  const floor: Floor = {
+    depth: 0,
+    seed,
+    w,
+    h,
+    tiles,
+    variant,
+    rooms: MIX_HALL.rooms.map((r) => ({ ...r })),
+    start: { ...MIX_HALL.start },
+    boss: { ...MIX_HALL.start },
+    packs: MIX_HALL.packs.map((p) => ({ ...p })),
+    props,
+    levers: [{ ...lever }],
+  };
+  // (the hall shows every piece of the mix, and the doors with them: a door in every room's way in, whatever the share of rooms with one)
+  const share = DOORS.share;
+  DOORS.share = 1;
+  floor.doors = layDoors(floor);
+  DOORS.share = share;
+  return finish(floor, false, null);
+}
 
 /**
  * A HALL WITH FLOOR ONE LEVEL UP AND FLOOR ONE LEVEL DOWN, built by hand (the owner, 7 Oct 2026,

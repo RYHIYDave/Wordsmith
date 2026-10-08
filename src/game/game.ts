@@ -7,10 +7,10 @@ import { CLASSES, COMBO, FIRST_WORD, GAMBLE_KINDS, GUIDE, LIMITS, MANA_MODE, MON
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
-import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeShapeRoom, makeStepHall, makeTown } from './level';
+import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown } from './level';
 import type { Hall } from './level';
 import { alongCut, bodyInWall, inWall } from './cut';
-import { DOOR_HELP, GATE_INSIDE, PIER_HOLD, doorMiddle, doorTiles, doorWay, insideBy, stepDoors } from './doors';
+import { DOOR_HELP, GATE_INSIDE, LEVER_NEAR, LOCK_CLEAR, PIER_HOLD, doorMiddle, doorTiles, doorWay, insideBy, stepDoors } from './doors';
 import type { DoorInst } from './doors';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -318,7 +318,7 @@ export class Game {
     this.refresh();
     this.clearLevel();
     const shape = SHAPES.find((k) => hall === `shape:${k}`);
-    this.level = shape ? makeShapeRoom(shape, this.seed) : hall === 'ledges' ? makeLedgeHall(this.seed) : hall === 'steps' ? makeStepHall(this.seed) : makeArena(this.seed);
+    this.level = shape ? makeShapeRoom(shape, this.seed) : hall === 'ledges' ? makeLedgeHall(this.seed) : hall === 'steps' ? makeStepHall(this.seed) : hall === 'mix' ? makeMixHall(this.seed) : makeArena(this.seed);
     this.inDungeon = true;
     this.dungeonWords = [];
     const f = this.level.floor;
@@ -1067,6 +1067,73 @@ export class Game {
       if (d.want === 1 && alive && this.wellInside(d, h.x, h.y)) this.dropGate(d);
       else if (d.want === 0 && !alive) this.raiseGate(d);
     }
+    // (THE MIX) A LEVER'S GATE, DOWN: the first time one is seen from near, a line says what it is
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'gate' || d.want !== 0 || d.told) continue;
+      const at = doorMiddle(d.spot);
+      if (Math.hypot(at.x - h.x, at.y - h.y) > TUNE.aggroRadius || !doorTiles(L.floor, d.spot).some((i) => L.visible[i] === 1)) continue;
+      d.told = true;
+      this.msg('A gate bars the way. Its lever is near.', MSG.omen);
+    }
+    this.updateLocks();
+  }
+
+  /**
+   * (THE MIX) THE ROOMS THAT LOCK. A gate hangs in every doorway of such a room, up. THEY FALL when
+   * the hero is inside the room, `LOCK_CLEAR` tiles and more from the middle of every one of its
+   * doorways, and a living monster of the room's own packs is inside it with him; THEY RISE when
+   * no living monster of the room's own packs is inside the room. (Clear of the doorways, not
+   * "so far past each wall that has one": a hero who kept to the walls could then walk from the
+   * way in to a way on and never be far enough from both walls at once.) Only those of the pack
+   * that are INSIDE are counted, so that one which was drawn out of the room before the gates
+   * fell cannot keep them down for good (it cannot come back in, and he cannot go out to it).
+   */
+  private updateLocks(): void {
+    const L = this.level;
+    const f = L.floor;
+    const h = this.hero;
+    for (const r of f.rooms) {
+      if (!r.locks) continue;
+      const gates = L.doors.filter((d) => d.spot.kind === 'trapgate' && d.spot.room === r.id);
+      if (gates.length === 0) continue;
+      const within = (m: { x: number; y: number }): boolean => m.x >= r.x && m.y >= r.y && m.x < r.x + r.w && m.y < r.y + r.h;
+      const pack = this.monsters.some((m) => !m.dead && m.packId >= 0 && m.packId < f.packs.length && f.packs[m.packId].roomId === r.id && within(m));
+      const down = gates.some((d) => d.want === 0);
+      if (!down) {
+        const clear = (d: DoorInst): boolean => {
+          const at = doorMiddle(d.spot);
+          return Math.hypot(at.x - h.x, at.y - h.y) >= LOCK_CLEAR;
+        };
+        if (!pack || this.over || !within(h) || !gates.every(clear)) continue;
+        for (const d of gates) this.dropGate(d);
+        this.msg('The gates fall.', MSG.omen);
+      } else if (!pack) {
+        for (const d of gates) if (d.want === 0) this.raiseGate(d);
+        this.msg('The gates rise.', MSG.good);
+      }
+    }
+  }
+
+  /**
+   * (THE MIX) THE HERO PULLS A LEVER, by walking up to it: its gate rises, and stays up. (The lever
+   * knows its gate by the room the gate bars: `Floor.levers`. One that knows none raises every
+   * lever's gate of the level.)
+   */
+  private pullLever(p: PropInst): void {
+    const L = this.level;
+    p.state = 1;
+    const spot = (L.floor.levers ?? []).find((q) => q.x === p.tx && q.y === p.ty);
+    let raised = 0;
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'gate' || d.want !== 0 || (spot && d.spot.room !== spot.room)) continue;
+      this.raiseGate(d);
+      raised++;
+    }
+    this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 6 });
+    this.sfx('door', 0.8);
+    if (raised > 0) this.msg('A gate rises.', MSG.good);
+    // (what the gate hid is seen at once from wherever it can be)
+    this.visionT = 0;
   }
 
   /**
@@ -1085,10 +1152,11 @@ export class Game {
    */
   private shutIn(m: { x: number; y: number }): boolean {
     const L = this.level;
-    if (!L.shut) return false;
+    if (L.doors.length === 0) return false;
     const h = this.hero;
     for (const d of L.doors) {
-      if (d.spot.kind !== 'door' || d.want !== 0) continue;
+      // (a door that is shut; and THE MIX: a lever's gate that is down. Not the boss's gate, nor a locking room's: when those are down the hero is inside)
+      if ((d.spot.kind !== 'door' && d.spot.kind !== 'gate') || d.want !== 0) continue;
       const r = L.floor.rooms.find((q) => q.id === d.spot.room);
       if (!r || m.x < r.x || m.y < r.y || m.x >= r.x + r.w || m.y >= r.y + r.h) continue;
       if (h.x < r.x || h.y < r.y || h.x >= r.x + r.w || h.y >= r.y + r.h) return true;
@@ -1103,7 +1171,7 @@ export class Game {
     return insideBy(d.spot, x, y) >= GATE_INSIDE;
   }
 
-  /** The boss's gate falls: from now on its doorway is wall to whatever walks, flies or is shot. A monster caught in the doorway is put down just inside. */
+  /** A gate falls (the boss's; THE MIX: a locking room's): from now on its doorway is wall to whatever walks, flies or is shot. A monster caught in the doorway is put down just inside. */
   private dropGate(d: DoorInst): void {
     const L = this.level;
     const f = L.floor;
@@ -1128,7 +1196,7 @@ export class Game {
     this.sfx('gateFall');
   }
 
-  /** The boss is dead: the gate goes up, and its doorway is floor again. */
+  /** A gate goes up, and its doorway is floor again (the boss is dead; THE MIX: a lever is pulled, a locking room's pack is dead). */
   private raiseGate(d: DoorInst): void {
     const L = this.level;
     d.want = 1;
@@ -3891,6 +3959,10 @@ export class Game {
         this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.depth) * (room ? 2 : 1), null, null);
         if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord)) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
       }
+    }
+    // (THE MIX) a lever: walk up, and it is pulled
+    for (const p of this.level.props) {
+      if (p.kind === 'lever' && p.state === 0 && Math.hypot(p.x - h.x, p.y - h.y) < LEVER_NEAR) this.pullLever(p);
     }
     // the fallen wordsmith: walk up, and the satchel is searched
     const b = this.level.body;
