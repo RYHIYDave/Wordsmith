@@ -2116,7 +2116,7 @@ function beamLetGoToGuard(): Motion {
   };
 }
 /** The beam's beginning as a move of its own (with MAGE_STANCES on), for `clips.holdStart`. */
-export const BEAM_START3: Move3 = { name: 'Beam, begun from her guard', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: { keys: [{ at: 0, pose: {} }] } };
+export const BEAM_START3: Move3 = { name: 'Beam, begun from her guard', held: 'staff', build: MAGE_BODY, rest: MAGE_GUARD, motion: beamStartsFromGuard() };
 /** The beginning of a held attack, for a hero who has one (the mage's beam, with MAGE_STANCES on): otherwise none. */
 export function holdStartOf(hold: Move3): Move3 | null {
   return MAGE_STANCES.on && hold === BEAM3 ? BEAM_START3 : null;
@@ -2142,8 +2142,6 @@ export function useMageStances(on: boolean): void {
   BEAM3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamRest;
   BEAM_END3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamEndRest;
   BEAM_END3.motion = on ? beamLetGoToGuard() : MAGE_TODAY.beamEnd;
-  BEAM_START3.rest = MAGE_GUARD;
-  BEAM_START3.motion = beamStartsFromGuard();
   remakeRuns();
 }
 
