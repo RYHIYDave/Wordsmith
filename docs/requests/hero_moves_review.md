@@ -211,3 +211,16 @@ and the same in every number above.)
    slides and touches.
 
 Each on a branch of the art chat's own, behind a switch that is off, a moving picture to him first.
+
+## What came of it (8 Oct 2026)
+
+- The gripping runs (mend 1's runs): on `art/hero-moves-review`, behind `GRIP`, off. His answer to
+  what next for the runs: "More directions, picture first (Recommended)".
+- Then, 15:31: "Wait I need the rangers animations fixed", and at 15:38 his list, which begins "All
+  of that, but more." (in full in the note below). The ranger was remade on a battle stance of his own, with mend 1 done for him (his
+  runs grip; his stops and starts; his legs run under his attacks and rockings as he walks; the
+  roll), and the Shot's arrow made the game's: branch `art/ranger-stances`, behind
+  `RANGER_STANCES` and `RANGER_ARROW`, off. He said yes to each part, and at 17:07 "Yes, hand it all
+  over (Recommended)". Its note: `docs/mockups/ranger_stances/README.md`.
+- Still to come from the art chat, pictures first: the mage's battle stance; the runs in more
+  directions; then mends 2 and 3.

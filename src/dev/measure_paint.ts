@@ -3,12 +3,19 @@
 // shown, or ahead of need a few thousandths of a second at a time (Renderer.heroArt): a frame
 // that takes long to paint is a pause in the game the first time it is seen.
 //   node tools/preview.mjs src/dev/measure_paint.ts shots/measure.png 100 100 "warrior"
+//   (hash "ranger!ranger": with the ranger's new stances and moves on, art/moves3.ts RANGER_STANCES)
 import { makeHeroArt } from '../art/heroes';
 import type { HeroArt, HeroLook } from '../art/heroes';
 import { makeHeroArt3 } from '../art/heroes3';
+import { useRangerStances } from '../art/moves3';
 import type { ClassId } from '../game/types';
 
-const cls = (decodeURIComponent(location.hash.slice(1)) || 'warrior') as ClassId;
+let asked = decodeURIComponent(location.hash.slice(1));
+if (asked.startsWith('ranger!')) {
+  useRangerStances(true);
+  asked = asked.slice('ranger!'.length);
+}
+const cls = (asked || 'warrior') as ClassId;
 
 function measure(name: string, art: HeroArt, look: HeroLook): void {
   const times: number[] = [];

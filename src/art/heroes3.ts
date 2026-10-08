@@ -29,7 +29,7 @@ import { paintRanger3 } from './hero3_ranger';
 import type { HeroArt, HeroLook } from './heroes';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
-import { GREAT_BLADE, MOVES3, SETTLES, STAFF_UP, settlesOf, startsOf } from './moves3';
+import { GREAT_BLADE, MOVES3, SETTLES, STAFF_UP, WALKS, runWaysOf, settlesOf, startsOf, walkingOf } from './moves3';
 import type { Move3 } from './moves3';
 import { CANVAS3 } from './skin';
 import type { GameView } from './skin';
@@ -203,7 +203,8 @@ const READY_LEAST3 = 1;
 const LEAP_FRAMES3 = 16;
 const ROLL_FRAMES3 = 14;
 
-function animSet3(plan: Plan, view: GameView): AnimSet {
+/** `fights`: the hero may fight where this look is worn (a dungeon): the pictures only a fight shows (made walking) are made only then. */
+function animSet3(plan: Plan, view: GameView, fights = true): AnimSet {
   const of = (key: string): Move3 => {
     const m = MOVES3[key];
     if (!m) throw new Error(`heroes3: no move called ${key}`);
@@ -247,6 +248,15 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
   // (coming to a stand out of the run, where the hero has that: moves3.ts, settlesOf)
   const stops = settlesOf(of(plan.walk), of(plan.idle));
   if (stops.length) set.stops = stops.map((m) => clip(m, CLIP_FPS3));
+  // (the run the other ways, for a hero turned to a mark: moves3.ts, runWaysOf)
+  // (only where there is fighting: in town nothing is faced while walking, and nothing is attacked)
+  const ways = fights ? runWaysOf(of(plan.walk)) : [];
+  if (ways.length) set.walkWays = ways.map((m) => round(m, walkFps));
+  // (the attacks made walking, the run's legs under them: moves3.ts, walkingOf)
+  const attackWalk = fights ? walkingOf(of(plan.attack), of(plan.walk)) : [];
+  if (attackWalk.length) (set.clips as NonNullable<AnimSet['clips']>).attackWalk = attackWalk.map((m) => clip(m, CLIP_FPS3));
+  const heavyWalk = fights ? walkingOf(of(plan.heavy), of(plan.walk)) : [];
+  if (heavyWalk.length) (set.clips as NonNullable<AnimSet['clips']>).heavyWalk = heavyWalk.map((m) => clip(m, CLIP_FPS3));
   // (and setting off from the stance into it: moves3.ts, startsOf)
   const start = startsOf(of(plan.walk), of(plan.idle));
   if (start) {
@@ -281,6 +291,15 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
   if (plan.fall) clips.fall = clip(of(plan.fall), CLIP_FPS3);
   if (plan.reel) clips.reel = clip(of(plan.reel), CLIP_FPS3);
   if (plan.lurch) clips.lurch = clip(of(plan.lurch), CLIP_FPS3);
+  // (and walking: moves3.ts, walkingOf; where there is fighting)
+  if (plan.reel && fights) {
+    const w = walkingOf(of(plan.reel), of(plan.walk), false);
+    if (w.length) clips.reelWalk = w.map((m) => clip(m, CLIP_FPS3));
+  }
+  if (plan.lurch && fights) {
+    const w = walkingOf(of(plan.lurch), of(plan.walk), false);
+    if (w.length) clips.lurchWalk = w.map((m) => clip(m, CLIP_FPS3));
+  }
   // (what a hero does when left standing is painted facing the camera only: the game turns them round for it)
   if (view === 'front') {
     if (plan.idleA) clips.idleA = clip(of(plan.idleA), GESTURE_FPS3);
@@ -307,7 +326,7 @@ export function makeHeroArt3(): HeroArt {
     let art = made.get(key);
     if (!art) {
       const plan = PLANS[cls][place];
-      art = { front: animSet3(plan, 'front'), back: animSet3(plan, 'back') };
+      art = { front: animSet3(plan, 'front', place === 'dungeon'), back: animSet3(plan, 'back', place === 'dungeon') };
       made.set(key, art);
     }
     return art;
@@ -321,8 +340,8 @@ export function makeHeroArt3(): HeroArt {
         list = [];
         // (standing and running first, then the attacks from start to finish, then the rest; what
         // a hero does when left standing is painted as it is shown, which is slowly enough)
-        const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
-          (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? []];
+        const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
+          (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? [])];
         for (const pick of picks) {
           for (const set of [art.front, art.back]) {
             const frames = pick(set);

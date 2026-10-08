@@ -9,7 +9,7 @@
 import { holdOnBack } from './carried';
 import { add, bonesAt, buildOf, dot, elbowFor, GRID, heading, len, mul, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, V3 } from './skeleton';
-import { RANGER_ARROW } from '../game/defs';
+import { RANGER_ARROW, TUNE } from '../game/defs';
 
 /** The usual body: 57 picture pixels tall, built like a grown person. What a weapon's length is a share of, and what the moves were first written on. */
 export const BODY: Build = buildOf(57);
@@ -1382,12 +1382,19 @@ const GRIP_RUNS: [Move3, () => Gait, number, (m: Motion) => Motion][] = [
   [KNIGHT_TOWN_RUN3, () => KNIGHT_TOWN_GAIT, 27 / 60, (m) => ready(m, { py: 0, stow: 1 })],
   [RANGER_TOWN_RUN3, () => (RANGER_STANCES.on ? RANGER_TOWN_UPRIGHT : RANGER_TOWN_GAIT), 25 / 60, (m) => ready(m, { ...READY, stow: 1 })],
 ];
-/** The runs as the two switches have them now. */
+/**
+ * The runs as the two switches have them now. (The ranger's grip with his new stances whether or
+ * not the others' do: his coming to a stand, setting off and shooting on the move are made on his
+ * gripping run, and the owner said yes to them on it: 15:57, 16:41 and 17:07, 8 Oct 2026. The
+ * others' wait for GRIP: asked what next for the runs, he said "More directions, picture first
+ * (Recommended)".)
+ */
 function remakeRuns(): void {
   for (const [move, gait, period, finish] of GRIP_RUNS) {
     const g = gait();
-    move.motion = finish(GRIP.on ? run(gripping(g, period), period) : run(g));
-    if (GRIP.on) move.stride = GRIP_SPEED * period;
+    const grips = GRIP.on || (RANGER_STANCES.on && move.held === 'bow');
+    move.motion = finish(grips ? run(gripping(g, period), period) : run(g));
+    if (grips) move.stride = GRIP_SPEED * period;
     else delete move.stride;
   }
 }
@@ -1727,6 +1734,88 @@ function rangerDrawsLow(): Motion {
   // (as it was until the bow is up in front of him with the string a third drawn; then into the crouch)
   const upTo = m.keys.filter((k) => k.at <= 19 * FR + 1e-9);
   return { keys: [...upTo, { at: DRAW_READY, pose: { ...BATTLE, stow: 0 }, ease: 'io' }, { at: DRAW_READY + 2, pose: { ...BATTLE, stow: 0 } }] };
+}
+
+/**
+ * SHOOTING ON THE MOVE: HIS LEGS RUN UNDER IT (the owner, 15:00, asked what a hero does when he
+ * attacks while walking: "Legs keep running (Recommended)"; and of the ranger, 15:38, "I need all
+ * that fixed"). The game lets him walk through an attack, slowed for its first moment
+ * (TUNE.attackSlow for TUNE.attackSlowTime) and at his own speed after; the picture had him glide.
+ * Here, for each of four ways he may be going while he faces his mark (ahead, to his left, back,
+ * to his right), the attack again: its body, arms, bow and head as they are standing, and under
+ * them his run's legs, stepping that way, as far through their turn at each moment as the game has
+ * carried him by then. (A hero carried faster or slower than his own speed slides a little; one
+ * going between two of the four ways, a little sideways.)
+ */
+export const WALKS = [0, 90, 180, 270];
+function walkingMotion(attack: Move3, runMove: Move3, angle: number, slowed = true): Motion {
+  const keys = attack.motion.keys;
+  const end = keys[keys.length - 1].at;
+  const rk = runMove.motion.keys;
+  const loop = runMove.motion.loop ?? 0;
+  const span = rk[rk.length - 1].at - loop;
+  const stride = runMove.stride as number;
+  const th = (angle * Math.PI) / 180;
+  const c = Math.cos(th);
+  const sn = Math.sin(th);
+  const n = Math.ceil(end * 30 - 1e-6);
+  const out: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = Math.min(end, i / 30);
+    const A = bonesAt(keys, attack.rest, t);
+    // (how far the game has carried him by now, at his own speed: slowed for the attack's first moment)
+    const gone = slowed ? GRIP_SPEED * (TUNE.attackSlow * Math.min(t, TUNE.attackSlowTime) + Math.max(0, t - TUNE.attackSlowTime)) : GRIP_SPEED * t;
+    const ph = (gone / stride) % 1;
+    const R = bonesAt(rk, runMove.rest, loop + span * ph);
+    const pose: Partial<Bones> = { ...A };
+    for (const k of ['from', 'to', 'mixK', 'lh2', 'rh2']) delete (pose as Record<string, unknown>)[k];
+    // (his run's legs, turned the way he goes; the pelvis rides as it does in the run)
+    Object.assign(pose, {
+      lfx: R.lfx * c - R.lfy * sn, lfy: R.lfx * sn + R.lfy * c, lfz: R.lfz, lfp: R.lfp * c, lft: R.lft,
+      rfx: R.rfx * c - R.rfy * sn, rfy: R.rfx * sn + R.rfy * c, rfz: R.rfz, rfp: R.rfp * c, rft: R.rft,
+      lk: R.lk, rk: R.rk, lkUp: R.lkUp, rkUp: R.rkUp, px: R.px, py: R.py, pz: R.pz,
+    });
+    out.push({ at: t, pose, ease: 'lin' });
+  }
+  return { ...attack.motion, keys: out };
+}
+/**
+ * HIS RUN THE OTHER THREE WAYS: when he walks one way while he faces another (turned to his mark,
+ * the game keeping him so), backing away from it or going across it, his run's legs step the way
+ * he goes (WALKS: to his left, back, to his right), his body as it is in the run. Frames by how far
+ * he has gone, as the run's.
+ */
+function runWay(runMove: Move3, angle: number): Motion {
+  const th = (angle * Math.PI) / 180;
+  const c = Math.cos(th);
+  const sn = Math.sin(th);
+  return {
+    ...runMove.motion,
+    keys: runMove.motion.keys.map((k) => {
+      const p = { ...runMove.rest, ...k.pose } as Bones;
+      return {
+        ...k,
+        pose: {
+          ...k.pose,
+          lfx: p.lfx * c - p.lfy * sn, lfy: p.lfx * sn + p.lfy * c, lfp: p.lfp * c,
+          rfx: p.rfx * c - p.rfy * sn, rfy: p.rfx * sn + p.rfy * c, rfp: p.rfp * c,
+          // (and not leaning into it: he is upright when he backs away or goes across)
+          pitch: (k.pose.pitch ?? p.pitch) * Math.max(0, c), bend: (k.pose.bend ?? p.bend) * Math.max(0.3, c),
+        },
+      };
+    }),
+  };
+}
+/** The ranger's run the other three ways (to his left, back, to his right), when he has them (RANGER_STANCES on, his run gripping): otherwise none. */
+export function runWaysOf(runMove: Move3): Move3[] {
+  if (!RANGER_STANCES.on || runMove.held !== 'bow' || runMove.stride === undefined) return [];
+  return WALKS.slice(1).map((angle) => ({ ...runMove, name: `${runMove.name}, ${angle === 180 ? 'backing away' : 'going across'}`, motion: runWay(runMove, angle) }));
+}
+
+/** An attack of the ranger's as he makes it walking, each of the four ways (WALKS), when he has that (RANGER_STANCES on, his run gripping): otherwise none. (`slowed` false: a blow's rocking, which does not slow him as an attack does.) */
+export function walkingOf(attack: Move3, runMove: Move3, slowed = true): Move3[] {
+  if (!RANGER_STANCES.on || attack.held !== 'bow' || runMove.stride === undefined) return [];
+  return WALKS.map((angle) => ({ ...attack, name: `${attack.name}, walking`, motion: walkingMotion(attack, runMove, angle, slowed) }));
 }
 
 /** As they are with the switch off. */

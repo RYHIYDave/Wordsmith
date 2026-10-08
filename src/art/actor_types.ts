@@ -50,6 +50,12 @@ export interface AnimSet {
    */
   start?: Clip;
   startAt?: number;
+  /**
+   * THE WALK THE OTHER WAYS: when the hero walks one way while facing another (turned to a mark),
+   * the walk's legs stepping to their left, back, and to their right, as the picture has them;
+   * frames as `walk`'s. Absent: the walk is shown whichever way they go.
+   */
+  walkWays?: Sprite[][];
   /** Heroes: 3 frames for the slow attack (a slam, a toss, a nova). Absent = it looks like `attack`. */
   heavy?: Sprite[];
   /** Heroes that leap: 3 frames (pushing off, in the air, coming down). Absent = the walk is shown. */
@@ -64,6 +70,14 @@ export interface AnimSet {
     attack?: Clip;
     /** (Strike's combo) the second swing: the downward slash. Absent: the second swing looks like the first. */
     attack2?: Clip;
+    /**
+     * THE ATTACKS MADE WALKING: the same, with the run's legs stepping under them, one clip for each
+     * of the four ways the hero may be going as they face their mark (ahead, to their left, back, to
+     * their right, as the picture has them). Shown in place of `attack` and `heavy` while the hero
+     * moves (render/figure.ts). Absent: the attack is shown as it is standing.
+     */
+    attackWalk?: Clip[];
+    heavyWalk?: Clip[];
     heavy?: Clip;
     leap?: Clip;
     idleA?: Clip;
@@ -109,6 +123,9 @@ export interface AnimSet {
     reel?: Clip;
     /** ... and thrown forward a step by one that comes from behind them. */
     lurch?: Clip;
+    /** The same two while the hero walks, the walk's legs under them, one for each of the four ways (as `attackWalk`). */
+    reelWalk?: Clip[];
+    lurchWalk?: Clip[];
   };
 }
 

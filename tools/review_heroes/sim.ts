@@ -6,7 +6,7 @@
 import type { ActorArt, AnimSet, Clip } from '../../src/art/actor_types';
 import { PLANS } from '../../src/art/heroes3';
 import type { Plan } from '../../src/art/heroes3';
-import { MOVES3, settlesOf, startsOf } from '../../src/art/moves3';
+import { MOVES3, runWaysOf, settlesOf, startsOf, walkingOf } from '../../src/art/moves3';
 import type { Move3 } from '../../src/art/moves3';
 import { lerp3 } from '../../src/art/skeleton';
 import type { V3 } from '../../src/art/skeleton';
@@ -41,6 +41,18 @@ export function moveOf(key: string): Move3 {
   if (key.startsWith('stop:')) {
     const [, run, stance, k] = key.split(':');
     return settlesOf(MOVES3[run], MOVES3[stance])[Number(k)];
+  }
+  if (key.startsWith('way:')) {
+    const [, run, k] = key.split(':');
+    return runWaysOf(MOVES3[run])[Number(k)];
+  }
+  if (key.startsWith('rock:')) {
+    const [, rock, run, k] = key.split(':');
+    return walkingOf(MOVES3[rock], MOVES3[run], false)[Number(k)];
+  }
+  if (key.startsWith('walk:')) {
+    const [, attack, run, k] = key.split(':');
+    return walkingOf(MOVES3[attack], MOVES3[run])[Number(k)];
   }
   if (key.startsWith('start:')) {
     const [, run, stance] = key.split(':');
@@ -87,6 +99,14 @@ function animSet(plan: Plan, view: View): AnimSet {
   const stops = settlesOf(of(plan.walk), of(plan.idle));
   stops.forEach((m, k) => keyOf.set(m, `stop:${plan.walk}:${plan.idle}:${k}`));
   if (stops.length) set.stops = stops.map((m) => clip(m, CLIP_FPS3));
+  const ways = runWaysOf(of(plan.walk));
+  ways.forEach((m, k) => keyOf.set(m, `way:${plan.walk}:${k}`));
+  if (ways.length) set.walkWays = ways.map((m) => round(m, walkFps));
+  for (const [which, key] of [['attackWalk', plan.attack], ['heavyWalk', plan.heavy]] as const) {
+    const walkers = walkingOf(of(key), of(plan.walk));
+    walkers.forEach((m, k) => keyOf.set(m, `walk:${key}:${plan.walk}:${k}`));
+    if (walkers.length) (set.clips as NonNullable<AnimSet['clips']>)[which] = walkers.map((m) => clip(m, CLIP_FPS3));
+  }
   const start = startsOf(of(plan.walk), of(plan.idle));
   if (start) {
     keyOf.set(start.move, `start:${plan.walk}:${plan.idle}`);
@@ -115,6 +135,12 @@ function animSet(plan: Plan, view: View): AnimSet {
   if (plan.fall) clips.fall = clip(of(plan.fall), CLIP_FPS3);
   if (plan.reel) clips.reel = clip(of(plan.reel), CLIP_FPS3);
   if (plan.lurch) clips.lurch = clip(of(plan.lurch), CLIP_FPS3);
+  for (const [which, key] of [['reelWalk', plan.reel], ['lurchWalk', plan.lurch]] as const) {
+    if (!key) continue;
+    const walkers = walkingOf(of(key), of(plan.walk), false);
+    walkers.forEach((m, k) => keyOf.set(m, `rock:${key}:${plan.walk}:${k}`));
+    if (walkers.length) clips[which] = walkers.map((m) => clip(m, CLIP_FPS3));
+  }
   if (view === 'front') {
     if (plan.idleA) clips.idleA = clip(of(plan.idleA), GESTURE_FPS3);
     if (plan.idleB) clips.idleB = clip(of(plan.idleB), GESTURE_FPS3);
@@ -210,6 +236,9 @@ export function scenariosOf(cls: ClassId): Scenario[] {
     { name: 'stops, starts and stops', cls, seconds: 2.6, face: front, step: (x) => { walk(x, 0, 0.62, 1, 0); walk(x, 1.2, 1.75, 1, 0); } },
     { name: 'quick attack, standing', cls, seconds: 1.3, face: front, step: (x) => tapAt(x, 0.2) },
     { name: 'quick attack, walking', cls, seconds: 1.2, face: front, step: (x) => { walk(x, 0, 9, 1, 0); tapAt(x, 0.3); } },
+    // (his mark ahead of him all the while, he walks away from it, and across it)
+    { name: 'quick attack, walking backward', cls, seconds: 1.2, face: front, step: (x) => { walk(x, 0, 9, -1, 0); x.c.face = true; x.c.aimX = x.game.hero.x + 4; x.c.aimY = x.game.hero.y; x.c.castX = x.c.aimX; x.c.castY = x.c.aimY; if (between(x.t, 0.3, 0.3 + 1 / 60)) x.c.fire = true; } },
+    { name: 'quick attack, walking across', cls, seconds: 1.2, face: front, step: (x) => { walk(x, 0, 9, 0, -1); x.c.face = true; x.c.aimX = x.game.hero.x + 4; x.c.aimY = x.game.hero.y; x.c.castX = x.c.aimX; x.c.castY = x.c.aimY; if (between(x.t, 0.3, 0.3 + 1 / 60)) x.c.fire = true; } },
     { name: 'quick attack, from behind', cls, seconds: 1.3, face: back, step: (x) => tapAt(x, 0.2) },
     { name: 'rocked by a blow, standing', cls, seconds: 1, face: front, step: () => {}, reelAt: 0.2 },
     { name: 'rocked by a blow, walking', cls, seconds: 1, face: front, step: (x) => walk(x, 0, 9, 1, 0), reelAt: 0.3 },
@@ -294,12 +323,17 @@ export function play(sc: Scenario): Shown[] {
       holdAs: h.channel && SKILLS[h.skills[h.channel.skill].id].kind === 'whirl' ? 'whirl' : 'beam',
       rollK, fallT: -1, reelT, reelBehind: sc.reelBehind ?? false,
     };
+    let moved: [number, number] = [0, 0];
     if (from && !h.move) {
       const d = Math.hypot(h.x - from[0], h.y - from[1]);
-      if (d < 1) walked += d;
+      if (d < 1) {
+        walked += d;
+        moved = [h.x - from[0], h.y - from[1]];
+      }
     }
     from = [h.x, h.y];
     st.walked = walked;
+    st.moved = moved;
     const sp = fig.frame(art, st, dt, 0, 0, true);
     const img = sp.img as unknown as string | { src: string };
     const left = typeof img !== 'string';
