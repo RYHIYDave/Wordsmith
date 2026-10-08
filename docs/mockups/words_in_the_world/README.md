@@ -12,9 +12,9 @@ BELOW AND NO TO THE THIRD**, which was then taken out (see "Sent to the owner").
   down; the whole word holds a moment, fades together (so that only the whole word is ever read), and
   is spelled again after a pause.
 - **A word carved in a wall**, where a tapestry of the decorations would hang: cut into the stone, or
-  cut and lit from inside in the word's colour. HIS ANSWER: "No carved words". TAKEN OUT (the commit
-  after "Mock-up (not in the game): words in the world" has it, for the record: `src/art/carving.ts`,
-  and `glyphRows` in `src/engine/font.ts`, which only the carvings used).
+  cut and lit from inside in the word's colour. HIS ANSWER: "No carved words". TAKEN OUT in `30582d9`; for the
+  record the branch's first commit, `6b3db27` ("Mock-up (not in the game): words in the world"), still has
+  them: `src/art/carving.ts`, and `glyphRows` in `src/engine/font.ts`, which only the carvings used.
 
 The art chat made it on 8 Oct 2026, on the branch `mockup/words-in-world`, ON TOP OF `mockup/decorations`
 (the decorations he said yes to at 08:55; the carvings hang where they hang). Every letter is the game's
