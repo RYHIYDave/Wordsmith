@@ -17,7 +17,7 @@ walking through; the hole seen from the room it leads to; and, for comparison, t
 the wall beside it left out. He was told with it: "I'd use the look at the top, where the wall
 carries on past the hole; the last picture is the other way, for comparison." **HIS ANSWER, 00:53:
 "Hole in the wall looks great"**, read as YES TO THE LOOK AT THE TOP OF THE SHEET (`whole: true`,
-the wall carrying on past the hole); he was told so at 00:55: "Great. I read that as yes to the top
+the wall carrying on past the hole); he was told so at 00:54: "Great. I read that as yes to the top
 look, with the wall carrying on past the hole. Your yes is noted on the hole's branch, and the main
 chat puts it in the game." (Earlier, at 00:36, to being told the art chat was starting on the hole:
 "Sounds good.") SO THIS IS NOW THE MAIN CHAT'S TO BUILD FOR REAL, behind a switch until it is in.
