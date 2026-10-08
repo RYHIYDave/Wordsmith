@@ -365,7 +365,9 @@ export class Figure {
     this.runAt = -1;
     let stands = false;
     const anim = st.anim === 'walk' && st.leapK < 0 && justDown ? 'idle' : st.anim;
-    if (st.leapK >= 0) this.sinceLand = 0;
+    // (and a roll that has a coming up of its own, AnimSet clips.land with no leap: art/heroes3.ts)
+    const rolling = st.rollK !== undefined && st.rollK >= 0 && set.clips?.land !== undefined && set.clips.leap === undefined;
+    if (st.leapK >= 0 || rolling) this.sinceLand = 0;
     else if (this.sinceLand >= 0) this.sinceLand = anim === 'idle' ? this.sinceLand + dt : -1;
     const tumble = st.rollK !== undefined && st.rollK >= 0 ? set.clips?.roll : undefined;
     const reel = st.reelT !== undefined && st.reelT >= 0 ? ((st.reelBehind ? set.clips?.lurch : undefined) ?? set.clips?.reel) : undefined;

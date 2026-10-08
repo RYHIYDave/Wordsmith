@@ -103,7 +103,12 @@ function animSet(plan: Plan, view: View): AnimSet {
     set.leap = frames(3, (i) => leap.frames[Math.round([0.05, 0.45, 0.9][i] * (LEAP_FRAMES3 - 1))]);
     if (span(m).end > until + 1e-6) clips.land = clip(m, CLIP_FPS3, until);
   }
-  if (plan.roll) clips.roll = spread(of(plan.roll), ROLL_FRAMES3, 0, span(of(plan.roll)).end);
+  if (plan.roll) {
+    const m = of(plan.roll);
+    const until = m.tumble ?? span(m).end;
+    clips.roll = spread(m, ROLL_FRAMES3, 0, until);
+    if (m.tumble !== undefined && span(m).end > until + 1e-6) clips.land = clip(m, CLIP_FPS3, until);
+  }
   if (plan.hold) clips.hold = clip(of(plan.hold), CLIP_FPS3);
   if (plan.release) clips.release = clip(of(plan.release), CLIP_FPS3);
   if (plan.whirl) clips.whirl = { ...clip(of(plan.whirl), CLIP_FPS3), turns: true };
@@ -208,6 +213,7 @@ export function scenariosOf(cls: ClassId): Scenario[] {
     { name: 'quick attack, from behind', cls, seconds: 1.3, face: back, step: (x) => tapAt(x, 0.2) },
     { name: 'rocked by a blow, standing', cls, seconds: 1, face: front, step: () => {}, reelAt: 0.2 },
     { name: 'rocked by a blow, walking', cls, seconds: 1, face: front, step: (x) => walk(x, 0, 9, 1, 0), reelAt: 0.3 },
+    { name: 'thrown forward by a blow from behind', cls, seconds: 1, face: front, step: () => {}, reelAt: 0.2, reelBehind: true },
     { name: 'swipe move', cls, seconds: 1.6, face: front, step: (x) => { if (between(x.t, 0.3, 0.3 + 1 / 60)) { const h = x.game.hero; x.c.evade = true; x.c.evadeX = h.x + 4; x.c.evadeY = h.y; } } },
     { name: 'swipe move while running', cls, seconds: 1.4, face: front, step: (x) => { walk(x, 0, 0.3, 1, 0); walk(x, 0.7, 9, 1, 0); if (between(x.t, 0.3, 0.3 + 1 / 60)) { const h = x.game.hero; x.c.evade = true; x.c.evadeX = h.x + 4; x.c.evadeY = h.y; } } },
   ];

@@ -59,6 +59,8 @@ export interface Move3 {
    * it. The game then chooses its frame by how far the hero has gone, not by the clock.
    */
   stride?: number;
+  /** A roll that the game carries along the floor for its first `tumble` seconds; the rest is the hero coming up, shown if they are then left standing (as a leap's landing is). */
+  tumble?: number;
 }
 
 const FR = 1 / 30;
@@ -431,7 +433,8 @@ export const RANGER_FALL3: Move3 = { name: "The ranger's fall", held: 'bow', bui
  * (`prop` 1; `pt` is how far round it has run). Or he draws an arrow, holds it level before his
  * eye and sights along it, head laid over a little, and puts it back (`prop` 2).
  */
-function squirrel(): Motion {
+function squirrel(B: Bones = ARCHER): Motion {
+  const ARCHER = B;
   const on: Partial<Bones> = { prop: 1 };
   return {
     keys: [
@@ -1629,8 +1632,110 @@ export function arrowTip(m: Move3, t: number): V3 {
 /** How long the arrow on his string is, as a share of his height. */
 export const ARROW_LONG = 0.43;
 
+/**
+ * HIS ROLL, FROM THE CROUCH AND IN STEP WITH THE GAME (the review, A and E: the game carried him on
+ * while the picture had him back on his feet, 16.3 px, and it ended on a flash of the run and a
+ * jump up). From low he dives at once; over in a ball (as the roll was); and out of it onto his
+ * feet, low, at the moment the game stops carrying him (`tumble`). The rest, up into his stance with
+ * the bow coming round and an arrow on the string, is shown if he is then left standing.
+ */
+const ROLL_LONG = 0.4;
+function rollLow(): Motion {
+  const long = ROLL_LONG;
+  const ball = (roll(long).keys.filter((k) => (k.pose as Bones).bend === 78).map((k) => k.pose)) as Partial<Bones>[];
+  const keys: Key3[] = [
+    // (he goes at once, off both feet: a dive, his feet leaving the floor as the game takes him)
+    { at: 0, pose: { px: 2, pz: -7.6, pitch: 26, bend: 26, faceUp: -12, lfx: 6, lfz: 2.2, lfp: 30, rfx: -4.5, rfz: 3.2, rfp: 40, rhIn: 0, rhx: 9, rhy: 2, rhz: -12, lhIn: 0, lhx: 6, lhy: 2, lhz: -14, wAz: 90, wEl: -10, wRoll: 80, draw: 0 } },
+    { at: 0.14 * long, pose: { px: 5, pz: -15.5, pitch: 62, bend: 48, faceUp: -75, lfx: 2, lfz: 3, lfp: 40, rfx: -5, rfp: 50, rfz: 5, rhIn: 2, rhx: 15, rhy: -4, rhz: 1.5, lhIn: 0, lhx: 6, lhy: 2, lhz: -10, wAz: 90, wEl: 0, wRoll: 80, draw: 0 }, ease: 'in' },
+  ];
+  // (the ball turns all the while the game carries him: it is over when he stops)
+  ball.forEach((pose, i) => keys.push({ at: (0.16 + 0.84 * (i / (ball.length - 1))) * long, pose: { ...pose, draw: 0 }, ease: i === 0 ? 'hold' : 'lin' }));
+  // (out of the ball and onto his feet, low, the bow coming round in front of him, the moment after the game stops carrying him)
+  const out: Partial<Bones> = { ...CROUCH, pz: -10.5, px: 1, pitch: 20, bend: 16, faceUp: 10, rfp: 18, rfz: onToes(18), lhIn: 0, lhx: 9, lhy: 3, lhz: -10, le: 10, rhIn: 0, rhx: 6, rhy: -1, rhz: -12, wAz: 20, wEl: -20, wRoll: 40, draw: 0 };
+  keys.push({ at: long + 0.03, pose: out, ease: 'hold' });
+  keys.push({ at: long + 0.08, pose: { ...out, pz: -10 }, ease: 'out' });
+  // (and up into his stance, the next arrow on the string)
+  keys.push({ at: long + 0.28, pose: {}, ease: 'io' });
+  return { keys };
+}
+
+/** Rocked back by a blow, or thrown forward by one from behind, from his crouch: the foot that goes, steps back. */
+function reelLow(from: Bones): Motion {
+  const m = reel(from);
+  // (the foot that goes back is lifted clear as it goes)
+  const keys = m.keys.map((k, i) => (i === 1 ? { ...k, pose: { ...k.pose, rfz: 2.4, rfp: 16 } } : k));
+  keys.splice(3, 0, { at: 5.5 * FR, pose: { px: from.px - 2.1, pz: from.pz - 1.1, pitch: from.pitch - 2, bend: from.bend - 4, faceUp: 7, rfx: from.rfx - 2.5, rfz: 2.4, rfp: 16 }, ease: 'io' });
+  return { ...m, keys };
+}
+function lurchLow(from: Bones): Motion {
+  const m = lurch(from);
+  const keys = m.keys.map((k, i) => (i === 1 ? { ...k, pose: { ...k.pose, lfz: 2.4, lfp: -10 } } : k));
+  keys.splice(3, 0, { at: 5.5 * FR, pose: { px: from.px + 2.5, pz: from.pz - 1.5, pitch: from.pitch + 3, bend: from.bend + 5, faceUp: -8, lfx: from.lfx + 2.75, lfz: 2.4, lfp: -10 }, ease: 'io' });
+  return { ...m, keys };
+}
+
+/** HIS FALL, FROM THE CROUCH: as it was (thrown back, a step to keep his feet, down on the knee he looses a Volley from, the bow laid down), but from low, and each foot lifted when it goes. */
+function fallLow(): Motion {
+  const hands: Partial<Bones> = { lhIn: 0, lhx: 4.5, lhy: 2, lhz: -19, le: 8, wAz: 0, wEl: -8, wRoll: 0, rhIn: 0, rhx: 1.2, rhy: -1, rhz: HANG, re: 0, draw: 0 };
+  const m = rangerFall();
+  const low = (k: Key3, pz: number | null, more: Partial<Bones> = {}): Key3 => ({ ...k, pose: { ...hands, ...k.pose, ...(pz === null ? {} : { pz }), ...more } });
+  const [k0, k1, k2, k3, ...rest] = m.keys;
+  return {
+    ...m,
+    keys: [
+      k0,
+      low(k1, -7, { rfz: 1.6 }),
+      low(k2, -6.6, { lfz: 1.2 }),
+      low(k3, -8, { rfz: onToes(16) }),
+      ...rest.map((k) => low(k, null)),
+    ],
+  };
+}
+
+/**
+ * HIS TWO HABITS IN A FIGHT, FROM THE CROUCH. The squirrel as it was, over his shoulders as he
+ * crouches. And THE ARROW ON HIS STRING SIGHTED: he takes it off the string, holds it level
+ * before his eye and sights along it, and nocks it again.
+ */
+function sightingOnString(B: Bones): Motion {
+  const off: Partial<Bones> = { draw: 0, prop: 2, pAz: B.wAz, pEl: B.wEl, pt: 0 };
+  const lowBow: Partial<Bones> = { lhIn: 0, lhx: 7.5, lhy: 3, lhz: -13, le: 10, wAz: 10, wEl: -40, wRoll: 30 };
+  const eye: Partial<Bones> = { ...lowBow, rhIn: 0, rhx: 11.5, rhy: 3.2, rhz: 6.2, re: 30, draw: 0, prop: 2, pAz: 4, pEl: 2, faceTilt: 9, faceTurn: -4, faceUp: 0, twist: B.twist - 4, bend: B.bend - 4, pz: B.pz + 0.8 };
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      // (the string let down and the arrow taken off it: in his hand where it lay on the string)
+      { at: 0.35, pose: { ...off } },
+      { at: 1.05, pose: { ...eye }, ease: 'io' },
+      { at: 2.25, pose: { ...eye, pt: 1, bend: B.bend - 2 }, ease: 'lin' },
+      { at: 2.5, pose: { ...eye, pt: 1 } },
+      { at: 3.15, pose: { ...off, pt: 1 }, ease: 'io' },
+      // (on the string again)
+      { at: 3.6, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/**
+ * MAKING READY WHEN PICKED, INTO HIS NEW STANCE: the bow off his back as it was, up and an arrow
+ * on the string, and down into his crouch, low, the bow out in front of him: the class card shows
+ * him so, from the `ready` moment on.
+ */
+const DRAW_READY = 26 * FR;
+function rangerDrawsLow(): Motion {
+  const m = rangerDraws();
+  // (as it was until the bow is up in front of him with the string a third drawn; then into the crouch)
+  const upTo = m.keys.filter((k) => k.at <= 19 * FR + 1e-9);
+  return { keys: [...upTo, { at: DRAW_READY, pose: { ...BATTLE, stow: 0 }, ease: 'io' }, { at: DRAW_READY + 2, pose: { ...BATTLE, stow: 0 } }] };
+}
+
 /** As they are with the switch off. */
-const RANGER_TODAY = { stand: RANGER_STAND3.motion, standRest: RANGER_STAND3.rest, town: RANGER_TOWN3.motion, shot: SHOT3.motion, shotRest: SHOT3.rest, volley: VOLLEY3.motion, volleyRest: VOLLEY3.rest };
+const RANGER_TODAY = {
+  stand: RANGER_STAND3.motion, standRest: RANGER_STAND3.rest, town: RANGER_TOWN3.motion, shot: SHOT3.motion, shotRest: SHOT3.rest, volley: VOLLEY3.motion, volleyRest: VOLLEY3.rest,
+  roll: ROLL3.motion, rollRest: ROLL3.rest, reel: RANGER_REEL3.motion, reelRest: RANGER_REEL3.rest, lurch: RANGER_LURCH3.motion, lurchRest: RANGER_LURCH3.rest,
+  fall: RANGER_FALL3.motion, fallRest: RANGER_FALL3.rest, squirrel: SQUIRREL3.motion, squirrelRest: SQUIRREL3.rest, sighting: SIGHTING3.motion, sightingRest: SIGHTING3.rest,
+  draw: RANGER_DRAW3.motion, drawReady: RANGER_DRAW3.ready,
+};
 /** Put the ranger's new stances in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
 export function useRangerStances(on: boolean): void {
   RANGER_STANCES.on = on;
@@ -1641,6 +1746,22 @@ export function useRangerStances(on: boolean): void {
   SHOT3.motion = on ? shotLow() : RANGER_TODAY.shot;
   VOLLEY3.rest = on ? BATTLE : RANGER_TODAY.volleyRest;
   VOLLEY3.motion = on ? volleyLow() : RANGER_TODAY.volley;
+  ROLL3.rest = on ? BATTLE : RANGER_TODAY.rollRest;
+  ROLL3.motion = on ? rollLow() : RANGER_TODAY.roll;
+  if (on) ROLL3.tumble = ROLL_LONG;
+  else delete ROLL3.tumble;
+  RANGER_REEL3.rest = on ? BATTLE : RANGER_TODAY.reelRest;
+  RANGER_REEL3.motion = on ? reelLow(BATTLE) : RANGER_TODAY.reel;
+  RANGER_LURCH3.rest = on ? BATTLE : RANGER_TODAY.lurchRest;
+  RANGER_LURCH3.motion = on ? lurchLow(BATTLE) : RANGER_TODAY.lurch;
+  RANGER_FALL3.rest = on ? BATTLE : RANGER_TODAY.fallRest;
+  RANGER_FALL3.motion = on ? fallLow() : RANGER_TODAY.fall;
+  SQUIRREL3.rest = on ? BATTLE : RANGER_TODAY.squirrelRest;
+  SQUIRREL3.motion = on ? squirrel(BATTLE) : RANGER_TODAY.squirrel;
+  SIGHTING3.rest = on ? BATTLE : RANGER_TODAY.sightingRest;
+  SIGHTING3.motion = on ? sightingOnString(BATTLE) : RANGER_TODAY.sighting;
+  RANGER_DRAW3.motion = on ? rangerDrawsLow() : RANGER_TODAY.draw;
+  RANGER_DRAW3.ready = on ? DRAW_READY : RANGER_TODAY.drawReady;
   // (and the game's own arrows, from where the picture's are: game/defs.ts, RANGER_ARROW)
   RANGER_ARROW.on = on;
   remakeRuns();

@@ -265,7 +265,14 @@ function animSet3(plan: Plan, view: GameView): AnimSet {
     set.leap = lazyFrames(3, (i) => leap.frames[Math.round([0.05, 0.45, 0.9][i] * (LEAP_FRAMES3 - 1))]);
     if (spanOf(m).end > until + 1e-6) clips.land = clip(m, CLIP_FPS3, until);
   }
-  if (plan.roll) clips.roll = spread(of(plan.roll), ROLL_FRAMES3, 0, spanOf(of(plan.roll)).end);
+  if (plan.roll) {
+    // (a roll the game carries along the floor for the first `tumble` of it: the rest is coming up,
+    // shown as a leap's landing is, if the hero is then left standing)
+    const m = of(plan.roll);
+    const until = m.tumble ?? spanOf(m).end;
+    clips.roll = spread(m, ROLL_FRAMES3, 0, until);
+    if (m.tumble !== undefined && spanOf(m).end > until + 1e-6) clips.land = clip(m, CLIP_FPS3, until);
+  }
   if (plan.hold) clips.hold = clip(of(plan.hold), CLIP_FPS3);
   if (plan.release) clips.release = clip(of(plan.release), CLIP_FPS3);
   // (a whirlwind on the bones is the hero turning all the way round, seen from one place: the
