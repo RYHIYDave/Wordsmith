@@ -1,6 +1,8 @@
-// THE MIX INSIDE EACH DUNGEON, STEP 1: THE RULES of a lever and its gate, and of a room that locks
+// THE MIX INSIDE EACH DUNGEON: THE RULES of a lever and its gate, and of a room that locks
 // (src/game/doors.ts, game.ts: `pullLever`, `updateLocks`; the hall laid by hand for them,
-// level.ts: `makeMixHall`). NOT IN ANY DUNGEON YET: the map-maker lays none of it.
+// level.ts: `makeMixHall`), and THE MAP-MAKER that lays them and two rooms next door in real
+// dungeons (game/dungeon.ts). BEHIND ITS SWITCH, `MIX.on`, OFF IN THE GAME until the owner says yes
+// to its pictures (sent 8 Oct 2026, 01:06): these tests switch it on for themselves and put it back.
 //
 // The owner, 7 Oct 2026, 14:01: "[...] that same bar style for gates going up and down with the
 // spikes on the bottom. Classic castle style. Implementing this should also affect level design
@@ -467,9 +469,13 @@ test('with the switch off a dungeon is Version 18.8\'s to the letter: the finger
   mixed(false, () => {
     for (const [depth, seed, print] of was) assert.equal(fingerprint(generateFloor(depth, seed)), print, `dungeon ${depth}, seed ${seed} is the dungeon 18.8 laid`);
   });
-  // and with it on, from the second dungeon on, every one of them is another
+  // and with it on, from the second dungeon on, every one of them is another; the first, a new
+  // player's lesson, is laid as it always was (not a die of the mix is thrown for it)
   mixed(true, () => {
-    for (const [depth, seed, print] of was) if (depth >= 2) assert.ok(fingerprint(generateFloor(depth, seed)) !== print, `with the mix on, dungeon ${depth}, seed ${seed} is another`);
+    for (const [depth, seed, print] of was) {
+      if (depth >= 2) assert.ok(fingerprint(generateFloor(depth, seed)) !== print, `with the mix on, dungeon ${depth}, seed ${seed} is another`);
+      else assert.equal(fingerprint(generateFloor(depth, seed)), print, `with the mix on, the first dungeon of seed ${seed} is the dungeon it was`);
+    }
   });
 });
 
@@ -591,4 +597,127 @@ test('with the mix on, in every dungeon from the second: the lever can be come t
   assert.ok(withGate >= dungeons * 0.9, `nearly every dungeon has its gate (${withGate} of ${dungeons})`);
   assert.ok(withLock >= dungeons * 0.8, `and most a room that locks (${withLock} of ${dungeons})`);
   assert.ok(pairs >= joints * 0.08 && pairs <= joints * 0.25, `about one joint in six is two rooms next door (${pairs} of ${joints})`);
+});
+
+test('with the mix on, whatever is shut in cannot come at the hero: in real dungeons with all their monsters, nothing the rule puts out of his reach can reach him but through a shut door or a lever\'s gate that is down; the hero is set down only where he could have walked', () => {
+  let asked = 0;
+  let behindGate = 0;
+  let pulled = 0;
+  for (const [seed, depth] of [[6, 2], [11, 3], [14, 4], [21, 5], [8, 6], [9, 3]] as const) {
+    const g = mixed(true, () => {
+      const q = new Game('warrior', seed);
+      q.depth = depth;
+      q.enterDungeon();
+      q.hero.invuln = 1e9;
+      return q;
+    });
+    const L = g.level;
+    const f = L.floor;
+    const h = g.hero;
+    const inLine = (s: DoorSpot, by: number): { x: number; y: number } => (s.alongX ? { x: s.a + 1.5, y: s.plane - s.out * by } : { x: s.plane - s.out * by, y: s.a + 1.5 });
+    // where a body can be come to from the hero: `walking`, on foot (through doors, which open for
+    // him; not through a gate that is down, whose tiles are neither walked nor seen through); else
+    // walked or flown over, and not through a shut door
+    const reached = (walking: boolean): Uint8Array => {
+      const out = new Uint8Array(f.w * f.h);
+      const ok = (i: number): boolean => (walking ? L.walk[i] === 1 : (L.walk[i] === 1 || L.open[i] === 1) && !(L.shut !== null && L.shut[i] === 1));
+      const queue = [Math.floor(h.y) * f.w + Math.floor(h.x)];
+      out[queue[0]] = 1;
+      for (let q = 0; q < queue.length; q++) {
+        const i = queue[q];
+        for (const j of [i + 1, i - 1, i + f.w, i - f.w]) {
+          if (j < 0 || j >= out.length || out[j] === 1 || !ok(j)) continue;
+          out[j] = 1;
+          queue.push(j);
+        }
+      }
+      return out;
+    };
+    const check = (when: string): number => {
+      const can = reached(false);
+      let n = 0;
+      for (const m of g.monsters) {
+        if (m.dead || !inner(g).shutIn(m)) continue;
+        n++;
+        assert.equal(can[Math.floor(m.y) * f.w + Math.floor(m.x)], 0, `dungeon ${depth}, seed ${seed}, ${when}: a ${m.kind} at ${m.x.toFixed(1)}, ${m.y.toFixed(1)} is out of the hero's reach, and could come to him without passing a shut door or a gate that is down: A ROOM HAS A SECOND WAY IN, and \`shutIn\` in game.ts must ask something else`);
+        if (L.doors.some((d) => d.spot.kind === 'gate' && d.want === 0 && within(room(g, d.spot.room), m))) behindGate++;
+      }
+      return n;
+    };
+    asked += check('as the run begins');
+    // the hero is set down before one door after another, the nearest the start first; where the
+    // way to a door is barred by the lever's gate he pulls the lever first, as a player must
+    const far = new Int32Array(f.w * f.h).fill(-1);
+    const first = [Math.floor(f.start.y) * f.w + Math.floor(f.start.x)];
+    far[first[0]] = 0;
+    for (let q = 0; q < first.length; q++) {
+      const i = first[q];
+      for (const j of [i + 1, i - 1, i + f.w, i - f.w]) {
+        if (j < 0 || j >= far.length || far[j] >= 0 || f.tiles[j] !== T_FLOOR) continue;
+        far[j] = far[i] + 1;
+        first.push(j);
+      }
+    }
+    const middle = (d: DoorInst): number => Math.floor(doorMiddle(d.spot).y) * f.w + Math.floor(doorMiddle(d.spot).x);
+    const order = L.doors.filter((d) => d.spot.kind === 'door').sort((a, b) => far[middle(a)] - far[middle(b)]);
+    let opened = 0;
+    for (const d of order) {
+      if (opened >= 5) break;
+      const p = inLine(d.spot, -2);
+      const at = Math.floor(p.y) * f.w + Math.floor(p.x);
+      if (L.walk[at] !== 1) continue;
+      if (reached(true)[at] !== 1) {
+        const lv = lever(g);
+        if (lv && lv.state === 0) {
+          inner(g).pullLever(lv);
+          steps(g, Math.ceil(GATE_RISE / DT) + 5);
+          pulled++;
+        }
+        // (beyond a room that locks, its gates down: not come to now)
+        if (reached(true)[at] !== 1) continue;
+      }
+      g.hero.x = p.x;
+      g.hero.y = p.y;
+      g.hero.move = null;
+      steps(g, 2);
+      assert.equal(d.want, 1, 'the door opens for him');
+      asked += check(`with ${opened + 1} of its doors opened`);
+      opened++;
+    }
+    assert.ok(opened >= 3, `dungeon ${depth}, seed ${seed}: ${opened} doors walked up to`);
+  }
+  assert.ok(asked > 200, `${asked} monsters asked about`);
+  assert.ok(behindGate > 0 && pulled > 0, `some of them behind a lever's gate that was down (${behindGate}), and the lever pulled to go on (${pulled} times)`);
+});
+
+test('with the mix on, the map-maker\'s other rules hold: the map is square and no larger than 160; the main path is as long as ever; at most one room more off it (the lever\'s nook); rooms 7x7 to 14x12, but the nook, which is smaller', () => {
+  const pathRooms = (depth: number): number => Math.min(15, 11 + Math.floor((depth - 1) / 2));
+  const branches = (depth: number): number => (depth <= 2 ? 3 : depth <= 5 ? 4 : 5);
+  let nooks = 0;
+  mixed(true, () => {
+    for (let depth = 2; depth <= 9; depth++) {
+      for (let k = 0; k < 8; k++) {
+        const seed = depth * 1000 + k * 7919 + 1;
+        const f = generateFloor(depth, seed);
+        const where = `dungeon ${depth}, seed ${seed}`;
+        assert.ok(f.w === f.h && f.w <= 160, `${where}: the map is ${f.w} by ${f.h}`);
+        const path = f.rooms.filter((r) => r.path >= 0);
+        assert.equal(path.length, pathRooms(depth), `${where}: the main path`);
+        const off = f.rooms.length - path.length;
+        assert.ok(off >= branches(depth) && off <= 2 * branches(depth) + 1, `${where}: ${off} rooms on side branches`);
+        for (const r of f.rooms) {
+          const long = Math.max(r.w, r.h);
+          const short = Math.min(r.w, r.h);
+          if (r.nook) {
+            nooks++;
+            assert.ok(short >= 5 && short <= 6 && long >= 6 && long <= 7, `${where}: the nook is ${r.w}x${r.h}`);
+          } else if (short < 7) {
+            // (a nook whose lever found no place is a small dead end like any other, and is not marked)
+            assert.ok(short >= 5 && long <= 7 && r.path < 0 && !f.levers, `${where}: room ${r.id} is ${r.w}x${r.h}`);
+          } else assert.ok(short <= 12 && long <= 14, `${where}: room ${r.id} is ${r.w}x${r.h}`);
+        }
+      }
+    }
+  });
+  assert.ok(nooks >= 50, `${nooks} nooks looked at`);
 });

@@ -78,7 +78,9 @@ const ACROSS_MAX = 8; // ... (five leaves the rooms ROOM_GAP apart)
 export const MIX = { on: false, pairs: true, levers: true, locks: true };
 const PAIR_SHARE = 1 / 6; // share of joints that are two rooms next door
 const PAIR_GAP = 3; // tiles of rock between two rooms next door: the least that lets the nearer room's back wall stand (render/walls.ts)
-const MIX_FROM = 2; // the first dungeon with a lever's gate and a room that locks (Dungeon 1 is a new player's lesson)
+const MIX_FROM = 2; // the first dungeon with any of the mix: a lever's gate, a room that locks, two rooms next door (Dungeon 1 is a new player's lesson, and is laid as it always was)
+/** (the level being planned may have two rooms next door: set by `planLevel` for the level it plans) */
+let pairsHere = false;
 
 const PACK_START_DIST = 10; // no pack centre this close to the hero's spawn point
 const PACK_SPACING = 4; // packs in one room are at least this far apart where the room allows
@@ -460,9 +462,10 @@ function grow(
     const side = pickSide(rng, heading);
     // THE MIX: now and then the new room is set down NEXT DOOR to the last one: three tiles of
     // rock between them, facing each other along most of the shorter one's side, a door and no
-    // hallway to speak of. Never the boss's hall. (The dice for it are thrown only where the
-    // map-maker mixes: a dungeon without the mix is rolled exactly as it always was.)
-    const pair = MIX.on && MIX.pairs && role !== 'boss' && rng.chance(PAIR_SHARE);
+    // hallway to speak of. Never the boss's hall, and not in the first dungeon. (The dice for it
+    // are thrown only where the map-maker mixes: a dungeon without the mix, and the first dungeon
+    // with it, is rolled exactly as it always was.)
+    const pair = pairsHere && role !== 'boss' && rng.chance(PAIR_SHARE);
     const gap = pair ? PAIR_GAP : rng.chance(LONG_CORRIDOR) ? rng.int(9, 13) : rng.int(ROOM_GAP, 8);
     const elbow = !pair && rng.chance(ELBOW_SHARE);
     let x: number;
@@ -540,6 +543,8 @@ interface Plan {
 
 /** Steps 1a-1c: the whole level as rectangles, on a grid with no edges (coordinates may be negative). */
 function planLevel(rng: RNG, depth: number): Plan | null {
+  // (THE MIX: two rooms next door from the second dungeon on; in the first, not a die is thrown for it)
+  pairsHere = MIX.on && MIX.pairs && depth >= MIX_FROM;
   const pathLen = pathRoomCount(depth);
   const used = new Set<number>();
   const rooms: RoomPlan[] = [];

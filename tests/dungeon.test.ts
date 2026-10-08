@@ -17,7 +17,7 @@ import nodeAssert from 'node:assert/strict';
 
 import { RNG } from '../src/engine/rng';
 import { doorPiers, doorWay } from '../src/game/doors';
-import { generateFloor, tileAt } from '../src/game/dungeon';
+import { MIX, generateFloor, tileAt } from '../src/game/dungeon';
 import { buildOpenGrid, buildWalkGrid, flowDir, flowField, lineOfSight, scatter } from '../src/game/nav';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from '../src/game/types';
 import type { Floor, PackSpot, PropSpot, Room } from '../src/game/types';
@@ -65,6 +65,10 @@ interface Sample {
 
 const samples: Sample[] = [];
 let generateMs = 0;
+// (THE MAP-MAKER AS IT LAYS A DUNGEON WITHOUT THE MIX, game/dungeon.ts, MIX: the mix's own rooms,
+// the lever's nook among them, are asked of in tests/mix.test.ts)
+const mixWas = MIX.on;
+MIX.on = false;
 for (let depth = 1; depth <= DEPTHS; depth++) {
   for (let k = 0; k < SEEDS; k++) {
     const seed = depth * 1000 + k * 7919 + 1;
@@ -74,6 +78,7 @@ for (let depth = 1; depth <= DEPTHS; depth++) {
     samples.push({ depth, seed, f, tag: `depth ${depth} seed ${seed}` });
   }
 }
+MIX.on = mixWas;
 
 // ---------------------------------------------------------------------------------------------
 // Helpers
@@ -267,9 +272,16 @@ function grid(rows: string[]): { g: Uint8Array; w: number; h: number } {
 // Generator: shape of the result
 
 test('same depth and seed always give the identical floor', () => {
-  for (const s of samples) {
-    const again = generateFloor(s.depth, s.seed);
-    assert.deepEqual(again, s.f, s.tag);
+  // (laid as the samples were: without the mix)
+  const mixOn = MIX.on;
+  MIX.on = false;
+  try {
+    for (const s of samples) {
+      const again = generateFloor(s.depth, s.seed);
+      assert.deepEqual(again, s.f, s.tag);
+    }
+  } finally {
+    MIX.on = mixOn;
   }
   // ...and a different seed or depth gives a different level
   assert.notDeepEqual(generateFloor(1, 1).tiles, generateFloor(1, 2).tiles);
