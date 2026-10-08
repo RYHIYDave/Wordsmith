@@ -23,7 +23,7 @@ import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
 import { makeBatArt } from './monster_bat';
 import { makeArcherArt, makeSkeletonArt } from './monster_bones';
-import { makeSkeletonArt3 } from './monster_bones3';
+import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
 import { makeBruteArt, makeGuardianArt } from './monster_brute';
 import { makeCultistArt } from './monster_cultist';
 import { makeWardenArt } from './monster_warden';
@@ -35,6 +35,14 @@ import { makeWardenArt } from './monster_warden';
  * and puts it back. The owner has not seen it: nothing that changes the look goes in before his yes.
  */
 export const SKELETON3 = { on: false };
+
+/**
+ * THE BONE ARCHER ON THE HEROES' BONES (art/monster_bones3.ts, `makeArcherArt3`): A MOCK-UP, AND
+ * OFF, as the skeleton's. While `on` is false the bone archer is today's (art/monster_bones.ts)
+ * and nothing about the game changes; a dev page or a playtest that wants pictures of the other one
+ * sets it for itself (window.__dbg.archer3) and puts it back. The owner has not seen it.
+ */
+export const ARCHER3 = { on: false };
 
 /** The figures there are: one for each kind of monster, and the guardian. */
 export type MonsterFigure = MonsterKind | 'guardian';
@@ -81,10 +89,16 @@ export function makeBestiary(): Bestiary {
   const made = new Map<MonsterFigure, ActorArt>();
   /** The skeleton on the bones, made the first time it is asked for with its switch on. */
   let bones3: ActorArt | null = null;
+  /** The bone archer on the bones, likewise. */
+  let archer3: ActorArt | null = null;
   const of = (figure: MonsterFigure): ActorArt => {
     if (figure === 'skeleton' && SKELETON3.on) {
       if (!bones3) bones3 = makeSkeletonArt3();
       return bones3;
+    }
+    if (figure === 'archer' && ARCHER3.on) {
+      if (!archer3) archer3 = makeArcherArt3();
+      return archer3;
     }
     let art = made.get(figure);
     if (!art) {
@@ -109,7 +123,7 @@ export function makeBestiary(): Bestiary {
   const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number; art: ActorArt } => {
     const art = of(figure);
     let list = todo.get(figure);
-    // (made again if the figure's pictures are others than they were: the skeleton's switch, SKELETON3, was thrown)
+    // (made again if the figure's pictures are others than they were: the skeleton's switch, SKELETON3, or the archer's, ARCHER3, was thrown)
     if (!list || list.art !== art) {
       list = { left: [], done: 0, art };
       // (and last its death: by the time one of them is killed, how it falls is painted)
