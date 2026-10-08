@@ -7,7 +7,9 @@ is today's exactly (tests check it).
 
 **State of this branch (`art/ranger-stances`), 8 Oct 2026:** from `main` at `5266f5b` (Version 19.1
 and the newer art rulebook), with `art/hero-moves-review` merged in (the review of every hero
-animation, its measuring tools, and the gripping runs behind `GRIP`, which stays off). **HE HAS
+animation, its measuring tools, and the gripping runs behind `GRIP`, which stays off), and then
+`main` at `2f8bcf1` (Version 19.2, Strike's two swings mended) merged in, so that it goes into
+`main` as it is now without a clash (two lines of imports and `__dbg` were joined by hand). **HE HAS
 SAID YES TO ALL OF IT, PART BY PART (15:57, 16:28, 16:41), AND AT 17:07 TO HANDING IT ALL OVER.**
 
 ## His words
@@ -114,7 +116,8 @@ today's exactly; his runs grip and the others' do not; as low as he runs; Shot's
 arrow gone from the string at the blow, no streak or fan; the game's numbers equal the picture's;
 his art has the new pictures only with the switch on, and the walking ones not in town; the
 figure's stops, start, walk the other ways, attacks made walking, and the roll's coming up.
-`tests/grip_runs.test.ts` (7). The whole suite 676 of 676; tsc clean; the game builds.
+`tests/grip_runs.test.ts` (7). With 19.2 merged in: the whole suite 681 of 681; tsc clean; the
+game builds; the ranger's playtest all passed, and Strike's (`combo_mends.mjs`) two swings, clean.
 
 ## To make it the game's own
 
