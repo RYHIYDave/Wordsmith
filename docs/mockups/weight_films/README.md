@@ -191,3 +191,7 @@ Nothing of this goes in before his yes to its film. Then, for each:
 
 **Both:** `tools/scenarios/weight_clock.mjs` is worth keeping for any film that compares two
 versions: it makes them differ only by the change.
+
+## Sent to the owner (8 Oct 2026, 02:55, by the art chat)
+
+previews/weight_heavy_blow.gif and previews/weight_planted_feet.gif (in the art chat's main clone), with these words: "4 of 4: weight. First film: the Slam as today, and with a tenth of a second's freeze as it lands. Second: each hero running, as today (the feet slide) and with each foot kept where it lands, which makes their legs move quicker. Want both in?" **HIS ANSWER: NOT YET IN.**  Before these went, at 00:53 on 8 Oct he wrote "If I’m not around to test phone speed continue on.  Keep going down the list", read as: leave the phone test until he is around and carry on down the art chat's list (decorations, the skeleton on the heroes' bones, true left-facing heroes, the two films of weight). He was told so at 00:54. Nothing of this is in the game; the main chat builds whatever he says yes to.
