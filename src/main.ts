@@ -62,6 +62,7 @@ import type { SmithPicture } from './ui/panels';
 import { gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
 import { THEME, Ui } from './ui/ui';
+import { demo3 } from './render/words3';
 
 declare const __BUILD__: string;
 
@@ -1605,6 +1606,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     doors: DOORS,
     /** THE TRAPS (game/traps.ts, TRAPS): ON in the game since the owner's yes (8 Oct 2026, 11:36); playtests that lay a dungeon without them set it for themselves and put it back. */
     traps: TRAPS,
+    /** THE NEW WORDS (render/words3.ts): how the eight words he chose on 8 Oct look at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
+    words3: demo3(fx, () => game),
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
