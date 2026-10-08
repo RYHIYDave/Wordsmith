@@ -307,3 +307,21 @@ FOR THE MAIN CHAT: add these two to the list of what is now yours to build for r
 switch until it is in: the two films of weight (`mockup/weight-films`: `HITSTOP`, `STRIDE` in
 `src/render/weight.ts`) and the decorations as in their second look (`mockup/decorations`: `DECOR.on`;
 not `DECOR.near`, the darker figure by a fire, which he never saw).
+
+## Words in the world (8 Oct, 08:58 to 09:21)
+
+Asked at 08:58 what the art chat should take up next (words in the world, recommended; a place with
+its own colours; the next monster on bones; the phone speed test): **"Words in the world
+(Recommended)".** The mock-up is the branch `mockup/words-in-world` (on top of `mockup/decorations`);
+its README has every word. The pictures went at 09:15 with three pop-ups; **09:21: the ring written
+in the word, "Yes (Recommended)"; the word rising off the blade, "Yes (Recommended)"; carved words,
+"No carved words".** Told at 09:22.
+
+Changed in the rulebook for it: "Words in the world" now has the two looks he chose as rules 1 and 2
+and "No carved words" as rule 3; its lead says letters show only on the monsters and weapons that
+carry a word; "Places" lost "Writing as landmarks" (it came from reading "Somewhere between 1 and 2"
+as some carved writing too; his answer of 09:21 settles it the other way).
+
+FOR THE MAIN CHAT: add to what is now yours to build for real, behind its switch until it is in:
+words in the world as he chose them (`mockup/words-in-world`: `WORDS_LOOK.on`, the ring written in
+the word and the word rising off the blade; no carvings).

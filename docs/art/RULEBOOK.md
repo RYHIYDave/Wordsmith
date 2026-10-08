@@ -91,9 +91,8 @@ The places carry the detail, always a step quieter than the fight. In your words
 2. **A step quieter.** Places use less contrast and duller colour than the figures in them, so the eye lands on the fight first.
 3. **Each place its own.** Every area has its own palette, stone, props and decoration. Two areas are never mistaken for each other.
 4. **Solid, not flat.** Walls are upright faces lit as the light falls, the left face lighter than the right, fading into the dark at the top. Props stand up off the floor with soft shadows. Steps and ledges are part of the world: "steps are a must include".
-5. **Writing as landmarks.** Here and there a place has words carved into it: over a door, round a shrine, on a boss's gate. Never on every wall.
-6. **Books may give worlds.** A group of floors may take its world from an old book, drawn only from the book itself and only from books out of copyright. The heroes never change their look for a book.
-7. **Old, broken and burnt.** Decorations show age: a tapestry torn and burnt, hanging in strips; a gargoyle head small and high on the wall; flagstones cracked or gone; a soft shadow at the foot of everything that stands. In your words, of the first gargoyle: "It’s too big and too low on the wall."
+5. **Books may give worlds.** A group of floors may take its world from an old book, drawn only from the book itself and only from books out of copyright. The heroes never change their look for a book.
+6. **Old, broken and burnt.** Decorations show age: a tapestry torn and burnt, hanging in strips; a gargoyle head small and high on the wall; flagstones cracked or gone; a soft shadow at the foot of everything that stands. In your words, of the first gargoyle: "It’s too big and too low on the wall."
 
 ## Movement
 
@@ -134,12 +133,13 @@ Wild for an instant, then clear: big moments flare, and nothing hides the fight 
 
 ## Words in the world
 
-Letters show wherever a word is at work, and now and then in the places themselves. In your words: "Wordsmithing is the strongest mechanic. Everything revolves around the wordsmithing first and foremost."
+Letters show wherever a word is at work: on the monsters and the weapons that carry one, and nowhere else. In your words: "Wordsmithing is the strongest mechanic. Everything revolves around the wordsmithing first and foremost."
 
-1. **A word shows its letters.** Gear with a word burned into it, and a monster carrying one, show glowing letters in that word's colour.
-2. **Carved words as landmarks.** Some places have writing cut into them, rare enough to notice (see Places).
-3. **The game's own letter.** Carved or glowing, the letters are the game's own lettering, never a font or script borrowed from elsewhere.
-4. **The words win.** When a word is picked up, burned in or used, it is the brightest, clearest thing on the screen for that moment.
+1. **A monster's ring is written in its word.** Under a named monster with a word, the ring on the floor is the word itself, round and round, turning slowly. You chose it on 8 Oct.
+2. **A weapon's word rises off it.** A weapon with a word burned in spells the word upward off the blade, letter by letter; the whole word holds a moment, fades, and comes again. You chose it on 8 Oct.
+3. **No carved words.** The walls stay with the decorations. In your words: "No carved words".
+4. **The game's own letter.** The letters are always the game's own lettering, never a font or script borrowed from elsewhere.
+5. **The words win.** When a word is picked up, burned in or used, it is the brightest, clearest thing on the screen for that moment.
 
 ## Menus and lettering
 
