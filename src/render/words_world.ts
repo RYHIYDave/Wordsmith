@@ -6,7 +6,8 @@
 // where a word works"); and at 08:58, of what the art chat should take up next, "Words in the world
 // (Recommended)". The art rulebook's rules for it ("Words in the world"): a word shows its letters
 // (gear with a word burned into it, and a monster carrying one, show glowing letters in that word's
-// colour); carved words as landmarks, rare enough to notice; the game's own letter; the words win.
+// colour); the game's own letter; the words win. (It also had carved words as landmarks, until his
+// answer of 09:21 below.)
 //
 // What this module draws (each part is a question for him, compared by eye with the game as it is):
 //   - A MONSTER THAT HAS A WORD (an elite, a guardian, the Warden): 'ring', the dotted ring on the
@@ -15,22 +16,23 @@
 //   - THE HERO'S WEAPON WITH A WORD BURNED INTO IT: 'rise', the word's letters rise off the blade (or
 //     the crystal) one after another, in a column that reads from the top down; the whole word
 //     holds a moment, fades, and is spelled again after a pause.
-//   - A WORD CARVED IN A WALL (art/carving.ts; render.ts stands it where a tapestry would hang):
-//     'plain', cut into the stone; 'glow', cut, and lit from inside in the word's colour.
+//   A WORD CARVED IN A WALL (cut in the stone, or cut and glowing) was shown to him too, at 09:15;
+//   his answer at 09:21, "No carved words": the walls stay with the decorations, and it was taken out.
 //   Tried and dropped before anything was shown to him: letters sparking up off a monster's ring
 //   (they crossed its legs and read as noise) and the word laid along the blade (on most frames the
 //   blade is too short on the screen for a word: the letters ran together).
 // Every letter is the game's own (engine/font.ts), in the small font, at the screen's grain.
+// HIS ANSWERS, 8 Oct 2026, 09:21, to the pictures of 09:15: the ring written in the word, "Yes
+// (Recommended)"; the word rising off the blade, "Yes (Recommended)"; carved words, "No carved words".
 import { WORD_COLOR } from '../art/icons';
 import { drawText, textWidth } from '../engine/font';
 import { WORDS } from '../game/defs';
 import type { WordId } from '../game/types';
 
-export const WORDS_LOOK: { on: boolean; monster: 'ring' | 'off'; gear: 'rise' | 'off'; carved: 'plain' | 'glow' | 'off' } = {
+export const WORDS_LOOK: { on: boolean; monster: 'ring' | 'off'; gear: 'rise' | 'off' } = {
   on: false,
   monster: 'ring',
   gear: 'rise',
-  carved: 'plain',
 };
 
 /** A word as it is written in the world: its own name, in capitals ("FLAME" for fire). */

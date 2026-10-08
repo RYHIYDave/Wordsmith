@@ -42,7 +42,6 @@ import { Figure, attackClip, attackFrame, monsterAttackAge, PHASE_APART } from '
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { LetterSparks, WORDS_LOOK, letterRing } from './words_world';
-import { makeCarvingArt } from '../art/carving';
 import { pline, wx, wy, wyFlat } from './fx';
 import type { Cam, Fallen, Fx } from './fx';
 
@@ -458,9 +457,7 @@ export class Renderer {
       if (d.kind === 'tapestry') {
         // (each strip just after the block of wall it hangs on: whatever stands in the room is in
         // front of it, as it is in front of the wall, and the next block does not cover it)
-        // (MOCK-UP: words in the world) with `WORDS_LOOK.carved`, a word cut into the wall in its place
-        const carved = WORDS_LOOK.on && WORDS_LOOK.carved !== 'off';
-        for (const q of carved ? this.carve.carving(d.alongX, d.variant, WORDS_LOOK.carved === 'glow') : A.tapestry(d.alongX, d.variant)) {
+        for (const q of A.tapestry(d.alongX, d.variant)) {
           const x = d.alongX ? d.x + q.t : d.x + 1;
           const y = d.alongX ? d.y + 1 : d.y + q.t;
           put((d.alongX ? Math.floor(x + 1e-6) + d.y : d.x + Math.floor(y + 1e-6)) + 1.01, q.s, x, y);
@@ -473,9 +470,8 @@ export class Renderer {
     }
   }
 
-  /** (MOCK-UP: words in the world, `WORDS_LOOK`) Letters rising off what carries a word; the carved words; the time of the last frame they were moved. */
+  /** (MOCK-UP: words in the world, `WORDS_LOOK`) Letters rising off what carries a word; the time of the last frame they were drawn. */
   private sparks = new LetterSparks();
-  private carve = makeCarvingArt();
   private wordsT = -1;
 
   /** (MOCK-UP: `DECOR.near`) The fires of this level that a figure may stand in front of: this frame's (none, unless the switch and `near` are on). */

@@ -565,28 +565,6 @@ export function drawText(g: CanvasRenderingContext2D, text: string, x: number, y
   return width;
 }
 
-/**
- * (MOCK-UP, words carved in the world: render/words_world.ts) The pixels of one line of text as rows of
- * '#' (ink) and '.', as drawText would ink them: at the font's own pixels, or at the finer grain
- * (`fine`: FONT_GRAIN picture pixels to a font pixel, the diagonals filled and the stems made bold
- * as the screen's letters are). Works without a DOM.
- */
-export function glyphRows(text: string, font: FontId = 'normal', fine = false): string[] {
-  const f = fontOf(font);
-  const g = fine ? FONT_GRAIN : 1;
-  const str = typeof text === 'string' ? text : String(text);
-  const w = Math.max(0, measure(f, str) * g + (fine && FONT_BOLD[f.id] ? 1 : 0));
-  const out = Array.from({ length: f.h * g }, () => new Array<string>(w).fill('.'));
-  let x = 0;
-  for (let i = 0; i < str.length; i++) {
-    const gi = glyphOf(f, str.charCodeAt(i));
-    const rows = fine ? (f.fine[gi] ?? (f.fine[gi] = fineRows(f.rows[gi], FONT_BOLD[f.id]))) : f.rows[gi];
-    if (f.ink[gi]) for (let y = 0; y < rows.length && y < out.length; y++) for (let c = 0; c < rows[y].length; c++) if (rows[y].charCodeAt(c) === 35 && x + c < w) out[y][x + c] = '#';
-    x += (f.w[gi] + GAP) * g;
-  }
-  return out.map((r) => r.join(''));
-}
-
 /** Width in pixels that drawText would draw (0 for an empty string). Works without a DOM. */
 export function textWidth(text: string, font: FontId = 'normal', scale = 1): number {
   return measure(fontOf(font), typeof text === 'string' ? text : String(text)) * cleanScale(scale);

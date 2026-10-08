@@ -1,4 +1,4 @@
-// (MOCK-UP, NOT IN THE GAME) WORDS IN THE WORLD (render/words_world.ts, art/carving.ts): stills of a
+// (MOCK-UP, NOT IN THE GAME) WORDS IN THE WORLD (render/words_world.ts): stills of a
 // real dungeon room with the decorations (game/decor.ts), the hero holding a weapon with a word burned
 // into it, and a named monster with a word beside him: as the game draws them today, and in each look.
 //
@@ -8,7 +8,7 @@
 //   FOE='2.2,-1.2'   where the named monster stands, from the hero, in tiles
 //   KIND=skeleton WORD=twin   the monster and its word
 //   IMBUE=fire       the word burned into the hero's weapon
-//   LOOKS='now;ring,rise,plain;ring,rise,glow'   each still: 'now' (the switch off), or monster,gear,carved
+//   LOOKS='now;ring,rise'   each still: 'now' (the switch off), or monster,gear
 //   WAIT=2300        how long after setting a look the still is taken (ms): long enough for the rising word to be spelled out
 //   node tools/playtest.mjs --file dist/words.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words_world.mjs --out shots/words/a
 import { log } from './lib.mjs';
@@ -22,7 +22,7 @@ export default async function (page, snap) {
   const kind = process.env.KIND || 'skeleton';
   const word = process.env.WORD || 'twin';
   const imbue = process.env.IMBUE || 'fire';
-  const looks = (process.env.LOOKS || 'now;ring,rise,plain;ring,rise,glow').split(';');
+  const looks = (process.env.LOOKS || 'now;ring,rise').split(';');
   const wait = Number(process.env.WAIT || 2300);
   const info = await page.evaluate(([seed, depth, room, at, foe, kind, word, imbue]) => {
     const d = window.__dbg; d.saving(false);
@@ -59,15 +59,15 @@ export default async function (page, snap) {
   log('monster', info.monster);
   log('weapon', info.weapon);
   for (const look of looks) {
-    const [monster, gear, carved] = look.split(',');
-    await page.evaluate(([look, monster, gear, carved]) => {
+    const [monster, gear] = look.split(',');
+    await page.evaluate(([look, monster, gear]) => {
       const d = window.__dbg;
       if (look === 'now') d.words.on = false;
-      else Object.assign(d.words, { on: true, monster, gear, carved });
-    }, [look, monster, gear, carved]);
+      else Object.assign(d.words, { on: true, monster, gear });
+    }, [look, monster, gear]);
     // (long enough for the rising word to be spelled out, and not yet faded)
     await page.waitForTimeout(wait);
-    await snap(look === 'now' ? 'now' : `${monster}_${gear}_${carved}`);
+    await snap(look === 'now' ? 'now' : `${monster}_${gear}`);
   }
   await page.evaluate(() => { const d = window.__dbg; const was = window.__wordsWas; if (was) { Object.assign(d.decor, was.decor); Object.assign(d.words, was.words); } });
 }
