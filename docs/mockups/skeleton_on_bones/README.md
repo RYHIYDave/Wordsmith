@@ -194,3 +194,7 @@ away. The motion was judged from frames side by side (a GIF cannot be watched pl
   jolted open) is small at the size of a phone; the coming apart carries it best.
 - The game's own death bits (the white squares it throws when anything dies) still fly over its
   coming apart; it might want fewer of them on a skeleton now that its bones fall.
+
+## Sent to the owner (8 Oct 2026, 02:55, by the art chat)
+
+previews/skeleton_on_bones_sheet.png and previews/skeleton_on_bones_film.gif, with these words: "2 of 4: the skeleton rebuilt on the heroes' bones, beside today's. The film shows both plod, strike and fall apart. Should the new skeleton replace today's?" **HIS ANSWER: NOT YET IN.**  Before these went, at 00:53 on 8 Oct he wrote "If I’m not around to test phone speed continue on.  Keep going down the list", read as: leave the phone test until he is around and carry on down the art chat's list (decorations, the skeleton on the heroes' bones, true left-facing heroes, the two films of weight). He was told so at 00:54. Nothing of this is in the game; the main chat builds whatever he says yes to.
