@@ -9,6 +9,10 @@ rubble on the floor, no door. / I'll mock it up and show you before it goes in."
 on paper, while its machine was taken up by playtests. IT HAS NEVER BEEN COMPILED OR SEEN. Expect
 type errors and a first picture that needs work.
 
+**8 Oct 2026, 00:23: THE ART CHAT HAS TAKEN THIS BRANCH UP.** It compiles (one fix: the crack's
+column in `makeBreach` was typed as a constant) and `dist/hole.html` builds. Pictures next; the
+owner gets them from the art chat. The main chat need not draw the hole.
+
 **The job:** make it compile, look at it, make it look right, and send the owner a sheet of
 pictures marked as a mock-up, with ONE question ("Is this the hole you meant?"). Nothing of it
 goes into the game from here: the main chat puts it in, behind a switch, after his yes.

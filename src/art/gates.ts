@@ -562,7 +562,7 @@ export function makeBreach(theme: Theme, alongX: boolean): Strip[] {
   // (a crack up the jamb from the shoulder of the hole, and one up from its top)
   const crack = new Set<number>();
   for (const [u0, v0, n, seed] of [[27, 44, 22, 3], [13, 55, 12, 9]] as const) {
-    let u = u0;
+    let u: number = u0;
     for (let k = 0; k < n; k++) {
       crack.add((v0 + k) * 64 + u);
       const r = chance(k, seed);
