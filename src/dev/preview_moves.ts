@@ -4,13 +4,13 @@
 // (art/heroes3.ts, paintMove3) from in front, the scarf's and the feather's flying ends moved on
 // as the game moves them. The figure stands in one place on the floor.
 //   node tools/page_gif.mjs src/dev/preview_moves.ts "4:ranger!|rstand~0.6+rfall=Falls|..." previews/x.gif
-//   hash = <screen pixels to a game pixel>:[ranger!][grip!]<move>[~<seconds>][@<from>-<to>]+<move>...[=<label>]|...
+//   hash = <screen pixels to a game pixel>:[ranger!][mage!][wild!][grip!]<move>[~<seconds>][@<from>-<to>]+<move>...[=<label>]|...
 //   (~<seconds>: play a loop that long; @<from>-<to>: only that piece of the move)
 import { paintMove3 } from '../art/heroes3';
 import { MAGE_TAILS } from '../art/hero_mage';
 import { RANGER_TAILS } from '../art/hero_ranger';
 import { WARRIOR_TAILS } from '../art/hero_warrior';
-import { MOVES3, useGrippingRuns, useRangerStances } from '../art/moves3';
+import { MOVES3, useGrippingRuns, useMageStances, useRangerStances, useWild } from '../art/moves3';
 import type { Move3 } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
 import { Tails } from '../engine/tails';
@@ -20,9 +20,11 @@ const cut = RAW.indexOf(':');
 const S = Number(RAW.slice(0, cut)) || 4;
 let list = RAW.slice(cut + 1);
 for (;;) {
-  const m = list.match(/^(ranger|grip)!\|?/);
+  const m = list.match(/^(ranger|mage|grip|wild)!\|?/);
   if (!m) break;
   if (m[1] === 'ranger') useRangerStances(true);
+  else if (m[1] === 'mage') useMageStances(true);
+  else if (m[1] === 'wild') useWild(true);
   else useGrippingRuns(true);
   list = list.slice(m[0].length);
 }

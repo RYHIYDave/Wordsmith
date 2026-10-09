@@ -16,7 +16,7 @@ import { SQ_BUNCH, SQ_FLICK, SQ_RUN, SQ_SIT, squirrel } from './hero_ranger';
 import { BROWN, CYAN, INDIGO, INK, LEAF, MAIL, PINK, PLUM, SKIN4, STEEL, TEAL, dim } from './kit';
 import type { Painted, Ramp } from './kit';
 import { onBack } from './carried';
-import { ARROW_LONG, BOW_BRACE, BOW_HALF, RANGER_STANCES } from './moves3';
+import { ARROW_LONG, BOW_BRACE, BOW_HALF, RANGER_STANCES, WILD } from './moves3';
 import { P } from './palette';
 import { ball, band, cloth, eyesToward, faces, girdle, mid, off, rod, sided, skirtOf, stage, thread, trunkBalls, wornOn } from './skin';
 import type { GameView, Ring } from './skin';
@@ -294,7 +294,25 @@ export function paintRanger3(s: Skeleton, q: Posed, view: GameView, kit: { build
   if (strung) {
     thread(line, st, tipOf(1), s.handR, CYAN[3]);
     thread(line, st, s.handR, tipOf(-1), CYAN[3]);
-    arrow(s.handR, add(s.handR, mul(p3, ARROW_LONG * B.tall)));
+    const point = add(s.handR, mul(p3, ARROW_LONG * B.tall));
+    arrow(s.handR, point);
+    // (BIG AND WILD, moves3.ts WILD: held at full draw, a glint runs to the arrow's point and it
+    // shines there, a star of four rays, as his aim settles: precise and quiet, as he is. A gleam of
+    // steel, white, not the friend's glow: the owner, of the ranger's, "just like wind instead of energy")
+    if (WILD.on && q.draw >= 0.85) {
+      const PALE = '#e6eef8';
+      const [cx, cy] = st.at(point);
+      const x = Math.round(cx - 0.5);
+      const y = Math.round(cy - 0.5);
+      const k = Math.min(1, (q.draw - 0.85) / 0.15);
+      const ray = 2 + Math.round(4 * k);
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) st.over.set(x + i, y + j, i === 0 || j === 0 ? '#ffffff' : PALE);
+      for (let d = 2; d <= ray; d++) {
+        const c = d <= ray - 2 ? '#ffffff' : PALE;
+        st.over.set(x + d, y, c).set(x - d, y, c).set(x, y + d, c).set(x, y - d, c);
+      }
+      lights.push({ x: cx, y: cy, r: 10 + 8 * k, color: PALE, a: 0.45 + 0.3 * k });
+    }
   } else thread(line, st, tipOf(1), tipOf(-1), CYAN[3]);
   // what has just been loosed: one arrow (prop 3) or a fan of them (prop 4), going the way it points; `pt` is how far gone
   if (!away && (q.prop === 3 || q.prop === 4) && q.pt < 0.999) {

@@ -268,6 +268,12 @@ export interface PackSpot {
    * powerful monster at the end of a side branch) and its followers.
    */
   tier: 'normal' | 'elite' | 'champion';
+  /**
+   * MONSTER PACKS (defs.ts): what the pack is of (every one of it that kind, a guardian's pack all
+   * guardians), its `size` by the kind's size. Absent with the switch off: the pack's kinds are mixed
+   * when it is filled, as before.
+   */
+  kind?: MonsterKind;
 }
 
 /**

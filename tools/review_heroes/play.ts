@@ -11,7 +11,7 @@
 //   node node_modules/tsx/dist/cli.mjs tools/review_heroes/play.ts [scenario ...] [--trace]
 // @ts-ignore - node typings are not part of this project
 import { readFileSync } from 'node:fs';
-import { useGrippingRuns, useRangerStances } from '../../src/art/moves3';
+import { useGrippingRuns, useMageStances, useRangerStances, useWild } from '../../src/art/moves3';
 import { COMBO } from '../../src/game/defs';
 import type { ClassId } from '../../src/game/types';
 import * as sim from './sim';
@@ -117,9 +117,11 @@ function judge(sc: Scenario, shown: Shown[]): string[] {
 }
 
 COMBO.on = true;
-// (--grip: with the gripping runs, art/moves3.ts GRIP; --ranger: with the ranger's new stances, RANGER_STANCES)
+// (--grip: with the gripping runs, art/moves3.ts GRIP; --ranger: with the ranger's new stances, RANGER_STANCES; --mage: the mage's, MAGE_STANCES; --wild: big and wild, WILD)
 if (process.argv.includes('--grip')) useGrippingRuns(true);
 if (process.argv.includes('--ranger')) useRangerStances(true);
+if (process.argv.includes('--mage')) useMageStances(true);
+if (process.argv.includes('--wild')) useWild(true);
 for (const cls of ['warrior', 'ranger', 'mage'] as ClassId[]) {
   for (const sc of scenariosOf(cls)) {
     const name = `${cls}: ${sc.name}`;

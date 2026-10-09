@@ -31,7 +31,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, RANGER_ARROW, SKILLS, TUNE, WORDS } from '../game/defs';
+import { MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, TUNE, WORDS } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
@@ -48,6 +48,8 @@ import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import type { Cam, Fallen, Fx } from './fx';
+import { WILD } from '../art/moves3';
+import { LEAP_LIFT, drawWildArrow, drawWildWave } from './wild';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -202,6 +204,21 @@ function ellipse(g: CanvasRenderingContext2D, cx: number, cy: number, r: number,
   g.ellipse(cx, cy, r * 22.6, r * 11.3, 0, 0, Math.PI * 2);
   g.fill();
   g.globalAlpha = 1;
+}
+
+/**
+ * MONSTER PACKS: drawn as an elite is, its name over it, its bar always, its ring: an elite (a yellow
+ * pack's leader is one), and, with PACK_LOOK, every one of a blue pack.
+ */
+function named(m: Monster): boolean {
+  return m.elite || (PACK_LOOK.on && m.rarity === 'blue');
+}
+
+/** The colour of a named monster's name: its word's; with PACK_LOOK, a blue pack's blue and a yellow pack's leader's yellow (the colours of magic and rare things). */
+function nameColor(m: Monster): string {
+  if (PACK_LOOK.on && m.rarity === 'blue') return RARITY_COLOR[1];
+  if (PACK_LOOK.on && m.rarity === 'leader') return RARITY_COLOR[2];
+  return m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
 }
 
 function ringDots(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string, gap = 1): void {
@@ -1387,7 +1404,7 @@ export class Renderer {
       if (m.dead || !m.seen || !here(m.x, m.y)) continue;
       const cx = wx(cam, m.x, m.y);
       const cy = wy(cam, m.x, m.y);
-      if (m.elite || m.boss) {
+      if (named(m) || m.boss) {
         const col = m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
         ringDots(g, cx, cy, m.r * (1.5 + 0.12 * Math.sin(t * 5)), col);
       }
@@ -1430,6 +1447,12 @@ export class Renderer {
   private heldFor(game: Game): number {
     const ch = game.hero.channel;
     return ch ? ch.t : -1;
+  }
+  /** The attack being wound up now is one that will be held (a beam, a whirlwind): it has a `channel`. */
+  private holdSoon(game: Game): boolean {
+    const w = game.hero.windup;
+    const s = w ? game.hero.skills[w.skill] : null;
+    return !!s && SKILLS[s.id].channel !== undefined;
   }
   private heldAs(game: Game): 'beam' | 'whirl' {
     const ch = game.hero.channel;
@@ -1878,7 +1901,8 @@ export class Renderer {
       // (in a swipe move the hero is lifted by the move, from the height they left to the height
       // they land on, not by the ground they pass over: a leap up a ledge rises to it)
       let sy = relief ? wyFlat(cam, h.x, h.y) - heroLift : wy(cam, h.x, h.y);
-      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 24;
+      // (big and wild, art/moves3.ts WILD: higher: render/wild.ts, LEAP_LIFT)
+      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * (WILD.on ? LEAP_LIFT : 24);
       // (a roll that goes over a ledge or a pit is a dive: it leaves the floor, a little)
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
@@ -1942,7 +1966,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them
@@ -1978,6 +2002,14 @@ export class Renderer {
         if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
         if (relief && !h.move) this.hide(h.x, h.y, heroLift);
         this.heroLit = { x: Math.round(sx), y: Math.round(sy) };
+        // BIG AND WILD (art/moves3.ts, WILD): where the power she holds burns, and how hot, for the
+        // effects to make it crackle and throw bolts (a place in the world, and its height there)
+        const held = WILD.on && coming <= 0 ? fig.charge() : null;
+        if (held) {
+          const cx = h.x + held.dx / 32;
+          const cy = h.y - held.dx / 32;
+          fx.charge(cx, cy, wy(cam, cx, cy) - (sy + held.dy), held.heat, h.fx, h.fy);
+        }
       }
       if (h.burnT > 0 && Math.random() < 0.4 * amb) fx.mote(h.x, h.y, ELEMENT_RAMP.fire);
       // "of Swiftness": while the haste lasts the hero leaves green afterimages and a wake of wind
@@ -2225,7 +2257,9 @@ export class Renderer {
         // and streaming back, darker and thinner the further back, with gaps that run along it
         // so that it is seen to flow; and two ripples that it leaves on the floor behind it.
         const run = Math.floor(t * 24);
-        for (let j = layers + 2; j >= 0; j--) {
+        // (BIG AND WILD, art/moves3.ts WILD: it stands up tall and boils: render/wild.ts)
+        if (WILD.on) drawWildWave(g, cam, p, tones, t, jx, jy);
+        else for (let j = layers + 2; j >= 0; j--) {
           // (the last two are the ripples left behind: thin, faint, and a way back)
           const ripple = j > layers;
           const back = ripple ? layers + (j - layers) * 4 : j;
@@ -2289,6 +2323,8 @@ export class Renderer {
       const leech = mine && p.words.includes('leech');
       const volatile = mine && p.words.includes('volatile');
       const flick = Math.floor(t * 20) % 2 === 0;
+      // (BIG AND WILD, art/moves3.ts WILD: a hero's arrow streaks light behind it: render/wild.ts)
+      if (WILD.on && mine) drawWildArrow(g, sx, sy, ux, uy);
       // Swift: a long pale streak behind the arrow
       if (swift) pline(g, sx - ux * 24, sy - uy * 24, sx - ux * 6, sy - uy * 6, twin ? P.tl3 : P.gn4);
       const body = (power ? 10 : swift ? 9 : leech || volatile || twin ? 8 : 6) + (lifted ? RANGER_ARROW.long - 6 : 0);
@@ -2564,7 +2600,7 @@ export class Renderer {
       else if (p.kind === 'tentTable') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 18, 56, 0.8);
       else if (p.kind === 'runeSlab') spot(wx(cam, p.x, p.y) + 8, wy(cam, p.x, p.y) - 12, 64 + Math.sin(t * 2) * 3, 0.75);
     }
-    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? 34 : 26, 0.8);
+    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? (WILD.on ? 52 : 34) : WILD.on && p.look === 'arrow' ? 40 : 26, 0.8);
     // What a monster's own fire lights: the floor round a cultist's flame (and far more of it as
     // the flame swells before it is thrown), the Warden's maul going hot. Eyes glow, and light
     // nothing.
@@ -2633,22 +2669,30 @@ export class Renderer {
 
   private drawBars(g: CanvasRenderingContext2D, game: Game, t: number): void {
     const cam = this.cam;
+    // (MONSTER PACKS, with PACK_LOOK: a blue pack's name is written once, over the first of it still
+    // standing in sight; every one of it has its ring and its bar. A name over each was a pile of
+    // letters: six bats, six names, one on another.)
+    const speaks = new Map<number, number>();
+    if (PACK_LOOK.on) for (const m of game.monsters) if (!m.dead && m.seen && m.rarity === 'blue' && !speaks.has(m.packId)) speaks.set(m.packId, m.id);
+    // (the names over all the bars, so that no bar of a pack's lies across its name)
+    const names: { m: Monster; x: number; y: number }[] = [];
     for (const m of game.monsters) {
       if (m.dead || !m.seen || m.boss) continue;
       // (the enemy locked onto always shows its life: it is the one being fought)
-      if (m.barT <= 0 && !m.elite && m.id !== this.lockId) continue;
+      if (m.barT <= 0 && !named(m) && m.id !== this.lockId) continue;
       // (over its head as it stands: a club or a sword raised above it passes in front of the bar)
       const sx = Math.round(wx(cam, m.x, m.y));
       const sy = Math.round(wy(cam, m.x, m.y)) - FIGURE_SIZE[figureOf(m)].top - 5;
-      const w = m.champion ? 34 : m.elite ? 24 : 16;
+      const w = m.champion ? 34 : named(m) ? 24 : 16;
       g.fillStyle = P.ink;
       g.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 4);
       g.fillStyle = P.bl1;
       g.fillRect(sx - w / 2, sy, w, 2);
-      g.fillStyle = m.elite ? P.fr4 : P.bl4;
+      g.fillStyle = named(m) ? P.fr4 : P.bl4;
       g.fillRect(sx - w / 2, sy, Math.max(0, Math.round((w * m.life) / m.maxLife)), 2);
-      if (m.elite) drawText(g, m.name, sx, sy - 8, m.words.length ? WORD_COLOR[m.words[0]] : P.fr4, { align: 'center', font: 'small', shadow: P.ink });
+      if (named(m) && (m.rarity !== 'blue' || speaks.get(m.packId) === m.id)) names.push({ m, x: sx, y: sy - 8 });
     }
+    for (const n of names) drawText(g, n.m.name, n.x, n.y, nameColor(n.m), { align: 'center', font: 'small', shadow: P.ink });
     // The hero's own life, over their head, where the eyes are in a fight (lifebar.ts says when it
     // is there). The part just lost stays lit for a moment; low, it flashes; its edge takes the
     // colour of what ails the hero, as the globe's rim does.

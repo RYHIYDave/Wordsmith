@@ -34,7 +34,7 @@ import type { TailRoot } from '../engine/tails';
 import { book, bookShut, mageLight } from './hero_mage';
 import { BROWN, CYAN, INDIGO, INK, MAIL, NIGHT, PINK, PLUM, ROBE, SKIN4, SPARK, STEEL, TEAL, hash } from './kit';
 import type { Painted, Ramp } from './kit';
-import { STAFF_UP, STAFF_DOWN } from './moves3';
+import { STAFF_UP, STAFF_DOWN, WILD } from './moves3';
 import { ball, band, cloth, eyesToward, faces, girdle, hidden, mid, off, rod, sided, skirtOf, stage, tippedFrom, trunkBalls } from './skin';
 import type { GameView, Ring, Sheet } from './skin';
 import { add, cross, dot, lerp3, mul, norm, sub, trunkOf } from './skeleton';
@@ -347,7 +347,16 @@ export function paintMage3(s: Skeleton, q: Posed, view: GameView, kit: { build: 
   }
   const hot = Math.max(0, Math.min(2, burn - 1));
   const pulse = hot > 0.5 ? 0 : Math.sin(wind);
-  lights.push({ x: tx, y: ty, r: 21 + hot * 6.5 + pulse * 1.5, color: SPARK[3], a: 0.38 + hot * 0.185 + pulse * 0.07 });
+  // (BIG AND WILD, moves3.ts WILD: a real glow, that swells and flickers with how hot it burns; the
+  // crackle and the bolts are render/fx.ts's, from the charge handed back below)
+  const heat = Math.max(0, burn - 1);
+  if (WILD.on) {
+    // (as it is in her guard, and as big again and nearly white as a spell is let go)
+    const k = Math.max(0, Math.min(1, (heat - 1.2) / 1.8));
+    const s = k * k * (3 - 2 * k);
+    lights.push({ x: tx, y: ty, r: 24 + 24 * s + 3 * hash(Math.round(tx), Math.round(ty), Math.round(heat * 40)), color: SPARK[3], a: 0.44 + 0.28 * s });
+  }
+  else lights.push({ x: tx, y: ty, r: 21 + hot * 6.5 + pulse * 1.5, color: SPARK[3], a: 0.38 + hot * 0.185 + pulse * 0.07 });
 
   // --- the staff brought down on the floor (prop 5; `pt` is 1 in the frame it strikes, 0 when the ring has gone) ---
   if (q.prop === 5 && q.pt > 0.02) {
@@ -378,5 +387,5 @@ export function paintMage3(s: Skeleton, q: Posed, view: GameView, kit: { build: 
     else book(layer, st.over, lx + 1, ly - 2, q.pt > 0.12 && q.pt < 0.88 ? ((q.pt - 0.12) / 0.76) % 1 : 0, lights);
   }
 
-  return { px: st.whole(kit.rim === undefined ? FRIEND_RIM : kit.rim), lights, tails };
+  return { px: st.whole(kit.rim === undefined ? FRIEND_RIM : kit.rim), lights, tails, charge: { x: tx, y: ty, heat } };
 }

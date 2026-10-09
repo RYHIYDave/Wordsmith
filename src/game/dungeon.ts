@@ -31,13 +31,13 @@
 //     the design rules out again and will fail if a change breaks one.
 
 import { RNG } from '../engine/rng';
-import { FIRST_DUNGEON, FIRST_LEVELS } from './defs';
+import { FIRST_DUNGEON, FIRST_LEVELS, MONSTERS, MONSTER_PACKS, packRange, sizeOf } from './defs';
 import { DOORS, layDoors } from './doors';
 import { TRAPS, TRAPS_FROM, layHazards, sealVault, unsealDoorless } from './traps';
 import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
-import type { Floor, PackSpot, PropKind, PropSpot, Room, RoomKind } from './types';
+import type { Floor, MonsterKind, PackSpot, PropKind, PropSpot, Room, RoomKind } from './types';
 
 // ---------------------------------------------------------------------------------------------
 // Tunables
@@ -1150,11 +1150,14 @@ interface PackDraft {
   min: number;
   max: number;
   size: number;
+  kind?: MonsterKind;
 }
 
 /** Everything the populate step shares between its helpers. */
 interface Stage {
   rng: RNG;
+  /** MONSTER PACKS: the lot each pack's kind and size are drawn from, apart from `rng`, so where packs stand and everything else is as it was. */
+  kindRng: RNG;
   depth: number;
   size: number;
   tiles: Uint8Array;
@@ -1505,6 +1508,19 @@ function placePacks(st: Stage, lay: Layout): PackSpot[] {
     rng.pick(open).size++;
     left--;
   }
+  // MONSTER PACKS (defs.ts; his rule of 9 Oct 2026, 07:49): a pack is of one kind, as many as the
+  // kind's size says; a guardian's lair holds guardians alone; a pack in a corridor is of the fewest
+  // and one more. Drawn from a lot of its own (kindRng): where the packs stand is as it was.
+  if (MONSTER_PACKS.on) {
+    const pool = Object.values(MONSTERS).filter(m => m.weight > 0 && m.minDepth <= depth);
+    for (const d of drafts) {
+      const champion = d.tier === 'champion';
+      const kind: MonsterKind = champion ? 'brute' : st.kindRng.weighted(pool, k => k.weight).kind;
+      const [lo, hi] = packRange(sizeOf(kind, champion), depth);
+      d.kind = kind;
+      d.size = st.kindRng.int(lo, d.roomId < 0 ? Math.min(hi, lo + 1) : hi);
+    }
+  }
 
   return drafts.map(d => ({
     x: (d.tile % size) + 0.5,
@@ -1512,6 +1528,7 @@ function placePacks(st: Stage, lay: Layout): PackSpot[] {
     roomId: d.roomId,
     size: d.size,
     tier: d.tier,
+    ...(d.kind ? { kind: d.kind } : {}),
   }));
 }
 
@@ -1747,6 +1764,7 @@ export function generateFloor(depth: number, seed: number): Floor {
   const solidTiles = cuts ? lay.tiles.map((t, i) => (cuts[i] !== 0 ? T_WALL : t)) : lay.tiles;
   const st: Stage = {
     rng,
+    kindRng: new RNG((mixSeed(d, seed) ^ 0x6a09e667) >>> 0),
     depth: d,
     size,
     tiles: solidTiles,

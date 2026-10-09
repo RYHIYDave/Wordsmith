@@ -255,6 +255,15 @@ export interface Monster {
   boss: boolean;
   /** Power words it has the powers of (elites and bosses), plus any burned into the dungeon. */
   words: WordId[];
+  /**
+   * MONSTER PACKS (game/defs.ts, PACKS): what it is in a blue or a yellow pack. 'blue': one of a
+   * blue pack, every one of which has the pack's word. 'leader': a yellow pack's leader, an elite.
+   * 'minion': one of a yellow pack's others, with its leader's words at half strength (`half`).
+   * Absent: a plain pack's, a guardian, the boss.
+   */
+  rarity?: 'blue' | 'leader' | 'minion';
+  /** Those of its words it has at half strength (a minion: its leader's). */
+  half?: WordId[];
   /** The words it will give up when it dies: the rune stones over its head. Most monsters have none. */
   carries: WordId[];
   state: MonsterState;
@@ -304,6 +313,16 @@ export interface Monster {
   seed: number;
 }
 
+/**
+ * MONSTER PACKS: what a minion's blow carries of its leader's words (game/defs.ts, PACKS): which words
+ * it has at half strength, and its own element, which the rest of the blow keeps when one of them is
+ * Flame, Frost or Lightning (half of its blow is then of that element).
+ */
+export interface HalfWords {
+  words: readonly WordId[];
+  base: Element;
+}
+
 export interface Projectile {
   x: number;
   y: number;
@@ -332,6 +351,8 @@ export interface Projectile {
   trail: number;
   /** Hostile shots: the words of the monster that fired it. */
   words: WordId[];
+  /** Hostile shots: a minion's, those of the words it has at half strength (MONSTER PACKS). */
+  half?: HalfWords;
   /** True once a rune (or a cloud) has been left, so an ability leaves only one. */
   runed: boolean;
   clouded: boolean;
@@ -374,6 +395,8 @@ export interface Zone {
   from: string;
   /** A warning laid by a monster's wind-up: that monster's id (a stun or a stagger breaks the attack off, and its warning with it). */
   src?: number;
+  /** A warning laid by a minion: those of its words it has at half strength (MONSTER PACKS). */
+  half?: HalfWords;
 }
 
 /**

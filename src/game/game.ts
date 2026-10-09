@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MOVE_OPENS, MSG, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
+import { CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -20,7 +20,7 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { AIM_MODES } from './state';
-import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, SkillState, SlotRef, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
+import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, SkillState, SlotRef, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -978,7 +978,13 @@ export class Game {
     // scarce words are never changes the dungeon itself.
     const lot = new RNG(seed ^ 0x2c1b3c6d);
     const kinds = Object.values(MONSTERS).filter((m) => m.weight > 0 && m.minDepth <= this.depth);
+    // (MONSTER PACKS: which packs are blue and which yellow, and their words, from a lot of its own)
+    const tiers = new RNG((seed ^ 0x7f4a7c15) >>> 0);
     f.packs.forEach((p, pi) => {
+      if (MONSTER_PACKS.on && p.kind) {
+        this.fillPack(p.kind, p.x, p.y, p.size, p.tier, pi, rng, lot, tiers);
+        return;
+      }
       const main = rng.weighted(kinds, (k) => k.weight);
       let size = p.size;
       if (main.kind === 'bat') size += 2;
@@ -1005,6 +1011,52 @@ export class Game {
       by = f.boss.y;
     }
     this.boss = this.spawn('warden', bx, by, -2, 0, true, rng, lot);
+  }
+
+  /**
+   * MONSTER PACKS (defs.ts): a pack of one kind, `size` of it (50% increased with Twin burned in at
+   * the gate), around (x, y). A guardian's pack is guardians alone. Any other is plain, blue or
+   * yellow (PACKS): an elite room's always yellow. A blue pack's one word is on every one of it; a
+   * yellow pack's leader has an elite's words, and the others, its minions, have those words at half
+   * strength.
+   */
+  private fillPack(kind: MonsterKind, x: number, y: number, size: number, tier: 'normal' | 'elite' | 'champion', pi: number, rng: RNG, lot: RNG, tiers: RNG): void {
+    const f = this.level.floor;
+    const n = this.dungeonWords.includes('twin') ? Math.round(size * GATE_TWIN_PACKS) : size;
+    const spots = scatter(this.level.walk, f.w, f.h, x, y, n, rng);
+    if (tier === 'champion') {
+      // (a lair gives up a word as one guardian did: only the first of them may carry one; words are scarce)
+      spots.forEach((s, i) => this.spawn('brute', s.x, s.y, pi, 2, false, rng, i === 0 ? lot : null));
+      return;
+    }
+    const rarity = packRarity(tier === 'elite', this.depth, tiers.next());
+    if (rarity === 'plain') {
+      for (const s of spots) this.spawn(kind, s.x, s.y, pi, 0, false, rng, lot);
+      return;
+    }
+    // (THE FIRST LEVELS: nothing has a word in the first dungeon; a yellow pack's leader is only the tougher)
+    const words = this.bareDungeon() ? [] : this.drawWords(tiers, rarity === 'blue' ? 1 : this.depth >= 6 ? 2 : 1);
+    if (rarity === 'blue') for (const s of spots) this.spawn(kind, s.x, s.y, pi, 0, false, rng, null, { rarity: 'blue', words });
+    // (words are scarce: as before, an elite room's leader may carry one of its words to give up; the
+    // leader of any other yellow pack carries none, and neither does a minion nor one of a blue pack)
+    else spots.forEach((s, i) => this.spawn(kind, s.x, s.y, pi, i === 0 ? 1 : 0, false, rng, i === 0 && tier === 'elite' ? lot : null, { rarity: i === 0 ? 'leader' : 'minion', words }));
+  }
+
+  /** THE FIRST LEVELS (21:05): "That also means no words on monsters for dungeon 1". */
+  private bareDungeon(): boolean {
+    return FIRST_LEVELS.on && !this.practice && this.depth <= 1;
+  }
+
+  /** `n` different words for a monster, never two of Flame, Frost and Lightning. */
+  private drawWords(rng: RNG, n: number): WordId[] {
+    const words: WordId[] = [];
+    while (words.length < n) {
+      const w = rng.pick(WORD_IDS);
+      if (words.includes(w)) continue;
+      if (ELEMENT_WORDS.includes(w) && words.some((o) => ELEMENT_WORDS.includes(o))) continue;
+      words.push(w);
+    }
+    return words;
   }
 
   /**
@@ -1108,27 +1160,26 @@ export class Game {
   /**
    * `rank`: 0 an ordinary monster, 1 an elite (it has a word's power, and its name), 2 a guardian (the powerful one at the end of a side branch).
    * `lot`: the draw that decides whether it gives up a word when it dies (none: it does not).
+   * `pack`: MONSTER PACKS, one of a blue or a yellow pack (fillPack), with the pack's words: then its
+   * words are those, at full strength or (a minion) at half; a leader is of rank 1.
    */
-  private spawn(kind: MonsterKind, x: number, y: number, packId: number, rank: 0 | 1 | 2, boss: boolean, rng: RNG, lot: RNG | null = null): Monster {
+  private spawn(kind: MonsterKind, x: number, y: number, packId: number, rank: 0 | 1 | 2, boss: boolean, rng: RNG, lot: RNG | null = null, pack: { rarity: 'blue' | 'leader' | 'minion'; words: readonly WordId[] } | null = null): Monster {
     const def = MONSTERS[kind];
     const elite = rank > 0;
     const champion = rank === 2;
-    const words: WordId[] = [];
     // (THE FIRST LEVELS, 21:05: "That also means no words on monsters for dungeon 1")
-    const bare = FIRST_LEVELS.on && !this.practice && this.depth <= 1;
-    const want = bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
-    while (words.length < want) {
-      const w = rng.pick(WORD_IDS);
-      if (words.includes(w)) continue;
-      if (ELEMENT_WORDS.includes(w) && words.some((o) => ELEMENT_WORDS.includes(o))) continue;
-      words.push(w);
-    }
+    const bare = this.bareDungeon();
+    const want = pack ? pack.words.length : bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
+    const words: WordId[] = pack ? [...pack.words] : this.drawWords(rng, want);
+    // (MONSTER PACKS: a minion has its leader's words at half strength)
+    let half: WordId[] = pack && pack.rarity === 'minion' ? [...pack.words] : [];
     // What it gives up when it dies (the rune stones over its head). Words are scarce. A guardian or
     // a named monster gives up one of its own only sometimes. The boss always gives up one, and the
     // chance of more grows with how deep the dungeon is and with every word burned into it (the
     // owner: "let the boss have a guaranteed drop of at least 1 word. we can have the chance of
     // dropping more words increase with difficulty and rarity modifiers on dungeons"). A word
-    // burned into a dungeon is spent: the boss does not hand it back.
+    // burned into a dungeon is spent: the boss does not hand it back. (MONSTER PACKS: of a blue or a
+    // yellow pack, only the leader, as an elite; the others give up none.)
     const greater = boss && this.depth % 5 === 0;
     let carries: WordId[] = [];
     if (boss && words.length) {
@@ -1141,14 +1192,19 @@ export class Game {
           p -= TUNE.bossThird;
         }
       }
-    } else if (lot && words.length) {
+    } else if (lot && words.length && (!pack || pack.rarity === 'leader')) {
       const p = champion ? TUNE.guardianCarry : TUNE.eliteCarry;
       // (the more words are burned into the dungeon, the likelier: that is what burning them buys)
       if (lot.chance(Math.min(1, p * (1 + 0.3 * this.dungeonWords.length)))) carries = [lot.pick(words)];
     }
     // (THE FIRST LEVELS: before the ring is lit nothing gives up a word)
     if (!this.wordsFall()) carries = [];
-    if (!bare) for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
+    if (!bare) {
+      for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
+      // (a word burned in at the gate is every monster's, a minion's at full strength too)
+      half = half.filter((w) => !this.dungeonWords.includes(w));
+    }
+    const has = { words, half };
     let life = def.life * (boss ? 1 + 0.4 * (this.depth - 1) : scaleLife(this.depth));
     let dm = scaleDmg(this.depth);
     let xp = def.xp * (1 + 0.25 * (this.depth - 1));
@@ -1157,29 +1213,40 @@ export class Game {
       dm *= TUNE.guardianDmg;
       xp *= 6;
     } else if (elite) {
-      life *= TUNE.eliteLife;
+      life *= pack ? PACKS.leaderLife : TUNE.eliteLife;
       dm *= TUNE.eliteDmg;
       xp *= 4;
+    } else if (pack && pack.rarity === 'blue') {
+      life *= PACKS.blueLife;
+      xp *= PACKS.blueLife;
     }
     if (greater) life *= 2;
-    if (words.includes('power')) {
-      life *= 1.3;
-      dm *= 1.4;
+    const power = wordShare(has, 'power');
+    if (power > 0) {
+      life *= 1 + 0.3 * power;
+      dm *= 1 + 0.4 * power;
     }
     let name = def.name;
-    if (elite || boss) name = [...words.slice(0, want).map((w) => WORDS[w].front), champion ? 'Guardian' : def.name].join(' ');
+    if (elite || boss || (pack && pack.rarity === 'blue')) name = [...words.slice(0, want).map((w) => WORDS[w].front), champion ? 'Guardian' : def.name].join(' ');
     if (greater) name = 'Greater ' + name;
     const m: Monster = {
       id: this.nextId++, kind, name, x, y, r: def.radius * (champion ? TUNE.guardianSize : elite ? 1.12 : 1), fx: 0.7071, fy: 0.7071,
       life: Math.round(life), maxLife: Math.round(life), dmgMin: def.dmgMin * dm, dmgMax: def.dmgMax * dm,
-      speed: def.speed * (words.includes('swift') ? 1.35 : 1), elite, champion, boss, words, carries,
+      speed: def.speed * (1 + 0.35 * wordShare(has, 'swift')), elite, champion, boss, words, carries,
       state: 'sleep', t: 0, cd: 0, packId, anim: 'idle', animT: rng.range(0, 3), flash: 0,
       burnT: 0, burnDps: 0, chillT: 0, chill: 0, frozenT: 0, freezeImmune: 0, poisonT: 0, poisonDps: 0, poisonN: 0,
-      stunT: 0, staggerT: 0, staggerCd: 0, markT: 0, shield: words.includes('guarding') ? Math.round(Math.round(life) * GUARD.monster) : 0,
+      stunT: 0, staggerT: 0, staggerCd: 0, markT: 0, shield: Math.round(Math.round(life) * GUARD.monster * wordShare(has, 'guarding')),
       lastSkill: -1, seen: false, barT: 0, phase: 0, atk: 0, dead: false, xp: Math.round(xp), seed: rng.next(),
     };
+    if (pack) m.rarity = pack.rarity;
+    if (half.length) m.half = half;
     this.monsters.push(m);
     return m;
+  }
+
+  /** MONSTER PACKS: what a minion's blow carries of its leader's words, to be weighed where it lands (hurtHero). None for any other. */
+  private halfOf(m: Monster): HalfWords | undefined {
+    return m.half && m.half.length ? { words: m.half, base: MONSTERS[m.kind].element } : undefined;
   }
 
   // ===========================================================================================
@@ -3167,10 +3234,12 @@ export class Game {
     this.sfx('rune', 0.7);
   }
 
-  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number): void {
+  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number, half?: HalfWords): void {
     // (a warning is never left out: if the floor is full, the oldest of the hero's own patches gives way to it)
     this.roomForZone();
-    this.zones.push({ x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src });
+    const z: Zone = { x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src };
+    if (half) z.half = half;
+    this.zones.push(z);
   }
 
   /** One hit of ability `i` on a monster, with everything a word in front adds to it. */
@@ -3306,8 +3375,8 @@ export class Game {
     }
   }
 
-  /** Heavy on a monster: its blow, from (fromX, fromY), knocks the hero back a step (walls stop it). */
-  private knockHero(fromX: number, fromY: number): void {
+  /** Heavy on a monster: its blow, from (fromX, fromY), knocks the hero back a step (walls stop it); `share`, a minion's half a step (MONSTER PACKS). */
+  private knockHero(fromX: number, fromY: number, share = 1): void {
     const h = this.hero;
     let dx = h.x - fromX;
     let dy = h.y - fromY;
@@ -3319,7 +3388,7 @@ export class Game {
       dx /= len;
       dy /= len;
     }
-    h.step = { dx: dx * HEAVY.knock, dy: dy * HEAVY.knock, t: 0.12 };
+    h.step = { dx: dx * HEAVY.knock * share, dy: dy * HEAVY.knock * share, t: 0.12 };
   }
 
   /** `poison`: the harm is poison working (its number is drawn in poison's colour, and it does not flash the monster). */
@@ -3385,9 +3454,10 @@ export class Game {
       this.emit({ t: 'orb', x: m.x, y: m.y });
       this.sfx('leech', 0.7);
     }
-    // a monster carrying Volatile goes off after a short warning
-    if (m.words.includes('volatile')) {
-      this.addWarn(m.x, m.y, 1.8, 0.7, ((m.dmgMin + m.dmgMax) / 2) * 1.5, this.monsterElement(m), [], `${m.name}'s dying blast`);
+    // a monster carrying Volatile goes off after a short warning (a minion, of its leader's Volatile, at half strength)
+    const blast = wordShare(m, 'volatile');
+    if (blast > 0) {
+      this.addWarn(m.x, m.y, 1.8, 0.7, ((m.dmgMin + m.dmgMax) / 2) * 1.5 * blast, this.monsterElement(m), [], `${m.name}'s dying blast`, undefined, this.halfOf(m));
     }
     this.dropLoot(m);
     this.gainXp(m.xp);
@@ -3463,14 +3533,25 @@ export class Game {
     return this.rng.range(m.dmgMin, m.dmgMax);
   }
 
-  /** (ox, oy): where a blow that has no monster behind it (a shot, a warning) came from: the way a Heavy one knocks the hero. */
-  hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = '', ox?: number, oy?: number): void {
+  /**
+   * (ox, oy): where a blow that has no monster behind it (a shot, a warning) came from: the way a Heavy one knocks the hero.
+   * `half`: MONSTER PACKS, a minion's shot or warning: those of `words` it has at half strength
+   * (for a blow of the minion itself, read off `src`).
+   */
+  hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = '', ox?: number, oy?: number, half?: HalfWords): void {
     const h = this.hero;
     if (this.over || h.invuln > 0 || h.move) return;
     this.slainBy = src ? src.name : from;
     const d = h.d;
     const fromX = src ? src.x : ox ?? h.x + h.fx;
     const fromY = src ? src.y : oy ?? h.y + h.fy;
+    // MONSTER PACKS: how much of each word's power the blow has (a minion's, of its leader's words,
+    // half); and when the word that made it Flame, Frost or Lightning is one of those, only half of
+    // the blow is of that element, the rest of the minion's own
+    const hv = half ?? (src ? this.halfOf(src) : undefined);
+    const k = (w: WordId): number => wordShare({ words, half: hv ? hv.words : undefined }, w);
+    const elK = hv && el !== hv.base && hv.words.includes(el as WordId) ? PACKS.minion : 1;
+    const parts: [Element, number][] = elK < 1 && hv ? [[el, elK], [hv.base, 1 - elK]] : [[el, 1]];
     // GUARDING burned into gear: a chance to block the blow, which then does nothing at all
     const block = Math.min(GUARD.blockCap, d.stats.blockChance);
     if (block > 0 && this.rng.chance(block / 100)) {
@@ -3479,10 +3560,12 @@ export class Game {
       this.sfx('hit', 0.5);
       return;
     }
-    let dmg = raw;
-    // (PRECISE, on a monster: its blows find the gaps in the hero's armour)
-    if (el === 'phys') dmg *= 1 - armorReduction(words.includes('precise') ? d.armor * (1 - PRECISE.armourIgnored) : d.armor, Math.max(1, this.depth));
-    else dmg *= 1 - (el === 'fire' ? d.resFire : el === 'frost' ? d.resFrost : d.resLight) / 100;
+    let dmg = 0;
+    for (const [e, share] of parts) {
+      // (PRECISE, on a monster: its blows find the gaps in the hero's armour)
+      if (e === 'phys') dmg += raw * share * (1 - armorReduction(k('precise') > 0 ? d.armor * (1 - PRECISE.armourIgnored * k('precise')) : d.armor, Math.max(1, this.depth)));
+      else dmg += raw * share * (1 - (e === 'fire' ? d.resFire : e === 'frost' ? d.resFrost : d.resLight) / 100);
+    }
     if (h.shockT > 0) dmg *= 1.2;
     // GUARDING behind: inside a ward the hero takes less (the strongest ward they stand in)
     let ward = 0;
@@ -3490,7 +3573,7 @@ export class Game {
     if (ward > 0) dmg *= 1 - ward;
     dmg = Math.max(1, Math.round(dmg));
     // HEAVY, on a monster: its blows knock the hero back a step
-    if (words.includes('heavy')) this.knockHero(fromX, fromY);
+    if (k('heavy') > 0) this.knockHero(fromX, fromY, k('heavy'));
     // GUARDING in front: the shield takes the blow first
     let soaked = 0;
     if (h.shield > 0) {
@@ -3511,22 +3594,25 @@ export class Game {
     this.emit({ t: 'hit', x: h.x, y: h.y, amount: dmg, crit: false, el, onHero: true });
     this.emit({ t: 'shake', amount: Math.min(5, 1 + dmg / 8) });
     this.sfx('hurt', 0.8);
-    if (words.includes('poison')) {
+    if (k('poison') > 0) {
       // a monster with Poison: most of the blow again, over the next few seconds
-      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, (dmg * 0.6) / TUNE.poisonTime);
+      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, (dmg * 0.6 * k('poison')) / TUNE.poisonTime);
       h.poisonT = TUNE.poisonTime;
     }
-    if (el === 'fire') {
-      h.burnDps = Math.max(h.burnT > 0 ? h.burnDps : 0, (dmg * 0.3) / 3);
-      h.burnT = 3;
-    } else if (el === 'frost') {
-      h.chill = 0.3;
-      h.chillT = 2;
-    } else if (el === 'lightning') {
-      h.shockT = 3;
+    // (what each element of the blow leaves: a minion's half of Flame burns half as hard)
+    for (const [e, share] of parts) {
+      if (e === 'fire') {
+        h.burnDps = Math.max(h.burnT > 0 ? h.burnDps : 0, (dmg * 0.3 * share) / 3);
+        h.burnT = 3;
+      } else if (e === 'frost') {
+        h.chill = Math.max(h.chillT > 0 ? h.chill : 0, 0.3 * share);
+        h.chillT = 2;
+      } else if (e === 'lightning') {
+        h.shockT = Math.max(h.shockT, 3 * share);
+      }
     }
-    if (src && !src.dead && words.includes('leech')) {
-      src.life = Math.min(src.maxLife, src.life + src.maxLife * 0.15);
+    if (src && !src.dead && k('leech') > 0) {
+      src.life = Math.min(src.maxLife, src.life + src.maxLife * 0.15 * k('leech'));
       this.emit({ t: 'text', x: src.x, y: src.y, text: 'heals', color: '#ff8a80' });
     }
     if (h.life <= 0) {
@@ -3746,7 +3832,7 @@ export class Game {
         continue;
       }
       // FRENZIED, on a monster: the more it is hurt, the faster it moves and the sooner it attacks again
-      const rage = m.words.includes('frenzied') ? 1 + FRENZY.monster * (1 - Math.max(0, m.life) / m.maxLife) : 1;
+      const rage = 1 + FRENZY.monster * wordShare(m, 'frenzied') * (1 - Math.max(0, m.life) / m.maxLife);
       m.cd -= dt * rage;
       const def = MONSTERS[m.kind];
       const slow = m.chillT > 0 ? 1 - m.chill : 1;
@@ -3882,7 +3968,7 @@ export class Game {
     if (def.aoe > 0 && !(m.boss && m.atk === 1)) {
       // a ground attack: show where it will land
       const reach = Math.min(dist, def.range);
-      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, def.windup, this.rollMonsterDmg(m), this.monsterElement(m), m.words, m.name, m.id);
+      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, def.windup, this.rollMonsterDmg(m), this.monsterElement(m), m.words, m.name, m.id, this.halfOf(m));
     }
   }
 
@@ -3890,12 +3976,13 @@ export class Game {
     const h = this.hero;
     m.state = 'recover';
     m.t = TUNE.monsterRecover;
-    m.cd = def.cooldown * (m.words.includes('swift') ? 0.7 : 1) * this.rng.range(0.9, 1.2);
+    m.cd = def.cooldown * (1 - 0.3 * wordShare(m, 'swift')) * this.rng.range(0.9, 1.2);
     const dx = h.x - m.x;
     const dy = h.y - m.y;
     const dist = Math.hypot(dx, dy) || 1;
     const el = this.monsterElement(m);
-    const twin = m.words.includes('twin');
+    // (TWIN: its second blow; a minion's, of its leader's Twin, at half strength: MONSTER PACKS)
+    const twin = wordShare(m, 'twin');
     if (m.boss && m.atk === 1) {
       // volley: a fan of bolts
       const base = Math.atan2(dy, dx);
@@ -3906,15 +3993,15 @@ export class Game {
     if (def.aoe > 0) {
       // the warning circle does the damage; a Twin monster follows it with a second, quicker one
       this.sfx('slam', 0.8);
-      if (twin) this.addWarn(h.x, h.y, def.aoe * 0.8, 0.6, this.rollMonsterDmg(m), el, m.words, m.name);
+      if (twin > 0) this.addWarn(h.x, h.y, def.aoe * 0.8, 0.6, this.rollMonsterDmg(m) * twin, el, m.words, m.name, undefined, this.halfOf(m));
       return;
     }
     if (def.ranged) {
       const base = Math.atan2(dy, dx);
       const look = m.kind === 'archer' ? 'arrow' : 'bolt';
-      if (twin) {
+      if (twin > 0) {
         this.shootAt(m, base - 0.12, def.projSpeed, this.rollMonsterDmg(m), el, look, def.range + 3);
-        this.shootAt(m, base + 0.12, def.projSpeed, this.rollMonsterDmg(m), el, look, def.range + 3);
+        this.shootAt(m, base + 0.12, def.projSpeed, this.rollMonsterDmg(m) * twin, el, look, def.range + 3);
       } else this.shootAt(m, base, def.projSpeed, this.rollMonsterDmg(m), el, look, def.range + 3);
       this.sfx(m.kind === 'archer' ? 'shot' : 'fire', 0.5);
       return;
@@ -3922,10 +4009,10 @@ export class Game {
     const reach = def.range + (m.r - 0.32) + 0.45 + TUNE.heroRadius;
     if (dist <= reach) this.hurtHero(this.rollMonsterDmg(m), el, m.words, m);
     this.sfx('swing', 0.4);
-    if (twin) {
+    if (twin > 0) {
       this.after(0.28, () => {
         if (m.dead) return;
-        if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach) this.hurtHero(this.rollMonsterDmg(m), el, m.words, m);
+        if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach) this.hurtHero(this.rollMonsterDmg(m) * twin, el, m.words, m);
       });
     }
   }
@@ -3934,7 +4021,7 @@ export class Game {
     this.projectiles.push({
       x: m.x + Math.cos(angle) * 0.4, y: m.y + Math.sin(angle) * 0.4, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
       r: look === 'bolt' ? 0.3 : 0.2, dist: range, hostile: true, dmg, element: el, look, pierce: false, hit: [], volley: false, skill: -1,
-      trail: 0, words: m.words, runed: false, clouded: false, age: 0, from: m.name, n: 0,
+      trail: 0, words: m.words, half: this.halfOf(m), runed: false, clouded: false, age: 0, from: m.name, n: 0,
     });
   }
 
@@ -3999,7 +4086,7 @@ export class Game {
         if (p.hostile) {
           if (!h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
             // (THE TRAPS: a dart's harm is a share of the life of what it meets)
-            this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from, p.x - p.vx, p.y - p.vy);
+            this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from, p.x - p.vx, p.y - p.vy, p.half);
             this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 5 });
             dead = true;
           }
@@ -4226,7 +4313,7 @@ export class Game {
           this.zones.splice(i, 1);
           this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'blast' });
           this.emit({ t: 'shake', amount: 2 });
-          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
         }
         continue;
       }

@@ -34,6 +34,13 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, Monster } from '../src/game/state';
 import { Figure, attackClip, attackFrame } from '../src/render/figure';
 import { paintWithoutCanvas } from './helpers';
+import { MAGE_STANCES, WILD, useMageStances, useWild } from '../src/art/moves3';
+
+// (VERSION 19.7: the mage's stances and every hero's moves big and wild are the game's own, art/moves3.ts
+// MAGE_STANCES and WILD, put in place as moves3.ts loads. This file's tests were written with them off,
+// and hold them off, as they were then; tests/wild.test.ts and tests/mage_stances.test.ts ask of them on.)
+useWild(false);
+useMageStances(false);
 
 paintWithoutCanvas();
 

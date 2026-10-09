@@ -4,7 +4,7 @@
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
-import { useComboMends, useRangerStances } from './art/moves3';
+import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt } from './art/icons';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
@@ -34,7 +34,7 @@ import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
 import { MIX, RELIEF } from './game/dungeon';
@@ -1289,6 +1289,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           g.update(gdt, controls);
           drain(g);
           fx.follow(g.projectiles, gdt * 60);
+          // (big and wild, render/wild.ts: what each monster is, for what flies off it when it is hit; and which swing of Strike the hero is in)
+          fx.wild.see(g.monsters, g.hero.combo, g);
         }
         // offer the level-up choice at the first quiet moment
         const h = g.hero;
@@ -1573,6 +1575,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     inv: (focus = -1) => openInventory(focus),
     /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
     modes: MODES,
+    /** MONSTER PACKS: the look of blue and yellow packs (game/defs.ts, PACK_LOOK), on since his yes; its pictures switch it off and on again for themselves: `packLook.on`. */
+    packLook: PACK_LOOK,
     /**
      * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS): a mock-up behind a switch that is off. Its
      * pictures and playtests switch it on (or off again) for themselves; the run made after follows it.
@@ -1732,6 +1736,18 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       useRangerStances(on);
       art.heroes = makeHeroArt3();
     },
+    /** THE MAGE'S STANCES (art/moves3.ts, MAGE_STANCES; the game's own since Version 19.7): playtests take them out and put them back, and the heroes are painted again (false: as she was before). */
+    mageStances: (on: boolean) => {
+      useMageStances(on);
+      art.heroes = makeHeroArt3();
+    },
+    /** BIG AND WILD (art/moves3.ts, WILD; render/wild.ts; the game's own since Version 19.7): playtests take it out and put it back, and the heroes are painted again (false: as they were). */
+    wild: (on: boolean) => {
+      useWild(on);
+      art.heroes = makeHeroArt3();
+    },
+    /** For films of a hero's habits: the hero does one of the two things they do when left standing (1 or 2) now, whatever the wait. */
+    habit: (which: 1 | 2) => renderer.figure.play(which),
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

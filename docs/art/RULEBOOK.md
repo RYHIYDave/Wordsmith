@@ -3,6 +3,8 @@
 Oct 8, 2026
 
 > **APPROVED BY THE OWNER, 8 Oct 2026, 08:23: "Okay this all sounds good".** Every chat that makes art for Wordsmith follows it; it changes only with his yes. Written by the art chat from his answers (`docs/art/interview.md` has every question and answer in his exact words). The living copy is his doc "Wordsmith Art Rulebook" (https://claude.ai/artifact/Dq343Th9FFbpt9EiKfNyYe); this file is a copy of it for the other chats, refreshed when the doc changes. Nothing here changes the game by itself: what it asks for goes in through the main chat, pictures first.
+>
+> **CHANGED BY THE OWNER, 8 Oct 2026: effects and animations are BIG AND WILD.** His words, by 20:14: "i think we need to amend the rules for effects and animations change it to big and wild.  why dont you redo the WAVE animation as big and wild as you think is appropriate and ill tell you if it needs to go more or less wild". He saw the Wave made so (`wild_wave.gif`, the art chat) and said by 20:48: "Just right (Recommended)". So Effects and magic, and Movement, now say big and wild, with that Wave as the measure. Then Strike and Shot were made so, each hero in his own way, and by 22:35 he said of both: "Yes, keep it (Recommended)". The doc is at rev 39 with it. In the code: `WILD` in `src/art/moves3.ts` and `src/render/wild.ts` (a switch that is off, on `art/mage-stances`).
 
 Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. You said yes to it on 8 Oct, so every chat that makes art for the game follows it, and it changes only with your yes.
 
@@ -96,15 +98,15 @@ The places carry the detail, always a step quieter than the fight. In your words
 
 ## Movement
 
-Weight is the test for every animation, and every character moves its own way. In your words: "The warrior swings his sword with practiced lethal intent" and "The rogue drops to a knee when he fires Volley".
+Weight is the test for every animation, and every character moves its own way, as big and wild as the Wave (8 Oct). In your words: "The warrior swings his sword with practiced lethal intent" and "The rogue drops to a knee when he fires Volley".
 
 1. **Weight first.** A blow plants the feet, turns the hips and carries through. A landing sinks. Something heavy is slow to start and slow to stop.
 2. **Each character its own way,** set in its brief (see A new character):
    - **The soldier:** heavy but quick. A lifetime with the sword: no wasted motion, his weight behind every swing.
    - **The ranger:** graceful and quiet, light on his feet. In your words: "needs to be to stay quiet in the forest".
-   - **The mage:** wild. Big sweeping casts, cape and braids flying, only just in control of the power.
+   - **The mage:** wild. Big sweeping casts, cape and braids flying, only just in control of the power: her whole body in every cast, and the power fighting back, as in the Wave of 8 Oct.
    - **The skeleton:** "plodding and brittle". One long step it falls onto, one stiff leg dragged after.
-3. **Every attack winds up** before it lands and follows through after, however quick it is.
+3. **Every attack winds up** before it lands and follows through after, however quick it is. The follow-through may run a couple of frames past the attack, as long as the blow comes just as fast. In your words, 8 Oct: "if it increases the total attack time by a couple frames, that's fine, as long as the swipe stays just as fast.  That would reinforce the follow through of the attack".
 4. **Loose things follow.** Cloth and hair trail the body and settle after it stops, and a blast or a beam blows them back.
 5. **Slick.** Smooth, plenty of frames, nothing jerky. In your words: "I want the animations to be really slick".
 6. **Alive when still.** A figure left standing breathes, shifts its weight and has small habits of its own.
@@ -118,18 +120,20 @@ A little blood: enough to sting, never a bloodbath. In your words: "A little".
 1. **A splash, then gone.** A creature with blood throws a small splash when hit and may leave a small stain that fades.
 2. **No blood where there is none.** Skeletons chip and crumble. Spirits and magic things flicker, crack or come apart in their own colour.
 3. **Every hit shows.** A struck figure flashes and is knocked back a little; a heavy blow rocks it.
-4. **Deaths are true to what died.** The cultist's robe crumples empty, as you asked: "have the cloaks just crumple to the ground like they're empty". The brute goes down on his knees and sags forward. Small things die quick; big things die heavy.
+4. **What flies off a hit is the monster's,** not the weapon's: bone and dust off a skeleton, yellow sparks and flakes of iron off armour, a scrap of robe and a little blood off a cultist. In your words, 8 Oct: "I'd rather have bone fragments or dust from the skeletons, or yellow sparks hitting an armored target.  So maybe that's a mob particle effect as opposed to the weapon effect". For now the sword's blows and the arrows throw it, and the mage's spells crackle instead: your choice of 8 Oct, "Only sword and arrows".
+5. **Deaths are true to what died.** The cultist's robe crumples empty, as you asked: "have the cloaks just crumple to the ground like they're empty". The brute goes down on his knees and sags forward. Small things die quick; big things die heavy.
 
 ## Effects and magic
 
-Wild for an instant, then clear: big moments flare, and nothing hides the fight for long. In your words: "My heart says big and wild, but my brain says bold but clear.  So maybe somewhere in the middle".
+Big and wild: magic that crackles, sparks everywhere, bolts that shoot out, and the screen kicks on big casts and hits. In your words, 8 Oct: "i think we need to amend the rules for effects and animations change it to big and wild". Until then it was "somewhere in the middle".
 
-1. **Peak fast, fade fast.** A big spell or a heavy blow can flare large for a moment, then clears.
-2. **The hero and every warning stay in sight.** No effect covers the hero, or a monster's wind-up or danger mark, for more than a blink.
-3. **Everyday hits are bold but clean:** a bright crescent, a few sparks, gone.
-4. **Shake is rare.** The screen shakes only on the biggest blows, and briefly.
-5. **Every word has its look.** Each power word shows in its own colour and shape, in front on the hit and behind on what is left, and stacked words add up.
-6. **Effects are pixel art too:** the same grain, the same crisp edges, lit from the same side.
+1. **The Wave is the measure.** Everything is as wild as the Wave you said yes to on 8 Oct ("Just right (Recommended)"): her crystal crackles and spits sparks as it burns; she swings with her whole body and the power kicks the staff back up; it goes with a blast and bolts that strike the floor; the wave stands up tall and crackles, and what it hits crackles too.
+2. **Each hero is wild in his own way.** The crackle is the mage's alone. In your words, 8 Oct: "Each character has a style, the crackling works for the mage, but not the warrior." The warrior's is the blade: a big crescent, a second sweep as the blade follows through, wind off its edge, dust and a kick. The ranger's is wind, not energy: a gust and hoops of air at the loose, and a trail of air behind the arrow. In your words: "Can we make the blue effects just like wind instead of energy?" You said yes to both by 22:35.
+3. **The hero and every warning stay in sight.** No effect covers the hero, or a monster's wind-up or danger mark, for more than a blink.
+4. **Power you can see.** Whatever holds power shows it: a real glow, energy crackling, bolts shooting out, barely held in. In your words: "there should be energy crackling and bolts shooting out, barely able to contain it".
+5. **Everything comes up to it.** Every animation made before is brought up to the Wave, one at a time, each shown to you first. In your words: "this goes for all the animations we've created".
+6. **Every word has its look.** Each power word shows in its own colour and shape, in front on the hit and behind on what is left, and stacked words add up.
+7. **Effects are pixel art too:** the same grain, the same crisp edges, lit from the same side.
 
 ## Words in the world
 

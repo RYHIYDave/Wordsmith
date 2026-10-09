@@ -2,8 +2,9 @@
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
 (https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
-as it is (Recommended)". The doc is the living one; this copy follows it (rev 34, with the first
-levels of Version 19.5 and the master rune-stone of Version 19.6 written in), and both change only
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 38, with the first
+levels of Version 19.5, the master rune-stone of Version 19.6 and the monster packs of Version 19.7
+written in), and both change only
 with his yes. The two pictures in the doc are written out here in words. How it was found:
 `docs/gameplay/interview.md`.
 
@@ -83,7 +84,8 @@ same fights turn into mowing packs down, and the danger moves to crowds, elites 
 at level 2 and the swipe at level 5 (your notes of 8 Oct, 20:36). A move is not shown until it
 opens, and its opening is a moment (22:23): the NEW MOVE banner, the tap attack’s plate sliding
 over, the new one revealed with a flourish. The first dungeon is gentle: about half the monsters, in
-packs of two to four, one room of elites, and every blow soft; its first pack is a softball of three
+packs half the size (two to four skeletons, three to five bats), one room of elites, and every blow
+soft; its first pack is a softball of three
 slow skeletons, to learn moving and tapping (22:25). The stick moves the hero at one speed, however
 far it is pushed (22:25).
 
@@ -171,6 +173,39 @@ From the second dungeon on, the mix (Version 18.9) varies the rooms themselves: 
 with only a door between, a gate whose lever sits in a little room nearby, and a room that locks
 you in until its pack is dead.
 
+## Monsters and packs (since Version 19.7)
+
+Every monster has a size, and its size says how many come in a pack (your rules of 9 Oct, 07:49):
+tiny, the bats, 6 to 10; small, the skeletons, archers and cultists, 4 to 7; medium, the green
+trolls, 3 to 5; large, the red trolls (the guardians), 1 or 2; and the boss alone. A pack is of one
+kind (your answer: “All mob types have their own packs unless otherwise stated.  And these can
+change with a pack size modifier on a word for the gate.”). The first dungeon’s packs are half the
+size. Twin burned in at the gate gives every pack 50% increased size, as well as giving every
+monster Twin, as each word burned in at the gate does.
+
+- **Blue packs (magic):** one word, on every monster of the pack, and 20% increased life. One pack in
+  four is blue, from the second dungeon on. The pack’s name is written once, in blue, and each of it
+  has a ring and a bar (your yes of 9 Oct, by 09:46, until the art chat’s own markers come).
+- **Yellow packs (rare):** a leader with a word (two from the sixth dungeon) and 3 times the life
+  (an elite had 4 times until Version 19.7); the rest of the pack are its minions, with 50% of each
+  of its words (your words of 08:02: “...the smaller minions would essentially have a 50%
+  Flame.”). Every elite room’s pack is yellow, and one in ten of the others from the second dungeon
+  on. The leader is named in yellow; the minions look as they always do.
+- **How long they take to kill** (08:10): a blue pack a little less than a yellow pack of the same
+  kind and size.
+- **Words stay scarce:** only an elite room’s leader may carry a word to give up, as an elite always
+  might, and a lair of guardians gives up one at most.
+- **The first dungeon** keeps its one room of elites and nothing more: no blue pack, no other yellow
+  one, and no words on anyone.
+
+**Their attacks, next (your rules of 9 Oct, 08:15 and 08:24).** Tiny and small monsters have one
+attack, medium two, large two or three, the boss four, and every one a basic single-target attack
+to use while its big ones cool down: the bigger the hit, the longer the cooldown. The green troll: a
+club swing and its slam. The red troll: a club swing, the slam, and a charge along a marked line.
+The boss: a swing, his slam, his fan of bolts, and his skeleton summon as his fourth (no ring of
+fire). “Pack leaders that are different mobs can have an extra attack if it seems right.” The new
+moves are drawn by the art chat, pictures to you first.
+
 ## Town and quests
 
 Town is where the hero comes back between dungeons: to wordsmith, forge, pick talents, trade, and
@@ -226,7 +261,7 @@ Something you can see, your yes, then one chat puts it in.
 
 ## The numbers
 
-The rules in numbers as the game has them in Version 19.6, checked against its code on 9 Oct. A chat
+The rules in numbers as the game has them in Version 19.7, checked against its code on 9 Oct. A chat
 changes one only with your yes.
 
 | What | Now | In the code |
@@ -238,10 +273,14 @@ changes one only with your yes.
 | Flask charges | 3 | `TUNE.potionMax` |
 | A flask heals | 45% of life | `TUNE.potionHeal` |
 | Kills to refill a charge | 18 | `TUNE.potionKills` |
-| Word slots | none until the ring is lit; then 1 in front | `slots`, `SLOT_OPENS` |
+| Word slots | none until the ring is lit; then 1 in front | `SLOT_OPENS` |
 | The other slots open | the second in front at level 5; behind, at level 7 and level 10 | `SLOT_OPENS` |
 | The moves open | tap at level 1, tap and hold at 2, the swipe at 5 | `MOVE_OPENS` |
-| The first dungeon | a budget of 60 monsters (120 before), packs of 2 to 4, 1 room of elites, every blow at half | `FIRST_DUNGEON`, `GUIDE.softDmg` |
+| The first dungeon | a budget of 60 monsters (120 before), packs half the size, 1 room of elites, every blow at half | `FIRST_DUNGEON`, `GUIDE.softDmg` |
+| Pack sizes | tiny 6 to 10, small 4 to 7, medium 3 to 5, large 1 to 2, the boss alone; in the first dungeon tiny 3 to 5, small 2 to 4, medium 2 to 3, large 1 | `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE` |
+| Twin at the gate | 50% increased pack size | `GATE_TWIN_PACKS` |
+| Blue packs | 1 in 4 of the packs not an elite room’s or a lair, from dungeon 2; 20% increased life | `PACKS` |
+| Yellow packs | every elite room’s, and 1 in 10 of the others from dungeon 2; the leader 3 times the life; its minions 50% of its words | `PACKS` |
 | The first pack | 3 slow skeletons: speed 2 (3 for the rest), a quarter of a blow, the life of one and a half bare taps | `FIRST_DUNGEON.softball` |
 | The third slot (switch off) | level 15 in front, level 20 behind | the note on `SLOT_OPENS` |
 | Words a boss gives | 1, and a chance of a second: 6% for each dungeon past the first, 25% more for each gate word | `TUNE.bossExtraPerDepth`, `bossExtraPerWord` |
@@ -264,6 +303,8 @@ it goes in.
 | The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
 | Five lands of ten, the final boss at 50 | One dungeon after another, with no end | Five lands, each its own look and monsters (with the art chat); a final boss |
 | Small, medium and big bosses | A boss in every dungeon; a Greater boss every fifth | A medium boss at 5, 15, 25…; a big boss at 10, 20, 30… |
+| Monster sizes, blue and yellow packs | Since Version 19.7 | Done; the leader’s own look (your skeleton champion) and the art chat’s markers to come |
+| Monsters’ attacks by size | A slam or a shot each; the boss a slam, bolts and his summons | Next: the attacks you set on 9 Oct, drawn by the art chat |
 | A world map | The gate in town, one dungeon deeper each time | The map; going back to beaten dungeons |
 | A small talent tree | None | A tree for each class; points with levels; re-picking for gold |
 | Forging three words into one | Not built | The table of ranks you were sent on 5 Oct, still waiting on your say |
@@ -281,7 +322,12 @@ death. (Your answer, 10:33: "Normal mode (Recommended)".) Both are in the game (
 (Recommended)"): the first four are in since Version 19.3. Then the first levels (20:38: "Yes, this
 next (Recommended)"): in since Version 19.5. Next, as you set it on 9 Oct at 00:22: the art chat’s
 art (the wordsmith on bones and the master rune-stone: in since Version 19.6), then the skill trees,
-then controller support with dual-stick aiming.
+then controller support with dual-stick aiming. On 9 Oct the monster packs came first (07:56: "Now,
+on its own (Recommended)"), with the mage’s stances and the big-and-wild skill looks (by 08:41:
+"With today's packs (Recommended)"): in since Version 19.7; the monsters’ attacks next ("Packs
+today, attacks next (Recommended)"). The skill trees and the controller go in as one version once
+you have gone over the trees (07:28), and the new words after them (07:28: "Next, after these
+(Recommended)").
 
 ## Still open
 
@@ -293,7 +339,7 @@ then controller support with dual-stick aiming.
 - [ ] Which words and places earlier heroes unlock, and for what deeds.
 - [ ] What quests give.
 - [ ] Each land’s look and monsters, with the art chat.
-- [ ] Where Mystical and the other four new words come, after your order of 9 Oct (the art, the
-  skill trees, the controller).
+- [ ] A yellow pack’s leader drawn as a monster of its own (your skeleton champion, an old rusty
+  helmet and a two-handed sword), and the art chat’s markers for blue and yellow packs.
 - [ ] Whether you would rather shoot through the bars of a shut door (asked 7 Oct).
 - [ ] Words on flasks, later.

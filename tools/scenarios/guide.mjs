@@ -365,9 +365,19 @@ export default async function (page, snap) {
     // set down here and has not walked in, has no place that far off that sees it. The pre-flight
     // of 18.7 met that: a ranger, seed 869691369, whose first two packs died before the rain of
     // arrows had landed; the third stood in a room of eight tiles by seven.)
+    // (and where a player could stand: not behind the shut door of the room it is in. Version 19.7's
+    // regression met that: a mage, seed 1277235665, the nearest pack four archers in a room whose
+    // door was shut and whose other way out goes only to a vault, so is reached through that door;
+    // set down in that passage, the hero was shot at by archers still "shut in" (game.ts, shutIn),
+    // which no fight counts, so that the fight prompt never came.)
+    const was = { x: h.x, y: h.y };
     for (const r of [5, 5.5, 6, 6.5, 7, 4, 3, 2.5]) for (let k = 0; k < 16 && best; k++) {
       const a = (k / 16) * Math.PI * 2; const x = best.x + Math.cos(a) * r; const y = best.y + Math.sin(a) * r;
-      if (g.level.walk[Math.floor(y) * f.w + Math.floor(x)] === 1 && g.free(g.level.walk, x, y, 0.45) && g.sees(x, y, best.x, best.y)) { h.x = x; h.y = y; return true; }
+      if (g.level.walk[Math.floor(y) * f.w + Math.floor(x)] === 1 && g.free(g.level.walk, x, y, 0.45) && g.sees(x, y, best.x, best.y)) {
+        h.x = x; h.y = y;
+        if (!g.shutIn(best)) return true;
+        h.x = was.x; h.y = was.y;
+      }
     }
     return false;
   });

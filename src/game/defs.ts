@@ -359,19 +359,114 @@ export interface MonsterDef {
   /** First dungeon it appears in, and how common it is in a pack. */
   minDepth: number;
   weight: number;
+  /** MONSTER SIZES (below): how big it is, which says how many come in a pack of it. */
+  size: MonsterSize;
 }
 
 export const MONSTERS: Record<MonsterKind, MonsterDef> = {
-  skeleton: { kind: 'skeleton', name: 'Skeleton', life: 22, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.32, range: 1.25, windup: 0.4, cooldown: 1.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 5 },
-  archer: { kind: 'archer', name: 'Bone Archer', life: 16, dmgMin: 4, dmgMax: 7, speed: 2.8, radius: 0.32, range: 8, windup: 0.55, cooldown: 2.0, xp: 7, ranged: true, projSpeed: 10, keepMax: 7, element: 'phys', aoe: 0, minDepth: 1, weight: 2 },
-  cultist: { kind: 'cultist', name: 'Cultist', life: 18, dmgMin: 6, dmgMax: 10, speed: 2.6, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 2, weight: 2 },
-  bat: { kind: 'bat', name: 'Cave Bat', life: 9, dmgMin: 3, dmgMax: 5, speed: 4.8, radius: 0.26, range: 0.95, windup: 0.22, cooldown: 1.0, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 3 },
+  skeleton: { kind: 'skeleton', name: 'Skeleton', life: 22, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.32, range: 1.25, windup: 0.4, cooldown: 1.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 5, size: 'small' },
+  archer: { kind: 'archer', name: 'Bone Archer', life: 16, dmgMin: 4, dmgMax: 7, speed: 2.8, radius: 0.32, range: 8, windup: 0.55, cooldown: 2.0, xp: 7, ranged: true, projSpeed: 10, keepMax: 7, element: 'phys', aoe: 0, minDepth: 1, weight: 2, size: 'small' },
+  cultist: { kind: 'cultist', name: 'Cultist', life: 18, dmgMin: 6, dmgMax: 10, speed: 2.6, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 2, weight: 2, size: 'small' },
+  bat: { kind: 'bat', name: 'Cave Bat', life: 9, dmgMin: 3, dmgMax: 5, speed: 4.8, radius: 0.26, range: 0.95, windup: 0.22, cooldown: 1.0, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 3, size: 'tiny' },
   // (THE BRUTE: 49 of life since Version 18.7; 70 until then. The owner, 7 Oct 2026, of guardians, which are brutes, 19:35:
   // "just big damage sponges and could use at least a 30% reduction in HP"; and of elite brutes, 21:10: "yes, every
   // interation of that mob type". So every kind of brute, plain, elite and guardian, has 30% less life than it had.)
-  brute: { kind: 'brute', name: 'Brute', life: 49, dmgMin: 14, dmgMax: 20, speed: 2.2, radius: 0.55, range: 1.7, windup: 0.85, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.7, minDepth: 3, weight: 1 },
-  warden: { kind: 'warden', name: 'Warden', life: 420, dmgMin: 18, dmgMax: 26, speed: 2.5, radius: 0.8, range: 2.6, windup: 0.95, cooldown: 2.4, xp: 150, ranged: false, projSpeed: 8, keepMax: 0, element: 'phys', aoe: 2.4, minDepth: 99, weight: 0 },
+  brute: { kind: 'brute', name: 'Brute', life: 49, dmgMin: 14, dmgMax: 20, speed: 2.2, radius: 0.55, range: 1.7, windup: 0.85, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.7, minDepth: 3, weight: 1, size: 'medium' },
+  warden: { kind: 'warden', name: 'Warden', life: 420, dmgMin: 18, dmgMax: 26, speed: 2.5, radius: 0.8, range: 2.6, windup: 0.95, cooldown: 2.4, xp: 150, ranged: false, projSpeed: 8, keepMax: 0, element: 'phys', aoe: 2.4, minDepth: 99, weight: 0, size: 'boss' },
 };
+
+/**
+ * MONSTER PACKS (Version 19.7). THEIR SIZES: the owner, 9 Oct 2026, 07:49: "Let’s add a few rules to
+ * monsters.  Size designation which affects pack size.  Tiny, small, medium, large, and boss.  Tiny is
+ * our bats, small are our skeletons, medium is the green trolls, large the red, and the boss is the
+ * boss.  Medium there should be 3-5 in a pack.  You can kinda extrapolate from there". Asked "Pack
+ * sizes by monster size, extrapolated: tiny (bats) 6 to 10, small (skeletons, archers, cultists) 4 to
+ * 7, medium (green trolls) 3 to 5, large (red ones) 1 to 2, the boss alone. The first dungeon stays
+ * gentler. Right?", he answered: "All mob types have their own packs unless otherwise stated.  And
+ * these can change with a pack size modifier on a word for the gate." And of that word: "Twin: half
+ * again as big (Recommended)" (and at 08:02: "Also can we change “half again” to 50% increased."). So:
+ * a pack is of one kind, its size by the kind's size; the green troll is the brute, the red the
+ * guardian (a brute of the guardian's rank, a pack of guardians alone); Twin burned in at the gate
+ * gives every pack 50% increased size (and every monster Twin, as every word burned in at the gate
+ * does). BLUE AND YELLOW PACKS: PACKS, below. ON: his "Now, on its own (Recommended)" (07:56), and by
+ * 08:41, of the art chat's mage stances and wild skills, "With today's packs (Recommended)".
+ */
+export type MonsterSize = 'tiny' | 'small' | 'medium' | 'large' | 'boss';
+export const MONSTER_PACKS = { on: true };
+/** How many come in a pack, by size: the fewest and the most. */
+export const PACK_BY_SIZE: Record<MonsterSize, readonly [number, number]> = { tiny: [6, 10], small: [4, 7], medium: [3, 5], large: [1, 2], boss: [1, 1] };
+/** The first dungeon's, gentler (THE FIRST LEVELS: FIRST_DUNGEON). */
+export const FIRST_PACK_BY_SIZE: Record<MonsterSize, readonly [number, number]> = { tiny: [3, 5], small: [2, 4], medium: [2, 3], large: [1, 1], boss: [1, 1] };
+/** Twin burned in at the gate: every pack this many times as big (50% increased size), rounded. */
+export const GATE_TWIN_PACKS = 1.5;
+/** A monster's size: the guardian, a brute of the guardian's rank, is large. */
+export function sizeOf(kind: MonsterKind, champion = false): MonsterSize {
+  return champion ? 'large' : MONSTERS[kind].size;
+}
+/** How many come in a pack of this size at this depth (the first dungeon gentler). */
+export function packRange(size: MonsterSize, depth: number): readonly [number, number] {
+  return FIRST_LEVELS.on && depth <= 1 ? FIRST_PACK_BY_SIZE[size] : PACK_BY_SIZE[size];
+}
+
+/**
+ * BLUE AND YELLOW PACKS (with MONSTER_PACKS). The owner, 9 Oct 2026, 08:02: "A magic pack (blue) is
+ * affected by one word, and that would mean everything in that pack was affected by the word.  A
+ * yellow pack would give the leader of the pack a word or two (I don’t remember how we designed that),
+ * and the other in the pack become “minions” of the leader, gaining 50% of the words bonus.  So we
+ * have a pack of skeletons.  The skeleton champion, who let’s say has an old rusty helmet and a two
+ * handed sword, has Flame, and the smaller minions would essentially have a 50% Flame." How often,
+ * his answers: "1 in 4, from dungeon 2 (Recommended)" and "Elite rooms, plus 1 in 10". How tough,
+ * 08:10: "Rare (yellow) mobs should take a bit longer to kill than your regular version of that mob.
+ * And blue mobs as well.  Time to kill for a magic (blue) pack should be slightly less than the rare
+ * mob and his minions."; and to the numbers below, "Yes, those numbers (Recommended)". The leader has
+ * an elite's words, one, two from dungeon 6 (none in the first dungeon: THE FIRST LEVELS), and an
+ * elite's harder blows (TUNE.eliteDmg); a blue pack's monsters and the minions hit as their kind does,
+ * but for their words. A pack of 4 to 7 skeletons, blue, is 4.8 to 8.4 skeletons' life to cut through;
+ * yellow, 6 to 9.
+ */
+export const PACKS = {
+  /**
+   * Of the packs that are not an elite room's or a guardian's, from dungeon `from`: the share that are
+   * yellow, and that are blue. (The first dungeon keeps the one room of elites THE FIRST LEVELS gave
+   * it, and nothing more: the owner, 8 Oct 2026, 20:36, of being thrown in at the start: "It feels a
+   * little too abrupt".)
+   */
+  yellow: 0.1,
+  blue: 0.25,
+  from: 2,
+  /** A yellow pack's leader: its life, times. (Until Version 19.7 an elite had 4 times.) */
+  leaderLife: 3,
+  /** A blue pack's monsters: their life, times (20% increased), and what they are worth, the same. */
+  blueLife: 1.2,
+  /** A minion: the share it has of each of its leader's words. */
+  minion: 0.5,
+};
+/**
+ * How a blue or a yellow pack is told apart, until the art chat's own markers come: as an elite is,
+ * with a ring and a bar always over it; a blue pack's name written once, in blue, over the first of
+ * it in sight (a name over each was a pile of letters), and a yellow pack's leader named in yellow
+ * (the colours of magic and rare things); the minions as they always are. His yes, by 9 Oct 2026,
+ * 09:46, to Packs_look.png, "Use this look for blue and yellow packs until the art chat's markers
+ * come?": "Yes, as shown (Recommended)". Off, a yellow pack's leader looks as any elite does, and
+ * the others as ordinary monsters (for pictures beside it).
+ */
+export const PACK_LOOK = { on: true };
+/** What a pack is: plain, blue (magic) or yellow (rare). A guardian's pack is none of them. */
+export type PackRarity = 'plain' | 'blue' | 'yellow';
+/** Which of them a pack is, drawn from `roll` (a number in [0, 1)): an elite room's is yellow. */
+export function packRarity(eliteRoom: boolean, depth: number, roll: number): PackRarity {
+  if (eliteRoom) return 'yellow';
+  if (depth < PACKS.from) return 'plain';
+  return roll < PACKS.yellow ? 'yellow' : roll < PACKS.yellow + PACKS.blue ? 'blue' : 'plain';
+}
+/**
+ * How much of word `w`'s power a monster has: all of it, PACKS.minion of it (a minion, of its
+ * leader's words: `half`), or none (it does not have the word).
+ */
+export function wordShare(m: { words: readonly WordId[]; half?: readonly WordId[] }, w: WordId): number {
+  if (!m.words.includes(w)) return 0;
+  return m.half && m.half.includes(w) ? PACKS.minion : 1;
+}
 
 export function scaleLife(depth: number): number {
   return 1 + 0.35 * (depth - 1);
