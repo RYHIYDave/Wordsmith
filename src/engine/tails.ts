@@ -52,6 +52,12 @@ export interface TailDef {
   glow?: { color: string; r: number; a: number; at?: number };
   /** The last pixels of the free end in another colour (a fringe), or none. */
   tip?: string;
+  /**
+   * The other face of the cloth, for a frame that shows it (`TailRoot.inside`): the lining of a
+   * coat-tail seen from in front. The same as the outside if not given. (The heroes reimagined,
+   * art/reimagined.ts: their switches are off.)
+   */
+  inside?: { dark: string; mid: string; light: string };
 }
 
 /** Where a tail is fixed on a frame. */
@@ -69,6 +75,8 @@ export interface TailRoot {
    * standing wind on top of it, and a ripple that much bigger. Absent or 0 = none.
    */
   blast?: number;
+  /** This frame shows the tail's other face (`TailDef.inside`). Absent = its outside. */
+  inside?: boolean;
 }
 
 interface Chain {
@@ -76,6 +84,8 @@ interface Chain {
   p: Float32Array;
   q: Float32Array;
   over: boolean;
+  /** Its other face is shown (`TailRoot.inside`). */
+  inside: boolean;
   def: TailDef;
   /** Where its fixed end was when the chain was last moved. */
   rx: number;
@@ -193,11 +203,12 @@ export class Tails {
       if (!def) continue;
       let c = this.chains.get(r.id);
       if (!c) {
-        c = { p: new Float32Array((def.n + 1) * 2), q: new Float32Array((def.n + 1) * 2), over: r.over, def, rx: ox + r.x - ax, ry: oy + r.y - ay };
+        c = { p: new Float32Array((def.n + 1) * 2), q: new Float32Array((def.n + 1) * 2), over: r.over, inside: !!r.inside, def, rx: ox + r.x - ax, ry: oy + r.y - ay };
         this.seed(c, c.rx, c.ry, facing);
         this.chains.set(r.id, c);
       }
       c.over = r.over;
+      c.inside = !!r.inside;
     }
     this.left += Math.min(Math.max(dt, 0), 0.1);
     const steps = Math.floor(this.left / SUB);
@@ -341,7 +352,8 @@ export class Tails {
       if (k === 0) mask.fill(0);
       k++;
       const d = c.def;
-      tones.push(rgb(d.dark), rgb(d.mid), rgb(d.light));
+      const face = c.inside && d.inside ? d.inside : d;
+      tones.push(rgb(face.dark), rgb(face.mid), rgb(face.light));
       tips.push(d.tip ? rgb(d.tip) : null);
       // discs strung along the chain, half a picture pixel apart
       for (let i = 0; i < d.n; i++) {

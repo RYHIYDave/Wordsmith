@@ -25,6 +25,7 @@ import { paintKnight3 } from './hero3_knight';
 import { paintKnight3b } from './hero3_knight2';
 import type { HeadPainter } from './hero3_knight';
 import { paintMage3 } from './hero3_mage';
+import { paintMage3b } from './hero3_mage2';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
 import { paintRanger3b } from './hero3_ranger2';
@@ -120,8 +121,9 @@ export function paintMove3(move: Move3, t: number, view: GameView, opts: Paint3 
       const point = away ? away.point : sk.point;
       trail.push([add(hand, mul(point, hero === 'mage' ? STAFF_UP * 0.5 : 1.3)), add(hand, mul(point, hero === 'mage' ? STAFF_UP : 1.3 + GREAT_BLADE))]);
     }
-    // (the knight reimagined, the Boar Knight, only while his switch is on: art/reimagined.ts. It is off.)
-    f = hero === 'mage' ? paintMage3(s, q, view, { build, ...kit, ...(opts.mage ? { look: opts.mage } : {}) }, { prev, trail, wind }) : (REIMAGINED.knight ? paintKnight3b : paintKnight3)(s, q, view, { build, twoHanded: true, ...kit }, { prev, trail: streakShown(move, now) ? trail : [], wind });
+    // (the knight and the mage reimagined, the Boar Knight and the Storm-witch, only while their switches are on: art/reimagined.ts. They are off.)
+    if (hero === 'mage') f = REIMAGINED.mage && !opts.mage ? paintMage3b(s, q, view, { build, ...kit }, { prev, trail, wind }) : paintMage3(s, q, view, { build, ...kit, ...(opts.mage ? { look: opts.mage } : {}) }, { prev, trail, wind });
+    else f = (REIMAGINED.knight ? paintKnight3b : paintKnight3)(s, q, view, { build, twoHanded: true, ...kit }, { prev, trail: streakShown(move, now) ? trail : [], wind });
   }
   return q.out > 0.01 ? lightsOut(f, q.out) : f;
 }

@@ -25,6 +25,7 @@ import {
 } from './kit';
 import type { LegStyle, Moves, Painted, Pose, Ramp, V } from './kit';
 import type { Timeline } from './clip';
+import { MAGE2_TAILS } from './reimagined';
 
 // --- how the mage is built, in pixels ----------------------------------------------------------
 const BODY = 46;
@@ -263,6 +264,9 @@ export const MAGE_TAILS: Record<string, TailDef> = {
   // THE BATTLE MAGE (the other look of the same painter) has two BRAIDS: shorter than loose hair, as thick at their ends as at their tops, each tied at its end with a thread of light.
   'm-braid-a': { n: 4, seg: 1.05, w0: 3.2, w1: 2.6, dark: PINK[0], mid: PINK[2], light: PINK[3], tip: CYAN[2], rest: [[0, 1], [0, 1], [0, 1], [0, 1]], stiff: 0.14, gravity: 300, wind: 14, flutter: 10, rate: 0.9, drag: 8 },
   'm-braid-b': { n: 4, seg: 1.05, w0: 3.2, w1: 2.6, dark: '#520a3c', mid: PINK[0], light: PINK[2], tip: CYAN[2], rest: [[0, 1], [0, 1], [0, 1], [0, 1]], stiff: 0.14, gravity: 300, wind: 14, flutter: 10, rate: 0.9, drag: 8 },
+  // (and what flies from the mage reimagined, the Storm-witch: named by no frame while her switch,
+  // REIMAGINED.mage in art/reimagined.ts, is off, as it is)
+  ...MAGE2_TAILS,
 };
 
 /** A small book, open: two pale pages on a dark cover. (x, y) is the middle of its spine's foot. `turn` (0..1) lifts a page across. */

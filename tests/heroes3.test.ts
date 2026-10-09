@@ -49,7 +49,7 @@ const VIEWS = ['front', 'back'] as const;
 const TAILS: Record<ClassId, string[]> = {
   warrior: REIMAGINED.knight ? ['w2-strip-a', 'w2-strip-b', 'w2-strip-c'] : ['w-scarf-a', 'w-scarf-b'],
   ranger: REIMAGINED.ranger ? ['r2-feather', 'r2-liripipe'] : ['r-feather'],
-  mage: ['m-braid-a', 'm-braid-b'],
+  mage: REIMAGINED.mage ? ['m2-braid-a', 'm2-braid-b', 'm2-coat-a', 'm2-coat-b'] : ['m-braid-a', 'm-braid-b'],
 };
 /** The moves each stands in and runs with, in a dungeon and in town, and the two attacks. */
 const MOVES: Record<ClassId, { stand: [string, string]; run: [string, string]; attack: string; heavy: string; ready: string }> = {

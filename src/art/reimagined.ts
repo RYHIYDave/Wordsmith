@@ -7,11 +7,11 @@
 //
 // PICTURES FIRST: each hero's new outfit is painted only while its switch here is on, and every
 // switch is OFF. Off, the game is exactly as it was (tests/reimagined.test.ts holds it, frame for
-// frame). The ranger's is "THE WIND-RUNNER" (art/hero3_ranger2.ts); the knight and the mage have
-// none yet.
+// frame). The ranger's is "THE WIND-RUNNER" (art/hero3_ranger2.ts), the knight's "THE BOAR KNIGHT"
+// (art/hero3_knight2.ts), the mage's "THE STORM-WITCH" (art/hero3_mage2.ts).
 
 import type { TailDef } from '../engine/tails';
-import { CYAN, LEAF } from './kit';
+import { CYAN, LEAF, PINK } from './kit';
 import type { Ramp } from './kit';
 
 /** Which heroes wear their reimagined outfit. ALL OFF until the owner has seen it and said yes. */
@@ -52,4 +52,23 @@ export const KNIGHT2_TAILS: Record<string, TailDef> = {
   'w2-strip-a': { n: 5, seg: 1.5, w0: 4.0, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.7, drag: 5, wave: 7.5, across: true },
   'w2-strip-b': { n: 6, seg: 1.5, w0: 4.4, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.5, drag: 5, wave: 7.5, across: true },
   'w2-strip-c': { n: 4, seg: 1.5, w0: 3.8, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.9, drag: 5, wave: 7.5, across: true },
+};
+
+/** The Storm-witch's coat (art/hero3_mage2.ts): a deep violet; its lining a lighter purple. */
+const COAT2: Ramp = ['#1e1040', '#1e1040', '#462a8a', '#6c4cbc', '#6c4cbc'];
+const LINING2: Ramp = ['#4a2a7a', '#4a2a7a', '#7a52b8', '#a682e0', '#a682e0'];
+/**
+ * What flies from the Storm-witch (art/hero3_mage2.ts): HER PINK BRAIDS, longer than the battle
+ * mage's and freer, so that they fly with her; and THE POINTS OF HER TWO COAT-TAILS, cloth, as wide
+ * as each tail where they leave its hem and coming to a point, drawn behind her (they hang from under
+ * the hem); seen from in front, it is their lining that shows (engine/tails.ts, `inside`). (The
+ * coat-tails themselves are painted in the frames, behind her and round her legs.) No frame names
+ * them while her switch is off.
+ */
+export const MAGE2_TAILS: Record<string, TailDef> = {
+  'm2-braid-a': { n: 7, seg: 1.15, w0: 3.2, w1: 2.4, dark: PINK[0], mid: PINK[2], light: PINK[3], tip: CYAN[2], rest: [[0, 1], [0, 1], [0, 1], [0, 1], [0, 1], [0, 1], [0, 1]], stiff: 0.05, gravity: 260, wind: 60, flutter: 60, rate: 1.1, drag: 5 },
+  'm2-braid-b': { n: 7, seg: 1.15, w0: 3.2, w1: 2.4, dark: '#520a3c', mid: PINK[0], light: PINK[2], tip: CYAN[2], rest: [[0, 1], [0, 1], [0, 1], [0, 1], [0, 1], [0, 1], [0, 1]], stiff: 0.05, gravity: 260, wind: 60, flutter: 60, rate: 1.1, drag: 5 },
+  // (long, from the back of her coat's skirt to her ankles, broad at the top and coming to a point; seen from in front, it is their lining that shows)
+  'm2-coat-a': { n: 3, seg: 1.3, w0: 8, w1: 2.6, dark: COAT2[1], mid: COAT2[2], light: COAT2[3], inside: { dark: LINING2[1], mid: LINING2[2], light: LINING2[3] }, gravity: 240, wind: 70, flutter: 120, rate: 1.5, drag: 4, wave: 5, across: true },
+  'm2-coat-b': { n: 3, seg: 1.3, w0: 8, w1: 2.6, dark: COAT2[1], mid: COAT2[2], light: COAT2[3], inside: { dark: LINING2[1], mid: LINING2[2], light: LINING2[3] }, gravity: 240, wind: 70, flutter: 120, rate: 1.25, drag: 4, wave: 5, across: true },
 };
