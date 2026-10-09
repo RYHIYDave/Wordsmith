@@ -2,7 +2,8 @@
 //   CLS=mage node tools/playtest.mjs --scenario tools/scenarios/words.mjs --out shots/w_mage
 export default async function (page, snap) {
   const cls = process.env.CLS || 'mage';
-  const words = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison'];
+  // (and since Version 19.3 the four new words, with their looks: Heavy, Precise, Frenzied, Guarding)
+  const words = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding'];
   await page.evaluate((c) => { const d = window.__dbg; d.run(c, 11); d.god = true; d.speed = 6; d.bot(true); }, cls);
   const st = () => page.evaluate(() => {
     const g = window.__dbg.game(); const h = g.hero;

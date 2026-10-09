@@ -13,12 +13,17 @@ import { SPELL_TONES } from '../art/spells';
 import type { SpellArt } from '../art/spells';
 import { GATE_UP, PILLAR, POST, STRIP, SWING_STEPS } from '../art/gates';
 import type { GateArt, Strip } from '../art/gates';
+import { SPIKE_SPOTS, SPIKE_STEPS } from '../art/hazards';
+import type { HazardArt } from '../art/hazards';
 import { WALL_LOOK } from '../art/ground';
 import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
 import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
-import { isTownFlat, isTownsperson, townSprite, turnedTo } from '../art/townscene';
+import { POWER, QUEST3, STONE_LAYING_STEPS, STONE_LYING_FRAMES, STONE_STANDING_FRAMES, floatingOf } from '../art/quest3';
+import type { StoneArt } from '../art/quest3';
+import { SMITH3 } from '../art/smith3';
+import { columnSprite, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
 import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
@@ -26,12 +31,13 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, SKILLS, TUNE, WORDS } from '../game/defs';
+import { MONSTERS, RANGER_ARROW, SKILLS, TUNE, WORDS } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
 import type { Monster, Station } from '../game/state';
-import { doorFace, doorTiles } from '../game/doors';
+import { doorFace, doorTiles, isLeaf } from '../game/doors';
+import { spikeAt, spikeHeight } from '../game/traps';
 import { STAIR_N, STAIR_W, levelAt } from '../game/height';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
@@ -40,6 +46,7 @@ import { Figure, attackClip, attackFrame, monsterAttackAge, PHASE_APART } from '
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
+import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import type { Cam, Fallen, Fx } from './fx';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
@@ -52,6 +59,9 @@ export const STATION_NAME: Record<Station, string> = { gate: 'GATE', wordsmith: 
  */
 export const NAME_LIFT: Record<Station, number> = { gate: 74, stash: 26, lexicon: 40, mystic: 86, wordsmith: 44, armourer: 50, stranger: 40 };
 
+/** Where the master rune-stone lies beside the fallen wordsmith, from where he lies (tiles): by his reaching hand. */
+const STONE_BY: readonly [number, number] = [0.55, -0.3];
+
 export interface Art {
   /** The dungeon's floor and walls (art/ground.ts). */
   ground: GroundArt;
@@ -59,6 +69,8 @@ export interface Art {
   props: DungeonProps;
   /** Its doors and gates (art/gates.ts): drawn only where a level has any (game/doors.ts). */
   gates: GateArt;
+  /** (THE TRAPS) Its spike floors and dart walls (art/hazards.ts): drawn only where a level has any (game/traps.ts). */
+  hazards: HazardArt;
   /** The town's own things (art/town.ts) and its people (art/townsfolk.ts): Version 14.4. */
   town: TownProps;
   folk: Townsfolk;
@@ -68,6 +80,8 @@ export interface Art {
   icons: IconArt;
   /** The orb the staff sets down, the familiar, and its bolt. */
   spells: SpellArt;
+  /** THE MASTER RUNE-STONE (art/quest3.ts): a mock-up behind QUEST3, off. */
+  quest?: StoneArt;
   /** The fallen wordsmith of a character's first dungeon. */
 }
 
@@ -276,6 +290,9 @@ export class Renderer {
    * and how much it took.
    */
   private reelT = -1;
+  /** How far the hero has walked, in tiles, all told, and where they were a frame ago (a walk whose feet grip the floor is shown by it: art/moves3.ts, GRIP). */
+  private walked = 0;
+  private walkedFrom: [number, number] | null = null;
   private reelBehind = false;
   private flashWas = 0;
   private lifeWas = 0;
@@ -300,6 +317,8 @@ export class Renderer {
   private figures: MonsterFigure[] = [];
   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
   private warmedFor: unknown = null;
+  /** Frames drawn, for the hero's and the monsters' turns at painting ahead (see heroArt). */
+  private warmFrame = 0;
   /** The level whose fallen monsters the effects are keeping (their bodies lie until the hero leaves it). */
   private fallenFor: unknown = null;
   /** The hero as a moving figure: which frame, the scarf and the feather, what they do when left standing. */
@@ -348,6 +367,8 @@ export class Renderer {
    *   THE BOSS'S GATE: a pillar just outside each end of the doorway, the arch from the one to the
    *   other, and the portcullis at the back of the arch, raised as far as the gate is open. Once it
    *   has fallen the mark carved in the arch is alight.
+   *   (THE MIX) A LEVER'S GATE, AND A LOCKING ROOM'S: the same, lower and lighter, under a plain
+   *   arch with no mark.
    * (The stone on either side of a door is wall, and the walls' own rules draw it or leave it out:
    * render/walls.ts.)
    */
@@ -377,12 +398,14 @@ export class Renderer {
           put(x + y + STRIP / 64, q.s, x, y);
         }
       };
-      if (s.kind === 'bossgate') {
+      if (!isLeaf(s.kind)) {
+        // (the boss's, heavy and carved; or a plain one: a lever's, a locking room's)
+        const boss = s.kind === 'bossgate';
         const wide = PILLAR / 32;
-        const pillar = A.pillar(true);
+        const pillar = A.pillar(boss);
         for (const [x, y] of [at(0), at(3 + wide)]) put(x + y - wide, pillar, x, y);
-        strips(A.portcullis(s.alongX, true, d.open * GATE_UP), -wide, wide);
-        strips(A.arch(s.alongX, true, d.want === 0), -wide, 0);
+        strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide);
+        strips(A.arch(s.alongX, boss, boss && d.want === 0), -wide, 0);
         continue;
       }
       const wide = POST / 32;
@@ -395,7 +418,139 @@ export class Renderer {
       const dx = s.alongX ? along : -back;
       const dy = s.alongX ? -back : along;
       const [hx, hy] = at(1);
-      put(hx + hy + 0.5 * along - 0.2 * back, A.leaf(Math.round(32 * (dx - dy)), Math.round(16 * (dx + dy))), hx, hy);
+      const ex = Math.round(32 * (dx - dy));
+      const ey = Math.round(16 * (dx + dy));
+      // (THE TRAPS: a sealed door's leaf is a slab with the rune of its word, alight until the door is opened)
+      put(hx + hy + 0.5 * along - 0.2 * back, s.kind === 'worddoor' && s.word ? A.seal(ex, ey, s.word, d.want === 0) : A.leaf(ex, ey), hx, hy);
+    }
+  }
+
+  /**
+   * (THE TRAPS, game/traps.ts; their pictures: art/hazards.ts) What of a level's traps stands up:
+   * a spike floor's spikes, while they are up, one in each of its holes, each at its own depth; and
+   * a dart wall's slot, in the face of its wall. (The holes and a plate lie flat on the floor: they
+   * are drawn with the ground.)
+   */
+  /** THE WORDSMITH'S RING MADE NEW (art/ring3.ts): the letters of light that swirl round him, and the column of light over his slab, stood among everything else by how near they are. */
+  private standRing3(game: Game, cam: Cam, t: number): void {
+    const art = this.art;
+    const r3 = art.town.ring3;
+    const L = game.level;
+    const ring = L.props.find((p) => p.kind === 'runeRing');
+    if (!r3 || !ring) return;
+    for (const l of swirlNow(art, t)) {
+      const x = ring.x + l.x;
+      const y = ring.y + l.y;
+      const sp = (l.big ? r3.big : r3.letters)[l.heat][l.k];
+      const sx = wx(cam, x, y);
+      const sy = wy(cam, x, y) - l.z;
+      this.stand(x + y, sp, sx, sy);
+      if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
+    }
+    const slab = L.props.find((p) => p.kind === 'runeSlab');
+    const col = slab ? columnSprite(art, t) : null;
+    if (slab && col) {
+      // (on the slab's top: 11 game pixels up)
+      const sx = wx(cam, slab.x, slab.y);
+      const sy = wy(cam, slab.x, slab.y) - 11;
+      this.stand(slab.x + slab.y + 0.05, col.s, sx, sy, null, 0, 1, col.alpha);
+      if (col.s.lights) this.propLit.push({ s: col.s, x: Math.round(sx), y: Math.round(sy) });
+    }
+    // (THE MASTER RUNE-STONE, art/quest3.ts: given, it rises out of the hero, floats over the slab,
+    // lies down and is laid into the hollow in its top, with a burst of its light)
+    const pw = ringPower(t);
+    const q = art.quest;
+    if (slab && q && pw && pw.g >= 0) {
+      const h = game.hero;
+      const fl = floatingOf(pw.g, [h.x, h.y], [slab.x, slab.y], 11);
+      if (fl) {
+        const sp = fl.lie <= 0.5 ? q.standing[Math.floor(t * 10) % STONE_STANDING_FRAMES] : q.laying[Math.min(STONE_LAYING_STEPS - 1, Math.round((fl.lie / 90) * (STONE_LAYING_STEPS - 1)))];
+        const sx = wx(cam, fl.x, fl.y);
+        const sy = wy(cam, fl.x, fl.y) - fl.z;
+        this.stand(fl.x + fl.y + 0.06, sp, sx, sy);
+        if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
+      }
+      if (pw.g >= POWER.set && pw.g < POWER.set + 0.3) {
+        const sx = wx(cam, slab.x, slab.y);
+        const sy = wy(cam, slab.x, slab.y) - 11;
+        this.stand(slab.x + slab.y + 0.07, q.flash, sx, sy, null, 0, 0.6 + (pw.g - POWER.set) * 2.4, 1 - (pw.g - POWER.set) / 0.3);
+        this.propLit.push({ s: q.flash, x: Math.round(sx), y: Math.round(sy) });
+      }
+    }
+  }
+
+  /**
+   * THE MASTER RUNE-STONE IN THE FIRST DUNGEON (art/quest3.ts, behind QUEST3): taken up, it rises
+   * from beside the fallen wordsmith, stands up, bursts with light and flies into the hero.
+   */
+  private standQuestStone(game: Game, cam: Cam, t: number): void {
+    const q = this.art.quest;
+    const b = game.level.body;
+    if (!q || !b || QUEST3.takenAt < 0) return;
+    const age = t - QUEST3.takenAt;
+    if (age < 0 || age >= 1) return;
+    const from: [number, number] = [b.x + STONE_BY[0], b.y + STONE_BY[1]];
+    const h = game.hero;
+    let x = from[0];
+    let y = from[1];
+    let z = 0;
+    let lie = 90;
+    let scale = 1;
+    if (age < 0.35) {
+      const k = age / 0.35;
+      z = 18 * k * (2 - k);
+      lie = 90 * (1 - k);
+    } else if (age < 0.55) {
+      z = 18;
+      lie = 0;
+    } else {
+      const k = (age - 0.55) / 0.45;
+      x = from[0] + (h.x - from[0]) * k * k;
+      y = from[1] + (h.y - from[1]) * k * k;
+      z = 18 - 4 * k;
+      lie = 0;
+      scale = 1 - 0.7 * k * k;
+    }
+    const sp = lie <= 0.5 ? q.standing[Math.floor(t * 10) % STONE_STANDING_FRAMES] : q.laying[Math.min(STONE_LAYING_STEPS - 1, Math.round((lie / 90) * (STONE_LAYING_STEPS - 1)))];
+    const sx = wx(cam, x, y);
+    const sy = wy(cam, x, y) - z;
+    this.stand(x + y + 0.05, sp, sx, sy, null, 0, scale, 1);
+    if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
+    if (age >= 0.35 && age < 0.65) {
+      this.stand(x + y + 0.06, q.flash, sx, sy, null, 0, 0.5 + (age - 0.35) * 3, 1 - (age - 0.35) / 0.3);
+      this.propLit.push({ s: q.flash, x: Math.round(sx), y: Math.round(sy) });
+    }
+  }
+
+  private standHazards(game: Game, cam: Cam): void {
+    const L = game.level;
+    if (L.hazards.length === 0) return;
+    const f = L.floor;
+    const A = this.art.hazards;
+    for (const z of L.hazards) {
+      const s = z.spot;
+      if (s.kind === 'spikes') {
+        const k = Math.round(spikeHeight(s, game.time) * SPIKE_STEPS);
+        if (k <= 0) continue;
+        const sp = A.spike(k);
+        for (let ty = s.y; ty < s.y + s.h; ty++) {
+          for (let tx = s.x; tx < s.x + s.w; tx++) {
+            if (!L.explored[ty * f.w + tx]) continue;
+            for (const [u, v] of SPIKE_SPOTS) {
+              const x = tx + 0.5 + u;
+              const y = ty + 0.5 + v;
+              this.stand(x + y, sp, wx(cam, x, y), wy(cam, x, y));
+            }
+          }
+        }
+      } else if (s.slot) {
+        const q = s.slot;
+        // (seen once the floor in front of it has been)
+        if (!L.explored[(q.y + q.dy) * f.w + q.x + q.dx]) continue;
+        const x = q.x + 0.5 + q.dx * 0.5;
+        const y = q.y + 0.5 + q.dy * 0.5;
+        this.stand(x + y + STRIP / 64, A.slot(q.dy !== 0), wx(cam, x, y), wy(cam, x, y));
+      }
     }
   }
 
@@ -1002,6 +1157,26 @@ export class Renderer {
         const sp = p.state === 1 ? art.props.fallenSearched : art.props.fallen;
         g.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
         if (p.state === 0 && Math.random() < 0.2 * amb) fx.mote(p.x, p.y, [P.tl5, P.tl4, P.white]);
+        // (THE MASTER RUNE-STONE, art/quest3.ts, behind QUEST3: lying beside him, its rune throbbing)
+        if (QUEST3.on && QUEST3.stone === 'lying' && art.quest) {
+          const st = art.quest.lying[Math.floor(t * 8) % STONE_LYING_FRAMES];
+          const x = wx(cam, p.x + STONE_BY[0], p.y + STONE_BY[1]);
+          const y = wy(cam, p.x + STONE_BY[0], p.y + STONE_BY[1]);
+          g.drawImage(st.img, Math.round(x - st.ax), Math.round(y - st.ay), st.w, st.h);
+          if (st.lights) this.propLit.push({ s: st, x: Math.round(x), y: Math.round(y) });
+          if (Math.random() < 0.15 * amb) fx.mote(p.x + STONE_BY[0], p.y + STONE_BY[1], [P.white, '#b8fff8', '#22d0e0']);
+        }
+      }
+    }
+    // (THE TRAPS) a spike floor's holes, glinting in the moment before its spikes come up; a dart wall's plate
+    for (const z of L.hazards) {
+      const s = z.spot;
+      const sp = s.kind === 'spikes' ? art.hazards.holes(spikeAt(s, game.time).at === 'warn') : art.hazards.plate(z.pressed > 0);
+      for (let ty = s.y; ty < s.y + s.h; ty++) {
+        for (let tx = s.x; tx < s.x + s.w; tx++) {
+          if (!L.explored[ty * f.w + tx] || !here(tx + 0.5, ty + 0.5)) continue;
+          g.drawImage(sp.img, Math.round(wx(cam, tx + 0.5, ty + 0.5)) - sp.ax, Math.round(wy(cam, tx + 0.5, ty + 0.5)) - sp.ay, sp.w, sp.h);
+        }
       }
     }
     for (const z of game.zones) {
@@ -1010,6 +1185,8 @@ export class Renderer {
       const cy = wy(cam, z.x, z.y);
       const k = z.t / z.dur;
       if (z.kind !== 'warn' && this.skip.has('ground')) continue;
+      // (Heavy's cracked ground and Guarding's ward are drawn with the new words' looks: words3.ts, floor3)
+      if (z.kind === 'cracks' || z.kind === 'ward') continue;
       if (z.kind === 'warn') {
         ellipse(g, cx, cy, z.r, P.bl3, 0.16 + 0.3 * k);
         ellipse(g, cx, cy, z.r * k, P.bl4, 0.3);
@@ -1133,6 +1310,8 @@ export class Renderer {
         }
       }
     }
+    // (THE NEW WORDS, a mock-up behind a switch that is off: what they leave on the floor)
+    if (WORDS3.on && !this.skip.has('ground')) floor3(g, cam, t, game, here);
     for (const tr of game.traps) {
       if (!here(tr.x, tr.y)) continue;
       const frames = art.icons.trap[tr.element];
@@ -1244,7 +1423,7 @@ export class Renderer {
   private clipOf(game: Game): number {
     const h = game.hero;
     const s = h.skills[h.attackSkill];
-    return s ? attackClip(h.cls, h.attackSkill, SKILLS[s.id].kind) : h.attackSkill;
+    return s ? attackClip(h.cls, h.attackSkill, SKILLS[s.id].kind, h.combo) : h.attackSkill;
   }
 
   /** How long the hero has been holding an attack (a beam, a whirlwind), in seconds, or -1 when they are not; and which. */
@@ -1283,8 +1462,14 @@ export class Renderer {
     const began = performance.now();
     const hero = (): boolean => this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);
+    // (Version 19.4: in town, once all of the town's are painted, the hero's pictures for the
+    // dungeon are painted ahead too, so that fewer are left for the dungeon's first seconds; and
+    // the hero and the monsters take turns by the frame as well as within one, so that when a
+    // picture costs more than the budget, one a frame, the monsters' do not all wait behind his)
+    const ahead = (): boolean => !!game.level.town && this.art.heroes.warm(h.cls, { ...look, town: false });
+    const heroFirst = (this.warmFrame++ & 1) === 0;
     for (let n = 0; n < 600; n++) {
-      const did = n % 2 === 0 ? hero() || beast() : beast() || hero();
+      const did = (n % 2 === 0) === heroFirst ? hero() || beast() || ahead() : beast() || hero() || ahead();
       if (!did || performance.now() - began >= budget) break;
     }
     return this.art.heroes.of(h.cls, look);
@@ -1370,6 +1555,8 @@ export class Renderer {
     const held = game.weapon();
     const arcane = h.cls === 'mage' || held === 'staff' || held === 'wand';
     fx.arcane = arcane;
+    // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
+    if (WORDS3.on) tick3(pace / 60, game, fx);
     const cam = this.cam;
     // Where on the screen the hero stands: the middle, or the middle of the part left to the world.
     // The picture glides from the one to the other, by the wall clock (the world may be standing
@@ -1542,6 +1729,8 @@ export class Renderer {
         case 'barrel': sp = p.state === 0 ? art.props.barrel : null; break;
         case 'urn': sp = p.state === 0 ? art.props.urn : null; break;
         case 'pillar': sp = art.props.pillar; break;
+        // (THE MIX: a lever, as it stands or pulled)
+        case 'lever': sp = art.gates.lever(p.state === 1); break;
         case 'portal': sp = p.state === 1 ? art.props.portal[Math.floor(t * 7) % 4] : art.props.portalOff; break;
         // (the town's own things and its people: art/townscene.ts says which picture each shows)
         default:
@@ -1559,6 +1748,11 @@ export class Renderer {
         if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
       }
     }
+    // (THE WORDSMITH'S RING MADE NEW, art/ring3.ts, behind art/smith3.ts SMITH3: the letters of light
+    // that swirl round, each stood among everything else, and the column of light over the slab)
+    if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);
+    if (!L.town && QUEST3.on) this.standQuestStone(game, cam, t);
+    this.standHazards(game, cam);
     this.standDoors(L, cam);
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
@@ -1629,6 +1823,12 @@ export class Renderer {
         const fig = figureOf(m);
         if (fig === 'skeleton' || fig === 'archer') sx += Math.floor(t * 40 + m.id) % 2 === 0 ? 1 : -1;
       }
+      // (THE NEW WORDS, a mock-up behind a switch that is off: knocked back a step by a stagger, swaying while stunned)
+      if (WORDS3.on) {
+        const [ox, oy] = shift3(m, t);
+        sx += ox;
+        sy += oy;
+      }
       const sp = this.monsterSprite(m);
       // (ice gives off no light)
       if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
@@ -1654,7 +1854,17 @@ export class Renderer {
         over = silhouette(sp, P.vn4);
         overA = Math.min(0.5, 0.2 + m.poisonN * 0.04) + 0.06 * Math.sin(t * 6 + m.id);
       }
+      // (THE NEW WORDS, a mock-up behind a switch that is off: the cursed, and what stands in a hex circle, drained grey)
+      if (WORDS3.on && (!over || m.flash <= 0)) {
+        const tn = tint3(m, t);
+        if (tn && (!over || tn[1] > overA)) {
+          over = silhouette(sp, tn[0]);
+          overA = tn[1];
+        }
+      }
       this.stand(m.x + m.y, sp, sx, sy, over, overA);
+      // (THE NEW WORDS, a mock-up behind a switch that is off: a slowed monster's echoes linger after it)
+      if (WORDS3.on) for (const e of echoes3(m)) this.stand(e.x + e.y - 0.02, silhouette(sp, e.color), wx(cam, e.x, e.y), wy(cam, e.x, e.y), null, 0, 1, e.alpha);
       hid?.(m.x, m.y);
       if (m.burnT > 0 && Math.random() < 0.55 * amb) fx.flames(m.x, m.y, 0.22, 1, 0.9);
       if (m.chillT > 0 && m.frozenT <= 0 && Math.random() < 0.12 * amb) fx.mote(m.x + (Math.random() - 0.5) * 0.5, m.y + (Math.random() - 0.5) * 0.5, [P.white, P.bu5]);
@@ -1722,7 +1932,17 @@ export class Renderer {
       } else if (this.reelT >= 0) this.reelT = this.reelT + pace / 60 > REEL_TIME ? -1 : this.reelT + pace / 60;
       this.flashWas = h.flash;
       this.lifeWas = h.life;
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      // (how far the hero has walked: a leap, a roll or a warp carries them, and is not walking)
+      let moved: [number, number] = [0, 0];
+      if (this.walkedFrom && !h.move) {
+        const d = Math.hypot(h.x - this.walkedFrom[0], h.y - this.walkedFrom[1]);
+        if (d < 1) {
+          this.walked += d;
+          moved = [h.x - this.walkedFrom[0], h.y - this.walkedFrom[1]];
+        }
+      }
+      this.walkedFrom = [h.x, h.y];
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them
@@ -1753,6 +1973,9 @@ export class Renderer {
       this.heroLit = null;
       if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
         this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, coming > 0 ? 1 - coming * coming * 0.85 : 1, fig, coming);
+        // (THE NEW WORDS, a mock-up behind a switch that is off: a frenzy of three or more shivers the hero in its colour)
+        const copies = WORDS3.on ? heroCopies3(t) : null;
+        if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
         if (relief && !h.move) this.hide(h.x, h.y, heroLift);
         this.heroLit = { x: Math.round(sx), y: Math.round(sy) };
       }
@@ -1836,8 +2059,8 @@ export class Renderer {
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
-      if (p.look !== 'arrow' && p.look !== 'wave') {
-        // (a familiar's bolt is a small bright mote; anything else that is not an arrow is a ball of light)
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart') {
+        // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];
         // a shot carrying Power is drawn large, whatever its size in the rules
@@ -1963,8 +2186,11 @@ export class Renderer {
 
     // arrows are drawn as short lines so they can point any way; a Swift orb gets its tail here too
     for (const p of game.projectiles) {
+      // (a hero's arrow, with the ranger's new pictures: from where the arrow on his string was, at its height: game/defs.ts, RANGER_ARROW)
+      const lifted = RANGER_ARROW.on && p.look === 'arrow' && !p.hostile;
+      if (lifted && 0.4 + p.age * Math.hypot(p.vx, p.vy) < RANGER_ARROW.from) continue;
       const sx = wx(cam, p.x, p.y);
-      const sy = wy(cam, p.x, p.y) - 10;
+      const sy = wy(cam, p.x, p.y) - (lifted ? Math.round(RANGER_ARROW.height) : 10);
       const dx = (p.vx - p.vy) * 16;
       const dy = (p.vx + p.vy) * 8;
       const len = Math.hypot(dx, dy) || 1;
@@ -2033,6 +2259,24 @@ export class Renderer {
         }
         continue;
       }
+      if (p.look === 'dart') {
+        // (THE TRAPS) a dart of a dart wall: a short iron shaft with a pale point, at the height of the
+        // slot it left; no light of its own, and no colour of a friend's or an enemy's
+        const hy = sy - 3;
+        // (a faint streak where it has just been, the shaft, and its point)
+        g.globalAlpha = 0.35;
+        pline(g, sx - ux * 16, hy - uy * 16, sx - ux * 9, hy - uy * 9, P.sl4);
+        g.globalAlpha = 1;
+        pline(g, sx - ux * 9, hy - uy * 9, sx, hy, P.sl4);
+        pline(g, sx - ux * 9, hy - uy * 9 + 1, sx - ux * 2, hy - uy * 2 + 1, P.sl2);
+        g.fillStyle = P.white;
+        g.fillRect(Math.round(sx), Math.round(hy) - 1, 2, 2);
+        g.fillStyle = P.black;
+        g.globalAlpha = 0.3;
+        g.fillRect(Math.round(sx - 3), Math.round(sy + 10), 5, 1);
+        g.globalAlpha = 1;
+        continue;
+      }
       if (p.look !== 'arrow') {
         if (swift) {
           pline(g, sx - ux * 30, sy - uy * 30, sx - ux * 7, sy - uy * 7, twin ? P.tl3 : P.gn4);
@@ -2047,7 +2291,7 @@ export class Renderer {
       const flick = Math.floor(t * 20) % 2 === 0;
       // Swift: a long pale streak behind the arrow
       if (swift) pline(g, sx - ux * 24, sy - uy * 24, sx - ux * 6, sy - uy * 6, twin ? P.tl3 : P.gn4);
-      const body = power ? 10 : swift ? 9 : leech || volatile || twin ? 8 : 6;
+      const body = (power ? 10 : swift ? 9 : leech || volatile || twin ? 8 : 6) + (lifted ? RANGER_ARROW.long - 6 : 0);
       // the shaft takes the colour of the word it carries
       const shaft = p.hostile ? P.bn3 : twin ? P.tl4 : power ? P.fr5 : swift ? P.gn5 : leech ? P.bl4 : volatile ? (flick ? P.pu5 : P.pu4) : P.wd5;
       const jx = volatile ? Math.round((Math.random() - 0.5) * 2) : 0;
@@ -2058,7 +2302,7 @@ export class Renderer {
       else g.fillRect(Math.round(sx) + jx, Math.round(sy) + jy, 2, 2);
       g.fillStyle = P.black;
       g.globalAlpha = 0.35;
-      g.fillRect(Math.round(sx - 2), Math.round(sy + 10), 4, 1);
+      g.fillRect(Math.round(sx - 2), Math.round(sy + (lifted ? Math.round(RANGER_ARROW.height) : 10)), 4, 1);
       g.globalAlpha = 1;
     }
 
@@ -2181,6 +2425,8 @@ export class Renderer {
       }
       g.globalAlpha = 1;
     }
+    // (THE NEW WORDS, a mock-up behind a switch that is off: what glows over the dark)
+    if (WORDS3.on && !this.skip.has('fx')) air3(g, cam, t, game, fx);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
     this.drawWordDrops(g, W, H, game, t);
     this.drawBeacon(g, game, t);
@@ -2318,7 +2564,7 @@ export class Renderer {
       else if (p.kind === 'tentTable') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 18, 56, 0.8);
       else if (p.kind === 'runeSlab') spot(wx(cam, p.x, p.y) + 8, wy(cam, p.x, p.y) - 12, 64 + Math.sin(t * 2) * 3, 0.75);
     }
-    for (const p of game.projectiles) spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? 34 : 26, 0.8);
+    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? 34 : 26, 0.8);
     // What a monster's own fire lights: the floor round a cultist's flame (and far more of it as
     // the flame swells before it is thrown), the Warden's maul going hot. Eyes glow, and light
     // nothing.
@@ -2369,6 +2615,8 @@ export class Renderer {
       else if (d.kind === 'orb' || (d.kind === 'item' && d.item && d.item.rarity >= 2)) spot(wx(cam, d.x, d.y), wy(cam, d.x, d.y) - 4, 18, 0.7);
     }
 
+    // (THE NEW WORDS, a mock-up behind a switch that is off)
+    if (WORDS3.on) lights3(spot, cam, game, t);
     // a burst of fire or a bolt of lightning lights up the room for a moment
     for (const l of fx.glows) spot(wx(cam, l.x, l.y), wy(cam, l.x, l.y) - 8, l.r, 0.9 * (1 - l.t / l.dur));
     for (const m of game.monsters) {

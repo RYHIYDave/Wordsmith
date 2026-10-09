@@ -11,7 +11,9 @@
 import { makeHands, log } from './lib.mjs';
 
 export default async function (page, snap) {
-  await page.evaluate(() => { window.__dbg.run('warrior', 31); });
+  // (THE FIRST LEVELS, the game's own since Version 19.5: a hero home from the first dungeon, the
+  // wordsmith's ring lit; the gate leads to the second dungeon, since the first takes no words)
+  await page.evaluate(() => { const d = window.__dbg; d.run('warrior', 31); d.seasoned(3); const g = d.game(); g.depth = 2; g.cleared = 1; });
   await page.waitForTimeout(300);
   const hands = await makeHands(page);
   const bad = (msg) => console.log('  !! ' + msg);

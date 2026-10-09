@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { botStep, newBot } from '../src/dev/bot';
 import { SKILLS, skillsFor } from '../src/game/defs';
 import { Game } from '../src/game/game';
+import { seasoned } from './helpers';
 import { emptyControls } from '../src/game/state';
 import { CLASS_IDS, WEAPONS, WORD_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
@@ -53,7 +54,8 @@ for (const cls of CLASS_IDS) {
 
 test('every word can go in front and behind every word-taking ability, and come out again', () => {
   for (const cls of CLASS_IDS) {
-    const g = new Game(cls, 7);
+    // (THE FIRST LEVELS, since Version 19.5: a slot behind opens at level 7, once the wordsmith's ring is lit)
+    const g = seasoned(new Game(cls, 7), 10);
     for (const w of WORD_IDS) g.hero.words[w] = 1;
     for (const s of [0, 1]) {
       for (const w of WORD_IDS) {

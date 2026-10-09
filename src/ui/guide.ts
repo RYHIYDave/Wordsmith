@@ -9,7 +9,7 @@
 // through the first dungeon ... a lootable corpse with a guaranteed drop ... you get the prompt
 // to socket the word."
 
-import { CLASSES, FIRST_WORD, SKILLS, WORDS } from '../game/defs';
+import { CLASSES, FIRST_LEVELS, FIRST_WORD, QUEST_ITEM, SKILLS, WORDS, firstWordSkill } from '../game/defs';
 import type { SkillId } from '../game/defs';
 import type { Game } from '../game/game';
 import type { GuideRow, GuideStep, SlotRef } from '../game/state';
@@ -64,7 +64,8 @@ export function guideWord(game: Game): WordId {
  */
 export function guideSlot(game: Game, word: WordId): SlotRef {
   const first = FIRST_WORD[game.hero.cls];
-  return { skill: word === first.word ? first.skill : 0, side: 'front', idx: 0 };
+  // (THE FIRST LEVELS: every class's first word goes before the quick attack: defs.ts, firstWordSkill)
+  return { skill: word === first.word ? firstWordSkill(game.hero.cls) : 0, side: 'front', idx: 0 };
 }
 
 const up = (s: string): string => s.toUpperCase();
@@ -122,6 +123,11 @@ export function guideBanner(game: Game, touch: boolean): Banner | null {
       const w = guideWord(game);
       return mk('WORDSMITHING', `A power word: ${up(WORDS[w].name)}`, 'Walk over it to take it.');
     }
+    // (THE FIRST LEVELS: the fallen wordsmith's quest item, to the wordsmith in town)
+    case 'carry':
+      return mk('WORDSMITHING', `You carry ${QUEST_ITEM.the}`, 'Take it to the wordsmith in town.');
+    case 'ring':
+      return mk('WORDSMITHING', `Bring ${QUEST_ITEM.the} to the wordsmith`, 'He stands in the ring of stones. Walk up to him.');
     case 'smith': {
       const w = guideWord(game);
       const to = guideSlot(game, w);
@@ -171,7 +177,9 @@ export function guideCoach(game: Game, touch: boolean): Coach | null {
     const word = front ?? behind;
     // (taken out again: whoever can do that needs no coaching)
     if (!word) return null;
-    return { word, to: { skill: G.set.skill, side: front ? 'front' : 'behind', idx: 0 }, text: `${up(sk.r.name)}! Close this and try it.`, done: true };
+    // (THE FIRST LEVELS: set in town, at the wordsmith's, it is tried as the next dungeon begins)
+    const tryIt = FIRST_LEVELS.on && game.level.town ? 'Try it in the next dungeon.' : 'Close this and try it.';
+    return { word, to: { skill: G.set.skill, side: front ? 'front' : 'behind', idx: 0 }, text: `${up(sk.r.name)}! ${tryIt}`, done: true };
   }
   const word = WORD_IDS.find((w) => h.words[w] > 0);
   if (!word) return null;

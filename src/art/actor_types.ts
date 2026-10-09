@@ -33,6 +33,29 @@ export interface AnimSet {
   /** Frames per second of the idle loop and of the walk. Absent = 2 and 8. */
   idleFps?: number;
   walkFps?: number;
+  /** A walk whose feet grip the floor: how many tiles the figure goes in one turn of it. Its frame is then chosen by how far the hero has gone (FigureState.walked), not by the clock. */
+  walkStride?: number;
+  /**
+   * COMING TO A STAND OUT OF THE RUN (a walk whose feet grip: `walkStride`): one clip for each of a
+   * few moments of the run, evenly spaced through its turn, the first from its start; each from that
+   * moment of the run into the first frame of the standing loop. The game plays the one nearest the
+   * moment the hero stopped (render/figure.ts). Absent: the standing loop is shown at once.
+   */
+  stops?: Clip[];
+  /**
+   * SETTING OFF FROM THE STANCE INTO THE RUN (a walk whose feet grip): its pictures, chosen by how
+   * far the hero has gone since setting off, as the run's are (sixty to a second of the run); and
+   * the place in the run's turn (0 to 1) it leads into, from where the run then goes on. Absent: the
+   * run is shown at once, from wherever in its turn the distance the hero has ever gone puts it.
+   */
+  start?: Clip;
+  startAt?: number;
+  /**
+   * THE WALK THE OTHER WAYS: when the hero walks one way while facing another (turned to a mark),
+   * the walk's legs stepping to their left, back, and to their right, as the picture has them;
+   * frames as `walk`'s. Absent: the walk is shown whichever way they go.
+   */
+  walkWays?: Sprite[][];
   /** Heroes: 3 frames for the slow attack (a slam, a toss, a nova). Absent = it looks like `attack`. */
   heavy?: Sprite[];
   /** Heroes that leap: 3 frames (pushing off, in the air, coming down). Absent = the walk is shown. */
@@ -45,6 +68,16 @@ export interface AnimSet {
    */
   clips?: {
     attack?: Clip;
+    /** (Strike's combo) the second swing: the downward slash. Absent: the second swing looks like the first. */
+    attack2?: Clip;
+    /**
+     * THE ATTACKS MADE WALKING: the same, with the run's legs stepping under them, one clip for each
+     * of the four ways the hero may be going as they face their mark (ahead, to their left, back, to
+     * their right, as the picture has them). Shown in place of `attack` and `heavy` while the hero
+     * moves (render/figure.ts). Absent: the attack is shown as it is standing.
+     */
+    attackWalk?: Clip[];
+    heavyWalk?: Clip[];
     heavy?: Clip;
     leap?: Clip;
     idleA?: Clip;
@@ -90,6 +123,9 @@ export interface AnimSet {
     reel?: Clip;
     /** ... and thrown forward a step by one that comes from behind them. */
     lurch?: Clip;
+    /** The same two while the hero walks, the walk's legs under them, one for each of the four ways (as `attackWalk`). */
+    reelWalk?: Clip[];
+    lurchWalk?: Clip[];
     /**
      * A MONSTER'S OTHER MOVES, by name (the owner, 9 Oct 2026: tiny and small monsters have one
      * attack, medium two, large two or three, the boss four, and always a basic single-target

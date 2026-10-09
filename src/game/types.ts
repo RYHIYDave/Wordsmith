@@ -19,8 +19,10 @@ export const ATTRS: readonly Attr[] = ['str', 'dex', 'int'];
 export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
-export type WordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison';
-export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison'];
+export type WordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding';
+// (THE NEW WORDS, his choice of 8 Oct 2026, 12:26, as his doc "Wordsmith: The New Words" plays them (his yes, 16:53): the first four, Heavy,
+// Precise, Frenzied and Guarding, from Version 19.3; their looks are the art chat's, render/words3.ts)
+export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding'];
 
 /** Damage types. An ability with no element word deals physical damage. */
 export type Element = 'phys' | 'fire' | 'frost' | 'lightning';
@@ -61,12 +63,14 @@ export type StatKey =
   | 'cdr' // % cooldown recovery
   | 'areaPct' // % increased area of effect
   | 'goldFind' // % increased gold
-  | 'magicFind'; // % increased item rarity
+  | 'magicFind' // % increased item rarity
+  | 'stunChance' // % chance that a hit stuns (Heavy, burned into gear)
+  | 'blockChance'; // % chance to block a blow (Guarding, burned into gear)
 
 export const STAT_KEYS: readonly StatKey[] = [
   'str', 'dex', 'int', 'dmgMin', 'dmgMax', 'dmgPct', 'physPct', 'firePct', 'frostPct', 'lightPct', 'atkSpeed',
   'critChance', 'critMult', 'maxLife', 'lifeRegen', 'lifeOnHit', 'lifeOnKill', 'maxMana', 'manaRegen',
-  'armor', 'fireRes', 'frostRes', 'lightRes', 'moveSpeed', 'cdr', 'areaPct', 'goldFind', 'magicFind',
+  'armor', 'fireRes', 'frostRes', 'lightRes', 'moveSpeed', 'cdr', 'areaPct', 'goldFind', 'magicFind', 'stunChance', 'blockChance',
 ];
 
 export type Stats = Record<StatKey, number>;
@@ -221,12 +225,29 @@ export interface Room {
   kind: RoomKind;
   /** Place along the main path: 0 is the start room, the highest is the boss hall. -1 on a side branch. */
   path: number;
+  /**
+   * THE MIX (game/dungeon.ts, MIX; absent on every room where the map-maker does not mix):
+   * `gated`: a gate stands in its way in, down until its lever is pulled. `locks`: a gate hangs
+   * in every one of its doorways, and they fall while the hero is inside with its pack.
+   * `nook`: the small room at a dead end where a lever stands. `nextDoor`: set down next door to
+   * the room before it, with only a door between them: that door is always there, whatever the
+   * share of rooms with a door (doors.ts, `hasDoor`).
+   */
+  gated?: boolean;
+  locks?: boolean;
+  nook?: boolean;
+  nextDoor?: boolean;
+  /**
+   * (THE TRAPS, game/traps.ts) A SEALED DOOR stands in its way in, a rune of this word on it: it
+   * opens only to a hit from an attack that carries the word (`DoorSpot.word`).
+   */
+  sealed?: WordId;
 }
 
-export type PropKind = 'brazier' | 'chest' | 'barrel' | 'urn' | 'pillar' | 'bones' | 'rubble';
+export type PropKind = 'brazier' | 'chest' | 'barrel' | 'urn' | 'pillar' | 'bones' | 'rubble' | 'lever';
 
 /** Props that block movement. 'bones' and 'rubble' are flat decoration. */
-export const SOLID_PROPS: readonly PropKind[] = ['brazier', 'chest', 'barrel', 'urn', 'pillar'];
+export const SOLID_PROPS: readonly PropKind[] = ['brazier', 'chest', 'barrel', 'urn', 'pillar', 'lever'];
 
 export interface PropSpot {
   kind: PropKind;
@@ -263,8 +284,26 @@ export interface PackSpot {
  *   'bossgate'  the portcullis of the boss's hall, the whole doorway wide under its arch: up
  *               until the hero is well inside, then down, and nothing passes it (nor a shot)
  *               until the boss is dead.
+ *   'gate'      (THE MIX) a portcullis under a plain arch across the way in of a room: DOWN,
+ *               and nothing passes it, until its lever is pulled (the owner, 7 Oct 2026, 14:01:
+ *               "They can be closed with levers or switches nearby to open them."). The lever
+ *               stands in a small room at a dead end nearby: `Floor.levers`.
+ *   'trapgate'  (THE MIX) the same gate in EVERY doorway of a room that locks: up, until the
+ *               hero is well inside with the room's pack; then down, until none of that pack
+ *               is left alive in the room.
+ *   'worddoor'  (THE TRAPS, game/traps.ts) A SEALED DOOR: a door's frame and size, its leaf a
+ *               slab with the rune of a word on it (`word`). It opens to nobody who comes near:
+ *               only to a hit from an attack that carries its word; then it swings open as a
+ *               door does, and stays open. Sealed, nothing passes it, nor a shot, nor sight.
  */
-export type DoorKind = 'door' | 'bossgate';
+export type DoorKind = 'door' | 'bossgate' | 'gate' | 'trapgate' | 'worddoor';
+
+/** (THE MIX) A LEVER: the tile it stands on (a prop of kind 'lever' stands there), and the room whose way in its gate bars. */
+export interface LeverSpot {
+  x: number;
+  y: number;
+  room: number;
+}
 
 export interface DoorSpot {
   kind: DoorKind;
@@ -283,6 +322,32 @@ export interface DoorSpot {
   plane: number;
   /** Which way the corridor lies from that line, and so which way its leaves swing: +1 toward greater y (or x), -1 toward lesser. */
   out: 1 | -1;
+  /** (THE TRAPS) A sealed door's word: the one an attack must carry to open it. */
+  word?: WordId;
+}
+
+/**
+ * (THE TRAPS, game/traps.ts) WHAT THE DUNGEON ITSELF HAS LAID FOR THE HERO.
+ *   'spikes'  A PATCH OF FLOOR whose spikes come up on a beat (`x`, `y`, `w`, `h`: its tiles;
+ *             `phase`: seconds into its beat as the level begins). Up, they hurt whatever
+ *             walks on the patch, hero and monster alike, once each time they rise.
+ *   'darts'   A PLATE in a corridor's floor (the tile `x`, `y`; `w` = `h` = 1) and a SLOT in the
+ *             wall at the end of the corridor (`slot`: the wall's tile, and the way the darts
+ *             leave it, `dx`, `dy`: a step along x or along y). The hero steps on the plate:
+ *             it clicks, and three darts leave the slot one after another, all at the place the
+ *             hero stood as it clicked; they hurt what they meet, hero or monster. The plate is
+ *             ready again a few seconds later.
+ */
+export type HazardKind = 'spikes' | 'darts';
+
+export interface HazardSpot {
+  kind: HazardKind;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  phase?: number;
+  slot?: { x: number; y: number; dx: number; dy: number };
 }
 
 export interface Floor {
@@ -322,6 +387,10 @@ export interface Floor {
   props: PropSpot[];
   /** DOORS AND GATES: what stands in the doorways; absent where the map-maker lays none (game/doors.ts, DOORS). */
   doors?: DoorSpot[];
+  /** (THE MIX) The levers of the level's gates; absent where there are none. */
+  levers?: LeverSpot[];
+  /** (THE TRAPS) The spike floors and dart walls of the level; absent where there are none (game/traps.ts). */
+  hazards?: HazardSpot[];
 }
 
 /**

@@ -3,15 +3,19 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CLASSES, FIRST_WORD, GAMBLE_KINDS, GUIDE, LIMITS, MANA_MODE, MONSTERS, MSG, PRACTICE, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
+import { CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MOVE_OPENS, MSG, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
-import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeShapeRoom, makeStepHall, makeTown } from './level';
+import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
 import type { Hall } from './level';
 import { alongCut, bodyInWall, inWall } from './cut';
-import { DOOR_HELP, GATE_INSIDE, PIER_HOLD, doorMiddle, doorTiles, doorWay, insideBy, stepDoors } from './doors';
+import { DOOR_HELP, GATE_INSIDE, LEVER_NEAR, LOCK_CLEAR, PIER_HOLD, doorMiddle, doorTiles, doorWay, insideBy, stepDoors } from './doors';
 import type { DoorInst } from './doors';
+import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
+import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
+import type { HeroMode } from './modes';
+import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
@@ -68,7 +72,17 @@ export interface RunSave {
   guide?: Guide | null;
   /** Which of the wordsmith's words for sale on this visit have been bought (their places on his shelf; absent in older saves). */
   wordsBought?: number[];
+  /** NORMAL OR HARDCORE (game/modes.ts), kept for life. Absent in a save from before there were modes (MODE_BEFORE), and while MODES.on is false. */
+  mode?: HeroMode;
+  /** THE FIRST LEVELS (defs.ts): the ring lit for this hero (absent in a save from before: lit), and the quest item carried. */
+  ring?: boolean;
+  quest?: 'heart' | null;
 }
+
+/** THE FIRST LEVELS: what the wordsmith says while his ring is dark. */
+export const DARK_RING = 'The runes are dark';
+/** THE FIRST LEVELS: what the gate says of a word laid on it before the first dungeon, which takes none. */
+export const FIRST_GATE = 'Not in the first dungeon';
 
 /** Nothing known of a word yet. */
 function noLore(): WordLore {
@@ -85,7 +99,7 @@ export function newMeta(): Meta {
   }
   const stash: (Item | null)[] = [];
   for (let i = 0; i < TUNE.stashSize; i++) stash.push(null);
-  return { lexicon, known, stash, deaths: 0, bestDepth: 0, taught: false, limit: 'cooldown', voice: 'male', aim: 'auto', aimChosen: false };
+  return { lexicon, known, stash, deaths: 0, bestDepth: 0, taught: false, limit: 'cooldown', voice: 'male', aim: 'auto', aimChosen: false, mode: 'normal', ring: false };
 }
 
 /** A new player's place in the first dungeon's prompts. */
@@ -117,8 +131,14 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   out.deaths = typeof m.deaths === 'number' && Number.isFinite(m.deaths) ? Math.max(0, Math.floor(m.deaths)) : 0;
   out.bestDepth = typeof m.bestDepth === 'number' && Number.isFinite(m.bestDepth) ? Math.max(0, Math.floor(m.bestDepth)) : 0;
   out.taught = m.taught === true;
+  // (THE FIRST LEVELS: the ring is lit on a device the first time a hero brings the MASTER RUNE-STONE. A
+  // device that saved before Version 19.5 has never had it lit: its next new hero goes for it, as
+  // the owner saw in the pictures, and it stays lit for the heroes after. A hero saved before then
+  // keeps his own ring, and his words, whatever the device's: see `restore`.)
+  out.ring = m.ring === true;
   out.limit = LIMITS.includes(m.limit as Limit) ? (m.limit as Limit) : 'cooldown';
   out.voice = VOICE_IDS.includes(m.voice as VoiceId) ? (m.voice as VoiceId) : 'male';
+  out.mode = HERO_MODES.includes(m.mode as HeroMode) ? (m.mode as HeroMode) : 'normal';
   // Attacks are aimed for the player (auto aim) unless they have switched to another way, and
   // the switch leaves its mark (`aimChosen`). A device that saved before Version 12.2.1 has no
   // mark either way: it holds 'tap' whether that was chosen or not (it was the default, and is
@@ -153,6 +173,18 @@ export class Game {
   slainBy = '';
   /** How this character sounds when they speak: chosen on the class cards, and kept with the character. */
   voice: VoiceId = 'male';
+  /**
+   * NORMAL OR HARDCORE (game/modes.ts): picked on the class cards, kept for life. A hero made any
+   * other way (the playtests' runs, the practice room) is Hardcore, the game's old rule; and while
+   * MODES.on is false nobody is anything else.
+   */
+  mode: HeroMode = 'hardcore';
+  /**
+   * The hero as they went into this dungeon (a save, `save()`, taken as they stepped in, after the
+   * gate's words were burned): what a Normal death goes back to. Null in town before the first
+   * dungeon, and in the practice room.
+   */
+  entry: RunSave | null = null;
   /** The hero's lines on big kills: the ones said so far, when the last was said, and dice of their own. */
   private quipSaid = new Set<string>();
   private quipAt = -1e9;
@@ -228,6 +260,8 @@ export class Game {
   private nextThing = 1;
   private bagFullT = 0;
   private denyT = 0;
+  /** Precise behind: for each ability, the use (its count of uses) that has already marked an enemy. */
+  private marked: number[] = [-1, -1, -1];
   private visList: number[] = [];
   private tmp = { x: 0, y: 0 };
 
@@ -277,6 +311,8 @@ export class Game {
     // the level at which both attacks have two sockets in front and two behind
     h.level = PRACTICE.level;
     h.pending = 0;
+    // (THE FIRST LEVELS: a seasoned throwaway has the wordsmith's ring lit, as any hero has who has been down before)
+    h.ring = true;
     const primary = CLASSES[h.cls].primary;
     for (const a of ATTRS) h.attrs[a] += a === primary ? 15 : 3;
     const rng = new RNG((this.seed ^ 0x9e3779b9) >>> 0);
@@ -318,7 +354,7 @@ export class Game {
     this.refresh();
     this.clearLevel();
     const shape = SHAPES.find((k) => hall === `shape:${k}`);
-    this.level = shape ? makeShapeRoom(shape, this.seed) : hall === 'ledges' ? makeLedgeHall(this.seed) : hall === 'steps' ? makeStepHall(this.seed) : makeArena(this.seed);
+    this.level = shape ? makeShapeRoom(shape, this.seed) : hall === 'ledges' ? makeLedgeHall(this.seed) : hall === 'steps' ? makeStepHall(this.seed) : hall === 'mix' ? makeMixHall(this.seed) : hall === 'traps' ? makeTrapHall(this.seed) : makeArena(this.seed);
     this.inDungeon = true;
     this.dungeonWords = [];
     const f = this.level.floor;
@@ -397,6 +433,14 @@ export class Game {
   guideRows(): GuideRow[] {
     const G = this.guide;
     if (!G || !G.met) return [];
+    // (THE FIRST LEVELS: only the moves that are open, each as it opens; the swipe with its level, not after a couple of blows)
+    if (FIRST_LEVELS.on) {
+      const open: GuideRow[] = [{ id: 'quick', done: G.quick }];
+      if (this.moveOpen(1)) open.push({ id: 'slow', done: G.slow });
+      if (this.moveOpen(2)) open.push({ id: 'evade', done: G.evade });
+      if (G.low) open.push({ id: 'flask', done: G.flask });
+      return open;
+    }
     const rows: GuideRow[] = [{ id: 'quick', done: G.quick }, { id: 'slow', done: G.slow }];
     if (G.hits >= GUIDE.hits) rows.push({ id: 'evade', done: G.evade });
     if (G.low) rows.push({ id: 'flask', done: G.flask });
@@ -417,6 +461,8 @@ export class Game {
     if (WORD_IDS.some((w) => h.words[w] > 0)) return 'smith';
     if (this.drops.some((d) => d.kind === 'word' && Math.hypot(d.x - h.x, d.y - h.y) < GUIDE.sight)) return 'take';
     if (fight) return null;
+    // (THE FIRST LEVELS: the quest item, to be taken to town and to the wordsmith)
+    if (FIRST_LEVELS.on && h.quest) return L.town ? 'ring' : 'carry';
     const b = L.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < GUIDE.sight && L.visible[b.ty * L.floor.w + b.tx] === 1) return 'body';
     if (G.walked < GUIDE.steps) return 'move';
@@ -540,6 +586,10 @@ export class Game {
       voice: this.voice,
       guide: this.guide ? { ...this.guide, set: this.guide.set ? { ...this.guide.set } : null } : null,
       wordsBought: this.wordStock.flatMap((w, i) => (w === null ? [i] : [])),
+      // (nothing of the modes is written while their switch is off: a hero made before then is MODE_BEFORE)
+      ...(MODES.on ? { mode: this.mode } : {}),
+      // (nor of the first levels while theirs is: a hero saved before them has the ring lit)
+      ...(FIRST_LEVELS.on ? { ring: h.ring, quest: h.quest } : {}),
     };
   }
 
@@ -570,11 +620,15 @@ export class Game {
     g.cleared = Math.max(0, Math.floor(num(s.cleared, 0)));
     g.kills = Math.max(0, Math.floor(num(s.kills, 0)));
     if (VOICE_IDS.includes(s.voice as VoiceId)) g.voice = s.voice as VoiceId;
+    g.mode = HERO_MODES.includes(s.mode as HeroMode) ? (s.mode as HeroMode) : MODE_BEFORE;
     g.runTime = Math.max(0, num(s.runTime, 0));
     if (Array.isArray(s.plan)) {
       for (const w of s.plan) if (WORD_IDS.includes(w) && g.plan.length < TUNE.planMax && !g.plan.includes(w)) g.plan.push(w);
     }
     g.bodySearched = s.body === true;
+    // (THE FIRST LEVELS: a save from before them, or made with them off, has the ring lit)
+    h.ring = !FIRST_LEVELS.on || s.ring !== false;
+    h.quest = s.quest === 'heart' ? 'heart' : null;
     if (s.guide && typeof s.guide === 'object') {
       // (the prompts carry on from where they were; what was set stays set)
       const q = s.guide;
@@ -635,11 +689,69 @@ export class Game {
     for (let i = 0; i < TUNE.bagSize; i++) bag.push(null);
     return {
       cls, level: 1, xp: 0, pending: 0, attrs, life: d.maxLife, mana: d.maxMana,
-      x: 0, y: 0, fx: 0.7071, fy: 0.7071, anim: 'idle', animT: 0, attackT: 0, attackSkill: 0, attackAge: 0, attackWind: 0, windup: null, channel: null, queued: null, swingT: 0, flash: 0, invuln: 0,
+      x: 0, y: 0, fx: 0.7071, fy: 0.7071, anim: 'idle', animT: 0, attackT: 0, attackSkill: 0, combo: 0, comboT: 0, step: null, attackAge: 0, attackWind: 0, windup: null, channel: null, queued: null, swingT: 0, flash: 0, invuln: 0,
       gear, bag, words, skills, gold: 0, potions: TUNE.potionMax, potionKills: 0,
-      might: 0, mightT: 0, haste: 0, hasteT: 0, burnT: 0, burnDps: 0, chillT: 0, chill: 0, shockT: 0, poisonT: 0, poisonDps: 0,
-      move: null, d,
+      might: 0, mightT: 0, haste: 0, hasteT: 0, frenzy: 0, frenzyT: 0, shield: 0, shieldT: 0, burnT: 0, burnDps: 0, chillT: 0, chill: 0, shockT: 0, poisonT: 0, poisonDps: 0,
+      move: null,
+      // (THE FIRST LEVELS: the ring is lit for him if it ever was on this device; with the switch off, always)
+      ring: !FIRST_LEVELS.on || this.meta.ring,
+      quest: null,
+      d,
     };
+  }
+
+  // ===========================================================================================
+  // THE FIRST LEVELS (defs.ts, FIRST_LEVELS): the abilities open by level, and wordsmithing with the ring
+
+  /** Is ability `i` open to the hero: always with the switch off and in the practice room; otherwise from its level (MOVE_OPENS). */
+  moveOpen(i: number): boolean {
+    return !FIRST_LEVELS.on || this.practice || this.hero.level >= (MOVE_OPENS[i] ?? 1);
+  }
+
+  /** The word slots an open ability has now, in front and behind: none before the ring is lit; then by level. */
+  slots(level = this.hero.level): [number, number] {
+    if (!this.hero.ring && !this.practice) return [0, 0];
+    return socketCount(level);
+  }
+
+  /**
+   * What the master rune-stone's pictures show (art/quest3.ts, QUEST3; main.ts sets them from this
+   * each frame): the wordsmith's ring dark (this hero's ring is not lit); the stone carried; the
+   * stone lying by the fallen wordsmith (here, unsearched, and the ring dark).
+   */
+  questView(): { dark: boolean; carried: boolean; lying: boolean } {
+    const live = FIRST_LEVELS.on && !this.practice;
+    const dark = live && !this.hero.ring;
+    const carried = live && this.hero.quest === 'heart';
+    const b = this.level.town ? null : this.level.body;
+    return { dark, carried, lying: dark && !carried && !!b && b.state === 0 };
+  }
+
+  /** Do words fall, and do monsters carry them, here and now: not before the ring is lit, and (21:05) not in the first dungeon. */
+  wordsFall(): boolean {
+    if (!FIRST_LEVELS.on || this.practice) return true;
+    return this.hero.ring && this.depth > 1;
+  }
+
+  /**
+   * THE QUEST ITEM BROUGHT TO THE WORDSMITH: his ring is lit (for this hero and on this device), he
+   * gives the hero's first word, and the slots open. Called when the hero comes up to him with it.
+   */
+  private lightRing(x: number, y: number): void {
+    const h = this.hero;
+    h.quest = null;
+    h.ring = true;
+    this.meta.ring = true;
+    const w = FIRST_WORD[h.cls].word;
+    h.words[w]++;
+    this.refresh();
+    if (!this.practice) this.meta.known[w].found = true;
+    this.emit({ t: 'ring', x, y });
+    this.emit({ t: 'wordGot', word: w });
+    this.sfx('rare');
+    this.msg(`The ring is lit. The wordsmith gives you a word: ${WORDS[w].name.toUpperCase()}.`, MSG.word);
+    // (as a first word found is: the inventory opens for it at once, and the lesson shows where it goes)
+    if (!this.wordAtWork() && this.placeable(w)) this.offer = w;
   }
 
   /** Rebuild everything derived from level, attributes, gear and socketed words. */
@@ -674,12 +786,14 @@ export class Game {
       this.orbs = this.orbs.filter((o) => o.skill !== i);
       this.familiars = this.familiars.filter((q) => q.skill !== i);
     }
-    const [nf, nb] = socketCount(h.level);
+    const [nf, nb] = this.slots();
     for (let i = 0; i < h.skills.length; i++) {
       const s = h.skills[i];
       const def = SKILLS[s.id];
-      const wantF = def.sockets ? nf : 0;
-      const wantB = def.sockets ? nb : 0;
+      // (THE FIRST LEVELS: an ability not yet open has no slots)
+      const open = this.moveOpen(i);
+      const wantF = def.sockets && open ? nf : 0;
+      const wantB = def.sockets && open ? nb : 0;
       while (s.front.length < wantF) s.front.push(null);
       while (s.behind.length < wantB) s.behind.push(null);
       // (a character saved when a slot opened at a lower level than it does now: the slot closes,
@@ -689,6 +803,17 @@ export class Game {
         while (side.length > want) {
           const w = side.pop();
           if (w) h.words[w]++;
+        }
+        // (ONE DAMAGE WORD A SIDE, since Version 19.3: a character saved with two keeps the first,
+        // and the other goes back to the pouch)
+        let damage = false;
+        for (let k = 0; k < side.length; k++) {
+          const w = side[k];
+          if (!w || WORDS[w].kind !== 'damage') continue;
+          if (damage) {
+            side[k] = null;
+            h.words[w]++;
+          } else damage = true;
         }
       }
       s.r = resolveSkill(def, s.front, s.behind, i < 2 ? weaponAttr(weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
@@ -735,10 +860,17 @@ export class Game {
     h.mightT = 0;
     h.haste = 0;
     h.hasteT = 0;
+    h.frenzy = 0;
+    h.frenzyT = 0;
+    h.shield = 0;
+    h.shieldT = 0;
     h.attackT = 0;
     h.windup = null;
     h.channel = null;
     h.queued = null;
+    h.combo = 0;
+    h.comboT = 0;
+    h.step = null;
     for (const s of h.skills) {
       s.cd = 0;
       s.charges = s.maxCharges;
@@ -823,11 +955,20 @@ export class Game {
     if (this.depth === 1 && this.cleared === 0) {
       this.placeBody();
       this.softenFirstHalf();
+      if (FIRST_LEVELS.on) this.softball();
+    } else if (FIRST_LEVELS.on && !this.practice && !this.hero.ring && !this.hero.quest && !this.bodySearched) {
+      // (THE FIRST LEVELS: without the MASTER RUNE-STONE there is no wordsmithing. A hero who left the
+      // first dungeon without searching the fallen wordsmith finds him again in the next, half way
+      // along its main path, and so on until he is found.)
+      this.placeBody();
     }
     this.updateVision(1);
     this.msg(`Dungeon ${this.depth}`, MSG.head);
     if (this.dungeonWords.length) this.msg(`Burned in: ${this.dungeonWords.map((w) => WORDS[w].name).join(', ')}`, MSG.word);
     this.sfx('portal');
+    // NORMAL MODE (game/modes.ts): the hero as they came in, for a death to go back to. (A copy
+    // through JSON: nothing found or changed in here can reach it.)
+    this.entry = JSON.parse(JSON.stringify(this.save())) as RunSave;
   }
 
   private spawnMonsters(seed: number): void {
@@ -917,12 +1058,50 @@ export class Game {
     if (!b) return;
     const f = this.level.floor;
     const dist = flowField(this.level.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, this.level.step);
-    // (ten steps to a tile: the body's own room counts as the first half)
-    const upTo = dist[b.ty * f.w + b.tx] + 80;
+    // (ten steps to a tile: the body's own room counts as the first half; THE FIRST LEVELS: the whole of the first dungeon, defs.ts FIRST_DUNGEON)
+    const upTo = FIRST_LEVELS.on ? Infinity : dist[b.ty * f.w + b.tx] + 80;
     for (const m of this.monsters) {
       if (m.boss || dist[Math.floor(m.y) * f.w + Math.floor(m.x)] > upTo) continue;
       m.dmgMin *= GUIDE.softDmg;
       m.dmgMax *= GUIDE.softDmg;
+    }
+  }
+
+  /**
+   * THE FIRST LEVELS: THE FIRST PACK IS A SOFTBALL (the owner, 22:25; defs.ts, FIRST_DUNGEON.softball).
+   * The pack nearest the way in, by the way one walks, gives way to a few slow skeletons that
+   * barely hurt and fall to a tap or two of the bare quick attack: the movement and the tap are
+   * learnt on them.
+   */
+  private softball(): void {
+    const f = this.level.floor;
+    const dist = flowField(this.level.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, this.level.step);
+    let best = -1;
+    let bd = Infinity;
+    for (const m of this.monsters) {
+      if (m.boss || m.packId < 0) continue;
+      const d = dist[Math.floor(m.y) * f.w + Math.floor(m.x)];
+      if (d < bd) {
+        bd = d;
+        best = m.packId;
+      }
+    }
+    if (best < 0) return;
+    const pack = this.monsters.filter((m) => m.packId === best);
+    const cx = pack.reduce((a, m) => a + m.x, 0) / pack.length;
+    const cy = pack.reduce((a, m) => a + m.y, 0) / pack.length;
+    this.monsters = this.monsters.filter((m) => m.packId !== best);
+    const S = FIRST_DUNGEON.softball;
+    const life = Math.max(2, Math.round(this.bareHit() * S.hits));
+    const def = MONSTERS.skeleton;
+    const rng = new RNG((this.seed ^ 0x50f7ba11) >>> 0);
+    for (const spot of scatter(this.level.walk, f.w, f.h, cx, cy, S.size, rng)) {
+      const m = this.spawn('skeleton', spot.x, spot.y, best, 0, false, rng);
+      m.maxLife = life;
+      m.life = life;
+      m.dmgMin = def.dmgMin * S.dmg;
+      m.dmgMax = def.dmgMax * S.dmg;
+      m.speed = S.speed;
     }
   }
 
@@ -935,7 +1114,9 @@ export class Game {
     const elite = rank > 0;
     const champion = rank === 2;
     const words: WordId[] = [];
-    const want = boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
+    // (THE FIRST LEVELS, 21:05: "That also means no words on monsters for dungeon 1")
+    const bare = FIRST_LEVELS.on && !this.practice && this.depth <= 1;
+    const want = bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
     while (words.length < want) {
       const w = rng.pick(WORD_IDS);
       if (words.includes(w)) continue;
@@ -965,7 +1146,9 @@ export class Game {
       // (the more words are burned into the dungeon, the likelier: that is what burning them buys)
       if (lot.chance(Math.min(1, p * (1 + 0.3 * this.dungeonWords.length)))) carries = [lot.pick(words)];
     }
-    for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
+    // (THE FIRST LEVELS: before the ring is lit nothing gives up a word)
+    if (!this.wordsFall()) carries = [];
+    if (!bare) for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
     let life = def.life * (boss ? 1 + 0.4 * (this.depth - 1) : scaleLife(this.depth));
     let dm = scaleDmg(this.depth);
     let xp = def.xp * (1 + 0.25 * (this.depth - 1));
@@ -992,6 +1175,7 @@ export class Game {
       speed: def.speed * (words.includes('swift') ? 1.35 : 1), elite, champion, boss, words, carries,
       state: 'sleep', t: 0, cd: 0, packId, anim: 'idle', animT: rng.range(0, 3), flash: 0,
       burnT: 0, burnDps: 0, chillT: 0, chill: 0, frozenT: 0, freezeImmune: 0, poisonT: 0, poisonDps: 0, poisonN: 0,
+      stunT: 0, staggerT: 0, staggerCd: 0, markT: 0, shield: words.includes('guarding') ? Math.round(Math.round(life) * GUARD.monster) : 0,
       lastSkill: -1, seen: false, barT: 0, phase: 0, atk: 0, dead: false, xp: Math.round(xp), seed: rng.next(),
     };
     this.monsters.push(m);
@@ -1017,6 +1201,7 @@ export class Game {
     const walked = this.hero.move ? 0 : Math.min(0.5, Math.hypot(this.hero.x - px, this.hero.y - py));
     this.updateVision(dt);
     this.updateDoors(dt);
+    this.updateHazards(dt);
     this.updateFlow(dt);
     this.updateMonsters(dt);
     this.updateProjectiles(dt);
@@ -1064,6 +1249,196 @@ export class Game {
       if (d.want === 1 && alive && this.wellInside(d, h.x, h.y)) this.dropGate(d);
       else if (d.want === 0 && !alive) this.raiseGate(d);
     }
+    // (THE MIX) A LEVER'S GATE, DOWN: the first time one is seen from near, a line says what it is
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'gate' || d.want !== 0 || d.told) continue;
+      const at = doorMiddle(d.spot);
+      if (Math.hypot(at.x - h.x, at.y - h.y) > TUNE.aggroRadius || !doorTiles(L.floor, d.spot).some((i) => L.visible[i] === 1)) continue;
+      d.told = true;
+      this.msg('A gate bars the way. Its lever is near.', MSG.omen);
+    }
+    // (THE TRAPS) A SEALED DOOR: the first time one is seen from near, a line says what it wants
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'worddoor' || d.want !== 0 || d.told || !d.spot.word) continue;
+      const at = doorMiddle(d.spot);
+      if (Math.hypot(at.x - h.x, at.y - h.y) > TUNE.aggroRadius || !doorTiles(L.floor, d.spot).some((i) => L.visible[i] === 1)) continue;
+      d.told = true;
+      this.msg(`A sealed door. It wants ${WORDS[d.spot.word].name.toUpperCase()}.`, MSG.omen);
+    }
+    this.updateLocks();
+  }
+
+  /**
+   * (THE TRAPS) A HIT FROM ABILITY `skill` reaches everything within `rad` of (x, y): A SEALED DOOR
+   * in its reach opens if the ability carries the door's word, in front or behind. (Called where
+   * a blow, a blast, a shot or what burns on the ground breaks barrels and urns: `breakProps`; and
+   * where a shot of the hero's meets a wall.) It swings open as a door does, and stays open; from
+   * then on its tile is open to whatever walks, flies, is shot or looks.
+   */
+  private unseal(skill: number, x: number, y: number, rad: number): void {
+    const L = this.level;
+    if (L.doors.length === 0 || skill < 0) return;
+    for (const d of L.doors) {
+      const w = d.spot.word;
+      if (d.spot.kind !== 'worddoor' || d.want !== 0 || !w) continue;
+      const at = doorMiddle(d.spot);
+      // (the door's tile: a tile across, so a hit that reaches within half a tile of its middle, and a little more, is on it)
+      if (Math.hypot(at.x - x, at.y - y) > rad + 0.65) continue;
+      if (!this.fronts(skill).includes(w) && !this.behinds(skill).includes(w)) continue;
+      d.want = 1;
+      d.told = true;
+      for (const i of doorWay(L.floor, d.spot)) {
+        L.walk[i] = 1;
+        L.open[i] = 1;
+      }
+      this.visionT = 0;
+      this.emit({ t: 'door', x: at.x, y: at.y, kind: 'open' });
+      this.emit({ t: 'spark', x: at.x, y: at.y, el: WORDS[w].element ?? 'phys', n: 10 });
+      this.sfx('door', 0.8);
+      this.sfx('word', 0.6);
+      this.msg(`The ${WORDS[w].name.toUpperCase()} seal breaks.`, MSG.word);
+    }
+  }
+
+  // ===========================================================================================
+  // (THE TRAPS, game/traps.ts) Spike floors and dart walls. A level has none unless they were laid.
+
+  private updateHazards(dt: number): void {
+    const L = this.level;
+    if (L.hazards.length === 0) return;
+    const h = this.hero;
+    for (const z of L.hazards) {
+      if (z.spot.kind === 'spikes') this.stepSpikes(z, h);
+      else this.stepDarts(z, h, dt);
+    }
+  }
+
+  /**
+   * A SPIKE FLOOR: up, its spikes hurt whatever walks on the patch, once each time they rise: the
+   * hero (a share of their life, before armour; not while leaping or rolling, nor while nothing
+   * can hurt them), and every monster but a bat, which flies over (a share of its own life). A
+   * boss is never hurt by one: none is laid in a boss's hall.
+   */
+  private stepSpikes(z: HazardInst, h: Hero): void {
+    const up = spikeAt(z.spot, this.time).at === 'up';
+    if (up && !z.wasUp) {
+      z.hit.length = 0;
+      const tx = z.spot.x + z.spot.w / 2;
+      const ty = z.spot.y + z.spot.h / 2;
+      if (Math.hypot(tx - h.x, ty - h.y) < 9) this.sfx('trapSet', 0.35);
+    }
+    z.wasUp = up;
+    if (!up || this.over) return;
+    if (!z.hit.includes(-1) && !h.move && h.invuln <= 0 && onHazard(z.spot, h.x, h.y)) {
+      z.hit.push(-1);
+      this.hurtHero(h.d.maxLife * SPIKE.share, 'phys', [], null, 'spikes');
+    }
+    for (const m of this.monsters) {
+      if (m.dead || m.kind === 'bat' || m.boss || z.hit.includes(m.id) || !onHazard(z.spot, m.x, m.y)) continue;
+      z.hit.push(m.id);
+      this.damageMonster(m, Math.max(1, Math.round(m.maxLife * SPIKE.share)), 'phys', false, -1);
+    }
+  }
+
+  /**
+   * A DART WALL: the hero steps on the plate, and if it is ready it clicks; a moment later the
+   * first of three darts leaves the slot, all of them at the place where the hero stood as it
+   * clicked (the click is the warning: who moves at once is missed). Ready again `DART.rearm`
+   * seconds after the click. (A monster on the plate does not set it off.)
+   */
+  private stepDarts(z: HazardInst, h: Hero, dt: number): void {
+    z.ready = Math.max(0, z.ready - dt);
+    z.pressed = Math.max(0, z.pressed - dt);
+    if (z.left > 0) {
+      z.next -= dt;
+      if (z.next <= 0) {
+        this.fireDart(z);
+        z.left--;
+        z.next = DART.gap;
+      }
+    }
+    if (this.over || z.ready > 0 || z.left > 0 || !onHazard(z.spot, h.x, h.y)) return;
+    z.left = DART.count;
+    z.next = DART.first;
+    z.ready = DART.rearm;
+    z.pressed = 0.6;
+    z.aimX = h.x;
+    z.aimY = h.y;
+    this.sfx('click', 0.9);
+  }
+
+  /** One dart leaves a dart wall's slot, at the place the hero stood as the plate clicked. */
+  private fireDart(z: HazardInst): void {
+    const o = slotMouth(z.spot);
+    let dx = z.aimX - o.x;
+    let dy = z.aimY - o.y;
+    const n = Math.hypot(dx, dy) || 1;
+    dx /= n;
+    dy /= n;
+    this.projectiles.push({
+      x: o.x, y: o.y, vx: dx * DART.speed, vy: dy * DART.speed, r: DART.r, dist: DART.reach,
+      hostile: true, trap: true, dmg: DART.share, element: 'phys', look: 'dart', pierce: false, hit: [],
+      volley: false, skill: -1, trail: 0, words: [], runed: false, clouded: false, age: 0, from: 'a dart', n: 0,
+    });
+    this.sfx('shot', 0.5);
+  }
+
+  /**
+   * (THE MIX) THE ROOMS THAT LOCK. A gate hangs in every doorway of such a room, up. THEY FALL when
+   * the hero is inside the room, `LOCK_CLEAR` tiles and more from the middle of every one of its
+   * doorways, and a living monster of the room's own packs is inside it with him; THEY RISE when
+   * no living monster of the room's own packs is inside the room. (Clear of the doorways, not
+   * "so far past each wall that has one": a hero who kept to the walls could then walk from the
+   * way in to a way on and never be far enough from both walls at once.) Only those of the pack
+   * that are INSIDE are counted, so that one which was drawn out of the room before the gates
+   * fell cannot keep them down for good (it cannot come back in, and he cannot go out to it).
+   */
+  private updateLocks(): void {
+    const L = this.level;
+    const f = L.floor;
+    const h = this.hero;
+    for (const r of f.rooms) {
+      if (!r.locks) continue;
+      const gates = L.doors.filter((d) => d.spot.kind === 'trapgate' && d.spot.room === r.id);
+      if (gates.length === 0) continue;
+      const within = (m: { x: number; y: number }): boolean => m.x >= r.x && m.y >= r.y && m.x < r.x + r.w && m.y < r.y + r.h;
+      const pack = this.monsters.some((m) => !m.dead && m.packId >= 0 && m.packId < f.packs.length && f.packs[m.packId].roomId === r.id && within(m));
+      const down = gates.some((d) => d.want === 0);
+      if (!down) {
+        const clear = (d: DoorInst): boolean => {
+          const at = doorMiddle(d.spot);
+          return Math.hypot(at.x - h.x, at.y - h.y) >= LOCK_CLEAR;
+        };
+        if (!pack || this.over || !within(h) || !gates.every(clear)) continue;
+        for (const d of gates) this.dropGate(d);
+        this.msg('The gates fall.', MSG.omen);
+      } else if (!pack) {
+        for (const d of gates) if (d.want === 0) this.raiseGate(d);
+        this.msg('The gates rise.', MSG.good);
+      }
+    }
+  }
+
+  /**
+   * (THE MIX) THE HERO PULLS A LEVER, by walking up to it: its gate rises, and stays up. (The lever
+   * knows its gate by the room the gate bars: `Floor.levers`. One that knows none raises every
+   * lever's gate of the level.)
+   */
+  private pullLever(p: PropInst): void {
+    const L = this.level;
+    p.state = 1;
+    const spot = (L.floor.levers ?? []).find((q) => q.x === p.tx && q.y === p.ty);
+    let raised = 0;
+    for (const d of L.doors) {
+      if (d.spot.kind !== 'gate' || d.want !== 0 || (spot && d.spot.room !== spot.room)) continue;
+      this.raiseGate(d);
+      raised++;
+    }
+    this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 6 });
+    this.sfx('door', 0.8);
+    if (raised > 0) this.msg('A gate rises.', MSG.good);
+    // (what the gate hid is seen at once from wherever it can be)
+    this.visionT = 0;
   }
 
   /**
@@ -1082,10 +1457,11 @@ export class Game {
    */
   private shutIn(m: { x: number; y: number }): boolean {
     const L = this.level;
-    if (!L.shut) return false;
+    if (L.doors.length === 0) return false;
     const h = this.hero;
     for (const d of L.doors) {
-      if (d.spot.kind !== 'door' || d.want !== 0) continue;
+      // (a door that is shut; and THE MIX: a lever's gate that is down. Not the boss's gate, nor a locking room's: when those are down the hero is inside)
+      if ((d.spot.kind !== 'door' && d.spot.kind !== 'gate' && d.spot.kind !== 'worddoor') || d.want !== 0) continue;
       const r = L.floor.rooms.find((q) => q.id === d.spot.room);
       if (!r || m.x < r.x || m.y < r.y || m.x >= r.x + r.w || m.y >= r.y + r.h) continue;
       if (h.x < r.x || h.y < r.y || h.x >= r.x + r.w || h.y >= r.y + r.h) return true;
@@ -1100,7 +1476,7 @@ export class Game {
     return insideBy(d.spot, x, y) >= GATE_INSIDE;
   }
 
-  /** The boss's gate falls: from now on its doorway is wall to whatever walks, flies or is shot. A monster caught in the doorway is put down just inside. */
+  /** A gate falls (the boss's; THE MIX: a locking room's): from now on its doorway is wall to whatever walks, flies or is shot. A monster caught in the doorway is put down just inside. */
   private dropGate(d: DoorInst): void {
     const L = this.level;
     const f = L.floor;
@@ -1125,7 +1501,7 @@ export class Game {
     this.sfx('gateFall');
   }
 
-  /** The boss is dead: the gate goes up, and its doorway is floor again. */
+  /** A gate goes up, and its doorway is floor again (the boss is dead; THE MIX: a lever is pulled, a locking room's pack is dead). */
   private raiseGate(d: DoorInst): void {
     const L = this.level;
     d.want = 1;
@@ -1631,6 +2007,11 @@ export class Game {
     h.flash = Math.max(0, h.flash - dt);
     h.invuln = Math.max(0, h.invuln - dt);
     h.swingT = Math.max(0, h.swingT - dt);
+    // (Strike's combo: the time in which the next swing may still be the second runs out; then the next is the first)
+    if (h.comboT > 0) {
+      h.comboT = Math.max(0, h.comboT - dt);
+      if (h.comboT <= 0) h.combo = 0;
+    }
     if (h.attackT > 0) {
       h.attackAge += dt;
       h.attackT = Math.max(0, h.attackT - dt);
@@ -1645,13 +2026,29 @@ export class Game {
       h.hasteT -= dt;
       if (h.hasteT <= 0) h.haste = 0;
     }
+    if (h.frenzyT > 0) {
+      h.frenzyT -= dt;
+      if (h.frenzyT <= 0) {
+        h.frenzyT = 0;
+        h.frenzy = 0;
+      }
+    }
+    if (h.shieldT > 0) {
+      h.shieldT -= dt;
+      if (h.shieldT <= 0) {
+        h.shieldT = 0;
+        h.shield = 0;
+      }
+    }
     if (h.chillT > 0) h.chillT -= dt;
     if (h.shockT > 0) h.shockT -= dt;
     if (h.burnT > 0) h.burnT -= dt;
     if (h.poisonT > 0) h.poisonT -= dt;
+    // (Frenzied: the frenzy makes every cooldown come round faster)
+    const pace = this.frenzyPace();
     for (const s of h.skills) {
       if (s.charges < s.maxCharges) {
-        s.cd -= dt;
+        s.cd -= dt * pace;
         if (s.cd <= 0) {
           s.charges++;
           s.cd = s.charges < s.maxCharges ? s.r.cooldown : 0;
@@ -1695,6 +2092,19 @@ export class Game {
         h.queued = null;
         this.useSkill(1, q.tx, q.ty);
       }
+    }
+
+    // (a swing's step forward: walls stop it, and monsters part from him after it as after any step)
+    if (h.step) {
+      const st = h.step;
+      const k = Math.min(1, dt / Math.max(1e-6, st.t));
+      const sx = st.dx * k;
+      const sy = st.dy * k;
+      this.slide(h, TUNE.heroRadius, sx, sy, this.level.walk);
+      st.dx -= sx;
+      st.dy -= sy;
+      st.t -= dt;
+      if (st.t <= 0) h.step = null;
     }
 
     let mx = c.mx;
@@ -1802,12 +2212,20 @@ export class Game {
       this.begin(0, tx, ty, def.windup);
       return;
     }
-    let rate = Math.max(0.3, s.r.rate);
+    // (Frenzied: the frenzy makes the quick attack faster)
+    let rate = Math.max(0.3, s.r.rate) * this.frenzyPace();
     if (h.chillT > 0) rate *= 1 - h.chill * 0.5;
     h.swingT = 1 / rate;
     this.face(tx, ty);
     // (a fast weapon's wind-up is never more than two fifths of the time between its blows)
     const wind = Math.min(def.windup, 0.4 / rate);
+    // STRIKE, A TWO-HIT COMBO (defs.ts, COMBO): the second swing if this one comes soon enough
+    // after a first, else the first; and a small step forward with either.
+    if (COMBO.on && def.kind === 'melee') {
+      h.combo = h.combo === 0 && h.comboT > 0 ? 1 : 0;
+      h.comboT = 1 / rate + TUNE.comboWindow;
+      h.step = { dx: h.fx * TUNE.swingStep, dy: h.fy * TUNE.swingStep, t: TUNE.swingStepTime };
+    } else h.combo = 0;
     this.begin(0, tx, ty, wind);
   }
 
@@ -1827,6 +2245,8 @@ export class Game {
   private useSkill(i: number, tx: number, ty: number): void {
     const h = this.hero;
     const s = h.skills[i];
+    // (THE FIRST LEVELS: not before its level)
+    if (!this.moveOpen(i)) return;
     // (one that is being held is already being made: the button held down does not ask for another)
     if (h.channel) return;
     if (s.charges < 1) return;
@@ -1849,6 +2269,11 @@ export class Game {
    */
   private begin(i: number, tx: number, ty: number, wind: number): void {
     const h = this.hero;
+    // (Strike's combo, defs.ts COMBO: anything but Strike between two Strikes makes the second the first swing again)
+    if (i !== 0) {
+      h.combo = 0;
+      h.comboT = 0;
+    }
     h.attackSkill = i;
     h.attackAge = 0;
     h.attackWind = wind;
@@ -2081,7 +2506,7 @@ export class Game {
         hits++;
       }
       if (line.length) this.landed(i);
-      for (let d = 0.5; d < end.len; d += 1) this.breakProps(sx + dx * d, sy + dy * d, half + 0.25);
+      for (let d = 0.5; d < end.len; d += 1) this.breakProps(sx + dx * d, sy + dy * d, half + 0.25, i);
       if (k === 0 && leaves) {
         // what it leaves: ground along the line; a rune and a cloud where it first struck, or
         // failing that near its far end
@@ -2090,6 +2515,8 @@ export class Game {
         const wy = line.length ? line[0].m.y : sy + dy * far;
         if (r.rune > 0) this.addRune(i, wx, wy, each);
         if (r.cloud > 0) this.addCloud(i, wx, wy, 1.5, each);
+        // (cracked ground and a ward, as a rune: where it first struck)
+        this.leavePatches(i, wx, wy, 1.0);
         if (r.zone) for (let n = 0, d = 1.3; n < TUNE.beamPatches && d < end.len; n++, d += TUNE.beamPatchGap) this.addGround(i, sx + dx * d, sy + dy * d, 1.0, each);
       }
     }
@@ -2125,6 +2552,23 @@ export class Game {
       h.hasteT = 3;
       this.emit({ t: 'buff', kind: 'haste', x: h.x, y: h.y, stacks: 1 });
     }
+    // FRENZIED in front: each use adds to the frenzy, up to its most, and holds it a while longer
+    if (r.frenzy) {
+      h.frenzy = Math.min(FRENZY.max, h.frenzy + 1);
+      h.frenzyT = Math.max(h.frenzyT, FRENZY.hold);
+      this.emit({ t: 'frenzy', x: h.x, y: h.y, dx: h.fx, dy: h.fy, n: h.frenzy });
+    }
+    // GUARDING in front: each use gives a shield (a new one is never weaker than what is left of the last)
+    if (r.shield > 0) {
+      h.shield = Math.max(h.shield, Math.round(h.d.maxLife * r.shield));
+      h.shieldT = GUARD.shieldTime;
+      this.emit({ t: 'shield', x: h.x, y: h.y, secs: GUARD.shieldTime });
+    }
+  }
+
+  /** How much faster the frenzy makes the hero's attacks and cooldowns (1: no frenzy). */
+  frenzyPace(): number {
+    return 1 + FRENZY.each * this.hero.frenzy;
   }
 
   private noMana(): void {
@@ -2138,6 +2582,8 @@ export class Game {
   private useEvasive(tx: number, ty: number, c: Controls): void {
     const h = this.hero;
     const s = h.skills[2];
+    // (THE FIRST LEVELS: not before its level)
+    if (!this.moveOpen(2)) return;
     if (s.charges < 1) return;
     if (h.mana < s.r.mana) {
       this.noMana();
@@ -2179,6 +2625,10 @@ export class Game {
     h.channel = null;
     h.queued = null;
     h.attackT = 0;
+    // (and Strike's combo with it: the next Strike is the first swing; a swing's step is over)
+    h.combo = 0;
+    h.comboT = 0;
+    h.step = null;
     this.face(tx, ty);
     this.sfx('dodge');
     // The words on it (Version 12.2: the evasive moves take words as the attacks do). In front
@@ -2460,7 +2910,7 @@ export class Game {
         best = m;
       }
     }
-    this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9);
+    this.breakProps(ox + dx * reach * 0.6, oy + dy * reach * 0.6, 0.9, i);
     if (!best) {
       // a swing that meets nothing still leaves its wake where the blade passed, as a shot does where it ends
       const wx = ox + dx * reach * 0.75;
@@ -2473,6 +2923,7 @@ export class Game {
     this.hitMonster(best, i, frac, false);
     this.landed(i);
     this.sfx(power ? 'power' : 'hit', 0.7);
+    if (words.includes('heavy')) this.emit({ t: 'heavy', x: tx, y: ty, r: 1.1, big: false });
     if (r.splash > 0) {
       const rad = r.splash * r.size;
       // a full-strength splash is an explosion; Power's is a shock through the ground
@@ -2492,6 +2943,8 @@ export class Game {
     const words = this.fronts(i);
     this.emit({ t: 'burst', x: cx, y: cy, r: rad, el: r.element, style, words, n, echo });
     if (words.includes('power')) this.sfx('power', 0.9);
+    // (Heavy lands out to the blast's edge; a whirlwind's turns are too many for that, its stuns show it)
+    if (words.includes('heavy') && style !== 'whirl') this.emit({ t: 'heavy', x: cx, y: cy, r: rad, big: true });
     let hits = 0;
     for (const m of this.monsters) {
       if (m.dead) continue;
@@ -2505,7 +2958,7 @@ export class Game {
       this.landed(i);
       this.sfx(r.element === 'fire' ? 'fire' : r.element === 'frost' ? 'frost' : r.element === 'lightning' ? 'zap' : 'hit', 0.8);
     }
-    this.breakProps(cx, cy, rad);
+    this.breakProps(cx, cy, rad, i);
     if (leaves) this.wake(i, cx, cy, rad, frac);
   }
 
@@ -2625,6 +3078,33 @@ export class Game {
     if (r.zone) this.addGround(i, x, y, Math.max(1.0, rad), frac);
     if (r.cloud > 0) this.addCloud(i, x, y, Math.max(1.5, rad), frac);
     if (r.rune > 0) this.addRune(i, x, y, frac);
+    this.leavePatches(i, x, y, rad);
+  }
+
+  /** What Heavy and Guarding behind leave where ability `i` lands: cracked ground, a ward circle. */
+  private leavePatches(i: number, x: number, y: number, rad: number): void {
+    const r = this.hero.skills[i].r;
+    if (r.cracks > 0) this.addPatch(i, 'cracks', x, y, Math.max(1.0, rad), r.cracks, 0);
+    if (r.ward > 0) this.addPatch(i, 'ward', x, y, Math.max(1.5, rad), GUARD.wardTime, r.ward);
+  }
+
+  /**
+   * Cracked ground or a ward circle, for `dur` seconds (`share`: what a ward takes off the harm).
+   * Laid again where one already is, that one lasts as long again from now: they do not pile up.
+   */
+  private addPatch(i: number, kind: 'cracks' | 'ward', x: number, y: number, rad: number, dur: number, share: number): void {
+    for (const o of this.zones) {
+      if (o.kind === kind && Math.hypot(o.x - x, o.y - y) < 0.6 && o.r >= rad - 0.1) {
+        o.t = 0;
+        o.dur = dur;
+        o.dmg = Math.max(o.dmg, share);
+        this.emit({ t: 'zone', kind, x: o.x, y: o.y, r: o.r, el: 'phys', dur });
+        return;
+      }
+    }
+    if (!this.roomForZone() || !this.onFloor(x, y)) return;
+    this.zones.push({ x, y, r: rad, t: 0, dur, kind, element: 'phys', dmg: share, slow: 0, tick: 0, hostile: false, skill: i, words: [], from: '' });
+    this.emit({ t: 'zone', kind, x, y, r: rad, el: 'phys', dur });
   }
 
   /**
@@ -2687,10 +3167,10 @@ export class Game {
     this.sfx('rune', 0.7);
   }
 
-  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string): void {
+  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number): void {
     // (a warning is never left out: if the floor is full, the oldest of the hero's own patches gives way to it)
     this.roomForZone();
-    this.zones.push({ x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from });
+    this.zones.push({ x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src });
   }
 
   /** One hit of ability `i` on a monster, with everything a word in front adds to it. */
@@ -2703,7 +3183,13 @@ export class Game {
     const st = d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
     let dmg = this.rng.range(d.dmgMin, d.dmgMax) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
-    const crit = this.rng.chance(d.critChance / 100);
+    let crit = this.rng.chance(d.critChance / 100);
+    // PRECISE behind: the hero's next hit on a marked enemy is a certain critical, and spends the mark
+    const spent = m.markT > 0;
+    if (spent) {
+      crit = true;
+      m.markT = 0;
+    }
     if (crit) dmg *= 1 + d.critMult / 100;
     dmg = Math.max(1, Math.round(dmg));
     const x = m.x;
@@ -2728,8 +3214,23 @@ export class Game {
     if (r.orbChance > 0 && !quiet) this.emit({ t: 'mark', x, y });
     // lightning comes down on the one it hits before it jumps to the others
     if (r.arcs > 0 && !quiet) this.emit({ t: 'arc', x0: x, y0: y, x1: x, y1: y, sky: true });
+    if (spent) this.emit({ t: 'markSpent', id: m.id, x, y, dx: x - h.x, dy: y - h.y });
     this.damageMonster(m, dmg, r.element, crit, i, !quiet && h.skills[i].front.includes('power'), front);
     if (r.poison > 0) this.poisonMonster(m, dmg * r.poison, i);
+    if (!m.dead) {
+      // HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too
+      if (r.stun > 0) this.stunMonster(m, r.stun);
+      else {
+        const chance = Math.min(HEAVY.stunCap, st.stunChance);
+        if (chance > 0 && this.rng.chance(chance / 100)) this.stunMonster(m, HEAVY.stun);
+      }
+      // PRECISE behind marks the first enemy each use hits (not one whose mark this very hit spent)
+      if (r.mark && !spent && this.marked[i] !== h.skills[i].uses) {
+        this.marked[i] = h.skills[i].uses;
+        m.markT = PRECISE.markTime;
+        this.emit({ t: 'markOn', id: m.id, x, y, secs: PRECISE.markTime });
+      }
+    }
     if (r.leech > 0) {
       this.healHero(r.leech);
       this.emit({ t: 'leech', x, y, n: r.leech });
@@ -2768,11 +3269,69 @@ export class Game {
     if (skill >= 0) m.lastSkill = skill;
   }
 
+  /**
+   * HEAVY: monster `m` is stunned for `secs`: it cannot move or attack, and what it was winding up
+   * is broken off. An elite (a guardian too) for half as long; a boss never.
+   */
+  private stunMonster(m: Monster, secs: number): void {
+    if (m.dead || m.boss) return;
+    const t = m.elite ? secs / 2 : secs;
+    if (t <= m.stunT) return;
+    m.stunT = t;
+    this.breakOff(m);
+    this.emit({ t: 'stun', id: m.id, x: m.x, y: m.y, secs: t });
+  }
+
+  /**
+   * HEAVY behind: monster `m` walks onto cracked ground (at (fromX, fromY)) and is staggered: its
+   * attack broken off, it reels for a moment, and the same ground lets it be a while before it can
+   * stagger it again. Not a boss.
+   */
+  private staggerMonster(m: Monster, fromX: number, fromY: number): void {
+    if (m.dead || m.boss || m.staggerCd > 0) return;
+    m.staggerT = HEAVY.stagger;
+    m.staggerCd = HEAVY.stagger + HEAVY.staggerAgain;
+    this.breakOff(m);
+    this.emit({ t: 'stagger', id: m.id, x: m.x, y: m.y, fromX, fromY });
+  }
+
+  /** An attack `m` was winding up is broken off, with the warning of a blow it was about to bring down. */
+  private breakOff(m: Monster): void {
+    if (m.state !== 'windup') return;
+    m.state = 'chase';
+    m.anim = 'idle';
+    for (let k = this.zones.length - 1; k >= 0; k--) {
+      const z = this.zones[k];
+      if (z.kind === 'warn' && z.src === m.id) this.zones.splice(k, 1);
+    }
+  }
+
+  /** Heavy on a monster: its blow, from (fromX, fromY), knocks the hero back a step (walls stop it). */
+  private knockHero(fromX: number, fromY: number): void {
+    const h = this.hero;
+    let dx = h.x - fromX;
+    let dy = h.y - fromY;
+    const len = Math.hypot(dx, dy);
+    if (len < 0.01) {
+      dx = -h.fx;
+      dy = -h.fy;
+    } else {
+      dx /= len;
+      dy /= len;
+    }
+    h.step = { dx: dx * HEAVY.knock, dy: dy * HEAVY.knock, t: 0.12 };
+  }
+
   /** `poison`: the harm is poison working (its number is drawn in poison's colour, and it does not flash the monster). */
   private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false): void {
     // (what is shut in a room is out of reach, of an arc of lightning and of what burns on the ground too: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
-    m.life -= dmg;
+    // (GUARDING, on a monster: its shield takes the harm first)
+    if (m.shield > 0) {
+      const soak = Math.min(m.shield, dmg);
+      m.shield -= soak;
+      m.life -= dmg - soak;
+    } else m.life -= dmg;
     if (!poison) m.flash = heavy ? 0.2 : 0.12;
     m.barT = 4;
     if (skill >= 0) m.lastSkill = skill;
@@ -2802,6 +3361,12 @@ export class Game {
     }
     // what the killing ability's words add
     const r = m.lastSkill >= 0 ? h.skills[m.lastSkill].r : null;
+    if (r && r.frenzyFeed) {
+      // FRENZIED behind: a kill adds to the frenzy and holds it longer (to three times its usual hold)
+      h.frenzy = Math.min(FRENZY.max, h.frenzy + 1);
+      h.frenzyT = Math.min(FRENZY.hold * 3, h.frenzyT + FRENZY.hold);
+      this.emit({ t: 'frenzyFed', x: m.x, y: m.y });
+    }
     if (r && r.volatile > 0) {
       const x = m.x;
       const y = m.y;
@@ -2898,16 +3463,48 @@ export class Game {
     return this.rng.range(m.dmgMin, m.dmgMax);
   }
 
-  hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = ''): void {
+  /** (ox, oy): where a blow that has no monster behind it (a shot, a warning) came from: the way a Heavy one knocks the hero. */
+  hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = '', ox?: number, oy?: number): void {
     const h = this.hero;
     if (this.over || h.invuln > 0 || h.move) return;
     this.slainBy = src ? src.name : from;
     const d = h.d;
+    const fromX = src ? src.x : ox ?? h.x + h.fx;
+    const fromY = src ? src.y : oy ?? h.y + h.fy;
+    // GUARDING burned into gear: a chance to block the blow, which then does nothing at all
+    const block = Math.min(GUARD.blockCap, d.stats.blockChance);
+    if (block > 0 && this.rng.chance(block / 100)) {
+      this.emit({ t: 'blocked', x: h.x, y: h.y, fromX, fromY });
+      this.emit({ t: 'text', x: h.x, y: h.y, text: 'Blocked', color: '#9fe8c0' });
+      this.sfx('hit', 0.5);
+      return;
+    }
     let dmg = raw;
-    if (el === 'phys') dmg *= 1 - armorReduction(d.armor, Math.max(1, this.depth));
+    // (PRECISE, on a monster: its blows find the gaps in the hero's armour)
+    if (el === 'phys') dmg *= 1 - armorReduction(words.includes('precise') ? d.armor * (1 - PRECISE.armourIgnored) : d.armor, Math.max(1, this.depth));
     else dmg *= 1 - (el === 'fire' ? d.resFire : el === 'frost' ? d.resFrost : d.resLight) / 100;
     if (h.shockT > 0) dmg *= 1.2;
+    // GUARDING behind: inside a ward the hero takes less (the strongest ward they stand in)
+    let ward = 0;
+    for (const z of this.zones) if (z.kind === 'ward' && Math.hypot(h.x - z.x, h.y - z.y) <= z.r) ward = Math.max(ward, z.dmg);
+    if (ward > 0) dmg *= 1 - ward;
     dmg = Math.max(1, Math.round(dmg));
+    // HEAVY, on a monster: its blows knock the hero back a step
+    if (words.includes('heavy')) this.knockHero(fromX, fromY);
+    // GUARDING in front: the shield takes the blow first
+    let soaked = 0;
+    if (h.shield > 0) {
+      soaked = Math.min(h.shield, dmg);
+      h.shield -= soaked;
+      dmg -= soaked;
+      if (h.shield <= 0) {
+        h.shield = 0;
+        h.shieldT = 0;
+      }
+    }
+    if (soaked > 0 || ward > 0) this.emit({ t: 'guarded', x: h.x, y: h.y, fromX, fromY });
+    // (all of it taken by the shield: nothing reaches the hero)
+    if (dmg <= 0) return;
     h.life -= dmg;
     h.flash = 0.15;
     if (this.guide) this.guide.hits++;
@@ -2956,8 +3553,71 @@ export class Game {
     // rules stop here, so nothing else would end it, and the picture of it would stand over
     // them as they fall.)
     this.hero.channel = null;
-    this.meta.deaths++;
+    // (a Normal hero is not lost: they will wake in town, `wakeSave`. The Lexicon counts the lost.)
+    if (!this.wakes) this.meta.deaths++;
     this.sfx('death');
+  }
+
+  /**
+   * NORMAL MODE (game/modes.ts): this hero, fallen or not, would wake in town from a death here.
+   * Only with the switch on, for a Normal hero, in a dungeon gone into (not the practice room).
+   */
+  get wakes(): boolean {
+    return MODES.on && this.mode === 'normal' && this.inDungeon && !this.practice && this.entry !== null;
+  }
+
+  /**
+   * NORMAL MODE: the hero as they wake in town after a death in this dungeon, as a save to be
+   * brought back (`Game.restore`): as they went in (the gear worn in, the bag, the words and where
+   * they were set, the gold, the fallen wordsmith's satchel), less a share of the gold carried in
+   * (NORMAL.goldShare); with all that was found in the dungeon gone; but with the level, the
+   * points and what they were spent on, the kills and the time as they are now. Facing the same
+   * dungeon (the depth and the dungeons cleared are as they were). Null where nobody wakes.
+   */
+  wakeSave(): RunSave | null {
+    if (!this.wakes || !this.entry) return null;
+    const now = this.save();
+    const e = JSON.parse(JSON.stringify(this.entry)) as RunSave;
+    e.level = now.level;
+    e.xp = now.xp;
+    e.pending = now.pending;
+    e.attrs = { ...now.attrs };
+    e.kills = now.kills;
+    e.runTime = now.runTime;
+    e.potionKills = now.potionKills;
+    e.voice = now.voice;
+    // (the first dungeon's prompts as they are now: they are not begun again)
+    e.guide = now.guide;
+    e.gold = Math.max(0, e.gold - this.goldShare());
+    e.maxUid = Math.max(e.maxUid, now.maxUid);
+    e.mode = 'normal';
+    return e;
+  }
+
+  /** The part of the gold carried into this dungeon that a Normal death costs. */
+  private goldShare(): number {
+    return this.entry ? Math.floor(Math.max(0, this.entry.gold) * NORMAL.goldShare) : 0;
+  }
+
+  /**
+   * NORMAL MODE: what a death here costs, for the death screen and the line in town: the pieces
+   * of gear, the words and the gold found in this dungeon, and the share of the gold carried in.
+   * Null where nobody wakes.
+   */
+  losses(): { items: number; words: number; gold: number; share: number } | null {
+    if (!this.wakes || !this.entry) return null;
+    const e = this.entry;
+    const h = this.hero;
+    const had = new Set<number>();
+    for (const it of [...EQUIP_SLOTS.map((s) => e.gear[s]), ...e.bag]) if (it) had.add(it.uid);
+    const items = [...EQUIP_SLOTS.map((s) => h.gear[s]), ...h.bag].filter((it) => it && !had.has(it.uid)).length;
+    // (a word is counted wherever it is: in the pouch, or set in an attack)
+    const count = (words: Record<WordId, number>, sockets: { front: (WordId | null)[]; behind: (WordId | null)[] }[], w: WordId): number =>
+      (words[w] ?? 0) + sockets.reduce((n, so) => n + [...so.front, ...so.behind].filter((x) => x === w).length, 0);
+    const nowSockets = h.skills.map((sk) => ({ front: sk.front, behind: sk.behind }));
+    let words = 0;
+    for (const w of WORD_IDS) words += Math.max(0, count(h.words, nowSockets, w) - count(e.words, e.sockets, w));
+    return { items, words, gold: Math.max(0, h.gold - e.gold), share: this.goldShare() };
   }
 
   // ===========================================================================================
@@ -3061,6 +3721,8 @@ export class Game {
       if (m.burnT > 0) m.burnT -= dt;
       if (m.chillT > 0) m.chillT -= dt;
       if (m.freezeImmune > 0) m.freezeImmune -= dt;
+      if (m.markT > 0) m.markT -= dt;
+      if (m.staggerCd > 0) m.staggerCd -= dt;
       if (m.poisonT > 0) {
         m.poisonT -= dt;
         if (m.poisonT <= 0) {
@@ -3076,7 +3738,16 @@ export class Game {
         }
         continue;
       }
-      m.cd -= dt;
+      // HEAVY: stunned or staggered, it does nothing (what it was winding up was broken off then)
+      if (m.stunT > 0 || m.staggerT > 0) {
+        m.stunT = Math.max(0, m.stunT - dt);
+        m.staggerT = Math.max(0, m.staggerT - dt);
+        m.anim = 'idle';
+        continue;
+      }
+      // FRENZIED, on a monster: the more it is hurt, the faster it moves and the sooner it attacks again
+      const rage = m.words.includes('frenzied') ? 1 + FRENZY.monster * (1 - Math.max(0, m.life) / m.maxLife) : 1;
+      m.cd -= dt * rage;
       const def = MONSTERS[m.kind];
       const slow = m.chillT > 0 ? 1 - m.chill : 1;
 
@@ -3151,7 +3822,7 @@ export class Game {
         }
       }
       if (moving && (mvx !== 0 || mvy !== 0)) {
-        const sp = m.speed * slow * dt;
+        const sp = m.speed * slow * rage * dt;
         const atX = m.x;
         const atY = m.y;
         this.slide(m, Math.min(m.r, 0.42), mvx * sp, mvy * sp, m.kind === 'bat' ? L.open : L.walk, true);
@@ -3211,7 +3882,7 @@ export class Game {
     if (def.aoe > 0 && !(m.boss && m.atk === 1)) {
       // a ground attack: show where it will land
       const reach = Math.min(dist, def.range);
-      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, def.windup, this.rollMonsterDmg(m), this.monsterElement(m), m.words, m.name);
+      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, def.windup, this.rollMonsterDmg(m), this.monsterElement(m), m.words, m.name, m.id);
     }
   }
 
@@ -3316,6 +3987,8 @@ export class Game {
         const nx = p.x + (p.vx / sp) * step;
         const ny = p.y + (p.vy / sp) * step;
         if (!this.isOpen(nx, ny)) {
+          // (THE TRAPS: what the hero shoots may meet a sealed door, and open it)
+          if (!p.hostile) this.unseal(p.skill, nx, ny, 0.1);
           this.endProjectile(p);
           dead = true;
           break;
@@ -3325,16 +3998,27 @@ export class Game {
         p.dist -= step;
         if (p.hostile) {
           if (!h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
-            this.hurtHero(p.dmg, p.element, p.words, null, p.from);
+            // (THE TRAPS: a dart's harm is a share of the life of what it meets)
+            this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from, p.x - p.vx, p.y - p.vy);
             this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 5 });
             dead = true;
+          }
+          // (THE TRAPS: a dart is the dungeon's, and hurts a monster it meets as it would the hero)
+          if (!dead && p.trap) {
+            for (const m of this.monsters) {
+              if (m.dead || m.boss || Math.hypot(m.x - p.x, m.y - p.y) > p.r + m.r) continue;
+              this.damageMonster(m, Math.max(1, Math.round(m.maxLife * p.dmg)), 'phys', false, -1);
+              this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 5 });
+              dead = true;
+              break;
+            }
           }
         } else {
           const r = h.skills[p.skill].r;
           // Whatever the hero sends flying breaks the barrels and urns it passes, and flies on: it
           // is not spent on one, so a shot aimed at a monster still gets there. (The owner, with
           // Version 12: "can't be broken by projectile attacks. That needs to be fixed".)
-          this.breakProps(p.x, p.y, p.r);
+          this.breakProps(p.x, p.y, p.r, p.skill);
           for (const m of this.monsters) {
             if (m.dead || p.hit.includes(m.id)) continue;
             if (Math.hypot(m.x - p.x, m.y - p.y) > p.r + m.r) continue;
@@ -3371,6 +4055,7 @@ export class Game {
     if (!p.mighted) {
       p.mighted = true;
       this.landed(p.skill);
+      if (p.words.includes('heavy')) this.emit({ t: 'heavy', x, y, r: 1.1, big: false });
     }
     const power = p.words.includes('power');
     this.sfx(power ? 'power' : 'hit', 0.6);
@@ -3387,7 +4072,7 @@ export class Game {
         if (p.volley) p.hit.push(o.id);
         this.hitMonster(o, p.skill, p.dmg * r.splashDmg, true);
       }
-      this.breakProps(x, y, rad);
+      this.breakProps(x, y, rad, p.skill);
     }
     if (r.rune > 0 && !p.runed) {
       p.runed = true;
@@ -3396,6 +4081,10 @@ export class Game {
     if (r.cloud > 0 && !p.clouded) {
       p.clouded = true;
       this.addCloud(p.skill, x, y, 1.5, p.dmg);
+    }
+    if ((r.cracks > 0 || r.ward > 0) && !p.left) {
+      p.left = true;
+      this.leavePatches(p.skill, x, y, 1.0);
     }
     this.emit({ t: 'spark', x, y, el: r.element, n: 6 });
   }
@@ -3411,6 +4100,10 @@ export class Game {
       if (r.cloud > 0 && !p.clouded) {
         p.clouded = true;
         this.addCloud(p.skill, p.x, p.y, 1.5, p.dmg);
+      }
+      if ((r.cracks > 0 || r.ward > 0) && !p.left && this.isOpen(p.x, p.y)) {
+        p.left = true;
+        this.leavePatches(p.skill, p.x, p.y, 1.0);
       }
     }
   }
@@ -3507,7 +4200,7 @@ export class Game {
             hits++;
           }
           if (hits > 0) this.landed(v.skill);
-          this.breakProps(ax, ay, reach * 0.6);
+          this.breakProps(ax, ay, reach * 0.6, v.skill);
           this.emit({ t: 'volleyFall', x: ax, y: ay, el: v.element, words, n: c, echo: v.echo, hits });
           // (ten arrows a second: the ones that hit are heard, and every other one that does not)
           if (hits > 0) this.sfx('hit', 0.45);
@@ -3533,7 +4226,7 @@ export class Game {
           this.zones.splice(i, 1);
           this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'blast' });
           this.emit({ t: 'shake', amount: 2 });
-          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y);
         }
         continue;
       }
@@ -3546,8 +4239,22 @@ export class Game {
           for (const m of this.monsters) {
             if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r) this.damageMonster(m, Math.max(1, Math.round(z.dmg)), z.element, false, z.skill);
           }
-          this.breakProps(z.x, z.y, z.r);
+          this.breakProps(z.x, z.y, z.r, z.skill);
         }
+        continue;
+      }
+      if (z.kind === 'cracks') {
+        // Heavy behind: what walks onto the cracked ground is staggered (bats fly over it)
+        for (const m of this.monsters) {
+          if (m.dead || m.state === 'sleep' || m.kind === 'bat') continue;
+          if (Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5) this.staggerMonster(m, z.x, z.y);
+        }
+        if (z.t >= z.dur) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'ward') {
+        // Guarding behind: it does its work in hurtHero, for as long as it lasts
+        if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
       z.tick -= dt;
@@ -3717,7 +4424,8 @@ export class Game {
     if (rng.chance(TUNE.dropGold)) this.addDrop('gold', m.x, m.y, rng.int(TUNE.goldMin, TUNE.goldMax) * goldBase, null, null);
     if (rng.chance(TUNE.dropItem * bonus)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
     if (rng.chance(TUNE.dropOrb)) this.addDrop('orb', m.x, m.y, 0, null, null);
-    if (rng.chance(TUNE.dropWord * bonus)) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
+    // (THE FIRST LEVELS: no word falls before the ring is lit, nor in the first dungeon)
+    if (rng.chance(TUNE.dropWord * bonus) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
   }
 
   private gainXp(n: number): void {
@@ -3734,9 +4442,17 @@ export class Game {
       this.emit({ t: 'levelup' });
       this.sfx('levelUp');
       this.msg(`Level ${h.level}`, MSG.head);
+      // THE FIRST LEVELS: an ability opens with this level
+      if (FIRST_LEVELS.on) {
+        for (let i = 1; i < MOVE_OPENS.length; i++) {
+          if (MOVE_OPENS[i] !== h.level) continue;
+          this.emit({ t: 'moveOpen', skill: i });
+          this.msg(`A new move: ${SKILLS[h.skills[i].id].name.toUpperCase()}.`, MSG.word);
+        }
+      }
       // a new socket has opened on both attacks: say so, and if a spare word fits it, offer it a place
-      const [f0, b0] = socketCount(h.level - 1);
-      const [f1, b1] = socketCount(h.level);
+      const [f0, b0] = this.slots(h.level - 1);
+      const [f1, b1] = this.slots(h.level);
       if (f1 > f0 || b1 > b0) {
         const nth = ['A', 'A second', 'A third'][(f1 > f0 ? f1 : b1) - 1] ?? 'Another';
         this.msg(`${nth} word slot has opened ${f1 > f0 ? 'IN FRONT of' : 'BEHIND'} your attacks.`, MSG.word);
@@ -3821,7 +4537,9 @@ export class Game {
   // ===========================================================================================
   // Props and the portal
 
-  private breakProps(x: number, y: number, rad: number): void {
+  /** `skill`: the ability whose hit it is (THE TRAPS: a sealed door in reach opens to one that carries its word: `unseal`). */
+  private breakProps(x: number, y: number, rad: number, skill = -1): void {
+    this.unseal(skill, x, y, rad);
     const f = this.level.floor;
     for (const p of this.level.props) {
       if (p.state !== 0 || (p.kind !== 'barrel' && p.kind !== 'urn')) continue;
@@ -3852,12 +4570,21 @@ export class Game {
         const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0);
         for (let i = 0; i < n; i++) this.addDrop('item', p.x, p.y + 0.6, 0, this.rollGear(room && i === 0 ? 2 : 1), null);
         this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.depth) * (room ? 2 : 1), null, null);
-        if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord)) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
+        if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
       }
+    }
+    // (THE MIX) a lever: walk up, and it is pulled
+    for (const p of this.level.props) {
+      if (p.kind === 'lever' && p.state === 0 && Math.hypot(p.x - h.x, p.y - h.y) < LEVER_NEAR) this.pullLever(p);
     }
     // the fallen wordsmith: walk up, and the satchel is searched
     const b = this.level.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < 1.3) this.searchBody(b);
+    // THE FIRST LEVELS: the quest item brought to the wordsmith in town: walk up to him, and his ring is lit
+    if (h.quest && this.level.town) {
+      const st = this.level.stations.find((s) => s.kind === 'wordsmith');
+      if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) this.lightRing(st.x, st.y);
+    }
     if (c.interact) {
       if (this.level.town) {
         // In town the rules only say which service was asked for; the interface opens its panel.
@@ -3874,6 +4601,15 @@ export class Game {
     const w = FIRST_WORD[this.hero.cls].word;
     this.emit({ t: 'search', x: b.x, y: b.y });
     this.sfx('rare');
+    // THE FIRST LEVELS: before the ring is lit, the satchel holds the quest item, not a word (the owner, 20:39)
+    if (FIRST_LEVELS.on && !this.hero.ring) {
+      this.hero.quest = 'heart';
+      this.hero.potions = TUNE.potionMax;
+      this.emit({ t: 'quest', x: b.x, y: b.y });
+      // (since Version 19.6 the stone lies by his hand, the art chat's: art/quest3.ts)
+      this.msg(`A fallen wordsmith. In his satchel, full flasks; by his hand, ${QUEST_ITEM.the}. Bring it to the wordsmith in town.`, MSG.word);
+      return;
+    }
     this.drops.push({ x: b.x, y: b.y, kind: 'word', gold: 0, item: null, word: w, age: 0 });
     this.emit({ t: 'wordDrop', word: w, x: b.x, y: b.y });
     // (and their flasks: the second half of the dungeon is met fresh)
@@ -3927,6 +4663,9 @@ export class Game {
   /** Why a word cannot be laid on the gate, or null if it can. */
   planProblem(word: WordId): string | null {
     if (this.hero.words[word] <= 0) return 'No spare word';
+    // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
+    // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
+    if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;
     if (this.plan.length >= TUNE.planMax) return `At most ${TUNE.planMax} words`;
     if (this.plan.includes(word)) return 'Already burning';
     if (WORDS[word].element && this.plan.some((w) => WORDS[w].element)) return 'One element per dungeon';
@@ -3967,6 +4706,8 @@ export class Game {
 
   /** Why `word` cannot be burned into this item, or null if it can: nothing there, no room left on it, or it has what the word gives already. */
   imbueProblem(ref: ItemRef, word: WordId): string | null {
+    // (THE FIRST LEVELS: nothing is wordsmithed before the ring is lit)
+    if (!this.hero.ring && !this.practice) return DARK_RING;
     const it = this.itemAt(ref);
     return it ? imbueProblem(it, word) : 'Nothing there';
   }
@@ -3982,6 +4723,7 @@ export class Game {
    */
   imbue(ref: ItemRef, word: WordId): string | null {
     const h = this.hero;
+    if (!h.ring && !this.practice) return DARK_RING;
     const it = this.itemAt(ref);
     if (!it) return 'Nothing there';
     if (h.words[word] <= 0) return 'No spare word';
@@ -4071,6 +4813,7 @@ export class Game {
   /** Wordsmith: buy the word in place `i` of his shelf. It joins the hero's spare words. */
   buyWord(i: number): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     const w = this.wordStock[i];
     if (!w) return 'Sold';
     const price = this.wordPrice();
@@ -4086,6 +4829,7 @@ export class Game {
   /** Wordsmith: sell him a spare word. He keeps it for the rest of this visit (see `buyBackWord`). */
   sellWord(word: WordId): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     if (!(h.words[word] > 0)) return 'No spare word';
     h.words[word]--;
     h.gold += this.wordSellValue();
@@ -4099,6 +4843,7 @@ export class Game {
   /** Wordsmith: take back word `i` of those sold to him on this visit, for what he paid for it. */
   buyBackWord(i: number): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     const w = this.wordsSold[i];
     if (!w) return 'Nothing there';
     const price = this.wordSellValue();
@@ -4365,7 +5110,8 @@ export class Game {
     after[to.idx] = word;
     const ws = after.filter((w): w is WordId => w !== null);
     if (new Set(ws).size !== ws.length) return 'Already there';
-    if (ws.filter((w) => WORDS[w].element).length > 1) return 'One element per side';
+    // (ONE DAMAGE WORD A SIDE: his answer, 8 Oct 2026, 16:53; before Version 19.3, one element a side)
+    if (ws.filter((w) => WORDS[w].kind === 'damage').length > 1) return 'One damage word per side';
     return null;
   }
 
@@ -4399,6 +5145,7 @@ export class Game {
       G.set = { skill: to.skill, uses: h.skills[to.skill].uses };
       if (firstWord) {
         // A new player's first word is on. In a dungeon, the dead rise for it; anywhere else there is nothing more to show.
+        // (THE FIRST LEVELS: it is set in town, at the wordsmith's, and that is the end of the lesson: his answer, 22:19, "No special moment")
         if (this.inDungeon) this.after(0.9, () => this.rise());
         else this.endGuide();
       }

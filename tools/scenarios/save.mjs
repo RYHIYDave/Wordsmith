@@ -57,7 +57,13 @@ export default async function (page, snap) {
   log('continued', JSON.stringify(now));
   if (!now || now.cls !== 'mage' || !now.guide) await fail('the prompts should carry on with the character');
   // the first word set (here by script), the prompts are over: stored at once, and remembered as taught
-  await page.evaluate(() => { const g = window.__dbg.game(); g.hero.words.fire = 1; g.socket(0, 'front', 'fire'); });
+  // (THE FIRST LEVELS, the game's own since Version 19.5: the first word is the wordsmith's, in town,
+  // once the MASTER RUNE-STONE has lit his ring: the satchel's item, home, and up to him, by script)
+  if (await page.evaluate(() => window.__dbg.firstLevelsOn())) {
+    await page.evaluate(() => { const g = window.__dbg.game(); g.hero.quest = 'heart'; g.enterTown(); const q = g.level.stations.find((k) => k.kind === 'wordsmith'); g.hero.x = q.x + 0.6; g.hero.y = q.y + 0.6; });
+    if (!(await hands.until(() => window.__dbg.game().hero.ring === true, 5000))) await fail('the MASTER RUNE-STONE brought to the wordsmith did not light his ring');
+  }
+  await page.evaluate(() => { const g = window.__dbg.game(); if (!(g.hero.words.fire > 0)) g.hero.words.fire = 1; g.socket(0, 'front', 'fire'); });
   await page.waitForTimeout(500);
   f = await stored();
   log('the first word set: stored at once', `run ${f && f.run ? f.run.cls : 'none'}, taught: ${f ? f.meta.taught : '-'}, log ${await page.evaluate(() => window.__dbg.guideLog.join(' '))}`);
@@ -131,17 +137,40 @@ export default async function (page, snap) {
   await page.waitForTimeout(5200);
   log('the warning goes away by itself after 5 s', String(!(await page.evaluate(() => [...window.__dbg.ui.marks.keys()].length === 0))));
 
-  // carry on with the Ranger, then die: the run goes, the Lexicon and stash stay
+  // carry on with the Ranger, a NORMAL hero (Version 19.1, game/modes.ts: the cards' mode, Normal
+  // unless it is changed there), and die: the hero falls, and wakes in town; what is stored is the
+  // hero as they wake, so that closing the page on the death screen changes nothing
   await toMenu();
   await hands.press('button:CONTINUE');
-  await page.evaluate(() => { const g = window.__dbg.game(); g.enterDungeon(); g.hurtHero(99999, 'phys', [], null); });
+  const mode = await page.evaluate(() => window.__dbg.game().mode);
+  log('the Ranger was made in the mode the cards had', mode);
+  if (mode !== 'normal') await fail('a hero made on the cards with the mode left alone should be Normal');
+  await page.evaluate(() => { const g = window.__dbg.game(); g.enterDungeon(); g.hero.gold += 50; g.hurtHero(99999, 'phys', [], null); });
   await page.waitForTimeout(500);
-  // (from Version 15.1 a hero whose life runs out FALLS first, and the words YOU DIED wait two
-  // seconds for it: main.ts, FALL_SEEN. Half a second after the blow they are not up yet.)
+  // (from Version 15.1 a hero whose life runs out FALLS first, and the words wait two seconds for
+  // it: main.ts, FALL_SEEN. Half a second after the blow they are not up yet.)
   await snap('falling');
-  const early = await hands.mark('button:New run');
+  const early = await hands.mark('button:Back to town');
   log('half a second after the blow the hero is falling, and the words are not up', String(!early));
-  if (early) await fail('YOU DIED came up at once: the hero was not shown falling');
+  if (early) await fail('YOU FELL came up at once: the hero was not shown falling');
+  for (let i = 0; i < 40 && !(await hands.mark('button:Back to town')); i++) await page.waitForTimeout(100);
+  await snap('fell');
+  f = await stored();
+  s = await st();
+  log('a Normal death: stored run / its gold / deaths', `${f.run ? f.run.cls : 'none'} / ${f.run ? f.run.gold : '-'} / ${s.deaths}`);
+  if (!f.run || f.run.cls !== 'ranger' || f.run.gold !== s.gold - 50 - Math.floor((s.gold - 50) / 4) || s.deaths !== 0) await fail('a Normal death should store the hero as they will wake (without the 50 gold found, less a quarter of the rest), and lose nobody');
+  await hands.press('button:Back to town');
+  await page.waitForTimeout(300);
+  s = await st();
+  log('back in town', { cls: s.cls, town: s.town, over: s.over, gold: s.gold, depth: s.depth });
+  if (!s.town || s.over || s.cls !== 'ranger') await fail('Back to town should wake the Ranger in town');
+
+  // the same Ranger made HARDCORE (as the cards' other mode would have made him), and dying: the run
+  // goes, the Lexicon and stash stay
+  await page.evaluate(() => { const g = window.__dbg.game(); g.mode = 'hardcore'; g.enterDungeon(); g.hurtHero(99999, 'phys', [], null); });
+  await page.waitForTimeout(500);
+  const early2 = await hands.mark('button:New run');
+  if (early2) await fail('YOU DIED came up at once: the hero was not shown falling');
   for (let i = 0; i < 40 && !(await hands.mark('button:New run')); i++) await page.waitForTimeout(100);
   await snap('dead');
   f = await stored();

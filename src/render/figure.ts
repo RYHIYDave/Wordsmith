@@ -53,6 +53,10 @@ export interface FigureState {
   reelT?: number;
   /** ... and that the blow came from behind them: they are thrown forward (`clips.lurch`) where one from in front rocks them back. */
   reelBehind?: boolean;
+  /** How far the hero has walked, in tiles, all told: a walk whose feet grip the floor (`AnimSet.walkStride`) is shown by it. */
+  walked?: number;
+  /** How the hero walked since the last frame, in tiles (x, y; nothing, or none, when they did not): an attack made walking has the legs run under it (`clips.attackWalk`). */
+  moved?: readonly [number, number];
 }
 
 /**
@@ -115,7 +119,9 @@ function frameOf(c: Clip, seconds: number): Sprite {
  * And a whirlwind, whoever spins it, is the first animation's blow held and carried round.
  * `slot`: 0 the quick attack, 1 the slow one. `kind`: how that attack is delivered.
  */
-export function attackClip(cls: ClassId, slot: number, kind: SkillKind): 0 | 1 {
+/** Which clip a hero's attack is shown with: 0 the quick attack's, 1 the slow one's, 2 (Strike's combo) the second swing's, where there is one. */
+export function attackClip(cls: ClassId, slot: number, kind: SkillKind, combo = 0): 0 | 1 | 2 {
+  if (slot === 0 && kind === 'melee' && combo === 1) return 2;
   if (cls === 'mage' && kind === 'beam') return 0;
   // (a whirlwind is the swing held out and carried round, not the blow brought down)
   if (kind === 'whirl') return 0;
@@ -184,6 +190,14 @@ export class Figure {
   private heldAs: 'beam' | 'whirl' = 'beam';
   /** How long ago a leap came down, in seconds, while the hero has stood there since (-1: not so). */
   private sinceLand = -1;
+  /** Where in its turn the run was when it was last shown (0 to 1), or -1 if what was last shown was not the run. */
+  private runAt = -1;
+  /** How long ago the hero came to a stand out of the run (AnimSet.stops), while standing there since (-1: not so); and which of the stops it is. */
+  private sinceStop = -1;
+  private stopOf = 0;
+  /** Whether what was last shown was the hero standing (or nothing yet), and how far the hero had gone (FigureState.walked) when they last set off from a stand. */
+  private stoodLast = true;
+  private runFrom = 0;
   /** How much of the light has gone out of a hero who has fallen, 0..1: what glows on their tails (a feather) goes with it. */
   private gone = 0;
   /** What was last shown, for the lights. */
@@ -219,6 +233,10 @@ export class Figure {
     this.loopFrom = 0;
     this.sinceHeld = -1;
     this.sinceLand = -1;
+    this.runAt = -1;
+    this.sinceStop = -1;
+    this.stoodLast = true;
+    this.runFrom = 0;
     this.gone = 0;
     this.view = null;
     this.turnK = 1;
@@ -290,6 +308,20 @@ export class Figure {
     return this.view;
   }
 
+  /**
+   * Which of the four ways the hero is walking as the picture has them (0 ahead, 1 to their left,
+   * 2 back, 3 to their right), or -1 if they did not walk since the last frame. The view from behind
+   * is a mirror, and so is a figure turned to screen-left: what is the figure's left in the picture
+   * is the world's right in each.
+   */
+  private wayOf(st: FigureState, away: boolean, left: boolean): number {
+    const mv = st.moved;
+    if (!mv || Math.hypot(mv[0], mv[1]) <= 1e-4) return -1;
+    const world = Math.atan2(mv[1], mv[0]) - Math.atan2(st.fy, st.fx);
+    const toLeft = world * (away ? 1 : -1) * (left ? -1 : 1);
+    return Math.round(((((toLeft * 180) / Math.PI) % 360) + 360) % 360 / 90) % 4;
+  }
+
   /** Do one of the two things now (1 or 2), whatever the wait: for the art tools. */
   play(which: 1 | 2): void {
     this.doing = which;
@@ -344,11 +376,21 @@ export class Figure {
     // rules still call the hero walking in the step the leap ends, as they do all through it:
     // that step is not walking off.)
     const justDown = this.sinceLand >= 0 && this.sinceLand < 0.06;
+    // (the run as it was last shown, if it was: the hero who stops now comes to a stand from there)
+    const ranAt = this.runAt;
+    this.runAt = -1;
+    let stands = false;
     const anim = st.anim === 'walk' && st.leapK < 0 && justDown ? 'idle' : st.anim;
-    if (st.leapK >= 0) this.sinceLand = 0;
+    // (and a roll that has a coming up of its own, AnimSet clips.land with no leap: art/heroes3.ts)
+    const rolling = st.rollK !== undefined && st.rollK >= 0 && set.clips?.land !== undefined && set.clips.leap === undefined;
+    if (st.leapK >= 0 || rolling) this.sinceLand = 0;
     else if (this.sinceLand >= 0) this.sinceLand = anim === 'idle' ? this.sinceLand + dt : -1;
     const tumble = st.rollK !== undefined && st.rollK >= 0 ? set.clips?.roll : undefined;
-    const reel = st.reelT !== undefined && st.reelT >= 0 ? ((st.reelBehind ? set.clips?.lurch : undefined) ?? set.clips?.reel) : undefined;
+    let reel = st.reelT !== undefined && st.reelT >= 0 ? ((st.reelBehind ? set.clips?.lurch : undefined) ?? set.clips?.reel) : undefined;
+    // (rocked while walking: the walk's legs under it, the way the hero goes: clips.reelWalk, lurchWalk)
+    const rockWalk = reel ? ((st.reelBehind ? set.clips?.lurchWalk : undefined) ?? set.clips?.reelWalk) : undefined;
+    const way = this.wayOf(st, away, left);
+    if (reel && rockWalk && rockWalk.length === 4 && way >= 0) reel = rockWalk[way];
     const reeling = reel && (st.reelT as number) < (reel.frames.length - 1) / reel.fps ? reel : undefined;
     // (a hero whose life has run out: the fall, and then how it leaves them, whatever they were doing)
     const fall = down ? set.clips?.fall : undefined;
@@ -363,7 +405,12 @@ export class Figure {
       const c = set.clips?.leap;
       s = c ? c.frames[Math.max(0, Math.min(c.frames.length - 1, Math.floor(st.leapK * c.frames.length)))] : (set.leap as Sprite[])[st.leapK < 0.18 ? 0 : st.leapK < 0.7 ? 1 : 2];
     } else if (anim === 'attack') {
-      const c = (st.attackSkill === 1 ? set.clips?.heavy : undefined) ?? set.clips?.attack;
+      let c = (st.attackSkill === 1 ? set.clips?.heavy : st.attackSkill === 2 ? set.clips?.attack2 : undefined) ?? set.clips?.attack;
+      // MADE WALKING (clips.attackWalk, heavyWalk): the one for the way the hero goes as they face
+      // their mark, as the picture has them (the view from behind is a mirror, and so is a figure
+      // turned to screen-left: what is the figure's left in the picture is the world's right in each)
+      const walkers = st.attackSkill === 1 ? set.clips?.heavyWalk : st.attackSkill === 0 ? set.clips?.attackWalk : undefined;
+      if (walkers && walkers.length === 4 && way >= 0) c = walkers[way];
       const holding = st.holdT !== undefined && st.holdT >= 0;
       const kind = st.holdAs ?? 'beam';
       const held = holding ? (kind === 'whirl' ? set.clips?.whirl : set.clips?.hold) : undefined;
@@ -391,20 +438,57 @@ export class Figure {
       this.loopFrom = st.animT;
     } else if (anim === 'walk') {
       this.sinceHeld = -1;
-      s = set.walk[Math.floor(st.animT * (set.walkFps ?? 8)) % set.walk.length];
+      // (a walk whose feet grip the floor goes by how far the hero has gone, to the nearest picture,
+      // so that a step's worth that falls a hair short does not show the picture before; any other by the clock)
+      const n = set.walk.length;
+      const at = set.walkStride !== undefined && st.walked !== undefined ? Math.round((st.walked / set.walkStride) * n) : Math.floor(st.animT * (set.walkFps ?? 8));
+      let i = ((at % n) + n) % n;
+      // (the walk the way the hero goes, where they face another way: AnimSet.walkWays)
+      let walk = set.walk;
+      if (set.walkWays && set.walkWays.length === 3 && way > 0) walk = set.walkWays[way - 1];
+      s = walk[i];
+      // SETTING OFF FROM A STAND (AnimSet.start): its pictures by how far the hero has gone since,
+      // and then the run from the place in its turn they lead into
+      if (set.start && set.walkStride !== undefined && st.walked !== undefined) {
+        if (this.stoodLast) this.runFrom = st.walked;
+        const k = Math.max(0, Math.round(((st.walked - this.runFrom) / set.walkStride) * n));
+        i = (Math.round((set.startAt ?? 0) * n) + k) % n;
+        s = k < set.start.frames.length && walk === set.walk ? set.start.frames[k] : walk[i];
+      }
+      this.runAt = i / n;
+      this.sinceStop = -1;
     } else {
+      stands = true;
       this.sinceHeld = -1;
       const land = this.sinceLand >= 0 ? set.clips?.land : undefined;
+      // COMING TO A STAND OUT OF THE RUN (AnimSet.stops): the stop from the moment of the run
+      // nearest where it was, played from the first step the hero stands
+      const stops = set.stops;
+      if (ranAt >= 0 && stops && stops.length > 0) {
+        this.sinceStop = 0;
+        this.stopOf = Math.round(ranAt * stops.length) % stops.length;
+      } else if (this.sinceStop >= 0) this.sinceStop += dt;
+      const stop = this.sinceStop >= 0 && stops ? stops[this.stopOf] : undefined;
       if (land && this.sinceLand < (land.frames.length - 1) / land.fps) {
         s = frameOf(land, this.sinceLand);
         // (the standing loop takes up from its first frame when he is up)
         this.loopFrom = st.animT;
         this.stood = 0;
+        this.sinceStop = -1;
+      } else if (stop && this.sinceStop < (stop.frames.length - 1) / stop.fps) {
+        s = frameOf(stop, this.sinceStop);
+        // (and from its first frame when he stands in it)
+        this.loopFrom = st.animT;
+        this.stood = 0;
       } else {
         this.sinceLand = -1;
+        this.sinceStop = -1;
         s = this.standingFrame(art, away, st.animT, dt, standing && gestures);
       }
     }
+    // (anything but standing ends coming to a stand)
+    if (!stands) this.sinceStop = -1;
+    this.stoodLast = stands;
     if (left) s = flipSprite(s);
     // (in a turn the knots the tails hang from close in on the middle with the figure)
     const q = this.squash;

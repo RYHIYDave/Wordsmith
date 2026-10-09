@@ -4,16 +4,22 @@
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
+import { useComboMends, useRangerStances } from './art/moves3';
 import { makeIconArt } from './art/icons';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
 import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
 import { makeGateArt } from './art/gates';
+import { makeHazardArt } from './art/hazards';
+import { TRAPS } from './game/traps';
+import { MODES } from './game/modes';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { makeTownProps } from './art/town';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
+import { SMITH3 } from './art/smith3';
+import { POWER, QUEST3, makeStoneArt } from './art/quest3';
 import { makeTitleArt } from './art/title';
 import { makeSmithTitle } from './art/title_smith';
 import type { SmithTake } from './art/title_smith';
@@ -28,10 +34,10 @@ import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
+import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
-import { RELIEF } from './game/dungeon';
+import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
@@ -53,11 +59,12 @@ import { guideBanner } from './ui/guide';
 import { drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
-import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi } from './ui/panels';
+import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
 import type { SmithPicture } from './ui/panels';
 import { gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
 import { THEME, Ui } from './ui/ui';
+import { WORDS3, demo3, events3 } from './render/words3';
 
 declare const __BUILD__: string;
 
@@ -151,6 +158,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     ground: makeGroundArt(),
     props: makeDungeonProps(),
     gates: makeGateArt(),
+    hazards: makeHazardArt(),
     town: makeTownProps(),
     folk: makeTownsfolk(),
     // THE HEROES PAINTED OVER THE BONES (art/heroes3.ts) ARE THE GAME'S from Version 16: the
@@ -162,6 +170,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     bestiary: makeBestiary(),
     icons: makeIconArt(),
     spells: makeSpellArt(),
+    // (THE MASTER RUNE-STONE, art/quest3.ts: a mock-up behind QUEST3, off; its pictures are painted the first time they are shown)
+    quest: makeStoneArt(),
   };
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
@@ -220,6 +230,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let wasOpen: string = 'none';
   /** Touch: the attack a tap asked for, kept until it has been carried out (or given up on). */
   let order: { id: number | null; x: number; y: number; t: number; uses: number } | null = null;
+  /** (Strike's combo, game/defs.ts COMBO) ON A PC: a click on a monster made in the middle of a swing, waiting its turn as a tap does. */
+  let click: { id: number | null; x: number; y: number; t: number; uses: number } | null = null;
   /** Touch: how often the slow ability had been used when the current hold began (-1 = no hold). One use per hold. */
   let holdUses = -1;
   /**
@@ -299,6 +311,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let quiet = 0;
   /** A word just picked up, announced at the top of the screen (`big`: a new player's first, announced large). */
   let toast: { word: WordId; t: number; big: boolean } | null = null;
+  /** THE FIRST LEVELS: the ability that has just opened, for its "NEW MOVE" (ui/hud.ts). */
+  let moveToast: { skill: number; t: number } | null = null;
   /** Every prompt of the first dungeon shown to the current character, in order (playtests check it). */
   const guideLog: string[] = [];
 
@@ -336,7 +350,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const writeSave = (): void => {
     if (!saving) return;
     // (the practice room is never saved)
-    if (game && mode === 'play' && !game.practice) saved = game.over ? null : game.save();
+    // (a fallen hero is gone, unless they are a Normal hero (game/modes.ts): then what is kept is the
+    // hero as they will wake in town, so that closing the page on the death screen changes nothing)
+    if (game && mode === 'play' && !game.practice) saved = game.over ? game.wakeSave() : game.save();
     try {
       const file: SaveFile = { v: 2, run: saved, meta };
       localStorage.setItem(SAVE_KEY, JSON.stringify(file));
@@ -379,6 +395,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const begin = (g: Game): void => {
     game = g;
     arrived = null;
+    // (THE MASTER RUNE-STONE: its moments are this hero's: see questFromRules)
+    QUEST3.givenAt = -1;
+    QUEST3.takenAt = -1;
     fx.clear();
     fx.messages = [];
     panels.open = 'none';
@@ -402,6 +421,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     invAuto = false;
     quiet = 0;
     toast = null;
+    moveToast = null;
     guideLog.length = 0;
   };
 
@@ -418,6 +438,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const newRun = (cls: ClassId, seed?: number, guide = false): void => {
     const sd = seed ?? ((Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0);
     const g = guide ? Game.forFirstRun(cls, sd, meta) : new Game(cls, sd, meta);
+    // (NORMAL OR HARDCORE, as the cards had it: game/modes.ts. Without the switch, the old rule.)
+    if (MODES.on) g.mode = meta.mode;
     begin(g);
     if (!guide) welcome(g);
     writeSave();
@@ -434,6 +456,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     invWas = game ? game.hero.skills.map((s) => ({ name: s.r.name, words: [...s.front, ...s.behind] })) : [];
     // (the news of a word found has been read by now: it does not wait behind the screen to be shown again)
     toast = null;
+    moveToast = null;
     if (game) game.offer = null;
     input.eat('Tab', 'KeyI');
     sfx('click');
@@ -442,7 +465,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // (LEDGES AND STAIRS, not in any dungeon yet: a page opened with #hall=ledges has the practice
   // room in the hall built for them, with its terrace, two flights of stairs, a pit and a gap)
   const hallAsked = new URLSearchParams(location.hash.slice(1)).get('hall');
-  const PRACTICE_HALL: Hall = hallAsked === 'ledges' || hallAsked === 'steps' ? hallAsked : hallAsked !== null && SHAPES.some((k) => hallAsked === `shape:${k}`) ? (hallAsked as Hall) : 'arena';
+  const PRACTICE_HALL: Hall = hallAsked === 'ledges' || hallAsked === 'steps' || hallAsked === 'mix' || hallAsked === 'traps' ? hallAsked : hallAsked !== null && SHAPES.some((k) => hallAsked === `shape:${k}`) ? (hallAsked as Hall) : 'arena';
 
   /** The practice room: a throwaway character with every word. It leaves the saved run, the Lexicon and the stash alone. */
   const startPractice = (cls: ClassId, seed?: number, hall: Hall = PRACTICE_HALL): void => {
@@ -490,6 +513,28 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
   };
 
+  /**
+   * NORMAL MODE (game/modes.ts): the fallen hero wakes in town, as they went into the dungeon but
+   * for what was found there and a share of their gold; the same dungeon waits beyond the gate.
+   */
+  const wake = (g: Game): void => {
+    const run = g.wakeSave();
+    const lost = g.losses();
+    const depth = g.depth;
+    if (!run) return;
+    let w: Game;
+    try {
+      w = Game.restore(run, meta);
+    } catch {
+      return;
+    }
+    begin(w);
+    // (one line, so that it reads the same where the newest line is at the top, as on a phone)
+    w.msg(`You wake in town. ${lost ? wakeLine(lost, depth) : ''}`.trim(), THEME.text);
+    writeSave();
+    sfx('portal');
+  };
+
   /** Open the panel for a town service the hero is standing at. */
   const openStation = (kind: Station): void => {
     // (until the trades are open, the wordsmith's work is done in the inventory alone: words are burned into gear there)
@@ -517,6 +562,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     invAuto = false;
     invWas = game ? game.hero.skills.map((s) => ({ name: s.r.name, words: [...s.front, ...s.behind] })) : [];
     toast = null;
+    moveToast = null;
     if (game) game.offer = null;
     // the key that opened the panel must not also act inside it
     input.eat('KeyE', 'KeyF', 'Enter');
@@ -681,8 +727,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const moving = mag > 0.18;
     if (moving) {
       const v = screenDirToWorld(sx, sy);
-      c.mx = v.x * mag;
-      c.my = v.y * mag;
+      // THE STICK GOES AT ONE SPEED (the owner, 8 Oct 2026, 22:25: "Also can you change the movement
+      // speed so it’s constant no matter where the joystick is in relation to the center"): pushed
+      // past the small still middle, the hero goes at full speed whatever the thumb's distance.
+      // (Before, the speed grew with it, full only at STICK_RADIUS.)
+      const k = input.stick.active ? 1 : mag;
+      c.mx = v.x * k;
+      c.my = v.y * k;
     }
 
     // A touch or a click on something that is used by standing next to it sends the hero there.
@@ -707,6 +758,30 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         c.aimX = target.x;
         c.aimY = target.y;
       }
+      // STRIKE'S COMBO (game/defs.ts, COMBO): A CLICK MADE IN THE MIDDLE OF A SWING WAITS ITS TURN, as a
+      // tap does on a phone (the touch controls below, `order`), so that two quick clicks are the two
+      // swings and not one. Only a click that attacks (on a monster, with Shift, or walking); it is
+      // given up when the swing it waited for has landed, after 1.2 seconds, or if its monster dies.
+      if (COMBO.on && SKILLS[h.skills[0].id].kind === 'melee') {
+        if (input.lpress && (target || moving || shift)) {
+          // (a swing already wound up lands without it: it waits for the one after)
+          const under = h.windup !== null && h.windup.skill === 0 ? 1 : 0;
+          click = { id: target ? target.id : null, x: c.aimX, y: c.aimY, t: 0, uses: h.skills[0].uses + under };
+        }
+        if (click) {
+          const o = click;
+          o.t += dt;
+          const was = o.id === null ? null : g.monsters.find((m) => m.id === o.id && !m.dead) ?? null;
+          if (h.skills[0].uses > o.uses || o.t > 1.2 || (o.id !== null && !was)) click = null;
+          else if (!input.lmb) {
+            const a = was ?? o;
+            c.aimX = a.x;
+            c.aimY = a.y;
+            c.fire = true;
+            c.approach = !!was && !moving;
+          }
+        }
+      } else click = null;
       if (input.lmb) {
         if (target || moving || shift) {
           c.fire = true;
@@ -1017,12 +1092,33 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   };
 
   /** Deal with what the rules reported: open town panels, start effects, play sounds. */
+  /**
+   * THE MASTER RUNE-STONE AND THE WORDSMITH'S RING (art/quest3.ts, QUEST3; the art chat's, the
+   * game's own since Version 19.6): its pictures follow the rules of the first levels (game/defs.ts,
+   * FIRST_LEVELS). The ring is dark while this hero's is (`Hero.ring`: a hero saved before 19.5 keeps
+   * his lit); the stone lies beside the fallen wordsmith while he is unsearched and the ring dark;
+   * it is carried while the hero has it (`Hero.quest`). Its two moments come from the rules' events
+   * (drain). `__dbg.quest3` takes all of it over, for the films.
+   */
+  let questByRules = true;
+  const questFromRules = (g: Game): void => {
+    if (!questByRules) return;
+    const v = g.questView();
+    QUEST3.dark = v.dark;
+    QUEST3.carried = v.carried;
+    QUEST3.stone = v.lying ? 'lying' : 'gone';
+  };
+
   const drain = (g: Game): void => {
     if (!g.events.length) return;
     for (const e of g.events) {
       if (e.t === 'station' && !bot) openStation(e.kind);
       // (words set in the inventory may be moved about before it closes: what came of it is shown then)
       else if (e.t === 'worded' && panels.open !== 'inv') fx.wordJoined(g.hero.x, g.hero.y, e.word, e.name);
+      else if (e.t === 'moveOpen') moveToast = { skill: e.skill, t: 0 };
+      // (THE MASTER RUNE-STONE: taken up beside the fallen wordsmith; given to the wordsmith, whose ring powers up)
+      else if (e.t === 'quest' && questByRules) QUEST3.takenAt = clock;
+      else if (e.t === 'ring' && questByRules) QUEST3.givenAt = clock;
       else if (e.t === 'wordGot') {
         // a new player's first word is the big moment: it is announced large, and the game holds its breath
         const big = !!g.guide && !g.guide.set;
@@ -1048,6 +1144,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
     const levelled = g.events.some((e) => e.t === 'levelup');
     fx.handle(g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
+    // (the new words' looks, called up by what the rules say happened: render/words3.ts)
+    if (WORDS3.on) events3(g.events, g, fx);
     g.events.length = 0;
     if (levelled) fx.celebrate(g.hero.x, g.hero.y);
   };
@@ -1088,13 +1186,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (titleLex) ui.press = null;
       const res = drawTitle(ui, art, titleArt, clock, TITLE, titleUi, {
         turn: turnLabel(),
-        resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, dungeon ${saved.depth}` : null,
+        resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, dungeon ${saved.depth}${MODES.on && saved.mode === 'hardcore' ? ', Hardcore' : ''}` : null,
         note: saved && confirm && !titleUi.practice ? `${input.touchMode ? 'Tap' : 'Choose'} ${CLASSES[confirm.cls].name} again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.` : null,
         guide: guideOn,
         limit: meta.limit,
         aim: scr.touch ? meta.aim : null,
         muted: isMuted(),
         voice: meta.voice,
+        mode: MODES.on && !titleUi.practice ? meta.mode : null,
         speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? CLASS_IDS[voiceTry.i - 1] : null,
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
       }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
@@ -1131,6 +1230,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           meta.voice = meta.voice === 'female' ? 'male' : 'female';
           writeSave();
           voiceTry = { i: 0, at: clock + 0.05 };
+          sfx('click');
+        }
+        if (res.mode) {
+          // NORMAL OR HARDCORE for the next hero (game/modes.ts); the cards remember it
+          meta.mode = meta.mode === 'hardcore' ? 'normal' : 'hardcore';
+          writeSave();
           sfx('click');
         }
         if (res.turn) flipTurn();
@@ -1190,6 +1295,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const busy = g.monsters.some((m) => !m.dead && m.state !== 'sleep' && Math.hypot(m.x - h.x, m.y - h.y) < 10);
         calm = h.pending > 0 && !busy ? calm + dt : 0;
         quiet = busy ? 0 : quiet + dt;
+        if (moveToast) {
+          moveToast.t += dt;
+          if (moveToast.t > 3.4) moveToast = null;
+        }
         if (toast) {
           toast.t += dt;
           if (toast.t > (toast.big ? 3.6 : 2.8)) toast = null;
@@ -1197,7 +1306,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (g.offer && (h.words[g.offer] <= 0 || !g.placeable(g.offer))) g.offer = null;
         // (a new player's first word is seen in its light for a moment before the screen opens for it)
         const wait = g.guide && !g.guide.set ? 2.4 : 0.9;
-        if (g.offer && quiet > wait && !bot && dbg.autoWords && !g.over) {
+        // (THE MASTER RUNE-STONE: the wordsmith's word waits until his ring has powered up, so that it is seen)
+        const powering = QUEST3.on && QUEST3.givenAt >= 0 && clock - QUEST3.givenAt < POWER.done + 0.4;
+        if (g.offer && quiet > wait && !powering && !bot && dbg.autoWords && !g.over) {
           // a word was picked up that has somewhere to go: the inventory, with the word in hand
           // (for a new player's first word it is left on its tile, so that the drag can be shown)
           openInventory(-1, g.guide && !g.guide.set ? null : g.offer, true);
@@ -1210,10 +1321,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
       }
       wasPaused = paused;
-      // death ends the run: nothing is left to continue, but the Lexicon and stash are kept
+      // death ends the run: nothing is left to continue, but the Lexicon and stash are kept. A
+      // NORMAL hero (game/modes.ts) is not lost: the save becomes the hero as they will wake in town.
       if (g.over && !deathSaved) {
         deathSaved = true;
-        clearSave();
+        if (g.wakes) writeSave();
+        else clearSave();
       }
       // what was done inside a panel last frame (a word set, a thing bought) is heard at once
       if (paused) drain(g);
@@ -1241,6 +1354,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         fx.shakeX = 0;
         fx.shakeY = 0;
       }
+      questFromRules(g);
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (a hero who has just warped in says their line when they have come together: `arrived`)
       if (arrived && !paused) {
@@ -1266,7 +1380,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const my = wy(renderer.cam, m.x, m.y);
         return mx > -16 && mx < scr.w + 16 && my > -8 && my < scr.h + 24;
       });
-      const hudIn: HudIn = { banner, toast: paused ? null : toast, gesture: null, fight: fightOn };
+      const hudIn: HudIn = { banner, toast: paused ? null : toast, moveToast: paused ? null : moveToast, gesture: null, fight: fightOn };
       if (banner && input.touchMode) {
         // on a phone, the gesture the prompt is asking for is shown as a ghost, where it should be made
         const cam = renderer.cam;
@@ -1346,11 +1460,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
             input.eat('Enter', 'Space');
           }
         } else if (drawDeath(ui, g) || input.pressed('Enter')) {
-          // straight to the class cards: one more go
-          mode = 'title';
-          game = null;
-          titleUi.page = 'class';
-          titleUi.practice = false;
+          if (g.wakes) wake(g);
+          else {
+            // straight to the class cards: one more go
+            mode = 'title';
+            game = null;
+            titleUi.page = 'class';
+            titleUi.practice = false;
+          }
         }
       } else if (panels.open === 'wordsmith' && !TUNE.tradesOpen) openInventory();
       else if (withInventory(panels.open)) {
@@ -1433,8 +1550,35 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       saved = null;
       newRun(cls, seed, true);
     },
+    /**
+     * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5): a hero who
+     * has been through them, for the playtests that are about something else. The wordsmith's ring
+     * lit (for the hero, and on this device), and the level raised to `level` if it is lower, so
+     * that the moves and slots of that level are open (all three moves from 5; a slot behind from
+     * 7; two a side from 10). No points to spend come with it, so no level-up choice opens.
+     */
+    seasoned: (level = 10) => {
+      if (!game) return;
+      const h = game.hero;
+      h.ring = true;
+      meta.ring = true;
+      if (h.level < level) h.level = level;
+      game.refresh();
+      h.life = h.d.maxLife;
+      h.mana = h.d.maxMana;
+    },
+    /** THE FIRST LEVELS: the NEW MOVE banner showing now (the move that has just opened, and how long it has shown), or null. */
+    moveToast: () => (moveToast ? { skill: moveToast.skill, t: moveToast.t } : null),
     /** The inventory, as the HUD opens it. */
     inv: (focus = -1) => openInventory(focus),
+    /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
+    modes: MODES,
+    /**
+     * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS): a mock-up behind a switch that is off. Its
+     * pictures and playtests switch it on (or off again) for themselves; the run made after follows it.
+     */
+    firstLevels: (on: boolean) => useFirstLevels(on),
+    firstLevelsOn: () => FIRST_LEVELS.on,
     /**
      * A third word slot a side, switched on or off (the owner's idea, not in the game: see
      * SLOT_OPENS in game/defs.ts). For pictures of how the menus and the game screen hold it.
@@ -1528,12 +1672,66 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     cam: () => renderer.cam,
     /** The map-maker's switches for terraces and sunken floor (game/dungeon.ts): pictures of what is not yet in the game switch it on. */
     relief: RELIEF,
-    /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them. OFF in the game: playtests set it for themselves and put it back. */
+    /** THE MIX (game/dungeon.ts, MIX): ON in the game since Version 18.9; playtests that lay a dungeon without it (or with it) set it for themselves and put it back. */
+    mix: MIX,
+    /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them, and the share of rooms that have a door. Playtests that change them put them back. */
     doors: DOORS,
     /** THE SKELETON ON THE HEROES' BONES (art/monster_bones3.ts), a mock-up: its switch. OFF in the game: a playtest that photographs it sets it for itself. */
     skeleton3: SKELETON3,
     /** THE BONE ARCHER ON THE HEROES' BONES (art/monster_bones3.ts), a mock-up: its switch. OFF in the game: a playtest that photographs it sets it for itself. */
     archer3: ARCHER3,
+    /** THE TRAPS (game/traps.ts, TRAPS): ON in the game since the owner's yes (8 Oct 2026, 11:36); playtests that lay a dungeon without them set it for themselves and put it back. */
+    traps: TRAPS,
+    /** THE NEW WORDS (render/words3.ts): how the eight words he chose on 8 Oct look at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
+    words3: demo3(fx, () => game),
+    /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
+    combo: COMBO,
+    /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
+    comboMends: (on: boolean) => {
+      useComboMends(on);
+      art.heroes = makeHeroArt3();
+    },
+    /** THE WORDSMITH ON BONES AND HIS RING MADE NEW (art/smith3.ts, SMITH3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
+    smith3: (on: boolean) => {
+      SMITH3.on = on;
+      art.folk = makeTownsfolk();
+      art.town = makeTownProps();
+    },
+    /** The clock the town's things go by (seconds, slowed with `slowmo`): a playtest can wait for the moment someone acts. */
+    clock: () => clock,
+    /**
+     * THE MASTER RUNE-STONE (art/quest3.ts, QUEST3): a mock-up behind a switch that is off; its films
+     * set what the rules will one day say. `on`; the ring `dark`; `give`: the stone is given now;
+     * `take`: it is taken up now from beside the fallen wordsmith (and carried); `lying`: it lies there.
+     */
+    quest3: (o: { on?: boolean; dark?: boolean; give?: boolean; take?: boolean; lying?: boolean; carried?: boolean; rules?: boolean }) => {
+      // (the films set it by hand; `rules: true` gives it back to the rules)
+      questByRules = o.rules === true;
+      if (o.on !== undefined) QUEST3.on = o.on;
+      if (o.dark !== undefined) QUEST3.dark = o.dark;
+      if (o.give) {
+        QUEST3.givenAt = clock;
+        QUEST3.carried = false;
+      }
+      if (o.take) {
+        QUEST3.takenAt = clock;
+        QUEST3.stone = 'gone';
+        QUEST3.carried = true;
+        // (for the pictures only: the fallen wordsmith is then searched, as the rules will have it)
+        if (game?.level.body) game.level.body.state = 1;
+      }
+      if (o.lying) {
+        QUEST3.stone = 'lying';
+        QUEST3.takenAt = -1;
+      }
+      if (o.carried !== undefined) QUEST3.carried = o.carried;
+      return { ...QUEST3 };
+    },
+    /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): ON since Version 19.4, on his yes; pictures of him as he was before switch them off and paint the heroes again (true: the new, the game's own, back). */
+    rangerStances: (on: boolean) => {
+      useRangerStances(on);
+      art.heroes = makeHeroArt3();
+    },
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

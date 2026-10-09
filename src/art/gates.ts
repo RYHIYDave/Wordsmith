@@ -34,8 +34,10 @@ import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { VAULT } from './ground';
 import type { Theme } from './ground';
-import { GRAIN } from './kit';
+import { GLYPH, WORD_COLOR, WORD_GLOW } from './icons';
+import { GRAIN, SPARK } from './kit';
 import { FLAME, IRON } from './mkit';
+import type { WordId } from '../game/types';
 
 /**
  * Wrought iron: shadow, body, lit edge, glint (the monsters' iron: art/mkit.ts).
@@ -239,6 +241,88 @@ export function makeDoorLeaf(ex: number, ey: number, high = DOOR_HIGH - 4): Spri
     p.set(x + 1, y - 2, DARK);
   }
   return p.sprite(ox, oy, GRAIN);
+}
+
+/**
+ * (THE TRAPS) THE LEAF OF A SEALED DOOR: a slab of dark iron in a frame of iron, studded, and in
+ * the middle of it THE RUNE OF ITS WORD, the word's own glyph in the word's own colour (as on the
+ * word's tablet: art/icons.ts). `lit`: sealed, the rune is alight and throws a little light of its
+ * colour; opened, it is spent, a dark groove. As a door's leaf, from its hinge (the anchor, on the
+ * floor) to its free end, (ex, ey) picture pixels away along the floor.
+ */
+export function makeSealLeaf(ex: number, ey: number, word: WordId, lit: boolean, high = DOOR_HIGH - 4): Sprite {
+  const pad = 6;
+  const w = Math.abs(ex) + pad * 2;
+  const h = high + Math.abs(ey) + pad * 2;
+  const p = new Px(w, h);
+  const ox = ex >= 0 ? pad : pad - ex;
+  const oy = high + pad + (ey < 0 ? -ey : 0);
+  const at = (t: number, up: number): [number, number] => [Math.round(ox + ex * t), Math.round(oy + ey * t - up)];
+  const cols = Math.max(2, Math.abs(ex));
+  // the slab, column by column
+  for (let c = 0; c <= cols; c++) {
+    const t = c / cols;
+    const [x, y] = at(t, 0);
+    for (let up = 2; up <= high - 1; up++) p.set(x, y - up, (up + c) % 11 === 0 ? DARK : BODY);
+  }
+  // its frame: rails at the foot and the head, and the two stiles
+  for (const [up, thick] of [[1, 3], [high - 2, 3]] as const) {
+    for (let q = 0; q < thick; q++) {
+      const [x0, y0] = at(0, up + q);
+      const [x1, y1] = at(1, up + q);
+      p.line(x0, y0, x1, y1, q === thick - 1 ? LIT : q === 0 ? DARK : BODY);
+    }
+  }
+  for (const t of [0, 1]) {
+    const [x, y] = at(t, 0);
+    for (let up = 1; up <= high; up++) {
+      p.set(x, y - up, LIT);
+      p.set(x + (ex >= 0 ? 1 : -1), y - up, BODY);
+    }
+    p.set(x, y - high - 1, GLINT);
+  }
+  // studs in two rows, high and low
+  for (const up of [9, high - 9]) {
+    for (const t of [0.2, 0.5, 0.8]) {
+      const [x, y] = at(t, up);
+      p.set(x, y, GLINT);
+      p.set(x, y + 1, DARK);
+    }
+  }
+  // THE RUNE: the word's glyph, three picture pixels to a cell (big enough to be read on a phone), carved in the middle of the slab
+  const rows = GLYPH[word];
+  const n = rows.length;
+  const cell = 3;
+  const span = n * cell;
+  const t0 = 0.5 - span / 2 / cols;
+  const mid = Math.round(high * 0.55);
+  const on = (gx: number, gy: number): boolean => gy >= 0 && gy < n && gx >= 0 && gx < n && rows[gy].charAt(gx) !== '.';
+  for (let gy = 0; gy < n; gy++) {
+    for (let gx = 0; gx < n; gx++) {
+      if (!on(gx, gy)) continue;
+      const core = rows[gy].charAt(gx) === 'o';
+      const c = lit ? (core ? WORD_GLOW[word] : WORD_COLOR[word]) : DARK;
+      // (a leaf in a plane along +y runs to screen-left: the glyph is turned so that it reads as it does on its tablet)
+      const col = ex < 0 ? n - 1 - gx : gx;
+      for (let i = 0; i < cell; i++) {
+        for (let j = 0; j < cell; j++) {
+          const [x, y] = at(t0 + (col * cell + i) / cols, mid + span / 2 - gy * cell - j);
+          p.set(x, y, c);
+        }
+      }
+      // (the groove's upper edge in shade, as a cut in stone has it)
+      if (!on(gx, gy - 1)) {
+        const [x, y] = at(t0 + (col * cell) / cols, mid + span / 2 - gy * cell + 1);
+        p.set(x, y, DARK);
+      }
+    }
+  }
+  const s = p.sprite(ox, oy, GRAIN);
+  if (lit) {
+    const [rx, ry] = at(0.5, mid);
+    s.lights = [{ x: rx / GRAIN, y: ry / GRAIN, r: 14, color: WORD_COLOR[word], a: 0.3 }];
+  }
+  return s;
 }
 
 // =================================================================================================
@@ -494,6 +578,46 @@ export function makePortcullis(alongX: boolean, a: ArchShape, raise: number, hea
 
 // =================================================================================================
 
+/**
+ * (THE MIX) A LEVER on a stone foot. Not yet pulled, its handle leans to screen-left and its grip
+ * glows the cyan of what is the player's to use; pulled, it leans right and the grip is plain
+ * iron. (As it was painted for the doors' second look, which the owner said yes to.)
+ */
+export function makeLever(theme: Theme, pulled: boolean): Sprite {
+  const p = new Px(44, 56);
+  const cx = 22;
+  const base = 46;
+  // the foot: a low block, lit on the left, in shade on the right, a slab on top
+  for (let up = 0; up < 10; up++) {
+    for (let dx = -12; dx < 12; dx++) {
+      const y = base - up - Math.floor(Math.abs(dx + 0.5) / 2) + 6;
+      p.set(cx + dx, y, dx < 0 ? (up % 5 === 0 ? theme.lit[0] : theme.lit[2]) : up % 5 === 0 ? theme.shade[0] : theme.shade[2]);
+    }
+  }
+  for (let y = -6; y <= 6; y++) {
+    const hw = 12 - Math.abs(y) * 2;
+    for (let dx = -hw; dx < hw; dx++) p.set(cx + dx, base - 10 + y, y > 3 ? theme.lit[3] : theme.lit[4]);
+  }
+  // the slot it moves in, and the handle
+  p.hline(cx - 5, base - 10, 10, DARK);
+  const lean = pulled ? 9 : -9;
+  for (let k = 0; k <= 24; k++) {
+    const x = cx + Math.round((lean * k) / 24);
+    const y = base - 10 - k;
+    p.set(x, y, LIT);
+    p.set(x + 1, y, BODY);
+    p.set(x + 2, y, DARK);
+  }
+  // the grip
+  const gx = cx + lean;
+  const gy = base - 36;
+  const grip = pulled ? [BODY, LIT, GLINT] : [SPARK[1], SPARK[2], SPARK[3]];
+  p.ellipse(gx + 1, gy, 3, 3, grip[0]);
+  p.ellipse(gx + 1, gy, 2, 2, grip[1]);
+  p.set(gx, gy - 1, grip[2]);
+  return p.sprite(cx, base, GRAIN);
+}
+
 /** How many steps a door's swing is painted in. */
 export const SWING_STEPS = 8;
 
@@ -510,6 +634,10 @@ export interface GateArt {
   arch(alongX: boolean, boss: boolean, lit: boolean): Strip[];
   /** A gate's portcullis, `raise` picture pixels off the floor (0 to GATE_UP: an even number of them). */
   portcullis(alongX: boolean, boss: boolean, raise: number): Strip[];
+  /** (THE MIX) A lever: as it stands, or pulled. */
+  lever(pulled: boolean): Sprite;
+  /** (THE TRAPS) A sealed door's leaf, its free end (ex, ey) from its hinge: the rune of `word` alight (sealed), or spent (opened). */
+  seal(ex: number, ey: number, word: WordId, lit: boolean): Sprite;
 }
 
 export function makeGateArt(theme: Theme = VAULT): GateArt {
@@ -518,8 +646,20 @@ export function makeGateArt(theme: Theme = VAULT): GateArt {
   const pillars = new Map<number, Sprite>();
   const arches = new Map<number, Strip[]>();
   const gates = new Map<number, Strip[]>();
+  const levers: (Sprite | null)[] = [null, null];
+  const seals = new Map<string, Sprite>();
   const shape = (boss: boolean): ArchShape => (boss ? ARCH_BOSS : ARCH);
   return {
+    seal(ex, ey, word, lit) {
+      const key = `${ex},${ey},${word},${lit ? 1 : 0}`;
+      let s = seals.get(key);
+      if (!s) seals.set(key, (s = makeSealLeaf(ex, ey, word, lit)));
+      return s;
+    },
+    lever(pulled) {
+      const k = pulled ? 1 : 0;
+      return levers[k] ?? (levers[k] = makeLever(theme, pulled));
+    },
     post: makePillar(theme, DOOR_HIGH, POST),
     lintel(alongX) {
       const key = alongX ? 1 : 0;

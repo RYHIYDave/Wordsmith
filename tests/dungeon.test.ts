@@ -16,8 +16,9 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 
 import { RNG } from '../src/engine/rng';
-import { doorPiers, doorWay } from '../src/game/doors';
-import { generateFloor, tileAt } from '../src/game/dungeon';
+import { FIRST_LEVELS } from '../src/game/defs';
+import { doorPiers, doorWay, isLeaf } from '../src/game/doors';
+import { MIX, generateFloor, tileAt } from '../src/game/dungeon';
 import { buildOpenGrid, buildWalkGrid, flowDir, flowField, lineOfSight, scatter } from '../src/game/nav';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from '../src/game/types';
 import type { Floor, PackSpot, PropSpot, Room } from '../src/game/types';
@@ -45,10 +46,15 @@ const SEEDS = Math.max(1, Number(env.DUNGEON_TEST_SEEDS) || 25);
 const MAP_MAX = 160;
 const pathRooms = (depth: number): number => Math.min(15, 11 + Math.floor((depth - 1) / 2));
 const branches = (depth: number): number => (depth <= 2 ? 3 : depth <= 5 ? 4 : 5);
-const eliteRooms = (depth: number): number => (depth <= 2 ? 2 : depth <= 5 ? 3 : 4);
-const monsterTarget = (depth: number): number => Math.min(230, 120 + 8 * (depth - 1));
-const normalPackMin = (depth: number): number => Math.min(7, 3 + Math.floor((depth - 1) / 3));
-const normalPackMax = (depth: number): number => Math.min(9, 6 + Math.floor((depth - 1) / 3));
+// (THE FIRST LEVELS, on since Version 19.5: the first dungeon is gentler, game/defs.ts FIRST_DUNGEON:
+// one room of elites, a budget of 60, packs of 2 to 4. The owner, 8 Oct 2026, 20:36: "This will
+// change the dungeon mob density and difficulty.  It feels a little too abrupt to be thrown into at
+// the start")
+const first = (depth: number): boolean => FIRST_LEVELS.on && depth <= 1;
+const eliteRooms = (depth: number): number => (first(depth) ? 1 : depth <= 2 ? 2 : depth <= 5 ? 3 : 4);
+const monsterTarget = (depth: number): number => (first(depth) ? 60 : Math.min(230, 120 + 8 * (depth - 1)));
+const normalPackMin = (depth: number): number => (first(depth) ? 2 : Math.min(7, 3 + Math.floor((depth - 1) / 3)));
+const normalPackMax = (depth: number): number => (first(depth) ? 4 : Math.min(9, 6 + Math.floor((depth - 1) / 3)));
 const isBossSized = (r: Room): boolean => (r.w >= 13 && r.h >= 12) || (r.w >= 12 && r.h >= 13);
 const isPillarRoom = (r: Room): boolean => (r.w >= 11 && r.h >= 10) || (r.w >= 10 && r.h >= 11);
 
@@ -65,6 +71,10 @@ interface Sample {
 
 const samples: Sample[] = [];
 let generateMs = 0;
+// (THE MAP-MAKER AS IT LAYS A DUNGEON WITHOUT THE MIX, game/dungeon.ts, MIX: the mix's own rooms,
+// the lever's nook among them, are asked of in tests/mix.test.ts)
+const mixWas = MIX.on;
+MIX.on = false;
 for (let depth = 1; depth <= DEPTHS; depth++) {
   for (let k = 0; k < SEEDS; k++) {
     const seed = depth * 1000 + k * 7919 + 1;
@@ -74,6 +84,7 @@ for (let depth = 1; depth <= DEPTHS; depth++) {
     samples.push({ depth, seed, f, tag: `depth ${depth} seed ${seed}` });
   }
 }
+MIX.on = mixWas;
 
 // ---------------------------------------------------------------------------------------------
 // Helpers
@@ -267,9 +278,16 @@ function grid(rows: string[]): { g: Uint8Array; w: number; h: number } {
 // Generator: shape of the result
 
 test('same depth and seed always give the identical floor', () => {
-  for (const s of samples) {
-    const again = generateFloor(s.depth, s.seed);
-    assert.deepEqual(again, s.f, s.tag);
+  // (laid as the samples were: without the mix)
+  const mixOn = MIX.on;
+  MIX.on = false;
+  try {
+    for (const s of samples) {
+      const again = generateFloor(s.depth, s.seed);
+      assert.deepEqual(again, s.f, s.tag);
+    }
+  } finally {
+    MIX.on = mixOn;
   }
   // ...and a different seed or depth gives a different level
   assert.notDeepEqual(generateFloor(1, 1).tiles, generateFloor(1, 2).tiles);
@@ -407,7 +425,8 @@ test('no passage is narrower than 3 tiles and no wall between two floor areas is
     const way = new Set<number>();
     const stone = new Set<number>();
     for (const d of f.doors ?? []) {
-      if (d.kind !== 'door') continue;
+      // (THE TRAPS: a sealed vault's door is a door's size, between its two piers, as a door is)
+      if (!isLeaf(d.kind)) continue;
       doors++;
       for (const i of doorWay(f, d)) way.add(i);
       for (const i of doorPiers(f, d)) stone.add(i);
@@ -455,7 +474,7 @@ test('every room has a doorway, and doorways are exactly 3 tiles wide, or one wh
       const doors = doorways(f, r);
       assert.ok(doors.length >= 1, `${tag}: room ${r.id} has no doorway`);
       // (DOORS, Version 18.5: a room's way in has a door in it, one tile wide; the boss hall's has the gate, all three)
-      const own = (f.doors ?? []).filter(d => d.room === r.id && d.kind === 'door').length;
+      const own = (f.doors ?? []).filter(d => d.room === r.id && isLeaf(d.kind)).length;
       let narrow = 0;
       for (const width of doors) {
         if (width === ACROSS_DOOR) here++;
@@ -705,10 +724,11 @@ test('pack sizes fit the depth and the total is within 25% of the monster budget
     const target = monsterTarget(depth);
     assert.ok(total >= target * 0.75 && total <= target * 1.25, `${tag}: ${total} monsters, budget ${target}`);
   }
-  // depth 1 lands in the 105-135 band
+  // depth 1 lands in the 105-135 band (with the first levels, 45-75)
+  const [lo, hi] = FIRST_LEVELS.on ? [45, 75] : [105, 135];
   for (const s of samples.filter(x => x.depth === 1)) {
     const total = totalMonsters(s.f);
-    assert.ok(total >= 105 && total <= 135, `${s.tag}: ${total} monsters`);
+    assert.ok(total >= lo && total <= hi, `${s.tag}: ${total} monsters`);
   }
 });
 

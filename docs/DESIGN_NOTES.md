@@ -4288,6 +4288,665 @@ picture; what the heroes do in town now is what they do on a class card, which h
   for byte with the kept copy before and after.
 - NOT CHECKED: a real phone.
 
+### Version 18.9: Strike, a two-hit combo with a step forward; and the mix inside each dungeon
+
+**What he said.** Of the combo, 7 Oct 2026, 23:18: **"I’d like STRIKE to have two animations.  The
+first is the strike we have now.  That one always plays first.  If the player taps again quickly,
+then the second animation, I downward slash, plays.  Back to the first if they tap again.  If it’s
+not tapped for a set duration, it goes back to the first animation.  Like a two hit combo if you
+tap twice"**; 23:18: **"And I want him to move forward a little every swing"**; 23:19: **"Not
+much, but some"** ("I downward slash" read as "a downward slash", his dictation). Of the mix, 7 Oct,
+14:01: "They can be closed with levers or switches nearby to open them."; 17:51: "I want different
+room and hallway configurations within each dungeon. So when you're populating a dungeon, it doesn't
+have to go room, hallway. We can mix it up with the doors and the gates to make more different and
+interesting layouts for the whole dungeon."; and to it as this chat's next job, 21:13: "thats fine".
+He was sent, on 8 Oct, a moving picture of the combo at 00:42 (strike_combo.gif: two quick taps,
+a second tap after the set time, the button held; facing you and facing away), with "Put it in as
+it is?", and three pictures of the mix in a real dungeon at 01:06 (mix_1_rooms_next_door.png,
+mix_2_gate_and_lever.png, mix_3_room_that_locks.png), with "Put the mix in?". **HIS ANSWER, 8 Oct,
+07:32: "Yeah looks good".** Read as yes to both, and told so at 07:34: "Great. I read that as yes
+to both: the Strike combo and the mix. They'll go out together as Version 18.9. / This is the first
+full test run with the mix switched on, so expect a few fixes along the way. I'd say around 11:00."
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "STRIKE'S COMBO, WRITTEN ON
+PAPER" to "VERSION 18.9 IS LIVE").
+
+- **STRIKE IS TWO SWINGS** (`COMBO` and `TUNE.comboWindow` in `src/game/defs.ts`; `useBasic` in
+  `src/game/game.ts`). The first is always the strike he had; the next is THE DOWNWARD SLASH if it
+  is begun within half a second of the moment it could first be begun (the weapon's time between
+  blows: 0.95 seconds with a plain great sword, so a tap within about a second and a half of the
+  first swing), and then the strike again; left longer, the next is the strike. Anything else
+  between two Strikes, the slow attack or an evasive move, makes the next the strike again. THE TWO
+  DO THE SAME HARM.
+- **EVERY SWING STEPS HIM FORWARD A THIRD OF A TILE** (`TUNE.swingStep`, 0.33, over
+  `swingStepTime`, 0.12 seconds, from when the swing is begun), along the way he faces; walls and
+  monsters stop it as they stop him.
+- **THE SLASH** (`SLASH3`, "kslash", in `src/art/moves3.ts`; the knight's `attack2` in
+  `src/art/heroes3.ts`; `attackClip` in `src/render/figure.ts`): from the rear stance the hilt goes
+  up over his right shoulder, he steps in, and the blade comes over and down across the front of him
+  at the height of a chest (the fourth frame, the rules' own, as the strike's is), on down to low on
+  his left; it is carried round his right side into the stance again, in thirteen frames, as the
+  strike is. Mended by `tools/audit_moves3.ts` before it was shown in the game: no hand short of
+  the hilt, no arm through the body.
+- **ON A PC, A CLICK MADE IN THE MIDDLE OF A SWING WAITS ITS TURN** (`click` in `src/main.ts`), as a
+  tap on a phone always has (`order`): without it two quick clicks are one swing. Only a click that
+  attacks (on a monster, with Shift, or walking); given up after 1.2 seconds.
+- **THE MIX INSIDE EACH DUNGEON, FROM THE SECOND DUNGEON ON** (`MIX` in `src/game/dungeon.ts`; the
+  first dungeon, a new player's lesson, is laid as it always was): (1) **TWO ROOMS NEXT DOOR**,
+  three tiles apart with only a door between them, which is always there (`Room.nextDoor`,
+  `hasDoor`): about one room in seven; (2) **A GATE ACROSS THE WAY, ITS LEVER NEARBY**: the way in of
+  one room of the main path is barred by a gate, down, and the lever stands in a small room at a dead
+  end off the room before it (the NOOK); the hero pulls it by walking up to it (`LEVER_NEAR`, a
+  tile and a half), the gate rises and stays up; no monster pulls one; a line says "A gate bars the
+  way. Its lever is near." the first time it is seen from near, and "A gate rises." when it does;
+  what is behind a gate that is down is out of the hero's reach, as behind a shut door; every
+  dungeon from the second has one; (3) **A ROOM THAT LOCKS**: one of the main path's elite rooms
+  has a gate in every doorway, up; when the hero is `LOCK_CLEAR` (2.7 tiles) inside with a living
+  monster of the room's own pack they fall ("The gates fall."), hold him in and everything else out,
+  and rise when none of that pack is left alive in the room ("The gates rise."); most dungeons have
+  one. The map marks a lever that has been seen and not yet pulled, and a gate that is down. The
+  playtests' own player goes for what it can come to, then the lever, then on.
+
+**How it was tested.**
+
+- `tsc` clean; THE WHOLE UNIT SUITE WITH BOTH ON, 633 OF 633 (07:38 to 07:41), and again in the
+  frozen copy after the regression (633 of 633, 08:42 to 08:45). `tests/combo.test.ts` (8) and
+  `tests/mix.test.ts` (12) are new; the tests of doors, of the map-maker and of terraces lay their
+  own dungeons without the mix where they ask about something else (and a lever's gate counts as a
+  way on foot once pulled), and the mix's tests hold the same things for its dungeons, among them
+  that nothing shut in behind a shut door or a gate that is down can come at the hero.
+- Before the regression, 49 playtests two at a time on a dev page built from the tree (07:42 to 07:57),
+  among them the combo's and the mix's own, the doors in four layouts, the dungeon, the side paths,
+  the boss, the sunken floors, the terraces, two monkeys and the soak: all clean but the doors in
+  four layouts, which were the playtest's own (it reads its doors off the canvas in the dungeon it
+  has always laid, and with the mix on the dungeon of that seed is another): it lays its dungeon
+  without the mix now, and run again all four were clean.
+- **The regression** on a copy frozen at 07:57 (the scratchpad's `v189a/arpg_frozen`,
+  07:57 to 08:41, two at a time, nothing else running): **144 OF 144 PLAYTESTS
+  FINISHED CLEAN**, among them the combo's and the mix's own on a PC and a phone.
+  Speed: 58.6 frames a second, longest frame 50 ms; the slowest fights of the four
+  word-pair runs 56.7 to 58.2 frames a second. Lower than 18.8's at midnight, so the 18.8 and the
+  18.9 pages were measured again side by side, each alone, one after the other (10:26 to 10:31):
+  the speed test 58.8 and 60.0 frames a second for 18.8, 58.2 and 59.2 for 18.9, longest frames of
+  33 to 67 ms on both; the ranger's slowest fights 58.2 and 57.8 against 57.5 and 58.3; the
+  warrior's 58.5 and 58.8 against 57.5 and 58.2. The machine was slower than at midnight; 18.9 is
+  within a frame a second of 18.8.
+- THE RELEASE BUILD, made in the copy at 08:45: `Play.html` 860,648 bytes and
+  `dist/artifact.html` 860,326, both saying V18.9; kept in the scratchpad's
+  `v189a/release/`.
+- **The published page itself** (`wrap189.sh` in the scratchpad, 10:04 to 10:21): **61
+  of 62 playtests clean.** The 58 of 18.8, and the combo's and the mix's own on a PC and a phone. The one
+  that was not, `town` (a PC's window), had one press at the wordsmith not taken (SELL, while two
+  pages played at once); run again alone at 10:25 it finished clean, the sale and the buying back
+  as ever. (A first run, begun after the build, stopped after nine at 08:48, when the machine
+  paused and was restarted.) Published at 10:31 ("Version 43", version
+  id `1791469898-b23c`); the file published is the kept copy, `v189a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html` (compared before the page's playtests and again
+  after publishing).
+- NOT CHECKED: a real phone. How the mix PLAYS (a gate to find the lever for, a room that shuts
+  him in with an elite pack) is his to find.
+
+### Version 19.0: the traps: spike floors, dart walls and sealed vaults
+
+**What he said.** 4 Oct 2026, 20:23: "And let's add some puzzles and traps in the dungeons when the
+dungeons get overhauled" (a list of six went to him with Version 14.1; he picked none, and was told
+that the spike floor, the dart wall and the word door would be first). His gameplay rulebook,
+approved 8 Oct, 10:33 (`docs/gameplay/RULEBOOK.md`): "Traps and puzzles: the spike floor, the dart
+wall, and the word door, which opens only to an attack carrying its word. These are next on the
+list to build." And his order of that morning: the traps, then Normal mode. He was sent their
+pictures at 11:27 (traps_spikes.gif, traps_pack.gif, traps_darts.gif, traps_door.gif,
+traps_stills.png: the hall laid by hand for them, filmed in the game), with "Put the traps into
+the dungeons, as in the pictures?" (One or two of each in every dungeon from the second on,
+tested, then a new version.) **HIS ANSWER, 11:36: "Yes, as they are (Recommended)".**
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "THE TRAPS, PICTURES FIRST" to
+"VERSION 19.0 IS LIVE"; the rules in `src/game/traps.ts`, their pictures in `src/art/hazards.ts`).
+
+- **THE SPIKE FLOOR** (`SPIKE`, `spikeAt`; `stepSpikes` in `src/game/game.ts`): a patch of floor
+  whose holes are always to be seen; on a beat of 1.6 seconds down, 0.3 of warning (the holes
+  glint) and 0.6 up. Up, it hurts whatever walks on it once each time it rises: a sixth of the
+  hero's life (before armour; not while rolling or leaping, nor while nothing can hurt them), and a
+  sixth of a monster's own (so a pack can be led over it); a bat flies over it; no boss meets one.
+  The spikes are iron catching the light, not a glow.
+- **THE DART WALL** (`DART`; `stepDarts`, `fireDart`): a plate of iron in the floor and a slot in
+  a wall. The hero on the plate (a monster does not set it off): it clicks, and three darts leave
+  the slot 0.25, 0.45 and 0.65 seconds later, ALL AT THE PLACE WHERE THE HERO STOOD AS IT CLICKED:
+  the click is the warning, and who moves is missed. Each takes twelve hundredths of the life of
+  what it meets, hero (before armour) or monster. Ready again three seconds after the click. A dart
+  has no light, and no friend's or enemy's colour.
+- **THE SEALED DOOR** (a door kind, `'worddoor'`, `src/game/doors.ts`; `unseal` in game.ts): a
+  door's frame and size, its leaf a studded slab with THE RUNE OF ITS WORD in the word's own colour
+  (`makeSealLeaf`, `src/art/gates.ts`), alight until it is opened. It opens to nobody who comes near:
+  only to a hit from an attack that carries its word, in front or behind (a blow, a blast, a shot
+  that meets it, what burns on the ground); then it swings open as a door does. The first time it
+  is seen from near: "A sealed door. It wants FLAME." (its word); as it opens: "The FLAME seal
+  breaks." Until then its tile is wall to whatever walks, flies, is shot or looks, and what is in
+  the vault is out of reach.
+- **THE MAP-MAKER** (`TRAPS.on`, `TRAPS_FROM`; `sealVault`, `unsealDoorless`, `layHazards`, called
+  from `generateFloor` in `src/game/dungeon.ts` with dice of their own, so a dungeon's tiles, rooms,
+  packs and props are what they were): FROM THE SECOND DUNGEON ON (the first is a new player's
+  lesson, and is laid as it always was), one or two spike floors (across a corridor, two long and
+  its whole width of three with wall on both sides, so that it cannot be walked round; or four by
+  four, three by three in a small room, clear of where the room's pack stands), one or two dart
+  walls (the plate one step inside a way out on a side toward the eye; the slot straight across
+  the room, in a wall that faces the eye; the floor between clear and level), and one treasure
+  vault sealed with a word (any of the nine), where the vault has a doorway for the door. Never
+  in the first room, the boss's hall, a vault, a lair or a nook; never on a doorway or a
+  corridor's tile beside a room, a prop, a lever, a stair, raised, sunken or cut floor; five tiles
+  apart. Over 660 dungeons (depths 2 to 12, sixty seeds) every one had a spike floor and a dart
+  wall, and 583 a sealed vault.
+- **THE TEST PLAYER** (`minded` in `src/dev/bot.ts`): it waits at a spike floor's edge while its
+  spikes are up, or will be before it could cross; it gets off one that is about to rise; once a
+  plate has clicked it steps across the darts' line, to the side with the more floor.
+- **THE HALL** laid by hand for them (`#hall=traps`, `makeTrapHall` in `src/game/level.ts`): the
+  corridor's spike floor, the room's, the dart run, and the vault sealed with FLAME.
+
+**How it was tested.**
+
+- `tsc` clean; `tests/traps.test.ts` (13: the switch and the first dungeon; the beat; the hall;
+  once a rise, a sixth of life; monsters and a bat; the plate, the darts at the click's place, the
+  re-arming; what a dart takes; the sealed door to its word in front or behind, the lines, the
+  vault in reach; an arrow that meets it; the test player past them unhurt; the map-maker's count,
+  rules and dice). The tests of doors, of the map-maker's doorways and of the mix's fingerprints
+  lay their dungeons without the traps where they ask about something else (and a sealed door
+  counts as a door where a door's shape is asked of); the terraces' test counts it as a way on foot.
+  THE WHOLE UNIT SUITE 646 OF 646 (11:56 to 11:59), and again in the frozen copy after the
+  regression (646 of 646, 12:56 to 12:59).
+- THE PRE-FLIGHT (a dev page built from the tree, 12:01 to 12:09): 24 playtests, among them the
+  traps' own, the doors' in four layouts, the dungeon on a PC and a phone, the boss, the soak and
+  two monkeys: all clean.
+- **The regression** on a copy frozen at 12:11 (the scratchpad's `v190a/arpg_frozen`,
+  12:11 to 12:55, two at a time, nothing else running): **146 OF 146 PLAYTESTS
+  FINISHED CLEAN**, among them the traps' own on a PC and a phone.
+  Speed: 59.6 frames a second, longest frame 33.4 ms; the slowest fights of the four word-pair runs 56.7 to 59.2 frames a second (18.9's: 58.6, and 56.7 to 58.2).
+- THE RELEASE BUILD, made in the copy at 13:01: `Play.html` 874,891 bytes and
+  `dist/artifact.html` 874,569, both saying V19.0; kept in the scratchpad's
+  `v190a/release/`.
+- **The published page itself** (`wrap190.sh` in the scratchpad, 13:01 to 13:19): **64
+  of 64 playtests clean.** The 62 of 18.9, and the traps' own on a PC and a phone. Published at 13:19 ("Version 44", version
+  id `1791479984-affa`); the file published is the kept copy, `v190a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone. How the traps PLAY in a run (how much they hurt at each depth, and
+  whether a sealed vault's word is one a player carries) is his to find.
+
+### Version 19.1: Normal mode
+
+**What he said.** His gameplay rulebook, approved 8 Oct 2026, 10:33 (`docs/gameplay/RULEBOOK.md`,
+"Heroes, death and the two modes"): "Every hero is made in one of two modes, picked at the start
+and kept for life." Normal: "The hero wakes in town", losing "What was found in that dungeon, and a
+share of the gold", keeping "The hero’s level, the gear worn in, the words, the talents"; Hardcore:
+"The hero is gone". And his order of that morning: after the traps, "Normal mode (Recommended)". He
+was sent its pictures at 13:34 (normal_cards.png, normal_fell.png, normal_town.png: the game on a
+phone), with "Put Normal mode into the game, as in the pictures?" and "How much of your own gold
+should a Normal death cost? (On top of everything found in that dungeon.)". **HIS ANSWERS, 13:35:
+"Yes, as it is (Recommended)" and "A quarter (Recommended)".**
+
+**What is in it** (the record is in `docs/NEXT_VERSION.md`, from "NORMAL MODE, PICTURES FIRST" to
+"VERSION 19.1 IS LIVE"; the rules in `src/game/modes.ts`).
+
+- **THE MODE ON THE CLASS CARDS** (`drawTitle` in `src/ui/panels.ts`): a button between BACK and
+  VOICE, MODE: NORMAL (the one they open with) or MODE: HARDCORE (in red), and under the cards
+  what it means (`MODE_LINE`): "Normal: a death sends the hero back to town, without what was found
+  in that dungeon." / "Hardcore: a death is the end of the hero. The Lexicon and the stash stay."
+  The cards remember the last (`Meta.mode`). Not in the practice room. Continue's line says
+  "Hardcore" of a Hardcore hero.
+- **KEPT FOR LIFE** (`Game.mode`, `RunSave.mode`): a hero saved before there were modes is Normal
+  (`MODE_BEFORE`): nobody loses a hero to a rule they never picked. A hero made any way but the
+  cards (the playtests' runs) is Hardcore, the old rule.
+- **A NORMAL DEATH** (`wakes`, `wakeSave`, `losses` in `src/game/game.ts`; `wake` in `src/main.ts`):
+  the hero falls as ever; the death screen says YOU FELL, what killed them, "You wake in town." and
+  what it cost ("Lost: what you found in dungeon 4 (2 items, 1 word, 140 gold), and 60 of your own
+  gold.", `wakeLine`), and its button is "Back to town". THE HERO AS THEY WENT IN is kept from the
+  moment they step into a dungeon (`Game.entry`, a save taken then): they wake in town with the
+  gear they wore in, the bag, the words and where they were set, and the fallen wordsmith's
+  satchel as they were; at the level, points and spending they had reached; with a QUARTER OF THE
+  GOLD CARRIED IN gone (`NORMAL.goldShare`, his answer) and all that was found in the dungeon;
+  the same dungeon beyond the gate. One line in town says so. The save becomes the woken hero at
+  the moment of the death (`writeSave`), so closing the page on the death screen changes nothing.
+  The Lexicon counts lost heroes only (`Meta.deaths`).
+- **A HARDCORE DEATH** is as it always was: YOU DIED, New run, the Lexicon and the stash kept.
+
+**How it was tested.**
+
+- `tsc` clean; `tests/modes.test.ts` (11: the switch on and the quarter; with the switch off,
+  every hero made and dying as before and nothing written of the modes; a Normal death loses no
+  hero; waking: the gear worn in and not what was put on, the bag, the words found gone and those
+  carried in kept, the level, the gold, the same dungeon tile for tile; a word set in the dungeon
+  goes and one set before stays; a Hardcore death; the first dungeon's satchel back on its body
+  and its prompts not begun again; nobody wakes in the practice room or while the prompts run; a
+  save from before the modes is Normal; the cards remember; no gold carried in, none of it lost).
+  THE WHOLE UNIT SUITE 657 OF 657 (13:37 to 13:41), and again in the frozen copy after the
+  regression (657 of 657, 14:36 to 14:39). The save playtest dies twice with its Ranger, Normal and then
+  Hardcore; the monkeys press Back to town where there is no New run.
+- THE PRE-FLIGHT (a dev page built from the tree, 13:41 to 13:50): 25 playtests, among them
+  Normal mode's own on a PC and a phone, the save's, the looks in four layouts, the touch, the way
+  in, the first dungeon, four monkeys and the soak: all clean.
+- **The regression** on a copy frozen at 13:50 (the scratchpad's `v191a/arpg_frozen`,
+  13:51 to 14:35, two at a time, nothing else running): **148 OF 148 PLAYTESTS
+  FINISHED CLEAN**, among them Normal mode's own on a PC and a phone.
+  Speed: 59.5 frames a second, longest frame 33.4 ms; the slowest fights of the four word-pair runs 57.2 to 58.8 frames a second (19.0's: 59.6, and 56.7 to 59.2).
+- THE RELEASE BUILD, made in the copy at 14:41: `Play.html` 878,093 bytes and
+  `dist/artifact.html` 877,771, both saying V19.1; kept in the scratchpad's
+  `v191a/release/`.
+- **The published page itself** (`wrap191.sh` in the scratchpad, 14:41 to 14:58): **66
+  of 66 playtests clean.** The 64 of 19.0, and Normal mode's own on a PC and a phone. Published at 14:59 ("Version 45", version
+  id `1791485997-90a7`); the file published is the kept copy, `v191a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone; whether a quarter feels right over many deaths is his to find.
+
+### Version 19.2: Strike's two swings mended
+
+**What he said.** 8 Oct 2026, 08:35, to this chat: "Send the strike combo to the art agent and have
+them review it to the rules". The art chat's review (`docs/requests/strike_combo_review_answer.md`,
+12:11) found five faults against the art rulebook, each with a tested mend; it made them on its
+branch `art/strike-combo-mends` behind a switch that was off, and sent him a moving picture at 14:02
+(`strike_combo_mended.gif`: the swings as they were beside the mended). His answers there, 14:05, as
+the art chat reports them (`docs/mockups/strike_combo_mends/README.md`): "Yes, the mended one
+(Recommended)" and, of the shorter stance at the blow, "Yes, shorter is fine (Recommended)". And in
+this chat, 15:04, to "Put the art chat's mended Strike (feet that grip the floor, no arm through his
+head, the shorter stance) into the game as Version 19.2?": **"Yes (Recommended)".**
+
+**What is in it** (the art chat's work, brought in whole: `src/art/moves3.ts`, `strikeMended`,
+`slashMended`, `mendFeet`, `backFoot`; `src/art/heroes3.ts`, `streakShown`; the record in
+`docs/NEXT_VERSION.md` from "AFTER 19.1 WENT OUT" to "VERSION 19.2 IS LIVE").
+
+- **FEET THAT GRIP THE FLOOR** (the art rulebook's Movement 8 and 1): both feet leave the floor while
+  the game's step carries him, and land at the blow in his stance's places; a foot on the floor now
+  moves at most 0.8 of a game pixel (before, up to 8.7). The lunge is his hips over the front foot:
+  THE SHORTER STANCE he said yes to.
+- **NO ARM THROUGH HIS HEAD** at the top of the slash (Heroes 6): the hilt further forward and lower,
+  his head laid toward his left shoulder.
+- **HIPS FIRST** in the slash, then the chest, then the blade; **NOTHING JERKY** in its raise or its
+  way back.
+- **THE STREAK ONLY THROUGH THE CUT** (the third to fifth frames of each swing): the way up and the
+  way back show a clean blade.
+- `COMBO_MENDS.on` TRUE: the mended swings are put in place as `moves3.ts` loads (`useComboMends`);
+  switched off they are the swings as they were, for pictures beside them (`__dbg.comboMends`).
+  Nothing of the rules changes: the same harm, the same timing, the same step.
+
+**How it was tested.**
+
+- `tsc` clean; `tests/combo_mends.test.ts` (5, the art chat's, now holding the mended swings as the
+  game's own: the switch on, and off and on again giving the old swings and the mended exactly;
+  feet that grip as the game plays the combo at 60 steps a second, the legs reaching; no arm in his
+  head; hips first and nothing jerky; the streak only through the cut). THE WHOLE UNIT SUITE 662 OF
+  662 (15:06 to 15:10), and again in the frozen copy after the regression (662 of 662, 16:11 to 16:14).
+- THE PRE-FLIGHT (a dev page built from the tree, 15:18 to 15:24): 21 playtests, among them the
+  combo's own on a PC and a phone, the looks, a warrior's words, his auto aim and melee, the facing,
+  the first dungeon for a warrior, the way in, two monkeys, the soak, the boss, the speed and the
+  warrior's word combinations: all clean.
+- **The regression** on a copy frozen at 15:26 (the scratchpad's `v192a/arpg_frozen`,
+  15:26 to 16:10, two at a time, nothing else running): **148 OF 148 PLAYTESTS
+  FINISHED CLEAN**.
+  Speed: 59.4 frames a second, longest frame 50 ms; the slowest fights of the four word-pair runs 58.7 to 59.3 frames a second (19.1's: 59.5, and 57.2 to 58.8).
+- THE RELEASE BUILD, made in the copy at 16:15: `Play.html` 879,262 bytes and
+  `dist/artifact.html` 878,940, both saying V19.2; kept in the scratchpad's
+  `v192a/release/`.
+- **The published page itself** (`wrap192.sh` in the scratchpad, 16:15 to 16:32): **66
+  of 66 playtests clean.** The same 66 as 19.1's. Published at 16:33 ("Version 46", version
+  id `1791491603-4d96`); the file published is the kept copy, `v192a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone; how the shorter stance feels in a fight is his to find.
+
+### Version 19.3: Heavy, Precise, Frenzied and Guarding
+
+**What he said.** 8 Oct 2026, 10:54, to this chat: "After the changes to normal mode I want to get
+more words into the game.  I’d like to add a word MYSTICAL, which increases spell damage in the same
+vein as PHYSICAL for attack damage, I’d like leech and volitile moved to shaping words, then I’d like
+4 more shaping words added." 10:58: "Sorry keep power’s name the same.  I meant power". 11:27: "Swift
+and twin are also shaping words into". At 12:26, to the art chat, he chose the eight (Pulling,
+Splitting, Heavy, Precise, Hexing, Stilling, Frenzied, Guarding), and said yes to their looks there
+(13:15 and 13:43, as it reports them). Here, 15:21: "Did you put the new words in?"; 15:25, "Yes,
+words first (Recommended)". The plan, his doc "Wordsmith: The New Words"
+(https://claude.ai/code/artifact/4ef13dd1-6b9e-4577-8342-129f6cd213bd): **his yes at 16:53, "Yes, as it
+is (Recommended)"**, and to its questions, "Nothing (Recommended)" (a word on the wrong kind of
+ability), "Yes, one a side (Recommended)" (one damage word on each side), "Yes (Recommended)"
+(Volatile's hidden bomb). The first four in, whose looks were ready (the art chat draws Mystical's
+after the ranger: he was told after 16:55). Pictures of them at work in the game, and of the screens,
+at 18:14; **his yes at 18:23: "Yes, as they are (Recommended)"**; and "Arcana (Recommended)"
+(Mystical's stack, to come) and "Later (Recommended)" (Mystified).
+
+**What is in it.**
+
+- **THE TWO KINDS OF WORD** (`WordKind` in `src/game/defs.ts`): DAMAGE words (Power, Flame, Frost,
+  Lightning, Poison; Mystical to come) and SHAPING words (Swift, Twin, Leech, Volatile, and the
+  new ones). **One damage word on each side** of an ability (`socketProblem`, `placeProblem`: "One
+  damage word per side"); a save from before with two on a side keeps the first, and the other goes
+  back to the pouch (`refresh`). Abilities are attacks or spells (`SPELL_SKILLS`, `isSpell`: the
+  staff's and the wand's, and Warp), for Mystical and Power to come.
+- **HEAVY** (Strength; `HEAVY`). In front: slower to use (cooldowns 1.25 times, a quick attack's
+  speed over 1.25), much harder (+50%, and half a percent more for each point of Strength), and what it hits is
+  **stunned** for 0.8 s (an elite, a guardian too, for half; a boss never): it cannot move or attack,
+  and a blow it was winding up is broken off, with its warning on the floor (`stunMonster`,
+  `breakOff`, `Zone.src`). Behind, "of Quakes": **cracked ground** for 4 s where it lands; a monster
+  that walks onto it is **staggered**, its attack broken off, for 0.55 s, and the same ground leaves it
+  be for 1.5 s after (`staggerMonster`; bats fly over it, bosses stand firm). Burned into gear: on
+  the weapon, gloves, a ring or the amulet a chance to stun (the stat `stunChance`; all the gear's
+  together at most 50%, `HEAVY.stunCap`) or Strength; on the rest armour or Strength. On a
+  monster: its blows knock the hero back 0.6 of a tile (`knockHero`, through the step that Strike's
+  combo uses: walls stop it).
+- **PRECISE** (Dexterity; `PRECISE`). In front: more damage (+30%, and half a percent more for each point
+  of Dexterity), an area 30% smaller (his change of 5 Oct: damage, not a critical chance). Behind, "of
+  the Mark": the first enemy each use hits is **marked** for 5 s; the hero's next hit on it is a
+  **certain critical**, and spends the mark (a hit that spends one marks nothing). Burned into gear:
+  critical chance or Dexterity (the weapon, gloves, rings, amulet); a critical's harm or Dexterity
+  (the rest). On a monster: its blows ignore half the hero's armour.
+- **FRENZIED** (Strength; `FRENZY`). In front: each use adds a stack of **frenzy**, up to five, each
+  8% faster for the quick attack and for the recovery of every cooldown (`frenzyPace`); it fades,
+  all at once, 3 s after the last use. Behind, "of Frenzy": a kill by the ability adds a stack and
+  holds the frenzy 3 s more, to 9 s at most. Burned into gear: attack speed or Strength (the weapon,
+  gloves, rings, amulet); running speed or Strength (the rest). On a monster: up to 50% faster as it
+  is hurt (moving, and coming round to its next blow).
+- **GUARDING** (Strength; `GUARD`). In front: each use gives a **shield** of a tenth of life (and a
+  tenth of a percent more for each point of Strength, to a fifth) for 3 s, which takes blows before life does;
+  a new one is never weaker than what is left of the last. Behind, "of Warding": a **ward circle** for
+  4 s where it lands, inside which the hero takes 30% less (and a fifth of a percent more for each point of Strength, to half). Burned
+  into gear, on any piece: a chance to block a blow, which then does nothing at all ("Blocked"; the
+  stat `blockChance`, all the gear's together at most 50%, `GUARD.blockCap`), or Strength. On a
+  monster: a shield of a fifth of its life, which takes harm first.
+- **THEIR LOOKS**, the art chat's (`src/render/words3.ts`, from `art/new-words` at `31e27c3`, his yes
+  in the art chat at 13:15 and 13:43): `WORDS3.on` true, and called up by the rules' own events
+  (`events3`; the events 'heavy', 'stun', 'stagger', 'markOn', 'markSpent', 'frenzy', 'frenzyFed',
+  'shield', 'guarded', 'blocked', and the 'zone' of cracks and wards): the heavy blow's freeze and
+  ring, the stars of a stun, the knock of a stagger, the cracked ground; the sight that closes on a
+  marked enemy and snaps shut on the critical; the ring of frenzy at the hero's feet; the shield's
+  shell, its flare where a blow is turned, and the ward circle. The demo of the other four (Pulling,
+  Splitting, Hexing, Stilling) does its share of the rules only on a page that listens (`W3.demo`).
+- **ROOM FOR THIRTEEN WORDS:** the Lexicon in town lays its stones in rows as even as they can be
+  (seven and six: `lexLayout`); the start screen's Lexicon takes two columns where one would run off
+  the panel; a pouch with more words than its stones have room for lays them narrower, a pixel apart
+  (`layPouch`, `NARROW_STONE`: all thirteen in one line of a phone's half).
+
+**How it was tested.**
+
+- `tsc` clean; `tests/new_words.test.ts` (20, new: each word in front and behind, on gear and on a
+  monster, and their looks called up by the rules, and nothing with the switch off);
+  `tests/word_kinds.test.ts` (4); `tests/words.test.ts`: every loadout of the first nine words, as
+  before, and every side holding a newer word against the empty side and each single word (2,568
+  loadouts an ability; all of them would be 6,724), each word seen to act; the art chat's
+  `tests/words3.test.ts`, the switch on. THE WHOLE UNIT SUITE 704 OF 704 (18:09 to 18:13), and again in
+  the frozen copy after the regression (704 of 704, 19:24 to 19:28).
+- THE PICTURES: `tools/scenarios/words193.mjs` (the four at work in the practice room by the game's
+  own rules, a frame every thirtieth of a second) and `tools/scenarios/words193_look.mjs` (the
+  inventory, the Lexicon in town and on the start screen, with all thirteen words).
+- THE PRE-FLIGHT (a dev page built from the tree, 18:24 to 18:32): 14 playtests, among them the
+  words for all three classes (the four new ones with them), the speed, the soak, a monkey, and the
+  word combinations for the warrior and on a phone (the four new among them, and the rule of one
+  damage word a side): all clean once the combos playtest knew the rule.
+- **The regression** on a copy frozen at 18:34 (the scratchpad's `v193a/arpg_frozen`,
+  18:34 to 19:20, two at a time, nothing else running): **147 OF 148 PLAYTESTS
+  FINISHED CLEAN**. The one: `guide_early_word_phone` (a ranger on a phone, a word dropped at his feet early), whose dungeon (seed 621620090) let him use all three attacks before any monster came near, so the fight prompt never showed; replayed with the same dungeon it does the same on 19.3's page, twice (19:21 and 19:22), and on 19.2's frozen page (19:23): the playtest's random dungeon, not this version.
+  Speed: 58.5 frames a second, longest frame 50 ms; the slowest fights of the four word-combination runs, the new words among them, 57.0 to 58.8 frames a second (19.2's: 59.4, and 58.7 to 59.3).
+- THE RELEASE BUILD, made in the copy at 19:28: `Play.html` 921,898 bytes and
+  `dist/artifact.html` 921,576, both saying V19.3; kept in the scratchpad's
+  `v193a/release/`.
+- **The published page itself** (`wrap193.sh` in the scratchpad, 19:39 to 19:57): **68
+  of 68 playtests clean.** The 66 of 19.2's, and the words for a warrior and for a ranger on a phone. (A first run from 19:28 was cut off after 38, all clean, by the ten minutes a command may run in the foreground; it was run again whole, in the background.) Published at 19:57 ("Version 47", version
+  id `1791503852-8b12`); the file published is the kept copy, `v193a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone; the numbers are the doc's starting points, to be tuned once he has
+  played them (a Guarding quick attack renews its shield with every swing; a Heavy one keeps a
+  plain monster all but stunned).
+
+### Version 19.4: the ranger's new stances
+
+**What he said.** 8 Oct 2026, to the art chat, 15:31: "Wait I need the rangers animations fixed";
+and at 15:38, asked which of them: "All of that, but more.  Each character should have a battle
+stance and a town stance.  When you run, the ranger is crouched, but when you stop he pops back up.
+I want him to stay crouched when he stops in battle.  Once he’s in town he stands upright, and he’ll
+need a movement animation for town as well.  Also his shot animation is upright so when you shoot
+an arrow you pop up and down to the crouch.  I want the battle stance to have the bow out and arrow
+knocked.  And the arrow that fires in the animation for shot doesn’t match the actual projectile
+that comes out for shot.  I need all that fixed". He said yes there to each part (15:57, 16:28,
+16:41) and at 17:07 to handing it all over, "Yes, hand it all over (Recommended)", as the art chat
+reports (`docs/mockups/ranger_stances/README.md`). Here, to a picture of him as he was and with the
+stances, in a dungeon and in town (`ranger_new_stances.png`), **his yes at 20:27: "Yes
+(Recommended)"**, to "Put the ranger's new stances into the game as Version 19.4, as in the
+picture?".
+
+**What is in it.** The art chat's `art/ranger-stances` at `cf9f09f`, brought in whole and switched
+on: `RANGER_STANCES.on` in `src/art/moves3.ts` and `RANGER_ARROW.on` in `src/game/defs.ts`, put in
+place by `useRangerStances(true)` as `moves3.ts` loads. (Its README says what each part is, measured
+against what was; "today" there is the ranger before this version.)
+
+- **In battle he stands as low as he runs**: crouched, side-on, the bow out in front of him and
+  down, an arrow on the string (`BATTLE`), breathing and shifting his weight. **In town he stands
+  upright, and runs upright** (`RANGER_TOWN_UPRIGHT`).
+- **No pop**: he comes to a stand out of the run in two steps, by the moment of the run he stopped
+  at (`AnimSet.stops`), and sets off from the stance into it (`AnimSet.start`). His runs grip the
+  floor. Facing his mark while he backs away or goes across it, his run steps that way
+  (`AnimSet.walkWays`).
+- **Shot and Volley from the crouch, with one arrow**: the arrow on his string is painted as the
+  game draws its own, and the game's arrow is drawn from where that one's point was, at its height,
+  as long (`RANGER_ARROW`); a Volley's arrows go up from his bow. The rules are not changed: an
+  arrow still starts 0.4 tiles ahead of him and hits what it hits.
+- **Shooting on the move his legs run under it**, and the same when a blow rocks him as he walks
+  (`clips.attackWalk`, `heavyWalk`, `reelWalk`, `lurchWalk`).
+- The roll, being rocked, thrown forward, the fall and his habits, from the crouch (and a new habit:
+  the arrow taken off the string, sighted along and nocked again); picked on his class card, he
+  makes ready into the battle stance.
+- **THE COST, EASED.** His pictures painted ahead of need are 958 in a dungeon (there were 182) and
+  408 in town. `Renderer.heroArt` (`src/render/render.ts`) lets his pictures and the monsters' take
+  turns by the frame, so that neither waits on the other, and in town it paints his dungeon
+  pictures ahead, so that the first dungeon of a session finds most of them made.
+- Switched off, he is as he was before (`useRangerStances(false)`; for a playtest's pictures,
+  `__dbg.rangerStances(false)`, which paints the heroes again).
+
+**How it was tested.**
+
+- `tsc` clean. The tests that took the switch to be off now hold it on:
+  `tests/ranger_stances.test.ts` (12: the game starts with his new moves; switched off he is as he
+  was, and on again exactly the new; his runs grip and the others' do not; as low as he runs; Shot's
+  feet still and the arrow gone from the string at the blow; the game's arrow numbers equal the
+  picture's; his art has the new pictures, and not the walking ones in town; the figure's stops,
+  start, other ways, attacks made walking and the roll's coming up), `tests/grip_runs.test.ts` (7:
+  the ranger's runs grip with his stances, the others' only with `GRIP`), `tests/heroes3.test.ts`
+  (13: his run at sixty pictures a second; his making ready keeps the bow in hand). THE WHOLE UNIT
+  SUITE on the branch, the switch still off: 723 of 723 (by 20:17); switched on, 721 of 723 at
+  first (those two of `heroes3`, written for him as he was), then mended; in the frozen copy after
+  the regression, 723 of 723, 21:32 to 21:35.
+- THE PICTURES: `tools/scenarios/ranger194_look.mjs` (stills of him as he was and with the stances:
+  in a dungeon standing and shooting, and in town); `tools/scenarios/first_dungeon_fps.mjs` (the
+  frame rate second by second as a session's first dungeon begins: CLS, ON, THROTTLE, SECS, TOWN).
+- `tools/scenarios/ranger_stances.mjs` (the art chat's) plays him as the game has him (the bot's
+  fight in the practice room, then run and stopped by hand), then switches him off and on again;
+  it is in the regression now, `ranger_stances_pc` and `ranger_stances_phone`.
+- THE PRE-FLIGHT (a dev page built from the tree, 20:40 to 20:45): 10 playtests (the ranger's own at
+  both sizes, look2, the first dungeon's lesson on a phone, aiming, heights, facing, the words, the
+  soak, the word combinations): all clean.
+- **The regression** on a copy frozen at 20:46 (the scratchpad's `v194a/arpg_frozen`,
+  20:46 to 21:30, two at a time, nothing else running): **150 OF 150 PLAYTESTS
+  FINISHED CLEAN**.
+  Speed: 60 frames a second, longest frame 33 ms; the slowest fights of the four word-combination runs 58.8 to 59.5 frames a second (19.3's: 58.5 and 50 ms, and 57.0 to 58.8).
+- THE RELEASE BUILD, made in the copy at 21:36: `Play.html` 936,206 bytes and
+  `dist/artifact.html` 935,884, both saying V19.4; kept in the scratchpad's
+  `v194a/release/`.
+- **The published page itself** (`wrap194.sh` in the scratchpad, 21:36 to 21:54): **70
+  of 70 playtests clean.** The 68 of 19.3's, and the ranger's own playtest at both sizes. Published at 21:56 ("Version 48", version
+  id `1791510971-8e3a`); the file published is the kept copy, `v194a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone. KNOWN, AS THE ART CHAT LISTS IT (its README, "Known, and not done
+  here"): running between the four drawn ways his feet still slide sideways (his answer for the
+  runs, "More directions, picture first (Recommended)", is the art chat's next for them); where an
+  attack or a blow begins or ends while he runs, the picture cuts between the run's arms and the
+  attack's; setting off backwards or across from standing, and a Volley walked out of mid-way, cut
+  for a frame; the roll's ball slides where it touches the floor; the mage's battle stance of her
+  own is still to come.
+
+### Version 19.5: the first levels
+
+**What he said.** 8 Oct 2026, 20:34: "Now that we have more words, I’d like to work on the game
+progression.  This includes the skill trees, but also how the game feels early and moving up
+through the levels." 20:36: "I’d like you to start with only your tap skill at level 1.  Level 2
+you unlock tap+hold.  Level 5 you unlock swipe.  This will change the dungeon mob density and
+difficulty.  It feels a little too abrupt to be thrown into at the start". To "Make this the next
+version, after the ranger: tap only at level 1, tap+hold at 2, swipe at 5, and a gentler first
+dungeon to match?", 20:38: "Yes, this next (Recommended)". 20:39: "I’d like the fallen wordsmith to
+drop a quest item that you give to the wordsmith in town to unlock the ability to wordsmith.  So you
+shouldn’t get a word in the first dungeon.  You’ll get your first word from the wordsmith in town
+and the tutorial Then you can add one before word.  This works with all the starting words to put
+before an attack.  The next slot you unlock is the second before slot.  So you can add a shaping
+word to your damage word.  Then you unlock the after slot." 20:41: "And I’d like the quest item to
+power up the runes around the wordsmith.  Like a battery being put in.  These animations should go
+to the art team". 21:05: "That also means no words on monsters for dungeon 1".
+
+To the first pictures (`first_levels.png`), 22:19: to "Is this the start you want, as in the
+pictures?", "Yes, with changes"; to "When should the other slots open?", "2nd before 5, after 7 and
+10 (Recommended)"; to "Your first word is set in town now. Where do you first try it?", "No special
+moment"; to "Your next hero, after the first: does he need the quest again?", "No, the ring stays
+lit (Recommended)". Asked what to change, 22:20: "The moves by level,The slots"; and of each, 22:21,
+"Hide them until they open". 22:23: "And I want it to be a moment when your new moves unlock.
+These animations should be strike skill slides over and whirlwind is revealed with a flourish".
+22:25: "Nice.  And I’d like the first pack you run into to be a real softball.  So you get a chance
+to learn the movement and tapping mechanic". 22:25: "Also can you change the movement speed so it’s
+constant no matter where the joystick is in relation to the center". To the new pictures and the
+film (`first_levels_2.png`, `new_moves.gif`) and "Put the first levels into the game as Version
+19.5, as in these pictures?", **his yes at 23:06: "Yes, now; ring art later (Recommended)"**.
+
+**What is in it.** `FIRST_LEVELS.on` in `src/game/defs.ts`, his words in full above it, put in place
+with the slots' levels as the file loads (`useFirstLevels`). Switched off, the game is 19.4's.
+
+- **The moves open by level** (`MOVE_OPENS`: tap at 1, tap and hold at 2, the swipe at 5;
+  `Game.moveOpen`). A move not open yet cannot be used, has no slots, and is not shown on the game
+  screen or on the inventory's ATTACKS page.
+- **The moment a move opens** (`drawMoveToast`, `OPENING` in `src/ui/hud.ts`; the rules' `moveOpen`
+  event): the NEW MOVE banner with the move's picture and name and how it is made; at level 2 the
+  quick attack's plate slides over from the middle and the slow one's opens out from its own middle
+  with a flourish (a flash, two rings, rays and sparks, in the friend's cyan and white); at level 5
+  the swipe's button the same.
+- **Wordsmithing opens with the wordsmith's ring** (`Hero.ring`; on the device, `Meta.ring`). Until
+  it is lit there are no word slots, no word falls anywhere, and his trade is shut ("The runes are
+  dark", `DARK_RING`). The fallen wordsmith's satchel holds the RUNE HEART instead of a word
+  (`QUEST_ITEM`, `Hero.quest`: a working name); walked up to the wordsmith in town with it, his ring
+  is lit (the rules' `ring` event, for the art chat's powering up to come), he gives the hero's first
+  word, and it goes before the quick attack whatever the class (`firstWordSkill`). Set there, the
+  lesson is over ("No special moment"). The ring stays lit for the heroes after, on that device. A
+  device that saved before this version has never had it lit: its next new hero goes for the RUNE
+  HEART. A hero saved before it keeps his ring and his words. A hero who leaves the first dungeon
+  without searching the fallen wordsmith finds him again in the next, half way along its main path,
+  and so on until he is found: without the RUNE HEART there would be no wordsmithing at all.
+- **The slots open in his order, once the ring is lit** (`SLOT_OPENS_FIRST`): one in front at once,
+  the second in front at 5, one behind at 7, the second behind at 10. A slot that has not opened is
+  not shown. A word in a slot that a saved hero's level no longer opens goes back to the pouch.
+- **The first dungeon is gentler** (`FIRST_DUNGEON`): about half the monsters (a budget of 60, not
+  120), packs of 2 to 4, one room of elites, every blow in it soft. **The first pack is a softball**:
+  three slow skeletons that barely hurt and fall to a tap or two (`FIRST_DUNGEON.softball`). **No
+  monster there carries a word** (the boss included) and no word falls there; and its gate takes
+  none ("Not in the first dungeon", `FIRST_GATE`: a later hero may carry one from the Lexicon).
+- **The lesson** shows only the moves that are open (tap alone at first; tap and hold from 2; the
+  swipe from 5), and two new prompts: "You carry the RUNE HEART" / "Take it to the wordsmith in
+  town." in the dungeon, and "Bring the RUNE HEART to the wordsmith" / "He stands in the ring of
+  stones. Walk up to him." in town.
+- **The stick goes at one speed** (`src/main.ts`, `readControls`): pushed past its small still
+  middle, the hero goes at full speed however far the thumb is from the centre.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/first_levels.test.ts` (13: the switch on; switched off the game as
+  it was; the moves by level and a shut move doing nothing; the quest, the ring, the first word for
+  the quick attack, the lesson ending in town; the slots in his order; no words in the first dungeon
+  and on its monsters; the gentler dungeon; saves of heroes and devices from before; the softball;
+  the lesson's lines by level; the first dungeon's gate). The tests written for the old start hold a
+  seasoned hero (`seasoned` in `tests/helpers.ts`: the ring lit, the level raised) where they are
+  about something else, and the old start switched off where they are about it (`guide`,
+  `economy`). THE WHOLE UNIT SUITE switched on: 734 of 734 by 23:27; then, with the three rules of the night and their tests, 735 of 736 by 00:25, the one a test of saving that laid a word on the first dungeon's gate (it lays it on the second's now).
+- THE PLAYTESTS follow it. `__dbg.seasoned(level)` (a hero some way in: the ring lit, the level
+  raised) for the playtests that are about something else (input, touch, town, look2, pages, mods,
+  half, scarce, perf, powerfx, monkey); `__dbg.moveToast()`. `guide.mjs` plays the new start with
+  real input on every layout: tap alone at level 1 and the others not shown; the softball; tap and
+  hold at level 2 (the level by script), its banner, and the hold used as the prompt asks; no word
+  anywhere in the first dungeon; the RUNE HEART from the satchel; home through the boss's portal
+  (the boss put down by script) and up to the wordsmith; the ring lit, his word, the inventory
+  opening by itself, the word dragged before the quick attack and the lesson over; the second
+  dungeon, the swipe at level 5 and its banner, the swipe made; LATE, a word found after it not
+  offered; the next hero with the ring lit. `look.mjs`, `save.mjs` and `monkey.mjs` (GUIDE=1) go
+  the new way too. A SURVEY first (the whole regression on a frozen copy with the switch on and the
+  old playtests, 23:31 to 00:18): 95 of 150 clean; the 55 others all assumed the old start (input, touch, town, save, scarce, look, look2, pages, mods, the 21 runs of the lesson, half, monkey), and are the ones mended.
+- THE PRE-FLIGHT (a dev page built from the tree, 00:25 to 00:42): 38 playtests, all 21 of the lesson and one or two of each of the others: 37 clean; scarce's second dungeon had no named monster carrying a word, so it now takes the first seed from its own whose second dungeon has one; with it and five more, 6 of 6 clean.
+- **The regression** on a copy frozen at 00:43 (the scratchpad's `v195a/arpg_frozen`,
+  00:43 to 01:32, two at a time, nothing else running): **137 OF 150 PLAYTESTS
+  FINISHED CLEAN**. Twelve were the playtests', not the game's: heights, depths and slants send the playtests' own player through a real second dungeon with a hero whose ring is dark, where the fallen wordsmith now lies too, and the bot goes to an unsearched body first; mended with `__dbg.seasoned(1)`, the ring lit as it is for a hero that far in (and in across, walls, doors and modes_look, which take such a hero that far and had passed). The thirteenth, `ranger_stances_pc`, samples his picture for seven seconds of the bot's fight in the practice room and never saw him idle. A SECOND FROZEN COPY at 01:34 (`v195b/arpg_frozen`, from `74500db`: the same game, its page byte for byte the first's but for the stamp, with the mended playtests) ran those 27 again, 01:34 to 01:40: 26 clean; `ranger_stances_pc` was flagged again beside another playtest, and was clean three times of three alone, then once of two beside its phone twin (01:40 to 01:42): its check leans on the machine's speed, and nothing of the first levels is in the practice room.
+  Speed: the frame-rate run 58.9 frames a second, longest frame 33 ms, with 23 patches of ground effects out (its hero is a seasoned mage with words behind his attacks now); the slowest fights of the four word-combination runs 58.0 to 59.2 frames a second, longest frame 50 ms.
+- The unit suite in the second frozen copy, 736 of 736, 01:43 to 01:47.
+- THE RELEASE BUILD, made in the second copy at 01:47: `Play.html` 943,906 bytes and
+  `dist/artifact.html` 943,584, both saying V19.5; kept in the scratchpad's
+  `v195b/release/`.
+- **The published page itself** (`wrap195.sh` in the scratchpad, 01:47 to 02:08): **74
+  of 74 playtests clean.** The 70 of 19.4's, and four of the first levels: the lesson held upright and narrow, a word found after it on a phone, and random input thrown at a new player's first dungeon. Published at 02:09 ("Version 49", version
+  id `1791526193-4511`); the file published is the kept copy, `v195b/release/artifact.html`, byte for
+  byte the second frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone. KNOWN: the ring looks as it did, lit, before the RUNE HEART is brought
+  (its dark look and its powering up are the art chat's, for a later version: "ring art later");
+  the RUNE HEART is a working name, and shows only in words (the satchel's line, the prompts, the
+  pouch's line); with the prompts off a new player is told of it only by the satchel's line and the
+  pouch's; the ranger's bot can stall in a first dungeon whose boss is behind a door it never comes
+  round to (the bot's, not the rules').
+
+### Version 19.6: the wordsmith on bones, and the master rune-stone
+
+**What he said.** To the art chat (as it posted them on the board at 23:18 and 00:13): 22:41, when
+the quest item was to be drawn, "wait on that, cause we probably need new art for the wordsmith and
+the runes around him with the new design rules"; 22:46, "id like him on the wire skeleton and all
+that"; by 23:09, to `smith.gif` and `smith_close.png`, "Yes, this is him (Recommended)", and of the
+ring, "Just right (Recommended)"; by 23:52, asked what the item should be, "A master rune-stone"; to
+its pictures, "Yes, keep it (Recommended)"; to the ring powering up, "Looks great except for the
+hole in the table.  Just a big black hole?"; at 00:01, to the hollow carved, "Yes, keep it
+(Recommended)". To this chat, 00:22 on the 9th: "K add the art, then work on our skill trees, then
+I’d like controller support.  Dual stick aiming."
+
+**What is in it.** The art chat's `art/quest-stone` at `7fd36bf` (with `art/wordsmith`, `ca09b4e`, in
+it), brought in whole and switched on: `SMITH3.on` in `src/art/smith3.ts` and `QUEST3.on` in
+`src/art/quest3.ts`. Its READMEs (`docs/mockups/wordsmith/README.md`,
+`docs/mockups/quest_stone/README.md`) say what each part is.
+
+- **The wordsmith on bones**, a head taller than the heroes, ancient, runes burning on him, turning
+  for real to whoever comes up; every so often he writes a great rune on the air and drives it into
+  his slab. **His ring big and wild**: six tall stones with burning runes, a circle in the floor,
+  fourteen letters of light swirling, a column of light off the slab.
+- **The master rune-stone**: it lies by the fallen wordsmith's hand in the first dungeon (or in the
+  dungeon where he is found: Version 19.5), throbbing; taken up, it flies into the hero; carried, it
+  shows by INVENTORY. In town the ring is dark (the stones cold, the wordsmith's runes cold, an empty
+  hollow in his slab) until it is given; then it floats to the slab, is laid in, and the ring powers
+  up, 4.7 s, into the ring he said yes to.
+- **The rules feed the pictures** (`Game.questView`, set into `QUEST3` each frame by
+  `questFromRules` in `src/main.ts`): the ring dark while this hero's is (`Hero.ring`); the stone
+  lying while the fallen wordsmith is unsearched and the ring dark; carried while `Hero.quest`
+  holds it; its two moments from the rules' events, `quest` (taken up) and `ring` (given). The
+  wordsmith's word waits until his ring has powered up before the inventory opens for it.
+- **His name for it**: `QUEST_ITEM` is the master rune-stone (19.5's words called it the RUNE HEART,
+  a working name). The fallen wordsmith's line: "A fallen wordsmith. In his satchel, full flasks; by
+  his hand, the MASTER RUNE-STONE. Bring it to the wordsmith in town."; the prompts, "You carry the
+  MASTER RUNE-STONE" and "Bring the MASTER RUNE-STONE to the wordsmith".
+- Switched off (`__dbg.smith3(false)`, `__dbg.quest3({ on: false })`), the town is 19.5's.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/smith3.test.ts` (6) and `tests/quest3.test.ts` (9), the art
+  chat's, now hold the switches on (and off again, as it was); `tests/townart.test.ts` tests the
+  town's own painting with `SMITH3` off, the old wordsmith and ring with it; `tests/first_levels.test.ts`
+  holds what the stone's pictures read from the rules. THE WHOLE UNIT SUITE: 752 of 752 by 02:33.
+- The pictures in the game itself (`guide.mjs` on a phone held sideways and narrow, 02:27 to
+  02:28): the stone by the fallen wordsmith, carried by INVENTORY, the dark ring with the new
+  wordsmith, the stone floating to the slab, the ring powered up beside the inventory and its coach;
+  the prompts' longer words fit, on the narrow layout over three lines.
+- THE PRE-FLIGHT (a dev page built from the tree, 02:34 to 02:42): 23 playtests (the town's every way, its services and looks, saving, the looks, the lesson on four layouts and with a word found after it, two monkeys in the first dungeon, the way in, the practice room, the dungeon's things, the walls, the speed): all clean.
+- **The regression** on a copy frozen at 02:42 (the scratchpad's `v196a/arpg_frozen`,
+  02:42 to 03:31, two at a time, nothing else running): **149 OF 150 PLAYTESTS
+  FINISHED CLEAN**. The one, `combo_phone` (Strike's two swings played with real taps on a phone, in the practice room), had two quick taps a sixth of a second apart make one swing instead of two. It was clean six times of six on the same page afterwards (03:31 to 03:33: three alone, and three beside its PC twin, as it ran in the regression), and nothing this version changed touches the practice room, Strike or the taps: a rare timing thing of the machine's, not found again.
+  Speed: the frame-rate run 58.9 frames a second, longest frame 50 ms, with 23 patches of ground effects out; the slowest fights of the four word-combination runs 56.5 to 58.6 frames a second, longest frame 67 ms.
+- The unit suite in the frozen copy, 752 of 752, 03:33 to 03:37.
+- THE RELEASE BUILD, made in the copy at 03:38: `Play.html` 974,485 bytes and
+  `dist/artifact.html` 974,163, both saying V19.6; kept in the scratchpad's
+  `v196a/release/`.
+- **The published page itself** (`wrap196.sh` in the scratchpad, 03:38 to 03:59): **74
+  of 74 playtests clean.** The same 74 as 19.5's. Published at 03:59 ("Version 50", version
+  id `1791532793-da50`); the file published is the kept copy, `v196a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone. KNOWN: the WORD FOUND banner for the wordsmith's word comes as the ring
+  begins to power up, over the top of the screen; Strike, Shot and the Wave big and wild (`WILD`, on
+  `art/mage-stances`, which also holds the mage's stances) are not in it yet: asked of the art chat
+  at 02:14 whether they can come without the mage's.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4372,19 +5031,34 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               iron: a door's post, lintel and one leaf of bars in each of 8 steps of its swing;
               the gate's pillar, round arch and portcullis; the mark carved in the boss's arch,
               in embers and alight. What is flat in a wall's plane is cut into STRIPS a quarter
-              of a tile wide, `Flat.strips`; `makeGateArt` keeps what has been painted),
+              of a tile wide, `Flat.strips`; `makeGateArt` keeps what has been painted; 19.0:
+              a sealed door's leaf, a studded slab with the rune of its word, `makeSealLeaf`),
+              hazards (19.0: THE TRAPS' PICTURES: a spike floor's holes and its spikes, a dart
+              wall's plate and its slot; render.ts draws them, `standHazards`, and the darts in
+              flight with the other shots),
               props (14.1: what stands and lies in a dungeon, and the fallen wordsmith);
               town (14.4: the town's own things: smithy, bazaar, the wordsmith's ring, the
               Lexicon, the stash), townsfolk (14.4: its four people, each a loop and
               something done now and then; townFrame, their clock), townscene (which picture
               each of the town's things shows at a moment: for the game and the dev pages);
+              smith3, ring3, quest3 (19.6, the art chat's: THE WORDSMITH ON BONES, `SMITH3`,
+              `makeSmith3`, and HIS RING BIG AND WILD, `makeRing3`; THE MASTER RUNE-STONE,
+              `QUEST3`, `makeStoneArt`, `POWER` (the ring powering up as it is given), read by
+              townscene's `ringPower` and render's `standRing3` and `standQuestStone`; set from
+              the rules each frame, `Game.questView` and `questFromRules` in main.ts);
               palette and icons: the art of the first builds, still in use; all drawn in code;
               monsters and the Warden in boss.ts (the monsters before Version 14), the tiles
               and dungeon props in tiles.ts and body.ts (the dungeon before 14.1), the town's
               props in tiles.ts and its two people in boss.ts (the town before 14.4): no
               longer in the game (kept for the before-and-now pictures);
               heroes_v1 (the old heroes) and heroes2 (an early finer warrior): for comparison
-              sheets only
+              sheets only;
+              skeleton, skin, moves3, heroes3, hero3_knight / hero3_ranger / hero3_mage (16.0:
+              THE THREE HEROES PAINTED OVER A SKELETON; moves3 their moves: since 19.2 Strike's
+              two swings mended, `COMBO_MENDS`; since 19.4 THE RANGER'S NEW STANCES,
+              `RANGER_STANCES`, `useRangerStances`, his battle stance and town stance, stops and
+              starts, gripping runs, Shot and Volley from the crouch, walking attacks; heroes3
+              their art, `animSet3`, and the pictures painted ahead, `HeroArt.warm`)
 src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, level, state, game,
               lock (touch: which enemy the hero is locked onto, Version 11.1),
               height (Version 18.0: the rules of ledges, stairs and pits: which step a body may
@@ -4400,7 +5074,31 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               `DOORS.share`: every vault and lair, and about one in five of the rest), the gate
               in the boss hall's, and the tile on either side of a door made wall; where a door's line, face, way and
               piers are; `stepDoors`: a door opens for the hero when he comes near, and
-              since 18.7 for nobody else; `shutGrid`: where a door is still shut)
+              since 18.7 for nobody else; `shutGrid`: where a door is still shut),
+              the mix (18.9, `MIX` in dungeon.ts: two rooms next door, `Room.nextDoor`; a
+              lever's `gate` and its nook, `LEVER_NEAR`; a room that locks, its `trapgate`s,
+              `LOCK_CLEAR`; their rules in game.ts, `pullLever`, `updateLocks`; the hall laid
+              by hand for them, `makeMixHall` in level.ts), Strike's combo (18.9, `COMBO` and
+              `TUNE.comboWindow`, `swingStep` in defs.ts; `useBasic`; the slash, `SLASH3` in
+              art/moves3.ts, chosen by `attackClip` in render/figure.ts; a PC's click that waits
+              its turn, `click` in main.ts),
+              traps (19.0: THE TRAPS, `TRAPS.on`, from the second dungeon, `TRAPS_FROM`: a
+              spike floor's beat, `SPIKE`, `spikeAt`; a dart wall, `DART`, `slotMouth`; the
+              map-maker's `sealVault`, `unsealDoorless`, `layHazards`; their rules in game.ts,
+              `stepSpikes`, `stepDarts`, `fireDart`, and the sealed door's, `unseal`; the
+              sealed door is a door kind, 'worddoor', in doors.ts; the hall laid by hand for
+              them, `makeTrapHall` in level.ts),
+              modes (19.1: NORMAL AND HARDCORE, `MODES.on`, `NORMAL.goldShare`, `MODE_BEFORE`,
+              `MODE_LINE`; in game.ts `Game.mode`, `entry` (the hero as they went into the
+              dungeon), `wakes`, `wakeSave`, `losses`; `RunSave.mode`, `Meta.mode`; waking in
+              town, `wake` in main.ts);
+              THE FIRST LEVELS (19.5, in defs.ts: `FIRST_LEVELS`, `useFirstLevels`, `MOVE_OPENS`,
+              `SLOT_OPENS_FIRST`, `QUEST_ITEM`, `FIRST_DUNGEON`, `firstWordSkill`; in game.ts
+              `moveOpen`, `slots`, `wordsFall`, `lightRing`, `softball`, `Hero.ring`,
+              `Hero.quest`, `Meta.ring`, `DARK_RING`, `FIRST_GATE`; the map-maker's numbers for
+              the first dungeon in dungeon.ts; the NEW MOVE banner and the plates' opening,
+              `drawMoveToast` and `OPENING` in ui/hud.ts; the stick at one speed, `readControls`
+              in main.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -4410,14 +5108,19 @@ src/render/   render (world: tiles, actors, ground patches, statuses, shots, lig
               standing: the game and the class cards both use it, Version 11; and how far into
               its attack a monster is by the rules' clock, Version 14),
               lifebar (the hero's life over their head: when it is there, what it shows, 11.2),
-              fx (everything that flies or flashes: each word's sign, numbers, shake, messages)
+              fx (everything that flies or flashes: each word's sign, numbers, shake, messages),
+              words3 (the new words' looks, the art chat's: since Version 19.3 Heavy's, Precise's,
+              Frenzied's and Guarding's in the game, called up by the rules' events, `events3`;
+              the other four a demo for its playtest's page, `demo3`, `W3.demo`)
 src/ui/       ui (immediate-mode kit), hud (globes, the attacks as phrases, the prompts' banner),
               inventory (Version 13.1: three pages, GEAR on the hero, ATTACKS, STATS, over the
               bag and the words; 14.2: on half the screen, what is read on a card over the
               game's half), lexicon (the book of words),
               guide (what the first dungeon's prompts say), words (word tiles and attack names),
-              panels (starting screen, level-up, pause, death, item cards), town (gate, vendor, stash)
-src/dev/      bot (test player), preview_*.ts (art sheets), sheet;
+              panels (starting screen, level-up, pause, death, item cards; 19.1: the cards'
+              MODE, and a Normal death's YOU FELL and Back to town, `wakeLine`), town (gate,
+              vendor, stash)
+src/dev/      bot (test player; 19.0: it minds the traps, `minded`), preview_*.ts (art sheets), sheet;
               preview_hero (every frame of a rig) and preview_hero_gif (a moving picture of it);
               styles + styles_cast + preview_styles = the art-style samples (style 6 = NEON):
               concept art today, the starting point for the redraw;
@@ -4428,7 +5131,10 @@ src/dev/      bot (test player), preview_*.ts (art sheets), sheet;
               striking, pacing out and back, or turning on the spot), preview_props
 src/main.ts   boot, frame loop, controls, saving, test hooks
 tests/        dungeon, items, town (every service's rules), sim (bots play whole runs headless),
-              words (every legal word loadout on every attack ability; random loadouts in live fights),
+              words (every legal word loadout on every attack ability; random loadouts in live fights;
+              since 19.3 the newer words' sides against the empty side and every single word),
+              new_words (19.3: Heavy, Precise, Frenzied, Guarding at work, on gear and on monsters,
+              and their looks called up), word_kinds (19.3: damage and shaping, attacks and spells),
               guide (Version 9: the prompts, the body and the first word, words lent and spent,
               the trap, Poison, Twin, cooldowns or mana, the Lexicon, kill lines, voices),
               economy (how scarce words are, and that a rune is a promise),
@@ -4468,7 +5174,18 @@ tests/        dungeon, items, town (every service's rules), sim (bots play whole
               of the hero's reach and cannot come at him, the risen dead rise on his side;
               and 18.8: where doors stand, a vault's and a lair's and about one in five others),
               gates (18.5: the pictures: frame, leaf, gate and arch, the mark, the portcullis),
-              small (18.6: a ranged monster holds its ground; the pick-up range; a brute's life)
+              small (18.6: a ranged monster holds its ground; the pick-up range; a brute's life),
+              combo (18.9: the switch; Strike, slash, Strike; the set time; the step and what
+              stops it; the same harm; what breaks it off; the picture),
+              mix (18.9: the hall's lever, gate and locking room; the map-maker's mix from the
+              second dungeon, the first as it was; nothing shut in can come at the hero; the
+              playtests' own player and the lever),
+              traps (19.0: the beat; once a rise; monsters and a bat; the plate and its darts; the
+              sealed door to its word; the test player past them; the map-maker's traps, their
+              rules and their dice),
+              modes (19.1: Normal and Hardcore; waking without what was found, at the level
+              reached, a quarter of the gold carried in gone, the same dungeon; old saves
+              Normal)
 tools/        build, preview, playtest + scenarios/, regress.sh (every browser playtest),
               town_gif.mjs (a moving picture of the town's hall, or of one place in it),
               hero_gif.mjs + hero_gif.py (a hero's moving picture), crop_heroes.py,
@@ -4615,6 +5332,34 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.6: the art chat's wordsmith on bones and master rune-stone (SMITH3 and QUEST3 on; the stone's pictures fed by the rules)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/smith_look.mjs --out shots/smith/on   # the wordsmith and his ring filmed (OFF=1: as they were; tools/smith_films.py makes the film)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/quest_dungeon.mjs --out shots/quest/dungeon   # the stone by the fallen wordsmith, taken up, carried (quest_town.mjs: the dark ring and its powering up; tools/quest_films.py)
+# Version 19.5: the first levels (FIRST_LEVELS on: the moves by level, the ring and the RUNE HEART, the slots in his order, the gentler first dungeon)
+CLS=ranger node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/guide.mjs --out shots/g195/ph   # a new player's start with real input, the RUNE HEART home to the ring, the first word set in town, the hold at 2 and the swipe at 5 (LATE=twin: a word found after it is not offered; in the regression on every layout)
+CLS=ranger node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/first_levels_look.mjs --out shots/fl/ph   # the pictures he saw: the softball, the satchel, the town, the ring lit, the slots, level 5
+CLS=warrior node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/first_levels_film.mjs --out shots/flf/w   # the moment a move opens, filmed slowed (the frames' game times in <out>_times.json)
+# Version 19.4: the ranger's new stances (the art chat's, art/ranger-stances; RANGER_STANCES on)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/ranger_stances.mjs --out shots/rs/ph   # the bot's fight with him in the practice room, run and stopped by hand, then off and on again (in the regression)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/ranger194_look.mjs --out shots/r194/look   # stills of him as he was and with the stances: a dungeon, standing and shooting, and town
+CLS=ranger THROTTLE=4 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/first_dungeon_fps.mjs --out shots/fps/t4   # the frame rate second by second as a session's first dungeon begins (THROTTLE: a slower machine; TOWN, SECS)
+# Version 19.3: Heavy, Precise, Frenzied and Guarding (their looks, the art chat's render/words3.ts, called up by the rules: events3)
+WORD=heavy node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words193.mjs --out shots/w193f/heavy   # a word at work by the game's own rules, a frame every thirtieth of a second (WORD=precise, frenzied, guarding; OFF=1: the looks off); its log says what the rules did
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words193_look.mjs --out shots/w193/ph   # the inventory, the Lexicon in town and on the start screen, with all thirteen words
+WORD=heavy node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words3.mjs --out shots/w3/heavy   # the art chat's demo of any of the eight (the four still to come: pulling, splitting, hexing, stilling)
+# Version 19.2: Strike's two swings mended (the art chat's, art/strike-combo-mends)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/combo_mends.mjs --out shots/mends/old   # the swings as they were (MENDS=1: the mended, the game's own); tools/combo_mends_film.py joins two such runs side by side
+node node_modules/tsx/dist/cli.mjs tools/combo_mends_check.ts mend   # the feet's slide and the arms against the head, measured on the bones (without "mend": the old swings)
+# Version 19.1: Normal mode
+node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/modes_look.mjs --out shots/modeslook/pc   # the cards' MODE, a Normal death and waking in town, in four pictures (in the regression: modes_pc, modes_phone)
+# Version 19.0: the traps: spike floors, dart walls and sealed vaults
+node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/traps_look.mjs --out shots/trapslook/pc   # the hall of the traps, lit, in eight pictures (in the regression: traps_pc, traps_phone)
+FILM=spikes node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/traps_film.mjs --out shots/trapsfilm/x   # a trap filmed in the game, slowed (FILM=spikes|darts|door|pack): frames in shots/trapsfilm/<film>/, joined by tools/hero_gif.py
+DEPTH=4 SEED=9 node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/traps_dungeon.mjs --out shots/trapsdungeon/d4   # the map-maker's traps of one real dungeon, each photographed
+# Version 18.9: Strike's combo and a step with every swing; the mix inside each dungeon
+node tools/page_gif.mjs src/dev/preview_combo.ts "4" previews/strike_combo.gif 5         # the combo's moving picture: the game's own rules, a phone's taps, the game's own figure and paintings
+sh tools/look_moves3.sh kslash 0,2,3,4 a                                                  # the slash, frame by frame (and tsx tools/audit_moves3.ts: its hands and arms)
+DEPTH=5 SEED=372602855 node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/mix_look.mjs --out shots/mixlook/pc   # the mix in a real dungeon, for pictures
 # Version 18.8: a door on some rooms only; no battle stance as an idle in town
 tsx <scratchpad>/v187/try/doorshare.ts                                            # (history: 240 dungeons: some six doors a dungeon; every vault and lair with a way in has one, 18 in a hundred of the other rooms)
 # Version 18.7: monsters do not open doors; what is shut in a room is out of reach; a brute's life

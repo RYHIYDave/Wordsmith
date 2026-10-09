@@ -292,6 +292,37 @@ CLS=ranger  run small_phone $P --scenario $S/small.mjs &
 CLS=mage    run small_upright $U --scenario $S/small.mjs &
 CLS=warrior run small_narrow  $U --eval "$N" --scenario $S/small.mjs &
 wait
+# STRIKE'S COMBO (Version 18.9; the playtest sets the switch for itself and puts it back): two
+# quick taps (clicks, on a PC) are Strike and then the downward slash; a tap long after is Strike
+# again; every swing steps the knight forward until a monster stops him; with the switch off every
+# swing is Strike, as it was, and he does not step.
+run combo_pc     --scenario $S/combo.mjs &
+run combo_phone  $P --scenario $S/combo.mjs &
+wait
+# THE MIX (Version 18.9), in the hall laid for it, with real input: a lever's gate holds the hero
+# and is told of; he walks to the nook and up to the lever, and the gate rises; through it and into
+# the room that locks, whose gates fall behind him, hold him, and rise when its pack is dead.
+CLS=warrior run mix_pc    --scenario $S/mix.mjs &
+CLS=ranger  run mix_phone $P --scenario $S/mix.mjs &
+wait
+# THE TRAPS, in the hall laid for them: a spike floor's beat and what it does to monsters on it; a
+# dart wall's plate and its darts; a sealed door that says what it wants and opens to a Strike that
+# carries its word (and the vault behind it unseen until then).
+run traps_pc     --scenario $S/traps_look.mjs &
+run traps_phone  $P --scenario $S/traps_look.mjs &
+wait
+# NORMAL MODE (Version 19.1): the class cards' mode, Normal and then Hardcore; a Normal warrior
+# falls in dungeon 4 with what he found there (YOU FELL, what it cost, Back to town); he wakes in
+# town without it, a quarter of his gold gone, the same dungeon waiting.
+run modes_pc     --scenario $S/modes_look.mjs &
+run modes_phone  $P --scenario $S/modes_look.mjs &
+wait
+# THE RANGER'S NEW STANCES (Version 19.4): the bot fights with him in the practice room (running and
+# stopping, shooting on the move, Volley, the roll, being hit), then he is run and stopped by hand;
+# switched off and on again, he is drawn as before and as the game has him.
+run ranger_stances_pc    --scenario $S/ranger_stances.mjs &
+run ranger_stances_phone $P --scenario $S/ranger_stances.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

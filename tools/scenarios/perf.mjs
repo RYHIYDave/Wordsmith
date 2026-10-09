@@ -1,6 +1,7 @@
 // Rough frame-rate check: counts frames while the bot fights, with many ground effects out.
 export default async function (page, snap) {
-  await page.evaluate(() => { const d = window.__dbg; d.run('mage', 11); d.god = true; d.speed = 8; d.bot(true); });
+  // (THE FIRST LEVELS, the game's own since Version 19.5: a hero some way in, the ring lit and every move and slot open)
+  await page.evaluate(() => { const d = window.__dbg; d.run('mage', 11); d.seasoned(10); d.god = true; d.speed = 8; d.bot(true); });
   await page.evaluate(() => { const g = window.__dbg.game(); const h = g.hero; h.words.fire = 2; h.words.twin = 2; g.socket(0, 'behind', 'fire'); g.socket(0, 'front', 'twin'); g.socket(1, 'behind', 'fire'); });
   for (let i = 0; i < 100; i++) { await page.waitForTimeout(100); const ok = await page.evaluate(() => { const g = window.__dbg.game(); const h = g.hero; return !g.level.town && g.monsters.filter((m) => !m.dead && m.state !== 'sleep' && Math.hypot(m.x - h.x, m.y - h.y) < 7).length >= 2; }); if (ok) break; }
   await page.evaluate(() => { window.__dbg.speed = 1; });

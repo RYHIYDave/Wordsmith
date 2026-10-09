@@ -31,7 +31,9 @@
 //     the design rules out again and will fail if a change breaks one.
 
 import { RNG } from '../engine/rng';
+import { FIRST_DUNGEON, FIRST_LEVELS } from './defs';
 import { DOORS, layDoors } from './doors';
+import { TRAPS, TRAPS_FROM, layHazards, sealVault, unsealDoorless } from './traps';
 import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
@@ -57,6 +59,32 @@ const ACROSS_SHARE = 0.15; // share of rooms set off diagonally from the last on
 const ACROSS_MIN = 5; // how far apart the two corners are, in tiles along the grid each way ...
 const ACROSS_MAX = 8; // ... (five leaves the rooms ROOM_GAP apart)
 
+/**
+ * THE MIX INSIDE EACH DUNGEON. The owner, 7 Oct 2026, 17:51: "I want different room and hallway
+ * configurations within each dungeon. So when you're populating a dungeon, it doesn't have to go
+ * room, hallway. We can mix it up with the doors and the gates to make more different and
+ * interesting layouts for the whole dungeon." Three pieces, each with a switch of its own:
+ *   `pairs`   TWO ROOMS NEXT DOOR: now and then a room is set down three tiles from the last one,
+ *             facing it, with only a door between them and no hallway to speak of;
+ *   `levers`  A GATE ACROSS THE WAY, ITS LEVER NEARBY (14:01: "They can be closed with levers or
+ *             switches nearby to open them."): the way in of one room of the main path is barred
+ *             by a gate, and a small room at a dead end off the room before it, the NOOK, holds
+ *             the lever;
+ *   `locks`   A ROOM THAT LOCKS: one of the main path's elite rooms has a gate in every doorway,
+ *             and they fall while the hero is inside with its pack.
+ * `on`: ON SINCE VERSION 18.9. He saw it in a real dungeon (three pictures, 8 Oct 2026, 01:06,
+ * with "Put the mix in?") and said, 07:32: "Yeah looks good". ON, every dungeon from the second
+ * is a new dungeon, for a room set down next door moves every room after it; the first, a new
+ * player's lesson, is laid as it always was. OFF, A DUNGEON IS WHAT IT WAS IN VERSION 18.8: the
+ * mix's dice are thrown only when it is on.
+ */
+export const MIX = { on: true, pairs: true, levers: true, locks: true };
+const PAIR_SHARE = 1 / 6; // share of joints that are two rooms next door
+const PAIR_GAP = 3; // tiles of rock between two rooms next door: the least that lets the nearer room's back wall stand (render/walls.ts)
+const MIX_FROM = 2; // the first dungeon with any of the mix: a lever's gate, a room that locks, two rooms next door (Dungeon 1 is a new player's lesson, and is laid as it always was)
+/** (the level being planned may have two rooms next door: set by `planLevel` for the level it plans) */
+let pairsHere = false;
+
 const PACK_START_DIST = 10; // no pack centre this close to the hero's spawn point
 const PACK_SPACING = 4; // packs in one room are at least this far apart where the room allows
 const BOSS_CLEAR_RADIUS = 5; // solid props keep this far from the boss point inside the boss room
@@ -73,13 +101,15 @@ export function branchCount(depth: number): number {
   return depth <= 2 ? 3 : depth <= 5 ? 4 : 5;
 }
 
-/** Total monsters a level of this depth aims for. */
+/** Total monsters a level of this depth aims for. (THE FIRST LEVELS: the first dungeon, gentler: defs.ts, FIRST_DUNGEON.) */
 export function monsterBudget(depth: number): number {
+  if (FIRST_LEVELS.on && depth <= 1) return FIRST_DUNGEON.budget;
   return Math.min(230, 120 + 8 * (Math.max(1, depth) - 1));
 }
 
 /** Smallest and largest size of a 'normal' pack at this depth. */
 export function packSizeRange(depth: number): { min: number; max: number } {
+  if (FIRST_LEVELS.on && depth <= 1) return { min: FIRST_DUNGEON.packMin, max: FIRST_DUNGEON.packMax };
   const grow = Math.floor((Math.max(1, depth) - 1) / 3);
   return { min: Math.min(7, 3 + grow), max: Math.min(9, 6 + grow) };
 }
@@ -92,6 +122,7 @@ const CHAMPION_PACK_MAX = 5;
 
 /** How many elite rooms a level of this depth has. */
 export function eliteRoomCount(depth: number): number {
+  if (FIRST_LEVELS.on && depth <= 1) return FIRST_DUNGEON.eliteRooms;
   return depth <= 2 ? 2 : depth <= 5 ? 3 : 4;
 }
 
@@ -106,7 +137,7 @@ interface Rect {
 }
 
 /** What a room is for, decided while the level is planned. */
-type Role = 'start' | 'path' | 'boss' | 'side' | 'vault' | 'lair';
+type Role = 'start' | 'path' | 'boss' | 'side' | 'vault' | 'lair' | 'nook';
 
 /** A room while the level is being planned. */
 interface RoomPlan extends Rect {
@@ -138,6 +169,8 @@ interface Corridor {
   legs: Leg[];
   /** TRIANGLES: set on a corridor that runs straight across the screen (its `legs` are then only the squares it is kept clear by). */
   across?: Across;
+  /** THE MIX: set on the way between two rooms next door (it is three tiles long). */
+  pair?: boolean;
 }
 
 /**
@@ -188,8 +221,8 @@ interface Size {
   h: number;
 }
 
-/** 'hall' is big enough for a boss fight (at least 13x12, either way round). */
-type SizeClass = 'small' | 'medium' | 'lair' | 'hall';
+/** 'hall' is big enough for a boss fight (at least 13x12, either way round). 'nook' (THE MIX): the small room a lever stands in. */
+type SizeClass = 'small' | 'medium' | 'lair' | 'hall' | 'nook';
 
 function rollSize(rng: RNG, cls: SizeClass): Size {
   let long: number;
@@ -197,6 +230,9 @@ function rollSize(rng: RNG, cls: SizeClass): Size {
   if (cls === 'hall') {
     long = rng.int(13, 14);
     short = 12;
+  } else if (cls === 'nook') {
+    long = rng.int(6, 7);
+    short = rng.int(5, 6);
   } else if (cls === 'small') {
     long = rng.int(7, 9);
     short = rng.int(7, Math.min(8, long));
@@ -430,35 +466,45 @@ function grow(
       return right ? (rng.chance(0.5) ? 0 : 3) : rng.chance(0.5) ? 2 : 1;
     }
     const side = pickSide(rng, heading);
-    const gap = rng.chance(LONG_CORRIDOR) ? rng.int(9, 13) : rng.int(ROOM_GAP, 8);
-    const elbow = rng.chance(ELBOW_SHARE);
+    // THE MIX: now and then the new room is set down NEXT DOOR to the last one: three tiles of
+    // rock between them, facing each other along most of the shorter one's side, a door and no
+    // hallway to speak of. Never the boss's hall, and not in the first dungeon. (The dice for it
+    // are thrown only where the map-maker mixes: a dungeon without the mix, and the first dungeon
+    // with it, is rolled exactly as it always was.)
+    const pair = pairsHere && role !== 'boss' && rng.chance(PAIR_SHARE);
+    const gap = pair ? PAIR_GAP : rng.chance(LONG_CORRIDOR) ? rng.int(9, 13) : rng.int(ROOM_GAP, 8);
+    const elbow = !pair && rng.chance(ELBOW_SHARE);
     let x: number;
     let y: number;
     if (SIDE_DX[side] !== 0) {
       x = side === 0 ? from.x1 + 1 + gap : from.x0 - gap - size.w;
+      // (rows shared: three, room for a door; next door, all but two of the shorter side)
+      const need = pair ? Math.max(3, Math.min(from.h, size.h) - 2) : 3;
       if (elbow) {
         const past = rng.int(-2, 5); // how far beyond the end of the wall (negative = a slight overlap)
         y = rng.chance(0.5) ? from.y1 + 1 + past : from.y0 - past - size.h;
-      } else y = rng.int(from.y0 - size.h + 3, from.y1 - 2); // at least 3 rows shared: room for a door
+      } else y = rng.int(from.y0 - size.h + need, from.y1 - need + 1);
     } else {
       y = side === 1 ? from.y1 + 1 + gap : from.y0 - gap - size.h;
+      const need = pair ? Math.max(3, Math.min(from.w, size.w) - 2) : 3;
       if (elbow) {
         const past = rng.int(-2, 5);
         x = rng.chance(0.5) ? from.x1 + 1 + past : from.x0 - past - size.w;
-      } else x = rng.int(from.x0 - size.w + 3, from.x1 - 2);
+      } else x = rng.int(from.x0 - size.w + need, from.x1 - need + 1);
     }
     const cand = makeRoom(rooms.length, x, y, size.w, size.h, role, path);
     if (Math.max(bx1, cand.x1) - Math.min(bx0, cand.x0) + 1 > span) continue;
     if (Math.max(by1, cand.y1) - Math.min(by0, cand.y0) + 1 > span) continue;
-    if (rooms.some(r => gapBetween(cand, r) < ROOM_GAP)) continue;
+    if (rooms.some(r => gapBetween(cand, r) < (pair && r === from ? PAIR_GAP : ROOM_GAP))) continue;
     if (corridors.some(c => c.legs.some(leg => near(leg, cand, CLEAR)))) continue;
     rooms.push(cand);
     const legs = planCorridor(rng, rooms, corridors, from, cand);
-    if (!legs) {
+    // (next door there is one way to join them, straight across the three tiles: no other will do)
+    if (!legs || (pair && legs.length !== 1)) {
       rooms.pop();
       continue;
     }
-    corridors.push({ a: from.id, b: cand.id, legs });
+    corridors.push(pair ? { a: from.id, b: cand.id, legs, pair: true } : { a: from.id, b: cand.id, legs });
     return side;
   }
   return -1;
@@ -496,10 +542,15 @@ interface Plan {
   corridors: Corridor[];
   /** Rooms 0..pathLen-1 are the main path, in walking order. */
   pathLen: number;
+  /** THE MIX: the room of the main path whose way in a gate bars, and the nook its lever stands in (-1: the level has none). */
+  gated: number;
+  nook: number;
 }
 
 /** Steps 1a-1c: the whole level as rectangles, on a grid with no edges (coordinates may be negative). */
 function planLevel(rng: RNG, depth: number): Plan | null {
+  // (THE MIX: two rooms next door from the second dungeon on; in the first, not a die is thrown for it)
+  pairsHere = MIX.on && MIX.pairs && depth >= MIX_FROM;
   const pathLen = pathRoomCount(depth);
   const used = new Set<number>();
   const rooms: RoomPlan[] = [];
@@ -531,7 +582,30 @@ function planLevel(rng: RNG, depth: number): Plan | null {
     for (let i = lo; i <= hi; i++) hosts.push(i);
     if (!growBranch(rng, rooms, corridors, rng.shuffle(hosts), rewards[b], used)) return null;
   }
-  return { rooms, corridors, pathLen };
+
+  // THE MIX: A GATE ACROSS THE WAY, ITS LEVER NEARBY. One room k of the main path (never the first
+  // after the start, never the boss's hall) has a gate in its way in; one more dead end is grown
+  // from room k - 1, a short way to the NOOK, where the lever stands: so the lever is always
+  // reached before the gate. The way from k - 1 to k must come into k by a doorway, for a gate
+  // stands in one (a corridor straight across the screen has none), and not next door (the gate
+  // would stand at the lever's elbow). Where no room has space for a nook, the dungeon has no
+  // gate. (No dice for it in the first dungeons, nor where the map-maker does not mix.)
+  let gated = -1;
+  let nook = -1;
+  if (MIX.on && MIX.levers && DOORS.on && depth >= MIX_FROM) {
+    const ks: number[] = [];
+    for (let k = 2; k <= pathLen - 2; k++) ks.push(k);
+    const size = freshSize(rng, 'nook', used);
+    for (const k of rng.shuffle(ks)) {
+      const joint = corridors.find(c => (c.a === k - 1 && c.b === k) || (c.a === k && c.b === k - 1));
+      if (!joint || joint.across || joint.pair) continue;
+      if (grow(rng, rooms, corridors, rooms[k - 1], size, 'nook', -1, -1) < 0) continue;
+      gated = k;
+      nook = rooms.length - 1;
+      break;
+    }
+  }
+  return { rooms, corridors, pathLen, gated, nook };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -932,6 +1006,10 @@ interface Layout {
   corr: Uint8Array;
   /** The corners of rooms that were taken off (in steps; cut clean where the map-maker lays triangles). */
   clips: Clip[];
+  /** THE MIX: the gated room and the lever's nook (the plan's), and the room that locks (`assignKinds` picks it); -1: none. */
+  gated: number;
+  nook: number;
+  locks: number;
 }
 
 /** Slide the plan so it sits in the middle of the smallest square map that holds it. Returns the map's side. */
@@ -977,7 +1055,7 @@ function tryLayout(rng: RNG, depth: number): Layout | null {
   const plan = planLevel(rng, depth);
   if (!plan) return null;
   const size = settle(plan);
-  const { rooms, corridors, pathLen } = plan;
+  const { rooms, corridors, pathLen, gated, nook } = plan;
   const tiles = new Uint8Array(size * size);
   const corr = new Uint8Array(size * size);
   carve(size, rooms, corridors, tiles, corr);
@@ -989,7 +1067,7 @@ function tryLayout(rng: RNG, depth: number): Layout | null {
   for (let i = 0; i < open.length; i++) open[i] = tiles[i] === T_FLOOR ? 1 : 0;
   const field = flowField(open, size, size, centreX(rooms[0]), centreY(rooms[0]));
   for (const r of rooms) if (field[centreY(r) * size + centreX(r)] === UNREACHABLE) return null;
-  return { size, rooms, corridors, pathLen, tiles, corr, clips };
+  return { size, rooms, corridors, pathLen, tiles, corr, clips, gated, nook, locks: -1 };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1015,6 +1093,16 @@ function assignKinds(rng: RNG, depth: number, lay: Layout): RoomKind[] {
     }
   }
   for (const r of chosen) kinds[r.id] = 'elite';
+  // THE MIX: ONE OF THE ELITE ROOMS LOCKS. Not the gated room nor the room before it (a gate that
+  // falls and a gate with a lever would stand at the two ends of one hallway); not a room that is
+  // come into or left at a corner (a gate stands in a doorway, and that way has none: the room
+  // would not hold), nor one with a room next door. Where no elite room will do, none locks.
+  // (No dice for it in the first dungeons, nor where the map-maker does not mix.)
+  if (MIX.on && MIX.locks && DOORS.on && depth >= MIX_FROM) {
+    const before = lay.gated >= 0 ? lay.rooms[lay.gated].path - 1 : -9;
+    const fit = chosen.filter(r => r.id !== lay.gated && r.path !== before && !lay.corridors.some(c => (c.a === r.id || c.b === r.id) && (c.across !== undefined || c.pair === true)));
+    if (fit.length > 0) lay.locks = rng.pick(fit).id;
+  }
   return kinds;
 }
 
@@ -1194,6 +1282,35 @@ function placeTreasureChests(st: Stage): void {
     }
     if (placed === 0 && solidAllowed(st, c, false)) addProp(st, 'chest', c);
   }
+}
+
+/**
+ * THE MIX: THE LEVER, in its nook: on the floor tile of the nook, against a wall, that is furthest
+ * from where the nook's way comes in (the first such, in the order the tiles are gone through).
+ * No dice. Returns its tile, or -1 if the nook has no tile for it.
+ */
+function placeLever(st: Stage, lay: Layout): number {
+  const r = st.rooms[lay.nook];
+  let best = -1;
+  let far = -1;
+  for (let y = r.y0; y <= r.y1; y++) {
+    for (let x = r.x0; x <= r.x1; x++) {
+      const i = y * st.size + x;
+      if (!solidAllowed(st, i, false) || !againstWall(st.size, st.tiles, i)) continue;
+      let d = Infinity;
+      for (let cy = Math.max(0, r.y0 - 2); cy <= Math.min(st.size - 1, r.y1 + 2); cy++) {
+        for (let cx = Math.max(0, r.x0 - 2); cx <= Math.min(st.size - 1, r.x1 + 2); cx++) {
+          if (lay.corr[cy * st.size + cx] === 1) d = Math.min(d, (cx - x) * (cx - x) + (cy - y) * (cy - y));
+        }
+      }
+      if (d !== Infinity && d > far) {
+        far = d;
+        best = i;
+      }
+    }
+  }
+  if (best >= 0) addProp(st, 'lever', best);
+  return best;
 }
 
 /**
@@ -1650,6 +1767,9 @@ export function generateFloor(depth: number, seed: number): Floor {
   placeBackWalls(st);
   placePillars(st);
   placeTreasureChests(st);
+  // (THE MIX: the lever in its nook, before the packs, which stand clear of it. A nook with no tile for one is a dead end like any other, and nothing is gated.)
+  const leverTile = lay.nook >= 0 ? placeLever(st, lay) : -1;
+  if (leverTile < 0) lay.gated = -1;
   const packs = placePacks(st, lay);
   // Other solid props keep off the pack centres and the tiles around them.
   const packTiles = new Uint8Array(size * size);
@@ -1666,6 +1786,11 @@ export function generateFloor(depth: number, seed: number): Floor {
   for (let i = 0; i < variant.length; i++) variant[i] = rng.int(0, 255);
 
   const rooms: Room[] = lay.rooms.map(r => ({ id: r.id, x: r.x0, y: r.y0, w: r.w, h: r.h, kind: kinds[r.id], path: r.path }));
+  // (THE MIX: the rooms it marks. Nothing is written on a room where the map-maker does not mix.)
+  if (lay.gated >= 0) rooms[lay.gated].gated = true;
+  if (lay.gated >= 0 && lay.nook >= 0) rooms[lay.nook].nook = true;
+  if (lay.locks >= 0) rooms[lay.locks].locks = true;
+  for (const c of lay.corridors) if (c.pair) rooms[c.b].nextDoor = true;
   const floor: Floor = {
     depth: d,
     seed,
@@ -1680,14 +1805,25 @@ export function generateFloor(depth: number, seed: number): Floor {
     props: st.props,
   };
   if (cut) floor.cut = cut;
+  if (lay.gated >= 0 && leverTile >= 0) floor.levers = [{ x: leverTile % size, y: Math.floor(leverTile / size), room: lay.gated }];
   // Step 5: TERRACES AND STAIRS (relief.ts), laid last and by dice of their own: the rooms, the
   // corridors, the packs and the props are what they were before there was any height.
   if (RELIEF.on) layTerraces(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x7e44ace5) >>> 0));
   // (sunken floor, with dice of its own, after the terraces: a dungeon's terraces are the ones it had before there was any)
   if (RELIEF.on && RELIEF.sunken) laySunken(floor, lay.corr, new RNG((mixSeed(d, seed) ^ 0x051d0e11) >>> 0));
+  // (THE TRAPS, traps.ts: from the second dungeon, by dice of their own. A treasure vault is sealed
+  // with a word before the doors are laid, so that a sealed door stands in its way in.)
+  const traps = TRAPS.on && DOORS.on && d >= TRAPS_FROM ? new RNG((mixSeed(d, seed) ^ 0x51ce7a95) >>> 0) : null;
+  if (traps) sealVault(floor, traps);
   // Step 6: DOORS AND GATES (doors.ts), if the map-maker lays them (`DOORS.on`: off). They take no
   // dice: a door stands in every doorway the level has, and the boss's gate in the boss hall's.
   if (DOORS.on) floor.doors = layDoors(floor);
+  // Step 7: THE TRAPS (traps.ts): one or two spike floors and one or two dart walls, after the doors.
+  if (traps) {
+    unsealDoorless(floor);
+    const hazards = layHazards(floor, traps);
+    if (hazards.length > 0) floor.hazards = hazards;
+  }
   return floor;
 }
 

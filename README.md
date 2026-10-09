@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (8 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 18.8).**
+**Status (9 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.6).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -147,12 +147,49 @@ one room in five of the rest; the others are open again, as they were before doo
 in them sees you coming and comes out to meet you. And in town the heroes no longer draw their
 weapons into the battle stance when they are left standing: they pass the time as they do on a
 class card.
+Version 18.9: Strike is a two-hit combo. Tap for the strike; tap again soon after and the next
+swing is a downward slash, then the strike again; and every swing steps you a little forward. And
+from the second dungeon on, a dungeon mixes things up: two rooms side by side with only a door
+between them, a gate across the way whose lever is in a little room nearby, and a room whose gates
+drop behind you until its pack is dead.
+Version 19.0: traps, from the second dungeon on. Spike floors come up on a beat (the holes glint
+just before), and hurt whatever stands on them, monsters too; a plate clicks under you and three
+darts fly from a slot in the wall at where you stood; and a treasure vault is sealed with the rune
+of a word, opened only by an attack that carries that word.
+Version 19.1: Normal mode. A hero is made Normal or Hardcore on the class cards, and stays so.
+A Normal hero who dies wakes in town at the level they had reached, with the gear and words they
+went in with, but without what they found in that dungeon and a quarter of the gold they carried
+in; the same dungeon waits. A Hardcore hero who dies is gone, as before.
+Version 19.2: Strike's two swings mended to the art rulebook. His feet grip the floor (they no
+longer slide as he steps into the blow), no arm passes through his head, the slash turns hips
+first and runs smoothly, and the streak shows only through the cut.
+Version 19.3: four new words, Heavy, Precise, Frenzied and Guarding, with their looks, and words of
+two kinds: damage words (Power, Flame, Frost, Lightning, Poison), one on each side of an attack, and
+shaping words (the rest). Heavy is slower and much harder, stuns, and behind cracks the ground so
+that what walks onto it is staggered; Precise is more damage in a smaller area, and behind marks an
+enemy for a certain critical; Frenzied makes each use faster, up to five times, and behind kills
+feed it; Guarding gives a shield on each use, and behind a ward circle.
+Version 19.4: the ranger's new stances, the art chat's. In battle he stands as low as he runs, the
+bow out and an arrow on the string, and comes to a stand and sets off with no pop; in town he stands
+and runs upright; Shot and Volley from the crouch, with one arrow (the game's arrow leaves from where
+the one on his string was); his legs run under his shots as he walks; the roll, the hits, the fall
+and his habits from the crouch.
+Version 19.5: the first levels. A new hero starts with the tap attack alone; tap and hold opens at
+level 2 and the swipe at 5, each with its moment. The first dungeon is gentler, its first pack a
+softball, and no word falls there: the fallen wordsmith holds the RUNE HEART, which lights the
+wordsmith's ring in town; he gives your first word, and the slots open one in front, the second in
+front at 5, behind at 7 and 10. The stick goes at one speed.
+Version 19.6: the art chat's wordsmith made new on bones, a head taller, runes burning on him, and
+his ring big and wild; the quest item is the master rune-stone, lying by the fallen wordsmith's
+hand: carried home, it is laid into the wordsmith's slab and his dark ring powers up.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
-teaches as you play: how to move, then your attacks as you meet the first monsters, then the dodge.
-Half way through lies a fallen wordsmith with your first power word. You drag it onto an attack,
-the dead rise, and you feel what the word does. Words are scarce: about three in a whole dungeon.
+teaches as you play: how to move, then your attack as you meet the first monsters. You start with the
+tap attack alone; tap and hold opens at level 2 and the swipe at level 5. Half way through lies a
+fallen wordsmith with the master rune-stone by his hand. Bring it home to the wordsmith in town: it
+lights the ring of runes around him, and he gives you your first power word to set before your tap
+attack. Words are scarce: none in the first dungeon, about three in each after.
 A word on an attack can be taken out again; a word burned into gear or into a dungeon is used up.
 
 ## How to play

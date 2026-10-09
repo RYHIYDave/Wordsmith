@@ -26,7 +26,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { botStep, newBot } from '../src/dev/bot';
 import type { RNG } from '../src/engine/rng';
-import { RELIEF, generateFloor } from '../src/game/dungeon';
+import { doorTiles, doorWay } from '../src/game/doors';
+import { MIX, RELIEF, generateFloor } from '../src/game/dungeon';
 import { Game } from '../src/game/game';
 import { STAIR_N, STAIR_W, canStep, levelAt } from '../src/game/height';
 import { UNREACHABLE, flowField } from '../src/game/nav';
@@ -256,7 +257,12 @@ test('a played dungeon with terraces: every monster has a way on foot to where t
     const what = `game seed ${500 + k * 37}, dungeon ${g.depth}`;
     assert.equal(L.step !== null, f.height !== undefined, `${what}: the game has a grid of steps where the floor has heights`);
     if (!L.step) continue;
-    const dist = flowField(L.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, L.step);
+    // (THE MIX, game/dungeon.ts: a lever's gate that is down is a way on foot once its lever is pulled)
+    const walk = L.walk.slice();
+    for (const d of L.doors) if (d.spot.kind === 'gate') for (const i of doorTiles(f, d.spot)) walk[i] = 1;
+    // (THE TRAPS, game/traps.ts: and so is a sealed vault's door, once a blow that carries its word has opened it)
+    for (const d of L.doors) if (d.spot.kind === 'worddoor') for (const i of doorWay(f, d.spot)) walk[i] = 1;
+    const dist = flowField(walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, L.step);
     for (const m of g.monsters) {
       const i = Math.floor(m.y) * f.w + Math.floor(m.x);
       assert.equal(L.walk[i], 1, `${what}: a ${m.kind} stands where nobody can`);
@@ -338,7 +344,11 @@ test("and in real dungeons: from the low floor of a room to a skeleton on its te
   for (let k = 0; k < 40 && done < 6; k++) {
     const g = new Game((['warrior', 'ranger', 'mage'] as ClassId[])[k % 3], 800 + k * 53);
     g.depth = 1 + (k % 6);
+    // (the dungeons these rooms were found in, laid without THE MIX: game/dungeon.ts)
+    const mixWas = MIX.on;
+    MIX.on = false;
     g.enterDungeon();
+    MIX.on = mixWas;
     const L = g.level;
     const f = L.floor;
     if (!f.height || !f.stair) continue;

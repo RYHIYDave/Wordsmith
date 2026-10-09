@@ -68,6 +68,8 @@ export const STAT_INFO: Record<StatKey, StatInfo> = {
   areaPct: { label: 'Area of Effect', pct: true, dp: 0 },
   goldFind: { label: 'Gold Find', pct: true, dp: 0 },
   magicFind: { label: 'Magic Find', pct: true, dp: 0 },
+  stunChance: { label: 'Chance to Stun', pct: true, dp: 0 },
+  blockChance: { label: 'Chance to Block', pct: true, dp: 0 },
 };
 
 // =============================================================================================
@@ -325,6 +327,9 @@ const AFFIX_FAMILIES: readonly FamilyDef[] = [
   suffix('lightres',  'lightRes',   NOT_MAINHAND,       [8, 14],    [25, 40],   LEVELS_OFF, ['of Grounding', 'of Earthing', 'of the Lull', 'of Clear Skies']),
   suffix('gold',      'goldFind',   FIND_SLOTS,         [8, 15],    [30, 50],   LEVELS_OFF, ['of Pennies', 'of Coin', 'of Plenty', 'of Riches']),
   suffix('mf',        'magicFind',  FIND_SLOTS,         [8, 15],    [30, 50],   LEVELS_OFF, ['of Luck', 'of Omens', 'of Windfall', 'of Providence']),
+  // (Version 19.3: two stats that come only from a word burned into gear, never rolled on a drop: weight 0. Their sizes are set here, for the imbue.)
+  prefix('stun',      'stunChance', ALL_SLOTS,          [3, 5],     [8, 12],    LEVELS_OFF, ['Jarring', 'Stunning', 'Dazing', 'Shattering'], 0),
+  prefix('block',     'blockChance', ALL_SLOTS,         [3, 5],     [8, 12],    LEVELS_OFF, ['Braced', 'Guarded', 'Bulwarked', 'Unbroken'], 0),
 ];
 
 // Row builders for the table above. An optional last argument overrides DEFAULT_AFFIX_WEIGHT for that row.
@@ -381,6 +386,25 @@ const IMBUE_TABLE: Record<WordId, readonly ImbueRule[]> = {
   volatile: [
     { slots: OFFENCE_SLOTS, options: [['prefix', 'areaPct'], ['suffix', 'int']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'maxMana'], ['suffix', 'int']] },
+  ],
+  // THE NEW WORDS (his doc "Wordsmith: The New Words", his yes of 8 Oct 2026, 16:53): Heavy a chance
+  // to stun, Precise critical chance, Frenzied attack speed, Guarding a chance to block (his own
+  // words page's gear for three of them); each, or its attribute
+  heavy: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'stunChance'], ['suffix', 'str']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'armor'], ['suffix', 'str']] },
+  ],
+  precise: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'critChance'], ['suffix', 'dex']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'critMult'], ['suffix', 'dex']] },
+  ],
+  frenzied: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'atkSpeed'], ['suffix', 'str']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'moveSpeed'], ['suffix', 'str']] },
+  ],
+  guarding: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'blockChance'], ['suffix', 'str']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'blockChance'], ['suffix', 'str']] },
   ],
   // (there is no poison damage or poison resistance on gear yet: poison grows with all damage, and is outlasted with life)
   poison: [
@@ -463,6 +487,8 @@ const SCORE_PER_POINT: Record<StatKey, number> = {
   areaPct: 2,
   goldFind: 0.5,
   magicFind: 0.6,
+  stunChance: 5,
+  blockChance: 5,
 };
 
 /** itemValue: gold for a Normal helm at item level 1, and the gold each further level adds. */

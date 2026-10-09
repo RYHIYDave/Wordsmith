@@ -52,7 +52,8 @@ import type { RNG } from '../src/engine/rng';
 import { MONSTERS, TUNE } from '../src/game/defs';
 import { DOORS, DOOR_NEAR, DOOR_SWING, GATE_FALL, GATE_INSIDE, GATE_RISE, PIER_HOLD, doorFace, doorLine, doorMiddle, doorPiers, doorTiles, doorWay, doorways, hasDoor, insideBy, makeDoors, pierGrid, shutGrid, stepDoors } from '../src/game/doors';
 import type { DoorInst } from '../src/game/doors';
-import { generateFloor } from '../src/game/dungeon';
+import { MIX, generateFloor } from '../src/game/dungeon';
+import { TRAPS } from '../src/game/traps';
 import { Game } from '../src/game/game';
 import { makeDungeon, makeTown } from '../src/game/level';
 import { emptyControls } from '../src/game/state';
@@ -60,6 +61,7 @@ import type { GameEvent, Monster } from '../src/game/state';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import type { DoorSpot, Element, Floor } from '../src/game/types';
 import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from '../src/render/walls';
+import { seasoned } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -73,17 +75,30 @@ const DT = 1 / 60;
 
 /** The share of rooms other than vaults and lairs that have a door, as the game has it (Version 18.8). */
 const SHARE = DOORS.share;
-/** The map-maker's switch for doors, set for the length of a test and put back; and the share of rooms that have one (as in the game, unless a test asks for every room to have one, as until 18.8: what a door does is asked so). */
+/**
+ * The map-maker's switch for doors, set for the length of a test and put back; and the share of
+ * rooms that have one (as in the game, unless a test asks for every room to have one, as until
+ * 18.8: what a door does is asked so). THE DUNGEONS LAID HERE ARE WITHOUT THE MIX (game/dungeon.ts,
+ * MIX: its gates, its locking rooms and its rooms next door are asked of in tests/mix.test.ts),
+ * AND WITHOUT THE TRAPS (game/traps.ts, TRAPS: a sealed vault's door is asked of in
+ * tests/traps.test.ts): here a door is asked of in the dungeons that have only doors.
+ */
 function doorsSet<T>(on: boolean, run: () => T, share = SHARE): T {
   const was = DOORS.on;
   const wasShare = DOORS.share;
+  const wasMix = MIX.on;
+  const wasTraps = TRAPS.on;
   DOORS.on = on;
   DOORS.share = share;
+  MIX.on = false;
+  TRAPS.on = false;
   try {
     return run();
   } finally {
     DOORS.on = was;
     DOORS.share = wasShare;
+    MIX.on = wasMix;
+    TRAPS.on = wasTraps;
   }
 }
 
@@ -661,7 +676,8 @@ test('what is shut in a room is out of the hero\'s reach: a blast set off agains
 test('a rain of arrows and an orb, aimed past a shut door by their own buttons, do not reach what stands just behind it; as the game was before this rule, they did', () => {
   for (const cls of ['ranger', 'mage'] as const) {
     for (const rule of [true, false]) {
-      const g = dungeon(6, 2, cls);
+      // (Volley and the orb, the slow attacks: THE FIRST LEVELS open them at level 2)
+      const g = seasoned(dungeon(6, 2, cls));
       const h = g.hero;
       const d = doorToWalkAt(g);
       Object.assign(h, inLine(d.spot, -4.5));

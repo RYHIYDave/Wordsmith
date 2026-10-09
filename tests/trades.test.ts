@@ -12,6 +12,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { GAMBLE_KINDS, TAGS, TOWN_FOLK, TUNE } from '../src/game/defs';
 import { Game } from '../src/game/game';
+// (THE FIRST LEVELS, since Version 19.5: the wordsmith trades in words once his ring is lit: tests/helpers.ts seasoned)
+import { seasoned } from './helpers';
 import { plainValue } from '../src/game/items';
 import { emptyControls } from '../src/game/state';
 import type { GameEvent } from '../src/game/state';
@@ -46,7 +48,7 @@ test('what a word costs: a dungeon\'s purse for each dungeon cleared, and he pay
 });
 
 test('buying a word: the gold goes, the word is a spare one, its place on the shelf is empty, and it is known', () => {
-  const g = new Game('warrior', 5);
+  const g = seasoned(new Game('warrior', 5), 1);
   const w = g.wordStock[1] as WordId;
   const had = g.hero.words[w];
   g.hero.gold = g.wordPrice() - 1;
@@ -69,7 +71,7 @@ test('buying a word: the gold goes, the word is a spare one, its place on the sh
 });
 
 test('selling a word: only a spare one; he pays, keeps it for the visit, and gives it back for what he paid', () => {
-  const g = new Game('warrior', 5);
+  const g = seasoned(new Game('warrior', 5), 1);
   const [a, b] = WORD_IDS;
   for (const w of WORD_IDS) g.hero.words[w] = 0;
   g.hero.gold = 0;
@@ -96,7 +98,7 @@ test('selling a word: only a spare one; he pays, keeps it for the visit, and giv
 });
 
 test('he has room for so many sold words: the oldest goes for good', () => {
-  const g = new Game('warrior', 5);
+  const g = seasoned(new Game('warrior', 5), 1);
   const w = WORD_IDS[2];
   g.hero.words[w] = TUNE.wordsSoldKept + 3;
   for (let i = 0; i < TUNE.wordsSoldKept + 3; i++) assert.equal(g.sellWord(w), null);
@@ -105,7 +107,7 @@ test('he has room for so many sold words: the oldest goes for good', () => {
 });
 
 test('a saved run keeps which of his words were bought on this visit', () => {
-  const g = new Game('warrior', 5);
+  const g = seasoned(new Game('warrior', 5), 1);
   g.hero.gold = 99999;
   const shelf = g.wordStock.slice();
   assert.equal(g.buyWord(2), null);

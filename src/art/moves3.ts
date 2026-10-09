@@ -7,8 +7,9 @@
 // Each move keeps the game's own timing: its blow lands (`hit`) when the rules say it does.
 
 import { holdOnBack } from './carried';
-import { add, bonesAt, buildOf, dot, elbowFor, heading, len, mul, solve, standing, sub } from './skeleton';
-import type { Bones, Build, Key3, Motion } from './skeleton';
+import { add, bonesAt, buildOf, dot, elbowFor, GRID, heading, len, mul, solve, standing, sub } from './skeleton';
+import type { Bones, Build, Key3, Motion, Posed, V3 } from './skeleton';
+import { RANGER_ARROW, TUNE } from '../game/defs';
 
 /** The usual body: 57 picture pixels tall, built like a grown person. What a weapon's length is a share of, and what the moves were first written on. */
 export const BODY: Build = buildOf(57);
@@ -53,6 +54,13 @@ export interface Move3 {
   arc?: { until: number; high: number };
   /** For a move in which a weapon is drawn: the moment, in seconds from its start, at which the hero stands ready with it (the stance is then held a while). */
   ready?: number;
+  /**
+   * For a run whose feet grip the floor (GRIP, below): how many tiles the hero goes in one turn of
+   * it. The game then chooses its frame by how far the hero has gone, not by the clock.
+   */
+  stride?: number;
+  /** A roll that the game carries along the floor for its first `tumble` seconds; the rest is the hero coming up, shown if they are then left standing (as a leap's landing is). */
+  tumble?: number;
 }
 
 const FR = 1 / 30;
@@ -88,9 +96,12 @@ export interface Gait {
   arms: (swing: number, step: number) => Partial<Bones>;
 }
 
+/** How much of a run's stride each foot is on the floor. */
+export const RUN_STANCE = 0.36;
+
 /** Two steps of a run (the left foot comes down at the start, the right half way), which then goes round. It takes `period` seconds. */
 export function run(g: Gait, period = 0.5, n = 16): Motion {
-  const STANCE = 0.36;
+  const STANCE = RUN_STANCE;
   const foot = (phase: number): { x: number; z: number; pitch: number } => {
     const ph = ((phase % 1) + 1) % 1;
     if (ph < STANCE) {
@@ -228,8 +239,8 @@ function drawn(body: Partial<Bones>, el: number, pull: number, rest: Bones = STA
  * the hand (`rock` degrees). The face does not move: an archer looks at the mark until the arrow
  * is in it.
  */
-function loosed(body: Partial<Bones>, el: number, back: number, kick: number, rock: number): Partial<Bones> {
-  const d = drawn(body, el, 1);
+function loosed(body: Partial<Bones>, el: number, back: number, kick: number, rock: number, rest: Bones = STANCE): Partial<Bones> {
+  const d = drawn(body, el, 1, rest);
   const aim = heading(0, el);
   return {
     ...d,
@@ -422,7 +433,8 @@ export const RANGER_FALL3: Move3 = { name: "The ranger's fall", held: 'bow', bui
  * (`prop` 1; `pt` is how far round it has run). Or he draws an arrow, holds it level before his
  * eye and sights along it, head laid over a little, and puts it back (`prop` 2).
  */
-function squirrel(): Motion {
+function squirrel(B: Bones = ARCHER): Motion {
+  const ARCHER = B;
   const on: Partial<Bones> = { prop: 1 };
   return {
     keys: [
@@ -545,6 +557,125 @@ function strike(): Motion {
 }
 
 export const STRIKE3: Move3 = { name: 'Strike, great sword', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: strike(), at: 'the moment it lands' };
+
+/**
+ * STRIKE, THE SECOND SWING: A DOWNWARD SLASH (the owner, 7 Oct 2026, 23:18: "If the player taps
+ * again quickly, then the second animation, [a] downward slash, plays"). From the rear stance the
+ * hilt goes up over his right shoulder, the blade standing up behind him (as at the top of a slam,
+ * lower and quicker); then he steps in and the blade comes OVER and down across the front of him,
+ * through whatever is there at the height of a chest (the fourth frame, the rules' own, as the
+ * strike's is), and on down to low on his left; he stays low under it a moment, and it is carried
+ * round his right side, low, into the stance again (as the slam's is).
+ */
+function slash(): Motion {
+  // (wAz -165: behind him and to his right; going OVER, past straight up, it comes down in front of him a little to his left)
+  const top: Partial<Bones> = { pz: -2.5, yaw: -20, twist: -12, pitch: 0, bend: 0, faceUp: -8, rhIn: 0, rhx: 2, rhy: 2, rhz: 16, wAz: -165, wEl: 62 };
+  // (struck: the front foot a stride further out, the back foot on its ball, as in the strike)
+  const struck: Partial<Bones> = { px: 9, lfx: 18.5, lfy: 0.5, lfz: 0, lft: 2, lk: 2, rfx: -7, rfy: -1, rfz: 2.2, rfp: 30, rft: -8, rk: -6 };
+  // (down: the blade has come over and across, 205 degrees up from pointing behind him is 25 below level in front, to his left)
+  const low: Partial<Bones> = { ...struck, pz: -6.5, yaw: 18, pitch: 8, twist: 14, bend: 16, faceUp: -20, rhIn: 2, rhx: 17, rhy: 4, rhz: 22, wAz: -165, wEl: 205 };
+  return {
+    hit: 4 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 2 * FR, pose: top, ease: 'out' },
+      { at: 3 * FR, pose: { ...top, ...struck, px: 4, lfx: 14, lfz: 2.5, pz: -3.5, rhx: 8, rhy: 3, rhz: 14, wEl: 110 }, ease: 'in' },
+      // (the blow: the blade nearly level in front of him at the height of a chest, going down)
+      { at: 4 * FR, pose: { ...struck, pz: -5, yaw: 10, pitch: 6, twist: 8, bend: 10, faceUp: -10, rhIn: 0, rhx: 14, rhy: 6, rhz: -2, wAz: -165, wEl: 168 }, ease: 'in' },
+      { at: 6 * FR, pose: low, ease: 'out' },
+      // (he stays low under it a moment; then it is carried round his right side, low, into the stance again)
+      { at: 8 * FR, pose: { ...low, pz: -6.4, pitch: 8, bend: 14 }, ease: 'out', as: { wAz: 15, wEl: -25 } },
+      // (round his right side, low: the hands out in front of him as it goes, the blade trailing)
+      { at: 10 * FR, pose: { ...struck, px: 6, pz: -6, yaw: -15, pitch: 8, twist: -15, bend: 14, faceUp: -12, rhIn: 2, rhx: 13, rhy: 0, rhz: 22, wAz: -60, wEl: -35 }, ease: 'io' },
+      { at: 13 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+export const SLASH3: Move3 = { name: 'Strike, the second swing: a downward slash', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: slash(), at: 'the moment it lands' };
+
+/**
+ * STRIKE'S COMBO MENDED: A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The
+ * owner asked the main chat at 08:35 to "Send the strike combo to the art agent and have them review
+ * it to the rules"; the review (docs/requests/strike_combo_review_answer.md) found five things that
+ * break the art rulebook, and these are its mends, as tested there:
+ *   A  FEET THAT GRIP THE FLOOR (Movement 8, "A foot stays where it lands"; Movement 1, "A blow
+ *      plants the feet"). The game's step carries him a third of a tile while the old swings kept
+ *      both feet planted, so they slid. Now both feet leave the floor while the step carries him
+ *      (the front foot lifting, the back foot pushing off its ball) and land in his stance's places
+ *      at the blow, the front foot flat and the back foot on its ball; the lunge is his hips over
+ *      the front foot, not a longer stance; and in the recovery nothing moves on the floor but the
+ *      back heel coming down about the ball.
+ *   B  NO ARM THROUGH HIS HEAD (Heroes 6, "Clean bodies"). At the top of the slash the hilt is
+ *      further forward and lower, and his head is laid toward his left shoulder.
+ *   C  HIPS FIRST (moves3's own rule for a swing: "hips first, then the trunk, then the arms, then
+ *      the blade"). At the slash's third frame the hips have turned, the chest is still back, and
+ *      the blade is only just past upright.
+ *   D  NOTHING JERKY (Movement 5). The slash's raise eases in and out; its recovery runs on through
+ *      the tenth frame without stopping there.
+ *   E  A BLADE THAT STAYS A BLADE (Effects 3, "a bright crescent"): the streak is drawn only through
+ *      the cut, its third to fifth frames (art/heroes3.ts, `paintMove3`).
+ * His yes to them, 8 Oct 2026: in the art chat at 14:05 ("Yes, the mended one (Recommended)"; of
+ * the shorter stance at the blow, "Yes, shorter is fine (Recommended)"), and in the main chat at
+ * 15:04, of "Put the art chat's mended Strike ... into the game as Version 19.2?": "Yes
+ * (Recommended)". SO THE SWITCH IS ON, from Version 19.2: the mended swings are the game's own
+ * (put in place as this file loads, below `useComboMends`). Switched off, `useComboMends(false)`
+ * gives the swings as they were before, for pictures beside them (the art must then be painted
+ * again: main.ts, `__dbg.comboMends`).
+ */
+export const COMBO_MENDS = { on: true };
+
+/** Where the back foot stands at and after the blow (A): its ball where the stance has it, turned -8, on its toes 36. */
+function backFoot(): Partial<Bones> {
+  const B = KNIGHT_BODY;
+  const a36 = (36 * Math.PI) / 180;
+  const t8 = (-8 * Math.PI) / 180;
+  const ballX = -5.5;
+  const ballY = -10.9;
+  const ankX = ballX - B.ball * Math.cos(a36) * Math.cos(t8);
+  const ankY = ballY - B.ball * Math.cos(a36) * Math.sin(t8);
+  return { rfx: ankX, rfy: ankY + B.stance, rfp: 36, rfz: onToes(36), rft: -8 };
+}
+
+/** The feet of both swings, mended (A): light at the coil, in the air at the third frame, down in the stance's places from the blow on. */
+function mendFeet(keys: readonly Key3[], hitKeys: number[]): Key3[] {
+  const back = backFoot();
+  const out = keys.map((k) => ({ ...k, pose: { ...k.pose } }));
+  out[1].pose = { ...out[1].pose, lfx: 11, lfz: 2.0, lfp: -10, rfx: -9, rfp: 30, rfz: onToes(30) + 1.2, rft: -30 };
+  out[2].pose = { ...out[2].pose, px: 0.5, lfx: 11.5, lfz: 2.4, lfp: -14, rfx: back.rfx as number, rfy: back.rfy as number, rfp: 32, rfz: onToes(32) + 0.8, rft: -12 };
+  const struck: Partial<Bones> = { px: 4, lfx: 10.5, lfy: 0.5, lfz: 0, lfp: 0, lft: 2, lk: 2, ...back, rk: -6 };
+  for (const i of hitKeys) out[i].pose = { ...out[i].pose, ...struck };
+  return out;
+}
+
+function strikeMended(): Motion {
+  const m = strike();
+  return { ...m, keys: mendFeet(m.keys, [3, 4, 5]) };
+}
+
+function slashMended(): Motion {
+  const m = slash();
+  const k = mendFeet(m.keys, [3, 4, 5, 6]);
+  // B and D: the top, the hilt forward and lower, the head laid toward the left shoulder, reached evenly
+  // (and, the raise being eased in, the back foot pushes off a little higher, so that it is clear of
+  // the floor by the first frame, when the game's step has begun to carry him)
+  k[1] = { ...k[1], ease: 'io', pose: { ...k[1].pose, rhx: 6, rhy: 2, rhz: 12, faceTilt: -10, rfz: onToes(30) + 2.4 } };
+  // B and C: the third frame, the hips gone round first, the chest still back, the blade only just past upright
+  k[2] = { ...k[2], pose: { ...k[2].pose, yaw: 0, twist: -32, rhx: 12, rhy: 6, rhz: 9, wEl: 85, faceTilt: -10 } };
+  // D: on through the tenth frame without stopping at it (and his hips a little forward of the stance as the blade is carried round, over the planted feet)
+  k[6] = { ...k[6], ease: 'in', pose: { ...k[6].pose, px: 5 } };
+  k[7] = { ...k[7], ease: 'out' };
+  return { ...m, keys: k };
+}
+
+/** Put the mended swings in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
+export function useComboMends(on: boolean): void {
+  COMBO_MENDS.on = on;
+  STRIKE3.motion = on ? strikeMended() : strike();
+  SLASH3.motion = on ? slashMended() : slash();
+}
+// (the game's own swings: the mended ones, since Version 19.2)
+useComboMends(COMBO_MENDS.on);
 
 /** A foot standing on its toes: the heel up by `deg`, the ball still on the floor (the ankle is that much higher). */
 function onToes(deg: number): number {
@@ -1296,11 +1427,534 @@ export const KNIGHT_LOOKS3: Move3 = { name: 'The knight looks about him', held: 
 export const RANGER_TOWN_SQUIRREL3: Move3 = { ...SQUIRREL3, name: 'The ranger and his squirrel, in town', rest: RANGER_TOWN };
 export const RANGER_TOWN_SIGHTING3: Move3 = { ...SIGHTING3, name: 'The ranger sights along an arrow, in town', rest: RANGER_TOWN };
 
+/**
+ * FEET THAT GRIP: THE RUNS. A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The
+ * owner asked at 14:20, "I want you to go through all animations for the three characters and see
+ * if they pass our ruleset", and the review (docs/requests/hero_moves_review.md, A) found that every
+ * run slides its feet: the game carries a hero 4.6 tiles a second, and a run's foot on the floor
+ * goes back under the body more slowly than that (the warrior's would have to be played 1.46
+ * times as fast, the ranger's 1.22, the mage's 1.79). Movement 8: "Feet grip the floor. A foot
+ * stays where it lands; a running figure moves its legs faster rather than slide." Asked at 15:00
+ * in what order to mend it all (the feet first), he gave no preference.
+ *   So, with the switch on: each run steps faster (a turn of it in `period` seconds at the game's
+ *   own speed, where it was half a second) and further (its reach and push grown so that a foot on
+ *   the floor goes back exactly as fast as the hero goes forward; its kick and bob a little, with
+ *   the longer step); and the game chooses its frame by how far the hero has gone (`Move3.stride`,
+ *   render/figure.ts), so that the feet grip at any speed: hasted, chilled, slowed by an attack.
+ *   It is painted in sixty pictures a second of it (art/heroes3.ts), one for each step the game
+ *   takes on a phone, so that a foot on the floor stays put between one picture and the next; and
+ *   a turn of it takes a whole number of sixtieths of a second (27, 25 and 23 of them).
+ *   The warrior steps at 4.4 a second, heavy; the ranger at 4.8, light; the mage at 5.2, quick.
+ */
+export const GRIP = { on: false };
+/** The game's own speed for a hero, tiles a second (TUNE.heroSpeed in game/defs.ts: a test holds them the same). */
+export const GRIP_SPEED = 4.6;
+/** Figure units (picture pixels along the way he faces) in a tile: a tile is 32 game pixels across, a unit forward GRID/2 of one. */
+export const UNITS_PER_TILE = 32 / GRID;
+/** A gait whose feet grip at the game's speed when a turn of it takes `period` seconds. */
+export function gripping(g: Gait, period: number): Gait {
+  const k = (GRIP_SPEED * UNITS_PER_TILE * RUN_STANCE * period) / (g.reach + g.push);
+  // (and sitting a little lower in it, so that the legs reach the longer step)
+  return { ...g, reach: g.reach * k, push: g.push * k, kick: g.kick * Math.sqrt(k), bob: g.bob * Math.sqrt(k), sink: g.sink + Math.max(0, k - 1) * 4.5 };
+}
+/** Each run: its move, its gait (as it is now: the ranger's in town changes with RANGER_STANCES, below), how long a turn of it takes when it grips, and how its keys are finished. */
+const GRIP_RUNS: [Move3, () => Gait, number, (m: Motion) => Motion][] = [
+  [KNIGHT_RUN3, () => KNIGHT_GAIT, 27 / 60, (m) => m],
+  [RANGER_RUN3, () => RANGER_GAIT, 25 / 60, (m) => ready(m)],
+  [MAGE_RUN3, () => MAGE_GAIT, 23 / 60, (m) => m],
+  [KNIGHT_TOWN_RUN3, () => KNIGHT_TOWN_GAIT, 27 / 60, (m) => ready(m, { py: 0, stow: 1 })],
+  [RANGER_TOWN_RUN3, () => (RANGER_STANCES.on ? RANGER_TOWN_UPRIGHT : RANGER_TOWN_GAIT), 25 / 60, (m) => ready(m, { ...READY, stow: 1 })],
+];
+/**
+ * The runs as the two switches have them now. (The ranger's grip with his new stances whether or
+ * not the others' do: his coming to a stand, setting off and shooting on the move are made on his
+ * gripping run, and the owner said yes to them on it: 15:57, 16:41 and 17:07, 8 Oct 2026. The
+ * others' wait for GRIP: asked what next for the runs, he said "More directions, picture first
+ * (Recommended)".)
+ */
+function remakeRuns(): void {
+  for (const [move, gait, period, finish] of GRIP_RUNS) {
+    const g = gait();
+    const grips = GRIP.on || (RANGER_STANCES.on && move.held === 'bow');
+    move.motion = finish(grips ? run(gripping(g, period), period) : run(g));
+    if (grips) move.stride = GRIP_SPEED * period;
+    else delete move.stride;
+  }
+}
+/** Put the gripping runs in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
+export function useGrippingRuns(on: boolean): void {
+  GRIP.on = on;
+  remakeRuns();
+}
+
+// ---------------------------------------------------------------------------------------------
+/**
+ * THE RANGER IN BATTLE AND IN TOWN (the art chat, 8 Oct 2026; THE GAME'S OWN SINCE VERSION
+ * 19.4). The owner, 15:31: "Wait I need the rangers animations fixed"; and at 15:38, asked which
+ * of them: "All of that, but more.  Each character should have a battle stance and a town
+ * stance.  When you run, the ranger is crouched, but when you stop he pops back up.  I want him to
+ * stay crouched when he stops in battle.  Once he’s in town he stands upright, and he’ll need a
+ * movement animation for town as well.  Also his shot animation is upright so when you shoot an
+ * arrow you pop up and down to the crouch.  I want the battle stance to have the bow out and arrow
+ * knocked.  And the arrow that fires in the animation for shot doesn’t match the actual
+ * projectile that comes out for shot.  I need all that fixed".
+ *   So, with the switch on: in a dungeon he stands as he runs, low (BATTLE: crouched, the bow out
+ *   in front of him and down, an arrow on the string); in town he stands upright as he always has
+ *   (RANGER_TOWN) and runs upright (RANGER_TOWN_UPRIGHT). Each stance breathes and shifts its weight
+ *   (Movement 6, "A figure left standing breathes, shifts its weight and has small habits of its own").
+ *
+ * His yes to them, 8 Oct 2026: in the art chat part by part (15:57, 16:28, 16:41) and at 17:07 to
+ * handing it all over ("Yes, hand it all over (Recommended)"); and in the main chat at 20:27, of
+ * "Put the ranger's new stances into the game as Version 19.4, as in the picture?": "Yes
+ * (Recommended)". SO THE SWITCH IS ON, from Version 19.4: the new stances and moves are the game's
+ * own (put in place as this file loads, at its foot, by `useRangerStances`). Switched off,
+ * `useRangerStances(false)` gives him as he was before, for pictures beside them (the art must then
+ * be painted again: main.ts, `__dbg.rangerStances`).
+ */
+export const RANGER_STANCES = { on: true };
+
+/** HOW LOW HE IS IN A FIGHT: as low as he runs, his weight between his feet, side-on to what is ahead, his head up and watching it. */
+const CROUCH: Partial<Bones> = {
+  px: -0.6, py: 0, pz: -6.2, yaw: -28, pitch: 12, roll: 1, twist: -10, bend: 8, side: -2,
+  lfx: 6.8, lfy: 1, lfz: 0, lfp: 0, lft: 10, lk: 12,
+  rfx: -5.2, rfy: -1.4, rfz: 0, rfp: 0, rft: -30, rk: -20,
+  faceTurn: 0, faceUp: 4, faceTilt: 0,
+};
+/** AND READY TO SHOOT: the bow held out in front of him and down, a little laid over, an arrow on the string and the string hand on it. */
+const BATTLE_AIM = -30;
+const BATTLE_PULL = 0.3;
+const BATTLE: Bones = { ...ARCHER, ...CROUCH, ...drawn(CROUCH, BATTLE_AIM, BATTLE_PULL, { ...ARCHER, ...CROUCH }), wRoll: 18 };
+
+/**
+ * A STANCE THAT IS ALIVE: two breaths, and the weight going over onto the front foot and back
+ * between them; the hands go with the body (they are measured from the shoulders), so the bow
+ * rises and falls a little with each breath. Two and four tenths of a second round.
+ */
+function alive(from: Bones, shift: Partial<Bones>): Motion {
+  const breath = (k: number): Partial<Bones> => ({ pz: from.pz - 0.5 * k, bend: from.bend + 1.4 * k });
+  const over: Partial<Bones> = {};
+  for (const [key, v] of Object.entries(shift)) (over as Record<string, number>)[key] = (from as unknown as Record<string, number>)[key] + (v as number);
+  const half: Partial<Bones> = {};
+  for (const [key, v] of Object.entries(shift)) (half as Record<string, number>)[key] = (from as unknown as Record<string, number>)[key] + (v as number) / 2;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.6, pose: { ...half, ...breath(1) }, ease: 'io' },
+      { at: 1.2, pose: { ...over }, ease: 'io' },
+      { at: 1.8, pose: { ...half, ...breath(1) }, ease: 'io' },
+      { at: 2.4, pose: {}, ease: 'io' },
+    ],
+    loop: 0,
+  };
+}
+/** The battle stance as a move: in a fight he is left standing in it. */
+const RANGER_BATTLE_MOTION = (): Motion => alive(BATTLE, { px: 0.7, py: 0.5, roll: -1.5, side: 1.5 });
+/** And in town: his weight is on his right leg already; it settles further onto it and comes back. */
+const RANGER_TOWN_MOTION = (): Motion => alive(RANGER_TOWN, { py: -0.4, roll: -1.2, side: 1.2 });
+
+/** HOW HE RUNS IN TOWN: upright, his head up, at his ease, both arms swinging loose and the bow on his back. */
+const RANGER_TOWN_UPRIGHT: Gait = {
+  reach: 11, push: 14.5, kick: 9.5, lean: 4, hunch: 0, sink: 2, bob: 1.4, hips: 10, counter: 0.85, yaw: 0, twist: 0, look: 1,
+  arms: (swing) => looseArms(RANGER_BODY, swing, 0.5, 0.3),
+};
+
+/**
+ * COMING TO A STAND OUT OF A RUN, in two quick steps: from the run as it is at `phase` of its
+ * turn (0 to 1), the foot that is off the floor is set down where the stance has it, and then the
+ * other is lifted and set down where the stance has it (if it is not there already), while the
+ * body settles into the stance over both: low into low, upright into upright, the bow coming up
+ * from his side to the front. It ends on the stance's own first pose, where its loop takes up.
+ */
+export function settle(runMove: Move3, phase: number, to: Bones, long = 0.24): Motion {
+  const { keys, loop } = runMove.motion;
+  const span = keys[keys.length - 1].at - (loop ?? 0);
+  const p = bonesAt(keys, runMove.rest, (loop ?? 0) + span * (((phase % 1) + 1) % 1)) as Posed;
+  const from: Partial<Bones> = { ...p };
+  for (const k of ['from', 'to', 'mixK', 'lh2', 'rh2']) delete (from as Record<string, unknown>)[k];
+  // (which foot is down: the lower; the other steps first)
+  const leftFirst = p.lfz > p.rfz;
+  const foot = (left: boolean, where: 'run' | 'up' | 'stance'): Partial<Bones> => {
+    if (where === 'run') return left ? { lfx: p.lfx, lfy: p.lfy, lfz: p.lfz, lfp: p.lfp, lft: p.lft } : { rfx: p.rfx, rfy: p.rfy, rfz: p.rfz, rfp: p.rfp, rft: p.rft };
+    if (where === 'stance') return left ? { lfx: to.lfx, lfy: to.lfy, lfz: to.lfz, lfp: to.lfp, lft: to.lft } : { rfx: to.rfx, rfy: to.rfy, rfz: to.rfz, rfp: to.rfp, rft: to.rft };
+    // (lifted, half way from where it was in the run to where it goes)
+    const half = (a: number, b: number): number => (a + b) / 2;
+    return left
+      ? { lfx: half(p.lfx, to.lfx), lfy: half(p.lfy, to.lfy), lfz: Math.max(p.lfz, 3.2), lfp: 10, lft: half(p.lft, to.lft) }
+      : { rfx: half(p.rfx, to.rfx), rfy: half(p.rfy, to.rfy), rfz: Math.max(p.rfz, 3.2), rfp: 10, rft: half(p.rft, to.rft) };
+  };
+  const first = leftFirst;
+  const second = !leftFirst;
+  // (the second foot steps only if it has somewhere to go)
+  const far = Math.hypot((second ? p.lfx : p.rfx) - (second ? to.lfx : to.rfx), (second ? p.lfy : p.rfy) - (second ? to.lfy : to.rfy)) > 1.5;
+  // (the body half way into the stance)
+  const mid: Partial<Bones> = {};
+  for (const f of ['px', 'py', 'pz', 'yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'faceTurn', 'faceUp', 'faceTilt'] as const) mid[f] = (p[f] + to[f]) / 2;
+  const steps: Key3[] = [
+    { at: 0, pose: from },
+    { at: long * 0.22, pose: { ...from, ...foot(first, 'up'), ...foot(second, 'run') }, ease: 'out' },
+    { at: long * 0.45, pose: { ...mid, ...foot(first, 'stance'), ...foot(second, 'run') }, ease: 'io' },
+  ];
+  if (far) steps.push({ at: long * 0.7, pose: { ...foot(first, 'stance'), ...foot(second, 'up') }, ease: 'io' });
+  steps.push({ at: long, pose: {}, ease: 'io' });
+  return { keys: steps };
+}
+/** How many moments of a run there are settles from: the game takes the one nearest the moment the hero stops. */
+export const SETTLES = 8;
+/** The settles from a run into a stance, when there are any (the ranger's, with RANGER_STANCES on): the first from the run's start. */
+export function settlesOf(runMove: Move3, stance: Move3): Move3[] {
+  if (!RANGER_STANCES.on || runMove.held !== 'bow') return [];
+  return Array.from({ length: SETTLES }, (_, i) => ({ ...stance, name: `${stance.name}: coming to a stand`, motion: settle(runMove, i / SETTLES, stance.rest) }));
+}
+
+/**
+ * SETTING OFF FROM A STANCE INTO THE RUN. The run takes up from the moment of its turn whose feet
+ * are nearest the stance's (`phase`); over its first `n` pictures (sixty to a second of the run,
+ * chosen by how far the hero has gone, as the run's are) the legs go from the stance's into the
+ * run's in the first three, and the body, the arms and the bow go from the stance's into the run's
+ * over all of them (the hands by where they are: the stance and the run measure them differently).
+ */
+export function startOf(runMove: Move3, stance: Bones, n = 9): { motion: Motion; phase: number } {
+  const { keys, loop } = runMove.motion;
+  const t0 = loop ?? 0;
+  const span = keys[keys.length - 1].at - t0;
+  const poseAt = (ph: number): Posed => bonesAt(keys, runMove.rest, t0 + span * (((ph % 1) + 1) % 1));
+  // (the moment of the run whose feet are nearest the stance's: both feet, and how far each is off the floor)
+  let phase = 0;
+  let best = Infinity;
+  for (let i = 0; i < 120; i++) {
+    const p = poseAt(i / 120);
+    const d = Math.hypot(p.lfx - stance.lfx, p.lfy - stance.lfy, p.lfz - stance.lfz) + Math.hypot(p.rfx - stance.rfx, p.rfy - stance.rfy, p.rfz - stance.rfz);
+    if (d < best) {
+      best = d;
+      phase = i / 120;
+    }
+  }
+  const build = runMove.build;
+  const S = solve(build, stance);
+  const LEGS = ['lfx', 'lfy', 'lfz', 'lfp', 'lft', 'rfx', 'rfy', 'rfz', 'rfp', 'rft', 'lk', 'rk', 'px', 'py', 'pz'] as const;
+  const UPPER = ['yaw', 'pitch', 'roll', 'twist', 'bend', 'side', 'faceTurn', 'faceUp', 'faceTilt', 'le', 're', 'wAz', 'wEl', 'wRoll', 'draw'] as const;
+  const ease = (k: number): number => k * k * (3 - 2 * k);
+  const out: Key3[] = [];
+  for (let i = 0; i < n; i++) {
+    const p = poseAt(phase + i / (span * 60));
+    const R = solve(build, p);
+    const wl = ease(Math.min(1, i / 3));
+    const w = ease(i / (n - 1));
+    const pose: Partial<Bones> = { ...p };
+    for (const k of ['from', 'to', 'mixK', 'lh2', 'rh2']) delete (pose as Record<string, unknown>)[k];
+    for (const f of LEGS) pose[f] = stance[f] + (p[f] - stance[f]) * wl;
+    for (const f of UPPER) pose[f] = stance[f] + (p[f] - stance[f]) * w;
+    // (the hands by where they are in the figure's own space, from where the stance has them to where the run does)
+    const l = add(S.handL, mul(sub(R.handL, S.handL), w));
+    const r = add(S.handR, mul(sub(R.handR, S.handR), w));
+    Object.assign(pose, { lhIn: 2, lhx: l[0], lhy: l[1], lhz: l[2], rhIn: 2, rhx: r[0], rhy: r[1], rhz: r[2] });
+    out.push({ at: i / 60, pose, ease: 'lin' });
+  }
+  return { motion: { keys: out }, phase };
+}
+/** The ranger's way of setting off from his stance into his run, when he has one (RANGER_STANCES on, the run gripping): the move, and the moment of the run it leads into. */
+export function startsOf(runMove: Move3, stance: Move3): { move: Move3; phase: number } | null {
+  if (!RANGER_STANCES.on || runMove.held !== 'bow' || runMove.stride === undefined) return null;
+  const { motion, phase } = startOf(runMove, stance.rest);
+  return { move: { ...runMove, name: `${runMove.name}: setting off`, motion }, phase };
+}
+
+/**
+ * HIS SHOT, FROM THE CROUCH (the owner, 15:38: "his shot animation is upright so when you shoot an
+ * arrow you pop up and down to the crouch"). He stays as low as he stands, his feet where they are:
+ * the bow comes up from low to level as his body turns side-on to the mark over his front foot and
+ * his chest comes up off the crouch, and the string is drawn to his jaw; then it goes. THE ARROW IS
+ * GONE FROM THE STRING IN THE PICTURE OF THE MOMENT IT GOES, and the game's own arrow carries on
+ * from where its point was (SHOT_TIP, the game's RANGER_ARROW: the owner, "the arrow that fires in
+ * the animation for shot doesn’t match the actual projectile that comes out for shot"); no streak
+ * of the picture's own flies with it. The string hand flies back, the bow rocks forward; he holds
+ * it a moment, and the bow comes down into his stance with the next arrow on the string.
+ */
+const SHOT_EL = 0;
+const SHOT_SET: Partial<Bones> = {
+  lfx: CROUCH.lfx, lfy: CROUCH.lfy, lfz: 0, lfp: 0, lft: CROUCH.lft, lk: CROUCH.lk,
+  rfx: CROUCH.rfx, rfy: CROUCH.rfy, rfz: 0, rfp: 0, rft: CROUCH.rft, rk: CROUCH.rk,
+  px: 0.3, py: 0, pz: -5.7, yaw: -46, pitch: 7, roll: 0, twist: -34, bend: -1, side: 0, faceTurn: 0, faceUp: 0, faceTilt: 0,
+};
+const LOW: Bones = { ...ARCHER, ...CROUCH };
+function shotLow(): Motion {
+  const set = SHOT_SET;
+  return {
+    hit: 5 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 2 * FR, pose: drawn({ ...set, pz: -6, yaw: -40, twist: -24, bend: 3 }, -9, 0.55, LOW), ease: 'out' },
+      { at: 4 * FR, pose: drawn(set, SHOT_EL, 1, LOW), ease: 'out' },
+      { at: 4.7 * FR, pose: drawn({ ...set, twist: -36 }, SHOT_EL, 1, LOW), ease: 'lin' },
+      // (loosed: the arrow has gone from the string)
+      { at: 5 * FR, pose: loosed({ ...set, bend: -2, twist: -41 }, SHOT_EL, 3.4, 1.4, 14, LOW), ease: 'lin' },
+      { at: 7 * FR, pose: loosed({ ...set, twist: -39 }, SHOT_EL, 3.8, 0.8, 10, LOW), ease: 'lin' },
+      { at: 9 * FR, pose: loosed({ ...set, twist: -39 }, SHOT_EL, 3.8, 0.8, 10, LOW), ease: 'out' },
+      { at: 15 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/**
+ * HIS VOLLEY, FROM THE CROUCH: down onto his knee from low ("The rogue drops to a knee when he
+ * fires Volley"), the lean back and the loose as they were, and up into his stance again. The fan
+ * of arrows is the game's own (render/fx.ts, `volleyUp`), from where his bow is when they go
+ * (VOLLEY_TIP): the picture has none of its own.
+ */
+function volleyLow(): Motion {
+  const down: Partial<Bones> = { ...KNEEL, pz: -14.5 };
+  const full: Partial<Bones> = { ...down, px: 2.5, yaw: -50, pitch: -10, twist: -38, bend: -30, faceUp: 50 };
+  const keys: Key3[] = [
+    { at: 0, pose: {} },
+    // (from low he is half way down already: the knee goes down and the front foot out as the eyes go up)
+    { at: 2 * FR, pose: drawn({ pz: -9.5, px: 1, yaw: -36, pitch: 6, twist: -20, bend: 6, faceUp: 28, lfx: 10.5, lfz: 2.4, lfp: -12, lft: 0, rfx: -8.5, rfz: 1.4, rfp: 28, rk: 0, lk: 3 }, 26, 0.35, LOW), ease: 'in' },
+    { at: 3 * FR, pose: drawn({ ...down, pz: -15.6, px: 1.6, yaw: -47, pitch: -2, twist: -32, bend: -6, faceUp: 40 }, 38, 0.6, LOW), ease: 'out' },
+    { at: 5 * FR, pose: drawn(full, 50, 1, LOW), ease: 'out' },
+    { at: 5.6 * FR, pose: drawn({ ...full, bend: -31 }, 50, 1, LOW), ease: 'lin' },
+    // (loosed, in the picture of the moment they go: the arrows are the game's own from here)
+    { at: 6 * FR, pose: loosed({ ...full, bend: -33, twist: -45 }, 50, 3.4, 1.4, 16, LOW), ease: 'lin' },
+    { at: 8 * FR, pose: loosed({ ...full, bend: -31, twist: -43, faceUp: 52 }, 50, 3.8, 0.8, 11, LOW), ease: 'lin' },
+    // (watching them go, he comes forward off the lean, and up off his knee into his stance)
+    { at: 12 * FR, pose: { ...down, px: 1.5, yaw: -40, pitch: -3, twist: -22, bend: -8, faceUp: 30, lhIn: 0, lhx: 9, lhy: 4, lhz: -8, rhIn: 0, rhx: 3, rhy: -1, rhz: -17, wEl: 8 } },
+    // (up off the knee: the front foot is lifted and drawn back under him, the back one comes up and forward, each set down where he stands)
+    { at: 14.5 * FR, pose: { pz: -10, px: 0.6, yaw: -34, pitch: 6, twist: -16, bend: 2, faceUp: 14, lfx: 10.5, lfy: 0.6, lfz: 2.6, lfp: -8, lft: 6, lk: 8, rfx: -9, rfy: -0.6, rfz: 2.2, rfp: 18, rft: -18, rk: -10, lhIn: 0, lhx: 9, lhy: 4, lhz: -10, rhIn: 0, rhx: 3, rhy: -1, rhz: -17, wEl: -10 }, ease: 'io' },
+    { at: 17 * FR, pose: {}, ease: 'io' },
+  ];
+  return { keys: keys.map((k, i) => (i === 0 || i === keys.length - 1 ? k : { ...k, pose: { ...READY, ...k.pose } })), hit: 6 * FR };
+}
+/** The tip of the arrow on the string of a move at a moment, in the figure's own space (forward, to his left, up; picture pixels from where he stands): where the painter draws it (hero3_ranger.ts). */
+export function arrowTip(m: Move3, t: number): V3 {
+  const q = bonesAt(m.motion.keys, m.rest, t);
+  const s = solve(m.build, q);
+  return add(s.handR, mul(heading(q.wAz, q.wEl), ARROW_LONG * m.build.tall));
+}
+/** How long the arrow on his string is, as a share of his height. */
+export const ARROW_LONG = 0.43;
+
+/**
+ * HIS ROLL, FROM THE CROUCH AND IN STEP WITH THE GAME (the review, A and E: the game carried him on
+ * while the picture had him back on his feet, 16.3 px, and it ended on a flash of the run and a
+ * jump up). From low he dives at once; over in a ball (as the roll was); and out of it onto his
+ * feet, low, at the moment the game stops carrying him (`tumble`). The rest, up into his stance with
+ * the bow coming round and an arrow on the string, is shown if he is then left standing.
+ */
+const ROLL_LONG = 0.4;
+function rollLow(): Motion {
+  const long = ROLL_LONG;
+  const ball = (roll(long).keys.filter((k) => (k.pose as Bones).bend === 78).map((k) => k.pose)) as Partial<Bones>[];
+  const keys: Key3[] = [
+    // (he goes at once, off both feet: a dive, his feet leaving the floor as the game takes him)
+    { at: 0, pose: { px: 2, pz: -7.6, pitch: 26, bend: 26, faceUp: -12, lfx: 6, lfz: 2.2, lfp: 30, rfx: -4.5, rfz: 3.2, rfp: 40, rhIn: 0, rhx: 9, rhy: 2, rhz: -12, lhIn: 0, lhx: 6, lhy: 2, lhz: -14, wAz: 90, wEl: -10, wRoll: 80, draw: 0 } },
+    { at: 0.14 * long, pose: { px: 5, pz: -15.5, pitch: 62, bend: 48, faceUp: -75, lfx: 2, lfz: 3, lfp: 40, rfx: -5, rfp: 50, rfz: 5, rhIn: 2, rhx: 15, rhy: -4, rhz: 1.5, lhIn: 0, lhx: 6, lhy: 2, lhz: -10, wAz: 90, wEl: 0, wRoll: 80, draw: 0 }, ease: 'in' },
+  ];
+  // (the ball turns all the while the game carries him: it is over when he stops)
+  ball.forEach((pose, i) => keys.push({ at: (0.16 + 0.84 * (i / (ball.length - 1))) * long, pose: { ...pose, draw: 0 }, ease: i === 0 ? 'hold' : 'lin' }));
+  // (out of the ball and onto his feet, low, the bow coming round in front of him, the moment after the game stops carrying him)
+  const out: Partial<Bones> = { ...CROUCH, pz: -10.5, px: 1, pitch: 20, bend: 16, faceUp: 10, rfp: 18, rfz: onToes(18), lhIn: 0, lhx: 9, lhy: 3, lhz: -10, le: 10, rhIn: 0, rhx: 6, rhy: -1, rhz: -12, wAz: 20, wEl: -20, wRoll: 40, draw: 0 };
+  keys.push({ at: long + 0.03, pose: out, ease: 'hold' });
+  keys.push({ at: long + 0.08, pose: { ...out, pz: -10 }, ease: 'out' });
+  // (and up into his stance, the next arrow on the string)
+  keys.push({ at: long + 0.28, pose: {}, ease: 'io' });
+  return { keys };
+}
+
+/** Rocked back by a blow, or thrown forward by one from behind, from his crouch: the foot that goes, steps back. */
+function reelLow(from: Bones): Motion {
+  const m = reel(from);
+  // (the foot that goes back is lifted clear as it goes)
+  const keys = m.keys.map((k, i) => (i === 1 ? { ...k, pose: { ...k.pose, rfz: 2.4, rfp: 16 } } : k));
+  keys.splice(3, 0, { at: 5.5 * FR, pose: { px: from.px - 2.1, pz: from.pz - 1.1, pitch: from.pitch - 2, bend: from.bend - 4, faceUp: 7, rfx: from.rfx - 2.5, rfz: 2.4, rfp: 16 }, ease: 'io' });
+  return { ...m, keys };
+}
+function lurchLow(from: Bones): Motion {
+  const m = lurch(from);
+  const keys = m.keys.map((k, i) => (i === 1 ? { ...k, pose: { ...k.pose, lfz: 2.4, lfp: -10 } } : k));
+  keys.splice(3, 0, { at: 5.5 * FR, pose: { px: from.px + 2.5, pz: from.pz - 1.5, pitch: from.pitch + 3, bend: from.bend + 5, faceUp: -8, lfx: from.lfx + 2.75, lfz: 2.4, lfp: -10 }, ease: 'io' });
+  return { ...m, keys };
+}
+
+/** HIS FALL, FROM THE CROUCH: as it was (thrown back, a step to keep his feet, down on the knee he looses a Volley from, the bow laid down), but from low, and each foot lifted when it goes. */
+function fallLow(): Motion {
+  const hands: Partial<Bones> = { lhIn: 0, lhx: 4.5, lhy: 2, lhz: -19, le: 8, wAz: 0, wEl: -8, wRoll: 0, rhIn: 0, rhx: 1.2, rhy: -1, rhz: HANG, re: 0, draw: 0 };
+  const m = rangerFall();
+  const low = (k: Key3, pz: number | null, more: Partial<Bones> = {}): Key3 => ({ ...k, pose: { ...hands, ...k.pose, ...(pz === null ? {} : { pz }), ...more } });
+  const [k0, k1, k2, k3, ...rest] = m.keys;
+  return {
+    ...m,
+    keys: [
+      k0,
+      low(k1, -7, { rfz: 1.6 }),
+      low(k2, -6.6, { lfz: 1.2 }),
+      low(k3, -8, { rfz: onToes(16) }),
+      ...rest.map((k) => low(k, null)),
+    ],
+  };
+}
+
+/**
+ * HIS TWO HABITS IN A FIGHT, FROM THE CROUCH. The squirrel as it was, over his shoulders as he
+ * crouches. And THE ARROW ON HIS STRING SIGHTED: he takes it off the string, holds it level
+ * before his eye and sights along it, and nocks it again.
+ */
+function sightingOnString(B: Bones): Motion {
+  const off: Partial<Bones> = { draw: 0, prop: 2, pAz: B.wAz, pEl: B.wEl, pt: 0 };
+  const lowBow: Partial<Bones> = { lhIn: 0, lhx: 7.5, lhy: 3, lhz: -13, le: 10, wAz: 10, wEl: -40, wRoll: 30 };
+  const eye: Partial<Bones> = { ...lowBow, rhIn: 0, rhx: 11.5, rhy: 3.2, rhz: 6.2, re: 30, draw: 0, prop: 2, pAz: 4, pEl: 2, faceTilt: 9, faceTurn: -4, faceUp: 0, twist: B.twist - 4, bend: B.bend - 4, pz: B.pz + 0.8 };
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      // (the string let down and the arrow taken off it: in his hand where it lay on the string)
+      { at: 0.35, pose: { ...off } },
+      { at: 1.05, pose: { ...eye }, ease: 'io' },
+      { at: 2.25, pose: { ...eye, pt: 1, bend: B.bend - 2 }, ease: 'lin' },
+      { at: 2.5, pose: { ...eye, pt: 1 } },
+      { at: 3.15, pose: { ...off, pt: 1 }, ease: 'io' },
+      // (on the string again)
+      { at: 3.6, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/**
+ * MAKING READY WHEN PICKED, INTO HIS NEW STANCE: the bow off his back as it was, up and an arrow
+ * on the string, and down into his crouch, low, the bow out in front of him: the class card shows
+ * him so, from the `ready` moment on.
+ */
+const DRAW_READY = 26 * FR;
+function rangerDrawsLow(): Motion {
+  const m = rangerDraws();
+  // (as it was until the bow is up in front of him with the string a third drawn; then into the crouch)
+  const upTo = m.keys.filter((k) => k.at <= 19 * FR + 1e-9);
+  return { keys: [...upTo, { at: DRAW_READY, pose: { ...BATTLE, stow: 0 }, ease: 'io' }, { at: DRAW_READY + 2, pose: { ...BATTLE, stow: 0 } }] };
+}
+
+/**
+ * SHOOTING ON THE MOVE: HIS LEGS RUN UNDER IT (the owner, 15:00, asked what a hero does when he
+ * attacks while walking: "Legs keep running (Recommended)"; and of the ranger, 15:38, "I need all
+ * that fixed"). The game lets him walk through an attack, slowed for its first moment
+ * (TUNE.attackSlow for TUNE.attackSlowTime) and at his own speed after; the picture had him glide.
+ * Here, for each of four ways he may be going while he faces his mark (ahead, to his left, back,
+ * to his right), the attack again: its body, arms, bow and head as they are standing, and under
+ * them his run's legs, stepping that way, as far through their turn at each moment as the game has
+ * carried him by then. (A hero carried faster or slower than his own speed slides a little; one
+ * going between two of the four ways, a little sideways.)
+ */
+export const WALKS = [0, 90, 180, 270];
+function walkingMotion(attack: Move3, runMove: Move3, angle: number, slowed = true): Motion {
+  const keys = attack.motion.keys;
+  const end = keys[keys.length - 1].at;
+  const rk = runMove.motion.keys;
+  const loop = runMove.motion.loop ?? 0;
+  const span = rk[rk.length - 1].at - loop;
+  const stride = runMove.stride as number;
+  const th = (angle * Math.PI) / 180;
+  const c = Math.cos(th);
+  const sn = Math.sin(th);
+  const n = Math.ceil(end * 30 - 1e-6);
+  const out: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const t = Math.min(end, i / 30);
+    const A = bonesAt(keys, attack.rest, t);
+    // (how far the game has carried him by now, at his own speed: slowed for the attack's first moment)
+    const gone = slowed ? GRIP_SPEED * (TUNE.attackSlow * Math.min(t, TUNE.attackSlowTime) + Math.max(0, t - TUNE.attackSlowTime)) : GRIP_SPEED * t;
+    const ph = (gone / stride) % 1;
+    const R = bonesAt(rk, runMove.rest, loop + span * ph);
+    const pose: Partial<Bones> = { ...A };
+    for (const k of ['from', 'to', 'mixK', 'lh2', 'rh2']) delete (pose as Record<string, unknown>)[k];
+    // (his run's legs, turned the way he goes; the pelvis rides as it does in the run)
+    Object.assign(pose, {
+      lfx: R.lfx * c - R.lfy * sn, lfy: R.lfx * sn + R.lfy * c, lfz: R.lfz, lfp: R.lfp * c, lft: R.lft,
+      rfx: R.rfx * c - R.rfy * sn, rfy: R.rfx * sn + R.rfy * c, rfz: R.rfz, rfp: R.rfp * c, rft: R.rft,
+      lk: R.lk, rk: R.rk, lkUp: R.lkUp, rkUp: R.rkUp, px: R.px, py: R.py, pz: R.pz,
+    });
+    out.push({ at: t, pose, ease: 'lin' });
+  }
+  return { ...attack.motion, keys: out };
+}
+/**
+ * HIS RUN THE OTHER THREE WAYS: when he walks one way while he faces another (turned to his mark,
+ * the game keeping him so), backing away from it or going across it, his run's legs step the way
+ * he goes (WALKS: to his left, back, to his right), his body as it is in the run. Frames by how far
+ * he has gone, as the run's.
+ */
+function runWay(runMove: Move3, angle: number): Motion {
+  const th = (angle * Math.PI) / 180;
+  const c = Math.cos(th);
+  const sn = Math.sin(th);
+  return {
+    ...runMove.motion,
+    keys: runMove.motion.keys.map((k) => {
+      const p = { ...runMove.rest, ...k.pose } as Bones;
+      return {
+        ...k,
+        pose: {
+          ...k.pose,
+          lfx: p.lfx * c - p.lfy * sn, lfy: p.lfx * sn + p.lfy * c, lfp: p.lfp * c,
+          rfx: p.rfx * c - p.rfy * sn, rfy: p.rfx * sn + p.rfy * c, rfp: p.rfp * c,
+          // (and not leaning into it: he is upright when he backs away or goes across)
+          pitch: (k.pose.pitch ?? p.pitch) * Math.max(0, c), bend: (k.pose.bend ?? p.bend) * Math.max(0.3, c),
+        },
+      };
+    }),
+  };
+}
+/** The ranger's run the other three ways (to his left, back, to his right), when he has them (RANGER_STANCES on, his run gripping): otherwise none. */
+export function runWaysOf(runMove: Move3): Move3[] {
+  if (!RANGER_STANCES.on || runMove.held !== 'bow' || runMove.stride === undefined) return [];
+  return WALKS.slice(1).map((angle) => ({ ...runMove, name: `${runMove.name}, ${angle === 180 ? 'backing away' : 'going across'}`, motion: runWay(runMove, angle) }));
+}
+
+/** An attack of the ranger's as he makes it walking, each of the four ways (WALKS), when he has that (RANGER_STANCES on, his run gripping): otherwise none. (`slowed` false: a blow's rocking, which does not slow him as an attack does.) */
+export function walkingOf(attack: Move3, runMove: Move3, slowed = true): Move3[] {
+  if (!RANGER_STANCES.on || attack.held !== 'bow' || runMove.stride === undefined) return [];
+  return WALKS.map((angle) => ({ ...attack, name: `${attack.name}, walking`, motion: walkingMotion(attack, runMove, angle, slowed) }));
+}
+
+/** As they are with the switch off. */
+const RANGER_TODAY = {
+  stand: RANGER_STAND3.motion, standRest: RANGER_STAND3.rest, town: RANGER_TOWN3.motion, shot: SHOT3.motion, shotRest: SHOT3.rest, volley: VOLLEY3.motion, volleyRest: VOLLEY3.rest,
+  roll: ROLL3.motion, rollRest: ROLL3.rest, reel: RANGER_REEL3.motion, reelRest: RANGER_REEL3.rest, lurch: RANGER_LURCH3.motion, lurchRest: RANGER_LURCH3.rest,
+  fall: RANGER_FALL3.motion, fallRest: RANGER_FALL3.rest, squirrel: SQUIRREL3.motion, squirrelRest: SQUIRREL3.rest, sighting: SIGHTING3.motion, sightingRest: SIGHTING3.rest,
+  draw: RANGER_DRAW3.motion, drawReady: RANGER_DRAW3.ready,
+};
+/** Put the ranger's new stances in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
+export function useRangerStances(on: boolean): void {
+  RANGER_STANCES.on = on;
+  RANGER_STAND3.rest = on ? BATTLE : RANGER_TODAY.standRest;
+  RANGER_STAND3.motion = on ? RANGER_BATTLE_MOTION() : RANGER_TODAY.stand;
+  RANGER_TOWN3.motion = on ? RANGER_TOWN_MOTION() : RANGER_TODAY.town;
+  SHOT3.rest = on ? BATTLE : RANGER_TODAY.shotRest;
+  SHOT3.motion = on ? shotLow() : RANGER_TODAY.shot;
+  VOLLEY3.rest = on ? BATTLE : RANGER_TODAY.volleyRest;
+  VOLLEY3.motion = on ? volleyLow() : RANGER_TODAY.volley;
+  ROLL3.rest = on ? BATTLE : RANGER_TODAY.rollRest;
+  ROLL3.motion = on ? rollLow() : RANGER_TODAY.roll;
+  if (on) ROLL3.tumble = ROLL_LONG;
+  else delete ROLL3.tumble;
+  RANGER_REEL3.rest = on ? BATTLE : RANGER_TODAY.reelRest;
+  RANGER_REEL3.motion = on ? reelLow(BATTLE) : RANGER_TODAY.reel;
+  RANGER_LURCH3.rest = on ? BATTLE : RANGER_TODAY.lurchRest;
+  RANGER_LURCH3.motion = on ? lurchLow(BATTLE) : RANGER_TODAY.lurch;
+  RANGER_FALL3.rest = on ? BATTLE : RANGER_TODAY.fallRest;
+  RANGER_FALL3.motion = on ? fallLow() : RANGER_TODAY.fall;
+  SQUIRREL3.rest = on ? BATTLE : RANGER_TODAY.squirrelRest;
+  SQUIRREL3.motion = on ? squirrel(BATTLE) : RANGER_TODAY.squirrel;
+  SIGHTING3.rest = on ? BATTLE : RANGER_TODAY.sightingRest;
+  SIGHTING3.motion = on ? sightingOnString(BATTLE) : RANGER_TODAY.sighting;
+  RANGER_DRAW3.motion = on ? rangerDrawsLow() : RANGER_TODAY.draw;
+  RANGER_DRAW3.ready = on ? DRAW_READY : RANGER_TODAY.drawReady;
+  // (and the game's own arrows, from where the picture's are: game/defs.ts, RANGER_ARROW)
+  RANGER_ARROW.on = on;
+  remakeRuns();
+}
+
 /** Every move there is on the bones so far, by a short name. */
 export const MOVES3: Record<string, Move3> = {
   ktown: KNIGHT_TOWN3, rtown: RANGER_TOWN3, ktownrun: KNIGHT_TOWN_RUN3, rtownrun: RANGER_TOWN_RUN3, kdraw: KNIGHT_DRAW3, rdraw: RANGER_DRAW3, mready: MAGE_READY3,
   klook: KNIGHT_LOOKS3, tsquirrel: RANGER_TOWN_SQUIRREL3, tsighting: RANGER_TOWN_SIGHTING3,
   rstand: RANGER_STAND3, volley: VOLLEY3, shot: SHOT3, rrun: RANGER_RUN3, roll: ROLL3, rreel: RANGER_REEL3, rlurch: RANGER_LURCH3, rfall: RANGER_FALL3, squirrel: SQUIRREL3, sighting: SIGHTING3,
   mstand: MAGE_STAND3, wave: WAVE3, orb: ORB3, beam: BEAM3, beamend: BEAM_END3, mrun: MAGE_RUN3, mreel: MAGE_REEL3, mlurch: MAGE_LURCH3, mfall: MAGE_FALL3, mlight: MAGE_LIGHT3, reading: READING3,
-  rear: REAR3, strike: STRIKE3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
+  rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
 };
+
+// (the game's own ranger: his new stances and moves, since Version 19.4, on his yes: RANGER_STANCES, above)
+useRangerStances(RANGER_STANCES.on);

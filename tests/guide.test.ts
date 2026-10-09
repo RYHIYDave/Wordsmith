@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { botStep, newBot } from '../src/dev/bot';
 import { speechPlan, syllables } from '../src/engine/audio';
 import { RNG } from '../src/engine/rng';
-import { CLASSES, FIRST_WORD, GUIDE, MANA_MODE, MONSTERS, PRACTICE, QUIPS, SKILLS, SLOT_LEVELS, TUNE, WORDS, skillsFor } from '../src/game/defs';
+import { CLASSES, FIRST_WORD, GUIDE, MANA_MODE, MONSTERS, PRACTICE, QUIPS, SKILLS, SLOT_LEVELS, TUNE, WORDS, skillsFor, useFirstLevels } from '../src/game/defs';
 import { Game, cleanMeta, newMeta } from '../src/game/game';
 import { plainWeapon, rollItem } from '../src/game/items';
 import { flowDir, flowField } from '../src/game/nav';
@@ -19,6 +19,14 @@ import type { ClassId, WeaponKind, WordId } from '../src/game/types';
 import { resolveSkill } from '../src/game/words';
 import { guideBanner, guideCoach, guideSlot } from '../src/ui/guide';
 import { land } from './helpers';
+
+// THE FIRST LEVELS (game/defs.ts, on since Version 19.5) changed the lesson: the abilities open by
+// level, the fallen wordsmith's satchel holds the master rune-stone, the first word is given in town and the
+// lesson ends there, the first pack is a softball, and the first dungeon is gentler. These tests are
+// of the lesson and the words as they were before, and of what the first levels left as it was (the
+// words lent to attacks, cooldowns or mana, the Lexicon...), so they run with the first levels off;
+// the new lesson is tested in tests/first_levels.test.ts.
+useFirstLevels(false);
 
 /** The odds of a word turning up by chance, as the game has them: a test that changes them does not change them for the next. */
 const WORD_ODDS = { dropWord: TUNE.dropWord, chestWord: TUNE.chestWord, vaultWord: TUNE.vaultWord };
@@ -730,7 +738,7 @@ test('a word on an attack is only lent to it: it can be taken out again, and a w
   assert.equal(g.placeProblem(front0, 'leech'), 'No spare word');
   while (h.level < SLOT_LEVELS.front) inner(g).gainXp(60);
   const front1 = { skill: 0, side: 'front', idx: 1 } as const;
-  assert.equal(g.placeProblem(front1, 'frost'), 'One element per side');
+  assert.equal(g.placeProblem(front1, 'frost'), 'One damage word per side');
   assert.equal(g.placeProblem(front1, 'fire'), 'No spare word');
   h.words.fire = 1;
   assert.equal(g.placeProblem(front1, 'fire'), 'Already there');
