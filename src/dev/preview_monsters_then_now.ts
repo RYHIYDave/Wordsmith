@@ -8,7 +8,7 @@
 
 import type { ActorArt } from '../art/actor_types';
 import { makeBestiary } from '../art/bestiary';
-import type { MonsterFigure } from '../art/bestiary';
+import type { ClassicFigure as MonsterFigure } from '../art/bestiary';
 import { makeBossArt } from '../art/boss';
 import { makeWarriorArt } from '../art/hero_warrior';
 import { makeGuardianArt, makeMonsterArt } from '../art/monsters';

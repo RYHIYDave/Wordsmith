@@ -19,7 +19,7 @@
 // longer in the game.
 
 import type { Sprite } from '../engine/px';
-import { MONSTER_ATTACKS } from '../game/defs';
+import { MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
 import { CRAWL_OUT } from './mkit';
@@ -29,6 +29,8 @@ import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
 import { TROLL_MOVES, makeBruteArt, makeGuardianArt } from './monster_brute';
 import { makeCultistArt } from './monster_cultist';
 import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
+import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
+import { PACK_MARKS } from '../render/pack_marks';
 
 /**
  * THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS): the rules of the monsters' moves
@@ -43,6 +45,19 @@ export function useMonsterAttacks(on: boolean): void {
   CRAWL_OUT.on = on;
 }
 useMonsterAttacks(MONSTER_ATTACKS.on);
+
+/**
+ * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,
+ * Boneward and Ossuary Golem in the dungeons and the skeleton champion at the head of a yellow pack of
+ * skeletons, their pictures (art/new_mobs3.ts NEW_MOBS), and the rings that tell blue and yellow packs
+ * apart (render/pack_marks.ts PACK_MARKS) go on and off together.
+ */
+export function useNewMonsters(on: boolean): void {
+  NEW_MONSTERS.on = on;
+  NEW_MOBS.on = on;
+  PACK_MARKS.on = on;
+}
+useNewMonsters(NEW_MONSTERS.on);
 
 /**
  * THE SKELETON ON THE HEROES' BONES (art/monster_bones3.ts): A MOCK-UP, AND OFF. While `on` is
@@ -62,7 +77,11 @@ export const ARCHER3 = { on: false };
 
 /** The figures there are: one for each kind of monster, and the guardian. */
 export type MonsterFigure = MonsterKind | 'guardian';
-export const MONSTER_FIGURES: readonly MonsterFigure[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'guardian', 'warden'];
+/** The figures of Version 14 (painted with the painter's kit: the tests of their pictures go through these). */
+export type ClassicFigure = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'guardian' | 'warden';
+export const MONSTER_FIGURES: readonly ClassicFigure[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'guardian', 'warden'];
+/** THE NEW MONSTERS' figures (Version 19.9), the art chat's, painted on the heroes' bones (art/new_mobs3.ts). */
+export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'golem', 'champion'];
 
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean }): MonsterFigure {
@@ -83,6 +102,11 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   brute: { top: 28, half: 16 },
   guardian: { top: 36, half: 21 },
   warden: { top: 61, half: 22 },
+  // THE NEW MONSTERS (measured off their pictures as the others are: tests/new_monsters.test.ts)
+  shade: { top: 26, half: 9 },
+  boneward: { top: 32, half: 11 },
+  golem: { top: 36, half: 21 },
+  champion: { top: 35, half: 9 },
 };
 
 export interface Bestiary {
@@ -100,6 +124,16 @@ export interface Bestiary {
 
 /** The last frame painted ahead of need. Kept only so that the reading of it cannot be optimised away. */
 export let warmed: Sprite | undefined;
+
+/**
+ * THE GOLEM'S SKULL IN FLIGHT (art/new_mobs3.ts makeSkullShotArt), kept with the Golem's pictures as one
+ * of its moves, `skull`, going round as it tumbles: so it is painted ahead with them.
+ */
+function withSkulls(art: ActorArt): ActorArt {
+  const skull = { frames: makeSkullShotArt(), fps: 16, loop: 0 };
+  for (const set of [art.front, art.back]) if (set.clips) set.clips.moves = { ...(set.clips.moves ?? {}), skull };
+  return art;
+}
 
 export function makeBestiary(): Bestiary {
   const made = new Map<MonsterFigure, ActorArt>();
@@ -125,7 +159,12 @@ export function makeBestiary(): Bestiary {
         : figure === 'bat' ? makeBatArt()
         : figure === 'brute' ? makeBruteArt()
         : figure === 'guardian' ? makeGuardianArt()
-        : makeWardenArt();
+        : figure === 'warden' ? makeWardenArt()
+        // THE NEW MONSTERS: their walks shown at the paces the rules give them
+        : figure === 'shade' ? makeShadeArt3(MONSTERS.shade.speed)
+        : figure === 'boneward' ? makeBonewardArt3(MONSTERS.boneward.speed)
+        : figure === 'golem' ? withSkulls(makeGolemArt3(MONSTERS.golem.speed))
+        : makeChampionArt3(MONSTERS.champion.speed);
       made.set(figure, art);
     }
     return art;

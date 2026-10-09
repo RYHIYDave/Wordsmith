@@ -200,13 +200,24 @@ export function moveFrame(set: AnimSet, m: { state: string; t: number; animT: nu
   return attackFrame(c, monsterAttackAge(m.state === 'windup', m.t, mv.windup, mv.recover), mv.windup);
 }
 
-/** The clip a move winds up and lands with (the charge: its wind-up, the roar and the scrape). */
+/**
+ * The clip a move winds up and lands with (the charge: its wind-up, the roar and the scrape). THE NEW
+ * MONSTERS' (Version 19.9): their basic blows are their `attack` (the Boneward's thrust, the Golem's
+ * club swing, the champion's cleave); the Boneward's and the Golem's throws, the Boneward's shield and
+ * the champion's cry are clips of their own (art/new_mobs3.ts).
+ */
 export function moveClip(set: AnimSet, mv: MonsterMove): Clip | undefined {
   const clips = set.clips;
   const more = clips?.moves;
   switch (mv.id) {
     case 'swing':
-      return more?.swing;
+      return more?.swing ?? clips?.attack;
+    case 'throw':
+      return more?.throw;
+    case 'bash':
+      return more?.bash;
+    case 'rally':
+      return more?.rally;
     case 'charge':
       return more?.chargeWind;
     case 'summon':

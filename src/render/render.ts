@@ -31,7 +31,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, TUNE, WORDS, movesOf } from '../game/defs';
+import { MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, TUNE, WORDS, movesOf } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
@@ -44,6 +44,9 @@ import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
 import { Figure, attackClip, attackFrame, clipFrame, monsterAttackAge, moveFrame, PHASE_APART } from './figure';
 import { drawChargeLane } from '../art/charge_lane';
+import { drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../art/mob_shots';
+import { skullAt, spearHeight } from './mob_world';
+import { PACK_MARKS, drawPackMark } from './pack_marks';
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
@@ -350,6 +353,8 @@ export class Renderer {
   /** Where the last afterimage of a hasted hero was left. */
   private blurAt = { x: 0, y: 0 };
   cam: Cam = { ox: 0, oy: 0 };
+  /** A point of the floor (tiles) on the screen, by this frame's camera: for what is drawn in the game's own pixels on the floor (art/mob_shots.ts, render/pack_marks.ts). */
+  private readonly floorAt = (x: number, y: number): readonly [number, number] => [wx(this.cam, x, y), wy(this.cam, x, y)];
   /** The height of the level being drawn (null: it is all of one height), and the level it was made for. */
   private relief: Relief | null = null;
   /** (THE WALLS' LOOK) The walls that are left out, for the level and the look they were worked out for. */
@@ -1205,6 +1210,15 @@ export class Renderer {
         if (here(z.x, z.y) || here(x1, y1) || here((z.x + x1) / 2, (z.y + y1) / 2)) drawChargeLane(g, { x0: z.x, y0: z.y, x1, y1, half: z.r, k: z.dur > 0 ? z.t / z.dur : 1, gone: z.gone }, (x, y) => [wx(cam, x, y), wy(cam, x, y)]);
         continue;
       }
+      // (THE NEW MONSTERS: a Golem's skull: its own shadow on the floor as it comes down, no circle; its
+      // burst where it lands. The skull itself is drawn with what flies, over the figures: art/mob_shots.ts)
+      if (z.kind === 'skull') {
+        if (z.t < z.dur) {
+          const s = skullAt(z);
+          if (here(s.x, s.y)) drawSkullShadow(g, this.floorAt, s.x, s.y, s.z, SKULL.top);
+        } else if (here(z.x, z.y)) drawSkullBurst(g, this.floorAt, z.x, z.y, z.t - z.dur);
+        continue;
+      }
       if (!here(z.x, z.y)) continue;
       const cx = wx(cam, z.x, z.y);
       const cy = wy(cam, z.x, z.y);
@@ -1407,12 +1421,21 @@ export class Renderer {
     // (the effects that lie flat are drawn once, over the last floor to be drawn)
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) fx.drawGround(g, cam);
 
+    // (THE NEW MONSTERS: a Boneward's spear lying where it came down, till it is picked up)
+    for (const sp of game.spears) if (L.explored[Math.floor(sp.y) * f.w + Math.floor(sp.x)] && here(sp.x, sp.y)) drawSpearLying(g, this.floorAt, sp.x, sp.y, sp.fx, sp.fy);
     // shadows, and the rings that mark elites
     for (const m of game.monsters) {
       if (m.dead || !m.seen || !here(m.x, m.y)) continue;
       const cx = wx(cam, m.x, m.y);
       const cy = wy(cam, m.x, m.y);
-      if (named(m) || m.boss) {
+      // (THE NEW MONSTERS' RINGS, with them: a blue pack's blue, with its word inside; a yellow pack's
+      // leader's written in his words and ringed in gold; his minions' gold and half there, filled with
+      // his word while his cry holds: render/pack_marks.ts. A leader with no word, as the first
+      // dungeon's, keeps the ring an elite has always had.)
+      const marks = PACK_MARKS.on && m.rarity !== undefined;
+      const words = m.rarity === 'minion' ? (m.half ?? []) : m.words;
+      if (marks && m.rarity && words.length) drawPackMark(g, this.floorAt, m.x, m.y, m.r, { rarity: m.rarity, words, cry: m.rallyT ? Math.min(1, m.rallyT / 0.5) : 0 }, t);
+      else if ((named(m) || m.boss) && !(marks && m.rarity === 'minion')) {
         const col = m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
         ringDots(g, cx, cy, m.r * (1.5 + 0.12 * Math.sin(t * 5)), col);
       }
@@ -1539,8 +1562,14 @@ export class Renderer {
    */
   private monsterSprite(m: Monster): Sprite {
     const art = this.monsterArt(m);
+    const more = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves;
+    const flip = (s: Sprite): Sprite => (m.fx - m.fy < 0 ? flipSprite(s) : s);
+    // (THE NEW MONSTERS: a Boneward whose spear is gone stands and plods with its hand empty, and
+    // stoops for its spear when it comes to it)
+    const bare = m.bare && more?.standBare && more.walkBare ? more : null;
     // (frozen solid: as it stands)
-    if (m.frozenT > 0) return this.actorSprite(art, 'idle', 0, 0, m.fx, m.fy);
+    if (m.frozenT > 0) return bare ? flip(bare.standBare.frames[0]) : this.actorSprite(art, 'idle', 0, 0, m.fx, m.fy);
+    if (m.state === 'pickup' && more?.pickUp) return flip(clipFrame(more.pickUp, SPEAR.stoop - m.t));
     // (THE MONSTERS' ATTACKS: a move of its own, with its own picture)
     const moves = movesOf(m);
     if (moves && m.move !== undefined && m.move >= 0 && m.move < moves.length && (m.anim === 'attack' || m.state === 'charge')) {
@@ -1557,6 +1586,7 @@ export class Renderer {
         return m.fx - m.fy < 0 ? flipSprite(s) : s;
       }
     }
+    if (bare && m.anim !== 'attack') return flip(clipFrame(m.anim === 'walk' ? bare.walkBare : bare.standBare, m.animT));
     return this.actorSprite(art, m.anim, m.animT, m.state === 'windup' ? 0 : m.t > 0.15 ? 1 : 2, m.fx, m.fy);
   }
 
@@ -2118,7 +2148,7 @@ export class Renderer {
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
-      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart') {
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear') {
         // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];
@@ -2243,8 +2273,30 @@ export class Renderer {
       }
     }
 
+    // (THE NEW MONSTERS: what is on the screen, or near enough to it to be seen in the air over it)
+    const onScreen = (x: number, y: number, up = 0): boolean => {
+      const px = wx(cam, x, y);
+      const py = wy(cam, x, y) - up;
+      return px > -40 && px < W + 40 && py > -40 && py < H + 40;
+    };
+    // (THE NEW MONSTERS: a Golem's skull in the air, tumbling, over everything it flies over)
+    for (const z of game.zones) {
+      if (z.kind !== 'skull' || z.t >= z.dur) continue;
+      const s = skullAt(z);
+      if (!onScreen(s.x, s.y, s.z)) continue;
+      const frames = art.bestiary.of('golem').front.clips?.moves?.skull?.frames;
+      if (!frames || frames.length === 0) continue;
+      const sp = frames[Math.floor(z.t * 16) % frames.length];
+      g.drawImage(sp.img, Math.round(wx(cam, s.x, s.y)) - sp.ax, Math.round(wy(cam, s.x, s.y) - s.z) - sp.ay, sp.w, sp.h);
+    }
     // arrows are drawn as short lines so they can point any way; a Swift orb gets its tail here too
     for (const p of game.projectiles) {
+      // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)
+      if (p.look === 'spear') {
+        const v = Math.hypot(p.vx, p.vy) || 1;
+        if (onScreen(p.x, p.y)) drawSpearShot(g, this.floorAt, p.x, p.y, spearHeight(p), p.vx / v, p.vy / v);
+        continue;
+      }
       // (a hero's arrow, with the ranger's new pictures: from where the arrow on his string was, at its height: game/defs.ts, RANGER_ARROW)
       const lifted = RANGER_ARROW.on && p.look === 'arrow' && !p.hostile;
       if (lifted && 0.4 + p.age * Math.hypot(p.vx, p.vy) < RANGER_ARROW.from) continue;

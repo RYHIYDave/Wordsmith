@@ -233,8 +233,11 @@ export interface Hero {
   d: Derived;
 }
 
-/** ('charge': THE MONSTERS' ATTACKS, the red troll running down the line he marked: game/defs.ts CHARGE.) */
-export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover' | 'charge';
+/**
+ * ('charge': THE MONSTERS' ATTACKS, the red troll running down the line he marked: game/defs.ts CHARGE.
+ * 'pickup': THE NEW MONSTERS, the Boneward stooping for its spear: game/defs.ts SPEAR.)
+ */
+export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover' | 'charge' | 'pickup';
 
 export interface Monster {
   id: number;
@@ -316,6 +319,10 @@ export interface Monster {
   moveCd?: number[];
   /** The red troll's charge: the line he runs along (from where he stood to where he will stop), and whether he has run the hero down on it yet. */
   charge?: { x0: number; y0: number; x1: number; y1: number; hit: boolean };
+  /** THE NEW MONSTERS (game/defs.ts SPEAR): the Boneward's spear is out of its hand (flying, or lying where it fell: Game.spears). */
+  bare?: boolean;
+  /** THE NEW MONSTERS (game/defs.ts RALLY): a minion's seconds left of its leader's words whole, since the skeleton champion's cry. */
+  rallyT?: number;
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
@@ -345,8 +352,8 @@ export interface Projectile {
   /** Hostile shots: damage already rolled. Hero shots: fraction of a normal hit. */
   dmg: number;
   element: Element;
-  /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart';
+  /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's (Version 19.9). */
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear';
   pierce: boolean;
   /**
    * Ids of monsters already hit, so a piercing shot hits each once. The shots of one use share one
@@ -380,11 +387,30 @@ export interface Projectile {
    * monsters alike, and `dmg` is the share of the life of whatever it meets.
    */
   trap?: boolean;
+  /** (THE NEW MONSTERS) The Boneward's spear: the monster that threw it, its whole way (tiles), and how high over the floor it left the hand (the game's pixels). */
+  src?: number;
+  way?: number;
+  z0?: number;
+}
+
+/**
+ * THE NEW MONSTERS (Version 19.9, game/defs.ts SPEAR): a Boneward's spear lying on the floor where it
+ * fell, pointing the way it flew, until its Boneward picks it up (`owner`: that monster's id). `flow`:
+ * the way to it, by the way one walks (worked out when it falls; null where nothing can walk to it).
+ */
+export interface Spear {
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  owner: number;
+  flow: Uint16Array | null;
 }
 
 /** 'cracks': Heavy behind, cracked ground that staggers; 'ward': Guarding behind, a circle the hero takes less harm in (Version 19.3). */
 /** ('lane': THE MONSTERS' ATTACKS, the line a red troll will charge along: from (x, y) to (x1, y1), `r` half its width.) */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane';
+/** ('skull': THE NEW MONSTERS, a skull the Golem has hurled: thrown from (x1, y1), coming down on (x, y) at `dur`, bursting after: game/defs.ts SKULL.) */
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull';
 
 export interface Zone {
   x: number;
@@ -408,7 +434,7 @@ export interface Zone {
   src?: number;
   /** A warning laid by a minion: those of its words it has at half strength (MONSTER PACKS). */
   half?: HalfWords;
-  /** A charge's line ('lane'): where it ends; and while he runs it, how much of the way he has come (0 to 1). Its `t` of `dur` is how far his wind-up has gone. */
+  /** A charge's line ('lane'): where it ends; and while he runs it, how much of the way he has come (0 to 1). Its `t` of `dur` is how far his wind-up has gone. A Golem's skull ('skull'): where it was thrown from; `gone` 1 once it has come down. */
   x1?: number;
   y1?: number;
   gone?: number;

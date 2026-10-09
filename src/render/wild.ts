@@ -35,6 +35,7 @@ import type { MonsterFigure } from '../art/bestiary';
 import { BONE } from '../art/kit';
 import { BLOOD as M_BLOOD, FLESH, FUR, GLOOM, IRON } from '../art/mkit';
 import { WILD } from '../art/moves3';
+import { OSSUARY, PALLOR, PLANK, SHROUD } from '../art/new_mobs3';
 import { P } from '../art/palette';
 import type { MonsterKind } from '../game/types';
 import type { Cam, Fx } from './fx';
@@ -69,6 +70,12 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   brute: { bits: [FLESH[2]], sparks: false, blood: true, dust: true },
   guardian: { bits: [IRON[4], IRON[2]], sparks: true, blood: false, dust: false },
   warden: { bits: [IRON[4], IRON[2]], sparks: true, blood: false, dust: false },
+  // THE NEW MONSTERS (Version 19.9): wisps of the Shade's shroud; the Boneward's bone planks and iron;
+  // the Golem's bones; the champion's bones off his rusted plate
+  shade: { bits: [SHROUD[3], PALLOR[3], PALLOR[2]], sparks: false, blood: false, dust: false },
+  boneward: { bits: [PLANK[4], PLANK[3], IRON[2]], sparks: true, blood: false, dust: true },
+  golem: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
+  champion: { bits: [BONE[4], BONE[3], IRON[2]], sparks: true, blood: false, dust: true },
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);

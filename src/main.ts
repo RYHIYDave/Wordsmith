@@ -1,7 +1,7 @@
 // Entry point: builds the art, then runs the frame loop that ties input, rules, drawing and
 // interface together.
 
-import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks } from './art/bestiary';
+import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
@@ -34,7 +34,7 @@ import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, MONSTER_ATTACKS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
 import { MIX, RELIEF } from './game/dungeon';
@@ -1743,6 +1743,18 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         art.bestiary = makeBestiary();
       }
       return MONSTER_ATTACKS.on;
+    },
+    /**
+     * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS, with their pictures and the rings that
+     * tell blue and yellow packs apart): on and off for playtests and films, and the monsters painted
+     * again. `newMonsters()` says whether they are on. (A dungeon laid before keeps the packs it has.)
+     */
+    newMonsters: (on?: boolean): boolean => {
+      if (on !== undefined) {
+        useNewMonsters(on);
+        art.bestiary = makeBestiary();
+      }
+      return NEW_MONSTERS.on;
     },
     rangerStances: (on: boolean) => {
       useRangerStances(on);

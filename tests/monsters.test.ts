@@ -22,7 +22,7 @@ import nodeAssert from 'node:assert/strict';
 
 import type { ActorArt, AnimSet, Clip } from '../src/art/actor_types';
 import { FIGURE_SIZE, MONSTER_FIGURES, figureOf, makeBestiary, useMonsterAttacks } from '../src/art/bestiary';
-import type { MonsterFigure } from '../src/art/bestiary';
+import type { ClassicFigure as MonsterFigure } from '../src/art/bestiary';
 import { CLIP_FPS, GRAIN, IDLE_FRAMES, KAX, KAY, KH, KW, RIM_ALPHA, WALK_FRAMES } from '../src/art/kit';
 import { DEATH_FPS, DEATH_TIME, ENEMY_RIM, onGrid, strike } from '../src/art/mkit';
 import type { Canvas } from '../src/art/mkit';

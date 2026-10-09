@@ -53,7 +53,9 @@ export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
       c.my = ux * side;
       return;
     }
-    if (z.kind !== 'warn') continue;
+    // (THE NEW MONSTERS: a Golem's skull, coming down where its shadow is, is stepped out of as a warning is)
+    if (z.kind === 'skull' && z.t >= z.dur) continue;
+    if (z.kind !== 'warn' && z.kind !== 'skull') continue;
     const dx = h.x - z.x;
     const dy = h.y - z.y;
     const d = Math.hypot(dx, dy);

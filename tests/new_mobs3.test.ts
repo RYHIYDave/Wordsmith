@@ -1,6 +1,9 @@
-// THREE NEW MONSTERS (src/art/new_mobs3.ts): A MOCK-UP, BEHIND A SWITCH THAT IS OFF. Pictures for
-// the owner to judge; nothing of them is in the game. So:
-//   1. the switch is off, and nothing of the game imports the file;
+// THREE NEW MONSTERS (src/art/new_mobs3.ts): the art chat's, made a mock-up behind a switch that was
+// off, with his yes to their pictures; IN THE GAME'S CODE SINCE VERSION 19.9, behind the main chat's
+// switch (game/defs.ts NEW_MONSTERS, which throws NEW_MOBS with it), off until he has seen films of them
+// in the game and said yes. So:
+//   1. the pictures' switch goes with the rules', and the game draws them only through the bestiary,
+//      the renderer and its effects;
 //   2. each painter paints every pose the pictures show (standing both ways, the held warning, the
 //      blow, its death) without throwing, and paints something;
 //   3. nothing on them glows a friend's colour: no cyan anywhere in their paintings or their lights;
@@ -29,6 +32,8 @@ import { ENEMY_RIM } from '../src/art/mkit';
 import type { ActorArt, AnimSet } from '../src/art/actor_types';
 import { DEATH_FPS } from '../src/art/mkit';
 import { BONEWARD, GOLEM, NEW_MOBS, NEW_MOBS_LIST, SHADE, TILE3, deathOfMob, makeBonewardArt3, makeGolemArt3, makeShadeArt3, paintMob, skeletonAt } from '../src/art/new_mobs3';
+import { NEW_MONSTERS } from '../src/game/defs';
+import '../src/art/bestiary';
 import type { Mob } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
 import type { Px, Sprite } from '../src/engine/px';
@@ -37,6 +42,7 @@ import { paintWithoutCanvas, paintingOf } from './helpers';
 interface Assert {
   ok(value: unknown, message?: string): void;
   equal(actual: unknown, expected: unknown, message?: string): void;
+  deepEqual(actual: unknown, expected: unknown, message?: string): void;
 }
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
@@ -79,16 +85,19 @@ function cyanGlow(r: number, g: number, b: number): boolean {
   return h >= 165 && h <= 205;
 }
 
-test('the switch is off, and no file of the game imports the mock-up', () => {
-  assert.equal(NEW_MOBS.on, false);
-  // (the mock-up is three files: the monsters, what they throw drawn on the floor, and the rings that tell their packs apart)
+test('their switch goes with the rules\' (Version 19.9), and only the bestiary, the renderer and its effects draw them', () => {
+  // (art/bestiary.ts useNewMonsters throws the pictures' switch, NEW_MOBS, with the rules', NEW_MONSTERS)
+  assert.equal(NEW_MOBS.on, NEW_MONSTERS.on, 'the pictures are on just while the rules are');
+  // (the art chat's three files: the monsters, what they throw drawn on the floor, and the rings that tell their packs apart)
   const mine = ['new_mobs3', 'mob_shots', 'pack_marks'];
   const files = fs.readdirSync('src', { recursive: true }).filter((f) => f.endsWith('.ts') && !f.startsWith('dev'));
+  const users: string[] = [];
   for (const f of files) {
     if (mine.some((m) => f.endsWith(`${m}.ts`))) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
-    for (const m of mine) assert.ok(!text.includes(m), `${f} imports the mock-up (${m})`);
+    if (mine.some((m) => new RegExp(`from '[./a-z_]*/${m}'`).test(text))) users.push(f.split('\\').join('/'));
   }
+  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/fx.ts', 'render/render.ts', 'render/wild.ts'], 'the game files that draw them');
 });
 
 test('each painter paints every pose of the pictures without throwing, and paints something', () => {

@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, movesOf, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -20,7 +20,7 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { AIM_MODES } from './state';
-import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, Riser, SkillState, SlotRef, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
+import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -196,6 +196,8 @@ export class Game {
   volleys: Volley[] = [];
   /** THE MONSTERS' ATTACKS: the dead the Warden has called, still crawling out of the ground (game/defs.ts SUMMON). */
   risers: Riser[] = [];
+  /** THE NEW MONSTERS (game/defs.ts SPEAR): the Bonewards' spears lying on the floor, each until its Boneward picks it up. */
+  spears: Spear[] = [];
   /** The orb set down by the staff's quick attack (one at a time), and the mage's familiars. */
   orbs: OrbInst[] = [];
   familiars: Familiar[] = [];
@@ -844,6 +846,7 @@ export class Game {
     this.traps = [];
     this.volleys = [];
     this.risers = [];
+    this.spears = [];
     this.orbs = [];
     this.familiars = [];
     this.drops = [];
@@ -980,7 +983,8 @@ export class Game {
     // Which monsters carry a word to give up is drawn from a lot of its own, so that changing how
     // scarce words are never changes the dungeon itself.
     const lot = new RNG(seed ^ 0x2c1b3c6d);
-    const kinds = Object.values(MONSTERS).filter((m) => m.weight > 0 && m.minDepth <= this.depth);
+    // (THE NEW MONSTERS among them only while their switch is on: packKinds)
+    const kinds = packKinds(this.depth);
     // (MONSTER PACKS: which packs are blue and which yellow, and their words, from a lot of its own)
     const tiers = new RNG((seed ^ 0x7f4a7c15) >>> 0);
     f.packs.forEach((p, pi) => {
@@ -1032,7 +1036,7 @@ export class Game {
       spots.forEach((s, i) => this.spawn('brute', s.x, s.y, pi, 2, false, rng, i === 0 ? lot : null));
       return;
     }
-    const rarity = packRarity(tier === 'elite', this.depth, tiers.next());
+    const rarity = packRarity(tier === 'elite', this.depth, tiers.next(), kind);
     if (rarity === 'plain') {
       for (const s of spots) this.spawn(kind, s.x, s.y, pi, 0, false, rng, lot);
       return;
@@ -1042,7 +1046,13 @@ export class Game {
     if (rarity === 'blue') for (const s of spots) this.spawn(kind, s.x, s.y, pi, 0, false, rng, null, { rarity: 'blue', words });
     // (words are scarce: as before, an elite room's leader may carry one of its words to give up; the
     // leader of any other yellow pack carries none, and neither does a minion nor one of a blue pack)
-    else spots.forEach((s, i) => this.spawn(kind, s.x, s.y, pi, i === 0 ? 1 : 0, false, rng, i === 0 && tier === 'elite' ? lot : null, { rarity: i === 0 ? 'leader' : 'minion', words }));
+    // (THE NEW MONSTERS: a yellow pack of skeletons is led by the skeleton champion, a monster of his own)
+    else spots.forEach((s, i) => this.spawn(i === 0 ? this.leaderOf(kind) : kind, s.x, s.y, pi, i === 0 ? 1 : 0, false, rng, i === 0 && tier === 'elite' ? lot : null, { rarity: i === 0 ? 'leader' : 'minion', words }));
+  }
+
+  /** What leads a yellow pack of `kind`: one of them (an elite), or, of skeletons, the skeleton champion (THE NEW MONSTERS). */
+  private leaderOf(kind: MonsterKind): MonsterKind {
+    return NEW_MONSTERS.on && kind === 'skeleton' ? 'champion' : kind;
   }
 
   /** THE FIRST LEVELS (21:05): "That also means no words on monsters for dungeon 1". */
@@ -1249,6 +1259,8 @@ export class Game {
 
   /** MONSTER PACKS: what a minion's blow carries of its leader's words, to be weighed where it lands (hurtHero). None for any other. */
   private halfOf(m: Monster): HalfWords | undefined {
+    // (THE NEW MONSTERS: rallied by the skeleton champion's cry, its leader's words are whole for a while: RALLY)
+    if (m.rallyT !== undefined && m.rallyT > 0) return undefined;
     return m.half && m.half.length ? { words: m.half, base: MONSTERS[m.kind].element } : undefined;
   }
 
@@ -3372,7 +3384,7 @@ export class Game {
 
   /** An attack `m` was winding up is broken off, with the warning of a blow it was about to bring down. */
   private breakOff(m: Monster): void {
-    if (m.state !== 'windup' && m.state !== 'charge') return;
+    if (m.state !== 'windup' && m.state !== 'charge' && m.state !== 'pickup') return;
     m.state = 'chase';
     m.anim = 'idle';
     m.charge = undefined;
@@ -3818,6 +3830,8 @@ export class Game {
       if (m.freezeImmune > 0) m.freezeImmune -= dt;
       if (m.markT > 0) m.markT -= dt;
       if (m.staggerCd > 0) m.staggerCd -= dt;
+      // (THE NEW MONSTERS: a minion's leader's words, whole since the skeleton champion's cry, for so long: RALLY)
+      if (m.rallyT !== undefined && m.rallyT > 0) m.rallyT = Math.max(0, m.rallyT - dt);
       if (m.poisonT > 0) {
         m.poisonT -= dt;
         if (m.poisonT <= 0) {
@@ -3860,6 +3874,10 @@ export class Game {
         this.runCharge(m, def, dt, slow);
         continue;
       }
+      if (m.state === 'pickup') {
+        this.stoop(m, dt);
+        continue;
+      }
       if (m.state === 'recover') {
         m.t -= dt;
         if (m.t <= 0) {
@@ -3886,8 +3904,17 @@ export class Game {
       let mvx = 0;
       let mvy = 0;
       let moving = true;
-      const reach = def.range + (m.r - 0.32);
-      if (def.ranged) {
+      const reach = this.reachOf(m, def);
+      // (THE NEW MONSTERS: a Boneward whose spear is gone goes for it, unless the hero is near: SPEAR)
+      const toSpear = m.bare && dist > SPEAR.near ? this.spearWay(m) : null;
+      if (toSpear === 'here') {
+        this.beginStoop(m);
+        continue;
+      }
+      if (toSpear) {
+        mvx = toSpear.x;
+        mvy = toSpear.y;
+      } else if (def.ranged) {
         if (los && dist <= def.range && m.cd <= 0) {
           this.startWindup(m, def);
           continue;
@@ -4098,14 +4125,17 @@ export class Game {
   private pickMove(m: Monster, def: MonsterDef, moves: readonly MonsterMove[], dist: number, los: boolean): number {
     // (from half its `first` to half as much again: so a pack does not bring its slams down together)
     if (!m.moveCd || m.moveCd.length !== moves.length) m.moveCd = moves.map((mv) => mv.first * this.rng.range(0.5, 1.5));
-    const reach = def.range + (m.r - 0.32) + TUNE.heroRadius;
+    const reach = this.reachOf(m, def) + TUNE.heroRadius;
     for (let i = moves.length - 1; i >= 0; i--) {
       const mv = moves[i];
       if (m.moveCd[i] > 0) continue;
+      // (THE NEW MONSTERS: the Boneward's thrust and its throw want its spear in hand; its shield, the spear gone)
+      if (m.kind === 'boneward' && (mv.id === 'bash') !== !!m.bare) continue;
       if (dist < mv.near || dist > (mv.far > 0 ? mv.far : reach)) continue;
       if (mv.id === 'summon') {
         if (this.called(m) >= SUMMON.most) continue;
       } else if (!los) continue;
+      if (mv.id === 'rally' && !this.hearsCry(m)) continue;
       if (mv.id === 'charge' && !this.chargeLane(m, dist)) continue;
       return i;
     }
@@ -4170,17 +4200,34 @@ export class Game {
     const dx = h.x - m.x;
     const dy = h.y - m.y;
     const dist = Math.hypot(dx, dy) || 1;
-    if (mv.id === 'swing') {
-      // the basic blow: whoever is in its reach when it lands (a Twin monster swings again)
-      const reach = def.range + (m.r - 0.32) + 0.45 + TUNE.heroRadius;
-      if (dist <= reach) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg, el, m.words, m);
-      this.sfx('swing', 0.5);
+    if (mv.id === 'swing' || mv.id === 'bash') {
+      // the basic blow: whoever is in its reach when it lands (a Twin monster swings again); the
+      // Boneward's shield, while its spear is gone, shoves the hero back too (THE NEW MONSTERS)
+      const reach = this.reachOf(m, def) + 0.45 + TUNE.heroRadius;
+      const bash = mv.id === 'bash';
+      if (dist <= reach) {
+        this.hurtHero(this.rollMonsterDmg(m) * mv.dmg, el, m.words, m);
+        if (bash) this.knockHero(m.x, m.y, 0.8);
+      }
+      this.sfx(bash ? 'hit' : 'swing', bash ? 0.6 : 0.5);
       if (twin > 0) {
         this.after(0.28, () => {
           if (m.dead) return;
           if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg * twin, el, m.words, m);
         });
       }
+    } else if (mv.id === 'throw') {
+      // THE NEW MONSTERS: the Golem's skull, or the Boneward's spear
+      if (m.kind === 'golem') {
+        this.hurlSkull(m, mv, 1);
+        if (twin > 0) {
+          this.after(0.35, () => {
+            if (!m.dead) this.hurlSkull(m, mv, twin);
+          });
+        }
+      } else this.throwSpear(m, mv);
+    } else if (mv.id === 'rally') {
+      this.rally(m);
     } else if (mv.id === 'slam') {
       // the red circle does the harm; a Twin monster follows it with a second, quicker one
       this.sfx('slam', 0.8);
@@ -4318,6 +4365,142 @@ export class Game {
   }
 
   // ===========================================================================================
+  // THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS, SPEAR, SKULL, RALLY)
+
+  /** How far a monster's blow reaches beyond its body (tiles): a Boneward whose spear is gone, its shield's. */
+  private reachOf(m: Monster, def: MonsterDef): number {
+    return (m.bare ? SPEAR.bash : def.range) + (m.r - 0.32);
+  }
+
+  /** THE BONEWARD THROWS ITS SPEAR at where the hero stands: from its hand, and its hand is empty till it picks the spear up again. */
+  private throwSpear(m: Monster, mv: MonsterMove): void {
+    const h = this.hero;
+    let x0 = m.x + m.fx * SPEAR.hand;
+    let y0 = m.y + m.fy * SPEAR.hand;
+    if (!this.isOpen(x0, y0)) {
+      x0 = m.x;
+      y0 = m.y;
+    }
+    const dx = h.x - x0;
+    const dy = h.y - y0;
+    const d = Math.hypot(dx, dy) || 1;
+    this.projectiles.push({
+      x: x0, y: y0, vx: (dx / d) * SPEAR.speed, vy: (dy / d) * SPEAR.speed, r: 0.22, dist: d, hostile: true,
+      dmg: this.rollMonsterDmg(m) * mv.dmg, element: this.monsterElement(m), look: 'spear', pierce: false, hit: [], volley: false, skill: -1,
+      trail: 0, words: m.words, half: this.halfOf(m), runed: false, clouded: false, age: 0, from: m.name, n: 0, src: m.id, way: d, z0: SPEAR.z,
+    });
+    m.bare = true;
+    this.sfx('swing', 0.6);
+  }
+
+  /** A spear has come down (on the hero, at a wall, or where it was aimed): it lies there, on the nearest floor one could walk to, till its Boneward picks it up. */
+  private laySpear(p: Projectile): void {
+    if (p.src === undefined) return;
+    const L = this.level;
+    const f = L.floor;
+    const ok = (x: number, y: number): boolean => {
+      const tx = Math.floor(x);
+      const ty = Math.floor(y);
+      return tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && L.walk[ty * f.w + tx] === 1 && this.onFloor(x, y);
+    };
+    let x = p.x;
+    let y = p.y;
+    if (!ok(x, y)) {
+      let bd = Infinity;
+      for (let r = 1; r <= 2 && bd === Infinity; r++) {
+        for (let oy = -r; oy <= r; oy++) {
+          for (let ox = -r; ox <= r; ox++) {
+            const cx = Math.floor(p.x) + ox + 0.5;
+            const cy = Math.floor(p.y) + oy + 0.5;
+            const d = Math.hypot(cx - p.x, cy - p.y);
+            if (d < bd && ok(cx, cy)) {
+              bd = d;
+              x = cx;
+              y = cy;
+            }
+          }
+        }
+      }
+    }
+    const sp = Math.hypot(p.vx, p.vy) || 1;
+    const flow = flowField(L.walk, f.w, f.h, x, y, 28, undefined, L.step);
+    this.spears.push({ x, y, fx: p.vx / sp, fy: p.vy / sp, owner: p.src, flow });
+  }
+
+  /** Which way a Boneward goes for its spear: 'here', near enough to stoop for it; null, none lying, or no way to it. */
+  private spearWay(m: Monster): { x: number; y: number } | 'here' | null {
+    const sp = this.spears.find((s) => s.owner === m.id);
+    if (!sp) return null;
+    const dx = sp.x - m.x;
+    const dy = sp.y - m.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= SPEAR.pick) return 'here';
+    const L = this.level;
+    const f = L.floor;
+    if (d < 2.5 && this.walksStraight(m.x, m.y, sp.x, sp.y)) return { x: dx / d, y: dy / d };
+    if (!sp.flow || sp.flow[Math.floor(m.y) * f.w + Math.floor(m.x)] === UNREACHABLE) return null;
+    const v = flowDir(sp.flow, L.walk, f.w, f.h, m.x, m.y, undefined, L.step);
+    return v.x === 0 && v.y === 0 ? null : { x: v.x, y: v.y };
+  }
+
+  /** It stoops for its spear, facing it (SPEAR.stoop seconds; the spear in its hand at SPEAR.grab). */
+  private beginStoop(m: Monster): void {
+    const sp = this.spears.find((s) => s.owner === m.id);
+    if (sp) {
+      const d = Math.hypot(sp.x - m.x, sp.y - m.y);
+      if (d > 0.01) {
+        m.fx = (sp.x - m.x) / d;
+        m.fy = (sp.y - m.y) / d;
+      }
+    }
+    m.state = 'pickup';
+    m.t = SPEAR.stoop;
+    m.anim = 'idle';
+    m.animT = 0;
+  }
+
+  private stoop(m: Monster, dt: number): void {
+    m.t -= dt;
+    if (m.bare && SPEAR.stoop - m.t >= SPEAR.grab) {
+      const k = this.spears.findIndex((s) => s.owner === m.id);
+      if (k >= 0) this.spears.splice(k, 1);
+      m.bare = false;
+    }
+    if (m.t <= 0) {
+      m.state = 'chase';
+      m.anim = 'idle';
+    }
+  }
+
+  /** THE GOLEM HURLS A SKULL at where the hero stands: it comes down there SKULL.fly seconds later, its shadow showing where; `share` of its blow (a Twin Golem's second skull, of its Twin). */
+  private hurlSkull(m: Monster, mv: MonsterMove, share: number): void {
+    const h = this.hero;
+    this.zones.push({
+      x: h.x, y: h.y, x1: m.x + m.fx * SKULL.hand, y1: m.y + m.fy * SKULL.hand, r: SKULL.r, t: 0, dur: SKULL.fly, kind: 'skull', element: this.monsterElement(m),
+      dmg: this.rollMonsterDmg(m) * mv.dmg * share, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id, half: this.halfOf(m), gone: 0,
+    });
+    this.sfx('swing', 0.45);
+  }
+
+  /** THE SKELETON CHAMPION CRIES OUT: his minions within RALLY.reach of him have his words whole for RALLY.dur seconds. */
+  private rally(m: Monster): void {
+    for (const o of this.monsters) {
+      if (o.dead || o === m || o.packId !== m.packId || o.rarity !== 'minion') continue;
+      if (Math.hypot(o.x - m.x, o.y - m.y) <= RALLY.reach) o.rallyT = RALLY.dur;
+    }
+    this.sfx('bossRoar', 0.5);
+    this.emit({ t: 'shake', amount: 1 });
+    this.msg(`${m.name} rallies his pack`, MSG.foe);
+  }
+
+  /** Whether one of the champion's minions would hear his cry: near enough, with words of his at half, and not rallied but now. */
+  private hearsCry(m: Monster): boolean {
+    return this.monsters.some(
+      (o) => !o.dead && o !== m && o.packId === m.packId && o.rarity === 'minion' && !!o.half && o.half.length > 0 && !(o.rallyT !== undefined && o.rallyT > 1) && Math.hypot(o.x - m.x, o.y - m.y) <= RALLY.reach,
+    );
+  }
+
+  // ===========================================================================================
   // Projectiles, traps, ground
 
   private updateProjectiles(dt: number): void {
@@ -4391,7 +4574,11 @@ export class Game {
           dead = true;
         }
       }
-      if (dead) this.projectiles.splice(i, 1);
+      if (dead) {
+        this.projectiles.splice(i, 1);
+        // (THE NEW MONSTERS: a Boneward's spear lies where it came down)
+        if (p.look === 'spear') this.laySpear(p);
+      }
     }
   }
 
@@ -4577,6 +4764,17 @@ export class Game {
           this.emit({ t: 'shake', amount: 2 });
           if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
         }
+        continue;
+      }
+      if (z.kind === 'skull') {
+        // (THE NEW MONSTERS: a Golem's skull comes down where it was aimed, and bursts)
+        if (!z.gone && z.t >= z.dur) {
+          z.gone = 1;
+          this.emit({ t: 'shake', amount: 2 });
+          this.sfx('slam', 0.6);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
+        }
+        if (z.t >= z.dur + SKULL.burst) this.zones.splice(i, 1);
         continue;
       }
       if (z.kind === 'lane') {

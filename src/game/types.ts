@@ -27,9 +27,17 @@ export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'f
 /** Damage types. An ability with no element word deals physical damage. */
 export type Element = 'phys' | 'fire' | 'frost' | 'lightning';
 
-/** 'warden' is the boss that ends a dungeon. */
-export type MonsterKind = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden';
+/**
+ * 'warden' is the boss that ends a dungeon. THE NEW MONSTERS (Version 19.9, game/defs.ts NEW_MONSTERS):
+ * 'shade', 'boneward' and 'golem', and 'champion', the skeleton champion, who leads a yellow pack of
+ * skeletons (a kind of its own, never a pack of its own: not the `champion` of a Monster, which is a
+ * guardian).
+ */
+export type MonsterKind = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion';
+/** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
+/** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
+export const NEW_KINDS: readonly MonsterKind[] = ['shade', 'boneward', 'golem', 'champion'];
 
 // ---------------------------------------------------------------------------------------------
 // Stats. Every number a character has is one of these keys. Percentages are whole numbers

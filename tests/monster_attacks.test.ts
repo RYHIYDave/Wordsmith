@@ -161,18 +161,24 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
   for (const kind of Object.keys(MONSTERS) as MonsterKind[]) {
     for (const champion of kind === 'brute' ? [false, true] : [false]) {
       const size = sizeOf(kind, champion);
-      const moves = movesOf({ kind, champion });
+      const all = movesOf({ kind, champion });
+      // (Version 19.9, THE NEW MONSTERS: the Boneward's shield, 'bash', stands in for its thrust while
+      // its spear is gone: it has its two at any one time. And a pack's leader that is a monster of its
+      // own may have one more: the skeleton champion's cry. His word of 08:24: "Pack leaders that are
+      // different mobs can have an extra attack if it seems right".)
+      const moves = all ? all.filter((mv) => mv.id !== 'bash') : null;
       // (one that has no moves has its one attack, as before)
       const n = moves ? moves.length : 1;
+      const leads = kind === 'champion' ? 1 : 0;
       const what = `${kind}${champion ? ' (a guardian: the red troll)' : ''}, ${size}`;
-      assert.ok(n >= want[size][0] && n <= want[size][1], `${what}: ${n} attacks (his rule: ${want[size].join(' to ')})`);
+      assert.ok(n >= want[size][0] && n <= want[size][1] + leads, `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);
       if (!moves) continue;
       const first = moves[0];
       assert.equal(first.id, 'swing', `${what}: the first is the basic blow, a swing`);
       assert.equal(first.cooldown, 0, `${what}: the basic blow has no cooldown of its own: it is used between the big ones`);
       assert.equal(first.far, 0, `${what}: it reaches no further than the monster's own reach`);
       for (let i = 1; i < moves.length; i++) assert.ok(moves[i].cooldown > moves[i - 1].cooldown, `${what}: ${moves[i].id} cools down longer (${moves[i].cooldown} s) than ${moves[i - 1].id} (${moves[i - 1].cooldown} s)`);
-      for (const mv of moves.slice(1)) assert.ok(mv.dmg > first.dmg || mv.id === 'bolts' || mv.id === 'summon', `${what}: ${mv.id} hits harder than the swing`);
+      for (const mv of moves.slice(1)) assert.ok(mv.dmg > first.dmg || mv.id === 'bolts' || mv.id === 'summon' || mv.id === 'rally', `${what}: ${mv.id} hits harder than the swing`);
     }
   }
   // the moves he said yes to

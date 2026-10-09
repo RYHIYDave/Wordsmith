@@ -31,7 +31,7 @@
 //     the design rules out again and will fail if a change breaks one.
 
 import { RNG } from '../engine/rng';
-import { FIRST_DUNGEON, FIRST_LEVELS, MONSTERS, MONSTER_PACKS, packRange, sizeOf } from './defs';
+import { FIRST_DUNGEON, FIRST_LEVELS, MONSTER_PACKS, packKinds, packRange, sizeOf } from './defs';
 import { DOORS, layDoors } from './doors';
 import { TRAPS, TRAPS_FROM, layHazards, sealVault, unsealDoorless } from './traps';
 import { flowField, UNREACHABLE } from './nav';
@@ -1511,11 +1511,14 @@ function placePacks(st: Stage, lay: Layout): PackSpot[] {
   // MONSTER PACKS (defs.ts; his rule of 9 Oct 2026, 07:49): a pack is of one kind, as many as the
   // kind's size says; a guardian's lair holds guardians alone; a pack in a corridor is of the fewest
   // and one more. Drawn from a lot of its own (kindRng): where the packs stand is as it was.
+  // (THE NEW MONSTERS among them while their switch is on; an elite room's pack is never of bats, whose
+  // packs are never yellow: defs.ts packKinds, packRarity)
   if (MONSTER_PACKS.on) {
-    const pool = Object.values(MONSTERS).filter(m => m.weight > 0 && m.minDepth <= depth);
+    const pool = packKinds(depth);
+    const elites = packKinds(depth, true);
     for (const d of drafts) {
       const champion = d.tier === 'champion';
-      const kind: MonsterKind = champion ? 'brute' : st.kindRng.weighted(pool, k => k.weight).kind;
+      const kind: MonsterKind = champion ? 'brute' : st.kindRng.weighted(d.tier === 'elite' ? elites : pool, k => k.weight).kind;
       const [lo, hi] = packRange(sizeOf(kind, champion), depth);
       d.kind = kind;
       d.size = st.kindRng.int(lo, d.roomId < 0 ? Math.min(hi, lo + 1) : hi);
