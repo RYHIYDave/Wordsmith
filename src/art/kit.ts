@@ -958,6 +958,8 @@ export interface Moves {
   reel?: Timeline;
   /** The same for a blow that comes from behind them: thrown forward a step, and upright again. */
   lurch?: Timeline;
+  /** A monster's other moves, by name (AnimSet.clips.moves). */
+  more?: Readonly<Record<string, Timeline>>;
 }
 
 /** How a rig reads its poses. */
@@ -1026,6 +1028,11 @@ export function animSet(rig: Rig, back: boolean, rest: Partial<Pose>, moves: Mov
   if (moves.fall) clips.fall = clip(moves.fall, CLIP_FPS);
   if (moves.reel) clips.reel = clip(moves.reel, CLIP_FPS);
   if (moves.lurch) clips.lurch = clip(moves.lurch, CLIP_FPS);
+  if (moves.more) {
+    const more: Record<string, Clip> = {};
+    for (const [name, t] of Object.entries(moves.more)) more[name] = clip(t, CLIP_FPS);
+    clips.moves = more;
+  }
   // (a roll's timeline runs from 0 to 1, like a leap's: shown by how far through the roll the hero is)
   if (moves.roll) clips.roll = clip(moves.roll, 12);
   if (moves.leap) {

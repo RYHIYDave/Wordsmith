@@ -143,6 +143,16 @@ export interface AnimSet {
     /** The same two while the hero walks, the walk's legs under them, one for each of the four ways (as `attackWalk`). */
     reelWalk?: Clip[];
     lurchWalk?: Clip[];
+    /**
+     * A MONSTER'S OTHER MOVES, by name (the owner, 9 Oct 2026: tiny and small monsters have one
+     * attack, medium two, large two or three, the boss four, and always a basic single-target
+     * attack to use while the big ones cool down). `attack` is still its first; these are the rest,
+     * each a clip as `attack` is (its `hit` where the blow lands, a held one's `loop` where its loop
+     * begins): the trolls' 'swing', the red troll's 'chargeWind', 'charge' (a loop, run for as long
+     * as the charge lasts) and 'chargeStop', ... Which is played when is the rules' (game/).
+     * Absent: the monster has `attack` (and `heavy`) only.
+     */
+    moves?: Record<string, Clip>;
   };
 }
 
