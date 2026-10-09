@@ -31,6 +31,7 @@ FILMS = {
     'precise': {'box': (236, 42, 180, 116), 'colour': (0xee, 0xf4, 0xfa), 'lines': ['In front: a narrow, exact hit: a needle of light', 'and a small bright star.', 'Behind: a sight closes on the enemy; the next hit', 'on it is a certain critical.']},
     'stilling': {'box': (228, 35, 214, 140), 'colour': (0x86, 0xea, 0xae), 'lines': ['In front: time slows for what it hits: a ripple, a clock', 'at its feet, and its echoes linger as it moves.', 'Behind: a bubble where enemies and their shots crawl.']},
     'guarding': {'box': (196, 48, 140, 108), 'colour': (0x30, 0xa8, 0x68), 'lines': ['In front: using it gives a brief shield, a shell round', 'the hero that flares where a blow lands.', 'Behind: a ward circle; the hero takes less damage inside.']},
+    'mystical': {'box': (200, 46, 180, 112), 'colour': (0xac, 0xbc, 0xfe), 'lines': ['In front: a bigger spell hit. A crescent of moonlight', 'sweeps round the struck; a spell that hits one enemy', 'splashes the ones beside it.', 'Behind: each spell hit sends a star to the little moon', 'at her shoulder. It waxes to full at five.']},
 }
 
 os.makedirs(out, exist_ok=True)

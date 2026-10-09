@@ -26,13 +26,25 @@ import { pline, wx, wy } from './fx';
  */
 export const WORDS3 = { on: true };
 
-export type NewWord = 'pulling' | 'splitting' | 'heavy' | 'precise' | 'hexing' | 'stilling' | 'frenzied' | 'guarding';
-export const NEW_WORDS: readonly NewWord[] = ['pulling', 'splitting', 'heavy', 'precise', 'hexing', 'stilling', 'frenzied', 'guarding'];
+/**
+ * The eight he chose at 12:26, and MYSTICAL: his own word, 8 Oct 2026, 10:54: "I’d like to add a
+ * word MYSTICAL, which increases spell damage in the same vein as PHYSICAL for attack damage" (and
+ * 10:58: "Sorry keep power’s name the same.  I meant power"). The main chat writes its rules (a
+ * damage word for spells, as Power is for attacks, growing with Intelligence); its colour and rune
+ * are drawn here by the art chat, behind the same switch, pictures to him first.
+ */
+export type NewWord = 'pulling' | 'splitting' | 'heavy' | 'precise' | 'hexing' | 'stilling' | 'frenzied' | 'guarding' | 'mystical';
+export const NEW_WORDS: readonly NewWord[] = ['pulling', 'splitting', 'heavy', 'precise', 'hexing', 'stilling', 'frenzied', 'guarding', 'mystical'];
 
 /**
  * Each word's colours, darkest to brightest (the last is its white-hot). Index 3 is the word's
  * own colour (WORD_COLOR, WORD_HUE), index 4 its glow (WORD_GLOW). Chosen to be told apart from the
  * nine words' colours and from the friend's cyan and the enemy's pink and gold (the note says how).
+ * Mystical's is the pale blue of moonlight: of all the colours bright enough to read on the game's
+ * deep blue, the one furthest from every word's, from the friend's cyan and the enemy's pink and
+ * gold, from the purple the game draws arcane magic in (the spells it will most often ride on) and
+ * from the blue of a magic item's name (tests/words3.test.ts measures it). The open magentas were
+ * further still from the words, but are the enemy's hot pink to the eye.
  */
 export const NEW_RAMP: Record<NewWord, readonly string[]> = {
   pulling: ['#16123e', '#2a2672', '#4844ae', '#7a76e0', '#c4c2ff', '#f4f2ff'],
@@ -43,6 +55,7 @@ export const NEW_RAMP: Record<NewWord, readonly string[]> = {
   stilling: ['#0c3024', '#1a5e46', '#3ea27a', '#86eaae', '#d0fce4', '#ffffff'],
   frenzied: ['#380a06', '#7c1a0c', '#c03616', '#ff5c33', '#ff9670', '#fff0e8'],
   guarding: ['#0a2a1c', '#124e32', '#1e8048', '#30a868', '#8ae4ac', '#eafff2'],
+  mystical: ['#141a3e', '#283672', '#5262b4', '#acbcfe', '#e2e8ff', '#ffffff'],
 };
 export const NEW_COLOR = Object.fromEntries(NEW_WORDS.map((w) => [w, NEW_RAMP[w][3]])) as Record<NewWord, string>;
 export const NEW_GLOW = Object.fromEntries(NEW_WORDS.map((w) => [w, NEW_RAMP[w][4]])) as Record<NewWord, string>;
@@ -68,6 +81,8 @@ export const NEW_GLYPH: Record<NewWord, readonly string[]> = {
   frenzied: ['X..X..', 'X..X..', '.X..X.', '.X..X.', '..X..X', '..o..o'],
   // a shield
   guarding: ['XXXXXX', 'X.oo.X', 'X.oo.X', 'X....X', '.X..X.', '..XX..'],
+  // a crescent moon and a star
+  mystical: ['...XX..', '..XX.o.', '.XXX...', '.XXX...', '.XXX...', '..XXX..', '...XXX.'],
 };
 
 // =============================================================================================
@@ -159,6 +174,26 @@ interface Snap {
   dur: number;
 }
 
+/** Mystical in front: a crescent of moonlight sweeping round what a spell struck (`a0`: where its head starts, `dir`: which way round). */
+interface Sweep {
+  x: number;
+  y: number;
+  t: number;
+  dur: number;
+  a0: number;
+  dir: number;
+}
+
+/** Mystical in front: a line of a constellation from what a spell struck to what its splash struck. */
+interface Link {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  t: number;
+  dur: number;
+}
+
 export const W3 = {
   patches: [] as Patch[],
   marks: new Map<number, Marked>(),
@@ -174,6 +209,16 @@ export const W3 = {
   trails: new Map<number, { x: number; y: number }[]>(),
   /** Guarding: the shield on the hero (seconds left, and how long it was given), and the last blow it turned (seconds since, and from where). */
   guard: { t: 0, dur: 0, struck: 9, fx: 0, fy: 0 },
+  /** Mystical in front: crescents sweeping round what spells struck, and the lines of their splash. */
+  sweeps: [] as Sweep[],
+  links: [] as Link[],
+  /**
+   * Mystical behind: the stacks the hero holds (0 to 5, as the rules say), how many the moon at their
+   * shoulder shows (it waxes as each star reaches it), seconds they have left, seconds since the moon
+   * last grew; and the stars flying to it from what was struck.
+   */
+  mystic: { n: 0, shown: 0, t: 0, since: 9 },
+  stars: [] as Flight[],
   /** The clock these are drawn by (game seconds), and its last step (what is given off is given off at so many a second, not so many a frame). */
   clock: 0,
   dt: 0,
@@ -182,6 +227,8 @@ export const W3 = {
   behind: [] as NewWord[],
   /** The demo is listening (a playtest's page): only then does `tick3` do the rules' share by hand. */
   demo: false,
+  /** The demo: the hero's spells are taken to strike one enemy each (Mystical's splash goes from their hits). */
+  single: false,
 };
 
 const MAX_PARTICLES = 900;
@@ -214,6 +261,14 @@ export function clear3(): void {
   W3.guard.t = 0;
   W3.guard.dur = 0;
   W3.guard.struck = 9;
+  W3.sweeps.length = 0;
+  W3.links.length = 0;
+  W3.mystic.n = 0;
+  W3.mystic.shown = 0;
+  W3.mystic.t = 0;
+  W3.mystic.since = 9;
+  W3.stars.length = 0;
+  mysticNote = null;
 }
 
 // =============================================================================================
@@ -473,6 +528,45 @@ export function guardStruck(fx: Fx, hx: number, hy: number, fromX: number, fromY
   streaks(fx, hx + (dx / len) * 0.35, hy + (dy / len) * 0.35, 9, [C[4], C[5], C[3]], 3, 3, { dx: dx / len, dy: dy / len, spread: 1.1, z: 14, life: 0.2 });
 }
 
+/**
+ * MYSTICAL, on a spell's hit at (x, y): a bigger hit, in moonlight. A crescent of it sweeps round
+ * the struck (the word's rune is a crescent moon), with a flash and a soft ring, and stardust is
+ * thrown up that drifts and dims.
+ */
+export function mysticHit(fx: Fx, x: number, y: number): void {
+  const C = NEW_RAMP.mystical;
+  W3.sweeps.push({ x, y, t: 0, dur: 0.3, a0: rnd(0, Math.PI * 2), dir: Math.random() < 0.5 ? -1 : 1 });
+  fx.flashes.push({ x, y, z: 12, r: 0.46, t: 0, dur: 0.1, colors: [C[5], C[4], C[3]] });
+  fx.rings.push({ x, y, r: 0.8, t: 0, dur: 0.24, colors: [C[5], C[4], C[3], C[2]], fill: false });
+  for (let i = 0; i < 12; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const s = rnd(0.4, 1.3);
+    const life = rnd(0.5, 0.9);
+    add(fx, { x: x + Math.cos(a) * 0.15, y: y + Math.sin(a) * 0.15, z: rnd(8, 16), vx: Math.cos(a) * s, vy: Math.sin(a) * s, vz: rnd(10, 35), life, life0: life, ramp: [C[5], C[4], C[3], C[2]], color: C[4], size: i % 4 === 0 ? 2 : 1, grav: -6 });
+  }
+  if (fx.glows.length < 24) fx.glows.push({ x, y, r: 30, t: 0, dur: 0.3 });
+}
+
+/**
+ * MYSTICAL, the splash of a spell that strikes one enemy (the main chat's page: "single-target
+ * spells splash nearby enemies"): lines of a constellation run out from the struck to each enemy the
+ * splash reaches, a star at each end, and each of them is struck with a small burst of moonlight.
+ */
+export function mysticSplash(fx: Fx, x: number, y: number, to: readonly { x: number; y: number }[]): void {
+  const C = NEW_RAMP.mystical;
+  for (const p of to) {
+    W3.links.push({ x0: x, y0: y, x1: p.x, y1: p.y, t: 0, dur: 0.45 });
+    // (it reaches them as its line does)
+    W3.later.push({
+      t: 0.07,
+      fn: () => {
+        fx.flashes.push({ x: p.x, y: p.y, z: 12, r: 0.28, t: 0, dur: 0.08, colors: [C[5], C[4], C[3]] });
+        streaks(fx, p.x, p.y, 5, [C[4], C[5], C[3]], 1.6, 2, { z: 12, life: 0.2 });
+      },
+    });
+  }
+}
+
 // =============================================================================================
 // BEHIND: what is left.
 
@@ -499,6 +593,52 @@ export function bubble(x: number, y: number, r: number, dur = 4): void {
 /** GUARDING behind: a ward circle at (x, y); the hero takes less damage inside it. */
 export function ward(x: number, y: number, r: number, dur = 4.5): void {
   W3.patches.push({ kind: 'ward', x, y, r, t: 0, dur, seed: Math.floor(Math.random() * 1e6) });
+}
+
+/** What the line over the hero calls Mystical's stacks, as Power's are MIGHT: his answer in the main chat at 18:23, “Arcana (Recommended)”. */
+export const MYSTIC_NAME = 'ARCANA';
+/** How long Mystical's stacks last, and how many there may be (the main chat's page: 5 seconds, up to 5). */
+export const MYSTIC_SECS = 5;
+export const MYSTIC_MAX = 5;
+/** How long a star takes to fly from the struck to the hero's moon. */
+const STAR_TIME = 0.34;
+
+/**
+ * MYSTICAL behind: a spell's hit has landed at (x, y), and the hero's spells grow stronger for a
+ * while, up to five times. A star flies from the struck to the little moon at the hero's shoulder,
+ * and as it gets there the moon waxes: a crescent (the word's rune) at one, full at five, with a line
+ * over the hero as Power's might has ("ARCANA 2", "FULL ARCANA"). `n`: the stacks the rules say the
+ * hero now holds (otherwise one more than before).
+ */
+export function mysticStack(x: number, y: number, n?: number): void {
+  const M = W3.mystic;
+  M.n = Math.max(1, Math.min(MYSTIC_MAX, n ?? M.n + 1));
+  M.t = MYSTIC_SECS;
+  // (a stack only kept up flies no star: the moon already says how much there is; at most one in
+  // the air for each the moon has still to show)
+  if (W3.stars.length < M.n - M.shown) W3.stars.push({ x0: x, y0: y, t: 0, dur: STAR_TIME, bend: Math.random() < 0.5 ? -0.7 : 0.7 });
+}
+
+/** The line that last told of Mystical's stacks: counted up in place while it is fresh, as Power's is. */
+let mysticNote: Fx['floaters'][number] | null = null;
+
+/** The moon has grown: it brightens for a moment, and the line over the hero says how much there is. */
+function moonGrows(fx: Fx, game: Game): void {
+  const M = W3.mystic;
+  const C = NEW_RAMP.mystical;
+  M.shown = Math.min(M.n, M.shown + 1);
+  M.since = 0;
+  const full = M.shown >= MYSTIC_MAX;
+  const text = full ? `FULL ${MYSTIC_NAME}` : `${MYSTIC_NAME} ${M.shown}`;
+  const last = mysticNote;
+  if (last && last.t < 0.45 && fx.floaters.includes(last)) {
+    last.text = text;
+    last.color = full ? C[5] : C[4];
+    last.big = full;
+  } else {
+    fx.float(game.hero.x, game.hero.y, text, full ? C[5] : C[4], full, 40);
+    mysticNote = fx.floaters[fx.floaters.length - 1] ?? null;
+  }
 }
 
 /** Whether (x, y) is inside a patch of this kind now. */
@@ -620,6 +760,31 @@ export function tick3(dt: number, game: Game, fx: Fx): void {
   if (f.t > 0) {
     f.t -= dt;
     if (f.t <= 0) f.n = 0;
+  }
+  // Mystical: the crescents and the constellation's lines fade; the stars reach the moon, and it waxes
+  for (const list of [W3.sweeps, W3.links]) {
+    for (let i = list.length - 1; i >= 0; i--) {
+      list[i].t += dt;
+      if (list[i].t >= list[i].dur) list.splice(i, 1);
+    }
+  }
+  for (let i = W3.stars.length - 1; i >= 0; i--) {
+    const s = W3.stars[i];
+    s.t += dt;
+    if (s.t >= s.dur) {
+      W3.stars.splice(i, 1);
+      if (W3.mystic.shown < W3.mystic.n) moonGrows(fx, game);
+    }
+  }
+  const M = W3.mystic;
+  M.since += dt;
+  if (M.t > 0) {
+    M.t -= dt;
+    if (M.t <= 0) {
+      M.n = 0;
+      M.shown = 0;
+      W3.stars.length = 0;
+    }
   }
   for (let i = W3.copies.length - 1; i >= 0; i--) {
     const c = W3.copies[i];
@@ -1366,10 +1531,187 @@ export function air3(g: CanvasRenderingContext2D, cam: Cam, t: number, game: Gam
   }
   // Guarding in front: the shell of the shield round the hero
   if (W3.guard.t > 0) drawShell(g, cam, game, fx, t);
+  // Mystical in front: crescents of moonlight sweeping round what spells struck, and the
+  // constellation's lines out to what their splash struck
+  for (const s of W3.sweeps) drawSweep(g, cam, s);
+  for (const l of W3.links) drawLink(g, cam, l, t);
+  // Mystical behind: the stars flying to the moon at the hero's shoulder, and the moon
+  const [mx, my] = moonAt(cam, game, fx, t);
+  for (const s of W3.stars) {
+    const C = NEW_RAMP.mystical;
+    const sx0 = wx(cam, s.x0, s.y0);
+    const sy0 = wy(cam, s.x0, s.y0) - 12;
+    const at = (q: number): [number, number] => {
+      const e = q * q * (3 - 2 * q);
+      const bx = mx - sx0;
+      const by = my - sy0;
+      const side = Math.sin(Math.PI * q) * s.bend * 0.35;
+      return [sx0 + bx * e - by * side, sy0 + by * e + bx * side - Math.sin(Math.PI * q) * 10];
+    };
+    const q1 = s.t / s.dur;
+    let [px, py] = at(q1);
+    for (let tail = 1; tail <= 4; tail++) {
+      const q = q1 - tail * 0.035;
+      if (q < 0) break;
+      const [qx, qy] = at(q);
+      pline(g, Math.round(px), Math.round(py), Math.round(qx), Math.round(qy), tail < 2 ? C[4] : tail < 3 ? C[3] : C[2]);
+      px = qx;
+      py = qy;
+    }
+    const [hx, hy] = at(q1);
+    starAt(g, Math.round(hx), Math.round(hy), C, 1);
+  }
+  moonWas = [mx, my];
+  if (W3.mystic.shown > 0) drawMoon(g, mx, my, t);
+  // a full moon sheds its light: motes of it drift down round the hero
+  if (W3.mystic.shown >= MYSTIC_MAX && Math.random() < 14 * W3.dt * fx.room()) {
+    const C = NEW_RAMP.mystical;
+    add(fx, { x: h.x + rnd(-0.45, 0.45), y: h.y + rnd(-0.45, 0.45), z: rnd(18, 30), vx: 0, vy: 0, vz: rnd(-14, -6), life: rnd(0.6, 1), color: pick([C[3], C[4], C[4], C[5]]), size: 1, grav: 0 });
+  }
   // a full frenzy gives off heat
   if (W3.frenzy.n >= 5 && Math.random() < 30 * W3.dt * fx.room()) {
     const C = NEW_RAMP.frenzied;
     add(fx, { x: h.x + rnd(-0.35, 0.35), y: h.y + rnd(-0.35, 0.35), z: rnd(4, 20), vx: 0, vy: 0, vz: rnd(30, 55), life: rnd(0.15, 0.3), color: pick([C[3], C[4]]), size: 1, grav: 0, streak: 3 });
+  }
+}
+
+/** A small star of moonlight at a screen point: a white heart, four short rays (`big`: longer rays). */
+function starAt(g: CanvasRenderingContext2D, x: number, y: number, C: readonly string[], big: number): void {
+  g.fillStyle = C[3];
+  for (let i = 1; i <= 1 + big; i++) {
+    g.fillRect(x - i, y, 1, 1);
+    g.fillRect(x + i, y, 1, 1);
+    g.fillRect(x, y - i, 1, 1);
+    g.fillRect(x, y + i, 1, 1);
+  }
+  g.fillStyle = C[4];
+  g.fillRect(x - 1, y, 3, 1);
+  g.fillRect(x, y - 1, 1, 3);
+  g.fillStyle = C[5];
+  g.fillRect(x, y, 1, 1);
+}
+
+/**
+ * Mystical in front: a crescent of moonlight sweeping round the struck, at its middle: an arc of a
+ * ring seen at the floor's slant, thickest in its middle and thin at both ends like the moon's, its
+ * leading end white. It sweeps half way round and more, and is gone.
+ */
+function drawSweep(g: CanvasRenderingContext2D, cam: Cam, s: Sweep): void {
+  const C = NEW_RAMP.mystical;
+  const k = s.t / s.dur;
+  const cx = wx(cam, s.x, s.y);
+  const cy = wy(cam, s.x, s.y) - 12;
+  const rx = 13;
+  const ry = 7;
+  const head = s.a0 + s.dir * smooth(Math.min(1, k * 1.4)) * Math.PI * 1.15;
+  const len = Math.PI * (0.35 + 0.55 * Math.min(1, k * 3));
+  g.globalAlpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
+  const n = 30;
+  for (let i = 0; i <= n; i++) {
+    const q = i / n;
+    const a = head - s.dir * q * len;
+    const thick = Math.sin(Math.PI * q);
+    const ox = Math.cos(a);
+    const oy = Math.sin(a);
+    g.fillStyle = q < 0.1 ? C[5] : q < 0.6 ? C[4] : C[3];
+    g.fillRect(Math.round(cx + ox * rx), Math.round(cy + oy * ry), 1, 1);
+    if (thick > 0.45) {
+      g.fillStyle = q < 0.5 ? C[4] : C[3];
+      g.fillRect(Math.round(cx + ox * (rx - 1.1)), Math.round(cy + oy * (ry - 0.7)), 1, 1);
+    }
+    if (thick > 0.85) {
+      g.fillStyle = C[2];
+      g.fillRect(Math.round(cx + ox * (rx - 2.2)), Math.round(cy + oy * (ry - 1.4)), 1, 1);
+    }
+  }
+  g.globalAlpha = 1;
+}
+
+/**
+ * Mystical's splash: a line of a constellation from the struck to what the splash struck, drawn
+ * out from the struck in an instant: dim, with brighter points along it, a star at each end. It
+ * holds a moment and fades.
+ */
+function drawLink(g: CanvasRenderingContext2D, cam: Cam, l: Link, t: number): void {
+  const C = NEW_RAMP.mystical;
+  const k = l.t / l.dur;
+  const x0 = Math.round(wx(cam, l.x0, l.y0));
+  const y0 = Math.round(wy(cam, l.x0, l.y0)) - 12;
+  const X1 = Math.round(wx(cam, l.x1, l.y1));
+  const Y1 = Math.round(wy(cam, l.x1, l.y1)) - 12;
+  const grow = Math.min(1, k / 0.16);
+  const x1 = Math.round(x0 + (X1 - x0) * grow);
+  const y1 = Math.round(y0 + (Y1 - y0) * grow);
+  const fade = k < 0.5 ? 1 : 1 - (k - 0.5) / 0.5;
+  g.globalAlpha = fade;
+  pline(g, x0, y0, x1, y1, C[3]);
+  // (brighter points along it, every few pixels, running out along the line)
+  const d = Math.hypot(x1 - x0, y1 - y0);
+  const run = Math.floor(t * 40) % 4;
+  for (let s = run; s < d; s += 4) {
+    g.fillStyle = C[5];
+    g.fillRect(Math.round(x0 + ((x1 - x0) * s) / (d || 1)), Math.round(y0 + ((y1 - y0) * s) / (d || 1)), 1, 1);
+  }
+  starAt(g, x0, y0, C, 1);
+  if (grow >= 1) starAt(g, X1, Y1, C, k < 0.3 ? 2 : 1);
+  g.globalAlpha = 1;
+}
+
+/** Where the moon was last drawn, on the screen (for its light, `lights3`). */
+let moonWas: [number, number] = [0, 0];
+
+/** Where the little moon of Mystical behind floats: at the hero's shoulder, to the left of the head, bobbing. */
+function moonAt(cam: Cam, game: Game, fx: Fx, t: number): [number, number] {
+  const h = game.hero;
+  return [Math.round(wx(cam, h.x, h.y)) - 13, Math.round(wy(cam, h.x, h.y)) - fx.headroom + 3 + Math.round(Math.sin(t * 2.2) * 1.5)];
+}
+
+/**
+ * Mystical behind: the little moon, seven pixels round, waxing with the stacks: a crescent lit on
+ * its left at one (as the rune's), half at three, full at five. The rest of its round is faint. It
+ * brightens as it grows, and blinks in its last second, as Power's might does.
+ */
+function drawMoon(g: CanvasRenderingContext2D, cx: number, cy: number, t: number): void {
+  const C = NEW_RAMP.mystical;
+  const M = W3.mystic;
+  if (M.t < 1 && Math.floor(t * 12) % 2 === 0) return;
+  const R = 3.5;
+  // (the edge between light and dark, as a share of the half-width at each row: lit where -dx >= k * half)
+  const k = [1, 0.55, 0.22, 0, -0.45, -1][Math.min(MYSTIC_MAX, M.shown)];
+  const fresh = M.since < 0.12;
+  const full = M.shown >= MYSTIC_MAX;
+  const x0 = cx - 3;
+  const y0 = cy - 3;
+  if (full) {
+    // a full moon's halo: a faint ring of light round it
+    g.globalAlpha = 0.45;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2 + t * 0.6;
+      g.fillStyle = i % 4 === 0 ? C[4] : C[3];
+      g.fillRect(Math.round(cx + Math.cos(a) * 6), Math.round(cy + Math.sin(a) * 6), 1, 1);
+    }
+    g.globalAlpha = 1;
+  }
+  for (let py = 0; py < 7; py++) {
+    for (let px = 0; px < 7; px++) {
+      const dx = px + 0.5 - R;
+      const dy = py + 0.5 - R;
+      if (dx * dx + dy * dy > R * R + 0.3) continue;
+      const half = Math.sqrt(Math.max(0, R * R - dy * dy));
+      const lit = -dx >= k * half - 0.01;
+      if (!lit) {
+        g.globalAlpha = 0.55;
+        g.fillStyle = C[1];
+        g.fillRect(x0 + px, y0 + py, 1, 1);
+        g.globalAlpha = 1;
+        continue;
+      }
+      // light from the upper left: its rim there is brightest; on a full moon, two darker seas
+      const rim = dx * dx + dy * dy > (R - 1.1) * (R - 1.1) && dx + dy < 0.5;
+      const sea = full && ((px === 4 && py === 3) || (px === 3 && py === 4) || (px === 4 && py === 4));
+      g.fillStyle = fresh ? C[5] : rim ? C[5] : sea ? C[3] : C[4];
+      g.fillRect(x0 + px, y0 + py, 1, 1);
+    }
   }
 }
 
@@ -1521,6 +1863,10 @@ export function lights3(spot: (x: number, y: number, r: number, a: number) => vo
     spot(wx(cam, m.x, m.y), wy(cam, m.x, m.y) - (k.stun > 0 || k.hex > 0 ? FIGURE_SIZE[figureOf(m)].top + 6 : 10), k.aim > 0 ? 26 : 16, 0.55);
   }
   if (W3.guard.t > 0) spot(wx(cam, game.hero.x, game.hero.y), wy(cam, game.hero.x, game.hero.y) - 16, 34, 0.6);
+  // Mystical: moonlight where a spell struck, and from the moon at the hero's shoulder
+  for (const s of W3.sweeps) spot(wx(cam, s.x, s.y), wy(cam, s.x, s.y) - 12, 24, 0.6 * (1 - s.t / s.dur));
+  const M = W3.mystic;
+  if (M.shown > 0) spot(moonWas[0], moonWas[1], 12 + M.shown * 3, 0.3 + M.shown * 0.08);
   void t;
 }
 
@@ -1597,6 +1943,8 @@ export function events3(events: readonly GameEvent[], game: Game, fx: Fx): void 
 
 /** How far a Pulling hit reaches, in tiles (a guess for the pictures: the rules will say). */
 const PULL_REACH = 2.2;
+/** How far Mystical's splash reaches from what a single-target spell struck, in tiles (a guess for the pictures: the rules will say). */
+const MYSTIC_SPLASH = 1.8;
 
 export function demoEvents3(events: readonly GameEvent[], game: Game, fx: Fx): void {
   if (!WORDS3.on) return;
@@ -1654,6 +2002,12 @@ export function demoEvents3(events: readonly GameEvent[], game: Game, fx: Fx): v
         if (k && k.hex > 0.5) hexFlare(fx, struck);
         else hexHit(fx, struck);
       } else if (struck) hexFlare(fx, struck);
+      if (W3.front.includes('mystical')) {
+        mysticHit(fx, e.x, e.y);
+        // (a spell that strikes one enemy splashes those about it: the demo only shows it, it hurts no one)
+        if (W3.single) mysticSplash(fx, e.x, e.y, near(e.x, e.y, MYSTIC_SPLASH).filter((m) => m !== struck));
+      }
+      if (W3.behind.includes('mystical')) mysticStack(e.x, e.y);
     } else if (e.t === 'swing' && !e.echo && (e.n ?? 0) === 0) {
       if (W3.front.includes('frenzied')) frenzyHit(fx, h.x, h.y, e.dx, e.dy);
       // (a sword's swing is an ability used: a cast is only told of when the ability carries words of the game's own)
@@ -1746,6 +2100,9 @@ export function demo3(fx: Fx, getGame: () => Game | null) {
       const g = getGame();
       if (g) guardOn(fx, g.hero.x, g.hero.y, secs);
     },
+    mysticHit: (x: number, y: number) => mysticHit(fx, x, y),
+    mysticSplash: (x: number, y: number, to: { x: number; y: number }[]) => mysticSplash(fx, x, y, to),
+    mysticStack: (x: number, y: number, n?: number) => mysticStack(x, y, n),
     /** How fast a monster may move now, for the playtest's walkers: slowed by Stilling. */
     pace: (id: number) => {
       const m = monster(id);

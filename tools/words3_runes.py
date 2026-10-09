@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""THE WORDS' RUNE STONES, the nine of today and the eight new ones (render/words3.ts, a mock-up: not in
+"""THE WORDS' RUNE STONES, the nine of today, the eight new ones and Mystical (render/words3.ts, a mock-up: not in
 the game), painted the way the game paints a rune stone (art/icons.ts, `runeSprite`: a tablet lit from
 the upper left, the glyph cut into it in the word's colour with its glowing core, an ink edge), from
 the glyphs and colours as they stand in the code, read out of the source files themselves.
@@ -92,11 +92,14 @@ gap = 26
 W = 18 * 2 + 9 * cell + 8 * gap
 rows = [('TODAY\'S NINE', [(NAMES[k], OLD[k], OLD_C[k], OLD_G[k]) for k in ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison']]),
         ('THE EIGHT HE CHOSE', [(k.capitalize(), NEW[k], NEW_C[k], NEW_G[k]) for k in ['pulling', 'splitting', 'heavy', 'precise', 'hexing', 'stilling', 'frenzied', 'guarding']])]
-H = 18 + 44 + 30 + 2 * (40 + cell + 60) + 20
+# (and Mystical, his word for spells, beside Power, his word for attacks: drawn after the eight)
+if 'mystical' in NEW:
+    rows.append(('MYSTICAL: FOR SPELLS, AS POWER IS FOR ATTACKS', [(NAMES['power'], OLD['power'], OLD_C['power'], OLD_G['power']), ('Mystical', NEW['mystical'], NEW_C['mystical'], NEW_G['mystical'])]))
+H = 18 + 44 + 30 + len(rows) * (40 + cell + 60) + 20
 sheet = Image.new('RGB', (W, H), BG)
 d = ImageDraw.Draw(sheet)
 d.text((18, 14), 'THE WORDS\' RUNE STONES', font=big, fill=GOLD)
-d.text((18, 54), 'as the game paints them, much enlarged. The new eight are a mock-up: not in the game.', font=small, fill=GREY)
+d.text((18, 54), 'as the game paints them, much enlarged. The new ones are a mock-up: not in the game.', font=small, fill=GREY)
 y = 92
 for title, items in rows:
     d.text((18, y), title, font=cap, fill=PALE)
