@@ -81,10 +81,13 @@ function cyanGlow(r: number, g: number, b: number): boolean {
 
 test('the switch is off, and no file of the game imports the mock-up', () => {
   assert.equal(NEW_MOBS.on, false);
+  // (the mock-up is two files: the monsters, and what they throw drawn on the floor)
+  const mine = ['new_mobs3', 'mob_shots'];
   const files = fs.readdirSync('src', { recursive: true }).filter((f) => f.endsWith('.ts') && !f.startsWith('dev'));
   for (const f of files) {
-    if (f.endsWith('new_mobs3.ts')) continue;
-    assert.ok(!fs.readFileSync(path.join('src', f), 'utf8').includes('new_mobs3'), `${f} imports the mock-up`);
+    if (mine.some((m) => f.endsWith(`${m}.ts`))) continue;
+    const text = fs.readFileSync(path.join('src', f), 'utf8');
+    for (const m of mine) assert.ok(!text.includes(m), `${f} imports the mock-up (${m})`);
   }
 });
 

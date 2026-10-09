@@ -93,32 +93,78 @@ them is cyan.
 - By 09:33, the Boneward's second attack: "Spear throw": it hurls its spear at you from afar, then
   fights with its shield (a shield bash) until it picks the spear up.
 
-Their attacks are drawn next, pictures first.
+## Their attacks (9 Oct, by his picks and the main chat's rules; pictures sent, his answer to come)
 
-## How it is checked
+By size (the main chat's rules from him): THE SHADE is small, one attack; THE BONEWARD medium, two;
+THE GOLEM large, two (and its old slam kept, for the rules to give it or not). None warns with
+anything on the floor: the Shade and the Boneward by the pose and a glint, the Golem's thrown skull by
+its own shadow.
 
-- `tests/new_mobs3.test.ts` (8): the switch is off and no game file uses it; every pose paints; no
-  cyan; the living have the pink edge and the dying none; the walks go round without a jump; the feet
-  of the Boneward and the Golem grip the floor (every frame has a foot down, and a foot that is down
-  does not move on the floor by a quarter of a picture pixel); each `ActorArt` is complete (both
-  facings, every list and clip, the blow on a frame, the walk matched to another pace) and every frame
-  of it has no cyan, and the pink edge if it lives and none if it is dying. tsc clean.
-- The pictures: `src/dev/preview_new_mobs.ts` (through `tools/preview.mjs`, and for the GIFs
-  `tools/page_gif.mjs`):
-  - `new_mobs_sheet.png`, `<shade|boneward|golem>_sheet.png` (hash `sheet`, `one:<id>`);
-  - `new_mobs_moving.gif` (`film:3`): each standing, then its warning held and its blow;
-  - `new_mobs_walks.gif` (`walks:3`): all three walking toward you and then away, beside the new
-    skeleton walking for pace, the floor going by under each at its pace (the floor here is the
-    dungeon's two flat shades, as the skeleton's film has it: the textured floor going by made the
-    file too big to send);
-  - `new_mobs_struck.png` (`struck:3`): each struck, five moments of its reel;
-  - `strip:<id>:<walk|reel|stand>:<front|back>[:scale]`: every frame of one move in a row, the floor
-    going by under a walk;
-  (the withdrawn floor warnings' `warns:2` and `attacks:2` went with them).
+- **The Shade's rake** (`attack`, as it was; its blow at `SHADE_HIT`, 0.5 s), now with his "Pose and a
+  glint": its claws drawn back high over its hood and held, glinting pink and gold, brighter as the blow
+  comes (`glint`, from nothing to its brightest just before the blow, and out as it lands); then down
+  and through with both claws.
+- **The Boneward's thrust** (`attack`, as it was; `BW_HIT`, 0.7 s), with the glint on its spear-head.
+- **The Boneward's spear throw** (his "Spear throw", by 09:33: it hurls its spear from afar, then fights
+  with its shield until it picks the spear up): `more.throw` (its blow at `BW_THROW_HIT`, 0.75 s): the
+  spear raised over its shoulder like a javelin and held, its head glinting; then hurled, and its hand
+  is empty from the blow on. While its spear is gone: `more.bash` (`BW_BASH_HIT`, 0.55 s: the shield
+  drawn in, then shoved out at you); `more.standBare` and `more.walkBare` (its stand and its plod with no
+  spear, going round as they do); and `more.pickUp` (1.0 s: it stoops, its hand down on the floor where
+  the spear lies, `BW_GRIP_AT`, and has it again at `BW_GRAB`, 0.5 s, the clip's `hit`).
+- **The spear in flight and lying** (`src/art/mob_shots.ts`, drawn in the game's own pixels, in the
+  colours of the painted spear): `drawSpearShot` (flying over its shadow, a streak of air behind it, its
+  head lit), `drawSpearLying` (where it fell, until it is picked up). `SPEAR_TILES`, its length;
+  `SPEAR_GRIP`, where along it the hand holds it.
+- **The Golem's club swing** (`attack` now, its basic blow; `GOLEM_SWING_HIT`, 0.6 s): the club drawn
+  back to its left side at its shoulder and held, the fire flaring (the warning; not the slam's, which
+  is the club straight up over its head); then swung round in front of it, level, and through, a streak
+  behind its head.
+- **The Golem's skull throw** (his "Hurl skulls (Recommended)"): `more.throw` (its blow at
+  `GOLEM_THROW_HIT`, 0.95 s; over at `GOLEM_THROW_END`, 1.5 s): its right fist goes up to its shoulder
+  and takes a skull off the pile (`GOLEM_TAKE`, 0.32 s); it rears back with it and holds, the fire
+  flaring; it hurls it overarm. The skull is in its fist until the blow, and its place on the shoulder
+  is empty until the throw is over. The skull in flight is a picture, `makeSkullShotArt()` (8 frames,
+  once round as it tumbles; its anchor at its middle; its eyes lit, the pink edge). Thrown up high, it
+  comes down on where it was aimed, and its own shadow on the floor shows where (`drawSkullShadow`: small
+  and faint while it is high, bigger and darker as it falls); then it bursts into flying bone and pink
+  embers (`drawSkullBurst`, `SKULL_BURST`, 0.7 s). No circle on the floor.
+- **The Golem's slam**, as it was: `more.slam` (`GOLEM_HIT`, 1.0 s), kept for the rules to use or not.
+- Where a thing thrown leaves the hand: `handAt(mob, move, t)` (the figure's own lengths: forward, to
+  its left, up; a tile of the floor is `TILE3` of them).
+
+## For the main chat
+
+- Still a mock-up, behind `NEW_MOBS` (off): nothing of the game imports `new_mobs3.ts` or `mob_shots.ts`.
+  Each monster's clips: `clips.attack` (the Shade's rake, the Boneward's thrust, the Golem's swing) and
+  the rest by name in `clips.moves`, the same new field as on `art/monster-attacks` (`AnimSet.clips.moves`
+  in `art/actor_types.ts`, word for word the same, so the two branches merge as one).
+- What the rules do with them is yours: when the Boneward throws (from afar), its spear landing where you
+  stood (`drawSpearShot`, then `drawSpearLying` till it is picked up), and that it fights with its shield
+  (`bash`) and walks to its spear (`walkBare`) to pick it up (`pickUp`) while it has none; the Golem's
+  skull a lob that comes down where you stood, its shadow there as it falls, its burst where it lands.
+
+## How the attacks are checked
+
+- `tests/new_mobs_attacks.test.ts` (7): by size (the Shade one attack and no other moves; the Boneward
+  its thrust and its throw with the bash, the pick-up, and its stand and plod with no spear; the Golem its
+  swing, its throw and the slam kept); each a clip as the game takes a monster's moves (a blow's `hit` on
+  its frame; a loop going round; the plod with no spear shown to match a pace); every frame of them
+  paints, has the pink edge and nothing cyan, nor a cyan light; the glint, from nothing to brightest just
+  before the blow and gone as it lands, a light that is not cyan; the spear gone from the Boneward's hand
+  as it throws and back once it picks it up, its hand on the floor where it lies; the skull in the Golem's
+  fist till it throws, its place on the shoulder empty till the throw is over; the swing's streak, and its
+  warning not the slam's; the skull in flight turning, with the pink edge; its shadow growing and
+  darkening as it falls, and nothing else on the floor; its burst, and gone; the spear flying up off the
+  floor and lying on it; none of it cyan.
+- `tests/new_mobs3.test.ts` (8), as above; the mock-up is now two files, and no file of the game imports
+  either.
+- The pictures (`src/dev/preview_new_mobs.ts`): `moves:<shade|boneward|golem>[:scale]` (each of its
+  attacks at its moments, facing you and away; the Golem's with its slam for comparison);
+  `shade_rake.gif` (`shadefilm:4`), `boneward_attacks.gif` (`bwfilm:3`), `golem_attacks.gif`
+  (`golemfilm:3`). In the films the floor where a thing thrown comes down is lit, as the light you carry
+  would light it.
 
 ## Not yet
 
-Their rules (health, speed, what their attacks do: the main chat's); where they live. Their attacks:
-the Shade's rake with a glint; the Boneward's thrust with a glint, its spear throw (and the spear in
-flight and lying, the shield bash while it has none, picking it up); the Golem's club swing and its
-skull throw (the skull in flight, its shadow, its burst).
+Their rules (health, speed, what their attacks do, when each is used: the main chat's); where they live.

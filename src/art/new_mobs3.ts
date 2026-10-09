@@ -417,6 +417,17 @@ export interface MobMove {
   /** A walk: the wind (cloth, tails) goes round once in this many seconds (its own round, so that it loops); and how fast the body goes over the floor, in the figure's own lengths a second (cloth is left behind by it). */
   period?: number;
   ground?: number;
+  /**
+   * THEIR ATTACKS (9 Oct): `t` seconds in, how bright the GLINT on its weapon is (the Shade's claws,
+   * the Boneward's spear-head: the warning, "Pose and a glint"); whether the Boneward is BARE, its
+   * spear thrown; whether a SKULL is in the Golem's fist. And when its blow lands, for its streak.
+   */
+  glint?: (t: number) => number;
+  bare?: (t: number) => boolean;
+  skull?: (t: number) => boolean;
+  blurAt?: number;
+  /** The Golem's club is swung round (a streak is drawn behind its head as the blow lands), not brought down. */
+  sweep?: boolean;
 }
 
 /** A tile of the floor along the grid, in the figure's own lengths: 32 picture pixels across the screen and 16 down (skeleton.ts, `project`). */
@@ -435,6 +446,12 @@ interface Moment {
   /** For the Shade's claws: where the claw tips have just been, newest first, each hand. */
   trailL?: V3[];
   trailR?: V3[];
+  /** The glint on its weapon (0 none), whether the Boneward's spear is gone from its hand, whether a skull is in the Golem's fist (MobMove). */
+  glint: number;
+  bare: boolean;
+  skull: boolean;
+  /** For the Golem's club as it sweeps: where the middle of its head has just been, newest first. */
+  trailC?: V3[];
 }
 
 function folded(m: MobMove, t: number): number {
@@ -489,6 +506,12 @@ export interface Mob {
   bits(st: Stage, m: Moment): Bit[];
   /** How a piece of it falls when it comes apart (null: it does not fall by itself). */
   fall?(piece: string): Fall | null;
+  /**
+   * ITS OTHER MOVES (9 Oct: by its size, the owner's rules in the main chat), by name: the Golem's
+   * `swing` and `throw`; the Boneward's `throw`, `bash`, `pickUp`, and `standBare` and `walkBare`
+   * for while its spear is thrown. Each is played once, or goes round (a loop) if its motion loops.
+   */
+  more?: Readonly<Record<string, MobMove>>;
 }
 /** The moves a monster of this file is painted in. */
 export type MobAct = 'stand' | 'attack' | 'walk' | 'reel';
@@ -503,7 +526,15 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   const blur = blurAt !== undefined && Math.abs(t - blurAt) < FR * 0.6;
   const wind = mv.period ? ((((t / mv.period) % 1) + 1) % 1) : windOf(t);
   // (the moment within its round, for what flickers frame by frame: so that a loop closes)
-  const m: Moment = { s, q, t: folded(mv, t), come, wind, blur };
+  const m: Moment = { s, q, t: folded(mv, t), come, wind, blur, glint: mv.glint ? Math.max(0, mv.glint(t)) : 0, bare: mv.bare ? mv.bare(t) : false, skull: mv.skull ? mv.skull(t) : false };
+  if (blur && mob.id === 'golem' && mv.sweep) {
+    const C: V3[] = [];
+    for (let i = 0; i <= 8; i++) {
+      const sk = solve(mob.build, posedAt(mv, t - (FR * 1.6 * i) / 8));
+      C.push(add(sk.handL, mul(norm(sub(sk.handL, sk.elbowL)), CLUB_OUT)));
+    }
+    m.trailC = C;
+  }
   if (blur && mob.id === 'shade') {
     const L: V3[] = [];
     const R: V3[] = [];
@@ -518,11 +549,19 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   return m;
 }
 
+/** One of its moves, by name: its four (stand, attack, walk, reel) or one of its others (`more`). */
+function moveOf(mob: Mob, which: MobAct | string): MobMove {
+  const base = which === 'stand' || which === 'attack' || which === 'walk' || which === 'reel';
+  const mv = base ? mob[which as MobAct] : mob.more?.[which];
+  if (!mv) throw new Error(`${mob.id} has no move ${which}`);
+  return mv;
+}
+
 /** ONE FRAME of a monster's move, seen from in front or from behind, with its pink edge (or `rim`). */
-export function paintMob(mob: Mob, which: MobAct, t: number, view: GameView, rim: string | null = ENEMY_RIM): Painted {
+export function paintMob(mob: Mob, which: MobAct | string, t: number, view: GameView, rim: string | null = ENEMY_RIM): Painted {
   const st = stage(view);
-  const mv = mob[which];
-  const m = momentOf(mob, mv, t, which === 'attack' ? mob.hit : undefined);
+  const mv = moveOf(mob, which);
+  const m = momentOf(mob, mv, t, which === 'attack' ? mob.hit : mv.blurAt);
   const bits = mob.bits(st, m);
   const lights = paintBits(st, bits, m.s.pelvis);
   return { px: st.whole(rim), lights };
@@ -624,7 +663,7 @@ const easeIO = (k: number): number => {
 /** The bones of one dying at a moment (before the pieces let go). */
 function dyingMoment(mob: Mob, t: number): Moment {
   const q = posedAt(mob.dying, t);
-  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false };
+  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: 0, bare: false, skull: false };
 }
 
 const THEN = new Map<string, Bit[]>();
@@ -826,6 +865,12 @@ function shadeBits(st: Stage, m: Moment, fade = 0, eyes = 1): Bit[] {
         const tip = add(knuckle, add(mul(hook, 2.4), mul(dirF, 0.8)));
         put(`arm${side}`, `arm${side}`, { k: 'rod', a: base, b: knuckle, ra: 0.7, rb: 0.6, ramp: BONE, far: true });
         put(`arm${side}`, `arm${side}`, { k: 'rod', a: knuckle, b: tip, ra: 0.6, rb: 0.22, ramp: BONE, far: true });
+        // THE GLINT (its warning, with the pose): its claws' points flare pink, hottest just before they come down
+        if (m.glint > 0.05) {
+          const g = m.glint;
+          if (kf === 0 || g > 0.6) put('glint', 'glint', { k: 'mote', p: tip, c: g > 0.9 ? FLAME[4] : FLAME[3], size: kf === 0 && g > 0.75 ? 2 : 1 });
+          if (kf === 0) put('glint', 'glint', { k: 'glow', p: tip, c: SOCKET, r: 3 + 4 * g, a: Math.min(0.85, 0.5 * g) });
+        }
       }
     }
   }
@@ -975,13 +1020,22 @@ function shadeStruck(): Motion {
   };
 }
 
+/**
+ * A GLINT over a wind-up (his "Pose and a glint", 9 Oct, by 09:30): from nothing at the start, to
+ * `held` as the warning pose is reached at `pose`, flaring to full just before the blow at `hit`, and
+ * out the moment it lands.
+ */
+function glintOver(pose: number, hit: number, held = 0.6): (t: number) => number {
+  return (t) => (t < 0 || t >= hit ? 0 : t < pose ? (held * t) / pose : held + (1.25 - held) * ((t - pose) / (hit - pose)));
+}
+
 export const SHADE: Mob = {
   id: 'shade',
   name: 'The Shade',
   size: 'small: comes in threes',
   build: SB,
   stand: { name: 'The Shade hovers', motion: shadeHover(), rest: SH_REST },
-  attack: { name: 'The Shade rakes', motion: shadeRake(), rest: SH_REST },
+  attack: { name: 'The Shade rakes', motion: shadeRake(), rest: SH_REST, glint: glintOver(0.17, SHADE_HIT) },
   idleFrames: 12,
   idleFps: 10,
   walk: { name: 'The Shade glides', motion: shadeGlide(), rest: SH_REST, period: SHADE_WALK_FRAMES / SHADE_WALK_FPS, ground: SHADE_PACE * TILE3 },
@@ -1290,16 +1344,25 @@ function bonewardBits(st: Stage, m: Moment): Bit[] {
   const front = dot(n, st.eye) > 0;
   if (runeLit > 0.05 && front) put('shield', 'shield', { k: 'glow', p: add(add(sc, mul(up, 1.5)), mul(n, 0.5)), c: SOCKET, r: 9 + 3 * clamp01(q.draw), a: 0.32 * runeLit });
 
-  // --- the spear in the left hand ---
-  const dirS = s.point;
-  const butt = add(s.handR, mul(dirS, -SPEAR_BACK));
-  const socket = add(s.handR, mul(dirS, SPEAR - SPEAR_BACK - 7));
-  const tip = add(s.handR, mul(dirS, SPEAR - SPEAR_BACK));
-  put('spear', 'spear', { k: 'rod', a: butt, b: socket, ra: 0.85, rb: 0.8, ramp: SHAFT });
-  put('spear', 'spear', { k: 'ball', c: butt, ax: sphere(1.0), skin: IRON });
-  put('spearhead', 'spear', { k: 'rod', a: add(socket, mul(dirS, -0.8)), b: add(socket, mul(dirS, 0.9)), ra: 1.1, rb: 1.1, ramp: RUST });
-  put('spearhead', 'spear', { k: 'rod', a: add(socket, mul(dirS, 0.9)), b: add(socket, mul(dirS, 3.0)), ra: 1.0, rb: 1.8, ramp: IRON });
-  put('spearhead', 'spear', { k: 'rod', a: add(socket, mul(dirS, 3.0)), b: tip, ra: 1.8, rb: 0.15, ramp: IRON });
+  // --- the spear in the right hand (none when it has been thrown: m.bare) ---
+  if (!m.bare) {
+    const dirS = s.point;
+    const butt = add(s.handR, mul(dirS, -SPEAR_BACK));
+    const socket = add(s.handR, mul(dirS, SPEAR - SPEAR_BACK - 7));
+    const tip = add(s.handR, mul(dirS, SPEAR - SPEAR_BACK));
+    put('spear', 'spear', { k: 'rod', a: butt, b: socket, ra: 0.85, rb: 0.8, ramp: SHAFT });
+    put('spear', 'spear', { k: 'ball', c: butt, ax: sphere(1.0), skin: IRON });
+    put('spearhead', 'spear', { k: 'rod', a: add(socket, mul(dirS, -0.8)), b: add(socket, mul(dirS, 0.9)), ra: 1.1, rb: 1.1, ramp: RUST });
+    put('spearhead', 'spear', { k: 'rod', a: add(socket, mul(dirS, 0.9)), b: add(socket, mul(dirS, 3.0)), ra: 1.0, rb: 1.8, ramp: IRON });
+    put('spearhead', 'spear', { k: 'rod', a: add(socket, mul(dirS, 3.0)), b: tip, ra: 1.8, rb: 0.15, ramp: IRON });
+    // THE GLINT (its warning, with the pose): the spear-head flares pink, hottest just before the blow
+    if (m.glint > 0.05) {
+      const g = m.glint;
+      put('glint', 'glint', { k: 'mote', p: tip, c: g > 0.9 ? FLAME[4] : FLAME[3], size: g > 0.75 ? 2 : 1 });
+      put('glint', 'glint', { k: 'mote', p: add(socket, mul(dirS, 4.5)), c: FLAME[2], size: 1 });
+      put('glint', 'glint', { k: 'glow', p: tip, c: SOCKET, r: 4 + 5 * g, a: Math.min(0.85, 0.55 * g) });
+    }
+  }
   return bits;
 }
 
@@ -1457,16 +1520,98 @@ function bwStruck(): Motion {
   };
 }
 
+/**
+ * THE BONEWARD'S OTHER MOVES (9 Oct). By its size (medium) two attacks: its thrust, the basic one;
+ * and, his pick by 09:33, "Spear throw": it hurls its spear at you from afar, then fights with its
+ * shield until it picks the spear up. So: the throw (the spear raised back over its shoulder like a
+ * javelin and held, its head glinting: the warning; then hurled, and its hand is empty), the bash
+ * (the shield shoved into you, while it has no spear), picking the spear up off the floor, and its
+ * stand and plod with no spear in its hand.
+ */
+export const BW_THROW_HIT = 0.75;
+export const BW_BASH_HIT = 0.55;
+/** In picking it up: the moment its hand closes on the spear. */
+export const BW_GRAB = 0.5;
+function bwThrow(): Motion {
+  // (raised like a javelin: the hand up over its shoulder and back, higher than its helm, the spear
+  // over its head, its point up and forward)
+  const wound: P = {
+    px: -1.6, pz: -1.4, yaw: -10, pitch: -8, twist: -22, bend: 0,
+    faceUp: 6, lfx: 4.6, lfy: 1.6, lk: 14, rfx: -4.0, rfy: -1.0, rk: -12,
+    rhIn: 1, rhx: -9.0, rhy: -5.0, rhz: 16.0, re: 60,
+    wAz: -6, wEl: 42, pAz: 6, pEl: 2, draw: 0.6,
+  };
+  const loosed: P = { ...wound, px: 2.2, pz: -2.2, pitch: 10, twist: 16, bend: 8, rhIn: 0, rhx: 14, rhy: 0, rhz: 2, re: 10, wAz: 0, wEl: 5, lfx: 6.4, draw: 0.9 };
+  return {
+    hit: BW_THROW_HIT,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.35, pose: wound, ease: 'out' },
+      { at: 0.5, pose: { ...wound, rhz: 16.4, twist: -23 }, ease: 'hold' },
+      { at: 0.62, pose: { ...wound, rhz: 15.8, twist: -22.5, draw: 0.65 }, ease: 'hold' },
+      { at: BW_THROW_HIT - 0.04, pose: { ...wound, rhx: -10.0, twist: -24 }, ease: 'lin' },
+      { at: BW_THROW_HIT, pose: loosed, ease: 'in' },
+      { at: BW_THROW_HIT + 0.1, pose: { ...loosed, rhx: 12, rhz: -8, twist: 14, pitch: 8, draw: 0.5 }, ease: 'out' },
+      { at: BW_THROW_HIT + 0.45, pose: {}, ease: 'io' },
+    ],
+  };
+}
+function bwBash(): Motion {
+  const coiled: P = { px: -1.5, pz: -1.4, pitch: -2, twist: 14, bend: 4, lhx: 2.0, lhy: -6.0, lhz: -8.0, pAz: 0, pEl: 2, lfx: 2.0, lk: 12, rfx: -2.0, rk: -10, draw: 0.5 };
+  const shove: P = { ...coiled, px: 4.0, pz: -1.8, pitch: 10, twist: -10, bend: 8, lhx: 14.0, lhy: -6.0, lhz: -10.0, pAz: -4, lfx: 6.4, draw: 0.85 };
+  return {
+    hit: BW_BASH_HIT,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.3, pose: coiled, ease: 'out' },
+      { at: BW_BASH_HIT - 0.05, pose: { ...coiled, px: -1.8, twist: 15 }, ease: 'lin' },
+      { at: BW_BASH_HIT, pose: shove, ease: 'in' },
+      { at: BW_BASH_HIT + 0.1, pose: { ...shove, px: 3.4, lhx: 12, draw: 0.6 }, ease: 'out' },
+      { at: BW_BASH_HIT + 0.45, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** In picking it up: where its hand closes on the spear lying on the floor (forward, to its left, up, from its floor point: its own lengths). */
+export const BW_GRIP_AT: V3 = [19, -10, 2.5];
+function bwPickUp(): Motion {
+  // (a deep stoop, the knees bent, its hand down on the floor where the spear lies, the spear in it
+  // lying flat along the floor; the shield lifted with it, so that its foot stays off the floor)
+  const down: P = {
+    px: 2.5, pz: -14, pitch: 42, bend: 32, faceUp: -30,
+    lfx: 6.5, lk: 40, rfx: -4.5, rk: -32,
+    lhx: 9.5, lhz: -4.0,
+    rhIn: 2, rhx: BW_GRIP_AT[0], rhy: BW_GRIP_AT[1], rhz: BW_GRIP_AT[2], re: 0, wAz: 0, wEl: -2, draw: 0.3,
+  };
+  return {
+    // (its `hit`: the moment it has its spear again)
+    hit: BW_GRAB,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.35, pose: down, ease: 'out' },
+      { at: BW_GRAB, pose: { ...down, rhz: BW_GRIP_AT[2] - 0.5 }, ease: 'lin' },
+      { at: 0.75, pose: { px: 1.2, pz: -4, pitch: 14, bend: 10, faceUp: -8, lhx: 8.5, lhz: -10, rhIn: 0, rhx: 6, rhy: -2, rhz: -16, re: 20, wAz: 0, wEl: -25, draw: 0.2 }, ease: 'io' },
+      { at: 1.0, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
 export const BONEWARD: Mob = {
   id: 'boneward',
   name: 'The Boneward',
   size: 'medium: a shield wall',
   build: WB,
   stand: { name: 'The Boneward keeps its post', motion: bwPost(), rest: BW_REST },
-  attack: { name: 'The Boneward thrusts', motion: bwThrust(), rest: BW_REST },
+  attack: { name: 'The Boneward thrusts', motion: bwThrust(), rest: BW_REST, glint: glintOver(0.3, BW_HIT) },
   idleFrames: 16,
   idleFps: 10,
   walk: { name: 'The Boneward plods', motion: bwPlod(), rest: BW_REST, period: BW_WALK_FRAMES / BW_WALK_FPS, ground: BW_PACE * TILE3 },
+  more: {
+    throw: { name: 'The Boneward throws its spear', motion: bwThrow(), rest: BW_REST, glint: glintOver(0.35, BW_THROW_HIT), bare: (t) => t >= BW_THROW_HIT },
+    bash: { name: 'The Boneward bashes with its shield', motion: bwBash(), rest: BW_REST, bare: () => true },
+    pickUp: { name: 'The Boneward picks its spear up', motion: bwPickUp(), rest: BW_REST, bare: (t) => t < BW_GRAB },
+    standBare: { name: 'The Boneward keeps its post, its spear thrown', motion: bwPost(), rest: BW_REST, bare: () => true },
+    walkBare: { name: 'The Boneward plods, its spear thrown', motion: bwPlod(), rest: BW_REST, period: BW_WALK_FRAMES / BW_WALK_FPS, ground: BW_PACE * TILE3, bare: () => true },
+  },
   walkFrames: BW_WALK_FRAMES,
   walkFps: BW_WALK_FPS,
   pace: BW_PACE,
@@ -1610,6 +1755,8 @@ function golemBits(st: Stage, m: Moment): Bit[] {
       [-1.6, sg * -2.4, 6.6, 2.7],
     ];
     piles.forEach(([fx, ly, uz, r], j) => {
+      // (the skull it takes to throw is gone from its right shoulder until the throw is over: m.bare)
+      if (side === 'R' && j === 0 && m.bare) return;
       const c = add(mc, add(add(mul(cf, fx), mul(cl, ly)), mul(cu, uz)));
       const look = faceAlong(add(add(cf, mul(cl, sg * (0.5 + j * 0.25))), mul(cu, 0.15 + (j % 2) * 0.25)));
       skull(st, put, `sk${side}${j}`, `sk${side}${j}`, c, look, [r, r * 0.92, r * 0.88], OSSUARY, eyesOf(st, look), 0, false);
@@ -1636,6 +1783,11 @@ function golemBits(st: Stage, m: Moment): Bit[] {
     bundle(put, `farm${side}`, `farm${side}`, el, hand, side === 'L' ? 5.6 : 4.8, 6, side === 'L' ? 7 : 8, OSSUARY);
     if (side === 'L') bandOn(put, `aband${side}`, `aband${side}`, el, hand, 0.5, 5.4, 2);
     if (side === 'R') {
+      // (a skull in its fist, to throw: its eyes lit by the fire in the golem)
+      if (m.skull) {
+        const look = faceAlong(norm(add(cf, mul(cu, 0.3))));
+        skull(st, put, 'held', 'held', add(hand, add(mul(fore, 4.2), mul(cu, 1.5))), look, [3.6, 3.3, 3.2], OSSUARY, eyesOf(st, look), lit, true, 4);
+      }
       put('fist', 'fist', { k: 'ball', c: add(hand, mul(fore, 1.5)), ax: sphere(4.0), skin: packed(OSSUARY, 2.2, 91), far: true });
       const acr = norm(cross(fore, cf), cl);
       for (const k of [-1, 0, 1]) {
@@ -1659,8 +1811,21 @@ function golemBits(st: Stage, m: Moment): Bit[] {
     }
   }
 
+  // --- the swing: the streak of the club's head where it has just been ---
+  if (m.blur && m.trailC) {
+    const tr = m.trailC;
+    for (let i = 1; i < tr.length; i++) {
+      const a = tr[i - 1];
+      const b = tr[i];
+      const n = Math.max(1, Math.ceil(Math.hypot(...(st.at(b).map((v, k) => v - st.at(a)[k]) as [number, number]))));
+      for (let j = 0; j < n; j++) {
+        const p = lerp3(a, b, j / n);
+        for (const off of [-3, 0, 3]) put('streak', 'streak', { k: 'mote', p: add(p, [0, 0, off]), c: i < tr.length / 2 ? OSSUARY[3] : OSSUARY[2], size: off === 0 ? 2 : 1 });
+      }
+    }
+  }
   // --- the slam: dust and chips of bone thrown up where the club comes down ---
-  if (m.blur) {
+  if (m.blur && !m.trailC) {
     const hand = s.handL;
     const fore = norm(sub(hand, s.elbowL), [0, 0, -1]);
     const cc = add(hand, mul(fore, CLUB_OUT));
@@ -1794,23 +1959,87 @@ function golemStruck(): Motion {
   };
 }
 
+/**
+ * THE GOLEM'S ATTACKS (9 Oct). By its size (large) two or three, one of them a basic single-target
+ * blow; and his pick by 09:30, "Hurl skulls (Recommended)": it pulls a skull off its shoulders and
+ * throws it, and it bursts into flying bone (where it will land shown by the skull's own shadow on the
+ * floor: art/mob_shots.ts). So its first attack is now a SWING of its club of skulls (the club dragged
+ * up and back to its left and held, the fire flaring; then round in front of it and through, its head
+ * leaving a streak); its big one the THROW (its fist goes up to its right shoulder and takes a skull
+ * off the pile; it rears back with it and holds, the fire flaring; it hurls it overarm, and the skull
+ * is gone from its fist at the blow; the skull's place on its shoulder is empty until the throw is
+ * over). Its slam, as it was, stays as `slam`, a third the rules may give it (or not: "every attack
+ * is a big slam on the ground").
+ */
+export const GOLEM_SWING_HIT = 0.6;
+export const GOLEM_THROW_HIT = 0.95;
+/** In the throw: when its fist closes on the skull, and when the skull's place on its shoulder fills again. */
+export const GOLEM_TAKE = 0.32;
+export const GOLEM_THROW_END = 1.5;
+function golemSwing(): Motion {
+  // (the club is the end of its left arm: it points the way the forearm does, so the elbow is set
+  // with the hand, `le`: forward of the hand when the club is cocked back behind its shoulder)
+  const gather: P = { lhIn: 2, lhx: 4, lhy: 36, lhz: 46, le: 150, twist: 18, pitch: 2, bend: 6, draw: 0.7 };
+  const wound: P = { lhIn: 2, lhx: -6, lhy: 38, lhz: 54, le: 140, twist: 30, pitch: -4, bend: 2, px: -1.5, rhx: 6, rhy: -8, rhz: -26, draw: 0.95 };
+  const blow: P = { lhIn: 2, lhx: 44, lhy: 2, lhz: 40, le: 45, twist: -22, pitch: 10, bend: 10, px: 3, rhx: 2, rhy: -4, rhz: -30, draw: 0.8 };
+  const thru: P = { ...blow, lhx: 18, lhy: -36, lhz: 40, le: 0, twist: -30, pitch: 8, bend: 10 };
+  return {
+    hit: GOLEM_SWING_HIT,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.22, pose: gather, ease: 'out' },
+      { at: 0.38, pose: wound, ease: 'out' },
+      { at: GOLEM_SWING_HIT - 0.06, pose: { ...wound, lhz: 55.5, twist: 31.5, draw: 1 }, ease: 'lin' },
+      // (round it comes, out at its side and level, not through the body)
+      { at: GOLEM_SWING_HIT - 0.03, pose: { ...blow, lhx: 18, lhy: 40, lhz: 48, le: 90, twist: 6, pitch: 4, bend: 6, px: 1 }, ease: 'in' },
+      { at: GOLEM_SWING_HIT, pose: blow, ease: 'lin' },
+      { at: GOLEM_SWING_HIT + 0.08, pose: thru, ease: 'out' },
+      { at: GOLEM_SWING_HIT + 0.22, pose: { ...thru, lhx: 16, lhy: -28, lhz: 30, twist: -20, draw: 0.6 }, ease: 'out' },
+      { at: GOLEM_SWING_HIT + 0.6, pose: {}, ease: 'io' },
+    ],
+  };
+}
+function golemThrow(): Motion {
+  const reach: P = { rhIn: 0, rhx: 2, rhy: 3, rhz: 6, re: 30, twist: -6, faceTurn: -10, draw: 0.6 };
+  const cocked: P = { rhIn: 0, rhx: -12, rhy: -8, rhz: 16, re: 40, twist: -24, pitch: -8, bend: 2, px: -2, lfx: 5, draw: 0.9 };
+  const loosed: P = { ...cocked, rhx: 18, rhy: 2, rhz: 14, re: 10, twist: 20, pitch: 12, bend: 12, px: 3, draw: 0.8 };
+  return {
+    hit: GOLEM_THROW_HIT,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.3, pose: reach, ease: 'out' },
+      { at: 0.36, pose: { ...reach, rhz: 5 }, ease: 'lin' },
+      { at: 0.58, pose: cocked, ease: 'out' },
+      { at: 0.72, pose: { ...cocked, rhz: 16.6, twist: -24.6 }, ease: 'hold' },
+      { at: GOLEM_THROW_HIT - 0.08, pose: { ...cocked, rhz: 17, twist: -25, draw: 1 }, ease: 'hold' },
+      { at: GOLEM_THROW_HIT, pose: loosed, ease: 'in' },
+      { at: GOLEM_THROW_HIT + 0.1, pose: { ...loosed, rhx: 16, rhy: 6, rhz: -8, twist: 16, pitch: 10, draw: 0.6 }, ease: 'out' },
+      { at: GOLEM_THROW_END, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
 export const GOLEM: Mob = {
   id: 'golem',
   name: 'The Ossuary Golem',
   size: 'big: slow, and menacing',
   build: GB,
   stand: { name: 'The Golem breathes', motion: golemBreath(), rest: GOLEM_REST },
-  attack: { name: 'The Golem slams', motion: golemSlam(), rest: GOLEM_REST },
+  attack: { name: 'The Golem swings its club', motion: golemSwing(), rest: GOLEM_REST, sweep: true },
   idleFrames: 24,
   idleFps: 10,
   walk: { name: 'The Golem strides', motion: golemStride(), rest: GOLEM_REST, period: G_WALK_FRAMES / G_WALK_FPS, ground: GOLEM_PACE * TILE3 },
+  more: {
+    throw: { name: 'The Golem hurls a skull', motion: golemThrow(), rest: GOLEM_REST, skull: (t) => t >= GOLEM_TAKE && t < GOLEM_THROW_HIT, bare: (t) => t >= GOLEM_TAKE && t < GOLEM_THROW_END - 0.05 },
+    slam: { name: 'The Golem slams', motion: golemSlam(), rest: GOLEM_REST, blurAt: GOLEM_HIT },
+  },
   walkFrames: G_WALK_FRAMES,
   walkFps: G_WALK_FPS,
   pace: GOLEM_PACE,
   reel: { name: 'The Golem is struck', motion: golemStruck(), rest: GOLEM_REST },
   reelTime: 0.25,
-  hit: GOLEM_HIT,
-  warn: 0.8,
+  hit: GOLEM_SWING_HIT,
+  warn: 0.5,
   dieTime: 1.6,
   dying: { name: 'The Golem falls apart', motion: golemGiving(), rest: GOLEM_REST },
   aura: { x: CANVAS3.ax - 2, y: CANVAS3.ay - 40, r: 64, color: '#ff3a78', a: 0.14 },
@@ -1851,7 +2080,7 @@ export function walkFpsAt(mob: Mob, pace: number): number {
 }
 
 /** A frame as the game holds it: cut down to the figure, with its lights and its pool of light. */
-function frameOf3(mob: Mob, which: MobAct, t: number, view: GameView): Sprite {
+function frameOf3(mob: Mob, which: MobAct | string, t: number, view: GameView): Sprite {
   return toSprite(paintMob(mob, which, t, view), mob.aura, CANVAS3.ax, CANVAS3.ay);
 }
 
@@ -1868,7 +2097,28 @@ function mobSet(mob: Mob, view: GameView, pace: number): AnimSet {
   const die: Clip = { frames: lazyFrames(dieN, (i) => toSprite(deathOfMob(mob, i / (dieN - 1), view), null, CANVAS3.ax, CANVAS3.ay)), fps: DEATH_FPS };
   const rn = Math.round(mob.reelTime * CLIP_FPS3) + 1;
   const reel: Clip = { frames: lazyFrames(rn, (i) => frameOf3(mob, 'reel', i / CLIP_FPS3, view)), fps: CLIP_FPS3 };
-  return { idle, walk, attack: lazyFrames(3, (i) => attack.frames[picks[i]]), idleFps: mob.idleFps, walkFps: walkFpsAt(mob, pace), clips: { attack, die, reel } };
+  const clips: NonNullable<AnimSet['clips']> = { attack, die, reel };
+  if (mob.more) {
+    // ITS OTHER MOVES, by name: played once (a blow's `hit` where it lands), or going round (its stand and its walk while its spear is gone)
+    const moves: Record<string, Clip> = {};
+    for (const [name, mv] of Object.entries(mob.more)) {
+      if (mv.motion.loop !== undefined) {
+        const walking = mv.ground !== undefined;
+        const fps = walking ? walkFpsAt(mob, pace) : mob.idleFps;
+        const n2 = walking ? mob.walkFrames : mob.idleFrames;
+        const at = walking ? mob.walkFps : mob.idleFps;
+        moves[name] = { frames: lazyFrames(n2, (i) => frameOf3(mob, name, i / at, view)), fps, loop: 0 };
+      } else {
+        const ks = mv.motion.keys;
+        const n2 = Math.round(ks[ks.length - 1].at * CLIP_FPS3) + 1;
+        const c: Clip = { frames: lazyFrames(n2, (i) => frameOf3(mob, name, i / CLIP_FPS3, view)), fps: CLIP_FPS3 };
+        if (mv.motion.hit !== undefined) c.hit = mv.motion.hit;
+        moves[name] = c;
+      }
+    }
+    clips.moves = moves;
+  }
+  return { idle, walk, attack: lazyFrames(3, (i) => attack.frames[picks[i]]), idleFps: mob.idleFps, walkFps: walkFpsAt(mob, pace), clips };
 }
 
 /** THE SHADE, in the shape the game holds a monster's pictures in; `pace`: the speed the rules will give it, in tiles a second (its glide is shown to match). */
@@ -1884,7 +2134,42 @@ export function makeGolemArt3(pace = GOLEM.pace): ActorArt {
   return { front: mobSet(GOLEM, 'front', pace), back: mobSet(GOLEM, 'back', pace) };
 }
 
-/** FOR TESTS AND PICTURES: the bones of a monster at a moment of one of its moves, solved. */
-export function skeletonAt(mob: Mob, which: MobAct, t: number): Skeleton {
-  return solve(mob.build, posedAt(mob[which], t));
+/** FOR TESTS AND PICTURES: the bones of a monster at a moment of one of its moves (its four, or one of its others), solved. */
+export function skeletonAt(mob: Mob, which: MobAct | string, t: number): Skeleton {
+  return solve(mob.build, posedAt(moveOf(mob, which), t));
+}
+
+/**
+ * WHERE ITS HAND IS `t` seconds into one of its moves: in the figure's own lengths, forward, to its
+ * left and up from its floor point (a tile is TILE3 of them along the floor; up, one is a picture
+ * pixel). Where what it throws leaves its hand: the Golem's skull (its right), the Boneward's spear
+ * (its right); and where the Boneward's hand closes on its spear, picking it up.
+ */
+export function handAt(mob: Mob, which: MobAct | string, t: number, side: 'L' | 'R' = 'R'): V3 {
+  const s = skeletonAt(mob, which, t);
+  return side === 'L' ? s.handL : s.handR;
+}
+
+// ---------------------------------------------------------------------------------------------
+// WHAT THEY THROW (9 Oct). The Golem's skull in flight, painted as its bones are; its shadow and its
+// burst, and the Boneward's spear in flight and lying on the floor, are drawn on the floor in the
+// game's own pixels (art/mob_shots.ts).
+
+/** THE GOLEM'S SKULL IN FLIGHT: a skull of its bones, turning over and over as it flies (`turn`, 0..1 once round), its eyes lit with the golem's fire, the enemy's edge round it. Its middle is on the anchor. */
+export function paintSkullShot(turn: number, view: GameView = 'front'): Painted {
+  const st = stage(view);
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => {
+    bits.push({ part, piece, shape });
+  };
+  const a = turn * Math.PI * 2;
+  const look = faceAlong(norm([Math.cos(a), 0.35, Math.sin(a)]), [Math.sin(a) * -1, 0, Math.cos(a)]);
+  skull(st, put, 'shot', 'shot', [0, 0, 0], look, [4.4, 4.0, 3.9], OSSUARY, eyesOf(st, look), 1, true, 5);
+  const lights = paintBits(st, bits, [0, 0, 0]);
+  return { px: st.whole(ENEMY_RIM), lights };
+}
+/** The frames of the skull in flight, once round (as the game holds a picture: cut down, its anchor at its middle). */
+export const SKULL_SHOT_FRAMES = 8;
+export function makeSkullShotArt(): Sprite[] {
+  return lazyFrames(SKULL_SHOT_FRAMES, (i) => toSprite(paintSkullShot(i / SKULL_SHOT_FRAMES), null, CANVAS3.ax, CANVAS3.ay));
 }
