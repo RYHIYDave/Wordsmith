@@ -93,7 +93,10 @@ them is cyan.
 - By 09:33, the Boneward's second attack: "Spear throw": it hurls its spear at you from afar, then
   fights with its shield (a shield bash) until it picks the spear up.
 
-## Their attacks (9 Oct, by his picks and the main chat's rules; pictures sent, his answer to come)
+## Their attacks (9 Oct, by his picks and the main chat's rules; his yes by 11:14)
+
+His answers by 11:14, to `shade_rake.gif`: "Yes, keep it (Recommended)"; to `boneward_attacks.gif`:
+"Yes, keep them (Recommended)"; to `golem_attacks.gif`: "Yes, keep them (Recommended)".
 
 By size (the main chat's rules from him): THE SHADE is small, one attack; THE BONEWARD medium, two;
 THE GOLEM large, two (and its old slam kept, for the rules to give it or not). None warns with
