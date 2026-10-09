@@ -35,10 +35,10 @@ import type { Light } from '../engine/px';
 import type { ActorArt } from './actor_types';
 import type { Key, Timeline } from './clip';
 import { fallen, quench } from './death';
-import { BONE, INDIGO, INK, MAIL, PLUM, REST, STEEL, ball, compose, dim, dir, joint, limb, lit, shearBy, stamp } from './kit';
+import { BONE, INDIGO, INK, MAIL, PLUM, REST, STEEL, ball, compose, dim, dir, hash, joint, limb, lit, shearBy, stamp } from './kit';
 import type { Painted, Pose, Ramp, Rig, V } from './kit';
 import { BLOOD, FLAME, FLESH, GORE, IRON, SOCKET, monsterArt } from './mkit';
-import type { Canvas } from './mkit';
+import type { Canvas, MonsterMoves } from './mkit';
 
 /** The canvas both are painted on, and the floor point under them on it. (There is room under the floor point for a club that trails toward us.) */
 export const BRUTE_CANVAS: Canvas = { w: 176, h: 176, ax: 76, ay: 146 };
@@ -460,6 +460,126 @@ function head(p: Px, cx: number, top: number, ramp: Ramp, back: boolean, roar: b
 }
 
 // ---------------------------------------------------------------------------------------------
+// THE TROLLS' NEW MOVES (the art chat, 9 Oct 2026). The owner's yes in the main chat, 9 Oct, by 08:15
+// (as that chat posted it at 08:30): the green troll (the brute) a club swing and its slam; the red
+// troll (the guardian) a club swing, a slam, and a charge along a marked line; and always a basic
+// single-target attack to use while the big ones cool down. And to the art chat, 09:17: "It’s not
+// the big red circles I have a problem with, it’s that every attack is a big slam on the ground." So
+// the slam stays as it was, and beside it:
+//   THE SWING (`swing`, prop 1): the club in both fists at his belly, swung round him LEVEL, from
+//     wound back on his club side, round through straight ahead (the blow), and on round to his
+//     other side, its head leaving a streak in the air behind it (Pose.sweep).
+//   THE CHARGE (`chargeWind`, `charge`, `chargeStop`, prop 2): his head goes down, he roars and
+//     scrapes a foot back twice, kicking dust (the warning, while the line it will run along is
+//     marked on the floor: art/charge_lane.ts); then he runs at it head down, the club hauled at
+//     his side (a loop, for as long as the rules have him charge); and he skids to a stop.
+// Behind a switch that is off: while it is, the trolls are exactly as they were.
+
+/** The switch: their new moves (AnimSet.clips.moves) are made only while it is on. */
+export const TROLL_MOVES = { on: false };
+
+/** A smear of air (the brute's club is plain wood: its streak gives off no light). */
+const AIR: Ramp = ['#3a3058', '#5c5480', '#9a92c0', '#d8d2f0', '#f4f0ff'];
+
+/**
+ * THE LEVEL SWING: for the club swung round him level at the height of his belly, `deg` degrees
+ * round from straight ahead toward his club side (+) or his other side (-): where his fists are on
+ * it, the way it points on the screen, how much of its length shows, and whether it is behind him.
+ * Seen from the corner, the circle it goes round is an oval: the club is seen end on (shortest) as
+ * it points at the eye, at full length as it points across, and is behind him while it points away.
+ * (Straight ahead is down the screen and to the right when he faces us, up it and to the right when
+ * he faces away; his club side is on the right of the picture either way.)
+ */
+function levelSwing(deg: number, waist: V, back: boolean, S: number): { at: V; aim: number; long: number; behind: boolean } {
+  const fwd = back ? -1 : 1;
+  const a = (deg * Math.PI) / 180;
+  // (ahead and his club side as the screen shows them, a tile's 16 pixels across to one: (1, fwd / 2) and (1, -fwd / 2))
+  const vx = Math.cos(a) + Math.sin(a);
+  const vy = 0.5 * fwd * (Math.cos(a) - Math.sin(a));
+  // Wound back round on his club side, he LIFTS it, as one winds up to swing a bat: his fists come up
+  // to his shoulder and the club stands up behind it. Swung level, its head hangs a little lower than
+  // its handle. Through to his other side, it rises a little again as his arms come round.
+  // (cocked back slantwise, not stood upright: his slam's warning is the club straight up over his head, and the two must not be mistaken)
+  const lift = clamp01((deg - 60) / 40);
+  const after = clamp01((-deg - 70) / 40);
+  const elev = ((-8 + lift * 38 + after * 30) * Math.PI) / 180;
+  const R = 13 * S * (1 - 0.2 * lift);
+  // (facing away, his club side is the nearer: wound back toward us, his fists are lower on the screen for it, and are raised the more)
+  const at: V = [waist[0] + vx * R + lift * 3 * S, waist[1] + vy * R - (lift * (back ? 14 : 10) + after * 5) * S];
+  // (up the screen, a length of it standing upright shows a little longer than one lying across: 1.225 to 1.414)
+  const dx = Math.cos(elev) * vx;
+  const dy = Math.cos(elev) * vy - Math.sin(elev) * 1.225;
+  return { at, aim: (Math.atan2(-dy, dx) * 180) / Math.PI, long: Math.min(1, Math.max(0.42, Math.hypot(dx, dy) / Math.SQRT2)), behind: vy < -0.12 };
+}
+
+/**
+ * THE STREAK the club's head leaves as it is swung round level (Pose.sweep: how many degrees of the
+ * swing it has just come through, + when it came round from his club side). It lies along the oval
+ * the head goes round: widest just behind the club, thinning and breaking up toward its oldest end.
+ * What of it is behind him goes on `behind`, the rest on `front`. The brute's is a smear of air; the
+ * guardian's, of the light of its club's burning bands (and it gives off a little of that light).
+ */
+function swingStreak(front: Px, behind: Px, deg: number, sweep: number, waist: V, back: boolean, S: number, G: boolean, lights: Light[]): V[] {
+  const ramp = G ? FLAME : AIR;
+  const n = Math.max(8, Math.round(Math.abs(sweep) / 3));
+  const path: V[] = [];
+  for (let j = n; j >= 0; j--) {
+    const u = j / n;
+    const s = levelSwing(deg + sweep * u, waist, back, S);
+    const [cx, cy] = dir(s.aim);
+    const L = (GRIP + CLUB * s.long - 5) * S;
+    const x = s.at[0] + cx * L;
+    const y = s.at[1] + cy * L;
+    path.push([x, y]);
+    const r = S * (1 + 5.5 * Math.pow(1 - u, 0.8));
+    const p = s.behind ? behind : front;
+    for (let yy = Math.floor(y - r); yy <= Math.ceil(y + r); yy++) {
+      for (let xx = Math.floor(x - r); xx <= Math.ceil(x + r); xx++) {
+        const d = Math.hypot(xx + 0.5 - x, yy + 0.5 - y);
+        if (d > r || !p.inside(xx, yy)) continue;
+        // (the oldest part of it is breaking up)
+        if (u > 0.5 && hash(xx, yy, 13) < (u - 0.5) * 2.2) continue;
+        const edge = d > r - 1.2;
+        p.set(xx, yy, edge ? ramp[u < 0.5 ? 2 : 1] : u < 0.18 ? ramp[4] : u < 0.45 ? ramp[3] : u < 0.75 ? ramp[2] : ramp[1]);
+      }
+    }
+  }
+  if (G) {
+    const strong = Math.min(1, Math.abs(sweep) / 90);
+    for (const k of [0.1, 0.4]) {
+      const at = path[Math.round((1 - k) * (path.length - 1))];
+      lights.push({ x: at[0], y: at[1], r: 12 * S, color: FLAME[2], a: 0.3 * strong });
+    }
+  }
+  return path;
+}
+
+/**
+ * Dust KICKED BACK by a foot that scrapes the floor (the charge's warning) or digs in (its stop):
+ * puffs thrown from (x, y) away from the way he faces and up, `t` (0..1) of the way through their
+ * short life, thinning as they go. The dull violet of the floor's own dust; it gives off no light.
+ */
+function kicked(p: Px, x: number, y: number, t: number, back: boolean, S: number, spread = 1): void {
+  if (t <= 0 || t >= 1) return;
+  const fwd = back ? -1 : 1;
+  const out = 1 - (1 - t) * (1 - t);
+  for (const [far, up, big, side] of [[9, 5, 3.4, 0], [15, 3, 2.6, 2.5], [6, 9, 2.4, -2], [19, 7, 1.8, 1]] as const) {
+    // (behind the foot: up the screen and to the left when he faces us, down it and to the left when he faces away)
+    const cx = x - (far * out + 2) * S * spread;
+    const cy = y - fwd * (far * 0.5 * out) * S * spread - up * out * S + side * S;
+    const r = big * S * (1 - 0.3 * t);
+    for (let yy = Math.floor(cy - r); yy <= Math.ceil(cy + r); yy++) {
+      for (let xx = Math.floor(cx - r); xx <= Math.ceil(cx + r); xx++) {
+        if ((xx + 0.5 - cx) ** 2 + (yy + 0.5 - cy) ** 2 > r * r || !p.inside(xx, yy)) continue;
+        if (t > 0.35 && (((xx + yy) % 2) + 2) % 2 !== 0) continue;
+        if (t > 0.7 && (((xx - yy) % 4) + 4) % 4 !== 0) continue;
+        p.set(xx, yy, yy + 0.5 < cy - r * 0.2 ? MAIL[3] : MAIL[2]);
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
 // The rig
 //
 // What it reads from a Pose:
@@ -475,6 +595,9 @@ function head(p: Px, cx: number, top: number, ramp: Ramp, back: boolean, roar: b
 //   wind, drag     the tatters of the hide; standing still (drag 0) the wind also times his breath,
 //                  the turn of his head, the shifting of the club and the opening of his fist
 //   behind         facing us: the club is behind him (raised over his head)
+//   prop 1         (TROLL_MOVES) THE LEVEL SWING: the club in both fists swung round him level; `aim` is
+//                  then how far round from straight ahead (+ his club side), and `sweep` its streak
+//   prop 2         (TROLL_MOVES) THE CHARGE: `sweep` is then the life of the dust a scraping foot kicks
 // and `how`: how he carries the club while his other hand is not on it (Carry).
 
 /** From one angle to another, the short way round, in degrees. */
@@ -531,8 +654,11 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   const k = clamp01(q.off);
   // WHERE IT TRAILS (THE CLUB TRAILS, at the top): all the way there until his other hand goes to the handle.
   const trail = how === 'high' ? 0 : 1 - k;
-  const heldAim = q.aim + (shift * 2.5 + walk * 3 * (roll * roll - q.swing * q.swing)) * (1 - trail);
-  const held: V = [X + u(SPREAD + 11.5 + q.hx) + shift * 0.6 * (1 - trail), ay - u(H_SHO + 13.5) - up + handDip + u(q.hy)];
+  // THE LEVEL SWING (prop 1, TROLL_MOVES): both fists on it at his belly, `aim` degrees round from straight ahead
+  const waist: V = [X + u(1.5), ay - u(27) - up + Y * 0.6];
+  const level = q.prop === 1 ? levelSwing(q.aim, waist, back, S) : null;
+  const heldAim = level ? level.aim : q.aim + (shift * 2.5 + walk * 3 * (roll * roll - q.swing * q.swing)) * (1 - trail);
+  const held: V = level ? [level.at[0] + u(q.hx), level.at[1] + u(q.hy)] : [X + u(SPREAD + 11.5 + q.hx) + shift * 0.6 * (1 - trail), ay - u(H_SHO + 13.5) - up + handDip + u(q.hy)];
   // each fist where it hangs when it has nothing to do: by the knee, swinging against the stride
   const hang: V = [offSh[0] - u(2.5) - q.swing * u(3.4), offSh[1] + u(25.5) - Math.abs(q.swing) * u(1.4) - q.swing * u(1.4) * fwd];
   const idle: V = [clubSh[0] + u(2.5) + q.swing * u(3.4), clubSh[1] + u(25.5) - Math.abs(q.swing) * u(1.4) + q.swing * u(1.4) * fwd];
@@ -565,7 +691,27 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   // where the club is: the point of its handle that is held, the way it points, how much of its length shows
   const at: V = [held[0] + (low[0] - held[0]) * trail, held[1] + (low[1] - held[1]) * trail];
   const aim = trail > 0 ? turnTo(heldAim, trailAim, trail) : heldAim;
-  const long = 1 + (trailLong - 1) * trail;
+  const holdLong = level ? level.long : 1;
+  const long = holdLong + (trailLong - holdLong) * trail;
+  /** The club is behind him (front view: `behind`; swung level: while it points away from the eye, once both fists are on it). */
+  const clubBehind = level ? level.behind && k > 0.5 : q.behind;
+  /** Where the streak of a level swing runs (to keep room for it on the sheets). */
+  const streakAt: V[] = [];
+  if (level && Math.abs(q.sweep) >= 6) {
+    for (const f of [0, 0.25, 0.5, 0.75, 1]) {
+      const s2 = levelSwing(q.aim + q.sweep * f, waist, back, S);
+      const [ddx, ddy] = dir(s2.aim);
+      const L = u(GRIP + CLUB * s2.long - 5);
+      streakAt.push([s2.at[0] + ddx * L, s2.at[1] + ddy * L]);
+    }
+  }
+  /**
+   * Where a foot scrapes (prop 2, the charge: Pose.sweep is how far through its life the dust it kicks
+   * is): his nearer foot when he faces us, his further one when he faces away, so that the dust it
+   * kicks back flies out beside him where it is seen, not behind his bulk.
+   */
+  const scrapeS = back ? q.far : q.near;
+  const scrape: V = [ax + (back ? farSide : -farSide) * u(LEG) + snap(scrapeS * u(3.6)) - u(2), floorY - 2 + (back ? -1 : 1) * snap(u(FOOT_TILT)) + snap(scrapeS * u(1.6) * fwd)];
   const [cdx, cdy] = dir(aim);
   const grip: V = [at[0] - cdx * u(6.5), at[1] - cdy * u(6.5)];
 
@@ -637,6 +783,8 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
       [[at[0] - cdx * u(choke * trail + GRIP), at[1] - cdy * u(choke * trail + GRIP)], u(4)],
       [[at[0] + cdx * u(CLUB * long - choke * trail), at[1] + cdy * u(CLUB * long - choke * trail)], u(12)],
       [[hx, hy + 7], 11],
+      ...streakAt.map((v) => [v, u(8)] as const),
+      ...(q.prop === 2 && q.sweep > 0 && q.sweep < 1 ? [[[scrape[0] - u(14), scrape[1] - u(8)], u(16)] as const] : []),
     ]));
   }
   const sheet = (): Px => new Px(cut.w, cut.h);
@@ -740,6 +888,11 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
 
   // --- the club, the hands, the head ---
   const weapon = sheet();
+  // (a level swing's streak: what of it is behind him on a sheet of its own, under everything)
+  const behindAll = sheet();
+  if (level && Math.abs(q.sweep) >= 6) swingStreak(weapon, behindAll, q.aim, q.sweep, waist, back, S, G, lights);
+  // (the charge: the dust a scraping or digging foot kicks back)
+  if (q.prop === 2) kicked(behindAll, scrape[0], scrape[1], q.sweep, back, S);
   // (held part way up its handle, more of the handle is behind the fist)
   club(weapon, [at[0] - cdx * u(choke * trail), at[1] - cdy * u(choke * trail)], aim, S, G, Math.sin(ph * 2) + roar, lights, long);
   const hands = sheet();
@@ -760,9 +913,11 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
 
   // --- stack it, and lay it on the canvas ---
   let layers: Px[];
-  if (back) layers = [offArm, skull, body, weapon, clubArm, hands];
-  else if (q.behind) layers = [weapon, clubArm, body, offArm, skull, hands];
-  else layers = [clubArm, body, weapon, offArm, skull, hands];
+  // (swung level and pointing away from us when he faces away: the club, his fists and his arms are all beyond him)
+  if (back && level && clubBehind) layers = [behindAll, weapon, hands, clubArm, offArm, skull, body];
+  else if (back) layers = [behindAll, offArm, skull, body, weapon, clubArm, hands];
+  else if (clubBehind) layers = [behindAll, weapon, clubArm, body, offArm, skull, hands];
+  else layers = [behindAll, clubArm, body, weapon, offArm, skull, hands];
   const done = compose(null, layers);
   /** A sheet of this frame laid on the whole canvas, where it belongs. */
   const placed = (src: Px): Px => {
@@ -825,6 +980,100 @@ function smash(back: boolean): Timeline {
     { at: HIT + 0.3, pose: { wind: 1 }, ease: 'io' },
   ];
   return { keys, hit: HIT };
+}
+
+// ---------------------------------------------------------------------------------------------
+// The trolls' new moves (TROLL_MOVES, above): their timelines
+
+/** The moment the swing's blow lands: quicker than the slam (it is the basic blow, used while the slam cools down). The rules' wind-up for it may differ: the frames are fitted to it. */
+export const SWING_HIT = 0.6;
+/** The moment the red troll sets off on his charge: his warning, while the line he will run along is marked on the floor. */
+export const CHARGE_GO = 0.9;
+/** A quarter of one stride of his charge (seconds): it goes round in four. */
+const CHARGE_STEP = 0.13;
+
+/** THE SWING: both fists on the club, round and back on his club side and held there (the warning), then round in front of him level, through the blow, and on round to his other side. */
+function swingMove(): Timeline {
+  const L: Partial<Pose> = { prop: 1, off: 1 };
+  // gathered: both fists on the handle, the club coming round to his club side
+  const gather: Partial<Pose> = { ...L, aim: 70, lean: -1, act: 0.3, wind: 0.1 };
+  // wound: round and back, leaning away from the blow to come, roaring, his weight on his back foot
+  const wound: Partial<Pose> = { ...L, aim: 100, lean: -3, bob: 1, act: 1, near: 0.4, far: -0.5, wind: 0.25 };
+  // the blow: straight ahead, all his weight going into it, the streak behind the club's head
+  const blow: Partial<Pose> = { ...L, aim: -8, lean: 4, bob: 2, act: 0.6, near: -0.3, far: 0.6, sweep: 110, wind: 0.5, drag: 0.8 };
+  // through: on round to his other side
+  const thru: Partial<Pose> = { ...L, aim: -100, lean: 5, bob: 3, act: 0.3, near: -0.3, far: 0.6, sweep: 92, wind: 0.65, drag: 1 };
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    { at: 0.16, pose: gather, ease: 'out' },
+    { at: 0.34, pose: wound, ease: 'out' },
+    // (held: he coils a little tighter)
+    { at: SWING_HIT - 0.05, pose: { ...wound, aim: 106, bob: 2, wind: 0.32 }, ease: 'lin' },
+    { at: SWING_HIT - 0.02, pose: { ...wound, aim: 70, sweep: 54, lean: 0 }, ease: 'in' },
+    { at: SWING_HIT, pose: blow, ease: 'lin' },
+    { at: SWING_HIT + 0.06, pose: thru, ease: 'out' },
+    { at: SWING_HIT + 0.16, pose: { ...thru, aim: -112, sweep: 18, bob: 2 }, ease: 'out' },
+    { at: SWING_HIT + 0.42, pose: { ...L, aim: -60, lean: 1, sweep: 0, wind: 0.85 }, ease: 'io' },
+    { at: SWING_HIT + 0.62, pose: { wind: 1 }, ease: 'io' },
+  ];
+  return { keys, hit: SWING_HIT };
+}
+
+/** THE CHARGE'S WARNING: a roar; his head goes down; he scrapes a foot back twice, kicking dust; and he is off (`hit`). (The foot that scrapes: his nearer one facing us, his further one facing away: see `scrape` in the rig.) */
+function chargeWindMove(back: boolean): Timeline {
+  const C: Partial<Pose> = { prop: 2 };
+  const low: Partial<Pose> = { ...C, lean: 10, bob: 3, act: 0.2, drag: 0.4 };
+  /** The scraping foot at `s` in its stride, lifted `l`. */
+  const foot = (s: number, l: number): Partial<Pose> => (back ? { far: s, farLift: l } : { near: s, nearLift: l });
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    { at: 0.14, pose: { ...C, lean: 3, bob: -2, act: 1, pt: 1 }, ease: 'out' },
+    { at: 0.3, pose: low, ease: 'in' },
+    { at: 0.4, pose: { ...low, ...foot(0.4, 0.5), sweep: 0 }, ease: 'out' },
+    { at: 0.5, pose: { ...low, ...foot(-1.4, 0), sweep: 0.08 }, ease: 'in' },
+    { at: 0.62, pose: { ...low, ...foot(0.4, 0.5), sweep: 0.7 }, ease: 'out' },
+    { at: 0.72, pose: { ...low, ...foot(-1.4, 0), sweep: 0.08 }, ease: 'in' },
+    { at: 0.84, pose: { ...low, ...foot(-0.6, 0), bob: 4, lean: 11, sweep: 0.75 }, ease: 'out' },
+    { at: CHARGE_GO, pose: { ...low, lean: 12, bob: 2, ...(back ? { near: 0.8, far: -1, farLift: 0.3 } : { far: 0.8, near: -1, nearLift: 0.3 }), sweep: 0.92 }, ease: 'in' },
+  ];
+  return { keys, hit: CHARGE_GO };
+}
+
+/** THE CHARGE: head down, running, the club hauled at his side. Round and round, for as long as the rules have him charge. */
+function chargeMove(): Timeline {
+  const C: Partial<Pose> = { prop: 2, lean: 12, drag: 1.6, act: 0.5 };
+  const T = CHARGE_STEP;
+  const keys: Key[] = [
+    { at: 0, pose: { ...C, near: 2, far: -2, bob: 4, swing: -1, wind: 0 } },
+    { at: T, pose: { ...C, near: 0.3, far: -0.3, farLift: 1.2, bob: -3, swing: 0, wind: 0.25 }, ease: 'out' },
+    { at: 2 * T, pose: { ...C, near: -2, far: 2, bob: 4, swing: 1, wind: 0.5 }, ease: 'in' },
+    { at: 3 * T, pose: { ...C, near: -0.3, far: 0.3, nearLift: 1.2, bob: -3, swing: 0, wind: 0.75 }, ease: 'out' },
+    { at: 4 * T, pose: { ...C, near: 2, far: -2, bob: 4, swing: -1, wind: 1 }, ease: 'in' },
+  ];
+  return { keys, loop: 0 };
+}
+
+/** THE CHARGE'S END: he digs a foot in and rears back, skidding, dust kicked up; and stands. */
+function chargeStopMove(): Timeline {
+  const C: Partial<Pose> = { prop: 2 };
+  const keys: Key[] = [
+    { at: 0, pose: { ...C, lean: 12, near: 2, far: -2, bob: 4, drag: 1.6, act: 0.5 } },
+    { at: 0.1, pose: { ...C, lean: -2, bob: 4, near: -0.6, far: 1.8, drag: 1, act: 0.8, sweep: 0.08 }, ease: 'out' },
+    { at: 0.32, pose: { ...C, lean: -4, bob: 1, near: -0.4, far: 1.2, drag: 0.4, act: 1, pt: 1, sweep: 0.7 }, ease: 'out' },
+    { at: 0.6, pose: { wind: 1 }, ease: 'io' },
+  ];
+  return { keys };
+}
+
+/** The new moves of each, by name (AnimSet.clips.moves): the green troll's swing; the red troll's swing and charge. */
+export function trollMoves(red: boolean, back: boolean): Record<string, Timeline> {
+  const more: Record<string, Timeline> = { swing: swingMove() };
+  if (red) {
+    more.chargeWind = chargeWindMove(back);
+    more.charge = chargeMove();
+    more.chargeStop = chargeStopMove();
+  }
+  return more;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -989,12 +1238,19 @@ const GUARDIAN_AURA: Light = { x: AX - 2, y: AY - 38, r: 62, color: '#ff3a78', a
  */
 const DEATH_PAINTED = true;
 
+/** What one of them does, seen one way round: the slam, its death, and (TROLL_MOVES) its new moves. */
+function ogreMoves(back: boolean, G: boolean, how: Carry): MonsterMoves {
+  const m: MonsterMoves = DEATH_PAINTED ? { attack: smash(back), die: (k) => ogreDeath(k, back, G, how) } : { attack: smash(back) };
+  if (TROLL_MOVES.on) m.more = trollMoves(G, back);
+  return m;
+}
+
 export function makeBruteArt(): ActorArt {
   const how = CARRY;
-  return monsterArt((q, back) => ogre(q, back, false, how), DEATH_PAINTED ? { attack: smash(false), die: (k) => ogreDeath(k, false, false, how) } : { attack: smash(false) }, DEATH_PAINTED ? { attack: smash(true), die: (k) => ogreDeath(k, true, false, how) } : { attack: smash(true) }, { canvas: BRUTE_CANVAS, rest: { aim: 80 }, aura: BRUTE_AURA, idleFps: 8, walkFps: 11, dieTime: 1.05 });
+  return monsterArt((q, back) => ogre(q, back, false, how), ogreMoves(false, false, how), ogreMoves(true, false, how), { canvas: BRUTE_CANVAS, rest: { aim: 80 }, aura: BRUTE_AURA, idleFps: 8, walkFps: 11, dieTime: 1.05 });
 }
 
 export function makeGuardianArt(): ActorArt {
   const how = CARRY;
-  return monsterArt((q, back) => ogre(q, back, true, how), DEATH_PAINTED ? { attack: smash(false), die: (k) => ogreDeath(k, false, true, how) } : { attack: smash(false) }, DEATH_PAINTED ? { attack: smash(true), die: (k) => ogreDeath(k, true, true, how) } : { attack: smash(true) }, { canvas: BRUTE_CANVAS, rest: { aim: 80 }, aura: GUARDIAN_AURA, idleFps: 8, walkFps: 9, dieTime: 1.2 });
+  return monsterArt((q, back) => ogre(q, back, true, how), ogreMoves(false, true, how), ogreMoves(true, true, how), { canvas: BRUTE_CANVAS, rest: { aim: 80 }, aura: GUARDIAN_AURA, idleFps: 8, walkFps: 9, dieTime: 1.2 });
 }

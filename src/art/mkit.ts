@@ -114,6 +114,8 @@ export interface MonsterMoves {
   attack: Timeline;
   /** A second attack, for the one monster that has two (the Warden's volley). */
   heavy?: Timeline;
+  /** Its other moves, by name (AnimSet.clips.moves: the trolls' swing, the red troll's charge, ...). */
+  more?: Readonly<Record<string, Timeline>>;
   /**
    * Its death, seen this way round: what it looks like `k` of the way through, 0 (as it stood
    * when the blow fell) to 1 (its body, lying where it will lie). See DEATH_FPS, and
@@ -174,6 +176,11 @@ export function monsterArt(rig: Rig, front: MonsterMoves, back: MonsterMoves, op
   const aura = opts.aura === undefined ? MENACE : opts.aura;
   const set = (m: MonsterMoves, away: boolean): AnimSet => {
     const moves: Moves = m.heavy ? { attack: onGrid(m.attack), heavy: onGrid(m.heavy) } : { attack: onGrid(m.attack) };
+    if (m.more) {
+      const more: Record<string, Timeline> = {};
+      for (const [name, t] of Object.entries(m.more)) more[name] = onGrid(t);
+      moves.more = more;
+    }
     if (opts.walk) moves.walk = opts.walk;
     const rim = opts.rim === undefined ? ENEMY_RIM : opts.rim;
     const look: RigOpts = opts.canvas ? { aura, anchor: [opts.canvas.ax, opts.canvas.ay] } : { aura };
