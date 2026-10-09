@@ -18,6 +18,8 @@ import { makeDungeonProps } from './art/props';
 import { makeTownProps } from './art/town';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
+import { SMITH3 } from './art/smith3';
+import { QUEST3, makeStoneArt } from './art/quest3';
 import { makeTitleArt } from './art/title';
 import { makeSmithTitle } from './art/title_smith';
 import type { SmithTake } from './art/title_smith';
@@ -168,6 +170,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     bestiary: makeBestiary(),
     icons: makeIconArt(),
     spells: makeSpellArt(),
+    // (THE MASTER RUNE-STONE, art/quest3.ts: a mock-up behind QUEST3, off; its pictures are painted the first time they are shown)
+    quest: makeStoneArt(),
   };
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
@@ -1656,6 +1660,40 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     comboMends: (on: boolean) => {
       useComboMends(on);
       art.heroes = makeHeroArt3();
+    },
+    /** THE WORDSMITH ON BONES AND HIS RING MADE NEW (art/smith3.ts, SMITH3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
+    smith3: (on: boolean) => {
+      SMITH3.on = on;
+      art.folk = makeTownsfolk();
+      art.town = makeTownProps();
+    },
+    /** The clock the town's things go by (seconds, slowed with `slowmo`): a playtest can wait for the moment someone acts. */
+    clock: () => clock,
+    /**
+     * THE MASTER RUNE-STONE (art/quest3.ts, QUEST3): a mock-up behind a switch that is off; its films
+     * set what the rules will one day say. `on`; the ring `dark`; `give`: the stone is given now;
+     * `take`: it is taken up now from beside the fallen wordsmith (and carried); `lying`: it lies there.
+     */
+    quest3: (o: { on?: boolean; dark?: boolean; give?: boolean; take?: boolean; lying?: boolean; carried?: boolean }) => {
+      if (o.on !== undefined) QUEST3.on = o.on;
+      if (o.dark !== undefined) QUEST3.dark = o.dark;
+      if (o.give) {
+        QUEST3.givenAt = clock;
+        QUEST3.carried = false;
+      }
+      if (o.take) {
+        QUEST3.takenAt = clock;
+        QUEST3.stone = 'gone';
+        QUEST3.carried = true;
+        // (for the pictures only: the fallen wordsmith is then searched, as the rules will have it)
+        if (game?.level.body) game.level.body.state = 1;
+      }
+      if (o.lying) {
+        QUEST3.stone = 'lying';
+        QUEST3.takenAt = -1;
+      }
+      if (o.carried !== undefined) QUEST3.carried = o.carried;
+      return { ...QUEST3 };
     },
     /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): ON since Version 19.4, on his yes; pictures of him as he was before switch them off and paint the heroes again (true: the new, the game's own, back). */
     rangerStances: (on: boolean) => {

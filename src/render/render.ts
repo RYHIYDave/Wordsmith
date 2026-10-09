@@ -20,7 +20,10 @@ import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
 import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
-import { isTownFlat, isTownsperson, townSprite, turnedTo } from '../art/townscene';
+import { POWER, QUEST3, STONE_LAYING_STEPS, STONE_LYING_FRAMES, STONE_STANDING_FRAMES, floatingOf } from '../art/quest3';
+import type { StoneArt } from '../art/quest3';
+import { SMITH3 } from '../art/smith3';
+import { columnSprite, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
 import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
@@ -56,6 +59,9 @@ export const STATION_NAME: Record<Station, string> = { gate: 'GATE', wordsmith: 
  */
 export const NAME_LIFT: Record<Station, number> = { gate: 74, stash: 26, lexicon: 40, mystic: 86, wordsmith: 44, armourer: 50, stranger: 40 };
 
+/** Where the master rune-stone lies beside the fallen wordsmith, from where he lies (tiles): by his reaching hand. */
+const STONE_BY: readonly [number, number] = [0.55, -0.3];
+
 export interface Art {
   /** The dungeon's floor and walls (art/ground.ts). */
   ground: GroundArt;
@@ -74,6 +80,8 @@ export interface Art {
   icons: IconArt;
   /** The orb the staff sets down, the familiar, and its bolt. */
   spells: SpellArt;
+  /** THE MASTER RUNE-STONE (art/quest3.ts): a mock-up behind QUEST3, off. */
+  quest?: StoneArt;
   /** The fallen wordsmith of a character's first dungeon. */
 }
 
@@ -423,6 +431,97 @@ export class Renderer {
    * a dart wall's slot, in the face of its wall. (The holes and a plate lie flat on the floor: they
    * are drawn with the ground.)
    */
+  /** THE WORDSMITH'S RING MADE NEW (art/ring3.ts): the letters of light that swirl round him, and the column of light over his slab, stood among everything else by how near they are. */
+  private standRing3(game: Game, cam: Cam, t: number): void {
+    const art = this.art;
+    const r3 = art.town.ring3;
+    const L = game.level;
+    const ring = L.props.find((p) => p.kind === 'runeRing');
+    if (!r3 || !ring) return;
+    for (const l of swirlNow(art, t)) {
+      const x = ring.x + l.x;
+      const y = ring.y + l.y;
+      const sp = (l.big ? r3.big : r3.letters)[l.heat][l.k];
+      const sx = wx(cam, x, y);
+      const sy = wy(cam, x, y) - l.z;
+      this.stand(x + y, sp, sx, sy);
+      if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
+    }
+    const slab = L.props.find((p) => p.kind === 'runeSlab');
+    const col = slab ? columnSprite(art, t) : null;
+    if (slab && col) {
+      // (on the slab's top: 11 game pixels up)
+      const sx = wx(cam, slab.x, slab.y);
+      const sy = wy(cam, slab.x, slab.y) - 11;
+      this.stand(slab.x + slab.y + 0.05, col.s, sx, sy, null, 0, 1, col.alpha);
+      if (col.s.lights) this.propLit.push({ s: col.s, x: Math.round(sx), y: Math.round(sy) });
+    }
+    // (THE MASTER RUNE-STONE, art/quest3.ts: given, it rises out of the hero, floats over the slab,
+    // lies down and is laid into the hollow in its top, with a burst of its light)
+    const pw = ringPower(t);
+    const q = art.quest;
+    if (slab && q && pw && pw.g >= 0) {
+      const h = game.hero;
+      const fl = floatingOf(pw.g, [h.x, h.y], [slab.x, slab.y], 11);
+      if (fl) {
+        const sp = fl.lie <= 0.5 ? q.standing[Math.floor(t * 10) % STONE_STANDING_FRAMES] : q.laying[Math.min(STONE_LAYING_STEPS - 1, Math.round((fl.lie / 90) * (STONE_LAYING_STEPS - 1)))];
+        const sx = wx(cam, fl.x, fl.y);
+        const sy = wy(cam, fl.x, fl.y) - fl.z;
+        this.stand(fl.x + fl.y + 0.06, sp, sx, sy);
+        if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
+      }
+      if (pw.g >= POWER.set && pw.g < POWER.set + 0.3) {
+        const sx = wx(cam, slab.x, slab.y);
+        const sy = wy(cam, slab.x, slab.y) - 11;
+        this.stand(slab.x + slab.y + 0.07, q.flash, sx, sy, null, 0, 0.6 + (pw.g - POWER.set) * 2.4, 1 - (pw.g - POWER.set) / 0.3);
+        this.propLit.push({ s: q.flash, x: Math.round(sx), y: Math.round(sy) });
+      }
+    }
+  }
+
+  /**
+   * THE MASTER RUNE-STONE IN THE FIRST DUNGEON (art/quest3.ts, behind QUEST3): taken up, it rises
+   * from beside the fallen wordsmith, stands up, bursts with light and flies into the hero.
+   */
+  private standQuestStone(game: Game, cam: Cam, t: number): void {
+    const q = this.art.quest;
+    const b = game.level.body;
+    if (!q || !b || QUEST3.takenAt < 0) return;
+    const age = t - QUEST3.takenAt;
+    if (age < 0 || age >= 1) return;
+    const from: [number, number] = [b.x + STONE_BY[0], b.y + STONE_BY[1]];
+    const h = game.hero;
+    let x = from[0];
+    let y = from[1];
+    let z = 0;
+    let lie = 90;
+    let scale = 1;
+    if (age < 0.35) {
+      const k = age / 0.35;
+      z = 18 * k * (2 - k);
+      lie = 90 * (1 - k);
+    } else if (age < 0.55) {
+      z = 18;
+      lie = 0;
+    } else {
+      const k = (age - 0.55) / 0.45;
+      x = from[0] + (h.x - from[0]) * k * k;
+      y = from[1] + (h.y - from[1]) * k * k;
+      z = 18 - 4 * k;
+      lie = 0;
+      scale = 1 - 0.7 * k * k;
+    }
+    const sp = lie <= 0.5 ? q.standing[Math.floor(t * 10) % STONE_STANDING_FRAMES] : q.laying[Math.min(STONE_LAYING_STEPS - 1, Math.round((lie / 90) * (STONE_LAYING_STEPS - 1)))];
+    const sx = wx(cam, x, y);
+    const sy = wy(cam, x, y) - z;
+    this.stand(x + y + 0.05, sp, sx, sy, null, 0, scale, 1);
+    if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
+    if (age >= 0.35 && age < 0.65) {
+      this.stand(x + y + 0.06, q.flash, sx, sy, null, 0, 0.5 + (age - 0.35) * 3, 1 - (age - 0.35) / 0.3);
+      this.propLit.push({ s: q.flash, x: Math.round(sx), y: Math.round(sy) });
+    }
+  }
+
   private standHazards(game: Game, cam: Cam): void {
     const L = game.level;
     if (L.hazards.length === 0) return;
@@ -1058,6 +1157,15 @@ export class Renderer {
         const sp = p.state === 1 ? art.props.fallenSearched : art.props.fallen;
         g.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
         if (p.state === 0 && Math.random() < 0.2 * amb) fx.mote(p.x, p.y, [P.tl5, P.tl4, P.white]);
+        // (THE MASTER RUNE-STONE, art/quest3.ts, behind QUEST3: lying beside him, its rune throbbing)
+        if (QUEST3.on && QUEST3.stone === 'lying' && art.quest) {
+          const st = art.quest.lying[Math.floor(t * 8) % STONE_LYING_FRAMES];
+          const x = wx(cam, p.x + STONE_BY[0], p.y + STONE_BY[1]);
+          const y = wy(cam, p.x + STONE_BY[0], p.y + STONE_BY[1]);
+          g.drawImage(st.img, Math.round(x - st.ax), Math.round(y - st.ay), st.w, st.h);
+          if (st.lights) this.propLit.push({ s: st, x: Math.round(x), y: Math.round(y) });
+          if (Math.random() < 0.15 * amb) fx.mote(p.x + STONE_BY[0], p.y + STONE_BY[1], [P.white, '#b8fff8', '#22d0e0']);
+        }
       }
     }
     // (THE TRAPS) a spike floor's holes, glinting in the moment before its spikes come up; a dart wall's plate
@@ -1640,6 +1748,10 @@ export class Renderer {
         if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
       }
     }
+    // (THE WORDSMITH'S RING MADE NEW, art/ring3.ts, behind art/smith3.ts SMITH3: the letters of light
+    // that swirl round, each stood among everything else, and the column of light over the slab)
+    if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);
+    if (!L.town && QUEST3.on) this.standQuestStone(game, cam, t);
     this.standHazards(game, cam);
     this.standDoors(L, cam);
     // the town's services carry their names, so a newcomer can see what is where
