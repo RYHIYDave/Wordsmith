@@ -38,6 +38,21 @@ export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
   // An attack is about to land where the hero stands: walk straight out of it.
   const h = g.hero;
   for (const z of g.zones) {
+    // (THE MONSTERS' ATTACKS: the line a red troll will charge along: out of it, sideways)
+    if (z.kind === 'lane') {
+      const x1 = z.x1 ?? z.x;
+      const y1 = z.y1 ?? z.y;
+      const len = Math.hypot(x1 - z.x, y1 - z.y) || 1;
+      const ux = (x1 - z.x) / len;
+      const uy = (y1 - z.y) / len;
+      const along = (h.x - z.x) * ux + (h.y - z.y) * uy;
+      const across = (h.x - z.x) * -uy + (h.y - z.y) * ux;
+      if (along < -0.5 || along > len + 0.5 || Math.abs(across) > z.r + 0.6) continue;
+      const side = across >= 0 ? 1 : -1;
+      c.mx = -uy * side;
+      c.my = ux * side;
+      return;
+    }
     if (z.kind !== 'warn') continue;
     const dx = h.x - z.x;
     const dy = h.y - z.y;

@@ -1,7 +1,7 @@
 // Entry point: builds the art, then runs the frame loop that ties input, rules, drawing and
 // interface together.
 
-import { FIGURE_SIZE, figureOf, makeBestiary } from './art/bestiary';
+import { FIGURE_SIZE, figureOf, makeBestiary, useMonsterAttacks } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
@@ -34,7 +34,7 @@ import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, MONSTER_ATTACKS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
 import { MIX, RELIEF } from './game/dungeon';
@@ -1728,6 +1728,18 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       return { ...QUEST3 };
     },
     /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): ON since Version 19.4, on his yes; pictures of him as he was before switch them off and paint the heroes again (true: the new, the game's own, back). */
+    /**
+     * THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS, with the art chat's pictures of
+     * the new moves): on and off for playtests and films, and the monsters painted again. `monsterAttacks()`
+     * says whether they are on.
+     */
+    monsterAttacks: (on?: boolean): boolean => {
+      if (on !== undefined) {
+        useMonsterAttacks(on);
+        art.bestiary = makeBestiary();
+      }
+      return MONSTER_ATTACKS.on;
+    },
     rangerStances: (on: boolean) => {
       useRangerStances(on);
       art.heroes = makeHeroArt3();

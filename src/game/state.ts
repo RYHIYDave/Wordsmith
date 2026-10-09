@@ -233,7 +233,8 @@ export interface Hero {
   d: Derived;
 }
 
-export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover';
+/** ('charge': THE MONSTERS' ATTACKS, the red troll running down the line he marked: game/defs.ts CHARGE.) */
+export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover' | 'charge';
 
 export interface Monster {
   id: number;
@@ -306,6 +307,15 @@ export interface Monster {
   phase: number;
   /** Boss only: which attack is winding up (0 = ground smash, 1 = volley). */
   atk: number;
+  /**
+   * THE MONSTERS' ATTACKS (game/defs.ts, MONSTER_ATTACKS; a monster that has moves, movesOf): which of
+   * its moves it is making (an index into them; -1, or absent, none), and the seconds left before each
+   * may be used again (set as it wakes).
+   */
+  move?: number;
+  moveCd?: number[];
+  /** The red troll's charge: the line he runs along (from where he stood to where he will stop), and whether he has run the hero down on it yet. */
+  charge?: { x0: number; y0: number; x1: number; y1: number; hit: boolean };
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
@@ -373,7 +383,8 @@ export interface Projectile {
 }
 
 /** 'cracks': Heavy behind, cracked ground that staggers; 'ward': Guarding behind, a circle the hero takes less harm in (Version 19.3). */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward';
+/** ('lane': THE MONSTERS' ATTACKS, the line a red troll will charge along: from (x, y) to (x1, y1), `r` half its width.) */
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane';
 
 export interface Zone {
   x: number;
@@ -397,6 +408,20 @@ export interface Zone {
   src?: number;
   /** A warning laid by a minion: those of its words it has at half strength (MONSTER PACKS). */
   half?: HalfWords;
+  /** A charge's line ('lane'): where it ends; and while he runs it, how much of the way he has come (0 to 1). Its `t` of `dur` is how far his wind-up has gone. */
+  x1?: number;
+  y1?: number;
+  gone?: number;
+}
+
+/**
+ * THE MONSTERS' ATTACKS: one of the dead the Warden has called, crawling out of the ground (game/defs.ts
+ * SUMMON). Until it is out it is not among the monsters: a picture only, not to be hit, doing nothing.
+ * `age`: seconds since it began to come up (below 0: not yet; it comes up a little after the one before).
+ */
+export interface Riser {
+  m: Monster;
+  age: number;
 }
 
 /**

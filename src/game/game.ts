@@ -3,8 +3,8 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
-import type { Limit, MonsterDef } from './defs';
+import { CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, movesOf, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
@@ -20,7 +20,7 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { AIM_MODES } from './state';
-import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, SkillState, SlotRef, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
+import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, Riser, SkillState, SlotRef, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -194,6 +194,8 @@ export class Game {
   zones: Zone[] = [];
   traps: Trap[] = [];
   volleys: Volley[] = [];
+  /** THE MONSTERS' ATTACKS: the dead the Warden has called, still crawling out of the ground (game/defs.ts SUMMON). */
+  risers: Riser[] = [];
   /** The orb set down by the staff's quick attack (one at a time), and the mage's familiars. */
   orbs: OrbInst[] = [];
   familiars: Familiar[] = [];
@@ -841,6 +843,7 @@ export class Game {
     this.zones = [];
     this.traps = [];
     this.volleys = [];
+    this.risers = [];
     this.orbs = [];
     this.familiars = [];
     this.drops = [];
@@ -1271,6 +1274,7 @@ export class Game {
     this.updateHazards(dt);
     this.updateFlow(dt);
     this.updateMonsters(dt);
+    if (this.risers.length) this.updateRisers(dt);
     this.updateProjectiles(dt);
     this.updateTraps(dt);
     this.updateVolleys(dt);
@@ -3273,6 +3277,8 @@ export class Game {
       if (m.chillT > 0 && m.freezeImmune <= 0 && !m.boss) {
         m.frozenT = m.elite ? 0.6 : 1.1;
         m.freezeImmune = 4;
+        // (THE MONSTERS' ATTACKS: a red troll frozen as he runs his charge is stopped in it)
+        if (m.state === 'charge') this.endCharge(m);
         this.emit({ t: 'freeze', x, y });
         this.sfx('frost', 0.7);
       }
@@ -3366,12 +3372,13 @@ export class Game {
 
   /** An attack `m` was winding up is broken off, with the warning of a blow it was about to bring down. */
   private breakOff(m: Monster): void {
-    if (m.state !== 'windup') return;
+    if (m.state !== 'windup' && m.state !== 'charge') return;
     m.state = 'chase';
     m.anim = 'idle';
+    m.charge = undefined;
     for (let k = this.zones.length - 1; k >= 0; k--) {
       const z = this.zones[k];
-      if (z.kind === 'warn' && z.src === m.id) this.zones.splice(k, 1);
+      if ((z.kind === 'warn' || z.kind === 'lane') && z.src === m.id) this.zones.splice(k, 1);
     }
   }
 
@@ -3413,6 +3420,8 @@ export class Game {
     if (m.dead) return;
     m.dead = true;
     this.kills++;
+    // (THE MONSTERS' ATTACKS: the line of a charge it was making goes with it)
+    if (m.charge || m.state === 'windup') this.dropLane(m);
     const h = this.hero;
     this.emit({ t: 'die', x: m.x, y: m.y, kind: m.kind, elite: m.elite, champion: m.champion, boss: m.boss, fx: m.fx, fy: m.fy });
     if (m.frozenT > 0) {
@@ -3836,10 +3845,19 @@ export class Game {
       m.cd -= dt * rage;
       const def = MONSTERS[m.kind];
       const slow = m.chillT > 0 ? 1 - m.chill : 1;
+      // (THE MONSTERS' ATTACKS: its big moves cool down too)
+      const moves = movesOf(m);
+      if (moves && m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= dt * rage;
 
       if (m.state === 'windup') {
         m.t -= dt * (0.6 + 0.4 * slow);
+        // (the line a charge will run along fills as his wind-up runs out)
+        if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'charge') this.laneOf(m, (z) => (z.t = Math.max(0, z.dur - m.t)));
         if (m.t <= 0) this.monsterAttack(m, def);
+        continue;
+      }
+      if (m.state === 'charge') {
+        this.runCharge(m, def, dt, slow);
         continue;
       }
       if (m.state === 'recover') {
@@ -3852,7 +3870,16 @@ export class Game {
       }
 
       const los = dist < 15 && this.sees(m.x, m.y, h.x, h.y);
-      if (m.boss) {
+      if (moves) {
+        // THE MONSTERS' ATTACKS: the biggest of its moves that is ready and in reach, else its basic blow
+        if (m.cd <= 0) {
+          const i = this.pickMove(m, def, moves, dist, los);
+          if (i >= 0) {
+            this.startMove(m, def, moves, i);
+            continue;
+          }
+        }
+      } else if (m.boss) {
         this.bossThink(m, def, dist, los);
         if (m.state !== 'chase') continue;
       }
@@ -3875,7 +3902,7 @@ export class Game {
           mvy = v.y;
         } else moving = false;
       } else {
-        if (!m.boss && los && dist <= reach + TUNE.heroRadius && m.cd <= 0) {
+        if (!moves && !m.boss && los && dist <= reach + TUNE.heroRadius && m.cd <= 0) {
           this.startWindup(m, def);
           continue;
         }
@@ -3973,6 +4000,11 @@ export class Game {
   }
 
   private monsterAttack(m: Monster, def: MonsterDef): void {
+    const moves = movesOf(m);
+    if (moves && m.move !== undefined && m.move >= 0) {
+      this.landMove(m, def, moves, m.move);
+      return;
+    }
     const h = this.hero;
     m.state = 'recover';
     m.t = TUNE.monsterRecover;
@@ -4053,6 +4085,236 @@ export class Game {
     }
     this.sfx('bossRoar');
     this.msg(`${m.name} calls the dead`, MSG.foe);
+  }
+
+  // ===========================================================================================
+  // THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS, MONSTER_MOVES)
+
+  /**
+   * Which of its moves monster `m` makes now: the biggest that is ready (its own cooldown run out)
+   * and that the hero is in reach of; else its basic blow, if the hero is in reach of that; else
+   * none (-1), and it comes on. (Its moves' first cooldowns are set the first time it is asked.)
+   */
+  private pickMove(m: Monster, def: MonsterDef, moves: readonly MonsterMove[], dist: number, los: boolean): number {
+    // (from half its `first` to half as much again: so a pack does not bring its slams down together)
+    if (!m.moveCd || m.moveCd.length !== moves.length) m.moveCd = moves.map((mv) => mv.first * this.rng.range(0.5, 1.5));
+    const reach = def.range + (m.r - 0.32) + TUNE.heroRadius;
+    for (let i = moves.length - 1; i >= 0; i--) {
+      const mv = moves[i];
+      if (m.moveCd[i] > 0) continue;
+      if (dist < mv.near || dist > (mv.far > 0 ? mv.far : reach)) continue;
+      if (mv.id === 'summon') {
+        if (this.called(m) >= SUMMON.most) continue;
+      } else if (!los) continue;
+      if (mv.id === 'charge' && !this.chargeLane(m, dist)) continue;
+      return i;
+    }
+    return -1;
+  }
+
+  /** How many of the dead the Warden has called still stand (or are coming up out of the ground). */
+  private called(m: Monster): number {
+    let n = this.risers.length;
+    for (const o of this.monsters) if (!o.dead && o !== m && o.packId === m.packId && o.kind === 'skeleton') n++;
+    return n;
+  }
+
+  /** Monster `m` begins move `i`: it winds up, and what it is about to do is shown (a slam's circle, a charge's line). */
+  private startMove(m: Monster, def: MonsterDef, moves: readonly MonsterMove[], i: number): void {
+    const h = this.hero;
+    const mv = moves[i];
+    m.state = 'windup';
+    m.t = mv.windup;
+    m.anim = 'attack';
+    m.animT = 0;
+    m.move = i;
+    m.atk = mv.id === 'bolts' ? 1 : 0;
+    const dx = h.x - m.x;
+    const dy = h.y - m.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    m.fx = dx / dist;
+    m.fy = dy / dist;
+    if (mv.id === 'slam') {
+      // the red circle where it will land, as it has always been
+      const reach = Math.min(dist, def.range);
+      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, mv.windup, this.rollMonsterDmg(m) * mv.dmg, this.monsterElement(m), m.words, m.name, m.id, this.halfOf(m));
+    } else if (mv.id === 'charge') {
+      // the line he will run along, on the floor: from him, through where the hero stands, and on
+      const lane = this.chargeLane(m, dist);
+      if (!lane) {
+        m.state = 'chase';
+        m.anim = 'idle';
+        m.move = -1;
+        return;
+      }
+      m.charge = { ...lane, hit: false };
+      this.zones.push({ x: lane.x0, y: lane.y0, x1: lane.x1, y1: lane.y1, r: CHARGE.half, t: 0, dur: mv.windup, kind: 'lane', element: this.monsterElement(m), dmg: 0, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id, gone: 0 });
+      this.sfx('bossRoar', 0.45);
+    } else if (mv.id === 'summon') {
+      this.sfx('bossRoar');
+      this.msg(`${m.name} calls the dead`, MSG.foe);
+    }
+  }
+
+  /** Monster `m`'s move `i` lands (the end of its wind-up). */
+  private landMove(m: Monster, def: MonsterDef, moves: readonly MonsterMove[], i: number): void {
+    const h = this.hero;
+    const mv = moves[i];
+    const swift = 1 - 0.3 * wordShare(m, 'swift');
+    m.state = 'recover';
+    m.t = mv.recover;
+    m.cd = mv.after * swift * this.rng.range(0.9, 1.2);
+    if (m.moveCd && mv.cooldown > 0) m.moveCd[i] = mv.cooldown * swift;
+    const el = this.monsterElement(m);
+    const twin = wordShare(m, 'twin');
+    const dx = h.x - m.x;
+    const dy = h.y - m.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    if (mv.id === 'swing') {
+      // the basic blow: whoever is in its reach when it lands (a Twin monster swings again)
+      const reach = def.range + (m.r - 0.32) + 0.45 + TUNE.heroRadius;
+      if (dist <= reach) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg, el, m.words, m);
+      this.sfx('swing', 0.5);
+      if (twin > 0) {
+        this.after(0.28, () => {
+          if (m.dead) return;
+          if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg * twin, el, m.words, m);
+        });
+      }
+    } else if (mv.id === 'slam') {
+      // the red circle does the harm; a Twin monster follows it with a second, quicker one
+      this.sfx('slam', 0.8);
+      if (twin > 0) this.addWarn(h.x, h.y, def.aoe * 0.8, 0.6, this.rollMonsterDmg(m) * mv.dmg * twin, el, m.words, m.name, undefined, this.halfOf(m));
+    } else if (mv.id === 'bolts') {
+      // the fan of bolts
+      const base = Math.atan2(dy, dx);
+      for (let k = -3; k <= 3; k++) this.shootAt(m, base + k * 0.2, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg, el, 'bolt', 13);
+      this.sfx('fire', 0.8);
+    } else if (mv.id === 'summon') {
+      this.callDead(m);
+    } else if (mv.id === 'charge' && m.charge) {
+      // he is off, down the line he marked
+      m.state = 'charge';
+      const c = m.charge;
+      m.t = Math.hypot(c.x1 - c.x0, c.y1 - c.y0) / CHARGE.speed + 0.5;
+      m.animT = 0;
+      this.sfx('slam', 0.5);
+    }
+  }
+
+  /** The line of monster `m`'s charge, if it is marked: `fn` is given it. */
+  private laneOf(m: Monster, fn: (z: Zone) => void): void {
+    for (const z of this.zones) if (z.kind === 'lane' && z.src === m.id) fn(z);
+  }
+
+  private dropLane(m: Monster): void {
+    for (let k = this.zones.length - 1; k >= 0; k--) {
+      const z = this.zones[k];
+      if (z.kind === 'lane' && z.src === m.id) this.zones.splice(k, 1);
+    }
+  }
+
+  /**
+   * THE RED TROLL'S CHARGE: the line he would run along to run the hero down, from where he stands
+   * through where the hero stands and CHARGE.past on; or null if he has no clear run there (a wall, a
+   * shut door, a pit or a ledge between, or too short a run to get past the hero).
+   */
+  private chargeLane(m: Monster, dist: number): { x0: number; y0: number; x1: number; y1: number } | null {
+    const h = this.hero;
+    const L = this.level;
+    if (dist < 0.01) return null;
+    const fx = (h.x - m.x) / dist;
+    const fy = (h.y - m.y) / dist;
+    const r = Math.min(m.r, 0.42);
+    const held = L.shut !== null;
+    let len = 0;
+    for (let a = 0.2; a <= dist + CHARGE.past + 1e-6; a += 0.2) {
+      if (!this.free(L.walk, m.x + fx * a, m.y + fy * a, r, false, held)) break;
+      len = a;
+    }
+    if (len < dist + 0.4) return null;
+    const x1 = m.x + fx * len;
+    const y1 = m.y + fy * len;
+    if (!this.walksStraight(m.x, m.y, x1, y1)) return null;
+    return { x0: m.x, y0: m.y, x1, y1 };
+  }
+
+  /** The red troll runs his line: what he meets of the hero on it is run down and knocked out of his way, once; at its end, or at anything that stops him, he pulls up. */
+  private runCharge(m: Monster, def: MonsterDef, dt: number, slow: number): void {
+    const c = m.charge;
+    if (!c) {
+      m.state = 'chase';
+      return;
+    }
+    const h = this.hero;
+    const len = Math.hypot(c.x1 - c.x0, c.y1 - c.y0) || 1;
+    const fx = (c.x1 - c.x0) / len;
+    const fy = (c.y1 - c.y0) / len;
+    const step = CHARGE.speed * (m.speed / def.speed) * slow * dt;
+    const ax = m.x;
+    const ay = m.y;
+    this.slide(m, Math.min(m.r, 0.42), fx * step, fy * step, this.level.walk, true);
+    m.fx = fx;
+    m.fy = fy;
+    m.t -= dt;
+    const along = (m.x - c.x0) * fx + (m.y - c.y0) * fy;
+    this.laneOf(m, (z) => (z.gone = Math.max(0, Math.min(1, along / len))));
+    if (!c.hit && !h.move && h.invuln <= 0 && Math.hypot(h.x - m.x, h.y - m.y) <= m.r + TUNE.heroRadius + 0.15) {
+      c.hit = true;
+      const moves = movesOf(m);
+      const mv = moves && m.move !== undefined && m.move >= 0 ? moves[m.move] : null;
+      this.hurtHero(this.rollMonsterDmg(m) * (mv ? mv.dmg : 1), this.monsterElement(m), m.words, m);
+      // (knocked aside, out of the line: away from the middle of it, or to one side if square in it)
+      const ox = c.x0 + fx * along;
+      const oy = c.y0 + fy * along;
+      const side = (h.x - ox) * -fy + (h.y - oy) * fx >= 0 ? 1 : -1;
+      this.knockHero(h.x + fy * side, h.y - fx * side, CHARGE.knock);
+      this.emit({ t: 'shake', amount: 3 });
+      this.sfx('slam', 0.9);
+    }
+    if (along >= len - 0.05 || Math.hypot(m.x - ax, m.y - ay) < step * 0.3 || m.t <= 0) this.endCharge(m);
+  }
+
+  /** The charge is over: he pulls up, skidding, and stands for a moment (a moment to hit him). */
+  private endCharge(m: Monster): void {
+    const moves = movesOf(m);
+    const mv = moves && m.move !== undefined && m.move >= 0 ? moves[m.move] : null;
+    m.state = 'recover';
+    m.t = mv ? mv.recover : TUNE.monsterRecover;
+    m.charge = undefined;
+    this.dropLane(m);
+  }
+
+  /** THE WARDEN CALLS THE DEAD (his fourth move): they crawl out of the ground round him, a little after one another, and join the fight when they are out. */
+  private callDead(m: Monster): void {
+    const f = this.level.floor;
+    const spots = scatter(this.level.walk, f.w, f.h, m.x, m.y, SUMMON.count + 1, this.rng).slice(1);
+    spots.forEach((s, k) => {
+      const add = this.spawn('skeleton', s.x, s.y, m.packId, 0, false, this.rng);
+      // (not among the monsters till it is out)
+      this.monsters.splice(this.monsters.indexOf(add), 1);
+      add.state = 'chase';
+      add.cd = 0.8;
+      const dx = this.hero.x - s.x;
+      const dy = this.hero.y - s.y;
+      const d = Math.hypot(dx, dy) || 1;
+      add.fx = dx / d;
+      add.fy = dy / d;
+      this.risers.push({ m: add, age: -k * SUMMON.apart });
+      this.emit({ t: 'shake', amount: 1 });
+    });
+  }
+
+  /** The dead crawling out of the ground: each, once it is out, is one of the monsters. */
+  private updateRisers(dt: number): void {
+    for (let k = this.risers.length - 1; k >= 0; k--) {
+      const r = this.risers[k];
+      r.age += dt;
+      if (r.age < SUMMON.rise) continue;
+      this.risers.splice(k, 1);
+      r.m.animT = 0;
+      this.monsters.push(r.m);
+    }
   }
 
   // ===========================================================================================
@@ -4315,6 +4577,11 @@ export class Game {
           this.emit({ t: 'shake', amount: 2 });
           if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
         }
+        continue;
+      }
+      if (z.kind === 'lane') {
+        // (THE MONSTERS' ATTACKS: a charge's line has no clock of its own: its troll's wind-up and run move it on, and it goes with him)
+        if (!this.monsters.some((m) => m.id === z.src && !m.dead && (m.state === 'windup' || m.state === 'charge'))) this.zones.splice(i, 1);
         continue;
       }
       if (z.kind === 'rune') {

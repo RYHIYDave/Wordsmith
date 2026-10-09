@@ -329,6 +329,12 @@ wait
 run packs_wild_pc    --scenario $S/packs_wild.mjs &
 run packs_wild_phone $P --scenario $S/packs_wild.mjs &
 wait
+# VERSION 19.8: THE MONSTERS' ATTACKS, switched on for it and off again at its end: green trolls swing
+# and slam; a red troll lays his line and charges down it; the Warden swings, slams and calls the dead,
+# who crawl out of the ground; a dungeon with the bot fighting there; switched off, a troll slams first.
+run monster_attacks_pc    --scenario $S/monster_attacks.mjs &
+run monster_attacks_phone $P --scenario $S/monster_attacks.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

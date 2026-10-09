@@ -7,13 +7,13 @@
 // finger and a mage light pops on and off, for the ranger a squirrel runs out from under his cloak
 // and around his shoulders then back under"). The game screen and the class cards both use it.
 
-import type { ActorArt, Clip } from '../art/actor_types';
+import type { ActorArt, AnimSet, Clip } from '../art/actor_types';
 import { HERO_TAILS } from '../art/heroes';
 import { drawAura, drawGlow, drawLights, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { Tails } from '../engine/tails';
 import { TUNE } from '../game/defs';
-import type { SkillKind } from '../game/defs';
+import type { MonsterMove, SkillKind } from '../game/defs';
 import type { ClassId } from '../game/types';
 
 /** What the rules know about the hero that the picture needs. */
@@ -173,10 +173,60 @@ export function attackFrame(c: Clip, age: number, wind: number): Sprite {
  * stop a rounding error short of nothing, and take one more step to land the blow): the picture
  * then stays a hair short of its blow, which is shown in the step the rules land theirs.
  */
-export function monsterAttackAge(windingUp: boolean, t: number, windup: number): number {
+export function monsterAttackAge(windingUp: boolean, t: number, windup: number, recover: number = TUNE.monsterRecover): number {
   const left = Math.max(0, t);
   if (windingUp) return windup > 0 ? windup * (1 - Math.max(NOT_YET, Math.min(1, left / windup))) : 0;
-  return windup + TUNE.monsterRecover - Math.min(TUNE.monsterRecover, left);
+  // (`recover`: what the rules count after the blow; THE MONSTERS' ATTACKS give each move its own)
+  return windup + recover - Math.min(recover, left);
+}
+
+/**
+ * THE MONSTERS' ATTACKS (game/defs.ts MONSTER_MOVES): the picture of a monster making move `mv`, seen
+ * one way round (`set`), played by the rules' clock as its one attack always was (its blow in the
+ * step the rules land theirs); null if the figure has no picture of that move. The trolls' swing, the
+ * red troll's charge (his roar and scrape, his run going round for as long as he runs, his pulling
+ * up) and the Warden's swing and his calling of the dead are the art chat's (AnimSet.clips.moves);
+ * the slam and the bolts are the pictures they have always had (`attack`, `heavy`).
+ * `m`: the monster's state, what the rules have left to count (`t`), and how long it has been at
+ * what it is doing (`animT`: his run).
+ */
+export function moveFrame(set: AnimSet, m: { state: string; t: number; animT: number }, mv: MonsterMove): Sprite | null {
+  const clips = set.clips;
+  const more = clips?.moves;
+  if (m.state === 'charge') return more?.charge ? clipFrame(more.charge, m.animT) : null;
+  if (mv.id === 'charge' && m.state === 'recover') return more?.chargeStop ? clipFrame(more.chargeStop, mv.recover - m.t) : null;
+  const c = moveClip(set, mv);
+  if (!c || c.hit === undefined) return null;
+  return attackFrame(c, monsterAttackAge(m.state === 'windup', m.t, mv.windup, mv.recover), mv.windup);
+}
+
+/** The clip a move winds up and lands with (the charge: its wind-up, the roar and the scrape). */
+export function moveClip(set: AnimSet, mv: MonsterMove): Clip | undefined {
+  const clips = set.clips;
+  const more = clips?.moves;
+  switch (mv.id) {
+    case 'swing':
+      return more?.swing;
+    case 'charge':
+      return more?.chargeWind;
+    case 'summon':
+      return more?.summon;
+    case 'bolts':
+      return clips?.heavy ?? clips?.attack;
+    default:
+      return clips?.attack;
+  }
+}
+
+/** A frame of a clip `t` seconds in; one that is held (its `loop`: the red troll's run) goes round from its loop. */
+export function clipFrame(c: Clip, t: number): Sprite {
+  const n = c.frames.length;
+  let i = Math.floor(Math.max(0, t) * c.fps + 1e-6);
+  if (c.loop !== undefined && i >= n) {
+    const from = Math.round(c.loop * c.fps);
+    i = from + ((i - from) % Math.max(1, n - from));
+  }
+  return c.frames[Math.max(0, Math.min(n - 1, i))];
 }
 /** The least of a wind-up that is still to come while the blow has not landed, as a share of it. */
 const NOT_YET = 1e-4;

@@ -19,13 +19,29 @@
 // longer in the game.
 
 import type { Sprite } from '../engine/px';
+import { MONSTER_ATTACKS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
+import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
 import { makeArcherArt, makeSkeletonArt } from './monster_bones';
-import { makeBruteArt, makeGuardianArt } from './monster_brute';
+import { TROLL_MOVES, makeBruteArt, makeGuardianArt } from './monster_brute';
 import { makeCultistArt } from './monster_cultist';
-import { makeWardenArt } from './monster_warden';
+import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
+
+/**
+ * THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS): the rules of the monsters' moves
+ * and the art chat's pictures of them (the trolls' swing and the red troll's charge, TROLL_MOVES; the
+ * Warden's swing and his calling of the dead, WARDEN_MOVES; the dead crawling out of the ground,
+ * CRAWL_OUT) go on and off together. A bestiary made after this has the pictures, or not.
+ */
+export function useMonsterAttacks(on: boolean): void {
+  MONSTER_ATTACKS.on = on;
+  TROLL_MOVES.on = on;
+  WARDEN_MOVES.on = on;
+  CRAWL_OUT.on = on;
+}
+useMonsterAttacks(MONSTER_ATTACKS.on);
 
 /** The figures there are: one for each kind of monster, and the guardian. */
 export type MonsterFigure = MonsterKind | 'guardian';
@@ -97,7 +113,9 @@ export function makeBestiary(): Bestiary {
       list = { left: [], done: 0 };
       const art = of(figure);
       // (and last its death: by the time one of them is killed, how it falls is painted)
-      for (const pick of [(a: AnimSet) => a.idle, (a: AnimSet) => a.walk, (a: AnimSet) => a.clips?.attack?.frames ?? a.attack, (a: AnimSet) => a.clips?.heavy?.frames ?? a.heavy ?? [], (a: AnimSet) => a.clips?.die?.frames ?? []]) {
+      // (a monster's other moves, THE MONSTERS' ATTACKS: art/actor_types.ts, AnimSet.clips.moves, after its first attacks)
+      const moves = (a: AnimSet): Sprite[] => Object.values(a.clips?.moves ?? {}).flatMap((c) => c.frames);
+      for (const pick of [(a: AnimSet) => a.idle, (a: AnimSet) => a.walk, (a: AnimSet) => a.clips?.attack?.frames ?? a.attack, (a: AnimSet) => a.clips?.heavy?.frames ?? a.heavy ?? [], moves, (a: AnimSet) => a.clips?.die?.frames ?? []]) {
         for (const set of [art.front, art.back]) {
           const frames = pick(set);
           // (reading a frame is what paints it: see lazyFrames in kit.ts)

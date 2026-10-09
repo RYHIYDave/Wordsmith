@@ -468,6 +468,94 @@ export function wordShare(m: { words: readonly WordId[]; half?: readonly WordId[
   return m.half && m.half.includes(w) ? PACKS.minion : 1;
 }
 
+/**
+ * THE MONSTERS' ATTACKS (Version 19.8). The owner, 9 Oct 2026, 08:15: "Tiny and small mobs should
+ * have one attack.  Medium two attacks, large 2-3, and the boss 4.  They should always have a basic,
+ * single target attack.  That way when their big telegraphed slams or spells go on cooldown, and they
+ * have their mace swing or magic missile to use in between.  The bigger the hit, the longer the
+ * cooldown." His yes to the moves: the green troll (the brute) a club swing and its slam; the red troll
+ * (the guardian) a club swing, the slam and a charge along a marked line; the boss a swing, his slam,
+ * his fan of bolts and his skeleton summon as his fourth ("The boss doesn’t need the ring of fire as he
+ * has the skeleton summon which should be designated as an attack"). The art chat drew the new moves,
+ * each with his yes (art/monster-attacks: the swings and the charge by 09:57, the Warden's swing by
+ * 10:18, the dead he calls crawling out of the ground by 10:23).
+ *
+ * So a monster that has moves here (the others have their one attack, as before) attacks with the
+ * biggest of them that is ready and that the hero is in reach of, and with its basic blow, the first,
+ * while the big ones cool down. A big move, once used, is not used again for its own `cooldown`; after
+ * any move the monster waits its `after` before the next (Swift shortens both, as it shortens a
+ * monster's wait today, and Frenzied hastens both). THE SWITCH: off, every monster attacks as it did
+ * until Version 19.8 (its one attack: MONSTERS, `windup`, `cooldown`, `aoe`; and the Warden his slam
+ * near, his bolts far, and the dead called at two thirds and one third of his life, in a flash of frost).
+ */
+export const MONSTER_ATTACKS = { on: false };
+export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon';
+export interface MonsterMove {
+  id: MoveId;
+  /** Seconds of warning before it lands (its picture is fitted to it: a monster's clip's `hit`). */
+  windup: number;
+  /** How hard it hits, times the monster's own blow (rolled between its dmgMin and dmgMax): for the bolts, each bolt. */
+  dmg: number;
+  /** Seconds before it may be used again (0: the basic blow, used whenever the monster may attack). */
+  cooldown: number;
+  /** Seconds from waking before it may first be used (from half of it to half as much again, by the monster: so a pack does not slam all at once). */
+  first: number;
+  /** Seconds after it before the monster attacks again (its `cd`). */
+  after: number;
+  /** Seconds after it lands that the monster stands, getting over it (its picture runs on through them). */
+  recover: number;
+  /** The hero's distance from it (tiles, middle to middle) at which it is used: from `near` to `far`; `far` 0 is the monster's own reach. */
+  near: number;
+  far: number;
+}
+/** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank). */
+export type MovesOf = 'brute' | 'guardian' | 'warden';
+/**
+ * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
+ * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
+ * SWING_HIT, art/monster_warden.ts WARDEN_SWING_HIT and SUMMON_RISE; the charge sets off at
+ * CHARGE_GO); the slams and the bolts keep the wind-ups they have had. They hit a hero who stands and
+ * takes it about as hard as their one attack did (tools/measure_moves.ts: 40 seconds beside each in a
+ * practice room, its words taken off: the green troll 7% less; the red 3% less, and 3% more from six
+ * tiles off, where he charges; the Warden's own blows 3% more beside him and the same from six tiles
+ * off, the dead he calls besides).
+ */
+export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
+  brute: [
+    { id: 'swing', windup: 0.6, dmg: 0.6, cooldown: 0, first: 0, after: 1.7, recover: 0.55, near: 0, far: 0 },
+    { id: 'slam', windup: 0.85, dmg: 1, cooldown: 6, first: 2, after: 2.3, recover: 0.3, near: 0, far: 0 },
+  ],
+  guardian: [
+    { id: 'swing', windup: 0.6, dmg: 0.65, cooldown: 0, first: 0, after: 1.7, recover: 0.55, near: 0, far: 0 },
+    { id: 'slam', windup: 0.85, dmg: 1, cooldown: 7, first: 2, after: 2.3, recover: 0.3, near: 0, far: 0 },
+    { id: 'charge', windup: 0.9, dmg: 1.3, cooldown: 9, first: 0, after: 2.2, recover: 0.6, near: 3.5, far: 9 },
+  ],
+  warden: [
+    { id: 'swing', windup: 0.7, dmg: 0.8, cooldown: 0, first: 0, after: 1.5, recover: 0.55, near: 0, far: 0 },
+    { id: 'bolts', windup: 0.7, dmg: 0.5, cooldown: 3.5, first: 0, after: 2.4, recover: 0.3, near: 3.4, far: 12 },
+    { id: 'slam', windup: 0.95, dmg: 1, cooldown: 8, first: 3, after: 2.4, recover: 0.3, near: 0, far: 3.4 },
+    { id: 'summon', windup: 1.1, dmg: 0, cooldown: 18, first: 9, after: 1.5, recover: 0.8, near: 0, far: 12 },
+  ],
+};
+/** Which moves a monster has (none: its one attack, as before). */
+export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
+  if (!MONSTER_ATTACKS.on) return null;
+  return m.kind === 'warden' ? MONSTER_MOVES.warden : m.kind === 'brute' ? (m.champion ? MONSTER_MOVES.guardian : MONSTER_MOVES.brute) : null;
+}
+/**
+ * THE RED TROLL'S CHARGE: how fast he runs (tiles a second), how far past where the hero stood his run
+ * goes, and half the width of the line he runs along (more than half of him: what is in it when he
+ * comes is run down). The hero he runs down is knocked out of his way, this many times Heavy's knock.
+ */
+export const CHARGE = { speed: 10, past: 1.5, half: 0.75, knock: 2 };
+/**
+ * THE DEAD HE CALLS (the Warden's fourth move): how many, and a little after one another; each takes
+ * RISE seconds to crawl out of the ground (the skeleton's picture, art/mkit.ts CRAWL_TIME), and till
+ * it is out it is no more than a picture: not to be hit, and doing nothing. He calls no more while
+ * `most` of those he has called still stand.
+ */
+export const SUMMON = { count: 4, apart: 0.1, rise: 1.4, most: 6 };
+
 export function scaleLife(depth: number): number {
   return 1 + 0.35 * (depth - 1);
 }

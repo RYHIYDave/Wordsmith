@@ -31,7 +31,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, TUNE, WORDS } from '../game/defs';
+import { MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, TUNE, WORDS, movesOf } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
@@ -42,7 +42,8 @@ import { STAIR_N, STAIR_W, levelAt } from '../game/height';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
-import { Figure, attackClip, attackFrame, monsterAttackAge, PHASE_APART } from './figure';
+import { Figure, attackClip, attackFrame, clipFrame, monsterAttackAge, moveFrame, PHASE_APART } from './figure';
+import { drawChargeLane } from '../art/charge_lane';
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
@@ -1197,6 +1198,13 @@ export class Renderer {
       }
     }
     for (const z of game.zones) {
+      // (THE MONSTERS' ATTACKS: the line a red troll will charge along, in the red circle's own reds: art/charge_lane.ts)
+      if (z.kind === 'lane') {
+        const x1 = z.x1 ?? z.x;
+        const y1 = z.y1 ?? z.y;
+        if (here(z.x, z.y) || here(x1, y1) || here((z.x + x1) / 2, (z.y + y1) / 2)) drawChargeLane(g, { x0: z.x, y0: z.y, x1, y1, half: z.r, k: z.dur > 0 ? z.t / z.dur : 1, gone: z.gone }, (x, y) => [wx(cam, x, y), wy(cam, x, y)]);
+        continue;
+      }
       if (!here(z.x, z.y)) continue;
       const cx = wx(cam, z.x, z.y);
       const cy = wy(cam, z.x, z.y);
@@ -1479,6 +1487,8 @@ export class Renderer {
       if (m.dead) continue;
       const f = figureOf(m);
       if (!figs.includes(f)) figs.push(f);
+      // (THE MONSTERS' ATTACKS: the Warden calls up skeletons: their crawling out of the ground is painted ahead)
+      if (m.boss && movesOf(m) && !figs.includes('skeleton')) figs.push('skeleton');
     }
     const budget = this.warmedFor === game.level ? WARM_MS : WARM_ENTER_MS;
     this.warmedFor = game.level;
@@ -1531,6 +1541,12 @@ export class Renderer {
     const art = this.monsterArt(m);
     // (frozen solid: as it stands)
     if (m.frozenT > 0) return this.actorSprite(art, 'idle', 0, 0, m.fx, m.fy);
+    // (THE MONSTERS' ATTACKS: a move of its own, with its own picture)
+    const moves = movesOf(m);
+    if (moves && m.move !== undefined && m.move >= 0 && m.move < moves.length && (m.anim === 'attack' || m.state === 'charge')) {
+      const s = moveFrame(m.fx + m.fy < -0.2 ? art.back : art.front, m, moves[m.move]);
+      if (s) return m.fx - m.fy < 0 ? flipSprite(s) : s;
+    }
     if (m.anim === 'attack') {
       const set = m.fx + m.fy < -0.2 ? art.back : art.front;
       const volley = m.boss && m.atk === 1;
@@ -1824,6 +1840,17 @@ export class Renderer {
       if (shown.sp.lights) this.monsterLit.push({ s: shown.sp, x: Math.round(sx), y: Math.round(sy) });
       this.stand(f.x + f.y, shown.sp, sx, sy, null, 0);
       hid?.(f.x, f.y);
+    }
+    // (THE MONSTERS' ATTACKS: the dead the Warden has called, crawling out of the ground: the skeleton's own picture of it, art/mkit.ts crawlOut)
+    for (const r of game.risers) {
+      const m = r.m;
+      const f = game.level.floor;
+      if (r.age < 0 || game.level.visible[Math.floor(m.y) * f.w + Math.floor(m.x)] !== 1) continue;
+      const art = this.monsterArt(m);
+      const c = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves?.crawl;
+      if (!c) continue;
+      const sp = clipFrame(c, r.age);
+      this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(sp) : sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
     }
     for (const m of game.monsters) {
       if (m.dead || !m.seen) continue;
