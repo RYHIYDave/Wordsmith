@@ -4947,6 +4947,89 @@ it), brought in whole and switched on: `SMITH3.on` in `src/art/smith3.ts` and `Q
   `art/mage-stances`, which also holds the mage's stances) are not in it yet: asked of the art chat
   at 02:14 whether they can come without the mage's.
 
+### Version 19.7: monster packs, blue and yellow; the mage's stances and the moves big and wild
+
+**What he said.** To this chat on 9 Oct. 07:49: "Let’s add a few rules to monsters.  Size
+designation which affects pack size.  Tiny, small, medium, large, and boss.  Tiny is our bats, small
+are our skeletons, medium is the green trolls, large the red, and the boss is the boss.  Medium
+there should be 3-5 in a pack.  You can kinda extrapolate from there". Asked whether tiny 6 to 10,
+small 4 to 7, medium 3 to 5, large 1 to 2 and the boss alone was right: "All mob types have their
+own packs unless otherwise stated.  And these can change with a pack size modifier on a word for the
+gate."; "Now, on its own (Recommended)" (07:56); "Twin: half again as big (Recommended)". 08:02: "A
+magic pack (blue) is affected by one word, and that would mean everything in that pack was affected
+by the word.  A yellow pack would give the leader of the pack a word or two (I don’t remember how we
+designed that), and the other in the pack become “minions” of the leader, gaining 50% of the words
+bonus.  So we have a pack of skeletons.  The skeleton champion, who let’s say has an old rusty
+helmet and a two handed sword, has Flame, and the smaller minions would essentially have a 50%
+Flame."; "Also can we change “half again” to 50% increased."; 08:03: "And doubled to 100%
+increased." How often: "1 in 4, from dungeon 2 (Recommended)"; "Elite rooms, plus 1 in 10". 08:10:
+"Rare (yellow) mobs should take a bit longer to kill than your regular version of that mob.  And
+blue mobs as well.  Time to kill for a magic (blue) pack should be slightly less than the rare mob
+and his minions."; to the leader 3 times the life and a blue pack's monsters 20% increased: "Yes,
+those numbers (Recommended)". 08:15, of their attacks (the next version): "Tiny and small mobs
+should have one attack.  Medium two attacks, large 2-3, and the boss 4.  They should always have a
+basic, single target attack.  That way when their big telegraphed slams or spells go on cooldown,
+and they have their mace swing or magic missile to use in between.  The bigger the hit, the longer
+the cooldown."; "Packs today, attacks next (Recommended)". By 08:41, of the art chat's mage stances and big-and-wild skill looks: "With
+today's packs (Recommended)". By 09:46, to `Packs_look.png`: "Yes, as shown (Recommended)".
+
+**What is in it.**
+
+- **Packs by size** (`MONSTER_PACKS`, `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE`, `sizeOf`, `packRange` in
+  `src/game/defs.ts`; `MonsterDef.size`): every pack is of one kind, as many as its size says;
+  a guardians' lair holds guardians alone (1 or 2); a corridor pack the fewest or one more; the
+  first dungeon's packs half the size. The map-maker draws each pack's kind and size from a lot of
+  its own (`Stage.kindRng`, `src/game/dungeon.ts`), so where packs stand is as it was;
+  `PackSpot.kind`. Twin burned in at the gate: every pack 50% increased (`GATE_TWIN_PACKS`).
+- **Blue and yellow packs** (`PACKS`, `packRarity`, `wordShare`; `Game.fillPack` and `spawn` in
+  `src/game/game.ts`): blue, one word on every one of it, 20% increased life (and worth as much
+  more); yellow, a leader of rank 1 (an elite: 3 times the life, an elite's blows, a word, two from
+  dungeon 6) and minions with its words at half strength (`Monster.half`; `Monster.rarity`). A blue
+  pack 1 in 4 of the packs that are not an elite room's or a lair, a yellow 1 in 10, both from the
+  second dungeon; every elite room's pack yellow. The first dungeon keeps its one room of elites
+  and nothing more, with no words on anyone (THE FIRST LEVELS).
+- **Half a word**, word by word (`wordShare`): Power 15% increased life and 20% damage; Swift 17.5%
+  speed and 15% shorter cooldowns; Guarding half the shield; Frenzied half the rage; Twin its second
+  blow at half; Volatile half the blast; and where a blow lands (`hurtHero`, with `HalfWords` carried
+  by shots and warnings): Poison half, Heavy half the knock, Precise half the armour found, Leech half
+  the healing; and of Flame, Frost or Lightning half of the blow is that element (resisted as it),
+  the rest the minion's own, and it burns, chills or shocks half as hard.
+- **Words stay scarce**: only an elite room's leader may carry a word to give up, and a lair's first
+  guardian; a blue pack's monsters and the minions carry none.
+- **The look** (`PACK_LOOK`, his yes by 09:46): each of a blue pack has the elite's ring and a bar
+  always over it, and the pack's name is written once, in blue (the colour of a magic item), over
+  the first of it in sight (`render.ts`, `named`, `nameColor`, `drawBars`: names after all the
+  bars); a yellow pack's leader is named in yellow; its minions as they always were.
+- **The art chat's `art/wild-skills`** at `ac4966a`, brought in whole and switched on: `MAGE_STANCES`
+  and `WILD` (`src/art/moves3.ts`), put in place as the file loads by `useMageStances` and then
+  `useWild`. The mage in her guard in a fight, her runs, casts, hits, fall and habits from it; and big
+  and wild: Strike, Shot and the Wave, Whirlwind, Leap, Volley, Trap, Orb and Warp (`render/wild.ts`).
+  Its READMEs: `docs/mockups/mage_stances/README.md`, `docs/mockups/big_and_wild/README.md`.
+
+**What it does to a dungeon** (30 dungeons of each depth, the packs off and on, 9 Oct): dungeon 1
+has 12% fewer monsters, 10% less life to cut through and 8% less experience; dungeons 2 to 6 about as many monsters (1 to 11% more), with 12 to 19% more life to cut through, from the blue and yellow packs, and 15 to 26% more experience; deeper, up to 17% fewer monsters at dungeon 12 (4% fewer at 8), since packs no longer grow with depth, and about the same life (8% more at 8, the same at 10 and 12).
+
+**How it was tested.**
+
+- `tsc` clean. `tests/packs.test.ts` (new, 9): the switches; one kind a pack, lairs,
+  elite rooms; the shares of blue and yellow, and none in the first dungeon; a blue pack's word,
+  life and name; a yellow pack's leader and minions; the time to kill; the gate's words and Twin;
+  half a word, word by word; the monsters a dungeon holds, before and now. Brought into line:
+  `tests/dungeon.test.ts` (the old sizes with the switch off; the new with it on), `economy`
+  (the lairs counted; an elite room's leaders), `guide` (new seeds for a pack in sight of the door),
+  `mix` (its fingerprints with the packs off), `town`. The art chat's tests hold the new looks on
+  (`tests/wild.test.ts`, `tests/mage_stances.test.ts`); the tests written before them hold them off
+  (`combo`, `combo_mends`, `grip_runs`, `heroes3`, `ranger_stances`). THE WHOLE UNIT SUITE: 781 of 781 in the frozen copy (below).
+- Pictures for him: `tools/scenarios/packs_look.mjs` (`Packs_look.png`).
+- THE PRE-FLIGHT: a dev page built from the tree, by 10:07: 24 playtests (the new one on a PC and a phone, the monsters and the dungeon on two layouts each, the boss, the scarce words, the lesson for a mage and a warrior, the spells on two layouts, the depths, the combo and the ranger's stances on two each, the way in, the practice room, the quips, the words of a mage, the HUD, a phone's melee, a mage's auto aim): all clean.
+- A new playtest in the regression, `tools/scenarios/packs_wild.mjs` (pc and phone): the three heroes
+  fight with the bot, the mage's stances and the wild moves switched off and on again; a dungeon of
+  packs, every pack of one kind, blue and yellow ones, the bot fighting there.
+- **The regression** on a copy frozen at 10:09 (the scratchpad's `v197a/arpg_frozen`, 10:09 to 11:00, two at a time, nothing else running): **151 OF 152 PLAYTESTS FINISHED CLEAN**. The one, `guide_pc_mage` (a new player's start as a mage, in a dungeon of a random seed, 1277235665), set the hero down by the pack nearest the way in, four archers in a room whose door was shut, in the passage beyond it that leads only to a vault, so is reached only through that door: the archers, still "shut in" (`shutIn` in `game.ts`), shot at the hero, and no fight counts what is shut in, so the fight prompt never came. That dungeon did so every time (twice more, 11:03 and 11:04), and is laid the same with the packs off: the playtest's, not this version's. The playtest now sets the hero down only where a player could stand (not behind the shut door of the target's room); so mended, the same dungeon finished clean (11:08), and the frozen copy took the mended playtest before its published page was played. Speed: the frame-rate run 54.6 frames a second (19.6: 58.9), longest frame 50 ms, with 25 patches of ground effects out; the slowest fights of the four word-combination runs 55.7 to 58.2 frames a second (19.6: 56.5 to 58.6), longest frame 83 ms.
+- The unit suite in the frozen copy: 781 of 781, 11:08 to 11:12.
+- THE RELEASE BUILD: made in the copy at 11:12, `Play.html` 1,022,870 bytes and `dist/artifact.html` 1,022,548, both saying V19.7; kept in the scratchpad's `v197a/release/`.
+- **The published page itself**: (`wrap197.sh` in the scratchpad, 11:13 to 11:36): **76 of 76 playtests clean**, the 74 of 19.6 and the new one on a PC and a phone. Published at 11:36 ("Version 51", version id `1791560190-db07`); the file published is the kept copy, `v197a/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -5057,7 +5140,10 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               THE THREE HEROES PAINTED OVER A SKELETON; moves3 their moves: since 19.2 Strike's
               two swings mended, `COMBO_MENDS`; since 19.4 THE RANGER'S NEW STANCES,
               `RANGER_STANCES`, `useRangerStances`, his battle stance and town stance, stops and
-              starts, gripping runs, Shot and Volley from the crouch, walking attacks; heroes3
+              starts, gripping runs, Shot and Volley from the crouch, walking attacks; since 19.7
+              THE MAGE'S STANCES, `MAGE_STANCES`, `useMageStances`, her guard, runs, casts, hits,
+              fall and habits from it, and BIG AND WILD, `WILD`, `useWild`, the swings, Shot and
+              the Wave made so, with `Clip.tail` and `Clip.poise`; heroes3
               their art, `animSet3`, and the pictures painted ahead, `HeroArt.warm`)
 src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, level, state, game,
               lock (touch: which enemy the hero is locked onto, Version 11.1),
@@ -5098,7 +5184,15 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               `Hero.quest`, `Meta.ring`, `DARK_RING`, `FIRST_GATE`; the map-maker's numbers for
               the first dungeon in dungeon.ts; the NEW MOVE banner and the plates' opening,
               `drawMoveToast` and `OPENING` in ui/hud.ts; the stick at one speed, `readControls`
-              in main.ts)
+              in main.ts);
+              THE MONSTER PACKS (19.7, in defs.ts: `MONSTER_PACKS`, `MonsterDef.size`,
+              `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE`, `GATE_TWIN_PACKS`, `sizeOf`, `packRange`,
+              `PACKS`, `packRarity`, `wordShare`, `PACK_LOOK`; each pack's kind and size drawn by
+              the map-maker, `Stage.kindRng` and `PackSpot.kind` in dungeon.ts; in game.ts
+              `fillPack`, `spawn`'s pack, `halfOf`, every monster word weighed by its share, and
+              where a blow lands, `hurtHero`'s `HalfWords`; `Monster.rarity`, `Monster.half`;
+              the names and bars of blue and yellow packs, `named`, `nameColor`, `drawBars` in
+              render/render.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -5111,7 +5205,10 @@ src/render/   render (world: tiles, actors, ground patches, statuses, shots, lig
               fx (everything that flies or flashes: each word's sign, numbers, shake, messages),
               words3 (the new words' looks, the art chat's: since Version 19.3 Heavy's, Precise's,
               Frenzied's and Guarding's in the game, called up by the rules' events, `events3`;
-              the other four a demo for its playtest's page, `demo3`, `W3.demo`)
+              the other four a demo for its playtest's page, `demo3`, `W3.demo`),
+              wild (19.7, the art chat's: BIG AND WILD, what the heroes' moves throw off,
+              `Wild`, fed by fx.ts and `see` in main.ts; `LEAP_LIFT`, `drawWildWave`,
+              `drawWildArrow`)
 src/ui/       ui (immediate-mode kit), hud (globes, the attacks as phrases, the prompts' banner),
               inventory (Version 13.1: three pages, GEAR on the hero, ATTACKS, STATS, over the
               bag and the words; 14.2: on half the screen, what is read on a card over the
@@ -5332,6 +5429,10 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.7: monster packs by size, blue and yellow (MONSTER_PACKS, PACKS, PACK_LOOK on); the mage's stances and the moves big and wild (MAGE_STANCES and WILD on)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/packs_wild.mjs --out shots/pw/ph   # the three heroes with the bot, her stances and the wild moves off and on again; a dungeon of packs (in the regression)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/packs_look.mjs --out shots/packs/ph   # the pictures he saw: a blue pack and a yellow pack, in the practice room and in dungeon 4 (the look off and on)
+SKILL=whirlwind node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/wild_skill.mjs --out shots/wild/whirlwind   # a skill big and wild, filmed (the art chat's; SKILL=leap|volley|trap|orb|warp; OFF=1 as it was)
 # Version 19.6: the art chat's wordsmith on bones and master rune-stone (SMITH3 and QUEST3 on; the stone's pictures fed by the rules)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/smith_look.mjs --out shots/smith/on   # the wordsmith and his ring filmed (OFF=1: as they were; tools/smith_films.py makes the film)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/quest_dungeon.mjs --out shots/quest/dungeon   # the stone by the fallen wordsmith, taken up, carried (quest_town.mjs: the dark ring and its powering up; tools/quest_films.py)

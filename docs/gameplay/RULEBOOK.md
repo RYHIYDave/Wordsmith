@@ -2,7 +2,7 @@
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
 (https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
-as it is (Recommended)". The doc is the living one; this copy follows it (rev 34, with the first
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 38, with the first
 levels of Version 19.5, the master rune-stone of Version 19.6 and the monster packs of Version 19.7
 written in), and both change only
 with his yes. The two pictures in the doc are written out here in words. How it was found:
@@ -273,7 +273,7 @@ changes one only with your yes.
 | Flask charges | 3 | `TUNE.potionMax` |
 | A flask heals | 45% of life | `TUNE.potionHeal` |
 | Kills to refill a charge | 18 | `TUNE.potionKills` |
-| Word slots | none until the ring is lit; then 1 in front | `slots`, `SLOT_OPENS` |
+| Word slots | none until the ring is lit; then 1 in front | `SLOT_OPENS` |
 | The other slots open | the second in front at level 5; behind, at level 7 and level 10 | `SLOT_OPENS` |
 | The moves open | tap at level 1, tap and hold at 2, the swipe at 5 | `MOVE_OPENS` |
 | The first dungeon | a budget of 60 monsters (120 before), packs half the size, 1 room of elites, every blow at half | `FIRST_DUNGEON`, `GUIDE.softDmg` |
