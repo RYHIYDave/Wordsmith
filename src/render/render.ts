@@ -309,6 +309,8 @@ export class Renderer {
   private figures: MonsterFigure[] = [];
   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
   private warmedFor: unknown = null;
+  /** Frames drawn, for the hero's and the monsters' turns at painting ahead (see heroArt). */
+  private warmFrame = 0;
   /** The level whose fallen monsters the effects are keeping (their bodies lie until the hero leaves it). */
   private fallenFor: unknown = null;
   /** The hero as a moving figure: which frame, the scarf and the feather, what they do when left standing. */
@@ -1352,8 +1354,14 @@ export class Renderer {
     const began = performance.now();
     const hero = (): boolean => this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);
+    // (Version 19.4: in town, once all of the town's are painted, the hero's pictures for the
+    // dungeon are painted ahead too, so that fewer are left for the dungeon's first seconds; and
+    // the hero and the monsters take turns by the frame as well as within one, so that when a
+    // picture costs more than the budget, one a frame, the monsters' do not all wait behind his)
+    const ahead = (): boolean => !!game.level.town && this.art.heroes.warm(h.cls, { ...look, town: false });
+    const heroFirst = (this.warmFrame++ & 1) === 0;
     for (let n = 0; n < 600; n++) {
-      const did = n % 2 === 0 ? hero() || beast() : beast() || hero();
+      const did = (n % 2 === 0) === heroFirst ? hero() || beast() || ahead() : beast() || hero() || ahead();
       if (!did || performance.now() - began >= budget) break;
     }
     return this.art.heroes.of(h.cls, look);
