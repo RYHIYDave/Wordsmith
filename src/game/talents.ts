@@ -257,7 +257,7 @@ export const TALENT_TUNE = {
   thorns: { share: 0.3, reach: 1.6 },
   unbreakable: { secs: 3 },
   earthshaker: { r: 2.4, secs: 1 },
-  /** Undoing a talent, in town (his rulebook: "Picks can be undone in town, for gold"): gold for each level of the hero's. The price is still his to set. */
+  /** Undoing a talent, in town (his rulebook: "Picks can be undone in town, for gold"): gold for each level of the hero's. His price, 9 Oct 2026, 07:28: "10 gold a level (Recommended)". */
   unlearnPerLevel: 10,
 };
 
