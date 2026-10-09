@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, GUIDE, MONSTERS, MOVE_OPENS, SLOT_OPENS, TUNE, useFirstLevels } from '../src/game/defs';
 import { eliteRoomCount, monsterBudget, packSizeRange } from '../src/game/dungeon';
-import { Game, newMeta } from '../src/game/game';
+import { FIRST_GATE, Game, cleanMeta, newMeta } from '../src/game/game';
 import { flowField } from '../src/game/nav';
 import type { RunSave } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -237,7 +237,7 @@ test('on: the first dungeon is gentler: fewer monsters, smaller packs, one room 
   });
 });
 
-test('on: a hero saved before the first levels keeps his ring; one saved with them keeps his quest item', () => {
+test('on: a hero saved before the first levels keeps his ring, and a device that saved before them has it dark; one saved with them keeps his quest item', () => {
   on(() => {
     const old = new Game('mage', 6, { ...newMeta(), taught: true, ring: true });
     const s = old.save() as RunSave;
@@ -245,6 +245,12 @@ test('on: a hero saved before the first levels keeps his ring; one saved with th
     delete s.quest;
     const back = Game.restore(s, newMeta());
     assert.equal(back.hero.ring, true, 'a save from before: the ring lit');
+    // (a DEVICE that saved before Version 19.5 has never had the ring lit, taught or not: its next
+    // new hero goes for the RUNE HEART, as in the pictures; once lit, it stays lit)
+    assert.equal(cleanMeta({ taught: true } as never).ring, false);
+    assert.equal(cleanMeta({ taught: true, ring: true } as never).ring, true);
+    assert.equal(new Game('mage', 9, cleanMeta({ taught: true } as never)).hero.ring, false);
+    assert.equal(new Game('mage', 9, cleanMeta({ taught: true, ring: true } as never)).hero.ring, true);
     const g = fresh('mage', 7);
     search(g);
     const again = Game.restore(g.save() as RunSave, newMeta());
@@ -292,5 +298,48 @@ test('on: the lesson shows the moves that are open: tap alone at first, tap and 
     assert.deepEqual(g.guideRows().map((r) => r.id), ['quick', 'slow']);
     upTo(g, 5);
     assert.deepEqual(g.guideRows().map((r) => r.id), ['quick', 'slow', 'evade']);
+  });
+});
+
+test('on: the first dungeon\'s gate takes no word, which would be burned for nothing; the second\'s does', () => {
+  on(() => {
+    // (a later hero, the ring lit, with a word from the Lexicon)
+    const g = new Game('warrior', 12, { ...newMeta(), ring: true, taught: true });
+    g.hero.words.swift = 1;
+    assert.ok(g.level.town);
+    assert.equal(g.depth, 1);
+    assert.equal(g.planProblem('swift'), FIRST_GATE);
+    assert.equal(g.planWord('swift'), FIRST_GATE);
+    assert.equal(g.hero.words.swift, 1, 'the word stays in the pouch');
+    assert.deepEqual(g.plan, []);
+    g.depth = 2;
+    g.cleared = 1;
+    assert.equal(g.planWord('swift'), null);
+    assert.deepEqual(g.plan, ['swift']);
+  });
+});
+
+test('on: a hero who leaves the first dungeon without the RUNE HEART finds the fallen wordsmith in the next, until he is found', () => {
+  on(() => {
+    const g = fresh('warrior', 61);
+    assert.ok(g.level.body, 'the fallen wordsmith in the first dungeon');
+    // (home without searching him)
+    g.depth = 2;
+    g.cleared = 1;
+    g.enterTown();
+    g.enterDungeon();
+    assert.ok(g.level.body, 'and again in the second, since without the RUNE HEART there is no wordsmithing');
+    search(g);
+    assert.equal(g.hero.quest, 'heart');
+    // (found, he is not laid again; nor for a hero whose ring is lit)
+    g.depth = 3;
+    g.cleared = 2;
+    g.enterDungeon();
+    assert.ok(!g.level.body, 'not again once found');
+    const lit = new Game('mage', 62, { ...newMeta(), ring: true, taught: true });
+    lit.depth = 2;
+    lit.cleared = 1;
+    lit.enterDungeon();
+    assert.ok(!lit.level.body, 'not for a hero whose ring is lit');
   });
 });

@@ -6,7 +6,8 @@ import { makeHands, log } from './lib.mjs';
 export default async function (page, snap) {
   const cls = process.env.CLS || 'warrior';
   const word = process.env.WORD || 'power';
-  await page.evaluate((c) => { const d = window.__dbg; d.run(c, 11); d.god = true; d.speed = 6; d.autoLevel = false; d.autoWords = false; d.bot(true); }, cls);
+  // (THE FIRST LEVELS, the game's own since Version 19.5: a hero some way in, the ring lit and all three moves open)
+  await page.evaluate((c) => { const d = window.__dbg; d.run(c, 11); d.seasoned(5); d.god = true; d.speed = 6; d.autoLevel = false; d.autoWords = false; d.bot(true); }, cls);
   const hands = await makeHands(page);
   const st = () => page.evaluate(() => {
     const d = window.__dbg; const g = d.game(); const h = g.hero;

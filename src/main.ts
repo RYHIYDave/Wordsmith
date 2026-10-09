@@ -1520,6 +1520,25 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       saved = null;
       newRun(cls, seed, true);
     },
+    /**
+     * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5): a hero who
+     * has been through them, for the playtests that are about something else. The wordsmith's ring
+     * lit (for the hero, and on this device), and the level raised to `level` if it is lower, so
+     * that the moves and slots of that level are open (all three moves from 5; a slot behind from
+     * 7; two a side from 10). No points to spend come with it, so no level-up choice opens.
+     */
+    seasoned: (level = 10) => {
+      if (!game) return;
+      const h = game.hero;
+      h.ring = true;
+      meta.ring = true;
+      if (h.level < level) h.level = level;
+      game.refresh();
+      h.life = h.d.maxLife;
+      h.mana = h.d.maxMana;
+    },
+    /** THE FIRST LEVELS: the NEW MOVE banner showing now (the move that has just opened, and how long it has shown), or null. */
+    moveToast: () => (moveToast ? { skill: moveToast.skill, t: moveToast.t } : null),
     /** The inventory, as the HUD opens it. */
     inv: (focus = -1) => openInventory(focus),
     /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */

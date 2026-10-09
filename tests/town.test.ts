@@ -380,6 +380,9 @@ test('stash and bag limits', () => {
 test('saving keeps the gate plan; the Lexicon and stash are saved apart from the run', () => {
   const meta = newMeta();
   const g = new Game('warrior', 40, meta);
+  // (home from the first dungeon: its own gate takes no word, since Version 19.5)
+  g.depth = 2;
+  g.cleared = 1;
   g.hero.words.volatile = 1;
   g.hero.words.swift = 2;
   g.hero.gold = TUNE.keepCost;

@@ -81,6 +81,8 @@ export interface RunSave {
 
 /** THE FIRST LEVELS: what the wordsmith says while his ring is dark. */
 export const DARK_RING = 'The runes are dark';
+/** THE FIRST LEVELS: what the gate says of a word laid on it before the first dungeon, which takes none. */
+export const FIRST_GATE = 'Not in the first dungeon';
 
 /** Nothing known of a word yet. */
 function noLore(): WordLore {
@@ -129,8 +131,11 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   out.deaths = typeof m.deaths === 'number' && Number.isFinite(m.deaths) ? Math.max(0, Math.floor(m.deaths)) : 0;
   out.bestDepth = typeof m.bestDepth === 'number' && Number.isFinite(m.bestDepth) ? Math.max(0, Math.floor(m.bestDepth)) : 0;
   out.taught = m.taught === true;
-  // (THE FIRST LEVELS: a device that saved before the ring had to be lit has wordsmithed, if it has been taught at all)
-  out.ring = typeof m.ring === 'boolean' ? m.ring : out.taught;
+  // (THE FIRST LEVELS: the ring is lit on a device the first time a hero brings the RUNE HEART. A
+  // device that saved before Version 19.5 has never had it lit: its next new hero goes for it, as
+  // the owner saw in the pictures, and it stays lit for the heroes after. A hero saved before then
+  // keeps his own ring, and his words, whatever the device's: see `restore`.)
+  out.ring = m.ring === true;
   out.limit = LIMITS.includes(m.limit as Limit) ? (m.limit as Limit) : 'cooldown';
   out.voice = VOICE_IDS.includes(m.voice as VoiceId) ? (m.voice as VoiceId) : 'male';
   out.mode = HERO_MODES.includes(m.mode as HeroMode) ? (m.mode as HeroMode) : 'normal';
@@ -938,6 +943,11 @@ export class Game {
       this.placeBody();
       this.softenFirstHalf();
       if (FIRST_LEVELS.on) this.softball();
+    } else if (FIRST_LEVELS.on && !this.practice && !this.hero.ring && !this.hero.quest && !this.bodySearched) {
+      // (THE FIRST LEVELS: without the RUNE HEART there is no wordsmithing. A hero who left the
+      // first dungeon without searching the fallen wordsmith finds him again in the next, half way
+      // along its main path, and so on until he is found.)
+      this.placeBody();
     }
     this.updateVision(1);
     this.msg(`Dungeon ${this.depth}`, MSG.head);
@@ -4639,6 +4649,9 @@ export class Game {
   /** Why a word cannot be laid on the gate, or null if it can. */
   planProblem(word: WordId): string | null {
     if (this.hero.words[word] <= 0) return 'No spare word';
+    // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
+    // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
+    if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;
     if (this.plan.length >= TUNE.planMax) return `At most ${TUNE.planMax} words`;
     if (this.plan.includes(word)) return 'Already burning';
     if (WORDS[word].element && this.plan.some((w) => WORDS[w].element)) return 'One element per dungeon';
