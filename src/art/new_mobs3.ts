@@ -55,11 +55,11 @@
 
 import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
-import { BONE, INDIGO, INK, dim, hash, lazyFrames, toSprite } from './kit';
+import { BONE, INDIGO, INK, dim, dir, hash, lazyFrames, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
 import { DEATH_FPS, ENEMY_RIM, FLAME, IRON, RUST, SOCKET } from './mkit';
 import { SKELETON3_BODY } from './monster_bones3';
-import { CANVAS3, band, ball, cloth, eyesToward, mid, rod, stage, thread, toneOf, wornOn } from './skin';
+import { CANVAS3, band, ball, cloth, eyesToward, laidAlong, mid, rod, stage, thread, toneOf, wornOn } from './skin';
 import type { ClothLook, GameView, Ring, Sheet, Skin, Stage } from './skin';
 import { GRID, about, add, bonesAt, buildOf, cross, dot, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
@@ -100,7 +100,8 @@ export type PanelSkin = (a: number, b: number, front: boolean, tone: number) => 
 type Shape =
   | { k: 'rod'; a: V3; b: V3; ra: number; rb: number; ramp: Ramp; far?: boolean }
   | { k: 'ball'; c: V3; ax: Frame3; skin: Skin; far?: boolean }
-  | { k: 'cloth'; rings: Ring[]; ramp: Ramp; look: ClothLook; torn?: ReadonlyArray<number> }
+  /** Cloth, or anything shaped as a tube through rings; `rigid`: a solid that falls whole (a helm), where cloth does not. */
+  | { k: 'cloth'; rings: Ring[]; ramp: Ramp; look: ClothLook; torn?: ReadonlyArray<number>; rigid?: boolean }
   /** An iron band round something: the half of the ring toward the eye. */
   | { k: 'band'; ring: Ring; ramp: Ramp; rows: number }
   /** A flat panel (a shield): its middle, and its half-width and half-height as directions. */
@@ -113,7 +114,9 @@ type Shape =
   /** A speck over everything, with no seam (a mote, a streak). */
   | { k: 'mote'; p: V3; c: string; size: number }
   /** A light it gives off: not painted, drawn over the dark by the game. */
-  | { k: 'glow'; p: V3; c: string; r: number; a: number };
+  | { k: 'glow'; p: V3; c: string; r: number; a: number }
+  /** The champion's great sword: its grip (his right hand), and the way its blade points. */
+  | { k: 'greatsword'; grip: V3; point: V3 };
 
 interface Bit {
   part: string;
@@ -202,6 +205,8 @@ function paintBits(st: Stage, bits: ReadonlyArray<Bit>, ref: V3): Light[] {
         return sh.rings[0].c;
       case 'teeth':
         return sh.pts[0];
+      case 'greatsword':
+        return sh.grip;
       default:
         return sh.p;
     }
@@ -230,6 +235,12 @@ function paintBits(st: Stage, bits: ReadonlyArray<Bit>, ref: V3): Light[] {
     } else if (sh.k === 'band') band(p, st, sh.ring, sh.ramp, sh.rows);
     else if (sh.k === 'panel') panel(p, st, sh.c, sh.u, sh.v, sh.skin);
     else if (sh.k === 'thread') thread(p, st, sh.a, sh.b, sh.c, sh.lift);
+    else if (sh.k === 'greatsword') {
+      const [gx, gy] = st.at(sh.grip);
+      const [px, py] = st.seen(sh.point);
+      greatSword(p, gx, gy, (Math.atan2(-py, px) * 180) / Math.PI, Math.hypot(px, py));
+      laidAlong(p, st, add(sh.grip, mul(sh.point, -GS_GRIP - 3)), add(sh.grip, mul(sh.point, GS_REACH + 1)), 0.3);
+    }
   }
   for (const b of after) {
     const sh = b.shape;
@@ -431,6 +442,9 @@ export interface MobMove {
   /** THE BONEWARD'S BLOWS: the points of it (a spear's tip, a shield's edges) whose way through the air is streaked as the blow lands; and over how many frames before it (1.6 if not said). */
   trail?: (s: Skeleton) => V3[];
   trailSpan?: number;
+  /** THE CHAMPION'S: his blow kicks up the floor's dust round his front foot; and how bright his rallying cry is, `t` seconds in. */
+  dust?: boolean;
+  rally?: (t: number) => number;
 }
 
 /** A tile of the floor along the grid, in the figure's own lengths: 32 picture pixels across the screen and 16 down (skeleton.ts, `project`). */
@@ -459,6 +473,9 @@ interface Moment {
   trails?: V3[][];
   /** Seconds since the move's blow landed (negative before it; absent for a move with no blow): what is kicked up by it lasts a moment. */
   since?: number;
+  /** The champion's: whether his blow kicks up dust, and how bright his rallying cry is (0 none). */
+  dust?: boolean;
+  rally: number;
 }
 
 function folded(m: MobMove, t: number): number {
@@ -479,7 +496,7 @@ function windOf(t: number): number {
 
 /** A monster of this file: how it is built, how it moves, how it is painted and how it dies. */
 export interface Mob {
-  id: 'shade' | 'boneward' | 'golem';
+  id: 'shade' | 'boneward' | 'golem' | 'champion';
   name: string;
   /** Small, medium or big, in a word or two. */
   size: string;
@@ -533,8 +550,9 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   const blur = blurAt !== undefined && Math.abs(t - blurAt) < FR * 0.6;
   const wind = mv.period ? ((((t / mv.period) % 1) + 1) % 1) : windOf(t);
   // (the moment within its round, for what flickers frame by frame: so that a loop closes)
-  const m: Moment = { s, q, t: folded(mv, t), come, wind, blur, glint: mv.glint ? Math.max(0, mv.glint(t)) : 0, bare: mv.bare ? mv.bare(t) : false, skull: mv.skull ? mv.skull(t) : false };
+  const m: Moment = { s, q, t: folded(mv, t), come, wind, blur, glint: mv.glint ? Math.max(0, mv.glint(t)) : 0, bare: mv.bare ? mv.bare(t) : false, skull: mv.skull ? mv.skull(t) : false, rally: mv.rally ? Math.max(0, mv.rally(t)) : 0 };
   if (mv.motion.hit !== undefined && !loops) m.since = t - mv.motion.hit;
+  if (mv.dust) m.dust = true;
   if (blur && mv.trail) {
     const T: V3[][] = [];
     for (let i = 0; i <= 8; i++) {
@@ -640,6 +658,10 @@ function moved(sh: Shape, turn: Turn, c0: V3, c1: V3, squash = 0): Shape {
     case 'mote':
     case 'glow':
       return { ...sh, p: P(sh.p) };
+    case 'greatsword':
+      return { ...sh, grip: P(sh.grip), point: turn(sh.point) };
+    case 'cloth':
+      return { ...sh, rings: sh.rings.map((r) => ({ c: P(r.c), u: turn(r.u), v: turn(r.v), pts: r.pts?.map(P) })) };
     default:
       return sh;
   }
@@ -656,6 +678,10 @@ function extent(sh: Shape): [V3, number][] {
       return [[add(add(sh.c, sh.u), sh.v), 0.5], [add(sub(sh.c, sh.u), sh.v), 0.5], [sub(add(sh.c, sh.u), sh.v), 0.5], [sub(sub(sh.c, sh.u), sh.v), 0.5]];
     case 'band':
       return [[add(sh.ring.c, sh.ring.u), 0.6], [sub(sh.ring.c, sh.ring.u), 0.6], [add(sh.ring.c, sh.ring.v), 0.6], [sub(sh.ring.c, sh.ring.v), 0.6]];
+    case 'greatsword':
+      return [[add(sh.grip, mul(sh.point, -GS_GRIP)), 1.5], [add(sh.grip, mul(sh.point, GS_REACH)), 0.5]];
+    case 'cloth':
+      return sh.rings.flatMap((r) => [[add(r.c, r.u), 0.4], [sub(r.c, r.u), 0.4], [add(r.c, r.v), 0.4], [sub(r.c, r.v), 0.4]] as [V3, number][]);
     default:
       return [];
   }
@@ -679,7 +705,7 @@ const easeIO = (k: number): number => {
 /** The bones of one dying at a moment (before the pieces let go). */
 function dyingMoment(mob: Mob, t: number): Moment {
   const q = posedAt(mob.dying, t);
-  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: 0, bare: false, skull: false };
+  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: 0, bare: false, skull: false, rally: 0 };
 }
 
 const THEN = new Map<string, Bit[]>();
@@ -708,7 +734,7 @@ function fallApart(mob: Mob, k: number, view: GameView): Painted {
   for (const piece of pieces) {
     const f = plan(piece);
     if (!f || t < f.from) continue;
-    const was = bitsThen(mob, st, f.from).filter((b) => b.piece === piece && b.shape.k !== 'glow' && b.shape.k !== 'cloth');
+    const was = bitsThen(mob, st, f.from).filter((b) => b.piece === piece && b.shape.k !== 'glow' && (b.shape.k !== 'cloth' || b.shape.rigid === true));
     if (!was.length) continue;
     const c0 = middleOf(was);
     // its long line: the furthest two of its points apart
@@ -2149,6 +2175,597 @@ export const GOLEM: Mob = {
     return scatter(piece, 0.56, 0.8, 12, 'axis');
   },
 };
+
+// =============================================================================================
+// 4. THE SKELETON CHAMPION: A YELLOW PACK'S LEADER (9 Oct)
+//
+// His words in the main chat (its post of 08:30): "So we have a pack of skeletons.  The skeleton
+// champion, who let’s say has an old rusty helmet and a two handed sword, has Flame, and the smaller
+// minions would essentially have a 50% Flame." And at 08:24: "Pack leaders that are different mobs
+// can have an extra attack if it seems right." The brief, answered by 11:51 (our picks, each his
+// pick): "A head taller (Recommended)": he stands over his skeletons, as tall as the Boneward but
+// leaner, no shield; "Proud and heavy (Recommended)": standing with his sword planted point-down,
+// his hands on its hilt, and walking, dragging its point along the floor; "Cleave and a rallying cry
+// (Recommended)": a great two-handed cleave, and he raises his sword and roars, his minions' words
+// flaring to full for a moment (the flare is the rules' and the game's: here, his part of it); "To his
+// knees on his sword (Recommended)": he sinks to his knees leaning on his sword, then crumbles, and
+// his helm rolls away. His word, whichever it is, is not painted on him: the game marks it.
+
+/** His body: the skeleton's own (art/monster_bones3.ts), a head taller, as tall as the Boneward and leaner. */
+const CH_K = 1.18;
+const CH_BODY: Build = scaled(SKELETON3_BODY, CH_K, { shoulderHalf: 1.06, ribHalf: 1.03 });
+const CB = CH_BODY;
+/** His bones' thickness. */
+const CK = CH_K * 1.05;
+/** His two-handed sword: the blade, the grip, and where his left hand is on it (behind his right, toward the pommel), all in the figure's own lengths. */
+const GS_BLADE = 30;
+const GS_GRIP = 8;
+const GS_LEFT = -4.2;
+/** From his right hand to the sword's point (the crossguard is just beyond the hand). */
+const GS_REACH = GS_BLADE + 3.2;
+/** His cape: an old wine-dark cloth, faded; and his helm's crest, of the same cloth where the light catches it. */
+export const CAPE: Ramp = ['#2a0c22', '#2a0c22', '#511a3c', '#7a2c56', '#7a2c56'];
+const CREST: Ramp = ['#511a3c', '#511a3c', '#7a2c56', '#a8426e', '#a8426e'];
+/** The cape's torn hem (as the Shade's: how far up each piece of it is gone). */
+const CAPE_TORN: readonly number[] = [2, 0, 3, 1, 4, 1, 0, 2, 3, 0, 2, 4, 1, 3, 0, 2];
+/** The notches in his blade (how far along it, and which edge). */
+const GS_NOTCHES: ReadonlyArray<readonly [number, number]> = [[0.31, 1], [0.55, -1], [0.72, 1]];
+
+/**
+ * HIS GREAT SWORD, laid along its line as the skeleton's sword is (art/monster_bones3.ts,
+ * `rustSword`): drawn at the angle the eye sees it and as long as the eye sees it. (hx, hy) is his
+ * right hand on the grip; `seen` how much of a length along the sword the eye sees. A long blade of
+ * old iron with a dark groove down its middle, rust on it and notches in its edges; a broad
+ * crossguard rusted at its ends; a long grip bound in dark cord; a round pommel.
+ */
+function greatSword(p: Sheet, hx: number, hy: number, deg: number, seen: number): void {
+  const [dx, dy] = dir(deg);
+  const litSide = 0.65 * dy - 0.75 * dx > 0 ? 1 : -1;
+  const len = Math.max(4, GS_BLADE * seen);
+  const grip = Math.max(2, GS_GRIP * seen);
+  const W = 2.7;
+  const G0 = 1.2;
+  const G1 = 2.8;
+  const tip = G1 + len;
+  const reach = tip + grip + 5;
+  for (let y = Math.floor(hy - reach); y <= Math.ceil(hy + reach); y++) {
+    for (let x = Math.floor(hx - reach); x <= Math.ceil(hx + reach); x++) {
+      const rx = x + 0.5 - hx;
+      const ry = y + 0.5 - hy;
+      const u = rx * dx + ry * dy;
+      const v = (-rx * dy + ry * dx) * litSide;
+      let c: string | null = null;
+      if (u >= G1 && u <= tip) {
+        const half = u > tip - 6 ? (tip - u) * (W / 6) : W;
+        if (Math.abs(v) <= half) {
+          c = v > half - 0.95 ? PALLOR[3] : v < -half + 0.95 ? IRON[2] : IRON[3];
+          // (the groove down its middle, for the first two thirds)
+          if (u < G1 + len * 0.62 && Math.abs(v) < 0.55) c = IRON[2];
+          // (rust on it, in patches)
+          if (hash(Math.round(u / 2.2), Math.round(v * 0.8), 17) < 0.14) c = RUST[2];
+          for (const [k, side] of GS_NOTCHES) if (Math.abs(u - (G1 + k * len)) < 0.9 && v * side > half - 1.05) c = null;
+        }
+      } else if (u >= G0 && u < G1 && Math.abs(v) <= W + 4.4) {
+        c = Math.abs(v) > W + 3 ? RUST[2] : v > 0.8 ? IRON[3] : v < -0.8 ? IRON[1] : IRON[2];
+      } else if (u >= -grip && u < G0 && Math.abs(v) <= 1.15) {
+        // (the grip, bound in dark cord: bands across it)
+        c = Math.floor(u * 0.9) % 2 === 0 ? SHAFT[3] : SHAFT[2];
+      } else if (u >= -grip - 2.6 && u < -grip && Math.abs(v) <= 1.8 - Math.abs(u + grip + 1.3) * 0.5) {
+        c = v > 0.3 ? IRON[3] : IRON[2];
+      }
+      if (c) p.set(x, y, c);
+    }
+  }
+}
+
+const CH_HANG = -(CB.upperArm + CB.foreArm) * 0.94;
+/** Standing as he does: his sword planted point-down before him, both hands on its hilt at his chest; upright, his feet set wide. */
+const CH_REST: Bones = {
+  ...standing(CB),
+  pz: -0.6, px: 0, yaw: -4, pitch: 2, roll: 0, twist: 0, bend: -2, side: 0,
+  faceTurn: 2, faceUp: 4, faceTilt: 0,
+  lfx: 2.4, lfy: 3.8, lft: 12, lk: 6, rfx: -0.6, rfy: -3.8, rft: -12, rk: -6,
+  rhIn: 2, rhx: 10.5, rhy: -0.5, rhz: GS_REACH + 0.9, re: -20,
+  lhIn: 3, lhx: GS_LEFT, lhy: 0, lhz: 0, le: 20,
+  wAz: 0, wEl: -88, wRoll: 0,
+  draw: 0.1, out: 0, pt: 0,
+};
+
+/** Where his sword's point is. */
+const swordTipOf = (s: Skeleton): V3 => add(s.handR, mul(s.point, GS_REACH));
+
+/** THE CHAMPION AS SOLIDS: the skeleton's bones, a head taller; an old rusty great helm, his eyes burning in its slit, a torn plume; a torn cape; his great sword. */
+function championBits(st: Stage, m: Moment): Bit[] {
+  const { s, q } = m;
+  const B = CB;
+  const K = CK;
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => {
+    bits.push({ part, piece, shape });
+  };
+  const [cf, cl, cu] = s.chest;
+  const lit = 1 - clamp01(q.out);
+  // (his eyes: burning, and burning hotter as he winds up or roars: `glint`)
+  const glare = lit * (1 + 0.6 * clamp01(m.glint));
+  const lagRaw = mul(m.come, -1.4);
+  const lagLen = len(lagRaw);
+  const lag = lagLen > 2.6 ? mul(lagRaw, 2.6 / lagLen) : lagRaw;
+  const flare = clamp01(q.gale);
+  const wave = m.wind * Math.PI * 2;
+
+  // --- the legs ---
+  for (const side of ['L', 'R'] as const) {
+    const hip = side === 'L' ? s.hipL : s.hipR;
+    const knee = side === 'L' ? s.kneeL : s.kneeR;
+    const ankle = side === 'L' ? s.ankleL : s.ankleR;
+    const heel = side === 'L' ? s.heelL : s.heelR;
+    const toe = side === 'L' ? s.toeL : s.toeR;
+    put(`leg${side}`, `leg${side}`, { k: 'rod', a: hip, b: knee, ra: 1.0 * K, rb: 0.85 * K, ramp: BONE, far: true });
+    put(`leg${side}`, `leg${side}`, { k: 'ball', c: knee, ax: sphere(1.45 * K), skin: BONE, far: true });
+    put(`leg${side}`, `shin${side}`, { k: 'rod', a: knee, b: ankle, ra: 0.85 * K, rb: 0.72 * K, ramp: BONE, far: true });
+    put(`leg${side}`, `shin${side}`, { k: 'ball', c: ankle, ax: sphere(1.0 * K), skin: BONE, far: true });
+    put(`leg${side}`, `foot${side}`, { k: 'rod', a: add(heel, [0, 0, 0.95 * K]), b: add(toe, [0, 0, 0.75 * K]), ra: 0.95 * K, rb: 0.75 * K, ramp: BONE, far: true });
+  }
+
+  // --- the pelvis, the spine, the rib cage ---
+  const [hf, hl, hu] = s.hips;
+  put('pelvis', 'pelvis', { k: 'ball', c: add(s.pelvis, mul(hu, 0.9 * K)), ax: [mul(hf, 3.1 * K), mul(hl, 4.8 * K), mul(hu, 2.2 * K)], skin: (u, tone) => (u[0] > 0.42 && u[2] < 0.25 && Math.abs(u[1]) > 0.16 && Math.abs(u[1]) < 0.56 ? INK : BONE[tone]) });
+  const low = add(s.pelvis, mul(hu, 2.6 * K));
+  const backOf = (p: V3, k: number): V3 => add(p, mul(cf, -k));
+  for (let i = 0; i < 4; i++) put('spine', 'cage', { k: 'ball', c: lerp3(low, backOf(s.ribs, 0.4), (i + 0.5) / 4), ax: sphere(1.12 * K), skin: BONE });
+  if (dot(cf, st.eye) < 0.1) {
+    put('ribs', 'cage', { k: 'rod', a: backOf(s.ribs, 1.6 * K), b: backOf(s.neck, 1.3 * K), ra: 1.0 * K, rb: 0.9 * K, ramp: BONE });
+    for (const sg of [1, -1] as const) {
+      const c = add(add(add(s.neck, mul(cu, -3.6 * K)), mul(cf, -2.3 * K)), mul(cl, sg * 3.0 * K));
+      put('blades', 'cage', { k: 'ball', c, ax: [mul(norm(add(cf, mul(cl, sg * 0.3))), 0.6 * K), mul(cl, 2.0 * K), mul(cu, 2.4 * K)], skin: BONE });
+    }
+  }
+  for (let i = 0; i < BW_RIBS.length; i++) {
+    const [down, W, Dp, gap, slope] = BW_RIBS[i];
+    const c = add(add(s.neck, mul(cu, -down * K)), mul(cf, Dp * 0.55 * K));
+    for (const sg of [1, -1] as const) {
+      let last: V3 | null = null;
+      for (let k = 0; k <= 6; k++) {
+        const th = gap + ((Math.PI - gap) * k) / 6;
+        const p = add(add(add(c, mul(cf, Dp * K * Math.cos(th))), mul(cl, sg * W * K * 1.02 * Math.sin(th))), mul(cu, -slope * K * (1 + Math.cos(th)) * 0.5));
+        if (last) {
+          const midP = mid(last, p);
+          const out = sub(midP, add(c, mul(cu, dot(sub(midP, c), cu))));
+          if (dot(norm(out), st.eye) > -0.12) put('ribs', 'cage', { k: 'rod', a: last, b: p, ra: 0.72 * K, rb: 0.72 * K, ramp: BONE });
+        }
+        last = p;
+      }
+    }
+  }
+  const sternumTop = add(add(s.neck, mul(cu, -1.0 * K)), mul(cf, 2.8 * 1.5 * K));
+  const sternumLow = add(add(s.neck, mul(cu, -7.5 * K)), mul(cf, 3.4 * 1.5 * K));
+  put('ribs', 'cage', { k: 'rod', a: sternumTop, b: sternumLow, ra: 0.95 * K, rb: 0.75 * K, ramp: BONE });
+
+  // --- the arms (his hands closed on the sword's grip, or the left hanging open as he walks) ---
+  for (const side of ['L', 'R'] as const) {
+    const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+    const el = side === 'L' ? s.elbowL : s.elbowR;
+    const hand = side === 'L' ? s.handL : s.handR;
+    const fore = norm(sub(hand, el), [0, 0, -1]);
+    put(`upper${side}`, `arm${side}`, { k: 'ball', c: sh, ax: sphere(1.45 * K), skin: BONE, far: true });
+    put(`upper${side}`, `arm${side}`, { k: 'rod', a: sh, b: el, ra: 0.85 * K, rb: 0.75 * K, ramp: BONE, far: true });
+    put(`fore${side}`, `fore${side}`, { k: 'ball', c: el, ax: sphere(1.3 * K), skin: BONE, far: true });
+    put(`fore${side}`, `fore${side}`, { k: 'rod', a: el, b: add(hand, mul(fore, -1.1)), ra: 0.75 * K, rb: 0.66 * K, ramp: BONE, far: true });
+    put(`fore${side}`, `fore${side}`, { k: 'ball', c: hand, ax: sphere(1.4 * K), skin: BONE, far: true });
+    put('ribs', 'cage', { k: 'rod', a: sternumTop, b: add(sh, mul(cu, 0.3)), ra: 0.72 * K, rb: 0.72 * K, ramp: BONE, far: true });
+    // a rusted pauldron on each shoulder, its edge ragged
+    const pc = add(add(sh, mul(cu, 1.5 * K)), mul(cl, (side === 'L' ? 1 : -1) * 0.6));
+    const out = side === 'L' ? cl : mul(cl, -1);
+    put(`plate${side}`, `plate${side}`, {
+      k: 'ball',
+      c: pc,
+      ax: [mul(cf, 3.4 * K), mul(out, 3.4 * K), mul(cu, 2.3 * K)],
+      skin: (u, tone) => {
+        if (u[2] < -0.05 + 0.12 * Math.sin(u[0] * 9 + (side === 'L' ? 0 : 1.7))) return null;
+        if (u[2] < 0.14) return RUST[Math.max(0, Math.min(2, tone - 1))];
+        if (Math.abs(u[2] - 0.5) < 0.07) return IRON[Math.max(0, tone - 1)];
+        if (hash(Math.round(u[0] * 5), Math.round(u[1] * 5), side === 'L' ? 5 : 6) < 0.34) return RUST[Math.min(3, tone)];
+        return IRON[tone];
+      },
+    });
+  }
+
+  // --- the neck, the skull and its jaw, under an old rusty great helm ---
+  for (const k of [0.3, 0.75]) put('neck', 'neck', { k: 'ball', c: lerp3(s.neck, s.skull, k), ax: sphere(1.05 * K), skin: BONE });
+  const face = wornOn(st, s, 26);
+  const [ff, fl, fu] = face;
+  const cran = at3(s.head, face, -0.4 * K, 0, 1.2 * K);
+  const R: V3 = [5.3 * K, 5.1 * K, 4.7 * K];
+  // (the skull is all but hidden in the helm: its eyes burn in the helm's slit, below)
+  skull(st, put, 'skull', 'skull', cran, face, R, BONE, 0, 0, false);
+  const hinge = at3(s.head, face, -1.8 * K, 0, -2.0 * K);
+  const open = clamp01(q.draw) * 36;
+  const jf = about(ff, fl, open);
+  const ju = about(fu, fl, open);
+  const jawC = add(hinge, add(mul(jf, 3.2 * K), mul(ju, -1.4 * K)));
+  put('mouth', 'skull', { k: 'ball', c: at3(s.head, face, 0.9 * K, 0, -2.3 * K), ax: [mul(ff, 2.0 * K), mul(fl, 2.8 * K), mul(fu, 1.05 * K)], skin: () => INK });
+  put('jaw', 'jaw', { k: 'ball', c: jawC, ax: [mul(jf, 2.9 * K), mul(fl, 3.5 * K), mul(ju, 1.35 * K)], skin: BONE });
+  // the helm: a great helm, old: a tube of iron with straight sides and a flat top, closed but for
+  // a slit across it for the eyes; a band round its brow, riveted; a ridge down its face; breathing
+  // holes on its right cheek; rust in spots; on its crown a crest of the cape's torn cloth
+  const HD = R[0] + 0.7;
+  const HW = R[1] + 0.9;
+  const hBot = at3(cran, face, 0.2, 0, -R[2] * 0.62);
+  const hTop = at3(cran, face, -0.2, 0, R[2] + 3.0);
+  const along = (k: number): V3 => lerp3(hBot, hTop, k);
+  const hUp = norm(sub(hTop, hBot), fu);
+  const ring = (k: number, w = 1): Ring => ({ c: along(k), u: mul(ff, HD * w), v: mul(fl, HW * w) });
+  put('helm', 'helm', { k: 'cloth', rings: [ring(0), ring(0.55, 1.02), ring(1, 0.96)], ramp: IRON, look: {}, rigid: true });
+  put('helm', 'helm', { k: 'ball', c: hTop, ax: [mul(ff, HD * 0.96), mul(fl, HW * 0.96), mul(hUp, 0.6)], skin: (u, tone) => (Math.hypot(u[0], u[1]) > 0.84 ? IRON[Math.max(0, tone - 1)] : IRON[Math.min(4, tone + 1)]) });
+  /** A point on the helm's face: `deg` round from straight ahead (to his left), `k` of the way up it. */
+  const onHelm = (deg: number, k: number, out = 1.0): { p: V3; n: V3 } => {
+    const a = deg * D;
+    const w = k > 0.55 ? 1.02 - (k - 0.55) * 0.13 : 1 + k * 0.036;
+    const n = norm(add(mul(ff, Math.cos(a) / HD), mul(fl, Math.sin(a) / HW)));
+    return { p: add(along(k), add(mul(ff, Math.cos(a) * HD * w * out), mul(fl, Math.sin(a) * HW * w * out))), n };
+  };
+  const SLIT_K = 0.5;
+  const dot1 = (deg: number, k: number, c: string): void => {
+    const { p, n } = onHelm(deg, k);
+    put('helm', 'helm', { k: 'dot', p, c, facing: n });
+  };
+  // the slit: two rows of the dark across its face
+  for (let deg = -62; deg <= 62; deg += 4) {
+    dot1(deg, SLIT_K, INK);
+    dot1(deg, SLIT_K - 0.035, INK);
+  }
+  // the ridge down its face, from the slit to the band
+  for (let k = SLIT_K + 0.06; k < 0.8; k += 0.035) dot1(0, k, IRON[3]);
+  // the band round its brow, and its rivets
+  for (let deg = -180; deg < 180; deg += 5) dot1(deg, 0.84, deg % 30 === 0 ? IRON[3] : IRON[0]);
+  // breathing holes on its right cheek
+  for (const [deg, k] of [[-30, 0.3], [-38, 0.3], [-46, 0.3], [-30, 0.22], [-38, 0.22], [-46, 0.22], [-34, 0.14], [-42, 0.14]] as const) dot1(deg, k, INK);
+  // rust in spots
+  for (let i = 0; i < 26; i++) {
+    const deg = -180 + 360 * hash(i, 1, 51);
+    const k = 0.05 + 0.88 * hash(i, 2, 51);
+    const c = hash(i, 3, 51) < 0.6 ? RUST[2] : RUST[1];
+    // (a patch: a spot and its neighbours)
+    dot1(deg, k, c);
+    if (hash(i, 4, 51) < 0.6) dot1(deg + 4, k, c);
+    if (hash(i, 5, 51) < 0.5) dot1(deg, k - 0.04, c);
+  }
+  // his eyes in the slit, burning
+  if (glare > 0.05) {
+    for (const sg of [-1, 1]) {
+      const { p: e } = onHelm(sg * 21, SLIT_K - 0.018, 1.02);
+      put('helm', 'helm', { k: 'dot', p: e, c: glare > 1.3 ? FLAME[4] : glare > 0.5 ? SOCKET : FLAME[1], facing: ff, c2: glare > 1.3 ? FLAME[3] : undefined });
+      if (dot(ff, st.eye) > 0.05) put('helm', 'helm', { k: 'glow', p: e, c: SOCKET, r: 3.5 + 3 * Math.max(0, glare - 1), a: Math.min(0.8, 0.42 * glare) });
+    }
+  }
+  // its crest: the cape's torn cloth, in tufts along its crown from front to back, streaming behind
+  {
+    const tufts = 5;
+    for (let j = 0; j < tufts; j++) {
+      const k = j / (tufts - 1);
+      const base = add(hTop, add(mul(ff, (0.7 - 1.5 * k) * HD), mul(hUp, 0.4)));
+      const sway = Math.sin(wave * 1.5 + j * 1.3) * (0.4 + 1.2 * flare) * (0.4 + k);
+      const tipP = add(base, add(add(mul(hUp, 4.6 - 1.8 * k), mul(ff, -1.6 - 4.0 * k * k)), add(mul(fl, sway), mul(lag, 0.5 * k))));
+      put('crest', 'helm', { k: 'rod', a: base, b: tipP, ra: 1.5, rb: 0.6, ramp: CREST });
+    }
+    // (and its tail, down the back of the helm)
+    const tail0 = add(hTop, add(mul(ff, -HD * 0.9), mul(hUp, 0.2)));
+    let last = tail0;
+    for (let i = 1; i <= 3; i++) {
+      const k = i / 3;
+      const sway = Math.sin(wave * 1.5 + k * 3.1) * (0.8 + 1.4 * flare) * k;
+      const p = add(tail0, add(add(mul(ff, -3.2 * k), mul(fl, sway)), add(mul(hUp, -5.5 * k), mul(lag, 0.8 * k))));
+      put('crest', 'helm', { k: 'rod', a: last, b: p, ra: 1.4 * (1 - (i - 1) / 3) + 0.45, rb: 1.4 * (1 - k) + 0.45, ramp: CREST });
+      last = p;
+    }
+  }
+
+  // --- the cape: torn, from his shoulders down his back to his knees, left behind as he goes ---
+  {
+    const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
+    const l: V3 = [-f[1], f[0], 0];
+    const top: Ring = { c: add(add(s.neck, mul(cu, -1.2)), mul(cf, -0.6)), u: mul(cf, B.ribDeep + 1.4), v: mul(cl, B.shoulderHalf + 1.4) };
+    const midR: Ring = { c: add(add(lerp3(s.waist, s.ribs, 0.4), mul(lag, 0.35)), mul(f, -0.8)), u: mul(f, B.ribDeep + 2.2), v: mul(l, B.ribHalf + 2.6) };
+    const hz = Math.max(3, s.pelvis[2] - B.thigh * 0.9) + 2.2 * flare;
+    const hc: V3 = [s.pelvis[0] - 2.6 * f[0] + lag[0] * 1.6, s.pelvis[1] - 2.6 * f[1] + lag[1] * 1.6, hz];
+    const wide = (B.ribHalf + 4.0) * (1 + 0.3 * flare);
+    const deep = (B.ribDeep + 3.0) * (1 + 0.35 * flare);
+    const pts: V3[] = [];
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      const rear = Math.max(0, -Math.cos(a));
+      const p0 = add(hc, add(mul(f, Math.cos(a) * deep), mul(l, Math.sin(a) * wide)));
+      pts.push(add(p0, add(mul(f, -rear * (1.4 + 2 * clamp01(len(m.come) / FR / 60))), [0, 0, Math.sin(wave + a * 2) * (0.6 + 1.2 * flare) + rear * 0.8])));
+    }
+    const hem: Ring = { c: hc, u: mul(f, deep), v: mul(l, wide), pts };
+    if (q.pt < 0.5) put('cape', 'cape', { k: 'cloth', rings: [top, midR, hem], ramp: CAPE, look: { arc: [100, 260], folds: [150, 180, 210], lift: 0.15 }, torn: CAPE_TORN });
+    // (fallen, it lies in a heap where he knelt)
+    else {
+      const at: V3 = [s.pelvis[0] + 2, s.pelvis[1], 0];
+      put('heap', 'heap', { k: 'cloth', rings: [{ c: add(at, [0, 0, 3.0]), u: mul(f, 4.5), v: mul(l, 5.5) }, { c: add(at, [0, 0, 0.6]), u: mul(f, 8.5), v: mul(l, 10.0) }], ramp: CAPE, look: { folds: [30, -40, 100, -120, 200], lift: 0.4 }, torn: CAPE_TORN });
+    }
+  }
+
+  // --- his great sword, in his right hand (both hands on it, mostly) ---
+  put('sword', 'sword', { k: 'greatsword', grip: s.handR, point: s.point });
+
+  // --- HIS BLOWS, AS THE BONEWARD'S (with his weight behind them): the way his blade went through the
+  // air streaked as the cleave lands, and the floor's dust kicked up round his front foot ---
+  if (m.blur && m.trails) {
+    for (const tr of m.trails) {
+      for (let i = 1; i < tr.length; i++) {
+        const a = tr[i - 1];
+        const b = tr[i];
+        const n = Math.max(1, Math.ceil(Math.hypot(...(st.at(b).map((v, k) => v - st.at(a)[k]) as [number, number]))));
+        for (let j = 0; j < n; j++) put('streak', 'streak', { k: 'mote', p: lerp3(a, b, j / n), c: i < tr.length / 2 ? BONE[3] : BONE[2], size: 1 });
+      }
+    }
+  }
+  if (m.dust && m.since !== undefined && m.since >= 0 && m.since < BW_DUST_FOR) {
+    const k = m.since / BW_DUST_FOR;
+    const foot = lerp3(s.heelL, s.toeL, 0.6);
+    for (let i = 0; i < 16; i++) {
+      if (hash(i, 7, 13) < k * 0.9) continue;
+      const a = (i / 16) * Math.PI * 2 + hash(i, 1, 13);
+      const r = 2.5 + (6 + 6 * hash(i, 2, 13)) * Math.sqrt(k);
+      const z = 0.4 + (1.5 + 3.5 * hash(i, 3, 13)) * Math.sin(Math.PI * Math.min(1, k * 1.3));
+      put('dust', 'dust', { k: 'mote', p: [foot[0] + Math.cos(a) * r * 1.2, foot[1] + Math.sin(a) * r, z], c: i % 3 ? OSSUARY[2] : OSSUARY[1], size: i % 3 === 0 ? 2 : 1 });
+    }
+  }
+  // --- THE RALLYING CRY: his sword raised high, light bursts from its point and runs down it, and
+  // embers rise round him (the minions' flare is the game's) ---
+  if (m.rally > 0.05) {
+    const g = m.rally;
+    const tip = swordTipOf(s);
+    put('rally', 'rally', { k: 'glow', p: tip, c: SOCKET, r: 6 + 10 * g, a: Math.min(0.9, 0.6 * g) });
+    put('rally', 'rally', { k: 'mote', p: tip, c: FLAME[4], size: 2 });
+    for (let i = 0; i < 6; i++) {
+      const k = (i + 0.5) / 6;
+      if (hash(i, Math.floor(m.t * 20), 37) > 0.45 + 0.4 * g) continue;
+      put('rally', 'rally', { k: 'mote', p: add(s.handR, mul(s.point, GS_REACH * (0.25 + 0.75 * k))), c: k > 0.7 ? FLAME[4] : FLAME[3], size: 1 });
+    }
+    for (let i = 0; i < 12; i++) {
+      const life = (m.t * 1.6 + hash(i, 1, 41)) % 1;
+      const a = hash(i, 2, 41) * Math.PI * 2;
+      const r = 7 + 9 * hash(i, 3, 41);
+      put('rally', 'rally', { k: 'mote', p: [s.pelvis[0] + Math.cos(a) * r, s.pelvis[1] + Math.sin(a) * r, 2 + life * 34], c: life < 0.5 ? FLAME[3] : FLAME[2], size: life < 0.3 && i % 3 === 0 ? 2 : 1 });
+    }
+    // (the cry itself: a burst of embers out from his chest the moment he roars, thrown out round him)
+    if (m.since !== undefined && m.since >= 0 && m.since < 0.32) {
+      const k = m.since / 0.32;
+      const c0 = lerp3(s.ribs, s.neck, 0.5);
+      for (let i = 0; i < 20; i++) {
+        if (hash(i, 9, 43) < k * 0.8) continue;
+        const a = (i / 20) * Math.PI * 2;
+        const r = 5 + 22 * Math.sqrt(k) * (0.8 + 0.4 * hash(i, 8, 43));
+        put('rally', 'rally', { k: 'mote', p: [c0[0] + Math.cos(a) * r, c0[1] + Math.sin(a) * r, c0[2] + (hash(i, 7, 43) - 0.5) * 8 - k * 6], c: k < 0.4 ? FLAME[4] : FLAME[3], size: k < 0.5 && i % 2 === 0 ? 2 : 1 });
+      }
+    }
+  }
+  return bits;
+}
+
+/** Standing, he keeps his ground: leaning on his planted sword, his weight shifting, his head turning to look over his pack, his jaw hanging and clacking; the cape and plume stirring. */
+function chPost(): Motion {
+  const R = CH_REST;
+  return {
+    loop: 0,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.7, pose: { pz: R.pz - 0.5, px: 0.6, pitch: R.pitch + 2, faceTurn: R.faceTurn + 14, faceUp: R.faceUp - 2, draw: 0.2 }, ease: 'io' },
+      { at: 1.2, pose: { pz: R.pz - 0.5, px: 0.6, pitch: R.pitch + 2, faceTurn: R.faceTurn + 16, faceUp: R.faceUp - 2, draw: 0.05 }, ease: 'hold' },
+      { at: 1.8, pose: { pz: R.pz - 0.2, px: -0.3, faceTurn: R.faceTurn - 12, faceTilt: 3, draw: 0.3 }, ease: 'io' },
+      { at: 2.4, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/** The moment his cleave lands, and his cry rings out (they have no rules yet: the main chat's). */
+export const CHAMPION_HIT = 0.8;
+export const RALLY_CRY = 0.85;
+/** HIS CLEAVE, wound up: the sword swung up and back over his right shoulder in both hands, his body turned away, his weight on his back foot, his eyes flaring in the slit (the warning). */
+const CH_WOUND: P = {
+  px: -2.6, pz: -4.6, yaw: -10, pitch: -6, roll: 0, twist: -32, bend: -2, side: 2,
+  faceUp: 4, faceTurn: 18, faceTilt: 0,
+  lfx: 4.2, lfy: 3.6, lk: 18, rfx: -5.2, rfy: -3.6, rk: -16,
+  rhIn: 1, rhx: -5.0, rhy: -6.5, rhz: 9.0, re: 50,
+  lhIn: 3, lhx: GS_LEFT, lhy: 0, lhz: 0, le: 30,
+  wAz: -150, wEl: 34, wRoll: 0,
+  draw: 0.5,
+};
+/** ... and landed: a step into it, his hips driving forward, the blade cleaving down across him to his left. */
+const CH_CLEAVE: P = {
+  ...CH_WOUND,
+  px: 6.4, pz: -7.4, yaw: 2, pitch: 22, twist: 26, bend: 12, side: 0,
+  faceUp: -6, faceTurn: 0,
+  lfx: 13.0, lfz: 0, lk: 30, rk: -4,
+  rhIn: 1, rhx: 13.0, rhy: 5.0, rhz: -15.0, re: 10,
+  wAz: 34, wEl: -26,
+  draw: 0.95,
+};
+function chCleave(): Motion {
+  const shake = (dz: number, more: P = {}): P => ({ ...CH_WOUND, rhz: (CH_WOUND.rhz ?? 0) + dz, ...more });
+  return {
+    hit: CHAMPION_HIT,
+    keys: [
+      { at: 0, pose: {} },
+      // (the sword wrenched up out of the floor, then swung up and back)
+      { at: 0.18, pose: { px: -0.6, pz: -1.6, twist: -10, rhIn: 1, rhx: 6.0, rhy: -3.0, rhz: -6.0, re: 10, wAz: -30, wEl: 20, draw: 0.3 }, ease: 'out' },
+      { at: 0.42, pose: CH_WOUND, ease: 'out' },
+      { at: 0.55, pose: shake(0.4, { draw: 0.55 }), ease: 'hold' },
+      { at: 0.66, pose: shake(-0.3, { draw: 0.5, twist: -33 }), ease: 'hold' },
+      { at: CHAMPION_HIT - 0.07, pose: shake(0.3, { px: -3.0, twist: -34, rhx: -5.6 }), ease: 'hold' },
+      // (the step: his front foot off the floor, the sword starting down)
+      { at: CHAMPION_HIT - 0.035, pose: { ...CH_WOUND, px: 1.8, pz: -5.6, pitch: 8, twist: -6, lfx: 9.0, lfz: 3.0, rhx: 3.0, rhy: -2.0, rhz: 4.0, wAz: -40, wEl: 10, draw: 0.8 }, ease: 'in' },
+      { at: CHAMPION_HIT, pose: CH_CLEAVE, ease: 'lin' },
+      { at: CHAMPION_HIT + 0.14, pose: { ...CH_CLEAVE, px: 7.0, pz: -8.0, rhx: 11.0, rhy: 8.0, rhz: -18.0, wAz: 62, wEl: -34, draw: 0.7 }, ease: 'out' },
+      // (hauled back, and the sword set point-down again)
+      { at: CHAMPION_HIT + 0.38, pose: { px: 2.0, pz: -3.0, pitch: 8, twist: 6, lfx: 7.5, lfz: 2.4, rhIn: 2, rhx: 12.0, rhy: 0.0, rhz: GS_REACH + 3.0, wAz: 10, wEl: -70, draw: 0.4 }, ease: 'io' },
+      { at: CHAMPION_HIT + 0.62, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** HIS RALLYING CRY: the sword wrenched up and raised high in both hands, its point to the roof; his head thrown back, his jaw wide, his eyes and the sword's point flaring, embers rising round him; then set down again. */
+function chRally(): Motion {
+  const up: P = {
+    px: -1.0, pz: -1.6, pitch: -8, bend: -10, twist: -4,
+    faceUp: 30, faceTurn: 0,
+    lfx: 3.6, lk: 10, rfx: -2.4, rk: -8,
+    rhIn: 1, rhx: 3.0, rhy: -4.0, rhz: 24.0, re: 30,
+    lhIn: 3, lhx: GS_LEFT, lhy: 0, lhz: 0, le: 30,
+    wAz: 0, wEl: 82, draw: 0.6,
+  };
+  return {
+    hit: RALLY_CRY,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.2, pose: { px: -0.4, pz: -2.4, pitch: 6, rhIn: 1, rhx: 7.0, rhy: -3.0, rhz: -2.0, wAz: 0, wEl: 30, draw: 0.2 }, ease: 'out' },
+      { at: 0.55, pose: up, ease: 'out' },
+      { at: RALLY_CRY - 0.08, pose: { ...up, rhz: 25.0, faceUp: 32, draw: 0.75 }, ease: 'io' },
+      { at: RALLY_CRY, pose: { ...up, rhz: 26.0, bend: -12, faceUp: 36, draw: 1.0 }, ease: 'out' },
+      { at: RALLY_CRY + 0.4, pose: { ...up, rhz: 25.4, bend: -11, faceUp: 34, draw: 0.95 }, ease: 'io' },
+      { at: RALLY_CRY + 0.7, pose: { px: 0.6, pz: -1.0, pitch: 4, rhIn: 2, rhx: 11.0, rhy: -0.4, rhz: GS_REACH + 4.0, wAz: 4, wEl: -80, draw: 0.3 }, ease: 'io' },
+      { at: RALLY_CRY + 0.95, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** How bright his cry is (0 none): up as the sword goes up, at its brightest as he roars, then out. */
+function rallyOver(t: number): number {
+  if (t < 0.4) return 0;
+  if (t < RALLY_CRY) return (t - 0.4) / (RALLY_CRY - 0.4);
+  if (t < RALLY_CRY + 0.4) return 1.25;
+  return Math.max(0, 1.25 - (t - RALLY_CRY - 0.4) * 4);
+}
+
+/**
+ * HIS MARCH, proud and heavy (his pick by 11:51): eight frames at ten a second, painted for 1.2
+ * tiles a second. Upright, each step coming down heavily and the body sinking onto it, the shoulders
+ * rolling, his free left hand swinging; his sword in his right hand, low at his side, its point
+ * dragged along the floor behind him. A foot that is down stays where it is on the floor.
+ */
+const CH_WALK_FRAMES = 8;
+const CH_WALK_FPS = 10;
+export const CHAMPION_PACE = 1.2;
+function chMarch(): Motion {
+  const R = CH_REST;
+  const n = CH_WALK_FRAMES;
+  const d = (CHAMPION_PACE * TILE3) / CH_WALK_FPS;
+  // (a foot comes down two frames' worth of floor ahead of the hips and leaves as far behind them: down five frames, off the floor three)
+  const half = 2 * d;
+  const SW = [0.22, 0.55, 0.85];
+  const SZ = [2.6, 3.8, 2.0];
+  const foot = (j: number): [number, number] => (j <= 4 ? [half - d * j, 0] : [-half + 2 * half * SW[j - 5], SZ[j - 5]]);
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const j = i % n;
+    const a = (j / n) * Math.PI * 2;
+    const [rx, rz] = foot(j);
+    const [lx, lz] = foot((j + 4) % n);
+    keys.push({
+      at: i / CH_WALK_FPS,
+      ease: 'lin',
+      pose: {
+        px: 0.4, py: -1.0 * Math.sin(a), pz: -1.6 - 1.2 * Math.cos(2 * a),
+        yaw: R.yaw + 4 * Math.cos(a), twist: -3 * Math.cos(a), pitch: 4 + 1.2 * Math.cos(2 * a), bend: 1 + Math.cos(2 * a),
+        roll: 3 * Math.sin(a), side: 1.5 * Math.sin(a),
+        faceUp: R.faceUp - 1 * Math.cos(2 * a), faceTurn: -2 * Math.cos(a), faceTilt: -2 * Math.sin(a),
+        rfx: rx, rfz: rz, rfy: -2.6, rft: -10, rk: -10, rfp: rz > 0 ? 12 : j === 0 ? -6 : 0,
+        lfx: lx, lfz: lz, lfy: 2.6, lft: 10, lk: 10, lfp: lz > 0 ? 12 : j === 4 ? -6 : 0,
+        lhIn: 0, lhx: 2.0 + 3.2 * Math.cos(a), lhy: 1.0, lhz: CH_HANG + 1.5 + 1.2 * Math.max(0, Math.cos(a)), le: -10,
+        rhIn: 0, rhx: -1.0 - 1.0 * Math.cos(a), rhy: -2.0, rhz: CH_HANG + 3.0, re: 6,
+        // (the sword trailed behind him, its point on the floor)
+        wAz: -168, wEl: -38 + 1.5 * Math.cos(2 * a), wRoll: 0,
+        draw: 0.15 + 0.1 * Math.max(0, Math.cos(2 * a)),
+      },
+    });
+  }
+  return { keys, loop: 0 };
+}
+/** STRUCK: rocked back on his heels, his hands keeping their hold on the planted sword, his head knocked back, the cape flaring; then he settles again. */
+function chStruck(): Motion {
+  const R = CH_REST;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.06, pose: { px: -2.6, pz: R.pz - 0.8, pitch: -7, bend: -6, twist: -5, faceUp: 14, faceTilt: -6, draw: 0.8, gale: 0.8 }, ease: 'out' },
+      { at: 0.15, pose: { px: -1.5, pz: R.pz - 0.8, pitch: -1, bend: -3, faceUp: 6, draw: 0.35, gale: 0.35 }, ease: 'io' },
+      { at: 0.3, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** DYING, TO HIS KNEES ON HIS SWORD (his pick by 11:51): a jolt; he sinks to his knees, both hands still on the hilt of the planted sword, his helm bowed against them, and the light goes out of his eyes; then he crumbles, his helm rolling away, his cape fallen in a heap, and his sword left standing in the floor. */
+function chGiving(): Motion {
+  const kneel: P = {
+    px: 0.6, pz: -15.5, pitch: 4, bend: 7, twist: 0, faceUp: -30, faceTilt: 6,
+    lfx: -5.5, rfx: -7.0, lfy: 3.4, rfy: -3.4, lfp: 55, rfp: 55, lk: 0, rk: 0,
+    rhIn: 2, rhx: 10.5, rhy: -0.5, rhz: GS_REACH + 0.9, wAz: 0, wEl: -88,
+  };
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.08, pose: { px: -1.2, pz: -0.8, pitch: -5, bend: -4, faceUp: 16, draw: 0.9 }, ease: 'out' },
+      { at: 0.55, pose: { ...kneel, draw: 0.6, out: 0.3 }, ease: 'in' },
+      { at: 0.62, pose: { ...kneel, pz: -15.8, draw: 0.5, out: 0.4 }, ease: 'out' },
+      { at: 1.05, pose: { ...kneel, faceUp: -38, bend: 10, draw: 0.35, out: 1 }, ease: 'io' },
+      { at: 1.12, pose: { ...kneel, faceUp: -38, bend: 10, draw: 0.35, out: 1, pt: 1 }, ease: 'hold' },
+      { at: 2.0, pose: { ...kneel, faceUp: -38, bend: 10, draw: 0.35, out: 1, pt: 1 }, ease: 'hold' },
+    ],
+  };
+}
+/** How each piece of him falls when he crumbles (seconds from the blow): his helm rolls away; his sword stays standing in the floor. */
+const CH_FALLS: Readonly<Record<string, Fall>> = {
+  helm: { from: 1.12, to: [15, -9], spin: 140, lay: 'axis', hop: 2.2 },
+  jaw: { from: 1.16, to: [7, 2], spin: 50, lay: 'keep', hop: 1 },
+  skull: { from: 1.2, to: [6, -3], spin: 30, lay: 'keep', hop: 1.2, pile: 0.6 },
+  armR: { from: 1.2, to: [3, -8], spin: -40, lay: 'axis', hop: 1 },
+  foreR: { from: 1.22, to: [6, -6], spin: 30, lay: 'axis', hop: 0.8 },
+  armL: { from: 1.2, to: [3, 8], spin: 35, lay: 'axis', pile: 0.8 },
+  foreL: { from: 1.23, to: [6, 9], spin: -25, lay: 'axis', pile: 1.2 },
+  plateL: { from: 1.18, to: [-3, 10], spin: 40, lay: 'keep', hop: 1.2 },
+  plateR: { from: 1.18, to: [-2, -11], spin: -30, lay: 'keep', hop: 1.2 },
+  cage: { from: 1.25, to: [1, 1], spin: 15, lay: 'axis', hop: 0.8 },
+  pelvis: { from: 1.27, to: [-2, 1], spin: 0, lay: 'keep' },
+  neck: { from: 1.24, to: [3, -4], spin: 60, lay: 'axis' },
+};
+
+export const CHAMPION: Mob = {
+  id: 'champion',
+  name: 'The Skeleton Champion',
+  size: 'a yellow pack’s leader: a head taller than his skeletons',
+  build: CB,
+  stand: { name: 'The Champion keeps his ground', motion: chPost(), rest: CH_REST },
+  attack: { name: 'The Champion cleaves', motion: chCleave(), rest: CH_REST, glint: (t) => (t > 0.3 && t < CHAMPION_HIT ? Math.min(1, (t - 0.3) / 0.3) : 0), trail: (sk) => [swordTipOf(sk)], dust: true },
+  idleFrames: 24,
+  idleFps: 10,
+  walk: { name: 'The Champion marches', motion: chMarch(), rest: CH_REST, period: CH_WALK_FRAMES / CH_WALK_FPS, ground: CHAMPION_PACE * TILE3 },
+  walkFrames: CH_WALK_FRAMES,
+  walkFps: CH_WALK_FPS,
+  pace: CHAMPION_PACE,
+  more: {
+    rally: { name: 'The Champion rallies his pack', motion: chRally(), rest: CH_REST, rally: rallyOver, glint: (t) => Math.min(1, rallyOver(t)) },
+  },
+  reel: { name: 'The Champion is struck', motion: chStruck(), rest: CH_REST },
+  reelTime: 0.3,
+  hit: CHAMPION_HIT,
+  warn: 0.62,
+  dieTime: 2.0,
+  dying: { name: 'The Champion falls to his knees', motion: chGiving(), rest: CH_REST },
+  aura: { x: CANVAS3.ax - 2, y: CANVAS3.ay - 34, r: 46, color: '#ff3a78', a: 0.13 },
+  shadow: 12,
+  bits: (st, m) => championBits(st, m),
+  fall(piece) {
+    const f = CH_FALLS[piece];
+    if (f) return f;
+    // (his sword stays standing in the floor, and the cape lies where it fell)
+    if (piece === 'sword' || piece === 'heap' || piece === 'cape' || piece === 'streak' || piece === 'dust' || piece === 'rally') return null;
+    return scatter(piece, 1.2, 1.34, piece.startsWith('rib') || piece.startsWith('plate') ? 9 : 6, piece.startsWith('rib') || piece === 'pelvis' ? 'flat' : 'axis');
+  },
+};
+
+/** THE SKELETON CHAMPION, as the game holds a monster (see makeShadeArt3). */
+export function makeChampionArt3(pace = CHAMPION.pace): ActorArt {
+  return { front: mobSet(CHAMPION, 'front', pace), back: mobSet(CHAMPION, 'back', pace) };
+}
 
 // ---------------------------------------------------------------------------------------------
 // For the pictures
