@@ -582,7 +582,7 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
   boneward: [
     { id: 'swing', windup: 0.7, dmg: 1, cooldown: 0, first: 0, after: 1.9, recover: 0.5, near: 0, far: 0 },
     { id: 'bash', windup: 0.55, dmg: 0.7, cooldown: 0, first: 0, after: 1.6, recover: 0.5, near: 0, far: 0 },
-    { id: 'throw', windup: 0.75, dmg: 1.3, cooldown: 6, first: 1.5, after: 1.2, recover: 0.55, near: 3.5, far: 8 },
+    { id: 'throw', windup: 0.75, dmg: 1.3, cooldown: 6, first: 0.6, after: 1.2, recover: 0.55, near: 3.5, far: 8 },
   ],
   golem: [
     { id: 'swing', windup: 0.6, dmg: 0.6, cooldown: 0, first: 0, after: 2.0, recover: 0.55, near: 0, far: 0 },
@@ -644,10 +644,11 @@ export const NEW_MONSTERS = { on: false };
  * what it meets of the hero on the way is hurt and it falls there, and otherwise it lies where it was
  * aimed (or where a wall stopped it) until the Boneward picks it up. While its spear is gone it fights
  * with its shield, of `bash` tiles' reach, when the hero is within `near` tiles of it; otherwise it goes
- * for its spear, stoops for it within `pick` tiles of it, and has it in hand again `grab` seconds into
- * the `stoop` (art/new_mobs3.ts BW_GRAB, and the pick-up's length).
+ * for its spear (and with the spear within `close` tiles of it, whoever is near), stoops for it within
+ * `pick` tiles of it, and has it in hand again `grab` seconds into the `stoop` (art/new_mobs3.ts
+ * BW_GRAB, and the pick-up's length): a moment in which to hit it.
  */
-export const SPEAR = { speed: 7, hand: 0.9, z: 21, bash: 1.0, near: 2.5, pick: 0.55, grab: 0.5, stoop: 1.0 };
+export const SPEAR = { speed: 7, hand: 0.9, z: 21, bash: 1.0, near: 2.5, close: 1.2, pick: 0.55, grab: 0.5, stoop: 1.0 };
 /**
  * THE GOLEM'S SKULLS (his pick by 09:30, "Hurl skulls (Recommended)"): thrown up high from its hand
  * (`hand` tiles before it, `z` of the game's pixels up), over where the hero stood by six tenths of its

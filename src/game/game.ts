@@ -3905,8 +3905,8 @@ export class Game {
       let mvy = 0;
       let moving = true;
       const reach = this.reachOf(m, def);
-      // (THE NEW MONSTERS: a Boneward whose spear is gone goes for it, unless the hero is near: SPEAR)
-      const toSpear = m.bare && dist > SPEAR.near ? this.spearWay(m) : null;
+      // (THE NEW MONSTERS: a Boneward whose spear is gone goes for it, unless the hero is near and the spear is not: SPEAR)
+      const toSpear = m.bare && (dist > SPEAR.near || this.spearWithin(m, SPEAR.close)) ? this.spearWay(m) : null;
       if (toSpear === 'here') {
         this.beginStoop(m);
         continue;
@@ -4441,6 +4441,11 @@ export class Game {
     if (!sp.flow || sp.flow[Math.floor(m.y) * f.w + Math.floor(m.x)] === UNREACHABLE) return null;
     const v = flowDir(sp.flow, L.walk, f.w, f.h, m.x, m.y, undefined, L.step);
     return v.x === 0 && v.y === 0 ? null : { x: v.x, y: v.y };
+  }
+
+  /** Whether a Boneward's spear lies within `d` tiles of it. */
+  private spearWithin(m: Monster, d: number): boolean {
+    return this.spears.some((s) => s.owner === m.id && Math.hypot(s.x - m.x, s.y - m.y) <= d);
   }
 
   /** It stoops for its spear, facing it (SPEAR.stoop seconds; the spear in its hand at SPEAR.grab). */
