@@ -21,9 +21,9 @@ interface Assert {
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
 
-/** Every move of the mage's that the switch changes, by its short name. */
-const HERS = ['mstand', 'mtown', 'mrun', 'mtownrun', 'mready'];
-const snap = (k: string): string => JSON.stringify({ rest: MOVES3[k].rest, motion: MOVES3[k].motion, ready: MOVES3[k].ready, stride: MOVES3[k].stride });
+/** Every move of the mage's that the switch changes, or that must stay as it is, by its short name. */
+const HERS = ['mstand', 'mtown', 'mrun', 'mtownrun', 'mready', 'mreel', 'mlurch', 'mfall', 'mlight', 'reading', 'tmlight', 'treading'];
+const snap = (k: string): string => JSON.stringify({ name: MOVES3[k].name, rest: MOVES3[k].rest, motion: MOVES3[k].motion, ready: MOVES3[k].ready, stride: MOVES3[k].stride });
 const TODAY = new Map(HERS.map((k) => [k, snap(k)]));
 const on = (fn: () => void): void => {
   useMageStances(true);
@@ -42,6 +42,13 @@ test('the switch is off, and her moves are today\'s', () => {
   // (her town stand and run, moves of their own now, are today's stand and run, picture for picture)
   assert.equal(JSON.stringify({ rest: MOVES3.mtown.rest, motion: MOVES3.mtown.motion }), JSON.stringify({ rest: MOVES3.mstand.rest, motion: MOVES3.mstand.motion }));
   assert.equal(JSON.stringify({ rest: MOVES3.mtownrun.rest, motion: MOVES3.mtownrun.motion }), JSON.stringify({ rest: MOVES3.mrun.rest, motion: MOVES3.mrun.motion }));
+  // (and her two habits in town are today's two habits)
+  assert.equal(JSON.stringify({ rest: MOVES3.tmlight.rest, motion: MOVES3.tmlight.motion }), JSON.stringify({ rest: MOVES3.mlight.rest, motion: MOVES3.mlight.motion }));
+  assert.equal(JSON.stringify({ rest: MOVES3.treading.rest, motion: MOVES3.treading.motion }), JSON.stringify({ rest: MOVES3.reading.rest, motion: MOVES3.reading.motion }));
+  assert.equal(PLANS.mage.town.idleA, 'tmlight');
+  assert.equal(PLANS.mage.town.idleB, 'treading');
+  assert.equal(PLANS.mage.dungeon.idleA, 'mlight');
+  assert.equal(PLANS.mage.dungeon.idleB, 'reading');
   assert.equal(PLANS.mage.town.idle, 'mtown');
   assert.equal(PLANS.mage.town.walk, 'mtownrun');
   assert.equal(PLANS.mage.dungeon.idle, 'mstand');
@@ -49,7 +56,10 @@ test('the switch is off, and her moves are today\'s', () => {
 
 test('switched on and off again, her moves are today\'s exactly', () => {
   on(() => {
-    for (const k of ['mstand', 'mtown', 'mrun', 'mtownrun']) assert.ok(snap(k) !== TODAY.get(k), `${k} changes with the switch on`);
+    for (const k of ['mstand', 'mtown', 'mrun', 'mtownrun', 'mreel', 'mlurch', 'mfall', 'mlight', 'reading']) assert.ok(snap(k) !== TODAY.get(k), `${k} changes with the switch on`);
+    // (in town she keeps both her habits as they are)
+    for (const k of ['tmlight', 'treading']) assert.equal(snap(k), TODAY.get(k), `${k} stays as it is in town`);
+    assert.equal(MOVES3.reading.name, 'The power gets away from the mage');
   });
   for (const k of HERS) assert.equal(snap(k), TODAY.get(k), `${k} is today's again`);
 });

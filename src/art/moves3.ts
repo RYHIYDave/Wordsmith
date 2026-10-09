@@ -1152,6 +1152,9 @@ function reading(): Motion {
 }
 export const MAGE_LIGHT3: Move3 = { name: 'The mage and a mage light', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: mageLight() };
 export const READING3: Move3 = { name: 'The mage reads', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: reading() };
+/** Her two habits in town: her own moves, the same as in a fight with MAGE_STANCES off, so that with it on she can have others in a fight. */
+export const MAGE_TOWN_LIGHT3: Move3 = { name: 'The mage and a mage light, in town', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: mageLight() };
+export const TOWN_READING3: Move3 = { name: 'The mage reads, in town', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: reading() };
 
 /** Standing: they breathe. Twelve tenths of a second round, as the game's standing loop is. */
 function breathing(from: Bones, more: Partial<Bones> = {}): Motion {
@@ -2122,10 +2125,87 @@ export function holdStartOf(hold: Move3): Move3 | null {
   return MAGE_STANCES.on && hold === BEAM3 ? BEAM_START3 : null;
 }
 
+/** Rocked back by a blow, or thrown forward by one from behind, from her guard: the foot that goes is lifted, and the staff stays level in her hands. */
+const mageReelLow = (): Motion => reelLow(MAGE_GUARD);
+const mageLurchLow = (): Motion => lurchLow(MAGE_GUARD);
+
+/**
+ * HER FALL, FROM HER GUARD: as it was (thrown back, a step back to keep her feet, the staff stood
+ * upright where she is and all that holds her up, and down it to her knees, slowly and then all at
+ * once), but from low, the staff swung up out of her guard as she is thrown, and each foot lifted
+ * when it steps.
+ */
+function mageFallFromGuard(): Motion {
+  const G = MAGE_GUARD;
+  const m = mageFall();
+  const [k0, , k2, ...rest] = m.keys;
+  return {
+    keys: [
+      k0,
+      // (thrown back: the back foot steps back, lifted; the staff swings up out of the level, her left hand letting it go)
+      { at: 2 * FR, pose: { px: -3.5, pz: G.pz - 0.4, pitch: -6, bend: -14, faceUp: -8, rfx: -10, rfz: 1.8, rfp: 12, ...staffHand(5, -1, -9), ...freeHand(4, 4, -9, -14), wAz: 180, wEl: 118, draw: 1 }, ease: 'out' },
+      // (the front foot comes back, lifted, as she catches herself)
+      { ...k2, pose: { ...k2.pose, lfz: 2, draw: 0.6 } },
+      ...rest,
+    ],
+  };
+}
+
+/**
+ * HER LIGHT, IN A FIGHT: still in her guard, she takes her left hand off the staff (it stays level
+ * in her right, its tip a little down), snaps her fingers, and a mage light pops on over her open
+ * hand; she watches it turn, snaps it out, and takes the staff again.
+ */
+function mageLightInGuard(): Motion {
+  const G = MAGE_GUARD;
+  const held: Partial<Bones> = { ...freeHand(9.5, 3.5, -5, 24), prop: 1, faceTurn: 26, faceUp: -18, twist: G.twist + 6, wEl: 152 };
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.4, pose: { ...held } },
+      { at: 1.6, pose: { ...held, pt: 0.45, faceUp: -10, lhz: -3.5 }, ease: 'io' },
+      { at: 3.1, pose: { ...held, pt: 1 }, ease: 'io' },
+      { at: 3.6, pose: {} },
+    ],
+  };
+}
+
+/**
+ * THE POWER GETS AWAY FROM HER (in a fight, in place of reading: the art rulebook's mage, "only
+ * just in control of the power"). The crystal flares white, a gust off it throws her coat and braids
+ * back, and the staff bucks up in her hands and pushes her back half a step (her back foot lifted as
+ * it goes); she leans into it, both hands hard on the staff, and wrestles it down level again; the
+ * crystal dies back to its glow, and she steps up into her guard.
+ */
+function powerGetsAway(): Motion {
+  const G = MAGE_GUARD;
+  const bucked: Partial<Bones> = { px: -2.4, pz: G.pz + 0.6, pitch: -4, bend: -6, faceUp: 8, wEl: 132, draw: 2.8, gale: 1.2, rfx: -9.5, rfz: 1.8, rfp: 12 };
+  const fought: Partial<Bones> = { px: 1.2, pz: G.pz - 1.4, pitch: 11, bend: 12, faceUp: -6, wEl: 158, draw: 2.2, gale: 0.7, rfx: -9.5 };
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      // (it flares, and bucks)
+      { at: 0.12, pose: { draw: 2.4, gale: 0.5 }, ease: 'in' },
+      { at: 0.24, pose: bucked, ease: 'out' },
+      { at: 0.42, pose: { ...bucked, rfz: 0, rfp: 0, wEl: 128, draw: 2.9 }, ease: 'io' },
+      // (she leans into it and wrestles it down, the staff shaking)
+      { at: 0.7, pose: fought, ease: 'io' },
+      { at: 0.82, pose: { ...fought, wEl: 155, rhz: G.rhz + 0.6 }, ease: 'lin' },
+      { at: 0.94, pose: { ...fought, wEl: 160, rhz: G.rhz - 0.4 }, ease: 'lin' },
+      { at: 1.1, pose: { ...fought, wEl: 164, draw: 1.8, gale: 0.4 }, ease: 'io' },
+      // (it is held; she steps up into her guard again, lifting her back foot, and it dies back to its glow)
+      { at: 1.4, pose: { px: 0.4, pz: G.pz - 0.6, bend: 6, faceUp: 2, draw: 1.5, gale: 0.2, rfx: -8.5, rfz: 1.6, rfp: 10 }, ease: 'io' },
+      { at: 1.8, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
 /** As they are with the switch off. */
 const MAGE_TODAY = {
   stand: MAGE_STAND3.motion, standRest: MAGE_STAND3.rest, town: MAGE_TOWN3.motion, runRest: MAGE_RUN3.rest,
   wave: WAVE3.motion, waveRest: WAVE3.rest, orb: ORB3.motion, orbRest: ORB3.rest, beamRest: BEAM3.rest, beamEnd: BEAM_END3.motion, beamEndRest: BEAM_END3.rest,
+  reel: MAGE_REEL3.motion, reelRest: MAGE_REEL3.rest, lurch: MAGE_LURCH3.motion, lurchRest: MAGE_LURCH3.rest, fall: MAGE_FALL3.motion, fallRest: MAGE_FALL3.rest,
+  light: MAGE_LIGHT3.motion, lightRest: MAGE_LIGHT3.rest, reading: READING3.motion, readingRest: READING3.rest, readingName: READING3.name,
 };
 /** Put the mage's new stances in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
 export function useMageStances(on: boolean): void {
@@ -2142,6 +2222,20 @@ export function useMageStances(on: boolean): void {
   BEAM3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamRest;
   BEAM_END3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamEndRest;
   BEAM_END3.motion = on ? beamLetGoToGuard() : MAGE_TODAY.beamEnd;
+  // (struck, and her fall, from her guard)
+  MAGE_REEL3.rest = on ? MAGE_GUARD : MAGE_TODAY.reelRest;
+  MAGE_REEL3.motion = on ? mageReelLow() : MAGE_TODAY.reel;
+  MAGE_LURCH3.rest = on ? MAGE_GUARD : MAGE_TODAY.lurchRest;
+  MAGE_LURCH3.motion = on ? mageLurchLow() : MAGE_TODAY.lurch;
+  MAGE_FALL3.rest = on ? MAGE_GUARD : MAGE_TODAY.fallRest;
+  MAGE_FALL3.motion = on ? mageFallFromGuard() : MAGE_TODAY.fall;
+  // (her two habits in a fight, from her guard: her light, and the power getting away from her in
+  // place of reading; in town she keeps both as they were: `tmlight`, `treading`)
+  MAGE_LIGHT3.rest = on ? MAGE_GUARD : MAGE_TODAY.lightRest;
+  MAGE_LIGHT3.motion = on ? mageLightInGuard() : MAGE_TODAY.light;
+  READING3.rest = on ? MAGE_GUARD : MAGE_TODAY.readingRest;
+  READING3.motion = on ? powerGetsAway() : MAGE_TODAY.reading;
+  READING3.name = on ? 'The power gets away from the mage' : MAGE_TODAY.readingName;
   remakeRuns();
 }
 
@@ -2151,6 +2245,6 @@ export const MOVES3: Record<string, Move3> = {
   klook: KNIGHT_LOOKS3, tsquirrel: RANGER_TOWN_SQUIRREL3, tsighting: RANGER_TOWN_SIGHTING3,
   rstand: RANGER_STAND3, volley: VOLLEY3, shot: SHOT3, rrun: RANGER_RUN3, roll: ROLL3, rreel: RANGER_REEL3, rlurch: RANGER_LURCH3, rfall: RANGER_FALL3, squirrel: SQUIRREL3, sighting: SIGHTING3,
   mstand: MAGE_STAND3, wave: WAVE3, orb: ORB3, beam: BEAM3, beamend: BEAM_END3, mrun: MAGE_RUN3, mreel: MAGE_REEL3, mlurch: MAGE_LURCH3, mfall: MAGE_FALL3, mlight: MAGE_LIGHT3, reading: READING3,
-  mtown: MAGE_TOWN3, mtownrun: MAGE_TOWN_RUN3, beamstart: BEAM_START3,
+  mtown: MAGE_TOWN3, mtownrun: MAGE_TOWN_RUN3, beamstart: BEAM_START3, tmlight: MAGE_TOWN_LIGHT3, treading: TOWN_READING3,
   rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
 };

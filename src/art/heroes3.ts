@@ -193,7 +193,7 @@ const KNIGHT_TOWN: Plan = { ...KNIGHT, idle: 'ktown', walk: 'ktownrun', idleA: '
 const RANGER_TOWN: Plan = { ...RANGER, idle: 'rtown', walk: 'rtownrun', idleA: 'tsquirrel', idleB: 'tsighting', ready: 'rdraw' };
 // (her town stand and run are moves of their own, the same as her stand and run in a fight with
 // moves3.ts MAGE_STANCES off, so that with it on she can stand and run otherwise in a fight)
-const MAGE_TOWN: Plan = { ...MAGE, idle: 'mtown', walk: 'mtownrun', idleA: 'mlight', idleB: 'reading', ready: 'mready' };
+const MAGE_TOWN: Plan = { ...MAGE, idle: 'mtown', walk: 'mtownrun', idleA: 'tmlight', idleB: 'treading', ready: 'mready' };
 /** `card`: ON A CLASS CARD they are as in town (since 18.8 they pass the time there as in town as well). */
 export const PLANS: Record<ClassId, { dungeon: Plan; town: Plan; card: Plan }> = {
   warrior: { dungeon: KNIGHT, town: KNIGHT_TOWN, card: { ...KNIGHT_TOWN } },
