@@ -15,9 +15,11 @@ import { makeGroundArt } from '../art/ground';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
 import { makeArcherArt3 } from '../art/monster_bones3';
+import { CENSER_HIT, makeCultistArt, makeHighPriestArt } from '../art/monster_cultist';
+import { DEATH_FPS } from '../art/mkit';
 import { MOVES3 } from '../art/moves3';
 import { MARKSMAN, MK_PIERCE_HIT, MK_SHOT_HIT, MK_SNAP, TILE3, deathOfMob, handAt, makeMarksmanArt3, paintMob } from '../art/new_mobs3';
-import { drawAimLine, drawGreatArrow } from '../art/mob_shots';
+import { drawAimLine, drawBurningSmoke, drawGreatArrow } from '../art/mob_shots';
 import type { FloorAt } from '../art/mob_shots';
 import type { Mob } from '../art/new_mobs3';
 import type { ActorArt, AnimSet, Clip } from '../art/actor_types';
@@ -172,7 +174,11 @@ const KNIGHT = (): Sprite => spriteOf3(MOVES3.rear, 0, 'front');
 
 /** EACH LEADER: his mob, his art as the game holds it, one of his pack, and what is said of him in the pictures. */
 interface Leader {
-  mob: Mob;
+  /** A leader on the bones (art/new_mobs3.ts), for the pictures that need his bones: none for one painted on the kit. */
+  mob?: Mob;
+  /** The soft shadow under him (its half-width on the floor, picture pixels), and the pace his walk is shown at (tiles a second). */
+  shadow: number;
+  pace: number;
   art: () => ActorArt;
   pack: () => Sprite;
   packName: string;
@@ -186,12 +192,15 @@ interface Leader {
   attackSaid: (t: number) => string;
   ownSaid: (t: number) => string;
   walkSaid: string;
+  standSaid: string;
   struckSaid: string;
   deathSaid: string;
 }
 const LEADERS: Record<string, Leader> = {
   marksman: {
     mob: MARKSMAN,
+    shadow: MARKSMAN.shadow,
+    pace: MARKSMAN.pace,
     art: () => makeMarksmanArt3(),
     pack: () => makeArcherArt3().front.idle[0],
     packName: 'A bone archer',
@@ -209,13 +218,50 @@ const LEADERS: Record<string, Leader> = {
     attackSaid: (t) => (t < MK_SHOT_HIT ? 'His shot: the great bow drawn to his jaw and held' : 'His shot: loosed'),
     ownSaid: (t) => (t < 0.52 ? 'His great shot: an arrow drawn from his quiver' : t < MK_PIERCE_HIT ? 'His great shot: drawn past his jaw and held, its head gathering light' : 'His great shot: loosed, to pierce'),
     walkSaid: 'His walk: unhurried, his great bow carried at his side',
+    standSaid: 'standing, still and patient',
     struckSaid: 'Struck: rocked back, his bow kept',
     deathSaid: 'Struck down: one last draw, and his bow snaps; then he comes apart',
   },
 };
+LEADERS.priest = {
+  shadow: 11,
+  pace: 1.0,
+  art: () => makeHighPriestArt(),
+  pack: () => makeCultistArt().front.idle[0],
+  packName: 'A cultist',
+  title: 'The high priest',
+  short: 'The high priest',
+  own: 'censer',
+  sheet: [
+    { which: 'attack', t: 0.6, name: 'His fire bolt', line: 'as his cultists throw' },
+    { which: 'censer', t: 0.5, name: 'His censer', line: 'swung back, pouring smoke' },
+    { which: 'censer', t: CENSER_HIT + 0.03, name: 'His censer', line: 'swung out, burning' },
+    { which: 'die', t: 0.6, name: 'Struck down', line: 'his robe crumples empty' },
+    { which: 'die', t: 1.0, name: 'His mask', line: 'falls last' },
+  ],
+  attackSaid: (t) => (t < 0.75 ? 'His fire bolt: the flame in his hand swells over his head' : 'His fire bolt: thrown'),
+  ownSaid: (t) => (t < CENSER_HIT - 0.05 ? 'His censer: swung back on its chain, flaring, pouring smoke' : 'His censer: swung round and out, its burning smoke streaming'),
+  walkSaid: 'His walk: a slow procession, his censer swinging',
+  standSaid: 'standing, his censer smoking on its chain',
+  struckSaid: 'The high priest',
+  deathSaid: 'Struck down: his robe crumples empty; his mask falls last',
+};
 const who = LEADERS[parts[1] || 'marksman'] ?? LEADERS.marksman;
-const L = who.mob;
-const shotOf = (which: string, t: number, view: GameView): Sprite => (which === 'die' ? dead3(L, t / L.dieTime, view) : sp3(L, which, t, view));
+const L = who.mob ?? MARKSMAN;
+let held: ActorArt | null = null;
+const artOf = (): ActorArt => (held ??= who.art());
+/** One of his moves as the game holds it, seen one way: standing and walking as loops. */
+function clipOf(which: string, view: GameView): Clip {
+  const set = view === 'back' ? artOf().back : artOf().front;
+  if (which === 'stand') return { frames: set.idle, fps: set.idleFps ?? 10, loop: 0 };
+  if (which === 'walk') return { frames: set.walk, fps: set.walkFps ?? 10, loop: 0 };
+  if (which === 'attack') return set.clips?.attack as Clip;
+  if (which === 'reel') return set.clips?.reel as Clip;
+  if (which === 'die') return { ...(set.clips?.die as Clip), fps: DEATH_FPS };
+  return set.clips?.moves?.[which] as Clip;
+}
+/** A frame of one of his moves `t` seconds in (a leader on the bones is painted at that very moment). */
+const shotOf = (which: string, t: number, view: GameView): Sprite => (who.mob ? (which === 'die' ? dead3(who.mob, t / who.mob.dieTime, view) : sp3(who.mob, which, t, view)) : frameAt(clipOf(which, view), t));
 
 // =============================================================================================
 // sheet: standing, beside his pack and a hero; under that, his moves and his death
@@ -226,10 +272,10 @@ if (mode === 'sheet') {
   const row1: { sp: Sprite; name: string; line: string; shadow: number; them: boolean }[] = [
     { sp: KNIGHT(), name: 'The knight', line: 'a hero, for size', shadow: 12, them: false },
     { sp: who.pack(), name: who.packName, line: 'his pack', shadow: 10, them: false },
-    { sp: sp3(L, 'stand', 0, 'front'), name: who.short, line: 'facing you', shadow: L.shadow, them: true },
-    { sp: sp3(L, 'stand', 0, 'back'), name: who.short, line: 'facing away', shadow: L.shadow, them: true },
+    { sp: shotOf('stand', 0, 'front'), name: who.short, line: 'facing you', shadow: who.shadow, them: true },
+    { sp: shotOf('stand', 0, 'back'), name: who.short, line: 'facing away', shadow: who.shadow, them: true },
   ];
-  const row2 = who.sheet.map((c) => ({ sp: shotOf(c.which, c.t, 'front'), name: c.name, line: c.line, shadow: L.shadow }));
+  const row2 = who.sheet.map((c) => ({ sp: shotOf(c.which, c.t, 'front'), name: c.name, line: c.line, shadow: who.shadow }));
   const GAP = 14;
   const cellOf = (sp: Sprite): [number, number] => {
     const [l, r] = reachOf(sp);
@@ -298,13 +344,13 @@ if (mode === 'film') {
     const t = tick / FPS;
     g.fillStyle = BG;
     g.fillRect(0, 0, cv.width, cv.height);
-    const said = t >= T1 && t < T2 - 0.4 ? who.attackSaid(t - T1) : t >= T2 && t < T2 + longOf(own[0]) ? who.ownSaid(t - T2) : `${who.title}: standing, still and patient`;
+    const said = t >= T1 && t < T2 - 0.4 ? who.attackSaid(t - T1) : t >= T2 && t < T2 + longOf(own[0]) ? who.ownSaid(t - T2) : `${who.title}: ${who.standSaid}`;
     text(said, PAD, 8, 17, '#ffd866', 700);
     text('a mock-up: not in the game. A yellow pack’s leader', PAD, 32, 14, '#cfc8ff', 600);
     const x0 = (cv.width - 2 * cw - PAD) / 2;
     for (let j = 0; j < 2; j++) {
       const x = x0 + j * (cw + PAD);
-      pane(x, HEAD, cw, ch, S, [{ sp: frameOf(j, t), fx: x + (M + l) * S, fy: HEAD + (M + u) * S, shadow: L.shadow }]);
+      pane(x, HEAD, cw, ch, S, [{ sp: frameOf(j, t), fx: x + (M + l) * S, fy: HEAD + (M + u) * S, shadow: who.shadow }]);
       text(j === 0 ? 'facing you' : 'facing away', x + cw / 2, HEAD + ch + 6, 15, '#e8e2ff', 600, 'center');
     }
   });
@@ -336,9 +382,9 @@ if (mode === 'walk') {
     g.fillStyle = BG;
     g.fillRect(0, 0, cv.width, cv.height);
     text(`${who.walkSaid}, ${away ? 'going away from you' : 'coming toward you'}`, PAD, 8, 17, '#ffd866', 700);
-    text(`a mock-up: not in the game. ${L.pace} tiles a second; the floor goes by under him`, PAD, 32, 14, '#cfc8ff', 600);
+    text(`a mock-up: not in the game. ${who.pace} tiles a second; the floor goes by under him`, PAD, 32, 14, '#cfc8ff', 600);
     const x = (cv.width - cw) / 2;
-    pane(x, HEAD, cw, ch, S, [{ sp, fx: x + (M + l) * S, fy: HEAD + (M + u) * S, shadow: L.shadow }], tt * L.pace, away, true);
+    pane(x, HEAD, cw, ch, S, [{ sp, fx: x + (M + l) * S, fy: HEAD + (M + u) * S, shadow: who.shadow }], tt * who.pace, away, true);
   });
 }
 
@@ -350,13 +396,16 @@ if (mode === 'death') {
   const FPS = 30;
   const art = who.art();
   const sets = [art.front, art.back];
-  const reel = sets.map((s) => s.clips?.reel as Clip);
-  const die = sets.map((s) => s.clips?.die as Clip);
+  const reel = sets.map((s) => s.clips?.reel);
+  const die = sets.map((s) => ({ ...(s.clips?.die as Clip), fps: DEATH_FPS }));
   const T1 = 0.5;
-  const T2 = T1 + longOf(reel[0]) + 0.4;
+  const T2 = T1 + (reel[0] ? longOf(reel[0]) + 0.4 : 0.3);
   const ROUND = T2 + longOf(die[0]) + 1.0;
   const TICKS = Math.round(ROUND * FPS);
-  const frameOf = (j: number, t: number): Sprite => (t >= T2 ? frameAt(die[j], t - T2) : t >= T1 && t < T1 + longOf(reel[j]) ? frameAt(reel[j], t - T1) : standingAt(sets[j], t));
+  const frameOf = (j: number, t: number): Sprite => {
+    const rj = reel[j];
+    return t >= T2 ? frameAt(die[j], t - T2) : rj && t >= T1 && t < T1 + longOf(rj) ? frameAt(rj, t - T1) : standingAt(sets[j], t);
+  };
   const all: Sprite[] = [];
   for (let i = 0; i < TICKS; i++) for (let j = 0; j < 2; j++) all.push(frameOf(j, i / FPS));
   const [l, r, u, d] = reachAll(all);
@@ -376,7 +425,7 @@ if (mode === 'death') {
     const x0 = (cv.width - 2 * cw - PAD) / 2;
     for (let j = 0; j < 2; j++) {
       const x = x0 + j * (cw + PAD);
-      pane(x, HEAD, cw, ch, S, [{ sp: frameOf(j, t), fx: x + (M + l) * S, fy: HEAD + (M + u) * S, shadow: L.shadow }]);
+      pane(x, HEAD, cw, ch, S, [{ sp: frameOf(j, t), fx: x + (M + l) * S, fy: HEAD + (M + u) * S, shadow: who.shadow }]);
       text(j === 0 ? 'facing you' : 'facing away', x + cw / 2, HEAD + ch + 6, 15, '#e8e2ff', 600, 'center');
     }
   });
@@ -408,7 +457,7 @@ if (mode === 'strip') {
   sps.forEach((sp, k) => {
     const x = 6 + (k % per) * (cw + 6);
     const y = 30 + Math.floor(k / per) * (ch + 22);
-    pane(x, y, cw, ch, S, [{ sp, fx: x + (M + l) * S, fy: y + (M + u) * S, shadow: L.shadow }]);
+    pane(x, y, cw, ch, S, [{ sp, fx: x + (M + l) * S, fy: y + (M + u) * S, shadow: who.shadow }]);
     text(`${idx[k]}`, x + 3, y + ch + 3, 12, '#a8a2b8');
   });
   win.__ready = true;
@@ -430,7 +479,7 @@ if (mode === 'pose') {
   g.fillStyle = BG;
   g.fillRect(0, 0, cv.width, cv.height);
   text(`${which} at ${t} s, ${view}`, 6, 6, 16, '#ffd866', 700);
-  pane(0, 30, cv.width, cv.height - 30, S, [{ sp, fx: (M + l) * S, fy: 30 + (M + u) * S, shadow: L.shadow }]);
+  pane(0, 30, cv.width, cv.height - 30, S, [{ sp, fx: (M + l) * S, fy: 30 + (M + u) * S, shadow: who.shadow }]);
   win.__ready = true;
 }
 
@@ -455,7 +504,7 @@ if (mode === 'poses') {
     row.forEach((sp, k) => {
       const x = 6 + k * (cw + 6);
       const y = 30 + j * (ch + 22);
-      pane(x, y, cw, ch, S, [{ sp, fx: x + (M + l) * S, fy: y + (M + u) * S, shadow: L.shadow }]);
+      pane(x, y, cw, ch, S, [{ sp, fx: x + (M + l) * S, fy: y + (M + u) * S, shadow: who.shadow }]);
       text(`${ts[k]} s`, x + 3, y + ch + 3, 12, '#a8a2b8');
     });
   });
@@ -508,7 +557,7 @@ function pane2(x: number, y: number, w: number, h: number, S: number, fx0: numbe
   g.fillStyle = 'rgba(6,4,14,0.55)';
   g.fillRect(x, y, w, h);
   g.globalCompositeOperation = 'destination-out';
-  const lit = g.createRadialGradient(fx0, fy0 - 18 * S, 0, fx0, fy0 - 18 * S, Math.max(60, (L.shadow + 40) * S));
+  const lit = g.createRadialGradient(fx0, fy0 - 18 * S, 0, fx0, fy0 - 18 * S, Math.max(60, (who.shadow + 40) * S));
   lit.addColorStop(0, 'rgba(0,0,0,0.6)');
   lit.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = lit;
@@ -525,7 +574,7 @@ function pane2(x: number, y: number, w: number, h: number, S: number, fx0: numbe
   }
   g.globalCompositeOperation = 'source-over';
   if (under) inGamePixels(x, y, w, h, fx0, fy0, S, under);
-  const sh = g.createRadialGradient(fx0, fy0, 0, fx0, fy0, L.shadow * S);
+  const sh = g.createRadialGradient(fx0, fy0, 0, fx0, fy0, who.shadow * S);
   sh.addColorStop(0, 'rgba(0,0,0,0.62)');
   sh.addColorStop(0.65, 'rgba(0,0,0,0.42)');
   sh.addColorStop(1, 'rgba(0,0,0,0)');
@@ -535,7 +584,7 @@ function pane2(x: number, y: number, w: number, h: number, S: number, fx0: numbe
   g.translate(-fx0, -fy0);
   g.fillStyle = sh;
   g.beginPath();
-  g.arc(fx0, fy0, L.shadow * S, 0, Math.PI * 2);
+  g.arc(fx0, fy0, who.shadow * S, 0, Math.PI * 2);
   g.fill();
   g.restore();
   drawAura(g, sp, fx0, fy0, 2 * S);
@@ -552,7 +601,87 @@ const onFloorOf = (p: readonly number[]): [number, number, number] => [p[0] / TI
 // shotfilm:marksman[:<scale>]: his plain shot, then his great shot: its line of aim on the floor as he
 // holds it, the great arrow flying along it
 
-if (mode === 'shotfilm') {
+if (mode === 'shotfilm' && who.own === 'censer') {
+  // THE HIGH PRIEST: his fire bolt, thrown at you; then his censer swung, and its burning smoke on the floor before him
+  const S = Number(parts[2]) || 3;
+  const FPS = 30;
+  const art = who.art();
+  const set = art.front;
+  const plain = set.clips?.attack as Clip;
+  const own = set.clips?.moves?.censer as Clip;
+  const T1 = 0.5;
+  const T2 = T1 + longOf(plain) + 0.5;
+  const SMOKE_FOR = 2.6;
+  const ROUND = T2 + (own.hit ?? CENSER_HIT) + SMOKE_FOR + 0.3;
+  const TICKS = Math.round(ROUND * FPS);
+  const YOU: readonly [number, number] = [5.0, 0];
+  const FAR = 6.6;
+  const YOU_SP = spriteOf3(MOVES3.rear, 0, 'back');
+  const BOLT_PACE = 6.5;
+  const SMOKE_AT: readonly [number, number] = [1.9, 0];
+  const frameOf = (t: number): Sprite => (t >= T1 && t < T1 + longOf(plain) ? frameAt(plain, t - T1) : t >= T2 && t < T2 + longOf(own) ? frameAt(own, t - T2) : standingAt(set, t));
+  const PAD = 10;
+  const [l, , u] = reachAll([...plain.frames, ...own.frames, set.idle[0]]);
+  const [ex, ey] = ISO(FAR, 0);
+  const W = (l + ex * 2 + 24) * S;
+  const H = (u + ey * 2 + 26) * S;
+  const HEAD = 58;
+  cv.width = Math.max(W + 2 * PAD, 680);
+  cv.height = HEAD + H + 34;
+  const X0 = Math.round((cv.width - W) / 2);
+  const fx0 = X0 + (l + 10) * S;
+  const fy0 = HEAD + (u + 8) * S;
+  const knight = (): void => {
+    const [a, b] = ISO(YOU[0], YOU[1]);
+    g.save();
+    g.translate(fx0 + a * 2 * S, fy0 + b * 2 * S);
+    g.scale(-1, 1);
+    drawAura(g, YOU_SP, 0, 0, 2 * S);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(YOU_SP.img, Math.round(-YOU_SP.ax * 2 * S), Math.round(-YOU_SP.ay * 2 * S), YOU_SP.img.width * S, YOU_SP.img.height * S);
+    drawLights(g, YOU_SP, 0, 0, 2 * S);
+    g.restore();
+  };
+  filmPage(TICKS, FPS, (tick) => {
+    const t = tick / FPS;
+    g.fillStyle = BG;
+    g.fillRect(0, 0, cv.width, cv.height);
+    const inOwn = t >= T2 && t < T2 + longOf(own);
+    const tb = t - (T1 + (plain.hit ?? 0.75));
+    const ts = t - (T2 + (own.hit ?? CENSER_HIT));
+    const said = t >= T1 && t < T2 - 0.2 ? who.attackSaid(t - T1) : inOwn || (ts >= 0 && ts < SMOKE_FOR) ? (ts < 0 ? who.ownSaid(t - T2) : 'His censer: its burning smoke lies on the floor before him') : `${who.title}: his two attacks`;
+    text(said, PAD, 8, 17, '#ffd866', 700);
+    text('a mock-up: not in the game. How long the smoke burns, and what it does, are the rules’', PAD, 32, 14, '#cfc8ff', 600);
+    const under = (c: CanvasRenderingContext2D): void => {
+      if (ts >= 0 && ts < SMOKE_FOR) drawBurningSmoke(c, ISO, SMOKE_AT[0], SMOKE_AT[1], 1.15, ts / SMOKE_FOR, t);
+    };
+    const over = (c: CanvasRenderingContext2D): void => {
+      const bx = 0.5 + tb * BOLT_PACE;
+      if (tb >= 0 && bx < YOU[0]) {
+        // (his fire bolt, as his cultists': a ball of fire and its trail)
+        const [ax, ay] = ISO(bx, 0);
+        const z = 17;
+        for (let d = 1; d < 12; d++) {
+          c.fillStyle = d < 4 ? '#ffb070' : d < 8 ? '#ff4f8a' : '#c0206a';
+          c.fillRect(Math.round(ax - d * 0.894), Math.round(ay - z - d * 0.447), 1, d < 5 ? 2 : 1);
+        }
+        c.fillStyle = '#ffb070';
+        c.fillRect(Math.round(ax) - 1, Math.round(ay - z) - 1, 3, 3);
+        c.fillStyle = '#fff0a0';
+        c.fillRect(Math.round(ax), Math.round(ay - z), 1, 1);
+      }
+    };
+    pane2(X0, HEAD, W, H, S, fx0, fy0, frameOf(t), under, undefined, [YOU]);
+    g.save();
+    g.beginPath();
+    g.rect(X0, HEAD, W, H);
+    g.clip();
+    knight();
+    inGamePixels(X0, HEAD, W, H, fx0, fy0, S, over);
+    g.restore();
+    text('facing you; the knight for the one he fights', X0 + W / 2, HEAD + H + 6, 15, '#e8e2ff', 600, 'center');
+  });
+} else if (mode === 'shotfilm') {
   const S = Number(parts[2]) || 3;
   const FPS = 30;
   const art = who.art();

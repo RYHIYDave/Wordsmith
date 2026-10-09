@@ -277,3 +277,58 @@ export function drawGreatArrow(g: CanvasRenderingContext2D, at: FloorAt, x: numb
   }
   g.globalAlpha = was;
 }
+
+// ---------------------------------------------------------------------------------------------
+// THE HIGH PRIEST'S BURNING SMOKE (9 Oct; art/monster_cultist.ts makeHighPriestArt, `moves.censer`).
+// A MOCK-UP: NOT IN THE GAME. Where his censer's smoke settles on the floor before him: a low cloud,
+// embers burning in it. How big it is, how long it lasts and what it does are the rules'.
+
+/** The smoke of his censer, dark to light (art/monster_cultist.ts SMOKE). */
+const SMOKE_TONES: readonly string[] = ['#3e3658', '#5c547c', '#847ca6'];
+
+/**
+ * HIS BURNING SMOKE on the floor round (x, y) (tiles), `r` tiles across its middle, `k` of the way
+ * through its life (0: it has just come down; it billows out to its full size in the first part of
+ * it, lies there burning, and thins away in the last); `t` the time (seconds). A low cloud of puffs
+ * of smoke that roll slowly, thicker in its middle, thinner at its edge, and embers in it, glowing
+ * pink and gold, rising and going out.
+ */
+export function drawBurningSmoke(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, r: number, k: number, t: number): void {
+  const kk = clamp01(k);
+  if (kk <= 0 || kk >= 1) return;
+  const grow = clamp01(kk / 0.15);
+  const fade = 1 - clamp01((kk - 0.72) / 0.28);
+  const R = r * (0.45 + 0.55 * grow);
+  const was = g.globalAlpha;
+  // the puffs: each where it lies in the cloud, rolling slowly round, rising and settling
+  const N = 22;
+  for (let i = 0; i < N; i++) {
+    const a = hash(i, 1, 91) * Math.PI * 2 + t * (0.25 + 0.2 * hash(i, 2, 91)) * (i % 2 ? 1 : -1);
+    const d = Math.sqrt(hash(i, 3, 91)) * R;
+    const [px, py] = at(x + Math.cos(a) * d, y + Math.sin(a) * d);
+    const lift = 2 + 3 * hash(i, 4, 91) + Math.sin(t * 1.3 + i) * 1;
+    const rad = (2.2 + 2.6 * hash(i, 5, 91)) * (0.6 + 0.4 * grow);
+    const inner = 1 - d / Math.max(0.01, R);
+    g.globalAlpha = was * fade * (0.3 + 0.35 * inner);
+    for (let jy = -Math.ceil(rad); jy <= Math.ceil(rad); jy++) {
+      for (let jx = -Math.ceil(rad * 1.3); jx <= Math.ceil(rad * 1.3); jx++) {
+        const q = (jx / 1.3) * (jx / 1.3) + jy * jy;
+        if (q > rad * rad) continue;
+        // (lit from under by the embers in it: its underside glows a deep pink)
+        g.fillStyle = jy > rad * 0.45 && hash(i, jx + 9, 93) < 0.6 ? FLAME[0] : q < rad * rad * 0.3 ? SMOKE_TONES[2] : q < rad * rad * 0.7 ? SMOKE_TONES[1] : SMOKE_TONES[0];
+        g.fillRect(Math.round(px + jx), Math.round(py - lift + jy), 1, 1);
+      }
+    }
+  }
+  // the embers in it: each rising a little way and going out, and coming again
+  for (let i = 0; i < 26; i++) {
+    const life = (t * (0.7 + 0.5 * hash(i, 6, 91)) + hash(i, 7, 91)) % 1;
+    const a = hash(i, 8, 91) * Math.PI * 2;
+    const d = Math.sqrt(hash(i, 9, 91)) * R * 0.9;
+    const [px, py] = at(x + Math.cos(a) * d, y + Math.sin(a) * d);
+    g.globalAlpha = was * fade * (1 - life);
+    g.fillStyle = life < 0.3 ? FLAME[4] : life < 0.65 ? FLAME[3] : FLAME[2];
+    g.fillRect(Math.round(px), Math.round(py - 1 - life * 9), 1, life < 0.25 && i % 3 === 0 ? 2 : 1);
+  }
+  g.globalAlpha = was;
+}

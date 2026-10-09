@@ -21,12 +21,13 @@
 
 import { Px } from '../engine/px';
 import type { Light } from '../engine/px';
-import type { ActorArt } from './actor_types';
+import type { ActorArt, Clip } from './actor_types';
+import { clipPoses } from './clip';
 import type { Key, Timeline } from './clip';
 import { fallen, quench } from './death';
-import { BONE, HI, INK, KAY, KH, KW, KX, LO, PINK, REST, STEEL, TURN, ball, compose, dim, dir, footOf, hash, inEllipse, joint, layer, limb, lit, shearBy, slant, stamp } from './kit';
+import { BONE, CLIP_FPS, HI, INDIGO, INK, KAX, KAY, KH, KW, KX, LO, PINK, REST, STEEL, TURN, ball, compose, dim, dir, edge, footOf, hash, inEllipse, joint, layer, lazyFrames, limb, lit, shearBy, slant, stamp, toSprite } from './kit';
 import type { Painted, Pose, Ramp, V } from './kit';
-import { FLAME, GLOOM, SOCKET, monsterArt, strike } from './mkit';
+import { ENEMY_RIM, FLAME, GLOOM, IRON, MENACE, SOCKET, monsterArt, onGrid, strike } from './mkit';
 
 // --- how the cultist is built, in pixels -------------------------------------------------------
 /** Floor to the top of the shoulders, to the rope round the waist, to the chin. */
@@ -234,7 +235,7 @@ function foot(p: Px, x: number, sole: number, far: boolean, back: boolean): void
 //   off          the knife arm: 0 hanging, 1 flung wide, -1 swept back.
 //   wind, drag   the flame, the hem, the open sleeve, the rope's end, the point of the cowl.
 
-function cultist(q: Pose, back: boolean, caller = false): Painted {
+function cultist(q: Pose, back: boolean, caller = false, priest = false): Painted {
   const lights: Light[] = [];
   /** The robe's cloth: the cultist's violet, or the gravecaller's shroud. */
   const cloth = caller ? SHROUD : GLOOM;
@@ -349,7 +350,7 @@ function cultist(q: Pose, back: boolean, caller = false): Painted {
       const x0 = Math.round(mid(y)) - 1 + midShift(y);
       // (a band of gold near its end)
       const band = y === end - 2;
-      for (let k = 0; k < 4; k++) if (robe.has(x0 + k, y)) robe.set(x0 + k, y, band ? FLAME[3] : PINK[k === 0 ? 3 : k === 3 ? 1 : 2]);
+      for (let k = 0; k < 4; k++) if (robe.has(x0 + k, y)) robe.set(x0 + k, y, band || (priest && (k === 0 || k === 3)) ? FLAME[3] : PINK[k === 0 ? 3 : k === 3 ? 1 : 2]);
     }
     // (the sign burns brighter while the fire is gathered)
     const gx = Math.round(mid(sy + 7)) + midShift(sy + 7);
@@ -377,7 +378,7 @@ function cultist(q: Pose, back: boolean, caller = false): Painted {
   const swept = Math.max(0, -q.off);
   // (it swings against the leg on its own side: the nearer leg facing us, the further one facing away)
   const kSwing = back ? -q.swing : q.swing;
-  const kHand: V = [X - 9 + kSwing * 1.2 - flung * 8.5 - swept * 3, sy + 14 + kSwing * 1.4 * fwd - flung * 8.5 - swept];
+  const kHand: V = [X - 9 + kSwing * 1.2 - flung * 8.5 - swept * 3 + (priest ? q.ohx : 0), sy + 14 + kSwing * 1.4 * fwd - flung * 8.5 - swept + (priest ? q.ohy : 0)];
   const kElbow = pick(joint(kShoulder, kHand, 5.5, 5.5, 1), joint(kShoulder, kHand, 5.5, 5.5, -1), (v) => -v[0]);
   const kLen = Math.hypot(kHand[0] - kElbow[0], kHand[1] - kElbow[1]) || 1;
   const kDir: V = [(kHand[0] - kElbow[0]) / kLen, (kHand[1] - kElbow[1]) / kLen];
@@ -386,6 +387,7 @@ function cultist(q: Pose, back: boolean, caller = false): Painted {
   const kRamp = back ? dim(cloth) : cloth;
   const knifeL = layer();
   if (caller) boneStaff(knifeL, Math.round(kHand[0]) - 1, Math.round(kHand[1]), floor, back, lights);
+  else if (priest) censerStaff(knifeL, over, kHand, floor, back, q, lights);
   else knife(knifeL, kHand[0] + kDir[0] * 0.5, kHand[1] + 1.5 + kDir[1] * 0.5, kDeg, back ? dim(STEEL) : STEEL);
   // facing us it hangs in front of the robe (under the cowl's mantle); facing away it is the far arm, behind the body
   const far = back ? layer() : body;
@@ -430,7 +432,8 @@ function cultist(q: Pose, back: boolean, caller = false): Painted {
     for (const [x, y] of open) head.set(x, y, INK);
     for (const [x, y] of open) if (!key.has(y * KW + x - 1)) head.set(x - 1, y, cloth[4]);
     const eyeY = Math.round(oy - 0.5 + tilt * 0.5);
-    for (const ex of [Math.round(ox - HOOD * 0.2), Math.round(ox + HOOD * 0.3)]) {
+    if (priest) mask(head, ox, oy, eyeY, hot, q.wind, lights);
+    else for (const ex of [Math.round(ox - HOOD * 0.2), Math.round(ox + HOOD * 0.3)]) {
       head.set(ex, eyeY, SOCKET);
       // (they smoulder as it stands, and burn up with the fire)
       lights.push({ x: ex + 0.5, y: eyeY + 0.5, r: 5 + 0.6 * hot, color: SOCKET, a: 0.45 + 0.07 * Math.sin(ph * 2 + 1) + 0.1 * hot });
@@ -492,7 +495,8 @@ function cultist(q: Pose, back: boolean, caller = false): Painted {
   const fy = Math.round(fHand[1]) - 3 - (q.act > 1.5 ? 1 : 0);
   fire(over, fHand[0], fy, q.act, q.wind, -drag * 1.6, lights);
   // (thrown: a last lick of it at the fingertips, streaming back; it lingers a moment as it dies)
-  if (q.pt > 0.02) fire(over, fHand[0] + 3, Math.round(fHand[1]) - 2, Math.sqrt(q.pt) * 0.9, q.wind, -3, lights);
+  // (the high priest's `pt` is his censer's, while it pours out smoke: `prop` 1)
+  if (q.pt > 0.02 && !(priest && q.prop >= 1)) fire(over, fHand[0] + 3, Math.round(fHand[1]) - 2, Math.sqrt(q.pt) * 0.9, q.wind, -3, lights);
 
   const layers = back ? [knifeL, far, farHand, body, head, arm, hands] : [body, knifeL, head, arm, hands];
   return { px: compose(null, layers, over), lights };
@@ -626,4 +630,305 @@ export function makeCultistArt(): ActorArt {
 /** One frame of the cultist, as a painting. */
 export function paintCultist(q: Pose, back: boolean): Painted {
   return cultist(q, back);
+}
+
+// =============================================================================================
+// THE HIGH PRIEST: A YELLOW PACK'S LEADER OF CULTISTS (the art chat, 9 Oct 2026). A MOCK-UP: NOT IN
+// THE GAME, as the gravecaller is: nothing of the game makes him (`makeHighPriestArt`).
+//
+// Asked in the art chat who should lead each kind of yellow pack, his pick for the cultists: "A high
+// priest (Recommended)". His brief (the art rulebook's "A new character"), asked as a pop-up and
+// answered by 14:41: "Their size" (offered as "As tall as they are; you know him by his mask and his
+// censer."); "A slow procession (Recommended)"; "His robe crumples empty (Recommended)"; and for the
+// Sound chat, "A chant and a chain's clink (Recommended)".
+//
+// So he is one of his cultists (the rig above), as tall as they are, known by two things: A MASK, a
+// smooth face of old ivory in the dark of his cowl, its eye slits slanting down, the pink burning in
+// them, a mark of gold on its brow; and HIS CENSER, which hangs on a chain from the iron crook of a
+// tall staff of dark wood (in his left hand, where a cultist holds its knife): a round iron vessel,
+// fire showing through its holes and licking from its top, smoke rising from it. His stole is edged
+// in gold. The flame in his right hand is his cultists'.
+//   standing   his censer sways on its chain, smoking.
+//   walking    A SLOW PROCESSION: short, gliding steps under the robe, the staff carried upright,
+//              the censer swinging on its chain with his steps and trailing smoke.
+//   attack     his fire bolt: as his cultists throw theirs (his staff stays where it is).
+//   moves.censer  HIS OWN: he raises his staff and swings the censer back on its chain, where it
+//              flares and pours smoke (the warning, held); then swings it round and out before
+//              him, its burning smoke streaming along the arc it goes through. (Where the smoke
+//              settles, and how it burns, are the rules': its cloud on the floor is
+//              art/mob_shots.ts drawBurningSmoke.)
+//   death      HIS ROBE CRUMPLES EMPTY, as his cultists' do; his staff topples, his censer rolls
+//              away spilling fire; and his mask, left hanging in the air where his face was, its
+//              eyes still burning, falls last onto the heap.
+//
+// How the rig reads a pose for him, over and above a cultist's:
+//   aim        his staff: 90 upright, less with its top toward the side he faces
+//   ohx, ohy   his staff hand, moved from where it rests (pixels)
+//   gale       his censer on its chain: degrees from hanging straight down, + toward the side faced
+//   sweep      how far his censer has just swung: its burning smoke streams along that arc
+//   prop, pt   prop 1: his censer pours out smoke, `pt` how hard (0..1)
+
+/** His mask: old ivory (not the bone of the dead: it is a thing made). */
+export const MASK: Ramp = ['#463a64', '#463a64', '#9288c2', '#d4cbef', '#d4cbef'];
+/** His staff: dark wood. */
+const STAFF_WOOD: Ramp = dim(INDIGO);
+/** The smoke from his censer, dark to light. */
+const SMOKE: readonly string[] = ['#3e3658', '#5c547c', '#847ca6'];
+/** His staff, from his fist up to its crook and down to its foot; and the chain his censer hangs on (pixels). */
+const STAFF_UP = 31;
+const STAFF_DOWN = 26;
+const CHAIN = 13;
+
+/**
+ * HIS MASK, in the opening of his cowl (`ox`, `oy` its middle; `eyeY` the row of the eyes): a smooth
+ * oval of ivory lit from the upper left, its eye slits slanting down toward its middle with the pink
+ * burning in them (hotter with the fire in his hand), a thin dark mouth, a mark of gold on its brow.
+ */
+function mask(p: Px, ox: number, oy: number, eyeY: number, hot: number, wind: number, lights: Light[]): void {
+  const mx = ox + 0.3;
+  const my = oy + 0.6;
+  const rx = HOOD * 0.5;
+  const ry = HOOD * 0.62;
+  for (let y = Math.floor(my - ry); y <= Math.ceil(my + ry); y++) {
+    for (let x = Math.floor(mx - rx); x <= Math.ceil(mx + rx); x++) {
+      const u = (x + 0.5 - mx) / rx;
+      const v = (y + 0.5 - my) / ry;
+      if (u * u + v * v > 1) continue;
+      p.set(x, y, MASK[u + v < -0.75 ? 3 : u + v > 0.85 ? 1 : 2]);
+    }
+  }
+  const ph = wind * Math.PI * 2;
+  for (const [ex, side] of [[Math.round(ox - HOOD * 0.2), -1], [Math.round(ox + HOOD * 0.3), 1]] as const) {
+    // (a slit: its outer end higher, the pink burning in its middle)
+    p.set(ex + side, eyeY - 1, INK);
+    p.set(ex, eyeY, SOCKET);
+    p.set(ex - side, eyeY, INK);
+    lights.push({ x: ex + 0.5, y: eyeY + 0.5, r: 5 + 0.6 * hot, color: SOCKET, a: 0.5 + 0.07 * Math.sin(ph * 2 + 1) + 0.1 * hot });
+  }
+  const mouth = Math.round(my + ry * 0.5);
+  for (let x = Math.round(mx) - 1; x <= Math.round(mx) + 1; x++) p.set(x, mouth, MASK[1]);
+  p.set(Math.round(mx), Math.round(my - ry * 0.62), FLAME[3]);
+}
+
+/** A puff of smoke: a round of it, thinner (more holes) the older it is (`age` 0..1). */
+function puff(p: Px, x: number, y: number, r: number, age: number, seed: number): void {
+  const c = age < 0.35 ? SMOKE[2] : age < 0.7 ? SMOKE[1] : SMOKE[0];
+  for (let j = Math.floor(y - r); j <= Math.ceil(y + r); j++) {
+    for (let i = Math.floor(x - r); i <= Math.ceil(x + r); i++) {
+      const d = Math.hypot(i + 0.5 - x, j + 0.5 - y);
+      if (d > r) continue;
+      if (hash(i * 7 + seed, j, 47) < age * 0.6 + (d / Math.max(0.5, r)) * 0.35) continue;
+      p.set(i, j, c);
+    }
+  }
+}
+
+/**
+ * HIS STAFF AND HIS CENSER: the staff through his fist (`hand`) at `q.aim`, its foot on the floor when
+ * it is upright and his hand at rest; an iron crook at its top, curling out away from him; the chain
+ * hanging from it at `q.gale` (swaying with the air as he stands, `wind`, and with the lean of his
+ * body); the censer at its end, a round iron vessel, fire in its holes and licking from its top,
+ * smoke rising from it. Pouring (`prop` 1, `pt` how hard), its fire flares and the smoke pours out,
+ * and along the arc it has just swung through (`sweep`) its burning smoke streams.
+ */
+function censerStaff(p: Px, over: Px, hand: V, floor: number, back: boolean, q: Pose, lights: Light[]): void {
+  const wood = back ? dim(STAFF_WOOD) : STAFF_WOOD;
+  const iron = back ? dim(IRON) : IRON;
+  const [dx, dy] = dir(q.aim);
+  const top: V = [hand[0] + dx * STAFF_UP, hand[1] + dy * STAFF_UP];
+  const foot: V = [hand[0] - dx * STAFF_DOWN, Math.min(floor, hand[1] - dy * STAFF_DOWN)];
+  limb(p, foot[0], foot[1], top[0], top[1], 1.05, 0.95, wood);
+  // the crook: up from the top of the staff, then out away from him, and down to where the chain hangs
+  const c1: V = [top[0] + dx * 2, top[1] + dy * 2];
+  const c2: V = [c1[0] - 2.6, c1[1] - 0.6];
+  const hook: V = [c2[0] - 1.2, c2[1] + 2.2];
+  limb(p, top[0], top[1], c1[0], c1[1], 0.85, 0.8, iron);
+  limb(p, c1[0], c1[1], c2[0], c2[1], 0.8, 0.75, iron);
+  limb(p, c2[0], c2[1], hook[0], hook[1], 0.75, 0.6, iron);
+  // the chain, at its angle
+  const flare = q.prop >= 1 ? clamp(q.pt, 0, 1) : 0;
+  const th = ((q.gale + 9 * Math.sin(q.wind * Math.PI * 2 + 0.7) * (1 - flare) + q.lean * 3) * Math.PI) / 180;
+  const cx0 = Math.sin(th);
+  const cy0 = Math.cos(th);
+  for (let i = 1; i <= CHAIN; i++) {
+    if (i % 3 === 0) continue;
+    p.set(Math.round(hook[0] + cx0 * i), Math.round(hook[1] + cy0 * i), i % 3 === 1 ? iron[3] : iron[2]);
+  }
+  const c: V = [hook[0] + cx0 * (CHAIN + 4.5), hook[1] + cy0 * (CHAIN + 4.5)];
+  // the censer: a round iron vessel, its lid a little darker under a rim, a knob where the chain is made fast
+  ball(p, c[0], c[1], 4.2, 3.8, iron);
+  for (let x = Math.round(c[0] - 3); x <= Math.round(c[0] + 3); x++) p.set(x, Math.round(c[1] - 1), iron[1]);
+  for (let x = Math.round(c[0] - 1); x <= Math.round(c[0] + 1); x++) p.set(x, Math.round(c[1] - 4), iron[3]);
+  p.set(Math.round(c[0]), Math.round(c[1] - 5), iron[3]);
+  // fire in its holes: a band of them round its belly, and one under the rim
+  const hole = flare > 0.5 ? FLAME[4] : FLAME[3];
+  for (const k of [-3, -1, 1, 3]) p.set(Math.round(c[0] + k), Math.round(c[1] + 1), Math.abs(k) === 1 ? hole : FLAME[2]);
+  for (const k of [-2, 0, 2]) p.set(Math.round(c[0] + k), Math.round(c[1] + 2.6), FLAME[1]);
+  p.set(Math.round(c[0] + 1), Math.round(c[1] - 2), FLAME[2]);
+  // and licking from its top (on the layer with no seam), its light
+  fire(over, c[0] - cx0 * 2.5, Math.round(c[1] - 4.5), 0.35 + 0.75 * flare, q.wind, -q.drag * 1.2 - cx0 * 1.5, lights);
+  lights.push({ x: c[0], y: c[1], r: 8 + 8 * flare, color: FLAME[3], a: 0.32 + 0.35 * flare });
+  // the smoke rising from it, carried back as he walks
+  const puffs = 4 + Math.round(4 * flare);
+  for (let j = 0; j < puffs; j++) {
+    const age = (q.wind * 2 + j / puffs) % 1;
+    const x = c[0] + Math.sin(age * 4 + j) * 1.4 - q.drag * age * 7 - cx0 * age * 4;
+    const y = c[1] - 6 - age * (12 + 6 * flare);
+    puff(over, x, y, 0.8 + age * (1.6 + flare), age, j * 13);
+  }
+  // pouring as it swings: burning smoke along the arc it has just come through, thickest where it is now
+  if (flare > 0.05 && q.sweep > 4) {
+    const n = Math.max(2, Math.round(q.sweep / 10));
+    for (let i = 1; i <= n; i++) {
+      const back1 = i / n;
+      const a = th - ((q.sweep * back1) * Math.PI) / 180;
+      const x = hook[0] + Math.sin(a) * (CHAIN + 4.5);
+      const y = hook[1] + Math.cos(a) * (CHAIN + 4.5);
+      puff(over, x, y, 2.4 - back1 * 0.9, 0.2 + back1 * 0.7, i * 31);
+      if (hash(i, 3, 53) < 0.8 * flare) over.set(Math.round(x + (hash(i, 4, 53) - 0.5) * 3), Math.round(y + (hash(i, 5, 53) - 0.5) * 3), back1 < 0.4 ? FLAME[4] : FLAME[3]);
+    }
+  }
+}
+
+/** His walk, A SLOW PROCESSION (his pick by 14:41): eight poses at nine a second; short gliding steps under the robe, hardly a bob; his staff carried upright; his censer swinging on its chain with his steps. */
+export const PROCESSION_FPS = 9;
+const PROCESSION: Partial<Pose>[] = Array.from({ length: 8 }, (_, i) => {
+  const a = (i / 8) * Math.PI * 2;
+  return {
+    near: -Math.cos(a) * 0.55,
+    nearLift: Math.max(0, Math.sin(a)) * 0.35,
+    far: Math.cos(a) * 0.55,
+    farLift: Math.max(0, -Math.sin(a)) * 0.35,
+    bob: i % 4 === 2 ? 1 : 0,
+    lean: 0,
+    swing: Math.cos(a) * 0.25,
+    wind: ((i / 8) * 2) % 1,
+    drag: 0.55,
+    ohy: -1.5,
+    gale: 26 * Math.sin(a - 0.9),
+  };
+});
+
+/** The moment his censer's swing is at its widest (its rules are the main chat's). */
+export const CENSER_HIT = 0.8;
+/** HIS CENSER SWUNG: raised, swung back on its chain, flaring and pouring smoke (held: the warning); then round and out before him, its burning smoke streaming along the arc. */
+function censerSwing(back: boolean): Timeline {
+  const H = CENSER_HIT;
+  const lift = back ? -1 : 0;
+  const wound: Partial<Pose> = { ohx: -3, ohy: -7 + lift, aim: 115, gale: -100, act: 1.3, lean: -2, bob: -1, prop: 1, pt: 0.35, wind: 0.15 };
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.32, pose: wound, ease: 'out' },
+      { at: 0.55, pose: { ...wound, gale: -108, pt: 0.6, wind: 0.3 }, ease: 'lin' },
+      // (the swing: down under the crook and up and out before him, pouring burning smoke all the way)
+      { at: H - 0.06, pose: { ...wound, ohx: -1, aim: 100, gale: -60, sweep: 40, pt: 0.8, wind: 0.36 }, ease: 'in' },
+      { at: H, pose: { ohx: 6, ohy: -3 + lift, aim: 48, gale: 75, sweep: 170, act: 1.2, lean: 2.5, bob: 1, prop: 1, pt: 1, wind: 0.42, drag: 1 }, ease: 'lin' },
+      { at: H + 0.1, pose: { ohx: 7, ohy: -2 + lift, aim: 42, gale: 95, sweep: 30, act: 1.1, lean: 3, bob: 1, prop: 1, pt: 0.85, wind: 0.5, drag: 1 }, ease: 'out' },
+      { at: H + 0.32, pose: { ohx: 3, ohy: -1, aim: 70, gale: 20, sweep: 0, act: 1, lean: 1, prop: 1, pt: 0.4, wind: 0.72, drag: 0.4 }, ease: 'io' },
+      { at: H + 0.6, pose: { wind: 1 }, ease: 'io' },
+    ],
+  };
+}
+
+/** His fire bolt: his cultists' throw (cultMoves), his staff kept where it is. */
+function priestMoves(): { front: { attack: Timeline }; backMoves: { attack: Timeline } } {
+  const { front, backMoves } = cultMoves();
+  const still = (t: Timeline): Timeline => ({ ...t, keys: t.keys.map((k) => ({ ...k, pose: { ...k.pose, off: 0 } })) });
+  return { front: { attack: still(front.attack) }, backMoves: { attack: still(backMoves.attack) } };
+}
+
+/** How long his death takes (seconds). */
+export const PRIEST_DIE_TIME = 1.5;
+/** When, of his death (0..1), his mask lets go and falls. */
+const MASK_FALLS = 0.5;
+/**
+ * HIS DEATH: HIS ROBE CRUMPLES EMPTY (his pick by 14:41), as his cultists' do (cultistDeath): a
+ * shudder, his fire and his censer flaring; then there is nobody in the robe, and it folds down onto
+ * its hem, the cowl coming down on it; his staff topples; his censer drops from its chain and rolls
+ * away, spilling fire that burns a moment on the floor; and his mask, left hanging where his face
+ * was, its eyes still burning, falls last onto the heap, and goes dark.
+ */
+function priestDeath(k: number, back: boolean): Painted {
+  const SHUDDER = 0.1;
+  if (k < SHUDDER) {
+    const u = k / SHUDDER;
+    return cultist({ ...REST, act: 1 + 1.4 * Math.sin(u * Math.PI), lean: -1.5 * u, bob: Math.floor(u * 4) % 2, hy: -3 * u, wind: 0.2 * u, drag: 0.5 * u, prop: 1, pt: Math.sin(u * Math.PI), gale: -20 * u }, back, false, true);
+  }
+  const stood = cultist({ ...REST, act: 0, lean: -1.5, hy: -3, wind: 0.2, drag: 0.5, gale: -20 }, back, false, true);
+  // what is cloth, what is his mask, his staff, his censer and its chain; and what was whoever wore them (which is gone)
+  const cloth = new Px(KW, KH);
+  const face = new Px(KW, KH);
+  const faceDark = new Px(KW, KH);
+  const staff = new Px(KW, KH);
+  const censer = new Px(KW, KH);
+  const woodAll = [...STAFF_WOOD, ...dim(STAFF_WOOD)];
+  const ironAll = [...IRON, ...dim(IRON)];
+  stood.px.each((x, y, c) => {
+    if (MASK.includes(c)) {
+      face.set(x, y, c);
+      faceDark.set(x, y, c);
+    } else if (c === SOCKET) {
+      // (the eyes of his mask, the only pink on him: lit while it hangs there, dark once it falls)
+      face.set(x, y, c);
+      faceDark.set(x, y, INK);
+    } else if (woodAll.includes(c)) staff.set(x, y, c);
+    else if (ironAll.includes(c)) censer.set(x, y, c);
+    else if (!FLAME.includes(c) && !BONE.includes(c) && c !== WHITE && !SMOKE.includes(c)) cloth.set(x, y, c);
+    return undefined;
+  });
+  const neck = KAY - SHOULDER + 1;
+  const u = (k - SHUDDER) / (1 - SHUDDER);
+  const side = back ? 1 : -1;
+  const rolled: V = [KX + side * -22, KAY + 1];
+  const px = fallen(
+    [
+      { px: cloth, box: [0, neck, KW, KH], to: [KX, KAY + 1], flat: 0.27, from: 0, until: 0.5 },
+      { px: staff, to: [KX + side * 15, KAY + 1], turns: side, topple: true, from: 0.04, until: 0.55, bounce: 1 },
+      { px: censer, to: rolled, turns: 2 * -side, from: 0.06, until: 0.62, hop: 3, bounce: 2 },
+      { px: cloth, box: [0, 0, KW, neck], to: [KX + (back ? -2 : 2), KAY - 8], flat: 0.7, from: 0, until: 0.55, bounce: 1.5 },
+      // (his mask, last: it hangs where his face was, its eyes burning, until the robe is down; then it falls onto the heap)
+      { px: u < MASK_FALLS + 0.05 ? face : faceDark, to: [KX + (back ? -1 : 2), KAY - 5], from: MASK_FALLS, until: 0.82, bounce: 1.2 },
+    ],
+    u, KW, KH, INK,
+  );
+  // the fire spilled from his censer as it rolled: a moment burning on the floor where it went, dying
+  const lights: Light[] = [];
+  if (u > 0.3 && u < 0.98) {
+    const burn = Math.sin(((u - 0.3) / 0.68) * Math.PI);
+    for (const [f, size] of [[0.45, 0.55], [0.75, 0.4], [1, 0.7]] as const) {
+      const x = KX + (rolled[0] - KX) * f;
+      if ((u - 0.3) / 0.32 < f) continue;
+      fire(px, x, KAY - 1, size * burn, u * 3 + f, 0, lights);
+    }
+  }
+  return { px, lights };
+}
+
+/** A move of his besides his attack, as the game holds a clip: its frames as monsterArt paints them (his pink edge, his pool of light). */
+function priestClip(t: Timeline, back: boolean): Clip {
+  const g = onGrid(t);
+  const poses = clipPoses(g.keys, { ...REST, act: 1 }, CLIP_FPS);
+  const frames = lazyFrames(poses.length, (i) => {
+    const f = cultist(poses[i], back, false, true);
+    edge(f.px, ENEMY_RIM);
+    return toSprite(f, MENACE, KAX, KAY);
+  });
+  const c: Clip = { frames, fps: CLIP_FPS };
+  if (g.hit !== undefined) c.hit = g.hit;
+  return c;
+}
+
+/** THE HIGH PRIEST, as the game holds a monster: his stand, his procession, his fire bolt (`attack`), his death, and his own move (`clips.moves.censer`). */
+export function makeHighPriestArt(): ActorArt {
+  const { front, backMoves } = priestMoves();
+  const art = monsterArt((q, back) => cultist(q, back, false, true), { ...front, die: (k) => priestDeath(k, false) }, { ...backMoves, die: (k) => priestDeath(k, true) }, { rest: { act: 1 }, walk: PROCESSION, walkFps: PROCESSION_FPS, dieTime: PRIEST_DIE_TIME });
+  for (const [set, back] of [[art.front, false], [art.back, true]] as const) set.clips = { ...set.clips, moves: { censer: priestClip(censerSwing(back), back) } };
+  return art;
+}
+
+/** One frame of the high priest, as a painting (for pictures). */
+export function paintHighPriest(q: Pose, back: boolean): Painted {
+  return cultist(q, back, false, true);
 }
