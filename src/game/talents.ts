@@ -180,7 +180,7 @@ const WARRIOR: TalentTree = {
   cls: 'warrior',
   shape: 'two swords crossed',
   paths: [
-    { id: 'technique', name: 'TECHNIQUE', color: TECHNIQUE, label: { node: 'honededge', side: 'right' } },
+    { id: 'technique', name: 'TECHNIQUE', color: TECHNIQUE, label: { node: 'honededge', side: 'below' } },
     { id: 'iron', name: 'IRON', color: IRON, label: { node: 'thickskin', side: 'right' } },
     { id: 'cross', name: '', color: CROSS, label: { node: 'earthshaker', side: 'above' } },
   ],
