@@ -1308,7 +1308,7 @@ export function makeGuardianArt(): ActorArt {
 //              crown comes off and rolls away.
 
 /** His banner's cloth: an old red hide. Its pole: dark wood. */
-const BANNER: Ramp = ['#3a0a1c', '#3a0a1c', '#7a1430', '#b0304c', '#b0304c'];
+export const BANNER: Ramp =['#3a0a1c', '#3a0a1c', '#7a1430', '#b0304c', '#b0304c'];
 const POLE: Ramp = dim(INDIGO);
 /** How much slower his blows are than his trolls' (he is bigger and heavier). */
 const CHIEF_SLOW = 1.2;

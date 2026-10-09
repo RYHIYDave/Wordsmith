@@ -1,7 +1,10 @@
 // Dev page: THE OTHER PACKS' LEADERS (a mock-up: NOT IN THE GAME): the bone marksman (art/new_mobs3.ts
-// MARKSMAN), on a piece of the dungeon's own floor with the dark of a dungeon over it, as
-// preview_champion.ts shows the skeleton champion.
+// MARKSMAN), the high priest (art/monster_cultist.ts makeHighPriestArt) and the troll chieftain
+// (art/monster_brute.ts makeChieftainArt), on a piece of the dungeon's own floor with the dark of a
+// dungeon over it, as preview_champion.ts shows the skeleton champion. <leader>: marksman, priest or
+// chieftain. (docs/mockups/more_leaders/README.md)
 //   node tools/preview.mjs src/dev/preview_leaders.ts previews/leaders/marksman_sheet.png 1400 1000 "sheet:marksman"
+//   node tools/page_gif.mjs src/dev/preview_leaders.ts "film:priest:3" previews/leaders/priest_film.gif
 //   hash = sheet:<leader>[:<scale>]: standing, facing you and away, beside one of his pack and the
 //            knight for size; under them his moves and his death
 //          film:<leader>[:<scale>]: frames of a moving picture (tools/page_gif.mjs): facing you and
@@ -9,8 +12,13 @@
 //          walk:<leader>[:<scale>]: frames of a moving picture: walking toward you and then away, the
 //            floor going by under him at his pace
 //          death:<leader>[:<scale>]: frames of a moving picture: struck, then struck down
+//          shotfilm:marksman[:<scale>]: frames of a moving picture: his plain shot, then his great shot,
+//            its line of aim on the floor as he holds it, the great arrow flying along it
+//          shotfilm:priest[:<scale>]: frames of a moving picture: his fire bolt, then his censer swung
+//            and its burning smoke on the floor before him
 //          strip:<leader>:<stand | walk | attack | reel | die | one of his others>:<front | back>[:<scale>]: every frame of one move
 //          pose:<leader>:<move>:<seconds>:<front | back>[:<scale>]: one frame, big
+//          poses:<leader>:<move>:<seconds,seconds,...>[:<scale>]: a row of frames of one move, facing you and away
 import { makeGroundArt } from '../art/ground';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';

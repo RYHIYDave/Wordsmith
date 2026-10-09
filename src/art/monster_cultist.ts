@@ -656,7 +656,8 @@ export function paintCultist(q: Pose, back: boolean): Painted {
 //              flares and pours smoke (the warning, held); then swings it round and out before
 //              him, its burning smoke streaming along the arc it goes through. (Where the smoke
 //              settles, and how it burns, are the rules': its cloud on the floor is
-//              art/mob_shots.ts drawBurningSmoke.)
+//              `drawBurningSmoke`, in the file of what the new monsters throw, which nothing of
+//              the game imports.)
 //   death      HIS ROBE CRUMPLES EMPTY, as his cultists' do; his staff topples, his censer rolls
 //              away spilling fire; and his mask, left hanging in the air where his face was, its
 //              eyes still burning, falls last onto the heap.
@@ -673,7 +674,7 @@ export const MASK: Ramp = ['#463a64', '#463a64', '#9288c2', '#d4cbef', '#d4cbef'
 /** His staff: dark wood. */
 const STAFF_WOOD: Ramp = dim(INDIGO);
 /** The smoke from his censer, dark to light. */
-const SMOKE: readonly string[] = ['#3e3658', '#5c547c', '#847ca6'];
+export const SMOKE: readonly string[] =['#3e3658', '#5c547c', '#847ca6'];
 /** His staff, from his fist up to its crook and down to its foot; and the chain his censer hangs on (pixels). */
 const STAFF_UP = 31;
 const STAFF_DOWN = 26;
