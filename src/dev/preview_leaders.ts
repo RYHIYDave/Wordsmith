@@ -16,6 +16,7 @@ import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
 import { makeArcherArt3 } from '../art/monster_bones3';
 import { CENSER_HIT, makeCultistArt, makeHighPriestArt } from '../art/monster_cultist';
+import { CHIEF_DIE_TIME, makeBruteArt, makeChieftainArt } from '../art/monster_brute';
 import { DEATH_FPS } from '../art/mkit';
 import { MOVES3 } from '../art/moves3';
 import { MARKSMAN, MK_PIERCE_HIT, MK_SHOT_HIT, MK_SNAP, TILE3, deathOfMob, handAt, makeMarksmanArt3, paintMob } from '../art/new_mobs3';
@@ -245,6 +246,30 @@ LEADERS.priest = {
   standSaid: 'standing, his censer smoking on its chain',
   struckSaid: 'The high priest',
   deathSaid: 'Struck down: his robe crumples empty; his mask falls last',
+};
+LEADERS.chieftain = {
+  shadow: 24,
+  pace: 0.9,
+  art: () => makeChieftainArt(),
+  pack: () => makeBruteArt().front.idle[0],
+  packName: 'A green troll',
+  title: 'The troll chieftain',
+  short: 'The chieftain',
+  own: 'swing',
+  sheet: [
+    { which: 'swing', t: 0.5, name: 'His swing', line: 'wound back' },
+    { which: 'swing', t: 0.76, name: 'His swing', line: 'the blow' },
+    { which: 'attack', t: 0.75, name: 'His slam', line: 'reared up' },
+    { which: 'attack', t: 1.07, name: 'His slam', line: 'the blow' },
+    { which: 'die', t: 0.7, name: 'Struck down', line: 'to his knees' },
+    { which: 'die', t: CHIEF_DIE_TIME, name: 'Fallen', line: 'face-first, his banner over him' },
+  ],
+  attackSaid: (t) => (t < 1.02 ? 'His slam: reared up, the club over his head' : 'His slam: the blow'),
+  ownSaid: (t) => (t < 0.72 ? 'His swing: wound back, the club held' : 'His swing: round in front of him, his weight behind it'),
+  walkSaid: 'His walk: heavy, his banner flying',
+  standSaid: 'standing, his banner stirring',
+  struckSaid: 'The troll chieftain',
+  deathSaid: 'Struck down: to his knees, then face-first; his banner falls over him',
 };
 const who = LEADERS[parts[1] || 'marksman'] ?? LEADERS.marksman;
 const L = who.mob ?? MARKSMAN;
