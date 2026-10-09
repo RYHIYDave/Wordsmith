@@ -34,7 +34,66 @@ heard any of it.
 
 ## What he said
 
-Not yet. (To be written here in his exact words.)
+**In short: the dream half and the wall's sound were not it; the fight wants more; the four ways the
+thrash half plays he liked, all of them. Next he hears a band made in code.**
+
+Asked at 15:51 as a pop-up, answered by 15:56:
+
+1. "Clip 1, exploring: are the tune and the feel right?" Yes, both (Recommended) ("Keep this tune and
+   this light, airy feel, and polish from here."), The feel, not the tune ("Keep how it sounds. Write
+   a different tune."), The tune, not the feel ("Keep the tune. Change how it sounds: say how, if you
+   can."), Neither ("Start the dream half again."). **His answer: "Neither".**
+2. "Clips 2 and 3, the fight: does the thrash half punch the way you want?" Yes, that's the punch
+   (Recommended) ("Keep it at this size and polish from here."), More ("Heavier and wilder, and
+   louder against the exploring."), Less ("It's too much. Pull it back."), It isn't thrash ("It
+   doesn't sound like the music you meant. Say what's missing, if you can."). **His answer: "More".**
+3. "The wall of chords and riffs: clip 3 or clip 4?" Strings, clip 3 (Recommended) ("Plucked strings
+   pushed through an amp: nearer to guitars."), Plain synths, clip 4 ("Held synth notes: plainly a
+   synthesizer."), Both together ("Layer the two."), Neither ("Say what you'd rather hear."). **His
+   answer: "Neither".**
+4. "In clip 3 the thrash half plays four ways, eleven seconds each. Which do you want in the game?
+   Pick any." Half-time, 0:22 (Recommended), Gallop, 0:00, Racing, 0:11, Blast, 0:34. **His answer,
+   in his own words:** "I liked them all, and interchanging them gives different opportunities for different attacks.  Half time for slams, racing for a barrage of shots, that kind of thing"
+
+Read back to him at about 15:58: the tune and the feel of exploring both go; the fight is to be
+heavier, wilder and a bigger jump in loudness; the wall needs a different sound; all four ways stay,
+and the game picks which one plays by what the fight is doing, which sits beside bosses on the beat.
+He was told the director's guess at where exploring went wrong (soft pads and a flute-like lead, no
+beat and no band: nearer new-age music than indie pop or shoegaze), and asked for a song that sounds
+right, if one came to mind. He named none.
+
+Asked at 15:58 as a second pop-up, answered by 16:09:
+
+1. "Exploring: what should it be instead?" A band playing softly (Recommended) ("Shimmering guitars
+   with echo, a soft beat, a bass and a voice-like lead: the same band that thrashes in a fight,
+   holding back."), Dark and moody ("Low and tense, in a minor key. More dungeon than daydream."),
+   Big and bright ("A proud adventure theme with a beat, already half way to the fight."), Almost
+   nothing ("Air, echoes and a few notes, so the fight hits harder."). **His answer: "A band playing
+   softly (Recommended)".**
+2. "What put you off clip 1 most? Pick any." Too soft and sleepy (Recommended) ("My guess: it floats
+   and never moves."), The sounds felt cheap ("Thin, toy-like, or like an old keyboard."), The tune
+   itself ("The melody, whatever plays it."), No beat ("No drums and no bass to drive it along.").
+   **His answer: "Too soft and sleepy (Recommended)", "The sounds felt cheap" and "The tune itself".**
+3. "The wall of chords and riffs: what should it sound like?" Real heavy guitars (Recommended) ("As
+   near to a real band's guitars as code can get: thicker, dirtier, lower."), Huge dirty synths
+   ("Thick, growling synths, like dark synthwave or an industrial track."), A shimmering haze ("More
+   shoegaze than metal: a bright blur of sound that the drums punch through."). **His answer: "Real
+   heavy guitars (Recommended)".**
+4. "Your idea: the fight's music follows the attacks (half-time for slams, racing for a barrage of
+   shots). Add it to the rulebook as a thing to try?" Yes, add it (Recommended) ("It goes in the
+   Music section, beside bosses on the beat."), Not yet ("Leave the rulebook as it is for now.").
+   **His answer: "Yes, add it (Recommended)".**
+
+Read back to him at about 16:12, with what comes next: the rulebook has his idea as Music's rule 10
+(his doc at rev 26); its rule 2 still says the music is made with synths, which his ears have now
+overruled, and he will be asked about changing it once he has heard the band. The next try-out comes
+in two steps: first the band's sounds on their own (heavy guitars, bass, drums, the soft shimmering
+guitar and the lead), with one question, whether they sound real enough; then the music, exploring
+and the fight played by that band, with two or three tunes to choose between.
+
+So of this try-out: the tune (`LEAD`, `HARMONY`), the dream half's wash, lead and sparkle, and both
+walls (plucked strings as they stand, and saws) are not wanted. The four kinds of eight bars
+(`DRIVE_OF_EIGHT`), the two halves and the punching in stand.
 
 ## The tune
 

@@ -8,10 +8,16 @@
 > for the other chats, refreshed when the doc changes. The doc's one picture is written out here in
 > words. Nothing here changes the game by itself: what it asks for goes in through the main chat,
 > samples first.
+>
+> **ADDED WITH HIS YES, 9 Oct 2026, by 16:09 (“Yes, add it (Recommended)”): the fight's music follows
+> the attacks, to try** (Music, rule 10; his idea, by 15:56). "Still open" also says how the first
+> music try-out went (docs/sound/music_tryout.md). The doc is at rev 26 with it. Nothing else changed.
 
 Wordsmith sounds real where the world is and retro where the game speaks. Hits crack and land with weight; loot and level-ups bleep like an old console; a word rings like a bell, then sparkles. The music is Dream Thrash made with synths: light and airy while you explore, punched way up in a fight.
 
 **Approved by you, 9 Oct 2026, by 14:04: “Yes, as it is (Recommended)”.** It is the game's rulebook for sound and music. Every chat that makes sound or music for Wordsmith follows it, and it changes only with your yes.
+
+**Added 9 Oct 2026, by 16:09, with your “Yes, add it (Recommended)”:** the fight's music follows the attacks, to try (Music, rule 10). Nothing else was changed.
 
 You asked for it on 9 Oct: “You are now the Director of sound and music for Wordsmith.  I’d like you to ask a bunch of questions to drill down what we want and how to get it.” It was found in seven rounds of questions, the way the art and gameplay rulebooks were. Your answers, in your own words, are kept in `docs/sound/interview.md`. Where a rule is the director's suggestion rather than your answer, it says **(director)**.
 
@@ -132,6 +138,7 @@ The dream half plays the whole time. The thrash half is added for a fight and ta
 7. **Bosses on the beat, to try.** Your idea of 9 Oct, 13:53: “Like get the bosses to attack on beat to the music?” In a boss fight the boss's blows land on the beat, and his wind-up sound rises into it. It needs a small change to the boss's rules, which is the main chat's to make.
 8. **The music gives way** (director). It ducks under a word's bell and under a fanfare, and it never covers a warning.
 9. **It is a try.** You said “I’d like to try”. The first piece is a try-out, tuned by ear, and this section follows what you say then.
+10. **The fight's music follows the attacks, to try.** Your idea of 9 Oct, by 15:56: “I liked them all, and interchanging them gives different opportunities for different attacks.  Half time for slams, racing for a barrage of shots, that kind of thing”. The thrash half plays four ways (a gallop, racing, half-time and a blast), and the game picks which by what the fight is doing. It sits beside bosses on the beat, and it needs the main chat's rules to say what the fight is doing.
 
 ## Voices
 
@@ -243,12 +250,13 @@ Almost all of this book is new to the game. Each row is a job, and each reaches 
 
 ## Still open
 
-Seven things are not settled yet. Each answer becomes a rule here.
+Eight things are not settled yet. Each answer becomes a rule here.
 
-- [ ] How Dream Thrash sounds when synths play it: settled by ear, with the first try-out.
+- [ ] How Dream Thrash should sound. The first try-out (9 Oct) was not it: of exploring you said “Neither”, of the wall of chords “Neither”, and of the fight “More”. Next to hear is a band made in code, by your picks “A band playing softly (Recommended)” and “Real heavy guitars (Recommended)”. Rule 2 of Music still says synths; it changes with your yes once you have heard the band.
 - [ ] Bosses on the beat: whether it feels right, once there is something to play; and the boss's rule, with the main chat.
+- [ ] The fight's music following the attacks: which way for which attack, once there is something to play; and the rules' side, with the main chat.
 - [ ] Which old console the retro voice takes after: settled by ear, with the first loot samples.
 - [ ] The Wordsmith theme itself.
 - [ ] Each land's own music and its own air, land by land.
 - [ ] How you play, speaker or headphones: asked in round 7, not answered.
-- [ ] The order of the work.
+- [ ] The order of the work. The music is first (your pick of 9 Oct: “Music first”); the rest is not settled.
