@@ -1248,6 +1248,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           g.update(gdt, controls);
           drain(g);
           fx.follow(g.projectiles, gdt * 60);
+          // (big and wild, render/wild.ts: what each monster is, for what flies off it when it is hit; and which swing of Strike the hero is in)
+          fx.wild.see(g.monsters, g.hero.combo);
         }
         // offer the level-up choice at the first quiet moment
         const h = g.hero;

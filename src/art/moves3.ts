@@ -61,6 +61,23 @@ export interface Move3 {
   stride?: number;
   /** A roll that the game carries along the floor for its first `tumble` seconds; the rest is the hero coming up, shown if they are then left standing (as a leap's landing is). */
   tumble?: number;
+  /**
+   * An attack whose END MAY BE SEEN AFTER THE RULES' ATTACK IS OVER, while the hero stands (WILD:
+   * Strike's follow-through, the owner, 8 Oct, 21:41: "if it increases the total attack time by a
+   * couple frames, that's fine, as long as the swipe stays just as fast"). The rules are not changed:
+   * the figure goes on showing the move to its end for as long as the hero is left standing
+   * (render/figure.ts), and anything else the hero does ends it.
+   */
+  tail?: boolean;
+  /**
+   * ... and where that end WAITS, in seconds from the start: while a second swing may still come
+   * (Strike's combo), the figure holds still there, and plays on to the end only once it can no
+   * longer come. The owner, of Strike's first swing: "I'd like if he kept the sword up at the end of
+   * the first hit then used that position to swipe back to the battle stance.  If there isn't a
+   * second tap to fire off that second attack, then he just moves the sword back down to battle
+   * stance."
+   */
+  poise?: number;
 }
 
 const FR = 1 / 30;
@@ -595,6 +612,30 @@ function slash(): Motion {
 export const SLASH3: Move3 = { name: 'Strike, the second swing: a downward slash', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: slash(), at: 'the moment it lands' };
 
 /**
+ * BIG AND WILD. A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The owner, by
+ * 20:14, of the mage's power getting away from her: "there's not even a glow on the staff, it just
+ * gets lighter.  there should be energy crackling and bolts shooting out, barely able to contain
+ * it.  this goes for all the animations we've created.  i think we need to amend the rules for
+ * effects and animations change it to big and wild.  why dont you redo the WAVE animation as big
+ * and wild as you think is appropriate and ill tell you if it needs to go more or less wild".
+ * At 20:17, of her being made to move wild: "move wild?  she just lowered her staff.  is that wild?"
+ *
+ * So, the Wave first, as the measure of how wild: with this on (and her stances, MAGE_STANCES), she
+ * casts it with her whole body (`wildWaveFromGuard`), and the power in the crystal crackles and
+ * throws bolts as it burns (the sprite says where the crystal is and how hot: kit.ts `Charge`; the
+ * renderer hands that to render/fx.ts, which makes the arcs, the sparks and the bolts). The Wave
+ * itself stands up tall, boils and crackles, and throws bolts ahead of it; what it hits crackles.
+ * By 20:48 he said of it: "Just right (Recommended)"; and at 20:49: "so much better.  id like to
+ * take that intensity and punch up some other animations as well.  show me strike and shot the
+ * same way, big and wild". So Strike's two swings (`wildStrike`, `wildSlash`) and the ranger's Shot
+ * from his crouch (`wildShotLow`, with his stances, RANGER_STANCES) are made so too, each in his own
+ * way (his notes are at each). By 22:35 he said of them, to wild_strike3.gif and
+ * wild_strike3_lone.gif: "Yes, keep it (Recommended)"; and to wild_shot3.gif: "Yes, keep it
+ * (Recommended)".
+ */
+export const WILD = { on: false };
+
+/**
  * STRIKE'S COMBO MENDED: A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The
  * owner asked the main chat at 08:35 to "Send the strike combo to the art agent and have them review
  * it to the rules"; the review (docs/requests/strike_combo_review_answer.md) found five things that
@@ -643,9 +684,14 @@ function mendFeet(keys: readonly Key3[], hitKeys: number[]): Key3[] {
   const out = keys.map((k) => ({ ...k, pose: { ...k.pose } }));
   out[1].pose = { ...out[1].pose, lfx: 11, lfz: 2.0, lfp: -10, rfx: -9, rfp: 30, rfz: onToes(30) + 1.2, rft: -30 };
   out[2].pose = { ...out[2].pose, px: 0.5, lfx: 11.5, lfz: 2.4, lfp: -14, rfx: back.rfx as number, rfy: back.rfy as number, rfp: 32, rfz: onToes(32) + 0.8, rft: -12 };
-  const struck: Partial<Bones> = { px: 4, lfx: 10.5, lfy: 0.5, lfz: 0, lfp: 0, lft: 2, lk: 2, ...back, rk: -6 };
+  const struck = struckOf();
   for (const i of hitKeys) out[i].pose = { ...out[i].pose, ...struck };
   return out;
+}
+
+/** Where the mended swings have his feet (and his hips over them) from the blow on: in his stance's places, the front foot flat and the back on its ball. */
+function struckOf(): Partial<Bones> {
+  return { px: 4, lfx: 10.5, lfy: 0.5, lfz: 0, lfp: 0, lft: 2, lk: 2, ...backFoot(), rk: -6 };
 }
 
 function strikeMended(): Motion {
@@ -671,8 +717,103 @@ function slashMended(): Motion {
 /** Put the mended swings in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
 export function useComboMends(on: boolean): void {
   COMBO_MENDS.on = on;
-  STRIKE3.motion = on ? strikeMended() : strike();
-  SLASH3.motion = on ? slashMended() : slash();
+  STRIKE3.motion = strikeNow();
+  SLASH3.motion = slashNow();
+}
+
+/**
+ * STRIKE, BIG AND WILD, IN HIS OWN WAY (WILD, above). The owner, 20:49: "show me strike and shot the
+ * same way, big and wild"; of the first try, which crackled as the mage does: "Each character has a
+ * style, the crackling works for the mage, but not the warrior.   Try again using their style as
+ * inspiration.  We're on the right track tho.  I like the big crescent and the kick.  More technique
+ * and follow through."; and of the second: "there's a few frames where he puts his sword down during
+ * the second hit.  I'd like if he kept the sword up at the end of the first hit then used that
+ * position to swipe back to the battle stance.  If there isn't a second tap to fire off that second
+ * attack, then he just moves the sword back down to battle stance."; and at 21:41: "if it increases
+ * the total attack time by a couple frames, that's fine, as long as the swipe stays just as fast.
+ * That would reinforce the follow through of the attack".
+ * So: THE FIRST SWING, the rising cut, as fast as it was: he coils deeper and lower, the blade further
+ * behind, and the blow lands with him sunk deep over his front foot; the blade runs on up over his
+ * left shoulder, all of him turned after it, and there he holds it, the sword up (strikeUp), for as
+ * long as a second swing may still come (`poise`). If none comes, he lowers it, round behind him and
+ * down into his guard: the end of the move, seen while he stands (`tail`). THE SECOND SWING swipes back from there, down the way the first went
+ * up, through the front of him and on round behind his right side into his guard, a couple of frames
+ * past the rules' attack (`tail` again). The crescent of light, the dust and the kick are the
+ * effects' (render/wild.ts), and what flies off a hit comes from what is hit. His feet are where the
+ * mended swings have them, and they leave the floor while the step of each swing carries him.
+ */
+function strikeUp(): Partial<Bones> {
+  return { ...struckOf(), px: 3.4, pz: -5.8, yaw: 26, pitch: 7, twist: 22, bend: 6, faceUp: -2, faceTilt: 0, rhIn: 0, rhx: 9.5, rhy: 11.5, rhz: 4.5, wAz: 122, wEl: 84 };
+}
+/** ... and as he holds it there, settled a little lower: where the first swing waits (STRIKE_POISE), and where the second begins. */
+function strikeHeld(): Partial<Bones> {
+  return { ...strikeUp(), pz: -6 };
+}
+
+/** Where Strike's first swing, big and wild, holds the sword up while the second may still come: the end of its settle there, after the rules' attack is over (at 13 frames: its blow at 4, and the rules' follow-through, 0.3 s). */
+const STRIKE_POISE = 15 * FR;
+
+function wildStrike(): Motion {
+  const m = strikeMended();
+  const k = m.keys.map((key) => ({ ...key, pose: { ...key.pose } }));
+  k[1].pose = { ...k[1].pose, pz: -5.8, yaw: -54, twist: -42, bend: 9, wAz: -170, wEl: -54 };
+  k[2].pose = { ...k[2].pose, twist: -62 };
+  k[3].pose = { ...k[3].pose, pz: -6.6, yaw: 30, twist: 16, bend: 13 };
+  // (through: up over his left shoulder, all of him turned after it)
+  k[4].pose = { ...k[4].pose, pz: -6.9, yaw: 38, twist: 36, bend: 9, wAz: 66, wEl: 70 };
+  const up = strikeUp();
+  // (the sword held up: the second swing begins from here; or, a beat later, it is lowered round
+  // behind him, over his right shoulder, and down into his guard)
+  const over: Partial<Bones> = { ...feetOf(up), pz: -4.4, yaw: -12, pitch: 2, twist: -10, bend: 2, faceUp: -6, faceTilt: -10, rhIn: 0, rhx: 6, rhy: 2, rhz: 12, wAz: 195, wEl: 62 };
+  return {
+    ...m,
+    keys: [
+      ...k.slice(0, 5),
+      { at: 8 * FR, pose: up, ease: 'out' },
+      { at: STRIKE_POISE, pose: strikeHeld(), ease: 'io' },
+      { at: 21 * FR, pose: over, ease: 'io' },
+      { at: 28 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/** THE SECOND SWING, BIG AND WILD: from the sword held up, swiped back down the way it went up, through the front of him at the height of a chest, and on round behind his right side into his guard. */
+function wildSlash(): Motion {
+  const up = strikeUp();
+  const keys: Key3[] = [
+    { at: 0, pose: strikeHeld() },
+    // (it gathers: the blade a little further over, his weight settling)
+    { at: 1.5 * FR, pose: { ...up, pz: -5.4, yaw: 30, twist: 28, wAz: 128, wEl: 88 }, ease: 'out' },
+    // (it comes down the way it went up)
+    { at: 3 * FR, pose: { ...up, pz: -6, yaw: 24, twist: 18, bend: 9, rhx: 10.5, rhy: 11, rhz: 3.5, wAz: 50, wEl: 52 }, ease: 'in' },
+    // (the blow, through the front of him)
+    { at: 4 * FR, pose: { pz: -6.6, yaw: 4, pitch: 9, twist: -6, bend: 13, faceUp: -4, rhIn: 0, rhx: 15, rhy: 7.5, rhz: -5, wAz: 8, wEl: 12 }, ease: 'in' },
+    // (on round and down behind his right side, his body turned after it, deeper than his guard)
+    { at: 7 * FR, pose: { pz: -6.3, yaw: -52, pitch: 5, twist: -42, bend: 9, rhz: 23.5, wAz: -170, wEl: -52 }, ease: 'out' },
+    { at: 14 * FR, pose: {}, ease: 'io' },
+  ];
+  return { hit: 4 * FR, keys: mendFeet(keys, [3, 4]) };
+}
+
+/** Where a pose has the feet (and the knees), and nothing else of it. */
+function feetOf(p: Partial<Bones>): Partial<Bones> {
+  const out: Record<string, number> = {};
+  for (const f of ['lfx', 'lfy', 'lfz', 'lfp', 'lft', 'lk', 'rfx', 'rfy', 'rfz', 'rfp', 'rft', 'rk'] as const) {
+    const v = p[f];
+    if (v !== undefined) out[f] = v;
+  }
+  return out as Partial<Bones>;
+}
+
+/** Which first swing of Strike is his now: today's, mended (COMBO_MENDS, the game's own since 19.2), or big and wild (WILD). */
+function strikeNow(): Motion {
+  if (WILD.on) return wildStrike();
+  return COMBO_MENDS.on ? strikeMended() : strike();
+}
+/** ... and which second swing. */
+function slashNow(): Motion {
+  if (WILD.on) return wildSlash();
+  return COMBO_MENDS.on ? slashMended() : slash();
 }
 // (the game's own swings: the mended ones, since Version 19.2)
 useComboMends(COMBO_MENDS.on);
@@ -1704,6 +1845,39 @@ function shotLow(): Motion {
   };
 }
 /**
+ * HIS SHOT, BIG AND WILD, IN HIS OWN WAY (WILD). The owner, of the first try, which threw lightning:
+ * "Same as the warrior.  This just looks like he's firing a lightning arrow.  We're getting there".
+ * So, an archer's: from the crouch as before, turning further into the draw and settling as he holds
+ * it at full draw (a glint runs to the arrow's point: the painter, art/hero3_ranger.ts); then the loose
+ * and its follow-through, held: the string hand flies back past his ear and stays there open, the bow
+ * is pushed on at the mark and rolls in his hand, and he watches the arrow in before the bow comes
+ * down. The crack of air, the arrow's streak and its spin, and the burst where it lands are the
+ * effects' (render/wild.ts). His feet stay where the crouch has them.
+ */
+function wildShotLow(): Motion {
+  const set = SHOT_SET;
+  return {
+    hit: 5 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 2 * FR, pose: drawn({ ...set, pz: -6.1, yaw: -40, twist: -24, bend: 3 }, -9, 0.6, LOW), ease: 'out' },
+      { at: 4 * FR, pose: drawn({ ...set, pz: -6.2, twist: -40 }, SHOT_EL, 1, LOW), ease: 'out' },
+      { at: 4.7 * FR, pose: drawn({ ...set, pz: -6.2, twist: -41 }, SHOT_EL, 1, LOW), ease: 'lin' },
+      // (loosed: the string hand flies back past his ear, the bow pushed on at the mark and rolling in his hand)
+      { at: 5 * FR, pose: loosed({ ...set, bend: -3, twist: -45 }, SHOT_EL, 4.8, 1.8, 18, LOW), ease: 'lin' },
+      // (the follow-through, held: the bow still on the mark, the string hand open behind his ear)
+      { at: 7 * FR, pose: loosed({ ...set, bend: -2, twist: -43 }, SHOT_EL, 5.4, 1.2, 12, LOW), ease: 'out' },
+      { at: 10 * FR, pose: loosed({ ...set, twist: -41 }, SHOT_EL, 5.2, 1, 10, LOW), ease: 'io' },
+      { at: 15 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** Which Shot is his now: today's, from the crouch (RANGER_STANCES), or big and wild from it (WILD as well). */
+function shotNow(): Motion {
+  if (!RANGER_STANCES.on) return RANGER_TODAY.shot;
+  return WILD.on ? wildShotLow() : shotLow();
+}
+/**
  * HIS VOLLEY, FROM THE CROUCH: down onto his knee from low ("The rogue drops to a knee when he
  * fires Volley"), the lean back and the loose as they were, and up into his stance again. The fan
  * of arrows is the game's own (render/fx.ts, `volleyUp`), from where his bow is when they go
@@ -1932,7 +2106,7 @@ export function useRangerStances(on: boolean): void {
   RANGER_STAND3.motion = on ? RANGER_BATTLE_MOTION() : RANGER_TODAY.stand;
   RANGER_TOWN3.motion = on ? RANGER_TOWN_MOTION() : RANGER_TODAY.town;
   SHOT3.rest = on ? BATTLE : RANGER_TODAY.shotRest;
-  SHOT3.motion = on ? shotLow() : RANGER_TODAY.shot;
+  SHOT3.motion = shotNow();
   VOLLEY3.rest = on ? BATTLE : RANGER_TODAY.volleyRest;
   VOLLEY3.motion = on ? volleyLow() : RANGER_TODAY.volley;
   ROLL3.rest = on ? BATTLE : RANGER_TODAY.rollRest;
@@ -2200,23 +2374,6 @@ function powerGetsAway(): Motion {
   };
 }
 
-// ---------------------------------------------------------------------------------------------
-/**
- * BIG AND WILD. A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The owner, by
- * 20:14, of the mage's power getting away from her: "there's not even a glow on the staff, it just
- * gets lighter.  there should be energy crackling and bolts shooting out, barely able to contain
- * it.  this goes for all the animations we've created.  i think we need to amend the rules for
- * effects and animations change it to big and wild.  why dont you redo the WAVE animation as big
- * and wild as you think is appropriate and ill tell you if it needs to go more or less wild".
- * At 20:17, of her being made to move wild: "move wild?  she just lowered her staff.  is that wild?"
- *
- * So, the Wave first, as the measure of how wild: with this on (and her stances, MAGE_STANCES), she
- * casts it with her whole body (`wildWaveFromGuard`), and the power in the crystal crackles and
- * throws bolts as it burns (the sprite says where the crystal is and how hot: kit.ts `Charge`; the
- * renderer hands that to render/fx.ts, which makes the arcs, the sparks and the bolts). The Wave
- * itself stands up tall, boils and crackles, and throws bolts ahead of it; what it hits crackles.
- */
-export const WILD = { on: false };
 
 /**
  * HER WAVE, BIG AND WILD, FROM HER GUARD. The crystal blazes as she coils: the staff goes up and
@@ -2281,6 +2438,17 @@ function waveNow(): Motion {
 export function useWild(on: boolean): void {
   WILD.on = on;
   WAVE3.motion = waveNow();
+  STRIKE3.motion = strikeNow();
+  SLASH3.motion = slashNow();
+  // (their ends are seen past the rules' attack, while he stands: his follow-through)
+  for (const m of [STRIKE3, SLASH3]) {
+    if (on) m.tail = true;
+    else delete m.tail;
+  }
+  // (and the first holds the sword up, where the second begins, for as long as that may still come)
+  if (on) STRIKE3.poise = STRIKE_POISE;
+  else delete STRIKE3.poise;
+  SHOT3.motion = shotNow();
 }
 
 /** As they are with the switch off. */

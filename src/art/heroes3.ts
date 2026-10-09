@@ -236,6 +236,8 @@ function animSet3(plan: Plan, view: GameView, fights = true): AnimSet {
     const c: Clip = { frames: lazyFrames(n, (i) => at(m, Math.min(t1, t0 + i / fps))), fps };
     if (m.motion.hit !== undefined && m.motion.hit >= t0 && m.motion.hit <= t1) c.hit = m.motion.hit - t0;
     if (m.motion.loop !== undefined) c.loop = m.motion.loop - t0;
+    if (m.tail) c.tail = true;
+    if (m.poise !== undefined && m.poise >= t0 && m.poise <= t1) c.poise = m.poise - t0;
     return c;
   };
   /** A piece of a move laid out in `n` pictures, first to last, to be shown by how far through it the hero is. */

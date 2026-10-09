@@ -45,7 +45,7 @@ import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
-import { drawWildWave } from './wild';
+import { drawWildArrow, drawWildWave } from './wild';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -1807,7 +1807,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them
@@ -2161,6 +2161,8 @@ export class Renderer {
       const leech = mine && p.words.includes('leech');
       const volatile = mine && p.words.includes('volatile');
       const flick = Math.floor(t * 20) % 2 === 0;
+      // (BIG AND WILD, art/moves3.ts WILD: a hero's arrow streaks light behind it: render/wild.ts)
+      if (WILD.on && mine) drawWildArrow(g, sx, sy, ux, uy);
       // Swift: a long pale streak behind the arrow
       if (swift) pline(g, sx - ux * 24, sy - uy * 24, sx - ux * 6, sy - uy * 6, twin ? P.tl3 : P.gn4);
       const body = (power ? 10 : swift ? 9 : leech || volatile || twin ? 8 : 6) + (lifted ? RANGER_ARROW.long - 6 : 0);
@@ -2434,7 +2436,7 @@ export class Renderer {
       else if (p.kind === 'tentTable') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 18, 56, 0.8);
       else if (p.kind === 'runeSlab') spot(wx(cam, p.x, p.y) + 8, wy(cam, p.x, p.y) - 12, 64 + Math.sin(t * 2) * 3, 0.75);
     }
-    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? (WILD.on ? 52 : 34) : 26, 0.8);
+    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? (WILD.on ? 52 : 34) : WILD.on && p.look === 'arrow' ? 40 : 26, 0.8);
     // What a monster's own fire lights: the floor round a cultist's flame (and far more of it as
     // the flame swells before it is thrown), the Warden's maul going hot. Eyes glow, and light
     // nothing.

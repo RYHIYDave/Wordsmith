@@ -966,7 +966,7 @@ export class Fx {
   follow(shots: ReadonlyArray<{ x: number; y: number; vx: number; vy: number; hostile: boolean; words: Words; element: Element; n: number; look?: string; r?: number; age?: number; dist?: number }>, pace = 1): void {
     const k = pace * this.room();
     // (big and wild: a wave in flight boils, crackles and throws bolts; and it is known where the waves are, for what they hit)
-    this.wild.follow(shots, k);
+    this.wild.follow(shots, k, RANGER_ARROW.on ? RANGER_ARROW.height : 10);
     if (k <= 0) return;
     const roll = (p: number): boolean => Math.random() < p * k;
     for (const p of shots) {
@@ -1075,7 +1075,9 @@ export class Fx {
           }
           if (second && e.el === 'phys' && !heavy) colors = MIRROR;
           if (e.echo) colors = MIRROR;
-          this.slashes.push({ x: e.x, y: e.y, a, reach: e.reach, t: 0, dur: fast ? 0.13 : heavy ? 0.24 : 0.16, colors, heavy, fast, rev: second, jag: e.el === 'lightning', faint: e.echo });
+          // (big and wild: a crescent of the friend's light in place of the plain cut, with sparks, crackle and dust: render/wild.ts)
+          const wild = this.wild.swing(e.x, e.y, e.dx, e.dy, e.reach, !heavy && !fast && !second && e.el === 'phys', !!e.echo);
+          if (!wild) this.slashes.push({ x: e.x, y: e.y, a, reach: e.reach, t: 0, dur: fast ? 0.13 : heavy ? 0.24 : 0.16, colors, heavy, fast, rev: second, jag: e.el === 'lightning', faint: e.echo });
           const tipX = e.x + e.dx * e.reach * 0.85;
           const tipY = e.y + e.dy * e.reach * 0.85;
           if (fast) {

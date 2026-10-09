@@ -1,7 +1,13 @@
 // Tests for BIG AND WILD (art/moves3.ts WILD, render/wild.ts: a mock-up behind a switch that is off;
 // the art chat, 8 Oct 2026). The owner, by 20:14: "i think we need to amend the rules for effects and
 // animations change it to big and wild.  why dont you redo the WAVE animation as big and wild as you
-// think is appropriate and ill tell you if it needs to go more or less wild".
+// think is appropriate and ill tell you if it needs to go more or less wild". Then Strike and Shot,
+// each hero in his own way (20:49: "show me strike and shot the same way, big and wild"; of the first
+// try: "Each character has a style, the crackling works for the mage, but not the warrior."), with
+// his notes on the second: the first swing ends with the sword held up, a second tap swipes back from
+// there, and with none he lowers it into his stance; what flies off a hit is the struck's ("I'd rather
+// have bone fragments or dust from the skeletons, or yellow sparks hitting an armored target"); and
+// the ranger's blue becomes wind ("Can we make the blue effects just like wind instead of energy?").
 //   run: tsx --test tests/wild.test.ts
 
 // @ts-ignore
@@ -9,17 +15,28 @@ import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
 
-import { paintMove3 } from '../src/art/heroes3';
-import { MAGE_BODY, MAGE_STANCES, MOVES3, WILD, useMageStances, useWild } from '../src/art/moves3';
-import { bonesAt, solve } from '../src/art/skeleton';
-import { SKILLS } from '../src/game/defs';
+import type { Clip } from '../src/art/actor_types';
+import { makeHeroArt3, paintMove3 } from '../src/art/heroes3';
+import { COMBO_MENDS, MAGE_BODY, MAGE_STANCES, MOVES3, SHOT3, SLASH3, STRIKE3, WILD, useMageStances, useRangerStances, useWild } from '../src/art/moves3';
+import type { Move3 } from '../src/art/moves3';
+import { bonesAt, project, solve } from '../src/art/skeleton';
+import type { V3 } from '../src/art/skeleton';
+import { P } from '../src/art/palette';
+import { COMBO, SKILLS } from '../src/game/defs';
+import { Game } from '../src/game/game';
+import { emptyControls } from '../src/game/state';
+import { Figure } from '../src/render/figure';
+import { AIR, CRACKLE } from '../src/render/wild';
 import { Fx } from '../src/render/fx';
+import { paintWithoutCanvas, unlike } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
   equal(actual: unknown, expected: unknown, message?: string): void;
 }
 const test: (name: string, fn: () => void) => void = nodeTest;
+// (the figure's frames are painted here, where there is no canvas)
+paintWithoutCanvas();
 const assert: Assert = nodeAssert;
 
 const wave = (): string => JSON.stringify({ rest: MOVES3.wave.rest, motion: MOVES3.wave.motion });
@@ -136,6 +153,291 @@ test('the effects add nothing with the switch off; with it on, the Wave is let g
       still.update(1 / 30);
     }
     assert.ok(still.wild.arcs.length > 0, 'the crystal crackles');
+  } finally {
+    useWild(false);
+  }
+});
+
+// ---- STRIKE AND SHOT, EACH IN HIS OWN WAY ----
+
+const swings = (): string => JSON.stringify([STRIKE3.motion, SLASH3.motion, STRIKE3.tail ?? null, SLASH3.tail ?? null, STRIKE3.poise ?? null]);
+const shot = (): string => JSON.stringify({ rest: SHOT3.rest, motion: SHOT3.motion });
+const unit = (v: V3): V3 => {
+  const l = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / l, v[1] / l, v[2] / l];
+};
+/** The angle between two directions, in degrees. */
+const ang = (a: V3, b: V3): number => {
+  const p = unit(a);
+  const q = unit(b);
+  return (Math.acos(Math.max(-1, Math.min(1, p[0] * q[0] + p[1] * q[1] + p[2] * q[2]))) * 180) / Math.PI;
+};
+/** Which way the blade points in a move at `t`. */
+const blade = (m: Move3, t: number): V3 => solve(m.build, bonesAt(m.motion.keys, m.rest, t)).point;
+
+test('Strike and Shot with the switch off are as the game has them (the mended swings; his Shot, as it was or from his crouch), and exactly so after it is switched on and off, in either order', () => {
+  assert.equal(COMBO_MENDS.on, true);
+  const mended = swings();
+  const today = shot();
+  useRangerStances(true);
+  const low = shot();
+  useRangerStances(false);
+  useWild(true);
+  try {
+    assert.ok(swings() !== mended, 'the wild swings are their own');
+    assert.equal(STRIKE3.tail, true);
+    assert.equal(SLASH3.tail, true);
+    assert.equal(shot(), today, 'without his stances his Shot is as it was, even with the switch on');
+    useRangerStances(true);
+    assert.ok(shot() !== low, 'from his crouch the wild Shot is its own');
+  } finally {
+    useRangerStances(false);
+    useWild(false);
+  }
+  assert.equal(swings(), mended);
+  assert.equal(STRIKE3.tail, undefined);
+  assert.equal(STRIKE3.poise, undefined);
+  assert.equal(shot(), today);
+  // (and whichever switch goes first)
+  useRangerStances(true);
+  useWild(true);
+  const both = shot();
+  useWild(false);
+  assert.equal(shot(), low);
+  useWild(true);
+  useRangerStances(false);
+  useRangerStances(true);
+  assert.equal(shot(), both);
+  useWild(false);
+  useRangerStances(false);
+  assert.equal(shot(), today);
+});
+
+test('the first wild swing lands when it did and holds the sword up past the rules\' attack; the second begins from just there, its blow as quick as before', () => {
+  const mended = { strike: MOVES3.strike.motion.hit, slash: MOVES3.kslash.motion.hit };
+  useWild(true);
+  try {
+    const s = MOVES3.strike;
+    const k = MOVES3.kslash;
+    assert.equal(s.motion.hit, mended.strike, 'the first blow lands when it did');
+    assert.equal(k.motion.hit, mended.slash, 'and the second as quickly as before');
+    const up = s.motion.keys.find((q) => Math.abs(q.at - 8 * FR) < 1e-9);
+    assert.ok(up !== undefined, 'the sword is up by the eighth frame');
+    // (where the picture has got to when the rules' attack is over: its blow, then the rules' follow-through at its own pace)
+    const over = (s.motion.hit as number) + SKILLS.strike.follow;
+    const poise = s.poise as number;
+    assert.ok(poise !== undefined && over <= poise + 1e-9 && poise > (up as { at: number }).at, `it holds at ${(poise / FR).toFixed(1)} frames; the rules are over at ${(over / FR).toFixed(1)}`);
+    const hold = s.motion.keys.find((q) => Math.abs(q.at - poise) < 1e-9);
+    assert.ok(hold !== undefined, 'a key where it holds');
+    assert.equal(JSON.stringify(k.motion.keys[0].pose), JSON.stringify((hold as { pose: unknown }).pose), 'the second swing begins from the sword as it is held up');
+    // (all through the hold the blade points as the second swing begins, near enough)
+    const from = blade(k, 0);
+    for (let t = (up as { at: number }).at; t <= poise + 1e-9; t += FR / 2) assert.ok(ang(blade(s, t), from) < 4, `at ${(t / FR).toFixed(1)} frames the blade is ${ang(blade(s, t), from).toFixed(1)} degrees off`);
+    // (the first swing is lowered into his guard: its last pose is the stance)
+    assert.equal(JSON.stringify(s.motion.keys[s.motion.keys.length - 1].pose), '{}');
+    assert.equal(JSON.stringify(k.motion.keys[k.motion.keys.length - 1].pose), '{}');
+  } finally {
+    useWild(false);
+  }
+});
+
+test('as the figure shows it: the sword held up for as long as a second swing may come, then lowered into his guard; with the switch off, neither', () => {
+  const DTF = 1 / 60;
+  const off = makeHeroArt3().of('warrior', { twoHanded: true });
+  assert.equal(off.front.clips?.attack?.tail, undefined);
+  assert.equal(off.front.clips?.attack?.poise, undefined);
+  useWild(true);
+  try {
+    const art = makeHeroArt3().of('warrior', { twoHanded: true });
+    const strike = art.front.clips?.attack as Clip;
+    const slash = art.front.clips?.attack2 as Clip;
+    assert.equal(strike.tail, true);
+    assert.equal(slash.tail, true);
+    assert.ok(strike.poise !== undefined && Math.abs(strike.poise - 15 * FR) < 1e-9, `it holds at ${strike.poise}`);
+    assert.equal(slash.poise, undefined, 'the second swing goes straight on into his guard');
+    const at = (anim: string, age: number, poised: boolean) => ({ anim, animT: 0, fx: 1, fy: 0, attackSkill: 0, attackAge: age, attackWind: 0.12, leapK: -1, poised });
+    const play = (poisedFor: number): { held: number; lowered: number; stands: boolean } => {
+      const fig = new Figure();
+      for (let age = 0; age < SKILLS.strike.windup + SKILLS.strike.follow; age += DTF) fig.frame(art, at('attack', age, true), DTF, 0, 0, false);
+      // (the picture it holds: the figure's own choice of frame for that moment, render/figure.ts frameOf)
+      const hold = strike.frames[Math.min(strike.frames.length - 1, Math.floor((strike.poise as number) * strike.fps + 1e-6))];
+      let held = 0;
+      let lowered = 0;
+      let last = null as unknown;
+      for (let i = 0; i < 180; i++) {
+        const s = fig.frame(art, at('idle', 0, i * DTF < poisedFor), DTF, 0, 0, false);
+        if (s === hold) held++;
+        else if (strike.frames.includes(s)) lowered++;
+        last = s;
+      }
+      return { held, lowered, stands: art.front.idle.includes(last as never) };
+    };
+    // (a second swing may come for a second: he holds the sword up all that while, then lowers it)
+    const wait = play(1);
+    assert.ok(wait.held >= 55, `held up for ${wait.held} sixtieths`);
+    assert.ok(wait.lowered >= 10, `and lowered over ${wait.lowered}`);
+    assert.ok(wait.stands, 'and then he stands in his guard');
+    // (none may come: straight on into his guard, holding only as the picture passes the sword up)
+    const none = play(0);
+    assert.ok(none.held <= 3, `held up for ${none.held} sixtieths`);
+    assert.ok(none.stands);
+    // (and the second swing's first picture is the one held: no jump into it. The same pose; only the
+    // hem of his tabard, which swings as he moves, hangs a little differently: 47 picture pixels, of
+    // the figure's 1,840)
+    const hold = strike.frames[Math.min(strike.frames.length - 1, Math.floor((strike.poise as number) * strike.fps + 1e-6))];
+    const into = unlike(hold, slash.frames[0]);
+    assert.ok(into <= 60, `the held picture and the second swing's first differ by ${into} picture pixels`);
+  } finally {
+    useWild(false);
+  }
+});
+
+/**
+ * The game plays Strike at 60 steps a second (taps at `taps` seconds), its own step included, and
+ * the figure shows it as render/figure.ts does: the attack, then its end while he stands, held while
+ * a second swing may still come. How far a foot on the floor moves, in game pixels, how short a leg
+ * falls, how many swings there were, and how long the sword was held up.
+ */
+function played(taps: number[], seconds: number, view: 'front' | 'back'): { slide: number; short: number; swings: number; held: number } {
+  const face: [number, number] = view === 'back' ? [0, -1] : [1, 0];
+  const game = Game.forPractice('warrior', 3);
+  (game as unknown as { waveT: number }).waveT = 1e9;
+  game.monsters.length = 0;
+  const h = game.hero;
+  h.x = 14.5;
+  h.y = 15.5;
+  h.fx = face[0];
+  h.fy = face[1];
+  const x0 = h.x;
+  const y0 = h.y;
+  const dt = 1 / 60;
+  let order = false;
+  let lastAge = 1e9;
+  let swings = 0;
+  let held = 0;
+  let tail: { move: string; at: number; since: number } | null = null;
+  const marks: Record<string, { on: boolean; start: [number, number] }> = {};
+  let slide = 0;
+  let short = 0;
+  for (let i = 0; i < Math.round(seconds * 60); i++) {
+    const t = i * dt;
+    const c = emptyControls();
+    c.aimX = h.x + face[0] * 2;
+    c.aimY = h.y + face[1] * 2;
+    for (const when of taps) if (t <= when && t + dt > when) order = true;
+    if (order) c.fire = true;
+    game.update(dt, c);
+    if (h.anim === 'attack' && h.attackAge < lastAge) {
+      swings++;
+      order = false;
+    }
+    lastAge = h.anim === 'attack' ? h.attackAge : 1e9;
+    let move = 'rear';
+    let tc = 0;
+    if (h.anim === 'attack') {
+      move = h.combo === 1 ? 'kslash' : 'strike';
+      const m = MOVES3[move];
+      const hit = m.motion.hit ?? 0;
+      tc = h.attackAge < h.attackWind ? (h.attackAge / h.attackWind) * hit : hit + (h.attackAge - h.attackWind);
+      tail = m.tail ? { move, at: tc, since: -1 } : null;
+    } else if (tail) {
+      const m = MOVES3[tail.move];
+      tail.since = tail.since < 0 ? 0 : tail.since + dt;
+      if (m.poise !== undefined && h.combo === 0 && h.comboT > 0 && tail.at + tail.since > m.poise) {
+        tail.since = Math.max(0, m.poise - tail.at);
+        held += dt;
+      }
+      if (tail.at + tail.since < m.motion.keys[m.motion.keys.length - 1].at) {
+        move = tail.move;
+        tc = tail.at + tail.since;
+      } else tail = null;
+    }
+    const m = MOVES3[move];
+    const end = m.motion.keys[m.motion.keys.length - 1].at;
+    const tm = Math.min(end, Math.max(0, Math.floor(tc * 30 + 1e-6)) / 30);
+    const q = bonesAt(m.motion.keys, m.rest, tm);
+    const s = solve(m.build, q);
+    const B = m.build;
+    short = Math.max(short, Math.hypot(s.ankleL[0] - q.lfx, s.ankleL[1] - (B.stance + q.lfy), s.ankleL[2] - (B.ankle + q.lfz)), Math.hypot(s.ankleR[0] - q.rfx, s.ankleR[1] - (-B.stance + q.rfy), s.ankleR[2] - (B.ankle + q.rfz)));
+    const ax = (h.x - x0 - (h.y - y0)) * 16;
+    const ay = (h.x - x0 + (h.y - y0)) * 8;
+    for (const [nm, toe, heel] of [['L', s.toeL, s.heelL], ['R', s.toeR, s.heelR]] as const) {
+      const p = project(toe as V3, view);
+      const sx = ax + p[0] / 2;
+      const sy = ay + p[1] / 2;
+      const on = Math.min(toe[2], heel[2]) < 0.5;
+      const key = `${swings}${nm}`;
+      const k = marks[key] ?? (marks[key] = { on: false, start: [0, 0] });
+      if (on && !k.on) k.start = [sx, sy];
+      if (on) slide = Math.max(slide, Math.hypot(sx - k.start[0], sy - k.start[1]));
+      k.on = on;
+    }
+  }
+  return { slide, short, swings, held };
+}
+
+test('his feet grip the floor through the wild swings as the game plays them: both swings, the second from the sword held up; and one swing, held and lowered', () => {
+  COMBO.on = true;
+  useWild(true);
+  try {
+    for (const view of ['front', 'back'] as const) {
+      // (two taps, the second as soon as the game swings again: it comes while the sword is held up)
+      const two = played([0.3, 1.25], 2.6, view);
+      assert.equal(two.swings, 2, `${view}: the combo's two swings`);
+      assert.ok(two.held > 0.1, `${view}: the sword held up until the second came (${two.held.toFixed(2)} s)`);
+      assert.ok(two.slide < 1, `${view}: a foot on the floor moved ${two.slide.toFixed(2)} game px`);
+      assert.ok(two.short < 0.05, `${view}: a leg falls short of its foot by ${two.short.toFixed(3)}`);
+      // (one tap: held up while a second may come, then lowered into his guard)
+      const one = played([0.3], 2.6, view);
+      assert.equal(one.swings, 1);
+      assert.ok(one.held > 0.5, `${view}: held up for ${one.held.toFixed(2)} s`);
+      assert.ok(one.slide < 1, `${view}: a foot on the floor moved ${one.slide.toFixed(2)} game px`);
+      assert.ok(one.short < 0.05, `${view}: a leg falls short of its foot by ${one.short.toFixed(3)}`);
+    }
+  } finally {
+    useWild(false);
+  }
+});
+
+test('what flies off a hit is the struck\'s: bone off a skeleton, yellow sparks off armour, never the blade\'s blue; the arrow goes in a gust of air and trails it', () => {
+  const play = (): void => {};
+  const BLUE = new Set([CRACKLE[1], CRACKLE[2], CRACKLE[3]]);
+  const blow = (kind: 'skeleton' | 'brute', champion: boolean): Fx => {
+    const fx = new Fx();
+    fx.wild.see([{ x: 6, y: 5, kind, champion }], 0);
+    fx.handle([{ t: 'swing', x: 5, y: 5, dx: 1, dy: 0, reach: 1.7, el: 'phys', words: [], echo: false }], play);
+    fx.particles.length = 0;
+    fx.flashes.length = 0;
+    fx.rings.length = 0;
+    const cuts = fx.slashes.length;
+    fx.handle([{ t: 'hit', x: 6, y: 5, amount: 10, crit: false, el: 'phys', onHero: false }], play);
+    for (const p of fx.particles) assert.ok(!BLUE.has(p.color), `nothing blue flies off it: ${p.color}`);
+    for (const f of fx.flashes) assert.ok(!f.colors.some((c) => BLUE.has(c)), `its burst is not blue: ${f.colors}`);
+    for (const r of fx.rings) assert.ok(!r.colors.some((c) => BLUE.has(c)), `nor its ring: ${r.colors}`);
+    for (const c of fx.slashes.slice(cuts)) assert.ok(!c.colors.some((k) => BLUE.has(k)), `nor the cut across it: ${c.colors}`);
+    return fx;
+  };
+  useWild(true);
+  try {
+    const bone = blow('skeleton', false).particles.map((p) => p.color);
+    assert.ok(bone.includes('#f0e8ff'), 'bone flies off a skeleton');
+    assert.ok(!bone.includes(P.gd4) && !bone.includes(P.gd5), 'and no sparks');
+    const steel = blow('brute', true).particles.map((p) => p.color);
+    assert.ok(steel.includes(P.gd5) || steel.includes(P.gd4), 'yellow sparks fly off an armoured guardian');
+    // (the arrow: a gust and hoops of air at the bow, and a trail of air; nothing blue)
+    const fx = new Fx();
+    fx.wild.see([{ x: 9, y: 5, kind: 'skeleton', champion: false }], 0);
+    fx.follow([{ x: 5, y: 5, vx: 10, vy: 0, hostile: false, words: [], element: 'phys', n: 0, look: 'arrow' }], 1);
+    const wild = fx.wild as unknown as { tracers: unknown[]; rings: unknown[] };
+    assert.equal(wild.tracers.length, 1, 'its trail of air');
+    assert.equal(wild.rings.length, 2, 'two hoops of air');
+    assert.ok(fx.particles.some((p) => AIR.includes(p.color)), 'lines of wind');
+    for (const p of fx.particles) assert.ok(!BLUE.has(p.color), `nothing blue at the loose: ${p.color}`);
+    fx.particles.length = 0;
+    fx.follow([{ x: 9, y: 5, vx: 10, vy: 0, hostile: false, words: [], element: 'phys', n: 0, look: 'arrow' }], 1);
+    fx.handle([{ t: 'hit', x: 9, y: 5, amount: 10, crit: false, el: 'phys', onHero: false }], play);
+    assert.ok(fx.particles.some((p) => p.color === '#f0e8ff'), 'it knocks bone off the skeleton');
+    for (const p of fx.particles) assert.ok(!BLUE.has(p.color), `nothing blue where it strikes: ${p.color}`);
   } finally {
     useWild(false);
   }

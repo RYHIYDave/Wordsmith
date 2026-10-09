@@ -16,6 +16,17 @@ export interface Clip {
   /** A held move: seconds from its start at which its loop begins (see art/clip.ts, Timeline.loop). */
   loop?: number;
   /**
+   * An attack whose END MAY BE SEEN AFTER THE RULES' ATTACK IS OVER, for as long as the hero is then
+   * left standing (its follow-through: art/moves3.ts, Move3.tail). Anything else the hero does ends it.
+   */
+  tail?: boolean;
+  /**
+   * ... and where that end WAITS: seconds from its start at which it holds still, for as long as a
+   * second swing may still come (render/figure.ts, FigureState.poised), before playing on to its end
+   * (art/moves3.ts, Move3.poise: Strike's first swing, big and wild, holds the sword up there).
+   */
+  poise?: number;
+  /**
    * The figure in it TURNS ALL THE WAY ROUND, seen from one place (a whirlwind painted over the
    * bones: art/heroes3.ts). While it is shown the game does not also turn the figure to face the
    * way the rules have the hero facing (render/figure.ts).
