@@ -2,9 +2,10 @@
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
 (https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
-as it is (Recommended)". The doc is the living one; this copy follows it (rev 29, with the first
-levels of Version 19.5 written in), and both change only with his yes. The two pictures in the doc
-are written out here in words. How it was found: `docs/gameplay/interview.md`.
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 34, with the first
+levels of Version 19.5 and the master rune-stone of Version 19.6 written in), and both change only
+with his yes. The two pictures in the doc are written out here in words. How it was found:
+`docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
 godlike by the end. This rulebook sets how it plays: the loop, how a hero grows, and how it should
@@ -101,11 +102,12 @@ attack, in front or behind, each place with its own effect. Levels and gear are 
 between the jumps.
 
 **Wordsmithing opens with a quest (since Version 19.5).** The fallen wordsmith in the first dungeon
-holds the RUNE HEART (a working name). Brought to the wordsmith in town, it lights the ring of runes
-around him, like a battery put in (your note of 8 Oct, 20:41), and he gives the hero’s first word,
-to set before the tap attack; there the first lesson ends. The ring stays lit for the heroes after.
-A hero who leaves the first dungeon without the RUNE HEART finds the fallen wordsmith again in the
-next.
+has the master rune-stone by his hand (its name your answer of 8 Oct, by 23:52: “A master
+rune-stone”). Brought to the wordsmith in town, it is laid into his slab, and the ring of runes
+around him, dark until then, powers up like a battery put in (your note of 8 Oct, 20:41; drawn so
+since Version 19.6), and he gives the hero’s first word, to set before the tap attack; there the
+first lesson ends. The ring stays lit for the heroes after. A hero who leaves the first dungeon
+without the master rune-stone finds the fallen wordsmith again in the next.
 
 - **Where words come from:** elites carry a word you can win; every boss gives one, and the chance
   of a second grows with depth. Past the final boss, rare words found nowhere else. None in the
@@ -224,7 +226,7 @@ Something you can see, your yes, then one chat puts it in.
 
 ## The numbers
 
-The rules in numbers as the game has them in Version 19.5, checked against its code on 9 Oct. A chat
+The rules in numbers as the game has them in Version 19.6, checked against its code on 9 Oct. A chat
 changes one only with your yes.
 
 | What | Now | In the code |
@@ -258,7 +260,7 @@ it goes in.
 | The rule | The game now | What it takes |
 | --- | --- | --- |
 | Normal and Hardcore | Both, since Version 19.1 | Done |
-| The first levels | Since Version 19.5 | The ring’s look, dark until the RUNE HEART and then powering up (with the art chat) |
+| The first levels | Since Version 19.5 | Done: the ring dark until the master rune-stone goes in, then powering up, since Version 19.6 |
 | The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
 | Five lands of ten, the final boss at 50 | One dungeon after another, with no end | Five lands, each its own look and monsters (with the art chat); a final boss |
 | Small, medium and big bosses | A boss in every dungeon; a Greater boss every fifth | A medium boss at 5, 15, 25…; a big boss at 10, 20, 30… |
@@ -278,7 +280,8 @@ death. (Your answer, 10:33: "Normal mode (Recommended)".) Both are in the game (
 19.1). Next the new words, before the talent tree (your answer, 15:25: "Yes, words first
 (Recommended)"): the first four are in since Version 19.3. Then the first levels (20:38: "Yes, this
 next (Recommended)"): in since Version 19.5. Next, as you set it on 9 Oct at 00:22: the art chat’s
-art, then the skill trees, then controller support with dual-stick aiming.
+art (the wordsmith on bones and the master rune-stone: in since Version 19.6), then the skill trees,
+then controller support with dual-stick aiming.
 
 ## Still open
 
@@ -290,7 +293,6 @@ art, then the skill trees, then controller support with dual-stick aiming.
 - [ ] Which words and places earlier heroes unlock, and for what deeds.
 - [ ] What quests give.
 - [ ] Each land’s look and monsters, with the art chat.
-- [ ] The RUNE HEART’s name (a working one) and the ring’s look, with the art chat.
 - [ ] Where Mystical and the other four new words come, after your order of 9 Oct (the art, the
   skill trees, the controller).
 - [ ] Whether you would rather shoot through the bars of a shut door (asked 7 Oct).

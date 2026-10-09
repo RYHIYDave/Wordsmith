@@ -87,7 +87,7 @@ export function unlike(a: Sprite, b: Sprite): number {
 
 /**
  * THE FIRST LEVELS (game/defs.ts, on since Version 19.5): the abilities open with levels (the slow
- * attack at 2, the swipe at 5), and wordsmithing with the wordsmith's ring, lit when the Rune Heart
+ * attack at 2, the swipe at 5), and wordsmithing with the wordsmith's ring, lit when the master rune-stone
  * is brought to him. A test of something else, written for a hero who has everything from the
  * start, makes him so here: at least level `level`, and the ring lit (for him and on this device).
  * (Level 10, every word slot open: two in front and two behind; level 5: all three abilities.)

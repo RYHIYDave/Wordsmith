@@ -4882,6 +4882,71 @@ with the slots' levels as the file loads (`useFirstLevels`). Switched off, the g
   pouch's; the ranger's bot can stall in a first dungeon whose boss is behind a door it never comes
   round to (the bot's, not the rules').
 
+### Version 19.6: the wordsmith on bones, and the master rune-stone
+
+**What he said.** To the art chat (as it posted them on the board at 23:18 and 00:13): 22:41, when
+the quest item was to be drawn, "wait on that, cause we probably need new art for the wordsmith and
+the runes around him with the new design rules"; 22:46, "id like him on the wire skeleton and all
+that"; by 23:09, to `smith.gif` and `smith_close.png`, "Yes, this is him (Recommended)", and of the
+ring, "Just right (Recommended)"; by 23:52, asked what the item should be, "A master rune-stone"; to
+its pictures, "Yes, keep it (Recommended)"; to the ring powering up, "Looks great except for the
+hole in the table.  Just a big black hole?"; at 00:01, to the hollow carved, "Yes, keep it
+(Recommended)". To this chat, 00:22 on the 9th: "K add the art, then work on our skill trees, then
+I’d like controller support.  Dual stick aiming."
+
+**What is in it.** The art chat's `art/quest-stone` at `7fd36bf` (with `art/wordsmith`, `ca09b4e`, in
+it), brought in whole and switched on: `SMITH3.on` in `src/art/smith3.ts` and `QUEST3.on` in
+`src/art/quest3.ts`. Its READMEs (`docs/mockups/wordsmith/README.md`,
+`docs/mockups/quest_stone/README.md`) say what each part is.
+
+- **The wordsmith on bones**, a head taller than the heroes, ancient, runes burning on him, turning
+  for real to whoever comes up; every so often he writes a great rune on the air and drives it into
+  his slab. **His ring big and wild**: six tall stones with burning runes, a circle in the floor,
+  fourteen letters of light swirling, a column of light off the slab.
+- **The master rune-stone**: it lies by the fallen wordsmith's hand in the first dungeon (or in the
+  dungeon where he is found: Version 19.5), throbbing; taken up, it flies into the hero; carried, it
+  shows by INVENTORY. In town the ring is dark (the stones cold, the wordsmith's runes cold, an empty
+  hollow in his slab) until it is given; then it floats to the slab, is laid in, and the ring powers
+  up, 4.7 s, into the ring he said yes to.
+- **The rules feed the pictures** (`Game.questView`, set into `QUEST3` each frame by
+  `questFromRules` in `src/main.ts`): the ring dark while this hero's is (`Hero.ring`); the stone
+  lying while the fallen wordsmith is unsearched and the ring dark; carried while `Hero.quest`
+  holds it; its two moments from the rules' events, `quest` (taken up) and `ring` (given). The
+  wordsmith's word waits until his ring has powered up before the inventory opens for it.
+- **His name for it**: `QUEST_ITEM` is the master rune-stone (19.5's words called it the RUNE HEART,
+  a working name). The fallen wordsmith's line: "A fallen wordsmith. In his satchel, full flasks; by
+  his hand, the MASTER RUNE-STONE. Bring it to the wordsmith in town."; the prompts, "You carry the
+  MASTER RUNE-STONE" and "Bring the MASTER RUNE-STONE to the wordsmith".
+- Switched off (`__dbg.smith3(false)`, `__dbg.quest3({ on: false })`), the town is 19.5's.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/smith3.test.ts` (6) and `tests/quest3.test.ts` (9), the art
+  chat's, now hold the switches on (and off again, as it was); `tests/townart.test.ts` tests the
+  town's own painting with `SMITH3` off, the old wordsmith and ring with it; `tests/first_levels.test.ts`
+  holds what the stone's pictures read from the rules. THE WHOLE UNIT SUITE: 752 of 752 by 02:33.
+- The pictures in the game itself (`guide.mjs` on a phone held sideways and narrow, 02:27 to
+  02:28): the stone by the fallen wordsmith, carried by INVENTORY, the dark ring with the new
+  wordsmith, the stone floating to the slab, the ring powered up beside the inventory and its coach;
+  the prompts' longer words fit, on the narrow layout over three lines.
+- THE PRE-FLIGHT (a dev page built from the tree, 02:34 to 02:42): 23 playtests (the town's every way, its services and looks, saving, the looks, the lesson on four layouts and with a word found after it, two monkeys in the first dungeon, the way in, the practice room, the dungeon's things, the walls, the speed): all clean.
+- **The regression** on a copy frozen at 02:42 (the scratchpad's `v196a/arpg_frozen`,
+  02:42 to 03:31, two at a time, nothing else running): **149 OF 150 PLAYTESTS
+  FINISHED CLEAN**. The one, `combo_phone` (Strike's two swings played with real taps on a phone, in the practice room), had two quick taps a sixth of a second apart make one swing instead of two. It was clean six times of six on the same page afterwards (03:31 to 03:33: three alone, and three beside its PC twin, as it ran in the regression), and nothing this version changed touches the practice room, Strike or the taps: a rare timing thing of the machine's, not found again.
+  Speed: the frame-rate run 58.9 frames a second, longest frame 50 ms, with 23 patches of ground effects out; the slowest fights of the four word-combination runs 56.5 to 58.6 frames a second, longest frame 67 ms.
+- The unit suite in the frozen copy, 752 of 752, 03:33 to 03:37.
+- THE RELEASE BUILD, made in the copy at 03:38: `Play.html` 974,485 bytes and
+  `dist/artifact.html` 974,163, both saying V19.6; kept in the scratchpad's
+  `v196a/release/`.
+- **The published page itself** (`wrap196.sh` in the scratchpad, 03:38 to 03:59): **74
+  of 74 playtests clean.** The same 74 as 19.5's. Published at 03:59 ("Version 50", version
+  id `1791532793-da50`); the file published is the kept copy, `v196a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone. KNOWN: the WORD FOUND banner for the wordsmith's word comes as the ring
+  begins to power up, over the top of the screen; Strike, Shot and the Wave big and wild (`WILD`, on
+  `art/mage-stances`, which also holds the mage's stances) are not in it yet: asked of the art chat
+  at 02:14 whether they can come without the mage's.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4976,6 +5041,11 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               Lexicon, the stash), townsfolk (14.4: its four people, each a loop and
               something done now and then; townFrame, their clock), townscene (which picture
               each of the town's things shows at a moment: for the game and the dev pages);
+              smith3, ring3, quest3 (19.6, the art chat's: THE WORDSMITH ON BONES, `SMITH3`,
+              `makeSmith3`, and HIS RING BIG AND WILD, `makeRing3`; THE MASTER RUNE-STONE,
+              `QUEST3`, `makeStoneArt`, `POWER` (the ring powering up as it is given), read by
+              townscene's `ringPower` and render's `standRing3` and `standQuestStone`; set from
+              the rules each frame, `Game.questView` and `questFromRules` in main.ts);
               palette and icons: the art of the first builds, still in use; all drawn in code;
               monsters and the Warden in boss.ts (the monsters before Version 14), the tiles
               and dungeon props in tiles.ts and body.ts (the dungeon before 14.1), the town's
@@ -5262,6 +5332,9 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.6: the art chat's wordsmith on bones and master rune-stone (SMITH3 and QUEST3 on; the stone's pictures fed by the rules)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/smith_look.mjs --out shots/smith/on   # the wordsmith and his ring filmed (OFF=1: as they were; tools/smith_films.py makes the film)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/quest_dungeon.mjs --out shots/quest/dungeon   # the stone by the fallen wordsmith, taken up, carried (quest_town.mjs: the dark ring and its powering up; tools/quest_films.py)
 # Version 19.5: the first levels (FIRST_LEVELS on: the moves by level, the ring and the RUNE HEART, the slots in his order, the gentler first dungeon)
 CLS=ranger node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/guide.mjs --out shots/g195/ph   # a new player's start with real input, the RUNE HEART home to the ring, the first word set in town, the hold at 2 and the swipe at 5 (LATE=twin: a word found after it is not offered; in the regression on every layout)
 CLS=ranger node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/first_levels_look.mjs --out shots/fl/ph   # the pictures he saw: the softball, the satchel, the town, the ring lit, the slots, level 5

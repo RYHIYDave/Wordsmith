@@ -44,7 +44,7 @@ export default async function (page, snap) {
   // ---- a character in a dungeon, a few steps from a pack that is awake, with things in the bag -------
   await page.evaluate((c) => {
     const d = window.__dbg; d.saving(false); d.run(c, 11); d.autoLevel = false; d.autoWords = false; d.god = true;
-    // (THE FIRST LEVELS, the game's own since Version 19.5: the wordsmith's ring lit, as it is once the RUNE HEART is brought)
+    // (THE FIRST LEVELS, the game's own since Version 19.5: the wordsmith's ring lit, as it is once the MASTER RUNE-STONE is brought)
     d.seasoned(1);
     const g = d.game(); const h = g.hero;
     for (let i = 0; i < 6 && i < g.shop.length; i++) h.bag[i] = g.shop[i];

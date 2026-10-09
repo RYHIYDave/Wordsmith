@@ -58,10 +58,10 @@ export default async function (page, snap) {
   if (!now || now.cls !== 'mage' || !now.guide) await fail('the prompts should carry on with the character');
   // the first word set (here by script), the prompts are over: stored at once, and remembered as taught
   // (THE FIRST LEVELS, the game's own since Version 19.5: the first word is the wordsmith's, in town,
-  // once the RUNE HEART has lit his ring: the satchel's item, home, and up to him, by script)
+  // once the MASTER RUNE-STONE has lit his ring: the satchel's item, home, and up to him, by script)
   if (await page.evaluate(() => window.__dbg.firstLevelsOn())) {
     await page.evaluate(() => { const g = window.__dbg.game(); g.hero.quest = 'heart'; g.enterTown(); const q = g.level.stations.find((k) => k.kind === 'wordsmith'); g.hero.x = q.x + 0.6; g.hero.y = q.y + 0.6; });
-    if (!(await hands.until(() => window.__dbg.game().hero.ring === true, 5000))) await fail('the RUNE HEART brought to the wordsmith did not light his ring');
+    if (!(await hands.until(() => window.__dbg.game().hero.ring === true, 5000))) await fail('the MASTER RUNE-STONE brought to the wordsmith did not light his ring');
   }
   await page.evaluate(() => { const g = window.__dbg.game(); if (!(g.hero.words.fire > 0)) g.hero.words.fire = 1; g.socket(0, 'front', 'fire'); });
   await page.waitForTimeout(500);

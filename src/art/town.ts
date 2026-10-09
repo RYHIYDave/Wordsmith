@@ -31,6 +31,9 @@ import type { Ramp } from './kit';
 import { IRON } from './mkit';
 import { COAL, EMBER, GOLD, ROUND_HI, ROUND_LO, column, hoop, stoneOf, tongue, trunk } from './props';
 import type { TrunkLook } from './props';
+import { makeRing3 } from './ring3';
+import type { Ring3Art } from './ring3';
+import { SMITH3 } from './smith3';
 
 /** A rune: a few strokes on a 5 x 9 grid. `k` picks which. Painted at (x, y), its top left. */
 const RUNES: ReadonlyArray<ReadonlyArray<string>> = [
@@ -835,6 +838,8 @@ export interface TownProps {
   /** The Lexicon: four frames (the script being read, the light lifting off it). */
   lexicon: Sprite[];
   stash: Sprite;
+  /** THE RING MADE NEW, BIG AND WILD (art/ring3.ts): painted only with the wordsmith on bones switched on (art/smith3.ts, SMITH3). */
+  ring3?: Ring3Art;
 }
 
 export function makeTownProps(theme: Theme = VAULT): TownProps {
@@ -851,5 +856,6 @@ export function makeTownProps(theme: Theme = VAULT): TownProps {
     runeRing: [0, 1, 2, 3, 4, 5, 6, 7].map(makeRuneRing),
     lexicon: [0, 1, 2, 3].map((f) => makeLexicon(theme, f)),
     stash: makeStash(),
+    ...(SMITH3.on ? { ring3: makeRing3(theme) } : {}),
   };
 }

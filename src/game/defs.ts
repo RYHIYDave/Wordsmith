@@ -538,8 +538,13 @@ export const MOVE_OPENS: readonly number[] = [1, 2, 5];
  * 5, after 7 and 10 (Recommended)".
  */
 export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly number[] } = { front: [1, 5], behind: [7, 10] };
-/** The quest item: what the fallen wordsmith's satchel holds, and what lights the ring (a name of the director's, until he or the art chat names it). */
-export const QUEST_ITEM = { name: 'Rune Heart', the: 'the RUNE HEART' };
+/**
+ * The quest item: what lies by the fallen wordsmith, and what lights the ring. His name for it, to
+ * the art chat by 23:52 on 8 Oct 2026, asked what it should be: "A master rune-stone" (Version 19.5
+ * went out calling it the RUNE HEART, a name of the director's; since 19.6, his, with the art
+ * chat's pictures of it: art/quest3.ts).
+ */
+export const QUEST_ITEM = { name: 'Master Rune-stone', the: 'the MASTER RUNE-STONE' };
 /**
  * The first dungeon, gentler, with the first levels on: about half the monsters of a first
  * dungeon (its budget, against `monsterBudget(1)`'s 120), in packs of two to four, one room of

@@ -5,7 +5,7 @@
 // THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5, on the owner's
 // yes of 8 Oct 2026, 23:06): the hero starts with the quick attack alone; the first pack is a
 // softball; no word falls in the first dungeon and no monster there carries one; the fallen
-// wordsmith's satchel holds the RUNE HEART, which is carried home through the boss's portal and
+// wordsmith has the MASTER RUNE-STONE by him (since Version 19.6, beside his hand), which is carried home through the boss's portal and
 // brought to the wordsmith in town; his ring is lit by it, he gives the first word, and it is set
 // there, on the quick attack: that is the end of the lesson ("No special moment").
 //   move > fight > body > carry > ring > smith > done
@@ -531,13 +531,13 @@ export default async function (page, snap) {
   log('  searched', `${s.body.state !== 0} (flasks ${s.potions})`);
   if (s.body.state === 0) { await fail('the body was never searched'); return; }
 
-  // ---- THE FIRST LEVELS: the satchel holds the RUNE HEART, and no word ------------------------------
+  // ---- THE FIRST LEVELS: by the fallen wordsmith, the MASTER RUNE-STONE, and no word -----------------
   if (fl) {
     s = (await wait((q) => !!q.quest, 3000)) ?? (await st());
-    log('4 in the satchel', `${s.quest === 'heart' ? 'the RUNE HEART' : 'NO QUEST ITEM'}; words on the floor ${s.drops}, in the pouch ${s.spare}; the prompt ${s.step}`);
-    if (s.quest !== 'heart') { await fail('the fallen wordsmith\'s satchel held no RUNE HEART'); return; }
+    log('4 by the fallen wordsmith', `${s.quest === 'heart' ? 'the MASTER RUNE-STONE' : 'NO QUEST ITEM'}; words on the floor ${s.drops}, in the pouch ${s.spare}; the prompt ${s.step}`);
+    if (s.quest !== 'heart') { await fail('the fallen wordsmith\'s satchel held no MASTER RUNE-STONE'); return; }
     if (s.drops || s.spare) await fail('the fallen wordsmith gave a word before the ring is lit');
-    if (s.step !== 'carry') await fail(`carrying the RUNE HEART the prompt should be "carry": it is ${s.step}`);
+    if (s.step !== 'carry') await fail(`carrying the MASTER RUNE-STONE the prompt should be "carry": it is ${s.step}`);
     await page.waitForTimeout(900);
     await snap('07_the_rune_heart');
   } else {
@@ -557,7 +557,7 @@ export default async function (page, snap) {
   }
 
   if (fl) {
-    // ---- carry: the RUNE HEART home. The way home is the portal the boss leaves behind: the boss and
+    // ---- carry: the MASTER RUNE-STONE home. The way home is the portal the boss leaves behind: the boss and
     // the rest are put down by script and the portal lit (as towntap.mjs does), the hero set down a
     // few steps from it with nothing between; the press on it is real -----------------------------
     const by = await page.evaluate(() => {
@@ -576,7 +576,7 @@ export default async function (page, snap) {
     await page.waitForTimeout(700);
     s = await st();
     log('5 by the portal, the boss down (by script)', `${by ? by.toFixed(1) + ' tiles off' : 'NO PLACE IN SIGHT OF IT'}; lit ${s.portalOn}; the prompt ${s.step}`);
-    if (s.step !== 'carry') await fail(`with the RUNE HEART in the dungeon the prompt should be "carry": it is ${s.step}`);
+    if (s.step !== 'carry') await fail(`with the MASTER RUNE-STONE in the dungeon the prompt should be "carry": it is ${s.step}`);
     await snap('08_the_portal');
     // (a press on it: the hero walks to it and steps through, as in towntap.mjs; failing that, the walk up and its prompt)
     if (s.portal) await hands.pressAt(s.portal.x, s.portal.y - 20);
@@ -587,10 +587,10 @@ export default async function (page, snap) {
       if (!s.town) { if (touch) await press('button:Return to town'); else await page.keyboard.press('KeyE'); }
       s = (await wait((q) => q.town, 6000)) ?? (await st());
     }
-    log('  home', `town ${s.town}, the RUNE HEART ${s.quest === 'heart' ? 'carried' : 'GONE'}; the prompt ${s.step}`);
+    log('  home', `town ${s.town}, the MASTER RUNE-STONE ${s.quest === 'heart' ? 'carried' : 'GONE'}; the prompt ${s.step}`);
     if (!s.town) { await fail('the portal did not take the hero home'); return; }
-    if (s.quest !== 'heart') await fail('the RUNE HEART was lost on the way home');
-    if (s.step !== 'ring') await fail(`in town with the RUNE HEART the prompt should be "ring": it is ${s.step}`);
+    if (s.quest !== 'heart') await fail('the MASTER RUNE-STONE was lost on the way home');
+    if (s.step !== 'ring') await fail(`in town with the MASTER RUNE-STONE the prompt should be "ring": it is ${s.step}`);
     await page.waitForTimeout(800);
     await snap('09_town_bring_it');
 
@@ -614,10 +614,10 @@ export default async function (page, snap) {
       if (s.smith) await hands.pressAt(s.smith.x, s.smith.y - 8);
       s = (await wait((q) => q.ring, 8000)) ?? (await st());
     }
-    log('6 walked up to the wordsmith with it', `ring lit ${s.ring} (on this device ${s.metaRing}); the RUNE HEART ${s.quest ? 'STILL CARRIED' : 'given'}; his word ${s.held}`);
-    if (!s.ring) { await fail('walking up to the wordsmith with the RUNE HEART did not light his ring'); return; }
+    log('6 walked up to the wordsmith with it', `ring lit ${s.ring} (on this device ${s.metaRing}); the MASTER RUNE-STONE ${s.quest ? 'STILL CARRIED' : 'given'}; his word ${s.held}`);
+    if (!s.ring) { await fail('walking up to the wordsmith with the MASTER RUNE-STONE did not light his ring'); return; }
     if (!s.metaRing) await fail('the ring is lit for the hero but not on this device');
-    if (s.quest) await fail('the RUNE HEART is still carried once the ring is lit');
+    if (s.quest) await fail('the MASTER RUNE-STONE is still carried once the ring is lit');
     w = s.held;
     if (w !== FIRST[cls].word) await fail(`the wordsmith should give the ${cls} ${FIRST[cls].word}: he gave ${w}`);
     await page.waitForTimeout(600);
@@ -872,7 +872,7 @@ export default async function (page, snap) {
   log('10 a second NEW GAME', s.title ? 'still on the starting screen' : `town ${s.town}, prompts ${s.guide ? 'on' : 'off'} (${s.step})`);
   if (s.title || !s.town || s.guide || s.step) await fail(`the second character should begin in town with no prompts: ${JSON.stringify({ title: s.title, town: s.town, guide: !!s.guide, step: s.step })}`);
   if (fl && !s.title) {
-    // (his answer, 22:19: "No, the ring stays lit (Recommended)": the next hero needs no RUNE HEART; and he too starts with the quick attack alone)
+    // (his answer, 22:19: "No, the ring stays lit (Recommended)": the next hero needs no MASTER RUNE-STONE; and he too starts with the quick attack alone)
     log('  the second hero: the ring / open at level 1', `${s.ring ? 'lit' : 'DARK'} / ${s.open.join(' / ')}`);
     if (!s.ring) await fail('the ring should stay lit for the next hero');
     if (s.open.join() !== 'true,false,false') await fail(`the next hero too should start with the quick attack alone: ${s.open.join(', ')}`);

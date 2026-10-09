@@ -30,6 +30,7 @@ import {
 import type { LegStyle, Painted, Pose, Ramp, V } from './kit';
 import { IRON } from './mkit';
 import { EMBER, GOLD } from './props';
+import { SMITH3, makeSmith3 } from './smith3';
 
 const SKIN: Ramp = [SKIN4[0], SKIN4[0], SKIN4[1], SKIN4[2], SKIN4[3]];
 
@@ -1085,6 +1086,18 @@ export function townFrame(m: Townsman, t: number, phase = 0, to: Facing | null =
   return m.act[Math.min(m.act.length - 1, Math.floor((u - rest) * ACT_FPS))];
 }
 
+/**
+ * Where one of the town's people is in what they do now and then at time `t` (with their clock set
+ * `phase` apart, as townFrame has it): seconds into it, or -1 while they stand in their loop.
+ */
+export function actAt(m: Townsman, t: number, phase = 0): number {
+  const loopT = m.idle.length / IDLE_FPS;
+  const rest = m.loops * loopT;
+  const every = rest + m.act.length / ACT_FPS;
+  const u = (((t + phase) % every) + every) % every;
+  return u < rest ? -1 : u - rest;
+}
+
 /** The town's people, by the names the game knows them by. */
 export interface Townsfolk {
   armourer: Townsman;
@@ -1137,5 +1150,6 @@ export function makeTownsfolk(): Townsfolk {
     for (const to of FACINGS) turned[to] = who !== 'stranger' && to === TOWN_WORK[who] ? idle : posed((q) => PAINT[who](q, to), p.idle, {}, opts);
     return { idle, act: posed(PAINT[who], p.act, {}, opts), loops: p.loops, work: TOWN_WORK[who], turned };
   };
-  return { armourer: one('armourer'), mystic: one('mystic'), wordsmith: one('wordsmith'), stranger: one('stranger') };
+  // (THE WORDSMITH ON BONES, art/smith3.ts: a mock-up behind a switch that is off)
+  return { armourer: one('armourer'), mystic: one('mystic'), wordsmith: SMITH3.on ? makeSmith3() : one('wordsmith'), stranger: one('stranger') };
 }

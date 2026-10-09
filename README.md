@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (8 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.5).**
+**Status (9 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.6).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -179,12 +179,15 @@ level 2 and the swipe at 5, each with its moment. The first dungeon is gentler, 
 softball, and no word falls there: the fallen wordsmith holds the RUNE HEART, which lights the
 wordsmith's ring in town; he gives your first word, and the slots open one in front, the second in
 front at 5, behind at 7 and 10. The stick goes at one speed.
+Version 19.6: the art chat's wordsmith made new on bones, a head taller, runes burning on him, and
+his ring big and wild; the quest item is the master rune-stone, lying by the fallen wordsmith's
+hand: carried home, it is laid into the wordsmith's slab and his dark ring powers up.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
 teaches as you play: how to move, then your attack as you meet the first monsters. You start with the
 tap attack alone; tap and hold opens at level 2 and the swipe at level 5. Half way through lies a
-fallen wordsmith whose satchel holds the RUNE HEART. Bring it home to the wordsmith in town: it
+fallen wordsmith with the master rune-stone by his hand. Bring it home to the wordsmith in town: it
 lights the ring of runes around him, and he gives you your first power word to set before your tap
 attack. Words are scarce: none in the first dungeon, about three in each after.
 A word on an attack can be taken out again; a word burned into gear or into a dungeon is used up.

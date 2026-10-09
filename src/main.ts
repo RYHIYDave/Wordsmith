@@ -18,6 +18,8 @@ import { makeDungeonProps } from './art/props';
 import { makeTownProps } from './art/town';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
+import { SMITH3 } from './art/smith3';
+import { POWER, QUEST3, makeStoneArt } from './art/quest3';
 import { makeTitleArt } from './art/title';
 import { makeSmithTitle } from './art/title_smith';
 import type { SmithTake } from './art/title_smith';
@@ -168,6 +170,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     bestiary: makeBestiary(),
     icons: makeIconArt(),
     spells: makeSpellArt(),
+    // (THE MASTER RUNE-STONE, art/quest3.ts: a mock-up behind QUEST3, off; its pictures are painted the first time they are shown)
+    quest: makeStoneArt(),
   };
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
@@ -391,6 +395,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const begin = (g: Game): void => {
     game = g;
     arrived = null;
+    // (THE MASTER RUNE-STONE: its moments are this hero's: see questFromRules)
+    QUEST3.givenAt = -1;
+    QUEST3.takenAt = -1;
     fx.clear();
     fx.messages = [];
     panels.open = 'none';
@@ -1085,6 +1092,23 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   };
 
   /** Deal with what the rules reported: open town panels, start effects, play sounds. */
+  /**
+   * THE MASTER RUNE-STONE AND THE WORDSMITH'S RING (art/quest3.ts, QUEST3; the art chat's, the
+   * game's own since Version 19.6): its pictures follow the rules of the first levels (game/defs.ts,
+   * FIRST_LEVELS). The ring is dark while this hero's is (`Hero.ring`: a hero saved before 19.5 keeps
+   * his lit); the stone lies beside the fallen wordsmith while he is unsearched and the ring dark;
+   * it is carried while the hero has it (`Hero.quest`). Its two moments come from the rules' events
+   * (drain). `__dbg.quest3` takes all of it over, for the films.
+   */
+  let questByRules = true;
+  const questFromRules = (g: Game): void => {
+    if (!questByRules) return;
+    const v = g.questView();
+    QUEST3.dark = v.dark;
+    QUEST3.carried = v.carried;
+    QUEST3.stone = v.lying ? 'lying' : 'gone';
+  };
+
   const drain = (g: Game): void => {
     if (!g.events.length) return;
     for (const e of g.events) {
@@ -1092,6 +1116,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // (words set in the inventory may be moved about before it closes: what came of it is shown then)
       else if (e.t === 'worded' && panels.open !== 'inv') fx.wordJoined(g.hero.x, g.hero.y, e.word, e.name);
       else if (e.t === 'moveOpen') moveToast = { skill: e.skill, t: 0 };
+      // (THE MASTER RUNE-STONE: taken up beside the fallen wordsmith; given to the wordsmith, whose ring powers up)
+      else if (e.t === 'quest' && questByRules) QUEST3.takenAt = clock;
+      else if (e.t === 'ring' && questByRules) QUEST3.givenAt = clock;
       else if (e.t === 'wordGot') {
         // a new player's first word is the big moment: it is announced large, and the game holds its breath
         const big = !!g.guide && !g.guide.set;
@@ -1281,7 +1308,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (g.offer && (h.words[g.offer] <= 0 || !g.placeable(g.offer))) g.offer = null;
         // (a new player's first word is seen in its light for a moment before the screen opens for it)
         const wait = g.guide && !g.guide.set ? 2.4 : 0.9;
-        if (g.offer && quiet > wait && !bot && dbg.autoWords && !g.over) {
+        // (THE MASTER RUNE-STONE: the wordsmith's word waits until his ring has powered up, so that it is seen)
+        const powering = QUEST3.on && QUEST3.givenAt >= 0 && clock - QUEST3.givenAt < POWER.done + 0.4;
+        if (g.offer && quiet > wait && !powering && !bot && dbg.autoWords && !g.over) {
           // a word was picked up that has somewhere to go: the inventory, with the word in hand
           // (for a new player's first word it is left on its tile, so that the drag can be shown)
           openInventory(-1, g.guide && !g.guide.set ? null : g.offer, true);
@@ -1327,6 +1356,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         fx.shakeX = 0;
         fx.shakeY = 0;
       }
+      questFromRules(g);
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (a hero who has just warped in says their line when they have come together: `arrived`)
       if (arrived && !paused) {
@@ -1658,6 +1688,42 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     comboMends: (on: boolean) => {
       useComboMends(on);
       art.heroes = makeHeroArt3();
+    },
+    /** THE WORDSMITH ON BONES AND HIS RING MADE NEW (art/smith3.ts, SMITH3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
+    smith3: (on: boolean) => {
+      SMITH3.on = on;
+      art.folk = makeTownsfolk();
+      art.town = makeTownProps();
+    },
+    /** The clock the town's things go by (seconds, slowed with `slowmo`): a playtest can wait for the moment someone acts. */
+    clock: () => clock,
+    /**
+     * THE MASTER RUNE-STONE (art/quest3.ts, QUEST3): a mock-up behind a switch that is off; its films
+     * set what the rules will one day say. `on`; the ring `dark`; `give`: the stone is given now;
+     * `take`: it is taken up now from beside the fallen wordsmith (and carried); `lying`: it lies there.
+     */
+    quest3: (o: { on?: boolean; dark?: boolean; give?: boolean; take?: boolean; lying?: boolean; carried?: boolean; rules?: boolean }) => {
+      // (the films set it by hand; `rules: true` gives it back to the rules)
+      questByRules = o.rules === true;
+      if (o.on !== undefined) QUEST3.on = o.on;
+      if (o.dark !== undefined) QUEST3.dark = o.dark;
+      if (o.give) {
+        QUEST3.givenAt = clock;
+        QUEST3.carried = false;
+      }
+      if (o.take) {
+        QUEST3.takenAt = clock;
+        QUEST3.stone = 'gone';
+        QUEST3.carried = true;
+        // (for the pictures only: the fallen wordsmith is then searched, as the rules will have it)
+        if (game?.level.body) game.level.body.state = 1;
+      }
+      if (o.lying) {
+        QUEST3.stone = 'lying';
+        QUEST3.takenAt = -1;
+      }
+      if (o.carried !== undefined) QUEST3.carried = o.carried;
+      return { ...QUEST3 };
     },
     /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): ON since Version 19.4, on his yes; pictures of him as he was before switch them off and paint the heroes again (true: the new, the game's own, back). */
     rangerStances: (on: boolean) => {
