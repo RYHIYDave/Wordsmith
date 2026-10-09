@@ -209,6 +209,56 @@ const WARRIOR: TalentTree = {
 
 export const TREES: Record<ClassId, TalentTree> = { warrior: WARRIOR, ranger: RANGER, mage: MAGE };
 
+/** What the talents do, in numbers: starting numbers, as their words on the cards say them (his to change). */
+export const TALENT_TUNE = {
+  // the mage
+  searing: { secs: 1, mult: 1.5 },
+  fuel: 4 / 3,
+  forking: 2,
+  overload: 1.15,
+  /** How long a lightning hit leaves an enemy shocked (what Overload works on). */
+  shockSecs: 2,
+  deepFreeze: { frozen: 1.5, again: 2.5 },
+  rime: 2,
+  shatter: 2,
+  /** Inferno's and Shatter's bursts: their reach, and Inferno's blast as a share of the dead one's life. */
+  burstR: 1.8,
+  inferno: 0.25,
+  shatterChill: 0.4,
+  /** Flame Warp: a patch of fire every tile of the way, its fire a second as a share of a hit, and how long it burns. */
+  flameWarp: { every: 1, share: 0.4, secs: 3, r: 0.8 },
+  stormWarp: { n: 4, reach: 3.5, share: 1 },
+  frostWarp: { r: 2.2 },
+  stormcaller: { every: 2, reach: 5, share: 0.8 },
+  // the ranger
+  windrunner: { secs: 2, speed: 30 },
+  venom: 2,
+  longShot: 4 / 3,
+  lightStep: { charges: 3, roll: 4 / 3 },
+  huntersMark: 3,
+  wideTraps: 4 / 3,
+  minefield: { n: 3, spread: 1.3 },
+  splitShot: { every: 3, n: 3, fan: 0.26 },
+  hail: { life: 2, area: 1.5 },
+  piercing: 1,
+  farSight: { most: 0.5, at: 8 },
+  steadyAim: { mult: 1.15, still: 0.3 },
+  // the warrior
+  fury: 8,
+  cleave: { share: 0.3, reach: 1.3 },
+  momentum: { secs: 1, speed: 25 },
+  battleRush: 0.7,
+  wrath: 1.25,
+  berserk: { below: 0.5, speed: 1.3, mult: 1.3 },
+  thickSkin: 1.15,
+  shieldwall: 2,
+  secondWind: 1.3,
+  bulwark: 0.9,
+  thorns: { share: 0.3, reach: 1.6 },
+  unbreakable: { secs: 3 },
+  earthshaker: { r: 2.4, secs: 1 },
+};
+
 /** A talent of a class's tree, by its id. */
 export function talentOf(cls: ClassId, id: string): TalentDef | undefined {
   return TREES[cls].talents.find((t) => t.id === id);

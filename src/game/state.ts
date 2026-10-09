@@ -287,6 +287,8 @@ export interface Monster {
   staggerCd: number;
   /** Precise behind: seconds the mark on it has left (the hero's next hit on it is a certain critical). */
   markT: number;
+  /** THE SKILL TREES: seconds left shocked by a lightning hit (Overload's mark; nothing else reads it). */
+  shockT: number;
   /** Guarding: what is left of the shield it carries, which takes damage before its life does. */
   shield: number;
   /** Which hero ability last hurt it (for effects that trigger on a kill), or -1. */
@@ -321,6 +323,8 @@ export interface Projectile {
   /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) */
   look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart';
   pierce: boolean;
+  /** THE SKILL TREES (Piercing): how many more enemies a shot that does not pierce may still pass through. */
+  pierceN?: number;
   /**
    * Ids of monsters already hit, so a piercing shot hits each once. The shots of one use share one
    * list (a Twin pair): no enemy takes both of them.
