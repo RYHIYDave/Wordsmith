@@ -1647,8 +1647,8 @@ export function useGrippingRuns(on: boolean): void {
 
 // ---------------------------------------------------------------------------------------------
 /**
- * THE RANGER IN BATTLE AND IN TOWN. A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct
- * 2026). The owner, 15:31: "Wait I need the rangers animations fixed"; and at 15:38, asked which
+ * THE RANGER IN BATTLE AND IN TOWN (the art chat, 8 Oct 2026; THE GAME'S OWN SINCE VERSION
+ * 19.4). The owner, 15:31: "Wait I need the rangers animations fixed"; and at 15:38, asked which
  * of them: "All of that, but more.  Each character should have a battle stance and a town
  * stance.  When you run, the ranger is crouched, but when you stop he pops back up.  I want him to
  * stay crouched when he stops in battle.  Once he’s in town he stands upright, and he’ll need a
@@ -1660,8 +1660,16 @@ export function useGrippingRuns(on: boolean): void {
  *   in front of him and down, an arrow on the string); in town he stands upright as he always has
  *   (RANGER_TOWN) and runs upright (RANGER_TOWN_UPRIGHT). Each stance breathes and shifts its weight
  *   (Movement 6, "A figure left standing breathes, shifts its weight and has small habits of its own").
+ *
+ * His yes to them, 8 Oct 2026: in the art chat part by part (15:57, 16:28, 16:41) and at 17:07 to
+ * handing it all over ("Yes, hand it all over (Recommended)"); and in the main chat at 20:27, of
+ * "Put the ranger's new stances into the game as Version 19.4, as in the picture?": "Yes
+ * (Recommended)". SO THE SWITCH IS ON, from Version 19.4: the new stances and moves are the game's
+ * own (put in place as this file loads, at its foot, by `useRangerStances`). Switched off,
+ * `useRangerStances(false)` gives him as he was before, for pictures beside them (the art must then
+ * be painted again: main.ts, `__dbg.rangerStances`).
  */
-export const RANGER_STANCES = { on: false };
+export const RANGER_STANCES = { on: true };
 
 /** HOW LOW HE IS IN A FIGHT: as low as he runs, his weight between his feet, side-on to what is ahead, his head up and watching it. */
 const CROUCH: Partial<Bones> = {
@@ -2499,3 +2507,6 @@ export const MOVES3: Record<string, Move3> = {
   mtown: MAGE_TOWN3, mtownrun: MAGE_TOWN_RUN3, beamstart: BEAM_START3, tmlight: MAGE_TOWN_LIGHT3, treading: TOWN_READING3,
   rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
 };
+
+// (the game's own ranger: his new stances and moves, since Version 19.4, on his yes: RANGER_STANCES, above)
+useRangerStances(RANGER_STANCES.on);

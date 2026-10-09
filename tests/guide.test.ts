@@ -730,7 +730,7 @@ test('a word on an attack is only lent to it: it can be taken out again, and a w
   assert.equal(g.placeProblem(front0, 'leech'), 'No spare word');
   while (h.level < SLOT_LEVELS.front) inner(g).gainXp(60);
   const front1 = { skill: 0, side: 'front', idx: 1 } as const;
-  assert.equal(g.placeProblem(front1, 'frost'), 'One element per side');
+  assert.equal(g.placeProblem(front1, 'frost'), 'One damage word per side');
   assert.equal(g.placeProblem(front1, 'fire'), 'No spare word');
   h.words.fire = 1;
   assert.equal(g.placeProblem(front1, 'fire'), 'Already there');

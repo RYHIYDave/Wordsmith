@@ -188,6 +188,16 @@ const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
 /** The attribute a weapon's attacks grow with, whoever holds it: a sword with Strength, a bow with Dexterity, a staff or a wand with Intelligence. */
 export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int' };
 
+/**
+ * ATTACKS AND SPELLS (the doc "Wordsmith: The New Words", his yes at 16:53 on 8 Oct 2026): the
+ * weapon decides, a sword, a great sword or a bow making attacks and a staff or a wand spells; the
+ * evasive moves go with their class (Leap and Trap attacks, Warp a spell).
+ */
+export const SPELL_SKILLS: ReadonlySet<SkillId> = new Set<SkillId>(['wave', 'orb', 'familiar', 'beam', 'warp']);
+export function isSpell(id: SkillId): boolean {
+  return SPELL_SKILLS.has(id);
+}
+
 /** The quick attack of a hand that holds that weapon. */
 export function tapSkill(weapon: WeaponKind | null): SkillId {
   return (weapon ? WEAPON_SKILLS[weapon] : BARE_SKILLS)[0];
@@ -230,8 +240,50 @@ export const ATTR_GIVES = {
 // Power words. The rule: a word in FRONT of an ability changes the hit; a word BEHIND it changes
 // what the ability leaves behind. The exact numbers are in words.ts.
 
+/**
+ * THE TWO KINDS OF WORD (his words, 5 Oct 2026: "I really like the distinction of Shape and
+ * Damage"; 8 Oct, 10:54 and 11:27: Leech, Volatile, Swift and Twin are shaping words). A DAMAGE word
+ * adds damage of a kind; a SHAPING word changes the hit, or what it leaves behind. An attack takes
+ * ONE DAMAGE WORD ON EACH SIDE (his answer, 8 Oct, 16:53: "Yes, one a side (Recommended)"): the doc
+ * "Wordsmith: The New Words".
+ */
+export type WordKind = 'damage' | 'shape';
+
+// THE NEW WORDS' NUMBERS (Version 19.3): the starting points of his doc "Wordsmith: The New Words"
+// (his yes, 8 Oct 2026, 16:53: "Yes, as it is (Recommended)"), to be tuned once he has played them.
+/** HEAVY: in front, 20% slower to use (cooldowns and mana 1.25 times, a quick attack's speed over 1.25), and it stuns; behind, cracked ground. */
+export const HEAVY = {
+  slower: 1.25,
+  /** Seconds a Heavy hit stuns for: an elite for half of it, a boss never. */
+  stun: 0.8,
+  /** Seconds the cracked ground lasts; a stagger, and how long a monster waits before the same ground staggers it again. */
+  cracks: 4,
+  stagger: 0.55,
+  staggerAgain: 1.5,
+  /** On a monster: its blows knock the hero this far back (tiles). */
+  knock: 0.6,
+  /** On gear: the most that a hero's gear together gives of a chance to stun (%). */
+  stunCap: 50,
+};
+/** PRECISE: in front, the area this much the size; behind, a mark lasts this many seconds. On a monster: its hits ignore this much of the hero's armour. */
+export const PRECISE = { area: 0.7, markTime: 5, armourIgnored: 0.5 };
+/** FRENZIED: each stack this much faster (attacks, and cooldowns recovering), up to `max`; the stacks fade `hold` seconds after the last use. On a monster: up to `monster` faster near death. */
+export const FRENZY = { each: 0.08, max: 5, hold: 3, monster: 0.5 };
+/** GUARDING: in front a shield of this fraction of life for `shieldTime` s; behind a ward that takes `ward` off the damage inside it, for `wardTime` s. On a monster: a shield of `monster` of its life. */
+export const GUARD = {
+  shield: 0.1,
+  shieldTime: 3,
+  ward: 0.3,
+  wardTime: 4,
+  monster: 0.2,
+  /** On gear: the most that a hero's gear together gives of a chance to block (%). */
+  blockCap: 50,
+};
+
 export interface WordDef {
   id: WordId;
+  /** Damage or shaping (see WordKind). */
+  kind: WordKind;
   /** The word itself, as it drops. */
   name: string;
   /** How it reads in front of an ability: "Flame" Orb. */
@@ -255,15 +307,21 @@ export interface WordDef {
 }
 
 export const WORDS: Record<WordId, WordDef> = {
-  power: { id: 'power', name: 'Power', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'The word of force.', frontText: 'More damage and a bigger hit.', behindText: 'Each hit that lands builds a short damage bonus.', monsterText: 'Hits harder and has more life.' },
-  leech: { id: 'leech', name: 'Leech', front: 'Leeching', behind: 'of Leeching', attr: 'str', element: null, about: 'The word of hunger. It takes life from what it touches.', frontText: 'Heals you for every enemy hit.', behindText: 'Enemies it kills drop life orbs.', monsterText: 'Heals when it hits you.' },
-  swift: { id: 'swift', name: 'Swift', front: 'Swift', behind: 'of Swiftness', attr: 'dex', element: null, about: 'The word of speed.', frontText: 'Faster to use again.', behindText: 'Each use gives you a burst of speed.', monsterText: 'Moves and attacks faster.' },
-  twin: { id: 'twin', name: 'Twin', front: 'Twin', behind: 'of Echoes', attr: 'dex', element: null, about: 'The word of doubling. Two of a thing, each the weaker for it.', frontText: 'Strikes, fires or bursts twice, each time weaker.', behindText: 'Repeats itself a moment later, weaker.', monsterText: 'Attacks twice.' },
-  fire: { id: 'fire', name: 'Flame', front: 'Flame', behind: 'of Flame', attr: 'int', element: 'fire', about: 'The word of fire.', frontText: 'Fire damage. Explodes and sets enemies burning.', behindText: 'Passes through, hits softer, leaves burning ground.', monsterText: 'Deals fire damage and sets you burning.' },
-  frost: { id: 'frost', name: 'Frost', front: 'Frost', behind: 'of Frost', attr: 'int', element: 'frost', about: 'The word of cold.', frontText: 'Frost damage. Chills, then freezes.', behindText: 'Passes through, hits softer, leaves ice that slows.', monsterText: 'Deals frost damage and slows you.' },
-  lightning: { id: 'lightning', name: 'Lightning', front: 'Lightning', behind: 'of Lightning', attr: 'int', element: 'lightning', about: 'The word of storms.', frontText: 'Lightning damage. Arcs to nearby enemies.', behindText: 'Passes through, hits softer, leaves a storm that strikes.', monsterText: 'Deals lightning damage and shocks you.' },
-  volatile: { id: 'volatile', name: 'Volatile', front: 'Volatile', behind: 'of Ruin', attr: 'int', element: null, about: 'The word of ruin. Things burst.', frontText: 'Enemies it kills explode.', behindText: 'Leaves a rune that detonates a moment later.', monsterText: 'Explodes when it dies.' },
-  poison: { id: 'poison', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
+  power: { id: 'power', kind: 'damage', name: 'Power', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'The word of force.', frontText: 'More damage and a bigger hit.', behindText: 'Each hit that lands builds a short damage bonus.', monsterText: 'Hits harder and has more life.' },
+  leech: { id: 'leech', kind: 'shape', name: 'Leech', front: 'Leeching', behind: 'of Leeching', attr: 'str', element: null, about: 'The word of hunger. It takes life from what it touches.', frontText: 'Heals you for every enemy hit.', behindText: 'Enemies it kills drop life orbs.', monsterText: 'Heals when it hits you.' },
+  swift: { id: 'swift', kind: 'shape', name: 'Swift', front: 'Swift', behind: 'of Swiftness', attr: 'dex', element: null, about: 'The word of speed.', frontText: 'Faster to use again.', behindText: 'Each use gives you a burst of speed.', monsterText: 'Moves and attacks faster.' },
+  twin: { id: 'twin', kind: 'shape', name: 'Twin', front: 'Twin', behind: 'of Echoes', attr: 'dex', element: null, about: 'The word of doubling. Two of a thing, each the weaker for it.', frontText: 'Strikes, fires or bursts twice, each time weaker.', behindText: 'Repeats itself a moment later, weaker.', monsterText: 'Attacks twice.' },
+  fire: { id: 'fire', kind: 'damage', name: 'Flame', front: 'Flame', behind: 'of Flame', attr: 'int', element: 'fire', about: 'The word of fire.', frontText: 'Fire damage. Explodes and sets enemies burning.', behindText: 'Passes through, hits softer, leaves burning ground.', monsterText: 'Deals fire damage and sets you burning.' },
+  frost: { id: 'frost', kind: 'damage', name: 'Frost', front: 'Frost', behind: 'of Frost', attr: 'int', element: 'frost', about: 'The word of cold.', frontText: 'Frost damage. Chills, then freezes.', behindText: 'Passes through, hits softer, leaves ice that slows.', monsterText: 'Deals frost damage and slows you.' },
+  lightning: { id: 'lightning', kind: 'damage', name: 'Lightning', front: 'Lightning', behind: 'of Lightning', attr: 'int', element: 'lightning', about: 'The word of storms.', frontText: 'Lightning damage. Arcs to nearby enemies.', behindText: 'Passes through, hits softer, leaves a storm that strikes.', monsterText: 'Deals lightning damage and shocks you.' },
+  volatile: { id: 'volatile', kind: 'shape', name: 'Volatile', front: 'Volatile', behind: 'of Ruin', attr: 'int', element: null, about: 'The word of ruin. Things burst.', frontText: 'Enemies it kills explode.', behindText: 'Leaves a rune that detonates a moment later.', monsterText: 'Explodes when it dies.' },
+  // THE NEW WORDS (his choice of 8 Oct 2026, 12:26; how they play: his doc "Wordsmith: The New Words",
+  // his yes at 16:53). All are shaping words. Their looks are the art chat's (render/words3.ts).
+  heavy: { id: 'heavy', kind: 'shape', name: 'Heavy', front: 'Heavy', behind: 'of Quakes', attr: 'str', element: null, about: 'The word of weight. Slow, and crushing.', frontText: 'Slower, hits much harder and stuns.', behindText: 'Leaves cracked ground that staggers enemies.', monsterText: 'Its blows knock you back.' },
+  precise: { id: 'precise', kind: 'shape', name: 'Precise', front: 'Precise', behind: 'of the Mark', attr: 'dex', element: null, about: 'The word of the exact. Narrow, and deadly.', frontText: 'More damage, a smaller area.', behindText: 'Marks an enemy: your next hit on it is a certain critical.', monsterText: 'Its hits find the gaps in your armour.' },
+  frenzied: { id: 'frenzied', kind: 'shape', name: 'Frenzied', front: 'Frenzied', behind: 'of Frenzy', attr: 'str', element: null, about: 'The word of rage. Faster, and faster.', frontText: 'Each use makes the next faster, up to five times.', behindText: 'Kills keep the frenzy going.', monsterText: 'Speeds up as it is hurt.' },
+  guarding: { id: 'guarding', kind: 'shape', name: 'Guarding', front: 'Guarding', behind: 'of Warding', attr: 'str', element: null, about: 'The word of the shield. It keeps you.', frontText: 'Each use gives you a brief shield.', behindText: 'Leaves a ward circle: you take less damage inside it.', monsterText: 'Carries a shield that soaks damage.' },
+  poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -509,17 +567,17 @@ export const COMBO = { on: true };
 /**
  * THE RANGER'S ARROWS LEAVE FROM WHERE HIS PICTURE HAS THEM (the art chat, 8 Oct 2026; the owner,
  * 15:38: "the arrow that fires in the animation for shot doesn’t match the actual projectile that
- * comes out for shot"). A MOCK-UP BEHIND A SWITCH THAT IS OFF, switched with the ranger's new
- * stances (art/moves3.ts, useRangerStances). With it on, a hero's arrow is drawn from where the
+ * comes out for shot"). ON SINCE VERSION 19.4, on his yes (8 Oct 2026, 20:27), switched with the
+ * ranger's new stances (art/moves3.ts, RANGER_STANCES, useRangerStances). On, a hero's arrow is drawn from where the
  * point of the arrow on his string was the moment before it went (`from` tiles ahead of him: it is
  * not seen before it gets there, as it is still on the bow; `height` game pixels off the floor, at
  * which it flies), as long as that arrow (`long` game pixels, where it was 6); and a Volley's
  * arrows go up from where his bow is (`volleyFrom` tiles ahead of him, `volleyHeight` up). The
  * rules are not changed: an arrow still starts 0.4 tiles ahead of him and hits what it hits.
- * With it off, as before: drawn from the start, 10 pixels up, 6 long; a volley from 10 pixels to
+ * Off, as before Version 19.4: drawn from the start, 10 pixels up, 6 long; a volley from 10 pixels to
  * the right of the feet, 27 up. (tests/ranger_stances.test.ts holds the numbers to the picture's.)
  */
-export const RANGER_ARROW = { on: false, from: 0.796, height: 22.5, long: 11, volleyFrom: 0.291, volleyHeight: 27.6 };
+export const RANGER_ARROW = { on: true, from: 0.796, height: 22.5, long: 11, volleyFrom: 0.291, volleyHeight: 27.6 };
 
 export const TUNE = {
   heroRadius: 0.3,
@@ -896,6 +954,10 @@ export const QUIPS: {
     leech: ['Thanks for the drink.', 'I feel better already.', "What's yours is mine."],
     volatile: ['Boom.', 'Mind the mess.', 'Handle with care.'],
     poison: ['Pick your poison.', 'Something you ate?', 'Bad for your health.'],
+    heavy: ['Down you go.', 'Feel that?', 'Heavy hitter.'],
+    precise: ['Right there.', 'Dead centre.', 'Through the gap.'],
+    frenzied: ['More!', "Can't stop now.", 'Faster.'],
+    guarding: ['Not today.', 'You missed.', 'Hold the line.'],
   },
   /** By the attack that made the kill. */
   skill: {

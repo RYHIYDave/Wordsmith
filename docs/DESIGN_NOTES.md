@@ -4588,6 +4588,191 @@ head, the shorter stance) into the game as Version 19.2?": **"Yes (Recommended)"
   byte the frozen copy's `dist/artifact.html`.
 - NOT CHECKED: a real phone; how the shorter stance feels in a fight is his to find.
 
+### Version 19.3: Heavy, Precise, Frenzied and Guarding
+
+**What he said.** 8 Oct 2026, 10:54, to this chat: "After the changes to normal mode I want to get
+more words into the game.  I’d like to add a word MYSTICAL, which increases spell damage in the same
+vein as PHYSICAL for attack damage, I’d like leech and volitile moved to shaping words, then I’d like
+4 more shaping words added." 10:58: "Sorry keep power’s name the same.  I meant power". 11:27: "Swift
+and twin are also shaping words into". At 12:26, to the art chat, he chose the eight (Pulling,
+Splitting, Heavy, Precise, Hexing, Stilling, Frenzied, Guarding), and said yes to their looks there
+(13:15 and 13:43, as it reports them). Here, 15:21: "Did you put the new words in?"; 15:25, "Yes,
+words first (Recommended)". The plan, his doc "Wordsmith: The New Words"
+(https://claude.ai/code/artifact/4ef13dd1-6b9e-4577-8342-129f6cd213bd): **his yes at 16:53, "Yes, as it
+is (Recommended)"**, and to its questions, "Nothing (Recommended)" (a word on the wrong kind of
+ability), "Yes, one a side (Recommended)" (one damage word on each side), "Yes (Recommended)"
+(Volatile's hidden bomb). The first four in, whose looks were ready (the art chat draws Mystical's
+after the ranger: he was told after 16:55). Pictures of them at work in the game, and of the screens,
+at 18:14; **his yes at 18:23: "Yes, as they are (Recommended)"**; and "Arcana (Recommended)"
+(Mystical's stack, to come) and "Later (Recommended)" (Mystified).
+
+**What is in it.**
+
+- **THE TWO KINDS OF WORD** (`WordKind` in `src/game/defs.ts`): DAMAGE words (Power, Flame, Frost,
+  Lightning, Poison; Mystical to come) and SHAPING words (Swift, Twin, Leech, Volatile, and the
+  new ones). **One damage word on each side** of an ability (`socketProblem`, `placeProblem`: "One
+  damage word per side"); a save from before with two on a side keeps the first, and the other goes
+  back to the pouch (`refresh`). Abilities are attacks or spells (`SPELL_SKILLS`, `isSpell`: the
+  staff's and the wand's, and Warp), for Mystical and Power to come.
+- **HEAVY** (Strength; `HEAVY`). In front: slower to use (cooldowns 1.25 times, a quick attack's
+  speed over 1.25), much harder (+50%, and half a percent more for each point of Strength), and what it hits is
+  **stunned** for 0.8 s (an elite, a guardian too, for half; a boss never): it cannot move or attack,
+  and a blow it was winding up is broken off, with its warning on the floor (`stunMonster`,
+  `breakOff`, `Zone.src`). Behind, "of Quakes": **cracked ground** for 4 s where it lands; a monster
+  that walks onto it is **staggered**, its attack broken off, for 0.55 s, and the same ground leaves it
+  be for 1.5 s after (`staggerMonster`; bats fly over it, bosses stand firm). Burned into gear: on
+  the weapon, gloves, a ring or the amulet a chance to stun (the stat `stunChance`; all the gear's
+  together at most 50%, `HEAVY.stunCap`) or Strength; on the rest armour or Strength. On a
+  monster: its blows knock the hero back 0.6 of a tile (`knockHero`, through the step that Strike's
+  combo uses: walls stop it).
+- **PRECISE** (Dexterity; `PRECISE`). In front: more damage (+30%, and half a percent more for each point
+  of Dexterity), an area 30% smaller (his change of 5 Oct: damage, not a critical chance). Behind, "of
+  the Mark": the first enemy each use hits is **marked** for 5 s; the hero's next hit on it is a
+  **certain critical**, and spends the mark (a hit that spends one marks nothing). Burned into gear:
+  critical chance or Dexterity (the weapon, gloves, rings, amulet); a critical's harm or Dexterity
+  (the rest). On a monster: its blows ignore half the hero's armour.
+- **FRENZIED** (Strength; `FRENZY`). In front: each use adds a stack of **frenzy**, up to five, each
+  8% faster for the quick attack and for the recovery of every cooldown (`frenzyPace`); it fades,
+  all at once, 3 s after the last use. Behind, "of Frenzy": a kill by the ability adds a stack and
+  holds the frenzy 3 s more, to 9 s at most. Burned into gear: attack speed or Strength (the weapon,
+  gloves, rings, amulet); running speed or Strength (the rest). On a monster: up to 50% faster as it
+  is hurt (moving, and coming round to its next blow).
+- **GUARDING** (Strength; `GUARD`). In front: each use gives a **shield** of a tenth of life (and a
+  tenth of a percent more for each point of Strength, to a fifth) for 3 s, which takes blows before life does;
+  a new one is never weaker than what is left of the last. Behind, "of Warding": a **ward circle** for
+  4 s where it lands, inside which the hero takes 30% less (and a fifth of a percent more for each point of Strength, to half). Burned
+  into gear, on any piece: a chance to block a blow, which then does nothing at all ("Blocked"; the
+  stat `blockChance`, all the gear's together at most 50%, `GUARD.blockCap`), or Strength. On a
+  monster: a shield of a fifth of its life, which takes harm first.
+- **THEIR LOOKS**, the art chat's (`src/render/words3.ts`, from `art/new-words` at `31e27c3`, his yes
+  in the art chat at 13:15 and 13:43): `WORDS3.on` true, and called up by the rules' own events
+  (`events3`; the events 'heavy', 'stun', 'stagger', 'markOn', 'markSpent', 'frenzy', 'frenzyFed',
+  'shield', 'guarded', 'blocked', and the 'zone' of cracks and wards): the heavy blow's freeze and
+  ring, the stars of a stun, the knock of a stagger, the cracked ground; the sight that closes on a
+  marked enemy and snaps shut on the critical; the ring of frenzy at the hero's feet; the shield's
+  shell, its flare where a blow is turned, and the ward circle. The demo of the other four (Pulling,
+  Splitting, Hexing, Stilling) does its share of the rules only on a page that listens (`W3.demo`).
+- **ROOM FOR THIRTEEN WORDS:** the Lexicon in town lays its stones in rows as even as they can be
+  (seven and six: `lexLayout`); the start screen's Lexicon takes two columns where one would run off
+  the panel; a pouch with more words than its stones have room for lays them narrower, a pixel apart
+  (`layPouch`, `NARROW_STONE`: all thirteen in one line of a phone's half).
+
+**How it was tested.**
+
+- `tsc` clean; `tests/new_words.test.ts` (20, new: each word in front and behind, on gear and on a
+  monster, and their looks called up by the rules, and nothing with the switch off);
+  `tests/word_kinds.test.ts` (4); `tests/words.test.ts`: every loadout of the first nine words, as
+  before, and every side holding a newer word against the empty side and each single word (2,568
+  loadouts an ability; all of them would be 6,724), each word seen to act; the art chat's
+  `tests/words3.test.ts`, the switch on. THE WHOLE UNIT SUITE 704 OF 704 (18:09 to 18:13), and again in
+  the frozen copy after the regression (704 of 704, 19:24 to 19:28).
+- THE PICTURES: `tools/scenarios/words193.mjs` (the four at work in the practice room by the game's
+  own rules, a frame every thirtieth of a second) and `tools/scenarios/words193_look.mjs` (the
+  inventory, the Lexicon in town and on the start screen, with all thirteen words).
+- THE PRE-FLIGHT (a dev page built from the tree, 18:24 to 18:32): 14 playtests, among them the
+  words for all three classes (the four new ones with them), the speed, the soak, a monkey, and the
+  word combinations for the warrior and on a phone (the four new among them, and the rule of one
+  damage word a side): all clean once the combos playtest knew the rule.
+- **The regression** on a copy frozen at 18:34 (the scratchpad's `v193a/arpg_frozen`,
+  18:34 to 19:20, two at a time, nothing else running): **147 OF 148 PLAYTESTS
+  FINISHED CLEAN**. The one: `guide_early_word_phone` (a ranger on a phone, a word dropped at his feet early), whose dungeon (seed 621620090) let him use all three attacks before any monster came near, so the fight prompt never showed; replayed with the same dungeon it does the same on 19.3's page, twice (19:21 and 19:22), and on 19.2's frozen page (19:23): the playtest's random dungeon, not this version.
+  Speed: 58.5 frames a second, longest frame 50 ms; the slowest fights of the four word-combination runs, the new words among them, 57.0 to 58.8 frames a second (19.2's: 59.4, and 58.7 to 59.3).
+- THE RELEASE BUILD, made in the copy at 19:28: `Play.html` 921,898 bytes and
+  `dist/artifact.html` 921,576, both saying V19.3; kept in the scratchpad's
+  `v193a/release/`.
+- **The published page itself** (`wrap193.sh` in the scratchpad, 19:39 to 19:57): **68
+  of 68 playtests clean.** The 66 of 19.2's, and the words for a warrior and for a ranger on a phone. (A first run from 19:28 was cut off after 38, all clean, by the ten minutes a command may run in the foreground; it was run again whole, in the background.) Published at 19:57 ("Version 47", version
+  id `1791503852-8b12`); the file published is the kept copy, `v193a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone; the numbers are the doc's starting points, to be tuned once he has
+  played them (a Guarding quick attack renews its shield with every swing; a Heavy one keeps a
+  plain monster all but stunned).
+
+### Version 19.4: the ranger's new stances
+
+**What he said.** 8 Oct 2026, to the art chat, 15:31: "Wait I need the rangers animations fixed";
+and at 15:38, asked which of them: "All of that, but more.  Each character should have a battle
+stance and a town stance.  When you run, the ranger is crouched, but when you stop he pops back up.
+I want him to stay crouched when he stops in battle.  Once he’s in town he stands upright, and he’ll
+need a movement animation for town as well.  Also his shot animation is upright so when you shoot
+an arrow you pop up and down to the crouch.  I want the battle stance to have the bow out and arrow
+knocked.  And the arrow that fires in the animation for shot doesn’t match the actual projectile
+that comes out for shot.  I need all that fixed". He said yes there to each part (15:57, 16:28,
+16:41) and at 17:07 to handing it all over, "Yes, hand it all over (Recommended)", as the art chat
+reports (`docs/mockups/ranger_stances/README.md`). Here, to a picture of him as he was and with the
+stances, in a dungeon and in town (`ranger_new_stances.png`), **his yes at 20:27: "Yes
+(Recommended)"**, to "Put the ranger's new stances into the game as Version 19.4, as in the
+picture?".
+
+**What is in it.** The art chat's `art/ranger-stances` at `cf9f09f`, brought in whole and switched
+on: `RANGER_STANCES.on` in `src/art/moves3.ts` and `RANGER_ARROW.on` in `src/game/defs.ts`, put in
+place by `useRangerStances(true)` as `moves3.ts` loads. (Its README says what each part is, measured
+against what was; "today" there is the ranger before this version.)
+
+- **In battle he stands as low as he runs**: crouched, side-on, the bow out in front of him and
+  down, an arrow on the string (`BATTLE`), breathing and shifting his weight. **In town he stands
+  upright, and runs upright** (`RANGER_TOWN_UPRIGHT`).
+- **No pop**: he comes to a stand out of the run in two steps, by the moment of the run he stopped
+  at (`AnimSet.stops`), and sets off from the stance into it (`AnimSet.start`). His runs grip the
+  floor. Facing his mark while he backs away or goes across it, his run steps that way
+  (`AnimSet.walkWays`).
+- **Shot and Volley from the crouch, with one arrow**: the arrow on his string is painted as the
+  game draws its own, and the game's arrow is drawn from where that one's point was, at its height,
+  as long (`RANGER_ARROW`); a Volley's arrows go up from his bow. The rules are not changed: an
+  arrow still starts 0.4 tiles ahead of him and hits what it hits.
+- **Shooting on the move his legs run under it**, and the same when a blow rocks him as he walks
+  (`clips.attackWalk`, `heavyWalk`, `reelWalk`, `lurchWalk`).
+- The roll, being rocked, thrown forward, the fall and his habits, from the crouch (and a new habit:
+  the arrow taken off the string, sighted along and nocked again); picked on his class card, he
+  makes ready into the battle stance.
+- **THE COST, EASED.** His pictures painted ahead of need are 958 in a dungeon (there were 182) and
+  408 in town. `Renderer.heroArt` (`src/render/render.ts`) lets his pictures and the monsters' take
+  turns by the frame, so that neither waits on the other, and in town it paints his dungeon
+  pictures ahead, so that the first dungeon of a session finds most of them made.
+- Switched off, he is as he was before (`useRangerStances(false)`; for a playtest's pictures,
+  `__dbg.rangerStances(false)`, which paints the heroes again).
+
+**How it was tested.**
+
+- `tsc` clean. The tests that took the switch to be off now hold it on:
+  `tests/ranger_stances.test.ts` (12: the game starts with his new moves; switched off he is as he
+  was, and on again exactly the new; his runs grip and the others' do not; as low as he runs; Shot's
+  feet still and the arrow gone from the string at the blow; the game's arrow numbers equal the
+  picture's; his art has the new pictures, and not the walking ones in town; the figure's stops,
+  start, other ways, attacks made walking and the roll's coming up), `tests/grip_runs.test.ts` (7:
+  the ranger's runs grip with his stances, the others' only with `GRIP`), `tests/heroes3.test.ts`
+  (13: his run at sixty pictures a second; his making ready keeps the bow in hand). THE WHOLE UNIT
+  SUITE on the branch, the switch still off: 723 of 723 (by 20:17); switched on, 721 of 723 at
+  first (those two of `heroes3`, written for him as he was), then mended; in the frozen copy after
+  the regression, 723 of 723, 21:32 to 21:35.
+- THE PICTURES: `tools/scenarios/ranger194_look.mjs` (stills of him as he was and with the stances:
+  in a dungeon standing and shooting, and in town); `tools/scenarios/first_dungeon_fps.mjs` (the
+  frame rate second by second as a session's first dungeon begins: CLS, ON, THROTTLE, SECS, TOWN).
+- `tools/scenarios/ranger_stances.mjs` (the art chat's) plays him as the game has him (the bot's
+  fight in the practice room, then run and stopped by hand), then switches him off and on again;
+  it is in the regression now, `ranger_stances_pc` and `ranger_stances_phone`.
+- THE PRE-FLIGHT (a dev page built from the tree, 20:40 to 20:45): 10 playtests (the ranger's own at
+  both sizes, look2, the first dungeon's lesson on a phone, aiming, heights, facing, the words, the
+  soak, the word combinations): all clean.
+- **The regression** on a copy frozen at 20:46 (the scratchpad's `v194a/arpg_frozen`,
+  20:46 to 21:30, two at a time, nothing else running): **150 OF 150 PLAYTESTS
+  FINISHED CLEAN**.
+  Speed: 60 frames a second, longest frame 33 ms; the slowest fights of the four word-combination runs 58.8 to 59.5 frames a second (19.3's: 58.5 and 50 ms, and 57.0 to 58.8).
+- THE RELEASE BUILD, made in the copy at 21:36: `Play.html` 936,206 bytes and
+  `dist/artifact.html` 935,884, both saying V19.4; kept in the scratchpad's
+  `v194a/release/`.
+- **The published page itself** (`wrap194.sh` in the scratchpad, 21:36 to 21:54): **70
+  of 70 playtests clean.** The 68 of 19.3's, and the ranger's own playtest at both sizes. Published at 21:56 ("Version 48", version
+  id `1791510971-8e3a`); the file published is the kept copy, `v194a/release/artifact.html`, byte for
+  byte the frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone. KNOWN, AS THE ART CHAT LISTS IT (its README, "Known, and not done
+  here"): running between the four drawn ways his feet still slide sideways (his answer for the
+  runs, "More directions, picture first (Recommended)", is the art chat's next for them); where an
+  attack or a blow begins or ends while he runs, the picture cuts between the run's arms and the
+  attack's; setting off backwards or across from standing, and a Volley walked out of mid-way, cut
+  for a frame; the roll's ball slides where it touches the floor; the mage's battle stance of her
+  own is still to come.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4688,7 +4873,13 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               props in tiles.ts and its two people in boss.ts (the town before 14.4): no
               longer in the game (kept for the before-and-now pictures);
               heroes_v1 (the old heroes) and heroes2 (an early finer warrior): for comparison
-              sheets only
+              sheets only;
+              skeleton, skin, moves3, heroes3, hero3_knight / hero3_ranger / hero3_mage (16.0:
+              THE THREE HEROES PAINTED OVER A SKELETON; moves3 their moves: since 19.2 Strike's
+              two swings mended, `COMBO_MENDS`; since 19.4 THE RANGER'S NEW STANCES,
+              `RANGER_STANCES`, `useRangerStances`, his battle stance and town stance, stops and
+              starts, gripping runs, Shot and Volley from the crouch, walking attacks; heroes3
+              their art, `animSet3`, and the pictures painted ahead, `HeroArt.warm`)
 src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, level, state, game,
               lock (touch: which enemy the hero is locked onto, Version 11.1),
               height (Version 18.0: the rules of ledges, stairs and pits: which step a body may
@@ -4731,7 +4922,10 @@ src/render/   render (world: tiles, actors, ground patches, statuses, shots, lig
               standing: the game and the class cards both use it, Version 11; and how far into
               its attack a monster is by the rules' clock, Version 14),
               lifebar (the hero's life over their head: when it is there, what it shows, 11.2),
-              fx (everything that flies or flashes: each word's sign, numbers, shake, messages)
+              fx (everything that flies or flashes: each word's sign, numbers, shake, messages),
+              words3 (the new words' looks, the art chat's: since Version 19.3 Heavy's, Precise's,
+              Frenzied's and Guarding's in the game, called up by the rules' events, `events3`;
+              the other four a demo for its playtest's page, `demo3`, `W3.demo`)
 src/ui/       ui (immediate-mode kit), hud (globes, the attacks as phrases, the prompts' banner),
               inventory (Version 13.1: three pages, GEAR on the hero, ATTACKS, STATS, over the
               bag and the words; 14.2: on half the screen, what is read on a card over the
@@ -4751,7 +4945,10 @@ src/dev/      bot (test player; 19.0: it minds the traps, `minded`), preview_*.t
               striking, pacing out and back, or turning on the spot), preview_props
 src/main.ts   boot, frame loop, controls, saving, test hooks
 tests/        dungeon, items, town (every service's rules), sim (bots play whole runs headless),
-              words (every legal word loadout on every attack ability; random loadouts in live fights),
+              words (every legal word loadout on every attack ability; random loadouts in live fights;
+              since 19.3 the newer words' sides against the empty side and every single word),
+              new_words (19.3: Heavy, Precise, Frenzied, Guarding at work, on gear and on monsters,
+              and their looks called up), word_kinds (19.3: damage and shaping, attacks and spells),
               guide (Version 9: the prompts, the body and the first word, words lent and spent,
               the trap, Poison, Twin, cooldowns or mana, the Lexicon, kill lines, voices),
               economy (how scarce words are, and that a rune is a promise),
@@ -4949,6 +5146,14 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.4: the ranger's new stances (the art chat's, art/ranger-stances; RANGER_STANCES on)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/ranger_stances.mjs --out shots/rs/ph   # the bot's fight with him in the practice room, run and stopped by hand, then off and on again (in the regression)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/ranger194_look.mjs --out shots/r194/look   # stills of him as he was and with the stances: a dungeon, standing and shooting, and town
+CLS=ranger THROTTLE=4 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/first_dungeon_fps.mjs --out shots/fps/t4   # the frame rate second by second as a session's first dungeon begins (THROTTLE: a slower machine; TOWN, SECS)
+# Version 19.3: Heavy, Precise, Frenzied and Guarding (their looks, the art chat's render/words3.ts, called up by the rules: events3)
+WORD=heavy node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words193.mjs --out shots/w193f/heavy   # a word at work by the game's own rules, a frame every thirtieth of a second (WORD=precise, frenzied, guarding; OFF=1: the looks off); its log says what the rules did
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words193_look.mjs --out shots/w193/ph   # the inventory, the Lexicon in town and on the start screen, with all thirteen words
+WORD=heavy node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/words3.mjs --out shots/w3/heavy   # the art chat's demo of any of the eight (the four still to come: pulling, splitting, hexing, stilling)
 # Version 19.2: Strike's two swings mended (the art chat's, art/strike-combo-mends)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/combo_mends.mjs --out shots/mends/old   # the swings as they were (MENDS=1: the mended, the game's own); tools/combo_mends_film.py joins two such runs side by side
 node node_modules/tsx/dist/cli.mjs tools/combo_mends_check.ts mend   # the feet's slide and the arms against the head, measured on the bones (without "mend": the old swings)

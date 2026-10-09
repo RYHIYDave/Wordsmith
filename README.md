@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (8 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.2).**
+**Status (8 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.4).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -163,6 +163,17 @@ in; the same dungeon waits. A Hardcore hero who dies is gone, as before.
 Version 19.2: Strike's two swings mended to the art rulebook. His feet grip the floor (they no
 longer slide as he steps into the blow), no arm passes through his head, the slash turns hips
 first and runs smoothly, and the streak shows only through the cut.
+Version 19.3: four new words, Heavy, Precise, Frenzied and Guarding, with their looks, and words of
+two kinds: damage words (Power, Flame, Frost, Lightning, Poison), one on each side of an attack, and
+shaping words (the rest). Heavy is slower and much harder, stuns, and behind cracks the ground so
+that what walks onto it is staggered; Precise is more damage in a smaller area, and behind marks an
+enemy for a certain critical; Frenzied makes each use faster, up to five times, and behind kills
+feed it; Guarding gives a shield on each use, and behind a ward circle.
+Version 19.4: the ranger's new stances, the art chat's. In battle he stands as low as he runs, the
+bow out and an arrow on the string, and comes to a stand and sets off with no pop; in town he stands
+and runs upright; Shot and Volley from the crouch, with one arrow (the game's arrow leaves from where
+the one on his string was); his legs run under his shots as he walks; the roll, the hits, the fall
+and his habits from the crouch.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which

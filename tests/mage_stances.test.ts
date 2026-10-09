@@ -67,10 +67,12 @@ test('switched on and off again, her moves are today\'s exactly', () => {
 test('her runs grip with the switch, and the others\' do not; the ranger\'s switch is not touched', () => {
   on(() => {
     assert.equal(GRIP.on, false);
-    assert.equal(RANGER_STANCES.on, false);
+    // (the ranger's stances are the game's own since Version 19.4, and her switch leaves them so: his runs grip with them)
+    assert.equal(RANGER_STANCES.on, true);
     assert.ok((MOVES3.mrun.stride ?? 0) > 0);
     assert.ok((MOVES3.mtownrun.stride ?? 0) > 0);
-    for (const k of ['krun', 'rrun', 'ktownrun', 'rtownrun']) assert.equal(MOVES3[k].stride, undefined, `${k} is today's`);
+    for (const k of ['krun', 'ktownrun']) assert.equal(MOVES3[k].stride, undefined, `${k} is today's`);
+    for (const k of ['rrun', 'rtownrun']) assert.ok((MOVES3[k].stride ?? 0) > 0, `${k} grips, with his stances`);
   });
 });
 
@@ -112,10 +114,9 @@ test('her art has her stops and her setting off with the switch on, in a fight a
         assert.equal(set.clips?.attackWalk, undefined);
       }
     }
-    for (const cls of ['warrior', 'ranger'] as const) {
-      const a = art.of(cls, { twoHanded: cls === 'warrior', town: false });
-      assert.equal(a.front.stops, undefined, `${cls} as today`);
-    }
+    assert.equal(art.of('warrior', { twoHanded: true, town: false }).front.stops, undefined, 'the warrior as today');
+    // (the ranger has his own, with his stances: the game's own since Version 19.4)
+    assert.ok((art.of('ranger', { twoHanded: false, town: false }).front.stops?.length ?? 0) > 0, 'the ranger with his own');
   };
   check(false);
   on(() => check(true));

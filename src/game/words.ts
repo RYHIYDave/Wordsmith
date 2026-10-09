@@ -3,7 +3,7 @@
 // Every pairing is assembled from the same few parts (bigger, faster, doubled, element, ground
 // patch, echo, rune, buff), so no pairing needs its own code or its own art.
 
-import { ATTR_GIVES, ATTR_NAME, CLASSES, MANA_MODE, SKILLS, TUNE, WORDS, holdSkill, tapSkill, weaponAttr } from './defs';
+import { ATTR_GIVES, ATTR_NAME, CLASSES, FRENZY, GUARD, HEAVY, MANA_MODE, PRECISE, SKILLS, TUNE, WORDS, holdSkill, tapSkill, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, WeaponKind, WordId } from './types';
@@ -19,7 +19,8 @@ function attrOf(word: WordId, d: Derived): number {
 export function socketProblem(group: readonly (WordId | null)[], word: WordId): string | null {
   if (!group.includes(null)) return 'No free socket';
   if (group.includes(word)) return 'Already there';
-  if (WORDS[word].element && group.some((w) => w !== null && WORDS[w].element)) return 'One element per side';
+  // ONE DAMAGE WORD A SIDE (his answer, 8 Oct 2026, 16:53: "Yes, one a side (Recommended)"; before, one element a side)
+  if (WORDS[word].kind === 'damage' && group.some((w) => w !== null && WORDS[w].kind === 'damage')) return 'One damage word per side';
   return null;
 }
 
@@ -72,8 +73,8 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   const r: Resolved = {
     id: def.id, name: skillName(def, front, behind), element, dmgMult: 0, size: 1, rate: 0, cooldown: 0, mana: 0,
     count: 1, countDmg: 1, splash: 0, splashDmg: 0, pierce: false, projSpeed: 0,
-    ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0,
-    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, lines,
+    ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0,
+    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, lines,
   };
 
   // ----- in front: the hit -----
@@ -169,6 +170,39 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`Volatile: enemies it kills explode for ${pct(boom)} of their life.`);
   }
 
+  // THE NEW WORDS IN FRONT (Version 19.3; his doc "Wordsmith: The New Words", his yes of 8 Oct 2026,
+  // 16:53; the numbers are its starting points)
+  if (has(front, 'heavy')) {
+    // slower, much harder, and it stuns
+    const a = attrOf('heavy', d);
+    const more = 50 + 0.5 * a;
+    dmgMult *= 1 + more / 100;
+    if (def.cooldown > 0) {
+      if (byMana) mana *= HEAVY.slower;
+      else cooldown *= HEAVY.slower;
+    } else rate /= HEAVY.slower;
+    r.stun = HEAVY.stun;
+    lines.push(`Heavy: +${pct(more)} damage, ${pct((HEAVY.slower - 1) * 100)} slower; stuns for ${HEAVY.stun} s.`);
+  }
+  if (has(front, 'precise')) {
+    // his change (5 Oct): more damage, not a critical chance; and a smaller area
+    const a = attrOf('precise', d);
+    const more = 30 + 0.5 * a;
+    dmgMult *= 1 + more / 100;
+    size *= PRECISE.area;
+    r.precise = true;
+    lines.push(`Precise: +${pct(more)} damage, ${pct((1 - PRECISE.area) * 100)} smaller area.`);
+  }
+  if (has(front, 'frenzied')) {
+    r.frenzy = true;
+    lines.push(`Frenzied: each use makes the next ${pct(FRENZY.each * 100)} faster, up to ${FRENZY.max} times; it fades ${FRENZY.hold} s after the last.`);
+  }
+  if (has(front, 'guarding')) {
+    const a = attrOf('guarding', d);
+    r.shield = Math.min(0.2, GUARD.shield + 0.001 * a);
+    lines.push(`Guarding: each use gives you a shield of ${pct(r.shield * 100)} of your life for ${GUARD.shieldTime} s.`);
+  }
+
   // ----- behind: the wake -----
   let softer = false;
   if (has(behind, 'power')) {
@@ -219,6 +253,24 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     const boom = 70 + attrOf('volatile', d);
     r.rune = boom / 100;
     lines.push(`of Ruin: leaves a rune that detonates for ${pct(boom)}.`);
+  }
+  // THE NEW WORDS BEHIND (Version 19.3)
+  if (has(behind, 'heavy')) {
+    r.cracks = HEAVY.cracks;
+    lines.push(`of Quakes: leaves cracked ground for ${HEAVY.cracks} s; an enemy walking onto it is staggered.`);
+  }
+  if (has(behind, 'precise')) {
+    r.mark = true;
+    lines.push('of the Mark: marks the first enemy it hits; your next hit on it is a certain critical.');
+  }
+  if (has(behind, 'frenzied')) {
+    r.frenzyFeed = true;
+    lines.push(`of Frenzy: each kill adds a stack and holds the frenzy ${FRENZY.hold} s more.`);
+  }
+  if (has(behind, 'guarding')) {
+    const a = attrOf('guarding', d);
+    r.ward = Math.min(0.5, GUARD.ward + 0.002 * a);
+    lines.push(`of Warding: leaves a ward circle for ${GUARD.wardTime} s; inside it you take ${pct(r.ward * 100)} less damage.`);
   }
   if (softer) dmgMult *= 0.7;
 
