@@ -515,6 +515,14 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
  *     all the starting words to put before an attack"), and the slots open in the order he gave:
  *     one in front, then the second in front, then behind (SLOT_OPENS_FIRST);
  *   - the first dungeon is gentler (FIRST_DUNGEON), and no monster in it carries a word.
+ * His answers to the first pictures (8 Oct, 22:19 to 22:21): the slots at 5, 7 and 10; the first
+ * word, set in town, has "No special moment" (the lesson ends there); a later hero finds the ring
+ * lit, "No, the ring stays lit (Recommended)" (`Meta.ring`); and a move or a slot that is not open
+ * yet is not shown at all: of both, "Hide them until they open". Then, 22:23: "And I want it to be a
+ * moment when your new moves unlock.  These animations should be strike skill slides over and
+ * whirlwind is revealed with a flourish" (ui/hud.ts, OPENING); and 22:25: "Nice.  And I’d like the
+ * first pack you run into to be a real softball.  So you get a chance to learn the movement and
+ * tapping mechanic" (FIRST_DUNGEON.softball).
  */
 export const FIRST_LEVELS = { on: false };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
@@ -523,7 +531,8 @@ export const MOVE_OPENS: readonly number[] = [1, 2, 5];
  * The levels at which the word slots open with the first levels on, once the ring is lit: the
  * first in front at once, the second in front at 5 (his words of 4 Oct, "I want the second word
  * upgrade on skills to come at level 5"), the first behind at 7 and the second behind at 10 (his
- * words of 4 Oct, "Move the second behind to 10"). The 7 is the director's, waiting on his say.
+ * words of 4 Oct, "Move the second behind to 10"); all three his answer of 8 Oct, 22:19, "2nd before
+ * 5, after 7 and 10 (Recommended)".
  */
 export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly number[] } = { front: [1, 5], behind: [7, 10] };
 /** The quest item: what the fallen wordsmith's satchel holds, and what lights the ring (a name of the director's, until he or the art chat names it). */
@@ -533,8 +542,14 @@ export const QUEST_ITEM = { name: 'Rune Heart', the: 'the RUNE HEART' };
  * dungeon (its budget, against `monsterBudget(1)`'s 120), in packs of two to four, one room of
  * elites, and every blow struck in it soft (GUIDE.softDmg, everywhere in it, not only before the
  * fallen wordsmith); the boss as before, without its words.
+ *
+ * `softball`: THE FIRST PACK (the owner, 22:25: "Nice.  And I’d like the first pack you run into
+ * to be a real softball.  So you get a chance to learn the movement and tapping mechanic"): the
+ * pack nearest the way in gives way to `size` skeletons, each falling to about `hits` of the
+ * character's bare quick attack, striking for `dmg` of a skeleton's blow, at `speed` tiles a
+ * second (a skeleton goes 3, the hero faster).
  */
-export const FIRST_DUNGEON = { budget: 60, packMin: 2, packMax: 4, eliteRooms: 1 };
+export const FIRST_DUNGEON = { budget: 60, packMin: 2, packMax: 4, eliteRooms: 1, softball: { size: 3, hits: 1.5, dmg: 0.25, speed: 2 } };
 /** The ability a class's first word is for: with the first levels on, the quick attack for every class (the swipe opens only at 5). */
 export function firstWordSkill(cls: ClassId): number {
   return FIRST_LEVELS.on ? 0 : FIRST_WORD[cls].skill;

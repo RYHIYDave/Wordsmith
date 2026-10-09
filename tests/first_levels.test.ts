@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, GUIDE, MONSTERS, MOVE_OPENS, SLOT_OPENS, TUNE, useFirstLevels } from '../src/game/defs';
 import { eliteRoomCount, monsterBudget, packSizeRange } from '../src/game/dungeon';
 import { Game, newMeta } from '../src/game/game';
+import { flowField } from '../src/game/nav';
 import type { RunSave } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { GameEvent } from '../src/game/state';
@@ -159,11 +160,10 @@ test('on: no wordsmithing until the ring is lit; the satchel holds the quest ite
       assert.equal(h.skills[1].front.length, 0, 'none on the slow attack, not open yet');
       assert.deepEqual(guideSlot(g, w), { skill: 0, side: 'front', idx: 0 }, `${cls}: the first word goes before the quick attack`);
       assert.equal(g.placeWord({ skill: 0, side: 'front', idx: 0 }, w), null);
-      assert.ok(g.guide, 'the lesson goes on: the word is felt in the next dungeon');
+      // (his answer, 22:19: "No special moment": set in town, the lesson is over)
+      assert.equal(g.guide, null, `${cls}: the lesson ends with the first word set`);
       g.enterDungeon();
-      assert.ok(g.guide && !g.guide.risen);
-      for (let i = 0; i < 60; i++) g.update(DT, emptyControls());
-      assert.ok(g.guide === null || g.guide.risen, `${cls}: the dead rise as the next dungeon begins`);
+      assert.ok(!g.monsters.some((m) => m.packId === -7), 'no dead rise for it');
     }
   });
 });
@@ -213,7 +213,8 @@ test('on: the first dungeon is gentler: fewer monsters, smaller packs, one room 
       const g = fresh(cls, 41);
       const plain = g.monsters.filter((m) => !m.elite && !m.boss);
       assert.ok(plain.length <= FIRST_DUNGEON.budget * 1.25, `${cls}: ${plain.length} monsters`);
-      for (const m of plain) assert.ok(Math.abs(m.dmgMax - MONSTERS[m.kind].dmgMax * GUIDE.softDmg) < 1e-9, `${m.name} hits soft wherever it stands`);
+      // (at most half a blow; the first pack, the softball, a quarter)
+      for (const m of plain) assert.ok(m.dmgMax <= MONSTERS[m.kind].dmgMax * GUIDE.softDmg + 1e-9, `${m.name} hits soft wherever it stands`);
     }
   });
 });
@@ -236,3 +237,28 @@ test('on: a hero saved before the first levels keeps his ring; one saved with th
   assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [1, 10] });
   assert.equal(FIRST_LEVELS.on, false);
 });
+
+test('on: the first pack is a softball: a few slow skeletons that barely hurt and fall to a tap or two', () => {
+  on(() => {
+    for (const cls of CLASS_IDS) {
+      for (const seed of [51, 52, 53]) {
+        const g = fresh(cls, seed);
+        const f = g.level.floor;
+        const dist = flowField(g.level.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, g.level.step);
+        const at = (m: { x: number; y: number }): number => dist[Math.floor(m.y) * f.w + Math.floor(m.x)];
+        const first = g.monsters.filter((m) => !m.boss && m.packId >= 0).sort((a, b) => at(a) - at(b))[0];
+        const pack = g.monsters.filter((m) => m.packId === first.packId);
+        const S = FIRST_DUNGEON.softball;
+        assert.ok(pack.length >= 1 && pack.length <= S.size, `${cls} ${seed}: ${pack.length} in the first pack`);
+        for (const m of pack) {
+          assert.equal(m.kind, 'skeleton', `${cls} ${seed}: skeletons only`);
+          assert.equal(m.elite, false);
+          assert.equal(m.speed, S.speed, 'slow');
+          assert.ok(Math.abs(m.dmgMax - MONSTERS.skeleton.dmgMax * S.dmg) < 1e-9, 'barely hurts');
+          assert.ok(m.maxLife < MONSTERS.skeleton.life, `falls to a tap or two: ${m.maxLife} life`);
+        }
+      }
+    }
+  });
+});
+

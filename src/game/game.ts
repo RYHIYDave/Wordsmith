@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CLASSES, COMBO, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MOVE_OPENS, MSG, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
+import { CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MOVE_OPENS, MSG, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -935,10 +935,9 @@ export class Game {
     if (this.depth === 1 && this.cleared === 0) {
       this.placeBody();
       this.softenFirstHalf();
+      if (FIRST_LEVELS.on) this.softball();
     }
     this.updateVision(1);
-    // (THE FIRST LEVELS: a first word set in town is felt as the next dungeon begins: the dead rise round the hero)
-    if (FIRST_LEVELS.on && this.guide && this.guide.set && !this.guide.risen) this.after(1.2, () => this.rise());
     this.msg(`Dungeon ${this.depth}`, MSG.head);
     if (this.dungeonWords.length) this.msg(`Burned in: ${this.dungeonWords.map((w) => WORDS[w].name).join(', ')}`, MSG.word);
     this.sfx('portal');
@@ -1040,6 +1039,44 @@ export class Game {
       if (m.boss || dist[Math.floor(m.y) * f.w + Math.floor(m.x)] > upTo) continue;
       m.dmgMin *= GUIDE.softDmg;
       m.dmgMax *= GUIDE.softDmg;
+    }
+  }
+
+  /**
+   * THE FIRST LEVELS: THE FIRST PACK IS A SOFTBALL (the owner, 22:25; defs.ts, FIRST_DUNGEON.softball).
+   * The pack nearest the way in, by the way one walks, gives way to a few slow skeletons that
+   * barely hurt and fall to a tap or two of the bare quick attack: the movement and the tap are
+   * learnt on them.
+   */
+  private softball(): void {
+    const f = this.level.floor;
+    const dist = flowField(this.level.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, this.level.step);
+    let best = -1;
+    let bd = Infinity;
+    for (const m of this.monsters) {
+      if (m.boss || m.packId < 0) continue;
+      const d = dist[Math.floor(m.y) * f.w + Math.floor(m.x)];
+      if (d < bd) {
+        bd = d;
+        best = m.packId;
+      }
+    }
+    if (best < 0) return;
+    const pack = this.monsters.filter((m) => m.packId === best);
+    const cx = pack.reduce((a, m) => a + m.x, 0) / pack.length;
+    const cy = pack.reduce((a, m) => a + m.y, 0) / pack.length;
+    this.monsters = this.monsters.filter((m) => m.packId !== best);
+    const S = FIRST_DUNGEON.softball;
+    const life = Math.max(2, Math.round(this.bareHit() * S.hits));
+    const def = MONSTERS.skeleton;
+    const rng = new RNG((this.seed ^ 0x50f7ba11) >>> 0);
+    for (const spot of scatter(this.level.walk, f.w, f.h, cx, cy, S.size, rng)) {
+      const m = this.spawn('skeleton', spot.x, spot.y, best, 0, false, rng);
+      m.maxLife = life;
+      m.life = life;
+      m.dmgMin = def.dmgMin * S.dmg;
+      m.dmgMax = def.dmgMax * S.dmg;
+      m.speed = S.speed;
     }
   }
 
@@ -5079,9 +5116,9 @@ export class Game {
       G.set = { skill: to.skill, uses: h.skills[to.skill].uses };
       if (firstWord) {
         // A new player's first word is on. In a dungeon, the dead rise for it; anywhere else there is nothing more to show.
-        // (THE FIRST LEVELS: it is set in town, at the wordsmith's, and felt as the next dungeon begins: enterDungeon)
+        // (THE FIRST LEVELS: it is set in town, at the wordsmith's, and that is the end of the lesson: his answer, 22:19, "No special moment")
         if (this.inDungeon) this.after(0.9, () => this.rise());
-        else if (!FIRST_LEVELS.on) this.endGuide();
+        else this.endGuide();
       }
     }
     return null;

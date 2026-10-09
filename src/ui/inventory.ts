@@ -63,7 +63,7 @@
 import { WORD_COLOR } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { ATTR_NAME, CLASSES, ELEMENT_NAME, MOVE_OPENS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
+import { ATTR_NAME, CLASSES, ELEMENT_NAME, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
 import type { Game } from '../game/game';
 import { modLines, statView } from '../game/items';
 import type { ImbueOption } from '../game/items';
@@ -538,11 +538,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         const r: Rect = { x: gx + j * SQ, y: gy, w: CELL, h: CELL };
         const idx = sd === 'front' ? j - (max - n) : j;
         if (idx >= 0 && idx < n) slots.push({ r, ref: { skill: s, side: sd, idx }, word: words[idx] ?? null });
-        else {
-          // (the level that opens it; on an ability not open yet, no sooner than the ability; before the ring is lit, 0: at the wordsmith's)
-          const lv = Math.max(SLOT_OPENS[sd][sd === 'front' ? max - 1 - j : j], open ? 1 : MOVE_OPENS[s]);
-          locked.push({ r, lv: !h.ring ? 0 : lv });
-        }
+        // (THE FIRST LEVELS: a slot not open yet is not shown at all; his answer, 22:21: "Hide them until they open")
+        else if (!FIRST_LEVELS.on) locked.push({ r, lv: SLOT_OPENS[sd][sd === 'front' ? max - 1 - j : j] });
       }
     };
     const frontW = maxF * SQ;
@@ -776,6 +773,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     }
   }
   for (let s = 0; s < abil.length; s++) {
+    // (THE FIRST LEVELS: an ability not open yet is not shown, and is nothing to press)
+    if (!game.moveOpen(s)) continue;
     if (!ui.pressIn(abil[s].x, abil[s].y, abil[s].w, abil[s].h)) continue;
     // an attack is pressed: it is the one read out (a word in hand stays in hand)
     st.focus = s;
@@ -1007,6 +1006,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   if (page === 'attacks') {
     for (const c of caps) cap(c.text, c.x, c.y, c.right);
     for (let s = 0; s < ROWS; s++) {
+      // (THE FIRST LEVELS: an ability not open yet is not shown at all: its line stays empty until it opens)
+      if (!game.moveOpen(s)) continue;
       const sk = h.skills[s];
       const def = SKILLS[sk.id];
       const a = abil[s];
@@ -1014,15 +1015,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
       const icon = art.icons.ability[def.icon];
       g.drawImage(icon.img, a.x + 1, a.y + Math.floor((a.h - icon.h) / 2), icon.w, icon.h);
       drawText(g, def.name.toUpperCase(), a.x + 22, a.y + 3, P.white);
-      // (THE FIRST LEVELS: an ability not open yet: dark, with the level that opens it)
-      const shut = !game.moveOpen(s);
-      if (shut) {
-        g.globalAlpha = 0.66;
-        g.fillStyle = P.black;
-        g.fillRect(a.x + 1, a.y + 1, a.w - 2, a.h - 2);
-        g.globalAlpha = 1;
-      }
-      drawText(g, shut ? `LEVEL ${MOVE_OPENS[s]}` : T ? (s === 0 ? 'TAP' : s === 1 ? 'HOLD' : 'SWIPE') : s === 0 ? 'LEFT' : s === 1 ? 'RIGHT' : 'SPACE', a.x + 22, a.y + 13, shut ? THEME.accent : THEME.dim, { font: 'small' });
+      drawText(g, T ? (s === 0 ? 'TAP' : s === 1 ? 'HOLD' : 'SWIPE') : s === 0 ? 'LEFT' : s === 1 ? 'RIGHT' : 'SPACE', a.x + 22, a.y + 13, THEME.dim, { font: 'small' });
       // its numbers: one hit, and how often
       const at = nums[s];
       if (at) {
@@ -1035,17 +1028,6 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     for (const c of locked) {
       // a slot not opened yet: the level that opens it
       ui.box(c.r.x, c.r.y, c.r.w, c.r.h, THEME.ink, THEME.edge);
-      if (c.lv === 0) {
-        // (THE FIRST LEVELS: shut until the wordsmith's ring is lit: a small dark ring of stones)
-        const cx = c.r.x + Math.floor(c.r.w / 2);
-        const cy = c.r.y + Math.floor(c.r.h / 2);
-        g.fillStyle = THEME.faint;
-        for (let k = 0; k < 8; k++) {
-          const a = (k / 8) * Math.PI * 2;
-          g.fillRect(Math.round(cx + Math.cos(a) * 4) - 1, Math.round(cy + Math.sin(a) * 4) - 1, 2, 2);
-        }
-        continue;
-      }
       drawText(g, 'LV', c.r.x + Math.floor(c.r.w / 2), c.r.y + 4, THEME.faint, { align: 'center', font: 'small' });
       drawText(g, `${c.lv}`, c.r.x + Math.floor(c.r.w / 2), c.r.y + 11, THEME.faint, { align: 'center', font: 'small' });
     }

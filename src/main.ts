@@ -720,8 +720,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const moving = mag > 0.18;
     if (moving) {
       const v = screenDirToWorld(sx, sy);
-      c.mx = v.x * mag;
-      c.my = v.y * mag;
+      // THE STICK GOES AT ONE SPEED (the owner, 8 Oct 2026, 22:25: "Also can you change the movement
+      // speed so it’s constant no matter where the joystick is in relation to the center"): pushed
+      // past the small still middle, the hero goes at full speed whatever the thumb's distance.
+      // (Before, the speed grew with it, full only at STICK_RADIUS.)
+      const k = input.stick.active ? 1 : mag;
+      c.mx = v.x * k;
+      c.my = v.y * k;
     }
 
     // A touch or a click on something that is used by standing next to it sends the hero there.
