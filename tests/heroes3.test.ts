@@ -45,8 +45,12 @@ const art = makeHeroArt3();
 const DUNGEON: HeroLook = { twoHanded: true };
 const TOWN: HeroLook = { twoHanded: true, town: true };
 const VIEWS = ['front', 'back'] as const;
-/** What flies from each: the tails every one of their frames must name. (The ranger reimagined, while his switch is on, has the tail of his hood and the feather in it: art/reimagined.ts. It is off.) */
-const TAILS: Record<ClassId, string[]> = { warrior: ['w-scarf-a', 'w-scarf-b'], ranger: REIMAGINED.ranger ? ['r2-feather', 'r2-liripipe'] : ['r-feather'], mage: ['m-braid-a', 'm-braid-b'] };
+/** What flies from each: the tails every one of their frames must name. (A hero reimagined, while their switch is on, has their new outfit's: art/reimagined.ts. The switches are off.) */
+const TAILS: Record<ClassId, string[]> = {
+  warrior: REIMAGINED.knight ? ['w2-strip-a', 'w2-strip-b', 'w2-strip-c'] : ['w-scarf-a', 'w-scarf-b'],
+  ranger: REIMAGINED.ranger ? ['r2-feather', 'r2-liripipe'] : ['r-feather'],
+  mage: ['m-braid-a', 'm-braid-b'],
+};
 /** The moves each stands in and runs with, in a dungeon and in town, and the two attacks. */
 const MOVES: Record<ClassId, { stand: [string, string]; run: [string, string]; attack: string; heavy: string; ready: string }> = {
   warrior: { stand: ['rear', 'ktown'], run: ['krun', 'ktownrun'], attack: 'strike', heavy: 'slam', ready: 'kdraw' },

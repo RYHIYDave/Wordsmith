@@ -1,7 +1,8 @@
-// Dev page: THE RANGER, REIMAGINED, MOVING (the art chat, 9 Oct 2026): a moving picture for the
-// owner of today's ranger (left) beside the Wind-runner (right; art/hero3_ranger2.ts), each row the
-// same moment of the same thing: his battle stance, breathing; a run and a stop; and a Shot. NOT IN
-// THE GAME: the switch (art/reimagined.ts) is off; this page turns it on only while it paints the
+// Dev page: A HERO, REIMAGINED, MOVING (the art chat, 9 Oct 2026): a moving picture for the owner
+// of a hero as the game has them today (left) beside their new outfit (right; art/reimagined.ts:
+// the ranger's Wind-runner, the knight's Boar Knight, the mage's Storm-witch), each row the same
+// moment of the same thing: the battle stance, breathing; a run and a stop; and the quick attack.
+// NOT IN THE GAME: the switches are off; this page turns one on only while it paints the
 // right-hand figures.
 //   As the game plays it: the game's own rules move the hero and the game's own chooser picks
 // each frame (tools/review_heroes/sim.ts, as src/dev/preview_play.ts uses it), and each frame is
@@ -9,12 +10,15 @@
 // feather are moved a sixtieth of a second at a time by the game's own tails (engine/tails.ts), and
 // the Shot's arrow flies as the game draws it (render/render.ts). The view follows the hero, so the
 // floor slides under him as he runs.
-//   node tools/page_gif.mjs src/dev/preview_reimagined_gif.ts "5" previews/reimagined/ranger_moving.gif
-//   hash = <screen pixels to a game pixel; 5 if not given>
+//   node tools/page_gif.mjs src/dev/preview_reimagined_gif.ts "5:ranger" previews/reimagined/ranger_moving.gif
+//   node tools/page_gif.mjs src/dev/preview_reimagined_gif.ts "5:knight" previews/reimagined/warrior_moving.gif
+//   node tools/page_gif.mjs src/dev/preview_reimagined_gif.ts "5:mage" previews/reimagined/mage_moving.gif
+//   hash = <screen pixels to a game pixel; 5 if not given>:<ranger | knight | mage; ranger if not given>
 import { makeGroundArt } from '../art/ground';
 import { HERO_TAILS } from '../art/heroes';
 import { paintMove3 } from '../art/heroes3';
 import type { Painted } from '../art/kit';
+import { MOVES3 } from '../art/moves3';
 import { REIMAGINED } from '../art/reimagined';
 import { CANVAS3 } from '../art/skin';
 import { P } from '../art/palette';
@@ -24,11 +28,18 @@ import { RANGER_ARROW } from '../game/defs';
 import { pline } from '../render/fx';
 import { moveOf, play } from '../../tools/review_heroes/sim';
 import type { Ctx, Scenario, Shown } from '../../tools/review_heroes/sim';
+import type { ClassId } from '../game/types';
 
-const [scaleArg = '5'] = decodeURIComponent(location.hash.slice(1)).split(':');
+const [scaleArg = '5', heroArg = 'ranger'] = decodeURIComponent(location.hash.slice(1)).split(':');
 const S = Number(scaleArg) || 5;
-/** How long the picture runs before it loops (two of his breaths in the battle stance, so that it goes round without a jump), and its frames a second (a GIF counts in hundredths: 4 each is 25 a second). */
-const SECONDS = 4.8;
+type Who = 'ranger' | 'knight' | 'mage';
+const WHO: Who = heroArg === 'knight' || heroArg === 'mage' ? heroArg : 'ranger';
+const CLS: ClassId = WHO === 'knight' ? 'warrior' : WHO;
+const NAME: Record<Who, [string, string]> = { ranger: ['The ranger', 'Shot'], knight: ['The warrior', 'Strike'], mage: ['The mage', 'Wave'] };
+/** How long the picture runs before it loops (a whole number of the hero's breaths in the battle stance, near five seconds, so that it goes round without a jump), and its frames a second (a GIF counts in hundredths: 4 each is 25 a second). */
+const STANCE = MOVES3[WHO === 'knight' ? 'rear' : WHO === 'mage' ? 'mstand' : 'rstand'];
+const BREATH = STANCE.motion.keys[STANCE.motion.keys.length - 1].at - (STANCE.motion.loop ?? 0);
+const SECONDS = BREATH * Math.max(1, Math.round(4.8 / BREATH));
 const FPS = 25;
 const FRAMES = Math.round(SECONDS * FPS);
 
@@ -43,11 +54,11 @@ function shootAt(x: Ctx, when: number): void {
   x.c.fire = true;
 }
 const ROWS: { name: string; sc: Scenario }[] = [
-  { name: 'His battle stance, breathing', sc: { name: 'stands', cls: 'ranger', seconds: SECONDS, face: [1, 0], step: () => {} } },
+  { name: 'The battle stance, breathing', sc: { name: 'stands', cls: CLS, seconds: SECONDS, face: [1, 0], step: () => {} } },
   {
     name: 'Running, then stopping',
     sc: {
-      name: 'runs and stops', cls: 'ranger', seconds: SECONDS, face: [1, 0],
+      name: 'runs and stops', cls: CLS, seconds: SECONDS, face: [1, 0],
       step: (x) => {
         // (as long as takes him six tiles along, to the step: the floor under him is laid six tiles round, so that it goes round with the picture)
         if (x.t >= 0.4 && x.t < 1.62) {
@@ -57,7 +68,7 @@ const ROWS: { name: string; sc: Scenario }[] = [
       },
     },
   },
-  { name: 'Shot', sc: { name: 'shoots', cls: 'ranger', seconds: SECONDS, face: [1, 0], step: (x) => { shootAt(x, 0.6); shootAt(x, 3.0); } } },
+  { name: NAME[WHO][1], sc: { name: 'attacks', cls: CLS, seconds: SECONDS, face: [1, 0], step: (x) => { shootAt(x, 0.6); shootAt(x, 0.6 + SECONDS / 2); } } },
 ];
 
 /** A cell, in game pixels, and where the hero's feet are in it. */
@@ -86,12 +97,12 @@ const cells: Cell[][] = ROWS.map((r) => {
 
 /** A frame, with the reimagined outfit or without it. */
 function paint(on: boolean, sh: Shown): Painted {
-  const was = REIMAGINED.ranger;
-  REIMAGINED.ranger = on;
+  const was = REIMAGINED[WHO];
+  REIMAGINED[WHO] = on;
   try {
     return paintMove3(moveOf(sh.key), sh.mt, sh.view);
   } finally {
-    REIMAGINED.ranger = was;
+    REIMAGINED[WHO] = was;
   }
 }
 
@@ -208,7 +219,7 @@ function draw(k: number): string {
   g.textAlign = 'left';
   g.fillStyle = '#ffd866';
   g.font = '700 26px system-ui, sans-serif';
-  g.fillText('The ranger, reimagined, moving', PAD + 2, PAD + 18);
+  g.fillText(`${NAME[WHO][0]}, reimagined, moving`, PAD + 2, PAD + 18);
   g.fillStyle = '#cfc8ff';
   g.font = '600 17px system-ui, sans-serif';
   g.fillText('a mock-up: not in the game', PAD + 2, PAD + 50);

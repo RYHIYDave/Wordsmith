@@ -1,28 +1,33 @@
 // The heroes reimagined (src/art/reimagined.ts; the art chat, 9 Oct 2026): new outfits over the same
 // bones and moves, as pictures for the owner, behind switches that are OFF until he has seen them
-// and said yes. What is held here: the switches are off, and with them off the game's ranger is
-// today's, frame for frame, byte for byte; and the ranger's new outfit (the Wind-runner,
-// src/art/hero3_ranger2.ts), switched on, is painted in every one of his moves, cleanly.
+// and said yes. What is held here: the switches are off, and with them off every hero is today's,
+// frame for frame, byte for byte; and each new outfit (the ranger's Wind-runner,
+// src/art/hero3_ranger2.ts; the knight's Boar Knight, src/art/hero3_knight2.ts), switched on, is
+// painted in every one of the hero's moves, cleanly, and the others are as they were.
 //   run: tsx --test tests/reimagined.test.ts
 
 // @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
+// @ts-ignore
+import { readFileSync } from 'node:fs';
 
+import { onBack } from '../src/art/carried';
 import { HERO_TAILS } from '../src/art/heroes';
-import { paintMove3, windAt } from '../src/art/heroes3';
+import { paintMove3, streakShown, windAt } from '../src/art/heroes3';
+import { paintKnight3 } from '../src/art/hero3_knight';
 import { paintRanger3 } from '../src/art/hero3_ranger';
 import { PINK, lightsOut } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { FLAME } from '../src/art/mkit';
-import { MOVES3, runWaysOf, settlesOf, startsOf, walkingOf } from '../src/art/moves3';
+import { GREAT_BLADE, MOVES3, runWaysOf, settlesOf, startsOf, walkingOf } from '../src/art/moves3';
 import type { Move3 } from '../src/art/moves3';
-import { RANGER2_TAILS, REIMAGINED } from '../src/art/reimagined';
+import { KNIGHT2_TAILS, RANGER2_TAILS, REIMAGINED } from '../src/art/reimagined';
 import { CANVAS3 } from '../src/art/skin';
 import type { GameView } from '../src/art/skin';
-import { bonesAt, solve } from '../src/art/skeleton';
-import type { Posed } from '../src/art/skeleton';
+import { add, bonesAt, mul, solve } from '../src/art/skeleton';
+import type { Posed, V3 } from '../src/art/skeleton';
 import { Tails } from '../src/engine/tails';
 import type { TailDef } from '../src/engine/tails';
 
@@ -33,25 +38,39 @@ interface Assert {
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
 
+type Who = 'ranger' | 'knight';
 const VIEWS: GameView[] = ['front', 'back'];
 const endOf = (m: Move3): number => m.motion.keys[m.motion.keys.length - 1].at;
+const FRAME = 1 / 30;
 
-/** Every move of the ranger's: his own, and those made from them (coming to a stand, setting off, running the other ways, shooting and being rocked as he walks). */
-const run = MOVES3.rrun;
-const stand = MOVES3.rstand;
-const HIS: [string, Move3][] = Object.entries(MOVES3).filter(([, m]) => m.held === 'bow');
-const start = startsOf(run, stand);
-const MADE: [string, Move3][] = [
-  ...settlesOf(run, stand).map((m, k): [string, Move3] => [`coming to a stand ${k}`, m]),
-  ...settlesOf(MOVES3.rtownrun, MOVES3.rtown).map((m, k): [string, Move3] => [`coming to a stand in town ${k}`, m]),
-  ...(start ? [['setting off', start.move] as [string, Move3]] : []),
-  ...runWaysOf(run).map((m, k): [string, Move3] => [`running the other way ${k}`, m]),
-  ...walkingOf(MOVES3.shot, run).map((m, k): [string, Move3] => [`shot, walking ${k}`, m]),
-  ...walkingOf(MOVES3.volley, run).map((m, k): [string, Move3] => [`volley, walking ${k}`, m]),
-  ...walkingOf(MOVES3.rreel, run, false).map((m, k): [string, Move3] => [`rocked, walking ${k}`, m]),
-  ...walkingOf(MOVES3.rlurch, run, false).map((m, k): [string, Move3] => [`thrown forward, walking ${k}`, m]),
-];
-const ALL: [string, Move3][] = [...HIS, ...MADE];
+/** Every move of a hero's: their own (by what they hold), and those made from them (coming to a stand, setting off, running the other ways, attacking and being rocked as they walk: the ranger's, so far). */
+function movesOf(held: string, run: Move3, stand: Move3, extra: [string, Move3][] = []): [string, Move3][] {
+  const start = startsOf(run, stand);
+  return [
+    ...Object.entries(MOVES3).filter(([, m]) => m.held === held),
+    ...settlesOf(run, stand).map((m, k): [string, Move3] => [`coming to a stand ${k}`, m]),
+    ...(start ? [['setting off', start.move] as [string, Move3]] : []),
+    ...runWaysOf(run).map((m, k): [string, Move3] => [`running the other way ${k}`, m]),
+    ...extra,
+  ];
+}
+const HEROES: Record<Who, { name: string; moves: [string, Move3][]; tails: string; stand: Move3 }> = {
+  ranger: {
+    name: 'the ranger',
+    stand: MOVES3.rstand,
+    tails: 'r2-feather,r2-liripipe',
+    moves: movesOf('bow', MOVES3.rrun, MOVES3.rstand, [
+      ...settlesOf(MOVES3.rtownrun, MOVES3.rtown).map((m, k): [string, Move3] => [`coming to a stand in town ${k}`, m]),
+      ...walkingOf(MOVES3.shot, MOVES3.rrun).map((m, k): [string, Move3] => [`shot, walking ${k}`, m]),
+      ...walkingOf(MOVES3.volley, MOVES3.rrun).map((m, k): [string, Move3] => [`volley, walking ${k}`, m]),
+      ...walkingOf(MOVES3.rreel, MOVES3.rrun, false).map((m, k): [string, Move3] => [`rocked, walking ${k}`, m]),
+      ...walkingOf(MOVES3.rlurch, MOVES3.rrun, false).map((m, k): [string, Move3] => [`thrown forward, walking ${k}`, m]),
+    ]),
+  },
+  knight: { name: 'the knight', stand: MOVES3.rear, tails: 'w2-strip-a,w2-strip-b,w2-strip-c', moves: movesOf('greatsword', MOVES3.krun, MOVES3.rear) },
+};
+const WHO: Who[] = ['ranger', 'knight'];
+
 /** Moments of a move, `every` seconds apart, and its end. */
 function moments(m: Move3, every: number): number[] {
   const out: number[] = [];
@@ -60,23 +79,24 @@ function moments(m: Move3, every: number): number[] {
   return out;
 }
 
-/** With the ranger's switch on for a while, and off again after, whatever happens. */
-function wearing(fn: () => void): void {
-  REIMAGINED.ranger = true;
+/** With one hero's switch on for a while, and off again after, whatever happens. */
+function wearing(who: Who, fn: () => void): void {
+  REIMAGINED[who] = true;
   try {
     fn();
   } finally {
-    REIMAGINED.ranger = false;
+    REIMAGINED[who] = false;
   }
 }
 
 /**
- * A frame of one of the ranger's moves as TODAY'S painter (src/art/hero3_ranger.ts) paints it,
- * called here directly with what art/heroes3.ts's paintMove3 hands a painter: the bones at that
- * moment (in a move that goes round, folded into its loop), the bones a thirtieth of a second
- * before, where the wind has got to, and the light going out of a hero who has fallen.
+ * A frame of one of a hero's moves as TODAY'S painter (src/art/hero3_ranger.ts, hero3_knight.ts)
+ * paints it, called here directly with what art/heroes3.ts's paintMove3 hands a painter: the bones
+ * at that moment (in a move that goes round, folded into its loop), the bones a thirtieth of a
+ * second before, where the wind has got to, (the knight) where his blade has just been, and the
+ * light going out of a hero who has fallen.
  */
-function today(move: Move3, t: number, view: GameView): Painted {
+function today(who: Who, move: Move3, t: number, view: GameView): Painted {
   const end = endOf(move);
   const from = move.motion.loop;
   const long = from !== undefined ? end - from : 0;
@@ -87,8 +107,25 @@ function today(move: Move3, t: number, view: GameView): Painted {
     if (from !== undefined && long > 1e-6 && now >= from && when < from) when += long;
     return bonesAt(move.motion.keys, move.rest, Math.max(0, when));
   };
+  const build = move.build;
   const q = posed(0);
-  const f = paintRanger3(solve(move.build, q), q, view, { build: move.build }, { prev: solve(move.build, posed(1 / 30)), wind: windAt(move, now) });
+  const s = solve(build, q);
+  const prev = solve(build, posed(FRAME));
+  const wind = windAt(move, now);
+  let f: Painted;
+  if (who === 'ranger') f = paintRanger3(s, q, view, { build }, { prev, wind });
+  else {
+    const trail: [V3, V3][] = [];
+    for (let i = 0; i <= 8; i++) {
+      const then = i === 0 ? q : posed((FRAME * i) / 8);
+      const sk = i === 0 ? s : solve(build, then);
+      const away = then.stow > 0.5 ? onBack(build, sk, 'sword') : null;
+      const hand = away ? away.grip : sk.handR;
+      const point = away ? away.point : sk.point;
+      trail.push([add(hand, mul(point, 1.3)), add(hand, mul(point, 1.3 + GREAT_BLADE))]);
+    }
+    f = paintKnight3(s, q, view, { build, twoHanded: true }, { prev, trail: streakShown(move, now) ? trail : [], wind });
+  }
   return q.out > 0.01 ? lightsOut(f, q.out) : f;
 }
 
@@ -108,76 +145,95 @@ test('every switch is off: no hero wears a reimagined outfit in the game', () =>
   assert.equal(REIMAGINED.mage, false);
 });
 
-test("with the switch off, every frame of the ranger is today's painter's own, byte for byte", () => {
-  let frames = 0;
-  for (const [name, m] of ALL) {
-    for (const t of moments(m, 0.1)) {
-      for (const view of VIEWS) {
-        const game = paintMove3(m, t, view);
-        const was = today(m, t, view);
-        assert.ok(same(game, was), `${name}, ${t.toFixed(2)} s, ${view}: ${unlike(game, was)} pixels are not today's`);
-        frames++;
-      }
-    }
-  }
-  assert.ok(frames > 300, `every move was looked at (${frames} frames)`);
-});
+for (const who of WHO) {
+  const H = HEROES[who];
 
-test('with the switch on, the ranger is the Wind-runner: not today, with the tail of his hood and his feather; the knight and the mage are as they were', () => {
-  const knight = paintMove3(MOVES3.rear, 0, 'front');
-  const mage = paintMove3(MOVES3.mstand, 0, 'front');
-  wearing(() => {
-    for (const [name, m] of HIS) {
-      for (const view of VIEWS) {
-        const now = paintMove3(m, 0, view);
-        const n = unlike(now, today(m, 0, view));
-        assert.ok(n > 300, `${name}, ${view}: only ${n} pixels differ from today's`);
-        assert.equal((now.tails ?? []).map((r) => r.id).sort().join(','), 'r2-feather,r2-liripipe', `${name}, ${view}: what flies from him`);
-      }
-    }
-    assert.ok(same(paintMove3(MOVES3.rear, 0, 'front'), knight), 'the knight changed');
-    assert.ok(same(paintMove3(MOVES3.mstand, 0, 'front'), mage), 'the mage changed');
-  });
-  // (and off again: today's)
-  assert.ok(same(paintMove3(stand, 0, 'front'), today(stand, 0, 'front')));
-});
-
-test('switched on, every move of his is painted cleanly: the whole figure, what flies from him tied on him, and nothing of the enemy\'s pink or gold', () => {
-  const enemy = new Set([...FLAME, ...PINK].map((c) => parseInt(c.slice(1), 16)));
-  let frames = 0;
-  wearing(() => {
-    for (const [name, m] of ALL) {
-      for (const t of moments(m, 1 / 15)) {
+  test(`with the switches off, every frame of ${H.name} is today's painter's own, byte for byte`, () => {
+    let frames = 0;
+    for (const [name, m] of H.moves) {
+      for (const t of moments(m, 0.1)) {
         for (const view of VIEWS) {
-          const where = `${name}, ${t.toFixed(3)} s, ${view}`;
-          const f = paintMove3(m, t, view);
-          const d = f.px.d;
-          let painted = 0;
-          let pink = 0;
-          for (let i = 0; i < d.length; i += 4) {
-            if (d[i + 3] === 0) continue;
-            painted++;
-            if (enemy.has((d[i] << 16) | (d[i + 1] << 8) | d[i + 2])) pink++;
-          }
-          // (the whole of him: he has no long cloak, so a little less of him than today, never much less; measured, 0.73 at the least, in the tightest moment of the roll)
-          const was = today(m, t, view).px.d;
-          let then = 0;
-          for (let i = 3; i < was.length; i += 4) if (was[i] > 0) then++;
-          assert.ok(painted > 0.65 * then, `${where}: only ${painted} pixels of him, where today has ${then}`);
-          assert.equal(pink, 0, `${where}: ${pink} pixels of the enemy's colours`);
-          const roots = f.tails ?? [];
-          assert.equal(roots.map((r) => r.id).sort().join(','), 'r2-feather,r2-liripipe', `${where}: what flies from him`);
-          for (const r of roots) assert.ok(r.x >= 0 && r.y >= 0 && r.x <= CANVAS3.w && r.y <= CANVAS3.h && Number.isFinite(r.x + r.y), `${where}: ${r.id} is tied at ${r.x}, ${r.y}`);
+          const game = paintMove3(m, t, view);
+          const was = today(who, m, t, view);
+          assert.ok(same(game, was), `${name}, ${t.toFixed(2)} s, ${view}: ${unlike(game, was)} pixels are not today's`);
           frames++;
         }
       }
     }
+    assert.ok(frames > 200, `every move was looked at (${frames} frames)`);
   });
-  assert.ok(frames > 600, `every move was looked at (${frames} frames)`);
+
+  test(`with ${H.name}'s switch on, ${H.name} wears the new outfit, with what flies from it; the others are as they were`, () => {
+    const others = WHO.filter((w) => w !== who).map((w) => [w, paintMove3(HEROES[w].stand, 0, 'front')] as const);
+    wearing(who, () => {
+      for (const [name, m] of H.moves) {
+        if (!(name in MOVES3)) continue;
+        for (const view of VIEWS) {
+          const now = paintMove3(m, 0, view);
+          const n = unlike(now, today(who, m, 0, view));
+          assert.ok(n > 300, `${name}, ${view}: only ${n} pixels differ from today's`);
+          assert.equal((now.tails ?? []).map((r) => r.id).sort().join(','), H.tails, `${name}, ${view}: what flies from the new outfit`);
+        }
+      }
+      for (const [w, was] of others) assert.ok(same(paintMove3(HEROES[w].stand, 0, 'front'), was), `${HEROES[w].name} changed`);
+    });
+    // (and off again: today's)
+    assert.ok(same(paintMove3(H.stand, 0, 'front'), today(who, H.stand, 0, 'front')));
+  });
+
+  test(`switched on, every move of ${H.name} is painted cleanly: the whole figure, what flies from it tied on it, and nothing of the enemy's pink or gold`, () => {
+    const enemy = new Set([...FLAME, ...PINK].map((c) => parseInt(c.slice(1), 16)));
+    let frames = 0;
+    wearing(who, () => {
+      for (const [name, m] of H.moves) {
+        for (const t of moments(m, 1 / 15)) {
+          for (const view of VIEWS) {
+            const where = `${name}, ${t.toFixed(3)} s, ${view}`;
+            const f = paintMove3(m, t, view);
+            const d = f.px.d;
+            let painted = 0;
+            let pink = 0;
+            for (let i = 0; i < d.length; i += 4) {
+              if (d[i + 3] === 0) continue;
+              painted++;
+              if (enemy.has((d[i] << 16) | (d[i + 1] << 8) | d[i + 2])) pink++;
+            }
+            // (the whole of the figure: the Wind-runner has no long cloak, so a little less of him than today, never much less; measured, 0.73 at the least, in the tightest moment of the roll)
+            const was = today(who, m, t, view).px.d;
+            let then = 0;
+            for (let i = 3; i < was.length; i += 4) if (was[i] > 0) then++;
+            assert.ok(painted > 0.65 * then, `${where}: only ${painted} pixels of the figure, where today has ${then}`);
+            assert.equal(pink, 0, `${where}: ${pink} pixels of the enemy's colours`);
+            const roots = f.tails ?? [];
+            assert.equal(roots.map((r) => r.id).sort().join(','), H.tails, `${where}: what flies from the new outfit`);
+            for (const r of roots) assert.ok(r.x >= 0 && r.y >= 0 && r.x <= CANVAS3.w && r.y <= CANVAS3.h && Number.isFinite(r.x + r.y), `${where}: ${r.id} is tied at ${r.x}, ${r.y}`);
+            frames++;
+          }
+        }
+      }
+    });
+    assert.ok(frames > 400, `every move was looked at (${frames} frames)`);
+  });
+}
+
+test('the Boar Knight keeps the pig helmet: the lines that paint his head are today\'s, exactly', () => {
+  // (the owner: "I just want to keep the pig helmet for sure on the warrior")
+  const head = (file: string): string => {
+    const text = readFileSync(new URL(`../src/art/${file}`, import.meta.url), 'utf8') as string;
+    const a = text.indexOf('  if (kit.head) kit.head({ st, s, q, B });');
+    const b = text.indexOf('  // --- the great sword');
+    assert.ok(a > 0 && b > a, `${file}: the head is where it was`);
+    return text.slice(a, b);
+  };
+  assert.equal(head('hero3_knight2.ts'), head('hero3_knight.ts'), 'the Boar Knight\'s head is not today\'s');
 });
 
-test('what flies from the Wind-runner is a tail the game knows how to move and draw: the tail of his hood is cloth, the feather a glowing quill', () => {
+test('what flies from the new outfits is what the game knows how to move and draw: the hood\'s tail is cloth, the feather a glowing quill, the cloak\'s strips cloth', () => {
   for (const id of ['r2-liripipe', 'r2-feather']) assert.ok(HERO_TAILS[id] === RANGER2_TAILS[id], `${id} is one of the game's tails`);
+  for (const id of ['w2-strip-a', 'w2-strip-b', 'w2-strip-c']) {
+    assert.ok(HERO_TAILS[id] === KNIGHT2_TAILS[id], `${id} is one of the game's tails`);
+    assert.ok(KNIGHT2_TAILS[id].rest === undefined && (KNIGHT2_TAILS[id].stiff ?? 0) === 0 && KNIGHT2_TAILS[id].glow === undefined, `${id} is cloth, and does not glow`);
+  }
   const tail = RANGER2_TAILS['r2-liripipe'];
   assert.ok(tail.rest === undefined && (tail.stiff ?? 0) === 0 && tail.glow === undefined, 'the tail of the hood is cloth, and does not glow');
   // (about half his height long: he is 57 picture pixels tall, two to a game pixel)
@@ -187,9 +243,9 @@ test('what flies from the Wind-runner is a tail the game knows how to move and d
   assert.ok((feather.stiff ?? 0) > 0 && feather.rest?.length === feather.n && feather.glow !== undefined, 'the feather is a quill, with a shape, and glows');
 });
 
-test('the tails of the game move as they did: what the hood\'s tail asks of the engine (an S-wave, a ripple across it) is its own, and every other tail is moved as before', () => {
+test('the tails of the game move as they did: what the new outfits ask of the engine (an S-wave, a ripple across) is their own, and every other tail is moved as before', () => {
   // (a tail that does not say how far round its ripple goes is moved as one that says 5.6, the engine's own, and down the screen)
-  const ids = Object.keys(HERO_TAILS).filter((id) => !id.startsWith('r2-'));
+  const ids = Object.keys(HERO_TAILS).filter((id) => !id.startsWith('r2-') && !id.startsWith('w2-') && !id.startsWith('m2-'));
   for (const id of ids) assert.ok(HERO_TAILS[id].wave === undefined && HERO_TAILS[id].across === undefined, `${id} asks for nothing new`);
   const plain: Record<string, TailDef> = {};
   const said: Record<string, TailDef> = {};

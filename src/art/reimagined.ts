@@ -12,6 +12,7 @@
 
 import type { TailDef } from '../engine/tails';
 import { CYAN, LEAF } from './kit';
+import type { Ramp } from './kit';
 
 /** Which heroes wear their reimagined outfit. ALL OFF until the owner has seen it and said yes. */
 export const REIMAGINED = { ranger: false, knight: false, mage: false };
@@ -37,4 +38,18 @@ export const RANGER2_TAILS: Record<string, TailDef> = {
     stiff: 1, gravity: 40, wind: 90, flutter: 70, rate: 1.9, drag: 9,
     glow: { color: CYAN[3], r: 6, a: 0.4, at: 0.55 },
   },
+};
+
+/** The Boar Knight's cloak (art/hero3_knight2.ts): a deep crimson. */
+const CLOAK: Ramp = ['#3a0812', '#3a0812', '#781426', '#b02436', '#b02436'];
+/**
+ * What flies from the Boar Knight (art/hero3_knight2.ts): THE TORN STRIPS AT THE HEM OF HIS CLOAK,
+ * three of them, hung from the back of its hem. Cloth: heavier than the hood's tail, shorter, an
+ * S-wave running down each. (His cloak itself is painted in the frames, behind his arms and round
+ * his legs; these are what the game moves every frame.) No frame names them while his switch is off.
+ */
+export const KNIGHT2_TAILS: Record<string, TailDef> = {
+  'w2-strip-a': { n: 5, seg: 1.5, w0: 4.0, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.7, drag: 5, wave: 7.5, across: true },
+  'w2-strip-b': { n: 6, seg: 1.5, w0: 4.4, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.5, drag: 5, wave: 7.5, across: true },
+  'w2-strip-c': { n: 4, seg: 1.5, w0: 3.8, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.9, drag: 5, wave: 7.5, across: true },
 };

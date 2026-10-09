@@ -22,6 +22,7 @@ import type { ClassId } from '../game/types';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { onBack } from './carried';
 import { paintKnight3 } from './hero3_knight';
+import { paintKnight3b } from './hero3_knight2';
 import type { HeadPainter } from './hero3_knight';
 import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
@@ -119,7 +120,8 @@ export function paintMove3(move: Move3, t: number, view: GameView, opts: Paint3 
       const point = away ? away.point : sk.point;
       trail.push([add(hand, mul(point, hero === 'mage' ? STAFF_UP * 0.5 : 1.3)), add(hand, mul(point, hero === 'mage' ? STAFF_UP : 1.3 + GREAT_BLADE))]);
     }
-    f = hero === 'mage' ? paintMage3(s, q, view, { build, ...kit, ...(opts.mage ? { look: opts.mage } : {}) }, { prev, trail, wind }) : paintKnight3(s, q, view, { build, twoHanded: true, ...kit }, { prev, trail: streakShown(move, now) ? trail : [], wind });
+    // (the knight reimagined, the Boar Knight, only while his switch is on: art/reimagined.ts. It is off.)
+    f = hero === 'mage' ? paintMage3(s, q, view, { build, ...kit, ...(opts.mage ? { look: opts.mage } : {}) }, { prev, trail, wind }) : (REIMAGINED.knight ? paintKnight3b : paintKnight3)(s, q, view, { build, twoHanded: true, ...kit }, { prev, trail: streakShown(move, now) ? trail : [], wind });
   }
   return q.out > 0.01 ? lightsOut(f, q.out) : f;
 }

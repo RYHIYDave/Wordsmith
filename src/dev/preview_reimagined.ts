@@ -1,13 +1,16 @@
-// Dev page: THE RANGER, REIMAGINED (the art chat, 9 Oct 2026): a picture for the owner of the
-// Wind-runner (art/hero3_ranger2.ts), the new outfit over the ranger's same bones and moves, beside
-// the ranger as the game has him today. NOT IN THE GAME: the switch (art/reimagined.ts) is off; this
-// page turns it on only while it paints the new one. Each figure is painted by the game's own
+// Dev page: A HERO, REIMAGINED (the art chat, 9 Oct 2026): a picture for the owner of a hero's new
+// outfit over the same bones and moves (art/reimagined.ts: the ranger's Wind-runner,
+// art/hero3_ranger2.ts; the knight's Boar Knight, art/hero3_knight2.ts; the mage's Storm-witch,
+// art/hero3_mage2.ts), beside the hero as the game has them today. NOT IN THE GAME: the switches are
+// off; this page turns one on only while it paints the new outfit. Each figure is painted by the game's own
 // painter (art/heroes3.ts, paintMove3) and stood on the dungeon's own floor with the pool of light
 // the game puts behind a hero; what flies from him (the tail of the hood, the feather) is moved by
 // the game's own tails (engine/tails.ts), as it would have moved by that moment, and the feather
 // glows as the game makes it. The last row is the two of them at about the size a phone shows them.
-//   node tools/preview.mjs src/dev/preview_reimagined.ts previews/reimagined/ranger_sheet.png 900 2640 "4"
-//   hash = <screen pixels to a picture pixel; 4 if not given>
+//   node tools/preview.mjs src/dev/preview_reimagined.ts previews/reimagined/ranger_sheet.png 900 2656 "4:ranger"
+//   node tools/preview.mjs src/dev/preview_reimagined.ts previews/reimagined/warrior_sheet.png 900 2656 "4:knight"
+//   node tools/preview.mjs src/dev/preview_reimagined.ts previews/reimagined/mage_sheet.png 900 2656 "4:mage"
+//   hash = <screen pixels to a picture pixel; 4 if not given>:<ranger | knight | mage; ranger if not given>
 import { makeGroundArt } from '../art/ground';
 import { HERO_TAILS } from '../art/heroes';
 import { paintMove3 } from '../art/heroes3';
@@ -22,8 +25,17 @@ import { drawGlow } from '../engine/px';
 import { Tails } from '../engine/tails';
 import { TUNE } from '../game/defs';
 
-const [scaleArg = '4'] = decodeURIComponent(location.hash.slice(1)).split(':');
+const [scaleArg = '4', heroArg = 'ranger'] = decodeURIComponent(location.hash.slice(1)).split(':');
 const S = Number(scaleArg) || 4;
+type Who = 'ranger' | 'knight' | 'mage';
+const WHO: Who = heroArg === 'knight' || heroArg === 'mage' ? heroArg : 'ranger';
+/** Each hero: their name, today's look and the new one, and the moves the picture shows (the attack at its `key` moment). */
+const HEROES: Record<Who, { name: string; today: string; fresh: string; stand: string; run: string; attack: string; attackSays: string; key: 'drawn' | 'hit'; fourth: string; fourthSays: string }> = {
+  ranger: { name: 'The ranger', today: 'the Feather-cap Scout', fresh: 'the Wind-runner', stand: 'rstand', run: 'rrun', attack: 'shot', attackSays: 'Shot: the string drawn back', key: 'drawn', fourth: 'rtown', fourthSays: 'In town' },
+  knight: { name: 'The warrior', today: 'the Scarf Knight', fresh: 'the Boar Knight', stand: 'rear', run: 'krun', attack: 'strike', attackSays: 'Strike: the blow', key: 'hit', fourth: 'ktown', fourthSays: 'In town' },
+  mage: { name: 'The mage', today: 'the battle mage', fresh: 'the Storm-witch', stand: 'mstand', run: 'mrun', attack: 'wave', attackSays: 'Wave: the blow', key: 'hit', fourth: 'orb', fourthSays: 'Orb: casting' },
+};
+const H = HEROES[WHO];
 /** On a phone the game shows a picture pixel about two and a half of the screen's own pixels across: the size of the last row. */
 const SMALL = 2;
 
@@ -42,12 +54,12 @@ const ground = makeGroundArt();
 
 /** A frame of a move, with the reimagined outfit or without it. */
 function paint(on: boolean, move: Move3, t: number, view: GameView): Painted {
-  const was = REIMAGINED.ranger;
-  REIMAGINED.ranger = on;
+  const was = REIMAGINED[WHO];
+  REIMAGINED[WHO] = on;
   try {
     return paintMove3(move, t, view);
   } finally {
-    REIMAGINED.ranger = was;
+    REIMAGINED[WHO] = was;
   }
 }
 
@@ -108,17 +120,20 @@ function most(move: Move3, of: (t: number) => number, from = 0, to?: number): nu
   return best;
 }
 
-const run = MOVES3.rrun;
-const shot = MOVES3.shot;
-const stand = MOVES3.rstand;
-const town = MOVES3.rtown;
-// (mid-run: the stride at its longest; the shot: the string drawn back furthest, before it is loosed)
+const run = MOVES3[H.run];
+const shot = MOVES3[H.attack];
+const stand = MOVES3[H.stand];
+const town = MOVES3[H.fourth];
+// (mid-run: the stride at its longest; the attack: the string drawn back furthest before it is
+// loosed, or the moment the blow lands)
 const stride = most(run, (t) => {
   const s = solve(run.build, bonesAt(run.motion.keys, run.rest, t));
   return Math.hypot(s.ankleL[0] - s.ankleR[0], s.ankleL[1] - s.ankleR[1]) + (s.ankleL[0] > s.ankleR[0] ? 0.5 : 0);
 });
 const hit = shot.motion.hit ?? 0.2;
-const drawn = most(shot, (t) => bonesAt(shot.motion.keys, shot.rest, t).draw, 0, hit - 1 / 60);
+const drawn = H.key === 'hit' ? hit : most(shot, (t) => bonesAt(shot.motion.keys, shot.rest, t).draw, 0, hit - 1 / 60);
+// (the fourth: a stance is shown as it stands; a move, at the moment it lands)
+const fourthT = town.motion.hit ?? 0;
 // (a run long enough to be at full speed, ending at that moment of the stride; a loop folds into itself)
 const runLoop = run.motion.loop ?? 0;
 const runEnd = run.motion.keys[run.motion.keys.length - 1].at;
@@ -127,19 +142,19 @@ const runT = stride + (runEnd - runLoop) * 2;
 const RUN_SPEED = TUNE.heroSpeed * Math.hypot(16, 8);
 
 const ROWS: { title: string; panes: Pane[]; k: number; half: number }[] = [
-  { title: 'TODAY: the Feather-cap Scout', k: S, half: HALF, panes: [pane('Today, facing you', false, stand, 0, 'front'), pane('Today, facing away', false, stand, 0, 'back')] },
-  { title: 'REIMAGINED: the Wind-runner', k: S, half: HALF, panes: [pane('Reimagined, facing you', true, stand, 0, 'front'), pane('Reimagined, facing away', true, stand, 0, 'back')] },
+  { title: `TODAY: ${H.today}`, k: S, half: HALF, panes: [pane('Today, facing you', false, stand, 0, 'front'), pane('Today, facing away', false, stand, 0, 'back')] },
+  { title: `REIMAGINED: ${H.fresh}`, k: S, half: HALF, panes: [pane('Reimagined, facing you', true, stand, 0, 'front'), pane('Reimagined, facing away', true, stand, 0, 'back')] },
   {
     title: 'REIMAGINED: on the move',
     k: S,
     half: HALF,
-    panes: [pane('Running', true, run, runT, 'front', { t0: 0, speed: RUN_SPEED }), pane('Shot: the string drawn back', true, shot, drawn, 'front', { t0: 0, before: stand })],
+    panes: [pane('Running', true, run, runT, 'front', { t0: 0, speed: RUN_SPEED }), pane(H.attackSays, true, shot, drawn, 'front', { t0: 0, before: stand })],
   },
   {
-    title: 'REIMAGINED: in town, and running away from you',
+    title: `REIMAGINED: ${H.fourthSays.toLowerCase()}, and running away from you`,
     k: S,
     half: HALF,
-    panes: [pane('In town', true, town, 0, 'front'), pane('Running, facing away', true, run, runT, 'back', { t0: 0, speed: RUN_SPEED })],
+    panes: [pane(H.fourthSays, true, town, fourthT, 'front', { t0: 0, before: town.motion.hit !== undefined ? stand : town }), pane('Running, facing away', true, run, runT, 'back', { t0: 0, speed: RUN_SPEED })],
   },
   {
     title: 'At about the size your phone shows them',
@@ -168,7 +183,7 @@ g.textBaseline = 'middle';
 g.textAlign = 'left';
 g.fillStyle = '#ffd866';
 g.font = '700 30px system-ui, sans-serif';
-g.fillText('The ranger, reimagined', PAD + 2, PAD + 20);
+g.fillText(`${H.name}, reimagined`, PAD + 2, PAD + 20);
 g.fillStyle = '#cfc8ff';
 g.font = '600 19px system-ui, sans-serif';
 g.fillText('a mock-up: not in the game', PAD + 2, PAD + 56);
