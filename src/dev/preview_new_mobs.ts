@@ -234,7 +234,7 @@ if (mode === 'sheet') {
 if (mode === 'one') {
   const mob = parts[1] === 'boneward' ? BONEWARD : parts[1] === 'golem' ? GOLEM : parts[1] === 'champion' ? CHAMPION : SHADE;
   const S = Number(parts[2]) || (mob === GOLEM ? 3 : 4);
-  const dieAt: Record<Mob['id'], [number, number]> = { shade: [0.3, 0.62], boneward: [0.3, 1], golem: [0.3, 1], champion: [0.45, 1] };
+  const dieAt: Record<Mob['id'], [number, number]> = { shade: [0.3, 0.62], boneward: [0.3, 1], golem: [0.3, 1], champion: [0.45, 1], marksman: [0.4, 1] };
   const [d1, d2] = dieAt[mob.id];
   const cells: { sp: Sprite; label: string }[] = [
     { sp: sp3(mob, 'stand', 0, 'front'), label: 'facing you' },
@@ -295,7 +295,7 @@ if (mode === 'film') {
   const FPS = 30;
   /** The round, and when in it each one attacks (one after another, so that each is seen): it stands, attacks, and stands again till the loop comes round. */
   const ROUND = 4.8;
-  const STARTS: Record<Mob['id'], number> = { shade: 0.7, boneward: 1.9, golem: 3.1, champion: 3.1 };
+  const STARTS: Record<Mob['id'], number> = { shade: 0.7, boneward: 1.9, golem: 3.1, champion: 3.1, marksman: 3.1 };
   const at = (mob: Mob, t: number): Sprite => {
     const standFor = STARTS[mob.id];
     const attackEnd = mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at;
@@ -430,7 +430,7 @@ if (mode === 'walks') {
 
 if (mode === 'struck') {
   const S = Number(parts[1]) || 3;
-  const MOMENTS: Record<Mob['id'], number[]> = { shade: [0, 0.05, 0.1, 0.17, 0.33], boneward: [0, 0.06, 0.11, 0.18, 0.3], golem: [0, 0.04, 0.09, 0.14, 0.25], champion: [0, 0.06, 0.11, 0.18, 0.3] };
+  const MOMENTS: Record<Mob['id'], number[]> = { shade: [0, 0.05, 0.1, 0.17, 0.33], boneward: [0, 0.06, 0.11, 0.18, 0.3], golem: [0, 0.04, 0.09, 0.14, 0.25], champion: [0, 0.06, 0.11, 0.18, 0.3], marksman: [0, 0.06, 0.11, 0.18, 0.3] };
   const PAD = 10;
   const M = 6;
   const rows = NEW_MOBS_LIST.map((mob) => {
@@ -458,7 +458,7 @@ if (mode === 'struck') {
   text('Struck: each one when a blow lands on it', PAD, 12, 24, '#ffd866', 700);
   text(`a mock-up: not in the game. Left to right, from the blow on (seconds). ${S} screen pixels to a picture pixel.`, PAD, 44, 15, '#cfc8ff', 600);
   let y = HEAD;
-  const said: Record<Mob['id'], string> = { shade: 'jolted back, its robe flaring', boneward: 'rocked behind its shield', golem: 'barely: a shudder, its fire flickering', champion: 'rocked back, his hands keeping hold of his sword' };
+  const said: Record<Mob['id'], string> = { shade: 'jolted back, its robe flaring', boneward: 'rocked behind its shield', golem: 'barely: a shudder, its fire flickering', champion: 'rocked back, his hands keeping hold of his sword', marksman: 'rocked back, his bow kept' };
   for (const q of rows) {
     text(`${q.mob.name}: ${said[q.mob.id]}`, PAD, y + 4, 17, '#ffd866', 700);
     y += NAME;

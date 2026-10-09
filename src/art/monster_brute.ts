@@ -35,6 +35,7 @@ import type { Light } from '../engine/px';
 import type { ActorArt } from './actor_types';
 import type { Key, Timeline } from './clip';
 import { fallen, quench } from './death';
+import type { Piece } from './death';
 import { BONE, INDIGO, INK, MAIL, PLUM, REST, STEEL, ball, compose, dim, dir, hash, joint, limb, lit, shearBy, stamp } from './kit';
 import type { Painted, Pose, Ramp, Rig, V } from './kit';
 import { BLOOD, FLAME, FLESH, GORE, IRON, SOCKET, monsterArt } from './mkit';
@@ -47,6 +48,10 @@ const AY = BRUTE_CANVAS.ay;
 
 // --- how the brute is built, in pixels (the guardian is all of it times GUARDIAN) -------------
 const GUARDIAN = 1.3;
+/** THE TROLL CHIEFTAIN (a mock-up: see the end of this file) is bigger than either of his trolls. */
+const CHIEF = 1.45;
+/** ... and his canvas: taller than the trolls' (his club reared over his head, his banner), with room either side. */
+export const CHIEF_CANVAS: Canvas = { w: 208, h: 212, ax: 92, ay: 180 };
 /** Heights above the floor: the top of the head, the middle of the shoulders, the top of the barrel seen from the front and from behind, its underside, the hips. */
 const H_HEAD = 54;
 const H_SHO = 47;
@@ -126,7 +131,7 @@ interface Box {
  * seam. The box is grown to whole blocks of 32 pixels, so that the kit keeps only a few sizes of
  * scratch layer for it, and it is kept on the canvas.
  */
-function boxOf(discs: ReadonlyArray<readonly [V, number]>): Box {
+function boxOf(discs: ReadonlyArray<readonly [V, number]>, can: Canvas = BRUTE_CANVAS): Box {
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -Infinity;
@@ -142,8 +147,8 @@ function boxOf(discs: ReadonlyArray<readonly [V, number]>): Box {
     const size = Math.min(max, Math.ceil((Math.min(max, Math.ceil(hi) + 3) - a) / 32) * 32);
     return [Math.min(a, max - size), size];
   };
-  const [x, w] = fit(x0, x1, BRUTE_CANVAS.w);
-  const [y, h] = fit(y0, y1, BRUTE_CANVAS.h);
+  const [x, w] = fit(x0, x1, can.w);
+  const [y, h] = fit(y0, y1, can.h);
   return { x, y, w, h };
 }
 
@@ -605,11 +610,13 @@ function turnTo(a: number, b: number, t: number): number {
   return a + ((((b - a) % 360) + 540) % 360 - 180) * t;
 }
 
-function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = null): Painted {
+function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = null, chief = false): Painted {
   // (the floor point: on the canvas, or on sheets cut down to the box that holds this frame. See below.)
-  const ax = cut ? AX - cut.x : AX;
-  const floorY = cut ? AY - cut.y : AY;
-  const S = G ? GUARDIAN : 1;
+  // (the troll chieftain is the brute's rig, bigger (CHIEF), on a bigger canvas of his own)
+  const can = chief ? CHIEF_CANVAS : BRUTE_CANVAS;
+  const ax = cut ? can.ax - cut.x : can.ax;
+  const floorY = cut ? can.ay - cut.y : can.ay;
+  const S = chief ? CHIEF : G ? GUARDIAN : 1;
   const u = (n: number): number => n * S;
   // Everything of him above his feet is measured up from `ay`: the floor, while his legs hold him.
   // Dying, his knees let him down (DOWN): all of it comes that much nearer the floor, and his legs,
@@ -710,6 +717,8 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
    * is): his nearer foot when he faces us, his further one when he faces away, so that the dust it
    * kicks back flies out beside him where it is seen, not behind his bulk.
    */
+  /** THE CHIEFTAIN'S BANNER, on his back: where its pole stands and its cloth hangs. */
+  const flag = chief ? bannerOf(X, shY, back, S, q.wind, Math.min(1.6, q.drag)) : null;
   const scrapeS = back ? q.far : q.near;
   const scrape: V = [ax + (back ? farSide : -farSide) * u(LEG) + snap(scrapeS * u(3.6)) - u(2), floorY - 2 + (back ? -1 : 1) * snap(u(FOOT_TILT)) + snap(scrapeS * u(1.6) * fwd)];
   const [cdx, cdy] = dir(aim);
@@ -785,7 +794,9 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
       [[hx, hy + 7], 11],
       ...streakAt.map((v) => [v, u(8)] as const),
       ...(q.prop === 2 && q.sweep > 0 && q.sweep < 1 ? [[[scrape[0] - u(14), scrape[1] - u(8)], u(16)] as const] : []),
-    ]));
+      // (the chieftain's crown of antlers over his head, and his banner: its pole and its cloth)
+      ...(flag ? [[[hx, hy - 9], 14] as const, [flag.foot, u(4)] as const, [flag.top, u(5)] as const, [[(flag.bar[0][0] + flag.bar[1][0]) / 2 + flag.sway / 2, flag.bar[0][1] + flag.long / 2], flag.long / 2 + u(8)] as const] : []),
+    ], can), chief);
   }
   const sheet = (): Px => new Px(cut.w, cut.h);
 
@@ -908,6 +919,10 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
 
   const skull = sheet();
   const eyes = head(skull, hx, hy, flesh, back, roar > 0.45, G);
+  const crownSheet = sheet();
+  const banner = sheet();
+  if (chief) crown(crownSheet, hx, hy);
+  if (flag) paintBanner(banner, flag, back, S, q.wind);
   // (the light in his eyes: it flares as he roars)
   if (eyes) lights.push({ x: eyes[0], y: eyes[1], r: (G ? 5.5 : 4.5) + roar * 2.5, color: SOCKET, a: (G ? 0.42 : 0.32) + roar * 0.18 });
 
@@ -918,20 +933,31 @@ function ogre(q: Pose, back: boolean, G: boolean, how: Carry, cut: Box | null = 
   else if (back) layers = [behindAll, offArm, skull, body, weapon, clubArm, hands];
   else if (clubBehind) layers = [behindAll, weapon, clubArm, body, offArm, skull, hands];
   else layers = [behindAll, clubArm, body, weapon, offArm, skull, hands];
+  // (the chieftain's crown is on his head; his banner on his back: behind all of him facing us, over his back facing away)
+  if (chief) {
+    const withCrown = layers.flatMap((l) => (l === skull ? [skull, crownSheet] : [l]));
+    layers = back ? withCrown.flatMap((l) => (l === body ? [body, banner] : [l])) : [banner, ...withCrown];
+  }
   const done = compose(null, layers);
   /** A sheet of this frame laid on the whole canvas, where it belongs. */
   const placed = (src: Px): Px => {
-    const out = new Px(BRUTE_CANVAS.w, BRUTE_CANVAS.h);
+    const out = new Px(can.w, can.h);
     for (let y = 0; y < cut.h; y++) out.d.set(src.d.subarray(y * cut.w * 4, (y + 1) * cut.w * 4), ((cut.y + y) * out.w + cut.x) * 4);
     return out;
   };
   // (his death takes him apart: the club by itself, and all of him but the club)
-  if (TAKE) TAKE({ club: placed(compose(null, [weapon])), rest: placed(compose(null, layers.filter((l) => l !== weapon))) });
+  if (TAKE) {
+    // (and the chieftain's banner and crown by themselves, for when they leave him: see chiefDeath)
+    const own = (l: Px): boolean => l === weapon || (chief && (l === banner || l === crownSheet) && TAKE_OFF !== null && TAKE_OFF.includes(l === banner ? 'banner' : 'crown'));
+    TAKE({ club: placed(compose(null, [weapon])), rest: placed(compose(null, layers.filter((l) => !own(l)))), banner: chief ? placed(compose(null, [banner])) : undefined, crown: chief ? placed(compose(null, [crownSheet])) : undefined });
+  }
   return { px: placed(done), lights: lights.map((l) => ({ ...l, x: l.x + cut.x, y: l.y + cut.y })) };
 }
 
 /** Set while a frame is painted for his death: it is handed the club by itself, and the rest of him. */
-let TAKE: ((parts: { club: Px; rest: Px }) => void) | null = null;
+let TAKE: ((parts: { club: Px; rest: Px; banner?: Px; crown?: Px }) => void) | null = null;
+/** While a frame of the chieftain's death is painted: which of his banner and crown have left him (they are not in the `rest` TAKE is handed). */
+let TAKE_OFF: ReadonlyArray<'banner' | 'crown'> | null = null;
 /**
  * Set while a frame of his death is painted, once he has been struck: `sink` is how far his knees
  * have let him down, in his own pixels (see the rig: all of him above his feet is that much nearer
@@ -1122,14 +1148,14 @@ const LIES = 0.84;
  * them, then one in four). They are in front of him, low: dust comes up round what lands. (It is
  * the dull violet of the floor's own dust, and gives off no light.)
  */
-function dust(p: Px, cx: number, half: number, t: number, S: number): void {
+function dust(p: Px, cx: number, half: number, t: number, S: number, ay = AY): void {
   if (t <= 0 || t >= 1) return;
   const out = 1 - (1 - t) * (1 - t);
   for (const side of [-1, 1]) {
     for (const [from, far, big, up] of [[0.75, 5, 4.4, 1], [0.95, 11, 3.6, 4], [1.05, 17, 2.6, 2], [0.85, 8, 2.2, 7]] as const) {
       const x = cx + side * (half * from + far * out * S);
       const r = big * S * (1 - 0.35 * t);
-      const y = AY + 2 - r * 0.8 - up * out * S;
+      const y = ay + 2 - r * 0.8 - up * out * S;
       for (let yy = Math.floor(y - r); yy <= Math.ceil(y + r); yy++) {
         for (let xx = Math.floor(x - r); xx <= Math.ceil(x + r); xx++) {
           if ((xx + 0.5 - x) ** 2 + (yy + 0.5 - y) ** 2 > r * r) continue;
@@ -1254,3 +1280,200 @@ export function makeGuardianArt(): ActorArt {
   const how = CARRY;
   return monsterArt((q, back) => ogre(q, back, true, how), ogreMoves(false, true, how), ogreMoves(true, true, how), { canvas: BRUTE_CANVAS, rest: { aim: 80 }, aura: GUARDIAN_AURA, idleFps: 8, walkFps: 9, dieTime: 1.2 });
 }
+
+// =============================================================================================
+// THE TROLL CHIEFTAIN: A YELLOW PACK'S LEADER OF TROLLS (the art chat, 9 Oct 2026). A MOCK-UP: NOT IN
+// THE GAME: nothing of the game makes him (`makeChieftainArt`).
+//
+// Asked in the art chat who should lead each kind of yellow pack, his pick for the trolls: "A troll
+// chieftain (Recommended)". His brief (the art rulebook's "A new character"), asked as a pop-up and
+// answered by 14:41: "Bigger than his trolls (Recommended)" (offered as "A head over them and
+// broader, with his crown of antlers and bone and the banner on his back."); his attacks, in his
+// own words: "I don’t want the bellow if the Skelton leader has the same thing" (so: his trolls'
+// swing and slam, heavier and slower, and no bellow); "To his knees, then face-first
+// (Recommended)" (offered as "He drops to his knees, then topples forward, and his banner falls
+// over him."); and for the Sound chat, "A huge rumbling bellow (Recommended)".
+//
+// So he is the brute's rig (the green troll's: his slate-blue hide, his hide skirt, his strap, his
+// studded club carried at his side), bigger than the red troll (CHIEF), with two things to know him
+// by: A CROWN OF ANTLERS AND BONE, a circlet of bone and teeth round his little head and two great
+// antlers branching up and out of it; and HIS BANNER, on a pole of dark wood on his back, its top a
+// small skull, its cloth a ragged hide of old red, painted with a pale sign, flying behind his head
+// and stirring as he moves.
+//   standing, walking  his trolls', slower: he is heavier (and his banner flies)
+//   attack     his trolls' slam (`smash`), slower
+//   moves.swing  his trolls' swing (TROLL_MOVES), slower
+//   death      TO HIS KNEES, THEN FACE-FIRST: his trolls' (ogreDeath), but over further, all the way
+//              down on his face; his banner topples forward and falls over him; and as he lands his
+//              crown comes off and rolls away.
+
+/** His banner's cloth: an old red hide. Its pole: dark wood. */
+export const BANNER: Ramp =['#3a0a1c', '#3a0a1c', '#7a1430', '#b0304c', '#b0304c'];
+const POLE: Ramp = dim(INDIGO);
+/** How much slower his blows are than his trolls' (he is bigger and heavier). */
+const CHIEF_SLOW = 1.2;
+
+/**
+ * WHERE HIS BANNER IS: the foot of its pole on his back (facing us, his back is up the screen and to
+ * the left of him; facing away, toward us), its top over his head, leaning back a little; the
+ * crossbar at its top, the cloth hanging from it (`long`), its foot blown back (`sway`) by the air
+ * and by his going.
+ */
+function bannerOf(X: number, shY: number, back: boolean, S: number, wind: number, drag: number): { foot: V; top: V; bar: [V, V]; long: number; sway: number } {
+  const foot: V = back ? [X - 3 * S, shY + 7 * S] : [X - 6 * S, shY + 3 * S];
+  const top: V = back ? [X - 9 * S, shY - 31 * S] : [X - 12 * S, shY - 33 * S];
+  const bar: [V, V] = [[top[0] - 7 * S, top[1] + 3 * S], [top[0] + 4 * S, top[1] + 2.5 * S]];
+  const ph = wind * Math.PI * 2;
+  return { foot, top, bar, long: 15 * S, sway: -(1.2 + 2.8 * drag) * S + Math.sin(ph) * 1.5 * S };
+}
+
+/** HIS BANNER, painted: the pole, a small skull at its top, the crossbar, and the cloth hanging from it, ragged at its foot, a pale sign on it. */
+function paintBanner(p: Px, f: { foot: V; top: V; bar: [V, V]; long: number; sway: number }, back: boolean, S: number, wind: number): void {
+  const ph = wind * Math.PI * 2;
+  const pole = back ? POLE : dim(POLE);
+  limb(p, f.foot[0], f.foot[1], f.top[0], f.top[1], 1.15 * S, 1.0 * S, pole);
+  limb(p, f.bar[0][0], f.bar[0][1], f.bar[1][0], f.bar[1][1], 0.8 * S, 0.8 * S, pole);
+  // the cloth: from the crossbar down, its foot blown back and stirring, its hem torn into tatters
+  const [a, b] = f.bar;
+  const y0 = Math.round(Math.min(a[1], b[1]) + 1);
+  const rows = Math.round(f.long);
+  for (let i = 0; i <= rows; i++) {
+    const t = i / rows;
+    const off = f.sway * t ** 1.5 + Math.sin(ph * 2 + t * 4) * 0.8 * S * t;
+    const x0 = Math.round(a[0] + 1 + off);
+    const x1 = Math.round(b[0] - 1 + off - t * 1.5 * S);
+    for (let x = x0; x <= x1; x++) {
+      // (tatters at its foot: some columns end short)
+      if (t > 0.78 && hash(x - x0, 3, 59) < (t - 0.78) * 4) continue;
+      const edge = x === x0 ? 3 : x === x1 ? 1 : 2;
+      p.set(x, y0 + i, BANNER[edge]);
+    }
+  }
+  // the sign painted on it, pale: a pair of antlers over a dot (his own)
+  const mx = Math.round((a[0] + b[0]) / 2 + f.sway * 0.3);
+  const my = Math.round(y0 + f.long * 0.42);
+  const sign = BONE[2];
+  for (const [dx, dy] of [[-3, -3], [-2, -2], [-2, -4], [-1, -1], [1, -1], [2, -2], [2, -4], [3, -3], [0, 0], [0, 1], [-1, 1], [1, 1]] as const) {
+    if (p.has(mx + dx, my + dy)) p.set(mx + dx, my + dy, sign);
+  }
+  // a small skull at the top of the pole, its sockets dark
+  const sx = Math.round(f.top[0]);
+  const sy = Math.round(f.top[1]);
+  stamp(p, sx - 2, sy - 4, ['.WWW.', 'WWWWW', 'WKWKW', '.WWW.', '.W.W.'], { W: BONE[3], K: INK });
+}
+
+/** HIS CROWN OF ANTLERS AND BONE, on his little head ((cx, top) as `head` takes them): a circlet of bone with teeth standing up out of it, and two great antlers branching up and out. */
+function crown(p: Px, cx: number, top: number): void {
+  const x0 = snap(cx - 7.5);
+  const y0 = snap(top);
+  // the antlers: a beam each side, up and out from the circlet, three tines off it
+  for (const side of [-1, 1] as const) {
+    const bx = side < 0 ? x0 + 2.5 : x0 + 12.5;
+    const pts: V[] = [[bx, y0 + 1], [bx + side * 2, y0 - 3.5], [bx + side * 4.5, y0 - 7.5], [bx + side * 5.8, y0 - 12], [bx + side * 5.2, y0 - 16.5]];
+    for (let i = 1; i < pts.length; i++) limb(p, pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1], 1.35 - i * 0.18, 1.2 - i * 0.18, BONE);
+    for (const [from, dx, dy] of [[1, -0.5, -4.5], [2, 4.2, -2.6], [3, -2.2, -4.2]] as const) {
+      const o = pts[from];
+      limb(p, o[0], o[1], o[0] + side * dx, o[1] + dy, 0.85, 0.5, BONE);
+    }
+  }
+  // the circlet: a band of bone round the top of his head, teeth standing up out of it
+  for (let x = x0 + 1; x <= x0 + 13; x++) {
+    p.set(x, y0, (x - x0) % 2 ? BONE[3] : BONE[2]);
+    p.set(x, y0 + 1, BONE[1]);
+    if ((x - x0) % 3 === 1) p.set(x, y0 - 1, BONE[3]);
+  }
+}
+
+/** A timeline played slower by `k` (its blow too). */
+function slower(t: Timeline, k: number): Timeline {
+  const out: Timeline = { ...t, keys: t.keys.map((key) => ({ ...key, at: key.at * k })) };
+  if (t.hit !== undefined) out.hit = t.hit * k;
+  return out;
+}
+
+/** How long his death takes (seconds). */
+export const CHIEF_DIE_TIME = 1.6;
+
+/** How he is posed `k` of the way through his death: his trolls' (`dying`), but on over further, all the way down onto his face. */
+function chiefDying(k: number, back: boolean): { pose: Partial<Pose>; sink: number } {
+  const d = dying(k, back);
+  const u3 = clamp01((k - GOES) / (LIES - GOES));
+  const pitch = u3 * u3;
+  return { pose: { ...d.pose, lean: (d.pose.lean ?? 0) + 7 * pitch, bob: (d.pose.bob ?? 0) + (back ? 4 : 7) * pitch }, sink: d.sink + 2 * pitch };
+}
+
+/** The pieces that leave him as he dies (his club, his banner, his crown), as they were when they left him, for each view: painted once and kept. */
+const CHIEF_PIECES = new Map<string, Px>();
+
+/**
+ * HIS DEATH, TO HIS KNEES, THEN FACE-FIRST (his pick by 14:41): as his trolls' (ogreDeath): rocked
+ * back with a roar, his club out of his hand, his knees giving, sagging on them; then over, all the
+ * way down onto his face. His banner leaves him as he goes over, topples forward and falls across
+ * him; and as he lands his crown comes off and rolls away.
+ */
+function chiefDeath(k: number, back: boolean, how: Carry): Painted {
+  const S = CHIEF;
+  const W = CHIEF_CANVAS.w;
+  const H = CHIEF_CANVAS.h;
+  const AX = CHIEF_CANVAS.ax;
+  const AY = CHIEF_CANVAS.ay;
+  const painted = (at: number, off: ReadonlyArray<'banner' | 'crown'>): { whole: Painted; club: Px; rest: Px; banner: Px; crown: Px } => {
+    const d = chiefDying(at, back);
+    let parts: { club: Px; rest: Px; banner?: Px; crown?: Px } | null = null;
+    TAKE = (got) => (parts = got);
+    TAKE_OFF = off;
+    DOWN = at >= STRUCK ? { sink: d.sink } : null;
+    const whole = ogre({ ...REST, aim: 80, ...d.pose }, back, false, how, null, true);
+    TAKE = null;
+    TAKE_OFF = null;
+    DOWN = null;
+    const got = parts as { club: Px; rest: Px; banner?: Px; crown?: Px } | null;
+    const none = new Px(W, H);
+    return { whole, club: got ? got.club : none, rest: got ? got.rest : whole.px, banner: got?.banner ?? none, crown: got?.crown ?? none };
+  };
+  const off: ('banner' | 'crown')[] = [];
+  if (k >= GOES) off.push('banner');
+  if (k >= LIES) off.push('crown');
+  const now = painted(k, off);
+  if (k < STRUCK) return now.whole;
+  const dark = [SOCKET, FLAME[3], FLAME[4]];
+  quench(now.rest, dark, INK);
+  const kept = (what: 'club' | 'banner' | 'crown', at: number): Px => {
+    const key = `${what}:${back ? 'back' : 'front'}:${how}`;
+    let px = CHIEF_PIECES.get(key);
+    if (!px) {
+      px = quench(painted(at, [])[what], dark, INK);
+      CHIEF_PIECES.set(key, px);
+    }
+    return px;
+  };
+  const club = kept('club', STRUCK);
+  const lay = across(club);
+  const clubTo: [number, number] = [lay ? (lay[0] + lay[1] + 1) / 2 + (back ? 17 : -10) * S : AX, AY + 3];
+  const pieces: Piece[] = [
+    { px: now.rest, to: [AX, AY], from: 2, until: 3 },
+    { px: club, to: clubTo, from: STRUCK, until: STRUCK + 0.19, hop: 2 * S, bounce: 2.5 * S },
+  ];
+  // (his banner: it goes over with him, and on over him, and lies across his back)
+  // (forward, the way he went: down the screen and to the right facing us, up it and to the right facing away)
+  if (k >= GOES) pieces.push({ px: kept('banner', GOES), to: [AX + 12 * S, AY - (back ? 14 : 10) * S], turns: 1, topple: true, from: GOES, until: LIES + 0.04, bounce: 1.5 * S });
+  // (his crown: knocked off as he lands, it rolls away from him)
+  if (k >= LIES) pieces.push({ px: kept('crown', LIES), to: [AX + 50 * S, AY + (back ? -8 : 2)], turns: 2, from: LIES, until: 0.99, hop: 3 * S, bounce: 2 * S });
+  const px = fallen(pieces, k, W, H, INK);
+  dust(px, AX + 2 * S, 14 * S, (k - KNEES) / 0.15, S, AY);
+  dust(px, AX + 14 * S, 24 * S, (k - LIES) / (1 - LIES), S, AY);
+  return { px, lights: [] };
+}
+
+/** The pool of light behind him, on his canvas. */
+const CHIEF_AURA: Light = { x: CHIEF_CANVAS.ax - 2, y: CHIEF_CANVAS.ay - 44, r: 70, color: '#ff3a78', a: 0.16 };
+
+/** THE TROLL CHIEFTAIN, as the game holds a monster: his stand and walk (slower than his trolls'), his slam (`attack`), his swing (`clips.moves.swing`), his death. */
+export function makeChieftainArt(): ActorArt {
+  const how = CARRY;
+  const moves = (back: boolean): MonsterMoves => ({ attack: slower(smash(back), CHIEF_SLOW), more: { swing: slower(swingMove(), CHIEF_SLOW) }, die: (k) => chiefDeath(k, back, how) });
+  return monsterArt((q, back) => ogre(q, back, false, how, null, true), moves(false), moves(true), { canvas: CHIEF_CANVAS, rest: { aim: 80 }, aura: CHIEF_AURA, idleFps: 7, walkFps: 8, dieTime: CHIEF_DIE_TIME });
+}
+
+/** One frame of the troll chieftain, as a painting (for pictures). */
+export const paintChieftain: Rig = (q, back) => ogre(q, back, false, CARRY, null, true);
