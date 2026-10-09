@@ -121,9 +121,18 @@ test("with the switch off the game's bone archer is today's, frame for frame and
 test('with the switch off its frames are painted ahead of need in the order they always were', () => {
   const fresh = makeBestiary();
   const today = makeArcherArt();
+  // (its other moves, if it had any, before its death: the bestiary's order since Version 19.8)
   const order: Sprite[] = [];
-  for (const pick of [(s: AnimSet) => s.idle, (s: AnimSet) => s.walk, (s: AnimSet) => clip(s, 'attack').frames, (s: AnimSet) => s.clips?.heavy?.frames ?? [], (s: AnimSet) => clip(s, 'die').frames]) {
-    for (const set of [today.front, today.back]) order.push(...Array.from(pick(set)));
+  const picks: ((s: AnimSet) => readonly (readonly Sprite[])[])[] = [
+    (s) => [s.idle],
+    (s) => [s.walk],
+    (s) => [clip(s, 'attack').frames],
+    (s) => [s.clips?.heavy?.frames ?? []],
+    (s) => Object.values(s.clips?.moves ?? {}).map((c) => c.frames),
+    (s) => [clip(s, 'die').frames],
+  ];
+  for (const pick of picks) {
+    for (const set of [today.front, today.back]) for (const frames of pick(set)) order.push(...Array.from(frames));
   }
   order.forEach((want, i) => {
     assert.equal(fresh.warm(['archer']), true, `frame ${i} of ${order.length} is painted`);

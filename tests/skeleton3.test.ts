@@ -105,11 +105,21 @@ test("with the switch off the game's skeleton is today's, frame for frame and pi
 test('with the switch off its frames are painted ahead of need in the order they always were', () => {
   const fresh = makeBestiary();
   const today = makeSkeletonArt();
-  // (standing, walking, the attack, a second attack if it had one, and last its death; facing
-  // the camera and then facing away; the bestiary as it was before the switch was there)
+  // (standing, walking, the attack, a second attack if it had one, its other moves (since Version
+  // 19.8, THE MONSTERS' ATTACKS: the skeleton's crawl out of the ground, for the dead the Warden
+  // calls), and last its death; facing the camera and then facing away; the bestiary as it was
+  // before the switch was there)
   const order: Sprite[] = [];
-  for (const pick of [(s: AnimSet) => s.idle, (s: AnimSet) => s.walk, (s: AnimSet) => clip(s, 'attack').frames, (s: AnimSet) => s.clips?.heavy?.frames ?? [], (s: AnimSet) => clip(s, 'die').frames]) {
-    for (const set of [today.front, today.back]) order.push(...Array.from(pick(set)));
+  const picks: ((s: AnimSet) => readonly (readonly Sprite[])[])[] = [
+    (s) => [s.idle],
+    (s) => [s.walk],
+    (s) => [clip(s, 'attack').frames],
+    (s) => [s.clips?.heavy?.frames ?? []],
+    (s) => Object.values(s.clips?.moves ?? {}).map((c) => c.frames),
+    (s) => [clip(s, 'die').frames],
+  ];
+  for (const pick of picks) {
+    for (const set of [today.front, today.back]) for (const frames of pick(set)) order.push(...Array.from(frames));
   }
   order.forEach((want, i) => {
     assert.equal(fresh.warm(['skeleton']), true, `frame ${i} of ${order.length} is painted`);
