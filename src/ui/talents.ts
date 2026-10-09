@@ -43,11 +43,12 @@ const CARD = 136;
 
 // ---- the runes on the stones ------------------------------------------------------------------
 // 'X' the colour, 'o' the glow. The paths' runes are the words' where a word is the thing (the
-// elements, the eye's sight, the wind's arrows, rage's claws, iron's shield, the quake's weight),
-// and three of the arrow's own.
+// elements, the eye's sight, the wind's arrows, iron's shield, the quake's weight), three of the
+// arrow's own, and the technique's blade.
 const ARROW: readonly string[] = ['....X..', '.....X.', 'XXXXXXo', '.....X.', '....X..'];
 const JAWS: readonly string[] = ['X.X.X.X', 'XXXXXXX', 'X.....X', '.X.o.X.', '..XXX..'];
 const SPLIT: readonly string[] = ['.....X', '....X.', 'XXXo..', '....X.', '.....X'];
+const BLADE: readonly string[] = ['.X.....', '.X.....', 'XXXXXXo', '.X.....', '.X.....'];
 /** A rune and its two colours. */
 interface Rune {
   rows: readonly string[];
@@ -67,7 +68,7 @@ const PATH_RUNE: Record<string, (color: string) => Rune> = {
   shaft: (c) => ({ rows: ARROW, color: c, glow: P.white }),
   traps: (c) => ({ rows: JAWS, color: c, glow: P.white }),
   arrows: (c) => ({ rows: SPLIT, color: c, glow: P.white }),
-  rage: () => wordRune('frenzied'),
+  technique: (c) => ({ rows: BLADE, color: c, glow: P.white }),
   iron: () => wordRune('guarding'),
   cross: () => wordRune('heavy'),
 };

@@ -271,7 +271,9 @@ export class Game {
    * this dungeon; shots of the bow since the last split (Split Shot).
    */
   private stillT = 0;
-  private momentumT = 0;
+  private footworkT = 0;
+  /** THE SKILL TREES (Master Stroke): hits landed since the last certain critical. */
+  private strokes = 0;
   private windT = 0;
   private stormT = 0;
   private unbroken = false;
@@ -839,7 +841,7 @@ export class Game {
       }
       s.r = resolveSkill(def, s.front, s.behind, i < 2 ? weaponAttr(weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
       // (THE SKILL TREES: Battle Rush, the leap ready sooner)
-      if (def.kind === 'leap' && this.has('battlerush')) s.r.cooldown *= TALENT_TUNE.battleRush;
+      if (def.kind === 'leap' && this.has('drilledleap')) s.r.cooldown *= TALENT_TUNE.drilledLeap;
       // (the roll's two charges are a thing of cooldowns: when mana is the limit, mana is; Light Step, three)
       s.maxCharges = def.kind === 'roll' && this.meta.limit === 'cooldown' ? (this.has('lightstep') ? TALENT_TUNE.lightStep.charges : 2) : 1;
       if (i < 2 && changed[i]) {
@@ -2564,7 +2566,7 @@ export class Game {
     const s = h.skills[i];
     if (!s || s.r.might <= 0) return;
     const r = s.r;
-    h.might = Math.min(r.might * (this.has('fury') ? TALENT_TUNE.fury : 5), h.might + r.might);
+    h.might = Math.min(r.might * (this.has('cadence') ? TALENT_TUNE.cadence : 5), h.might + r.might);
     h.mightT = 5;
     this.emit({ t: 'buff', kind: 'might', x: h.x, y: h.y, stacks: Math.max(1, Math.round(h.might / r.might)) });
   }
@@ -2595,7 +2597,7 @@ export class Game {
   /** How much faster the frenzy makes the hero's attacks and cooldowns (1: no frenzy). */
   frenzyPace(): number {
     // (THE SKILL TREES: Berserk, below half his life, faster still)
-    return (1 + FRENZY.each * this.hero.frenzy) * (this.berserking() ? TALENT_TUNE.berserk.speed : 1);
+    return 1 + FRENZY.each * this.hero.frenzy;
   }
 
   private noMana(): void {
@@ -3033,9 +3035,9 @@ export class Game {
         if (Math.hypot(o.x - tx, o.y - ty) <= rad + o.r && !this.shutIn(o)) this.hitMonster(o, i, frac * r.splashDmg, true);
       }
     }
-    // (THE SKILL TREES: Cleave, a melee hit splashes on the enemies beside)
-    if (this.has('cleave')) {
-      const C = TALENT_TUNE.cleave;
+    // (THE SKILL TREES: Sweeping Cut, a melee hit splashes on the enemies beside)
+    if (this.has('sweepingcut')) {
+      const C = TALENT_TUNE.sweepingCut;
       for (const o of this.monsters) {
         if (o.dead || o === best || this.shutIn(o)) continue;
         if (Math.hypot(o.x - tx, o.y - ty) <= C.reach + o.r) this.hitMonster(o, i, frac * C.share, true);
@@ -3296,6 +3298,11 @@ export class Game {
     // (THE SKILL TREES: what the talents make of a hit)
     if (TALENTS.on) dmg *= this.talentHitMult(m);
     let crit = this.rng.chance(d.critChance / 100);
+    // (THE SKILL TREES: Master Stroke, every fourth hit landed on its own target a certain critical)
+    if (!quiet && this.has('masterstroke') && ++this.strokes >= TALENT_TUNE.masterStroke.every) {
+      this.strokes = 0;
+      crit = true;
+    }
     // PRECISE behind: the hero's next hit on a marked enemy is a certain critical, and spends the mark
     const spent = m.markT > 0;
     if (spent) {
@@ -3375,10 +3382,9 @@ export class Game {
     const h = this.hero;
     const T = TALENT_TUNE;
     let k = 1;
-    if (this.has('wrath') && (m.elite || m.boss)) k *= T.wrath;
+    if (this.has('giantslayer') && (m.elite || m.boss)) k *= T.giantSlayer;
     if (this.has('steadyaim') && this.stillT >= T.steadyAim.still) k *= T.steadyAim.mult;
     if (this.has('farsight')) k *= 1 + T.farSight.most * Math.min(1, Math.hypot(m.x - h.x, m.y - h.y) / T.farSight.at);
-    if (this.berserking()) k *= T.berserk.mult;
     if (this.has('shatter') && m.frozenT > 0) k *= T.shatter;
     return k;
   }
@@ -3543,7 +3549,7 @@ export class Game {
   /** THE SKILL TREES: what a kill does with the talents: Momentum's speed; Inferno's blast for one that dies burning; Shatter's burst of cold for one that dies frozen. */
   private talentKill(m: Monster): void {
     const T = TALENT_TUNE;
-    if (this.has('momentum')) this.momentumT = T.momentum.secs;
+    if (this.has('footwork')) this.footworkT = T.footwork.secs;
     const x = m.x;
     const y = m.y;
     if (this.has('inferno') && m.burnT > 0) {
@@ -5239,27 +5245,21 @@ export class Game {
     return Math.max(1, Math.round(((h.d.dmgMin + h.d.dmgMax) / 2) * share * (1 + (st.dmgPct + pct) / 100)));
   }
 
-  /** Berserk: below half his life. */
-  berserking(): boolean {
-    const h = this.hero;
-    return this.has('berserk') && h.life < h.d.maxLife * TALENT_TUNE.berserk.below;
-  }
-
-  /** How high Power's and Frenzied's stacks go: five, eight with Fury. */
+  /** How high Power's and Frenzied's stacks go: five, eight with Cadence. */
   private stackMax(): number {
-    return this.has('fury') ? TALENT_TUNE.fury : FRENZY.max;
+    return this.has('cadence') ? TALENT_TUNE.cadence : FRENZY.max;
   }
 
   /** What the talents add to the hero's speed now (%): Momentum after a kill, Windrunner after a roll. */
   private talentSpeed(): number {
-    return (this.momentumT > 0 ? TALENT_TUNE.momentum.speed : 0) + (this.windT > 0 ? TALENT_TUNE.windrunner.speed : 0);
+    return (this.footworkT > 0 ? TALENT_TUNE.footwork.speed : 0) + (this.windT > 0 ? TALENT_TUNE.windrunner.speed : 0);
   }
 
   /** The talents' own clocks, each frame: standing still, the speeds wearing off, Stormcaller's bolts. */
   private updateTalents(dt: number, walked: number): void {
     const h = this.hero;
     this.stillT = walked > 0.001 || h.move ? 0 : this.stillT + dt;
-    if (this.momentumT > 0) this.momentumT -= dt;
+    if (this.footworkT > 0) this.footworkT -= dt;
     if (this.windT > 0) this.windT -= dt;
     if (this.has('stormcaller') && !this.level.town && !this.over) {
       this.stormT -= dt;

@@ -104,12 +104,12 @@ test('the shapes: the mage three paths of five from her rune; the arrow two feat
   const point = ranger.talents.find((t) => t.id === 'farsight')!;
   assert.deepEqual([...point.from].sort(), ['hail', 'minefield', 'piercing'], "the arrow's barbs and middle meet at its point");
   const warrior = TREES.warrior;
-  assert.deepEqual(warrior.talents.filter((t) => !t.from.length).map((t) => t.id).sort(), ['bloodlust', 'thickskin']);
+  assert.deepEqual(warrior.talents.filter((t) => !t.from.length).map((t) => t.id).sort(), ['honededge', 'thickskin']);
   const cross = warrior.talents.find((t) => t.id === 'earthshaker')!;
-  assert.deepEqual([...cross.from].sort(), ['battlerush', 'bulwark'], 'the crossing is reached from either sword');
+  assert.deepEqual([...cross.from].sort(), ['bulwark', 'drilledleap'], 'the crossing is reached from either sword');
   // (past the crossing, either sword's tip)
-  assert.equal(talentOpen('warrior', ['bloodlust', 'fury', 'battlerush', 'earthshaker'], 'thorns'), true);
-  assert.equal(talentOpen('warrior', ['bloodlust', 'fury', 'battlerush', 'earthshaker'], 'wrath'), true);
+  assert.equal(talentOpen('warrior', ['honededge', 'cadence', 'drilledleap', 'earthshaker'], 'thorns'), true);
+  assert.equal(talentOpen('warrior', ['honededge', 'cadence', 'drilledleap', 'earthshaker'], 'giantslayer'), true);
 });
 
 test('a talent is taken with a point, once, after one that leads to it', () => {
@@ -142,7 +142,7 @@ test('with the switch on: the game takes a talent, and a step that is a number a
     assert.equal(g.takeTalent('searing'), 'Next point at level 15');
     const w = seasoned(new Game('warrior', 4), 5);
     const dmg = w.hero.d.stats.dmgPct;
-    assert.equal(w.takeTalent('bloodlust'), null);
+    assert.equal(w.takeTalent('honededge'), null);
     assert.equal(w.hero.d.stats.dmgPct, dmg + 15);
   });
 });
