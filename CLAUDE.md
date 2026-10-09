@@ -10,9 +10,10 @@ directs and playtests, and Claude writes and tests everything.
 - `docs/DESIGN_NOTES.md`: every version: what he said about it in his own words, what is in it,
   how it was tested. Its section 7 is the code map and its section 8 the working method.
 - `docs/NEXT_VERSION.md`: the running record, newest at the end.
-- `docs/gameplay/RULEBOOK.md` and `docs/art/RULEBOOK.md`: the game's two rulebooks, his (both
-  approved 8 Oct 2026). Gameplay follows the first and art the second; each changes only with his
-  yes.
+- `docs/gameplay/RULEBOOK.md`, `docs/art/RULEBOOK.md` and `docs/sound/RULEBOOK.md`: the game's
+  three rulebooks, his. Gameplay follows the first, art the second, sound and music the third;
+  each changes only with his yes. The first two were approved 8 Oct 2026; the third 9 Oct 2026
+  (by 14:04), and put here at his word by 16:05: "Yes, add it (Recommended)".
 
 ## The owner's standing rules
 
