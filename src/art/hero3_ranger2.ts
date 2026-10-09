@@ -36,7 +36,7 @@ import type { Light } from '../engine/px';
 import type { TailRoot } from '../engine/tails';
 import { SQ_BUNCH, SQ_FLICK, SQ_RUN, SQ_SIT, squirrel } from './hero_ranger';
 import { squirrelOn } from './hero3_ranger';
-import { BROWN, CYAN, GLINT, INDIGO, LEAF, MAIL, STEEL, TEAL } from './kit';
+import { BROWN, CYAN, GLINT, INDIGO, LEAF, MAIL, SKIN4, STEEL, TEAL } from './kit';
 import type { Painted, Ramp } from './kit';
 import { onBack } from './carried';
 import { ARROW_LONG, BOW_BRACE, BOW_HALF, RANGER_STANCES } from './moves3';
@@ -70,8 +70,10 @@ const WRAPS: Ramp = [P.bn1, P.bn1, P.bn2, P.bn3, P.bn3];
 const WRAP_GAP = P.bn1;
 /** The cloth over his nose and mouth: a dark indigo, catching a little of the light under the hood. */
 const VEIL: Ramp = [INDIGO[0], INDIGO[0], '#36307c', INDIGO[2], INDIGO[2]];
-/** His face above it, in the deep shadow of the hood: only the glints of his eyes show in it. */
-const SHADED: Ramp = ['#140f34', '#140f34', '#1e1846', '#2c2454', '#2c2454'];
+/** His face above it: a sliver of skin in the shadow of the hood, and his eyes in it. */
+const SHADED: Ramp = [SKIN4[0], SKIN4[0], SKIN4[1], SKIN4[2], SKIN4[2]];
+/** His eyes: pale, each with the friend's cyan glint (he is a friend: his eyes may glow cyan). */
+const EYE = '#eae6ff';
 /** The fletchings of his arrows in the quiver: pale, and their tips. */
 const FLETCH: Ramp = [P.bn2, P.bn2, P.bn3, P.bn4, P.bn4];
 const FLETCH_TIP = CYAN[4];
@@ -88,8 +90,11 @@ export const CAPE_DROP = 6.8;
 const CAPE_RIDE = 4.2;
 /** How far round from an arm the hem rides up with it (degrees either side). */
 const RIDE_ARC = 60;
-/** The points of the cape's hem: how many pixels each column of it loses from its foot, column by column across the picture. */
-const DAGS: readonly number[] = [0, 1, 2, 3, 2, 1];
+/** The points of the cape's hem: how many pixels each column of it loses from its foot, column by column across the picture (deep enough to be seen at the size a phone shows him). */
+const DAGS: readonly number[] = [0, 1, 2, 3, 4, 3, 2, 1];
+/** The band along its hem, and the shadow the hood casts on it: a darker green, so that hood, cape and jerkin read as three pieces. */
+const CAPE_EDGE = '#0b3a22';
+const CAPE_SHADE = LEAF[1];
 
 /** Is a pixel of a sheet one of these colours? (So that a mark goes on the face, not on the hood in front of it.) */
 function isOf(p: Sheet, x: number, y: number, ramp: Ramp): boolean {
@@ -97,19 +102,26 @@ function isOf(p: Sheet, x: number, y: number, ramp: Ramp): boolean {
   return c !== null && ramp.includes(c);
 }
 
-/** Cut the hem of a cloth into points: each column of the part loses `cuts[x]` pixels from its foot (the pattern repeats across the picture). */
-function dagged(p: Sheet, cuts: readonly number[]): void {
+/**
+ * Cut the hem of a cloth into points: each column of the part loses `cuts[x]` pixels from its foot
+ * (the pattern repeats across the picture); and the two pixels above the cut, all along it, are
+ * `edge`, a band that follows the points.
+ */
+function dagged(p: Sheet, cuts: readonly number[], edge: string): void {
   const W = p.w;
   for (let x = 0; x < W; x++) {
     let y = p.h - 1;
     while (y >= 0 && p.d[(y * W + x) * 4 + 3] === 0) y--;
+    if (y < 0) continue;
     const n = cuts[x % cuts.length];
-    for (let k = 0; k < n && y - k >= 0; k++) {
+    let k = 0;
+    for (; k < n && y - k >= 0; k++) {
       const i = (y - k) * W + x;
       if (p.d[i * 4 + 3] === 0) break;
       p.erase(x, y - k);
       p.z[i] = NaN;
     }
+    for (let j = 0; j < 2; j++) p.mark(x, y - k - j, edge);
   }
 }
 
@@ -234,6 +246,8 @@ export function paintRanger3b(s: Skeleton, q: Posed, view: GameView, kit: { buil
     ball(glove, st, hand, [[aW + 0.6, 0, 0], [0, aW + 0.6, 0], [0, 0, aW + 0.6]], mine(GLOVE, hand));
   }
 
+  /** The cape's part, for the shadow the hood casts on it (below). */
+  let capeSheet: Sheet | null = null;
   // --- THE CAPE: over his shoulders, all the way round, to the middle of his upper arms, its hem
   // cut into points. His arms come out from under it: where one is lifted, the hem rides up on that
   // side to the underside of the arm where it leaves the cape, so that the cloth lies over the arm
@@ -283,7 +297,8 @@ export function paintRanger3b(s: Skeleton, q: Posed, view: GameView, kit: { buil
     const hem: Ring = { c: hc, u: hu, v: hv, pts };
     const cape = st.part(st.near(s.neck) + 0.1);
     cloth(cape, st, [top, shoulders, hem], HOOD, { folds: [35, -35, 150, -150, 90, -90] });
-    dagged(cape, DAGS);
+    dagged(cape, DAGS, CAPE_EDGE);
+    capeSheet = cape;
   }
 
   // --- the quiver: brown leather, slung on his back outside the cape from his left hip to above
@@ -333,7 +348,12 @@ export function paintRanger3b(s: Skeleton, q: Posed, view: GameView, kit: { buil
       const a = turn * D;
       const eye = add(s.head, add(add(mul(hf, Math.cos(a) * R[0] * 0.97), mul(hl, Math.sin(a) * R[1] * 0.97)), mul(hu, 0.16 * R[2])));
       const [x, y] = st.at(eye);
-      if (isOf(face, x - 0.5, y - 0.5, SHADED)) face.mark(Math.round(x - 0.5), Math.round(y - 0.5), GLINT);
+      const ex = Math.round(x - 0.5);
+      const ey = Math.round(y - 0.5);
+      // (the pale of the eye, and the glint beside it on the side he faces)
+      const ahead = st.seen(hf)[0] >= 0 ? 1 : -1;
+      if (isOf(face, ex, ey, SHADED)) face.mark(ex, ey, EYE);
+      if (isOf(face, ex + ahead, ey, SHADED)) face.mark(ex + ahead, ey, GLINT);
     }
     // (the hood: bigger than his head all round, tipped from the eye a little as all headgear is,
     // and open in front for his face, its edge turned back; its crown drawn out behind and up into
@@ -353,6 +373,16 @@ export function paintRanger3b(s: Skeleton, q: Posed, view: GameView, kit: { buil
     const crown = add(C, add(mul(wf, -R[0] * 0.45), mul(wu, R[2] * 0.55)));
     const point = add(C, add(mul(wf, -R[0] * PEAK[0]), mul(wu, R[2] * PEAK[1])));
     rod(hood, st, crown, point, 2.6, 1.2, HOOD);
+    // (the shadow the hood casts on the cape, just under it)
+    if (capeSheet) {
+      const cape: Sheet = capeSheet;
+      for (let y = 1; y < cape.h; y++) {
+        for (let x = 0; x < cape.w; x++) {
+          if (!cape.has(x, y) || hood.has(x, y)) continue;
+          if (hood.has(x, y - 1) || (y > 1 && hood.has(x, y - 2))) cape.mark(x, y, CAPE_SHADE);
+        }
+      }
+    }
     const root = st.at(point);
     const quill = st.at(add(C, add(add(mul(wl, -R[1] * sl * 0.95), mul(wu, R[2] * 0.4)), mul(wf, -R[0] * 0.35))));
     tails = [

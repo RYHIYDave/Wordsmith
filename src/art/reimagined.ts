@@ -20,15 +20,17 @@ export const REIMAGINED = { ranger: false, knight: false, mage: false };
  * What flies from the Wind-runner (art/hero3_ranger2.ts), moved and drawn every frame of the game
  * as the first ranger's feather is (engine/tails.ts): no frame names them while his switch is off.
  *   - THE LIRIPIPE: the long tail of his hood, a narrow tube of its own bright green, about half
- *     his height long, from the crown of the hood. Cloth: it has no shape of its own; it streams
- *     back in the standing wind, trails behind him when he runs and swings on when he stops. The
- *     one thing to know him by.
+ *     his height long, from the crown of the hood, tapering to a narrow tip. Cloth: it has no shape
+ *     of its own; it streams back in the standing wind, trails behind him when he runs and swings on
+ *     when he stops, and an S-wave runs down it (engine/tails.ts, `wave` and `across`). The one
+ *     thing to know him by.
  *   - THE FEATHER from his first cap, long and glowing cyan, its quill tucked into the side of the
  *     hood: it sweeps back from there rather than standing up, as a quill under a band of cloth
  *     does.
  */
 export const RANGER2_TAILS: Record<string, TailDef> = {
-  'r2-liripipe': { n: 9, seg: 1.65, w0: 5.0, w1: 2.6, dark: LEAF[1], mid: LEAF[2], light: LEAF[3], gravity: 150, wind: 240, flutter: 170, rate: 1.8, drag: 5 },
+  // (it tapers from the width of the hood's point to a narrow tip, and an S-wave runs down it with the wind and his motion: cloth, not a rod)
+  'r2-liripipe': { n: 10, seg: 1.5, w0: 5.2, w1: 1.2, dark: LEAF[1], mid: LEAF[2], light: LEAF[3], gravity: 150, wind: 240, flutter: 260, rate: 1.5, drag: 5, wave: 8.8, across: true },
   'r2-feather': {
     n: 8, seg: 1.95, w0: 2.2, w1: 1.4, belly: 2.2, dark: CYAN[1], mid: CYAN[2], light: CYAN[3],
     rest: [[-0.3, -1], [-0.45, -1], [-0.6, -0.85], [-0.75, -0.7], [-0.9, -0.45], [-1, -0.2], [-1, 0.05], [-0.95, 0.3]],

@@ -23,6 +23,8 @@ import { CANVAS3 } from '../src/art/skin';
 import type { GameView } from '../src/art/skin';
 import { bonesAt, solve } from '../src/art/skeleton';
 import type { Posed } from '../src/art/skeleton';
+import { Tails } from '../src/engine/tails';
+import type { TailDef } from '../src/engine/tails';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -183,4 +185,37 @@ test('what flies from the Wind-runner is a tail the game knows how to move and d
   assert.ok(long > 0.45 * MOVES3.rstand.build.tall && long < 0.65 * MOVES3.rstand.build.tall, `the tail of the hood is ${long.toFixed(1)} picture pixels long`);
   const feather = RANGER2_TAILS['r2-feather'];
   assert.ok((feather.stiff ?? 0) > 0 && feather.rest?.length === feather.n && feather.glow !== undefined, 'the feather is a quill, with a shape, and glows');
+});
+
+test('the tails of the game move as they did: what the hood\'s tail asks of the engine (an S-wave, a ripple across it) is its own, and every other tail is moved as before', () => {
+  // (a tail that does not say how far round its ripple goes is moved as one that says 5.6, the engine's own, and down the screen)
+  const ids = Object.keys(HERO_TAILS).filter((id) => !id.startsWith('r2-'));
+  for (const id of ids) assert.ok(HERO_TAILS[id].wave === undefined && HERO_TAILS[id].across === undefined, `${id} asks for nothing new`);
+  const plain: Record<string, TailDef> = {};
+  const said: Record<string, TailDef> = {};
+  for (const id of ids) {
+    plain[id] = HERO_TAILS[id];
+    said[id] = { ...HERO_TAILS[id], wave: 5.6, across: false };
+  }
+  const a = new Tails(plain);
+  const b = new Tails(said);
+  for (let k = 0; k < 600; k++) {
+    const roots = ids.map((id, i) => ({ id, x: 40 + i + Math.sin(k * 0.05) * 6, y: 20 + Math.cos(k * 0.07) * 3, over: i % 2 === 0, blast: k % 300 < 40 ? 1.5 : 0 }));
+    a.step(1 / 60, roots, 40, 60, k % 400 < 200 ? 1 : -1, Math.sin(k * 0.01) * 80, Math.cos(k * 0.013) * 40);
+    b.step(1 / 60, roots, 40, 60, k % 400 < 200 ? 1 : -1, Math.sin(k * 0.01) * 80, Math.cos(k * 0.013) * 40);
+  }
+  assert.equal(JSON.stringify(a.shapes()), JSON.stringify(b.shapes()), 'the same tails, moved the same way');
+  // (and the hood's tail, hanging in still air, snakes: its middle swings from side to side of the line from its root to its tip)
+  const t = new Tails({ 'r2-liripipe': RANGER2_TAILS['r2-liripipe'] });
+  let most = 0;
+  for (let k = 0; k < 400; k++) {
+    t.step(1 / 60, [{ id: 'r2-liripipe', x: 40, y: 20, over: false }], 40, 60, 1, 0, 0);
+    const p = t.shapes()[0].points;
+    const n = p.length / 2 - 1;
+    const [x0, y0, x1, y1] = [p[0], p[1], p[n * 2], p[n * 2 + 1]];
+    const m = Math.floor(n / 2);
+    const across = Math.abs((x1 - x0) * (p[m * 2 + 1] - y0) - (y1 - y0) * (p[m * 2] - x0)) / (Math.hypot(x1 - x0, y1 - y0) || 1);
+    if (k > 120) most = Math.max(most, across);
+  }
+  assert.ok(most > 0.8, `the hood's tail does not snake (${most.toFixed(2)} game pixels off its line at the most)`);
 });

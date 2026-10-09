@@ -38,6 +38,14 @@ export interface TailDef {
   /** How big the ripple is that the wind sends down it (the same units), and how many times a second it comes. */
   flutter: number;
   rate: number;
+  /**
+   * How far on its way round the ripple is at the free end, against the fixed one (radians): 5.6
+   * if not given, less than one whole wave, so that the tail bends; more than two pi puts an S in
+   * it that travels down it. (The heroes reimagined, art/reimagined.ts: their switches are off.)
+   */
+  wave?: number;
+  /** The ripple pushes across the tail where it lies, not only down the screen: it snakes as cloth in the wind does, whichever way it streams. Down the screen if not said. */
+  across?: boolean;
   /** How quickly the air stops it: the share of its speed it loses in a second (0 = never stops, 20 = at once). */
   drag: number;
   /** A light it carries part of the way along (a glowing feather), or none. Radius in game pixels. */
@@ -233,10 +241,17 @@ export class Tails {
       // the standing wind blows it back from the way the figure faces, gravity pulls it down, and a
       // ripple runs along it from the fixed end to the free one (each tail in its own time)
       // (in a blast the ripple is bigger and comes three times as fast)
-      const ripple = Math.sin(this.clock * d.rate * (blast > 0 ? 3 : 1) * Math.PI * 2 - t * 5.6 + k * 2.1) * d.flutter * (0.3 + 0.7 * t) * (1 + blast * 1.6);
+      const ripple = Math.sin(this.clock * d.rate * (blast > 0 ? 3 : 1) * Math.PI * 2 - t * (d.wave ?? 5.6) + k * 2.1) * d.flutter * (0.3 + 0.7 * t) * (1 + blast * 1.6);
       const gust = 1 + 0.25 * Math.sin(this.clock * 1.7 + k) + blast * 2.4;
       nx += -facing * d.wind * gust * SUB * SUB;
-      ny += (d.gravity + ripple) * SUB * SUB;
+      if (d.across) {
+        // (square to the tail where it lies: from the point before this one to this one)
+        const ax = x - p[(i - 1) * 2];
+        const ay = y - p[(i - 1) * 2 + 1];
+        const al = Math.hypot(ax, ay) || 1;
+        nx += ((-ay / al) * ripple) * SUB * SUB;
+        ny += (d.gravity + (ax / al) * ripple) * SUB * SUB;
+      } else ny += (d.gravity + ripple) * SUB * SUB;
       q[i * 2] = x;
       q[i * 2 + 1] = y;
       p[i * 2] = nx;
