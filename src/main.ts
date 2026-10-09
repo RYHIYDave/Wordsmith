@@ -32,6 +32,7 @@ import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
 import { Input } from './engine/input';
 import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
+import { BTN, GAMEPAD, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
@@ -275,6 +276,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   /** Touch, attacking the way the hero faces: the enemy locked onto, and the level it is on. */
   const lock = new LockOn();
   let lockLevel: Level | null = null;
+  /**
+   * A GAME CONTROLLER (engine/gamepad.ts, GAMEPAD, off until his yes): the pad; whether its pointer
+   * is out (in the menus); the slow attack's use when LT went down (one use a press).
+   */
+  const pad = new Pad();
+  let padPointer = false;
+  let padHoldUses = -1;
   /** Something the player touched in order to use it: the hero walks there, and then it is used. */
   let errand: { kind: Spot; x: number; y: number; t: number; level: Level; flow: Uint16Array } | null = null;
   /** A class card pressed once while a saved run exists: a second press starts over. */
@@ -678,6 +686,103 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (b && b.state === 0 && L.explored[b.ty * L.floor.w + b.tx]) test('body', 'body', b.x, b.y, b.x, b.y);
     }
     return best;
+  };
+
+  /** The enemy nearest the line from the hero along (vx, vy), within `reach` and a narrow cone: where a pushed right stick points. */
+  const coneTarget = (g: Game, vx: number, vy: number, reach: number): Monster | null => {
+    const h = g.hero;
+    let best: Monster | null = null;
+    let bs = Infinity;
+    for (const m of g.monsters) {
+      if (m.dead || m.state === 'sleep') continue;
+      const dx = m.x - h.x;
+      const dy = m.y - h.y;
+      const d = Math.hypot(dx, dy);
+      if (d > reach || d < 0.01) continue;
+      const a = Math.acos(Math.max(-1, Math.min(1, (dx * vx + dy * vy) / d)));
+      if (a > 0.38 || !g.sees(h.x, h.y, m.x, m.y)) continue;
+      const score = a + d * 0.03;
+      if (score < bs) {
+        bs = score;
+        best = m;
+      }
+    }
+    return best;
+  };
+
+  /**
+   * A GAME CONTROLLER (engine/gamepad.ts): the pad's sticks and buttons as the game's controls, over
+   * whatever the keyboard, the mouse or the screen said. The left stick moves; the right stick aims
+   * (pushed: where it points, at an enemy near that line if there is one; let go: the game aims, as
+   * on a phone); RT the quick attack, LT the slow one, A the evasive move, X a flask, B use.
+   */
+  const padControls = (g: Game, dt: number): void => {
+    const c = controls;
+    const h = g.hero;
+    if (pad.left.m > 0) {
+      const v = screenDirToWorld(pad.left.x, pad.left.y);
+      const l = Math.hypot(v.x, v.y) || 1;
+      // (at one speed, as the touch stick)
+      c.mx = v.x / l;
+      c.my = v.y / l;
+    }
+    if (lockLevel !== g.level) {
+      lock.clear();
+      lockLevel = g.level;
+    }
+    const slow = h.skills[1];
+    const slowDef = SKILLS[slow.id];
+    const reach = Math.min(slowDef.range > 0 ? slowDef.range : 4, 6);
+    let quickAt = { x: h.x + h.fx * 3, y: h.y + h.fy * 3 };
+    let slowAt = { x: h.x + h.fx * reach, y: h.y + h.fy * reach };
+    if (pad.right.m > 0) {
+      const v = screenDirToWorld(pad.right.x, pad.right.y);
+      const l = Math.hypot(v.x, v.y) || 1;
+      const vx = v.x / l;
+      const vy = v.y / l;
+      const m = coneTarget(g, vx, vy, 10);
+      quickAt = m ? { x: m.x, y: m.y } : { x: h.x + vx * 4, y: h.y + vy * 4 };
+      slowAt = m ? placedAim(g, m, slowDef.kind) : { x: h.x + vx * reach, y: h.y + vy * reach };
+      renderer.lockId = m ? m.id : null;
+      // (he turns to where it points, walking or not)
+      c.face = true;
+    } else {
+      const aims = autoTargets(g, lock.update(g, dt), fought);
+      if (aims.quick) {
+        quickAt = { x: aims.quick.x, y: aims.quick.y };
+        renderer.lockId = aims.quick.id;
+      }
+      if (aims.slow) slowAt = placedAim(g, aims.slow, slowDef.kind);
+    }
+    c.aimX = quickAt.x;
+    c.aimY = quickAt.y;
+    if (pad.down(BTN.RT)) {
+      c.fire = true;
+      c.approach = false;
+    }
+    if (pad.down(BTN.LT)) {
+      if (padHoldUses < 0) padHoldUses = slow.uses;
+      if (slow.uses === padHoldUses) {
+        c.cast = true;
+        c.castX = slowAt.x;
+        c.castY = slowAt.y;
+      }
+      if (slowDef.channel) {
+        c.hold = true;
+        c.castX = slowAt.x;
+        c.castY = slowAt.y;
+      }
+    } else padHoldUses = -1;
+    if (pad.pressed(BTN.A)) {
+      const ml = Math.hypot(c.mx, c.my);
+      const dx = ml > 0.01 ? c.mx / ml : h.fx;
+      const dy = ml > 0.01 ? c.my / ml : h.fy;
+      c.evade = true;
+      c.evadeX = h.x + dx * 6;
+      c.evadeY = h.y + dy * 6;
+    }
+    if (pad.pressed(BTN.X)) c.potion = true;
+    if (pad.pressed(BTN.B)) c.interact = true;
   };
 
   const readControls = (g: Game, dt: number): void => {
@@ -1090,6 +1195,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         input.mark = { x: wx(cam, e.x, e.y), y: wy(cam, e.x, e.y) - 14 };
       }
     }
+    // (A GAME CONTROLLER, while one is being played with: its sticks and buttons over the rest)
+    if (GAMEPAD.on && pad.live()) padControls(g, dt);
   };
 
   /** Deal with what the rules reported: open town panels, start effects, play sounds. */
@@ -1151,12 +1258,61 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (levelled) fx.celebrate(g.hero.x, g.hero.y);
   };
 
+  /**
+   * A GAME CONTROLLER, once a frame before anything reads the input: in play, START pauses, Y opens
+   * the inventory and BACK the map (as their keys do); in the menus, the left stick moves a pointer,
+   * A presses where it is and B (or START) goes back, as Escape does.
+   */
+  const padFrame = (dt: number): void => {
+    const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? [...navigator.getGamepads()] : [];
+    pad.poll(pads, dt);
+    if (!pad.live()) {
+      padPointer = false;
+      return;
+    }
+    const inPlay = mode === 'play' && !!game && !game.over && panels.open === 'none';
+    if (inPlay) {
+      padPointer = false;
+      if (pad.pressed(BTN.START)) input.press('Escape');
+      if (pad.pressed(BTN.Y)) input.press('Tab');
+      if (pad.pressed(BTN.BACK)) input.press('KeyM');
+      return;
+    }
+    if (!padPointer) {
+      pad.px = Math.floor(scr.w / 2);
+      pad.py = Math.floor(scr.h / 2);
+      padPointer = true;
+    }
+    pad.steer(dt, scr.w, scr.h);
+    input.mx = pad.px;
+    input.my = pad.py;
+    if (pad.pressed(BTN.A)) input.uiPress = { x: Math.round(pad.px), y: Math.round(pad.py), button: 0 };
+    if (pad.pressed(BTN.B) || pad.pressed(BTN.START)) input.press('Escape');
+    if (pad.pressed(BTN.Y) && withInventory(panels.open)) input.press('Tab');
+  };
+
+  /** The menus' pointer, while a controller is steering it: a small arrow. */
+  const drawPadPointer = (g: CanvasRenderingContext2D, x: number, y: number): void => {
+    const rows = ['X....', 'XX...', 'XoX..', 'XooX.', 'XoooX', 'XooXX', 'XXoX.', '...X.'];
+    const px = Math.round(x);
+    const py = Math.round(y);
+    for (let r = 0; r < rows.length; r++) {
+      for (let k = 0; k < rows[r].length; k++) {
+        const ch = rows[r][k];
+        if (ch === '.') continue;
+        g.fillStyle = ch === 'X' ? '#0e0c24' : '#7af8f0';
+        g.fillRect(px + k, py + r, 1, 1);
+      }
+    }
+  };
+
   const frame = (now: number): void => {
     // (playtests can slow time down to photograph effects that last a fraction of a second)
     const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)) * dbg.slowmo;
     last = now;
     clock += dt;
     input.beginFrame();
+    if (GAMEPAD.on) padFrame(dt);
     const cg = scr.g;
     ui.begin(cg, scr.w, scr.h, input.uiPress, input.mx, input.my, input.touchMode);
     ui.held = input.hold.active ? { x: input.hold.x, y: input.hold.y } : null;
@@ -1527,6 +1683,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
       }
     }
+    if (GAMEPAD.on && padPointer) drawPadPointer(cg, pad.px, pad.py);
     input.endFrame();
     requestAnimationFrame(frame);
   };
@@ -1581,6 +1738,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     modes: MODES,
     /** THE SKILL TREES' switch (game/talents.ts), off until his yes: for their pictures and playtests (`talents.on`). */
     talents: TALENTS,
+    /** A GAME CONTROLLER's switch (engine/gamepad.ts), off until his yes; and the pad as read (its pointer). */
+    gamepad: GAMEPAD,
+    pad: () => ({ connected: pad.connected, live: pad.live(), pointer: padPointer, px: pad.px, py: pad.py }),
+    /** Put the pad's menu pointer here (game pixels), for playtests that press a button with it. */
+    padAt: (x: number, y: number) => {
+      pad.px = x;
+      pad.py = y;
+    },
     /**
      * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS): a mock-up behind a switch that is off. Its
      * pictures and playtests switch it on (or off again) for themselves; the run made after follows it.

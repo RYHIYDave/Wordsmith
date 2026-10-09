@@ -222,6 +222,11 @@ export class Input {
     return this.fresh.has(code);
   }
 
+  /** A key pressed this frame from elsewhere (a game controller's button standing in for it: engine/gamepad.ts). */
+  press(code: string): void {
+    this.fresh.add(code);
+  }
+
   /** Use up a key press so nothing later in the frame also acts on it. */
   eat(...codes: string[]): void {
     for (const c of codes) this.fresh.delete(c);
