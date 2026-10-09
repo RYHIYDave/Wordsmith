@@ -9,9 +9,14 @@
 //   WHO=champion  a yellow pack: the skeleton champion (Flame) and four skeletons, his minions, with half
 //                 his Flame: his ring of letters and theirs half there; he cries, and their rings fill
 //                 with his word while it holds; his cleave.
+//   WHO=marksman  a yellow pack: the bone marksman (Frost) seven tiles off and three bone archers: he draws
+//                 his great shot, his line of aim on the floor; it pierces; then his shots and theirs;
+//   WHO=priest    a yellow pack: the high priest (Flame) and three cultists: he swings his censer, its
+//                 burning smoke on the floor where the warrior stands; then his fire bolts and theirs;
+//   WHO=chieftain a yellow pack: the troll chieftain (Power) and two green trolls: his swing and his slam.
 // The monsters cannot die. A picture every 1/FPS second of the GAME's time, the game slowed so that the
 // camera keeps up. Frames: <out>_fNNN.png.
-//   WHO=shades|boneward|golem|champion  SECONDS=9  FPS=20
+//   WHO=shades|boneward|golem|champion|marksman|priest|chieftain  SECONDS=9  FPS=20
 //   node tools/playtest.mjs --file dist/<a build>.html --size 960x540 --scenario tools/scenarios/new_mobs_film.mjs --out shots/film/<who>
 export default async function (page, snap) {
   const who = process.env.WHO || 'shades';
@@ -33,7 +38,7 @@ export default async function (page, snap) {
       const lx = -Math.SQRT1_2; const ly = Math.SQRT1_2; const ux = -Math.SQRT1_2; const uy = -Math.SQRT1_2;
       return { x: h.x + far * (Math.cos(a) * lx + Math.sin(a) * ux), y: h.y + far * (Math.cos(a) * ly + Math.sin(a) * uy) };
     };
-    const NAMES = { shade: 'Shade', boneward: 'Boneward', golem: 'Ossuary Golem', champion: 'Skeleton Champion', skeleton: 'Skeleton' };
+    const NAMES = { shade: 'Shade', boneward: 'Boneward', golem: 'Ossuary Golem', champion: 'Skeleton Champion', skeleton: 'Skeleton', marksman: 'Bone Marksman', priest: 'High Priest', chieftain: 'Troll Chieftain' };
     const put = (kind, p, pack = null) => {
       const m = g.spawn(kind, p.x, p.y, 1, pack && pack.rarity === 'leader' ? 1 : 0, false, g.rng, null, pack);
       if (!pack) { m.words = []; m.name = NAMES[kind]; }
@@ -52,6 +57,21 @@ export default async function (page, snap) {
       const m = put('boneward', { x: h.x - 6, y: h.y }); m.cd = 0.2; m.moveCd = [0, 0, 0]; made.push(m);
     } else if (who === 'golem') {
       const m = put('golem', { x: h.x - 6, y: h.y }); m.cd = 0.2; m.moveCd = [0, 0]; made.push(m);
+    } else if (who === 'marksman') {
+      const words = ['frost'];
+      const c = put('marksman', { x: h.x - 7, y: h.y }, { rarity: 'leader', words });
+      c.cd = 0.2; c.moveCd = [0, 0]; made.push(c);
+      for (const [dx, dy] of [[-6, -1.2], [-6.2, 1.2], [-5.4, 0.6]]) { const m = put('archer', { x: h.x + dx, y: h.y + dy }, { rarity: 'minion', words }); m.cd = 2.5; made.push(m); }
+    } else if (who === 'priest') {
+      const words = ['fire'];
+      const c = put('priest', { x: h.x - 2.4, y: h.y }, { rarity: 'leader', words });
+      c.cd = 0.2; c.moveCd = [0, 0]; made.push(c);
+      for (const [dx, dy] of [[-4, -1.6], [-4.4, 1.4], [-5, 0]]) { const m = put('cultist', { x: h.x + dx, y: h.y + dy }, { rarity: 'minion', words }); m.cd = 2.5; made.push(m); }
+    } else if (who === 'chieftain') {
+      const words = ['power'];
+      const c = put('chieftain', at(1.7, 0), { rarity: 'leader', words });
+      c.cd = 0.2; made.push(c);
+      for (const [far, deg] of [[1.6, 120], [1.6, -120]]) { const m = put('brute', at(far, deg), { rarity: 'minion', words }); m.cd = 1.5; made.push(m); }
     } else {
       const words = ['fire'];
       const c = put('champion', at(2.6, 0), { rarity: 'leader', words });
@@ -65,7 +85,7 @@ export default async function (page, snap) {
     // later, and the slowing of the game with it)
     made.forEach((m, k) => {
       m.state = 'recover';
-      m.t = 2.1 + (who === 'champion' && k > 0 ? 0.9 + 0.35 * k : 0.5 * k);
+      m.t = 2.1 + (k > 0 && ['champion', 'marksman', 'priest'].includes(who) ? 0.9 + 0.35 * k : 0.5 * k);
     });
     return made.map((m) => m.id);
   }, who);
