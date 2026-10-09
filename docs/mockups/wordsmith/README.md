@@ -86,4 +86,4 @@ in for a playtest.
 
 The quest item (his job of 20:39 and 20:41, through the main chat): the ring dark until the hero
 brings the fallen wordsmith's item; the item put in like a battery; the runes powering up into this.
-Pictures first.
+Done, with his yes, on the branch `art/quest-stone`: `docs/mockups/quest_stone/README.md`.

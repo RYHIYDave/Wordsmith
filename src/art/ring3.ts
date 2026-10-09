@@ -26,8 +26,11 @@
 import { Px } from '../engine/px';
 import type { Light, Sprite } from '../engine/px';
 import type { Theme } from './ground';
-import { Iso } from './isokit';
+import { Iso, plainSide } from './isokit';
 import { CYAN, GRAIN, TEAL, compose, hash, lazyFrames } from './kit';
+import { stoneOf } from './props';
+import { STONE_THICK, paintHollow, paintStone, roundFromSlab } from './quest3';
+import type { HollowTones } from './quest3';
 import { RUNES7, burning } from './smith3';
 
 /** How the ring burns: 0 dark (not yet powered), 1 burning, 2 a pulse on it, 3 flaring (a rune has just gone into the slab). */
@@ -49,7 +52,30 @@ export interface Ring3Art {
   /** The letters that swirl round: each of his runes, small and big, at three heats. */
   letters: Sprite[][];
   big: Sprite[][];
+  /**
+   * THE SLAB, made for the master rune-stone (art/quest3.ts): dark, an empty hollow in its top;
+   * the stone laid into it, its rune catching (in steps, cold to burning); the slab's own four
+   * runes catching one by one; and the slab burning, the stone in it, a word lifting off it (frame
+   * by frame).
+   */
+  slabEmpty: Sprite;
+  slabSet: Sprite[];
+  slabRunes: Sprite[];
+  slab: Sprite[];
+  /** The circle in the floor while the light runs round it from the slab's side, both ways (in steps: none of it alight, to all of it). */
+  fuse: Sprite[];
+  /** The column rising off the slab (in steps, from nothing to its whole height). */
+  columnRising: Sprite[];
 }
+
+/** Where each of the six standing stones stands from the middle of the ring, in tiles (as game/level.ts has them: TOWN.runeStones, by their variant), and the slab. */
+export const STONE_AT: ReadonlyArray<readonly [number, number]> = [[-2, -1], [-1, -2], [1, -2], [-2, 1], [2, -1], [-1, 2]];
+export const SLAB_AT: readonly [number, number] = [0, 1];
+
+/** How many steps the light running round the circle is painted in; and the column rising; and the stone's rune catching. */
+export const FUSE_STEPS = 16;
+export const RISE_STEPS = 8;
+export const SET_STEPS = 5;
 
 /** One of his runes, `sx` pixels to each of its pixels across and `sy` down, its top left at (x, y). */
 function runeAt(p: Px, k: number, x: number, y: number, color: string, sx = 1, sy = 1): void {
@@ -170,7 +196,7 @@ function makeStone3(theme: Theme, variant: number, blaze: Blaze, frame: number):
 // wider and burning brighter, his runes laid flat in the floor between its rings, and two bright
 // arcs chasing each other round it, throwing sparks. 212 x 106; anchored at its middle.
 
-function makeFloor3(frame: number, burns: boolean): Sprite {
+function makeFloor3(frame: number, burns: boolean, fuse = 1): Sprite {
   const W = 212;
   const H = 106;
   const p = new Px(W, H);
@@ -184,9 +210,11 @@ function makeFloor3(frame: number, burns: boolean): Sprite {
       const dy = (y + 0.5 - cy) / (H / 2);
       const d = Math.hypot(dx, dy);
       const a = (Math.atan2(dy, dx) / (Math.PI * 2) + 1.25) % 1;
-      // (two arcs, half the circle apart, each leading with its bright end)
+      // (two arcs, half the circle apart, each leading with its bright end; or, while the light
+      // is running round it from the slab's side, only what it has reached, its front white)
       const lead = Math.min((a - turn + 2) % 1, (a - turn + 2.5) % 1);
-      const hot = burns ? (lead < 0.05 ? 3 : lead < 0.18 ? 2 : 1) : 0;
+      const from = fuse < 1 ? roundFromSlab(dx + dy, dy - dx) : 0;
+      const hot = !burns || from > fuse ? 0 : fuse < 1 ? (fuse - from < 0.05 ? 3 : fuse - from < 0.14 ? 2 : 1) : lead < 0.05 ? 3 : lead < 0.18 ? 2 : 1;
       const tone = hot === 3 ? '#ffffff' : hot === 2 ? CYAN[3] : hot === 1 ? CYAN[2] : cold;
       if (Math.abs(d - 0.965) < 0.03 || Math.abs(d - 0.73) < 0.022) p.set(x, y, tone);
       else if (d < 0.22 && (Math.abs(dx) < 0.014 || Math.abs(dy) < 0.026)) p.set(x, y, burns ? TEAL[2] : cold);
@@ -199,10 +227,35 @@ function makeFloor3(frame: number, burns: boolean): Sprite {
     const ry = cy + Math.sin(a) * (H / 2) * 0.848;
     const u = ((a / (Math.PI * 2) + 1.25 - turn) % 1 + 1) % 1;
     const near = Math.min((u + 1) % 1, (u + 0.5) % 1);
-    const c = !burns ? cold : near < 0.08 ? '#ffffff' : near < 0.2 ? CYAN[3] : CYAN[2];
+    const reached = fuse >= 1 || roundFromSlab(Math.cos(a) + Math.sin(a), Math.sin(a) - Math.cos(a)) <= fuse;
+    const c = !burns || !reached ? cold : fuse < 1 ? CYAN[2] : near < 0.08 ? '#ffffff' : near < 0.2 ? CYAN[3] : CYAN[2];
     runeAt(p, i, Math.round(rx - 5), Math.round(ry - 3), c, 2, 1);
   }
   const s = p.sprite(cx, cy, GRAIN);
+  if (burns && fuse < 1) {
+    // (the light running round: sparks and a light at each of its two fronts)
+    if (fuse <= 0) return s;
+    const lights: Light[] = [];
+    for (const side of [-1, 1]) {
+      // (the front, as the world has it: the slab's side turned by the share run, each way)
+      const w = Math.PI / 2 + side * fuse * Math.PI;
+      const wx = Math.cos(w);
+      const wy = Math.sin(w);
+      // (the world's way, as the sprite's x and y: across is x - y, down is half of x + y)
+      const ex = (wx - wy) / Math.SQRT2;
+      const ey = (wx + wy) / Math.SQRT2;
+      const hx = cx + ex * (W / 2) * 0.965;
+      const hy = cy + ey * (H / 2) * 0.965;
+      for (let k = 0; k < 7; k++) {
+        const sx = Math.round(hx + (hash(k, frame, 61 + side) - 0.5) * 8);
+        const sy = Math.round(hy - 1 - hash(k, frame, 63 + side) * 8);
+        if (sx >= 0 && sy >= 0 && sx < W && sy < H) p.set(sx, sy, k % 2 === 0 ? '#ffffff' : CYAN[3]);
+      }
+      lights.push({ x: hx / GRAIN, y: hy / GRAIN, r: 16, color: CYAN[2], a: 0.55 });
+    }
+    s.lights = lights;
+    return s;
+  }
   if (burns) {
     // (sparks thrown up off the head of each arc, and its light)
     const lights: Light[] = [];
@@ -228,12 +281,12 @@ function makeFloor3(frame: number, burns: boolean): Sprite {
 // heart and the friend's cyan round it, shimmering, with runes climbing in it. 30 x 150; anchored
 // at the foot of its middle, which the renderer stands on the slab's top.
 
-function makeColumn3(frame: number): Sprite {
+function makeColumn3(frame: number, rise = 1): Sprite {
   const W = 30;
   const H = 150;
   const p = new Px(W, H);
   const cx = W / 2;
-  for (let y = 0; y < H; y++) {
+  for (let y = Math.floor(H * (1 - rise)); y < H; y++) {
     const t = y / H;
     // (it narrows and thins out as it rises)
     const half = 2.2 + 3.4 * (1 - t) ** 1.5;
@@ -247,16 +300,107 @@ function makeColumn3(frame: number): Sprite {
       } else if (!shimmer && (y + frame) % 3 !== 0) p.set(x, y, CYAN[2]);
     }
   }
-  // (runes climbing in it)
+  // (runes climbing in it; and, while it rises, its head bursting white)
   for (let r = 0; r < 4; r++) {
     const y = Math.round(H - 14 - ((frame / COLUMN_FRAMES + r / 4) % 1) * (H - 30));
-    runeAt(p, r * 2 + 1, Math.round(cx - 2.5), y, '#ffffff');
+    if (y > H * (1 - rise)) runeAt(p, r * 2 + 1, Math.round(cx - 2.5), y, '#ffffff');
+  }
+  if (rise < 1) {
+    const top = Math.floor(H * (1 - rise));
+    for (let k = 0; k < 10; k++) {
+      const x = Math.round(cx + (hash(k, frame, 71) - 0.5) * 12);
+      const y = top - Math.round(hash(k, frame, 73) * 6);
+      if (y >= 0) p.set(x, y, k % 2 === 0 ? '#ffffff' : CYAN[3]);
+    }
   }
   const s = p.sprite(cx, H, GRAIN);
   s.lights = [
     { x: cx / GRAIN, y: (H - 10) / GRAIN, r: 26, color: CYAN[2], a: 0.5 },
     { x: cx / GRAIN, y: (H * 0.45) / GRAIN, r: 22, color: CYAN[2], a: 0.3 },
   ];
+  return s;
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE SLAB, made for the master rune-stone: as art/town.ts builds it (a low table of the walls'
+// stone on two feet, its runes along its front), with a hollow in the middle of its top the shape
+// of the stone, where the great rune was cut before. 68 x 76; the middle of its tile at (34, 58).
+
+export interface SlabState {
+  /** The stone is in the hollow. */
+  stone: boolean;
+  /** How bright the stone's rune burns, 0 cold to 1. */
+  burn: number;
+  /** How many of its four runes along its front are alight. */
+  runes: number;
+  /** It is burning as the ring is: the rune along its front that is brightest goes along, and a word lifts off it (frame by frame). */
+  burning: boolean;
+  frame: number;
+}
+
+/** The empty hollow's colours, in the slab's own stone: its floor a step down from its top, its walls as its sides are, the rune's print and the crease darker. */
+const HOLLOW_TONES = (theme: Theme): HollowTones => {
+  const stone = stoneOf(theme);
+  return { floor: stone[3], crease: theme.lit[1], print: theme.lit[2], lit: theme.lit[2], mid: theme.lit[1], shade: theme.shade[2] };
+};
+
+function makeSlab3(theme: Theme, o: SlabState): Sprite {
+  const W = 68;
+  const H = 76;
+  const ox = 34;
+  const oy = 58;
+  const stone = stoneOf(theme);
+  const slab = new Px(W, H);
+  const over = new Px(W, H);
+  const iso = new Iso(slab, ox, oy);
+  const A = 0.6;
+  const B = 0.3;
+  const FEET = 13;
+  const TOP = 22;
+  const litSide = plainSide(theme.lit[2], theme.lit[4], theme.lit[1]);
+  const shadeSide = plainSide(theme.shade[2], theme.shade[4], theme.shade[1]);
+  for (const x of [-A + 0.08, A - 0.3]) iso.box(x, -B + 0.05, x + 0.22, B - 0.05, 0, FEET, { top: () => stone[2], left: litSide, right: shadeSide });
+  // (its runes along the front: cut, and those alight burning; burning as the ring is, the brightest goes along)
+  const front = new Px(40, TOP - FEET);
+  const glowing = new Px(40, TOP - FEET);
+  const hottest = o.burning ? o.frame % 4 : -1;
+  for (let i = 0; i < 4; i++) {
+    const alight = i < o.runes;
+    runeAt(front, i + 4, 3 + i * 9, 1, !alight ? theme.shade[1] : i === hottest ? '#ffffff' : CYAN[2]);
+    if (alight) runeAt(glowing, i + 4, 3 + i * 9, 1, i === hottest ? '#ffffff' : CYAN[3]);
+  }
+  iso.box(-A, -B, A, B, FEET, TOP, {
+    top: (u, v) => (u < 0.05 || v < 0.07 || u > 0.95 || v > 0.93 ? stone[3] : stone[4]),
+    left: (u, v, w, h) => front.get(u, v) ?? litSide(u, v, w, h, 0, 0),
+    right: shadeSide,
+  });
+  if (o.runes > 0) new Iso(over, ox, oy).left(-A, A, B, FEET, TOP, (u, v) => glowing.get(u, v));
+  // THE HOLLOW in its top, the stone's shape; and the stone laid in it, flush with the top
+  const [mx, my] = iso.at(0, 0, TOP);
+  if (!o.stone) {
+    // (empty: cut in the slab's own stone, its far walls seen, the great rune's print in its floor)
+    paintHollow(slab, mx, my + STONE_THICK / 2, -45, 90, HOLLOW_TONES(theme));
+  } else {
+    const st = new Px(W, H);
+    const on = new Px(W, H);
+    paintStone(st, on, mx, my + STONE_THICK / 2, -45, 90, o.burn);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (st.has(x, y)) slab.set(x, y, st.get(x, y) as string);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (on.has(x, y)) over.set(x, y, on.get(x, y) as string);
+  }
+  const lights: Light[] = [];
+  if (o.stone && o.burn > 0.1) lights.push({ x: mx / GRAIN, y: (my - 2) / GRAIN, r: 10 + 10 * o.burn, color: CYAN[2], a: 0.25 + 0.3 * o.burn });
+  // (the word that lifts off it, burning as the ring is: forms, rises, thins away)
+  if (o.burning) {
+    const f = o.frame % 8;
+    if (f >= 1) {
+      const rise = f <= 1 ? 0 : (f - 1) * 4;
+      const tone = f <= 4 ? '#ffffff' : f === 5 ? CYAN[3] : f === 6 ? CYAN[2] : TEAL[1];
+      const gy = my - 18 - rise;
+      if (gy >= 0) runeAt(over, 3 + f, mx - 2, gy, tone);
+    }
+  }
+  const s = compose(null, [slab], over).sprite(ox, oy, GRAIN);
+  if (lights.length) s.lights = lights;
   return s;
 }
 
@@ -299,6 +443,12 @@ export function makeRing3(theme: Theme): Ring3Art {
     column: lazyFrames(COLUMN_FRAMES, (f) => makeColumn3(f)),
     letters,
     big,
+    slabEmpty: makeSlab3(theme, { stone: false, burn: 0, runes: 0, burning: false, frame: 0 }),
+    slabSet: lazyFrames(SET_STEPS, (k) => makeSlab3(theme, { stone: true, burn: k / (SET_STEPS - 1), runes: 0, burning: false, frame: 0 })),
+    slabRunes: lazyFrames(4, (k) => makeSlab3(theme, { stone: true, burn: 1, runes: k + 1, burning: false, frame: 0 })),
+    slab: lazyFrames(8, (f) => makeSlab3(theme, { stone: true, burn: 1, runes: 4, burning: true, frame: f })),
+    fuse: lazyFrames(FUSE_STEPS + 1, (k) => makeFloor3(k, true, k / FUSE_STEPS)),
+    columnRising: lazyFrames(RISE_STEPS, (k) => makeColumn3(k, (k + 1) / RISE_STEPS)),
   };
 }
 

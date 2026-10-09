@@ -103,7 +103,7 @@ function glyphIn(st: Stage, k: number, x: number, y: number, color: string, big 
  * THE GREAT RUNE he writes on the air: its strokes in the order he makes them, each from one point
  * to another in a square two across (its middle at 0, 0; up is +). His own design.
  */
-const GREAT: ReadonlyArray<readonly [number, number, number, number]> = [
+export const GREAT_RUNE: ReadonlyArray<readonly [number, number, number, number]> = [
   [0, 1, 0, -1],
   [-0.7, 0.55, 0, 1],
   [0.7, 0.55, 0, 1],
@@ -209,6 +209,11 @@ export interface SmithAround {
   prev?: Skeleton;
   /** Where the wind and his slow throb have got to, 0..1 round. */
   wind?: number;
+  /**
+   * HIS RING IS DARK (art/quest3.ts: until the master rune-stone is laid into his slab): the runes
+   * on him are cut and cold, his eyes are dim, and no rune turns over his hand.
+   */
+  dark?: boolean;
 }
 
 /** THE WORDSMITH, painted over his bones, turned `turn` degrees to his left from facing down the screen to the right. */
@@ -219,11 +224,12 @@ export function paintSmith3(s0: Skeleton, q: Posed, turn: number, around: SmithA
   const lights: Light[] = [];
   const round = (around.wind ?? 0) * Math.PI * 2;
   const lag: V3 = around.prev ? mul(sub(s.pelvis, turnedBy(around.prev, turn).pelvis), -0.9) : [0, 0, 0];
-  // how hot the runes on him burn: a slow throb as he stands, a blaze as he works
-  const heat = Math.max(0, Math.min(1, q.draw));
+  // how hot the runes on him burn: a slow throb as he stands, a blaze as he works; cold while his ring is dark
+  const dark = around.dark === true;
+  const heat = dark ? 0 : Math.max(0, Math.min(1, q.draw));
   const throb = 0.5 + 0.5 * Math.sin(round * 2);
   /** How hot the rune at `k` along a band burns (a pulse runs down each band, round and round). */
-  const hotAt = (k: number): number => Math.min(1, 0.32 + 0.16 * throb + 0.62 * heat + 0.22 * Math.max(0, Math.cos((k - (around.wind ?? 0)) * Math.PI * 4)) * (1 - heat * 0.5));
+  const hotAt = (k: number): number => (dark ? 0 : Math.min(1, 0.32 + 0.16 * throb + 0.62 * heat + 0.22 * Math.max(0, Math.cos((k - (around.wind ?? 0)) * Math.PI * 4)) * (1 - heat * 0.5)));
   const trunk = trunkOf(B, s);
   const [aS, aE, aW] = B.armR;
   const [lH, lK, lA] = B.legR;
@@ -401,9 +407,9 @@ export function paintSmith3(s0: Skeleton, q: Posed, turn: number, around: SmithA
     const a = t * D;
     const eye = add(s.head, add(add(mul(hf, Math.cos(a) * R[0] * 0.97), mul(hl, Math.sin(a) * R[1] * 0.97)), mul(hu, 0.04 * R[2])));
     const [x, y] = st.at(eye);
-    head.mark(Math.round(x - 0.5), Math.round(y - 0.5), heat > 0.5 ? '#ffffff' : CYAN[3]);
-    head.mark(Math.round(x - 0.5), Math.round(y - 0.5) + 1, CYAN[2]);
-    lights.push({ x, y, r: 5 + heat * 3, color: CYAN[2], a: 0.25 + heat * 0.2 });
+    head.mark(Math.round(x - 0.5), Math.round(y - 0.5), dark ? TEAL[2] : heat > 0.5 ? '#ffffff' : CYAN[3]);
+    head.mark(Math.round(x - 0.5), Math.round(y - 0.5) + 1, dark ? TEAL[1] : CYAN[2]);
+    if (!dark) lights.push({ x, y, r: 5 + heat * 3, color: CYAN[2], a: 0.25 + heat * 0.2 });
   }
   // (the cowl: a shell over his head, open over his face, its peak a little back and up)
   {
@@ -449,7 +455,7 @@ export function paintSmith3(s0: Skeleton, q: Posed, turn: number, around: SmithA
 
   // --- what is in the air: the small rune turning over his right hand as he stands (prop 2), or the
   // great rune he writes, gathers up and drives into the slab (prop 1) ---
-  if (q.prop === 2) {
+  if (q.prop === 2 && !dark) {
     const over = add(s.handR, [0, 0, 7 + Math.sin(q.pt * Math.PI * 4) * 1.2]);
     const [x, y] = st.at(over);
     const k = Math.floor(q.pt * 4) % 4;
@@ -484,12 +490,12 @@ function greatRune(st: Stage, s: Skeleton, pt: number, lights: Light[]): void {
   } else c = slab;
   if (pt >= 0.99) return;
   const [cx, cy] = st.at(c);
-  const done = Math.min(1, pt / 0.6) * GREAT.length;
+  const done = Math.min(1, pt / 0.6) * GREAT_RUNE.length;
   const hot = pt > 0.6 ? 1 : 0.75;
-  for (let i = 0; i < GREAT.length; i++) {
+  for (let i = 0; i < GREAT_RUNE.length; i++) {
     const part = Math.max(0, Math.min(1, done - i));
     if (part <= 0) break;
-    const [ax, ay, bx, by] = GREAT[i];
+    const [ax, ay, bx, by] = GREAT_RUNE[i];
     const x0 = cx + ax * size;
     const y0 = cy - ay * size;
     const x1 = cx + (ax + (bx - ax) * part) * size;
@@ -527,12 +533,15 @@ function greatRune(st: Stage, s: Skeleton, pt: number, lights: Light[]): void {
 /** His pool of light: the friend's cyan, a little wider than a hero's (he is bigger, and he burns). */
 const AURA_SMITH: Light = { x: CANVAS3.ax - 4, y: CANVAS3.ay - 34, r: 56, color: '#28dcf0', a: 0.24 };
 
-/** One frame of him: the moment `t` of a run of keys, turned to face `to`, the wind at `wind`. */
-export function smithFrame(keys: ReadonlyArray<Key3>, t: number, to: Facing, wind: number): Sprite {
+/** His pool of light while his ring is dark: a dim one, as a townsman has. */
+const AURA_DARK: Light = { ...AURA_SMITH, r: 36, a: 0.1 };
+
+/** One frame of him: the moment `t` of a run of keys, turned to face `to`, the wind at `wind`; `dark`: his ring is dark. */
+export function smithFrame(keys: ReadonlyArray<Key3>, t: number, to: Facing, wind: number, dark = false): Sprite {
   const q = bonesAt(keys, SMITH_STANCE, t);
   const s = solve(SMITH_BODY, q);
   const prev = solve(SMITH_BODY, bonesAt(keys, SMITH_STANCE, Math.max(0, t - 1 / 30)));
-  return toSprite(paintSmith3(s, q, FACING_TURN[to], { prev, wind }), AURA_SMITH, CANVAS3.ax, CANVAS3.ay);
+  return toSprite(paintSmith3(s, q, FACING_TURN[to], { prev, wind, dark }), dark ? AURA_DARK : AURA_SMITH, CANVAS3.ax, CANVAS3.ay);
 }
 
 /** The town's frames of him: standing at his work (the slab is to his left: he faces down the screen to the left), what he does now and then, and turned to whoever comes up to him. */
@@ -543,6 +552,25 @@ export function makeSmith3(fps = 10, actFps = 20): Townsman {
   const actN = Math.round(SMITH_ACT_LONG * actFps) + 1;
   const act = lazyFrames(actN, (i) => smithFrame(ACT_KEYS, (i / (actN - 1)) * SMITH_ACT_LONG, 'sw', (i / (actN - 1)) % 1));
   return { idle, act, loops: 3, work: 'sw', turned: { sw: idle, se: idleOf('se'), ne: idleOf('ne'), nw: idleOf('nw') } };
+}
+
+/** His frames while his ring is dark, for each set of his frames as the town has them: made the first time they are asked for. */
+const DARK = new WeakMap<Townsman, Townsman>();
+export function darkOf(m: Townsman): Townsman {
+  let d = DARK.get(m);
+  if (!d) {
+    d = makeSmith3Dark();
+    DARK.set(m, d);
+  }
+  return d;
+}
+
+/** ... and while his ring is dark (art/quest3.ts): the same loop with the runes on him cold, and no work (he cannot do it without the ring). */
+export function makeSmith3Dark(fps = 10): Townsman {
+  const idleN = Math.round(SMITH_IDLE_LONG * fps);
+  const idleOf = (to: Facing): Sprite[] => lazyFrames(idleN, (i) => smithFrame(IDLE_KEYS, (i / idleN) * SMITH_IDLE_LONG, to, i / idleN, true));
+  const idle = idleOf('sw');
+  return { idle, act: [], loops: 1, work: 'sw', turned: { sw: idle, se: idleOf('se'), ne: idleOf('ne'), nw: idleOf('nw') } };
 }
 
 /** For the dev pages and the tests: the keys of his standing loop and of what he does now and then. */

@@ -23,6 +23,7 @@ import type { WordId } from '../game/types';
 import { socketProblem } from '../game/words';
 import type { Fx } from '../render/fx';
 import type { Art } from '../render/render';
+import { QUEST3 } from '../art/quest3';
 import { pressName } from './guide';
 import type { Banner } from './guide';
 import { THEME } from './ui';
@@ -876,6 +877,16 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
       g.drawImage(art.icons.word[first].img, lx, iy);
       drawText(g, `${spare}`, lx + 14, iy + 4, WORD_COLOR[first], { font: 'small', shadow: P.ink });
     }
+  }
+  // (THE MASTER RUNE-STONE, art/quest3.ts, behind QUEST3: while it is carried it shows here, from the
+  // moment it has flown into the hero, popping in a little bigger)
+  if (QUEST3.on && QUEST3.carried && art.quest && (QUEST3.takenAt < 0 || t - QUEST3.takenAt >= 1)) {
+    const ic = art.quest.icon;
+    const since = QUEST3.takenAt >= 0 ? t - QUEST3.takenAt - 1 : 9;
+    const pop = since < 0.3 ? 1.5 - since / 0.6 : 1;
+    const cx = lx + (spare > 0 ? 26 : 0) + 7;
+    const cy = btnY + btnH / 2;
+    g.drawImage(ic.img, Math.round(cx - ic.ax * pop), Math.round(cy - ic.ay * pop), Math.round(ic.w * pop), Math.round(ic.h * pop));
   }
 
   // ---- top right: minimap and pause ---------------------------------------------------------
