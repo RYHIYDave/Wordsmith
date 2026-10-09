@@ -4,7 +4,7 @@
 import { FIGURE_SIZE, figureOf, makeBestiary } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
-import { useComboMends } from './art/moves3';
+import { useComboMends, useRangerStances } from './art/moves3';
 import { makeIconArt } from './art/icons';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
@@ -1615,6 +1615,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
     comboMends: (on: boolean) => {
       useComboMends(on);
+      art.heroes = makeHeroArt3();
+    },
+    /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): a mock-up behind switches that are off; its playtests put them in and paint the heroes again (false: today's back). */
+    rangerStances: (on: boolean) => {
+      useRangerStances(on);
       art.heroes = makeHeroArt3();
     },
     /**
