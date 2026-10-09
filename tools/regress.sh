@@ -329,9 +329,9 @@ wait
 run packs_wild_pc    --scenario $S/packs_wild.mjs &
 run packs_wild_phone $P --scenario $S/packs_wild.mjs &
 wait
-# VERSION 19.8: THE MONSTERS' ATTACKS, switched on for it and off again at its end: green trolls swing
-# and slam; a red troll lays his line and charges down it; the Warden swings, slams and calls the dead,
-# who crawl out of the ground; a dungeon with the bot fighting there; switched off, a troll slams first.
+# VERSION 19.8: THE MONSTERS' ATTACKS, on in the game: green trolls swing and slam; a red troll lays his
+# line and charges down it; the Warden swings, slams and calls the dead, who crawl out of the ground; a
+# dungeon with the bot fighting there; switched off, a troll slams first; and on again.
 run monster_attacks_pc    --scenario $S/monster_attacks.mjs &
 run monster_attacks_phone $P --scenario $S/monster_attacks.mjs &
 wait

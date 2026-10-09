@@ -484,11 +484,16 @@ export function wordShare(m: { words: readonly WordId[]; half?: readonly WordId[
  * biggest of them that is ready and that the hero is in reach of, and with its basic blow, the first,
  * while the big ones cool down. A big move, once used, is not used again for its own `cooldown`; after
  * any move the monster waits its `after` before the next (Swift shortens both, as it shortens a
- * monster's wait today, and Frenzied hastens both). THE SWITCH: off, every monster attacks as it did
- * until Version 19.8 (its one attack: MONSTERS, `windup`, `cooldown`, `aoe`; and the Warden his slam
- * near, his bolts far, and the dead called at two thirds and one third of his life, in a flash of frost).
+ * monster's wait today, and Frenzied hastens both). ON SINCE VERSION 19.8: his yes by 9 Oct 2026, 12:48,
+ * to films of them in the game (green_trolls.gif, red_troll.gif, warden.gif), asked "Should the
+ * monsters' attacks go into the game as they are in these films?": "Yes, as shown (Recommended)".
+ * Switched off (for pictures beside it, and the tests written before it), every monster attacks as it
+ * did until Version 19.8 (its one attack: MONSTERS, `windup`, `cooldown`, `aoe`; and the Warden his
+ * slam near, his bolts far, and the dead called at two thirds and one third of his life, in a flash
+ * of frost). The art chat's pictures of the new moves go on and off with it (art/bestiary.ts,
+ * useMonsterAttacks, as that file loads).
  */
-export const MONSTER_ATTACKS = { on: false };
+export const MONSTER_ATTACKS = { on: true };
 export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon';
 export interface MonsterMove {
   id: MoveId;

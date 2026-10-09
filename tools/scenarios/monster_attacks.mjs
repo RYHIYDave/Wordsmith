@@ -1,11 +1,10 @@
-// VERSION 19.8: THE MONSTERS' ATTACKS (game/defs.ts MONSTER_ATTACKS, MONSTER_MOVES; the art chat's
-// pictures of the new moves, art/bestiary.ts useMonsterAttacks), switched on for this playtest and off
-// again at its end, as the game has it.
+// VERSION 19.8, IN PLAY: THE MONSTERS' ATTACKS (game/defs.ts MONSTER_ATTACKS, MONSTER_MOVES; the art
+// chat's pictures of the new moves, art/bestiary.ts useMonsterAttacks), on in the game.
 // 1. The practice room, the warrior (who cannot die here) and the bot: three green trolls, who swing and
 //    slam; a red troll from six tiles off, who lays his line, charges down it and pulls up; the Warden,
 //    who swings, slams and calls the dead, who crawl out of the ground and then join the fight.
-// 2. A dungeon (the fourth), the bot fighting there with the attacks on.
-// 3. Switched off: a green troll slams, its red circle first, as before.
+// 2. A dungeon (the fourth), the bot fighting there.
+// 3. Switched off: a green troll slams, its red circle first, as before; and on again, as the game has it.
 // Nothing may go wrong on the page, and the pictures are painted all the while.
 //   node tools/playtest.mjs [--file dist/<a build>.html] [--touch --size 844x390 --dpr 3] --scenario tools/scenarios/monster_attacks.mjs --out shots/monster_attacks
 import { log } from './lib.mjs';
@@ -14,7 +13,7 @@ export default async function (page, snap) {
   let fails = 0;
   const check = (label, ok, detail = '') => { if (!ok) fails++; log(label, `${ok ? 'ok' : 'FAILED'} ${detail}`); if (!ok) console.log(`  !! ${label} ${detail}`); };
   await page.evaluate(() => { window.__dbg.saving(false); });
-  check('the attacks are switched on for this playtest', await page.evaluate(() => window.__dbg.monsterAttacks(true)) === true);
+  check('the attacks are on in the game', await page.evaluate(() => window.__dbg.monsterAttacks()) === true);
 
   /**
    * The practice room, emptied, with what `put` puts in it; then `secs` of the game watched: the moves
@@ -116,7 +115,7 @@ export default async function (page, snap) {
   check('a dungeon with the attacks on: the bot fought on', !over);
 
   // ---- 3. switched off: as before ------------------------------------------------------------------
-  check('switched off again', await page.evaluate(() => window.__dbg.monsterAttacks(false)) === false);
+  check('switched off', await page.evaluate(() => window.__dbg.monsterAttacks(false)) === false);
   const off = await page.evaluate(async () => {
     const d = window.__dbg; d.practice('warrior', 7); d.god = true;
     const g = d.game(); g.waveT = 1e9; g.monsters.length = 0;
@@ -131,5 +130,6 @@ export default async function (page, snap) {
   }
   check('switched off, a green troll slams, its red circle first, as before', circle);
   await snap('switched_off');
+  check('and on again, as the game has it', await page.evaluate(() => window.__dbg.monsterAttacks(true)) === true);
   log('RESULT', fails ? `${fails} FAILED` : 'all passed');
 }

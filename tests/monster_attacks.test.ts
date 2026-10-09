@@ -7,8 +7,10 @@
 // cooldown." His yes to the moves: the green troll a club swing and its slam; the red troll a club
 // swing, the slam and a charge along a marked line; the boss a swing, his slam, his fan of bolts and
 // his skeleton summon as his fourth. The pictures are the art chat's (art/monster-attacks), with his yes.
+// On since Version 19.8, his yes by 12:48 to films of them in the game: "Yes, as shown (Recommended)".
 // So:
-//   1. the switch is off, and with it off no monster has moves: each attacks as it did;
+//   1. the switch is on in the game, the pictures with it; switched off, no monster has moves, and
+//      each attacks as it did;
 //   2. his rules, in the moves: tiny and small one attack (their own), medium two, large two or three,
 //      the boss four; the first a basic blow at one, with no ground warning; the bigger the hit, the
 //      longer the cooldown;
@@ -121,26 +123,34 @@ function play(r: Room, secs: number, each?: (k: number) => void): { began: Began
 
 const FIGURES: Which[] = ['brute', 'guardian', 'warden'];
 
-test('the switch is off: no monster has moves, and each attacks as it did', () => {
-  assert.equal(MONSTER_ATTACKS.on, false, 'MONSTER_ATTACKS is off');
-  assert.equal(TROLL_MOVES.on, false, "and the trolls' new pictures with it");
-  assert.equal(WARDEN_MOVES.on, false, "and the Warden's");
-  assert.equal(CRAWL_OUT.on, false, 'and the dead crawling out');
-  for (const kind of Object.keys(MONSTERS) as MonsterKind[]) {
-    assert.equal(movesOf({ kind, champion: false }), null, `${kind}: no moves`);
-    assert.equal(movesOf({ kind, champion: true }), null, `${kind}, a guardian's rank: no moves`);
+test('the switch is on in the game, the pictures with it; switched off, no monster has moves, and each attacks as it did', () => {
+  assert.equal(MONSTER_ATTACKS.on, true, 'MONSTER_ATTACKS is on');
+  assert.equal(TROLL_MOVES.on, true, "and the trolls' new pictures with it");
+  assert.equal(WARDEN_MOVES.on, true, "and the Warden's");
+  assert.equal(CRAWL_OUT.on, true, 'and the dead crawling out');
+  const game = makeBestiary();
+  for (const f of ['brute', 'guardian', 'warden', 'skeleton'] as MonsterFigure[]) assert.ok(game.of(f).front.clips?.moves, `${f}: its new moves are painted in the game`);
+  useMonsterAttacks(false);
+  try {
+    assert.equal(TROLL_MOVES.on || WARDEN_MOVES.on || CRAWL_OUT.on, false, 'switched off, the pictures go with it');
+    for (const kind of Object.keys(MONSTERS) as MonsterKind[]) {
+      assert.equal(movesOf({ kind, champion: false }), null, `${kind}: no moves`);
+      assert.equal(movesOf({ kind, champion: true }), null, `${kind}, a guardian's rank: no moves`);
+    }
+    // (a green troll beside the hero brings its slam down, the red circle first, as it always has)
+    const r = room('brute', 1);
+    let circle = false;
+    for (let k = 0; k < 180 && !circle; k++) {
+      r.g.update(1 / 60, emptyControls());
+      circle = r.g.zones.some((z) => z.kind === 'warn');
+    }
+    assert.ok(circle, 'switched off, its one attack is the slam, its red circle first');
+    // (and the art made with the switch off has none of the new pictures)
+    const beasts = makeBestiary();
+    for (const f of ['brute', 'guardian', 'warden', 'skeleton'] as MonsterFigure[]) assert.equal(beasts.of(f).front.clips?.moves, undefined, `${f}: no new moves painted`);
+  } finally {
+    useMonsterAttacks(true);
   }
-  // (a green troll beside the hero brings its slam down, the red circle first, as it always has)
-  const r = room('brute', 1);
-  let circle = false;
-  for (let k = 0; k < 180 && !circle; k++) {
-    r.g.update(1 / 60, emptyControls());
-    circle = r.g.zones.some((z) => z.kind === 'warn');
-  }
-  assert.ok(circle, 'switched off, its one attack is the slam, its red circle first');
-  // (and the art made with the switch off has none of the new pictures)
-  const beasts = makeBestiary();
-  for (const f of ['brute', 'guardian', 'warden', 'skeleton'] as MonsterFigure[]) assert.equal(beasts.of(f).front.clips?.moves, undefined, `${f}: no new moves painted`);
 });
 
 test('his rules: tiny and small one attack, medium two, large two or three, the boss four; a basic blow first; the bigger the hit, the longer the cooldown', () => {

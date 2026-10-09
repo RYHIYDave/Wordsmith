@@ -162,6 +162,8 @@ test('a stun breaks off the blow a monster is winding up, and the warning of it 
   const m = put(g, a, 'brute', 1.5, 0);
   m.cd = 0;
   m.state = 'chase';
+  // (THE MONSTERS' ATTACKS, Version 19.8: its slam, not its swing; the swing is made to wait)
+  m.moveCd = [99, 0];
   // (the brute brings its club down on the ground: a warning comes first)
   for (let t = 0; t < 1 && stateOf(m) !== 'windup'; t += DT) run(g, seen, DT);
   assert.equal(stateOf(m), 'windup');
