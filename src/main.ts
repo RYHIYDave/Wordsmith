@@ -1,7 +1,7 @@
 // Entry point: builds the art, then runs the frame loop that ties input, rules, drawing and
 // interface together.
 
-import { FIGURE_SIZE, figureOf, makeBestiary, useMonsterAttacks } from './art/bestiary';
+import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
@@ -1680,6 +1680,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     mix: MIX,
     /** DOORS AND GATES (game/doors.ts): the map-maker's switch for them, and the share of rooms that have a door. Playtests that change them put them back. */
     doors: DOORS,
+    /** THE SKELETON ON THE HEROES' BONES (art/monster_bones3.ts), a mock-up: its switch. OFF in the game: a playtest that photographs it sets it for itself. */
+    skeleton3: SKELETON3,
+    /** THE BONE ARCHER ON THE HEROES' BONES (art/monster_bones3.ts), a mock-up: its switch. OFF in the game: a playtest that photographs it sets it for itself. */
+    archer3: ARCHER3,
     /** THE TRAPS (game/traps.ts, TRAPS): ON in the game since the owner's yes (8 Oct 2026, 11:36); playtests that lay a dungeon without them set it for themselves and put it back. */
     traps: TRAPS,
     /** THE NEW WORDS (render/words3.ts): how the eight words he chose on 8 Oct look at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */

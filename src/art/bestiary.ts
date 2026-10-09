@@ -25,6 +25,7 @@ import type { ActorArt, AnimSet } from './actor_types';
 import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
 import { makeArcherArt, makeSkeletonArt } from './monster_bones';
+import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
 import { TROLL_MOVES, makeBruteArt, makeGuardianArt } from './monster_brute';
 import { makeCultistArt } from './monster_cultist';
 import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
@@ -42,6 +43,22 @@ export function useMonsterAttacks(on: boolean): void {
   CRAWL_OUT.on = on;
 }
 useMonsterAttacks(MONSTER_ATTACKS.on);
+
+/**
+ * THE SKELETON ON THE HEROES' BONES (art/monster_bones3.ts): A MOCK-UP, AND OFF. While `on` is
+ * false the skeleton is today's (art/monster_bones.ts) and nothing about the game changes; a dev
+ * page or a playtest that wants pictures of the other one sets it for itself (window.__dbg.skeleton3)
+ * and puts it back. The owner has not seen it: nothing that changes the look goes in before his yes.
+ */
+export const SKELETON3 = { on: false };
+
+/**
+ * THE BONE ARCHER ON THE HEROES' BONES (art/monster_bones3.ts, `makeArcherArt3`): A MOCK-UP, AND
+ * OFF, as the skeleton's. While `on` is false the bone archer is today's (art/monster_bones.ts)
+ * and nothing about the game changes; a dev page or a playtest that wants pictures of the other one
+ * sets it for itself (window.__dbg.archer3) and puts it back. The owner has not seen it.
+ */
+export const ARCHER3 = { on: false };
 
 /** The figures there are: one for each kind of monster, and the guardian. */
 export type MonsterFigure = MonsterKind | 'guardian';
@@ -86,7 +103,19 @@ export let warmed: Sprite | undefined;
 
 export function makeBestiary(): Bestiary {
   const made = new Map<MonsterFigure, ActorArt>();
+  /** The skeleton on the bones, made the first time it is asked for with its switch on. */
+  let bones3: ActorArt | null = null;
+  /** The bone archer on the bones, likewise. */
+  let archer3: ActorArt | null = null;
   const of = (figure: MonsterFigure): ActorArt => {
+    if (figure === 'skeleton' && SKELETON3.on) {
+      if (!bones3) bones3 = makeSkeletonArt3();
+      return bones3;
+    }
+    if (figure === 'archer' && ARCHER3.on) {
+      if (!archer3) archer3 = makeArcherArt3();
+      return archer3;
+    }
     let art = made.get(figure);
     if (!art) {
       art =
@@ -106,12 +135,13 @@ export function makeBestiary(): Bestiary {
    * first thing seen of a monster), walking, then its attacks from start to finish. The last of
    * `left` is the next to paint.
    */
-  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number }>();
-  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number } => {
+  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number; art: ActorArt }>();
+  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number; art: ActorArt } => {
+    const art = of(figure);
     let list = todo.get(figure);
-    if (!list) {
-      list = { left: [], done: 0 };
-      const art = of(figure);
+    // (made again if the figure's pictures are others than they were: the skeleton's switch, SKELETON3, or the archer's, ARCHER3, was thrown)
+    if (!list || list.art !== art) {
+      list = { left: [], done: 0, art };
       // (and last its death: by the time one of them is killed, how it falls is painted; and before
       // it, a monster's other moves, THE MONSTERS' ATTACKS: art/actor_types.ts, AnimSet.clips.moves.
       // Each pick gives lists of frames, which are only counted here, never read: READING A FRAME IS
@@ -141,7 +171,7 @@ export function makeBestiary(): Bestiary {
     warm(figures: ReadonlyArray<MonsterFigure>): boolean {
       // Whichever of them has had the fewest painted goes next: so all of them can stand and
       // walk (forty frames each) before any of them has every frame of its attack.
-      let next: { left: (() => Sprite)[]; done: number } | null = null;
+      let next: { left: (() => Sprite)[]; done: number; art: ActorArt } | null = null;
       for (const f of figures) {
         const list = listOf(f);
         if (list.left.length > 0 && (!next || list.done < next.done)) next = list;
