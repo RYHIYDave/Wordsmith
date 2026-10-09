@@ -114,7 +114,7 @@ export default async function (page, snap) {
   // ---- a level, lit, asleep and empty -----------------------------------------------------------
   const begin = (seed, depth) => page.evaluate(([cls, seed, depth]) => {
     const d = window.__dbg; d.saving(false);
-    d.run(cls, seed);
+    d.run(cls, seed); /* (THE FIRST LEVELS, since Version 19.5: a hero this far in has the wordsmith's ring lit; with it dark the fallen wordsmith would lie in this dungeon too, and the playtests' own player would go to him first) */ d.seasoned(1);
     const g = d.game();
     if (depth > 0) { g.depth = depth; g.enterDungeon(); }
     d.autoLevel = false; d.autoWords = false; d.god = true;
