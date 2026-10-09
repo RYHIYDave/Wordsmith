@@ -12,6 +12,8 @@ archer on bones, both with his yes on 8 Oct).
 
 - 9 Oct, 00:20: "I’m going to bed so just keep working on new animations, then rework the ranger,
   then go into new mob types".
+- By 05:26, to `new_mobs_sheet.png` and the three sheets, asked which to make: "All three
+  (Recommended)" (the pick put to him: "Then their walks, and the main chat writes their rules").
 
 ## The three (the art rulebook's brief for a new character, answered with our picks)
 
