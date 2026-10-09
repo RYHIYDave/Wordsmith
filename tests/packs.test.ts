@@ -10,7 +10,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { RNG } from '../src/engine/rng';
-import { FIRST_LEVELS, GATE_TWIN_PACKS, GUARD, HEAVY, MONSTERS, MONSTER_PACKS, PACKS, PACK_LOOK, TUNE, WORDS, packRarity, scaleDmg, scaleLife, wordShare } from '../src/game/defs';
+import { FIRST_LEVELS, GATE_TWIN_PACKS, GUARD, HEAVY, MONSTERS, MONSTER_PACKS, PACKS, PACK_LOOK, TUNE, WORDS, leaderKind, packRarity, scaleDmg, scaleLife, wordShare } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -56,7 +56,7 @@ test('the switch is on, and so is the look of blue and yellow packs (his yes to 
   assert.equal(GATE_TWIN_PACKS, 1.5, 'Twin at the gate: 50% increased');
 });
 
-test('every pack is of one kind; a lair holds guardians alone; elite rooms hold yellow packs', () => {
+test('every pack is of one kind (but a yellow pack\'s leader, who may be a leader of his own); a lair holds guardians alone; elite rooms hold yellow packs', () => {
   for (const depth of DEPTHS) {
     for (let seed = 1; seed <= 6; seed++) {
       const g = dungeon(seed * 31 + depth, depth);
@@ -64,8 +64,14 @@ test('every pack is of one kind; a lair holds guardians alone; elite rooms hold 
       for (const [id, ms] of packsOf(g)) {
         const p = packs[id];
         const tag = `dungeon ${depth}, seed ${seed}, pack ${id} (${p.tier})`;
-        assert.ok(ms.every((m) => m.kind === ms[0].kind), `${tag}: of one kind`);
-        assert.equal(ms[0].kind, p.kind, `${tag}: the kind the map-maker gave it`);
+        // (THE NEW MONSTERS, Version 19.9: a yellow pack of skeletons is led by the skeleton champion, of
+        // bone archers by the bone marksman, of cultists by the high priest, of green trolls by the troll
+        // chieftain: game/defs.ts LEADERS, leaderKind)
+        const others = ms.filter((m) => m.rarity !== 'leader');
+        const leader = ms.find((m) => m.rarity === 'leader');
+        assert.ok(others.every((m) => m.kind === others[0].kind), `${tag}: of one kind`);
+        assert.ok(others.every((m) => m.kind === p.kind), `${tag}: the kind the map-maker gave it`);
+        if (leader && p.kind) assert.equal(leader.kind, leaderKind(p.kind), `${tag}: led by one of its own, or by a leader of its own (LEADERS)`);
         assert.ok(ms.length <= p.size, `${tag}: no more than its size`);
         assert.ok(ms.length >= Math.min(p.size, 1), `${tag}: someone stands in it`);
         if (p.tier === 'champion') assert.ok(ms.every((m) => m.champion && m.kind === 'brute' && !m.rarity), `${tag}: guardians alone`);

@@ -4,8 +4,9 @@
 //    Leap; the ranger's Shot, Volley and roll; the mage's Wave, Orb and Warp), their pictures painted
 //    all the while; the mage's stances and the wild moves switched off and on again.
 // 2. A dungeon of packs: every pack of one kind, blue and yellow packs among them (a blue pack's
-//    word on every one of it, a yellow pack's leader an elite with minions), the bot fighting there;
-//    and the blue and yellow names drawn.
+//    word on every one of it, a yellow pack's leader an elite with minions; since Version 19.9 a yellow
+//    pack of skeletons, archers, cultists or green trolls is led by a leader of his own, game/defs.ts
+//    LEADERS), the bot fighting there; and the blue and yellow names drawn.
 // Nothing may go wrong on the page.
 //   node tools/playtest.mjs [--file dist/<a build>.html] [--touch --size 844x390 --dpr 3] --scenario tools/scenarios/packs_wild.mjs --out shots/packs_wild
 import { log } from './lib.mjs';
@@ -68,8 +69,13 @@ export default async function (page, snap) {
       byPack.get(m.packId).push(m);
     }
     let mixed = 0; let blue = 0; let yellow = 0; let badBlue = 0; let badYellow = 0;
+    // (THE NEW MONSTERS, Version 19.9: their own leaders, as game/defs.ts LEADERS has them)
+    const LEADS = { skeleton: 'champion', archer: 'marksman', cultist: 'priest', brute: 'chieftain' };
     for (const ms of byPack.values()) {
-      if (ms.some((m) => m.kind !== ms[0].kind)) mixed++;
+      const others = ms.filter((m) => m.rarity !== 'leader');
+      const leader = ms.find((m) => m.rarity === 'leader');
+      const kind = (others[0] || ms[0]).kind;
+      if (others.some((m) => m.kind !== kind) || (leader && leader.kind !== kind && leader.kind !== LEADS[kind])) mixed++;
       if (ms[0].rarity === 'blue') { blue++; if (!ms.every((m) => m.rarity === 'blue' && m.words[0] === ms[0].words[0])) badBlue++; }
       if (ms[0].rarity === 'leader') { yellow++; if (!ms[0].elite || !ms.slice(1).every((m) => m.rarity === 'minion' && m.half && m.half.length === ms[0].words.length)) badYellow++; }
     }

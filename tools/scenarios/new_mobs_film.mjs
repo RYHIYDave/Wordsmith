@@ -12,7 +12,8 @@
 //   WHO=marksman  a yellow pack: the bone marksman (Frost) seven tiles off and three bone archers: he draws
 //                 his great shot, his line of aim on the floor; it pierces; then his shots and theirs;
 //   WHO=priest    a yellow pack: the high priest (Flame) and three cultists: he swings his censer, its
-//                 burning smoke on the floor where the warrior stands; then his fire bolts and theirs;
+//                 burning smoke on the floor where the warrior stands; he burns a moment and walks out of
+//                 it; then the priest's fire bolts and theirs;
 //   WHO=chieftain a yellow pack: the troll chieftain (Power) and two green trolls: his swing and his slam.
 // The monsters cannot die. A picture every 1/FPS second of the GAME's time, the game slowed so that the
 // camera keeps up. Frames: <out>_fNNN.png.
@@ -61,7 +62,7 @@ export default async function (page, snap) {
       const words = ['frost'];
       const c = put('marksman', { x: h.x - 7, y: h.y }, { rarity: 'leader', words });
       c.cd = 0.2; c.moveCd = [0, 0]; made.push(c);
-      for (const [dx, dy] of [[-6, -1.2], [-6.2, 1.2], [-5.4, 0.6]]) { const m = put('archer', { x: h.x + dx, y: h.y + dy }, { rarity: 'minion', words }); m.cd = 2.5; made.push(m); }
+      for (const [dx, dy] of [[-7.6, -2], [-7.6, 2], [-8.6, 0.4]]) { const m = put('archer', { x: h.x + dx, y: h.y + dy }, { rarity: 'minion', words }); m.cd = 2.5; made.push(m); }
     } else if (who === 'priest') {
       const words = ['fire'];
       const c = put('priest', { x: h.x - 2.4, y: h.y }, { rarity: 'leader', words });
@@ -71,7 +72,7 @@ export default async function (page, snap) {
       const words = ['power'];
       const c = put('chieftain', at(1.7, 0), { rarity: 'leader', words });
       c.cd = 0.2; made.push(c);
-      for (const [far, deg] of [[1.6, 120], [1.6, -120]]) { const m = put('brute', at(far, deg), { rarity: 'minion', words }); m.cd = 1.5; made.push(m); }
+      for (const [far, deg] of [[2.4, 115], [2.4, -150]]) { const m = put('brute', at(far, deg), { rarity: 'minion', words }); m.cd = 1.5; made.push(m); }
     } else {
       const words = ['fire'];
       const c = put('champion', at(2.6, 0), { rarity: 'leader', words });
@@ -101,6 +102,10 @@ export default async function (page, snap) {
     const wait = t0 + i * step - Date.now();
     if (wait > 0) await page.waitForTimeout(wait);
     await snap(`f${String(i).padStart(3, '0')}`);
+    // (the high priest's smoke: the warrior stands in it a moment, burning, then walks out of it, down
+    // and to the right on the screen, away from the priest, so that it is seen on the open floor)
+    if (who === 'priest' && i === 36) { await page.keyboard.down('KeyS'); await page.keyboard.down('KeyD'); }
+    if (who === 'priest' && i === 46) { await page.keyboard.up('KeyS'); await page.keyboard.up('KeyD'); }
     const now = await page.evaluate(() => {
       const g = window.__dbg.game();
       const mv = (m) => (m.move !== undefined && m.move >= 0 ? m.move : -1);

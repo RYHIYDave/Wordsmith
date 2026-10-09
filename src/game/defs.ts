@@ -668,10 +668,13 @@ export const SUMMON = { count: 4, apart: 0.1, rise: 1.4, most: 6 };
  * rings (Recommended)" (render/pack_marks.ts PACK_MARKS). His pick by 16:05 of what comes next: "New
  * monsters + rings (Recommended)". By his sizes: the Shade small, in packs of 4 to 7, from the second
  * dungeon; the Boneward medium, 3 to 5, from the third; the Golem large, 1 or 2, from the fourth; the
- * champion leads a yellow pack of skeletons. OFF until he has seen films of them in the game and said
- * yes (PICTURES FIRST); switched with their pictures and the rings (art/bestiary.ts useNewMonsters).
+ * champion leads a yellow pack of skeletons; and the art chat's other leaders (by 15:46): the bone
+ * marksman leads bone archers, the high priest cultists, the troll chieftain green trolls. ON SINCE
+ * VERSION 19.9: asked, with films of all seven in the game and their rules, whether they go in as
+ * shown, he answered by 17:49: "Yes, as shown (Recommended)". Switched with their pictures and the
+ * rings (art/bestiary.ts useNewMonsters); the tests written before them hold it off.
  */
-export const NEW_MONSTERS = { on: false };
+export const NEW_MONSTERS = { on: true };
 /**
  * THE BONEWARD'S SPEAR (his pick by 09:33, "Spear throw": it hurls its spear at you from afar, then
  * fights with its shield until it picks the spear up). Thrown at where the hero stands, `speed` tiles a

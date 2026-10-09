@@ -7,7 +7,9 @@
 // have an extra attack if it seems right."). And BATS ARE NEVER A YELLOW PACK, his pick by 16:05: "Bats
 // never come yellow (Recommended)". And the art chat's other leaders (mockup/more-leaders, his yes by
 // 15:17, 15:34 and 15:46): the bone marksman, the high priest and the troll chieftain. So:
-//   1. the switch is off in the game, the pictures and the rings with it; off, no dungeon has them;
+//   1. the switch is on in the game since Version 19.9 (his yes by 17:49, to films of all seven in the
+//      game and their rules: "Yes, as shown (Recommended)"), the pictures and the rings with it;
+//      switched off, no dungeon has them;
 //   2. on, they come by depth, in packs of their sizes (the Shade small, the Boneward medium, the Golem
 //      large); a yellow pack of skeletons is led by the champion;
 //   3. bats are never a yellow pack, and an elite room is never bats (whether the switch is on or not);
@@ -82,6 +84,16 @@ function withNew<T>(fn: () => T): T {
     useNewMonsters(was);
   }
 }
+/** The same with the new monsters switched off, as the game was until Version 19.9. */
+function withOff<T>(fn: () => T): T {
+  const was = NEW_MONSTERS.on;
+  useNewMonsters(false);
+  try {
+    return fn();
+  } finally {
+    useNewMonsters(was);
+  }
+}
 
 /** Dungeon `depth` of a character who has been down before. */
 function dungeon(seed: number, depth: number): Game {
@@ -142,21 +154,21 @@ const idOf = (m: Monster): MoveId | null => {
 
 // =============================================================================================
 
-test('the switch is off in the game, the pictures and the rings with it; off, no dungeon has them', () => {
-  assert.equal(NEW_MONSTERS.on, false, 'NEW_MONSTERS is off until he has seen films of them in the game and said yes');
-  assert.equal(NEW_MOBS.on, false, 'their pictures are off with it');
-  assert.equal(PACK_MARKS.on, false, 'and the rings');
-  for (let depth = 1; depth <= 12; depth++) for (const k of packKinds(depth)) assert.ok(!NEW_KINDS.includes(k.kind), `dungeon ${depth}: no ${k.kind}`);
-  for (const depth of [2, 4, 7]) {
-    for (let seed = 1; seed <= 4; seed++) {
-      const g = dungeon(seed * 13 + depth, depth);
-      assert.ok(g.monsters.every((m) => !NEW_KINDS.includes(m.kind)), `dungeon ${depth}, seed ${seed}: none of the new monsters`);
+test('the switch is on in the game, the pictures and the rings with it; switched off, no dungeon has them', () => {
+  assert.equal(NEW_MONSTERS.on, true, 'NEW_MONSTERS is on since Version 19.9: his yes by 17:49, "Yes, as shown (Recommended)"');
+  assert.equal(NEW_MOBS.on, true, 'their pictures are on with it');
+  assert.equal(PACK_MARKS.on, true, 'and the rings');
+  withOff(() => {
+    assert.equal(NEW_MOBS.on || PACK_MARKS.on, false, 'off, the pictures and the rings go with them');
+    for (let depth = 1; depth <= 12; depth++) for (const k of packKinds(depth)) assert.ok(!NEW_KINDS.includes(k.kind), `dungeon ${depth}: no ${k.kind}`);
+    for (const depth of [2, 4, 7]) {
+      for (let seed = 1; seed <= 4; seed++) {
+        const g = dungeon(seed * 13 + depth, depth);
+        assert.ok(g.monsters.every((m) => !NEW_KINDS.includes(m.kind)), `dungeon ${depth}, seed ${seed}: none of the new monsters`);
+      }
     }
-  }
-  withNew(() => {
-    assert.equal(NEW_MOBS.on && PACK_MARKS.on, true, 'on, the pictures and the rings come with them');
   });
-  assert.equal(NEW_MOBS.on || PACK_MARKS.on, false, 'and go with them');
+  assert.equal(NEW_MOBS.on && PACK_MARKS.on, true, 'and come back with them');
 });
 
 test('on, they come by depth, in packs of their sizes; a yellow pack is led by its leader', () => {
@@ -208,16 +220,18 @@ test('on, they come by depth, in packs of their sizes; a yellow pack is led by i
   });
   // (off, a yellow pack of skeletons is led by a skeleton, as before)
   let checked = 0;
-  for (let seed = 1; seed <= 10; seed++) {
-    const g = dungeon(seed * 17 + 28, 4);
-    for (const [id, ms] of packsOf(g)) {
-      const leader = ms.find((m) => m.rarity === 'leader');
-      if (leader && g.level.floor.packs[id].kind === 'skeleton') {
-        checked++;
-        assert.equal(leader.kind, 'skeleton', 'off: a skeleton leads');
+  withOff(() => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const g = dungeon(seed * 17 + 28, 4);
+      for (const [id, ms] of packsOf(g)) {
+        const leader = ms.find((m) => m.rarity === 'leader');
+        if (leader && g.level.floor.packs[id].kind === 'skeleton') {
+          checked++;
+          assert.equal(leader.kind, 'skeleton', 'off: a skeleton leads');
+        }
       }
     }
-  }
+  });
   assert.ok(checked > 0);
 });
 

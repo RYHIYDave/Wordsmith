@@ -2,7 +2,7 @@
 // today's monsters of its size. A practice room; the monster beside the warrior (or six tiles off, where
 // the Boneward throws its spear and the Golem its skulls); 40 seconds; the hero's life put back after
 // every step; its words taken off (the moves alone weighed). And how much life each has, against the one
-// beside it.
+// beside it. The leaders (rank 1, an elite) beside one of those they lead leading a yellow pack.
 //   tsx tools/measure_new_mobs.ts [seconds=40] [rng=9]
 import { RNG } from '../src/engine/rng';
 import { Game } from '../src/game/game';
@@ -16,6 +16,7 @@ const SECONDS = Number(args[0]) || 40;
 const SEED = Number(args[1]) || 9;
 
 function fight(kind: MonsterKind, rank: 0 | 1 | 2, far: number): { perSecond: number; moves: Record<string, number>; life: number } {
+  const was0 = NEW_MONSTERS.on;
   NEW_MONSTERS.on = true;
   const g = Game.forPractice('warrior', 5);
   const hooks = g as unknown as { waveT: number; spawn(kind: MonsterKind, x: number, y: number, pack: number, rank: 0 | 1 | 2, boss: boolean, rng: RNG): Monster; wakeUp(m: Monster): void };
@@ -43,7 +44,7 @@ function fight(kind: MonsterKind, rank: 0 | 1 | 2, far: number): { perSecond: nu
     if (now && now !== was) moves[now] = (moves[now] ?? 0) + 1;
     was = now;
   }
-  NEW_MONSTERS.on = false;
+  NEW_MONSTERS.on = was0;
   return { perSecond: lost / SECONDS, moves, life };
 }
 
@@ -59,6 +60,12 @@ const rows: [string, MonsterKind, 0 | 1 | 2, number][] = [
   ['THE GOLEM, six tiles off', 'golem', 0, 6],
   ['a skeleton leading a yellow pack, beside him', 'skeleton', 1, 0.9],
   ['THE SKELETON CHAMPION, beside him', 'champion', 1, 1],
+  ['a bone archer leading a yellow pack, seven tiles off', 'archer', 1, 7],
+  ['THE BONE MARKSMAN, seven tiles off', 'marksman', 1, 7],
+  ['a cultist leading a yellow pack, two and a half tiles off', 'cultist', 1, 2.5],
+  ['THE HIGH PRIEST, two and a half tiles off', 'priest', 1, 2.5],
+  ['a green troll leading a yellow pack, beside him', 'brute', 1, 1],
+  ['THE TROLL CHIEFTAIN, beside him', 'chieftain', 1, 1.2],
 ];
 for (const [label, kind, rank, far] of rows) {
   const r = fight(kind, rank, far);

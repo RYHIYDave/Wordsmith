@@ -8,10 +8,25 @@
 > for the other chats, refreshed when the doc changes. The doc's one picture is written out here in
 > words. Nothing here changes the game by itself: what it asks for goes in through the main chat,
 > samples first.
+>
+> **ADDED WITH HIS YES, 9 Oct 2026, by 16:09 (“Yes, add it (Recommended)”): the fight's music follows
+> the attacks, to try** (Music, rule 10; his idea, by 15:56). "Still open" also says how the first
+> music try-out went (docs/sound/music_tryout.md). The doc was at rev 26 with it. Nothing else changed.
+>
+> **CHANGED WITH HIS YES, 9 Oct 2026, by 18:14 (“Yes, change it (Recommended)”): the music is played by a
+> band of real recorded guitars, bass and drums, with a synth in it** (Music, rule 2; it said "Made with
+> synths"). The band's instruments are recordings, the one exception to "Made in code" (How sound is
+> made and approved, rule 5, which now says so); how they get into the game is open, for the main chat
+> and him ("Still open", now nine things). The doc is at rev 37 with it.
+> docs/sound/music_tryout2.md has what he heard and what he said.
 
-Wordsmith sounds real where the world is and retro where the game speaks. Hits crack and land with weight; loot and level-ups bleep like an old console; a word rings like a bell, then sparkles. The music is Dream Thrash made with synths: light and airy while you explore, punched way up in a fight.
+Wordsmith sounds real where the world is and retro where the game speaks. Hits crack and land with weight; loot and level-ups bleep like an old console; a word rings like a bell, then sparkles. The music is Dream Thrash played by a band, with a synth in it: light and airy while you explore, punched way up in a fight.
 
 **Approved by you, 9 Oct 2026, by 14:04: “Yes, as it is (Recommended)”.** It is the game's rulebook for sound and music. Every chat that makes sound or music for Wordsmith follows it, and it changes only with your yes.
+
+**Added 9 Oct 2026, by 16:09, with your “Yes, add it (Recommended)”:** the fight's music follows the attacks, to try (Music, rule 10). Nothing else was changed.
+
+**Changed 9 Oct 2026, by 18:14, with your “Yes, change it (Recommended)”:** the music is played by a band of real recorded guitars, bass and drums, with a synth in it (Music, rule 2). Until then that rule was headed: Made with synths.
 
 You asked for it on 9 Oct: “You are now the Director of sound and music for Wordsmith.  I’d like you to ask a bunch of questions to drill down what we want and how to get it.” It was found in seven rounds of questions, the way the art and gameplay rulebooks were. Your answers, in your own words, are kept in `docs/sound/interview.md`. Where a rule is the director's suggestion rather than your answer, it says **(director)**.
 
@@ -25,7 +40,7 @@ Five rules sit above all the others. When two rules clash, these win, the higher
 2. **Real world, retro game.** The world sounds like the things in it: steel, bone, stone, fire. The game itself speaks like an old console: loot, menus and level-ups bleep.
 3. **Everything has weight.** A hit is a sharp crack, then a heavy thud. Light for small hits, heavy for big ones.
 4. **Words ring out.** A word is where the two voices meet. When one drops, or works, you know it by ear.
-5. **Massive and airborne.** The music is Dream Thrash made with synths: weightless while you explore, massive when a fight starts.
+5. **Massive and airborne.** The music is Dream Thrash played by a band, with a synth in it: weightless while you explore, massive when a fight starts.
 
 **Never:** cartoony (no boings, slide-whistles or comedy sounds); harsh or piercing (nothing shrill or painful, however loud, even on a phone's small speaker).
 
@@ -48,7 +63,7 @@ The world sounds real, the game speaks retro, and words are where the two meet. 
 | Menus and buttons | Retro |
 | A word found | Both: a deep bell, then a retro run |
 | A word at work in a fight | Both: the real thing, with a small retro shine |
-| Music | Its own: synth |
+| Music | Its own: a band, with a synth in it |
 | Lines the heroes and townsfolk say | Its own: a mumble shaped like speech |
 
 - **Real means larger than life** (director): like the thing itself, with extra punch. It is still made in code, with no recordings.
@@ -113,7 +128,7 @@ You know what dropped by its sound alone, and the big moments are a proud retro 
 
 ## Music
 
-The music is a try at Dream Thrash, made with synths: light and airy while you explore, punched way up in a fight.
+The music is a try at Dream Thrash, played by a band with a synth in it: light and airy while you explore, punched way up in a fight.
 
 (The doc's picture, "Dream always. Thrash for the fight.", in words: three stretches of time side by
 side, Exploring, A fight, Room clear. A band labelled "Dream half: light and airy" runs under all
@@ -124,7 +139,7 @@ a diamond, a blow, on some of them.)
 The dream half plays the whole time. The thrash half is added for a fight and taken away after it.
 
 1. **Dream Thrash.** Your words: “seamlessly fuse the absolute aggression of extreme metal with the weightless euphoria of indie pop and shoegaze, creating a sound that feels simultaneously massive and entirely airborne”.
-2. **Made with synths.** Your words: “I was thinking more synth.  Light and airy in towns or exploring, punched way up during fights.” Synth is the one kind of music that code makes for real. The thrash half is synths too, so it will sound like synths playing metal, not like a recorded band.
+2. **Played by a band, with a synth in it.** Your words: “I was thinking more synth.  Light and airy in towns or exploring, punched way up during fights.” That was the first plan. On 9 Oct you asked for better instruments, heard a band played on real recorded guitars, bass and drums, and said “Yes, write the music (Recommended)”. Then you said “Get a synth in the band as well”, and of what it should do you picked “The air (Recommended)”: soft held chords behind the band. The band's instruments are public-domain recordings, played from notes in code; the synth is made in code.
 3. **The measure is Astronoid's sound:** racing drums and fast, bright riffs under high, floating, layered melodies. Joyful, not grim. It is for feel only: every note is the game's own.
 4. **Two halves** (how the director reads rounds 5 and 6 together). The dream half is the light, airy music of town and exploring, and it never stops. The thrash half punches in on top of it when monsters wake, and falls away when the room is clear.
 5. **Music everywhere, each its own.** A theme on the start screen, music in town, each land's own music in its dungeons, and a piece for bosses. On 4 Oct you asked for “distinct music for each dungeon type”.
@@ -132,6 +147,7 @@ The dream half plays the whole time. The thrash half is added for a fight and ta
 7. **Bosses on the beat, to try.** Your idea of 9 Oct, 13:53: “Like get the bosses to attack on beat to the music?” In a boss fight the boss's blows land on the beat, and his wind-up sound rises into it. It needs a small change to the boss's rules, which is the main chat's to make.
 8. **The music gives way** (director). It ducks under a word's bell and under a fanfare, and it never covers a warning.
 9. **It is a try.** You said “I’d like to try”. The first piece is a try-out, tuned by ear, and this section follows what you say then.
+10. **The fight's music follows the attacks, to try.** Your idea of 9 Oct, by 15:56: “I liked them all, and interchanging them gives different opportunities for different attacks.  Half time for slams, racing for a barrage of shots, that kind of thing”. The thrash half plays four ways (a gallop, racing, half-time and a blast), and the game picks which by what the fight is doing. It sits beside bosses on the beat, and it needs the main chat's rules to say what the fight is doing.
 
 ## Voices
 
@@ -186,7 +202,7 @@ A sample you can play, your yes, then one chat puts it in.
 2. **A page with play buttons.** Samples come on a page for your phone, every sound with a button, old beside new. No films.
 3. **Questions as pop-ups.** Every question comes with options, the recommended one first, and your own words always possible.
 4. **One chat puts it in.** The sound chat works on branches of its own. Only the main chat puts sound into the game and publishes.
-5. **Made in code.** No sound files: every sound and every note of music is a recipe in code.
+5. **Made in code.** No sound files: every sound and every note of music is a recipe in code. One exception since 9 Oct, with your yes to Music, rule 2: the band's guitars, bass and drums are recordings of real instruments. How they get into the game is still open.
 6. **Original only.** Nothing is copied from a game, a film or a band. Dead Cells, Diablo / Path of Exile and Astronoid are for feel only.
 7. **Your ears are the test.** The sound chat cannot hear. It checks each sound by measuring it and by looking at a picture of it. What you say after listening is the real test.
 8. **Your words, exactly.** When a rule quotes you, the quote is exact.
@@ -231,7 +247,7 @@ Almost all of this book is new to the game. Each row is a job, and each reaches 
 | A word at work; a note for every word | 8 of 13 words have a sound of their own | Sounds for the other five, and the shine |
 | Loot by rarity, heard as it drops | Silent as it falls; picked up, white and blue share one sound | A sound for each rarity, as it drops |
 | The fanfare, and the world dips | A rising run for a level; nothing dips | The fanfare, and the dip |
-| Music | None | A music player in code; the Dream Thrash try-out; the theme; then each place |
+| Music | None | A music player, and a way to carry the band's recordings in the game (the main chat's, with you); the Dream Thrash try-out; the theme; then each place |
 | Bosses on the beat, to try | No beat to follow | The music's beat shared with the rules; the boss's own rule is the main chat's |
 | A better mumble | A note for each syllable | Voices with breath and vowels in them |
 | One voice each, no button | The VOICE button sets all three | The main chat takes the button out |
@@ -243,12 +259,14 @@ Almost all of this book is new to the game. Each row is a job, and each reaches 
 
 ## Still open
 
-Seven things are not settled yet. Each answer becomes a rule here.
+Nine things are not settled yet. Each answer becomes a rule here.
 
-- [ ] How Dream Thrash sounds when synths play it: settled by ear, with the first try-out.
+- [ ] How Dream Thrash should sound. The first try-out (9 Oct) was not it: of exploring you said “Neither”, of the wall of chords “Neither”, and of the fight “More”. The band's sound check (9 Oct, on real recorded instruments) got your “Yes, write the music (Recommended)”, with “The lead guitar” to mend, the guitars “Heavier”, exploring “Calmer and dreamier”, and a synth for “The air (Recommended)”. Next to hear is the music itself: exploring and the fight, with two or three tunes to choose between.
+- [ ] How the band's recordings get into the game. It has no sound files today: for the main chat and you to settle.
 - [ ] Bosses on the beat: whether it feels right, once there is something to play; and the boss's rule, with the main chat.
+- [ ] The fight's music following the attacks: which way for which attack, once there is something to play; and the rules' side, with the main chat.
 - [ ] Which old console the retro voice takes after: settled by ear, with the first loot samples.
 - [ ] The Wordsmith theme itself.
 - [ ] Each land's own music and its own air, land by land.
 - [ ] How you play, speaker or headphones: asked in round 7, not answered.
-- [ ] The order of the work.
+- [ ] The order of the work. The music is first (your pick of 9 Oct: “Music first”); the rest is not settled.
