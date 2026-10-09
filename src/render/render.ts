@@ -20,7 +20,9 @@ import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
 import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
-import { isTownFlat, isTownsperson, townSprite, turnedTo } from '../art/townscene';
+import { swirlAt } from '../art/ring3';
+import { SMITH3 } from '../art/smith3';
+import { columnSprite, isTownFlat, isTownsperson, smithAct, townSprite, turnedTo } from '../art/townscene';
 import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
 import { drawText, textWidth } from '../engine/font';
@@ -423,6 +425,33 @@ export class Renderer {
    * a dart wall's slot, in the face of its wall. (The holes and a plate lie flat on the floor: they
    * are drawn with the ground.)
    */
+  /** THE WORDSMITH'S RING MADE NEW (art/ring3.ts): the letters of light that swirl round him, and the column of light over his slab, stood among everything else by how near they are. */
+  private standRing3(game: Game, cam: Cam, t: number): void {
+    const art = this.art;
+    const r3 = art.town.ring3;
+    const L = game.level;
+    const ring = L.props.find((p) => p.kind === 'runeRing');
+    if (!r3 || !ring) return;
+    for (const l of swirlAt(t, smithAct(art, t))) {
+      const x = ring.x + l.x;
+      const y = ring.y + l.y;
+      const sp = (l.big ? r3.big : r3.letters)[l.heat][l.k];
+      const sx = wx(cam, x, y);
+      const sy = wy(cam, x, y) - l.z;
+      this.stand(x + y, sp, sx, sy);
+      if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
+    }
+    const slab = L.props.find((p) => p.kind === 'runeSlab');
+    const col = slab ? columnSprite(art, t) : null;
+    if (slab && col) {
+      // (on the slab's top: 11 game pixels up)
+      const sx = wx(cam, slab.x, slab.y);
+      const sy = wy(cam, slab.x, slab.y) - 11;
+      this.stand(slab.x + slab.y + 0.05, col.s, sx, sy, null, 0, 1, col.alpha);
+      if (col.s.lights) this.propLit.push({ s: col.s, x: Math.round(sx), y: Math.round(sy) });
+    }
+  }
+
   private standHazards(game: Game, cam: Cam): void {
     const L = game.level;
     if (L.hazards.length === 0) return;
@@ -1640,6 +1669,9 @@ export class Renderer {
         if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
       }
     }
+    // (THE WORDSMITH'S RING MADE NEW, art/ring3.ts, behind art/smith3.ts SMITH3: the letters of light
+    // that swirl round, each stood among everything else, and the column of light over the slab)
+    if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);
     this.standHazards(game, cam);
     this.standDoors(L, cam);
     // the town's services carry their names, so a newcomer can see what is where

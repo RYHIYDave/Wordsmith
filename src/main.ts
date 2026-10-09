@@ -18,6 +18,7 @@ import { makeDungeonProps } from './art/props';
 import { makeTownProps } from './art/town';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
+import { SMITH3 } from './art/smith3';
 import { makeTitleArt } from './art/title';
 import { makeSmithTitle } from './art/title_smith';
 import type { SmithTake } from './art/title_smith';
@@ -1617,6 +1618,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       useComboMends(on);
       art.heroes = makeHeroArt3();
     },
+    /** THE WORDSMITH ON BONES AND HIS RING MADE NEW (art/smith3.ts, SMITH3): a mock-up behind a switch that is off; its pictures switch it on and paint the town's people again. */
+    smith3: (on: boolean) => {
+      SMITH3.on = on;
+      art.folk = makeTownsfolk();
+      art.town = makeTownProps();
+    },
+    /** The clock the town's things go by (seconds, slowed with `slowmo`): a playtest can wait for the moment someone acts. */
+    clock: () => clock,
     /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): ON since Version 19.4, on his yes; pictures of him as he was before switch them off and paint the heroes again (true: the new, the game's own, back). */
     rangerStances: (on: boolean) => {
       useRangerStances(on);

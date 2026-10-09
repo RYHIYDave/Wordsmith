@@ -3,8 +3,10 @@
 // (dev/preview_town_gif.ts): so the two cannot come to differ.
 
 import type { Sprite } from '../engine/px';
+import { COLUMN_FRAMES, FLOOR_FRAMES, flareOf, stoneBlaze } from './ring3';
+import { SMITH3 } from './smith3';
 import type { TownProps } from './town';
-import { townFrame } from './townsfolk';
+import { actAt, townFrame } from './townsfolk';
 import type { Facing, Townsfolk } from './townsfolk';
 
 export interface TownArt {
@@ -85,16 +87,44 @@ export function townSprite(art: TownArt, kind: string, variant: number, t: numbe
     case 'tentBack': return town.tentBack;
     case 'tentTable': return town.tentTable;
     case 'mystic': return townFrame(art.folk.mystic, t, 3.1, to);
-    // the wordsmith's ring
-    case 'runeRing': return town.runeRing[Math.floor(t * 4) % town.runeRing.length];
+    // the wordsmith's ring (made new, big and wild, with the wordsmith on bones: art/ring3.ts)
+    case 'runeRing':
+      if (SMITH3.on && town.ring3) return town.ring3.floor[Math.floor(t * (10 + 14 * flareOf(smithAct(art, t)))) % FLOOR_FRAMES];
+      return town.runeRing[Math.floor(t * 4) % town.runeRing.length];
     case 'runeSlab': return town.runeSlab[Math.floor(t * 5) % town.runeSlab.length];
     case 'runeStone': {
+      if (SMITH3.on && town.ring3) {
+        const ways = town.ring3.stones[variant % town.ring3.stones.length][stoneBlaze(variant, t, smithAct(art, t))];
+        return ways[Math.floor(t * 9 + variant * 1.7) % ways.length];
+      }
       // (a pulse of light goes round the ring, from stone to stone)
       const stone = town.runeStone[variant % town.runeStone.length];
       return Math.floor(t * 1.6) % 6 === variant % 6 ? stone.alight : stone.dim;
     }
-    case 'wordsmith': return townFrame(art.folk.wordsmith, t, 6.4, to);
+    case 'wordsmith':
+      smithTo = to;
+      return townFrame(art.folk.wordsmith, t, SMITH_PHASE, to);
     case 'stranger': return townFrame(art.folk.stranger, t, 4.7, to);
     default: return null;
   }
+}
+
+/** The wordsmith's clock is set this far apart from the others'. */
+const SMITH_PHASE = 6.4;
+/** Which way the wordsmith was last turned to someone (townSprite is told each frame he is drawn). */
+let smithTo: Facing | null = null;
+
+/** Where the wordsmith is in his work at time `t` (art/townsfolk.ts, actAt): seconds into it, or -1 (and -1 while he is turned to someone: his work waits). */
+export function smithAct(art: TownArt, t: number): number {
+  const m = art.folk.wordsmith;
+  if (smithTo !== null && m.turned[smithTo] !== m.idle) return -1;
+  return actAt(m, t, SMITH_PHASE);
+}
+
+/** The column of light over the slab at time `t` (the new ring only), and how strongly it shows. */
+export function columnSprite(art: TownArt, t: number): { s: Sprite; alpha: number } | null {
+  const r = art.town.ring3;
+  if (!SMITH3.on || !r) return null;
+  const f = flareOf(smithAct(art, t));
+  return { s: r.column[Math.floor(t * (12 + 12 * f)) % COLUMN_FRAMES], alpha: Math.min(1, 0.42 + 0.58 * f) };
 }
