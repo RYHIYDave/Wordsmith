@@ -1,0 +1,400 @@
+<title>Dream Thrash Try-out</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+  /* Layout: one column for a phone held upright. Each clip is a row: a square play button, its name,
+     and a strip that shows the music's two halves over time (dream below, thrash above). */
+  :root {
+    color-scheme: dark;
+    --night: #0c0b14;        /* the dark of the game's world */
+    --stone: #161525;        /* a panel on it */
+    --seam: #2c2a44;         /* lines and empty lanes */
+    --parchment: #ebe6dc;    /* words */
+    --ash: #a19bb6;          /* quieter words */
+    --dream: #58d9ea;        /* the dream half: the cyan a friend glows */
+    --dream-deep: #1d5b68;
+    --thrash: #ff5f9e;       /* the thrash half: the pink and gold an enemy glows */
+    --gold: #ffc247;
+    --display: "Pixelify Sans", "Trebuchet MS", "Verdana", sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--night);
+    color: var(--parchment);
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.5;
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  main { max-width: 40rem; margin-inline: auto; display: grid; gap: 40px; }
+  h1, h2, h3, p, ul, ol { margin: 0; }
+  ul, ol { padding: 0; list-style: none; }
+
+  .eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ash); }
+  h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem, 11vw, 3.6rem); line-height: 1; text-wrap: balance; }
+  h1 .dream { color: var(--dream); }
+  h1 .thrash { background: linear-gradient(90deg, var(--thrash), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  h2 { font-family: var(--display); font-weight: 500; font-size: 1.35rem; line-height: 1.2; text-wrap: balance; }
+  h3 { font-family: var(--body); font-weight: 700; font-size: 1.05rem; line-height: 1.25; }
+  .top { display: grid; gap: 14px; }
+  .lede { font-size: 1.08rem; max-width: 34rem; }
+  .how { border-left: 3px solid var(--gold); padding: 2px 0 2px 14px; color: var(--parchment); max-width: 34rem; }
+  .how b { color: var(--gold); font-weight: 700; }
+  .quiet { color: var(--ash); }
+
+  /* a clip */
+  .clips { display: grid; gap: 30px; }
+  .clip { display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 14px; row-gap: 12px; align-items: start; }
+  .clip .words { min-width: 0; display: grid; gap: 4px; }
+  .clip .words p { color: var(--ash); font-size: 0.95rem; }
+  .clip .under { grid-column: 1 / -1; display: grid; gap: 8px; }
+  .num { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--ash); text-transform: uppercase; }
+
+  .play {
+    width: 56px; height: 56px; padding: 0; border: 0; cursor: pointer;
+    background: var(--parchment); color: var(--night);
+    /* corners cut square, like a pixel-art button */
+    clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
+    display: grid; place-items: center;
+  }
+  .play:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; clip-path: none; }
+  .play svg { width: 24px; height: 24px; fill: currentColor; }
+  .play .pause, .play .wait { display: none; }
+  .clip[data-state="playing"] .play { background: var(--gold); }
+  .clip[data-state="playing"] .play .go, .clip[data-state="loading"] .play .go { display: none; }
+  .clip[data-state="playing"] .play .pause { display: block; }
+  .clip[data-state="loading"] .play .wait { display: block; animation: blink 0.7s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .clip[data-state="loading"] .play .wait { animation: none; } }
+
+  /* the strip: thrash above, dream below, a playhead across both */
+  .strip { position: relative; display: grid; gap: 3px; padding-block: 6px; cursor: pointer; touch-action: none; }
+  .lane { position: relative; height: 18px; background: var(--seam); overflow: hidden; }
+  .lane.dream { height: 12px; }
+  .lane i { position: absolute; top: 0; bottom: 0; display: block; }
+  .lane.dream i { background: linear-gradient(90deg, var(--dream-deep), var(--dream)); }
+  .lane.thrash i { background: linear-gradient(90deg, var(--thrash), var(--gold)); border-right: 2px solid var(--night); }
+  .lane.thrash i span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--night); font-weight: 500; white-space: nowrap; overflow: hidden; }
+  .head { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--parchment); transform: translateX(-1px); pointer-events: none; }
+  .head::before { content: ""; position: absolute; top: 0; left: -3px; width: 8px; height: 4px; background: var(--parchment); }
+  .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 14px; font-family: var(--mono); font-size: 0.74rem; color: var(--ash); font-variant-numeric: tabular-nums; }
+  .row .clock { color: var(--parchment); }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .key b { font-weight: 500; color: var(--parchment); }
+  .key .d::before, .key .t::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 6px; background: var(--dream); }
+  .key .t::before { background: linear-gradient(90deg, var(--thrash), var(--gold)); }
+  .trouble { grid-column: 1 / -1; color: var(--gold); font-size: 0.92rem; }
+
+  /* the parts on their own: the same row, smaller */
+  .parts { display: grid; gap: 18px; }
+  .parts .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr)); gap: 18px 24px; }
+  .clip.small { grid-template-columns: 44px minmax(0, 1fr); column-gap: 12px; row-gap: 6px; }
+  .clip.small .play { width: 44px; height: 44px; }
+  .clip.small .play svg { width: 18px; height: 18px; }
+  .clip.small .lane { height: 8px; }
+  .clip.small .lane i { background: var(--ash); }
+  .clip.small.is-dream .lane i { background: var(--dream); }
+  .clip.small.is-thrash .lane i { background: linear-gradient(90deg, var(--thrash), var(--gold)); }
+  .clip.small .strip { padding-block: 4px; }
+
+  /* notes */
+  .notes { display: grid; gap: 26px; border-top: 1px solid var(--seam); padding-top: 28px; }
+  .notes section { display: grid; gap: 10px; }
+  .notes li { position: relative; padding-left: 18px; max-width: 36rem; }
+  .notes li + li { margin-top: 8px; }
+  .notes li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 7px; height: 7px; background: var(--dream); }
+  .notes .not li::before { background: var(--thrash); }
+  .tags { font-family: var(--mono); font-size: 0.86em; color: var(--dream); }
+  .facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; font-size: 0.95rem; }
+  .facts dt { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); padding-top: 3px; }
+  .facts dd { margin: 0; }
+</style>
+
+<main>
+  <header class="top">
+    <p class="eyebrow">Wordsmith · music · try-out 1 · 9 Oct 2026</p>
+    <h1><span class="dream">Dream</span> <span class="thrash">Thrash</span></h1>
+    <p class="lede">The first music written for Wordsmith. One tune in two halves: the dream half plays while you explore, and the thrash half punches in when a fight starts. None of it is in the game.</p>
+    <p class="how"><b>How to listen.</b> Set your volume on the first clip, then leave it alone. How much louder the fight is than the exploring is part of what you are judging. Try your phone's own speaker first.</p>
+  </header>
+
+  <section class="clips" aria-label="The clips">
+    <article class="clip" data-src="clips/dream.mp3" data-len="48.8">
+      <button class="play" type="button" aria-label="Play: Exploring"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+      <div class="words">
+        <span class="num">Clip 1</span>
+        <h3>Exploring</h3>
+        <p>The dream half alone, once round the whole tune: a wash of chords, a slow lead, a sparkle.</p>
+      </div>
+      <div class="under">
+        <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="49" aria-valuenow="0" tabindex="0">
+          <div class="lane thrash"></div>
+          <div class="lane dream"><i style="left:0;width:91.8%"></i></div>
+          <div class="head"></div>
+        </div>
+        <div class="row"><span class="key"><span class="d">the dream half</span></span><span class="clock">0:00 / 0:49</span></div>
+      </div>
+    </article>
+
+    <article class="clip" data-src="clips/fight_breaks_out.mp3" data-len="48.8">
+      <button class="play" type="button" aria-label="Play: A fight starts, and ends"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+      <div class="words">
+        <span class="num">Clip 2</span>
+        <h3>A fight starts, and ends</h3>
+        <p>You are exploring. Monsters wake and the thrash half punches in. When the room is clear it falls away, and the dream carries on.</p>
+      </div>
+      <div class="under">
+        <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="49" aria-valuenow="0" tabindex="0">
+          <div class="lane thrash"><i style="left:22.95%;width:45.9%"><span>the fight</span></i></div>
+          <div class="lane dream"><i style="left:0;width:91.8%"></i></div>
+          <div class="head"></div>
+        </div>
+        <div class="row"><span class="key"><span><b>0:11</b> monsters wake</span><span><b>0:34</b> the room is clear</span></span><span class="clock">0:00 / 0:49</span></div>
+      </div>
+    </article>
+
+    <article class="clip" data-src="clips/fight_full.mp3" data-len="48.8">
+      <button class="play" type="button" aria-label="Play: In the thick of it"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+      <div class="words">
+        <span class="num">Clip 3</span>
+        <h3>In the thick of it</h3>
+        <p>A fight that lasts the whole tune, so you hear the four ways the thrash half plays, eleven seconds of each.</p>
+      </div>
+      <div class="under">
+        <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="49" aria-valuenow="0" tabindex="0">
+          <div class="lane thrash"><i style="left:0;width:22.95%"><span>gallop</span></i><i style="left:22.95%;width:22.95%"><span>racing</span></i><i style="left:45.9%;width:22.95%"><span>half-time</span></i><i style="left:68.85%;width:22.95%"><span>blast</span></i></div>
+          <div class="lane dream"><i style="left:0;width:91.8%"></i></div>
+          <div class="head"></div>
+        </div>
+        <div class="row"><span class="key"><span class="t">the thrash half</span><span class="d">the dream half, still playing</span></span><span class="clock">0:00 / 0:49</span></div>
+      </div>
+    </article>
+
+    <article class="clip" data-src="clips/fight_full_saws.mp3" data-len="48.8">
+      <button class="play" type="button" aria-label="Play: The same fight, with a plain synth wall"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+      <div class="words">
+        <span class="num">Clip 4</span>
+        <h3>The same fight, with a plain synth wall</h3>
+        <p>In clip 3 the chords, the riff and the bass are plucked strings pushed through an amp, all worked out in code. Here they are plain held synth notes instead. Which is nearer your Dream Thrash?</p>
+      </div>
+      <div class="under">
+        <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="49" aria-valuenow="0" tabindex="0">
+          <div class="lane thrash"><i style="left:0;width:22.95%"><span>gallop</span></i><i style="left:22.95%;width:22.95%"><span>racing</span></i><i style="left:45.9%;width:22.95%"><span>half-time</span></i><i style="left:68.85%;width:22.95%"><span>blast</span></i></div>
+          <div class="lane dream"><i style="left:0;width:91.8%"></i></div>
+          <div class="head"></div>
+        </div>
+        <div class="row"><span class="key"><span class="t">the thrash half, as synths</span></span><span class="clock">0:00 / 0:49</span></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="parts">
+    <h2>The parts on their own</h2>
+    <p class="quiet">Eight bars of each, turned up so you can hear it alone. If something bothers you in a clip, find it here and tell me which.</p>
+    <div class="grid">
+      <article class="clip small is-dream" data-src="clips/only_lead.mp3" data-len="14.2">
+        <button class="play" type="button" aria-label="Play: the lead alone"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words"><h3>The lead</h3><p>Soft for four bars, then at full voice, as in a fight.</p></div>
+        <div class="under"><div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0"><div class="lane"><i style="left:0;width:78.9%"></i></div><div class="head"></div></div></div>
+      </article>
+      <article class="clip small is-dream" data-src="clips/only_wash.mp3" data-len="14.2">
+        <button class="play" type="button" aria-label="Play: the wash alone"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words"><h3>The wash</h3><p>The chords under everything, and the soft low note.</p></div>
+        <div class="under"><div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0"><div class="lane"><i style="left:0;width:78.9%"></i></div><div class="head"></div></div></div>
+      </article>
+      <article class="clip small is-dream" data-src="clips/only_sparkle.mp3" data-len="14.2">
+        <button class="play" type="button" aria-label="Play: the sparkle alone"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words"><h3>The sparkle</h3><p>Small plucked notes, thrown from side to side by an echo.</p></div>
+        <div class="under"><div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0"><div class="lane"><i style="left:0;width:78.9%"></i></div><div class="head"></div></div></div>
+      </article>
+      <article class="clip small is-thrash" data-src="clips/only_drums.mp3" data-len="14.2">
+        <button class="play" type="button" aria-label="Play: the drums alone"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words"><h3>The drums</h3><p>Racing, a fill, then half-time.</p></div>
+        <div class="under"><div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0"><div class="lane"><i style="left:0;width:78.9%"></i></div><div class="head"></div></div></div>
+      </article>
+      <article class="clip small is-thrash" data-src="clips/only_wall.mp3" data-len="14.2">
+        <button class="play" type="button" aria-label="Play: the wall alone"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words"><h3>The wall</h3><p>Chords and bass: chugging, then left to ring.</p></div>
+        <div class="under"><div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0"><div class="lane"><i style="left:0;width:78.9%"></i></div><div class="head"></div></div></div>
+      </article>
+      <article class="clip small is-thrash" data-src="clips/only_riff.mp3" data-len="14.2">
+        <button class="play" type="button" aria-label="Play: the riff alone"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words"><h3>The riff</h3><p>Two voices, picked fast.</p></div>
+        <div class="under"><div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0"><div class="lane"><i style="left:0;width:78.9%"></i></div><div class="head"></div></div></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="notes">
+    <section>
+      <h2>What I checked, since I can't hear</h2>
+      <ul>
+        <li>Every note is in the key, and no two voices clash. A checker reads the tune as written.</li>
+        <li>The strings are in tune.</li>
+        <li>Nothing clips and nothing clicks.</li>
+        <li>The fight measures about 6 units louder than the exploring, on the loudness scale that radio and streaming use. That is a clear step up.</li>
+        <li>A phone's speaker can't play deep notes. The kick drum, the wall and the lead each have sound in the range it does play.</li>
+        <li>A listening program that names what it hears was asked about each half. Its top answers for the dream half: <span class="tags">Music, New-age music, Background music, Tender music</span>. For the fight: <span class="tags">Music, Video game music, Soundtrack music, Background music, Exciting music</span>. It did not say heavy metal.</li>
+      </ul>
+    </section>
+    <section class="not">
+      <h2>What nobody has checked</h2>
+      <ul>
+        <li>How it sounds. Nobody has heard this. You are the first.</li>
+        <li>A real phone.</li>
+        <li>How it sits under the game's other sounds.</li>
+        <li>Whether the tune comes round on itself without a seam. It is written to.</li>
+        <li>Bosses on the beat. Not built yet.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>The tune</h2>
+      <dl class="facts">
+        <dt>Key</dt><dd>D major: bright, not grim</dd>
+        <dt>Speed</dt><dd>0.35 of a second a beat (about 171 beats a minute)</dd>
+        <dt>Length</dt><dd>32 bars, 45 seconds, then it comes round again</dd>
+        <dt>Made of</dt><dd>Code only, like every sound in the game: no recordings, no sound files</dd>
+        <dt>Old beside new</dt><dd>The game has no music today, so there is nothing old to set beside this</dd>
+      </dl>
+    </section>
+  </section>
+</main>
+
+<script>
+(() => {
+  const clips = [...document.querySelectorAll('.clip')].map((el) => {
+    const audio = new Audio();
+    audio.preload = 'none';
+    audio.src = el.dataset.src;
+    return { el, audio, len: Number(el.dataset.len), src: el.dataset.src, way: 'file', tried: new Set(['file']), blob: null, mending: false, started: false,
+      button: el.querySelector('.play'), strip: el.querySelector('.strip'), head: el.querySelector('.head'), clock: el.querySelector('.clock') };
+  });
+  const mmss = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  const state = (c, s) => { c.el.dataset.state = s; };
+  const trouble = (c, text) => {
+    let p = c.el.querySelector('.trouble');
+    if (!p) { p = document.createElement('p'); p.className = 'trouble'; c.el.appendChild(p); }
+    p.textContent = text;
+    p.hidden = !text;
+  };
+  const show = (c) => {
+    const t = Math.min(c.audio.currentTime || 0, c.len);
+    c.head.style.left = (100 * t / c.len) + '%';
+    c.strip.setAttribute('aria-valuenow', String(Math.round(t)));
+    if (c.clock) c.clock.textContent = mmss(t) + ' / ' + mmss(Math.round(c.len));
+  };
+  const tick = () => {
+    for (const c of clips) if (!c.audio.paused) show(c);
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+
+  // A clip can reach the player three ways: as a blob held in the page (best: it can be wound to any
+  // point), as text, or straight from its file. Each is tried until one works, so the page plays
+  // wherever it is opened.
+  const WAYS = ['blob', 'text', 'file'];
+  const asText = (blob) => new Promise((done, fail) => {
+    const r = new FileReader();
+    r.onload = () => done(r.result);
+    r.onerror = () => fail(r.error);
+    r.readAsDataURL(blob);
+  });
+  const fetched = async (c) => {
+    if (!c.blob) {
+      const got = await fetch(c.src);
+      if (!got.ok) throw new Error('fetch ' + got.status);
+      c.blob = new Blob([await got.arrayBuffer()], { type: 'audio/mpeg' });
+    }
+    return c.blob;
+  };
+  const give = async (c, way) => {
+    c.way = way;
+    c.tried.add(way);
+    c.audio.src = way === 'file' ? c.src : way === 'blob' ? URL.createObjectURL(await fetched(c)) : await asText(await fetched(c));
+    c.audio.preload = 'auto';
+    c.audio.load();
+  };
+  const mend = async (c, wasPlaying) => {
+    if (c.mending) return;
+    const next = WAYS.find((w) => !c.tried.has(w));
+    if (!next) { state(c, 'idle'); trouble(c, 'This clip will not play here. Tell me, and I will send the sound itself.'); return; }
+    c.mending = true;
+    if (wasPlaying) state(c, 'loading');
+    try {
+      await give(c, next);
+      c.mending = false;
+      if (!wasPlaying) return;
+      try { await c.audio.play(); } catch (e) {
+        if (e && e.name === 'NotAllowedError') { state(c, 'idle'); trouble(c, 'Ready now. Tap play once more.'); }
+        else if (!e || e.name !== 'AbortError') mend(c, true);
+      }
+    } catch (e) {
+      c.mending = false;
+      state(c, 'idle');
+      if (wasPlaying) trouble(c, 'This clip will not load here. Tell me, and I will send the sound itself.');
+    }
+  };
+
+  const stopOthers = (c) => { for (const o of clips) if (o !== c && !o.audio.paused) o.audio.pause(); };
+  const toggle = (c) => {
+    if (c.mending) return;
+    if (!c.audio.paused) { c.audio.pause(); return; }
+    stopOthers(c);
+    trouble(c, '');
+    state(c, 'loading');
+    c.started = true;
+    const p = c.audio.play();
+    if (p && p.catch) p.catch((e) => {
+      if (e && e.name === 'AbortError') return;
+      if (e && e.name === 'NotAllowedError') { state(c, 'idle'); return; }
+      mend(c, true);
+    });
+  };
+  const seek = (c, x) => {
+    const box = c.strip.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (x - box.left) / box.width)) * c.len;
+    try { c.audio.currentTime = Math.min(t, Math.max(0, c.len - 0.05)); } catch (e) { /* not loaded yet: it starts from the top */ }
+    show(c);
+  };
+
+  for (const c of clips) {
+    state(c, 'idle');
+    show(c);
+    c.button.addEventListener('click', () => toggle(c));
+    c.audio.addEventListener('playing', () => { state(c, 'playing'); trouble(c, ''); });
+    c.audio.addEventListener('waiting', () => { if (!c.audio.paused) state(c, 'loading'); });
+    c.audio.addEventListener('pause', () => { if (!c.mending) state(c, 'idle'); show(c); });
+    c.audio.addEventListener('ended', () => { try { c.audio.currentTime = 0; } catch (e) { /* stays at the end */ } state(c, 'idle'); show(c); });
+    c.audio.addEventListener('error', () => { if (c.audio.error && !c.mending) mend(c, c.el.dataset.state === 'loading' || c.el.dataset.state === 'playing'); });
+    let held = false;
+    c.strip.addEventListener('pointerdown', (e) => { held = true; try { c.strip.setPointerCapture(e.pointerId); } catch (err) { /* no capture: taps still work */ } seek(c, e.clientX); });
+    c.strip.addEventListener('pointermove', (e) => { if (held) seek(c, e.clientX); });
+    const letGo = () => { held = false; };
+    c.strip.addEventListener('pointerup', letGo);
+    c.strip.addEventListener('pointercancel', letGo);
+    c.strip.addEventListener('keydown', (e) => {
+      const step = e.key === 'ArrowRight' ? 5 : e.key === 'ArrowLeft' ? -5 : 0;
+      if (!step) return;
+      e.preventDefault();
+      try { c.audio.currentTime = Math.max(0, Math.min(c.len - 0.05, (c.audio.currentTime || 0) + step)); } catch (err) { /* not loaded yet */ }
+      show(c);
+    });
+  }
+
+  // Fetch the clips one after another, in the order they are on the page, and hand each to its player
+  // as a blob before it is first played. A clip tapped before its turn plays straight from its file.
+  (async () => {
+    for (const c of clips) {
+      if (c.started) continue;
+      try {
+        await fetched(c);
+        if (c.started || c.mending) continue;
+        c.tried.delete('file');
+        await give(c, 'blob');
+      } catch (e) { /* it stays on its file */ }
+    }
+  })();
+})();
+</script>
