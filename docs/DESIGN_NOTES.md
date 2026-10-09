@@ -5030,6 +5030,105 @@ has 12% fewer monsters, 10% less life to cut through and 8% less experience; dun
 - THE RELEASE BUILD: made in the copy at 11:12, `Play.html` 1,022,870 bytes and `dist/artifact.html` 1,022,548, both saying V19.7; kept in the scratchpad's `v197a/release/`.
 - **The published page itself**: (`wrap197.sh` in the scratchpad, 11:13 to 11:36): **76 of 76 playtests clean**, the 74 of 19.6 and the new one on a PC and a phone. Published at 11:36 ("Version 51", version id `1791560190-db07`); the file published is the kept copy, `v197a/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
 
+### Version 19.8: the monsters' attacks
+
+**What he said.** To this chat on 9 Oct, 08:15: "Tiny and small mobs should have one attack.  Medium
+two attacks, large 2-3, and the boss 4.  They should always have a basic, single target attack.  That
+way when their big telegraphed slams or spells go on cooldown, and they have their mace swing or magic
+missile to use in between.  The bigger the hit, the longer the cooldown." His yes to the moves: the
+green troll a club swing and its slam; the red troll a club swing, the slam and a charge along a
+marked line; the boss a swing, his slam, his fan of bolts and his skeleton summon as his fourth ("The
+boss doesn’t need the ring of fire as he has the skeleton summon which should be designated as an
+attack"). 08:24: "Pack leaders that are different mobs can have an extra attack if it seems right."
+(That waits for a pack leader of his own kind: the art chat's skeleton champion and his rallying cry,
+a later version.) "Packs today, attacks next (Recommended)". To the art chat (as it posted them): by
+09:17, "It’s not the big red circles I have a problem with, it’s that every attack is a big slam on
+the ground.  Use the same logic we do with characters, ask questions about the larger enemies and
+develop attacks that are thematic"; by 09:30, the trolls "Club sweep and a charge (Recommended)", the
+Warden "He can keep the slam.  I just don’t want it overused"; by 09:57, to `troll_swing.gif` and
+`troll_charge.gif`, "Yes, keep it (Recommended)"; by 10:18, to `warden_swing.gif`, "Yes, keep it
+(Recommended)", and of the dead he calls, "I’d like them to crawl out of the ground when summoned";
+by 10:23, to their crawling out, "Yes, keep it (Recommended)". By 12:48, to films of it all in the game
+(`green_trolls.gif`, `red_troll.gif`, `warden.gif`), asked "Should the monsters' attacks go into the
+game as they are in these films?": "Yes, as shown (Recommended)".
+
+**What is in it.**
+
+- **The moves** (`MONSTER_ATTACKS`, on; `MONSTER_MOVES`, `MonsterMove`, `movesOf` in
+  `src/game/defs.ts`; `pickMove`, `startMove`, `landMove` in `src/game/game.ts`; `Monster.move` and
+  `Monster.moveCd`). A monster that has moves attacks with the biggest of them that is ready and that
+  the hero is in reach of, and with its basic blow, the first, while the big ones cool down; a big
+  move, once used, waits its own cooldown; after any move the monster waits before the next (Swift
+  shortens both, Frenzied hastens both). Each big move is first ready from half to one and a half
+  times its `first` after the monster wakes, so a pack does not bring its slams down together.
+  - The green troll (medium, two): its club swing, a blow at one (0.6 s of warning, 60% of its blow,
+    no circle); its slam as before (0.85 s, its red circle, the whole blow), once every 6 seconds at
+    most.
+  - The red troll (large, three): its swing (65% of its blow); the slam, once every 7 seconds at most;
+    and the charge: from 3.5 to 9 tiles off, with a clear run past where the hero stands (no wall, shut
+    door, pit or ledge between), he roars and scrapes for 0.9 s while his line fills on the floor (a
+    zone of its own kind, `lane`, from him to 1.5 tiles past the hero, 1.5 tiles wide), then runs it at
+    10 tiles a second; whoever is in his way is run down, once (130% of his blow), and knocked out of
+    it (`CHARGE`); he pulls up at its end and stands 0.6 s, a moment to hit him; once every 9 seconds
+    at most. A stun breaks it off, wound up or running, and the line goes with it; a freeze stops his
+    run.
+  - The Warden (the boss, four): his swing (0.7 s, 80% of his blow); his bolts, only beyond his
+    slam's reach (3.4 to 12 tiles), once every 3.5 seconds at most; his slam, within 3.4 tiles, once
+    every 8 seconds at most ("I just don’t want it overused"); and calling the dead, an attack of its
+    own (1.1 s, his hand rising): four skeletons crawl out of the ground round him, a little after one
+    another, 1.4 s each, and till they are out they are a picture only, not among the monsters: not to
+    be hit or aimed at, doing nothing (`SUMMON`, `Game.risers`, `Riser`, `callDead`). First ready 4.5 to
+    13.5 seconds into the fight, then every 18 seconds at most, and never while 6 of those he called
+    still stand. He no longer calls them at two thirds and a third of his life.
+  - The bats, skeletons, archers and cultists (tiny and small): their one attack, as before.
+- **The pictures**: the art chat's `art/monster-attacks` (`dd38870`), merged here: the trolls' swing
+  and the red troll's charge (`TROLL_MOVES`), the Warden's swing and his calling of the dead
+  (`WARDEN_MOVES`), the dead crawling out (`CRAWL_OUT`), all on and off with the rules
+  (`useMonsterAttacks` in `src/art/bestiary.ts`, as that file loads). Each move is played by the rules'
+  clock, its blow on the rules' blow (`moveFrame`, `moveClip`, `clipFrame` in `src/render/figure.ts`;
+  `monsterAttackAge` takes a move's own recovery); the charge's line is drawn where the red circle is
+  (`drawChargeLane`, in `render.ts`'s floor pass); the crawling dead stand among the figures; the new
+  moves are painted ahead of need (`makeBestiary`'s warming, and the skeleton's crawl where the Warden is).
+- **The bot** steps out of a charge's line (`src/dev/bot.ts`).
+- **How hard they hit**: a hero who stands and takes it is hurt about as hard as by their one attack
+  (`tools/measure_moves.ts`, 40 seconds beside each in a practice room, its words taken off): the green
+  troll 7% less; the red 3% less, and 3% more from six tiles off, where he charges; the Warden's own
+  blows 3% more beside him and the same from six tiles off, the dead he calls besides. The test bot's runs (`tools/measure_attacks.ts`, six of each hero from the start, 40 minutes of play
+  each, off and on): 19 dungeons cleared either way, 11 deaths off and 10 on; its boss fights 28.5 to
+  33.7 seconds on average (29.7 to 35.6 off), the Warden calling 4 to 6 of the dead a fight on average,
+  where at two thirds and a third of his life he called 8.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/monster_attacks.test.ts` (new, 10): the switch on in the game, the pictures with
+  it, and off as before; his rules in the moves (how many by size, the basic blow first, the bigger
+  the hit the longer the cooldown); each move landing when its picture's blow does; a green troll
+  swinging while its slam cools down; the red troll's charge (the line laid and filling, past the
+  hero; run down once and knocked out of it; stepping out of it; pulling up and the line gone; a stun
+  breaking it off; no charge with a wall between); the Warden's four, and the dead crawling out (not
+  among the monsters, not aimed at, then joining the fight); the rising dead neither hit nor hitting
+  nor walking; the Warden with the switch off as before; the pictures, each move from its own clip,
+  its blow on the rules' blow, the run going round, the crawl, all painted ahead; the bot stepping out
+  of a line. `tests/monsters.test.ts`, written before them, holds them off; in `tests/new_words.test.ts`
+  a stun breaks off a troll's slam (its swing made to wait). THE WHOLE UNIT SUITE: 801 of 801 in the frozen copy (below).
+- Films for him, from the game: `tools/scenarios/attacks_film.mjs` and `tools/attacks_films.py`.
+- THE PRE-FLIGHT: a dev page built from the tree, by 13:08: 22 playtests (the new one on a PC and a phone; the monsters on four layouts; the boss; the lesson for a warrior, and for a mage on a phone; the dungeon on two layouts; the packs; the doors; the heights; the depths; the practice room; the small things; the traps; the mix; the way in; the scarce words; the words of a warrior), all clean in the end. The older monsters playtest (`tools/scenarios/monsters.mjs`), written for one attack, at first found every troll's and the Warden's first blow out of its clip: it now switches the attacks off for itself and on again at its end, and was clean on four layouts.
+- A new playtest in the regression, `tools/scenarios/monster_attacks.mjs` (pc and phone): green trolls
+  swinging and slamming; a red troll laying his line and charging down it; the Warden swinging,
+  slamming and calling the dead, who crawl out and join the fight; the bot fighting the Warden and a
+  red troll; a dungeon with the bot fighting there; switched off, a troll slams first; and on again.
+- **The regression** on two frozen copies, two at a time, nothing else running. THE FIRST (the scratchpad's `v198a/arpg_frozen`, 13:11 to 14:15): 142 OF 154 clean; the 12 others all failed between 13:28 and 13:34, when this machine's own disk allowance ran out (screenshots could not be taken, pages crashed, and one hung to its 15-minute limit; old screenshots and frozen copies were deleted at 13:34, and nothing failed after); and its word-combination runs found the stutter below, mended. THE SECOND, the copy that went live (`v198b/arpg_frozen`, 14:26 to 15:19): **153 OF 154 PLAYTESTS FINISHED CLEAN**. The one, `ranger_stances_pc`: a check of the playtest's own looks at what the ranger is doing every eighth of a second while the bot fights, and must see him stand once; it saw him attacking every time. It passed on the first copy, and three times of three on this one after (by 15:21). Speed: the frame-rate run 55.8 frames a second (19.7: 54.6), longest frame 67 ms; the slowest fights of the four word-combination runs 54.5 to 58.5 frames a second (19.7: 55.7 to 58.2), longest frame 133 ms, in a phone's first fight, where 19.7's page and this one, run again side by side, gave 50 to 83 ms both
+- **What the first regression found, and the mend**: its word-combination runs (`combos_*`) had their
+  longest frame at 183 to 200 ms in the first fights (19.7: 83 ms); on this machine, 19.7's page 50 ms
+  and this one's 183 to 200, and with the attacks switched off 83. The list of frames to paint ahead
+  (`makeBestiary`) joined the moves' frame lists with `flatMap`, which READS every frame, and reading a
+  frame is what paints it (`lazyFrames`), so the first time a troll was met all its new moves were
+  painted in one frame of the game. Now each list is only counted, never read (`e1d0f5f`); a test holds
+  it (the first call to paint ahead paints one frame); the same fights after: 50 to 67 ms.
+- The unit suite in the frozen copy: 801 of 801, 15:21 to 15:26.
+- THE RELEASE BUILD: made in the copy at 15:26, `Play.html` 1,043,002 bytes and `dist/artifact.html` 1,042,680, both saying V19.8; kept in the scratchpad's `v198b/release/`.
+- **The published page itself**: (`wrap198.sh` in the scratchpad, 15:26 to 15:50): **78 of 78 playtests clean**, the 76 of 19.7 and the new one on a PC and a phone. Published at 15:50 ("Version 52", version id `1791575422-94d8`); the file published is the kept copy, `v198b/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -5102,7 +5201,11 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               heroes (hands out the three rigs) + hero_warrior / hero_ranger / hero_mage;
               mkit (the monsters' colours; strike, onGrid, monsterArt: Version 14),
               bestiary (hands out the monsters' rigs; which figure a monster is, how big it
-              stands, painting ahead) + monster_bones / _cultist / _bat / _brute / _warden;
+              stands, painting ahead; 19.8: the monsters' new moves on and off with the rules,
+              `useMonsterAttacks`) + monster_bones / _cultist / _bat / _brute / _warden (19.8,
+              the art chat's: the trolls' swing and the red troll's charge, `TROLL_MOVES`; the
+              Warden's swing and his calling of the dead, `WARDEN_MOVES`; the dead crawling out,
+              `CRAWL_OUT` in mkit) + charge_lane (the line a charge runs along, `drawChargeLane`);
               title (the two paintings behind the starting screen, each a stack of six groups, and
               their life) + title_morph + morph (the one turning into the other, Version 11);
               spells (the orb, the familiar and its bolt, in each element's colours, Version 12);
@@ -5192,7 +5295,13 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               `fillPack`, `spawn`'s pack, `halfOf`, every monster word weighed by its share, and
               where a blow lands, `hurtHero`'s `HalfWords`; `Monster.rarity`, `Monster.half`;
               the names and bars of blue and yellow packs, `named`, `nameColor`, `drawBars` in
-              render/render.ts)
+              render/render.ts);
+              THE MONSTERS' ATTACKS (19.8, in defs.ts: `MONSTER_ATTACKS`, `MONSTER_MOVES`,
+              `MonsterMove`, `movesOf`, `CHARGE`, `SUMMON`; in game.ts `pickMove`, `startMove`,
+              `landMove`, the red troll's charge, `chargeLane`, `runCharge`, `endCharge`, its line a
+              zone of kind 'lane', and the dead the Warden calls, `callDead`, `Game.risers`,
+              `updateRisers`; `Monster.move`, `moveCd`, `charge`, the state 'charge'; the bot
+              steps out of a line, dev/bot.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -5200,7 +5309,8 @@ src/render/   render (world: tiles, actors, ground patches, statuses, shots, lig
               18.5: the stone beside a door in a back wall that the wall runs on into stands),
               figure (which frame of a hero to show, their tails, and what they do when left
               standing: the game and the class cards both use it, Version 11; and how far into
-              its attack a monster is by the rules' clock, Version 14),
+              its attack a monster is by the rules' clock, Version 14; 19.8: a monster's move,
+              `moveFrame`, `moveClip`, and a held clip going round, `clipFrame`),
               lifebar (the hero's life over their head: when it is there, what it shows, 11.2),
               fx (everything that flies or flashes: each word's sign, numbers, shake, messages),
               words3 (the new words' looks, the art chat's: since Version 19.3 Heavy's, Precise's,
@@ -5429,6 +5539,12 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.8: the monsters' attacks (MONSTER_ATTACKS on, with the art chat's TROLL_MOVES, WARDEN_MOVES and CRAWL_OUT)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/monster_attacks.mjs --out shots/ma/ph   # green trolls, a red troll's charge, the Warden and the dead he calls; a dungeon; off and on again (in the regression)
+WHO=red SECONDS=9.5 FPS=20 node tools/playtest.mjs --file dist/<page>.html --size 960x540 --scenario tools/scenarios/attacks_film.mjs --out shots/film/red   # a film's frames (WHO=trolls|red|warden), then:
+python3 tools/attacks_films.py shots/film/red previews/attacks/red_troll.gif "THE RED TROLL" "<line>" "<line>" 170,80,500,300   # the film he saw
+tsx tools/measure_moves.ts [seconds] [rng] [bare]   # how hard each monster with moves hits a hero who stands and takes it, off and on
+tsx tools/measure_attacks.ts [seeds] [seconds]   # the bot's runs, off and on: dungeons cleared, deaths, harm by kind, boss fights
 # Version 19.7: monster packs by size, blue and yellow (MONSTER_PACKS, PACKS, PACK_LOOK on); the mage's stances and the moves big and wild (MAGE_STANCES and WILD on)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/packs_wild.mjs --out shots/pw/ph   # the three heroes with the bot, her stances and the wild moves off and on again; a dungeon of packs (in the regression)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/packs_look.mjs --out shots/packs/ph   # the pictures he saw: a blue pack and a yellow pack, in the practice room and in dungeon 4 (the look off and on)

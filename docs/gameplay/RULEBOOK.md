@@ -2,9 +2,9 @@
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
 (https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
-as it is (Recommended)". The doc is the living one; this copy follows it (rev 38, with the first
-levels of Version 19.5, the master rune-stone of Version 19.6 and the monster packs of Version 19.7
-written in), and both change only
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 39, with the first
+levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs of Version 19.7
+and the monsters' attacks of Version 19.8 written in), and both change only
 with his yes. The two pictures in the doc are written out here in words. How it was found:
 `docs/gameplay/interview.md`.
 
@@ -198,13 +198,28 @@ monster Twin, as each word burned in at the gate does.
 - **The first dungeon** keeps its one room of elites and nothing more: no blue pack, no other yellow
   one, and no words on anyone.
 
-**Their attacks, next (your rules of 9 Oct, 08:15 and 08:24).** Tiny and small monsters have one
-attack, medium two, large two or three, the boss four, and every one a basic single-target attack
-to use while its big ones cool down: the bigger the hit, the longer the cooldown. The green troll: a
-club swing and its slam. The red troll: a club swing, the slam, and a charge along a marked line.
-The boss: a swing, his slam, his fan of bolts, and his skeleton summon as his fourth (no ring of
-fire). “Pack leaders that are different mobs can have an extra attack if it seems right.” The new
-moves are drawn by the art chat, pictures to you first.
+**Their attacks (since Version 19.8; your rules of 9 Oct, 08:15 and 08:24).** Tiny and small
+monsters have one attack, medium two, large two or three, the boss four, and every one a basic
+single-target attack to use while its big ones cool down: the bigger the hit, the longer the
+cooldown. A monster uses the biggest of its moves that is ready and that you are in reach of, and
+its basic blow in between. Your yes by 12:48, to films of them in the game: “Yes, as shown
+(Recommended)”.
+
+- **The green troll:** a club swing, its basic blow; and its slam, with the red circle, once every 6
+  seconds at most.
+- **The red troll:** the swing; the slam, once every 7 seconds at most; and a charge, once every 9
+  seconds at most. From 3.5 to 9 tiles off, with a clear run, he roars and scrapes while his line
+  fills on the floor, then runs it: whoever is in it is run down and knocked aside, so step out of
+  the line. At its end he stands a moment.
+- **The boss:** his swing; his fan of bolts, when you are beyond his slam’s reach; his slam, once
+  every 8 seconds at most (“He can keep the slam.  I just don’t want it overused”); and calling the
+  dead, an attack of its own (no ring of fire): four skeletons crawl out of the ground, and cannot
+  be hit until they are out. The first call comes 4.5 to 13.5 seconds into the fight, then every 18
+  seconds at most, and never while 6 of those he called still stand.
+- **Bats, skeletons, archers and cultists:** their one attack.
+
+“Pack leaders that are different mobs can have an extra attack if it seems right.” That waits for a
+leader of his own kind: the art chat’s skeleton champion and his rallying cry, to come.
 
 ## Town and quests
 
