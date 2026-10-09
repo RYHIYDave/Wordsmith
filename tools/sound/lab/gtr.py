@@ -65,6 +65,33 @@ def play(strokes, length, side, seed=1, mute_tau=0.04, loose=0.004, thunk=0.35):
     return out
 
 
+def tremolo(notes, length, side, seed=5, every=STEP, loose=0.006, under=0.35, fall=0.08, tight=1.0):
+    """A tune picked fast: (time, seconds, note). Each note is struck again and again, `every` seconds apart, down
+    and up. A string picked again is not stopped dead: the last stroke dips and dies away under the new one, so the
+    note holds while the pick chatters on it (struck and cut, struck and cut, it sounds like a machine)."""
+    rng = np.random.default_rng(seed + (side > 0) * 100)
+    out = np.zeros(int(length * SR))
+    last = {}
+    for (t0, dur, n) in sorted(notes):
+        count = max(1, int(round(dur / every)))
+        src = source(n, side)
+        for i in range(count):
+            down = i % 2 == 0
+            vel = 3 if (i == 0 or down) else 2
+            key = f'gtr/{src}_{LAYERS[vel]}_{fresh(rng, last, (src, vel), 3)}'
+            x = shift(load(key), n - src - tuned(key, 0.2) / 100 + rng.normal(0, 0.03))
+            # this stroke at full until the next one; then it drops to `under` and dies away
+            m = min(len(x), int((every + 4 * fall) * SR))
+            t = np.arange(m) / SR
+            late = np.clip((t - every * tight) / 0.006, 0, 1)
+            env = (1 - late) + late * under * np.exp(-np.maximum(0, t - every * tight) / fall)
+            y = x[:m] * env
+            y[-int(0.004 * SR):] *= np.linspace(1, 0, int(0.004 * SR))
+            level = (1.0 if i == 0 else 0.9 if down else 0.8) * (1 + rng.normal(0, 0.05))
+            put(out, y, max(0, t0 + i * every + rng.uniform(-loose, loose)), level)
+    return out
+
+
 def read(x, cents):
     """Plays a recording with its pitch moved as it goes (cents, one for every sample of the result): slides and wobble."""
     rate = 2 ** (cents / 1200)
