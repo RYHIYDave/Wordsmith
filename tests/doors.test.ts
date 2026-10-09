@@ -61,6 +61,7 @@ import type { GameEvent, Monster } from '../src/game/state';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import type { DoorSpot, Element, Floor } from '../src/game/types';
 import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from '../src/render/walls';
+import { seasoned } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -675,7 +676,8 @@ test('what is shut in a room is out of the hero\'s reach: a blast set off agains
 test('a rain of arrows and an orb, aimed past a shut door by their own buttons, do not reach what stands just behind it; as the game was before this rule, they did', () => {
   for (const cls of ['ranger', 'mage'] as const) {
     for (const rule of [true, false]) {
-      const g = dungeon(6, 2, cls);
+      // (Volley and the orb, the slow attacks: THE FIRST LEVELS open them at level 2)
+      const g = seasoned(dungeon(6, 2, cls));
       const h = g.hero;
       const d = doorToWalkAt(g);
       Object.assign(h, inLine(d.spot, -4.5));

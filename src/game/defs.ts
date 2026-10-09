@@ -504,8 +504,11 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
  * wordsmith.  Like a battery being put in.  These animations should go to the art team". 21:05:
  * "That also means no words on monsters for dungeon 1".
  *
- * A MOCK-UP BEHIND A SWITCH THAT IS OFF, until he has seen pictures of it and said yes (with it off
- * the game is 19.4's exactly; tests/first_levels.test.ts). With it on:
+ * THE GAME'S OWN SINCE VERSION 19.5: his yes at 23:06, to "Put the first levels into the game as
+ * Version 19.5, as in these pictures?": "Yes, now; ring art later (Recommended)" (the art chat's
+ * dark ring and its powering up to come in a later version). So the switch is on, put in place with
+ * the slots' levels as this file loads (`useFirstLevels`, at the foot of the slots). Switched off,
+ * the game is 19.4's (tests/first_levels.test.ts), for pictures beside the new. With it on:
  *   - the abilities open by level (MOVE_OPENS): the quick attack (tap) at once, the slow one (tap
  *     and hold) at 2, the evasive move (swipe) at 5; a shut one cannot be used and has no slots;
  *   - until the wordsmith's ring is lit (`Hero.ring`) there is no wordsmithing: no slots, no word
@@ -524,7 +527,7 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
  * first pack you run into to be a real softball.  So you get a chance to learn the movement and
  * tapping mechanic" (FIRST_DUNGEON.softball).
  */
-export const FIRST_LEVELS = { on: false };
+export const FIRST_LEVELS = { on: true };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];
 /**
@@ -973,6 +976,8 @@ export function useFirstLevels(on: boolean): void {
   SLOT_LEVELS.front = SLOT_OPENS.front[1];
   SLOT_LEVELS.behind = SLOT_OPENS.behind[1];
 }
+// (the game's own: the first levels, since Version 19.5)
+useFirstLevels(FIRST_LEVELS.on);
 
 /** Sockets an ability has at a given hero level: [in front, behind]. */
 export function socketCount(level: number): [number, number] {

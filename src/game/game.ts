@@ -306,6 +306,8 @@ export class Game {
     // the level at which both attacks have two sockets in front and two behind
     h.level = PRACTICE.level;
     h.pending = 0;
+    // (THE FIRST LEVELS: a seasoned throwaway has the wordsmith's ring lit, as any hero has who has been down before)
+    h.ring = true;
     const primary = CLASSES[h.cls].primary;
     for (const a of ATTRS) h.attrs[a] += a === primary ? 15 : 3;
     const rng = new RNG((this.seed ^ 0x9e3779b9) >>> 0);

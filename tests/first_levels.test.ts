@@ -1,7 +1,7 @@
-// THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS: a mock-up behind a switch that is off; the owner's
-// notes of 8 Oct 2026, 20:34 to 21:05). With the switch off the game is as it was; with it on, the
-// abilities open by level, wordsmithing opens with the wordsmith's ring, the slots open in his
-// order, and the first dungeon is gentler and carries no words.
+// THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the owner's notes of 8 Oct 2026, 20:34 to 22:25,
+// and his yes at 23:06: ON SINCE VERSION 19.5). With the switch on (the game's own) the abilities
+// open by level, wordsmithing opens with the wordsmith's ring, the slots open in his order, and the
+// first dungeon is gentler and carries no words; switched off, the game is as it was before.
 //   run: tsx --test tests/first_levels.test.ts
 // @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
@@ -22,13 +22,22 @@ const DT = 1 / 30;
 type Inner = { gainXp: (n: number) => void };
 const inner = (g: Game): Inner => g as unknown as Inner;
 
-/** With the first levels on, and off again after, whatever happens. */
+/** With the first levels on, as the game has them (and on again after, whatever happens). */
 function on(fn: () => void): void {
   useFirstLevels(true);
   try {
     fn();
   } finally {
-    useFirstLevels(false);
+    useFirstLevels(true);
+  }
+}
+/** With the first levels off for a while (the game as it was before Version 19.5), and on again after. */
+function off(fn: () => void): void {
+  useFirstLevels(false);
+  try {
+    fn();
+  } finally {
+    useFirstLevels(true);
   }
 }
 
@@ -67,7 +76,16 @@ function toWordsmith(g: Game): void {
   g.update(DT, emptyControls());
 }
 
-test('the switch is off, and the game is as it was', () => {
+test('the switch is on, since Version 19.5', () => {
+  assert.equal(FIRST_LEVELS.on, true);
+  assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [7, 10] });
+  assert.equal(monsterBudget(1), FIRST_DUNGEON.budget);
+  const g = fresh('warrior');
+  assert.equal(g.hero.ring, false, 'a new player: the ring is dark');
+  assert.deepEqual([0, 1, 2].map((i) => g.moveOpen(i)), [true, false, false]);
+});
+
+test('switched off, the game is as it was', () => off(() => {
   assert.equal(FIRST_LEVELS.on, false);
   assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [1, 10] });
   assert.equal(monsterBudget(1), 120);
@@ -87,7 +105,7 @@ test('the switch is off, and the game is as it was', () => {
   const s = fresh('warrior').save() as RunSave;
   assert.equal(s.ring, undefined);
   assert.equal(s.quest, undefined);
-});
+}));
 
 test('on: the abilities open by level, tap at once, tap and hold at 2, swipe at 5', () => {
   on(() => {
@@ -233,9 +251,9 @@ test('on: a hero saved before the first levels keeps his ring; one saved with th
     assert.equal(again.hero.ring, false);
     assert.equal(again.hero.quest, 'heart');
   });
-  // (and off again: as it was)
-  assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [1, 10] });
-  assert.equal(FIRST_LEVELS.on, false);
+  // (and on again, as the game has it)
+  assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [7, 10] });
+  assert.equal(FIRST_LEVELS.on, true);
 });
 
 test('on: the first pack is a softball: a few slow skeletons that barely hurt and fall to a tap or two', () => {
@@ -262,3 +280,17 @@ test('on: the first pack is a softball: a few slow skeletons that barely hurt an
   });
 });
 
+
+test('on: the lesson shows the moves that are open: tap alone at first, tap and hold from level 2, the swipe from 5', () => {
+  on(() => {
+    const g = fresh('warrior', 23);
+    assert.ok(g.guide);
+    g.guide!.met = true;
+    g.guide!.walked = GUIDE.steps;
+    assert.deepEqual(g.guideRows().map((r) => r.id), ['quick']);
+    upTo(g, 2);
+    assert.deepEqual(g.guideRows().map((r) => r.id), ['quick', 'slow']);
+    upTo(g, 5);
+    assert.deepEqual(g.guideRows().map((r) => r.id), ['quick', 'slow', 'evade']);
+  });
+});
