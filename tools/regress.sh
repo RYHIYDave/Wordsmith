@@ -323,6 +323,18 @@ wait
 run ranger_stances_pc    --scenario $S/ranger_stances.mjs &
 run ranger_stances_phone $P --scenario $S/ranger_stances.mjs &
 wait
+# THE SKILL TREES (behind TALENTS; the playtest sets the switch for itself and puts it back): for each
+# class, NEW TALENT on the HUD opens the inventory's TALENTS page; a talent read and taken, one whose
+# way is not open read, and the one taken undone in town, for gold.
+run talents_pc     --scenario $S/talents_look.mjs &
+run talents_phone  $P --scenario $S/talents_look.mjs &
+wait
+# A GAME CONTROLLER (behind GAMEPAD; the playtest sets the switch for itself, hands the page a pad of
+# its own, and puts both back): walking, aiming with the right stick and attacking, the slow attack,
+# the evasive move, a flask, the inventory and the menus' pointer, pause, and the map.
+run gamepad_pc     --scenario $S/gamepad.mjs &
+run gamepad_phone  $P --scenario $S/gamepad.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

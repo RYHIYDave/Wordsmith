@@ -25,13 +25,18 @@ export default async function (page, snap) {
   const before = s.painted;
   // (the bot runs about, stops, shoots on the move, looses Volleys and rolls)
   await page.evaluate(() => { const d = window.__dbg; d.autoLevel = false; d.bot(true); d.speed = 2; });
+  // (seven seconds of it at least; and on, up to eleven more, until he has been seen both standing and
+  // attacking: on a busy machine the bot can keep on the move through all of the first seven, which
+  // says nothing of his stances. 9 Oct 2026: ranger_stances_pc was flagged so in 19.5's regression
+  // beside other playtests, and clean three times of three alone.)
   const seen = new Set();
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 150; i++) {
     await page.waitForTimeout(120);
     s = await st();
     seen.add(s.anim);
-    if (i % 15 === 7) await snap(`fight_${i}`);
+    if (i < 60 && i % 15 === 7) await snap(`fight_${i}`);
     if (s.over) break;
+    if (i >= 59 && ['idle', 'attack'].every((a) => seen.has(a))) break;
   }
   check('the bot fought on with him', !s.over, `life ${s.life}/${s.max}`);
   check('he stood and attacked', ['idle', 'attack'].every((a) => seen.has(a)), [...seen].join(' '));
