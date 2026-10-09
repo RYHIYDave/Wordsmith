@@ -25,7 +25,7 @@ import type { Painted } from '../src/art/kit';
 import { FLAME } from '../src/art/mkit';
 import { GREAT_BLADE, MOVES3, STAFF_UP, runWaysOf, settlesOf, startsOf, walkingOf } from '../src/art/moves3';
 import type { Move3 } from '../src/art/moves3';
-import { KNIGHT2_TAILS, MAGE2_TAILS, RANGER2_TAILS, REIMAGINED } from '../src/art/reimagined';
+import { MAGE2_TAILS, RANGER2_TAILS, REIMAGINED } from '../src/art/reimagined';
 import { CANVAS3 } from '../src/art/skin';
 import type { GameView } from '../src/art/skin';
 import { add, bonesAt, mul, solve } from '../src/art/skeleton';
@@ -69,7 +69,8 @@ const HEROES: Record<Who, { name: string; moves: [string, Move3][]; tails: strin
       ...walkingOf(MOVES3.rlurch, MOVES3.rrun, false).map((m, k): [string, Move3] => [`thrown forward, walking ${k}`, m]),
     ]),
   },
-  knight: { name: 'the knight', stand: MOVES3.rear, tails: 'w2-strip-a,w2-strip-b,w2-strip-c', moves: movesOf('greatsword', MOVES3.krun, MOVES3.rear) },
+  // (the Boar Knight's cloak is painted in the frames, its hem ragged: nothing flies from him that the game moves)
+  knight: { name: 'the knight', stand: MOVES3.rear, tails: '', moves: movesOf('greatsword', MOVES3.krun, MOVES3.rear) },
   mage: {
     name: 'the mage',
     stand: MOVES3.mstand,
@@ -264,12 +265,9 @@ test('the Boar Knight keeps the pig helmet: the lines that paint his head are to
   assert.equal(head('hero3_knight2.ts'), head('hero3_knight.ts'), 'the Boar Knight\'s head is not today\'s');
 });
 
-test('what flies from the new outfits is what the game knows how to move and draw: the hood\'s tail is cloth, the feather a glowing quill, the cloak\'s strips cloth, the braids hair and the coat\'s points cloth', () => {
+test('what flies from the new outfits is what the game knows how to move and draw: the hood\'s tail is cloth, the feather a glowing quill, the braids hair and the coat\'s points cloth; nothing flies from the Boar Knight', () => {
   for (const id of ['r2-liripipe', 'r2-feather']) assert.ok(HERO_TAILS[id] === RANGER2_TAILS[id], `${id} is one of the game's tails`);
-  for (const id of ['w2-strip-a', 'w2-strip-b', 'w2-strip-c']) {
-    assert.ok(HERO_TAILS[id] === KNIGHT2_TAILS[id], `${id} is one of the game's tails`);
-    assert.ok(KNIGHT2_TAILS[id].rest === undefined && (KNIGHT2_TAILS[id].stiff ?? 0) === 0 && KNIGHT2_TAILS[id].glow === undefined, `${id} is cloth, and does not glow`);
-  }
+  assert.equal(Object.keys(HERO_TAILS).filter((id) => id.startsWith('w2-')).join(','), '', 'nothing of the Boar Knight\'s is moved by the game');
   for (const id of ['m2-braid-a', 'm2-braid-b', 'm2-coat-a', 'm2-coat-b']) {
     assert.ok(HERO_TAILS[id] === MAGE2_TAILS[id], `${id} is one of the game's tails`);
     assert.ok(MAGE2_TAILS[id].glow === undefined, `${id} does not glow`);

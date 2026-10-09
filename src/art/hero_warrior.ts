@@ -39,7 +39,6 @@ import {
   along, animSet, arm, ball, compose, dim, dir, fist, footOf, hash, joint, layer, leg, limb, lit, runPoses, shear, slant, stamp,
 } from './kit';
 import type { LegStyle, Moves, Painted, Pose, Ramp, V } from './kit';
-import { KNIGHT2_TAILS } from './reimagined';
 
 // --- how the knight is built, in pixels -------------------------------------------------------
 /** Floor to chin, floor to hip, floor to belt. */
@@ -352,9 +351,7 @@ export function scarfTails(c: Ramp): Record<string, TailDef> {
     'w-scarf-b': { n: 7, seg: 1.7, w0: 4.4, w1: 2.4, dark: c[0], mid: mixTone(c[1], c[2]), light: c[2], ...SCARF, gravity: 125, wind: 330, rate: 2.3, flutter: 400 },
   };
 }
-// (and what flies from the knight reimagined, the Boar Knight: named by no frame while his switch,
-// REIMAGINED.knight in art/reimagined.ts, is off, as it is)
-export const WARRIOR_TAILS: Record<string, TailDef> = { ...scarfTails(KNIGHT_LOOK.scarf), ...KNIGHT2_TAILS };
+export const WARRIOR_TAILS: Record<string, TailDef> = scarfTails(KNIGHT_LOOK.scarf);
 
 function mixTone(a: string, b: string): string {
   const v = (h: string, i: number): number => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);

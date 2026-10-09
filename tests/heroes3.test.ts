@@ -47,7 +47,7 @@ const TOWN: HeroLook = { twoHanded: true, town: true };
 const VIEWS = ['front', 'back'] as const;
 /** What flies from each: the tails every one of their frames must name. (A hero reimagined, while their switch is on, has their new outfit's: art/reimagined.ts. The switches are off.) */
 const TAILS: Record<ClassId, string[]> = {
-  warrior: REIMAGINED.knight ? ['w2-strip-a', 'w2-strip-b', 'w2-strip-c'] : ['w-scarf-a', 'w-scarf-b'],
+  warrior: REIMAGINED.knight ? [] : ['w-scarf-a', 'w-scarf-b'],
   ranger: REIMAGINED.ranger ? ['r2-feather', 'r2-liripipe'] : ['r-feather'],
   mage: REIMAGINED.mage ? ['m2-braid-a', 'm2-braid-b', 'm2-coat-a', 'm2-coat-b'] : ['m-braid-a', 'm-braid-b'],
 };

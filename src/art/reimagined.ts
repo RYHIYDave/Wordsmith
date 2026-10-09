@@ -40,19 +40,10 @@ export const RANGER2_TAILS: Record<string, TailDef> = {
   },
 };
 
-/** The Boar Knight's cloak (art/hero3_knight2.ts): a deep crimson. */
-const CLOAK: Ramp = ['#3a0812', '#3a0812', '#781426', '#b02436', '#b02436'];
-/**
- * What flies from the Boar Knight (art/hero3_knight2.ts): THE TORN STRIPS AT THE HEM OF HIS CLOAK,
- * three of them, hung from the back of its hem. Cloth: heavier than the hood's tail, shorter, an
- * S-wave running down each. (His cloak itself is painted in the frames, behind his arms and round
- * his legs; these are what the game moves every frame.) No frame names them while his switch is off.
- */
-export const KNIGHT2_TAILS: Record<string, TailDef> = {
-  'w2-strip-a': { n: 5, seg: 1.5, w0: 4.0, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.7, drag: 5, wave: 7.5, across: true },
-  'w2-strip-b': { n: 6, seg: 1.5, w0: 4.4, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.5, drag: 5, wave: 7.5, across: true },
-  'w2-strip-c': { n: 4, seg: 1.5, w0: 3.8, w1: 1.6, dark: CLOAK[0], mid: CLOAK[2], light: CLOAK[3], gravity: 230, wind: 170, flutter: 220, rate: 1.9, drag: 5, wave: 7.5, across: true },
-};
+// (The Boar Knight, art/hero3_knight2.ts, has nothing that the game moves apart from him: his cloak
+// is painted in the frames, left behind as he moves and streaming out as he runs, its hem cut into
+// short jagged points. Long strips torn from it, and then short tatters, were tried, flying from
+// its hem: they read as legs and as claws.)
 
 /** The Storm-witch's coat (art/hero3_mage2.ts): a deep violet; its lining a lighter purple. */
 const COAT2: Ramp = ['#1e1040', '#1e1040', '#462a8a', '#6c4cbc', '#6c4cbc'];

@@ -9,16 +9,20 @@
 // TODAY'S, EXACTLY: the helm with its pointed visor, painted by the very lines of today's painter
 // (below, "the head", copied as they are). The rest, broad and heavy ("heavy but quick", "proud and
 // daring"):
-//   - BIG ROUNDED PAULDRONS of steel, three plates each (a dome over the shoulder and two lames
-//     round the arm below it), the right a little bigger: his shoulders much broader than today.
-//   - A DARK FUR MANTLE round his neck and over his shoulders and the top of his back, its edge
-//     rough; and from under it A LONG DEEP-CRIMSON CLOAK to his calves, its hem torn into strips.
-//     The cloak is his moving cloth (no scarf): it is left behind as he moves, streams out behind
-//     him when he runs and stirs in the wind, and the torn strips at its hem are hung from it and
-//     moved every frame of the game ('w2-strip-a' to 'c', art/reimagined.ts; engine/tails.ts). IT
-//     IS BEHIND HIS ARMS AS THE FIRST RANGER'S CLOAK WAS (an elbow out behind him has it go round
-//     behind the elbow), and below the waist it goes round his legs wherever they are (skin.ts,
-//     skirtOf): no arm, no leg and no blade comes through it.
+//   - BIG BROAD PAULDRONS of steel plate, three plates each: a flat dome over the point of the
+//     shoulder, lit along its top, and below it two plates (lames) round the top of the arm, each
+//     flaring out a little past the one above, a dark seam under the edge of each; the right one a
+//     little bigger. His shoulders much broader than today.
+//   - A ROUGH COLLAR OF DARK FUR round the root of his neck and over his shoulders, behind the
+//     pauldrons, standing up round the back of his neck and, highest, over his shoulders, so that it
+//     shows round the helm from in front too; its edges broken into tufts, a few lighter hairs in it.
+//   - From under it A LONG DEEP-CRIMSON CLOAK to his calves, its hem cut into short jagged points.
+//     The cloak is his moving cloth (no scarf), painted in the frames: it is left behind as he moves,
+//     streams out behind him when he runs and stirs in the wind. Nothing flies from it that the game
+//     moves apart from him (long strips torn from its hem, and then short tatters, were tried: they
+//     read as legs and as claws). IT IS BEHIND HIS ARMS AS THE FIRST RANGER'S CLOAK WAS (an elbow
+//     out behind him has it go round behind the elbow), and below the waist it goes round his legs
+//     wherever they are (skin.ts, skirtOf): no arm, no leg and no blade comes through it.
 //   - A steel breastplate with a raised ridge down its middle; over it a SHORT RED TABARD, a panel
 //     in front and one behind, the front one with his emblem: A BOAR'S HEAD in cream (his own
 //     design, a few bold pixels).
@@ -28,16 +32,15 @@
 //     are plain colours, not lights.
 
 import type { Light } from '../engine/px';
-import type { TailRoot } from '../engine/tails';
 import { RED, blade, bladeLights } from './hero_warrior';
 import { BLADE, GLINT, INK, MAIL, STEEL, hash } from './kit';
 import type { Painted, Ramp } from './kit';
 import { GREAT_BLADE } from './moves3';
 import { P } from './palette';
 import { ball, band, cloth, eyesToward, faces, girdle, hidden, laidAlong, mid, off, rod, sided, skirtOf, stage, trunkBalls } from './skin';
-import type { GameView, Ring, Sheet } from './skin';
+import type { GameView, Ring, Sheet, Stage } from './skin';
 import { onBack } from './carried';
-import { add, dot, lerp3, mul, norm, sub, trunkOf } from './skeleton';
+import { add, cross, dot, lerp3, mul, norm, sub, trunkOf } from './skeleton';
 import type { Posed, Skeleton, V3 } from './skeleton';
 import { FRIEND_RIM, HELM } from './hero3_knight';
 import type { Around, Knight3 } from './hero3_knight';
@@ -50,9 +53,9 @@ const SLOTS = 0.46;
 const TABARD = RED;
 /** The cloak: a deep crimson, darker than the tabard; its lining darker still. */
 const CRIMSON: Ramp = ['#3a0812', '#3a0812', '#781426', '#b02436', '#b02436'];
-/** The fur of the mantle: a charcoal brown. */
-const FUR: Ramp = ['#1a1310', '#1a1310', '#36281f', '#5a4434', '#5a4434'];
-const FUR_TIP = '#7a604a';
+/** The fur of the collar: a dark brown; and the lighter tips of a few of its hairs. */
+const FUR: Ramp = ['#140b05', '#140b05', '#2e1b0e', '#4a2e18', '#4a2e18'];
+const FUR_TIP = '#7e5c3c';
 /** Leather: the belt. */
 const STRAP: Ramp = [P.wd1, P.wd1, P.wd2, P.wd3, P.wd3];
 /** The buckle: bronze (a plain colour: it does not glow). */
@@ -61,11 +64,21 @@ const BRONZE: Ramp = ['#4a2c14', '#4a2c14', '#8e5c2c', '#c89a5a', '#c89a5a'];
 const CREAM = '#f0e6c8';
 const IVORY = '#fff8e8';
 
-/** The pauldrons: how much bigger the right one (his sword arm) is than the left; and where on each, from its top (1) to its foot (-1), the edges of the two plates below its top one are. */
+/** The pauldrons: how much bigger the right one (his sword arm) is than the left; and how far each of the two plates (lames) below the dome comes down, and how much each flares out past the one above it. */
 const RIGHT_BIGGER = 1.14;
-const LAMES: readonly number[] = [0.5, 0.08];
+const LAME: readonly [number, number] = [1.55, 0.09];
+/** The steel of a seam between two plates: dark (a shade lighter where the light is on it). */
+const SEAM: Ramp = [STEEL[0], STEEL[0], STEEL[0], STEEL[1], STEEL[1]];
+/** The lit top edge of a plate. */
+const EDGE: Ramp = [STEEL[3], STEEL[3], STEEL[4], STEEL[4], STEEL[4]];
 /** The cloak: how far above the floor its hem hangs (about the middle of his calves). */
 export const CLOAK_HEM = 8.5;
+/** ITS RAGGED HEM: how deep its jagged points are cut up into it, the least and the most (picture pixels), and how far apart they are round it (degrees). */
+const RAGS: readonly [number, number, number] = [2, 4, 22];
+/** The fur collar: how high above the root of his neck its top edge, its thickest round and its foot are. */
+const FUR_AT: readonly [number, number, number] = [1.0, -1.0, -3.0];
+/** The fur collar where it stands up round the back of his neck and over his shoulders: how high its top edge is above the root of his neck behind him and over his shoulders, and how wide it flares there (half its width). */
+const RUFF: readonly [number, number, number] = [1.6, 5.0, 7.6];
 
 /**
  * HIS BOAR: a boar's head, seen from the side and facing the way he faces (its crest of bristles,
@@ -95,40 +108,85 @@ function links(p: Sheet, ramp: Ramp): void {
 }
 
 /**
- * A HEM TORN INTO STRIPS: across the part, where its foot is, a deep notch at each of `at` (shares
- * of the way across it, so that the strips stay with the cloth as it swings), `deep` pixels deep
- * and narrowing to its top; and between them a little raggedness. Each column loses from its foot
- * as much as that says.
+ * A HEM CUT INTO SHORT JAGGED POINTS, along the hem as the eye sees it (the points of its ring from
+ * `from` to `to` degrees round, joined): every RAGS[2] degrees round it a point that reaches the
+ * hem, and between each two a notch cut up into the cloth, 2 to 4 pixels deep (each its own). The
+ * points are where they are round the hem, so they stay with the cloth as it swings and streams.
  */
-function torn(p: Sheet, at: readonly number[], deep: number): void {
-  const W = p.w;
-  let x0 = W;
-  let x1 = -1;
-  const foot = new Int16Array(W).fill(-1);
-  for (let x = 0; x < W; x++) {
-    for (let y = p.h - 1; y >= 0; y--) {
-      if (p.d[(y * W + x) * 4 + 3] === 0) continue;
-      foot[x] = y;
-      x0 = Math.min(x0, x);
-      x1 = Math.max(x1, x);
-      break;
+function ragged(p: Sheet, st: Stage, pts: readonly V3[], from: number, to: number): void {
+  const n = pts.length;
+  const segs: [number, number, number, number, number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const a0 = (i / n) * 360;
+    const a1 = ((i + 1) / n) * 360;
+    if (a1 <= from || a0 >= to) continue;
+    const [x0, y0] = st.at(pts[i]);
+    const [x1, y1] = st.at(pts[(i + 1) % n]);
+    segs.push([x0, y0, x1, y1, a0, a1]);
+  }
+  if (!segs.length) return;
+  const most = RAGS[1] + 1;
+  let bx0 = Infinity;
+  let by0 = Infinity;
+  let bx1 = -Infinity;
+  let by1 = -Infinity;
+  for (const [x0, y0, x1, y1] of segs) {
+    bx0 = Math.min(bx0, x0, x1);
+    by0 = Math.min(by0, y0, y1);
+    bx1 = Math.max(bx1, x0, x1);
+    by1 = Math.max(by1, y0, y1);
+  }
+  // (what of the part there was: a notch is cut in from its edge, never a hole in the middle of it,
+  // where the hem, seen through the cloth, passes behind what is in front of it)
+  const was = Uint8Array.from({ length: p.w * p.h }, (_, i) => (p.d[i * 4 + 3] > 0 ? 1 : 0));
+  const edgeNear = (x: number, y: number, r: number): boolean => {
+    for (let j = -r; j <= r; j++) {
+      for (let i = -r; i <= r; i++) {
+        if (i * i + j * j > r * r + r) continue;
+        const xx = x + i;
+        const yy = y + j;
+        if (xx < 0 || yy < 0 || xx >= p.w || yy >= p.h || !was[yy * p.w + xx]) return true;
+      }
+    }
+    return false;
+  };
+  for (let y = Math.floor(by0 - most); y <= Math.ceil(by1 + most); y++) {
+    for (let x = Math.floor(bx0 - most); x <= Math.ceil(bx1 + most); x++) {
+      if (!p.has(x, y)) continue;
+      // (how far it is from the hem, and where round the hem that nearest point is)
+      let best = Infinity;
+      let ang = 0;
+      for (const [x0, y0, x1, y1, a0, a1] of segs) {
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const t = Math.max(0, Math.min(1, ((x + 0.5 - x0) * dx + (y + 0.5 - y0) * dy) / (dx * dx + dy * dy || 1e-6)));
+        const d = Math.hypot(x + 0.5 - x0 - dx * t, y + 0.5 - y0 - dy * t);
+        if (d < best) {
+          best = d;
+          ang = a0 + (a1 - a0) * t;
+        }
+      }
+      const k = Math.floor(ang / RAGS[2]);
+      const f = ang / RAGS[2] - k;
+      const deep = RAGS[0] + Math.round(hash(k, 4, 61) * (RAGS[1] - RAGS[0]));
+      const cut = deep * (1 - Math.abs(2 * f - 1));
+      if (best < cut && edgeNear(x, y, Math.ceil(cut))) {
+        p.erase(x, y);
+        p.z[y * p.w + x] = NaN;
+      }
     }
   }
-  if (x1 < x0) return;
-  for (let x = x0; x <= x1; x++) {
-    if (foot[x] < 0) continue;
-    let cut = hash(x, 3, 91) < 0.35 ? 1 : 0;
-    for (const a of at) {
-      const cx = x0 + (x1 - x0) * a;
-      const d = Math.abs(x + 0.5 - cx);
-      if (d < 2.6) cut = Math.max(cut, Math.round(deep * (1 - d / 2.6)));
-    }
-    for (let k = 0; k < cut; k++) {
-      const y = foot[x] - k;
-      if (y < 0 || p.d[(y * W + x) * 4 + 3] === 0) break;
-      p.erase(x, y);
-      p.z[y * W + x] = NaN;
-    }
+}
+
+/** A line one pixel wide round part of a ring (from `from` to `to` degrees round it from its first line), drawn on what of `p` is painted there, on the side of the ring toward the eye: lit from the upper left. */
+function lineRound(p: Sheet, st: Stage, r: Ring, ramp: Ramp, from: number, to: number): void {
+  for (let a = from; a <= to; a += 2) {
+    const t = a * D;
+    const outward = add(mul(r.u, Math.cos(t)), mul(r.v, Math.sin(t)));
+    const seen = st.seen(outward);
+    if (seen[2] < 0) continue;
+    const [x, y] = st.at(add(r.c, outward));
+    p.mark(Math.round(x - 0.5), Math.round(y - 0.5), ramp[seen[0] < 0.25 * Math.hypot(seen[0], seen[1]) ? 3 : 2]);
   }
 }
 
@@ -177,8 +235,7 @@ export function paintKnight3b(s: Skeleton, q: Posed, view: GameView, kit: Knight
   // behind it (as the first ranger's cloak did, art/hero3_ranger.ts). Below his waist it goes round
   // his legs wherever they are, as a long coat does (skin.ts, skirtOf). It is left behind by
   // however far he has just moved, streams out behind him the faster he goes, and stirs in the
-  // wind; its hem is torn into strips, and three of them hang from it and fly (the game moves those). ---
-  const strips: TailRoot[] = [];
+  // wind; its hem is cut into short jagged points. ---
   {
     const f = norm([cf[0], cf[1], 0], [1, 0, 0]);
     const l = norm([cl[0], cl[1], 0], [0, 1, 0]);
@@ -208,15 +265,8 @@ export function paintKnight3b(s: Skeleton, q: Posed, view: GameView, kit: Knight
     const rings: Ring[] = [top, middle, ...coat];
     const cloak = st.part(mid(s.ribs, s.pelvis));
     cloth(cloak, st, rings, CRIMSON, { folds: [180, 150, -150, 125, -125], arc: [100, 260], lining: 0.4 });
-    torn(cloak, [0.2, 0.47, 0.76], 7);
-    // (the three strips that fly: from the back of its hem, at a third, a half and two thirds of the way round behind him)
     const hem = coat[coat.length - 1];
-    const pts = hem.pts ?? [];
-    for (const [id, at] of [['w2-strip-a', 0.375], ['w2-strip-b', 0.5], ['w2-strip-c', 0.625]] as const) {
-      const p = pts.length ? pts[Math.round(at * pts.length) % pts.length] : add(hem.c, mul(hem.u, -1));
-      const [x, y] = st.at(add(p, [0, 0, 0.6]));
-      strips.push({ id, x, y, over: fromBehind });
-    }
+    if (hem.pts) ragged(cloak, st, hem.pts, 100, 260);
   }
 
   // --- the breastplate: steel over all of his trunk, a raised ridge down its middle ---
@@ -298,55 +348,122 @@ export function paintKnight3b(s: Skeleton, q: Posed, view: GameView, kit: Knight
     ball(glove, st, hand, [[aW + 1.15, 0, 0], [0, aW + 1.15, 0], [0, 0, aW + 1.05]], steel);
   }
 
-  // --- THE PAULDRONS: big and round, of steel plates: a dome over the point of each shoulder,
-  // standing out past it and down over the top of the arm, and across its lower part the edges of
-  // the two plates (lames) below the top one, each lit along its top. The right one (his sword
-  // arm) is a little bigger. ---
+  // --- THE PAULDRONS: big and broad plates of steel over the points of his shoulders. Each is a
+  // flat dome, lit along its top, and below it two plates (lames) round the top of the arm, each
+  // flaring out a little past the one above: a dark seam under the edge of each plate, and the
+  // plate below lit along its top. They ride up a little with a raised arm. The right one (his
+  // sword arm) is a little bigger. ---
+  const plates: Sheet[] = [];
   for (const side of ['L', 'R'] as const) {
     const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+    const el = side === 'L' ? s.elbowL : s.elbowR;
     const out = side === 'L' ? 1 : -1;
     const big = side === 'R' ? RIGHT_BIGGER : 1;
     const steel = mine(STEEL, sh);
+    // (its axis: down from over the shoulder, a little of the way toward the elbow; the way out from his body, and forward, square to it)
+    const down = norm(add(mul(cu, -0.6), mul(norm(sub(el, sh), mul(cu, -1)), 0.4)), mul(cu, -1));
+    const side0 = mul(cl, out);
+    const o = norm(sub(side0, mul(down, dot(side0, down))), side0);
+    const fw = norm(cross(down, o), cf);
+    const ahead = dot(fw, cf) < 0 ? mul(fw, -1) : fw;
+    const rF = (aS + 2.1) * big;
+    const rO = (aS + 2.7) * big;
+    const rU = (aS - 0.4) * big;
+    // (the rim of the dome, where the first lame hangs from)
+    const rim = add(off(sh, s.chest, 0, out * 2.6, 0), mul(down, -0.6));
     const dome = st.part(st.near(sh) + 0.7);
-    ball(dome, st, off(sh, s.chest, 0, out * 2.0, 0.2), [mul(cf, (aS + 2.3) * big), mul(cl, (aS + 2.9) * big), mul(cu, (aS + 1.4) * big)], (u, tone) => {
-      const up = u[2];
-      for (const edge of LAMES) {
-        // (the edge of a plate: dark; the plate below it is lit along its top)
-        if (up < edge && up > edge - 0.15) return steel[Math.min(1, tone)];
-        if (up <= edge - 0.15 && up > edge - 0.3) return steel[Math.min(4, tone + 1)];
-      }
-      return steel[tone];
+    ball(dome, st, rim, [mul(ahead, rF), mul(o, rO), mul(down, -rU)], (u, tone) => {
+      if (u[2] < 0) return null;
+      // (plate: flat, few tones; the top of it, where the light is, lit)
+      return u[2] > 0.78 && tone >= 2 ? steel[4] : steel[Math.max(1, Math.min(3, tone))];
     });
+    plates.push(dome);
+    let top: Ring = { c: rim, u: mul(o, rO), v: mul(ahead, rF) };
+    for (let k = 0; k < 2; k++) {
+      const grow = 1 + LAME[1] * (k + 1);
+      const foot: Ring = { c: add(top.c, mul(down, LAME[0])), u: mul(o, rO * grow), v: mul(ahead, rF * grow) };
+      const lame = st.part(st.near(sh) + 0.65 - k * 0.05);
+      cloth(lame, st, [top, foot], steel, { arc: [-125, 125], lift: 0.4 });
+      // (the seam under the plate above, dark; and this plate lit along its top, just under it)
+      lineRound(lame, st, { c: add(top.c, mul(down, 0.2)), u: top.u, v: top.v }, SEAM, -125, 125);
+      lineRound(lame, st, { c: add(top.c, mul(down, 0.75)), u: mul(top.u, 1 + LAME[1] * 0.4), v: mul(top.v, 1 + LAME[1] * 0.4) }, EDGE, -125, 125);
+      plates.push(lame);
+      top = foot;
+    }
   }
 
-  // --- THE MANTLE: dark fur round his neck, over his shoulders and the top of his back, short in
-  // front and longest behind, its edge rough ---
+  // --- THE FUR: a rough collar of dark fur, thick, round the root of his neck and over the tops of
+  // his shoulders under the pauldrons; and standing up round the back of his neck and, highest,
+  // over his shoulders behind the pauldrons, so that from in front it shows round the helm and over
+  // the pauldrons. Its edges are broken into tufts, a few lighter hairs at their tips. ---
   {
-    const top: Ring = { c: add(s.neck, mul(cu, 1.1)), u: mul(cf, B.ribDeep * 0.75), v: mul(cl, 4.6) };
-    const shoulders: Ring = { c: add(s.neck, mul(cu, -0.6)), u: mul(cf, B.ribDeep + 2.4), v: mul(cl, B.shoulderHalf * 0.86) };
+    const ring = (up: number, deep: number, wide: number): Ring => ({ c: add(s.neck, mul(cu, up)), u: mul(cf, deep), v: mul(cl, wide) });
     const pts: V3[] = [];
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * Math.PI * 2;
-      // (how far down it hangs: two units in front, eight behind)
-      const down = 2.6 + 5.4 * (1 - Math.cos(a)) * 0.5;
-      pts.push(add(add(s.neck, mul(cu, -down)), add(mul(cf, Math.cos(a) * (B.ribDeep + 2.8)), mul(cl, Math.sin(a) * (B.shoulderHalf * 0.9)))));
+      const down = -FUR_AT[2] + 0.8 * Math.max(0, -Math.cos(a)) ** 2;
+      pts.push(add(add(s.neck, mul(cu, -down)), add(mul(cf, Math.cos(a) * (B.ribDeep + 1.4)), mul(cl, Math.sin(a) * B.shoulderHalf * 0.78))));
     }
-    const hemC = add(s.neck, mul(cu, -5.3));
-    const hem: Ring = { c: hemC, u: mul(cf, B.ribDeep + 2.8), v: mul(cl, B.shoulderHalf * 0.9), pts };
-    const fur = st.part(st.near(s.neck) + 0.2);
-    cloth(fur, st, [top, shoulders, hem], FUR, { folds: [30, -30, 70, -70, 110, -110, 150, -150, 180] });
-    // (its rough edge: tufts of every length; and a few lighter tips in it)
-    for (let x = 0; x < fur.w; x++) {
-      let y = fur.h - 1;
-      while (y >= 0 && fur.d[(y * fur.w + x) * 4 + 3] === 0) y--;
-      if (y < 0) continue;
-      const n = Math.floor(hash(x, 5, 17) * 3.2);
-      for (let k = 0; k < n && y - k > 0; k++) {
-        fur.erase(x, y - k);
-        fur.z[(y - k) * fur.w + x] = NaN;
+    const thick = ring(FUR_AT[1], B.ribDeep + 1.9, B.shoulderHalf * 0.82);
+    const roll = st.part(st.near(s.neck) + 0.2);
+    cloth(roll, st, [ring(FUR_AT[0], B.ribDeep * 0.8, 4.6), thick, { ...ring(FUR_AT[2], B.ribDeep + 1.4, B.shoulderHalf * 0.78), pts }], FUR, { folds: [30, -30, 70, -70, 110, -110, 150, -150, 180] });
+    // (standing up round the back of his neck and over his shoulders, highest over the shoulders,
+    // behind the pauldrons: from in front its inside shows round the helm and over the pauldrons;
+    // from behind it is low behind the helm, which it leaves as it is)
+    const ruff = st.part(add(s.neck, mul(cf, -1)));
+    const edge: V3[] = [];
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      const up = RUFF[0] + (RUFF[1] - RUFF[0]) * Math.sin(a) ** 2;
+      edge.push(add(add(s.neck, mul(cu, up)), add(mul(cf, Math.cos(a) * B.ribDeep - 0.8), mul(cl, Math.sin(a) * RUFF[2]))));
+    }
+    const rim: Ring = { c: add(add(s.neck, mul(cu, (RUFF[0] + RUFF[1]) / 2)), mul(cf, -0.8)), u: mul(cf, B.ribDeep), v: mul(cl, RUFF[2]), pts: edge };
+    cloth(ruff, st, [rim, thick], FUR, { arc: [62, 298], lining: 0.12, folds: [75, -75, 105, -105, 140, -140] });
+    // (its edges: tufts, every column its own, along its foot and along its top; on a few a lighter tip)
+    for (const [fur, seed] of [[roll, 17], [ruff, 29]] as const) {
+      for (let x = 0; x < fur.w; x++) {
+        let y = fur.h - 1;
+        while (y >= 0 && !fur.has(x, y)) y--;
+        if (y < 0) continue;
+        const h = hash(x, 5, seed);
+        let end = y;
+        if (h < 0.3) {
+          fur.erase(x, y);
+          fur.z[y * fur.w + x] = NaN;
+          end = y - 1;
+        } else if (h > 0.55) {
+          const z = fur.nearAt(x, y);
+          const n = h > 0.85 ? 2 : 1;
+          for (let k = 1; k <= n; k++) fur.put(x, y + k, FUR[1], z);
+          end = y + n;
+        }
+        if (hash(x, 9, seed + 6) > 0.68) fur.mark(x, end, FUR_TIP);
+        let t = 0;
+        while (t < fur.h && !fur.has(x, t)) t++;
+        if (t >= end) continue;
+        const g = hash(x, 7, seed + 24);
+        if (g > 0.5) {
+          const z = fur.nearAt(x, t);
+          const n = g > 0.82 ? 2 : 1;
+          for (let k = 1; k <= n; k++) fur.put(x, t - k, FUR[2], z);
+          if (hash(x, 3, seed + 2) > 0.6) fur.mark(x, t - n, FUR_TIP);
+        } else if (g < 0.22) {
+          fur.erase(x, t);
+          fur.z[t * fur.w + x] = NaN;
+        }
       }
-      if (hash(x, 9, 23) > 0.55) fur.mark(x, y - n - 1, FUR_TIP);
     }
+    // (and a few lighter hairs in the lit side of it)
+    for (const fur of [roll, ruff]) {
+      for (let y = 0; y < fur.h; y++) {
+        for (let x = 0; x < fur.w; x++) {
+          const c = fur.get(x, y);
+          if (c !== null && FUR.lastIndexOf(c) >= 3 && hash(x, y, 53) < 0.16) fur.mark(x, y, FUR_TIP);
+        }
+      }
+    }
+    // (the pauldrons are over it: what of it is under them is not seen)
+    for (const plate of plates) hidden(fromBehind ? [ruff] : [roll, ruff], plate);
   }
 
   // --- the head: TODAY'S, EXACTLY (art/hero3_knight.ts): mail at his neck, and over all of his
@@ -438,5 +555,5 @@ export function paintKnight3b(s: Skeleton, q: Posed, view: GameView, kit: Knight
   // (its light: not when it is on his back and he is between it and the eye)
   if (!(away && st.near(s.chest[0]) > 0)) for (const l of bladeLights(gx, gy, deg, len)) lights.push(l);
 
-  return { px: st.whole(kit.rim === undefined ? FRIEND_RIM : kit.rim), lights, tails: strips };
+  return { px: st.whole(kit.rim === undefined ? FRIEND_RIM : kit.rim), lights, tails: [] };
 }
