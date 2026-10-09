@@ -2648,6 +2648,13 @@ export class Renderer {
 
   private drawBars(g: CanvasRenderingContext2D, game: Game, t: number): void {
     const cam = this.cam;
+    // (MONSTER PACKS, with PACK_LOOK: a blue pack's name is written once, over the first of it still
+    // standing in sight; every one of it has its ring and its bar. A name over each was a pile of
+    // letters: six bats, six names, one on another.)
+    const speaks = new Map<number, number>();
+    if (PACK_LOOK.on) for (const m of game.monsters) if (!m.dead && m.seen && m.rarity === 'blue' && !speaks.has(m.packId)) speaks.set(m.packId, m.id);
+    // (the names over all the bars, so that no bar of a pack's lies across its name)
+    const names: { m: Monster; x: number; y: number }[] = [];
     for (const m of game.monsters) {
       if (m.dead || !m.seen || m.boss) continue;
       // (the enemy locked onto always shows its life: it is the one being fought)
@@ -2662,8 +2669,9 @@ export class Renderer {
       g.fillRect(sx - w / 2, sy, w, 2);
       g.fillStyle = named(m) ? P.fr4 : P.bl4;
       g.fillRect(sx - w / 2, sy, Math.max(0, Math.round((w * m.life) / m.maxLife)), 2);
-      if (named(m)) drawText(g, m.name, sx, sy - 8, nameColor(m), { align: 'center', font: 'small', shadow: P.ink });
+      if (named(m) && (m.rarity !== 'blue' || speaks.get(m.packId) === m.id)) names.push({ m, x: sx, y: sy - 8 });
     }
+    for (const n of names) drawText(g, n.m.name, n.x, n.y, nameColor(n.m), { align: 'center', font: 'small', shadow: P.ink });
     // The hero's own life, over their head, where the eyes are in a fight (lifebar.ts says when it
     // is there). The part just lost stays lit for a moment; low, it flashes; its edge takes the
     // colour of what ails the hero, as the globe's rim does.

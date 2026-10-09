@@ -34,7 +34,7 @@ import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
 import { MIX, RELIEF } from './game/dungeon';
@@ -1573,6 +1573,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     inv: (focus = -1) => openInventory(focus),
     /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
     modes: MODES,
+    /** MONSTER PACKS: the look of blue and yellow packs (game/defs.ts, PACK_LOOK), on since his yes; its pictures switch it off and on again for themselves: `packLook.on`. */
+    packLook: PACK_LOOK,
     /**
      * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS): a mock-up behind a switch that is off. Its
      * pictures and playtests switch it on (or off again) for themselves; the run made after follows it.

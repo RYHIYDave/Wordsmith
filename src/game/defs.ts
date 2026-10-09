@@ -442,13 +442,15 @@ export const PACKS = {
   minion: 0.5,
 };
 /**
- * How a blue or a yellow pack is told apart, until the art chat's own markers come: as an elite is
- * today, its name over it, its bar and its ring, with the name in blue (a blue pack's, every one) or
- * yellow (a yellow pack's leader), the colours of magic and rare things. PICTURES FIRST: off until
- * the owner has seen it and said yes. (Off, a yellow pack's leader looks as any elite does, and the
- * others as ordinary monsters.)
+ * How a blue or a yellow pack is told apart, until the art chat's own markers come: as an elite is,
+ * with a ring and a bar always over it; a blue pack's name written once, in blue, over the first of
+ * it in sight (a name over each was a pile of letters), and a yellow pack's leader named in yellow
+ * (the colours of magic and rare things); the minions as they always are. His yes, by 9 Oct 2026,
+ * 09:46, to Packs_look.png, "Use this look for blue and yellow packs until the art chat's markers
+ * come?": "Yes, as shown (Recommended)". Off, a yellow pack's leader looks as any elite does, and
+ * the others as ordinary monsters (for pictures beside it).
  */
-export const PACK_LOOK = { on: false };
+export const PACK_LOOK = { on: true };
 /** What a pack is: plain, blue (magic) or yellow (rare). A guardian's pack is none of them. */
 export type PackRarity = 'plain' | 'blue' | 'yellow';
 /** Which of them a pack is, drawn from `roll` (a number in [0, 1)): an elite room's is yellow. */

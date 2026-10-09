@@ -49,9 +49,9 @@ function packsOf(g: Game): Map<number, Monster[]> {
 
 const DEPTHS = [2, 3, 5, 6, 9];
 
-test('the switch is on, and the look of blue and yellow packs is off until he has seen it (pictures first)', () => {
+test('the switch is on, and so is the look of blue and yellow packs (his yes to its pictures)', () => {
   assert.equal(MONSTER_PACKS.on, true);
-  assert.equal(PACK_LOOK.on, false);
+  assert.equal(PACK_LOOK.on, true);
   assert.deepEqual({ yellow: PACKS.yellow, blue: PACKS.blue, from: PACKS.from, leaderLife: PACKS.leaderLife, blueLife: PACKS.blueLife, minion: PACKS.minion }, { yellow: 0.1, blue: 0.25, from: 2, leaderLife: 3, blueLife: 1.2, minion: 0.5 });
   assert.equal(GATE_TWIN_PACKS, 1.5, 'Twin at the gate: 50% increased');
 });
