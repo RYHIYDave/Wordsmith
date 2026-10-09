@@ -32,7 +32,7 @@ import type { Speaker, SpeakerVoice } from './engine/audio';
 import { MISSING_GLYPHS, drawText, textWidth } from './engine/font';
 import { Input } from './engine/input';
 import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
-import { BTN, GAMEPAD, Pad } from './engine/gamepad';
+import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
@@ -57,7 +57,7 @@ import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
 import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
-import { guideBanner } from './ui/guide';
+import { guideAttack, guideBanner } from './ui/guide';
 import { drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
@@ -278,11 +278,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let lockLevel: Level | null = null;
   /**
    * A GAME CONTROLLER (engine/gamepad.ts, GAMEPAD, off until his yes): the pad; whether its pointer
-   * is out (in the menus); the slow attack's use when LT went down (one use a press).
+   * is out (in the menus); the slow attack's use when LT went down (one use a press); the D-pad's UP
+   * pressed this frame, for the prompt over the attacks (LEVEL UP, or NEW TALENT).
    */
   const pad = new Pad();
   let padPointer = false;
   let padHoldUses = -1;
+  let padPrompt = false;
   /** Something the player touched in order to use it: the hero walks there, and then it is used. */
   let errand: { kind: Spot; x: number; y: number; t: number; level: Level; flow: Uint16Array } | null = null;
   /** A class card pressed once while a saved run exists: a second press starts over. */
@@ -1260,12 +1262,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
 
   /**
    * A GAME CONTROLLER, once a frame before anything reads the input: in play, START pauses, Y opens
-   * the inventory and BACK the map (as their keys do); in the menus, the left stick moves a pointer,
-   * A presses where it is and B (or START) goes back, as Escape does.
+   * the inventory and BACK the map (as their keys do), and the D-pad's UP presses the prompt over the
+   * attacks; in the menus, the left stick moves a pointer, A presses where it is and B (or START)
+   * goes back, as Escape does.
    */
   const padFrame = (dt: number): void => {
     const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? [...navigator.getGamepads()] : [];
     pad.poll(pads, dt);
+    padPrompt = false;
+    PAD_USE.live = pad.live();
     if (!pad.live()) {
       padPointer = false;
       return;
@@ -1274,8 +1279,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (inPlay) {
       padPointer = false;
       if (pad.pressed(BTN.START)) input.press('Escape');
-      if (pad.pressed(BTN.Y)) input.press('Tab');
+      if (pad.pressed(BTN.Y)) {
+        // (while the first dungeon's prompt asks for a word to be put on an attack, the inventory
+        // opens at that attack, as a press on its plate does)
+        const at = game ? guideAttack(game) : -1;
+        if (at >= 0) openInventory(at);
+        else input.press('Tab');
+      }
       if (pad.pressed(BTN.BACK)) input.press('KeyM');
+      if (pad.pressed(BTN.UP)) padPrompt = true;
       return;
     }
     if (!padPointer) {
@@ -1313,6 +1325,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     clock += dt;
     input.beginFrame();
     if (GAMEPAD.on) padFrame(dt);
+    else PAD_USE.live = false;
     const cg = scr.g;
     ui.begin(cg, scr.w, scr.h, input.uiPress, input.mx, input.my, input.touchMode);
     ui.held = input.hold.active ? { x: input.hold.x, y: input.hold.y } : null;
@@ -1421,6 +1434,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           else openInventory();
         }
         if (input.pressed('KeyL') && g.hero.pending > 0) panels.open = 'level';
+        // (A GAME CONTROLLER: the D-pad's UP presses the prompt over the attacks: LEVEL UP, or else
+        // NEW TALENT, which opens the inventory on TALENTS)
+        if (padPrompt && panels.open === 'none') {
+          if (g.hero.pending > 0) panels.open = 'level';
+          else if (g.talentsLeft() > 0) {
+            openInventory(-1);
+            invUi.page = 'talents';
+          }
+        }
         // the dungeon map (there is nothing to map in town)
         if (input.pressed('KeyM') && !g.level.town && (panels.open === 'none' || panels.open === 'map')) panels.open = panels.open === 'map' ? 'none' : 'map';
         if (input.pressed('Escape')) panels.open = panels.open === 'none' ? 'pause' : 'none';

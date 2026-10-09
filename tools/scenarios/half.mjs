@@ -92,7 +92,7 @@ export default async function (page, snap) {
   check('the hero stands in the middle of the game\'s half', inMid(s), `${s.hero.sx.toFixed(1)}, ${s.hero.sy.toFixed(1)}; the middle is ${mid.x}, ${mid.y}`);
   check('none of the game\'s own buttons is drawn under it', !hudAny(s), Object.keys(s.rects).filter((k) => k.startsWith('skill') || k === 'potion' || k === 'minimap' || k.startsWith('button:INVENTORY')).join(' '));
   // everything of the inventory lies inside its half
-  const mine = Object.entries(s.rects).filter(([k]) => /^(bag:|gear:|word:|tab:|page:|button:(GEAR|ATTACKS|STATS|DONE)|glance)/.test(k));
+  const mine = Object.entries(s.rects).filter(([k]) => /^(bag:|gear:|word:|tab:|page:|button:(GEAR|ATTACKS|STATS|TALENTS|DONE)|glance)/.test(k));
   const out = mine.filter(([, r]) => r.x < inv.x || r.y < inv.y || r.x + r.w > inv.x + inv.w || r.y + r.h > inv.y + inv.h).map(([k]) => k);
   check('everything of the inventory lies inside its half', mine.length > 30 && out.length === 0, out.join(' '));
   await snap('02_open');

@@ -17,7 +17,8 @@ import type { Controls, GameEvent, Monster } from '../src/game/state';
 import { CLASS_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId, WeaponKind, WordId } from '../src/game/types';
 import { resolveSkill } from '../src/game/words';
-import { guideBanner, guideCoach, guideSlot } from '../src/ui/guide';
+import { guideAttack, guideBanner, guideCoach, guideSlot } from '../src/ui/guide';
+import { PAD_USE } from '../src/engine/gamepad';
 import { land } from './helpers';
 
 // THE FIRST LEVELS (game/defs.ts, on since Version 19.5) changed the lesson: the abilities open by
@@ -400,6 +401,16 @@ test('the word found, the prompt is to put it on an attack: the one the first du
     assert.deepEqual(coach.to, { skill: first.skill, side: 'front', idx: 0 });
     assert.equal(coach.text, `Drag ${WORDS[first.word].name.toUpperCase()} onto ${name}.`);
     assert.equal(coach.done, false);
+    // (A GAME CONTROLLER being played with: Y opens the inventory at that attack, and A is a click
+    // where its pointer is)
+    assert.equal(guideAttack(g), first.skill);
+    PAD_USE.live = true;
+    try {
+      assert.equal(guideBanner(g, false)!.sub, 'Press Y to open your attacks.');
+      assert.equal(guideCoach(g, false)!.text, `Press A on ${WORDS[first.word].name.toUpperCase()}, then on ${name}'s slot.`);
+    } finally {
+      PAD_USE.live = false;
+    }
     // in a fight the word waits: the prompt says so, and points at nothing
     const m = dummy(g, 3, 0);
     g.update(DT, c);

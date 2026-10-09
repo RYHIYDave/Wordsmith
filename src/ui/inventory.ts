@@ -63,6 +63,7 @@
 import { WORD_COLOR } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
+import { PAD_USE } from '../engine/gamepad';
 import { ATTR_NAME, CLASSES, ELEMENT_NAME, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
 import type { Game } from '../game/game';
 import { modLines, statView } from '../game/items';
@@ -1031,7 +1032,9 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
       const icon = art.icons.ability[def.icon];
       g.drawImage(icon.img, a.x + 1, a.y + Math.floor((a.h - icon.h) / 2), icon.w, icon.h);
       drawText(g, def.name.toUpperCase(), a.x + 22, a.y + 3, P.white);
-      drawText(g, T ? (s === 0 ? 'TAP' : s === 1 ? 'HOLD' : 'SWIPE') : s === 0 ? 'LEFT' : s === 1 ? 'RIGHT' : 'SPACE', a.x + 22, a.y + 13, THEME.dim, { font: 'small' });
+      // (with a controller being played with, its buttons: RT, LT and A)
+      const how = PAD_USE.live ? (s === 0 ? 'RT' : s === 1 ? 'LT' : 'A') : T ? (s === 0 ? 'TAP' : s === 1 ? 'HOLD' : 'SWIPE') : s === 0 ? 'LEFT' : s === 1 ? 'RIGHT' : 'SPACE';
+      drawText(g, how, a.x + 22, a.y + 13, THEME.dim, { font: 'small' });
       // its numbers: one hit, and how often
       const at = nums[s];
       if (at) {

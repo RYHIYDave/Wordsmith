@@ -6,8 +6,12 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { BTN, DEAD, GAMEPAD, POINTER_SPEED, Pad, TRIGGER, deadZone } from '../src/engine/gamepad';
+import { BTN, DEAD, GAMEPAD, PAD_USE, POINTER_SPEED, Pad, TRIGGER, deadZone } from '../src/engine/gamepad';
 import type { PadLike } from '../src/engine/gamepad';
+import { SKILLS } from '../src/game/defs';
+import type { SkillId } from '../src/game/defs';
+import { Game } from '../src/game/game';
+import { guideBanner, padPress, pressName } from '../src/ui/guide';
 
 /** A pad with these sticks and these buttons down (triggers by how far down). */
 function padOf(axes: number[], down: number[] = [], triggers: Partial<Record<number, number>> = {}): PadLike {
@@ -65,4 +69,26 @@ test("the menus' pointer goes with the left stick and stays on the screen", () =
   assert.ok(Math.abs(p.px - (100 + POINTER_SPEED * 0.5)) < 1e-6);
   p.steer(10, 480, 270);
   assert.equal(p.px, 479, 'not off the edge');
+});
+
+test('while a pad is played with, the lessons name its buttons (and without one, as they were)', () => {
+  assert.equal(PAD_USE.live, false);
+  const g = Game.forFirstRun('warrior', 12);
+  assert.equal(g.guideStep(), 'move');
+  assert.equal(guideBanner(g, false)!.text, 'W A S D to MOVE');
+  const ids = Object.keys(SKILLS) as SkillId[];
+  const held = ids.find((k) => SKILLS[k].channel)!;
+  const once = ids.find((k) => !SKILLS[k].channel)!;
+  assert.equal(pressName(false, 0, once), 'LEFT CLICK');
+  PAD_USE.live = true;
+  try {
+    assert.equal(guideBanner(g, false)!.text, 'LEFT STICK to MOVE');
+    assert.equal(guideBanner(g, true)!.text, 'LEFT STICK to MOVE', 'on a phone with a pad too');
+    assert.equal(pressName(false, 0, once), 'RT');
+    assert.equal(pressName(true, 2, once), 'A');
+    assert.equal(padPress(1, once), 'LT');
+    assert.equal(padPress(1, held), 'HOLD LT', 'one that goes on while it is held');
+  } finally {
+    PAD_USE.live = false;
+  }
 });

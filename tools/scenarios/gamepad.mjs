@@ -4,7 +4,10 @@
 //   1. in play: the left stick walks the hero; the right stick aims at a monster and RT strikes it;
 //      LT is the slow attack; A the evasive move; X a flask;
 //   2. Y opens the inventory; there the left stick moves a pointer and A presses DONE;
-//   3. START pauses; B goes back; BACK opens the map in a dungeon.
+//   3. START pauses; B goes back; BACK opens the map in a dungeon;
+//   4. the D-pad's UP presses the prompt over the attacks: LEVEL UP, or NEW TALENT (the skill trees
+//      switched on for it); the prompts, the flask, the moves, the ATTACKS page and the pause
+//      panel's list name the pad's buttons while it is played with.
 //   node tools/playtest.mjs --file <page> [--touch --size 844x390 --dpr 3] --scenario tools/scenarios/gamepad.mjs --out shots/gamepad/pc
 import { log } from './lib.mjs';
 
@@ -131,6 +134,43 @@ export default async function (page, snap) {
   check('   BACK opens the map in a dungeon', s.panel === 'map', s.panel);
   await snap('06_map');
   await tap(8);
+  // 4. the D-pad's UP: LEVEL UP, named so
+  const buttons = () => page.evaluate(() => [...window.__dbg.ui.marks.keys()].filter((m) => m.startsWith('button:')));
+  await page.evaluate(() => { window.__dbg.game().hero.pending = 1; });
+  await page.waitForTimeout(300);
+  let named = await buttons();
+  check('4. LEVEL UP names the D-pad\'s UP', named.includes('button:LEVEL UP (UP)'), named.join(' | '));
+  await snap('07_named');
+  await tap(12);
+  s = await st();
+  check('   UP opens LEVEL UP', s.panel === 'level', s.panel);
+  await snap('08_level_up');
+  await tap(1);
+  s = await st();
+  check('   and B closes it', s.panel === 'none', s.panel);
+  // a talent point waiting (the skill trees switched on for this): NEW TALENT, and UP opens it
+  await page.evaluate(() => { const d = window.__dbg; window.__talentsWere = d.talents.on; d.talents.on = true; const g = d.game(); g.hero.pending = 0; g.hero.talents = []; g.refresh(); });
+  await page.waitForTimeout(300);
+  named = await buttons();
+  check('   NEW TALENT names it too', named.includes('button:NEW TALENT (UP)'), named.join(' | '));
+  await tap(12);
+  s = await st();
+  const pg = await page.evaluate(() => window.__dbg.invUi.page);
+  check('   UP opens the inventory on TALENTS', s.panel === 'inv' && pg === 'talents', `${s.panel}, ${pg}`);
+  await snap('09_talents');
+  // (the ATTACKS page names RT, LT and A)
+  await page.evaluate(() => { window.__dbg.invUi.page = 'attacks'; });
+  await page.waitForTimeout(200);
+  await snap('10_attacks_named');
+  await tap(1);
+  s = await st();
+  check('   B closes the inventory', s.panel === 'none', s.panel);
+  await page.evaluate(() => { window.__dbg.talents.on = window.__talentsWere; });
+  // (the pause panel's list of controls is the pad's)
+  await tap(9);
+  await page.waitForTimeout(200);
+  await snap('11_pause_named');
+  await tap(1);
   await page.evaluate(() => { window.__dbg.gamepad.on = false; });
   log('gamepad', fails ? `${fails} thing(s) wrong` : 'all as they should be');
 }

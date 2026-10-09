@@ -26,6 +26,7 @@ export default async function (page, snap) {
     await page.evaluate(([cls, taken]) => {
       const d = window.__dbg;
       d.saving(false);
+      window.__talentsWere ??= d.talents.on;
       d.talents.on = true;
       d.run(cls, 21);
       d.seasoned(30);
@@ -83,6 +84,6 @@ export default async function (page, snap) {
     // (closed, and the switch put back)
     await page.evaluate(() => { const d = window.__dbg; d.invUi.talents.sel = null; });
   }
-  await page.evaluate(() => { window.__dbg.talents.on = false; });
+  await page.evaluate(() => { window.__dbg.talents.on = window.__talentsWere; });
   log('talents', fails ? `${fails} thing(s) wrong` : 'all as they should be');
 }

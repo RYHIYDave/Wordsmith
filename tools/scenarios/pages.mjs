@@ -92,7 +92,7 @@ export default async function (page, snap) {
   check('and the INVENTORY button opens it on GEAR again', s.page === 'gear', s.page);
 
   // ---- 2. the pages, and what never moves ---------------------------------------------------------------
-  const inScreen = (q) => Object.entries(q.rects).filter(([k]) => /^(tab|gear|bag|word|socket|page):|^button:(DONE|GEAR|ATTACKS|STATS)/.test(k)).filter(([, r]) => r.x < 0 || r.y < 0 || r.x + r.w > q.W || r.y + r.h > q.H).map(([k]) => k);
+  const inScreen = (q) => Object.entries(q.rects).filter(([k]) => /^(tab|gear|bag|word|socket|page):|^button:(DONE|GEAR|ATTACKS|STATS|TALENTS)/.test(k)).filter(([, r]) => r.x < 0 || r.y < 0 || r.x + r.w > q.W || r.y + r.h > q.H).map(([k]) => k);
   const onBottom = (q) => {
     // nothing of a page may lie on the bag or on the words
     const pg = q.rects[`page:${q.page}`];

@@ -11,12 +11,18 @@
 //   A             the evasive move (SWIPE), the way the hero is moving
 //   B             use (search, talk, pick up)       X  a flask       Y  the inventory
 //   START         pause                             BACK  the map
+//   D-PAD UP      the prompt over the attacks: LEVEL UP, or NEW TALENT
 //   in menus      the left stick moves a pointer, A presses, B goes back
+// While a pad is played with, the prompts and the inventory's ATTACKS page name its buttons
+// (`PAD_USE`).
 // This file only reads the pad: what a stick or a button means is main.ts's (`padFrame`,
 // `padControls`).
 
 /** THE SWITCH: off, no pad is read (the game as it was). */
 export const GAMEPAD = { on: false };
+
+/** A pad is being played with now (the switch on, and the pad moved or pressed lately): set by main.ts each frame, so that the prompts and the ATTACKS page can name its buttons. */
+export const PAD_USE = { live: false };
 
 /** The standard layout's buttons, by what they are called on an Xbox pad (on a PlayStation pad: A is the cross, B the circle, X the square, Y the triangle). */
 export const BTN = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, LT: 6, RT: 7, BACK: 8, START: 9, LS: 10, RS: 11, UP: 12, DOWN: 13, LEFT: 14, RIGHT: 15 } as const;

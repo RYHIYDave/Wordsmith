@@ -13,6 +13,7 @@
 import { WORD_COLOR } from '../art/icons';
 import { ELEMENT_RAMP, P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
+import { PAD_USE } from '../engine/gamepad';
 import type { Input } from '../engine/input';
 import { SKILLS, WORDS, xpToNext } from '../game/defs';
 import { doorTiles } from '../game/doors';
@@ -720,6 +721,9 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   const d = h.d;
   const out: HudOut = { inventory: -1, potion: false, interact: false, level: false, pause: false, map: false };
   const touch = ui.touch;
+  // (A GAME CONTROLLER being played with, engine/gamepad.ts: the flask, the moves and the prompts
+  // are named by its buttons)
+  const pd = PAD_USE.live;
   // The fight prompt stays a moment after its last line is done, all ticked, before it goes.
   let banner = inp.banner;
   if (banner && banner.lines.length) lastFight = { b: banner, t };
@@ -760,7 +764,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     g.globalAlpha = 1;
   }
   drawText(g, `${h.potions}`, px + ps - 2, py + ps - 7, P.white, { align: 'right', font: 'small', shadow: P.ink });
-  if (!touch) drawText(g, 'Q', px + 2, py + 2, THEME.dim, { font: 'small', shadow: P.ink });
+  if (pd || !touch) drawText(g, pd ? 'X' : 'Q', px + 2, py + 2, THEME.dim, { font: 'small', shadow: P.ink });
   // (with fingers the level is up beside the life)
   if (!touch) drawText(g, `LV ${h.level}`, px, py - 7, THEME.accent, { font: 'small', shadow: P.ink });
   if (point === 'flask') {
@@ -826,7 +830,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
       g.globalAlpha = 1;
     }
     if (s.maxCharges > 1) drawText(g, `${s.charges}`, ex + ps - 2, py + ps - 7, P.white, { align: 'right', font: 'small', shadow: P.ink });
-    drawText(g, touch ? 'SWIPE' : 'SPACE', ex + Math.floor(ps / 2), py - 7, point === 'dodge' ? THEME.accent : THEME.dim, { align: 'center', font: 'small', shadow: P.ink });
+    drawText(g, pd ? 'A' : touch ? 'SWIPE' : 'SPACE', ex + Math.floor(ps / 2), py - 7, point === 'dodge' ? THEME.accent : THEME.dim, { align: 'center', font: 'small', shadow: P.ink });
     if (point === 'dodge') {
       // the prompt is pointing at the dodge
       if (pulse) {
@@ -895,7 +899,8 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     // (the prompt's arrow at the dodge stands clear of that name)
     if (point === 'dodge') arrow(g, ex + Math.floor(ps / 2), py - (named ? 17 : 9), t, THEME.accent);
   }
-  // (with a mouse, an attack that goes on while it is held says HOLD: see pressName)
+  // (with a mouse, an attack that goes on while it is held says HOLD: see pressName; with a
+  // controller, pressName names its triggers)
   const keys = [pressName(false, 0, h.skills[0].id), pressName(false, 1, h.skills[1].id)];
   const gestures = ['TAP', 'HOLD'];
   for (let s = 0; s < 2; s++) {
@@ -947,7 +952,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     }
     if (sk.maxCharges > 1) drawText(g, `${sk.charges}`, r.x + 18, iy + 13, P.white, { align: 'right', font: 'small', shadow: P.ink });
     drawPhrase(g, art, pieces[s], r.x + 20 + PAD, r.y, PH, pulse);
-    drawText(g, touch ? gestures[s] : keys[s], r.x + 1, r.y - 6, THEME.dim, { font: 'small', shadow: P.ink });
+    drawText(g, pd || !touch ? keys[s] : gestures[s], r.x + 1, r.y - 6, THEME.dim, { font: 'small', shadow: P.ink });
     if (asked) arrow(g, r.x + Math.floor(r.w / 2), r.y - 8, t, THEME.accent);
     if (revealing) {
       g.restore();
@@ -979,15 +984,17 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   const pbh = touch ? 18 : 13;
   let promptY = touch ? barTop - pbh - 11 : barTop - 22;
   if (h.pending > 0) {
-    const w = touch ? 92 : 78;
+    // (with a controller, the D-pad's UP presses it)
+    const label = pd ? 'LEVEL UP (UP)' : touch ? 'LEVEL UP' : 'LEVEL UP (L)';
+    const w = pd ? ui.width(label) + (touch ? 20 : 12) : touch ? 92 : 78;
     const x = Math.floor(W / 2 - w / 2);
     if (ui.pressIn(x, promptY, w, pbh)) out.level = true;
     ui.claim(x, promptY, w, pbh);
-    ui.drawButton(x, promptY, w, pbh, touch ? 'LEVEL UP' : 'LEVEL UP (L)', { primary: true, lit: pulse });
+    ui.drawButton(x, promptY, w, pbh, label, { primary: true, lit: pulse });
     promptY -= pbh + 3;
   } else if (game.talentsLeft() > 0) {
     // THE SKILL TREES: a talent point is waiting (after the level's attribute, where both come at once)
-    const label = 'NEW TALENT';
+    const label = pd ? 'NEW TALENT (UP)' : 'NEW TALENT';
     const w = ui.width(label) + (touch ? 20 : 12);
     const x = Math.floor(W / 2 - w / 2);
     if (ui.pressIn(x, promptY, w, pbh)) out.talents = true;
@@ -998,7 +1005,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   }
   const hint = game.interactHint();
   if (hint) {
-    const label = touch ? hint : `${hint} (E)`;
+    const label = pd ? `${hint} (B)` : touch ? hint : `${hint} (E)`;
     const w = ui.width(label) + (touch ? 20 : 12);
     const x = Math.floor(W / 2 - w / 2);
     if (ui.pressIn(x, promptY, w, pbh)) out.interact = true;
@@ -1023,7 +1030,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   if (touch) drawText(g, `LV ${h.level}`, statX, goldY + 11, THEME.text, { font: 'small', shadow: P.ink });
   {
     // words, attacks and gear are one screen: it is lit while a word is waiting for a place
-    const label = touch ? 'INVENTORY' : 'INVENTORY (I)';
+    const label = pd ? 'INVENTORY (Y)' : touch ? 'INVENTORY' : 'INVENTORY (I)';
     const w = ui.width(label, !touch) + (touch ? 14 : 10);
     if (ui.pressIn(lx, btnY, w, btnH)) out.inventory = 3;
     ui.claim(lx, btnY, w, btnH);

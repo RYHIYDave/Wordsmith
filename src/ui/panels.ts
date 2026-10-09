@@ -5,6 +5,7 @@
 import { WORD_COLOR } from '../art/icons';
 import { P, RARITY_COLOR } from '../art/palette';
 import { drawText, wrapText } from '../engine/font';
+import { PAD_USE } from '../engine/gamepad';
 import type { Sprite } from '../engine/px';
 import { ATTR_GIVES, ATTR_NAME, CLASSES, SKILLS, TUNE, WORDS, holdSkill, skillsFor, tapSkill } from '../game/defs';
 import type { Limit } from '../game/defs';
@@ -809,9 +810,12 @@ export function drawPause(ui: Ui, muted: boolean, turn: string | null, limit: Li
   const T = ui.touch;
   const bh = T ? 18 : 13;
   // The controls, as a short table: what, and how. (The owner: "the menus are very wordy with the descriptions".)
-  const help: ReadonlyArray<readonly [string, string]> = T
-    ? [['MOVE', 'left thumb'], ['ATTACK', 'tap'], ['SLOW ATTACK', 'hold'], ['EVADE', 'swipe'], ['FLASK', 'tap it'], ['INVENTORY', 'tap an attack']]
-    : [['MOVE', 'WASD, or hold the left button'], ['ATTACK', 'left button'], ['STAND AND ATTACK', 'Shift + left button'], ['SLOW ATTACK', 'right button'], ['EVADE', 'Space'], ['FLASK', 'Q'], ['INTERACT', 'E'], ['INVENTORY', 'Tab'], ['LEVEL UP', 'L']];
+  // (with a game controller being played with, its buttons: engine/gamepad.ts)
+  const help: ReadonlyArray<readonly [string, string]> = PAD_USE.live
+    ? [['MOVE', 'left stick'], ['AIM', 'right stick'], ['ATTACK', 'RT'], ['SLOW ATTACK', 'LT'], ['EVADE', 'A'], ['FLASK', 'X'], ['INTERACT', 'B'], ['INVENTORY', 'Y'], ['LEVEL UP', 'D-pad up'], ['MAP', 'BACK']]
+    : T
+      ? [['MOVE', 'left thumb'], ['ATTACK', 'tap'], ['SLOW ATTACK', 'hold'], ['EVADE', 'swipe'], ['FLASK', 'tap it'], ['INVENTORY', 'tap an attack']]
+      : [['MOVE', 'WASD, or hold the left button'], ['ATTACK', 'left button'], ['STAND AND ATTACK', 'Shift + left button'], ['SLOW ATTACK', 'right button'], ['EVADE', 'Space'], ['FLASK', 'Q'], ['INTERACT', 'E'], ['INVENTORY', 'Tab'], ['LEVEL UP', 'L']];
   const keyW = help.reduce((n, r) => Math.max(n, ui.width(r[0], true)), 0) + 8;
   const valW = help.reduce((n, r) => Math.max(n, ui.width(r[1], true)), 0);
   // (as wide as it always was: the three buttons along the bottom need the room)

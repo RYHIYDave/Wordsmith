@@ -9,6 +9,7 @@
 // through the first dungeon ... a lootable corpse with a guaranteed drop ... you get the prompt
 // to socket the word."
 
+import { PAD_USE } from '../engine/gamepad';
 import { CLASSES, FIRST_LEVELS, FIRST_WORD, QUEST_ITEM, SKILLS, WORDS, firstWordSkill } from '../game/defs';
 import type { SkillId } from '../game/defs';
 import type { Game } from '../game/game';
@@ -78,10 +79,24 @@ const up = (s: string): string => s.toUpperCase();
  * there it says HOLD.
  */
 export function pressName(touch: boolean, slot: number, id: SkillId): string {
+  if (PAD_USE.live) return padPress(slot, id);
   if (slot === 2) return touch ? 'SWIPE' : 'SPACE';
   if (touch) return slot === 0 ? 'TAP' : 'TAP + HOLD';
   if (slot === 0) return 'LEFT CLICK';
   return SKILLS[id].channel ? 'HOLD RIGHT CLICK' : 'RIGHT CLICK';
+}
+
+/** A GAME CONTROLLER being played with (engine/gamepad.ts, `PAD_USE`): the button for each of the three moves. */
+export function padPress(slot: number, id: SkillId): string {
+  if (slot === 2) return 'A';
+  if (slot === 0) return 'RT';
+  return SKILLS[id].channel ? 'HOLD LT' : 'LT';
+}
+
+/** The attack the first dungeon's prompt is asking a word onto just now (out of a fight), or -1: a controller's Y opens the inventory there. */
+export function guideAttack(game: Game): number {
+  if (!game.guide || game.guideStep() !== 'smith' || game.inFight()) return -1;
+  return guideSlot(game, guideWord(game)).skill;
 }
 
 /** What the first dungeon's prompt points at for that ability: its plate at the bottom of the screen, or the button of the evasive move. */
@@ -97,11 +112,14 @@ export function guideBanner(game: Game, touch: boolean): Banner | null {
   const mk = (caption: Banner['caption'], text: string, sub = '', point: Banner['point'] = null): Banner => ({ step, caption, text, sub, lines: [], point });
   switch (step) {
     case 'move':
+      if (PAD_USE.live) return mk('HOW TO PLAY', 'LEFT STICK to MOVE', 'The right stick aims.');
       return mk('HOW TO PLAY', touch ? 'LEFT THUMB to MOVE' : 'W A S D to MOVE', touch ? 'Put your thumb down anywhere on the left and push.' : 'Or hold the left button on open ground.');
     case 'fight': {
-      const how: Record<GuideRow['id'], string> = touch
-        ? { quick: pressName(true, 0, h.skills[0].id), slow: pressName(true, 1, h.skills[1].id), evade: pressName(true, 2, h.skills[2].id), flask: 'TAP THE FLASK' }
-        : { quick: pressName(false, 0, h.skills[0].id), slow: pressName(false, 1, h.skills[1].id), evade: pressName(false, 2, h.skills[2].id), flask: 'Q' };
+      const how: Record<GuideRow['id'], string> = PAD_USE.live
+        ? { quick: padPress(0, h.skills[0].id), slow: padPress(1, h.skills[1].id), evade: padPress(2, h.skills[2].id), flask: 'X' }
+        : touch
+          ? { quick: pressName(true, 0, h.skills[0].id), slow: pressName(true, 1, h.skills[1].id), evade: pressName(true, 2, h.skills[2].id), flask: 'TAP THE FLASK' }
+          : { quick: pressName(false, 0, h.skills[0].id), slow: pressName(false, 1, h.skills[1].id), evade: pressName(false, 2, h.skills[2].id), flask: 'Q' };
       const what: Record<GuideRow['id'], string> = {
         // (the quick attack is the weapon's, so the character's own list of attacks is asked, not the class's)
         quick: `to ${SKILLS[h.skills[0].id].verb}`,
@@ -136,6 +154,8 @@ export function guideBanner(game: Game, touch: boolean): Banner | null {
       // (with fingers the evasive move's button is not a thing to tap: the right thumb lives in that
       // corner, and a touch there is a tap, a hold or a swipe. The INVENTORY button is, and it is lit.)
       if (touch && to.skill === 2) return mk('WORDSMITHING', `Put ${up(WORDS[w].name)} on ${name}`, 'Tap INVENTORY, at the top of the screen.');
+      // (with a controller: Y opens the inventory at that attack, guideAttack)
+      if (PAD_USE.live) return mk('WORDSMITHING', `Put ${up(WORDS[w].name)} on ${name}`, 'Press Y to open your attacks.', pointOf(to.skill));
       return mk('WORDSMITHING', `Put ${up(WORDS[w].name)} on ${name}`, touch ? `Tap ${name} at the bottom of the screen.` : `Click ${name} at the bottom of the screen.`, pointOf(to.skill));
     }
     case 'use': {
@@ -178,12 +198,14 @@ export function guideCoach(game: Game, touch: boolean): Coach | null {
     // (taken out again: whoever can do that needs no coaching)
     if (!word) return null;
     // (THE FIRST LEVELS: set in town, at the wordsmith's, it is tried as the next dungeon begins)
-    const tryIt = FIRST_LEVELS.on && game.level.town ? 'Try it in the next dungeon.' : 'Close this and try it.';
+    const tryIt = FIRST_LEVELS.on && game.level.town ? 'Try it in the next dungeon.' : PAD_USE.live ? 'Press B and try it.' : 'Close this and try it.';
     return { word, to: { skill: G.set.skill, side: front ? 'front' : 'behind', idx: 0 }, text: `${up(sk.r.name)}! ${tryIt}`, done: true };
   }
   const word = WORD_IDS.find((w) => h.words[w] > 0);
   if (!word) return null;
   const to = guideSlot(game, word);
   const name = up(SKILLS[h.skills[to.skill].id].name);
-  return { word, to, text: touch ? `Drag ${up(WORDS[word].name)} onto ${name}.` : `Drag ${up(WORDS[word].name)} onto ${name}, or click the word and then the slot.`, done: false };
+  // (with a controller, A is a click where its pointer is)
+  const text = PAD_USE.live ? `Press A on ${up(WORDS[word].name)}, then on ${name}'s slot.` : touch ? `Drag ${up(WORDS[word].name)} onto ${name}.` : `Drag ${up(WORDS[word].name)} onto ${name}, or click the word and then the slot.`;
+  return { word, to, text, done: false };
 }
