@@ -55,6 +55,9 @@ guard (`MAGE_STANCES`). The rest of the skills on `art/wild-skills`: `art/mage-s
   new rules." 00:24: "We don’t need slam or familiar for now"; and "Don’t need beam either". So the
   rest are six: the warrior's Whirlwind and Leap, the ranger's Volley and Trap, the mage's Orb and
   Warp (below), made while he slept and shown to him in the morning.
+- By 05:24 (9 Oct), to `wild_whirlwind.gif` and `wild_leap.gif`: "Yes, keep both (Recommended)"; to
+  `wild_volley.gif` and `wild_trap.gif`: "Yes, keep both (Recommended)"; to `wild_orb.gif` and
+  `wild_warp.gif`: "Yes, keep both (Recommended)".
 
 The art rulebook (his doc, the project's `claude/art_rulebook.md`, `docs/art/RULEBOOK.md`) now
 says big and wild under Effects and magic and under Movement, with this Wave as the measure.

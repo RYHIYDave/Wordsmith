@@ -6,10 +6,9 @@ game is today's exactly (tests check it).
 
 **State of this branch (`art/mage-stances`), 8 Oct 2026:** from `art/ranger-stances` at `cf9f09f`
 (the ranger's stances, which the main chat brings in as Version 19.4, and main at 19.2), because
-the mage's stops and setting off are made by the same means as his. **WORK IN PROGRESS: her stance
-and her runs have his yes (19:01), and her casts from it (19:19). Her hits, fall and habits from it
-are in the code too (switch off) but have NOT his yes: he saw them and asked for everything to be
-big and wild first (below). None of what is here is wild yet.**
+the mage's stops and setting off are made by the same means as his. **DONE: her stance
+and her runs have his yes (19:01), and her casts from it (19:19); and on 9 Oct her hits and fall from
+it (by 05:26) and, with `WILD` on, her habits from it (by 07:31). All of her stances have his yes.**
 
 ## His words
 
@@ -65,11 +64,16 @@ big and wild first (below). None of what is here is wild yet.**
 - **Struck, and her fall, from her guard** (`mageReelLow`, `mageLurchLow`, `mageFallFromGuard`): the
   foot that steps is lifted and the staff stays level in her hands; a foot on the floor moves 0.0 game
   px when she is rocked or thrown standing (today 2.3 and 2.5). In her fall the staff swings up out
-  of her guard and she goes down it to her knees as before. No yes yet (above).
+  of her guard and she goes down it to her knees as before. His yes by 05:26 on 9 Oct, shown
+  `mage_hits_fall.gif` again and asked whether it comes in with her stances, so that she does not pop
+  out of her guard when hit: "Yes, with her stances (Recommended)".
 - **Her habits in a fight, from her guard** (`mageLightInGuard`, `powerGetsAway`; in town she keeps
   today's two, now moves of their own, `tmlight` and `treading`): her light with one hand off the
-  staff; and in place of reading, the power getting away from her. No yes yet: he wants the power
-  getting away big and wild, "energy crackling and bolts shooting out, barely able to contain it".
+  staff; and in place of reading, the power getting away from her. He wanted the power getting away
+  big and wild, "energy crackling and bolts shooting out, barely able to contain it"; with `WILD` on
+  her crystal now crackles and spits bolts as it does. Shown `wild_habits.gif` (as he saw them, and
+  big and wild; `tools/mage_habits_films.sh`), by 07:31 on 9 Oct: "Yes, keep them (Recommended)". So
+  her stances come in whole, with `WILD`.
 - Not yet: her casts made walking, and everything made big and wild (the Wave first).
 
 ## Tests

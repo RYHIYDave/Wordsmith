@@ -1674,6 +1674,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       useWild(on);
       art.heroes = makeHeroArt3();
     },
+    /** For films of a hero's habits: the hero does one of the two things they do when left standing (1 or 2) now, whatever the wait. */
+    habit: (which: 1 | 2) => renderer.figure.play(which),
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is

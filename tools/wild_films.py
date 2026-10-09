@@ -58,6 +58,13 @@ FILMS = {
         'behind the arrow. It punches in, and what flies off is',
         'what it hits: bone and dust, yellow sparks off armour.',
     ]},
+    'habits': {'box': (199, 74, 309, 144), 'title': 'Her habits, big and wild', 'before': 'AS YOU SAW THEM', 'lines': [
+        'Top: as you saw them last night. Bottom: big and wild.',
+        'In a fight, when she stands a while in her guard: first she',
+        'snaps up a light; then the power gets away from her, her',
+        'crystal crackling and spitting bolts at the floor, and she',
+        'fights it back down into her guard.',
+    ]},
     'whirlwind': {'box': (149, 49, 359, 164), 'title': 'Whirlwind, big and wild', 'before': 'AS IT IS IN THE GAME', 'lines': [
         'Top: as it is in the game. Bottom: big and wild, his way.',
         'A kick of dust as it begins. A ring of the blade\'s light',
