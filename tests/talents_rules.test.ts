@@ -1,5 +1,5 @@
 // THE SKILL TREES AT WORK (game/talents.ts, TALENTS: OFF until the owner has said yes): what each
-// talent does, by the rules in game/game.ts, with the switch on for each test (and off again after).
+// talent does, by the rules in game/game.ts, with the switch held on for each test (and as it was after).
 // Their numbers are TALENT_TUNE's, as the cards say them.
 //   run: tsx --test tests/talents_rules.test.ts
 // @ts-ignore - node typings are not part of this project
@@ -39,14 +39,16 @@ interface Inside {
 }
 
 /** With the talents' switch on for the test, and off again after. */
-function on(fn: () => void): void {
-  TALENTS.on = true;
+function held(to: boolean, fn: () => void): void {
+  const was = TALENTS.on;
+  TALENTS.on = to;
   try {
     fn();
   } finally {
-    TALENTS.on = false;
+    TALENTS.on = was;
   }
 }
+const on = (fn: () => void): void => held(true, fn);
 
 /** The practice room, emptied, the hero at (14.5, 15.5) facing +x, with these talents and words. */
 function room(cls: ClassId, talents: string[], words: readonly [number, 'front' | 'behind', WordId][] = [], seed = 5): { g: Game; a: Inside; seen: GameEvent[] } {
@@ -124,12 +126,14 @@ const of = <T extends GameEvent['t']>(seen: readonly GameEvent[], t: T): Extract
 // ---- with the switch off, a hero's talents do nothing -------------------------------------------
 
 test('switched off, talents written into a hero do nothing', () => {
-  const g = Game.forPractice('warrior', 5);
-  const before = g.hero.d.maxLife;
-  g.hero.talents = ['thickskin', 'bloodlust'];
-  g.refresh();
-  assert.equal(g.hero.d.maxLife, before);
-  assert.equal(g.has('thickskin'), false);
+  held(false, () => {
+    const g = Game.forPractice('warrior', 5);
+    const before = g.hero.d.maxLife;
+    g.hero.talents = ['thickskin', 'bloodlust'];
+    g.refresh();
+    assert.equal(g.hero.d.maxLife, before);
+    assert.equal(g.has('thickskin'), false);
+  });
 });
 
 // ---- the warrior ------------------------------------------------------------------------------

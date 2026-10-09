@@ -15,26 +15,33 @@ import type { ClassId } from '../src/game/types';
 import { wrapText } from '../src/engine/font';
 import { seasoned } from './helpers';
 
-/** With the switch on for a while, and off again after (the game's own until his yes). */
-function on(fn: () => void): void {
-  TALENTS.on = true;
+/** With the switch held on (or off) for a while, and as it was again after. */
+function held(to: boolean, fn: () => void): void {
+  const was = TALENTS.on;
+  TALENTS.on = to;
   try {
     fn();
   } finally {
-    TALENTS.on = false;
+    TALENTS.on = was;
   }
 }
+const on = (fn: () => void): void => held(true, fn);
 
-test('the switch is off: no talents can be taken, and they add nothing', () => {
+test("the game's switch is off, until his yes", () => {
   assert.equal(TALENTS.on, false);
-  const g = seasoned(new Game('mage', 3), 30);
-  assert.equal(g.talentsLeft(), 0);
-  assert.notEqual(g.talentProblem('kindling'), null);
-  assert.notEqual(g.takeTalent('kindling'), null);
-  assert.deepEqual(g.hero.talents, []);
-  assert.deepEqual(talentMods('mage', ['kindling']), []);
-  // (and a save holds nothing of them)
-  assert.equal('talents' in g.save(), false);
+});
+
+test('switched off: no talents can be taken, and they add nothing', () => {
+  held(false, () => {
+    const g = seasoned(new Game('mage', 3), 30);
+    assert.equal(g.talentsLeft(), 0);
+    assert.notEqual(g.talentProblem('kindling'), null);
+    assert.notEqual(g.takeTalent('kindling'), null);
+    assert.deepEqual(g.hero.talents, []);
+    assert.deepEqual(talentMods('mage', ['kindling']), []);
+    // (and a save holds nothing of them)
+    assert.equal('talents' in g.save(), false);
+  });
 });
 
 test('ten points, one at every fifth level', () => {
