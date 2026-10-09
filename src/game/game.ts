@@ -131,7 +131,7 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   out.deaths = typeof m.deaths === 'number' && Number.isFinite(m.deaths) ? Math.max(0, Math.floor(m.deaths)) : 0;
   out.bestDepth = typeof m.bestDepth === 'number' && Number.isFinite(m.bestDepth) ? Math.max(0, Math.floor(m.bestDepth)) : 0;
   out.taught = m.taught === true;
-  // (THE FIRST LEVELS: the ring is lit on a device the first time a hero brings the RUNE HEART. A
+  // (THE FIRST LEVELS: the ring is lit on a device the first time a hero brings the MASTER RUNE-STONE. A
   // device that saved before Version 19.5 has never had it lit: its next new hero goes for it, as
   // the owner saw in the pictures, and it stays lit for the heroes after. A hero saved before then
   // keeps his own ring, and his words, whatever the device's: see `restore`.)
@@ -714,6 +714,19 @@ export class Game {
     return socketCount(level);
   }
 
+  /**
+   * What the master rune-stone's pictures show (art/quest3.ts, QUEST3; main.ts sets them from this
+   * each frame): the wordsmith's ring dark (this hero's ring is not lit); the stone carried; the
+   * stone lying by the fallen wordsmith (here, unsearched, and the ring dark).
+   */
+  questView(): { dark: boolean; carried: boolean; lying: boolean } {
+    const live = FIRST_LEVELS.on && !this.practice;
+    const dark = live && !this.hero.ring;
+    const carried = live && this.hero.quest === 'heart';
+    const b = this.level.town ? null : this.level.body;
+    return { dark, carried, lying: dark && !carried && !!b && b.state === 0 };
+  }
+
   /** Do words fall, and do monsters carry them, here and now: not before the ring is lit, and (21:05) not in the first dungeon. */
   wordsFall(): boolean {
     if (!FIRST_LEVELS.on || this.practice) return true;
@@ -944,7 +957,7 @@ export class Game {
       this.softenFirstHalf();
       if (FIRST_LEVELS.on) this.softball();
     } else if (FIRST_LEVELS.on && !this.practice && !this.hero.ring && !this.hero.quest && !this.bodySearched) {
-      // (THE FIRST LEVELS: without the RUNE HEART there is no wordsmithing. A hero who left the
+      // (THE FIRST LEVELS: without the MASTER RUNE-STONE there is no wordsmithing. A hero who left the
       // first dungeon without searching the fallen wordsmith finds him again in the next, half way
       // along its main path, and so on until he is found.)
       this.placeBody();
@@ -4593,7 +4606,8 @@ export class Game {
       this.hero.quest = 'heart';
       this.hero.potions = TUNE.potionMax;
       this.emit({ t: 'quest', x: b.x, y: b.y });
-      this.msg(`A fallen wordsmith. In the satchel: full flasks, and ${QUEST_ITEM.the}. Bring it to the wordsmith in town.`, MSG.word);
+      // (since Version 19.6 the stone lies by his hand, the art chat's: art/quest3.ts)
+      this.msg(`A fallen wordsmith. In his satchel, full flasks; by his hand, ${QUEST_ITEM.the}. Bring it to the wordsmith in town.`, MSG.word);
       return;
     }
     this.drops.push({ x: b.x, y: b.y, kind: 'word', gold: 0, item: null, word: w, age: 0 });

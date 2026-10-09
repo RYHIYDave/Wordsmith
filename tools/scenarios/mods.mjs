@@ -50,7 +50,7 @@ export default async function (page, snap) {
   // ---- a character with a white, a blue and two yellow pieces in the bag, and words to spare ----------------
   const made = await page.evaluate((cls) => {
     const d = window.__dbg; d.saving(false); d.run(cls, 11); d.autoLevel = false; d.autoWords = false;
-    // (THE FIRST LEVELS, the game's own since Version 19.5: the wordsmith's ring lit, as it is once the RUNE HEART is brought; the level as below)
+    // (THE FIRST LEVELS, the game's own since Version 19.5: the wordsmith's ring lit, as it is once the MASTER RUNE-STONE is brought; the level as below)
     d.seasoned(1);
     const g = d.game(); const h = g.hero;
     while (h.level < 8) g.gainXp(200);

@@ -246,7 +246,7 @@ test('on: a hero saved before the first levels keeps his ring, and a device that
     const back = Game.restore(s, newMeta());
     assert.equal(back.hero.ring, true, 'a save from before: the ring lit');
     // (a DEVICE that saved before Version 19.5 has never had the ring lit, taught or not: its next
-    // new hero goes for the RUNE HEART, as in the pictures; once lit, it stays lit)
+    // new hero goes for the MASTER RUNE-STONE, as in the pictures; once lit, it stays lit)
     assert.equal(cleanMeta({ taught: true } as never).ring, false);
     assert.equal(cleanMeta({ taught: true, ring: true } as never).ring, true);
     assert.equal(new Game('mage', 9, cleanMeta({ taught: true } as never)).hero.ring, false);
@@ -319,7 +319,7 @@ test('on: the first dungeon\'s gate takes no word, which would be burned for not
   });
 });
 
-test('on: a hero who leaves the first dungeon without the RUNE HEART finds the fallen wordsmith in the next, until he is found', () => {
+test('on: a hero who leaves the first dungeon without the MASTER RUNE-STONE finds the fallen wordsmith in the next, until he is found', () => {
   on(() => {
     const g = fresh('warrior', 61);
     assert.ok(g.level.body, 'the fallen wordsmith in the first dungeon');
@@ -328,7 +328,7 @@ test('on: a hero who leaves the first dungeon without the RUNE HEART finds the f
     g.cleared = 1;
     g.enterTown();
     g.enterDungeon();
-    assert.ok(g.level.body, 'and again in the second, since without the RUNE HEART there is no wordsmithing');
+    assert.ok(g.level.body, 'and again in the second, since without the MASTER RUNE-STONE there is no wordsmithing');
     search(g);
     assert.equal(g.hero.quest, 'heart');
     // (found, he is not laid again; nor for a hero whose ring is lit)
@@ -341,5 +341,20 @@ test('on: a hero who leaves the first dungeon without the RUNE HEART finds the f
     lit.cleared = 1;
     lit.enterDungeon();
     assert.ok(!lit.level.body, 'not for a hero whose ring is lit');
+  });
+});
+
+test('on: what the master rune-stone\'s pictures show follows the rules: lying by the fallen wordsmith, carried, the ring dark until it is given', () => {
+  on(() => {
+    const g = fresh('ranger', 71);
+    assert.deepEqual(g.questView(), { dark: true, carried: false, lying: true }, 'a new player: the stone lies by him, the ring dark');
+    search(g);
+    assert.deepEqual(g.questView(), { dark: true, carried: true, lying: false }, 'taken up: carried');
+    assert.ok(g.events.some((e) => e.t === 'quest'), 'the moment it is taken up, for its flight');
+    toWordsmith(g);
+    assert.deepEqual(g.questView(), { dark: false, carried: false, lying: false }, 'given: the ring lit');
+    // (a later hero, the ring lit on the device: no stone, the ring lit; and the practice room is lit)
+    const later = Game.forFirstRun('mage', 72, { ...newMeta(), ring: true, taught: false });
+    assert.deepEqual(later.questView(), { dark: false, carried: false, lying: false });
   });
 });

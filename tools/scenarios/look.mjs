@@ -1,7 +1,7 @@
 // A quick look at the screens, for whoever is working on them: the starting screen and its pages,
 // then a new game (the first dungeon with its prompts), the body, the word, the inventory.
 // THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5): the body holds
-// the RUNE HEART, the word is the wordsmith's in town once it lights his ring (the way home and the
+// the MASTER RUNE-STONE, the word is the wordsmith's in town once it lights his ring (the way home and the
 // walk to him by script: guide.mjs makes them with real input), and the word is carried to the
 // slow attack and back at level 2, when that attack has opened and has a slot.
 //   node tools/playtest.mjs --scenario tools/scenarios/look.mjs --out shots/look
@@ -67,7 +67,7 @@ export default async function (page, snap) {
   await page.evaluate(() => { const g = window.__dbg.game(); const b = g.level.body; g.hero.x = b.x + 1.0; g.hero.y = b.y + 0.4; });
   await page.waitForTimeout(500);
   if (fl) {
-    if (!(await hands.until(() => window.__dbg.game().hero.quest === 'heart'))) console.log('  !! the RUNE HEART was never taken from the satchel');
+    if (!(await hands.until(() => window.__dbg.game().hero.quest === 'heart'))) console.log('  !! the MASTER RUNE-STONE was never taken from the satchel');
     await page.waitForTimeout(900);
     await snap('11_rune_heart');
     // home (by script), and up to the wordsmith, whose ring it lights

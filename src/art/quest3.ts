@@ -36,13 +36,15 @@ import { GRID } from './skeleton';
 import { GREAT_RUNE } from './smith3';
 
 /**
- * The switch, and the demo's state (main.ts sets it for the films; the rules will set what they
- * need when the main chat puts it in): whether the ring is still dark; when (on the town's clock)
- * the stone was given (-1: not yet); where the stone is in the first dungeon (by the fallen
- * wordsmith; taken, at the moment on the clock it was picked up; or gone); and whether the hero
- * carries it.
+ * The switch, and what the pictures read: whether the ring is still dark; when (on the town's
+ * clock) the stone was given (-1: not yet); where the stone is in the first dungeon (by the fallen
+ * wordsmith, or gone), and the moment on the clock it was taken up; and whether the hero carries it.
+ * THE GAME'S OWN SINCE VERSION 19.6 (his yes to the art chat at 00:01 on 9 Oct 2026, "Yes, keep it
+ * (Recommended)", and to the main chat at 00:22, "K add the art"): the rules set the rest each
+ * frame (main.ts, `questFromRules`, from the first levels: game/defs.ts, FIRST_LEVELS); the films
+ * set it by hand (`__dbg.quest3`). Switched off, the ring is as it was.
  */
-export const QUEST3 = { on: false, dark: true, givenAt: -1, stone: 'lying' as 'lying' | 'gone', takenAt: -1, carried: false };
+export const QUEST3 = { on: true, dark: false, givenAt: -1, stone: 'gone' as 'lying' | 'gone', takenAt: -1, carried: false };
 
 /** The slate it is cut from: dark, a little teal, so that the cyan of its rune is the brightest thing on it. */
 export const SLATE: Ramp = ['#141a2e', '#141a2e', '#24304a', '#36506a', '#4a6e86'];

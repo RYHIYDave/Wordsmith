@@ -21,7 +21,7 @@ import { guideBanner, guideCoach, guideSlot } from '../src/ui/guide';
 import { land } from './helpers';
 
 // THE FIRST LEVELS (game/defs.ts, on since Version 19.5) changed the lesson: the abilities open by
-// level, the fallen wordsmith's satchel holds the Rune Heart, the first word is given in town and the
+// level, the fallen wordsmith's satchel holds the master rune-stone, the first word is given in town and the
 // lesson ends there, the first pack is a softball, and the first dungeon is gentler. These tests are
 // of the lesson and the words as they were before, and of what the first levels left as it was (the
 // words lent to attacks, cooldowns or mana, the Lexicon...), so they run with the first levels off;

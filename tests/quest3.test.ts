@@ -39,10 +39,10 @@ const assert: Assert = nodeAssert;
 
 paintWithoutCanvas();
 
-/** The switches as they are in the game: both off, the stone not given. */
+/** The switches as they are in the game since Version 19.6: both on; the ring lit and the stone gone, as for a hero whose ring is lit (main.ts sets these from the rules each frame). */
 const reset = (): void => {
-  SMITH3.on = false;
-  Object.assign(QUEST3, { on: false, dark: true, givenAt: -1, stone: 'lying', takenAt: -1, carried: false });
+  SMITH3.on = true;
+  Object.assign(QUEST3, { on: true, dark: false, givenAt: -1, stone: 'gone', takenAt: -1, carried: false });
 };
 
 /** The town with the wordsmith and his ring made new, and the stone's switch on: for a test, then both off again. */
@@ -70,9 +70,16 @@ const light = (c: string): number => {
   return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
 };
 
-test('the switch is off: the ring burns as it always has, and nothing of the stone shows', () => {
+test('the switches are on, since Version 19.6', () => {
   reset();
-  assert.equal(QUEST3.on, false);
+  assert.equal(SMITH3.on, true);
+  assert.equal(QUEST3.on, true);
+  assert.deepEqual(ringPower(0), { dark: false, g: -1 }, 'a lit ring, nothing powering up');
+});
+
+test('switched off: the ring burns as it always has, and nothing of the stone shows', () => {
+  reset();
+  QUEST3.on = false;
   assert.equal(ringPower(0), null, 'no power-up to follow');
   SMITH3.on = true;
   try {

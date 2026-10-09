@@ -29,6 +29,7 @@ import { BONE, GLINT, GRAIN, IDLE_FPS, KH, KW, REST, SPARK, TEAL } from '../src/
 import type { Pose } from '../src/art/kit';
 import { SOCKET } from '../src/art/mkit';
 import { EMBER, GOLD } from '../src/art/props';
+import { SMITH3 } from '../src/art/smith3';
 import { makeTownProps } from '../src/art/town';
 import { ACT_FPS, FACINGS, PAINT, TOWN_POSES, TOWN_WORK, makeTownsfolk, townFrame } from '../src/art/townsfolk';
 import type { Facing, Townsfolk } from '../src/art/townsfolk';
@@ -50,6 +51,12 @@ const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
 
 paintWithoutCanvas();
+
+// (SINCE VERSION 19.6 THE WORDSMITH AND HIS RING ARE THE ART CHAT'S, on bones and big and wild:
+// art/smith3.ts and art/ring3.ts, SMITH3 on, held by tests/smith3.test.ts and tests/quest3.test.ts.
+// This file holds the town's own painting (Version 14.4), the old wordsmith and ring with it, kept
+// behind that switch: it is switched off here, for this file alone.)
+SMITH3.on = false;
 
 const FOLK = makeTownsfolk();
 const TOWNS = makeTownProps();

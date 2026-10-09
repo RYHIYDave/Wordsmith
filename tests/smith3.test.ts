@@ -32,21 +32,30 @@ const assert: Assert = nodeAssert;
 
 paintWithoutCanvas();
 
-/** With the switch on for a moment, and off again after. */
+/** With the switch on (as the game has it since Version 19.6), and on again after whatever happens. */
 const on = <T>(fn: () => T): T => {
   SMITH3.on = true;
   try {
     return fn();
   } finally {
-    SMITH3.on = false;
+    SMITH3.on = true;
   }
 };
 
-test('the switch is off: the town has the wordsmith and the ring it had', () => {
-  assert.equal(SMITH3.on, false);
-  const folk = makeTownsfolk();
-  assert.equal(folk.wordsmith.act.length, TOWN_POSES.wordsmith.act.length, 'his act as it was');
-  assert.equal(makeTownProps().ring3, undefined, 'no new ring painted');
+test('the switch is on, since Version 19.6: the wordsmith on bones and his ring made new', () => {
+  assert.equal(SMITH3.on, true);
+  assert.ok(makeTownProps().ring3 !== undefined, 'the new ring painted');
+});
+
+test('switched off: the town has the wordsmith and the ring it had', () => {
+  SMITH3.on = false;
+  try {
+    const folk = makeTownsfolk();
+    assert.equal(folk.wordsmith.act.length, TOWN_POSES.wordsmith.act.length, 'his act as it was');
+    assert.equal(makeTownProps().ring3, undefined, 'no new ring painted');
+  } finally {
+    SMITH3.on = true;
+  }
 });
 
 test('with it on: the wordsmith on bones, standing, at his work and turned to each side; the new ring painted', () => {

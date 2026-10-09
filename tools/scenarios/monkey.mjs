@@ -77,7 +77,7 @@ export default async function (page, snap) {
         return '';
       });
   /**
-   * (THE FIRST LEVELS) With the RUNE HEART from the body: home and up to the wordsmith, whose ring it
+   * (THE FIRST LEVELS) With the MASTER RUNE-STONE from the body: home and up to the wordsmith, whose ring it
    * lights; he gives the first word, and in town the inventory opens for it. (The way home and the
    * walk are guide.mjs's, with real input.)
    */
@@ -90,7 +90,7 @@ export default async function (page, snap) {
         if (!q) return '';
         for (const r of [0.8, 1.0, 1.2]) for (let k = 0; k < 12; k++) {
           const a = (k / 12) * Math.PI * 2; const x = q.x + Math.cos(a) * r; const y = q.y + Math.sin(a) * r;
-          if (g.free(g.level.walk, x, y, 0.45)) { g.hero.x = x; g.hero.y = y; return 'walk:wordsmith with the RUNE HEART'; }
+          if (g.free(g.level.walk, x, y, 0.45)) { g.hero.x = x; g.hero.y = y; return 'walk:wordsmith with the MASTER RUNE-STONE'; }
         }
         return '';
       });

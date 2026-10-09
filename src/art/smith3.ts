@@ -37,8 +37,14 @@ import { add, bonesAt, buildOf, lerp3, mul, solve, standing, sub, trunkOf } from
 import type { Bones, Build, Key3, Posed, Rot, Skeleton, V3 } from './skeleton';
 import type { Facing, Townsman } from './townsfolk';
 
-/** The switch: the wordsmith on bones and his ring made new (art/town.ts), or as they were. */
-export const SMITH3 = { on: false };
+/**
+ * The switch: the wordsmith on bones and his ring made new (art/town.ts), or as they were. THE
+ * GAME'S OWN SINCE VERSION 19.6: his yes to the art chat by 23:09 on 8 Oct 2026 ("Yes, this is him
+ * (Recommended)"; of the ring, "Just right (Recommended)"), and to the main chat at 00:22 on the
+ * 9th: "K add the art, then work on our skill trees, then I’d like controller support.  Dual stick
+ * aiming." Switched off (`__dbg.smith3(false)`, which paints the town again), the town is 19.5's.
+ */
+export const SMITH3 = { on: true };
 
 /** His body: a head taller than the heroes (they are 54.5 to 58 tall), broad in the shoulder and deep in the chest, his limbs heavy. */
 export const SMITH_BODY: Build = buildOf(68, 1.3, { shoulders: 1.16, chest: 1.14, waist: 1.16, hips: 1.08, depth: 1.12, limbs: 1.12, pad: 1.8, skirt: [9, 8] });
