@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { TUNE, WORDS } from '../src/game/defs';
+import { TUNE, WORDS, useFirstLevels } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -14,6 +14,13 @@ import { CLASS_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId, WordId } from '../src/game/types';
 
 const DT = 1 / 30;
+
+// THE FIRST LEVELS (game/defs.ts, on since Version 19.5) keep every word from a hero until the
+// wordsmith's ring is lit, and leave the first dungeon without a word at all (the owner, 21:05: "That
+// also means no words on monsters for dungeon 1"). These tests are of how scarce words are as the
+// drops are tuned, dungeon by dungeon, so they run with the first levels off, as the game was; what
+// the first levels change is tested in tests/first_levels.test.ts.
+useFirstLevels(false);
 
 /** Dungeon number `depth` of a character who has been down before (so it is not their first dungeon, with its fallen wordsmith). */
 function dungeon(cls: ClassId, seed: number, depth: number, plan: WordId[] = []): Game {

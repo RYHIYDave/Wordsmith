@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { RNG } from '../src/engine/rng';
 import { TUNE, VENDORS, VENDOR_IDS } from '../src/game/defs';
 import { Game, cleanMeta, newMeta } from '../src/game/game';
+import { seasoned } from './helpers';
 import { itemValue, rollItem } from '../src/game/items';
 import { TOWN } from '../src/game/level';
 import { UNREACHABLE, flowField } from '../src/game/nav';
@@ -75,6 +76,9 @@ test('pressing interact in town asks for the service; it does not enter the dung
 
 test('gate: up to three words, no repeats, one element; burned on entering; monsters have their powers', () => {
   const g = new Game('ranger', 9);
+  // (the second dungeon: THE FIRST LEVELS leave the first without a word on any monster, burned in or not)
+  g.depth = 2;
+  g.cleared = 1;
   const h = g.hero;
   for (const w of WORD_IDS) h.words[w] = 2;
   assert.equal(g.planWord('fire'), null);
@@ -97,6 +101,8 @@ test('gate: up to three words, no repeats, one element; burned on entering; mons
   for (const m of g.monsters) assert.ok(m.words.includes('fire') && m.words.includes('power'), `${m.name} carries the dungeon's words`);
   // an ordinary dungeon's ordinary monsters carry none
   const plain = new Game('ranger', 9);
+  plain.depth = 2;
+  plain.cleared = 1;
   plain.enterDungeon();
   assert.ok(plain.monsters.filter((m) => !m.elite && !m.boss).every((m) => m.words.length === 0));
   // the words make its monsters tougher
@@ -110,7 +116,8 @@ test('burning a word into gear uses it up; what it becomes is rolled from the ou
   for (const cls of CLASS_IDS) {
     const became = new Set<string>();
     for (let seed = 1; seed <= 24; seed++) {
-      const g = new Game(cls, seed);
+      // (THE FIRST LEVELS, since Version 19.5: words are burned into gear once the wordsmith's ring is lit)
+      const g = seasoned(new Game(cls, seed), 1);
       const h = g.hero;
       const rng = new RNG(77);
       h.gear.gloves = rollItem(3, rng, { slot: 'gloves', rarity: 1 });
@@ -162,7 +169,7 @@ test('burning a word into gear uses it up; what it becomes is rolled from the ou
 });
 
 test('every word can be burned into every slot', () => {
-  const g = new Game('warrior', 3);
+  const g = seasoned(new Game('warrior', 3), 1);
   const rng = new RNG(5);
   const slots = ['mainhand', 'offhand', 'helm', 'chest', 'gloves', 'belt', 'boots', 'amulet', 'ring'] as const;
   for (const w of WORD_IDS) {
@@ -373,6 +380,9 @@ test('stash and bag limits', () => {
 test('saving keeps the gate plan; the Lexicon and stash are saved apart from the run', () => {
   const meta = newMeta();
   const g = new Game('warrior', 40, meta);
+  // (home from the first dungeon: its own gate takes no word, since Version 19.5)
+  g.depth = 2;
+  g.cleared = 1;
   g.hero.words.volatile = 1;
   g.hero.words.swift = 2;
   g.hero.gold = TUNE.keepCost;

@@ -16,6 +16,7 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 
 import { RNG } from '../src/engine/rng';
+import { FIRST_LEVELS } from '../src/game/defs';
 import { doorPiers, doorWay, isLeaf } from '../src/game/doors';
 import { MIX, generateFloor, tileAt } from '../src/game/dungeon';
 import { buildOpenGrid, buildWalkGrid, flowDir, flowField, lineOfSight, scatter } from '../src/game/nav';
@@ -45,10 +46,15 @@ const SEEDS = Math.max(1, Number(env.DUNGEON_TEST_SEEDS) || 25);
 const MAP_MAX = 160;
 const pathRooms = (depth: number): number => Math.min(15, 11 + Math.floor((depth - 1) / 2));
 const branches = (depth: number): number => (depth <= 2 ? 3 : depth <= 5 ? 4 : 5);
-const eliteRooms = (depth: number): number => (depth <= 2 ? 2 : depth <= 5 ? 3 : 4);
-const monsterTarget = (depth: number): number => Math.min(230, 120 + 8 * (depth - 1));
-const normalPackMin = (depth: number): number => Math.min(7, 3 + Math.floor((depth - 1) / 3));
-const normalPackMax = (depth: number): number => Math.min(9, 6 + Math.floor((depth - 1) / 3));
+// (THE FIRST LEVELS, on since Version 19.5: the first dungeon is gentler, game/defs.ts FIRST_DUNGEON:
+// one room of elites, a budget of 60, packs of 2 to 4. The owner, 8 Oct 2026, 20:36: "This will
+// change the dungeon mob density and difficulty.  It feels a little too abrupt to be thrown into at
+// the start")
+const first = (depth: number): boolean => FIRST_LEVELS.on && depth <= 1;
+const eliteRooms = (depth: number): number => (first(depth) ? 1 : depth <= 2 ? 2 : depth <= 5 ? 3 : 4);
+const monsterTarget = (depth: number): number => (first(depth) ? 60 : Math.min(230, 120 + 8 * (depth - 1)));
+const normalPackMin = (depth: number): number => (first(depth) ? 2 : Math.min(7, 3 + Math.floor((depth - 1) / 3)));
+const normalPackMax = (depth: number): number => (first(depth) ? 4 : Math.min(9, 6 + Math.floor((depth - 1) / 3)));
 const isBossSized = (r: Room): boolean => (r.w >= 13 && r.h >= 12) || (r.w >= 12 && r.h >= 13);
 const isPillarRoom = (r: Room): boolean => (r.w >= 11 && r.h >= 10) || (r.w >= 10 && r.h >= 11);
 
@@ -718,10 +724,11 @@ test('pack sizes fit the depth and the total is within 25% of the monster budget
     const target = monsterTarget(depth);
     assert.ok(total >= target * 0.75 && total <= target * 1.25, `${tag}: ${total} monsters, budget ${target}`);
   }
-  // depth 1 lands in the 105-135 band
+  // depth 1 lands in the 105-135 band (with the first levels, 45-75)
+  const [lo, hi] = FIRST_LEVELS.on ? [45, 75] : [105, 135];
   for (const s of samples.filter(x => x.depth === 1)) {
     const total = totalMonsters(s.f);
-    assert.ok(total >= 105 && total <= 135, `${s.tag}: ${total} monsters`);
+    assert.ok(total >= lo && total <= hi, `${s.tag}: ${total} monsters`);
   }
 });
 

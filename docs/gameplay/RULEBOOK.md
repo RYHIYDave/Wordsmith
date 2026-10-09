@@ -1,10 +1,10 @@
 # Wordsmith Gameplay Rulebook
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
-(https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33:
-"Yes, as it is (Recommended)". The doc is the living one; this copy follows it, and both change
-only with his yes. The two pictures in the doc are written out here in words. How it was found:
-`docs/gameplay/interview.md`.
+(https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 29, with the first
+levels of Version 19.5 written in), and both change only with his yes. The two pictures in the doc
+are written out here in words. How it was found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
 godlike by the end. This rulebook sets how it plays: the loop, how a hero grows, and how it should
@@ -78,6 +78,14 @@ Fights start tense and end godlike. A new hero meets packs small enough to read:
 watched, dodged and punished, and mistakes hurt. As the hero levels, gears up and wordsmiths, the
 same fights turn into mowing packs down, and the danger moves to crowds, elites and bosses.
 
+**The first levels (since Version 19.5).** A new hero has the tap attack alone; tap and hold opens
+at level 2 and the swipe at level 5 (your notes of 8 Oct, 20:36). A move is not shown until it
+opens, and its opening is a moment (22:23): the NEW MOVE banner, the tap attack’s plate sliding
+over, the new one revealed with a flourish. The first dungeon is gentle: about half the monsters, in
+packs of two to four, one room of elites, and every blow soft; its first pack is a softball of three
+slow skeletons, to learn moving and tapping (22:25). The stick moves the hero at one speed, however
+far it is pushed (22:25).
+
 - **Healing comes three ways, all in the game now:** life that comes back slowly on its own; the
   word Leech (in front it heals on every hit; behind, what it kills drops life orbs); and the
   flasks.
@@ -92,10 +100,20 @@ Words give the big jumps in power. A word is won in a dungeon, kept in the Lexic
 attack, in front or behind, each place with its own effect. Levels and gear are the steady steps
 between the jumps.
 
+**Wordsmithing opens with a quest (since Version 19.5).** The fallen wordsmith in the first dungeon
+holds the RUNE HEART (a working name). Brought to the wordsmith in town, it lights the ring of runes
+around him, like a battery put in (your note of 8 Oct, 20:41), and he gives the hero’s first word,
+to set before the tap attack; there the first lesson ends. The ring stays lit for the heroes after.
+A hero who leaves the first dungeon without the RUNE HEART finds the fallen wordsmith again in the
+next.
+
 - **Where words come from:** elites carry a word you can win; every boss gives one, and the chance
-  of a second grows with depth. Past the final boss, rare words found nowhere else.
-- **Slots:** one in front and one behind from the start; the second in front opens at level 5, the
-  second behind at level 10. Very late, a third in front at 15 and a third behind at 20.
+  of a second grows with depth. Past the final boss, rare words found nowhere else. None in the
+  first dungeon, since Version 19.5: its monsters carry none, and its gate takes none.
+- **Slots:** none until the wordsmith’s ring is lit; then one in front at once, the second in front
+  at level 5, one behind at level 7 and the second behind at level 10 (since Version 19.5; your
+  answer of 8 Oct, 22:19: "2nd before 5, after 7 and 10 (Recommended)"). A slot is not shown until
+  it opens. Very late, a third in front at 15 and a third behind at 20.
 - **Forging:** three of the same word forge into one stronger word at the wordsmith, up to rank V.
 - **The gate word belongs to the endless depth:** there, words laid on the gate make the next
   dungeon harder and richer.
@@ -140,7 +158,7 @@ the class cards, in the game since Version 19.1. A hero saved before there were 
 A dungeon is one long level of rooms, laid fresh each time, ending in its boss’s hall. Besides its
 monsters it holds all four of these:
 
-- **Elites with words:** named monsters carrying a word you can win, as now.
+- **Elites with words:** named monsters carrying a word you can win, from the second dungeon on.
 - **Traps and puzzles:** the spike floor, the dart wall, and the word door (a sealed door), which
   opens only to an attack carrying its word: in the game from the second dungeon on since Version
   19.0.
@@ -206,8 +224,8 @@ Something you can see, your yes, then one chat puts it in.
 
 ## The numbers
 
-The rules in numbers as the game has them in Version 18.9, checked against its code on 8 Oct. A
-chat changes one only with your yes.
+The rules in numbers as the game has them in Version 19.5, checked against its code on 9 Oct. A chat
+changes one only with your yes.
 
 | What | Now | In the code |
 | --- | --- | --- |
@@ -218,8 +236,11 @@ chat changes one only with your yes.
 | Flask charges | 3 | `TUNE.potionMax` |
 | A flask heals | 45% of life | `TUNE.potionHeal` |
 | Kills to refill a charge | 18 | `TUNE.potionKills` |
-| Word slots at the start | 1 in front, 1 behind | `SLOT_OPENS` |
-| The second slot opens | level 5 in front, level 10 behind | `SLOT_OPENS` |
+| Word slots | none until the ring is lit; then 1 in front | `slots`, `SLOT_OPENS` |
+| The other slots open | the second in front at level 5; behind, at level 7 and level 10 | `SLOT_OPENS` |
+| The moves open | tap at level 1, tap and hold at 2, the swipe at 5 | `MOVE_OPENS` |
+| The first dungeon | a budget of 60 monsters (120 before), packs of 2 to 4, 1 room of elites, every blow at half | `FIRST_DUNGEON`, `GUIDE.softDmg` |
+| The first pack | 3 slow skeletons: speed 2 (3 for the rest), a quarter of a blow, the life of one and a half bare taps | `FIRST_DUNGEON.softball` |
 | The third slot (switch off) | level 15 in front, level 20 behind | the note on `SLOT_OPENS` |
 | Words a boss gives | 1, and a chance of a second: 6% for each dungeon past the first, 25% more for each gate word | `TUNE.bossExtraPerDepth`, `bossExtraPerWord` |
 | The Greater boss | every fifth dungeon, with twice the life | `game.ts` |
@@ -237,6 +258,7 @@ it goes in.
 | The rule | The game now | What it takes |
 | --- | --- | --- |
 | Normal and Hardcore | Both, since Version 19.1 | Done |
+| The first levels | Since Version 19.5 | The ring’s look, dark until the RUNE HEART and then powering up (with the art chat) |
 | The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
 | Five lands of ten, the final boss at 50 | One dungeon after another, with no end | Five lands, each its own look and monsters (with the art chat); a final boss |
 | Small, medium and big bosses | A boss in every dungeon; a Greater boss every fifth | A medium boss at 5, 15, 25…; a big boss at 10, 20, 30… |
@@ -251,22 +273,25 @@ it goes in.
 | A board of best depths | None | The game online |
 | Co-op | None | After release |
 
-The order, as you set it on 8 Oct: after the traps, Normal mode, since it is small and changes
-every death. (His answer, 10:33: "Normal mode (Recommended)".) Both are in the game (Versions 19.0
-and 19.1). Next the new words, before the talent tree (your answer, 15:25: "Yes, words first
-(Recommended)"): the first four are in since Version 19.3. Then the talent tree (15:04: "The talent
-tree (Recommended)").
+The order, as you set it on 8 Oct: after the traps, Normal mode, since it is small and changes every
+death. (Your answer, 10:33: "Normal mode (Recommended)".) Both are in the game (Versions 19.0 and
+19.1). Next the new words, before the talent tree (your answer, 15:25: "Yes, words first
+(Recommended)"): the first four are in since Version 19.3. Then the first levels (20:38: "Yes, this
+next (Recommended)"): in since Version 19.5. Next, as you set it on 9 Oct at 00:22: the art chat’s
+art, then the skill trees, then controller support with dual-stick aiming.
 
 ## Still open
 
 - [ ] What is in each talent tree. (How many points is settled: ten, one every five levels, your
   answer of 8 Oct, 15:16: "10, one every 5 levels (Recommended)".)
 - [ ] The table of ranks for forging, sent to you on 5 Oct.
-- [ ] The price of re-picking talents. (What a Normal death costs is settled: a quarter of the
-  gold carried in, his answer of 8 Oct, 13:35: "A quarter (Recommended)".)
+- [ ] The price of re-picking talents. (What a Normal death costs is settled: a quarter of the gold
+  carried in, your answer of 8 Oct, 13:35: "A quarter (Recommended)".)
 - [ ] Which words and places earlier heroes unlock, and for what deeds.
 - [ ] What quests give.
 - [ ] Each land’s look and monsters, with the art chat.
-- [ ] The first minutes: how a new player learns. Today the first dungeon is the lesson.
+- [ ] The RUNE HEART’s name (a working one) and the ring’s look, with the art chat.
+- [ ] Where Mystical and the other four new words come, after your order of 9 Oct (the art, the
+  skill trees, the controller).
 - [ ] Whether you would rather shoot through the bars of a shut door (asked 7 Oct).
 - [ ] Words on flasks, later.

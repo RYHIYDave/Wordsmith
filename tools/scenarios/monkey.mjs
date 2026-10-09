@@ -16,7 +16,10 @@ export default async function (page, snap) {
   // most of the ones after it): random input is thrown at the prompts, the body, the first word and
   // the inventory that opens by itself for it
   const guided = !!process.env.GUIDE;
-  const begin = (k, sd, g) => page.evaluate(([k, sd, g]) => { const d = window.__dbg; if (g) d.first(k, sd); else d.run(k, sd); }, [k, sd, g]);
+  // (THE FIRST LEVELS, the game's own since Version 19.5: a character that is not a new player's is
+  // one some way in, the wordsmith's ring lit and every move and slot open, so that the dice have
+  // everything to press; a new player's plays the first levels as they are)
+  const begin = (k, sd, g) => page.evaluate(([k, sd, g]) => { const d = window.__dbg; if (g) d.first(k, sd); else { d.run(k, sd); if (d.seasoned) d.seasoned(10); } }, [k, sd, g]);
   await begin(cls, 99, guided);
   await page.waitForTimeout(200);
   const hands = await makeHands(page);
@@ -44,7 +47,7 @@ export default async function (page, snap) {
     }
     // the first dungeon's prompts: the step is one the game knows, and a word that was set was set on an attack
     const step = g.guideStep();
-    if (![null, 'move', 'fight', 'body', 'take', 'smith', 'use'].includes(step)) bad.push(`an unknown prompt: ${step}`);
+    if (![null, 'move', 'fight', 'body', 'take', 'smith', 'use', 'carry', 'ring'].includes(step)) bad.push(`an unknown prompt: ${step}`);
     // (0 and 1 the two attacks, 2 the evasive move, which takes words since Version 12.2)
     if (g.guide && g.guide.set && ![0, 1, 2].includes(g.guide.set.skill)) bad.push(`the first word is on attack ${g.guide.set.skill}`);
     if (!g.guide && step) bad.push('a prompt with no prompts running');
@@ -70,6 +73,24 @@ export default async function (page, snap) {
         for (const r of [1.0, 0.8, 1.2]) for (let k = 0; k < 12; k++) {
           const a = (k / 12) * Math.PI * 2; const x = b.x + Math.cos(a) * r; const y = b.y + Math.sin(a) * r;
           if (g.free(g.level.walk, x, y, 0.45)) { h.x = x; h.y = y; return 'walk:body'; }
+        }
+        return '';
+      });
+  /**
+   * (THE FIRST LEVELS) With the RUNE HEART from the body: home and up to the wordsmith, whose ring it
+   * lights; he gives the first word, and in town the inventory opens for it. (The way home and the
+   * walk are guide.mjs's, with real input.)
+   */
+  let ringDone = false;
+  const toSmith = () => page.evaluate(() => {
+        const d = window.__dbg; const g = d.game();
+        if (!g || g.over || d.panels.open !== 'none' || g.hero.quest !== 'heart') return '';
+        if (!g.level.town) g.enterTown();
+        const q = g.level.stations.find((k) => k.kind === 'wordsmith');
+        if (!q) return '';
+        for (const r of [0.8, 1.0, 1.2]) for (let k = 0; k < 12; k++) {
+          const a = (k / 12) * Math.PI * 2; const x = q.x + Math.cos(a) * r; const y = q.y + Math.sin(a) * r;
+          if (g.free(g.level.walk, x, y, 0.45)) { g.hero.x = x; g.hero.y = y; return 'walk:wordsmith with the RUNE HEART'; }
         }
         return '';
       });
@@ -143,6 +164,7 @@ export default async function (page, snap) {
     for (const k of Object.keys(tours)) if (!did && !toured[k] && i >= due[k]) { did = await tours[k](); if (did) toured[k] = true; }
     // (a first dungeon is not left before its body has been visited once)
     if (!did && guided && !bodyDone && i >= 10) { did = await toBody(); if (did) bodyDone = true; }
+    if (!did && guided && bodyDone && !ringDone && i >= 12) { did = await toSmith(); if (did) ringDone = true; }
     if (did) {
       // (that was this step)
     } else if (r < 0.03) {

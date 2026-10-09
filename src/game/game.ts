@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CLASSES, COMBO, FIRST_WORD, FRENZY, GAMBLE_KINDS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MSG, PRACTICE, PRECISE, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
+import { CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MOVE_OPENS, MSG, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -74,7 +74,15 @@ export interface RunSave {
   wordsBought?: number[];
   /** NORMAL OR HARDCORE (game/modes.ts), kept for life. Absent in a save from before there were modes (MODE_BEFORE), and while MODES.on is false. */
   mode?: HeroMode;
+  /** THE FIRST LEVELS (defs.ts): the ring lit for this hero (absent in a save from before: lit), and the quest item carried. */
+  ring?: boolean;
+  quest?: 'heart' | null;
 }
+
+/** THE FIRST LEVELS: what the wordsmith says while his ring is dark. */
+export const DARK_RING = 'The runes are dark';
+/** THE FIRST LEVELS: what the gate says of a word laid on it before the first dungeon, which takes none. */
+export const FIRST_GATE = 'Not in the first dungeon';
 
 /** Nothing known of a word yet. */
 function noLore(): WordLore {
@@ -91,7 +99,7 @@ export function newMeta(): Meta {
   }
   const stash: (Item | null)[] = [];
   for (let i = 0; i < TUNE.stashSize; i++) stash.push(null);
-  return { lexicon, known, stash, deaths: 0, bestDepth: 0, taught: false, limit: 'cooldown', voice: 'male', aim: 'auto', aimChosen: false, mode: 'normal' };
+  return { lexicon, known, stash, deaths: 0, bestDepth: 0, taught: false, limit: 'cooldown', voice: 'male', aim: 'auto', aimChosen: false, mode: 'normal', ring: false };
 }
 
 /** A new player's place in the first dungeon's prompts. */
@@ -123,6 +131,11 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   out.deaths = typeof m.deaths === 'number' && Number.isFinite(m.deaths) ? Math.max(0, Math.floor(m.deaths)) : 0;
   out.bestDepth = typeof m.bestDepth === 'number' && Number.isFinite(m.bestDepth) ? Math.max(0, Math.floor(m.bestDepth)) : 0;
   out.taught = m.taught === true;
+  // (THE FIRST LEVELS: the ring is lit on a device the first time a hero brings the RUNE HEART. A
+  // device that saved before Version 19.5 has never had it lit: its next new hero goes for it, as
+  // the owner saw in the pictures, and it stays lit for the heroes after. A hero saved before then
+  // keeps his own ring, and his words, whatever the device's: see `restore`.)
+  out.ring = m.ring === true;
   out.limit = LIMITS.includes(m.limit as Limit) ? (m.limit as Limit) : 'cooldown';
   out.voice = VOICE_IDS.includes(m.voice as VoiceId) ? (m.voice as VoiceId) : 'male';
   out.mode = HERO_MODES.includes(m.mode as HeroMode) ? (m.mode as HeroMode) : 'normal';
@@ -298,6 +311,8 @@ export class Game {
     // the level at which both attacks have two sockets in front and two behind
     h.level = PRACTICE.level;
     h.pending = 0;
+    // (THE FIRST LEVELS: a seasoned throwaway has the wordsmith's ring lit, as any hero has who has been down before)
+    h.ring = true;
     const primary = CLASSES[h.cls].primary;
     for (const a of ATTRS) h.attrs[a] += a === primary ? 15 : 3;
     const rng = new RNG((this.seed ^ 0x9e3779b9) >>> 0);
@@ -418,6 +433,14 @@ export class Game {
   guideRows(): GuideRow[] {
     const G = this.guide;
     if (!G || !G.met) return [];
+    // (THE FIRST LEVELS: only the moves that are open, each as it opens; the swipe with its level, not after a couple of blows)
+    if (FIRST_LEVELS.on) {
+      const open: GuideRow[] = [{ id: 'quick', done: G.quick }];
+      if (this.moveOpen(1)) open.push({ id: 'slow', done: G.slow });
+      if (this.moveOpen(2)) open.push({ id: 'evade', done: G.evade });
+      if (G.low) open.push({ id: 'flask', done: G.flask });
+      return open;
+    }
     const rows: GuideRow[] = [{ id: 'quick', done: G.quick }, { id: 'slow', done: G.slow }];
     if (G.hits >= GUIDE.hits) rows.push({ id: 'evade', done: G.evade });
     if (G.low) rows.push({ id: 'flask', done: G.flask });
@@ -438,6 +461,8 @@ export class Game {
     if (WORD_IDS.some((w) => h.words[w] > 0)) return 'smith';
     if (this.drops.some((d) => d.kind === 'word' && Math.hypot(d.x - h.x, d.y - h.y) < GUIDE.sight)) return 'take';
     if (fight) return null;
+    // (THE FIRST LEVELS: the quest item, to be taken to town and to the wordsmith)
+    if (FIRST_LEVELS.on && h.quest) return L.town ? 'ring' : 'carry';
     const b = L.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < GUIDE.sight && L.visible[b.ty * L.floor.w + b.tx] === 1) return 'body';
     if (G.walked < GUIDE.steps) return 'move';
@@ -563,6 +588,8 @@ export class Game {
       wordsBought: this.wordStock.flatMap((w, i) => (w === null ? [i] : [])),
       // (nothing of the modes is written while their switch is off: a hero made before then is MODE_BEFORE)
       ...(MODES.on ? { mode: this.mode } : {}),
+      // (nor of the first levels while theirs is: a hero saved before them has the ring lit)
+      ...(FIRST_LEVELS.on ? { ring: h.ring, quest: h.quest } : {}),
     };
   }
 
@@ -599,6 +626,9 @@ export class Game {
       for (const w of s.plan) if (WORD_IDS.includes(w) && g.plan.length < TUNE.planMax && !g.plan.includes(w)) g.plan.push(w);
     }
     g.bodySearched = s.body === true;
+    // (THE FIRST LEVELS: a save from before them, or made with them off, has the ring lit)
+    h.ring = !FIRST_LEVELS.on || s.ring !== false;
+    h.quest = s.quest === 'heart' ? 'heart' : null;
     if (s.guide && typeof s.guide === 'object') {
       // (the prompts carry on from where they were; what was set stays set)
       const q = s.guide;
@@ -662,8 +692,53 @@ export class Game {
       x: 0, y: 0, fx: 0.7071, fy: 0.7071, anim: 'idle', animT: 0, attackT: 0, attackSkill: 0, combo: 0, comboT: 0, step: null, attackAge: 0, attackWind: 0, windup: null, channel: null, queued: null, swingT: 0, flash: 0, invuln: 0,
       gear, bag, words, skills, gold: 0, potions: TUNE.potionMax, potionKills: 0,
       might: 0, mightT: 0, haste: 0, hasteT: 0, frenzy: 0, frenzyT: 0, shield: 0, shieldT: 0, burnT: 0, burnDps: 0, chillT: 0, chill: 0, shockT: 0, poisonT: 0, poisonDps: 0,
-      move: null, d,
+      move: null,
+      // (THE FIRST LEVELS: the ring is lit for him if it ever was on this device; with the switch off, always)
+      ring: !FIRST_LEVELS.on || this.meta.ring,
+      quest: null,
+      d,
     };
+  }
+
+  // ===========================================================================================
+  // THE FIRST LEVELS (defs.ts, FIRST_LEVELS): the abilities open by level, and wordsmithing with the ring
+
+  /** Is ability `i` open to the hero: always with the switch off and in the practice room; otherwise from its level (MOVE_OPENS). */
+  moveOpen(i: number): boolean {
+    return !FIRST_LEVELS.on || this.practice || this.hero.level >= (MOVE_OPENS[i] ?? 1);
+  }
+
+  /** The word slots an open ability has now, in front and behind: none before the ring is lit; then by level. */
+  slots(level = this.hero.level): [number, number] {
+    if (!this.hero.ring && !this.practice) return [0, 0];
+    return socketCount(level);
+  }
+
+  /** Do words fall, and do monsters carry them, here and now: not before the ring is lit, and (21:05) not in the first dungeon. */
+  wordsFall(): boolean {
+    if (!FIRST_LEVELS.on || this.practice) return true;
+    return this.hero.ring && this.depth > 1;
+  }
+
+  /**
+   * THE QUEST ITEM BROUGHT TO THE WORDSMITH: his ring is lit (for this hero and on this device), he
+   * gives the hero's first word, and the slots open. Called when the hero comes up to him with it.
+   */
+  private lightRing(x: number, y: number): void {
+    const h = this.hero;
+    h.quest = null;
+    h.ring = true;
+    this.meta.ring = true;
+    const w = FIRST_WORD[h.cls].word;
+    h.words[w]++;
+    this.refresh();
+    if (!this.practice) this.meta.known[w].found = true;
+    this.emit({ t: 'ring', x, y });
+    this.emit({ t: 'wordGot', word: w });
+    this.sfx('rare');
+    this.msg(`The ring is lit. The wordsmith gives you a word: ${WORDS[w].name.toUpperCase()}.`, MSG.word);
+    // (as a first word found is: the inventory opens for it at once, and the lesson shows where it goes)
+    if (!this.wordAtWork() && this.placeable(w)) this.offer = w;
   }
 
   /** Rebuild everything derived from level, attributes, gear and socketed words. */
@@ -698,12 +773,14 @@ export class Game {
       this.orbs = this.orbs.filter((o) => o.skill !== i);
       this.familiars = this.familiars.filter((q) => q.skill !== i);
     }
-    const [nf, nb] = socketCount(h.level);
+    const [nf, nb] = this.slots();
     for (let i = 0; i < h.skills.length; i++) {
       const s = h.skills[i];
       const def = SKILLS[s.id];
-      const wantF = def.sockets ? nf : 0;
-      const wantB = def.sockets ? nb : 0;
+      // (THE FIRST LEVELS: an ability not yet open has no slots)
+      const open = this.moveOpen(i);
+      const wantF = def.sockets && open ? nf : 0;
+      const wantB = def.sockets && open ? nb : 0;
       while (s.front.length < wantF) s.front.push(null);
       while (s.behind.length < wantB) s.behind.push(null);
       // (a character saved when a slot opened at a lower level than it does now: the slot closes,
@@ -865,6 +942,12 @@ export class Game {
     if (this.depth === 1 && this.cleared === 0) {
       this.placeBody();
       this.softenFirstHalf();
+      if (FIRST_LEVELS.on) this.softball();
+    } else if (FIRST_LEVELS.on && !this.practice && !this.hero.ring && !this.hero.quest && !this.bodySearched) {
+      // (THE FIRST LEVELS: without the RUNE HEART there is no wordsmithing. A hero who left the
+      // first dungeon without searching the fallen wordsmith finds him again in the next, half way
+      // along its main path, and so on until he is found.)
+      this.placeBody();
     }
     this.updateVision(1);
     this.msg(`Dungeon ${this.depth}`, MSG.head);
@@ -962,12 +1045,50 @@ export class Game {
     if (!b) return;
     const f = this.level.floor;
     const dist = flowField(this.level.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, this.level.step);
-    // (ten steps to a tile: the body's own room counts as the first half)
-    const upTo = dist[b.ty * f.w + b.tx] + 80;
+    // (ten steps to a tile: the body's own room counts as the first half; THE FIRST LEVELS: the whole of the first dungeon, defs.ts FIRST_DUNGEON)
+    const upTo = FIRST_LEVELS.on ? Infinity : dist[b.ty * f.w + b.tx] + 80;
     for (const m of this.monsters) {
       if (m.boss || dist[Math.floor(m.y) * f.w + Math.floor(m.x)] > upTo) continue;
       m.dmgMin *= GUIDE.softDmg;
       m.dmgMax *= GUIDE.softDmg;
+    }
+  }
+
+  /**
+   * THE FIRST LEVELS: THE FIRST PACK IS A SOFTBALL (the owner, 22:25; defs.ts, FIRST_DUNGEON.softball).
+   * The pack nearest the way in, by the way one walks, gives way to a few slow skeletons that
+   * barely hurt and fall to a tap or two of the bare quick attack: the movement and the tap are
+   * learnt on them.
+   */
+  private softball(): void {
+    const f = this.level.floor;
+    const dist = flowField(this.level.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, this.level.step);
+    let best = -1;
+    let bd = Infinity;
+    for (const m of this.monsters) {
+      if (m.boss || m.packId < 0) continue;
+      const d = dist[Math.floor(m.y) * f.w + Math.floor(m.x)];
+      if (d < bd) {
+        bd = d;
+        best = m.packId;
+      }
+    }
+    if (best < 0) return;
+    const pack = this.monsters.filter((m) => m.packId === best);
+    const cx = pack.reduce((a, m) => a + m.x, 0) / pack.length;
+    const cy = pack.reduce((a, m) => a + m.y, 0) / pack.length;
+    this.monsters = this.monsters.filter((m) => m.packId !== best);
+    const S = FIRST_DUNGEON.softball;
+    const life = Math.max(2, Math.round(this.bareHit() * S.hits));
+    const def = MONSTERS.skeleton;
+    const rng = new RNG((this.seed ^ 0x50f7ba11) >>> 0);
+    for (const spot of scatter(this.level.walk, f.w, f.h, cx, cy, S.size, rng)) {
+      const m = this.spawn('skeleton', spot.x, spot.y, best, 0, false, rng);
+      m.maxLife = life;
+      m.life = life;
+      m.dmgMin = def.dmgMin * S.dmg;
+      m.dmgMax = def.dmgMax * S.dmg;
+      m.speed = S.speed;
     }
   }
 
@@ -980,7 +1101,9 @@ export class Game {
     const elite = rank > 0;
     const champion = rank === 2;
     const words: WordId[] = [];
-    const want = boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
+    // (THE FIRST LEVELS, 21:05: "That also means no words on monsters for dungeon 1")
+    const bare = FIRST_LEVELS.on && !this.practice && this.depth <= 1;
+    const want = bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
     while (words.length < want) {
       const w = rng.pick(WORD_IDS);
       if (words.includes(w)) continue;
@@ -1010,7 +1133,9 @@ export class Game {
       // (the more words are burned into the dungeon, the likelier: that is what burning them buys)
       if (lot.chance(Math.min(1, p * (1 + 0.3 * this.dungeonWords.length)))) carries = [lot.pick(words)];
     }
-    for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
+    // (THE FIRST LEVELS: before the ring is lit nothing gives up a word)
+    if (!this.wordsFall()) carries = [];
+    if (!bare) for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
     let life = def.life * (boss ? 1 + 0.4 * (this.depth - 1) : scaleLife(this.depth));
     let dm = scaleDmg(this.depth);
     let xp = def.xp * (1 + 0.25 * (this.depth - 1));
@@ -2107,6 +2232,8 @@ export class Game {
   private useSkill(i: number, tx: number, ty: number): void {
     const h = this.hero;
     const s = h.skills[i];
+    // (THE FIRST LEVELS: not before its level)
+    if (!this.moveOpen(i)) return;
     // (one that is being held is already being made: the button held down does not ask for another)
     if (h.channel) return;
     if (s.charges < 1) return;
@@ -2442,6 +2569,8 @@ export class Game {
   private useEvasive(tx: number, ty: number, c: Controls): void {
     const h = this.hero;
     const s = h.skills[2];
+    // (THE FIRST LEVELS: not before its level)
+    if (!this.moveOpen(2)) return;
     if (s.charges < 1) return;
     if (h.mana < s.r.mana) {
       this.noMana();
@@ -4282,7 +4411,8 @@ export class Game {
     if (rng.chance(TUNE.dropGold)) this.addDrop('gold', m.x, m.y, rng.int(TUNE.goldMin, TUNE.goldMax) * goldBase, null, null);
     if (rng.chance(TUNE.dropItem * bonus)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
     if (rng.chance(TUNE.dropOrb)) this.addDrop('orb', m.x, m.y, 0, null, null);
-    if (rng.chance(TUNE.dropWord * bonus)) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
+    // (THE FIRST LEVELS: no word falls before the ring is lit, nor in the first dungeon)
+    if (rng.chance(TUNE.dropWord * bonus) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
   }
 
   private gainXp(n: number): void {
@@ -4299,9 +4429,17 @@ export class Game {
       this.emit({ t: 'levelup' });
       this.sfx('levelUp');
       this.msg(`Level ${h.level}`, MSG.head);
+      // THE FIRST LEVELS: an ability opens with this level
+      if (FIRST_LEVELS.on) {
+        for (let i = 1; i < MOVE_OPENS.length; i++) {
+          if (MOVE_OPENS[i] !== h.level) continue;
+          this.emit({ t: 'moveOpen', skill: i });
+          this.msg(`A new move: ${SKILLS[h.skills[i].id].name.toUpperCase()}.`, MSG.word);
+        }
+      }
       // a new socket has opened on both attacks: say so, and if a spare word fits it, offer it a place
-      const [f0, b0] = socketCount(h.level - 1);
-      const [f1, b1] = socketCount(h.level);
+      const [f0, b0] = this.slots(h.level - 1);
+      const [f1, b1] = this.slots(h.level);
       if (f1 > f0 || b1 > b0) {
         const nth = ['A', 'A second', 'A third'][(f1 > f0 ? f1 : b1) - 1] ?? 'Another';
         this.msg(`${nth} word slot has opened ${f1 > f0 ? 'IN FRONT of' : 'BEHIND'} your attacks.`, MSG.word);
@@ -4419,7 +4557,7 @@ export class Game {
         const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0);
         for (let i = 0; i < n; i++) this.addDrop('item', p.x, p.y + 0.6, 0, this.rollGear(room && i === 0 ? 2 : 1), null);
         this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.depth) * (room ? 2 : 1), null, null);
-        if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord)) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
+        if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
       }
     }
     // (THE MIX) a lever: walk up, and it is pulled
@@ -4429,6 +4567,11 @@ export class Game {
     // the fallen wordsmith: walk up, and the satchel is searched
     const b = this.level.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < 1.3) this.searchBody(b);
+    // THE FIRST LEVELS: the quest item brought to the wordsmith in town: walk up to him, and his ring is lit
+    if (h.quest && this.level.town) {
+      const st = this.level.stations.find((s) => s.kind === 'wordsmith');
+      if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) this.lightRing(st.x, st.y);
+    }
     if (c.interact) {
       if (this.level.town) {
         // In town the rules only say which service was asked for; the interface opens its panel.
@@ -4445,6 +4588,14 @@ export class Game {
     const w = FIRST_WORD[this.hero.cls].word;
     this.emit({ t: 'search', x: b.x, y: b.y });
     this.sfx('rare');
+    // THE FIRST LEVELS: before the ring is lit, the satchel holds the quest item, not a word (the owner, 20:39)
+    if (FIRST_LEVELS.on && !this.hero.ring) {
+      this.hero.quest = 'heart';
+      this.hero.potions = TUNE.potionMax;
+      this.emit({ t: 'quest', x: b.x, y: b.y });
+      this.msg(`A fallen wordsmith. In the satchel: full flasks, and ${QUEST_ITEM.the}. Bring it to the wordsmith in town.`, MSG.word);
+      return;
+    }
     this.drops.push({ x: b.x, y: b.y, kind: 'word', gold: 0, item: null, word: w, age: 0 });
     this.emit({ t: 'wordDrop', word: w, x: b.x, y: b.y });
     // (and their flasks: the second half of the dungeon is met fresh)
@@ -4498,6 +4649,9 @@ export class Game {
   /** Why a word cannot be laid on the gate, or null if it can. */
   planProblem(word: WordId): string | null {
     if (this.hero.words[word] <= 0) return 'No spare word';
+    // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
+    // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
+    if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;
     if (this.plan.length >= TUNE.planMax) return `At most ${TUNE.planMax} words`;
     if (this.plan.includes(word)) return 'Already burning';
     if (WORDS[word].element && this.plan.some((w) => WORDS[w].element)) return 'One element per dungeon';
@@ -4538,6 +4692,8 @@ export class Game {
 
   /** Why `word` cannot be burned into this item, or null if it can: nothing there, no room left on it, or it has what the word gives already. */
   imbueProblem(ref: ItemRef, word: WordId): string | null {
+    // (THE FIRST LEVELS: nothing is wordsmithed before the ring is lit)
+    if (!this.hero.ring && !this.practice) return DARK_RING;
     const it = this.itemAt(ref);
     return it ? imbueProblem(it, word) : 'Nothing there';
   }
@@ -4553,6 +4709,7 @@ export class Game {
    */
   imbue(ref: ItemRef, word: WordId): string | null {
     const h = this.hero;
+    if (!h.ring && !this.practice) return DARK_RING;
     const it = this.itemAt(ref);
     if (!it) return 'Nothing there';
     if (h.words[word] <= 0) return 'No spare word';
@@ -4642,6 +4799,7 @@ export class Game {
   /** Wordsmith: buy the word in place `i` of his shelf. It joins the hero's spare words. */
   buyWord(i: number): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     const w = this.wordStock[i];
     if (!w) return 'Sold';
     const price = this.wordPrice();
@@ -4657,6 +4815,7 @@ export class Game {
   /** Wordsmith: sell him a spare word. He keeps it for the rest of this visit (see `buyBackWord`). */
   sellWord(word: WordId): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     if (!(h.words[word] > 0)) return 'No spare word';
     h.words[word]--;
     h.gold += this.wordSellValue();
@@ -4670,6 +4829,7 @@ export class Game {
   /** Wordsmith: take back word `i` of those sold to him on this visit, for what he paid for it. */
   buyBackWord(i: number): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     const w = this.wordsSold[i];
     if (!w) return 'Nothing there';
     const price = this.wordSellValue();
@@ -4971,6 +5131,7 @@ export class Game {
       G.set = { skill: to.skill, uses: h.skills[to.skill].uses };
       if (firstWord) {
         // A new player's first word is on. In a dungeon, the dead rise for it; anywhere else there is nothing more to show.
+        // (THE FIRST LEVELS: it is set in town, at the wordsmith's, and that is the end of the lesson: his answer, 22:19, "No special moment")
         if (this.inDungeon) this.after(0.9, () => this.rise());
         else this.endGuide();
       }

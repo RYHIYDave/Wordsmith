@@ -11,6 +11,7 @@ import nodeAssert from 'node:assert/strict';
 import { SKILLS, SPELL_SKILLS, WORDS, isSpell } from '../src/game/defs';
 import type { SkillId } from '../src/game/defs';
 import { Game } from '../src/game/game';
+import { seasoned } from './helpers';
 import type { RunSave } from '../src/game/game';
 import { WORD_IDS } from '../src/game/types';
 import { socketProblem } from '../src/game/words';
@@ -54,9 +55,8 @@ test('one damage word on each side: a second is refused, whichever two; a shapin
 });
 
 test('a hero saved with two damage words on a side keeps the first; the other goes back to the pouch', () => {
-  const g = new Game('warrior', 12);
-  g.hero.level = 12;
-  g.refresh();
+  // (every slot open: THE FIRST LEVELS open them with the wordsmith's ring and with levels)
+  const g = seasoned(new Game('warrior', 12), 12);
   const s = g.save();
   // (as a save from before Version 19.3 could hold it: Power and Flame in front, Frost and Poison behind)
   s.sockets[0] = { front: ['power', 'fire'], behind: ['frost', 'poison'] };
