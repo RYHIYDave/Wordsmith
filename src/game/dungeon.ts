@@ -31,6 +31,7 @@
 //     the design rules out again and will fail if a change breaks one.
 
 import { RNG } from '../engine/rng';
+import { FIRST_DUNGEON, FIRST_LEVELS } from './defs';
 import { DOORS, layDoors } from './doors';
 import { TRAPS, TRAPS_FROM, layHazards, sealVault, unsealDoorless } from './traps';
 import { flowField, UNREACHABLE } from './nav';
@@ -100,13 +101,15 @@ export function branchCount(depth: number): number {
   return depth <= 2 ? 3 : depth <= 5 ? 4 : 5;
 }
 
-/** Total monsters a level of this depth aims for. */
+/** Total monsters a level of this depth aims for. (THE FIRST LEVELS: the first dungeon, gentler: defs.ts, FIRST_DUNGEON.) */
 export function monsterBudget(depth: number): number {
+  if (FIRST_LEVELS.on && depth <= 1) return FIRST_DUNGEON.budget;
   return Math.min(230, 120 + 8 * (Math.max(1, depth) - 1));
 }
 
 /** Smallest and largest size of a 'normal' pack at this depth. */
 export function packSizeRange(depth: number): { min: number; max: number } {
+  if (FIRST_LEVELS.on && depth <= 1) return { min: FIRST_DUNGEON.packMin, max: FIRST_DUNGEON.packMax };
   const grow = Math.floor((Math.max(1, depth) - 1) / 3);
   return { min: Math.min(7, 3 + grow), max: Math.min(9, 6 + grow) };
 }
@@ -119,6 +122,7 @@ const CHAMPION_PACK_MAX = 5;
 
 /** How many elite rooms a level of this depth has. */
 export function eliteRoomCount(depth: number): number {
+  if (FIRST_LEVELS.on && depth <= 1) return FIRST_DUNGEON.eliteRooms;
   return depth <= 2 ? 2 : depth <= 5 ? 3 : 4;
 }
 

@@ -14,7 +14,7 @@ import { WORD_COLOR } from '../art/icons';
 import { ELEMENT_RAMP, P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import type { Input } from '../engine/input';
-import { SKILLS, WORDS, xpToNext } from '../game/defs';
+import { MOVE_OPENS, SKILLS, WORDS, xpToNext } from '../game/defs';
 import { doorTiles } from '../game/doors';
 import type { Game } from '../game/game';
 import type { Hero, Level } from '../game/state';
@@ -45,6 +45,8 @@ export interface HudIn {
   banner: Banner | null;
   /** A word that has just been picked up, and for how many seconds it has been announced. `big`: a new player's first word. */
   toast: { word: WordId; t: number; big?: boolean } | null;
+  /** THE FIRST LEVELS: an ability that has just opened with a level (1 the slow attack, 2 the evasive move), and how long ago. */
+  moveToast?: { skill: number; t: number } | null;
   /**
    * Touch: the gesture the prompt is asking for, to be shown as a ghost. For a tap or a hold,
    * (x, y) is the thing to press, on screen; for the walking thumb, (dx, dy) is the way to go.
@@ -535,6 +537,39 @@ function drawToast(ui: Ui, art: Art, word: WordId, age: number, top: number, big
 }
 
 /**
+ * THE FIRST LEVELS: "NEW MOVE": an ability that has just opened with a level, at the top of the
+ * screen for a moment: its picture and its name large, and how it is made ("TAP + HOLD to SLAM").
+ */
+function drawMoveToast(ui: Ui, art: Art, h: Hero, skill: number, age: number, top: number): number {
+  const g = ui.g;
+  const sk = h.skills[skill];
+  const def = SKILLS[sk.id];
+  const name = def.name.toUpperCase();
+  const scale = ui.w >= 380 ? 3 : 2;
+  const nw = textWidth(name) * scale;
+  const line = `${pressName(ui.touch, skill, sk.id)} to ${def.verb}`;
+  const icon = art.icons.ability[def.icon];
+  const bw = Math.min(ui.w - 8, Math.max(icon.w * 2 + 8 + nw + 24, textWidth(line) + 20));
+  const bh = 14 + Math.max(9 * scale, icon.h * 2) + 14;
+  const bx = Math.floor((ui.w - bw) / 2);
+  const by = top - Math.round((1 - Math.min(1, age / 0.18)) * 10);
+  const fade = age > 2.8 ? Math.max(0, 1 - (age - 2.8) / 0.5) : 1;
+  g.globalAlpha = 0.92 * fade;
+  ui.box(bx, by, bw, bh, age < 0.1 ? P.white : THEME.bg, THEME.accent);
+  g.globalAlpha = fade;
+  drawText(g, 'NEW MOVE', Math.floor(ui.w / 2), by + 4, THEME.accent, { align: 'center', font: 'small' });
+  const tw = icon.w * 2 + 8 + nw;
+  const x = Math.floor((ui.w - tw) / 2);
+  const rowH = Math.max(9 * scale, icon.h * 2);
+  g.drawImage(icon.img, x, by + 12 + Math.floor((rowH - icon.h * 2) / 2), icon.w * 2, icon.h * 2);
+  const lit = age < 0.6 && Math.floor(age * 12) % 2 === 0;
+  drawText(g, name, x + icon.w * 2 + 8, by + 12 + Math.floor((rowH - 9 * scale) / 2), lit ? P.white : THEME.accent, { scale, shadow: P.ink });
+  drawText(g, line, Math.floor(ui.w / 2), by + 14 + rowH, THEME.text, { align: 'center', shadow: P.ink });
+  g.globalAlpha = 1;
+  return by + bh;
+}
+
+/**
  * Touch only: a ghost of the gesture the lesson is asking for, drawn where it should be made.
  * `x`, `y`: where (for a tap or a hold, the monster to press on). `dx`, `dy`: which way (for the
  * walking thumb), in screen terms.
@@ -697,7 +732,15 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
       g.globalAlpha = 1;
     }
     if (s.maxCharges > 1) drawText(g, `${s.charges}`, ex + ps - 2, py + ps - 7, P.white, { align: 'right', font: 'small', shadow: P.ink });
-    drawText(g, touch ? 'SWIPE' : 'SPACE', ex + Math.floor(ps / 2), py - 7, point === 'dodge' ? THEME.accent : THEME.dim, { align: 'center', font: 'small', shadow: P.ink });
+    // (THE FIRST LEVELS: not open yet: dark, with the level that opens it)
+    const shut = !game.moveOpen(2);
+    if (shut) {
+      g.globalAlpha = 0.75;
+      g.fillStyle = P.black;
+      g.fillRect(ex + 1, py + 1, ps - 2, ps - 2);
+      g.globalAlpha = 1;
+    }
+    drawText(g, shut ? `LEVEL ${MOVE_OPENS[2]}` : touch ? 'SWIPE' : 'SPACE', ex + Math.floor(ps / 2), py - 7, point === 'dodge' ? THEME.accent : THEME.dim, { align: 'center', font: 'small', shadow: P.ink });
     if (point === 'dodge') {
       // the prompt is pointing at the dodge
       if (pulse) {
@@ -798,7 +841,15 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     }
     if (sk.maxCharges > 1) drawText(g, `${sk.charges}`, r.x + 18, iy + 13, P.white, { align: 'right', font: 'small', shadow: P.ink });
     drawPhrase(g, art, pieces[s], r.x + 20 + PAD, r.y, PH, pulse);
-    drawText(g, touch ? gestures[s] : keys[s], r.x + 1, r.y - 6, THEME.dim, { font: 'small', shadow: P.ink });
+    // (THE FIRST LEVELS: an attack not open yet: dark, with the level that opens it)
+    const shut = !game.moveOpen(s);
+    if (shut) {
+      g.globalAlpha = 0.72;
+      g.fillStyle = P.black;
+      g.fillRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2);
+      g.globalAlpha = 1;
+    }
+    drawText(g, shut ? `LEVEL ${MOVE_OPENS[s]}` : touch ? gestures[s] : keys[s], r.x + 1, r.y - 6, THEME.dim, { font: 'small', shadow: P.ink });
     if (asked) arrow(g, r.x + Math.floor(r.w / 2), r.y - 8, t, THEME.accent);
   }
   if (hoverSkill >= 0) {
@@ -916,6 +967,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // (where the prompt or the news of a word ends, so that on a narrow screen the messages can go under it)
   let noticeEnd = 0;
   if (inp.toast) noticeEnd = drawToast(ui, art, inp.toast.word, inp.toast.t, bossUp && W >= 380 ? 24 : W >= 380 ? 4 : NARROW_TOP, !!inp.toast.big);
+  else if (inp.moveToast) noticeEnd = drawMoveToast(ui, art, h, inp.moveToast.skill, inp.moveToast.t, bossUp && W >= 380 ? 24 : W >= 380 ? 4 : NARROW_TOP);
   else if (banner && !bossUp) noticeEnd = drawBanner(ui, banner, t);
 
   // ---- messages -----------------------------------------------------------------------------

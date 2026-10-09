@@ -223,6 +223,13 @@ export interface Hero {
   /** A leap or a roll in progress. */
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
   move: null | { kind: 'leap' | 'roll'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean };
+  /**
+   * THE FIRST LEVELS (defs.ts, FIRST_LEVELS): whether the wordsmith's ring is lit for this hero,
+   * so that he can wordsmith (always, with the switch off and for a hero saved before it); and the
+   * quest item he carries, if any.
+   */
+  ring: boolean;
+  quest: 'heart' | null;
   d: Derived;
 }
 
@@ -535,7 +542,8 @@ export interface StationSpot {
  *   smith   a word is in the pouch: put it on an attack
  *   use     the word is on: use that attack (the dead rise for it)
  */
-export type GuideStep = 'move' | 'fight' | 'body' | 'take' | 'smith' | 'use';
+/** (THE FIRST LEVELS add 'carry', the quest item to be taken to town, and 'ring', to the wordsmith with it.) */
+export type GuideStep = 'move' | 'fight' | 'body' | 'take' | 'carry' | 'ring' | 'smith' | 'use';
 
 /** One line of the fight prompt: a thing to do, and whether it has been done. */
 export interface GuideRow {
@@ -611,6 +619,8 @@ export interface Meta {
   aimChosen: boolean;
   /** The mode last picked on the class cards (game/modes.ts): the next hero is made in it unless it is changed there. */
   mode: HeroMode;
+  /** THE FIRST LEVELS: the wordsmith's ring has been lit on this device (a hero has brought him the quest item). */
+  ring: boolean;
 }
 
 /**
@@ -714,6 +724,15 @@ export type GameEvent =
   | { t: 'guide'; step: GuideStep | 'done' }
   /** The fallen wordsmith has been searched. */
   | { t: 'search'; x: number; y: number }
+  /**
+   * THE FIRST LEVELS (defs.ts, FIRST_LEVELS): 'moveOpen', an ability has just opened with a level
+   * (1 the slow attack, 2 the evasive move); 'quest', the quest item was taken from the satchel at
+   * (x, y); 'ring', it was brought to the wordsmith, whose ring at (x, y) is lit now (the art
+   * chat's animation is called up by it).
+   */
+  | { t: 'moveOpen'; skill: number }
+  | { t: 'quest'; x: number; y: number }
+  | { t: 'ring'; x: number; y: number }
   /** An orb is set down at (x, y); its waves reach `r`. / The orb that was out is gone (its time was up, or a new one took its place). */
   | { t: 'wave'; x: number; y: number; dx: number; dy: number; w: number; el: Element; words: readonly WordId[]; echo: boolean }
   | { t: 'orbSet'; x: number; y: number; r: number; el: Element; words: readonly WordId[] }
