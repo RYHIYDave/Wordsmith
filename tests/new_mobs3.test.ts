@@ -83,7 +83,8 @@ test('the switch is off, and no file of the game imports the mock-up', () => {
   assert.equal(NEW_MOBS.on, false);
   const files = fs.readdirSync('src', { recursive: true }).filter((f) => f.endsWith('.ts') && !f.startsWith('dev'));
   for (const f of files) {
-    if (f.endsWith('new_mobs3.ts')) continue;
+    // (and the warnings on the floor of the same mock-up, art/mob_warnings.ts, held to the same by tests/mob_warnings.test.ts)
+    if (f.endsWith('new_mobs3.ts') || f.endsWith('mob_warnings.ts')) continue;
     assert.ok(!fs.readFileSync(path.join('src', f), 'utf8').includes('new_mobs3'), `${f} imports the mock-up`);
   }
 });
