@@ -10,7 +10,7 @@
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { P } from './palette';
-import { WORD_IDS } from '../game/types';
+import { ALL_WORD_IDS } from '../game/types';
 import type { AbilityId, Element, IconKey, WordId } from '../game/types';
 import { makeAbilityIcons } from './ability_icons';
 
@@ -49,6 +49,12 @@ export const WORD_COLOR: Record<WordId, string> = {
   precise: '#eef4fa',
   frenzied: '#ff5c33',
   guarding: '#30a868',
+  // (the words still to come, WORDS4: Mystical's colour his yes of 17:59, the four's of 13:15 and 13:43)
+  mystical: '#acbcfe',
+  pulling: '#7a76e0',
+  splitting: '#dcaaf6',
+  hexing: '#b8b4c8',
+  stilling: '#86eaae',
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -919,6 +925,17 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   frenzied: ['X..X..', 'X..X..', '.X..X.', '.X..X.', '..X..X', '..o..o'],
   // a shield
   guarding: ['XXXXXX', 'X.oo.X', 'X.oo.X', 'X....X', '.X..X.', '..XX..'],
+  // (the words still to come, WORDS4: the art chat's runes, NEW_GLYPH)
+  // a crescent moon and a star
+  mystical: ['...XX..', '..XX.o.', '.XXX...', '.XXX...', '.XXX...', '..XXX..', '...XXX.'],
+  // a whirl drawn in to its middle
+  pulling: ['.XXXX..', 'X....X.', 'X.XX..X', 'X.Xo..X', 'X..XXX.', '.X.....', '..XXXX.'],
+  // one stroke that forks into three
+  splitting: ['X..X..X', '.X.X.X.', '..XXX..', '...o...', '...X...', '...X...', '...X...'],
+  // an eye that weeps a hook
+  hexing: ['..XXX..', '.X...X.', 'X..o..X', '.X...X.', '..XXX..', '...X...', '..X....'],
+  // an hourglass
+  stilling: ['XXXXXX', '.X..X.', '..oo..', '..oo..', '.X..X.', 'XXXXXX'],
 };
 
 /** The lighter tone used for each glyph's glowing core. */
@@ -936,6 +953,11 @@ export const WORD_GLOW: Record<WordId, string> = {
   precise: '#ffffff',
   frenzied: '#ff9670',
   guarding: '#8ae4ac',
+  mystical: '#e2e8ff',
+  pulling: '#c4c2ff',
+  splitting: '#f2dcff',
+  hexing: '#e6e2ee',
+  stilling: '#d0fce4',
 };
 
 function runeSprite(word: WordId): Sprite {
@@ -975,7 +997,8 @@ function runeSprite(word: WordId): Sprite {
 
 function makeWordRunes(): Record<WordId, Sprite> {
   const out = {} as Record<WordId, Sprite>;
-  for (const w of WORD_IDS) out[w] = runeSprite(w);
+  // (every word's, those of WORDS4 too: the switch may be thrown after the pictures are made)
+  for (const w of ALL_WORD_IDS) out[w] = runeSprite(w);
   return out;
 }
 

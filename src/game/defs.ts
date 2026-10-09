@@ -3,6 +3,7 @@
 
 import type { VendorId } from './state';
 import type { AbilityId, Attr, ClassId, Element, Limit, MonsterKind, Slot, WeaponKind, WordId } from './types';
+import { ALL_WORD_IDS, WORD_IDS } from './types';
 
 export type { Limit } from './types';
 
@@ -280,6 +281,34 @@ export const GUARD = {
   blockCap: 50,
 };
 
+// THE WORDS STILL TO COME (WORDS4, below; off until his yes to them at work): the starting points of
+// the same doc where it gives them, and this chat's where it does not; all to be tuned once he has
+// played them.
+/**
+ * MYSTICAL, which does for spells what Power does for attacks: in front +`dmg`% spell damage and
+ * `dmgPer`% a point of Intelligence, a bigger hit (+`big`%, `bigPer`% a point), and a spell that
+ * strikes one enemy splashes those beside it (`splash` tiles, `splashDmg` of the hit); behind, each
+ * spell hit that lands adds `arcana` + `arcanaPer` a point percent of spell damage for `secs` s, up
+ * to `max` times: ARCANA, his name for it (8 Oct 2026, 18:23, "Arcana (Recommended)"). On a monster:
+ * it hits `monsterDmg` times as hard, and the hero's spells do it `monsterSpells` of their damage.
+ */
+export const MYSTIC = { dmg: 25, dmgPer: 0.6, big: 20, bigPer: 0.3, splash: 1.2, splashDmg: 0.5, arcana: 6, arcanaPer: 0.1, secs: 5, max: 5, monsterDmg: 1.4, monsterSpells: 0.75 };
+/**
+ * VOLATILE'S HIDDEN BOMB (his words, 5 Oct: "I'd like volitile to be scaled by dex and id like it to
+ * be more of a trap than a spell. Like you secretly stuck a bomb on them."): in front, a charge stuck
+ * on what it hits bursts `delay` s later, for `dmg` + `per` a point of Dexterity percent of the hit,
+ * on everything within `r` tiles. One charge on a monster at a time.
+ */
+export const BOMB = { delay: 1.5, dmg: 60, per: 0.8, r: 1.6 };
+/** PULLING: in front the struck are dragged up to `drag` tiles toward the blow (a hit on one: toward the hero); behind a vortex of `r` tiles for `secs` s draws enemies to its middle at `speed` tiles a second. On gear: gold and orbs come from further. On a monster: its hits drag the hero `monster` tiles toward it. */
+export const PULL = { drag: 1.5, secs: 3, r: 2.0, speed: 1.6, monster: 0.6 };
+/** SPLITTING: in front, on its first hit, `copies` smaller copies of `copyDmg` each go on to other enemies within `reach` tiles; behind, where it ends, `shards` shards of `shardDmg` each fly out all round, `shardReach` tiles. On a monster: it splits into `monster` smaller ones at half life when it dies. */
+export const SPLIT = { copies: 3, copyDmg: 0.4, reach: 5, shards: 6, shardDmg: 0.25, shardReach: 3, monster: 2 };
+/** HEXING: in front a curse for `secs` s: the cursed takes `more` more damage from everything; behind a hex circle of `r` tiles for `circleSecs` s: enemies in it deal `weaker` less. On a monster: its hits curse the hero, who takes `more` more damage for `heroSecs` s. */
+export const HEX = { secs: 4, more: 0.2, r: 2.0, circleSecs: 4, weaker: 0.25, heroSecs: 3 };
+/** STILLING: in front what it hits moves, attacks and shoots `slow` slower for `secs` s; behind a bubble of `r` tiles for `bubbleSecs` s where enemies and their shots go `crawl` slower. On a monster: its hits make the hero's cooldowns run `heroSlow` slower for `heroSecs` s. */
+export const STILL = { secs: 2, slow: 0.4, r: 2.0, bubbleSecs: 4, crawl: 0.6, heroSecs: 4, heroSlow: 0.4 };
+
 export interface WordDef {
   id: WordId;
   /** Damage or shaping (see WordKind). */
@@ -322,7 +351,46 @@ export const WORDS: Record<WordId, WordDef> = {
   frenzied: { id: 'frenzied', kind: 'shape', name: 'Frenzied', front: 'Frenzied', behind: 'of Frenzy', attr: 'str', element: null, about: 'The word of rage. Faster, and faster.', frontText: 'Each use makes the next faster, up to five times.', behindText: 'Kills keep the frenzy going.', monsterText: 'Speeds up as it is hurt.' },
   guarding: { id: 'guarding', kind: 'shape', name: 'Guarding', front: 'Guarding', behind: 'of Warding', attr: 'str', element: null, about: 'The word of the shield. It keeps you.', frontText: 'Each use gives you a brief shield.', behindText: 'Leaves a ward circle: you take less damage inside it.', monsterText: 'Carries a shield that soaks damage.' },
   poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
+  // THE WORDS STILL TO COME (WORDS4, below): Mystical, a damage word, and four shaping words
+  mystical: { id: 'mystical', kind: 'damage', name: 'Mystical', front: 'Mystical', behind: 'of Mysteries', attr: 'int', element: null, about: 'The word of the arcane. It feeds spells.', frontText: 'More spell damage and a bigger hit.', behindText: 'Each spell hit that lands builds a short spell damage bonus.', monsterText: 'Hits harder, and your spells do less to it.' },
+  pulling: { id: 'pulling', kind: 'shape', name: 'Pulling', front: 'Pulling', behind: 'of the Vortex', attr: 'int', element: null, about: 'The word of drawing in. Things come to it.', frontText: 'Drags what it hits toward the blow.', behindText: 'Leaves a vortex that draws enemies in.', monsterText: 'Its hits drag you toward it.' },
+  splitting: { id: 'splitting', kind: 'shape', name: 'Splitting', front: 'Splitting', behind: 'of Shards', attr: 'dex', element: null, about: 'The word of breaking. One becomes many.', frontText: 'Breaks into three smaller copies on its first hit.', behindText: 'Bursts into shards where it ends.', monsterText: 'Splits in two when it dies.' },
+  hexing: { id: 'hexing', kind: 'shape', name: 'Hexing', front: 'Hexing', behind: 'of the Hex', attr: 'int', element: null, about: 'The word of the curse. It weakens.', frontText: 'Curses what it hits: it takes more damage.', behindText: 'Leaves a hex circle: enemies in it deal less damage.', monsterText: 'Its hits curse you.' },
+  stilling: { id: 'stilling', kind: 'shape', name: 'Stilling', front: 'Stilling', behind: 'of Stillness', attr: 'int', element: null, about: 'The word of stopped time. All slows.', frontText: 'Slows what it hits in time.', behindText: 'Leaves a bubble where enemies and their shots crawl.', monsterText: 'Its hits slow your cooldowns.' },
 };
+
+/**
+ * THE WORDS STILL TO COME (his doc "Wordsmith: The New Words", his yes of 8 Oct 2026, 16:53: "Yes,
+ * as it is (Recommended)"; their place, next after the skill trees and the controller: 9 Oct,
+ * 07:28, "Next, after these (Recommended)"). MYSTICAL, which does for spells what Power does for
+ * attacks, with POWER FOR ATTACKS ONLY (and Mystical for spells only: set on the other kind a word
+ * does nothing, and its slot says so; his answer, 16:53, "Nothing (Recommended)") and VOLATILE'S
+ * HIDDEN BOMB, by Dexterity; and PULLING, SPLITTING, HEXING and STILLING. Their looks are the art
+ * chat's, with his yes (render/words3.ts). OFF until he has seen them at work and said yes: the five
+ * do not drop and are not shown (WORD_IDS), Power and Volatile are as they were.
+ */
+export const WORDS4 = { on: false };
+const WORDS4_IDS: readonly WordId[] = ['mystical', 'pulling', 'splitting', 'hexing', 'stilling'];
+const AS_IT_WAS = { power: { ...WORDS.power }, volatile: { ...WORDS.volatile } };
+const WITH_WORDS4 = {
+  power: { about: 'The word of force. It feeds attacks.', frontText: 'More attack damage and a bigger hit.', behindText: 'Each attack hit that lands builds a short damage bonus.' },
+  volatile: { attr: 'dex' as Attr, about: 'The word of ruin. A hidden bomb.', frontText: 'Sticks a hidden charge on what it hits; it bursts a moment later.' },
+};
+/** WORDS4 on (true) or off (false): the switch, the words in the game, and what Power and Volatile say. For tests and pictures; the game follows it at once. */
+export function useWords4(on: boolean): void {
+  WORDS4.on = on;
+  WORD_IDS.length = 0;
+  WORD_IDS.push(...ALL_WORD_IDS.filter((w) => on || !WORDS4_IDS.includes(w)));
+  Object.assign(WORDS.power, on ? WITH_WORDS4.power : AS_IT_WAS.power);
+  Object.assign(WORDS.volatile, on ? WITH_WORDS4.volatile : AS_IT_WAS.volatile);
+}
+useWords4(WORDS4.on);
+
+/** A word that does nothing on this ability (WORDS4): Power on a spell, Mystical on an attack (isSpell: the weapon decides). */
+export function wordInert(word: WordId, id: SkillId): boolean {
+  if (!WORDS4.on) return false;
+  return (word === 'power' && isSpell(id)) || (word === 'mystical' && !isSpell(id));
+}
 
 // ---------------------------------------------------------------------------------------------
 // Monsters. Numbers are for dungeon 1; scaleLife / scaleDmg grow them with depth.
@@ -1051,6 +1119,12 @@ export const QUIPS: {
     precise: ['Right there.', 'Dead centre.', 'Through the gap.'],
     frenzied: ['More!', "Can't stop now.", 'Faster.'],
     guarding: ['Not today.', 'You missed.', 'Hold the line.'],
+    // (WORDS4)
+    mystical: ['Mind over matter.', 'A touch of the arcane.', 'Spellbound.'],
+    pulling: ['Come closer.', 'Drawn in.', 'Nowhere to run.'],
+    splitting: ['Divide and conquer.', 'In pieces.', 'Shattered.'],
+    hexing: ['Cursed.', 'Bad luck.', 'The hex holds.'],
+    stilling: ['Time is up.', 'Hold still.', 'Out of time.'],
   },
   /** By the attack that made the kill. */
   skill: {

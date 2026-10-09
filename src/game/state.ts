@@ -82,6 +82,18 @@ export interface Resolved {
   frenzy: boolean;
   /** GUARDING in front: each use gives the hero a shield of this fraction of their life (0 = none). */
   shield: number;
+  /** WORDS4. MYSTICAL in front: a spell's bigger hit (dmgMult, size, splash); the flag is for its look. */
+  mystic: boolean;
+  /** VOLATILE'S HIDDEN BOMB in front: a charge stuck on what it hits bursts a moment later for this fraction of the hit (0 = none; with WORDS4 off, `volatile`). */
+  charge: number;
+  /** PULLING in front: the struck are dragged up to this many tiles toward the blow (0 = none). */
+  pull: number;
+  /** SPLITTING in front: on its first hit it breaks into smaller copies that go on to other enemies, each for this fraction of the hit (0 = none). */
+  split: number;
+  /** HEXING in front: seconds a curse lasts on what it hits (0 = none). */
+  hex: number;
+  /** STILLING in front: seconds what it hits is slowed in time (0 = none). */
+  still: number;
   // --- behind: the wake ---
   /** Each use adds this % damage for a few seconds (stacks). */
   might: number;
@@ -105,6 +117,16 @@ export interface Resolved {
   frenzyFeed: boolean;
   /** GUARDING behind: a ward circle left where it hits; inside it the hero takes this fraction less damage. 0 = none. */
   ward: number;
+  /** WORDS4. MYSTICAL behind: each spell hit that lands adds this % spell damage for a few seconds (stacks: ARCANA). */
+  arcana: number;
+  /** PULLING behind: a vortex left where it hits. */
+  vortex: boolean;
+  /** SPLITTING behind: shards fly out all round where it ends, each for this fraction of the hit (0 = none). */
+  shards: number;
+  /** HEXING behind: a hex circle left where it hits. */
+  hexCircle: boolean;
+  /** STILLING behind: a bubble left where it hits. */
+  bubble: boolean;
   /** Plain-language lines for the character panel. */
   lines: string[];
 }
@@ -211,6 +233,12 @@ export interface Hero {
   /** Guarding in front: what the shield will still take before the hero's life does, and its seconds left. */
   shield: number;
   shieldT: number;
+  /** WORDS4. "of Mysteries" stacks (ARCANA, % spell damage) and their timer. */
+  arcana: number;
+  arcanaT: number;
+  /** WORDS4. Seconds left cursed by a monster's Hexing (the hero takes more damage) / with the cooldowns slowed by its Stilling. */
+  hexT: number;
+  stillT: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -291,6 +319,16 @@ export interface Monster {
   shockT: number;
   /** Guarding: what is left of the shield it carries, which takes damage before its life does. */
   shield: number;
+  /**
+   * WORDS4. Volatile's hidden bomb: seconds until the charge stuck on it bursts (0 = none), and for
+   * how much; Hexing: seconds left cursed (it takes more damage); Stilling: seconds left slowed in
+   * time; `split`: one of the smaller ones a Splitting monster broke into (it does not split again).
+   */
+  chargeT: number;
+  chargeDmg: number;
+  hexT: number;
+  stillT: number;
+  split?: boolean;
   /** Which hero ability last hurt it (for effects that trigger on a kill), or -1. */
   lastSkill: number;
   /** True while the hero can see it. */
@@ -350,6 +388,8 @@ export interface Projectile {
   from: string;
   /** Hero shots: 0 for the first of a cast, 1 for its twin. */
   n: number;
+  /** WORDS4, Splitting: one of the smaller copies (or shards) a shot broke into: it does not split again, and leaves nothing behind. */
+  split?: boolean;
   /**
    * (THE TRAPS) A dart of a dart wall: the dungeon's, not a monster's. It hurts the hero and the
    * monsters alike, and `dmg` is the share of the life of whatever it meets.
@@ -358,7 +398,7 @@ export interface Projectile {
 }
 
 /** 'cracks': Heavy behind, cracked ground that staggers; 'ward': Guarding behind, a circle the hero takes less harm in (Version 19.3). */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward';
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'vortex' | 'hex' | 'bubble';
 
 export interface Zone {
   x: number;
@@ -775,11 +815,25 @@ export type GameEvent =
   /** `sky`: the bolt comes down from above onto (x1, y1) instead of jumping along the ground. */
   | { t: 'arc'; x0: number; y0: number; x1: number; y1: number; sky?: boolean }
   /** What a word behind an ability gives the hero: "of Power" stacks might, "of Swiftness" gives haste. */
-  | { t: 'buff'; kind: 'might' | 'haste'; x: number; y: number; stacks: number }
+  | { t: 'buff'; kind: 'might' | 'haste' | 'arcana'; x: number; y: number; stacks: number }
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
   | { t: 'echo'; x: number; y: number; dx: number; dy: number; kind: SkillKind; delay: number }
   /** A patch of ground or a rune has just been laid. (`dur`: cracks and wards, its seconds; laid again where one already is, it lasts that long from now.) */
-  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward'; x: number; y: number; r: number; el: Element; dur?: number }
+  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'vortex' | 'hex' | 'bubble'; x: number; y: number; r: number; el: Element; dur?: number }
+  /**
+   * WORDS4, for the looks (render/words3.ts): Mystical's splash from what a spell struck at (x, y) to
+   * those beside it; Volatile's charge stuck on monster `id` / bursting at (x, y), out to `r`;
+   * Splitting's first hit at (x, y), the copies going the ways `to`; shards flying out at (x, y);
+   * monster `id` cursed / slowed in time for `secs`; a Pulling hit drawing in to (x, y).
+   */
+  | { t: 'mysticSplash'; x: number; y: number; to: readonly { x: number; y: number }[] }
+  | { t: 'charge'; id: number; x: number; y: number; secs: number }
+  | { t: 'chargeBurst'; x: number; y: number; r: number }
+  | { t: 'split'; x: number; y: number; to: readonly { x: number; y: number }[] }
+  | { t: 'shards'; x: number; y: number; r: number }
+  | { t: 'hexed'; id: number; x: number; y: number; secs: number }
+  | { t: 'stilled'; id: number; x: number; y: number; secs: number }
+  | { t: 'pull'; x: number; y: number; r: number }
   /**
    * THE NEW WORDS AT WORK (Version 19.3), for their looks (render/words3.ts): a Heavy hit lands
    * (`big`: an area ability's, out to `r`); monster `id` is stunned for `secs` / staggered by a blow

@@ -19,7 +19,7 @@
 // table), so a deliberate rule change needs the same change there.
 
 import type { RNG } from '../engine/rng';
-import { CLASSES } from './defs';
+import { CLASSES, WORDS4 } from './defs';
 import type { Affix, ClassId, IconKey, Imbue, Item, Limit, OffhandKind, OldWeaponKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
 import { SLOTS } from './types';
 
@@ -70,6 +70,8 @@ export const STAT_INFO: Record<StatKey, StatInfo> = {
   magicFind: { label: 'Magic Find', pct: true, dp: 0 },
   stunChance: { label: 'Chance to Stun', pct: true, dp: 0 },
   blockChance: { label: 'Chance to Block', pct: true, dp: 0 },
+  spellPct: { label: 'Spell Damage', pct: true, dp: 0 },
+  pickupPct: { label: 'Pick-up Reach', pct: true, dp: 0 },
 };
 
 // =============================================================================================
@@ -330,6 +332,9 @@ const AFFIX_FAMILIES: readonly FamilyDef[] = [
   // (Version 19.3: two stats that come only from a word burned into gear, never rolled on a drop: weight 0. Their sizes are set here, for the imbue.)
   prefix('stun',      'stunChance', ALL_SLOTS,          [3, 5],     [8, 12],    LEVELS_OFF, ['Jarring', 'Stunning', 'Dazing', 'Shattering'], 0),
   prefix('block',     'blockChance', ALL_SLOTS,         [3, 5],     [8, 12],    LEVELS_OFF, ['Braced', 'Guarded', 'Bulwarked', 'Unbroken'], 0),
+  // (WORDS4: two more of the same kind, Mystical's spell damage and Pulling's reach for gold and orbs)
+  prefix('spell',     'spellPct',   OFFENCE_SLOTS,      [6, 12],    [25, 45],   LEVELS_OFF, ['Mystic', 'Arcane', 'Eldritch', 'Sorcerous'], 0),
+  prefix('reach',     'pickupPct',  ALL_SLOTS,          [15, 25],   [35, 50],   LEVELS_OFF, ['Drawing', 'Beckoning', 'Luring', 'Magnetic'], 0),
 ];
 
 // Row builders for the table above. An optional last argument overrides DEFAULT_AFFIX_WEIGHT for that row.
@@ -411,7 +416,29 @@ const IMBUE_TABLE: Record<WordId, readonly ImbueRule[]> = {
     { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'dex']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'maxLife'], ['suffix', 'dex']] },
   ],
+  // THE WORDS STILL TO COME (WORDS4; his doc's "On gear"): Mystical spell damage, or mana on the
+  // protective pieces; Pulling gold and orbs from further; Splitting and Hexing more damage;
+  // Stilling faster cooldowns; each, or its attribute
+  mystical: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'spellPct'], ['suffix', 'int']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'maxMana'], ['suffix', 'int']] },
+  ],
+  pulling: [{ slots: ALL_SLOTS, options: [['prefix', 'pickupPct'], ['suffix', 'int']] }],
+  splitting: [{ slots: ALL_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'dex']] }],
+  hexing: [{ slots: ALL_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'int']] }],
+  stilling: [{ slots: ALL_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'int']] }],
 };
+
+/** VOLATILE BY DEXTERITY (WORDS4, his words of 5 Oct): on gear too its attribute is Dexterity. */
+const VOLATILE_BY_DEX: readonly ImbueRule[] = [
+  { slots: OFFENCE_SLOTS, options: [['prefix', 'areaPct'], ['suffix', 'dex']] },
+  { slots: DEFENCE_SLOTS, options: [['prefix', 'maxMana'], ['suffix', 'dex']] },
+];
+/** What a word becomes on gear, as the game has it now (Volatile's attribute follows WORDS4). */
+function imbueTable(word: WordId): readonly ImbueRule[] {
+  if (word === 'volatile' && WORDS4.on) return VOLATILE_BY_DEX;
+  return IMBUE_TABLE[word] ?? IMBUE_TABLE.power;
+}
 
 /** The three element words share one pattern: damage on the weapon, resistance on protective pieces, either on the rest. */
 function elementImbue(damage: StatKey, resistance: StatKey): ImbueRule[] {
@@ -489,6 +516,8 @@ const SCORE_PER_POINT: Record<StatKey, number> = {
   magicFind: 0.6,
   stunChance: 5,
   blockChance: 5,
+  spellPct: 1.2,
+  pickupPct: 0.5,
 };
 
 /** itemValue: gold for a Normal helm at item level 1, and the gold each further level adds. */
@@ -1028,14 +1057,14 @@ for (const f of AFFIX_FAMILIES) if (f.stat !== 'damage') FAMILY_BY_STAT.set(f.st
 
 /** What a word may become on gear, as the Lexicon tells it: for each group of slots, the stats it can turn into there. */
 export function imbueRules(word: WordId): { slots: readonly Slot[]; stats: StatKey[] }[] {
-  return (IMBUE_TABLE[word] ?? IMBUE_TABLE.power).map((r) => ({ slots: r.slots, stats: r.options.map((o) => o[1]) }));
+  return imbueTable(word).map((r) => ({ slots: r.slots, stats: r.options.map((o) => o[1]) }));
 }
 
 /** The 1-2 modifiers this word can become on this slot at this item level. Never empty. */
 export function imbueOptions(word: WordId, slot: Slot, ilvl: number): ImbueOption[] {
   const level = cleanLevel(ilvl);
   // The table covers every word and slot; the fallbacks only keep a bad save from breaking the game.
-  const rules = IMBUE_TABLE[word] ?? IMBUE_TABLE.power;
+  const rules = imbueTable(word);
   const rule = rules.find((r) => r.slots.includes(slot)) ?? rules[0];
   return rule.options.map(([kind, stat]) => {
     const family = FAMILY_BY_STAT.get(stat);

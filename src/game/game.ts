@@ -22,7 +22,7 @@ import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { AIM_MODES } from './state';
 import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, SkillState, SlotRef, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
-import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
 
@@ -96,7 +96,8 @@ function noLore(): WordLore {
 export function newMeta(): Meta {
   const lexicon = {} as Record<WordId, number>;
   const known = {} as Record<WordId, WordLore>;
-  for (const w of WORD_IDS) {
+  // (kept for every word there is, WORDS4's too: the switch may be thrown while a game is going)
+  for (const w of ALL_WORD_IDS) {
     lexicon[w] = 0;
     known[w] = noLore();
   }
@@ -114,7 +115,7 @@ export function newGuide(): Guide {
 export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   const out = newMeta();
   if (!m || typeof m !== 'object') return out;
-  for (const w of WORD_IDS) {
+  for (const w of ALL_WORD_IDS) {
     const n = m.lexicon ? m.lexicon[w] : 0;
     out.lexicon[w] = typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
     const k = m.known ? m.known[w] : undefined;
@@ -693,8 +694,8 @@ export class Game {
     for (const s of EQUIP_SLOTS) gear[s] = null;
     gear.mainhand = starterWeapon(cls);
     const words = {} as Record<WordId, number>;
-    // (no word to begin with: the first lies in a satchel, half way through the first dungeon)
-    for (const w of WORD_IDS) words[w] = 0;
+    // (no word to begin with: the first lies in a satchel, half way through the first dungeon. Kept for every word there is, WORDS4's too.)
+    for (const w of ALL_WORD_IDS) words[w] = 0;
     const attrs: Record<Attr, number> = { ...c.attrs };
     const d = derive(cls, 1, attrs, gear, this.meta.limit);
     // both attacks are the weapon's; the evasive move is the character's own
@@ -710,6 +711,7 @@ export class Game {
       x: 0, y: 0, fx: 0.7071, fy: 0.7071, anim: 'idle', animT: 0, attackT: 0, attackSkill: 0, combo: 0, comboT: 0, step: null, attackAge: 0, attackWind: 0, windup: null, channel: null, queued: null, swingT: 0, flash: 0, invuln: 0,
       gear, bag, words, skills, gold: 0, potions: TUNE.potionMax, potionKills: 0,
       might: 0, mightT: 0, haste: 0, hasteT: 0, frenzy: 0, frenzyT: 0, shield: 0, shieldT: 0, burnT: 0, burnDps: 0, chillT: 0, chill: 0, shockT: 0, poisonT: 0, poisonDps: 0,
+      arcana: 0, arcanaT: 0, hexT: 0, stillT: 0,
       move: null,
       // (THE FIRST LEVELS: the ring is lit for him if it ever was on this device; with the switch off, always)
       ring: !FIRST_LEVELS.on || this.meta.ring,
@@ -1201,6 +1203,7 @@ export class Game {
       state: 'sleep', t: 0, cd: 0, packId, anim: 'idle', animT: rng.range(0, 3), flash: 0,
       burnT: 0, burnDps: 0, chillT: 0, chill: 0, frozenT: 0, freezeImmune: 0, poisonT: 0, poisonDps: 0, poisonN: 0,
       stunT: 0, staggerT: 0, staggerCd: 0, markT: 0, shockT: 0, shield: words.includes('guarding') ? Math.round(Math.round(life) * GUARD.monster) : 0,
+      chargeT: 0, chargeDmg: 0, hexT: 0, stillT: 0,
       lastSkill: -1, seen: false, barT: 0, phase: 0, atk: 0, dead: false, xp: Math.round(xp), seed: rng.next(),
     };
     this.monsters.push(m);

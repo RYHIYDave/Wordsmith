@@ -3,7 +3,7 @@
 // Every pairing is assembled from the same few parts (bigger, faster, doubled, element, ground
 // patch, echo, rune, buff), so no pairing needs its own code or its own art.
 
-import { ATTR_GIVES, ATTR_NAME, CLASSES, FRENZY, GUARD, HEAVY, MANA_MODE, PRECISE, SKILLS, TUNE, WORDS, holdSkill, tapSkill, weaponAttr } from './defs';
+import { ATTR_GIVES, ATTR_NAME, BOMB, CLASSES, FRENZY, GUARD, HEAVY, HEX, MANA_MODE, MYSTIC, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, WORDS4, holdSkill, isSpell, tapSkill, weaponAttr, wordInert } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, WeaponKind, WordId } from './types';
@@ -24,6 +24,16 @@ export function socketProblem(group: readonly (WordId | null)[], word: WordId): 
   return null;
 }
 
+/** WORDS4: what a word set on the wrong kind says (on the attack's lines, and over the slot before it is set). */
+export function inertLine(w: 'power' | 'mystical'): string {
+  return w === 'power' ? 'Power: nothing on a spell. Power is for attacks.' : 'Mystical: nothing on an attack. Mystical is for spells.';
+}
+
+/** Whether a word does nothing on this ability (WORDS4: Power on a spell, Mystical on an attack), for the slot to say so. */
+export function inertOn(word: WordId, def: SkillDef): boolean {
+  return wordInert(word, def.id);
+}
+
 /** The ability's display name with its words: "Twin Flame Orb of Echoes". */
 export function skillName(def: SkillDef, front: readonly (WordId | null)[], behind: readonly (WordId | null)[]): string {
   const f = front.filter((w): w is WordId => w !== null).map((w) => WORDS[w].front);
@@ -41,7 +51,8 @@ export function skillName(def: SkillDef, front: readonly (WordId | null)[], behi
  * no mana. 'mana': they cost mana and need only a moment between uses.
  */
 export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], behind: readonly (WordId | null)[], grows: Attr | ClassId, d: Derived, limit: Limit = 'cooldown'): Resolved {
-  const has = (g: readonly (WordId | null)[], w: WordId): boolean => g.includes(w);
+  // (WORDS4: Power does nothing on a spell, nor Mystical on an attack: wordInert)
+  const has = (g: readonly (WordId | null)[], w: WordId): boolean => g.includes(w) && !wordInert(w, def.id);
   // (one enemy at a time: a blade, a shot, a familiar's bolt. A word that makes "the hit" bigger gives these a splash.)
   const single = def.kind === 'melee' || def.kind === 'projectile' || def.kind === 'summon';
   const lines: string[] = [def.desc];
@@ -75,7 +86,14 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     count: 1, countDmg: 1, splash: 0, splashDmg: 0, pierce: false, projSpeed: 0,
     ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0,
     might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, lines,
+    mystic: false, charge: 0, pull: 0, split: 0, hex: 0, still: 0, arcana: 0, vortex: false, shards: 0, hexCircle: false, bubble: false,
   };
+
+  // (WORDS4: a word set on the wrong kind says so, and does nothing: his answer of 8 Oct 2026, 16:53, "Nothing (Recommended)")
+  for (const w of ['power', 'mystical'] as const) {
+    if (!(front.includes(w) || behind.includes(w)) || !wordInert(w, def.id)) continue;
+    lines.push(inertLine(w));
+  }
 
   // ----- in front: the hit -----
   if (has(front, 'power')) {
@@ -89,6 +107,20 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
       r.splashDmg = Math.max(r.splashDmg, 0.5);
     }
     lines.push(`Power: +${pct(dmg)} damage, +${pct(big)} size${single ? ', splashes nearby enemies' : ''}.`);
+  }
+  // MYSTICAL in front (WORDS4): for spells what Power is for attacks
+  if (has(front, 'mystical')) {
+    const a = attrOf('mystical', d);
+    const dmg = MYSTIC.dmg + MYSTIC.dmgPer * a;
+    const big = MYSTIC.big + MYSTIC.bigPer * a;
+    dmgMult *= 1 + dmg / 100;
+    size *= 1 + big / 100;
+    r.mystic = true;
+    if (single) {
+      r.splash = Math.max(r.splash, MYSTIC.splash);
+      r.splashDmg = Math.max(r.splashDmg, MYSTIC.splashDmg);
+    }
+    lines.push(`Mystical: +${pct(dmg)} spell damage, +${pct(big)} size${single ? ', splashes nearby enemies' : ''}.`);
   }
   if (has(front, 'swift')) {
     const a = attrOf('swift', d);
@@ -165,9 +197,16 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`Poison: hits 20% softer; poisons for ${pct(dose)} of the hit a second for ${TUNE.poisonTime} s. Up to ${TUNE.poisonStacks} doses add up.`);
   }
   if (has(front, 'volatile')) {
-    const boom = 12 + 0.2 * attrOf('volatile', d);
-    r.volatile = boom / 100;
-    lines.push(`Volatile: enemies it kills explode for ${pct(boom)} of their life.`);
+    if (WORDS4.on) {
+      // VOLATILE'S HIDDEN BOMB (WORDS4; his words of 5 Oct 2026: "Like you secretly stuck a bomb on them"), by Dexterity
+      const boom = BOMB.dmg + BOMB.per * attrOf('volatile', d);
+      r.charge = boom / 100;
+      lines.push(`Volatile: sticks a hidden charge on what it hits; ${BOMB.delay} s later it bursts for ${pct(boom)} of the hit, on all near it.`);
+    } else {
+      const boom = 12 + 0.2 * attrOf('volatile', d);
+      r.volatile = boom / 100;
+      lines.push(`Volatile: enemies it kills explode for ${pct(boom)} of their life.`);
+    }
   }
 
   // THE NEW WORDS IN FRONT (Version 19.3; his doc "Wordsmith: The New Words", his yes of 8 Oct 2026,
@@ -202,12 +241,33 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     r.shield = Math.min(0.2, GUARD.shield + 0.001 * a);
     lines.push(`Guarding: each use gives you a shield of ${pct(r.shield * 100)} of your life for ${GUARD.shieldTime} s.`);
   }
+  // THE WORDS STILL TO COME IN FRONT (WORDS4; the same doc's starting points)
+  if (has(front, 'pulling')) {
+    r.pull = Math.min(2.5, PULL.drag + 0.005 * attrOf('pulling', d));
+    lines.push(`Pulling: drags what it hits up to ${r.pull.toFixed(1)} tiles toward the blow.`);
+  }
+  if (has(front, 'splitting')) {
+    r.split = Math.min(0.6, SPLIT.copyDmg + 0.002 * attrOf('splitting', d));
+    lines.push(`Splitting: on its first hit it breaks into ${SPLIT.copies} smaller copies, each for ${pct(r.split * 100)}, that go on to other enemies.`);
+  }
+  if (has(front, 'hexing')) {
+    r.hex = HEX.secs + 0.01 * attrOf('hexing', d);
+    lines.push(`Hexing: curses what it hits for ${r.hex.toFixed(1)} s: it takes ${pct(HEX.more * 100)} more damage from everything.`);
+  }
+  if (has(front, 'stilling')) {
+    r.still = STILL.secs + 0.01 * attrOf('stilling', d);
+    lines.push(`Stilling: what it hits moves, attacks and shoots ${pct(STILL.slow * 100)} slower for ${r.still.toFixed(1)} s.`);
+  }
 
   // ----- behind: the wake -----
   let softer = false;
   if (has(behind, 'power')) {
     r.might = 6 + 0.1 * attrOf('power', d);
     lines.push(`of Power: each hit that lands adds +${pct(r.might)} damage for 5 s (up to 5 times).`);
+  }
+  if (has(behind, 'mystical')) {
+    r.arcana = MYSTIC.arcana + MYSTIC.arcanaPer * attrOf('mystical', d);
+    lines.push(`of Mysteries: each spell hit that lands adds +${pct(r.arcana)} spell damage for ${MYSTIC.secs} s (up to ${MYSTIC.max} times).`);
   }
   if (has(behind, 'swift')) {
     r.haste = 15 + 0.2 * attrOf('swift', d);
@@ -271,6 +331,23 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     const a = attrOf('guarding', d);
     r.ward = Math.min(0.5, GUARD.ward + 0.002 * a);
     lines.push(`of Warding: leaves a ward circle for ${GUARD.wardTime} s; inside it you take ${pct(r.ward * 100)} less damage.`);
+  }
+  // THE WORDS STILL TO COME BEHIND (WORDS4)
+  if (has(behind, 'pulling')) {
+    r.vortex = true;
+    lines.push(`of the Vortex: leaves a vortex for ${PULL.secs} s that draws enemies to its middle.`);
+  }
+  if (has(behind, 'splitting')) {
+    r.shards = Math.min(0.45, SPLIT.shardDmg + 0.001 * attrOf('splitting', d));
+    lines.push(`of Shards: where it ends, ${SPLIT.shards} shards fly out all round, each for ${pct(r.shards * 100)}.`);
+  }
+  if (has(behind, 'hexing')) {
+    r.hexCircle = true;
+    lines.push(`of the Hex: leaves a hex circle for ${HEX.circleSecs} s; enemies in it deal ${pct(HEX.weaker * 100)} less damage.`);
+  }
+  if (has(behind, 'stilling')) {
+    r.bubble = true;
+    lines.push(`of Stillness: leaves a bubble for ${STILL.bubbleSecs} s where enemies and their shots go ${pct(STILL.crawl * 100)} slower.`);
   }
   if (softer) dmgMult *= 0.7;
 

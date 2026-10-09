@@ -19,10 +19,14 @@ export const ATTRS: readonly Attr[] = ['str', 'dex', 'int'];
 export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
-export type WordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding';
+export type WordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'mystical' | 'pulling' | 'splitting' | 'hexing' | 'stilling';
 // (THE NEW WORDS, his choice of 8 Oct 2026, 12:26, as his doc "Wordsmith: The New Words" plays them (his yes, 16:53): the first four, Heavy,
-// Precise, Frenzied and Guarding, from Version 19.3; their looks are the art chat's, render/words3.ts)
-export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding'];
+// Precise, Frenzied and Guarding, from Version 19.3; their looks are the art chat's, render/words3.ts. Mystical, Pulling, Splitting,
+// Hexing and Stilling are behind WORDS4 (game/defs.ts), off until his yes to them at work.)
+/** Every word there is: what is kept for each word (a hero's pouch, the Lexicon) is kept for all of them. */
+export const ALL_WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding', 'mystical', 'pulling', 'splitting', 'hexing', 'stilling'];
+/** The words in the game: the ones that drop, are shown and are counted. The five of WORDS4 join it while that switch is on (useWords4). */
+export const WORD_IDS: WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding'];
 
 /** Damage types. An ability with no element word deals physical damage. */
 export type Element = 'phys' | 'fire' | 'frost' | 'lightning';
@@ -65,12 +69,15 @@ export type StatKey =
   | 'goldFind' // % increased gold
   | 'magicFind' // % increased item rarity
   | 'stunChance' // % chance that a hit stuns (Heavy, burned into gear)
-  | 'blockChance'; // % chance to block a blow (Guarding, burned into gear)
+  | 'blockChance' // % chance to block a blow (Guarding, burned into gear)
+  | 'spellPct' // % increased spell damage (Mystical, burned into gear: WORDS4)
+  | 'pickupPct'; // % further that gold and life orbs fly to the hero from (Pulling, burned into gear: WORDS4)
 
 export const STAT_KEYS: readonly StatKey[] = [
   'str', 'dex', 'int', 'dmgMin', 'dmgMax', 'dmgPct', 'physPct', 'firePct', 'frostPct', 'lightPct', 'atkSpeed',
   'critChance', 'critMult', 'maxLife', 'lifeRegen', 'lifeOnHit', 'lifeOnKill', 'maxMana', 'manaRegen',
   'armor', 'fireRes', 'frostRes', 'lightRes', 'moveSpeed', 'cdr', 'areaPct', 'goldFind', 'magicFind', 'stunChance', 'blockChance',
+  'spellPct', 'pickupPct',
 ];
 
 export type Stats = Record<StatKey, number>;

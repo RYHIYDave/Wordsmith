@@ -174,6 +174,17 @@ function expectedImbue(word: WordId, slot: Slot): ImbuePick[] {
       return offence ? [['prefix', 'atkSpeed'], ['suffix', 'str']] : [['prefix', 'moveSpeed'], ['suffix', 'str']];
     case 'guarding':
       return [['prefix', 'blockChance'], ['suffix', 'str']];
+    // (WORDS4: the words still to come)
+    case 'mystical':
+      return offence ? [['prefix', 'spellPct'], ['suffix', 'int']] : [['prefix', 'maxMana'], ['suffix', 'int']];
+    case 'pulling':
+      return [['prefix', 'pickupPct'], ['suffix', 'int']];
+    case 'splitting':
+      return [['prefix', 'dmgPct'], ['suffix', 'dex']];
+    case 'hexing':
+      return [['prefix', 'dmgPct'], ['suffix', 'int']];
+    case 'stilling':
+      return [['prefix', 'cdr'], ['suffix', 'int']];
   }
 }
 
