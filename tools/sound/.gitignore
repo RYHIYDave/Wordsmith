@@ -1,0 +1,2 @@
+# python leaves these beside the sound tools when they run
+__pycache__/

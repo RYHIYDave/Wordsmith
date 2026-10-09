@@ -1,0 +1,408 @@
+<title>Band Sound Check</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+  /* Layout: one column for a phone held upright, the same look as try-out 1's page. Each clip is a row:
+     a square play button, its name, and a strip that shows what is played when (pink and gold: the band
+     at full; cyan: the band holding back). */
+  :root {
+    color-scheme: dark;
+    --night: #0c0b14;        /* the dark of the game's world */
+    --stone: #161525;        /* a panel on it */
+    --seam: #2c2a44;         /* lines and empty lanes */
+    --parchment: #ebe6dc;    /* words */
+    --ash: #a19bb6;          /* quieter words */
+    --dream: #58d9ea;        /* holding back: the cyan a friend glows */
+    --dream-deep: #1d5b68;
+    --thrash: #ff5f9e;       /* at full: the pink and gold an enemy glows */
+    --gold: #ffc247;
+    --display: "Pixelify Sans", "Trebuchet MS", "Verdana", sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--night);
+    color: var(--parchment);
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.5;
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  main { max-width: 40rem; margin-inline: auto; display: grid; gap: 40px; }
+  h1, h2, h3, p, ul, ol { margin: 0; }
+  ul, ol { padding: 0; list-style: none; }
+
+  .eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ash); }
+  h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem, 11vw, 3.6rem); line-height: 1; text-wrap: balance; }
+  h1 .thrash { background: linear-gradient(90deg, var(--thrash), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  h2 { font-family: var(--display); font-weight: 500; font-size: 1.35rem; line-height: 1.2; text-wrap: balance; }
+  h3 { font-family: var(--body); font-weight: 700; font-size: 1.05rem; line-height: 1.25; }
+  .top { display: grid; gap: 14px; }
+  .lede { font-size: 1.08rem; max-width: 34rem; }
+  .how { border-left: 3px solid var(--gold); padding: 2px 0 2px 14px; color: var(--parchment); max-width: 34rem; }
+  .how b { color: var(--gold); font-weight: 700; }
+  .quiet { color: var(--ash); }
+
+  /* a clip */
+  .group { display: grid; gap: 22px; }
+  .group > p { max-width: 34rem; }
+  .clips { display: grid; gap: 30px; }
+  .clip { display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 14px; row-gap: 12px; align-items: start; }
+  .clip .words { min-width: 0; display: grid; gap: 4px; }
+  .clip .words p { color: var(--ash); font-size: 0.95rem; }
+  .clip .under { grid-column: 1 / -1; display: grid; gap: 8px; }
+  .num { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--ash); text-transform: uppercase; }
+
+  .play {
+    width: 56px; height: 56px; padding: 0; border: 0; cursor: pointer;
+    background: var(--parchment); color: var(--night);
+    /* corners cut square, like a pixel-art button */
+    clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
+    display: grid; place-items: center;
+  }
+  .play:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; clip-path: none; }
+  .play svg { width: 24px; height: 24px; fill: currentColor; }
+  .play .pause, .play .wait { display: none; }
+  .clip[data-state="playing"] .play { background: var(--gold); }
+  .clip[data-state="playing"] .play .go, .clip[data-state="loading"] .play .go { display: none; }
+  .clip[data-state="playing"] .play .pause { display: block; }
+  .clip[data-state="loading"] .play .wait { display: block; animation: blink 0.7s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .clip[data-state="loading"] .play .wait { animation: none; } }
+
+  /* the strip: one lane cut into the stretches of the clip, a playhead across it */
+  .strip { position: relative; display: grid; padding-block: 6px; cursor: pointer; touch-action: none; }
+  .lane { position: relative; height: 22px; background: var(--seam); overflow: hidden; }
+  .lane i { position: absolute; top: 0; bottom: 0; display: block; border-right: 2px solid var(--night); }
+  .lane i.loud { background: linear-gradient(90deg, var(--thrash), var(--gold)); }
+  .lane i.soft { background: linear-gradient(90deg, var(--dream-deep), var(--dream)); }
+  .lane i span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--mono); font-style: normal; font-size: 0.66rem; letter-spacing: 0.02em; color: var(--night); font-weight: 500; white-space: nowrap; overflow: hidden; }
+  .lane i.soft span { color: #04161a; }
+  .head { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--parchment); transform: translateX(-1px); pointer-events: none; }
+  .head::before { content: ""; position: absolute; top: 0; left: -3px; width: 8px; height: 4px; background: var(--parchment); }
+  .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 14px; font-family: var(--mono); font-size: 0.74rem; color: var(--ash); font-variant-numeric: tabular-nums; }
+  .row .clock { color: var(--parchment); margin-left: auto; }
+  .trouble { grid-column: 1 / -1; color: var(--gold); font-size: 0.92rem; }
+
+  /* notes */
+  .notes { display: grid; gap: 26px; border-top: 1px solid var(--seam); padding-top: 28px; }
+  .notes section { display: grid; gap: 10px; }
+  .notes li { position: relative; padding-left: 18px; max-width: 36rem; }
+  .notes li + li { margin-top: 8px; }
+  .notes li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 7px; height: 7px; background: var(--dream); }
+  .notes .not li::before { background: var(--thrash); }
+  .notes p { max-width: 36rem; }
+  .tags { font-family: var(--mono); font-size: 0.86em; color: var(--dream); }
+  .facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; font-size: 0.95rem; }
+  .facts dt { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); padding-top: 3px; }
+  .facts dd { margin: 0; }
+</style>
+
+<main>
+  <header class="top">
+    <p class="eyebrow">Wordsmith · music · try-out 2, step 1 · 9 Oct 2026</p>
+    <h1>The <span class="thrash">band</span></h1>
+    <p class="lede">Real instruments this time: a real electric guitar, a real bass and a real drum kit, recorded one note and one hit at a time, and played here from lists of notes. None of it is in the game.</p>
+    <p class="how"><b>This is a sound check, not the music.</b> There is no tune yet: the notes are only there to show the sounds. One question as you listen: do these sound like real instruments? Headphones show the most. Your phone's own speaker shows what most players would hear.</p>
+  </header>
+
+  <section class="group">
+    <h2>The band together</h2>
+    <div class="clips">
+      <article class="clip" data-src="clips/band_full.mp3" data-len="19.8">
+        <button class="play" type="button" aria-label="Play: The band at full"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 1</span>
+          <h3>The band at full</h3>
+          <p>As in a fight: two heavy guitars, bass, drums and a lead guitar. Three ways of playing (the lead comes in with the second), then one last chord.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="loud" style="left:0;width:28.28%"><span>galloping</span></i><i class="loud" style="left:28.28%;width:28.28%"><span>half-time</span></i><i class="loud" style="left:56.57%;width:28.28%"><span>race, blast</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:20</span></div>
+        </div>
+      </article>
+
+      <article class="clip" data-src="clips/band_soft.mp3" data-len="14.2">
+        <button class="play" type="button" aria-label="Play: The band holding back"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 2</span>
+          <h3>The band holding back</h3>
+          <p>The same band, as when you explore: one guitar strummed, one picked with an echo, the bass, a light brisk beat, and the lead.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="soft" style="left:0;width:78.87%"><span>holding back</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:14</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>Each one alone</h2>
+    <p class="quiet">If something sounds wrong in the band, find it here and tell me which.</p>
+    <div class="clips">
+      <article class="clip" data-src="clips/heavy_guitars.mp3" data-len="18.8">
+        <button class="play" type="button" aria-label="Play: The heavy guitars"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 3</span>
+          <h3>The heavy guitars</h3>
+          <p>Two of them, one in each ear on headphones. Muted and galloping, then chords left to ring, then one line picked fast.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="19" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="loud" style="left:0;width:29.79%"><span>galloping</span></i><i class="loud" style="left:29.79%;width:29.79%"><span>chords ring</span></i><i class="loud" style="left:59.57%;width:29.79%"><span>picked fast</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:19</span></div>
+        </div>
+      </article>
+
+      <article class="clip" data-src="clips/bass.mp3" data-len="18.5">
+        <button class="play" type="button" aria-label="Play: The bass"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 4</span>
+          <h3>The bass</h3>
+          <p>What it plays under the heavy guitars, the same three ways. Most of it is too deep for a phone's speaker: headphones if you can.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="19" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="loud" style="left:0;width:30.27%"><span>galloping</span></i><i class="loud" style="left:30.27%;width:30.27%"><span>long notes</span></i><i class="loud" style="left:60.54%;width:30.27%"><span>picked fast</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:19</span></div>
+        </div>
+      </article>
+
+      <article class="clip" data-src="clips/drums.mp3" data-len="31.0">
+        <button class="play" type="button" aria-label="Play: The drums"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 5</span>
+          <h3>The drums</h3>
+          <p>The four ways of try-out 1, now on a real kit, then the light beat of the band holding back.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="31" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="loud" style="left:0;width:18.06%"><span>gallop</span></i><i class="loud" style="left:18.06%;width:18.06%"><span>racing</span></i><i class="loud" style="left:36.13%;width:18.06%"><span>half</span></i><i class="loud" style="left:54.19%;width:18.06%"><span>blast</span></i><i class="soft" style="left:72.26%;width:18.06%"><span>light</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:31</span></div>
+        </div>
+      </article>
+
+      <article class="clip" data-src="clips/soft_guitar.mp3" data-len="14.2">
+        <button class="play" type="button" aria-label="Play: The soft guitars"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 6</span>
+          <h3>The soft guitars</h3>
+          <p>The same guitar with the amp turned down. One strums the chords (to the left on headphones). One picks them a string at a time, with a shimmer and an echo (to the right).</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="soft" style="left:0;width:78.87%"><span>strummed and picked</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:14</span></div>
+        </div>
+      </article>
+
+      <article class="clip" data-src="clips/lead.mp3" data-len="13.7">
+        <button class="play" type="button" aria-label="Play: The lead"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 7</span>
+          <h3>The lead</h3>
+          <p>The guitar that will carry the tune. The same few notes twice: held back, then at full.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="14" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="soft" style="left:0;width:40.88%"><span>held back</span></i><i class="loud" style="left:40.88%;width:40.88%"><span>at full</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:14</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="notes">
+    <section>
+      <h2>What is real, and what is code</h2>
+      <dl class="facts">
+        <dt>Guitar</dt><dd>An Epiphone electric guitar, each note recorded straight from the guitar, with no amp</dd>
+        <dt>Bass</dt><dd>A Squier Jazz Bass, recorded the same way</dd>
+        <dt>Drums</dt><dd>A big old kit made in Poland decades ago, every hit recorded through a microphone close by and a pair overhead</dd>
+        <dt>From</dt><dd>Karoryfer Samples, who recorded all three and gave them to the public domain: free for anyone to use, in a game too</dd>
+        <dt>Code</dt><dd>The amps and their speakers, the rooms, the echo and the shimmer. And the playing: which note, when, and how hard</dd>
+      </dl>
+      <p class="quiet">So how heavy the guitars are, how much echo, how big the room: all of that I can still turn.</p>
+    </section>
+    <section>
+      <h2>What I checked, since I can't hear</h2>
+      <ul>
+        <li>Every guitar and bass note was measured and set in tune. Strings hit hard ring sharp at first. As recorded, the bass's lowest short notes were more than a semitone out, so those I left out.</li>
+        <li>The same recording is never played twice in a row, so nothing repeats like a machine.</li>
+        <li>Nothing clips, nothing clicks, and the seven clips are all about as loud as each other.</li>
+        <li>On a phone's speaker the bass loses most of its weight, and the kick drum keeps little but the tick of its beater. The guitars, the snare and the lead come through.</li>
+        <li>Three listening programs that name what they hear were asked about each clip. The heavy guitars: <span class="tags">Guitar, Plucked string instrument, Electric guitar, Distortion</span>. The bass: <span class="tags">Bass guitar, Guitar</span>. The drums: <span class="tags">Drum, Drum kit, Bass drum, Snare drum</span>. The soft guitars and the lead: <span class="tags">Guitar</span>. The band at full: <span class="tags">Guitar, Heavy metal, Plucked string instrument, Electric guitar</span>. Try-out 1's fight never got "heavy metal".</li>
+        <li>Asked outright, the most any of the three gave to "synthesizer" on any clip was 9 chances in 100 (the bass alone), and to "drum machine" 2 in 100.</li>
+        <li>The band holding back is the one I am least sure of. They heard music (<span class="tags">Background music, Video game music, Soundtrack music</span>) but did not pick out its instruments, though they named each of them rightly alone.</li>
+      </ul>
+    </section>
+    <section class="not">
+      <h2>What nobody has checked</h2>
+      <ul>
+        <li>How it sounds. Nobody has heard this. You are the first.</li>
+        <li>Whether the heavy guitars are heavy enough for you.</li>
+        <li>The lead. A real player bends and slides between notes. Mine steps from one recorded note to the next, so it is the hardest of these to make real.</li>
+        <li>A real phone.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>What this would mean for the game</h2>
+      <p>Recordings are sound files, and today the game has none: every sound in it is made in code. Music played on these would put files inside the game. That is for you and the main chat to decide once you have heard them. Nothing changes until then.</p>
+    </section>
+  </section>
+</main>
+
+<script>
+(() => {
+  const clips = [...document.querySelectorAll('.clip')].map((el) => {
+    const audio = new Audio();
+    audio.preload = 'none';
+    audio.src = el.dataset.src;
+    return { el, audio, len: Number(el.dataset.len), src: el.dataset.src, way: 'file', tried: new Set(['file']), blob: null, mending: false, started: false,
+      button: el.querySelector('.play'), strip: el.querySelector('.strip'), head: el.querySelector('.head'), clock: el.querySelector('.clock') };
+  });
+  const mmss = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  const state = (c, s) => { c.el.dataset.state = s; };
+  const trouble = (c, text) => {
+    let p = c.el.querySelector('.trouble');
+    if (!p) { p = document.createElement('p'); p.className = 'trouble'; c.el.appendChild(p); }
+    p.textContent = text;
+    p.hidden = !text;
+  };
+  const show = (c) => {
+    const t = Math.min(c.audio.currentTime || 0, c.len);
+    c.head.style.left = (100 * t / c.len) + '%';
+    c.strip.setAttribute('aria-valuenow', String(Math.round(t)));
+    if (c.clock) c.clock.textContent = mmss(t) + ' / ' + mmss(Math.round(c.len));
+  };
+  const tick = () => {
+    for (const c of clips) if (!c.audio.paused) show(c);
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+
+  // A clip can reach the player three ways: as a blob held in the page (best: it can be wound to any
+  // point), as text, or straight from its file. Each is tried until one works, so the page plays
+  // wherever it is opened.
+  const WAYS = ['blob', 'text', 'file'];
+  const asText = (blob) => new Promise((done, fail) => {
+    const r = new FileReader();
+    r.onload = () => done(r.result);
+    r.onerror = () => fail(r.error);
+    r.readAsDataURL(blob);
+  });
+  const fetched = async (c) => {
+    if (!c.blob) {
+      const got = await fetch(c.src);
+      if (!got.ok) throw new Error('fetch ' + got.status);
+      c.blob = new Blob([await got.arrayBuffer()], { type: 'audio/mpeg' });
+    }
+    return c.blob;
+  };
+  const give = async (c, way) => {
+    c.way = way;
+    c.tried.add(way);
+    c.audio.src = way === 'file' ? c.src : way === 'blob' ? URL.createObjectURL(await fetched(c)) : await asText(await fetched(c));
+    c.audio.preload = 'auto';
+    c.audio.load();
+  };
+  const mend = async (c, wasPlaying) => {
+    if (c.mending) return;
+    const next = WAYS.find((w) => !c.tried.has(w));
+    if (!next) { state(c, 'idle'); trouble(c, 'This clip will not play here. Tell me, and I will send the sound itself.'); return; }
+    c.mending = true;
+    if (wasPlaying) state(c, 'loading');
+    try {
+      await give(c, next);
+      c.mending = false;
+      if (!wasPlaying) return;
+      try { await c.audio.play(); } catch (e) {
+        if (e && e.name === 'NotAllowedError') { state(c, 'idle'); trouble(c, 'Ready now. Tap play once more.'); }
+        else if (!e || e.name !== 'AbortError') mend(c, true);
+      }
+    } catch (e) {
+      c.mending = false;
+      state(c, 'idle');
+      if (wasPlaying) trouble(c, 'This clip will not load here. Tell me, and I will send the sound itself.');
+    }
+  };
+
+  const stopOthers = (c) => { for (const o of clips) if (o !== c && !o.audio.paused) o.audio.pause(); };
+  const toggle = (c) => {
+    if (c.mending) return;
+    if (!c.audio.paused) { c.audio.pause(); return; }
+    stopOthers(c);
+    trouble(c, '');
+    state(c, 'loading');
+    c.started = true;
+    const p = c.audio.play();
+    if (p && p.catch) p.catch((e) => {
+      if (e && e.name === 'AbortError') return;
+      if (e && e.name === 'NotAllowedError') { state(c, 'idle'); return; }
+      mend(c, true);
+    });
+  };
+  const seek = (c, x) => {
+    const box = c.strip.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (x - box.left) / box.width)) * c.len;
+    try { c.audio.currentTime = Math.min(t, Math.max(0, c.len - 0.05)); } catch (e) { /* not loaded yet: it starts from the top */ }
+    show(c);
+  };
+
+  for (const c of clips) {
+    state(c, 'idle');
+    show(c);
+    c.button.addEventListener('click', () => toggle(c));
+    c.audio.addEventListener('playing', () => { state(c, 'playing'); trouble(c, ''); });
+    c.audio.addEventListener('waiting', () => { if (!c.audio.paused) state(c, 'loading'); });
+    c.audio.addEventListener('pause', () => { if (!c.mending) state(c, 'idle'); show(c); });
+    c.audio.addEventListener('ended', () => { try { c.audio.currentTime = 0; } catch (e) { /* stays at the end */ } state(c, 'idle'); show(c); });
+    c.audio.addEventListener('error', () => { if (c.audio.error && !c.mending) mend(c, c.el.dataset.state === 'loading' || c.el.dataset.state === 'playing'); });
+    let held = false;
+    c.strip.addEventListener('pointerdown', (e) => { held = true; try { c.strip.setPointerCapture(e.pointerId); } catch (err) { /* no capture: taps still work */ } seek(c, e.clientX); });
+    c.strip.addEventListener('pointermove', (e) => { if (held) seek(c, e.clientX); });
+    const letGo = () => { held = false; };
+    c.strip.addEventListener('pointerup', letGo);
+    c.strip.addEventListener('pointercancel', letGo);
+    c.strip.addEventListener('keydown', (e) => {
+      const step = e.key === 'ArrowRight' ? 5 : e.key === 'ArrowLeft' ? -5 : 0;
+      if (!step) return;
+      e.preventDefault();
+      try { c.audio.currentTime = Math.max(0, Math.min(c.len - 0.05, (c.audio.currentTime || 0) + step)); } catch (err) { /* not loaded yet */ }
+      show(c);
+    });
+  }
+
+  // Fetch the clips one after another, in the order they are on the page, and hand each to its player
+  // as a blob before it is first played. A clip tapped before its turn plays straight from its file.
+  (async () => {
+    for (const c of clips) {
+      if (c.started) continue;
+      try {
+        await fetched(c);
+        if (c.started || c.mending) continue;
+        c.tried.delete('file');
+        await give(c, 'blob');
+      } catch (e) { /* it stays on its file */ }
+    }
+  })();
+})();
+</script>
