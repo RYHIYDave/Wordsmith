@@ -9,13 +9,19 @@
 //            pose, the moment its blow lands, two moments of its death; and the same at a phone's size
 //          film[:<scale>]: frames of a moving picture for tools/page_gif.mjs: each standing, then
 //            its attack (the warning held, then the blow), looping
+//          walks[:<scale>]: frames of a moving picture: all three walking toward you and then away,
+//            beside the new skeleton walking, the floor going by under each at its pace
+//          struck[:<scale>]: each struck, a few frames of its reel, facing you
+//          strip:<shade | boneward | golem>:<walk | reel | stand>:<front | back>[:<scale>]: every frame of one move in a row
 import { makeGroundArt } from '../art/ground';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
 import { makeSkeletonArt3 } from '../art/monster_bones3';
 import { MOVES3 } from '../art/moves3';
-import { BONEWARD, GOLEM, NEW_MOBS_LIST, SHADE, deathOfMob, paintMob } from '../art/new_mobs3';
-import type { Mob } from '../art/new_mobs3';
+import { BONEWARD, GOLEM, NEW_MOBS_LIST, SHADE, deathOfMob, makeBonewardArt3, makeGolemArt3, makeShadeArt3, paintMob } from '../art/new_mobs3';
+import type { Mob, MobAct } from '../art/new_mobs3';
+import type { ActorArt } from '../art/actor_types';
+import { MONSTERS } from '../game/defs';
 import { CANVAS3 } from '../art/skin';
 import type { GameView } from '../art/skin';
 import { drawAura, drawLights } from '../engine/px';
@@ -58,7 +64,7 @@ function reachOf(sp: Sprite): [number, number, number, number] {
  * about the figures), and on it figures at their floor points: each with its soft shadow, its pool
  * of light, itself and its lights. `S`: screen pixels to a picture pixel.
  */
-function pane(x: number, y: number, w: number, h: number, S: number, who: ReadonlyArray<{ sp: Sprite; fx: number; fy: number; shadow: number }>): void {
+function pane(x: number, y: number, w: number, h: number, S: number, who: ReadonlyArray<{ sp: Sprite; fx: number; fy: number; shadow: number }>, by = 0, away = false, flat = false): void {
   g.save();
   g.beginPath();
   g.rect(x, y, w, h);
@@ -70,11 +76,27 @@ function pane(x: number, y: number, w: number, h: number, S: number, who: Readon
   const fy0 = who.length ? who[0].fy : y + h / 2;
   // (a tile is a diamond 64 picture pixels across and 32 down; its picture is anchored at its top corner)
   const span = Math.ceil(w / (32 * S)) + 4;
-  for (let ty = -span; ty <= span; ty++) {
-    for (let tx = -span; tx <= span; tx++) {
-      const px = fx0 + (tx - ty) * 32 * S;
-      const py = fy0 + (tx + ty) * 16 * S - 16 * S;
+  // (walking toward you is down the screen and to the right, along the grid's x; away is up and to the right, along -y)
+  const mx = away ? 0 : by;
+  const my = away ? -by : 0;
+  for (let ty = Math.floor(my) - span; ty <= Math.floor(my) + span; ty++) {
+    for (let tx = Math.floor(mx) - span; tx <= Math.floor(mx) + span; tx++) {
+      const px = fx0 + (tx - mx - (ty - my)) * 32 * S;
+      const py = fy0 + (tx - mx + (ty - my)) * 16 * S - 16 * S;
       if (px < x - 70 * S || px > x + w + 70 * S || py < y - 40 * S || py > y + h + 40 * S) continue;
+      if (flat) {
+        // (the flagstones in the dungeon's two shades, flat, as the skeleton's film has them: a moving
+        // picture of the game's own textured floor going by is too big to send)
+        g.fillStyle = ((tx + ty) % 2 + 2) % 2 === 0 ? '#201e50' : '#1b1946';
+        g.beginPath();
+        g.moveTo(px, py + 1 * S);
+        g.lineTo(px + 31 * S, py + 16 * S);
+        g.lineTo(px, py + 31 * S);
+        g.lineTo(px - 31 * S, py + 16 * S);
+        g.closePath();
+        g.fill();
+        continue;
+      }
       const sp = ground.floor(tx + 20, ty + 20);
       g.drawImage(sp.img, px - sp.ax * 2 * S, py - sp.ay * 2 * S, sp.img.width * S, sp.img.height * S);
     }
@@ -117,7 +139,7 @@ function pane(x: number, y: number, w: number, h: number, S: number, who: Readon
   g.restore();
 }
 
-const sp3 = (mob: Mob, which: 'stand' | 'attack', t: number, view: GameView): Sprite => toSprite(paintMob(mob, which, t, view), mob.aura, CANVAS3.ax, CANVAS3.ay);
+const sp3 = (mob: Mob, which: MobAct, t: number, view: GameView): Sprite => toSprite(paintMob(mob, which, t, view), mob.aura, CANVAS3.ax, CANVAS3.ay);
 const dead3 = (mob: Mob, k: number, view: GameView): Sprite => toSprite(deathOfMob(mob, k, view), null, CANVAS3.ax, CANVAS3.ay);
 const KNIGHT = (): Sprite => spriteOf3(MOVES3.rear, 0, 'front');
 const SKELETON = (): Sprite => makeSkeletonArt3().front.idle[0];
@@ -315,5 +337,168 @@ if (mode === 'film') {
     draw(i);
     return cv.toDataURL('image/png');
   };
+  win.__ready = true;
+}
+
+// =============================================================================================
+// walks: all three walking toward you, then away, beside the new skeleton walking (for pace)
+
+const ARTS = (): { name: string; art: ActorArt; pace: number; shadow: number; said: string }[] => [
+  { name: 'The skeleton', art: makeSkeletonArt3(), pace: MONSTERS.skeleton.speed, shadow: 10, said: `${MONSTERS.skeleton.speed} tiles a second (its rules)` },
+  { name: SHADE.name, art: makeShadeArt3(), pace: SHADE.pace, shadow: SHADE.shadow, said: `glides, ${SHADE.pace} tiles a second` },
+  { name: BONEWARD.name, art: makeBonewardArt3(), pace: BONEWARD.pace, shadow: BONEWARD.shadow, said: `plods, ${BONEWARD.pace} tile a second` },
+  { name: GOLEM.name, art: makeGolemArt3(), pace: GOLEM.pace, shadow: GOLEM.shadow, said: `strides, ${GOLEM.pace} tiles a second` },
+];
+
+if (mode === 'walks') {
+  const S = Number(parts[1]) || 3;
+  const FPS = 25;
+  /** Each way round, seconds. */
+  const LEG = 2.4;
+  const TICKS = Math.round(2 * LEG * FPS);
+  const cells = ARTS();
+  // (one box for each, that holds every frame of its walk both ways)
+  const reach = cells.map((c) => {
+    let l = 0;
+    let r = 0;
+    let u = 0;
+    let d = 0;
+    for (const set of [c.art.front, c.art.back]) {
+      for (const sp of set.walk) {
+        const [a, b, e, f] = reachOf(sp);
+        l = Math.max(l, a);
+        r = Math.max(r, b);
+        u = Math.max(u, e);
+        d = Math.max(d, f);
+      }
+    }
+    return [l, r, u, d];
+  });
+  const PAD = 8;
+  const M = 10;
+  const up = Math.max(...reach.map((q) => q[2]));
+  const down = Math.max(10, ...reach.map((q) => q[3]));
+  const widths = reach.map((q) => (q[0] + q[1] + 2 * M) * S);
+  const H = (up + down + 2 * M) * S;
+  const HEAD = 56;
+  cv.width = PAD + widths.reduce((a, b) => a + b + PAD, 0);
+  cv.height = HEAD + H + 52;
+  const draw = (tick: number): void => {
+    const t = tick / FPS;
+    const away = t >= LEG;
+    const tt = away ? t - LEG : t;
+    g.fillStyle = BG;
+    g.fillRect(0, 0, cv.width, cv.height);
+    text(`Their walks, ${away ? 'going away from you' : 'coming toward you'}: the floor goes by under each at its own pace`, PAD, 8, 17, '#ffd866', 700);
+    text('a mock-up: not in the game. The skeleton, for pace, walks as the rules have it', PAD, 32, 14, '#cfc8ff', 600);
+    let x = PAD;
+    cells.forEach((c, j) => {
+      const set = away ? c.art.back : c.art.front;
+      const sp = set.walk[Math.floor(tt * (set.walkFps ?? 8) + 1e-6) % set.walk.length];
+      const w = widths[j];
+      pane(x, HEAD, w, H, S, [{ sp, fx: x + (M + reach[j][0]) * S, fy: HEAD + (M + up) * S, shadow: c.shadow }], tt * c.pace, away, true);
+      text(c.name, x + w / 2, HEAD + H + 6, 15, j === 0 ? '#cfc8ff' : '#ffd866', 700, 'center');
+      text(c.said, x + w / 2, HEAD + H + 26, 13, '#a8a2b8', 500, 'center');
+      x += w + PAD;
+    });
+  };
+  draw(0);
+  win.__frames = TICKS;
+  win.__tickMs = 1000 / FPS;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cv.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
+// =============================================================================================
+// struck: each struck, a few frames of its reel, facing you
+
+if (mode === 'struck') {
+  const S = Number(parts[1]) || 3;
+  const MOMENTS: Record<Mob['id'], number[]> = { shade: [0, 0.05, 0.1, 0.17, 0.33], boneward: [0, 0.06, 0.11, 0.18, 0.3], golem: [0, 0.04, 0.09, 0.14, 0.25] };
+  const PAD = 10;
+  const M = 6;
+  const rows = NEW_MOBS_LIST.map((mob) => {
+    const sps = MOMENTS[mob.id].map((t) => sp3(mob, 'reel', t, 'front'));
+    let l = 0;
+    let r = 0;
+    let u = 0;
+    let d = 0;
+    for (const sp of sps) {
+      const [a, b, e, f] = reachOf(sp);
+      l = Math.max(l, a);
+      r = Math.max(r, b);
+      u = Math.max(u, e);
+      d = Math.max(d, f);
+    }
+    return { mob, sps, l, r, u, d: Math.max(d, 8) };
+  });
+  const HEAD = 70;
+  const NAME = 28;
+  const LAB = 24;
+  cv.width = PAD + Math.max(...rows.map((q) => q.sps.length * ((q.l + q.r + 2 * M) * S + PAD)));
+  cv.height = HEAD + rows.reduce((a, q) => a + NAME + (q.u + q.d + 2 * M) * S + LAB + PAD, 0);
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  text('Struck: each one when a blow lands on it', PAD, 12, 24, '#ffd866', 700);
+  text(`a mock-up: not in the game. Left to right, from the blow on (seconds). ${S} screen pixels to a picture pixel.`, PAD, 44, 15, '#cfc8ff', 600);
+  let y = HEAD;
+  const said: Record<Mob['id'], string> = { shade: 'jolted back, its robe flaring', boneward: 'rocked behind its shield', golem: 'barely: a shudder, its fire flickering' };
+  for (const q of rows) {
+    text(`${q.mob.name}: ${said[q.mob.id]}`, PAD, y + 4, 17, '#ffd866', 700);
+    y += NAME;
+    const cw = (q.l + q.r + 2 * M) * S;
+    const ch = (q.u + q.d + 2 * M) * S;
+    q.sps.forEach((sp, i) => {
+      const x = PAD + i * (cw + PAD);
+      pane(x, y, cw, ch, S, [{ sp, fx: x + (M + q.l) * S, fy: y + (M + q.u) * S, shadow: q.mob.shadow }]);
+      text(`${MOMENTS[q.mob.id][i].toFixed(2)} s`, x + cw / 2, y + ch + 4, 14, '#e8e2ff', 500, 'center');
+    });
+    y += ch + LAB + PAD;
+  }
+  win.__ready = true;
+}
+
+// =============================================================================================
+// strip: every frame of one move in a row, big
+
+if (mode === 'strip') {
+  const mob = parts[1] === 'boneward' ? BONEWARD : parts[1] === 'golem' ? GOLEM : SHADE;
+  const which = (parts[2] === 'reel' || parts[2] === 'stand' ? parts[2] : 'walk') as MobAct;
+  const view: GameView = parts[3] === 'back' ? 'back' : 'front';
+  const S = Number(parts[4]) || 3;
+  const fps = which === 'walk' ? mob.walkFps : which === 'stand' ? mob.idleFps : 30;
+  const n = which === 'walk' ? mob.walkFrames : which === 'stand' ? mob.idleFrames : Math.round(mob.reelTime * 30) + 1;
+  const sps: Sprite[] = [];
+  for (let i = 0; i < n; i++) sps.push(sp3(mob, which, i / fps, view));
+  let l = 0;
+  let r = 0;
+  let u = 0;
+  let d = 0;
+  for (const sp of sps) {
+    const [a, b, e, f] = reachOf(sp);
+    l = Math.max(l, a);
+    r = Math.max(r, b);
+    u = Math.max(u, e);
+    d = Math.max(d, f);
+  }
+  const M = 6;
+  const cw = (l + r + 2 * M) * S;
+  const ch = (u + Math.max(d, 8) + 2 * M) * S;
+  const per = Math.max(1, Math.min(n, Math.floor(2400 / (cw + 6))));
+  cv.width = per * (cw + 6) + 6;
+  cv.height = 30 + Math.ceil(n / per) * (ch + 22);
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  text(`${mob.name}: ${which}, ${view === 'front' ? 'facing you' : 'facing away'}, ${n} frames at ${fps} a second`, 6, 6, 16, '#ffd866', 700);
+  // (the floor going by under it at its pace, as it walks: a foot that is down stays on one spot of it)
+  sps.forEach((sp, i) => {
+    const x = 6 + (i % per) * (cw + 6);
+    const y = 30 + Math.floor(i / per) * (ch + 22);
+    pane(x, y, cw, ch, S, [{ sp, fx: x + (M + l) * S, fy: y + (M + u) * S, shadow: mob.shadow }], which === 'walk' ? (i / fps) * mob.pace : 0, view === 'back');
+    text(`${i}`, x + 3, y + ch + 3, 12, '#a8a2b8');
+  });
   win.__ready = true;
 }

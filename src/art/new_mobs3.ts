@@ -33,21 +33,35 @@
 //     high behind its head, leaning back, the fire flaring. It slams the club down. It dies with
 //     its fire guttering out, falling apart into a heap of bones and iron.
 //
+// AFTER HIS YES TO ALL THREE (9 Oct, by 05:26: "All three (Recommended)"): their walks, a reel for
+// when each is struck, and each made as the game takes a monster (`makeShadeArt3`,
+// `makeBonewardArt3`, `makeGolemArt3`: an ActorArt, as art/monster_bones3.ts makes the skeleton's),
+// so that the main chat can give them rules. Still unused by the game.
+//   glide   the Shade has no steps: it leans into its way and bobs, its arms trailing low, its robe
+//           and tails streaming back (cloth is left behind by the ground it covers: `MobMove.ground`).
+//   plod    the Boneward walks as the skeleton does, the shield before it, the spear low.
+//   stride  the Golem's heavy, swaying steps, its bulk rolling onto the foot that is down.
+//   For the two that walk, A FOOT THAT IS DOWN STAYS ON ITS SPOT OF THE FLOOR (the art rulebook:
+//   "Feet grip the floor"): each walk is painted for a pace (`Mob.pace`, tiles a second), and at
+//   another pace the same frames are shown faster or slower (`walkFpsAt`).
+//
 // What the numbers of a pose mean to these painters besides the bones:
 //   draw  the Shade: how far its claws are spread (0 curled, 1 spread wide). The Boneward: its jaw
 //         (0 shut, 1 wide). The Golem: how high its fire burns (0 embers, 1 flaring).
 //   out   the light going out of it (eyes, rune, fire), 0 lit to 1 dark.
+//   gale  the Shade's robe flaring out round it as it is struck, 0 to 1.
 //   pAz, pEl  the Boneward's shield: the way its face is turned (degrees to the left of the way
 //         the figure faces) and how far its top is tipped back.
 
-import type { Light } from '../engine/px';
-import { BONE, INDIGO, INK, dim, hash } from './kit';
+import type { Light, Sprite } from '../engine/px';
+import type { ActorArt, AnimSet, Clip } from './actor_types';
+import { BONE, INDIGO, INK, dim, hash, lazyFrames, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
-import { ENEMY_RIM, FLAME, IRON, RUST, SOCKET } from './mkit';
+import { DEATH_FPS, ENEMY_RIM, FLAME, IRON, RUST, SOCKET } from './mkit';
 import { SKELETON3_BODY } from './monster_bones3';
 import { CANVAS3, band, ball, cloth, eyesToward, mid, rod, stage, thread, toneOf, wornOn } from './skin';
 import type { ClothLook, GameView, Ring, Sheet, Skin, Stage } from './skin';
-import { about, add, bonesAt, buildOf, cross, dot, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
+import { GRID, about, add, bonesAt, buildOf, cross, dot, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF. Nothing of the game reads this file; a chat that puts these monsters in, on the owner's yes, does it behind this. */
@@ -400,7 +414,13 @@ export interface MobMove {
   name: string;
   motion: Motion;
   rest: Bones;
+  /** A walk: the wind (cloth, tails) goes round once in this many seconds (its own round, so that it loops); and how fast the body goes over the floor, in the figure's own lengths a second (cloth is left behind by it). */
+  period?: number;
+  ground?: number;
 }
+
+/** A tile of the floor along the grid, in the figure's own lengths: 32 picture pixels across the screen and 16 down (skeleton.ts, `project`). */
+export const TILE3 = 32 / GRID;
 
 /** What a frame is painted from. */
 interface Moment {
@@ -442,7 +462,22 @@ export interface Mob {
   build: Build;
   stand: MobMove;
   attack: MobMove;
-  /** In the attack: the moment the blow lands, and a moment in the held warning pose. */
+  /** Its standing loop: how many frames, at how many a second. */
+  idleFrames: number;
+  idleFps: number;
+  /**
+   * ITS WALK: a loop of `walkFrames` frames at `walkFps` a second, painted for a pace of `pace`
+   * tiles a second. At that pace a foot that is down stays where it is on the floor (the art
+   * rulebook: "Feet grip the floor"). At another pace the same frames are shown faster or slower
+   * (`walkFpsAt`), so that they still grip.
+   */
+  walk: MobMove;
+  walkFrames: number;
+  walkFps: number;
+  pace: number;
+  /** STRUCK: what it does when a blow lands on it, from standing (`reelTime` seconds). */
+  reel: MobMove;
+  reelTime: number;
   hit: number;
   warn: number;
   /** How long its death takes (seconds), and the bones as it gives way. */
@@ -455,15 +490,20 @@ export interface Mob {
   /** How a piece of it falls when it comes apart (null: it does not fall by itself). */
   fall?(piece: string): Fall | null;
 }
+/** The moves a monster of this file is painted in. */
+export type MobAct = 'stand' | 'attack' | 'walk' | 'reel';
 
 function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   const q = posedAt(mv, t);
   const s = solve(mob.build, q);
   const before = solve(mob.build, posedAt(mv, t - FR));
   const loops = mv.motion.loop !== undefined;
-  const come = loops || t >= FR ? sub(s.pelvis, before.pelvis) : ([0, 0, 0] as V3);
+  let come = loops || t >= FR ? sub(s.pelvis, before.pelvis) : ([0, 0, 0] as V3);
+  if (mv.ground) come = add(come, [mv.ground * FR, 0, 0]);
   const blur = blurAt !== undefined && Math.abs(t - blurAt) < FR * 0.6;
-  const m: Moment = { s, q, t, come, wind: windOf(t), blur };
+  const wind = mv.period ? ((((t / mv.period) % 1) + 1) % 1) : windOf(t);
+  // (the moment within its round, for what flickers frame by frame: so that a loop closes)
+  const m: Moment = { s, q, t: folded(mv, t), come, wind, blur };
   if (blur && mob.id === 'shade') {
     const L: V3[] = [];
     const R: V3[] = [];
@@ -479,9 +519,9 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
 }
 
 /** ONE FRAME of a monster's move, seen from in front or from behind, with its pink edge (or `rim`). */
-export function paintMob(mob: Mob, which: 'stand' | 'attack', t: number, view: GameView, rim: string | null = ENEMY_RIM): Painted {
+export function paintMob(mob: Mob, which: MobAct, t: number, view: GameView, rim: string | null = ENEMY_RIM): Painted {
   const st = stage(view);
-  const mv = which === 'stand' ? mob.stand : mob.attack;
+  const mv = mob[which];
   const m = momentOf(mob, mv, t, which === 'attack' ? mob.hit : undefined);
   const bits = mob.bits(st, m);
   const lights = paintBits(st, bits, m.s.pelvis);
@@ -715,24 +755,31 @@ function shadeBits(st: Stage, m: Moment, fade = 0, eyes = 1): Bit[] {
   const [cf, cl, cu] = s.chest;
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
-  const lag = mul(m.come, -1.4);
+  // (cloth is left behind by however far the body has just come: gliding, that is far, and the
+  // robe streams; struck, the robe flares out round it: `gale`)
+  const lagRaw = mul(m.come, -1.4);
+  const lagLen = len(lagRaw);
+  const lag = lagLen > 2.6 ? mul(lagRaw, 2.6 / lagLen) : lagRaw;
+  const stream = clamp01(len(m.come) / FR / 120);
+  const flare = clamp01(q.gale);
   const wave = m.wind * Math.PI * 2;
+  const flutter = 1 + Math.round(stream);
 
   // --- the robe: from round the neck, over the shoulders, down to a torn hem below where its knees would be ---
   const collar: Ring = { c: add(s.neck, mul(cu, 0.5)), u: mul(cf, 2.4), v: mul(cl, 2.8) };
   const shoulders: Ring = { c: add(s.neck, mul(cu, -1.6)), u: mul(cf, B.ribDeep + 1.5), v: mul(cl, B.shoulderHalf + 1.3) };
   const waist: Ring = { c: add(lerp3(s.waist, s.ribs, 0.3), mul(lag, 0.25)), u: mul(f, B.ribDeep + 1.3), v: mul(l, B.ribHalf + 1.5) };
-  const hz = Math.max(1.2, s.pelvis[2] - (B.thigh * 0.95 + 2));
+  const hz = Math.max(1.2, s.pelvis[2] - (B.thigh * 0.95 + 2)) + 2.6 * flare;
   const short = clamp01((s.pelvis[2] - B.thigh - 3 - hz) / 10);
   const hc: V3 = [s.pelvis[0] - 2.0 * f[0] + lag[0], s.pelvis[1] - 2.0 * f[1] + lag[1], hz];
-  const wide = 6.2 + short * 3.5;
-  const deep = 5.0 + short * 3;
+  const wide = (6.2 + short * 3.5) * (1 + 0.45 * flare);
+  const deep = (5.0 + short * 3) * (1 + 0.4 * flare);
   const pts: V3[] = [];
   for (let i = 0; i < 16; i++) {
     const a = (i / 16) * Math.PI * 2;
     const rear = Math.max(0, -Math.cos(a));
     const p0 = add(hc, add(mul(f, Math.cos(a) * deep), mul(l, Math.sin(a) * wide)));
-    pts.push(add(p0, add(mul(f, -rear * 1.6), [0, 0, Math.sin(wave + a * 2) * 0.7 + rear * 1.2])));
+    pts.push(add(p0, add(mul(f, -rear * (1.6 + 3 * stream)), [0, 0, Math.sin(wave * flutter + a * 2) * (0.7 + 0.8 * stream + 1.4 * flare) + rear * (1.2 + 1.5 * stream)])));
   }
   const hem: Ring = { c: hc, u: mul(f, deep), v: mul(l, wide), pts };
   if (fade < 0.85) put('robe', 'robe', { k: 'cloth', rings: [collar, shoulders, waist, hem], ramp: fade > 0.45 ? dim(SHROUD) : SHROUD, look: { folds: [25, -25, 70, -70, 180], lift: 0.25 }, torn: ROBE_TORN });
@@ -742,13 +789,13 @@ function shadeBits(st: Stage, m: Moment, fade = 0, eyes = 1): Bit[] {
     const along = 1 - fade * 1.6;
     for (let j = 0; j < 4; j++) {
       const ang = [138, 162, 198, 222][j] * D;
-      const L = [12, 15, 14, 11][j] * along;
+      const L = [12, 15, 14, 11][j] * along * (1 + 0.35 * stream);
       const base = add(hc, add(mul(f, Math.cos(ang) * deep * 0.8), mul(l, Math.sin(ang) * wide * 0.8)));
       let last: V3 = add(base, [0, 0, 1.2]);
       for (let i = 1; i <= 4; i++) {
         const k = i / 4;
-        const sway = Math.sin(wave + j * 1.9 + k * 3.2) * 1.3 * k;
-        const p = add(base, add(add(mul(f, -L * k), mul(l, Math.sin(ang) * k * 3.4 + sway)), [0, 0, -L * 0.42 * k + Math.cos(wave * 2 + j + k * 2) * 0.7 * k]));
+        const sway = Math.sin(wave * flutter + j * 1.9 + k * 3.2) * (1.3 + 1.1 * stream) * k;
+        const p = add(base, add(add(mul(f, -L * k), mul(l, Math.sin(ang) * k * (3.4 + 2 * flare) + sway)), [0, 0, -L * (0.42 - 0.24 * stream - 0.2 * flare) * k + Math.cos(wave * 2 * flutter + j + k * 2) * (0.7 + 0.6 * stream) * k]));
         const pp: V3 = [p[0], p[1], Math.max(1.6, p[2])];
         put(`tail${j}`, 'robe', { k: 'rod', a: last, b: pp, ra: 1.9 * (1 - (i - 1) / 4) + 0.3, rb: 1.9 * (1 - k) + 0.3, ramp: SHROUD });
         last = pp;
@@ -805,7 +852,8 @@ function shadeBits(st: Stage, m: Moment, fade = 0, eyes = 1): Bit[] {
         const e = add(ic, add(mul(ff, ir[0] * 0.86), add(mul(fl, k * 1.3), mul(fu, -0.1))));
         const hot = eyes > 1.2 ? FLAME[4] : eyes > 0.5 ? SOCKET : FLAME[1];
         put('hood', 'hood', { k: 'dot', p: e, c: hot, facing: ff });
-        put('hood', 'hood', { k: 'glow', p: e, c: SOCKET, r: 3.5 + Math.max(0, eyes - 1) * 3, a: Math.min(0.75, 0.45 * eyes) });
+        // (its light only where the eyes are seen: none through the back of the hood)
+        if (dot(ff, st.eye) > 0.05) put('hood', 'hood', { k: 'glow', p: e, c: SOCKET, r: 3.5 + Math.max(0, eyes - 1) * 3, a: Math.min(0.75, 0.45 * eyes) });
       }
     }
   }
@@ -890,6 +938,43 @@ function shadeGiving(): Motion {
   };
 }
 
+/** ITS GLIDE: eight frames at twelve a second, painted for a pace a little quicker than the skeleton's (3 tiles a second in the rules). It has no feet: it leans into its way and goes, bobbing, the arms trailing low behind it and the robe's tails streaming back and fluttering. */
+const SHADE_WALK_FRAMES = 8;
+const SHADE_WALK_FPS = 12;
+export const SHADE_PACE = 3.4;
+function shadeGlide(): Motion {
+  const R = SH_REST;
+  const n = SHADE_WALK_FRAMES;
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const a = ((i % n) / n) * Math.PI * 2;
+    keys.push({
+      at: i / SHADE_WALK_FPS,
+      ease: 'lin',
+      pose: {
+        px: 0.6, pz: R.pz + 1.0 + 1.3 * Math.sin(a), yaw: -4 + 2 * Math.sin(a + 0.6), pitch: 11 + 2 * Math.sin(a + 1.2), bend: 9, roll: 2.5 * Math.sin(a), twist: 2, side: 0,
+        faceUp: 4 + 2 * Math.sin(a + 1.6), faceTilt: 2 * Math.sin(a + 0.4), faceTurn: 0,
+        lhIn: 0, lhx: -3.0 + Math.sin(a + 0.8), lhy: 5.0, lhz: -13.5, le: -16,
+        rhIn: 0, rhx: -2.6 + Math.sin(a + 0.8 + Math.PI), rhy: -5.2, rhz: -13.5, re: -16,
+        draw: 0.2,
+      },
+    });
+  }
+  return { keys, loop: 0 };
+}
+/** STRUCK: jolted back, the robe flaring out round it, the arms flung up, the eyes flaring; then it rights itself. */
+function shadeStruck(): Motion {
+  const R = SH_REST;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.05, pose: { px: -4.5, pz: R.pz + 2.5, pitch: -20, bend: -16, yaw: -2, faceUp: 18, faceTilt: -8, lhIn: 1, lhx: 7, lhy: 7, lhz: 3, le: 0, rhIn: 1, rhx: 6, rhy: -7, rhz: 5, re: 0, draw: 1, gale: 1 }, ease: 'out' },
+      { at: 0.15, pose: { px: -3.0, pz: R.pz + 1.5, pitch: -6, bend: -4, faceUp: 6, faceTilt: -3, lhIn: 1, lhx: 5, lhy: 5, lhz: -6, le: 0, rhIn: 1, rhx: 4.5, rhy: -5, rhz: -5, re: 0, draw: 0.6, gale: 0.45 }, ease: 'out' },
+      { at: 0.33, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
 export const SHADE: Mob = {
   id: 'shade',
   name: 'The Shade',
@@ -897,6 +982,14 @@ export const SHADE: Mob = {
   build: SB,
   stand: { name: 'The Shade hovers', motion: shadeHover(), rest: SH_REST },
   attack: { name: 'The Shade rakes', motion: shadeRake(), rest: SH_REST },
+  idleFrames: 12,
+  idleFps: 10,
+  walk: { name: 'The Shade glides', motion: shadeGlide(), rest: SH_REST, period: SHADE_WALK_FRAMES / SHADE_WALK_FPS, ground: SHADE_PACE * TILE3 },
+  walkFrames: SHADE_WALK_FRAMES,
+  walkFps: SHADE_WALK_FPS,
+  pace: SHADE_PACE,
+  reel: { name: 'The Shade is struck', motion: shadeStruck(), rest: SH_REST },
+  reelTime: 0.33,
   hit: SHADE_HIT,
   warn: 0.37,
   dieTime: 1.0,
@@ -1294,6 +1387,76 @@ const BW_FALLS: Readonly<Record<string, Fall>> = {
   skull: { from: 0.78, to: [7, -5], spin: 25, lay: 'keep', hop: 1.4, pile: 0.6 },
 };
 
+/**
+ * ITS PLOD, AS THE SKELETON'S (art/monster_bones3.ts: "plodding and brittle"): eight frames at
+ * eleven a second, painted for a pace of a tile a second. The right leg steps long and the whole
+ * frame falls onto it, the knee locked; the left is dragged after it, stiff, swung out round the
+ * side from a hitched hip, its toe scraping the floor. A FOOT THAT IS DOWN STAYS WHERE IT IS ON
+ * THE FLOOR (the art rulebook: "Feet grip the floor"): it goes back under the body by as much as
+ * the floor goes by. The shield is kept before it and the spear low.
+ */
+const BW_WALK_FRAMES = 8;
+const BW_WALK_FPS = 11;
+export const BW_PACE = 1.0;
+function bwPlod(): Motion {
+  const R = BW_REST;
+  const n = BW_WALK_FRAMES;
+  const d = (BW_PACE * TILE3) / BW_WALK_FPS;
+  // the right foot: down far out in front at frame 0, down through frame 5, swung through 6 and 7
+  const RL = 10.4;
+  const rfx = (j: number): number => (j <= 5 ? RL - d * j : RL - 5 * d + 5 * d * (j === 6 ? 0.4 : 0.82));
+  const RFZ = [0, 0, 0, 0, 0, 0, 3.6, 1.8];
+  const RFP = [-6, 0, 0, 0, 4, 20, 10, -4];
+  // the left foot: down from frame 4 to frame 0 of the next round, dragged through frames 1 to 3
+  const LL = 3.4;
+  const lfx = (j: number): number => (j >= 4 ? LL - d * (j - 4) : j === 0 ? LL - 4 * d : LL - 4 * d + 4 * d * [0, 0.14, 0.45, 0.76][j]);
+  const LFZ = [0, 0.8, 1.0, 0.7, 0, 0, 0, 0];
+  const LFP = [10, 32, 30, 14, 0, 0, 0, 4];
+  const LFY = [0, 0.8, 2.2, 1.2, 0, 0, 0, 0];
+  //                0     1     2     3     4     5     6     7
+  const PZ = [-3.4, -4.4, -3.0, -1.4, -2.2, -1.4, -0.8, -2.2];
+  const PITCH = [8, 10, 8, 5, 6, 5, 7, 9];
+  const BEND = [10, 14, 12, 8, 9, 8, 9, 11];
+  const ROLL = [-4, -6, 1, 5, 2, -1, -2, -3];
+  const YAW = [6, 6, 3, -2, -5, -5, 0, 4];
+  const FACEUP = [-2, -12, -10, -5, -4, -8, -6, -3];
+  const TILT = [4, 12, 10, 6, 3, 7, 9, 6];
+  const JAW = [0.1, 0.6, 0.35, 0.1, 0.3, 0.12, 0.05, 0.05];
+  const RATTLE = [0, 0.8, -0.6, 0.2, 0.5, -0.4, 0, 0];
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const j = i % n;
+    const a = (j / n) * Math.PI * 2;
+    keys.push({
+      at: i / BW_WALK_FPS,
+      ease: 'lin',
+      pose: {
+        px: 0, pz: PZ[j], pitch: PITCH[j], bend: BEND[j], roll: ROLL[j], yaw: R.yaw + YAW[j], twist: R.twist - YAW[j] * 0.5, side: -ROLL[j] * 0.4,
+        faceUp: R.faceUp + FACEUP[j], faceTilt: TILT[j], faceTurn: R.faceTurn - YAW[j] * 0.3,
+        rfx: rfx(j), rfy: -0.2, rfz: RFZ[j], rfp: RFP[j], rft: -12, rk: -6,
+        lfx: lfx(j), lfy: LFY[j], lfz: LFZ[j], lfp: LFP[j], lft: 8 + LFY[j] * 3, lk: 14 + LFY[j] * 5,
+        lhIn: 1, lhx: R.lhx, lhy: R.lhy, lhz: R.lhz + 0.6 * Math.sin(a), le: 0,
+        rhIn: 0, rhx: R.rhx + 1.4 * Math.sin(a + 2.5), rhy: R.rhy, rhz: R.rhz, re: R.re,
+        wAz: R.wAz, wEl: R.wEl + 3 * Math.sin(a + 2.5),
+        draw: JAW[j], pt: RATTLE[j],
+      },
+    });
+  }
+  return { keys, loop: 0 };
+}
+/** STRUCK: rocked back behind its shield, the shield driven in against it, the jaw knocked open and the bones rattling on their pins; its feet stay where they are. */
+function bwStruck(): Motion {
+  const R = BW_REST;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.06, pose: { px: -2.2, pz: R.pz - 0.6, pitch: -5, bend: -7, twist: R.twist - 6, faceUp: 12, faceTilt: -4, lhx: R.lhx - 2.5, lhz: R.lhz + 1.0, pEl: 9, draw: 0.85, pt: 0.9 }, ease: 'out' },
+      { at: 0.14, pose: { px: -1.4, pz: R.pz - 0.8, pitch: 0, bend: 0, faceUp: 4, lhx: R.lhx - 1.2, draw: 0.4, pt: -0.7 }, ease: 'io' },
+      { at: 0.3, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
 export const BONEWARD: Mob = {
   id: 'boneward',
   name: 'The Boneward',
@@ -1301,6 +1464,14 @@ export const BONEWARD: Mob = {
   build: WB,
   stand: { name: 'The Boneward keeps its post', motion: bwPost(), rest: BW_REST },
   attack: { name: 'The Boneward thrusts', motion: bwThrust(), rest: BW_REST },
+  idleFrames: 16,
+  idleFps: 10,
+  walk: { name: 'The Boneward plods', motion: bwPlod(), rest: BW_REST, period: BW_WALK_FRAMES / BW_WALK_FPS, ground: BW_PACE * TILE3 },
+  walkFrames: BW_WALK_FRAMES,
+  walkFps: BW_WALK_FPS,
+  pace: BW_PACE,
+  reel: { name: 'The Boneward is struck', motion: bwStruck(), rest: BW_REST },
+  reelTime: 0.3,
   hit: BW_HIT,
   warn: 0.55,
   dieTime: 1.5,
@@ -1565,6 +1736,64 @@ function golemGiving(): Motion {
   };
 }
 
+/**
+ * ITS STRIDE: heavy, swaying steps, eight frames at eight a second (the skeleton's walk is twelve),
+ * painted for a pace of 0.9 tiles a second. Its whole bulk rolls over onto the foot that is down,
+ * and sinks as each foot comes down; the club of skulls is dragged along the floor beside it,
+ * swinging as the arm swings; the fire swells at every footfall. A foot that is down stays where it
+ * is on the floor.
+ */
+const G_WALK_FRAMES = 8;
+const G_WALK_FPS = 8;
+export const GOLEM_PACE = 0.9;
+function golemStride(): Motion {
+  const R = GOLEM_REST;
+  const n = G_WALK_FRAMES;
+  const d = (GOLEM_PACE * TILE3) / G_WALK_FPS;
+  // (a foot comes down two frames' worth of floor ahead of the hips and leaves as far behind them: down five frames, off the floor three)
+  const half = 2 * d;
+  const SW = [0.22, 0.55, 0.85];
+  const SZ = [3.4, 5.0, 2.6];
+  const foot = (j: number): [number, number] => (j <= 4 ? [half - d * j, 0] : [-half + 2 * half * SW[j - 5], SZ[j - 5]]);
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const j = i % n;
+    const a = (j / n) * Math.PI * 2;
+    const [rx, rz] = foot(j);
+    const [lx, lz] = foot((j + 4) % n);
+    keys.push({
+      at: i / G_WALK_FPS,
+      ease: 'lin',
+      pose: {
+        px: -1, py: -2.2 * Math.sin(a), pz: -3.2 - 1.5 * Math.cos(2 * a),
+        yaw: R.yaw + 5 * Math.cos(a), twist: R.twist - 4 * Math.cos(a), pitch: R.pitch + 1.2 * Math.cos(2 * a), bend: R.bend + 1.5 * Math.cos(2 * a),
+        roll: 5 * Math.sin(a), side: 3 * Math.sin(a),
+        faceUp: R.faceUp - 1.5 * Math.cos(2 * a), faceTurn: R.faceTurn - 3 * Math.cos(a), faceTilt: -3 * Math.sin(a),
+        rfx: rx, rfz: rz, rfy: -2, rft: -16, rk: -14, rfp: rz > 0 ? 12 : j === 0 ? -6 : 0,
+        lfx: lx, lfz: lz, lfy: 2.5, lft: 14, lk: 14, lfp: lz > 0 ? 12 : j === 4 ? -6 : 0,
+        lhIn: 2, lhx: 15 + 4.5 * Math.cos(a), lhy: 19 + 1.5 * Math.sin(a), lhz: 16 + 1.4 * Math.max(0, Math.sin(a + 0.6)), le: -10,
+        rhIn: 0, rhx: 4 - 3.5 * Math.cos(a), rhy: -4, rhz: -36, re: 0,
+        draw: 0.5 + 0.14 * Math.cos(2 * a),
+      },
+    });
+  }
+  return { keys, loop: 0 };
+}
+/** STRUCK: it barely notices. A shudder through the bulk, and the fire in its cage gutters and flares. */
+function golemStruck(): Motion {
+  const R = GOLEM_REST;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.04, pose: { roll: 1.6, pitch: R.pitch - 1.5, pz: R.pz - 0.6, draw: 0.2 }, ease: 'out' },
+      { at: 0.09, pose: { roll: -1.2, pitch: R.pitch - 0.8, draw: 0.8 }, ease: 'io' },
+      { at: 0.14, pose: { roll: 0.7, draw: 0.3 }, ease: 'io' },
+      { at: 0.19, pose: { roll: -0.3, draw: 0.62 }, ease: 'io' },
+      { at: 0.25, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
 export const GOLEM: Mob = {
   id: 'golem',
   name: 'The Ossuary Golem',
@@ -1572,6 +1801,14 @@ export const GOLEM: Mob = {
   build: GB,
   stand: { name: 'The Golem breathes', motion: golemBreath(), rest: GOLEM_REST },
   attack: { name: 'The Golem slams', motion: golemSlam(), rest: GOLEM_REST },
+  idleFrames: 24,
+  idleFps: 10,
+  walk: { name: 'The Golem strides', motion: golemStride(), rest: GOLEM_REST, period: G_WALK_FRAMES / G_WALK_FPS, ground: GOLEM_PACE * TILE3 },
+  walkFrames: G_WALK_FRAMES,
+  walkFps: G_WALK_FPS,
+  pace: GOLEM_PACE,
+  reel: { name: 'The Golem is struck', motion: golemStruck(), rest: GOLEM_REST },
+  reelTime: 0.25,
   hit: GOLEM_HIT,
   warn: 0.8,
   dieTime: 1.6,
@@ -1599,4 +1836,55 @@ export const NEW_MOBS_LIST: ReadonlyArray<Mob> = [SHADE, BONEWARD, GOLEM];
 /** A monster `k` of the way through its death (0: as the blow fell; 1: what is left). */
 export function deathOfMob(mob: Mob, k: number, view: GameView): Painted {
   return mob.id === 'shade' ? shadeDeath(k, view) : fallApart(mob, k, view);
+}
+
+// ---------------------------------------------------------------------------------------------
+// As the game holds a monster's pictures (art/actor_types.ts), as makeSkeletonArt3 makes the
+// skeleton's: still unused by the game (no rules for them yet: the main chat's).
+
+/** Frames a second of an attack and of a reel (the game's own for what is played once). */
+const CLIP_FPS3 = 30;
+
+/** Frames a second of a monster's walk at a pace of `pace` tiles a second: the same frames shown faster or slower, so that its feet still grip the floor. */
+export function walkFpsAt(mob: Mob, pace: number): number {
+  return (mob.walkFps * pace) / mob.pace;
+}
+
+/** A frame as the game holds it: cut down to the figure, with its lights and its pool of light. */
+function frameOf3(mob: Mob, which: MobAct, t: number, view: GameView): Sprite {
+  return toSprite(paintMob(mob, which, t, view), mob.aura, CANVAS3.ax, CANVAS3.ay);
+}
+
+function mobSet(mob: Mob, view: GameView, pace: number): AnimSet {
+  const idle = lazyFrames(mob.idleFrames, (i) => frameOf3(mob, 'stand', i / mob.idleFps, view));
+  const walk = lazyFrames(mob.walkFrames, (i) => frameOf3(mob, 'walk', i / mob.walkFps, view));
+  const keys = mob.attack.motion.keys;
+  const n = Math.round(keys[keys.length - 1].at * CLIP_FPS3) + 1;
+  const attack: Clip = { frames: lazyFrames(n, (i) => frameOf3(mob, 'attack', i / CLIP_FPS3, view)), fps: CLIP_FPS3, hit: mob.hit };
+  const pick = (seconds: number): number => Math.max(0, Math.min(n - 1, Math.round(seconds * CLIP_FPS3)));
+  const picks = [pick(mob.hit * 0.7), pick(mob.hit + 0.035), pick(((n - 1) / CLIP_FPS3 + mob.hit) / 2)];
+  const dieN = Math.round(mob.dieTime * DEATH_FPS) + 1;
+  // (a dying thing has no pool of light behind it, and no edge of light round it)
+  const die: Clip = { frames: lazyFrames(dieN, (i) => toSprite(deathOfMob(mob, i / (dieN - 1), view), null, CANVAS3.ax, CANVAS3.ay)), fps: DEATH_FPS };
+  const rn = Math.round(mob.reelTime * CLIP_FPS3) + 1;
+  const reel: Clip = { frames: lazyFrames(rn, (i) => frameOf3(mob, 'reel', i / CLIP_FPS3, view)), fps: CLIP_FPS3 };
+  return { idle, walk, attack: lazyFrames(3, (i) => attack.frames[picks[i]]), idleFps: mob.idleFps, walkFps: walkFpsAt(mob, pace), clips: { attack, die, reel } };
+}
+
+/** THE SHADE, in the shape the game holds a monster's pictures in; `pace`: the speed the rules will give it, in tiles a second (its glide is shown to match). */
+export function makeShadeArt3(pace = SHADE.pace): ActorArt {
+  return { front: mobSet(SHADE, 'front', pace), back: mobSet(SHADE, 'back', pace) };
+}
+/** THE BONEWARD, as the game holds a monster (see makeShadeArt3). */
+export function makeBonewardArt3(pace = BONEWARD.pace): ActorArt {
+  return { front: mobSet(BONEWARD, 'front', pace), back: mobSet(BONEWARD, 'back', pace) };
+}
+/** THE OSSUARY GOLEM, as the game holds a monster (see makeShadeArt3). */
+export function makeGolemArt3(pace = GOLEM.pace): ActorArt {
+  return { front: mobSet(GOLEM, 'front', pace), back: mobSet(GOLEM, 'back', pace) };
+}
+
+/** FOR TESTS AND PICTURES: the bones of a monster at a moment of one of its moves, solved. */
+export function skeletonAt(mob: Mob, which: MobAct, t: number): Skeleton {
+  return solve(mob.build, posedAt(mob[which], t));
 }
