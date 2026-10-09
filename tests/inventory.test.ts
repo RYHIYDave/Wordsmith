@@ -22,7 +22,7 @@ import { Game } from '../src/game/game';
 import { rollItem } from '../src/game/items';
 import { EQUIP_SLOTS, WORD_IDS } from '../src/game/types';
 import type { EquipSlot, Item, WordId } from '../src/game/types';
-import { COMPARE, DOLL_ROWS, DOLL_SLOT, DOLL_W, INV_MAX_H, INV_MAX_W, INV_MIN_H, INV_MIN_W, INV_PAGES, dollAt, dollHeight, gameRect, invRect, layPouch, newInvUi, resetInvUi, wornFor } from '../src/ui/inventory';
+import { COMPARE, DOLL_ROWS, DOLL_SLOT, DOLL_W, INV_MAX_H, INV_MAX_W, INV_MIN_H, INV_MIN_W, INV_PAGES, NARROW_STONE, dollAt, dollHeight, gameRect, invRect, layPouch, newInvUi, resetInvUi, wornFor } from '../src/ui/inventory';
 import { CELL, itemCard } from '../src/ui/panels';
 import { nameLines, nameParts, namePartsWidth, tileWidth } from '../src/ui/words';
 
@@ -154,7 +154,7 @@ test('with more words than there is room for, the tiles lose their rune stones; 
   const count = (): number => 6;
   // room that holds them with their rune stones
   const roomy = layPouch(WORD_IDS, count, 309, 3, 3);
-  assert.equal(roomy.bare, false, 'nine words, six of each, fit a phone held sideways as they are');
+  assert.equal(roomy.bare, false, 'thirteen words, six of each, fit a phone held sideways as they are');
   assert.equal(roomy.hidden, 0);
   // one line fewer: bare
   const full = layPouch(WORD_IDS, count, 309, roomy.lines - 1, 3);
@@ -168,19 +168,33 @@ test('with more words than there is room for, the tiles lose their rune stones; 
   for (const c of tight.cells) assert.ok(c.line === 0 && c.x + c.w <= 120);
   // no words at all
   const none = layPouch([], count, 200, 3, 3);
-  assert.deepEqual(none, { cells: [], lines: 1, bare: false, stones: false, hidden: 0 });
+  assert.deepEqual(none, { cells: [], lines: 1, bare: false, stones: false, narrow: false, hidden: 0 });
   // The half-screen inventory has one line for them on a phone held sideways (224 game pixels):
-  // a full pouch is laid out as rune stones alone, each the size of a bag's cell, and every word
-  // is there to be pressed.
-  const line = layPouch(WORD_IDS, count, 224, 1, 3);
-  assert.equal(line.stones, true);
-  assert.equal(line.hidden, 0, 'all nine words fit one line as stones');
-  assert.deepEqual(line.cells.map((c) => c.word), [...WORD_IDS]);
-  line.cells.forEach((c, i) => {
+  // a pouch of nine words is laid out as rune stones alone, each the size of a bag's cell, and
+  // every word is there to be pressed.
+  const nine = layPouch(WORD_IDS.slice(0, 9), count, 224, 1, 3);
+  assert.equal(nine.stones, true);
+  assert.equal(nine.narrow, false);
+  assert.equal(nine.hidden, 0, 'nine words fit one line as stones');
+  nine.cells.forEach((c, i) => {
     assert.equal(c.w, CELL);
     assert.equal(c.x, i * (CELL + 3));
     assert.equal(c.line, 0);
   });
+  // A full pouch of all thirteen (Version 19.3) is too many for those: the stones stand in
+  // narrower tiles, a pixel apart, and still every word is there to be pressed.
+  const line = layPouch(WORD_IDS, count, 224, 1, 3);
+  assert.equal(line.stones, true);
+  assert.equal(line.narrow, true);
+  assert.equal(line.hidden, 0, 'all thirteen words fit one line as narrow stones');
+  assert.deepEqual(line.cells.map((c) => c.word), [...WORD_IDS]);
+  line.cells.forEach((c, i) => {
+    assert.equal(c.w, NARROW_STONE);
+    assert.equal(c.x, i * (NARROW_STONE + 1));
+    assert.equal(c.line, 0);
+  });
+  // (the stone itself, 14 pixels with its outline, still has a pixel of tile to either side)
+  assert.ok(NARROW_STONE >= 16);
   // a few words in that line are written out, as ever
   const few = layPouch(['fire', 'power'], () => 1, 224, 1, 3);
   assert.equal(few.stones, false);
@@ -300,16 +314,17 @@ test('an attack\'s numbers: one hit, lowest to highest, as the rules will roll i
 // ---------------------------------------------------------------------------------------------
 // Version 13.2
 
-test('word slots open by the list: one a side from the start, the second in front at 5 and behind at 10; a third a side is not switched on', () => {
-  assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [1, 10] }, 'the game as it is: two a side (a third at 15 and 20 is the owner\'s idea, tried only through the test hook)');
+test('word slots open by the list: one in front from the start (once the ring is lit), the second in front at 5, behind at 7 and 10; a third a side is not switched on', () => {
+  // (THE FIRST LEVELS, since Version 19.5: his order of 8 Oct, 20:39, and his answer of 22:19, "2nd before 5, after 7 and 10 (Recommended)")
+  assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [7, 10] }, 'the game as it is: two a side (a third at 15 and 20 is the owner\'s idea, tried only through the test hook)');
   assert.deepEqual([SLOT_LEVELS.front, SLOT_LEVELS.behind], [5, 10]);
   const at = (lv: number): string => socketCount(lv).join();
-  assert.deepEqual([1, 4, 5, 9, 10, 15, 20, 99].map(at), ['1,1', '1,1', '2,1', '2,1', '2,2', '2,2', '2,2', '2,2']);
+  assert.deepEqual([1, 4, 5, 6, 7, 9, 10, 15, 20, 99].map(at), ['1,0', '1,0', '2,0', '2,0', '2,1', '2,1', '2,2', '2,2', '2,2', '2,2']);
   // and with the two levels of his idea added, everything that counts slots follows
   SLOT_OPENS.front.push(15);
   SLOT_OPENS.behind.push(20);
   try {
-    assert.deepEqual([1, 5, 10, 14, 15, 19, 20, 99].map(at), ['1,1', '2,1', '2,2', '2,2', '3,2', '3,2', '3,3', '3,3']);
+    assert.deepEqual([1, 5, 7, 10, 14, 15, 19, 20, 99].map(at), ['1,0', '2,0', '2,1', '2,2', '2,2', '3,2', '3,2', '3,3', '3,3']);
     const g = Game.forPractice('mage', 4);
     g.hero.level = 20;
     g.refresh();

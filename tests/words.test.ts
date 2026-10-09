@@ -1,11 +1,15 @@
 // Power word combinations, tested exhaustively.
 //
 // An attack ability holds up to two words in front and two behind. A side may hold any one word or
-// any two different words, except two elements ("one element per side"): 43 ways to fill a side,
-// 43 x 43 = 1,849 loadouts for an ability, and there are twelve abilities that take words (since
-// Version 12.2: the nine attacks the weapons give, Strike, Slam, Whirlwind, Shot, Volley, Wave,
-// Orb, Familiar and Beam, and the three evasive moves, Leap, Trap and Warp). Every one of those
-// 22,188 loadouts is built and used here, on monsters, in the practice room:
+// any two different words, except two DAMAGE words (since Version 19.3, "one damage word per side",
+// his answer of 8 Oct 2026, 16:53; before it, one element a side). With the first nine words that
+// is 36 ways to fill a side, 36 x 36 = 1,296 loadouts for an ability, and there are twelve abilities
+// that take words (since Version 12.2: the nine attacks the weapons give, Strike, Slam, Whirlwind,
+// Shot, Volley, Wave, Orb, Familiar and Beam, and the three evasive moves, Leap, Trap and Warp).
+// Every one of those 15,552 loadouts is built and used here, on monsters, in the practice room;
+// and since Version 19.3 (Heavy, Precise, Frenzied, Guarding: 82 ways to fill a side) so is every
+// side that holds one of the newer words, in front and behind, against the empty side and every
+// side of a single word (see `loadouts`: all of them would be more than five times as many):
 //   - its numbers must be exactly what its words give one at a time (no word disturbs another);
 //   - when used, every word on it must be seen to act (the hit, the wake, the echo, the rune...);
 //   - nothing may go wrong: no error, no number that is not a number, nothing past its cap,
@@ -37,8 +41,39 @@ function sides(): WordId[][] {
   for (const w of WORD_IDS) out.push([w]);
   for (let i = 0; i < WORD_IDS.length; i++) {
     for (let j = i + 1; j < WORD_IDS.length; j++) {
-      if (isElement(WORD_IDS[i]) && isElement(WORD_IDS[j])) continue;
+      if (WORDS[WORD_IDS[i]].kind === 'damage' && WORDS[WORD_IDS[j]].kind === 'damage') continue;
       out.push([WORD_IDS[i], WORD_IDS[j]]);
+    }
+  }
+  return out;
+}
+
+/** The nine words there were before Version 19.3. */
+const FIRST_NINE: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison'];
+
+/**
+ * The loadouts used for each ability: every one made of the first nine words (36 x 36); and every
+ * side that holds a newer word, in front and then behind, with the empty side or a single word on
+ * the other (each loadout once).
+ */
+function loadouts(): [WordId[], WordId[]][] {
+  const all = sides();
+  const old = all.filter((s) => s.every((w) => FIRST_NINE.includes(w)));
+  const fresh = all.filter((s) => s.some((w) => !FIRST_NINE.includes(w)));
+  const singles = all.filter((s) => s.length <= 1);
+  const out: [WordId[], WordId[]][] = [];
+  const have = new Set<string>();
+  const add = (f: WordId[], b: WordId[]): void => {
+    const key = `${f.join('+')}|${b.join('+')}`;
+    if (have.has(key)) return;
+    have.add(key);
+    out.push([f, b]);
+  };
+  for (const f of old) for (const b of old) add(f, b);
+  for (const s of fresh) {
+    for (const o of singles) {
+      add(s, o);
+      add(o, s);
     }
   }
   return out;
@@ -82,6 +117,10 @@ function checkNumbers(def: SkillDef, front: readonly WordId[], behind: readonly 
   assert.equal(r.poison, inFront('poison')?.poison ?? 0, `${name} poison`);
   assert.equal(r.splash, Math.max(0, ...front.map((w) => resolveSkill(def, [w], [], cls, d).splash)), `${name} splash`);
   assert.equal(r.splashDmg, Math.max(0, ...front.map((w) => resolveSkill(def, [w], [], cls, d).splashDmg)), `${name} splash damage`);
+  assert.equal(r.stun, inFront('heavy')?.stun ?? 0, `${name} stun`);
+  assert.equal(r.precise, !!inFront('precise'), `${name} precise`);
+  assert.equal(r.frenzy, !!inFront('frenzied'), `${name} frenzy`);
+  assert.equal(r.shield, inFront('guarding')?.shield ?? 0, `${name} shield`);
   // behind
   assert.equal(r.might, atBack('power')?.might ?? 0, `${name} might`);
   assert.equal(r.haste, atBack('swift')?.haste ?? 0, `${name} haste`);
@@ -89,6 +128,10 @@ function checkNumbers(def: SkillDef, front: readonly WordId[], behind: readonly 
   assert.equal(r.orbChance, atBack('leech')?.orbChance ?? 0, `${name} orb chance`);
   assert.equal(r.rune, atBack('volatile')?.rune ?? 0, `${name} rune`);
   assert.equal(r.cloud, atBack('poison')?.cloud ?? 0, `${name} cloud`);
+  assert.equal(r.cracks, atBack('heavy')?.cracks ?? 0, `${name} cracks`);
+  assert.equal(r.mark, !!atBack('precise'), `${name} mark`);
+  assert.equal(r.frenzyFeed, !!atBack('frenzied'), `${name} frenzy fed by kills`);
+  assert.equal(r.ward, atBack('guarding')?.ward ?? 0, `${name} ward`);
   const ground = behind.find(isElement);
   assert.deepEqual(r.zone, ground ? resolveSkill(def, [], [ground], cls, d).zone : null, `${name} ground`);
   assert.equal(r.pierce, !!ground, `${name} passes through`);
@@ -136,6 +179,15 @@ function checkWordAlone(def: SkillDef, cls: ClassId, d: Derived): void {
   }
   assert.ok(b('leech').orbChance > 0 && b('leech').orbChance <= 1, `${n}: of Leeching has a chance of a life orb`);
   assert.ok(b('volatile').rune > 0, `${n}: of Ruin leaves a rune`);
+  // (the new words, Version 19.3)
+  assert.ok(f('heavy').dmgMult > bare.dmgMult && f('heavy').stun > 0, `${n}: Heavy hits harder, and stuns`);
+  if (def.cooldown > 0) assert.ok(f('heavy').cooldown > bare.cooldown, `${n}: Heavy is slower to come round`);
+  else assert.ok(f('heavy').rate < bare.rate, `${n}: Heavy is a slower attack`);
+  assert.ok(f('precise').dmgMult > bare.dmgMult && f('precise').size < bare.size && f('precise').precise, `${n}: Precise is more damage in a smaller area`);
+  assert.ok(f('frenzied').frenzy && f('frenzied').dmgMult === bare.dmgMult, `${n}: Frenzied builds a frenzy`);
+  assert.ok(f('guarding').shield > 0 && f('guarding').shield <= 0.2, `${n}: Guarding gives a shield`);
+  assert.ok(b('heavy').cracks > 0 && b('precise').mark && b('frenzied').frenzyFeed, `${n}: of Quakes cracks the ground, of the Mark marks, of Frenzy feeds the frenzy`);
+  assert.ok(b('guarding').ward > 0 && b('guarding').ward <= 0.5, `${n}: of Warding leaves a ward`);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -181,6 +233,9 @@ interface Seen {
   chilled: boolean;
   poisoned: boolean;
   orbDrops: number;
+  /** At any time during the run: the most frenzy the hero held, and the strongest shield. */
+  frenzy: number;
+  shield: number;
   g: Game;
 }
 
@@ -238,7 +293,7 @@ function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonl
     c.evadeX = c.aimX;
     c.evadeY = c.aimY;
   }
-  const seen: Seen = { events: [], shots: 0, shotTwins: 0, traps: 0, mostShots: 0, twinSeen: false, might: 0, haste: 0, burned: false, chilled: false, poisoned: false, orbDrops: 0, g };
+  const seen: Seen = { events: [], shots: 0, shotTwins: 0, traps: 0, mostShots: 0, twinSeen: false, might: 0, haste: 0, burned: false, chilled: false, poisoned: false, orbDrops: 0, frenzy: 0, shield: 0, g };
   const life0 = h.life;
   /** What is looked at after every step of the game, from the press to the end. */
   const look = (): void => {
@@ -254,6 +309,10 @@ function useOnce(cls: ClassId, weapon: WeaponKind, skill: number, front: readonl
     for (const v of [h.x, h.y, h.life, h.mana, h.might, h.haste]) assert.ok(Number.isFinite(v), `${name}: the hero's numbers stay numbers`);
     // (might comes from what LANDS, since Version 12.2: an arrow in flight, a volley still in the air, a trap not yet stepped on have given none yet)
     seen.might = Math.max(seen.might, h.might);
+    seen.frenzy = Math.max(seen.frenzy, h.frenzy);
+    seen.shield = Math.max(seen.shield, h.shield);
+    for (const v of [h.frenzy, h.frenzyT, h.shield, h.shieldT]) assert.ok(Number.isFinite(v) && v >= 0, `${name}: the frenzy's and the shield's numbers stay numbers`);
+    for (const m of g.monsters) for (const v of [m.stunT, m.staggerT, m.markT, m.shield]) assert.ok(Number.isFinite(v) && v >= 0, `${name}: a stun, a stagger, a mark and a shield stay numbers`);
     for (const p of g.projectiles) for (const v of [p.x, p.y, p.vx, p.vy, p.dmg]) assert.ok(Number.isFinite(v), `${name}: a shot's numbers stay numbers`);
     seen.mostShots = Math.max(seen.mostShots, g.projectiles.filter((p) => !p.hostile).length);
     if (g.projectiles.some((p) => !p.hostile && p.n > 0)) seen.twinSeen = true;
@@ -405,19 +464,53 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
     assert.ok(runes >= 1, `${name}: of Ruin writes a rune`);
     assert.equal(count((e) => e.t === 'burst' && e.style === 'ruin'), runes, `${name}: ...and every rune goes off`);
   } else assert.ok(!any((e) => (e.t === 'zone' && e.kind === 'rune') || (e.t === 'burst' && e.style === 'ruin')), `${name}: no rune without of Ruin`);
+
+  // ---- the new words (Version 19.3), in front and behind
+  // (what dies at a touch is not there to be stunned or marked)
+  if (front.includes('heavy')) {
+    if (!weak) assert.ok(any((e) => e.t === 'stun'), `${name}: Heavy stuns what it hits`);
+    // (a whirlwind's turns, a beam's bites and a volley's arrows are too many for the weight of each: their stuns show it)
+    if (def.kind !== 'whirl' && def.kind !== 'beam' && def.kind !== 'volley') assert.ok(any((e) => e.t === 'heavy'), `${name}: Heavy lands with its weight`);
+  } else assert.ok(!any((e) => e.t === 'stun' || e.t === 'heavy'), `${name}: no stun without Heavy`);
+  if (behind.includes('heavy')) {
+    assert.ok(any((e) => e.t === 'zone' && e.kind === 'cracks' && e.dur === 4), `${name}: of Quakes cracks the ground`);
+  } else assert.ok(!any((e) => (e.t === 'zone' && e.kind === 'cracks') || e.t === 'stagger'), `${name}: no cracked ground without of Quakes`);
+  if (behind.includes('precise') && !weak) {
+    assert.equal(count((e) => e.t === 'markOn'), 1, `${name}: of the Mark marks the first it hits, once a use`);
+    assert.ok(count((e) => e.t === 'markSpent') <= 1, `${name}: ...and a mark is spent once`);
+  } else if (!behind.includes('precise')) assert.ok(!any((e) => e.t === 'markOn' || e.t === 'markSpent'), `${name}: no mark without of the Mark`);
+  // (a stack for the use: a kill fed by of Frenzy may have given one first, in the same blow)
+  if (front.includes('frenzied')) assert.ok(any((e) => e.t === 'frenzy' && e.n >= 1) && seen.frenzy >= 1, `${name}: Frenzied builds the frenzy`);
+  else assert.ok(!any((e) => e.t === 'frenzy'), `${name}: no frenzy without Frenzied`);
+  if (behind.includes('frenzied') && weak) assert.ok(any((e) => e.t === 'frenzyFed') && seen.frenzy >= 1, `${name}: of Frenzy is fed by its kills`);
+  if (!behind.includes('frenzied')) assert.ok(!any((e) => e.t === 'frenzyFed'), `${name}: no kill feeds a frenzy without of Frenzy`);
+  if (!front.includes('frenzied') && !behind.includes('frenzied')) assert.equal(seen.frenzy, 0, `${name}: no frenzy without the word`);
+  if (front.includes('guarding')) assert.ok(any((e) => e.t === 'shield') && seen.shield > 0, `${name}: Guarding gives a shield`);
+  else assert.ok(!any((e) => e.t === 'shield') && seen.shield === 0, `${name}: no shield without Guarding`);
+  if (behind.includes('guarding')) assert.ok(any((e) => e.t === 'zone' && e.kind === 'ward' && e.dur === 4), `${name}: of Warding leaves its circle`);
+  else assert.ok(!any((e) => e.t === 'zone' && e.kind === 'ward'), `${name}: no ward without of Warding`);
   if (weak) assert.ok(seen.g.kills > 0, `${name}: weak monsters die to it`);
 }
 
 // ---------------------------------------------------------------------------------------------
 
-test('the rule of the sockets: any word or any two different words to a side, but never two elements', () => {
+/** How many loadouts each ability is put through (`loadouts`). */
+const LOADOUTS = 2568;
+
+test('the rule of the sockets: any word or any two different words to a side, but never two damage words', () => {
   const all = sides();
-  assert.equal(all.length, 43);
+  // (the empty side, thirteen words alone, and every pair of them but the ten of two damage words)
+  assert.equal(all.length, 82);
+  assert.equal(all.length, 1 + WORD_IDS.length + (WORD_IDS.length * (WORD_IDS.length - 1)) / 2 - 10);
+  // (the first nine's 36 x 36 = 1,296; the 46 sides with a newer word, each against the empty side
+  // and the thirteen single words, in front and behind: 46 x 14 x 2 = 1,288, less the 16 met twice,
+  // where a newer word alone is on both sides)
+  assert.equal(loadouts().length, LOADOUTS);
   for (const a of WORD_IDS) {
     for (const b of WORD_IDS) {
       const why = socketProblem([a, null], b);
       if (a === b) assert.equal(why, 'Already there');
-      else if (isElement(a) && isElement(b)) assert.equal(why, 'One element per side');
+      else if (WORDS[a].kind === 'damage' && WORDS[b].kind === 'damage') assert.equal(why, 'One damage word per side');
       else assert.equal(why, null, `${a} and ${b} share a side`);
     }
     assert.equal(socketProblem([a, 'power' === a ? 'swift' : 'power'], 'leech' === a ? 'twin' : 'leech'), 'No free socket');
@@ -454,25 +547,23 @@ for (const { cls, weapon, skill } of CASES) {
   const def = SKILLS[practice(cls, weapon).hero.skills[skill].id];
   test(`every loadout of ${def.name} (a ${cls} with a ${weapon}): each word acts, the numbers add up, nothing goes wrong`, () => {
     checkWordAlone(def, cls, practice(cls, weapon).hero.d);
-    const all = sides();
-    let loadouts = 0;
+    let used = 0;
     let uses = 0;
-    for (const front of all) {
-      for (const behind of all) {
-        const name = tag(cls, def, front, behind);
-        loadouts++;
-        // against monsters that can take it: every word that acts on a hit must act
-        checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, false, name), false, name);
+    for (const [front, behind] of loadouts()) {
+      const name = tag(cls, def, front, behind);
+      used++;
+      // against monsters that can take it: every word that acts on a hit must act
+      checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, false, name), false, name);
+      uses++;
+      // against monsters that die at a touch: the words that act on a kill
+      if (front.includes('volatile') || behind.includes('leech') || behind.includes('frenzied')) {
+        checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, true, `${name} (kills)`), true, `${name} (kills)`);
         uses++;
-        // against monsters that die at a touch: the words that act on a kill
-        if (front.includes('volatile') || behind.includes('leech')) {
-          checkActed(def, front, behind, useOnce(cls, weapon, skill, front, behind, true, `${name} (kills)`), true, `${name} (kills)`);
-          uses++;
-        }
       }
     }
-    assert.equal(loadouts, 43 * 43);
-    console.log(`${cls} ${def.name}: ${loadouts} loadouts, ${uses} uses, all in order`);
+    // (the first nine's 36 x 36, and the newer words' sides against the empty side and every single word)
+    assert.equal(used, LOADOUTS);
+    console.log(`${cls} ${def.name}: ${used} loadouts, ${uses} uses, all in order`);
   });
 }
 

@@ -85,7 +85,9 @@ export default async function (page, snap) {
 
   // 4. Tab opens the inventory; a spare word is set by clicking it, then the slot
   // (a new character has no word: two are handed over here)
-  await page.evaluate(() => { const g = window.__dbg.game(); Object.assign(g.hero.words, { fire: 1, twin: 1 }); g.refresh(); });
+  // (THE FIRST LEVELS, the game's own since Version 19.5: and the hero as he is some way in, the
+  // wordsmith's ring lit and all three moves open, level 5: what follows is about the mouse and keys)
+  await page.evaluate(() => { const d = window.__dbg; d.seasoned(5); const g = d.game(); Object.assign(g.hero.words, { fire: 1, twin: 1 }); g.refresh(); });
   await page.keyboard.press('Tab');
   await page.waitForTimeout(200);
   s = await st();

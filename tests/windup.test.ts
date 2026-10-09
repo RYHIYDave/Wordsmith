@@ -22,7 +22,7 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster } from '../src/game/state';
 import { CLASS_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
-import { land } from './helpers';
+import { land, seasoned } from './helpers';
 
 /** A fine step, so that the seconds below mean something: every time here is told to a 120th of a second. */
 const DT = 1 / 120;
@@ -73,7 +73,8 @@ function room(cls: ClassId, seed = 3): Game {
  * costs can be counted exactly. (In the practice room mana pours back by itself.)
  */
 function field(cls: ClassId, limit: 'cooldown' | 'mana' = 'cooldown', seed = 9): Game {
-  const g = new Game(cls, seed);
+  // (all three abilities open: THE FIRST LEVELS open the swipe at level 5, tests/helpers.ts seasoned)
+  const g = seasoned(new Game(cls, seed));
   // (not a first dungeon, with its fallen wordsmith)
   g.depth = 2;
   g.cleared = 1;
@@ -210,7 +211,8 @@ test('the wind-ups are short: about a quarter of a second at the most, and the e
 
 test('a new character, and one carried on with from a save, is not in the middle of anything', () => {
   for (const cls of CLASS_IDS) {
-    const g = new Game(cls, 5);
+    // (with the slow attack open: THE FIRST LEVELS open it at level 2)
+    const g = seasoned(new Game(cls, 5));
     const h = g.hero;
     assert.deepEqual([h.windup, h.queued, h.attackT, h.attackAge, h.attackWind, h.swingT], [null, null, 0, 0, 0, 0], `${cls}: nothing begun, nothing waiting`);
     // a save made in the middle of an attack keeps nothing of it: the character comes back standing in town

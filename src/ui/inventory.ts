@@ -63,7 +63,7 @@
 import { WORD_COLOR } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { ATTR_NAME, CLASSES, ELEMENT_NAME, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
+import { ATTR_NAME, CLASSES, ELEMENT_NAME, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
 import type { Game } from '../game/game';
 import { modLines, statView } from '../game/items';
 import type { ImbueOption } from '../game/items';
@@ -355,28 +355,30 @@ const sameSel = (a: Sel | null, b: Sel): boolean => !!a && a.kind === b.kind && 
 /**
  * The spare words as tiles, in lines `maxW` wide. If they do not go into `room` lines with their
  * rune stones they are laid out without (`bare`); if they do not go in even so, as their rune
- * stones alone (`stones`: a tile the size of a bag's cell, the word read when it is pressed).
- * Whatever still does not fit is left out, and `hidden` says how many words that is.
+ * stones alone (`stones`: a tile the size of a bag's cell, the word read when it is pressed); and
+ * failing that, as narrower stones a pixel apart (`narrow`, since Version 19.3: thirteen words in
+ * one line of a phone's half). Whatever still does not fit is left out, and `hidden` says how many.
  */
-export function layPouch(words: readonly WordId[], count: (w: WordId) => number, maxW: number, room: number, gap: number): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number; bare: boolean; stones: boolean; hidden: number } {
-  const lay = (how: 'full' | 'bare' | 'stones'): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number } => {
+export function layPouch(words: readonly WordId[], count: (w: WordId) => number, maxW: number, room: number, gap: number): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number; bare: boolean; stones: boolean; narrow: boolean; hidden: number } {
+  const lay = (how: 'full' | 'bare' | 'stones' | 'narrow'): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number } => {
     const cells: { word: WordId; x: number; line: number; w: number }[] = [];
     let x = 0;
     let line = 0;
     for (const w of words) {
-      const tw = how === 'stones' ? CELL : Math.min(maxW, tileWidth(w, 'name', count(w), how === 'bare'));
+      const tw = how === 'stones' ? CELL : how === 'narrow' ? NARROW_STONE : Math.min(maxW, tileWidth(w, 'name', count(w), how === 'bare'));
       if (x > 0 && x + tw > maxW) {
         x = 0;
         line++;
       }
       cells.push({ word: w, x, line, w: tw });
-      x += tw + gap;
+      x += tw + (how === 'narrow' ? 1 : gap);
     }
     return { cells, lines: cells.length ? cells[cells.length - 1].line + 1 : 1 };
   };
   let out = lay('full');
   let bare = false;
   let stones = false;
+  let narrow = false;
   if (out.lines > room) {
     out = lay('bare');
     bare = true;
@@ -385,9 +387,19 @@ export function layPouch(words: readonly WordId[], count: (w: WordId) => number,
     out = lay('stones');
     stones = true;
   }
+  if (out.lines > room) {
+    out = lay('narrow');
+    narrow = true;
+  }
   const shown = out.cells.filter((c) => c.line < room);
-  return { cells: shown, lines: Math.min(out.lines, room), bare, stones, hidden: out.cells.length - shown.length };
+  return { cells: shown, lines: Math.min(out.lines, room), bare, stones, narrow, hidden: out.cells.length - shown.length };
 }
+
+/**
+ * A rune stone in a pouch with more words than its stones have room for (Version 19.3's thirteen,
+ * on a phone held sideways): the stone itself (14 pixels) in a tile only just wider, a pixel apart.
+ */
+export const NARROW_STONE = 16;
 
 /** How an attack is limited, said short ("1.74/S", "5.0 S", "14 MANA") and long. */
 function paceText(game: Game, s: number): { short: string; long: string } {
@@ -498,7 +510,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // gone in). Slots not opened yet are dim, with the level that opens them. (Laid out from how
   // many slots there are: there may one day be three a side.)
   const ROWS = 3;
-  const [nf, nb] = socketCount(h.level);
+  // (THE FIRST LEVELS: none before the ring is lit, and none on an ability not open yet: game.slots, game.moveOpen)
+  const [nf, nb] = game.slots();
   const [maxF, maxB] = socketCount(999);
   // the attack's own plate: as wide as the longest of the three names needs (WHIRLWIND is wider than the 66 the others fit in)
   const AW = Math.max(66, 22 + Math.max(...h.skills.slice(0, 3).map((k) => textWidth(SKILLS[k.id].name.toUpperCase()))) + 4);
@@ -515,7 +528,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   if (page === 'attacks') {
     const group = (s: number, sd: 'front' | 'behind', gx: number, gy: number): void => {
       const sk = h.skills[s];
-      const n = sd === 'front' ? nf : nb;
+      const open = game.moveOpen(s);
+      const n = !open ? 0 : sd === 'front' ? nf : nb;
       const max = sd === 'front' ? maxF : maxB;
       const words = sd === 'front' ? sk.front : sk.behind;
       // (they stand in the order the name is read in: in front the first word furthest from the
@@ -524,7 +538,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         const r: Rect = { x: gx + j * SQ, y: gy, w: CELL, h: CELL };
         const idx = sd === 'front' ? j - (max - n) : j;
         if (idx >= 0 && idx < n) slots.push({ r, ref: { skill: s, side: sd, idx }, word: words[idx] ?? null });
-        else locked.push({ r, lv: SLOT_OPENS[sd][sd === 'front' ? max - 1 - j : j] });
+        // (THE FIRST LEVELS: a slot not open yet is not shown at all; his answer, 22:21: "Hide them until they open")
+        else if (!FIRST_LEVELS.on) locked.push({ r, lv: SLOT_OPENS[sd][sd === 'front' ? max - 1 - j : j] });
       }
     };
     const frontW = maxF * SQ;
@@ -758,6 +773,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     }
   }
   for (let s = 0; s < abil.length; s++) {
+    // (THE FIRST LEVELS: an ability not open yet is not shown, and is nothing to press)
+    if (!game.moveOpen(s)) continue;
     if (!ui.pressIn(abil[s].x, abil[s].y, abil[s].w, abil[s].h)) continue;
     // an attack is pressed: it is the one read out (a word in hand stays in hand)
     st.focus = s;
@@ -989,6 +1006,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   if (page === 'attacks') {
     for (const c of caps) cap(c.text, c.x, c.y, c.right);
     for (let s = 0; s < ROWS; s++) {
+      // (THE FIRST LEVELS: an ability not open yet is not shown at all: its line stays empty until it opens)
+      if (!game.moveOpen(s)) continue;
       const sk = h.skills[s];
       const def = SKILLS[sk.id];
       const a = abil[s];
@@ -1142,8 +1161,9 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
 
   // ---- draw: the pouch of spare words ---------------------------------------------------------------
   cap('YOUR WORDS', pouchX, pouchY - CAP);
-  // (the owner, 5 Oct 2026, 22:36: "none to spare under words to empty")
-  if (!pouchWords.length) drawText(g, 'empty', pouchX, pouchY + Math.floor((TH - 5) / 2), THEME.faint, { font: 'small' });
+  // (the owner, 5 Oct 2026, 22:36: "none to spare under words to empty"; THE FIRST LEVELS: before the ring is lit, what opens wordsmithing)
+  const dark = !h.ring ? (h.quest ? `Slots open at the wordsmith: bring him ${QUEST_ITEM.the}.` : 'No word slots until his ring is lit.') : null;
+  if (!pouchWords.length) drawText(g, dark ?? 'empty', pouchX, pouchY + Math.floor((TH - 5) / 2), dark ? THEME.dim : THEME.faint, { font: 'small' });
   for (const c of pouch) {
     const sel = st.word === c.w || (!!st.pending && st.pending.word === c.w);
     const hot = ui.hover(c.r.x, c.r.y, c.r.w, c.r.h);

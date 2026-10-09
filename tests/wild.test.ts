@@ -17,7 +17,7 @@ import nodeAssert from 'node:assert/strict';
 
 import type { Clip } from '../src/art/actor_types';
 import { makeHeroArt3, paintMove3 } from '../src/art/heroes3';
-import { COMBO_MENDS, MAGE_BODY, MAGE_STANCES, MOVES3, SHOT3, SLASH3, STRIKE3, WILD, useMageStances, useRangerStances, useWild } from '../src/art/moves3';
+import { COMBO_MENDS, MAGE_BODY, MAGE_STANCES, MOVES3, RANGER_STANCES, SHOT3, SLASH3, STRIKE3, WILD, useMageStances, useRangerStances, useWild } from '../src/art/moves3';
 import type { Move3 } from '../src/art/moves3';
 import { bonesAt, project, solve } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
@@ -177,40 +177,47 @@ const blade = (m: Move3, t: number): V3 => solve(m.build, bonesAt(m.motion.keys,
 
 test('Strike and Shot with the switch off are as the game has them (the mended swings; his Shot, as it was or from his crouch), and exactly so after it is switched on and off, in either order', () => {
   assert.equal(COMBO_MENDS.on, true);
-  const mended = swings();
-  const today = shot();
-  useRangerStances(true);
-  const low = shot();
+  // (his stances are the game's own since Version 19.4: put aside here, to see his Shot as it was too, and put back after)
+  assert.equal(RANGER_STANCES.on, true);
   useRangerStances(false);
-  useWild(true);
   try {
-    assert.ok(swings() !== mended, 'the wild swings are their own');
-    assert.equal(STRIKE3.tail, true);
-    assert.equal(SLASH3.tail, true);
-    assert.equal(shot(), today, 'without his stances his Shot is as it was, even with the switch on');
+    const mended = swings();
+    const today = shot();
     useRangerStances(true);
-    assert.ok(shot() !== low, 'from his crouch the wild Shot is its own');
-  } finally {
+    const low = shot();
     useRangerStances(false);
+    useWild(true);
+    try {
+      assert.ok(swings() !== mended, 'the wild swings are their own');
+      assert.equal(STRIKE3.tail, true);
+      assert.equal(SLASH3.tail, true);
+      assert.equal(shot(), today, 'without his stances his Shot is as it was, even with the switch on');
+      useRangerStances(true);
+      assert.ok(shot() !== low, 'from his crouch the wild Shot is its own');
+    } finally {
+      useRangerStances(false);
+      useWild(false);
+    }
+    assert.equal(swings(), mended);
+    assert.equal(STRIKE3.tail, undefined);
+    assert.equal(STRIKE3.poise, undefined);
+    assert.equal(shot(), today);
+    // (and whichever switch goes first)
+    useRangerStances(true);
+    useWild(true);
+    const both = shot();
     useWild(false);
+    assert.equal(shot(), low);
+    useWild(true);
+    useRangerStances(false);
+    useRangerStances(true);
+    assert.equal(shot(), both);
+    useWild(false);
+    useRangerStances(false);
+    assert.equal(shot(), today);
+  } finally {
+    useRangerStances(true);
   }
-  assert.equal(swings(), mended);
-  assert.equal(STRIKE3.tail, undefined);
-  assert.equal(STRIKE3.poise, undefined);
-  assert.equal(shot(), today);
-  // (and whichever switch goes first)
-  useRangerStances(true);
-  useWild(true);
-  const both = shot();
-  useWild(false);
-  assert.equal(shot(), low);
-  useWild(true);
-  useRangerStances(false);
-  useRangerStances(true);
-  assert.equal(shot(), both);
-  useWild(false);
-  useRangerStances(false);
-  assert.equal(shot(), today);
 });
 
 test('the first wild swing lands when it did and holds the sword up past the rules\' attack; the second begins from just there, its blow as quick as before', () => {

@@ -31,7 +31,7 @@ export default async function (page, snap) {
   // ---- 2. a Normal death in dungeon 4 -------------------------------------------------------------
   const set = await page.evaluate(() => {
     const d = window.__dbg;
-    d.run('warrior', 47);
+    d.run('warrior', 47); /* (THE FIRST LEVELS, since Version 19.5: a hero this far in has the wordsmith's ring lit; with it dark the fallen wordsmith would lie in this dungeon too, and the playtests' own player would go to him first) */ d.seasoned(1);
     const g = d.game();
     g.mode = 'normal';
     d.autoLevel = false; d.autoWords = false;

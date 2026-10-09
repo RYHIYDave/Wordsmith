@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CLASSES, COMBO, FIRST_WORD, GAMBLE_KINDS, GUIDE, LIMITS, MANA_MODE, MONSTERS, MSG, PRACTICE, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
+import { CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MOVE_OPENS, MSG, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
 import type { Limit, MonsterDef } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -74,7 +74,15 @@ export interface RunSave {
   wordsBought?: number[];
   /** NORMAL OR HARDCORE (game/modes.ts), kept for life. Absent in a save from before there were modes (MODE_BEFORE), and while MODES.on is false. */
   mode?: HeroMode;
+  /** THE FIRST LEVELS (defs.ts): the ring lit for this hero (absent in a save from before: lit), and the quest item carried. */
+  ring?: boolean;
+  quest?: 'heart' | null;
 }
+
+/** THE FIRST LEVELS: what the wordsmith says while his ring is dark. */
+export const DARK_RING = 'The runes are dark';
+/** THE FIRST LEVELS: what the gate says of a word laid on it before the first dungeon, which takes none. */
+export const FIRST_GATE = 'Not in the first dungeon';
 
 /** Nothing known of a word yet. */
 function noLore(): WordLore {
@@ -91,7 +99,7 @@ export function newMeta(): Meta {
   }
   const stash: (Item | null)[] = [];
   for (let i = 0; i < TUNE.stashSize; i++) stash.push(null);
-  return { lexicon, known, stash, deaths: 0, bestDepth: 0, taught: false, limit: 'cooldown', voice: 'male', aim: 'auto', aimChosen: false, mode: 'normal' };
+  return { lexicon, known, stash, deaths: 0, bestDepth: 0, taught: false, limit: 'cooldown', voice: 'male', aim: 'auto', aimChosen: false, mode: 'normal', ring: false };
 }
 
 /** A new player's place in the first dungeon's prompts. */
@@ -123,6 +131,11 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   out.deaths = typeof m.deaths === 'number' && Number.isFinite(m.deaths) ? Math.max(0, Math.floor(m.deaths)) : 0;
   out.bestDepth = typeof m.bestDepth === 'number' && Number.isFinite(m.bestDepth) ? Math.max(0, Math.floor(m.bestDepth)) : 0;
   out.taught = m.taught === true;
+  // (THE FIRST LEVELS: the ring is lit on a device the first time a hero brings the RUNE HEART. A
+  // device that saved before Version 19.5 has never had it lit: its next new hero goes for it, as
+  // the owner saw in the pictures, and it stays lit for the heroes after. A hero saved before then
+  // keeps his own ring, and his words, whatever the device's: see `restore`.)
+  out.ring = m.ring === true;
   out.limit = LIMITS.includes(m.limit as Limit) ? (m.limit as Limit) : 'cooldown';
   out.voice = VOICE_IDS.includes(m.voice as VoiceId) ? (m.voice as VoiceId) : 'male';
   out.mode = HERO_MODES.includes(m.mode as HeroMode) ? (m.mode as HeroMode) : 'normal';
@@ -247,6 +260,8 @@ export class Game {
   private nextThing = 1;
   private bagFullT = 0;
   private denyT = 0;
+  /** Precise behind: for each ability, the use (its count of uses) that has already marked an enemy. */
+  private marked: number[] = [-1, -1, -1];
   private visList: number[] = [];
   private tmp = { x: 0, y: 0 };
 
@@ -296,6 +311,8 @@ export class Game {
     // the level at which both attacks have two sockets in front and two behind
     h.level = PRACTICE.level;
     h.pending = 0;
+    // (THE FIRST LEVELS: a seasoned throwaway has the wordsmith's ring lit, as any hero has who has been down before)
+    h.ring = true;
     const primary = CLASSES[h.cls].primary;
     for (const a of ATTRS) h.attrs[a] += a === primary ? 15 : 3;
     const rng = new RNG((this.seed ^ 0x9e3779b9) >>> 0);
@@ -416,6 +433,14 @@ export class Game {
   guideRows(): GuideRow[] {
     const G = this.guide;
     if (!G || !G.met) return [];
+    // (THE FIRST LEVELS: only the moves that are open, each as it opens; the swipe with its level, not after a couple of blows)
+    if (FIRST_LEVELS.on) {
+      const open: GuideRow[] = [{ id: 'quick', done: G.quick }];
+      if (this.moveOpen(1)) open.push({ id: 'slow', done: G.slow });
+      if (this.moveOpen(2)) open.push({ id: 'evade', done: G.evade });
+      if (G.low) open.push({ id: 'flask', done: G.flask });
+      return open;
+    }
     const rows: GuideRow[] = [{ id: 'quick', done: G.quick }, { id: 'slow', done: G.slow }];
     if (G.hits >= GUIDE.hits) rows.push({ id: 'evade', done: G.evade });
     if (G.low) rows.push({ id: 'flask', done: G.flask });
@@ -436,6 +461,8 @@ export class Game {
     if (WORD_IDS.some((w) => h.words[w] > 0)) return 'smith';
     if (this.drops.some((d) => d.kind === 'word' && Math.hypot(d.x - h.x, d.y - h.y) < GUIDE.sight)) return 'take';
     if (fight) return null;
+    // (THE FIRST LEVELS: the quest item, to be taken to town and to the wordsmith)
+    if (FIRST_LEVELS.on && h.quest) return L.town ? 'ring' : 'carry';
     const b = L.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < GUIDE.sight && L.visible[b.ty * L.floor.w + b.tx] === 1) return 'body';
     if (G.walked < GUIDE.steps) return 'move';
@@ -561,6 +588,8 @@ export class Game {
       wordsBought: this.wordStock.flatMap((w, i) => (w === null ? [i] : [])),
       // (nothing of the modes is written while their switch is off: a hero made before then is MODE_BEFORE)
       ...(MODES.on ? { mode: this.mode } : {}),
+      // (nor of the first levels while theirs is: a hero saved before them has the ring lit)
+      ...(FIRST_LEVELS.on ? { ring: h.ring, quest: h.quest } : {}),
     };
   }
 
@@ -597,6 +626,9 @@ export class Game {
       for (const w of s.plan) if (WORD_IDS.includes(w) && g.plan.length < TUNE.planMax && !g.plan.includes(w)) g.plan.push(w);
     }
     g.bodySearched = s.body === true;
+    // (THE FIRST LEVELS: a save from before them, or made with them off, has the ring lit)
+    h.ring = !FIRST_LEVELS.on || s.ring !== false;
+    h.quest = s.quest === 'heart' ? 'heart' : null;
     if (s.guide && typeof s.guide === 'object') {
       // (the prompts carry on from where they were; what was set stays set)
       const q = s.guide;
@@ -659,9 +691,54 @@ export class Game {
       cls, level: 1, xp: 0, pending: 0, attrs, life: d.maxLife, mana: d.maxMana,
       x: 0, y: 0, fx: 0.7071, fy: 0.7071, anim: 'idle', animT: 0, attackT: 0, attackSkill: 0, combo: 0, comboT: 0, step: null, attackAge: 0, attackWind: 0, windup: null, channel: null, queued: null, swingT: 0, flash: 0, invuln: 0,
       gear, bag, words, skills, gold: 0, potions: TUNE.potionMax, potionKills: 0,
-      might: 0, mightT: 0, haste: 0, hasteT: 0, burnT: 0, burnDps: 0, chillT: 0, chill: 0, shockT: 0, poisonT: 0, poisonDps: 0,
-      move: null, d,
+      might: 0, mightT: 0, haste: 0, hasteT: 0, frenzy: 0, frenzyT: 0, shield: 0, shieldT: 0, burnT: 0, burnDps: 0, chillT: 0, chill: 0, shockT: 0, poisonT: 0, poisonDps: 0,
+      move: null,
+      // (THE FIRST LEVELS: the ring is lit for him if it ever was on this device; with the switch off, always)
+      ring: !FIRST_LEVELS.on || this.meta.ring,
+      quest: null,
+      d,
     };
+  }
+
+  // ===========================================================================================
+  // THE FIRST LEVELS (defs.ts, FIRST_LEVELS): the abilities open by level, and wordsmithing with the ring
+
+  /** Is ability `i` open to the hero: always with the switch off and in the practice room; otherwise from its level (MOVE_OPENS). */
+  moveOpen(i: number): boolean {
+    return !FIRST_LEVELS.on || this.practice || this.hero.level >= (MOVE_OPENS[i] ?? 1);
+  }
+
+  /** The word slots an open ability has now, in front and behind: none before the ring is lit; then by level. */
+  slots(level = this.hero.level): [number, number] {
+    if (!this.hero.ring && !this.practice) return [0, 0];
+    return socketCount(level);
+  }
+
+  /** Do words fall, and do monsters carry them, here and now: not before the ring is lit, and (21:05) not in the first dungeon. */
+  wordsFall(): boolean {
+    if (!FIRST_LEVELS.on || this.practice) return true;
+    return this.hero.ring && this.depth > 1;
+  }
+
+  /**
+   * THE QUEST ITEM BROUGHT TO THE WORDSMITH: his ring is lit (for this hero and on this device), he
+   * gives the hero's first word, and the slots open. Called when the hero comes up to him with it.
+   */
+  private lightRing(x: number, y: number): void {
+    const h = this.hero;
+    h.quest = null;
+    h.ring = true;
+    this.meta.ring = true;
+    const w = FIRST_WORD[h.cls].word;
+    h.words[w]++;
+    this.refresh();
+    if (!this.practice) this.meta.known[w].found = true;
+    this.emit({ t: 'ring', x, y });
+    this.emit({ t: 'wordGot', word: w });
+    this.sfx('rare');
+    this.msg(`The ring is lit. The wordsmith gives you a word: ${WORDS[w].name.toUpperCase()}.`, MSG.word);
+    // (as a first word found is: the inventory opens for it at once, and the lesson shows where it goes)
+    if (!this.wordAtWork() && this.placeable(w)) this.offer = w;
   }
 
   /** Rebuild everything derived from level, attributes, gear and socketed words. */
@@ -696,12 +773,14 @@ export class Game {
       this.orbs = this.orbs.filter((o) => o.skill !== i);
       this.familiars = this.familiars.filter((q) => q.skill !== i);
     }
-    const [nf, nb] = socketCount(h.level);
+    const [nf, nb] = this.slots();
     for (let i = 0; i < h.skills.length; i++) {
       const s = h.skills[i];
       const def = SKILLS[s.id];
-      const wantF = def.sockets ? nf : 0;
-      const wantB = def.sockets ? nb : 0;
+      // (THE FIRST LEVELS: an ability not yet open has no slots)
+      const open = this.moveOpen(i);
+      const wantF = def.sockets && open ? nf : 0;
+      const wantB = def.sockets && open ? nb : 0;
       while (s.front.length < wantF) s.front.push(null);
       while (s.behind.length < wantB) s.behind.push(null);
       // (a character saved when a slot opened at a lower level than it does now: the slot closes,
@@ -711,6 +790,17 @@ export class Game {
         while (side.length > want) {
           const w = side.pop();
           if (w) h.words[w]++;
+        }
+        // (ONE DAMAGE WORD A SIDE, since Version 19.3: a character saved with two keeps the first,
+        // and the other goes back to the pouch)
+        let damage = false;
+        for (let k = 0; k < side.length; k++) {
+          const w = side[k];
+          if (!w || WORDS[w].kind !== 'damage') continue;
+          if (damage) {
+            side[k] = null;
+            h.words[w]++;
+          } else damage = true;
         }
       }
       s.r = resolveSkill(def, s.front, s.behind, i < 2 ? weaponAttr(weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
@@ -757,6 +847,10 @@ export class Game {
     h.mightT = 0;
     h.haste = 0;
     h.hasteT = 0;
+    h.frenzy = 0;
+    h.frenzyT = 0;
+    h.shield = 0;
+    h.shieldT = 0;
     h.attackT = 0;
     h.windup = null;
     h.channel = null;
@@ -848,6 +942,12 @@ export class Game {
     if (this.depth === 1 && this.cleared === 0) {
       this.placeBody();
       this.softenFirstHalf();
+      if (FIRST_LEVELS.on) this.softball();
+    } else if (FIRST_LEVELS.on && !this.practice && !this.hero.ring && !this.hero.quest && !this.bodySearched) {
+      // (THE FIRST LEVELS: without the RUNE HEART there is no wordsmithing. A hero who left the
+      // first dungeon without searching the fallen wordsmith finds him again in the next, half way
+      // along its main path, and so on until he is found.)
+      this.placeBody();
     }
     this.updateVision(1);
     this.msg(`Dungeon ${this.depth}`, MSG.head);
@@ -945,12 +1045,50 @@ export class Game {
     if (!b) return;
     const f = this.level.floor;
     const dist = flowField(this.level.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, this.level.step);
-    // (ten steps to a tile: the body's own room counts as the first half)
-    const upTo = dist[b.ty * f.w + b.tx] + 80;
+    // (ten steps to a tile: the body's own room counts as the first half; THE FIRST LEVELS: the whole of the first dungeon, defs.ts FIRST_DUNGEON)
+    const upTo = FIRST_LEVELS.on ? Infinity : dist[b.ty * f.w + b.tx] + 80;
     for (const m of this.monsters) {
       if (m.boss || dist[Math.floor(m.y) * f.w + Math.floor(m.x)] > upTo) continue;
       m.dmgMin *= GUIDE.softDmg;
       m.dmgMax *= GUIDE.softDmg;
+    }
+  }
+
+  /**
+   * THE FIRST LEVELS: THE FIRST PACK IS A SOFTBALL (the owner, 22:25; defs.ts, FIRST_DUNGEON.softball).
+   * The pack nearest the way in, by the way one walks, gives way to a few slow skeletons that
+   * barely hurt and fall to a tap or two of the bare quick attack: the movement and the tap are
+   * learnt on them.
+   */
+  private softball(): void {
+    const f = this.level.floor;
+    const dist = flowField(this.level.walk, f.w, f.h, f.start.x, f.start.y, Infinity, undefined, this.level.step);
+    let best = -1;
+    let bd = Infinity;
+    for (const m of this.monsters) {
+      if (m.boss || m.packId < 0) continue;
+      const d = dist[Math.floor(m.y) * f.w + Math.floor(m.x)];
+      if (d < bd) {
+        bd = d;
+        best = m.packId;
+      }
+    }
+    if (best < 0) return;
+    const pack = this.monsters.filter((m) => m.packId === best);
+    const cx = pack.reduce((a, m) => a + m.x, 0) / pack.length;
+    const cy = pack.reduce((a, m) => a + m.y, 0) / pack.length;
+    this.monsters = this.monsters.filter((m) => m.packId !== best);
+    const S = FIRST_DUNGEON.softball;
+    const life = Math.max(2, Math.round(this.bareHit() * S.hits));
+    const def = MONSTERS.skeleton;
+    const rng = new RNG((this.seed ^ 0x50f7ba11) >>> 0);
+    for (const spot of scatter(this.level.walk, f.w, f.h, cx, cy, S.size, rng)) {
+      const m = this.spawn('skeleton', spot.x, spot.y, best, 0, false, rng);
+      m.maxLife = life;
+      m.life = life;
+      m.dmgMin = def.dmgMin * S.dmg;
+      m.dmgMax = def.dmgMax * S.dmg;
+      m.speed = S.speed;
     }
   }
 
@@ -963,7 +1101,9 @@ export class Game {
     const elite = rank > 0;
     const champion = rank === 2;
     const words: WordId[] = [];
-    const want = boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
+    // (THE FIRST LEVELS, 21:05: "That also means no words on monsters for dungeon 1")
+    const bare = FIRST_LEVELS.on && !this.practice && this.depth <= 1;
+    const want = bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
     while (words.length < want) {
       const w = rng.pick(WORD_IDS);
       if (words.includes(w)) continue;
@@ -993,7 +1133,9 @@ export class Game {
       // (the more words are burned into the dungeon, the likelier: that is what burning them buys)
       if (lot.chance(Math.min(1, p * (1 + 0.3 * this.dungeonWords.length)))) carries = [lot.pick(words)];
     }
-    for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
+    // (THE FIRST LEVELS: before the ring is lit nothing gives up a word)
+    if (!this.wordsFall()) carries = [];
+    if (!bare) for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
     let life = def.life * (boss ? 1 + 0.4 * (this.depth - 1) : scaleLife(this.depth));
     let dm = scaleDmg(this.depth);
     let xp = def.xp * (1 + 0.25 * (this.depth - 1));
@@ -1020,6 +1162,7 @@ export class Game {
       speed: def.speed * (words.includes('swift') ? 1.35 : 1), elite, champion, boss, words, carries,
       state: 'sleep', t: 0, cd: 0, packId, anim: 'idle', animT: rng.range(0, 3), flash: 0,
       burnT: 0, burnDps: 0, chillT: 0, chill: 0, frozenT: 0, freezeImmune: 0, poisonT: 0, poisonDps: 0, poisonN: 0,
+      stunT: 0, staggerT: 0, staggerCd: 0, markT: 0, shield: words.includes('guarding') ? Math.round(Math.round(life) * GUARD.monster) : 0,
       lastSkill: -1, seen: false, barT: 0, phase: 0, atk: 0, dead: false, xp: Math.round(xp), seed: rng.next(),
     };
     this.monsters.push(m);
@@ -1870,13 +2013,29 @@ export class Game {
       h.hasteT -= dt;
       if (h.hasteT <= 0) h.haste = 0;
     }
+    if (h.frenzyT > 0) {
+      h.frenzyT -= dt;
+      if (h.frenzyT <= 0) {
+        h.frenzyT = 0;
+        h.frenzy = 0;
+      }
+    }
+    if (h.shieldT > 0) {
+      h.shieldT -= dt;
+      if (h.shieldT <= 0) {
+        h.shieldT = 0;
+        h.shield = 0;
+      }
+    }
     if (h.chillT > 0) h.chillT -= dt;
     if (h.shockT > 0) h.shockT -= dt;
     if (h.burnT > 0) h.burnT -= dt;
     if (h.poisonT > 0) h.poisonT -= dt;
+    // (Frenzied: the frenzy makes every cooldown come round faster)
+    const pace = this.frenzyPace();
     for (const s of h.skills) {
       if (s.charges < s.maxCharges) {
-        s.cd -= dt;
+        s.cd -= dt * pace;
         if (s.cd <= 0) {
           s.charges++;
           s.cd = s.charges < s.maxCharges ? s.r.cooldown : 0;
@@ -2040,7 +2199,8 @@ export class Game {
       this.begin(0, tx, ty, def.windup);
       return;
     }
-    let rate = Math.max(0.3, s.r.rate);
+    // (Frenzied: the frenzy makes the quick attack faster)
+    let rate = Math.max(0.3, s.r.rate) * this.frenzyPace();
     if (h.chillT > 0) rate *= 1 - h.chill * 0.5;
     h.swingT = 1 / rate;
     this.face(tx, ty);
@@ -2072,6 +2232,8 @@ export class Game {
   private useSkill(i: number, tx: number, ty: number): void {
     const h = this.hero;
     const s = h.skills[i];
+    // (THE FIRST LEVELS: not before its level)
+    if (!this.moveOpen(i)) return;
     // (one that is being held is already being made: the button held down does not ask for another)
     if (h.channel) return;
     if (s.charges < 1) return;
@@ -2340,6 +2502,8 @@ export class Game {
         const wy = line.length ? line[0].m.y : sy + dy * far;
         if (r.rune > 0) this.addRune(i, wx, wy, each);
         if (r.cloud > 0) this.addCloud(i, wx, wy, 1.5, each);
+        // (cracked ground and a ward, as a rune: where it first struck)
+        this.leavePatches(i, wx, wy, 1.0);
         if (r.zone) for (let n = 0, d = 1.3; n < TUNE.beamPatches && d < end.len; n++, d += TUNE.beamPatchGap) this.addGround(i, sx + dx * d, sy + dy * d, 1.0, each);
       }
     }
@@ -2375,6 +2539,23 @@ export class Game {
       h.hasteT = 3;
       this.emit({ t: 'buff', kind: 'haste', x: h.x, y: h.y, stacks: 1 });
     }
+    // FRENZIED in front: each use adds to the frenzy, up to its most, and holds it a while longer
+    if (r.frenzy) {
+      h.frenzy = Math.min(FRENZY.max, h.frenzy + 1);
+      h.frenzyT = Math.max(h.frenzyT, FRENZY.hold);
+      this.emit({ t: 'frenzy', x: h.x, y: h.y, dx: h.fx, dy: h.fy, n: h.frenzy });
+    }
+    // GUARDING in front: each use gives a shield (a new one is never weaker than what is left of the last)
+    if (r.shield > 0) {
+      h.shield = Math.max(h.shield, Math.round(h.d.maxLife * r.shield));
+      h.shieldT = GUARD.shieldTime;
+      this.emit({ t: 'shield', x: h.x, y: h.y, secs: GUARD.shieldTime });
+    }
+  }
+
+  /** How much faster the frenzy makes the hero's attacks and cooldowns (1: no frenzy). */
+  frenzyPace(): number {
+    return 1 + FRENZY.each * this.hero.frenzy;
   }
 
   private noMana(): void {
@@ -2388,6 +2569,8 @@ export class Game {
   private useEvasive(tx: number, ty: number, c: Controls): void {
     const h = this.hero;
     const s = h.skills[2];
+    // (THE FIRST LEVELS: not before its level)
+    if (!this.moveOpen(2)) return;
     if (s.charges < 1) return;
     if (h.mana < s.r.mana) {
       this.noMana();
@@ -2727,6 +2910,7 @@ export class Game {
     this.hitMonster(best, i, frac, false);
     this.landed(i);
     this.sfx(power ? 'power' : 'hit', 0.7);
+    if (words.includes('heavy')) this.emit({ t: 'heavy', x: tx, y: ty, r: 1.1, big: false });
     if (r.splash > 0) {
       const rad = r.splash * r.size;
       // a full-strength splash is an explosion; Power's is a shock through the ground
@@ -2746,6 +2930,8 @@ export class Game {
     const words = this.fronts(i);
     this.emit({ t: 'burst', x: cx, y: cy, r: rad, el: r.element, style, words, n, echo });
     if (words.includes('power')) this.sfx('power', 0.9);
+    // (Heavy lands out to the blast's edge; a whirlwind's turns are too many for that, its stuns show it)
+    if (words.includes('heavy') && style !== 'whirl') this.emit({ t: 'heavy', x: cx, y: cy, r: rad, big: true });
     let hits = 0;
     for (const m of this.monsters) {
       if (m.dead) continue;
@@ -2879,6 +3065,33 @@ export class Game {
     if (r.zone) this.addGround(i, x, y, Math.max(1.0, rad), frac);
     if (r.cloud > 0) this.addCloud(i, x, y, Math.max(1.5, rad), frac);
     if (r.rune > 0) this.addRune(i, x, y, frac);
+    this.leavePatches(i, x, y, rad);
+  }
+
+  /** What Heavy and Guarding behind leave where ability `i` lands: cracked ground, a ward circle. */
+  private leavePatches(i: number, x: number, y: number, rad: number): void {
+    const r = this.hero.skills[i].r;
+    if (r.cracks > 0) this.addPatch(i, 'cracks', x, y, Math.max(1.0, rad), r.cracks, 0);
+    if (r.ward > 0) this.addPatch(i, 'ward', x, y, Math.max(1.5, rad), GUARD.wardTime, r.ward);
+  }
+
+  /**
+   * Cracked ground or a ward circle, for `dur` seconds (`share`: what a ward takes off the harm).
+   * Laid again where one already is, that one lasts as long again from now: they do not pile up.
+   */
+  private addPatch(i: number, kind: 'cracks' | 'ward', x: number, y: number, rad: number, dur: number, share: number): void {
+    for (const o of this.zones) {
+      if (o.kind === kind && Math.hypot(o.x - x, o.y - y) < 0.6 && o.r >= rad - 0.1) {
+        o.t = 0;
+        o.dur = dur;
+        o.dmg = Math.max(o.dmg, share);
+        this.emit({ t: 'zone', kind, x: o.x, y: o.y, r: o.r, el: 'phys', dur });
+        return;
+      }
+    }
+    if (!this.roomForZone() || !this.onFloor(x, y)) return;
+    this.zones.push({ x, y, r: rad, t: 0, dur, kind, element: 'phys', dmg: share, slow: 0, tick: 0, hostile: false, skill: i, words: [], from: '' });
+    this.emit({ t: 'zone', kind, x, y, r: rad, el: 'phys', dur });
   }
 
   /**
@@ -2941,10 +3154,10 @@ export class Game {
     this.sfx('rune', 0.7);
   }
 
-  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string): void {
+  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number): void {
     // (a warning is never left out: if the floor is full, the oldest of the hero's own patches gives way to it)
     this.roomForZone();
-    this.zones.push({ x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from });
+    this.zones.push({ x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src });
   }
 
   /** One hit of ability `i` on a monster, with everything a word in front adds to it. */
@@ -2957,7 +3170,13 @@ export class Game {
     const st = d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
     let dmg = this.rng.range(d.dmgMin, d.dmgMax) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
-    const crit = this.rng.chance(d.critChance / 100);
+    let crit = this.rng.chance(d.critChance / 100);
+    // PRECISE behind: the hero's next hit on a marked enemy is a certain critical, and spends the mark
+    const spent = m.markT > 0;
+    if (spent) {
+      crit = true;
+      m.markT = 0;
+    }
     if (crit) dmg *= 1 + d.critMult / 100;
     dmg = Math.max(1, Math.round(dmg));
     const x = m.x;
@@ -2982,8 +3201,23 @@ export class Game {
     if (r.orbChance > 0 && !quiet) this.emit({ t: 'mark', x, y });
     // lightning comes down on the one it hits before it jumps to the others
     if (r.arcs > 0 && !quiet) this.emit({ t: 'arc', x0: x, y0: y, x1: x, y1: y, sky: true });
+    if (spent) this.emit({ t: 'markSpent', id: m.id, x, y, dx: x - h.x, dy: y - h.y });
     this.damageMonster(m, dmg, r.element, crit, i, !quiet && h.skills[i].front.includes('power'), front);
     if (r.poison > 0) this.poisonMonster(m, dmg * r.poison, i);
+    if (!m.dead) {
+      // HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too
+      if (r.stun > 0) this.stunMonster(m, r.stun);
+      else {
+        const chance = Math.min(HEAVY.stunCap, st.stunChance);
+        if (chance > 0 && this.rng.chance(chance / 100)) this.stunMonster(m, HEAVY.stun);
+      }
+      // PRECISE behind marks the first enemy each use hits (not one whose mark this very hit spent)
+      if (r.mark && !spent && this.marked[i] !== h.skills[i].uses) {
+        this.marked[i] = h.skills[i].uses;
+        m.markT = PRECISE.markTime;
+        this.emit({ t: 'markOn', id: m.id, x, y, secs: PRECISE.markTime });
+      }
+    }
     if (r.leech > 0) {
       this.healHero(r.leech);
       this.emit({ t: 'leech', x, y, n: r.leech });
@@ -3022,11 +3256,69 @@ export class Game {
     if (skill >= 0) m.lastSkill = skill;
   }
 
+  /**
+   * HEAVY: monster `m` is stunned for `secs`: it cannot move or attack, and what it was winding up
+   * is broken off. An elite (a guardian too) for half as long; a boss never.
+   */
+  private stunMonster(m: Monster, secs: number): void {
+    if (m.dead || m.boss) return;
+    const t = m.elite ? secs / 2 : secs;
+    if (t <= m.stunT) return;
+    m.stunT = t;
+    this.breakOff(m);
+    this.emit({ t: 'stun', id: m.id, x: m.x, y: m.y, secs: t });
+  }
+
+  /**
+   * HEAVY behind: monster `m` walks onto cracked ground (at (fromX, fromY)) and is staggered: its
+   * attack broken off, it reels for a moment, and the same ground lets it be a while before it can
+   * stagger it again. Not a boss.
+   */
+  private staggerMonster(m: Monster, fromX: number, fromY: number): void {
+    if (m.dead || m.boss || m.staggerCd > 0) return;
+    m.staggerT = HEAVY.stagger;
+    m.staggerCd = HEAVY.stagger + HEAVY.staggerAgain;
+    this.breakOff(m);
+    this.emit({ t: 'stagger', id: m.id, x: m.x, y: m.y, fromX, fromY });
+  }
+
+  /** An attack `m` was winding up is broken off, with the warning of a blow it was about to bring down. */
+  private breakOff(m: Monster): void {
+    if (m.state !== 'windup') return;
+    m.state = 'chase';
+    m.anim = 'idle';
+    for (let k = this.zones.length - 1; k >= 0; k--) {
+      const z = this.zones[k];
+      if (z.kind === 'warn' && z.src === m.id) this.zones.splice(k, 1);
+    }
+  }
+
+  /** Heavy on a monster: its blow, from (fromX, fromY), knocks the hero back a step (walls stop it). */
+  private knockHero(fromX: number, fromY: number): void {
+    const h = this.hero;
+    let dx = h.x - fromX;
+    let dy = h.y - fromY;
+    const len = Math.hypot(dx, dy);
+    if (len < 0.01) {
+      dx = -h.fx;
+      dy = -h.fy;
+    } else {
+      dx /= len;
+      dy /= len;
+    }
+    h.step = { dx: dx * HEAVY.knock, dy: dy * HEAVY.knock, t: 0.12 };
+  }
+
   /** `poison`: the harm is poison working (its number is drawn in poison's colour, and it does not flash the monster). */
   private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false): void {
     // (what is shut in a room is out of reach, of an arc of lightning and of what burns on the ground too: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
-    m.life -= dmg;
+    // (GUARDING, on a monster: its shield takes the harm first)
+    if (m.shield > 0) {
+      const soak = Math.min(m.shield, dmg);
+      m.shield -= soak;
+      m.life -= dmg - soak;
+    } else m.life -= dmg;
     if (!poison) m.flash = heavy ? 0.2 : 0.12;
     m.barT = 4;
     if (skill >= 0) m.lastSkill = skill;
@@ -3056,6 +3348,12 @@ export class Game {
     }
     // what the killing ability's words add
     const r = m.lastSkill >= 0 ? h.skills[m.lastSkill].r : null;
+    if (r && r.frenzyFeed) {
+      // FRENZIED behind: a kill adds to the frenzy and holds it longer (to three times its usual hold)
+      h.frenzy = Math.min(FRENZY.max, h.frenzy + 1);
+      h.frenzyT = Math.min(FRENZY.hold * 3, h.frenzyT + FRENZY.hold);
+      this.emit({ t: 'frenzyFed', x: m.x, y: m.y });
+    }
     if (r && r.volatile > 0) {
       const x = m.x;
       const y = m.y;
@@ -3152,16 +3450,48 @@ export class Game {
     return this.rng.range(m.dmgMin, m.dmgMax);
   }
 
-  hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = ''): void {
+  /** (ox, oy): where a blow that has no monster behind it (a shot, a warning) came from: the way a Heavy one knocks the hero. */
+  hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = '', ox?: number, oy?: number): void {
     const h = this.hero;
     if (this.over || h.invuln > 0 || h.move) return;
     this.slainBy = src ? src.name : from;
     const d = h.d;
+    const fromX = src ? src.x : ox ?? h.x + h.fx;
+    const fromY = src ? src.y : oy ?? h.y + h.fy;
+    // GUARDING burned into gear: a chance to block the blow, which then does nothing at all
+    const block = Math.min(GUARD.blockCap, d.stats.blockChance);
+    if (block > 0 && this.rng.chance(block / 100)) {
+      this.emit({ t: 'blocked', x: h.x, y: h.y, fromX, fromY });
+      this.emit({ t: 'text', x: h.x, y: h.y, text: 'Blocked', color: '#9fe8c0' });
+      this.sfx('hit', 0.5);
+      return;
+    }
     let dmg = raw;
-    if (el === 'phys') dmg *= 1 - armorReduction(d.armor, Math.max(1, this.depth));
+    // (PRECISE, on a monster: its blows find the gaps in the hero's armour)
+    if (el === 'phys') dmg *= 1 - armorReduction(words.includes('precise') ? d.armor * (1 - PRECISE.armourIgnored) : d.armor, Math.max(1, this.depth));
     else dmg *= 1 - (el === 'fire' ? d.resFire : el === 'frost' ? d.resFrost : d.resLight) / 100;
     if (h.shockT > 0) dmg *= 1.2;
+    // GUARDING behind: inside a ward the hero takes less (the strongest ward they stand in)
+    let ward = 0;
+    for (const z of this.zones) if (z.kind === 'ward' && Math.hypot(h.x - z.x, h.y - z.y) <= z.r) ward = Math.max(ward, z.dmg);
+    if (ward > 0) dmg *= 1 - ward;
     dmg = Math.max(1, Math.round(dmg));
+    // HEAVY, on a monster: its blows knock the hero back a step
+    if (words.includes('heavy')) this.knockHero(fromX, fromY);
+    // GUARDING in front: the shield takes the blow first
+    let soaked = 0;
+    if (h.shield > 0) {
+      soaked = Math.min(h.shield, dmg);
+      h.shield -= soaked;
+      dmg -= soaked;
+      if (h.shield <= 0) {
+        h.shield = 0;
+        h.shieldT = 0;
+      }
+    }
+    if (soaked > 0 || ward > 0) this.emit({ t: 'guarded', x: h.x, y: h.y, fromX, fromY });
+    // (all of it taken by the shield: nothing reaches the hero)
+    if (dmg <= 0) return;
     h.life -= dmg;
     h.flash = 0.15;
     if (this.guide) this.guide.hits++;
@@ -3378,6 +3708,8 @@ export class Game {
       if (m.burnT > 0) m.burnT -= dt;
       if (m.chillT > 0) m.chillT -= dt;
       if (m.freezeImmune > 0) m.freezeImmune -= dt;
+      if (m.markT > 0) m.markT -= dt;
+      if (m.staggerCd > 0) m.staggerCd -= dt;
       if (m.poisonT > 0) {
         m.poisonT -= dt;
         if (m.poisonT <= 0) {
@@ -3393,7 +3725,16 @@ export class Game {
         }
         continue;
       }
-      m.cd -= dt;
+      // HEAVY: stunned or staggered, it does nothing (what it was winding up was broken off then)
+      if (m.stunT > 0 || m.staggerT > 0) {
+        m.stunT = Math.max(0, m.stunT - dt);
+        m.staggerT = Math.max(0, m.staggerT - dt);
+        m.anim = 'idle';
+        continue;
+      }
+      // FRENZIED, on a monster: the more it is hurt, the faster it moves and the sooner it attacks again
+      const rage = m.words.includes('frenzied') ? 1 + FRENZY.monster * (1 - Math.max(0, m.life) / m.maxLife) : 1;
+      m.cd -= dt * rage;
       const def = MONSTERS[m.kind];
       const slow = m.chillT > 0 ? 1 - m.chill : 1;
 
@@ -3468,7 +3809,7 @@ export class Game {
         }
       }
       if (moving && (mvx !== 0 || mvy !== 0)) {
-        const sp = m.speed * slow * dt;
+        const sp = m.speed * slow * rage * dt;
         const atX = m.x;
         const atY = m.y;
         this.slide(m, Math.min(m.r, 0.42), mvx * sp, mvy * sp, m.kind === 'bat' ? L.open : L.walk, true);
@@ -3528,7 +3869,7 @@ export class Game {
     if (def.aoe > 0 && !(m.boss && m.atk === 1)) {
       // a ground attack: show where it will land
       const reach = Math.min(dist, def.range);
-      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, def.windup, this.rollMonsterDmg(m), this.monsterElement(m), m.words, m.name);
+      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, def.windup, this.rollMonsterDmg(m), this.monsterElement(m), m.words, m.name, m.id);
     }
   }
 
@@ -3645,7 +3986,7 @@ export class Game {
         if (p.hostile) {
           if (!h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
             // (THE TRAPS: a dart's harm is a share of the life of what it meets)
-            this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from);
+            this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from, p.x - p.vx, p.y - p.vy);
             this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 5 });
             dead = true;
           }
@@ -3701,6 +4042,7 @@ export class Game {
     if (!p.mighted) {
       p.mighted = true;
       this.landed(p.skill);
+      if (p.words.includes('heavy')) this.emit({ t: 'heavy', x, y, r: 1.1, big: false });
     }
     const power = p.words.includes('power');
     this.sfx(power ? 'power' : 'hit', 0.6);
@@ -3727,6 +4069,10 @@ export class Game {
       p.clouded = true;
       this.addCloud(p.skill, x, y, 1.5, p.dmg);
     }
+    if ((r.cracks > 0 || r.ward > 0) && !p.left) {
+      p.left = true;
+      this.leavePatches(p.skill, x, y, 1.0);
+    }
     this.emit({ t: 'spark', x, y, el: r.element, n: 6 });
   }
 
@@ -3741,6 +4087,10 @@ export class Game {
       if (r.cloud > 0 && !p.clouded) {
         p.clouded = true;
         this.addCloud(p.skill, p.x, p.y, 1.5, p.dmg);
+      }
+      if ((r.cracks > 0 || r.ward > 0) && !p.left && this.isOpen(p.x, p.y)) {
+        p.left = true;
+        this.leavePatches(p.skill, p.x, p.y, 1.0);
       }
     }
   }
@@ -3863,7 +4213,7 @@ export class Game {
           this.zones.splice(i, 1);
           this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'blast' });
           this.emit({ t: 'shake', amount: 2 });
-          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y);
         }
         continue;
       }
@@ -3878,6 +4228,20 @@ export class Game {
           }
           this.breakProps(z.x, z.y, z.r, z.skill);
         }
+        continue;
+      }
+      if (z.kind === 'cracks') {
+        // Heavy behind: what walks onto the cracked ground is staggered (bats fly over it)
+        for (const m of this.monsters) {
+          if (m.dead || m.state === 'sleep' || m.kind === 'bat') continue;
+          if (Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5) this.staggerMonster(m, z.x, z.y);
+        }
+        if (z.t >= z.dur) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'ward') {
+        // Guarding behind: it does its work in hurtHero, for as long as it lasts
+        if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
       z.tick -= dt;
@@ -4047,7 +4411,8 @@ export class Game {
     if (rng.chance(TUNE.dropGold)) this.addDrop('gold', m.x, m.y, rng.int(TUNE.goldMin, TUNE.goldMax) * goldBase, null, null);
     if (rng.chance(TUNE.dropItem * bonus)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
     if (rng.chance(TUNE.dropOrb)) this.addDrop('orb', m.x, m.y, 0, null, null);
-    if (rng.chance(TUNE.dropWord * bonus)) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
+    // (THE FIRST LEVELS: no word falls before the ring is lit, nor in the first dungeon)
+    if (rng.chance(TUNE.dropWord * bonus) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
   }
 
   private gainXp(n: number): void {
@@ -4064,9 +4429,17 @@ export class Game {
       this.emit({ t: 'levelup' });
       this.sfx('levelUp');
       this.msg(`Level ${h.level}`, MSG.head);
+      // THE FIRST LEVELS: an ability opens with this level
+      if (FIRST_LEVELS.on) {
+        for (let i = 1; i < MOVE_OPENS.length; i++) {
+          if (MOVE_OPENS[i] !== h.level) continue;
+          this.emit({ t: 'moveOpen', skill: i });
+          this.msg(`A new move: ${SKILLS[h.skills[i].id].name.toUpperCase()}.`, MSG.word);
+        }
+      }
       // a new socket has opened on both attacks: say so, and if a spare word fits it, offer it a place
-      const [f0, b0] = socketCount(h.level - 1);
-      const [f1, b1] = socketCount(h.level);
+      const [f0, b0] = this.slots(h.level - 1);
+      const [f1, b1] = this.slots(h.level);
       if (f1 > f0 || b1 > b0) {
         const nth = ['A', 'A second', 'A third'][(f1 > f0 ? f1 : b1) - 1] ?? 'Another';
         this.msg(`${nth} word slot has opened ${f1 > f0 ? 'IN FRONT of' : 'BEHIND'} your attacks.`, MSG.word);
@@ -4184,7 +4557,7 @@ export class Game {
         const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0);
         for (let i = 0; i < n; i++) this.addDrop('item', p.x, p.y + 0.6, 0, this.rollGear(room && i === 0 ? 2 : 1), null);
         this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.depth) * (room ? 2 : 1), null, null);
-        if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord)) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
+        if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
       }
     }
     // (THE MIX) a lever: walk up, and it is pulled
@@ -4194,6 +4567,11 @@ export class Game {
     // the fallen wordsmith: walk up, and the satchel is searched
     const b = this.level.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < 1.3) this.searchBody(b);
+    // THE FIRST LEVELS: the quest item brought to the wordsmith in town: walk up to him, and his ring is lit
+    if (h.quest && this.level.town) {
+      const st = this.level.stations.find((s) => s.kind === 'wordsmith');
+      if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) this.lightRing(st.x, st.y);
+    }
     if (c.interact) {
       if (this.level.town) {
         // In town the rules only say which service was asked for; the interface opens its panel.
@@ -4210,6 +4588,14 @@ export class Game {
     const w = FIRST_WORD[this.hero.cls].word;
     this.emit({ t: 'search', x: b.x, y: b.y });
     this.sfx('rare');
+    // THE FIRST LEVELS: before the ring is lit, the satchel holds the quest item, not a word (the owner, 20:39)
+    if (FIRST_LEVELS.on && !this.hero.ring) {
+      this.hero.quest = 'heart';
+      this.hero.potions = TUNE.potionMax;
+      this.emit({ t: 'quest', x: b.x, y: b.y });
+      this.msg(`A fallen wordsmith. In the satchel: full flasks, and ${QUEST_ITEM.the}. Bring it to the wordsmith in town.`, MSG.word);
+      return;
+    }
     this.drops.push({ x: b.x, y: b.y, kind: 'word', gold: 0, item: null, word: w, age: 0 });
     this.emit({ t: 'wordDrop', word: w, x: b.x, y: b.y });
     // (and their flasks: the second half of the dungeon is met fresh)
@@ -4263,6 +4649,9 @@ export class Game {
   /** Why a word cannot be laid on the gate, or null if it can. */
   planProblem(word: WordId): string | null {
     if (this.hero.words[word] <= 0) return 'No spare word';
+    // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
+    // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
+    if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;
     if (this.plan.length >= TUNE.planMax) return `At most ${TUNE.planMax} words`;
     if (this.plan.includes(word)) return 'Already burning';
     if (WORDS[word].element && this.plan.some((w) => WORDS[w].element)) return 'One element per dungeon';
@@ -4303,6 +4692,8 @@ export class Game {
 
   /** Why `word` cannot be burned into this item, or null if it can: nothing there, no room left on it, or it has what the word gives already. */
   imbueProblem(ref: ItemRef, word: WordId): string | null {
+    // (THE FIRST LEVELS: nothing is wordsmithed before the ring is lit)
+    if (!this.hero.ring && !this.practice) return DARK_RING;
     const it = this.itemAt(ref);
     return it ? imbueProblem(it, word) : 'Nothing there';
   }
@@ -4318,6 +4709,7 @@ export class Game {
    */
   imbue(ref: ItemRef, word: WordId): string | null {
     const h = this.hero;
+    if (!h.ring && !this.practice) return DARK_RING;
     const it = this.itemAt(ref);
     if (!it) return 'Nothing there';
     if (h.words[word] <= 0) return 'No spare word';
@@ -4407,6 +4799,7 @@ export class Game {
   /** Wordsmith: buy the word in place `i` of his shelf. It joins the hero's spare words. */
   buyWord(i: number): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     const w = this.wordStock[i];
     if (!w) return 'Sold';
     const price = this.wordPrice();
@@ -4422,6 +4815,7 @@ export class Game {
   /** Wordsmith: sell him a spare word. He keeps it for the rest of this visit (see `buyBackWord`). */
   sellWord(word: WordId): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     if (!(h.words[word] > 0)) return 'No spare word';
     h.words[word]--;
     h.gold += this.wordSellValue();
@@ -4435,6 +4829,7 @@ export class Game {
   /** Wordsmith: take back word `i` of those sold to him on this visit, for what he paid for it. */
   buyBackWord(i: number): string | null {
     const h = this.hero;
+    if (!h.ring) return DARK_RING;
     const w = this.wordsSold[i];
     if (!w) return 'Nothing there';
     const price = this.wordSellValue();
@@ -4701,7 +5096,8 @@ export class Game {
     after[to.idx] = word;
     const ws = after.filter((w): w is WordId => w !== null);
     if (new Set(ws).size !== ws.length) return 'Already there';
-    if (ws.filter((w) => WORDS[w].element).length > 1) return 'One element per side';
+    // (ONE DAMAGE WORD A SIDE: his answer, 8 Oct 2026, 16:53; before Version 19.3, one element a side)
+    if (ws.filter((w) => WORDS[w].kind === 'damage').length > 1) return 'One damage word per side';
     return null;
   }
 
@@ -4735,6 +5131,7 @@ export class Game {
       G.set = { skill: to.skill, uses: h.skills[to.skill].uses };
       if (firstWord) {
         // A new player's first word is on. In a dungeon, the dead rise for it; anywhere else there is nothing more to show.
+        // (THE FIRST LEVELS: it is set in town, at the wordsmith's, and that is the end of the lesson: his answer, 22:19, "No special moment")
         if (this.inDungeon) this.after(0.9, () => this.rise());
         else this.endGuide();
       }

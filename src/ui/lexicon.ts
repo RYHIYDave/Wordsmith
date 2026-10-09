@@ -138,15 +138,20 @@ function knownPips(g: CanvasRenderingContext2D, meta: Meta, w: WordId, x: number
  * shelf of kept words along the bottom (a line for its caption and its button, then the
  * stones), and between them the page of the word that is open.
  */
-export function lexLayout(r: Rect, touch: boolean): { x0: number; bw: number; bodyY: number; pitch: number; bh: number; shelfY: number; keptY: number; pageY: number; pageH: number } {
+export function lexLayout(r: Rect, touch: boolean): { x0: number; bw: number; bodyY: number; pitch: number; perRow: number; rows: number; bh: number; shelfY: number; keptY: number; pageY: number; pageH: number } {
   const x0 = r.x + SIDE_M;
   const bw = r.w - 2 * SIDE_M;
   const bodyY = r.y + 2 + (touch ? 22 : 16) + 2;
-  const pitch = Math.max(CELL, Math.min(PITCH, Math.floor((bw + 2) / WORD_IDS.length)));
+  // (every word in one row where they fit; where they do not, as Version 19.3's thirteen do not,
+  // in rows as even as they can be: seven and six)
+  const fit = Math.max(1, Math.floor((bw + 2) / PITCH));
+  const rows = Math.max(1, Math.ceil(WORD_IDS.length / fit));
+  const perRow = Math.ceil(WORD_IDS.length / rows);
+  const pitch = rows === 1 ? Math.max(CELL, Math.min(PITCH, Math.floor((bw + 2) / WORD_IDS.length))) : PITCH;
   const bh = touch ? 18 : 13;
   const shelfY = r.y + r.h - (3 + bh + 2 + CELL + 4);
-  const pageY = bodyY + CELL + 6;
-  return { x0, bw, bodyY, pitch, bh, shelfY, keptY: shelfY + 3 + bh + 2, pageY, pageH: shelfY - 3 - pageY };
+  const pageY = bodyY + rows * (CELL + 2) - 2 + 6;
+  return { x0, bw, bodyY, pitch, perRow, rows, bh, shelfY, keptY: shelfY + 3 + bh + 2, pageY, pageH: shelfY - 3 - pageY };
 }
 
 /**
@@ -159,13 +164,15 @@ export function lexLayout(r: Rect, touch: boolean): { x0: number; bw: number; bo
 export function lexiconSide(ui: Ui, art: Art, meta: Meta, game: Game, st: LexUi, inv: InvUi, r: Rect): Side {
   const g = ui.g;
   const T = ui.touch;
-  const { x0, bw, bodyY, pitch, bh, shelfY, keptY, pageY, pageH } = lexLayout(sideBody(r, ui.w, ui.h), T);
+  const { x0, bw, bodyY, pitch, perRow, bh, shelfY, keptY, pageY, pageH } = lexLayout(sideBody(r, ui.w, ui.h), T);
   const found = WORD_IDS.filter((w) => meta.known[w].found);
   if (st.sel && !meta.known[st.sel].found) st.sel = null;
   if (!st.sel && found.length) st.sel = found[0];
-  const cells = WORD_IDS.map((w, i) => ({ w, r: { x: x0 + i * pitch, y: bodyY, w: CELL, h: CELL } }));
+  const cells = WORD_IDS.map((w, i) => ({ w, r: { x: x0 + (i % perRow) * pitch, y: bodyY + Math.floor(i / perRow) * (CELL + 2), w: CELL, h: CELL } }));
   const kept = WORD_IDS.filter((w) => meta.lexicon[w] > 0);
-  const chips = kept.map((w, i) => ({ w, n: meta.lexicon[w], r: { x: x0 + i * pitch, y: keptY, w: CELL, h: CELL } }));
+  // (the shelf has one row: more kinds kept than it holds side by side, and they stand closer)
+  const keptPitch = kept.length > 1 ? Math.min(pitch, Math.floor((bw - CELL) / (kept.length - 1))) : pitch;
+  const chips = kept.map((w, i) => ({ w, n: meta.lexicon[w], r: { x: x0 + i * keptPitch, y: keptY, w: CELL, h: CELL } }));
   const cost = game.keepCost();
   const takeW = textWidth('TAKE IT OUT') + 16;
   const takeR: Rect = { x: r.x + r.w - SIDE_M - takeW, y: shelfY + 3, w: takeW, h: bh };
@@ -260,8 +267,10 @@ export function drawLexicon(ui: Ui, art: Art, meta: Meta, st: LexUi, dt: number)
   const py = Math.max(3, Math.floor((H - ph) / 2));
   const hdr = T ? 23 : 18;
   const rowH = T ? 19 : 17;
-  const listW = narrow ? pw - 12 : 104;
-  const cols = narrow ? 3 : 1;
+  // (one column of words beside the page; two where one would run off the foot of the panel, as
+  // Version 19.3's thirteen do on a phone held sideways)
+  const cols = narrow ? 3 : hdr + 2 + WORD_IDS.length * rowH + 4 <= ph ? 1 : 2;
+  const listW = narrow ? pw - 12 : 104 * cols;
   const cellW = Math.floor(listW / cols);
   const listX = px + 6;
   const listY = py + hdr + 2;

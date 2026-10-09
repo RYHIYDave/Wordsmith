@@ -188,6 +188,16 @@ const BARE_SKILLS: readonly [SkillId, SkillId] = ['strike', 'slam'];
 /** The attribute a weapon's attacks grow with, whoever holds it: a sword with Strength, a bow with Dexterity, a staff or a wand with Intelligence. */
 export const WEAPON_ATTR: Record<WeaponKind, Attr> = { sword: 'str', greatsword: 'str', bow: 'dex', staff: 'int', wand: 'int' };
 
+/**
+ * ATTACKS AND SPELLS (the doc "Wordsmith: The New Words", his yes at 16:53 on 8 Oct 2026): the
+ * weapon decides, a sword, a great sword or a bow making attacks and a staff or a wand spells; the
+ * evasive moves go with their class (Leap and Trap attacks, Warp a spell).
+ */
+export const SPELL_SKILLS: ReadonlySet<SkillId> = new Set<SkillId>(['wave', 'orb', 'familiar', 'beam', 'warp']);
+export function isSpell(id: SkillId): boolean {
+  return SPELL_SKILLS.has(id);
+}
+
 /** The quick attack of a hand that holds that weapon. */
 export function tapSkill(weapon: WeaponKind | null): SkillId {
   return (weapon ? WEAPON_SKILLS[weapon] : BARE_SKILLS)[0];
@@ -230,8 +240,50 @@ export const ATTR_GIVES = {
 // Power words. The rule: a word in FRONT of an ability changes the hit; a word BEHIND it changes
 // what the ability leaves behind. The exact numbers are in words.ts.
 
+/**
+ * THE TWO KINDS OF WORD (his words, 5 Oct 2026: "I really like the distinction of Shape and
+ * Damage"; 8 Oct, 10:54 and 11:27: Leech, Volatile, Swift and Twin are shaping words). A DAMAGE word
+ * adds damage of a kind; a SHAPING word changes the hit, or what it leaves behind. An attack takes
+ * ONE DAMAGE WORD ON EACH SIDE (his answer, 8 Oct, 16:53: "Yes, one a side (Recommended)"): the doc
+ * "Wordsmith: The New Words".
+ */
+export type WordKind = 'damage' | 'shape';
+
+// THE NEW WORDS' NUMBERS (Version 19.3): the starting points of his doc "Wordsmith: The New Words"
+// (his yes, 8 Oct 2026, 16:53: "Yes, as it is (Recommended)"), to be tuned once he has played them.
+/** HEAVY: in front, 20% slower to use (cooldowns and mana 1.25 times, a quick attack's speed over 1.25), and it stuns; behind, cracked ground. */
+export const HEAVY = {
+  slower: 1.25,
+  /** Seconds a Heavy hit stuns for: an elite for half of it, a boss never. */
+  stun: 0.8,
+  /** Seconds the cracked ground lasts; a stagger, and how long a monster waits before the same ground staggers it again. */
+  cracks: 4,
+  stagger: 0.55,
+  staggerAgain: 1.5,
+  /** On a monster: its blows knock the hero this far back (tiles). */
+  knock: 0.6,
+  /** On gear: the most that a hero's gear together gives of a chance to stun (%). */
+  stunCap: 50,
+};
+/** PRECISE: in front, the area this much the size; behind, a mark lasts this many seconds. On a monster: its hits ignore this much of the hero's armour. */
+export const PRECISE = { area: 0.7, markTime: 5, armourIgnored: 0.5 };
+/** FRENZIED: each stack this much faster (attacks, and cooldowns recovering), up to `max`; the stacks fade `hold` seconds after the last use. On a monster: up to `monster` faster near death. */
+export const FRENZY = { each: 0.08, max: 5, hold: 3, monster: 0.5 };
+/** GUARDING: in front a shield of this fraction of life for `shieldTime` s; behind a ward that takes `ward` off the damage inside it, for `wardTime` s. On a monster: a shield of `monster` of its life. */
+export const GUARD = {
+  shield: 0.1,
+  shieldTime: 3,
+  ward: 0.3,
+  wardTime: 4,
+  monster: 0.2,
+  /** On gear: the most that a hero's gear together gives of a chance to block (%). */
+  blockCap: 50,
+};
+
 export interface WordDef {
   id: WordId;
+  /** Damage or shaping (see WordKind). */
+  kind: WordKind;
   /** The word itself, as it drops. */
   name: string;
   /** How it reads in front of an ability: "Flame" Orb. */
@@ -255,15 +307,21 @@ export interface WordDef {
 }
 
 export const WORDS: Record<WordId, WordDef> = {
-  power: { id: 'power', name: 'Power', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'The word of force.', frontText: 'More damage and a bigger hit.', behindText: 'Each hit that lands builds a short damage bonus.', monsterText: 'Hits harder and has more life.' },
-  leech: { id: 'leech', name: 'Leech', front: 'Leeching', behind: 'of Leeching', attr: 'str', element: null, about: 'The word of hunger. It takes life from what it touches.', frontText: 'Heals you for every enemy hit.', behindText: 'Enemies it kills drop life orbs.', monsterText: 'Heals when it hits you.' },
-  swift: { id: 'swift', name: 'Swift', front: 'Swift', behind: 'of Swiftness', attr: 'dex', element: null, about: 'The word of speed.', frontText: 'Faster to use again.', behindText: 'Each use gives you a burst of speed.', monsterText: 'Moves and attacks faster.' },
-  twin: { id: 'twin', name: 'Twin', front: 'Twin', behind: 'of Echoes', attr: 'dex', element: null, about: 'The word of doubling. Two of a thing, each the weaker for it.', frontText: 'Strikes, fires or bursts twice, each time weaker.', behindText: 'Repeats itself a moment later, weaker.', monsterText: 'Attacks twice.' },
-  fire: { id: 'fire', name: 'Flame', front: 'Flame', behind: 'of Flame', attr: 'int', element: 'fire', about: 'The word of fire.', frontText: 'Fire damage. Explodes and sets enemies burning.', behindText: 'Passes through, hits softer, leaves burning ground.', monsterText: 'Deals fire damage and sets you burning.' },
-  frost: { id: 'frost', name: 'Frost', front: 'Frost', behind: 'of Frost', attr: 'int', element: 'frost', about: 'The word of cold.', frontText: 'Frost damage. Chills, then freezes.', behindText: 'Passes through, hits softer, leaves ice that slows.', monsterText: 'Deals frost damage and slows you.' },
-  lightning: { id: 'lightning', name: 'Lightning', front: 'Lightning', behind: 'of Lightning', attr: 'int', element: 'lightning', about: 'The word of storms.', frontText: 'Lightning damage. Arcs to nearby enemies.', behindText: 'Passes through, hits softer, leaves a storm that strikes.', monsterText: 'Deals lightning damage and shocks you.' },
-  volatile: { id: 'volatile', name: 'Volatile', front: 'Volatile', behind: 'of Ruin', attr: 'int', element: null, about: 'The word of ruin. Things burst.', frontText: 'Enemies it kills explode.', behindText: 'Leaves a rune that detonates a moment later.', monsterText: 'Explodes when it dies.' },
-  poison: { id: 'poison', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
+  power: { id: 'power', kind: 'damage', name: 'Power', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'The word of force.', frontText: 'More damage and a bigger hit.', behindText: 'Each hit that lands builds a short damage bonus.', monsterText: 'Hits harder and has more life.' },
+  leech: { id: 'leech', kind: 'shape', name: 'Leech', front: 'Leeching', behind: 'of Leeching', attr: 'str', element: null, about: 'The word of hunger. It takes life from what it touches.', frontText: 'Heals you for every enemy hit.', behindText: 'Enemies it kills drop life orbs.', monsterText: 'Heals when it hits you.' },
+  swift: { id: 'swift', kind: 'shape', name: 'Swift', front: 'Swift', behind: 'of Swiftness', attr: 'dex', element: null, about: 'The word of speed.', frontText: 'Faster to use again.', behindText: 'Each use gives you a burst of speed.', monsterText: 'Moves and attacks faster.' },
+  twin: { id: 'twin', kind: 'shape', name: 'Twin', front: 'Twin', behind: 'of Echoes', attr: 'dex', element: null, about: 'The word of doubling. Two of a thing, each the weaker for it.', frontText: 'Strikes, fires or bursts twice, each time weaker.', behindText: 'Repeats itself a moment later, weaker.', monsterText: 'Attacks twice.' },
+  fire: { id: 'fire', kind: 'damage', name: 'Flame', front: 'Flame', behind: 'of Flame', attr: 'int', element: 'fire', about: 'The word of fire.', frontText: 'Fire damage. Explodes and sets enemies burning.', behindText: 'Passes through, hits softer, leaves burning ground.', monsterText: 'Deals fire damage and sets you burning.' },
+  frost: { id: 'frost', kind: 'damage', name: 'Frost', front: 'Frost', behind: 'of Frost', attr: 'int', element: 'frost', about: 'The word of cold.', frontText: 'Frost damage. Chills, then freezes.', behindText: 'Passes through, hits softer, leaves ice that slows.', monsterText: 'Deals frost damage and slows you.' },
+  lightning: { id: 'lightning', kind: 'damage', name: 'Lightning', front: 'Lightning', behind: 'of Lightning', attr: 'int', element: 'lightning', about: 'The word of storms.', frontText: 'Lightning damage. Arcs to nearby enemies.', behindText: 'Passes through, hits softer, leaves a storm that strikes.', monsterText: 'Deals lightning damage and shocks you.' },
+  volatile: { id: 'volatile', kind: 'shape', name: 'Volatile', front: 'Volatile', behind: 'of Ruin', attr: 'int', element: null, about: 'The word of ruin. Things burst.', frontText: 'Enemies it kills explode.', behindText: 'Leaves a rune that detonates a moment later.', monsterText: 'Explodes when it dies.' },
+  // THE NEW WORDS (his choice of 8 Oct 2026, 12:26; how they play: his doc "Wordsmith: The New Words",
+  // his yes at 16:53). All are shaping words. Their looks are the art chat's (render/words3.ts).
+  heavy: { id: 'heavy', kind: 'shape', name: 'Heavy', front: 'Heavy', behind: 'of Quakes', attr: 'str', element: null, about: 'The word of weight. Slow, and crushing.', frontText: 'Slower, hits much harder and stuns.', behindText: 'Leaves cracked ground that staggers enemies.', monsterText: 'Its blows knock you back.' },
+  precise: { id: 'precise', kind: 'shape', name: 'Precise', front: 'Precise', behind: 'of the Mark', attr: 'dex', element: null, about: 'The word of the exact. Narrow, and deadly.', frontText: 'More damage, a smaller area.', behindText: 'Marks an enemy: your next hit on it is a certain critical.', monsterText: 'Its hits find the gaps in your armour.' },
+  frenzied: { id: 'frenzied', kind: 'shape', name: 'Frenzied', front: 'Frenzied', behind: 'of Frenzy', attr: 'str', element: null, about: 'The word of rage. Faster, and faster.', frontText: 'Each use makes the next faster, up to five times.', behindText: 'Kills keep the frenzy going.', monsterText: 'Speeds up as it is hurt.' },
+  guarding: { id: 'guarding', kind: 'shape', name: 'Guarding', front: 'Guarding', behind: 'of Warding', attr: 'str', element: null, about: 'The word of the shield. It keeps you.', frontText: 'Each use gives you a brief shield.', behindText: 'Leaves a ward circle: you take less damage inside it.', monsterText: 'Carries a shield that soaks damage.' },
+  poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -432,6 +490,75 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
 };
 
 /**
+ * THE FIRST LEVELS (Version 19.5). The owner, 8 Oct 2026, 20:34: "Now that we have more words,
+ * I’d like to work on the game progression.  This includes the skill trees, but also how the game
+ * feels early and moving up through the levels." 20:36: "I’d like you to start with only your tap
+ * skill at level 1.  Level 2 you unlock tap+hold.  Level 5 you unlock swipe.  This will change the
+ * dungeon mob density and difficulty.  It feels a little too abrupt to be thrown into at the
+ * start". 20:39: "I’d like the fallen wordsmith to drop a quest item that you give to the wordsmith
+ * in town to unlock the ability to wordsmith.  So you shouldn’t get a word in the first dungeon.
+ * You’ll get your first word from the wordsmith in town and the tutorial Then you can add one
+ * before word.  This works with all the starting words to put before an attack.  The next slot you
+ * unlock is the second before slot.  So you can add a shaping word to your damage word.  Then you
+ * unlock the after slot." 20:41: "And I’d like the quest item to power up the runes around the
+ * wordsmith.  Like a battery being put in.  These animations should go to the art team". 21:05:
+ * "That also means no words on monsters for dungeon 1".
+ *
+ * THE GAME'S OWN SINCE VERSION 19.5: his yes at 23:06, to "Put the first levels into the game as
+ * Version 19.5, as in these pictures?": "Yes, now; ring art later (Recommended)" (the art chat's
+ * dark ring and its powering up to come in a later version). So the switch is on, put in place with
+ * the slots' levels as this file loads (`useFirstLevels`, at the foot of the slots). Switched off,
+ * the game is 19.4's (tests/first_levels.test.ts), for pictures beside the new. With it on:
+ *   - the abilities open by level (MOVE_OPENS): the quick attack (tap) at once, the slow one (tap
+ *     and hold) at 2, the evasive move (swipe) at 5; a shut one cannot be used and has no slots;
+ *   - until the wordsmith's ring is lit (`Hero.ring`) there is no wordsmithing: no slots, no word
+ *     falls anywhere, and his trade is shut; the fallen wordsmith's satchel holds the QUEST ITEM
+ *     (`Hero.quest`) instead of a word; brought to the wordsmith in town it lights his ring, he
+ *     gives the first word (for the quick attack, in front, whatever the class: "This works with
+ *     all the starting words to put before an attack"), and the slots open in the order he gave:
+ *     one in front, then the second in front, then behind (SLOT_OPENS_FIRST);
+ *   - the first dungeon is gentler (FIRST_DUNGEON), and no monster in it carries a word.
+ * His answers to the first pictures (8 Oct, 22:19 to 22:21): the slots at 5, 7 and 10; the first
+ * word, set in town, has "No special moment" (the lesson ends there); a later hero finds the ring
+ * lit, "No, the ring stays lit (Recommended)" (`Meta.ring`); and a move or a slot that is not open
+ * yet is not shown at all: of both, "Hide them until they open". Then, 22:23: "And I want it to be a
+ * moment when your new moves unlock.  These animations should be strike skill slides over and
+ * whirlwind is revealed with a flourish" (ui/hud.ts, OPENING); and 22:25: "Nice.  And I’d like the
+ * first pack you run into to be a real softball.  So you get a chance to learn the movement and
+ * tapping mechanic" (FIRST_DUNGEON.softball).
+ */
+export const FIRST_LEVELS = { on: true };
+/** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
+export const MOVE_OPENS: readonly number[] = [1, 2, 5];
+/**
+ * The levels at which the word slots open with the first levels on, once the ring is lit: the
+ * first in front at once, the second in front at 5 (his words of 4 Oct, "I want the second word
+ * upgrade on skills to come at level 5"), the first behind at 7 and the second behind at 10 (his
+ * words of 4 Oct, "Move the second behind to 10"); all three his answer of 8 Oct, 22:19, "2nd before
+ * 5, after 7 and 10 (Recommended)".
+ */
+export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly number[] } = { front: [1, 5], behind: [7, 10] };
+/** The quest item: what the fallen wordsmith's satchel holds, and what lights the ring (a name of the director's, until he or the art chat names it). */
+export const QUEST_ITEM = { name: 'Rune Heart', the: 'the RUNE HEART' };
+/**
+ * The first dungeon, gentler, with the first levels on: about half the monsters of a first
+ * dungeon (its budget, against `monsterBudget(1)`'s 120), in packs of two to four, one room of
+ * elites, and every blow struck in it soft (GUIDE.softDmg, everywhere in it, not only before the
+ * fallen wordsmith); the boss as before, without its words.
+ *
+ * `softball`: THE FIRST PACK (the owner, 22:25: "Nice.  And I’d like the first pack you run into
+ * to be a real softball.  So you get a chance to learn the movement and tapping mechanic"): the
+ * pack nearest the way in gives way to `size` skeletons, each falling to about `hits` of the
+ * character's bare quick attack, striking for `dmg` of a skeleton's blow, at `speed` tiles a
+ * second (a skeleton goes 3, the hero faster).
+ */
+export const FIRST_DUNGEON = { budget: 60, packMin: 2, packMax: 4, eliteRooms: 1, softball: { size: 3, hits: 1.5, dmg: 0.25, speed: 2 } };
+/** The ability a class's first word is for: with the first levels on, the quick attack for every class (the swipe opens only at 5). */
+export function firstWordSkill(cls: ClassId): number {
+  return FIRST_LEVELS.on ? 0 : FIRST_WORD[cls].skill;
+}
+
+/**
  * The first dungeon teaches as it goes (the rules call it the guide). The owner's order: a prompt
  * on how to move; on meeting the first monsters, "tap to ..., tap + hold to ..."; after a couple of
  * blows, "swipe to ..." with the dodge pointed out; half way through, a body to search with a
@@ -509,17 +636,17 @@ export const COMBO = { on: true };
 /**
  * THE RANGER'S ARROWS LEAVE FROM WHERE HIS PICTURE HAS THEM (the art chat, 8 Oct 2026; the owner,
  * 15:38: "the arrow that fires in the animation for shot doesn’t match the actual projectile that
- * comes out for shot"). A MOCK-UP BEHIND A SWITCH THAT IS OFF, switched with the ranger's new
- * stances (art/moves3.ts, useRangerStances). With it on, a hero's arrow is drawn from where the
+ * comes out for shot"). ON SINCE VERSION 19.4, on his yes (8 Oct 2026, 20:27), switched with the
+ * ranger's new stances (art/moves3.ts, RANGER_STANCES, useRangerStances). On, a hero's arrow is drawn from where the
  * point of the arrow on his string was the moment before it went (`from` tiles ahead of him: it is
  * not seen before it gets there, as it is still on the bow; `height` game pixels off the floor, at
  * which it flies), as long as that arrow (`long` game pixels, where it was 6); and a Volley's
  * arrows go up from where his bow is (`volleyFrom` tiles ahead of him, `volleyHeight` up). The
  * rules are not changed: an arrow still starts 0.4 tiles ahead of him and hits what it hits.
- * With it off, as before: drawn from the start, 10 pixels up, 6 long; a volley from 10 pixels to
+ * Off, as before Version 19.4: drawn from the start, 10 pixels up, 6 long; a volley from 10 pixels to
  * the right of the feet, 27 up. (tests/ranger_stances.test.ts holds the numbers to the picture's.)
  */
-export const RANGER_ARROW = { on: false, from: 0.796, height: 22.5, long: 11, volleyFrom: 0.291, volleyHeight: 27.6 };
+export const RANGER_ARROW = { on: true, from: 0.796, height: 22.5, long: 11, volleyFrom: 0.291, volleyHeight: 27.6 };
 
 export const TUNE = {
   heroRadius: 0.3,
@@ -833,6 +960,25 @@ export const SLOT_OPENS: { front: number[]; behind: number[] } = { front: [1, 5]
 /** The levels that open the second slot in front and the second behind. */
 export const SLOT_LEVELS = { front: SLOT_OPENS.front[1], behind: SLOT_OPENS.behind[1] };
 
+/** The slots as they are without the first levels (kept to put back). */
+const SLOT_OPENS_BEFORE = { front: [...SLOT_OPENS.front], behind: [...SLOT_OPENS.behind] };
+/**
+ * THE FIRST LEVELS on (true) or off (false): the switch, and the slots' levels with it
+ * (SLOT_OPENS_FIRST, or as they were). For tests and pictures; a game made after it follows it.
+ */
+export function useFirstLevels(on: boolean): void {
+  FIRST_LEVELS.on = on;
+  const want = on ? SLOT_OPENS_FIRST : SLOT_OPENS_BEFORE;
+  SLOT_OPENS.front.length = 0;
+  SLOT_OPENS.front.push(...want.front);
+  SLOT_OPENS.behind.length = 0;
+  SLOT_OPENS.behind.push(...want.behind);
+  SLOT_LEVELS.front = SLOT_OPENS.front[1];
+  SLOT_LEVELS.behind = SLOT_OPENS.behind[1];
+}
+// (the game's own: the first levels, since Version 19.5)
+useFirstLevels(FIRST_LEVELS.on);
+
 /** Sockets an ability has at a given hero level: [in front, behind]. */
 export function socketCount(level: number): [number, number] {
   return [SLOT_OPENS.front.filter((lv) => level >= lv).length, SLOT_OPENS.behind.filter((lv) => level >= lv).length];
@@ -896,6 +1042,10 @@ export const QUIPS: {
     leech: ['Thanks for the drink.', 'I feel better already.', "What's yours is mine."],
     volatile: ['Boom.', 'Mind the mess.', 'Handle with care.'],
     poison: ['Pick your poison.', 'Something you ate?', 'Bad for your health.'],
+    heavy: ['Down you go.', 'Feel that?', 'Heavy hitter.'],
+    precise: ['Right there.', 'Dead centre.', 'Through the gap.'],
+    frenzied: ['More!', "Can't stop now.", 'Faster.'],
+    guarding: ['Not today.', 'You missed.', 'Hold the line.'],
   },
   /** By the attack that made the kill. */
   skill: {

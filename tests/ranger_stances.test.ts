@@ -1,7 +1,9 @@
 // Tests for the ranger's new stances and moves (art/moves3.ts RANGER_STANCES, with game/defs.ts
-// RANGER_ARROW: a mock-up behind switches that are off; the art chat, 8 Oct 2026). The owner, 15:38:
-// "When you run, the ranger is crouched, but when you stop he pops back up.  I want him to stay
-// crouched when he stops in battle." He said yes to each part: 15:57, 16:28, 16:41 and 17:07.
+// RANGER_ARROW; the art chat, 8 Oct 2026). The owner, 15:38: "When you run, the ranger is
+// crouched, but when you stop he pops back up.  I want him to stay crouched when he stops in
+// battle." He said yes to each part: 15:57, 16:28, 16:41 and 17:07; and in the main chat at 20:27
+// to putting them into the game as Version 19.4. So the switches are ON from Version 19.4; switched
+// off, he is as he was before (for pictures beside the new).
 //   run: tsx --test tests/ranger_stances.test.ts
 
 // @ts-ignore
@@ -28,31 +30,53 @@ const assert: Assert = nodeAssert;
 
 /** Every move of the ranger's that the switch changes, by its short name. */
 const HIS = ['rstand', 'rtown', 'rrun', 'rtownrun', 'shot', 'volley', 'roll', 'rreel', 'rlurch', 'rfall', 'squirrel', 'sighting', 'rdraw'];
-const TODAY = new Map(HIS.map((k) => [k, JSON.stringify({ rest: MOVES3[k].rest, motion: MOVES3[k].motion, ready: MOVES3[k].ready })]));
 const now = (k: string): string => JSON.stringify({ rest: MOVES3[k].rest, motion: MOVES3[k].motion, ready: MOVES3[k].ready });
+const all = (): Map<string, string> => new Map(HIS.map((k) => [k, now(k)]));
+/** His moves as the game starts with them (the switch on, since Version 19.4). */
+const LOADED = all();
+/** His moves as they were before Version 19.4 (the switch off), and the new ones (switched on again). */
+useRangerStances(false);
+const BEFORE = all();
+useRangerStances(true);
+const NEW = all();
+/** With the switch on, as the game has it. */
 const on = (fn: () => void): void => {
   useRangerStances(true);
   try {
     fn();
   } finally {
-    useRangerStances(false);
+    useRangerStances(true);
+  }
+};
+/** With the switch off for a while (him as he was before Version 19.4), and on again after. */
+const off = (fn: () => void): void => {
+  useRangerStances(false);
+  try {
+    fn();
+  } finally {
+    useRangerStances(true);
   }
 };
 
-test('the switches are off, and his moves are today\'s', () => {
-  assert.equal(RANGER_STANCES.on, false);
-  assert.equal(RANGER_ARROW.on, false);
-  for (const k of HIS) assert.equal(MOVES3[k].stride, undefined, `${k} has no stride`);
-  assert.equal(MOVES3.roll.tumble, undefined);
+test('the switches are on, since Version 19.4: the game starts with his new moves', () => {
+  assert.equal(RANGER_STANCES.on, true);
+  assert.equal(RANGER_ARROW.on, true);
+  for (const k of HIS) assert.equal(LOADED.get(k), NEW.get(k), `${k}: the game starts with the new one`);
+  assert.ok((MOVES3.rrun.stride ?? 0) > 0);
+  assert.ok(MOVES3.roll.tumble !== undefined);
 });
 
-test('switched on and off again, his moves are today\'s exactly', () => {
-  on(() => {
-    assert.equal(RANGER_ARROW.on, true);
-    for (const k of ['rstand', 'shot', 'volley', 'roll', 'rreel', 'rfall', 'sighting', 'rdraw', 'rrun', 'rtownrun']) assert.ok(now(k) !== TODAY.get(k), `${k} changes with the switch on`);
+test('switched off and on again, his moves are the new ones exactly; off, they are as they were before', () => {
+  off(() => {
+    assert.equal(RANGER_STANCES.on, false);
+    assert.equal(RANGER_ARROW.on, false);
+    for (const k of HIS) assert.equal(MOVES3[k].stride, undefined, `${k} has no stride with the switch off`);
+    assert.equal(MOVES3.roll.tumble, undefined);
+    for (const k of ['rstand', 'shot', 'volley', 'roll', 'rreel', 'rfall', 'sighting', 'rdraw', 'rrun', 'rtownrun']) assert.ok(now(k) !== NEW.get(k), `${k} is not the new one with the switch off`);
+    for (const k of HIS) assert.equal(now(k), BEFORE.get(k), `${k} is as it was before`);
   });
-  assert.equal(RANGER_ARROW.on, false);
-  for (const k of HIS) assert.equal(now(k), TODAY.get(k), `${k} is today's again`);
+  assert.equal(RANGER_ARROW.on, true);
+  for (const k of HIS) assert.equal(now(k), NEW.get(k), `${k} is the new one again`);
 });
 
 test('his runs grip with the switch, and the others\' do not', () => {
@@ -108,7 +132,7 @@ test('the game\'s arrows leave from where the picture\'s are', () => {
   });
 });
 
-test('his art has the new pictures with the switch on, and none of them without', () => {
+test('his art has the new pictures with the switch on (the game\'s own), and none of them without', () => {
   const check = (yes: boolean): void => {
     const art = makeHeroArt3();
     const dungeon = art.of('ranger', { twoHanded: false, town: false });
@@ -136,8 +160,8 @@ test('his art has the new pictures with the switch on, and none of them without'
       assert.equal(a.front.clips?.attackWalk, undefined);
     }
   };
-  check(false);
-  on(() => check(true));
+  check(true);
+  off(() => check(false));
 });
 
 // ---------------------------------------------------------------------------------------------

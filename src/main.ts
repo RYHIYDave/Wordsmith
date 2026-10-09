@@ -32,7 +32,7 @@ import { LEDGE_H, screenDirToWorld, toWorldX, toWorldY } from './engine/iso';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, COMBO, SKILLS, SLOT_OPENS, TUNE } from './game/defs';
+import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
 import { MIX, RELIEF } from './game/dungeon';
@@ -62,6 +62,7 @@ import type { SmithPicture } from './ui/panels';
 import { gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
 import { THEME, Ui } from './ui/ui';
+import { WORDS3, demo3, events3 } from './render/words3';
 
 declare const __BUILD__: string;
 
@@ -306,6 +307,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let quiet = 0;
   /** A word just picked up, announced at the top of the screen (`big`: a new player's first, announced large). */
   let toast: { word: WordId; t: number; big: boolean } | null = null;
+  /** THE FIRST LEVELS: the ability that has just opened, for its "NEW MOVE" (ui/hud.ts). */
+  let moveToast: { skill: number; t: number } | null = null;
   /** Every prompt of the first dungeon shown to the current character, in order (playtests check it). */
   const guideLog: string[] = [];
 
@@ -411,6 +414,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     invAuto = false;
     quiet = 0;
     toast = null;
+    moveToast = null;
     guideLog.length = 0;
   };
 
@@ -445,6 +449,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     invWas = game ? game.hero.skills.map((s) => ({ name: s.r.name, words: [...s.front, ...s.behind] })) : [];
     // (the news of a word found has been read by now: it does not wait behind the screen to be shown again)
     toast = null;
+    moveToast = null;
     if (game) game.offer = null;
     input.eat('Tab', 'KeyI');
     sfx('click');
@@ -550,6 +555,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     invAuto = false;
     invWas = game ? game.hero.skills.map((s) => ({ name: s.r.name, words: [...s.front, ...s.behind] })) : [];
     toast = null;
+    moveToast = null;
     if (game) game.offer = null;
     // the key that opened the panel must not also act inside it
     input.eat('KeyE', 'KeyF', 'Enter');
@@ -714,8 +720,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const moving = mag > 0.18;
     if (moving) {
       const v = screenDirToWorld(sx, sy);
-      c.mx = v.x * mag;
-      c.my = v.y * mag;
+      // THE STICK GOES AT ONE SPEED (the owner, 8 Oct 2026, 22:25: "Also can you change the movement
+      // speed so it’s constant no matter where the joystick is in relation to the center"): pushed
+      // past the small still middle, the hero goes at full speed whatever the thumb's distance.
+      // (Before, the speed grew with it, full only at STICK_RADIUS.)
+      const k = input.stick.active ? 1 : mag;
+      c.mx = v.x * k;
+      c.my = v.y * k;
     }
 
     // A touch or a click on something that is used by standing next to it sends the hero there.
@@ -1080,6 +1091,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (e.t === 'station' && !bot) openStation(e.kind);
       // (words set in the inventory may be moved about before it closes: what came of it is shown then)
       else if (e.t === 'worded' && panels.open !== 'inv') fx.wordJoined(g.hero.x, g.hero.y, e.word, e.name);
+      else if (e.t === 'moveOpen') moveToast = { skill: e.skill, t: 0 };
       else if (e.t === 'wordGot') {
         // a new player's first word is the big moment: it is announced large, and the game holds its breath
         const big = !!g.guide && !g.guide.set;
@@ -1105,6 +1117,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     }
     const levelled = g.events.some((e) => e.t === 'levelup');
     fx.handle(g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
+    // (the new words' looks, called up by what the rules say happened: render/words3.ts)
+    if (WORDS3.on) events3(g.events, g, fx);
     g.events.length = 0;
     if (levelled) fx.celebrate(g.hero.x, g.hero.y);
   };
@@ -1256,6 +1270,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const busy = g.monsters.some((m) => !m.dead && m.state !== 'sleep' && Math.hypot(m.x - h.x, m.y - h.y) < 10);
         calm = h.pending > 0 && !busy ? calm + dt : 0;
         quiet = busy ? 0 : quiet + dt;
+        if (moveToast) {
+          moveToast.t += dt;
+          if (moveToast.t > 3.4) moveToast = null;
+        }
         if (toast) {
           toast.t += dt;
           if (toast.t > (toast.big ? 3.6 : 2.8)) toast = null;
@@ -1334,7 +1352,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const my = wy(renderer.cam, m.x, m.y);
         return mx > -16 && mx < scr.w + 16 && my > -8 && my < scr.h + 24;
       });
-      const hudIn: HudIn = { banner, toast: paused ? null : toast, gesture: null, fight: fightOn };
+      const hudIn: HudIn = { banner, toast: paused ? null : toast, moveToast: paused ? null : moveToast, gesture: null, fight: fightOn };
       if (banner && input.touchMode) {
         // on a phone, the gesture the prompt is asking for is shown as a ghost, where it should be made
         const cam = renderer.cam;
@@ -1504,10 +1522,35 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       saved = null;
       newRun(cls, seed, true);
     },
+    /**
+     * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5): a hero who
+     * has been through them, for the playtests that are about something else. The wordsmith's ring
+     * lit (for the hero, and on this device), and the level raised to `level` if it is lower, so
+     * that the moves and slots of that level are open (all three moves from 5; a slot behind from
+     * 7; two a side from 10). No points to spend come with it, so no level-up choice opens.
+     */
+    seasoned: (level = 10) => {
+      if (!game) return;
+      const h = game.hero;
+      h.ring = true;
+      meta.ring = true;
+      if (h.level < level) h.level = level;
+      game.refresh();
+      h.life = h.d.maxLife;
+      h.mana = h.d.maxMana;
+    },
+    /** THE FIRST LEVELS: the NEW MOVE banner showing now (the move that has just opened, and how long it has shown), or null. */
+    moveToast: () => (moveToast ? { skill: moveToast.skill, t: moveToast.t } : null),
     /** The inventory, as the HUD opens it. */
     inv: (focus = -1) => openInventory(focus),
     /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
     modes: MODES,
+    /**
+     * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS): a mock-up behind a switch that is off. Its
+     * pictures and playtests switch it on (or off again) for themselves; the run made after follows it.
+     */
+    firstLevels: (on: boolean) => useFirstLevels(on),
+    firstLevelsOn: () => FIRST_LEVELS.on,
     /**
      * A third word slot a side, switched on or off (the owner's idea, not in the game: see
      * SLOT_OPENS in game/defs.ts). For pictures of how the menus and the game screen hold it.
@@ -1607,6 +1650,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     doors: DOORS,
     /** THE TRAPS (game/traps.ts, TRAPS): ON in the game since the owner's yes (8 Oct 2026, 11:36); playtests that lay a dungeon without them set it for themselves and put it back. */
     traps: TRAPS,
+    /** THE NEW WORDS (render/words3.ts): how the eight words he chose on 8 Oct look at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
+    words3: demo3(fx, () => game),
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
@@ -1614,7 +1659,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       useComboMends(on);
       art.heroes = makeHeroArt3();
     },
-    /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): a mock-up behind switches that are off; its playtests put them in and paint the heroes again (false: today's back). */
+    /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): ON since Version 19.4, on his yes; pictures of him as he was before switch them off and paint the heroes again (true: the new, the game's own, back). */
     rangerStances: (on: boolean) => {
       useRangerStances(on);
       art.heroes = makeHeroArt3();

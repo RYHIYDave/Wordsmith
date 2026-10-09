@@ -74,6 +74,14 @@ export interface Resolved {
   volatile: number;
   /** Poison: each hit adds a dose that deals this fraction of the hit every second while it lasts. 0 = none. */
   poison: number;
+  /** HEAVY in front (Version 19.3): seconds a hit stuns for (0 = none). It also hits harder and is slower: dmgMult, rate, cooldown. */
+  stun: number;
+  /** PRECISE in front: a narrow, exact hit (more damage, a smaller area: dmgMult, size); the flag is for its look. */
+  precise: boolean;
+  /** FRENZIED in front: each use adds a stack of speed (up to FRENZY.max). */
+  frenzy: boolean;
+  /** GUARDING in front: each use gives the hero a shield of this fraction of their life (0 = none). */
+  shield: number;
   // --- behind: the wake ---
   /** Each use adds this % damage for a few seconds (stacks). */
   might: number;
@@ -89,6 +97,14 @@ export interface Resolved {
   rune: number;
   /** A cloud of poison left at the impact: this fraction of the hit every second to whatever stands in it. 0 = none. */
   cloud: number;
+  /** HEAVY behind (Version 19.3): cracked ground left where it hits, for this many seconds; an enemy walking onto it is staggered. 0 = none. */
+  cracks: number;
+  /** PRECISE behind: the first enemy each use hits is marked: the hero's next hit on it is a certain critical. */
+  mark: boolean;
+  /** FRENZIED behind: a kill by it adds a stack and holds the frenzy longer. */
+  frenzyFeed: boolean;
+  /** GUARDING behind: a ward circle left where it hits; inside it the hero takes this fraction less damage. 0 = none. */
+  ward: number;
   /** Plain-language lines for the character panel. */
   lines: string[];
 }
@@ -189,6 +205,12 @@ export interface Hero {
   /** "of Swiftness" bonus (%) and its timer. */
   haste: number;
   hasteT: number;
+  /** Frenzied (Version 19.3): stacks of frenzy, each making the hero's attacks and the recovery of their cooldowns faster (FRENZY), and the seconds before they fade. */
+  frenzy: number;
+  frenzyT: number;
+  /** Guarding in front: what the shield will still take before the hero's life does, and its seconds left. */
+  shield: number;
+  shieldT: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -201,6 +223,13 @@ export interface Hero {
   /** A leap or a roll in progress. */
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
   move: null | { kind: 'leap' | 'roll'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean };
+  /**
+   * THE FIRST LEVELS (defs.ts, FIRST_LEVELS): whether the wordsmith's ring is lit for this hero,
+   * so that he can wordsmith (always, with the switch off and for a hero saved before it); and the
+   * quest item he carries, if any.
+   */
+  ring: boolean;
+  quest: 'heart' | null;
   d: Derived;
 }
 
@@ -247,6 +276,17 @@ export interface Monster {
   poisonT: number;
   poisonDps: number;
   poisonN: number;
+  /**
+   * Heavy (Version 19.3): seconds it is stunned for (it cannot move or attack) and staggered for
+   * (its attack broken off), and the seconds before cracked ground may stagger it again.
+   */
+  stunT: number;
+  staggerT: number;
+  staggerCd: number;
+  /** Precise behind: seconds the mark on it has left (the hero's next hit on it is a certain critical). */
+  markT: number;
+  /** Guarding: what is left of the shield it carries, which takes damage before its life does. */
+  shield: number;
   /** Which hero ability last hurt it (for effects that trigger on a kill), or -1. */
   lastSkill: number;
   /** True while the hero can see it. */
@@ -297,6 +337,8 @@ export interface Projectile {
   clouded: boolean;
   /** It has given its "of Power" stack (one for each shot that lands, however many it goes through). */
   mighted?: boolean;
+  /** It has left its cracked ground or its ward (Heavy or Guarding behind): one for each shot, where it first hits or ends. */
+  left?: boolean;
   age: number;
   /** Hostile shots: the name of the monster that fired it (for "slain by"). */
   from: string;
@@ -309,7 +351,8 @@ export interface Projectile {
   trap?: boolean;
 }
 
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn';
+/** 'cracks': Heavy behind, cracked ground that staggers; 'ward': Guarding behind, a circle the hero takes less harm in (Version 19.3). */
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward';
 
 export interface Zone {
   x: number;
@@ -319,7 +362,7 @@ export interface Zone {
   dur: number;
   kind: ZoneKind;
   element: Element;
-  /** Damage per tick (ground patches), or the blast damage (rune, warn). */
+  /** Damage per tick (ground patches), the blast damage (rune, warn), or the share of harm a ward takes off (ward). */
   dmg: number;
   slow: number;
   tick: number;
@@ -329,6 +372,8 @@ export interface Zone {
   words: WordId[];
   /** Hostile zones: the name of the monster that made it (for "slain by"). */
   from: string;
+  /** A warning laid by a monster's wind-up: that monster's id (a stun or a stagger breaks the attack off, and its warning with it). */
+  src?: number;
 }
 
 /**
@@ -497,7 +542,8 @@ export interface StationSpot {
  *   smith   a word is in the pouch: put it on an attack
  *   use     the word is on: use that attack (the dead rise for it)
  */
-export type GuideStep = 'move' | 'fight' | 'body' | 'take' | 'smith' | 'use';
+/** (THE FIRST LEVELS add 'carry', the quest item to be taken to town, and 'ring', to the wordsmith with it.) */
+export type GuideStep = 'move' | 'fight' | 'body' | 'take' | 'carry' | 'ring' | 'smith' | 'use';
 
 /** One line of the fight prompt: a thing to do, and whether it has been done. */
 export interface GuideRow {
@@ -573,6 +619,8 @@ export interface Meta {
   aimChosen: boolean;
   /** The mode last picked on the class cards (game/modes.ts): the next hero is made in it unless it is changed there. */
   mode: HeroMode;
+  /** THE FIRST LEVELS: the wordsmith's ring has been lit on this device (a hero has brought him the quest item). */
+  ring: boolean;
 }
 
 /**
@@ -676,6 +724,15 @@ export type GameEvent =
   | { t: 'guide'; step: GuideStep | 'done' }
   /** The fallen wordsmith has been searched. */
   | { t: 'search'; x: number; y: number }
+  /**
+   * THE FIRST LEVELS (defs.ts, FIRST_LEVELS): 'moveOpen', an ability has just opened with a level
+   * (1 the slow attack, 2 the evasive move); 'quest', the quest item was taken from the satchel at
+   * (x, y); 'ring', it was brought to the wordsmith, whose ring at (x, y) is lit now (the art
+   * chat's animation is called up by it).
+   */
+  | { t: 'moveOpen'; skill: number }
+  | { t: 'quest'; x: number; y: number }
+  | { t: 'ring'; x: number; y: number }
   /** An orb is set down at (x, y); its waves reach `r`. / The orb that was out is gone (its time was up, or a new one took its place). */
   | { t: 'wave'; x: number; y: number; dx: number; dy: number; w: number; el: Element; words: readonly WordId[]; echo: boolean }
   | { t: 'orbSet'; x: number; y: number; r: number; el: Element; words: readonly WordId[] }
@@ -713,8 +770,29 @@ export type GameEvent =
   | { t: 'buff'; kind: 'might' | 'haste'; x: number; y: number; stacks: number }
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
   | { t: 'echo'; x: number; y: number; dx: number; dy: number; kind: SkillKind; delay: number }
-  /** A patch of ground or a rune has just been laid. */
-  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune'; x: number; y: number; r: number; el: Element }
+  /** A patch of ground or a rune has just been laid. (`dur`: cracks and wards, its seconds; laid again where one already is, it lasts that long from now.) */
+  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward'; x: number; y: number; r: number; el: Element; dur?: number }
+  /**
+   * THE NEW WORDS AT WORK (Version 19.3), for their looks (render/words3.ts): a Heavy hit lands
+   * (`big`: an area ability's, out to `r`); monster `id` is stunned for `secs` / staggered by a blow
+   * from (fromX, fromY) / marked by Precise for `secs` / struck on its mark (a certain critical,
+   * from the way (dx, dy)).
+   */
+  | { t: 'heavy'; x: number; y: number; r: number; big: boolean }
+  | { t: 'stun'; id: number; x: number; y: number; secs: number }
+  | { t: 'stagger'; id: number; x: number; y: number; fromX: number; fromY: number }
+  | { t: 'markOn'; id: number; x: number; y: number; secs: number }
+  | { t: 'markSpent'; id: number; x: number; y: number; dx: number; dy: number }
+  /**
+   * Frenzied: a use adds a stack (`n` now held), going the way (dx, dy) / a kill feeds the frenzy,
+   * from (x, y). Guarding: a use gives the hero a shield for `secs` / a blow from (fromX, fromY) is
+   * turned by the shield or softened by a ward. A blow is blocked (the gear's chance to block).
+   */
+  | { t: 'frenzy'; x: number; y: number; dx: number; dy: number; n: number }
+  | { t: 'frenzyFed'; x: number; y: number }
+  | { t: 'shield'; x: number; y: number; secs: number }
+  | { t: 'guarded'; x: number; y: number; fromX: number; fromY: number }
+  | { t: 'blocked'; x: number; y: number; fromX: number; fromY: number }
   /** Life drawn out of a monster at (x, y) and into the hero. */
   | { t: 'leech'; x: number; y: number; n: number }
   /** "of Leeching" hits something: it is marked (it will leave a life orb if this ability kills it). */

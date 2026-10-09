@@ -44,6 +44,11 @@ export const WORD_COLOR: Record<WordId, string> = {
   leech: P.bl5,
   volatile: P.pu4,
   poison: P.vn4,
+  // (the new words: the art chat's colours, with his yes of 8 Oct 2026, 13:15: render/words3.ts, NEW_RAMP)
+  heavy: '#ac8753',
+  precise: '#eef4fa',
+  frenzied: '#ff5c33',
+  guarding: '#30a868',
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -905,6 +910,15 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   volatile: ['X.XX.X', '.XXXX.', 'XXooXX', 'XXooXX', '.XXXX.', 'X.XX.X'],
   // skull
   poison: ['.XXXX.', 'XXXXXX', 'X.XX.X', 'XXXXXX', '.XooX.', '.X..X.'],
+  // (the new words: the art chat's runes, his yes of 13:15: render/words3.ts, NEW_GLYPH)
+  // a weight with a ring to lift it by
+  heavy: ['..XX..', '.X..X.', '.XXXX.', 'XXXXXX', 'XXooXX', 'XXXXXX'],
+  // the sight of a bow: four ticks round a point
+  precise: ['...X...', '...X...', '.......', 'XX.o.XX', '.......', '...X...', '...X...'],
+  // three claw marks
+  frenzied: ['X..X..', 'X..X..', '.X..X.', '.X..X.', '..X..X', '..o..o'],
+  // a shield
+  guarding: ['XXXXXX', 'X.oo.X', 'X.oo.X', 'X....X', '.X..X.', '..XX..'],
 };
 
 /** The lighter tone used for each glyph's glowing core. */
@@ -918,6 +932,10 @@ export const WORD_GLOW: Record<WordId, string> = {
   leech: P.white,
   volatile: P.pu5,
   poison: P.vn5,
+  heavy: '#e0c08c',
+  precise: '#ffffff',
+  frenzied: '#ff9670',
+  guarding: '#8ae4ac',
 };
 
 function runeSprite(word: WordId): Sprite {
