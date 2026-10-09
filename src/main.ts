@@ -1301,6 +1301,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (pad.pressed(BTN.A)) input.uiPress = { x: Math.round(pad.px), y: Math.round(pad.py), button: 0 };
     if (pad.pressed(BTN.B) || pad.pressed(BTN.START)) input.press('Escape');
     if (pad.pressed(BTN.Y) && withInventory(panels.open)) input.press('Tab');
+    // (BACK, which opened the map, closes it again, as M does)
+    if (pad.pressed(BTN.BACK) && panels.open === 'map') input.press('KeyM');
   };
 
   /** The menus' pointer, while a controller is steering it: a small arrow. */

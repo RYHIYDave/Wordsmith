@@ -134,6 +134,8 @@ export default async function (page, snap) {
   check('   BACK opens the map in a dungeon', s.panel === 'map', s.panel);
   await snap('06_map');
   await tap(8);
+  s = await st();
+  check('   and BACK closes it again', s.panel === 'none', s.panel);
   // 4. the D-pad's UP: LEVEL UP, named so
   const buttons = () => page.evaluate(() => [...window.__dbg.ui.marks.keys()].filter((m) => m.startsWith('button:')));
   await page.evaluate(() => { window.__dbg.game().hero.pending = 1; });
