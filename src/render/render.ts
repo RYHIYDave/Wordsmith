@@ -46,7 +46,7 @@ import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
-import { drawWildArrow, drawWildWave } from './wild';
+import { LEAP_LIFT, drawWildArrow, drawWildWave } from './wild';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -1774,7 +1774,8 @@ export class Renderer {
       // (in a swipe move the hero is lifted by the move, from the height they left to the height
       // they land on, not by the ground they pass over: a leap up a ledge rises to it)
       let sy = relief ? wyFlat(cam, h.x, h.y) - heroLift : wy(cam, h.x, h.y);
-      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 24;
+      // (big and wild, art/moves3.ts WILD: higher: render/wild.ts, LEAP_LIFT)
+      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * (WILD.on ? LEAP_LIFT : 24);
       // (a roll that goes over a ledge or a pit is a dive: it leaves the floor, a little)
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);

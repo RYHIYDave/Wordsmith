@@ -6,8 +6,10 @@ the warrior's Strike and the ranger's Shot, each in his own way, and he said yes
 behind a switch that is off: `WILD` in `src/art/moves3.ts` (`useWild(on)`), with the effects in
 `src/render/wild.ts`. With it off, the game is as it was exactly (tests check it).
 
-**Where:** on `art/mage-stances`, because the wild Wave is cast from her guard (`MAGE_STANCES`).
-The wild Shot is from the ranger's crouch (`RANGER_STANCES`, the game's own since Version 19.4).
+**Where:** the Wave, Strike and Shot on `art/mage-stances`, because the wild Wave is cast from her
+guard (`MAGE_STANCES`). The rest of the skills on `art/wild-skills`: `art/mage-stances` with main
+(Version 19.4) merged in. The wild Shot, Volley and Trap are from the ranger's crouch
+(`RANGER_STANCES`, the game's own since Version 19.4).
 
 ## His words
 
@@ -48,6 +50,11 @@ The wild Shot is from the ranger's crouch (`RANGER_STANCES`, the game's own sinc
   what was hit; for now only the sword and the arrows throw them.) By 22:36, to "Should every hit
   throw the monster's own bits, the mage's spells too (on top of their crackle)?": "Only sword and
   arrows".
+
+- 9 Oct, 00:05: "K after let’s reimagine the rest of the animations for the main skills using the
+  new rules." 00:24: "We don’t need slam or familiar for now"; and "Don’t need beam either". So the
+  rest are six: the warrior's Whirlwind and Leap, the ranger's Volley and Trap, the mage's Orb and
+  Warp (below), made while he slept and shown to him in the morning.
 
 The art rulebook (his doc, the project's `claude/art_rulebook.md`, `docs/art/RULEBOOK.md`) now
 says big and wild under Effects and magic and under Movement, with this Wave as the measure.
@@ -109,6 +116,47 @@ says big and wild under Effects and magic and under Movement, with this Wave as 
 - The colours: `AIR` in `src/render/wild.ts`, white to a pale cool grey, nothing of the crackle's
   cyan.
 
+## The rest of the skills, each hero in his own way (9 Oct)
+
+The effects only (`src/render/wild.ts`); his moves are as they were, but for the leap's height. The
+events the rules already send are handed on by `render/fx.ts`; what lasts (a leap, a roll, the
+whirlwind, a volley's patch, an orb) is followed from the world `main.ts` hands it each step
+(`fx.wild.see(g.monsters, g.hero.combo, g)`).
+
+- **Whirlwind, the blade's way** (`whirlStart`, `whirlTurn`, `whirlEnd`; the vortices): a kick of
+  dust and a flash on the blade as it begins; while it goes, a ring of the blade's light (cyan,
+  white at its head) goes round him with the game's own crescents, and a wider ring of the wind it
+  raises; lines of wind fly off the edge and dust is flung out round his feet; each turn throws a
+  ring of wind and jolts the screen; what it cuts is struck hard and throws its own bits (bone and
+  dust off a skeleton); it ends with a last sweep flung wide and a kick.
+- **Leap, the blade's way** (`leapOff`, the leap's trail, `landing`): he drives up off the floor,
+  which cracks under him (cold cracks: no glow), dust bursting out round his feet and wind tearing
+  off back the way he came; he goes higher (`LEAP_LIFT`, 40 game pixels for the game's 24: the
+  renderer lifts him so), wind streaming off him and the blade's light trailing over his head; he
+  lands blade first: a white flash, a cut of the blade's light, the floor cracked open round him,
+  stone thrown up and a wall of dust rolling out, a ring of wind past it, the game holding still a
+  tenth of a second (the rulebook's freeze), the screen kicking hard; what he lands among is struck
+  hard and throws its own bits.
+- **Volley, in wind** (`volleyUp`, the hoops, the patch's vortices, `volleyDrop`, `volleyFall`): a
+  gust bursts off the bow, upward; a column of wind spirals up with the arrows, hoops of air rising
+  round it; grit kicked up round his knee; wind gathers round the patch while the arrows are up and
+  turns over it while they come down, grit turning in it; each arrow falls in a streak of air and
+  goes in with a puff of air and grit; what it hits throws its own bits.
+- **Trap, in wind** (the roll's trail, `trapSet`, `blast`, the twister): he dives in a swoosh of air
+  that curls off behind him, grit kicked up; the trap's jaws glint as it is set, in a breath of
+  wind; when it goes off the jaws snap with a white flash and a whirlwind tears up out of it, a
+  funnel of air turning with grit flung round in it and a ring of wind tearing outward; what it
+  catches is buffeted (a puff, a hoop of wind: no bits, as only sword and arrows throw them).
+- **Orb, the crackle** (`orbSet`, the orb's crackle, `nova`, `orbGone`): the staff comes down and
+  the power bursts out round her, a ring of arcs and bolts striking the floor; a great bolt leaps
+  from her crystal to where the orb hangs, and it bursts into being with bolts of its own; it
+  crackles as it hangs; each wave is a ring of arcs run out from it, with bolts lashing to what is
+  near, and what it catches crackles; when its time is up it folds in on itself with a crack.
+- **Warp, the crackle** (`warp`, `thunder`): her power folds in on her with a crack where she goes
+  from; a great bolt joins that place to where she comes out, sparks strewn along it; and she
+  arrives in a thunderclap, bolts striking out all round her, a ring of arcs, a fountain of sparks,
+  the game holding an instant and the screen kicking hard; what it catches crackles.
+
 ## What flies off a hit (`MATTER`, `Wild.debris`, `Wild.see`)
 
 The monster's, not the weapon's (his "mob particle effect"): chosen by what was hit, from the
@@ -120,12 +168,12 @@ answer by 22:36); the Wave crackles over what it hits instead.
 
 ## Not yet
 
-The rest one at a time, each shown to him first: her power getting away, her hits and fall, the
-Orb and the Beam, Slam, Volley, the roll, the words' looks.
+Slam, Familiar and Beam (his words of 00:24: not for now); her power getting away, her hits and
+fall; the words' looks. Each shown to him first.
 
 ## How it is checked
 
-- `tests/wild.test.ts` (11): the switch off and the Wave as it was (today's, or from her guard);
+- `tests/wild.test.ts` (12 with the one below): the switch off and the Wave as it was (today's, or from her guard);
   on and off again exactly; without her stances the Wave is today's even with the switch on; the
   wild Wave lands when the rules let it go and is over before their attack is; her feet; the
   pictures carry the crystal's charge; the effects add nothing with the switch off. Strike and
@@ -146,7 +194,15 @@ Orb and the Beam, Slam, Volley, the roll, the words' looks.
   `FRAMES=116-185 WIDTH=540 COLOURS=144 python3 tools/wild_films.py shots/wild/strike_off shots/wild/strike_on previews/wild/wild_strike3_lone.gif 160-185x2 2 strike_lone`;
   `WIDTH=560 COLOURS=144 python3 tools/wild_films.py shots/wild/shot_off shots/wild/shot_on previews/wild/wild_shot3.gif 8-30 3 shot`.
   The warrior's taps come as the game spaces a held attack's swings, so the hold is seen.
-- The whole unit suite: 697 of 697; tsc clean.
+- The rest of the skills: `tests/wild.test.ts`, one more: nothing of the effects' own with the
+  switch off; with it on, each of the six with far more on the screen, nothing in the enemy's
+  colours, no crackle but the mage's, dust for the warrior and wind for the ranger, the leap's
+  freeze and cold cracks and its height, the trap's whirlwind (and none where no trap lay).
+- Their films: `node tools/build_to.mjs dist/wild.html`, then for each skill
+  `SKILL=<whirlwind|leap|volley|trap|orb|warp> node tools/playtest.mjs --file dist/wild.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/wild_skill.mjs --out shots/wild/<skill>_on`
+  (and `OFF=1 ... --out shots/wild/<skill>_off`), then `tools/wild_skill_films.sh`'s lines, e.g.
+  `WIDTH=480 COLOURS=96 python3 tools/wild_films.py shots/wild/leap_off shots/wild/leap_on previews/wild/wild_leap.gif 8-30 2 leap`.
+- The whole unit suite: 740 of 740 (9 Oct); tsc clean.
 
 ## To make it the game's own
 
@@ -159,6 +215,7 @@ What it touches beyond the art: `render/figure.ts` (an attack's end seen while t
 `Clip.tail`, and where it waits, `Clip.poise`, told by `FigureState.poised`; and `Figure.charge`),
 `render/render.ts` (the wave drawn tall, the arrow's head, the crystal's place handed to the
 effects, and `poised: h.combo === 0 && h.comboT > 0`), `render/fx.ts` (calls into `Wild`),
-`main.ts` (`fx.wild.see(g.monsters, g.hero.combo)` each frame, and `__dbg.wild`), `engine/px.ts`
+`main.ts` (`fx.wild.see(g.monsters, g.hero.combo, g)` each frame, and `__dbg.wild`), the leap's
+height in `render/render.ts` (`LEAP_LIFT` while the switch is on), `engine/px.ts`
 and `art/kit.ts` (a sprite's `Charge`), `art/actor_types.ts` (`Clip.tail`, `Clip.poise`) and
 `art/heroes3.ts` (the clips carry them).

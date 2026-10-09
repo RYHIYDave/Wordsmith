@@ -1191,6 +1191,14 @@ export class Fx {
           const power = has(w, 'power');
           const second = (e.n ?? 0) > 0;
           const area = e.style !== 'shock';
+          // (big and wild, render/wild.ts: a whirlwind's turn, a leap's landing, a warp, an orb's wave or her arrival, a trap going off)
+          if (!e.echo) {
+            if (e.style === 'whirl') this.wild.whirlTurn(e.x, e.y, e.r);
+            else if (e.style === 'land') this.wild.landing(e.x, e.y, e.r);
+            else if (e.style === 'warp') this.wild.warp(e.x, e.y);
+            else if (e.style === 'nova') this.wild.nova(e.x, e.y, e.r);
+            else if (e.style === 'blast') this.wild.blast(e.x, e.y, e.r);
+          }
           if (e.style === 'ruin') {
             // a rune goes off
             this.rings.push({ x: e.x, y: e.y, r: e.r, t: 0, dur: 0.3, colors: VIOLET, fill: true, heavy: true });
@@ -1533,6 +1541,8 @@ export class Fx {
           // ... and the orb is there (the ball itself is drawn by the renderer; its waves are 'burst' events)
           this.flashes.push({ x: e.x, y: e.y, z: 13, r: 0.55, t: 0, dur: 0.12, colors: cs });
           for (let i = 0; i < 8; i++) this.mote(e.x, e.y, cs);
+          // (big and wild: the power bursts out round her and a great bolt leaps to where it hangs: render/wild.ts)
+          this.wild.orbSet(e.x, e.y);
           break;
         }
         case 'orbEnd': {
@@ -1611,10 +1621,16 @@ export class Fx {
         }
         case 'channel':
         case 'channelEnd':
-          break; // (what is seen of these is the first bite and the beam thinning away)
+          // (what is seen of these is the first bite and the beam thinning away; big and wild, a whirlwind's beginning and end: render/wild.ts)
+          if (e.kind === 'whirl') {
+            if (e.t === 'channel') this.wild.whirlStart(e.x, e.y);
+            else this.wild.whirlEnd(e.x, e.y);
+          }
+          break;
         case 'trapSet':
           // (the trap itself is drawn on the floor by the renderer: here, the snap of its being set)
           this.spray(e.x, e.y, 4, [P.sl5, P.sl4, P.sl3], 1.6, 40, 2);
+          this.wild.trapSet(e.x, e.y);
           break;
         case 'volleyUp': {
           // A volley leaves the bow: a handful of arrows straight up and off the top of the
@@ -1638,6 +1654,8 @@ export class Fx {
             });
           }
           this.flashes.push({ x: bx, y: by, z: bz + 1, r: has(e.words, 'power') ? 0.34 : 0.22, t: 0, dur: 0.09, colors });
+          // (big and wild: a gust off the bow, and a column of wind spiralling up with them: render/wild.ts)
+          this.wild.volleyUp(bx, by, bz, !!e.echo);
           break;
         }
         case 'volleyDrop': {
@@ -1645,6 +1663,7 @@ export class Fx {
           // arrow, head first: see drawAir).
           const colors = this.arrowColors(e.el, e.words, e.n, e.echo);
           if (this.falling.length < 80) this.falling.push({ x: e.x, y: e.y, t: 0, dur: Math.max(0.02, e.in), colors, heavy: has(e.words, 'power') });
+          this.wild.volleyDrop(e.x, e.y, e.in);
           break;
         }
         case 'volleyFall': {
@@ -1659,6 +1678,7 @@ export class Fx {
           if (e.el !== 'phys' || heavy) this.glow(e.x, e.y, heavy ? 26 : 18, 0.16);
           if (heavy && e.hits > 0) this.shake = Math.max(this.shake, 0.8);
           if (has(e.words, 'swift')) this.streaks(e.x, e.y, 2, WIND, 4, 5, { life: 0.12, z: 3 });
+          this.wild.volleyFall(e.x, e.y, e.hits);
           break;
         }
         case 'volleyEnd':

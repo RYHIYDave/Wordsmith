@@ -5,7 +5,7 @@ phone's screen, 844 x 390 at three picture pixels to a point, the game at five s
 pixel), as it was above and big and wild below, cut round the mage and what she strikes, with what it
 is over the top. First at the game's own speed (a frame is a thirtieth of a second of the game's
 time), then a piece of it again, slower.
-   python3 tools/wild_films.py <before prefix> <after prefix> <out.gif> [slow from-to[xN],...] [slow times] [wave|strike|shot]
+   python3 tools/wild_films.py <before prefix> <after prefix> <out.gif> [slow from-to[xN],...] [slow times] [wave|strike|shot|whirlwind|leap|volley|trap|orb|warp]
 e.g. python3 tools/wild_films.py shots/wild/off shots/wild/on previews/wild/wild_wave.gif 8-36 3
      python3 tools/wild_films.py shots/wild/strike_off shots/wild/strike_on previews/wild/wild_strike3.gif 9-34,94-123x2 3 strike
      python3 tools/wild_films.py shots/wild/shot_off shots/wild/shot_on previews/wild/wild_shot3.gif 8-30 3 shot
@@ -58,6 +58,48 @@ FILMS = {
         'behind the arrow. It punches in, and what flies off is',
         'what it hits: bone and dust, yellow sparks off armour.',
     ]},
+    'whirlwind': {'box': (149, 49, 359, 164), 'title': 'Whirlwind, big and wild', 'before': 'AS IT IS IN THE GAME', 'lines': [
+        'Top: as it is in the game. Bottom: big and wild, his way.',
+        'A kick of dust as it begins. A ring of the blade\'s light',
+        'goes round him with the plain one, and a wider ring of the',
+        'wind it raises; wind flies off the edge, dust is flung out;',
+        'what it cuts throws bone and dust. A last sweep to end.',
+    ]},
+    'leap': {'box': (134, 44, 374, 169), 'title': 'Leap, big and wild', 'before': 'AS IT IS IN THE GAME', 'lines': [
+        'Top: as it is in the game. Bottom: big and wild, his way.',
+        'He drives up off the floor: it cracks, dust bursts. He goes',
+        'higher, wind tearing off him, the blade\'s light trailing.',
+        'He lands blade first: the floor cracks open, stone and a',
+        'wall of dust fly, a ring of wind, and everything holds.',
+    ]},
+    'volley': {'box': (179, 29, 419, 164), 'title': 'Volley, big and wild', 'before': 'AS IT IS IN THE GAME', 'lines': [
+        'Top: as it is in the game. Bottom: big and wild, his way.',
+        'Wind, not energy: a gust off the bow, a column of wind',
+        'spiralling up with the arrows, hoops of air round it. Wind',
+        'gathers and turns over the patch; each arrow falls in a',
+        'streak of air, and what it hits throws bone and dust.',
+    ]},
+    'trap': {'box': (164, 49, 404, 174), 'title': 'Trap, big and wild', 'before': 'AS IT IS IN THE GAME', 'lines': [
+        'Top: as it is in the game. Bottom: big and wild, his way.',
+        'He dives in a swoosh of air, grit kicked up; the trap\'s jaws',
+        'glint as it is set, in a breath of wind. When a monster',
+        'steps on it, the jaws snap and a whirlwind tears up out of',
+        'it, a ring of wind tearing outward. No sparks: wind.',
+    ]},
+    'orb': {'box': (179, 29, 419, 164), 'title': 'Orb, big and wild', 'before': 'AS SHE IS IN HER STANCES', 'lines': [
+        'Top: as you last saw her. Bottom: big and wild, her way.',
+        'The staff comes down: arcs run round her and bolts strike',
+        'the floor; a great bolt leaps to where the orb hangs and it',
+        'bursts out. It crackles as it hangs; each wave is a ring of',
+        'arcs with bolts lashing out at what is near.',
+    ]},
+    'warp': {'box': (134, 44, 374, 169), 'title': 'Warp, big and wild', 'before': 'AS SHE IS IN HER STANCES', 'lines': [
+        'Top: as you last saw her. Bottom: big and wild, her way.',
+        'Her power folds in on her with a crack; a great bolt joins',
+        'where she was and where she comes out, the way she went;',
+        'and she arrives in a thunderclap: bolts striking out all',
+        'round her, a ring of arcs, sparks, and everything holds.',
+    ]},
 }
 BOX = FILMS[what]['box']
 W = int(os.environ.get('WIDTH', '640'))
@@ -67,10 +109,21 @@ TITLE = FILMS[what]['title']
 LINES = FILMS[what]['lines']
 
 big, mid, small, tag = ImageFont.truetype(B, 26), ImageFont.truetype(R, 17), ImageFont.truetype(R, 14), ImageFont.truetype(B, 16)
+# (a narrower film: the words made smaller to fit, and the note that it is a mock-up put at the foot)
+_probe = ImageDraw.Draw(Image.new('RGB', (10, 10)))
+_widest = max(_probe.textlength(line, font=mid) for line in LINES)
+LINE = 22
+if _widest > W - 28:
+    k = (W - 28) / _widest
+    mid = ImageFont.truetype(R, max(10, int(17 * k)))
+    big = ImageFont.truetype(B, max(16, int(26 * k)))
+    LINE = max(14, int(22 * k))
+NARROW = _probe.textlength(TITLE, font=big) + _probe.textlength('a mock-up: not in the game', font=small) + 40 > W
 x0, y0, x1, y1 = BOX
 scale = W / ((x1 - x0) * K)
 H = round((y1 - y0) * K * scale)
-top = 12 + 34 + len(LINES) * 22 + 8
+HEAD = 46 + (14 if NARROW else 0)
+top = HEAD + len(LINES) * LINE + 8
 
 
 def panel(path):
@@ -81,9 +134,12 @@ def card(i, note):
     c = Image.new('RGB', (W, top + 2 * (H + 24) + 24), BG)
     d = ImageDraw.Draw(c)
     d.text((14, 10), TITLE, font=big, fill=GOLD)
-    d.text((W - 14, 18), 'a mock-up: not in the game', font=small, fill=GREY, anchor='ra')
+    if not NARROW:
+        d.text((W - 14, 18), 'a mock-up: not in the game', font=small, fill=GREY, anchor='ra')
+    else:
+        d.text((14, 40), 'a mock-up: not in the game', font=small, fill=GREY)
     for k, line in enumerate(LINES):
-        d.text((14, 46 + k * 22), line, font=mid, fill=PALE)
+        d.text((14, HEAD + k * LINE), line, font=mid, fill=PALE)
     y = top
     for label, colour, prefix in ((FILMS[what]['before'], GREY, before), ('BIG AND WILD', CYAN, after)):
         d.text((14, y + 3), label, font=tag, fill=colour)

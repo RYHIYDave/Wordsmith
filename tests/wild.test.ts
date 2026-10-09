@@ -26,7 +26,8 @@ import { COMBO, SKILLS } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import { Figure } from '../src/render/figure';
-import { AIR, CRACKLE } from '../src/render/wild';
+import { AIR, CRACKLE, LEAP_LIFT } from '../src/render/wild';
+import type { WildWorld } from '../src/render/wild';
 import { Fx } from '../src/render/fx';
 import { paintWithoutCanvas, unlike } from './helpers';
 
@@ -445,6 +446,93 @@ test('what flies off a hit is the struck\'s: bone off a skeleton, yellow sparks 
     fx.handle([{ t: 'hit', x: 9, y: 5, amount: 10, crit: false, el: 'phys', onHero: false }], play);
     assert.ok(fx.particles.some((p) => p.color === '#f0e8ff'), 'it knocks bone off the skeleton');
     for (const p of fx.particles) assert.ok(!BLUE.has(p.color), `nothing blue where it strikes: ${p.color}`);
+  } finally {
+    useWild(false);
+  }
+});
+
+// ---- THE REST OF THE SKILLS (the owner, 9 Oct 2026, 00:05: "let's reimagine the rest of the
+// animations for the main skills using the new rules"; Slam, Familiar and Beam left for now) ----
+
+test('the rest of the skills, big and wild: nothing with the switch off; with it on, each in its hero\'s way, and nothing in the enemy\'s colours', () => {
+  const play = (): void => {};
+  const world = (o: Partial<WildWorld> = {}): WildWorld => ({ hero: { x: 5, y: 5, fx: 1, fy: 0, move: null }, orbs: [], volleys: [], traps: [], ...o });
+  const leapMove = { kind: 'leap', t: 0.05, dur: 0.38, x0: 5, y0: 5, x1: 8, y1: 5 };
+  const SKILL_EVENTS: Record<string, (fx: Fx) => void> = {
+    whirlwind: (fx) => {
+      fx.wild.see([{ x: 6, y: 5, kind: 'skeleton', champion: false }], 0, world());
+      fx.handle([{ t: 'channel', kind: 'whirl', x: 5, y: 5, el: 'phys' }, { t: 'burst', x: 5, y: 5, r: 2, el: 'phys', style: 'whirl' }], play);
+      for (let i = 0; i < 6; i++) fx.update(1 / 30);
+      fx.handle([{ t: 'hit', x: 6, y: 5, amount: 10, crit: false, el: 'phys', onHero: false }, { t: 'channelEnd', kind: 'whirl', x: 5, y: 5, el: 'phys', part: 1 }], play);
+    },
+    leap: (fx) => {
+      fx.wild.see([{ x: 8.5, y: 5, kind: 'skeleton', champion: false }], 0, world({ hero: { x: 5.5, y: 5, fx: 1, fy: 0, move: leapMove } }));
+      for (let i = 0; i < 4; i++) fx.update(1 / 30);
+      fx.handle([{ t: 'burst', x: 8, y: 5, r: 1.6, el: 'phys', style: 'land' }, { t: 'hit', x: 8.5, y: 5, amount: 10, crit: false, el: 'phys', onHero: false }], play);
+    },
+    volley: (fx) => {
+      fx.wild.see([{ x: 9, y: 5, kind: 'skeleton', champion: false }], 0, world({ volleys: [{ id: 1, x: 9, y: 5, r: 2.2, t: 0.1 }] }));
+      fx.handle([{ t: 'volleyUp', x: 5, y: 5, tx: 9, ty: 5, r: 2.2, el: 'phys', words: [], echo: false }, { t: 'volleyDrop', x: 9, y: 5, el: 'phys', words: [], n: 0, echo: false, in: 0.2 }, { t: 'volleyFall', x: 9, y: 5, el: 'phys', words: [], n: 0, echo: false, hits: 1 }], play);
+      for (let i = 0; i < 6; i++) fx.update(1 / 30);
+    },
+    trap: (fx) => {
+      fx.wild.see([], 0, world({ hero: { x: 5, y: 5, fx: -1, fy: 0, move: { kind: 'roll', t: 0.05, dur: 0.24, x0: 6, y0: 5, x1: 3, y1: 5 } }, traps: [{ x: 6, y: 5 }] }));
+      for (let i = 0; i < 3; i++) fx.update(1 / 30);
+      fx.handle([{ t: 'trapSet', x: 6, y: 5, el: 'phys' }, { t: 'burst', x: 6, y: 5, r: 2, el: 'phys', style: 'blast' }], play);
+      for (let i = 0; i < 3; i++) fx.update(1 / 30);
+    },
+    orb: (fx) => {
+      fx.wild.see([{ x: 9.5, y: 5, kind: 'skeleton', champion: false }], 0, world({ orbs: [{ id: 1, x: 9, y: 5, t: 0.5, life: 5 }] }));
+      fx.handle([{ t: 'orbSet', x: 9, y: 5, r: 2.2, el: 'phys', words: [] }, { t: 'burst', x: 9, y: 5, r: 2.2, el: 'phys', style: 'nova' }], play);
+      for (let i = 0; i < 6; i++) fx.update(1 / 30);
+    },
+    warp: (fx) => {
+      fx.wild.see([], 0, world());
+      fx.handle([{ t: 'burst', x: 5, y: 5, r: 0.8, el: 'frost', style: 'warp' }, { t: 'burst', x: 9, y: 5, r: 0.8, el: 'frost', style: 'warp' }, { t: 'burst', x: 9, y: 5, r: 1.6, el: 'phys', style: 'nova' }], play);
+      for (let i = 0; i < 3; i++) fx.update(1 / 30);
+    },
+  };
+  /** How much is on the screen: particles, flashes, rings and cuts, and the effects' own arcs and the like. */
+  const amount = (fx: Fx): number => {
+    const w = fx.wild as unknown as { arcs: unknown[]; vortices: unknown[]; twisters: unknown[]; hoops: unknown[] };
+    return fx.particles.length + fx.flashes.length + fx.rings.length + fx.slashes.length + w.arcs.length + w.vortices.length + w.twisters.length + w.hoops.length;
+  };
+  const ENEMY = new Set(['#7a1058', '#c0206a', '#ff4f8a', '#ffb070', '#fff0a0', '#ff3a78']);
+  const off: Record<string, Fx> = {};
+  for (const [name, go] of Object.entries(SKILL_EVENTS)) {
+    const fx = new Fx();
+    go(fx);
+    const w = fx.wild as unknown as { arcs: unknown[]; vortices: unknown[]; twisters: unknown[]; hoops: unknown[] };
+    assert.equal(w.arcs.length + w.vortices.length + w.twisters.length + w.hoops.length, 0, `${name}: nothing of the effects' own with the switch off`);
+    off[name] = fx;
+  }
+  useWild(true);
+  try {
+    const on: Record<string, Fx> = {};
+    for (const [name, go] of Object.entries(SKILL_EVENTS)) {
+      const fx = new Fx();
+      go(fx);
+      on[name] = fx;
+      assert.ok(amount(fx) > amount(off[name]) * 1.5, `${name}: big and wild (${amount(fx)} things on the screen, against ${amount(off[name])})`);
+      for (const p of fx.particles) assert.ok(!ENEMY.has(p.color.toLowerCase()), `${name}: nothing in the enemy's colours (${p.color})`);
+    }
+    // (the crackle is the mage's alone; the warrior's are the blade and dust, the ranger's wind)
+    for (const name of ['whirlwind', 'leap', 'volley', 'trap']) assert.equal(on[name].wild.arcs.length, 0, `${name}: no crackle`);
+    for (const name of ['orb', 'warp']) assert.ok(on[name].wild.arcs.some((a) => a.bolt), `${name}: bolts`);
+    const dust = (fx: Fx): boolean => fx.particles.some((p) => ([P.st6, P.st5, P.st4] as string[]).includes(p.color));
+    const wind = (fx: Fx): boolean => fx.particles.some((p) => AIR.includes(p.color));
+    for (const name of ['whirlwind', 'leap']) assert.ok(dust(on[name]), `${name}: dust kicked up`);
+    for (const name of ['volley', 'trap']) assert.ok(wind(on[name]), `${name}: wind`);
+    // (the leap lands with a freeze, the floor cracked cold round it; it goes higher; the trap goes off in a whirlwind)
+    assert.ok(on.leap.freeze >= 0.09, 'the leap lands with a freeze');
+    assert.ok(on.leap.cracks.length > 0 && on.leap.cracks.every((c) => c.hot === 0), 'the floor cracks, cold');
+    assert.ok(LEAP_LIFT > 24, 'he leaps higher');
+    assert.equal((on.trap.wild as unknown as { twisters: unknown[] }).twisters.length, 1, 'a whirlwind tears up out of the trap');
+    // (and a trap's burst with no trap there, as another blast is, is left as it is)
+    const other = new Fx();
+    other.wild.see([], 0, world());
+    other.handle([{ t: 'burst', x: 6, y: 5, r: 2, el: 'phys', style: 'blast' }], play);
+    assert.equal((other.wild as unknown as { twisters: unknown[] }).twisters.length, 0, 'no whirlwind where no trap lay');
   } finally {
     useWild(false);
   }
