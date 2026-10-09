@@ -583,10 +583,10 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   return m;
 }
 
-/** One of its moves, by name: its four (stand, attack, walk, reel) or one of its others (`more`). */
+/** One of its moves, by name: its four (stand, attack, walk, reel), its dying, or one of its others (`more`). */
 function moveOf(mob: Mob, which: MobAct | string): MobMove {
   const base = which === 'stand' || which === 'attack' || which === 'walk' || which === 'reel';
-  const mv = base ? mob[which as MobAct] : mob.more?.[which];
+  const mv = base ? mob[which as MobAct] : which === 'dying' ? mob.dying : mob.more?.[which];
   if (!mv) throw new Error(`${mob.id} has no move ${which}`);
   return mv;
 }
