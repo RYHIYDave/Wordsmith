@@ -129,7 +129,7 @@ export default async function (page, snap) {
     // (and without the traps, game/traps.ts, in the game since the owner's yes of 8 Oct 2026: a sealed vault's door is asked of in tools/scenarios/traps_look.mjs)
     const wasTraps = d.traps.on;
     d.traps.on = false;
-    d.run(cls, seed);
+    d.run(cls, seed); /* (THE FIRST LEVELS, since Version 19.5: a hero this far in has the wordsmith's ring lit; with it dark the fallen wordsmith would lie in this dungeon too, and the playtests' own player would go to him first) */ d.seasoned(1);
     const g = d.game();
     g.depth = depth; g.enterDungeon();
     d.doors.on = was;

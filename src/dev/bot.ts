@@ -1,7 +1,7 @@
 // A crude automatic player, used only for testing: it lets the game be played end to end without
 // a person, in the headless tests and in browser screenshots. It is not part of the game.
 
-import { FIRST_WORD, SKILLS, TUNE } from '../game/defs';
+import { FIRST_WORD, SKILLS, TUNE, firstWordSkill } from '../game/defs';
 import type { Game } from '../game/game';
 import { placedAim } from '../game/lock';
 import { UNREACHABLE, flowDir, flowField, lineOfSight } from '../game/nav';
@@ -75,7 +75,7 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
       if (h.words[w] <= 0) continue;
       // the character's first word goes where the first dungeon suggests; any other, into the first free place
       const first = FIRST_WORD[h.cls];
-      if (w === first.word && g.socket(first.skill, 'front', w) === null) continue;
+      if (w === first.word && g.socket(firstWordSkill(h.cls), 'front', w) === null) continue;
       for (let s = 0; s < 2; s++) {
         if (g.socket(s, 'front', w) === null) break;
         if (g.socket(s, 'behind', w) === null) break;

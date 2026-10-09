@@ -48,6 +48,8 @@ export default async function (page, snap) {
   // ---- a character some way in, with things to wear in the bag --------------------------------------
   await page.evaluate((cls) => {
     const d = window.__dbg; d.saving(false); d.run(cls, 11); d.autoLevel = false; d.autoWords = false;
+    // (THE FIRST LEVELS, the game's own since Version 19.5: the wordsmith's ring lit, as it is once the RUNE HEART is brought; the level as below)
+    d.seasoned(1);
     const g = d.game(); const h = g.hero;
     while (h.level < 8) g.gainXp(200);
     const prim = { warrior: 'str', ranger: 'dex', mage: 'int' }[cls];
@@ -312,6 +314,8 @@ export default async function (page, snap) {
     const d = window.__dbg; d.first(cls, 5);
     const g = d.game(); g.guide.walked = 99; g.guide.quick = g.guide.slow = g.guide.evade = true;
     for (const m of g.monsters) m.dead = true;
+    // (THE FIRST LEVELS: a new player's first word comes in town, from the wordsmith, once the RUNE HEART has lit his ring)
+    if (d.firstLevelsOn()) { g.enterTown(); d.seasoned(1); }
     g.hero.words.poison = 1; g.meta.known.poison.found = true;
     d.inv();
   }, cls);

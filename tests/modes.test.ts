@@ -19,6 +19,7 @@ import { plainWeapon } from '../src/game/items';
 import { MODES, MODE_BEFORE, NORMAL } from '../src/game/modes';
 import type { HeroMode } from '../src/game/modes';
 import { WORD_IDS } from '../src/game/types';
+import { seasoned } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -136,7 +137,8 @@ test('waking: what was found in the dungeon is lost, and a share of the gold car
 
 test('a word set in a slot in the dungeon goes; one set before going in stays where it was', () => {
   modes(true, () => {
-    const g = new Game('warrior', 33);
+    // (a slot to set it in: THE FIRST LEVELS open them with the wordsmith's ring, tests/helpers.ts seasoned)
+    const g = seasoned(new Game('warrior', 33), 1);
     g.mode = 'normal';
     g.hero.words.fire = 1;
     assert.equal(g.socket(0, 'front', 'fire'), null);

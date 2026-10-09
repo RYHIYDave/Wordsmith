@@ -194,7 +194,7 @@ export default async function (page, snap) {
     d.relief.cuts = true;
     let out = null;
     for (let seed = 5; seed < 45 && !out; seed++) {
-      d.run(cls, seed);
+      d.run(cls, seed); /* (THE FIRST LEVELS, since Version 19.5: a hero this far in has the wordsmith's ring lit; with it dark the fallen wordsmith would lie in this dungeon too, and the playtests' own player would go to him first) */ d.seasoned(1);
       const g = d.game(); g.depth = 2; g.enterDungeon();
       const f = g.level.floor;
       if (!f.cut) continue;

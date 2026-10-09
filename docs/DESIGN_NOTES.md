@@ -4773,6 +4773,115 @@ against what was; "today" there is the ranger before this version.)
   for a frame; the roll's ball slides where it touches the floor; the mage's battle stance of her
   own is still to come.
 
+### Version 19.5: the first levels
+
+**What he said.** 8 Oct 2026, 20:34: "Now that we have more words, I’d like to work on the game
+progression.  This includes the skill trees, but also how the game feels early and moving up
+through the levels." 20:36: "I’d like you to start with only your tap skill at level 1.  Level 2
+you unlock tap+hold.  Level 5 you unlock swipe.  This will change the dungeon mob density and
+difficulty.  It feels a little too abrupt to be thrown into at the start". To "Make this the next
+version, after the ranger: tap only at level 1, tap+hold at 2, swipe at 5, and a gentler first
+dungeon to match?", 20:38: "Yes, this next (Recommended)". 20:39: "I’d like the fallen wordsmith to
+drop a quest item that you give to the wordsmith in town to unlock the ability to wordsmith.  So you
+shouldn’t get a word in the first dungeon.  You’ll get your first word from the wordsmith in town
+and the tutorial Then you can add one before word.  This works with all the starting words to put
+before an attack.  The next slot you unlock is the second before slot.  So you can add a shaping
+word to your damage word.  Then you unlock the after slot." 20:41: "And I’d like the quest item to
+power up the runes around the wordsmith.  Like a battery being put in.  These animations should go
+to the art team". 21:05: "That also means no words on monsters for dungeon 1".
+
+To the first pictures (`first_levels.png`), 22:19: to "Is this the start you want, as in the
+pictures?", "Yes, with changes"; to "When should the other slots open?", "2nd before 5, after 7 and
+10 (Recommended)"; to "Your first word is set in town now. Where do you first try it?", "No special
+moment"; to "Your next hero, after the first: does he need the quest again?", "No, the ring stays
+lit (Recommended)". Asked what to change, 22:20: "The moves by level,The slots"; and of each, 22:21,
+"Hide them until they open". 22:23: "And I want it to be a moment when your new moves unlock.
+These animations should be strike skill slides over and whirlwind is revealed with a flourish".
+22:25: "Nice.  And I’d like the first pack you run into to be a real softball.  So you get a chance
+to learn the movement and tapping mechanic". 22:25: "Also can you change the movement speed so it’s
+constant no matter where the joystick is in relation to the center". To the new pictures and the
+film (`first_levels_2.png`, `new_moves.gif`) and "Put the first levels into the game as Version
+19.5, as in these pictures?", **his yes at 23:06: "Yes, now; ring art later (Recommended)"**.
+
+**What is in it.** `FIRST_LEVELS.on` in `src/game/defs.ts`, his words in full above it, put in place
+with the slots' levels as the file loads (`useFirstLevels`). Switched off, the game is 19.4's.
+
+- **The moves open by level** (`MOVE_OPENS`: tap at 1, tap and hold at 2, the swipe at 5;
+  `Game.moveOpen`). A move not open yet cannot be used, has no slots, and is not shown on the game
+  screen or on the inventory's ATTACKS page.
+- **The moment a move opens** (`drawMoveToast`, `OPENING` in `src/ui/hud.ts`; the rules' `moveOpen`
+  event): the NEW MOVE banner with the move's picture and name and how it is made; at level 2 the
+  quick attack's plate slides over from the middle and the slow one's opens out from its own middle
+  with a flourish (a flash, two rings, rays and sparks, in the friend's cyan and white); at level 5
+  the swipe's button the same.
+- **Wordsmithing opens with the wordsmith's ring** (`Hero.ring`; on the device, `Meta.ring`). Until
+  it is lit there are no word slots, no word falls anywhere, and his trade is shut ("The runes are
+  dark", `DARK_RING`). The fallen wordsmith's satchel holds the RUNE HEART instead of a word
+  (`QUEST_ITEM`, `Hero.quest`: a working name); walked up to the wordsmith in town with it, his ring
+  is lit (the rules' `ring` event, for the art chat's powering up to come), he gives the hero's first
+  word, and it goes before the quick attack whatever the class (`firstWordSkill`). Set there, the
+  lesson is over ("No special moment"). The ring stays lit for the heroes after, on that device. A
+  device that saved before this version has never had it lit: its next new hero goes for the RUNE
+  HEART. A hero saved before it keeps his ring and his words. A hero who leaves the first dungeon
+  without searching the fallen wordsmith finds him again in the next, half way along its main path,
+  and so on until he is found: without the RUNE HEART there would be no wordsmithing at all.
+- **The slots open in his order, once the ring is lit** (`SLOT_OPENS_FIRST`): one in front at once,
+  the second in front at 5, one behind at 7, the second behind at 10. A slot that has not opened is
+  not shown. A word in a slot that a saved hero's level no longer opens goes back to the pouch.
+- **The first dungeon is gentler** (`FIRST_DUNGEON`): about half the monsters (a budget of 60, not
+  120), packs of 2 to 4, one room of elites, every blow in it soft. **The first pack is a softball**:
+  three slow skeletons that barely hurt and fall to a tap or two (`FIRST_DUNGEON.softball`). **No
+  monster there carries a word** (the boss included) and no word falls there; and its gate takes
+  none ("Not in the first dungeon", `FIRST_GATE`: a later hero may carry one from the Lexicon).
+- **The lesson** shows only the moves that are open (tap alone at first; tap and hold from 2; the
+  swipe from 5), and two new prompts: "You carry the RUNE HEART" / "Take it to the wordsmith in
+  town." in the dungeon, and "Bring the RUNE HEART to the wordsmith" / "He stands in the ring of
+  stones. Walk up to him." in town.
+- **The stick goes at one speed** (`src/main.ts`, `readControls`): pushed past its small still
+  middle, the hero goes at full speed however far the thumb is from the centre.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/first_levels.test.ts` (13: the switch on; switched off the game as
+  it was; the moves by level and a shut move doing nothing; the quest, the ring, the first word for
+  the quick attack, the lesson ending in town; the slots in his order; no words in the first dungeon
+  and on its monsters; the gentler dungeon; saves of heroes and devices from before; the softball;
+  the lesson's lines by level; the first dungeon's gate). The tests written for the old start hold a
+  seasoned hero (`seasoned` in `tests/helpers.ts`: the ring lit, the level raised) where they are
+  about something else, and the old start switched off where they are about it (`guide`,
+  `economy`). THE WHOLE UNIT SUITE switched on: 734 of 734 by 23:27; then, with the three rules of the night and their tests, 735 of 736 by 00:25, the one a test of saving that laid a word on the first dungeon's gate (it lays it on the second's now).
+- THE PLAYTESTS follow it. `__dbg.seasoned(level)` (a hero some way in: the ring lit, the level
+  raised) for the playtests that are about something else (input, touch, town, look2, pages, mods,
+  half, scarce, perf, powerfx, monkey); `__dbg.moveToast()`. `guide.mjs` plays the new start with
+  real input on every layout: tap alone at level 1 and the others not shown; the softball; tap and
+  hold at level 2 (the level by script), its banner, and the hold used as the prompt asks; no word
+  anywhere in the first dungeon; the RUNE HEART from the satchel; home through the boss's portal
+  (the boss put down by script) and up to the wordsmith; the ring lit, his word, the inventory
+  opening by itself, the word dragged before the quick attack and the lesson over; the second
+  dungeon, the swipe at level 5 and its banner, the swipe made; LATE, a word found after it not
+  offered; the next hero with the ring lit. `look.mjs`, `save.mjs` and `monkey.mjs` (GUIDE=1) go
+  the new way too. A SURVEY first (the whole regression on a frozen copy with the switch on and the
+  old playtests, 23:31 to 00:18): 95 of 150 clean; the 55 others all assumed the old start (input, touch, town, save, scarce, look, look2, pages, mods, the 21 runs of the lesson, half, monkey), and are the ones mended.
+- THE PRE-FLIGHT (a dev page built from the tree, 00:25 to 00:42): 38 playtests, all 21 of the lesson and one or two of each of the others: 37 clean; scarce's second dungeon had no named monster carrying a word, so it now takes the first seed from its own whose second dungeon has one; with it and five more, 6 of 6 clean.
+- **The regression** on a copy frozen at 00:43 (the scratchpad's `v195a/arpg_frozen`,
+  00:43 to 01:32, two at a time, nothing else running): **137 OF 150 PLAYTESTS
+  FINISHED CLEAN**. Twelve were the playtests', not the game's: heights, depths and slants send the playtests' own player through a real second dungeon with a hero whose ring is dark, where the fallen wordsmith now lies too, and the bot goes to an unsearched body first; mended with `__dbg.seasoned(1)`, the ring lit as it is for a hero that far in (and in across, walls, doors and modes_look, which take such a hero that far and had passed). The thirteenth, `ranger_stances_pc`, samples his picture for seven seconds of the bot's fight in the practice room and never saw him idle. A SECOND FROZEN COPY at 01:34 (`v195b/arpg_frozen`, from `74500db`: the same game, its page byte for byte the first's but for the stamp, with the mended playtests) ran those 27 again, 01:34 to 01:40: 26 clean; `ranger_stances_pc` was flagged again beside another playtest, and was clean three times of three alone, then once of two beside its phone twin (01:40 to 01:42): its check leans on the machine's speed, and nothing of the first levels is in the practice room.
+  Speed: the frame-rate run 58.9 frames a second, longest frame 33 ms, with 23 patches of ground effects out (its hero is a seasoned mage with words behind his attacks now); the slowest fights of the four word-combination runs 58.0 to 59.2 frames a second, longest frame 50 ms.
+- The unit suite in the second frozen copy, 736 of 736, 01:43 to 01:47.
+- THE RELEASE BUILD, made in the second copy at 01:47: `Play.html` 943,906 bytes and
+  `dist/artifact.html` 943,584, both saying V19.5; kept in the scratchpad's
+  `v195b/release/`.
+- **The published page itself** (`wrap195.sh` in the scratchpad, 01:47 to 02:08): **74
+  of 74 playtests clean.** The 70 of 19.4's, and four of the first levels: the lesson held upright and narrow, a word found after it on a phone, and random input thrown at a new player's first dungeon. Published at 02:09 ("Version 49", version
+  id `1791526193-4511`); the file published is the kept copy, `v195b/release/artifact.html`, byte for
+  byte the second frozen copy's `dist/artifact.html`.
+- NOT CHECKED: a real phone. KNOWN: the ring looks as it did, lit, before the RUNE HEART is brought
+  (its dark look and its powering up are the art chat's, for a later version: "ring art later");
+  the RUNE HEART is a working name, and shows only in words (the satchel's line, the prompts, the
+  pouch's line); with the prompts off a new player is told of it only by the satchel's line and the
+  pouch's; the ranger's bot can stall in a first dungeon whose boss is behind a door it never comes
+  round to (the bot's, not the rules').
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -4912,7 +5021,14 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               modes (19.1: NORMAL AND HARDCORE, `MODES.on`, `NORMAL.goldShare`, `MODE_BEFORE`,
               `MODE_LINE`; in game.ts `Game.mode`, `entry` (the hero as they went into the
               dungeon), `wakes`, `wakeSave`, `losses`; `RunSave.mode`, `Meta.mode`; waking in
-              town, `wake` in main.ts)
+              town, `wake` in main.ts);
+              THE FIRST LEVELS (19.5, in defs.ts: `FIRST_LEVELS`, `useFirstLevels`, `MOVE_OPENS`,
+              `SLOT_OPENS_FIRST`, `QUEST_ITEM`, `FIRST_DUNGEON`, `firstWordSkill`; in game.ts
+              `moveOpen`, `slots`, `wordsFall`, `lightRing`, `softball`, `Hero.ring`,
+              `Hero.quest`, `Meta.ring`, `DARK_RING`, `FIRST_GATE`; the map-maker's numbers for
+              the first dungeon in dungeon.ts; the NEW MOVE banner and the plates' opening,
+              `drawMoveToast` and `OPENING` in ui/hud.ts; the stick at one speed, `readControls`
+              in main.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -5146,6 +5262,10 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.5: the first levels (FIRST_LEVELS on: the moves by level, the ring and the RUNE HEART, the slots in his order, the gentler first dungeon)
+CLS=ranger node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/guide.mjs --out shots/g195/ph   # a new player's start with real input, the RUNE HEART home to the ring, the first word set in town, the hold at 2 and the swipe at 5 (LATE=twin: a word found after it is not offered; in the regression on every layout)
+CLS=ranger node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/first_levels_look.mjs --out shots/fl/ph   # the pictures he saw: the softball, the satchel, the town, the ring lit, the slots, level 5
+CLS=warrior node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/first_levels_film.mjs --out shots/flf/w   # the moment a move opens, filmed slowed (the frames' game times in <out>_times.json)
 # Version 19.4: the ranger's new stances (the art chat's, art/ranger-stances; RANGER_STANCES on)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/ranger_stances.mjs --out shots/rs/ph   # the bot's fight with him in the practice room, run and stopped by hand, then off and on again (in the regression)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/ranger194_look.mjs --out shots/r194/look   # stills of him as he was and with the stances: a dungeon, standing and shooting, and town

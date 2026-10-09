@@ -21,6 +21,7 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster } from '../src/game/state';
 import type { ClassId, WeaponKind } from '../src/game/types';
 import { attackClip } from '../src/render/figure';
+import { seasoned } from './helpers';
 
 const DT = 1 / 60;
 
@@ -538,7 +539,8 @@ test('words on a held attack: Twin, what the words behind it leave, and of Echoe
 });
 
 test('a held attack does not outlive the level it was begun in', () => {
-  const g = new Game('warrior', 5);
+  // (Whirlwind, the slow attack: THE FIRST LEVELS open it at level 2)
+  const g = seasoned(new Game('warrior', 5));
   g.enterDungeon();
   const h = g.hero;
   const c = emptyControls();

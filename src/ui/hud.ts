@@ -45,6 +45,8 @@ export interface HudIn {
   banner: Banner | null;
   /** A word that has just been picked up, and for how many seconds it has been announced. `big`: a new player's first word. */
   toast: { word: WordId; t: number; big?: boolean } | null;
+  /** THE FIRST LEVELS: an ability that has just opened with a level (1 the slow attack, 2 the evasive move), and how long ago. */
+  moveToast?: { skill: number; t: number } | null;
   /**
    * Touch: the gesture the prompt is asking for, to be shown as a ghost. For a tap or a hold,
    * (x, y) is the thing to press, on screen; for the walking thumb, (dx, dy) is the way to go.
@@ -535,6 +537,124 @@ function drawToast(ui: Ui, art: Art, word: WordId, age: number, top: number, big
 }
 
 /**
+ * THE FIRST LEVELS: THE MOMENT A MOVE OPENS (the owner, 8 Oct 2026, 22:23: "And I want it to be a
+ * moment when your new moves unlock.  These animations should be strike skill slides over and
+ * whirlwind is revealed with a flourish"). The quick attack's plate, alone in the middle until
+ * then, slides over to its place beside the new one (`slide` seconds); the new plate opens out from
+ * its middle (`revealAt`, over `reveal`), with a flash, a ring thrown out, rays and sparks in the
+ * friend's cyan and white (`flourish`, to `end`). The swipe's button opens the same way, at once.
+ * Big and wild, as the art rulebook has it since 8 Oct.
+ */
+const OPENING = { slide: 0.45, revealAt: 0.3, reveal: 0.3, end: 1.8 };
+const easeInOut = (k: number): number => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
+
+/** Clip what is drawn next to the middle `k` of a rectangle's width (it opens out from its middle). The caller restores. */
+function wipeOpen(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, k: number): void {
+  const ww = Math.max(1, Math.round(w * (1 - Math.pow(1 - Math.max(0, k), 3))));
+  g.save();
+  g.beginPath();
+  g.rect(Math.round(x + (w - ww) / 2) - 1, y - 12, ww + 2, h + 14);
+  g.clip();
+}
+
+/** The flourish a move comes in with: a flash over it, a ring thrown out, turning rays, and sparks that fly and fall. `age` in seconds. */
+function flourish(g: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number, age: number): void {
+  if (age < 0 || age > OPENING.end) return;
+  const k = age / OPENING.end;
+  const fade = 1 - k;
+  const wide = Math.max(1, w / Math.max(1, h)) ** 0.5;
+  // the flash, over the plate
+  if (age < 0.3) {
+    g.globalAlpha = (1 - age / 0.3) * 0.85;
+    g.fillStyle = P.white;
+    g.fillRect(Math.round(cx - w / 2), Math.round(cy - h / 2), Math.round(w), Math.round(h));
+  }
+  // two rings thrown out, flattened as the floor is
+  for (const [delay, reach] of [[0, 110], [0.18, 70]] as const) {
+    const a = age - delay;
+    if (a < 0 || a > 0.9) continue;
+    const r = 8 + reach * (1 - Math.pow(1 - a / 0.9, 3));
+    g.globalAlpha = (1 - a / 0.9) * 0.9;
+    g.fillStyle = delay ? P.white : THEME.accent;
+    const n = 72;
+    for (let i = 0; i < n; i++) {
+      const t = (i / n) * Math.PI * 2;
+      g.fillRect(Math.round(cx + Math.cos(t) * r * wide), Math.round(cy + Math.sin(t) * r * 0.5), 2, 1);
+    }
+  }
+  // rays that turn as they go out
+  const rays = 14;
+  for (let i = 0; i < rays; i++) {
+    const t = (i / rays) * Math.PI * 2 + age * 1.8;
+    const r0 = 6 + 46 * k;
+    const r1 = r0 + 34 * fade;
+    g.globalAlpha = fade * 0.9;
+    g.fillStyle = i % 2 ? P.white : THEME.accent;
+    for (let f = 0; f <= 1.0001; f += 1 / 12) {
+      const r = r0 + (r1 - r0) * f;
+      g.fillRect(Math.round(cx + Math.cos(t) * r * wide), Math.round(cy + Math.sin(t) * r * 0.55), 1, 1);
+    }
+  }
+  // sparks thrown up and out, falling as they go
+  for (let i = 0; i < 40; i++) {
+    const r1 = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+    const r2 = Math.abs(Math.sin(i * 78.233) * 12345.678) % 1;
+    const t = r1 * Math.PI * 2;
+    const sp = 50 + 110 * r2;
+    const x = cx + Math.cos(t) * sp * age * wide;
+    const y = cy + Math.sin(t) * sp * age * 0.6 - 40 * age + 90 * age * age;
+    g.globalAlpha = Math.max(0, fade * (1.2 - r2 * 0.4));
+    g.fillStyle = i % 3 === 0 ? P.white : THEME.accent;
+    const sz = i % 5 === 0 ? 2 : 1;
+    g.fillRect(Math.round(x), Math.round(y), sz, sz);
+  }
+  // its edge, lit, pulsing as it settles
+  const pulseK = Math.max(0, Math.sin(age * 14)) * fade;
+  g.globalAlpha = pulseK;
+  g.fillStyle = THEME.accent;
+  const x0 = Math.round(cx - w / 2) - 1;
+  const y0 = Math.round(cy - h / 2) - 1;
+  g.fillRect(x0, y0, Math.round(w) + 2, 1);
+  g.fillRect(x0, y0 + Math.round(h) + 1, Math.round(w) + 2, 1);
+  g.fillRect(x0, y0, 1, Math.round(h) + 2);
+  g.fillRect(x0 + Math.round(w) + 1, y0, 1, Math.round(h) + 2);
+  g.globalAlpha = 1;
+}
+
+/**
+ * THE FIRST LEVELS: "NEW MOVE": an ability that has just opened with a level, at the top of the
+ * screen for a moment: its picture and its name large, and how it is made ("TAP + HOLD to SLAM").
+ */
+function drawMoveToast(ui: Ui, art: Art, h: Hero, skill: number, age: number, top: number): number {
+  const g = ui.g;
+  const sk = h.skills[skill];
+  const def = SKILLS[sk.id];
+  const name = def.name.toUpperCase();
+  const scale = ui.w >= 380 ? 3 : 2;
+  const nw = textWidth(name) * scale;
+  const line = `${pressName(ui.touch, skill, sk.id)} to ${def.verb}`;
+  const icon = art.icons.ability[def.icon];
+  const bw = Math.min(ui.w - 8, Math.max(icon.w * 2 + 8 + nw + 24, textWidth(line) + 20));
+  const bh = 14 + Math.max(9 * scale, icon.h * 2) + 14;
+  const bx = Math.floor((ui.w - bw) / 2);
+  const by = top - Math.round((1 - Math.min(1, age / 0.18)) * 10);
+  const fade = age > 2.8 ? Math.max(0, 1 - (age - 2.8) / 0.5) : 1;
+  g.globalAlpha = 0.92 * fade;
+  ui.box(bx, by, bw, bh, age < 0.1 ? P.white : THEME.bg, THEME.accent);
+  g.globalAlpha = fade;
+  drawText(g, 'NEW MOVE', Math.floor(ui.w / 2), by + 4, THEME.accent, { align: 'center', font: 'small' });
+  const tw = icon.w * 2 + 8 + nw;
+  const x = Math.floor((ui.w - tw) / 2);
+  const rowH = Math.max(9 * scale, icon.h * 2);
+  g.drawImage(icon.img, x, by + 12 + Math.floor((rowH - icon.h * 2) / 2), icon.w * 2, icon.h * 2);
+  const lit = age < 0.6 && Math.floor(age * 12) % 2 === 0;
+  drawText(g, name, x + icon.w * 2 + 8, by + 12 + Math.floor((rowH - 9 * scale) / 2), lit ? P.white : THEME.accent, { scale, shadow: P.ink });
+  drawText(g, line, Math.floor(ui.w / 2), by + 14 + rowH, THEME.text, { align: 'center', shadow: P.ink });
+  g.globalAlpha = 1;
+  return by + bh;
+}
+
+/**
  * Touch only: a ghost of the gesture the lesson is asking for, drawn where it should be made.
  * `x`, `y`: where (for a tap or a hold, the monster to press on). `dx`, `dy`: which way (for the
  * walking thumb), in screen terms.
@@ -656,7 +776,13 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // (it only shows whether it is ready: the move itself is a flick, or Space)
   let hoverSkill = -1;
   const ex = byMana ? W - 37 - ps : W - ps - 5;
-  {
+  // (THE FIRST LEVELS: a move not open yet is not shown at all; his answer, 22:21: "Hide them until they open".
+  // And the moment it opens is a moment: OPENING, below)
+  const dodgeShown = game.moveOpen(2);
+  const opening = inp.moveToast && inp.moveToast.t < OPENING.end ? inp.moveToast : null;
+  const dodgeIn = opening && opening.skill === 2 ? opening.t : -1;
+  if (dodgeShown && dodgeIn >= 0) wipeOpen(g, ex, py, ps, ps, Math.min(1, dodgeIn / OPENING.reveal));
+  if (dodgeShown) {
     const s = h.skills[2];
     const def = SKILLS[s.id];
     ui.mark('skill:2', ex, py, ps, ps);
@@ -710,6 +836,10 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
       // (its arrow is drawn below, once it is known whether the move's name is written over the button)
     }
   }
+  if (dodgeShown && dodgeIn >= 0) {
+    g.restore();
+    flourish(g, ex + ps / 2, py + ps / 2, ps, ps, dodgeIn);
+  }
 
   // ---- the two attacks, written out with their word sockets ---------------------------------
   const PH = touch ? 22 : 20;
@@ -738,10 +868,20 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   const plates = stacked
     ? [{ x: Math.floor((W - w0) / 2), y: H - 40 - PH * 2 - 9, w: w0, h: PH }, { x: Math.floor((W - w1) / 2), y: H - 40 - PH, w: w1, h: PH }]
     : [{ x: Math.round((availL + availR - w0 - w1 - 5) / 2), y: H - PH - 4, w: w0, h: PH }, { x: Math.round((availL + availR - w0 - w1 - 5) / 2) + w0 + 5, y: H - PH - 4, w: w1, h: PH }];
+  // (THE FIRST LEVELS: an attack not open yet is not shown: the quick one alone, in the middle where the two would be)
+  const slowShown = game.moveOpen(1);
+  const alone = stacked ? { x: Math.floor((W - w0) / 2), y: H - 40 - PH, w: w0, h: PH } : { x: Math.round((availL + availR - w0) / 2), y: H - PH - 4, w: w0, h: PH };
+  if (!slowShown) plates[0] = alone;
+  // (the moment the slow attack opens: the quick one's plate slides over from the middle to make room)
+  const slowIn = opening && opening.skill === 1 && slowShown ? opening.t : -1;
+  if (slowIn >= 0) {
+    const k = easeInOut(Math.min(1, slowIn / OPENING.slide));
+    plates[0] = { ...plates[0], x: Math.round(alone.x + (plates[0].x - alone.x) * k), y: Math.round(alone.y + (plates[0].y - alone.y) * k) };
+  }
   const barTop = plates[0].y;
   // the evasive move's name with its words, in small letters over its button, when the plates
   // are not stacked up there (a phone held upright has no room for it: the pips say it)
-  {
+  if (dodgeShown) {
     const sw = h.skills[2];
     const parts = nameParts(SKILLS[sw.id], sw.front, sw.behind);
     const named = parts.length > 1 && !stacked;
@@ -756,7 +896,13 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   const keys = [pressName(false, 0, h.skills[0].id), pressName(false, 1, h.skills[1].id)];
   const gestures = ['TAP', 'HOLD'];
   for (let s = 0; s < 2; s++) {
+    if (s === 1 && !slowShown) continue;
     const r = plates[s];
+    // (and the slow one comes in after it, opening out from its middle, with a flourish)
+    const revealing = s === 1 && slowIn >= 0;
+    const rk = revealing ? (slowIn - OPENING.revealAt) / OPENING.reveal : 1;
+    if (revealing && rk <= 0) continue;
+    if (revealing) wipeOpen(g, r.x, r.y, r.w, r.h, Math.min(1, rk));
     const sk = h.skills[s];
     const def = SKILLS[sk.id];
     // the prompt points at the phrase it wants pressed
@@ -800,6 +946,10 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     drawPhrase(g, art, pieces[s], r.x + 20 + PAD, r.y, PH, pulse);
     drawText(g, touch ? gestures[s] : keys[s], r.x + 1, r.y - 6, THEME.dim, { font: 'small', shadow: P.ink });
     if (asked) arrow(g, r.x + Math.floor(r.w / 2), r.y - 8, t, THEME.accent);
+    if (revealing) {
+      g.restore();
+      flourish(g, r.x + r.w / 2, r.y + r.h / 2, r.w, r.h, slowIn - OPENING.revealAt);
+    }
   }
   if (hoverSkill >= 0) {
     // what the ability under the mouse does, words included
@@ -916,6 +1066,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // (where the prompt or the news of a word ends, so that on a narrow screen the messages can go under it)
   let noticeEnd = 0;
   if (inp.toast) noticeEnd = drawToast(ui, art, inp.toast.word, inp.toast.t, bossUp && W >= 380 ? 24 : W >= 380 ? 4 : NARROW_TOP, !!inp.toast.big);
+  else if (inp.moveToast) noticeEnd = drawMoveToast(ui, art, h, inp.moveToast.skill, inp.moveToast.t, bossUp && W >= 380 ? 24 : W >= 380 ? 4 : NARROW_TOP);
   else if (banner && !bossUp) noticeEnd = drawBanner(ui, banner, t);
 
   // ---- messages -----------------------------------------------------------------------------
