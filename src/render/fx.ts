@@ -28,7 +28,7 @@ import { figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE, INDIGO, PINK, PLUM, TEAL } from '../art/kit';
 import { BLOOD as M_BLOOD, FLAME as M_FLAME, FLESH, FUR, GLOOM, GORE, IRON, WING } from '../art/mkit';
-import { CAPE, OSSUARY, PALLOR, PLANK, SHROUD } from '../art/new_mobs3';
+import { CAPE, MK_CLOAK, MK_WOOD, OSSUARY, PALLOR, PLANK, SHROUD } from '../art/new_mobs3';
 import { ELEMENT_RAMP, P } from '../art/palette';
 import type { Sfx } from '../engine/audio';
 import { drawText, textWidth, wrapText } from '../engine/font';
@@ -307,6 +307,9 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   boneward: [PLANK[4], PLANK[2], IRON[4], M_FLAME[3]],
   golem: [OSSUARY[4], OSSUARY[2], IRON[4], M_FLAME[3]],
   champion: [BONE[4], BONE[2], CAPE[3], IRON[4]],
+  marksman: [BONE[4], BONE[2], MK_CLOAK[3], MK_WOOD[3]],
+  priest: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
+  chieftain: [FLESH[4], FLESH[2], FLESH[0], PLUM[2]],
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);

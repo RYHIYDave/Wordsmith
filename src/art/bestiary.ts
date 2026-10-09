@@ -26,10 +26,10 @@ import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
 import { makeArcherArt, makeSkeletonArt } from './monster_bones';
 import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
-import { TROLL_MOVES, makeBruteArt, makeGuardianArt } from './monster_brute';
-import { makeCultistArt } from './monster_cultist';
+import { TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './monster_brute';
+import { makeCultistArt, makeHighPriestArt } from './monster_cultist';
 import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
-import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
+import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
 
 /**
@@ -81,7 +81,7 @@ export type MonsterFigure = MonsterKind | 'guardian';
 export type ClassicFigure = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'guardian' | 'warden';
 export const MONSTER_FIGURES: readonly ClassicFigure[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'guardian', 'warden'];
 /** THE NEW MONSTERS' figures (Version 19.9), the art chat's, painted on the heroes' bones (art/new_mobs3.ts). */
-export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'golem', 'champion'];
+export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'];
 
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean }): MonsterFigure {
@@ -107,6 +107,10 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   boneward: { top: 32, half: 11 },
   golem: { top: 36, half: 21 },
   champion: { top: 35, half: 9 },
+  marksman: { top: 33, half: 10 },
+  priest: { top: 30, half: 9 },
+  // (his antlers are of his head, as the Warden's horns are of his)
+  chieftain: { top: 58, half: 23 },
 };
 
 export interface Bestiary {
@@ -164,7 +168,10 @@ export function makeBestiary(): Bestiary {
         : figure === 'shade' ? makeShadeArt3(MONSTERS.shade.speed)
         : figure === 'boneward' ? makeBonewardArt3(MONSTERS.boneward.speed)
         : figure === 'golem' ? withSkulls(makeGolemArt3(MONSTERS.golem.speed))
-        : makeChampionArt3(MONSTERS.champion.speed);
+        : figure === 'champion' ? makeChampionArt3(MONSTERS.champion.speed)
+        : figure === 'marksman' ? makeMarksmanArt3(MONSTERS.marksman.speed)
+        : figure === 'priest' ? makeHighPriestArt()
+        : makeChieftainArt();
       made.set(figure, art);
     }
     return art;

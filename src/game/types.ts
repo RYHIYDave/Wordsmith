@@ -29,15 +29,16 @@ export type Element = 'phys' | 'fire' | 'frost' | 'lightning';
 
 /**
  * 'warden' is the boss that ends a dungeon. THE NEW MONSTERS (Version 19.9, game/defs.ts NEW_MONSTERS):
- * 'shade', 'boneward' and 'golem', and 'champion', the skeleton champion, who leads a yellow pack of
- * skeletons (a kind of its own, never a pack of its own: not the `champion` of a Monster, which is a
- * guardian).
+ * 'shade', 'boneward' and 'golem'; and the yellow packs' leaders, each a kind of its own and never a
+ * pack of its own (game/defs.ts LEADERS): 'champion', the skeleton champion, who leads skeletons (not
+ * the `champion` of a Monster, which is a guardian); 'marksman', the bone marksman, bone archers;
+ * 'priest', the high priest, cultists; and 'chieftain', the troll chieftain, green trolls.
  */
-export type MonsterKind = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion';
+export type MonsterKind = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
-export const NEW_KINDS: readonly MonsterKind[] = ['shade', 'boneward', 'golem', 'champion'];
+export const NEW_KINDS: readonly MonsterKind[] = ['shade', 'boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'];
 
 // ---------------------------------------------------------------------------------------------
 // Stats. Every number a character has is one of these keys. Percentages are whole numbers

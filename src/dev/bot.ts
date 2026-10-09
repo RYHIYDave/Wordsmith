@@ -38,8 +38,8 @@ export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
   // An attack is about to land where the hero stands: walk straight out of it.
   const h = g.hero;
   for (const z of g.zones) {
-    // (THE MONSTERS' ATTACKS: the line a red troll will charge along: out of it, sideways)
-    if (z.kind === 'lane') {
+    // (THE MONSTERS' ATTACKS: the line a red troll will charge along, or a marksman's line of aim: out of it, sideways)
+    if (z.kind === 'lane' || z.kind === 'aim') {
       const x1 = z.x1 ?? z.x;
       const y1 = z.y1 ?? z.y;
       const len = Math.hypot(x1 - z.x, y1 - z.y) || 1;
@@ -55,7 +55,8 @@ export function botStep(g: Game, c: Controls, st: BotState, dt: number): void {
     }
     // (THE NEW MONSTERS: a Golem's skull, coming down where its shadow is, is stepped out of as a warning is)
     if (z.kind === 'skull' && z.t >= z.dur) continue;
-    if (z.kind !== 'warn' && z.kind !== 'skull') continue;
+    // (and out of the high priest's burning smoke)
+    if (z.kind !== 'warn' && z.kind !== 'skull' && z.kind !== 'smoke') continue;
     const dx = h.x - z.x;
     const dy = h.y - z.y;
     const d = Math.hypot(dx, dy);

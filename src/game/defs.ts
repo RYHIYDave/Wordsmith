@@ -385,6 +385,17 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // THE SKELETON CHAMPION: never a pack of his own (no weight): a yellow pack of skeletons' leader, with a
   // skeleton's life (three times it, as a leader) and his cleave and his rallying cry (RALLY).
   champion: { kind: 'champion', name: 'Skeleton Champion', life: 22, dmgMin: 6, dmgMax: 9, speed: 1.6, radius: 0.34, range: 1.5, windup: 0.8, cooldown: 2.0, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // THE OTHER LEADERS (the art chat's mockup/more-leaders, his yes by 15:17, 15:34 and 15:46), each with
+  // the life and blows of those he leads (three times the life, as a leader) and a move of his own.
+  // THE BONE MARKSMAN, leader of bone archers: a head taller, still and patient; his shot (art/new_mobs3.ts
+  // MK_SHOT_HIT) and his great shot (AIM).
+  marksman: { kind: 'marksman', name: 'Bone Marksman', life: 16, dmgMin: 4, dmgMax: 7, speed: 1.8, radius: 0.34, range: 9, windup: 0.7, cooldown: 2.2, xp: 7, ranged: true, projSpeed: 10, keepMax: 8, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // THE HIGH PRIEST, leader of cultists: their size, a slow procession (art/monster_cultist.ts
+  // PROCESSION_FPS, 9 frames a second to their 14); their fire bolt, and his censer (SMOKE).
+  priest: { kind: 'priest', name: 'High Priest', life: 18, dmgMin: 6, dmgMax: 10, speed: 1.7, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // THE TROLL CHIEFTAIN, leader of green trolls: bigger than the red troll; his trolls' swing and slam, a
+  // fifth slower (his pictures, in art/monster_brute.ts), heavier; no bellow, by his word.
+  chieftain: { kind: 'chieftain', name: 'Troll Chieftain', life: 49, dmgMin: 14, dmgMax: 20, speed: 1.6, radius: 0.62, range: 1.9, windup: 1.03, cooldown: 2.8, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.9, minDepth: 99, weight: 0, size: 'medium' },
 };
 
 /**
@@ -524,9 +535,11 @@ export const MONSTER_ATTACKS = { on: true };
  * ('swing': a monster's basic blow, its single-target attack: the trolls' and the Warden's club swing,
  * and since Version 19.9 the Boneward's thrust, the Golem's club swing and the skeleton champion's
  * cleave. THE NEW MONSTERS' others: 'throw', the Boneward's spear and the Golem's skulls; 'bash', the
- * Boneward's shield while its spear is gone; 'rally', the skeleton champion's rallying cry.)
+ * Boneward's shield while its spear is gone; 'rally', the skeleton champion's rallying cry. 'shoot':
+ * the basic blow of a leader who shoots, the bone marksman's arrow and the high priest's fire bolt, as
+ * those they lead shoot; 'pierce', the marksman's great shot; 'censer', the high priest's burning smoke.)
  */
-export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally';
+export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer';
 export interface MonsterMove {
   id: MoveId;
   /** Seconds of warning before it lands (its picture is fitted to it: a monster's clip's `hit`). */
@@ -546,7 +559,7 @@ export interface MonsterMove {
   far: number;
 }
 /** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank; and THE NEW MONSTERS of Version 19.9). */
-export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion';
+export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain';
 /**
  * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
  * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
@@ -592,6 +605,22 @@ export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
     { id: 'swing', windup: 0.8, dmg: 1.3, cooldown: 0, first: 0, after: 2.0, recover: 0.6, near: 0, far: 0 },
     { id: 'rally', windup: 0.85, dmg: 0, cooldown: 14, first: 2, after: 1.4, recover: 0.9, near: 0, far: 10 },
   ],
+  // THE OTHER LEADERS: the marksman his shot and his great shot, from 2.5 to 13 tiles off (MK_SHOT_HIT,
+  // MK_PIERCE_HIT); the high priest his fire bolt and his censer, within 3.2 tiles (CENSER_HIT; its
+  // `dmg` the whole of what the smoke does to one who stays in it); the chieftain his trolls' swing and
+  // slam, heavier, each a fifth slower than theirs (the blows of his pictures, 0.733 s and 1.033 s).
+  marksman: [
+    { id: 'shoot', windup: 0.7, dmg: 1, cooldown: 0, first: 0, after: 2.2, recover: 0.5, near: 0, far: 0 },
+    { id: 'pierce', windup: 1.6, dmg: 2.2, cooldown: 8, first: 2, after: 2.0, recover: 0.9, near: 2.5, far: 13 },
+  ],
+  priest: [
+    { id: 'shoot', windup: 0.75, dmg: 1, cooldown: 0, first: 0, after: 2.7, recover: 0.3, near: 0, far: 0 },
+    { id: 'censer', windup: 0.8, dmg: 1.8, cooldown: 7, first: 1.5, after: 2.0, recover: 0.55, near: 0, far: 3.2 },
+  ],
+  chieftain: [
+    { id: 'swing', windup: 0.73, dmg: 0.7, cooldown: 0, first: 0, after: 2.0, recover: 0.6, near: 0, far: 0 },
+    { id: 'slam', windup: 1.03, dmg: 1.2, cooldown: 7, first: 2, after: 2.6, recover: 0.35, near: 0, far: 0 },
+  ],
 };
 /** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
 export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
@@ -607,6 +636,12 @@ export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly M
       return MONSTER_MOVES.golem;
     case 'champion':
       return MONSTER_MOVES.champion;
+    case 'marksman':
+      return MONSTER_MOVES.marksman;
+    case 'priest':
+      return MONSTER_MOVES.priest;
+    case 'chieftain':
+      return MONSTER_MOVES.chieftain;
     default:
       return null;
   }
@@ -664,6 +699,33 @@ export const SKULL = { fly: 1.1, top: 100, z: 31, hand: 0.9, over: 0.6, r: 1.1, 
  * half); he cries only when there is one to hear it whose words are half.
  */
 export const RALLY = { dur: 5, reach: 8 };
+/**
+ * THE YELLOW PACKS' LEADERS (Version 19.9, with NEW_MONSTERS): a yellow pack of skeletons is led by the
+ * skeleton champion, of bone archers by the bone marksman, of cultists by the high priest, of green
+ * trolls by the troll chieftain (the art chat's, each with his yes); any other by one of its own.
+ * (Bats have no yellow packs: packRarity.)
+ */
+export const LEADERS: Partial<Record<MonsterKind, MonsterKind>> = { skeleton: 'champion', archer: 'marksman', cultist: 'priest', brute: 'chieftain' };
+/** What leads a yellow pack of `kind`. */
+export function leaderKind(kind: MonsterKind): MonsterKind {
+  return (NEW_MONSTERS.on && LEADERS[kind]) || kind;
+}
+/**
+ * THE BONE MARKSMAN'S GREAT SHOT (his "Yes, keep the line (Recommended)", by 15:17): while he draws and
+ * holds it, a line of aim on the floor from him toward the hero, running out from `from` seconds into
+ * his draw (the picture's nocking of the arrow); it follows the hero until `lock` seconds before he
+ * looses, and then holds still: step out of it. The great arrow flies along it at `speed` tiles a second
+ * for `range` tiles (walls stop it), `z` pixels over the floor, and PIERCES: whoever it meets on its way
+ * is hurt, and it flies on. `r`: half its width.
+ */
+export const AIM = { from: 0.52, lock: 0.4, speed: 16, range: 14, z: 14, r: 0.3 };
+/**
+ * THE HIGH PRIEST'S CENSER (his "Yes, keep it (Recommended)", by 15:34): its burning smoke settles on the
+ * floor before him, as far as `at` tiles (nearer if the hero is), `r` tiles across its middle, and burns
+ * whoever is in it every `tick` seconds for `dur` seconds (the move's `dmg` shared out over them), with
+ * fire. Step out of it.
+ */
+export const SMOKE = { at: 1.9, near: 1.0, r: 1.15, dur: 3, tick: 0.5 };
 
 export function scaleLife(depth: number): number {
   return 1 + 0.35 * (depth - 1);

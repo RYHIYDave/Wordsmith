@@ -5,7 +5,8 @@
 // monsters + rings (Recommended)"; and his rules of 08:15 ("Tiny and small mobs should have one attack.
 // Medium two attacks, large 2-3, and the boss 4.") and 08:24 ("Pack leaders that are different mobs can
 // have an extra attack if it seems right."). And BATS ARE NEVER A YELLOW PACK, his pick by 16:05: "Bats
-// never come yellow (Recommended)". So:
+// never come yellow (Recommended)". And the art chat's other leaders (mockup/more-leaders, his yes by
+// 15:17, 15:34 and 15:46): the bone marksman, the high priest and the troll chieftain. So:
 //   1. the switch is off in the game, the pictures and the rings with it; off, no dungeon has them;
 //   2. on, they come by depth, in packs of their sizes (the Shade small, the Boneward medium, the Golem
 //      large); a yellow pack of skeletons is led by the champion;
@@ -17,9 +18,12 @@
 //      out is not; then it bursts and is gone; a Twin Golem throws a second;
 //   7. the champion's cry: his minions near him have his words whole for a while, and then half again;
 //      he does not cry with no one to hear it;
+//   7b. the other leaders lead their packs: the marksman's great shot along a line of aim that follows
+//      the hero and then holds still, piercing; the high priest's burning smoke, that burns whoever
+//      stays in it; the chieftain's swing and slam;
 //   8. the pictures: each of their moves has its picture by the rules' clock, the stoop and the stand
 //      and plod with no spear; their sizes fit them; their walks are shown at the rules' paces;
-//   9. the bot steps out from under a skull.
+//   9. the bot steps out from under a skull, out of a line of aim and out of the smoke.
 //   run: tsx --test tests/new_monsters.test.ts
 
 // @ts-ignore
@@ -30,13 +34,14 @@ import nodeAssert from 'node:assert/strict';
 import { FIGURE_SIZE, NEW_FIGURES, makeBestiary, useNewMonsters } from '../src/art/bestiary';
 import { SKULL_BURST } from '../src/art/mob_shots';
 import {
-  BONEWARD, BW_BASH_HIT, BW_GRAB, BW_HIT, BW_THROW_HIT, CHAMPION, CHAMPION_HIT, GOLEM, GOLEM_SWING_HIT, GOLEM_THROW_HIT, NEW_MOBS, RALLY_CRY, SHADE, SHADE_HIT, walkFpsAt,
+  BONEWARD, BW_BASH_HIT, BW_GRAB, BW_HIT, BW_THROW_HIT, CHAMPION, CHAMPION_HIT, GOLEM, GOLEM_SWING_HIT, GOLEM_THROW_HIT, MARKSMAN, MK_PIERCE_HIT, MK_SHOT_HIT, NEW_MOBS, RALLY_CRY, SHADE, SHADE_HIT, walkFpsAt,
 } from '../src/art/new_mobs3';
+import { CENSER_HIT } from '../src/art/monster_cultist';
 import type { Mob } from '../src/art/new_mobs3';
 import { GRAIN } from '../src/art/kit';
 import { botStep, newBot } from '../src/dev/bot';
 import { RNG } from '../src/engine/rng';
-import { MONSTERS, MONSTER_MOVES, NEW_MONSTERS, PACKS, RALLY, SKULL, SPEAR, movesOf, packKinds, packRange, packRarity, scaleLife, sizeOf, wordShare } from '../src/game/defs';
+import { AIM, LEADERS, MONSTERS, MONSTER_MOVES, NEW_MONSTERS, PACKS, RALLY, SKULL, SMOKE, SPEAR, leaderKind, movesOf, packKinds, packRange, packRarity, scaleLife, sizeOf, wordShare } from '../src/game/defs';
 import type { MonsterMove, MoveId } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -154,7 +159,7 @@ test('the switch is off in the game, the pictures and the rings with it; off, no
   assert.equal(NEW_MOBS.on || PACK_MARKS.on, false, 'and go with them');
 });
 
-test('on, they come by depth, in packs of their sizes; a yellow pack of skeletons is led by the champion', () => {
+test('on, they come by depth, in packs of their sizes; a yellow pack is led by its leader', () => {
   withNew(() => {
     const kinds = (d: number): string => packKinds(d).map((k) => k.kind).filter((k) => NEW_KINDS.includes(k)).join(' ');
     assert.equal(kinds(1), '', 'the first dungeon: none of them');
@@ -166,6 +171,7 @@ test('on, they come by depth, in packs of their sizes; a yellow pack of skeleton
     assert.equal(sizeOf('boneward'), 'medium');
     assert.equal(sizeOf('golem'), 'large');
     const seen = new Set<MonsterKind>();
+    const leaders = new Set<MonsterKind>();
     let led = 0;
     for (const depth of [4, 5, 6, 8]) {
       for (let seed = 1; seed <= 10; seed++) {
@@ -181,19 +187,24 @@ test('on, they come by depth, in packs of their sizes; a yellow pack of skeleton
             assert.ok(ms.length >= Math.min(lo, p.size) && ms.length <= hi, `${tag}: ${ms.length}, of his sizes (${lo} to ${hi})`);
           }
           const leader = ms.find((m) => m.rarity === 'leader');
-          if (leader && p.kind === 'skeleton') {
+          const lead = p.kind ? LEADERS[p.kind] : undefined;
+          if (leader && p.kind && lead) {
             led++;
-            assert.equal(leader.kind, 'champion', `${tag}: a yellow pack of skeletons is led by the champion`);
+            leaders.add(lead);
+            assert.equal(leader.kind, lead, `${tag}: a yellow pack of ${p.kind}s is led by the ${lead}`);
             assert.ok(leader.elite, `${tag}: an elite`);
-            const want = Math.round(MONSTERS.champion.life * scaleLife(depth) * PACKS.leaderLife * (leader.words.includes('power') ? 1.3 : 1));
-            assert.ok(Math.abs(leader.maxLife - want) <= 1, `${tag}: a skeleton's life, three times (${leader.maxLife}, ${want})`);
-            assert.ok(ms.filter((m) => m !== leader).every((m) => m.kind === 'skeleton' && m.rarity === 'minion'), `${tag}: his minions skeletons`);
+            assert.equal(MONSTERS[lead].life, MONSTERS[p.kind].life, `${tag}: with the life of those he leads`);
+            const want = Math.round(MONSTERS[lead].life * scaleLife(depth) * PACKS.leaderLife * (leader.words.includes('power') ? 1.3 : 1));
+            assert.ok(Math.abs(leader.maxLife - want) <= 1, `${tag}: three times it (${leader.maxLife}, ${want})`);
+            assert.ok(ms.filter((m) => m !== leader).every((m) => m.kind === p.kind && m.rarity === 'minion'), `${tag}: his minions those he leads`);
           } else if (leader) assert.equal(leader.kind, p.kind, `${tag}: any other yellow pack is led by one of its own`);
         }
       }
     }
     for (const k of ['shade', 'boneward', 'golem'] as MonsterKind[]) assert.ok(seen.has(k), `the ${k} is met`);
-    assert.ok(led > 0, 'yellow packs of skeletons are met');
+    assert.ok(led > 0, 'led yellow packs are met');
+    for (const k of ['champion', 'marksman', 'priest', 'chieftain'] as MonsterKind[]) assert.ok(leaders.has(k), `the ${k} leads a pack`);
+    assert.equal(leaderKind('bat'), 'bat', 'bats have no leader of their own (and no yellow packs)');
   });
   // (off, a yellow pack of skeletons is led by a skeleton, as before)
   let checked = 0;
@@ -264,6 +275,20 @@ test('their blows land when their pictures’ do', () => {
   assert.equal(of(MONSTER_MOVES.champion, 'swing').windup, CHAMPION_HIT);
   assert.equal(of(MONSTER_MOVES.champion, 'rally').windup, RALLY_CRY);
   assert.equal(SPEAR.grab, BW_GRAB, 'the spear in hand again when its picture has it');
+  // (the other leaders)
+  assert.equal(MONSTERS.marksman.windup, MK_SHOT_HIT, 'the marksman\u2019s shot');
+  assert.equal(of(MONSTER_MOVES.marksman, 'shoot').windup, MK_SHOT_HIT);
+  assert.equal(of(MONSTER_MOVES.marksman, 'pierce').windup, MK_PIERCE_HIT, 'his great shot');
+  assert.equal(of(MONSTER_MOVES.priest, 'censer').windup, CENSER_HIT, 'the high priest\u2019s censer');
+  assert.equal(MONSTERS.priest.windup, MONSTERS.cultist.windup, 'his fire bolt, his cultists\u2019');
+  const beasts = makeBestiary();
+  const chief = beasts.of('chieftain').front.clips;
+  assert.ok(chief?.attack?.hit !== undefined && Math.abs(of(MONSTER_MOVES.chieftain, 'slam').windup - chief.attack.hit) < 0.01, 'the chieftain\u2019s slam on his picture\u2019s blow');
+  assert.ok(chief?.moves?.swing?.hit !== undefined && Math.abs(of(MONSTER_MOVES.chieftain, 'swing').windup - chief.moves.swing.hit) < 0.01, 'and his swing');
+  assert.ok(Math.abs(of(MONSTER_MOVES.chieftain, 'swing').windup / of(MONSTER_MOVES.brute, 'swing').windup - 1.2) < 0.03, 'a fifth slower than his trolls\u2019 swing');
+  assert.equal(MONSTER_MOVES.marksman.map((mv) => mv.id).join(' '), 'shoot pierce');
+  assert.equal(MONSTER_MOVES.priest.map((mv) => mv.id).join(' '), 'shoot censer');
+  assert.equal(MONSTER_MOVES.chieftain.map((mv) => mv.id).join(' '), 'swing slam', 'the chieftain his trolls\u2019 two, and no bellow');
   assert.equal(SKULL.burst, SKULL_BURST, 'the skull’s burst as long as its picture');
   const art = makeBestiary();
   const pick = art.of('boneward').front.clips?.moves?.pickUp;
@@ -414,11 +439,120 @@ test('the champion’s cry: his minions near him have his words whole for a whil
   });
 });
 
+test('the marksman’s great shot: a line of aim that follows the hero, then holds still; the great arrow pierces and flies on', () => {
+  withNew(() => {
+    const { g, m } = room('marksman', 7, { rarity: 'leader', words: [] });
+    const h = g.hero;
+    m.words = [];
+    m.moveCd = [99, 0];
+    m.cd = 0;
+    run(g, 2, () => g.zones.some((z) => z.kind === 'aim'));
+    const z = g.zones.find((q) => q.kind === 'aim');
+    assert.ok(z, 'a line of aim');
+    if (!z) return;
+    assert.equal(idOf(m), 'pierce', 'as he draws his great shot');
+    // (the hero steps aside while he draws: the line follows, until it holds still)
+    const c = emptyControls();
+    let before = { x: z.x1 ?? 0, y: z.y1 ?? 0 };
+    let followed = false;
+    let held: { x: number; y: number } | null = null;
+    for (let k = 0; k < 4 * 60 && m.state === 'windup'; k++) {
+      if (k === 30) h.y += 1.5;
+      g.update(1 / 60, c);
+      h.life = h.d.maxLife;
+      if (!g.zones.includes(z)) break;
+      const now = { x: z.x1 ?? 0, y: z.y1 ?? 0 };
+      if (m.t > AIM.lock + 0.05 && Math.hypot(now.x - before.x, now.y - before.y) > 0.3) followed = true;
+      if (m.t <= AIM.lock && !held) held = now;
+      if (m.t <= AIM.lock - 0.05 && held) assert.ok(Math.hypot(now.x - held.x, now.y - held.y) < 1e-6, 'held still before he looses');
+      before = now;
+    }
+    assert.ok(followed, 'the line followed the hero while he drew');
+    assert.ok(held, 'and held still');
+    // (he looses: the great arrow flies along the line, through the hero, and on)
+    const arrow = g.projectiles.find((p) => p.look === 'great');
+    assert.ok(arrow && arrow.pierce, 'the great arrow, piercing');
+    if (!arrow) return;
+    assert.ok(!g.zones.includes(z), 'the line is gone as he looses');
+    // (stand in its way: hurt once, and it flies on past)
+    h.x = arrow.x + (arrow.vx / AIM.speed) * 3;
+    h.y = arrow.y + (arrow.vy / AIM.speed) * 3;
+    const lost = run(g, 0.4);
+    assert.ok(lost > 0, 'the hero in its way is hurt');
+    assert.ok(arrow.struck === true && g.projectiles.includes(arrow), 'and it flies on');
+    const more = run(g, 0.3);
+    assert.equal(more, 0, 'hurt only once');
+  });
+});
+
+test('the high priest’s censer: its burning smoke burns whoever stays in it, and not one who steps out', () => {
+  withNew(() => {
+    for (const stays of [true, false]) {
+      const { g, m } = room('priest', 2, { rarity: 'leader', words: [] });
+      const h = g.hero;
+      m.words = [];
+      m.moveCd = [99, 0];
+      m.cd = 0;
+      // (he swings it back: one who will step out goes behind him now, before it comes down)
+      run(g, 2, () => m.state === 'windup' && idOf(m) === 'censer');
+      assert.equal(idOf(m), 'censer', 'he swings his censer');
+      if (!stays) {
+        h.x = m.x - m.fx * 3;
+        h.y = m.y - m.fy * 3;
+      }
+      const where = { x: h.x, y: h.y };
+      run(g, 2, () => {
+        h.x = where.x;
+        h.y = where.y;
+        return g.zones.some((z) => z.kind === 'smoke');
+      });
+      const z = g.zones.find((q) => q.kind === 'smoke');
+      assert.ok(z, 'his burning smoke on the floor');
+      if (!z) return;
+      assert.ok(Math.hypot(z.x - m.x, z.y - m.y) <= SMOKE.at + 1e-6, 'before him');
+      assert.equal(z.r, SMOKE.r);
+      assert.equal(Math.hypot(h.x - z.x, h.y - z.y) <= z.r, stays, stays ? 'on the hero who stood before him' : 'not on the hero behind him');
+      let lost = 0;
+      const c = emptyControls();
+      for (let k = 0; k < Math.round((SMOKE.dur + 0.2) * 60); k++) {
+        const before = h.life;
+        g.update(1 / 60, c);
+        h.x = where.x;
+        h.y = where.y;
+        if (g.zones.includes(z)) lost += Math.max(0, before - h.life);
+        h.life = h.d.maxLife;
+        m.cd = 9;
+      }
+      assert.equal(lost > 0, stays, stays ? 'whoever stays in it is burned' : 'whoever stepped out is not');
+      assert.ok(!g.zones.includes(z), `and it is gone after ${SMOKE.dur} s`);
+    }
+  });
+});
+
+test('the chieftain swings and slams, his slam no sooner than its cooldown', () => {
+  withNew(() => {
+    const { g, m } = room('chieftain', 1.2, { rarity: 'leader', words: [] });
+    m.words = [];
+    const began: MoveId[] = [];
+    let was = m.state;
+    const c = emptyControls();
+    for (let k = 0; k < 20 * 60; k++) {
+      g.update(1 / 60, c);
+      g.hero.life = g.hero.d.maxLife;
+      if (m.state === 'windup' && was !== 'windup') began.push(idOf(m) ?? 'swing');
+      was = m.state;
+    }
+    const slams = began.filter((id) => id === 'slam').length;
+    assert.ok(began.includes('swing') && slams >= 1, `his swing and his slam: ${began.join(' ')}`);
+    assert.ok(slams <= Math.ceil(20 / 7) + 1, `slams no more often than its cooldown allows (${slams} in 20 s)`);
+  });
+});
+
 test('the pictures: each move by the rules’ clock, the stoop, the stand and plod with no spear; their sizes; their walks at the rules’ paces', () => {
   withNew(() => {
     const art = makeBestiary();
     const of = (k: MonsterKind) => art.of(k);
-    for (const kind of ['boneward', 'golem', 'champion'] as MonsterKind[]) {
+    for (const kind of ['boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'] as MonsterKind[]) {
       const moves = movesOf({ kind, champion: false });
       assert.ok(moves, `${kind}: moves`);
       if (!moves) continue;
@@ -444,7 +578,9 @@ test('the pictures: each move by the rules’ clock, the stoop, the stand and pl
       const ax = Math.round(s.ax * GRAIN);
       const ay = Math.round(s.ay * GRAIN);
       let head = 0;
-      for (let y = 0; y < p.h && head === 0; y++) for (let x = ax - 3; x <= ax + 3; x++) if (p.has(x, y)) head = (ay - y) / GRAIN;
+      // (the chieftain's antlers are of his head, as the Warden's horns are of his, and stand to either side of its line)
+      const span = f === 'chieftain' ? 22 : 3;
+      for (let y = 0; y < p.h && head === 0; y++) for (let x = ax - span; x <= ax + span; x++) if (p.has(x, y)) head = (ay - y) / GRAIN;
       assert.ok(Math.abs(size.top - head) <= 4, `the ${f}: the game takes its head to be ${size.top} up; in the picture it is ${head}`);
       const reach = Math.max(s.ax, s.w - s.ax);
       assert.ok(size.half <= reach + 1 && size.half >= reach * 0.4, `the ${f}: ${size.half} to either side; the picture reaches ${reach}`);
@@ -452,7 +588,7 @@ test('the pictures: each move by the rules’ clock, the stoop, the stand and pl
     assert.ok(FIGURE_SIZE.champion.top > FIGURE_SIZE.skeleton.top + 4, 'the champion a head taller than his skeletons');
     assert.ok(FIGURE_SIZE.golem.top > FIGURE_SIZE.boneward.top && FIGURE_SIZE.boneward.top > FIGURE_SIZE.shade.top, 'the Golem the biggest of the three, the Shade the smallest');
     // their walks, shown faster or slower to match the paces the rules give them (the feet grip the floor)
-    const mobs: [MonsterKind, Mob][] = [['shade', SHADE], ['boneward', BONEWARD], ['golem', GOLEM], ['champion', CHAMPION]];
+    const mobs: [MonsterKind, Mob][] = [['shade', SHADE], ['boneward', BONEWARD], ['golem', GOLEM], ['champion', CHAMPION], ['marksman', MARKSMAN]];
     for (const [kind, mob] of mobs) assert.ok(Math.abs((of(kind).front.walkFps ?? 0) - walkFpsAt(mob, MONSTERS[kind].speed)) < 1e-9, `${kind}: its walk at the rules' pace`);
     // (and what flies: the spear low, from the hand to the floor; the skull up high and down onto where it was aimed)
     assert.equal(spearHeight({ dist: 5, way: 5, z0: SPEAR.z }), SPEAR.z, 'the spear leaves the hand at its height');
@@ -465,6 +601,47 @@ test('the pictures: each move by the rules’ clock, the stoop, the stand and pl
     assert.ok(Math.abs(over.x - 10) < 1e-6, 'over where it was aimed by six tenths of the way');
     const end = skullAt({ ...z, t: SKULL.fly });
     assert.ok(Math.abs(end.x - 10) < 1e-6 && end.z < 1e-6, 'and down onto it');
+  });
+});
+
+test('the bot steps out of a line of aim and out of the smoke', () => {
+  withNew(() => {
+    for (const kind of ['marksman', 'priest'] as MonsterKind[]) {
+      const { g, m } = room(kind, kind === 'marksman' ? 7 : 2, { rarity: 'leader', words: [] });
+      const h = g.hero;
+      m.words = [];
+      m.moveCd = [99, 0];
+      m.cd = 0;
+      const what = kind === 'marksman' ? 'aim' : 'smoke';
+      run(g, 2, () => g.zones.some((z) => z.kind === what));
+      const z = g.zones.find((q) => q.kind === what);
+      assert.ok(z, `${kind}: his ${what}`);
+      if (!z) return;
+      // (in the middle of it)
+      if (what === 'smoke') {
+        h.x = z.x;
+        h.y = z.y;
+      }
+      const bot = newBot(false, true);
+      const c = emptyControls();
+      let out = false;
+      for (let k = 0; k < 90; k++) {
+        botStep(g, c, bot, 1 / 60);
+        g.update(1 / 60, c);
+        h.life = h.d.maxLife;
+        m.cd = 9;
+        if (!g.zones.includes(z)) break;
+        if (what === 'smoke') out = out || Math.hypot(h.x - z.x, h.y - z.y) > z.r + 0.3;
+        else {
+          const x1 = z.x1 ?? z.x;
+          const y1 = z.y1 ?? z.y;
+          const len = Math.hypot(x1 - z.x, y1 - z.y) || 1;
+          const across = Math.abs((h.x - z.x) * -((y1 - z.y) / len) + (h.y - z.y) * ((x1 - z.x) / len));
+          out = out || across > z.r + 0.3;
+        }
+      }
+      assert.ok(out, `${kind}: the bot stepped out of his ${what}`);
+    }
   });
 });
 

@@ -169,16 +169,17 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       const moves = all ? all.filter((mv) => mv.id !== 'bash') : null;
       // (one that has no moves has its one attack, as before)
       const n = moves ? moves.length : 1;
-      const leads = kind === 'champion' ? 1 : 0;
+      const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' ? 1 : 0;
       const what = `${kind}${champion ? ' (a guardian: the red troll)' : ''}, ${size}`;
       assert.ok(n >= want[size][0] && n <= want[size][1] + leads, `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);
       if (!moves) continue;
       const first = moves[0];
-      assert.equal(first.id, 'swing', `${what}: the first is the basic blow, a swing`);
+      // (Version 19.9: a leader who shoots, as those he leads do: his basic blow a shot)
+      assert.equal(first.id, MONSTERS[kind].ranged ? 'shoot' : 'swing', `${what}: the first is the basic blow, a swing (or, for one who shoots, a shot)`);
       assert.equal(first.cooldown, 0, `${what}: the basic blow has no cooldown of its own: it is used between the big ones`);
       assert.equal(first.far, 0, `${what}: it reaches no further than the monster's own reach`);
       for (let i = 1; i < moves.length; i++) assert.ok(moves[i].cooldown > moves[i - 1].cooldown, `${what}: ${moves[i].id} cools down longer (${moves[i].cooldown} s) than ${moves[i - 1].id} (${moves[i - 1].cooldown} s)`);
-      for (const mv of moves.slice(1)) assert.ok(mv.dmg > first.dmg || mv.id === 'bolts' || mv.id === 'summon' || mv.id === 'rally', `${what}: ${mv.id} hits harder than the swing`);
+      for (const mv of moves.slice(1)) assert.ok(mv.dmg > first.dmg || mv.id === 'bolts' || mv.id === 'summon' || mv.id === 'rally', `${what}: ${mv.id} hits harder than the basic blow`);
     }
   }
   // the moves he said yes to

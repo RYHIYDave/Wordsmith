@@ -31,7 +31,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, TUNE, WORDS, movesOf } from '../game/defs';
+import { AIM, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, TUNE, WORDS, movesOf } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
@@ -44,7 +44,7 @@ import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
 import { Figure, attackClip, attackFrame, clipFrame, monsterAttackAge, moveFrame, PHASE_APART } from './figure';
 import { drawChargeLane } from '../art/charge_lane';
-import { drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../art/mob_shots';
+import { drawAimLine, drawBurningSmoke, drawGreatArrow, drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../art/mob_shots';
 import { skullAt, spearHeight } from './mob_world';
 import { PACK_MARKS, drawPackMark } from './pack_marks';
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
@@ -1220,6 +1220,18 @@ export class Renderer {
         } else if (here(z.x, z.y)) drawSkullBurst(g, this.floorAt, z.x, z.y, z.t - z.dur);
         continue;
       }
+      // (THE NEW MONSTERS: the bone marksman's line of aim, running out as he draws: art/mob_shots.ts)
+      if (z.kind === 'aim') {
+        const x1 = z.x1 ?? z.x;
+        const y1 = z.y1 ?? z.y;
+        if (here(z.x, z.y) || here(x1, y1) || here((z.x + x1) / 2, (z.y + y1) / 2)) drawAimLine(g, this.floorAt, z.x, z.y, x1, y1, (z.t - AIM.from) / Math.max(0.01, z.dur - AIM.from), t);
+        continue;
+      }
+      // (THE NEW MONSTERS: the high priest's burning smoke, billowing, burning and thinning away)
+      if (z.kind === 'smoke') {
+        if (here(z.x, z.y)) drawBurningSmoke(g, this.floorAt, z.x, z.y, z.r, z.t / z.dur, t);
+        continue;
+      }
       if (!here(z.x, z.y)) continue;
       const cx = wx(cam, z.x, z.y);
       const cy = wy(cam, z.x, z.y);
@@ -2149,7 +2161,7 @@ export class Renderer {
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
-      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear') {
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great') {
         // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];
@@ -2296,6 +2308,12 @@ export class Renderer {
       if (p.look === 'spear') {
         const v = Math.hypot(p.vx, p.vy) || 1;
         if (onScreen(p.x, p.y)) drawSpearShot(g, this.floorAt, p.x, p.y, spearHeight(p), p.vx / v, p.vy / v);
+        continue;
+      }
+      // (THE NEW MONSTERS: the bone marksman's great arrow, burning, a streak of light behind it)
+      if (p.look === 'great') {
+        const v = Math.hypot(p.vx, p.vy) || 1;
+        if (onScreen(p.x, p.y)) drawGreatArrow(g, this.floorAt, p.x, p.y, AIM.z, p.vx / v, p.vy / v, t);
         continue;
       }
       // (a hero's arrow, with the ranger's new pictures: from where the arrow on his string was, at its height: game/defs.ts, RANGER_ARROW)

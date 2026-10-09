@@ -76,6 +76,9 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   boneward: { bits: [PLANK[4], PLANK[3], IRON[2]], sparks: true, blood: false, dust: true },
   golem: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
   champion: { bits: [BONE[4], BONE[3], IRON[2]], sparks: true, blood: false, dust: true },
+  marksman: { bits: [BONE[4], BONE[3], BONE[2]], sparks: false, blood: false, dust: true },
+  priest: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: true, dust: false },
+  chieftain: { bits: [FLESH[2]], sparks: false, blood: true, dust: true },
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);

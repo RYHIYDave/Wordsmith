@@ -218,6 +218,10 @@ export function moveClip(set: AnimSet, mv: MonsterMove): Clip | undefined {
       return more?.bash;
     case 'rally':
       return more?.rally;
+    case 'pierce':
+      return more?.pierce;
+    case 'censer':
+      return more?.censer;
     case 'charge':
       return more?.chargeWind;
     case 'summon':

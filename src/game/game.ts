@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -1050,9 +1050,9 @@ export class Game {
     else spots.forEach((s, i) => this.spawn(i === 0 ? this.leaderOf(kind) : kind, s.x, s.y, pi, i === 0 ? 1 : 0, false, rng, i === 0 && tier === 'elite' ? lot : null, { rarity: i === 0 ? 'leader' : 'minion', words }));
   }
 
-  /** What leads a yellow pack of `kind`: one of them (an elite), or, of skeletons, the skeleton champion (THE NEW MONSTERS). */
+  /** What leads a yellow pack of `kind`: one of them (an elite), or a leader of his own (THE NEW MONSTERS: defs.ts LEADERS). */
   private leaderOf(kind: MonsterKind): MonsterKind {
-    return NEW_MONSTERS.on && kind === 'skeleton' ? 'champion' : kind;
+    return leaderKind(kind);
   }
 
   /** THE FIRST LEVELS (21:05): "That also means no words on monsters for dungeon 1". */
@@ -3390,7 +3390,7 @@ export class Game {
     m.charge = undefined;
     for (let k = this.zones.length - 1; k >= 0; k--) {
       const z = this.zones[k];
-      if ((z.kind === 'warn' || z.kind === 'lane') && z.src === m.id) this.zones.splice(k, 1);
+      if ((z.kind === 'warn' || z.kind === 'lane' || z.kind === 'aim') && z.src === m.id) this.zones.splice(k, 1);
     }
   }
 
@@ -3867,6 +3867,8 @@ export class Game {
         m.t -= dt * (0.6 + 0.4 * slow);
         // (the line a charge will run along fills as his wind-up runs out)
         if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'charge') this.laneOf(m, (z) => (z.t = Math.max(0, z.dur - m.t)));
+        // (THE NEW MONSTERS: the marksman's line of aim runs out as he draws, and follows the hero till it holds still: AIM)
+        if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'pierce') this.holdAim(m);
         if (m.t <= 0) this.monsterAttack(m, def);
         continue;
       }
@@ -3915,7 +3917,8 @@ export class Game {
         mvx = toSpear.x;
         mvy = toSpear.y;
       } else if (def.ranged) {
-        if (los && dist <= def.range && m.cd <= 0) {
+        // (THE NEW MONSTERS: one with moves of its own, the marksman and the high priest, shoots by them)
+        if (!moves && los && dist <= def.range && m.cd <= 0) {
           this.startWindup(m, def);
           continue;
         }
@@ -4125,7 +4128,8 @@ export class Game {
   private pickMove(m: Monster, def: MonsterDef, moves: readonly MonsterMove[], dist: number, los: boolean): number {
     // (from half its `first` to half as much again: so a pack does not bring its slams down together)
     if (!m.moveCd || m.moveCd.length !== moves.length) m.moveCd = moves.map((mv) => mv.first * this.rng.range(0.5, 1.5));
-    const reach = this.reachOf(m, def) + TUNE.heroRadius;
+    // (one that shoots, as far as it shoots: THE NEW MONSTERS, the marksman's and the high priest's shot)
+    const reach = def.ranged ? def.range : this.reachOf(m, def) + TUNE.heroRadius;
     for (let i = moves.length - 1; i >= 0; i--) {
       const mv = moves[i];
       if (m.moveCd[i] > 0) continue;
@@ -4183,6 +4187,10 @@ export class Game {
     } else if (mv.id === 'summon') {
       this.sfx('bossRoar');
       this.msg(`${m.name} calls the dead`, MSG.foe);
+    } else if (mv.id === 'pierce') {
+      // (THE NEW MONSTERS: the marksman's line of aim, from him toward the hero: AIM)
+      const end = this.aimEnd(m.x, m.y, m.fx, m.fy);
+      this.zones.push({ x: m.x, y: m.y, x1: end.x, y1: end.y, r: AIM.r, t: 0, dur: mv.windup, kind: 'aim', element: this.monsterElement(m), dmg: 0, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id });
     }
   }
 
@@ -4228,6 +4236,19 @@ export class Game {
       } else this.throwSpear(m, mv);
     } else if (mv.id === 'rally') {
       this.rally(m);
+    } else if (mv.id === 'shoot') {
+      // THE NEW MONSTERS: a leader who shoots, as those he leads shoot (a Twin one, two at once)
+      const base = Math.atan2(dy, dx);
+      const look = m.kind === 'marksman' ? 'arrow' : 'bolt';
+      if (twin > 0) {
+        this.shootAt(m, base - 0.12, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg, el, look, def.range + 3);
+        this.shootAt(m, base + 0.12, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg * twin, el, look, def.range + 3);
+      } else this.shootAt(m, base, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg, el, look, def.range + 3);
+      this.sfx(look === 'arrow' ? 'shot' : 'fire', 0.5);
+    } else if (mv.id === 'pierce') {
+      this.greatShot(m, mv);
+    } else if (mv.id === 'censer') {
+      this.swingCenser(m, mv, dist);
     } else if (mv.id === 'slam') {
       // the red circle does the harm; a Twin monster follows it with a second, quicker one
       this.sfx('slam', 0.8);
@@ -4498,6 +4519,74 @@ export class Game {
     this.msg(`${m.name} rallies his pack`, MSG.foe);
   }
 
+  /** Where a line of aim from (x, y) the way (fx, fy) ends: AIM.range tiles on, or at the first wall. */
+  private aimEnd(x: number, y: number, fx: number, fy: number): { x: number; y: number } {
+    let len = 0;
+    for (let a = 0.25; a <= AIM.range + 1e-6; a += 0.25) {
+      if (!this.isOpen(x + fx * a, y + fy * a)) break;
+      len = a;
+    }
+    return { x: x + fx * len, y: y + fy * len };
+  }
+
+  /** THE MARKSMAN DRAWS: his line of aim runs out (its `t`, how far he has drawn) and follows the hero until AIM.lock seconds before he looses; then it holds still. */
+  private holdAim(m: Monster): void {
+    for (const z of this.zones) {
+      if (z.kind !== 'aim' || z.src !== m.id) continue;
+      z.t = Math.max(0, z.dur - m.t);
+      if (m.t <= AIM.lock) continue;
+      const h = this.hero;
+      const d = Math.hypot(h.x - m.x, h.y - m.y);
+      if (d < 0.01) continue;
+      m.fx = (h.x - m.x) / d;
+      m.fy = (h.y - m.y) / d;
+      const end = this.aimEnd(m.x, m.y, m.fx, m.fy);
+      z.x = m.x;
+      z.y = m.y;
+      z.x1 = end.x;
+      z.y1 = end.y;
+    }
+  }
+
+  /** THE MARKSMAN LOOSES HIS GREAT ARROW along his line of aim: it pierces whoever it meets, and flies on to its end. */
+  private greatShot(m: Monster, mv: MonsterMove): void {
+    let fx = m.fx;
+    let fy = m.fy;
+    for (const z of this.zones) {
+      if (z.kind !== 'aim' || z.src !== m.id) continue;
+      const len = Math.hypot((z.x1 ?? z.x) - z.x, (z.y1 ?? z.y) - z.y);
+      if (len > 0.01) {
+        fx = ((z.x1 ?? z.x) - z.x) / len;
+        fy = ((z.y1 ?? z.y) - z.y) / len;
+      }
+    }
+    for (let k = this.zones.length - 1; k >= 0; k--) if (this.zones[k].kind === 'aim' && this.zones[k].src === m.id) this.zones.splice(k, 1);
+    this.projectiles.push({
+      x: m.x + fx * 0.4, y: m.y + fy * 0.4, vx: fx * AIM.speed, vy: fy * AIM.speed, r: AIM.r, dist: AIM.range, hostile: true, dmg: this.rollMonsterDmg(m) * mv.dmg,
+      element: this.monsterElement(m), look: 'great', pierce: true, hit: [], volley: false, skill: -1, trail: 0, words: m.words, half: this.halfOf(m),
+      runed: false, clouded: false, age: 0, from: m.name, n: 0, src: m.id,
+    });
+    this.emit({ t: 'shake', amount: 1 });
+    this.sfx('shot', 0.9);
+  }
+
+  /** THE HIGH PRIEST SWINGS HIS CENSER: its burning smoke settles before him (as far as SMOKE.at, or where the hero stands if nearer), and burns whoever is in it. */
+  private swingCenser(m: Monster, mv: MonsterMove, dist: number): void {
+    const at = Math.max(SMOKE.near, Math.min(SMOKE.at, dist));
+    let x = m.x + m.fx * at;
+    let y = m.y + m.fy * at;
+    if (!this.isOpen(x, y)) {
+      x = m.x + m.fx * SMOKE.near;
+      y = m.y + m.fy * SMOKE.near;
+    }
+    const ticks = Math.max(1, Math.round(SMOKE.dur / SMOKE.tick));
+    this.zones.push({
+      x, y, r: SMOKE.r, t: 0, dur: SMOKE.dur, kind: 'smoke', element: 'fire', dmg: (this.rollMonsterDmg(m) * mv.dmg) / ticks, slow: 0, tick: 0, hostile: true,
+      skill: -1, words: m.words, from: m.name, src: m.id, half: this.halfOf(m),
+    });
+    this.sfx('fire', 0.7);
+  }
+
   /** Whether one of the champion's minions would hear his cry: near enough, with words of his at half, and not rallied but now. */
   private hearsCry(m: Monster): boolean {
     return this.monsters.some(
@@ -4534,11 +4623,13 @@ export class Game {
         p.y = ny;
         p.dist -= step;
         if (p.hostile) {
-          if (!h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
+          if (!p.struck && !h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
             // (THE TRAPS: a dart's harm is a share of the life of what it meets)
             this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from, p.x - p.vx, p.y - p.vy, p.half);
             this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 5 });
-            dead = true;
+            // (THE NEW MONSTERS: the marksman's great arrow pierces: it flies on)
+            if (p.pierce) p.struck = true;
+            else dead = true;
           }
           // (THE TRAPS: a dart is the dungeon's, and hurts a monster it meets as it would the hero)
           if (!dead && p.trap) {
@@ -4780,6 +4871,22 @@ export class Game {
           if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
         }
         if (z.t >= z.dur + SKULL.burst) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'aim') {
+        // (THE NEW MONSTERS: the marksman's line of aim has no clock of its own: his draw moves it on, and it goes with it)
+        if (!this.monsters.some((m) => m.id === z.src && !m.dead && m.state === 'windup')) this.zones.splice(i, 1);
+        else z.t -= dt;
+        continue;
+      }
+      if (z.kind === 'smoke') {
+        // (THE NEW MONSTERS: the high priest's burning smoke burns whoever is in it, now and then: SMOKE)
+        z.tick -= dt;
+        if (z.tick <= 0) {
+          z.tick += SMOKE.tick;
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + TUNE.heroRadius * 0.5) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
+        }
+        if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
       if (z.kind === 'lane') {

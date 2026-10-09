@@ -352,8 +352,8 @@ export interface Projectile {
   /** Hostile shots: damage already rolled. Hero shots: fraction of a normal hit. */
   dmg: number;
   element: Element;
-  /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's (Version 19.9). */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear';
+  /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great';
   pierce: boolean;
   /**
    * Ids of monsters already hit, so a piercing shot hits each once. The shots of one use share one
@@ -391,6 +391,8 @@ export interface Projectile {
   src?: number;
   way?: number;
   z0?: number;
+  /** (THE NEW MONSTERS) A hostile shot that pierces (the marksman's great arrow): it has hurt the hero once, and flies on. */
+  struck?: boolean;
 }
 
 /**
@@ -410,7 +412,8 @@ export interface Spear {
 /** 'cracks': Heavy behind, cracked ground that staggers; 'ward': Guarding behind, a circle the hero takes less harm in (Version 19.3). */
 /** ('lane': THE MONSTERS' ATTACKS, the line a red troll will charge along: from (x, y) to (x1, y1), `r` half its width.) */
 /** ('skull': THE NEW MONSTERS, a skull the Golem has hurled: thrown from (x1, y1), coming down on (x, y) at `dur`, bursting after: game/defs.ts SKULL.) */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull';
+/** ('aim': the bone marksman's line of aim for his great shot, from (x, y) to (x1, y1), its `t` of `dur` how far he has drawn: game/defs.ts AIM. 'smoke': the high priest's burning smoke, that burns the hero in it: SMOKE.) */
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke';
 
 export interface Zone {
   x: number;

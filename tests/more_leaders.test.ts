@@ -10,7 +10,8 @@
 // don’t want the bellow if the Skelton leader has the same thing", "To his knees, then face-first
 // (Recommended)". His yes to their pictures: the marksman's by 15:17, the high priest's by 15:34, the
 // chieftain's by 15:46. So:
-//   1. the switch is off, and nothing of the game makes any of them;
+//   1. their switch goes with the rules' (in the game's code since Version 19.9, behind the main chat's
+//      game/defs.ts NEW_MONSTERS, off until he has seen them in the game), and only the bestiary makes them;
 //   2. THE MARKSMAN paints in every pose both ways round, nothing cyan, the pink edge while he lives
 //      and none as he dies; and he is a head taller than his archers;
 //   3. his walk goes round, and his feet grip the floor;
@@ -55,6 +56,8 @@ import { makeArcherArt3 } from '../src/art/monster_bones3';
 import { BANNER, CHIEF_DIE_TIME, SWING_HIT, makeBruteArt, makeChieftainArt, makeGuardianArt } from '../src/art/monster_brute';
 import { CENSER_HIT, MASK, PRIEST_DIE_TIME, PROCESSION_FPS, SMOKE, makeCultistArt, makeHighPriestArt, paintCultist, paintHighPriest } from '../src/art/monster_cultist';
 import { MARKSMAN, MK_PIERCE_HIT, MK_SHOT_HIT, MK_SNAP, MK_WOOD, NEW_MOBS, NEW_MOBS_LIST, TILE3, deathOfMob, makeMarksmanArt3, paintMob, skeletonAt, walkFpsAt } from '../src/art/new_mobs3';
+import { NEW_MONSTERS } from '../src/game/defs';
+import '../src/art/bestiary';
 import { P } from '../src/art/palette';
 import { rgba } from '../src/engine/px';
 import type { Px, Sprite } from '../src/engine/px';
@@ -176,8 +179,8 @@ const CH = makeChieftainArt();
 const BR = makeBruteArt();
 const GU = makeGuardianArt();
 
-test('the switch is off, and nothing of the game makes any of them', () => {
-  assert.equal(NEW_MOBS.on, false);
+test('their switch goes with the rules\' (Version 19.9), and only the bestiary makes them', () => {
+  assert.equal(NEW_MOBS.on, NEW_MONSTERS.on, 'the pictures are on just while the rules are');
   assert.ok(!NEW_MOBS_LIST.includes(MARKSMAN), 'the new three stay three');
   // (the high priest and the chieftain are made in the files of their cultists and trolls, which the
   // game uses: only those files name them, and the mock-up's own, which nothing of the game imports:
@@ -194,7 +197,8 @@ test('the switch is off, and nothing of the game makes any of them', () => {
   assert.ok(files.includes('art/bestiary.ts') && files.includes('art/monster_cultist.ts'), 'the game’s files are looked through');
   for (const f of files) {
     const text = fs.readFileSync(path.join('src', f), 'utf8');
-    for (const [name, home] of Object.entries(makers)) if (f !== home) assert.ok(!text.includes(name), `${f} names ${name}`);
+    // (the bestiary makes them for the game, as it makes every monster: art/bestiary.ts)
+    for (const [name, home] of Object.entries(makers)) if (f !== home && f !== 'art/bestiary.ts') assert.ok(!text.includes(name), `${f} names ${name}`);
   }
 });
 
