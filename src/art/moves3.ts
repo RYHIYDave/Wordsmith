@@ -2200,6 +2200,89 @@ function powerGetsAway(): Motion {
   };
 }
 
+// ---------------------------------------------------------------------------------------------
+/**
+ * BIG AND WILD. A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The owner, by
+ * 20:14, of the mage's power getting away from her: "there's not even a glow on the staff, it just
+ * gets lighter.  there should be energy crackling and bolts shooting out, barely able to contain
+ * it.  this goes for all the animations we've created.  i think we need to amend the rules for
+ * effects and animations change it to big and wild.  why dont you redo the WAVE animation as big
+ * and wild as you think is appropriate and ill tell you if it needs to go more or less wild".
+ * At 20:17, of her being made to move wild: "move wild?  she just lowered her staff.  is that wild?"
+ *
+ * So, the Wave first, as the measure of how wild: with this on (and her stances, MAGE_STANCES), she
+ * casts it with her whole body (`wildWaveFromGuard`), and the power in the crystal crackles and
+ * throws bolts as it burns (the sprite says where the crystal is and how hot: kit.ts `Charge`; the
+ * renderer hands that to render/fx.ts, which makes the arcs, the sparks and the bolts). The Wave
+ * itself stands up tall, boils and crackles, and throws bolts ahead of it; what it hits crackles.
+ */
+export const WILD = { on: false };
+
+/**
+ * HER WAVE, BIG AND WILD, FROM HER GUARD. The crystal blazes as she coils: the staff goes up and
+ * far back over her right shoulder, her body arched and turned away, her free hand thrust out at her
+ * mark, fingers spread. It comes over in one great arc and is driven down through the air in front
+ * of her as she lunges deep (the wave goes on the sixth frame, as the rules have it), the blast
+ * throwing her coat and braids back. Then the power kicks: the staff bucks up in her hand and throws
+ * her head back, her free hand grabs for it, and she wrestles it down, shaking, both hands on it,
+ * and comes up into her guard. Her feet stay where her guard has them (the back one turns on its
+ * ball as she lunges, and is down again before she is back in her guard). Fourteen frames: it is
+ * over before the rules' attack is.
+ */
+function wildWaveFromGuard(): Motion {
+  const G = MAGE_GUARD;
+  const coil: Partial<Bones> = {
+    ...GUARD_FEET, px: -2.6, pz: G.pz + 1.1, yaw: -48, twist: -30, pitch: -3, bend: -7, faceTurn: 8, faceUp: 2,
+    ...staffHand(-4.5, -5.5, 11.5), ...freeHand(10.5, 2.5, 1.5, 6), wAz: 166, wEl: 50, draw: 2.6, gale: 0.8,
+  };
+  const slam: Partial<Bones> = {
+    ...GUARD_PIVOT, px: 3.8, pz: G.pz - 2, yaw: 14, pitch: 10, twist: 22, bend: 14, faceTurn: 0, faceUp: 0,
+    ...staffHand(12, -5, -8), ...freeHand(-5, 7, -6, -40), wAz: 174, wEl: 178, draw: 3, gale: 1.6,
+  };
+  const kicked: Partial<Bones> = {
+    ...GUARD_PIVOT, px: 1.4, pz: G.pz - 1.2, yaw: 10, pitch: 1, twist: 16, bend: 4, faceUp: 9,
+    ...staffHand(9, -5, -3.5), ...freeHand(4, 3, -6, -12), wAz: 176, wEl: 146, draw: 2.8, gale: 1.3,
+  };
+  const fought: Partial<Bones> = {
+    ...GUARD_FEET, px: 2, pz: G.pz - 1.6, yaw: 0, pitch: 8, twist: 6, bend: 11, faceUp: -2,
+    rhIn: 0, rhx: 6, rhy: -2, rhz: -11, re: 0, lhIn: 3, lhx: 10, lhy: 0, lhz: 0, le: 0, wAz: 178, wEl: 166, draw: 2.4, gale: 0.9,
+  };
+  return {
+    hit: 5 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      // (she lets go with her left hand and it goes out at her mark as the staff goes up and back and she coils)
+      { at: 1.5 * FR, pose: { ...partWay(G, {}, coil, 0.45), ...staffHand(-1.5, -5.5, 4), ...freeHand(8, 2, -2, -4), wEl: 92, draw: 2, gale: 0.45 }, ease: 'out' },
+      { at: 3.5 * FR, pose: coil, ease: 'out' },
+      // (THE STAFF COMES OVER, high: her hand goes up and round in a great arc)
+      { at: 4.2 * FR, pose: { ...partWay(G, coil, slam, 0.3), ...staffHand(2.5, -6.5, 14), ...freeHand(7, 4, -1, -14), draw: 2.9, gale: 1 }, ease: 'in' },
+      { at: 5 * FR, pose: slam, ease: 'lin' },
+      // (driven on down through the air)
+      { at: 6 * FR, pose: { ...slam, pz: G.pz - 2.4, bend: 16, pitch: 11, ...staffHand(11.5, -5, -11), wEl: 196, draw: 3, gale: 1.5 }, ease: 'lin' },
+      // (THE POWER KICKS: the staff bucks up, her head is thrown back, her free hand grabs for it)
+      { at: 7.5 * FR, pose: kicked, ease: 'out' },
+      // (she wrestles it down, both hands on it, and it shakes)
+      { at: 9.5 * FR, pose: fought, ease: 'io' },
+      { at: 10.5 * FR, pose: { ...fought, wEl: 160, rhz: -10.4, draw: 2.3 }, ease: 'lin' },
+      { at: 11.5 * FR, pose: { ...fought, wEl: 167, rhz: -11.3, draw: 2.1, gale: 0.6 }, ease: 'lin' },
+      // (it is held; she comes up into her guard, and the crystal dies back to its glow)
+      { at: 14 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/** Which Wave is hers now: today's, from her guard (MAGE_STANCES), or big and wild from it (WILD as well). */
+function waveNow(): Motion {
+  if (!MAGE_STANCES.on) return MAGE_TODAY.wave;
+  return WILD.on ? wildWaveFromGuard() : waveFromGuard();
+}
+
+/** Make it all big and wild (true), or as it is (false): see WILD. For the pictures; the art is painted afterwards. */
+export function useWild(on: boolean): void {
+  WILD.on = on;
+  WAVE3.motion = waveNow();
+}
+
 /** As they are with the switch off. */
 const MAGE_TODAY = {
   stand: MAGE_STAND3.motion, standRest: MAGE_STAND3.rest, town: MAGE_TOWN3.motion, runRest: MAGE_RUN3.rest,
@@ -2216,7 +2299,7 @@ export function useMageStances(on: boolean): void {
   MAGE_RUN3.rest = on ? MAGE_GUARD : MAGE_TODAY.runRest;
   // (her casts, from her guard and back into it)
   WAVE3.rest = on ? MAGE_GUARD : MAGE_TODAY.waveRest;
-  WAVE3.motion = on ? waveFromGuard() : MAGE_TODAY.wave;
+  WAVE3.motion = waveNow();
   ORB3.rest = on ? MAGE_GUARD : MAGE_TODAY.orbRest;
   ORB3.motion = on ? orbFromGuard() : MAGE_TODAY.orb;
   BEAM3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamRest;

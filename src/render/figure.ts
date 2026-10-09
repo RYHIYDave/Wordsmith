@@ -604,6 +604,18 @@ export class Figure {
     return [half(x - s.ax * scale * q), Math.max(0.5, half(s.w * scale * q))];
   }
 
+  /**
+   * Where the power the figure last shown holds burns (the mage's crystal: art/kit.ts, Charge), from
+   * its feet in game pixels (right and down), and how hot; null if it holds none. In a turn it closes
+   * in on the middle with the figure, and in a fall it dies with the light.
+   */
+  charge(): { dx: number; dy: number; heat: number } | null {
+    const s = this.last;
+    if (!s || !s.charge) return null;
+    const q = Math.min(1, this.squash);
+    return { dx: (s.charge.x - s.ax) * q, dy: s.charge.y - s.ay, heat: s.charge.heat * (1 - this.gone) };
+  }
+
   /** Add the lights of the figure last shown (a lit blade, a crystal, a glowing feather). Call it after any darkness is laid down. */
   lights(g: CanvasRenderingContext2D, x: number, y: number, scale = 1): void {
     const s = this.last;

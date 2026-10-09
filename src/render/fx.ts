@@ -34,6 +34,7 @@ import { drawText, textWidth, wrapText } from '../engine/font';
 import { RANGER_ARROW, WORDS } from '../game/defs';
 import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
+import { Wild } from './wild';
 
 /** Where the world origin sits on screen this frame. */
 export interface Cam {
@@ -489,6 +490,13 @@ export class Fx {
   private later: { t: number; fn: () => void }[] = [];
   /** A Mage's untyped damage is drawn in arcane purple rather than steel. */
   arcane = false;
+  /** BIG AND WILD (art/moves3.ts, WILD, a mock-up behind a switch that is off): the crackle, the sparks and the bolts it adds (render/wild.ts). */
+  readonly wild = new Wild(this);
+
+  /** The renderer, each frame the hero is drawn: where the power they hold burns (a place in the world and its height in pixels), how hot, and the way they face (see Wild). */
+  charge(x: number, y: number, z: number, heat: number, fx: number, fy: number): void {
+    this.wild.charge(x, y, z, heat, fx, fy);
+  }
 
   private ramp(el: Element): readonly string[] {
     if (el === 'phys') return this.arcane ? ELEMENT_RAMP.arcane : ELEMENT_RAMP.phys;
@@ -531,6 +539,7 @@ export class Fx {
     this.might.t = 0;
     this.healSum = 0;
     this.later = [];
+    this.wild.clear();
   }
 
   // =============================================================================================
@@ -954,8 +963,10 @@ export class Fx {
    * What the hero's own shots shed as they fly, by the words in front of them. Call once per game
    * step with the length of the step in sixtieths of a second (see Renderer.draw's `pace`).
    */
-  follow(shots: ReadonlyArray<{ x: number; y: number; vx: number; vy: number; hostile: boolean; words: Words; element: Element; n: number }>, pace = 1): void {
+  follow(shots: ReadonlyArray<{ x: number; y: number; vx: number; vy: number; hostile: boolean; words: Words; element: Element; n: number; look?: string; r?: number; age?: number; dist?: number }>, pace = 1): void {
     const k = pace * this.room();
+    // (big and wild: a wave in flight boils, crackles and throws bolts; and it is known where the waves are, for what they hit)
+    this.wild.follow(shots, k);
     if (k <= 0) return;
     const roll = (p: number): boolean => Math.random() < p * k;
     for (const p of shots) {
@@ -1003,6 +1014,8 @@ export class Fx {
             break;
           }
           const ramp = this.ramp(e.el);
+          // (big and wild: what a wave hits crackles)
+          if (!e.onHero) this.wild.hit(e.x, e.y);
           if (e.onHero) this.float(e.x, e.y, `-${e.amount}`, P.bl4, false, 30);
           else this.float(e.x, e.y, e.crit ? `${e.amount}!` : `${e.amount}`, e.crit ? P.gd4 : e.el === 'phys' ? P.white : ramp[ramp.length - 2], e.crit || !!e.heavy);
           this.spray(e.x, e.y, e.onHero ? 5 : 3, e.onHero ? [P.bl4, P.bl3] : ramp, 2.2, 50, 12);
@@ -1506,6 +1519,8 @@ export class Fx {
           const cs = e.echo ? MIRROR : this.magic(e.el);
           this.flashes.push({ x: e.x + e.dx * 0.5, y: e.y + e.dy * 0.5, z: 12, r: 0.4, t: 0, dur: 0.09, colors: cs });
           this.streaks(e.x + e.dx * 0.4, e.y + e.dy * 0.4, 6, cs, 5, 6, { dx: e.dx, dy: e.dy, spread: 0.9, life: 0.18, z: 10 });
+          // (big and wild: let go with a blast, and bolts shoot out ahead of it)
+          this.wild.cast(e.x, e.y, e.dx, e.dy, e.echo);
           break;
         }
         case 'orbSet': {
@@ -1877,6 +1892,7 @@ export class Fx {
       this.messages[i].t += dt;
       if (this.messages[i].t > this.messages[i].life) this.messages.splice(i, 1);
     }
+    this.wild.update(dt);
     this.shake = Math.max(0, this.shake - dt * 22);
     this.shakeX = this.shake > 0.3 ? Math.round(rnd(-this.shake, this.shake)) : 0;
     this.shakeY = this.shake > 0.3 ? Math.round(rnd(-this.shake, this.shake) * 0.6) : 0;
@@ -2393,6 +2409,8 @@ export class Fx {
         g.fillRect(px, py, p.size, p.size);
       }
     }
+    // (big and wild: the arcs of power, over the sparks)
+    this.wild.draw(g, c);
     // "of Power": an ember circles the hero for every stack held. (From Version 15.1, as the owner
     // asked on his page of notes, "Power's orbs spinning round the character": they go round on a
     // ring that is tilted, high behind the hero and low in front; the ones on the far side of the

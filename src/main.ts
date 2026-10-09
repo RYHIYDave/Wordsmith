@@ -4,7 +4,7 @@
 import { FIGURE_SIZE, figureOf, makeBestiary } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
-import { useComboMends, useMageStances, useRangerStances } from './art/moves3';
+import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt } from './art/icons';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
@@ -1620,6 +1620,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** THE MAGE'S NEW STANCES (art/moves3.ts, MAGE_STANCES): a mock-up behind a switch that is off; its playtests put it in and paint the heroes again (false: today's back). */
     mageStances: (on: boolean) => {
       useMageStances(on);
+      art.heroes = makeHeroArt3();
+    },
+    /** BIG AND WILD (art/moves3.ts, WILD; render/wild.ts): a mock-up behind a switch that is off; its playtests put it in and paint the heroes again (false: as it is). */
+    wild: (on: boolean) => {
+      useWild(on);
       art.heroes = makeHeroArt3();
     },
     /**
