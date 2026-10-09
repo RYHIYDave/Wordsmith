@@ -65,39 +65,35 @@ them is cyan.
   Their blows land at 0.5 s (the Shade), 0.7 s (the Boneward) and 1.0 s (the Golem): a rule's `windup`
   for each should be that. STILL UNUSED BY THE GAME: nothing imports them.
 
-## Their warnings on the floor (9 Oct, after his words of 07:44)
+## His answers of 9 Oct, morning: their walks yes; attacks that come from what they are
 
-- His words, 9 Oct, 07:44: "When you get to attacks, I’d like to see something other than a big red
-  circle on the ground."
-- Today a monster's ground attack is warned of by a red circle that fills (`render/render.ts`, the
-  `'warn'` zone: the Brute's and the Warden's slams). These three warn each in a shape of its own
-  (`src/art/mob_warnings.ts`, `drawWarning`): WHERE from the first moment of the wind-up, faint;
-  WHEN by how it lights up; then the blow's own mark where it landed, fading. In the enemy's pink
-  burning to gold, with the floor's stone and dust; nothing cyan. Drawn in the game's own pixels
-  on the floor under the figures, as the floor's cracks are (`render/fx.ts`).
-  - **The Shade**: three claw marks on the floor before it, faint; they light one after another
-    (three, two, one) and beat; its claws come through: the marks flash white-gold and are left as
-    torn gouges that fade (0.5 s).
-  - **The Boneward**: a lane out to its spear's reach, on its spear's side, marked with dashes and
-    diamonds (its rune's) and a spear-head at the end, faint; they light one after another from it
-    outward, the spear-head last and gold; the thrust runs down the lane in a white-gold streak,
-    sparks off its end (0.45 s).
-  - **The Ossuary Golem**: where the club will come down, faint hairline cracks out to the edge of
-    what it will hit; grit hops on the floor; the cracks open along them from the middle outward,
-    hotter and hotter, pink to gold, reaching the edge as the club comes down; dust rises off their
-    ends; the club lands: the cracks blaze white-gold, stone is thrown up, dust bursts out; they
-    cool, and fade (1.4 s).
-- Each where its blow lands in its pictures (`WARN`): the Shade's claws come down about 0.6 tiles ahead,
-  its marks run 0.25 to 1.05 tiles ahead, 0.36 to either side; the Boneward's spear-head is about
-  1.15 tiles ahead at the thrust, its lane runs 0.45 to 1.6 tiles ahead, a fifth of a tile to its right
-  (its spear's side); the Golem's club comes down about 0.8 tiles ahead, a sixth of a tile to its left,
-  and the cracks run 1.4 tiles round. Each lights up in parts of its wind-up, so it fits whatever
-  wind-up the rules give it; its mark stays `WARN[id].mark` seconds after the blow.
-- **For the main chat**: `drawWarning(g, { id, x, y, fx, fy, t, windup, reach?, r?, seed? }, at)`, on the
-  floor under the figures where the `'warn'` zone is drawn today, for one of these winding up (`t`:
-  seconds since its wind-up began) and for `WARN[id].mark` seconds after its blow (`warnShowing`).
-  `at` gives a floor point on the screen (render.ts: `wx`, `wy`). It is the mirror when the monster
-  is shown mirrored (render.ts's rule, `fx - fy < 0`). Its lights are `drawGlow`'s. Still unused.
+- By 09:17, to `new_mobs_walks.gif` and `new_mobs_struck.png`: "Yes, keep them (Recommended)".
+- His words of 07:44: "When you get to attacks, I’d like to see something other than a big red circle
+  on the ground." They were read as: each new monster warns in a shape of its own on the floor. So
+  each was given one (claw marks; a lane of rune marks; the floor cracking), shown as
+  `new_mobs_attacks.gif` and `new_mobs_warns.png`. By 09:17: "No, change them"; and, asked whether
+  the Brute's and the Warden's slams should lose the red circle too: "It’s not the big red circles I
+  have a problem with, it’s that every attack is a big slam on the ground.  Use the same logic we do
+  with characters, ask questions about the larger enemies and develop attacks that are thematic". So
+  the floor warnings are withdrawn (they were `src/art/mob_warnings.ts`, commit `779045a`).
+- Asked about the big ones, by 09:30: the trolls (the Brute and the Guardian), "Club sweep and a
+  charge (Recommended)"; the Warden, "He can keep the slam.  I just don’t want it overused"; THE
+  GOLEM, "Hurl skulls (Recommended)": it pulls a skull off its shoulders and throws it, and it bursts
+  into flying bone (where it will land is shown by the skull's own shadow on the floor, not a
+  circle); THE SHADE AND THE BONEWARD warn by "Pose and a glint (Recommended)": the wind-up pose,
+  the claws or the spear-head flaring pink, nothing on the floor.
+- His word at 09:30: "I made some changes in the main chat regarding monsters. Please get with the
+  other agent and apply those changes to your designs." The main chat's rules from him (its post of
+  08:30 on the board, his words of 07:49 to 08:24): monsters by size, in packs of their own kind (tiny
+  6 to 10, small 4 to 7, medium 3 to 5, large 1 to 2, the boss alone); tiny and small have one attack,
+  medium two, large two or three, the boss four, and always a basic single-target attack to use while
+  the big ones cool down (the bigger the hit, the longer the cooldown). So by size: THE SHADE small
+  (one attack, its rake), THE BONEWARD medium (two), THE GOLEM large (a club swing as its basic attack,
+  and the skull throw).
+- By 09:33, the Boneward's second attack: "Spear throw": it hurls its spear at you from afar, then
+  fights with its shield (a shield bash) until it picks the spear up.
+
+Their attacks are drawn next, pictures first.
 
 ## How it is checked
 
@@ -107,13 +103,6 @@ them is cyan.
   does not move on the floor by a quarter of a picture pixel); each `ActorArt` is complete (both
   facings, every list and clip, the blow on a frame, the walk matched to another pace) and every frame
   of it has no cyan, and the pink edge if it lives and none if it is dying. tsc clean.
-- `tests/mob_warnings.test.ts` (9): no file of the game draws the warnings; each shows from the first
-  moment of its wind-up to the end of its mark and not outside it; only the enemy's colours, the
-  floor's stone and dust, nothing cyan; WHERE from the first moment (faint, already as far as the blow
-  will reach; the Golem's all the way round); WHEN (nothing lit at first, more and more, most just
-  before the blow); the blow's white-gold flash, and its mark fading; the same from frame to frame;
-  the mirror when the monster is shown mirrored; where each blow lands in its pictures is inside its
-  warning.
 - The pictures: `src/dev/preview_new_mobs.ts` (through `tools/preview.mjs`, and for the GIFs
   `tools/page_gif.mjs`):
   - `new_mobs_sheet.png`, `<shade|boneward|golem>_sheet.png` (hash `sheet`, `one:<id>`);
@@ -125,12 +114,11 @@ them is cyan.
   - `new_mobs_struck.png` (`struck:3`): each struck, five moments of its reel;
   - `strip:<id>:<walk|reel|stand>:<front|back>[:scale]`: every frame of one move in a row, the floor
     going by under a walk;
-  - `new_mobs_warns.png` (`warns:2`): each one's warning at moments of its wind-up, as its blow
-    lands, and after;
-  - `new_mobs_attacks.gif` (`attacks:2`): each stands, winds up with its warning on the floor,
-    strikes, and its mark fades, one after another.
+  (the withdrawn floor warnings' `warns:2` and `attacks:2` went with them).
 
 ## Not yet
 
-Their rules (health, speed, what their attacks do: the main chat's); where they live. His yes to the
-warnings. Whether the Brute's and the Warden's slams should leave the red circle too (his to say).
+Their rules (health, speed, what their attacks do: the main chat's); where they live. Their attacks:
+the Shade's rake with a glint; the Boneward's thrust with a glint, its spear throw (and the spear in
+flight and lying, the shield bash while it has none, picking it up); the Golem's club swing and its
+skull throw (the skull in flight, its shadow, its burst).

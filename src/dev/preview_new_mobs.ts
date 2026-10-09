@@ -13,10 +13,6 @@
 //            beside the new skeleton walking, the floor going by under each at its pace
 //          struck[:<scale>]: each struck, a few frames of its reel, facing you
 //          strip:<shade | boneward | golem>:<walk | reel | stand>:<front | back>[:<scale>]: every frame of one move in a row
-//          warns[:<scale>]: each one's warning on the floor (art/mob_warnings.ts), at moments of its
-//            wind-up, as its blow lands, and after
-//          attacks[:<scale>]: frames of a moving picture: each stands, then winds up with its warning
-//            on the floor, strikes, and its blow's mark fades, one after another, looping
 import { makeGroundArt } from '../art/ground';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
@@ -30,8 +26,6 @@ import { CANVAS3 } from '../art/skin';
 import type { GameView } from '../art/skin';
 import { drawAura, drawLights } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { WARN, drawWarning } from '../art/mob_warnings';
-import type { FloorAt } from '../art/mob_warnings';
 
 const parts = decodeURIComponent(location.hash.slice(1)).split(':');
 const mode = parts[0] || 'sheet';
@@ -508,164 +502,5 @@ if (mode === 'strip') {
     pane(x, y, cw, ch, S, [{ sp, fx: x + (M + l) * S, fy: y + (M + u) * S, shadow: mob.shadow }], which === 'walk' ? (i / fps) * mob.pace : 0, view === 'back');
     text(`${i}`, x + 3, y + ch + 3, 12, '#a8a2b8');
   });
-  win.__ready = true;
-}
-
-// =============================================================================================
-// The warnings on the floor (art/mob_warnings.ts), each facing down the screen to the right (the
-// way a monster facing you is painted), from its floor point at the floor's (0, 0)
-
-/** Where a point of the floor is, in the game's pixels, from the figure's floor point. */
-const ISO: FloorAt = (x, y) => [(x - y) * 16, (x + y) * 8];
-
-/** Draw on the floor at a figure's floor point (fx, fy) in the game's own pixels: each is `2 * S` screen pixels (a picture pixel is half one). */
-function onFloor(fx: number, fy: number, S: number, draw: () => void): void {
-  g.save();
-  g.translate(Math.round(fx), Math.round(fy));
-  g.scale(2 * S, 2 * S);
-  g.imageSmoothingEnabled = false;
-  draw();
-  g.restore();
-}
-
-function warnAt(mob: Mob, t: number): void {
-  drawWarning(g, { id: mob.id, x: 0, y: 0, fx: 1, fy: 0, t, windup: mob.hit }, ISO);
-}
-
-/** How far a monster's warning reaches over its whole life, in picture pixels from its floor point: left, right, up, down. */
-function warnReach(mob: Mob): [number, number, number, number] {
-  let l = 0;
-  let r = 0;
-  let u = 0;
-  let d = 0;
-  const pen = {
-    fillStyle: '',
-    globalAlpha: 1,
-    fillRect(x: number, y: number, w: number, h: number): void {
-      l = Math.min(l, x);
-      r = Math.max(r, x + w);
-      u = Math.min(u, y);
-      d = Math.max(d, y + h);
-    },
-  } as unknown as CanvasRenderingContext2D;
-  for (let t = 0; t < mob.hit + WARN[mob.id].mark; t += 1 / 60) drawWarning(pen, { id: mob.id, x: 0, y: 0, fx: 1, fy: 0, t, windup: mob.hit }, ISO, () => {});
-  return [-l * 2, r * 2, -u * 2, d * 2];
-}
-
-const attackEnd = (mob: Mob): number => mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at;
-
-if (mode === 'warns') {
-  const S = Number(parts[1]) || 2;
-  const PAD = 10;
-  const M = 6;
-  const HEAD = 70;
-  const NAME = 28;
-  const LAB = 40;
-  const said: Record<Mob['id'], string> = {
-    shade: 'three claw marks: faint, then lit one after another; its claws come through and leave them torn',
-    boneward: 'a lane of its rune’s marks out to its spear’s reach, lit from it outward; the thrust runs down it',
-    golem: 'the floor cracks where the club will land, hotter and hotter, out to the edge; it lands; stone and dust',
-  };
-  const rows = NEW_MOBS_LIST.map((mob) => {
-    const W = mob.hit;
-    const mark = WARN[mob.id].mark;
-    const ts = [0.03 * W / 0.5, W * 0.35, W * 0.65, W * 0.94, W + 0.03, W + mark * 0.45];
-    const sps = ts.map((t) => (t < attackEnd(mob) ? sp3(mob, 'attack', t, 'front') : sp3(mob, 'stand', t, 'front')));
-    let [l, r, u, d] = warnReach(mob);
-    for (const sp of sps) {
-      const [a, b, e, f] = reachOf(sp);
-      l = Math.max(l, a);
-      r = Math.max(r, b);
-      u = Math.max(u, e);
-      d = Math.max(d, f);
-    }
-    return { mob, ts, sps, l, r, u, d: Math.max(d, 8) };
-  });
-  cv.width = PAD + Math.max(...rows.map((q) => q.ts.length * ((q.l + q.r + 2 * M) * S + PAD)));
-  cv.height = HEAD + rows.reduce((a, q) => a + NAME + (q.u + q.d + 2 * M) * S + LAB + PAD, 0);
-  g.fillStyle = BG;
-  g.fillRect(0, 0, cv.width, cv.height);
-  text('Their warnings on the floor, instead of the red circle', PAD, 12, 24, '#ffd866', 700);
-  text(`a mock-up: not in the game. Left to right: from the start of its wind-up to its blow, and after. ${S} screen pixels to a picture pixel.`, PAD, 44, 15, '#cfc8ff', 600);
-  let y = HEAD;
-  for (const q of rows) {
-    text(`${q.mob.name}: ${said[q.mob.id]}`, PAD, y + 4, 17, '#ffd866', 700);
-    y += NAME;
-    const cw = (q.l + q.r + 2 * M) * S;
-    const ch = (q.u + q.d + 2 * M) * S;
-    q.sps.forEach((sp, i) => {
-      const x = PAD + i * (cw + PAD);
-      const fx = x + (M + q.l) * S;
-      const fy = y + (M + q.u) * S;
-      const t = q.ts[i];
-      pane(x, y, cw, ch, S, [{ sp, fx, fy, shadow: q.mob.shadow }], 0, false, false, () => onFloor(fx, fy, S, () => warnAt(q.mob, t)));
-      const W = q.mob.hit;
-      const line1 = t < W ? `${t.toFixed(2)} s` : i === 4 ? 'the blow lands' : `${(t - W).toFixed(2)} s after`;
-      const line2 = i === 0 ? 'the wind-up begins' : i === 3 ? 'just before the blow' : t < W ? `of ${W.toFixed(1)} s` : i === 4 ? `at ${W.toFixed(1)} s` : 'its mark fading';
-      text(line1, x + cw / 2, y + ch + 4, 14, i === 4 ? '#ffd866' : '#e8e2ff', i === 4 ? 700 : 500, 'center');
-      text(line2, x + cw / 2, y + ch + 21, 13, '#a8a2b8', 500, 'center');
-    });
-    y += ch + LAB + PAD;
-  }
-  win.__ready = true;
-}
-
-if (mode === 'attacks') {
-  const S = Number(parts[1]) || 2;
-  const FPS = 30;
-  /** The round, and when in it each one attacks (one after another, so that each is seen). */
-  const ROUND = 5.6;
-  const STARTS: Record<Mob['id'], number> = { shade: 0.5, boneward: 1.6, golem: 2.9 };
-  const TICKS = Math.round(ROUND * FPS);
-  const PAD = 10;
-  const M = 6;
-  const boxes = NEW_MOBS_LIST.map((mob) => {
-    let [l, r, u, d] = warnReach(mob);
-    const frames: Sprite[] = [];
-    for (let i = 0; i < TICKS; i++) {
-      const t = i / FPS;
-      const tw = t - STARTS[mob.id];
-      frames.push(tw >= 0 && tw < attackEnd(mob) ? sp3(mob, 'attack', tw, 'front') : sp3(mob, 'stand', t, 'front'));
-    }
-    for (const sp of frames) {
-      const [a, b, e, f] = reachOf(sp);
-      l = Math.max(l, a);
-      r = Math.max(r, b);
-      u = Math.max(u, e);
-      d = Math.max(d, f);
-    }
-    return { mob, frames, l, r, u, d };
-  });
-  const up = Math.max(...boxes.map((b) => b.u));
-  const down = Math.max(10, ...boxes.map((b) => b.d));
-  const widths = boxes.map((b) => (b.l + b.r + 2 * M) * S);
-  const H = (up + down + 2 * M) * S;
-  const HEAD = 56;
-  cv.width = PAD + widths.reduce((a, b) => a + b + PAD, 0);
-  cv.height = HEAD + H + 34;
-  const draw = (tick: number): void => {
-    const t = tick / FPS;
-    g.fillStyle = BG;
-    g.fillRect(0, 0, cv.width, cv.height);
-    text('Their warnings on the floor, instead of the red circle', PAD, 8, 17, '#ffd866', 700);
-    text('a mock-up: not in the game. Each warns where, faint at first, and lights up as its blow comes', PAD, 32, 14, '#cfc8ff', 600);
-    let x = PAD;
-    boxes.forEach((b, j) => {
-      const w = widths[j];
-      const fx = x + (M + b.l) * S;
-      const fy = HEAD + (M + up) * S;
-      const tw = t - STARTS[b.mob.id];
-      pane(x, HEAD, w, H, S, [{ sp: b.frames[tick % TICKS], fx, fy, shadow: b.mob.shadow }], 0, false, false, () => onFloor(fx, fy, S, () => warnAt(b.mob, tw)));
-      text(b.mob.name, x + w / 2, HEAD + H + 6, 15, '#ffd866', 700, 'center');
-      x += w + PAD;
-    });
-  };
-  draw(0);
-  win.__frames = TICKS;
-  win.__tickMs = 1000 / FPS;
-  win.__frame = (i: number): string => {
-    draw(i);
-    return cv.toDataURL('image/png');
-  };
   win.__ready = true;
 }
