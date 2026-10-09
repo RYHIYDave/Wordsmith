@@ -230,6 +230,8 @@ export interface Hero {
    */
   ring: boolean;
   quest: 'heart' | null;
+  /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
+  talents: string[];
   d: Derived;
 }
 
@@ -731,6 +733,8 @@ export type GameEvent =
    * chat's animation is called up by it).
    */
   | { t: 'moveOpen'; skill: number }
+  /** THE SKILL TREES (game/talents.ts): a talent taken. */
+  | { t: 'talent'; id: string }
   | { t: 'quest'; x: number; y: number }
   | { t: 'ring'; x: number; y: number }
   /** An orb is set down at (x, y); its waves reach `r`. / The orb that was out is gone (its time was up, or a new one took its place). */

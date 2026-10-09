@@ -4,7 +4,7 @@ import { ATTR_GIVES, CLASSES, TUNE } from './defs';
 import { MANA_AS_CDR, itemMods } from './items';
 import type { Derived } from './state';
 import { EQUIP_SLOTS, STAT_KEYS } from './types';
-import type { Attr, ClassId, EquipSlot, Item, Limit, Stats } from './types';
+import type { Attr, ClassId, EquipSlot, Item, Limit, StatMod, Stats } from './types';
 
 export function emptyStats(): Stats {
   const s = {} as Stats;
@@ -12,13 +12,15 @@ export function emptyStats(): Stats {
   return s;
 }
 
-export function derive(cls: ClassId, level: number, attrs: Record<Attr, number>, gear: Record<EquipSlot, Item | null>, limit: Limit = 'cooldown'): Derived {
+export function derive(cls: ClassId, level: number, attrs: Record<Attr, number>, gear: Record<EquipSlot, Item | null>, limit: Limit = 'cooldown', extra: readonly StatMod[] = []): Derived {
   const stats = emptyStats();
   for (const slot of EQUIP_SLOTS) {
     const it = gear[slot];
     if (!it) continue;
     for (const m of itemMods(it)) stats[m.stat] += m.value;
   }
+  // (THE SKILL TREES: what the talents taken add, game/talents.ts talentMods; none while TALENTS is off)
+  for (const m of extra) stats[m.stat] += m.value;
   const str = attrs.str + stats.str;
   const dex = attrs.dex + stats.dex;
   const int = attrs.int + stats.int;

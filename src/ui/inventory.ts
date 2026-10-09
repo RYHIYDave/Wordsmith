@@ -79,11 +79,18 @@ import type { Line, Sel } from './panels';
 import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { arrow, drawName, drawNameLines, drawWordTile, nameLines, nameParts, namePartsWidth, tileWidth } from './words';
+import { TALENTS } from '../game/talents';
+import { drawTalents, layTalents, newTalentUi, talentPresses } from './talents';
+import type { TalentUi } from './talents';
 
-export type InvPage = 'gear' | 'attacks' | 'stats';
+export type InvPage = 'gear' | 'attacks' | 'stats' | 'talents';
 /** The pages, in the order of their names along the top. */
 export const INV_PAGES: readonly InvPage[] = ['gear', 'attacks', 'stats'];
-const PAGE_LABEL: Record<InvPage, string> = { gear: 'GEAR', attacks: 'ATTACKS', stats: 'STATS' };
+/** The pages there are now: THE SKILL TREES' page too, with their switch on (game/talents.ts, TALENTS). */
+export function invPages(): readonly InvPage[] {
+  return TALENTS.on ? [...INV_PAGES, 'talents'] : INV_PAGES;
+}
+const PAGE_LABEL: Record<InvPage, string> = { gear: 'GEAR', attacks: 'ATTACKS', stats: 'STATS', talents: 'TALENTS' };
 
 /** Where a word is about to go: an exact socket of an attack, a piece of gear, or a place of the service in the other half. */
 type Target = { kind: 'slot'; ref: SlotRef } | { kind: 'item'; sel: Sel } | { kind: 'side'; at: string };
@@ -128,6 +135,8 @@ export interface InvUi {
   result: { word: WordId; item: string; text: string; t: number } | null;
   /** Something is being carried over this page's name, and for how long: long enough, and the page turns. */
   tab: { page: InvPage; t: number } | null;
+  /** THE SKILL TREES' page (ui/talents.ts): the talent being read, its card, a flare. */
+  talents: TalentUi;
   /**
    * The card that floats over the game's half, as it was drawn last frame: where it is, and its
    * buttons by their labels. (A press arrives between frames, at what was on the screen: the
@@ -225,7 +234,7 @@ export function wornFor(game: Game, it: Item): Item[] {
 }
 
 export function newInvUi(): InvUi {
-  return { page: 'gear', word: null, drag: null, carry: null, sel: null, compare: null, look: null, pending: null, note: '', noteT: 0, focus: 0, flash: null, result: null, tab: null, card: null };
+  return { page: 'gear', word: null, drag: null, carry: null, sel: null, compare: null, look: null, pending: null, note: '', noteT: 0, focus: 0, flash: null, result: null, tab: null, card: null, talents: newTalentUi() };
 }
 
 /**
@@ -435,6 +444,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   /** A new player's first word is waiting: the page is the attacks', and everything but the word and the attacks stands back. */
   const first = !!coach && !coach.done;
   if (first) st.page = 'attacks';
+  // (THE SKILL TREES' page is there only with their switch on)
+  if (st.page === 'talents' && !TALENTS.on) st.page = 'gear';
   const page = st.page;
   /** The page to turn to once this frame is drawn (everything below is laid out for `page`). */
   let nextPage: InvPage = page;
@@ -492,10 +503,11 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const tabs: { r: Rect; page: InvPage }[] = [];
   {
     // (as much air round each name as the panel leaves once DONE has its room)
-    const names = INV_PAGES.reduce((a, pg) => a + textWidth(PAGE_LABEL[pg]), 0);
-    const pad = Math.max(6, Math.min(T ? 14 : 10, Math.floor((bodyW - dbw - 6 - names - 2 * (INV_PAGES.length - 1)) / INV_PAGES.length)));
+    const pages = invPages();
+    const names = pages.reduce((a, pg) => a + textWidth(PAGE_LABEL[pg]), 0);
+    const pad = Math.max(4, Math.min(T ? 14 : 10, Math.floor((bodyW - dbw - 6 - names - 2 * (pages.length - 1)) / pages.length)));
     let x = X0;
-    for (const pg of INV_PAGES) {
+    for (const pg of pages) {
       const w = textWidth(PAGE_LABEL[pg]) + pad;
       tabs.push({ r: { x, y: top + 1, w, h: tabH }, page: pg });
       x += w + 2;
@@ -587,6 +599,9 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // the three attacks (`mini`); everything else that is read is on a card that floats over the
   // game's half, against the panel's edge (drawn at the end: see "what is being read").
   const mini: Rect | null = page === 'attacks' ? { x: X0, y: rowsEnd + 4, w: bodyW, h: pageY + pageH - rowsEnd - 4 } : null;
+  // THE SKILL TREES' page: the class's tree laid into the page
+  const pageR: Rect = { x: X0, y: pageY, w: bodyW, h: pageH };
+  const tlay = page === 'talents' ? layTalents(game, pageR) : null;
   const pbh = T ? 20 : 15;
 
   for (const c of slots) ui.mark(`socket:${c.ref.skill}:${c.ref.side}:${c.ref.idx}`, c.r.x, c.r.y, c.r.w, c.r.h);
@@ -635,8 +650,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
       return;
     }
     st.pending = { word, sel: to.sel };
-    // (the question is asked where things are read, and STATS has no such place)
-    if (page === 'stats') nextPage = 'gear';
+    // (the question is asked where things are read, and STATS has no such place, nor has TALENTS)
+    if (page === 'stats' || page === 'talents') nextPage = 'gear';
   };
   /** Yes: the word is burned into the piece of gear. */
   const commit = (): void => {
@@ -716,6 +731,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     if (cardPress('BURN IT')) commit();
     else if (cardPress('CANCEL')) st.pending = null;
   }
+  if (tlay) say(talentPresses(ui, game, st.talents, tlay));
   if (ui.pressIn(doneR.x, doneR.y, doneR.w, doneR.h)) close = true;
   for (const tb of tabs) {
     if (!ui.pressIn(tb.r.x, tb.r.y, tb.r.w, tb.r.h)) continue;
@@ -741,8 +757,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     st.look = null;
     st.result = null;
     st.drag = { word: c.w, x0: ui.press ? ui.press.x : c.r.x, y0: ui.press ? ui.press.y : c.r.y, moving: false, was, from: null };
-    // (STATS has nowhere to read a word and nowhere to put one)
-    if (page === 'stats') nextPage = 'attacks';
+    // (STATS has nowhere to read a word and nowhere to put one, nor has TALENTS)
+    if (page === 'stats' || page === 'talents') nextPage = 'attacks';
   }
   for (const c of slots) {
     const quick = ui.pressIn(c.r.x, c.r.y, c.r.w, c.r.h, 2);
@@ -1090,6 +1106,8 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     g.restore();
     // beside them: their numbers at a glance (what changes when a piece is put on)
     drawGlance(ui, game, glanceR);
+  } else if (tlay) {
+    drawTalents(ui, game, st.talents, tlay, pageR, R, t, dt);
   } else {
     drawStats(ui, game, { x: X0, y: pageY, w: bodyW, h: pageH });
   }

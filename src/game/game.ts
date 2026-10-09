@@ -15,6 +15,7 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
+import { TALENTS, cleanTalents, takeProblem, talentMods, talentPoints } from './talents';
 import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -77,6 +78,8 @@ export interface RunSave {
   /** THE FIRST LEVELS (defs.ts): the ring lit for this hero (absent in a save from before: lit), and the quest item carried. */
   ring?: boolean;
   quest?: 'heart' | null;
+  /** THE SKILL TREES (game/talents.ts): the talents taken, in the order taken (absent when none). */
+  talents?: string[];
 }
 
 /** THE FIRST LEVELS: what the wordsmith says while his ring is dark. */
@@ -590,6 +593,8 @@ export class Game {
       ...(MODES.on ? { mode: this.mode } : {}),
       // (nor of the first levels while theirs is: a hero saved before them has the ring lit)
       ...(FIRST_LEVELS.on ? { ring: h.ring, quest: h.quest } : {}),
+      // (THE SKILL TREES: none can be taken while their switch is off, so nothing is written then)
+      ...(h.talents.length ? { talents: [...h.talents] } : {}),
     };
   }
 
@@ -629,6 +634,8 @@ export class Game {
     // (THE FIRST LEVELS: a save from before them, or made with them off, has the ring lit)
     h.ring = !FIRST_LEVELS.on || s.ring !== false;
     h.quest = s.quest === 'heart' ? 'heart' : null;
+    // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
+    h.talents = cleanTalents(h.cls, h.level, s.talents);
     if (s.guide && typeof s.guide === 'object') {
       // (the prompts carry on from where they were; what was set stays set)
       const q = s.guide;
@@ -696,6 +703,7 @@ export class Game {
       // (THE FIRST LEVELS: the ring is lit for him if it ever was on this device; with the switch off, always)
       ring: !FIRST_LEVELS.on || this.meta.ring,
       quest: null,
+      talents: [],
       d,
     };
   }
@@ -757,7 +765,7 @@ export class Game {
   /** Rebuild everything derived from level, attributes, gear and socketed words. */
   refresh(): void {
     const h = this.hero;
-    h.d = derive(h.cls, h.level, h.attrs, h.gear, this.meta.limit);
+    h.d = derive(h.cls, h.level, h.attrs, h.gear, this.meta.limit, talentMods(h.cls, h.talents));
     // The weapon in hand decides both attacks. Their words stay where they are: they belong to the
     // place, not to the attack ("Power Strike becomes Power Shot when a bow is equipped"). What
     // the old attack had set going is gone with it. An attack that was waiting to be ready hands
@@ -4984,6 +4992,29 @@ export class Game {
 
   // ===========================================================================================
   // Things the player does in the panels
+
+  /** THE SKILL TREES (game/talents.ts): why this talent cannot be taken now, or null if it can. */
+  talentProblem(id: string): string | null {
+    if (!TALENTS.on) return 'No talents yet';
+    return takeProblem(this.hero.cls, this.hero.level, this.hero.talents, id);
+  }
+
+  /** Take a talent with a point: why not, or null when it is taken. */
+  takeTalent(id: string): string | null {
+    const why = this.talentProblem(id);
+    if (why) return why;
+    const h = this.hero;
+    h.talents.push(id);
+    this.refresh();
+    this.emit({ t: 'talent', id });
+    this.sfx('equip');
+    return null;
+  }
+
+  /** How many talent points are waiting to be spent. */
+  talentsLeft(): number {
+    return TALENTS.on ? Math.max(0, talentPoints(this.hero.level) - this.hero.talents.length) : 0;
+  }
 
   chooseAttr(a: Attr): void {
     const h = this.hero;

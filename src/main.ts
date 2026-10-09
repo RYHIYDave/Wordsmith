@@ -13,6 +13,7 @@ import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
+import { TALENTS } from './game/talents';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { makeTownProps } from './art/town';
@@ -1573,6 +1574,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     inv: (focus = -1) => openInventory(focus),
     /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
     modes: MODES,
+    /** THE SKILL TREES' switch (game/talents.ts), off until his yes: for their pictures and playtests (`talents.on`). */
+    talents: TALENTS,
     /**
      * THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS): a mock-up behind a switch that is off. Its
      * pictures and playtests switch it on (or off again) for themselves; the run made after follows it.
