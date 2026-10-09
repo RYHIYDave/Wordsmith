@@ -17,10 +17,11 @@
 // A HERO IS CYAN (kit.ts: GLINT, SPARK, the lit blade); WHAT GLOWS ON AN ENEMY IS HOT PINK,
 // BURNING TO GOLD (SOCKET in an eye, FLAME in a hand or on a rune).
 
+import { Px } from '../engine/px';
 import type { Light } from '../engine/px';
 import type { ActorArt, AnimSet } from './actor_types';
 import type { Key, Timeline } from './clip';
-import { CLIP_FPS, KAX, KAY, animSet, paintedFrames } from './kit';
+import { CLIP_FPS, KAX, KAY, REST, animSet, edge, hash, paintedFrames } from './kit';
 import type { Moves, Painted, Pose, Ramp, Rig, RigOpts } from './kit';
 
 // ---------------------------------------------------------------------------------------------
@@ -116,12 +117,128 @@ export interface MonsterMoves {
   heavy?: Timeline;
   /** Its other moves, by name (AnimSet.clips.moves: the trolls' swing, the red troll's charge, ...). */
   more?: Readonly<Record<string, Timeline>>;
+  /** CRAWLING OUT OF THE GROUND (CRAWL_OUT, crawlOut): its pose `k` (0..1) of the way out, and how tall it stands with its arms up (picture pixels). */
+  crawl?: { pose: (k: number) => Partial<Pose>; tall: number };
   /**
    * Its death, seen this way round: what it looks like `k` of the way through, 0 (as it stood
    * when the blow fell) to 1 (its body, lying where it will lie). See DEATH_FPS, and
    * AnimSet.clips.die in actor_types.ts.
    */
   die?: (k: number) => Painted;
+}
+
+/**
+ * CRAWLING OUT OF THE GROUND (the art chat, 9 Oct 2026). The owner, 9 Oct, of the dead the Warden
+ * calls up, shown them putting themselves back together out of their bones: "I’d like them to crawl
+ * out of the ground when summoned". So: the floor breaks open into a pit; its hands come up out of it
+ * first, clawing (it is posed with its arms up: they are the first of it to come into the light),
+ * then its skull; it hauls itself up onto the rim and heaves the rest of itself out, a foot stepping
+ * up onto the floor; and the pit closes behind it. Stone is thrown up as the hands break through, and
+ * pink motes rise out of the dark. Behind a switch that is off (the main chat turns it on with the
+ * Warden's new moves): `CRAWL_OUT`; and made for a monster whose `MonsterMoves.crawl` says how it is
+ * posed on the way out. Its clip is `AnimSet.clips.moves.crawl`, CRAWL_TIME long.
+ */
+export const CRAWL_OUT = { on: false };
+export const CRAWL_TIME = 1.4;
+export const CRAWL_FPS = 20;
+
+/** The floor's stone, for the pit's rim and the stone thrown up (palette.ts st2, st3, st5, st6). */
+const RIM_STONE: Ramp = ['#2a2331', '#2a2331', '#3a3040', '#655868', '#857888'];
+
+function crawlOut(rig: Rig, back: boolean, base: Pose, crawl: { pose: (k: number) => Partial<Pose>; tall: number }, k: number, ax: number, ay: number, rim: string | null): Painted {
+  const clamp = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const ease = (u: number): number => u * u * (3 - 2 * u);
+  const part = (a: number, b: number): number => clamp((k - a) / (b - a));
+  // how far down it still is: out of sight, then two heaves (the hands and the skull; the rest of it)
+  const heave1 = ease(part(0.12, 0.42));
+  const heave2 = ease(part(0.52, 0.82));
+  // (between the heaves it struggles on the rim: a wobble)
+  const struggle = Math.sin(part(0.42, 0.52) * Math.PI) * 2;
+  const depth = Math.round(crawl.tall * (1 - 0.4 * heave1 - 0.6 * heave2) + struggle);
+  // (and once out, it settles into its own standing pose)
+  const settle = ease(part(0.84, 1));
+  const posed: Pose = { ...base, ...crawl.pose(Math.min(k, 0.84)) };
+  const numbers = posed as unknown as Record<string, unknown>;
+  const rest = base as unknown as Record<string, unknown>;
+  for (const f of Object.keys(numbers)) if (typeof numbers[f] === 'number' && typeof rest[f] === 'number') numbers[f] = (numbers[f] as number) + ((rest[f] as number) - (numbers[f] as number)) * settle;
+  if (settle >= 1) Object.assign(posed, base);
+  const fig = rig(posed, back);
+  if (rim) edge(fig.px, rim);
+  const W = fig.px.w;
+  const H = fig.px.h;
+  const out = new Px(W, H);
+  // the pit: it opens, stays open while it comes up, and closes once it stands
+  const open = ease(part(0, 0.12)) * (1 - ease(part(0.86, 1)));
+  const rx = 17 * open;
+  const ry = 7 * open;
+  const front = (x: number): number => (Math.abs(x + 0.5 - ax) < rx ? ay + ry * Math.sqrt(Math.max(0, 1 - ((x + 0.5 - ax) / rx) ** 2)) : ay);
+  if (open > 0.03) {
+    // its dark, and its far rim
+    for (let y = Math.floor(ay - ry - 1); y <= Math.ceil(ay + ry + 1); y++) {
+      for (let x = Math.floor(ax - rx - 1); x <= Math.ceil(ax + rx + 1); x++) {
+        const u = (x + 0.5 - ax) / rx;
+        const v = (y + 0.5 - ay) / ry;
+        const d = u * u + v * v;
+        if (d > 1) continue;
+        out.set(x, y, d > 0.72 && v < 0 ? RIM_STONE[2] : '#07050a');
+      }
+    }
+  }
+  // the figure, sunk `depth`, cut off by the pit's near edge (and by the floor beside it)
+  for (let y = 0; y < H; y++) {
+    const ny = y + depth;
+    if (ny >= H) continue;
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      if (fig.px.d[i + 3] === 0) continue;
+      if (depth > 0 && ny > front(x)) continue;
+      const j = (ny * W + x) * 4;
+      out.d[j] = fig.px.d[i];
+      out.d[j + 1] = fig.px.d[i + 1];
+      out.d[j + 2] = fig.px.d[i + 2];
+      out.d[j + 3] = fig.px.d[i + 3];
+    }
+  }
+  if (open > 0.03) {
+    // the pit's near rim, over it: broken stone
+    for (let x = Math.floor(ax - rx); x <= Math.ceil(ax + rx); x++) {
+      const y = Math.round(front(x));
+      out.set(x, y, RIM_STONE[3]);
+      if (hash(x, 3, 71) < 0.5) out.set(x, y + 1, RIM_STONE[2]);
+      if (hash(x, 5, 72) < 0.25) out.set(x, y - 1, RIM_STONE[4]);
+    }
+    // stone thrown up as its hands break through, falling back
+    const burst = part(0.14, 0.5);
+    if (burst > 0 && burst < 1) {
+      for (let n = 0; n < 9; n++) {
+        const a = (hash(n, 1, 73) - 0.5) * 2.6 - Math.PI / 2;
+        const sp = 18 + hash(n, 2, 73) * 22;
+        const t = burst * 0.55;
+        const x = Math.round(ax + Math.cos(a) * sp * t * 1.4);
+        const y = Math.round(ay - 2 + Math.sin(a) * sp * t + 70 * t * t);
+        if (y < ay + 4) {
+          out.set(x, y, RIM_STONE[hash(n, 3, 73) < 0.5 ? 3 : 4]);
+          if (hash(n, 4, 73) < 0.4) out.set(x + 1, y, RIM_STONE[2]);
+        }
+      }
+    }
+    // pink motes rising out of the dark
+    for (let n = 0; n < 6; n++) {
+      const ph = (k * 2.2 + n / 6) % 1;
+      const x = Math.round(ax - rx * 0.7 + hash(n, 6, 74) * rx * 1.4);
+      const y = Math.round(ay - ph * 26);
+      if (open > 0.3) out.set(x, y, ph < 0.5 ? FLAME[3] : FLAME[2]);
+    }
+  }
+  // its lights where they are now, if they are out of the ground
+  const lights: Light[] = [];
+  for (const l of fig.lights) {
+    const ly = l.y + depth;
+    if (depth > 0 && ly > front(Math.round(l.x))) continue;
+    lights.push({ ...l, y: ly });
+  }
+  if (open > 0.3) lights.push({ x: ax, y: ay - 6, r: 18, color: FLAME[2], a: 0.25 * open });
+  return { px: out, lights };
 }
 
 /** Frames a second of a death, and how long one takes unless its figure says otherwise (seconds). */
@@ -188,6 +305,14 @@ export function monsterArt(rig: Rig, front: MonsterMoves, back: MonsterMoves, op
     const s = animSet(rig, away, opts.rest ?? {}, moves, look);
     if (opts.idleFps !== undefined) s.idleFps = opts.idleFps;
     if (opts.walkFps !== undefined) s.walkFps = opts.walkFps;
+    if (m.crawl && CRAWL_OUT.on) {
+      const crawl = m.crawl;
+      const [ax, ay] = opts.canvas ? [opts.canvas.ax, opts.canvas.ay] : [KAX, KAY];
+      const base: Pose = { ...REST, ...(opts.rest ?? {}) };
+      const rimC = opts.rim === undefined ? ENEMY_RIM : opts.rim;
+      const frames = paintedFrames(Math.round(CRAWL_TIME * CRAWL_FPS) + 1, (k) => crawlOut(rig, away, base, crawl, k, ax, ay, rimC), { aura: null, anchor: [ax, ay] });
+      s.clips = { ...s.clips, moves: { ...(s.clips?.moves ?? {}), crawl: { frames, fps: CRAWL_FPS } } };
+    }
     if (m.die) {
       // (a dying thing has no pool of light behind it)
       const frames = paintedFrames(Math.max(2, Math.round((opts.dieTime ?? DEATH_TIME) * DEATH_FPS) + 1), m.die, opts.canvas ? { aura: null, anchor: [opts.canvas.ax, opts.canvas.ay] } : { aura: null });

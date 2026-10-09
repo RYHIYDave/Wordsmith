@@ -9,11 +9,19 @@
 //            you; each swings, and then each slams as today (its red circle and all)
 //          charge[:<scale>]: frames of a moving picture: the red troll's charge: the warning while its
 //            line is marked on the floor, the run down it, the stop
+//          warden[:<scale>]: THE WARDEN'S NEW MOVES (art/monster_warden.ts, WARDEN_MOVES): moments of his
+//            swing and of his calling the dead, facing you and facing away
+//          wswing[:<scale>]: frames of a moving picture: the Warden's swing, then his slam as today
+//          summon[:<scale>]: frames of a moving picture: the Warden calls the dead, and skeletons crawl
+//            out of the ground round him (mkit.ts crawlOut)
 //   <scale>: screen pixels to a picture pixel (a game pixel is two)
 import { makeGroundArt } from '../art/ground';
 import { drawChargeLane } from '../art/charge_lane';
 import type { FloorAt } from '../art/charge_lane';
 import { CHARGE_GO, SWING_HIT, TROLL_MOVES, makeBruteArt, makeGuardianArt } from '../art/monster_brute';
+import { SUMMON_RISE, WARDEN_MOVES, WARDEN_SWING_HIT, makeWardenArt } from '../art/monster_warden';
+import { makeSkeletonArt } from '../art/monster_bones';
+import { CRAWL_OUT } from '../art/mkit';
 import type { ActorArt, AnimSet, Clip } from '../art/actor_types';
 import { P } from '../art/palette';
 import { drawAura, drawLights } from '../engine/px';
@@ -21,6 +29,8 @@ import type { Sprite } from '../engine/px';
 import { MONSTERS } from '../game/defs';
 
 TROLL_MOVES.on = true;
+WARDEN_MOVES.on = true;
+CRAWL_OUT.on = true;
 
 const parts = decodeURIComponent(location.hash.slice(1)).split(':');
 const mode = parts[0] || 'sheet';
@@ -392,6 +402,196 @@ if (mode === 'charge') {
     const fy = fy0 + oy * 2 * S;
     pane(PAD, HEAD, W, H, S, fx0, fy0, [{ sp: st.sp, fx, fy, shadow: SHADOW.guardian }], st.k >= 0 && (st.gone === undefined || st.gone < 1) ? () => onFloor(fx0, fy0, S, () => drawChargeLane(g, { x0: 0, y0: 0, x1: LONG, y1: 0, half: HALF, k: st.k, gone: st.gone }, ISO)) : undefined);
     text('The red troll', PAD + W / 2, HEAD + H + 6, 15, '#ffd866', 700, 'center');
+  };
+  draw(0);
+  win.__frames = TICKS;
+  win.__tickMs = 1000 / FPS;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cv.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
+// =============================================================================================
+// THE WARDEN
+
+const WARDEN: ActorArt = makeWardenArt();
+const W_SHADOW = 30;
+
+if (mode === 'warden') {
+  const S = Number(parts[1]) || 2;
+  const PAD = 10;
+  const M = 6;
+  type Cell = { sp: Sprite; label: string };
+  const rows: { title: string; cells: Cell[] }[] = [];
+  const sw = (back: boolean): Cell[] =>
+    [[0.25, 'taking it up'], [0.5, 'cocked back'], [WARDEN_SWING_HIT - 0.04, 'held (the warning)'], [WARDEN_SWING_HIT, 'the blow'], [WARDEN_SWING_HIT + 0.08, 'through'], [WARDEN_SWING_HIT + 0.35, 'after']].map(([t, label]) => ({ sp: at(moveOf(back ? WARDEN.back : WARDEN.front, 'swing'), t as number), label: label as string }));
+  const su = (back: boolean): Cell[] =>
+    [[0.4, 'the maul planted'], [0.6, 'his hand low, palm up'], [0.85, 'it comes up'], [SUMMON_RISE, 'the dead rise'], [SUMMON_RISE + 0.4, 'held up'], [SUMMON_RISE + 0.8, 'after']].map(([t, label]) => ({ sp: at(moveOf(back ? WARDEN.back : WARDEN.front, 'summon'), t as number), label: label as string }));
+  rows.push({ title: 'The Warden’s swing, facing you', cells: sw(false) });
+  rows.push({ title: 'The Warden’s swing, facing away', cells: sw(true) });
+  rows.push({ title: 'The Warden calls the dead, facing you', cells: su(false) });
+  rows.push({ title: 'The Warden calls the dead, facing away', cells: su(true) });
+  let [l, r, u, d] = [0, 0, 0, 0];
+  for (const row of rows) {
+    for (const c of row.cells) {
+      const [a, b, e, f] = reachOf(c.sp);
+      l = Math.max(l, a);
+      r = Math.max(r, b);
+      u = Math.max(u, e);
+      d = Math.max(d, f);
+    }
+  }
+  const cw = (l + r + 2 * M) * S;
+  const chh = (u + Math.max(d, 10) + 2 * M) * S;
+  const HEAD = 66;
+  const NAME = 26;
+  const LAB = 24;
+  cv.width = PAD + 6 * (cw + PAD);
+  cv.height = HEAD + rows.length * (NAME + chh + LAB + PAD);
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  text('The Warden’s new moves: a swing, and calling the dead', PAD, 10, 24, '#ffd866', 700);
+  text(`a mock-up: not in the game. His slam and his fan of bolts stay as they are. ${S} screen pixels to a picture pixel.`, PAD, 40, 15, '#cfc8ff', 600);
+  let y = HEAD;
+  for (const row of rows) {
+    text(row.title, PAD, y + 3, 17, '#ffd866', 700);
+    y += NAME;
+    row.cells.forEach((c, i) => {
+      const x = PAD + i * (cw + PAD);
+      const fx = x + (M + l) * S;
+      const fy = y + (M + u) * S;
+      pane(x, y, cw, chh, S, fx, fy, [{ sp: c.sp, fx, fy, shadow: W_SHADOW }]);
+      text(c.label, x + cw / 2, y + chh + 4, 14, '#e8e2ff', 500, 'center');
+    });
+    y += chh + LAB + PAD;
+  }
+  win.__ready = true;
+}
+
+if (mode === 'wswing') {
+  const S = Number(parts[1]) || 2;
+  const FPS = 30;
+  const SWING_AT = 0.5;
+  const SLAM_AT = 2.4;
+  const slam = WARDEN.front.clips?.attack as Clip;
+  const SLAM_END = slam.frames.length / slam.fps;
+  const ROUND = SLAM_AT + SLAM_END + 0.5;
+  const TICKS = Math.round(ROUND * FPS);
+  const swing = moveOf(WARDEN.front, 'swing');
+  const slamHit = MONSTERS.warden.windup;
+  const frameAt = (t: number): Sprite => {
+    if (t >= SWING_AT && t < SWING_AT + swing.frames.length / swing.fps) return at(swing, t - SWING_AT);
+    if (t >= SLAM_AT && t < SLAM_AT + SLAM_END) return at(slam, t - SLAM_AT);
+    return standing(WARDEN.front, t);
+  };
+  const R = MONSTERS.warden.aoe;
+  let [l, r, u, d] = [0, 0, 0, 0];
+  for (let i = 0; i < TICKS; i++) {
+    const [a, b, e, f] = reachOf(frameAt(i / FPS));
+    l = Math.max(l, a);
+    r = Math.max(r, b);
+    u = Math.max(u, e);
+    d = Math.max(d, f);
+  }
+  const [cx0, cy0] = ISO(1.6, 0);
+  r = Math.max(r, (cx0 + R * 22.6) * 2 + 10);
+  d = Math.max(d, (cy0 + R * 11.3) * 2 + 10);
+  l = Math.max(l, (R * 22.6 - cx0) * 2 + 10);
+  const PAD = 10;
+  const M = 6;
+  const W2 = (l + r + 2 * M) * S;
+  const H = (u + d + 2 * M) * S;
+  const HEAD = 56;
+  cv.width = W2 + 2 * PAD;
+  cv.height = HEAD + H + 34;
+  const draw = (tick: number): void => {
+    const t = tick / FPS;
+    g.fillStyle = BG;
+    g.fillRect(0, 0, cv.width, cv.height);
+    text('The Warden: a new swing, and his slam as it is', PAD, 8, 17, '#ffd866', 700);
+    text('a mock-up: not in the game. His swing, then his slam as today', PAD, 32, 14, '#cfc8ff', 600);
+    const fx = PAD + (M + l) * S;
+    const fy = HEAD + (M + u) * S;
+    const ts = t - SLAM_AT;
+    pane(PAD, HEAD, W2, H, S, fx, fy, [{ sp: frameAt(t), fx, fy, shadow: W_SHADOW }], ts >= 0 && ts < slamHit ? () => onFloor(fx, fy, S, () => warnCircle(cx0, cy0, R, ts / slamHit)) : undefined);
+    text('The Warden', PAD + W2 / 2, HEAD + H + 6, 15, '#ffd866', 700, 'center');
+  };
+  draw(0);
+  win.__frames = TICKS;
+  win.__tickMs = 1000 / FPS;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cv.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
+if (mode === 'summon') {
+  const S = Number(parts[1]) || 2;
+  const FPS = 30;
+  const CALL_AT = 0.5;
+  const summon = moveOf(WARDEN.front, 'summon');
+  const SKEL = makeSkeletonArt();
+  const rise = moveOf(SKEL.front, 'crawl');
+  const RISE_AT = CALL_AT + SUMMON_RISE;
+  const RISE_LONG = rise.frames.length / rise.fps;
+  const ROUND = RISE_AT + RISE_LONG + 1.6;
+  const TICKS = Math.round(ROUND * FPS);
+  /** Where the dead come up (tiles from him), and a little after one another. */
+  const SPOTS: ReadonlyArray<readonly [number, number, number]> = [[1.7, 0.2, 0], [0.5, 1.7, 0.12], [1.5, -1.3, 0.2], [-0.8, 1.3, 0.3]];
+  const wardenAt = (t: number): Sprite => (t >= CALL_AT && t < CALL_AT + summon.frames.length / summon.fps ? at(summon, t - CALL_AT) : standing(WARDEN.front, t));
+  let [l, r, u, d] = [0, 0, 0, 0];
+  for (let i = 0; i < TICKS; i++) {
+    const [a, b, e, f] = reachOf(wardenAt(i / FPS));
+    l = Math.max(l, a);
+    r = Math.max(r, b);
+    u = Math.max(u, e);
+    d = Math.max(d, f);
+  }
+  for (const [x, y] of SPOTS) {
+    const [sx, sy] = ISO(x, y);
+    const [a, b, e, f] = reachOf(SKEL.front.idle[0]);
+    l = Math.max(l, a - sx * 2);
+    r = Math.max(r, b + sx * 2);
+    u = Math.max(u, e - sy * 2);
+    d = Math.max(d, f + sy * 2);
+  }
+  const PAD = 10;
+  const M = 8;
+  const W2 = (l + r + 2 * M) * S;
+  const H = (u + d + 2 * M) * S;
+  const HEAD = 56;
+  cv.width = W2 + 2 * PAD;
+  cv.height = HEAD + H + 34;
+  const draw = (tick: number): void => {
+    const t = tick / FPS;
+    g.fillStyle = BG;
+    g.fillRect(0, 0, cv.width, cv.height);
+    text('The Warden calls the dead', PAD, 8, 17, '#ffd866', 700);
+    text('a mock-up: not in the game. The dead crawl out of the ground', PAD, 32, 14, '#cfc8ff', 600);
+    const fx0 = PAD + (M + l) * S;
+    const fy0 = HEAD + (M + u) * S;
+    const who: Who[] = [];
+    // (those further up the screen first, so that the nearer stand in front of them)
+    const all: { x: number; y: number; sp: Sprite; shadow: number; alpha: number }[] = [{ x: 0, y: 0, sp: wardenAt(t), shadow: W_SHADOW, alpha: 1 }];
+    for (const [x, y, late] of SPOTS) {
+      const tr = t - RISE_AT - late;
+      if (tr < 0) continue;
+      const sp = tr < RISE_LONG ? at(rise, tr) : standing(SKEL.front, tr);
+      // (no shadow while it is still in the ground)
+      all.push({ x, y, sp, shadow: tr < RISE_LONG * 0.75 ? 0 : 9, alpha: 1 });
+    }
+    all.sort((a, b) => a.x + a.y - (b.x + b.y));
+    for (const f of all) {
+      const [sx, sy] = ISO(f.x, f.y);
+      who.push({ sp: f.sp, fx: fx0 + sx * 2 * S, fy: fy0 + sy * 2 * S, shadow: f.shadow });
+    }
+    g.save();
+    pane(PAD, HEAD, W2, H, S, fx0, fy0, who);
+    g.restore();
+    text('The Warden, and the dead he calls', PAD + W2 / 2, HEAD + H + 6, 15, '#ffd866', 700, 'center');
   };
   draw(0);
   win.__frames = TICKS;

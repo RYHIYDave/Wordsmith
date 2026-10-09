@@ -1101,8 +1101,39 @@ export function makeSkeletonArt(low = true, was = false): ActorArt {
     ),
   };
   const held = low ? SWORD_LOW : SWORD_UP;
-  return monsterArt(paintSkeleton, { ...front, die: (k) => bonesDeath(k, false, 'sword', held) }, { ...back, die: (k) => bonesDeath(k, true, 'sword', held) }, was ? { rest: held } : { rest: held, walk: shamble() });
+  return monsterArt(paintSkeleton, { ...front, die: (k) => bonesDeath(k, false, 'sword', held), crawl: CRAWL }, { ...back, die: (k) => bonesDeath(k, true, 'sword', held), crawl: CRAWL }, was ? { rest: held } : { rest: held, walk: shamble() });
 }
+
+/**
+ * CRAWLING OUT OF THE GROUND, called up by the Warden (mkit.ts, crawlOut; behind CRAWL_OUT, off):
+ * its free hand up out of the pit first, clawing, then its skull, thrown back, its jaw open, the
+ * sword low in its other hand; then its hands come down onto the rim and it heaves, head down; then
+ * a foot steps up onto the floor, and it stands.
+ */
+const CRAWL = {
+  tall: 70,
+  pose: (k: number): Partial<Pose> => {
+    // (its free hand is the highest of it, clawing: the first of it out; the sword low in the other, its blade down, so that it comes up after)
+    const reach: Partial<Pose> = { off: 1, ohx: -2, ohy: -16, hx: 4, hy: -6, aim: -70, act: 0.5, pt: -2, lean: 0, bob: 0 };
+    const haul: Partial<Pose> = { off: 1, ohx: 5, ohy: 12, hx: 7, hy: -2, aim: 10, act: 0.8, pt: 2, lean: 4, bob: 2 };
+    const step: Partial<Pose> = { off: 0.3, ohx: 0, ohy: 0, hx: 2, hy: -6, aim: 60, act: 0.3, pt: 0, lean: 3, bob: 1, near: 1, nearLift: 0.8 };
+    const mixed = (a: Partial<Pose>, b: Partial<Pose>, t: number): Partial<Pose> => {
+      const u = t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);
+      const o: Record<string, number> = {};
+      for (const f of new Set([...Object.keys(a), ...Object.keys(b)])) {
+        const av = (a as Record<string, number>)[f] ?? 0;
+        const bv = (b as Record<string, number>)[f] ?? 0;
+        o[f] = av + (bv - av) * u;
+      }
+      return o as Partial<Pose>;
+    };
+    const wind = { wind: (k * 1.4) % 1 };
+    if (k < 0.42) return { ...reach, ...wind, ohy: -16 + Math.sin(k * 40) * 2 };
+    if (k < 0.62) return { ...mixed(reach, haul, (k - 0.42) / 0.2), ...wind };
+    // (from here it settles into its standing pose: crawlOut does that)
+    return { ...mixed(haul, step, (k - 0.62) / 0.22), ...wind };
+  },
+};
 
 /**
  * An archer's shot. The hanging hand comes to the string; the bow comes up as the string comes
