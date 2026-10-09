@@ -1,15 +1,17 @@
 # Wordsmith Sound and Music Rulebook
 
-A copy of the owner's doc, "Wordsmith Sound and Music Rulebook"
-(https://claude.ai/code/artifact/cee027fe-87c9-4b63-aaf7-8180b913ca11), as its FIRST DRAFT stood on
-9 Oct 2026. **NOT YET APPROVED: it waits for his yes.** The doc is the living one; this copy follows
-it. Written by the sound chat from his answers (`docs/sound/interview.md` has every question and
-answer in his exact words). The doc's one picture is written out here in words. Nothing here changes
-the game by itself: what it asks for goes in through the main chat, samples first.
+> **APPROVED BY THE OWNER, 9 Oct 2026, by 14:04: “Yes, as it is (Recommended)”.** Every chat that
+> makes sound or music for Wordsmith follows it; it changes only with his yes. Written by the sound
+> chat from his answers (`docs/sound/interview.md` has every question and answer in his exact
+> words). The living copy is his doc "Wordsmith Sound and Music Rulebook"
+> (https://claude.ai/code/artifact/cee027fe-87c9-4b63-aaf7-8180b913ca11); this file is a copy of it
+> for the other chats, refreshed when the doc changes. The doc's one picture is written out here in
+> words. Nothing here changes the game by itself: what it asks for goes in through the main chat,
+> samples first.
 
 Wordsmith sounds real where the world is and retro where the game speaks. Hits crack and land with weight; loot and level-ups bleep like an old console; a word rings like a bell, then sparkles. The music is Dream Thrash made with synths: light and airy while you explore, punched way up in a fight.
 
-**First draft, 9 Oct 2026, waiting for your yes.** With your yes it becomes the game's rulebook for sound and music, and changes only with your yes.
+**Approved by you, 9 Oct 2026, by 14:04: “Yes, as it is (Recommended)”.** It is the game's rulebook for sound and music. Every chat that makes sound or music for Wordsmith follows it, and it changes only with your yes.
 
 You asked for it on 9 Oct: “You are now the Director of sound and music for Wordsmith.  I’d like you to ask a bunch of questions to drill down what we want and how to get it.” It was found in seven rounds of questions, the way the art and gameplay rulebooks were. Your answers, in your own words, are kept in `docs/sound/interview.md`. Where a rule is the director's suggestion rather than your answer, it says **(director)**.
 

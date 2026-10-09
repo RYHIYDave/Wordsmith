@@ -7,7 +7,8 @@ exact words, and how each was read. The rulebook is his doc "Wordsmith Sound and
 this branch is a copy of it. It was made the way the art and gameplay rulebooks were
 (`docs/art/interview.md`, `docs/gameplay/interview.md`): rounds of four questions as pop-ups with
 options, our pick first and marked, his own words always possible; each round read back to him in
-plain words; then a first draft for his yes.
+plain words; then a first draft for his yes. **He said yes to it on 9 Oct 2026, by 14:04** ("His yes",
+near the end of this file, has the question and his words).
 
 Times are the machine's clock (his own time, America/Detroit). "Asked just after 13:10" means the
 clock read 13:10 just before the pop-up went out; "answered by 13:13" means his answers were there
@@ -430,7 +431,39 @@ settings; How sound is made and approved; The numbers; What this changes in the 
 - Every quotation in it was checked by machine against this file and against `docs/DESIGN_NOTES.md`,
   `docs/NEXT_VERSION.md`, `docs/art/RULEBOOK.md` and `docs/gameplay/interview.md`.
 - Every number in "The numbers" was read from the code of Version 19.7 by a script.
-- The sound chat has heard none of today's sounds, and has made no sound yet.
+- The sound chat had heard none of today's sounds, and had made no sound yet.
+
+## His yes (asked at 14:02, answered by 14:04)
+
+Put to him as a pop-up of two questions, after a plain message that the first draft was ready:
+
+1. "The sound and music rulebook: is the first draft right?" Yes, as it is (Recommended) ("It becomes
+   the game's sound and music rulebook, and changes only with your yes."), Yes, with my edits
+   ("You've edited or commented in the doc. I take those in first."), Not yet ("Say what's off and
+   I'll redraft.").
+2. "What should I make first? Everything comes on one page with play buttons, old beside new." A
+   taste of each (Recommended) ("A sword hit, a word found, the three rarities of loot, a slam with
+   its warning, and a short Dream Thrash sketch. It puts every part of the rulebook to your ear at
+   once."), Music first ("The Dream Thrash try-out alone: the dream half, then the thrash half
+   punching in."), The fight first ("Hits on bone, iron and flesh, the heroes' three main attacks,
+   and your hero being hit."), Monsters' attacks first ("The trolls' and the Warden's new attacks
+   with their wind-up warnings, ready for the next version.").
+
+His answers:
+
+- **The draft:** "Yes, as it is (Recommended)".
+- **First samples:** "Music first".
+
+**How they were read, and told to him at 14:07:**
+
+1. The rulebook is approved as it stands, the director's suggestions with it, and is the game's
+   third rulebook, beside gameplay and art: it changes only with his yes. The doc's lead says so (rev
+   22: "Approved by you, 9 Oct 2026, by 14:04"), and so does the head of `docs/sound/RULEBOOK.md`.
+   Nothing else in it was changed.
+2. The first thing made is the Dream Thrash try-out on its own, which was not the director's pick (a
+   taste of each): the dream half, then the thrash half punching in, on a page with play buttons. He
+   was told again that the sound chat cannot hear, and to expect the first try-out to be something to
+   steer, not the finished tune.
 
 FOR THE MAIN CHAT, from his answers (each is also on the Chat Board):
 
@@ -443,5 +476,8 @@ FOR THE MAIN CHAT, from his answers (each is also on the Chat Board):
   first: a moment for the start of a big attack's wind-up (today the first sound comes with the
   blow); what a hit landed on (bone, iron, flesh); the freeze on a heavy blow; life falling under
   the life bar's own low mark; a drop's rarity as it falls; a fight beginning and a room cleared.
-- TWO VOLUMES, music and sounds, is the director's suggestion in the draft, and waits for his yes
-  with the rest.
+- TWO VOLUMES, music and sounds, is the director's suggestion in the rulebook, and had his yes with
+  the rest of it. It is wanted when there is music in the game, not before.
+- THE RULEBOOK HAS HIS YES. Please bring `docs/sound/RULEBOOK.md` and this file into `main` with
+  your next version, and give CLAUDE.md a line for the third rulebook beside the other two. The
+  project has a copy too, `claude/sound_rulebook.md`, written by the sound chat on 9 Oct.
