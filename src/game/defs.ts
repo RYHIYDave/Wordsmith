@@ -388,8 +388,8 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
  * a pack is of one kind, its size by the kind's size; the green troll is the brute, the red the
  * guardian (a brute of the guardian's rank, a pack of guardians alone); Twin burned in at the gate
  * gives every pack 50% increased size (and every monster Twin, as every word burned in at the gate
- * does). BLUE AND YELLOW PACKS: PACKS, below. ON: his "Now, on its own (Recommended)" (07:56), and at
- * 08:29, of the art chat's mage stances and wild skills, "With today's packs (Recommended)".
+ * does). BLUE AND YELLOW PACKS: PACKS, below. ON: his "Now, on its own (Recommended)" (07:56), and by
+ * 08:41, of the art chat's mage stances and wild skills, "With today's packs (Recommended)".
  */
 export type MonsterSize = 'tiny' | 'small' | 'medium' | 'large' | 'boss';
 export const MONSTER_PACKS = { on: true };

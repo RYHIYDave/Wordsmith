@@ -34,6 +34,7 @@ import { drawText, textWidth, wrapText } from '../engine/font';
 import { RANGER_ARROW, WORDS } from '../game/defs';
 import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
+import { Wild } from './wild';
 
 /** Where the world origin sits on screen this frame. */
 export interface Cam {
@@ -489,6 +490,13 @@ export class Fx {
   private later: { t: number; fn: () => void }[] = [];
   /** A Mage's untyped damage is drawn in arcane purple rather than steel. */
   arcane = false;
+  /** BIG AND WILD (art/moves3.ts, WILD, a mock-up behind a switch that is off): the crackle, the sparks and the bolts it adds (render/wild.ts). */
+  readonly wild = new Wild(this);
+
+  /** The renderer, each frame the hero is drawn: where the power they hold burns (a place in the world and its height in pixels), how hot, and the way they face (see Wild). */
+  charge(x: number, y: number, z: number, heat: number, fx: number, fy: number): void {
+    this.wild.charge(x, y, z, heat, fx, fy);
+  }
 
   private ramp(el: Element): readonly string[] {
     if (el === 'phys') return this.arcane ? ELEMENT_RAMP.arcane : ELEMENT_RAMP.phys;
@@ -531,6 +539,7 @@ export class Fx {
     this.might.t = 0;
     this.healSum = 0;
     this.later = [];
+    this.wild.clear();
   }
 
   // =============================================================================================
@@ -954,8 +963,10 @@ export class Fx {
    * What the hero's own shots shed as they fly, by the words in front of them. Call once per game
    * step with the length of the step in sixtieths of a second (see Renderer.draw's `pace`).
    */
-  follow(shots: ReadonlyArray<{ x: number; y: number; vx: number; vy: number; hostile: boolean; words: Words; element: Element; n: number }>, pace = 1): void {
+  follow(shots: ReadonlyArray<{ x: number; y: number; vx: number; vy: number; hostile: boolean; words: Words; element: Element; n: number; look?: string; r?: number; age?: number; dist?: number }>, pace = 1): void {
     const k = pace * this.room();
+    // (big and wild: a wave in flight boils, crackles and throws bolts; and it is known where the waves are, for what they hit)
+    this.wild.follow(shots, k, RANGER_ARROW.on ? RANGER_ARROW.height : 10);
     if (k <= 0) return;
     const roll = (p: number): boolean => Math.random() < p * k;
     for (const p of shots) {
@@ -1003,6 +1014,8 @@ export class Fx {
             break;
           }
           const ramp = this.ramp(e.el);
+          // (big and wild: what a wave hits crackles)
+          if (!e.onHero) this.wild.hit(e.x, e.y);
           if (e.onHero) this.float(e.x, e.y, `-${e.amount}`, P.bl4, false, 30);
           else this.float(e.x, e.y, e.crit ? `${e.amount}!` : `${e.amount}`, e.crit ? P.gd4 : e.el === 'phys' ? P.white : ramp[ramp.length - 2], e.crit || !!e.heavy);
           this.spray(e.x, e.y, e.onHero ? 5 : 3, e.onHero ? [P.bl4, P.bl3] : ramp, 2.2, 50, 12);
@@ -1062,7 +1075,9 @@ export class Fx {
           }
           if (second && e.el === 'phys' && !heavy) colors = MIRROR;
           if (e.echo) colors = MIRROR;
-          this.slashes.push({ x: e.x, y: e.y, a, reach: e.reach, t: 0, dur: fast ? 0.13 : heavy ? 0.24 : 0.16, colors, heavy, fast, rev: second, jag: e.el === 'lightning', faint: e.echo });
+          // (big and wild: a crescent of the friend's light in place of the plain cut, with sparks, crackle and dust: render/wild.ts)
+          const wild = this.wild.swing(e.x, e.y, e.dx, e.dy, e.reach, !heavy && !fast && !second && e.el === 'phys', !!e.echo);
+          if (!wild) this.slashes.push({ x: e.x, y: e.y, a, reach: e.reach, t: 0, dur: fast ? 0.13 : heavy ? 0.24 : 0.16, colors, heavy, fast, rev: second, jag: e.el === 'lightning', faint: e.echo });
           const tipX = e.x + e.dx * e.reach * 0.85;
           const tipY = e.y + e.dy * e.reach * 0.85;
           if (fast) {
@@ -1176,6 +1191,14 @@ export class Fx {
           const power = has(w, 'power');
           const second = (e.n ?? 0) > 0;
           const area = e.style !== 'shock';
+          // (big and wild, render/wild.ts: a whirlwind's turn, a leap's landing, a warp, an orb's wave or her arrival, a trap going off)
+          if (!e.echo) {
+            if (e.style === 'whirl') this.wild.whirlTurn(e.x, e.y, e.r);
+            else if (e.style === 'land') this.wild.landing(e.x, e.y, e.r);
+            else if (e.style === 'warp') this.wild.warp(e.x, e.y);
+            else if (e.style === 'nova') this.wild.nova(e.x, e.y, e.r);
+            else if (e.style === 'blast') this.wild.blast(e.x, e.y, e.r);
+          }
           if (e.style === 'ruin') {
             // a rune goes off
             this.rings.push({ x: e.x, y: e.y, r: e.r, t: 0, dur: 0.3, colors: VIOLET, fill: true, heavy: true });
@@ -1506,6 +1529,8 @@ export class Fx {
           const cs = e.echo ? MIRROR : this.magic(e.el);
           this.flashes.push({ x: e.x + e.dx * 0.5, y: e.y + e.dy * 0.5, z: 12, r: 0.4, t: 0, dur: 0.09, colors: cs });
           this.streaks(e.x + e.dx * 0.4, e.y + e.dy * 0.4, 6, cs, 5, 6, { dx: e.dx, dy: e.dy, spread: 0.9, life: 0.18, z: 10 });
+          // (big and wild: let go with a blast, and bolts shoot out ahead of it)
+          this.wild.cast(e.x, e.y, e.dx, e.dy, e.echo);
           break;
         }
         case 'orbSet': {
@@ -1516,6 +1541,8 @@ export class Fx {
           // ... and the orb is there (the ball itself is drawn by the renderer; its waves are 'burst' events)
           this.flashes.push({ x: e.x, y: e.y, z: 13, r: 0.55, t: 0, dur: 0.12, colors: cs });
           for (let i = 0; i < 8; i++) this.mote(e.x, e.y, cs);
+          // (big and wild: the power bursts out round her and a great bolt leaps to where it hangs: render/wild.ts)
+          this.wild.orbSet(e.x, e.y);
           break;
         }
         case 'orbEnd': {
@@ -1594,10 +1621,16 @@ export class Fx {
         }
         case 'channel':
         case 'channelEnd':
-          break; // (what is seen of these is the first bite and the beam thinning away)
+          // (what is seen of these is the first bite and the beam thinning away; big and wild, a whirlwind's beginning and end: render/wild.ts)
+          if (e.kind === 'whirl') {
+            if (e.t === 'channel') this.wild.whirlStart(e.x, e.y);
+            else this.wild.whirlEnd(e.x, e.y);
+          }
+          break;
         case 'trapSet':
           // (the trap itself is drawn on the floor by the renderer: here, the snap of its being set)
           this.spray(e.x, e.y, 4, [P.sl5, P.sl4, P.sl3], 1.6, 40, 2);
+          this.wild.trapSet(e.x, e.y);
           break;
         case 'volleyUp': {
           // A volley leaves the bow: a handful of arrows straight up and off the top of the
@@ -1621,6 +1654,8 @@ export class Fx {
             });
           }
           this.flashes.push({ x: bx, y: by, z: bz + 1, r: has(e.words, 'power') ? 0.34 : 0.22, t: 0, dur: 0.09, colors });
+          // (big and wild: a gust off the bow, and a column of wind spiralling up with them: render/wild.ts)
+          this.wild.volleyUp(bx, by, bz, !!e.echo);
           break;
         }
         case 'volleyDrop': {
@@ -1628,6 +1663,7 @@ export class Fx {
           // arrow, head first: see drawAir).
           const colors = this.arrowColors(e.el, e.words, e.n, e.echo);
           if (this.falling.length < 80) this.falling.push({ x: e.x, y: e.y, t: 0, dur: Math.max(0.02, e.in), colors, heavy: has(e.words, 'power') });
+          this.wild.volleyDrop(e.x, e.y, e.in);
           break;
         }
         case 'volleyFall': {
@@ -1642,6 +1678,7 @@ export class Fx {
           if (e.el !== 'phys' || heavy) this.glow(e.x, e.y, heavy ? 26 : 18, 0.16);
           if (heavy && e.hits > 0) this.shake = Math.max(this.shake, 0.8);
           if (has(e.words, 'swift')) this.streaks(e.x, e.y, 2, WIND, 4, 5, { life: 0.12, z: 3 });
+          this.wild.volleyFall(e.x, e.y, e.hits);
           break;
         }
         case 'volleyEnd':
@@ -1877,6 +1914,7 @@ export class Fx {
       this.messages[i].t += dt;
       if (this.messages[i].t > this.messages[i].life) this.messages.splice(i, 1);
     }
+    this.wild.update(dt);
     this.shake = Math.max(0, this.shake - dt * 22);
     this.shakeX = this.shake > 0.3 ? Math.round(rnd(-this.shake, this.shake)) : 0;
     this.shakeY = this.shake > 0.3 ? Math.round(rnd(-this.shake, this.shake) * 0.6) : 0;
@@ -2393,6 +2431,8 @@ export class Fx {
         g.fillRect(px, py, p.size, p.size);
       }
     }
+    // (big and wild: the arcs of power, over the sparks)
+    this.wild.draw(g, c);
     // "of Power": an ember circles the hero for every stack held. (From Version 15.1, as the owner
     // asked on his page of notes, "Power's orbs spinning round the character": they go round on a
     // ring that is tilted, high behind the hero and low in front; the ones on the far side of the

@@ -323,6 +323,12 @@ wait
 run ranger_stances_pc    --scenario $S/ranger_stances.mjs &
 run ranger_stances_phone $P --scenario $S/ranger_stances.mjs &
 wait
+# VERSION 19.7: the three heroes fight with the bot in the practice room, the mage in her stances and
+# every hero's moves big and wild (switched off and on again); then a dungeon of packs, every pack of
+# one kind, blue and yellow packs among them, the bot fighting there.
+run packs_wild_pc    --scenario $S/packs_wild.mjs &
+run packs_wild_phone $P --scenario $S/packs_wild.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

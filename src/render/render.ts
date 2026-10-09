@@ -48,6 +48,8 @@ import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import type { Cam, Fallen, Fx } from './fx';
+import { WILD } from '../art/moves3';
+import { LEAP_LIFT, drawWildArrow, drawWildWave } from './wild';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -1446,6 +1448,12 @@ export class Renderer {
     const ch = game.hero.channel;
     return ch ? ch.t : -1;
   }
+  /** The attack being wound up now is one that will be held (a beam, a whirlwind): it has a `channel`. */
+  private holdSoon(game: Game): boolean {
+    const w = game.hero.windup;
+    const s = w ? game.hero.skills[w.skill] : null;
+    return !!s && SKILLS[s.id].channel !== undefined;
+  }
   private heldAs(game: Game): 'beam' | 'whirl' {
     const ch = game.hero.channel;
     const s = ch ? game.hero.skills[ch.skill] : null;
@@ -1893,7 +1901,8 @@ export class Renderer {
       // (in a swipe move the hero is lifted by the move, from the height they left to the height
       // they land on, not by the ground they pass over: a leap up a ledge rises to it)
       let sy = relief ? wyFlat(cam, h.x, h.y) - heroLift : wy(cam, h.x, h.y);
-      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 24;
+      // (big and wild, art/moves3.ts WILD: higher: render/wild.ts, LEAP_LIFT)
+      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * (WILD.on ? LEAP_LIFT : 24);
       // (a roll that goes over a ledge or a pit is a dive: it leaves the floor, a little)
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
@@ -1957,7 +1966,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them
@@ -1993,6 +2002,14 @@ export class Renderer {
         if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
         if (relief && !h.move) this.hide(h.x, h.y, heroLift);
         this.heroLit = { x: Math.round(sx), y: Math.round(sy) };
+        // BIG AND WILD (art/moves3.ts, WILD): where the power she holds burns, and how hot, for the
+        // effects to make it crackle and throw bolts (a place in the world, and its height there)
+        const held = WILD.on && coming <= 0 ? fig.charge() : null;
+        if (held) {
+          const cx = h.x + held.dx / 32;
+          const cy = h.y - held.dx / 32;
+          fx.charge(cx, cy, wy(cam, cx, cy) - (sy + held.dy), held.heat, h.fx, h.fy);
+        }
       }
       if (h.burnT > 0 && Math.random() < 0.4 * amb) fx.mote(h.x, h.y, ELEMENT_RAMP.fire);
       // "of Swiftness": while the haste lasts the hero leaves green afterimages and a wake of wind
@@ -2240,7 +2257,9 @@ export class Renderer {
         // and streaming back, darker and thinner the further back, with gaps that run along it
         // so that it is seen to flow; and two ripples that it leaves on the floor behind it.
         const run = Math.floor(t * 24);
-        for (let j = layers + 2; j >= 0; j--) {
+        // (BIG AND WILD, art/moves3.ts WILD: it stands up tall and boils: render/wild.ts)
+        if (WILD.on) drawWildWave(g, cam, p, tones, t, jx, jy);
+        else for (let j = layers + 2; j >= 0; j--) {
           // (the last two are the ripples left behind: thin, faint, and a way back)
           const ripple = j > layers;
           const back = ripple ? layers + (j - layers) * 4 : j;
@@ -2304,6 +2323,8 @@ export class Renderer {
       const leech = mine && p.words.includes('leech');
       const volatile = mine && p.words.includes('volatile');
       const flick = Math.floor(t * 20) % 2 === 0;
+      // (BIG AND WILD, art/moves3.ts WILD: a hero's arrow streaks light behind it: render/wild.ts)
+      if (WILD.on && mine) drawWildArrow(g, sx, sy, ux, uy);
       // Swift: a long pale streak behind the arrow
       if (swift) pline(g, sx - ux * 24, sy - uy * 24, sx - ux * 6, sy - uy * 6, twin ? P.tl3 : P.gn4);
       const body = (power ? 10 : swift ? 9 : leech || volatile || twin ? 8 : 6) + (lifted ? RANGER_ARROW.long - 6 : 0);
@@ -2579,7 +2600,7 @@ export class Renderer {
       else if (p.kind === 'tentTable') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 18, 56, 0.8);
       else if (p.kind === 'runeSlab') spot(wx(cam, p.x, p.y) + 8, wy(cam, p.x, p.y) - 12, 64 + Math.sin(t * 2) * 3, 0.75);
     }
-    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? 34 : 26, 0.8);
+    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? (WILD.on ? 52 : 34) : WILD.on && p.look === 'arrow' ? 40 : 26, 0.8);
     // What a monster's own fire lights: the floor round a cultist's flame (and far more of it as
     // the flame swells before it is thrown), the Warden's maul going hot. Eyes glow, and light
     // nothing.

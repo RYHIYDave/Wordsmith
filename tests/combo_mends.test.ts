@@ -17,12 +17,18 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { streakShown } from '../src/art/heroes3';
-import { COMBO_MENDS, MOVES3, SLASH3, STRIKE3, useComboMends } from '../src/art/moves3';
+import { COMBO_MENDS, MAGE_STANCES, MOVES3, SLASH3, STRIKE3, WILD, useComboMends, useMageStances, useWild } from '../src/art/moves3';
 import { bonesAt, lerp3, project, solve } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
 import { COMBO } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
+
+// (VERSION 19.7: the mage's stances and every hero's moves big and wild are the game's own, art/moves3.ts
+// MAGE_STANCES and WILD, put in place as moves3.ts loads. This file's tests were written with them off,
+// and hold them off, as they were then; tests/wild.test.ts and tests/mage_stances.test.ts ask of them on.)
+useWild(false);
+useMageStances(false);
 
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
