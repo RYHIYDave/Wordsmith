@@ -26,7 +26,9 @@ import type { HeadPainter } from './hero3_knight';
 import { paintMage3 } from './hero3_mage';
 import type { MageLook } from './hero3_mage';
 import { paintRanger3 } from './hero3_ranger';
+import { paintRanger3b } from './hero3_ranger2';
 import type { HeroArt, HeroLook } from './heroes';
+import { REIMAGINED } from './reimagined';
 import { lazyFrames, lightsOut, toSprite } from './kit';
 import type { Painted } from './kit';
 import { COMBO_MENDS, GREAT_BLADE, MOVES3, SETTLES, SLASH3, STAFF_UP, STRIKE3, WALKS, runWaysOf, settlesOf, startsOf, walkingOf } from './moves3';
@@ -103,7 +105,8 @@ export function paintMove3(move: Move3, t: number, view: GameView, opts: Paint3 
   const kit: { rim?: string | null; head?: HeadPainter } = opts.rim === undefined ? {} : { rim: opts.rim };
   if (opts.head && hero !== 'mage') kit.head = opts.head;
   let f: Painted;
-  if (hero === 'ranger') f = paintRanger3(s, q, view, { build, ...kit }, { prev, wind });
+  // (the ranger reimagined, the Wind-runner, only while his switch is on: art/reimagined.ts. It is off.)
+  if (hero === 'ranger') f = (REIMAGINED.ranger ? paintRanger3b : paintRanger3)(s, q, view, { build, ...kit }, { prev, wind });
   else {
     // what a swing leaves its streak from, newest first: a blade from guard to point, a staff
     // from half way up to its crystal. (A sword that was on his back a moment ago was THERE.)

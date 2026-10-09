@@ -22,6 +22,7 @@ import { makeHeroArt } from '../src/art/heroes';
 import type { HeroLook } from '../src/art/heroes';
 import { PLANS, makeHeroArt3, windAt } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
+import { REIMAGINED } from '../src/art/reimagined';
 import { about, aimFor, bonesAt, dot, heading, len, norm, solve, sub } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
 import { CLASS_IDS } from '../src/game/types';
@@ -44,8 +45,8 @@ const art = makeHeroArt3();
 const DUNGEON: HeroLook = { twoHanded: true };
 const TOWN: HeroLook = { twoHanded: true, town: true };
 const VIEWS = ['front', 'back'] as const;
-/** What flies from each: the tails every one of their frames must name. */
-const TAILS: Record<ClassId, string[]> = { warrior: ['w-scarf-a', 'w-scarf-b'], ranger: ['r-feather'], mage: ['m-braid-a', 'm-braid-b'] };
+/** What flies from each: the tails every one of their frames must name. (The ranger reimagined, while his switch is on, has the tail of his hood and the feather in it: art/reimagined.ts. It is off.) */
+const TAILS: Record<ClassId, string[]> = { warrior: ['w-scarf-a', 'w-scarf-b'], ranger: REIMAGINED.ranger ? ['r2-feather', 'r2-liripipe'] : ['r-feather'], mage: ['m-braid-a', 'm-braid-b'] };
 /** The moves each stands in and runs with, in a dungeon and in town, and the two attacks. */
 const MOVES: Record<ClassId, { stand: [string, string]; run: [string, string]; attack: string; heavy: string; ready: string }> = {
   warrior: { stand: ['rear', 'ktown'], run: ['krun', 'ktownrun'], attack: 'strike', heavy: 'slam', ready: 'kdraw' },

@@ -24,6 +24,7 @@ import {
 } from './kit';
 import type { Timeline } from './clip';
 import type { LegStyle, Moves, Painted, Pose, Ramp, V } from './kit';
+import { RANGER2_TAILS } from './reimagined';
 
 // --- how the scout is built, in pixels ---------------------------------------------------------
 const BODY = 45;
@@ -151,6 +152,9 @@ export const RANGER_TAILS: Record<string, TailDef> = {
     stiff: 1, gravity: 40, wind: 90, flutter: 70, rate: 1.9, drag: 9,
     glow: { color: CYAN[3], r: 6, a: 0.4, at: 0.55 },
   },
+  // (and what flies from the ranger reimagined, the Wind-runner: named by no frame while his switch,
+  // REIMAGINED.ranger in art/reimagined.ts, is off, as it is)
+  ...RANGER2_TAILS,
 };
 
 /**
