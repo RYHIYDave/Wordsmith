@@ -112,14 +112,23 @@ export function makeBestiary(): Bestiary {
     if (!list) {
       list = { left: [], done: 0 };
       const art = of(figure);
-      // (and last its death: by the time one of them is killed, how it falls is painted)
-      // (a monster's other moves, THE MONSTERS' ATTACKS: art/actor_types.ts, AnimSet.clips.moves, after its first attacks)
-      const moves = (a: AnimSet): Sprite[] => Object.values(a.clips?.moves ?? {}).flatMap((c) => c.frames);
-      for (const pick of [(a: AnimSet) => a.idle, (a: AnimSet) => a.walk, (a: AnimSet) => a.clips?.attack?.frames ?? a.attack, (a: AnimSet) => a.clips?.heavy?.frames ?? a.heavy ?? [], moves, (a: AnimSet) => a.clips?.die?.frames ?? []]) {
+      // (and last its death: by the time one of them is killed, how it falls is painted; and before
+      // it, a monster's other moves, THE MONSTERS' ATTACKS: art/actor_types.ts, AnimSet.clips.moves.
+      // Each pick gives lists of frames, which are only counted here, never read: READING A FRAME IS
+      // WHAT PAINTS IT (lazyFrames in kit.ts), and a list of them all read at once, made by joining
+      // the moves' lists, painted them all in one frame of the game: a pause of a fifth of a second,
+      // the first time a troll was met)
+      const picks: ((a: AnimSet) => readonly (readonly Sprite[])[])[] = [
+        (a) => [a.idle],
+        (a) => [a.walk],
+        (a) => [a.clips?.attack?.frames ?? a.attack],
+        (a) => [a.clips?.heavy?.frames ?? a.heavy ?? []],
+        (a) => Object.values(a.clips?.moves ?? {}).map((c) => c.frames),
+        (a) => [a.clips?.die?.frames ?? []],
+      ];
+      for (const pick of picks) {
         for (const set of [art.front, art.back]) {
-          const frames = pick(set);
-          // (reading a frame is what paints it: see lazyFrames in kit.ts)
-          for (let i = 0; i < frames.length; i++) list.left.push(() => (warmed = frames[i]));
+          for (const frames of pick(set)) for (let i = 0; i < frames.length; i++) list.left.push(() => (warmed = frames[i]));
         }
       }
       list.left.reverse();

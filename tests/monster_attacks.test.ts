@@ -36,6 +36,7 @@ import nodeAssert from 'node:assert/strict';
 import type { AnimSet, Clip } from '../src/art/actor_types';
 import { figureOf, makeBestiary, useMonsterAttacks } from '../src/art/bestiary';
 import type { MonsterFigure } from '../src/art/bestiary';
+import { PAINTING } from '../src/art/kit';
 import { CRAWL_OUT, CRAWL_TIME } from '../src/art/mkit';
 import { CHARGE_GO, SWING_HIT, TROLL_MOVES } from '../src/art/monster_brute';
 import { SUMMON_RISE, WARDEN_MOVES, WARDEN_SWING_HIT } from '../src/art/monster_warden';
@@ -483,9 +484,13 @@ test("the pictures: each move shown with its own clip, its blow in the step the 
   // the dead crawl out of the ground: the skeleton's crawl, as long as the rules' rising
   const crawl = beasts.of('skeleton').front.clips?.moves?.crawl;
   assert.ok(crawl && Math.abs(crawl.frames.length / crawl.fps - SUMMON.rise) < 0.1, 'the skeleton has its crawl out of the ground, as long as the rules have it');
-  // painted ahead: a fresh bestiary paints the new moves of a figure too, and then has nothing left
+  // painted ahead: a fresh bestiary paints the new moves of a figure too, one frame a call (never
+  // all of them in one frame of the game), and then has nothing left
   const fresh = makeBestiary();
-  let calls = 0;
+  const before = PAINTING.frames;
+  assert.equal(fresh.warm(['guardian']), true);
+  assert.equal(PAINTING.frames - before, 1, 'the first call paints one frame, and no more');
+  let calls = 1;
   while (fresh.warm(['guardian'])) calls++;
   const a = fresh.of('guardian');
   const total = (s: AnimSet): number => s.idle.length + s.walk.length + (s.clips?.attack?.frames.length ?? 0) + (s.clips?.heavy?.frames.length ?? 0) + Object.values(s.clips?.moves ?? {}).reduce((n, c) => n + c.frames.length, 0) + (s.clips?.die?.frames.length ?? 0);
