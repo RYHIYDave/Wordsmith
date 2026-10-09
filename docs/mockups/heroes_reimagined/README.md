@@ -1,5 +1,9 @@
 # Mock-up: THE THREE HEROES REIMAGINED (NOT IN THE GAME until the main chat puts it there)
 
+**HIS ANSWER: NOT WANTED.** By 05:24 on 9 Oct, asked whether he liked the three: "No, try again";
+and by 05:26, asked which way to try again: "Leave the heroes as they are". So the heroes keep
+today's looks; this branch is kept only as a record, and nothing of it goes into the game.
+
 **What it is.** A new outfit for each hero over the same bones and moves (the art rulebook: "built
 for skins"), made while the owner slept, for him to judge. Behind switches that are off:
 `REIMAGINED = { ranger, knight, mage }` in `src/art/reimagined.ts`. With them off every frame of
