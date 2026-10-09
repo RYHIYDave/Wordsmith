@@ -34,7 +34,7 @@ import { ENEMY_RIM } from '../src/art/mkit';
 import { SKULL_BURST, drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../src/art/mob_shots';
 import {
   BONEWARD, BW_BASH_HIT, BW_GRAB, BW_GRIP_AT, BW_HIT, BW_THROW_HIT, GOLEM, GOLEM_HIT, GOLEM_SWING_HIT, GOLEM_TAKE, GOLEM_THROW_END, GOLEM_THROW_HIT,
-  SHADE, SHADE_HIT, handAt, makeBonewardArt3, makeGolemArt3, makeShadeArt3, makeSkullShotArt, paintMob, walkFpsAt,
+  OSSUARY, SHADE, SHADE_HIT, handAt, makeBonewardArt3, makeGolemArt3, makeShadeArt3, makeSkullShotArt, paintMob, skeletonAt, walkFpsAt,
 } from '../src/art/new_mobs3';
 import type { Mob, MobMove } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
@@ -188,9 +188,9 @@ test('the Boneward’s spear leaves its hand as it throws and is back in it when
   for (const name of ['bash', 'standBare', 'walkBare']) assert.ok((BONEWARD.more?.[name] as MobMove).bare?.(0.3), `${name}: no spear in its hand`);
   assert.ok(pick.bare?.(BW_GRAB - 0.02) && !pick.bare?.(BW_GRAB), 'it has its spear again once its hand closes on it');
   for (const view of ['front', 'back'] as const) {
-    const gone = painted(paintMob(BONEWARD, 'throw', BW_THROW_HIT + 0.05, view).px);
-    const kept = painted(paintMob(withMove(BONEWARD, 'throw', { bare: () => false }), 'throw', BW_THROW_HIT + 0.05, view).px);
-    assert.ok(kept - gone > 30, `${view}: the spear is gone from its hand (${kept} then ${gone} pixels)`);
+    const gone = paintMob(BONEWARD, 'throw', BW_THROW_HIT + 0.05, view).px;
+    const kept = paintMob(withMove(BONEWARD, 'throw', { bare: () => false }), 'throw', BW_THROW_HIT + 0.05, view).px;
+    assert.ok(differ(kept, gone) > 40 && painted(kept) > painted(gone), `${view}: the spear is gone from its hand (${differ(kept, gone)} pixels differ)`);
   }
   // its hand goes down to the floor where the spear lies
   const hand = handAt(BONEWARD, 'pickUp', BW_GRAB);
@@ -206,6 +206,38 @@ test('the Boneward’s spear leaves its hand as it throws and is back in it when
     const full = paintMob(withMove(GOLEM, 'throw', { bare: () => false }), 'throw', 1.2, view).px;
     const empty = paintMob(GOLEM, 'throw', 1.2, view).px;
     assert.ok(differ(full, empty) > 15, `${view}: the skull's place on its shoulder empty (${differ(full, empty)} pixels differ)`);
+  }
+});
+
+test('the Boneward’s blows have its weight behind them: it steps into each, its back foot where it was, its hips driving forward; a streak; dust kicked up', () => {
+  // (his word by 11:22, of the first drawing: "Actually can we take the boneward’s animations up a notch?  There’s no power in his attacks")
+  const blows: [string, number, number][] = [
+    ['attack', BONEWARD.warn, BW_HIT],
+    ['throw', 0.6, BW_THROW_HIT],
+    ['bash', 0.4, BW_BASH_HIT],
+  ];
+  for (const [which, held, hit] of blows) {
+    const a = skeletonAt(BONEWARD, which, held);
+    const b = skeletonAt(BONEWARD, which, hit);
+    assert.ok(b.pelvis[0] - a.pelvis[0] > 8, `${which}: its hips drive forward into the blow (${(b.pelvis[0] - a.pelvis[0]).toFixed(1)})`);
+    assert.ok(b.toeL[0] - a.toeL[0] > 7 && b.toeL[2] < 2.5, `${which}: its front foot steps out and is down at the blow (${(b.toeL[0] - a.toeL[0]).toFixed(1)}, ${b.toeL[2].toFixed(1)} up)`);
+    assert.ok(Math.hypot(b.toeR[0] - a.toeR[0], b.toeR[1] - a.toeR[1]) < 0.6, `${which}: its back foot stays where it is on the floor`);
+    for (const view of ['front', 'back'] as const) {
+      // the streak, as the blow lands (the same moment with no blow struck has none)
+      const struck = paintMob(BONEWARD, which, hit, view).px;
+      const still = paintMob(which === 'attack' ? { ...BONEWARD, hit: -1 } : withMove(BONEWARD, which, { blurAt: undefined }), which, hit, view).px;
+      assert.ok(differ(struck, still) > 40, `${which} ${view}: a streak as the blow lands (${differ(struck, still)} pixels)`);
+      // the dust its front foot kicks up (bone-dust motes, the Golem's own colour: nothing else of it is that colour)
+      const dust = (p: Px): number => {
+        const want = rgba(OSSUARY[2]).slice(0, 3).join(',');
+        let n = 0;
+        for (let i = 0; i < p.d.length; i += 4) if (p.d[i + 3] > 0 && `${p.d[i]},${p.d[i + 1]},${p.d[i + 2]}` === want) n++;
+        return n;
+      };
+      const before = dust(paintMob(BONEWARD, which, held, view).px);
+      const after = dust(paintMob(BONEWARD, which, hit + 0.1, view).px);
+      assert.ok(before === 0 && after > 4, `${which} ${view}: dust kicked up as its foot stamps down (${before} then ${after})`);
+    }
   }
 });
 

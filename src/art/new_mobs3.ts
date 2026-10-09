@@ -428,6 +428,9 @@ export interface MobMove {
   blurAt?: number;
   /** The Golem's club is swung round (a streak is drawn behind its head as the blow lands), not brought down. */
   sweep?: boolean;
+  /** THE BONEWARD'S BLOWS: the points of it (a spear's tip, a shield's edges) whose way through the air is streaked as the blow lands; and over how many frames before it (1.6 if not said). */
+  trail?: (s: Skeleton) => V3[];
+  trailSpan?: number;
 }
 
 /** A tile of the floor along the grid, in the figure's own lengths: 32 picture pixels across the screen and 16 down (skeleton.ts, `project`). */
@@ -452,6 +455,10 @@ interface Moment {
   skull: boolean;
   /** For the Golem's club as it sweeps: where the middle of its head has just been, newest first. */
   trailC?: V3[];
+  /** For the Boneward's blows: where each point of its `trail` has just been, newest first. */
+  trails?: V3[][];
+  /** Seconds since the move's blow landed (negative before it; absent for a move with no blow): what is kicked up by it lasts a moment. */
+  since?: number;
 }
 
 function folded(m: MobMove, t: number): number {
@@ -527,6 +534,15 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   const wind = mv.period ? ((((t / mv.period) % 1) + 1) % 1) : windOf(t);
   // (the moment within its round, for what flickers frame by frame: so that a loop closes)
   const m: Moment = { s, q, t: folded(mv, t), come, wind, blur, glint: mv.glint ? Math.max(0, mv.glint(t)) : 0, bare: mv.bare ? mv.bare(t) : false, skull: mv.skull ? mv.skull(t) : false };
+  if (mv.motion.hit !== undefined && !loops) m.since = t - mv.motion.hit;
+  if (blur && mv.trail) {
+    const T: V3[][] = [];
+    for (let i = 0; i <= 8; i++) {
+      const pts = mv.trail(solve(mob.build, posedAt(mv, t - (FR * (mv.trailSpan ?? 1.6) * i) / 8)));
+      pts.forEach((p, j) => (T[j] ??= []).push(p));
+    }
+    m.trails = T;
+  }
   if (blur && mob.id === 'golem' && mv.sweep) {
     const C: V3[] = [];
     for (let i = 0; i <= 8; i++) {
@@ -1363,8 +1379,43 @@ function bonewardBits(st: Stage, m: Moment): Bit[] {
       put('glint', 'glint', { k: 'glow', p: tip, c: SOCKET, r: 4 + 5 * g, a: Math.min(0.85, 0.55 * g) });
     }
   }
+
+  // --- THE WEIGHT OF ITS BLOWS (his word by 11:22: "There’s no power in his attacks"): the way its
+  // spear's tip or its shield's edges went through the air, streaked as the blow lands; and the
+  // floor's dust kicked up round its front foot as it stamps down into the blow ---
+  if (m.blur && m.trails) {
+    for (const tr of m.trails) {
+      for (let i = 1; i < tr.length; i++) {
+        const a = tr[i - 1];
+        const b = tr[i];
+        const n = Math.max(1, Math.ceil(Math.hypot(...(st.at(b).map((v, k) => v - st.at(a)[k]) as [number, number]))));
+        for (let j = 0; j < n; j++) {
+          const p = lerp3(a, b, j / n);
+          for (const off of [-1.1, 0, 1.1]) put('streak', 'streak', { k: 'mote', p: add(p, [0, 0, off]), c: i < tr.length / 2 ? BONE[3] : BONE[2], size: 1 });
+        }
+      }
+    }
+  }
+  if (m.since !== undefined && m.since >= 0 && m.since < BW_DUST_FOR) {
+    const k = m.since / BW_DUST_FOR;
+    const foot = lerp3(s.heelL, s.toeL, 0.6);
+    for (let i = 0; i < 16; i++) {
+      // (fewer of it as it settles)
+      if (hash(i, 7, 13) < k * 0.9) continue;
+      const a = (i / 16) * Math.PI * 2 + hash(i, 1, 13);
+      const r = 2.5 + (6 + 6 * hash(i, 2, 13)) * Math.sqrt(k);
+      const z = 0.4 + (1.5 + 3.5 * hash(i, 3, 13)) * Math.sin(Math.PI * Math.min(1, k * 1.3));
+      put('dust', 'dust', { k: 'mote', p: [foot[0] + Math.cos(a) * r * 1.2, foot[1] + Math.sin(a) * r, z], c: i % 3 ? OSSUARY[2] : OSSUARY[1], size: i % 3 === 0 ? 2 : 1 });
+    }
+  }
   return bits;
 }
+/** How long the dust its stamping foot kicks up hangs (seconds from the blow). */
+const BW_DUST_FOR = 0.3;
+/** Where its spear's tip is. */
+const spearTipOf = (s: Skeleton): V3 => add(s.handR, mul(s.point, SPEAR - SPEAR_BACK));
+/** Where its shield's top and foot are, about, at its face (its hand on the grip, the shield upright before it). */
+const shieldEdgesOf = (s: Skeleton): V3[] => [add(add(s.handL, mul(s.chest[0], 2)), mul(s.chest[2], 9)), add(add(s.handL, mul(s.chest[0], 2)), mul(s.chest[2], -9))];
 
 /** Standing, it keeps its post: a slow sway, the spear point drifting, the jaw hanging and clacking. */
 function bwPost(): Motion {
@@ -1383,24 +1434,33 @@ function bwPost(): Motion {
 
 /** The moment its thrust lands (it has no rules yet: a slow monster's wind-up). */
 export const BW_HIT = 0.7;
+/**
+ * ITS BLOWS WITH ITS WEIGHT BEHIND THEM (his word by 11:22, of the first drawing: "There’s no power in
+ * his attacks"). Each coils back on its back foot and holds, then STEPS INTO THE BLOW: its front foot
+ * goes out and stamps down (kicking up the floor's dust), its hips drive forward, its chest whips round
+ * and its arm goes all the way out; it holds there a beat, then hauls itself back. Its back foot stays
+ * where it is on the floor, and its front foot is off the floor only while it steps.
+ */
 const BW_WOUND: P = {
-  px: -1.2, pz: -4.2, yaw: -10, pitch: 7, roll: 0, twist: -14, bend: 6, side: 0,
-  faceUp: 4, faceTurn: 0, faceTilt: 0,
-  lfx: 4.5, lfy: 1.6, lft: 8, lk: 18, rfx: -4.5, rfy: -1.0, rft: -18, rk: -14,
-  lhIn: 1, lhx: 9.5, lhy: -10.5, lhz: -11.0, le: 0,
-  rhIn: 1, rhx: -4.0, rhy: -1.5, rhz: 2.0, re: 30,
-  wAz: 4, wEl: -3, pAz: -10, pEl: -5,
+  px: -3.2, pz: -5.6, yaw: -12, pitch: 3, roll: 0, twist: -30, bend: 4, side: 0,
+  faceUp: 2, faceTurn: 16, faceTilt: 0,
+  lfx: 3.4, lfy: 1.6, lft: 8, lk: 24, rfx: -5.6, rfy: -1.4, rft: -18, rk: -18,
+  lhIn: 1, lhx: 9.5, lhy: -9.0, lhz: -12.0, le: 0,
+  rhIn: 1, rhx: -13.0, rhy: -6.0, rhz: 1.5, re: 30,
+  wAz: 2, wEl: -2, pAz: -18, pEl: -3,
   draw: 0.55,
 };
 const BW_THRUST: P = {
   ...BW_WOUND,
-  px: 3.2, pz: -3.6, pitch: 11, twist: 16, bend: 9,
-  lfx: 6.8, rfx: -5.0,
-  rhIn: 1, rhx: 12.5, rhy: 2.0, rhz: -1.0, re: 0,
-  wAz: 7, wEl: -6,
-  draw: 0.9,
+  px: 6.8, pz: -7.6, yaw: -4, pitch: 20, twist: 24, bend: 10,
+  faceUp: -2, faceTurn: 0,
+  lfx: 13.5, lfz: 0, lk: 32, rk: -2,
+  lhx: 4.0, lhy: -4.0, lhz: -13.0,
+  rhx: 21.0, rhy: 1.0, rhz: -1.0, re: 0,
+  wAz: 0, wEl: -3, pAz: 8, pEl: 0,
+  draw: 0.95,
 };
-/** THE THRUST: the spear comes up and back to its shoulder over the shield's rim, the shield braced and the knees bent, held (the warning); then it drives the spear past the shield's edge. */
+/** THE THRUST: coiled back on its back foot behind the shield, the spear drawn right back to its shoulder (the warning, its head glinting); then a step and a lunge, its whole weight driving the spear out past the shield's edge. */
 function bwThrust(): Motion {
   const shake = (dz: number, more: P = {}): P => ({ ...BW_WOUND, rhz: (BW_WOUND.rhz ?? 0) + dz, ...more });
   return {
@@ -1410,10 +1470,14 @@ function bwThrust(): Motion {
       { at: 0.3, pose: BW_WOUND, ease: 'out' },
       { at: 0.42, pose: shake(0.4, { draw: 0.6 }), ease: 'hold' },
       { at: 0.54, pose: shake(-0.2, { draw: 0.5 }), ease: 'hold' },
-      { at: 0.63, pose: shake(0.3, { draw: 0.62 }), ease: 'hold' },
-      { at: BW_HIT, pose: BW_THRUST, ease: 'in' },
-      { at: BW_HIT + 0.12, pose: { ...BW_THRUST, rhx: 11, px: 3.6, draw: 0.5 }, ease: 'out' },
-      { at: BW_HIT + 0.4, pose: {}, ease: 'io' },
+      { at: 0.62, pose: shake(0.3, { draw: 0.62, px: -3.6, twist: -32, rhx: -14 }), ease: 'hold' },
+      // (the step: its front foot off the floor, the spear starting out)
+      { at: BW_HIT - 0.035, pose: { ...BW_WOUND, px: 1.5, pz: -6, pitch: 10, twist: -6, lfx: 9, lfz: 3.2, rhx: -2, draw: 0.8 }, ease: 'in' },
+      { at: BW_HIT, pose: BW_THRUST, ease: 'lin' },
+      { at: BW_HIT + 0.14, pose: { ...BW_THRUST, px: 7.4, pz: -8.0, rhx: 22, draw: 0.75 }, ease: 'out' },
+      // (hauled back: the front foot comes off the floor again on its way home)
+      { at: BW_HIT + 0.34, pose: { ...BW_WOUND, px: 1.5, pz: -4.0, pitch: 8, twist: -4, lfx: 7.5, lfz: 2.4, rhIn: 0, rhx: 4.0, rhy: -2.2, rhz: BW_HANG + 4, re: 10, wAz: -10, wEl: -16, pAz: -12, draw: 0.4 }, ease: 'io' },
+      { at: BW_HIT + 0.55, pose: {}, ease: 'io' },
     ],
   };
 }
@@ -1533,41 +1597,70 @@ export const BW_BASH_HIT = 0.55;
 /** In picking it up: the moment its hand closes on the spear. */
 export const BW_GRAB = 0.5;
 function bwThrow(): Motion {
-  // (raised like a javelin: the hand up over its shoulder and back, higher than its helm, the spear
-  // over its head, its point up and forward)
+  // (raised like a javelin: the hand up over its shoulder and right back, higher than its helm, the
+  // spear over its head, its point up and forward; it leans back over its back foot, its shield held
+  // out before it toward what it will throw at)
   const wound: P = {
-    px: -1.6, pz: -1.4, yaw: -10, pitch: -8, twist: -22, bend: 0,
-    faceUp: 6, lfx: 4.6, lfy: 1.6, lk: 14, rfx: -4.0, rfy: -1.0, rk: -12,
-    rhIn: 1, rhx: -9.0, rhy: -5.0, rhz: 16.0, re: 60,
-    wAz: -6, wEl: 42, pAz: 6, pEl: 2, draw: 0.6,
+    px: -3.4, pz: -2.8, yaw: -14, pitch: -12, twist: -30, bend: -4, side: 2,
+    faceUp: 6, faceTurn: 16, lfx: 5.5, lfy: 1.8, lk: 14, rfx: -5.6, rfy: -1.2, rk: -18,
+    lhIn: 1, lhx: 10.0, lhy: -6.0, lhz: -9.0,
+    rhIn: 1, rhx: -14.0, rhy: -6.0, rhz: 15.0, re: 70,
+    wAz: -6, wEl: 40, pAz: -6, pEl: 4, draw: 0.6,
   };
-  const loosed: P = { ...wound, px: 2.2, pz: -2.2, pitch: 10, twist: 16, bend: 8, rhIn: 0, rhx: 14, rhy: 0, rhz: 2, re: 10, wAz: 0, wEl: 5, lfx: 6.4, draw: 0.9 };
+  // (hurled: it steps through and drives its hips forward, its chest whips round, the arm comes over
+  // the top and out in front, and it bends right over after it)
+  const loosed: P = {
+    ...wound,
+    px: 7.2, pz: -5.6, yaw: -2, pitch: 24, twist: 26, bend: 12, side: 0,
+    faceUp: -4, faceTurn: 0, lfx: 13.5, lfz: 0, lk: 30, rk: -4,
+    lhx: 3.0, lhy: -2.0, lhz: -14.0, pAz: 14,
+    rhIn: 1, rhx: 15.0, rhy: -3.0, rhz: 9.0, re: 10,
+    wAz: 0, wEl: 5, draw: 0.95,
+  };
   return {
     hit: BW_THROW_HIT,
     keys: [
       { at: 0, pose: {} },
       { at: 0.35, pose: wound, ease: 'out' },
-      { at: 0.5, pose: { ...wound, rhz: 16.4, twist: -23 }, ease: 'hold' },
-      { at: 0.62, pose: { ...wound, rhz: 15.8, twist: -22.5, draw: 0.65 }, ease: 'hold' },
-      { at: BW_THROW_HIT - 0.04, pose: { ...wound, rhx: -10.0, twist: -24 }, ease: 'lin' },
-      { at: BW_THROW_HIT, pose: loosed, ease: 'in' },
-      { at: BW_THROW_HIT + 0.1, pose: { ...loosed, rhx: 12, rhz: -8, twist: 14, pitch: 8, draw: 0.5 }, ease: 'out' },
-      { at: BW_THROW_HIT + 0.45, pose: {}, ease: 'io' },
+      { at: 0.5, pose: { ...wound, rhz: 15.4, twist: -31 }, ease: 'hold' },
+      { at: 0.62, pose: { ...wound, rhz: 14.8, twist: -30.5, draw: 0.65 }, ease: 'hold' },
+      { at: BW_THROW_HIT - 0.06, pose: { ...wound, px: -3.8, pitch: -14, rhx: -16.0, twist: -33 }, ease: 'lin' },
+      // (the step through, the arm coming over the top)
+      { at: BW_THROW_HIT - 0.03, pose: { ...wound, px: 2.0, pz: -4.0, pitch: 6, twist: -4, lfx: 9.5, lfz: 3.0, rhx: -2.0, rhz: 18.0, draw: 0.85 }, ease: 'in' },
+      { at: BW_THROW_HIT, pose: loosed, ease: 'lin' },
+      // (the follow-through: its arm on down across it, bent over after the throw)
+      { at: BW_THROW_HIT + 0.14, pose: { ...loosed, px: 7.6, pitch: 30, bend: 16, twist: 30, rhIn: 0, rhx: 9.0, rhy: 9.0, rhz: -20.0, re: 20, draw: 0.6 }, ease: 'out' },
+      { at: BW_THROW_HIT + 0.36, pose: { px: 2.0, pz: -3.0, pitch: 10, twist: 6, bend: 6, lfx: 7.0, lfz: 2.4, rhIn: 0, rhx: 5.0, rhy: -1.0, rhz: -18.0, draw: 0.4 }, ease: 'io' },
+      { at: BW_THROW_HIT + 0.58, pose: {}, ease: 'io' },
     ],
   };
 }
 function bwBash(): Motion {
-  const coiled: P = { px: -1.5, pz: -1.4, pitch: -2, twist: 14, bend: 4, lhx: 2.0, lhy: -6.0, lhz: -8.0, pAz: 0, pEl: 2, lfx: 2.0, lk: 12, rfx: -2.0, rk: -10, draw: 0.5 };
-  const shove: P = { ...coiled, px: 4.0, pz: -1.8, pitch: 10, twist: -10, bend: 8, lhx: 14.0, lhy: -6.0, lhz: -10.0, pAz: -4, lfx: 6.4, draw: 0.85 };
+  // (coiled: the shield drawn in tight against it, its left shoulder back behind it, crouched on its back foot)
+  const coiled: P = {
+    px: -3.6, pz: -5.0, yaw: 4, pitch: 0, twist: 26, bend: 4,
+    faceTurn: -12, lfx: 3.0, lk: 20, rfx: -6.0, rk: -16,
+    lhIn: 1, lhx: 1.0, lhy: -6.0, lhz: -9.0, pAz: -22, pEl: 4, draw: 0.5,
+  };
+  // (the shove: a step and its whole weight behind the shield, its shoulder in it, driven out into you)
+  const shove: P = {
+    ...coiled,
+    px: 8.5, pz: -6.4, yaw: -6, pitch: 18, twist: -24, bend: 10,
+    faceTurn: 0, lfx: 13.0, lfz: 0, lk: 30, rk: -2,
+    lhx: 18.0, lhy: -6.0, lhz: -10.0, pAz: -10, pEl: -4, draw: 0.9,
+  };
   return {
     hit: BW_BASH_HIT,
     keys: [
       { at: 0, pose: {} },
       { at: 0.3, pose: coiled, ease: 'out' },
-      { at: BW_BASH_HIT - 0.05, pose: { ...coiled, px: -1.8, twist: 15 }, ease: 'lin' },
-      { at: BW_BASH_HIT, pose: shove, ease: 'in' },
-      { at: BW_BASH_HIT + 0.1, pose: { ...shove, px: 3.4, lhx: 12, draw: 0.6 }, ease: 'out' },
-      { at: BW_BASH_HIT + 0.45, pose: {}, ease: 'io' },
+      { at: BW_BASH_HIT - 0.06, pose: { ...coiled, px: -4.2, twist: 29, lfz: 1.2 }, ease: 'lin' },
+      // (the step, the shield starting out)
+      { at: BW_BASH_HIT - 0.03, pose: { ...coiled, px: 2.0, pitch: 8, twist: 4, lfx: 8.5, lfz: 3.0, lhx: 8.0, draw: 0.75 }, ease: 'in' },
+      { at: BW_BASH_HIT, pose: shove, ease: 'lin' },
+      { at: BW_BASH_HIT + 0.14, pose: { ...shove, px: 9.2, lhx: 19.0, draw: 0.6 }, ease: 'out' },
+      { at: BW_BASH_HIT + 0.34, pose: { ...coiled, px: 2.0, pz: -3.0, twist: 4, lfx: 7.0, lfz: 2.4, lhx: 6.0, draw: 0.4 }, ease: 'io' },
+      { at: BW_BASH_HIT + 0.55, pose: {}, ease: 'io' },
     ],
   };
 }
@@ -1601,13 +1694,13 @@ export const BONEWARD: Mob = {
   size: 'medium: a shield wall',
   build: WB,
   stand: { name: 'The Boneward keeps its post', motion: bwPost(), rest: BW_REST },
-  attack: { name: 'The Boneward thrusts', motion: bwThrust(), rest: BW_REST, glint: glintOver(0.3, BW_HIT) },
+  attack: { name: 'The Boneward thrusts', motion: bwThrust(), rest: BW_REST, glint: glintOver(0.3, BW_HIT), trail: (sk) => [spearTipOf(sk)] },
   idleFrames: 16,
   idleFps: 10,
   walk: { name: 'The Boneward plods', motion: bwPlod(), rest: BW_REST, period: BW_WALK_FRAMES / BW_WALK_FPS, ground: BW_PACE * TILE3 },
   more: {
-    throw: { name: 'The Boneward throws its spear', motion: bwThrow(), rest: BW_REST, glint: glintOver(0.35, BW_THROW_HIT), bare: (t) => t >= BW_THROW_HIT },
-    bash: { name: 'The Boneward bashes with its shield', motion: bwBash(), rest: BW_REST, bare: () => true },
+    throw: { name: 'The Boneward throws its spear', motion: bwThrow(), rest: BW_REST, glint: glintOver(0.35, BW_THROW_HIT), bare: (t) => t >= BW_THROW_HIT, blurAt: BW_THROW_HIT, trail: (sk) => [sk.handR] },
+    bash: { name: 'The Boneward bashes with its shield', motion: bwBash(), rest: BW_REST, bare: () => true, blurAt: BW_BASH_HIT, trail: shieldEdgesOf, trailSpan: 0.8 },
     pickUp: { name: 'The Boneward picks its spear up', motion: bwPickUp(), rest: BW_REST, bare: (t) => t < BW_GRAB },
     standBare: { name: 'The Boneward keeps its post, its spear thrown', motion: bwPost(), rest: BW_REST, bare: () => true },
     walkBare: { name: 'The Boneward plods, its spear thrown', motion: bwPlod(), rest: BW_REST, period: BW_WALK_FRAMES / BW_WALK_FPS, ground: BW_PACE * TILE3, bare: () => true },
@@ -1631,7 +1724,7 @@ export const BONEWARD: Mob = {
       if (piece === 'shield') return { ...f, up: heading(BW_REST.pAz, 0) };
       return f;
     }
-    if (piece === 'streak') return null;
+    if (piece === 'streak' || piece === 'dust' || piece === 'glint') return null;
     return scatter(piece, 0.58, 0.74, piece.startsWith('rib') || piece.startsWith('plate') ? 9 : 6, piece.startsWith('rib') || piece === 'pelvis' || piece.startsWith('plate') ? 'flat' : 'axis');
   },
 };

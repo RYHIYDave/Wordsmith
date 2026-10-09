@@ -93,10 +93,12 @@ them is cyan.
 - By 09:33, the Boneward's second attack: "Spear throw": it hurls its spear at you from afar, then
   fights with its shield (a shield bash) until it picks the spear up.
 
-## Their attacks (9 Oct, by his picks and the main chat's rules; his yes by 11:14)
+## Their attacks (9 Oct, by his picks and the main chat's rules; his yes by 11:14, the Boneward's redrawn since)
 
 His answers by 11:14, to `shade_rake.gif`: "Yes, keep it (Recommended)"; to `boneward_attacks.gif`:
-"Yes, keep them (Recommended)"; to `golem_attacks.gif`: "Yes, keep them (Recommended)".
+"Yes, keep them (Recommended)"; to `golem_attacks.gif`: "Yes, keep them (Recommended)". Then by 11:22,
+of the Boneward: "Actually can we take the boneward’s animations up a notch?  There’s no power in his
+attacks" (below): its blows were redrawn and sent again.
 
 By size (the main chat's rules from him): THE SHADE is small, one attack; THE BONEWARD medium, two;
 THE GOLEM large, two (and its old slam kept, for the rules to give it or not). None warns with
@@ -107,12 +109,25 @@ its own shadow.
   glint": its claws drawn back high over its hood and held, glinting pink and gold, brighter as the blow
   comes (`glint`, from nothing to its brightest just before the blow, and out as it lands); then down
   and through with both claws.
-- **The Boneward's thrust** (`attack`, as it was; `BW_HIT`, 0.7 s), with the glint on its spear-head.
+- **THE BONEWARD'S BLOWS, WITH ITS WEIGHT BEHIND THEM.** His word by 11:22, of the first drawing (sent
+  with the others at 11:13): "Actually can we take the boneward’s animations up a notch?  There’s no power
+  in his attacks". Read as: each blow was too small and too stiff. So each now coils back on its back
+  foot and holds (the warning), then STEPS INTO THE BLOW: its front foot goes out and stamps down,
+  kicking up the floor's dust; its hips drive forward, its chest whips round, its arm goes all the way
+  out; it holds there a beat and hauls itself back. Its back foot stays where it is on the floor, and
+  its front foot is off the floor only while it steps. The way its spear's tip (the thrust), its hand
+  (the throw) or its shield's edges (the bash) went through the air is streaked as the blow lands
+  (`MobMove.trail`).
+- **The Boneward's thrust** (`attack`; `BW_HIT`, 0.7 s): coiled behind the shield, the spear drawn right
+  back to its shoulder, its head glinting; then the step and the lunge, the spear driven out past the
+  shield's edge.
 - **The Boneward's spear throw** (his "Spear throw", by 09:33: it hurls its spear from afar, then fights
   with its shield until it picks the spear up): `more.throw` (its blow at `BW_THROW_HIT`, 0.75 s): the
-  spear raised over its shoulder like a javelin and held, its head glinting; then hurled, and its hand
-  is empty from the blow on. While its spear is gone: `more.bash` (`BW_BASH_HIT`, 0.55 s: the shield
-  drawn in, then shoved out at you); `more.standBare` and `more.walkBare` (its stand and its plod with no
+  spear raised over its shoulder like a javelin and right back, leaning back with its shield held out
+  toward you, its head glinting; then it steps through, its arm comes over the top, and it bends right
+  over after the throw; its hand is empty from the blow on. While its spear is gone: `more.bash` (`BW_BASH_HIT`, 0.55 s: the shield
+  drawn in tight, crouched behind it; then a step and its whole weight behind the shield, driven out
+  at you); `more.standBare` and `more.walkBare` (its stand and its plod with no
   spear, going round as they do); and `more.pickUp` (1.0 s: it stoops, its hand down on the floor where
   the spear lies, `BW_GRIP_AT`, and has it again at `BW_GRAB`, 0.5 s, the clip's `hit`).
 - **The spear in flight and lying** (`src/art/mob_shots.ts`, drawn in the game's own pixels, in the
@@ -149,14 +164,16 @@ its own shadow.
 
 ## How the attacks are checked
 
-- `tests/new_mobs_attacks.test.ts` (7): by size (the Shade one attack and no other moves; the Boneward
+- `tests/new_mobs_attacks.test.ts` (8): by size (the Shade one attack and no other moves; the Boneward
   its thrust and its throw with the bash, the pick-up, and its stand and plod with no spear; the Golem its
   swing, its throw and the slam kept); each a clip as the game takes a monster's moves (a blow's `hit` on
   its frame; a loop going round; the plod with no spear shown to match a pace); every frame of them
   paints, has the pink edge and nothing cyan, nor a cyan light; the glint, from nothing to brightest just
   before the blow and gone as it lands, a light that is not cyan; the spear gone from the Boneward's hand
   as it throws and back once it picks it up, its hand on the floor where it lies; the skull in the Golem's
-  fist till it throws, its place on the shoulder empty till the throw is over; the swing's streak, and its
+  fist till it throws, its place on the shoulder empty till the throw is over; the Boneward's weight in
+  each blow (its hips driving forward, its front foot stepping out and down at the blow, its back foot
+  where it was, a streak as it lands, dust kicked up after); the Golem swing's streak, and its
   warning not the slam's; the skull in flight turning, with the pink edge; its shadow growing and
   darkening as it falls, and nothing else on the floor; its burst, and gone; the spear flying up off the
   floor and lying on it; none of it cyan.
