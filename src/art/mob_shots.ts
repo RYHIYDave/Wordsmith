@@ -54,10 +54,13 @@ function line(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y
  * darker as it comes down, so that where it will land is seen before it lands. `z` is its height over
  * the floor and `top` the highest it gets (in the same units).
  */
-export function drawSkullShadow(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, z: number, top: number): void {
+export function drawSkullShadow(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, z: number, top: number, widest = 8): void {
   const [sx, sy] = at(x, y);
   const near = 1 - clamp01(z / Math.max(1e-6, top));
-  const rx = 3 + 5 * near;
+  // (`widest`: half its width as it lands, in the game's pixels. In the game (Version 19.9, the main
+  // chat) it lands as wide as what it will hurt, so that it is seen round the feet of whoever stands
+  // where it was aimed; in the art chat's films, 8)
+  const rx = 3 + (widest - 3) * near;
   const was = g.globalAlpha;
   g.globalAlpha = 0.25 + 0.5 * near;
   g.fillStyle = P.black;

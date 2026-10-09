@@ -1215,7 +1215,8 @@ export class Renderer {
       if (z.kind === 'skull') {
         if (z.t < z.dur) {
           const s = skullAt(z);
-          if (here(s.x, s.y)) drawSkullShadow(g, this.floorAt, s.x, s.y, s.z, SKULL.top);
+          // (as wide, when it lands, as what it will hurt: a tile on the floor is 16 pixels to its middle across, and a circle on it as wide as its radius times that times the square root of two)
+          if (here(s.x, s.y)) drawSkullShadow(g, this.floorAt, s.x, s.y, s.z, SKULL.top, Math.round(z.r * 16 * Math.SQRT2));
         } else if (here(z.x, z.y)) drawSkullBurst(g, this.floorAt, z.x, z.y, z.t - z.dur);
         continue;
       }
