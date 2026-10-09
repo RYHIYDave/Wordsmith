@@ -55,13 +55,13 @@
 
 import type { Light, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
-import { BONE, INDIGO, INK, dim, dir, hash, lazyFrames, toSprite } from './kit';
+import { BONE, INDIGO, INK, PINK, PLUM, dim, dir, hash, lazyFrames, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
-import { DEATH_FPS, ENEMY_RIM, FLAME, IRON, RUST, SOCKET } from './mkit';
+import { BLOOD, DEATH_FPS, ENEMY_RIM, FLAME, IRON, RUST, SOCKET } from './mkit';
 import { SKELETON3_BODY } from './monster_bones3';
 import { CANVAS3, band, ball, cloth, eyesToward, laidAlong, mid, rod, stage, thread, toneOf, wornOn } from './skin';
 import type { ClothLook, GameView, Ring, Sheet, Skin, Stage } from './skin';
-import { GRID, about, add, bonesAt, buildOf, cross, dot, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
+import { GRID, about, add, aimFor, bonesAt, buildOf, cross, dot, elbowFor, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF. Nothing of the game reads this file; a chat that puts these monsters in, on the owner's yes, does it behind this. */
@@ -297,7 +297,7 @@ function scaled(b: Build, k: number, more: Partial<Record<'shoulderHalf' | 'ribH
  * toward whoever looks (as the heroes' eyes are, `eyesToward`: given as `mid`, degrees round from
  * the nose), and a row of teeth. `lit`: a point of hot pink in each socket (0 none, 1 burning).
  */
-function skull(st0: Stage, put: Put, part: string, piece: string, c: V3, face: Frame3, r: V3, ramp: Ramp, midDeg: number, lit: number, teeth: boolean, glowR = 4): void {
+function skull(st0: Stage, put: Put, part: string, piece: string, c: V3, face: Frame3, r: V3, ramp: Ramp, midDeg: number, lit: number, teeth: boolean, glowR = 4, shade?: (u: V3, tone: number) => number): void {
   const [ff, fl, fu] = face;
   const midA = midDeg * D;
   const onCran = (az: number, el: number): V3 => norm([Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)]);
@@ -308,7 +308,8 @@ function skull(st0: Stage, put: Put, part: string, piece: string, c: V3, face: F
   const skin: Skin = (u, tone) => {
     for (const d of sock) if (u[0] * d[0] + u[1] * d[1] + u[2] * d[2] > cosS) return INK;
     if (u[0] * nose[0] + u[1] * nose[1] + u[2] * nose[2] > cosN && u[2] < nose[2] + 0.05) return INK;
-    return ramp[tone];
+    // (in the shade of a hood, if it is under one: the marksman's)
+    return ramp[shade ? Math.max(0, Math.min(4, shade(u, tone))) : tone];
   };
   put(part, piece, { k: 'ball', c, ax: [mul(ff, r[0]), mul(fl, r[1]), mul(fu, r[2])], skin });
   const onSkull = (d: V3, k = 0.95): V3 => add(c, add(add(mul(ff, d[0] * r[0] * k), mul(fl, d[1] * r[1] * k)), mul(fu, d[2] * r[2] * k)));
@@ -445,6 +446,9 @@ export interface MobMove {
   /** THE CHAMPION'S: his blow kicks up the floor's dust round his front foot; and how bright his rallying cry is, `t` seconds in. */
   dust?: boolean;
   rally?: (t: number) => number;
+  /** THE MARKSMAN'S: his jaw, `t` seconds in (0 shut to 1 wide: his `draw` is his bow's); and how much light his great arrow has gathered (0 none, 1 all of it). */
+  jaw?: (t: number) => number;
+  charge?: (t: number) => number;
 }
 
 /** A tile of the floor along the grid, in the figure's own lengths: 32 picture pixels across the screen and 16 down (skeleton.ts, `project`). */
@@ -476,6 +480,10 @@ interface Moment {
   /** The champion's: whether his blow kicks up dust, and how bright his rallying cry is (0 none). */
   dust?: boolean;
   rally: number;
+  /** The marksman's jaw (if the move says), and the light his great arrow has gathered (0 none); and whether this is a frame of its death (`dyingMoment`). */
+  jaw?: number;
+  charge: number;
+  dying?: boolean;
 }
 
 function folded(m: MobMove, t: number): number {
@@ -496,7 +504,7 @@ function windOf(t: number): number {
 
 /** A monster of this file: how it is built, how it moves, how it is painted and how it dies. */
 export interface Mob {
-  id: 'shade' | 'boneward' | 'golem' | 'champion';
+  id: 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman';
   name: string;
   /** Small, medium or big, in a word or two. */
   size: string;
@@ -550,7 +558,8 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   const blur = blurAt !== undefined && Math.abs(t - blurAt) < FR * 0.6;
   const wind = mv.period ? ((((t / mv.period) % 1) + 1) % 1) : windOf(t);
   // (the moment within its round, for what flickers frame by frame: so that a loop closes)
-  const m: Moment = { s, q, t: folded(mv, t), come, wind, blur, glint: mv.glint ? Math.max(0, mv.glint(t)) : 0, bare: mv.bare ? mv.bare(t) : false, skull: mv.skull ? mv.skull(t) : false, rally: mv.rally ? Math.max(0, mv.rally(t)) : 0 };
+  const m: Moment = { s, q, t: folded(mv, t), come, wind, blur, glint: mv.glint ? Math.max(0, mv.glint(t)) : 0, bare: mv.bare ? mv.bare(t) : false, skull: mv.skull ? mv.skull(t) : false, rally: mv.rally ? Math.max(0, mv.rally(t)) : 0, charge: mv.charge ? Math.max(0, mv.charge(t)) : 0 };
+  if (mv.jaw) m.jaw = clamp01(mv.jaw(t));
   if (mv.motion.hit !== undefined && !loops) m.since = t - mv.motion.hit;
   if (mv.dust) m.dust = true;
   if (blur && mv.trail) {
@@ -619,6 +628,8 @@ export interface Fall {
   up?: V3;
   hop?: number;
   pile?: number;
+  /** How high it is flung up on its way down (a limb of the marksman's bow as it snaps): none if not said. */
+  rise?: number;
 }
 const G = 400;
 type Turn = (v: V3) => V3;
@@ -705,7 +716,7 @@ const easeIO = (k: number): number => {
 /** The bones of one dying at a moment (before the pieces let go). */
 function dyingMoment(mob: Mob, t: number): Moment {
   const q = posedAt(mob.dying, t);
-  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: 0, bare: false, skull: false, rally: 0 };
+  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: 0, bare: false, skull: false, rally: 0, charge: 0, dying: true, jaw: mob.dying.jaw ? clamp01(mob.dying.jaw(t)) : undefined };
 }
 
 const THEN = new Map<string, Bit[]>();
@@ -780,7 +791,7 @@ function fallApart(mob: Mob, k: number, view: GameView): Painted {
     const bounceT = Math.sqrt((2 * hop) / G) * 2;
     const tau = t - f.from;
     const p = Math.min(1, tau / fallT);
-    let z = c0[2] + (rest[2] - c0[2]) * p * p;
+    let z = c0[2] + (rest[2] - c0[2]) * p * p + (f.rise ?? 0) * 4 * p * (1 - p);
     if (tau > fallT && tau < fallT + bounceT) z = rest[2] + hop * Math.sin((Math.PI * (tau - fallT)) / bounceT);
     const across = 1 - (1 - Math.min(1, tau / (fallT + bounceT * 0.5))) ** 2;
     const c1: V3 = [c0[0] + (rest[0] - c0[0]) * across, c0[1] + (rest[1] - c0[1]) * across, z];
@@ -2765,6 +2776,830 @@ export const CHAMPION: Mob = {
 /** THE SKELETON CHAMPION, as the game holds a monster (see makeShadeArt3). */
 export function makeChampionArt3(pace = CHAMPION.pace): ActorArt {
   return { front: mobSet(CHAMPION, 'front', pace), back: mobSet(CHAMPION, 'back', pace) };
+}
+
+// =============================================================================================
+// 5. THE BONE MARKSMAN: A YELLOW PACK'S LEADER OF BONE ARCHERS (9 Oct)
+//
+// Asked in the art chat who should lead each kind of yellow pack, his pick for the bone archers, by
+// 14:32: "A bone marksman (Recommended)". His brief (the art rulebook's "A new character"), our
+// picks, each his pick by 14:32: "A head taller (Recommended)", "Still and patient (Recommended)",
+// "His bow snaps (Recommended)"; and for the Sound chat, "Creak, rattle, deep twang (Recommended)".
+//
+// So: one of the bone archers (art/monster_bones3.ts, the archer on the bones, his yes of 8 Oct), a
+// head taller than they are and lean; the archers' red hood over his skull, its point hanging down
+// his back; a long cloak of a deeper red, torn at the hem; a quiver of long arrows on his back; and
+// A GREAT BOW AS TALL AS HE IS, of near-black wood, its tips ears of bone, its grip bound in red
+// cord. He stands still and patient, resting on it, its lower tip on the floor: only his head
+// turns, slowly, and his cloak stirs. He shoots as his archers do, slower. HIS OWN MOVE, THE GREAT
+// SHOT (`moves.pierce`): he plants his feet, reaches back over his shoulder for an arrow from his
+// quiver, nocks it, and draws the great bow past his jaw; he holds it there while its head gathers
+// light, pink burning to gold (the warning), and looses it, to pierce. Dying, he draws his bow one
+// last time, with no arrow on it, and it snaps; then he comes apart. His word is not painted on
+// him: the ring under him shows it (render/pack_marks.ts).
+
+/** His body: the skeleton's own (art/monster_bones3.ts), a head taller than his archers, as the champion is, and lean. */
+const MK_K = 1.18;
+const MK_BODY: Build = scaled(SKELETON3_BODY, MK_K, { shoulderHalf: 1.03, ribHalf: 1.02 });
+const MB = MK_BODY;
+/** His bones' thickness. */
+const MKK = MK_K * 1.03;
+/** HIS GREAT BOW: half its length, from the grip to either tip (the archers' is 20); how far the string stands off the grip; the ears of bone at its tips; an arrow, nock to point. */
+const GB_HALF = 27;
+const GB_BRACE = 6.2;
+const GB_EAR = 4.2;
+const GB_ARROW = 27;
+/** His colours: his hood the archers' red (theirs: art/monster_bones3.ts); his cloak a red so deep it is nearly black, so that the hood stands out on it; the bow's wood near black; the cord on its grip red. */
+const MK_HOOD: Ramp = BLOOD;
+export const MK_CLOAK: Ramp = ['#1e0510', '#1e0510', '#46091f', '#6e1230', '#6e1230'];
+export const MK_WOOD: Ramp = ['#16133a', '#16133a', '#2c2864', '#4a4494', '#4a4494'];
+const MK_STRING = BONE[2];
+const MK_SHAFT = PLUM[3];
+/** How much is torn off his cloak's hem across it (as the champion's cape). */
+const MK_CLOAK_TORN: readonly number[] = [3, 1, 4, 0, 2, 5, 1, 3, 0, 2, 4, 1, 3, 0, 1, 4];
+
+/**
+ * HIS STRING HAND (`prop`): on the string with an arrow nocked (1); just let go (2); an arrow in it,
+ * taken from his quiver (3: it points along `pAz`, `pEl`); on the string with no arrow on it (4: his
+ * last draw); and once his bow has snapped (5). Anything else (0, 6): off the string, empty. (Every
+ * one of them is a number other than 0, so that between two keys the one shown changes half way.)
+ */
+const MK_NOCKED = 1;
+const MK_LET_GO = 2;
+const MK_TAKEN = 3;
+const MK_BARE = 4;
+const MK_SNAPPED = 5;
+const MK_FREE = 6;
+function mkHand(prop: number): number {
+  const h = Math.round(prop);
+  return h >= 1 && h <= 5 ? h : MK_FREE;
+}
+
+const MK_HANG = -(MB.upperArm + MB.foreArm) * 0.95;
+/** How he stands: upright and still, his feet set, his head up. */
+const MK_BASE: Bones = {
+  ...standing(MB),
+  pz: -0.4, px: 0, yaw: -6, pitch: 0, roll: 0, twist: -2, bend: 2, side: 0,
+  faceTurn: 4, faceUp: 2, faceTilt: 0,
+  lfx: 2.4, lfy: 1.6, lft: 10, lk: 4, rfx: -2.0, rfy: -1.5, rft: -16, rk: -6,
+  lhIn: 0, lhx: 2.6, lhy: 2.4, lhz: MK_HANG + 2, le: -6,
+  rhIn: 0, rhx: 0.6, rhy: -1.6, rhz: MK_HANG + 0.4, re: 6,
+  wAz: 0, wEl: 0, wRoll: 0,
+  draw: 0, pt: 0, out: 0, prop: MK_FREE, gale: 0,
+};
+
+/**
+ * HIS GREAT BOW AT REST: standing on its lower tip on the floor beside his left foot, leaning out and
+ * a little forward, his left hand on its grip (given from his place on the floor, `HandIn` 2, so that
+ * the bow stays where it stands as he shifts); his right hand hanging empty. The belly of the bow
+ * faces forward, the string behind it.
+ */
+const MK_LEAN: V3 = norm([0.12, 0.2, 0.97]);
+const MK_GRIP_AT: V3 = [3.4, 13.4, 0.9 + GB_HALF * MK_LEAN[2]];
+/** Which way the belly of the bow faces at rest and as he carries it: forward and out to his left, so that the eye sees its curve from in front and from behind (the string toward him). */
+const MK_BELLY: V3 = norm([1, 1, 0]);
+function mkRest(body: P, grip: V3 = MK_GRIP_AT, lean: V3 = MK_LEAN): P {
+  const fwd = norm(sub(MK_BELLY, mul(lean, dot(MK_BELLY, lean))));
+  const { wAz, wEl, wRoll } = aimFor(fwd, lean);
+  return { rhIn: 0, rhx: 0.6, rhy: -1.6, rhz: MK_HANG + 0.4, re: 6, ...body, lhIn: 2, lhx: grip[0], lhy: grip[1], lhz: grip[2], le: -10, wAz, wEl, wRoll, draw: 0, prop: MK_FREE };
+}
+export const MK_REST: Bones = { ...MK_BASE, ...mkRest({}) };
+
+/** The great bow carried as he walks: off the floor, upright at his left side and leaning forward, his hand on its grip at his hip. */
+function mkCarry(body: P, swing = 0): P {
+  const q: Bones = { ...MK_BASE, ...body };
+  const s = solve(MB, { ...q, lhIn: 0, lhx: 2.8, lhy: 2.6, lhz: MK_HANG + 4.4 });
+  const lean = norm([0.36 + 0.05 * swing, 0.16, 0.92]);
+  const fwd = norm(sub(MK_BELLY, mul(lean, dot(MK_BELLY, lean))));
+  const { wAz, wEl, wRoll } = aimFor(fwd, lean);
+  const l = sub(s.handL, s.shoulderL);
+  return { ...body, lhIn: 1, lhx: l[0], lhy: l[1], lhz: l[2], le: -12, wAz, wEl, wRoll, draw: 0, prop: MK_FREE };
+}
+
+/**
+ * THE GREAT BOW DRAWN, as his archers draw theirs (art/monster_bones3.ts, `drawnBow`): the arrow `el`
+ * degrees above level toward the mark straight ahead, the string `pull` of the way back (1: to his
+ * jaw; for his great shot more, past it toward his ear). `prop`: what is on the string.
+ */
+function mkDrawn(body: P, el: number, pull: number, prop = MK_NOCKED): P {
+  const q: Bones = { ...MK_BASE, ...body };
+  const s = solve(MB, q);
+  const aim = heading(0, el);
+  const [ff, fl, fu] = s.face;
+  const anchor = add(s.head, add(mul(ff, 0.4 * MK_K), add(mul(fl, -3.2 * MK_K), mul(fu, -5.6 * MK_K))));
+  const armLen = (MB.upperArm + MB.foreArm) * 0.975;
+  const from = sub(anchor, s.shoulderL);
+  const along = dot(aim, from);
+  const disc = along * along - dot(from, from) + armLen * armLen;
+  const grip = disc >= 0 ? add(anchor, mul(aim, -along + Math.sqrt(disc))) : add(s.shoulderL, mul(aim, armLen));
+  const full = len(sub(grip, anchor));
+  const string = add(grip, mul(aim, -(GB_BRACE + (full - GB_BRACE) * Math.min(1, pull) + (pull - Math.min(1, pull)) * 5)));
+  const l = sub(grip, s.shoulderL);
+  const r = sub(string, s.shoulderR);
+  const hands: P = { ...body, lhIn: 1, lhx: l[0], lhy: l[1], lhz: l[2], rhIn: 1, rhx: r[0], rhy: r[1], rhz: r[2], wAz: 0, wEl: el, wRoll: 0, draw: pull, prop };
+  const slack = 1 - Math.min(1, pull);
+  const re = elbowFor(MB, { ...q, ...hands }, false, add(add(mul(aim, -(0.3 + 0.7 * (1 - slack))), [0, 0, -0.35 * (1 - slack) - 0.6 * slack]), mul(s.chest[1], -0.7 * slack)), MK_BASE.re);
+  const le = elbowFor(MB, { ...q, ...hands }, true, add(mul(s.chest[0], 1), [0, 0, -0.4]), MK_BASE.le);
+  return { ...hands, re, le };
+}
+/** THE MOMENT THE STRING GOES (as `loosedBow`): the string hand flung back past his skull (`back`), the bow pushed on (`kick`) and rocked forward in his hand (`rock` degrees); the string empty, his fingers open. */
+function mkLoosed(body: P, el: number, back: number, kick: number, rock: number, prop = MK_LET_GO): P {
+  const d = mkDrawn(body, el, 1);
+  const aim = heading(0, el);
+  return {
+    ...d,
+    lhx: (d.lhx ?? 0) + aim[0] * kick, lhz: (d.lhz ?? 0) + aim[2] * kick,
+    rhx: (d.rhx ?? 0) - aim[0] * back, rhy: (d.rhy ?? 0) - 1.8, rhz: (d.rhz ?? 0) - aim[2] * back - back * 1.0,
+    wEl: el - rock, draw: 0, prop,
+  };
+}
+/** Where the mouth of his quiver is, on his back behind his right shoulder. */
+function quiverMouth(s: Skeleton): V3 {
+  return at3(s.ribs, s.chest, -(MB.ribDeep + 2.6), -MB.shoulderHalf * 0.55, MB.chest + 3.6);
+}
+/** His right hand at his quiver's mouth (`pulled` 0), or drawn up out of it with an arrow (1). */
+function mkReach(body: P, pulled: number): P {
+  const q: Bones = { ...MK_BASE, ...body };
+  const s = solve(MB, q);
+  const hand = add(quiverMouth(s), add(mul(s.chest[2], 1.4 + 6.5 * pulled), mul(s.chest[0], 0.6 - 1.2 * pulled)));
+  const r = sub(hand, s.shoulderR);
+  return { rhIn: 1, rhx: r[0], rhy: r[1], rhz: r[2], re: 40 + 20 * pulled };
+}
+
+/** THE MARKSMAN AS SOLIDS: the skeleton's bones, a head taller; the archers' red hood, its point down his back; a long cloak; his quiver; his great bow, and the arrow on it. */
+function marksmanBits(st: Stage, m: Moment): Bit[] {
+  const { s, q } = m;
+  const B = MB;
+  const K = MKK;
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => {
+    bits.push({ part, piece, shape });
+  };
+  const [cf, cl, cu] = s.chest;
+  const lit = 1 - clamp01(q.out);
+  const hand = mkHand(q.prop);
+  // (his eyes: burning, and hotter as he draws and holds: `glint`)
+  const glare = lit * (1 + 0.8 * clamp01(m.glint));
+  const lagRaw = mul(m.come, -1.4);
+  const lagLen = len(lagRaw);
+  const lag = lagLen > 2.6 ? mul(lagRaw, 2.6 / lagLen) : lagRaw;
+  const flare = clamp01(q.gale);
+  const wave = m.wind * Math.PI * 2;
+  // (a rattle knocks his skull and his cage sideways on their pins; `pt` is the string's throw just after it is let go)
+  const knock: V3 = hand === MK_LET_GO ? [0, 0, 0] : mul(cl, q.pt);
+  const fallen = m.dying === true && m.t >= MK_CRUMBLE;
+
+  // --- the legs ---
+  for (const side of ['L', 'R'] as const) {
+    const hip = side === 'L' ? s.hipL : s.hipR;
+    const knee = side === 'L' ? s.kneeL : s.kneeR;
+    const ankle = side === 'L' ? s.ankleL : s.ankleR;
+    const heel = side === 'L' ? s.heelL : s.heelR;
+    const toe = side === 'L' ? s.toeL : s.toeR;
+    put(`leg${side}`, `leg${side}`, { k: 'rod', a: hip, b: knee, ra: 1.0 * K, rb: 0.85 * K, ramp: BONE, far: true });
+    put(`leg${side}`, `leg${side}`, { k: 'ball', c: knee, ax: sphere(1.45 * K), skin: BONE, far: true });
+    put(`leg${side}`, `shin${side}`, { k: 'rod', a: knee, b: ankle, ra: 0.85 * K, rb: 0.72 * K, ramp: BONE, far: true });
+    put(`leg${side}`, `shin${side}`, { k: 'ball', c: ankle, ax: sphere(1.0 * K), skin: BONE, far: true });
+    put(`leg${side}`, `foot${side}`, { k: 'rod', a: add(heel, [0, 0, 0.95 * K]), b: add(toe, [0, 0, 0.75 * K]), ra: 0.95 * K, rb: 0.75 * K, ramp: BONE, far: true });
+  }
+
+  // --- the pelvis, the spine, the rib cage ---
+  const [hf, hl, hu] = s.hips;
+  put('pelvis', 'pelvis', { k: 'ball', c: add(s.pelvis, mul(hu, 0.9 * K)), ax: [mul(hf, 3.1 * K), mul(hl, 4.8 * K), mul(hu, 2.2 * K)], skin: (u, tone) => (u[0] > 0.42 && u[2] < 0.25 && Math.abs(u[1]) > 0.16 && Math.abs(u[1]) < 0.56 ? INK : BONE[tone]) });
+  const low = add(s.pelvis, mul(hu, 2.6 * K));
+  const backOf = (p: V3, k: number): V3 => add(p, mul(cf, -k));
+  for (let i = 0; i < 4; i++) put('spine', 'cage', { k: 'ball', c: lerp3(low, backOf(add(s.ribs, knock), 0.4), (i + 0.5) / 4), ax: sphere(1.12 * K), skin: BONE });
+  const neckAt = add(s.neck, knock);
+  if (dot(cf, st.eye) < 0.1) {
+    put('ribs', 'cage', { k: 'rod', a: backOf(add(s.ribs, knock), 1.6 * K), b: backOf(neckAt, 1.3 * K), ra: 1.0 * K, rb: 0.9 * K, ramp: BONE });
+    for (const sg of [1, -1] as const) {
+      const c = add(add(add(neckAt, mul(cu, -3.6 * K)), mul(cf, -2.3 * K)), mul(cl, sg * 3.0 * K));
+      put('blades', 'cage', { k: 'ball', c, ax: [mul(norm(add(cf, mul(cl, sg * 0.3))), 0.6 * K), mul(cl, 2.0 * K), mul(cu, 2.4 * K)], skin: BONE });
+    }
+  }
+  for (let i = 0; i < BW_RIBS.length; i++) {
+    const [down, W, Dp, gap, slope] = BW_RIBS[i];
+    const c = add(add(neckAt, mul(cu, -down * K)), mul(cf, Dp * 0.55 * K));
+    for (const sg of [1, -1] as const) {
+      let last: V3 | null = null;
+      for (let k = 0; k <= 6; k++) {
+        const th = gap + ((Math.PI - gap) * k) / 6;
+        const p = add(add(add(c, mul(cf, Dp * K * Math.cos(th))), mul(cl, sg * W * K * 1.0 * Math.sin(th))), mul(cu, -slope * K * (1 + Math.cos(th)) * 0.5));
+        if (last) {
+          const midP = mid(last, p);
+          const out = sub(midP, add(c, mul(cu, dot(sub(midP, c), cu))));
+          if (dot(norm(out), st.eye) > -0.12) put('ribs', 'cage', { k: 'rod', a: last, b: p, ra: 0.72 * K, rb: 0.72 * K, ramp: BONE });
+        }
+        last = p;
+      }
+    }
+  }
+  const sternumTop = add(add(neckAt, mul(cu, -1.0 * K)), mul(cf, 2.8 * 1.5 * K));
+  const sternumLow = add(add(neckAt, mul(cu, -7.5 * K)), mul(cf, 3.4 * 1.5 * K));
+  put('ribs', 'cage', { k: 'rod', a: sternumTop, b: sternumLow, ra: 0.95 * K, rb: 0.75 * K, ramp: BONE });
+
+  // --- the arms: his left hand closed on the bow's grip; his right on the string, flung open, closed on an arrow, or hanging ---
+  for (const side of ['L', 'R'] as const) {
+    const sh = side === 'L' ? s.shoulderL : s.shoulderR;
+    const el = side === 'L' ? s.elbowL : s.elbowR;
+    const hnd = side === 'L' ? s.handL : s.handR;
+    const fore = norm(sub(hnd, el), [0, 0, -1]);
+    const wrist = add(hnd, mul(fore, -1.1 * K));
+    put(`upper${side}`, `arm${side}`, { k: 'ball', c: sh, ax: sphere(1.45 * K), skin: BONE, far: true });
+    put(`upper${side}`, `arm${side}`, { k: 'rod', a: sh, b: el, ra: 0.85 * K, rb: 0.75 * K, ramp: BONE, far: true });
+    put(`fore${side}`, `fore${side}`, { k: 'ball', c: el, ax: sphere(1.3 * K), skin: BONE, far: true });
+    put(`fore${side}`, `fore${side}`, { k: 'rod', a: el, b: wrist, ra: 0.75 * K, rb: 0.66 * K, ramp: BONE, far: true });
+    put('ribs', 'cage', { k: 'rod', a: sternumTop, b: add(sh, mul(cu, 0.3)), ra: 0.72 * K, rb: 0.72 * K, ramp: BONE, far: true });
+    const closed = side === 'L' || hand === MK_NOCKED || hand === MK_BARE || hand === MK_TAKEN;
+    if (closed) put(`fore${side}`, `fore${side}`, { k: 'ball', c: hnd, ax: sphere((side === 'L' ? 1.45 : 1.3) * K), skin: BONE, far: true });
+    else {
+      // (open: just let go, the finger bones spring apart; or hanging, three finger bones curling)
+      put(`fore${side}`, `fore${side}`, { k: 'ball', c: wrist, ax: sphere(1.0 * K), skin: BONE, far: true });
+      const acrossH = norm(cross(fore, cu), cl);
+      for (const k of [-1, 0, 1]) {
+        const base = add(wrist, mul(acrossH, k * 0.75 * K));
+        const tip = hand === MK_LET_GO ? add(add(base, mul(fore, 2.4 * K)), mul(acrossH, k * 1.5 * K)) : add(add(base, mul(fore, (2.8 - Math.abs(k) * 0.5) * K)), mul(cf, (0.4 + Math.abs(k) * 0.1) * K));
+        put(`fore${side}`, `fore${side}`, { k: 'rod', a: base, b: tip, ra: 0.55 * K, rb: 0.5 * K, ramp: BONE, far: true });
+      }
+    }
+  }
+
+  // --- the neck, the skull in the shade of his hood, and the jaw ---
+  for (const k of [0.3, 0.75]) put('neck', 'neck', { k: 'ball', c: add(lerp3(s.neck, s.skull, k), mul(knock, k)), ax: sphere(1.05 * K), skin: BONE });
+  const skullAt = add(s.head, knock);
+  const face = wornOn(st, s, 26);
+  const [ff, fl, fu] = face;
+  const eyes = eyesToward(st, s);
+  const midDeg = (eyes[0] + eyes[1]) / 2;
+  const cran = at3(skullAt, face, -0.4 * MK_K, 0, 1.2 * MK_K);
+  const R: V3 = [5.3 * MK_K, 5.1 * MK_K, 4.7 * MK_K];
+  // (under the hood his face is in its shade, his brow most: the pink in his sockets burns out of the dark)
+  skull(st, put, 'skull', 'skull', cran, face, R, BONE, midDeg, 0, true, 4, (u, tone) => tone - (u[2] > 0.1 ? 2 : 1));
+  {
+    const midA = midDeg * D;
+    const onCran = (az: number, el: number): V3 => norm([Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)]);
+    const onSkull = (d: V3, k = 0.97): V3 => add(cran, add(add(mul(ff, d[0] * R[0] * k), mul(fl, d[1] * R[1] * k)), mul(fu, d[2] * R[2] * k)));
+    const facingOf = (d: V3): V3 => norm(add(add(mul(ff, d[0] / R[0]), mul(fl, d[1] / R[1])), mul(fu, d[2] / R[2])));
+    if (glare > 0.05) {
+      for (const d of [onCran(midA - 29 * D, 0.3), onCran(midA + 29 * D, 0.3)]) {
+        const p = onSkull(d);
+        const n = facingOf(d);
+        put('skull', 'skull', { k: 'dot', p, c: glare > 1.45 ? FLAME[4] : glare > 0.5 ? SOCKET : FLAME[1], facing: n, c2: glare > 1.45 ? FLAME[3] : undefined });
+        if (dot(n, st.eye) > 0.05) put('skull', 'eyes', { k: 'glow', p, c: SOCKET, r: 4.2 + 3.5 * Math.max(0, glare - 1), a: Math.min(0.85, 0.42 * glare) });
+      }
+    }
+  }
+  const hinge = at3(skullAt, face, -1.8 * MK_K, 0, -2.0 * MK_K);
+  const open = clamp01(m.jaw ?? 0.12) * 34;
+  const jf = about(ff, fl, open);
+  const ju = about(fu, fl, open);
+  const jawC = add(hinge, add(mul(jf, 3.2 * MK_K), mul(ju, -1.4 * MK_K)));
+  put('mouth', 'skull', { k: 'ball', c: at3(skullAt, face, 0.9 * MK_K, 0, -2.3 * MK_K), ax: [mul(ff, 2.0 * MK_K), mul(fl, 2.8 * MK_K), mul(fu, 1.05 * MK_K)], skin: () => INK });
+  put('jaw', 'jaw', { k: 'ball', c: jawC, ax: [mul(jf, 2.9 * MK_K), mul(fl, 3.5 * MK_K), mul(ju, 1.35 * MK_K)], skin: BONE });
+
+  // --- his hood: the archers' red, a little bigger than his cranium and turned with it, open in front
+  // from the brow down, its rim dark, the dark inside it round his face; at the back it hangs down his
+  // nape, and its long point falls down his back ---
+  {
+    const hc = at3(cran, face, -0.9 * MK_K, 0, 0.7 * MK_K);
+    const hr: V3 = [R[0] + 1.6, R[1] + 1.4, R[2] + 1.4];
+    const hoodSkin: Skin = (u, tone) => {
+      if (u[0] > 0.18 && u[2] < 0.38) return null;
+      if (u[0] > 0.02 && u[2] < 0.54) return MK_HOOD[0];
+      if (Math.hypot(u[0] + 0.15, u[1] - 0.38, u[2] - 0.86) < 0.2) return INK;
+      if (u[0] < -0.35 && Math.abs(u[1]) < 0.06) return MK_HOOD[0];
+      return MK_HOOD[tone];
+    };
+    put('hood', 'skull', { k: 'ball', c: hc, ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin: hoodSkin });
+    const ic = at3(cran, face, -0.9 * MK_K - 1.6, 0, 0.7 * MK_K - 0.2);
+    put('hood', 'skull', { k: 'ball', c: ic, ax: [mul(ff, hr[0] - 1.1), mul(fl, hr[1] - 0.15), mul(fu, hr[2] - 0.3)], skin: (u) => (u[0] < -0.05 ? null : INK) });
+    const nape = add(lerp3(neckAt, skullAt, 0.45), mul(ff, -(R[0] * 0.55)));
+    put('hood', 'skull', { k: 'ball', c: nape, ax: [mul(ff, 3.4 * MK_K), mul(fl, R[1] + 0.4), mul(fu, 4.8 * MK_K)], skin: (u, tone) => (Math.abs(u[1]) < 0.06 && u[0] < -0.3 ? MK_HOOD[0] : MK_HOOD[tone]) });
+    // (its point: out from the back of the crown, then falling down his back, left behind as he moves)
+    const base = at3(hc, face, -hr[0] * 0.6, 0, hr[2] * 0.62);
+    let last = base;
+    const n = 5;
+    for (let i = 1; i <= n; i++) {
+      const k = i / n;
+      const sway = Math.sin(wave + k * 2.4) * (0.5 + 1.6 * flare) * k;
+      const p = add(base, add(add(mul(ff, -(3.0 * k + 1.2 * k * k) * MK_K), mul(fl, sway)), add(mul(fu, (1.2 * k - 12.5 * k * k) * MK_K), mul(lag, 1.4 * k))));
+      put('hoodtail', 'skull', { k: 'rod', a: last, b: p, ra: 2.4 * (1 - (i - 1) / n) + 0.45, rb: 2.4 * (1 - k) + 0.45, ramp: MK_HOOD });
+      last = p;
+    }
+  }
+
+  // --- his long cloak: from his shoulders down his back to his calves, a deeper red, torn at the hem;
+  // left behind as he goes, stirring as he stands; fallen, a heap where he stood ---
+  {
+    const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
+    const l: V3 = [-f[1], f[0], 0];
+    if (!fallen) {
+      const top: Ring = { c: add(add(neckAt, mul(cu, -1.0)), mul(cf, -0.5)), u: mul(cf, B.ribDeep + 1.6), v: mul(cl, B.shoulderHalf + 1.5) };
+      const midR: Ring = { c: add(add(lerp3(s.waist, s.ribs, 0.3), mul(lag, 0.4)), mul(f, -0.7)), u: mul(f, B.ribDeep + 2.6), v: mul(l, B.ribHalf + 3.6) };
+      const hz = Math.max(4, s.pelvis[2] - B.thigh - 4.0) + 3.0 * flare;
+      const hcl: V3 = [s.pelvis[0] - 2.4 * f[0] + lag[0] * 2.0, s.pelvis[1] - 2.4 * f[1] + lag[1] * 2.0, hz];
+      const wide = (B.ribHalf + 5.2) * (1 + 0.3 * flare);
+      const deep = (B.ribDeep + 3.6) * (1 + 0.35 * flare);
+      const pts: V3[] = [];
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const rear = Math.max(0, -Math.cos(a));
+        const p0 = add(hcl, add(mul(f, Math.cos(a) * deep), mul(l, Math.sin(a) * wide)));
+        pts.push(add(p0, add(mul(f, -rear * (1.6 + 2.4 * clamp01(len(m.come) / FR / 60))), [0, 0, Math.sin(wave + a * 2) * (0.7 + 1.4 * flare) + rear * 1.0])));
+      }
+      const hem: Ring = { c: hcl, u: mul(f, deep), v: mul(l, wide), pts };
+      put('cloak', 'cloak', { k: 'cloth', rings: [top, midR, hem], ramp: MK_CLOAK, look: { arc: [80, 280], folds: [125, 155, 205, 235], lift: 0.12 }, torn: MK_CLOAK_TORN });
+    } else {
+      const at: V3 = [s.pelvis[0] - 1, s.pelvis[1], 0];
+      put('heap', 'heap', { k: 'cloth', rings: [{ c: add(at, [0, 0, 3.2]), u: mul(f, 5.0), v: mul(l, 6.0) }, { c: add(at, [0, 0, 0.6]), u: mul(f, 9.5), v: mul(l, 11.0) }], ramp: MK_CLOAK, look: { folds: [30, -40, 100, -120, 200], lift: 0.4 }, torn: MK_CLOAK_TORN });
+    }
+  }
+
+  // --- his quiver, slung on his back over the cloak: long, of the archers' plum leather, its mouth
+  // behind his right shoulder, five long arrows standing out of it fletched in pink ---
+  {
+    const mouth = add(quiverMouth(s), knock);
+    const foot = add(at3(s.ribs, s.chest, -(B.ribDeep + 2.4), B.shoulderHalf * 0.25, -7.0), knock);
+    const up = norm(sub(mouth, foot));
+    put('quiver', 'quiver', { k: 'rod', a: foot, b: mouth, ra: 1.5 * MK_K, rb: 1.85 * MK_K, ramp: PLUM });
+    put('quiver', 'quiver', { k: 'rod', a: add(mouth, mul(up, -1.6)), b: add(mouth, mul(up, -0.6)), ra: 2.0 * MK_K, rb: 2.0 * MK_K, ramp: dim(PLUM) });
+    put('quiver', 'quiver', { k: 'ball', c: mouth, ax: [mul(cf, 2.0 * MK_K), mul(cl, 2.0 * MK_K), mul(up, 0.5)], skin: () => INK });
+    for (let i = 0; i < 5; i++) {
+      const k = i - 2;
+      const from = add(mouth, add(mul(cl, k * 0.7), mul(cf, Math.abs(k) % 2 === 0 ? 0.3 : -0.4)));
+      const fan = norm(add(up, mul(cl, k * 0.22)));
+      const mid3 = add(from, mul(fan, 1.8));
+      const tip = add(from, mul(fan, 6.0 + (k === 0 ? 1.0 : Math.abs(k) === 1 ? 0.5 : 0)));
+      // (each arrow whole, its shaft down inside the quiver where it is not seen: so that it spills out whole when he falls)
+      put('shafts', `arrow${i}`, { k: 'thread', a: add(foot, mul(up, 1.4)), b: from, c: MK_SHAFT, lift: 0 });
+      put('fletch', `arrow${i}`, { k: 'thread', a: from, b: mid3, c: MK_SHAFT, lift: 0.3 });
+      put('fletch', `arrow${i}`, { k: 'thread', a: mid3, b: tip, c: PINK[i % 2 ? 2 : 3], lift: 0.3 });
+      put('fletch', `arrow${i}`, { k: 'thread', a: add(mid3, mul(cf, 0.5)), b: add(tip, mul(cf, 0.5)), c: PINK[3], lift: 0.3 });
+    }
+  }
+
+  // --- his great bow, and what is on its string ---
+  greatBowBits(st, m, hand, put);
+
+  // --- THE SHOT GOES: a flash at the bow and a streak out along the arrow's way, for an instant (his
+  // great shot's in pink and gold, as bright as the light it had gathered; a plain shot's a pale puff) ---
+  if (hand === MK_LET_GO && m.since !== undefined && m.since >= 0 && m.since < 0.2) {
+    const k = m.since / 0.2;
+    const p3 = s.point;
+    const front = add(s.handL, mul(p3, 2.5));
+    const great = m.charge > 0.05;
+    if (great) {
+      const g = m.charge;
+      put('flash', 'flash', { k: 'glow', p: front, c: SOCKET, r: 7 + 9 * g * (1 - k), a: Math.min(0.9, 0.85 * g * (1 - k)) });
+      // (a ring of sparks thrown out round the bow, square to the shot)
+      const e1 = norm(cross(p3, [0, 0, 1]), [0, 1, 0]);
+      const e2 = cross(e1, p3);
+      for (let i = 0; i < 12; i++) {
+        if (hash(i, 3, 61) < k * 0.9) continue;
+        const a = (i / 12) * Math.PI * 2;
+        const r = 2 + 9 * Math.sqrt(k);
+        put('flash', 'flash', { k: 'mote', p: add(front, add(mul(e1, Math.cos(a) * r), add(mul(e2, Math.sin(a) * r), mul(p3, 2 * k)))), c: k < 0.4 ? FLAME[4] : FLAME[3], size: k < 0.3 && i % 3 === 0 ? 2 : 1 });
+      }
+      // (and the streak: where the arrow went, out ahead of him, bright at its head and fading behind)
+      const reach = 10 + 70 * Math.min(1, k * 3);
+      const tail = Math.max(0, reach - 34);
+      for (let d = tail; d < reach; d += 0.8) {
+        const w = (d - tail) / Math.max(1, reach - tail);
+        if (hash(Math.round(d * 3), 1, 63) > 0.35 + 0.65 * w - k * 0.4) continue;
+        put('flash', 'flash', { k: 'mote', p: add(front, mul(p3, d)), c: w > 0.8 ? FLAME[4] : w > 0.45 ? FLAME[3] : FLAME[2], size: w > 0.85 && k < 0.5 ? 2 : 1 });
+      }
+    } else if (k < 0.6) {
+      for (let i = 0; i < 4; i++) put('flash', 'flash', { k: 'mote', p: add(front, add(mul(p3, 1.5 + i * 2.2 + 6 * k), [0, 0, (hash(i, 1, 67) - 0.5) * 1.6])), c: i < 2 ? BONE[3] : BONE[2], size: 1 });
+    }
+  }
+
+  // --- HIS BOW SNAPS (dying): splinters burst from the break and fall ---
+  if (m.dying === true && m.t >= MK_SNAP && m.t < MK_SNAP + 0.45) {
+    const k = (m.t - MK_SNAP) / 0.45;
+    const brk = add(s.handL, mul(s.across, 3.0));
+    // (a flash at the break, for an instant)
+    if (k < 0.16) put('snap', 'snap', { k: 'glow', p: brk, c: BONE[3], r: 7 * (1 - k / 0.16) + 3, a: 0.6 * (1 - k / 0.16) });
+    for (let i = 0; i < 22; i++) {
+      if (hash(i, 9, 71) < k * 0.75) continue;
+      const a = (i / 22) * Math.PI * 2 + hash(i, 1, 71);
+      const r = (3 + 10 * hash(i, 2, 71)) * Math.sqrt(k);
+      const z = (3 + 9 * hash(i, 3, 71)) * k - 30 * k * k;
+      put('snap', 'snap', { k: 'mote', p: add(brk, [Math.cos(a) * r, Math.sin(a) * r, z]), c: i % 3 === 0 ? BONE[3] : i % 3 === 1 ? MK_WOOD[3] : BONE[2], size: i % 3 === 0 && k < 0.5 ? 2 : 1 });
+    }
+  }
+  return bits;
+}
+
+/**
+ * HIS GREAT BOW in his left hand (as the archers' `bowBits`, bigger): its two limbs of near-black
+ * wood bent from the grip to the tips, drawn back as the string comes; ears of bone at its tips,
+ * curving forward; red cord bound round its grip; the string, to the fingers that hold it; the arrow
+ * on it, whose head turns to a spark as it is drawn, or, his great shot's, burns from pink to gold
+ * with the light it gathers (`charge`) and drips embers. SNAPPED, it is two pieces: the upper limb,
+ * broken off above the grip (it flies), and the lower with the grip, its string hanging loose.
+ */
+function greatBowBits(st: Stage, m: Moment, hand: number, put: Put): void {
+  const { s, q } = m;
+  void st;
+  const grip = s.handL;
+  const p3 = s.point;
+  const ac = s.across;
+  const drawn = hand === MK_NOCKED || hand === MK_BARE;
+  const draw = drawn ? Math.max(0, Math.min(1.3, q.draw)) : 0;
+  const snapped = hand === MK_SNAPPED;
+  const tipOf = (side: 1 | -1): V3 => add(grip, add(mul(ac, side * GB_HALF * (1 - 0.1 * draw)), mul(p3, -(GB_BRACE + 3.4 * draw))));
+  const limbAt = (side: 1 | -1, k: number): V3 => {
+    const ctl = add(grip, add(mul(ac, side * GB_HALF * 0.72), mul(p3, 1.8 - 0.6 * draw)));
+    const t = tipOf(side);
+    return add(add(mul(grip, (1 - k) * (1 - k)), mul(ctl, 2 * k * (1 - k))), mul(t, k * k));
+  };
+  /** Where a limb breaks when the bow snaps: this far along it from the grip. */
+  const BREAK = 0.12;
+  for (const side of [1, -1] as const) {
+    const piece = snapped && side === 1 ? 'bowUp' : 'bow';
+    const from = snapped && side === 1 ? BREAK + 0.03 : 0;
+    let last = limbAt(side, from);
+    for (let i = 1; i <= 8; i++) {
+      const k = from + ((1 - from) * i) / 8;
+      const pt = limbAt(side, k);
+      const k0 = from + ((1 - from) * (i - 1)) / 8;
+      put('bow', piece, { k: 'rod', a: last, b: pt, ra: 1.9 - 0.95 * k0, rb: 1.9 - 0.95 * k, ramp: MK_WOOD });
+      last = pt;
+    }
+    // (its ear of bone, curving forward from the tip, a knob at its end)
+    const tip = tipOf(side);
+    const ear = add(tip, add(mul(ac, side * 1.6), mul(p3, GB_EAR)));
+    const earMid = add(tip, add(mul(ac, side * 1.9), mul(p3, GB_EAR * 0.45)));
+    put('bow', piece, { k: 'rod', a: tip, b: earMid, ra: 1.25, rb: 1.0, ramp: BONE });
+    put('bow', piece, { k: 'rod', a: earMid, b: ear, ra: 1.0, rb: 0.55, ramp: BONE });
+    put('bow', piece, { k: 'ball', c: ear, ax: sphere(0.85), skin: BONE });
+    if (snapped) {
+      // (the broken ends: splinters standing out of each)
+      const end = limbAt(side, side === 1 ? BREAK + 0.03 : BREAK);
+      for (let j = -1; j <= 1; j++) {
+        const sp = add(end, add(mul(ac, side * -(1.2 + 0.6 * Math.abs(j))), mul(p3, j * 0.7)));
+        put('bow', piece, { k: 'rod', a: end, b: sp, ra: 0.6, rb: 0.2, ramp: j === 0 ? BONE : MK_WOOD });
+      }
+    }
+  }
+  // the cord bound round the grip, in bands of red
+  for (let i = 0; i < 3; i++) {
+    const a = add(grip, mul(ac, -2.4 + i * 1.6));
+    const b = add(grip, mul(ac, -2.4 + (i + 1) * 1.6));
+    put('bow', 'bow', { k: 'rod', a, b, ra: 2.1, rb: 2.1, ramp: i % 2 ? MK_HOOD : dim(MK_HOOD) });
+  }
+  // the string: to the fingers that hold it, or straight; for the instant after it is let go, flung forward; snapped, hanging loose from the lower tip
+  const top = tipOf(1);
+  const bot = tipOf(-1);
+  const rest = add(grip, mul(p3, -GB_BRACE));
+  if (snapped) {
+    const hangTo = add(add(rest, mul(ac, -6)), [0, 0, -4]);
+    put('string', 'bow', { k: 'thread', a: bot, b: hangTo, c: MK_STRING, lift: 0.2 });
+    return;
+  }
+  if (drawn) {
+    put('string', 'bow', { k: 'thread', a: top, b: s.handR, c: MK_STRING, lift: 0.2 });
+    put('string', 'bow', { k: 'thread', a: s.handR, b: bot, c: MK_STRING, lift: 0.2 });
+  } else {
+    const mid3 = hand === MK_LET_GO ? add(rest, mul(p3, q.pt)) : rest;
+    put('string', 'bow', { k: 'thread', a: top, b: mid3, c: MK_STRING, lift: 0.2 });
+    put('string', 'bow', { k: 'thread', a: mid3, b: bot, c: MK_STRING, lift: 0.2 });
+  }
+  // the arrow: on the string under his fingers, along the way the bow points; or in his hand, taken from the quiver
+  let nock: V3;
+  let way: V3;
+  if (hand === MK_NOCKED) {
+    nock = s.handR;
+    way = p3;
+  } else if (hand === MK_TAKEN) {
+    way = heading(q.pAz, q.pEl);
+    nock = add(s.handR, mul(way, -1.4));
+  } else return;
+  const head = add(nock, mul(way, GB_ARROW));
+  const fl = norm(cross(way, ac), [0, 1, 0]);
+  const great = m.charge > 0.02;
+  put('arrow', 'arrow', { k: 'thread', a: add(nock, mul(way, 1.2)), b: add(head, mul(way, -2.0)), c: great ? MK_WOOD[2] : MK_SHAFT, lift: 0.35 });
+  for (const side of [1, -1]) put('arrow', 'arrow', { k: 'thread', a: add(add(nock, mul(way, 0.4)), mul(fl, side * 0.7)), b: add(add(nock, mul(way, 4.0)), mul(fl, side * 0.35)), c: PINK[side > 0 ? 3 : 2], lift: 0.35 });
+  const neck = add(head, mul(way, -2.0));
+  if (great) {
+    // HIS GREAT ARROW: a broad head that gathers light, pink burning to gold, and drips embers
+    const g = clamp01(m.charge);
+    put('arrow', 'arrow', { k: 'thread', a: neck, b: add(head, mul(way, -0.7)), c: g > 0.55 ? FLAME[3] : SOCKET, lift: 0.4 });
+    put('arrow', 'arrow', { k: 'thread', a: add(neck, mul(fl, 0.6)), b: add(head, mul(way, -0.4)), c: g > 0.75 ? FLAME[4] : FLAME[2], lift: 0.4 });
+    put('arrow', 'arrow', { k: 'thread', a: add(head, mul(way, -0.6)), b: head, c: g > 0.35 ? FLAME[4] : FLAME[3], lift: 0.45 });
+    put('arrow', 'charge', { k: 'glow', p: head, c: SOCKET, r: 4 + 9 * g, a: 0.25 + 0.55 * g });
+    if (g > 0.3) {
+      for (let i = 0; i < 6; i++) {
+        const life = (m.t * 1.7 + hash(i, 1, 59)) % 1;
+        const p = add(add(head, mul(way, -1.2 * hash(i, 2, 59))), [(hash(i, 3, 59) - 0.5) * 1.6, (hash(i, 4, 59) - 0.5) * 1.6, -life * 9]);
+        if (hash(i, 5, 59) > g) continue;
+        put('arrow', 'charge', { k: 'mote', p, c: life < 0.4 ? FLAME[4] : life < 0.7 ? FLAME[3] : FLAME[2], size: 1 });
+      }
+    }
+    return;
+  }
+  // a plain arrow's head: rusted; drawn, a spark of the enemy's pink burning to gold, spitting at full draw
+  const hot = Math.max(0, Math.min(1, (draw - 0.25) / 0.6));
+  const spits = draw >= 0.98 && Math.floor(m.t * 30 + 1e-6) % 2 === 1;
+  if (hot > 0.05) {
+    put('arrow', 'arrow', { k: 'thread', a: neck, b: add(head, mul(way, -0.6)), c: SOCKET, lift: 0.4 });
+    put('arrow', 'arrow', { k: 'thread', a: add(head, mul(way, -0.5)), b: head, c: FLAME[spits ? 4 : 3], lift: 0.4 });
+    put('arrow', 'charge', { k: 'glow', p: head, c: SOCKET, r: 4 + hot * 5 + (spits ? 1.5 : 0), a: 0.25 + hot * 0.3 + (spits ? 0.1 : 0) });
+  } else {
+    put('arrow', 'arrow', { k: 'thread', a: neck, b: head, c: RUST[2], lift: 0.4 });
+    put('arrow', 'arrow', { k: 'thread', a: add(head, mul(way, -0.5)), b: head, c: RUST[3], lift: 0.45 });
+  }
+}
+
+/** STILL AND PATIENT (his pick by 14:32): twenty-four tenths of a second round. Resting on his great bow, he does not move; his head turns slowly to look along his left, holds there, comes back past straight and settles. Only his cloak stirs. */
+function mkStill(): Motion {
+  return {
+    loop: 0,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.8, pose: mkRest({ faceTurn: 30, faceUp: 0, faceTilt: -2, pz: -0.5 }), ease: 'io' },
+      { at: 1.3, pose: mkRest({ faceTurn: 31, faceUp: 0, faceTilt: -2, pz: -0.5 }), ease: 'lin' },
+      { at: 1.9, pose: mkRest({ faceTurn: -10, faceUp: 3, faceTilt: 1 }), ease: 'io' },
+      { at: 2.4, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** His jaw: shut, but for a clack now and then. */
+function mkStillJaw(t: number): number {
+  const i = Math.floor((((t % 2.4) + 2.4) % 2.4) * 10 + 1e-6);
+  return i === 20 ? 0.0 : i === 21 ? 0.35 : 0.08;
+}
+
+/**
+ * HIS WALK: eight frames at ten a second, painted for 1.5 tiles a second (shown faster or slower for
+ * another pace, `walkFpsAt`). Upright and unhurried, long smooth steps, no lurch; his bow carried off
+ * the floor at his left side, his right arm swinging a little; his cloak and his hood's point
+ * streaming back. A foot that is down stays where it is on the floor.
+ */
+const MK_WALK_FRAMES = 8;
+const MK_WALK_FPS = 10;
+export const MARKSMAN_PACE = 1.5;
+function mkStalk(): Motion {
+  const R = MK_BASE;
+  const n = MK_WALK_FRAMES;
+  const d = (MARKSMAN_PACE * TILE3) / MK_WALK_FPS;
+  const half = 2 * d;
+  const SW = [0.22, 0.55, 0.85];
+  const SZ = [2.2, 3.2, 1.6];
+  const foot = (j: number): [number, number] => (j <= 4 ? [half - d * j, 0] : [-half + 2 * half * SW[j - 5], SZ[j - 5]]);
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const j = i % n;
+    const a = (j / n) * Math.PI * 2;
+    const [rx, rz] = foot(j);
+    const [lx, lz] = foot((j + 4) % n);
+    const body: P = {
+      px: 0.6, py: -0.6 * Math.sin(a), pz: -1.0 - 0.8 * Math.cos(2 * a),
+      yaw: R.yaw + 3 * Math.cos(a), twist: -2 * Math.cos(a), pitch: 3 + 0.6 * Math.cos(2 * a), bend: 2,
+      roll: 1.6 * Math.sin(a), side: 0.8 * Math.sin(a),
+      faceUp: 2, faceTurn: -1.5 * Math.cos(a), faceTilt: -1 * Math.sin(a),
+      rfx: rx, rfz: rz, rfy: -2.2, rft: -10, rk: -8, rfp: rz > 0 ? 10 : j === 0 ? -4 : 0,
+      lfx: lx, lfz: lz, lfy: 2.2, lft: 10, lk: 8, lfp: lz > 0 ? 10 : j === 4 ? -4 : 0,
+      rhIn: 0, rhx: 0.6 - 2.4 * Math.cos(a), rhy: -1.8, rhz: MK_HANG + 1.0 + 0.8 * Math.max(0, -Math.cos(a)), re: 8,
+    };
+    keys.push({ at: i / MK_WALK_FPS, ease: 'lin', pose: mkCarry(body, Math.cos(a)) });
+  }
+  return { keys, loop: 0 };
+}
+
+/** How he stands to shoot: his front (left) foot toward the mark, side-on to it, upright. */
+const MK_SET: P = { px: 0.8, pz: -1.2, yaw: -40, pitch: 0, roll: 0, twist: -36, bend: 0, side: 0, faceTurn: 0, faceUp: 0, faceTilt: 2, lfx: 5.8, lfy: 1.2, lfz: 0, lft: 4, lk: 6, rfx: -3.8, rfy: -1.0, rfz: 0, rft: -44, rk: -26 };
+const MK_AIM = -2;
+/** The moment his plain shot goes (its rules are the main chat's). */
+export const MK_SHOT_HIT = 0.7;
+/**
+ * HIS SHOT, as his archers shoot (`loose`), slower and steadier: the bow lifted off the floor and
+ * brought up as he turns side-on, his hand to the string with an arrow on it; one long pull to his
+ * jaw; held, still but for the tremble of old bone under the strain, the arrowhead spitting (the
+ * warning: the pose); then the string goes, the bow kicks, the string thrums; he watches it go, and
+ * sets the bow down on its tip again.
+ */
+function mkShot(): Motion {
+  const H = MK_SHOT_HIT;
+  const tw = MK_SET.twist ?? 0;
+  const hold = (n: number, twist: number, el: number, pull: number): Key3 => ({ at: n * FR, pose: mkDrawn({ ...MK_SET, twist: tw + twist }, MK_AIM + el, pull), ease: 'hold' });
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 4 * FR, pose: mkDrawn({ px: 0.4, pz: -0.8, yaw: -26, twist: -20, lfx: 4.0, lft: 6, rfx: -2.8, rft: -30, rk: -16 }, MK_AIM - 16, 0.08), ease: 'out' },
+      { at: 11 * FR, pose: mkDrawn(MK_SET, MK_AIM, 1), ease: 'io' },
+      hold(13, -0.6, 0.3, 1.01),
+      hold(15, -1, -0.2, 1.02),
+      hold(17, -0.8, 0.3, 1.03),
+      hold(19, -1.2, -0.3, 1.04),
+      { at: H, pose: { ...mkLoosed({ ...MK_SET, twist: tw - 5 }, MK_AIM, 4.0, 1.8, 10), pt: 3.2 }, ease: 'hold' },
+      { at: H + 2 * FR, pose: { ...mkLoosed({ ...MK_SET, twist: tw - 6 }, MK_AIM, 4.6, 1.2, 7), pt: -1.4 }, ease: 'out' },
+      { at: H + 4 * FR, pose: { ...mkLoosed({ ...MK_SET, twist: tw - 6 }, MK_AIM, 4.4, 1.0, 6), pt: 0.6 }, ease: 'lin' },
+      { at: H + 6 * FR, pose: { ...mkLoosed({ ...MK_SET, twist: tw - 6 }, MK_AIM, 4.3, 0.9, 5), pt: 0 }, ease: 'lin' },
+      { at: H + 0.3, pose: mkCarry({ px: 0.4, pz: -0.8, yaw: -18, twist: -10, lfx: 3.4, rfx: -2.6, rft: -26, rk: -14 }), ease: 'io' },
+      { at: H + 0.55, pose: {}, ease: 'io' },
+    ],
+  };
+}
+function mkShotJaw(t: number): number {
+  const H = MK_SHOT_HIT;
+  if (t < 4 * FR) return 0.08 * (1 - t / (4 * FR));
+  if (t < H - 1e-6) return 0;
+  if (t < H + 3 * FR) return 0.55;
+  if (t < H + 0.3) return 0.3;
+  return 0.08;
+}
+
+/** The moment his great shot goes (its rules, and what it pierces, are the main chat's). */
+export const MK_PIERCE_HIT = 1.6;
+/** Planted for it: his feet wider, lower, side-on. */
+const MK_PLANT: P = { ...MK_SET, px: 0.6, pz: -2.6, twist: -38, lfx: 7.0, lfy: 1.6, lk: 12, rfx: -5.0, rfy: -1.4, rk: -30 };
+/**
+ * HIS GREAT SHOT (his own move, `moves.pierce`): he plants his feet and brings the bow up; reaches back
+ * over his right shoulder and draws a long arrow from his quiver, its head already smouldering; swings
+ * it down and nocks it; draws the great bow slowly past his jaw toward his ear; and HOLDS, while its
+ * head gathers light, pink burning to gold, embers dripping from it and his eyes burning (the
+ * warning). Then the string goes: the bow kicks and rocks, his cloak flares, a flash at the bow and a
+ * streak along the arrow's way; the string thrums; he holds, watching it go, and sets the bow down.
+ */
+function mkPierce(): Motion {
+  const H = MK_PIERCE_HIT;
+  const tw = MK_PLANT.twist ?? 0;
+  const ready = mkDrawn(MK_PLANT, MK_AIM - 10, 0, MK_FREE);
+  const hold = (at: number, twist: number, el: number, pull: number): Key3 => ({ at, pose: { ...mkDrawn({ ...MK_PLANT, twist: tw + twist }, MK_AIM + el, pull) }, ease: 'hold' });
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: {} },
+      // (the bow up, his hand back over his shoulder to the quiver)
+      { at: 0.22, pose: { ...ready, ...mkReach(MK_PLANT, 0), prop: MK_FREE, pAz: -170, pEl: -60 }, ease: 'out' },
+      { at: 0.24, pose: { ...ready, ...mkReach(MK_PLANT, 0.05), prop: MK_TAKEN, pAz: -170, pEl: -62 }, ease: 'hold' },
+      // (an arrow drawn up out of it, and brought over his shoulder, its smouldering head up and forward)
+      { at: 0.32, pose: { ...ready, ...mkReach(MK_PLANT, 0.7), prop: MK_TAKEN, pAz: -160, pEl: -40 }, ease: 'out' },
+      { at: 0.42, pose: { ...ready, rhIn: 1, rhx: 2.0, rhy: -2.5, rhz: 12.5, re: 70, prop: MK_TAKEN, pAz: -40, pEl: 68 }, ease: 'io' },
+      // (and down to the string)
+      { at: 0.5, pose: { ...mkDrawn(MK_PLANT, MK_AIM - 6, 0.02, MK_TAKEN), pAz: 0, pEl: MK_AIM - 4 }, ease: 'io' },
+      { at: 0.52, pose: mkDrawn(MK_PLANT, MK_AIM - 5, 0.04), ease: 'hold' },
+      // (drawn slowly, all the way, past his jaw)
+      { at: 0.75, pose: mkDrawn({ ...MK_PLANT, twist: tw - 1 }, MK_AIM - 1, 0.5), ease: 'in' },
+      { at: 1.1, pose: mkDrawn({ ...MK_PLANT, twist: tw - 2 }, MK_AIM, 1.18), ease: 'out' },
+      // (held)
+      hold(1.17, -2.4, 0.3, 1.19),
+      hold(1.24, -2.0, -0.2, 1.2),
+      hold(1.31, -2.6, 0.3, 1.2),
+      hold(1.38, -2.2, -0.3, 1.21),
+      hold(1.45, -2.8, 0.3, 1.21),
+      hold(1.52, -2.3, -0.3, 1.22),
+      // the string goes
+      { at: H, pose: { ...mkLoosed({ ...MK_PLANT, twist: tw - 8, pz: -3.2 }, MK_AIM, 6.0, 2.6, 16), pt: 4.4, gale: 0.9 }, ease: 'hold' },
+      { at: H + 2 * FR, pose: { ...mkLoosed({ ...MK_PLANT, twist: tw - 9, pz: -3.0 }, MK_AIM, 6.6, 1.8, 12), pt: -2.0, gale: 0.8 }, ease: 'out' },
+      { at: H + 4 * FR, pose: { ...mkLoosed({ ...MK_PLANT, twist: tw - 9, pz: -2.9 }, MK_AIM, 6.4, 1.5, 10), pt: 1.2, gale: 0.6 }, ease: 'lin' },
+      { at: H + 6 * FR, pose: { ...mkLoosed({ ...MK_PLANT, twist: tw - 9, pz: -2.8 }, MK_AIM, 6.2, 1.4, 9), pt: -0.5, gale: 0.45 }, ease: 'lin' },
+      { at: H + 8 * FR, pose: { ...mkLoosed({ ...MK_PLANT, twist: tw - 9, pz: -2.8 }, MK_AIM, 6.1, 1.3, 8), pt: 0, gale: 0.35 }, ease: 'lin' },
+      // (held, watching it go; then the bow set down)
+      { at: H + 0.45, pose: { ...mkLoosed({ ...MK_PLANT, twist: tw - 8, pz: -2.6 }, MK_AIM, 5.8, 1.2, 6), pt: 0, gale: 0.1 }, ease: 'io' },
+      { at: H + 0.78, pose: mkCarry({ px: 0.4, pz: -1.2, yaw: -18, twist: -10, lfx: 3.6, rfx: -2.8, rft: -26, rk: -14 }), ease: 'io' },
+      { at: H + 1.05, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** How much light his great arrow has gathered (0 none to 1): smouldering as he takes it, gathering as he draws and holds; after it goes, the flash it leaves. */
+function pierceCharge(t: number): number {
+  const H = MK_PIERCE_HIT;
+  if (t < 0.26) return 0;
+  if (t < 0.52) return 0.05 + 0.1 * ((t - 0.26) / 0.26);
+  if (t < 1.1) return 0.15 + 0.55 * ((t - 0.52) / 0.58);
+  if (t < H) return 0.7 + 0.3 * ((t - 1.1) / (H - 1.1));
+  if (t < H + 0.2) return 1;
+  return 0;
+}
+/** His eyes as he shoots: burning up as he draws, hottest as he holds, dying back after. */
+function pierceGlare(t: number): number {
+  const H = MK_PIERCE_HIT;
+  if (t < 0.5) return 0;
+  if (t < 1.1) return 0.6 * ((t - 0.5) / 0.6);
+  if (t < H) return 0.6 + 0.4 * ((t - 1.1) / (H - 1.1));
+  return Math.max(0, 1 - (t - H) / 0.35);
+}
+function pierceJaw(t: number): number {
+  const H = MK_PIERCE_HIT;
+  if (t < 0.5) return 0.08;
+  if (t < H - 1e-6) return 0;
+  if (t < H + 0.12) return 0.7;
+  if (t < H + 0.45) return 0.4;
+  return 0.12;
+}
+
+/** STRUCK: rocked back on his heels, his hand keeping hold of the bow where it stands, his head knocked back, his cloak flaring; then still again. */
+function mkStruck(): Motion {
+  const R = MK_BASE;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.06, pose: mkRest({ px: -2.4, pz: R.pz - 0.7, pitch: -6, bend: -5, twist: -6, faceUp: 14, faceTilt: -6, gale: 0.8, rhx: -1.5, rhz: MK_HANG + 2.0, pt: 0.8 }), ease: 'out' },
+      { at: 0.15, pose: mkRest({ px: -1.4, pz: R.pz - 0.6, pitch: -2, bend: -2, faceUp: 6, gale: 0.35, pt: -0.3 }), ease: 'io' },
+      { at: 0.3, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/** When, as he dies, his bow snaps; and when he comes apart. */
+export const MK_SNAP = 0.5;
+const MK_CRUMBLE = 1.0;
+/**
+ * DYING, HIS BOW SNAPS (his pick by 14:32): a jolt; he heaves the great bow up and drags its string
+ * back one last time, with no arrow on it, past his jaw, his bones shaking under the strain; and the
+ * bow SNAPS above the grip: the upper limb flies off turning, splinters burst, his string hand is
+ * flung back empty. The light goes out of his eyes; he sways, his knees go, and he comes apart, his
+ * skull rolling away in its hood, his quiver spilling its arrows, his cloak a heap where he stood.
+ */
+function mkGiving(): Motion {
+  const strain: P = { px: -1.2, pz: -2.0, yaw: -30, twist: -26, pitch: -5, bend: -5, faceUp: 8, lfx: 3.4, lft: 4, rfx: -3.4, rft: -30, rk: -16 };
+  const last = (pull: number, more: P = {}): P => mkDrawn({ ...strain, ...more }, 8, pull, MK_BARE);
+  const broke = mkLoosed({ ...strain, pz: -2.6, twist: -32, faceUp: 14 }, 8, 7.0, 0.6, -10, MK_SNAPPED);
+  const sag: P = { ...broke, px: -0.4, pz: -6, pitch: 10, bend: 16, faceUp: -18, faceTilt: 12, lk: 6, rk: -6, lfx: 2.4, rfx: -1.6, rhIn: 0, rhx: 1.0, rhy: -2.2, rhz: MK_HANG + 1.0, re: 0, out: 0.7, prop: MK_SNAPPED };
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.06, pose: mkRest({ px: -1.8, pz: -0.9, pitch: -6, bend: -6, faceUp: 18, faceTilt: 6, gale: 0.9, rhx: -0.5, rhz: MK_HANG + 3, pt: 0.9 }), ease: 'out' },
+      { at: 0.22, pose: last(0.5, { pt: -0.4 }), ease: 'out' },
+      { at: 0.36, pose: last(1.15, { pt: 0.5 }), ease: 'io' },
+      { at: 0.4, pose: last(1.22, { pt: -0.6 }), ease: 'hold' },
+      { at: 0.44, pose: last(1.26, { pt: 0.7 }), ease: 'hold' },
+      { at: 0.47, pose: last(1.28, { pt: -0.7 }), ease: 'hold' },
+      { at: MK_SNAP, pose: { ...broke, pt: 0, gale: 0.7 }, ease: 'hold' },
+      { at: MK_SNAP + 0.1, pose: { ...broke, pz: -3.0, faceUp: 6, out: 0.3, gale: 0.5 }, ease: 'out' },
+      { at: 0.82, pose: sag, ease: 'in' },
+      { at: MK_CRUMBLE, pose: { ...sag, pz: -11.5, pitch: 18, bend: 26, faceUp: -30, lk: 8, rk: -8, out: 1 }, ease: 'in' },
+      { at: 1.9, pose: { ...sag, pz: -11.5, pitch: 18, bend: 26, faceUp: -30, lk: 8, rk: -8, out: 1 }, ease: 'hold' },
+    ],
+  };
+}
+function givingJaw(t: number): number {
+  if (t < 0.06) return 0.12 + t / 0.06;
+  if (t < MK_SNAP) return 0.05;
+  if (t < MK_SNAP + 0.12) return 0.8;
+  return 0.55;
+}
+/** How each piece of him falls (seconds from the blow): the upper limb of his bow flies when it snaps; the rest when he comes apart. */
+const MK_FALLS: Readonly<Record<string, Fall>> = {
+  bowUp: { from: MK_SNAP, to: [12, 16], spin: 260, lay: 'axis', hop: 3.2, rise: 14 },
+  bow: { from: MK_CRUMBLE + 0.02, to: [7, 8], spin: 40, lay: 'axis', hop: 1.2 },
+  skull: { from: MK_CRUMBLE + 0.16, to: [9, -7], spin: 50, lay: 'keep', hop: 1.4, pile: 0.6 },
+  jaw: { from: MK_CRUMBLE + 0.12, to: [6, 2], spin: 50, lay: 'keep', hop: 1 },
+  quiver: { from: MK_CRUMBLE + 0.06, to: [-10, -6], spin: -50, lay: 'axis', hop: 1.2 },
+  armR: { from: MK_CRUMBLE + 0.04, to: [3, -8], spin: -40, lay: 'axis', hop: 1 },
+  foreR: { from: MK_CRUMBLE + 0.06, to: [6, -6], spin: 30, lay: 'axis', hop: 0.8 },
+  armL: { from: MK_CRUMBLE + 0.04, to: [3, 8], spin: 35, lay: 'axis', pile: 0.8 },
+  foreL: { from: MK_CRUMBLE + 0.07, to: [6, 9], spin: -25, lay: 'axis', pile: 1.2 },
+  cage: { from: MK_CRUMBLE + 0.09, to: [1, 1], spin: 15, lay: 'axis', hop: 0.8 },
+  pelvis: { from: MK_CRUMBLE + 0.11, to: [-2, 1], spin: 0, lay: 'keep' },
+  neck: { from: MK_CRUMBLE + 0.08, to: [3, -4], spin: 60, lay: 'axis' },
+};
+
+export const MARKSMAN: Mob = {
+  id: 'marksman',
+  name: 'The Bone Marksman',
+  size: 'a yellow pack’s leader: a head taller than his bone archers',
+  build: MB,
+  stand: { name: 'The Marksman waits', motion: mkStill(), rest: MK_REST, jaw: mkStillJaw },
+  attack: { name: 'The Marksman shoots', motion: mkShot(), rest: MK_REST, jaw: mkShotJaw, glint: (t) => (t > 11 * FR && t < MK_SHOT_HIT ? 0.5 : 0) },
+  idleFrames: 24,
+  idleFps: 10,
+  walk: { name: 'The Marksman stalks', motion: mkStalk(), rest: MK_REST, period: MK_WALK_FRAMES / MK_WALK_FPS, ground: MARKSMAN_PACE * TILE3, jaw: () => 0.1 },
+  walkFrames: MK_WALK_FRAMES,
+  walkFps: MK_WALK_FPS,
+  pace: MARKSMAN_PACE,
+  more: {
+    pierce: { name: 'The Marksman’s great shot', motion: mkPierce(), rest: MK_REST, jaw: pierceJaw, charge: pierceCharge, glint: pierceGlare, blurAt: MK_PIERCE_HIT },
+  },
+  reel: { name: 'The Marksman is struck', motion: mkStruck(), rest: MK_REST, jaw: (t) => (t < 0.15 ? 0.6 : 0.2) },
+  reelTime: 0.3,
+  hit: MK_SHOT_HIT,
+  warn: 0.55,
+  dieTime: 1.9,
+  dying: { name: 'The Marksman’s bow snaps', motion: mkGiving(), rest: MK_REST, jaw: givingJaw },
+  aura: { x: CANVAS3.ax - 2, y: CANVAS3.ay - 34, r: 46, color: '#ff3a78', a: 0.13 },
+  shadow: 12,
+  bits: (st, m) => marksmanBits(st, m),
+  fall(piece) {
+    const f = MK_FALLS[piece];
+    if (f) return f;
+    // (his cloak lies where it fell; what flashes and bursts is not a piece of him)
+    if (piece === 'cloak' || piece === 'heap' || piece === 'snap' || piece === 'flash' || piece === 'charge' || piece === 'eyes') return null;
+    // (his arrows spill out of his quiver round where it falls)
+    if (piece.startsWith('arrow')) {
+      const i = Number(piece.slice(5)) || 0;
+      return { from: MK_CRUMBLE + 0.1 + 0.03 * i, to: [-10 + (hash(i, 1, 73) - 0.5) * 12, -6 + (hash(i, 2, 73) - 0.5) * 12], spin: (hash(i, 3, 73) - 0.5) * 160, lay: 'axis', hop: 0.6 };
+    }
+    return scatter(piece, MK_CRUMBLE + 0.04, MK_CRUMBLE + 0.16, piece.startsWith('rib') ? 9 : 6, piece === 'pelvis' ? 'flat' : 'axis');
+  },
+};
+
+/** THE BONE MARKSMAN, as the game holds a monster (see makeShadeArt3). */
+export function makeMarksmanArt3(pace = MARKSMAN.pace): ActorArt {
+  return { front: mobSet(MARKSMAN, 'front', pace), back: mobSet(MARKSMAN, 'back', pace) };
 }
 
 // ---------------------------------------------------------------------------------------------

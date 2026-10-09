@@ -182,3 +182,98 @@ export function drawSpearLying(g: CanvasRenderingContext2D, at: FloorAt, x: numb
   g.globalAlpha = was;
   spear(g, bx, by, tx, ty, 0);
 }
+
+// ---------------------------------------------------------------------------------------------
+// THE BONE MARKSMAN'S GREAT SHOT (9 Oct; art/new_mobs3.ts MARKSMAN, `moves.pierce`). A MOCK-UP: NOT IN THE GAME.
+// While he holds it, a line of aim on the floor, out from him along the way it will fly (a straight
+// shot that pierces: where it will go is a line, as the red troll's charge has one); then the great
+// arrow in flight along it, its head burning gold and a streak of light behind it.
+
+/** His great arrow's shaft (art/new_mobs3.ts MK_WOOD, dark to light) and the light it burns with, dim to bright. */
+const GREAT_SHAFT: readonly string[] = ['#16133a', '#2c2864', '#4a4494'];
+
+/**
+ * HIS LINE OF AIM, on the floor from under him (x0, y0) toward (x1, y1) (tiles), as he holds his
+ * great shot: it runs out from him as he draws (`k`, 0 to 1 as the light gathers), a dotted line of
+ * the enemy's pink whose dots run away from him along it, brighter the nearer the shot is; at its
+ * height, small chevrons along it, pointing the way the arrow will go. `t`: the time (seconds).
+ */
+export function drawAimLine(g: CanvasRenderingContext2D, at: FloorAt, x0: number, y0: number, x1: number, y1: number, k: number, t: number): void {
+  const kk = clamp01(k);
+  if (kk <= 0.01) return;
+  const [ax, ay] = at(x0, y0);
+  const [bx, by] = at(x1, y1);
+  const full = Math.hypot(bx - ax, by - ay);
+  if (full < 1) return;
+  const ux = (bx - ax) / full;
+  const uy = (by - ay) / full;
+  const reach = full * clamp01(kk * 1.4);
+  const was = g.globalAlpha;
+  const run = (t * 26) % 4;
+  for (let d = 6 + run; d < reach; d += 4) {
+    // (fading out toward its far end, and in from where he stands)
+    const fade = Math.min(1, (reach - d) / 18) * Math.min(1, (d - 4) / 8);
+    g.globalAlpha = was * (0.25 + 0.55 * kk) * fade;
+    g.fillStyle = kk > 0.85 ? FLAME[3] : FLAME[2];
+    g.fillRect(Math.round(ax + ux * d), Math.round(ay + uy * d), 2, 1);
+  }
+  if (kk > 0.7) {
+    const nx = -uy;
+    const ny = ux;
+    const step = 14;
+    for (let d = 14 + ((t * 30) % step); d < reach - 6; d += step) {
+      const fade = Math.min(1, (reach - d) / 18);
+      g.globalAlpha = was * (kk - 0.7) * 3 * 0.8 * fade;
+      g.fillStyle = FLAME[3];
+      for (const side of [-1, 1]) for (let j = 1; j <= 3; j++) g.fillRect(Math.round(ax + ux * (d - j) + nx * side * j), Math.round(ay + uy * (d - j) + ny * side * j * 0.5), 1, 1);
+    }
+  }
+  g.globalAlpha = was;
+}
+
+/**
+ * HIS GREAT ARROW IN FLIGHT: its head at (x, y) on the floor and `z` (the game's pixels) over it,
+ * flying the way (fx, fy) (a unit vector on the floor): a long dark shaft, pink fletching, its head
+ * burning gold; behind it a long streak of light, gold to pink, fading; sparks shed from it; and its
+ * shadow on the floor under it. `t`: the time (seconds), for the sparks.
+ */
+export function drawGreatArrow(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, z: number, fx: number, fy: number, t: number): void {
+  const [hx, hy] = at(x, y);
+  const [qx, qy] = at(x + fx, y + fy);
+  const dl = Math.hypot(qx - hx, qy - hy) || 1;
+  const ux = (qx - hx) / dl;
+  const uy = (qy - hy) / dl;
+  const was = g.globalAlpha;
+  // its shadow on the floor
+  g.globalAlpha = was * 0.35;
+  line(g, hx - ux * 14, hy - uy * 14, hx, hy, P.black);
+  // the streak behind it
+  const top = hy - z;
+  for (let d = 0; d < 40; d++) {
+    const k = d / 40;
+    g.globalAlpha = was * (1 - k) * 0.85;
+    g.fillStyle = k < 0.25 ? FLAME[4] : k < 0.6 ? FLAME[3] : FLAME[2];
+    g.fillRect(Math.round(hx - ux * (6 + d)), Math.round(top - uy * (6 + d)), 1, d < 14 ? 2 : 1);
+  }
+  g.globalAlpha = was;
+  // the shaft, the fletching, the head
+  line(g, hx - ux * 13, top - uy * 13 + 1, hx - ux * 2, top - uy * 2 + 1, GREAT_SHAFT[0]);
+  line(g, hx - ux * 13, top - uy * 13, hx - ux * 2, top - uy * 2, GREAT_SHAFT[2]);
+  g.fillStyle = FLAME[2];
+  g.fillRect(Math.round(hx - ux * 12), Math.round(top - uy * 12) - 1, 1, 1);
+  g.fillRect(Math.round(hx - ux * 11), Math.round(top - uy * 11) + 1, 1, 1);
+  g.fillStyle = FLAME[3];
+  g.fillRect(Math.round(hx - ux * 2), Math.round(top - uy * 2), 2, 2);
+  g.fillStyle = FLAME[4];
+  g.fillRect(Math.round(hx - 1), Math.round(top - 1), 3, 2);
+  // sparks shed behind it
+  for (let i = 0; i < 6; i++) {
+    const life = (t * 5 + hash(i, 1, 81)) % 1;
+    const d = 8 + life * 26;
+    const off = (hash(i, 2, 81) - 0.5) * 6 * life;
+    g.globalAlpha = was * (1 - life);
+    g.fillStyle = life < 0.4 ? FLAME[4] : FLAME[3];
+    g.fillRect(Math.round(hx - ux * d - uy * off), Math.round(top - uy * d + ux * off * 0.5 + life * 4), 1, 1);
+  }
+  g.globalAlpha = was;
+}
