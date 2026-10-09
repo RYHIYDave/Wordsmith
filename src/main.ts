@@ -1430,6 +1430,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (hud.potion) g.usePotion();
       if (hud.interact) wantInteract = true;
       if (hud.level) panels.open = 'level';
+      // (THE SKILL TREES: a talent point waiting: the inventory opens on TALENTS)
+      if (hud.talents) {
+        openInventory(-1);
+        invUi.page = 'talents';
+      }
       if (hud.pause) panels.open = 'pause';
 
       if (panels.open === 'level' && wasOpen !== 'level') levelShownAt = clock;

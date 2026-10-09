@@ -36,6 +36,8 @@ export interface HudOut {
   potion: boolean;
   interact: boolean;
   level: boolean;
+  /** THE SKILL TREES (game/talents.ts, off until his yes): NEW TALENT was pressed: the inventory, on TALENTS. */
+  talents?: boolean;
   pause: boolean;
   /** The small map was pressed: show or hide the large one. */
   map: boolean;
@@ -982,6 +984,16 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     if (ui.pressIn(x, promptY, w, pbh)) out.level = true;
     ui.claim(x, promptY, w, pbh);
     ui.drawButton(x, promptY, w, pbh, touch ? 'LEVEL UP' : 'LEVEL UP (L)', { primary: true, lit: pulse });
+    promptY -= pbh + 3;
+  } else if (game.talentsLeft() > 0) {
+    // THE SKILL TREES: a talent point is waiting (after the level's attribute, where both come at once)
+    const label = 'NEW TALENT';
+    const w = ui.width(label) + (touch ? 20 : 12);
+    const x = Math.floor(W / 2 - w / 2);
+    if (ui.pressIn(x, promptY, w, pbh)) out.talents = true;
+    ui.claim(x, promptY, w, pbh);
+    ui.drawButton(x, promptY, w, pbh, label, { primary: true, lit: pulse });
+    ui.mark('button:NEW TALENT', x, promptY, w, pbh);
     promptY -= pbh + 3;
   }
   const hint = game.interactHint();

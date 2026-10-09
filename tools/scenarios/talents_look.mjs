@@ -4,7 +4,9 @@
 //   1. the tree with nothing being read;
 //   2. a talent that can be taken now, read on its card, with TAKE;
 //   3. TAKE pressed: it is taken, lit, and the points go down by one;
-//   4. a talent whose way is not open yet, read: the card says why.
+//   4. a talent whose way is not open yet, read: the card says why;
+//   5. the one just taken, read again in town: UNDO, for gold, gives the point back.
+// It begins with the button the HUD shows while a point waits, NEW TALENT, which opens the page.
 //   node tools/playtest.mjs --file <page> [--touch --size 844x390 --dpr 3] --scenario tools/scenarios/talents_look.mjs --out shots/talents/pc
 import { log, makeHands } from './lib.mjs';
 
@@ -31,11 +33,15 @@ export default async function (page, snap) {
       d.autoLevel = false; d.autoWords = false;
       g.hero.pending = 0;
       g.hero.talents = [...taken];
+      g.hero.gold = 1000;
       g.refresh();
-      d.inv();
-      d.invUi.page = 'talents';
       d.invUi.talents.sel = null;
     }, [cls, b.taken]);
+    await page.waitForTimeout(400);
+    // the HUD's button while a point waits: it opens the inventory on TALENTS
+    check(`${cls}: 0. NEW TALENT shows while a point waits`, !!(await hands.mark('button:NEW TALENT')));
+    await snap(`${cls}_0_button`);
+    await hands.press('button:NEW TALENT');
     await page.waitForTimeout(500);
     await snap(`${cls}_1_tree`);
     const st = () => page.evaluate(() => {
@@ -65,6 +71,15 @@ export default async function (page, snap) {
     s = await st();
     check(`${cls}: 4. ${b.shut} read, no TAKE (its way is not open)`, s.card && !s.take);
     log(`${cls}: what the steps taken add`, JSON.stringify(s.d));
+    // 5. the one just taken, read again, and undone (in town, for gold)
+    await hands.press(`talent:${b.take}`);
+    await page.waitForTimeout(250);
+    check(`${cls}: 5. ${b.take} read again, with UNDO in town`, !!(await hands.mark('button:UNDO')));
+    await snap(`${cls}_5_undo`);
+    await hands.press('button:UNDO');
+    await page.waitForTimeout(250);
+    s = await st();
+    check(`${cls}: 5. undone: its point back`, !s.taken.includes(b.take) && s.left === 2, `${s.taken.join(', ')}; ${s.left} left`);
     // (closed, and the switch put back)
     await page.evaluate(() => { const d = window.__dbg; d.invUi.talents.sel = null; });
   }

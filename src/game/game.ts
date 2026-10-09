@@ -15,7 +15,7 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
-import { TALENTS, TALENT_TUNE, cleanTalents, takeProblem, talentMods, talentPoints } from './talents';
+import { TALENTS, TALENT_TUNE, cleanTalents, takeProblem, talentMods, talentPoints, unlearnProblem } from './talents';
 import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -5191,6 +5191,33 @@ export class Game {
     this.refresh();
     this.emit({ t: 'talent', id });
     this.sfx('equip');
+    return null;
+  }
+
+  /** What undoing a talent costs now: gold for each of the hero's levels (in town only). */
+  unlearnPrice(): number {
+    return TALENT_TUNE.unlearnPerLevel * this.hero.level;
+  }
+
+  /** Why talent `id` cannot be undone now, or null if it can: in town, for gold, and nothing taken may hang on it alone. */
+  unlearnProblemNow(id: string): string | null {
+    if (!TALENTS.on) return 'No talents yet';
+    const why = unlearnProblem(this.hero.cls, this.hero.talents, id);
+    if (why) return why;
+    if (!this.level.town) return 'Undone in town only';
+    if (this.hero.gold < this.unlearnPrice()) return `Needs ${this.unlearnPrice()} gold`;
+    return null;
+  }
+
+  /** Undo talent `id`, for gold, giving its point back: why not, or null when it is done. */
+  unlearnTalent(id: string): string | null {
+    const why = this.unlearnProblemNow(id);
+    if (why) return why;
+    const h = this.hero;
+    h.gold -= this.unlearnPrice();
+    h.talents = h.talents.filter((t) => t !== id);
+    this.refresh();
+    this.sfx('gold');
     return null;
   }
 

@@ -257,6 +257,8 @@ export const TALENT_TUNE = {
   thorns: { share: 0.3, reach: 1.6 },
   unbreakable: { secs: 3 },
   earthshaker: { r: 2.4, secs: 1 },
+  /** Undoing a talent, in town (his rulebook: "Picks can be undone in town, for gold"): gold for each level of the hero's. The price is still his to set. */
+  unlearnPerLevel: 10,
 };
 
 /** A talent of a class's tree, by its id. */
@@ -275,6 +277,20 @@ export function takeProblem(cls: ClassId, level: number, taken: readonly string[
   }
   if (t.from.length && !t.from.some((f) => taken.includes(f))) return 'Take the one before it first';
   return null;
+}
+
+/** Why a taken talent cannot be undone (nothing else of the tree may hang on it alone), or null if it can. */
+export function unlearnProblem(cls: ClassId, taken: readonly string[], id: string): string | null {
+  if (!taken.includes(id)) return 'Not taken';
+  const rest = taken.filter((t) => t !== id);
+  const reach = new Set<string>();
+  for (let n = 0; n <= rest.length; n++) {
+    for (const t of rest) {
+      const def = talentOf(cls, t);
+      if (def && (!def.from.length || def.from.some((f) => reach.has(f)))) reach.add(t);
+    }
+  }
+  return reach.size === rest.length ? null : 'Undo the ones after it first';
 }
 
 /** Whether the talent could be taken were there a point to spend (its way is open). */

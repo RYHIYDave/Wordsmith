@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/game';
 import type { RunSave } from '../src/game/game';
-import { TALENTS, TALENT_EVERY, TALENT_MAX, TREES, cleanTalents, nextTalentLevel, takeProblem, talentMods, talentOpen, talentPoints } from '../src/game/talents';
+import { TALENTS, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, TREES, cleanTalents, nextTalentLevel, takeProblem, talentMods, talentOpen, talentPoints, unlearnProblem } from '../src/game/talents';
 import { CLASS_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { wrapText } from '../src/engine/font';
@@ -167,4 +167,32 @@ test("every talent's words fit its card in a few lines, in plain words", () => {
       assert.ok(t.name.length <= 14, `${cls}: ${t.name} is short`);
     }
   }
+});
+
+test('undoing a talent: in town, for gold, and only one that nothing taken hangs on alone', () => {
+  // (the tree: what may be undone)
+  assert.equal(unlearnProblem('mage', ['kindling', 'searing'], 'searing'), null, 'the last of a path');
+  assert.equal(unlearnProblem('mage', ['kindling', 'searing'], 'kindling'), 'Undo the ones after it first');
+  assert.equal(unlearnProblem('mage', ['kindling'], 'charged'), 'Not taken');
+  // two ways onto the arrow's shaft: either feather may go while the other holds it
+  assert.equal(unlearnProblem('ranger', ['fleet', 'windrunner', 'keeneye', 'venom', 'quickdraw'], 'venom'), null);
+  assert.equal(unlearnProblem('ranger', ['fleet', 'windrunner', 'quickdraw'], 'windrunner'), 'Undo the ones after it first');
+  on(() => {
+    const g = seasoned(new Game('mage', 3), 10);
+    assert.equal(g.takeTalent('kindling'), null);
+    assert.equal(g.takeTalent('searing'), null);
+    assert.equal(g.level.town, true, 'a new run begins in town');
+    assert.equal(g.unlearnPrice(), TALENT_TUNE.unlearnPerLevel * 10);
+    g.hero.gold = 0;
+    assert.equal(g.unlearnTalent('searing'), `Needs ${g.unlearnPrice()} gold`);
+    g.hero.gold = 1000;
+    assert.equal(g.unlearnTalent('kindling'), 'Undo the ones after it first');
+    assert.equal(g.unlearnTalent('searing'), null);
+    assert.deepEqual(g.hero.talents, ['kindling']);
+    assert.equal(g.hero.gold, 1000 - TALENT_TUNE.unlearnPerLevel * 10);
+    assert.equal(g.talentsLeft(), 1, 'the point back to spend');
+    // out of town: not there
+    g.enterDungeon();
+    assert.equal(g.unlearnTalent('kindling'), 'Undone in town only');
+  });
 });

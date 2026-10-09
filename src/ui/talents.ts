@@ -25,8 +25,8 @@ import type { Rect, Ui } from './ui';
 export interface TalentUi {
   /** The talent being read. */
   sel: string | null;
-  /** The card as it was drawn last frame, and its TAKE (a press on it is answered next frame). */
-  card: { r: Rect; take: Rect | null } | null;
+  /** The card as it was drawn last frame, and its TAKE or UNDO (a press on it is answered next frame). */
+  card: { r: Rect; take: Rect | null; undo?: Rect | null } | null;
   /** A talent just taken, and how long ago: it flares. */
   flash: { id: string; t: number } | null;
 }
@@ -219,6 +219,10 @@ export function talentPresses(ui: Ui, game: Game, st: TalentUi, lay: TalentLayou
     if (why) say = why;
     else st.flash = { id, t: 0 };
   }
+  if (card && card.undo && st.sel && ui.pressIn(card.undo.x, card.undo.y, card.undo.w, card.undo.h)) {
+    const why = game.unlearnTalent(st.sel);
+    if (why) say = why;
+  }
   // (a press anywhere else on the card is the card's: it does not close the inventory)
   if (card && ui.press && !ui.used && inside(card.r, ui.press.x, ui.press.y)) ui.used = true;
   const pad = ui.touch ? 3 : 1;
@@ -410,12 +414,22 @@ export function drawTalents(ui: Ui, game: Game, st: TalentUi, lay: TalentLayout,
   }
   const by = cr.y + cr.h - 5 - bh;
   let take: Rect | null = null;
-  if (took) drawText(g, 'TAKEN', cr.x + 5, by + Math.floor((bh - 8) / 2) + 1, THEME.good);
-  else if (why === null) {
+  let undo: Rect | null = null;
+  if (took) {
+    // taken: and in town, undone for gold (his rulebook), if nothing taken hangs on it alone
+    drawText(g, 'TAKEN', cr.x + 5, by + Math.floor((bh - 8) / 2) + 1, THEME.good);
+    const tw = textWidth('TAKEN') + 10;
+    const no = game.unlearnProblemNow(def.id);
+    if (no === null) {
+      undo = { x: cr.x + 5 + tw, y: by, w: cr.w - 10 - tw, h: bh };
+      ui.drawButton(undo.x, undo.y, undo.w, undo.h, `UNDO  ${game.unlearnPrice()} GOLD`);
+      ui.mark('button:UNDO', undo.x, undo.y, undo.w, undo.h);
+    } else drawText(g, no.toUpperCase(), cr.x + 5 + tw, by + Math.floor((bh - 6) / 2) + 1, THEME.dim, { font: 'small' });
+  } else if (why === null) {
     take = { x: cr.x + 5, y: by, w: cr.w - 10, h: bh };
     ui.drawButton(take.x, take.y, take.w, take.h, 'TAKE  (1 POINT)', { primary: true });
     ui.mark('button:TAKE', take.x, take.y, take.w, take.h);
   } else drawText(g, why.toUpperCase(), cr.x + 5, by + Math.floor((bh - 6) / 2) + 1, THEME.dim, { font: 'small' });
   ui.mark('talent-card', cr.x, cr.y, cr.w, cr.h);
-  st.card = { r: cr, take };
+  st.card = { r: cr, take, undo };
 }
