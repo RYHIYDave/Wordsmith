@@ -317,6 +317,12 @@ wait
 run modes_pc     --scenario $S/modes_look.mjs &
 run modes_phone  $P --scenario $S/modes_look.mjs &
 wait
+# THE RANGER'S NEW STANCES (Version 19.4): the bot fights with him in the practice room (running and
+# stopping, shooting on the move, Volley, the roll, being hit), then he is run and stopped by hand;
+# switched off and on again, he is drawn as before and as the game has him.
+run ranger_stances_pc    --scenario $S/ranger_stances.mjs &
+run ranger_stances_phone $P --scenario $S/ranger_stances.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

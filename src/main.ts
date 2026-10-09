@@ -1617,7 +1617,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       useComboMends(on);
       art.heroes = makeHeroArt3();
     },
-    /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): a mock-up behind switches that are off; its playtests put them in and paint the heroes again (false: today's back). */
+    /** THE RANGER'S NEW STANCES AND MOVES (art/moves3.ts, RANGER_STANCES, with game/defs.ts RANGER_ARROW): ON since Version 19.4, on his yes; pictures of him as he was before switch them off and paint the heroes again (true: the new, the game's own, back). */
     rangerStances: (on: boolean) => {
       useRangerStances(on);
       art.heroes = makeHeroArt3();

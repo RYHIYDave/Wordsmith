@@ -1,4 +1,10 @@
-# Mock-up: the ranger's battle stance, town stance and moves (NOT IN THE GAME until the main chat puts it there)
+# Mock-up: the ranger's battle stance, town stance and moves (IN THE GAME SINCE VERSION 19.4)
+
+**In the game since Version 19.4** (the main chat, 8 Oct 2026): his yes at 20:27, "Yes
+(Recommended)", to "Put the ranger's new stances into the game as Version 19.4, as in the
+picture?". The switches are on (`RANGER_STANCES.on`, and with it `RANGER_ARROW.on`: `useRangerStances(true)`
+as `src/art/moves3.ts` loads); switched off, he is as he was before, for pictures beside the new.
+The text below is the art chat's, as it handed the work over.
 
 **What it is.** The ranger remade on his own battle stance, as the owner asked, behind switches that
 are off: `RANGER_STANCES.on` in `src/art/moves3.ts`, and with it the game's side,

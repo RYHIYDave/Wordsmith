@@ -13,7 +13,7 @@ import nodeAssert from 'node:assert/strict';
 
 import type { ActorArt, AnimSet } from '../src/art/actor_types';
 import { PLANS, makeHeroArt3 } from '../src/art/heroes3';
-import { GRIP, GRIP_SPEED, MOVES3, useGrippingRuns } from '../src/art/moves3';
+import { GRIP, GRIP_SPEED, MOVES3, RANGER_STANCES, useGrippingRuns } from '../src/art/moves3';
 import { TUNE } from '../src/game/defs';
 import { CLASS_IDS } from '../src/game/types';
 import type { Sprite } from '../src/engine/px';
@@ -32,10 +32,16 @@ const assert: Assert = nodeAssert;
 const RUNS = [...new Set(CLASS_IDS.flatMap((c) => [PLANS[c].dungeon.walk, PLANS[c].town.walk]))];
 /** The runs as they are with the switch off, as this file found them. */
 const TODAY = new Map(RUNS.map((k) => [k, JSON.stringify(MOVES3[k].motion)]));
+/** The ranger's runs, which grip with his new stances whether or not the others' do (RANGER_STANCES, on since Version 19.4: tests/ranger_stances.test.ts). */
+const HIS = new Set([PLANS.ranger.dungeon.walk, PLANS.ranger.town.walk]);
 
-test('the switch is off, and the runs are today\'s', () => {
+test('the switch is off, and the runs are today\'s (the ranger\'s grip with his stances, since Version 19.4)', () => {
   assert.equal(GRIP.on, false);
-  for (const k of RUNS) assert.equal(MOVES3[k].stride, undefined, `${k} has no stride with the switch off`);
+  assert.equal(RANGER_STANCES.on, true);
+  for (const k of RUNS) {
+    if (HIS.has(k)) assert.ok((MOVES3[k].stride ?? 0) > 0, `${k} grips with the ranger's stances`);
+    else assert.equal(MOVES3[k].stride, undefined, `${k} has no stride with the switch off`);
+  }
 });
 
 test('the gripping runs are made for the speed the game gives a hero', () => {
@@ -45,14 +51,18 @@ test('the gripping runs are made for the speed the game gives a hero', () => {
 test('switched on and off again, the runs are today\'s exactly', () => {
   useGrippingRuns(true);
   try {
-    for (const k of RUNS) assert.ok(JSON.stringify(MOVES3[k].motion) !== TODAY.get(k), `${k} changes with the switch on`);
+    for (const k of RUNS) {
+      // (the ranger's grip already, with his stances: the same with the switch on)
+      if (HIS.has(k)) assert.equal(JSON.stringify(MOVES3[k].motion), TODAY.get(k), `${k} grips already`);
+      else assert.ok(JSON.stringify(MOVES3[k].motion) !== TODAY.get(k), `${k} changes with the switch on`);
+    }
   } finally {
     useGrippingRuns(false);
   }
   assert.equal(GRIP.on, false);
   for (const k of RUNS) {
     assert.equal(JSON.stringify(MOVES3[k].motion), TODAY.get(k), `${k} is today's again`);
-    assert.equal(MOVES3[k].stride, undefined);
+    if (!HIS.has(k)) assert.equal(MOVES3[k].stride, undefined);
   }
 });
 
@@ -81,13 +91,18 @@ test('with the switch on, a turn of each run is a whole number of sixtieths, and
   }
 });
 
-test('with the switch off, the heroes are given today\'s runs, by the clock', () => {
+test('with the switch off, the heroes are given today\'s runs, by the clock (the ranger his gripping one, with his stances)', () => {
   const art = makeHeroArt3();
   for (const cls of CLASS_IDS) {
     const a = art.of(cls, { twoHanded: cls === 'warrior', town: false });
     for (const set of [a.front, a.back]) {
-      assert.equal(set.walkStride, undefined);
-      assert.equal(set.walkFps, 30);
+      if (cls === 'ranger') {
+        assert.equal(set.walkStride, MOVES3[PLANS.ranger.dungeon.walk].stride);
+        assert.equal(set.walkFps, 60);
+      } else {
+        assert.equal(set.walkStride, undefined);
+        assert.equal(set.walkFps, 30);
+      }
     }
   }
 });

@@ -77,17 +77,21 @@ test('each hero has a figure for the dungeon and another for the town, each made
   }
 });
 
-test('standing and running go round: whole loops, at ten and at thirty frames a second', () => {
+test('standing and running go round: whole loops, at ten and at thirty frames a second (a run that grips, sixty)', () => {
   for (const cls of CLASS_IDS) {
     for (const [i, look] of [DUNGEON, TOWN].entries()) {
       const a = art.of(cls, look);
+      // (the ranger's runs grip the floor, with his new stances, since Version 19.4: a picture each sixtieth of a second, tests/grip_runs.test.ts)
+      const grips = MOVES3[MOVES[cls].run[i]].stride !== undefined;
+      assert.equal(grips, cls === 'ranger', `${cls}: the run grips the floor only for the ranger`);
+      const fps = grips ? 60 : 30;
       for (const view of VIEWS) {
         const set = a[view];
         const where = `${cls}, ${i === 0 ? 'dungeon' : 'town'}, ${view}`;
         assert.equal(set.idleFps, 10, `${where}: the standing loop's rate`);
-        assert.equal(set.walkFps, 30, `${where}: the run's rate`);
+        assert.equal(set.walkFps, fps, `${where}: the run's rate`);
         assert.ok(near(set.idle.length / 10, endOf(MOVES[cls].stand[i])), `${where}: the standing loop is ${set.idle.length} frames, its move ${endOf(MOVES[cls].stand[i])} s`);
-        assert.ok(near(set.walk.length / 30, endOf(MOVES[cls].run[i])), `${where}: the run is ${set.walk.length} frames, its move ${endOf(MOVES[cls].run[i])} s`);
+        assert.ok(near(set.walk.length / fps, endOf(MOVES[cls].run[i])), `${where}: the run is ${set.walk.length} frames, its move ${endOf(MOVES[cls].run[i])} s`);
       }
     }
   }
@@ -218,7 +222,8 @@ test('a run begins at once for heroes with no picture of making ready, and after
 
 test('a weapon changes between the back and the hand exactly where it lies on the back', () => {
   const angle = (a: V3, b: V3): number => (Math.acos(Math.max(-1, Math.min(1, dot(a, b)))) * 180) / Math.PI;
-  for (const [key, what, left] of [['kdraw', 'sword', false], ['rdraw', 'bow', true]] as const) {
+  // (the knight takes his sword up and puts it away again; the ranger, since Version 19.4, makes ready into his battle stance, the bow kept out in front of him: taken up once)
+  for (const [key, what, left, times] of [['kdraw', 'sword', false, 2], ['rdraw', 'bow', true, 1]] as const) {
     const move = MOVES3[key];
     const keys = move.motion.keys;
     let changes = 0;
@@ -235,7 +240,7 @@ test('a weapon changes between the back and the hand exactly where it lies on th
       assert.ok(angle(s.point, b.point) < 0.1, `${key}, key ${i}: the ${what} is turned ${angle(s.point, b.point).toFixed(2)} degrees from how it lies`);
       assert.ok(angle(s.across, b.across) < 0.1, `${key}, key ${i}: the ${what} is rolled ${angle(s.across, b.across).toFixed(2)} degrees from how it lies`);
     }
-    assert.equal(changes, 2, `${key}: it is taken up once and put away once`);
+    assert.equal(changes, times, `${key}: it is taken up once${times === 2 ? ' and put away once' : ', and kept in hand'}`);
     assert.equal(move.rest.stow, 1, `${key}: it does not begin with the ${what} put away`);
   }
 });
