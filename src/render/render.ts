@@ -31,7 +31,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, RANGER_ARROW, SKILLS, TUNE, WORDS } from '../game/defs';
+import { MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, TUNE, WORDS } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
@@ -202,6 +202,21 @@ function ellipse(g: CanvasRenderingContext2D, cx: number, cy: number, r: number,
   g.ellipse(cx, cy, r * 22.6, r * 11.3, 0, 0, Math.PI * 2);
   g.fill();
   g.globalAlpha = 1;
+}
+
+/**
+ * MONSTER PACKS: drawn as an elite is, its name over it, its bar always, its ring: an elite (a yellow
+ * pack's leader is one), and, with PACK_LOOK, every one of a blue pack.
+ */
+function named(m: Monster): boolean {
+  return m.elite || (PACK_LOOK.on && m.rarity === 'blue');
+}
+
+/** The colour of a named monster's name: its word's; with PACK_LOOK, a blue pack's blue and a yellow pack's leader's yellow (the colours of magic and rare things). */
+function nameColor(m: Monster): string {
+  if (PACK_LOOK.on && m.rarity === 'blue') return RARITY_COLOR[1];
+  if (PACK_LOOK.on && m.rarity === 'leader') return RARITY_COLOR[2];
+  return m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
 }
 
 function ringDots(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string, gap = 1): void {
@@ -1387,7 +1402,7 @@ export class Renderer {
       if (m.dead || !m.seen || !here(m.x, m.y)) continue;
       const cx = wx(cam, m.x, m.y);
       const cy = wy(cam, m.x, m.y);
-      if (m.elite || m.boss) {
+      if (named(m) || m.boss) {
         const col = m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
         ringDots(g, cx, cy, m.r * (1.5 + 0.12 * Math.sin(t * 5)), col);
       }
@@ -2636,18 +2651,18 @@ export class Renderer {
     for (const m of game.monsters) {
       if (m.dead || !m.seen || m.boss) continue;
       // (the enemy locked onto always shows its life: it is the one being fought)
-      if (m.barT <= 0 && !m.elite && m.id !== this.lockId) continue;
+      if (m.barT <= 0 && !named(m) && m.id !== this.lockId) continue;
       // (over its head as it stands: a club or a sword raised above it passes in front of the bar)
       const sx = Math.round(wx(cam, m.x, m.y));
       const sy = Math.round(wy(cam, m.x, m.y)) - FIGURE_SIZE[figureOf(m)].top - 5;
-      const w = m.champion ? 34 : m.elite ? 24 : 16;
+      const w = m.champion ? 34 : named(m) ? 24 : 16;
       g.fillStyle = P.ink;
       g.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 4);
       g.fillStyle = P.bl1;
       g.fillRect(sx - w / 2, sy, w, 2);
-      g.fillStyle = m.elite ? P.fr4 : P.bl4;
+      g.fillStyle = named(m) ? P.fr4 : P.bl4;
       g.fillRect(sx - w / 2, sy, Math.max(0, Math.round((w * m.life) / m.maxLife)), 2);
-      if (m.elite) drawText(g, m.name, sx, sy - 8, m.words.length ? WORD_COLOR[m.words[0]] : P.fr4, { align: 'center', font: 'small', shadow: P.ink });
+      if (named(m)) drawText(g, m.name, sx, sy - 8, nameColor(m), { align: 'center', font: 'small', shadow: P.ink });
     }
     // The hero's own life, over their head, where the eyes are in a fight (lifebar.ts says when it
     // is there). The part just lost stays lit for a moment; low, it flashes; its edge takes the
