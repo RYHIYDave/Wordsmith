@@ -11,6 +11,8 @@
 //   - what glows on an enemy is never the heroes' cyan;
 //   - the sizes the game goes by (the bar over a head, a finger on a monster) fit the pictures;
 //   - the flat-colour copies of frames that a hit or an ailment asks for cannot fill a phone's memory.
+// (Written before THE MONSTERS' ATTACKS of Version 19.8, it holds them off, rules and pictures: the
+// monsters here have their one attack, as they had then. tests/monster_attacks.test.ts has them on.)
 //   run: tsx --test tests/monsters.test.ts
 
 // @ts-ignore
@@ -19,8 +21,8 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 
 import type { ActorArt, AnimSet, Clip } from '../src/art/actor_types';
-import { FIGURE_SIZE, MONSTER_FIGURES, figureOf, makeBestiary } from '../src/art/bestiary';
-import type { MonsterFigure } from '../src/art/bestiary';
+import { FIGURE_SIZE, MONSTER_FIGURES, figureOf, makeBestiary, useMonsterAttacks } from '../src/art/bestiary';
+import type { ClassicFigure as MonsterFigure } from '../src/art/bestiary';
 import { CLIP_FPS, GRAIN, IDLE_FRAMES, KAX, KAY, KH, KW, RIM_ALPHA, WALK_FRAMES } from '../src/art/kit';
 import { DEATH_FPS, DEATH_TIME, ENEMY_RIM, onGrid, strike } from '../src/art/mkit';
 import type { Canvas } from '../src/art/mkit';
@@ -47,6 +49,7 @@ const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
 
 paintWithoutCanvas();
+useMonsterAttacks(false);
 
 const BEASTS = makeBestiary();
 const VIEWS = ['front', 'back'] as const;

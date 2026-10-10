@@ -7,13 +7,13 @@
 // finger and a mage light pops on and off, for the ranger a squirrel runs out from under his cloak
 // and around his shoulders then back under"). The game screen and the class cards both use it.
 
-import type { ActorArt, Clip } from '../art/actor_types';
+import type { ActorArt, AnimSet, Clip } from '../art/actor_types';
 import { HERO_TAILS } from '../art/heroes';
 import { drawAura, drawGlow, drawLights, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { Tails } from '../engine/tails';
 import { TUNE } from '../game/defs';
-import type { SkillKind } from '../game/defs';
+import type { MonsterMove, SkillKind } from '../game/defs';
 import type { ClassId } from '../game/types';
 
 /** What the rules know about the hero that the picture needs. */
@@ -37,6 +37,8 @@ export interface FigureState {
    */
   holdT?: number;
   holdAs?: 'beam' | 'whirl';
+  /** The attack being wound up now is one that will be HELD (a beam): a figure with a picture of its own for that beginning (`clips.holdStart`) shows it, in place of the attack's own. */
+  holdSoon?: boolean;
   /** How far through a roll, 0..1, or absent or -1 when not rolling. A figure with a picture of its own for it (`clips.roll`) shows that. */
   rollK?: number;
   /**
@@ -57,6 +59,12 @@ export interface FigureState {
   walked?: number;
   /** How the hero walked since the last frame, in tiles (x, y; nothing, or none, when they did not): an attack made walking has the legs run under it (`clips.attackWalk`). */
   moved?: readonly [number, number];
+  /**
+   * A second swing may still come: the first of Strike's two has been made, and the time in which a
+   * second would follow it (the rules' Hero.combo and comboT) has not run out. An attack's end that
+   * waits for it (`Clip.poise`) holds there meanwhile.
+   */
+  poised?: boolean;
 }
 
 /**
@@ -165,10 +173,75 @@ export function attackFrame(c: Clip, age: number, wind: number): Sprite {
  * stop a rounding error short of nothing, and take one more step to land the blow): the picture
  * then stays a hair short of its blow, which is shown in the step the rules land theirs.
  */
-export function monsterAttackAge(windingUp: boolean, t: number, windup: number): number {
+export function monsterAttackAge(windingUp: boolean, t: number, windup: number, recover: number = TUNE.monsterRecover): number {
   const left = Math.max(0, t);
   if (windingUp) return windup > 0 ? windup * (1 - Math.max(NOT_YET, Math.min(1, left / windup))) : 0;
-  return windup + TUNE.monsterRecover - Math.min(TUNE.monsterRecover, left);
+  // (`recover`: what the rules count after the blow; THE MONSTERS' ATTACKS give each move its own)
+  return windup + recover - Math.min(recover, left);
+}
+
+/**
+ * THE MONSTERS' ATTACKS (game/defs.ts MONSTER_MOVES): the picture of a monster making move `mv`, seen
+ * one way round (`set`), played by the rules' clock as its one attack always was (its blow in the
+ * step the rules land theirs); null if the figure has no picture of that move. The trolls' swing, the
+ * red troll's charge (his roar and scrape, his run going round for as long as he runs, his pulling
+ * up) and the Warden's swing and his calling of the dead are the art chat's (AnimSet.clips.moves);
+ * the slam and the bolts are the pictures they have always had (`attack`, `heavy`).
+ * `m`: the monster's state, what the rules have left to count (`t`), and how long it has been at
+ * what it is doing (`animT`: his run).
+ */
+export function moveFrame(set: AnimSet, m: { state: string; t: number; animT: number }, mv: MonsterMove): Sprite | null {
+  const clips = set.clips;
+  const more = clips?.moves;
+  if (m.state === 'charge') return more?.charge ? clipFrame(more.charge, m.animT) : null;
+  if (mv.id === 'charge' && m.state === 'recover') return more?.chargeStop ? clipFrame(more.chargeStop, mv.recover - m.t) : null;
+  const c = moveClip(set, mv);
+  if (!c || c.hit === undefined) return null;
+  return attackFrame(c, monsterAttackAge(m.state === 'windup', m.t, mv.windup, mv.recover), mv.windup);
+}
+
+/**
+ * The clip a move winds up and lands with (the charge: its wind-up, the roar and the scrape). THE NEW
+ * MONSTERS' (Version 19.9): their basic blows are their `attack` (the Boneward's thrust, the Golem's
+ * club swing, the champion's cleave); the Boneward's and the Golem's throws, the Boneward's shield and
+ * the champion's cry are clips of their own (art/new_mobs3.ts).
+ */
+export function moveClip(set: AnimSet, mv: MonsterMove): Clip | undefined {
+  const clips = set.clips;
+  const more = clips?.moves;
+  switch (mv.id) {
+    case 'swing':
+      return more?.swing ?? clips?.attack;
+    case 'throw':
+      return more?.throw;
+    case 'bash':
+      return more?.bash;
+    case 'rally':
+      return more?.rally;
+    case 'pierce':
+      return more?.pierce;
+    case 'censer':
+      return more?.censer;
+    case 'charge':
+      return more?.chargeWind;
+    case 'summon':
+      return more?.summon;
+    case 'bolts':
+      return clips?.heavy ?? clips?.attack;
+    default:
+      return clips?.attack;
+  }
+}
+
+/** A frame of a clip `t` seconds in; one that is held (its `loop`: the red troll's run) goes round from its loop. */
+export function clipFrame(c: Clip, t: number): Sprite {
+  const n = c.frames.length;
+  let i = Math.floor(Math.max(0, t) * c.fps + 1e-6);
+  if (c.loop !== undefined && i >= n) {
+    const from = Math.round(c.loop * c.fps);
+    i = from + ((i - from) % Math.max(1, n - from));
+  }
+  return c.frames[Math.max(0, Math.min(n - 1, i))];
 }
 /** The least of a wind-up that is still to come while the blow has not landed, as a share of it. */
 const NOT_YET = 1e-4;
@@ -190,6 +263,14 @@ export class Figure {
   private heldAs: 'beam' | 'whirl' = 'beam';
   /** How long ago a leap came down, in seconds, while the hero has stood there since (-1: not so). */
   private sinceLand = -1;
+  /**
+   * AN ATTACK'S FOLLOW-THROUGH, SEEN AFTER THE RULES' ATTACK (Clip.tail): the clip of the attack last
+   * shown, if its end may be seen, the moment of it then shown, and the seconds the hero has stood
+   * since (-1 while the attack is still being made).
+   */
+  private tailOf: Clip | null = null;
+  private tailAt = 0;
+  private sinceTail = -1;
   /** Where in its turn the run was when it was last shown (0 to 1), or -1 if what was last shown was not the run. */
   private runAt = -1;
   /** How long ago the hero came to a stand out of the run (AnimSet.stops), while standing there since (-1: not so); and which of the stops it is. */
@@ -233,6 +314,8 @@ export class Figure {
     this.loopFrom = 0;
     this.sinceHeld = -1;
     this.sinceLand = -1;
+    this.tailOf = null;
+    this.sinceTail = -1;
     this.runAt = -1;
     this.sinceStop = -1;
     this.stoodLast = true;
@@ -421,14 +504,24 @@ export class Figure {
       else if (this.sinceHeld >= 0) this.sinceHeld = st.attackAge < this.lastAge ? -1 : this.sinceHeld + dt;
       this.lastAge = st.attackAge;
       const letGo = this.sinceHeld >= 0 && !holding ? (this.heldAs === 'whirl' ? set.clips?.whirlEnd : set.clips?.release) : undefined;
+      // (the beginning of a held attack, while the rules wind it up, where the art has one)
+      const begun = !holding && st.holdSoon ? set.clips?.holdStart : undefined;
       if (held && held.frames.length > 1) s = heldFrame(held, st.holdT as number);
       else if (letGo) s = frameOf(letGo, this.sinceHeld);
+      else if (begun) s = attackFrame(begun, st.attackAge, st.attackWind);
       else if (c) s = attackFrame(c, st.attackAge, st.attackWind);
       else {
         const list = st.attackSkill === 1 && set.heavy ? set.heavy : set.attack;
         const k = st.attackAge < st.attackWind ? 0 : st.attackAge - st.attackWind < 0.14 ? 1 : 2;
         s = list[k];
       }
+      // (an attack whose end may be seen after the rules' attack: where it has got to)
+      this.tailOf = !(held && held.frames.length > 1) && !letGo && !begun && c && c.tail ? c : null;
+      if (this.tailOf) {
+        const hit = this.tailOf.hit ?? 0;
+        this.tailAt = st.attackAge < st.attackWind ? (st.attackWind > 0 ? (st.attackAge / st.attackWind) * hit : hit) : hit + (st.attackAge - st.attackWind);
+      }
+      this.sinceTail = -1;
     } else if (reeling) {
       // (rocked back by a blow: in place of the walk or the standing loop, for as long as it lasts)
       this.sinceHeld = -1;
@@ -469,7 +562,17 @@ export class Figure {
         this.stopOf = Math.round(ranAt * stops.length) % stops.length;
       } else if (this.sinceStop >= 0) this.sinceStop += dt;
       const stop = this.sinceStop >= 0 && stops ? stops[this.stopOf] : undefined;
-      if (land && this.sinceLand < (land.frames.length - 1) / land.fps) {
+      // (the rest of an attack's follow-through, Clip.tail: from where it had got to, to its end)
+      const tail = this.tailOf;
+      if (tail) this.sinceTail = this.sinceTail < 0 ? 0 : this.sinceTail + dt;
+      // (while a second swing may still come, an end that waits for it holds where that begins)
+      if (tail && tail.poise !== undefined && st.poised && this.tailAt + this.sinceTail > tail.poise) this.sinceTail = Math.max(0, tail.poise - this.tailAt);
+      if (tail && this.tailAt + this.sinceTail < (tail.frames.length - 1) / tail.fps) {
+        s = frameOf(tail, this.tailAt + this.sinceTail);
+        this.loopFrom = st.animT;
+        this.stood = 0;
+        this.sinceStop = -1;
+      } else if (land && this.sinceLand < (land.frames.length - 1) / land.fps) {
         s = frameOf(land, this.sinceLand);
         // (the standing loop takes up from its first frame when he is up)
         this.loopFrom = st.animT;
@@ -483,8 +586,14 @@ export class Figure {
       } else {
         this.sinceLand = -1;
         this.sinceStop = -1;
+        this.tailOf = null;
         s = this.standingFrame(art, away, st.animT, dt, standing && gestures);
       }
+    }
+    // (anything but the attack itself or standing ends its follow-through)
+    if (!stands && anim !== 'attack') {
+      this.tailOf = null;
+      this.sinceTail = -1;
     }
     // (anything but standing ends coming to a stand)
     if (!stands) this.sinceStop = -1;
@@ -597,6 +706,18 @@ export class Figure {
     if (q >= 1) return [x - s.ax * scale, s.w * scale];
     const half = (v: number): number => Math.round(v * 2) / 2;
     return [half(x - s.ax * scale * q), Math.max(0.5, half(s.w * scale * q))];
+  }
+
+  /**
+   * Where the power the figure last shown holds burns (the mage's crystal: art/kit.ts, Charge), from
+   * its feet in game pixels (right and down), and how hot; null if it holds none. In a turn it closes
+   * in on the middle with the figure, and in a fall it dies with the light.
+   */
+  charge(): { dx: number; dy: number; heat: number } | null {
+    const s = this.last;
+    if (!s || !s.charge) return null;
+    const q = Math.min(1, this.squash);
+    return { dx: (s.charge.x - s.ax) * q, dy: s.charge.y - s.ay, heat: s.charge.heat * (1 - this.gone) };
   }
 
   /** Add the lights of the figure last shown (a lit blade, a crystal, a glowing feather). Call it after any darkness is laid down. */

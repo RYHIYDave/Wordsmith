@@ -13,13 +13,19 @@ import nodeAssert from 'node:assert/strict';
 
 import type { ActorArt, AnimSet, Clip } from '../src/art/actor_types';
 import { makeHeroArt3 } from '../src/art/heroes3';
-import { GRIP, MOVES3, RANGER_STANCES, SETTLES, UNITS_PER_TILE, arrowTip, useRangerStances } from '../src/art/moves3';
+import { GRIP, MAGE_STANCES, MOVES3, RANGER_STANCES, SETTLES, UNITS_PER_TILE, WILD, arrowTip, useMageStances, useRangerStances, useWild } from '../src/art/moves3';
 import type { Move3 } from '../src/art/moves3';
 import { bonesAt, solve } from '../src/art/skeleton';
 import { RANGER_ARROW } from '../src/game/defs';
 import type { Sprite } from '../src/engine/px';
 import { Figure } from '../src/render/figure';
 import type { FigureState } from '../src/render/figure';
+
+// (VERSION 19.7: the mage's stances and every hero's moves big and wild are the game's own, art/moves3.ts
+// MAGE_STANCES and WILD, put in place as moves3.ts loads. This file's tests were written with them off,
+// and hold them off, as they were then; tests/wild.test.ts and tests/mage_stances.test.ts ask of them on.)
+useWild(false);
+useMageStances(false);
 
 interface Assert {
   ok(value: unknown, message?: string): void;

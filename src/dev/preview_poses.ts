@@ -3,21 +3,23 @@
 // stances). Painted by the game's own function (art/heroes3.ts, paintMove3), the scarf's and the
 // feather's flying ends settled as the game moves them.
 //   node tools/preview.mjs src/dev/preview_poses.ts shots/x.png 1800 900 "ranger!|rstand@0=Battle|rtown@0=Town"
-//   hash = [ranger!][grip!]<move>@<seconds>[=<what it is called>]|...   (ranger!: art/moves3.ts RANGER_STANCES on; grip!: GRIP on)
+//   hash = [ranger!][mage!][wild!][grip!]<move>@<seconds>[=<what it is called>]|...   (ranger!: art/moves3.ts RANGER_STANCES on; grip!: GRIP on)
 import { paintMove3 } from '../art/heroes3';
 import { MAGE_TAILS } from '../art/hero_mage';
 import { RANGER_TAILS } from '../art/hero_ranger';
 import { WARRIOR_TAILS } from '../art/hero_warrior';
-import { MOVES3, useGrippingRuns, useRangerStances } from '../art/moves3';
+import { MOVES3, useGrippingRuns, useMageStances, useRangerStances, useWild } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
 import type { GameView } from '../art/skin';
 import { Tails } from '../engine/tails';
 
 let list = decodeURIComponent(location.hash.slice(1)) || 'ranger!|rstand@0=Battle';
 for (;;) {
-  const m = list.match(/^(ranger|grip)!\|?/);
+  const m = list.match(/^(ranger|mage|grip|wild)!\|?/);
   if (!m) break;
   if (m[1] === 'ranger') useRangerStances(true);
+  else if (m[1] === 'mage') useMageStances(true);
+  else if (m[1] === 'wild') useWild(true);
   else useGrippingRuns(true);
   list = list.slice(m[0].length);
 }

@@ -3,7 +3,7 @@
 
 import type { VendorId } from './state';
 import type { AbilityId, Attr, ClassId, Element, Limit, MonsterKind, Slot, WeaponKind, WordId } from './types';
-import { ALL_WORD_IDS, WORD_IDS } from './types';
+import { ALL_WORD_IDS, NEW_KINDS, WORD_IDS } from './types';
 
 export type { Limit } from './types';
 
@@ -427,19 +427,375 @@ export interface MonsterDef {
   /** First dungeon it appears in, and how common it is in a pack. */
   minDepth: number;
   weight: number;
+  /** MONSTER SIZES (below): how big it is, which says how many come in a pack of it. */
+  size: MonsterSize;
 }
 
 export const MONSTERS: Record<MonsterKind, MonsterDef> = {
-  skeleton: { kind: 'skeleton', name: 'Skeleton', life: 22, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.32, range: 1.25, windup: 0.4, cooldown: 1.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 5 },
-  archer: { kind: 'archer', name: 'Bone Archer', life: 16, dmgMin: 4, dmgMax: 7, speed: 2.8, radius: 0.32, range: 8, windup: 0.55, cooldown: 2.0, xp: 7, ranged: true, projSpeed: 10, keepMax: 7, element: 'phys', aoe: 0, minDepth: 1, weight: 2 },
-  cultist: { kind: 'cultist', name: 'Cultist', life: 18, dmgMin: 6, dmgMax: 10, speed: 2.6, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 2, weight: 2 },
-  bat: { kind: 'bat', name: 'Cave Bat', life: 9, dmgMin: 3, dmgMax: 5, speed: 4.8, radius: 0.26, range: 0.95, windup: 0.22, cooldown: 1.0, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 3 },
+  skeleton: { kind: 'skeleton', name: 'Skeleton', life: 22, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.32, range: 1.25, windup: 0.4, cooldown: 1.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 5, size: 'small' },
+  archer: { kind: 'archer', name: 'Bone Archer', life: 16, dmgMin: 4, dmgMax: 7, speed: 2.8, radius: 0.32, range: 8, windup: 0.55, cooldown: 2.0, xp: 7, ranged: true, projSpeed: 10, keepMax: 7, element: 'phys', aoe: 0, minDepth: 1, weight: 2, size: 'small' },
+  cultist: { kind: 'cultist', name: 'Cultist', life: 18, dmgMin: 6, dmgMax: 10, speed: 2.6, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 2, weight: 2, size: 'small' },
+  bat: { kind: 'bat', name: 'Cave Bat', life: 9, dmgMin: 3, dmgMax: 5, speed: 4.8, radius: 0.26, range: 0.95, windup: 0.22, cooldown: 1.0, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 1, weight: 3, size: 'tiny' },
   // (THE BRUTE: 49 of life since Version 18.7; 70 until then. The owner, 7 Oct 2026, of guardians, which are brutes, 19:35:
   // "just big damage sponges and could use at least a 30% reduction in HP"; and of elite brutes, 21:10: "yes, every
   // interation of that mob type". So every kind of brute, plain, elite and guardian, has 30% less life than it had.)
-  brute: { kind: 'brute', name: 'Brute', life: 49, dmgMin: 14, dmgMax: 20, speed: 2.2, radius: 0.55, range: 1.7, windup: 0.85, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.7, minDepth: 3, weight: 1 },
-  warden: { kind: 'warden', name: 'Warden', life: 420, dmgMin: 18, dmgMax: 26, speed: 2.5, radius: 0.8, range: 2.6, windup: 0.95, cooldown: 2.4, xp: 150, ranged: false, projSpeed: 8, keepMax: 0, element: 'phys', aoe: 2.4, minDepth: 99, weight: 0 },
+  brute: { kind: 'brute', name: 'Brute', life: 49, dmgMin: 14, dmgMax: 20, speed: 2.2, radius: 0.55, range: 1.7, windup: 0.85, cooldown: 2.3, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.7, minDepth: 3, weight: 1, size: 'medium' },
+  warden: { kind: 'warden', name: 'Warden', life: 420, dmgMin: 18, dmgMax: 26, speed: 2.5, radius: 0.8, range: 2.6, windup: 0.95, cooldown: 2.4, xp: 150, ranged: false, projSpeed: 8, keepMax: 0, element: 'phys', aoe: 2.4, minDepth: 99, weight: 0, size: 'boss' },
+  // THE NEW MONSTERS (Version 19.9; NEW_MONSTERS, below): in no dungeon while it is off. Their blows land
+  // when their pictures' do (`windup`: art/new_mobs3.ts SHADE_HIT, BW_HIT, GOLEM_SWING_HIT, CHAMPION_HIT).
+  // THE SHADE, small: light and quick, fun to smash; its one attack, the rake.
+  shade: { kind: 'shade', name: 'Shade', life: 14, dmgMin: 4, dmgMax: 7, speed: 3.4, radius: 0.3, range: 1.1, windup: 0.5, cooldown: 1.3, xp: 5, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 2, weight: 2, size: 'small' },
+  // THE BONEWARD, medium: plodding, behind its shield; its thrust, and its spear thrown from afar (SPEAR).
+  boneward: { kind: 'boneward', name: 'Boneward', life: 40, dmgMin: 9, dmgMax: 13, speed: 1.5, radius: 0.4, range: 1.6, windup: 0.7, cooldown: 2.0, xp: 14, ranged: false, projSpeed: 7, keepMax: 0, element: 'phys', aoe: 0, minDepth: 3, weight: 1.5, size: 'medium' },
+  // THE OSSUARY GOLEM, large: slow and menacing; its club swing, and the skulls it hurls (SKULL).
+  golem: { kind: 'golem', name: 'Ossuary Golem', life: 100, dmgMin: 16, dmgMax: 24, speed: 1.3, radius: 0.68, range: 1.8, windup: 0.6, cooldown: 2.4, xp: 30, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 4, weight: 0.8, size: 'large' },
+  // THE SKELETON CHAMPION: never a pack of his own (no weight): a yellow pack of skeletons' leader, with a
+  // skeleton's life (three times it, as a leader) and his cleave and his rallying cry (RALLY).
+  champion: { kind: 'champion', name: 'Skeleton Champion', life: 22, dmgMin: 6, dmgMax: 9, speed: 1.6, radius: 0.34, range: 1.5, windup: 0.8, cooldown: 2.0, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // THE OTHER LEADERS (the art chat's mockup/more-leaders, his yes by 15:17, 15:34 and 15:46), each with
+  // the life and blows of those he leads (three times the life, as a leader) and a move of his own.
+  // THE BONE MARKSMAN, leader of bone archers: a head taller, still and patient; his shot (art/new_mobs3.ts
+  // MK_SHOT_HIT) and his great shot (AIM).
+  marksman: { kind: 'marksman', name: 'Bone Marksman', life: 16, dmgMin: 4, dmgMax: 7, speed: 1.8, radius: 0.34, range: 9, windup: 0.7, cooldown: 2.2, xp: 7, ranged: true, projSpeed: 10, keepMax: 8, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // THE HIGH PRIEST, leader of cultists: their size, a slow procession (art/monster_cultist.ts
+  // PROCESSION_FPS, 9 frames a second to their 14); their fire bolt, and his censer (SMOKE).
+  priest: { kind: 'priest', name: 'High Priest', life: 18, dmgMin: 6, dmgMax: 10, speed: 1.7, radius: 0.32, range: 7.5, windup: 0.75, cooldown: 2.7, xp: 8, ranged: true, projSpeed: 6.5, keepMax: 6.5, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // THE TROLL CHIEFTAIN, leader of green trolls: bigger than the red troll; his trolls' swing and slam, a
+  // fifth slower (his pictures, in art/monster_brute.ts), heavier; no bellow, by his word.
+  chieftain: { kind: 'chieftain', name: 'Troll Chieftain', life: 49, dmgMin: 14, dmgMax: 20, speed: 1.6, radius: 0.62, range: 1.9, windup: 1.03, cooldown: 2.8, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.9, minDepth: 99, weight: 0, size: 'medium' },
 };
+
+/**
+ * MONSTER PACKS (Version 19.7). THEIR SIZES: the owner, 9 Oct 2026, 07:49: "Let’s add a few rules to
+ * monsters.  Size designation which affects pack size.  Tiny, small, medium, large, and boss.  Tiny is
+ * our bats, small are our skeletons, medium is the green trolls, large the red, and the boss is the
+ * boss.  Medium there should be 3-5 in a pack.  You can kinda extrapolate from there". Asked "Pack
+ * sizes by monster size, extrapolated: tiny (bats) 6 to 10, small (skeletons, archers, cultists) 4 to
+ * 7, medium (green trolls) 3 to 5, large (red ones) 1 to 2, the boss alone. The first dungeon stays
+ * gentler. Right?", he answered: "All mob types have their own packs unless otherwise stated.  And
+ * these can change with a pack size modifier on a word for the gate." And of that word: "Twin: half
+ * again as big (Recommended)" (and at 08:02: "Also can we change “half again” to 50% increased."). So:
+ * a pack is of one kind, its size by the kind's size; the green troll is the brute, the red the
+ * guardian (a brute of the guardian's rank, a pack of guardians alone); Twin burned in at the gate
+ * gives every pack 50% increased size (and every monster Twin, as every word burned in at the gate
+ * does). BLUE AND YELLOW PACKS: PACKS, below. ON: his "Now, on its own (Recommended)" (07:56), and by
+ * 08:41, of the art chat's mage stances and wild skills, "With today's packs (Recommended)".
+ */
+export type MonsterSize = 'tiny' | 'small' | 'medium' | 'large' | 'boss';
+export const MONSTER_PACKS = { on: true };
+/** How many come in a pack, by size: the fewest and the most. */
+export const PACK_BY_SIZE: Record<MonsterSize, readonly [number, number]> = { tiny: [6, 10], small: [4, 7], medium: [3, 5], large: [1, 2], boss: [1, 1] };
+/** The first dungeon's, gentler (THE FIRST LEVELS: FIRST_DUNGEON). */
+export const FIRST_PACK_BY_SIZE: Record<MonsterSize, readonly [number, number]> = { tiny: [3, 5], small: [2, 4], medium: [2, 3], large: [1, 1], boss: [1, 1] };
+/** Twin burned in at the gate: every pack this many times as big (50% increased size), rounded. */
+export const GATE_TWIN_PACKS = 1.5;
+/** A monster's size: the guardian, a brute of the guardian's rank, is large. */
+export function sizeOf(kind: MonsterKind, champion = false): MonsterSize {
+  return champion ? 'large' : MONSTERS[kind].size;
+}
+/** How many come in a pack of this size at this depth (the first dungeon gentler). */
+export function packRange(size: MonsterSize, depth: number): readonly [number, number] {
+  return FIRST_LEVELS.on && depth <= 1 ? FIRST_PACK_BY_SIZE[size] : PACK_BY_SIZE[size];
+}
+
+/**
+ * BLUE AND YELLOW PACKS (with MONSTER_PACKS). The owner, 9 Oct 2026, 08:02: "A magic pack (blue) is
+ * affected by one word, and that would mean everything in that pack was affected by the word.  A
+ * yellow pack would give the leader of the pack a word or two (I don’t remember how we designed that),
+ * and the other in the pack become “minions” of the leader, gaining 50% of the words bonus.  So we
+ * have a pack of skeletons.  The skeleton champion, who let’s say has an old rusty helmet and a two
+ * handed sword, has Flame, and the smaller minions would essentially have a 50% Flame." How often,
+ * his answers: "1 in 4, from dungeon 2 (Recommended)" and "Elite rooms, plus 1 in 10". How tough,
+ * 08:10: "Rare (yellow) mobs should take a bit longer to kill than your regular version of that mob.
+ * And blue mobs as well.  Time to kill for a magic (blue) pack should be slightly less than the rare
+ * mob and his minions."; and to the numbers below, "Yes, those numbers (Recommended)". The leader has
+ * an elite's words, one, two from dungeon 6 (none in the first dungeon: THE FIRST LEVELS), and an
+ * elite's harder blows (TUNE.eliteDmg); a blue pack's monsters and the minions hit as their kind does,
+ * but for their words. A pack of 4 to 7 skeletons, blue, is 4.8 to 8.4 skeletons' life to cut through;
+ * yellow, 6 to 9.
+ */
+export const PACKS = {
+  /**
+   * Of the packs that are not an elite room's or a guardian's, from dungeon `from`: the share that are
+   * yellow, and that are blue. (The first dungeon keeps the one room of elites THE FIRST LEVELS gave
+   * it, and nothing more: the owner, 8 Oct 2026, 20:36, of being thrown in at the start: "It feels a
+   * little too abrupt".)
+   */
+  yellow: 0.1,
+  blue: 0.25,
+  from: 2,
+  /** A yellow pack's leader: its life, times. (Until Version 19.7 an elite had 4 times.) */
+  leaderLife: 3,
+  /** A blue pack's monsters: their life, times (20% increased), and what they are worth, the same. */
+  blueLife: 1.2,
+  /** A minion: the share it has of each of its leader's words. */
+  minion: 0.5,
+};
+/**
+ * How a blue or a yellow pack is told apart, until the art chat's own markers come: as an elite is,
+ * with a ring and a bar always over it; a blue pack's name written once, in blue, over the first of
+ * it in sight (a name over each was a pile of letters), and a yellow pack's leader named in yellow
+ * (the colours of magic and rare things); the minions as they always are. His yes, by 9 Oct 2026,
+ * 09:46, to Packs_look.png, "Use this look for blue and yellow packs until the art chat's markers
+ * come?": "Yes, as shown (Recommended)". Off, a yellow pack's leader looks as any elite does, and
+ * the others as ordinary monsters (for pictures beside it).
+ */
+export const PACK_LOOK = { on: true };
+/** What a pack is: plain, blue (magic) or yellow (rare). A guardian's pack is none of them. */
+export type PackRarity = 'plain' | 'blue' | 'yellow';
+/**
+ * Which of them a pack of `kind` is, drawn from `roll` (a number in [0, 1)): an elite room's is yellow.
+ * BATS ARE NEVER A YELLOW PACK (Version 19.9). The owner to the art chat, by 9 Oct 2026, 14:32: “Bats I
+ * dont think need a leader”; asked in this chat “Today a pack of bats can still come yellow, with a
+ * leader. Change that?”, by 16:05: “Bats never come yellow (Recommended)” (“A pack of bats is plain or
+ * blue, never led.”). So a pack of bats is blue as often as any other (1 in 4, from dungeon 2), and
+ * otherwise plain; and an elite room is never bats (game/dungeon.ts, `eliteKinds`).
+ */
+export function packRarity(eliteRoom: boolean, depth: number, roll: number, kind?: MonsterKind): PackRarity {
+  const led = kind !== 'bat';
+  if (eliteRoom && led) return 'yellow';
+  if (depth < PACKS.from) return 'plain';
+  if (!led) return roll < PACKS.blue ? 'blue' : 'plain';
+  return roll < PACKS.yellow ? 'yellow' : roll < PACKS.yellow + PACKS.blue ? 'blue' : 'plain';
+}
+/** Which monsters a pack may be of, `depth` dungeons down (an elite room's, `elite`: never bats, whose packs are never yellow). */
+export function packKinds(depth: number, elite = false): MonsterDef[] {
+  return Object.values(MONSTERS).filter((m) => m.weight > 0 && m.minDepth <= depth && (NEW_MONSTERS.on || !NEW_KINDS.includes(m.kind)) && !(elite && m.kind === 'bat'));
+}
+/**
+ * How much of word `w`'s power a monster has: all of it, PACKS.minion of it (a minion, of its
+ * leader's words: `half`), or none (it does not have the word).
+ */
+export function wordShare(m: { words: readonly WordId[]; half?: readonly WordId[]; rallyT?: number }, w: WordId): number {
+  if (!m.words.includes(w)) return 0;
+  // (THE SKELETON CHAMPION'S RALLYING CRY, Version 19.9: his minions' words whole for a while: RALLY)
+  return m.half && m.half.includes(w) && !(m.rallyT !== undefined && m.rallyT > 0) ? PACKS.minion : 1;
+}
+
+/**
+ * THE MONSTERS' ATTACKS (Version 19.8). The owner, 9 Oct 2026, 08:15: "Tiny and small mobs should
+ * have one attack.  Medium two attacks, large 2-3, and the boss 4.  They should always have a basic,
+ * single target attack.  That way when their big telegraphed slams or spells go on cooldown, and they
+ * have their mace swing or magic missile to use in between.  The bigger the hit, the longer the
+ * cooldown." His yes to the moves: the green troll (the brute) a club swing and its slam; the red troll
+ * (the guardian) a club swing, the slam and a charge along a marked line; the boss a swing, his slam,
+ * his fan of bolts and his skeleton summon as his fourth ("The boss doesn’t need the ring of fire as he
+ * has the skeleton summon which should be designated as an attack"). The art chat drew the new moves,
+ * each with his yes (art/monster-attacks: the swings and the charge by 09:57, the Warden's swing by
+ * 10:18, the dead he calls crawling out of the ground by 10:23).
+ *
+ * So a monster that has moves here (the others have their one attack, as before) attacks with the
+ * biggest of them that is ready and that the hero is in reach of, and with its basic blow, the first,
+ * while the big ones cool down. A big move, once used, is not used again for its own `cooldown`; after
+ * any move the monster waits its `after` before the next (Swift shortens both, as it shortens a
+ * monster's wait today, and Frenzied hastens both). ON SINCE VERSION 19.8: his yes by 9 Oct 2026, 12:48,
+ * to films of them in the game (green_trolls.gif, red_troll.gif, warden.gif), asked "Should the
+ * monsters' attacks go into the game as they are in these films?": "Yes, as shown (Recommended)".
+ * Switched off (for pictures beside it, and the tests written before it), every monster attacks as it
+ * did until Version 19.8 (its one attack: MONSTERS, `windup`, `cooldown`, `aoe`; and the Warden his
+ * slam near, his bolts far, and the dead called at two thirds and one third of his life, in a flash
+ * of frost). The art chat's pictures of the new moves go on and off with it (art/bestiary.ts,
+ * useMonsterAttacks, as that file loads).
+ */
+export const MONSTER_ATTACKS = { on: true };
+/**
+ * ('swing': a monster's basic blow, its single-target attack: the trolls' and the Warden's club swing,
+ * and since Version 19.9 the Boneward's thrust, the Golem's club swing and the skeleton champion's
+ * cleave. THE NEW MONSTERS' others: 'throw', the Boneward's spear and the Golem's skulls; 'bash', the
+ * Boneward's shield while its spear is gone; 'rally', the skeleton champion's rallying cry. 'shoot':
+ * the basic blow of a leader who shoots, the bone marksman's arrow and the high priest's fire bolt, as
+ * those they lead shoot; 'pierce', the marksman's great shot; 'censer', the high priest's burning smoke.)
+ */
+export type MoveId = 'swing' | 'slam' | 'bolts' | 'charge' | 'summon' | 'throw' | 'bash' | 'rally' | 'shoot' | 'pierce' | 'censer';
+export interface MonsterMove {
+  id: MoveId;
+  /** Seconds of warning before it lands (its picture is fitted to it: a monster's clip's `hit`). */
+  windup: number;
+  /** How hard it hits, times the monster's own blow (rolled between its dmgMin and dmgMax): for the bolts, each bolt. */
+  dmg: number;
+  /** Seconds before it may be used again (0: the basic blow, used whenever the monster may attack). */
+  cooldown: number;
+  /** Seconds from waking before it may first be used (from half of it to half as much again, by the monster: so a pack does not slam all at once). */
+  first: number;
+  /** Seconds after it before the monster attacks again (its `cd`). */
+  after: number;
+  /** Seconds after it lands that the monster stands, getting over it (its picture runs on through them). */
+  recover: number;
+  /** The hero's distance from it (tiles, middle to middle) at which it is used: from `near` to `far`; `far` 0 is the monster's own reach. */
+  near: number;
+  far: number;
+}
+/** Which moves a monster has: by its figure (the green troll is the brute; the red, a brute of the guardian's rank; and THE NEW MONSTERS of Version 19.9). */
+export type MovesOf = 'brute' | 'guardian' | 'warden' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain';
+/**
+ * The moves, the basic blow first and the biggest last; the bigger the hit, the longer its cooldown.
+ * The trolls' swing and the Warden's land when their pictures' blows do (art/monster_brute.ts
+ * SWING_HIT, art/monster_warden.ts WARDEN_SWING_HIT and SUMMON_RISE; the charge sets off at
+ * CHARGE_GO); the slams and the bolts keep the wind-ups they have had. They hit a hero who stands and
+ * takes it about as hard as their one attack did (tools/measure_moves.ts: 40 seconds beside each in a
+ * practice room, its words taken off: the green troll 7% less; the red 3% less, and 3% more from six
+ * tiles off, where he charges; the Warden's own blows 3% more beside him and the same from six tiles
+ * off, the dead he calls besides).
+ */
+export const MONSTER_MOVES: Record<MovesOf, readonly MonsterMove[]> = {
+  brute: [
+    { id: 'swing', windup: 0.6, dmg: 0.6, cooldown: 0, first: 0, after: 1.7, recover: 0.55, near: 0, far: 0 },
+    { id: 'slam', windup: 0.85, dmg: 1, cooldown: 6, first: 2, after: 2.3, recover: 0.3, near: 0, far: 0 },
+  ],
+  guardian: [
+    { id: 'swing', windup: 0.6, dmg: 0.65, cooldown: 0, first: 0, after: 1.7, recover: 0.55, near: 0, far: 0 },
+    { id: 'slam', windup: 0.85, dmg: 1, cooldown: 7, first: 2, after: 2.3, recover: 0.3, near: 0, far: 0 },
+    { id: 'charge', windup: 0.9, dmg: 1.3, cooldown: 9, first: 0, after: 2.2, recover: 0.6, near: 3.5, far: 9 },
+  ],
+  warden: [
+    { id: 'swing', windup: 0.7, dmg: 0.8, cooldown: 0, first: 0, after: 1.5, recover: 0.55, near: 0, far: 0 },
+    { id: 'bolts', windup: 0.7, dmg: 0.5, cooldown: 3.5, first: 0, after: 2.4, recover: 0.3, near: 3.4, far: 12 },
+    { id: 'slam', windup: 0.95, dmg: 1, cooldown: 8, first: 3, after: 2.4, recover: 0.3, near: 0, far: 3.4 },
+    { id: 'summon', windup: 1.1, dmg: 0, cooldown: 18, first: 9, after: 1.5, recover: 0.8, near: 0, far: 12 },
+  ],
+  // THE NEW MONSTERS (Version 19.9, NEW_MONSTERS below): the Boneward (medium) its thrust and its spear
+  // thrown from afar, and while its spear is gone its shield (art/new_mobs3.ts BW_HIT, BW_BASH_HIT,
+  // BW_THROW_HIT); the Golem (large) its club swing and its skulls (GOLEM_SWING_HIT, GOLEM_THROW_HIT; its
+  // slam, painted, is not given it: "every attack is a big slam on the ground", his word of 09:17); the
+  // skeleton champion, a small pack's leader, his cleave and his rallying cry (CHAMPION_HIT, RALLY_CRY:
+  // "Pack leaders that are different mobs can have an extra attack if it seems right", 08:24).
+  boneward: [
+    { id: 'swing', windup: 0.7, dmg: 1, cooldown: 0, first: 0, after: 1.9, recover: 0.5, near: 0, far: 0 },
+    { id: 'bash', windup: 0.55, dmg: 0.7, cooldown: 0, first: 0, after: 1.6, recover: 0.5, near: 0, far: 0 },
+    { id: 'throw', windup: 0.75, dmg: 1.3, cooldown: 6, first: 0.6, after: 1.2, recover: 0.55, near: 3.5, far: 8 },
+  ],
+  golem: [
+    { id: 'swing', windup: 0.6, dmg: 0.6, cooldown: 0, first: 0, after: 2.0, recover: 0.55, near: 0, far: 0 },
+    { id: 'throw', windup: 0.95, dmg: 1.1, cooldown: 5, first: 1, after: 2.2, recover: 0.55, near: 2.5, far: 10 },
+  ],
+  champion: [
+    { id: 'swing', windup: 0.8, dmg: 1.3, cooldown: 0, first: 0, after: 2.0, recover: 0.6, near: 0, far: 0 },
+    { id: 'rally', windup: 0.85, dmg: 0, cooldown: 14, first: 2, after: 1.4, recover: 0.9, near: 0, far: 10 },
+  ],
+  // THE OTHER LEADERS: the marksman his shot and his great shot, from 2.5 to 13 tiles off (MK_SHOT_HIT,
+  // MK_PIERCE_HIT); the high priest his fire bolt and his censer, within 3.2 tiles (CENSER_HIT; its
+  // `dmg` the whole of what the smoke does to one who stays in it); the chieftain his trolls' swing and
+  // slam, heavier, each a fifth slower than theirs (the blows of his pictures, 0.733 s and 1.033 s).
+  marksman: [
+    { id: 'shoot', windup: 0.7, dmg: 1, cooldown: 0, first: 0, after: 2.2, recover: 0.5, near: 0, far: 0 },
+    { id: 'pierce', windup: 1.6, dmg: 2.2, cooldown: 8, first: 2, after: 2.0, recover: 0.9, near: 2.5, far: 13 },
+  ],
+  priest: [
+    { id: 'shoot', windup: 0.75, dmg: 1, cooldown: 0, first: 0, after: 2.7, recover: 0.3, near: 0, far: 0 },
+    { id: 'censer', windup: 0.8, dmg: 1.8, cooldown: 7, first: 1.5, after: 2.0, recover: 0.55, near: 0, far: 3.2 },
+  ],
+  chieftain: [
+    { id: 'swing', windup: 0.73, dmg: 0.7, cooldown: 0, first: 0, after: 2.0, recover: 0.6, near: 0, far: 0 },
+    { id: 'slam', windup: 1.03, dmg: 1.2, cooldown: 7, first: 2, after: 2.6, recover: 0.35, near: 0, far: 0 },
+  ],
+};
+/** Which moves a monster has (none: its one attack, as before; the Shade, small, has its one, the rake). */
+export function movesOf(m: { kind: MonsterKind; champion: boolean }): readonly MonsterMove[] | null {
+  if (!MONSTER_ATTACKS.on) return null;
+  switch (m.kind) {
+    case 'warden':
+      return MONSTER_MOVES.warden;
+    case 'brute':
+      return m.champion ? MONSTER_MOVES.guardian : MONSTER_MOVES.brute;
+    case 'boneward':
+      return MONSTER_MOVES.boneward;
+    case 'golem':
+      return MONSTER_MOVES.golem;
+    case 'champion':
+      return MONSTER_MOVES.champion;
+    case 'marksman':
+      return MONSTER_MOVES.marksman;
+    case 'priest':
+      return MONSTER_MOVES.priest;
+    case 'chieftain':
+      return MONSTER_MOVES.chieftain;
+    default:
+      return null;
+  }
+}
+/**
+ * THE RED TROLL'S CHARGE: how fast he runs (tiles a second), how far past where the hero stood his run
+ * goes, and half the width of the line he runs along (more than half of him: what is in it when he
+ * comes is run down). The hero he runs down is knocked out of his way, this many times Heavy's knock.
+ */
+export const CHARGE = { speed: 10, past: 1.5, half: 0.75, knock: 2 };
+/**
+ * THE DEAD HE CALLS (the Warden's fourth move): how many, and a little after one another; each takes
+ * RISE seconds to crawl out of the ground (the skeleton's picture, art/mkit.ts CRAWL_TIME), and till
+ * it is out it is no more than a picture: not to be hit, and doing nothing. He calls no more while
+ * `most` of those he has called still stand.
+ */
+export const SUMMON = { count: 4, apart: 0.1, rise: 1.4, most: 6 };
+
+/**
+ * THE NEW MONSTERS (Version 19.9): the art chat's Shade, Boneward and Ossuary Golem, and the skeleton
+ * champion, each painted with his yes (the Shade's rake and the Golem's moves by 11:14, the Boneward's
+ * blows, redrawn with more weight at his word of 11:22, by 11:36; the champion by 12:19, "Yes, this is
+ * him (Recommended)"); and the rings that tell blue and yellow packs apart, by 12:19, "Yes, use the new
+ * rings (Recommended)" (render/pack_marks.ts PACK_MARKS). His pick by 16:05 of what comes next: "New
+ * monsters + rings (Recommended)". By his sizes: the Shade small, in packs of 4 to 7, from the second
+ * dungeon; the Boneward medium, 3 to 5, from the third; the Golem large, 1 or 2, from the fourth; the
+ * champion leads a yellow pack of skeletons; and the art chat's other leaders (by 15:46): the bone
+ * marksman leads bone archers, the high priest cultists, the troll chieftain green trolls. ON SINCE
+ * VERSION 19.9: asked, with films of all seven in the game and their rules, whether they go in as
+ * shown, he answered by 17:49: "Yes, as shown (Recommended)". Switched with their pictures and the
+ * rings (art/bestiary.ts useNewMonsters); the tests written before them hold it off.
+ */
+export const NEW_MONSTERS = { on: true };
+/**
+ * THE BONEWARD'S SPEAR (his pick by 09:33, "Spear throw": it hurls its spear at you from afar, then
+ * fights with its shield until it picks the spear up). Thrown at where the hero stands, `speed` tiles a
+ * second, from its hand (`hand` tiles before it, `z` of the game's pixels up: art/new_mobs3.ts handAt);
+ * what it meets of the hero on the way is hurt and it falls there, and otherwise it lies where it was
+ * aimed (or where a wall stopped it) until the Boneward picks it up. While its spear is gone it fights
+ * with its shield, of `bash` tiles' reach, when the hero is within `near` tiles of it; otherwise it goes
+ * for its spear (and with the spear within `close` tiles of it, whoever is near), stoops for it within
+ * `pick` tiles of it, and has it in hand again `grab` seconds into the `stoop` (art/new_mobs3.ts
+ * BW_GRAB, and the pick-up's length): a moment in which to hit it.
+ */
+export const SPEAR = { speed: 7, hand: 0.9, z: 21, bash: 1.0, near: 2.5, close: 1.2, pick: 0.55, grab: 0.5, stoop: 1.0 };
+/**
+ * THE GOLEM'S SKULLS (his pick by 09:30, "Hurl skulls (Recommended)"): thrown up high from its hand
+ * (`hand` tiles before it, `z` of the game's pixels up), over where the hero stood by six tenths of its
+ * `fly` seconds and falling onto it from `top` pixels; its own shadow on the floor shows where (no
+ * circle). What is within `r` tiles of where it comes down is hurt. Then it bursts (art/mob_shots.ts
+ * SKULL_BURST: `burst` seconds).
+ */
+export const SKULL = { fly: 1.1, top: 100, z: 31, hand: 0.9, over: 0.6, r: 1.1, burst: 0.7 };
+/**
+ * THE SKELETON CHAMPION'S RALLYING CRY (his brief by 11:51: "Cleave and a rallying cry (Recommended)":
+ * he raises his sword and roars, his minions' words flaring to full for a moment). When he cries, his
+ * minions within `reach` tiles of him have his words whole for `dur` seconds (MONSTER PACKS gave them
+ * half); he cries only when there is one to hear it whose words are half.
+ */
+export const RALLY = { dur: 5, reach: 8 };
+/**
+ * THE YELLOW PACKS' LEADERS (Version 19.9, with NEW_MONSTERS): a yellow pack of skeletons is led by the
+ * skeleton champion, of bone archers by the bone marksman, of cultists by the high priest, of green
+ * trolls by the troll chieftain (the art chat's, each with his yes); any other by one of its own.
+ * (Bats have no yellow packs: packRarity.)
+ */
+export const LEADERS: Partial<Record<MonsterKind, MonsterKind>> = { skeleton: 'champion', archer: 'marksman', cultist: 'priest', brute: 'chieftain' };
+/** What leads a yellow pack of `kind`. */
+export function leaderKind(kind: MonsterKind): MonsterKind {
+  return (NEW_MONSTERS.on && LEADERS[kind]) || kind;
+}
+/**
+ * THE BONE MARKSMAN'S GREAT SHOT (his "Yes, keep the line (Recommended)", by 15:17): while he draws and
+ * holds it, a line of aim on the floor from him toward the hero, running out from `from` seconds into
+ * his draw (the picture's nocking of the arrow); it follows the hero until `lock` seconds before he
+ * looses, and then holds still: step out of it. The great arrow flies along it at `speed` tiles a second
+ * for `range` tiles (walls stop it), `z` pixels over the floor, and PIERCES: whoever it meets on its way
+ * is hurt, and it flies on. `r`: half its width.
+ */
+export const AIM = { from: 0.52, lock: 0.4, speed: 16, range: 14, z: 14, r: 0.3 };
+/**
+ * THE HIGH PRIEST'S CENSER (his "Yes, keep it (Recommended)", by 15:34): its burning smoke settles on the
+ * floor before him, as far as `at` tiles (nearer if the hero is), `r` tiles across its middle, and burns
+ * whoever is in it every `tick` seconds for `dur` seconds (the move's `dmg` shared out over them), with
+ * fire. Step out of it.
+ */
+export const SMOKE = { at: 1.9, near: 1.0, r: 1.15, dur: 3, tick: 0.5 };
 
 export function scaleLife(depth: number): number {
   return 1 + 0.35 * (depth - 1);

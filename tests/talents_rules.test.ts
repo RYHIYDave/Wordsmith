@@ -26,7 +26,8 @@ interface Inside {
   volleys: Volley[];
   projectiles: Projectile[];
   stillT: number;
-  momentumT: number;
+  footworkT: number;
+  strokes: number;
   windT: number;
   spawn(kind: MonsterKind, x: number, y: number, pack: number, rank: 0 | 1 | 2, boss: boolean, rng: RNG): Monster;
   wakeUp(m: Monster): void;
@@ -129,7 +130,7 @@ test('switched off, talents written into a hero do nothing', () => {
   held(false, () => {
     const g = Game.forPractice('warrior', 5);
     const before = g.hero.d.maxLife;
-    g.hero.talents = ['thickskin', 'bloodlust'];
+    g.hero.talents = ['thickskin', 'honededge'];
     g.refresh();
     assert.equal(g.hero.d.maxLife, before);
     assert.equal(g.has('thickskin'), false);
@@ -138,22 +139,22 @@ test('switched off, talents written into a hero do nothing', () => {
 
 // ---- the warrior ------------------------------------------------------------------------------
 
-test('Thick Skin: life +15%; Bloodlust: all damage +15%', () => {
+test('Thick Skin: life +15%; Honed Edge: all damage +15%', () => {
   on(() => {
     const bare = room('warrior', []).g.hero.d;
-    const { g } = room('warrior', ['thickskin', 'bloodlust']);
+    const { g } = room('warrior', ['thickskin', 'honededge']);
     assert.equal(g.hero.d.maxLife, Math.round(bare.maxLife * 1.15));
     assert.equal(g.hero.d.stats.dmgPct, bare.stats.dmgPct + 15);
   });
 });
 
-test('Battle Rush: Leap ready again 30% sooner; Fury: Power and Frenzied stack to eight', () => {
+test('Drilled Leap: Leap ready again 30% sooner; Cadence: Power and Frenzied stack to eight', () => {
   on(() => {
     const bare = room('warrior', []).g.hero.skills[2].r.cooldown;
-    const { g } = room('warrior', ['battlerush', 'fury'], [[0, 'front', 'frenzied']]);
+    const { g } = room('warrior', ['drilledleap', 'cadence'], [[0, 'front', 'frenzied']]);
     assert.equal(SKILLS[g.hero.skills[2].id].kind, 'leap');
     near(g.hero.skills[2].r.cooldown, bare * 0.7, 'the leap\'s wait');
-    // eight uses of a Frenzied attack: eight stacks (five without Fury)
+    // eight uses of a Frenzied attack: eight stacks (five without Cadence)
     const inner = g as unknown as { boons(i: number): void };
     for (let k = 0; k < 10; k++) inner.boons(0);
     assert.equal(g.hero.frenzy, 8);
@@ -163,17 +164,26 @@ test('Battle Rush: Leap ready again 30% sooner; Fury: Power and Frenzied stack t
   });
 });
 
-test('Wrath: elites and bosses take 25% more; Berserk: below half life, 30% harder and faster', () => {
+test('Giant Slayer: elites and bosses take 25% increased damage; Master Stroke: every fourth hit landed a certain critical', () => {
   on(() => {
-    const { g, a } = room('warrior', ['wrath', 'berserk']);
+    const { g, a } = room('warrior', ['giantslayer', 'masterstroke']);
     const m = put(g, a, 'skeleton', 1, 0);
     const e = put(g, a, 'skeleton', 1, 1, 1);
     near(a.talentHitMult(m), 1, 'a plain monster');
     near(a.talentHitMult(e), 1.25, 'an elite');
-    const pace = g.frenzyPace();
-    g.hero.life = g.hero.d.maxLife * 0.4;
-    near(a.talentHitMult(m), 1.3, 'below half his life');
-    near(g.frenzyPace(), pace * 1.3, 'and faster');
+    // (no chance of a critical of his own: only the fourth hit is one)
+    g.hero.d.critChance = 0;
+    m.life = m.maxLife = 1e6;
+    const crits: boolean[] = [];
+    for (let k = 0; k < 8; k++) {
+      g.events.length = 0;
+      a.hitMonster(m, 0, 1, false);
+      crits.push(g.events.some((ev) => ev.t === 'hit' && ev.crit));
+    }
+    assert.deepEqual(crits, [false, false, false, true, false, false, false, true]);
+    // (a splash's hit is not one of them)
+    a.hitMonster(m, 0, 1, true);
+    assert.equal(a.strokes, 0);
   });
 });
 
@@ -227,9 +237,9 @@ test('Earthshaker: the leap lands with a quake that stuns everything near', () =
   });
 });
 
-test('Cleave: a melee hit splashes 30% of itself on the enemies beside', () => {
+test('Sweeping Cut: a melee hit splashes 30% of itself on the enemies beside', () => {
   on(() => {
-    const { g, a, seen } = room('warrior', ['cleave']);
+    const { g, a, seen } = room('warrior', ['sweepingcut']);
     const m = put(g, a, 'skeleton', 1.1, 0);
     const beside = put(g, a, 'skeleton', 1.4, 0.9);
     swing(g, seen, m);
@@ -240,12 +250,12 @@ test('Cleave: a melee hit splashes 30% of itself on the enemies beside', () => {
   });
 });
 
-test('Momentum: a kill, 25% faster for a second', () => {
+test('Footwork: a kill, 25% faster for a second', () => {
   on(() => {
-    const { g, a } = room('warrior', ['momentum']);
+    const { g, a } = room('warrior', ['footwork']);
     const m = put(g, a, 'skeleton', 1, 0);
     a.kill(m);
-    near(a.momentumT, 1, 'the second of speed');
+    near(a.footworkT, 1, 'the second of speed');
   });
 });
 

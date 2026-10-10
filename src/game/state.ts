@@ -263,7 +263,11 @@ export interface Hero {
   d: Derived;
 }
 
-export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover';
+/**
+ * ('charge': THE MONSTERS' ATTACKS, the red troll running down the line he marked: game/defs.ts CHARGE.
+ * 'pickup': THE NEW MONSTERS, the Boneward stooping for its spear: game/defs.ts SPEAR.)
+ */
+export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover' | 'charge' | 'pickup';
 
 export interface Monster {
   id: number;
@@ -285,6 +289,15 @@ export interface Monster {
   boss: boolean;
   /** Power words it has the powers of (elites and bosses), plus any burned into the dungeon. */
   words: WordId[];
+  /**
+   * MONSTER PACKS (game/defs.ts, PACKS): what it is in a blue or a yellow pack. 'blue': one of a
+   * blue pack, every one of which has the pack's word. 'leader': a yellow pack's leader, an elite.
+   * 'minion': one of a yellow pack's others, with its leader's words at half strength (`half`).
+   * Absent: a plain pack's, a guardian, the boss.
+   */
+  rarity?: 'blue' | 'leader' | 'minion';
+  /** Those of its words it has at half strength (a minion: its leader's). */
+  half?: WordId[];
   /** The words it will give up when it dies: the rune stones over its head. Most monsters have none. */
   carries: WordId[];
   state: MonsterState;
@@ -321,11 +334,12 @@ export interface Monster {
   shield: number;
   /**
    * WORDS4. Volatile's hidden bomb: seconds until the charge stuck on it bursts (0 = none), and for
-   * how much; Hexing: seconds left cursed (it takes more damage); Stilling: seconds left slowed in
-   * time; `split`: one of the smaller ones a Splitting monster broke into (it does not split again).
+   * how much (called the bomb in the code, not to be taken for a red troll's charge, `charge`);
+   * Hexing: seconds left cursed (it takes more damage); Stilling: seconds left slowed in time;
+   * `split`: one of the smaller ones a Splitting monster broke into (it does not split again).
    */
-  chargeT: number;
-  chargeDmg: number;
+  bombT: number;
+  bombDmg: number;
   hexT: number;
   stillT: number;
   split?: boolean;
@@ -339,11 +353,34 @@ export interface Monster {
   phase: number;
   /** Boss only: which attack is winding up (0 = ground smash, 1 = volley). */
   atk: number;
+  /**
+   * THE MONSTERS' ATTACKS (game/defs.ts, MONSTER_ATTACKS; a monster that has moves, movesOf): which of
+   * its moves it is making (an index into them; -1, or absent, none), and the seconds left before each
+   * may be used again (set as it wakes).
+   */
+  move?: number;
+  moveCd?: number[];
+  /** The red troll's charge: the line he runs along (from where he stood to where he will stop), and whether he has run the hero down on it yet. */
+  charge?: { x0: number; y0: number; x1: number; y1: number; hit: boolean };
+  /** THE NEW MONSTERS (game/defs.ts SPEAR): the Boneward's spear is out of its hand (flying, or lying where it fell: Game.spears). */
+  bare?: boolean;
+  /** THE NEW MONSTERS (game/defs.ts RALLY): a minion's seconds left of its leader's words whole, since the skeleton champion's cry. */
+  rallyT?: number;
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
   /** A per-monster random number for small variations (bat weaving, idle timing). */
   seed: number;
+}
+
+/**
+ * MONSTER PACKS: what a minion's blow carries of its leader's words (game/defs.ts, PACKS): which words
+ * it has at half strength, and its own element, which the rest of the blow keeps when one of them is
+ * Flame, Frost or Lightning (half of its blow is then of that element).
+ */
+export interface HalfWords {
+  words: readonly WordId[];
+  base: Element;
 }
 
 export interface Projectile {
@@ -358,8 +395,8 @@ export interface Projectile {
   /** Hostile shots: damage already rolled. Hero shots: fraction of a normal hit. */
   dmg: number;
   element: Element;
-  /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) */
-  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart';
+  /** 'mote': a familiar's small bolt. ('orb' was the mage's thrown orb until Version 12; nothing fires one now.) 'spear': the Boneward's, and 'great', the bone marksman's great arrow (Version 19.9). */
+  look: 'arrow' | 'orb' | 'bolt' | 'mote' | 'wave' | 'dart' | 'spear' | 'great';
   pierce: boolean;
   /** THE SKILL TREES (Piercing): how many more enemies a shot that does not pierce may still pass through. */
   pierceN?: number;
@@ -376,6 +413,8 @@ export interface Projectile {
   trail: number;
   /** Hostile shots: the words of the monster that fired it. */
   words: WordId[];
+  /** Hostile shots: a minion's, those of the words it has at half strength (MONSTER PACKS). */
+  half?: HalfWords;
   /** True once a rune (or a cloud) has been left, so an ability leaves only one. */
   runed: boolean;
   clouded: boolean;
@@ -395,10 +434,34 @@ export interface Projectile {
    * monsters alike, and `dmg` is the share of the life of whatever it meets.
    */
   trap?: boolean;
+  /** (THE NEW MONSTERS) The Boneward's spear: the monster that threw it, its whole way (tiles), and how high over the floor it left the hand (the game's pixels). */
+  src?: number;
+  way?: number;
+  z0?: number;
+  /** (THE NEW MONSTERS) A hostile shot that pierces (the marksman's great arrow): it has hurt the hero once, and flies on. */
+  struck?: boolean;
+}
+
+/**
+ * THE NEW MONSTERS (Version 19.9, game/defs.ts SPEAR): a Boneward's spear lying on the floor where it
+ * fell, pointing the way it flew, until its Boneward picks it up (`owner`: that monster's id). `flow`:
+ * the way to it, by the way one walks (worked out when it falls; null where nothing can walk to it).
+ */
+export interface Spear {
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  owner: number;
+  flow: Uint16Array | null;
 }
 
 /** 'cracks': Heavy behind, cracked ground that staggers; 'ward': Guarding behind, a circle the hero takes less harm in (Version 19.3). */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'vortex' | 'hex' | 'bubble';
+/** ('vortex', 'hex', 'bubble': THE NEW WORDS, behind WORDS4: what Pulling, Hexing and Stilling leave behind, each where its attack ended: game/defs.ts PULL, HEX and STILL.) */
+/** ('lane': THE MONSTERS' ATTACKS, the line a red troll will charge along: from (x, y) to (x1, y1), `r` half its width.) */
+/** ('skull': THE NEW MONSTERS, a skull the Golem has hurled: thrown from (x1, y1), coming down on (x, y) at `dur`, bursting after: game/defs.ts SKULL.) */
+/** ('aim': the bone marksman's line of aim for his great shot, from (x, y) to (x1, y1), its `t` of `dur` how far he has drawn: game/defs.ts AIM. 'smoke': the high priest's burning smoke, that burns the hero in it: SMOKE.) */
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke' | 'vortex' | 'hex' | 'bubble';
 
 export interface Zone {
   x: number;
@@ -420,6 +483,22 @@ export interface Zone {
   from: string;
   /** A warning laid by a monster's wind-up: that monster's id (a stun or a stagger breaks the attack off, and its warning with it). */
   src?: number;
+  /** A warning laid by a minion: those of its words it has at half strength (MONSTER PACKS). */
+  half?: HalfWords;
+  /** A charge's line ('lane'): where it ends; and while he runs it, how much of the way he has come (0 to 1). Its `t` of `dur` is how far his wind-up has gone. A Golem's skull ('skull'): where it was thrown from; `gone` 1 once it has come down. */
+  x1?: number;
+  y1?: number;
+  gone?: number;
+}
+
+/**
+ * THE MONSTERS' ATTACKS: one of the dead the Warden has called, crawling out of the ground (game/defs.ts
+ * SUMMON). Until it is out it is not among the monsters: a picture only, not to be hit, doing nothing.
+ * `age`: seconds since it began to come up (below 0: not yet; it comes up a little after the one before).
+ */
+export interface Riser {
+  m: Monster;
+  age: number;
 }
 
 /**

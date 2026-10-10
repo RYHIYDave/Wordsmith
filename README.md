@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (9 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.6).**
+**Status (9 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 19.9).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -182,6 +182,19 @@ front at 5, behind at 7 and 10. The stick goes at one speed.
 Version 19.6: the art chat's wordsmith made new on bones, a head taller, runes burning on him, and
 his ring big and wild; the quest item is the master rune-stone, lying by the fallen wordsmith's
 hand: carried home, it is laid into the wordsmith's slab and his dark ring powers up.
+Version 19.7: monsters come in packs of one kind, as many as their size says (bats 6 to 10,
+skeletons 4 to 7, green trolls 3 to 5, red ones 1 or 2); blue packs share one word, yellow packs
+have a leader with a word or two and minions with half of each; the mage fights from a guard of her
+own, and every hero's moves are big and wild.
+Version 19.8: the bigger monsters have more than one attack: the green troll swings its club
+between slams; the red troll charges down a line it marks on the floor; the Warden swings, slams,
+shoots his bolts from afar and calls the dead, who crawl out of the ground.
+Version 19.9: new monsters: the quick Shade from the second dungeon, the Boneward, who throws its
+spear and fights with its shield till it picks it up, from the third, and the Ossuary Golem, who
+hurls skulls, from the fourth; yellow packs have leaders of their own (the skeleton champion, whose
+cry makes his minions' words whole, the bone marksman's great shot, the high priest's burning
+censer, the troll chieftain); rings at their feet tell blue and yellow packs apart; bats never come
+yellow.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which

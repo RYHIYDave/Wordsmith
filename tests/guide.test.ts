@@ -215,8 +215,8 @@ test('on meeting the first monsters: "tap to ..., tap + hold to ...", each line 
     // (with a mouse one click of an attack that goes on while held is a single cut: there it says HOLD)
     assert.deepEqual(pc.lines.map((l) => l.how), ['LEFT CLICK', SKILLS[slow].channel ? 'HOLD RIGHT CLICK' : 'RIGHT CLICK']);
     assert.equal(touch.point, null, 'nothing is pointed at yet');
-    // the quick attack
-    m.life = m.maxLife = 1e6;
+    // the quick attack (and nothing is killed meanwhile, to leave a word that would be the next prompt)
+    for (const o of g.monsters) o.life = o.maxLife = 1e6;
     for (const o of g.monsters) o.cd = 1e9;
     c.aimX = m.x;
     c.aimY = m.y;
@@ -346,7 +346,8 @@ test('before the body there is no word, so what stands before it hits softer; it
     let before = 0;
     let after = 0;
     for (const m of g.monsters) {
-      if (m.elite || m.boss) continue;
+      // (MONSTER PACKS, since Version 19.7: and not of a blue or a yellow pack, whose words make it tougher)
+      if (m.elite || m.boss || m.rarity) continue;
       const def = MONSTERS[m.kind];
       const d = dist[Math.floor(m.y) * f.w + Math.floor(m.x)];
       assert.equal(m.maxLife, def.life, 'as tough as any');
@@ -1512,9 +1513,12 @@ test('a new player\'s first dungeon does not begin with a fight: nothing wakes b
   // dungeon was rolled again (three of the eight seeds listed until then had nothing in sight any
   // more; eleven first dungeons in twelve hundred did); and for Version 18.3, when the corridors
   // straight across the screen set the rooms themselves down differently (none of the eight did;
-  // nineteen in twenty-four hundred do, and these are the first eight).)
+  // nineteen in twenty-four hundred do, and these are the first eight); and for Version 19.7, when
+  // a pack came to be of one kind, as many as its size says (game/defs.ts, MONSTER_PACKS): eight of
+  // the first seven hundred and forty-nine did; and for Version 19.9, when an elite room came never to
+  // be of bats (game/defs.ts, packKinds): eight of the first nine hundred and thirty-seven do, these.)
   let tried = 0;
-  for (const seed of [2502417, 2858772, 4038703, 4434653, 5923425, 7166708, 7459711, 8481262]) {
+  for (const seed of [776075, 1029483, 2858772, 4070379, 4822684, 5939263, 7000409, 7412197]) {
     const g = Game.forFirstRun('mage', seed);
     const h = g.hero;
     const c = emptyControls();

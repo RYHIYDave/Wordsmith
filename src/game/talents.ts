@@ -22,9 +22,12 @@
 //   MAGE      three paths from her rune: FIRE, LIGHTNING, FROST, each five long.
 //   RANGER    an arrow flying right: two feathers to start from, the shaft, and a head whose two
 //             barbs (TRAPS above, ARROWS below) and middle all meet at the point.
-//   WARRIOR   two swords crossed: RAGE and IRON, each from its pommel on the left through its guard
-//             (with a quillon each side) to the crossing in the middle, which is both swords', and
-//             on to its tip; past the crossing either sword's tip may be reached.
+//   WARRIOR   two swords crossed: TECHNIQUE and IRON, each from its pommel on the left through its
+//             guard (with a quillon each side) to the crossing in the middle, which is both swords',
+//             and on to its tip; past the crossing either sword's tip may be reached. (The first
+//             sword was RAGE until the owner, 9 Oct 2026, 08:06: "One issue I’m seeing with the
+//             warrior tree is rage.  He’s not a barbarian, he’s all about power and technique."; his
+//             yes to TECHNIQUE as this chat listed it: "Yes, as listed (Recommended)".)
 
 import type { ClassId, StatKey, WordId } from './types';
 
@@ -106,9 +109,9 @@ const MAGE: TalentTree = {
   ],
   talents: [
     { id: 'kindling', name: 'Kindling', big: false, path: 'fire', at: [1, 0], from: [], text: 'Fire damage +25%.', mods: [{ stat: 'firePct', value: 25 }] },
-    { id: 'searing', name: 'Searing', big: false, path: 'fire', at: [2, 0], from: ['kindling'], text: 'Burning lasts a second longer and hurts half as much again.' },
+    { id: 'searing', name: 'Searing', big: false, path: 'fire', at: [2, 0], from: ['kindling'], text: 'Burning lasts a second longer, and its damage is 50% increased.' },
     { id: 'flamewarp', name: 'Flame Warp', big: true, path: 'fire', at: [3, 0], from: ['searing'], text: 'Warp leaves a trail of fire behind you.' },
-    { id: 'fuel', name: 'Fuel', big: false, path: 'fire', at: [4, 0], from: ['flamewarp'], text: 'Flame in front explodes a third wider.', word: 'fire' },
+    { id: 'fuel', name: 'Fuel', big: false, path: 'fire', at: [4, 0], from: ['flamewarp'], text: 'Flame in front explodes with 33% increased size.', word: 'fire' },
     { id: 'inferno', name: 'Inferno', big: true, path: 'fire', at: [5, 0], from: ['fuel'], text: 'Enemies that die burning explode in flame.' },
     { id: 'charged', name: 'Charged', big: false, path: 'lightning', at: [1, 2], from: [], text: 'Lightning damage +25%.', mods: [{ stat: 'lightPct', value: 25 }] },
     { id: 'forking', name: 'Forking', big: false, path: 'lightning', at: [2, 2], from: ['charged'], text: 'Lightning arcs to two more enemies.', word: 'lightning' },
@@ -116,10 +119,10 @@ const MAGE: TalentTree = {
     { id: 'overload', name: 'Overload', big: false, path: 'lightning', at: [4, 2], from: ['stormwarp'], text: 'Shocked enemies take 15% more damage from everything.' },
     { id: 'stormcaller', name: 'Stormcaller', big: true, path: 'lightning', at: [5, 2], from: ['overload'], text: 'Every two seconds, lightning strikes an enemy near you.' },
     { id: 'bittercold', name: 'Bitter Cold', big: false, path: 'frost', at: [1, 4], from: [], text: 'Frost damage +25%.', mods: [{ stat: 'frostPct', value: 25 }] },
-    { id: 'deepfreeze', name: 'Deep Freeze', big: false, path: 'frost', at: [2, 4], from: ['bittercold'], text: 'Enemies freeze sooner and stay frozen half as long again.' },
+    { id: 'deepfreeze', name: 'Deep Freeze', big: false, path: 'frost', at: [2, 4], from: ['bittercold'], text: 'Enemies freeze sooner, with 50% increased freeze time.' },
     { id: 'frostwarp', name: 'Frost Warp', big: true, path: 'frost', at: [3, 4], from: ['deepfreeze'], text: 'Where you warp from, a burst of cold freezes the enemies near.' },
-    { id: 'rime', name: 'Rime', big: false, path: 'frost', at: [4, 4], from: ['frostwarp'], text: 'The ice that Frost leaves behind is twice as big.', word: 'frost' },
-    { id: 'shatter', name: 'Shatter', big: true, path: 'frost', at: [5, 4], from: ['rime'], text: 'Frozen enemies take double damage; one that dies bursts, chilling those near.' },
+    { id: 'rime', name: 'Rime', big: false, path: 'frost', at: [4, 4], from: ['frostwarp'], text: 'The ice that Frost leaves behind has 100% increased size.', word: 'frost' },
+    { id: 'shatter', name: 'Shatter', big: true, path: 'frost', at: [5, 4], from: ['rime'], text: 'Frozen enemies take 100% increased damage; one that dies bursts, chilling those near.' },
   ],
 };
 
@@ -145,17 +148,17 @@ const RANGER: TalentTree = {
     { id: 'fleet', name: 'Fleet', big: false, path: 'wind', at: [0, 0.5], from: [], text: 'Move 10% faster.', mods: [{ stat: 'moveSpeed', value: 10 }] },
     { id: 'windrunner', name: 'Windrunner', big: false, path: 'wind', at: [0.9, 1.25], from: ['fleet'], text: 'After a roll, run 30% faster for two seconds.' },
     { id: 'keeneye', name: 'Keen Eye', big: false, path: 'eye', at: [0, 3.5], from: [], text: 'Critical chance +8%.', mods: [{ stat: 'critChance', value: 8 }] },
-    { id: 'venom', name: 'Venom', big: false, path: 'eye', at: [0.9, 2.75], from: ['keeneye'], text: 'Poison stacks twice as high.', word: 'poison' },
+    { id: 'venom', name: 'Venom', big: false, path: 'eye', at: [0.9, 2.75], from: ['keeneye'], text: 'Poison has a 100% increased stack limit.', word: 'poison' },
     // the shaft
     { id: 'quickdraw', name: 'Quick Draw', big: false, path: 'shaft', at: [1.9, 2], from: ['windrunner', 'venom', 'steadyaim'], text: 'Attacks 10% faster.', mods: [{ stat: 'atkSpeed', value: 10 }] },
-    { id: 'longshot', name: 'Long Shot', big: false, path: 'shaft', at: [3, 2], from: ['quickdraw'], text: 'Arrows fly a third further and faster.' },
-    { id: 'lightstep', name: 'Light Step', big: true, path: 'shaft', at: [4.1, 2], from: ['longshot'], text: 'Trap holds three charges, and you roll a third further.' },
+    { id: 'longshot', name: 'Long Shot', big: false, path: 'shaft', at: [3, 2], from: ['quickdraw'], text: 'Arrows have 33% increased range and speed.' },
+    { id: 'lightstep', name: 'Light Step', big: true, path: 'shaft', at: [4.1, 2], from: ['longshot'], text: 'Trap holds three charges, and your roll has 33% increased reach.' },
     { id: 'huntersmark', name: "Hunter's Mark", big: false, path: 'shaft', at: [5.2, 2], from: ['lightstep'], text: "Precise's mark makes a triple critical.", word: 'precise' },
     // the head: two barbs and the middle, meeting at the point
-    { id: 'widetraps', name: 'Wide Traps', big: false, path: 'traps', at: [6, 0.5], from: ['huntersmark'], text: 'Traps burst a third wider.' },
+    { id: 'widetraps', name: 'Wide Traps', big: false, path: 'traps', at: [6, 0.5], from: ['huntersmark'], text: 'Traps burst with 33% increased size.' },
     { id: 'minefield', name: 'Minefield', big: true, path: 'traps', at: [6.9, 1.25], from: ['widetraps'], text: 'Each roll lays three traps in a fan.' },
     { id: 'splitshot', name: 'Split Shot', big: false, path: 'arrows', at: [6, 3.5], from: ['huntersmark'], text: 'Every third arrow splits into three.' },
-    { id: 'hail', name: 'Hail', big: true, path: 'arrows', at: [6.9, 2.75], from: ['splitshot'], text: 'Volley rains twice as long, and half again as wide.' },
+    { id: 'hail', name: 'Hail', big: true, path: 'arrows', at: [6.9, 2.75], from: ['splitshot'], text: 'Volley rains with 100% increased duration and 50% increased area.' },
     { id: 'piercing', name: 'Piercing', big: false, path: 'shaft', at: [6.45, 2], from: ['huntersmark'], text: 'Arrows pass through one more enemy.' },
     { id: 'farsight', name: 'Far Sight', big: true, path: 'shaft', at: [7.8, 2], from: ['minefield', 'hail', 'piercing'], text: 'The further the enemy, the harder you hit: up to +50% at eight tiles.' },
     // the nock, between the feathers: a third way onto the shaft
@@ -169,7 +172,7 @@ const RANGER: TalentTree = {
 };
 
 // ---- the warrior: two swords crossed --------------------------------------------------------------
-const RAGE = '#ff6a50';
+const TECHNIQUE = '#ff6a50';
 const IRON = '#a8c0d8';
 const CROSS = '#ac8753';
 
@@ -177,32 +180,32 @@ const WARRIOR: TalentTree = {
   cls: 'warrior',
   shape: 'two swords crossed',
   paths: [
-    { id: 'rage', name: 'RAGE', color: RAGE, label: { node: 'bloodlust', side: 'right' } },
+    { id: 'technique', name: 'TECHNIQUE', color: TECHNIQUE, label: { node: 'honededge', side: 'below' } },
     { id: 'iron', name: 'IRON', color: IRON, label: { node: 'thickskin', side: 'right' } },
     { id: 'cross', name: '', color: CROSS, label: { node: 'earthshaker', side: 'above' } },
   ],
   talents: [
-    // RAGE: from its pommel low on the left up to its tip high on the right
-    { id: 'bloodlust', name: 'Bloodlust', big: false, path: 'rage', at: [0, 4], from: [], text: 'All damage +15%.', mods: [{ stat: 'dmgPct', value: 15 }] },
-    { id: 'fury', name: 'Fury', big: true, path: 'rage', at: [1, 3.33], from: ['bloodlust'], text: 'Power and Frenzied stack to eight, not five.', word: 'frenzied' },
-    { id: 'cleave', name: 'Cleave', big: false, path: 'rage', at: [1.55, 4.15], from: ['fury'], text: 'A melee hit splashes 30% of itself on the enemies beside.' },
-    { id: 'momentum', name: 'Momentum', big: false, path: 'rage', at: [0.45, 2.5], from: ['fury'], text: 'Each kill: run 25% faster for a second.' },
-    { id: 'battlerush', name: 'Battle Rush', big: false, path: 'rage', at: [2, 2.67], from: ['fury'], text: 'Leap is ready again 30% sooner.' },
-    { id: 'wrath', name: 'Wrath', big: false, path: 'rage', at: [4.5, 1], from: ['earthshaker'], text: 'Elites and bosses take 25% more from you.' },
-    { id: 'berserk', name: 'Berserk', big: true, path: 'rage', at: [6, 0], from: ['wrath'], text: 'Below half your life, you attack 30% faster and hit 30% harder.' },
+    // TECHNIQUE: from its pommel low on the left up to its tip high on the right
+    { id: 'honededge', name: 'Honed Edge', big: false, path: 'technique', at: [0, 4], from: [], text: 'All damage +15%.', mods: [{ stat: 'dmgPct', value: 15 }] },
+    { id: 'cadence', name: 'Cadence', big: true, path: 'technique', at: [1, 3.33], from: ['honededge'], text: 'Power and Frenzied stack to eight, not five.', word: 'power' },
+    { id: 'sweepingcut', name: 'Sweeping Cut', big: false, path: 'technique', at: [1.55, 4.15], from: ['cadence'], text: 'A melee hit splashes 30% of itself on the enemies beside.' },
+    { id: 'footwork', name: 'Footwork', big: false, path: 'technique', at: [0.45, 2.5], from: ['cadence'], text: 'Each kill: run 25% faster for a second.' },
+    { id: 'drilledleap', name: 'Drilled Leap', big: false, path: 'technique', at: [2, 2.67], from: ['cadence'], text: 'Leap is ready again 30% sooner.' },
+    { id: 'giantslayer', name: 'Giant Slayer', big: false, path: 'technique', at: [4.5, 1], from: ['earthshaker'], text: 'Elites and bosses take 25% increased damage from you.' },
+    { id: 'masterstroke', name: 'Master Stroke', big: true, path: 'technique', at: [6, 0], from: ['giantslayer'], text: 'Every fourth hit you land is a certain critical.' },
     // IRON: from its pommel high on the left down to its tip low on the right
     { id: 'thickskin', name: 'Thick Skin', big: false, path: 'iron', at: [0, 0], from: [], text: 'Life +15%.' },
-    { id: 'shieldwall', name: 'Shieldwall', big: true, path: 'iron', at: [1, 0.67], from: ['thickskin'], text: "Guarding's shield is twice as strong.", word: 'guarding' },
+    { id: 'shieldwall', name: 'Shieldwall', big: true, path: 'iron', at: [1, 0.67], from: ['thickskin'], text: "Guarding's shield has 100% increased strength.", word: 'guarding' },
     { id: 'resolute', name: 'Resolute', big: false, path: 'iron', at: [1.55, -0.15], from: ['shieldwall'], text: 'Fire, frost and lightning resistance +15%.', mods: [{ stat: 'fireRes', value: 15 }, { stat: 'frostRes', value: 15 }, { stat: 'lightRes', value: 15 }] },
     { id: 'secondwind', name: 'Second Wind', big: false, path: 'iron', at: [0.45, 1.5], from: ['shieldwall'], text: 'Flasks heal 30% more.' },
     { id: 'bulwark', name: 'Bulwark', big: false, path: 'iron', at: [2, 1.33], from: ['shieldwall'], text: 'You take 10% less damage.' },
     { id: 'thorns', name: 'Thorns', big: false, path: 'iron', at: [4.5, 3], from: ['earthshaker'], text: 'Enemies that strike you up close take 30% of the blow back.' },
     { id: 'unbreakable', name: 'Unbreakable', big: true, path: 'iron', at: [6, 4], from: ['thorns'], text: 'Once a dungeon, a killing blow leaves you at 1 life, shielded for three seconds.' },
     // the crossing: both swords'
-    { id: 'earthshaker', name: 'Earthshaker', big: true, path: 'cross', at: [3, 2], from: ['battlerush', 'bulwark'], text: 'Leap lands with a quake that stuns everything near for a second.' },
+    { id: 'earthshaker', name: 'Earthshaker', big: true, path: 'cross', at: [3, 2], from: ['drilledleap', 'bulwark'], text: 'Leap lands with a quake that stuns everything near for a second.' },
   ],
   figures: [
-    { kind: 'sword', path: 'rage', pommel: 'bloodlust', guard: 'fury', tip: 'berserk', quillons: ['cleave', 'momentum'] },
+    { kind: 'sword', path: 'technique', pommel: 'honededge', guard: 'cadence', tip: 'masterstroke', quillons: ['sweepingcut', 'footwork'] },
     { kind: 'sword', path: 'iron', pommel: 'thickskin', guard: 'shieldwall', tip: 'unbreakable', quillons: ['resolute', 'secondwind'] },
   ],
 };
@@ -244,12 +247,13 @@ export const TALENT_TUNE = {
   farSight: { most: 0.5, at: 8 },
   steadyAim: { mult: 1.15, still: 0.3 },
   // the warrior
-  fury: 8,
-  cleave: { share: 0.3, reach: 1.3 },
-  momentum: { secs: 1, speed: 25 },
-  battleRush: 0.7,
-  wrath: 1.25,
-  berserk: { below: 0.5, speed: 1.3, mult: 1.3 },
+  cadence: 8,
+  sweepingCut: { share: 0.3, reach: 1.3 },
+  footwork: { secs: 1, speed: 25 },
+  drilledLeap: 0.7,
+  giantSlayer: 1.25,
+  /** Master Stroke: every `every`th hit the hero lands (a hit's own target; not a splash, an arc or a burn) is a certain critical. */
+  masterStroke: { every: 4 },
   thickSkin: 1.15,
   shieldwall: 2,
   secondWind: 1.3,

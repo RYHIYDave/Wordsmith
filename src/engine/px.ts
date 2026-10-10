@@ -37,6 +37,8 @@ export interface Sprite {
   aura?: Light;
   /** Where the things that fly from the figure are fixed (a scarf, a feather). They are not in the picture: see tails.ts. */
   tails?: ReadonlyArray<TailRoot>;
+  /** Where the power a hero holds burns (the mage's crystal), in game pixels, and how hot (art/kit.ts, Charge). */
+  charge?: { x: number; y: number; heat: number };
 }
 
 /** '#rgb', '#rrggbb' or '#rrggbbaa'. null means "leave this pixel alone". */
@@ -417,6 +419,7 @@ export function flipSprite(s: Sprite): Sprite {
   if (s.lights) f.lights = s.lights.map((l) => ({ ...l, x: s.w - l.x }));
   if (s.aura) f.aura = { ...s.aura, x: s.w - s.aura.x };
   if (s.tails) f.tails = s.tails.map((r) => ({ ...r, x: s.w - r.x }));
+  if (s.charge) f.charge = { ...s.charge, x: s.w - s.charge.x };
   flipped.set(s, f);
   return f;
 }

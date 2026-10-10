@@ -8,6 +8,9 @@
 // (while the rules wind the blow up the picture is short of its blow; in the step the rules land it
 // the picture has reached it; it is back at rest when the monster may act again), with the game
 // slowed so that single frames can be told apart.
+// (Written before THE MONSTERS' ATTACKS of Version 19.8, it switches them off for itself, rules and
+// pictures, and on again at its end, as the game has them: the monsters here have their one attack, as
+// they had then. tools/scenarios/monster_attacks.mjs plays the new moves.)
 //   node tools/playtest.mjs --scenario tools/scenarios/monsters.mjs --out shots/mon/pc
 //   node tools/playtest.mjs --touch --size 844x390 --dpr 3 --scenario tools/scenarios/monsters.mjs --out shots/mon/phone
 import { log } from './lib.mjs';
@@ -18,7 +21,7 @@ export default async function (page, snap) {
 
   // ---- a practice room with nothing in it, and a hero who cannot be hurt ---------------------------------
   await page.evaluate(() => {
-    const d = window.__dbg; d.saving(false); d.practice('warrior', 7); d.autoLevel = false; d.autoWords = false; d.god = true;
+    const d = window.__dbg; d.saving(false); d.monsterAttacks(false); d.practice('warrior', 7); d.autoLevel = false; d.autoWords = false; d.god = true;
     const g = d.game(); g.waveT = 1e9; g.monsters.length = 0; g.projectiles.length = 0;
   });
   await page.waitForTimeout(400);
@@ -228,4 +231,6 @@ export default async function (page, snap) {
   // (every character the game asked for must be one the fonts can draw)
   const missing = await page.evaluate(() => window.__dbg.missing());
   if (missing.length) bad('text asked for characters the fonts cannot draw: ' + missing.join(' '));
+  // (and the monsters' attacks on again, as the game has them)
+  check('the monsters\' attacks on again, as the game has them', await page.evaluate(() => window.__dbg.monsterAttacks(true)) === true);
 }

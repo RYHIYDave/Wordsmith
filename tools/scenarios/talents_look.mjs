@@ -13,7 +13,7 @@ import { log, makeHands } from './lib.mjs';
 const BUILDS = {
   mage: { taken: ['kindling', 'searing', 'flamewarp', 'charged'], take: 'fuel', shut: 'shatter' },
   ranger: { taken: ['fleet', 'windrunner', 'quickdraw', 'longshot'], take: 'lightstep', shut: 'farsight' },
-  warrior: { taken: ['bloodlust', 'fury', 'battlerush', 'cleave'], take: 'earthshaker', shut: 'unbreakable' },
+  warrior: { taken: ['honededge', 'cadence', 'drilledleap', 'sweepingcut'], take: 'earthshaker', shut: 'unbreakable' },
 };
 
 export default async function (page, snap) {
