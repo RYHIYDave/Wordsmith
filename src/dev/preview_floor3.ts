@@ -280,7 +280,7 @@ else if (mode === 'spots') {
   });
 }
 else if (mode === 'room') {
-  // a room of the Headsman's floor as the game would lay it: walls along the two far sides, the
+  // a room of the Chained One's floor as the game would lay it: walls along the two far sides, the
   // pieces in it, the warrior for size. (Where each thing stands would be the main chat's rules.)
   const N = 10;
   // (room enough on the right for the chute's heap)
@@ -291,8 +291,8 @@ else if (mode === 'room') {
   const at = (x: number, y: number): [number, number] => [ox + (x - y) * 16, oy + (x + y) * 8];
   const fr = (n: string, k = 0): Sprite => (P(n).frames!.length === 4 ? P(n).frames![F % 4] : P(n).frames![k]);
   const tiles = new Map<string, Sprite>([
-    ['4,4', fr('sawdust')], ['5,5', fr('sawdust')], ['3,6', fr('gutter')], ['8,4', fr('trapdoor')], ['5,7', fr('the split floor')], ['6,7', fr('the split floor')],
-    ['4,8', fr('the hood in the floor')], ['6,2', fr('cobbles')], ['7,2', fr('cobbles')], ['6,1', fr('cobbles')],
+    ['4,4', fr('old straw')], ['2,7', fr('old straw')], ['5,5', fr('ball grooves')], ['6,5', fr('ball grooves')], ['8,4', fr('the oubliette')], ['5,8', fr('the smashed flags')],
+    ['4,6', fr('the cage in the floor')], ['7,7', fr('a ring in the floor')],
   ]);
   const wallAt = (tx: number, ty: number): boolean => tx === 0 || ty === 0;
   const stands: Stand[] = [];
@@ -312,14 +312,14 @@ else if (mode === 'room') {
     }
   }
   // lying on the floor (flat: drawn before anything stands)
-  for (const [n, x, y] of [['bones in irons', 3.4, 8.6], ['skulls in the sawdust', 6.2, 6.0], ['broken axe', 7.8, 4.6], ['coil of rope', 4.4, 1.8], ['broken wheel', 7.0, 9.0], ['basket', 6.4, 4.3]] as const) {
+  for (const [n, x, y] of [['his pallet', 2.6, 7.2], ['a snapped chain', 6.2, 6.0], ['a burst cuff', 7.8, 5.0], ['a torn-out bar', 4.4, 2.0], ['a bowl kicked over', 3.2, 8.4], ['meal sack', 6.4, 4.3]] as const) {
     const [px, py] = at(x, y);
-    draw(n === 'basket' ? fr(n, 1) : fr(n), px, py);
+    draw(n === 'meal sack' ? fr(n, 1) : fr(n), px, py);
   }
   // on the walls, each at one of its places, some walls left bare: the far wall's faces turned to
   // screen-left (along ty = 0), the near-left wall's turned to screen-right (along tx = 0)
-  const onLeft: [number, string, number][] = [[1, 'the long stain', 0], [2, 'hoods on pegs', 1], [3, 'torch', 0], [4, 'bell niche', 2], [5, 'his banner', 0], [6, 'axe on hooks', 2], [7, 'torch', 1], [8, 'skull ledge', 1], [9, 'the chute', 0]];
-  const onRight: [number, string, number][] = [[1, 'chain from the dark', 1], [2, 'hatch', 0], [3, 'torch', 2], [4, 'tools of the trade', 1], [5, 'the hood carved', 2], [6, 'black candles', 0], [7, 'noose', 2], [8, 'axe-scarred stone', 1], [9, 'branding irons', 0]];
+  const onLeft: [number, string, number][] = [[1, 'the bowed wall', 0], [2, 'the cell window', 1], [3, 'fire basket', 0], [4, 'the cell window', 0], [5, 'rings and chains', 0], [6, 'the chain port', 0], [7, 'fire basket', 1], [8, 'the cell window', 2], [9, 'the torn-out ring', 0]];
+  const onRight: [number, string, number][] = [[1, 'the wall winch', 1], [2, 'bent bars', 0], [3, "the jailers' lamp", 2], [4, 'a skull in its cage', 1], [5, 'the cage carved', 2], [6, 'balls on a rack', 0], [7, 'claw-torn stone', 2], [8, "the ball's crater", 1], [9, 'the feeding slot', 0]];
   for (const [tx, n, k] of onLeft) {
     const [x, y] = at(tx, 0);
     const l = P(n).spots![k].left;
@@ -332,15 +332,15 @@ else if (mode === 'room') {
   }
   // what stands, its soft shadow under it
   const things: [string, number, number][] = [
-    ['the scaffold', 6.5, 2.5], ['the block', 5.0, 4.4], ['basket', 5.6, 5.1], ['the gallows', 2.5, 2.4], ['kicked-over stool', 2.9, 3.6], ['the great bell', 8.6, 2.4], ['the gibbet', 8.6, 6.0],
-    ['the stocks', 2.6, 6.6], ['the grindstone', 8.4, 8.0], ['brazier of irons', 1.6, 4.4], ["the headsman's strongbox", 1.5, 8.4], ['sawdust barrel', 1.4, 1.5], ['crate', 2.3, 1.2],
-    ['pail', 6.0, 8.6], ['dropped lantern', 9.2, 8.8], ['the chute', 9.5, 1.5],
+    ['the cage', 6.5, 2.5], ['the chain post', 5.0, 4.4], ['straw bale', 5.6, 5.4], ['the great winch', 2.6, 2.4], ['water jug', 2.9, 3.8], ['the feed trough', 8.6, 3.0], ['a heap of chains', 8.4, 6.2],
+    ['the stone bench', 2.4, 6.0], ['the anvil', 8.4, 8.2], ["the jailers' kettle", 1.6, 4.4], ["the jailers' chest", 1.5, 8.4], ['box of irons', 1.4, 1.5], ['ball and chain', 4.0, 6.6],
+    ['water jug', 6.0, 8.6], ['the torn-out ring', 9.5, 1.5],
   ];
   for (const [n, x, y] of things) {
     const [px, py] = at(x, y);
     const p = P(n);
     if (p.shadow) softShadow(px, py, p.shadow);
-    stands.push({ d: x + y, s: n === 'the chute' ? p.frames![0] : fr(n), x: px, y: py });
+    stands.push({ d: x + y, s: n === 'the torn-out ring' ? p.frames![0] : fr(n), x: px, y: py });
   }
   const [hx, hy] = at(5.5, 8.6);
   softShadow(hx, hy, 0.36);
@@ -396,7 +396,7 @@ else if (mode === 'moment') {
     // (where it plays: at the foot of the wall's face over (2, 0), or over (0, 4) for the face to screen-right; the ball on the floor)
     const [wx, wy] = right ? at(0, 4) : at(2, 0);
     const [px, py] = onWallM ? (right ? [wx + 8, wy + 12] : [wx - 8, wy + 12]) : at(2.6, 2.4);
-    const [hx, hy] = onWallM ? (right ? at(4.2, 4.6) : at(4.6, 4.2)) : at(6.3, 6.5);
+    const [hx, hy] = onWallM ? (right ? at(4.2, 4.6) : at(4.6, 4.2)) : at(3.3, 6.7);
     if (!onWallM) softShadow(px, py, 0.5);
     softShadow(hx, hy, 0.36);
     draw(fr, px, py);

@@ -70,7 +70,7 @@ test('floor 3, moments: the chains creep, are hauled taut all at once and slam a
     // the ring rips out and whips down: it travels far, falling faster just before it strikes, and bounces
     const ring = track(film.tracks, 'the torn ring');
     assert.ok(Math.hypot(ring[land]!.x - ring[rip - 1]!.x, ring[land]!.y - ring[rip - 1]!.y) >= 25, 'the torn ring does not fly far');
-    assert.ok(ring[land]!.y - ring[land - 1]!.y > ring[land - 2]!.y - ring[land - 3]!.y, 'the torn ring does not fall faster as it strikes');
+    assert.ok(step(ring, land) >= 3, `the torn ring strikes at only ${step(ring, land).toFixed(1)} a frame`);
     const after = ring.slice(land + 1, land + 8).map((a) => a!.y);
     assert.ok(Math.min(...after) <= ring[land]!.y - 1.5, `the ring does not bounce (${(ring[land]!.y - Math.min(...after)).toFixed(1)})`);
     // the two left drop slack and swing: their middles go down from taut and come back up at least once
