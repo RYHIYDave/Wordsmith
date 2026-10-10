@@ -522,7 +522,7 @@ function chainedFilms(): Record<string, FilmOf> {
     breakBall: {
       long: lastKey(CHAINED_FREED[1], 'breakBall'),
       heavy: [],
-      said: (t) => (t < 0.42 ? 'The ball’s chain: he takes it behind his neck' : t < CO_SNAP_BALL ? 'The ball’s chain: hauled over his head, straining, roaring' : t < CO_SNAP_BALL + 0.4 ? 'The ball’s chain: torn from his collar' : 'He roars, free of the ball'),
+      said: (t) => (t < 0.46 ? 'The ball’s chain: he looks back at the ball and takes hold of his collar' : t < CO_SNAP_BALL ? 'The ball’s chain: he strides away from it, the chain taut, straining, roaring' : t < CO_SNAP_BALL + 0.4 ? 'The ball’s chain: torn from his collar' : 'He roars, free of the ball'),
       then: CHAINED_FREED[2],
       left: leftBall,
     },
