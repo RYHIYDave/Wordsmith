@@ -18,8 +18,12 @@
 // This file only reads the pad: what a stick or a button means is main.ts's (`padFrame`,
 // `padControls`).
 
-/** THE SWITCH: off, no pad is read (the game as it was). */
-export const GAMEPAD = { on: false };
+/**
+ * THE SWITCH: off, no pad is read (the game as it was). ON since Version 20.1, with the skill trees:
+ * his answer of 9 Oct 2026, 07:28, to the controller as drawn (`Controller_layout.png`, `In_game.png`):
+ * "Yes, with the trees (Recommended)".
+ */
+export const GAMEPAD = { on: true };
 
 /** A pad is being played with now (the switch on, and the pad moved or pressed lately): set by main.ts each frame, so that the prompts and the ATTACKS page can name its buttons. */
 export const PAD_USE = { live: false };

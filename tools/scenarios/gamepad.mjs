@@ -1,5 +1,5 @@
-// A GAME CONTROLLER (engine/gamepad.ts, `GAMEPAD.on`, OFF in the game until the owner has seen the
-// layout and said yes): this playtest switches it on for itself and plays the game with a pad of
+// A GAME CONTROLLER (engine/gamepad.ts, `GAMEPAD.on`, ON in the game since Version 20.1, with the
+// skill trees; his yes to the layout of 9 Oct, 07:28): this playtest switches it on for itself (and back as it was) and plays the game with a pad of
 // its own making (navigator.getGamepads answered by the page: no real pad is needed).
 //   1. in play: the left stick walks the hero; the right stick aims at a monster and RT strikes it;
 //      LT is the slow attack; A the evasive move; X a flask;
@@ -26,6 +26,7 @@ export default async function (page, snap) {
     Object.defineProperty(navigator, 'getGamepads', { value: read, configurable: true });
     const d = window.__dbg;
     d.saving(false);
+    window.__padWere = d.gamepad.on;
     d.gamepad.on = true;
   });
   const set = (axes, down = []) => page.evaluate(([a, b]) => { window.__padState.axes = a; window.__padState.down = b; }, [axes, down]);
@@ -173,6 +174,6 @@ export default async function (page, snap) {
   await page.waitForTimeout(200);
   await snap('11_pause_named');
   await tap(1);
-  await page.evaluate(() => { window.__dbg.gamepad.on = false; });
+  await page.evaluate(() => { window.__dbg.gamepad.on = window.__padWere; });
   log('gamepad', fails ? `${fails} thing(s) wrong` : 'all as they should be');
 }

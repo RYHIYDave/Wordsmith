@@ -19,8 +19,8 @@ function padOf(axes: number[], down: number[] = [], triggers: Partial<Record<num
   return { connected: true, mapping: 'standard', axes, buttons };
 }
 
-test('the switch is off', () => {
-  assert.equal(GAMEPAD.on, false);
+test('the switch is on, with the skill trees (Version 20.1)', () => {
+  assert.equal(GAMEPAD.on, true);
 });
 
 test('a stick has a still middle, then rises to full at its rim, in its own direction', () => {

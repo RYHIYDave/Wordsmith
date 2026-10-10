@@ -31,8 +31,12 @@
 
 import type { ClassId, StatKey, WordId } from './types';
 
-/** THE SWITCH: off, there are no talents and no page for them (the game as it was). */
-export const TALENTS = { on: false };
+/**
+ * THE SWITCH: off, there are no talents and no page for them (the game as it was). ON since Version
+ * 20.1: the owner, 10 Oct 2026, 01:40, "Show me the skill trees" (the doc and its pictures opened
+ * for him), and at 01:55: "Go ahead and ship it".
+ */
+export const TALENTS = { on: true };
 
 /** A point at every fifth level: ten by level 50 (his answer, 8 Oct 15:16). */
 export const TALENT_EVERY = 5;

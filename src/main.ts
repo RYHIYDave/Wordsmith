@@ -277,7 +277,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const lock = new LockOn();
   let lockLevel: Level | null = null;
   /**
-   * A GAME CONTROLLER (engine/gamepad.ts, GAMEPAD, off until his yes): the pad; whether its pointer
+   * A GAME CONTROLLER (engine/gamepad.ts, GAMEPAD, on since Version 20.1): the pad; whether its pointer
    * is out (in the menus); the slow attack's use when LT went down (one use a press); the D-pad's UP
    * pressed this frame, for the prompt over the attacks (LEVEL UP, or NEW TALENT).
    */
@@ -1763,9 +1763,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     inv: (focus = -1) => openInventory(focus),
     /** NORMAL MODE's switch (game/modes.ts), for its pictures and playtests: `modes.on`. */
     modes: MODES,
-    /** THE SKILL TREES' switch (game/talents.ts), off until his yes: for their pictures and playtests (`talents.on`). */
+    /** THE SKILL TREES' switch (game/talents.ts), on since Version 20.1: for their pictures and playtests (`talents.on`). */
     talents: TALENTS,
-    /** A GAME CONTROLLER's switch (engine/gamepad.ts), off until his yes; and the pad as read (its pointer). */
+    /** A GAME CONTROLLER's switch (engine/gamepad.ts), on since Version 20.1; and the pad as read (its pointer). */
     gamepad: GAMEPAD,
     pad: () => ({ connected: pad.connected, live: pad.live(), pointer: padPointer, px: pad.px, py: pad.py }),
     /** Put the pad's menu pointer here (game pixels), for playtests that press a button with it. */

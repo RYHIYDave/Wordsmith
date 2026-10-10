@@ -27,8 +27,8 @@ function held(to: boolean, fn: () => void): void {
 }
 const on = (fn: () => void): void => held(true, fn);
 
-test("the game's switch is off, until his yes", () => {
-  assert.equal(TALENTS.on, false);
+test("the game's switch is on, since his word of 10 Oct 2026, 01:55 (Version 20.1)", () => {
+  assert.equal(TALENTS.on, true);
 });
 
 test('switched off: no talents can be taken, and they add nothing', () => {

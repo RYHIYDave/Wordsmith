@@ -1,5 +1,5 @@
-// THE SKILL TREES (game/talents.ts, `TALENTS.on`, OFF in the game until the owner has seen pictures
-// and said yes): this playtest switches them on for itself. For each class, a hero at level 30 (six
+// THE SKILL TREES (game/talents.ts, `TALENTS.on`, ON in the game since Version 20.1, his word of
+// 10 Oct 2026, 01:55: "Go ahead and ship it"): this playtest switches them on for itself (and back as they were). For each class, a hero at level 30 (six
 // points) with four talents taken; the inventory's TALENTS page:
 //   1. the tree with nothing being read;
 //   2. a talent that can be taken now, read on its card, with TAKE;
