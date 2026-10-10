@@ -11,6 +11,8 @@ Oct 8, 2026
 > **CHANGED BY THE OWNER, 10 Oct 2026: EACH FLOOR THEMED AFTER ITS BOSS, AND THE TOWN'S GATE NO LONGER CYAN.** Asked whether the Crypt's four floors were good to build as shown, he answered by 07:29: "Yes.  I’d also like each floor to be themed after the boss.  Add this to the ruleset.  We need somewhere between 40-50 unique assets on each floor for each boss.  That can include wall tiles, floor tiles, breakables, stuff on the walls, on the floor, obstacles, the looks of doors and gates, traps, and quests." So Places has a new rule 7. Asked whether the stairwell, the waypoint and the town's gate were good to build as shown (offered as: the main chat builds them in, and his rulebook's line on the gate's cyan changes with it), he answered by 07:29: "Yes, as shown (Recommended)". So Colour 3 names the waypoints as friendly magic, and no longer the gate. The doc is at rev 43 with both. The pictures: the Crypt Review page (https://claude.ai/artifact/K2KBZoF2RnnYZWVZMfNqAa); the code: `mockup/crypt`.
 >
 > **CHANGED BY THE OWNER HIMSELF, 10 Oct 2026, by 07:41:** in his doc (rev 78) he renamed "Effects and magic" to "Animations", and its rule 2 now reads "Each hero or boss is wild in his own way."
+>
+> **CHANGED BY THE OWNER, 10 Oct 2026: AS FAR AS IT WILL GO.** His words to the art chat by 07:47: "Put in the ruleset that I want animations as big and wild and kinetic and weighty as possible.  I’d rather it be a notch too high than a notch too low." So Animations has a new rule 1, and the doc is at rev 79 with it.
 
 Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. You said yes to it on 8 Oct, so every chat that makes art for the game follows it, and it changes only with your yes.
 
@@ -134,13 +136,14 @@ A little blood: enough to sting, never a bloodbath. In your words: "A little".
 
 Big and wild: magic that crackles, sparks everywhere, bolts that shoot out, and the screen kicks on big casts and hits. In your words, 8 Oct: "i think we need to amend the rules for effects and animations change it to big and wild". Until then it was "somewhere in the middle".
 
-1. **The Wave is the measure.** Everything is as wild as the Wave you said yes to on 8 Oct ("Just right (Recommended)"): her crystal crackles and spits sparks as it burns; she swings with her whole body and the power kicks the staff back up; it goes with a blast and bolts that strike the floor; the wave stands up tall and crackles, and what it hits crackles too.
-2. **Each hero or boss is wild in his own way.** The crackle is the mage's alone. In your words, 8 Oct: "Each character has a style, the crackling works for the mage, but not the warrior." The warrior's is the blade: a big crescent, a second sweep as the blade follows through, wind off its edge, dust and a kick. The ranger's is wind, not energy: a gust and hoops of air at the loose, and a trail of air behind the arrow. In your words: "Can we make the blue effects just like wind instead of energy?" You said yes to both by 22:35.
-3. **The hero and every warning stay in sight.** No effect covers the hero, or a monster's wind-up or danger mark, for more than a blink.
-4. **Power you can see.** Whatever holds power shows it: a real glow, energy crackling, bolts shooting out, barely held in. In your words: "there should be energy crackling and bolts shooting out, barely able to contain it".
-5. **Everything comes up to it.** Every animation made before is brought up to the Wave, one at a time, each shown to you first. In your words: "this goes for all the animations we've created".
-6. **Every word has its look.** Each power word shows in its own colour and shape, in front on the hit and behind on what is left, and stacked words add up.
-7. **Effects are pixel art too:** the same grain, the same crisp edges, lit from the same side.
+1. **As far as it will go.** Every animation, of a hero, a monster or a boss, and every effect, is as big, wild, kinetic and weighty as it can be. When in doubt, a notch too high, never a notch too low. In your words, 10 Oct: “Put in the ruleset that I want animations as big and wild and kinetic and weighty as possible.  I’d rather it be a notch too high than a notch too low.”
+2. **The Wave is the measure.** Everything is as wild as the Wave you said yes to on 8 Oct ("Just right (Recommended)"): her crystal crackles and spits sparks as it burns; she swings with her whole body and the power kicks the staff back up; it goes with a blast and bolts that strike the floor; the wave stands up tall and crackles, and what it hits crackles too.
+3. **Each hero or boss is wild in his own way.** The crackle is the mage's alone. In your words, 8 Oct: "Each character has a style, the crackling works for the mage, but not the warrior." The warrior's is the blade: a big crescent, a second sweep as the blade follows through, wind off its edge, dust and a kick. The ranger's is wind, not energy: a gust and hoops of air at the loose, and a trail of air behind the arrow. In your words: "Can we make the blue effects just like wind instead of energy?" You said yes to both by 22:35.
+4. **The hero and every warning stay in sight.** No effect covers the hero, or a monster's wind-up or danger mark, for more than a blink.
+5. **Power you can see.** Whatever holds power shows it: a real glow, energy crackling, bolts shooting out, barely held in. In your words: "there should be energy crackling and bolts shooting out, barely able to contain it".
+6. **Everything comes up to it.** Every animation made before is brought up to the Wave, one at a time, each shown to you first. In your words: "this goes for all the animations we've created".
+7. **Every word has its look.** Each power word shows in its own colour and shape, in front on the hit and behind on what is left, and stacked words add up.
+8. **Effects are pixel art too:** the same grain, the same crisp edges, lit from the same side.
 
 ## Words in the world
 
