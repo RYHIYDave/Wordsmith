@@ -99,15 +99,17 @@ test('gate: up to three words, no repeats, one element; burned on entering; mons
   assert.equal(h.words.fire, 1, 'and the words are gone for good');
   assert.ok(g.monsters.length > 20);
   for (const m of g.monsters) assert.ok(m.words.includes('fire') && m.words.includes('power'), `${m.name} carries the dungeon's words`);
-  // an ordinary dungeon's ordinary monsters carry none
+  // an ordinary dungeon's ordinary monsters carry none (MONSTER PACKS, since Version 19.7: those of
+  // a plain pack; a blue pack's have its word, a yellow pack's minions their leader's)
   const plain = new Game('ranger', 9);
   plain.depth = 2;
   plain.cleared = 1;
   plain.enterDungeon();
-  assert.ok(plain.monsters.filter((m) => !m.elite && !m.boss).every((m) => m.words.length === 0));
+  assert.ok(plain.monsters.filter((m) => !m.elite && !m.boss && !m.rarity).every((m) => m.words.length === 0));
+  assert.ok(plain.monsters.filter((m) => !m.elite && !m.boss && !m.rarity).length > 20, 'and most are of plain packs');
   // the words make its monsters tougher
-  const tough = g.monsters.filter((m) => m.kind === 'skeleton' && !m.elite)[0];
-  const weak = plain.monsters.filter((m) => m.kind === 'skeleton' && !m.elite)[0];
+  const tough = g.monsters.filter((m) => m.kind === 'skeleton' && !m.elite && !m.rarity)[0];
+  const weak = plain.monsters.filter((m) => m.kind === 'skeleton' && !m.elite && !m.rarity)[0];
   if (tough && weak) assert.ok(tough.maxLife > weak.maxLife, 'Power adds life');
 });
 

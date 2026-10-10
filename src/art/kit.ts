@@ -740,6 +740,20 @@ export interface Painted {
   px: Px;
   lights: Light[];
   tails?: TailRoot[];
+  /** Where the power a hero holds burns in the picture (the mage's crystal), and how hot: see Charge. */
+  charge?: Charge;
+}
+
+/**
+ * Where the power a hero holds burns (the mage's crystal), on the picture, and how hot it burns:
+ * 0 cold, about 1.3 in her guard, 3 as a spell is let go. The renderer hands it to render/fx.ts,
+ * which makes it crackle and throw bolts when everything is big and wild (art/moves3.ts, WILD).
+ * Nothing is drawn from it otherwise.
+ */
+export interface Charge {
+  x: number;
+  y: number;
+  heat: number;
 }
 
 /** Paints one frame of a hero. */
@@ -782,6 +796,11 @@ export function lightsOut(f: Painted, out: number): Painted {
     }
   }
   f.lights = k >= 0.98 ? [] : f.lights.map((l) => ({ ...l, a: (l.a ?? 1) * (1 - k) }));
+  // (and the power in it dies with the light)
+  if (f.charge) {
+    if (k >= 0.98) delete f.charge;
+    else f.charge = { ...f.charge, heat: f.charge.heat * (1 - k) };
+  }
   return f;
 }
 
@@ -833,6 +852,7 @@ export function toSprite(f: Painted, aura: Light | null = AURA, ax = KAX, ay = K
   // (the heroes' pool of light unless told otherwise: a monster has a dimmer, redder one of its own, or none)
   if (aura) s.aura = game(aura);
   if (f.tails && f.tails.length) s.tails = f.tails.map((r) => ({ ...r, x: (r.x - box.x) / GRAIN, y: (r.y - box.y) / GRAIN }));
+  if (f.charge) s.charge = { x: (f.charge.x - box.x) / GRAIN, y: (f.charge.y - box.y) / GRAIN, heat: f.charge.heat };
   return s;
 }
 
@@ -938,6 +958,8 @@ export interface Moves {
   reel?: Timeline;
   /** The same for a blow that comes from behind them: thrown forward a step, and upright again. */
   lurch?: Timeline;
+  /** A monster's other moves, by name (AnimSet.clips.moves). */
+  more?: Readonly<Record<string, Timeline>>;
 }
 
 /** How a rig reads its poses. */
@@ -1006,6 +1028,11 @@ export function animSet(rig: Rig, back: boolean, rest: Partial<Pose>, moves: Mov
   if (moves.fall) clips.fall = clip(moves.fall, CLIP_FPS);
   if (moves.reel) clips.reel = clip(moves.reel, CLIP_FPS);
   if (moves.lurch) clips.lurch = clip(moves.lurch, CLIP_FPS);
+  if (moves.more) {
+    const more: Record<string, Clip> = {};
+    for (const [name, t] of Object.entries(moves.more)) more[name] = clip(t, CLIP_FPS);
+    clips.moves = more;
+  }
   // (a roll's timeline runs from 0 to 1, like a leap's: shown by how far through the roll the hero is)
   if (moves.roll) clips.roll = clip(moves.roll, 12);
   if (moves.leap) {

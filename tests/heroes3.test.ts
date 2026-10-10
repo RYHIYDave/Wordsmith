@@ -21,7 +21,7 @@ import { onBack } from '../src/art/carried';
 import { makeHeroArt } from '../src/art/heroes';
 import type { HeroLook } from '../src/art/heroes';
 import { PLANS, makeHeroArt3, windAt } from '../src/art/heroes3';
-import { MOVES3 } from '../src/art/moves3';
+import { MAGE_STANCES, MOVES3, WILD, useMageStances, useWild } from '../src/art/moves3';
 import { about, aimFor, bonesAt, dot, heading, len, norm, solve, sub } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
 import { CLASS_IDS } from '../src/game/types';
@@ -30,6 +30,12 @@ import { Figure, heldFrame } from '../src/render/figure';
 import type { Art } from '../src/render/render';
 import { ENTER_OUT, enterLength } from '../src/ui/panels';
 import { paintWithoutCanvas, paintingOf, unlike } from './helpers';
+
+// (VERSION 19.7: the mage's stances and every hero's moves big and wild are the game's own, art/moves3.ts
+// MAGE_STANCES and WILD, put in place as moves3.ts loads. This file's tests were written with them off,
+// and hold them off, as they were then; tests/wild.test.ts and tests/mage_stances.test.ts ask of them on.)
+useWild(false);
+useMageStances(false);
 
 interface Assert {
   ok(value: unknown, message?: string): void;

@@ -335,6 +335,27 @@ wait
 run gamepad_pc     --scenario $S/gamepad.mjs &
 run gamepad_phone  $P --scenario $S/gamepad.mjs &
 wait
+# VERSION 19.7: the three heroes fight with the bot in the practice room, the mage in her stances and
+# every hero's moves big and wild (switched off and on again); then a dungeon of packs, every pack of
+# one kind, blue and yellow packs among them, the bot fighting there.
+run packs_wild_pc    --scenario $S/packs_wild.mjs &
+run packs_wild_phone $P --scenario $S/packs_wild.mjs &
+wait
+# VERSION 19.8: THE MONSTERS' ATTACKS, on in the game: green trolls swing and slam; a red troll lays his
+# line and charges down it; the Warden swings, slams and calls the dead, who crawl out of the ground; a
+# dungeon with the bot fighting there; switched off, a troll slams first; and on again.
+run monster_attacks_pc    --scenario $S/monster_attacks.mjs &
+run monster_attacks_phone $P --scenario $S/monster_attacks.mjs &
+wait
+# VERSION 19.9: THE NEW MONSTERS, on in the game: Shades rake; a Boneward throws its spear, bashes while
+# it lies there, stoops for it and thrusts; a Golem's skulls come down where the warrior stood; the
+# skeleton champion cleaves and cries; the bone marksman's great shot and its line of aim; the high
+# priest's censer and its smoke; the troll chieftain swings and slams; dungeons laid, each new monster from
+# its own dungeon on, the new leaders at the head of yellow packs, no pack of bats yellow; switched off,
+# none of them; and on again.
+run new_monsters_pc    --scenario $S/new_monsters.mjs &
+run new_monsters_phone $P --scenario $S/new_monsters.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

@@ -4947,6 +4947,343 @@ it), brought in whole and switched on: `SMITH3.on` in `src/art/smith3.ts` and `Q
   `art/mage-stances`, which also holds the mage's stances) are not in it yet: asked of the art chat
   at 02:14 whether they can come without the mage's.
 
+### Version 19.7: monster packs, blue and yellow; the mage's stances and the moves big and wild
+
+**What he said.** To this chat on 9 Oct. 07:49: "Let’s add a few rules to monsters.  Size
+designation which affects pack size.  Tiny, small, medium, large, and boss.  Tiny is our bats, small
+are our skeletons, medium is the green trolls, large the red, and the boss is the boss.  Medium
+there should be 3-5 in a pack.  You can kinda extrapolate from there". Asked whether tiny 6 to 10,
+small 4 to 7, medium 3 to 5, large 1 to 2 and the boss alone was right: "All mob types have their
+own packs unless otherwise stated.  And these can change with a pack size modifier on a word for the
+gate."; "Now, on its own (Recommended)" (07:56); "Twin: half again as big (Recommended)". 08:02: "A
+magic pack (blue) is affected by one word, and that would mean everything in that pack was affected
+by the word.  A yellow pack would give the leader of the pack a word or two (I don’t remember how we
+designed that), and the other in the pack become “minions” of the leader, gaining 50% of the words
+bonus.  So we have a pack of skeletons.  The skeleton champion, who let’s say has an old rusty
+helmet and a two handed sword, has Flame, and the smaller minions would essentially have a 50%
+Flame."; "Also can we change “half again” to 50% increased."; 08:03: "And doubled to 100%
+increased." How often: "1 in 4, from dungeon 2 (Recommended)"; "Elite rooms, plus 1 in 10". 08:10:
+"Rare (yellow) mobs should take a bit longer to kill than your regular version of that mob.  And
+blue mobs as well.  Time to kill for a magic (blue) pack should be slightly less than the rare mob
+and his minions."; to the leader 3 times the life and a blue pack's monsters 20% increased: "Yes,
+those numbers (Recommended)". 08:15, of their attacks (the next version): "Tiny and small mobs
+should have one attack.  Medium two attacks, large 2-3, and the boss 4.  They should always have a
+basic, single target attack.  That way when their big telegraphed slams or spells go on cooldown,
+and they have their mace swing or magic missile to use in between.  The bigger the hit, the longer
+the cooldown."; "Packs today, attacks next (Recommended)". By 08:41, of the art chat's mage stances and big-and-wild skill looks: "With
+today's packs (Recommended)". By 09:46, to `Packs_look.png`: "Yes, as shown (Recommended)".
+
+**What is in it.**
+
+- **Packs by size** (`MONSTER_PACKS`, `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE`, `sizeOf`, `packRange` in
+  `src/game/defs.ts`; `MonsterDef.size`): every pack is of one kind, as many as its size says;
+  a guardians' lair holds guardians alone (1 or 2); a corridor pack the fewest or one more; the
+  first dungeon's packs half the size. The map-maker draws each pack's kind and size from a lot of
+  its own (`Stage.kindRng`, `src/game/dungeon.ts`), so where packs stand is as it was;
+  `PackSpot.kind`. Twin burned in at the gate: every pack 50% increased (`GATE_TWIN_PACKS`).
+- **Blue and yellow packs** (`PACKS`, `packRarity`, `wordShare`; `Game.fillPack` and `spawn` in
+  `src/game/game.ts`): blue, one word on every one of it, 20% increased life (and worth as much
+  more); yellow, a leader of rank 1 (an elite: 3 times the life, an elite's blows, a word, two from
+  dungeon 6) and minions with its words at half strength (`Monster.half`; `Monster.rarity`). A blue
+  pack 1 in 4 of the packs that are not an elite room's or a lair, a yellow 1 in 10, both from the
+  second dungeon; every elite room's pack yellow. The first dungeon keeps its one room of elites
+  and nothing more, with no words on anyone (THE FIRST LEVELS).
+- **Half a word**, word by word (`wordShare`): Power 15% increased life and 20% damage; Swift 17.5%
+  speed and 15% shorter cooldowns; Guarding half the shield; Frenzied half the rage; Twin its second
+  blow at half; Volatile half the blast; and where a blow lands (`hurtHero`, with `HalfWords` carried
+  by shots and warnings): Poison half, Heavy half the knock, Precise half the armour found, Leech half
+  the healing; and of Flame, Frost or Lightning half of the blow is that element (resisted as it),
+  the rest the minion's own, and it burns, chills or shocks half as hard.
+- **Words stay scarce**: only an elite room's leader may carry a word to give up, and a lair's first
+  guardian; a blue pack's monsters and the minions carry none.
+- **The look** (`PACK_LOOK`, his yes by 09:46): each of a blue pack has the elite's ring and a bar
+  always over it, and the pack's name is written once, in blue (the colour of a magic item), over
+  the first of it in sight (`render.ts`, `named`, `nameColor`, `drawBars`: names after all the
+  bars); a yellow pack's leader is named in yellow; its minions as they always were.
+- **The art chat's `art/wild-skills`** at `ac4966a`, brought in whole and switched on: `MAGE_STANCES`
+  and `WILD` (`src/art/moves3.ts`), put in place as the file loads by `useMageStances` and then
+  `useWild`. The mage in her guard in a fight, her runs, casts, hits, fall and habits from it; and big
+  and wild: Strike, Shot and the Wave, Whirlwind, Leap, Volley, Trap, Orb and Warp (`render/wild.ts`).
+  Its READMEs: `docs/mockups/mage_stances/README.md`, `docs/mockups/big_and_wild/README.md`.
+
+**What it does to a dungeon** (30 dungeons of each depth, the packs off and on, 9 Oct): dungeon 1
+has 12% fewer monsters, 10% less life to cut through and 8% less experience; dungeons 2 to 6 about as many monsters (1 to 11% more), with 12 to 19% more life to cut through, from the blue and yellow packs, and 15 to 26% more experience; deeper, up to 17% fewer monsters at dungeon 12 (4% fewer at 8), since packs no longer grow with depth, and about the same life (8% more at 8, the same at 10 and 12).
+
+**How it was tested.**
+
+- `tsc` clean. `tests/packs.test.ts` (new, 9): the switches; one kind a pack, lairs,
+  elite rooms; the shares of blue and yellow, and none in the first dungeon; a blue pack's word,
+  life and name; a yellow pack's leader and minions; the time to kill; the gate's words and Twin;
+  half a word, word by word; the monsters a dungeon holds, before and now. Brought into line:
+  `tests/dungeon.test.ts` (the old sizes with the switch off; the new with it on), `economy`
+  (the lairs counted; an elite room's leaders), `guide` (new seeds for a pack in sight of the door),
+  `mix` (its fingerprints with the packs off), `town`. The art chat's tests hold the new looks on
+  (`tests/wild.test.ts`, `tests/mage_stances.test.ts`); the tests written before them hold them off
+  (`combo`, `combo_mends`, `grip_runs`, `heroes3`, `ranger_stances`). THE WHOLE UNIT SUITE: 781 of 781 in the frozen copy (below).
+- Pictures for him: `tools/scenarios/packs_look.mjs` (`Packs_look.png`).
+- THE PRE-FLIGHT: a dev page built from the tree, by 10:07: 24 playtests (the new one on a PC and a phone, the monsters and the dungeon on two layouts each, the boss, the scarce words, the lesson for a mage and a warrior, the spells on two layouts, the depths, the combo and the ranger's stances on two each, the way in, the practice room, the quips, the words of a mage, the HUD, a phone's melee, a mage's auto aim): all clean.
+- A new playtest in the regression, `tools/scenarios/packs_wild.mjs` (pc and phone): the three heroes
+  fight with the bot, the mage's stances and the wild moves switched off and on again; a dungeon of
+  packs, every pack of one kind, blue and yellow ones, the bot fighting there.
+- **The regression** on a copy frozen at 10:09 (the scratchpad's `v197a/arpg_frozen`, 10:09 to 11:00, two at a time, nothing else running): **151 OF 152 PLAYTESTS FINISHED CLEAN**. The one, `guide_pc_mage` (a new player's start as a mage, in a dungeon of a random seed, 1277235665), set the hero down by the pack nearest the way in, four archers in a room whose door was shut, in the passage beyond it that leads only to a vault, so is reached only through that door: the archers, still "shut in" (`shutIn` in `game.ts`), shot at the hero, and no fight counts what is shut in, so the fight prompt never came. That dungeon did so every time (twice more, 11:03 and 11:04), and is laid the same with the packs off: the playtest's, not this version's. The playtest now sets the hero down only where a player could stand (not behind the shut door of the target's room); so mended, the same dungeon finished clean (11:08), and the frozen copy took the mended playtest before its published page was played. Speed: the frame-rate run 54.6 frames a second (19.6: 58.9), longest frame 50 ms, with 25 patches of ground effects out; the slowest fights of the four word-combination runs 55.7 to 58.2 frames a second (19.6: 56.5 to 58.6), longest frame 83 ms.
+- The unit suite in the frozen copy: 781 of 781, 11:08 to 11:12.
+- THE RELEASE BUILD: made in the copy at 11:12, `Play.html` 1,022,870 bytes and `dist/artifact.html` 1,022,548, both saying V19.7; kept in the scratchpad's `v197a/release/`.
+- **The published page itself**: (`wrap197.sh` in the scratchpad, 11:13 to 11:36): **76 of 76 playtests clean**, the 74 of 19.6 and the new one on a PC and a phone. Published at 11:36 ("Version 51", version id `1791560190-db07`); the file published is the kept copy, `v197a/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
+
+### Version 19.8: the monsters' attacks
+
+**What he said.** To this chat on 9 Oct, 08:15: "Tiny and small mobs should have one attack.  Medium
+two attacks, large 2-3, and the boss 4.  They should always have a basic, single target attack.  That
+way when their big telegraphed slams or spells go on cooldown, and they have their mace swing or magic
+missile to use in between.  The bigger the hit, the longer the cooldown." His yes to the moves: the
+green troll a club swing and its slam; the red troll a club swing, the slam and a charge along a
+marked line; the boss a swing, his slam, his fan of bolts and his skeleton summon as his fourth ("The
+boss doesn’t need the ring of fire as he has the skeleton summon which should be designated as an
+attack"). 08:24: "Pack leaders that are different mobs can have an extra attack if it seems right."
+(That waits for a pack leader of his own kind: the art chat's skeleton champion and his rallying cry,
+a later version.) "Packs today, attacks next (Recommended)". To the art chat (as it posted them): by
+09:17, "It’s not the big red circles I have a problem with, it’s that every attack is a big slam on
+the ground.  Use the same logic we do with characters, ask questions about the larger enemies and
+develop attacks that are thematic"; by 09:30, the trolls "Club sweep and a charge (Recommended)", the
+Warden "He can keep the slam.  I just don’t want it overused"; by 09:57, to `troll_swing.gif` and
+`troll_charge.gif`, "Yes, keep it (Recommended)"; by 10:18, to `warden_swing.gif`, "Yes, keep it
+(Recommended)", and of the dead he calls, "I’d like them to crawl out of the ground when summoned";
+by 10:23, to their crawling out, "Yes, keep it (Recommended)". By 12:48, to films of it all in the game
+(`green_trolls.gif`, `red_troll.gif`, `warden.gif`), asked "Should the monsters' attacks go into the
+game as they are in these films?": "Yes, as shown (Recommended)".
+
+**What is in it.**
+
+- **The moves** (`MONSTER_ATTACKS`, on; `MONSTER_MOVES`, `MonsterMove`, `movesOf` in
+  `src/game/defs.ts`; `pickMove`, `startMove`, `landMove` in `src/game/game.ts`; `Monster.move` and
+  `Monster.moveCd`). A monster that has moves attacks with the biggest of them that is ready and that
+  the hero is in reach of, and with its basic blow, the first, while the big ones cool down; a big
+  move, once used, waits its own cooldown; after any move the monster waits before the next (Swift
+  shortens both, Frenzied hastens both). Each big move is first ready from half to one and a half
+  times its `first` after the monster wakes, so a pack does not bring its slams down together.
+  - The green troll (medium, two): its club swing, a blow at one (0.6 s of warning, 60% of its blow,
+    no circle); its slam as before (0.85 s, its red circle, the whole blow), once every 6 seconds at
+    most.
+  - The red troll (large, three): its swing (65% of its blow); the slam, once every 7 seconds at most;
+    and the charge: from 3.5 to 9 tiles off, with a clear run past where the hero stands (no wall, shut
+    door, pit or ledge between), he roars and scrapes for 0.9 s while his line fills on the floor (a
+    zone of its own kind, `lane`, from him to 1.5 tiles past the hero, 1.5 tiles wide), then runs it at
+    10 tiles a second; whoever is in his way is run down, once (130% of his blow), and knocked out of
+    it (`CHARGE`); he pulls up at its end and stands 0.6 s, a moment to hit him; once every 9 seconds
+    at most. A stun breaks it off, wound up or running, and the line goes with it; a freeze stops his
+    run.
+  - The Warden (the boss, four): his swing (0.7 s, 80% of his blow); his bolts, only beyond his
+    slam's reach (3.4 to 12 tiles), once every 3.5 seconds at most; his slam, within 3.4 tiles, once
+    every 8 seconds at most ("I just don’t want it overused"); and calling the dead, an attack of its
+    own (1.1 s, his hand rising): four skeletons crawl out of the ground round him, a little after one
+    another, 1.4 s each, and till they are out they are a picture only, not among the monsters: not to
+    be hit or aimed at, doing nothing (`SUMMON`, `Game.risers`, `Riser`, `callDead`). First ready 4.5 to
+    13.5 seconds into the fight, then every 18 seconds at most, and never while 6 of those he called
+    still stand. He no longer calls them at two thirds and a third of his life.
+  - The bats, skeletons, archers and cultists (tiny and small): their one attack, as before.
+- **The pictures**: the art chat's `art/monster-attacks` (`dd38870`), merged here: the trolls' swing
+  and the red troll's charge (`TROLL_MOVES`), the Warden's swing and his calling of the dead
+  (`WARDEN_MOVES`), the dead crawling out (`CRAWL_OUT`), all on and off with the rules
+  (`useMonsterAttacks` in `src/art/bestiary.ts`, as that file loads). Each move is played by the rules'
+  clock, its blow on the rules' blow (`moveFrame`, `moveClip`, `clipFrame` in `src/render/figure.ts`;
+  `monsterAttackAge` takes a move's own recovery); the charge's line is drawn where the red circle is
+  (`drawChargeLane`, in `render.ts`'s floor pass); the crawling dead stand among the figures; the new
+  moves are painted ahead of need (`makeBestiary`'s warming, and the skeleton's crawl where the Warden is).
+- **The bot** steps out of a charge's line (`src/dev/bot.ts`).
+- **How hard they hit**: a hero who stands and takes it is hurt about as hard as by their one attack
+  (`tools/measure_moves.ts`, 40 seconds beside each in a practice room, its words taken off): the green
+  troll 7% less; the red 3% less, and 3% more from six tiles off, where he charges; the Warden's own
+  blows 3% more beside him and the same from six tiles off, the dead he calls besides. The test bot's runs (`tools/measure_attacks.ts`, six of each hero from the start, 40 minutes of play
+  each, off and on): 19 dungeons cleared either way, 11 deaths off and 10 on; its boss fights 28.5 to
+  33.7 seconds on average (29.7 to 35.6 off), the Warden calling 4 to 6 of the dead a fight on average,
+  where at two thirds and a third of his life he called 8.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/monster_attacks.test.ts` (new, 10): the switch on in the game, the pictures with
+  it, and off as before; his rules in the moves (how many by size, the basic blow first, the bigger
+  the hit the longer the cooldown); each move landing when its picture's blow does; a green troll
+  swinging while its slam cools down; the red troll's charge (the line laid and filling, past the
+  hero; run down once and knocked out of it; stepping out of it; pulling up and the line gone; a stun
+  breaking it off; no charge with a wall between); the Warden's four, and the dead crawling out (not
+  among the monsters, not aimed at, then joining the fight); the rising dead neither hit nor hitting
+  nor walking; the Warden with the switch off as before; the pictures, each move from its own clip,
+  its blow on the rules' blow, the run going round, the crawl, all painted ahead; the bot stepping out
+  of a line. `tests/monsters.test.ts`, written before them, holds them off; in `tests/new_words.test.ts`
+  a stun breaks off a troll's slam (its swing made to wait). THE WHOLE UNIT SUITE: 801 of 801 in the frozen copy (below).
+- Films for him, from the game: `tools/scenarios/attacks_film.mjs` and `tools/attacks_films.py`.
+- THE PRE-FLIGHT: a dev page built from the tree, by 13:08: 22 playtests (the new one on a PC and a phone; the monsters on four layouts; the boss; the lesson for a warrior, and for a mage on a phone; the dungeon on two layouts; the packs; the doors; the heights; the depths; the practice room; the small things; the traps; the mix; the way in; the scarce words; the words of a warrior), all clean in the end. The older monsters playtest (`tools/scenarios/monsters.mjs`), written for one attack, at first found every troll's and the Warden's first blow out of its clip: it now switches the attacks off for itself and on again at its end, and was clean on four layouts.
+- A new playtest in the regression, `tools/scenarios/monster_attacks.mjs` (pc and phone): green trolls
+  swinging and slamming; a red troll laying his line and charging down it; the Warden swinging,
+  slamming and calling the dead, who crawl out and join the fight; the bot fighting the Warden and a
+  red troll; a dungeon with the bot fighting there; switched off, a troll slams first; and on again.
+- **The regression** on two frozen copies, two at a time, nothing else running. THE FIRST (the scratchpad's `v198a/arpg_frozen`, 13:11 to 14:15): 142 OF 154 clean; the 12 others all failed between 13:28 and 13:34, when this machine's own disk allowance ran out (screenshots could not be taken, pages crashed, and one hung to its 15-minute limit; old screenshots and frozen copies were deleted at 13:34, and nothing failed after); and its word-combination runs found the stutter below, mended. THE SECOND, the copy that went live (`v198b/arpg_frozen`, 14:26 to 15:19): **153 OF 154 PLAYTESTS FINISHED CLEAN**. The one, `ranger_stances_pc`: a check of the playtest's own looks at what the ranger is doing every eighth of a second while the bot fights, and must see him stand once; it saw him attacking every time. It passed on the first copy, and three times of three on this one after (by 15:21). Speed: the frame-rate run 55.8 frames a second (19.7: 54.6), longest frame 67 ms; the slowest fights of the four word-combination runs 54.5 to 58.5 frames a second (19.7: 55.7 to 58.2), longest frame 133 ms, in a phone's first fight, where 19.7's page and this one, run again side by side, gave 50 to 83 ms both
+- **What the first regression found, and the mend**: its word-combination runs (`combos_*`) had their
+  longest frame at 183 to 200 ms in the first fights (19.7: 83 ms); on this machine, 19.7's page 50 ms
+  and this one's 183 to 200, and with the attacks switched off 83. The list of frames to paint ahead
+  (`makeBestiary`) joined the moves' frame lists with `flatMap`, which READS every frame, and reading a
+  frame is what paints it (`lazyFrames`), so the first time a troll was met all its new moves were
+  painted in one frame of the game. Now each list is only counted, never read (`e1d0f5f`); a test holds
+  it (the first call to paint ahead paints one frame); the same fights after: 50 to 67 ms.
+- The unit suite in the frozen copy: 801 of 801, 15:21 to 15:26.
+- THE RELEASE BUILD: made in the copy at 15:26, `Play.html` 1,043,002 bytes and `dist/artifact.html` 1,042,680, both saying V19.8; kept in the scratchpad's `v198b/release/`.
+- **The published page itself**: (`wrap198.sh` in the scratchpad, 15:26 to 15:50): **78 of 78 playtests clean**, the 76 of 19.7 and the new one on a PC and a phone. Published at 15:50 ("Version 52", version id `1791575422-94d8`); the file published is the kept copy, `v198b/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
+
+### Version 19.9: the new monsters, the other leaders and the rings
+
+**What he said.** To this chat on 9 Oct, 08:24: "Pack leaders that are different mobs can have an extra
+attack if it seems right." His pick by 16:05 of what comes next: "New monsters + rings (Recommended)";
+and asked whether a pack of bats may be yellow: "Bats never come yellow (Recommended)". To the art chat
+(as it posted them): to the Shade's rake and the Golem's and the Boneward's attacks, by 11:14, "Yes, keep
+it (Recommended)" and "Yes, keep them (Recommended)"; the Boneward's blows redrawn at his word of 11:22
+("Actually can we take the boneward’s animations up a notch?  There’s no power in his attacks"), his yes
+by 11:36, "Yes, keep it (Recommended)"; the skeleton champion by 12:19, "Yes, this is him
+(Recommended)", and the rings, "Yes, use the new rings (Recommended)"; the bone marksman by 15:17, the
+high priest by 15:34 and the troll chieftain by 15:46, "Yes, this is him (Recommended)" to each (and
+"Yes, keep the line (Recommended)" to the marksman's line of aim, "Yes, keep it (Recommended)" to the
+priest's smoke); of the chieftain, by 14:41, "I don’t want the bellow if the Skelton leader has the same
+thing"; of bats, by 14:32, "Bats I dont think need a leader". By 17:49, to films of all seven in the game
+(`previews/new_mobs199/`: `shades.gif`, `boneward.gif`, `golem.gif` and `champion.gif`, sent at 16:54;
+`marksman.gif`, `priest.gif` and `chieftain.gif`), with their rules, asked "Should the new monsters and
+leaders go into the game as shown, with those rules?": "Yes, as shown (Recommended)".
+
+**What is in it.**
+
+- **The new monsters** (`NEW_MONSTERS`, on; theirs in `MONSTERS` and `MONSTER_MOVES`, and `packKinds`,
+  in `src/game/defs.ts`), in packs of one kind by his sizes:
+  - The Shade (small, 4 to 7 a pack, from the second dungeon): its one attack, the rake (0.5 s; its
+    warning its pose and a glint on its claws). Quick (3.4 tiles a second) and frail (14 life; a
+    skeleton has 22).
+  - The Boneward (medium, 3 to 5, from the third): its thrust (0.7 s, its whole blow); and its spear
+    (`SPEAR`; `Game.spears`, `throwSpear`, `laySpear`, `spearWay`, `beginStoop`, `stoop` in
+    `src/game/game.ts`), hurled from 3.5 to 8 tiles off at where the hero stands, once every 6 seconds at
+    most (130% of its blow): whoever it meets is hurt, and it lies where it came down, or where a wall
+    stopped it. While it lies there the Boneward fights with its shield, a shove that knocks the hero
+    back (70% of its blow), when he is within 2.5 tiles, and otherwise goes for the spear (for it first
+    when it lies within 1.2 tiles of the Boneward) and stoops for it, a second in which to hit it; the
+    spear is in its hand again half way through.
+  - The Ossuary Golem (large, 1 or 2, from the fourth): its club swing (0.6 s, 60% of its blow); and its
+    skulls (`SKULL`, `hurlSkull`, the zone 'skull'), thrown up high from 2.5 to 10 tiles off, once every
+    5 seconds at most (110% of its blow): the skull comes down where the hero stood, its own shadow
+    growing there as it falls (no red circle), and hurts whatever is within 1.1 tiles of it; then it
+    bursts. Its painted slam is not given it (his 09:17 to the art chat: "it’s that every attack is a big
+    slam on the ground").
+- **The leaders** (`LEADERS`, `leaderKind`; `fillPack`): a yellow pack of skeletons is led by the skeleton
+  champion, of bone archers by the bone marksman, of cultists by the high priest, of green trolls by the
+  troll chieftain; any other yellow pack by one of its own, as before. Each has the life of those he
+  leads, three times over as every yellow pack's leader has, and one move more than they have (his "an
+  extra attack"):
+  - The skeleton champion: his cleave (0.8 s, 130% of his blow); and his rallying cry (0.85 s), once
+    every 14 seconds at most: his minions within 8 tiles of him have his words whole for 5 seconds
+    (`RALLY`, `rally`, `Monster.rallyT`, `wordShare`), and their rings fill with his word while it holds.
+    He cries only when one who can hear it has his words at half.
+  - The bone marksman: his shot (0.7 s); and his great shot, from 2.5 to 13 tiles off, once every 8
+    seconds at most (220% of his blow; `AIM`, the zone 'aim', `holdAim`, `greatShot`, the projectile
+    'great'): he draws and holds it 1.6 s while his line of aim runs out on the floor toward the hero and
+    follows him, until 0.4 s before he lets go, when it holds still; the great arrow flies down it at 16
+    tiles a second for 14 tiles (a wall stops it) and goes through whoever it meets.
+  - The high priest: his fire bolt (0.75 s); and his censer (0.8 s), when the hero is within 3.2 tiles,
+    once every 7 seconds at most (`SMOKE`, the zone 'smoke', `swingCenser`): its burning smoke settles
+    before him, as far as 1.9 tiles (nearer if the hero is), 1.15 tiles across its middle, and burns
+    whoever is in it every half second for 3 seconds, with fire (180% of his blow in all).
+  - The troll chieftain: his trolls' swing and slam, a fifth slower (0.73 s and 1.03 s) and a little
+    harder (70% and 120% of his blow; theirs 60% and 100%), the slam with its red circle once every 7
+    seconds at most (theirs 6). No cry: it stays the champion's.
+  - Each big move is first ready from half to one and a half times its `first` after the monster wakes,
+    as 19.8's are, so that a pack's big moves do not come together.
+- **Bats are never a yellow pack** (`packRarity`): a pack of bats is plain or blue, and an elite room's
+  pack is never bats (`packKinds(depth, true)`).
+- **The pictures**: the art chat's `mockup/pack-leaders` (`d4a6070`, which holds `mockup/new-mobs`,
+  `b801ce2`) and `mockup/more-leaders` (`0ee8a14`), merged here and switched on with the rules
+  (`useNewMonsters` in `src/art/bestiary.ts`: `NEW_MOBS` and `PACK_MARKS` go with `NEW_MONSTERS`; the
+  art's own modules keep them off until the bestiary is loaded). Their sizes on the screen
+  (`FIGURE_SIZE`, top and half): the Shade 26 and 9, the Boneward 32 and 11, the Golem 36 and 21, the
+  champion 35 and 9, the marksman 33 and 10, the priest 30 and 9, the chieftain 58 and 23. Each move is
+  played by the rules' clock, its blow on the rules' blow (`moveClip` in `src/render/figure.ts`); the
+  Boneward's stoop, and its stand and plod with no spear; the spear in flight and lying where it fell,
+  the skull in flight over the figures and its shadow, the line of aim, the great arrow and the burning
+  smoke (`src/render/render.ts`; `skullAt` and `spearHeight` in `src/render/mob_world.ts`). ONE CHANGE TO
+  THE ART CHAT'S PICTURE, for him to judge in the films: the skull's shadow lands as wide as what it
+  hurts (`drawSkullShadow`'s `widest` in `src/art/mob_shots.ts`), so that it shows round the feet of
+  whoever stands where it was aimed.
+- **The rings** (`drawPackMark` in `src/render/pack_marks.ts`, `PACK_MARKS` on), in place of 19.7's
+  ring at the feet: a blue pack's blue ring with its word's colour dotted inside, on every one; a yellow
+  pack's leader his ring of letters in his word, ringed in gold; his minions a broken gold ring, which
+  fills with his word while the champion's cry holds. The names and bars are as 19.7 has them.
+- **Their sounds**, today's, borrowed (no new names in `Sfx`): the Shade's rake as any monster's blow
+  ('swing', 0.4); the Boneward's thrust, the Golem's club, the champion's cleave and the chieftain's
+  swing as the trolls' swing ('swing', 0.5); the Boneward's shield ('hit', 0.6) and its spear thrown
+  ('swing', 0.6); the Golem's skull thrown ('swing', 0.45) and coming down ('slam', 0.6); the champion's
+  cry ('bossRoar', 0.5); the marksman's shot ('shot', 0.5) and great shot ('shot', 0.9); the priest's
+  bolt ('fire', 0.5) and censer ('fire', 0.7); the chieftain's slam ('slam', 0.8). Posted to the sound
+  chat (16:57, 18:29).
+- **The bot** steps aside from a line of aim and out from under a skull and out of the smoke
+  (`src/dev/bot.ts`).
+- **How hard they hit** (`tools/measure_new_mobs.ts`: a hero who stands and takes it, 40 seconds in a
+  practice room, its words taken off; their life as in the fourth dungeon, the practice room's): the
+  Shade 3.10 a second (life 29), a skeleton 4.20 (45); the Boneward 4.25 beside him and 3.92 from six
+  tiles off, where it throws (life 82), a green troll 4.88 (100); the Golem 4.83 beside him and 5.03 from
+  six tiles off (life 205), a red troll 6.35 and 6.72 (502). As yellow packs' leaders, each with the life
+  of those he leads three times over: the champion 5.20 a second, a skeleton leading 5.83 (180); the
+  marksman 3.52 from seven tiles off, an archer leading 3.13 (131); the high priest 9.63 from two and a
+  half tiles off, a cultist leading 6.95 (148), the difference his smoke, for a hero who stands in it
+  all 3 seconds (one who steps out at once takes one burn of its six); the chieftain 6.95, a green troll
+  leading 6.85 (402).
+- **A call of mine**, by the same rule he said yes to: the first dungeon's one elite room may be led by
+  the champion or the marksman too; nothing has words there, so the champion's cry has nothing to make
+  whole there.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/new_monsters.test.ts` (new, 13): the switch on in the game, the pictures and the
+  rings with it, and off as before; by depth and in packs of their sizes, a yellow pack led by its new
+  leader with three times his life, any other by its own; bats never yellow and an elite room never bats;
+  their blows landing when their pictures' do; the Boneward's spear thrown, lying, gone for, stooped for
+  and had again, its shield meanwhile; the Golem's skull coming down where the hero stood, hurting what
+  is under it and not what stepped out, bursting, and a Twin Golem's second; the champion's cry, his
+  minions' words whole for a while and then half again, and no cry with none to hear it; the marksman's
+  line of aim following and then holding still, the great arrow piercing; the priest's smoke burning
+  whoever stays in it; the chieftain's swing and slam; the pictures of every move by the rules' clock,
+  their sizes and their walks at the rules' paces; the bot stepping out from under a skull, out of a line
+  of aim and out of the smoke. Changed for them: `tests/packs.test.ts` (a yellow pack's leader may be a
+  leader of its own), `tests/monster_attacks.test.ts` (the leaders' extra move), `tests/new_mobs3.test.ts`
+  and `tests/more_leaders.test.ts` (the pictures on just while the rules are), `tests/guide.test.ts` (its
+  seeds found again: an elite room is never bats now), `tests/skeleton3.test.ts` and
+  `tests/archer3.test.ts` (the painting order since 19.8), `tests/monsters.test.ts` (the classic
+  figures). THE WHOLE UNIT SUITE: 870 of 870 in the frozen copy (below).
+- Films for him, from the game: `tools/scenarios/new_mobs_film.mjs` (WHO=shades, boneward, golem,
+  champion, marksman, priest, chieftain) and `tools/attacks_films.py`.
+- THE PRE-FLIGHT: a dev page built from the tree, by 18:58: 26 playtests (the new one on a PC and a
+  phone; the monsters on four layouts; the boss; the lesson for a warrior, and for a mage on a phone; the
+  dungeon on two layouts; the packs on two; the monsters' attacks on two; the doors; the heights; the
+  depths; the practice room; the small things; the traps; the mix; the way in; the scarce words; the
+  words of a warrior; the side paths), all clean.
+- A new playtest in the regression, `tools/scenarios/new_monsters.mjs` (pc and phone): Shades raking; a
+  Boneward's spear thrown, lying, stooped for, its shield and thrust; a Golem's skulls and club; the
+  champion's cleave and cry, his minions rallied; the marksman's great shot, its line and his shots; the
+  priest's censer, its smoke and his bolts; the chieftain's swing and slam; the bot fighting a Boneward, a
+  Golem and the marksman's pack; dungeons 1 to 6 laid (each new monster from its own dungeon on, the new
+  leaders at the head of yellow packs, no pack of bats yellow) and the bot fighting in the fourth;
+  switched off, none of them and every yellow pack led by its own; and on again.
+  `tools/scenarios/packs_wild.mjs` allows a yellow pack's own leader.
+- **The regression** on the frozen copy (the scratchpad's `v199a/arpg_frozen`, `f31a653`, 18:59 to
+  19:49), two at a time, nothing else running: **155 OF 156 PLAYTESTS FINISHED CLEAN**. The one,
+  `mix_phone`: a check of the playtest's own looks at how far the hero is from the lever when it first
+  sees the lever pulled, and must find him within 0.6 tiles of its reach (1.5 tiles); it looked late and
+  found him 0.88 tiles off. Clean three times of three after, alone (1.34, 1.34 and 1.50 tiles; by 19:51).
+  Speed: the frame-rate run 56.9 frames a second (19.8: 55.8), longest frame 50 ms; the slowest fights of
+  the four word-combination runs 57.6 to 59.3 frames a second (19.8: 54.5 to 58.5), longest frame 67 ms.
+- The unit suite in the frozen copy: 870 of 870, 19:52 to 19:56.
+- THE RELEASE BUILD: made in the copy at 19:56, `Play.html` 1,189,821 bytes and `dist/artifact.html`
+  1,189,499, both saying V19.9; kept in the scratchpad's `v199a/release/`.
+- **The published page itself**: (`wrap199.sh` in the scratchpad, 19:56 to 20:20): **79 of 80 playtests
+  clean**, the 78 of 19.8 and the new one on a PC and a phone. The one, `mix_phone`: the same check of
+  the playtest's own as in the regression, at the same 0.88 tiles. Run again, 20:20 to 20:35: beside
+  another playtest, and beside its PC twin as the regression runs them, clean on 19.9's page every time
+  (1.42, 1.26, 1.28 and 1.27 tiles) as on 19.8's (1.34, 1.12, 1.36 and 1.44). Published at 20:35
+  ("Version 53", version id `1791592557-dfd8`); the file published is the kept copy,
+  `v199a/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -5019,7 +5356,19 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               heroes (hands out the three rigs) + hero_warrior / hero_ranger / hero_mage;
               mkit (the monsters' colours; strike, onGrid, monsterArt: Version 14),
               bestiary (hands out the monsters' rigs; which figure a monster is, how big it
-              stands, painting ahead) + monster_bones / _cultist / _bat / _brute / _warden;
+              stands, painting ahead; 19.8: the monsters' new moves on and off with the rules,
+              `useMonsterAttacks`) + monster_bones / _cultist / _bat / _brute / _warden (19.8,
+              the art chat's: the trolls' swing and the red troll's charge, `TROLL_MOVES`; the
+              Warden's swing and his calling of the dead, `WARDEN_MOVES`; the dead crawling out,
+              `CRAWL_OUT` in mkit) + charge_lane (the line a charge runs along, `drawChargeLane`);
+              19.9: THE NEW MONSTERS, the art chat's, on and off with the rules, `useNewMonsters`
+              (`NEW_FIGURES`; `ClassicFigure`, the figures of Version 14, for the tests of their
+              pictures) + new_mobs3 (the Shade, the Boneward, the Ossuary Golem, the skeleton
+              champion and the bone marksman on the heroes' bones, `NEW_MOBS`) + monster_cultist
+              (the high priest, `makeHighPriestArt`) + monster_brute (the troll chieftain,
+              `makeChieftainArt`) + mob_shots (what they throw and lay on the floor: the spear in
+              flight and lying, the skull's shadow and burst, the line of aim, the great arrow, the
+              burning smoke);
               title (the two paintings behind the starting screen, each a stack of six groups, and
               their life) + title_morph + morph (the one turning into the other, Version 11);
               spells (the orb, the familiar and its bolt, in each element's colours, Version 12);
@@ -5057,7 +5406,10 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               THE THREE HEROES PAINTED OVER A SKELETON; moves3 their moves: since 19.2 Strike's
               two swings mended, `COMBO_MENDS`; since 19.4 THE RANGER'S NEW STANCES,
               `RANGER_STANCES`, `useRangerStances`, his battle stance and town stance, stops and
-              starts, gripping runs, Shot and Volley from the crouch, walking attacks; heroes3
+              starts, gripping runs, Shot and Volley from the crouch, walking attacks; since 19.7
+              THE MAGE'S STANCES, `MAGE_STANCES`, `useMageStances`, her guard, runs, casts, hits,
+              fall and habits from it, and BIG AND WILD, `WILD`, `useWild`, the swings, Shot and
+              the Wave made so, with `Clip.tail` and `Clip.poise`; heroes3
               their art, `animSet3`, and the pictures painted ahead, `HeroArt.warm`)
 src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, level, state, game,
               lock (touch: which enemy the hero is locked onto, Version 11.1),
@@ -5098,7 +5450,30 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               `Hero.quest`, `Meta.ring`, `DARK_RING`, `FIRST_GATE`; the map-maker's numbers for
               the first dungeon in dungeon.ts; the NEW MOVE banner and the plates' opening,
               `drawMoveToast` and `OPENING` in ui/hud.ts; the stick at one speed, `readControls`
-              in main.ts)
+              in main.ts);
+              THE MONSTER PACKS (19.7, in defs.ts: `MONSTER_PACKS`, `MonsterDef.size`,
+              `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE`, `GATE_TWIN_PACKS`, `sizeOf`, `packRange`,
+              `PACKS`, `packRarity`, `wordShare`, `PACK_LOOK`; each pack's kind and size drawn by
+              the map-maker, `Stage.kindRng` and `PackSpot.kind` in dungeon.ts; in game.ts
+              `fillPack`, `spawn`'s pack, `halfOf`, every monster word weighed by its share, and
+              where a blow lands, `hurtHero`'s `HalfWords`; `Monster.rarity`, `Monster.half`;
+              the names and bars of blue and yellow packs, `named`, `nameColor`, `drawBars` in
+              render/render.ts);
+              THE MONSTERS' ATTACKS (19.8, in defs.ts: `MONSTER_ATTACKS`, `MONSTER_MOVES`,
+              `MonsterMove`, `movesOf`, `CHARGE`, `SUMMON`; in game.ts `pickMove`, `startMove`,
+              `landMove`, the red troll's charge, `chargeLane`, `runCharge`, `endCharge`, its line a
+              zone of kind 'lane', and the dead the Warden calls, `callDead`, `Game.risers`,
+              `updateRisers`; `Monster.move`, `moveCd`, `charge`, the state 'charge'; the bot
+              steps out of a line, dev/bot.ts);
+              THE NEW MONSTERS (19.9, in defs.ts: `NEW_MONSTERS`, theirs in `MONSTERS` and
+              `MONSTER_MOVES`, `packKinds`, `SPEAR`, `SKULL`, `RALLY`, `LEADERS`, `leaderKind`, `AIM`,
+              `SMOKE`, and bats never yellow in `packRarity`; in game.ts the Boneward's spear,
+              `Game.spears`, `throwSpear`, `laySpear`, `spearWay`, `beginStoop`, `stoop`, the state
+              'pickup', `Monster.bare`; the Golem's skulls, `hurlSkull`, the zone 'skull'; the
+              champion's cry, `rally`, `Monster.rallyT`; the marksman's great shot, `holdAim`,
+              `greatShot`, the zone 'aim', the projectile 'great'; the priest's censer,
+              `swingCenser`, the zone 'smoke'; a yellow pack's leader, `leaderOf` in `fillPack`; the
+              bot steps out of them, dev/bot.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -5106,12 +5481,19 @@ src/render/   render (world: tiles, actors, ground patches, statuses, shots, lig
               18.5: the stone beside a door in a back wall that the wall runs on into stands),
               figure (which frame of a hero to show, their tails, and what they do when left
               standing: the game and the class cards both use it, Version 11; and how far into
-              its attack a monster is by the rules' clock, Version 14),
+              its attack a monster is by the rules' clock, Version 14; 19.8: a monster's move,
+              `moveFrame`, `moveClip`, and a held clip going round, `clipFrame`),
               lifebar (the hero's life over their head: when it is there, what it shows, 11.2),
               fx (everything that flies or flashes: each word's sign, numbers, shake, messages),
               words3 (the new words' looks, the art chat's: since Version 19.3 Heavy's, Precise's,
               Frenzied's and Guarding's in the game, called up by the rules' events, `events3`;
-              the other four a demo for its playtest's page, `demo3`, `W3.demo`)
+              the other four a demo for its playtest's page, `demo3`, `W3.demo`),
+              wild (19.7, the art chat's: BIG AND WILD, what the heroes' moves throw off,
+              `Wild`, fed by fx.ts and `see` in main.ts; `LEAP_LIFT`, `drawWildWave`,
+              `drawWildArrow`),
+              pack_marks (19.9, the art chat's: THE RINGS that tell blue and yellow packs apart,
+              `drawPackMark`, `PACK_MARKS`), mob_world (19.9: where a skull is in its flight,
+              `skullAt`, and how high a spear flies, `spearHeight`)
 src/ui/       ui (immediate-mode kit), hud (globes, the attacks as phrases, the prompts' banner),
               inventory (Version 13.1: three pages, GEAR on the hero, ATTACKS, STATS, over the
               bag and the words; 14.2: on half the screen, what is read on a card over the
@@ -5332,6 +5714,21 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.9: the new monsters, the other leaders and the rings (NEW_MONSTERS on, with the art chat's NEW_MOBS and PACK_MARKS)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/new_monsters.mjs --out shots/nm/ph   # each new monster's moves in the practice room; dungeons 1 to 6 laid; off and on again (in the regression)
+WHO=priest SECONDS=9 FPS=20 node tools/playtest.mjs --file dist/<page>.html --size 960x540 --scenario tools/scenarios/new_mobs_film.mjs --out shots/film199/priest   # a film's frames (WHO=shades|boneward|golem|champion|marksman|priest|chieftain), then:
+python3 tools/attacks_films.py shots/film199/priest previews/new_mobs199/priest.gif "THE HIGH PRIEST" "<line>" "<line>" 210,100,440,270   # the film he saw
+tsx tools/measure_new_mobs.ts [seconds] [rng]   # how hard each new monster and leader hits a hero who stands and takes it, beside one of today's
+# Version 19.8: the monsters' attacks (MONSTER_ATTACKS on, with the art chat's TROLL_MOVES, WARDEN_MOVES and CRAWL_OUT)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/monster_attacks.mjs --out shots/ma/ph   # green trolls, a red troll's charge, the Warden and the dead he calls; a dungeon; off and on again (in the regression)
+WHO=red SECONDS=9.5 FPS=20 node tools/playtest.mjs --file dist/<page>.html --size 960x540 --scenario tools/scenarios/attacks_film.mjs --out shots/film/red   # a film's frames (WHO=trolls|red|warden), then:
+python3 tools/attacks_films.py shots/film/red previews/attacks/red_troll.gif "THE RED TROLL" "<line>" "<line>" 170,80,500,300   # the film he saw
+tsx tools/measure_moves.ts [seconds] [rng] [bare]   # how hard each monster with moves hits a hero who stands and takes it, off and on
+tsx tools/measure_attacks.ts [seeds] [seconds]   # the bot's runs, off and on: dungeons cleared, deaths, harm by kind, boss fights
+# Version 19.7: monster packs by size, blue and yellow (MONSTER_PACKS, PACKS, PACK_LOOK on); the mage's stances and the moves big and wild (MAGE_STANCES and WILD on)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/packs_wild.mjs --out shots/pw/ph   # the three heroes with the bot, her stances and the wild moves off and on again; a dungeon of packs (in the regression)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/packs_look.mjs --out shots/packs/ph   # the pictures he saw: a blue pack and a yellow pack, in the practice room and in dungeon 4 (the look off and on)
+SKILL=whirlwind node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/wild_skill.mjs --out shots/wild/whirlwind   # a skill big and wild, filmed (the art chat's; SKILL=leap|volley|trap|orb|warp; OFF=1 as it was)
 # Version 19.6: the art chat's wordsmith on bones and master rune-stone (SMITH3 and QUEST3 on; the stone's pictures fed by the rules)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/smith_look.mjs --out shots/smith/on   # the wordsmith and his ring filmed (OFF=1: as they were; tools/smith_films.py makes the film)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/quest_dungeon.mjs --out shots/quest/dungeon   # the stone by the fallen wordsmith, taken up, carried (quest_town.mjs: the dark ring and its powering up; tools/quest_films.py)
@@ -5461,6 +5858,12 @@ python3 tools/sheet_cells.py previews/words_stacked.png "Four words at once" "..
 node tools/preview.mjs src/dev/preview_styles.ts shots/styles.png 1200 2600      # the six art styles (crop to the logged "sheet WxH")
 node tools/preview.mjs src/dev/preview_styles.ts shots/pair.png 1200 4000 pair   # styles 1 and 6, the whole cast
 node tools/preview.mjs src/dev/preview_dungeon.ts shots/dungeon.png 1100 760      # six generated levels, top-down
+# THE SHAPE OF A DUNGEON (his yes by 18:28, 9 Oct: "Yes, after 19.9 (Recommended)"): a view of the game, the same view in
+# plain lines with the places marked where a decoration fits (the rules: the head of src/dev/preview_frame.ts), and the key
+SEED=3897415668 DEPTH=3 AT=31.5,98.5 node tools/playtest.mjs --file dist/frame.html --size 1000x640 --dpr 1 --scenario tools/scenarios/frame_photo.mjs --out shots/frame/photo
+node tools/preview.mjs src/dev/preview_frame.ts shots/frame/cam.png 1000 640 "3:23:cam:31.5:98.5:500:320:2"   # its [log] lines give the counts
+python3 tools/frame_compose.py shots/frame/photo_view.png shots/frame/cam.png previews/dungeon_shape.png --depth 3 --here 4,18,2,16 --whole 45,276,13,222 --standing "braziers (boxes), rubble (a cross)" --door "the barred door into the lower room"
+node tools/preview.mjs src/dev/preview_frame.ts shots/frame/win.png 1180 830 "3:23:20:88:46:106:2"   # a window of tiles with its own title and key; "3:23:all:1" the whole level
 node tools/preview.mjs src/dev/preview_warrior2.ts shots/warrior2.png 540 1600    # old and new warrior side by side
 tsx tools/balance.ts 12 2400                                                      # bots: dungeons cleared, cause of death
 ```

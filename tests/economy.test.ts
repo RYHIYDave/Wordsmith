@@ -105,23 +105,29 @@ test('words are scarce: a fully explored dungeon holds a handful, where it used 
         all += expected;
         most = Math.max(most, expected);
         if (expected > 8) piles++;
+        // (MONSTER PACKS, since Version 19.7: a lair may hold two guardians, and gives up a word as
+        // one guardian did, so it is the lairs that are counted; and of the yellow packs' leaders, only
+        // an elite room's may carry a word, as an elite always might: those are counted)
+        const lairs = new Map<number, boolean>();
         for (const m of g.monsters) {
-          if (m.champion) {
-            guardians++;
-            if (m.carries.length) guardianCarry++;
-          } else if (m.elite) {
+          if (m.champion) lairs.set(m.packId, (lairs.get(m.packId) ?? false) || m.carries.length > 0);
+          else if (m.elite && !m.boss && (!m.rarity || f.packs[m.packId].tier === 'elite')) {
             elites++;
             if (m.carries.length) eliteCarry++;
           }
         }
+        for (const carried of lairs.values()) {
+          guardians++;
+          if (carried) guardianCarry++;
+        }
         assert.ok(standing >= 1, 'the boss, at least');
       }
     }
-    rows.push(`dungeon ${depth}: ${(all / n).toFixed(1)} words in a full clear (${(sure / n).toFixed(1)} standing on monsters; the most in any one: ${most.toFixed(1)}); named monsters carrying ${Math.round((eliteCarry / elites) * 100)}%, guardians ${Math.round((guardianCarry / guardians) * 100)}%`);
+    rows.push(`dungeon ${depth}: ${(all / n).toFixed(1)} words in a full clear (${(sure / n).toFixed(1)} standing on monsters; the most in any one: ${most.toFixed(1)}); named monsters carrying ${Math.round((eliteCarry / elites) * 100)}%, guardians' lairs ${Math.round((guardianCarry / guardians) * 100)}%`);
     assert.ok(all / n >= 2 && all / n <= 5.5, `dungeon ${depth}: ${(all / n).toFixed(2)} words on average in a full clear (it was 9 to 13)`);
     assert.ok(piles <= 3 && most <= 11, `dungeon ${depth}: hardly ever a pile (${piles} of ${n} hold more than 8 words; ${most.toFixed(1)} at most)`);
     assert.ok(Math.abs(eliteCarry / elites - TUNE.eliteCarry) < 0.12, `dungeon ${depth}: about one named monster in five carries (${eliteCarry} of ${elites})`);
-    assert.ok(Math.abs(guardianCarry / guardians - TUNE.guardianCarry) < 0.15, `dungeon ${depth}: guardians carry about ${TUNE.guardianCarry * 100}% of the time (${guardianCarry} of ${guardians})`);
+    assert.ok(Math.abs(guardianCarry / guardians - TUNE.guardianCarry) < 0.15, `dungeon ${depth}: a guardian's lair gives up a word about ${TUNE.guardianCarry * 100}% of the time (${guardianCarry} of ${guardians})`);
   }
   console.log(rows.join('\n'));
 });
@@ -283,7 +289,14 @@ test('how scarce words are never changes the dungeon itself', () => {
       const o = g2.monsters[i];
       assert.deepEqual([m.kind, m.name, m.x, m.y, m.maxLife, m.words.join()], [o.kind, o.name, o.x, o.y, o.maxLife, o.words.join()]);
     });
-    assert.ok(g2.monsters.filter((m) => m.elite).every((m) => m.carries.length === 1), 'with the chances turned all the way up, every named monster carries');
+    // (MONSTER PACKS, since Version 19.7: the named monsters that may carry a word are an elite
+    // room's leader and the first guardian of a lair; a lair gives up a word as one guardian did)
+    const packs = g2.level.floor.packs;
+    const leaders = g2.monsters.filter((m) => m.elite && !m.champion && !m.boss && (!m.rarity || packs[m.packId].tier === 'elite'));
+    assert.ok(leaders.length > 0 && leaders.every((m) => m.carries.length === 1), 'with the chances turned all the way up, every elite room\'s leader carries');
+    for (const id of new Set(g2.monsters.filter((m) => m.champion).map((m) => m.packId))) {
+      assert.equal(g2.monsters.filter((m) => m.champion && m.packId === id && m.carries.length === 1).length, 1, 'and every lair gives up one word');
+    }
   } finally {
     Object.assign(TUNE, keep);
   }

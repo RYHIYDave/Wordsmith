@@ -997,6 +997,95 @@ interface WardenParts {
   beltY: number;
 }
 
+// ---------------------------------------------------------------------------------------------
+// THE WARDEN'S NEW MOVES (the art chat, 9 Oct 2026). The owner's yes in the main chat, 9 Oct, by
+// 08:15 (as that chat posted it at 08:30): the boss a swing, his slam, his fan of bolts, and his
+// skeleton summon as his fourth; and always a basic single-target attack to use while the big ones
+// cool down. To the art chat, 09:30, of his slam: "He can keep the slam.  I just don’t want it
+// overused". So beside the slam and the volley, as they were:
+//   THE SWING (`swing`, prop 2): his basic blow. Both hands on the shaft, the maul cocked back
+//     slantwise over his further shoulder and held (the warning: not the slam's, which is the maul
+//     hoisted straight up and back over the helm), then swung round him level at his belt, through
+//     straight ahead (the blow), and on round to his other side, the head leaving a streak of its fire.
+//   CALLING THE DEAD (`summon`, prop 1 with `pt` below 0): the maul planted as for the volley, his free
+//     hand low before him, palm up; it comes up slowly, fingers clawed, his head going back and every
+//     fire in him flaring, and embers rise off the floor round his feet: the dead come up with it. They
+//     CRAWL OUT OF THE GROUND (his word, by 10:18: "I’d like them to crawl out of the ground when
+//     summoned"; his yes by 10:23): mkit.ts crawlOut, the skeleton's `moves.crawl`, behind CRAWL_OUT.
+// Behind a switch that is off: while it is, he is exactly as he was.
+
+/** The switch: his new moves (AnimSet.clips.moves) are made only while it is on. */
+export const WARDEN_MOVES = { on: false };
+
+/**
+ * THE LEVEL SWING, his: for the maul swung round him level at his belt, `deg` round from straight
+ * ahead toward his further side (+) or his nearer (-): where the hand at its butt is, the way the
+ * shaft runs on the screen, how much of its length shows, and whether it is behind him. As the
+ * trolls' (art/monster_brute.ts): an oval seen from the corner; cocked back, it is lifted slantwise
+ * over his shoulder.
+ */
+function wardenLevel(deg: number, belt: V, back: boolean): { at: V; aim: number; long: number; behind: boolean } {
+  const fwd = back ? -1 : 1;
+  const a = (deg * Math.PI) / 180;
+  const vx = Math.cos(a) + Math.sin(a);
+  const vy = 0.5 * fwd * (Math.cos(a) - Math.sin(a));
+  const lift = clamp01((deg - 60) / 40);
+  const after = clamp01((-deg - 70) / 40);
+  const elev = ((-10 + lift * 40 + after * 28) * Math.PI) / 180;
+  const R = 15 * (1 - 0.2 * lift);
+  const at: V = [belt[0] + vx * R + lift * 4, belt[1] + vy * R - (lift * (back ? 16 : 12) + after * 6)];
+  const dx = Math.cos(elev) * vx;
+  const dy = Math.cos(elev) * vy - Math.sin(elev) * 1.225;
+  return { at, aim: (Math.atan2(-dy, dx) * 180) / Math.PI, long: Math.min(1, Math.max(0.45, Math.hypot(dx, dy) / Math.SQRT2)), behind: vy < -0.12 };
+}
+
+/** The middle of the maul's head for a level swing at `deg` (as `maul` places it). */
+function levelHead(deg: number, belt: V, back: boolean): V & { behind?: boolean } {
+  const l = wardenLevel(deg, belt, back);
+  const [dx, dy] = dir(l.aim);
+  return [l.at[0] + dx * REACH * l.long, l.at[1] + dy * REACH * l.long];
+}
+
+/**
+ * THE STREAK the maul's head leaves as it is swung round level (Pose.sweep: degrees just come
+ * through): a band of its fire along the oval it goes round, widest just behind the head, thinning and
+ * breaking up toward its oldest end. Laid over what is in front of him (`front`) and under him what is
+ * behind (`behindL`); the newest part of it, under the head itself, is left to the head.
+ */
+function maulStreak(front: Px, behindL: Px, deg: number, sweep: number, belt: V, back: boolean, lights: Light[]): void {
+  const n = Math.max(10, Math.round(Math.abs(sweep) / 3));
+  for (let j = n; j >= 0; j--) {
+    const u = j / n;
+    if (u < 0.1) continue;
+    const at = deg + sweep * u;
+    const l = wardenLevel(at, belt, back);
+    const [x, y] = levelHead(at, belt, back);
+    const r = 1.5 + 8 * Math.pow(1 - u, 0.8);
+    const p = l.behind ? behindL : front;
+    for (let yy = Math.floor(y - r); yy <= Math.ceil(y + r); yy++) {
+      for (let xx = Math.floor(x - r); xx <= Math.ceil(x + r); xx++) {
+        const d = Math.hypot(xx + 0.5 - x, yy + 0.5 - y);
+        if (d > r || !p.inside(xx, yy)) continue;
+        if (u > 0.5 && hashW(xx, yy) < (u - 0.5) * 2.2) continue;
+        const edge = d > r - 1.2;
+        p.set(xx, yy, edge ? FLAME[u < 0.5 ? 2 : 1] : u < 0.22 ? FLAME[4] : u < 0.45 ? FLAME[3] : u < 0.75 ? FLAME[2] : FLAME[1]);
+      }
+    }
+  }
+  const strong = Math.min(1, Math.abs(sweep) / 90);
+  for (const k of [0.2, 0.45]) {
+    const [x, y] = levelHead(deg + sweep * k, belt, back);
+    lights.push({ x, y, r: 22, color: FLAME[3], a: 0.35 * strong });
+  }
+}
+
+/** A steady scatter, 0..1, for a pixel. */
+function hashW(x: number, y: number): number {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
 function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Painted {
   taken = 0;
   const lights: Light[] = [];
@@ -1022,18 +1111,25 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
   // --- the maul and the two hands ---
   // planted (the volley), it stands on the floor and does not move with the body
   const loose = q.prop === 1 ? clamp01(q.off) : 0;
+  // (swung level, prop 2: both hands on the shaft at his belt, `aim` the degrees round from straight ahead)
+  const belt: V = [Xs + 1, AY - 58 + Y];
+  const level = q.prop === 2 ? wardenLevel(q.aim, belt, back) : null;
+  /** Calling the dead (prop 1, `pt` below 0): his open hand comes up from low before him, fingers up, and holds no fire. */
+  const summon = q.prop === 1 && q.pt < 0;
   const carry = Math.round((Xs + hipX) / 2) - AX;
-  const rear: V = [
-    Math.round(AX - 8 + carry * (1 - loose) + q.hx + sway * 1.2),
-    Math.round(AY - 60 + (Y + Math.round(Math.abs(sway))) * (1 - loose) + q.hy),
-  ];
-  const [dx, dy] = dir(q.aim);
+  // (taking it up into the swing and putting it back after, `off` goes from the maul held at rest, 0, to swung level, 1)
+  const into = level ? smooth(q.off) : 0;
+  const held: V = [AX - 8 + carry + (level ? 0 : q.hx) + sway * 1.2, AY - 60 + Y + Math.round(Math.abs(sway)) + (level ? 0 : q.hy)];
+  const rear: V = level
+    ? [Math.round(held[0] + (level.at[0] + q.hx - held[0]) * into), Math.round(held[1] + (level.at[1] + q.hy - held[1]) * into)]
+    : [Math.round(AX - 8 + carry * (1 - loose) + q.hx + sway * 1.2), Math.round(AY - 60 + (Y + Math.round(Math.abs(sway))) * (1 - loose) + q.hy)];
+  const [dx, dy] = dir(level ? REST_AIM + (((((level.aim - REST_AIM) % 360) + 540) % 360) - 180) * into : q.aim);
   // (hoisted up and back, the maul tips away from where he faces: less of its length shows, and
   // the hand that guides it slides down the shaft to the one at the butt)
   const turn = ((((q.aim + 180) % 360) + 360) % 360) - 180;
-  const tip = smooth((turn - 20) / 65);
-  const seen = 1 - 0.42 * tip;
-  const spread = SPREAD - 12 * tip;
+  const tip = level ? 0 : smooth((turn - 20) / 65);
+  const seen = level ? 1 + (level.long - 1) * into : 1 - 0.42 * tip;
+  const spread = level ? SPREAD * (1 - 0.4 * (1 - level.long) * into) : SPREAD - 12 * tip;
   const onShaft: V = [rear[0] + dx * spread, rear[1] + dy * spread];
   const raised: V = [Xs + 27 + q.ohx, sy - 24 + q.ohy];
   // (the hand that leaves the shaft goes out to the side on its way up, clear of his face)
@@ -1070,6 +1166,10 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
   const maulL = px();
   // (planted, the spike on its head is in the floor)
   const head = maul(maulL, rear, dx, dy, seen, 7 * (1 - loose), heat, pulse);
+  // (swung level: the streak of its fire, what of it is behind him on a layer under all of him, the rest laid over him at the end)
+  const behindAll = px();
+  const streakFront = level && into > 0.9 && Math.abs(q.sweep) >= 6 ? px() : null;
+  if (level && streakFront) maulStreak(streakFront, behindAll, q.aim, q.sweep, belt, back, lights);
 
   const body = px();
   const crouch = Y * 0.45;
@@ -1105,7 +1205,7 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
     },
   };
   // (the hand off the shaft is open; swept out at the hero, it points the way the bolts go)
-  const sweep = Math.hypot(q.ohx, q.ohy) > 6;
+  const sweep = !summon && Math.hypot(q.ohx, q.ohy) > 6;
   const cast = back ? 30 : -12;
   const foreR: Part = {
     x: (eR[0] + lead[0]) / 2,
@@ -1157,8 +1257,14 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
   }
 
   // --- stack it, bottom to top ---
-  const stack: (Px | Part)[] = [];
-  if (back) {
+  const stack: (Px | Part)[] = [behindAll];
+  if (level && into > 0.5 && !back && level.behind) {
+    // facing us, swung round behind him: the maul and his further arm are beyond him, his nearer arm across his front
+    stack.push(maulL, capeL, armR, foreR, body, armL, headP, plateFar, plateNear, foreL);
+  } else if (level && into > 0.5 && back && !level.behind) {
+    // facing away, swung round toward us: the maul and his arms are on our side of him
+    stack.push(body, capeL, headP, plateFar, plateNear, armL, armR, maulL, foreL, foreR);
+  } else if (back) {
     // facing away, what he holds before him is beyond him: the maul and his arms. Hoisted over his
     // head and back, the maul tips toward us, and his arms are on our side of the helm.
     const crowned = rear[1] < ty + 1 && lead[1] < ty + 1 && loose < 0.5;
@@ -1190,9 +1296,16 @@ function jailer(q: Pose, back: boolean, take?: (parts: WardenParts) => void): Pa
   }
   const out = compose(null, layers);
 
+  if (streakFront) out.blit(streakFront, 0, 0);
   // --- what burns in the air: over everything, with no seam round it ---
+  if (summon && loose > 0.5) {
+    // the dead answer: embers rise off the floor all round his feet, more as his hand comes up
+    const rise = clamp01((60 - (q.ohy + 10)) / 70);
+    for (const [ox, seed] of [[-34, 1], [-18, 2], [16, 3], [36, 4], [-4, 5]] as const) embers(out, AX + ox, AY - 2, 2 + Math.round(rise * 3), 10 + rise * 26, q.wind, seed);
+    lights.push({ x: AX, y: AY - 6, r: 30 + rise * 30, color: FLAME[2], a: 0.15 + rise * 0.3 });
+  }
   if (loose > 0.25) {
-    const fire = clamp01(q.pt);
+    const fire = summon ? 0 : clamp01(q.pt);
     if (fire > 0.04 && loose > 0.6) {
       // the fire gathering over the open palm
       const tall = 5 + fire * 21 + Math.sin(q.wind * Math.PI * 14) * 1.5;
@@ -1304,6 +1417,49 @@ function volley(plant: Partial<Pose>, loose: Partial<Pose>, after: Partial<Pose>
   return { keys, hit };
 }
 
+/** The moment his swing's blow lands, and the moment the dead rise as he calls them, in seconds (the rules' times may differ: the frames are fitted to them). */
+export const WARDEN_SWING_HIT = 0.7;
+export const SUMMON_RISE = 1.1;
+
+/** HIS SWING (WARDEN_MOVES, prop 2): both hands on the shaft, the maul cocked back slantwise over his further shoulder and held (the warning), then round him level, through the blow, and on round. */
+function wardenSwing(): Timeline {
+  const hit = WARDEN_SWING_HIT;
+  const L: Partial<Pose> = { prop: 2, off: 1 };
+  const gather: Partial<Pose> = { ...L, aim: 70, lean: -1, act: 0.3, wind: 0.1, drag: 0.4 };
+  const wound: Partial<Pose> = { ...L, aim: 100, lean: -3, bob: 2, act: 0.8, near: 0.4, far: -0.5, wind: 0.25, drag: 1 };
+  const blow: Partial<Pose> = { ...L, aim: -8, lean: 4, bob: 3, act: 1, near: -0.3, far: 0.7, sweep: 110, wind: 0.5, drag: 2 };
+  const thru: Partial<Pose> = { ...L, aim: -100, lean: 5, bob: 3, act: 0.6, near: -0.3, far: 0.7, sweep: 92, wind: 0.65, drag: 1.4 };
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    { at: 0.2, pose: gather, ease: 'out' },
+    { at: 0.4, pose: wound, ease: 'out' },
+    { at: hit - 0.05, pose: { ...wound, aim: 106, bob: 2.5, act: 0.95, wind: 0.32 }, ease: 'lin' },
+    { at: hit - 0.02, pose: { ...wound, aim: 70, sweep: 54, lean: 0 }, ease: 'in' },
+    { at: hit, pose: blow, ease: 'lin' },
+    { at: hit + 0.07, pose: thru, ease: 'out' },
+    { at: hit + 0.18, pose: { ...thru, aim: -112, sweep: 18 }, ease: 'out' },
+    { at: hit + 0.45, pose: { ...L, aim: -60, lean: 1, sweep: 0, act: 0.3, wind: 0.85 }, ease: 'io' },
+    { at: hit + 0.7, pose: { wind: 1 }, ease: 'io' },
+  ];
+  return { keys, hit };
+}
+
+/** CALLING THE DEAD (WARDEN_MOVES, prop 1 with `pt` below 0): the maul planted as for the volley (`plant`), his free hand low before him, palm up; up it comes, fingers clawed, his head going back and his fires flaring, and the dead rise with it (`hit`). */
+function wardenSummon(plant: Partial<Pose>): Timeline {
+  const stood: Partial<Pose> = { prop: 1, aim: -90, hx: plant.hx ?? 0, hy: plant.hy ?? 0 };
+  const low: Partial<Pose> = { ...stood, ...plant, off: 1, ohx: 2, ohy: 60, pt: -1, act: 0.5, lean: (plant.lean ?? 0) + 3, bob: 2.5, wind: 0.1, drag: 0.3 };
+  const up: Partial<Pose> = { ...stood, ...plant, off: 1, ohx: 8, ohy: -8, pt: -1, act: 1, lean: -3, bob: -1, wind: 0.5, drag: 0.8 };
+  const keys: Key[] = [
+    { at: 0, pose: {} },
+    { at: 0.4, pose: low, ease: 'out' },
+    { at: 0.6, pose: { ...low, ohy: 57, act: 0.6, wind: 0.2 }, ease: 'lin' },
+    { at: SUMMON_RISE, pose: up, ease: 'io' },
+    { at: SUMMON_RISE + 0.5, pose: { ...up, ohy: -10, act: 0.9, wind: 0.8 }, ease: 'lin' },
+    { at: SUMMON_RISE + 0.85, pose: { wind: 1 }, ease: 'io' },
+  ];
+  return { keys, hit: SUMMON_RISE };
+}
+
 /**
  * How long he takes to die, in seconds. (The owner, 5 Oct 2026: "I think we want death animations
  * and corpses for enemies"; he was told the Warden "gets a big one".)
@@ -1394,6 +1550,7 @@ export function makeWardenArt(): ActorArt {
     ),
     die: (k) => wardenDeath(k, false),
   };
+  if (WARDEN_MOVES.on) front.more = { swing: wardenSwing(), summon: wardenSummon({ hx: -22, hy: -5, lean: -1, bob: 0.5 }) };
   const backMoves: MonsterMoves = {
     attack: slam(
       { bob: 0.5, lean: 0.5, hx: 10, hy: -20, aim: 24, act: 0.3, wind: 0.08, drag: 0.5 },
@@ -1408,6 +1565,7 @@ export function makeWardenArt(): ActorArt {
     ),
     die: (k) => wardenDeath(k, true),
   };
+  if (WARDEN_MOVES.on) backMoves.more = { swing: wardenSwing(), summon: wardenSummon({ hx: -33, hy: -9, lean: -1, bob: 0.5 }) };
   return monsterArt(jailer, front, backMoves, {
     canvas: WARDEN_CANVAS,
     rest: { aim: REST_AIM },

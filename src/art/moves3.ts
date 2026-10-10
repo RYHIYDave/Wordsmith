@@ -61,6 +61,23 @@ export interface Move3 {
   stride?: number;
   /** A roll that the game carries along the floor for its first `tumble` seconds; the rest is the hero coming up, shown if they are then left standing (as a leap's landing is). */
   tumble?: number;
+  /**
+   * An attack whose END MAY BE SEEN AFTER THE RULES' ATTACK IS OVER, while the hero stands (WILD:
+   * Strike's follow-through, the owner, 8 Oct, 21:41: "if it increases the total attack time by a
+   * couple frames, that's fine, as long as the swipe stays just as fast"). The rules are not changed:
+   * the figure goes on showing the move to its end for as long as the hero is left standing
+   * (render/figure.ts), and anything else the hero does ends it.
+   */
+  tail?: boolean;
+  /**
+   * ... and where that end WAITS, in seconds from the start: while a second swing may still come
+   * (Strike's combo), the figure holds still there, and plays on to the end only once it can no
+   * longer come. The owner, of Strike's first swing: "I'd like if he kept the sword up at the end of
+   * the first hit then used that position to swipe back to the battle stance.  If there isn't a
+   * second tap to fire off that second attack, then he just moves the sword back down to battle
+   * stance."
+   */
+  poise?: number;
 }
 
 const FR = 1 / 30;
@@ -595,6 +612,37 @@ function slash(): Motion {
 export const SLASH3: Move3 = { name: 'Strike, the second swing: a downward slash', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: slash(), at: 'the moment it lands' };
 
 /**
+ * BIG AND WILD (the art chat, 8 Oct 2026; THE GAME'S OWN SINCE VERSION 19.7). The owner, by
+ * 20:14, of the mage's power getting away from her: "there's not even a glow on the staff, it just
+ * gets lighter.  there should be energy crackling and bolts shooting out, barely able to contain
+ * it.  this goes for all the animations we've created.  i think we need to amend the rules for
+ * effects and animations change it to big and wild.  why dont you redo the WAVE animation as big
+ * and wild as you think is appropriate and ill tell you if it needs to go more or less wild".
+ * At 20:17, of her being made to move wild: "move wild?  she just lowered her staff.  is that wild?"
+ *
+ * So, the Wave first, as the measure of how wild: with this on (and her stances, MAGE_STANCES), she
+ * casts it with her whole body (`wildWaveFromGuard`), and the power in the crystal crackles and
+ * throws bolts as it burns (the sprite says where the crystal is and how hot: kit.ts `Charge`; the
+ * renderer hands that to render/fx.ts, which makes the arcs, the sparks and the bolts). The Wave
+ * itself stands up tall, boils and crackles, and throws bolts ahead of it; what it hits crackles.
+ * By 20:48 he said of it: "Just right (Recommended)"; and at 20:49: "so much better.  id like to
+ * take that intensity and punch up some other animations as well.  show me strike and shot the
+ * same way, big and wild". So Strike's two swings (`wildStrike`, `wildSlash`) and the ranger's Shot
+ * from his crouch (`wildShotLow`, with his stances, RANGER_STANCES) are made so too, each in his own
+ * way (his notes are at each). By 22:35 he said of them, to wild_strike3.gif and
+ * wild_strike3_lone.gif: "Yes, keep it (Recommended)"; and to wild_shot3.gif: "Yes, keep it
+ * (Recommended)".
+ *
+ * His yes to the six more, Whirlwind, Leap, Volley, Trap, Orb and Warp, in the art chat, a pair of
+ * films at a time, by 05:24 on 9 Oct: "Yes, keep both (Recommended)", three times; and in the main
+ * chat by 08:41, asked when the mage's stances and the big-and-wild skill looks go in: "With today's
+ * packs (Recommended)". SO THE SWITCH IS ON, from Version 19.7 (put in place as this file loads, at
+ * its foot, by `useWild`, after `useMageStances`). Switched off, `useWild(false)` gives them as they
+ * were, for pictures beside them (the art must then be painted again: main.ts, `__dbg.wild`).
+ */
+export const WILD = { on: true };
+
+/**
  * STRIKE'S COMBO MENDED: A MOCK-UP BEHIND A SWITCH THAT IS OFF (the art chat, 8 Oct 2026). The
  * owner asked the main chat at 08:35 to "Send the strike combo to the art agent and have them review
  * it to the rules"; the review (docs/requests/strike_combo_review_answer.md) found five things that
@@ -643,9 +691,14 @@ function mendFeet(keys: readonly Key3[], hitKeys: number[]): Key3[] {
   const out = keys.map((k) => ({ ...k, pose: { ...k.pose } }));
   out[1].pose = { ...out[1].pose, lfx: 11, lfz: 2.0, lfp: -10, rfx: -9, rfp: 30, rfz: onToes(30) + 1.2, rft: -30 };
   out[2].pose = { ...out[2].pose, px: 0.5, lfx: 11.5, lfz: 2.4, lfp: -14, rfx: back.rfx as number, rfy: back.rfy as number, rfp: 32, rfz: onToes(32) + 0.8, rft: -12 };
-  const struck: Partial<Bones> = { px: 4, lfx: 10.5, lfy: 0.5, lfz: 0, lfp: 0, lft: 2, lk: 2, ...back, rk: -6 };
+  const struck = struckOf();
   for (const i of hitKeys) out[i].pose = { ...out[i].pose, ...struck };
   return out;
+}
+
+/** Where the mended swings have his feet (and his hips over them) from the blow on: in his stance's places, the front foot flat and the back on its ball. */
+function struckOf(): Partial<Bones> {
+  return { px: 4, lfx: 10.5, lfy: 0.5, lfz: 0, lfp: 0, lft: 2, lk: 2, ...backFoot(), rk: -6 };
 }
 
 function strikeMended(): Motion {
@@ -671,8 +724,103 @@ function slashMended(): Motion {
 /** Put the mended swings in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
 export function useComboMends(on: boolean): void {
   COMBO_MENDS.on = on;
-  STRIKE3.motion = on ? strikeMended() : strike();
-  SLASH3.motion = on ? slashMended() : slash();
+  STRIKE3.motion = strikeNow();
+  SLASH3.motion = slashNow();
+}
+
+/**
+ * STRIKE, BIG AND WILD, IN HIS OWN WAY (WILD, above). The owner, 20:49: "show me strike and shot the
+ * same way, big and wild"; of the first try, which crackled as the mage does: "Each character has a
+ * style, the crackling works for the mage, but not the warrior.   Try again using their style as
+ * inspiration.  We're on the right track tho.  I like the big crescent and the kick.  More technique
+ * and follow through."; and of the second: "there's a few frames where he puts his sword down during
+ * the second hit.  I'd like if he kept the sword up at the end of the first hit then used that
+ * position to swipe back to the battle stance.  If there isn't a second tap to fire off that second
+ * attack, then he just moves the sword back down to battle stance."; and at 21:41: "if it increases
+ * the total attack time by a couple frames, that's fine, as long as the swipe stays just as fast.
+ * That would reinforce the follow through of the attack".
+ * So: THE FIRST SWING, the rising cut, as fast as it was: he coils deeper and lower, the blade further
+ * behind, and the blow lands with him sunk deep over his front foot; the blade runs on up over his
+ * left shoulder, all of him turned after it, and there he holds it, the sword up (strikeUp), for as
+ * long as a second swing may still come (`poise`). If none comes, he lowers it, round behind him and
+ * down into his guard: the end of the move, seen while he stands (`tail`). THE SECOND SWING swipes back from there, down the way the first went
+ * up, through the front of him and on round behind his right side into his guard, a couple of frames
+ * past the rules' attack (`tail` again). The crescent of light, the dust and the kick are the
+ * effects' (render/wild.ts), and what flies off a hit comes from what is hit. His feet are where the
+ * mended swings have them, and they leave the floor while the step of each swing carries him.
+ */
+function strikeUp(): Partial<Bones> {
+  return { ...struckOf(), px: 3.4, pz: -5.8, yaw: 26, pitch: 7, twist: 22, bend: 6, faceUp: -2, faceTilt: 0, rhIn: 0, rhx: 9.5, rhy: 11.5, rhz: 4.5, wAz: 122, wEl: 84 };
+}
+/** ... and as he holds it there, settled a little lower: where the first swing waits (STRIKE_POISE), and where the second begins. */
+function strikeHeld(): Partial<Bones> {
+  return { ...strikeUp(), pz: -6 };
+}
+
+/** Where Strike's first swing, big and wild, holds the sword up while the second may still come: the end of its settle there, after the rules' attack is over (at 13 frames: its blow at 4, and the rules' follow-through, 0.3 s). */
+const STRIKE_POISE = 15 * FR;
+
+function wildStrike(): Motion {
+  const m = strikeMended();
+  const k = m.keys.map((key) => ({ ...key, pose: { ...key.pose } }));
+  k[1].pose = { ...k[1].pose, pz: -5.8, yaw: -54, twist: -42, bend: 9, wAz: -170, wEl: -54 };
+  k[2].pose = { ...k[2].pose, twist: -62 };
+  k[3].pose = { ...k[3].pose, pz: -6.6, yaw: 30, twist: 16, bend: 13 };
+  // (through: up over his left shoulder, all of him turned after it)
+  k[4].pose = { ...k[4].pose, pz: -6.9, yaw: 38, twist: 36, bend: 9, wAz: 66, wEl: 70 };
+  const up = strikeUp();
+  // (the sword held up: the second swing begins from here; or, a beat later, it is lowered round
+  // behind him, over his right shoulder, and down into his guard)
+  const over: Partial<Bones> = { ...feetOf(up), pz: -4.4, yaw: -12, pitch: 2, twist: -10, bend: 2, faceUp: -6, faceTilt: -10, rhIn: 0, rhx: 6, rhy: 2, rhz: 12, wAz: 195, wEl: 62 };
+  return {
+    ...m,
+    keys: [
+      ...k.slice(0, 5),
+      { at: 8 * FR, pose: up, ease: 'out' },
+      { at: STRIKE_POISE, pose: strikeHeld(), ease: 'io' },
+      { at: 21 * FR, pose: over, ease: 'io' },
+      { at: 28 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/** THE SECOND SWING, BIG AND WILD: from the sword held up, swiped back down the way it went up, through the front of him at the height of a chest, and on round behind his right side into his guard. */
+function wildSlash(): Motion {
+  const up = strikeUp();
+  const keys: Key3[] = [
+    { at: 0, pose: strikeHeld() },
+    // (it gathers: the blade a little further over, his weight settling)
+    { at: 1.5 * FR, pose: { ...up, pz: -5.4, yaw: 30, twist: 28, wAz: 128, wEl: 88 }, ease: 'out' },
+    // (it comes down the way it went up)
+    { at: 3 * FR, pose: { ...up, pz: -6, yaw: 24, twist: 18, bend: 9, rhx: 10.5, rhy: 11, rhz: 3.5, wAz: 50, wEl: 52 }, ease: 'in' },
+    // (the blow, through the front of him)
+    { at: 4 * FR, pose: { pz: -6.6, yaw: 4, pitch: 9, twist: -6, bend: 13, faceUp: -4, rhIn: 0, rhx: 15, rhy: 7.5, rhz: -5, wAz: 8, wEl: 12 }, ease: 'in' },
+    // (on round and down behind his right side, his body turned after it, deeper than his guard)
+    { at: 7 * FR, pose: { pz: -6.3, yaw: -52, pitch: 5, twist: -42, bend: 9, rhz: 23.5, wAz: -170, wEl: -52 }, ease: 'out' },
+    { at: 14 * FR, pose: {}, ease: 'io' },
+  ];
+  return { hit: 4 * FR, keys: mendFeet(keys, [3, 4]) };
+}
+
+/** Where a pose has the feet (and the knees), and nothing else of it. */
+function feetOf(p: Partial<Bones>): Partial<Bones> {
+  const out: Record<string, number> = {};
+  for (const f of ['lfx', 'lfy', 'lfz', 'lfp', 'lft', 'lk', 'rfx', 'rfy', 'rfz', 'rfp', 'rft', 'rk'] as const) {
+    const v = p[f];
+    if (v !== undefined) out[f] = v;
+  }
+  return out as Partial<Bones>;
+}
+
+/** Which first swing of Strike is his now: today's, mended (COMBO_MENDS, the game's own since 19.2), or big and wild (WILD). */
+function strikeNow(): Motion {
+  if (WILD.on) return wildStrike();
+  return COMBO_MENDS.on ? strikeMended() : strike();
+}
+/** ... and which second swing. */
+function slashNow(): Motion {
+  if (WILD.on) return wildSlash();
+  return COMBO_MENDS.on ? slashMended() : slash();
 }
 // (the game's own swings: the mended ones, since Version 19.2)
 useComboMends(COMBO_MENDS.on);
@@ -1152,6 +1300,9 @@ function reading(): Motion {
 }
 export const MAGE_LIGHT3: Move3 = { name: 'The mage and a mage light', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: mageLight() };
 export const READING3: Move3 = { name: 'The mage reads', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: reading() };
+/** Her two habits in town: her own moves, the same as in a fight with MAGE_STANCES off, so that with it on she can have others in a fight. */
+export const MAGE_TOWN_LIGHT3: Move3 = { name: 'The mage and a mage light, in town', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: mageLight() };
+export const TOWN_READING3: Move3 = { name: 'The mage reads, in town', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: reading() };
 
 /** Standing: they breathe. Twelve tenths of a second round, as the game's standing loop is. */
 function breathing(from: Bones, more: Partial<Bones> = {}): Motion {
@@ -1165,6 +1316,13 @@ function breathing(from: Bones, more: Partial<Bones> = {}): Motion {
   };
 }
 export const MAGE_STAND3: Move3 = { name: 'The mage, standing', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: breathing(MAGE) };
+/**
+ * The mage in town: as she has always stood and run there (her staff her walking stick). Her own
+ * moves, so that in a fight she can have others (MAGE_STANCES); with the switch off they are the
+ * same as MAGE_STAND3 and MAGE_RUN3, picture for picture.
+ */
+export const MAGE_TOWN3: Move3 = { name: 'The mage in town, standing', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: breathing(MAGE) };
+export const MAGE_TOWN_RUN3: Move3 = { name: 'The mage runs in town', held: 'staff', build: MAGE_BODY, rest: MAGE, motion: run(MAGE_GAIT) };
 export const RANGER_STAND3: Move3 = { name: 'The ranger, standing', held: 'bow', build: RANGER_BODY, rest: ARCHER, motion: breathing(ARCHER, { lhz: ARCHER.lhz - 0.4 }) };
 
 // ---------------------------------------------------------------------------------------------
@@ -1368,6 +1526,16 @@ export const RANGER_DRAW3: Move3 = { name: 'The ranger unslings his bow', held: 
  * stood on the ground again. (Low and at her side, her head up: the owner, 6 Oct 2026, 21:04,
  * of moves made with the staff up in front of her, "very obscured by the hat and the robe".)
  */
+/**
+ * THE MAGE'S GUARD: low and side-on, her feet well apart, the staff level in both hands and pointed
+ * at what is ahead, its crystal alight. She comes to it when she is picked (`mageReadies`), and,
+ * with MAGE_STANCES on, it is how she stands in a fight (MAGE_GUARD, below).
+ */
+const MAGE_GUARD_POSE: Partial<Bones> = {
+  px: 0, pz: -3.2, yaw: -30, pitch: 5, roll: 0, twist: -8, bend: 4, side: 0, faceTurn: 0, faceUp: 0,
+  lfx: 7, lfy: 0.5, lfz: 0, lfp: 0, lft: 0, lk: 2, rfx: -7.5, rfy: -1, rft: -46, rk: -32,
+  rhIn: 0, rhx: 2, rhy: 0.5, rhz: -15, re: 0, lhIn: 3, lhx: 11.5, lhy: 0, lhz: 0, le: 0, wAz: 180, wEl: 166,
+};
 function mageReadies(): Motion {
   const lift: Partial<Bones> = { pz: -0.6, yaw: -12, twist: -5, faceUp: 2, rhIn: 0, rhx: 3, rhy: -6, rhz: -2, wAz: 180, wEl: 94, lhIn: 0, lhx: 3.5, lhy: 4, lhz: -10, le: -20 };
   // (its head comes down OUTSIDE her, tipped out to her right as well as forward: straight forward it would cross her face)
@@ -1375,11 +1543,7 @@ function mageReadies(): Motion {
     px: 0, pz: -1.8, yaw: -20, twist: -6, pitch: 2, bend: 2, faceUp: 1, lfx: 3.5, lfz: 1.4, lfp: 6, rfx: -3.5, rft: -34, rk: -24,
     rhIn: 0, rhx: 3.5, rhy: -5, rhz: -9, wAz: 140, wEl: 128, lhIn: 0, lhx: 7, lhy: 0, lhz: -11, le: -10,
   };
-  const guard: Partial<Bones> = {
-    px: 0, pz: -3.2, yaw: -30, pitch: 5, roll: 0, twist: -8, bend: 4, side: 0, faceTurn: 0, faceUp: 0,
-    lfx: 7, lfy: 0.5, lfz: 0, lfp: 0, lft: 0, lk: 2, rfx: -7.5, rfy: -1, rft: -46, rk: -32,
-    rhIn: 0, rhx: 2, rhy: 0.5, rhz: -15, re: 0, lhIn: 3, lhx: 11.5, lhy: 0, lhz: 0, le: 0, wAz: 180, wEl: 166,
-  };
+  const guard = MAGE_GUARD_POSE;
   return {
     keys: [
       { at: 0, pose: {} },
@@ -1461,9 +1625,10 @@ export function gripping(g: Gait, period: number): Gait {
 const GRIP_RUNS: [Move3, () => Gait, number, (m: Motion) => Motion][] = [
   [KNIGHT_RUN3, () => KNIGHT_GAIT, 27 / 60, (m) => m],
   [RANGER_RUN3, () => RANGER_GAIT, 25 / 60, (m) => ready(m)],
-  [MAGE_RUN3, () => MAGE_GAIT, 23 / 60, (m) => m],
+  [MAGE_RUN3, () => (MAGE_STANCES.on ? MAGE_BATTLE_GAIT : MAGE_GAIT), 23 / 60, (m) => m],
   [KNIGHT_TOWN_RUN3, () => KNIGHT_TOWN_GAIT, 27 / 60, (m) => ready(m, { py: 0, stow: 1 })],
   [RANGER_TOWN_RUN3, () => (RANGER_STANCES.on ? RANGER_TOWN_UPRIGHT : RANGER_TOWN_GAIT), 25 / 60, (m) => ready(m, { ...READY, stow: 1 })],
+  [MAGE_TOWN_RUN3, () => MAGE_GAIT, 23 / 60, (m) => m],
 ];
 /**
  * The runs as the two switches have them now. (The ranger's grip with his new stances whether or
@@ -1475,7 +1640,7 @@ const GRIP_RUNS: [Move3, () => Gait, number, (m: Motion) => Motion][] = [
 function remakeRuns(): void {
   for (const [move, gait, period, finish] of GRIP_RUNS) {
     const g = gait();
-    const grips = GRIP.on || (RANGER_STANCES.on && move.held === 'bow');
+    const grips = GRIP.on || stanced(move.held);
     move.motion = finish(grips ? run(gripping(g, period), period) : run(g));
     if (grips) move.stride = GRIP_SPEED * period;
     else delete move.stride;
@@ -1600,9 +1765,9 @@ export function settle(runMove: Move3, phase: number, to: Bones, long = 0.24): M
 }
 /** How many moments of a run there are settles from: the game takes the one nearest the moment the hero stops. */
 export const SETTLES = 8;
-/** The settles from a run into a stance, when there are any (the ranger's, with RANGER_STANCES on): the first from the run's start. */
+/** The settles from a run into a stance, when there are any (the ranger's with RANGER_STANCES on, the mage's with MAGE_STANCES): the first from the run's start. */
 export function settlesOf(runMove: Move3, stance: Move3): Move3[] {
-  if (!RANGER_STANCES.on || runMove.held !== 'bow') return [];
+  if (!stanced(runMove.held)) return [];
   return Array.from({ length: SETTLES }, (_, i) => ({ ...stance, name: `${stance.name}: coming to a stand`, motion: settle(runMove, i / SETTLES, stance.rest) }));
 }
 
@@ -1652,9 +1817,9 @@ export function startOf(runMove: Move3, stance: Bones, n = 9): { motion: Motion;
   }
   return { motion: { keys: out }, phase };
 }
-/** The ranger's way of setting off from his stance into his run, when he has one (RANGER_STANCES on, the run gripping): the move, and the moment of the run it leads into. */
+/** The way of setting off from a stance into the run, for a hero with stances of their own (the ranger, the mage: `stanced`) whose run grips: the move, and the moment of the run it leads into. */
 export function startsOf(runMove: Move3, stance: Move3): { move: Move3; phase: number } | null {
-  if (!RANGER_STANCES.on || runMove.held !== 'bow' || runMove.stride === undefined) return null;
+  if (!stanced(runMove.held) || runMove.stride === undefined) return null;
   const { motion, phase } = startOf(runMove, stance.rest);
   return { move: { ...runMove, name: `${runMove.name}: setting off`, motion }, phase };
 }
@@ -1693,6 +1858,39 @@ function shotLow(): Motion {
       { at: 15 * FR, pose: {}, ease: 'io' },
     ],
   };
+}
+/**
+ * HIS SHOT, BIG AND WILD, IN HIS OWN WAY (WILD). The owner, of the first try, which threw lightning:
+ * "Same as the warrior.  This just looks like he's firing a lightning arrow.  We're getting there".
+ * So, an archer's: from the crouch as before, turning further into the draw and settling as he holds
+ * it at full draw (a glint runs to the arrow's point: the painter, art/hero3_ranger.ts); then the loose
+ * and its follow-through, held: the string hand flies back past his ear and stays there open, the bow
+ * is pushed on at the mark and rolls in his hand, and he watches the arrow in before the bow comes
+ * down. The crack of air, the arrow's streak and its spin, and the burst where it lands are the
+ * effects' (render/wild.ts). His feet stay where the crouch has them.
+ */
+function wildShotLow(): Motion {
+  const set = SHOT_SET;
+  return {
+    hit: 5 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 2 * FR, pose: drawn({ ...set, pz: -6.1, yaw: -40, twist: -24, bend: 3 }, -9, 0.6, LOW), ease: 'out' },
+      { at: 4 * FR, pose: drawn({ ...set, pz: -6.2, twist: -40 }, SHOT_EL, 1, LOW), ease: 'out' },
+      { at: 4.7 * FR, pose: drawn({ ...set, pz: -6.2, twist: -41 }, SHOT_EL, 1, LOW), ease: 'lin' },
+      // (loosed: the string hand flies back past his ear, the bow pushed on at the mark and rolling in his hand)
+      { at: 5 * FR, pose: loosed({ ...set, bend: -3, twist: -45 }, SHOT_EL, 4.8, 1.8, 18, LOW), ease: 'lin' },
+      // (the follow-through, held: the bow still on the mark, the string hand open behind his ear)
+      { at: 7 * FR, pose: loosed({ ...set, bend: -2, twist: -43 }, SHOT_EL, 5.4, 1.2, 12, LOW), ease: 'out' },
+      { at: 10 * FR, pose: loosed({ ...set, twist: -41 }, SHOT_EL, 5.2, 1, 10, LOW), ease: 'io' },
+      { at: 15 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** Which Shot is his now: today's, from the crouch (RANGER_STANCES), or big and wild from it (WILD as well). */
+function shotNow(): Motion {
+  if (!RANGER_STANCES.on) return RANGER_TODAY.shot;
+  return WILD.on ? wildShotLow() : shotLow();
 }
 /**
  * HIS VOLLEY, FROM THE CROUCH: down onto his knee from low ("The rogue drops to a knee when he
@@ -1923,7 +2121,7 @@ export function useRangerStances(on: boolean): void {
   RANGER_STAND3.motion = on ? RANGER_BATTLE_MOTION() : RANGER_TODAY.stand;
   RANGER_TOWN3.motion = on ? RANGER_TOWN_MOTION() : RANGER_TODAY.town;
   SHOT3.rest = on ? BATTLE : RANGER_TODAY.shotRest;
-  SHOT3.motion = on ? shotLow() : RANGER_TODAY.shot;
+  SHOT3.motion = shotNow();
   VOLLEY3.rest = on ? BATTLE : RANGER_TODAY.volleyRest;
   VOLLEY3.motion = on ? volleyLow() : RANGER_TODAY.volley;
   ROLL3.rest = on ? BATTLE : RANGER_TODAY.rollRest;
@@ -1947,14 +2145,384 @@ export function useRangerStances(on: boolean): void {
   remakeRuns();
 }
 
+// ---------------------------------------------------------------------------------------------
+/**
+ * THE MAGE IN BATTLE AND IN TOWN (the art chat, 8 Oct 2026; THE GAME'S OWN SINCE VERSION 19.7).
+ * The owner, 15:38: "Each character should have a battle stance and a town stance." The
+ * warrior has both and the ranger's are made (RANGER_STANCES); the mage had one figure for both,
+ * her staff her walking stick. So, with this switch on: in a dungeon she stands ready for a fight,
+ * in the guard she comes to when she is picked on her class card (MAGE_GUARD_POSE: low and side-on,
+ * the staff level in both hands and pointed at what is ahead, its crystal alight), and the power in
+ * it is only just held (the art rulebook's mage: "only just in control of the power"): the crystal
+ * flares and settles as she breathes, and a wind off it lifts her coat and braids. She runs low, the
+ * staff held ready (MAGE_BATTLE_GAIT). In town she stands and runs as she always has, her weight now
+ * shifting as she stands.
+ *
+ * His yes: her guard and runs (8 Oct, 19:01) and her casts (19:19) in the art chat; her hits and fall
+ * from her guard by 05:26 on 9 Oct, "Yes, with her stances (Recommended)"; her habits big and wild by
+ * 07:31, "Yes, keep them (Recommended)"; and in the main chat by 08:41: "With today's packs
+ * (Recommended)". SO THE SWITCH IS ON, from Version 19.7 (put in place as this file loads, at its
+ * foot, by `useMageStances`). Switched off, `useMageStances(false)` gives her as she was before.
+ */
+export const MAGE_STANCES = { on: true };
+
+/** Whether a hero has stances of their own now, by what they carry: the ranger (the bow) with RANGER_STANCES, the mage (the staff) with MAGE_STANCES. */
+export function stanced(held: Held): boolean {
+  return (held === 'bow' && RANGER_STANCES.on) || (held === 'staff' && MAGE_STANCES.on);
+}
+
+/** How she stands in a fight: her guard, the crystal alight and a wind off it. */
+const MAGE_GUARD: Bones = { ...MAGE, ...MAGE_GUARD_POSE, draw: 1.3, gale: 0.1 };
+
+/**
+ * HER GUARD, ALIVE: two breaths and her weight going over onto the front foot and back, as the
+ * ranger's (`alive`); and twice in the round the power in the crystal surges, flaring and throwing
+ * a gust off it, and is held down again, the second time harder. Two and four tenths of a second round.
+ */
+function mageAlive(g: Bones): Motion {
+  const at = (shift: number, breath: number, draw: number, gale: number): Partial<Bones> => ({
+    px: g.px + 0.5 * shift, py: g.py + 0.4 * shift, roll: g.roll - 1.2 * shift, side: g.side + 1.2 * shift,
+    pz: g.pz - 0.5 * breath, bend: g.bend + 1.4 * breath, draw: g.draw + draw, gale: g.gale + gale,
+  });
+  return {
+    keys: [
+      { at: 0, pose: at(0, 0, 0, 0) },
+      { at: 0.3, pose: at(0.22, 0.5, 0.6, 0.14), ease: 'out' },
+      { at: 0.5, pose: at(0.4, 0.85, 0.1, 0.04), ease: 'io' },
+      { at: 1.2, pose: at(1, 0, 0.25, 0.06), ease: 'io' },
+      { at: 1.6, pose: at(0.7, 0.6, 0.8, 0.2), ease: 'out' },
+      { at: 1.82, pose: at(0.5, 1, 0.05, 0.05), ease: 'io' },
+      { at: 2.4, pose: at(0, 0, 0, 0), ease: 'io' },
+    ],
+    loop: 0,
+  };
+}
+/** And in town: her weight is on her left leg already; it settles further onto it and comes back. */
+const MAGE_TOWN_MOTION = (): Motion => alive(MAGE, { py: 0.4, roll: -1, side: 1.2 });
+
+/** HOW SHE RUNS IN A FIGHT: low and quick, side-on, the staff held ready in both hands as in her guard, its crystal alight, her coat flying. */
+const MAGE_BATTLE_GAIT: Gait = {
+  reach: 8.5, push: 10, kick: 6.5, lean: 6, hunch: 4, sink: 3.2, bob: 0.8, hips: 5, counter: 0.3, yaw: -18, twist: -6, look: 2,
+  arms: (swing, step) => ({
+    rhIn: 0, rhx: 2, rhy: 0.5, rhz: -15 + 0.6 * Math.cos(step * Math.PI * 2), re: 0,
+    lhIn: 3, lhx: 11.5, lhy: 0, lhz: 0, le: 0,
+    wAz: 180, wEl: 160 + swing * 2, draw: 1.2, gale: 0.36,
+  }),
+};
+
+/** Her feet in her guard, and the back one pivoting on its ball as her hips come round (the ball stays where it is). */
+const GUARD_FEET: Partial<Bones> = { lfx: 7, lfy: 0.5, lfz: 0, lfp: 0, lft: 0, lk: 2, rfx: -7.5, rfy: -1, rfz: 0, rfp: 0, rft: -46, rk: -32 };
+const GUARD_PIVOT: Partial<Bones> = { ...GUARD_FEET, rfp: 24, rfz: onToes(24), rft: -22, rk: -14 };
+const freeHand = (x: number, y: number, z: number, le = -8): Partial<Bones> => ({ lhIn: 0, lhx: x, lhy: y, lhz: z, le });
+const staffHand = (x: number, y: number, z: number): Partial<Bones> => ({ rhIn: 0, rhx: x, rhy: y, rhz: z });
+
+/**
+ * HER WAVE, FROM HER GUARD. Her feet stay where her guard has them. Her left hand lets go of the
+ * staff and goes out ahead of her as the staff swings up and back at her right and she coils onto
+ * the back foot; then the hips come round, the back foot turning on its ball, the chest after them,
+ * and the staff comes OVER and down through the air in front (the wave goes on the sixth frame, as
+ * the rules have it); it is held low a moment; and her left hand takes the staff again and it comes
+ * up level into her guard. A bigger cast than standing tall, as the art rulebook has her: "Big
+ * sweeping casts".
+ */
+function waveFromGuard(): Motion {
+  const G = MAGE_GUARD;
+  const back: Partial<Bones> = { ...GUARD_FEET, px: -1.6, pz: G.pz + 0.6, yaw: -40, twist: -24, pitch: 2, bend: -3, lfz: 0, ...staffHand(-3.5, -6, 7), ...freeHand(9, 1.5, -2), wAz: 168, wEl: 38, draw: 1.9, gale: 0.3 };
+  const down: Partial<Bones> = { ...GUARD_PIVOT, px: 2.6, pz: G.pz - 0.8, yaw: 8, pitch: 6, twist: 14, bend: 9, faceUp: 0, ...staffHand(11, -5, -7), ...freeHand(-3, 7, -9, -30), wAz: 172, wEl: 170, draw: 2.3, gale: 0.5 };
+  const held: Partial<Bones> = { ...GUARD_PIVOT, px: 2.2, pz: G.pz - 1, yaw: 10, pitch: 6, twist: 17, bend: 10, faceUp: 0, ...staffHand(10.5, -5, -9.5), ...freeHand(-3, 7.5, -10, -30), wAz: 172, wEl: 188, draw: 1.5, gale: 0.25 };
+  return {
+    hit: 5 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 2 * FR, pose: { ...GUARD_FEET, px: -1, pz: G.pz + 0.4, yaw: -36, twist: -16, bend: 0, ...staffHand(-1, -5.5, 5.5), ...freeHand(8, 2, -3.5), wAz: 170, wEl: 70, draw: 1.6, gale: 0.2 }, ease: 'out' },
+      { at: 4 * FR, pose: back, ease: 'out' },
+      // (THE STAFF COMES OVER: her hand goes up and round in an arc, as a swing's does)
+      { at: 4.5 * FR, pose: { ...partWay(G, back, down, 0.25), ...staffHand(3, -6.5, 9), ...freeHand(6, 4, -5) }, ease: 'in' },
+      { at: 5 * FR, pose: down, ease: 'lin' },
+      { at: 6 * FR, pose: { ...down, pz: G.pz - 1.2, yaw: 11, twist: 19, bend: 11, ...staffHand(11, -5, -10), ...freeHand(-3.5, 7.5, -10, -30), wEl: 192, draw: 2.1 }, ease: 'lin' },
+      { at: 9 * FR, pose: held, ease: 'out' },
+      // (her left hand comes back to the staff, and it is brought up level into her guard)
+      { at: 12 * FR, pose: { ...partWay(G, held, {}, 0.55), ...staffHand(5, -2, -13), ...freeHand(6, 3, -9, -12) }, ease: 'in' },
+      { at: 15 * FR, pose: {}, ease: 'out' },
+    ],
+  };
+}
+
+/**
+ * HER ORB, FROM HER GUARD (the owner: "Slam the staff down on the ground and a little pulse aura
+ * goes out around the character then the orb appears where you tapped"). Her feet stay where her
+ * guard has them. The staff comes up off the level to stand straight up at her right and is raised
+ * high as she rises out of her crouch, her free hand going up and out the other side; a beat at the
+ * top; and it is driven onto the floor, her knees giving deep in her wide stance and her free hand
+ * thrust down at the spot (the ninth frame, the rules' own). That is held; her left hand takes the
+ * staff, and it comes up level into her guard.
+ */
+function orbFromGuard(): Motion {
+  const G = MAGE_GUARD;
+  const lift: Partial<Bones> = { ...GUARD_FEET, pz: G.pz + 1, yaw: -22, twist: -6, pitch: 2, bend: 1, faceUp: 0, ...staffHand(3, -6, -1), ...freeHand(3, 4.5, -8, -20), wAz: 180, wEl: 92 };
+  const top: Partial<Bones> = { ...GUARD_FEET, pz: G.pz + 2.6, yaw: -16, twist: -6, pitch: -2, bend: -5, faceUp: -2, ...staffHand(2.5, -6.5, 9.5), ...freeHand(4.5, 11, 1.5, 10), wAz: 180, wEl: 94 };
+  const low: Partial<Bones> = {
+    ...GUARD_FEET, px: 1.5, pz: G.pz - 1.8, yaw: -14, twist: -8, pitch: 5, bend: 9, faceUp: -3, lk: 10, rk: -36,
+    rhIn: 2, rhx: 4.5, rhy: -15.5, rhz: STAFF_DOWN, wAz: 180, wEl: 90, ...freeHand(7.5, 3.5, -9, -12),
+  };
+  return {
+    hit: 8 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      // (the crystal gathers as it rises; prop 5 is the ring of light that runs out along the floor from where it strikes, `pt` 1 as it lands)
+      { at: 3 * FR, pose: { ...lift, draw: 1.5, gale: 0.2 }, ease: 'out' },
+      { at: 6 * FR, pose: { ...top, draw: 2, gale: 0.3 }, ease: 'out' },
+      { at: 7 * FR, pose: { ...top, rhz: 10.2, lhz: 2.4, bend: -6, draw: 2.2 }, ease: 'lin' },
+      { at: 8 * FR, pose: { ...low, prop: 5, pt: 1, draw: 2.5, gale: 0.6 }, ease: 'in' },
+      { at: 10 * FR, pose: { ...low, pz: G.pz - 2.6, bend: 11, lhz: -10, prop: 5, pt: 0.35, draw: 2.1, gale: 0.4 }, ease: 'out' },
+      { at: 14 * FR, pose: { ...low, pz: G.pz - 1.2, bend: 7, faceUp: -1, ...freeHand(6, 2, -10.5, -12), draw: 1.5, gale: 0.2 }, ease: 'out' },
+      // (her left hand comes to the staff as it comes up out of the floor, and it is brought level into her guard)
+      { at: 17 * FR, pose: { ...GUARD_FEET, pz: G.pz - 0.4, yaw: -24, twist: -8, pitch: 4, bend: 4, ...staffHand(3, -3, -9), ...freeHand(7, 2, -9, -10), wAz: 180, wEl: 128, draw: 1.4 }, ease: 'io' },
+      { at: 20 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/**
+ * THE BEAM BEGINS, FROM HER GUARD: in the moment the rules wind it up she brings the staff level
+ * at her mark, the crystal gathering, and sets her back foot ready for the push (the hold's own
+ * first picture is where this ends). Shown in place of a picture of the Wave, which the beam's
+ * winding up showed until now (render/figure.ts, `clips.holdStart`).
+ */
+function beamStartsFromGuard(): Motion {
+  const first: Partial<Bones> = { ...BRACED, px: 3, pz: -3.4, pitch: 9, gale: 0.3 };
+  return {
+    hit: 4 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      // (her back foot steps back for the push: lifted as it goes)
+      { at: 2 * FR, pose: { ...partWay(MAGE_GUARD, {}, first, 0.5), rfz: 2.2, rfp: 12, draw: 1.8, gale: 0.2 }, ease: 'io' },
+      { at: 4 * FR, pose: first, ease: 'io' },
+    ],
+  };
+}
+/** THE BEAM LET GO, INTO HER GUARD: the push is gone and she comes forward off the lean, the staff still level, and settles into her guard. */
+function beamLetGoToGuard(): Motion {
+  return {
+    keys: [
+      { at: 0, pose: { ...BRACED } },
+      { at: 2 * FR, pose: { ...BRACED, px: 0.5, pz: -4, pitch: 15, bend: 11, gale: 0.15 }, ease: 'out' },
+      // (her back foot steps up into her guard: lifted as it comes)
+      { at: 4 * FR, pose: { ...partWay(MAGE_GUARD, { ...BRACED, px: 0.5, pz: -4, pitch: 15, bend: 11 }, {}, 0.6), rfz: 2.2, rfp: 12, draw: 1.4, gale: 0.12 }, ease: 'io' },
+      { at: 7 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** The beam's beginning as a move of its own (with MAGE_STANCES on), for `clips.holdStart`. */
+export const BEAM_START3: Move3 = { name: 'Beam, begun from her guard', held: 'staff', build: MAGE_BODY, rest: MAGE_GUARD, motion: beamStartsFromGuard() };
+/** The beginning of a held attack, for a hero who has one (the mage's beam, with MAGE_STANCES on): otherwise none. */
+export function holdStartOf(hold: Move3): Move3 | null {
+  return MAGE_STANCES.on && hold === BEAM3 ? BEAM_START3 : null;
+}
+
+/** Rocked back by a blow, or thrown forward by one from behind, from her guard: the foot that goes is lifted, and the staff stays level in her hands. */
+const mageReelLow = (): Motion => reelLow(MAGE_GUARD);
+const mageLurchLow = (): Motion => lurchLow(MAGE_GUARD);
+
+/**
+ * HER FALL, FROM HER GUARD: as it was (thrown back, a step back to keep her feet, the staff stood
+ * upright where she is and all that holds her up, and down it to her knees, slowly and then all at
+ * once), but from low, the staff swung up out of her guard as she is thrown, and each foot lifted
+ * when it steps.
+ */
+function mageFallFromGuard(): Motion {
+  const G = MAGE_GUARD;
+  const m = mageFall();
+  const [k0, , k2, ...rest] = m.keys;
+  return {
+    keys: [
+      k0,
+      // (thrown back: the back foot steps back, lifted; the staff swings up out of the level, her left hand letting it go)
+      { at: 2 * FR, pose: { px: -3.5, pz: G.pz - 0.4, pitch: -6, bend: -14, faceUp: -8, rfx: -10, rfz: 1.8, rfp: 12, ...staffHand(5, -1, -9), ...freeHand(4, 4, -9, -14), wAz: 180, wEl: 118, draw: 1 }, ease: 'out' },
+      // (the front foot comes back, lifted, as she catches herself)
+      { ...k2, pose: { ...k2.pose, lfz: 2, draw: 0.6 } },
+      ...rest,
+    ],
+  };
+}
+
+/**
+ * HER LIGHT, IN A FIGHT: still in her guard, she takes her left hand off the staff (it stays level
+ * in her right, its tip a little down), snaps her fingers, and a mage light pops on over her open
+ * hand; she watches it turn, snaps it out, and takes the staff again.
+ */
+function mageLightInGuard(): Motion {
+  const G = MAGE_GUARD;
+  const held: Partial<Bones> = { ...freeHand(9.5, 3.5, -5, 24), prop: 1, faceTurn: 26, faceUp: -18, twist: G.twist + 6, wEl: 152 };
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.4, pose: { ...held } },
+      { at: 1.6, pose: { ...held, pt: 0.45, faceUp: -10, lhz: -3.5 }, ease: 'io' },
+      { at: 3.1, pose: { ...held, pt: 1 }, ease: 'io' },
+      { at: 3.6, pose: {} },
+    ],
+  };
+}
+
+/**
+ * THE POWER GETS AWAY FROM HER (in a fight, in place of reading: the art rulebook's mage, "only
+ * just in control of the power"). The crystal flares white, a gust off it throws her coat and braids
+ * back, and the staff bucks up in her hands and pushes her back half a step (her back foot lifted as
+ * it goes); she leans into it, both hands hard on the staff, and wrestles it down level again; the
+ * crystal dies back to its glow, and she steps up into her guard.
+ */
+function powerGetsAway(): Motion {
+  const G = MAGE_GUARD;
+  const bucked: Partial<Bones> = { px: -2.4, pz: G.pz + 0.6, pitch: -4, bend: -6, faceUp: 8, wEl: 132, draw: 2.8, gale: 1.2, rfx: -9.5, rfz: 1.8, rfp: 12 };
+  const fought: Partial<Bones> = { px: 1.2, pz: G.pz - 1.4, pitch: 11, bend: 12, faceUp: -6, wEl: 158, draw: 2.2, gale: 0.7, rfx: -9.5 };
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      // (it flares, and bucks)
+      { at: 0.12, pose: { draw: 2.4, gale: 0.5 }, ease: 'in' },
+      { at: 0.24, pose: bucked, ease: 'out' },
+      { at: 0.42, pose: { ...bucked, rfz: 0, rfp: 0, wEl: 128, draw: 2.9 }, ease: 'io' },
+      // (she leans into it and wrestles it down, the staff shaking)
+      { at: 0.7, pose: fought, ease: 'io' },
+      { at: 0.82, pose: { ...fought, wEl: 155, rhz: G.rhz + 0.6 }, ease: 'lin' },
+      { at: 0.94, pose: { ...fought, wEl: 160, rhz: G.rhz - 0.4 }, ease: 'lin' },
+      { at: 1.1, pose: { ...fought, wEl: 164, draw: 1.8, gale: 0.4 }, ease: 'io' },
+      // (it is held; she steps up into her guard again, lifting her back foot, and it dies back to its glow)
+      { at: 1.4, pose: { px: 0.4, pz: G.pz - 0.6, bend: 6, faceUp: 2, draw: 1.5, gale: 0.2, rfx: -8.5, rfz: 1.6, rfp: 10 }, ease: 'io' },
+      { at: 1.8, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+
+/**
+ * HER WAVE, BIG AND WILD, FROM HER GUARD. The crystal blazes as she coils: the staff goes up and
+ * far back over her right shoulder, her body arched and turned away, her free hand thrust out at her
+ * mark, fingers spread. It comes over in one great arc and is driven down through the air in front
+ * of her as she lunges deep (the wave goes on the sixth frame, as the rules have it), the blast
+ * throwing her coat and braids back. Then the power kicks: the staff bucks up in her hand and throws
+ * her head back, her free hand grabs for it, and she wrestles it down, shaking, both hands on it,
+ * and comes up into her guard. Her feet stay where her guard has them (the back one turns on its
+ * ball as she lunges, and is down again before she is back in her guard). Fourteen frames: it is
+ * over before the rules' attack is.
+ */
+function wildWaveFromGuard(): Motion {
+  const G = MAGE_GUARD;
+  const coil: Partial<Bones> = {
+    ...GUARD_FEET, px: -2.6, pz: G.pz + 1.1, yaw: -48, twist: -30, pitch: -3, bend: -7, faceTurn: 8, faceUp: 2,
+    ...staffHand(-4.5, -5.5, 11.5), ...freeHand(10.5, 2.5, 1.5, 6), wAz: 166, wEl: 50, draw: 2.6, gale: 0.8,
+  };
+  const slam: Partial<Bones> = {
+    ...GUARD_PIVOT, px: 3.8, pz: G.pz - 2, yaw: 14, pitch: 10, twist: 22, bend: 14, faceTurn: 0, faceUp: 0,
+    ...staffHand(12, -5, -8), ...freeHand(-5, 7, -6, -40), wAz: 174, wEl: 178, draw: 3, gale: 1.6,
+  };
+  const kicked: Partial<Bones> = {
+    ...GUARD_PIVOT, px: 1.4, pz: G.pz - 1.2, yaw: 10, pitch: 1, twist: 16, bend: 4, faceUp: 9,
+    ...staffHand(9, -5, -3.5), ...freeHand(4, 3, -6, -12), wAz: 176, wEl: 146, draw: 2.8, gale: 1.3,
+  };
+  const fought: Partial<Bones> = {
+    ...GUARD_FEET, px: 2, pz: G.pz - 1.6, yaw: 0, pitch: 8, twist: 6, bend: 11, faceUp: -2,
+    rhIn: 0, rhx: 6, rhy: -2, rhz: -11, re: 0, lhIn: 3, lhx: 10, lhy: 0, lhz: 0, le: 0, wAz: 178, wEl: 166, draw: 2.4, gale: 0.9,
+  };
+  return {
+    hit: 5 * FR,
+    keys: [
+      { at: 0, pose: {} },
+      // (she lets go with her left hand and it goes out at her mark as the staff goes up and back and she coils)
+      { at: 1.5 * FR, pose: { ...partWay(G, {}, coil, 0.45), ...staffHand(-1.5, -5.5, 4), ...freeHand(8, 2, -2, -4), wEl: 92, draw: 2, gale: 0.45 }, ease: 'out' },
+      { at: 3.5 * FR, pose: coil, ease: 'out' },
+      // (THE STAFF COMES OVER, high: her hand goes up and round in a great arc)
+      { at: 4.2 * FR, pose: { ...partWay(G, coil, slam, 0.3), ...staffHand(2.5, -6.5, 14), ...freeHand(7, 4, -1, -14), draw: 2.9, gale: 1 }, ease: 'in' },
+      { at: 5 * FR, pose: slam, ease: 'lin' },
+      // (driven on down through the air)
+      { at: 6 * FR, pose: { ...slam, pz: G.pz - 2.4, bend: 16, pitch: 11, ...staffHand(11.5, -5, -11), wEl: 196, draw: 3, gale: 1.5 }, ease: 'lin' },
+      // (THE POWER KICKS: the staff bucks up, her head is thrown back, her free hand grabs for it)
+      { at: 7.5 * FR, pose: kicked, ease: 'out' },
+      // (she wrestles it down, both hands on it, and it shakes)
+      { at: 9.5 * FR, pose: fought, ease: 'io' },
+      { at: 10.5 * FR, pose: { ...fought, wEl: 160, rhz: -10.4, draw: 2.3 }, ease: 'lin' },
+      { at: 11.5 * FR, pose: { ...fought, wEl: 167, rhz: -11.3, draw: 2.1, gale: 0.6 }, ease: 'lin' },
+      // (it is held; she comes up into her guard, and the crystal dies back to its glow)
+      { at: 14 * FR, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/** Which Wave is hers now: today's, from her guard (MAGE_STANCES), or big and wild from it (WILD as well). */
+function waveNow(): Motion {
+  if (!MAGE_STANCES.on) return MAGE_TODAY.wave;
+  return WILD.on ? wildWaveFromGuard() : waveFromGuard();
+}
+
+/** Make it all big and wild (true), or as it is (false): see WILD. For the pictures; the art is painted afterwards. */
+export function useWild(on: boolean): void {
+  WILD.on = on;
+  WAVE3.motion = waveNow();
+  STRIKE3.motion = strikeNow();
+  SLASH3.motion = slashNow();
+  // (their ends are seen past the rules' attack, while he stands: his follow-through)
+  for (const m of [STRIKE3, SLASH3]) {
+    if (on) m.tail = true;
+    else delete m.tail;
+  }
+  // (and the first holds the sword up, where the second begins, for as long as that may still come)
+  if (on) STRIKE3.poise = STRIKE_POISE;
+  else delete STRIKE3.poise;
+  SHOT3.motion = shotNow();
+}
+
+/** As they are with the switch off. */
+const MAGE_TODAY = {
+  stand: MAGE_STAND3.motion, standRest: MAGE_STAND3.rest, town: MAGE_TOWN3.motion, runRest: MAGE_RUN3.rest,
+  wave: WAVE3.motion, waveRest: WAVE3.rest, orb: ORB3.motion, orbRest: ORB3.rest, beamRest: BEAM3.rest, beamEnd: BEAM_END3.motion, beamEndRest: BEAM_END3.rest,
+  reel: MAGE_REEL3.motion, reelRest: MAGE_REEL3.rest, lurch: MAGE_LURCH3.motion, lurchRest: MAGE_LURCH3.rest, fall: MAGE_FALL3.motion, fallRest: MAGE_FALL3.rest,
+  light: MAGE_LIGHT3.motion, lightRest: MAGE_LIGHT3.rest, reading: READING3.motion, readingRest: READING3.rest, readingName: READING3.name,
+};
+/** Put the mage's new stances in the place of today's (true), or today's back (false). For the pictures; the art is painted afterwards. */
+export function useMageStances(on: boolean): void {
+  MAGE_STANCES.on = on;
+  MAGE_STAND3.rest = on ? MAGE_GUARD : MAGE_TODAY.standRest;
+  MAGE_STAND3.motion = on ? mageAlive(MAGE_GUARD) : MAGE_TODAY.stand;
+  MAGE_TOWN3.motion = on ? MAGE_TOWN_MOTION() : MAGE_TODAY.town;
+  MAGE_RUN3.rest = on ? MAGE_GUARD : MAGE_TODAY.runRest;
+  // (her casts, from her guard and back into it)
+  WAVE3.rest = on ? MAGE_GUARD : MAGE_TODAY.waveRest;
+  WAVE3.motion = waveNow();
+  ORB3.rest = on ? MAGE_GUARD : MAGE_TODAY.orbRest;
+  ORB3.motion = on ? orbFromGuard() : MAGE_TODAY.orb;
+  BEAM3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamRest;
+  BEAM_END3.rest = on ? MAGE_GUARD : MAGE_TODAY.beamEndRest;
+  BEAM_END3.motion = on ? beamLetGoToGuard() : MAGE_TODAY.beamEnd;
+  // (struck, and her fall, from her guard)
+  MAGE_REEL3.rest = on ? MAGE_GUARD : MAGE_TODAY.reelRest;
+  MAGE_REEL3.motion = on ? mageReelLow() : MAGE_TODAY.reel;
+  MAGE_LURCH3.rest = on ? MAGE_GUARD : MAGE_TODAY.lurchRest;
+  MAGE_LURCH3.motion = on ? mageLurchLow() : MAGE_TODAY.lurch;
+  MAGE_FALL3.rest = on ? MAGE_GUARD : MAGE_TODAY.fallRest;
+  MAGE_FALL3.motion = on ? mageFallFromGuard() : MAGE_TODAY.fall;
+  // (her two habits in a fight, from her guard: her light, and the power getting away from her in
+  // place of reading; in town she keeps both as they were: `tmlight`, `treading`)
+  MAGE_LIGHT3.rest = on ? MAGE_GUARD : MAGE_TODAY.lightRest;
+  MAGE_LIGHT3.motion = on ? mageLightInGuard() : MAGE_TODAY.light;
+  READING3.rest = on ? MAGE_GUARD : MAGE_TODAY.readingRest;
+  READING3.motion = on ? powerGetsAway() : MAGE_TODAY.reading;
+  READING3.name = on ? 'The power gets away from the mage' : MAGE_TODAY.readingName;
+  remakeRuns();
+}
+
 /** Every move there is on the bones so far, by a short name. */
 export const MOVES3: Record<string, Move3> = {
   ktown: KNIGHT_TOWN3, rtown: RANGER_TOWN3, ktownrun: KNIGHT_TOWN_RUN3, rtownrun: RANGER_TOWN_RUN3, kdraw: KNIGHT_DRAW3, rdraw: RANGER_DRAW3, mready: MAGE_READY3,
   klook: KNIGHT_LOOKS3, tsquirrel: RANGER_TOWN_SQUIRREL3, tsighting: RANGER_TOWN_SIGHTING3,
   rstand: RANGER_STAND3, volley: VOLLEY3, shot: SHOT3, rrun: RANGER_RUN3, roll: ROLL3, rreel: RANGER_REEL3, rlurch: RANGER_LURCH3, rfall: RANGER_FALL3, squirrel: SQUIRREL3, sighting: SIGHTING3,
   mstand: MAGE_STAND3, wave: WAVE3, orb: ORB3, beam: BEAM3, beamend: BEAM_END3, mrun: MAGE_RUN3, mreel: MAGE_REEL3, mlurch: MAGE_LURCH3, mfall: MAGE_FALL3, mlight: MAGE_LIGHT3, reading: READING3,
+  mtown: MAGE_TOWN3, mtownrun: MAGE_TOWN_RUN3, beamstart: BEAM_START3, tmlight: MAGE_TOWN_LIGHT3, treading: TOWN_READING3,
   rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
 };
 
 // (the game's own ranger: his new stances and moves, since Version 19.4, on his yes: RANGER_STANCES, above)
 useRangerStances(RANGER_STANCES.on);
+// (the game's own mage, her stances, and every hero's moves big and wild, since Version 19.7, on his yes: MAGE_STANCES and WILD, above)
+useMageStances(MAGE_STANCES.on);
+useWild(WILD.on);

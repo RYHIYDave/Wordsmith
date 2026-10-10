@@ -27,9 +27,18 @@ export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'f
 /** Damage types. An ability with no element word deals physical damage. */
 export type Element = 'phys' | 'fire' | 'frost' | 'lightning';
 
-/** 'warden' is the boss that ends a dungeon. */
-export type MonsterKind = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden';
+/**
+ * 'warden' is the boss that ends a dungeon. THE NEW MONSTERS (Version 19.9, game/defs.ts NEW_MONSTERS):
+ * 'shade', 'boneward' and 'golem'; and the yellow packs' leaders, each a kind of its own and never a
+ * pack of its own (game/defs.ts LEADERS): 'champion', the skeleton champion, who leads skeletons (not
+ * the `champion` of a Monster, which is a guardian); 'marksman', the bone marksman, bone archers;
+ * 'priest', the high priest, cultists; and 'chieftain', the troll chieftain, green trolls.
+ */
+export type MonsterKind = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain';
+/** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
+/** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
+export const NEW_KINDS: readonly MonsterKind[] = ['shade', 'boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'];
 
 // ---------------------------------------------------------------------------------------------
 // Stats. Every number a character has is one of these keys. Percentages are whole numbers
@@ -268,6 +277,12 @@ export interface PackSpot {
    * powerful monster at the end of a side branch) and its followers.
    */
   tier: 'normal' | 'elite' | 'champion';
+  /**
+   * MONSTER PACKS (defs.ts): what the pack is of (every one of it that kind, a guardian's pack all
+   * guardians), its `size` by the kind's size. Absent with the switch off: the pack's kinds are mixed
+   * when it is filled, as before.
+   */
+  kind?: MonsterKind;
 }
 
 /**

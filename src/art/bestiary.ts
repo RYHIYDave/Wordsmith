@@ -19,17 +19,69 @@
 // longer in the game.
 
 import type { Sprite } from '../engine/px';
+import { MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
+import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
 import { makeArcherArt, makeSkeletonArt } from './monster_bones';
-import { makeBruteArt, makeGuardianArt } from './monster_brute';
-import { makeCultistArt } from './monster_cultist';
-import { makeWardenArt } from './monster_warden';
+import { makeArcherArt3, makeSkeletonArt3 } from './monster_bones3';
+import { TROLL_MOVES, makeBruteArt, makeChieftainArt, makeGuardianArt } from './monster_brute';
+import { makeCultistArt, makeHighPriestArt } from './monster_cultist';
+import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
+import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
+import { PACK_MARKS } from '../render/pack_marks';
+
+/**
+ * THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS): the rules of the monsters' moves
+ * and the art chat's pictures of them (the trolls' swing and the red troll's charge, TROLL_MOVES; the
+ * Warden's swing and his calling of the dead, WARDEN_MOVES; the dead crawling out of the ground,
+ * CRAWL_OUT) go on and off together. A bestiary made after this has the pictures, or not.
+ */
+export function useMonsterAttacks(on: boolean): void {
+  MONSTER_ATTACKS.on = on;
+  TROLL_MOVES.on = on;
+  WARDEN_MOVES.on = on;
+  CRAWL_OUT.on = on;
+}
+useMonsterAttacks(MONSTER_ATTACKS.on);
+
+/**
+ * THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS): the rules that put the art chat's Shade,
+ * Boneward and Ossuary Golem in the dungeons and the skeleton champion at the head of a yellow pack of
+ * skeletons, their pictures (art/new_mobs3.ts NEW_MOBS), and the rings that tell blue and yellow packs
+ * apart (render/pack_marks.ts PACK_MARKS) go on and off together.
+ */
+export function useNewMonsters(on: boolean): void {
+  NEW_MONSTERS.on = on;
+  NEW_MOBS.on = on;
+  PACK_MARKS.on = on;
+}
+useNewMonsters(NEW_MONSTERS.on);
+
+/**
+ * THE SKELETON ON THE HEROES' BONES (art/monster_bones3.ts): A MOCK-UP, AND OFF. While `on` is
+ * false the skeleton is today's (art/monster_bones.ts) and nothing about the game changes; a dev
+ * page or a playtest that wants pictures of the other one sets it for itself (window.__dbg.skeleton3)
+ * and puts it back. The owner has not seen it: nothing that changes the look goes in before his yes.
+ */
+export const SKELETON3 = { on: false };
+
+/**
+ * THE BONE ARCHER ON THE HEROES' BONES (art/monster_bones3.ts, `makeArcherArt3`): A MOCK-UP, AND
+ * OFF, as the skeleton's. While `on` is false the bone archer is today's (art/monster_bones.ts)
+ * and nothing about the game changes; a dev page or a playtest that wants pictures of the other one
+ * sets it for itself (window.__dbg.archer3) and puts it back. The owner has not seen it.
+ */
+export const ARCHER3 = { on: false };
 
 /** The figures there are: one for each kind of monster, and the guardian. */
 export type MonsterFigure = MonsterKind | 'guardian';
-export const MONSTER_FIGURES: readonly MonsterFigure[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'guardian', 'warden'];
+/** The figures of Version 14 (painted with the painter's kit: the tests of their pictures go through these). */
+export type ClassicFigure = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'guardian' | 'warden';
+export const MONSTER_FIGURES: readonly ClassicFigure[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'guardian', 'warden'];
+/** THE NEW MONSTERS' figures (Version 19.9), the art chat's, painted on the heroes' bones (art/new_mobs3.ts). */
+export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'];
 
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean }): MonsterFigure {
@@ -50,6 +102,15 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   brute: { top: 28, half: 16 },
   guardian: { top: 36, half: 21 },
   warden: { top: 61, half: 22 },
+  // THE NEW MONSTERS (measured off their pictures as the others are: tests/new_monsters.test.ts)
+  shade: { top: 26, half: 9 },
+  boneward: { top: 32, half: 11 },
+  golem: { top: 36, half: 21 },
+  champion: { top: 35, half: 9 },
+  marksman: { top: 33, half: 10 },
+  priest: { top: 30, half: 9 },
+  // (his antlers are of his head, as the Warden's horns are of his)
+  chieftain: { top: 58, half: 23 },
 };
 
 export interface Bestiary {
@@ -68,9 +129,31 @@ export interface Bestiary {
 /** The last frame painted ahead of need. Kept only so that the reading of it cannot be optimised away. */
 export let warmed: Sprite | undefined;
 
+/**
+ * THE GOLEM'S SKULL IN FLIGHT (art/new_mobs3.ts makeSkullShotArt), kept with the Golem's pictures as one
+ * of its moves, `skull`, going round as it tumbles: so it is painted ahead with them.
+ */
+function withSkulls(art: ActorArt): ActorArt {
+  const skull = { frames: makeSkullShotArt(), fps: 16, loop: 0 };
+  for (const set of [art.front, art.back]) if (set.clips) set.clips.moves = { ...(set.clips.moves ?? {}), skull };
+  return art;
+}
+
 export function makeBestiary(): Bestiary {
   const made = new Map<MonsterFigure, ActorArt>();
+  /** The skeleton on the bones, made the first time it is asked for with its switch on. */
+  let bones3: ActorArt | null = null;
+  /** The bone archer on the bones, likewise. */
+  let archer3: ActorArt | null = null;
   const of = (figure: MonsterFigure): ActorArt => {
+    if (figure === 'skeleton' && SKELETON3.on) {
+      if (!bones3) bones3 = makeSkeletonArt3();
+      return bones3;
+    }
+    if (figure === 'archer' && ARCHER3.on) {
+      if (!archer3) archer3 = makeArcherArt3();
+      return archer3;
+    }
     let art = made.get(figure);
     if (!art) {
       art =
@@ -80,7 +163,15 @@ export function makeBestiary(): Bestiary {
         : figure === 'bat' ? makeBatArt()
         : figure === 'brute' ? makeBruteArt()
         : figure === 'guardian' ? makeGuardianArt()
-        : makeWardenArt();
+        : figure === 'warden' ? makeWardenArt()
+        // THE NEW MONSTERS: their walks shown at the paces the rules give them
+        : figure === 'shade' ? makeShadeArt3(MONSTERS.shade.speed)
+        : figure === 'boneward' ? makeBonewardArt3(MONSTERS.boneward.speed)
+        : figure === 'golem' ? withSkulls(makeGolemArt3(MONSTERS.golem.speed))
+        : figure === 'champion' ? makeChampionArt3(MONSTERS.champion.speed)
+        : figure === 'marksman' ? makeMarksmanArt3(MONSTERS.marksman.speed)
+        : figure === 'priest' ? makeHighPriestArt()
+        : makeChieftainArt();
       made.set(figure, art);
     }
     return art;
@@ -90,18 +181,30 @@ export function makeBestiary(): Bestiary {
    * first thing seen of a monster), walking, then its attacks from start to finish. The last of
    * `left` is the next to paint.
    */
-  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number }>();
-  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number } => {
+  const todo = new Map<MonsterFigure, { left: (() => Sprite)[]; done: number; art: ActorArt }>();
+  const listOf = (figure: MonsterFigure): { left: (() => Sprite)[]; done: number; art: ActorArt } => {
+    const art = of(figure);
     let list = todo.get(figure);
-    if (!list) {
-      list = { left: [], done: 0 };
-      const art = of(figure);
-      // (and last its death: by the time one of them is killed, how it falls is painted)
-      for (const pick of [(a: AnimSet) => a.idle, (a: AnimSet) => a.walk, (a: AnimSet) => a.clips?.attack?.frames ?? a.attack, (a: AnimSet) => a.clips?.heavy?.frames ?? a.heavy ?? [], (a: AnimSet) => a.clips?.die?.frames ?? []]) {
+    // (made again if the figure's pictures are others than they were: the skeleton's switch, SKELETON3, or the archer's, ARCHER3, was thrown)
+    if (!list || list.art !== art) {
+      list = { left: [], done: 0, art };
+      // (and last its death: by the time one of them is killed, how it falls is painted; and before
+      // it, a monster's other moves, THE MONSTERS' ATTACKS: art/actor_types.ts, AnimSet.clips.moves.
+      // Each pick gives lists of frames, which are only counted here, never read: READING A FRAME IS
+      // WHAT PAINTS IT (lazyFrames in kit.ts), and a list of them all read at once, made by joining
+      // the moves' lists, painted them all in one frame of the game: a pause of a fifth of a second,
+      // the first time a troll was met)
+      const picks: ((a: AnimSet) => readonly (readonly Sprite[])[])[] = [
+        (a) => [a.idle],
+        (a) => [a.walk],
+        (a) => [a.clips?.attack?.frames ?? a.attack],
+        (a) => [a.clips?.heavy?.frames ?? a.heavy ?? []],
+        (a) => Object.values(a.clips?.moves ?? {}).map((c) => c.frames),
+        (a) => [a.clips?.die?.frames ?? []],
+      ];
+      for (const pick of picks) {
         for (const set of [art.front, art.back]) {
-          const frames = pick(set);
-          // (reading a frame is what paints it: see lazyFrames in kit.ts)
-          for (let i = 0; i < frames.length; i++) list.left.push(() => (warmed = frames[i]));
+          for (const frames of pick(set)) for (let i = 0; i < frames.length; i++) list.left.push(() => (warmed = frames[i]));
         }
       }
       list.left.reverse();
@@ -114,7 +217,7 @@ export function makeBestiary(): Bestiary {
     warm(figures: ReadonlyArray<MonsterFigure>): boolean {
       // Whichever of them has had the fewest painted goes next: so all of them can stand and
       // walk (forty frames each) before any of them has every frame of its attack.
-      let next: { left: (() => Sprite)[]; done: number } | null = null;
+      let next: { left: (() => Sprite)[]; done: number; art: ActorArt } | null = null;
       for (const f of figures) {
         const list = listOf(f);
         if (list.left.length > 0 && (!next || list.done < next.done)) next = list;

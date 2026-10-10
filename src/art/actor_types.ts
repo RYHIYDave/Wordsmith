@@ -16,6 +16,17 @@ export interface Clip {
   /** A held move: seconds from its start at which its loop begins (see art/clip.ts, Timeline.loop). */
   loop?: number;
   /**
+   * An attack whose END MAY BE SEEN AFTER THE RULES' ATTACK IS OVER, for as long as the hero is then
+   * left standing (its follow-through: art/moves3.ts, Move3.tail). Anything else the hero does ends it.
+   */
+  tail?: boolean;
+  /**
+   * ... and where that end WAITS: seconds from its start at which it holds still, for as long as a
+   * second swing may still come (render/figure.ts, FigureState.poised), before playing on to its end
+   * (art/moves3.ts, Move3.poise: Strike's first swing, big and wild, holds the sword up there).
+   */
+  poise?: number;
+  /**
    * The figure in it TURNS ALL THE WAY ROUND, seen from one place (a whirlwind painted over the
    * bones: art/heroes3.ts). While it is shown the game does not also turn the figure to face the
    * way the rules have the hero facing (render/figure.ts).
@@ -89,6 +100,12 @@ export interface AnimSet {
      * blast arriving); from there it goes round and round.
      */
     hold?: Clip;
+    /**
+     * What the figure does while a held attack is wound up, before it is held (the mage's beam,
+     * with her stances: art/moves3.ts MAGE_STANCES): played over the rules' wind-up, its last frame
+     * the hold's first. Absent: the attack's own picture is shown then, as before.
+     */
+    holdStart?: Clip;
     /** What the figure does when a held attack is let go, in place of the rest of the attack. */
     release?: Clip;
     /** The same two for a WHIRLWIND, which is held too: the spin, round and round, and coming out of it. */
@@ -126,6 +143,16 @@ export interface AnimSet {
     /** The same two while the hero walks, the walk's legs under them, one for each of the four ways (as `attackWalk`). */
     reelWalk?: Clip[];
     lurchWalk?: Clip[];
+    /**
+     * A MONSTER'S OTHER MOVES, by name (the owner, 9 Oct 2026: tiny and small monsters have one
+     * attack, medium two, large two or three, the boss four, and always a basic single-target
+     * attack to use while the big ones cool down). `attack` is still its first; these are the rest,
+     * each a clip as `attack` is (its `hit` where the blow lands, a held one's `loop` where its loop
+     * begins): the trolls' 'swing', the red troll's 'chargeWind', 'charge' (a loop, run for as long
+     * as the charge lasts) and 'chargeStop', ... Which is played when is the rules' (game/).
+     * Absent: the monster has `attack` (and `heavy`) only.
+     */
+    moves?: Record<string, Clip>;
   };
 }
 

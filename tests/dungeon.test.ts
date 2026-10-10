@@ -16,7 +16,7 @@ import nodeTest from 'node:test';
 import nodeAssert from 'node:assert/strict';
 
 import { RNG } from '../src/engine/rng';
-import { FIRST_LEVELS } from '../src/game/defs';
+import { FIRST_LEVELS, MONSTERS, MONSTER_PACKS, PACK_BY_SIZE, packRange, sizeOf } from '../src/game/defs';
 import { doorPiers, doorWay, isLeaf } from '../src/game/doors';
 import { MIX, generateFloor, tileAt } from '../src/game/dungeon';
 import { buildOpenGrid, buildWalkGrid, flowDir, flowField, lineOfSight, scatter } from '../src/game/nav';
@@ -315,7 +315,8 @@ test('odd depths and seeds still give a valid level', () => {
   assert.equal(pathOf(deep).length, 15);
   assert.ok(deep.rooms.length <= 15 + 2 * 5);
   assert.ok(totalMonsters(deep) <= 230 * 1.25);
-  assert.ok(deep.packs.every(p => p.size <= 9));
+  // (MONSTER PACKS, since Version 19.7: a pack of bats may be 10)
+  assert.ok(deep.packs.every(p => p.size <= (MONSTER_PACKS.on ? 10 : 9)));
 });
 
 test('the map is square and no larger than 160, and room counts and arrays match the depth', () => {
@@ -711,24 +712,80 @@ test('bigger normal rooms get more packs', () => {
   assert.ok(bigPacks / big > smallPacks / small + 0.5, `big rooms average ${bigPacks / big} packs, small rooms ${smallPacks / small}`);
 });
 
-test('pack sizes fit the depth and the total is within 25% of the monster budget', () => {
+test('pack sizes fit the depth and the total is within 25% of the monster budget (the monster packs switched off)', () => {
+  // (MONSTER PACKS, game/defs.ts, on since Version 19.7: switched off, the packs are as they were, mixed when they are filled)
+  const was = MONSTER_PACKS.on;
+  MONSTER_PACKS.on = false;
+  const mixWas = MIX.on;
+  MIX.on = false;
+  try {
+    for (let depth = 1; depth <= DEPTHS; depth++) {
+      for (let k = 0; k < 8; k++) {
+        const seed = depth * 1000 + k * 7919 + 1;
+        const f = generateFloor(depth, seed);
+        const tag = `depth ${depth} seed ${seed}`;
+        for (const p of f.packs) {
+          assert.ok(Number.isInteger(p.size), `${tag}: pack size ${p.size}`);
+          assert.equal(p.kind, undefined, `${tag}: a pack of no one kind`);
+          if (p.tier === 'elite' || p.tier === 'champion') assert.ok(p.size >= 3 && p.size <= 5, `${tag}: ${p.tier} pack of ${p.size}`);
+          else assert.ok(p.size >= normalPackMin(depth) && p.size <= normalPackMax(depth), `${tag}: normal pack of ${p.size}`);
+          // corridor packs are small
+          if (p.roomId === -1) assert.ok(p.size <= normalPackMin(depth) + 1, `${tag}: corridor pack of ${p.size}`);
+        }
+        const total = totalMonsters(f);
+        const target = monsterTarget(depth);
+        assert.ok(total >= target * 0.75 && total <= target * 1.25, `${tag}: ${total} monsters, budget ${target}`);
+        // depth 1 lands in the 105-135 band (with the first levels, 45-75)
+        const [lo, hi] = FIRST_LEVELS.on ? [45, 75] : [105, 135];
+        if (depth === 1) assert.ok(total >= lo && total <= hi, `${tag}: ${total} monsters`);
+      }
+    }
+  } finally {
+    MONSTER_PACKS.on = was;
+    MIX.on = mixWas;
+  }
+});
+
+test('MONSTER PACKS: every pack is of one kind, as many as its size says; a lair holds guardians; the total stays near the budget', () => {
+  // The owner, 9 Oct 2026, 07:49: "Size designation which affects pack size.  Tiny, small, medium,
+  // large, and boss." Tiny the bats, 6 to 10; small the skeletons, archers and cultists, 4 to 7;
+  // medium the green trolls (the brute), 3 to 5; large the red (the guardian), 1 to 2; the first
+  // dungeon gentler (game/defs.ts, PACK_BY_SIZE, FIRST_PACK_BY_SIZE).
+  assert.ok(MONSTER_PACKS.on, 'on in the game');
+  assert.equal(sizeOf('bat'), 'tiny');
+  for (const k of ['skeleton', 'archer', 'cultist'] as const) assert.equal(sizeOf(k), 'small');
+  assert.equal(sizeOf('brute'), 'medium');
+  assert.equal(sizeOf('brute', true), 'large', 'the guardian, a brute of the guardian\'s rank');
+  assert.equal(sizeOf('warden'), 'boss');
+  assert.deepEqual(PACK_BY_SIZE, { tiny: [6, 10], small: [4, 7], medium: [3, 5], large: [1, 2], boss: [1, 1] });
+  const kinds = new Set<string>();
+  const byDepth = new Map<number, number[]>();
   for (const { f, depth, tag } of samples) {
     for (const p of f.packs) {
       assert.ok(Number.isInteger(p.size), `${tag}: pack size ${p.size}`);
-      if (p.tier === 'elite' || p.tier === 'champion') assert.ok(p.size >= 3 && p.size <= 5, `${tag}: ${p.tier} pack of ${p.size}`);
-      else assert.ok(p.size >= normalPackMin(depth) && p.size <= normalPackMax(depth), `${tag}: normal pack of ${p.size}`);
-      // corridor packs are small
-      if (p.roomId === -1) assert.ok(p.size <= normalPackMin(depth) + 1, `${tag}: corridor pack of ${p.size}`);
+      assert.ok(p.kind !== undefined, `${tag}: a pack of one kind`);
+      const kind = p.kind!;
+      kinds.add(kind);
+      const champion = p.tier === 'champion';
+      // (a guardian, a brute of the guardian's rank, keeps its lair from the first dungeon on)
+      if (!champion) assert.ok(MONSTERS[kind].minDepth <= depth && MONSTERS[kind].weight > 0, `${tag}: a pack of ${kind}, which does not come so soon`);
+      if (champion) assert.equal(kind, 'brute', `${tag}: a guardian's lair holds guardians`);
+      const [lo, hi] = packRange(sizeOf(kind, champion), depth);
+      assert.ok(p.size >= lo && p.size <= hi, `${tag}: a pack of ${p.size} ${kind}${champion ? ' guardians' : ''}, where ${lo} to ${hi} come`);
+      // corridor packs are of the fewest, or one more
+      if (p.roomId === -1) assert.ok(p.size <= lo + 1, `${tag}: corridor pack of ${p.size} ${kind}`);
     }
-    const total = totalMonsters(f);
-    const target = monsterTarget(depth);
-    assert.ok(total >= target * 0.75 && total <= target * 1.25, `${tag}: ${total} monsters, budget ${target}`);
+    const list = byDepth.get(depth) ?? [];
+    list.push(totalMonsters(f) / monsterTarget(depth));
+    byDepth.set(depth, list);
   }
-  // depth 1 lands in the 105-135 band (with the first levels, 45-75)
-  const [lo, hi] = FIRST_LEVELS.on ? [45, 75] : [105, 135];
-  for (const s of samples.filter(x => x.depth === 1)) {
-    const total = totalMonsters(s.f);
-    assert.ok(total >= lo && total <= hi, `${s.tag}: ${total} monsters`);
+  for (const k of ['skeleton', 'archer', 'cultist', 'bat', 'brute']) assert.ok(kinds.has(k), `packs of ${k}`);
+  // How many packs there are is the monster budget's still, so the total stays near it: within half
+  // of it in any one dungeon, and within a quarter of it on average at every depth.
+  for (const [depth, list] of byDepth) {
+    const avg = list.reduce((a, b) => a + b, 0) / list.length;
+    assert.ok(avg >= 0.75 && avg <= 1.25, `dungeon ${depth}: on average ${avg.toFixed(2)} of the budget`);
+    for (const r of list) assert.ok(r >= 0.5 && r <= 1.5, `dungeon ${depth}: a dungeon with ${r.toFixed(2)} of the budget`);
   }
 });
 

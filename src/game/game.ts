@@ -3,8 +3,8 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MOVE_OPENS, MSG, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, SKILLS, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, xpToNext } from './defs';
-import type { Limit, MonsterDef } from './defs';
+import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
 import { ARENA, SHAPES, makeArena, makeDungeon, makeLedgeHall, makeMixHall, makeShapeRoom, makeStepHall, makeTown, makeTrapHall } from './level';
@@ -21,7 +21,7 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { AIM_MODES } from './state';
-import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, SkillState, SlotRef, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
+import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -197,6 +197,10 @@ export class Game {
   zones: Zone[] = [];
   traps: Trap[] = [];
   volleys: Volley[] = [];
+  /** THE MONSTERS' ATTACKS: the dead the Warden has called, still crawling out of the ground (game/defs.ts SUMMON). */
+  risers: Riser[] = [];
+  /** THE NEW MONSTERS (game/defs.ts SPEAR): the Bonewards' spears lying on the floor, each until its Boneward picks it up. */
+  spears: Spear[] = [];
   /** The orb set down by the staff's quick attack (one at a time), and the mage's familiars. */
   orbs: OrbInst[] = [];
   familiars: Familiar[] = [];
@@ -866,6 +870,8 @@ export class Game {
     this.zones = [];
     this.traps = [];
     this.volleys = [];
+    this.risers = [];
+    this.spears = [];
     this.orbs = [];
     this.familiars = [];
     this.drops = [];
@@ -1004,8 +1010,15 @@ export class Game {
     // Which monsters carry a word to give up is drawn from a lot of its own, so that changing how
     // scarce words are never changes the dungeon itself.
     const lot = new RNG(seed ^ 0x2c1b3c6d);
-    const kinds = Object.values(MONSTERS).filter((m) => m.weight > 0 && m.minDepth <= this.depth);
+    // (THE NEW MONSTERS among them only while their switch is on: packKinds)
+    const kinds = packKinds(this.depth);
+    // (MONSTER PACKS: which packs are blue and which yellow, and their words, from a lot of its own)
+    const tiers = new RNG((seed ^ 0x7f4a7c15) >>> 0);
     f.packs.forEach((p, pi) => {
+      if (MONSTER_PACKS.on && p.kind) {
+        this.fillPack(p.kind, p.x, p.y, p.size, p.tier, pi, rng, lot, tiers);
+        return;
+      }
       const main = rng.weighted(kinds, (k) => k.weight);
       let size = p.size;
       if (main.kind === 'bat') size += 2;
@@ -1032,6 +1045,58 @@ export class Game {
       by = f.boss.y;
     }
     this.boss = this.spawn('warden', bx, by, -2, 0, true, rng, lot);
+  }
+
+  /**
+   * MONSTER PACKS (defs.ts): a pack of one kind, `size` of it (50% increased with Twin burned in at
+   * the gate), around (x, y). A guardian's pack is guardians alone. Any other is plain, blue or
+   * yellow (PACKS): an elite room's always yellow. A blue pack's one word is on every one of it; a
+   * yellow pack's leader has an elite's words, and the others, its minions, have those words at half
+   * strength.
+   */
+  private fillPack(kind: MonsterKind, x: number, y: number, size: number, tier: 'normal' | 'elite' | 'champion', pi: number, rng: RNG, lot: RNG, tiers: RNG): void {
+    const f = this.level.floor;
+    const n = this.dungeonWords.includes('twin') ? Math.round(size * GATE_TWIN_PACKS) : size;
+    const spots = scatter(this.level.walk, f.w, f.h, x, y, n, rng);
+    if (tier === 'champion') {
+      // (a lair gives up a word as one guardian did: only the first of them may carry one; words are scarce)
+      spots.forEach((s, i) => this.spawn('brute', s.x, s.y, pi, 2, false, rng, i === 0 ? lot : null));
+      return;
+    }
+    const rarity = packRarity(tier === 'elite', this.depth, tiers.next(), kind);
+    if (rarity === 'plain') {
+      for (const s of spots) this.spawn(kind, s.x, s.y, pi, 0, false, rng, lot);
+      return;
+    }
+    // (THE FIRST LEVELS: nothing has a word in the first dungeon; a yellow pack's leader is only the tougher)
+    const words = this.bareDungeon() ? [] : this.drawWords(tiers, rarity === 'blue' ? 1 : this.depth >= 6 ? 2 : 1);
+    if (rarity === 'blue') for (const s of spots) this.spawn(kind, s.x, s.y, pi, 0, false, rng, null, { rarity: 'blue', words });
+    // (words are scarce: as before, an elite room's leader may carry one of its words to give up; the
+    // leader of any other yellow pack carries none, and neither does a minion nor one of a blue pack)
+    // (THE NEW MONSTERS: a yellow pack of skeletons is led by the skeleton champion, a monster of his own)
+    else spots.forEach((s, i) => this.spawn(i === 0 ? this.leaderOf(kind) : kind, s.x, s.y, pi, i === 0 ? 1 : 0, false, rng, i === 0 && tier === 'elite' ? lot : null, { rarity: i === 0 ? 'leader' : 'minion', words }));
+  }
+
+  /** What leads a yellow pack of `kind`: one of them (an elite), or a leader of his own (THE NEW MONSTERS: defs.ts LEADERS). */
+  private leaderOf(kind: MonsterKind): MonsterKind {
+    return leaderKind(kind);
+  }
+
+  /** THE FIRST LEVELS (21:05): "That also means no words on monsters for dungeon 1". */
+  private bareDungeon(): boolean {
+    return FIRST_LEVELS.on && !this.practice && this.depth <= 1;
+  }
+
+  /** `n` different words for a monster, never two of Flame, Frost and Lightning. */
+  private drawWords(rng: RNG, n: number): WordId[] {
+    const words: WordId[] = [];
+    while (words.length < n) {
+      const w = rng.pick(WORD_IDS);
+      if (words.includes(w)) continue;
+      if (ELEMENT_WORDS.includes(w) && words.some((o) => ELEMENT_WORDS.includes(o))) continue;
+      words.push(w);
+    }
+    return words;
   }
 
   /**
@@ -1135,27 +1200,26 @@ export class Game {
   /**
    * `rank`: 0 an ordinary monster, 1 an elite (it has a word's power, and its name), 2 a guardian (the powerful one at the end of a side branch).
    * `lot`: the draw that decides whether it gives up a word when it dies (none: it does not).
+   * `pack`: MONSTER PACKS, one of a blue or a yellow pack (fillPack), with the pack's words: then its
+   * words are those, at full strength or (a minion) at half; a leader is of rank 1.
    */
-  private spawn(kind: MonsterKind, x: number, y: number, packId: number, rank: 0 | 1 | 2, boss: boolean, rng: RNG, lot: RNG | null = null): Monster {
+  private spawn(kind: MonsterKind, x: number, y: number, packId: number, rank: 0 | 1 | 2, boss: boolean, rng: RNG, lot: RNG | null = null, pack: { rarity: 'blue' | 'leader' | 'minion'; words: readonly WordId[] } | null = null): Monster {
     const def = MONSTERS[kind];
     const elite = rank > 0;
     const champion = rank === 2;
-    const words: WordId[] = [];
     // (THE FIRST LEVELS, 21:05: "That also means no words on monsters for dungeon 1")
-    const bare = FIRST_LEVELS.on && !this.practice && this.depth <= 1;
-    const want = bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
-    while (words.length < want) {
-      const w = rng.pick(WORD_IDS);
-      if (words.includes(w)) continue;
-      if (ELEMENT_WORDS.includes(w) && words.some((o) => ELEMENT_WORDS.includes(o))) continue;
-      words.push(w);
-    }
+    const bare = this.bareDungeon();
+    const want = pack ? pack.words.length : bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
+    const words: WordId[] = pack ? [...pack.words] : this.drawWords(rng, want);
+    // (MONSTER PACKS: a minion has its leader's words at half strength)
+    let half: WordId[] = pack && pack.rarity === 'minion' ? [...pack.words] : [];
     // What it gives up when it dies (the rune stones over its head). Words are scarce. A guardian or
     // a named monster gives up one of its own only sometimes. The boss always gives up one, and the
     // chance of more grows with how deep the dungeon is and with every word burned into it (the
     // owner: "let the boss have a guaranteed drop of at least 1 word. we can have the chance of
     // dropping more words increase with difficulty and rarity modifiers on dungeons"). A word
-    // burned into a dungeon is spent: the boss does not hand it back.
+    // burned into a dungeon is spent: the boss does not hand it back. (MONSTER PACKS: of a blue or a
+    // yellow pack, only the leader, as an elite; the others give up none.)
     const greater = boss && this.depth % 5 === 0;
     let carries: WordId[] = [];
     if (boss && words.length) {
@@ -1168,14 +1232,19 @@ export class Game {
           p -= TUNE.bossThird;
         }
       }
-    } else if (lot && words.length) {
+    } else if (lot && words.length && (!pack || pack.rarity === 'leader')) {
       const p = champion ? TUNE.guardianCarry : TUNE.eliteCarry;
       // (the more words are burned into the dungeon, the likelier: that is what burning them buys)
       if (lot.chance(Math.min(1, p * (1 + 0.3 * this.dungeonWords.length)))) carries = [lot.pick(words)];
     }
     // (THE FIRST LEVELS: before the ring is lit nothing gives up a word)
     if (!this.wordsFall()) carries = [];
-    if (!bare) for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
+    if (!bare) {
+      for (const w of this.dungeonWords) if (!words.includes(w)) words.push(w);
+      // (a word burned in at the gate is every monster's, a minion's at full strength too)
+      half = half.filter((w) => !this.dungeonWords.includes(w));
+    }
+    const has = { words, half };
     let life = def.life * (boss ? 1 + 0.4 * (this.depth - 1) : scaleLife(this.depth));
     let dm = scaleDmg(this.depth);
     let xp = def.xp * (1 + 0.25 * (this.depth - 1));
@@ -1184,29 +1253,42 @@ export class Game {
       dm *= TUNE.guardianDmg;
       xp *= 6;
     } else if (elite) {
-      life *= TUNE.eliteLife;
+      life *= pack ? PACKS.leaderLife : TUNE.eliteLife;
       dm *= TUNE.eliteDmg;
       xp *= 4;
+    } else if (pack && pack.rarity === 'blue') {
+      life *= PACKS.blueLife;
+      xp *= PACKS.blueLife;
     }
     if (greater) life *= 2;
-    if (words.includes('power')) {
-      life *= 1.3;
-      dm *= 1.4;
+    const power = wordShare(has, 'power');
+    if (power > 0) {
+      life *= 1 + 0.3 * power;
+      dm *= 1 + 0.4 * power;
     }
     let name = def.name;
-    if (elite || boss) name = [...words.slice(0, want).map((w) => WORDS[w].front), champion ? 'Guardian' : def.name].join(' ');
+    if (elite || boss || (pack && pack.rarity === 'blue')) name = [...words.slice(0, want).map((w) => WORDS[w].front), champion ? 'Guardian' : def.name].join(' ');
     if (greater) name = 'Greater ' + name;
     const m: Monster = {
       id: this.nextId++, kind, name, x, y, r: def.radius * (champion ? TUNE.guardianSize : elite ? 1.12 : 1), fx: 0.7071, fy: 0.7071,
       life: Math.round(life), maxLife: Math.round(life), dmgMin: def.dmgMin * dm, dmgMax: def.dmgMax * dm,
-      speed: def.speed * (words.includes('swift') ? 1.35 : 1), elite, champion, boss, words, carries,
+      speed: def.speed * (1 + 0.35 * wordShare(has, 'swift')), elite, champion, boss, words, carries,
       state: 'sleep', t: 0, cd: 0, packId, anim: 'idle', animT: rng.range(0, 3), flash: 0,
       burnT: 0, burnDps: 0, chillT: 0, chill: 0, frozenT: 0, freezeImmune: 0, poisonT: 0, poisonDps: 0, poisonN: 0,
-      stunT: 0, staggerT: 0, staggerCd: 0, markT: 0, shockT: 0, shield: words.includes('guarding') ? Math.round(Math.round(life) * GUARD.monster) : 0,
+      stunT: 0, staggerT: 0, staggerCd: 0, markT: 0, shockT: 0, shield: Math.round(Math.round(life) * GUARD.monster * wordShare(has, 'guarding')),
       lastSkill: -1, seen: false, barT: 0, phase: 0, atk: 0, dead: false, xp: Math.round(xp), seed: rng.next(),
     };
+    if (pack) m.rarity = pack.rarity;
+    if (half.length) m.half = half;
     this.monsters.push(m);
     return m;
+  }
+
+  /** MONSTER PACKS: what a minion's blow carries of its leader's words, to be weighed where it lands (hurtHero). None for any other. */
+  private halfOf(m: Monster): HalfWords | undefined {
+    // (THE NEW MONSTERS: rallied by the skeleton champion's cry, its leader's words are whole for a while: RALLY)
+    if (m.rallyT !== undefined && m.rallyT > 0) return undefined;
+    return m.half && m.half.length ? { words: m.half, base: MONSTERS[m.kind].element } : undefined;
   }
 
   // ===========================================================================================
@@ -1232,6 +1314,7 @@ export class Game {
     this.updateHazards(dt);
     this.updateFlow(dt);
     this.updateMonsters(dt);
+    if (this.risers.length) this.updateRisers(dt);
     this.updateProjectiles(dt);
     this.updateTraps(dt);
     this.updateVolleys(dt);
@@ -3279,10 +3362,12 @@ export class Game {
     this.sfx('rune', 0.7);
   }
 
-  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number): void {
+  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number, half?: HalfWords): void {
     // (a warning is never left out: if the floor is full, the oldest of the hero's own patches gives way to it)
     this.roomForZone();
-    this.zones.push({ x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src });
+    const z: Zone = { x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src };
+    if (half) z.half = half;
+    this.zones.push(z);
   }
 
   /** One hit of ability `i` on a monster, with everything a word in front adds to it. */
@@ -3328,6 +3413,8 @@ export class Game {
         const deep = this.has('deepfreeze');
         m.frozenT = (m.elite ? 0.6 : 1.1) * (deep ? TALENT_TUNE.deepFreeze.frozen : 1);
         m.freezeImmune = deep ? TALENT_TUNE.deepFreeze.again : 4;
+        // (THE MONSTERS' ATTACKS: a red troll frozen as he runs his charge is stopped in it)
+        if (m.state === 'charge') this.endCharge(m);
         this.emit({ t: 'freeze', x, y });
         this.sfx('frost', 0.7);
       }
@@ -3438,17 +3525,18 @@ export class Game {
 
   /** An attack `m` was winding up is broken off, with the warning of a blow it was about to bring down. */
   private breakOff(m: Monster): void {
-    if (m.state !== 'windup') return;
+    if (m.state !== 'windup' && m.state !== 'charge' && m.state !== 'pickup') return;
     m.state = 'chase';
     m.anim = 'idle';
+    m.charge = undefined;
     for (let k = this.zones.length - 1; k >= 0; k--) {
       const z = this.zones[k];
-      if (z.kind === 'warn' && z.src === m.id) this.zones.splice(k, 1);
+      if ((z.kind === 'warn' || z.kind === 'lane' || z.kind === 'aim') && z.src === m.id) this.zones.splice(k, 1);
     }
   }
 
-  /** Heavy on a monster: its blow, from (fromX, fromY), knocks the hero back a step (walls stop it). */
-  private knockHero(fromX: number, fromY: number): void {
+  /** Heavy on a monster: its blow, from (fromX, fromY), knocks the hero back a step (walls stop it); `share`, a minion's half a step (MONSTER PACKS). */
+  private knockHero(fromX: number, fromY: number, share = 1): void {
     const h = this.hero;
     let dx = h.x - fromX;
     let dy = h.y - fromY;
@@ -3460,7 +3548,7 @@ export class Game {
       dx /= len;
       dy /= len;
     }
-    h.step = { dx: dx * HEAVY.knock, dy: dy * HEAVY.knock, t: 0.12 };
+    h.step = { dx: dx * HEAVY.knock * share, dy: dy * HEAVY.knock * share, t: 0.12 };
   }
 
   /** `poison`: the harm is poison working (its number is drawn in poison's colour, and it does not flash the monster). */
@@ -3487,6 +3575,8 @@ export class Game {
     if (m.dead) return;
     m.dead = true;
     this.kills++;
+    // (THE MONSTERS' ATTACKS: the line of a charge it was making goes with it)
+    if (m.charge || m.state === 'windup') this.dropLane(m);
     const h = this.hero;
     this.emit({ t: 'die', x: m.x, y: m.y, kind: m.kind, elite: m.elite, champion: m.champion, boss: m.boss, fx: m.fx, fy: m.fy });
     if (m.frozenT > 0) {
@@ -3529,9 +3619,10 @@ export class Game {
       this.emit({ t: 'orb', x: m.x, y: m.y });
       this.sfx('leech', 0.7);
     }
-    // a monster carrying Volatile goes off after a short warning
-    if (m.words.includes('volatile')) {
-      this.addWarn(m.x, m.y, 1.8, 0.7, ((m.dmgMin + m.dmgMax) / 2) * 1.5, this.monsterElement(m), [], `${m.name}'s dying blast`);
+    // a monster carrying Volatile goes off after a short warning (a minion, of its leader's Volatile, at half strength)
+    const blast = wordShare(m, 'volatile');
+    if (blast > 0) {
+      this.addWarn(m.x, m.y, 1.8, 0.7, ((m.dmgMin + m.dmgMax) / 2) * 1.5 * blast, this.monsterElement(m), [], `${m.name}'s dying blast`, undefined, this.halfOf(m));
     }
     this.dropLoot(m);
     this.gainXp(m.xp);
@@ -3639,14 +3730,25 @@ export class Game {
     return this.rng.range(m.dmgMin, m.dmgMax);
   }
 
-  /** (ox, oy): where a blow that has no monster behind it (a shot, a warning) came from: the way a Heavy one knocks the hero. */
-  hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = '', ox?: number, oy?: number): void {
+  /**
+   * (ox, oy): where a blow that has no monster behind it (a shot, a warning) came from: the way a Heavy one knocks the hero.
+   * `half`: MONSTER PACKS, a minion's shot or warning: those of `words` it has at half strength
+   * (for a blow of the minion itself, read off `src`).
+   */
+  hurtHero(raw: number, el: Element, words: readonly WordId[], src: Monster | null, from = '', ox?: number, oy?: number, half?: HalfWords): void {
     const h = this.hero;
     if (this.over || h.invuln > 0 || h.move) return;
     this.slainBy = src ? src.name : from;
     const d = h.d;
     const fromX = src ? src.x : ox ?? h.x + h.fx;
     const fromY = src ? src.y : oy ?? h.y + h.fy;
+    // MONSTER PACKS: how much of each word's power the blow has (a minion's, of its leader's words,
+    // half); and when the word that made it Flame, Frost or Lightning is one of those, only half of
+    // the blow is of that element, the rest of the minion's own
+    const hv = half ?? (src ? this.halfOf(src) : undefined);
+    const k = (w: WordId): number => wordShare({ words, half: hv ? hv.words : undefined }, w);
+    const elK = hv && el !== hv.base && hv.words.includes(el as WordId) ? PACKS.minion : 1;
+    const parts: [Element, number][] = elK < 1 && hv ? [[el, elK], [hv.base, 1 - elK]] : [[el, 1]];
     // GUARDING burned into gear: a chance to block the blow, which then does nothing at all
     const block = Math.min(GUARD.blockCap, d.stats.blockChance);
     if (block > 0 && this.rng.chance(block / 100)) {
@@ -3655,10 +3757,12 @@ export class Game {
       this.sfx('hit', 0.5);
       return;
     }
-    let dmg = raw;
-    // (PRECISE, on a monster: its blows find the gaps in the hero's armour)
-    if (el === 'phys') dmg *= 1 - armorReduction(words.includes('precise') ? d.armor * (1 - PRECISE.armourIgnored) : d.armor, Math.max(1, this.depth));
-    else dmg *= 1 - (el === 'fire' ? d.resFire : el === 'frost' ? d.resFrost : d.resLight) / 100;
+    let dmg = 0;
+    for (const [e, share] of parts) {
+      // (PRECISE, on a monster: its blows find the gaps in the hero's armour)
+      if (e === 'phys') dmg += raw * share * (1 - armorReduction(k('precise') > 0 ? d.armor * (1 - PRECISE.armourIgnored * k('precise')) : d.armor, Math.max(1, this.depth)));
+      else dmg += raw * share * (1 - (e === 'fire' ? d.resFire : e === 'frost' ? d.resFrost : d.resLight) / 100);
+    }
     if (h.shockT > 0) dmg *= 1.2;
     // GUARDING behind: inside a ward the hero takes less (the strongest ward they stand in)
     let ward = 0;
@@ -3672,7 +3776,7 @@ export class Game {
       this.damageMonster(src, Math.max(1, Math.round(raw * TALENT_TUNE.thorns.share)), 'phys', false, -1);
     }
     // HEAVY, on a monster: its blows knock the hero back a step
-    if (words.includes('heavy')) this.knockHero(fromX, fromY);
+    if (k('heavy') > 0) this.knockHero(fromX, fromY, k('heavy'));
     // GUARDING in front: the shield takes the blow first
     let soaked = 0;
     if (h.shield > 0) {
@@ -3693,22 +3797,25 @@ export class Game {
     this.emit({ t: 'hit', x: h.x, y: h.y, amount: dmg, crit: false, el, onHero: true });
     this.emit({ t: 'shake', amount: Math.min(5, 1 + dmg / 8) });
     this.sfx('hurt', 0.8);
-    if (words.includes('poison')) {
+    if (k('poison') > 0) {
       // a monster with Poison: most of the blow again, over the next few seconds
-      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, (dmg * 0.6) / TUNE.poisonTime);
+      h.poisonDps = Math.max(h.poisonT > 0 ? h.poisonDps : 0, (dmg * 0.6 * k('poison')) / TUNE.poisonTime);
       h.poisonT = TUNE.poisonTime;
     }
-    if (el === 'fire') {
-      h.burnDps = Math.max(h.burnT > 0 ? h.burnDps : 0, (dmg * 0.3) / 3);
-      h.burnT = 3;
-    } else if (el === 'frost') {
-      h.chill = 0.3;
-      h.chillT = 2;
-    } else if (el === 'lightning') {
-      h.shockT = 3;
+    // (what each element of the blow leaves: a minion's half of Flame burns half as hard)
+    for (const [e, share] of parts) {
+      if (e === 'fire') {
+        h.burnDps = Math.max(h.burnT > 0 ? h.burnDps : 0, (dmg * 0.3 * share) / 3);
+        h.burnT = 3;
+      } else if (e === 'frost') {
+        h.chill = Math.max(h.chillT > 0 ? h.chill : 0, 0.3 * share);
+        h.chillT = 2;
+      } else if (e === 'lightning') {
+        h.shockT = Math.max(h.shockT, 3 * share);
+      }
     }
-    if (src && !src.dead && words.includes('leech')) {
-      src.life = Math.min(src.maxLife, src.life + src.maxLife * 0.15);
+    if (src && !src.dead && k('leech') > 0) {
+      src.life = Math.min(src.maxLife, src.life + src.maxLife * 0.15 * k('leech'));
       this.emit({ t: 'text', x: src.x, y: src.y, text: 'heals', color: '#ff8a80' });
     }
     // (THE SKILL TREES: Unbreakable, once in each dungeon a killing blow leaves him at 1 life, shielded)
@@ -3915,6 +4022,8 @@ export class Game {
       if (m.markT > 0) m.markT -= dt;
       if (m.shockT > 0) m.shockT -= dt;
       if (m.staggerCd > 0) m.staggerCd -= dt;
+      // (THE NEW MONSTERS: a minion's leader's words, whole since the skeleton champion's cry, for so long: RALLY)
+      if (m.rallyT !== undefined && m.rallyT > 0) m.rallyT = Math.max(0, m.rallyT - dt);
       if (m.poisonT > 0) {
         m.poisonT -= dt;
         if (m.poisonT <= 0) {
@@ -3938,14 +4047,29 @@ export class Game {
         continue;
       }
       // FRENZIED, on a monster: the more it is hurt, the faster it moves and the sooner it attacks again
-      const rage = m.words.includes('frenzied') ? 1 + FRENZY.monster * (1 - Math.max(0, m.life) / m.maxLife) : 1;
+      const rage = 1 + FRENZY.monster * wordShare(m, 'frenzied') * (1 - Math.max(0, m.life) / m.maxLife);
       m.cd -= dt * rage;
       const def = MONSTERS[m.kind];
       const slow = m.chillT > 0 ? 1 - m.chill : 1;
+      // (THE MONSTERS' ATTACKS: its big moves cool down too)
+      const moves = movesOf(m);
+      if (moves && m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= dt * rage;
 
       if (m.state === 'windup') {
         m.t -= dt * (0.6 + 0.4 * slow);
+        // (the line a charge will run along fills as his wind-up runs out)
+        if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'charge') this.laneOf(m, (z) => (z.t = Math.max(0, z.dur - m.t)));
+        // (THE NEW MONSTERS: the marksman's line of aim runs out as he draws, and follows the hero till it holds still: AIM)
+        if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'pierce') this.holdAim(m);
         if (m.t <= 0) this.monsterAttack(m, def);
+        continue;
+      }
+      if (m.state === 'charge') {
+        this.runCharge(m, def, dt, slow);
+        continue;
+      }
+      if (m.state === 'pickup') {
+        this.stoop(m, dt);
         continue;
       }
       if (m.state === 'recover') {
@@ -3958,16 +4082,35 @@ export class Game {
       }
 
       const los = dist < 15 && this.sees(m.x, m.y, h.x, h.y);
-      if (m.boss) {
+      if (moves) {
+        // THE MONSTERS' ATTACKS: the biggest of its moves that is ready and in reach, else its basic blow
+        if (m.cd <= 0) {
+          const i = this.pickMove(m, def, moves, dist, los);
+          if (i >= 0) {
+            this.startMove(m, def, moves, i);
+            continue;
+          }
+        }
+      } else if (m.boss) {
         this.bossThink(m, def, dist, los);
         if (m.state !== 'chase') continue;
       }
       let mvx = 0;
       let mvy = 0;
       let moving = true;
-      const reach = def.range + (m.r - 0.32);
-      if (def.ranged) {
-        if (los && dist <= def.range && m.cd <= 0) {
+      const reach = this.reachOf(m, def);
+      // (THE NEW MONSTERS: a Boneward whose spear is gone goes for it, unless the hero is near and the spear is not: SPEAR)
+      const toSpear = m.bare && (dist > SPEAR.near || this.spearWithin(m, SPEAR.close)) ? this.spearWay(m) : null;
+      if (toSpear === 'here') {
+        this.beginStoop(m);
+        continue;
+      }
+      if (toSpear) {
+        mvx = toSpear.x;
+        mvy = toSpear.y;
+      } else if (def.ranged) {
+        // (THE NEW MONSTERS: one with moves of its own, the marksman and the high priest, shoots by them)
+        if (!moves && los && dist <= def.range && m.cd <= 0) {
           this.startWindup(m, def);
           continue;
         }
@@ -3981,7 +4124,7 @@ export class Game {
           mvy = v.y;
         } else moving = false;
       } else {
-        if (!m.boss && los && dist <= reach + TUNE.heroRadius && m.cd <= 0) {
+        if (!moves && !m.boss && los && dist <= reach + TUNE.heroRadius && m.cd <= 0) {
           this.startWindup(m, def);
           continue;
         }
@@ -4074,20 +4217,26 @@ export class Game {
     if (def.aoe > 0 && !(m.boss && m.atk === 1)) {
       // a ground attack: show where it will land
       const reach = Math.min(dist, def.range);
-      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, def.windup, this.rollMonsterDmg(m), this.monsterElement(m), m.words, m.name, m.id);
+      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, def.windup, this.rollMonsterDmg(m), this.monsterElement(m), m.words, m.name, m.id, this.halfOf(m));
     }
   }
 
   private monsterAttack(m: Monster, def: MonsterDef): void {
+    const moves = movesOf(m);
+    if (moves && m.move !== undefined && m.move >= 0) {
+      this.landMove(m, def, moves, m.move);
+      return;
+    }
     const h = this.hero;
     m.state = 'recover';
     m.t = TUNE.monsterRecover;
-    m.cd = def.cooldown * (m.words.includes('swift') ? 0.7 : 1) * this.rng.range(0.9, 1.2);
+    m.cd = def.cooldown * (1 - 0.3 * wordShare(m, 'swift')) * this.rng.range(0.9, 1.2);
     const dx = h.x - m.x;
     const dy = h.y - m.y;
     const dist = Math.hypot(dx, dy) || 1;
     const el = this.monsterElement(m);
-    const twin = m.words.includes('twin');
+    // (TWIN: its second blow; a minion's, of its leader's Twin, at half strength: MONSTER PACKS)
+    const twin = wordShare(m, 'twin');
     if (m.boss && m.atk === 1) {
       // volley: a fan of bolts
       const base = Math.atan2(dy, dx);
@@ -4098,15 +4247,15 @@ export class Game {
     if (def.aoe > 0) {
       // the warning circle does the damage; a Twin monster follows it with a second, quicker one
       this.sfx('slam', 0.8);
-      if (twin) this.addWarn(h.x, h.y, def.aoe * 0.8, 0.6, this.rollMonsterDmg(m), el, m.words, m.name);
+      if (twin > 0) this.addWarn(h.x, h.y, def.aoe * 0.8, 0.6, this.rollMonsterDmg(m) * twin, el, m.words, m.name, undefined, this.halfOf(m));
       return;
     }
     if (def.ranged) {
       const base = Math.atan2(dy, dx);
       const look = m.kind === 'archer' ? 'arrow' : 'bolt';
-      if (twin) {
+      if (twin > 0) {
         this.shootAt(m, base - 0.12, def.projSpeed, this.rollMonsterDmg(m), el, look, def.range + 3);
-        this.shootAt(m, base + 0.12, def.projSpeed, this.rollMonsterDmg(m), el, look, def.range + 3);
+        this.shootAt(m, base + 0.12, def.projSpeed, this.rollMonsterDmg(m) * twin, el, look, def.range + 3);
       } else this.shootAt(m, base, def.projSpeed, this.rollMonsterDmg(m), el, look, def.range + 3);
       this.sfx(m.kind === 'archer' ? 'shot' : 'fire', 0.5);
       return;
@@ -4114,10 +4263,10 @@ export class Game {
     const reach = def.range + (m.r - 0.32) + 0.45 + TUNE.heroRadius;
     if (dist <= reach) this.hurtHero(this.rollMonsterDmg(m), el, m.words, m);
     this.sfx('swing', 0.4);
-    if (twin) {
+    if (twin > 0) {
       this.after(0.28, () => {
         if (m.dead) return;
-        if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach) this.hurtHero(this.rollMonsterDmg(m), el, m.words, m);
+        if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach) this.hurtHero(this.rollMonsterDmg(m) * twin, el, m.words, m);
       });
     }
   }
@@ -4126,7 +4275,7 @@ export class Game {
     this.projectiles.push({
       x: m.x + Math.cos(angle) * 0.4, y: m.y + Math.sin(angle) * 0.4, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
       r: look === 'bolt' ? 0.3 : 0.2, dist: range, hostile: true, dmg, element: el, look, pierce: false, hit: [], volley: false, skill: -1,
-      trail: 0, words: m.words, runed: false, clouded: false, age: 0, from: m.name, n: 0,
+      trail: 0, words: m.words, half: this.halfOf(m), runed: false, clouded: false, age: 0, from: m.name, n: 0,
     });
   }
 
@@ -4161,6 +4310,483 @@ export class Game {
   }
 
   // ===========================================================================================
+  // THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS, MONSTER_MOVES)
+
+  /**
+   * Which of its moves monster `m` makes now: the biggest that is ready (its own cooldown run out)
+   * and that the hero is in reach of; else its basic blow, if the hero is in reach of that; else
+   * none (-1), and it comes on. (Its moves' first cooldowns are set the first time it is asked.)
+   */
+  private pickMove(m: Monster, def: MonsterDef, moves: readonly MonsterMove[], dist: number, los: boolean): number {
+    // (from half its `first` to half as much again: so a pack does not bring its slams down together)
+    if (!m.moveCd || m.moveCd.length !== moves.length) m.moveCd = moves.map((mv) => mv.first * this.rng.range(0.5, 1.5));
+    // (one that shoots, as far as it shoots: THE NEW MONSTERS, the marksman's and the high priest's shot)
+    const reach = def.ranged ? def.range : this.reachOf(m, def) + TUNE.heroRadius;
+    for (let i = moves.length - 1; i >= 0; i--) {
+      const mv = moves[i];
+      if (m.moveCd[i] > 0) continue;
+      // (THE NEW MONSTERS: the Boneward's thrust and its throw want its spear in hand; its shield, the spear gone)
+      if (m.kind === 'boneward' && (mv.id === 'bash') !== !!m.bare) continue;
+      if (dist < mv.near || dist > (mv.far > 0 ? mv.far : reach)) continue;
+      if (mv.id === 'summon') {
+        if (this.called(m) >= SUMMON.most) continue;
+      } else if (!los) continue;
+      if (mv.id === 'rally' && !this.hearsCry(m)) continue;
+      if (mv.id === 'charge' && !this.chargeLane(m, dist)) continue;
+      return i;
+    }
+    return -1;
+  }
+
+  /** How many of the dead the Warden has called still stand (or are coming up out of the ground). */
+  private called(m: Monster): number {
+    let n = this.risers.length;
+    for (const o of this.monsters) if (!o.dead && o !== m && o.packId === m.packId && o.kind === 'skeleton') n++;
+    return n;
+  }
+
+  /** Monster `m` begins move `i`: it winds up, and what it is about to do is shown (a slam's circle, a charge's line). */
+  private startMove(m: Monster, def: MonsterDef, moves: readonly MonsterMove[], i: number): void {
+    const h = this.hero;
+    const mv = moves[i];
+    m.state = 'windup';
+    m.t = mv.windup;
+    m.anim = 'attack';
+    m.animT = 0;
+    m.move = i;
+    m.atk = mv.id === 'bolts' ? 1 : 0;
+    const dx = h.x - m.x;
+    const dy = h.y - m.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    m.fx = dx / dist;
+    m.fy = dy / dist;
+    if (mv.id === 'slam') {
+      // the red circle where it will land, as it has always been
+      const reach = Math.min(dist, def.range);
+      this.addWarn(m.x + m.fx * reach, m.y + m.fy * reach, def.aoe, mv.windup, this.rollMonsterDmg(m) * mv.dmg, this.monsterElement(m), m.words, m.name, m.id, this.halfOf(m));
+    } else if (mv.id === 'charge') {
+      // the line he will run along, on the floor: from him, through where the hero stands, and on
+      const lane = this.chargeLane(m, dist);
+      if (!lane) {
+        m.state = 'chase';
+        m.anim = 'idle';
+        m.move = -1;
+        return;
+      }
+      m.charge = { ...lane, hit: false };
+      this.zones.push({ x: lane.x0, y: lane.y0, x1: lane.x1, y1: lane.y1, r: CHARGE.half, t: 0, dur: mv.windup, kind: 'lane', element: this.monsterElement(m), dmg: 0, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id, gone: 0 });
+      this.sfx('bossRoar', 0.45);
+    } else if (mv.id === 'summon') {
+      this.sfx('bossRoar');
+      this.msg(`${m.name} calls the dead`, MSG.foe);
+    } else if (mv.id === 'pierce') {
+      // (THE NEW MONSTERS: the marksman's line of aim, from him toward the hero: AIM)
+      const end = this.aimEnd(m.x, m.y, m.fx, m.fy);
+      this.zones.push({ x: m.x, y: m.y, x1: end.x, y1: end.y, r: AIM.r, t: 0, dur: mv.windup, kind: 'aim', element: this.monsterElement(m), dmg: 0, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id });
+    }
+  }
+
+  /** Monster `m`'s move `i` lands (the end of its wind-up). */
+  private landMove(m: Monster, def: MonsterDef, moves: readonly MonsterMove[], i: number): void {
+    const h = this.hero;
+    const mv = moves[i];
+    const swift = 1 - 0.3 * wordShare(m, 'swift');
+    m.state = 'recover';
+    m.t = mv.recover;
+    m.cd = mv.after * swift * this.rng.range(0.9, 1.2);
+    if (m.moveCd && mv.cooldown > 0) m.moveCd[i] = mv.cooldown * swift;
+    const el = this.monsterElement(m);
+    const twin = wordShare(m, 'twin');
+    const dx = h.x - m.x;
+    const dy = h.y - m.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    if (mv.id === 'swing' || mv.id === 'bash') {
+      // the basic blow: whoever is in its reach when it lands (a Twin monster swings again); the
+      // Boneward's shield, while its spear is gone, shoves the hero back too (THE NEW MONSTERS)
+      const reach = this.reachOf(m, def) + 0.45 + TUNE.heroRadius;
+      const bash = mv.id === 'bash';
+      if (dist <= reach) {
+        this.hurtHero(this.rollMonsterDmg(m) * mv.dmg, el, m.words, m);
+        if (bash) this.knockHero(m.x, m.y, 0.8);
+      }
+      this.sfx(bash ? 'hit' : 'swing', bash ? 0.6 : 0.5);
+      if (twin > 0) {
+        this.after(0.28, () => {
+          if (m.dead) return;
+          if (Math.hypot(this.hero.x - m.x, this.hero.y - m.y) <= reach) this.hurtHero(this.rollMonsterDmg(m) * mv.dmg * twin, el, m.words, m);
+        });
+      }
+    } else if (mv.id === 'throw') {
+      // THE NEW MONSTERS: the Golem's skull, or the Boneward's spear
+      if (m.kind === 'golem') {
+        this.hurlSkull(m, mv, 1);
+        if (twin > 0) {
+          this.after(0.35, () => {
+            if (!m.dead) this.hurlSkull(m, mv, twin);
+          });
+        }
+      } else this.throwSpear(m, mv);
+    } else if (mv.id === 'rally') {
+      this.rally(m);
+    } else if (mv.id === 'shoot') {
+      // THE NEW MONSTERS: a leader who shoots, as those he leads shoot (a Twin one, two at once)
+      const base = Math.atan2(dy, dx);
+      const look = m.kind === 'marksman' ? 'arrow' : 'bolt';
+      if (twin > 0) {
+        this.shootAt(m, base - 0.12, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg, el, look, def.range + 3);
+        this.shootAt(m, base + 0.12, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg * twin, el, look, def.range + 3);
+      } else this.shootAt(m, base, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg, el, look, def.range + 3);
+      this.sfx(look === 'arrow' ? 'shot' : 'fire', 0.5);
+    } else if (mv.id === 'pierce') {
+      this.greatShot(m, mv);
+    } else if (mv.id === 'censer') {
+      this.swingCenser(m, mv, dist);
+    } else if (mv.id === 'slam') {
+      // the red circle does the harm; a Twin monster follows it with a second, quicker one
+      this.sfx('slam', 0.8);
+      if (twin > 0) this.addWarn(h.x, h.y, def.aoe * 0.8, 0.6, this.rollMonsterDmg(m) * mv.dmg * twin, el, m.words, m.name, undefined, this.halfOf(m));
+    } else if (mv.id === 'bolts') {
+      // the fan of bolts
+      const base = Math.atan2(dy, dx);
+      for (let k = -3; k <= 3; k++) this.shootAt(m, base + k * 0.2, def.projSpeed, this.rollMonsterDmg(m) * mv.dmg, el, 'bolt', 13);
+      this.sfx('fire', 0.8);
+    } else if (mv.id === 'summon') {
+      this.callDead(m);
+    } else if (mv.id === 'charge' && m.charge) {
+      // he is off, down the line he marked
+      m.state = 'charge';
+      const c = m.charge;
+      m.t = Math.hypot(c.x1 - c.x0, c.y1 - c.y0) / CHARGE.speed + 0.5;
+      m.animT = 0;
+      this.sfx('slam', 0.5);
+    }
+  }
+
+  /** The line of monster `m`'s charge, if it is marked: `fn` is given it. */
+  private laneOf(m: Monster, fn: (z: Zone) => void): void {
+    for (const z of this.zones) if (z.kind === 'lane' && z.src === m.id) fn(z);
+  }
+
+  private dropLane(m: Monster): void {
+    for (let k = this.zones.length - 1; k >= 0; k--) {
+      const z = this.zones[k];
+      if (z.kind === 'lane' && z.src === m.id) this.zones.splice(k, 1);
+    }
+  }
+
+  /**
+   * THE RED TROLL'S CHARGE: the line he would run along to run the hero down, from where he stands
+   * through where the hero stands and CHARGE.past on; or null if he has no clear run there (a wall, a
+   * shut door, a pit or a ledge between, or too short a run to get past the hero).
+   */
+  private chargeLane(m: Monster, dist: number): { x0: number; y0: number; x1: number; y1: number } | null {
+    const h = this.hero;
+    const L = this.level;
+    if (dist < 0.01) return null;
+    const fx = (h.x - m.x) / dist;
+    const fy = (h.y - m.y) / dist;
+    const r = Math.min(m.r, 0.42);
+    const held = L.shut !== null;
+    let len = 0;
+    for (let a = 0.2; a <= dist + CHARGE.past + 1e-6; a += 0.2) {
+      if (!this.free(L.walk, m.x + fx * a, m.y + fy * a, r, false, held)) break;
+      len = a;
+    }
+    if (len < dist + 0.4) return null;
+    const x1 = m.x + fx * len;
+    const y1 = m.y + fy * len;
+    if (!this.walksStraight(m.x, m.y, x1, y1)) return null;
+    return { x0: m.x, y0: m.y, x1, y1 };
+  }
+
+  /** The red troll runs his line: what he meets of the hero on it is run down and knocked out of his way, once; at its end, or at anything that stops him, he pulls up. */
+  private runCharge(m: Monster, def: MonsterDef, dt: number, slow: number): void {
+    const c = m.charge;
+    if (!c) {
+      m.state = 'chase';
+      return;
+    }
+    const h = this.hero;
+    const len = Math.hypot(c.x1 - c.x0, c.y1 - c.y0) || 1;
+    const fx = (c.x1 - c.x0) / len;
+    const fy = (c.y1 - c.y0) / len;
+    const step = CHARGE.speed * (m.speed / def.speed) * slow * dt;
+    const ax = m.x;
+    const ay = m.y;
+    this.slide(m, Math.min(m.r, 0.42), fx * step, fy * step, this.level.walk, true);
+    m.fx = fx;
+    m.fy = fy;
+    m.t -= dt;
+    const along = (m.x - c.x0) * fx + (m.y - c.y0) * fy;
+    this.laneOf(m, (z) => (z.gone = Math.max(0, Math.min(1, along / len))));
+    if (!c.hit && !h.move && h.invuln <= 0 && Math.hypot(h.x - m.x, h.y - m.y) <= m.r + TUNE.heroRadius + 0.15) {
+      c.hit = true;
+      const moves = movesOf(m);
+      const mv = moves && m.move !== undefined && m.move >= 0 ? moves[m.move] : null;
+      this.hurtHero(this.rollMonsterDmg(m) * (mv ? mv.dmg : 1), this.monsterElement(m), m.words, m);
+      // (knocked aside, out of the line: away from the middle of it, or to one side if square in it)
+      const ox = c.x0 + fx * along;
+      const oy = c.y0 + fy * along;
+      const side = (h.x - ox) * -fy + (h.y - oy) * fx >= 0 ? 1 : -1;
+      this.knockHero(h.x + fy * side, h.y - fx * side, CHARGE.knock);
+      this.emit({ t: 'shake', amount: 3 });
+      this.sfx('slam', 0.9);
+    }
+    if (along >= len - 0.05 || Math.hypot(m.x - ax, m.y - ay) < step * 0.3 || m.t <= 0) this.endCharge(m);
+  }
+
+  /** The charge is over: he pulls up, skidding, and stands for a moment (a moment to hit him). */
+  private endCharge(m: Monster): void {
+    const moves = movesOf(m);
+    const mv = moves && m.move !== undefined && m.move >= 0 ? moves[m.move] : null;
+    m.state = 'recover';
+    m.t = mv ? mv.recover : TUNE.monsterRecover;
+    m.charge = undefined;
+    this.dropLane(m);
+  }
+
+  /** THE WARDEN CALLS THE DEAD (his fourth move): they crawl out of the ground round him, a little after one another, and join the fight when they are out. */
+  private callDead(m: Monster): void {
+    const f = this.level.floor;
+    const spots = scatter(this.level.walk, f.w, f.h, m.x, m.y, SUMMON.count + 1, this.rng).slice(1);
+    spots.forEach((s, k) => {
+      const add = this.spawn('skeleton', s.x, s.y, m.packId, 0, false, this.rng);
+      // (not among the monsters till it is out)
+      this.monsters.splice(this.monsters.indexOf(add), 1);
+      add.state = 'chase';
+      add.cd = 0.8;
+      const dx = this.hero.x - s.x;
+      const dy = this.hero.y - s.y;
+      const d = Math.hypot(dx, dy) || 1;
+      add.fx = dx / d;
+      add.fy = dy / d;
+      this.risers.push({ m: add, age: -k * SUMMON.apart });
+      this.emit({ t: 'shake', amount: 1 });
+    });
+  }
+
+  /** The dead crawling out of the ground: each, once it is out, is one of the monsters. */
+  private updateRisers(dt: number): void {
+    for (let k = this.risers.length - 1; k >= 0; k--) {
+      const r = this.risers[k];
+      r.age += dt;
+      if (r.age < SUMMON.rise) continue;
+      this.risers.splice(k, 1);
+      r.m.animT = 0;
+      this.monsters.push(r.m);
+    }
+  }
+
+  // ===========================================================================================
+  // THE NEW MONSTERS (Version 19.9; game/defs.ts NEW_MONSTERS, SPEAR, SKULL, RALLY)
+
+  /** How far a monster's blow reaches beyond its body (tiles): a Boneward whose spear is gone, its shield's. */
+  private reachOf(m: Monster, def: MonsterDef): number {
+    return (m.bare ? SPEAR.bash : def.range) + (m.r - 0.32);
+  }
+
+  /** THE BONEWARD THROWS ITS SPEAR at where the hero stands: from its hand, and its hand is empty till it picks the spear up again. */
+  private throwSpear(m: Monster, mv: MonsterMove): void {
+    const h = this.hero;
+    let x0 = m.x + m.fx * SPEAR.hand;
+    let y0 = m.y + m.fy * SPEAR.hand;
+    if (!this.isOpen(x0, y0)) {
+      x0 = m.x;
+      y0 = m.y;
+    }
+    const dx = h.x - x0;
+    const dy = h.y - y0;
+    const d = Math.hypot(dx, dy) || 1;
+    this.projectiles.push({
+      x: x0, y: y0, vx: (dx / d) * SPEAR.speed, vy: (dy / d) * SPEAR.speed, r: 0.22, dist: d, hostile: true,
+      dmg: this.rollMonsterDmg(m) * mv.dmg, element: this.monsterElement(m), look: 'spear', pierce: false, hit: [], volley: false, skill: -1,
+      trail: 0, words: m.words, half: this.halfOf(m), runed: false, clouded: false, age: 0, from: m.name, n: 0, src: m.id, way: d, z0: SPEAR.z,
+    });
+    m.bare = true;
+    this.sfx('swing', 0.6);
+  }
+
+  /** A spear has come down (on the hero, at a wall, or where it was aimed): it lies there, on the nearest floor one could walk to, till its Boneward picks it up. */
+  private laySpear(p: Projectile): void {
+    if (p.src === undefined) return;
+    const L = this.level;
+    const f = L.floor;
+    const ok = (x: number, y: number): boolean => {
+      const tx = Math.floor(x);
+      const ty = Math.floor(y);
+      return tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && L.walk[ty * f.w + tx] === 1 && this.onFloor(x, y);
+    };
+    let x = p.x;
+    let y = p.y;
+    if (!ok(x, y)) {
+      let bd = Infinity;
+      for (let r = 1; r <= 2 && bd === Infinity; r++) {
+        for (let oy = -r; oy <= r; oy++) {
+          for (let ox = -r; ox <= r; ox++) {
+            const cx = Math.floor(p.x) + ox + 0.5;
+            const cy = Math.floor(p.y) + oy + 0.5;
+            const d = Math.hypot(cx - p.x, cy - p.y);
+            if (d < bd && ok(cx, cy)) {
+              bd = d;
+              x = cx;
+              y = cy;
+            }
+          }
+        }
+      }
+    }
+    const sp = Math.hypot(p.vx, p.vy) || 1;
+    const flow = flowField(L.walk, f.w, f.h, x, y, 28, undefined, L.step);
+    this.spears.push({ x, y, fx: p.vx / sp, fy: p.vy / sp, owner: p.src, flow });
+  }
+
+  /** Which way a Boneward goes for its spear: 'here', near enough to stoop for it; null, none lying, or no way to it. */
+  private spearWay(m: Monster): { x: number; y: number } | 'here' | null {
+    const sp = this.spears.find((s) => s.owner === m.id);
+    if (!sp) return null;
+    const dx = sp.x - m.x;
+    const dy = sp.y - m.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= SPEAR.pick) return 'here';
+    const L = this.level;
+    const f = L.floor;
+    if (d < 2.5 && this.walksStraight(m.x, m.y, sp.x, sp.y)) return { x: dx / d, y: dy / d };
+    if (!sp.flow || sp.flow[Math.floor(m.y) * f.w + Math.floor(m.x)] === UNREACHABLE) return null;
+    const v = flowDir(sp.flow, L.walk, f.w, f.h, m.x, m.y, undefined, L.step);
+    return v.x === 0 && v.y === 0 ? null : { x: v.x, y: v.y };
+  }
+
+  /** Whether a Boneward's spear lies within `d` tiles of it. */
+  private spearWithin(m: Monster, d: number): boolean {
+    return this.spears.some((s) => s.owner === m.id && Math.hypot(s.x - m.x, s.y - m.y) <= d);
+  }
+
+  /** It stoops for its spear, facing it (SPEAR.stoop seconds; the spear in its hand at SPEAR.grab). */
+  private beginStoop(m: Monster): void {
+    const sp = this.spears.find((s) => s.owner === m.id);
+    if (sp) {
+      const d = Math.hypot(sp.x - m.x, sp.y - m.y);
+      if (d > 0.01) {
+        m.fx = (sp.x - m.x) / d;
+        m.fy = (sp.y - m.y) / d;
+      }
+    }
+    m.state = 'pickup';
+    m.t = SPEAR.stoop;
+    m.anim = 'idle';
+    m.animT = 0;
+  }
+
+  private stoop(m: Monster, dt: number): void {
+    m.t -= dt;
+    if (m.bare && SPEAR.stoop - m.t >= SPEAR.grab) {
+      const k = this.spears.findIndex((s) => s.owner === m.id);
+      if (k >= 0) this.spears.splice(k, 1);
+      m.bare = false;
+    }
+    if (m.t <= 0) {
+      m.state = 'chase';
+      m.anim = 'idle';
+    }
+  }
+
+  /** THE GOLEM HURLS A SKULL at where the hero stands: it comes down there SKULL.fly seconds later, its shadow showing where; `share` of its blow (a Twin Golem's second skull, of its Twin). */
+  private hurlSkull(m: Monster, mv: MonsterMove, share: number): void {
+    const h = this.hero;
+    this.zones.push({
+      x: h.x, y: h.y, x1: m.x + m.fx * SKULL.hand, y1: m.y + m.fy * SKULL.hand, r: SKULL.r, t: 0, dur: SKULL.fly, kind: 'skull', element: this.monsterElement(m),
+      dmg: this.rollMonsterDmg(m) * mv.dmg * share, slow: 0, tick: 0, hostile: true, skill: -1, words: m.words, from: m.name, src: m.id, half: this.halfOf(m), gone: 0,
+    });
+    this.sfx('swing', 0.45);
+  }
+
+  /** THE SKELETON CHAMPION CRIES OUT: his minions within RALLY.reach of him have his words whole for RALLY.dur seconds. */
+  private rally(m: Monster): void {
+    for (const o of this.monsters) {
+      if (o.dead || o === m || o.packId !== m.packId || o.rarity !== 'minion') continue;
+      if (Math.hypot(o.x - m.x, o.y - m.y) <= RALLY.reach) o.rallyT = RALLY.dur;
+    }
+    this.sfx('bossRoar', 0.5);
+    this.emit({ t: 'shake', amount: 1 });
+    this.msg(`${m.name} rallies his pack`, MSG.foe);
+  }
+
+  /** Where a line of aim from (x, y) the way (fx, fy) ends: AIM.range tiles on, or at the first wall. */
+  private aimEnd(x: number, y: number, fx: number, fy: number): { x: number; y: number } {
+    let len = 0;
+    for (let a = 0.25; a <= AIM.range + 1e-6; a += 0.25) {
+      if (!this.isOpen(x + fx * a, y + fy * a)) break;
+      len = a;
+    }
+    return { x: x + fx * len, y: y + fy * len };
+  }
+
+  /** THE MARKSMAN DRAWS: his line of aim runs out (its `t`, how far he has drawn) and follows the hero until AIM.lock seconds before he looses; then it holds still. */
+  private holdAim(m: Monster): void {
+    for (const z of this.zones) {
+      if (z.kind !== 'aim' || z.src !== m.id) continue;
+      z.t = Math.max(0, z.dur - m.t);
+      if (m.t <= AIM.lock) continue;
+      const h = this.hero;
+      const d = Math.hypot(h.x - m.x, h.y - m.y);
+      if (d < 0.01) continue;
+      m.fx = (h.x - m.x) / d;
+      m.fy = (h.y - m.y) / d;
+      const end = this.aimEnd(m.x, m.y, m.fx, m.fy);
+      z.x = m.x;
+      z.y = m.y;
+      z.x1 = end.x;
+      z.y1 = end.y;
+    }
+  }
+
+  /** THE MARKSMAN LOOSES HIS GREAT ARROW along his line of aim: it pierces whoever it meets, and flies on to its end. */
+  private greatShot(m: Monster, mv: MonsterMove): void {
+    let fx = m.fx;
+    let fy = m.fy;
+    for (const z of this.zones) {
+      if (z.kind !== 'aim' || z.src !== m.id) continue;
+      const len = Math.hypot((z.x1 ?? z.x) - z.x, (z.y1 ?? z.y) - z.y);
+      if (len > 0.01) {
+        fx = ((z.x1 ?? z.x) - z.x) / len;
+        fy = ((z.y1 ?? z.y) - z.y) / len;
+      }
+    }
+    for (let k = this.zones.length - 1; k >= 0; k--) if (this.zones[k].kind === 'aim' && this.zones[k].src === m.id) this.zones.splice(k, 1);
+    this.projectiles.push({
+      x: m.x + fx * 0.4, y: m.y + fy * 0.4, vx: fx * AIM.speed, vy: fy * AIM.speed, r: AIM.r, dist: AIM.range, hostile: true, dmg: this.rollMonsterDmg(m) * mv.dmg,
+      element: this.monsterElement(m), look: 'great', pierce: true, hit: [], volley: false, skill: -1, trail: 0, words: m.words, half: this.halfOf(m),
+      runed: false, clouded: false, age: 0, from: m.name, n: 0, src: m.id,
+    });
+    this.emit({ t: 'shake', amount: 1 });
+    this.sfx('shot', 0.9);
+  }
+
+  /** THE HIGH PRIEST SWINGS HIS CENSER: its burning smoke settles before him (as far as SMOKE.at, or where the hero stands if nearer), and burns whoever is in it. */
+  private swingCenser(m: Monster, mv: MonsterMove, dist: number): void {
+    const at = Math.max(SMOKE.near, Math.min(SMOKE.at, dist));
+    let x = m.x + m.fx * at;
+    let y = m.y + m.fy * at;
+    if (!this.isOpen(x, y)) {
+      x = m.x + m.fx * SMOKE.near;
+      y = m.y + m.fy * SMOKE.near;
+    }
+    const ticks = Math.max(1, Math.round(SMOKE.dur / SMOKE.tick));
+    this.zones.push({
+      x, y, r: SMOKE.r, t: 0, dur: SMOKE.dur, kind: 'smoke', element: 'fire', dmg: (this.rollMonsterDmg(m) * mv.dmg) / ticks, slow: 0, tick: 0, hostile: true,
+      skill: -1, words: m.words, from: m.name, src: m.id, half: this.halfOf(m),
+    });
+    this.sfx('fire', 0.7);
+  }
+
+  /** Whether one of the champion's minions would hear his cry: near enough, with words of his at half, and not rallied but now. */
+  private hearsCry(m: Monster): boolean {
+    return this.monsters.some(
+      (o) => !o.dead && o !== m && o.packId === m.packId && o.rarity === 'minion' && !!o.half && o.half.length > 0 && !(o.rallyT !== undefined && o.rallyT > 1) && Math.hypot(o.x - m.x, o.y - m.y) <= RALLY.reach,
+    );
+  }
+
+  // ===========================================================================================
   // Projectiles, traps, ground
 
   private updateProjectiles(dt: number): void {
@@ -4189,11 +4815,13 @@ export class Game {
         p.y = ny;
         p.dist -= step;
         if (p.hostile) {
-          if (!h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
+          if (!p.struck && !h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
             // (THE TRAPS: a dart's harm is a share of the life of what it meets)
-            this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from, p.x - p.vx, p.y - p.vy);
+            this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from, p.x - p.vx, p.y - p.vy, p.half);
             this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 5 });
-            dead = true;
+            // (THE NEW MONSTERS: the marksman's great arrow pierces: it flies on)
+            if (p.pierce) p.struck = true;
+            else dead = true;
           }
           // (THE TRAPS: a dart is the dungeon's, and hurts a monster it meets as it would the hero)
           if (!dead && p.trap) {
@@ -4239,7 +4867,11 @@ export class Game {
           dead = true;
         }
       }
-      if (dead) this.projectiles.splice(i, 1);
+      if (dead) {
+        this.projectiles.splice(i, 1);
+        // (THE NEW MONSTERS: a Boneward's spear lies where it came down)
+        if (p.look === 'spear') this.laySpear(p);
+      }
     }
   }
 
@@ -4423,8 +5055,40 @@ export class Game {
           this.zones.splice(i, 1);
           this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'blast' });
           this.emit({ t: 'shake', amount: 2 });
-          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
         }
+        continue;
+      }
+      if (z.kind === 'skull') {
+        // (THE NEW MONSTERS: a Golem's skull comes down where it was aimed, and bursts)
+        if (!z.gone && z.t >= z.dur) {
+          z.gone = 1;
+          this.emit({ t: 'shake', amount: 2 });
+          this.sfx('slam', 0.6);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
+        }
+        if (z.t >= z.dur + SKULL.burst) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'aim') {
+        // (THE NEW MONSTERS: the marksman's line of aim has no clock of its own: his draw moves it on, and it goes with it)
+        if (!this.monsters.some((m) => m.id === z.src && !m.dead && m.state === 'windup')) this.zones.splice(i, 1);
+        else z.t -= dt;
+        continue;
+      }
+      if (z.kind === 'smoke') {
+        // (THE NEW MONSTERS: the high priest's burning smoke burns whoever is in it, now and then: SMOKE)
+        z.tick -= dt;
+        if (z.tick <= 0) {
+          z.tick += SMOKE.tick;
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + TUNE.heroRadius * 0.5) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
+        }
+        if (z.t >= z.dur) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'lane') {
+        // (THE MONSTERS' ATTACKS: a charge's line has no clock of its own: its troll's wind-up and run move it on, and it goes with him)
+        if (!this.monsters.some((m) => m.id === z.src && !m.dead && (m.state === 'windup' || m.state === 'charge'))) this.zones.splice(i, 1);
         continue;
       }
       if (z.kind === 'rune') {

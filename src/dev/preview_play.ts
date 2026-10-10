@@ -6,9 +6,9 @@
 // has got to while it stays down. The scarf's and the feather's flying ends go as the game moves them
 // (but for a figure facing screen-left, which is drawn without them).
 //   node tools/page_gif.mjs src/dev/preview_play.ts "3:1:warrior/quick attack, walking|ranger/quick attack, walking" previews/x.gif
-//   hash = <screen pixels to a game pixel>:<slowed how many times>:[grip!][slid<n>!]<class>/<scenario>[=<label>]|<class>/<scenario>...
+//   hash = <screen pixels to a game pixel>:<slowed how many times>:[grip!][ranger!][mage!][slid<n>!]<class>/<scenario>[=<label>]|<class>/<scenario>...
 import { paintMove3 } from '../art/heroes3';
-import { useGrippingRuns, useRangerStances } from '../art/moves3';
+import { useGrippingRuns, useMageStances, useRangerStances } from '../art/moves3';
 import { CANVAS3 } from '../art/skin';
 import { MAGE_TAILS } from '../art/hero_mage';
 import { RANGER_TAILS } from '../art/hero_ranger';
@@ -42,10 +42,11 @@ let list = list0;
 let GRIPPING = false;
 let SLID = 1;
 for (;;) {
-  const m = list.match(/^(grip|ranger|slid([0-9.]+))!/);
+  const m = list.match(/^(grip|ranger|mage|slid([0-9.]+))!/);
   if (!m) break;
   if (m[1] === 'grip') GRIPPING = true;
   else if (m[1] === 'ranger') useRangerStances(true);
+  else if (m[1] === 'mage') useMageStances(true);
   else SLID = Number(m[2]);
   list = list.slice(m[0].length);
 }

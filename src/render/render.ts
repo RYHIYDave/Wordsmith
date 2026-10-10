@@ -31,7 +31,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { MONSTERS, RANGER_ARROW, SKILLS, TUNE, WORDS } from '../game/defs';
+import { AIM, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, TUNE, WORDS, movesOf } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { TOWN } from '../game/level';
@@ -42,12 +42,18 @@ import { STAIR_N, STAIR_W, levelAt } from '../game/height';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
-import { Figure, attackClip, attackFrame, monsterAttackAge, PHASE_APART } from './figure';
+import { Figure, attackClip, attackFrame, clipFrame, monsterAttackAge, moveFrame, PHASE_APART } from './figure';
+import { drawChargeLane } from '../art/charge_lane';
+import { drawAimLine, drawBurningSmoke, drawGreatArrow, drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../art/mob_shots';
+import { skullAt, spearHeight } from './mob_world';
+import { PACK_MARKS, drawPackMark } from './pack_marks';
 import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import type { Cam, Fallen, Fx } from './fx';
+import { WILD } from '../art/moves3';
+import { LEAP_LIFT, drawWildArrow, drawWildWave } from './wild';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -204,6 +210,21 @@ function ellipse(g: CanvasRenderingContext2D, cx: number, cy: number, r: number,
   g.globalAlpha = 1;
 }
 
+/**
+ * MONSTER PACKS: drawn as an elite is, its name over it, its bar always, its ring: an elite (a yellow
+ * pack's leader is one), and, with PACK_LOOK, every one of a blue pack.
+ */
+function named(m: Monster): boolean {
+  return m.elite || (PACK_LOOK.on && m.rarity === 'blue');
+}
+
+/** The colour of a named monster's name: its word's; with PACK_LOOK, a blue pack's blue and a yellow pack's leader's yellow (the colours of magic and rare things). */
+function nameColor(m: Monster): string {
+  if (PACK_LOOK.on && m.rarity === 'blue') return RARITY_COLOR[1];
+  if (PACK_LOOK.on && m.rarity === 'leader') return RARITY_COLOR[2];
+  return m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
+}
+
 function ringDots(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string, gap = 1): void {
   g.fillStyle = color;
   const n = Math.max(16, Math.round(r * 44));
@@ -332,6 +353,8 @@ export class Renderer {
   /** Where the last afterimage of a hasted hero was left. */
   private blurAt = { x: 0, y: 0 };
   cam: Cam = { ox: 0, oy: 0 };
+  /** A point of the floor (tiles) on the screen, by this frame's camera: for what is drawn in the game's own pixels on the floor (art/mob_shots.ts, render/pack_marks.ts). */
+  private readonly floorAt = (x: number, y: number): readonly [number, number] => [wx(this.cam, x, y), wy(this.cam, x, y)];
   /** The height of the level being drawn (null: it is all of one height), and the level it was made for. */
   private relief: Relief | null = null;
   /** (THE WALLS' LOOK) The walls that are left out, for the level and the look they were worked out for. */
@@ -1180,6 +1203,35 @@ export class Renderer {
       }
     }
     for (const z of game.zones) {
+      // (THE MONSTERS' ATTACKS: the line a red troll will charge along, in the red circle's own reds: art/charge_lane.ts)
+      if (z.kind === 'lane') {
+        const x1 = z.x1 ?? z.x;
+        const y1 = z.y1 ?? z.y;
+        if (here(z.x, z.y) || here(x1, y1) || here((z.x + x1) / 2, (z.y + y1) / 2)) drawChargeLane(g, { x0: z.x, y0: z.y, x1, y1, half: z.r, k: z.dur > 0 ? z.t / z.dur : 1, gone: z.gone }, (x, y) => [wx(cam, x, y), wy(cam, x, y)]);
+        continue;
+      }
+      // (THE NEW MONSTERS: a Golem's skull: its own shadow on the floor as it comes down, no circle; its
+      // burst where it lands. The skull itself is drawn with what flies, over the figures: art/mob_shots.ts)
+      if (z.kind === 'skull') {
+        if (z.t < z.dur) {
+          const s = skullAt(z);
+          // (as wide, when it lands, as what it will hurt: a tile on the floor is 16 pixels to its middle across, and a circle on it as wide as its radius times that times the square root of two)
+          if (here(s.x, s.y)) drawSkullShadow(g, this.floorAt, s.x, s.y, s.z, SKULL.top, Math.round(z.r * 16 * Math.SQRT2));
+        } else if (here(z.x, z.y)) drawSkullBurst(g, this.floorAt, z.x, z.y, z.t - z.dur);
+        continue;
+      }
+      // (THE NEW MONSTERS: the bone marksman's line of aim, running out as he draws: art/mob_shots.ts)
+      if (z.kind === 'aim') {
+        const x1 = z.x1 ?? z.x;
+        const y1 = z.y1 ?? z.y;
+        if (here(z.x, z.y) || here(x1, y1) || here((z.x + x1) / 2, (z.y + y1) / 2)) drawAimLine(g, this.floorAt, z.x, z.y, x1, y1, (z.t - AIM.from) / Math.max(0.01, z.dur - AIM.from), t);
+        continue;
+      }
+      // (THE NEW MONSTERS: the high priest's burning smoke, billowing, burning and thinning away)
+      if (z.kind === 'smoke') {
+        if (here(z.x, z.y)) drawBurningSmoke(g, this.floorAt, z.x, z.y, z.r, z.t / z.dur, t);
+        continue;
+      }
       if (!here(z.x, z.y)) continue;
       const cx = wx(cam, z.x, z.y);
       const cy = wy(cam, z.x, z.y);
@@ -1382,12 +1434,21 @@ export class Renderer {
     // (the effects that lie flat are drawn once, over the last floor to be drawn)
     if ((pass < 0 || pass === 1) && !this.skip.has('fx')) fx.drawGround(g, cam);
 
+    // (THE NEW MONSTERS: a Boneward's spear lying where it came down, till it is picked up)
+    for (const sp of game.spears) if (L.explored[Math.floor(sp.y) * f.w + Math.floor(sp.x)] && here(sp.x, sp.y)) drawSpearLying(g, this.floorAt, sp.x, sp.y, sp.fx, sp.fy);
     // shadows, and the rings that mark elites
     for (const m of game.monsters) {
       if (m.dead || !m.seen || !here(m.x, m.y)) continue;
       const cx = wx(cam, m.x, m.y);
       const cy = wy(cam, m.x, m.y);
-      if (m.elite || m.boss) {
+      // (THE NEW MONSTERS' RINGS, with them: a blue pack's blue, with its word inside; a yellow pack's
+      // leader's written in his words and ringed in gold; his minions' gold and half there, filled with
+      // his word while his cry holds: render/pack_marks.ts. A leader with no word, as the first
+      // dungeon's, keeps the ring an elite has always had.)
+      const marks = PACK_MARKS.on && m.rarity !== undefined;
+      const words = m.rarity === 'minion' ? (m.half ?? []) : m.words;
+      if (marks && m.rarity && words.length) drawPackMark(g, this.floorAt, m.x, m.y, m.r, { rarity: m.rarity, words, cry: m.rallyT ? Math.min(1, m.rallyT / 0.5) : 0 }, t);
+      else if ((named(m) || m.boss) && !(marks && m.rarity === 'minion')) {
         const col = m.words.length ? WORD_COLOR[m.words[0]] : P.fr4;
         ringDots(g, cx, cy, m.r * (1.5 + 0.12 * Math.sin(t * 5)), col);
       }
@@ -1431,6 +1492,12 @@ export class Renderer {
     const ch = game.hero.channel;
     return ch ? ch.t : -1;
   }
+  /** The attack being wound up now is one that will be held (a beam, a whirlwind): it has a `channel`. */
+  private holdSoon(game: Game): boolean {
+    const w = game.hero.windup;
+    const s = w ? game.hero.skills[w.skill] : null;
+    return !!s && SKILLS[s.id].channel !== undefined;
+  }
   private heldAs(game: Game): 'beam' | 'whirl' {
     const ch = game.hero.channel;
     const s = ch ? game.hero.skills[ch.skill] : null;
@@ -1456,6 +1523,8 @@ export class Renderer {
       if (m.dead) continue;
       const f = figureOf(m);
       if (!figs.includes(f)) figs.push(f);
+      // (THE MONSTERS' ATTACKS: the Warden calls up skeletons: their crawling out of the ground is painted ahead)
+      if (m.boss && movesOf(m) && !figs.includes('skeleton')) figs.push('skeleton');
     }
     const budget = this.warmedFor === game.level ? WARM_MS : WARM_ENTER_MS;
     this.warmedFor = game.level;
@@ -1506,8 +1575,20 @@ export class Renderer {
    */
   private monsterSprite(m: Monster): Sprite {
     const art = this.monsterArt(m);
+    const more = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves;
+    const flip = (s: Sprite): Sprite => (m.fx - m.fy < 0 ? flipSprite(s) : s);
+    // (THE NEW MONSTERS: a Boneward whose spear is gone stands and plods with its hand empty, and
+    // stoops for its spear when it comes to it)
+    const bare = m.bare && more?.standBare && more.walkBare ? more : null;
     // (frozen solid: as it stands)
-    if (m.frozenT > 0) return this.actorSprite(art, 'idle', 0, 0, m.fx, m.fy);
+    if (m.frozenT > 0) return bare ? flip(bare.standBare.frames[0]) : this.actorSprite(art, 'idle', 0, 0, m.fx, m.fy);
+    if (m.state === 'pickup' && more?.pickUp) return flip(clipFrame(more.pickUp, SPEAR.stoop - m.t));
+    // (THE MONSTERS' ATTACKS: a move of its own, with its own picture)
+    const moves = movesOf(m);
+    if (moves && m.move !== undefined && m.move >= 0 && m.move < moves.length && (m.anim === 'attack' || m.state === 'charge')) {
+      const s = moveFrame(m.fx + m.fy < -0.2 ? art.back : art.front, m, moves[m.move]);
+      if (s) return m.fx - m.fy < 0 ? flipSprite(s) : s;
+    }
     if (m.anim === 'attack') {
       const set = m.fx + m.fy < -0.2 ? art.back : art.front;
       const volley = m.boss && m.atk === 1;
@@ -1518,6 +1599,7 @@ export class Renderer {
         return m.fx - m.fy < 0 ? flipSprite(s) : s;
       }
     }
+    if (bare && m.anim !== 'attack') return flip(clipFrame(m.anim === 'walk' ? bare.walkBare : bare.standBare, m.animT));
     return this.actorSprite(art, m.anim, m.animT, m.state === 'windup' ? 0 : m.t > 0.15 ? 1 : 2, m.fx, m.fy);
   }
 
@@ -1802,6 +1884,17 @@ export class Renderer {
       this.stand(f.x + f.y, shown.sp, sx, sy, null, 0);
       hid?.(f.x, f.y);
     }
+    // (THE MONSTERS' ATTACKS: the dead the Warden has called, crawling out of the ground: the skeleton's own picture of it, art/mkit.ts crawlOut)
+    for (const r of game.risers) {
+      const m = r.m;
+      const f = game.level.floor;
+      if (r.age < 0 || game.level.visible[Math.floor(m.y) * f.w + Math.floor(m.x)] !== 1) continue;
+      const art = this.monsterArt(m);
+      const c = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves?.crawl;
+      if (!c) continue;
+      const sp = clipFrame(c, r.age);
+      this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(sp) : sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
+    }
     for (const m of game.monsters) {
       if (m.dead || !m.seen) continue;
       let sx = wx(cam, m.x, m.y);
@@ -1878,7 +1971,8 @@ export class Renderer {
       // (in a swipe move the hero is lifted by the move, from the height they left to the height
       // they land on, not by the ground they pass over: a leap up a ledge rises to it)
       let sy = relief ? wyFlat(cam, h.x, h.y) - heroLift : wy(cam, h.x, h.y);
-      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 24;
+      // (big and wild, art/moves3.ts WILD: higher: render/wild.ts, LEAP_LIFT)
+      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * (WILD.on ? LEAP_LIFT : 24);
       // (a roll that goes over a ledge or a pit is a dive: it leaves the floor, a little)
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);
@@ -1942,7 +2036,7 @@ export class Renderer {
         }
       }
       this.walkedFrom = [h.x, h.y];
-      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
+      const sp = fig.frame(heroArt, { anim: h.anim, animT: h.animT, fx: h.fx, fy: h.fy, attackSkill: this.clipOf(game), attackAge: h.attackAge, attackWind: h.attackWind, leapK, holdT: this.heldFor(game), holdAs: this.heldAs(game), holdSoon: this.holdSoon(game), rollK, fallT: this.fallT, reelT: this.reelT, reelBehind: this.reelBehind, walked: this.walked, moved, poised: h.combo === 0 && h.comboT > 0 }, game.over ? sinceLook : pace / 60, (h.x - h.y) * 16, (h.x + h.y) * 8 - (wy(cam, h.x, h.y) - sy), calm);
       let over: Sprite | null = null;
       let overA = 0;
       // (the game's clock stops with the blow that fells a hero, and its flash would stand on them
@@ -1978,6 +2072,14 @@ export class Renderer {
         if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
         if (relief && !h.move) this.hide(h.x, h.y, heroLift);
         this.heroLit = { x: Math.round(sx), y: Math.round(sy) };
+        // BIG AND WILD (art/moves3.ts, WILD): where the power she holds burns, and how hot, for the
+        // effects to make it crackle and throw bolts (a place in the world, and its height there)
+        const held = WILD.on && coming <= 0 ? fig.charge() : null;
+        if (held) {
+          const cx = h.x + held.dx / 32;
+          const cy = h.y - held.dx / 32;
+          fx.charge(cx, cy, wy(cam, cx, cy) - (sy + held.dy), held.heat, h.fx, h.fy);
+        }
       }
       if (h.burnT > 0 && Math.random() < 0.4 * amb) fx.mote(h.x, h.y, ELEMENT_RAMP.fire);
       // "of Swiftness": while the haste lasts the hero leaves green afterimages and a wake of wind
@@ -2059,7 +2161,7 @@ export class Renderer {
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
-      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart') {
+      if (p.look !== 'arrow' && p.look !== 'wave' && p.look !== 'dart' && p.look !== 'spear' && p.look !== 'great') {
         // (a familiar's bolt is a small bright mote; anything else that is not an arrow (nor a wave, nor a dart) is a ball of light)
         const mote = p.look === 'mote';
         const frames = mote ? [art.spells.mote[p.element]] : art.icons.orb[p.element];
@@ -2184,8 +2286,36 @@ export class Renderer {
       }
     }
 
+    // (THE NEW MONSTERS: what is on the screen, or near enough to it to be seen in the air over it)
+    const onScreen = (x: number, y: number, up = 0): boolean => {
+      const px = wx(cam, x, y);
+      const py = wy(cam, x, y) - up;
+      return px > -40 && px < W + 40 && py > -40 && py < H + 40;
+    };
+    // (THE NEW MONSTERS: a Golem's skull in the air, tumbling, over everything it flies over)
+    for (const z of game.zones) {
+      if (z.kind !== 'skull' || z.t >= z.dur) continue;
+      const s = skullAt(z);
+      if (!onScreen(s.x, s.y, s.z)) continue;
+      const frames = art.bestiary.of('golem').front.clips?.moves?.skull?.frames;
+      if (!frames || frames.length === 0) continue;
+      const sp = frames[Math.floor(z.t * 16) % frames.length];
+      g.drawImage(sp.img, Math.round(wx(cam, s.x, s.y)) - sp.ax, Math.round(wy(cam, s.x, s.y) - s.z) - sp.ay, sp.w, sp.h);
+    }
     // arrows are drawn as short lines so they can point any way; a Swift orb gets its tail here too
     for (const p of game.projectiles) {
+      // (THE NEW MONSTERS: a Boneward's spear, flying low from its hand to where it comes down)
+      if (p.look === 'spear') {
+        const v = Math.hypot(p.vx, p.vy) || 1;
+        if (onScreen(p.x, p.y)) drawSpearShot(g, this.floorAt, p.x, p.y, spearHeight(p), p.vx / v, p.vy / v);
+        continue;
+      }
+      // (THE NEW MONSTERS: the bone marksman's great arrow, burning, a streak of light behind it)
+      if (p.look === 'great') {
+        const v = Math.hypot(p.vx, p.vy) || 1;
+        if (onScreen(p.x, p.y)) drawGreatArrow(g, this.floorAt, p.x, p.y, AIM.z, p.vx / v, p.vy / v, t);
+        continue;
+      }
       // (a hero's arrow, with the ranger's new pictures: from where the arrow on his string was, at its height: game/defs.ts, RANGER_ARROW)
       const lifted = RANGER_ARROW.on && p.look === 'arrow' && !p.hostile;
       if (lifted && 0.4 + p.age * Math.hypot(p.vx, p.vy) < RANGER_ARROW.from) continue;
@@ -2225,7 +2355,9 @@ export class Renderer {
         // and streaming back, darker and thinner the further back, with gaps that run along it
         // so that it is seen to flow; and two ripples that it leaves on the floor behind it.
         const run = Math.floor(t * 24);
-        for (let j = layers + 2; j >= 0; j--) {
+        // (BIG AND WILD, art/moves3.ts WILD: it stands up tall and boils: render/wild.ts)
+        if (WILD.on) drawWildWave(g, cam, p, tones, t, jx, jy);
+        else for (let j = layers + 2; j >= 0; j--) {
           // (the last two are the ripples left behind: thin, faint, and a way back)
           const ripple = j > layers;
           const back = ripple ? layers + (j - layers) * 4 : j;
@@ -2289,6 +2421,8 @@ export class Renderer {
       const leech = mine && p.words.includes('leech');
       const volatile = mine && p.words.includes('volatile');
       const flick = Math.floor(t * 20) % 2 === 0;
+      // (BIG AND WILD, art/moves3.ts WILD: a hero's arrow streaks light behind it: render/wild.ts)
+      if (WILD.on && mine) drawWildArrow(g, sx, sy, ux, uy);
       // Swift: a long pale streak behind the arrow
       if (swift) pline(g, sx - ux * 24, sy - uy * 24, sx - ux * 6, sy - uy * 6, twin ? P.tl3 : P.gn4);
       const body = (power ? 10 : swift ? 9 : leech || volatile || twin ? 8 : 6) + (lifted ? RANGER_ARROW.long - 6 : 0);
@@ -2564,7 +2698,7 @@ export class Renderer {
       else if (p.kind === 'tentTable') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 18, 56, 0.8);
       else if (p.kind === 'runeSlab') spot(wx(cam, p.x, p.y) + 8, wy(cam, p.x, p.y) - 12, 64 + Math.sin(t * 2) * 3, 0.75);
     }
-    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? 34 : 26, 0.8);
+    for (const p of game.projectiles) if (p.look !== 'dart') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 10, p.hostile ? 16 : p.look === 'mote' ? 14 : p.look === 'wave' ? (WILD.on ? 52 : 34) : WILD.on && p.look === 'arrow' ? 40 : 26, 0.8);
     // What a monster's own fire lights: the floor round a cultist's flame (and far more of it as
     // the flame swells before it is thrown), the Warden's maul going hot. Eyes glow, and light
     // nothing.
@@ -2633,22 +2767,30 @@ export class Renderer {
 
   private drawBars(g: CanvasRenderingContext2D, game: Game, t: number): void {
     const cam = this.cam;
+    // (MONSTER PACKS, with PACK_LOOK: a blue pack's name is written once, over the first of it still
+    // standing in sight; every one of it has its ring and its bar. A name over each was a pile of
+    // letters: six bats, six names, one on another.)
+    const speaks = new Map<number, number>();
+    if (PACK_LOOK.on) for (const m of game.monsters) if (!m.dead && m.seen && m.rarity === 'blue' && !speaks.has(m.packId)) speaks.set(m.packId, m.id);
+    // (the names over all the bars, so that no bar of a pack's lies across its name)
+    const names: { m: Monster; x: number; y: number }[] = [];
     for (const m of game.monsters) {
       if (m.dead || !m.seen || m.boss) continue;
       // (the enemy locked onto always shows its life: it is the one being fought)
-      if (m.barT <= 0 && !m.elite && m.id !== this.lockId) continue;
+      if (m.barT <= 0 && !named(m) && m.id !== this.lockId) continue;
       // (over its head as it stands: a club or a sword raised above it passes in front of the bar)
       const sx = Math.round(wx(cam, m.x, m.y));
       const sy = Math.round(wy(cam, m.x, m.y)) - FIGURE_SIZE[figureOf(m)].top - 5;
-      const w = m.champion ? 34 : m.elite ? 24 : 16;
+      const w = m.champion ? 34 : named(m) ? 24 : 16;
       g.fillStyle = P.ink;
       g.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 4);
       g.fillStyle = P.bl1;
       g.fillRect(sx - w / 2, sy, w, 2);
-      g.fillStyle = m.elite ? P.fr4 : P.bl4;
+      g.fillStyle = named(m) ? P.fr4 : P.bl4;
       g.fillRect(sx - w / 2, sy, Math.max(0, Math.round((w * m.life) / m.maxLife)), 2);
-      if (m.elite) drawText(g, m.name, sx, sy - 8, m.words.length ? WORD_COLOR[m.words[0]] : P.fr4, { align: 'center', font: 'small', shadow: P.ink });
+      if (named(m) && (m.rarity !== 'blue' || speaks.get(m.packId) === m.id)) names.push({ m, x: sx, y: sy - 8 });
     }
+    for (const n of names) drawText(g, n.m.name, n.x, n.y, nameColor(n.m), { align: 'center', font: 'small', shadow: P.ink });
     // The hero's own life, over their head, where the eyes are in a fight (lifebar.ts says when it
     // is there). The part just lost stays lit for a moment; low, it flashes; its edge takes the
     // colour of what ails the hero, as the globe's rim does.

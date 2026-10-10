@@ -16,7 +16,7 @@
 
 import type { AnimSet, Clip } from '../art/actor_types';
 import { FIGURE_SIZE, MONSTER_FIGURES, makeBestiary } from '../art/bestiary';
-import type { MonsterFigure } from '../art/bestiary';
+import type { ClassicFigure as MonsterFigure } from '../art/bestiary';
 import { setClubCarry } from '../art/monster_brute';
 import { drawAura, drawLights } from '../engine/px';
 import type { Sprite } from '../engine/px';
