@@ -153,8 +153,8 @@ export default async function (page, snap) {
   if (plate) log('the attack at the bottom of the screen (CSS px)', await cssPx(plate));
   // (a new character has no word: two are handed over here)
   // (THE FIRST LEVELS, the game's own since Version 19.5: and the hero as he is some way in, the
-  // wordsmith's ring lit and every move and slot open, level 10: what follows is about the fingers)
-  await page.evaluate(() => { const d = window.__dbg; d.seasoned(10); const g = d.game(); Object.assign(g.hero.words, { fire: 1, twin: 1 }); g.refresh(); });
+  // wordsmith's ring lit and every move and slot open, level 20 since Version 20.0 (two behind from 20): what follows is about the fingers)
+  await page.evaluate(() => { const d = window.__dbg; d.seasoned(20); const g = d.game(); Object.assign(g.hero.words, { fire: 1, twin: 1 }); g.refresh(); });
   await tapMark('skill:0');
   s = await st();
   log('tapped the attack: panel', s.panel);

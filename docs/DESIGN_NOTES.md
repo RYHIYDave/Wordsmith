@@ -5284,6 +5284,95 @@ leaders go into the game as shown, with those rules?": "Yes, as shown (Recommend
   ("Version 53", version id `1791592557-dfd8`); the file published is the kept copy,
   `v199a/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
 
+### Version 20.0: his fixes of 9 Oct, 22:12, and the word slots at 4, 15 and 20
+
+**What he said.** To this chat on 9 Oct, 22:12, after playing 19.9: "Okay so bosses with leech are very
+hard to kill for warrior.  Almost impossible.  The quest is too in your face with all the text and
+reminder constantly at the top of the screen.  The wordsmith should give you the word after the altar
+powers up.  And mobs shouldn’t flash white when taking dot damage". 22:13: "I like the beginning.  It’s
+pretty solid and difficult" (the beginning kept as it is). Asked by pop-up, his answers: Leech on a
+monster, "What its blow takes (Recommended)"; the quest's line, "A few seconds, then gone
+(Recommended)". The slots: 22:18, "I almost think we pull the word slots back even further.  What are
+the current levels that word slots unlock?"; then, the pop-ups set aside at his word ("Okay stop with
+the question and pop up box for a second let’s just talk"), 22:25: "I want you to have a little time
+experimenting with the words before another one is available."; 22:27: "I think it’s still too fast.
+Remember we have combining words and a skill tree to add which will give the player more to do.";
+offered 10, 15 and 20, 22:28: "Okay let’s try it." and "Let’s measure"; 22:51: "Move slot 2 back to
+level 4." and "That should be early"; 22:52: "Two is enough for a long time I think". Pictures of the
+fixes in the game went to him at 23:29 (`previews/fixes20/`: `stone_reminder.png`,
+`ring_then_word.gif`, `burning_no_flash.gif`), with Leech and the slots told in words, and "If these
+look right to you, I'll put them all live as Version 20.0."; his answer at 23:46: "Good".
+
+**What is in it.**
+
+- **Leech on a monster** heals it by what its blow takes from the hero, never past its whole life; a
+  minion, with half its leader's word, by half of that (`hurtHero` in `src/game/game.ts`). Until now
+  each blow healed it 15% of its whole life, which on a boss outran a warrior's damage.
+- **The quest's line at the top** shows for a few seconds as the master rune-stone is taken, and again
+  on coming into town with it, and is then gone (`QUEST_ITEM.promptSecs`, 6 s; `questPromptT` in
+  `game.ts`, read by `guideStep`); it no longer stands at the top the whole way home. The line on
+  taking it is shorter: "You take the MASTER RUNE-STONE. Bring it to the wordsmith." (it was "A fallen
+  wordsmith. In his satchel, full flasks; by his hand, the MASTER RUNE-STONE. Bring it to the wordsmith
+  in town.").
+- **The word once the ring has powered up**: the ring is lit as the stone is brought, as before, and the
+  wordsmith gives the first word, the slot in front opening with it and the inventory offered for it,
+  when the ring's powering up is over (`QUEST_ITEM.ringSecs`, 4.7 s, the art chat's `POWER.done` in
+  `src/art/quest3.ts`; `ringWord` and `giveRingWord` in `game.ts`). A hero who leaves town meanwhile is
+  given it at once; a save meanwhile holds it.
+- **Harm over time does not flash**: a monster burning, or standing in fire or ice on the ground, is
+  hurt with no white flash; a blow, a storm's bolt or a rune's burst still flashes it, as poison never
+  did (`damageMonster`'s `dot` in `game.ts`).
+- **The word slots** (`SLOT_OPENS_FIRST` in `src/game/defs.ts`): one in front with the first word, the
+  second in front at level 4, behind at 15 and 20 (they were 5, 7 and 10, since 19.5). Measured with
+  the test player (`tools/count_levels.ts`): level 3, 5, 6, 8 and 9 at the ends of dungeons 1 to 5; level
+  4 early in the second dungeon; level 10 during the sixth. The practice room opens every slot whatever
+  the level (two a side, as its level 10 gave until now), so that every combination can still be tried
+  there (`Game.slots`).
+- **Calls of mine**, for him to overrule: the slot in front opens with the word, after the ring has
+  powered up, and not as the ring is lit; the line on taking the stone was shortened as well as the one
+  at the top.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/night_fixes.test.ts` (new, 4): a boss with Leech heals what its blow took, far
+  less than 15% of its life, and never past its whole life; burning and fire on the ground do not flash
+  a monster, a blow does; the word not given while the ring powers up, given once it has, the inventory
+  offered for it; not lost if the hero leaves town meanwhile, held by a save. Changed for the new rules:
+  `tests/first_levels.test.ts` (the quest's line gone after its few seconds and back in town; the word
+  0 before `ringSecs` and 1 after; the slots at levels 3, 4, 14, 15, 19 and 20), `tests/inventory.test.ts`,
+  `tests/packs.test.ts` (Leech heals what it took, a minion half), `tests/swipes.test.ts`,
+  `tests/weapons.test.ts`, `tests/word_kinds.test.ts`, `tests/sim.test.ts`. THE WHOLE UNIT SUITE: 874 of
+  874 in the frozen copy, before the regression and after it (below).
+- Pictures for him, from the game: `tools/scenarios/ring_word.mjs` (the stone taken and its line, in town
+  and gone, then the ring powering up and the word: 4.9 s after the ring was lit in the frames, a picture
+  every tenth of a second), `tools/scenarios/dot_flash.mjs` (on 19.9's page white at every tick of the
+  fire, on the fixed one only at the blow) and `tools/fix_pictures.py`.
+- THE PRE-FLIGHT (`tools/preflight.sh`, new: chosen playtests of the regression as it runs them, on a dev
+  page of the tree), 23:52 to 00:03: 21 playtests (the lesson for a warrior on a PC, a mage on a phone and
+  a ranger with a late word; the save; the random input, alone and through the lesson; the fingers; the
+  pages; the practice room; the third slot; the looks; the plates; the mods; a mage's words; mouse and
+  keyboard; the words' looks; the spells; the walls; the doors; the town): 16 clean, and 5 holding the
+  rules the version changes (the save setting the first word by script as the ring was lit; the fingers,
+  the pages, the looks and the third slot wanting a slot behind at 8, 10 or 12), each mended:
+  `save.mjs` waits for the wordsmith's word; `touch.mjs` a hero of level 20, `pages.mjs` and `look2.mjs`
+  of 15; `slots3.mjs` counts the slots the game reports, the practice room opening every one; and
+  `guide.mjs` reads how long the quest's line has still to show and waits for the word once the ring is
+  lit (4.6 s in the pre-flight), failing if it comes as the ring is lit. Then 16 more (those five on
+  every layout, the frame rate, the packs on a PC): all clean.
+- **The regression** on the frozen copy (the scratchpad's `v200a/arpg_frozen`, `880ff9d`, 00:10 to 01:00),
+  two at a time, nothing else running: **ALL 156 PLAYTESTS FINISHED CLEAN**. Speed: the frame-rate run 59.3
+  frames a second (19.9: 56.9), longest frame 33.4 ms; the slowest fights of the four word-combination runs
+  56.4 to 59.1 frames a second (19.9: 57.6 to 59.3), longest frame 67 ms.
+- The unit suite in the frozen copy once more, after the regression, nothing in `src` newer than the page
+  tested and `src` the same as the tree's: 874 of 874, 01:03 to 01:07.
+- THE RELEASE BUILD: made in the copy at 01:07, `Play.html` 1,190,413 bytes and `dist/artifact.html`
+  1,190,091, both saying V20.0; kept in the scratchpad's `v200a/release/`.
+- **The published page itself** (`wrap200.sh` in the scratchpad, 01:08 to 01:32): **82 of 82 playtests
+  clean**, the 80 of 19.9 and two more for this version: the lesson for a ranger on a PC (the quest's
+  prompts, the word once the ring has powered up) and the ATTACKS page on a phone (the slots as they
+  open). Published at 01:33 ("Version 54", version id `1791610401-c83f`); the file published is the kept
+  copy, `v200a/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -5714,6 +5803,11 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 20.0: his fixes of 9 Oct, 22:12 (Leech, the quest's line, the word after the ring, no flash for harm over time) and the slots at 4, 15 and 20
+PAGE=dist/pre.html JOBS=2 bash tools/preflight.sh guide_pc_warrior save touch_wide   # THE PRE-FLIGHT: chosen playtests of the regression, as it runs them, on a page of the tree (logs in shots/preflight/)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/ring_word.mjs --out shots/ring/ph   # the stone taken and its line, in town and gone; the ring powering up, then the word (frames fNNN)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/dot_flash.mjs --out shots/dot/now   # a skeleton burning, then struck once (run on the live game's page too, as shots/dot/was)
+python3 tools/fix_pictures.py . previews/fixes20   # the pictures he saw: stone_reminder.png, ring_then_word.gif, burning_no_flash.gif
 # Version 19.9: the new monsters, the other leaders and the rings (NEW_MONSTERS on, with the art chat's NEW_MOBS and PACK_MARKS)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/new_monsters.mjs --out shots/nm/ph   # each new monster's moves in the practice room; dungeons 1 to 6 laid; off and on again (in the regression)
 WHO=priest SECONDS=9 FPS=20 node tools/playtest.mjs --file dist/<page>.html --size 960x540 --scenario tools/scenarios/new_mobs_film.mjs --out shots/film199/priest   # a film's frames (WHO=shades|boneward|golem|champion|marksman|priest|chieftain), then:

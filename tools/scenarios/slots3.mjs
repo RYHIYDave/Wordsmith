@@ -21,6 +21,9 @@ export default async function (page, snap) {
     for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) { const a = list[i]; const b = list[j]; if (a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h) over.push(`${a.k} / ${b.k}`); }
     check(`${what}: ${want} of them, all on the screen, none over another`, list.length === want && off.length === 0 && over.length === 0, `${list.length} found${off.length ? `; off the screen: ${off.map((r) => r.k).join(' ')}` : ''}${over.length ? `; overlapping: ${over.join(', ')}` : ''}; narrowest ${Math.min(...list.map((r) => r.w))} wide`);
   };
+  // (since Version 20.0 the practice room opens every slot, whatever the level: so here every page holds
+  // three a side once the third is switched on, and the count wanted is the game's own)
+  const total = (n) => n.reduce((a, q) => a + q[0] + q[1], 0);
   const level = (n) => page.evaluate((n) => { const g = window.__dbg.game(); g.hero.level = n; g.refresh(); return g.hero.skills.map((s) => [s.front.length, s.behind.length]); }, n);
 
   await page.evaluate((c) => {
@@ -35,7 +38,7 @@ export default async function (page, snap) {
   log('level 12: slots on each attack [in front, behind]', JSON.stringify(n));
   await page.evaluate(() => window.__dbg.inv(0));
   await page.waitForTimeout(250);
-  await laid('level 12, the ATTACKS page: slots', 'socket:', 12);
+  await laid('level 12, the ATTACKS page: slots', 'socket:', total(n));
   await snap('01_level12_attacks');
   await hands.press('button:DONE');
 
@@ -44,7 +47,7 @@ export default async function (page, snap) {
   log('level 16', JSON.stringify(n));
   await page.evaluate(() => window.__dbg.inv(0));
   await page.waitForTimeout(250);
-  await laid('level 16, the ATTACKS page: slots', 'socket:', 15);
+  await laid('level 16, the ATTACKS page: slots', 'socket:', total(n));
   await snap('02_level16_attacks');
   await hands.press('button:DONE');
 

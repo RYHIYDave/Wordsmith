@@ -307,10 +307,15 @@ test('a minion\'s half of a word: half the power of each, word by word', () => {
     const { g, half, full } = pair(['leech']);
     bare(g);
     half.life = full.life = 1;
+    // (it heals what its blow takes: 9 Oct 2026, 22:12, "bosses with leech are very hard to kill"; "What its blow takes (Recommended)")
+    let before = g.hero.life;
     g.hurtHero(10, 'phys', full.words, full);
+    const took = before - g.hero.life;
+    before = g.hero.life;
     g.hurtHero(10, 'phys', half.words, half);
-    assert.ok(Math.abs(full.life - 1 - full.maxLife * 0.15) < 1e-9);
-    assert.ok(Math.abs(half.life - 1 - half.maxLife * 0.075) < 1e-9, 'half the healing');
+    const tookHalf = before - g.hero.life;
+    assert.ok(took > 0 && Math.abs(full.life - 1 - took) < 1e-9, `it heals what its blow took (${full.life - 1} against ${took})`);
+    assert.ok(Math.abs(half.life - 1 - tookHalf / 2) < 1e-9, 'half the healing');
   }
   // PRECISE: half the armour found
   {

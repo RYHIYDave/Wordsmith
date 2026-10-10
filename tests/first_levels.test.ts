@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, GUIDE, MONSTERS, MOVE_OPENS, SLOT_OPENS, TUNE, useFirstLevels } from '../src/game/defs';
+import { FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, GUIDE, MONSTERS, MOVE_OPENS, QUEST_ITEM, SLOT_OPENS, TUNE, useFirstLevels } from '../src/game/defs';
 import { eliteRoomCount, monsterBudget, packSizeRange } from '../src/game/dungeon';
 import { FIRST_GATE, Game, cleanMeta, newMeta } from '../src/game/game';
 import { flowField } from '../src/game/nav';
@@ -78,7 +78,8 @@ function toWordsmith(g: Game): void {
 
 test('the switch is on, since Version 19.5', () => {
   assert.equal(FIRST_LEVELS.on, true);
-  assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [7, 10] });
+  // (9 Oct 2026, 22:28 to 22:52: "Okay let’s try it." of 10, 15 and 20, then "Move slot 2 back to level 4.")
+  assert.deepEqual(SLOT_OPENS, { front: [1, 4], behind: [15, 20] });
   assert.equal(monsterBudget(1), FIRST_DUNGEON.budget);
   const g = fresh('warrior');
   assert.equal(g.hero.ring, false, 'a new player: the ring is dark');
@@ -159,8 +160,11 @@ test('on: no wordsmithing until the ring is lit; the satchel holds the quest ite
       assert.ok(!g.drops.some((d) => d.kind === 'word'), `${cls}: no word from the satchel`);
       assert.equal(h.potions, TUNE.potionMax, 'and full flasks, as before');
       assert.equal(g.guideStep(), 'carry');
+      // (its line shows a few seconds, then goes: 9 Oct 2026, 22:12, "The quest is too in your face")
+      for (let t = 0; t < QUEST_ITEM.promptSecs + 0.1; t += DT) g.update(DT, emptyControls());
+      assert.equal(g.guideStep(), null, `${cls}: after ${QUEST_ITEM.promptSecs} s the line is gone`);
       g.enterTown();
-      assert.equal(g.guideStep(), 'ring');
+      assert.equal(g.guideStep(), 'ring', 'and shows again on reaching town');
       assert.ok(guideBanner(g, true)?.text.includes('wordsmith'));
       // (the trade is shut while the ring is dark)
       assert.equal(g.sellWord(FIRST_WORD[cls].word), 'The runes are dark');
@@ -171,6 +175,10 @@ test('on: no wordsmithing until the ring is lit; the satchel holds the quest ite
       assert.equal(h.quest, null);
       assert.ok(g.events.some((e) => e.t === 'ring'), 'the ring\'s moment, for its animation');
       const w = FIRST_WORD[cls].word;
+      // (the word once the ring has powered up: 9 Oct 2026, 22:12, "The wordsmith should give you the word after the altar powers up")
+      assert.equal(h.words[w], 0, `${cls}: not while the ring powers up`);
+      assert.equal(g.offer, null);
+      for (let t = 0; t < QUEST_ITEM.ringSecs + 0.1; t += DT) g.update(DT, emptyControls());
       assert.equal(h.words[w], 1, `${cls}: the wordsmith gives ${w}`);
       assert.equal(g.offer, w, 'the inventory opens for it');
       assert.deepEqual(g.slots(), [1, 0], 'one slot in front, none behind');
@@ -195,11 +203,12 @@ test('on: the slots open in his order: one in front, the second in front, then b
       return g.slots().join();
     };
     assert.equal(g.slots().join(), '1,0');
-    assert.equal(at(4), '1,0');
-    assert.equal(at(5), '2,0');
-    assert.equal(at(6), '2,0');
-    assert.equal(at(7), '2,1');
-    assert.equal(at(10), '2,2');
+    assert.equal(at(3), '1,0');
+    assert.equal(at(4), '2,0');
+    assert.equal(at(14), '2,0');
+    assert.equal(at(15), '2,1');
+    assert.equal(at(19), '2,1');
+    assert.equal(at(20), '2,2');
   });
 });
 
@@ -258,7 +267,7 @@ test('on: a hero saved before the first levels keeps his ring, and a device that
     assert.equal(again.hero.quest, 'heart');
   });
   // (and on again, as the game has it)
-  assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [7, 10] });
+  assert.deepEqual(SLOT_OPENS, { front: [1, 4], behind: [15, 20] });
   assert.equal(FIRST_LEVELS.on, true);
 });
 

@@ -894,14 +894,20 @@ export const MOVE_OPENS: readonly number[] = [1, 2, 5];
  * words of 4 Oct, "Move the second behind to 10"); all three his answer of 8 Oct, 22:19, "2nd before
  * 5, after 7 and 10 (Recommended)".
  */
-export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly number[] } = { front: [1, 5], behind: [7, 10] };
+// (pulled back, 9 Oct 2026, 22:25 to 22:28: "I want you to have a little time experimenting with the words before another one is
+// available"; "I think it’s still too fast.  Remember we have combining words and a skill tree to add"; asked of 10, 15
+// and 20: "Okay let’s try it."; then, 22:51: "Move slot 2 back to level 4.")
+export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly number[] } = { front: [1, 4], behind: [15, 20] };
 /**
  * The quest item: what lies by the fallen wordsmith, and what lights the ring. His name for it, to
  * the art chat by 23:52 on 8 Oct 2026, asked what it should be: "A master rune-stone" (Version 19.5
  * went out calling it the RUNE HEART, a name of the director's; since 19.6, his, with the art
  * chat's pictures of it: art/quest3.ts).
  */
-export const QUEST_ITEM = { name: 'Master Rune-stone', the: 'the MASTER RUNE-STONE' };
+// `promptSecs`: how long its line shows at the top, on finding it and on reaching town with it (9 Oct 2026, 22:12, "The
+// quest is too in your face"; asked, "A few seconds, then gone (Recommended)"). `ringSecs`: the ring's powering up before
+// the wordsmith gives the word (22:12, "The wordsmith should give you the word after the altar powers up"; art/quest3.ts POWER.done).
+export const QUEST_ITEM = { name: 'Master Rune-stone', the: 'the MASTER RUNE-STONE', promptSecs: 6, ringSecs: 4.7 };
 /**
  * The first dungeon, gentler, with the first levels on: about half the monsters of a first
  * dungeon (its budget, against `monsterBudget(1)`'s 120), in packs of two to four, one room of
@@ -969,7 +975,7 @@ export const MANA_MODE = {
 
 /** The practice room (title screen): a seasoned throwaway character, and monsters that keep coming. */
 export const PRACTICE = {
-  /** The level that opens the second socket behind (SLOT_LEVELS): two in front and two behind on both attacks and on the swipe. */
+  /** The practice hero's level (every slot is open in the practice room whatever the level: Game.slots). */
   level: 10,
   /** Item level of the gear handed out (usable at level 7). */
   ilvl: 4,

@@ -6,8 +6,10 @@
 // yes of 8 Oct 2026, 23:06): the hero starts with the quick attack alone; the first pack is a
 // softball; no word falls in the first dungeon and no monster there carries one; the fallen
 // wordsmith has the MASTER RUNE-STONE by him (since Version 19.6, beside his hand), which is carried home through the boss's portal and
-// brought to the wordsmith in town; his ring is lit by it, he gives the first word, and it is set
-// there, on the quick attack: that is the end of the lesson ("No special moment").
+// brought to the wordsmith in town; his ring is lit by it and powers up, and only then does he give
+// the first word (since Version 20.0), which is set there, on the quick attack: that is the end of
+// the lesson ("No special moment"). The prompts "carry" and "ring" show for a few seconds each, as
+// the stone is taken and as the hero comes into town with it (since Version 20.0).
 //   move > fight > body > carry > ring > smith > done
 // Tap and hold opens at level 2 and the swipe at 5: the levels are given by script (a new player
 // reaches the second a minute or so into the first dungeon, the fifth in the second), and each
@@ -94,6 +96,8 @@ export default async function (page, snap) {
       toast: d.moveToast ? d.moveToast() : null,
       carriers: g.monsters.filter((m) => !m.dead && m.carries && m.carries.length).length,
       metaRing: d.meta().ring === true,
+      // (Version 20.0, his "A few seconds, then gone (Recommended)": how long the quest's line at the top has still to show)
+      promptT: g.questPromptT ?? 0,
       title: false, step: g.guideStep(), rows: g.guideRows(), town: !!L.town, depth: g.depth, panel: d.panels.open, w: d.screen.w, h: d.screen.h,
       guide: G ? { walked: +G.walked.toFixed(1), met: G.met, hits: G.hits, quick: G.quick, slow: G.slow, evade: G.evade, set: G.set, risen: G.risen } : null,
       hero: at(h.x, h.y), pos: { x: h.x, y: h.y },
@@ -547,7 +551,7 @@ export default async function (page, snap) {
     log('4 by the fallen wordsmith', `${s.quest === 'heart' ? 'the MASTER RUNE-STONE' : 'NO QUEST ITEM'}; words on the floor ${s.drops}, in the pouch ${s.spare}; the prompt ${s.step}`);
     if (s.quest !== 'heart') { await fail('the fallen wordsmith\'s satchel held no MASTER RUNE-STONE'); return; }
     if (s.drops || s.spare) await fail('the fallen wordsmith gave a word before the ring is lit');
-    if (s.step !== 'carry') await fail(`carrying the MASTER RUNE-STONE the prompt should be "carry": it is ${s.step}`);
+    if (s.step !== 'carry' || !(s.promptT > 0)) await fail(`taking the MASTER RUNE-STONE the prompt should be "carry", for a few seconds: it is ${s.step} (${s.promptT} s left)`);
     await page.waitForTimeout(900);
     await snap('07_the_rune_heart');
   } else {
@@ -585,8 +589,10 @@ export default async function (page, snap) {
     if (by === null) { await fail('the first dungeon has no portal'); return; }
     await page.waitForTimeout(700);
     s = await st();
-    log('5 by the portal, the boss down (by script)', `${by ? by.toFixed(1) + ' tiles off' : 'NO PLACE IN SIGHT OF IT'}; lit ${s.portalOn}; the prompt ${s.step}`);
-    if (s.step !== 'carry') await fail(`with the MASTER RUNE-STONE in the dungeon the prompt should be "carry": it is ${s.step}`);
+    log('5 by the portal, the boss down (by script)', `${by ? by.toFixed(1) + ' tiles off' : 'NO PLACE IN SIGHT OF IT'}; lit ${s.portalOn}; the prompt ${s.step} (${(+s.promptT).toFixed(1)} s left)`);
+    // (since Version 20.0 the prompt shows for a few seconds after the stone is taken, and is then gone)
+    const carryWant = s.promptT > 0 ? 'carry' : null;
+    if (s.step !== carryWant) await fail(`with the MASTER RUNE-STONE in the dungeon the prompt should be ${carryWant ? '"carry"' : 'gone, its few seconds up'}: it is ${s.step}`);
     await snap('08_the_portal');
     // (a press on it: the hero walks to it and steps through, as in towntap.mjs; failing that, the walk up and its prompt)
     if (s.portal) await hands.pressAt(s.portal.x, s.portal.y - 20);
@@ -600,7 +606,7 @@ export default async function (page, snap) {
     log('  home', `town ${s.town}, the MASTER RUNE-STONE ${s.quest === 'heart' ? 'carried' : 'GONE'}; the prompt ${s.step}`);
     if (!s.town) { await fail('the portal did not take the hero home'); return; }
     if (s.quest !== 'heart') await fail('the MASTER RUNE-STONE was lost on the way home');
-    if (s.step !== 'ring') await fail(`in town with the MASTER RUNE-STONE the prompt should be "ring": it is ${s.step}`);
+    if (s.step !== 'ring' || !(s.promptT > 0)) await fail(`coming into town with the MASTER RUNE-STONE the prompt should be "ring", for a few seconds: it is ${s.step} (${s.promptT} s left)`);
     await page.waitForTimeout(800);
     await snap('09_town_bring_it');
 
@@ -628,6 +634,14 @@ export default async function (page, snap) {
     if (!s.ring) { await fail('walking up to the wordsmith with the MASTER RUNE-STONE did not light his ring'); return; }
     if (!s.metaRing) await fail('the ring is lit for the hero but not on this device');
     if (s.quest) await fail('the MASTER RUNE-STONE is still carried once the ring is lit');
+    // (Version 20.0, his "The wordsmith should give you the word after the altar powers up": the word
+    // comes once the ring has powered up, QUEST_ITEM.ringSecs of the game's time, not as it is lit)
+    if (s.held) await fail(`the word came as the ring was lit, before it had powered up: ${s.held}`);
+    const lit = Date.now();
+    s = (await wait((q) => !!q.held, 10000)) ?? (await st());
+    const took = (Date.now() - lit) / 1000;
+    log('  the ring powered up, then his word', `${s.held} after ${took.toFixed(1)} s`);
+    if (s.held && took < 3.5) await fail(`the word came ${took.toFixed(1)} s after the ring was lit: before it had powered up`);
     w = s.held;
     if (w !== FIRST[cls].word) await fail(`the wordsmith should give the ${cls} ${FIRST[cls].word}: he gave ${w}`);
     await page.waitForTimeout(600);
@@ -645,8 +659,9 @@ export default async function (page, snap) {
     const from = await hands.mark(`word:${w}`);
     const to = await hands.mark(slot);
     if (!from || !to) { await fail(`cannot drag word:${w} to ${slot}: on screen are ${(await hands.marks()).join(', ')}`); return; }
-    if (await hands.mark('socket:0:behind:0')) await fail('a slot behind is shown before it opens (level 7)');
-    if (await hands.mark('socket:0:front:1')) await fail('a second slot in front is shown before it opens (level 5)');
+    // (the slots since Version 20.0, his 22:51: the second in front at level 4, behind at 15 and 20)
+    if (await hands.mark('socket:0:behind:0')) await fail('a slot behind is shown before it opens (level 15)');
+    if (s.level < 4 && await hands.mark('socket:0:front:1')) await fail('a second slot in front is shown before it opens (level 4)');
     await hands.dragStart(from.x, from.y, to.x, to.y);
     await page.waitForTimeout(200);
     await snap('12_dragging');
