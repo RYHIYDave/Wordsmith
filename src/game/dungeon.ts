@@ -1156,6 +1156,8 @@ interface PackDraft {
 /** Everything the populate step shares between its helpers. */
 interface Stage {
   rng: RNG;
+  /** THE CRYPT (CRYPT_LITTER): the dice for what more lies on its deeper floors, apart from `rng`, so that the rest is as it was. */
+  litterRng: RNG;
   /** MONSTER PACKS: the lot each pack's kind and size are drawn from, apart from `rng`, so where packs stand and everything else is as it was. */
   kindRng: RNG;
   depth: number;
@@ -1651,17 +1653,38 @@ function placeBonusChest(st: Stage): void {
   addProp(st, 'chest', rng.pick(flat.length > 0 ? flat : spots));
 }
 
+/**
+ * THE CRYPT LESS FINISHED THE DEEPER IT GOES (art/crypt.ts; a mock-up, off). The owner, 9 Oct
+ * 2026, 22:47: "By floor 4 it’s about half dirt and rocks with discarded and rusted mining
+ * equipment around." On, more lies on the floor of the deeper dungeons: for each of the usual
+ * litter, `more` again of what the art draws as rubble (on those floors, rocks and the miners'
+ * gear among it), dungeon 1 first. Thrown by dice of their own (Stage.litterRng), so that nothing
+ * else in a dungeon changes.
+ */
+export const CRYPT_LITTER = { on: false, more: [0, 0.3, 0.7, 1.2] as readonly number[] };
+
 /** Bones and rubble: flat decoration, about one per 40 floor tiles, anywhere on the floor. */
 function placeLitter(st: Stage): void {
   const { rng } = st;
   const floor: number[] = [];
   for (let i = 0; i < st.tiles.length; i++) if (st.tiles[i] === T_FLOOR) floor.push(i);
   let want = Math.round(floor.length / 40);
+  const usual = want;
   for (let tries = want * 6; tries > 0 && want > 0; tries--) {
     const i = rng.pick(floor);
     if (st.taken[i] === 1 || st.keepOut[i] === 1) continue;
     addProp(st, rng.chance(0.5) ? 'bones' : 'rubble', i);
     want--;
+  }
+  if (CRYPT_LITTER.on && st.depth >= 1) {
+    const dice = st.litterRng;
+    let more = Math.round(usual * CRYPT_LITTER.more[Math.min(CRYPT_LITTER.more.length, st.depth) - 1]);
+    for (let tries = more * 6; tries > 0 && more > 0; tries--) {
+      const i = dice.pick(floor);
+      if (st.taken[i] === 1 || st.keepOut[i] === 1) continue;
+      addProp(st, 'rubble', i);
+      more--;
+    }
   }
 }
 
@@ -1767,6 +1790,7 @@ export function generateFloor(depth: number, seed: number): Floor {
   const solidTiles = cuts ? lay.tiles.map((t, i) => (cuts[i] !== 0 ? T_WALL : t)) : lay.tiles;
   const st: Stage = {
     rng,
+    litterRng: new RNG((mixSeed(d, seed) ^ 0x51ed270b) >>> 0),
     kindRng: new RNG((mixSeed(d, seed) ^ 0x6a09e667) >>> 0),
     depth: d,
     size,

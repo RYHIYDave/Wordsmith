@@ -57,6 +57,29 @@ export interface Theme {
   /** The face turned to screen-left, the middle tone of the three, and the one turned to screen-right, in shade. */
   lit: Face;
   shade: Face;
+  /** What is gone of its stonework, and the earth and rock under it (none: all of it is there, as in the vault). */
+  earth?: Earth;
+}
+
+/**
+ * THE CRYPT LESS FINISHED THE DEEPER IT GOES (the owner, 9 Oct 2026, 22:47: "the deeper you go, the
+ * less finished the crypt.  The top floor, while old and crumbling, is all stone.  As you go down,
+ * there’s more and more missing and more just dirt around.  By floor 4 it’s about half dirt and
+ * rocks"): how much of a floor's flagstones are gone, in patches, and of its walls' stones; the
+ * earth under them and the rock in it; how often a stone that is there has lost a corner or is
+ * cracked across (the vault's is one in fourteen of each).
+ */
+export interface Earth {
+  /** Of the floor's flagstones, how many are gone (0 none to 1 all), lying in patches. */
+  gone: number;
+  /** Of the walls' stones, how many have fallen or were never laid: rough rock and earth there (0 to 1). */
+  raw: number;
+  /** Of the stones that are there, how many have lost a corner, and as many again are cracked across. */
+  broken: number;
+  /** The earth: its dark (in pits, and under what lies on it), its usual tone, a lighter tone in patches, and the lit top of a clod. */
+  dirt: readonly [string, string, string, string];
+  /** Rock, lying in the earth and in the walls: its shaded side, its body, an odd one, its lit edge. */
+  rock: readonly [string, string, string, string];
 }
 
 /** The Warden's vault: the dungeon of the first book. Deep blue flagstones, violet-blue walls. */
@@ -115,6 +138,86 @@ function patch(wu: number, wv: number): number {
   return (at(iu, iv) * (1 - su) + at(iu + 1, iv) * su) * (1 - sv) + (at(iu, iv + 1) * (1 - su) + at(iu + 1, iv + 1) * su) * sv;
 }
 
+/** A smooth number between 0 and 1 over the floor that comes round with it, `cell` tiles to a patch (a multiple that divides PERIOD), its own for each `seed`. */
+function smoothAt(wu: number, wv: number, cell: number, seed: number): number {
+  const n = Math.round(PERIOD / cell);
+  const gu = wu / cell;
+  const gv = wv / cell;
+  const iu = Math.floor(gu);
+  const iv = Math.floor(gv);
+  const fu = gu - iu;
+  const fv = gv - iv;
+  const at = (a: number, b: number): number => hash(((a % n) + n) % n, ((b % n) + n) % n, seed);
+  const su = fu * fu * (3 - 2 * fu);
+  const sv = fv * fv * (3 - 2 * fv);
+  return (at(iu, iv) * (1 - su) + at(iu + 1, iv) * su) * (1 - sv) + (at(iu, iv + 1) * (1 - su) + at(iu + 1, iv + 1) * su) * sv;
+}
+/** Which flagstones are gone, as a set of their places in the pattern (u * n + v): the theme's share of them, in patches. */
+const GONE = new Map<string, Set<number>>();
+function goneOf(theme: Theme): Set<number> {
+  const e = theme.earth;
+  const key = `${theme.id}:${e?.gone ?? 0}`;
+  let out = GONE.get(key);
+  if (out) return out;
+  out = new Set<number>();
+  if (e && e.gone > 0) {
+    // (patches a few tiles across, and here and there a stone on its own: the share taken exactly, the lowest first)
+    const S = theme.slabs;
+    const n = Math.round(PERIOD * S);
+    const all: [number, number][] = [];
+    for (let iu = 0; iu < n; iu++) for (let iv = 0; iv < n; iv++) all.push([iu * n + iv, 0.7 * smoothAt((iu + 0.5) / S, (iv + 0.5) / S, 2.5, 37) + 0.3 * hash(iu, iv, 33)]);
+    all.sort((a, b) => a[1] - b[1]);
+    for (let i = 0; i < Math.round(e.gone * all.length); i++) out.add(all[i][0]);
+  }
+  GONE.set(key, out);
+  return out;
+}
+
+/**
+ * EARTH, where the flagstones are gone: dark violet earth in clods, lighter in patches, and rocks
+ * lying in it, each lit along its upper-left edge and throwing a little shadow to its lower right
+ * (four to a tile side, about half of them there).
+ */
+function earthAt(e: Earth, wu: number, wv: number, x: number, y: number): string {
+  const G = 4;
+  const n = PERIOD * G;
+  const gu = wu * G;
+  const gv = wv * G;
+  const cu = Math.floor(gu);
+  const cv = Math.floor(gv);
+  let shadow = false;
+  for (let du = -1; du <= 1; du++) {
+    for (let dv = -1; dv <= 1; dv++) {
+      const a = (((cu + du) % n) + n) % n;
+      const b = (((cv + dv) % n) + n) % n;
+      if (hash(a, b, 41) > 0.5) continue;
+      const ou = gu - (cu + du + 0.25 + 0.5 * hash(a, b, 42));
+      const ov = gv - (cv + dv + 0.25 + 0.5 * hash(a, b, 43));
+      const r = 0.16 + 0.2 * hash(a, b, 44);
+      // (a lump, not a disc: its edge goes in and out a little round it)
+      const ang = Math.atan2(ov, ou);
+      const rr = r * (1 + 0.18 * Math.sin(ang * 3 + hash(a, b, 45) * 6));
+      const d = Math.hypot(ou, ov);
+      if (d < rr) {
+        // (light from the upper left of the screen: the rock's side toward -u is lit, toward +u in shade)
+        const k = (-ou * 0.95 - ov * 0.3) / rr;
+        if (k > 0.5) return e.rock[3];
+        if (k < -0.45) return e.rock[0];
+        return hash(a, b, 46) < 0.3 ? e.rock[2] : e.rock[1];
+      }
+      if (d < rr + 0.12 && ou > 0) shadow = true;
+    }
+  }
+  if (shadow) return e.dirt[0];
+  // (the earth: clods a few pixels across, lighter in patches; a lit top here and there, a pit here and there)
+  const light = smoothAt(wu, wv, 2, 47);
+  const clod = hash(Math.floor(wu * 14), Math.floor(wv * 14), 48);
+  if (hash(x, y, 49) < 0.02) return e.dirt[0];
+  if (clod > 0.86) return e.dirt[3];
+  if (clod < 0.08) return e.dirt[0];
+  return light > 0.58 ? e.dirt[2] : e.dirt[1];
+}
+
 /** The colour of the floor at a place in the world (in tiles). */
 function floorAt(theme: Theme, wu: number, wv: number, x: number, y: number): string {
   const S = theme.slabs;
@@ -123,21 +226,32 @@ function floorAt(theme: Theme, wu: number, wv: number, x: number, y: number): st
   const fu = wu * S - su;
   const fv = wv * S - sv;
   const edge = Math.min(fu, fv);
-  if (edge < 0.075) return theme.mortar;
   // (the pattern of tones comes round with the pictures: every PERIOD tiles)
   const n = Math.round(PERIOD * S);
   const iu = ((su % n) + n) % n;
   const iv = ((sv % n) + n) % n;
+  const e = theme.earth;
+  if (e) {
+    // WHERE THE STONE IS GONE: earth. And where a stone is there but its neighbour is gone, its edge broken away there, raggedly.
+    const gone = goneOf(theme);
+    if (gone.has(iu * n + iv)) return earthAt(e, wu, wv, x, y);
+    const near = (a: number, b: number): boolean => gone.has(((((iu + a) % n) + n) % n) * n + ((((iv + b) % n) + n) % n));
+    const rag = 0.06 + 0.1 * hash(Math.floor((fu + fv) * 9), iu * 31 + iv, 51);
+    if ((near(-1, 0) && fu < rag) || (near(1, 0) && fu > 1 - rag) || (near(0, -1) && fv < rag) || (near(0, 1) && fv > 1 - rag)) return earthAt(e, wu, wv, x, y);
+  }
+  if (edge < 0.075) return theme.mortar;
   const tone = hash(iu, iv, 1);
   const odd = hash(iu, iv, 2);
+  // (how often a stone has lost a corner, and is cracked across: the theme's, or the vault's one in fourteen)
+  const broken = e?.broken ?? 0.07;
   // a stone that has lost a corner: the gap is filled with the dirt of the joints
-  if (odd < 0.07) {
-    const cu = odd < 0.035 ? fu : 1 - fu;
+  if (odd < broken) {
+    const cu = odd < broken / 2 ? fu : 1 - fu;
     const cv = hash(iu, iv, 3) < 0.5 ? fv : 1 - fv;
-    if (cu + cv < 0.42) return theme.mortar;
+    if (cu + cv < 0.42) return e ? earthAt(e, wu, wv, x, y) : theme.mortar;
   }
   // a stone cracked across: a dark line that wanders from one side of it to the other
-  if (odd > 0.93) {
+  if (odd > 1 - broken) {
     const along = hash(iu, iv, 5) < 0.5;
     const a = along ? fu : fv;
     const b = along ? fv : fu;
@@ -310,19 +424,78 @@ function wallFace(theme: Theme, spec: WallSpec, left: boolean, height: number): 
   const [joint, lo, usual, odd, hi] = left ? theme.lit : theme.shade;
   const seed = spec.seed * 16 + (left ? 0 : 5);
   const skip = TALL - height;
-  const crack = crackPath(left ? spec.crackL : spec.crackR, seed);
+  const e = theme.earth;
+  // (OLD AND CRUMBLING, the Crypt's: more of the faces cracked down, the theme's share of them, each its own way)
+  const extra: [number, number, number] | undefined = e && hash(spec.seed, left ? 1 : 2, 91) < e.broken * 2.2 ? [5 + Math.floor(hash(spec.seed, left ? 3 : 4, 92) * 20), 2 + Math.floor(hash(spec.seed, left ? 5 : 6, 93) * 26), 12 + Math.floor(hash(spec.seed, left ? 7 : 8, 94) * 34)] : undefined;
+  const crack = crackPath((left ? spec.crackL : spec.crackR) ?? extra, seed);
+  // (rough rock, in the light of this face: the face turned to screen-left a step lighter than the one in shade)
+  const rock = e ? (left ? e.rock.map((c) => mixHex(c, theme.lit[2], 0.25)) : e.rock.map((c) => mixHex(c, theme.shade[1], 0.45))) : null;
+  const deep = e ? (left ? e.dirt[0] : mixHex(e.dirt[0], BEYOND, 0.3)) : joint;
   return (u, v) => {
     const row = v + skip;
     const course = Math.floor(row / COURSE);
     const r = row % COURSE;
     if (crack.has(row * 64 + u)) return joint;
     if (crack.has(row * 64 + u - 1)) return hi;
-    // the line between two courses
-    if (r === 0) return joint;
     const mid = course % 2 === 0;
     // where this course's upright joint is: in the middle of the face, or at the tile's edge
     // (the left face's last column and the right face's first are the block's front corner)
     const at = mid ? 15 : left ? 0 : 30;
+    if (e && rock && e.raw > 0) {
+      // A STONE THAT HAS FALLEN, OR WAS NEVER LAID: rough rock and earth where it would be, in lumps
+      // a few pixels across, each lit along its upper-left edge, with dark earth between them
+      const which = mid ? (u < at ? 0 : 1) : 0;
+      if (hash(course * 2 + which, spec.seed, seed + 17) < e.raw) {
+        const CELL = 7;
+        const gx = u / CELL;
+        const gy = row / (CELL * 0.8);
+        const cx = Math.floor(gx);
+        const cy = Math.floor(gy);
+        let best = 9;
+        let second = 9;
+        let id = 0;
+        let ox = 0;
+        let oy = 0;
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            const px = cx + dx + 0.15 + 0.7 * hash(cx + dx, cy + dy, seed + 23);
+            const py = cy + dy + 0.15 + 0.7 * hash(cx + dx, cy + dy, seed + 29);
+            const d = Math.hypot(gx - px, gy - py);
+            if (d < best) {
+              second = best;
+              best = d;
+              id = (cx + dx) * 31 + cy + dy;
+              ox = gx - px;
+              oy = gy - py;
+            } else if (d < second) second = d;
+          }
+        }
+        if (second - best < 0.12) return deep;
+        const k = -ox * 0.8 - oy * 0.9;
+        if (k > 0.32) return rock[3];
+        if (k < -0.3) return rock[0];
+        return hash(id, 3, seed + 31) < 0.3 ? rock[2] : rock[1];
+      }
+    }
+    if (e) {
+      // A STONE THAT HAS LOST A CORNER (the Crypt's, the theme's share of them): a notch broken out
+      // of its top corner by a joint, dark earth in it, its broken edge catching the light below it
+      const which = mid ? (u < at ? 0 : 1) : 0;
+      const k = course * 2 + which;
+      if (hash(k, spec.seed, seed + 41) < e.broken) {
+        // (which top corner: the one by the joint on its left or on its right; and how big)
+        const leftEnd = mid ? (which === 0 ? 0 : at + 1) : left ? 1 : 0;
+        const rightEnd = mid ? (which === 0 ? at - 1 : 30) : left ? 30 : 29;
+        const onLeft = hash(k, spec.seed, seed + 43) < 0.5;
+        const size = 4 + Math.floor(hash(k, spec.seed, seed + 47) * 5);
+        const du = onLeft ? u - leftEnd : rightEnd - u;
+        const d = du + (r - 1) * 1.3;
+        if (du >= 0 && r >= 0 && d < size) return deep;
+        if (du >= 0 && r >= 0 && d < size + 1.4) return onLeft ? lo : hi;
+      }
+    }
+    // the line between two courses
+    if (r === 0) return joint;
     if (u === at) return joint;
     // (a stone of a course whose joint is in the middle of the face runs on into the next tile,
     // and must be one tone there: only a stone that lies within the tile can be the odd one)
