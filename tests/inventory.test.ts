@@ -314,21 +314,21 @@ test('an attack\'s numbers: one hit, lowest to highest, as the rules will roll i
 // ---------------------------------------------------------------------------------------------
 // Version 13.2
 
-test('word slots open by the list: one in front from the start (once the ring is lit), the second in front at 5, behind at 7 and 10; a third a side is not switched on', () => {
-  // (THE FIRST LEVELS, since Version 19.5: his order of 8 Oct, 20:39, and his answer of 22:19, "2nd before 5, after 7 and 10 (Recommended)")
-  assert.deepEqual(SLOT_OPENS, { front: [1, 5], behind: [7, 10] }, 'the game as it is: two a side (a third at 15 and 20 is the owner\'s idea, tried only through the test hook)');
-  assert.deepEqual([SLOT_LEVELS.front, SLOT_LEVELS.behind], [5, 10]);
+test('word slots open by the list: one in front from the start (once the ring is lit), the second in front at 4, behind at 15 and 20; a third a side is not switched on', () => {
+  // (THE FIRST LEVELS: his order of 8 Oct, 20:39; the levels his of 9 Oct, 22:28 to 22:52: "Okay let’s try it." of 10, 15
+  // and 20, then "Move slot 2 back to level 4." and "Two is enough for a long time I think")
+  assert.deepEqual(SLOT_OPENS, { front: [1, 4], behind: [15, 20] }, 'the game as it is: two a side');
+  assert.deepEqual([SLOT_LEVELS.front, SLOT_LEVELS.behind], [4, 20]);
   const at = (lv: number): string => socketCount(lv).join();
-  assert.deepEqual([1, 4, 5, 6, 7, 9, 10, 15, 20, 99].map(at), ['1,0', '1,0', '2,0', '2,0', '2,1', '2,1', '2,2', '2,2', '2,2', '2,2']);
-  // and with the two levels of his idea added, everything that counts slots follows
-  SLOT_OPENS.front.push(15);
-  SLOT_OPENS.behind.push(20);
+  assert.deepEqual([1, 3, 4, 5, 14, 15, 19, 20, 99].map(at), ['1,0', '1,0', '2,0', '2,0', '2,0', '2,1', '2,1', '2,2', '2,2']);
+  // and with a third a side added (through the test hook), everything that counts slots follows
+  SLOT_OPENS.front.push(25);
+  SLOT_OPENS.behind.push(30);
   try {
-    assert.deepEqual([1, 5, 7, 10, 14, 15, 19, 20, 99].map(at), ['1,0', '2,0', '2,1', '2,2', '2,2', '3,2', '3,2', '3,3', '3,3']);
+    assert.deepEqual([4, 15, 20, 24, 25, 29, 30, 99].map(at), ['2,0', '2,1', '2,2', '2,2', '3,2', '3,2', '3,3', '3,3']);
     const g = Game.forPractice('mage', 4);
-    g.hero.level = 20;
     g.refresh();
-    assert.deepEqual(g.hero.skills.map((k) => [k.front.length, k.behind.length]), [[3, 3], [3, 3], [3, 3]]);
+    assert.deepEqual(g.hero.skills.map((k) => [k.front.length, k.behind.length]), [[3, 3], [3, 3], [3, 3]], 'every slot open in the practice room');
     g.hero.words.power = 1;
     assert.equal(g.placeWord({ skill: 0, side: 'front', idx: 2 }, 'power'), null, 'a word goes into a third slot');
     // switched off again, the slot closes and its word goes back to the pouch

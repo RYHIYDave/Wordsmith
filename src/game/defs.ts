@@ -975,7 +975,7 @@ export const MANA_MODE = {
 
 /** The practice room (title screen): a seasoned throwaway character, and monsters that keep coming. */
 export const PRACTICE = {
-  /** The level that opens the second socket behind (SLOT_LEVELS): two in front and two behind on both attacks and on the swipe. */
+  /** The practice hero's level (every slot is open in the practice room whatever the level: Game.slots). */
   level: 10,
   /** Item level of the gear handed out (usable at level 7). */
   ilvl: 4,

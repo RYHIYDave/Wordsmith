@@ -769,8 +769,8 @@ test('a save from before Version 12 comes back with its weapons brought up to da
 
 test('a mage saved before Version 12, words on Orb and Nova, comes back with them on Wave and Orb', () => {
   // (the sockets are kept by place: the first attack's, the second attack's)
-  // (a slot behind: THE FIRST LEVELS open it at level 7, once the wordsmith's ring is lit)
-  const g = seasoned(new Game('mage', 8), 7);
+  // (a slot behind: THE FIRST LEVELS open it at level 15 since 9 Oct 2026, once the wordsmith's ring is lit)
+  const g = seasoned(new Game('mage', 8), 15);
   const h = g.hero;
   h.words.fire = 1;
   h.words.twin = 1;
@@ -784,7 +784,7 @@ test('a mage saved before Version 12, words on Orb and Nova, comes back with the
 
 test('a character saved with another class\'s weapon comes back with it, its attacks and its words', () => {
   for (const [cls, w] of [['warrior', 'wand'], ['ranger', 'staff'], ['mage', 'sword'], ['mage', 'bow']] as const) {
-    const g = seasoned(new Game(cls, 31), 7);
+    const g = seasoned(new Game(cls, 31), 15);
     const h = g.hero;
     h.gear.mainhand = plainWeapon(w, 2);
     g.refresh();

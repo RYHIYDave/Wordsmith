@@ -391,7 +391,7 @@ test('the three evasive moves take words in the same slots as the attacks', () =
   for (const cls of CLASS_IDS) {
     const g = room(cls);
     const h = g.hero;
-    const [nf, nb] = socketCount(h.level);
+    const [nf, nb] = g.slots();
     assert.ok(SKILLS[h.skills[2].id].sockets, `${cls}: ${h.skills[2].id} takes words`);
     assert.equal(h.skills[2].front.length, nf, 'as many slots in front as an attack has');
     assert.equal(h.skills[2].behind.length, nb, 'and behind');

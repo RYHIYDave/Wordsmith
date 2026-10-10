@@ -721,6 +721,8 @@ export class Game {
   /** The word slots an open ability has now, in front and behind: none before the ring is lit; then by level. */
   slots(level = this.hero.level): [number, number] {
     if (!this.hero.ring && !this.practice) return [0, 0];
+    // (the practice room is for trying every combination: every slot is open there, whatever the level)
+    if (this.practice) return socketCount(999);
     return socketCount(level);
   }
 
