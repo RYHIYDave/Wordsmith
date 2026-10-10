@@ -13,6 +13,8 @@ Oct 8, 2026
 > **CHANGED BY THE OWNER HIMSELF, 10 Oct 2026, by 07:41:** in his doc (rev 78) he renamed "Effects and magic" to "Animations", and its rule 2 now reads "Each hero or boss is wild in his own way."
 >
 > **CHANGED BY THE OWNER, 10 Oct 2026: AS FAR AS IT WILL GO.** His words to the art chat by 07:47: "Put in the ruleset that I want animations as big and wild and kinetic and weighty as possible.  I’d rather it be a notch too high than a notch too low." So Animations has a new rule 1. By 07:53: "And I want all animations checked against this statement before I see them." So rule 1 says every animation is checked against it before he sees it. The doc is at rev 80 with both.
+>
+> **CHANGED BY THE OWNER, 10 Oct 2026: MOMENTS AROUND YOU.** His idea at 07:52 ("I’d also like a couple environmental things happening around you for immersion unique for each floor."); asked whether it should be a rule, his pick: "Yes, add it (Recommended)". So Places has a new rule 8, and the doc is at rev 81 with it.
 
 Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. You said yes to it on 8 Oct, so every chat that makes art for the game follows it, and it changes only with your yes.
 
@@ -104,6 +106,7 @@ The places carry the detail, always a step quieter than the fight. In your words
 5. **Books may give worlds.** A group of floors may take its world from an old book, drawn only from the book itself and only from books out of copyright. The heroes never change their look for a book.
 6. **Old, broken and burnt.** Decorations show age: a tapestry torn and burnt, hanging in strips; a gargoyle head small and high on the wall; flagstones cracked or gone; a soft shadow at the foot of everything that stands. In your words, of the first gargoyle: "It’s too big and too low on the wall."
 7. **Each floor themed after its boss.** Every floor takes its theme from the boss who rules it, and has between 40 and 50 pieces made for it alone: wall tiles, floor tiles, things that break, things on the walls and on the floor, obstacles, the look of its doors and gates, its traps and its quests. In your words, 10 Oct: “I’d also like each floor to be themed after the boss.  Add this to the ruleset.  We need somewhere between 40-50 unique assets on each floor for each boss.  That can include wall tiles, floor tiles, breakables, stuff on the walls, on the floor, obstacles, the looks of doors and gates, traps, and quests.”
+8. **Moments around you.** Every floor has a few small moments of its own that happen near the hero as he goes, for immersion: something shifts above and dust comes down, a pack of birds is spooked and flies off, a root shrivels as he walks by. They never fight him, and they are as big and weighty as Animations 1 asks. In your words, 10 Oct: “I’d also like a couple environmental things happening around you for immersion unique for each floor.  Something shifts above you and dust comes down, you spook a pack of birds and they fly off,  a root shrivels as you walk by.  That sort of stuff”.
 
 ## Movement
 
