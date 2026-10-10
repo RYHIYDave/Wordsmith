@@ -5454,6 +5454,90 @@ the release's first commit, shortly after 01:55, as a production step): at 07:15
   (0.93 and 0.95 s). Published at 08:55 ("Version 55", version id `1791636949-2eb3`); the file published
   is the kept copy, `v201a/release/artifact.html`, byte for byte the copy's `dist/artifact.html`.
 
+### Version 20.2: the Crypt, its cells and open floors, and the ways through it
+
+**What he said.** His outline of the Crypt, 9 Oct, 22:47: "The gate on the wall with be turned to a gate
+from the levels.  It will open automatically as you approach it and go through.  you will enter floor 1 of
+the Crypt.  You find the dead wordsmith and the quest item to turn the altar on, kill the warden and find
+a stairwell leading down.  At the bottom of the stairs is Crypt floor 2.  There is a waypoint that will
+warp you to town and back at the beginning over every floor except the first as you could just walk back
+through the gate." At 22:50: "Let’s have the door words go for now.  I think that’ll be endgame stuff". To
+the art chat's Crypt (its four floors, the stairwell, the waypoint, the town's gate), by 07:29 on 10 Oct:
+"Yes.  I’d also like each floor to be themed after the boss." and "Yes, as shown (Recommended)". At 08:26:
+"Id like one floor design change per 5 levels.  It needs to be thematic to the type of environment.  Like
+for the crypt prison dungeon or whatever the first 5 are that we have, rows of jail cells along the wall.
+Small rooms each with a door.  And I’d like for the current 5, as the floors get less and less finished,
+I’d like to open up more and not be so confined and claustrophobic." His order at 09:02: "Sounds good".
+To the pictures of the cells and the open floors (by 09:51), at 10:07: "I like the changes". To the films
+of the ways in the game (by 11:12), at 11:15: "Good". Asked for his direct OK for the release itself, in a plain message at 16:36 (20.2 having passed all its tests), at 16:42: "Yes". While it was tested, at 13:59: "is there a reason you update so often?  does it have to happen this frequently or can we wait and put more stuff into each update.  it doesnt matter im just asking" (told: no need; bigger batches from now on); at 14:00: "okay.  i feel like we can hit all these levels at the same time and get the first 5 done" (the next version: the first five floors together).
+
+**What is in it.**
+
+- **The Crypt's look** (the art chat's, `src/art/crypt.ts`, `CRYPT`, on; `src/art/crypt_ways.ts`): floors 1
+  to 4 of the vault's indigo stone, less of it the deeper (earth about 1%, 16%, 33% and 52% of the
+  floor), walls fallen to rough rock from floor 2, floor 4's pillars timber pit props; floors past 4 look
+  as floor 4; town and the practice room keep the vault's. Each floor's pictures are painted when it is
+  first reached. **More lying about** (`CRYPT_LITTER`, `game/dungeon.ts`, on): floors 2 to 4, laid last,
+  where nothing else is (not on a dart wall's run).
+- **Its layout** (`CRYPT_LAYOUT`, `game/dungeon.ts`, on; floors 1 to 5): cell blocks, one or two rooms of the
+  main path made long halls with a row of cells along the back wall, each cell a small room with the
+  game's barred door, nothing fighting in it; from floor 2 bigger rooms, shorter corridors, more rooms
+  next door, and from floor 3 breaches. A grown room keeps the monsters of its size before growing
+  (`RoomPlan.base`); treasure vaults do not grow.
+- **The ways** (`src/game/ways.ts`, `WAYS`, on): the town's gate, a levels' gate in the back wall where the
+  field of light was, rising as he comes within 6 tiles and falling past 8, walked into to floor 1; floor
+  1's own gate in a back wall of its first room, standing open, the way back to town; the stairwell,
+  opening in the boss's hall as the boss dies (by the hall's middle, or clear of his body in one of up to
+  five places), its top step to the next floor, no way up; a waypoint beside where he comes in on every
+  floor from the second, waking as he comes near, the use button warping him to town and the town's
+  waypoint back to the deepest floor reached (`RunSave.way`); the screen darkening and lightening through
+  a gate or down a stairwell; the gate's words gone (no gate service). The stairwell's opening is a
+  placeholder (the game's slam and a shake) until the art chat's.
+- **A lever's sides kept clear** (`LEVER_CLEAR`, `game/dungeon.ts`, on): an old bug, in 20.1 too: a lever
+  could be shut in by barrels, urns and fires set down round it after it (of 900 from floor 2 down, 55 on
+  all four sides, 22 not even across a corner without breaking a way). Now a lever has an open side and
+  nothing solid beside it. A boss hall left with fewer than two places for the stairwell gives up the
+  barrels and urns on them.
+- **A touch to go somewhere goes round a pillar** (`main.ts`, the errand): the straight run is taken only when
+  it is clear for the hero's body, not just for a line through his middle (one that grazed a pillar's tile
+  caught his shoulder, and the path round and the run past it took turns, the hero going nowhere).
+- **The playtests' own player** walks on up to a lever and onto a stairwell's top step from the tile beside
+  them (`src/dev/bot.ts`): the soak now gets to floor 5 (in 20.1's regression it ended on floor 2).
+
+**How it was tested.**
+
+- `tests/ways.test.ts` 13 (new), `tests/crypt_layout.test.ts` 6 (new), `tests/crypt.test.ts` 13 (with the switches
+  off, and `LEVER_CLEAR` off, 150 dungeons as at `aaa8310`), `tests/mix.test.ts` 12 (nothing solid beside a lever,
+  each lever come to round whatever stands); `tools/scenarios/ways_film.mjs`; the scenarios that went through the
+  town's gate or home by the boss's portal follow the ways.
+- THE FIRST REGRESSION, on a frozen copy at `acbf238` (the scratchpad's `v202a`), 12:04:15 to 12:53:58: 126 of 160
+  clean. The 34: scenarios still taking the boss's portal home from floor 1 or pressing the town's gate for its
+  words, `doors` laying its own dungeons with the Crypt on, three of the playtests' own timing under load; and one
+  of the game's: the practice room had taken the Crypt's look. Mended (`8a9e29d`), with the two things found on
+  the way: A LEVER SHUT IN (the soak's bot stood for good at one on floor 2; of 900 levers from the second floor
+  down, 55 shut in on all four sides and 22 of them not come to even across a corner without breaking a way:
+  `LEVER_CLEAR`), and a boss hall left with one place for the stairwell. The bot walks onto a stairwell's top
+  step (`f4f64e3`). The pre-flight, 23 playtests of the 34's kinds on a page of `8a9e29d` from 13:29:43: 22
+  clean; `mix_phone`'s own late look (the lever pulled "0.87 tiles off", its check from 0.9): clean twice alone.
+- THE SECOND REGRESSION, on a frozen copy at `f4f64e3` (`v202b`), 13:51:29 to 14:46:55: 157 of 160 clean. `town`
+  (the wordsmith's SELL pressed and nothing sold, as in 20.1's run cut off at 02:19): clean twice alone.
+  `guide_pc_warrior` and `guide_narrow_warrior` (seeds 102641959 and 1581565294, a pillar a tile before where the
+  scenario set the hero down inside the first floor's gate): set down over its tile he could take no step (the
+  scenario's fault, mended); set down clear of it, the touch on the gate left him standing at the pillar (seen at
+  102.72, 116.36 for over four seconds): THE GAME'S FAULT, mended (`e022e9f`, above); both seeds clean after.
+- THE UNIT SUITE 945 of 945 at `e022e9f` (14:57:40 to 15:03:32), `tsc` clean.
+- **THE THIRD REGRESSION**, on a frozen copy at `b712a28` (`v202c`; `src` the same as `e022e9f`'s), 15:04:25 to
+  15:58:58, two at a time, nothing else running: **ALL 160 PLAYTESTS FINISHED CLEAN**. The soak to floor 5
+  (cleared 4, run time 2164 s). Speed: the frame-rate run 57.5 frames a second (20.1: 55.5), longest frame
+  66.7 ms; the slowest fights of the four word-combination runs 54.2 to 57.2 frames a second (20.1: 53.6 to
+  56.2), longest frame 83 ms.
+- `find src -newer dist/copy.html` named nothing; the unit suite in the copy once more, `src` the same as the
+  branch's: 945 of 945, 16:00:23 to 16:06:10.
+- THE RELEASE BUILD: made in the copy at 16:06, `Play.html` 1,253,554 bytes and `dist/artifact.html` 1,253,232,
+  both saying V20.2; kept in the scratchpad's `v202c/release/`.
+- **The published page itself** (`wrap202.sh` in the scratchpad, 16:06:55 to 16:35:31): **88 OF 88 PLAYTESTS
+  CLEAN** (20.1's 86, and fingers on a phone held upright, and the soak). Published at 16:42 ("Version 56", version id `1791664967-f0c9`, label "Version 20.2"); the file published is the kept copy, `v202c/release/artifact.html`, byte for byte the copy's `dist/artifact.html`. main on GitHub fast-forwarded from `c0b62a5` to `f352d4c` (the branch `crypt`, with the release `Play.html`).
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -5798,6 +5882,23 @@ Contracts worth knowing:
   TURNED TO THE EYE (`doorFace` = `doorLine` + 1), by `standDoors` in render.ts; what is flat in
   that plane comes as strips, each at its own depth. With `DOORS.on` false a dungeon is Version
   18.4's to the letter (laying doors takes no dice).
+- **The Crypt (since Version 20.2).** ITS LOOK, the art chat's: `art/crypt.ts` (`CRYPT`;
+  `cryptFloor(depth)` names which of its four floors a depth looks as, past 4 the fourth;
+  `cryptGround`, `cryptProps`, `cryptWays`), `art/crypt_ways.ts` (`makeStairwell`,
+  `makeWaypointArt`); `main.ts` swaps `art.ground` and `art.props` by floor (town and the practice
+  room keep the vault's). ITS LAYOUT, `game/dungeon.ts`: `CRYPT_LAYOUT` (cell blocks, `Room.block`
+  and `Room.cell`; from floor 2 bigger rooms, shorter corridors, breaches from 3; a grown room's
+  packs by `RoomPlan.base`, its area before growing; floors 1 to 5 only), `CRYPT_LITTER` (more
+  rubble, laid last, `moreLitter`), `LEVER_CLEAR` (a lever has an open side and nothing solid
+  beside it, `placeLever`). THE WAYS, `game/ways.ts` (`WAYS`): `Level.ways` = `{ stair, stairs,
+  way, gate }`, made in `makeDungeon` and `makeTown` (`level.ts`): the town's gate (`'waygate'`, a
+  door kind; `TOWN_GATE`), floor 1's gate (`placeFirstGate`, `openGate`; nothing before it,
+  `beforeGate`), the stairwell's places (`stairSpots`; `stairFor` picks one clear of the boss's
+  body as he dies; `openStair` in `game.ts`), a waypoint by where the hero comes in from floor 2
+  (`placeWay`; `Game.wayDepth`, `RunSave.way`); `Game.updateWays`, `leave`, `takeWay`,
+  `enterTown(by)` and `enterDungeon(by)`; the curtain (`CURTAIN_SECS`) drawn by `main.ts`; touched
+  as Spot `'through'` and `'way'` (`main.ts`, `spotAt`); `__dbg.ways(on)`, `__dbg.crypt(on)`,
+  `__dbg.cryptLayout(on)`.
 - **Rules know nothing about drawing or input.** `Game.update(dt, controls)` reads a `Controls`
   object (world space) and pushes `GameEvent`s; `Fx.handle` and the sound system consume them.
   All randomness in rules goes through `RNG`.

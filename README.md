@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (10 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 20.1).**
+**Status (10 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 20.2).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -203,6 +203,12 @@ Version 20.1: the skill trees: fifteen talents for each class, in its own shape 
 paths of fire, lightning and frost, the ranger's arrow, the warrior's crossed swords), ten points, one
 every fifth level, picked on the inventory's TALENTS page and undone in town for gold; and a game
 controller, with two-stick aiming and its buttons named on the screen.
+Version 20.2: the Crypt. Its first floors crumble from stone into earth and rock the deeper you
+go; rows of prison cells line the walls, and the deeper floors open up into bigger rooms. The gate
+in town opens as you come and takes you to floor 1, whose own gate takes you home; when a floor's
+boss dies a stairwell opens down to the next; from floor 2 a waypoint where you come in warps you
+to town and back. A lever is never shut in by barrels now, and a tap to walk somewhere goes round
+a pillar.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
