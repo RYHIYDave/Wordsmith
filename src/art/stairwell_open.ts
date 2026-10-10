@@ -901,11 +901,12 @@ function makeMoment(theme: Theme, way: Way): Moment {
       }
     }
     // (up out of what is open of the hole, from where it fell back toward the top of the steps)
-    const n = r === 0 ? 4 : 4 + 3 * r;
+    const n = r === 0 ? 4 : 4 + 4 * r;
     for (let i = 0; i < n; i++) {
       const al = Math.max(0.12, Math.min(hinge[cell][0] - 0.15, hinge[cell][0] - 0.2 - 0.6 * h(cell, i, 548)));
       const [x, y] = XY(al, 0.12 + 1.0 * h(i, cell, 549));
-      puff({ f0: ld.at + (i % 2), x, y, z: 1, vx: 0, vy: 0, vz: 5 + r * 4 + 6 * h(i, cell, 550), r0: 3, big: 4 + r * 2.6 + 3 * h(i, cell, 551), life: 14 + r * 3, fall: 0.45 }, 2);
+      // (each deeper slam a bigger column of its own, building to the great burst)
+      puff({ f0: ld.at + (i % 3), x, y, z: 1, vx: 0, vy: 0, vz: 5 + r * 6 + 6 * h(i, cell, 550), r0: 3, big: 4 + r * 3 + 3 * h(i, cell, 551), life: 15 + r * 3, fall: 0.5 }, 2);
     }
     for (let i = 0; i < 4 + 3 * r; i++) {
       const al = Math.max(0.15, hinge[cell][0] - 0.25 - 0.4 * h(cell, i, 552));
