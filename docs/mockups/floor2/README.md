@@ -8,7 +8,8 @@ does (what breaks, what blocks, what hurts, what a quest asks, when a moment pla
 chat's, once he has said yes.
 
 **State of this branch (`mockup/floor2-headsman`):** from `mockup/floor1-warden` (6ae5589, floor 1 as
-he said yes to it). Made by THE ART CHAT, 10 Oct 2026. Not yet seen by him.
+he said yes to it). Made by THE ART CHAT, 10 Oct 2026. **He has said yes to it, as shown** (by 14:13;
+his words below): the main chat's to build in.
 
 ## His words
 
@@ -25,6 +26,10 @@ he said yes to it). Made by THE ART CHAT, 10 Oct 2026. Not yet seen by him.
   "And the rats just kind of disappear.  Animations need run the checks."
 - By 12:00, of floor 1: "Yes, on to floor 2 (Recommended)", offered as: floor 1 goes to the main chat
   to build in, and the art chat starts the Headsman's floor.
+- By 14:13, of floor 2, asked "Floor 2's pieces and moments, as on the Headsman Floor Review page:
+  good as shown?": "Yes, on to floors 3 and 4 (Recommended)", offered as: floor 2 goes to the main
+  chat to build in, and the art chat starts the Chained One's and the amalgamation's floors side by
+  side.
 
 ## The theme
 
