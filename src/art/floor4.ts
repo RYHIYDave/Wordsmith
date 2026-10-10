@@ -950,10 +950,11 @@ function mawAt(x: number, y: number): 'lip' | 'fang' | 'in' | null {
   const h = 0.5 * Math.sqrt(Math.max(0, 1 - x ** 6)) + 0.03 * Math.sin(x * 13);
   if (Math.abs(y) > h + 0.13) return null;
   if (Math.abs(y) > h) return 'lip';
-  for (const [c, len, up] of [[-0.62, 0.62, 1], [-0.2, 0.86, 1], [0.24, 0.8, 1], [0.66, 0.58, 1], [-0.41, 0.6, -1], [0.03, 0.52, -1], [0.45, 0.62, -1]] as const) {
+  // (great fangs, few, crooked and of every length: never a row so even it could be read as a letter)
+  for (const [c, len, up, w] of [[-0.58, 0.8, 1, 0.15], [-0.18, 0.42, 1, 0.1], [0.3, 0.95, 1, 0.17], [0.7, 0.45, 1, 0.1], [-0.36, 0.55, -1, 0.13], [0.52, 0.66, -1, 0.14]] as const) {
     const d = up > 0 ? h - y : y + h;
     const L = len * 2 * h;
-    if (d < L && Math.abs(x - c) < 0.11 * (1 - d / L) + 0.01) return 'fang';
+    if (d < L && Math.abs(x - c - (d / L) * 0.04 * Math.sign(c)) < w * (1 - d / L) + 0.012) return 'fang';
   }
   return 'in';
 }
@@ -1781,20 +1782,34 @@ function charnelHeap(): Sprite {
   S.seams();
   return compose(null, [S.p], null).sprite(HEAP_AX, HEAP_AY, GRAIN);
 }
-/** A TIMBER CRIB: squared timbers laid two by two, crosswise, in a square stack, the miners' way of holding a roof up; a cap laid across its top, wedges driven under it. 64 x 88 at (32, 70). */
+/** A TIMBER CRIB: rough logs laid two by two, crosswise, in a square stack, the miners' way of holding a roof up, their cut ends showing their rings; a wedge driven in at its top. 64 x 88 at (32, 70). */
 function timberCrib(): Sprite {
   const S = new Scene(new Px(64, 88), 32, 70);
-  const shadeT = (f: number, u: number, v: number, n: V3): string => (f === 0 || f === 1 ? (Math.hypot((u - 0.5) * 1.2, v - 0.5) < 0.25 ? TIMBER[0] : TIMBER[3]) : f === 4 ? (u < 0.04 || v < 0.06 ? TIMBER[4] : TIMBER[3]) : toneAt(n, TIMBER, -0.1));
   let id = 1;
+  const log = (a: V3, b: V3): void => {
+    S.rod(a, b, 3, 3, TIMBER, id);
+    // (its cut ends: the rings of the wood, the end toward the eye)
+    const d = norm(sub(b, a));
+    const s1 = norm(cross(d, [0, 0, 1]));
+    const s2 = cross(s1, d);
+    for (const e of [a, b]) {
+      const out = dot(sub(e, mul(add(a, b), 0.5)), TOWARD) > 0;
+      if (!out) continue;
+      S.egg(e, [d, s1, s2], [0.5, 3, 3], (_n, w) => {
+        const r = Math.hypot(dot(sub(w, e), s1), dot(sub(w, e), s2));
+        return r > 2.4 ? TIMBER[1] : Math.abs(r - 1.3) < 0.45 ? TIMBER[1] : TIMBER[2];
+      }, id);
+    }
+    id++;
+  };
   for (let k = 0; k < 7; k++) {
-    const z = 3.2 + k * 6.4;
+    const z = 3 + k * 5.8;
     for (const s of [-1, 1]) {
-      if (k % 2 === 0) S.box([0, s * 10, z], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [14, 3, 3.2], (f, u, v, n) => shadeT(f, u, v, n), id++);
-      else S.box([s * 10, 0, z], [[0, 1, 0], [-1, 0, 0], [0, 0, 1]], [14, 3, 3.2], (f, u, v, n) => shadeT(f, u, v, n), id++);
+      if (k % 2 === 0) log([-14, s * 10, z], [14, s * 10, z]);
+      else log([s * 10, -14, z], [s * 10, 14, z]);
     }
   }
-  S.box([0, 0, 48.6], XYZ, [16, 16, 2.4], (f, u, v, n) => (f === 4 ? (Math.abs(((u * 5) % 1) - 0.5) > 0.44 ? TIMBER[0] : TIMBER[3]) : toneAt(n, TIMBER, -0.1)), id++);
-  S.box([-12, 13, 45.6], XYZ, [2.4, 1.6, 0.8], (_f, _u, _v, n) => toneAt(n, TIMBER, -0.1), id++);
+  S.box([-10, 12, 41.6], XYZ, [2.4, 1.4, 1.4], (_f, _u, _v, n) => toneAt(n, TIMBER, -0.1), id++);
   S.seams();
   return compose(null, [S.p], null).sprite(32, 70, GRAIN);
 }
@@ -1842,12 +1857,12 @@ function boulder(): Sprite {
   return compose(null, [S.p], null).sprite(40, 52, GRAIN);
 }
 
-/** THE BONE COLUMN: a round column of the ossuary, faced with the dead: rings of skulls staring out between bands of bone ends, on a foot of stone, a stone cap at its head. 56 x 120 at (28, 104). */
+/** THE BONE COLUMN: a round column of the ossuary, faced with the dead: rings of skulls staring out between bands of bone ends, on a foot of stone, going up into the dark. 56 x 128 at (28, 112). */
 function boneColumn(): Sprite {
-  const S = new Scene(new Px(56, 120), 28, 104);
+  const S = new Scene(new Px(56, 128), 28, 112);
   const R = 11;
   // its core, dark
-  for (let z = 4; z <= 78; z += 0.5) {
+  for (let z = 4; z <= 100; z += 0.5) {
     for (let a = 0; a < Math.PI * 2; a += 0.06) {
       const p: V3 = [Math.cos(a) * R, Math.sin(a) * R, z];
       const [x, y] = S.at(p);
@@ -1856,7 +1871,7 @@ function boneColumn(): Sprite {
   }
   let id = 2;
   // its foot and cap of dressed stone
-  for (const [z0, h, r] of [[0, 5, 14], [79, 4, 14]] as const) {
+  for (const [z0, h, r] of [[0, 5, 14]] as const) {
     for (let z = z0; z <= z0 + h; z += 0.5) {
       for (let a = 0; a < Math.PI * 2; a += 0.04) {
         const n: V3 = [Math.cos(a), Math.sin(a), 0];
@@ -1868,7 +1883,7 @@ function boneColumn(): Sprite {
     S.egg([0, 0, z0 + h], XYZ, [r, r, 0.3], (_n, w) => (w[0] + w[1] < -r * 0.9 ? STONE[3] : STONE[2]), id++);
   }
   // rings of skulls between bands of bone ends
-  for (const [z, kind] of [[9, 'end'], [13.4, 'end'], [22, 'skull'], [31, 'end'], [35.4, 'end'], [44, 'skull'], [53, 'end'], [57.4, 'end'], [66, 'skull'], [75, 'end']] as const) {
+  for (const [z, kind] of [[9, 'end'], [13.4, 'end'], [22, 'skull'], [31, 'end'], [35.4, 'end'], [44, 'skull'], [53, 'end'], [57.4, 'end'], [66, 'skull'], [75, 'end'], [79.4, 'end'], [88, 'skull'], [97, 'end']] as const) {
     const n = kind === 'skull' ? 8 : 14;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + (kind === 'end' ? (z % 2) * 0.2 : 0.2);
@@ -1884,7 +1899,14 @@ function boneColumn(): Sprite {
     }
   }
   S.seams();
-  return compose(null, [S.p], null).sprite(28, 104, GRAIN);
+  // (up into the dark over the floor, as the walls go)
+  for (let i = 0; i < S.id.length; i++) {
+    if (S.id[i] < 0 || S.hz[i] < 62) continue;
+    const x = i % S.p.w;
+    const y = Math.floor(i / S.p.w);
+    S.p.set(x, y, mix(S.p.get(x, y)!, BEYOND, [0.2, 0.42, 0.66, 0.9][Math.min(3, Math.floor((S.hz[i] - 62) / 9))]));
+  }
+  return compose(null, [S.p], null).sprite(28, 112, GRAIN);
 }
 
 /** THE RELIQUARY (the game's chest): an old box of dark wood bound in bone, where the ossuary's keepers kept what the dead left them. */
@@ -1962,7 +1984,8 @@ const skullsMark: Mark = (x, y, st, _lit, lightLow) => {
   if (d > 9.4) return toLight > 5 ? st.light : toLight < -6 ? st.dark : st.body;
   const k = threeSkullsAt(x / 8, y / 8);
   if (k === 'dark') return st.joint;
-  if (k === 'bone') return threeSkullsAt((x + (lightLow ? -1 : 1)) / 8, (y + 1) / 8) === 'bone' ? st.body : st.light;
+  // (each skull raised out of the field and lit: its edge away from the light in shade)
+  if (k === 'bone') return threeSkullsAt((x - (lightLow ? -1 : 1)) / 8, (y - 1) / 8) === 'bone' ? st.light : st.body;
   return st.dark;
 };
 /** OVER ITS OWN GATE: the maw cut in the stone, its fangs, the fire inside it burning pink (the enemy's, as the game's boss gate has the Warden's). */
@@ -2020,20 +2043,20 @@ function eldestSkull(): Sprite {
  */
 const SPOTS: Record<string, ReadonlyArray<readonly [number, number]>> = {
   'the skull wall': [[0, 0]],
-  'bone-lined niche': [[4, -1], [-2, 8], [-1, 19]],
+  'bone-lined niche': [[4, -1], [-3, 11], [0, 19]],
   "the miners' breach": [[0, 0]],
   'shored rock': [[0, 0], [-1, 0], [1, 0]],
-  "the dead's arm": [[7, 0], [2, 9], [7, 16]],
-  'seam of ore': [[2, -5], [3, 7], [-3, 30]],
-  'the charnel layer': [[2, -1], [0, 7], [-1, 24]],
-  "miner's lantern": [[8, -21], [10, -14], [-10, 9]],
-  'pick in the wall': [[-10, -7], [-3, 5], [-12, 14]],
-  "the cult's candle": [[6, -12], [-6, 3], [-5, 10]],
-  'garland of skulls': [[1, -12], [0, 5], [-1, 19]],
+  "the dead's arm": [[7, -1], [4, 7], [1, 14]],
+  'seam of ore': [[1, -5], [3, 3], [-3, 30]],
+  'the charnel layer': [[2, -1], [0, 6], [-1, 24]],
+  "miner's lantern": [[10, -17], [5, -5], [-9, 9]],
+  'pick in the wall': [[-4, -4], [-12, 7], [-12, 14]],
+  "the cult's candle": [[7, -16], [0, -1], [-5, 10]],
+  'garland of skulls': [[-1, -5], [-1, 12], [1, 19]],
   "the miners' ladder": [[0, 0], [-7, 0], [6, 0]],
   "the miners' tools": [[-2, -8], [-2, -1], [-2, 6]],
-  "the cult's daub": [[1, -16], [-1, 10], [-1, 17]],
-  'ribs on a spike': [[10, -19], [0, 2], [-7, 9]],
+  "the cult's daub": [[0, -16], [0, 1], [-1, 17]],
+  'ribs on a spike': [[10, -15], [-7, 2], [-7, 9]],
   'jaw slot': [[0, 0]],
 };
 
@@ -2319,7 +2342,7 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
   const fling = (L: Loose): V3 => {
     const s = SKULL_WALL[L.i];
     const r = (k: number): number => hash(L.i, k, 581) - 0.5;
-    if (L.go < SLUMP) return [s.a * 0.08 + r(1) * 1.6, 3 + 3.4 * L.w + r(2) * 1.2, 0.8 + 1.8 * L.w + r(3) * 0.8];
+    if (L.go < SLUMP) return [s.a * 0.09 + r(1) * 1.8, 3.6 + 4 * L.w + r(2) * 1.2, 1.4 + 2.6 * L.w + r(3) * 0.8];
     return [s.a * 0.04 + r(1) * 1.0, 1.2 + r(2) * 1.0, s.back ? 0.6 : 0];
   };
   // THE BULGE before it goes: out of the wall, and the shudder, harder and harder
@@ -2329,7 +2352,7 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
     const amp = (0.25 + 2.2 * t * t) * L.w;
     const j = (k: number): number => (hash(L.i * 7 + f, k, 582) - 0.5) * 2;
     const w = Math.sqrt(L.w);
-    return [j(1) * amp, 6.5 * t ** 1.5 * w + Math.max(0, j(2)) * amp * 0.5, j(3) * amp * 0.8 - 1.4 * t * t * w];
+    return [j(1) * amp, 10 * t ** 1.6 * w + Math.max(0, j(2)) * amp * 0.5, j(3) * amp * 0.8 - 2.2 * t * t * w];
   };
   // the run: every loose one, frame by frame, in the wall's frame
   const N = 112;
@@ -2475,6 +2498,14 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
     const g = flat();
     skullWallGaps(g);
     if (f >= BURST) for (let v = 0; v <= 79; v++) for (let u = -16; u <= 15; u++) if (holeAt(u, v, f)) g.set(fx(u), fy(v), hash(u >> 1, v >> 1, 590) < 0.12 ? EARTH[0] : DEEP);
+    // (the cracks round it opening as it bulges, and the gaps between the dead in it gone to black)
+    if (f > 4 && f < BURST) {
+      const t = (f - 4) / (BURST - 4);
+      for (let v = 0; v <= 79; v++) for (let u = -16; u <= 15; u++) {
+        const k = Math.hypot(u / 0.8 / 17.5, (v - 25) / 19.5);
+        if (k < 1 - 0.5 * (1 - t) && (Math.abs(k - (1 - 0.5 * (1 - t))) < 0.07 || hash(u, v, 591) < t * 0.8)) g.set(fx(u), fy(v), DEEP);
+      }
+    }
     const base = new Px(MW, MH);
     base.blit(onFacePx(g, alongX), ax - PCX, ay - PFOOT);
     const out = compose(base, [S.p], null);

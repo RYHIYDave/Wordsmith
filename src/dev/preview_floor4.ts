@@ -226,6 +226,8 @@ else if (mode === 'look') {
     ['the mine cart', "the rails' end", 'the windlass', 'pyramid of skulls', 'the charnel heap', "the cult's altar", 'the bone column', 'the boulder'],
     ['the rails', 'earth and bones', 'raked earth', 'bone-paved floor', 'the drag', 'spilled ore', 'bone spikes', 'rotten boards'],
     ['empty boots', 'rib cage', 'arm from a heap', "a cultist's robe", 'heap of skulls', 'the eldest skull', 'ore tub', 'oil jug'],
+    ["miner's lantern", 'pick in the wall', "the miners' tools", "the miners' ladder", 'ribs on a spike', 'shored rock', 'seam of ore', 'the charnel layer'],
+    ['timber crib', 'the reliquary', "the rails' end", 'drill steels', 'broken ladder', 'snapped prop', 'ore sack', "the cult's altar"],
   ];
   const list = (LOOKS[F] ?? LOOKS[0]).map(P);
   const PER = 4;
@@ -309,8 +311,8 @@ else if (mode === 'room') {
   }
   // what stands, its soft shadow under it
   const things: [string, number, number][] = [
-    ['the mine cart', 2.5, 7.5], ["the rails' end", 7.6, 7.5], ['the windlass', 7.5, 2.5], ['pyramid of skulls', 2.6, 2.2], ['the charnel heap', 5.2, 1.9], ['timber crib', 1.5, 4.8],
-    ["the cult's altar", 4.6, 5.0], ['the boulder', 8.6, 9.0], ['the bone column', 3.5, 9.0], ['the reliquary', 1.4, 8.8], ['heap of skulls', 8.8, 4.6], ['oil jug', 6.2, 6.0],
+    ['the mine cart', 2.5, 7.5], ["the rails' end", 7.6, 7.5], ['the windlass', 7.5, 2.5], ['pyramid of skulls', 2.6, 2.2], ['the charnel heap', 5.2, 1.9], ['the bone column', 1.5, 4.8],
+    ["the cult's altar", 4.6, 5.0], ['the boulder', 8.6, 9.0], ['timber crib', 3.6, 9.2], ['the reliquary', 1.4, 8.8], ['heap of skulls', 8.8, 4.6], ['oil jug', 6.2, 6.0],
     ['ore tub', 5.4, 9.2], ['empty boots', 4.0, 6.4], ['arm from a heap', 9.0, 6.6], ["the miners' breach", 5.5, 1.5],
   ];
   for (const [n, x, y] of things) {
@@ -375,7 +377,7 @@ else if (mode === 'moment') {
       }
       const [wx, wy] = right ? at(0, 2) : at(3, 0);
       const [px, py] = right ? [wx + 8, wy + 12] : [wx - 8, wy + 12];
-      const [hx, hy] = right ? at(4.2, 3.4) : at(3.4, 4.2);
+      const [hx, hy] = right ? at(4.6, 1.2) : at(1.2, 4.6);
       softShadow(hx, hy, 0.36);
       draw(fr, px, py);
       draw(hero.front.idle[0], hx, hy);
