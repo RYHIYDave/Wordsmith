@@ -42,7 +42,9 @@ export default async function (page, snap) {
 
   // each place, with the hero before it; three pictures a third of a second apart, to catch what
   // moves. Where a place has a service, standing there offers it (the stranger has none yet).
-  const places = [['gate', 14.7, 7.2, 'gate'], ['smithy', 18.5, 8.6, 'armourer'], ['bazaar', 19.5, 14.8, 'mystic'], ['ring', 10.5, 15.5, 'wordsmith'], ['stranger', 8.6, 9.6, null], ['lexicon', 13.5, 13.6, 'lexicon'], ['stash', 13.6, 18.5, 'stash']];
+  // (THE WAYS, game/ways.ts, on since Version 20.2: the gate is one of the levels' gates, walked through, and offers nothing)
+  const ways = await page.evaluate(() => !!window.__dbg.game().level.ways);
+  const places = [['gate', 14.7, 7.2, ways ? null : 'gate'], ['smithy', 18.5, 8.6, 'armourer'], ['bazaar', 19.5, 14.8, 'mystic'], ['ring', 10.5, 15.5, 'wordsmith'], ['stranger', 8.6, 9.6, null], ['lexicon', 13.5, 13.6, 'lexicon'], ['stash', 13.6, 18.5, 'stash']];
   for (const [name, x, y, service] of places) {
     await stand(x, y);
     await page.waitForTimeout(350);

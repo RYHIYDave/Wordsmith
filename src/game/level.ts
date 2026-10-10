@@ -804,7 +804,20 @@ export function makeDungeon(depth: number, seed: number): Level {
   // (the places in the boss's hall where the stairwell may open; where the hall has no room for it, the portal home stands in it as before)
   const solidSpot = new Set<number>();
   for (const p of floor.props) if (SOLID_PROPS.includes(p.kind)) solidSpot.add(p.y * floor.w + p.x);
-  const stairs = stairSpots(floor, (i) => solidSpot.has(i));
+  let stairs = stairSpots(floor, (i) => solidSpot.has(i));
+  // (a hall so crowded that it has fewer than two: its barrels and urns are what give way, those on
+  // the places taken away; its fires and pillars stay. Its places run along x: stairSpots.)
+  if (stairs.length < 2) {
+    const breaks = (k: string): boolean => k === 'barrel' || k === 'urn';
+    const fixed = new Set<number>();
+    for (const p of floor.props) if (SOLID_PROPS.includes(p.kind) && !breaks(p.kind)) fixed.add(p.y * floor.w + p.x);
+    const more = stairSpots(floor, (i) => fixed.has(i));
+    if (more.length > stairs.length) {
+      stairs = more;
+      const on = (x: number, y: number): boolean => more.some((s) => x >= s.x - 1 && x <= s.x + 3 && y >= s.y - 1 && y <= s.y + 2);
+      floor.props = floor.props.filter((p) => !(breaks(p.kind) && on(p.x, p.y)));
+    }
+  }
   const stair = stairs[0] ?? null;
   const level = finish(floor, false, stair ? null : portalAt(floor.boss.x, floor.boss.y, false));
   const solidAt = new Uint8Array(floor.w * floor.h);

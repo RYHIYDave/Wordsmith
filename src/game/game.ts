@@ -1077,6 +1077,8 @@ export class Game {
     this.flow = new Uint16Array(f.w * f.h);
     this.spawnMonsters(seed);
     if (this.depth === 1 && this.cleared === 0) {
+      // (THE WAYS: the first floor may be come back to before it is cleared, through its gate from
+      // town; the fallen wordsmith, once searched, is laid there searched: nothing more comes of him)
       this.placeBody();
       this.softenFirstHalf();
       if (FIRST_LEVELS.on) this.softball();

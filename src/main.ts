@@ -1580,7 +1580,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       questFromRules(g);
       // (THE CRYPT, behind CRYPT: this floor's pictures, made the first time it is reached)
-      const crypt = CRYPT.on && g.inDungeon ? cryptFloor(g.depth) : 0;
+      // (the practice room is no floor of the Crypt: it keeps the vault's stone, as it always had)
+      const crypt = CRYPT.on && g.inDungeon && !g.practice ? cryptFloor(g.depth) : 0;
       if (crypt !== cryptShown) {
         art.ground = crypt ? cryptGround(crypt) : vault.ground;
         art.props = crypt ? cryptProps(crypt) : vault.props;

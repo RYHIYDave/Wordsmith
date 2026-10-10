@@ -129,6 +129,12 @@ export default async function (page, snap) {
     // (and without the traps, game/traps.ts, in the game since the owner's yes of 8 Oct 2026: a sealed vault's door is asked of in tools/scenarios/traps_look.mjs)
     const wasTraps = d.traps.on;
     d.traps.on = false;
+    // (and without the Crypt, on since Version 20.2: its layout and its ways while the dungeon is laid,
+    // and its look for as long as this playtest runs: it reads the doors' stone and bars off the canvas
+    // in the vault's colours. The doors are the same in the Crypt; its stone is its own.)
+    d.crypt(false);
+    d.cryptLayout(false);
+    d.ways(false);
     d.run(cls, seed); /* (THE FIRST LEVELS, since Version 19.5: a hero this far in has the wordsmith's ring lit; with it dark the fallen wordsmith would lie in this dungeon too, and the playtests' own player would go to him first) */ d.seasoned(1);
     const g = d.game();
     g.depth = depth; g.enterDungeon();
@@ -136,6 +142,8 @@ export default async function (page, snap) {
     d.doors.share = wasShare;
     d.mix.on = wasMix;
     d.traps.on = wasTraps;
+    d.cryptLayout(true);
+    d.ways(true);
     d.autoLevel = false; d.autoWords = false; d.god = true;
     g.wakeUp = () => {};
     g.monsters = g.monsters.filter((m) => m.boss);

@@ -1,4 +1,4 @@
-// THE WAYS THROUGH THE CRYPT (game/ways.ts, WAYS, off): the gate in town to the first floor, the
+// THE WAYS THROUGH THE CRYPT (game/ways.ts, WAYS, on since Version 20.2): the gate in town to the first floor, the
 // stairwell down from every floor, and the waypoints, to town and back. The owner's outline, 9 Oct
 // 2026, 22:47: "The gate on the wall with be turned to a gate from the levels.  It will open
 // automatically as you approach it and go through.  you will enter floor 1 of the Crypt.  You find
@@ -512,5 +512,41 @@ test('the deepest waypoint reached is kept with the run; nothing of it is writte
   waysSet(false, () => {
     const g = inTown(52);
     assert.equal('way' in g.save(), false);
+  });
+});
+
+test('the first floor gone back to through its gate before it is cleared: its fallen wordsmith, once searched, lies there searched, and nothing more comes of him', () => {
+  waysSet(true, () => {
+    const g = Game.forFirstRun('warrior', 61);
+    const b0 = g.level.body!;
+    assert.ok(b0 && b0.state === 0, 'he lies on the first floor, not yet searched');
+    // (his satchel searched, the hero walks home through the gate, and back in)
+    g.bodySearched = true;
+    b0.state = 1;
+    g.enterTown('gate');
+    g.depth = 1;
+    g.enterDungeon('gate');
+    assert.equal(g.cleared, 0, 'the first floor, not yet cleared');
+    const b = g.level.body!;
+    assert.ok(b && b.state === 1, 'he lies there still, already searched');
+    // (walked up to, nothing comes of him: no word, no stone, no flasks)
+    g.monsters.length = 0;
+    const h = g.hero;
+    h.potions = 0;
+    const quest = h.quest ?? null;
+    h.x = b.x + 0.8;
+    h.y = b.y;
+    g.events.length = 0;
+    for (let i = 0; i < 10; i++) g.update(DT, emptyControls());
+    assert.equal(g.events.some((e) => e.t === 'search' || e.t === 'quest' || e.t === 'wordDrop'), false, 'nothing comes of him');
+    assert.equal(g.drops.filter((d) => d.kind === 'word').length, 0);
+    assert.equal(h.potions, 0);
+    assert.equal(h.quest ?? null, quest);
+    // (and unsearched, he lies there as he did)
+    const q = Game.forFirstRun('warrior', 61);
+    q.enterTown('gate');
+    q.depth = 1;
+    q.enterDungeon('gate');
+    assert.ok(q.level.body && q.level.body.state === 0, 'unsearched, he lies there still, to be searched');
   });
 });

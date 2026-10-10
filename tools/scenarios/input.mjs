@@ -10,7 +10,7 @@ export default async function (page, snap) {
     const near = g.monsters.filter((m) => !m.dead).sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y))[0];
     // (the way on: in town the gate in the back wall, used from the floor before it; in a dungeon the portal home)
     const way = (g.level.town ? g.level.stations.find((q) => q.kind === 'gate') : g.level.portal) ?? { x: h.x, y: h.y };
-    return { town: g.level.town, x: h.x, y: h.y, life: h.life, uses: h.skills.map((k) => k.uses), kills: g.kills, proj: g.projectiles.length, zones: g.zones.length,
+    return { ways: !!g.level.ways, town: g.level.town, x: h.x, y: h.y, life: h.life, uses: h.skills.map((k) => k.uses), kills: g.kills, proj: g.projectiles.length, zones: g.zones.length,
       skills: h.skills.map((k) => k.r.name), words: h.words, panel: d.panels.open, portal: toCss(way.x, way.y),
       hero: toCss(h.x, h.y), near: near ? { ...toCss(near.x, near.y), dist: Math.hypot(near.x - h.x, near.y - h.y), state: near.state } : null, cd: h.skills.map((k) => k.charges), css };
   });
@@ -58,6 +58,17 @@ export default async function (page, snap) {
   s = await st();
   log('W moved hero up-screen by', (Math.hypot(s.x - x0, s.y - y0)).toFixed(2) + ' tiles');
 
+  // 3. (THE WAYS, game/ways.ts, on since Version 20.2) a click on the gate's arch: the hero is sent into
+  // its doorway; it rises as he comes, and takes him through to the first floor
+  if (s.ways) {
+    await page.mouse.click(s.portal.x, s.portal.y - 30 * s.css);
+    for (let i = 0; i < 40 && s.town; i++) { await page.waitForTimeout(200); s = await st(); }
+    await page.waitForTimeout(500);
+    s = await st();
+    log('clicked the gate: in dungeon', String(!s.town));
+    await snap('gate');
+    if (s.town) { bad('a click on the gate did not take the hero through it'); return; }
+  } else {
   // 3. hold the left button on the portal: walk there, then press E
   await page.mouse.move(s.portal.x, s.portal.y + 10);
   await page.mouse.down();
@@ -82,6 +93,7 @@ export default async function (page, snap) {
   log('pressed E in the panel: in dungeon', String(!s.town));
   // (everything after this is in the dungeon: without it there is nothing more to learn here)
   if (s.town) { bad('E in the gate panel did not lead into the dungeon'); return; }
+  }
 
   // 4. Tab opens the inventory; a spare word is set by clicking it, then the slot
   // (a new character has no word: two are handed over here)

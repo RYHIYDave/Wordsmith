@@ -38,7 +38,7 @@ import { botStep, newBot } from '../src/dev/bot';
 import type { RNG } from '../src/engine/rng';
 import { DOORS, GATE_RISE, LEVER_NEAR, LOCK_CLEAR, doorMiddle, doorTiles, doorways } from '../src/game/doors';
 import type { DoorInst } from '../src/game/doors';
-import { MIX, generateFloor } from '../src/game/dungeon';
+import { LEVER_CLEAR, MIX, generateFloor } from '../src/game/dungeon';
 import { TRAPS } from '../src/game/traps';
 import { MONSTER_PACKS, useFirstLevels } from '../src/game/defs';
 import { Game } from '../src/game/game';
@@ -46,7 +46,7 @@ import { MIX_HALL } from '../src/game/level';
 import { UNREACHABLE, flowField } from '../src/game/nav';
 import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster, PropInst } from '../src/game/state';
-import { T_FLOOR } from '../src/game/types';
+import { SOLID_PROPS, T_FLOOR } from '../src/game/types';
 import type { DoorSpot, Element, Floor, Room } from '../src/game/types';
 import { withoutCrypt } from './helpers';
 
@@ -526,6 +526,7 @@ test('with the mix on, in every dungeon from the second: the lever can be come t
   let withLock = 0;
   let pairs = 0;
   let joints = 0;
+  assert.equal(LEVER_CLEAR.on, true, 'a lever\'s sides are kept clear in the game (since Version 20.2)');
   mixed(true, () => {
     for (let seed = 1; seed <= 6; seed++) {
       const f = generateFloor(1, seed * 13);
@@ -565,6 +566,12 @@ test('with the mix on, in every dungeon from the second: the lever can be come t
           const shut = cameTo(f, new Set(tilesOf(f, gates[0])));
           const i = lever.y * f.w + lever.x;
           assert.ok([i + 1, i - 1, i + f.w, i - f.w].some((j) => shut[j] === 1), `${where}: THE LEVER CAN BE COME TO WITH ITS GATE DOWN`);
+          // (Version 20.2: and with nothing broken on the way, by the side of it: nothing solid stands
+          // beside it, and what stands in the way, barrels and urns too, is gone round)
+          const solid = f.props.filter((p) => SOLID_PROPS.includes(p.kind)).map((p) => p.y * f.w + p.x);
+          const round = cameTo(f, new Set([...tilesOf(f, gates[0]), ...solid]));
+          assert.ok([i + 1, i - 1, i + f.w, i - f.w].some((j) => round[j] === 1), `${where}: the lever can be come to, by its side, round whatever stands`);
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (dx || dy) assert.ok(!solid.includes(i + dy * f.w + dx), `${where}: nothing solid stands beside the lever`);
           assert.equal(shut[middleOf(f, room)], 0, `${where}: the gated room cannot`);
           assert.equal(shut[Math.floor(f.boss.y) * f.w + Math.floor(f.boss.x)], 0, `${where}: nor the boss`);
         }

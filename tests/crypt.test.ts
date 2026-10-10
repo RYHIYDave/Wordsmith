@@ -36,7 +36,7 @@ import { WORD_COLOR } from '../src/art/icons';
 import { GRAIN, mix } from '../src/art/kit';
 import { makeDungeonProps } from '../src/art/props';
 import type { Sprite } from '../src/engine/px';
-import { CRYPT_LAYOUT, CRYPT_LITTER, generateFloor } from '../src/game/dungeon';
+import { CRYPT_LAYOUT, CRYPT_LITTER, LEVER_CLEAR, generateFloor } from '../src/game/dungeon';
 import { WAYS } from '../src/game/ways';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
@@ -144,13 +144,19 @@ test('both switches are on in the game (Version 20.2); with them off nothing of 
   assert.equal(c.digest('hex').slice(0, 16), '3bd3183f39eb6227', "the vault's pictures are as they were");
 });
 
-test('nothing of the game changes with the switches off (and the Crypt\'s layout and ways): every dungeon the map-maker makes, as at aaa8310', () => {
+test('nothing of the game changes with the switches off (and the Crypt\'s layout and ways, and a lever\'s sides kept clear, game/dungeon.ts LEVER_CLEAR): every dungeon the map-maker makes, as at aaa8310', () => {
   const c = createHash('sha1');
-  for (let d = 1; d <= 6; d++) {
-    for (let s = 1; s <= 25; s++) {
-      const f = switches({ litter: false, layout: false, ways: false }, () => generateFloor(d, s * 7919));
-      c.update(JSON.stringify({ t: Array.from(f.tiles), v: Array.from(f.variant), p: f.props, k: f.packs, r: f.rooms, d: f.doors ?? null, c: f.cut ? Array.from(f.cut) : null, h: f.height ? Array.from(f.height) : null }));
+  const was = LEVER_CLEAR.on;
+  LEVER_CLEAR.on = false;
+  try {
+    for (let d = 1; d <= 6; d++) {
+      for (let s = 1; s <= 25; s++) {
+        const f = switches({ litter: false, layout: false, ways: false }, () => generateFloor(d, s * 7919));
+        c.update(JSON.stringify({ t: Array.from(f.tiles), v: Array.from(f.variant), p: f.props, k: f.packs, r: f.rooms, d: f.doors ?? null, c: f.cut ? Array.from(f.cut) : null, h: f.height ? Array.from(f.height) : null }));
+      }
     }
+  } finally {
+    LEVER_CLEAR.on = was;
   }
   assert.equal(c.digest('hex').slice(0, 16), 'a89c4a6c51c4eba8', '150 dungeons as they were');
 });

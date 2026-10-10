@@ -5,8 +5,8 @@
 // THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5, on the owner's
 // yes of 8 Oct 2026, 23:06): the hero starts with the quick attack alone; the first pack is a
 // softball; no word falls in the first dungeon and no monster there carries one; the fallen
-// wordsmith has the MASTER RUNE-STONE by him (since Version 19.6, beside his hand), which is carried home through the boss's portal and
-// brought to the wordsmith in town; his ring is lit by it and powers up, and only then does he give
+// wordsmith has the MASTER RUNE-STONE by him (since Version 19.6, beside his hand), which is carried home (since Version 20.2
+// through the first floor's gate, game/ways.ts; before, through the boss's portal) and brought to the wordsmith in town; his ring is lit by it and powers up, and only then does he give
 // the first word (since Version 20.0), which is set there, on the quick attack: that is the end of
 // the lesson ("No special moment"). The prompts "carry" and "ring" show for a few seconds each, as
 // the stone is taken and as the hero comes into town with it (since Version 20.0).
@@ -89,7 +89,11 @@ export default async function (page, snap) {
     // (THE FIRST LEVELS: the wordsmith in town, the portal in a dungeon; what is open; the NEW MOVE banner)
     const smith = L.town ? L.stations.find((q) => q.kind === 'wordsmith') : null;
     const po = !L.town ? L.portal : null;
+    // (THE WAYS, game/ways.ts, on since Version 20.2: the first floor's way home is its gate, in a back wall of its first room, standing open)
+    const wg = !L.town && L.ways && L.ways.gate >= 0 ? L.doors[L.ways.gate].spot : null;
+    const wgAt = wg ? (wg.alongX ? { x: wg.a + 1.5, y: wg.plane - 0.5 } : { x: wg.plane - 0.5, y: wg.a + 1.5 }) : null;
     return {
+      wayGate: wgAt ? at(wgAt.x, wgAt.y) : null, wayGatePos: wgAt,
       quest: h.quest ?? null, ring: h.ring !== false, open: [0, 1, 2].map((i) => (g.moveOpen ? g.moveOpen(i) : true)),
       smith: smith ? at(smith.x, smith.y) : null, smithDist: smith ? Math.hypot(smith.x - h.x, smith.y - h.y) : 99,
       portal: po ? at(po.x, po.y) : null, portalOn: po ? po.state === 1 : false,
@@ -571,6 +575,40 @@ export default async function (page, snap) {
   }
 
   if (fl) {
+    if ((await st()).wayGate) {
+    // ---- carry: the MASTER RUNE-STONE home (THE WAYS, on since Version 20.2). The way home from the
+    // first floor is its gate, in a back wall of its first room, standing open: the rest are put down
+    // by script, the hero set down a few steps inside it; the press on it is real (towntap.mjs) -------
+    const by = await page.evaluate(() => {
+      const g = window.__dbg.game(); const L = g.level; const s = L.doors[L.ways.gate].spot; const h = g.hero;
+      for (const m of g.monsters) m.dead = true;
+      const inside = 3.2;
+      h.x = s.alongX ? s.a + 1.5 : s.plane + inside;
+      h.y = s.alongX ? s.plane + inside : s.a + 1.5;
+      return inside;
+    });
+    await page.waitForTimeout(700);
+    s = await st();
+    log('5 inside the first floor\'s gate (by script)', `${by} tiles inside it; the prompt ${s.step} (${(+s.promptT).toFixed(1)} s left)`);
+    // (since Version 20.0 the prompt shows for a few seconds after the stone is taken, and is then gone)
+    const carryWant = s.promptT > 0 ? 'carry' : null;
+    if (s.step !== carryWant) await fail(`with the MASTER RUNE-STONE in the dungeon the prompt should be ${carryWant ? '"carry"' : 'gone, its few seconds up'}: it is ${s.step}`);
+    await snap('08_the_gate');
+    // (a press on it: the hero walks into its doorway, and the game takes him through; failing that, the walk up)
+    if (s.wayGate) await hands.pressAt(s.wayGate.x, s.wayGate.y - 20);
+    s = (await wait((q) => q.town, 8000)) ?? (await st());
+    if (!s.town) {
+      log('  (the press did not take the hero home: walked into the gate instead)', '');
+      s = await walk((q) => q.wayGate, (q) => q.town, 8000);
+      s = (await wait((q) => q.town, 4000)) ?? (await st());
+    }
+    log('  home', `town ${s.town}, the MASTER RUNE-STONE ${s.quest === 'heart' ? 'carried' : 'GONE'}; the prompt ${s.step}`);
+    if (!s.town) { await fail('the first floor\'s gate did not take the hero home'); return; }
+    if (s.quest !== 'heart') await fail('the MASTER RUNE-STONE was lost on the way home');
+    if (s.step !== 'ring' || !(s.promptT > 0)) await fail(`coming into town with the MASTER RUNE-STONE the prompt should be "ring", for a few seconds: it is ${s.step} (${s.promptT} s left)`);
+    await page.waitForTimeout(800);
+    await snap('09_town_bring_it');
+    } else {
     // ---- carry: the MASTER RUNE-STONE home. The way home is the portal the boss leaves behind: the boss and
     // the rest are put down by script and the portal lit (as towntap.mjs does), the hero set down a
     // few steps from it with nothing between; the press on it is real -----------------------------
@@ -609,6 +647,7 @@ export default async function (page, snap) {
     if (s.step !== 'ring' || !(s.promptT > 0)) await fail(`coming into town with the MASTER RUNE-STONE the prompt should be "ring", for a few seconds: it is ${s.step} (${s.promptT} s left)`);
     await page.waitForTimeout(800);
     await snap('09_town_bring_it');
+    }
 
     // ---- ring: near the wordsmith (by script), the walk up to him is real --------------------------
     const stood = await page.evaluate(() => {
@@ -835,6 +874,9 @@ export default async function (page, snap) {
   if (fl) {
     await page.evaluate(() => {
       const g = window.__dbg.game();
+      // (THE WAYS, on since Version 20.2: home through the first floor's gate, no floor was cleared,
+      // and the second is reached down the first's stairwell: as if he had gone down it)
+      if (g.depth === 1) { g.depth = 2; g.cleared = Math.max(1, g.cleared); }
       g.enterDungeon();
       // (a quiet start: nothing awake within reach, so that what follows is not a fight)
       for (const m of g.monsters) if (Math.hypot(m.x - g.hero.x, m.y - g.hero.y) < 14) m.dead = true;

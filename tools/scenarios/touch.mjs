@@ -36,7 +36,10 @@ export default async function (page, snap) {
     const near = g.monsters.filter((m) => !m.dead).sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y))[0];
     // (the way on: in town the gate in the back wall, used from the floor before it; in a dungeon the portal home)
     const way = (g.level.town ? g.level.stations.find((q) => q.kind === 'gate') : g.level.portal) ?? { x: h.x, y: h.y };
-    return { ...base, town: g.level.town, x: h.x, y: h.y, life: h.life, maxLife: h.d.maxLife, words: h.words, sockets: h.skills.map((k) => ({ front: k.front, behind: k.behind })), kills: g.kills, proj: g.projectiles.length,
+    // (THE WAYS, game/ways.ts, on since Version 20.2: the gate's doorway, walked into)
+    const W = g.level.ways; const ds = W && W.gate >= 0 ? g.level.doors[W.gate].spot : null;
+    const door = ds ? (ds.alongX ? scr(ds.a + 1.5, ds.plane - 0.5) : scr(ds.plane - 0.5, ds.a + 1.5)) : null;
+    return { ...base, town: g.level.town, door, x: h.x, y: h.y, life: h.life, maxLife: h.d.maxLife, words: h.words, sockets: h.skills.map((k) => ({ front: k.front, behind: k.behind })), kills: g.kills, proj: g.projectiles.length,
       skills: h.skills.map((k) => k.r.name), panel: d.panels.open, portal: scr(way.x, way.y), hero: scr(h.x, h.y),
       near: near ? { ...scr(near.x, near.y), dist: Math.hypot(near.x - h.x, near.y - h.y), state: near.state } : null, charges: h.skills.map((k) => k.charges),
       potions: h.potions, pending: h.pending, hint: g.interactHint(), stick: d.input.stick.active, held: d.input.aim.held, fx: h.fx, fy: h.fy, uses: h.skills.map((k) => k.uses) };
@@ -93,7 +96,24 @@ export default async function (page, snap) {
   s = await st();
   log('stick right: hero moved right by', ((s.x - s.y) - (p0.x - p0.y)).toFixed(2) + ' (world x-y)');
 
-  // 3. steer to the gate with the stick, then tap the prompt that appears
+  // 3. steer to the gate with the stick, then tap the prompt that appears (THE WAYS, on since Version
+  // 20.2: steer into it; it rises as he comes, and takes him through: there is no prompt)
+  if (s.door) {
+    for (let i = 0; i < 150 && s.town; i++) {
+      s = await st();
+      if (!s.town) break;
+      const dx = s.door.x - s.hero.x, dy = s.door.y - s.hero.y;
+      const d = Math.hypot(dx, dy) || 1;
+      await move(1, sx + (dx / d) * 28, sy + (dy / d) * 28);
+      await page.waitForTimeout(200);
+    }
+    await up(1);
+    await page.waitForTimeout(600);
+    s = await st();
+    log('steered into the gate: in dungeon', String(!s.town));
+    await snap('gate');
+    if (s.town) { bad('the gate did not lead into the dungeon'); return; }
+  } else {
   for (let i = 0; i < 90; i++) {
     s = await st();
     const dx = s.portal.x - s.hero.x, dy = s.portal.y + 12 - s.hero.y;
@@ -121,6 +141,7 @@ export default async function (page, snap) {
   s = await st();
   log('tapped ENTER: in dungeon', String(!s.town));
   if (s.town) { bad('the gate did not lead into the dungeon'); return; }
+  }
 
   // 4. the inventory: its button; then the attack at the bottom of the screen, a word, a slot
   // (Quiet first. The attacks along the bottom are buttons only while no fight is on, and about

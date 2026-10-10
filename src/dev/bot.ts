@@ -241,6 +241,7 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     }
   }
   // (THE MIX) nothing left that can be come to, and a lever not yet pulled: go and pull it (walking up to it does)
+  let lever: { x: number; y: number } | null = null;
   if (!goal && reach) {
     for (const p of L.props) {
       if (p.kind !== 'lever' || p.state !== 0) continue;
@@ -249,6 +250,7 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
         const ty = p.ty + dy;
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h || L.walk[ty * f.w + tx] !== 1 || reach[ty * f.w + tx] === UNREACHABLE) continue;
         goal = { x: tx + 0.5, y: ty + 0.5 };
+        lever = p;
         break;
       }
       if (goal) break;
@@ -263,6 +265,15 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     c.interact = g.interactHint() !== null;
   }
   if (goal) walkTo(goal.x, goal.y);
+  // (on the tile beside a lever, the way there is at an end, and the hero may have come onto it by a
+  // far corner, too far off for the lever: he walks on, up to it, as a player would)
+  if (lever && goal && Math.floor(h.x) === Math.floor(goal.x) && Math.floor(h.y) === Math.floor(goal.y)) {
+    const d = Math.hypot(lever.x - h.x, lever.y - h.y);
+    if (d > 0.01) {
+      c.mx = (lever.x - h.x) / d;
+      c.my = (lever.y - h.y) / d;
+    }
+  }
 }
 
 /**

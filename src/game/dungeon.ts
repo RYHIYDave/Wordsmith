@@ -80,6 +80,16 @@ const ACROSS_MAX = 8; // ... (five leaves the rooms ROOM_GAP apart)
  * mix's dice are thrown only when it is on.
  */
 export const MIX = { on: true, pairs: true, levers: true, locks: true };
+/**
+ * A LEVER'S SIDES KEPT CLEAR (on since Version 20.2): the lever is put where a side of it is open
+ * floor, and nothing solid is set down on a tile beside it afterwards (`placeLever`). Off, a lever
+ * is put as before: of 900 levers looked at from the second floor down (the Crypt's layout on), 55
+ * were shut in on all four sides by barrels, urns and fires, and 22 of them could not be come to even
+ * across a corner without breaking a way to them (the playtests' own player stood at one for good).
+ * A rule of the map-maker's, not a picture: what a level looks like is unchanged but for where a
+ * barrel or a fire stands near a lever.
+ */
+export const LEVER_CLEAR = { on: true };
 const PAIR_SHARE = 1 / 6; // share of joints that are two rooms next door
 const PAIR_GAP = 3; // tiles of rock between two rooms next door: the least that lets the nearer room's back wall stand (render/walls.ts)
 const MIX_FROM = 2; // the first dungeon with any of the mix: a lever's gate, a room that locks, two rooms next door (Dungeon 1 is a new player's lesson, and is laid as it always was)
@@ -1472,15 +1482,19 @@ function placeTreasureChests(st: Stage): void {
  * THE MIX: THE LEVER, in its nook: on the floor tile of the nook, against a wall, that is furthest
  * from where the nook's way comes in (the first such, in the order the tiles are gone through).
  * No dice. Returns its tile, or -1 if the nook has no tile for it.
+ * (LEVER_CLEAR, on since Version 20.2: it is walked up to, so a side of it is open floor with nothing
+ * on it, and nothing solid is set down beside it afterwards.)
  */
 function placeLever(st: Stage, lay: Layout): number {
   const r = st.rooms[lay.nook];
+  const { size } = st;
   let best = -1;
   let far = -1;
   for (let y = r.y0; y <= r.y1; y++) {
     for (let x = r.x0; x <= r.x1; x++) {
-      const i = y * st.size + x;
-      if (!solidAllowed(st, i, false) || !againstWall(st.size, st.tiles, i)) continue;
+      const i = y * size + x;
+      if (!solidAllowed(st, i, false) || !againstWall(size, st.tiles, i)) continue;
+      if (LEVER_CLEAR.on && ![i - 1, i + 1, i - size, i + size].some((j) => st.tiles[j] === T_FLOOR && st.taken[j] !== 1)) continue;
       let d = Infinity;
       for (let cy = Math.max(0, r.y0 - 2); cy <= Math.min(st.size - 1, r.y1 + 2); cy++) {
         for (let cx = Math.max(0, r.x0 - 2); cx <= Math.min(st.size - 1, r.x1 + 2); cx++) {
@@ -1493,7 +1507,10 @@ function placeLever(st: Stage, lay: Layout): number {
       }
     }
   }
-  if (best >= 0) addProp(st, 'lever', best);
+  if (best >= 0) {
+    addProp(st, 'lever', best);
+    if (LEVER_CLEAR.on) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) st.noSolid[best + dy * size + dx] = 1;
+  }
   return best;
 }
 
