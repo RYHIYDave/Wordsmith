@@ -2196,7 +2196,7 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
     for (const d of DUST) {
       if (k >= d.life) continue;
       const r = (d.r0 + d.grow * (1 - Math.exp(-k / 5))) * (1 - (k / d.life) ** 2);
-      if (r >= 0.6) lastDust = k;
+      if (r >= 1.2) lastDust = k;
     }
   }
   let lastDust2 = 0;
@@ -2204,7 +2204,7 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
     for (const d of DUST2) {
       if (k >= d.life) continue;
       const r = (d.r0 + d.grow * (1 - Math.exp(-k / 5))) * (1 - (k / d.life) ** 2);
-      if (r >= 0.6) lastDust2 = k;
+      if (r >= 1.2) lastDust2 = k;
     }
   }
   const END = Math.max(land + lastDust, land2 + lastDust2) + 1;
@@ -2291,7 +2291,7 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
       }
       // the dust: clouds thrown out along the floor from the strike and rising, each swelling and then shrinking away
       if (!rest) {
-        for (const d of DUST) {
+        for (const [ci, d] of DUST.entries()) {
           if (k >= d.life) continue;
           const go = (1 - 0.88 ** k) / (1 - 0.88);
           const a = L.a + Math.cos(d.ang) * d.v * go;
@@ -2299,16 +2299,18 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
           const z = 4 * (1 - Math.exp(-k / 6)) + d.rise * k;
           const grow = d.r0 + d.grow * (1 - Math.exp(-k / 5));
           const r = grow * (1 - (k / d.life) ** 2);
-          if (r < 0.6) continue;
+          // (a wisp smaller than this is gone)
+          if (r < 1.2) continue;
           const [x, y] = scr(a, b, z);
           for (let yy = Math.floor(y - r); yy <= y + r; yy++) {
             for (let xx = Math.floor(x - r * 1.4); xx <= x + r * 1.4; xx++) {
               const q = (((xx + 0.5 - x) / 1.4) ** 2 + (yy + 0.5 - y) ** 2) / (r * r);
               if (q > 1) continue;
-              // (soft at its rim: every other pixel there)
-              if (q > 0.6 && (xx + yy) % 2 === 0) continue;
-              const toLight = (xx - x + (yy - y)) / r;
-              over.set(xx, yy, toLight < -0.8 ? STONE[4] : toLight < 0.5 ? STONE[3] : STONE[2]);
+              // (soft at its rim: a scatter of its pixels there, thinning outward, different in each
+              // cloud; two tones, its body and its edge to the light: the fourth look found the
+              // checkered rims and three bands of light striping the clouds where they overlap)
+              if (q > 0.6 && hash(xx, yy, 140 + ci) < 0.35 + (q - 0.6) * 1.4) continue;
+              over.set(xx, yy, xx - x + (yy - y) * 1.4 < -r * 0.95 ? STONE[4] : STONE[3]);
             }
           }
         }
@@ -2347,12 +2349,12 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
         for (const dx of [-6, -1, 4]) for (let k = 4; k < 18; k += 2) over.set(Math.round(x + dx), Math.round(y - 8 - k), k < 10 ? STONE[3] : STONE[2]);
       }
       /** A small cloud of dust, soft at its rim, lit on its upper left. */
-      const cloud = (x: number, y: number, r: number): void => {
+      const cloud = (x: number, y: number, r: number, seed = 0): void => {
         for (let yy = Math.floor(y - r); yy <= y + r; yy++) {
           for (let xx = Math.floor(x - r * 1.3); xx <= x + r * 1.3; xx++) {
             const q = (((xx + 0.5 - x) / 1.3) ** 2 + (yy + 0.5 - y) ** 2) / (r * r);
-            if (q > 1 || (q > 0.5 && (xx + yy) % 2 === 0)) continue;
-            over.set(xx, yy, xx - x + (yy - y) < -r * 0.6 ? STONE[4] : STONE[3]);
+            if (q > 1 || (q > 0.55 && hash(xx, yy, 150 + seed) < 0.35 + (q - 0.55) * 1.3)) continue;
+            over.set(xx, yy, xx - x + (yy - y) * 1.4 < -r * 0.9 ? STONE[4] : STONE[3]);
           }
         }
       };
@@ -2394,13 +2396,14 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
       // the second blow's dust, thrown out low and rising, smaller than the first's
       if (f >= land2) {
         const k2 = f - land2;
-        for (const d of DUST2) {
+        for (const [ci, d] of DUST2.entries()) {
           if (k2 >= d.life) continue;
           const go = (1 - 0.88 ** k2) / (1 - 0.88);
           const r = (d.r0 + d.grow * (1 - Math.exp(-k2 / 5))) * (1 - (k2 / d.life) ** 2);
-          if (r < 0.6) continue;
+          // (a wisp smaller than this is gone)
+          if (r < 1.2) continue;
           const [x, y] = scr(L2.a + Math.cos(d.ang) * d.v * go, Math.max(0.02, L2.b + Math.sin(d.ang) * d.v * go), 3 * (1 - Math.exp(-k2 / 6)) + d.rise * k2);
-          cloud(x, y, r);
+          cloud(x, y, r, ci);
         }
       }
       // (the stone above smeared as it drops fastest: pale lines trailing up off it)
