@@ -5129,6 +5129,161 @@ game as they are in these films?": "Yes, as shown (Recommended)".
 - THE RELEASE BUILD: made in the copy at 15:26, `Play.html` 1,043,002 bytes and `dist/artifact.html` 1,042,680, both saying V19.8; kept in the scratchpad's `v198b/release/`.
 - **The published page itself**: (`wrap198.sh` in the scratchpad, 15:26 to 15:50): **78 of 78 playtests clean**, the 76 of 19.7 and the new one on a PC and a phone. Published at 15:50 ("Version 52", version id `1791575422-94d8`); the file published is the kept copy, `v198b/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
 
+### Version 19.9: the new monsters, the other leaders and the rings
+
+**What he said.** To this chat on 9 Oct, 08:24: "Pack leaders that are different mobs can have an extra
+attack if it seems right." His pick by 16:05 of what comes next: "New monsters + rings (Recommended)";
+and asked whether a pack of bats may be yellow: "Bats never come yellow (Recommended)". To the art chat
+(as it posted them): to the Shade's rake and the Golem's and the Boneward's attacks, by 11:14, "Yes, keep
+it (Recommended)" and "Yes, keep them (Recommended)"; the Boneward's blows redrawn at his word of 11:22
+("Actually can we take the boneward’s animations up a notch?  There’s no power in his attacks"), his yes
+by 11:36, "Yes, keep it (Recommended)"; the skeleton champion by 12:19, "Yes, this is him
+(Recommended)", and the rings, "Yes, use the new rings (Recommended)"; the bone marksman by 15:17, the
+high priest by 15:34 and the troll chieftain by 15:46, "Yes, this is him (Recommended)" to each (and
+"Yes, keep the line (Recommended)" to the marksman's line of aim, "Yes, keep it (Recommended)" to the
+priest's smoke); of the chieftain, by 14:41, "I don’t want the bellow if the Skelton leader has the same
+thing"; of bats, by 14:32, "Bats I dont think need a leader". By 17:49, to films of all seven in the game
+(`previews/new_mobs199/`: `shades.gif`, `boneward.gif`, `golem.gif` and `champion.gif`, sent at 16:54;
+`marksman.gif`, `priest.gif` and `chieftain.gif`), with their rules, asked "Should the new monsters and
+leaders go into the game as shown, with those rules?": "Yes, as shown (Recommended)".
+
+**What is in it.**
+
+- **The new monsters** (`NEW_MONSTERS`, on; theirs in `MONSTERS` and `MONSTER_MOVES`, and `packKinds`,
+  in `src/game/defs.ts`), in packs of one kind by his sizes:
+  - The Shade (small, 4 to 7 a pack, from the second dungeon): its one attack, the rake (0.5 s; its
+    warning its pose and a glint on its claws). Quick (3.4 tiles a second) and frail (14 life; a
+    skeleton has 22).
+  - The Boneward (medium, 3 to 5, from the third): its thrust (0.7 s, its whole blow); and its spear
+    (`SPEAR`; `Game.spears`, `throwSpear`, `laySpear`, `spearWay`, `beginStoop`, `stoop` in
+    `src/game/game.ts`), hurled from 3.5 to 8 tiles off at where the hero stands, once every 6 seconds at
+    most (130% of its blow): whoever it meets is hurt, and it lies where it came down, or where a wall
+    stopped it. While it lies there the Boneward fights with its shield, a shove that knocks the hero
+    back (70% of its blow), when he is within 2.5 tiles, and otherwise goes for the spear (for it first
+    when it lies within 1.2 tiles of the Boneward) and stoops for it, a second in which to hit it; the
+    spear is in its hand again half way through.
+  - The Ossuary Golem (large, 1 or 2, from the fourth): its club swing (0.6 s, 60% of its blow); and its
+    skulls (`SKULL`, `hurlSkull`, the zone 'skull'), thrown up high from 2.5 to 10 tiles off, once every
+    5 seconds at most (110% of its blow): the skull comes down where the hero stood, its own shadow
+    growing there as it falls (no red circle), and hurts whatever is within 1.1 tiles of it; then it
+    bursts. Its painted slam is not given it (his 09:17 to the art chat: "it’s that every attack is a big
+    slam on the ground").
+- **The leaders** (`LEADERS`, `leaderKind`; `fillPack`): a yellow pack of skeletons is led by the skeleton
+  champion, of bone archers by the bone marksman, of cultists by the high priest, of green trolls by the
+  troll chieftain; any other yellow pack by one of its own, as before. Each has the life of those he
+  leads, three times over as every yellow pack's leader has, and one move more than they have (his "an
+  extra attack"):
+  - The skeleton champion: his cleave (0.8 s, 130% of his blow); and his rallying cry (0.85 s), once
+    every 14 seconds at most: his minions within 8 tiles of him have his words whole for 5 seconds
+    (`RALLY`, `rally`, `Monster.rallyT`, `wordShare`), and their rings fill with his word while it holds.
+    He cries only when one who can hear it has his words at half.
+  - The bone marksman: his shot (0.7 s); and his great shot, from 2.5 to 13 tiles off, once every 8
+    seconds at most (220% of his blow; `AIM`, the zone 'aim', `holdAim`, `greatShot`, the projectile
+    'great'): he draws and holds it 1.6 s while his line of aim runs out on the floor toward the hero and
+    follows him, until 0.4 s before he lets go, when it holds still; the great arrow flies down it at 16
+    tiles a second for 14 tiles (a wall stops it) and goes through whoever it meets.
+  - The high priest: his fire bolt (0.75 s); and his censer (0.8 s), when the hero is within 3.2 tiles,
+    once every 7 seconds at most (`SMOKE`, the zone 'smoke', `swingCenser`): its burning smoke settles
+    before him, as far as 1.9 tiles (nearer if the hero is), 1.15 tiles across its middle, and burns
+    whoever is in it every half second for 3 seconds, with fire (180% of his blow in all).
+  - The troll chieftain: his trolls' swing and slam, a fifth slower (0.73 s and 1.03 s) and a little
+    harder (70% and 120% of his blow; theirs 60% and 100%), the slam with its red circle once every 7
+    seconds at most (theirs 6). No cry: it stays the champion's.
+  - Each big move is first ready from half to one and a half times its `first` after the monster wakes,
+    as 19.8's are, so that a pack's big moves do not come together.
+- **Bats are never a yellow pack** (`packRarity`): a pack of bats is plain or blue, and an elite room's
+  pack is never bats (`packKinds(depth, true)`).
+- **The pictures**: the art chat's `mockup/pack-leaders` (`d4a6070`, which holds `mockup/new-mobs`,
+  `b801ce2`) and `mockup/more-leaders` (`0ee8a14`), merged here and switched on with the rules
+  (`useNewMonsters` in `src/art/bestiary.ts`: `NEW_MOBS` and `PACK_MARKS` go with `NEW_MONSTERS`; the
+  art's own modules keep them off until the bestiary is loaded). Their sizes on the screen
+  (`FIGURE_SIZE`, top and half): the Shade 26 and 9, the Boneward 32 and 11, the Golem 36 and 21, the
+  champion 35 and 9, the marksman 33 and 10, the priest 30 and 9, the chieftain 58 and 23. Each move is
+  played by the rules' clock, its blow on the rules' blow (`moveClip` in `src/render/figure.ts`); the
+  Boneward's stoop, and its stand and plod with no spear; the spear in flight and lying where it fell,
+  the skull in flight over the figures and its shadow, the line of aim, the great arrow and the burning
+  smoke (`src/render/render.ts`; `skullAt` and `spearHeight` in `src/render/mob_world.ts`). ONE CHANGE TO
+  THE ART CHAT'S PICTURE, for him to judge in the films: the skull's shadow lands as wide as what it
+  hurts (`drawSkullShadow`'s `widest` in `src/art/mob_shots.ts`), so that it shows round the feet of
+  whoever stands where it was aimed.
+- **The rings** (`drawPackMark` in `src/render/pack_marks.ts`, `PACK_MARKS` on), in place of 19.7's
+  ring at the feet: a blue pack's blue ring with its word's colour dotted inside, on every one; a yellow
+  pack's leader his ring of letters in his word, ringed in gold; his minions a broken gold ring, which
+  fills with his word while the champion's cry holds. The names and bars are as 19.7 has them.
+- **Their sounds**, today's, borrowed (no new names in `Sfx`): the Shade's rake as any monster's blow
+  ('swing', 0.4); the Boneward's thrust, the Golem's club, the champion's cleave and the chieftain's
+  swing as the trolls' swing ('swing', 0.5); the Boneward's shield ('hit', 0.6) and its spear thrown
+  ('swing', 0.6); the Golem's skull thrown ('swing', 0.45) and coming down ('slam', 0.6); the champion's
+  cry ('bossRoar', 0.5); the marksman's shot ('shot', 0.5) and great shot ('shot', 0.9); the priest's
+  bolt ('fire', 0.5) and censer ('fire', 0.7); the chieftain's slam ('slam', 0.8). Posted to the sound
+  chat (16:57, 18:29).
+- **The bot** steps aside from a line of aim and out from under a skull and out of the smoke
+  (`src/dev/bot.ts`).
+- **How hard they hit** (`tools/measure_new_mobs.ts`: a hero who stands and takes it, 40 seconds in a
+  practice room, its words taken off; their life as in the fourth dungeon, the practice room's): the
+  Shade 3.10 a second (life 29), a skeleton 4.20 (45); the Boneward 4.25 beside him and 3.92 from six
+  tiles off, where it throws (life 82), a green troll 4.88 (100); the Golem 4.83 beside him and 5.03 from
+  six tiles off (life 205), a red troll 6.35 and 6.72 (502). As yellow packs' leaders, each with the life
+  of those he leads three times over: the champion 5.20 a second, a skeleton leading 5.83 (180); the
+  marksman 3.52 from seven tiles off, an archer leading 3.13 (131); the high priest 9.63 from two and a
+  half tiles off, a cultist leading 6.95 (148), the difference his smoke, for a hero who stands in it
+  all 3 seconds (one who steps out at once takes one burn of its six); the chieftain 6.95, a green troll
+  leading 6.85 (402).
+- **A call of mine**, by the same rule he said yes to: the first dungeon's one elite room may be led by
+  the champion or the marksman too; nothing has words there, so the champion's cry has nothing to make
+  whole there.
+
+**How it was tested.**
+
+- `tsc` clean. `tests/new_monsters.test.ts` (new, 13): the switch on in the game, the pictures and the
+  rings with it, and off as before; by depth and in packs of their sizes, a yellow pack led by its new
+  leader with three times his life, any other by its own; bats never yellow and an elite room never bats;
+  their blows landing when their pictures' do; the Boneward's spear thrown, lying, gone for, stooped for
+  and had again, its shield meanwhile; the Golem's skull coming down where the hero stood, hurting what
+  is under it and not what stepped out, bursting, and a Twin Golem's second; the champion's cry, his
+  minions' words whole for a while and then half again, and no cry with none to hear it; the marksman's
+  line of aim following and then holding still, the great arrow piercing; the priest's smoke burning
+  whoever stays in it; the chieftain's swing and slam; the pictures of every move by the rules' clock,
+  their sizes and their walks at the rules' paces; the bot stepping out from under a skull, out of a line
+  of aim and out of the smoke. Changed for them: `tests/packs.test.ts` (a yellow pack's leader may be a
+  leader of its own), `tests/monster_attacks.test.ts` (the leaders' extra move), `tests/new_mobs3.test.ts`
+  and `tests/more_leaders.test.ts` (the pictures on just while the rules are), `tests/guide.test.ts` (its
+  seeds found again: an elite room is never bats now), `tests/skeleton3.test.ts` and
+  `tests/archer3.test.ts` (the painting order since 19.8), `tests/monsters.test.ts` (the classic
+  figures). THE WHOLE UNIT SUITE: 870 of 870 in the frozen copy (below).
+- Films for him, from the game: `tools/scenarios/new_mobs_film.mjs` (WHO=shades, boneward, golem,
+  champion, marksman, priest, chieftain) and `tools/attacks_films.py`.
+- THE PRE-FLIGHT: a dev page built from the tree, by 18:58: 26 playtests (the new one on a PC and a
+  phone; the monsters on four layouts; the boss; the lesson for a warrior, and for a mage on a phone; the
+  dungeon on two layouts; the packs on two; the monsters' attacks on two; the doors; the heights; the
+  depths; the practice room; the small things; the traps; the mix; the way in; the scarce words; the
+  words of a warrior; the side paths), all clean.
+- A new playtest in the regression, `tools/scenarios/new_monsters.mjs` (pc and phone): Shades raking; a
+  Boneward's spear thrown, lying, stooped for, its shield and thrust; a Golem's skulls and club; the
+  champion's cleave and cry, his minions rallied; the marksman's great shot, its line and his shots; the
+  priest's censer, its smoke and his bolts; the chieftain's swing and slam; the bot fighting a Boneward, a
+  Golem and the marksman's pack; dungeons 1 to 6 laid (each new monster from its own dungeon on, the new
+  leaders at the head of yellow packs, no pack of bats yellow) and the bot fighting in the fourth;
+  switched off, none of them and every yellow pack led by its own; and on again.
+  `tools/scenarios/packs_wild.mjs` allows a yellow pack's own leader.
+- **The regression** on the frozen copy (the scratchpad's `v199a/arpg_frozen`, `f31a653`, 18:59 to
+  19:49), two at a time, nothing else running: **155 OF 156 PLAYTESTS FINISHED CLEAN**. The one,
+  `mix_phone`: a check of the playtest's own looks at how far the hero is from the lever when it first
+  sees the lever pulled, and must find him within 0.6 tiles of its reach (1.5 tiles); it looked late and
+  found him 0.88 tiles off. Clean three times of three after, alone (1.34, 1.34 and 1.50 tiles; by 19:51).
+  Speed: the frame-rate run 56.9 frames a second (19.8: 55.8), longest frame 50 ms; the slowest fights of
+  the four word-combination runs 57.6 to 59.3 frames a second (19.8: 54.5 to 58.5), longest frame 67 ms.
+- The unit suite in the frozen copy: 870 of 870, 19:52 to 19:56.
+- THE RELEASE BUILD: made in the copy at 19:56, `Play.html` 1,189,821 bytes and `dist/artifact.html`
+  1,189,499, both saying V19.9; kept in the scratchpad's `v199a/release/`.
+- **The published page itself**: (`wrap199.sh` in the scratchpad, 19:56 to 20:20): **79 of 80 playtests
+  clean**, the 78 of 19.8 and the new one on a PC and a phone. The one, `mix_phone`: the same check of
+  the playtest's own as in the regression, at the same 0.88 tiles. Run again, 20:20 to 20:35: beside
+  another playtest, and beside its PC twin as the regression runs them, clean on 19.9's page every time
+  (1.42, 1.26, 1.28 and 1.27 tiles) as on 19.8's (1.34, 1.12, 1.36 and 1.44). Published at 20:35
+  ("Version 53", version id `1791592557-dfd8`); the file published is the kept copy,
+  `v199a/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -5206,6 +5361,14 @@ src/art/      kit (style 6: palette, painting helpers, Pose, legs, animSet: for 
               the art chat's: the trolls' swing and the red troll's charge, `TROLL_MOVES`; the
               Warden's swing and his calling of the dead, `WARDEN_MOVES`; the dead crawling out,
               `CRAWL_OUT` in mkit) + charge_lane (the line a charge runs along, `drawChargeLane`);
+              19.9: THE NEW MONSTERS, the art chat's, on and off with the rules, `useNewMonsters`
+              (`NEW_FIGURES`; `ClassicFigure`, the figures of Version 14, for the tests of their
+              pictures) + new_mobs3 (the Shade, the Boneward, the Ossuary Golem, the skeleton
+              champion and the bone marksman on the heroes' bones, `NEW_MOBS`) + monster_cultist
+              (the high priest, `makeHighPriestArt`) + monster_brute (the troll chieftain,
+              `makeChieftainArt`) + mob_shots (what they throw and lay on the floor: the spear in
+              flight and lying, the skull's shadow and burst, the line of aim, the great arrow, the
+              burning smoke);
               title (the two paintings behind the starting screen, each a stack of six groups, and
               their life) + title_morph + morph (the one turning into the other, Version 11);
               spells (the orb, the familiar and its bolt, in each element's colours, Version 12);
@@ -5301,7 +5464,16 @@ src/game/     types, defs (tables + tuning), stats, words, items, dungeon, nav, 
               `landMove`, the red troll's charge, `chargeLane`, `runCharge`, `endCharge`, its line a
               zone of kind 'lane', and the dead the Warden calls, `callDead`, `Game.risers`,
               `updateRisers`; `Monster.move`, `moveCd`, `charge`, the state 'charge'; the bot
-              steps out of a line, dev/bot.ts)
+              steps out of a line, dev/bot.ts);
+              THE NEW MONSTERS (19.9, in defs.ts: `NEW_MONSTERS`, theirs in `MONSTERS` and
+              `MONSTER_MOVES`, `packKinds`, `SPEAR`, `SKULL`, `RALLY`, `LEADERS`, `leaderKind`, `AIM`,
+              `SMOKE`, and bats never yellow in `packRarity`; in game.ts the Boneward's spear,
+              `Game.spears`, `throwSpear`, `laySpear`, `spearWay`, `beginStoop`, `stoop`, the state
+              'pickup', `Monster.bare`; the Golem's skulls, `hurlSkull`, the zone 'skull'; the
+              champion's cry, `rally`, `Monster.rallyT`; the marksman's great shot, `holdAim`,
+              `greatShot`, the zone 'aim', the projectile 'great'; the priest's censer,
+              `swingCenser`, the zone 'smoke'; a yellow pack's leader, `leaderOf` in `fillPack`; the
+              bot steps out of them, dev/bot.ts)
 src/render/   render (world: tiles, actors, ground patches, statuses, shots, light; `view`,
               the point of the screen the hero is drawn at, Version 14.2),
               walls (18.4: the two rules of the walls' look: `wallsAway`, which walls are left
@@ -5318,7 +5490,10 @@ src/render/   render (world: tiles, actors, ground patches, statuses, shots, lig
               the other four a demo for its playtest's page, `demo3`, `W3.demo`),
               wild (19.7, the art chat's: BIG AND WILD, what the heroes' moves throw off,
               `Wild`, fed by fx.ts and `see` in main.ts; `LEAP_LIFT`, `drawWildWave`,
-              `drawWildArrow`)
+              `drawWildArrow`),
+              pack_marks (19.9, the art chat's: THE RINGS that tell blue and yellow packs apart,
+              `drawPackMark`, `PACK_MARKS`), mob_world (19.9: where a skull is in its flight,
+              `skullAt`, and how high a spear flies, `spearHeight`)
 src/ui/       ui (immediate-mode kit), hud (globes, the attacks as phrases, the prompts' banner),
               inventory (Version 13.1: three pages, GEAR on the hero, ATTACKS, STATS, over the
               bag and the words; 14.2: on half the screen, what is read on a card over the
@@ -5539,6 +5714,11 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 19.9: the new monsters, the other leaders and the rings (NEW_MONSTERS on, with the art chat's NEW_MOBS and PACK_MARKS)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/new_monsters.mjs --out shots/nm/ph   # each new monster's moves in the practice room; dungeons 1 to 6 laid; off and on again (in the regression)
+WHO=priest SECONDS=9 FPS=20 node tools/playtest.mjs --file dist/<page>.html --size 960x540 --scenario tools/scenarios/new_mobs_film.mjs --out shots/film199/priest   # a film's frames (WHO=shades|boneward|golem|champion|marksman|priest|chieftain), then:
+python3 tools/attacks_films.py shots/film199/priest previews/new_mobs199/priest.gif "THE HIGH PRIEST" "<line>" "<line>" 210,100,440,270   # the film he saw
+tsx tools/measure_new_mobs.ts [seconds] [rng]   # how hard each new monster and leader hits a hero who stands and takes it, beside one of today's
 # Version 19.8: the monsters' attacks (MONSTER_ATTACKS on, with the art chat's TROLL_MOVES, WARDEN_MOVES and CRAWL_OUT)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/monster_attacks.mjs --out shots/ma/ph   # green trolls, a red troll's charge, the Warden and the dead he calls; a dungeon; off and on again (in the regression)
 WHO=red SECONDS=9.5 FPS=20 node tools/playtest.mjs --file dist/<page>.html --size 960x540 --scenario tools/scenarios/attacks_film.mjs --out shots/film/red   # a film's frames (WHO=trolls|red|warden), then:

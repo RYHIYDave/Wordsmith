@@ -2,11 +2,11 @@
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
 (https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
-as it is (Recommended)". The doc is the living one; this copy follows it (rev 39, with the first
-levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs of Version 19.7
-and the monsters' attacks of Version 19.8 written in), and both change only
-with his yes. The two pictures in the doc are written out here in words. How it was found:
-`docs/gameplay/interview.md`.
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 48, with the first
+levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs of Version 19.7,
+the monsters' attacks of Version 19.8 and the new monsters, leaders and rings of Version 19.9
+written in), and both change only with his yes. The two pictures in the doc are written out here in
+words. How it was found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
 godlike by the end. This rulebook sets how it plays: the loop, how a hero grows, and how it should
@@ -183,14 +183,17 @@ change with a pack size modifier on a word for the gate.”). The first dungeon�
 size. Twin burned in at the gate gives every pack 50% increased size, as well as giving every
 monster Twin, as each word burned in at the gate does.
 
-- **Blue packs (magic):** one word, on every monster of the pack, and 20% increased life. One pack in
-  four is blue, from the second dungeon on. The pack’s name is written once, in blue, and each of it
-  has a ring and a bar (your yes of 9 Oct, by 09:46, until the art chat’s own markers come).
+- **Blue packs (magic):** one word, on every monster of the pack, and 20% increased life. One pack
+  in four is blue, from the second dungeon on. The pack’s name is written once, in blue, and each of
+  it has a bar and, at its feet, a blue ring with its word’s colour dotted inside: the art chat’s
+  rings, since Version 19.9 (your yes by 12:19: “Yes, use the new rings (Recommended)”).
 - **Yellow packs (rare):** a leader with a word (two from the sixth dungeon) and 3 times the life
   (an elite had 4 times until Version 19.7); the rest of the pack are its minions, with 50% of each
-  of its words (your words of 08:02: “...the smaller minions would essentially have a 50%
-  Flame.”). Every elite room’s pack is yellow, and one in ten of the others from the second dungeon
-  on. The leader is named in yellow; the minions look as they always do.
+  of its words (your words of 08:02: “...the smaller minions would essentially have a 50% Flame.”).
+  Every elite room’s pack is yellow, and one in ten of the others from the second dungeon on, but
+  never a pack of bats (your pick by 16:05: “Bats never come yellow (Recommended)”), so an elite
+  room is never bats. The leader is named in yellow, his ring written in his word and ringed in
+  gold; his minions’ ring is a broken gold one (since Version 19.9).
 - **How long they take to kill** (08:10): a blue pack a little less than a yellow pack of the same
   kind and size.
 - **Words stay scarce:** only an elite room’s leader may carry a word to give up, as an elite always
@@ -218,8 +221,33 @@ its basic blow in between. Your yes by 12:48, to films of them in the game: “Y
   seconds at most, and never while 6 of those he called still stand.
 - **Bats, skeletons, archers and cultists:** their one attack.
 
-“Pack leaders that are different mobs can have an extra attack if it seems right.” That waits for a
-leader of his own kind: the art chat’s skeleton champion and his rallying cry, to come.
+**Leaders of their own (since Version 19.9).** “Pack leaders that are different mobs can have an
+extra attack if it seems right.” A yellow pack of skeletons is led by the skeleton champion, of bone
+archers by the bone marksman, of cultists by the high priest, of green trolls by the troll
+chieftain, each drawn by the art chat with your yes; any other yellow pack by one of its own. Each
+has the life of those he leads, three times over, and one move more than they have.
+
+- **The skeleton champion:** his cleave; and his rallying cry, once every 14 seconds at most: his
+  minions within 8 tiles have his words whole for 5 seconds, and their rings fill with his word.
+- **The bone marksman:** his shot; and his great shot, once every 8 seconds at most: his line of aim
+  follows you, holds still just before he lets go, and the arrow goes through whoever it meets.
+- **The high priest:** his fire bolt; and his censer, once every 7 seconds at most when you are
+  within 3.2 tiles: its burning smoke burns whoever stays in it, for 3 seconds.
+- **The troll chieftain:** his trolls’ swing and slam, a fifth slower and a little harder, the slam
+  once every 7 seconds at most. No cry (your words: “I don’t want the bellow if the Skelton leader
+  has the same thing”).
+
+**New monsters (since Version 19.9),** the art chat’s, each with your yes, in packs of their own by
+their sizes:
+
+- **The Shade** (small), from the second dungeon: one attack, a rake.
+- **The Boneward** (medium), from the third: its thrust; and its spear, thrown from afar once every
+  6 seconds at most. The spear lies where it fell, and the Boneward fights with its shield until it
+  has stooped for it again.
+- **The Ossuary Golem** (large), from the fourth: its club; and its skulls, thrown high once every 5
+  seconds at most, coming down where you stood, its shadow showing where: step out of it.
+
+Your yes by 17:49, to films of all of them in the game: “Yes, as shown (Recommended)”.
 
 ## Town and quests
 
@@ -276,7 +304,7 @@ Something you can see, your yes, then one chat puts it in.
 
 ## The numbers
 
-The rules in numbers as the game has them in Version 19.7, checked against its code on 9 Oct. A chat
+The rules in numbers as the game has them in Version 19.9, checked against its code on 9 Oct. A chat
 changes one only with your yes.
 
 | What | Now | In the code |
@@ -296,6 +324,9 @@ changes one only with your yes.
 | Twin at the gate | 50% increased pack size | `GATE_TWIN_PACKS` |
 | Blue packs | 1 in 4 of the packs not an elite room’s or a lair, from dungeon 2; 20% increased life | `PACKS` |
 | Yellow packs | every elite room’s, and 1 in 10 of the others from dungeon 2; the leader 3 times the life; its minions 50% of its words | `PACKS` |
+| Leaders of their own | skeletons the champion, bone archers the marksman, cultists the priest, green trolls the chieftain; never a pack of bats | `LEADERS`, `packRarity` |
+| The new monsters | the Shade from dungeon 2, the Boneward from 3, the Golem from 4 | `MONSTERS` |
+| Their big moves | the Boneward’s spear every 6 s at most, the Golem’s skull every 5 s, the champion’s cry every 14 s (it lasts 5 s), the great shot every 8 s, the censer every 7 s (its smoke 3 s), the chieftain’s slam every 7 s | `MONSTER_MOVES`, `RALLY`, `SMOKE` |
 | The first pack | 3 slow skeletons: speed 2 (3 for the rest), a quarter of a blow, the life of one and a half bare taps | `FIRST_DUNGEON.softball` |
 | The third slot (switch off) | level 15 in front, level 20 behind | the note on `SLOT_OPENS` |
 | Words a boss gives | 1, and a chance of a second: 6% for each dungeon past the first, 25% more for each gate word | `TUNE.bossExtraPerDepth`, `bossExtraPerWord` |
@@ -318,8 +349,8 @@ it goes in.
 | The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
 | Five lands of ten, the final boss at 50 | One dungeon after another, with no end | Five lands, each its own look and monsters (with the art chat); a final boss |
 | Small, medium and big bosses | A boss in every dungeon; a Greater boss every fifth | A medium boss at 5, 15, 25…; a big boss at 10, 20, 30… |
-| Monster sizes, blue and yellow packs | Since Version 19.7 | Done; the leader’s own look (your skeleton champion) and the art chat’s markers to come |
-| Monsters’ attacks by size | A slam or a shot each; the boss a slam, bolts and his summons | Next: the attacks you set on 9 Oct, drawn by the art chat |
+| Monster sizes, blue and yellow packs | Since Version 19.7; the new leaders and the rings since Version 19.9 | Done |
+| Monsters’ attacks by size | Since Version 19.8; the new monsters’ and the leaders’ since Version 19.9 | Done |
 | A world map | The gate in town, one dungeon deeper each time | The map; going back to beaten dungeons |
 | A small talent tree | None | A tree for each class; points with levels; re-picking for gold |
 | Forging three words into one | Not built | The table of ranks you were sent on 5 Oct, still waiting on your say |
@@ -340,9 +371,10 @@ art (the wordsmith on bones and the master rune-stone: in since Version 19.6), t
 then controller support with dual-stick aiming. On 9 Oct the monster packs came first (07:56: "Now,
 on its own (Recommended)"), with the mage’s stances and the big-and-wild skill looks (by 08:41:
 "With today's packs (Recommended)"): in since Version 19.7; the monsters’ attacks next ("Packs
-today, attacks next (Recommended)"). The skill trees and the controller go in as one version once
-you have gone over the trees (07:28), and the new words after them (07:28: "Next, after these
-(Recommended)").
+today, attacks next (Recommended)"): in since Version 19.8; then the new monsters, their leaders and
+the rings (16:05: "New monsters + rings (Recommended)"): in since Version 19.9. The skill trees and
+the controller go in as one version once you have gone over the trees (07:28), and the new words
+after them (07:28: "Next, after these (Recommended)").
 
 ## Still open
 
@@ -354,7 +386,8 @@ you have gone over the trees (07:28), and the new words after them (07:28: "Next
 - [ ] Which words and places earlier heroes unlock, and for what deeds.
 - [ ] What quests give.
 - [ ] Each land’s look and monsters, with the art chat.
-- [ ] A yellow pack’s leader drawn as a monster of its own (your skeleton champion, an old rusty
-  helmet and a two-handed sword), and the art chat’s markers for blue and yellow packs.
+- [x] A yellow pack’s leader drawn as a monster of its own (your skeleton champion, an old rusty
+  helmet and a two-handed sword), and the art chat’s markers for blue and yellow packs. Done in
+  Version 19.9.
 - [ ] Whether you would rather shoot through the bars of a shut door (asked 7 Oct).
 - [ ] Words on flasks, later.
