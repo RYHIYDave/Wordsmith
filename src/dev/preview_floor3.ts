@@ -21,6 +21,8 @@ import type { Sprite } from '../engine/px';
 const [mode = 'sheet', scaleArg = '', nArg = ''] = decodeURIComponent(location.hash.slice(1)).split(':');
 const S = Math.max(1, Math.round(Number(scaleArg) || 2));
 const F = Number(nArg) || 0;
+/** For `only`: the pieces asked for by name, with | between them. */
+const NAMES = nArg.split('|').filter((n) => n && Number.isNaN(Number(n)));
 
 const cv = document.createElement('canvas');
 const g = cv.getContext('2d') as CanvasRenderingContext2D;
@@ -219,18 +221,20 @@ if (mode === 'sheet') {
     label(alongX || n !== 'the door' ? n : 'the door, the other way', i * DW + 10, oy + 92);
   });
 }
-else if (mode === 'look') {
-  // a few pieces close, each in its cell as on the sheet (n: which eight, in the order of the set)
-  const list = pieces.slice(F * 8, F * 8 + 8);
+else if (mode === 'look' || mode === 'only') {
+  // a few pieces close, each in its cell as on the sheet (n: which eight, in the order of the set;
+  // or `only`, the pieces named, with | between them)
+  const list = mode === 'only' ? NAMES.map(P) : pieces.slice(F * 8, F * 8 + 8);
   const PER = 4;
   const RH = 150;
   size(CW * PER + 40, Math.ceil(list.length / PER) * RH + 20);
   list.forEach((p, i) => cell(p, 56 + (i % PER) * CW, 10 + Math.floor(i / PER) * RH + 90));
 }
-else if (mode === 'close') {
-  // eight pieces close (n: which eight, in the order of the set): a wall piece on one face of wall
-  // turned to screen-left with the floor before it; anything else on a patch of floor
-  const list = pieces.slice(F * 8, F * 8 + 8);
+else if (mode === 'close' || mode === 'one') {
+  // eight pieces close (n: which eight, in the order of the set; or `one`, the pieces named, with |
+  // between them): a wall piece on one face of wall turned to screen-left with the floor before it;
+  // anything else on a patch of floor
+  const list = mode === 'one' ? NAMES.map(P) : pieces.slice(F * 8, F * 8 + 8);
   const CWc = 84;
   const RHc = 104;
   size(CWc * 4, RHc * Math.ceil(list.length / 4));
@@ -318,7 +322,7 @@ else if (mode === 'room') {
   }
   // on the walls, each at one of its places, some walls left bare: the far wall's faces turned to
   // screen-left (along ty = 0), the near-left wall's turned to screen-right (along tx = 0)
-  const onLeft: [number, string, number][] = [[1, 'the bowed wall', 0], [2, 'the cell window', 1], [3, 'fire basket', 0], [4, 'the cell window', 0], [5, 'rings and chains', 0], [6, 'the chain port', 0], [7, 'fire basket', 1], [8, 'the cell window', 2], [9, 'the torn-out ring', 0]];
+  const onLeft: [number, string, number][] = [[1, 'the bowed wall', 0], [2, 'the cell grate', 1], [3, 'fire basket', 0], [4, 'the cell grate', 0], [5, 'rings and chains', 0], [6, 'the chain port', 0], [7, 'fire basket', 1], [8, 'the cell grate', 2], [9, 'the torn-out ring', 0]];
   const onRight: [number, string, number][] = [[1, 'the wall winch', 1], [2, 'bent bars', 0], [3, "the jailers' lamp", 2], [4, 'a skull in its cage', 1], [5, 'the cage carved', 2], [6, 'balls on a rack', 0], [7, 'claw-torn stone', 2], [8, "the ball's crater", 1], [9, 'the feeding slot', 0]];
   for (const [tx, n, k] of onLeft) {
     const [x, y] = at(tx, 0);
