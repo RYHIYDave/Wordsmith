@@ -5303,7 +5303,8 @@ export class Game {
       this.hero.potions = TUNE.potionMax;
       this.emit({ t: 'quest', x: b.x, y: b.y });
       // (since Version 19.6 the stone lies by his hand, the art chat's: art/quest3.ts)
-      this.msg(`A fallen wordsmith. In his satchel, full flasks; by his hand, ${QUEST_ITEM.the}. Bring it to the wordsmith in town.`, MSG.word);
+      // (short: the line at the top says where it goes, for a few seconds; 9 Oct 2026, 22:12, "too in your face with all the text")
+      this.msg(`You take ${QUEST_ITEM.the}. Bring it to the wordsmith.`, MSG.word);
       return;
     }
     this.drops.push({ x: b.x, y: b.y, kind: 'word', gold: 0, item: null, word: w, age: 0 });
