@@ -107,17 +107,25 @@ between the jumps.
 has the master rune-stone by his hand (its name your answer of 8 Oct, by 23:52: “A master
 rune-stone”). Brought to the wordsmith in town, it is laid into his slab, and the ring of runes
 around him, dark until then, powers up like a battery put in (your note of 8 Oct, 20:41; drawn so
-since Version 19.6), and he gives the hero’s first word, to set before the tap attack; there the
-first lesson ends. The ring stays lit for the heroes after. A hero who leaves the first dungeon
+since Version 19.6); once it has powered up, and not before, he gives the hero’s first word (since
+Version 20.0; your note of 9 Oct, 22:12: “The wordsmith should give you the word after the altar
+powers up”), to set before the tap attack; there the first lesson ends. While the stone is carried,
+a line at the top of the screen says where it goes for a few seconds, as it is taken and again on
+coming into town with it, and is then gone (since Version 20.0; your pick: “A few seconds, then
+gone (Recommended)”). The ring stays lit for the heroes after. A hero who leaves the first dungeon
 without the master rune-stone finds the fallen wordsmith again in the next.
 
 - **Where words come from:** elites carry a word you can win; every boss gives one, and the chance
   of a second grows with depth. Past the final boss, rare words found nowhere else. None in the
   first dungeon, since Version 19.5: its monsters carry none, and its gate takes none.
-- **Slots:** none until the wordsmith’s ring is lit; then one in front at once, the second in front
-  at level 5, one behind at level 7 and the second behind at level 10 (since Version 19.5; your
-  answer of 8 Oct, 22:19: "2nd before 5, after 7 and 10 (Recommended)"). A slot is not shown until
-  it opens. Very late, a third in front at 15 and a third behind at 20.
+- **Slots:** none until the wordsmith’s ring is lit; then one in front, with the first word; the
+  second in front at level 4, one behind at level 15 and the second behind at level 20 (since
+  Version 20.0; your words of 9 Oct, 22:25: “I want you to have a little time experimenting with the
+  words before another one is available.”; 22:51: “Move slot 2 back to level 4.” and “That should be
+  early”; 22:52: “Two is enough for a long time I think”. From Version 19.5 they opened at 5, 7 and
+  10.) A slot is not shown until it opens. In the practice room every slot is open, whatever the
+  level. Very late, a third in front at 15 and a third behind at 20 (an idea, switched off: its
+  levels to be set again, now that the slots behind open at 15 and 20).
 - **Forging:** three of the same word forge into one stronger word at the wordsmith, up to rank V.
 - **The gate word belongs to the endless depth:** there, words laid on the gate make the next
   dungeon harder and richer.
@@ -196,6 +204,10 @@ monster Twin, as each word burned in at the gate does.
   gold; his minions’ ring is a broken gold one (since Version 19.9).
 - **How long they take to kill** (08:10): a blue pack a little less than a yellow pack of the same
   kind and size.
+- **Leech on a monster** heals it by what its blow takes from the hero, never past its whole life;
+  a minion, with half the word, by half of that (since Version 20.0; your pick of 9 Oct: “What its
+  blow takes (Recommended)”, after your note at 22:12: “bosses with leech are very hard to kill for
+  warrior.  Almost impossible.”). Until then each blow healed it 15% of its whole life.
 - **Words stay scarce:** only an elite room’s leader may carry a word to give up, as an elite always
   might, and a lair of guardians gives up one at most.
 - **The first dungeon** keeps its one room of elites and nothing more: no blue pack, no other yellow
@@ -316,8 +328,10 @@ changes one only with your yes.
 | Flask charges | 3 | `TUNE.potionMax` |
 | A flask heals | 45% of life | `TUNE.potionHeal` |
 | Kills to refill a charge | 18 | `TUNE.potionKills` |
-| Word slots | none until the ring is lit; then 1 in front | `SLOT_OPENS` |
-| The other slots open | the second in front at level 5; behind, at level 7 and level 10 | `SLOT_OPENS` |
+| Word slots | none until the ring is lit; then 1 in front, with the first word, once the ring has powered up (4.7 s) | `SLOT_OPENS`, `QUEST_ITEM.ringSecs` |
+| The other slots open | the second in front at level 4; behind, at level 15 and level 20 | `SLOT_OPENS_FIRST` |
+| The quest’s line at the top | 6 s as the stone is taken, and 6 s on coming into town with it | `QUEST_ITEM.promptSecs` |
+| Leech on a monster | heals what its blow takes (a minion half) | `game.ts` `hurtHero` |
 | The moves open | tap at level 1, tap and hold at 2, the swipe at 5 | `MOVE_OPENS` |
 | The first dungeon | a budget of 60 monsters (120 before), packs half the size, 1 room of elites, every blow at half | `FIRST_DUNGEON`, `GUIDE.softDmg` |
 | Pack sizes | tiny 6 to 10, small 4 to 7, medium 3 to 5, large 1 to 2, the boss alone; in the first dungeon tiny 3 to 5, small 2 to 4, medium 2 to 3, large 1 | `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE` |
@@ -345,7 +359,7 @@ it goes in.
 | The rule | The game now | What it takes |
 | --- | --- | --- |
 | Normal and Hardcore | Both, since Version 19.1 | Done |
-| The first levels | Since Version 19.5 | Done: the ring dark until the master rune-stone goes in, then powering up, since Version 19.6 |
+| The first levels | Since Version 19.5 | Done: the ring dark until the master rune-stone goes in, then powering up, since Version 19.6; the first word once it has powered up, and the slots at 4, 15 and 20, since Version 20.0 |
 | The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
 | Five lands of ten, the final boss at 50 | One dungeon after another, with no end | Five lands, each its own look and monsters (with the art chat); a final boss |
 | Small, medium and big bosses | A boss in every dungeon; a Greater boss every fifth | A medium boss at 5, 15, 25…; a big boss at 10, 20, 30… |

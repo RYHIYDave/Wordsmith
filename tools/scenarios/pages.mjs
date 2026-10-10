@@ -51,7 +51,8 @@ export default async function (page, snap) {
     // (THE FIRST LEVELS, the game's own since Version 19.5: the wordsmith's ring lit, as it is once the MASTER RUNE-STONE is brought; the level as below)
     d.seasoned(1);
     const g = d.game(); const h = g.hero;
-    while (h.level < 8) g.gainXp(200);
+    // (level 15: two slots in front and one behind, as level 8 had them until Version 20.0, his 22:51: the second in front at 4, behind at 15 and 20)
+    while (h.level < 15) g.gainXp(200);
     const prim = { warrior: 'str', ranger: 'dex', mage: 'int' }[cls];
     while (h.pending > 0) g.chooseAttr(prim);
     // (things to wear, off the two vendors' shelves: the armourer's rolled pieces, a weapon, an off

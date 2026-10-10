@@ -746,8 +746,9 @@ export class Game {
   }
 
   /**
-   * THE QUEST ITEM BROUGHT TO THE WORDSMITH: his ring is lit (for this hero and on this device), he
-   * gives the hero's first word, and the slots open. Called when the hero comes up to him with it.
+   * THE QUEST ITEM BROUGHT TO THE WORDSMITH: his ring is lit (for this hero and on this device), and
+   * once it has powered up he gives the hero's first word and the slots open with it (giveRingWord,
+   * since Version 20.0). Called when the hero comes up to him with it.
    */
   private lightRing(x: number, y: number): void {
     const h = this.hero;
