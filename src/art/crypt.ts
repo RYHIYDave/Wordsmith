@@ -65,10 +65,10 @@ export const ROCK = ['#1a1830', '#2b2944', '#34304e', '#4a4668'] as const;
 /** Rock as a ramp for lit() (three tones: [0] = [1], [3] = [4]). */
 const ROCK_RAMP: Ramp = [ROCK[0], ROCK[0], ROCK[1], ROCK[3], ROCK[3]];
 /** Old timber: the dungeon's wood (the plum of the barrels and chests), darker and duller with age. */
-const TIMBER: Ramp = ['#22182a', '#22182a', '#46323f', '#6c5060', '#6c5060'];
+export const TIMBER: Ramp = ['#22182a', '#22182a', '#46323f', '#6c5060', '#6c5060'];
 /** Iron left in the damp, and the rust on it: the monsters' IRON and RUST (art/mkit.ts), darker and duller. */
-const OLD_IRON: Ramp = ['#16142c', '#16142c', '#34305e', '#5e5a92', '#5e5a92'];
-const OLD_RUST: Ramp = ['#2a1430', '#2a1430', '#55284e', '#7e4466', '#7e4466'];
+export const OLD_IRON: Ramp = ['#16142c', '#16142c', '#34305e', '#5e5a92', '#5e5a92'];
+export const OLD_RUST: Ramp = ['#2a1430', '#2a1430', '#55284e', '#7e4466', '#7e4466'];
 
 // ---------------------------------------------------------------------------------------------
 // The four floors
