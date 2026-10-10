@@ -32,11 +32,28 @@ import { Iso } from './isokit';
 import type { SideShader } from './isokit';
 import { GRAIN, INK, hash, lit, mix } from './kit';
 import type { Ramp } from './kit';
+import { makeStairwell, makeWaypointArt } from './crypt_ways';
+import type { WaypointArt } from './crypt_ways';
 import { makeDungeonProps } from './props';
 import type { DungeonProps } from './props';
 
+/**
+ * WHERE A PICTURE PUTS THE WAYS THROUGH (art/crypt_ways.ts): the stairwell down and the waypoint,
+ * on one level, for photographs of the mock-up. Where they would stand, and what they do, is the
+ * main chat's to put into the game once he has said yes; until then a playtest puts them here
+ * (__dbg.cryptMarks) and the renderer draws them, as they would look, and does nothing else.
+ */
+export interface CryptMarks {
+  /** The level they are on (none: nowhere). */
+  level: unknown;
+  /** The stairwell: the corner of its opening up the screen, in tiles, and which way its steps go down. */
+  stair: { x: number; y: number; way: 'x' | 'y' } | null;
+  /** The waypoint: its middle, in tiles; asleep, awake, or warping since `t0` (the renderer's clock, seconds). */
+  way: { x: number; y: number; state: 'asleep' | 'awake' | 'warp'; t0: number } | null;
+}
+
 /** THE SWITCH. Off: every dungeon is the vault, as in the game. On: each of the Crypt's floors is its own (main.ts swaps the pictures as the hero goes down). */
-export const CRYPT = { on: false };
+export const CRYPT: { on: boolean; marks: CryptMarks } = { on: false, marks: { level: null, stair: null, way: null } };
 
 // ---------------------------------------------------------------------------------------------
 // The colours
@@ -65,9 +82,9 @@ interface FloorSpec {
 }
 const SPECS: readonly FloorSpec[] = [
   { gone: 0, raw: 0, broken: 0.16, grime: 0 },
-  { gone: 0.14, raw: 0.12, broken: 0.18, grime: 0.06 },
-  { gone: 0.3, raw: 0.28, broken: 0.2, grime: 0.12 },
-  { gone: 0.5, raw: 0.5, broken: 0.22, grime: 0.18 },
+  { gone: 0.12, raw: 0.12, broken: 0.18, grime: 0.06 },
+  { gone: 0.27, raw: 0.28, broken: 0.2, grime: 0.12 },
+  { gone: 0.45, raw: 0.5, broken: 0.22, grime: 0.18 },
 ];
 
 function dirty<T extends readonly string[]>(tones: T, grime: number): T {
@@ -238,47 +255,57 @@ function makeShovel(theme: Theme): Sprite {
   return withShadow(theme, [haft, blade]).sprite(GOX, GOY, GRAIN);
 }
 
-/** A bucket on its side, its mouth toward the screen-left and dark inside; its bail sprung loose on the floor. */
+/**
+ * A bucket on its side, lying along y on the grid (the owner, 5 Oct 2026: "any sprite or doodad or
+ * whatever should always be seen at an angle"): a round body narrowing to its foot, two hoops round
+ * it, its mouth toward the lower left of the screen and dark inside, its bail sprung loose on the
+ * floor. Painted as the eye sees it: every point of it set down on the screen where it falls, the
+ * nearer over the farther, lit by which way it faces (up lightest, toward the screen's right darkest).
+ */
 function makeBucket(theme: Theme): Sprite {
   const body = new Px(GW, GH);
   const bail = new Px(GW, GH);
-  // the bucket lies along y: a round body seen from a little above, its mouth wider than its foot
-  const iso = new Iso(body, GOX, GOY);
-  const [mx, my] = iso.at(0, 0.16, 0);
-  const [bx, by] = iso.at(0, -0.16, 0);
-  lit(body, OLD_IRON, [1, 3], [1, 3], (l) => {
-    l.poly(
-      [
-        [bx - 1, by - 12],
-        [mx - 1, my - 15],
-        [mx + 1, my],
-        [bx + 3, by + 1],
-      ],
-      INK,
-    );
-    l.ellipse(bx + 1, by - 5.5, 5.5, 6.5, INK);
-  });
-  // the hoops round it
-  for (const t of [0.3, 0.72]) {
-    const x = bx + (mx - bx) * t;
-    const y = by + (my - by) * t;
-    for (let k = -7; k <= 6; k++) {
-      const px = Math.round(x + 1 + k * 0.15);
-      const py = Math.round(y - 7 + k);
-      if (body.has(px, py)) body.set(px, py, k < -2 ? OLD_IRON[3] : OLD_IRON[0]);
+  /** Its length along y, its radius at the mouth and at the foot (tiles), and how high a tile is in picture pixels. */
+  const LEN = 0.3;
+  const RM = 0.12;
+  const RF = 0.095;
+  const ZT = 45;
+  const near = new Float32Array(GW * GH).fill(-1e9);
+  const put = (x: number, y: number, z: number, c: string, p: Px = body): void => {
+    const px = Math.round(GOX + (x - y) * 32 - 0.5);
+    const py = Math.round(GOY + (x + y) * 16 - z - 0.5);
+    if (px < 0 || py < 0 || px >= GW || py >= GH) return;
+    const key = x + y + z / ZT / 2;
+    const i = py * GW + px;
+    if (key < near[i]) return;
+    near[i] = key;
+    p.set(px, py, c);
+  };
+  // the body
+  for (let t = 0; t <= 1; t += 1 / 64) {
+    const y = -LEN / 2 + t * LEN;
+    const r = RF + (RM - RF) * t;
+    const hoop = Math.abs(t - 0.3) < 0.04 || Math.abs(t - 0.72) < 0.04;
+    for (let a = 0; a < 2 * Math.PI; a += 1 / 48) {
+      const x = r * Math.cos(a);
+      const z = (RM + r * Math.sin(a)) * ZT;
+      const light = 0.8 * Math.sin(a) - 0.6 * Math.cos(a);
+      put(x, y, z, hoop ? (light > 0.3 ? OLD_IRON[3] : OLD_IRON[0]) : light > 0.45 ? OLD_IRON[3] : light > -0.25 ? OLD_IRON[2] : OLD_IRON[0]);
+    }
+  }
+  // the mouth: its rim, and the dark inside it (a disc facing +y, the lower left of the screen)
+  for (let rr = 0; rr <= RM; rr += 1 / 160) {
+    for (let a = 0; a < 2 * Math.PI; a += 1 / 64) {
+      const x = rr * Math.cos(a);
+      const z = (RM + rr * Math.sin(a)) * ZT;
+      put(x, LEN / 2 + 0.001, z, rr > RM - 0.018 ? (Math.sin(a) - Math.cos(a) > 0 ? OLD_IRON[3] : OLD_IRON[2]) : rr > RM - 0.04 ? DIRT[0] : INK);
     }
   }
   rusty(body, 73, 0.4);
-  // the mouth: a rim, and the dark inside
-  body.ellipse(mx, my - 7.5, 5.2, 7.6, OLD_IRON[3]);
-  body.ellipse(mx + 0.4, my - 7.2, 4, 6.4, DIRT[0]);
-  body.ellipse(mx + 1.2, my - 6.2, 2.4, 4.2, INK);
-  // the bail: a loop of wire lying out on the floor beside it
-  for (let a = 0; a <= Math.PI; a += 0.08) {
-    const x = Math.round(mx - 3 + Math.cos(a) * 8);
-    const y = Math.round(my + 2 + Math.sin(a) * 3);
-    bail.set(x, y, a < 1.4 ? OLD_IRON[3] : OLD_RUST[2]);
-  }
+  // the bail: a loop of wire lying on the floor beside the mouth
+  const bx = 0.16;
+  const by = LEN / 2 - 0.02;
+  for (let a = 0; a <= Math.PI; a += 1 / 40) put(bx + Math.cos(a) * 0.13, by + Math.sin(a) * 0.13, 0.5, a < 1.3 ? OLD_IRON[3] : OLD_RUST[2], bail);
   return withShadow(theme, [bail, body], 2, 1).sprite(GOX, GOY, GRAIN);
 }
 
@@ -328,26 +355,23 @@ export function makeGear(theme: Theme): Record<GearName, Sprite> {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The fourth floor's pillar: A MINER'S PIT PROP. A squared post standing on a flat stone and going
-// up into the dark (its top fades out as the walls' faces do: art/ground.ts, WALLS_FADING), a
-// strut set slanting against it from the floor, an iron band round its foot, and an old lantern
-// on a nail, long out. 48 x 124; its tile's middle at (24, 108). (The vault's pillar is 40 x 100 at
+// The fourth floor's pillar: A MINER'S PIT PROP. A squared post on a flat stone, a cap-block
+// across its head (what it holds up is in the dark over the floor, as the walls' tops are), a strut
+// set slanting against it from the floor, an iron band round its foot, and an old lantern on a
+// nail, long out. 48 x 108; its tile's middle at (24, 92). (The vault's pillar is 40 x 100 at
 // (20, 84): the game draws either by its anchor.)
-
-/** How far up the post goes, and how much of its top is lost in the dark, in picture pixels (the walls': 80, 24). */
-const PROP_TALL = 96;
-const PROP_FADE = 24;
 
 function makeProp(theme: Theme): Sprite {
   const W = 48;
-  const H = 124;
+  const H = 108;
   const cx = 24;
-  const oy = 108;
+  const oy = 92;
   const wood = new Px(W, H);
   const strut = new Px(W, H);
   const iron = new Px(W, H);
   const iso = new Iso(wood, cx, oy);
   const P = 0.12;
+  const TOP = 64;
   /** Grain down a side: a darker line here and there, and a split. */
   const grain = (litSide: boolean): SideShader => (u, v, w, h) => {
     if (v >= h - 1) return TIMBER[0];
@@ -357,13 +381,19 @@ function makeProp(theme: Theme): Sprite {
   };
   // the flat stone it stands on
   iso.box(-0.2, -0.2, 0.2, 0.2, 0, 4, { top: (u, v) => (u < 0.08 || v < 0.08 ? ROCK[3] : ROCK[2]), left: () => ROCK[1], right: () => ROCK[0] });
-  // the post, up into the dark
-  iso.box(-P, -P, P, P, 4, PROP_TALL, { top: () => null, left: grain(true), right: grain(false) });
+  // the post
+  iso.box(-P, -P, P, P, 4, TOP, { top: () => TIMBER[3], left: grain(true), right: grain(false) });
+  // the cap-block across its head, a little wider than it, the end grain of the timber on its sides
+  iso.box(-0.17, -0.2, 0.17, 0.2, TOP, TOP + 9, {
+    top: (u, v) => (u < 0.06 || v < 0.06 ? TIMBER[3] : mix(TIMBER[2], TIMBER[3], 0.5)),
+    left: (u, v, w, h) => (v === 0 ? TIMBER[3] : v >= h - 1 ? TIMBER[0] : u === Math.round(w / 2) ? TIMBER[0] : TIMBER[2]),
+    right: (_u, v, _w, h) => (v === 0 ? TIMBER[2] : v >= h - 1 ? TIMBER[0] : mix(TIMBER[0], TIMBER[2], 0.35)),
+  });
   // the strut, set slanting against the post from the floor on its shaded side: a beam lit along its upper-left edge
   const s = new Iso(strut, cx, oy);
   const Y = 0.03;
   const [fx, fy] = s.at(0.46, Y, 0);
-  const [tx, ty] = s.at(P, Y, 52);
+  const [tx, ty] = s.at(P, Y, 46);
   lit(strut, TIMBER, [1, 2], [1, 2], (l) =>
     l.poly(
       [
@@ -377,11 +407,11 @@ function makeProp(theme: Theme): Sprite {
   );
   // a wedge under its foot
   s.box(0.38, -0.05, 0.52, 0.06, 0, 3, { top: () => TIMBER[2], left: () => TIMBER[2], right: () => TIMBER[0] });
-  // the iron band round the post's foot, and the nails in it
+  // the iron band round the post's foot
   const band = new Iso(iron, cx, oy);
   band.box(-P - 0.01, -P - 0.01, P + 0.01, P + 0.01, 10, 15, { top: () => null, left: side(OLD_IRON, true), right: side(OLD_IRON, false) });
   // a nail high on the lit side, and the old lantern hanging from it by its ring
-  const [nx, ny] = iso.at(-0.02, P, 62);
+  const [nx, ny] = iso.at(-0.02, P, 50);
   iron.set(Math.round(nx), Math.round(ny), OLD_IRON[3]).set(Math.round(nx) + 1, Math.round(ny), OLD_IRON[0]);
   const lx = Math.round(nx) - 2;
   const ly = Math.round(ny) + 2;
@@ -398,14 +428,6 @@ function makeProp(theme: Theme): Sprite {
   out.blit(wood, 0, 0);
   out.blit(iron, 0, 0);
   out.blit(strut, 0, 0);
-  // the top of the post lost in the dark, in four flat steps (as the walls' faces: art/ground.ts, put)
-  const top = oy - PROP_TALL - Math.ceil(P * 2 * 16) - 2;
-  for (let y = 0; y < H; y++) {
-    const k = y - top;
-    if (k >= PROP_FADE) break;
-    const a = k < 0 ? 0 : [0.14, 0.38, 0.62, 0.84][Math.floor((k * 4) / PROP_FADE)];
-    for (let x = 0; x < W; x++) if (out.has(x, y)) out.d[(y * W + x) * 4 + 3] = Math.round(255 * a);
-  }
   return out.sprite(cx, oy, GRAIN);
 }
 
@@ -414,16 +436,20 @@ function makeProp(theme: Theme): Sprite {
 
 /**
  * What lies on each floor besides the bones (the game picks one of a list for each thing that
- * lies there, by its own number: render.ts). The vault's dressed rubble fades out as you go down,
- * rocks come in, and the gear on the fourth (and a pick and a bucket already on the third).
+ * lies there, by its own number: render.ts), by name: the vault's dressed rubble fading out as you
+ * go down, rocks coming in, and the gear on the fourth (and a pick and a bucket already on the third).
  */
+export function cryptLitter(k: number): string[] {
+  if (k <= 1) return ['rubble0', 'rubble1', 'rubble2'];
+  if (k === 2) return ['rubble0', 'rubble1', 'rubble2', 'rock0', 'rock1'];
+  if (k === 3) return ['rubble0', 'rubble1', 'rock0', 'rock1', 'rock2', 'pick', 'bucket'];
+  return ['rubble0', 'rock0', 'rock1', 'rock2', 'pick', 'shovel', 'bucket', 'rail', 'sledge'];
+}
+
 function litterOf(k: number, props: DungeonProps, theme: Theme): Sprite[] {
   const rocks = [0, 1, 2].map((v) => makeRocks(theme, v));
-  const gear = makeGear(theme);
-  if (k === 0) return props.rubble;
-  if (k === 1) return [...props.rubble, rocks[0], rocks[1]];
-  if (k === 2) return [props.rubble[0], props.rubble[1], ...rocks, gear.pick, gear.bucket];
-  return [props.rubble[0], ...rocks, gear.pick, gear.shovel, gear.bucket, gear.rail, gear.sledge];
+  const gear = makeGear(theme) as Record<string, Sprite>;
+  return cryptLitter(k).map((name) => (name.startsWith('rubble') ? props.rubble[Number(name.slice(6))] : name.startsWith('rock') ? rocks[Number(name.slice(4))] : gear[name]));
 }
 
 const GROUNDS = new Map<number, GroundArt>();
@@ -441,11 +467,22 @@ export function cryptProps(k: number): DungeonProps {
   if (!p) {
     const theme = CRYPT_FLOORS[k - 1];
     const base = makeDungeonProps(theme);
-    p = { ...base, rubble: litterOf(k - 1, base, theme), pillar: k === 4 ? makeProp(theme) : base.pillar };
+    p = { ...base, rubble: litterOf(k, base, theme), pillar: k === 4 ? makeProp(theme) : base.pillar };
     PROPS.set(k, p);
   }
   return p;
 }
+const WAYS = new Map<number, { stair: Record<'x' | 'y', Sprite>; way: WaypointArt }>();
+/** The stairwell (each way down) and the waypoint, in the stone of the Crypt's floor `k` (1 to 4). */
+export function cryptWays(k: number): { stair: Record<'x' | 'y', Sprite>; way: WaypointArt } {
+  let w = WAYS.get(k);
+  if (!w) {
+    const theme = CRYPT_FLOORS[k - 1];
+    WAYS.set(k, (w = { stair: { x: makeStairwell(theme, 'x'), y: makeStairwell(theme, 'y') }, way: makeWaypointArt(theme) }));
+  }
+  return w;
+}
+
 /** Forget the pictures made (the walls' look has changed: art/ground.ts, setWallLook). */
 export function forgetCrypt(): void {
   GROUNDS.clear();

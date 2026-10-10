@@ -16,6 +16,7 @@ import { MODES } from './game/modes';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, cryptFloor, cryptGround, cryptProps, forgetCrypt } from './art/crypt';
+import type { CryptMarks } from './art/crypt';
 import { CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
 import { townSprite } from './art/townscene';
@@ -1793,6 +1794,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     crypt: (on: boolean) => {
       CRYPT.on = on;
       CRYPT_LITTER.on = on;
+    },
+    /** (THE CRYPT) Where a picture puts the stairwell down and the waypoint on the level the hero is on (art/crypt.ts, CryptMarks). */
+    cryptMarks: (m: Partial<CryptMarks>) => {
+      CRYPT.marks = { level: game ? game.level : null, stair: m.stair ?? null, way: m.way ?? null };
     },
     /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For

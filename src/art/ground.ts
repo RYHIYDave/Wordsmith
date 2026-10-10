@@ -435,8 +435,11 @@ function wallFace(theme: Theme, spec: WallSpec, left: boolean, height: number): 
     const row = v + skip;
     const course = Math.floor(row / COURSE);
     const r = row % COURSE;
-    if (crack.has(row * 64 + u)) return joint;
-    if (crack.has(row * 64 + u - 1)) return hi;
+    // (a crack runs down the dressed stone: in a theme with earth, not through rough rock or a broken corner, which come first)
+    if (!e) {
+      if (crack.has(row * 64 + u)) return joint;
+      if (crack.has(row * 64 + u - 1)) return hi;
+    }
     const mid = course % 2 === 0;
     // where this course's upright joint is: in the middle of the face, or at the tile's edge
     // (the left face's last column and the right face's first are the block's front corner)
@@ -479,7 +482,7 @@ function wallFace(theme: Theme, spec: WallSpec, left: boolean, height: number): 
     }
     if (e) {
       // A STONE THAT HAS LOST A CORNER (the Crypt's, the theme's share of them): a notch broken out
-      // of its top corner by a joint, dark earth in it, its broken edge catching the light below it
+      // of its top corner by a joint, dark earth in it, its broken edge lit or in shade as it is turned
       const which = mid ? (u < at ? 0 : 1) : 0;
       const k = course * 2 + which;
       if (hash(k, spec.seed, seed + 41) < e.broken) {
@@ -491,8 +494,11 @@ function wallFace(theme: Theme, spec: WallSpec, left: boolean, height: number): 
         const du = onLeft ? u - leftEnd : rightEnd - u;
         const d = du + (r - 1) * 1.3;
         if (du >= 0 && r >= 0 && d < size) return deep;
-        if (du >= 0 && r >= 0 && d < size + 1.4) return onLeft ? lo : hi;
+        // (its broken edge: turned up and to the left, toward the light, where the corner it lost is its left one; else away from it)
+        if (du >= 0 && r >= 0 && d < size + 1.4) return onLeft ? hi : lo;
       }
+      if (crack.has(row * 64 + u)) return joint;
+      if (crack.has(row * 64 + u - 1)) return hi;
     }
     // the line between two courses
     if (r === 0) return joint;

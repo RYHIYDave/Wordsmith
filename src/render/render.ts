@@ -23,6 +23,8 @@ import type { TownProps } from '../art/town';
 import { POWER, QUEST3, STONE_LAYING_STEPS, STONE_LYING_FRAMES, STONE_STANDING_FRAMES, floatingOf } from '../art/quest3';
 import type { StoneArt } from '../art/quest3';
 import { SMITH3 } from '../art/smith3';
+import { CRYPT, cryptFloor, cryptWays } from '../art/crypt';
+import { WARP_FRAMES, WAY_FRAMES } from '../art/crypt_ways';
 import { columnSprite, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
 import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
@@ -375,6 +377,44 @@ export class Renderer {
     this.awayFor = L;
     this.awayKey = key;
     return this.awayGrid;
+  }
+
+  /**
+   * (THE CRYPT, art/crypt_ways.ts; a mock-up behind CRYPT) What of the stairwell and the waypoint
+   * lies on the floor: the opening and its steps, and the dais, asleep or awake. Only where a
+   * picture puts them (CRYPT.marks): nothing of the game knows of them.
+   */
+  private flatCrypt(g: CanvasRenderingContext2D, L: Game['level'], t: number): void {
+    const m = CRYPT.marks;
+    const art = cryptWays(Math.max(1, cryptFloor(L.floor.depth)));
+    const cam = this.cam;
+    if (m.stair) {
+      const sp = art.stair[m.stair.way];
+      g.drawImage(sp.img, Math.round(wx(cam, m.stair.x, m.stair.y)) - sp.ax, Math.round(wy(cam, m.stair.x, m.stair.y)) - sp.ay, sp.w, sp.h);
+    }
+    if (m.way) {
+      const sp = m.way.state === 'asleep' ? art.way.asleep : art.way.awake[Math.floor(t * 10) % WAY_FRAMES];
+      const x = Math.round(wx(cam, m.way.x, m.way.y));
+      const y = Math.round(wy(cam, m.way.x, m.way.y));
+      g.drawImage(sp.img, x - sp.ax, y - sp.ay, sp.w, sp.h);
+      if (sp.lights) this.propLit.push({ s: sp, x, y });
+    }
+  }
+
+  /** (THE CRYPT) What stands over the waypoint: motes of light rising while it is awake; the column of a warp. */
+  private standCrypt(L: Game['level'], t: number): void {
+    const m = CRYPT.marks;
+    if (!m.way || m.way.state === 'asleep') return;
+    const art = cryptWays(Math.max(1, cryptFloor(L.floor.depth)));
+    // (a warp is over when its last frame has been shown: nothing stands over the dais then)
+    const f = Math.max(0, Math.floor((t - m.way.t0) * 20));
+    if (m.way.state === 'warp' && f >= WARP_FRAMES) return;
+    const sp = m.way.state === 'warp' ? art.way.warp[f] : art.way.motes[Math.floor(t * 10) % WAY_FRAMES];
+    const x = Math.round(wx(this.cam, m.way.x, m.way.y));
+    const y = Math.round(wy(this.cam, m.way.x, m.way.y));
+    // (a warp's column stands in front of the hero on the dais: it is what he goes into)
+    this.stand(m.way.x + m.way.y + (m.way.state === 'warp' ? 0.05 : 0), sp, x, y);
+    if (sp.lights) this.propLit.push({ s: sp, x, y });
   }
 
   /**
@@ -1161,6 +1201,8 @@ export class Renderer {
       // (sunken floor and the flights down into it; raised floor and the flights up to it; the room's own floor)
       return (hs && hs[i] < 0 ? 2 : top[i] > 0 ? 1 : 0) === pass;
     };
+    // (THE CRYPT, art/crypt.ts, behind CRYPT: the stairwell down and the waypoint, where a picture puts them)
+    if (CRYPT.on && CRYPT.marks.level === L && pass <= 0) this.flatCrypt(g, L, t);
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] || !here(p.x, p.y)) continue;
       const sx = wx(cam, p.x, p.y);
@@ -1737,7 +1779,8 @@ export class Renderer {
         } else if (kind === T_WALL) {
           // (in town three tiles of the back wall are the gate: each carries its part of the arch, and the light in it moves)
           const part = L.town && ty === TOWN.gateWall.y ? tx - TOWN.gateWall.x : -1;
-          if (part >= 0 && part < TOWN.gateWall.n) {
+          // (THE CRYPT, a mock-up behind CRYPT: a town with a gate of the levels' in its wall has no field of light there)
+          if (part >= 0 && part < TOWN.gateWall.n && !(CRYPT.on && L.doors.length > 0)) {
             const sp = art.ground.gate[Math.floor(t * 6) % art.ground.gate.length][part];
             this.stand(s + 1, sp, px, py);
             if (sp.lights) this.propLit.push({ s: sp, x: Math.round(px), y: Math.round(py) });
@@ -1836,6 +1879,7 @@ export class Renderer {
     if (!L.town && QUEST3.on) this.standQuestStone(game, cam, t);
     this.standHazards(game, cam);
     this.standDoors(L, cam);
+    if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
       const lift = NAME_LIFT[st.kind];

@@ -4,6 +4,7 @@
 //   hash = <mode>:<scale>   mode: floors (the four rooms side by side, the vault first), sheet
 //   (the rocks, the gear and the timber prop, on stone and on earth), room:<k> (one floor alone)
 import { CRYPT_FLOORS, cryptGround, cryptPieces, cryptProps } from '../art/crypt';
+import { makeStairwell, makeWaypointArt } from '../art/crypt_ways';
 import { VAULT, makeGroundArt } from '../art/ground';
 import type { GroundArt } from '../art/ground';
 import { makeHeroArt3 } from '../art/heroes3';
@@ -130,5 +131,62 @@ else if (mode === 'pieces') {
     draw(s, x, y);
   });
   draw(p4.prop, CW * 5 + 30, 92);
+}
+else if (mode === 'stairs') {
+  // the stairwell going down each way, on each floor, in a patch of that floor
+  const ks = [1, 2, 3, 4];
+  const CW = 200;
+  size(CW * ks.length, 260);
+  ks.forEach((k, i) => {
+    const ground = cryptGround(k);
+    const theme = CRYPT_FLOORS[k - 1];
+    const ox = i * CW + CW / 2;
+    for (const [way, oy, ax, ay] of [['x', 20, 4, 2], ['y', 140, 2, 4]] as const) {
+      for (let tx = 0; tx < 8; tx++) for (let ty = 0; ty < 8; ty++) {
+        const x = ox + (tx - ty) * 16;
+        const y = oy + (tx + ty) * 8;
+        draw(ground.floor(tx, ty), x, y);
+      }
+      const sp = makeStairwell(theme, way);
+      draw(sp, ox + (ax - ay) * 16, oy + (ax + ay) * 8);
+    }
+    label(theme.id, i * CW + 6, 250);
+  });
+}
+else if (mode === 'way') {
+  // the waypoint: asleep; awake (four frames of its loop); a warp (four frames): on a patch of floor k
+  const k = Number(extra) || 2;
+  const ground = cryptGround(k);
+  const art = makeWaypointArt(CRYPT_FLOORS[k - 1]);
+  const shots: [Sprite, Sprite | null][] = [[art.asleep, null], ...[0, 3, 6, 9].map((f) => [art.awake[f], art.motes[f]] as [Sprite, Sprite]), ...[1, 3, 5, 8].map((f) => [art.awake[f], art.warp[f]] as [Sprite, Sprite])];
+  const CW = 80;
+  size(CW * shots.length, 170);
+  shots.forEach((_, i) => {
+    const ox = i * CW + CW / 2;
+    for (let tx = -2; tx <= 2; tx++) for (let ty = -2; ty <= 2; ty++) draw(ground.floor(tx + 5, ty + 5), ox + (tx - ty) * 16, 112 + (tx + ty) * 8);
+  });
+  shots.forEach(([base, over], i) => {
+    const ox = i * CW + CW / 2;
+    draw(base, ox, 120);
+    if (over) draw(over, ox, 120);
+  });
+}
+else if (mode === 'warp') {
+  // a warp, every one of its frames, on a patch of floor k
+  const k = Number(extra) || 2;
+  const ground = cryptGround(k);
+  const art = makeWaypointArt(CRYPT_FLOORS[k - 1]);
+  const CW = 60;
+  size(CW * art.warp.length, 170);
+  art.warp.forEach((_, i) => {
+    const ox = i * CW + CW / 2;
+    for (let tx = -2; tx <= 2; tx++) for (let ty = -2; ty <= 2; ty++) draw(ground.floor(tx + 5, ty + 5), ox + (tx - ty) * 16, 132 + (tx + ty) * 8);
+  });
+  art.warp.forEach((w, i) => {
+    const ox = i * CW + CW / 2;
+    draw(art.awake[i % art.awake.length], ox, 140);
+    draw(w, ox, 140);
+    label(String(i), ox - 3, 166);
+  });
 }
 (window as unknown as { __ready: boolean }).__ready = true;

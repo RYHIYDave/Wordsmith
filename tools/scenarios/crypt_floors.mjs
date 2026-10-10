@@ -19,7 +19,9 @@ export default async function (page, snap) {
       g.level.explored.fill(1);
       g.monsters.splice(0);
     }, [dep, on]);
-    await page.waitForTimeout(700);
+    await page.waitForTimeout(400);
+    await page.evaluate(() => { window.__dbg.fx.messages.length = 0; });
+    await page.waitForTimeout(300);
     const rooms = await page.evaluate(() => {
       const f = window.__dbg.game().level.floor;
       return f.rooms.map((r) => ({ id: r.id, kind: r.kind, x: r.x, y: r.y, w: r.w, h: r.h }));
