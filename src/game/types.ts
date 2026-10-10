@@ -247,6 +247,14 @@ export interface Room {
   nook?: boolean;
   nextDoor?: boolean;
   /**
+   * THE CRYPT (game/dungeon.ts, CRYPT_LAYOUT; absent where its layout is off): `block`: a cell
+   * block, a long hall of the main path with a row of cells along its back wall. `cell`: one of
+   * those cells, a small room at a dead end with its door (and `nextDoor` set: the door is always
+   * there).
+   */
+  block?: boolean;
+  cell?: boolean;
+  /**
    * (THE TRAPS, game/traps.ts) A SEALED DOOR stands in its way in, a rune of this word on it: it
    * opens only to a hit from an attack that carries the word (`DoorSpot.word`).
    */

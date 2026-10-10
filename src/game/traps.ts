@@ -189,7 +189,7 @@ export function layHazards(f: Floor, rng: RNG): HazardSpot[] {
   };
   const clearOf = (cx: number, cy: number): boolean => out.every((z) => Math.hypot(z.x + z.w / 2 - cx, z.y + z.h / 2 - cy) >= TRAP_GAP);
   const fit = (r: Room): boolean => r.kind === 'normal' || r.kind === 'elite';
-  const roomOk = (r: Room): boolean => fit(r) && r.path !== 0 && !r.nook && !r.sealed;
+  const roomOk = (r: Room): boolean => fit(r) && r.path !== 0 && !r.nook && !r.sealed && !r.cell;
 
   // ---- THE SPIKE FLOORS -------------------------------------------------------------------------
   const spikeWant = rng.chance(0.5) ? 2 : 1;

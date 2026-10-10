@@ -18,7 +18,7 @@ import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, cryptFloor, cryptGround, cryptProps, forgetCrypt } from './art/crypt';
 import type { CryptMarks } from './art/crypt';
-import { CRYPT_LITTER } from './game/dungeon';
+import { CRYPT_LAYOUT, CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
@@ -1991,6 +1991,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     crypt: (on: boolean) => {
       CRYPT.on = on;
       CRYPT_LITTER.on = on;
+    },
+    /**
+     * THE CRYPT'S LAYOUT (game/dungeon.ts, CRYPT_LAYOUT, off): its cell blocks and their rows of
+     * cells, and its floors opening up the deeper they go, on or off (a dungeon made after is laid
+     * so). For pictures.
+     */
+    cryptLayout: (on: boolean) => {
+      CRYPT_LAYOUT.on = on;
     },
     /** (THE CRYPT) Where a picture puts the stairwell down and the waypoint on the level the hero is on (art/crypt.ts, CryptMarks). */
     cryptMarks: (m: Partial<CryptMarks>) => {

@@ -299,6 +299,8 @@ export function layTerraces(f: Floor, corr: Uint8Array, rng: RNG): number {
   let count = 0;
   for (const r of f.rooms as Room[]) {
     if (r.kind === 'start' || r.kind === 'boss') continue;
+    // (THE CRYPT: a cell block's hall is flat, and so is a cell)
+    if (r.block || r.cell) continue;
     if (r.w < ROOM_MIN || r.h < ROOM_MIN) continue;
     if (!rng.chance(TERRACE_SHARE)) continue;
     const x0 = r.x;
@@ -358,6 +360,7 @@ export function laySunken(f: Floor, corr: Uint8Array, rng: RNG): number {
   let count = 0;
   for (const r of f.rooms as Room[]) {
     if (r.kind === 'start' || r.kind === 'boss') continue;
+    if (r.block || r.cell) continue;
     if (r.w < ROOM_MIN + 1 || r.h < ROOM_MIN + 1) continue;
     let raised = false;
     for (let y = r.y; y < r.y + r.h && !raised; y++) for (let x = r.x; x < r.x + r.w; x++) if (height[y * f.w + x] !== 0) raised = true;
