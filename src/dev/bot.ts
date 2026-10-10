@@ -259,19 +259,22 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
   if (!goal && g.boss && canReach(g.boss)) goal = g.boss;
   // (THE WAYS: the boss dead, down the stairwell: walking onto its top step takes the hero down)
   const stair = L.ways?.stair;
-  if (!goal && stair && stair.open) goal = topStep(stair);
+  let step: { x: number; y: number } | null = null;
+  if (!goal && stair && stair.open) goal = step = topStep(stair);
   if (!goal && portal) {
     goal = { x: portal.x, y: portal.y + 0.8 };
     c.interact = g.interactHint() !== null;
   }
   if (goal) walkTo(goal.x, goal.y);
-  // (on the tile beside a lever, the way there is at an end, and the hero may have come onto it by a
-  // far corner, too far off for the lever: he walks on, up to it, as a player would)
-  if (lever && goal && Math.floor(h.x) === Math.floor(goal.x) && Math.floor(h.y) === Math.floor(goal.y)) {
-    const d = Math.hypot(lever.x - h.x, lever.y - h.y);
+  // (on the tile the way leads to, the way is at an end, and the hero may have come onto it by a far
+  // edge or corner: too far off for a lever beside it, or not yet on a stairwell's top step. He walks
+  // on, up to the lever, onto the middle of the step, as a player would.)
+  const on = lever ?? step;
+  if (on && goal && Math.floor(h.x) === Math.floor(goal.x) && Math.floor(h.y) === Math.floor(goal.y)) {
+    const d = Math.hypot(on.x - h.x, on.y - h.y);
     if (d > 0.01) {
-      c.mx = (lever.x - h.x) / d;
-      c.my = (lever.y - h.y) / d;
+      c.mx = (on.x - h.x) / d;
+      c.my = (on.y - h.y) / d;
     }
   }
 }
