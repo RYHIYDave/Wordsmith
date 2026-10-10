@@ -2,10 +2,11 @@
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
 (https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
-as it is (Recommended)". The doc is the living one; this copy follows it (rev 53, with the first
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 58, with the first
 levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs of Version 19.7,
-the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9 and the
-fixes and word slots of Version 20.0 written in), and both change only with his yes. The two pictures in the doc are written out here in
+the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
+fixes and word slots of Version 20.0 and the skill trees and the controller of Version 20.1 written
+in), and both change only with his yes. The two pictures in the doc are written out here in
 words. How it was found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -141,9 +142,15 @@ without the master rune-stone finds the fallen wordsmith again in the next.
 Two heroes of the same class differ by the talents they pick and the words in their attacks.
 
 - **A small talent tree where every pick counts:** few talents, each a real choice that changes
-  how the hero plays. One tree per class is the director’s suggestion.
-- **Talent points come with levels,** one every few levels. The exact count is still open.
-- **Picks can be undone in town, for gold,** so a new build costs something to try.
+  how the hero plays. One tree per class, fifteen talents in each, every tree in its own shape
+  (since Version 20.1): the mage three paths from her rune, for fire, lightning and frost; the
+  ranger an arrow with forks; the warrior two swords crossed, Technique and Iron (your answers of
+  8 Oct, 15:16, and 9 Oct, 08:06; the trees as the doc “Wordsmith: The Skill Trees” has them, your
+  word of 10 Oct, 01:55: “Go ahead and ship it”).
+- **Talent points come with levels:** ten, one at every fifth level (your answer of 8 Oct, 15:16:
+  “10, one every 5 levels (Recommended)”).
+- **Picks can be undone in town, for gold,** so a new build costs something to try: 10 gold for
+  each of the hero’s levels (your answer of 9 Oct, 07:28: “10 gold a level (Recommended)”).
 - **Gear: a few good pieces.** Every drop is worth a look, and there is little to sort. Any weapon
   fits any class, as now.
 
@@ -366,7 +373,8 @@ it goes in.
 | Monster sizes, blue and yellow packs | Since Version 19.7; the new leaders and the rings since Version 19.9 | Done |
 | Monsters’ attacks by size | Since Version 19.8; the new monsters’ and the leaders’ since Version 19.9 | Done |
 | A world map | The gate in town, one dungeon deeper each time | The map; going back to beaten dungeons |
-| A small talent tree | None | A tree for each class; points with levels; re-picking for gold |
+| A small talent tree | A tree for each class, ten points with levels, undoing in town for gold, since Version 20.1 | A passive for each class (your idea of 9 Oct, 22:59) |
+| Controller support | Since Version 20.1: two sticks, the right one aiming; the buttons named on the screen | Done |
 | Forging three words into one | Not built | The table of ranks you were sent on 5 Oct, still waiting on your say |
 | A third slot a side | Built, switch off | Tests and balance for six words on one attack |
 | Gate words for the endless depth | Gate words on any dungeon | Moved to past the final boss |
@@ -387,16 +395,18 @@ on its own (Recommended)"), with the mage’s stances and the big-and-wild skill
 "With today's packs (Recommended)"): in since Version 19.7; the monsters’ attacks next ("Packs
 today, attacks next (Recommended)"): in since Version 19.8; then the new monsters, their leaders and
 the rings (16:05: "New monsters + rings (Recommended)"): in since Version 19.9. The skill trees and
-the controller go in as one version once you have gone over the trees (07:28), and the new words
-after them (07:28: "Next, after these (Recommended)").
+the controller are in since Version 20.1 (10 Oct, 01:55: “Go ahead and ship it”), and the new words
+come next (07:28: "Next, after these (Recommended)").
 
 ## Still open
 
-- [ ] What is in each talent tree. (How many points is settled: ten, one every five levels, your
-  answer of 8 Oct, 15:16: "10, one every 5 levels (Recommended)".)
+- [x] What is in each talent tree: the doc “Wordsmith: The Skill Trees”, in the game since Version
+  20.1 (your word of 10 Oct, 01:55: “Go ahead and ship it”). Ten points, one every five levels: your
+  answer of 8 Oct, 15:16: "10, one every 5 levels (Recommended)".
 - [ ] The table of ranks for forging, sent to you on 5 Oct.
-- [ ] The price of re-picking talents. (What a Normal death costs is settled: a quarter of the gold
-  carried in, your answer of 8 Oct, 13:35: "A quarter (Recommended)".)
+- [x] The price of re-picking talents: 10 gold for each of the hero’s levels (your answer of 9 Oct,
+  07:28: “10 gold a level (Recommended)”). (What a Normal death costs is settled: a quarter of the
+  gold carried in, your answer of 8 Oct, 13:35: "A quarter (Recommended)".)
 - [ ] Which words and places earlier heroes unlock, and for what deeds.
 - [ ] What quests give.
 - [ ] Each land’s look and monsters, with the art chat.

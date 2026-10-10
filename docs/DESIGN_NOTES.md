@@ -5373,6 +5373,87 @@ look right to you, I'll put them all live as Version 20.0."; his answer at 23:46
   open). Published at 01:33 ("Version 54", version id `1791610401-c83f`); the file published is the kept
   copy, `v200a/release/artifact.html`, byte for byte the frozen copy's `dist/artifact.html`.
 
+### Version 20.1: the skill trees and the controller
+
+**What he said.** His order of 9 Oct, 00:22: "K add the art, then work on our skill trees, then I’d like
+controller support.  Dual stick aiming." His answers of 8 Oct, 15:16, which set the trees: "10, one every
+5 levels (Recommended)"; "A mix of both"; "I’d like them to be in a different shape.  Make the mage three
+paths for fire lightning and frost, the ranger a path with forks like a arrow, and the warrior, well I
+don’t have a cool idea for the warrior so I guess that’s on you to figure out"; "Yes, a few
+(Recommended)". The doc "Wordsmith: The Skill Trees" (https://claude.ai/artifact/JKpjxrN2LFNujFs5iMFFqS)
+and `Skill_trees.png` went to him on 9 Oct by 04:36, the controller's layout (`Controller_layout.png`)
+and `In_game.png` by 06:39. His answers of 07:28: to the trees, "Give me some time to go over them and
+then we’ll add them"; to the controller, "Yes, with the trees (Recommended)"; to undoing a talent, "10
+gold a level (Recommended)". At 08:06: "One issue I’m seeing with the warrior tree is rage.  He’s not a
+barbarian, he’s all about power and technique." (Rage became Technique: "Yes, as listed
+(Recommended)"). On 10 Oct at 01:40: "Show me the skill trees" (the doc opened for him); at 01:55: "Go
+ahead and ship it". Asked for his direct OK for the release itself (this session's safety check had stopped
+the release's first commit, shortly after 01:55, as a production step): at 07:15, "Yes".
+
+**What is in it.**
+
+- **The skill trees** (`src/game/talents.ts`, `TALENTS`, on): fifteen talents a class (`TREES`), each with
+  where it sits, what leads to it, its card's words and its word if any; ten points, one at every fifth
+  level (`talentPoints`); a talent taken once one that leads to it is (`takeProblem`). THE MAGE: three
+  paths of five from her rune, fire, lightning and frost, a big talent in the middle of each changing her
+  Warp and a big one at the end. THE RANGER: an arrow flying right, two feathers to start from and the
+  nock between them, the shaft, the head's two barbs (traps above, arrows below), meeting at the point,
+  Far Sight. THE WARRIOR: two swords crossed, Technique and Iron, from their pommels through their guards
+  (a quillon each side) to a crossing that is both swords', and on to either tip. Every talent does what
+  its card says (`TALENT_TUNE`, starting numbers; `game.ts` `has`, `talentHitMult`, `talentKill`,
+  `talentWarp`, `updateTalents`), using the effects the game has.
+- **Where they are picked**: the inventory's fourth page, TALENTS (`ui/talents.ts`), the tree in its shape
+  with faint figures (the arrow's feathers and head, the swords' blades and guards); a talent read on a
+  card with TAKE, or UNDO in town for 10 gold for each of the hero's levels (`unlearnPerLevel`); NEW TALENT
+  on the HUD while a point waits. Saved with the hero (`RunSave.talents`, `cleanTalents`).
+- **The controller** (`src/engine/gamepad.ts`, `GAMEPAD`, on): the browser's Gamepad API, the common pads by
+  their one standard layout. The left stick moves (at one speed, as the touch stick); the right stick aims
+  (pushed: where it points, at an enemy near that line if there is one; let go: the game aims, as on a
+  phone); RT the quick attack (held: it goes on); LT the slow attack (one use a press; held, Whirlwind and
+  Beam go on); A the evasive move; X a flask; B use; Y the inventory; START pause; BACK the map; UP the
+  prompt over the attacks (LEVEL UP, or NEW TALENT). In the menus the left stick moves a pointer, A presses
+  and B goes back. While a pad is played with, the game names its buttons (the prompts, the flask, the
+  moves' plates, the ATTACKS page, the pause panel's controls and the first dungeon's lessons). With no pad
+  the game is as it was. NOT CHECKED: a real pad.
+- **Not in it yet**: his passive for each class (9 Oct, 22:59 and 23:01: the warrior's Riposte, the mage's
+  Mind, the ranger's Hawk), to be drawn into the trees.
+
+**How it was tested.**
+
+- `tests/talents.test.ts` 9, `tests/talents_rules.test.ts` 22, `tests/gamepad.test.ts` 6 (the switches now
+  held on); `tools/scenarios/talents_look.mjs` and `tools/scenarios/gamepad.mjs` in the regression, pc and
+  phone.
+- The merge of 20.0 into `talents` came in clean. Its first commit was stopped by this session's
+  safety check, so the branch was put back as it was and the merged tree, the switches on, tested as a copy
+  (the scratchpad's `v201a/arpg_frozen`); after his "Yes" the same merge and the same edits were committed
+  (`1fb8c70`, `b9d0f9f`), `src`, `tests` and `tools` the same as the copy's, file for file.
+- In the copy: `tsc` clean; THE WHOLE UNIT SUITE 912 of 912 (02:00 to 02:04). THE PRE-FLIGHT, 02:04 to
+  02:14, 30 playtests on its page (the trees and the controller pc and phone; the lesson three ways; the
+  town two ways; half; pages; the HUD two ways; the looks two ways; the save; the practice room; the new
+  monsters; the packs; the monsters' attacks; Normal mode; the traps; the mix; mouse and keyboard; fingers;
+  the plates; a warrior's words; random input alone and through the lesson; the frame rate): all clean.
+- **The regression**: begun at 02:14 and cut off at 02:19, 19 playtests in, when this machine went to sleep
+  with the session (one of the 19, `town`, flagged: the wordsmith's SELL pressed and nothing sold);
+  run again from 07:18, after his "Yes", to 08:13, two at a time, nothing else running: **159 OF 160
+  PLAYTESTS FINISHED CLEAN** (the 156 of 20.0, and the trees and the controller, pc and phone). The one,
+  `depths_pc`: walking along the rim of the sunken floor, a look of the playtest's own came late under the
+  load and found the hero past the sunken floor's last column (21.48, 13.87), on the hall's floor, where
+  its check still wanted him held at the rim; clean twice alone as it stood (20.59 and 20.64), mended
+  (beyond x 21.3 the rim's check does not apply) and clean twice more (20.72, 20.63). `town`, flagged in
+  the run cut off at 02:19, was clean in this one. Speed: the frame-rate run 55.5 frames a second (20.0:
+  59.3), longest frame 50 ms; the slowest fights of the four word-combination runs 53.6 to 56.2 frames a
+  second (20.0: 56.4 to 59.1), longest frame 83 ms.
+- The unit suite in the copy once more, nothing in `src` newer than the page tested and `src` the same as
+  the branch's: 912 of 912, 08:18 to 08:23.
+- THE RELEASE BUILD: made in the copy at 08:23, `Play.html` 1,221,105 bytes and `dist/artifact.html`
+  1,220,783, both saying V20.1; kept in the scratchpad's `v201a/release/`.
+- **The published page itself** (`wrap201.sh` in the scratchpad, 08:23 to 08:50): **85 of 86 playtests
+  clean**, the 82 of 20.0 and the trees and the controller, pc and phone. The one, `combo_phone`: its
+  two quick taps came out as one Strike ("0.00 s apart"), as in 19.6's regression; clean twice alone on
+  the same page (0.93 and 0.94 s apart, the slash), and twice beside its PC twin as the wrap runs them
+  (0.93 and 0.95 s). Published at 08:55 ("Version 55", version id `1791636949-2eb3`); the file published
+  is the kept copy, `v201a/release/artifact.html`, byte for byte the copy's `dist/artifact.html`.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -5803,6 +5884,9 @@ bash tools/look_moves3.sh strike 0,4,8,12 name                                  
 CLS=warrior WEAPON=greatsword SKILL=0 DX=40 DY=20 node tools/playtest.mjs --scenario tools/scenarios/film_attack.mjs --out shots/play/w_strike_front   # an attack filmed IN THE GAME, a frame every thirtieth of a second (SKILL=1 the slow one, 9 the evasive move; HOLD=1 holds it; DX=-40 DY=-20 facing away)
 CLS=mage KILL=1 node tools/playtest.mjs --scenario tools/scenarios/film_fall.mjs --out shots/play/fall_m   # a hero's fall filmed in the game (KILL=0: a heavy blow that rocks them)
 node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new  # picking a hero: the entrance held to its rules (add --hash "heroes=old" for the first heroes, who have none)
+# Version 20.1: the skill trees and the controller (TALENTS and GAMEPAD on)
+node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/talents_look.mjs --out shots/talents/ph   # each class: NEW TALENT, the TALENTS page, a talent read, taken, one not open, undone in town (CLS=mage|ranger|warrior for one; in the regression)
+node tools/playtest.mjs --file dist/<page>.html --scenario tools/scenarios/gamepad.mjs --out shots/pad/pc   # a pad of the playtest's own making (the page answers navigator.getGamepads): walking, aiming, the buttons, the pointer, the names, UP to TALENTS (in the regression)
 # Version 20.0: his fixes of 9 Oct, 22:12 (Leech, the quest's line, the word after the ring, no flash for harm over time) and the slots at 4, 15 and 20
 PAGE=dist/pre.html JOBS=2 bash tools/preflight.sh guide_pc_warrior save touch_wide   # THE PRE-FLIGHT: chosen playtests of the regression, as it runs them, on a page of the tree (logs in shots/preflight/)
 node tools/playtest.mjs --file dist/<page>.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/ring_word.mjs --out shots/ring/ph   # the stone taken and its line, in town and gone; the ring powering up, then the word (frames fNNN)

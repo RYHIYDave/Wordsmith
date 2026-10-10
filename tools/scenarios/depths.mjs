@@ -148,7 +148,10 @@ export default async function (page, snap) {
   // 1. at the rim
   await place(18.6, 12.4);
   let s = await walk(0, 1, (q) => q.y > 13.9 || q.x > 20.7, 1300);
-  check('1. walking at the rim: the hero stays on the hall\'s floor', s.level === 0 && s.stair === 0 && s.y <= 13.71 && s.lift === 0, `at ${s.x.toFixed(2)}, ${s.y.toFixed(2)}`);
+  // (beside the sunken floor, x up to 21.0, he is held at the rim; past its last column, x 21.0 and his
+  // 0.3, the hall's floor goes on at its own level, and a late look under the regression's load found him
+  // there once, at 21.48, 13.87, on the hall's floor: 10 Oct 2026, the regression of 20.1)
+  check('1. walking at the rim: the hero stays on the hall\'s floor', s.level === 0 && s.stair === 0 && (s.y <= 13.71 || s.x >= 21.3) && s.lift === 0, `at ${s.x.toFixed(2)}, ${s.y.toFixed(2)}`);
   await snap('1_at_the_rim');
 
   // 2. down the stairs, begun a little out of line with them (a third of the hero's width past the flight's edge)
