@@ -436,6 +436,8 @@ export interface MobMove {
    */
   glint?: (t: number) => number;
   bare?: (t: number) => boolean;
+  /** WHERE ITS FEET ARE, over and above its keys (a boss's footwork: each foot down where it lands, lifted to move, art/bosses3.ts): the feet's own fields at a moment of the move. */
+  feet?: (t: number) => Partial<Bones>;
   skull?: (t: number) => boolean;
   blurAt?: number;
   /** The Golem's club is swung round (a streak is drawn behind its head as the blow lands), not brought down. */
@@ -451,7 +453,11 @@ export interface MobMove {
   /** THE MARKSMAN'S: his jaw, `t` seconds in (0 shut to 1 wide: his `draw` is his bow's); and how much light his great arrow has gathered (0 none, 1 all of it). */
   jaw?: (t: number) => number;
   charge?: (t: number) => number;
+  /** A BOSS'S CHAINS (art/bosses3.ts, the Chained One's): where the links of each are `t` seconds in, by name (worked out through the move: art/boss_chains.ts); one not named is not his to paint then. */
+  ropes?: (t: number) => Ropes;
 }
+/** Chains, by name: the points along each, in the figure's own space. */
+export type Ropes = Readonly<Record<string, ReadonlyArray<V3>>>;
 
 /** A tile of the floor along the grid, in the figure's own lengths: 32 picture pixels across the screen and 16 down (skeleton.ts, `project`). */
 export const TILE3 = 32 / GRID;
@@ -486,6 +492,8 @@ export interface Moment {
   jaw?: number;
   charge: number;
   dying?: boolean;
+  /** A boss's chains as they are now (MobMove.ropes). */
+  ropes?: Ropes;
 }
 
 function folded(m: MobMove, t: number): number {
@@ -498,7 +506,8 @@ function folded(m: MobMove, t: number): number {
   return from + ((((t - from) % long) + long) % long);
 }
 function posedAt(m: MobMove, t: number): Posed {
-  return bonesAt(m.motion.keys, m.rest, folded(m, t));
+  const q = bonesAt(m.motion.keys, m.rest, folded(m, t));
+  return m.feet ? { ...q, ...m.feet(folded(m, t)) } : q;
 }
 function windOf(t: number): number {
   return (((t / 1.2) % 1) + 1) % 1;
@@ -584,6 +593,7 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   // (the moment within its round, for what flickers frame by frame: so that a loop closes)
   const m: Moment = { s, q, t: folded(mv, t), come, wind, blur, glint: mv.glint ? Math.max(0, mv.glint(t)) : 0, bare: mv.bare ? mv.bare(t) : false, skull: mv.skull ? mv.skull(t) : false, rally: mv.rally ? Math.max(0, mv.rally(t)) : 0, charge: mv.charge ? Math.max(0, mv.charge(t)) : 0 };
   if (mv.jaw) m.jaw = clamp01(mv.jaw(t));
+  if (mv.ropes) m.ropes = mv.ropes(folded(mv, t));
   if (mv.motion.hit !== undefined && !loops) m.since = t - mv.motion.hit;
   if (mv.dust) m.dust = true;
   if ((blur || (mv.trailOver !== undefined && mv.trailOver(t))) && mv.trail) {
@@ -746,7 +756,7 @@ const easeIO = (k: number): number => {
 /** The bones of one dying at a moment (before the pieces let go). */
 function dyingMoment(mob: Mob, t: number): Moment {
   const q = posedAt(mob.dying, t);
-  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: 0, bare: false, skull: false, rally: 0, charge: 0, dying: true, jaw: mob.dying.jaw ? clamp01(mob.dying.jaw(t)) : undefined };
+  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: mob.dying.glint ? Math.max(0, mob.dying.glint(t)) : 0, bare: false, skull: false, rally: 0, charge: 0, dying: true, jaw: mob.dying.jaw ? clamp01(mob.dying.jaw(t)) : undefined, ropes: mob.dying.ropes ? mob.dying.ropes(t) : undefined };
 }
 
 const THEN = new Map<string, Bit[]>();

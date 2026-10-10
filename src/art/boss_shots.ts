@@ -14,10 +14,18 @@
 //     on the floor (`drawThrowPath`); in flight the axe (a picture: art/bosses3.ts makeAxeShotArt) has
 //     its shadow under it (`drawAxeShadow`), and its way is `throwPathAt`.
 //   His chop: where the blade bites, the floor cracks and a puff of it flies (`drawChopCrack`).
+// THE CHAINED ONE (art/bosses3.ts), his picks by 16:44:
+//   "Hook and drag (Recommended)": the hook flung out across the room is a picture of its own
+//     (art/bosses3.ts makeHookShotArt), its chain drawn from his right cuff to it (`drawChainOut`), and
+//     where it is, `coHookPath`; it scrapes the floor as he hauls it in (`drawScrape`).
+//   "Ball throw (Recommended)": the ball in flight is a picture of its own (makeBallShotArt), its chain
+//     drawn from his collar to it (`drawChainOut`); while it flies its shadow grows on the floor where it
+//     will come down (`drawBallShadow`); there it crashes into the floor (`drawBallCrash`); and it
+//     scrapes the floor as he hauls it back (`drawScrape`).
 // Their colours are the enemy's: pink and gold (never a friend's cyan).
 
 import { hash } from './kit';
-import { FLAME } from './mkit';
+import { FLAME, IRON } from './mkit';
 import type { FloorAt } from './mob_shots';
 import { P } from './palette';
 
@@ -299,5 +307,98 @@ export function drawChopCrack(g: CanvasRenderingContext2D, at: FloorAt, x: numbe
     g.globalAlpha = was;
     dotAt(g, cx - 2, cy - 2, FLAME[4], 5, 3);
   }
+  g.globalAlpha = was;
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE CHAINED ONE
+
+/**
+ * A CHAIN OUT ACROSS THE ROOM, from (x0, y0) to (x1, y1) (screen points in the game's pixels: his
+ * cuff or his collar, and the hook or the ball), sagging `sag` pixels at its middle: its links, each
+ * turned a quarter round from the last, as the chain at his wrist is painted, in his old iron; a dark
+ * seam under it.
+ */
+export function drawChainOut(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, sag: number): void {
+  const long = Math.hypot(x1 - x0, y1 - y0);
+  const n = Math.max(2, Math.ceil(long / 1.25));
+  for (let i = 0; i <= n; i++) {
+    const k = i / n;
+    const x = x0 + (x1 - x0) * k;
+    const y = y0 + (y1 - y0) * k + sag * 4 * k * (1 - k);
+    if (i % 2 === 0) {
+      // (a link seen flat: a little ring)
+      dotAt(g, x, y + 1, P.ink, 2, 1);
+      dotAt(g, x, y, IRON[3], 2, 1);
+    } else {
+      // (a link seen edge on)
+      dotAt(g, x, y + 1, P.ink);
+      dotAt(g, x, y, IRON[2]);
+    }
+  }
+}
+/** THE BALL'S SHADOW on the floor where it will come down, at (x, y) (tiles), as it falls: `k` 0 as it leaves his hands to 1 as it lands; darker and wider as it nears. */
+export function drawBallShadow(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, k: number): void {
+  const [sx, sy] = at(x, y);
+  const near = clamp01(k);
+  const rx = 3 + 6 * near;
+  const was = g.globalAlpha;
+  g.globalAlpha = was * (0.2 + 0.55 * near);
+  g.fillStyle = P.black;
+  g.beginPath();
+  g.ellipse(Math.round(sx), Math.round(sy), rx, rx / 2, 0, 0, Math.PI * 2);
+  g.fill();
+  g.globalAlpha = was;
+}
+/** How long the ball's crash shows (seconds from when it comes down). */
+export const BALL_CRASH_FOR = 1.4;
+/** WHERE THE BALL COMES DOWN, at (x, y) (tiles), `t` seconds after: the floor cracked out all round from it, a ring of dust and chips flung out, and a flash where it struck. */
+export function drawBallCrash(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, t: number): void {
+  if (t < 0 || t >= BALL_CRASH_FOR) return;
+  const was = g.globalAlpha;
+  const fade = t < BALL_CRASH_FOR * 0.55 ? 1 : 1 - (t - BALL_CRASH_FOR * 0.55) / (BALL_CRASH_FOR * 0.45);
+  const glow = clamp01(1 - t / 0.3);
+  // the cracks, out every way from it
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + hash(i, 5, 41) * 0.6;
+    const long = 0.35 + 0.3 * hash(i, 6, 41);
+    const pts = jagged(at, x, y, Math.cos(a), Math.sin(a), long, 40 + i, 0.07);
+    along(pts, (px, py, f) => {
+      g.globalAlpha = was * fade;
+      dotAt(g, px, py, glow > 0.1 && f < 0.5 ? (glow > 0.6 ? FLAME[3] : FLAME[2]) : P.ink);
+    });
+  }
+  // the dust and chips flung out, a ring going wider and fading
+  const [cx, cy] = at(x, y);
+  const r = 4 + 22 * clamp01(t / 0.6);
+  const dust = clamp01(1 - t / 0.9);
+  if (dust > 0) {
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2 + hash(i, 9, 43) * 0.3;
+      const rr = r * (0.7 + 0.5 * hash(i, 10, 43));
+      g.globalAlpha = was * dust * 0.85;
+      dotAt(g, cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * 0.5 - 2 * Math.sin(Math.PI * clamp01(t / 0.6)) * hash(i, 11, 43) * 6, i % 3 === 0 ? P.st6 : P.st4);
+    }
+  }
+  if (t < 0.08) {
+    g.globalAlpha = was;
+    dotAt(g, cx - 3, cy - 2, FLAME[4], 7, 4);
+  }
+  g.globalAlpha = was;
+}
+/** WHAT IS DRAGGED SCRAPES THE FLOOR: from (x0, y0) back to (x1, y1) (tiles), the way it has just come, a pale scratch in the stone and a little dust kicked up (`k`: 1 fresh to 0 gone). */
+export function drawScrape(g: CanvasRenderingContext2D, at: FloorAt, x0: number, y0: number, x1: number, y1: number, k: number): void {
+  if (k <= 0) return;
+  const was = g.globalAlpha;
+  const [ax, ay] = at(x0, y0);
+  const [bx, by] = at(x1, y1);
+  const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay)));
+  for (let i = 0; i <= n; i++) {
+    const f = i / n;
+    g.globalAlpha = was * clamp01(k) * (0.35 + 0.4 * (1 - f));
+    dotAt(g, ax + (bx - ax) * f, ay + (by - ay) * f, i % 4 === 0 ? P.st6 : P.st5);
+  }
+  g.globalAlpha = was * clamp01(k) * 0.7;
+  for (let i = 0; i < 4; i++) dotAt(g, ax + (hash(i, 3, 47) - 0.5) * 6, ay - 1 - hash(i, 4, 47) * 3, P.st4);
   g.globalAlpha = was;
 }

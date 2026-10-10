@@ -15,8 +15,8 @@ import { toSprite } from '../art/kit';
 import { makeSkeletonArt3 } from '../art/monster_bones3';
 import { makeWardenArt } from '../art/monster_warden';
 import { MOVES3 } from '../art/moves3';
-import { AMALGAM, AXE_SHOT_FRAMES, CHAINED, HEADSMAN, HS_CATCH, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SWEEP_FROM, HS_SWEEP_TO, HS_THROW_HIT, axeOf, hsBite, hsSweepReach, makeAxeShotArt } from '../art/bosses3';
-import { SENTENCE_FROM, drawAxeShadow, drawChopCrack, drawSentenceLine, drawSentenceSplit, drawSweepRing, drawThrowPath, throwPathAt } from '../art/boss_shots';
+import { AMALGAM, AXE_SHOT_FRAMES, BALL_SHOT_FRAMES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_SNAP_BALL, CO_SNAP_L, makeLeftBehindArt, CO_BALL_LAND, CO_BALL_LET, CO_BALL_REACH, CO_HOOK_BACK, CO_HOOK_BITE, CO_HOOK_LET, CO_HOOK_REACH, CO_LASH_HIT, CO_WHIRL_FROM, CO_WHIRL_TO, HEADSMAN, HOOK_SHOT_FRAMES, coBallPath, coCollarAt, coCuffAt, coHookPath, coWhirlReach, makeBallShotArt, makeHookShotArt, HS_CATCH, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SWEEP_FROM, HS_SWEEP_TO, HS_THROW_HIT, axeOf, hsBite, hsSweepReach, makeAxeShotArt } from '../art/bosses3';
+import { SENTENCE_FROM, drawAxeShadow, drawBallCrash, drawBallShadow, drawChainOut, drawChopCrack, drawScrape, drawSentenceLine, drawSentenceSplit, drawSweepRing, drawThrowPath, throwPathAt } from '../art/boss_shots';
 import type { FloorAt } from '../art/mob_shots';
 import { TILE3, canvasOf, deathOfMob, handAt, paintMob, paintViewOf, posedOfMob, skeletonAt } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
@@ -139,7 +139,9 @@ function pane(x: number, y: number, w: number, h: number, S: number, who: Readon
 
 const BOSSES: Record<string, { mob: Mob; title: string; short: string; walkSaid?: string; struckSaid?: string; deathSaid?: string }> = {
   headsman: { mob: HEADSMAN, title: 'The Headsman', short: 'The Headsman', walkSaid: 'His walk: slow and heavy, his axe across him', struckSaid: 'Struck: he barely gives', deathSaid: 'His hood falls empty' },
-  chained: { mob: CHAINED, title: 'The Chained One', short: 'The Chained One' },
+  chained: { mob: CHAINED, title: 'The Chained One', short: 'The Chained One', walkSaid: 'His walk: a starved giant’s lurching shamble, his chains dragging, the ball scraping behind him', struckSaid: 'Struck: he jerks back from it, his chains rattling', deathSaid: 'His chains drag him down' },
+  chained1: { mob: CHAINED_FREED[1], title: 'The Chained One, his left chain off', short: 'His left chain off', walkSaid: 'His walk, his left chain off', struckSaid: 'Struck', deathSaid: 'His chains drag him down' },
+  chained2: { mob: CHAINED_FREED[2], title: 'The Chained One, free of the ball', short: 'Free of the ball', walkSaid: 'His walk, free of the ball', struckSaid: 'Struck', deathSaid: 'His chains drag him down' },
   amalgam: { mob: AMALGAM, title: 'The Ossuary Amalgamation', short: 'The amalgamation' },
 };
 const spOf = (mob: Mob, which: string, t: number, view: GameView): Sprite =>
@@ -311,7 +313,7 @@ function inGamePixels(x: number, y: number, w: number, h: number, fx0: number, f
   g.drawImage(low, x0, y0, low.width * k, low.height * k);
 }
 /** A pane of floor with him where he stands: `under` drawn on the floor (the game's pixels), `over` in the air; `by` tiles of floor gone by under him (a walk), `away` which way. */
-function filmPane(x: number, y: number, w: number, h: number, S: number, fx0: number, fy0: number, sp: Sprite, shadow: number, under?: (c: CanvasRenderingContext2D) => void, over?: (c: CanvasRenderingContext2D) => void, by = 0, away = false): void {
+function filmPane(x: number, y: number, w: number, h: number, S: number, fx0: number, fy0: number, sp: Sprite, shadow: number, under?: (c: CanvasRenderingContext2D) => void, over?: (c: CanvasRenderingContext2D) => void, by = 0, away = false, props: ReadonlyArray<Sprite> = []): void {
   g.save();
   g.beginPath();
   g.rect(x, y, w, h);
@@ -354,6 +356,9 @@ function filmPane(x: number, y: number, w: number, h: number, S: number, fx0: nu
   g.arc(fx0, fy0, shadow * S, 0, Math.PI * 2);
   g.fill();
   g.restore();
+  // (what lies on the floor where he stands, painted as he is: a broken chain left behind)
+  g.imageSmoothingEnabled = false;
+  for (const p of props) g.drawImage(p.img, Math.round(fx0 - p.ax * 2 * S), Math.round(fy0 - p.ay * 2 * S), p.img.width * S, p.img.height * S);
   drawAura(g, sp, fx0, fy0, 2 * S);
   g.imageSmoothingEnabled = false;
   g.drawImage(sp.img, Math.round(fx0 - sp.ax * 2 * S), Math.round(fy0 - sp.ay * 2 * S), sp.img.width * S, sp.img.height * S);
@@ -385,9 +390,12 @@ interface FilmOf {
   said: (t: number) => string;
   under?: (c: CanvasRenderingContext2D, t: number, view: GameView) => void;
   over?: (c: CanvasRenderingContext2D, t: number, view: GameView) => void;
+  /** Who he is after it (his chains breaking: as free as he is then), and what it leaves lying on the floor where he stands (`left`: the game's pixels from his floor point). */
+  then?: Mob;
+  left?: Record<GameView, Sprite>;
 }
 const lastKey = (mob: Mob, which: string): number => {
-  const mv = which === 'attack' ? mob.attack : which === 'reel' ? mob.reel : mob.more?.[which];
+  const mv = which === 'attack' ? mob.attack : which === 'reel' ? mob.reel : which === 'dying' ? mob.dying : mob.more?.[which];
   const keys = mv?.motion.keys ?? [];
   return keys.length ? keys[keys.length - 1].at : 1;
 };
@@ -458,7 +466,93 @@ function headsmanFilms(): Record<string, FilmOf> {
     },
   };
 }
-const FILMS: Record<string, () => Record<string, FilmOf>> = { headsman: headsmanFilms };
+function chainedFilms(): Record<string, FilmOf> {
+  const leftL = { front: makeLeftBehindArt('L', 'front'), back: makeLeftBehindArt('L', 'back') };
+  const leftBall = { front: makeLeftBehindArt('ball', 'front'), back: makeLeftBehindArt('ball', 'back') };
+  const hooks = { front: makeHookShotArt('front'), back: makeHookShotArt('back') };
+  const balls = { front: makeBallShotArt('front'), back: makeBallShotArt('back') };
+  const at = (view: GameView, fwd: number, left: number): [number, number] => floorOf(paintViewOf(CHAINED, view), fwd, left);
+  /** A point of the figure's own space on the screen (the game's pixels, from his floor point). */
+  const onScreen = (view: GameView, p: readonly number[]): [number, number] => {
+    const [f, l, h] = tilesOf(p);
+    const [x, y] = ISO(...at(view, f, l));
+    return [x, y - h];
+  };
+  return {
+    attack: {
+      long: lastKey(CHAINED, 'attack'),
+      heavy: [CO_LASH_HIT],
+      said: (t) => (t < 0.46 ? 'His lash: his fist up over his shoulder, the chain swinging over after it' : t < CO_LASH_HIT - 0.12 ? 'His lash: held there, the chain hanging down his back, his eyes flaring' : t < CO_LASH_HIT + 0.3 ? 'His lash: over the top and down, the chain slammed down before him' : 'His lash: dragged back to him'),
+    },
+    hook: {
+      long: lastKey(CHAINED, 'hook'),
+      heavy: [],
+      said: (t) => (t < 0.3 ? 'Hook and drag: the hook swung out at his side' : t < CO_HOOK_LET - 0.05 ? 'Hook and drag: swung round and round at his side, faster and faster; he points' : t < CO_HOOK_BITE + 0.05 ? 'Hook and drag: flung out across the room' : t < CO_HOOK_BACK ? 'Hook and drag: hauled in, hand over hand, dragging what it caught' : 'Hook and drag: it falls at his feet'),
+      under: (c, t, view) => {
+        const h = coHookPath(t);
+        if (!h || h.flying) return;
+        const [x, y] = at(view, h.at[0], h.at[1]);
+        const [x0, y0] = at(view, CO_HOOK_REACH, h.at[1]);
+        drawScrape(c, ISO, x, y, x0, y0, 1);
+      },
+      over: (c, t, view) => {
+        const h = coHookPath(t);
+        if (!h) return;
+        const [hx, hy] = at(view, h.at[0], h.at[1]);
+        const [sx, sy] = ISO(hx, hy);
+        const [cx, cy] = onScreen(view, coCuffAt('hook', t));
+        drawChainOut(c, cx, cy, sx, sy - h.at[2], h.flying ? 6 : 1);
+        const set = hooks[view];
+        spriteAt(c, h.flying ? set[Math.floor((t * 2.5 * HOOK_SHOT_FRAMES) % HOOK_SHOT_FRAMES)] : set[HOOK_SHOT_FRAMES], sx, sy - h.at[2]);
+      },
+    },
+    whirl: {
+      long: lastKey(CHAINED, 'whirl'),
+      heavy: [],
+      said: (t) => (t < 0.55 ? 'The chain whirl: crouched, his chains swinging up' : t < CO_WHIRL_FROM ? 'The chain whirl: wound round to his right, held' : t < CO_WHIRL_TO ? 'The chain whirl: three times round, his chains flying out round him' : 'The chain whirl: staggering out of it'),
+      under: (c, t) => drawSweepRing(c, ISO, 0, 0, coWhirlReach() / TILE3, t < CO_WHIRL_FROM ? Math.max(0, Math.min(1, (t - 0.3) / (CO_WHIRL_FROM - 0.35))) : 0, t),
+    },
+    breakL: {
+      long: lastKey(CHAINED, 'breakL'),
+      heavy: [],
+      said: (t) => (t < 0.44 ? 'His left chain: he stamps on it' : t < CO_SNAP_L ? 'His left chain: he wrenches his arm up against it, roaring' : t < CO_SNAP_L + 0.4 ? 'His left chain: it snaps at the cuff' : 'He roars, wilder'),
+      then: CHAINED_FREED[1],
+      left: leftL,
+    },
+    breakBall: {
+      long: lastKey(CHAINED_FREED[1], 'breakBall'),
+      heavy: [],
+      said: (t) => (t < 0.42 ? 'The ball’s chain: he takes it behind his neck' : t < CO_SNAP_BALL ? 'The ball’s chain: hauled over his head, straining, roaring' : t < CO_SNAP_BALL + 0.4 ? 'The ball’s chain: torn from his collar' : 'He roars, free of the ball'),
+      then: CHAINED_FREED[2],
+      left: leftBall,
+    },
+    ball: {
+      long: lastKey(CHAINED, 'ball'),
+      heavy: [],
+      said: (t) => (t < 0.6 ? 'The ball throw: down to the iron ball behind him' : t < 1.12 ? 'The ball throw: heaved up over his head' : t < CO_BALL_LET - 0.05 ? 'The ball throw: held up there, trembling' : t < CO_BALL_LAND + 0.05 ? 'The ball throw: hurled across the room' : t < CO_BALL_BACK ? 'The ball throw: hauled back on its chain' : 'The ball throw: dragged round behind him'),
+      under: (c, t, view) => {
+        const [lx, ly] = at(view, CO_BALL_REACH, 0);
+        if (t >= 0.9 && t < CO_BALL_LAND) drawBallShadow(c, ISO, lx, ly, t < CO_BALL_LET ? 0.15 * Math.min(1, (t - 0.9) / 0.4) : 0.15 + 0.85 * ((t - CO_BALL_LET) / (CO_BALL_LAND - CO_BALL_LET)));
+        drawBallCrash(c, ISO, lx, ly, t - CO_BALL_LAND);
+        const b = coBallPath(t);
+        if (b && !b.flying) {
+          const [x, y] = at(view, b.at[0], b.at[1]);
+          drawScrape(c, ISO, x, y, lx, ly, 1);
+        }
+      },
+      over: (c, t, view) => {
+        const b = coBallPath(t);
+        if (!b) return;
+        const [bx, by] = at(view, b.at[0], b.at[1]);
+        const [sx, sy] = ISO(bx, by);
+        const [cx, cy] = onScreen(view, coCollarAt('ball', t));
+        drawChainOut(c, cx, cy, sx, sy - b.at[2], b.flying ? 8 : 2);
+        spriteAt(c, balls[view][b.flying ? Math.floor((t * 1.6 * BALL_SHOT_FRAMES) % BALL_SHOT_FRAMES) : 0], sx, sy - b.at[2]);
+      },
+    },
+  };
+}
+const FILMS: Record<string, () => Record<string, FilmOf>> = { headsman: headsmanFilms, chained: chainedFilms, chained1: chainedFilms, chained2: chainedFilms };
 
 if (mode === 'move') {
   const who = BOSSES[parts[1] || 'headsman'] ?? BOSSES.headsman;
@@ -486,7 +580,7 @@ if (mode === 'move') {
     const m = moveT(t);
     if (ups && t >= T0 && t < T1) return spOf(mob, 'raise', t - T0, view);
     if (ups && t >= after && t < after + UP) return spOf(mob, 'lower', t - after, view);
-    return m < 0 || m > film.long ? spOf(mob, 'stand', t, view) : spOf(mob, which, m, view);
+    return m < 0 ? spOf(mob, 'stand', t, view) : m > film.long ? spOf(film.then ?? mob, 'stand', t, view) : spOf(mob, which, m, view);
   };
   // (how big a pane must be: every frame of it, both ways, and what it does to the floor)
   const all: Sprite[] = [];
@@ -495,7 +589,7 @@ if (mode === 'move') {
   const PAD = 10;
   const M = 30;
   // (room on the floor for what the move does to it: before him, which is down the picture facing you and up it facing away)
-  const FLOOR = which === 'sentence' ? 150 : which === 'throw' ? 130 : 40;
+  const FLOOR = which === 'sentence' ? 150 : which === 'throw' || which === 'hook' || which === 'ball' ? 150 : 40;
   const cw = (l + r + 2 * M + FLOOR) * S;
   const ch = (u + d + 2 * M + FLOOR * 0.5) * S;
   const HEAD = 58;
@@ -507,14 +601,14 @@ if (mode === 'move') {
     g.fillStyle = BG;
     g.fillRect(0, 0, cv.width, cv.height);
     const said = m >= 0 && m <= film.long ? film.said(m) : ups && t >= T0 && t < T1 ? `${who.title} takes up his axe in both hands, across him` : ups && t >= after && t < after + UP ? `${who.title} sets his axe down again` : `${who.title}`;
-    text(said, PAD, 8, 17, '#ffd866', 700);
+    text(m > film.long && film.then ? `${film.then.name}` : said, PAD, 8, 17, '#ffd866', 700);
     text('a mock-up: not in the game. What each blow hurts, and how far, are the main chat’s rules', PAD, 32, 14, '#cfc8ff', 600);
     for (const [j, view] of (['front', 'back'] as const).entries()) {
       const x = PAD + j * (cw + PAD);
       const fx0 = x + (M + l + (which === 'sweep' ? FLOOR * 0.5 : 0)) * S;
       const fy0 = view === 'front' || which === 'sweep' ? HEAD + (M + u + (which === 'sweep' ? FLOOR * 0.25 : 0)) * S : HEAD + ch - (M + d) * S;
       const mm = m >= 0 && m <= film.long ? m : -1;
-      filmPane(x, HEAD, cw, ch, S, fx0, fy0, frameOf(view, t), mob.shadow, film.under && mm >= 0 ? (c) => film.under?.(c, mm, view) : undefined, film.over && mm >= 0 ? (c) => film.over?.(c, mm, view) : undefined);
+      filmPane(x, HEAD, cw, ch, S, fx0, fy0, frameOf(view, t), mob.shadow, film.under && mm >= 0 ? (c) => film.under?.(c, mm, view) : undefined, film.over && mm >= 0 ? (c) => film.over?.(c, mm, view) : undefined, 0, false, film.left && m > film.long ? [film.left[view]] : []);
       text(view === 'front' ? 'facing you' : 'facing away', x + cw / 2, HEAD + ch + 6, 15, '#e8e2ff', 600, 'center');
     }
   });

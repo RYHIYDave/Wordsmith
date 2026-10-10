@@ -19,6 +19,20 @@
 //   6. FACING AWAY, THE AXE IS IN HIS RIGHT HAND: his back is painted as the camera truly sees him (and
 //      every other figure's as before);
 //   7. as he falls and lies, no elbow points up.
+// And, by his words at 23:35, "I need all bosses ran through all checks from now on.  These boss fights
+// are important"; at 23:44, "Add it to the rulebook.  All checks must be made."; at 23:56, "And every
+// boss gets the same treatment as characters" (the art rulebook's How art is made 7):
+//   8. EVERY BOSS THROUGH EVERY CHECK, the whole review the heroes had (src/art/boss_checks.ts): every
+//      frame of every move of the Headsman and of the Chained One, in each of his three states, from in
+//      front and from behind: nothing through him, feet that grip, nothing in the floor, nothing jerky,
+//      nothing that jumps from one move to the next, blows drawn back, held and carried through, hips
+//      first, alive when still;
+//   9. THE CHAINED ONE paints in every frame both ways round, in all three of his states: nothing cyan,
+//      his edge while he lives, none as he dies;
+//  10. every pixel of both of them is whole or empty, but the edge of light;
+//  11. his chains hang from his cuffs and his collar in every frame, a broken one is gone from him (and
+//      what it leaves on the floor paints), and his throws leave and come back to his hands;
+//  12. nothing of the game imports the chains or the checks either.
 //   run: tsx --test tests/bosses.test.ts
 
 // @ts-ignore
@@ -31,7 +45,8 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import type { AnimSet } from '../src/art/actor_types';
-import { BOSSES, HEADSMAN, HS_CHOP_HIT, HS_SENTENCE_HIT, axeOf, hsBite, makeHeadsmanArt3 } from '../src/art/bosses3';
+import { BOSSES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_BALL_LET, CO_HOOK_BACK, CO_HOOK_LET, HEADSMAN, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SHAPE, axeOf, coBallPath, coCollarAt, coCuffAt, coHookPath, coShape, collarRingAt, cuffAt, hsBite, makeChainedArt3, makeHeadsmanArt3, makeLeftBehindArt } from '../src/art/bosses3';
+import { checkBoss, findingsSaid } from '../src/art/boss_checks';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
 import { BONEWARD, GOLEM, MARKSMAN, SHADE, TILE3, paintViewOf, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
@@ -99,7 +114,7 @@ function segDist(p: V3, a: V3, b: V3): number {
 }
 /** His moves that hold the axe, and how long each is (seconds): every frame of them at thirty a second is looked at. */
 const MOVES: ReadonlyArray<[string, number]> = [
-  ['stand', 2.5], ['raise', 0.5], ['lower', 0.5], ['walk', 1.25], ['attack', 1.85], ['sentence', 2.65], ['sweep', 2.27], ['throw', 3.1], ['reel', 0.3],
+  ['stand', 2.5], ['raise', 0.6], ['lower', 0.6], ['setOff', 0.4], ['halt', 0.5], ['walk', 1.25], ['attack', 1.85], ['sentence', 2.65], ['sweep', 2.27], ['throw', 3.1], ['reel', 0.3],
 ];
 /** While the throw's axe is out of his hands. */
 const thrown = (mv: string, t: number): boolean => mv === 'throw' && t >= 0.8 && t < 2.3;
@@ -203,3 +218,101 @@ test('7. as he falls and lies, no elbow points up', () => {
     assert.ok(s.elbowL[2] <= s.shoulderL[2] + 1 && s.elbowR[2] <= s.shoulderR[2] + 1, `at ${t.toFixed(2)} s: his elbows ${s.elbowL[2].toFixed(0)}, ${s.elbowR[2].toFixed(0)} over his shoulders ${s.shoulderL[2].toFixed(0)}, ${s.shoulderR[2].toFixed(0)}`);
   }
 });
+
+test('8. EVERY BOSS THROUGH EVERY CHECK: the whole review, every frame of every move, both ways round', () => {
+  const all: [string, Parameters<typeof checkBoss>[0], Parameters<typeof checkBoss>[1]][] = [
+    ['the Headsman', HEADSMAN, HS_SHAPE],
+    ['the Chained One', CHAINED, coShape(CHAINED)],
+    ['the Chained One, his left chain off', CHAINED_FREED[1], coShape(CHAINED_FREED[1])],
+    ['the Chained One, free of the ball', CHAINED_FREED[2], coShape(CHAINED_FREED[2])],
+  ];
+  for (const [who, mob, shape] of all) {
+    const found = checkBoss(mob, shape);
+    assert.equal(found.length, 0, `${who}: ${findingsSaid(found).slice(0, 12).join('; ')}`);
+  }
+});
+
+test('9. the Chained One paints in every frame both ways round, as free as he is: nothing cyan, his edge while he lives, none as he dies', () => {
+  for (const freed of [0, 1, 2] as const) {
+    const art = makeChainedArt3(CHAINED.pace, freed);
+    for (const view of ['front', 'back'] as const) {
+      const { living, dying } = framesOf(art[view]);
+      assert.ok(living.length > 150 && dying.length > 20, `${freed}, ${view}: ${living.length} living frames, ${dying.length} dying`);
+      living.forEach((sp, i) => {
+        const f = looked(sp);
+        assert.ok(f.n > 600 && !f.cyan && f.rim > 40, `${freed}, ${view}, living frame ${i}: ${f.n} pixels, ${f.rim} of his edge${f.cyan ? ', and cyan' : ''}`);
+      });
+      dying.forEach((sp, i) => {
+        const f = looked(sp);
+        assert.ok(f.n > 300 && !f.cyan && f.rim === 0, `${freed}, ${view}, dying frame ${i}: ${f.n} pixels, ${f.rim} of an edge${f.cyan ? ', and cyan' : ''}`);
+      });
+    }
+  }
+});
+
+test('10. every pixel of both of them is whole or empty, but the edge of light', () => {
+  for (const [who, art] of [['the Headsman', makeHeadsmanArt3()], ['the Chained One', makeChainedArt3()]] as const) {
+    for (const view of ['front', 'back'] as const) {
+      const { living, dying } = framesOf(art[view]);
+      [...living, ...dying].forEach((sp, i) => {
+        const d = paintingOf(sp).d;
+        let odd = 0;
+        for (let k = 3; k < d.length; k += 4) if (d[k] !== 0 && d[k] !== 255 && d[k] !== RIM_ALPHA) odd++;
+        assert.equal(odd, 0, `${who}, ${view}, frame ${i}: ${odd} pixels neither whole nor empty`);
+      });
+    }
+  }
+});
+
+test('11. his chains hang from his cuffs and his collar; a broken one is gone from him; his throws leave and come back to his hands', () => {
+  const moves = (mob: typeof CHAINED): string[] => ['stand', 'walk', 'attack', 'reel', ...Object.keys(mob.more ?? {})];
+  const moveOf = (mob: typeof CHAINED, m: string) => (m === 'stand' || m === 'walk' || m === 'attack' || m === 'reel' ? mob[m] : mob.more![m]);
+  for (const [mob, has] of [[CHAINED, ['L', 'R', 'ball']], [CHAINED_FREED[1], ['R', 'ball']], [CHAINED_FREED[2], ['R']]] as const) {
+    for (const m of moves(mob)) {
+      const mv = moveOf(mob, m);
+      const end = mv.motion.keys[mv.motion.keys.length - 1].at;
+      for (let t = 0; t <= end + 1e-9; t += 0.1) {
+        const r = mv.ropes!(t);
+        const s = skeletonAt(mob, m, t);
+        for (const name of ['L', 'R', 'ball'] as const) {
+          const ch = r[name];
+          if (!(has as readonly string[]).includes(name)) {
+            assert.ok(!ch, `${mob.id} ${m} at ${t.toFixed(1)} s: his ${name} chain is broken, but there`);
+            continue;
+          }
+          // (out across the room, or broken in this very move, it is not his to paint)
+          if (!ch) continue;
+          if ((m === 'breakL' && name === 'L') || (m === 'breakBall' && name === 'ball')) continue;
+          const at = name === 'ball' ? collarRingAt(s) : cuffAt(s, name);
+          assert.ok(len(sub(ch[0], at)) < 0.8, `${mob.id} ${m} at ${t.toFixed(1)} s: his ${name} chain hangs ${len(sub(ch[0], at)).toFixed(1)} from where it is fixed`);
+        }
+      }
+    }
+  }
+  for (const which of ['L', 'ball'] as const) for (const view of ['front', 'back'] as const) assert.ok(paintingOf(makeLeftBehindArt(which, view)).d.some((v, i) => i % 4 === 3 && v > 0), `what his broken ${which} chain leaves on the floor paints, ${view}`);
+  // (the hook leaves his hand as he flings it, and is back in it when he has hauled it in; and the ball)
+  // (in tiles before him and to his left, and up in game pixels, as the game's drawings of them take it)
+  const inTiles = (p: V3): V3 => [p[0] / TILE3, p[1] / TILE3, p[2] / 2];
+  const near = (a: readonly number[], b: V3): number => Math.hypot(a[0] - b[0], a[1] - b[1], (a[2] - b[2]) / 16);
+  const hook0 = coHookPath(CO_HOOK_LET + 0.001);
+  assert.ok(hook0 && near(hook0.at, inTiles(coCuffAt('hook', CO_HOOK_LET))) < 1.8, `the hook leaves from his right hand: ${hook0?.at.map((v) => v.toFixed(2)).join(',')}`);
+  assert.ok(coHookPath(CO_HOOK_BACK + 0.05) === null, 'the hook is his again when it is hauled in');
+  const ball0 = coBallPath(CO_BALL_LET + 0.001);
+  assert.ok(ball0 && near(ball0.at, inTiles(lerpHands(CO_BALL_LET))) < 0.1, 'the ball leaves from between his hands');
+  assert.ok(coBallPath(CO_BALL_BACK + 0.05) === null, 'the ball is his again when it is hauled in');
+  void coCollarAt;
+});
+
+test('12. nothing of the game imports the chains or the checks either', () => {
+  for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks/.test(f)) continue;
+    const text = fs.readFileSync(path.join('src', f), 'utf8');
+    assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
+  }
+});
+
+/** Between his hands, a moment into the ball throw. */
+function lerpHands(t: number): V3 {
+  const s = skeletonAt(CHAINED, 'ball', t);
+  return mul(add(s.handL, s.handR), 0.5);
+}
