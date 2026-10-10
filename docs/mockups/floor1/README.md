@@ -8,7 +8,8 @@ does (what breaks, what blocks, what hurts, what a quest asks, when a moment pla
 chat's, once he has said yes.
 
 **State of this branch (`mockup/floor1-warden`):** from `mockup/crypt` (the Crypt as he said yes to
-it). Made by THE ART CHAT, 10 Oct 2026. First sent to him at 402d01f; his notes on it mended since.
+it). Made by THE ART CHAT, 10 Oct 2026. First sent to him at 402d01f; his notes on it mended since;
+his yes by 12:00, as shown. Ready for the main chat.
 
 ## His words
 
@@ -30,6 +31,10 @@ it). Made by THE ART CHAT, 10 Oct 2026. First sent to him at 402d01f; his notes 
   is three blocks high?  Some assets could be the full height like a large crack down the wall.  Or
   a floor tile and wall combo that’s shows a crumbled wall and the debris piled on the floor.   And
   the rats just kind of disappear.  Animations need run the checks."
+- Asked, of the pictures with his notes worked in (the review page "Warden Floor Review"), "Floor 1's
+  pieces and moments, as on the Warden Floor Review page: good as shown?", by 12:00: "Yes, on to
+  floor 2 (Recommended)", offered as: floor 1 goes to the main chat to build in, and the art chat
+  starts the Headsman's floor. **So floor 1 has his yes, as shown: the main chat's to build in.**
 
 ## How his notes were read, and what changed
 
