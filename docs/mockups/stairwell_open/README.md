@@ -78,10 +78,9 @@ with their row) and `the kerb`.
   dropping (never steeper than the eye looks down, or it would hang hidden under the next), slips and
   falls forward, faster every frame, slams onto the steps and shoots on down them out of sight under
   the floor, darker the deeper it goes in the stairwell's own five steps of dark. The second and third
-  rows slam on frames 25 and 30 (0.83 and 1.0 s), jolts; each slam blows dust up out of the hole and
-  flings chips. Every slab is out of sight by frame 29.
+  rows slam on frames 25 and 30 (0.83 and 1.0 s), jolts; each slam blows dust up out of the hole and flings chips, each deeper slam a bigger column, building to the great burst. Every slab is out of sight by frame 29.
 - **The great burst** (frame 36, 1.2 s, a jolt: the last row slams, deep under the near kerb, which
-  jumps 2 pixels and settles): a column of dust blows up out of the whole hole, highest at frame 45 (1.5 s), 190
+  jumps 2 pixels and settles): a column of dust blows up out of the whole hole, highest at frame 45 or 46 (1.5 s), 190
   picture pixels (95 of the game's) above the opening's corner, spreading out as it goes; a skirt of
   it rolls out over the kerb across the floor; chips and stones are flung up out of it over 6 frames,
   across the hole and back down into it. The dust falls fast and thins away as clouds (never as a
@@ -91,7 +90,7 @@ with their row) and `the kerb`.
 ## For the main chat, when he has said yes
 
 - **Lined up by the anchor:** every frame is anchored at makeStairwell's anchor, the corner of the
-  opening up the screen; each is cut to what is painted in it (the biggest 228 x 268 picture pixels,
+  opening up the screen; each is cut to what is painted in it (the biggest 232 x 268 picture pixels,
   the stairwell's 143 x 82): draw each by its anchor, as a sprite is drawn.
 - **Swap at the ends:** draw nothing of it before it plays; play its frames from the boss's death
   (whatever stood on the opening put to one side of it, as you have it); after its last frame, draw the
@@ -102,7 +101,7 @@ with their row) and `the kerb`.
 - **The jolts** (1, 9, 25, 30, 36) are for the screen's kick and a sound: the films kick it 3 game
   pixels down and back at each; and a tremor of a game pixel every frame from the shock to the heave,
   the floor shuddering. Both the main chat's to do in the game, at his rule's size.
-- **Painting it:** about 1 s each here (tsx; all eight 8.6 s), a phone several times that: paint the
+- **Painting it:** about 1 s each here (tsx; all eight 8.6 to 10.5 s, run to run), a phone several times that: paint the
   floor's one (its way) when the floor is first reached, or while the boss fight goes on.
 - **Shared:** it holds a copy of makeStairwell's painter that takes the kerb's height and keeps, for
   each pixel, how high in the world what it shows is (for what falls into the hole to be hidden by what
@@ -123,7 +122,7 @@ were lost in the dust and then read as a comb of sticks (now fewer, chunkier, in
 over the dust, spread over six frames, with short trails); the cracks made a regular grid, a window or
 a net (they now branch from the middle, jagged); the heave's dust was popcorn (now a skirt and five
 jets); slabs tipped too steep hung hidden under the next; a slab struck the steps a frame before its
-jolt; the slabs by the near kerb vanished behind it on the heave (the kerb now leads them up).
+jolt; the slabs by the near kerb vanished behind it on the heave (the kerb now leads them up); the slabs' stretch was the quietest part, against his rule (each deeper slam now throws a bigger column, building to the great burst).
 
 ## The checks (`tests/stairwell_open.test.ts`, 57, each floor and way)
 
