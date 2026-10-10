@@ -86,7 +86,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     count: 1, countDmg: 1, splash: 0, splashDmg: 0, pierce: false, projSpeed: 0,
     ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0,
     might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, lines,
-    mystic: false, charge: 0, pull: 0, split: 0, hex: 0, still: 0, arcana: 0, vortex: false, shards: 0, hexCircle: false, bubble: false,
+    mystic: false, bomb: 0, pull: 0, split: 0, hex: 0, still: 0, arcana: 0, vortex: false, shards: 0, hexCircle: false, bubble: false,
   };
 
   // (WORDS4: a word set on the wrong kind says so, and does nothing: his answer of 8 Oct 2026, 16:53, "Nothing (Recommended)")
@@ -200,7 +200,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     if (WORDS4.on) {
       // VOLATILE'S HIDDEN BOMB (WORDS4; his words of 5 Oct 2026: "Like you secretly stuck a bomb on them"), by Dexterity
       const boom = BOMB.dmg + BOMB.per * attrOf('volatile', d);
-      r.charge = boom / 100;
+      r.bomb = boom / 100;
       lines.push(`Volatile: sticks a hidden charge on what it hits; ${BOMB.delay} s later it bursts for ${pct(boom)} of the hit, on all near it.`);
     } else {
       const boom = 12 + 0.2 * attrOf('volatile', d);

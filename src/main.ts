@@ -36,7 +36,7 @@ import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, WORDS4, WORDS5, useFirstLevels, useWords4, useWords5 } from './game/defs';
 import type { Limit } from './game/defs';
 import { DOORS } from './game/doors';
 import { MIX, RELIEF } from './game/dungeon';
@@ -1952,6 +1952,26 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         art.bestiary = makeBestiary();
       }
       return NEW_MONSTERS.on;
+    },
+    /**
+     * THE WORDS STILL TO COME (game/defs.ts): WORDS4, Mystical with Power for attacks only and
+     * Volatile's hidden bomb; WORDS5, Pulling, Splitting, Hexing and Stilling. Off until his yes to
+     * them at work: on and off for playtests and films, the hero's attacks worked out afresh.
+     * `words4()` / `words5()` say whether they are on.
+     */
+    words4: (on?: boolean): boolean => {
+      if (on !== undefined) {
+        useWords4(on);
+        if (game) game.refresh();
+      }
+      return WORDS4.on;
+    },
+    words5: (on?: boolean): boolean => {
+      if (on !== undefined) {
+        useWords5(on);
+        if (game) game.refresh();
+      }
+      return WORDS5.on;
     },
     rangerStances: (on: boolean) => {
       useRangerStances(on);

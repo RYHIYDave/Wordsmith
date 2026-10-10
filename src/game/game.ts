@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, BOMB, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, MYSTIC, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, WORDS4, firstWordSkill, isSpell, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordInert, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -21,7 +21,7 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { AIM_MODES } from './state';
-import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
+import type { AimMode, Bomb, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -202,6 +202,8 @@ export class Game {
   risers: Riser[] = [];
   /** THE NEW MONSTERS (game/defs.ts SPEAR): the Bonewards' spears lying on the floor, each until its Boneward picks it up. */
   spears: Spear[] = [];
+  /** VOLATILE'S HIDDEN BOMB (WORDS4): the charges stuck on monsters, till they burst. */
+  bombs: Bomb[] = [];
   /** The orb set down by the staff's quick attack (one at a time), and the mage's familiars. */
   orbs: OrbInst[] = [];
   familiars: Familiar[] = [];
@@ -270,6 +272,8 @@ export class Game {
   private denyT = 0;
   /** Precise behind: for each ability, the use (its count of uses) that has already marked an enemy. */
   private marked: number[] = [-1, -1, -1];
+  /** VOLATILE'S HIDDEN BOMB: the use of each ability that last stuck a charge (one charge a use, on the first enemy it hits). */
+  private bombed: number[] = [-1, -1, -1];
   /**
    * THE SKILL TREES (game/talents.ts): seconds the hero has stood still (Steady Aim); seconds left
    * of Momentum's and Windrunner's speed; seconds to Stormcaller's next bolt; Unbreakable spent in
@@ -874,6 +878,7 @@ export class Game {
     this.volleys = [];
     this.risers = [];
     this.spears = [];
+    this.bombs = [];
     this.orbs = [];
     this.familiars = [];
     this.drops = [];
@@ -891,6 +896,8 @@ export class Game {
     h.poisonT = 0;
     h.might = 0;
     h.mightT = 0;
+    h.arcana = 0;
+    h.arcanaT = 0;
     h.haste = 0;
     h.hasteT = 0;
     h.frenzy = 0;
@@ -1268,6 +1275,9 @@ export class Game {
       life *= 1 + 0.3 * power;
       dm *= 1 + 0.4 * power;
     }
+    // MYSTICAL on a monster (WORDS4): it hits harder (and the hero's spells do it less: hitMonster)
+    const mystic = wordShare(has, 'mystical');
+    if (mystic > 0) dm *= 1 + (MYSTIC.monsterDmg - 1) * mystic;
     let name = def.name;
     if (elite || boss || (pack && pack.rarity === 'blue')) name = [...words.slice(0, want).map((w) => WORDS[w].front), champion ? 'Guardian' : def.name].join(' ');
     if (greater) name = 'Greater ' + name;
@@ -1324,6 +1334,7 @@ export class Game {
     this.updateOrbs(dt);
     this.updateFamiliars(dt);
     this.updateZones(dt);
+    if (this.bombs.length) this.updateBombs(dt);
     this.updateDots(dt);
     this.updateDrops(dt);
     this.updateProps(c);
@@ -2096,8 +2107,19 @@ export class Game {
     const r = h.skills[i].r;
     const st = h.d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
-    const k = r.dmgMult * (1 + (st.dmgPct + el) / 100);
+    const k = r.dmgMult * (1 + (st.dmgPct + el + this.spellPct(i, false)) / 100);
     return [Math.max(1, Math.round(h.d.dmgMin * k)), Math.max(1, Math.round(h.d.dmgMax * k))];
+  }
+
+  /**
+   * WORDS4: the % more ability `i`'s hits deal for being a spell: the spell damage burned into gear
+   * (Mystical's), and, in the fight (`live`), the hero's ARCANA ("of Mysteries"). 0 for an attack.
+   */
+  private spellPct(i: number, live: boolean): number {
+    const h = this.hero;
+    const s = h.skills[i];
+    if (!s || !isSpell(s.id)) return 0;
+    return h.d.stats.spellPct + (live ? h.arcana : 0);
   }
 
   /** Average damage of one hit with an ability, used to size ground patches and runes. */
@@ -2106,7 +2128,7 @@ export class Game {
     const r = h.skills[i].r;
     const st = h.d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
-    return ((h.d.dmgMin + h.d.dmgMax) / 2) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
+    return ((h.d.dmgMin + h.d.dmgMax) / 2) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might + this.spellPct(i, true)) / 100);
   }
 
   // ===========================================================================================
@@ -2135,6 +2157,10 @@ export class Game {
     if (h.mightT > 0) {
       h.mightT -= dt;
       if (h.mightT <= 0) h.might = 0;
+    }
+    if (h.arcanaT > 0) {
+      h.arcanaT -= dt;
+      if (h.arcanaT <= 0) h.arcana = 0;
     }
     if (h.hasteT > 0) {
       h.hasteT -= dt;
@@ -2619,7 +2645,7 @@ export class Game {
         this.hitMonster(q.m, i, each, hits >= 3);
         hits++;
       }
-      if (line.length) this.landed(i);
+      if (line.length) this.landed(i, line[0].m.x, line[0].m.y);
       for (let d = 0.5; d < end.len; d += 1) this.breakProps(sx + dx * d, sy + dy * d, half + 0.25, i);
       if (k === 0 && leaves) {
         // what it leaves: ground along the line; a rune and a cloud where it first struck, or
@@ -2647,14 +2673,24 @@ export class Game {
    * could swing at the air before a fight and walk in at full might; and an attack held or set
    * down, used once every five seconds, never got past the first stack.)
    */
-  private landed(i: number): void {
+  private landed(i: number, x?: number, y?: number): void {
     const h = this.hero;
     const s = h.skills[i];
-    if (!s || s.r.might <= 0) return;
+    if (!s) return;
     const r = s.r;
-    h.might = Math.min(r.might * (this.has('cadence') ? TALENT_TUNE.cadence : 5), h.might + r.might);
-    h.mightT = 5;
-    this.emit({ t: 'buff', kind: 'might', x: h.x, y: h.y, stacks: Math.max(1, Math.round(h.might / r.might)) });
+    if (r.might > 0) {
+      h.might = Math.min(r.might * (this.has('cadence') ? TALENT_TUNE.cadence : 5), h.might + r.might);
+      h.mightT = 5;
+      this.emit({ t: 'buff', kind: 'might', x: h.x, y: h.y, stacks: Math.max(1, Math.round(h.might / r.might)) });
+    }
+    // MYSTICAL behind (WORDS4): each spell blow that lands adds to the hero's ARCANA (his name for it,
+    // 8 Oct 2026, 18:23, "Arcana (Recommended)"), up to MYSTIC.max stacks, and keeps it up; its star
+    // flies to the hero from (x, y), where the blow struck
+    if (r.arcana > 0) {
+      h.arcana = Math.min(r.arcana * MYSTIC.max, h.arcana + r.arcana);
+      h.arcanaT = MYSTIC.secs;
+      this.emit({ t: 'buff', kind: 'arcana', x: x ?? h.x, y: y ?? h.y, stacks: Math.max(1, Math.round(h.arcana / r.arcana)) });
+    }
   }
 
   /** What a use of ability `i` gives the hero, from the words behind it: haste. Once a use. ("of Power" is given by what lands: see `landed`.) */
@@ -2923,13 +2959,14 @@ export class Game {
   /** The words in front of ability `i`: what the effects show. */
   private fronts(i: number): WordId[] {
     const s = this.hero.skills[i];
-    return s ? s.front.filter((w): w is WordId => w !== null) : [];
+    // (WORDS4: a word that does nothing on this ability, Power on a spell or Mystical on an attack, is not counted)
+    return s ? s.front.filter((w): w is WordId => w !== null && !wordInert(w, s.id)) : [];
   }
 
   /** The words behind ability `i`. */
   private behinds(i: number): WordId[] {
     const s = this.hero.skills[i];
-    return s ? s.behind.filter((w): w is WordId => w !== null) : [];
+    return s ? s.behind.filter((w): w is WordId => w !== null && !wordInert(w, s.id)) : [];
   }
 
   /**
@@ -3108,7 +3145,7 @@ export class Game {
     const tx = best.x;
     const ty = best.y;
     this.hitMonster(best, i, frac, false);
-    this.landed(i);
+    this.landed(i, tx, ty);
     this.sfx(power ? 'power' : 'hit', 0.7);
     if (words.includes('heavy')) this.emit({ t: 'heavy', x: tx, y: ty, r: 1.1, big: false });
     if (r.splash > 0) {
@@ -3116,10 +3153,16 @@ export class Game {
       const rad = r.splash * r.size * (r.element === 'fire' && this.has('fuel') ? TALENT_TUNE.fuel : 1);
       // a full-strength splash is an explosion; Power's is a shock through the ground
       this.emit({ t: 'burst', x: tx, y: ty, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words, n, echo });
+      const to: { x: number; y: number }[] = [];
       for (const o of this.monsters) {
         if (o.dead || o === best) continue;
-        if (Math.hypot(o.x - tx, o.y - ty) <= rad + o.r && !this.shutIn(o)) this.hitMonster(o, i, frac * r.splashDmg, true);
+        if (Math.hypot(o.x - tx, o.y - ty) <= rad + o.r && !this.shutIn(o)) {
+          to.push({ x: o.x, y: o.y });
+          this.hitMonster(o, i, frac * r.splashDmg, true);
+        }
       }
+      // (MYSTICAL, WORDS4: its splash runs out as the lines of a constellation, for its look)
+      if (r.mystic && to.length) this.emit({ t: 'mysticSplash', x: tx, y: ty, to });
     }
     // (THE SKILL TREES: Sweeping Cut, a melee hit splashes on the enemies beside)
     if (this.has('sweepingcut')) {
@@ -3151,7 +3194,7 @@ export class Game {
       }
     }
     if (hits > 0) {
-      this.landed(i);
+      this.landed(i, cx, cy);
       this.sfx(r.element === 'fire' ? 'fire' : r.element === 'frost' ? 'frost' : r.element === 'lightning' ? 'zap' : 'hit', 0.8);
     }
     this.breakProps(cx, cy, rad, i);
@@ -3373,6 +3416,32 @@ export class Game {
     this.zones.push(z);
   }
 
+  /**
+   * VOLATILE'S HIDDEN BOMB (WORDS4; his words of 5 Oct 2026: "Like you secretly stuck a bomb on
+   * them."): each charge rides on its monster, lies where it fell if it dies first, and bursts when
+   * its time is up, on everything within BOMB.r (nothing shut in another room: `shutIn`).
+   */
+  private updateBombs(dt: number): void {
+    for (let k = this.bombs.length - 1; k >= 0; k--) {
+      const b = this.bombs[k];
+      const m = this.monsters.find((q) => q.id === b.id && !q.dead);
+      if (m) {
+        b.x = m.x;
+        b.y = m.y;
+      }
+      b.t -= dt;
+      if (m) m.bombT = Math.max(0, b.t);
+      if (b.t > 0) continue;
+      this.bombs.splice(k, 1);
+      this.emit({ t: 'burst', x: b.x, y: b.y, r: BOMB.r, el: b.el, style: 'blast', words: VOLATILE_ONLY });
+      this.emit({ t: 'bombBurst', x: b.x, y: b.y, r: BOMB.r });
+      this.sfx('explode', 0.6);
+      for (const o of this.monsters) {
+        if (!o.dead && Math.hypot(o.x - b.x, o.y - b.y) <= BOMB.r + o.r && !this.shutIn(o)) this.damageMonster(o, b.dmg, b.el, false, b.skill);
+      }
+    }
+  }
+
   /** One hit of ability `i` on a monster, with everything a word in front adds to it. */
   private hitMonster(m: Monster, i: number, frac: number, quiet: boolean): void {
     // (what is shut in a room is out of reach: `shutIn`)
@@ -3382,7 +3451,12 @@ export class Game {
     const r = h.skills[i].r;
     const st = d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
-    let dmg = this.rng.range(d.dmgMin, d.dmgMax) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
+    let dmg = this.rng.range(d.dmgMin, d.dmgMax) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might + this.spellPct(i, true)) / 100);
+    // (MYSTICAL on a monster, WORDS4: the hero's spells do it less; a minion, of its leader's Mystical, half that)
+    if (isSpell(h.skills[i].id)) {
+      const ward = wordShare(m, 'mystical');
+      if (ward > 0) dmg *= 1 - (1 - MYSTIC.monsterSpells) * ward;
+    }
     // (THE SKILL TREES: what the talents make of a hit)
     if (TALENTS.on) dmg *= this.talentHitMult(m);
     let crit = this.rng.chance(d.critChance / 100);
@@ -3431,7 +3505,15 @@ export class Game {
     // (THE SKILL TREES: a lightning hit leaves it shocked, which Overload works on)
     if (TALENTS.on && (r.element === 'lightning' || r.arcs > 0)) m.shockT = TALENT_TUNE.shockSecs;
     if (spent) this.emit({ t: 'markSpent', id: m.id, x, y, dx: x - h.x, dy: y - h.y });
-    this.damageMonster(m, dmg, r.element, crit, i, !quiet && h.skills[i].front.includes('power'), front);
+    this.damageMonster(m, dmg, r.element, crit, i, !!front && front.includes('power'), front);
+    // VOLATILE'S HIDDEN BOMB in front (WORDS4): a charge stuck on the first enemy each use hits, one
+    // on a monster at a time, that bursts a moment later on all near it (where it fell, if it dies)
+    if (r.bomb > 0 && this.bombed[i] !== h.skills[i].uses && !this.bombs.some((b) => b.id === m.id)) {
+      this.bombed[i] = h.skills[i].uses;
+      this.bombs.push({ id: m.id, x, y, t: BOMB.delay, dur: BOMB.delay, dmg: Math.max(1, Math.round(dmg * r.bomb)), el: r.element, skill: i });
+      m.bombT = BOMB.delay;
+      this.emit({ t: 'bomb', id: m.id, x, y, secs: BOMB.delay });
+    }
     if (r.poison > 0) this.poisonMonster(m, dmg * r.poison, i);
     if (!m.dead) {
       // HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too
@@ -3697,7 +3779,7 @@ export class Game {
     if (m.boss) lists.push({ w: W.boss, lines: QUIPS.boss });
     const s = m.lastSkill >= 0 ? h.skills[m.lastSkill] : null;
     if (s) {
-      const words = [...s.front, ...s.behind].filter((w): w is WordId => w !== null);
+      const words = [...this.fronts(m.lastSkill), ...this.behinds(m.lastSkill)];
       if (words.length) lists.push({ w: W.word, lines: QUIPS.word[q.pick(words)] });
       lists.push({ w: W.skill, lines: QUIPS.skill[s.id] });
     }
@@ -4886,7 +4968,7 @@ export class Game {
     // (an arrow or a wave that goes through several is still one blow)
     if (!p.mighted) {
       p.mighted = true;
-      this.landed(p.skill);
+      this.landed(p.skill, x, y);
       if (p.words.includes('heavy')) this.emit({ t: 'heavy', x, y, r: 1.1, big: false });
     }
     const power = p.words.includes('power');
@@ -4895,6 +4977,7 @@ export class Game {
       const rad = r.splash * r.size * (r.element === 'fire' && this.has('fuel') ? TALENT_TUNE.fuel : 1);
       this.emit({ t: 'burst', x, y, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words: p.words });
       if (r.splashDmg >= 1) this.sfx(r.element === 'frost' ? 'frost' : 'explode', 0.6);
+      const to: { x: number; y: number }[] = [];
       for (const o of this.monsters) {
         if (o.dead || o === m) continue;
         // (one of a volley: what another shot of it has already hurt is left alone, and what this
@@ -4902,8 +4985,11 @@ export class Game {
         if (p.volley && p.hit.includes(o.id)) continue;
         if (Math.hypot(o.x - x, o.y - y) > rad + o.r || this.shutIn(o)) continue;
         if (p.volley) p.hit.push(o.id);
+        to.push({ x: o.x, y: o.y });
         this.hitMonster(o, p.skill, p.dmg * r.splashDmg, true);
       }
+      // (MYSTICAL, WORDS4: its splash runs out as the lines of a constellation, for its look)
+      if (r.mystic && to.length) this.emit({ t: 'mysticSplash', x, y, to });
       this.breakProps(x, y, rad, p.skill);
     }
     if (r.rune > 0 && !p.runed) {
@@ -5031,7 +5117,7 @@ export class Game {
             this.hitMonster(m, v.skill, v.frac, hits >= 3);
             hits++;
           }
-          if (hits > 0) this.landed(v.skill);
+          if (hits > 0) this.landed(v.skill, ax, ay);
           this.breakProps(ax, ay, reach * 0.6, v.skill);
           this.emit({ t: 'volleyFall', x: ax, y: ay, el: v.element, words, n: c, echo: v.echo, hits });
           // (ten arrows a second: the ones that hit are heard, and every other one that does not)

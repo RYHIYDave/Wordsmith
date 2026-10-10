@@ -64,12 +64,13 @@ import { WORD_COLOR } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
-import { ATTR_NAME, CLASSES, ELEMENT_NAME, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
+import { ATTR_NAME, CLASSES, ELEMENT_NAME, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, wordInert, xpToNext } from '../game/defs';
 import type { Game } from '../game/game';
 import { modLines, statView } from '../game/items';
 import type { ImbueOption } from '../game/items';
 import type { SlotRef } from '../game/state';
 import { armorReduction } from '../game/stats';
+import { inertLine } from '../game/words';
 import { ATTRS, EQUIP_SLOTS, WORD_IDS } from '../game/types';
 import type { ClassId, EquipSlot, IconKey, Item, Limit, WordId } from '../game/types';
 import { Figure } from '../render/figure';
@@ -1372,7 +1373,9 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
           line(why, THEME.bad, false);
           return;
         }
-        line(ref.side === 'front' ? WORDS[word].frontText : WORDS[word].behindText, P.white, false);
+        // (WORDS4: Power on a spell or Mystical on an attack does nothing there, and the slot says so before it is set)
+        if ((word === 'power' || word === 'mystical') && wordInert(word, sk.id)) line(inertLine(word), THEME.bad, false);
+        else line(ref.side === 'front' ? WORDS[word].frontText : WORDS[word].behindText, P.white, false);
         const back = game.displaced(ref);
         if (back) line(`${WORDS[back].name.toUpperCase()} is there now. It goes back to your words.`, THEME.text);
         line(T || (st.drag && st.drag.moving) ? 'Let go to set it. It can be taken out again.' : 'Click to set it. It can be taken out again.', THEME.dim);

@@ -361,30 +361,45 @@ export const WORDS: Record<WordId, WordDef> = {
 
 /**
  * THE WORDS STILL TO COME (his doc "Wordsmith: The New Words", his yes of 8 Oct 2026, 16:53: "Yes,
- * as it is (Recommended)"; their place, next after the skill trees and the controller: 9 Oct,
- * 07:28, "Next, after these (Recommended)"). MYSTICAL, which does for spells what Power does for
- * attacks, with POWER FOR ATTACKS ONLY (and Mystical for spells only: set on the other kind a word
- * does nothing, and its slot says so; his answer, 16:53, "Nothing (Recommended)") and VOLATILE'S
- * HIDDEN BOMB, by Dexterity; and PULLING, SPLITTING, HEXING and STILLING. Their looks are the art
- * chat's, with his yes (render/words3.ts). OFF until he has seen them at work and said yes: the five
- * do not drop and are not shown (WORD_IDS), Power and Volatile are as they were.
+ * as it is (Recommended)"; their place, after the skill trees and the controller: 9 Oct, 07:28,
+ * "Next, after these (Recommended)"; built while he goes over the trees: 21:22, "Not yet; carry on
+ * with the words (Recommended)"). In the doc's order, two versions:
+ *   WORDS4: MYSTICAL, which does for spells what Power does for attacks, with POWER FOR ATTACKS ONLY
+ *   (and Mystical for spells only: set on the other kind a word does nothing, and its slot says so;
+ *   his answer, 16:53, "Nothing (Recommended)") and VOLATILE'S HIDDEN BOMB, by Dexterity;
+ *   WORDS5: PULLING, SPLITTING, HEXING and STILLING.
+ * Their looks are the art chat's, with his yes (render/words3.ts). Each OFF until he has seen it at
+ * work and said yes: its words do not drop and are not shown (WORD_IDS); with WORDS4 off, Power and
+ * Volatile are as they were.
  */
 export const WORDS4 = { on: false };
-const WORDS4_IDS: readonly WordId[] = ['mystical', 'pulling', 'splitting', 'hexing', 'stilling'];
+export const WORDS5 = { on: false };
+const WORDS4_IDS: readonly WordId[] = ['mystical'];
+const WORDS5_IDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling'];
 const AS_IT_WAS = { power: { ...WORDS.power }, volatile: { ...WORDS.volatile } };
 const WITH_WORDS4 = {
   power: { about: 'The word of force. It feeds attacks.', frontText: 'More attack damage and a bigger hit.', behindText: 'Each attack hit that lands builds a short damage bonus.' },
   volatile: { attr: 'dex' as Attr, about: 'The word of ruin. A hidden bomb.', frontText: 'Sticks a hidden charge on what it hits; it bursts a moment later.' },
 };
+/** The words in the game (WORD_IDS) as the two switches have them. */
+function fillWordIds(): void {
+  WORD_IDS.length = 0;
+  WORD_IDS.push(...ALL_WORD_IDS.filter((w) => (WORDS4.on || !WORDS4_IDS.includes(w)) && (WORDS5.on || !WORDS5_IDS.includes(w))));
+}
 /** WORDS4 on (true) or off (false): the switch, the words in the game, and what Power and Volatile say. For tests and pictures; the game follows it at once. */
 export function useWords4(on: boolean): void {
   WORDS4.on = on;
-  WORD_IDS.length = 0;
-  WORD_IDS.push(...ALL_WORD_IDS.filter((w) => on || !WORDS4_IDS.includes(w)));
+  fillWordIds();
   Object.assign(WORDS.power, on ? WITH_WORDS4.power : AS_IT_WAS.power);
   Object.assign(WORDS.volatile, on ? WITH_WORDS4.volatile : AS_IT_WAS.volatile);
 }
+/** WORDS5 on (true) or off (false): the switch and the words in the game. For tests and pictures; the game follows it at once. */
+export function useWords5(on: boolean): void {
+  WORDS5.on = on;
+  fillWordIds();
+}
 useWords4(WORDS4.on);
+useWords5(WORDS5.on);
 
 /** A word that does nothing on this ability (WORDS4): Power on a spell, Mystical on an attack (isSpell: the weapon decides). */
 export function wordInert(word: WordId, id: SkillId): boolean {

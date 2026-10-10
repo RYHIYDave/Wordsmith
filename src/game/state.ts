@@ -84,8 +84,8 @@ export interface Resolved {
   shield: number;
   /** WORDS4. MYSTICAL in front: a spell's bigger hit (dmgMult, size, splash); the flag is for its look. */
   mystic: boolean;
-  /** VOLATILE'S HIDDEN BOMB in front: a charge stuck on what it hits bursts a moment later for this fraction of the hit (0 = none; with WORDS4 off, `volatile`). */
-  charge: number;
+  /** VOLATILE'S HIDDEN BOMB in front: a charge stuck on the first enemy each use hits bursts a moment later for this fraction of the hit (0 = none; with WORDS4 off, `volatile`). */
+  bomb: number;
   /** PULLING in front: the struck are dragged up to this many tiles toward the blow (0 = none). */
   pull: number;
   /** SPLITTING in front: on its first hit it breaks into smaller copies that go on to other enemies, each for this fraction of the hit (0 = none). */
@@ -454,6 +454,23 @@ export interface Spear {
   fy: number;
   owner: number;
   flow: Uint16Array | null;
+}
+
+/**
+ * VOLATILE'S HIDDEN BOMB (WORDS4): a charge stuck on monster `id`, riding on it (and lying where it
+ * fell, if it dies first), that bursts when `t` runs out, for `dmg`, of `el`, on all within BOMB.r;
+ * `skill`: the hero's ability that stuck it (a kill by its burst is that ability's); `dur`: how long
+ * it was given (for its look).
+ */
+export interface Bomb {
+  id: number;
+  x: number;
+  y: number;
+  t: number;
+  dur: number;
+  dmg: number;
+  el: Element;
+  skill: number;
 }
 
 /** 'cracks': Heavy behind, cracked ground that staggers; 'ward': Guarding behind, a circle the hero takes less harm in (Version 19.3). */
@@ -906,8 +923,8 @@ export type GameEvent =
    * monster `id` cursed / slowed in time for `secs`; a Pulling hit drawing in to (x, y).
    */
   | { t: 'mysticSplash'; x: number; y: number; to: readonly { x: number; y: number }[] }
-  | { t: 'charge'; id: number; x: number; y: number; secs: number }
-  | { t: 'chargeBurst'; x: number; y: number; r: number }
+  | { t: 'bomb'; id: number; x: number; y: number; secs: number }
+  | { t: 'bombBurst'; x: number; y: number; r: number }
   | { t: 'split'; x: number; y: number; to: readonly { x: number; y: number }[] }
   | { t: 'shards'; x: number; y: number; r: number }
   | { t: 'hexed'; id: number; x: number; y: number; secs: number }

@@ -11,9 +11,11 @@
 // hand (`demo3`, at the foot of this file), moving monsters as the rules one day will.
 
 import { FIGURE_SIZE, figureOf } from '../art/bestiary';
+import { GLYPH } from '../art/icons';
+import { P } from '../art/palette';
 import { hash2 } from '../engine/rng';
 import type { Game } from '../game/game';
-import type { GameEvent, Monster } from '../game/state';
+import type { Bomb, GameEvent, Monster } from '../game/state';
 import type { Cam, Fx } from './fx';
 import { pline, wx, wy } from './fx';
 
@@ -564,6 +566,77 @@ export function mysticSplash(fx: Fx, x: number, y: number, to: readonly { x: num
         streaks(fx, p.x, p.y, 5, [C[4], C[5], C[3]], 1.6, 2, { z: 12, life: 0.2 });
       },
     });
+  }
+}
+
+// =============================================================================================
+// VOLATILE'S HIDDEN BOMB (WORDS4; drawn by this chat after the art chat's way here, Volatile's own
+// colour and rune: pictures to him first). Its burst is Volatile's blast as the game has it.
+
+/** Volatile's colours: deep to white (its word colour is P.pu4). */
+const VOLATILE_RAMP: readonly string[] = ['#0a0612', P.pu2, P.pu3, P.pu4, P.pu5, P.white];
+
+/** A charge is stuck on a monster at (x, y): a spark of Volatile's violet where it bites in. */
+export function bombStuck(fx: Fx, x: number, y: number): void {
+  const C = VOLATILE_RAMP;
+  fx.flashes.push({ x, y, z: 10, r: 0.24, t: 0, dur: 0.08, colors: [C[5], C[4], C[3]] });
+  streaks(fx, x, y, 5, [C[4], C[5], C[3]], 1.4, 2, { z: 10, life: 0.16 });
+}
+
+/**
+ * The charge on its monster (or where it fell, if the monster died first): Volatile's rune, small,
+ * dark-edged, stuck on the body; its heart beats violet, faster and faster as the burst comes, and
+ * sparks crackle off it; in its last moment it burns white.
+ */
+function drawBomb(g: CanvasRenderingContext2D, cam: Cam, game: Game, b: Bomb, t: number, fx: Fx): void {
+  const C = VOLATILE_RAMP;
+  const m = game.monsters.find((q) => q.id === b.id && !q.dead);
+  const sx = Math.round(wx(cam, b.x, b.y)) + (m ? shift3(m, t)[0] : 0);
+  const base = Math.round(wy(cam, b.x, b.y)) + (m ? shift3(m, t)[1] : 0);
+  // (on the body, a little above its middle; on the floor if what carried it has fallen)
+  const cy = m ? base - Math.round(FIGURE_SIZE[figureOf(m)].top * 0.55) : base - 3;
+  const left = Math.max(0, b.t);
+  const k = 1 - left / Math.max(0.01, b.dur);
+  // (the beat: slow at first, quickening to a flicker; white at the very end)
+  const rate = 3 + 22 * k * k;
+  const on = Math.sin(t * Math.PI * 2 * rate) > 0;
+  const hot = left < 0.22;
+  const rows = GLYPH.volatile;
+  const n = rows.length;
+  const x0 = sx - Math.floor(n / 2);
+  const y0 = cy - Math.floor(n / 2);
+  g.fillStyle = C[0];
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < rows[r].length; c++) {
+      if (rows[r][c] === '.') continue;
+      g.fillRect(x0 + c - 1, y0 + r, 3, 1);
+      g.fillRect(x0 + c, y0 + r - 1, 1, 3);
+    }
+  }
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < rows[r].length; c++) {
+      const ch = rows[r][c];
+      if (ch === '.') continue;
+      g.fillStyle = hot ? C[5] : ch === 'o' ? (on ? C[5] : C[4]) : r < 2 ? C[4] : C[3];
+      g.fillRect(x0 + c, y0 + r, 1, 1);
+    }
+  }
+  // each beat throws a ring out from it, quicker as the burst comes (a ticking charge, read at a glance)
+  const beat = (t * rate) % 1;
+  const rr = 3 + beat * 6;
+  g.globalAlpha = (1 - beat) * (hot ? 1 : 0.85);
+  g.fillStyle = hot ? C[5] : C[4];
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
+    g.fillRect(Math.round(sx + Math.cos(a) * rr), Math.round(cy + Math.sin(a) * rr * 0.6), 1, 1);
+  }
+  g.globalAlpha = 1;
+  // sparks crackle off it, more as it nears its burst (so many a second, not so many a frame)
+  if (Math.random() < (4 + 30 * k) * W3.dt * fx.room()) {
+    const a = Math.random() * Math.PI * 2;
+    const len = 2 + Math.round(Math.random() * 3);
+    g.fillStyle = Math.random() < 0.5 ? C[5] : C[4];
+    for (let i = 1; i <= len; i++) g.fillRect(Math.round(sx + Math.cos(a) * (3 + i)), Math.round(cy + Math.sin(a) * (2 + i * 0.7)), 1, 1);
   }
 }
 
@@ -1380,6 +1453,8 @@ export function air3(g: CanvasRenderingContext2D, cam: Cam, t: number, game: Gam
     if (k.stun > 0) drawStun(g, sx, top, t, k);
     if (k.hex > 0 || k.flare > 0) drawSigil(g, sx, top - 13 + Math.round(Math.sin(t * 2.6 + m.id) * 1.2), k, t);
   }
+  // VOLATILE'S HIDDEN BOMB (WORDS4): each charge the rules hold
+  for (const b of game.bombs ?? []) drawBomb(g, cam, game, b, t, fx);
   for (const s of W3.snaps) {
     const m = game.monsters.find((q) => q.id === s.id);
     if (!m) continue;
@@ -1867,6 +1942,12 @@ export function lights3(spot: (x: number, y: number, r: number, a: number) => vo
   for (const s of W3.sweeps) spot(wx(cam, s.x, s.y), wy(cam, s.x, s.y) - 12, 24, 0.6 * (1 - s.t / s.dur));
   const M = W3.mystic;
   if (M.shown > 0) spot(moonWas[0], moonWas[1], 12 + M.shown * 3, 0.3 + M.shown * 0.08);
+  // Volatile's hidden bomb (WORDS4): a small violet light where each charge sits, brighter as it nears its burst
+  for (const b of game.bombs ?? []) {
+    const m = game.monsters.find((q) => q.id === b.id && !q.dead);
+    const k = 1 - Math.max(0, b.t) / Math.max(0.01, b.dur);
+    spot(wx(cam, b.x, b.y), wy(cam, b.x, b.y) - (m ? Math.round(FIGURE_SIZE[figureOf(m)].top * 0.55) : 3), 10 + 8 * k, 0.35 + 0.3 * k);
+  }
   void t;
 }
 
@@ -1879,8 +1960,10 @@ export function lights3(spot: (x: number, y: number, r: number, a: number) => vo
 // THE GAME'S OWN WORDS AT WORK (Version 19.3): Heavy, Precise, Frenzied and Guarding, called up by
 // what the rules say happened (game.ts: the events 'heavy', 'stun', 'stagger', 'markOn',
 // 'markSpent', 'frenzy', 'frenzyFed', 'shield', 'guarded', 'blocked', and the 'zone' of cracks and
-// wards). main.ts calls it every frame, with that frame's events, while WORDS3.on. The other four
-// words (Pulling, Splitting, Hexing, Stilling) are still the demo's, below, until their rules are in.
+// wards). main.ts calls it every frame, with that frame's events, while WORDS3.on. WORDS4 (game/defs.ts):
+// Mystical's 'hit' words, 'mysticSplash' and 'buff' of 'arcana'; Volatile's hidden bomb, 'bomb' (and
+// its charge drawn from the rules' Game.bombs, `drawBomb`). The other four words (Pulling, Splitting,
+// Hexing, Stilling) are still the demo's, below, until their rules are in.
 
 let joinedLevel: unknown = null;
 /** The patches the rules laid (not a Heavy blow's own short cracks): one laid again where it lies lasts longer. */
@@ -1917,7 +2000,12 @@ export function events3(events: readonly GameEvent[], game: Game, fx: Fx): void 
       if (m) preciseCrit(fx, m, e.dx, e.dy);
     } else if (e.t === 'hit') {
       if (!e.onHero && e.words && e.words.includes('precise') && !spent.has(`${e.x},${e.y}`)) preciseHit(fx, e.x, e.y, e.x - h.x, e.y - h.y);
-    } else if (e.t === 'frenzy') frenzyHit(fx, e.x, e.y, e.dx, e.dy);
+      // MYSTICAL in front (WORDS4): a spell's hit, in moonlight (the rules leave a word that does nothing there out of `words`)
+      if (!e.onHero && e.words && e.words.includes('mystical')) mysticHit(fx, e.x, e.y);
+    } else if (e.t === 'mysticSplash') mysticSplash(fx, e.x, e.y, e.to);
+    else if (e.t === 'buff' && e.kind === 'arcana') mysticStack(e.x, e.y, e.stacks);
+    else if (e.t === 'bomb') bombStuck(fx, e.x, e.y);
+    else if (e.t === 'frenzy') frenzyHit(fx, e.x, e.y, e.dx, e.dy);
     else if (e.t === 'frenzyFed') frenzyFed(e.x, e.y);
     else if (e.t === 'shield') guardOn(fx, e.x, e.y, e.secs);
     else if (e.t === 'guarded' || e.t === 'blocked') guardStruck(fx, e.x, e.y, e.fromX, e.fromY);

@@ -1349,6 +1349,8 @@ export class Fx {
           break;
         }
         case 'buff': {
+          // (MYSTICAL behind, WORDS4: its ARCANA is the art chat's moon at the hero's shoulder, render/words3.ts)
+          if (e.kind === 'arcana') break;
           if (e.kind === 'haste') {
             // Swift behind: a gust lifts round the hero
             this.gust(e.x, e.y, 1.3);

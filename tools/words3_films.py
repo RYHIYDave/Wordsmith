@@ -5,7 +5,9 @@ at three picture pixels to a point, the game at five screen pixels to a game pix
 the word does, with the word's name and what it does over the top, at the game's own speed (a frame
 is a thirtieth of a second of the game's time).
    python3 tools/words3_films.py <frames dir> <out dir> [word ...]
-The frames are <frames dir>/<word>_fNNN.png; each film goes to <out dir>/<word>.gif."""
+The frames are <frames dir>/<word>_fNNN.png; each film goes to <out dir>/<word>.gif.
+   env NOTE: the line at the top right (default: a mock-up, not in the game). The films of WORDS4 at work
+   by the game's own rules (tools/scenarios/words4_film.mjs): NOTE="in the game, switched off till your yes"."""
 import glob
 import os
 import subprocess
@@ -32,7 +34,11 @@ FILMS = {
     'stilling': {'box': (228, 35, 214, 140), 'colour': (0x86, 0xea, 0xae), 'lines': ['In front: time slows for what it hits: a ripple, a clock', 'at its feet, and its echoes linger as it moves.', 'Behind: a bubble where enemies and their shots crawl.']},
     'guarding': {'box': (196, 48, 140, 108), 'colour': (0x30, 0xa8, 0x68), 'lines': ['In front: using it gives a brief shield, a shell round', 'the hero that flares where a blow lands.', 'Behind: a ward circle; the hero takes less damage inside.']},
     'mystical': {'box': (200, 46, 180, 112), 'colour': (0xac, 0xbc, 0xfe), 'lines': ['In front: a bigger spell hit. A crescent of moonlight', 'sweeps round the struck; a spell that hits one enemy', 'splashes the ones beside it.', 'Behind: each spell hit sends a star to the little moon', 'at her shoulder. It waxes to full at five.']},
+    # (WORDS4 at work by the game's own rules: tools/scenarios/words4_film.mjs)
+    'wave': {'title': 'MYSTICAL', 'box': (214, 52, 180, 108), 'colour': (0xac, 0xbc, 0xfe), 'lines': ['On the Wave: a bigger spell hit, a crescent round each', 'it strikes (the Wave strikes many, so no splash).', 'Behind: a star from each hit to the moon at her', 'shoulder: ARCANA, more spell damage, full at five.']},
+    'volatile': {'box': (206, 56, 180, 108), 'colour': (0x98, 0x58, 0xd0), 'lines': ['In front: a hidden charge, stuck on the first enemy', 'each use hits. It ticks faster and faster, then', 'bursts, and hurts everything near it.']},
 }
+NOTE = os.environ.get('NOTE', 'a mock-up: not in the game')
 
 os.makedirs(out, exist_ok=True)
 big, mid, small = ImageFont.truetype(B, 26), ImageFont.truetype(R, 17), ImageFont.truetype(R, 14)
@@ -48,8 +54,8 @@ for word in words:
         im = Image.open(path).convert('RGB').crop((x * K, y * K, (x + w) * K, (y + h) * K)).resize((W, H), Image.LANCZOS)
         card = Image.new('RGB', (W, top + H + 22), BG)
         d = ImageDraw.Draw(card)
-        d.text((14, 10), word.upper(), font=big, fill=f['colour'])
-        d.text((W - 14, 18), 'a mock-up: not in the game', font=small, fill=GREY, anchor='ra')
+        d.text((14, 10), f.get('title', word.upper()), font=big, fill=f['colour'])
+        d.text((W - 14, 18), NOTE, font=small, fill=GREY, anchor='ra')
         for i, line in enumerate(f['lines']):
             d.text((14, 46 + i * 22), line, font=mid, fill=PALE)
         card.paste(im, (0, top))
