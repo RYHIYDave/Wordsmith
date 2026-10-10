@@ -5858,6 +5858,12 @@ python3 tools/sheet_cells.py previews/words_stacked.png "Four words at once" "..
 node tools/preview.mjs src/dev/preview_styles.ts shots/styles.png 1200 2600      # the six art styles (crop to the logged "sheet WxH")
 node tools/preview.mjs src/dev/preview_styles.ts shots/pair.png 1200 4000 pair   # styles 1 and 6, the whole cast
 node tools/preview.mjs src/dev/preview_dungeon.ts shots/dungeon.png 1100 760      # six generated levels, top-down
+# THE SHAPE OF A DUNGEON (his yes by 18:28, 9 Oct: "Yes, after 19.9 (Recommended)"): a view of the game, the same view in
+# plain lines with the places marked where a decoration fits (the rules: the head of src/dev/preview_frame.ts), and the key
+SEED=3897415668 DEPTH=3 AT=31.5,98.5 node tools/playtest.mjs --file dist/frame.html --size 1000x640 --dpr 1 --scenario tools/scenarios/frame_photo.mjs --out shots/frame/photo
+node tools/preview.mjs src/dev/preview_frame.ts shots/frame/cam.png 1000 640 "3:23:cam:31.5:98.5:500:320:2"   # its [log] lines give the counts
+python3 tools/frame_compose.py shots/frame/photo_view.png shots/frame/cam.png previews/dungeon_shape.png --depth 3 --here 4,18,2,16 --whole 45,276,13,222 --standing "braziers (boxes), rubble (a cross)" --door "the barred door into the lower room"
+node tools/preview.mjs src/dev/preview_frame.ts shots/frame/win.png 1180 830 "3:23:20:88:46:106:2"   # a window of tiles with its own title and key; "3:23:all:1" the whole level
 node tools/preview.mjs src/dev/preview_warrior2.ts shots/warrior2.png 540 1600    # old and new warrior side by side
 tsx tools/balance.ts 12 2400                                                      # bots: dungeons cleared, cause of death
 ```
