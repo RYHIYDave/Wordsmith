@@ -321,6 +321,18 @@ test('Pixels 1, crisp: no loose single pixels standing alone in any piece (but a
 test('Pixels 7: everything that stands has a soft shadow under it, as the figures do (the game draws it)', () => {
   for (const p of pieces.filter((q) => q.kind === 'obstacle' || q.kind === 'breakable' || q.name === 'candles' || q.name === "the statue's head" || q.name === 'horned helm' || q.kind === 'quest' || q.name === 'crumbled wall')) {
     assert.ok(p.shadow !== undefined && p.shadow >= 0.15 && p.shadow <= 0.7, `${p.name}: its shadow ${p.shadow}`);
+    // and the shadow the game will draw for it (render.ts: a soft oval r x 22.6 x 1.5 game pixels to each
+    // side, its dark part a little less) as wide as what stands on it: from just short of its foot to a
+    // little past it, not a dot under it nor a pool round it (the fourth look: check more than a number)
+    const s = p.frames![0];
+    const q = paintingOf(s);
+    const ay = Math.round(s.ay * (s.density ?? 1));
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    for (let y = Math.max(0, ay - 24); y < q.h; y++) for (let x = 0; x < q.w; x++) if (q.has(x, y)) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+    const foot = (x1 - x0 + 1) / 4;
+    const reach = p.shadow! * 22.6 * 1.5;
+    assert.ok(reach >= 0.7 * foot && reach <= 1.8 * foot, `${p.name}: its shadow reaches ${reach.toFixed(1)} to each side, its foot ${foot.toFixed(1)}`);
   }
 });
 
@@ -445,11 +457,12 @@ test('moments: the rats feed, bolt flat out, never through each other, and go in
         const [p0, p1, p2] = [t.at[i - 2]!, t.at[i - 1]!, t.at[i]!];
         const s1 = Math.hypot(p1.x - p0.x, (p1.y - p0.y) * 2);
         const s2 = Math.hypot(p2.x - p1.x, (p2.y - p1.y) * 2);
-        if (s1 < 2 || s2 < 2 || p2.shown < 1) continue;
+        if (s1 < 1 || s2 < 1 || p2.shown < 1) continue;
         let d = Math.atan2((p2.y - p1.y) * 2, p2.x - p1.x) - Math.atan2((p1.y - p0.y) * 2, p1.x - p0.x);
         while (d > Math.PI) d -= Math.PI * 2;
         while (d < -Math.PI) d += Math.PI * 2;
-        assert.ok(Math.abs(d) <= 0.6, `${f.name}, ${t.name}, frame ${i}: turned ${((Math.abs(d) * 180) / Math.PI).toFixed(0)} degrees in a frame`);
+        // (the third look found 0.6 a snap: no more than 26 degrees in a frame, small steps too)
+        assert.ok(Math.abs(d) <= 0.45, `${f.name}, ${t.name}, frame ${i}: turned ${((Math.abs(d) * 180) / Math.PI).toFixed(0)} degrees in a frame`);
       }
     }
     // all three freeze together before they bolt, then all set off together
@@ -460,10 +473,25 @@ test('moments: the rats feed, bolt flat out, never through each other, and go in
     const off = f.tracks.map((t) => t.at.findIndex((a, i) => i > 0 && Math.hypot(a!.x - t.at[i - 1]!.x, a!.y - t.at[i - 1]!.y) >= 0.5));
     assert.ok(Math.max(...off) - Math.min(...off) <= 2, `${f.name}: they set off on frames ${off.join(', ')}`);
   }
-  // they read on the floor: their fur lighter than the floor they run on
-  const fur = Math.max(...['#4c3c42'].map((c) => luma(...rgb(c))));
+  // they read on the floor: the floor they run on (its three darker slabs), against which they are measured below
   const floor = Math.max(...CRYPT_FLOORS[0].slab.slice(0, 3).map((c) => luma(...rgb(c))));
-  assert.ok(fur >= floor + 6, `their fur ${fur.toFixed(0)}, the floor ${floor.toFixed(0)}`);
+  // and as painted: of what is drawn of them (each frame against what is left when they have gone),
+  // most is lighter than the floor, not their dark underside, legs and outline (the third look: check
+  // the pixels, not a colour). While they freeze, before any dust is kicked up.
+  const rats = named('rats bolt');
+  const gone = paintingOf(rats.after![0]);
+  for (const k of [5, 8]) {
+    const p = paintingOf(rats.frames[k]);
+    let light = 0;
+    let all = 0;
+    for (let i = 0; i < p.d.length; i += 4) {
+      if (!p.d[i + 3]) continue;
+      if (gone.d[i + 3] && gone.d[i] === p.d[i] && gone.d[i + 1] === p.d[i + 1] && gone.d[i + 2] === p.d[i + 2]) continue;
+      all++;
+      if (luma(p.d[i], p.d[i + 1], p.d[i + 2]) >= floor + 6) light++;
+    }
+    assert.ok(light >= 0.45 * all, `the rats as painted, frame ${k}: ${light} of their ${all} pixels lighter than the floor`);
+  }
 });
 
 test('moments: the stone shifts in the wall, tips out and falls faster every frame, strikes at the jolt and breaks, and throws its dust wide', () => {
@@ -476,6 +504,24 @@ test('moments: the stone shifts in the wall, tips out and falls faster every fra
     // it shudders in its bed before it goes
     const xs = f.tracks[0].at.slice(0, jolt).map((a) => (a ? a.x : 0));
     assert.ok(new Set(xs.map((x) => Math.round(x))).size >= 3, `${f.name}: it shudders`);
+    // hard enough to see: while it is still in its bed, three of the game's pixels from one side to the other (the third look found a picture pixel's shudder unseen)
+    const y0 = f.tracks[0].at[0]!.y;
+    const inBed = f.tracks[0].at.slice(0, jolt).filter((a) => a !== null && Math.abs(a.y - y0) <= 5).map((a) => a!.x);
+    assert.ok(Math.max(...inBed) - Math.min(...inBed) >= 6, `${f.name}: it shudders only ${Math.max(...inBed) - Math.min(...inBed)} pixels`);
+    // more of the wall gives: the stone above it is still until the strike, then slips down and hangs there; a lump drops after
+    const above = f.tracks.find((t) => t.name === 'the stone above it')!;
+    assert.ok(above.at.slice(0, jolt + 1).every((a) => a!.x === above.at[0]!.x && a!.y === above.at[0]!.y), `${f.name}: the stone above moves before the strike`);
+    // it slips and hangs (the fourth look: then gives way, the second blow, a jolt of its own)
+    const second = m.jolts[1];
+    assert.ok(second !== undefined && second > jolt + 12, `${f.name}: a second blow, ${second} after ${jolt}`);
+    const ay = above.at.map((a) => a!.y);
+    assert.ok(ay[jolt + 10] - ay[0] >= 8, `${f.name}: the stone above slips only ${(ay[jolt + 10] - ay[0]).toFixed(1)}`);
+    assert.ok(ay[second] - ay[second - 6] >= 30, `${f.name}: the stone above falls only ${(ay[second] - ay[second - 6]).toFixed(1)} before the second blow`);
+    assert.ok(Math.abs(ay[ay.length - 1] - ay[second]) <= 4, `${f.name}: the stone above lies where it struck`);
+    // a lump of the wall's core shaken out at the first blow, dropping a long way
+    const lump = f.tracks.find((t) => t.name === 'a lump of the wall')!.at;
+    const born = lump.findIndex((a) => a !== null);
+    assert.ok(born >= jolt && lump[lump.length - 1]!.y - lump[born]!.y >= 30, `${f.name}: the lump drops at the strike, a long way (${born}, ${(lump[lump.length - 1]!.y - lump[born]!.y).toFixed(0)})`);
     // the fall: the last six frames before the strike, faster every frame, and a long way
     const fall = ys.slice(jolt - 6, jolt);
     for (let i = 2; i < fall.length; i++) assert.ok(fall[i] - fall[i - 1] > fall[i - 1] - fall[i - 2], `${f.name}: faster at fall step ${i} (${fall.map((y) => y.toFixed(1)).join(', ')})`);

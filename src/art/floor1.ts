@@ -966,7 +966,6 @@ function effigyTomb(): Sprite {
   const base = new Px(W, H);
   const body = new Px(W, H);
   const fig = new Px(W, H);
-  const sword = new Px(W, H);
   block(new Iso(base, ox, oy), STONE, -0.5, -0.29, 0.5, 0.29, 0, 6);
   block(new Iso(body, ox, oy), STONE, -0.45, -0.24, 0.45, 0.24, 6, 24);
   block(new Iso(body, ox, oy), STONE, -0.47, -0.26, 0.47, 0.26, 24, 28);
@@ -974,25 +973,28 @@ function effigyTomb(): Sprite {
   const E: Ramp = [STONE[1], STONE[1], mix(STONE[2], STONE[3], 0.6), STONE[4], mix(STONE[4], '#ffffff', 0.2)];
   const e = new Iso(fig, ox, oy);
   const Z = 28;
-  // the cushion under his head; his head on it, the points of his crown along its top
-  block(e, E, -0.42, -0.12, -0.3, 0.12, Z, Z + 3);
-  block(e, E, -0.39, -0.06, -0.28, 0.06, Z + 3, Z + 9);
-  for (const y of [-0.05, -0.017, 0.017, 0.05]) {
-    const [cx, cy] = e.at(-0.33, y, Z + 9);
-    fig.set(Math.round(cx), Math.round(cy) - 1, E[4]).set(Math.round(cx), Math.round(cy), E[3]);
-  }
-  // his shoulders, broad; his robe falling to his feet, a little lower
+  // the cushion under his head, broad and flat; his head on it, round, the points of his crown round its top
+  // (the third look found a ribbed lump: a round head now, and the sword a line of light, one piece with him)
+  block(e, E, -0.43, -0.13, -0.27, 0.13, Z, Z + 3);
+  const [hx, hy] = e.at(-0.35, 0, Z + 7);
+  ball(fig, hx, hy, 3.8, 3.4, E);
+  for (const k of [-2, 0, 2]) fig.set(Math.round(hx + k), Math.round(hy) - 4, E[4]).set(Math.round(hx + k), Math.round(hy) - 3, E[3]);
+  fig.set(Math.round(hx) + 1, Math.round(hy) + 1, E[1]);
+  // his shoulders, broad; his robe falling to his feet, a little lower, a fold down it
   block(e, E, -0.28, -0.12, -0.14, 0.12, Z, Z + 7);
   block(e, E, -0.14, -0.1, 0.3, 0.1, Z, Z + 6);
   // his feet, turned up at the end
   block(e, E, 0.3, -0.08, 0.36, -0.01, Z, Z + 9);
   block(e, E, 0.3, 0.01, 0.36, 0.08, Z, Z + 9);
-  // the sword laid down his body from his breast to his knees, its guard across, his hands folded on its hilt
-  const s = new Iso(sword, ox, oy);
-  block(s, E, -0.12, -0.016, 0.22, 0.016, Z + 6, Z + 7);
-  block(s, E, -0.12, -0.07, -0.1, 0.07, Z + 6, Z + 8);
-  block(s, E, -0.22, -0.045, -0.13, 0.045, Z + 6, Z + 10);
-  return compose(base, [body, fig, sword], null).sprite(ox, oy, GRAIN);
+  // the sword laid down his body from his breast to his knees: its blade a line of light with its shadow
+  // beside it on the robe, its guard across, his hands folded on its hilt
+  const [b0x, b0y] = e.at(-0.1, 0, Z + 6);
+  const [b1x, b1y] = e.at(0.26, 0, Z + 6);
+  fig.line(Math.round(b0x), Math.round(b0y) + 1, Math.round(b1x), Math.round(b1y) + 1, STONE[1]);
+  fig.line(Math.round(b0x), Math.round(b0y), Math.round(b1x), Math.round(b1y), E[4]);
+  block(e, E, -0.12, -0.07, -0.1, 0.07, Z + 6, Z + 8);
+  block(e, E, -0.22, -0.045, -0.13, 0.045, Z + 6, Z + 10);
+  return compose(base, [body, fig], null).sprite(ox, oy, GRAIN);
 }
 
 /**
@@ -1054,11 +1056,12 @@ function knightStatue(): Sprite {
   const [px, py] = f.at(0, 0.16, P0 + 40);
   ball(front, px, py, 3.4, 2.6, STONE);
   // the horns, from his helm's sides out along his shoulders' line and up; the tip of one broken off
+  // (thick at the root and sweeping well out before they rise: the third look found one a thin antenna)
   for (const s of [-1, 1]) {
     for (let t = 0; t <= (s < 0 ? 0.86 : 1); t += 0.02) {
       // (a bull's: out along his shoulders' line, curving up at their tips)
-      const [x, y] = f.at(s * (0.09 + 0.28 * Math.sin((t * Math.PI) / 2)), 0, P0 + 68 + 3 * t + 11 * t * t);
-      const th = Math.round(4 * (1 - t)) + 1;
+      const [x, y] = f.at(s * (0.09 + 0.33 * Math.sin((t * Math.PI) / 2)), 0, P0 + 67 + 2 * t + 9 * t * t);
+      const th = Math.round(5 * (1 - t)) + 2;
       for (let q = 0; q < th; q++) horns.set(Math.round(x), Math.round(y) + q, q === 0 ? (t > 0.8 ? STONE[4] : STONE[3]) : q === th - 1 ? STONE[1] : STONE[2]);
     }
   }
@@ -1630,7 +1633,9 @@ function coiledChain(): Sprite {
     const rust = hash(link, 1, 115) < 0.25;
     if (link % 2) {
       // a link lying flat: a ring five across and three deep, its middle the floor
-      for (const [dx, dy, c] of [[-2, 0, I[3]], [-1, -1, I[4]], [0, -1, I[3]], [1, -1, I[3]], [2, 0, I[2]], [1, 1, I[1]], [0, 1, I[1]], [-1, 1, I[2]]] as const) p.set(sx + dx, sy + dy, rust && dx > 0 ? OLD_RUST[2] : c);
+      // (a glint on one link in four, not on every one: the third look found the chain sparkling)
+      const top = link % 4 === 1 ? I[4] : I[3];
+      for (const [dx, dy, c] of [[-2, 0, I[3]], [-1, -1, top], [0, -1, I[3]], [1, -1, I[2]], [2, 0, I[2]], [1, 1, I[1]], [0, 1, I[1]], [-1, 1, I[2]]] as const) p.set(sx + dx, sy + dy, rust && dx > 0 ? OLD_RUST[2] : c);
     } else {
       // on its edge: a bar, lit along its top, dark under
       for (let dx = -2; dx <= 2; dx++) p.set(sx + dx, sy, dx < 1 ? I[3] : I[2]).set(sx + dx, sy + 1, I[0]);
@@ -1932,7 +1937,7 @@ interface Rock {
  * of the dark overhead, unseen for half a second; a drop, not a stone; frozen as it struck while the
  * game went on; and its dust a speckle.)
  */
-function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after: Sprite[]; tracks: Track[]; land: number } {
+function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after: Sprite[]; tracks: Track[]; land: number; land2: number } {
   const W = 220;
   const H = 180;
   const ax = 110;
@@ -1967,12 +1972,12 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
     return shaded(lit[Math.max(0, Math.min(4, k + 1 + e))]);
   };
   /** The fade of the wall's top (onFace): up in the dark, a stone is as dark as the wall there. */
-  const faded = (c: string, z: number): string => {
+  const faded = (c: string, z: number, keep = 1): string => {
     const fromTop = 79 - z;
-    return fromTop < 24 ? mix(c, BEYOND, [0.9, 0.66, 0.42, 0.2][Math.max(0, Math.floor((fromTop * 4) / 24))]) : c;
+    return fromTop < 24 && keep > 0 ? mix(c, BEYOND, keep * [0.9, 0.66, 0.42, 0.2][Math.max(0, Math.floor((fromTop * 4) / 24))]) : c;
   };
   /** Draw a block: each face that is seen, only what of it is out in the room (not inside the wall), shaded and textured as a dressed stone. */
-  const drawRock = (p: Px, r: Rock, seed: number): void => {
+  const drawRock = (p: Px, r: Rock, seed: number, keep = 1): void => {
     const c = Math.cos(r.turn);
     const s = Math.sin(r.turn);
     const corner = (sa: number, sb: number, sz: number): [number, number, number] => {
@@ -2018,12 +2023,21 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
         const z = zs[0] + (zs[1] - zs[0]) * u + (zs[3] - zs[0]) * v;
         // its dressed face: lit along the edge toward the light, dark along the one away; a few marks of the chisel
         const e = v > 0.9 ? 1 : v < 0.1 || hash(Math.floor(u * 8), Math.floor(v * 6), seed) < 0.08 ? -1 : 0;
-        return faded(toneOf(k, e), z);
+        return faded(toneOf(k, e), z, keep);
       });
     }
   };
   // the chips and the dust clouds of the strike, each its own way
-  const CHIPS = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => ({ ang: hash(i, 1, 121) * Math.PI * 2, v: 0.03 + 0.05 * hash(i, 2, 121), up: 5 + 6 * hash(i, 3, 121) }));
+  // (thrown well out, a tile and more, each bouncing once where it comes down: the third look found them falling short)
+  const CHIPS = Array.from({ length: 12 }, (_, i) => ({ ang: hash(i, 1, 121) * Math.PI * 2, v: 0.05 + 0.06 * hash(i, 2, 121), up: 6 + 8 * hash(i, 3, 121) }));
+  /** Where a chip is, k frames after the strike: along the floor from the strike (tiles), and up (pixels). */
+  const chipAt = (c: { v: number; up: number }, k: number): [number, number] => {
+    const t1 = (2 * c.up) / G;
+    if (k <= t1) return [c.v * k, c.up * k - 0.5 * G * k * k];
+    const up2 = c.up * 0.3;
+    const t = Math.min(k - t1, (2 * up2) / G);
+    return [c.v * t1 + c.v * 0.6 * t, Math.max(0, up2 * t - 0.5 * G * t * t)];
+  };
   // (a ring of low clouds thrown fast along the floor, and a few slower billows that rise)
   const DUST = Array.from({ length: 16 }, (_, i) => {
     const billow = i % 4 === 0;
@@ -2036,9 +2050,13 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
   const SHAKE = 8;
   const TIP = 16;
   const DROP = 21;
+  /** The shudder, frame by frame: across and up, in picture pixels (two to a game pixel). */
+  const SHUDDER: ReadonlyArray<readonly [number, number]> = [[2, 1], [-2, 0], [3, 2], [-2, 0], [4, 1], [-3, 2], [4, 0], [-4, 2]];
   const tracks: Track[] = [
     { name: 'the stone', at: [] },
     { name: 'its broken half', at: [] },
+    { name: 'the stone above it', at: [] },
+    { name: 'a lump of the wall', at: [] },
   ];
   let land = -1;
   let landed: Rock | null = null;
@@ -2047,8 +2065,11 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
     const r: Rock = { ...home };
     if (f < SHAKE) return r;
     if (f < TIP) {
-      // shuddering, a pixel this way and that, creeping out of its bed
-      r.a += ([0, 1, 0, -1][f % 4] / 32) * (alongX ? 1 : -1);
+      // shuddering, harder as it works loose: one and two of the game's pixels this way and that,
+      // jumping in its bed, creeping out of it (the third look found a picture pixel's shudder unseen)
+      const [sa, sz] = SHUDDER[f - SHAKE];
+      r.a += (sa / 32) * (alongX ? 1 : -1);
+      r.z += sz;
       r.b += 0.03 * ((f - SHAKE) / (TIP - SHAKE));
       return r;
     }
@@ -2093,6 +2114,82 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
     const r: Rock = { ...L, ha: L.ha * 0.36, hb: L.hb * 0.9, hz: L.hz * 0.8, a: L.a + L.ha * 0.62 + 0.02 + 0.035 * go, b: L.b + 0.05 * go, turn: L.turn + 0.3 * go };
     return { ...r, z: r.z - lowest(r) };
   };
+  // THE STONE ABOVE IT: the course over the gap has lost what held it up. As the stone strikes, the
+  // stone over the gap's right half slips: it sags down into the gap and tips out, half out of its bed,
+  // out of the dark into the light, jerks as it catches, and hangs there; it shivers, and gives way:
+  // it drops, turning, and strikes the floor, the second blow (the third look asked for more of the
+  // wall to give; the fourth found the hanging stone lost in the dark, and asked for a second strike).
+  const SU0 = 1;
+  const SU1 = 14;
+  const SZ0 = 64;
+  const SZ1 = 77;
+  const slipHome: Rock = { a: (aOf(SU0) + aOf(SU1 + 1)) / 2, b: -D / 2, z: (SZ0 + SZ1 + 1) / 2, ha: (SU1 + 1 - SU0) / 64, hb: D / 2, hz: (SZ1 + 1 - SZ0) / 2, turn: 0 };
+  const SLIP = [0, 0.04, 0.16, 0.36, 0.64, 1, 1.14, 0.95, 1.02, 1];
+  const hangAt = (p: number): Rock => ({ ...slipHome, z: slipHome.z - 10 * p, b: slipHome.b + 0.12 * p, turn: 0.42 * p });
+  const hung = hangAt(1);
+  /** When it gives way, and how it falls from where it hung. */
+  const FALL2 = land + 17;
+  const fall2 = (t: number): Rock => ({ ...hung, b: hung.b + 0.035 * t, z: hung.z - 0.5 * G * t * t - 0.6 * t, turn: 0.42 + 0.2 * t });
+  let land2 = -1;
+  let L2: Rock = hung;
+  for (let t = 1; t < 30; t++) {
+    const r = fall2(t);
+    if (lowest(r) <= 0) {
+      land2 = FALL2 + t;
+      L2 = { ...r, z: r.z - lowest(r) };
+      break;
+    }
+  }
+  const slipAt = (f: number, rest: boolean): Rock => {
+    if (rest || f >= land2) {
+      // down: it rocks back flat, sliding a little, and lies there
+      const k = rest ? 999 : f - land2;
+      const flatTurn = Math.round(L2.turn / (Math.PI / 2)) * (Math.PI / 2);
+      const turn = k >= 4 ? flatTurn : L2.turn + (flatTurn - L2.turn) * (1 - (1 - k / 4) ** 2) + (k === 1 ? 0.08 : 0);
+      const r: Rock = { ...L2, turn, b: L2.b + 0.015 * Math.min(k, 4) };
+      return { ...r, z: r.z - lowest(r) };
+    }
+    if (f > FALL2) return fall2(f - FALL2);
+    if (f <= land) return slipHome;
+    const r = hangAt(SLIP[Math.min(SLIP.length - 1, f - land)]);
+    // (it shivers before it goes)
+    return f >= FALL2 - 4 ? { ...r, z: r.z + [1, 0, 2, 0, 1][f - (FALL2 - 4)], a: r.a + ([1, -1, 1, -2, 0][f - (FALL2 - 4)] / 32) * (alongX ? 1 : -1) } : r;
+  };
+  /** How much of the wall's fade it keeps: all of it in its bed, none once it has come out into the light. */
+  const slipKeep = (f: number, rest: boolean): number => (rest || f > land + 5 ? 0 : f <= land ? 1 : Math.max(0, 1 - SLIP[f - land]));
+  // THE SECOND BLOW'S dust and chips: fewer and smaller than the first's
+  const DUST2 = Array.from({ length: 10 }, (_, i) => {
+    const billow = i % 3 === 0;
+    return { ang: (i / 10) * Math.PI * 2 + hash(i, 1, 131) * 0.5, v: billow ? 0.03 + 0.015 * hash(i, 2, 131) : 0.09 + 0.05 * hash(i, 2, 131), r0: billow ? 2.6 : 1.4 + hash(i, 3, 131), grow: billow ? 5 : 3, rise: billow ? 0.5 : 0.12, life: (billow ? 28 : 20) + Math.floor(hash(i, 4, 131) * 6) };
+  });
+  const CHIPS2 = Array.from({ length: 6 }, (_, i) => ({ ang: hash(i, 1, 132) * Math.PI * 2, v: 0.04 + 0.05 * hash(i, 2, 132), up: 5 + 6 * hash(i, 3, 132) }));
+  // A LUMP OF THE WALL'S CORE, shaken out of the gap by the first blow: it drops, strikes the floor
+  // with a puff of its own, hops once and lies there (twice the size it was: the fourth look)
+  const LUMP_AT = land;
+  const lumpHome = { a: slipHome.a - (alongX ? 1 : -1) * 0.12, b: 0.07, z: 50 };
+  const LUMP_FALL = Math.ceil(Math.sqrt((2 * (lumpHome.z - 5)) / G));
+  const lumpAt = (f: number, rest: boolean): Rock | null => {
+    if (!rest && f < LUMP_AT) return null;
+    const t = rest ? 999 : f - LUMP_AT;
+    const base: Rock = { a: lumpHome.a, b: lumpHome.b, z: 0, ha: 6 / 32, hb: 0.12, hz: 5, turn: 0 };
+    const sit = (r: Rock, up: number): Rock => ({ ...r, z: r.z - lowest(r) + up });
+    if (t <= LUMP_FALL) {
+      const r: Rock = { ...base, z: lumpHome.z - 0.5 * G * t * t, turn: 0.22 * t };
+      return lowest(r) < 0 ? sit(r, 0) : r;
+    }
+    // the hop, out from the wall, coming to rest flat
+    const h = Math.min(t - LUMP_FALL, 5);
+    const t0 = 0.22 * LUMP_FALL;
+    const flatT = Math.ceil(t0 / (Math.PI / 2)) * (Math.PI / 2);
+    return sit({ ...base, b: base.b + 0.016 * h, turn: t0 + (flatT - t0) * (h / 5) }, Math.max(0, 3.2 * h - 0.64 * h * h));
+  };
+  // GRIT POURING after the strike, out of the gap's ledge and from under the hanging stone, thick at
+  // first and thinning to nothing over a second; what comes down heaps up at the wall's foot
+  const POUR = Array.from({ length: 44 }, (_, i) => {
+    const under = i % 3 !== 0;
+    return { born: land + 1 + Math.floor(26 * (i / 44) ** 1.5), u: under ? SU0 + hash(i, 1, 127) * (SU1 - SU0) : U0 + hash(i, 1, 127) * (U1 - U0), z0: under ? 57 : Z0 - 1, b: under ? 0.03 + 0.03 * hash(i, 2, 127) : 0.02 + 0.02 * hash(i, 2, 127), land: { db: 0.02 + 0.09 * hash(i, 3, 127) ** 1.5, da: (hash(i, 4, 127) - 0.5) * 0.06 } };
+  });
+  const pourFall = (g: { z0: number }): number => Math.ceil(Math.sqrt(g.z0 / 0.55));
   // (its last frame, what is left, follows straight on from the last wisp of dust)
   let lastDust = 0;
   for (let k = 0; k <= DUST_END; k++) {
@@ -2102,7 +2199,15 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
       if (r >= 0.6) lastDust = k;
     }
   }
-  const END = land + lastDust + 1;
+  let lastDust2 = 0;
+  for (let k = 0; k <= 40; k++) {
+    for (const d of DUST2) {
+      if (k >= d.life) continue;
+      const r = (d.r0 + d.grow * (1 - Math.exp(-k / 5))) * (1 - (k / d.life) ** 2);
+      if (r >= 0.6) lastDust2 = k;
+    }
+  }
+  const END = Math.max(land + lastDust, land2 + lastDust2) + 1;
   const paint = (f: number, rest: boolean): Sprite => {
     const face = flat();
     const body = new Px(W, H);
@@ -2125,7 +2230,36 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
         face.set(fx(U1 + 2 + Math.floor(i * 0.5)), fy(Z1 - 2 - i), DEEP);
       }
     }
+    // (once the stone above has slipped: the dark of its bed, and the joints round it opened)
+    if (rest || f > land) {
+      for (let v = SZ0; v <= SZ1; v++) {
+        for (let u = SU0 - 1; u <= SU1 + 1; u++) face.set(fx(u), fy(v), u === SU1 + 1 ? FACE[1] : hash(u, v, 128) < 0.06 ? '#1b1426' : DEEP);
+      }
+      for (let u = SU0 - 1; u <= SU1 + 1; u++) face.set(fx(u), fy(SZ1 + 1), DEEP);
+    }
     body.blit(onFacePx(face, alongX), ax - PCX, ay - PFOOT);
+    // the stone above, and the lump shaken out from under it
+    const sl = slipAt(f, rest);
+    const lu = lumpAt(f, rest);
+    // (the farther of the two first)
+    if (lu && lu.a + lu.b > sl.a + sl.b) drawRock(body, lu, 4);
+    drawRock(body, sl, 3, slipKeep(f, rest));
+    if (lu && lu.a + lu.b <= sl.a + sl.b) drawRock(body, lu, 4);
+    // the chips of the second blow, where they come to rest
+    if (rest || f >= land2) {
+      const k2 = rest ? 999 : f - land2;
+      for (const c of CHIPS2) {
+        const [d, z] = chipAt(c, k2);
+        const [x, y] = scr(L2.a + Math.cos(c.ang) * d, Math.max(0.02, L2.b + Math.sin(c.ang) * d), z);
+        body.set(Math.round(x), Math.round(y), FACE[2]).set(Math.round(x) + 1, Math.round(y), FACE[1]);
+      }
+    }
+    // the grit that pours after the strike: what has come down heaped at the wall's foot
+    for (const g of POUR) {
+      if (!rest && f - g.born < pourFall(g)) continue;
+      const [x, y] = scr(aOf(g.u) + g.land.da, g.b + g.land.db, 0);
+      body.set(Math.round(x), Math.round(y), hash(g.born, Math.round(g.u * 3), 129) < 0.5 ? FACE[2] : FACE[3]).set(Math.round(x) + 1, Math.round(y), FACE[1]);
+    }
     const stone = tracks[0];
     const half = tracks[1];
     const centre = (r: Rock): { x: number; y: number } => {
@@ -2147,13 +2281,11 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
         stone.at[f] = { ...centre(big), shown: 1, size: 24 };
         half.at[f] = { ...centre(small), shown: 1, size: 16 };
       }
-      // the chips: thrown out and up, coming down where they come down, and staying
+      // the chips: thrown out and up, coming down, bouncing once, and staying where they stop
       for (const c of CHIPS) {
-        const tl = (2 * c.up) / G;
-        const t = Math.min(k, tl);
-        const a = L.a + Math.cos(c.ang) * c.v * t;
-        const b = Math.max(0.02, L.b + Math.sin(c.ang) * c.v * t);
-        const z = Math.max(0, c.up * t - 0.5 * G * t * t);
+        const [d, z] = chipAt(c, k);
+        const a = L.a + Math.cos(c.ang) * d;
+        const b = Math.max(0.02, L.b + Math.sin(c.ang) * d);
         const [x, y] = scr(a, b, z);
         body.set(Math.round(x), Math.round(y), c.v > 0.06 ? FACE[3] : FACE[2]).set(Math.round(x) + 1, Math.round(y), FACE[1]);
       }
@@ -2214,6 +2346,72 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
         const [x, y] = scr(r.a, r.b, r.z);
         for (const dx of [-6, -1, 4]) for (let k = 4; k < 18; k += 2) over.set(Math.round(x + dx), Math.round(y - 8 - k), k < 10 ? STONE[3] : STONE[2]);
       }
+      /** A small cloud of dust, soft at its rim, lit on its upper left. */
+      const cloud = (x: number, y: number, r: number): void => {
+        for (let yy = Math.floor(y - r); yy <= y + r; yy++) {
+          for (let xx = Math.floor(x - r * 1.3); xx <= x + r * 1.3; xx++) {
+            const q = (((xx + 0.5 - x) / 1.3) ** 2 + (yy + 0.5 - y) ** 2) / (r * r);
+            if (q > 1 || (q > 0.5 && (xx + yy) % 2 === 0)) continue;
+            over.set(xx, yy, xx - x + (yy - y) < -r * 0.6 ? STONE[4] : STONE[3]);
+          }
+        }
+      };
+      // grit pouring after the strike: out of the gap's ledge and from under the hanging stone, falling, catching the light
+      for (const g of POUR) {
+        const t = f - g.born;
+        if (t < 0 || t >= pourFall(g)) continue;
+        const z = g.z0 - 0.55 * t * t;
+        if (z < 1) continue;
+        const [x, y] = scr(aOf(g.u), g.b + g.land.db * (t / pourFall(g)), z);
+        over.set(Math.round(x), Math.round(y), hash(g.born, Math.round(g.u * 3), 126) < 0.5 ? STONE[4] : STONE[3]);
+        if (t > 2) over.set(Math.round(x), Math.round(y) - 1, STONE[2]);
+      }
+      // dust bursting out from under the stone above as it slips down into the gap (below where the wall fades)
+      if (f > land && f <= land + 10) {
+        const k = f - land - 1;
+        const r = 1.2 + 2.4 * Math.sin((Math.PI * (k + 1)) / 11);
+        for (const [u, z] of [[SU0 + 1, 58], [SU1 - 1, 55], [(SU0 + SU1) / 2, 57]] as const) {
+          const [x, y] = scr(aOf(u), 0.04 + 0.025 * k, z - 1.2 * k);
+          cloud(x, y, r);
+        }
+      }
+      // the lump's own puff where it strikes, thrown out low each way
+      const lk = f - LUMP_AT - LUMP_FALL;
+      if (lk >= 0 && lk < 10) {
+        for (const s of [-1, 1]) {
+          const [x, y] = scr(lumpHome.a + s * 0.03 * (1 + lk), lumpHome.b + 0.02 * lk, 2 + 0.4 * lk);
+          cloud(x, y, (1.4 + 1.6 * Math.sin((Math.PI * (lk + 1)) / 11)));
+        }
+      }
+      // (the lump smeared as it drops fastest: a short streak up off it)
+      let smear = 0;
+      const lt = f - LUMP_AT;
+      if (lu && lt >= 3 && lt <= LUMP_FALL) {
+        smear = Math.min(10, Math.round(G * lt * 0.8));
+        const [x, y] = scr(lu.a, lu.b, lu.z + lu.hz);
+        for (let k = 1; k <= smear; k++) if (k % 3 !== 0) over.set(Math.round(x), Math.round(y) - k, k < 5 ? STONE[3] : STONE[2]);
+      }
+      // the second blow's dust, thrown out low and rising, smaller than the first's
+      if (f >= land2) {
+        const k2 = f - land2;
+        for (const d of DUST2) {
+          if (k2 >= d.life) continue;
+          const go = (1 - 0.88 ** k2) / (1 - 0.88);
+          const r = (d.r0 + d.grow * (1 - Math.exp(-k2 / 5))) * (1 - (k2 / d.life) ** 2);
+          if (r < 0.6) continue;
+          const [x, y] = scr(L2.a + Math.cos(d.ang) * d.v * go, Math.max(0.02, L2.b + Math.sin(d.ang) * d.v * go), 3 * (1 - Math.exp(-k2 / 6)) + d.rise * k2);
+          cloud(x, y, r);
+        }
+      }
+      // (the stone above smeared as it drops fastest: pale lines trailing up off it)
+      let streak = 0;
+      if (f > FALL2 + 1 && f < land2) {
+        streak = Math.min(12, Math.round(G * (f - FALL2) * 0.7));
+        const [x, y] = scr(sl.a, sl.b, sl.z + sl.hz);
+        for (const dx of [-4, 3]) for (let k = 2; k <= streak; k += 2) over.set(Math.round(x + dx), Math.round(y) - k, k < 7 ? STONE[3] : STONE[2]);
+      }
+      tracks[2].at[f] = { ...centre(sl), shown: 1, size: 16 + streak };
+      tracks[3].at[f] = lu ? { ...centre(lu), shown: 1, size: 12 + smear } : null;
     }
     return compose(null, [body], over).sprite(ax, ay, GRAIN);
   };
@@ -2225,13 +2423,19 @@ function wallGivesWay(alongX: boolean): { frames: Sprite[]; before: Sprite[]; af
   }
   // (before: the stone in its place, the hairline round it; after: what is left)
   const before = [paint(0, false)];
-  return { frames, before, after: [paint(END, true)], tracks, land };
+  return { frames, before, after: [paint(END, true)], tracks, land, land2 };
 }
 
 // -------------------------------------------------------------------------------------------------
 
-/** The rats' fur: a dusty grey-brown, its back lit, against the floor's indigo (the second look found the first pale mice, and the next too dark to see on the floor). */
-const FUR: Ramp = ['#140f12', '#140f12', '#4c3c42', '#78626a', '#9e8890'];
+/**
+ * The rats' fur: a dusty grey-brown, its back lit, against the floor's indigo (the second look found
+ * the first pale mice, and the next too dark to see on the floor; the third, counting their pixels,
+ * most of them darker than the floor: their shaded side is a warm dark grey now, not black).
+ */
+const FUR: Ramp = ['#140f12', '#3e3238', '#4c3c42', '#78626a', '#9e8890'];
+/** The dust the rats kick up off the floor: its rim, its middle, its lit edge. */
+const RAT_DUST = ['#3e3a52', '#4a4660', '#58526a'] as const;
 
 /**
  * RATS BOLT. Three rats feed on a scatter of bones (`before`, a loop). Something startles them: all
@@ -2326,14 +2530,17 @@ function ratsBolt(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after:
         let turn = want - s.h;
         while (turn > Math.PI) turn -= Math.PI * 2;
         while (turn < -Math.PI) turn += Math.PI * 2;
-        const most = s.v < 0.08 ? 0.6 : 0.42;
+        // (spinning round on the spot as it starts, but running no more than 0.3 a frame: the third look found 0.6 at a run a snap)
+        const most = 0.3 + 0.3 * Math.max(0, 1 - s.v / 0.06);
         s.h += Math.max(-most, Math.min(most, turn));
         // its speed: flat out; slowing to its place at the side, and while the widest of it squeezes through the mouth
         const squeeze = s.b < 0.16 && s.b > -0.42;
         const top = !clear ? Math.min(RUN, dist * 0.45) : squeeze ? RUN * 0.45 : RUN;
         s.v = s.v < top ? Math.min(top, s.v + RUN * 0.34) : Math.max(top, s.v - RUN * 0.5);
         // (facing well away from where it wants to go, it turns before it runs)
-        const go = Math.abs(turn) > 1.6 ? s.v * 0.35 : s.v;
+        // (facing well away from where it wants to go, it wheels round tight, hardly moving, before it runs)
+        if (Math.abs(turn) > 1.2) s.v = Math.min(s.v, 0.04);
+        const go = Math.abs(turn) > 1.2 ? s.v * 0.5 : s.v;
         if (!clear && dist < 0.05) s.doing = 'wait';
         else s.doing = s.b < MOUTH ? 'in' : 'run';
         s.a += Math.cos(s.h) * Math.min(go, dist + (clear ? 1 : 0));
@@ -2374,6 +2581,19 @@ function ratsBolt(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after:
       feet[i].push(planted.map((q) => [...q] as [number, number]));
     }
   }
+  // DUST KICKED UP from its hind feet as it pushes off, and as it scrabbles at the hole: puffs that
+  // swell, drift back and up, and linger a quarter of a second (the third look found them too small to see)
+  const PUFFS: { f0: number; a: number; b: number; h: number; life: number; size: number }[] = [];
+  for (let i = 0; i < rats.length; i++) {
+    for (let f = 0; f < NF; f++) {
+      const st = states[i][f];
+      // (at the push-off, two, and scrabbling at the hole, one every third frame: not a string of them)
+      if (!((st.doing === 'run' && (f === BOLT || f === BOLT + 2)) || (st.doing === 'wait' && (f + i) % 3 === 0))) continue;
+      const [ra, rb, rh] = along(i, f, 0.36);
+      const side = (f + i) % 2 ? 1 : -1;
+      PUFFS.push({ f0: f, a: ra - Math.cos(rh) * 0.06 - Math.sin(rh) * 0.03 * side, b: rb - Math.sin(rh) * 0.06 + Math.cos(rh) * 0.03 * side, h: rh, life: Math.min(8, NF - 1 - f), size: 0.7 + 0.6 * hash(f, i, 133) });
+    }
+  }
   const BONES = (q: Px): void => {
     for (const [a, b, a2, b2] of [[-0.2, 1.75, 0.15, 1.85], [0.2, 2.05, 0.45, 1.95], [-0.45, 2.45, -0.1, 2.5]] as const) {
       const [x0, y0] = scr(a, b, 0);
@@ -2389,6 +2609,8 @@ function ratsBolt(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after:
   /** One frame: each rat at frame `f` (its feeding loop's frame `loop` while it feeds). */
   const paint = (f: number, loop: number, record: boolean): Sprite => {
     const p = new Px(W, H);
+    // (the rats on a layer of their own, each already seamed: not seamed again with the bones, which would ring them twice in ink)
+    const rl = new Px(W, H);
     const over = new Px(W, H);
     BONES(p);
     // far ones first
@@ -2429,7 +2651,8 @@ function ratsBolt(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after:
       for (let k = PARTS.length - 1; k >= 0; k--) {
         const [back, z, rx, ry] = PARTS[k];
         const [a, b] = along(i, f, back);
-        const lift = k <= 1 ? (frozen ? 2 + ((f + i) % 2) : feeding ? [0, -1, -2, -1][(loop + i) % 4] : busy ? (f % 2) : 0) : 0;
+        // (sniffing in a slow rhythm, three frames up and three down: the third look found a pixel's flicker every frame a buzz)
+        const lift = k <= 1 ? (frozen ? 2 + (Math.floor((f + i) / 3) % 2) : feeding ? [0, -1, -2, -1][(loop + i) % 4] : busy ? Math.floor(f / 2) % 2 : 0) : 0;
         const bound = (st.doing === 'run' || st.doing === 'in') && k === 2 && f % 2 ? 1 : 0;
         const [px, py] = scr(a, b, z + lift + bound);
         ball(q, px, py, rx, ry, FUR);
@@ -2454,16 +2677,7 @@ function ratsBolt(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after:
           all++;
           if (outAt(x, y) < 0) continue;
           shown++;
-          p.set(x, y, c);
-        }
-      }
-      // dust kicked up from its hind feet as it pushes off, and as it scrabbles at the hole
-      const kick = (st.doing === 'run' && f - BOLT < 4 && f >= BOLT) || busy;
-      if (kick) {
-        const [ra, rb, rh] = along(i, f, 0.36);
-        for (let k = 0; k < 2; k++) {
-          const [dx, dy] = scr(ra - Math.cos(rh) * (0.06 + 0.03 * k), rb - Math.sin(rh) * (0.06 + 0.03 * k), 1 + k);
-          if (outAt(dx, dy) >= 0) over.ellipse(dx, dy, 1.6 - 0.4 * k + (f % 2) * 0.4, 1, k ? STONE[2] : STONE[3]);
+          rl.set(x, y, c);
         }
       }
       if (record) {
@@ -2472,8 +2686,28 @@ function ratsBolt(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after:
         tracks[i].at.push({ x: tx - ax, y: ty - ay, shown: all ? shown / all : 0, size: 8 });
       }
     }
+    // the dust they kick up: each puff swells, drifts back and up off the floor, and lingers
+    for (const pf of PUFFS) {
+      const age = f - pf.f0;
+      if (age < 0 || age >= pf.life) continue;
+      const r = (1.4 + 1.8 * Math.sin((Math.PI * (age + 1)) / (pf.life + 1))) * pf.size;
+      const back = 0.025 * age;
+      const [x, y] = scr(pf.a - Math.cos(pf.h) * back, pf.b - Math.sin(pf.h) * back, 1.5 + 0.6 * age);
+      if (outAt(x, y) < 0) continue;
+      for (let yy = Math.floor(y - r); yy <= y + r; yy++) {
+        for (let xx = Math.floor(x - r * 1.4); xx <= x + r * 1.4; xx++) {
+          const q2 = (((xx + 0.5 - x) / 1.4) ** 2 + (yy + 0.5 - y) ** 2) / (r * r);
+          if (q2 > 1 || (q2 > 0.55 && (xx + yy) % 2 === 0) || outAt(xx, yy) < 0) continue;
+          // (the floor's own dust: a step or two lighter than the floor, never as light as their fur: the fourth look found it glowing)
+          over.set(xx, yy, xx - x + (yy - y) < -r * 0.5 ? RAT_DUST[2] : q2 < 0.5 ? RAT_DUST[1] : RAT_DUST[0]);
+        }
+      }
+    }
     if (record) contacts.push(touching);
-    return compose(null, [p], over).sprite(ax, ay, GRAIN);
+    const out = compose(null, [p], null);
+    out.blit(rl, 0, 0);
+    out.blit(over, 0, 0);
+    return out.sprite(ax, ay, GRAIN);
   };
   const frames: Sprite[] = [];
   for (let f = 0; f < NF; f++) frames.push(paint(f, f, true));
@@ -2522,10 +2756,14 @@ function candleGutters(): Moment {
   const flameTrack: Track = { name: 'the tallest flame', at: [] };
   const smokeTrack: Track = { name: 'its smoke', at: [] };
   const frames: Sprite[] = [];
+  // (its frames wider than the candles' own, out to the left, the way the draught comes: the ash it
+  // drives skates in from well behind them, past the hero's feet; the third look found it unseen)
+  const OX = 112;
+  const MW = CW_ + OX;
   for (let f = 0; f < N; f++) {
     const g = gust(f);
-    const over = new Px(CW_, CH_);
-    const smoke = new Px(CW_, CH_);
+    const over = new Px(MW, CH_);
+    const smoke = new Px(MW, CH_);
     let lit_ = 0;
     const { wax, fire } = candlesPx((i, x, top, fr, wx) => {
       const fo = outOf(i);
@@ -2560,23 +2798,29 @@ function candleGutters(): Moment {
         const [dx, dy, hh] = STICKS[i];
         const vx = 2.6 + 2 * hash(b, k, 96);
         const vy = -0.9 - hash(b, k, 97);
-        const x = CCX + dx + 4 + vx * age;
+        const x = OX + CCX + dx + 4 + vx * age;
         const y = CCY + dy - hh - 6 + vy * age + 0.12 * age * age;
         over.set(Math.round(x), Math.round(y), age < 3 ? EMBER[4] : age < 6 ? EMBER[3] : age < 9 ? EMBER[2] : COAL[3]);
       }
     }
-    // ash and grit skating across the floor on the draught, through the wax, settling
-    for (let b = 1; b < 30; b++) {
-      for (let k = 0; k < 2; k++) {
+    // ash and grit skating across the floor on the draught from well behind the candles, through the
+    // wax and on, hopping, slowing as it settles and gone: grains a game pixel across (2 by 2)
+    for (let b = 1; b < 28; b++) {
+      for (let k = 0; k < 3; k++) {
         const age = f - b;
-        const life = 12 + Math.floor(hash(b, k, 98) * 8);
+        const life = 18 + Math.floor(hash(b, k, 98) * 10);
         if (age < 0 || age >= life || gust(b) < 0.3) continue;
-        const x0 = CCX - 34 + hash(b, k, 99) * 26;
-        const y0 = CCY - 5 + hash(b, k, 100) * 12;
+        const x0 = OX + CCX - 118 + hash(b, k, 99) * 70;
+        const y0 = CCY - 8 + hash(b, k, 100) * 16;
         let x = x0;
-        for (let t = b; t < f; t++) x += 2.4 * gust(t) * (1 - (t - b) / life);
-        const hop = Math.round(Math.abs(Math.sin(age * 0.9 + k)) * 2 * gust(f));
-        over.set(Math.round(x), Math.round(y0) - hop, k ? STONE[3] : WAX[2]);
+        for (let t = b; t < f; t++) x += 4.2 * gust(t) * (1 - (t - b) / life);
+        const hop = Math.round(Math.abs(Math.sin(age * 0.8 + k)) * 3 * gust(f));
+        const tone = k === 1 ? STONE[3] : WAX[2];
+        const X = Math.round(x);
+        const Y = Math.round(y0) - hop;
+        // (the last few frames of its life, a single grain, before it is gone)
+        if (life - age <= 3) over.set(X, Y, tone);
+        else over.set(X, Y, tone).set(X + 1, Y, tone).set(X, Y + 1, STONE[2]).set(X + 1, Y + 1, STONE[2]);
       }
     }
     // the smoke off each snuffed wick: a thick plume, given off for a third of a second, dragged off by the draught and then rising, thinning from its oldest end
@@ -2584,7 +2828,7 @@ function candleGutters(): Moment {
     for (const [i, fo] of OUT) {
       if (f < fo || f >= N - 1) continue;
       const [dx, dy, hh] = STICKS[i];
-      const wx0 = CCX + dx;
+      const wx0 = OX + CCX + dx;
       const wy0 = CCY + dy - hh - 2;
       let prev: [number, number] | null = null;
       let all = 0;
@@ -2604,15 +2848,16 @@ function candleGutters(): Moment {
           if (a < 8) smoke.set(sx, sy - 1, '#a29cba');
         }
         prev = keep ? [sx, sy] : null;
-        if (i === 2 && e === fo) smokeTrack.at[f] = { x: sx - CCX, y: sy - CCY, shown: 0, size: Math.min(8, 2 + (f - fo)) };
+        if (i === 2 && e === fo) smokeTrack.at[f] = { x: sx - OX - CCX, y: sy - CCY, shown: 0, size: Math.min(8, 2 + (f - fo)) };
       }
       if (i === 2 && smokeTrack.at[f]) smokeTrack.at[f]!.shown = kept / all;
     }
-    const s = compose(null, [wax], fire);
+    const s = new Px(MW, CH_);
+    s.blit(compose(null, [wax], fire), OX, 0);
     s.blit(smoke, 0, 0);
     s.blit(over, 0, 0);
-    const sp = s.sprite(CCX, CCY, GRAIN);
-    sp.lights = [{ x: CCX / GRAIN, y: (CCY - 22) / GRAIN, r: 13 - (STICKS.length - 1 - lit_) * 1.5 + Math.round(g * 2), color: EMBER[2], a: 0.42 + g * 0.06 }];
+    const sp = s.sprite(OX + CCX, CCY, GRAIN);
+    sp.lights = [{ x: (OX + CCX) / GRAIN, y: (CCY - 22) / GRAIN, r: 13 - (STICKS.length - 1 - lit_) * 1.5 + Math.round(g * 2), color: EMBER[2], a: 0.42 + g * 0.06 }];
     frames.push(sp);
   }
   for (let f = 0; f < N; f++) if (flameTrack.at[f] === undefined) flameTrack.at[f] = null;
@@ -2630,7 +2875,9 @@ export function wardenMoments(): Moment[] {
   const rats: Moment = { name: 'rats bolt', frames: left.frames, fps: 30, before: left.before, after: left.after, tracks: left.tracks, jolts: [], holds: [], contacts: left.contacts, right };
   const sl = wallGivesWay(true);
   const sr = wallGivesWay(false);
-  const stone: Moment = { name: 'dust and a falling stone', frames: sl.frames, fps: 30, before: sl.before, after: sl.after, tracks: sl.tracks, jolts: [sl.land], holds: [], right: { frames: sr.frames, before: sr.before, after: sr.after, tracks: sr.tracks } };
+  // (one moment, two faces: the blows fall on the same frames in both)
+  if (sr.land !== sl.land || sr.land2 !== sl.land2) throw new Error('the stone strikes on different frames in the two faces');
+  const stone: Moment = { name: 'dust and a falling stone', frames: sl.frames, fps: 30, before: sl.before, after: sl.after, tracks: sl.tracks, jolts: [sl.land, sl.land2], holds: [], right: { frames: sr.frames, before: sr.before, after: sr.after, tracks: sr.tracks } };
   return (moments = [stone, rats, candleGutters()]);
 }
 
@@ -2776,7 +3023,7 @@ export function wardenPieces(): Piece[] {
     { name: 'horned knight', kind: 'obstacle', frames: [knightStatue()], shadow: 0.45 },
     { name: 'pillar', kind: 'obstacle', frames: [pillar()], shadow: 0.34 },
     { name: 'cresset', kind: 'obstacle', frames: [0, 1, 2, 3].map(cresset), shadow: 0.28 },
-    { name: 'rack of mauls', kind: 'obstacle', frames: [maulRack()], shadow: 0.5 },
+    { name: 'rack of mauls', kind: 'obstacle', frames: [maulRack()], shadow: 0.4 },
     { name: "the king's throne", kind: 'obstacle', frames: [throne()], shadow: 0.62 },
     { name: "the king's coffer", kind: 'obstacle', frames: [coffer(false), coffer(true)], shadow: 0.38 },
     // doors and gates: the floor's own, as the game takes them; each piece's pictures its leaf, its plain gate's arch, its boss's arch

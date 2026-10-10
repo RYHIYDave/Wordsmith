@@ -16,6 +16,7 @@ import type { Piece, PieceKind } from '../art/floor1';
 import { GATE_UP, PILLAR, POST, STRIP } from '../art/gates';
 import type { Strip } from '../art/gates';
 import { makeHeroArt3 } from '../art/heroes3';
+import { drawLights } from '../engine/px';
 import type { Sprite } from '../engine/px';
 
 const [mode = 'sheet', scaleArg = '', nArg = ''] = decodeURIComponent(location.hash.slice(1)).split(':');
@@ -91,6 +92,8 @@ interface Stand {
 function standAll(list: Stand[]): void {
   list.sort((a, b) => a.d - b.d);
   for (const st of list) draw(st.s, st.x, st.y);
+  // (then the light each gives off, added over all, as the game adds a prop's: render.ts, propLit)
+  for (const st of list) drawLights(g, st.s, Math.round(st.x), Math.round(st.y));
 }
 
 /**
@@ -244,7 +247,8 @@ else if (mode === 'room') {
   // a room of the Warden's floor as the game would lay it: walls along the two far sides, the
   // pieces in it, the warrior for size. (Where each thing stands would be the main chat's rules.)
   const N = 10;
-  const W0 = N * 32 + 40;
+  // (room enough on the right for the crumbled wall's heap)
+  const W0 = N * 32 + 100;
   size(W0, N * 16 + 120);
   const ox = W0 / 2;
   const oy = 70;
@@ -334,6 +338,14 @@ else if (mode === 'moment') {
     g.beginPath();
     g.rect((i % COLS) * CWm, Math.floor(i / COLS) * CHm, CWm, CHm);
     g.clip();
+    // (THE SCREEN'S KICK as the stone strikes, as the game kicks it for a heavy blow: the main chat's
+    // to do in the game, drawn here so that the film shows it. Down 3 of the game's pixels, back up 2, settling)
+    const fi = i - before.length;
+    // (the second blow, a smaller stone, kicks it less)
+    const KICKS = [[[1, 3], [-1, -2], [0, 1]], [[1, 2], [-1, -1], [0, 1]]] as const;
+    const jk = m.jolts.findIndex((j) => fi - j >= 0 && fi - j < 3);
+    const kick = jk >= 0 && fi < film.frames.length ? KICKS[Math.min(jk, 1)][fi - m.jolts[jk]] : undefined;
+    if (kick) g.translate(kick[0], kick[1]);
     const at = (x: number, y: number): [number, number] => [ox + (x - y) * 16, oy + (x + y) * 8];
     const wallAt = (tx: number, ty: number): boolean => (right ? tx === 0 : ty === 0);
     for (let tx = 0; tx < 6; tx++) for (let ty = 0; ty < 6; ty++) {
@@ -354,12 +366,14 @@ else if (mode === 'moment') {
     const [hx, hy] = which === 2 ? at(1.4, 3.8) : right ? at(4.4, 1.6) : at(1.6, 4.4);
     if (which === 1 || which === 3) draw(right ? P('rat hole').right![0] : P('rat hole').left![0], px, py);
     softShadow(hx, hy, 0.36);
+    const [cx, cy] = at(3, 2.5);
     if (which === 2) {
-      const [cx, cy] = at(3, 2.5);
       softShadow(cx, cy, P('candles').shadow ?? 0.2);
       draw(fr, cx, cy);
     } else draw(fr, px, py);
     draw(hero.front.idle[0], hx, hy);
+    // (the candles' light, added over all as the game adds a prop's, falling as each goes out)
+    if (which === 2) drawLights(g, fr, Math.round(cx), Math.round(cy));
     g.restore();
   });
 }
