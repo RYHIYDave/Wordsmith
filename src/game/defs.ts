@@ -896,8 +896,8 @@ export const MOVE_OPENS: readonly number[] = [1, 2, 5];
  */
 // (pulled back, 9 Oct 2026, 22:25 to 22:28: "I want you to have a little time experimenting with the words before another one is
 // available"; "I think it’s still too fast.  Remember we have combining words and a skill tree to add"; asked of 10, 15
-// and 20: "Okay let’s try it.")
-export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly number[] } = { front: [1, 10], behind: [15, 20] };
+// and 20: "Okay let’s try it."; then, 22:51: "Move slot 2 back to level 4.")
+export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly number[] } = { front: [1, 4], behind: [15, 20] };
 /**
  * The quest item: what lies by the fallen wordsmith, and what lights the ring. His name for it, to
  * the art chat by 23:52 on 8 Oct 2026, asked what it should be: "A master rune-stone" (Version 19.5
