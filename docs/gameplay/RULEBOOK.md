@@ -2,21 +2,22 @@
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
 (https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
-as it is (Recommended)". The doc is the living one; this copy follows it (rev 58, with the first
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 78, with the first
 levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs of Version 19.7,
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
-fixes and word slots of Version 20.0 and the skill trees and the controller of Version 20.1 written
-in), and both change only with his yes. The two pictures in the doc are written out here in
-words. How it was found: `docs/gameplay/interview.md`.
+fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
+new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
+change only with his yes. The two pictures in the doc are written out here in words. How it was
+found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
 godlike by the end. This rulebook sets how it plays: the loop, how a hero grows, and how it should
 feel. It changes only with your yes.
 
-A hero goes down one dungeon at a time, ten to fifteen minutes each, and comes back to town in
-between. Five lands of ten dungeons lead to the final boss; past it lies the endless depth. The big
-jumps in power come from wordsmithing: words won from elites and bosses, set into attacks, forged
-into stronger ranks.
+A hero goes down floor by floor, ten to fifteen minutes each, with a boss on every floor. The floors
+come in sets of five, each themed to its bosses with a lair boss on the fifth, and they go on down
+without end: the point is to get as far down as possible. The big jumps in power come from
+wordsmithing: words won from elites and bosses, set into attacks, forged into stronger ranks.
 
 You asked for it on 8 Oct 2026: “I want to create a ruleset creating the gameplay loop,
 progression, and how the game should feel to play.” It was found the way the art rulebook was, in
@@ -47,33 +48,70 @@ next.
 
 ## The loop
 
-(The doc's picture, "Every sitting is one dungeon, then town", in words:)
+(The doc's picture, "Down floor by floor, with town a waypoint away", in words:)
 
-- The world map (pick the next dungeon, or go back to one) → a dungeon (10 to 15 minutes; a boss
-  at its end) → cleared → town (wordsmith, forge, talents; trade and take quests) → the next
-  dungeon, on the world map.
-- In a dungeon the hero dies → which mode?
-  - Normal: wakes in town; loses the dungeon’s finds and some gold → town.
-  - Hardcore: the hero is gone; the Lexicon and the stash stay; a new hero starts at dungeon 1 →
-    the world map.
+- Town (wordsmith, forge, talents; trade and take quests) → the gate → a floor (10 to 15 minutes;
+  a boss at its end) → boss beaten → the stairwell (down to the next floor; a waypoint at the
+  bottom) → the next floor.
+- From a floor, a waypoint (from floor 2): to town and back.
+- On a floor the hero dies → which mode?
+  - Normal: wakes in town; loses the floor’s finds and some gold → town.
+  - Hardcore: the hero is gone; the Lexicon and the stash stay; a new hero starts in town.
 
-A sitting is one dungeon of ten to fifteen minutes; between dungeons the hero is in town, then
-picks the next on the world map. A death in Normal sends the hero to town; in Hardcore it sends the
-next hero to dungeon 1.
+A floor takes ten to fifteen minutes and ends in its boss, then a stairwell down to the next. The
+hero starts in town by the wordsmith and the altar, and goes in through the gate in town, which
+opens by itself as he comes; from floor 1 he can walk back out through it, and every floor after it
+has a waypoint at its start, to town and back (your outline of 9 Oct, 22:47). A death in Normal
+sends the hero to town; in Hardcore the next hero starts in town, at floor 1.
 
 ## The climb
 
-(The doc's picture, "Five lands of ten, and a bigger boss every fifth dungeon", in words:)
+(The doc's picture, "Five floors to a set, a lair boss on every fifth, and no last floor", in words:)
 
-- Land 1: dungeons 1 to 10. Land 2: 11 to 20. Land 3: 21 to 30. Land 4: 31 to 40. Land 5: 41 to
-  50. Then the endless depth, which gate words push.
-- A small boss ends every dungeon. A medium boss at 5, 15, 25, 35 and 45; a big boss at 10, 20, 30
-  and 40; the final boss at 50.
+- The Crypt, floors 1 to 5; set 2, floors 6 to 10; set 3, 11 to 15; set 4, 16 to 20; set 5, 21 to
+  25; and on down, with no last floor. Each set of five has bosses, monsters and a theme of its own;
+  the Crypt is the first.
+- A boss on every floor; a lair boss on every fifth (5, 10, 15, 20, 25 and on).
 
-Each land has its own look and monsters, a medium boss at its fifth dungeon and a big boss at its
-tenth; the fifth land’s big boss is the final boss, about twelve hours in. Beaten dungeons stay on
-the map, worth going back to for fresh words, locked secrets (a word door you can now open) and
-quests.
+The floors come five in a row, each set of five themed to its bosses: a boss on every floor, the
+floor themed after it, and a lair boss on the fifth. In your words of 10 Oct, 07:21: “We’re going to
+make a ton of bosses and mobs.  Then theme those floors to the bosses.  5 in a row, lair boss per
+5.” (The art rulebook says it too, in Places 7: each floor themed after its boss.) A floor is what
+the rest of this book calls a dungeon: one long level of rooms, ending in its boss.
+
+There is no last floor. Past the fifth, the hero goes on down into the next five, with bosses and a
+theme of their own, and on again: “once we get to 5, we just keep delving and fighting bosses.” The
+point is to get as far down as possible. Each set of five tells a story as a theme its floors share,
+not as a story told in order: “I’d like maybe every 5 to tell a story but just as a collective theme
+and not so much a linear story.”
+
+Each set has one change to how its floors are laid out, fitting its place (08:26): “Id like one
+floor design change per 5 levels.  It needs to be thematic to the type of environment.”
+
+What is built stays (“So we’re still good on everything that we’ve built so far”), and so do the
+gate in town and the start: “I still like the gate in town.  And the start with the wordsmith and
+the altar”.
+
+**The first five: the Crypt** (your outline of 9 Oct, 22:47, and your words of 10 Oct, 08:26). The
+hero starts in town next to the wordsmith, who sends him to find another wordsmith in the Crypt; the
+armourer sends him to slay the Warden. A cult has found an ancient evil power under the crypt.
+
+- **Floor 1, the Warden’s:** the fallen wordsmith, with the master rune-stone that powers up the
+  altar (in the game since Version 19.5); the Warden; then a stairwell down. The way back to town is
+  the gate.
+- **Floors 2 to 5,** each with a waypoint at its start: the Headsman on floor 2; the prisoner on
+  floor 3 (the art chat’s Chained One); the amalgamation on floor 4; and on floor 5 the lair boss, a
+  very powerful cultist fleshmancer, human sized, whose spells fill the room and must be dodged. “He
+  is the one creating the ossuary guys and the giant amalgamation.”
+- **Less finished the deeper:** floor 1 old and crumbling, but all stone; more missing and more
+  bare dirt on each floor down; by floor 4 about half dirt and rock, with discarded, rusted mining
+  gear about.
+- **Its change to the floors:** rows of jail cells along the walls, “Small rooms each with a
+  door.”; and the floors opening up as they get less finished: “I’d like to open up more and not be
+  so confined and claustrophobic.”
+- **Its look** is the art chat’s: its four floors, the stairwell, the waypoint and the town’s gate
+  as one of the levels’ gates have your yes (to the art chat, by 07:29 on 10 Oct); the cells and the
+  open floors come to you as pictures first.
 
 ## Fights
 
@@ -117,8 +155,9 @@ gone (Recommended)”). The ring stays lit for the heroes after. A hero who leav
 without the master rune-stone finds the fallen wordsmith again in the next.
 
 - **Where words come from:** elites carry a word you can win; every boss gives one, and the chance
-  of a second grows with depth. Past the final boss, rare words found nowhere else. None in the
-  first dungeon, since Version 19.5: its monsters carry none, and its gate takes none.
+  of a second grows with depth. Deep down, rare words found nowhere else (where they begin is still
+  open). None in the first dungeon, since Version 19.5: its monsters carry none, and its gate takes
+  none.
 - **Slots:** none until the wordsmith’s ring is lit; then one in front, with the first word; the
   second in front at level 4, one behind at level 15 and the second behind at level 20 (since
   Version 20.0; your words of 9 Oct, 22:25: “I want you to have a little time experimenting with the
@@ -128,8 +167,9 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   level. Very late, a third in front at 15 and a third behind at 20 (an idea, switched off: its
   levels to be set again, now that the slots behind open at 15 and 20).
 - **Forging:** three of the same word forge into one stronger word at the wordsmith, up to rank V.
-- **The gate word belongs to the endless depth:** there, words laid on the gate make the next
-  dungeon harder and richer.
+- **Words laid on the gate go for now,** to come back later as endgame (your words of 9 Oct, 22:50:
+  “Let’s have the door words go for now.  I think that’ll be endgame stuff”); then they make the
+  next floor harder and richer.
 - **Thirteen words today, of two kinds (since Version 19.3):** damage words add damage of a kind
   (Power, Flame, Frost, Lightning, Poison); shaping words change what the attack does (Swift, Twin,
   Leech, Volatile, Heavy, Precise, Frenzied, Guarding). An attack takes one damage word on each
@@ -165,7 +205,7 @@ the class cards, in the game since Version 19.1. A hero saved before there were 
 | What is lost | What was found in that dungeon, and a quarter of the gold carried in | The hero and all they carry |
 | What stays | The hero’s level, the gear worn in, the words, the talents | The Lexicon, the stash and the unlocks, for the next hero |
 
-- **Every new hero starts at dungeon 1.** What earlier heroes left makes the early lands quick: the
+- **Every new hero starts at floor 1.** What earlier heroes left makes the early floors quick: the
   Lexicon’s words, the stash’s gear, and unlocks.
 - **Unlocks are new words and places,** opened by what earlier heroes did. Which ones, and for what
   deeds, is still open.
@@ -275,6 +315,9 @@ take quests.
 
 - **Who is there today:** the armourer and the mystic, who sell; the wordsmith; and the stranger,
   who lets you gamble for gold. The stash and the Lexicon are kept in town.
+- **The Crypt’s two quests** (your outline of 9 Oct, 22:47): the wordsmith’s, to find another
+  wordsmith in the Crypt (the master rune-stone, in the game since Version 19.5); and the
+  armourer’s, to slay the Warden.
 - **The story is light, told through quests from people in town.** A quest sends the hero into a
   dungeon, often one already beaten, for something new there.
 - **What quests give** is still open. Talent points come with levels, not from quests.
@@ -294,14 +337,13 @@ Money never buys:
 **One rule added by the director, approved with the draft on 8 Oct:** the free stash and Lexicon
 are enough to play the whole game well. Bought space is for keeping more, never for being stronger.
 
-## Past the final boss, and friends
+## As far down as you can go, and friends
 
-Beating the final boss opens the endless depth: dungeons that keep getting deeper, for the brave.
-Most players can reach the final boss with care; the endless depth is the real test.
+There is no final boss and no last floor: the hero goes on down, five floors to a set, and the test
+is how far (your words of 10 Oct, 07:21: “The point is to get as far down as possible.”).
 
-- **The gate word pushes it:** words laid on the gate make each next dungeon harder and richer.
-- **It rewards rare words** found nowhere else, and **a board** that ranks best depths against
-  other players.
+- **The deep floors reward rare words** found nowhere else, and **a board** that ranks best depths
+  against other players.
 - **Friends:** the game is built for one player first. Co-op comes after release.
 
 ## How gameplay is made and approved
@@ -368,18 +410,19 @@ it goes in.
 | Normal and Hardcore | Both, since Version 19.1 | Done |
 | The first levels | Since Version 19.5 | Done: the ring dark until the master rune-stone goes in, then powering up, since Version 19.6; the first word once it has powered up, and the slots at 4, 15 and 20, since Version 20.0 |
 | The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
-| Five lands of ten, the final boss at 50 | One dungeon after another, with no end | Five lands, each its own look and monsters (with the art chat); a final boss |
-| Small, medium and big bosses | A boss in every dungeon; a Greater boss every fifth | A medium boss at 5, 15, 25…; a big boss at 10, 20, 30… |
+| Sets of five floors, each themed to its bosses, on down without end | One dungeon after another, with no end | Each set its own bosses, monsters and look, with the art chat: the Crypt first |
+| A boss of its own on every floor; a lair boss on every fifth | The Warden ends every dungeon; a Greater Warden, with twice the life, every fifth | The Crypt’s: the Headsman, the Chained One and the amalgamation (the art chat’s, with your yes), and the fleshmancer, not yet drawn |
 | Monster sizes, blue and yellow packs | Since Version 19.7; the new leaders and the rings since Version 19.9 | Done |
 | Monsters’ attacks by size | Since Version 19.8; the new monsters’ and the leaders’ since Version 19.9 | Done |
-| A world map | The gate in town, one dungeon deeper each time | The map; going back to beaten dungeons |
+| The gate in town, stairwells and waypoints | The gate in town, one dungeon deeper each time | The gate to floor 1, opening as you come; a stairwell down at the end of every floor; a waypoint at the start of every floor from the second (the art chat’s pictures have your yes) |
+| The Crypt’s floors | One look for every dungeon | Less finished the deeper (the art chat’s pictures have your yes); the cells and the opening up, pictures to you first |
 | A small talent tree | A tree for each class, ten points with levels, undoing in town for gold, since Version 20.1 | A passive for each class (your idea of 9 Oct, 22:59) |
 | Controller support | Since Version 20.1: two sticks, the right one aiming; the buttons named on the screen | Done |
 | Forging three words into one | Not built | The table of ranks you were sent on 5 Oct, still waiting on your say |
 | A third slot a side | Built, switch off | Tests and balance for six words on one attack |
-| Gate words for the endless depth | Gate words on any dungeon | Moved to past the final boss |
+| Words on the gate, as endgame | Gate words on any dungeon | Taken out for now (your words of 9 Oct, 22:50) |
 | Traps, puzzles, events, secrets | The mix (Version 18.9) and the traps (Version 19.0) | Puzzles beyond the word door, events and secrets |
-| Quests from townsfolk | None | The quests, and who gives them |
+| Quests from townsfolk | The wordsmith’s, since Version 19.5: the master rune-stone | The armourer’s, to slay the Warden; more after it, and what they give |
 | A free game with a shop | Played free as a web page | A store on phone and PC; the four classes later |
 | A board of best depths | None | The game online |
 | Co-op | None | After release |
@@ -395,8 +438,10 @@ on its own (Recommended)"), with the mage’s stances and the big-and-wild skill
 "With today's packs (Recommended)"): in since Version 19.7; the monsters’ attacks next ("Packs
 today, attacks next (Recommended)"): in since Version 19.8; then the new monsters, their leaders and
 the rings (16:05: "New monsters + rings (Recommended)"): in since Version 19.9. The skill trees and
-the controller are in since Version 20.1 (10 Oct, 01:55: “Go ahead and ship it”), and the new words
-come next (07:28: "Next, after these (Recommended)").
+the controller are in since Version 20.1 (10 Oct, 01:55: “Go ahead and ship it”). On 10 Oct you gave
+the game its new shape (07:21 and 08:26), and the order after it (09:02: “Sounds good”): this book
+first; then the Crypt (its floors, the stairwell, the waypoint, the gate in town, the cells and the
+open floors), pictures first; then its bosses on floors 2 to 4; then the new words.
 
 ## Still open
 
@@ -409,7 +454,13 @@ come next (07:28: "Next, after these (Recommended)").
   gold carried in, your answer of 8 Oct, 13:35: "A quarter (Recommended)".)
 - [ ] Which words and places earlier heroes unlock, and for what deeds.
 - [ ] What quests give.
-- [ ] Each land’s look and monsters, with the art chat.
+- [ ] Each set of five after the Crypt: its theme, bosses, monsters and change to the floors, with
+  the art chat.
+- [ ] What the fleshmancer drops (your words of 9 Oct, 22:47: “He drops something, maybe the key to
+  allow wordmelding.  I don’t really know.”).
+- [ ] Going back to a floor already beaten, now that there is no world map: whether a waypoint
+  takes the hero only to town and back, or to any floor reached.
+- [ ] Where the rare words begin, now that there is no final boss.
 - [x] A yellow pack’s leader drawn as a monster of its own (your skeleton champion, an old rusty
   helmet and a two-handed sword), and the art chat’s markers for blue and yellow packs. Done in
   Version 19.9.
