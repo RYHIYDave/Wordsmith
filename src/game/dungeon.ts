@@ -32,7 +32,7 @@
 
 import { RNG } from '../engine/rng';
 import { FIRST_DUNGEON, FIRST_LEVELS, MONSTER_PACKS, packKinds, packRange, sizeOf } from './defs';
-import { DOORS, layDoors } from './doors';
+import { DOORS, doorTiles, layDoors } from './doors';
 import { TRAPS, TRAPS_FROM, layHazards, sealVault, unsealDoorless } from './traps';
 import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
@@ -1651,6 +1651,17 @@ function placeBonusChest(st: Stage): void {
   addProp(st, 'chest', rng.pick(flat.length > 0 ? flat : spots));
 }
 
+/**
+ * THE CRYPT LESS FINISHED THE DEEPER IT GOES (art/crypt.ts; a mock-up, off). The owner, 9 Oct
+ * 2026, 22:47: "By floor 4 it’s about half dirt and rocks with discarded and rusted mining
+ * equipment around." On, more lies on the floor of the deeper dungeons: for each of the usual
+ * litter, `more` again of what the art draws as rubble (on those floors, rocks and the miners'
+ * gear among it), dungeon 1 first. Laid LAST of everything (`moreLitter`), by dice of its own, on
+ * plain floor that nothing else has (no stair, no trap, no doorway, nothing standing or lying, not
+ * near the start or the boss), so that nothing else in a dungeon changes.
+ */
+export const CRYPT_LITTER = { on: false, more: [0, 0.3, 0.7, 1.2] as readonly number[] };
+
 /** Bones and rubble: flat decoration, about one per 40 floor tiles, anywhere on the floor. */
 function placeLitter(st: Stage): void {
   const { rng } = st;
@@ -1662,6 +1673,35 @@ function placeLitter(st: Stage): void {
     if (st.taken[i] === 1 || st.keepOut[i] === 1) continue;
     addProp(st, rng.chance(0.5) ? 'bones' : 'rubble', i);
     want--;
+  }
+}
+
+/** (CRYPT_LITTER) The more that lies on the floor of the Crypt's deeper floors: after everything else is laid, where nothing else is. */
+function moreLitter(f: Floor, dice: RNG): void {
+  const n = f.w * f.h;
+  const free = new Uint8Array(n);
+  for (let i = 0; i < n; i++) free[i] = f.tiles[i] === T_FLOOR && !(f.cut && f.cut[i] !== 0) && !(f.stair && f.stair[i] !== 0) ? 1 : 0;
+  for (const p of f.props) free[p.y * f.w + p.x] = 0;
+  for (const h of f.hazards ?? []) for (let y = Math.floor(h.y) - 1; y <= Math.ceil(h.y + h.h); y++) for (let x = Math.floor(h.x) - 1; x <= Math.ceil(h.x + h.w); x++) if (x >= 0 && y >= 0 && x < f.w && y < f.h) free[y * f.w + x] = 0;
+  for (const d of f.doors ?? []) for (const i of doorTiles(f, d)) free[i] = 0;
+  for (const l of f.levers ?? []) free[l.y * f.w + l.x] = 0;
+  // (not within two tiles of where the hero comes in, or of the boss)
+  for (const c of [f.start, f.boss]) {
+    for (let y = Math.floor(c.y) - 2; y <= Math.floor(c.y) + 2; y++) for (let x = Math.floor(c.x) - 2; x <= Math.floor(c.x) + 2; x++) if (x >= 0 && y >= 0 && x < f.w && y < f.h) free[y * f.w + x] = 0;
+  }
+  const spots: number[] = [];
+  let floorTiles = 0;
+  for (let i = 0; i < n; i++) {
+    if (f.tiles[i] === T_FLOOR) floorTiles++;
+    if (free[i]) spots.push(i);
+  }
+  let more = Math.round(Math.round(floorTiles / 40) * CRYPT_LITTER.more[Math.min(CRYPT_LITTER.more.length, f.depth) - 1]);
+  for (let tries = more * 6; tries > 0 && more > 0 && spots.length > 0; tries--) {
+    const i = dice.pick(spots);
+    if (!free[i]) continue;
+    free[i] = 0;
+    f.props.push({ kind: 'rubble', x: i % f.w, y: Math.floor(i / f.w) });
+    more--;
   }
 }
 
@@ -1845,6 +1885,8 @@ export function generateFloor(depth: number, seed: number): Floor {
     const hazards = layHazards(floor, traps);
     if (hazards.length > 0) floor.hazards = hazards;
   }
+  // (THE CRYPT, behind CRYPT_LITTER, off: more lying about on its deeper floors, laid last, by dice of its own)
+  if (CRYPT_LITTER.on && d >= 1) moreLitter(floor, new RNG((mixSeed(d, seed) ^ 0x51ed270b) >>> 0));
   return floor;
 }
 

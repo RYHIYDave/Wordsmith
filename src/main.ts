@@ -16,6 +16,9 @@ import { MODES } from './game/modes';
 import { TALENTS } from './game/talents';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
+import { CRYPT, cryptFloor, cryptGround, cryptProps, forgetCrypt } from './art/crypt';
+import type { CryptMarks } from './art/crypt';
+import { CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
@@ -175,6 +178,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (THE MASTER RUNE-STONE, art/quest3.ts: a mock-up behind QUEST3, off; its pictures are painted the first time they are shown)
     quest: makeStoneArt(),
   };
+  // THE CRYPT (art/crypt.ts, behind CRYPT, off): each of its floors has a ground and props of its
+  // own, swapped in as the hero goes down; the vault's are the town's, and every dungeon's with it off.
+  const vault = { ground: art.ground, props: art.props };
+  let cryptShown = 0;
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
   // WHICH START SCREEN. 'library' is the one the game has had since Version 11 (the library that
@@ -1538,6 +1545,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         fx.shakeY = 0;
       }
       questFromRules(g);
+      // (THE CRYPT, behind CRYPT: this floor's pictures, made the first time it is reached)
+      const crypt = CRYPT.on && g.inDungeon ? cryptFloor(g.depth) : 0;
+      if (crypt !== cryptShown) {
+        art.ground = crypt ? cryptGround(crypt) : vault.ground;
+        art.props = crypt ? cryptProps(crypt) : vault.props;
+        cryptShown = crypt;
+      }
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (a hero who has just warped in says their line when they have come together: `arrived`)
       if (arrived && !paused) {
@@ -1971,6 +1985,18 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** For films of a hero's habits: the hero does one of the two things they do when left standing (1 or 2) now, whatever the wait. */
     habit: (which: 1 | 2) => renderer.figure.play(which),
     /**
+     * THE CRYPT (art/crypt.ts; game/dungeon.ts, CRYPT_LITTER): its floors less finished the deeper
+     * they go, on or off (both switches; a dungeon made after has the litter of it). For pictures.
+     */
+    crypt: (on: boolean) => {
+      CRYPT.on = on;
+      CRYPT_LITTER.on = on;
+    },
+    /** (THE CRYPT) Where a picture puts the stairwell down and the waypoint on the level the hero is on (art/crypt.ts, CryptMarks). */
+    cryptMarks: (m: Partial<CryptMarks>) => {
+      CRYPT.marks = { level: game ? game.level : null, stair: m.stair ?? null, way: m.way ?? null };
+    },
+    /**
      * THE WALLS' LOOK (art/ground.ts): set it, and the floor and walls are painted again. For
      * playtests that photograph a look, who put back the one they found; the game's own is
      * whatever `WALL_LOOK` starts as. `wallLook()` says which is in force.
@@ -1978,6 +2004,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     walls: (look: Partial<WallLook>) => {
       setWallLook(look);
       art.ground = makeGroundArt();
+      // (the Crypt's floors are painted again too, the next time each is reached)
+      vault.ground = art.ground;
+      forgetCrypt();
+      cryptShown = 0;
       // (a gate's post is as tall as the walls, and it fades as they do)
       art.gates = makeGateArt();
     },
