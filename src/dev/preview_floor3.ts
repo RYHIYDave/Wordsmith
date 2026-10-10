@@ -322,8 +322,10 @@ else if (mode === 'room') {
   }
   // on the walls, each at one of its places, some walls left bare: the far wall's faces turned to
   // screen-left (along ty = 0), the near-left wall's turned to screen-right (along tx = 0)
-  const onLeft: [number, string, number][] = [[1, 'the bowed wall', 0], [2, 'the cell grate', 1], [3, 'fire basket', 0], [4, 'the cell grate', 0], [5, 'rings and chains', 0], [6, 'the chain port', 0], [7, 'fire basket', 1], [8, 'the cell grate', 2], [9, 'the torn-out ring', 0]];
-  const onRight: [number, string, number][] = [[1, 'the wall winch', 1], [2, 'bent bars', 0], [3, "the jailers' lamp", 2], [4, 'a skull in its cage', 1], [5, 'the cage carved', 2], [6, 'balls on a rack', 0], [7, 'claw-torn stone', 2], [8, "the ball's crater", 1], [9, 'the feeding slot', 0]];
+  // (a few strong pieces carrying each wall, plain stretches of wall between them: the first fresh
+  // look found every tile of the walls dressed, too busy to read)
+  const onLeft: [number, string, number][] = [[2, 'the cell grate', 0], [3, 'fire basket', 1], [5, 'rings and chains', 0], [7, 'the bowed wall', 0], [9, 'the torn-out ring', 0]];
+  const onRight: [number, string, number][] = [[2, 'bent bars', 1], [3, "the jailers' lamp", 0], [5, 'the cage carved', 2], [7, 'balls on a rack', 1], [9, 'claw-torn stone', 0]];
   for (const [tx, n, k] of onLeft) {
     const [x, y] = at(tx, 0);
     const l = P(n).spots![k].left;

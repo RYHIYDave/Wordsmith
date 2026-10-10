@@ -8,8 +8,8 @@ does (what breaks, what blocks, what hurts, what a quest asks, when a moment pla
 chat's, once he has said yes.
 
 **State of this branch (`mockup/floor3-chained`):** from `mockup/floor2-headsman` at 590af58 (floor 2
-as he said yes to it, its moment helpers exported). Made by THE ART CHAT, 10 Oct 2026. **Not yet seen
-by him.**
+as he said yes to it, its moment helpers exported). Made by THE ART CHAT, 10 Oct 2026; mended the
+same day after the first fresh look (below). **Not yet seen by him.**
 
 ## His words
 
@@ -44,23 +44,26 @@ of bars, grooves gouged in the flags by a dragged ball, stone torn by his finger
 burst where he got out; empty bowls and an empty trough (he was starved); straw and rags; the
 jailers' winches, goads, fire and kettle. It stands on the Crypt's third floor as he said yes to it
 (`CRYPT_FLOORS[2]`: about a third of the floor earth, the walls' stones fallen to rough rock in
-places). His marks are his iron face-cage (his long head, the band across his brow, four bars bowed
-down over his face, the strap over his crown, his eyes behind the bars: pink only over his own gate)
-and the ball and its chain. No carved words. The main chat lays a cell block on each Crypt floor;
-these pieces dress it as his prison (`the cell window` is a cell's barred window, and the moment
-with the bars plays in one).
+places). His marks are his MUZZLE-CAGE (his "muzzled", in his own pick: one shape wherever it is,
+carved in the wall, laid in the floor, over his gate, on a skull on a hook, and torn off him for the
+quest: an iron cage over his jaw, the shape of a jaw, three bands across it with short uprights
+between them set so that none crosses a band, rivets where they meet, a strap back from each top
+corner; his eyes deep under his brow above it, pink only over his own gate and in the dark of his
+cell in the moments) and the ball and its chain. No carved words. The main chat lays a cell block on
+each Crypt floor; these pieces dress it as his prison (`the cell grate` is a cell's barred front, the
+wall's height, and the moment with the bars plays in one).
 
 ## What is in it (`chainedPieces()`, 50 pieces; `chainedMoments()`, 3)
 
-- Wall tiles (9): bent bars, claw-torn stone, the feeding slot, the cage carved (his caged face in relief), the ball's crater, the bowed wall (the wall's height), the torn-out ring (its heap of broken stone, the ring and its chain: its `frames[0]`, drawn on the floor tile before it, before the wall), the chain port (a low iron-framed mouth at the wall's foot), the cell window.
-- On the walls (9): rings and chains (the wall's height: the chains reach the floor), balls on a rack, fire basket (4 frames, with its light), goad and catch-pole, empty bowls, rags on a nail, the wall winch (the wall's height: its chain runs up into the dark), the jailers' lamp (4 frames, with its light), a skull in its cage.
+- Wall tiles (9): bent bars (three bowed the same way, a snapped stub), claw-torn stone, the feeding slot (a wooden bowl on its lip), the cage carved (his muzzled face in relief in a sunk field), the ball's crater (a shallow dented dish, cracks all round), the bowed wall (the wall's height: a crack up it, the courses beside it curving out), the torn-out ring (its plate wrenched half out and hanging by one bolt, the ring on it bent; a breach to one side; its heap of broken stone and the chain's snapped end as its `frames[0]`, drawn on the floor tile before it, before the wall), the chain port (a low iron-framed mouth at the wall's foot, a heavy chain running into it), the cell grate (the wall's height: a cell's barred front, three thick bars, black inside).
+- On the walls (9): rings and chains (the wall's height: the chains reach the floor), balls on a rack (three dark balls apart, a highlight each), fire basket (4 frames, with its light), goad and catch-pole (a long pale spike; a rope noose hanging open; pegs), empty bowls (seen from the side: three stacked, one apart with its spoon), rags on a nail (an old grey-brown rag hung by its corners on two nails, sagging, its hem torn), the wall winch (the wall's height: its chain runs up into the dark), the jailers' lamp (an iron lantern on a bracket, 4 frames, with its light), a skull in its cage (a small pale skull, the dark iron muzzle round its jaw, hung by its straps from a hook).
 - Floor tiles (6): old straw, ball grooves, the oubliette (a grate over a pit), the smashed flags, the cage in the floor (his mark), a ring in the floor.
-- Traps (3): the trip chain (and sprung), the mantrap (and shut), the ball hatch (a wall piece).
-- Breakables (4), each whole and then broken (`frames[1]`, what it leaves): straw bale, water jug, meal sack, box of irons.
-- On the floor (6): a burst cuff, ball and chain, a snapped chain, a bowl kicked over, his pallet, a torn-out bar.
-- Obstacles (9): the cage (taller than a man, its door torn half off), the chain post, the feed trough, the great winch, the jailers' kettle (4 frames, with its light), the anvil, a heap of chains, the stone bench, the jailers' chest (the chest; closed and open).
-- Doors and gates (3): the door (a cell door of iron plates riveted, a grille high in it, a great bolt), the gate (the ball and chain over it), the boss's gate (his caged face, his eyes his embers behind the bars). As `Piece.gates`, made by `makeGateArt(theme, look)` (`chainedGates()`).
-- Quest (1): the Chained One's face-cage, torn off him and lying tipped on its side.
+- Traps (3): the trip chain (and sprung), the mantrap (two long toothed jaws laid open either side of a square pan; and shut), the ball hatch (a wall piece: a square iron hatch, its shutter propped open, a ball on its sill).
+- Breakables (4), each whole and then broken (`frames[1]`, what it leaves): straw bale (warm grey, its stalks lying along it, two twine bands), water jug, meal sack, box of irons.
+- On the floor (6): a burst cuff, ball and chain, a snapped chain, a bowl kicked over (on its side, its dark mouth to us), his pallet (a flat straw mat, a rough grey blanket over half of it), a torn-out bar (straight, one sharp kink, a lump of mortar on its end).
+- Obstacles (9): the cage (four thick pointed bars to a side, its floor dark, its door swung wide, the lock hanging open), the chain post, the feed trough (planks on trestle feet), the great winch, the jailers' kettle (4 frames, with its light), the anvil, a heap of chains, the stone bench (a dark slab on two blocks, leg-irons on it), the jailers' chest (the chest; closed and open).
+- Doors and gates (3): the door (a cell door of iron plates riveted, a grille high in it, a great bolt), the gate (the ball and chain over it), the boss's gate (his muzzled face, his eyes his embers). As `Piece.gates`, made by `makeGateArt(theme, look)` (`chainedGates()`).
+- Quest (1): the Chained One's face-cage: his muzzle-cage of dark iron, torn off him and lying on the floor, a band burst and an upright snapped, its straps torn short.
 
 Anchors, shadows (`Piece.shadow`), lights (`Sprite.lights`) and wall pieces' places (`Piece.spots`:
 three each, low to high and across; never the same piece on two neighbouring tiles of a wall) are as
@@ -74,97 +77,137 @@ kick and the sound (the films show a kick of 3 of the game's pixels and back). T
 `right`: the same for a face turned to screen-right (the same picture laid on that wall, in its
 shade, the light still from the upper left).
 
-- **The chains pull** (57 frames, 1.9 s; a wall piece's anchor; its frames reach a tile and a half
-  along the wall: it plays where the wall runs on past its tile to a chain port of its own, painted in
-  the moment). Three heavy chains hang from great rings, slack down the stone and along its foot into
-  the port's dark (`before`). They creep toward it (from frame 1); at frame 9 (0.3 s) all three are
-  hauled at once, snatched up off the floor and snapped taut against the stone at frame 12 (0.4 s,
-  a jolt), dust bursting off the wall all along them, the rings jerking on their plates; they strain
-  and thrum; it heaves again at frame 21 (0.7 s, a jolt), the stone cracking round the first ring's
-  plate; at frame 29 (0.97 s, a jolt) that ring rips out of the wall, chips and dust flying, and its
-  chain whips out across the room and slams down onto the floor at frame 37 (1.23 s, a jolt), the
-  ring and the links by it bouncing; whatever pulled lets go, and the other two drop slack, swing out
-  into the room and back against the stone, and hang still. What is left: the torn-out ring and its
-  chain on the floor, the hole and the cracks it left, the two chains hanging. Worked out as a
-  chain of points (Verlet's way, as the boss's own chains: `Rope`), so they hang, snap, whip and
-  swing with weight.
-- **The ball falls** (73 frames, 2.43 s; on the floor, anchored at the middle of a heap of fallen
-  stone, painted in the moment, the ball's chain down its side). Grit sifts from under the ball; a
-  pebble breaks away at frame 2 and tumbles down; the ball creaks out toward the edge and back, and
-  again further; at frame 14 (0.47 s) it rolls off, drops, falling faster every frame, and smashes
-  into the flags at frame 20 (0.67 s, a jolt): the flags crack out round it, chips fly and bounce,
-  dust bursts out low across the floor; it bounces and strikes again at frame 26 (0.87 s, a jolt), its
-  chain snatched off the heap after it, and rolls on toward the hero, turning over, dragging its chain,
-  and stops hard (a heavy thing stops soon). What is left: the ball where it stopped, its chain
-  trailing back, the cracked flags, the chips. Painted in depth (floor 2's `Deep`), so the heap, the
-  ball and its chain hide each other as they should; the ball's pits roll round with it.
-- **The bars shake** (57 frames, 1.9 s; a wall piece's anchor: `the cell window` at its place (0, 0);
-  at its other places, shift the frames as the place shifts the piece). The barred window, dark
-  inside (`before`). The bars tremble (frame 1); two great grey hands come out of the dark (frames 3
-  to 7) and close round the two outer bars; two pink eyes open high in the dark between them (frame
-  8). Three heaves, each harder, at frames 11, 20 and 30 (0.37, 0.67 and 1.0 s, the jolts): the bars
-  wrenched in and out and side to side, a smear behind them, rust and grit showering off, dust
-  bursting from the stone's joints round the window, chips of mortar flung out, the stone cracking out
-  from the window's corners further each time, his eyes flaring; at the third, a bar bends out of the
-  window into the room and its rivet pops and flies, bouncing across the floor. He holds it,
-  trembling; his fingers slide off (frame 40) and his hands sink back into the dark (frames 42 to 50);
-  his eyes go back into it after them, nearer each other, smaller and dimmer (frames 45 to 53). What
-  is left: the window, its bar bent out, the cracks, the rivet on the floor. His eyes are the enemy's
-  pink burning to gold: the boss's own mark, seen nowhere else on the floor but over his gate.
+- **The chains pull** (63 frames, 2.1 s; a wall piece's anchor; its frames reach a tile and a half
+  along the wall, where it runs on past its tile to a chain port painted in the moment, and two tiles
+  out into the room). Three heavy chains hang from great rings, slack down the stone and along its
+  foot into the port's dark (`before`). It begins at once: the rings shudder and mortar trickles from
+  frame 1, and from frame 3 his eyes glint pink deep in the port. At frame 8 (0.27 s, a jolt) all
+  three are hauled: snatched up off the floor, links sliding away into the port, the rings wrenched
+  long on their bolts, cracks running out round the plates, dust blasting out of the port; it lets
+  them out a little; at frame 17 (0.57 s, a jolt) it hauls again, harder: taut and straight they
+  thrum, the rings bent further, the cracks running on, the first plate tearing out, mortar pouring;
+  at frame 26 (0.87 s, a jolt) it rips out: the plate and its ring and chunks of the wall flung out
+  into the room, the chunks bouncing away toward the hero, the freed chain whipping out after its
+  ring in an S across the floor and slapping down at frame 34 (1.13 s, a jolt), bouncing, slapping
+  down again smaller about frame 41. Whatever pulled lets go: the eyes go back into the dark, the
+  other two drop slack, swing out and back and hang still, the dust sinks onto the floor and is gone
+  by frame 62. What is left: the torn plate, ring and chain lying out across the floor, the hole and
+  the cracks, the two chains hanging, their rings bent, the chunks. On the face turned to
+  screen-right the port is on the other side of the rings, toward the eye (so that the chains run
+  down to it there too).
+- **The ball falls** (77 frames, 2.57 s; on the floor, anchored at the middle of a tall ragged heap
+  of fallen masonry, painted in the moment, the ball's chain down its side to a block at its foot).
+  Grit trickles from under the ball and a pebble breaks away at frame 2; it rocks out toward the edge
+  and back, several pixels, and again further; at frame 14 (0.47 s) it tips over the edge and drops
+  the heap's height, falling faster every frame, two stones tumbling after it, and smashes into the
+  flags at frame 23 (0.77 s, a jolt): they crack out round it and their broken pieces jump, chips fly,
+  dust bursts out low; it bounces high, clear of the dust, comes down again at frame 32 (1.07 s, a
+  jolt) and bounces smaller, then rolls a long heavy way toward the hero, its chain paying out until,
+  about frame 57 (1.9 s), it goes taut, snatches the block off the heap's foot and drags it, and the
+  ball rocks back on its chain and is still. What is left: the ball lying whole on the floor where it
+  stopped, its chain taut to the dragged block, the smashed flags, the chips and stones. Painted in
+  depth (floor 2's `Deep`), so the heap, the ball, its chain and the block hide each other as they
+  should.
+- **The bars shake** (58 frames, 1.93 s; a wall piece's anchor: `the cell grate` at its place (0,
+  0); at its other places, shift the frames as the place shifts the piece). The cell's barred front,
+  black inside (`before`). The bars tremble (frame 1); two pink eyes rise into the gaps high in the
+  dark from frame 2, a matched pair; from frame 5 two huge grey hands come up out of the black and,
+  by frame 10, close round the two outer bars, behind them, their knuckled fingers wrapped round
+  each. Three heaves, each harder, at frames 11, 20 and 30 (0.37, 0.67 and 1.0 s, the jolts): the
+  bars flex and spring, side to side and out into the room, the mortar cracking out from the
+  grate's corners and along its jambs further each time, stones popping out of the jambs and
+  bouncing away across the floor, dust blasting from the joints, his eyes narrowing; at the third
+  the outer bar in his hand on the side the room is seen from bows right out of the grate, both its
+  ends still fast, and the pin at its head shoots out across the floor in an arc, glinting as it
+  pings off the flags. He holds it, trembling; his fingers open (frame 40) and his hands slide down
+  into the black (frames 42 to 51); his eyes go back into it, smaller and dimmer and nearer each
+  other (frames 44 to 53). What is left: the grate, a bar bowed out, the cracks, the stones and the
+  pin on the floor. His eyes are the enemy's pink: the boss's own mark, seen nowhere else on the
+  floor but over his gate and in the port.
+- **The dust**, in all three (the first fresh look asked for it so): fewer, bigger clouds, each
+  growing out of the point it is struck from over three frames, blowing out fast, hanging and
+  spreading, then settling: sinking onto the floor and flattening into a low sheet that shrinks
+  away as one. Thick in its middle and every other pixel round its edge (pixel art's way of showing
+  what is seen through: none of those pixels stands alone). Painted under whatever moves, so that it
+  never hides a blow.
 
 ## For the main chat, when he has said yes
 
 - `src/art/floorkit.ts` and `tests/floor_checks.ts` as for floor 2; floor 2's moment helpers are
   imported from `src/art/floor2.ts`, not copied.
-- The chains' moment needs a run of wall a tile and a half long (its own tile and the next along);
-  the bars' moment plays in a `cell window`. The moments' frames are bigger than the pieces' own (line
-  them up by the anchor), and each is cut down to what is painted in it.
-- Painting all three moments takes about 2 s here, once; a phone several times that: worth painting
+- The chains' moment needs a run of wall a tile and a half long, its own tile and the next along
+  (on a face turned to screen-right the port is on the near side of the rings), and floor two tiles
+  out from it; the bars' moment plays in a `cell grate`. The moments' frames are bigger than the
+  pieces' own (line them up by the anchor), and each is cut down to what is painted in it.
+- Painting all three moments takes about 5 s here, once; a phone several times that: worth painting
   ahead, or when the floor is first reached.
+- His mark here is the muzzle-cage (his "A starved giant, muzzled"). The boss as painted on
+  `mockup/bosses` wears a cage of bars over his whole face; if the mark is said yes to, the boss's
+  own cage may want to match it, or the mark to be the boss's: the art chat's to put to him.
 
 ## Looks, and what was mended
 
-The brief asks for two looks by a fresh pair of eyes. **This helper had no way to start one** (no
-subagent tool here), so those two looks are still to be had: the art chat's to run, with the
-pictures below. What the maker's own looks found and mended, piece by piece and frame by frame at the
-game's size and close: a collar on a peg read as a basin (replaced by balls on a rack); his caged face
-in the wall read as a barred window, then as a birdcage (now a head in relief, the iron over it,
-eyes and a mouth's slit behind the bars); claw marks read as the letter M (now four slanting grooves
-apart from each other); a snare's loop with its tail risked reading as a symbol (replaced by a trip
-chain); a ring in the floor with its chain's end read as a Q (no tail now); the smashed flags read as
-a spider (now broken pieces along fine cracks); a chain post's chains read as an octopus (one chain,
-wound round its foot); the chains on the wall's plates read as skulls (dark plates, rings hanging
-clear); the balls on the rack and the wall's carved face were too pale (now quieter); bars bowed
-together read as a K (bowed the other way); a split ball read as two eyes (dropped); the quest's
-cage, lying, read as an E (now tipped on its side and seen round, as a cage). In the moments: dust
-sat like wool (now it bursts out fast and falls); the torn chain shot into the port in three frames
-(the chain's way per small step was a frame's: mended), then flew so long it landed out of sight
-(now it whips out and slams down within eight frames); the ball rolled on for two seconds (it now
-stops hard); the hands on the bars read as a grey column (now on the outer bars, the eyes between);
-the shaking read too small at the game's size (bigger heaves, smears, chips, cracks spreading).
-Things still uncertain, for the fresh eyes: whether his face-cage marks (carved, in the floor, over
-the gates, the quest) read as a muzzled face or as a helmet or mask; whether the ball and chain over
-the gate reads at its size; whether the hands gripping the bars read as hands; the mantrap open read
-as a toothed ring.
+The helper that made the floor had no way to start a fresh look; the art chat ran the first. What it
+found, most serious first, and what was mended:
 
-## The checks (`tests/floor3.test.ts`, 20)
+- Letters and symbols: the bent bars read as "DSI"/"DSK" (now three bars bowed the same way, one
+  smooth curve each, and a snapped stub; nothing crosses); the bars moment ended on "I I K" (a new
+  grate, no bar across: the bowed bar bows out, both its ends fast); his mark in the floor read as a
+  cross over a tombstone, a helm, "TT", over the gate as "TT" or a monogram, and was drawn four ways
+  (now one muzzle-cage everywhere, no stroke crossing another).
+- Faces where none was meant: the crater on a corner as a skull's weeping eyes (shallow now, no pale
+  streaks, cracks all round); the torn-out ring as an angry face with a beard, no ring (the ring
+  hangs there now, the breach to one side); the mantrap as an eye or an @ (nothing round: two long
+  toothed jaws and a square pan); the rags as hooded figures with an eye (a wide rag on two nails, no
+  hole); the ball in flight as an eyeball (dark iron, one highlight, its pits faint, its lug raised
+  and lit).
+- Flesh-coloured bowls read as meat (brown wood now, with a rim and a dark inside); a pink eye smeared
+  into a streak like a drip (no smear on the eyes now).
+- Pieces that did not read, each redrawn as asked: balls on a rack, empty bowls, goad and
+  catch-pole, the jailers' lamp, the chain port, the bowed wall, the cage carved, a skull in its
+  cage, straw bale, a burst cuff, his pallet, a torn-out bar, the feed trough, the stone bench, the
+  cage, ball grooves and the smashed flags (stronger), the ball hatch, the heap in the ball's moment.
+- The moments, all a notch or two too low, and their dust a speckle: each rebuilt bigger (above), the
+  dust new; the chains begin at once, slide into the port, bend their rings, rip, whip out at the
+  hero; on the face turned to screen-right they had seemed to float (the port is now on their near
+  side); the ball no longer sinks into the floor at the end; the bars are the wall's height, the
+  hands huge and behind them, the eyes a pair.
+- A one-pixel twitch of the whole picture every tenth frame of the films: it was in the films, not
+  the frames (they were made at three screen pixels to two picture pixels, so where a cell fell
+  decided which pixels doubled); the films are now made at an even scale.
+- The room: its walls dressed on every tile (now a few strong pieces, plain wall between); the wall
+  pieces' places barely differed in height (spread up the wall now: each piece's three about twenty
+  pixels apart or more, where its tile allows).
+
+The second fresh look is the art chat's to run. Things the maker is still unsure of: whether the
+muzzle-cage reads as a muzzle or as a hockey-mask grille; whether the open mantrap reads as a trap at
+a phone's size; whether the bent bars' three bows read as bars and not as brackets; whether the hands
+read as hands at the game's size.
+
+## The checks (`tests/floor3.test.ts`, 21)
 
 Every check floor 2 went through, by `floorChecks` (Places 7; Pixels 1, crisp, no loose pixels;
 Colour 3; Colour 4; Pixels 4; Pixels 7; his notes: every wall piece in three places, low to high and
 across, within its tile, nothing in the fade, no band of the wall holding more than a third; the
 moments crisp, 30 a second, nothing popping in or out at the start, the end or the middle, nothing
-jumping, always moving, no speckle). Its own: the chains are snatched up fast and taut together, the
-torn ring flies far and strikes hard and bounces, the other two drop and swing, chips born as it rips
-and lying still, dust flying wide; the ball falls a long way faster every frame, strikes on a jolt,
-bounces well above its path, rolls on toward the hero and stops, its chain dragged, chips born on the
-blow, the pebble first; the bars jump three pixels and more at every heave and shake to and fro, the
-hands come and go bit by bit, his eyes burn at every heave and go back into the dark over frames, the
-bar bends out, the rivet pops on the last heave, flies far, bounces and lies still; and in both faces.
+jumping, always moving, no speckle). Its own: the dust grows out of where it is struck over three
+frames, blows out fast and slows, spreads, sinks onto the floor flat and shrinks away as one; the
+chains begin at once with his eyes in the port, are snatched up at the first haul, the torn ring is
+thrown far out toward the hero and strikes hard and bounces, the other two drop and swing, the
+chunks fly and lie still; the ball rocks, falls far and faster every frame, strikes hard, bounces
+high, rolls a long way toward the hero, drags its block, rocks back and lies whole on the floor, the
+flags jump and land, stones tumble after it; the bars are the wall's height, jump at every heave and
+shake to and fro, the hands come and go bit by bit and slide down as they go, the eyes are a
+matched pair at every heave and go over frames, the bar bows out, the pin is shot far and bounces
+and lies still, the stones pop on the heaves; and in both faces.
 
 ## Pictures (not in the repository)
 
-`node tools/preview.mjs src/dev/preview_floor3.ts <out.png> 6000 6000 "sheet:3"` (every piece by
-kind), `"spots:3"` (every wall piece at its three places), `"room:3"` (a room laid with them),
-`"close:6:<n>"` (eight pieces close, n the eighth of the set), `"moment:3:<n>"` (n: 0 the chains, 3
-the chains in the other face, 1 the ball, 2 the bars, 4 the bars in the other face; every frame in a
-grid, the page logs the grid), `"strip:4:<n>"`. The page must be bigger than the picture.
+`node tools/preview.mjs src/dev/preview_floor3.ts <out.png> 6000 6000 "sheet:4"` (every piece by
+kind), `"spots:4"` (every wall piece at its three places), `"room:4"` (a room laid with them),
+`"close:6:<n>"` (eight pieces close, n the eighth of the set), `"only:6:<name>|<name>"` (the pieces
+named, each on its corner of wall or its floor), `"moment:2:<n>"` (n: 0 the chains, 3 the chains in
+the other face, 1 the ball, 2 the bars, 4 the bars in the other face; every frame in a grid, the page
+logs the grid; page 8000 x 8000), `"strip:4:<n>"`. Use an even scale (2, 4, 6): at an odd one a
+picture pixel is not a whole number of screen pixels and the films twitch. The page must be bigger
+than the picture.

@@ -491,13 +491,14 @@ function bentBars(p: Px): void {
   const bar = (u0: number, bow: number): void => {
     for (let v = V0; v <= V1; v++) {
       const t = (v - V0) / (V1 - V0);
-      const U = Math.round(u0 - bow * Math.sin(Math.PI * t));
+      // (bent most below the middle, where a shoulder shoved: not an even arc)
+      const U = Math.round(u0 - bow * Math.sin(Math.PI * t ** 0.75));
       b.set(fx(U), fy(v), DIM_IRON[3]).set(fx(U + 1), fy(v), DIM_IRON[2]).set(fx(U + 2), fy(v), DIM_IRON[0]);
     }
   };
-  bar(-8, 2.5);
-  bar(-3, 3.5);
-  bar(2, 4.5);
+  bar(-8, 1.6);
+  bar(-3, 2.6);
+  bar(2, 3.4);
   // the fourth, snapped: a stub up from the sill, straight, its end jagged; its socket in the lintel torn empty
   for (let v = V0; v <= V0 + 8; v++) b.set(fx(6), fy(v), DIM_IRON[3]).set(fx(7), fy(v), DIM_IRON[2]).set(fx(8), fy(v), DIM_IRON[0]);
   b.set(fx(6), fy(V0 + 9), DIM_IRON[3]).set(fx(8), fy(V0 + 9), DIM_IRON[0]).set(fx(8), fy(V0 + 10), DIM_IRON[2]);
@@ -1697,17 +1698,24 @@ function bowlKicked(): Sprite {
 /** HIS PALLET: a heap of old straw flattened on the floor where he lay, roughly long and square, its stalks every way and its edges ragged with strays; a rough grey blanket thrown over the half of it, rumpled, its edge wavering, a fold or two across it, its near corner turned back. */
 function strawPallet(): Sprite {
   const p = lying((l, under) => {
-    // the straw: short stalks every way, thick in the middle of the mat, strays round its edges
-    for (let i = 0; i < 420; i++) {
-      const fx_ = hash(i, 1, 365);
-      const fy_ = hash(i, 2, 365);
-      const inMat = i < 360;
-      const x = LCX - 25 + fx_ * 46 + (inMat ? 0 : (hash(i, 7, 365) - 0.5) * 10);
-      const y = LCY - 9 + fy_ * 18 + (inMat ? 0 : (hash(i, 8, 365) - 0.5) * 6);
-      const ang = hash(i, 3, 365) * Math.PI;
-      const L = 2 + hash(i, 4, 365) * 4;
-      const g = hash(i, 5, 365);
-      under.line(Math.round(x), Math.round(y), Math.round(x + Math.cos(ang) * L), Math.round(y + Math.sin(ang) * L * 0.6), g < 0.22 ? STRAW[4] : g < 0.6 ? STRAW[3] : g < 0.85 ? STRAW[2] : STRAW[1]);
+    // the straw: a flat mat, its edge ragged by a pixel or two, its stalks lying mostly along it, a few strays out of its ends
+    const X0 = LCX - 25;
+    const X1 = LCX + 22;
+    const Y0 = LCY - 9;
+    const Y1 = LCY + 9;
+    for (let y = Y0; y <= Y1; y++) {
+      const e0 = X0 + Math.floor(hash(y, 1, 365) * 3);
+      const e1 = X1 - Math.floor(hash(y, 2, 365) * 3);
+      for (let x = e0; x <= e1; x++) {
+        const g = hash(Math.floor((x + (y % 3) * 2) / 4), y, 366);
+        under.set(x, y, y === Y0 || x === e0 ? STRAW[4] : y === Y1 || x === e1 ? STRAW[1] : g < 0.2 ? STRAW[4] : g < 0.62 ? STRAW[3] : STRAW[2]);
+      }
+    }
+    for (let i = 0; i < 10; i++) {
+      const left = i % 2 === 0;
+      const y = Y0 + 2 + Math.floor(hash(i, 1, 367) * (Y1 - Y0 - 4));
+      const x = left ? X0 + 1 : X1 - 1;
+      under.line(x, y, x + (left ? -3 : 3) - Math.floor(hash(i, 2, 367) * 2) * (left ? 1 : -1), y + Math.round((hash(i, 3, 367) - 0.5) * 3), STRAW[3]);
     }
     // the blanket over the right of it: its edge wavering, rumpled (soft swells lit toward the light), a fold across it, its near corner turned back
     const edge = (y: number): number => LCX - 4 + Math.round(Math.sin((y - LCY) * 0.5) * 2 + Math.sin(y * 1.3) * 0.6);
