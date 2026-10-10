@@ -1159,27 +1159,27 @@ function gallows(): Sprite {
 }
 
 /** Picture pixels to a tile, across the floor (as floor 1's moments): a tile's 32 across on the picture is 40 of them. */
-const KT = 40;
+export const KT = 40;
 /** A point of the world on the picture, from where it is measured: x and y across the floor and z up, all in picture pixels (KT to a tile). */
-function onPic(x: number, y: number, z: number): [number, number] {
+export function onPic(x: number, y: number, z: number): [number, number] {
   return [((x - y) * 32) / KT, ((x + y) * 16) / KT - z];
 }
 /** The way toward the hero, out of the picture: x and y across the floor, z up (for which side of a thing he sees). */
-const TOWARD: readonly [number, number, number] = [0.61, 0.61, 0.5];
+export const TOWARD: readonly [number, number, number] = [0.61, 0.61, 0.5];
 /**
  * A point of a thing hung from a point and swung `ang` radians, along y (its foot toward the hero,
  * +y, for more than 0: across a beam along x) or, `alongX`, along x (across an arm along y): `down`
  * picture pixels down it from where it hangs and (`cx`, `cy`) across it, across the way it swings and
  * along it as it hangs straight. In the world, from where it hangs.
  */
-function swungWorld(ang: number, down: number, cx: number, cy: number, alongX = false): [number, number, number] {
+export function swungWorld(ang: number, down: number, cx: number, cy: number, alongX = false): [number, number, number] {
   const s = Math.sin(ang);
   const c = Math.cos(ang);
   const w = down * s + cy * c;
   return alongX ? [w, -cx, -down * c + cy * s] : [cx, w, -down * c + cy * s];
 }
 /** The same on the picture, from where it hangs. */
-function swung(ang: number, down: number, cx: number, cy: number, alongX = false): [number, number] {
+export function swung(ang: number, down: number, cx: number, cy: number, alongX = false): [number, number] {
   const [x, y, z] = swungWorld(ang, down, cx, cy, alongX);
   return onPic(x, y, z);
 }
@@ -1400,7 +1400,7 @@ function bellRadius(y: number): number {
   return 10.9 + 10.6 * ((t - 0.55) / 0.45) ** 2.2;
 }
 /** Light falling on a face, in the world: from the upper left of the picture, and a little toward us. */
-const LIGHT_W: readonly [number, number, number] = (() => {
+export const LIGHT_W: readonly [number, number, number] = (() => {
   const v = [-0.55, 0.45, 0.7];
   const n = Math.hypot(v[0], v[1], v[2]);
   return [v[0] / n, v[1] / n, v[2] / n] as const;
@@ -1408,7 +1408,7 @@ const LIGHT_W: readonly [number, number, number] = (() => {
 /** The bell's lip where the light catches it. */
 const BELL_LIT = '#7470a8';
 /** A picture painted with depth: each pixel keeps whatever of the world is nearest the hero. */
-class Deep {
+export class Deep {
   readonly z: Float32Array;
   constructor(readonly p: Px) {
     this.z = new Float32Array(p.w * p.h).fill(-Infinity);
@@ -1423,7 +1423,7 @@ class Deep {
     this.p.set(X, Y, c);
   }
 }
-const dot3 = (a: readonly number[], b: readonly number[]): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+export const dot3 = (a: readonly number[], b: readonly number[]): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 /**
  * The great bell at its swing `ang` (radians, across its axle: its mouth toward the hero, +y, for
@@ -1913,12 +1913,12 @@ export function headsmanPieces(): Piece[] {
 // kinetic and weighty as possible.  I’d rather it be a notch too high than a notch too low.”
 
 /** The floor's dust: its rim, its middle, its edge to the light (as floor 1's). */
-const FLOOR_DUST = ['#3e3a52', '#4a4660', '#58526a'] as const;
+export const FLOOR_DUST = ['#3e3a52', '#4a4660', '#58526a'] as const;
 
 /** A puff of dust thrown out along the floor from where something struck it: clouds that swell, fly out and up, and shrink away. */
-interface Puff { f0: number; x: number; y: number; z: number; ang: number; v: number; r0: number; grow: number; rise: number; life: number; seed: number }
+export interface Puff { f0: number; x: number; y: number; z: number; ang: number; v: number; r0: number; grow: number; rise: number; life: number; seed: number }
 /** A ring of `n` puffs born on frame `f0` at (x, y, z) in the world (picture pixels), thrown out `v` (picture pixels a frame at first), each at most `big` across. */
-function puffRing(f0: number, x: number, y: number, z: number, n: number, v: number, big: number, seed: number): Puff[] {
+export function puffRing(f0: number, x: number, y: number, z: number, n: number, v: number, big: number, seed: number): Puff[] {
   return Array.from({ length: n }, (_, i) => ({
     f0, x, y, z,
     ang: (i / n) * Math.PI * 2 + hash(i, seed, 401) * 0.5,
@@ -1934,7 +1934,7 @@ function puffRing(f0: number, x: number, y: number, z: number, n: number, v: num
  * The puffs on frame `f`, painted on `over` (those toward the hero of `split`, a line across the
  * floor through the world's (0, 0), or all of them) and `under` (those behind it), from (ax, ay).
  */
-function paintPuffs(puffs: readonly Puff[], f: number, ax: number, ay: number, over: Px, under: Px | null, light: readonly [string, string]): void {
+export function paintPuffs(puffs: readonly Puff[], f: number, ax: number, ay: number, over: Px, under: Px | null, light: readonly [string, string]): void {
   for (const d of puffs) {
     const k = f - d.f0;
     if (k < 0 || k >= d.life) continue;
@@ -1955,8 +1955,8 @@ function paintPuffs(puffs: readonly Puff[], f: number, ax: number, ay: number, o
  * is always moving, to the end), and more in bursts. Each: [the frame it is loosed, x, y, z0, how
  * fast across (x, y a frame), how hard it falls].
  */
-type Grain = [number, number, number, number, number, number, number];
-function grainStream(from: number, last: number, g: number, at: (i: number) => [number, number, number]): Grain[] {
+export type Grain = [number, number, number, number, number, number, number];
+export function grainStream(from: number, last: number, g: number, at: (i: number) => [number, number, number]): Grain[] {
   const out: Grain[] = [];
   for (let i = 0; ; i++) {
     const [x, y, z0] = at(i);
@@ -1968,7 +1968,7 @@ function grainStream(from: number, last: number, g: number, at: (i: number) => [
   return out;
 }
 /** The grains on frame `f`, two picture pixels across, painted on `p` from (ax, ay); those that have met the floor are gone. */
-function paintGrains(p: Px, grains: readonly Grain[], f: number, ax: number, ay: number, tones: readonly [string, string], wobble = 0): void {
+export function paintGrains(p: Px, grains: readonly Grain[], f: number, ax: number, ay: number, tones: readonly [string, string], wobble = 0): void {
   for (const [f0, x0, y0, z0, vx, vy, g] of grains) {
     const k = f - f0;
     if (k < 0) continue;
@@ -1982,7 +1982,7 @@ function paintGrains(p: Px, grains: readonly Grain[], f: number, ax: number, ay:
 }
 
 /** The short way round from one heading to another, `k` of the way. */
-function turnToward(from: number, to: number, k: number): number {
+export function turnToward(from: number, to: number, k: number): number {
   let d = to - from;
   while (d > Math.PI) d -= Math.PI * 2;
   while (d < -Math.PI) d += Math.PI * 2;
