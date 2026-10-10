@@ -60,7 +60,7 @@ import type { Painted, Ramp } from './kit';
 import { BLOOD, DEATH_FPS, ENEMY_RIM, FLAME, IRON, RUST, SOCKET } from './mkit';
 import { SKELETON3_BODY } from './monster_bones3';
 import { CANVAS3, band, ball, cloth, eyesToward, laidAlong, mid, rod, stage, thread, toneOf, wornOn } from './skin';
-import type { ClothLook, GameView, Ring, Sheet, Skin, Stage } from './skin';
+import type { ClothLook, GameView, PaintView, Ring, Sheet, Skin, Stage } from './skin';
 import { GRID, about, add, aimFor, bonesAt, buildOf, cross, dot, elbowFor, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
@@ -74,7 +74,7 @@ const LX = -0.52;
 const LY = -0.62;
 const LZ = 0.59;
 type P = Partial<Bones>;
-type Frame3 = readonly [V3, V3, V3];
+export type Frame3 = readonly [V3, V3, V3];
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
 // ---------------------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ export const OSSUARY: Ramp = ['#463e70', '#463e70', '#948bbf', '#d3cbec', '#d3cb
 /** A flat panel's skin: `a` across it and `b` up it (the figure's own lengths, from its middle); whether its face (not its back) is toward the eye; and the tone the light gives it. */
 export type PanelSkin = (a: number, b: number, front: boolean, tone: number) => string | null;
 
-type Shape =
+export type Shape =
   | { k: 'rod'; a: V3; b: V3; ra: number; rb: number; ramp: Ramp; far?: boolean }
   | { k: 'ball'; c: V3; ax: Frame3; skin: Skin; far?: boolean }
   /** Cloth, or anything shaped as a tube through rings; `rigid`: a solid that falls whole (a helm), where cloth does not. */
@@ -118,20 +118,20 @@ type Shape =
   /** The champion's great sword: its grip (his right hand), and the way its blade points. */
   | { k: 'greatsword'; grip: V3; point: V3 };
 
-interface Bit {
+export interface Bit {
   part: string;
   piece: string;
   shape: Shape;
 }
-type Put = (part: string, piece: string, shape: Shape) => void;
+export type Put = (part: string, piece: string, shape: Shape) => void;
 
-function sphere(r: number): Frame3 {
+export function sphere(r: number): Frame3 {
   return [[r, 0, 0], [0, r, 0], [0, 0, r]];
 }
-function at3(c: V3, r: Frame3, f: number, l: number, u: number): V3 {
+export function at3(c: V3, r: Frame3, f: number, l: number, u: number): V3 {
   return add(c, add(mul(r[0], f), add(mul(r[1], l), mul(r[2], u))));
 }
-function farSide(st: Stage, ref: V3, ramp: Ramp, p: V3): Ramp {
+export function farSide(st: Stage, ref: V3, ramp: Ramp, p: V3): Ramp {
   return st.near(p) < st.near(ref) - 1.6 ? dim(ramp) : ramp;
 }
 
@@ -165,7 +165,7 @@ function panel(p: Sheet, st: Stage, c: V3, u: V3, v: V3, skin: PanelSkin): void 
 }
 
 /** A hem torn into tongues (art/monster_bones3.ts, `tear`): from the foot of each column, `torn` pixels taken away. */
-function tear(p: Sheet, torn: ReadonlyArray<number>): void {
+export function tear(p: Sheet, torn: ReadonlyArray<number>): void {
   let x0 = p.w;
   let x1 = -1;
   const lowest = new Int16Array(p.w).fill(-1);
@@ -188,7 +188,7 @@ function tear(p: Sheet, torn: ReadonlyArray<number>): void {
 }
 
 /** Paint solids on a stage, a part for each part named; the lights they give off. `ref`: the middle of the body (a far limb is a step darker). */
-function paintBits(st: Stage, bits: ReadonlyArray<Bit>, ref: V3): Light[] {
+export function paintBits(st: Stage, bits: ReadonlyArray<Bit>, ref: V3): Light[] {
   const parts = new Map<string, Sheet>();
   const lights: Light[] = [];
   const whereOf = (sh: Shape): V3 => {
@@ -282,7 +282,7 @@ function paintBits(st: Stage, bits: ReadonlyArray<Bit>, ref: V3): Light[] {
 // Things more than one of them has
 
 /** A body's lengths, all made `k` times as long (and `more`: some of them further, each by its own share). */
-function scaled(b: Build, k: number, more: Partial<Record<'shoulderHalf' | 'ribHalf' | 'ribDeep' | 'pelvisHalf' | 'waistHalf', number>> = {}): Build {
+export function scaled(b: Build, k: number, more: Partial<Record<'shoulderHalf' | 'ribHalf' | 'ribDeep' | 'pelvisHalf' | 'waistHalf', number>> = {}): Build {
   const out: Record<string, unknown> = {};
   for (const [key, v] of Object.entries(b)) {
     if (typeof v === 'number') out[key] = v * k * ((more as Record<string, number>)[key] ?? 1);
@@ -297,7 +297,7 @@ function scaled(b: Build, k: number, more: Partial<Record<'shoulderHalf' | 'ribH
  * toward whoever looks (as the heroes' eyes are, `eyesToward`: given as `mid`, degrees round from
  * the nose), and a row of teeth. `lit`: a point of hot pink in each socket (0 none, 1 burning).
  */
-function skull(st0: Stage, put: Put, part: string, piece: string, c: V3, face: Frame3, r: V3, ramp: Ramp, midDeg: number, lit: number, teeth: boolean, glowR = 4, shade?: (u: V3, tone: number) => number): void {
+export function skull(st0: Stage, put: Put, part: string, piece: string, c: V3, face: Frame3, r: V3, ramp: Ramp, midDeg: number, lit: number, teeth: boolean, glowR = 4, shade?: (u: V3, tone: number) => number): void {
   const [ff, fl, fu] = face;
   const midA = midDeg * D;
   const onCran = (az: number, el: number): V3 => norm([Math.cos(az) * Math.cos(el), Math.sin(az) * Math.cos(el), Math.sin(el)]);
@@ -334,14 +334,14 @@ function skull(st0: Stage, put: Put, part: string, piece: string, c: V3, face: F
 }
 
 /** The way a skull at `c` looks out along `fwd` (level-ish), as a frame of three lines. */
-function faceAlong(fwd: V3, upHint: V3 = [0, 0, 1]): Frame3 {
+export function faceAlong(fwd: V3, upHint: V3 = [0, 0, 1]): Frame3 {
   const f = norm(fwd, [1, 0, 0]);
   const l = norm(cross(upHint, f), [0, 1, 0]);
   return [f, l, cross(f, l)];
 }
 
 /** Where, round a skull, the eye sees its face from: as `eyesToward` does for a head, for a skull that is not on bones. */
-function eyesOf(st: Stage, face: Frame3): number {
+export function eyesOf(st: Stage, face: Frame3): number {
   const cam = Math.atan2(dot(st.eye, face[1]), dot(st.eye, face[0])) / D;
   const front = clamp01((110 - Math.abs(cam)) / 40);
   return Math.max(-40, Math.min(40, cam * 0.67)) * front;
@@ -351,7 +351,7 @@ function eyesOf(st: Stage, face: Frame3): number {
  * PACKED BONES: the skin of a mass of bones crammed together (a golem's trunk, a shoulder): cells
  * on the solid's own surface, each a bone's end catching the light, the dark between them.
  */
-function packed(ramp: Ramp, cells: number, seed: number, open?: (u: V3) => boolean): Skin {
+export function packed(ramp: Ramp, cells: number, seed: number, open?: (u: V3) => boolean): Skin {
   return (u, tone) => {
     if (open && open(u)) return null;
     const px = u[0] * cells;
@@ -387,7 +387,7 @@ function packed(ramp: Ramp, cells: number, seed: number, open?: (u: V3) => boole
 }
 
 /** A BUNDLE OF BONES from `a` to `b`, `r` round: `n` long bones side by side, knobbed at their ends, on a dark core; each bone a piece of its own (to fall by itself). */
-function bundle(put: Put, part: string, piece: string, a: V3, b: V3, r: number, n: number, seed: number, ramp: Ramp): void {
+export function bundle(put: Put, part: string, piece: string, a: V3, b: V3, r: number, n: number, seed: number, ramp: Ramp): void {
   const axis = norm(sub(b, a), [0, 0, -1]);
   const e1 = norm(cross(axis, Math.abs(axis[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
   const e2 = cross(axis, e1);
@@ -411,7 +411,7 @@ function bundle(put: Put, part: string, piece: string, a: V3, b: V3, r: number, 
 }
 
 /** An iron band round a line from `a` to `b`, at `k` of the way, `r` round. */
-function bandOn(put: Put, part: string, piece: string, a: V3, b: V3, k: number, r: number, rows = 2): void {
+export function bandOn(put: Put, part: string, piece: string, a: V3, b: V3, k: number, r: number, rows = 2): void {
   const axis = norm(sub(b, a), [0, 0, -1]);
   const e1 = norm(cross(axis, Math.abs(axis[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
   const e2 = cross(axis, e1);
@@ -441,8 +441,10 @@ export interface MobMove {
   /** The Golem's club is swung round (a streak is drawn behind its head as the blow lands), not brought down. */
   sweep?: boolean;
   /** THE BONEWARD'S BLOWS: the points of it (a spear's tip, a shield's edges) whose way through the air is streaked as the blow lands; and over how many frames before it (1.6 if not said). */
-  trail?: (s: Skeleton) => V3[];
+  trail?: (s: Skeleton, q: Posed) => V3[];
   trailSpan?: number;
+  /** A BOSS'S BLOWS (art/bosses3.ts): streaked for as long as this says, not only as the blow lands (an axe swung all the way round). */
+  trailOver?: (t: number) => boolean;
   /** THE CHAMPION'S: his blow kicks up the floor's dust round his front foot; and how bright his rallying cry is, `t` seconds in. */
   dust?: boolean;
   rally?: (t: number) => number;
@@ -455,7 +457,7 @@ export interface MobMove {
 export const TILE3 = 32 / GRID;
 
 /** What a frame is painted from. */
-interface Moment {
+export interface Moment {
   s: Skeleton;
   q: Posed;
   t: number;
@@ -504,7 +506,8 @@ function windOf(t: number): number {
 
 /** A monster of this file: how it is built, how it moves, how it is painted and how it dies. */
 export interface Mob {
-  id: 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman';
+  /** Which it is: 'shade', 'boneward', 'golem', 'champion', 'marksman'; the bosses' (art/bosses3.ts) their own. */
+  id: string;
   name: string;
   /** Small, medium or big, in a word or two. */
   size: string;
@@ -535,6 +538,15 @@ export interface Mob {
   /** The pool of light the game puts behind it (picture pixels on the bones' canvas), and the soft shadow under it (its half-width on the floor, picture pixels). */
   aura: Light;
   shadow: number;
+  /** A canvas of its own, for one too big for the bones' canvas (CANVAS3): a boss (art/bosses3.ts). */
+  canvas?: MobCanvas;
+  /**
+   * ITS BACK AS THE CAMERA TRULY SEES IT (skin.ts `PaintView` 'rear'): what it holds in its right hand
+   * is on its right from behind too, and not in its other hand as in a mirror (the Headsman, the
+   * owner's word by 19:47: "carrying it  and standing still facing away the axe is in his wrong
+   * hand"). Without it, from behind as the heroes are.
+   */
+  trueBack?: boolean;
   bits(st: Stage, m: Moment): Bit[];
   /** How a piece of it falls when it comes apart (null: it does not fall by itself). */
   fall?(piece: string): Fall | null;
@@ -547,6 +559,18 @@ export interface Mob {
 }
 /** The moves a monster of this file is painted in. */
 export type MobAct = 'stand' | 'attack' | 'walk' | 'reel';
+
+/** A canvas for a monster on the bones: its size, and the floor point under the figure on it (picture pixels). */
+export interface MobCanvas {
+  readonly w: number;
+  readonly h: number;
+  readonly ax: number;
+  readonly ay: number;
+}
+/** The canvas a monster is painted on: its own, or the bones' (CANVAS3). */
+export function canvasOf(mob: Mob): MobCanvas {
+  return mob.canvas ?? CANVAS3;
+}
 
 function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   const q = posedAt(mv, t);
@@ -562,10 +586,11 @@ function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   if (mv.jaw) m.jaw = clamp01(mv.jaw(t));
   if (mv.motion.hit !== undefined && !loops) m.since = t - mv.motion.hit;
   if (mv.dust) m.dust = true;
-  if (blur && mv.trail) {
+  if ((blur || (mv.trailOver !== undefined && mv.trailOver(t))) && mv.trail) {
     const T: V3[][] = [];
     for (let i = 0; i <= 8; i++) {
-      const pts = mv.trail(solve(mob.build, posedAt(mv, t - (FR * (mv.trailSpan ?? 1.6) * i) / 8)));
+      const qi = posedAt(mv, t - (FR * (mv.trailSpan ?? 1.6) * i) / 8);
+      const pts = mv.trail(solve(mob.build, qi), qi);
       pts.forEach((p, j) => (T[j] ??= []).push(p));
     }
     m.trails = T;
@@ -601,8 +626,13 @@ function moveOf(mob: Mob, which: MobAct | string): MobMove {
 }
 
 /** ONE FRAME of a monster's move, seen from in front or from behind, with its pink edge (or `rim`). */
+/** The view a monster's pictures for one of the game's two are painted in (`trueBack`). */
+export function paintViewOf(mob: Mob, view: GameView): PaintView {
+  return view === 'back' && mob.trueBack ? 'rear' : view;
+}
 export function paintMob(mob: Mob, which: MobAct | string, t: number, view: GameView, rim: string | null = ENEMY_RIM): Painted {
-  const st = stage(view);
+  const can = canvasOf(mob);
+  const st = stage(paintViewOf(mob, view), can.ax, can.ay, can);
   const mv = moveOf(mob, which);
   const m = momentOf(mob, mv, t, which === 'attack' ? mob.hit : mv.blurAt);
   const bits = mob.bits(st, m);
@@ -730,7 +760,8 @@ function bitsThen(mob: Mob, st: Stage, t: number): Bit[] {
 
 /** A MONSTER OF BONES `k` OF THE WAY THROUGH ITS DEATH: the bones give way, then each piece lets go and falls to lie on the floor. */
 function fallApart(mob: Mob, k: number, view: GameView): Painted {
-  const st = stage(view);
+  const can = canvasOf(mob);
+  const st = stage(paintViewOf(mob, view), can.ax, can.ay, can);
   const t = clamp01(k) * mob.dieTime;
   const now = dyingMoment(mob, t);
   const live = mob.bits(st, now);
@@ -805,7 +836,7 @@ function fallApart(mob: Mob, k: number, view: GameView): Painted {
 }
 
 /** A piece's fall when the plan does not name it: it lets go between `t0` and `t1`, and lies about where it was, spread out by `spread`. */
-function scatter(piece: string, t0: number, t1: number, spread: number, lay: Fall['lay'] = 'axis'): Fall {
+export function scatter(piece: string, t0: number, t1: number, spread: number, lay: Fall['lay'] = 'axis'): Fall {
   let h = 0;
   for (let i = 0; i < piece.length; i++) h = (h * 31 + piece.charCodeAt(i)) | 0;
   const a = hash(h, 1, 7);
@@ -3626,10 +3657,12 @@ export function walkFpsAt(mob: Mob, pace: number): number {
 
 /** A frame as the game holds it: cut down to the figure, with its lights and its pool of light. */
 function frameOf3(mob: Mob, which: MobAct | string, t: number, view: GameView): Sprite {
-  return toSprite(paintMob(mob, which, t, view), mob.aura, CANVAS3.ax, CANVAS3.ay);
+  const can = canvasOf(mob);
+  return toSprite(paintMob(mob, which, t, view), mob.aura, can.ax, can.ay);
 }
 
-function mobSet(mob: Mob, view: GameView, pace: number): AnimSet {
+/** A monster on the bones as the game holds a monster's pictures, one facing: its stand, its walk, its attack and its other moves, struck, its death. */
+export function mobSet(mob: Mob, view: GameView, pace: number): AnimSet {
   const idle = lazyFrames(mob.idleFrames, (i) => frameOf3(mob, 'stand', i / mob.idleFps, view));
   const walk = lazyFrames(mob.walkFrames, (i) => frameOf3(mob, 'walk', i / mob.walkFps, view));
   const keys = mob.attack.motion.keys;
@@ -3639,7 +3672,8 @@ function mobSet(mob: Mob, view: GameView, pace: number): AnimSet {
   const picks = [pick(mob.hit * 0.7), pick(mob.hit + 0.035), pick(((n - 1) / CLIP_FPS3 + mob.hit) / 2)];
   const dieN = Math.round(mob.dieTime * DEATH_FPS) + 1;
   // (a dying thing has no pool of light behind it, and no edge of light round it)
-  const die: Clip = { frames: lazyFrames(dieN, (i) => toSprite(deathOfMob(mob, i / (dieN - 1), view), null, CANVAS3.ax, CANVAS3.ay)), fps: DEATH_FPS };
+  const can = canvasOf(mob);
+  const die: Clip = { frames: lazyFrames(dieN, (i) => toSprite(deathOfMob(mob, i / (dieN - 1), view), null, can.ax, can.ay)), fps: DEATH_FPS };
   const rn = Math.round(mob.reelTime * CLIP_FPS3) + 1;
   const reel: Clip = { frames: lazyFrames(rn, (i) => frameOf3(mob, 'reel', i / CLIP_FPS3, view)), fps: CLIP_FPS3 };
   const clips: NonNullable<AnimSet['clips']> = { attack, die, reel };
@@ -3680,6 +3714,10 @@ export function makeGolemArt3(pace = GOLEM.pace): ActorArt {
 }
 
 /** FOR TESTS AND PICTURES: the bones of a monster at a moment of one of its moves (its four, or one of its others), solved. */
+/** A move's posed bones at a moment (what the pose asks, before the bones are solved): for checks and the floor's drawings. */
+export function posedOfMob(mob: Mob, which: MobAct | string, t: number): Posed {
+  return posedAt(moveOf(mob, which), t);
+}
 export function skeletonAt(mob: Mob, which: MobAct | string, t: number): Skeleton {
   return solve(mob.build, posedAt(moveOf(mob, which), t));
 }
