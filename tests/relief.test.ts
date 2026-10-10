@@ -35,6 +35,7 @@ import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
 import { SOLID_PROPS, T_FLOOR, T_PIT } from '../src/game/types';
 import type { ClassId, Floor, Room } from '../src/game/types';
+import { withoutCrypt } from './helpers';
 
 const DEPTHS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 const SEEDS = 14;
@@ -222,16 +223,19 @@ test('everything that could be walked to can still be walked to, on foot: no way
 test('nothing else about the dungeon is changed: with no terraces it is the same floor, rooms, packs and things', () => {
   let checked = 0;
   for (const s of samples.filter((_, i) => i % 3 === 0)) {
-    const flat = without(() => generateFloor(s.depth, s.seed));
+    // (both laid without the Crypt, whose litter, laid last of all where nothing else is, keeps off
+    // the stairs and so lies elsewhere without them: `withoutCrypt`)
+    const real = withoutCrypt(() => generateFloor(s.depth, s.seed));
+    const flat = withoutCrypt(() => without(() => generateFloor(s.depth, s.seed)));
     assert.equal(flat.height, undefined);
     assert.equal(flat.stair, undefined);
-    assert.deepEqual(s.f.tiles, flat.tiles, `${name(s)}: the floor`);
-    assert.deepEqual(s.f.variant, flat.variant, `${name(s)}: the look of the tiles`);
-    assert.deepEqual(s.f.rooms, flat.rooms, `${name(s)}: the rooms`);
-    assert.deepEqual(s.f.packs, flat.packs, `${name(s)}: the packs`);
-    assert.deepEqual(s.f.props, flat.props, `${name(s)}: the things`);
-    assert.deepEqual(s.f.start, flat.start);
-    assert.deepEqual(s.f.boss, flat.boss);
+    assert.deepEqual(real.tiles, flat.tiles, `${name(s)}: the floor`);
+    assert.deepEqual(real.variant, flat.variant, `${name(s)}: the look of the tiles`);
+    assert.deepEqual(real.rooms, flat.rooms, `${name(s)}: the rooms`);
+    assert.deepEqual(real.packs, flat.packs, `${name(s)}: the packs`);
+    assert.deepEqual(real.props, flat.props, `${name(s)}: the things`);
+    assert.deepEqual(real.start, flat.start);
+    assert.deepEqual(real.boss, flat.boss);
     checked++;
   }
   assert.ok(checked >= 20);
@@ -344,6 +348,9 @@ test("and in real dungeons: from the low floor of a room to a skeleton on its te
   for (let k = 0; k < 40 && done < 6; k++) {
     const g = new Game((['warrior', 'ranger', 'mage'] as ClassId[])[k % 3], 800 + k * 53);
     g.depth = 1 + (k % 6);
+    // (the fallen wordsmith searched: else he lies on the next dungeon's main path, and the bot,
+    // which goes to him first, may be a long way off when the time is up)
+    g.bodySearched = true;
     // (the dungeons these rooms were found in, laid without THE MIX: game/dungeon.ts)
     const mixWas = MIX.on;
     MIX.on = false;

@@ -52,8 +52,12 @@ export interface CryptMarks {
   way: { x: number; y: number; state: 'asleep' | 'awake' | 'warp'; t0: number } | null;
 }
 
-/** THE SWITCH. Off: every dungeon is the vault, as in the game. On: each of the Crypt's floors is its own (main.ts swaps the pictures as the hero goes down). */
-export const CRYPT: { on: boolean; marks: CryptMarks } = { on: false, marks: { level: null, stair: null, way: null } };
+/**
+ * THE SWITCH. Off: every dungeon is the vault, as it was. On: each of the Crypt's floors is its own (main.ts swaps the pictures as the hero goes down).
+ * ON SINCE VERSION 20.2: asked by the art chat by 07:29 on 10 Oct 2026, "The Crypt's four floors, as on the Crypt Review page: good to build as shown?",
+ * the owner: "Yes.  I’d also like each floor to be themed after the boss."
+ */
+export const CRYPT: { on: boolean; marks: CryptMarks } = { on: true, marks: { level: null, stair: null, way: null } };
 
 // ---------------------------------------------------------------------------------------------
 // The colours

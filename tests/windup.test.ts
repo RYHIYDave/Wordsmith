@@ -23,6 +23,18 @@ import type { Controls, GameEvent, Monster } from '../src/game/state';
 import { CLASS_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { land, seasoned } from './helpers';
+import { WAYS, topStep } from '../src/game/ways';
+
+/** The game as it was before THE WAYS (game/ways.ts, on since Version 20.2): the portal home from a dungeon. */
+function waysOff<T>(run: () => T): T {
+  const was = WAYS.on;
+  WAYS.on = false;
+  try {
+    return run();
+  } finally {
+    WAYS.on = was;
+  }
+}
 
 /** A fine step, so that the seconds below mean something: every time here is told to a 120th of a second. */
 const DT = 1 / 120;
@@ -745,10 +757,11 @@ test('the quick attack goes the way the hero faces, from wherever they have got 
 
 test('a new level clears an attack that was still being made', () => {
   for (const cls of CLASS_IDS) {
-    for (const where of ['dungeon', 'town', 'portal'] as const) {
-      const g = field(cls, 'mana');
+    for (const where of ['dungeon', 'town', 'portal', 'stairs'] as const) {
+      // (the portal home: the dungeons as they were before the ways, game/ways.ts, WAYS; on since Version 20.2)
+      const g = where === 'portal' ? waysOff(() => field(cls, 'mana')) : field(cls, 'mana');
       const h = g.hero;
-      const name = `${cls}, into the ${where === 'portal' ? 'town by the portal' : where}`;
+      const name = `${cls}, into the ${where === 'portal' ? 'town by the portal' : where === 'stairs' ? 'next floor down the stairwell' : where}`;
       // a quick attack being made, and a slow one waiting behind it
       const c = ask(g, 0, 2, 0);
       c.cast = true;
@@ -757,7 +770,19 @@ test('a new level clears an attack that was still being made', () => {
       assert.ok(h.windup && h.queued && h.attackT > 0, `${name}: an attack is being made and another is waiting`);
       if (where === 'dungeon') g.enterDungeon();
       else if (where === 'town') g.enterTown();
-      else {
+      else if (where === 'stairs') {
+        // (the way a player leaves a floor: its boss dead, onto its stairwell's top step)
+        const st = g.level.ways?.stair;
+        assert.ok(st, `${name}: a stairwell`);
+        if (!st) return;
+        (g as unknown as { openStair: (s: typeof st) => void }).openStair(st);
+        const top = topStep(st);
+        h.x = top.x;
+        h.y = top.y;
+        const L = g.level;
+        for (let i = 0; i < 60 && g.level === L; i++) g.update(DT, emptyControls());
+        assert.ok(g.inDungeon && g.level !== L, `${name}: down the stairwell`);
+      } else {
         // (the way a player leaves: standing at the open portal, and pressing)
         const p = g.level.portal;
         assert.ok(p);

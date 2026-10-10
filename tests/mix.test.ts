@@ -48,6 +48,7 @@ import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster, PropInst } from '../src/game/state';
 import { T_FLOOR } from '../src/game/types';
 import type { DoorSpot, Element, Floor, Room } from '../src/game/types';
+import { withoutCrypt } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -346,14 +347,19 @@ test('the playtests\' own player, with a gate down: it kills what it can come to
 // =================================================================================================
 // STEP 2: THE MAP-MAKER. The switch is off in the game; these tests set it for themselves.
 
-/** The map-maker's switch for the mix (and for doors), set for the length of a test and put back. */
+/**
+ * The map-maker's switch for the mix (and for doors), set for the length of a test and put back;
+ * and the map-maker without the Crypt (`withoutCrypt`), as it lays every dungeon past it: the
+ * Crypt's own rooms next door, its cells, and its breaches (rooms next door with the rock between
+ * them knocked out, and no door), are asked of in tests/crypt_layout.test.ts.
+ */
 function mixed<T>(on: boolean, run: () => T): T {
   const was = { ...MIX };
   const doors = DOORS.on;
   MIX.on = on;
   DOORS.on = true;
   try {
-    return run();
+    return withoutCrypt(run);
   } finally {
     Object.assign(MIX, was);
     DOORS.on = doors;

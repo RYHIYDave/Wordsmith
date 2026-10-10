@@ -106,9 +106,10 @@ let pairsHere = false;
  *     (`pair`), and from the third floor some of those joined by A BREACH, the rock between them
  *     knocked out along all but a tile at either end of the side they share (`breach`): two rooms
  *     made one wide space. (Never a cell block, the boss's hall, a vault, a lair or the nook.)
- * OFF, EVERY DUNGEON IS WHAT IT WAS: none of its dice are thrown.
+ * OFF, EVERY DUNGEON IS WHAT IT WAS: none of its dice are thrown. ON SINCE VERSION 20.2: the owner,
+ * 10 Oct 2026, 10:07, of its pictures: "I like the changes".
  */
-export const CRYPT_LAYOUT = { on: false };
+export const CRYPT_LAYOUT = { on: true };
 /** The Crypt is the first set of five floors (the owner, 10 Oct 2026, 07:21: "5 in a row, lair boss per 5."). */
 const CRYPT_LAST = 5;
 /** By the Crypt's floor, 1 to 5 (index 0 unused). */
@@ -204,6 +205,8 @@ interface RoomPlan extends Rect {
   block?: boolean;
   /** THE CRYPT: a cell's hall runs along x (the cell is on its -y side), else along y (the cell on its -x side). */
   cellAlongX?: boolean;
+  /** THE CRYPT OPENS UP: its area before it was grown (`Size.base`): its packs go by it. */
+  base?: number;
 }
 
 /**
@@ -280,12 +283,14 @@ interface Size {
   h: number;
   /** THE CRYPT: a cell block's. */
   block?: boolean;
+  /** THE CRYPT OPENS UP: its area before it was grown (the room's packs go by it: `placePacks`). */
+  base?: number;
 }
 
 /** 'hall' is big enough for a boss fight (at least 13x12, either way round). 'nook' (THE MIX): the small room a lever stands in. 'block' (THE CRYPT): a cell block, a long hall. */
 type SizeClass = 'small' | 'medium' | 'lair' | 'hall' | 'nook' | 'block';
 
-function rollSize(rng: RNG, cls: SizeClass): Size {
+function rollSize(rng: RNG, cls: SizeClass, grows = true): Size {
   let long: number;
   let short: number;
   // (THE CRYPT: a cell block, long enough for a row of three or four cells along it)
@@ -310,19 +315,22 @@ function rollSize(rng: RNG, cls: SizeClass): Size {
     long = rng.int(9, 12);
     short = rng.int(8, Math.min(11, long));
   }
-  // (THE CRYPT OPENS UP: from its second floor down its rooms are bigger, its boss's hall too; not the lever's nook)
-  if (cryptK > 1 && cls !== 'nook') {
+  // (THE CRYPT OPENS UP: from its second floor down its rooms are bigger, its boss's hall too; not
+  // the lever's nook, nor a treasure vault, a small room for its guards and its hoard. Its monsters
+  // are those of the room it would have been: `base`)
+  const base = long * short;
+  if (cryptK > 1 && cls !== 'nook' && grows) {
     const g = OPEN.grow[cryptK];
     long += rng.int(g - 1, g);
     short += rng.int(g - 1, g);
   }
-  return rng.chance(0.5) ? { w: long, h: short } : { w: short, h: long };
+  return rng.chance(0.5) ? { w: long, h: short, base } : { w: short, h: long, base };
 }
 
 /** Roll a size, re-rolling a few times if this exact size is already taken, so a level's rooms differ. */
-function freshSize(rng: RNG, cls: SizeClass, used: Set<number>): Size {
-  let size = rollSize(rng, cls);
-  for (let tries = 0; tries < 4 && used.has(size.w * 100 + size.h); tries++) size = rollSize(rng, cls);
+function freshSize(rng: RNG, cls: SizeClass, used: Set<number>, grows = true): Size {
+  let size = rollSize(rng, cls, grows);
+  for (let tries = 0; tries < 4 && used.has(size.w * 100 + size.h); tries++) size = rollSize(rng, cls, grows);
   used.add(size.w * 100 + size.h);
   return size;
 }
@@ -627,7 +635,7 @@ function growBranch(rng: RNG, rooms: RoomPlan[], corridors: Corridor[], hosts: r
   const twoRooms = rng.chance(TWO_ROOM_BRANCH);
   const crossSize = freshSize(rng, rng.chance(0.5) ? 'small' : 'medium', used);
   // A guardian needs room to fight in; a vault is a small room.
-  const rewardSize = freshSize(rng, reward === 'lair' ? 'lair' : 'small', used);
+  const rewardSize = freshSize(rng, reward === 'lair' ? 'lair' : 'small', used, reward !== 'vault');
   for (const host of hosts) {
     const roomMark = rooms.length;
     const corridorMark = corridors.length;
@@ -637,8 +645,12 @@ function growBranch(rng: RNG, rooms: RoomPlan[], corridors: Corridor[], hosts: r
       heading = grow(rng, rooms, corridors, from, crossSize, 'side', -1, -1);
       if (heading < 0) continue;
       from = rooms[rooms.length - 1];
+      from.base = crossSize.base;
     }
-    if (grow(rng, rooms, corridors, from, rewardSize, reward, -1, heading) >= 0) return true;
+    if (grow(rng, rooms, corridors, from, rewardSize, reward, -1, heading) >= 0) {
+      rooms[rooms.length - 1].base = rewardSize.base;
+      return true;
+    }
     // No space for the reward room: take the first room back out and try the next host.
     rooms.length = roomMark;
     corridors.length = corridorMark;
@@ -672,12 +684,14 @@ function planLevel(rng: RNG, depth: number): Plan | null {
   const classes = pathSizeClasses(rng, pathLen);
   const first = freshSize(rng, classes[0], used);
   rooms.push(makeRoom(0, 0, 0, first.w, first.h, 'start', 0));
+  rooms[0].base = first.base;
   let heading = -1;
   for (let i = 1; i < pathLen; i++) {
     const size = freshSize(rng, classes[i], used);
     heading = grow(rng, rooms, corridors, rooms[i - 1], size, i === pathLen - 1 ? 'boss' : 'path', i, heading);
     if (heading < 0) return null;
     if (size.block) rooms[i].block = true;
+    rooms[i].base = size.base;
   }
 
   // The side branches: one in each stretch of the path, never from the start room or the boss hall.
@@ -1594,7 +1608,8 @@ function placePacks(st: Stage, lay: Layout): PackSpot[] {
     // (THE CRYPT: nothing fights in a cell)
     if (r.role === 'cell') continue;
     if (kind === 'normal') {
-      const area = r.w * r.h;
+      // (THE CRYPT OPENS UP: a room grown bigger holds the packs it would have held: more room, not more monsters)
+      const area = r.base ?? r.w * r.h;
       normalIn[r.id] = Math.min(capacity[r.id], area < 72 ? 1 : area < 121 ? 2 : 3);
     } else if (kind === 'treasure') normalIn[r.id] = 1; // the vault's guards
     else if (kind === 'elite') {
@@ -1830,9 +1845,10 @@ function placeBonusChest(st: Stage): void {
  * litter, `more` again of what the art draws as rubble (on those floors, rocks and the miners'
  * gear among it), dungeon 1 first. Laid LAST of everything (`moreLitter`), by dice of its own, on
  * plain floor that nothing else has (no stair, no trap, no doorway, nothing standing or lying, not
- * near the start or the boss), so that nothing else in a dungeon changes.
+ * near the start or the boss), so that nothing else in a dungeon changes. ON SINCE VERSION 20.2, with
+ * the Crypt's pictures (art/crypt.ts, CRYPT).
  */
-export const CRYPT_LITTER = { on: false, more: [0, 0.3, 0.7, 1.2] as readonly number[] };
+export const CRYPT_LITTER = { on: true, more: [0, 0.3, 0.7, 1.2] as readonly number[] };
 
 /**
  * THE CRYPT (CRYPT_LAYOUT): what is in a cell. Bones on a tile or two of its floor, rubble now and
@@ -1881,6 +1897,13 @@ function moreLitter(f: Floor, dice: RNG): void {
   for (let i = 0; i < n; i++) free[i] = f.tiles[i] === T_FLOOR && !(f.cut && f.cut[i] !== 0) && !(f.stair && f.stair[i] !== 0) ? 1 : 0;
   for (const p of f.props) free[p.y * f.w + p.x] = 0;
   for (const h of f.hazards ?? []) for (let y = Math.floor(h.y) - 1; y <= Math.ceil(h.y + h.h); y++) for (let x = Math.floor(h.x) - 1; x <= Math.ceil(h.x + h.w); x++) if (x >= 0 && y >= 0 && x < f.w && y < f.h) free[y * f.w + x] = 0;
+  // (nor on a dart wall's run, between its slot and its plate, which is kept clear: game/traps.ts)
+  for (const h of f.hazards ?? []) {
+    const q = h.kind === 'darts' ? h.slot : undefined;
+    if (!q) continue;
+    if (q.dy === 1) for (let y = q.y + 1; y <= h.y; y++) free[y * f.w + h.x] = 0;
+    else for (let x = q.x + 1; x <= h.x; x++) free[h.y * f.w + x] = 0;
+  }
   for (const d of f.doors ?? []) for (const i of doorTiles(f, d)) free[i] = 0;
   for (const l of f.levers ?? []) free[l.y * f.w + l.x] = 0;
   // (not within two tiles of where the hero comes in, or of the boss)

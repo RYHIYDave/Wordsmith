@@ -1516,9 +1516,12 @@ test('a new player\'s first dungeon does not begin with a fight: nothing wakes b
   // nineteen in twenty-four hundred do, and these are the first eight); and for Version 19.7, when
   // a pack came to be of one kind, as many as its size says (game/defs.ts, MONSTER_PACKS): eight of
   // the first seven hundred and forty-nine did; and for Version 19.9, when an elite room came never to
-  // be of bats (game/defs.ts, packKinds): eight of the first nine hundred and thirty-seven do, these.)
+  // be of bats (game/defs.ts, packKinds): eight of the first nine hundred and thirty-seven did; and
+  // for Version 20.2, when the first floor came to be the Crypt's, with its cell blocks and its first
+  // room kept square for the gate to town (game/dungeon.ts CRYPT_LAYOUT, game/ways.ts WAYS): eight
+  // of the first four hundred and thirty-two do, these.)
   let tried = 0;
-  for (const seed of [776075, 1029483, 2858772, 4070379, 4822684, 5939263, 7000409, 7412197]) {
+  for (const seed of [332611, 475153, 902779, 1187863, 1536299, 1718436, 2779582, 3413102]) {
     const g = Game.forFirstRun('mage', seed);
     const h = g.hero;
     const c = emptyControls();

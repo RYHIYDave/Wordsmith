@@ -30,6 +30,18 @@ export default async function (page, snap) {
   };
   /** The trades are open (the wordsmith has a screen of his own, and the stranger his gamble) if the stranger has a station. */
   const trades = await page.evaluate(() => window.__dbg.game().level.stations.some((q) => q.kind === 'stranger'));
+  // THE WAYS (game/ways.ts, on since Version 20.2): the gate is one of the levels' gates, walked
+  // through to the first floor (touched, the hero is sent into its doorway), not a service; and a
+  // dungeon's way on is its stairwell, its way home a waypoint, not the portal
+  const ways = await page.evaluate(() => !!window.__dbg.game().level.ways);
+  /** Touched, the gate takes the hero through it to the first floor; then back to town, where he stood. */
+  const through = async (what) => {
+    const r = await waitFor((s) => !s.town, 9000);
+    if (r.ms < 0) { fails++; console.log(`  !! touching ${what} did not take the hero through the gate: town=${r.s.town} errand=${r.s.errand}`); }
+    log(`touch ${what}`, `through the gate: town=${r.s.town} depth=${r.s.depth} after ${r.ms} ms`);
+    await page.evaluate(() => { const g = window.__dbg.game(); g.enterTown(); });
+    await page.waitForTimeout(500);
+  };
   /** The panel a station opens (until the trades are open the wordsmith simply opens the inventory; the two vendors have the one screen). */
   const panelOf = (kind) => (kind === 'wordsmith' ? (trades ? 'wordsmith' : 'inv') : kind === 'armourer' || kind === 'mystic' ? 'vendor' : kind);
   /** That panel is open, and at a vendor's it is that vendor's shelf. */
@@ -64,6 +76,7 @@ export default async function (page, snap) {
     const side = p.x < v.w * 0.4 ? 'stick side' : 'aim side';
     await hands.pressAt(p.x, p.y - 14);
     const first = await st();
+    if (kind === 'gate' && ways) { await through('the gate'); continue; }
     if (kind === 'wordsmith') { await page.waitForTimeout(500); await snap('walking'); }
     const r = await waitFor((s) => isOpen(s, kind));
     if (r.ms < 0) { fails++; console.log(`  !! touching the ${kind} did not open its panel`); }
@@ -102,10 +115,13 @@ export default async function (page, snap) {
   await page.waitForTimeout(250);
   p = await where('gate');
   await hands.pressAt(p.x, p.y - 40);
-  r = await waitFor((s) => s.panel === 'gate');
-  if (r.ms < 0) { fails++; console.log('  !! touching the arch of the gate did not open the gate'); }
-  log('touch the arch of the gate', `panel=${r.s.panel} after ${r.ms} ms`);
-  await close();
+  if (ways) await through('the arch of the gate');
+  else {
+    r = await waitFor((s) => s.panel === 'gate');
+    if (r.ms < 0) { fails++; console.log('  !! touching the arch of the gate did not open the gate'); }
+    log('touch the arch of the gate', `panel=${r.s.panel} after ${r.ms} ms`);
+    await close();
+  }
   // the floor at the gate's threshold. (Version 14.5: on the screen that is where the far corner of
   // the tent's roof comes to, four tiles nearer. While the tent was touched by a box round it, a
   // touch here sent the hero to the trader: the playtest with a mouse found it.)
@@ -113,10 +129,13 @@ export default async function (page, snap) {
   await page.waitForTimeout(250);
   p = await where('gate');
   await hands.pressAt(p.x, p.y + 4);
-  r = await waitFor((s) => s.panel === 'gate');
-  if (r.ms < 0) { fails++; console.log(`  !! touching the floor at the gate's threshold did not open the gate: panel=${r.s.panel}${r.s.panel === 'vendor' ? ' (' + r.s.vendor + ')' : ''}`); }
-  log("touch the floor at the gate's threshold", `panel=${r.s.panel} after ${r.ms} ms`);
-  await close();
+  if (ways) await through("the floor at the gate's threshold");
+  else {
+    r = await waitFor((s) => s.panel === 'gate');
+    if (r.ms < 0) { fails++; console.log(`  !! touching the floor at the gate's threshold did not open the gate: panel=${r.s.panel}${r.s.panel === 'vendor' ? ' (' + r.s.vendor + ')' : ''}`); }
+    log("touch the floor at the gate's threshold", `panel=${r.s.panel} after ${r.ms} ms`);
+    await close();
+  }
   // the name over the tent is the trader's, as every name is the thing's it names
   await page.evaluate(() => { const g = window.__dbg.game(); g.hero.x = 17.5; g.hero.y = 15.5; });
   await page.waitForTimeout(250);
@@ -154,8 +173,10 @@ export default async function (page, snap) {
   log('down the screen from the arch to the tent', `${drawn.runs} (the tent is ${drawn.offset[0]},${drawn.offset[1]} game pixels from the gate's floor)`);
   log("the gate's threshold, 2 above it to 5 below", drawn.threshold.join(' '));
   log("the open floor beside the tent's roof", String(drawn.beside));
-  if (drawn.threshold.some((k) => k !== 'gate')) { fails++; console.log("  !! a part of the gate's threshold is not the gate's to the touch"); }
-  if (drawn.order[0] !== 'gate' || drawn.order[drawn.order.length - 1] !== 'mystic' || drawn.order.indexOf('mystic') < drawn.order.lastIndexOf('gate')) { fails++; console.log('  !! down the screen from the arch it should be the gate, and then the tent, and no going back'); }
+  // (the gate is touched as a way through while the ways are on: main.ts, Spot 'through')
+  const gk = ways ? 'through' : 'gate';
+  if (drawn.threshold.some((k) => k !== gk)) { fails++; console.log("  !! a part of the gate's threshold is not the gate's to the touch"); }
+  if (drawn.order[0] !== gk || drawn.order[drawn.order.length - 1] !== 'mystic' || drawn.order.indexOf('mystic') < drawn.order.lastIndexOf(gk)) { fails++; console.log('  !! down the screen from the arch it should be the gate, and then the tent, and no going back'); }
   if (drawn.beside !== null) { fails++; console.log(`  !! the open floor beside the tent's roof is taken for the ${drawn.beside}`); }
 
   // ---- touching bare floor does nothing of the kind; steering calls an errand off ----
@@ -180,6 +201,50 @@ export default async function (page, snap) {
   await page.waitForTimeout(1200);
   s = await st();
   if (s.panel !== 'none') { fails++; log('  !! a panel opened anyway', s.panel); }
+
+  // ---- (THE WAYS) the stairwell down, opened, touched from a few steps off; then the next floor's waypoint, touched: to town ----
+  if (ways) {
+    await page.evaluate(() => {
+      const d = window.__dbg; const g = d.game();
+      g.depth = 2; g.bodySearched = true; g.enterDungeon();
+      const L = g.level; const f = L.floor;
+      const b = g.monsters.find((m) => m.boss);
+      g.damageMonster(b, b.life + b.shield + 1, 'phys', false, -1);
+      for (const m of g.monsters) m.dead = true;
+      const st = L.ways.stair;
+      // a walkable tile 4 to 5 tiles from its top step
+      let best = null;
+      for (let ty = 0; ty < f.h; ty++) for (let tx = 0; tx < f.w; tx++) {
+        if (L.walk[ty * f.w + tx] !== 1) continue;
+        const dd = Math.hypot(tx + 0.5 - st.x - 0.5, ty + 0.5 - st.y - 0.62);
+        if (dd > 4 && dd < 5 && (!best || ty > best.ty)) best = { tx, ty };
+      }
+      g.hero.x = best.tx + 0.5; g.hero.y = best.ty + 0.5;
+      for (let i = 0; i < L.explored.length; i++) L.explored[i] = 1;
+    });
+    await page.waitForTimeout(600);
+    s = await st();
+    log('in the dungeon', `town=${s.town} depth=${s.depth}`);
+    p = await page.evaluate(() => { const d = window.__dbg; const q = d.game().level.ways.stair; return d.at(q.x + 1.2, q.y + 0.62); });
+    await snap('stairwell');
+    await hands.pressAt(p.x, p.y);
+    r = await waitFor((q) => q.depth === 3 && !q.town, 8000);
+    if (r.ms < 0) fails++;
+    log('touch the stairwell', `town=${r.s.town} depth=${r.s.depth} after ${r.ms} ms`);
+    await page.waitForTimeout(800);
+    p = await page.evaluate(() => { const d = window.__dbg; const w = d.game().level.ways.way; return d.at(w.x, w.y); });
+    await snap('waypoint');
+    await hands.pressAt(p.x, p.y - 4);
+    r = await waitFor((q) => q.town === true, 8000);
+    if (r.ms < 0) fails++;
+    log('touch the waypoint', `town=${r.s.town} depth=${r.s.depth} after ${r.ms} ms`);
+    await snap('back_in_town');
+    const missing = await page.evaluate(() => window.__dbg.missing());
+    if (missing.length) { fails++; console.log('  !! text asked for characters the fonts cannot draw: ' + missing.join(' ')); }
+    if (fails) console.log(`  !! ${fails} check(s) failed`);
+    log('RESULT', fails ? `${fails} FAILED` : 'all passed');
+    return;
+  }
 
   // ---- the portal home: put the hero in a dungeon, light the portal, stand a few steps away ----
   await page.evaluate(() => {

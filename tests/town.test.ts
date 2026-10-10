@@ -15,6 +15,18 @@ import { UNREACHABLE, flowField } from '../src/game/nav';
 import { emptyControls } from '../src/game/state';
 import type { Station } from '../src/game/state';
 import { CLASS_IDS, EQUIP_SLOTS, WORD_IDS } from '../src/game/types';
+import { WAYS, topStep } from '../src/game/ways';
+
+/** THE WAYS (game/ways.ts, on since Version 20.2), set for the length of `run` and put back. */
+function waysSet<T>(on: boolean, run: () => T): T {
+  const was = WAYS.on;
+  WAYS.on = on;
+  try {
+    return run();
+  } finally {
+    WAYS.on = was;
+  }
+}
 
 // (the stranger's is the gamble: his once the trades are open)
 const STATIONS: Station[] = TUNE.tradesOpen ? ['gate', 'lexicon', 'wordsmith', 'armourer', 'mystic', 'stash', 'stranger'] : ['gate', 'lexicon', 'wordsmith', 'armourer', 'mystic', 'stash'];
@@ -44,28 +56,34 @@ function goTo(g: Game, kind: Station): void {
   g.hero.y = at.y;
 }
 
-test('the town has every service, each reachable on foot, and none overlap', () => {
-  const g = new Game('warrior', 5);
-  assert.ok(g.level.town);
-  assert.deepEqual(g.level.stations.map((s) => s.kind).sort(), [...STATIONS].sort());
-  for (const kind of STATIONS) {
-    goTo(g, kind);
-    assert.equal(g.stationNear(), kind, `standing by the ${kind} offers the ${kind}`);
-    assert.ok(g.interactHint(), 'and there is a prompt for it');
-  }
-  // from the arrival point nothing is in reach, so no prompt covers the first view of the town
-  g.hero.x = TOWN.start.x;
-  g.hero.y = TOWN.start.y;
-  assert.equal(g.stationNear(), null);
-  // stations are far enough apart that the prompt is never ambiguous
-  const st = g.level.stations;
-  for (let i = 0; i < st.length; i++) for (let j = i + 1; j < st.length; j++) {
-    assert.ok(Math.hypot(st[i].x - st[j].x, st[i].y - st[j].y) > TUNE.useRange * 2, `${st[i].kind} and ${st[j].kind} are well apart`);
-  }
+test('the town has every service, each reachable on foot, and none overlap (the gate, while the ways are on, is walked through: no service of its own)', () => {
+  for (const ways of [true, false]) waysSet(ways, () => {
+    const g = new Game('warrior', 5);
+    assert.ok(g.level.town);
+    assert.deepEqual(g.level.stations.map((s) => s.kind).sort(), [...STATIONS].sort());
+    for (const kind of STATIONS) {
+      goTo(g, kind);
+      if (kind === 'gate' && ways) {
+        assert.notEqual(g.stationNear(), 'gate', 'standing by the gate offers no service while the ways are on (game/ways.ts)');
+        continue;
+      }
+      assert.equal(g.stationNear(), kind, `standing by the ${kind} offers the ${kind}`);
+      assert.ok(g.interactHint(), 'and there is a prompt for it');
+    }
+    // from the arrival point nothing is in reach, so no prompt covers the first view of the town
+    g.hero.x = TOWN.start.x;
+    g.hero.y = TOWN.start.y;
+    assert.equal(g.stationNear(), null);
+    // stations are far enough apart that the prompt is never ambiguous
+    const st = g.level.stations;
+    for (let i = 0; i < st.length; i++) for (let j = i + 1; j < st.length; j++) {
+      assert.ok(Math.hypot(st[i].x - st[j].x, st[i].y - st[j].y) > TUNE.useRange * 2, `${st[i].kind} and ${st[j].kind} are well apart`);
+    }
+  });
 });
 
-test('pressing interact in town asks for the service; it does not enter the dungeon by itself', () => {
-  const g = new Game('mage', 5);
+test('pressing interact in town asks for the service; it does not enter the dungeon by itself (the gate as a service: the ways off)', () => {
+  const g = waysSet(false, () => new Game('mage', 5));
   goTo(g, 'gate');
   const c = emptyControls();
   c.interact = true;
@@ -413,9 +431,12 @@ test('a damaged or missing Lexicon save becomes an empty one, not a crash', () =
   }
 });
 
-test('clearing a dungeon records the deepest one reached', () => {
-  const g = new Game('warrior', 77);
-  g.enterDungeon();
+test('clearing a dungeon records the deepest one reached (by the portal home: the ways off; and down the stairwell, below)', () => {
+  const g = waysSet(false, () => {
+    const q = new Game('warrior', 77);
+    q.enterDungeon();
+    return q;
+  });
   // kill the boss the quick way and walk into the portal
   assert.ok(g.boss);
   const c = emptyControls();
@@ -439,6 +460,24 @@ test('clearing a dungeon records the deepest one reached', () => {
   c.interact = true;
   g.update(1 / 30, c);
   assert.ok(g.level.town);
+  assert.equal(g.meta.bestDepth, 1);
+  assert.equal(g.depth, 2);
+});
+
+test('going down the stairwell records the deepest floor reached (the ways on, as in the game)', () => {
+  const g = new Game('warrior', 77);
+  g.hero.invuln = 1e9;
+  g.enterDungeon();
+  const boss = g.monsters.find((m) => m.boss)!;
+  (g as unknown as { damageMonster: (m: unknown, d: number, el: string, c: boolean, s: number) => void }).damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
+  const st = g.level.ways!.stair!;
+  assert.ok(st.open, 'the stairwell opened');
+  const top = topStep(st);
+  g.hero.x = top.x;
+  g.hero.y = top.y;
+  const L = g.level;
+  for (let i = 0; i < 60 && g.level === L; i++) g.update(1 / 30, emptyControls());
+  assert.ok(g.inDungeon && g.level !== L, 'down to the next floor');
   assert.equal(g.meta.bestDepth, 1);
   assert.equal(g.depth, 2);
 });

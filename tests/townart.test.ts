@@ -41,6 +41,8 @@ import { TOWN, makeTown } from '../src/game/level';
 import { UNREACHABLE, flowField } from '../src/game/nav';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import { paintWithoutCanvas, paintingOf, unlike } from './helpers';
+import { doorTiles } from '../src/game/doors';
+import { WAYS } from '../src/game/ways';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -387,11 +389,16 @@ test('the hall: each place is where its person is, the gate is in the wall, the 
     return p as { x: number; y: number; tx: number; ty: number };
   };
   const tile = (x: number, y: number): number => f.tiles[y * f.w + x];
-  // the gate: its tiles are wall, in the back wall on the right (the row above the floor), with floor before each
+  // the gate: its tiles are wall, in the back wall on the right (the row above the floor), with floor before each;
+  // but (THE WAYS, game/ways.ts, on since Version 20.2) the three of them that are the doorway of the levels' gate
+  // in it, floor to the dark beyond
+  const doorway = new Set(L.doors.flatMap((d) => doorTiles(f, d.spot)));
+  assert.equal(doorway.size, WAYS.on ? 3 : 0);
   for (let k = 0; k < TOWN.gateWall.n; k++) {
-    assert.equal(tile(TOWN.gateWall.x + k, TOWN.gateWall.y), T_WALL);
+    const i = TOWN.gateWall.y * f.w + TOWN.gateWall.x + k;
+    assert.ok(doorway.has(i) ? tile(TOWN.gateWall.x + k, TOWN.gateWall.y) === T_FLOOR : tile(TOWN.gateWall.x + k, TOWN.gateWall.y) === T_WALL);
     assert.equal(tile(TOWN.gateWall.x + k, TOWN.gateWall.y + 1), T_FLOOR);
-    assert.equal(L.low[TOWN.gateWall.y * f.w + TOWN.gateWall.x + k], 0, 'and it is a whole wall there, not one cut down');
+    if (!doorway.has(i)) assert.equal(L.low[i], 0, 'and it is a whole wall there, not one cut down');
   }
   assert.equal(TOWN.gateWall.y, TOWN.y0 - 1);
   // where it is used from is on the floor straight under the middle of the arch, as the screen shows it

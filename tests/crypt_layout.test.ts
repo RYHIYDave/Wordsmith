@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { CRYPT_LAYOUT, cryptLayoutFloor, generateFloor } from '../src/game/dungeon';
+import { CRYPT_LAYOUT, cryptLayoutFloor, generateFloor, monsterBudget } from '../src/game/dungeon';
 import { doorTiles } from '../src/game/doors';
 import { SOLID_PROPS, T_FLOOR } from '../src/game/types';
 import type { Floor } from '../src/game/types';
@@ -41,11 +41,11 @@ function openness(f: Floor): { corridor: number; area: number } {
   return { corridor: corr / floor, area: rooms.reduce((a, r) => a + r.w * r.h, 0) / rooms.length };
 }
 
-test('the switch is off, and off no dungeon is a Crypt floor of this layout', () => {
-  assert.equal(CRYPT_LAYOUT.on, false);
-  for (let d = 0; d <= 7; d++) assert.equal(cryptLayoutFloor(d), 0);
-  withLayout(true, () => {
-    assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7].map(cryptLayoutFloor), [0, 1, 2, 3, 4, 5, 0, 0]);
+test('the switch is on in the game (Version 20.2; his "I like the changes" of 10 Oct, 10:07): dungeons 1 to 5 are the Crypt\'s floors; off, none is', () => {
+  assert.equal(CRYPT_LAYOUT.on, true);
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7].map(cryptLayoutFloor), [0, 1, 2, 3, 4, 5, 0, 0]);
+  withLayout(false, () => {
+    for (let d = 0; d <= 7; d++) assert.equal(cryptLayoutFloor(d), 0);
   });
 });
 
@@ -149,5 +149,32 @@ test('from the third floor some rooms are joined by a breach, a wide opening in 
     assert.equal(per[0], 0);
     assert.equal(per[1], 0);
     assert.ok(per[2] > 0 && per[3] > per[2] * 0.9 && per[4] > 0, `wide openings by floor: ${per.join(', ')}`);
+  });
+});
+
+test('the Crypt\'s floors keep the map-maker\'s other rules: as many monsters as ever (a room grown bigger holds the packs it would have), treasure vaults small rooms, every room but a cell the packs of its kind', () => {
+  withLayout(true, () => {
+    for (let d = 1; d <= 5; d++) {
+      const share: number[] = [];
+      const base: number[] = [];
+      for (const seed of SEEDS) {
+        const f = generateFloor(d, seed);
+        const at = `dungeon ${d}, seed ${seed}`;
+        share.push(f.packs.reduce((a, p) => a + p.size, 0) / monsterBudget(d));
+        const off = withLayout(false, () => generateFloor(d, seed));
+        base.push(off.packs.reduce((a, p) => a + p.size, 0) / monsterBudget(d));
+        for (const r of f.rooms) {
+          const here = f.packs.filter((p) => p.roomId === r.id);
+          if (r.kind === 'treasure') assert.ok(Math.max(r.w, r.h) <= 9 && Math.min(r.w, r.h) <= 8, `${at}: a vault is a small room (${r.w}x${r.h})`);
+          if (r.cell) assert.equal(here.length, 0, `${at}: nothing in a cell`);
+          else if (r.kind === 'normal') assert.ok(here.length >= 1 && here.length <= 3, `${at}: room ${r.id} (${r.w}x${r.h}) holds ${here.length} packs`);
+        }
+      }
+      const avg = (a: number[]): number => a.reduce((x, y) => x + y, 0) / a.length;
+      assert.ok(avg(share) >= 0.75 && avg(share) <= 1.25, `floor ${d}: on average ${avg(share).toFixed(2)} of the monster budget`);
+      for (const r of share) assert.ok(r >= 0.5 && r <= 1.5, `floor ${d}: a floor with ${r.toFixed(2)} of the budget`);
+      // (and about as many as the same dungeons without the layout: a tenth more at most, on average)
+      assert.ok(avg(share) <= avg(base) * 1.1, `floor ${d}: ${avg(share).toFixed(2)} of the budget, against ${avg(base).toFixed(2)} without the layout`);
+    }
   });
 });

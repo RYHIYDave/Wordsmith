@@ -61,7 +61,7 @@ import type { GameEvent, Monster } from '../src/game/state';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import type { DoorSpot, Element, Floor } from '../src/game/types';
 import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from '../src/render/walls';
-import { seasoned } from './helpers';
+import { seasoned, withoutCrypt } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -81,7 +81,8 @@ const SHARE = DOORS.share;
  * 18.8: what a door does is asked so). THE DUNGEONS LAID HERE ARE WITHOUT THE MIX (game/dungeon.ts,
  * MIX: its gates, its locking rooms and its rooms next door are asked of in tests/mix.test.ts),
  * AND WITHOUT THE TRAPS (game/traps.ts, TRAPS: a sealed vault's door is asked of in
- * tests/traps.test.ts): here a door is asked of in the dungeons that have only doors.
+ * tests/traps.test.ts), AND WITHOUT THE CRYPT (its layout and litter: `withoutCrypt`): here a door is
+ * asked of in the dungeons that have only doors.
  */
 function doorsSet<T>(on: boolean, run: () => T, share = SHARE): T {
   const was = DOORS.on;
@@ -93,7 +94,9 @@ function doorsSet<T>(on: boolean, run: () => T, share = SHARE): T {
   MIX.on = false;
   TRAPS.on = false;
   try {
-    return run();
+    // (and without the Crypt, as the map-maker lays every dungeon past it: its cells, each with its
+    // door, are asked of in tests/crypt_layout.test.ts)
+    return withoutCrypt(run);
   } finally {
     DOORS.on = was;
     DOORS.share = wasShare;
@@ -173,7 +176,8 @@ test('the switch is on in the game: a dungeon has doors and the town has none; w
   }
   const lit = makeDungeon(2, 6);
   assert.ok(lit.doors.length >= 2 && lit.pier !== null);
-  assert.deepEqual(makeTown(7).doors, [], 'the town has none either way');
+  // (THE WAYS, game/ways.ts, on since Version 20.2: but its gate to the first floor, one of the levels' gates)
+  assert.deepEqual(makeTown(7).doors.map((d) => d.spot.kind), ['waygate'], 'the town has none but its gate to the first floor');
   assert.equal(makeTown(7).pier, null);
   doorsSet(false, () => {
     for (const [depth, seed] of [[1, 3], [2, 6], [7, 41]]) assert.equal(generateFloor(depth, seed).doors, undefined);

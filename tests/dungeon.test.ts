@@ -22,6 +22,7 @@ import { MIX, generateFloor, tileAt } from '../src/game/dungeon';
 import { buildOpenGrid, buildWalkGrid, flowDir, flowField, lineOfSight, scatter } from '../src/game/nav';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from '../src/game/types';
 import type { Floor, PackSpot, PropSpot, Room } from '../src/game/types';
+import { withoutCrypt } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -72,18 +73,22 @@ interface Sample {
 const samples: Sample[] = [];
 let generateMs = 0;
 // (THE MAP-MAKER AS IT LAYS A DUNGEON WITHOUT THE MIX, game/dungeon.ts, MIX: the mix's own rooms,
-// the lever's nook among them, are asked of in tests/mix.test.ts)
+// the lever's nook among them, are asked of in tests/mix.test.ts; AND WITHOUT THE CRYPT, as it
+// lays every dungeon past it: the Crypt's floors, its cell blocks and bigger rooms, are asked of in
+// tests/crypt_layout.test.ts, `withoutCrypt`)
 const mixWas = MIX.on;
 MIX.on = false;
-for (let depth = 1; depth <= DEPTHS; depth++) {
-  for (let k = 0; k < SEEDS; k++) {
-    const seed = depth * 1000 + k * 7919 + 1;
-    const t0 = performance.now();
-    const f = generateFloor(depth, seed);
-    generateMs += performance.now() - t0;
-    samples.push({ depth, seed, f, tag: `depth ${depth} seed ${seed}` });
+withoutCrypt(() => {
+  for (let depth = 1; depth <= DEPTHS; depth++) {
+    for (let k = 0; k < SEEDS; k++) {
+      const seed = depth * 1000 + k * 7919 + 1;
+      const t0 = performance.now();
+      const f = generateFloor(depth, seed);
+      generateMs += performance.now() - t0;
+      samples.push({ depth, seed, f, tag: `depth ${depth} seed ${seed}` });
+    }
   }
-}
+});
 MIX.on = mixWas;
 
 // ---------------------------------------------------------------------------------------------
@@ -278,12 +283,12 @@ function grid(rows: string[]): { g: Uint8Array; w: number; h: number } {
 // Generator: shape of the result
 
 test('same depth and seed always give the identical floor', () => {
-  // (laid as the samples were: without the mix)
+  // (laid as the samples were: without the mix and without the Crypt)
   const mixOn = MIX.on;
   MIX.on = false;
   try {
     for (const s of samples) {
-      const again = generateFloor(s.depth, s.seed);
+      const again = withoutCrypt(() => generateFloor(s.depth, s.seed));
       assert.deepEqual(again, s.f, s.tag);
     }
   } finally {

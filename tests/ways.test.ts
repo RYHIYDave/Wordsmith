@@ -9,7 +9,7 @@
 // 07:29 on 10 Oct: "Yes, as shown (Recommended)".
 //
 // What is held here:
-//   - the switch is off, and off the game is what it was: the town has no gate of the levels and
+//   - the switch is on in the game, and off the game is what it was: the town has no gate of the levels and
 //     no waypoint, a dungeon its dark portal home in the boss's hall, lit when the boss dies;
 //   - the ways have the sizes of their pictures;
 //   - on, every floor has places for its stairwell in its boss's hall (the first across its
@@ -106,8 +106,8 @@ function inTown(seed: number): Game {
   return g;
 }
 
-test('the switch is off; off, the town has no gate of the levels and no waypoint, and a dungeon its dark portal home, lit when its boss dies', () => {
-  assert.equal(WAYS.on, false);
+test('the switch is on in the game (Version 20.2; his "Good" of 10 Oct, 11:15); off, the town has no gate of the levels and no waypoint, and a dungeon its dark portal home, lit when its boss dies', () => {
+  assert.equal(WAYS.on, true);
   waysSet(false, () => {
     const T = makeTown(7);
     assert.equal(T.ways, null);

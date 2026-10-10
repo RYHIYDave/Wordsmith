@@ -1,5 +1,5 @@
 // THE WAYS THROUGH THE CRYPT: the gate in town, the stairwell down from every floor, and the
-// waypoints, to town and back. A mock-up behind WAYS, OFF, until he has seen it and said yes.
+// waypoints, to town and back. Behind WAYS, on since Version 20.2.
 //
 // The owner's outline, 9 Oct 2026, 22:47: "The gate on the wall with be turned to a gate from the
 // levels.  It will open automatically as you approach it and go through.  you will enter floor 1
@@ -30,8 +30,8 @@
 import { SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
 import type { DoorSpot, Floor } from './types';
 
-/** THE SWITCH (off). */
-export const WAYS = { on: false };
+/** THE SWITCH. ON SINCE VERSION 20.2: the owner, 10 Oct 2026, 11:15, of films of them in the game: "Good". */
+export const WAYS = { on: true };
 
 /** The town's gate rises when the hero is this near the middle of its doorway, in tiles; at his pace he is at its bars a little over a second after, as it is 95% up (the art chat's film: tools/scenarios/crypt_gate.mjs). */
 export const GATE_RISE_AT = 6;

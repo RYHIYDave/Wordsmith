@@ -12,8 +12,10 @@
 
 import { Px } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
+import { CRYPT_LAYOUT, CRYPT_LITTER } from '../src/game/dungeon';
 import type { Game } from '../src/game/game';
 import type { Controls } from '../src/game/state';
+import { WAYS } from '../src/game/ways';
 
 /** No attack takes this long to land: the slowest wind-up in the game is about a quarter of a second. */
 export const LAND_LIMIT = 1;
@@ -103,3 +105,23 @@ export function seasoned(g: Game, level = 5): Game {
   return g;
 }
 
+/**
+ * THE MAP-MAKER WITHOUT THE CRYPT (on since Version 20.2): its layout (game/dungeon.ts,
+ * CRYPT_LAYOUT: the cell blocks and the floors opening up), its litter (CRYPT_LITTER), and the
+ * first floor's first room kept square for the gate to town (game/ways.ts, WAYS), all off for the
+ * length of `run` and put back. The map-maker as it lays every dungeon past the Crypt, the sixth
+ * and on: a test of its own rules, or of something else asked of the same dungeons it always
+ * asked of, lays its dungeons so. (The Crypt's floors are asked of in tests/crypt_layout.test.ts,
+ * tests/crypt.test.ts and tests/ways.test.ts.)
+ */
+export function withoutCrypt<T>(run: () => T): T {
+  const was = [CRYPT_LAYOUT.on, CRYPT_LITTER.on, WAYS.on];
+  CRYPT_LAYOUT.on = false;
+  CRYPT_LITTER.on = false;
+  WAYS.on = false;
+  try {
+    return run();
+  } finally {
+    [CRYPT_LAYOUT.on, CRYPT_LITTER.on, WAYS.on] = was;
+  }
+}

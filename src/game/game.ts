@@ -1465,13 +1465,13 @@ export class Game {
       }
       const here = Math.floor(h.y) * L.floor.w + Math.floor(h.x);
       if (d.open > 0.85 && doorTiles(L.floor, d.spot).includes(here)) {
-        this.leaving = { to: L.town ? 'gateIn' : 'gateOut', t: 0 };
+        this.leave(L.town ? 'gateIn' : 'gateOut');
         return false;
       }
     }
     // THE STAIRWELL, once open: stepping onto its top step takes him down.
     if (W.stair && W.stair.open && onTopStep(W.stair, h.x, h.y)) {
-      this.leaving = { to: 'down', t: 0 };
+      this.leave('down');
       return false;
     }
     // THE WAYPOINT wakes the first time he comes near it (the town's is awake while there is a floor to warp back to).
@@ -1481,6 +1481,19 @@ export class Game {
       this.sfx('power', 0.5);
     }
     return false;
+  }
+
+  /** THE WAYS: he is on his way out of the level. Whatever attack he was making is let go of, and costs nothing (as a dodge breaks one off): he does nothing more here. */
+  private leave(to: WayTo): void {
+    const h = this.hero;
+    this.leaving = { to, t: 0 };
+    if (h.channel) this.endChannel(true);
+    h.windup = null;
+    h.channel = null;
+    h.queued = null;
+    h.attackT = 0;
+    h.combo = 0;
+    h.comboT = 0;
   }
 
   /** THE WAYS: what lies at the end of the way he has taken. */
@@ -5691,7 +5704,7 @@ export class Game {
         const W = this.level.ways;
         if (W && W.way && (!this.level.town || this.wayDepth >= 2)) {
           W.way.warpAt = this.time;
-          this.leaving = { to: this.level.town ? 'warpBack' : 'warpTown', t: 0 };
+          this.leave(this.level.town ? 'warpBack' : 'warpTown');
           this.sfx('power', 0.7);
           return;
         }

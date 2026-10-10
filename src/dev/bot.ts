@@ -8,6 +8,8 @@ import { UNREACHABLE, flowDir, flowField, lineOfSight } from '../game/nav';
 import type { Controls, Monster } from '../game/state';
 import { SPIKE, onHazard, slotMouth, spikeAt } from '../game/traps';
 import { WORD_IDS } from '../game/types';
+import { doorMiddle } from '../game/doors';
+import { topStep } from '../game/ways';
 
 export interface BotState {
   flow: Uint16Array | null;
@@ -196,6 +198,22 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
 
   // nothing to fight: go and find something
   const portal = L.portal;
+  if (L.town && L.ways) {
+    // (THE WAYS, game/ways.ts: back down by the town's waypoint to the deepest floor reached, once
+    // there is one; else through the gate, which rises as the bot comes: walked into, the game takes
+    // it through. While the gate is down its doorway is wall, and the bot goes to the floor before it.)
+    const W = L.ways;
+    if (W.way && W.way.awake) {
+      walkTo(W.way.x, W.way.y);
+      c.interact = Math.hypot(W.way.x - h.x, W.way.y - h.y) < 0.6;
+    } else if (W.gate >= 0) {
+      const d = L.doors[W.gate];
+      const m = doorMiddle(d.spot);
+      if (d.want === 1) walkTo(m.x, m.y);
+      else walkTo(m.x, m.y + 1);
+    }
+    return;
+  }
   if (L.town) {
     // (a person uses the gate's panel; the bot just steps through)
     // (the gate is in the town's back wall: it is used from the floor before it)
@@ -237,6 +255,9 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     }
   }
   if (!goal && g.boss && canReach(g.boss)) goal = g.boss;
+  // (THE WAYS: the boss dead, down the stairwell: walking onto its top step takes the hero down)
+  const stair = L.ways?.stair;
+  if (!goal && stair && stair.open) goal = topStep(stair);
   if (!goal && portal) {
     goal = { x: portal.x, y: portal.y + 0.8 };
     c.interact = g.interactHint() !== null;

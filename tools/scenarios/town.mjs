@@ -363,6 +363,36 @@ export default async function (page, snap) {
   if (s.panel !== 'none') bad('DONE should close the inventory');
 
   // ---- gate ----
+  // THE WAYS (game/ways.ts, on since Version 20.2): the gate is one of the levels' gates, walked
+  // through to the first floor, and the words laid on it go (his words of 9 Oct, 22:50, "Let’s have
+  // the door words go for now."): standing before it offers nothing; walking into it, it rises,
+  // and takes the hero through.
+  if (await page.evaluate(() => !!window.__dbg.game().level.ways)) {
+    await standAt('gate');
+    await page.waitForTimeout(300);
+    s = await st();
+    check('standing before the gate offers no service', !String(s.hint ?? '').startsWith('Gate'), String(s.hint));
+    await page.evaluate(() => { const g = window.__dbg.game(); g.hero.x = 14.5; g.hero.y = 7.8; });
+    await page.waitForTimeout(1300);
+    await snap('gate');
+    await page.keyboard.down('KeyW');
+    await page.keyboard.down('KeyD');
+    let went = false;
+    for (let k = 0; k < 40 && !went; k++) {
+      await page.waitForTimeout(100);
+      went = !(await st()).town;
+    }
+    await page.keyboard.up('KeyW');
+    await page.keyboard.up('KeyD');
+    await page.waitForTimeout(600);
+    s = await st();
+    log('walked into the gate', `in town ${s.town}, dungeon ${s.depth}`);
+    check('walked into, the gate takes him to the first floor', !s.town && s.depth === 1, `town ${s.town}, depth ${s.depth}`);
+    await snap('dungeon');
+    const missing = await page.evaluate(() => window.__dbg.missing());
+    if (missing.length) bad('text asked for characters the fonts cannot draw: ' + missing.join(' '));
+    return;
+  }
   s = await open('gate');
   if (s.panel !== 'gate') bad(`the gate should open the gate: open is ${s.panel}`);
   await snap('gate');

@@ -22,6 +22,7 @@ import type { HazardInst } from '../src/game/traps';
 import { T_FLOOR, T_WALL, WORD_IDS } from '../src/game/types';
 import type { Floor, HazardSpot, WordId } from '../src/game/types';
 import type { RNG } from '../src/engine/rng';
+import { withoutCrypt } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -460,7 +461,8 @@ test('the map-maker\'s traps take dice of their own: with them, a dungeon\'s til
     const off = laid(false, () => generateFloor(depth, seed));
     assert.deepEqual(f.tiles, off.tiles, `${where}: the same tiles`);
     assert.deepEqual(f.packs, off.packs, `${where}: the same packs`);
-    assert.deepEqual(f.props, off.props, `${where}: the same props`);
+    // (the props, both laid without the Crypt, whose litter, laid last of all where nothing else is, keeps off the traps: `withoutCrypt`)
+    assert.deepEqual(withoutCrypt(() => generateFloor(depth, seed)).props, withoutCrypt(() => laid(false, () => generateFloor(depth, seed))).props, `${where}: the same props`);
     assert.deepEqual(f.rooms.map((r) => ({ ...r, sealed: undefined })).map((r) => JSON.stringify(r)), off.rooms.map((r) => JSON.stringify({ ...r, sealed: undefined })), `${where}: the same rooms, but for the seal`);
     assert.deepEqual((f.doors ?? []).map((d) => ({ ...d, kind: d.kind === 'worddoor' ? 'door' : d.kind, word: undefined })).map((d) => JSON.stringify(d)), (off.doors ?? []).map((d) => JSON.stringify({ ...d, word: undefined })), `${where}: the same doors, but that the vault's is sealed`);
     const again = generateFloor(depth, seed);

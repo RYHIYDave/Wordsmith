@@ -36,7 +36,8 @@ import { WORD_COLOR } from '../src/art/icons';
 import { GRAIN, mix } from '../src/art/kit';
 import { makeDungeonProps } from '../src/art/props';
 import type { Sprite } from '../src/engine/px';
-import { CRYPT_LITTER, generateFloor } from '../src/game/dungeon';
+import { CRYPT_LAYOUT, CRYPT_LITTER, generateFloor } from '../src/game/dungeon';
+import { WAYS } from '../src/game/ways';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
 interface Assert {
@@ -105,9 +106,24 @@ function placePictures(k: number, shades = true): Sprite[] {
 
 // ---------------------------------------------------------------------------------------------
 
-test('nothing of the game changes with the switches off: the vault, every picture, as at aaa8310', () => {
-  assert.equal(CRYPT.on, false, 'CRYPT is off');
-  assert.equal(CRYPT_LITTER.on, false, 'CRYPT_LITTER is off');
+/** The Crypt's switches (and those of its layout and its ways, which change what the map-maker lays), set for the length of `run` and put back. */
+function switches<T>(on: { crypt?: boolean; litter: boolean; layout?: boolean; ways?: boolean }, run: () => T): T {
+  const was = [CRYPT.on, CRYPT_LITTER.on, CRYPT_LAYOUT.on, WAYS.on];
+  CRYPT.on = on.crypt ?? was[0];
+  CRYPT_LITTER.on = on.litter;
+  CRYPT_LAYOUT.on = on.layout ?? was[2];
+  WAYS.on = on.ways ?? was[3];
+  try {
+    return run();
+  } finally {
+    [CRYPT.on, CRYPT_LITTER.on, CRYPT_LAYOUT.on, WAYS.on] = was;
+  }
+}
+
+test('both switches are on in the game (Version 20.2); with them off nothing of the game changes: the vault, every picture, as at aaa8310', () => {
+  assert.equal(CRYPT.on, true, 'CRYPT is on');
+  assert.equal(CRYPT_LITTER.on, true, 'CRYPT_LITTER is on');
+  // (the vault's pictures are painted whatever the switches say: the Crypt's are its own, cryptGround and cryptProps)
   const c = createHash('sha1');
   const put = (s: Sprite): void => {
     const p = paintingOf(s);
@@ -128,11 +144,11 @@ test('nothing of the game changes with the switches off: the vault, every pictur
   assert.equal(c.digest('hex').slice(0, 16), '3bd3183f39eb6227', "the vault's pictures are as they were");
 });
 
-test('nothing of the game changes with the switches off: every dungeon the map-maker makes, as at aaa8310', () => {
+test('nothing of the game changes with the switches off (and the Crypt\'s layout and ways): every dungeon the map-maker makes, as at aaa8310', () => {
   const c = createHash('sha1');
   for (let d = 1; d <= 6; d++) {
     for (let s = 1; s <= 25; s++) {
-      const f = generateFloor(d, s * 7919);
+      const f = switches({ litter: false, layout: false, ways: false }, () => generateFloor(d, s * 7919));
       c.update(JSON.stringify({ t: Array.from(f.tiles), v: Array.from(f.variant), p: f.props, k: f.packs, r: f.rooms, d: f.doors ?? null, c: f.cut ? Array.from(f.cut) : null, h: f.height ? Array.from(f.height) : null }));
     }
   }
@@ -144,14 +160,8 @@ test('with it on, only what lies on the floor changes (nothing else of the dunge
   for (const d of FLOORS) {
     let more = 0;
     for (let s = 1; s <= 10; s++) {
-      const off = generateFloor(d, s * 104729);
-      CRYPT_LITTER.on = true;
-      let on;
-      try {
-        on = generateFloor(d, s * 104729);
-      } finally {
-        CRYPT_LITTER.on = false;
-      }
+      const off = switches({ litter: false }, () => generateFloor(d, s * 104729));
+      const on = switches({ litter: true }, () => generateFloor(d, s * 104729));
       const rest = (f: typeof off): string => JSON.stringify({ t: Array.from(f.tiles), v: Array.from(f.variant), k: f.packs, r: f.rooms, s: f.start, b: f.boss, d: f.doors ?? null, l: f.levers ?? null, z: f.hazards ?? null, h: f.height ? Array.from(f.height) : null, st: f.stair ? Array.from(f.stair) : null, c: f.cut ? Array.from(f.cut) : null });
       assert.equal(rest(on), rest(off), `dungeon ${d}, seed ${s * 104729}: everything but what lies on the floor as it was`);
       assert.deepEqual(on.props.slice(0, off.props.length), off.props, 'what was there is there, in the same order');

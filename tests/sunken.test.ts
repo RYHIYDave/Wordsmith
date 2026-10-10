@@ -35,6 +35,7 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, Monster } from '../src/game/state';
 import { SOLID_PROPS, T_FLOOR, T_PIT, T_WALL } from '../src/game/types';
 import type { ClassId, Floor, Room } from '../src/game/types';
+import { withoutCrypt } from './helpers';
 
 const DT = 1 / 60;
 const R = TUNE.heroRadius;
@@ -416,7 +417,8 @@ test('a dungeon\'s terraces are the ones it had, and nothing else about it is ch
     assert.deepEqual(s.f.tiles, before.tiles, `${name(s)}: the floor`);
     assert.deepEqual(s.f.rooms, before.rooms, `${name(s)}: the rooms`);
     assert.deepEqual(s.f.packs, before.packs, `${name(s)}: the packs`);
-    assert.deepEqual(s.f.props, before.props, `${name(s)}: the things`);
+    // (the things, both laid without the Crypt, whose litter, laid last of all where nothing else is, keeps off the stairs: `withoutCrypt`)
+    assert.deepEqual(withoutCrypt(() => generateFloor(s.depth, s.seed)).props, withoutCrypt(() => sunkenSet(false, () => generateFloor(s.depth, s.seed))).props, `${name(s)}: the things`);
     const n = s.f.w * s.f.h;
     for (let i = 0; i < n; i++) {
       const was = before.height ? before.height[i] : 0;
