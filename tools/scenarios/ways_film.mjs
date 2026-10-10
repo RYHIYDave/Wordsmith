@@ -53,9 +53,10 @@ export default async function (page, snap) {
     await hands.pressAt(p.x, p.y - up);
   };
 
-  // ---- A: THE GATE IN TOWN ----
+  // ---- A: THE GATE IN TOWN, AND BACK THROUGH THE FIRST FLOOR'S ----
   let came = -1;
-  const a = await film('a', 150, async (i) => {
+  let home = -1;
+  const a = await film('a', 220, async (i) => {
     if (i === 8) {
       const st = await page.evaluate(() => { const q = window.__dbg.game().level.stations.find((s) => s.kind === 'gate'); return { x: q.x, y: q.y }; });
       await touch(st.x, st.y, 30);
@@ -64,35 +65,47 @@ export default async function (page, snap) {
     const s = await state();
     if (i % 10 === 0) log('a', `frame ${i}: ${JSON.stringify(s)}`);
     if (came < 0 && !s.town) { came = i; log('a', `on the first floor at frame ${i}, at ${s.x}, ${s.y}`); }
-    return came >= 0 && i >= came + 22;
+    // (a moment on the first floor; then sent back through its gate, which stands open)
+    if (came >= 0 && i === came + 20) {
+      const m = await page.evaluate(() => {
+        const L = window.__dbg.game().level; const sp = L.doors[L.ways.gate].spot;
+        const line = sp.out > 0 ? sp.plane : sp.plane - 1;
+        return sp.alongX ? { x: sp.a + 1.5, y: line + 0.5 } : { x: line + 0.5, y: sp.a + 1.5 };
+      });
+      await touch(m.x, m.y, 30);
+      log('a', `the first floor's gate touched: errand ${(await state()).errand}`);
+    }
+    if (came >= 0 && home < 0 && s.town) { home = i; log('a', `back in town at frame ${i}, at ${s.x}, ${s.y}`); }
+    return home >= 0 && i >= home + 20;
   });
   log('film a', `${a + 1} frames`);
 
   // ---- B: THE BOSS FALLS, THE STAIRWELL OPENS, DOWN IT ----
+  await page.evaluate(() => { const g = window.__dbg.game(); g.depth = 1; g.enterDungeon('gate'); });
+  await page.waitForTimeout(600);
   const where = await page.evaluate(() => {
     const d = window.__dbg; const g = d.game(); const L = g.level;
     g.monsters = g.monsters.filter((m) => m.boss);
     L.explored.fill(1);
-    const st = L.ways.stair;
-    const s = L.doors.find((q) => q.spot.kind === 'bossgate').spot;
-    // (just inside the hall's gate, short of where it would fall behind him: GATE_INSIDE, 2.2 tiles; looking at the hall's middle)
-    const across = s.plane - s.out * 1.4;
-    const h = g.hero;
-    h.x = s.alongX ? s.a + 1.5 : across;
-    h.y = s.alongX ? across : s.a + 1.5;
-    const mx = st.x + 1.2; const my = st.y + 0.62;
-    const n = Math.hypot(mx - h.x, my - h.y);
-    h.fx = (mx - h.x) / n; h.fy = (my - h.y) / n;
     const boss = g.monsters[0];
-    return { hero: [h.x, h.y], stair: [st.x, st.y], boss: [boss.x, boss.y], far: n };
+    const s = L.doors.find((q) => q.spot.kind === 'bossgate').spot;
+    // (three tiles from the boss, toward the hall's way in, looking at him: the hall's gate falls behind him, as it does)
+    const gx = s.alongX ? s.a + 1.5 : s.plane;
+    const gy = s.alongX ? s.plane : s.a + 1.5;
+    const n = Math.hypot(gx - boss.x, gy - boss.y);
+    const h = g.hero;
+    h.x = boss.x + ((gx - boss.x) / n) * 3;
+    h.y = boss.y + ((gy - boss.y) / n) * 3;
+    h.fx = -(gx - boss.x) / n; h.fy = -(gy - boss.y) / n;
+    return { hero: [h.x, h.y], places: L.ways.stairs.map((p) => [p.x, p.y]), boss: [boss.x, boss.y] };
   });
   log('b', JSON.stringify(where));
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(1500);
   came = -1;
   const b = await film('b', 200, async (i) => {
     if (i === 6) {
-      await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.boss && !q.dead); if (m) g.damageMonster(m, m.life + m.shield + 1, 'phys', false, -1); });
-      log('b', `the boss falls; the stairwell open: ${await page.evaluate(() => window.__dbg.game().level.ways.stair.open)}`);
+      const fell = await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.boss && !q.dead); if (!m) return null; const at = [+m.x.toFixed(2), +m.y.toFixed(2)]; g.damageMonster(m, m.life + m.shield + 1, 'phys', false, -1); const st = g.level.ways.stair; return { at, stair: [st.x, st.y], open: st.open }; });
+      log('b', `the boss falls: ${JSON.stringify(fell)}`);
     }
     if (i === 30) {
       const st = await page.evaluate(() => { const q = window.__dbg.game().level.ways.stair; return { x: q.x + 1.2, y: q.y + 0.62 }; });

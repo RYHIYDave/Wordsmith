@@ -139,8 +139,8 @@ export function nearStair(s: StairWay, x: number, y: number, by: number): boolea
 export function stairFor(spots: readonly StairWay[], bx: number, by: number, hx: number, hy: number): StairWay | null {
   return spots.find((s) => !nearStair(s, bx, by, STAIR_CLEAR) && !nearStair(s, hx, hy, 0.5)) ?? spots.find((s) => !nearStair(s, bx, by, STAIR_CLEAR)) ?? spots[0] ?? null;
 }
-/** How far the boss's body must lie from a stairwell's opening for it to open there, in tiles: a boss's body lies a tile and more across. */
-export const STAIR_CLEAR = 1.3;
+/** How far the boss's body must lie from a stairwell's opening for it to open there, in tiles: a boss's body lies a tile and more across, and his hoard falls round it. */
+export const STAIR_CLEAR = 2;
 
 /** The tiles of an open stairwell that nobody walks on: its opening past the top step (the steps going down into the dark). */
 export function stairTiles(f: Floor, s: StairWay): number[] {
