@@ -208,8 +208,9 @@ what each move does, how far, how often and to whom, are the main chat's.
 
 ## The Ossuary Amalgamation (`AMALGAM`)
 
-- **Its look** (his yes by 17:44, "Yes, this is it (Recommended)"): a heap of the dead, low and wide,
-  slumped on the floor, a head over the Warden: dark packed bone, the fire in its cracks, skulls all over
+- **Its look** (his yes by 17:44, "Yes, this is it (Recommended)"; of the shapes offered he had picked "A
+  heap that crawls low"): a heap of the dead, low and wide, slumped on the floor (its top 34 game pixels up
+  on its centre line, the Warden's 61; 92 across): dark packed bone, the fire in its cracks, skulls all over
   it with the pink in their sockets, rib cages and broken bones jutting from its hump, the dead's own arms
   reaching up out of it; no face, but a maw low in its front, a ragged split full of fangs with the fire
   inside, a crowd of skulls staring over it; behind, it trails off into the floor. SIX GREAT ARMS OF BONE
@@ -217,7 +218,7 @@ what each move does, how far, how often and to whom, are the main chat's.
   of its own, 320 by 256 (the floor point at 156, 190).
 - **It hauls itself on its arms, and its hands grip the floor as feet do** (his pick by 16:40, "Hauls
   itself on its arms (Recommended)"): a hand that is down stays where it came down while the heap slides
-  on over the floor, and moves only lifted (`handwork`, `amGait`). Its heap and its arms are its own
+  on over the floor, and moves only lifted (`handwork`, `AM_GAIT`, `amGaitAt`). Its heap and its arms are its own
   (`amFrame`, `amArms`, `amGeometry`): the bones only say where it is, which way it faces, how it heaves
   (`pz`), leans (`pitch`) and twists (`yaw`), how wide its maw gapes (`draw`), how wild the arms on its
   top are (`pt`), how far it has burst apart (`gale`) and the fire in it (`out`).
@@ -225,9 +226,10 @@ what each move does, how far, how often and to whom, are the main chat's.
   side to side, its maw working, the arms on its top grabbing at the air; its right front hand shifts its
   grip and back.
 - **Setting off** (`more.setOff`, 0.7 s), **its haul** (`walk`, 8 frames at 10 a second, painted for 0.8
-  tiles a second, `AMALGAM_PACE`: its six hands two by two crosswise, each reaching out ahead, gripping,
+  tiles a second, `AMALGAM_PACE`: its six hands three at a time, each reaching out ahead, gripping,
   the heap dragged up to it, surging on at each pull) and **stopping** (`more.halt`, 0.5 s, from the
-  walk's first frame: at most 0.8 s to come round to it), as the other two's.
+  walk's first frame: at most 0.8 s to come round to it), as the other two's. Its hands go three at a time,
+  crosswise: its right front, left side and right hind together, then the other three.
 - **Its swipe** (`attack`, 1.5 s; the blow at 0.82 s, `AM_SWIPE_HIT`): it twists away to its right,
   rearing, its right front arm up and back, claws spread, maw gaping; held, trembling (the warning); the
   heap twists hard round to its left, its hips first, and the arm rakes across the floor before it, low,
@@ -241,8 +243,9 @@ what each move does, how far, how often and to whom, are the main chat's.
   shuddering, while OUT ACROSS THE ROOM ARMS OF THE DEAD BURST UP OUT OF THE FLOOR, where the rules put
   them: each place cracks and glows first (`drawArmCrack`, 0.5 s before, `ARM_CRACK_WARN`); then the floor
   bursts open, its stone flung up, and three arms of the dead thrust up out of the dark, clawing, sway and
-  grab at the air, and sink back (`makeFloorArmArt`: 14 frames at 10 a second, 1.4 s, `FLOOR_ARM_TIME`; up
-  by 0.15 s, `FLOOR_ARM_UP`; sinking from 1.0 s, `FLOOR_ARM_SINK`); the cracks stay a moment after (0.8 s,
+  grab at the air, and sink back, the broken stone settling back over the hole after them, nothing left of
+  it by its last frame (`makeFloorArmArt`: 13 frames at 10 a second, 1.3 s, `FLOOR_ARM_TIME`; up by 0.15 s,
+  `FLOOR_ARM_UP`; sinking from 1.0 s, `FLOOR_ARM_SINK`); the cracks stay a moment after (0.8 s,
   `ARM_CRACK_AFTER`). In the film, five places in a fan 2.7 to 4.4 tiles ahead, coming up from 0.5 s after
   the slam to 1.0 s after: the rules' own in the game.
 - **The skull swarm** (`more.swarm`, 2.0 s; his pick, "Skull swarm (Recommended)"): it swells, the arms on
@@ -250,33 +253,38 @@ what each move does, how far, how often and to whom, are the main chat's.
   (`AM_SWARM_HIT`) it heaves forward and spews fourteen burning skulls (`AM_SWARM_N`) out of its maw, each
   tumbling, its jaw chattering, a tail of fire behind it; and sags back. Each is in its own picture for its
   first 0.34 s (`AM_SWARM_LIFE`); THEN IT IS THE GAME'S, from where and when `amSwarmSkulls()` says (2.1 to
-  2.5 tiles ahead, 0.7 tiles to either side, 4 to 7.5 game pixels up, 0.34 to 0.57 s after the blow, headed
+  2.5 tiles ahead, up to 0.8 tiles to either side, 4 to 7.5 game pixels up, 0.34 to 0.57 s after the blow, headed
   from 30 degrees to its right to 34 to its left), going 4 tiles a second along its way (`AM_SWARM_SPEED`:
   the pictures are drawn for it). In flight it is `makeSwarmSkullArt` (6 frames at 13 a second,
   `SWARM_SKULL_FPS`, flying along its own forward: turned as a monster is for the way it goes), its shadow
   `drawSkullShadow`, where it lands `drawSkullBurst` (the Golem's skull's, in `src/art/mob_shots.ts`). How
-  far each flies, whether they seek the hero, and what they hurt are the rules'; in the film each flies 4.5
-  to 6.5 tiles and dives to the floor.
+  far each flies, whether they seek the hero, and what they hurt are the rules'; in the film each flies 4 to
+  5.5 tiles and dives to the floor. As it swells every skull on it burns, and its cracks flare (`burn`, a
+  rope of the move's: its skulls' sockets all alight, more of its cracks aglow).
 - **Devour** (`more.devour`, 2.8 s; his pick, "Devour (Recommended)": it drags the bones off the floor into
   itself, and a hero with them if close): its maw opens wide, wider, the fire in it roaring, and its front
   arms spread out wide, low over the floor (the warning, 0.5 to 0.92 s); they rake in along the floor from
   0.92 to 1.56 s, gouging it (`drawClawRake`; where the hands are, `amRakeAt(t)`), tearing the dead up out
   of it, bones and skulls and stone, in puffs of dust, and dragging all of it in to its maw, faster and
   faster, tumbling, gone into it; the maw snaps shut at 1.6 s (`AM_DEVOUR_HIT`: the blow); it gulps,
-  swelling, its skulls burning bright, and lets go. A hero dragged in with it is the rules'.
+  swelling, its skulls burning bright (`burn`), and lets go. A hero dragged in with it is the rules'; in the
+  film a bone beast near it is dragged in by the rake, clawing at the floor (its `more.dragged`), and is
+  gone into the maw as it snaps shut.
 - **A bone beast bursts out of it** (`more.burst`, 1.5 s; his pick, "As it's hurt (Recommended)": bone
-  beasts break off it as it takes damage, and any left alive, it eats back): its right flank swells and
-  bulges, shuddering, as something works its way out; at 0.6 s (`AM_BURST_AT`) it bursts at
-  `AM_BURST_FROM`, bone flying, and a bone beast is flung out of it to land clear of its hands at
-  `AM_BURST_SPOT` (0.4 tiles ahead, 1.7 tiles to its right), facing `AM_BURST_WAY`, away from it: the game
-  makes the beast there at that moment and plays its `more.emerge` (below); the heap reels from it, and the
-  wound closes. How often, and when, are the rules'.
+  beasts break off it as it takes damage, and any left alive, it eats back): the back of its right flank
+  swells and bulges, shuddering, as something works its way out; at 0.6 s (`AM_BURST_AT`) it bursts there
+  (`AM_BURST_FROM`), bone flying, and a bone beast is flung out of it to land behind its right side, clear of
+  all six of its arms and of its heap, whichever way it is turned, at `AM_BURST_SPOT` (1.2 tiles behind it,
+  1.4 to its right), facing `AM_BURST_WAY`, away from it: the game makes the beast there at that moment and
+  plays its `more.emerge` (below); the heap reels from it, and the wound closes. How often, and when, are the
+  rules'.
 - **Struck** (`reel`, 0.3 s): the heap shudders, its skulls rattling, the arms on its top jerking; its hands
   keep their grip.
 - **It bursts apart** (`dying`, 2.8 s, `AM_DIE_TIME`; his words by 16:37, "It bursts apart"): struck down,
-  it roars with all its jaws; it swells, shuddering, the fire in its cracks flaring, and holds; at 1.0 s
-  (`AM_BURSTS`) it bursts: its heap slumps and spreads flat over the floor, its bones flung out all round,
-  skulls tumbling, its arms falling still where their hands gripped; the fire goes out (flat by 2.1 s).
+  it roars with all its jaws; it swells, shuddering, every skull on it burning and the fire in its cracks
+  flaring (`burn`), and holds; at 1.0 s (`AM_BURSTS`) it bursts: its heap slumps and spreads flat over the
+  floor, its bones flung out all round, skulls tumbling, its arms falling still where their hands gripped;
+  the fire goes out, in its cracks and in its maw (flat by 2.1 s).
 
 ## The bone beast (`BONE_BEAST`)
 
@@ -295,10 +303,10 @@ what each move does, how far, how often and to whom, are the main chat's.
   warning, from 0.28 s); its body tips forward and it pounces, its claws raking down before it, and its jaw
   snaps shut on what is there (a streak of fire behind its fangs); it lands on its front hands, carried on
   by it, and draws back to its crouch.
-- **It bursts out** (`more.emerge`, 0.95 s, `BB_EMERGE_TIME`; from the moment its maker's flank bursts, at
-  `AM_BURST_SPOT`, facing `AM_BURST_WAY`): it is flung out of the flank curled up (it starts 26 of the
-  figure's lengths behind its floor point, toward the flank, and 12 up), lands on the floor at 0.24 s, its
-  arms unfold and grip, it rears with its jaw gaping, and crouches, ready.
+- **It bursts out** (`more.emerge`, 1.0 s, `BB_EMERGE_TIME`; from the moment its maker's flank bursts, at
+  `AM_BURST_SPOT`, facing `AM_BURST_WAY`): it is flung out of the flank curled up (it starts where the flank
+  bursts: 34 of the figure's lengths behind its floor point, toward the flank, and 7 up), lands on the floor
+  at 0.3 s, its arms unfold and grip, it rears with its jaw gaping, and crouches, ready.
 - **Dragged back in to be eaten** (`more.dragged`, going round, 8 frames at 20 a second; "any left alive,
   it eats back"): low on its belly, its skull turned back, shrieking, its claws scrabbling at the floor,
   skittering over it without a grip (held just off it, so they never stand on it), while the game drags it
@@ -345,9 +353,15 @@ end he strikes with, and where his moves hand over to each other.
   mended: its hands put beyond its arms' reach at rest and in the swipe (so they slid); its swipe's arm
   through its own brow; its side hands sliding as it twisted; its elbows into the floor as it died; its
   burst leaping; its slam's hands leaping down; its big moves not drawn back or carried through far enough.
-- **The bone beast:** 9 moves (stand, walk, attack, reel, dying, setOff, halt, emerge, dragged), 157 frames,
+- **The bone beast:** 9 moves (stand, walk, attack, reel, dying, setOff, halt, emerge, dragged), 158 frames,
   each both ways round: nothing found (`BB_SHAPE`). Caught and mended: its skull lunging before its body
   in the bite (now its body tips first, its skull after).
+- **A second look, with fresh eyes** (another check of the amalgamation and the beast, its films and this
+  record, by one who had not made them, before the hand-over, 10 Oct): it found the beast landing on its
+  maker's right hind hand (now it lands clear of all six arms, and `tests/bosses.test.ts` 14 holds it so);
+  its maw still glowing after it died (its fire goes out with it now); its skulls not burning, nor its
+  cracks flaring, where this record said they did (they do now: `burn`); the broken stone round the arms
+  from the floor vanishing all at once (it settles away now); and slips in this record, put right.
 
 `npx tsx shots/boss_report.ts <headsman|chained|chained1|chained2|amalgam|beast|all> [move]` prints the review
 (`shots/` is kept out of git; `tests/bosses.test.ts`, test 8, runs the same and wants nothing found).
@@ -385,11 +399,13 @@ end he strikes with, and where his moves hand over to each other.
   asked for before then is worked out then, all at once. The chains come out the same either way.
 - **Painting a frame** takes about 21 ms (the Headsman) and 23 ms (the Chained One) on this machine,
   once the chains are worked out: the Headsman has 469 frames each way round (and `holds`, pictures
-  only, never played), the Chained One 546, 546 and 352. THE AMALGAMATION IS THE HEAVIEST: about 49 ms a
-  frame (its heap of packed bone), 454 frames each way round (397 living, 57 dying); worth painting ahead
-  from the start of dungeon 4. The bone beast about 4 ms, 154 frames each way round.
-- **What the amalgamation sends out, for you to draw where your rules put them** (`src/art/bosses3.ts`
-  and `src/art/boss_shots.ts`, all in the enemy's pink and gold): the arms of the dead from the floor,
+  only, never played), the Chained One 546, 546 and 352. THE AMALGAMATION IS THE HEAVIEST: about 50 ms a
+  frame on average here (42 to 58 by move; a check run while other work was going measured up to 80), its
+  heap of packed bone; 451 frames each way round (394 living, 57 dying); worth painting ahead from the start
+  of dungeon 4. The bone beast about 3 ms, 155 frames each way round (128 living, 27 dying).
+- **What the amalgamation sends out, for you to draw where your rules put them** (pictures in
+  `src/art/bosses3.ts`; floor drawings in `src/art/boss_shots.ts`, but the skull's shadow and burst, which
+  are the Golem's in `src/art/mob_shots.ts`; all in the enemy's pink and gold): the arms of the dead from the floor,
   `makeFloorArmArt(view)` (its hole on the anchor), with `drawArmCrack` before and after; its swarm's
   skulls in flight, `makeSwarmSkullArt(view)`, taken over from `amSwarmSkulls()`, with `drawSkullShadow`
   and `drawSkullBurst`; where its hands slam, `drawBallCrash` at `AM_SLAM_SPOTS`; its claws' gouges as it

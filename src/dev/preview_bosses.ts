@@ -143,7 +143,7 @@ const BOSSES: Record<string, { mob: Mob; title: string; short: string; walkSaid?
   chained: { mob: CHAINED, title: 'The Chained One', short: 'The Chained One', walkSaid: 'His walk: a starved giant’s lurching shamble, his chains dragging, the ball scraping behind him', struckSaid: 'Struck: he jerks back from it, his chains rattling', deathSaid: 'His chains drag him down' },
   chained1: { mob: CHAINED_FREED[1], title: 'The Chained One, his left chain off', short: 'His left chain off', walkSaid: 'His walk, his left chain off', struckSaid: 'Struck', deathSaid: 'His chains drag him down' },
   chained2: { mob: CHAINED_FREED[2], title: 'The Chained One, free of the ball', short: 'Free of the ball', walkSaid: 'His walk, free of the ball', struckSaid: 'Struck', deathSaid: 'His chains drag him down' },
-  amalgam: { mob: AMALGAM, title: 'The Ossuary Amalgamation', short: 'The amalgamation', walkSaid: 'Its haul: its great hands reach out, grip and drag the heap on, two by two', struckSaid: 'Struck: the heap shudders, its skulls rattling', deathSaid: 'It bursts apart' },
+  amalgam: { mob: AMALGAM, title: 'The Ossuary Amalgamation', short: 'The amalgamation', walkSaid: 'Its haul: its great hands reach out, grip and drag the heap on, three at a time', struckSaid: 'Struck: the heap shudders, its skulls rattling', deathSaid: 'It bursts apart' },
   beast: { mob: BONE_BEAST, title: 'A bone beast', short: 'A bone beast', walkSaid: 'Its scuttle: low and quick on its four hands, two by two', struckSaid: 'Struck: it jerks back, its jaw flying open', deathSaid: 'It falls apart' },
 };
 const spOf = (mob: Mob, which: string, t: number, view: GameView): Sprite =>
@@ -468,9 +468,21 @@ interface FilmOf {
   tail?: number;
   /** What it sends out across the room, as pictures of their own, at a moment: those in front of him (nearer the eye) and those behind. */
   placed?: (t: number, view: GameView) => { behind: Placed[]; before: Placed[] };
-  /** Room on the floor before him for it (picture pixels; 40 if not said). */
+  /** Room on the floor before him for it (picture pixels; 40 if not said), and to his left on the screen. */
   room?: number;
+  roomLeft?: number;
+  /** Whether what it sends out is there before the move and after it too, all through the film (a beast near it before it devours). */
+  always?: boolean;
+  /** Whether it is nowhere before the move (a beast that bursts out of its maker): the floor bare until then. */
+  bare?: boolean;
 }
+/** Nothing to show: an empty picture. */
+const NOTHING: Sprite = (() => {
+  const c = document.createElement('canvas');
+  c.width = 1;
+  c.height = 1;
+  return { img: c, w: 0.5, h: 0.5, ax: 0, ay: 0, density: 2 };
+})();
 const lastKey = (mob: Mob, which: string): number => {
   const mv = which === 'attack' ? mob.attack : which === 'reel' ? mob.reel : which === 'dying' ? mob.dying : mob.more?.[which];
   const keys = mv?.motion.keys ?? [];
@@ -650,7 +662,7 @@ function amalgamFilms(): Record<string, FilmOf> {
   const SPOTS: ReadonlyArray<readonly [number, number, number]> = [[2.7, -0.9, 0.5], [2.9, 1.0, 0.62], [3.6, 0.05, 0.76], [4.2, -1.4, 0.9], [4.4, 1.5, 1.0]];
   const slams = AM_SLAM_SPOTS.map((p) => tilesOf(p));
   const swarm = amSwarmSkulls().map((k, i) => {
-    const far = 4.5 + 2 * ((i * 7919) % 13) / 13;
+    const far = 4 + 1.5 * ((i * 7919) % 13) / 12;
     return { ...k, from: tilesOf(k.at), far, flight: far / AM_SWARM_SPEED };
   });
   const where = (k: (typeof swarm)[number], age: number): [number, number, number] => {
@@ -705,8 +717,8 @@ function amalgamFilms(): Record<string, FilmOf> {
     swarm: {
       long: lastKey(AMALGAM, 'swarm'),
       heavy: [],
-      tail: 2.0,
-      room: 190,
+      tail: 1.8,
+      room: 230,
       said: (t) => (t < 0.45 ? 'The skull swarm: it swells, the arms on its top flailing' : t < AM_SWARM_HIT - 0.04 ? 'The skull swarm: its maw gaping wider and wider, every skull on it burning' : t < AM_SWARM_HIT + 0.6 ? 'The skull swarm: it heaves forward and spews a swarm of burning skulls' : 'The skull swarm: they fly on out across the room'),
       under: (c, t, view) => {
         for (const k of swarm) {
@@ -739,6 +751,7 @@ function amalgamFilms(): Record<string, FilmOf> {
       room: 60,
       said: (t) => (t < 0.5 ? 'Devour: its maw opens wide, its front arms spread out low' : t < 0.92 ? 'Devour: held there, the fire roaring in its maw' : t < 1.56 ? 'Devour: its arms rake in along the floor, dragging all that lies there in to its maw, a bone beast with it' : t < 1.9 ? 'Devour: its maw snaps shut on it' : 'Devour: it gulps, swelling, and lets go'),
       // (a bone beast near it, eaten back: dragged in as its arms rake, clawing at the floor, and gone into its maw as it snaps shut. When, and which, are the rules')
+      always: true,
       placed: (t, view) => {
         if (t >= AM_DEVOUR_HIT) return { behind: [], before: [] };
         const from = [2.3, -0.9];
@@ -746,7 +759,7 @@ function amalgamFilms(): Record<string, FilmOf> {
         const k = t < 0.92 ? 0 : Math.min(1, ((t - 0.92) / (1.58 - 0.92)) ** 2);
         const [x, y] = scr(view, from[0] + (to[0] - from[0]) * k, from[1] + (to[1] - from[1]) * k);
         const { v, flip } = facing(view, [from[0] - to[0], from[1] - to[1]]);
-        const sp = t < 0.92 ? spOf(BONE_BEAST, 'stand', Math.floor(t * BONE_BEAST.idleFps + 1e-6) / BONE_BEAST.idleFps, v) : spOf(BONE_BEAST, 'dragged', ((Math.floor((t - 0.92) * BONE_BEAST.walkFps + 1e-6) % BONE_BEAST.walkFrames) / BONE_BEAST.walkFps), v);
+        const sp = t < 0.92 ? spOf(BONE_BEAST, 'stand', ((Math.floor((t + 2) * BONE_BEAST.idleFps + 1e-6) % BONE_BEAST.idleFrames) / BONE_BEAST.idleFps), v) : spOf(BONE_BEAST, 'dragged', ((Math.floor((t - 0.92) * BONE_BEAST.walkFps + 1e-6) % BONE_BEAST.walkFrames) / BONE_BEAST.walkFps), v);
         const one: Placed = { sp, x, y, flip, shadow: BONE_BEAST.shadow };
         return y > 0 ? { behind: [], before: [one] } : { behind: [one], before: [] };
       },
@@ -767,25 +780,34 @@ function amalgamFilms(): Record<string, FilmOf> {
     burst: {
       long: lastKey(AMALGAM, 'burst'),
       heavy: [],
-      tail: 1.25,
+      tail: 1.7,
       room: 40,
-      said: (t) => (t < AM_BURST_AT ? 'A bone beast bursts out of it: its flank swells and bulges, shuddering' : t < AM_BURST_AT + 0.3 ? 'A bone beast bursts out of it: the flank bursts, the beast flung out' : t < AM_BURST_AT + BB_EMERGE_TIME ? 'A bone beast: it lands, uncurls and rears' : 'A bone beast scuttles off; the wound closes'),
+      roomLeft: 110,
+      always: true,
+      said: (t) => (t < AM_BURST_AT ? 'A bone beast bursts out of it: the back of its flank swells and bulges, shuddering' : t < AM_BURST_AT + 0.3 ? 'A bone beast bursts out of it: the flank bursts, the beast flung out' : t < AM_BURST_AT + BB_EMERGE_TIME ? 'A bone beast: it lands, uncurls and rears' : 'A bone beast scuttles off; the wound closes'),
       placed: (t, view) => {
         const u = t - AM_BURST_AT;
         if (u < 0) return { behind: [], before: [] };
         const { v, flip } = facing(view, AM_BURST_WAY);
-        // (out of its maker's flank and down, then off along its way at its pace: setting off, then scuttling)
-        const off = Math.max(0, u - BB_EMERGE_TIME);
-        const go = off * BONE_BEAST.pace;
-        const [x, y] = scr(view, spot[0] + AM_BURST_WAY[0] * go, spot[1] + AM_BURST_WAY[1] * go);
+        // (out of its maker's flank and down, then off along its way at its pace: setting off, scuttling, stopping, and standing)
         const setOff = lastKey(BONE_BEAST, 'setOff');
+        const halt = lastKey(BONE_BEAST, 'halt');
         const period = BONE_BEAST.walkFrames / BONE_BEAST.walkFps;
+        const WALK = period;
+        const off = u - BB_EMERGE_TIME;
+        const going = Math.max(0, Math.min(off, setOff + WALK + halt));
+        const go = going * BONE_BEAST.pace;
+        const [x, y] = scr(view, spot[0] + AM_BURST_WAY[0] * go, spot[1] + AM_BURST_WAY[1] * go);
         const sp =
-          u < BB_EMERGE_TIME
+          off < 0
             ? spOf(BONE_BEAST, 'emerge', u, v)
             : off < setOff
               ? spOf(BONE_BEAST, 'setOff', off, v)
-              : spOf(BONE_BEAST, 'walk', ((Math.floor((off - setOff) * BONE_BEAST.walkFps + 1e-6) % BONE_BEAST.walkFrames) / BONE_BEAST.walkFrames) * period, v);
+              : off < setOff + WALK
+                ? spOf(BONE_BEAST, 'walk', ((Math.floor((off - setOff) * BONE_BEAST.walkFps + 1e-6) % BONE_BEAST.walkFrames) / BONE_BEAST.walkFrames) * period, v)
+                : off < setOff + WALK + halt
+                  ? spOf(BONE_BEAST, 'halt', off - setOff - WALK, v)
+                  : spOf(BONE_BEAST, 'stand', ((Math.floor((off - setOff - WALK - halt) * BONE_BEAST.idleFps + 1e-6) % BONE_BEAST.idleFrames) / BONE_BEAST.idleFps), v);
         const one: Placed = { sp, x, y, flip, shadow: BONE_BEAST.shadow };
         return y > 0 ? { behind: [], before: [one] } : { behind: [one], before: [] };
       },
@@ -802,7 +824,8 @@ function beastFilms(): Record<string, FilmOf> {
     emerge: {
       long: lastKey(BONE_BEAST, 'emerge'),
       heavy: [],
-      said: (t) => (t < 0.24 ? 'It drops out of the amalgamation, curled up' : t < 0.36 ? 'It lands' : t < 0.6 ? 'Its arms unfold and grip the floor' : 'It rears, its jaw gaping, and crouches, ready'),
+      bare: true,
+      said: (t) => (t < 0.3 ? 'Flung out of the amalgamation, curled up' : t < 0.42 ? 'It lands' : t < 0.66 ? 'Its arms unfold and grip the floor' : 'It rears, its jaw gaping, and crouches, ready'),
     },
     dragged: {
       long: 1.6,
@@ -842,7 +865,7 @@ if (mode === 'move') {
     const m = moveT(t);
     if (ups && t >= T0 && t < T1) return spOf(mob, 'raise', t - T0, view);
     if (ups && t >= after && t < after + UP) return spOf(mob, 'lower', t - after, view);
-    return m < 0 ? spOf(mob, 'stand', standAt(t, 0), view) : m > film.long ? spOf(film.then ?? mob, 'stand', standAt(t, standFrom), view) : spOf(mob, which, m, view);
+    return m < 0 ? (film.bare ? NOTHING : spOf(mob, 'stand', standAt(t, 0), view)) : m > film.long ? spOf(film.then ?? mob, 'stand', standAt(t, standFrom), view) : spOf(mob, which, m, view);
   };
   // (how big a pane must be: every frame of it, both ways, and what it does to the floor)
   const all: Sprite[] = [];
@@ -852,7 +875,8 @@ if (mode === 'move') {
   const M = 30;
   // (room on the floor for what the move does to it: before him, which is down the picture facing you and up it facing away)
   const FLOOR = film.room ?? (which === 'sentence' ? 150 : which === 'throw' || which === 'hook' || which === 'ball' ? 150 : 40);
-  const cw = (l + r + 2 * M + FLOOR) * S;
+  const LEFT = film.roomLeft ?? 0;
+  const cw = (l + r + 2 * M + FLOOR + LEFT) * S;
   const ch = (u + d + 2 * M + FLOOR * 0.5) * S;
   const HEAD = 58;
   cv.width = PAD + 2 * (cw + PAD);
@@ -862,15 +886,15 @@ if (mode === 'move') {
     const m = moveT(t);
     g.fillStyle = BG;
     g.fillRect(0, 0, cv.width, cv.height);
-    const said = m >= 0 && m <= film.long ? film.said(m) : ups && t >= T0 && t < T1 ? `${who.title} takes up his axe in both hands, across him` : ups && t >= after && t < after + UP ? `${who.title} sets his axe down again` : `${who.title}`;
+    const said = m >= 0 && m <= film.long + (film.tail ?? 0) ? film.said(m) : film.bare && m < 0 ? '' : ups && t >= T0 && t < T1 ? `${who.title} takes up his axe in both hands, across him` : ups && t >= after && t < after + UP ? `${who.title} sets his axe down again` : `${who.title}`;
     text(m > film.long && film.then ? `${film.then.name}` : said, PAD, 8, 17, '#ffd866', 700);
     text('a mock-up: not in the game. What each blow hurts, and how far, are the main chat’s rules', PAD, 32, 14, '#cfc8ff', 600);
     for (const [j, view] of (['front', 'back'] as const).entries()) {
       const x = PAD + j * (cw + PAD);
-      const fx0 = x + (M + l + (which === 'sweep' ? FLOOR * 0.5 : 0)) * S;
+      const fx0 = x + (M + l + LEFT + (which === 'sweep' ? FLOOR * 0.5 : 0)) * S;
       const fy0 = view === 'front' || which === 'sweep' ? HEAD + (M + u + (which === 'sweep' ? FLOOR * 0.25 : 0)) * S : HEAD + ch - (M + d) * S;
       const mm = m >= 0 && m <= film.long + (film.tail ?? 0) ? m : -1;
-      filmPane(x, HEAD, cw, ch, S, fx0, fy0, frameOf(view, t), mob.shadow, film.under && mm >= 0 ? (c) => film.under?.(c, mm, view) : undefined, film.over && mm >= 0 ? (c) => film.over?.(c, mm, view) : undefined, 0, false, film.left && m > film.long ? [film.left[view]] : [], film.placed && mm >= 0 ? film.placed(mm, view) : undefined);
+      filmPane(x, HEAD, cw, ch, S, fx0, fy0, frameOf(view, t), film.bare && m < 0 ? 0 : mob.shadow, film.under && mm >= 0 ? (c) => film.under?.(c, mm, view) : undefined, film.over && mm >= 0 ? (c) => film.over?.(c, mm, view) : undefined, 0, false, film.left && m > film.long ? [film.left[view]] : [], film.placed && (mm >= 0 || film.always) ? film.placed(film.always ? m : mm, view) : undefined);
       text(view === 'front' ? 'facing you' : 'facing away', x + cw / 2, HEAD + ch + 6, 15, '#e8e2ff', 600, 'center');
     }
   });

@@ -44,7 +44,7 @@
 //      while they live and none as they die, every pixel whole or empty but the edge;
 //  14. what it sends out across the room paints, in the enemy's colours (the arms of the dead from the
 //      floor, a skull of its swarm in flight); its swarm leaves its picture out before its maw, going on
-//      out; the beast lands clear of its hands, flung out of its flank.
+//      out; the beast lands clear of all six of its arms and its heap, flung out of its flank.
 //   run: tsx --test tests/bosses.test.ts
 
 // @ts-ignore
@@ -57,7 +57,7 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import type { AnimSet } from '../src/art/actor_types';
-import { AMALGAM, AM_BURST_FROM, AM_BURST_SPOT, AM_BURST_WAY, AM_SHAPE, AM_SWARM_N, BB_SHAPE, BONE_BEAST, FLOOR_ARM_FRAMES, SWARM_SKULL_FRAMES, amSwarmSkulls, makeAmalgamArt3, makeBoneBeastArt3, makeFloorArmArt, makeSwarmSkullArt, BOSSES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_BALL_LET, CO_HOOK_BACK, CO_HOOK_LET, HEADSMAN, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SHAPE, axeOf, coBallPath, coCollarAt, coCuffAt, coHookPath, coShape, collarRingAt, cuffAt, hsBite, makeChainedArt3, makeHeadsmanArt3, makeLeftBehindArt } from '../src/art/bosses3';
+import { AMALGAM, AM_BURST_FROM, AM_BURST_SPOT, AM_BURST_WAY, AM_SHAPE, amGeometry, AM_SWARM_N, BB_SHAPE, BONE_BEAST, FLOOR_ARM_FRAMES, SWARM_SKULL_FRAMES, amSwarmSkulls, makeAmalgamArt3, makeBoneBeastArt3, makeFloorArmArt, makeSwarmSkullArt, BOSSES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_BALL_LET, CO_HOOK_BACK, CO_HOOK_LET, HEADSMAN, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SHAPE, axeOf, coBallPath, coCollarAt, coCuffAt, coHookPath, coShape, collarRingAt, cuffAt, hsBite, makeChainedArt3, makeHeadsmanArt3, makeLeftBehindArt } from '../src/art/bosses3';
 import { checkBoss, findingsSaid } from '../src/art/boss_checks';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
@@ -348,7 +348,7 @@ test('13. the amalgamation and the bone beast paint in every frame both ways rou
   }
 });
 
-test('14. what it sends out paints in the enemy\'s colours; its swarm leaves out before its maw; the beast lands clear of its hands, out of its flank', () => {
+test('14. what it sends out paints in the enemy\'s colours; its swarm leaves out before its maw; the beast lands clear of its arms and heap, out of its flank', () => {
   for (const view of ['front', 'back'] as const) {
     const arms = makeFloorArmArt(view);
     const skulls = makeSwarmSkullArt(view);
@@ -372,12 +372,24 @@ test('14. what it sends out paints in the enemy\'s colours; its swarm leaves out
     assert.ok(k.way[0] > 0.75 && Math.abs(Math.hypot(k.way[0], k.way[1]) - 1) < 1e-6 && k.way[2] === 0, `going on out: ${k.way.map((v) => v.toFixed(2)).join(', ')}`);
     assert.ok(k.after > 0.3 && k.after < 0.6, `${k.after.toFixed(2)} s after the blow`);
   }
-  // (the beast lands clear of every hand of its maker's, flung out along its way from its flank)
-  for (const t of [0, 1.5]) {
-    const q = posedOfMob(AMALGAM, 'stand', t);
-    for (const [name, h] of [['R1', [q.rhx, q.rhy]], ['L1', [q.lhx, q.lhy]], ['R2', [q.rfx, q.rfy]], ['L2', [q.lfx, q.lfy]]] as const) {
-      const d = Math.hypot(h[0] - AM_BURST_SPOT[0], h[1] - AM_BURST_SPOT[1]);
-      assert.ok(d > 25, `the beast lands ${d.toFixed(0)} from its ${name} hand`);
+  // (the beast lands clear of all six of its maker's arms and of its heap, whichever way the game turns it: farther from every arm than its own hands reach, as its maker stands and as the beast bursts out)
+  const segDist2 = (p: readonly number[], a: readonly number[], b: readonly number[]): number => {
+    const ab = [b[0] - a[0], b[1] - a[1]];
+    const L2 = ab[0] * ab[0] + ab[1] * ab[1];
+    const k = L2 > 1e-9 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * ab[0] + (p[1] - a[1]) * ab[1]) / L2)) : 0;
+    return Math.hypot(p[0] - (a[0] + ab[0] * k), p[1] - (a[1] + ab[1] * k));
+  };
+  for (const [m, mv] of [['stand', AMALGAM.stand], ['burst', AMALGAM.more!.burst]] as const) {
+    for (let t = 0; t <= 1.5 + 1e-9; t += 0.1) {
+      const { frame, arms } = amGeometry(skeletonAt(AMALGAM, m, t), posedOfMob(AMALGAM, m, t), mv.ropes?.(t));
+      for (const a of arms) {
+        const d = Math.min(segDist2(AM_BURST_SPOT, a.sh, a.el), segDist2(AM_BURST_SPOT, a.el, a.hand)) - a.r;
+        assert.ok(d > 23, `${m} at ${t.toFixed(1)} s: the beast lands ${d.toFixed(1)} from its maker's ${a.name} arm`);
+      }
+      for (const L of frame.lumps) {
+        const d = (Math.hypot((AM_BURST_SPOT[0] - L.c[0]) / L.r[0], (AM_BURST_SPOT[1] - L.c[1]) / L.r[1]) - 1) * Math.min(L.r[0], L.r[1]);
+        assert.ok(d > 12, `${m} at ${t.toFixed(1)} s: the beast lands ${d.toFixed(1)} from its maker's heap`);
+      }
     }
   }
   const back = posedOfMob(BONE_BEAST, 'emerge', 0).px;

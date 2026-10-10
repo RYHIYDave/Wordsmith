@@ -3709,7 +3709,7 @@ function massSkin(cells: number, seed: number, hot: number): Skin {
       // a crack between two bones: in some of them the fire
       const a = Math.min(id1, id2);
       const b = Math.max(id1, id2);
-      if (hot > 0.1 && hash(a, b, seed + 7) < 0.22 && tone >= 1) return hot > 0.6 && tone >= 3 ? FLAME[1] : FLAME[0];
+      if (hot > 0.1 && hash(a, b, seed + 7) < 0.22 * Math.max(1, hot) && tone >= 1) return hot > 0.6 && tone >= 3 ? FLAME[1] : FLAME[0];
       return MASS[0];
     }
     if (Math.sqrt(d1) < 0.22 && tone >= 2) return MASS[Math.min(4, tone + 1)];
@@ -3884,14 +3884,19 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
   const jaw = clamp01(q.draw);
   const agit = clamp01(q.pt);
 
-  // --- the heap: lumps of dark packed bone slumped on the floor, the fire in their cracks (its right flank swelling as a bone beast works its way out of it) ---
+  // --- the heap: lumps of dark packed bone slumped on the floor, the fire in their cracks (hotter as it burns: `burn`, its skull swarm, its gulp, swelling as it dies); a swelling at the back of its right flank as a bone beast works its way out of it ---
   const bulge = clamp01(m.ropes?.bulge?.[0]?.[0] ?? 0);
-  lumps.forEach((L, i) => {
-    const b = i === 4 ? bulge : 0;
-    const c = b > 0 ? add(L.c, add(mul(l, -6 * b), [0, 0, 2 * b])) : L.c;
-    const r: V3 = [L.r[0] * (1 + 0.3 * b), L.r[1] * (1 + 0.45 * b), L.r[2] * (1 + 0.4 * b)];
-    put('heap', 'heap', { k: 'ball', c, ax: [mul(f, r[0]), mul(l, r[1]), [0, 0, r[2]]], skin: massSkin(Math.max(r[0], r[1]) / 3.4, L.seed, b > 0 ? Math.min(1.5, lit + b) : lit) });
+  const burn = clamp01(m.ropes?.burn?.[0]?.[0] ?? 0);
+  const hot = lit * (1 + 0.5 * burn);
+  lumps.forEach((L) => {
+    put('heap', 'heap', { k: 'ball', c: L.c, ax: [mul(f, L.r[0]), mul(l, L.r[1]), [0, 0, L.r[2]]], skin: massSkin(Math.max(L.r[0], L.r[1]) / 3.4, L.seed, hot) });
   });
+  if (bulge > 0) {
+    const out = norm(add(mul(f, AM_BURST_FROM[0] + 6), mul(l, AM_BURST_FROM[1])));
+    const c = add(at(AM_BURST_FROM[0], AM_BURST_FROM[1], AM_BURST_FROM[2] - 1), mul(out, -7 + 7 * bulge));
+    const r = 5 + 9 * bulge;
+    put('heap', 'heap', { k: 'ball', c, ax: [mul(out, r * 0.9), mul(norm(cross(up, out)), r), [0, 0, r * 0.85]], skin: massSkin(r / 3.4, 211, Math.min(1.5, lit + bulge)) });
+  }
 
   // --- bones sunk in it every which way, their knobbed ends standing out ---
   for (let i = 0; i < 72; i++) {
@@ -3951,7 +3956,7 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
     const twist = (hash(i, 3, 47) - 0.5) * 2.4;
     const look = faceAlong(norm(add(out, mul(cross(up, out), twist * 0.6))), norm(add(up, mul(out, -0.4 + hash(i, 4, 47) * 0.8))));
     const r = i % 9 === 4 ? 5.8 : 3.8 + hash(i, 5, 47) * 1.3;
-    const glow = hash(i, 6, 47) < 0.5 ? lit * (0.6 + 0.4 * Math.sin(t * 2 + i)) : 0;
+    const glow = Math.max(hash(i, 6, 47) < 0.5 ? lit * (0.6 + 0.4 * Math.sin(t * 2 + i)) : 0, lit * burn * (0.85 + 0.15 * Math.sin(t * 9 + i)));
     skull(st, put, `sk${i}`, `sk${i}`, add(p, mul(out, r * 0.25)), look, [r, r * 0.9, r * 0.92], p[2] < 9 ? DEEP_OSS : OSS, eyesOf(st, look), glow, i % 2 === 0, 3);
   }
 
@@ -3976,7 +3981,7 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
       if (u[0] < -0.3) return null;
       // (its lips ragged)
       if (Math.abs(u[2]) > 0.74 + 0.26 * Math.sin(u[1] * 17 + 1.1)) return null;
-      return jaw > 0.2 && Math.abs(u[1]) < 0.6 && Math.abs(u[2]) < 0.5 ? FLAME[jaw > 0.65 ? 3 : 2] : INK;
+      return jaw > 0.2 && Math.abs(u[1]) < 0.6 && Math.abs(u[2]) < 0.5 ? (lit > 0.55 ? FLAME[jaw > 0.65 ? 3 : 2] : lit > 0.2 ? FLAME[0] : INK) : INK;
     },
   });
   for (const sgn of [1, -1]) {
@@ -4126,7 +4131,8 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
     const from = at(AM_BURST_FROM[0], AM_BURST_FROM[1], AM_BURST_FROM[2]);
     for (let i = 0; i < 16; i++) {
       const a = (hash(i, 1, 107) - 0.5) * 2.2;
-      const dir = norm(add(mul(l, -Math.cos(a)), mul(f, Math.sin(a))));
+      const o = norm(add(mul(f, AM_BURST_FROM[0] + 6), mul(l, AM_BURST_FROM[1])));
+      const dir = norm(add(mul(o, Math.cos(a)), mul(cross(up, o), Math.sin(a))));
       const sp = 30 + 50 * hash(i, 2, 107);
       const vz = 40 + 70 * hash(i, 3, 107);
       const z = Math.max(0.8, 12 + vz * burstSince - 0.5 * 500 * burstSince * burstSince);
@@ -4161,7 +4167,7 @@ function amalgamBits(st: Stage, m: Moment): Bit[] {
 
   // --- the fire in it, glowing through its cracks; embers rising off it ---
   if (lit > 0.1) {
-    for (let i = 0; i < 6; i++) put('fire', 'fire', { k: 'glow', p: onLump([1, 3, 2, 4, 5, 6][i], -140 + i * 60, 0.5, 1.0), c: '#ff3a78', r: 10, a: 0.16 * lit });
+    for (let i = 0; i < 6; i++) put('fire', 'fire', { k: 'glow', p: onLump([1, 3, 2, 4, 5, 6][i], -140 + i * 60, 0.5, 1.0), c: '#ff3a78', r: 10 + 6 * burn, a: (0.16 + 0.14 * burn) * lit });
     for (let i = 0; i < 14; i++) {
       const life = (t * 0.55 + hash(i, 1, 59)) % 1;
       const p0 = onLump([1, 3, 2, 6][i % 4], -170 + hash(i, 2, 59) * 340, 0.4 + 0.5 * hash(i, 3, 59), 1.0);
@@ -4669,15 +4675,15 @@ function amDevour(): Motion {
 
 /**
  * BURSTING AS IT'S HURT (his pick by 16:40, "As it's hurt (Recommended)": bone beasts break off it as it
- * takes damage, and any left alive, it eats back): a flank of it swells and bulges, shuddering, as
- * something works its way out; it bursts, bone flying, and a bone beast drops out of it onto the floor
+ * takes damage, and any left alive, it eats back): the back of its right flank swells and bulges,
+ * shuddering, as something works its way out; it bursts, bone flying, and a bone beast is flung out of it
  * (the game's to make a beast of then: `BONE_BEAST`, coming out by its own `more.emerge`); the heap
  * reels from it, and the wound closes.
  */
 export const AM_BURST_AT = 0.6;
 /** Where its flank bursts (the figure's own space: forward, to its left, up), where the beast lands (on the floor, clear of its hands) and the way from the one to the other (the beast faces it). */
-export const AM_BURST_FROM: V3 = [0, -42, 12];
-export const AM_BURST_SPOT: V3 = [16, -66, 0];
+export const AM_BURST_FROM: V3 = [-19, -33, 12];
+export const AM_BURST_SPOT: V3 = [-46, -54, 0];
 export const AM_BURST_WAY: V3 = norm([AM_BURST_SPOT[0] - AM_BURST_FROM[0], AM_BURST_SPOT[1] - AM_BURST_FROM[1], 0]);
 function amBurst(): Motion {
   const R = AM_REST;
@@ -4699,6 +4705,10 @@ function amBulge(t: number): number {
   return 1 - smooth01((t - AM_BURST_AT) / 0.16);
 }
 
+/** How much every skull on it burns and its cracks flare (0 to 1), `t` seconds into a move: rising from `a` to `b`, held, falling from `c` to `d`. */
+function burning(t: number, a: number, b: number, c: number, d: number): number {
+  return t < b ? smooth01((t - a) / (b - a)) : 1 - smooth01((t - c) / (d - c));
+}
 /** Where a great hand is, and the tips of its claws ahead of it (for the streak behind a blow of it). */
 function amClaws(s: Skeleton, q: Posed, name: string): V3[] {
   const a = amArms(amFrame(s, q), q).find((x) => x.name === name) as AmLimb;
@@ -4720,9 +4730,9 @@ export const AMALGAM: Mob = {
   more: {
     setOff: amMove('The amalgamation sets off', amSetOff(), amSetOffHands(), { ground: AM_GROUND }),
     halt: amMove('The amalgamation stops', amHalt(), amHaltHands(), { ground: AM_GROUND }),
-    floorArms: amMove('Arms from the floor', amFloorArms(), amFloorArmsHands(), { also: (t) => slamBurst([AM_SLAM_R, AM_SLAM_L], t - AM_SLAM_HIT, 97, 1.3) }),
-    swarm: amMove('The skull swarm', amSwarm(), undefined, { also: (t) => ({ swarmT: [[t - AM_SWARM_HIT, 0, 0]] }) }),
-    devour: amMove('Devour', amDevour(), amDevourHands(), { also: (t) => ({ devourT: [[t - 0.92, 0, 0]] }) }),
+    floorArms: amMove('Arms from the floor', amFloorArms(), amFloorArmsHands(), { also: (t) => ({ ...slamBurst([AM_SLAM_R, AM_SLAM_L], t - AM_SLAM_HIT, 97, 1.3), burn: [[0.7 * burning(t, 0.3, 0.7, 1.05, 1.5), 0, 0]] }) }),
+    swarm: amMove('The skull swarm', amSwarm(), undefined, { also: (t) => ({ swarmT: [[t - AM_SWARM_HIT, 0, 0]], burn: [[burning(t, 0.3, 0.9, 1.45, 1.95), 0, 0]] }) }),
+    devour: amMove('Devour', amDevour(), amDevourHands(), { also: (t) => ({ devourT: [[t - 0.92, 0, 0]], burn: [[burning(t, 1.58, 1.72, 2.05, 2.6), 0, 0]] }) }),
     burst: amMove('A bone beast bursts out of it', amBurst(), undefined, { also: (t) => ({ bulge: [[amBulge(t), t - AM_BURST_AT, 0]] }) }),
   },
   reel: amMove('The amalgamation is struck', amStruck()),
@@ -4730,7 +4740,7 @@ export const AMALGAM: Mob = {
   hit: AM_SWIPE_HIT,
   warn: 0.5,
   dieTime: AM_DIE_TIME,
-  dying: amMove('The amalgamation bursts apart', amDying()),
+  dying: amMove('The amalgamation bursts apart', amDying(), undefined, { also: (t) => ({ burn: [[burning(t, 0.1, 0.5, 1.0, 1.3), 0, 0]] }) }),
   aura: { x: AM_CANVAS.ax - 4, y: AM_CANVAS.ay - 34, r: 84, color: '#ff3a78', a: 0.16 },
   shadow: 46,
   canvas: AM_CANVAS,
@@ -4845,7 +4855,7 @@ export function makeSwarmSkullArt(view: GameView = 'front'): Sprite[] {
  */
 export const FLOOR_ARM_CANVAS: MobCanvas = { w: 110, h: 120, ax: 55, ay: 86 };
 export const FLOOR_ARM_FPS = 10;
-export const FLOOR_ARM_FRAMES = 14;
+export const FLOOR_ARM_FRAMES = 13;
 export const FLOOR_ARM_TIME = FLOOR_ARM_FRAMES / FLOOR_ARM_FPS;
 /** When they are all the way up (seconds after they begin to burst out), and when they begin to sink back. */
 export const FLOOR_ARM_UP = 0.15;
@@ -4889,12 +4899,12 @@ export function paintFloorArms(t: number, view: PaintView = 'front'): Painted {
   };
   const up: V3 = [0, 0, 1];
   // (how far up they are: thrust up fast; held; sinking back)
-  const out = t < FLOOR_ARM_UP ? 1 - (1 - t / FLOOR_ARM_UP) ** 2 : t < FLOOR_ARM_SINK ? 1 : 1 - smooth01((t - FLOOR_ARM_SINK) / (FLOOR_ARM_TIME - 0.1 - FLOOR_ARM_SINK));
-  // (how wide the hole is: broken open at once, closing as they sink)
-  const open = t < FLOOR_ARM_SINK ? 1 : 1 - 0.75 * smooth01((t - FLOOR_ARM_SINK) / (FLOOR_ARM_TIME - FLOOR_ARM_SINK));
+  const out = t < FLOOR_ARM_UP ? 1 - (1 - t / FLOOR_ARM_UP) ** 2 : t < FLOOR_ARM_SINK ? 1 : 1 - smooth01((t - FLOOR_ARM_SINK) / (FLOOR_ARM_TIME - 0.12 - FLOOR_ARM_SINK));
+  // (how wide the hole is: broken open at once, closing after them as they sink, and gone by its last frame: the crack on the floor is left, the game's)
+  const open = t < FLOOR_ARM_SINK ? 1 : 1 - smooth01((t - FLOOR_ARM_SINK) / (FLOOR_ARM_TIME + 0.05 - FLOOR_ARM_SINK));
   // the hole: the dark, and the enemy's fire deep in it
   const hr = 7.5 * open;
-  put('hole', 'hole', {
+  if (open > 0.12) put('hole', 'hole', {
     k: 'ball',
     c: [0, 0, 0.15],
     ax: [[hr, 0, 0], [0, hr * 0.9, 0], [0, 0, 0.15]],
@@ -4918,8 +4928,10 @@ export function paintFloorArms(t: number, view: PaintView = 'front'): Painted {
     const c: V3 = add(mul(rad, r0), [0, 0, 1.0 + z]);
     const radU = add(mul(rad, Math.cos(tip)), mul(up, Math.sin(tip)));
     const upU = add(mul(rad, -Math.sin(tip)), mul(up, Math.cos(tip)));
-    const big = 3 + 1.4 * hash(j, 4, 113);
-    put(`slab${j}`, `slab${j}`, { k: 'ball', c, ax: [mul(radU, big * 0.8), mul(tan, big), mul(upU, 1.1)], skin: FLOOR_STONE });
+    // (sinking back into the floor with the arms, flat, smaller and smaller, gone by the last frame)
+    const big = (3 + 1.4 * hash(j, 4, 113)) * Math.sqrt(Math.max(0, open));
+    if (big < 1.2) continue;
+    put(`slab${j}`, `slab${j}`, { k: 'ball', c: [c[0], c[1], c[2] * open], ax: [mul(radU, big * 0.8), mul(tan, big), mul(upU, 1.1)], skin: FLOOR_STONE });
   }
   // chips of stone flung up and out
   for (let j = 0; j < 14; j++) {
@@ -5396,15 +5408,15 @@ function bbDying(): Motion {
  * out of the flank, curled up, onto the floor; its arms unfold and grip; it rears, its jaw gaping, and
  * crouches, ready.
  */
-export const BB_EMERGE_TIME = 0.95;
+export const BB_EMERGE_TIME = 1.0;
 /** How far behind its floor point it starts (toward its maker's flank) and how high, flung out of it; when it lands. */
-const BB_FLUNG = 26;
-const BB_FLUNG_UP = 12;
-const BB_LANDS = 0.24;
-/** Where its body is as it is flung out and falls (its `px` and `pz`), `t` seconds in, until it lands. */
+const BB_FLUNG = Math.hypot(AM_BURST_SPOT[0] - AM_BURST_FROM[0], AM_BURST_SPOT[1] - AM_BURST_FROM[1]);
+const BB_FLUNG_UP = 7;
+const BB_LANDS = 0.3;
+/** Where its body is as it is flung out and falls (its `px` and `pz`), `t` seconds in, until it lands: pushed out of the flank, faster and faster, and falling. */
 const bbFlight = (t: number): [number, number] => {
   const k = clamp01(t / BB_LANDS);
-  return [-BB_FLUNG + (BB_FLUNG - 1) * k, BB_FLUNG_UP - (BB_FLUNG_UP + 1.8) * k * k];
+  return [-BB_FLUNG + (BB_FLUNG - 1) * Math.pow(k, 1.5), BB_FLUNG_UP - (BB_FLUNG_UP + 1.8) * k * k];
 };
 function bbEmergeHands(): (t: number) => Record<string, V3> {
   // (curled in under it as it flies, carried with it; spreading as it falls; reaching out and gripping once it is down)
@@ -5414,7 +5426,7 @@ function bbEmergeHands(): (t: number) => Record<string, V3> {
   for (const n of BB_HANDS) {
     const late = n === 'FR' || n === 'HL' ? 0 : 0.06;
     const [x, z] = bbFlight(BB_LANDS);
-    tracks[n] = { start: [low[n][0] + x, low[n][1], low[n][2] + z], moves: [{ t0: 0.3 + late, t1: 0.52 + late, to: BB_PLANT[n] }] };
+    tracks[n] = { start: [low[n][0] + x, low[n][1], low[n][2] + z], moves: [{ t0: 0.36 + late, t1: 0.58 + late, to: BB_PLANT[n] }] };
   }
   const after = handwork(tracks);
   return (t) => {
@@ -5434,9 +5446,9 @@ function bbEmerge(): Motion {
     keys.push({ at: t, ease: 'lin', pose: { px: x, pz: z, pitch: 24 - 16 * (i / 4), draw: 0.6 + 0.2 * (i / 4), pt: 1 } });
   }
   keys.push(
-    { at: 0.34, pose: { px: -0.4, pz: -2.2, pitch: 6, draw: 0.9, pt: 1 }, ease: 'out' },
-    { at: 0.6, pose: { pz: 1.2, pitch: -12, draw: 1, pt: 1, faceTurn: 10 }, ease: 'io' },
-    { at: 0.75, pose: { pz: 0.6, pitch: -6, draw: 0.4, faceTurn: 4 }, ease: 'io' },
+    { at: 0.4, pose: { px: -0.4, pz: -2.2, pitch: 6, draw: 0.9, pt: 1 }, ease: 'out' },
+    { at: 0.66, pose: { pz: 1.2, pitch: -12, draw: 1, pt: 1, faceTurn: 10 }, ease: 'io' },
+    { at: 0.81, pose: { pz: 0.6, pitch: -6, draw: 0.4, faceTurn: 4 }, ease: 'io' },
     { at: BB_EMERGE_TIME, pose: {}, ease: 'io' },
   );
   return { keys };
