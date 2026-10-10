@@ -730,13 +730,27 @@ export const AIM = { from: 0.52, lock: 0.4, speed: 16, range: 14, z: 14, r: 0.3 
  */
 export const SMOKE = { at: 1.9, near: 1.0, r: 1.15, dur: 3, tick: 0.5 };
 
+/**
+ * HOW MONSTERS GROW WITH THE FLOOR: their life and their blows, each by this share more for every
+ * floor below the first (a boss's life by its own rule, game.ts `spawn`). Held here so that a
+ * measuring tool can try other numbers (tools/measure_leech.ts).
+ */
+export const DEPTH_SCALE = { life: 0.35, dmg: 0.22 };
+
 export function scaleLife(depth: number): number {
-  return 1 + 0.35 * (depth - 1);
+  return 1 + DEPTH_SCALE.life * (depth - 1);
 }
 
 export function scaleDmg(depth: number): number {
-  return 1 + 0.22 * (depth - 1);
+  return 1 + DEPTH_SCALE.dmg * (depth - 1);
 }
+
+/**
+ * LEECH IN FRONT, ITS CEILING: the most of his life that Leech can give back to the hero in a second
+ * (a share of his life). Infinity: no ceiling, as the game has been. (The owner, 10 Oct 2026, 18:07:
+ * "Warrior is basically unkillable once you get leech".)
+ */
+export const LEECH = { cap: Infinity };
 
 // ---------------------------------------------------------------------------------------------
 // The town's two vendors.

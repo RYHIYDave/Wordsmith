@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, LEECH, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -256,6 +256,9 @@ export class Game {
   bodySearched = false;
   /** THE WAYS (ways.ts, behind WAYS): the deepest floor whose waypoint the hero has reached, the town's waypoint warping him back to its start (0: none yet). */
   wayDepth = 0;
+  /** (LEECH.cap) when the second Leech is counted in began, and what it has given back in it */
+  private leechFrom = -1;
+  private leechGiven = 0;
   /** THE WAYS: on his way out of this level (down the stairwell, through a gate, or by a waypoint), and how long since it began. Nothing he does meanwhile. */
   leaving: { to: WayTo; t: number } | null = null;
   /** THE WAYS: how long since he came into this level down a stairwell or through a gate (the screen lightens over CURTAIN_SECS). */
@@ -3688,8 +3691,20 @@ export class Game {
       }
     }
     if (r.leech > 0) {
-      this.healHero(r.leech);
-      this.emit({ t: 'leech', x, y, n: r.leech });
+      // (LEECH.cap: no more than that share of his life back from Leech in any one second)
+      let n = r.leech;
+      if (LEECH.cap !== Infinity) {
+        if (this.time - this.leechFrom >= 1) {
+          this.leechFrom = this.time;
+          this.leechGiven = 0;
+        }
+        n = Math.max(0, Math.min(n, LEECH.cap * h.d.maxLife - this.leechGiven));
+        this.leechGiven += n;
+      }
+      if (n > 0) {
+        this.healHero(n);
+        this.emit({ t: 'leech', x, y, n });
+      }
     }
     if (st.lifeOnHit > 0) this.healHero(st.lifeOnHit);
     if (r.arcs > 0 && !quiet) {
