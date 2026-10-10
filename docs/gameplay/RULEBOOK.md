@@ -2,10 +2,10 @@
 
 A copy of the owner's doc, "Wordsmith Gameplay Rulebook"
 (https://claude.ai/artifact/YAU2N1pFr64coSATv3wVLH), as he approved it on 8 Oct 2026 at 10:33: "Yes,
-as it is (Recommended)". The doc is the living one; this copy follows it (rev 48, with the first
+as it is (Recommended)". The doc is the living one; this copy follows it (rev 53, with the first
 levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs of Version 19.7,
-the monsters' attacks of Version 19.8 and the new monsters, leaders and rings of Version 19.9
-written in), and both change only with his yes. The two pictures in the doc are written out here in
+the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9 and the
+fixes and word slots of Version 20.0 written in), and both change only with his yes. The two pictures in the doc are written out here in
 words. How it was found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
