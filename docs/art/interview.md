@@ -346,3 +346,25 @@ names the skeleton and the bone archer, and that he chose both on 8 Oct.
 FOR THE MAIN CHAT: add to what is now yours to build for real, behind its switch until it is in:
 the bone archer on bones (`mockup/archer-on-bones`, on top of `mockup/skeleton-on-bones`:
 `ARCHER3.on`, after `SKELETON3.on`; its README says what changes in the tests).
+
+## The Crypt, and each floor themed after its boss (10 Oct, 07:29)
+
+Sent at 07:05: the review page "Crypt Review" (https://claude.ai/artifact/K2KBZoF2RnnYZWVZMfNqAa;
+branch `mockup/crypt`): the Crypt's four floors, less finished the deeper they go, the stairwell
+down, the waypoint, and the town's gate as one of the levels' gates. Asked as pop-ups, our pick
+first:
+
+- "The Crypt's four floors, as on the Crypt Review page: good to build as shown?" ("Yes, as shown
+  (Recommended)": "The main chat builds them into the game."; "Some need work": "Tell me which
+  floor and what."). His answer, by 07:29: "Yes.  I’d also like each floor to be themed after the
+  boss.  Add this to the ruleset.  We need somewhere between 40-50 unique assets on each floor for
+  each boss.  That can include wall tiles, floor tiles, breakables, stuff on the walls, on the
+  floor, obstacles, the looks of doors and gates, traps, and quests."
+- "The stairwell, the waypoint and the town's gate: good to build as shown?" ("Yes, as shown
+  (Recommended)": "The main chat builds them in, and your rulebook's line on the gate's cyan
+  changes with it."; "Some need work": "Tell me which and what."). His answer, by 07:29: "Yes, as
+  shown (Recommended)".
+
+Changed in the rulebook for it (his doc at rev 43): "Places" has a new rule 7, "Each floor themed
+after its boss", with his words; "Colour" 3 names the waypoints as friendly magic, and no longer
+the town's gate.

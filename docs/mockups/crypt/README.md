@@ -9,6 +9,11 @@ switches that are off (`CRYPT`, art/crypt.ts; `CRYPT_LITTER`, game/dungeon.ts), 
 stairwell, the waypoint and the gate stand, and what they do, are the main chat's to build once he
 has said yes.
 
+**HE HAS SAID YES to all of it as shown (10 Oct, by 07:29; his words below).** It is the main
+chat's to build in. With it he set a new rule for every floor (his art rulebook, Places 7): each
+floor themed after its boss, with 40 to 50 pieces of its own. Those are still to be made; what is
+here is the Crypt as shown to him.
+
 **State of this branch (`mockup/crypt`):** on `main` at Version 20.0 (`aaa8310`). Made by THE ART
 CHAT, 10 Oct 2026, from 04:55, while he slept.
 
@@ -32,6 +37,25 @@ CHAT, 10 Oct 2026, from 04:55, while he slept.
   as the wordsmith's circle and the gate" cyan; a place darker and duller than any word's colour;
   "never mud-brown all over"); Places 1 to 6 (rich detail; a step quieter; solid, not flat; "Old,
   broken and burnt": "flagstones cracked or gone"); Pixels 1 to 7.
+- His answers in this chat, 10 Oct 2026, to the review page "Crypt Review"
+  (https://claude.ai/artifact/K2KBZoF2RnnYZWVZMfNqAa), asked as pop-ups, our pick first:
+  - "The Crypt's four floors, as on the Crypt Review page: good to build as shown?" ("Yes, as shown
+    (Recommended)": "The main chat builds them into the game."; "Some need work"). By 07:29, in
+    his own words: "Yes.  I’d also like each floor to be themed after the boss.  Add this to the
+    ruleset.  We need somewhere between 40-50 unique assets on each floor for each boss.  That can
+    include wall tiles, floor tiles, breakables, stuff on the walls, on the floor, obstacles, the
+    looks of doors and gates, traps, and quests." Read as: yes to the four floors as shown; and a
+    new rule in his art rulebook (Places 7, his doc at rev 43): every floor takes its theme from its
+    boss, with between 40 and 50 pieces made for it alone.
+  - "The stairwell, the waypoint and the town's gate: good to build as shown?" ("Yes, as shown
+    (Recommended)": "The main chat builds them in, and your rulebook's line on the gate's cyan
+    changes with it."; "Some need work"). By 07:29: "Yes, as shown (Recommended)". So Colour 3 of
+    his rulebook now names the waypoints as friendly magic, and no longer the gate (rev 43).
+  - "The bone beast (the skull on four bony arms that bursts out of the amalgamation) needs a sound
+    brief for the sound chat. What should it sound like?" ("Clacking jaw, skittering claws
+    (Recommended)": "Bony claws ticking on stone as it scuttles, fangs snapping, a shriek as it
+    dies."; "Echo of the hundred jaws"; "An insect's chitter"). By 07:29: "Clacking jaw, skittering
+    claws (Recommended)". Posted to the sound chat.
 
 ## What was read, and what is shown
 
@@ -138,7 +162,13 @@ scenario run with `node tools/playtest.mjs --file dist/crypt.html --touch --size
   the waypoint where `CRYPT.marks` puts them; and a town with a door in it has no field of light in
   its gate (for the gate's film, which puts one of the levels' gates there itself).
 
-## For the main chat, when he has said yes
+## For the main chat (his yes by 07:29, 10 Oct)
+
+- HIS RULEBOOK changed with it (his doc at rev 43; `docs/art/RULEBOOK.md` here is the copy, with
+  the change of 9 Oct from `mockup/bosses` in it too): Colour 3 names the waypoints as friendly
+  magic, not the gate; Places 7, each floor themed after its boss, 40 to 50 pieces of its own.
+  The pieces are the art chat's to make, pictures to him first. Breakables, obstacles, traps and
+  quests are things of the game as well as pictures: their rules are yours.
 
 - WHERE THEY GO is yours: the stairwell (after the boss: in the boss's hall, or a room beyond it),
   the waypoint (at the start of floors 2 on), the town's gate (its doorway in the town's wall, and
