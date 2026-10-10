@@ -576,11 +576,14 @@ if (mode === 'move') {
     return m;
   };
   const after = T1 + film.long + film.heavy.length * HOLD;
+  // (his stand at its own frames a second, as the game shows it; after the move it begins again from its first frame, where the move hands over to it)
+  const standFrom = after + (ups ? UP : 0);
+  const standAt = (t: number, from: number): number => Math.floor(Math.max(0, t - from) * mob.idleFps + 1e-6) / mob.idleFps;
   const frameOf = (view: GameView, t: number): Sprite => {
     const m = moveT(t);
     if (ups && t >= T0 && t < T1) return spOf(mob, 'raise', t - T0, view);
     if (ups && t >= after && t < after + UP) return spOf(mob, 'lower', t - after, view);
-    return m < 0 ? spOf(mob, 'stand', t, view) : m > film.long ? spOf(film.then ?? mob, 'stand', t, view) : spOf(mob, which, m, view);
+    return m < 0 ? spOf(mob, 'stand', standAt(t, 0), view) : m > film.long ? spOf(film.then ?? mob, 'stand', standAt(t, standFrom), view) : spOf(mob, which, m, view);
   };
   // (how big a pane must be: every frame of it, both ways, and what it does to the floor)
   const all: Sprite[] = [];
@@ -614,16 +617,85 @@ if (mode === 'move') {
   });
 }
 
+if (mode === 'stand') {
+  // HIS STAND, twice round, at its own frames a second, as the game shows it: his breath and the shift of his weight, and his habits
+  const who = BOSSES[parts[1] || 'headsman'] ?? BOSSES.headsman;
+  const S = Number(parts[2]) || 2;
+  const FPS = 30;
+  const mob = who.mob;
+  const LOOP = mob.idleFrames / mob.idleFps;
+  const TICKS = Math.round(2 * LOOP * FPS);
+  const at = (t: number): number => (Math.floor(t * mob.idleFps + 1e-6) % mob.idleFrames) / mob.idleFps;
+  const all: Sprite[] = [];
+  for (let i = 0; i < mob.idleFrames; i++) for (const v of ['front', 'back'] as const) all.push(spOf(mob, 'stand', i / mob.idleFps, v));
+  const [l, r, u, d] = reachAll(all);
+  const PAD = 10;
+  const M = 16;
+  const cw = (l + r + 2 * M) * S;
+  const ch = (u + d + 2 * M) * S;
+  const HEAD = 58;
+  cv.width = PAD + 2 * (cw + PAD);
+  cv.height = HEAD + ch + 34;
+  filmPage(TICKS, FPS, (tick) => {
+    const t = tick / FPS;
+    g.fillStyle = BG;
+    g.fillRect(0, 0, cv.width, cv.height);
+    text(`${mob.stand.name}`, PAD, 8, 17, '#ffd866', 700);
+    text(`a mock-up: not in the game. His stand, ${mob.idleFrames} frames at ${mob.idleFps} a second, twice round`, PAD, 32, 14, '#cfc8ff', 600);
+    for (const [j, view] of (['front', 'back'] as const).entries()) {
+      const x = PAD + j * (cw + PAD);
+      filmPane(x, HEAD, cw, ch, S, x + (M + l) * S, HEAD + (M + u) * S, spOf(mob, 'stand', at(t), view), mob.shadow);
+      text(view === 'front' ? 'facing you' : 'facing away', x + cw / 2, HEAD + ch + 6, 15, '#e8e2ff', 600, 'center');
+    }
+  });
+}
+
 if (mode === 'walk') {
   const who = BOSSES[parts[1] || 'headsman'] ?? BOSSES.headsman;
   const S = Number(parts[2]) || 2;
   const FPS = 30;
   const mob = who.mob;
-  const LEG = 2.5;
-  const TICKS = Math.round(2 * LEG * FPS);
   const period = mob.walkFrames / mob.walkFps;
+  // (as the game would play it, each way: he stands; takes up his axe, if he sets it down to stand, as the
+  // Headsman does; sets off; walks; stops as his walk comes round to its first frame; sets his axe down;
+  // stands. His stand at its own frames a second, his walk at its own, the rest at the game's 30)
+  const has = (which: string): boolean => mob.more?.[which] !== undefined;
+  const ups = has('raise') && has('lower');
+  const steps = has('setOff') && has('halt');
+  const seq: { which: string; long: number }[] = [
+    { which: 'stand', long: 0.6 },
+    ...(ups ? [{ which: 'raise', long: lastKey(mob, 'raise') }] : []),
+    ...(steps ? [{ which: 'setOff', long: lastKey(mob, 'setOff') }] : []),
+    { which: 'walk', long: Math.ceil(2.4 / period) * period },
+    ...(steps ? [{ which: 'halt', long: lastKey(mob, 'halt') }] : []),
+    ...(ups ? [{ which: 'lower', long: lastKey(mob, 'lower') }] : []),
+    { which: 'stand', long: 1.0 },
+  ];
+  const LEG = seq.reduce((a, p) => a + p.long, 0);
+  const TICKS = Math.round(2 * LEG * FPS);
+  const moving = (w: string): boolean => w === 'setOff' || w === 'walk' || w === 'halt';
+  /** What he is doing at a moment of one way: which move, the moment of it the game would show, and how far the floor has gone by under him (tiles). */
+  const doing = (t: number): { which: string; m: number; by: number; i: number } => {
+    let t0 = 0;
+    let by = 0;
+    for (let i = 0; i < seq.length; i++) {
+      const p = seq[i];
+      if (t < t0 + p.long || i === seq.length - 1) {
+        const m = Math.max(0, Math.min(p.long, t - t0));
+        const shown = p.which === 'stand' ? Math.floor(m * mob.idleFps + 1e-6) / mob.idleFps : p.which === 'walk' ? ((Math.floor(m * mob.walkFps + 1e-6) % mob.walkFrames) / mob.walkFrames) * period : m;
+        return { which: p.which, m: shown, by: by + (moving(p.which) ? m * mob.pace : 0), i };
+      }
+      t0 += p.long;
+      if (moving(p.which)) by += p.long * mob.pace;
+    }
+    return { which: 'stand', m: 0, by, i: 0 };
+  };
+  const frameOf = (view: GameView, t: number): Sprite => {
+    const d = doing(t);
+    return spOf(mob, d.which, d.m, view);
+  };
   const all: Sprite[] = [];
-  for (let i = 0; i < mob.walkFrames; i++) for (const v of ['front', 'back'] as const) all.push(spOf(mob, 'walk', (i / mob.walkFrames) * period, v));
+  for (let i = 0; i < Math.round(LEG * FPS); i += 2) for (const v of ['front', 'back'] as const) all.push(frameOf(v, i / FPS));
   const [l, r, u, d] = reachAll(all);
   const PAD = 10;
   const M = 16;
@@ -632,19 +704,21 @@ if (mode === 'walk') {
   const HEAD = 58;
   cv.width = Math.max(cw + 2 * PAD, 640);
   cv.height = HEAD + ch + 34;
+  const named = (which: string): string =>
+    which === 'walk' ? (who.walkSaid ?? who.title) : which === 'stand' ? mob.stand.name : (mob.more?.[which]?.name ?? who.title);
   filmPage(TICKS, FPS, (tick) => {
     const t = tick / FPS;
     const away = t >= LEG;
     const tt = away ? t - LEG : t;
     const view: GameView = away ? 'back' : 'front';
-    const i = Math.floor(tt * mob.walkFps + 1e-6) % mob.walkFrames;
-    const sp = spOf(mob, 'walk', (i / mob.walkFrames) * period, view);
+    const dd = doing(tt);
+    const sp = spOf(mob, dd.which, dd.m, view);
     g.fillStyle = BG;
     g.fillRect(0, 0, cv.width, cv.height);
-    text(`${who.walkSaid ?? who.title}, ${away ? 'going away' : 'coming toward you'}`, PAD, 8, 17, '#ffd866', 700);
+    text(`${named(dd.which)}, ${away ? 'going away' : 'coming toward you'}`, PAD, 8, 17, '#ffd866', 700);
     text(`a mock-up: not in the game. ${mob.pace} tiles a second; the floor goes by under him`, PAD, 32, 14, '#cfc8ff', 600);
     const x = (cv.width - cw) / 2;
-    filmPane(x, HEAD, cw, ch, S, x + (M + l) * S, HEAD + (M + u) * S, sp, mob.shadow, undefined, undefined, tt * mob.pace, away);
+    filmPane(x, HEAD, cw, ch, S, x + (M + l) * S, HEAD + (M + u) * S, sp, mob.shadow, undefined, undefined, dd.by, away);
   });
 }
 
@@ -661,8 +735,10 @@ if (mode === 'death') {
   const T2 = T1 + reelLong + 0.5;
   const ROUND = T2 + mob.dieTime + 1.0;
   const TICKS = Math.round(ROUND * FPS);
+  // (his stand at its own frames a second; after he is struck, from its first frame again)
+  const standAt = (t: number, from: number): number => Math.floor(Math.max(0, t - from) * mob.idleFps + 1e-6) / mob.idleFps;
   const frameOf = (view: GameView, t: number): Sprite =>
-    t >= T2 ? spOf(mob, 'die', Math.min(mob.dieTime, t - T2), view) : t >= T1 && t < T1 + reelLong ? spOf(mob, 'reel', t - T1, view) : ups && t >= 0.3 && t < T1 ? spOf(mob, 'raise', Math.min(UP, t - 0.3), view) : ups && t >= T1 ? spOf(mob, 'reel', reelLong, view) : spOf(mob, 'stand', t, view);
+    t >= T2 ? spOf(mob, 'die', Math.min(mob.dieTime, t - T2), view) : t >= T1 && t < T1 + reelLong ? spOf(mob, 'reel', t - T1, view) : ups && t >= 0.3 && t < T1 ? spOf(mob, 'raise', Math.min(UP, t - 0.3), view) : ups && t >= T1 ? spOf(mob, 'reel', reelLong, view) : spOf(mob, 'stand', t >= T1 ? standAt(t, T1 + reelLong) : standAt(t, 0), view);
   const all: Sprite[] = [];
   for (let i = 0; i < TICKS; i += 3) for (const v of ['front', 'back'] as const) all.push(frameOf(v, i / FPS));
   const [l, r, u, d] = reachAll(all);

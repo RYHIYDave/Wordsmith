@@ -1327,9 +1327,20 @@ const HS_AXE_GOES = 0.3;
 export const HS_HOOD_GOES = 1.32;
 /** Where his feet stand as he dies: his right where it stood, his left stepped back level with it as he is rocked back; how far they come up onto their toes as his knees go down; how high a knee is on the floor (as big as it is, in its boot). */
 const HS_DIE_FEET = ((): Record<'L' | 'R', Plant> => {
-  const L0 = plantOf(HB, 'L', {}, HS_REST);
-  const R0 = plantOf(HB, 'R', {}, HS_REST);
+  const L0 = plantOf(HB, 'L', {}, HS_READY);
+  const R0 = plantOf(HB, 'R', {}, HS_READY);
   return { L: plantBy(L0, R0.at[0] - L0.at[0], 0), R: R0 };
+})();
+/** His hands where his carry has them (measured from his shoulders along his chest, so that they go where it goes), let fall `down` and opened `out` to his sides: letting go of the axe. */
+const HS_LETTING = ((): ((down: number, out: number) => P) => {
+  const s = solve(HB, HS_READY as Posed);
+  const rel = (h: V3, sh: V3): V3 => {
+    const d = sub(h, sh);
+    return [dot(d, s.chest[0]), dot(d, s.chest[1]), dot(d, s.chest[2])];
+  };
+  const L = rel(s.handL, s.shoulderL);
+  const R = rel(s.handR, s.shoulderR);
+  return (down, out) => ({ lhIn: 0, lhx: L[0], lhy: L[1] + out, lhz: L[2] - down, rhIn: 0, rhx: R[0], rhy: R[1] - out, rhz: R[2] - down });
 })();
 const HS_TUCK = 58;
 const HS_KNEE_DOWN = HB.legR[1] * 1.05;
@@ -1360,16 +1371,16 @@ const HS_SLUMP: P = limp(hsKneeling(24, { yaw: -6, pitch: 70, roll: 0, twist: 0,
 const HS_GOING: P = limp(hsKneeling(52, { yaw: -6, pitch: 80, roll: 0, twist: 0, bend: 18, side: 0, faceTurn: 12, faceUp: -56, faceTilt: 12 }), 26, 11);
 const HS_PRONE: P = { ...limp(hsKneeling(76, { yaw: -6, pitch: 86, roll: 0, twist: 0, bend: 6, side: 0, faceTurn: 12, faceUp: -40, faceTilt: 14 }), 40, 10), out: 1 };
 function hsDying(): Motion {
-  const R = HS_REST;
+  const R = HS_READY;
   return {
     keys: [
-      // (from where he stands, his axe planted by his foot, his hand on it)
+      // (from his carry, as he fights: his axe across him in both hands; as in the death he said yes to, by 21:33)
       { at: 0, pose: {} },
-      // (rocked back, his hand still on the axe; it slips from his hand and topples, and his arms drop, his left out before him and down)
-      { at: 0.12, pose: { px: -3, pz: R.pz - 1, pitch: -1, bend: 1, faceUp: 8, gale: 0.6, lhIn: 0, lhx: 5, lhy: 8, lhz: HS_HANG + 2, le: -8 }, ease: 'out' },
-      { at: HS_AXE_GOES, pose: { px: -2, pz: R.pz - 3, pitch: 1, bend: 4, faceUp: 4, gale: 0.4, lhIn: 0, lhx: 7, lhy: 11, lhz: HS_HANG + 5, le: -8 }, ease: 'io' },
-      { at: 0.38, pose: { px: -1.5, pz: R.pz - 5, pitch: 3, bend: 5, faceUp: 4, gale: 0.3, lhIn: 0, lhx: 7, lhy: 12, lhz: HS_HANG + 6, le: -8, rhIn: 0, rhx: 9, rhy: -12, rhz: HS_HANG + 8, re: 8 }, ease: 'io' },
-      { at: 0.48, pose: { px: -1, pz: -10, pitch: 4, bend: 6, faceUp: 4, lk: 30, rk: -30, gale: 0.2, ...HS_HANGING }, ease: 'io' },
+      // (rocked back, the axe still in his hands; it slips from them as they open and fall, and his arms drop to his sides)
+      { at: 0.12, pose: { px: -3, pz: R.pz - 1, pitch: -6, bend: -6, faceUp: 14, gale: 0.6 }, ease: 'out' },
+      { at: HS_AXE_GOES, pose: { px: -2, pz: R.pz - 3, pitch: 0, bend: 2, faceUp: 8, gale: 0.4, ...HS_LETTING(6, 3) }, ease: 'in' },
+      { at: 0.38, pose: { px: -1.5, pz: R.pz - 5, pitch: 3, bend: 5, faceUp: 4, gale: 0.3, lhIn: 0, lhx: 7, lhy: 12, lhz: HS_HANG + 8, le: -8, rhIn: 0, rhx: 9, rhy: -12, rhz: HS_HANG + 10, re: 8 }, ease: 'lin' },
+      { at: 0.48, pose: { px: -1, pz: -10, pitch: 4, bend: 6, faceUp: 4, lk: 30, rk: -30, gale: 0.2, ...HS_HANGING }, ease: 'out' },
       // (his knees give: down onto them, swaying)
       { at: 0.8, pose: { ...HS_ON_KNEES, out: 0.3 }, ease: 'in' },
       { at: 0.95, pose: { ...HS_ON_KNEES, pz: (HS_ON_KNEES.pz as number) + 1, pitch: 4, side: -2, roll: -2, out: 0.5 }, ease: 'out' },
@@ -1387,7 +1398,7 @@ function hsDying(): Motion {
 }
 /** HIS FEET AS HE DIES: his left stepped back level with his right as he is rocked back; both up onto their toes as his knees go down before them, and there they stay. */
 function hsDyingFeet(): (t: number) => P {
-  const L0 = plantOf(HB, 'L', {}, HS_REST);
+  const L0 = plantOf(HB, 'L', {}, HS_READY);
   const F = HS_DIE_FEET;
   return footwork(HB, {
     L: { start: L0, moves: [{ t0: 0.06, t1: 0.3, to: F.L, lift: 5 }, { t0: 0.5, t1: 0.78, to: { ...F.L, pitch: HS_TUCK } }] },
@@ -1427,7 +1438,7 @@ export const HEADSMAN: Mob = {
   hit: HS_CHOP_HIT,
   warn: 0.4,
   dieTime: HS_DIE_TIME,
-  dying: { name: 'The Headsman’s hood falls empty', motion: axed(hsDying(), HS_REST), rest: HS_REST, feet: hsDyingFeet() },
+  dying: { name: 'The Headsman’s hood falls empty', motion: axed(hsDying(), HS_READY), rest: HS_READY, feet: hsDyingFeet() },
   aura: { x: HS_CANVAS.ax - 2, y: HS_CANVAS.ay - 56, r: 84, color: '#ff3a78', a: 0.15 },
   shadow: 30,
   canvas: HS_CANVAS,
@@ -1492,13 +1503,14 @@ export const HS_SHAPE: BossShape = {
     { from: 'walk', at: 0, to: 'halt', toAt: 0 },
     { from: 'halt', at: 'end', to: 'lower', toAt: 0 },
     { from: 'lower', at: 'end', to: 'stand', toAt: 0 },
-    { from: 'stand', at: 0, to: 'dying', toAt: 0 },
     ...(['attack', 'sentence', 'sweep', 'throw', 'reel'] as const).flatMap((m): Handover[] => [
       { from: 'raise', at: 'end', to: m, toAt: 0 },
       { from: 'halt', at: 'end', to: m, toAt: 0 },
       { from: m, at: 'end', to: 'lower', toAt: 0 },
       { from: m, at: 'end', to: 'setOff', toAt: 0 },
     ]),
+    // (struck down as he fights, his axe across him in his hands: his death begins there, as the one he said yes to did)
+    ...(['raise', 'halt', 'attack', 'sentence', 'sweep', 'throw', 'reel'] as const).map((m): Handover => ({ from: m, at: 'end', to: 'dying', toAt: 0 })),
   ],
   things: (move, t, s) => {
     const mv = move === 'stand' || move === 'walk' || move === 'attack' || move === 'reel' ? HEADSMAN[move] : move === 'dying' ? HEADSMAN.dying : HEADSMAN.more?.[move];
@@ -1827,13 +1839,56 @@ interface CoChainPlan {
   end?: () => Ropes;
   /** Parts of him a chain is not kept out of at a moment (a foot standing on it: lifted off it, it lets it be, and does not fling it). */
   bare?: (name: CoRope, t: number) => ReadonlyArray<string>;
+  /** When to work it out ahead (`workOutChained`): his stand 0, his walk 1, the rest 2 (the default). */
+  rank?: number;
 }
 /** How many rounds a looped move is worked through before the one that is kept (so its chains swing as they do round and round, not as they first start). */
 const CO_ROUNDS = 4;
+/**
+ * WORKING HIS CHAINS OUT AHEAD. Each move's chains are worked out once, the first time they are asked
+ * for: all of them, in all three of his states, take about fifteen seconds on the machine they were
+ * made on, and a phone several times that. So the game can work them out a little at a time, ahead of
+ * time (`workOutChained`: as many milliseconds of it as it gives, each time it is called), his stands
+ * first, then his walks, then the rest; whatever is asked for before it is done is worked out then,
+ * all at once. The same chains come out either way.
+ */
+interface CoJob {
+  rank: number;
+  step: (until: number) => boolean;
+}
+const CO_WORK: CoJob[] = [];
+const coClock = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+/** Work on his chains for about `ms` milliseconds: whether all of them are worked out now. */
+export function workOutChained(ms: number): boolean {
+  const until = coClock() + ms;
+  for (const j of [...CO_WORK].sort((a, b) => a.rank - b.rank)) if (!j.step(until)) return false;
+  return true;
+}
+/** A piece of work done in small steps (`make`: each `yield` a place it may stop and go on later), in the order of its `rank`: what it comes to, worked out all at once if it is not done yet. */
+function coJob<T>(rank: number, make: () => Generator<void, T>): () => T {
+  let steps: Generator<void, T> | null = null;
+  let done: { v: T } | null = null;
+  const run = (until: number): boolean => {
+    if (done) return true;
+    steps ??= make();
+    for (;;) {
+      const r = steps.next();
+      if (r.done) {
+        done = { v: r.value };
+        steps = null;
+        return true;
+      }
+      if (coClock() >= until) return false;
+    }
+  };
+  CO_WORK.push({ rank, step: run });
+  return () => {
+    run(Infinity);
+    return (done as { v: T }).v;
+  };
+}
 /** His chains as they hang when he has stood still a while: worked out once from how he was first painted. */
-let coSettled: Record<CoRope, ReadonlyArray<V3>> | null = null;
-function settledChains(): Record<CoRope, ReadonlyArray<V3>> {
-  if (coSettled) return coSettled;
+const coSettled = coJob(-1, function* (): Generator<void, Record<CoRope, ReadonlyArray<V3>>> {
   const s = solve(CB2, CO_REST as Posed);
   const start = restChains(s);
   const out = {} as Record<CoRope, ReadonlyArray<V3>>;
@@ -1842,11 +1897,20 @@ function settledChains(): Record<CoRope, ReadonlyArray<V3>> {
     const c = new Chain(CO_SPEC[name], start[name]);
     const h = usualHold(name, s);
     // (let fall and swing, then stilled: as they hang after he has stood a while)
-    for (let i = 0; i < Math.round(2.0 / SIM_STEP); i++) stepChain(c, h, body.limbs, body.lumps, 0, SIM_STEP);
-    for (let i = 0; i < Math.round(1.0 / SIM_STEP); i++) stepChain(c, h, body.limbs, body.lumps, 0, SIM_STEP, 0.99);
+    for (let i = 0; i < Math.round(2.0 / SIM_STEP); i++) {
+      stepChain(c, h, body.limbs, body.lumps, 0, SIM_STEP);
+      if (i % 64 === 63) yield;
+    }
+    for (let i = 0; i < Math.round(1.0 / SIM_STEP); i++) {
+      stepChain(c, h, body.limbs, body.lumps, 0, SIM_STEP, 0.99);
+      if (i % 64 === 63) yield;
+    }
     out[name] = c.now();
   }
-  return (coSettled = out);
+  return out;
+});
+function settledChains(): Record<CoRope, ReadonlyArray<V3>> {
+  return coSettled();
 }
 /**
  * HIS CHAINS THROUGH A MOVE: worked out (once, when first asked for) from his chains as they hang at
@@ -1855,10 +1919,10 @@ function settledChains(): Record<CoRope, ReadonlyArray<V3>> {
  * rounds first, and the round kept is closed on itself.
  */
 function coChains(motion: Motion, rest: Bones, plan: CoChainPlan = {}, names: ReadonlyArray<CoRope> = CO_ROPES, feet?: (t: number) => P): (t: number) => Ropes {
-  let made: ((t: number) => Ropes) | null = null;
-  return (t) => (made ??= makeCoChains(motion, rest, plan, names, feet))(t);
+  const made = coJob(plan.rank ?? 2, () => makeCoChains(motion, rest, plan, names, feet));
+  return (t) => made()(t);
 }
-function makeCoChains(motion: Motion, rest: Bones, plan: CoChainPlan, names: ReadonlyArray<CoRope>, feet?: (t: number) => P): (t: number) => Ropes {
+function* makeCoChains(motion: Motion, rest: Bones, plan: CoChainPlan, names: ReadonlyArray<CoRope>, feet?: (t: number) => P): Generator<void, (t: number) => Ropes> {
   const keys = motion.keys;
   const end = keys.length ? keys[keys.length - 1].at : 0;
   const loop = motion.loop;
@@ -1947,6 +2011,7 @@ function makeCoChains(motion: Motion, rest: Bones, plan: CoChainPlan, names: Rea
     keep(t1);
     t0 = t1;
     s0 = s1;
+    yield;
   }
   const tracks = {} as Record<CoRope, ChainTrack>;
   for (const name of names) {
@@ -1954,21 +2019,27 @@ function makeCoChains(motion: Motion, rest: Bones, plan: CoChainPlan, names: Rea
     if (loop !== undefined && frames.every((f) => f !== null)) {
       // (a loop closed on itself: and what that closing moved into him, put back out of him, moment by moment)
       const closed = closeLoop(frames as ReadonlyArray<ReadonlyArray<V3>>);
-      frames = closed.map((f, k) => {
+      const outOf: V3[][] = [];
+      for (let k = 0; k < closed.length; k++) {
+        const f = closed[k];
         const body = coBody(bonesThen(keepFrom + k * SIM_KEEP), name === 'ball' ? undefined : name);
         const spec = CO_SPEC[name];
-        return f.map((q, i) => {
-          if (i < 3) return q;
-          const p: [number, number, number] = [q[0], q[1], q[2]];
-          const pad = i === f.length - 1 ? spec.endR : spec.r;
-          for (let pass = 0; pass < 2; pass++) {
-            for (const l of body.limbs) outOfLimb(p, l, pad);
-            for (const o of body.lumps) outOfLump(p, o, pad);
-          }
-          p[2] = Math.max(p[2], pad);
-          return p as V3;
-        });
-      });
+        outOf.push(
+          f.map((q, i) => {
+            if (i < 3) return q;
+            const p: [number, number, number] = [q[0], q[1], q[2]];
+            const pad = i === f.length - 1 ? spec.endR : spec.r;
+            for (let pass = 0; pass < 2; pass++) {
+              for (const l of body.limbs) outOfLimb(p, l, pad);
+              for (const o of body.lumps) outOfLump(p, o, pad);
+            }
+            p[2] = Math.max(p[2], pad);
+            return p as V3;
+          }),
+        );
+        if (k % 8 === 7) yield;
+      }
+      frames = outOf;
     }
     if (goal && loop === undefined) {
       // (and what is left of the way, closed in its very last moments)
@@ -3098,8 +3169,8 @@ function chainedMob(freed: CoFreed): Mob {
   const walkAt0 = (): Ropes => walk.ropes!(0);
   const mvIn = (name: string, motion: Motion, plan: CoChainPlan = {}, more: Partial<MobMove> = {}): MobMove => coMove(name, motion, plan, more, names);
   const mv = (name: string, motion: Motion, plan: CoChainPlan = {}, more: Partial<MobMove> = {}): MobMove => mvIn(name, motion, { start: standAt0, end: standAt0, ...plan }, more);
-  const stand = mvIn('The Chained One breathes', coStand());
-  const walk = mvIn('The Chained One shambles', coWalk(), { ground: CHAINED_PACE * TILE3 }, { period: CO_WALK_FRAMES / CO_WALK_FPS, ground: CHAINED_PACE * TILE3 });
+  const stand = mvIn('The Chained One breathes', coStand(), { rank: 0 });
+  const walk = mvIn('The Chained One shambles', coWalk(), { ground: CHAINED_PACE * TILE3, rank: 1 }, { period: CO_WALK_FRAMES / CO_WALK_FPS, ground: CHAINED_PACE * TILE3 });
   const more: Record<string, MobMove> = {
     setOff: mv('The Chained One sets off', coSetOff(), { ground: CO_GROUND, end: walkAt0 }, { ground: CO_GROUND, feet: coSetOffFeet() }),
     halt: mv('The Chained One stops', coHalt(), { ground: CO_GROUND, start: walkAt0 }, { ground: CO_GROUND, feet: coHaltFeet() }),

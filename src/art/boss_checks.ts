@@ -20,8 +20,9 @@
 //   JERK     (Movement 5, "nothing jerky"; Movement 1, "slow to start and slow to stop"): a frame that
 //            leaps, a motion that stalls and goes on, one that turns straight back at speed, one that
 //            starts or stops at its fastest; a loop, the step from its last frame back to its first.
-//   JUMP     (Movement 5) where one move hands over to the next (his stand into each move and back, into
-//            his walk and out of it at any step): the picture must not leap.
+//   JUMP     (Movement 5) where one move hands over to the next (his stand, from whatever frame of it the
+//            game has come to, into each move, and back; into his walk and out of it): the picture must
+//            not leap, nor what he carries.
 //   BLOW     (Movement 3, "Every attack winds up before it lands and follows through after"; Monsters
 //            4, "The warning is a pose"): the end he strikes with is drawn back, held, and goes on
 //            after the blow.
@@ -415,45 +416,53 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
         { from: 'stand', at: 0, to: 'walk', toAt: 0 },
         ...framesOf(mob, 'walk').map((t): Handover => ({ from: 'walk', at: t, to: 'stand', toAt: 0 })),
       ];
+  // (his stand the game leaves at whatever frame it has come to, as it left the heroes' standing: from every frame of it)
+  const stands = framesOf(mob, 'stand');
   for (const h of hand) {
     if (!moves.includes(h.from) && !moves.includes(h.to)) continue;
-    const a = skeletonAt(mob, h.from, h.at === 'end' ? longOf(mob, h.from) : h.at);
+    const froms = h.from === 'stand' ? stands : [h.at === 'end' ? longOf(mob, h.from) : h.at];
     const b = skeletonAt(h.mob ?? mob, h.to, h.toAt);
-    const pa = pointsOf(a);
     const pb = pointsOf(b);
+    const thB = (h.mob ? (shape.thingsOf?.(h.mob) ?? shape.things) : shape.things)?.(h.to, h.toAt, b) ?? [];
     let worst = 0;
-    for (const view of VIEWS) {
-      let sum = 0;
-      let n = 0;
-      for (const k of Object.keys(pa)) {
-        const [x0, y0] = seen(pa[k], view);
-        const [x1, y1] = seen(pb[k], view);
-        sum += Math.hypot(x1 - x0, y1 - y0);
-        n++;
-      }
-      worst = Math.max(worst, sum / n);
-    }
-    if (worst > JUMP_MAX) found.push({ move: `${h.from} > ${h.to}`, t: h.at === 'end' ? longOf(mob, h.from) : h.at, kind: 'jump', what: `${h.from} at ${h.at === 'end' ? 'its end' : `${h.at.toFixed(2)} s`} into ${h.to}${h.mob ? ` (${h.mob.id})` : ''}`, by: worst });
-    // (and what he carries or drags: a chain swinging at the end of one move and hanging still at the start of the next leaps)
-    const ta = h.at === 'end' ? longOf(mob, h.from) : h.at;
-    const tb = h.toAt;
-    const thA = shape.things?.(h.from, ta, a) ?? [];
-    const thB = (h.mob ? (shape.thingsOf?.(h.mob) ?? shape.things) : shape.things)?.(h.to, tb, b) ?? [];
-    for (const x of thA) {
-      const y = thB.find((z) => z.name === x.name);
-      if (!y || y.pts.length !== x.pts.length || !x.pts.length) continue;
-      let w = 0;
+    let worstAt = froms[0];
+    const carried = new Map<string, { by: number; t: number }>();
+    for (const ta of froms) {
+      const a = skeletonAt(mob, h.from, ta);
+      const pa = pointsOf(a);
       for (const view of VIEWS) {
         let sum = 0;
-        for (let i = 0; i < x.pts.length; i++) {
-          const [x0, y0] = seen(x.pts[i], view);
-          const [x1, y1] = seen(y.pts[i], view);
+        let n = 0;
+        for (const k of Object.keys(pa)) {
+          const [x0, y0] = seen(pa[k], view);
+          const [x1, y1] = seen(pb[k], view);
           sum += Math.hypot(x1 - x0, y1 - y0);
+          n++;
         }
-        w = Math.max(w, sum / x.pts.length);
+        if (sum / n > worst) {
+          worst = sum / n;
+          worstAt = ta;
+        }
       }
-      if (w > JUMP_MAX * 1.5) found.push({ move: `${h.from} > ${h.to}`, t: ta, kind: 'jump', what: `his ${x.name}, ${h.from} at ${h.at === 'end' ? 'its end' : `${ta.toFixed(2)} s`} into ${h.to}`, by: w });
+      // (and what he carries or drags: a chain swinging at the end of one move and hanging still at the start of the next leaps)
+      for (const x of shape.things?.(h.from, ta, a) ?? []) {
+        const y = thB.find((z) => z.name === x.name);
+        if (!y || y.pts.length !== x.pts.length || !x.pts.length) continue;
+        for (const view of VIEWS) {
+          let sum = 0;
+          for (let i = 0; i < x.pts.length; i++) {
+            const [x0, y0] = seen(x.pts[i], view);
+            const [x1, y1] = seen(y.pts[i], view);
+            sum += Math.hypot(x1 - x0, y1 - y0);
+          }
+          const w = sum / x.pts.length;
+          if (w > (carried.get(x.name)?.by ?? 0)) carried.set(x.name, { by: w, t: ta });
+        }
+      }
     }
+    const when = (t: number): string => (h.at === 'end' ? 'its end' : `${t.toFixed(2)} s`);
+    if (worst > JUMP_MAX) found.push({ move: `${h.from} > ${h.to}`, t: worstAt, kind: 'jump', what: `${h.from} at ${when(worstAt)} into ${h.to}${h.mob ? ` (${h.mob.id})` : ''}`, by: worst });
+    for (const [name, { by, t }] of carried) if (by > JUMP_MAX * 1.5) found.push({ move: `${h.from} > ${h.to}`, t, kind: 'jump', what: `his ${name}, ${h.from} at ${when(t)} into ${h.to}`, by });
   }
   return found.sort((a, b) => b.by - a.by);
 }

@@ -199,6 +199,19 @@ export function stepChain(c: Chain, hold: ChainHold, limbs: ReadonlyArray<Limb>,
   };
   for (let i = 0; i < n; i++) c.touch[i] = false;
   const sunk: number[] = new Array(n).fill(0);
+  // (each part of him, a ball round it: a link outside that ball, with its pad, is outside the part, and is not
+  // looked at further: the same pictures, worked out several times faster)
+  const lb: number[] = [];
+  for (const l of limbs) lb.push((l.a[0] + l.b[0]) / 2, (l.a[1] + l.b[1]) / 2, (l.a[2] + l.b[2]) / 2, Math.hypot(l.b[0] - l.a[0], l.b[1] - l.a[1], l.b[2] - l.a[2]) / 2 + l.r);
+  const ob: number[] = [];
+  for (const o of lumps) ob.push(o.c[0], o.c[1], o.c[2], Math.max(o.h[0], o.h[1], o.h[2]));
+  const near = (q: Pm, b: number[], k: number, pad: number): boolean => {
+    const dx = q[0] - b[k];
+    const dy = q[1] - b[k + 1];
+    const dz = q[2] - b[k + 2];
+    const r = b[k + 3] + pad;
+    return dx * dx + dy * dy + dz * dz < r * r;
+  };
   for (let it = 0; it < SIM_ITER; it++) {
     if (hold.from) put(0, hold.from);
     for (const [i, q] of hold.held) put(Math.max(0, Math.min(n - 1, i)), q);
@@ -230,8 +243,8 @@ export function stepChain(c: Chain, hold: ChainHold, limbs: ReadonlyArray<Limb>,
       const pad = i === n - 1 && c.spec.endPad !== undefined ? c.spec.endPad : c.lie[i];
       // (the links nearest what holds it hang against the limb it is fixed to: they are not pushed off it)
       if (i > 2) {
-        for (const l of limbs) outOfLimb(q, l, pad);
-        for (const o of lumps) if (outOfLump(q, o, pad)) c.touch[i] = true;
+        for (let j = 0; j < limbs.length; j++) if (near(q, lb, j * 4, pad)) outOfLimb(q, limbs[j], pad);
+        for (let j = 0; j < lumps.length; j++) if (near(q, ob, j * 4, pad) && outOfLump(q, lumps[j], pad)) c.touch[i] = true;
       }
       if (q[2] < c.lie[i]) {
         sunk[i] = Math.max(sunk[i], c.lie[i] - q[2]);
