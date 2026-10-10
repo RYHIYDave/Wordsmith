@@ -582,9 +582,18 @@ export default async function (page, snap) {
     const by = await page.evaluate(() => {
       const g = window.__dbg.game(); const L = g.level; const s = L.doors[L.ways.gate].spot; const h = g.hero;
       for (const m of g.monsters) m.dead = true;
-      const inside = 3.2;
-      h.x = s.alongX ? s.a + 1.5 : s.plane + inside;
-      h.y = s.alongX ? s.plane + inside : s.a + 1.5;
+      // (a few steps inside it, where he could stand: not over what stands there, a pillar say; Version
+      // 20.2's regression set him down over one's tile, 3.2 tiles in, and there he could take no step)
+      const f = L.floor;
+      const stands = (x, y) => { for (const [ox, oy] of [[-0.31, -0.31], [0.31, -0.31], [-0.31, 0.31], [0.31, 0.31]]) if (L.walk[Math.floor(y + oy) * f.w + Math.floor(x + ox)] !== 1) return false; return true; };
+      let inside = 3.2;
+      found: for (const ins of [3.2, 3.6, 4.0, 2.8, 4.4]) {
+        for (const al of [1.5, 0.9, 2.1]) {
+          const x = s.alongX ? s.a + al : s.plane + ins;
+          const y = s.alongX ? s.plane + ins : s.a + al;
+          if (stands(x, y)) { inside = ins; h.x = x; h.y = y; break found; }
+        }
+      }
       return inside;
     });
     await page.waitForTimeout(700);

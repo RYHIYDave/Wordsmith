@@ -1224,7 +1224,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // (a ledge is in the way as a wall is: the way round it is by the stairs)
         // (THE WAYS: a waypoint and a way through are walked onto, not up to: the run must be clear to the spot itself)
         const short = e.kind === 'way' || e.kind === 'through' ? 0 : 1.35;
-        const straight = lineOfSight(walk, f.w, f.h, h.x, h.y, e.x - ux * short, e.y - uy * short) && g.walksStraight(h.x, h.y, e.x - ux * short, e.y - uy * short);
+        // (Version 20.2: the run is clear for his body, not just for a line through his middle: a run
+        // that grazed the corner of a pillar's tile caught his shoulder on it, and the path round it
+        // and the run past it took turns, a step each, with the hero going nowhere)
+        const ex = e.x - ux * short;
+        const ey = e.y - uy * short;
+        const side = TUNE.heroRadius + 0.05;
+        const clear = (ox: number, oy: number): boolean => lineOfSight(walk, f.w, f.h, h.x + ox, h.y + oy, ex + ox, ey + oy) && g.walksStraight(h.x + ox, h.y + oy, ex + ox, ey + oy);
+        const straight = clear(0, 0) && clear(-uy * side, ux * side) && clear(uy * side, -ux * side);
         const v = straight ? { x: ux, y: uy } : flowDir(e.flow, walk, f.w, f.h, h.x, h.y, undefined, g.level.step);
         if (v.x === 0 && v.y === 0) {
           // on its tile already, or no path the field knows: head straight for it
