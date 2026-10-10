@@ -3,12 +3,11 @@
 **What it is.** Three new bosses of the Warden's standing, one for each of dungeons 2, 3 and 4 (the
 Warden keeps dungeon 1; a lair boss for dungeon 5 comes after them). They are monsters of
 `src/art/new_mobs3.ts`'s kind, posed on the heroes' bones and dressed in the heroes' solids, each on a
-canvas of its own. All three looks have his yes. **THE HEADSMAN AND THE CHAINED ONE ARE READY TO GO IN,
-WITH HIS YES** (10 Oct, 01:58: "I’m going to trust you that these are sick after all the tests and just
-throw them in."). Every move of both has been through every check the heroes had (`src/art/boss_checks.ts`;
+canvas of its own. All three looks have his yes. **ALL THREE ARE READY TO GO IN, WITH HIS YES** (10 Oct,
+01:58: "I’m going to trust you that these are sick after all the tests and just throw them in.  Finish the
+amalgamation and throw that in to.  AFTER the checks tho."). Every move of all three, and of the bone beast
+that bursts out of the amalgamation, has been through every check the heroes had (`src/art/boss_checks.ts`;
 the art rulebook's How art is made 7), every frame, from in front and from behind, and nothing is found.
-The amalgamation's moves are next here, through the same checks first (his words, the same message:
-"Finish the amalgamation and throw that in to.  AFTER the checks tho.").
 
 Nothing of the game makes them: `src/art/bosses3.ts` (the three), `src/art/boss_shots.ts` (what they
 draw on the floor, in the game's own pixels), `src/art/boss_chains.ts` (the Chained One's chains),
@@ -207,6 +206,108 @@ what each move does, how far, how often and to whom, are the main chat's.
   for the ball, his hands short of it and an arm in his hips; in his death, his knees and toes in the
   floor and his feet sliding; at the end of a move, a chain drawn back through his body.
 
+## The Ossuary Amalgamation (`AMALGAM`)
+
+- **Its look** (his yes by 17:44, "Yes, this is it (Recommended)"): a heap of the dead, low and wide,
+  slumped on the floor, a head over the Warden: dark packed bone, the fire in its cracks, skulls all over
+  it with the pink in their sockets, rib cages and broken bones jutting from its hump, the dead's own arms
+  reaching up out of it; no face, but a maw low in its front, a ragged split full of fangs with the fire
+  inside, a crowd of skulls staring over it; behind, it trails off into the floor. SIX GREAT ARMS OF BONE
+  out of its front and sides reach out along the ground, elbows out, hands spread on the floor. A canvas
+  of its own, 320 by 256 (the floor point at 156, 190).
+- **It hauls itself on its arms, and its hands grip the floor as feet do** (his pick by 16:40, "Hauls
+  itself on its arms (Recommended)"): a hand that is down stays where it came down while the heap slides
+  on over the floor, and moves only lifted (`handwork`, `amGait`). Its heap and its arms are its own
+  (`amFrame`, `amArms`, `amGeometry`): the bones only say where it is, which way it faces, how it heaves
+  (`pz`), leans (`pitch`) and twists (`yaw`), how wide its maw gapes (`draw`), how wild the arms on its
+  top are (`pt`), how far it has burst apart (`gale`) and the fire in it (`out`).
+- **Standing** (`stand`, 30 frames at 10 a second): it heaves as if it breathed, its bulk shifting from
+  side to side, its maw working, the arms on its top grabbing at the air; its right front hand shifts its
+  grip and back.
+- **Setting off** (`more.setOff`, 0.7 s), **its haul** (`walk`, 8 frames at 10 a second, painted for 0.8
+  tiles a second, `AMALGAM_PACE`: its six hands two by two crosswise, each reaching out ahead, gripping,
+  the heap dragged up to it, surging on at each pull) and **stopping** (`more.halt`, 0.5 s, from the
+  walk's first frame: at most 0.8 s to come round to it), as the other two's.
+- **Its swipe** (`attack`, 1.5 s; the blow at 0.82 s, `AM_SWIPE_HIT`): it twists away to its right,
+  rearing, its right front arm up and back, claws spread, maw gaping; held, trembling (the warning); the
+  heap twists hard round to its left, its hips first, and the arm rakes across the floor before it, low,
+  and on round past, a streak of the enemy's fire along its claws; the heap crashes forward into it (the
+  game's freeze); the hand back down where it gripped. Where the hand is, moment by moment: `amSwipeAt(t)`.
+- **Arms from the floor** (`more.floorArms`, 2.3 s; his pick, "Arms from the floor (Recommended)"): it
+  rears up high, its front arms raised over it, maw gaping, its fire flaring, and holds there, trembling
+  (the warning); it crashes down, both great hands slammed flat on the floor before it at 1.0 s
+  (`AM_SLAM_HIT`; at `AM_SLAM_SPOTS`, 1.5 tiles ahead and half a tile to either side: stone and dust fly,
+  the floor cracks under them, `drawBallCrash`), squashing flat against the floor, and presses there,
+  shuddering, while OUT ACROSS THE ROOM ARMS OF THE DEAD BURST UP OUT OF THE FLOOR, where the rules put
+  them: each place cracks and glows first (`drawArmCrack`, 0.5 s before, `ARM_CRACK_WARN`); then the floor
+  bursts open, its stone flung up, and three arms of the dead thrust up out of the dark, clawing, sway and
+  grab at the air, and sink back (`makeFloorArmArt`: 14 frames at 10 a second, 1.4 s, `FLOOR_ARM_TIME`; up
+  by 0.15 s, `FLOOR_ARM_UP`; sinking from 1.0 s, `FLOOR_ARM_SINK`); the cracks stay a moment after (0.8 s,
+  `ARM_CRACK_AFTER`). In the film, five places in a fan 2.7 to 4.4 tiles ahead, coming up from 0.5 s after
+  the slam to 1.0 s after: the rules' own in the game.
+- **The skull swarm** (`more.swarm`, 2.0 s; his pick, "Skull swarm (Recommended)"): it swells, the arms on
+  its top flailing, every skull on it burning, its maw gaping wider and wider (the warning); at 1.0 s
+  (`AM_SWARM_HIT`) it heaves forward and spews fourteen burning skulls (`AM_SWARM_N`) out of its maw, each
+  tumbling, its jaw chattering, a tail of fire behind it; and sags back. Each is in its own picture for its
+  first 0.34 s (`AM_SWARM_LIFE`); THEN IT IS THE GAME'S, from where and when `amSwarmSkulls()` says (2.1 to
+  2.5 tiles ahead, 0.7 tiles to either side, 4 to 7.5 game pixels up, 0.34 to 0.57 s after the blow, headed
+  from 30 degrees to its right to 34 to its left), going 4 tiles a second along its way (`AM_SWARM_SPEED`:
+  the pictures are drawn for it). In flight it is `makeSwarmSkullArt` (6 frames at 13 a second,
+  `SWARM_SKULL_FPS`, flying along its own forward: turned as a monster is for the way it goes), its shadow
+  `drawSkullShadow`, where it lands `drawSkullBurst` (the Golem's skull's, in `src/art/mob_shots.ts`). How
+  far each flies, whether they seek the hero, and what they hurt are the rules'; in the film each flies 4.5
+  to 6.5 tiles and dives to the floor.
+- **Devour** (`more.devour`, 2.8 s; his pick, "Devour (Recommended)": it drags the bones off the floor into
+  itself, and a hero with them if close): its maw opens wide, wider, the fire in it roaring, and its front
+  arms spread out wide, low over the floor (the warning, 0.5 to 0.92 s); they rake in along the floor from
+  0.92 to 1.56 s, gouging it (`drawClawRake`; where the hands are, `amRakeAt(t)`), tearing the dead up out
+  of it, bones and skulls and stone, in puffs of dust, and dragging all of it in to its maw, faster and
+  faster, tumbling, gone into it; the maw snaps shut at 1.6 s (`AM_DEVOUR_HIT`: the blow); it gulps,
+  swelling, its skulls burning bright, and lets go. A hero dragged in with it is the rules'.
+- **A bone beast bursts out of it** (`more.burst`, 1.5 s; his pick, "As it's hurt (Recommended)": bone
+  beasts break off it as it takes damage, and any left alive, it eats back): its right flank swells and
+  bulges, shuddering, as something works its way out; at 0.6 s (`AM_BURST_AT`) it bursts at
+  `AM_BURST_FROM`, bone flying, and a bone beast is flung out of it to land clear of its hands at
+  `AM_BURST_SPOT` (0.4 tiles ahead, 1.7 tiles to its right), facing `AM_BURST_WAY`, away from it: the game
+  makes the beast there at that moment and plays its `more.emerge` (below); the heap reels from it, and the
+  wound closes. How often, and when, are the rules'.
+- **Struck** (`reel`, 0.3 s): the heap shudders, its skulls rattling, the arms on its top jerking; its hands
+  keep their grip.
+- **It bursts apart** (`dying`, 2.8 s, `AM_DIE_TIME`; his words by 16:37, "It bursts apart"): struck down,
+  it roars with all its jaws; it swells, shuddering, the fire in its cracks flaring, and holds; at 1.0 s
+  (`AM_BURSTS`) it bursts: its heap slumps and spreads flat over the floor, its bones flung out all round,
+  skulls tumbling, its arms falling still where their hands gripped; the fire goes out (flat by 2.1 s).
+
+## The bone beast (`BONE_BEAST`)
+
+- **What it is** (his pick by 16:40, "As it's hurt (Recommended)"): a piece of the amalgamation's heap gone
+  off on its own: a knot of the same dark packed bone, the fire in its cracks, two small skulls sunk in its
+  sides; a skull at its front, a jaw full of fangs under it and the fire in its sockets; four arms of the
+  dead out of its sides, on which it scuttles low over the floor, elbows up, as a crab does. Small (on the
+  bones' canvas, `CANVAS3`), quick, and it bites. Its hands grip the floor as feet do, as its maker's.
+- **Standing** (`stand`, 16 frames at 10 a second): it bobs and shifts on its hands, its skull turning this
+  way and that, its jaw working; its right front hand shifts its grip.
+- **Setting off** (`more.setOff`, 0.3 s), **its scuttle** (`walk`, 8 frames at 20 a second, painted for 1.5
+  tiles a second, `BB_PACE`: its hands two by two crosswise) and **stopping** (`more.halt`, 0.3 s, from the
+  walk's first frame: at most 0.4 s), carried at its pace as the bosses' are.
+- **Its bite** (`attack`, 1.12 s; the blow at 0.62 s, `BB_BITE_HIT`): it rears back on its hind hands, its
+  front claws raised and spread, its jaw gaping, its sockets flaring, and holds there, trembling (the
+  warning, from 0.28 s); its body tips forward and it pounces, its claws raking down before it, and its jaw
+  snaps shut on what is there (a streak of fire behind its fangs); it lands on its front hands, carried on
+  by it, and draws back to its crouch.
+- **It bursts out** (`more.emerge`, 0.95 s, `BB_EMERGE_TIME`; from the moment its maker's flank bursts, at
+  `AM_BURST_SPOT`, facing `AM_BURST_WAY`): it is flung out of the flank curled up (it starts 26 of the
+  figure's lengths behind its floor point, toward the flank, and 12 up), lands on the floor at 0.24 s, its
+  arms unfold and grip, it rears with its jaw gaping, and crouches, ready.
+- **Dragged back in to be eaten** (`more.dragged`, going round, 8 frames at 20 a second; "any left alive,
+  it eats back"): low on its belly, its skull turned back, shrieking, its claws scrabbling at the floor,
+  skittering over it without a grip (held just off it, so they never stand on it), while the game drags it
+  in to its maker's maw (the devour); gone into it as the maw snaps shut. When it is eaten is the rules'.
+- **Struck** (`reel`, 0.3 s): it jerks back, its jaw flying open, and crouches again.
+- **It falls apart** (`dying`, 1.3 s, `BB_DIE_TIME`): it rears, shrieking, its front claws up; it crashes
+  down on its belly, its front arms thrown out wide; its knot slumps and spreads, its arms fall flat along
+  the floor, and its skull rolls off its front onto its side; the fire goes out of it.
+
 ## The review (`src/art/boss_checks.ts`; the art rulebook, How art is made 7)
 
 Every boss through every check the heroes had, on every frame the game would show (his stand at its
@@ -235,15 +336,28 @@ end he strikes with, and where his moves hand over to each other.
   picture jumping into his walk and out of it; his weight never shifting standing. All mended.
 - **The Chained One:** 11 moves as he is chained (546 frames), 11 with his left chain off (546), 9 free
   of the ball (352), each both ways round: nothing found.
+- **The Ossuary Amalgamation:** 11 moves (stand, walk, attack, reel, dying, setOff, halt, floorArms, swarm,
+  devour, burst), 453 frames, each both ways round: nothing found. As it is not built as a man, it tells the review
+  what of it grips the floor (its six hands, in place of heels and toes), its arms (six, in place of two),
+  the lumps of its heap (which rest in the floor as it is made), and the points of it followed (its hands,
+  its hump, its brow with the maw in it, its middle) and where it strikes from (its swipe's hand; slamming,
+  its hump; spewing and snapping, its brow): `AM_SHAPE`. What the review caught while it was being made, all
+  mended: its hands put beyond its arms' reach at rest and in the swipe (so they slid); its swipe's arm
+  through its own brow; its side hands sliding as it twisted; its elbows into the floor as it died; its
+  burst leaping; its slam's hands leaping down; its big moves not drawn back or carried through far enough.
+- **The bone beast:** 9 moves (stand, walk, attack, reel, dying, setOff, halt, emerge, dragged), 157 frames,
+  each both ways round: nothing found (`BB_SHAPE`). Caught and mended: its skull lunging before its body
+  in the bite (now its body tips first, its skull after).
 
-`npx tsx shots/boss_report.ts <headsman|chained|chained1|chained2|all> [move]` prints the review
+`npx tsx shots/boss_report.ts <headsman|chained|chained1|chained2|amalgam|beast|all> [move]` prints the review
 (`shots/` is kept out of git; `tests/bosses.test.ts`, test 8, runs the same and wants nothing found).
 
 ## For the main chat
 
-- **His yes is given** for the Headsman and the Chained One to go in as they are (01:58, above). Their
-  order in dungeons 2 to 4 (his outline of 22:47, on the board: the Headsman floor 2, the prisoner floor
-  3, the amalgamation floor 4), and every rule of every move, are yours. The numbers above are where the
+- **His yes is given** for all three to go in as they are (01:58, above), the amalgamation once it had
+  been through every check (it has, with its bone beast). Their order in dungeons 2 to 4 (his outline of
+  22:47, on the board: the Headsman floor 2, the prisoner floor 3, the amalgamation floor 4), and every rule
+  of every move, are yours. The numbers above are where the
   pictures put things; the floor drawings in `src/art/boss_shots.ts` take where and when from them.
 - **How the moves hand over, as the checks hold them** (play them so, and nothing jumps):
   - The Headsman: `stand` (any frame) into `raise`; `raise` into `setOff`, any blow or `reel`; `setOff`
@@ -254,6 +368,13 @@ end he strikes with, and where his moves hand over to each other.
   - The Chained One: `stand` (any frame) into `setOff`, any move, `reel` or his death; `setOff` into
     `walk`; `walk` (at its first frame) into `halt`; `halt` and every move into `stand` (its first
     frame); `breakL` ends in `CHAINED_FREED[1]`'s stand, `breakBall` in `CHAINED_FREED[2]`'s.
+  - The amalgamation: `stand` (any frame) into `setOff`, any move, `reel` or its death; `setOff`
+    into `walk`; `walk` (at its first frame) into `halt`; `halt` and every move into `stand` (its first
+    frame).
+  - The bone beast: made at `more.emerge`'s first frame where its maker's flank bursts; `emerge` into
+    `stand` (its first frame); `stand` (any frame) into `setOff`, `attack`, `reel`, `dragged` or its
+    death; `setOff` into `walk`; `walk` (at its first frame) into `halt`; `halt`, `attack` and `reel` into
+    `stand` (its first frame).
   - `setOff`, `walk` and `halt` are carried by the game at the boss's pace from start to end
     (`MobMove.ground`).
 - **His chains cost time to work out** (the Chained One): each move's, the first time it is asked for;
@@ -264,7 +385,19 @@ end he strikes with, and where his moves hand over to each other.
   asked for before then is worked out then, all at once. The chains come out the same either way.
 - **Painting a frame** takes about 21 ms (the Headsman) and 23 ms (the Chained One) on this machine,
   once the chains are worked out: the Headsman has 469 frames each way round (and `holds`, pictures
-  only, never played), the Chained One 546, 546 and 352.
+  only, never played), the Chained One 546, 546 and 352. THE AMALGAMATION IS THE HEAVIEST: about 49 ms a
+  frame (its heap of packed bone), 454 frames each way round (397 living, 57 dying); worth painting ahead
+  from the start of dungeon 4. The bone beast about 4 ms, 154 frames each way round.
+- **What the amalgamation sends out, for you to draw where your rules put them** (`src/art/bosses3.ts`
+  and `src/art/boss_shots.ts`, all in the enemy's pink and gold): the arms of the dead from the floor,
+  `makeFloorArmArt(view)` (its hole on the anchor), with `drawArmCrack` before and after; its swarm's
+  skulls in flight, `makeSwarmSkullArt(view)`, taken over from `amSwarmSkulls()`, with `drawSkullShadow`
+  and `drawSkullBurst`; where its hands slam, `drawBallCrash` at `AM_SLAM_SPOTS`; its claws' gouges as it
+  devours, `drawClawRake` along `amRakeAt(t)`; the bone beast, `makeBoneBeastArt3(pace)`, made at
+  `AM_BURST_SPOT` facing `AM_BURST_WAY` at `AM_BURST_AT` into its maker's `burst`.
+- **The sizes, measured as `tests/monsters.test.ts` measures `FIGURE_SIZE`** (yours to set): the
+  amalgamation, the top of its head on its centre line 34 game pixels up (its highest point 38.5), half
+  its width 46; the bone beast 14, and 17.
 - **New on `MobMove`** (`src/art/new_mobs3.ts`; no other monster's frames change): `feet` (the
   footwork, laid over a move's bones: planted feet, steps, pivots, a knee on the floor), `ropes` (the
   chains at a moment). A boss's canvas is its own (`HS_CANVAS`, 380 by 340, the floor point at 190,
@@ -273,18 +406,22 @@ end he strikes with, and where his moves hand over to each other.
 
 ## Tests and checks
 
-- `tests/bosses.test.ts` (12): 1, the switch is off and nothing of the game imports the bosses; 2, the
+- `tests/bosses.test.ts` (14): 1, the switch is off and nothing of the game imports the bosses; 2, the
   Headsman paints in every frame both ways round, nothing cyan, his edge while he lives and none as he
   dies; 3, his axe never goes through him in any frame of any move; 4, his left hand at the haft's very
   end whenever a pose puts it on the haft, and both hands there at each blow; 5, the chop bites about
   three tiles ahead and the sentence further, both into the floor and not through it; 6, facing away the
   axe is in his right hand (and every other figure is seen from behind as before); 7, as he falls and
   lies, no elbow is above its shoulder; 8, EVERY BOSS THROUGH EVERY CHECK (the whole review, every frame
-  of every move, both ways round, nothing found: the Headsman and the Chained One in all three of his
-  states); 9, the Chained One paints in every frame both ways round, as free as he is; 10, every pixel
-  of both is whole or empty but the edge of light; 11, his chains hang from his cuffs and his collar, a
-  broken one is gone from him, and his throws leave and come back to his hands; 12, nothing of the game
-  imports the chains or the checks either.
+  of every move, both ways round, nothing found: the Headsman, the Chained One in all three of his
+  states, the amalgamation and the bone beast); 9, the Chained One paints in every frame both ways round,
+  as free as he is; 10, every pixel of both is whole or empty but the edge of light; 11, his chains hang
+  from his cuffs and his collar, a broken one is gone from him, and his throws leave and come back to his
+  hands; 12, nothing of the game imports the chains or the checks either; 13, the amalgamation and the
+  bone beast paint in every frame both ways round, nothing cyan, their edge while they live and none as
+  they die, every pixel whole or empty but the edge; 14, what the amalgamation sends out paints in the
+  enemy's colours (the arms from the floor, a skull of its swarm), its swarm leaves its picture out before
+  its maw and goes on out, and the beast lands clear of its hands, flung out of its flank.
 - `tests/new_mobs3.test.ts`: the new monsters' "nothing of the game imports the mock-up" lets the
   bosses' files (a mock-up of their own) import them.
 - The whole unit suite passes on the branch; `tsc` is clean.
@@ -294,4 +431,6 @@ end he strikes with, and where his moves hand over to each other.
   `src/art/new_mobs3.ts` of what they share has changed (`MobMove.feet` and `ropes`, which change only
   a move that has them): the 1388 frames `shots/hash_all3.ts` paints of the heroes, the skeleton, the
   archer, the Shade, the Boneward, the Golem, the champion, the marksman and the Golem's skull are the
-  same at `2328249` and now (10 Oct).
+  same at `2328249` and now (10 Oct). The Headsman and the Chained One are as they were handed over
+  (`1f6eeb6`): every fourth frame of every move of both, in all three of his states, both ways round
+  (1048 frames, `shots/hs_co_hash.ts`), the same pixel for pixel after the amalgamation's work.

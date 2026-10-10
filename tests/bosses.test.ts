@@ -33,6 +33,18 @@
 //  11. his chains hang from his cuffs and his collar in every frame, a broken one is gone from him (and
 //      what it leaves on the floor paints), and his throws leave and come back to his hands;
 //  12. nothing of the game imports the chains or the checks either.
+// THE OSSUARY AMALGAMATION, his words: by 16:37, "A head over the Warden", "Skulls and arms all over
+// (Recommended)", "It eats the dead", "It bursts apart"; by 16:40, "Hauls itself on its arms
+// (Recommended)", "Arms from the floor (Recommended)", "Skull swarm (Recommended)", "Devour
+// (Recommended)", "As it's hurt (Recommended)"; his yes to its look by 17:44, "Yes, this is it
+// (Recommended)"; and, at 01:58 on 10 Oct, "Finish the amalgamation and throw that in to.  AFTER the
+// checks tho." So, with the bone beast that bursts out of it:
+//   8. (above) the amalgamation and the bone beast through every check as well;
+//  13. THE AMALGAMATION AND THE BONE BEAST paint in every frame both ways round: nothing cyan, the edge
+//      while they live and none as they die, every pixel whole or empty but the edge;
+//  14. what it sends out across the room paints, in the enemy's colours (the arms of the dead from the
+//      floor, a skull of its swarm in flight); its swarm leaves its picture out before its maw, going on
+//      out; the beast lands clear of its hands, flung out of its flank.
 //   run: tsx --test tests/bosses.test.ts
 
 // @ts-ignore
@@ -45,7 +57,7 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import type { AnimSet } from '../src/art/actor_types';
-import { BOSSES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_BALL_LET, CO_HOOK_BACK, CO_HOOK_LET, HEADSMAN, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SHAPE, axeOf, coBallPath, coCollarAt, coCuffAt, coHookPath, coShape, collarRingAt, cuffAt, hsBite, makeChainedArt3, makeHeadsmanArt3, makeLeftBehindArt } from '../src/art/bosses3';
+import { AMALGAM, AM_BURST_FROM, AM_BURST_SPOT, AM_BURST_WAY, AM_SHAPE, AM_SWARM_N, BB_SHAPE, BONE_BEAST, FLOOR_ARM_FRAMES, SWARM_SKULL_FRAMES, amSwarmSkulls, makeAmalgamArt3, makeBoneBeastArt3, makeFloorArmArt, makeSwarmSkullArt, BOSSES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_BALL_LET, CO_HOOK_BACK, CO_HOOK_LET, HEADSMAN, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SHAPE, axeOf, coBallPath, coCollarAt, coCuffAt, coHookPath, coShape, collarRingAt, cuffAt, hsBite, makeChainedArt3, makeHeadsmanArt3, makeLeftBehindArt } from '../src/art/bosses3';
 import { checkBoss, findingsSaid } from '../src/art/boss_checks';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
@@ -225,6 +237,8 @@ test('8. EVERY BOSS THROUGH EVERY CHECK: the whole review, every frame of every 
     ['the Chained One', CHAINED, coShape(CHAINED)],
     ['the Chained One, his left chain off', CHAINED_FREED[1], coShape(CHAINED_FREED[1])],
     ['the Chained One, free of the ball', CHAINED_FREED[2], coShape(CHAINED_FREED[2])],
+    ['the Ossuary Amalgamation', AMALGAM, AM_SHAPE],
+    ['a bone beast', BONE_BEAST, BB_SHAPE],
   ];
   for (const [who, mob, shape] of all) {
     const found = checkBoss(mob, shape);
@@ -309,6 +323,66 @@ test('12. nothing of the game imports the chains or the checks either', () => {
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }
+});
+
+test('13. the amalgamation and the bone beast paint in every frame both ways round: nothing cyan, their edge while they live, none as they die, every pixel whole or empty but the edge', () => {
+  for (const [who, art, most, least, edge] of [['the amalgamation', makeAmalgamArt3(), 380, 50, 60], ['a bone beast', makeBoneBeastArt3(), 120, 20, 20]] as const) {
+    for (const view of ['front', 'back'] as const) {
+      const { living, dying } = framesOf(art[view]);
+      assert.ok(living.length > most && dying.length > least, `${who}, ${view}: ${living.length} living frames, ${dying.length} dying`);
+      living.forEach((sp, i) => {
+        const f = looked(sp);
+        assert.ok(f.n > 300 && !f.cyan && f.rim > edge, `${who}, ${view}, living frame ${i}: ${f.n} pixels, ${f.rim} of its edge${f.cyan ? ', and cyan' : ''}`);
+      });
+      dying.forEach((sp, i) => {
+        const f = looked(sp);
+        assert.ok(f.n > 200 && !f.cyan && f.rim === 0, `${who}, ${view}, dying frame ${i}: ${f.n} pixels, ${f.rim} of an edge${f.cyan ? ', and cyan' : ''}`);
+      });
+      [...living, ...dying].forEach((sp, i) => {
+        const d = paintingOf(sp).d;
+        let odd = 0;
+        for (let k = 3; k < d.length; k += 4) if (d[k] !== 0 && d[k] !== 255 && d[k] !== RIM_ALPHA) odd++;
+        assert.equal(odd, 0, `${who}, ${view}, frame ${i}: ${odd} pixels neither whole nor empty`);
+      });
+    }
+  }
+});
+
+test('14. what it sends out paints in the enemy\'s colours; its swarm leaves out before its maw; the beast lands clear of its hands, out of its flank', () => {
+  for (const view of ['front', 'back'] as const) {
+    const arms = makeFloorArmArt(view);
+    const skulls = makeSwarmSkullArt(view);
+    assert.equal(arms.length, FLOOR_ARM_FRAMES);
+    assert.equal(skulls.length, SWARM_SKULL_FRAMES);
+    arms.forEach((sp, i) => {
+      const f = looked(sp);
+      assert.ok(f.n > 60 && !f.cyan, `the arms from the floor, ${view}, frame ${i}: ${f.n} pixels${f.cyan ? ', and cyan' : ''}`);
+    });
+    // (up, between bursting out and sinking back, the arms are most of it)
+    assert.ok(looked(arms[5]).n > looked(arms[0]).n + 400, `the arms up: ${looked(arms[5]).n} pixels, the floor bursting: ${looked(arms[0]).n}`);
+    skulls.forEach((sp, i) => {
+      const f = looked(sp);
+      assert.ok(f.n > 40 && !f.cyan && f.rim > 4, `a skull of its swarm, ${view}, frame ${i}: ${f.n} pixels, ${f.rim} of its edge${f.cyan ? ', and cyan' : ''}`);
+    });
+  }
+  const swarm = amSwarmSkulls();
+  assert.equal(swarm.length, AM_SWARM_N);
+  for (const k of swarm) {
+    assert.ok(k.at[0] > 40 && Math.abs(k.at[1]) < 50 && k.at[2] > 5 && k.at[2] < 17, `a skull leaves its picture at ${k.at.map((v) => v.toFixed(0)).join(', ')}`);
+    assert.ok(k.way[0] > 0.75 && Math.abs(Math.hypot(k.way[0], k.way[1]) - 1) < 1e-6 && k.way[2] === 0, `going on out: ${k.way.map((v) => v.toFixed(2)).join(', ')}`);
+    assert.ok(k.after > 0.3 && k.after < 0.6, `${k.after.toFixed(2)} s after the blow`);
+  }
+  // (the beast lands clear of every hand of its maker's, flung out along its way from its flank)
+  for (const t of [0, 1.5]) {
+    const q = posedOfMob(AMALGAM, 'stand', t);
+    for (const [name, h] of [['R1', [q.rhx, q.rhy]], ['L1', [q.lhx, q.lhy]], ['R2', [q.rfx, q.rfy]], ['L2', [q.lfx, q.lfy]]] as const) {
+      const d = Math.hypot(h[0] - AM_BURST_SPOT[0], h[1] - AM_BURST_SPOT[1]);
+      assert.ok(d > 25, `the beast lands ${d.toFixed(0)} from its ${name} hand`);
+    }
+  }
+  const back = posedOfMob(BONE_BEAST, 'emerge', 0).px;
+  const start = [AM_BURST_SPOT[0] + AM_BURST_WAY[0] * back, AM_BURST_SPOT[1] + AM_BURST_WAY[1] * back];
+  assert.ok(Math.hypot(start[0] - AM_BURST_FROM[0], start[1] - AM_BURST_FROM[1]) < 12, `it starts ${Math.hypot(start[0] - AM_BURST_FROM[0], start[1] - AM_BURST_FROM[1]).toFixed(1)} from where the flank bursts`);
 });
 
 /** Between his hands, a moment into the ball throw. */

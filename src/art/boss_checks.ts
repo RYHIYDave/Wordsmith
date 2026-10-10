@@ -35,9 +35,9 @@
 // solids; what he carries; the end he strikes with.
 
 import type { Mob, MobMove } from './new_mobs3';
-import { skeletonAt } from './new_mobs3';
+import { posedOfMob, skeletonAt } from './new_mobs3';
 import { add, dot, len, lerp3, mul, norm, project, sub } from './skeleton';
-import type { Rot, Skeleton, V3 } from './skeleton';
+import type { Posed, Rot, Skeleton, V3 } from './skeleton';
 
 /** A part of him, a limb: from `a` to `b`, `r` thick (as painted: skin, sleeve, boot, a skirt round a leg). */
 export interface CheckLimb {
@@ -68,18 +68,36 @@ export interface Handover {
   toAt: number;
   mob?: Mob;
 }
-/** A BOSS AS THE REVIEW SEES HIM. */
+/** One of his arms at a moment: where it comes out of him, its elbow and its hand. */
+export interface CheckArm {
+  name: string;
+  sh: V3;
+  el: V3;
+  hand: V3;
+}
+/** A BOSS AS THE REVIEW SEES HIM. (Each is given his bones at the moment, and the pose they were solved from.) */
 export interface BossShape {
   /** His outside as painted, at a moment: limbs (named legL, shinL, footL, upperL, foreL, ... neck, head) and solids (his trunk, his head, what he wears on them). An arm keeps out of all of these but his own; a thing out of all but where it is held. */
-  body: (s: Skeleton) => { limbs: CheckLimb[]; lumps: CheckLump[] };
+  body: (s: Skeleton, q: Posed) => { limbs: CheckLimb[]; lumps: CheckLump[] };
   /** What he carries or drags at a moment of a move (by its name), and where it is. */
-  things?: (move: string, t: number, s: Skeleton) => CheckThing[];
+  things?: (move: string, t: number, s: Skeleton, q: Posed) => CheckThing[];
   /** The end he strikes with at a moment of a move (an axe's edge, a chain's end), if he holds one then. */
-  tip?: (move: string, t: number, s: Skeleton) => V3 | null;
+  tip?: (move: string, t: number, s: Skeleton, q: Posed) => V3 | null;
+  /**
+   * ONE WHO IS NOT BUILT AS A MAN (a heap of the dead hauling itself on its arms): what of him grips the
+   * floor (his hands, in place of heels and toes: down where they come down, as feet are), his arms (in
+   * place of a man's two), and the points of him the review follows from frame to frame and where one
+   * move hands over to the next (in place of a man's head, hands, knees and feet).
+   */
+  grips?: (move: string, t: number, s: Skeleton, q: Posed) => ReadonlyArray<{ name: string; p: V3 }>;
+  arms?: (move: string, t: number, s: Skeleton, q: Posed) => ReadonlyArray<CheckArm>;
+  follow?: (move: string, t: number, s: Skeleton, q: Posed) => Readonly<Record<string, V3>>;
+  /** His solids that rest in the floor as he is made (a heap slumped on it, a tail trailing off into it): not held out of it. */
+  floorFree?: ReadonlyArray<string>;
   /** Moves that are only pictures for the owner, never played (stills of how he holds his weapon): not reviewed. */
   pictures?: ReadonlyArray<string>;
-  /** How far above the floor each of these must stay (the figure's own lengths): his knees, elbows and hands are round, and as thick as they are. */
-  low?: Partial<Record<'knee' | 'elbow' | 'hand' | 'heel' | 'toe', number>>;
+  /** How far above the floor each of these must stay (the figure's own lengths): his knees, elbows and hands are round, and as thick as they are; what grips the floor (`grip`), where it is put down. */
+  low?: Partial<Record<'knee' | 'elbow' | 'hand' | 'heel' | 'toe' | 'grip', number>>;
   /** Where his moves hand over to each other (if not said: his stand into each move and back, into his walk and out of it at any step). */
   handovers?: ReadonlyArray<Handover>;
   /** Who he is after a move that changes him (a chain broken): his stand after it is that one's. */
@@ -188,7 +206,14 @@ const angleBetween = (a: V3, b: V3): number => (Math.acos(Math.max(-1, Math.min(
 export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<string> = movesOf(mob).filter((m) => !shape.pictures?.includes(m))): Finding[] {
   const found: Finding[] = [];
   const VIEWS = viewsOf(mob);
-  const low = { knee: 1.5, elbow: 1.2, hand: 0.4, heel: -0.6, toe: -0.6, ...shape.low };
+  const low = { knee: 1.5, elbow: 1.2, hand: 0.4, heel: -0.6, toe: -0.6, grip: -0.6, ...shape.low };
+  const free = new Set(shape.floorFree ?? []);
+  /** What grips the floor at a moment: his heels and toes, or what his shape says. */
+  const gripsAt = (which: string, t: number, s: Skeleton, q: Posed): ReadonlyArray<{ name: string; p: V3 }> =>
+    shape.grips ? shape.grips(which, t, s, q) : [{ name: 'heelL', p: s.heelL }, { name: 'toeL', p: s.toeL }, { name: 'heelR', p: s.heelR }, { name: 'toeR', p: s.toeR }];
+  /** His arms at a moment: a man's two, or what his shape says. */
+  const armsAt = (which: string, t: number, s: Skeleton, q: Posed): ReadonlyArray<CheckArm> =>
+    shape.arms ? shape.arms(which, t, s, q) : [{ name: 'L', sh: s.shoulderL, el: s.elbowL, hand: s.handL }, { name: 'R', sh: s.shoulderR, el: s.elbowR, hand: s.handR }];
   for (const which of moves) {
     const mv = moveOf(mob, which);
     if (!mv) continue;
@@ -197,49 +222,58 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
     // (walking, the floor goes by under him: a foot on it goes back with it)
     const ground = mv.ground ?? 0;
     const sk = ts.map((t) => skeletonAt(mob, which, t));
-    const tips = ts.map((t, i) => shape.tip?.(which, t, sk[i]) ?? null);
-    // --- SLIDE: each heel and toe, from where it came down, until it lifts (a loop: followed round twice, so that one down where it closes is followed across) ---
-    for (const side of ['L', 'R'] as const) {
-      for (const part of ['heel', 'toe'] as const) {
-        for (const view of VIEWS) {
-          let start: [number, number] | null = null;
-          let from = 0;
-          const n = ts.length;
-          const list = round ? [...ts.keys(), ...ts.keys()].map((i, j) => ({ i, lap: j >= n ? 1 : 0 })) : [...ts.keys()].map((i) => ({ i, lap: 0 }));
-          for (const { i, lap } of list) {
-            const p = (sk[i] as unknown as Record<string, V3>)[part + side];
-            if (p[2] > 0.6) {
-              start = null;
-              continue;
-            }
-            // (the game carries a walking figure on at its pace: where the foot is on the floor itself)
-            const T = ts[i] + lap * (ts[n - 1] - ts[0]);
-            const [x, y] = seen([p[0] + ground * T, p[1], p[2]], view);
-            if (!start) {
-              start = [x, y];
-              from = ts[i];
-              continue;
-            }
-            const d = Math.hypot(x - start[0], y - start[1]);
-            if (d > SLIDE_MAX) found.push({ move: which, t: ts[i], kind: 'slide', what: `${part}${side} (down from ${from.toFixed(2)} s)`, by: d });
+    const qs = ts.map((t) => posedOfMob(mob, which, t));
+    const tips = ts.map((t, i) => shape.tip?.(which, t, sk[i], qs[i]) ?? null);
+    // --- SLIDE: each heel and toe (or what grips), from where it came down, until it lifts (a loop: followed round twice, so that one down where it closes is followed across) ---
+    const grips = ts.map((t, i) => gripsAt(which, t, sk[i], qs[i]));
+    for (const g of grips[0] ?? []) {
+      const name = g.name;
+      for (const view of VIEWS) {
+        let start: [number, number] | null = null;
+        let from = 0;
+        const n = ts.length;
+        const list = round ? [...ts.keys(), ...ts.keys()].map((i, j) => ({ i, lap: j >= n ? 1 : 0 })) : [...ts.keys()].map((i) => ({ i, lap: 0 }));
+        for (const { i, lap } of list) {
+          const p = grips[i].find((e) => e.name === name)?.p;
+          if (!p || p[2] > 0.6) {
+            start = null;
+            continue;
           }
+          // (the game carries a walking figure on at its pace: where the foot is on the floor itself)
+          const T = ts[i] + lap * (ts[n - 1] - ts[0]);
+          const [x, y] = seen([p[0] + ground * T, p[1], p[2]], view);
+          if (!start) {
+            start = [x, y];
+            from = ts[i];
+            continue;
+          }
+          const d = Math.hypot(x - start[0], y - start[1]);
+          if (d > SLIDE_MAX) found.push({ move: which, t: ts[i], kind: 'slide', what: `${name} (down from ${from.toFixed(2)} s)`, by: d });
         }
       }
     }
     for (let fi = 0; fi < ts.length; fi++) {
       const t = ts[fi];
       const s = sk[fi];
-      const { limbs, lumps } = shape.body(s);
+      const q = qs[fi];
+      const { limbs, lumps } = shape.body(s, q);
+      const arms = armsAt(which, t, s, q);
       // --- FLOOR ---
-      for (const side of ['L', 'R'] as const) {
-        const parts: [keyof typeof low, V3][] = [
-          ['knee', side === 'L' ? s.kneeL : s.kneeR], ['elbow', side === 'L' ? s.elbowL : s.elbowR], ['hand', side === 'L' ? s.handL : s.handR],
-          ['heel', side === 'L' ? s.heelL : s.heelR], ['toe', side === 'L' ? s.toeL : s.toeR],
-        ];
-        for (const [name, p] of parts) if (p[2] < low[name] - SINK_MAX) found.push({ move: which, t, kind: 'floor', what: `${name}${side}`, by: low[name] - p[2] });
+      if (!shape.arms) {
+        for (const side of ['L', 'R'] as const) {
+          const parts: [keyof typeof low, V3][] = [['knee', side === 'L' ? s.kneeL : s.kneeR], ['elbow', side === 'L' ? s.elbowL : s.elbowR], ['hand', side === 'L' ? s.handL : s.handR]];
+          for (const [name, p] of parts) if (p[2] < low[name] - SINK_MAX) found.push({ move: which, t, kind: 'floor', what: `${name}${side}`, by: low[name] - p[2] });
+        }
+      } else {
+        for (const a of arms) for (const [name, p] of [['elbow', a.el], ['hand', a.hand]] as const) if (p[2] < low[name] - SINK_MAX) found.push({ move: which, t, kind: 'floor', what: `${name} ${a.name}`, by: low[name] - p[2] });
+      }
+      for (const g of grips[fi]) {
+        const lo = shape.grips ? low.grip : low[g.name.startsWith('heel') ? 'heel' : 'toe'];
+        if (g.p[2] < lo - SINK_MAX) found.push({ move: which, t, kind: 'floor', what: g.name, by: lo - g.p[2] });
       }
       // (and his trunk and head, lying on the floor: not into it)
       for (const o of lumps) {
+        if (free.has(o.name)) continue;
         const under = o.c[2] - Math.hypot(o.h[0] * o.rot[0][2], o.h[1] * o.rot[1][2], o.h[2] * o.rot[2][2]);
         if (under < -SINK_MAX) found.push({ move: which, t, kind: 'floor', what: o.name, by: -under });
       }
@@ -249,32 +283,31 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
         if (under < -SINK_MAX) found.push({ move: which, t, kind: 'floor', what: l.name, by: -under });
       }
       // --- ARM: into his head, his neck, his trunk or what he wears; a hand into a thigh ---
-      for (const side of ['L', 'R'] as const) {
-        const sh = side === 'L' ? s.shoulderL : s.shoulderR;
-        const el = side === 'L' ? s.elbowL : s.elbowR;
-        const ha = side === 'L' ? s.handL : s.handR;
+      for (const a of arms) {
+        const { sh, el } = a;
+        const ha = a.hand;
         for (let k = 0; k <= 12; k++) {
           // (the top of the upper arm is in the shoulder: from its middle on)
-          const q = k <= 6 ? add(sh, mul(sub(el, sh), 0.45 + 0.55 * (k / 6))) : add(el, mul(sub(ha, el), (k - 6) / 6));
+          const pt = k <= 6 ? add(sh, mul(sub(el, sh), 0.45 + 0.55 * (k / 6))) : add(el, mul(sub(ha, el), (k - 6) / 6));
           const bit = k <= 6 ? 'upper' : 'fore';
           for (const o of lumps) {
-            const d = inLump(q, o);
-            if (d > SINK_MAX) found.push({ move: which, t, kind: 'arm', what: `${bit}${side} in ${o.name}`, by: d });
+            const d = inLump(pt, o);
+            if (d > SINK_MAX) found.push({ move: which, t, kind: 'arm', what: `${bit}${a.name} in ${o.name}`, by: d });
           }
           for (const l of limbs) {
             if (l.name !== 'head' && l.name !== 'neck') continue;
-            const d = inLimb(q, l);
-            if (d > SINK_MAX) found.push({ move: which, t, kind: 'arm', what: `${bit}${side} in ${l.name}`, by: d });
+            const d = inLimb(pt, l);
+            if (d > SINK_MAX) found.push({ move: which, t, kind: 'arm', what: `${bit}${a.name} in ${l.name}`, by: d });
           }
         }
         for (const l of limbs) {
           if (!/^leg[LR]$/.test(l.name)) continue;
           const d = inLimb(ha, l);
-          if (d > SINK_MAX) found.push({ move: which, t, kind: 'arm', what: `hand${side} in ${l.name}`, by: d });
+          if (d > SINK_MAX) found.push({ move: which, t, kind: 'arm', what: `hand${a.name} in ${l.name}`, by: d });
         }
       }
       // --- THROUGH ---
-      for (const th of shape.things?.(which, t, s) ?? []) {
+      for (const th of shape.things?.(which, t, s, q) ?? []) {
         const may = new Set(th.may ?? []);
         const tol = th.r >= THICK ? THICK : th.r + SINK_MAX;
         for (const q of th.pts) {
@@ -293,9 +326,10 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
       }
     }
     // --- JERK: the points that carry a move, frame to frame, as the game shows them ---
-    const followed: [string, (i: number) => V3 | null][] = [
-      ['tip', (i) => tips[i]], ['handR', (i) => sk[i].handR], ['handL', (i) => sk[i].handL], ['head', (i) => sk[i].head], ['pelvis', (i) => sk[i].pelvis],
-    ];
+    const fol = shape.follow ? ts.map((t, i) => (shape.follow as NonNullable<BossShape['follow']>)(which, t, sk[i], qs[i])) : null;
+    const followed: [string, (i: number) => V3 | null][] = fol
+      ? [['tip', (i) => tips[i]], ...Object.keys(fol[0] ?? {}).map((k): [string, (i: number) => V3 | null] => [k, (i) => fol[i][k] ?? null])]
+      : [['tip', (i) => tips[i]], ['handR', (i) => sk[i].handR], ['handL', (i) => sk[i].handL], ['head', (i) => sk[i].head], ['pelvis', (i) => sk[i].pelvis]];
     const jerks = new Set<string>();
     for (const [name, at] of followed) {
       for (const view of VIEWS) {
@@ -339,7 +373,7 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
     // --- BLOW and HIPS: a blow drawn back, held, and carried through; the hips first ---
     const hit = mv.motion.hit;
     if (hit !== undefined && which !== 'stand' && which !== 'walk' && tips.every((p, i) => p || Math.abs(ts[i] - hit) > 0.2)) {
-      const tipAt = (t: number): V3 | null => shape.tip?.(which, t, skeletonAt(mob, which, t)) ?? null;
+      const tipAt = (t: number): V3 | null => shape.tip?.(which, t, skeletonAt(mob, which, t), posedOfMob(mob, which, t)) ?? null;
       const h0 = tipAt(Math.max(0, hit - FR / 2));
       const h1 = tipAt(hit + FR / 2);
       if (h0 && h1 && len(sub(h1, h0)) > 1e-6) {
@@ -418,22 +452,25 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
       ];
   // (his stand the game leaves at whatever frame it has come to, as it left the heroes' standing: from every frame of it)
   const stands = framesOf(mob, 'stand');
+  /** The points of him at a moment of a move (`who`: as he is then): a man's head, hands, knees and feet, or what his shape follows. */
+  const pointsAt = (who: Mob, move: string, t: number, s: Skeleton): Record<string, V3> => (shape.follow ? { ...shape.follow(move, t, s, posedOfMob(who, move, t)) } : pointsOf(s));
   for (const h of hand) {
     if (!moves.includes(h.from) && !moves.includes(h.to)) continue;
     const froms = h.from === 'stand' ? stands : [h.at === 'end' ? longOf(mob, h.from) : h.at];
     const b = skeletonAt(h.mob ?? mob, h.to, h.toAt);
-    const pb = pointsOf(b);
-    const thB = (h.mob ? (shape.thingsOf?.(h.mob) ?? shape.things) : shape.things)?.(h.to, h.toAt, b) ?? [];
+    const pb = pointsAt(h.mob ?? mob, h.to, h.toAt, b);
+    const thB = (h.mob ? (shape.thingsOf?.(h.mob) ?? shape.things) : shape.things)?.(h.to, h.toAt, b, posedOfMob(h.mob ?? mob, h.to, h.toAt)) ?? [];
     let worst = 0;
     let worstAt = froms[0];
     const carried = new Map<string, { by: number; t: number }>();
     for (const ta of froms) {
       const a = skeletonAt(mob, h.from, ta);
-      const pa = pointsOf(a);
+      const pa = pointsAt(mob, h.from, ta, a);
       for (const view of VIEWS) {
         let sum = 0;
         let n = 0;
         for (const k of Object.keys(pa)) {
+          if (!pb[k]) continue;
           const [x0, y0] = seen(pa[k], view);
           const [x1, y1] = seen(pb[k], view);
           sum += Math.hypot(x1 - x0, y1 - y0);
@@ -445,7 +482,7 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
         }
       }
       // (and what he carries or drags: a chain swinging at the end of one move and hanging still at the start of the next leaps)
-      for (const x of shape.things?.(h.from, ta, a) ?? []) {
+      for (const x of shape.things?.(h.from, ta, a, posedOfMob(mob, h.from, ta)) ?? []) {
         const y = thB.find((z) => z.name === x.name);
         if (!y || y.pts.length !== x.pts.length || !x.pts.length) continue;
         for (const view of VIEWS) {

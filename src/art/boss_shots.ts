@@ -402,3 +402,71 @@ export function drawScrape(g: CanvasRenderingContext2D, at: FloorAt, x0: number,
   for (let i = 0; i < 4; i++) dotAt(g, ax + (hash(i, 3, 47) - 0.5) * 6, ay - 1 - hash(i, 4, 47) * 3, P.st4);
   g.globalAlpha = was;
 }
+
+// ---------------------------------------------------------------------------------------------
+// THE OSSUARY AMALGAMATION
+
+/** How long before arms of the dead burst up out of the floor its cracks glow there (seconds: the warning). */
+export const ARM_CRACK_WARN = 0.5;
+/** How long the cracks stay after the arms have sunk back (seconds), fading. */
+export const ARM_CRACK_AFTER = 0.8;
+/**
+ * WHERE ARMS OF THE DEAD BURST UP OUT OF THE FLOOR (its "Arms from the floor"), at (x, y) (tiles), `t`
+ * seconds from when they do: before, the floor cracking open there, out every way, its cracks glowing
+ * brighter and longer as it comes (the warning); while they are up (`stay` seconds: art/bosses3.ts
+ * FLOOR_ARM_TIME) the cracks dark round the hole; after, fading.
+ */
+export function drawArmCrack(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, t: number, stay = 1.4): void {
+  if (t < -ARM_CRACK_WARN || t >= stay + ARM_CRACK_AFTER) return;
+  const was = g.globalAlpha;
+  const coming = t < 0 ? 1 + t / ARM_CRACK_WARN : 1;
+  const fade = t < stay ? 1 : 1 - (t - stay) / ARM_CRACK_AFTER;
+  const hot = t < 0 ? 0.35 + 0.65 * coming : clamp01(1 - t / 0.25);
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + hash(i, 5, 61) * 0.7;
+    const long = (0.28 + 0.2 * hash(i, 6, 61)) * (0.35 + 0.65 * coming);
+    const pts = jagged(at, x, y, Math.cos(a), Math.sin(a), long, 60 + i, 0.07);
+    along(pts, (px, py, f) => {
+      g.globalAlpha = was * fade;
+      dotAt(g, px, py, hot > 0.1 && f < 0.75 ? (hot > 0.6 && f < 0.4 ? FLAME[3] : FLAME[2]) : P.ink);
+    });
+  }
+  // (and the glow coming up through them, beating faster as it comes)
+  if (t < 0) {
+    const [cx, cy] = at(x, y);
+    g.globalAlpha = was * (0.25 + 0.35 * coming) * (0.75 + 0.25 * Math.sin(t * (18 + 20 * coming)));
+    dotAt(g, cx - 2, cy - 1, FLAME[2], 5, 2);
+    dotAt(g, cx - 1, cy - 1, FLAME[3], 3, 1);
+  }
+  g.globalAlpha = was;
+}
+/**
+ * WHERE GREAT CLAWS RAKE THE FLOOR (its devour): along a way of floor points (tiles, oldest first),
+ * three gouges side by side, dark, a pale edge of broken stone along each, the freshest end the
+ * deepest; `k`: 1 fresh to 0 gone.
+ */
+export function drawClawRake(g: CanvasRenderingContext2D, at: FloorAt, pts: ReadonlyArray<readonly [number, number]>, k: number): void {
+  if (k <= 0 || pts.length < 2) return;
+  const was = g.globalAlpha;
+  for (let c = -1; c <= 1; c++) {
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1];
+      const [x1, y1] = pts[i];
+      const L = Math.hypot(x1 - x0, y1 - y0) || 1;
+      const sx = (-(y1 - y0) / L) * 0.1 * c;
+      const sy = ((x1 - x0) / L) * 0.1 * c;
+      const [ax, ay] = at(x0 + sx, y0 + sy);
+      const [bx, by] = at(x1 + sx, y1 + sy);
+      const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay)));
+      for (let j = 0; j < n; j++) {
+        const f = j / n;
+        const fresh = 0.55 + 0.45 * ((i - 1 + f) / (pts.length - 1));
+        g.globalAlpha = was * clamp01(k) * fresh;
+        dotAt(g, ax + (bx - ax) * f, ay + (by - ay) * f, P.ink);
+        g.globalAlpha = was * clamp01(k) * fresh * 0.7;
+        dotAt(g, ax + (bx - ax) * f, ay + (by - ay) * f - 1, P.st6);
+      }
+    }
+  }
+  g.globalAlpha = was;
+}

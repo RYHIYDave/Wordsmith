@@ -15,13 +15,14 @@ import { toSprite } from '../art/kit';
 import { makeSkeletonArt3 } from '../art/monster_bones3';
 import { makeWardenArt } from '../art/monster_warden';
 import { MOVES3 } from '../art/moves3';
-import { AMALGAM, AXE_SHOT_FRAMES, BALL_SHOT_FRAMES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_SNAP_BALL, CO_SNAP_L, makeLeftBehindArt, CO_BALL_LAND, CO_BALL_LET, CO_BALL_REACH, CO_HOOK_BACK, CO_HOOK_BITE, CO_HOOK_LET, CO_HOOK_REACH, CO_LASH_HIT, CO_WHIRL_FROM, CO_WHIRL_TO, HEADSMAN, HOOK_SHOT_FRAMES, coBallPath, coCollarAt, coCuffAt, coHookPath, coWhirlReach, makeBallShotArt, makeHookShotArt, HS_CATCH, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SWEEP_FROM, HS_SWEEP_TO, HS_THROW_HIT, axeOf, hsBite, hsSweepReach, makeAxeShotArt } from '../art/bosses3';
-import { SENTENCE_FROM, drawAxeShadow, drawBallCrash, drawBallShadow, drawChainOut, drawChopCrack, drawScrape, drawSentenceLine, drawSentenceSplit, drawSweepRing, drawThrowPath, throwPathAt } from '../art/boss_shots';
+import { AMALGAM, AM_BURST_AT, AM_BURST_SPOT, AM_BURST_WAY, AM_DEVOUR_HIT, AM_SLAM_HIT, AM_SLAM_SPOTS, AM_SWARM_HIT, AM_SWARM_SPEED, AM_SWIPE_HIT, BB_BITE_HIT, BB_EMERGE_TIME, BONE_BEAST, FLOOR_ARM_FPS, FLOOR_ARM_FRAMES, FLOOR_ARM_SINK, FLOOR_ARM_TIME, SWARM_SKULL_FPS, SWARM_SKULL_FRAMES, amRakeAt, amSwarmSkulls, makeFloorArmArt, makeSwarmSkullArt, AXE_SHOT_FRAMES, BALL_SHOT_FRAMES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_SNAP_BALL, CO_SNAP_L, makeLeftBehindArt, CO_BALL_LAND, CO_BALL_LET, CO_BALL_REACH, CO_HOOK_BACK, CO_HOOK_BITE, CO_HOOK_LET, CO_HOOK_REACH, CO_LASH_HIT, CO_WHIRL_FROM, CO_WHIRL_TO, HEADSMAN, HOOK_SHOT_FRAMES, coBallPath, coCollarAt, coCuffAt, coHookPath, coWhirlReach, makeBallShotArt, makeHookShotArt, HS_CATCH, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SWEEP_FROM, HS_SWEEP_TO, HS_THROW_HIT, axeOf, hsBite, hsSweepReach, makeAxeShotArt } from '../art/bosses3';
+import { SENTENCE_FROM, drawArmCrack, drawAxeShadow, drawBallCrash, drawClawRake, drawBallShadow, drawChainOut, drawChopCrack, drawScrape, drawSentenceLine, drawSentenceSplit, drawSweepRing, drawThrowPath, throwPathAt } from '../art/boss_shots';
+import { drawSkullBurst, drawSkullShadow } from '../art/mob_shots';
 import type { FloorAt } from '../art/mob_shots';
 import { TILE3, canvasOf, deathOfMob, handAt, paintMob, paintViewOf, posedOfMob, skeletonAt } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
 import type { GameView, PaintView } from '../art/skin';
-import { drawAura, drawLights } from '../engine/px';
+import { drawAura, drawGlow, drawLights } from '../engine/px';
 import type { Sprite } from '../engine/px';
 
 const parts = decodeURIComponent(location.hash.slice(1)).split(':');
@@ -142,7 +143,8 @@ const BOSSES: Record<string, { mob: Mob; title: string; short: string; walkSaid?
   chained: { mob: CHAINED, title: 'The Chained One', short: 'The Chained One', walkSaid: 'His walk: a starved giant’s lurching shamble, his chains dragging, the ball scraping behind him', struckSaid: 'Struck: he jerks back from it, his chains rattling', deathSaid: 'His chains drag him down' },
   chained1: { mob: CHAINED_FREED[1], title: 'The Chained One, his left chain off', short: 'His left chain off', walkSaid: 'His walk, his left chain off', struckSaid: 'Struck', deathSaid: 'His chains drag him down' },
   chained2: { mob: CHAINED_FREED[2], title: 'The Chained One, free of the ball', short: 'Free of the ball', walkSaid: 'His walk, free of the ball', struckSaid: 'Struck', deathSaid: 'His chains drag him down' },
-  amalgam: { mob: AMALGAM, title: 'The Ossuary Amalgamation', short: 'The amalgamation' },
+  amalgam: { mob: AMALGAM, title: 'The Ossuary Amalgamation', short: 'The amalgamation', walkSaid: 'Its haul: its great hands reach out, grip and drag the heap on, two by two', struckSaid: 'Struck: the heap shudders, its skulls rattling', deathSaid: 'It bursts apart' },
+  beast: { mob: BONE_BEAST, title: 'A bone beast', short: 'A bone beast', walkSaid: 'Its scuttle: low and quick on its four hands, two by two', struckSaid: 'Struck: it jerks back, its jaw flying open', deathSaid: 'It falls apart' },
 };
 const spOf = (mob: Mob, which: string, t: number, view: GameView): Sprite =>
   which === 'die' ? toSprite(deathOfMob(mob, t / mob.dieTime, view), null, canvasOf(mob).ax, canvasOf(mob).ay) : toSprite(paintMob(mob, which, t, view), mob.aura, canvasOf(mob).ax, canvasOf(mob).ay);
@@ -185,6 +187,32 @@ function widthOf(list: { sp: Sprite }[], S: number, PAD: number): number {
     const [l, r] = reachOf(f.sp);
     return a + Math.max(l + r, 62) + GAP;
   }, GAP) * S + PAD * 2;
+}
+
+if (mode === 'shots') {
+  // WHAT THE AMALGAMATION SENDS OUT, frame by frame, beside the knight for size: shots:<arms | skull>[:<scale>]
+  const which = parts[1] || 'arms';
+  const S = Number(parts[2]) || 3;
+  const PAD = 14;
+  const frames = which === 'skull' ? makeSwarmSkullArt('front') : makeFloorArmArt('front');
+  const fps = which === 'skull' ? SWARM_SKULL_FPS : FLOOR_ARM_FPS;
+  const list = [
+    { sp: KNIGHT(), name: 'The knight', line: 'for size', shadow: 12, gold: false },
+    ...frames.map((sp, i) => ({ sp, name: `${(i / fps).toFixed(2)} s`, line: which === 'skull' ? 'flying to the right' : '', shadow: 0, gold: true })),
+  ];
+  const W = Math.max(widthOf(list, S, PAD), 600);
+  cv.width = W;
+  cv.height = 3000;
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  text(which === 'skull' ? 'A skull of its swarm, in flight' : 'Arms of the dead from the floor', PAD, 10, 22, '#ffd866', 700);
+  const h = row(list, 50, S, PAD, W);
+  cv.height = 50 + h + 10;
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  text(which === 'skull' ? 'A skull of its swarm, in flight' : 'Arms of the dead from the floor', PAD, 10, 22, '#ffd866', 700);
+  row(list, 50, S, PAD, W);
+  win.__ready = true;
 }
 
 if (mode === 'lineup') {
@@ -313,7 +341,48 @@ function inGamePixels(x: number, y: number, w: number, h: number, fx0: number, f
   g.drawImage(low, x0, y0, low.width * k, low.height * k);
 }
 /** A pane of floor with him where he stands: `under` drawn on the floor (the game's pixels), `over` in the air; `by` tiles of floor gone by under him (a walk), `away` which way. */
-function filmPane(x: number, y: number, w: number, h: number, S: number, fx0: number, fy0: number, sp: Sprite, shadow: number, under?: (c: CanvasRenderingContext2D) => void, over?: (c: CanvasRenderingContext2D) => void, by = 0, away = false, props: ReadonlyArray<Sprite> = []): void {
+/** A sprite put on the floor of a film beside him: where (the game's pixels from his floor point, the sprite's own floor point), turned over or not, and the soft shadow under it (its half-width, picture pixels; none if 0). */
+interface Placed {
+  sp: Sprite;
+  x: number;
+  y: number;
+  flip?: boolean;
+  shadow?: number;
+}
+function drawPlaced(S: number, fx0: number, fy0: number, list: ReadonlyArray<Placed>): void {
+  for (const p of list) {
+    const px = fx0 + p.x * 2 * S;
+    const py = fy0 + p.y * 2 * S;
+    if (p.shadow) {
+      const sh = g.createRadialGradient(px, py, 0, px, py, p.shadow * S);
+      sh.addColorStop(0, 'rgba(0,0,0,0.6)');
+      sh.addColorStop(1, 'rgba(0,0,0,0)');
+      g.save();
+      g.translate(px, py);
+      g.scale(1, 0.5);
+      g.translate(-px, -py);
+      g.fillStyle = sh;
+      g.beginPath();
+      g.arc(px, py, p.shadow * S, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+    }
+    // (turned over, as the game turns a picture over for one who faces the other way: its lights with it)
+    const k = 2 * S;
+    const light = (l: { x: number; y: number; r: number; color: string; a?: number }): void => drawGlow(g, px + (p.flip ? -1 : 1) * (l.x - p.sp.ax) * k, py + (l.y - p.sp.ay) * k, l.r * k, l.color, l.a ?? 0.5);
+    if (p.sp.aura) light(p.sp.aura);
+    g.imageSmoothingEnabled = false;
+    if (p.flip) {
+      g.save();
+      g.translate(px, py);
+      g.scale(-1, 1);
+      g.drawImage(p.sp.img, Math.round(-p.sp.ax * 2 * S), Math.round(-p.sp.ay * 2 * S), p.sp.img.width * S, p.sp.img.height * S);
+      g.restore();
+    } else g.drawImage(p.sp.img, Math.round(px - p.sp.ax * 2 * S), Math.round(py - p.sp.ay * 2 * S), p.sp.img.width * S, p.sp.img.height * S);
+    for (const l of p.sp.lights ?? []) light(l);
+  }
+}
+function filmPane(x: number, y: number, w: number, h: number, S: number, fx0: number, fy0: number, sp: Sprite, shadow: number, under?: (c: CanvasRenderingContext2D) => void, over?: (c: CanvasRenderingContext2D) => void, by = 0, away = false, props: ReadonlyArray<Sprite> = [], placed: { behind: ReadonlyArray<Placed>; before: ReadonlyArray<Placed> } = { behind: [], before: [] }): void {
   g.save();
   g.beginPath();
   g.rect(x, y, w, h);
@@ -359,10 +428,12 @@ function filmPane(x: number, y: number, w: number, h: number, S: number, fx0: nu
   // (what lies on the floor where he stands, painted as he is: a broken chain left behind)
   g.imageSmoothingEnabled = false;
   for (const p of props) g.drawImage(p.img, Math.round(fx0 - p.ax * 2 * S), Math.round(fy0 - p.ay * 2 * S), p.img.width * S, p.img.height * S);
+  drawPlaced(S, fx0, fy0, placed.behind);
   drawAura(g, sp, fx0, fy0, 2 * S);
   g.imageSmoothingEnabled = false;
   g.drawImage(sp.img, Math.round(fx0 - sp.ax * 2 * S), Math.round(fy0 - sp.ay * 2 * S), sp.img.width * S, sp.img.height * S);
   drawLights(g, sp, fx0, fy0, 2 * S);
+  drawPlaced(S, fx0, fy0, placed.before);
   if (over) inGamePixels(x, y, w, h, fx0, fy0, S, over);
   g.restore();
 }
@@ -393,6 +464,12 @@ interface FilmOf {
   /** Who he is after it (his chains breaking: as free as he is then), and what it leaves lying on the floor where he stands (`left`: the game's pixels from his floor point). */
   then?: Mob;
   left?: Record<GameView, Sprite>;
+  /** How long what it does to the floor and sends out goes on after the move is over (seconds; he stands meanwhile). */
+  tail?: number;
+  /** What it sends out across the room, as pictures of their own, at a moment: those in front of him (nearer the eye) and those behind. */
+  placed?: (t: number, view: GameView) => { behind: Placed[]; before: Placed[] };
+  /** Room on the floor before him for it (picture pixels; 40 if not said). */
+  room?: number;
 }
 const lastKey = (mob: Mob, which: string): number => {
   const mv = which === 'attack' ? mob.attack : which === 'reel' ? mob.reel : which === 'dying' ? mob.dying : mob.more?.[which];
@@ -552,7 +629,189 @@ function chainedFilms(): Record<string, FilmOf> {
     },
   };
 }
-const FILMS: Record<string, () => Record<string, FilmOf>> = { headsman: headsmanFilms, chained: chainedFilms, chained1: chainedFilms, chained2: chainedFilms };
+const smooth01 = (u: number): number => {
+  const k = Math.max(0, Math.min(1, u));
+  return k * k * (3 - 2 * k);
+};
+function amalgamFilms(): Record<string, FilmOf> {
+  const at = (view: GameView, fwd: number, left: number): [number, number] => floorOf(paintViewOf(AMALGAM, view), fwd, left);
+  /** Where a point of the floor before it and to its left (tiles) is on the screen, and a way along the floor seen there: which of a picture's two ways it is (facing you or away) and whether it is turned over. */
+  const scr = (view: GameView, fwd: number, left: number): [number, number] => {
+    const [x, y] = ISO(...at(view, fwd, left));
+    return [x, y];
+  };
+  const facing = (view: GameView, way: readonly number[]): { v: GameView; flip: boolean } => {
+    const [x, y] = scr(view, way[0], way[1]);
+    return { v: y > 0 ? 'front' : 'back', flip: x < 0 };
+  };
+  const arms = makeFloorArmArt('front');
+  const skulls = { front: makeSwarmSkullArt('front'), back: makeSwarmSkullArt('back') };
+  // (where the arms come up in these films: a fan out before it, the nearest first, and when: seconds after its hands slam the floor. The rules' own in the game)
+  const SPOTS: ReadonlyArray<readonly [number, number, number]> = [[2.7, -0.9, 0.5], [2.9, 1.0, 0.62], [3.6, 0.05, 0.76], [4.2, -1.4, 0.9], [4.4, 1.5, 1.0]];
+  const slams = AM_SLAM_SPOTS.map((p) => tilesOf(p));
+  const swarm = amSwarmSkulls().map((k, i) => {
+    const far = 4.5 + 2 * ((i * 7919) % 13) / 13;
+    return { ...k, from: tilesOf(k.at), far, flight: far / AM_SWARM_SPEED };
+  });
+  const where = (k: (typeof swarm)[number], age: number): [number, number, number] => {
+    const d = Math.min(age, k.flight) * AM_SWARM_SPEED;
+    const dive = smooth01((age - (k.flight - 0.28)) / 0.28);
+    return [k.from[0] + k.way[0] * d, k.from[1] + k.way[1] * d, k.from[2] * (1 - dive)];
+  };
+  const spot = tilesOf(AM_BURST_SPOT);
+  return {
+    attack: {
+      long: lastKey(AMALGAM, 'attack'),
+      heavy: [AM_SWIPE_HIT],
+      said: (t) => (t < 0.36 ? 'Its swipe: it twists away, rearing, its right front arm up and back' : t < 0.66 ? 'Its swipe: held there, its claws spread, its maw gaping' : t < 1.0 ? 'Its swipe: round low across the floor before it, the heap crashing into it' : 'Its swipe: its hand back down where it gripped'),
+    },
+    floorArms: {
+      long: lastKey(AMALGAM, 'floorArms'),
+      heavy: [AM_SLAM_HIT],
+      tail: 2.0,
+      room: 150,
+      said: (t) => {
+        const after = t - AM_SLAM_HIT;
+        if (t < 0.45) return 'Arms from the floor: it rears up high, its great arms raised over it';
+        if (t < 0.76) return 'Arms from the floor: held up there, trembling, its maw gaping, its fire flaring';
+        if (after < 0.3) return 'Arms from the floor: it crashes down, both great hands slammed flat on the floor';
+        if (after < SPOTS[0][2]) return 'Arms from the floor: the floor cracks and glows out before it, where they will come';
+        if (after < SPOTS[SPOTS.length - 1][2] + FLOOR_ARM_SINK) return 'Arms from the floor: arms of the dead burst up out of the floor, clawing';
+        return 'Arms from the floor: they sink back down';
+      },
+      under: (c, t, view) => {
+        for (const [f, l] of slams) {
+          const [x, y] = at(view, f, l);
+          drawBallCrash(c, ISO, x, y, t - AM_SLAM_HIT);
+        }
+        for (const [f, l, when] of SPOTS) {
+          const [x, y] = at(view, f, l);
+          drawArmCrack(c, ISO, x, y, t - AM_SLAM_HIT - when, FLOOR_ARM_TIME);
+        }
+      },
+      placed: (t, view) => {
+        const out: { behind: Placed[]; before: Placed[] } = { behind: [], before: [] };
+        for (const [f, l, when] of SPOTS) {
+          const u = t - AM_SLAM_HIT - when;
+          if (u < 0 || u >= FLOOR_ARM_TIME) continue;
+          const [x, y] = scr(view, f, l);
+          (y > 0 ? out.before : out.behind).push({ sp: arms[Math.min(FLOOR_ARM_FRAMES - 1, Math.floor(u * FLOOR_ARM_FPS + 1e-6))], x, y });
+        }
+        out.behind.sort((a, b) => a.y - b.y);
+        out.before.sort((a, b) => a.y - b.y);
+        return out;
+      },
+    },
+    swarm: {
+      long: lastKey(AMALGAM, 'swarm'),
+      heavy: [],
+      tail: 2.0,
+      room: 190,
+      said: (t) => (t < 0.45 ? 'The skull swarm: it swells, the arms on its top flailing' : t < AM_SWARM_HIT - 0.04 ? 'The skull swarm: its maw gaping wider and wider, every skull on it burning' : t < AM_SWARM_HIT + 0.6 ? 'The skull swarm: it heaves forward and spews a swarm of burning skulls' : 'The skull swarm: they fly on out across the room'),
+      under: (c, t, view) => {
+        for (const k of swarm) {
+          const age = t - AM_SWARM_HIT - k.after;
+          if (age < 0) continue;
+          const [f, l, h] = where(k, age);
+          const [x, y] = at(view, f, l);
+          if (age < k.flight) drawSkullShadow(c, ISO, x, y, h, k.from[2]);
+          else drawSkullBurst(c, ISO, x, y, age - k.flight);
+        }
+      },
+      placed: (t, view) => {
+        const out: { behind: Placed[]; before: Placed[] } = { behind: [], before: [] };
+        swarm.forEach((k, i) => {
+          const age = t - AM_SWARM_HIT - k.after;
+          if (age < 0 || age >= k.flight) return;
+          const [f, l, h] = where(k, age);
+          const [x, y] = scr(view, f, l);
+          const { v, flip } = facing(view, k.way);
+          const sp = skulls[v][Math.floor(age * SWARM_SKULL_FPS + i) % SWARM_SKULL_FRAMES];
+          (y > 0 ? out.before : out.behind).push({ sp, x, y: y - h, flip });
+        });
+        return out;
+      },
+    },
+    devour: {
+      long: lastKey(AMALGAM, 'devour'),
+      heavy: [AM_DEVOUR_HIT],
+      tail: 0.9,
+      room: 60,
+      said: (t) => (t < 0.5 ? 'Devour: its maw opens wide, its front arms spread out low' : t < 0.92 ? 'Devour: held there, the fire roaring in its maw' : t < 1.56 ? 'Devour: its arms rake in along the floor, dragging all that lies there in to its maw, a bone beast with it' : t < 1.9 ? 'Devour: its maw snaps shut on it' : 'Devour: it gulps, swelling, and lets go'),
+      // (a bone beast near it, eaten back: dragged in as its arms rake, clawing at the floor, and gone into its maw as it snaps shut. When, and which, are the rules')
+      placed: (t, view) => {
+        if (t >= AM_DEVOUR_HIT) return { behind: [], before: [] };
+        const from = [2.3, -0.9];
+        const to = [0.95, -0.08];
+        const k = t < 0.92 ? 0 : Math.min(1, ((t - 0.92) / (1.58 - 0.92)) ** 2);
+        const [x, y] = scr(view, from[0] + (to[0] - from[0]) * k, from[1] + (to[1] - from[1]) * k);
+        const { v, flip } = facing(view, [from[0] - to[0], from[1] - to[1]]);
+        const sp = t < 0.92 ? spOf(BONE_BEAST, 'stand', Math.floor(t * BONE_BEAST.idleFps + 1e-6) / BONE_BEAST.idleFps, v) : spOf(BONE_BEAST, 'dragged', ((Math.floor((t - 0.92) * BONE_BEAST.walkFps + 1e-6) % BONE_BEAST.walkFrames) / BONE_BEAST.walkFps), v);
+        const one: Placed = { sp, x, y, flip, shadow: BONE_BEAST.shadow };
+        return y > 0 ? { behind: [], before: [one] } : { behind: [one], before: [] };
+      },
+      under: (c, t, view) => {
+        if (t < 0.92) return;
+        // (its claws gouge the floor along the way they rake, from where they came down to where they are)
+        const k = t < 1.56 ? 1 : 1 - (t - 1.56) / 1.2;
+        for (const n of ['R1', 'L1'] as const) {
+          const pts: [number, number][] = [];
+          for (let u = 0.92; u <= Math.min(t, 1.56) + 1e-6; u += 0.04) {
+            const [f, l] = tilesOf(amRakeAt(u)[n]);
+            pts.push(at(view, f, l));
+          }
+          drawClawRake(c, ISO, pts, k);
+        }
+      },
+    },
+    burst: {
+      long: lastKey(AMALGAM, 'burst'),
+      heavy: [],
+      tail: 1.25,
+      room: 40,
+      said: (t) => (t < AM_BURST_AT ? 'A bone beast bursts out of it: its flank swells and bulges, shuddering' : t < AM_BURST_AT + 0.3 ? 'A bone beast bursts out of it: the flank bursts, the beast flung out' : t < AM_BURST_AT + BB_EMERGE_TIME ? 'A bone beast: it lands, uncurls and rears' : 'A bone beast scuttles off; the wound closes'),
+      placed: (t, view) => {
+        const u = t - AM_BURST_AT;
+        if (u < 0) return { behind: [], before: [] };
+        const { v, flip } = facing(view, AM_BURST_WAY);
+        // (out of its maker's flank and down, then off along its way at its pace: setting off, then scuttling)
+        const off = Math.max(0, u - BB_EMERGE_TIME);
+        const go = off * BONE_BEAST.pace;
+        const [x, y] = scr(view, spot[0] + AM_BURST_WAY[0] * go, spot[1] + AM_BURST_WAY[1] * go);
+        const setOff = lastKey(BONE_BEAST, 'setOff');
+        const period = BONE_BEAST.walkFrames / BONE_BEAST.walkFps;
+        const sp =
+          u < BB_EMERGE_TIME
+            ? spOf(BONE_BEAST, 'emerge', u, v)
+            : off < setOff
+              ? spOf(BONE_BEAST, 'setOff', off, v)
+              : spOf(BONE_BEAST, 'walk', ((Math.floor((off - setOff) * BONE_BEAST.walkFps + 1e-6) % BONE_BEAST.walkFrames) / BONE_BEAST.walkFrames) * period, v);
+        const one: Placed = { sp, x, y, flip, shadow: BONE_BEAST.shadow };
+        return y > 0 ? { behind: [], before: [one] } : { behind: [one], before: [] };
+      },
+    },
+  };
+}
+function beastFilms(): Record<string, FilmOf> {
+  return {
+    attack: {
+      long: lastKey(BONE_BEAST, 'attack'),
+      heavy: [BB_BITE_HIT],
+      said: (t) => (t < 0.28 ? 'Its bite: it rears back, its front claws up' : t < 0.5 ? 'Its bite: held there, trembling, its jaw gaping, its sockets flaring' : t < 0.8 ? 'Its bite: it pounces, its claws raking down, and its jaw snaps shut' : 'Its bite: it crouches again'),
+    },
+    emerge: {
+      long: lastKey(BONE_BEAST, 'emerge'),
+      heavy: [],
+      said: (t) => (t < 0.24 ? 'It drops out of the amalgamation, curled up' : t < 0.36 ? 'It lands' : t < 0.6 ? 'Its arms unfold and grip the floor' : 'It rears, its jaw gaping, and crouches, ready'),
+    },
+    dragged: {
+      long: 1.6,
+      heavy: [],
+      said: () => 'Dragged back in to be eaten: its claws scrabble at the floor, it shrieks',
+    },
+  };
+}
+const FILMS: Record<string, () => Record<string, FilmOf>> = { headsman: headsmanFilms, chained: chainedFilms, chained1: chainedFilms, chained2: chainedFilms, amalgam: amalgamFilms, beast: beastFilms };
 
 if (mode === 'move') {
   const who = BOSSES[parts[1] || 'headsman'] ?? BOSSES.headsman;
@@ -567,7 +826,7 @@ if (mode === 'move') {
   const UP = ups ? lastKey(mob, 'raise') : 0;
   const T0 = 0.4;
   const T1 = T0 + UP;
-  const ROUND = T1 + film.long + film.heavy.length * HOLD + UP + 0.6;
+  const ROUND = T1 + film.long + film.heavy.length * HOLD + UP + Math.max(0.6, (film.tail ?? 0) + 0.3);
   const TICKS = Math.round(ROUND * FPS);
   /** The moment of the move at a moment of the film (held a tenth of a second at each heavy blow: the game's freeze). */
   const moveT = (t: number): number => {
@@ -592,7 +851,7 @@ if (mode === 'move') {
   const PAD = 10;
   const M = 30;
   // (room on the floor for what the move does to it: before him, which is down the picture facing you and up it facing away)
-  const FLOOR = which === 'sentence' ? 150 : which === 'throw' || which === 'hook' || which === 'ball' ? 150 : 40;
+  const FLOOR = film.room ?? (which === 'sentence' ? 150 : which === 'throw' || which === 'hook' || which === 'ball' ? 150 : 40);
   const cw = (l + r + 2 * M + FLOOR) * S;
   const ch = (u + d + 2 * M + FLOOR * 0.5) * S;
   const HEAD = 58;
@@ -610,8 +869,8 @@ if (mode === 'move') {
       const x = PAD + j * (cw + PAD);
       const fx0 = x + (M + l + (which === 'sweep' ? FLOOR * 0.5 : 0)) * S;
       const fy0 = view === 'front' || which === 'sweep' ? HEAD + (M + u + (which === 'sweep' ? FLOOR * 0.25 : 0)) * S : HEAD + ch - (M + d) * S;
-      const mm = m >= 0 && m <= film.long ? m : -1;
-      filmPane(x, HEAD, cw, ch, S, fx0, fy0, frameOf(view, t), mob.shadow, film.under && mm >= 0 ? (c) => film.under?.(c, mm, view) : undefined, film.over && mm >= 0 ? (c) => film.over?.(c, mm, view) : undefined, 0, false, film.left && m > film.long ? [film.left[view]] : []);
+      const mm = m >= 0 && m <= film.long + (film.tail ?? 0) ? m : -1;
+      filmPane(x, HEAD, cw, ch, S, fx0, fy0, frameOf(view, t), mob.shadow, film.under && mm >= 0 ? (c) => film.under?.(c, mm, view) : undefined, film.over && mm >= 0 ? (c) => film.over?.(c, mm, view) : undefined, 0, false, film.left && m > film.long ? [film.left[view]] : [], film.placed && mm >= 0 ? film.placed(mm, view) : undefined);
       text(view === 'front' ? 'facing you' : 'facing away', x + cw / 2, HEAD + ch + 6, 15, '#e8e2ff', 600, 'center');
     }
   });
