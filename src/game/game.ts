@@ -259,6 +259,10 @@ export class Game {
   private flowT = 0;
   private visionT = 0;
   private dotT = 0;
+  /** THE FIRST LEVELS: seconds the quest's line still shows at the top (QUEST_ITEM.promptSecs). */
+  private questPromptT = 0;
+  /** The word the wordsmith gives once his ring has powered up, and the seconds till then (QUEST_ITEM.ringSecs). */
+  private ringWord: { word: WordId; t: number } | null = null;
   private nextId = 1;
   /** Ids for orbs and familiars (the pictures tell them apart by it). */
   private nextThing = 1;
@@ -466,7 +470,8 @@ export class Game {
     if (this.drops.some((d) => d.kind === 'word' && Math.hypot(d.x - h.x, d.y - h.y) < GUIDE.sight)) return 'take';
     if (fight) return null;
     // (THE FIRST LEVELS: the quest item, to be taken to town and to the wordsmith)
-    if (FIRST_LEVELS.on && h.quest) return L.town ? 'ring' : 'carry';
+    // (for a few seconds on finding it and on reaching town with it, then not: QUEST_ITEM.promptSecs)
+    if (FIRST_LEVELS.on && h.quest) return this.questPromptT > 0 ? (L.town ? 'ring' : 'carry') : null;
     const b = L.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < GUIDE.sight && L.visible[b.ty * L.floor.w + b.tx] === 1) return 'body';
     if (G.walked < GUIDE.steps) return 'move';
@@ -485,6 +490,7 @@ export class Game {
     const G = this.guide;
     if (!G) return;
     const h = this.hero;
+    if (this.questPromptT > 0) this.questPromptT = Math.max(0, this.questPromptT - dt);
     G.walked += moved;
     if (h.skills[0].uses > 0) G.quick = true;
     if (h.skills[1].uses > 0) G.slow = true;
@@ -582,7 +588,7 @@ export class Game {
     for (const it of [...EQUIP_SLOTS.map((s) => h.gear[s]), ...h.bag, ...this.meta.stash, ...this.shops.armourer, ...this.shops.mystic]) if (it) maxUid = Math.max(maxUid, it.uid);
     return {
       v: 1, cls: h.cls, seed: this.seed, level: h.level, xp: h.xp, pending: h.pending, attrs: { ...h.attrs },
-      gear: { ...h.gear }, bag: [...h.bag], words: { ...h.words },
+      gear: { ...h.gear }, bag: [...h.bag], words: this.ringWord ? { ...h.words, [this.ringWord.word]: h.words[this.ringWord.word] + 1 } : { ...h.words },
       sockets: h.skills.map((s) => ({ front: [...s.front], behind: [...s.behind] })),
       gold: h.gold, potionKills: h.potionKills, depth: this.depth, cleared: this.cleared, kills: this.kills, runTime: this.runTime, maxUid,
       plan: [...this.plan],
@@ -747,13 +753,26 @@ export class Game {
     h.ring = true;
     this.meta.ring = true;
     const w = FIRST_WORD[h.cls].word;
-    h.words[w]++;
-    this.refresh();
     if (!this.practice) this.meta.known[w].found = true;
     this.emit({ t: 'ring', x, y });
+    this.sfx('rare');
+    this.msg('The ring is lit.', MSG.word);
+    // (the word once the ring has powered up: the owner, 9 Oct 2026, 22:12)
+    this.ringWord = { word: w, t: QUEST_ITEM.ringSecs };
+  }
+
+  /** The wordsmith gives the hero's first word, the ring powered up. */
+  private giveRingWord(): void {
+    const p = this.ringWord;
+    if (!p) return;
+    this.ringWord = null;
+    const h = this.hero;
+    const w = p.word;
+    h.words[w]++;
+    this.refresh();
     this.emit({ t: 'wordGot', word: w });
     this.sfx('rare');
-    this.msg(`The ring is lit. The wordsmith gives you a word: ${WORDS[w].name.toUpperCase()}.`, MSG.word);
+    this.msg(`The wordsmith gives you a word: ${WORDS[w].name.toUpperCase()}.`, MSG.word);
     // (as a first word found is: the inventory opens for it at once, and the lesson shows where it goes)
     if (!this.wordAtWork() && this.placeable(w)) this.offer = w;
   }
@@ -840,6 +859,8 @@ export class Game {
   }
 
   private clearLevel(): void {
+    // (a word the wordsmith was about to give is given now, not lost with the level)
+    if (this.ringWord) this.giveRingWord();
     this.monsters = [];
     this.projectiles = [];
     this.zones = [];
@@ -899,6 +920,7 @@ export class Game {
     h.potions = TUNE.potionMax;
     this.flow = new Uint16Array(f.w * f.h);
     this.rollShop();
+    if (FIRST_LEVELS.on && h.quest) this.questPromptT = QUEST_ITEM.promptSecs;
   }
 
   /** The shelf of the vendor the hero is dealing with. */
@@ -1294,6 +1316,10 @@ export class Game {
     this.updateFamiliars(dt);
     this.updateZones(dt);
     this.updateDots(dt);
+    if (this.ringWord) {
+      this.ringWord.t -= dt;
+      if (this.ringWord.t <= 0) this.giveRingWord();
+    }
     this.updateDrops(dt);
     this.updateProps(c);
     if (this.practice) this.updatePractice(dt);
@@ -3411,7 +3437,8 @@ export class Game {
   }
 
   /** `poison`: the harm is poison working (its number is drawn in poison's colour, and it does not flash the monster). */
-  private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false): void {
+  /** `dot`: harm over time (burning, fire or ice on the ground): no flash (9 Oct 2026, 22:12, "mobs shouldn’t flash white when taking dot damage"). */
+  private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false, dot = false): void {
     // (what is shut in a room is out of reach, of an arc of lightning and of what burns on the ground too: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
     // (GUARDING, on a monster: its shield takes the harm first)
@@ -3420,7 +3447,7 @@ export class Game {
       m.shield -= soak;
       m.life -= dmg - soak;
     } else m.life -= dmg;
-    if (!poison) m.flash = heavy ? 0.2 : 0.12;
+    if (!poison && !dot) m.flash = heavy ? 0.2 : 0.12;
     m.barT = 4;
     if (skill >= 0) m.lastSkill = skill;
     if (m.state === 'sleep') this.wakeUp(m);
@@ -3632,8 +3659,10 @@ export class Game {
         h.shockT = Math.max(h.shockT, 3 * share);
       }
     }
+    // (LEECH on a monster heals what its blow takes: 9 Oct 2026, 22:12, "bosses with leech are very hard to kill"; asked,
+    // "What its blow takes (Recommended)". Until then, 15% of its whole life a blow.)
     if (src && !src.dead && k('leech') > 0) {
-      src.life = Math.min(src.maxLife, src.life + src.maxLife * 0.15 * k('leech'));
+      src.life = Math.min(src.maxLife, src.life + dmg * k('leech'));
       this.emit({ t: 'text', x: src.x, y: src.y, text: 'heals', color: '#ff8a80' });
     }
     if (h.life <= 0) {
@@ -4950,7 +4979,7 @@ export class Game {
               m.chill = Math.max(m.chillT > 0 ? m.chill : 0, z.slow);
               m.chillT = 0.7;
             }
-            this.damageMonster(m, Math.max(1, Math.round(z.dmg * 0.5)), z.element, false, z.skill);
+            this.damageMonster(m, Math.max(1, Math.round(z.dmg * 0.5)), z.element, false, z.skill, false, undefined, false, true);
           }
         }
       }
@@ -4964,7 +4993,7 @@ export class Game {
     if (this.dotT > 0) return;
     this.dotT += 0.5;
     for (const m of this.monsters) {
-      if (!m.dead && m.burnT > 0) this.damageMonster(m, Math.max(1, Math.round(m.burnDps * 0.5)), 'fire', false, m.lastSkill);
+      if (!m.dead && m.burnT > 0) this.damageMonster(m, Math.max(1, Math.round(m.burnDps * 0.5)), 'fire', false, m.lastSkill, false, undefined, false, true);
       if (!m.dead && m.poisonT > 0 && m.poisonDps > 0) this.damageMonster(m, Math.max(1, Math.round(m.poisonDps * 0.5)), 'phys', false, m.lastSkill, false, undefined, true);
     }
     const h = this.hero;
@@ -5268,6 +5297,7 @@ export class Game {
     // THE FIRST LEVELS: before the ring is lit, the satchel holds the quest item, not a word (the owner, 20:39)
     if (FIRST_LEVELS.on && !this.hero.ring) {
       this.hero.quest = 'heart';
+      this.questPromptT = QUEST_ITEM.promptSecs;
       this.hero.potions = TUNE.potionMax;
       this.emit({ t: 'quest', x: b.x, y: b.y });
       // (since Version 19.6 the stone lies by his hand, the art chat's: art/quest3.ts)
