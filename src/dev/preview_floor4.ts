@@ -10,7 +10,7 @@
 //             "cells <before> <frames> <after> <columns> <cell w> <cell h>" for the film's maker.
 // Scales are whole numbers only, so every pixel of the game is the same size in the picture.
 import { cryptGround } from '../art/crypt';
-import { ossuaryMoments, ossuaryPieces } from '../art/floor4';
+import { ossuaryFilm, ossuaryPieces } from '../art/floor4';
 import type { Piece, PieceKind } from '../art/floorkit';
 import { GATE_UP, PILLAR, POST, STRIP } from '../art/gates';
 import type { Strip } from '../art/gates';
@@ -305,8 +305,9 @@ else if (mode === 'room') {
   }
   // on the walls, each at one of its places: the far wall's faces turned to screen-left (along ty = 0),
   // the near-left wall's turned to screen-right (along tx = 0)
-  const onLeft: [number, string, number][] = [[1, 'the skull wall', 0], [2, 'the skull wall', 0], [3, 'the skull wall', 0], [4, "miner's lantern", 0], [5, "the miners' breach", 0], [6, 'bone-lined niche', 1], [7, "the cult's candle", 0], [8, 'shored rock', 0], [9, 'garland of skulls', 1]];
-  const onRight: [number, string, number][] = [[1, "the miners' ladder", 0], [2, "the miners' tools", 0], [3, 'the charnel layer', 1], [4, "miner's lantern", 1], [5, "the dead's arm", 0], [6, "the cult's daub", 1], [7, 'seam of ore', 2], [8, 'ribs on a spike', 0], [9, 'pick in the wall', 2]];
+  // (the lantern well clear of the charnel heap, so that its flame never sits over it: the first fresh look found it seeming on fire)
+  const onLeft: [number, string, number][] = [[1, 'the skull wall', 0], [2, 'the skull wall', 0], [3, 'the skull wall', 0], [4, 'garland of skulls', 0], [5, "the miners' breach", 0], [6, 'bone-lined niche', 1], [7, "the cult's candle", 0], [8, 'shored rock', 0], [9, "miner's lantern", 1]];
+  const onRight: [number, string, number][] = [[1, "the miners' ladder", 0], [2, "the miners' tools", 0], [3, 'the charnel layer', 1], [4, 'ribs on a spike', 0], [5, "the dead's arm", 0], [6, "the cult's daub", 1], [7, 'seam of ore', 2], [8, "miner's lantern", 1], [9, 'pick in the wall', 2]];
   for (const [tx, n, k] of onLeft) {
     const [x, y] = at(tx, 0);
     const l = P(n).spots![k].left;
@@ -340,15 +341,14 @@ else if (mode === 'moment') {
   //   n: 0 the skull wall spills (a face turned to screen-left), 3 the same in a face turned to
   //   screen-right, 1 the cart runs, 2 the bones stir
   const which = F;
-  const MS = ossuaryMoments();
-  const m = MS[which === 3 ? 0 : Math.min(which, MS.length - 1)];
+  const film = ossuaryFilm(which);
+  const m = film;
   const right = which === 3;
   const wallM = which === 0 || which === 3;
-  const film = right ? m.right! : m;
   const before = film.before ? (film.before.length > 1 ? [...film.before, ...film.before] : [film.before[0], film.before[0], film.before[0], film.before[0]]) : [];
   const after = film.after ? [film.after[0]] : [];
   const cells = [...before, ...film.frames, ...after];
-  const [CWm, CHm, TOP] = which === 1 ? [400, 250, 70] : wallM ? [330, 250, 110] : [300, 230, 100];
+  const [CWm, CHm, TOP] = which === 1 ? [400, 250, 70] : wallM ? [360, 270, 110] : [300, 230, 100];
   const COLS = 10;
   size(CWm * Math.min(COLS, cells.length), CHm * Math.ceil(cells.length / COLS));
   console.log(`cells ${before.length} ${film.frames.length} ${after.length} ${COLS} ${CWm * S} ${CHm * S}`);
@@ -407,8 +407,7 @@ else if (mode === 'moment') {
 else if (mode === 'strip') {
   // twelve frames of one of its moments, close, side by side on the floor, for a look at its shapes
   //   n: 0 the skull wall, 1 the cart, 2 the heap; the frames picked evenly, and every jolt
-  const MS = ossuaryMoments();
-  const m = MS[Math.min(F, MS.length - 1)];
+  const m = ossuaryFilm(F);
   const n = m.frames.length;
   const pick = [...new Set([...Array.from({ length: 12 }, (_, i) => Math.round((i * (n - 1)) / 11)), ...m.jolts])].sort((a, b) => a - b).slice(0, 16);
   const CWs = F === 1 ? 300 : 180;

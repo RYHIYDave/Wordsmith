@@ -2788,10 +2788,10 @@ function boneHand(S: Scene, wr: V3, along: V3, n: V3, curl: number, ramp: Ramp, 
  * the middle of its tile, as a wall piece is.
  */
 function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[]; after: Sprite[]; tracks: Track[]; jolts: number[] } {
-  const MW = 336;
-  const MH = 248;
+  const MW = 392;
+  const MH = 292;
   // (the spill goes out toward the eye: down the screen and to the left, or to the right)
-  const ax = alongX ? 248 : 88;
+  const ax = alongX ? 296 : 96;
   const ay = 132;
   const W0 = faceWorld(alongX);
   const toW = dirOf(W0);
@@ -3064,7 +3064,7 @@ function cartPoints(k: CartPose): V3[] {
  */
 function cartRuns(): Moment {
   const MW = 600;
-  const MH = 312;
+  const MH = 352;
   const ax = 76;
   const ay = 116;
   const CREAK = 22;
@@ -3168,11 +3168,11 @@ function cartRuns(): Moment {
         const r = (q: number): number => hash(i, q, 674) - 0.5;
         const vNow = f < HIT ? acc * (f - CREAK) : vHit;
         b.p = p;
-        letGo(b, f < HIT ? [vNow * 0.8, 3.2 + r(1), 2.8 + r(2)] : [vNow * (0.8 + 0.3 * (r(1) + 0.5)), r(2) * 4.4, 3 + 3 * (r(3) + 0.5)], i, b.kind === 'ore' ? 0.15 : 0.32);
+        letGo(b, f < HIT ? [vNow * 0.8, 3.2 + r(1), 2.8 + r(2)] : [vNow * (0.62 + 0.26 * (r(1) + 0.5)), r(2) * 4.4, 3 + 3 * (r(3) + 0.5)], i, b.kind === 'ore' ? 0.15 : 0.32);
         if (i === BONE_I) b.F = norm([21, -6, 0.4]);
       } else b.p = p;
     });
-    if (f > 0) stepBodies(bodies, f, -1, 0.955);
+    if (f > 0) stepBodies(bodies, f, -1, 0.94);
     states.push(bodies.map(copyBody));
   }
   if (states[N - 1].some((b) => !b.still)) throw new Error('the cart: its load is still moving at the end: ' + states[N - 1].filter((b) => !b.still).map((b) => `${b.kind} ${b.p.map((q) => q.toFixed(1))} v ${b.v.map((q) => q.toFixed(2))}`).join('; '));
@@ -3646,12 +3646,37 @@ function bonesStir(): Moment {
   return { name: 'the bones stir', frames, fps: 30, before: [charnelHeap()], after: [frames[N - 1]], tracks, jolts: [BURST, collapse], holds: [] };
 }
 
+const films = new Map<string, ReturnType<typeof skullWallSpills>>();
+const filmOf = (alongX: boolean): ReturnType<typeof skullWallSpills> => {
+  const k = alongX ? 'left' : 'right';
+  if (!films.has(k)) films.set(k, skullWallSpills(alongX));
+  return films.get(k)!;
+};
+const each: (Moment | null)[] = [null, null, null];
+/** One of floor 4's moments (0 the skull wall, 1 the cart, 2 the heap), made the first time it is asked for and kept. */
+export function ossuaryMoment(n: number): Moment {
+  const had = each[n];
+  if (had) return had;
+  let m: Moment;
+  if (n === 0) {
+    const sl = filmOf(true);
+    const sr = filmOf(false);
+    m = { name: 'the skull wall spills', frames: sl.frames, fps: 30, before: sl.before, after: sl.after, tracks: sl.tracks, jolts: sl.jolts, holds: [], right: { frames: sr.frames, before: sr.before, after: sr.after, tracks: sr.tracks } };
+  } else m = n === 1 ? cartRuns() : bonesStir();
+  return (each[n] = m);
+}
+/** A film of floor 4's moments for a page to show (0 the skull wall in a face turned to screen-left, 3 the same turned to screen-right, 1 the cart, 2 the heap), painting no more than that one. */
+export function ossuaryFilm(n: number): { name: string; frames: Sprite[]; before: Sprite[] | null; after: Sprite[] | null; jolts: number[] } {
+  if (n === 0 || n === 3) {
+    const f = filmOf(n === 0);
+    return { name: 'the skull wall spills', frames: f.frames, before: f.before, after: f.after, jolts: f.jolts };
+  }
+  const m = ossuaryMoment(n);
+  return { name: m.name, frames: m.frames, before: m.before, after: m.after, jolts: m.jolts };
+}
 let moments: Moment[] | null = null;
 /** Floor 4's moments around the hero, made the first time they are asked for and kept. */
 export function ossuaryMoments(): Moment[] {
   if (moments) return moments;
-  const sl = skullWallSpills(true);
-  const sr = skullWallSpills(false);
-  const spill: Moment = { name: 'the skull wall spills', frames: sl.frames, fps: 30, before: sl.before, after: sl.after, tracks: sl.tracks, jolts: sl.jolts, holds: [], right: { frames: sr.frames, before: sr.before, after: sr.after, tracks: sr.tracks } };
-  return (moments = [spill, cartRuns(), bonesStir()]);
+  return (moments = [0, 1, 2].map(ossuaryMoment));
 }
