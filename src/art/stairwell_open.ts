@@ -268,8 +268,8 @@ function rowLine(r: number, ac: number): number {
   const s = ac / 0.17;
   const i = Math.floor(s);
   const t = s - i;
-  const a = (hash(i, r, 501) - 0.5) * 0.1;
-  const b = (hash(i + 1, r, 501) - 0.5) * 0.1;
+  const a = (hash(i, r, 501) - 0.5) * 0.16;
+  const b = (hash(i + 1, r, 501) - 0.5) * 0.16;
   return (STAIR_LONG / ROWS) * r + a + (b - a) * t;
 }
 /** The crack that splits row r in two across, where it crosses `al` (tiles across). */
@@ -277,8 +277,8 @@ function splitLine(r: number, al: number): number {
   const s = al / 0.15;
   const i = Math.floor(s);
   const t = s - i;
-  const a = (hash(i, r, 503) - 0.5) * 0.12;
-  const b = (hash(i + 1, r, 503) - 0.5) * 0.12;
+  const a = (hash(i, r, 503) - 0.5) * 0.2;
+  const b = (hash(i + 1, r, 503) - 0.5) * 0.2;
   return STAIR_WIDE * (0.45 + 0.12 * hash(r, 1, 504)) + a + (b - a) * t;
 }
 /** Which slab of the lid a point of the opening is in (row * 2 + side), or -1 outside it. */
@@ -288,6 +288,35 @@ function cellAt(al: number, ac: number): number {
   while (r < ROWS - 1 && al >= rowLine(r + 1, ac)) r++;
   return r * 2 + (ac < splitLine(r, al) ? 0 : 1);
 }
+/**
+ * THE CRACKS THAT BRANCH OFF from the middle, where the first one bursts, into the slabs (they are not
+ * where the slabs part: lines across their tops, as a flagstone cracked across has, from the first frame
+ * to the last they are seen): each a few straight runs, (along, across) in tiles.
+ */
+const BRANCHES: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = (() => {
+  const m: [number, number] = [STAIR_LONG / 2, splitLine(1, STAIR_LONG / 2 - 0.01)];
+  return [
+    [m, [m[0] - 0.14, m[1] - 0.2], [m[0] - 0.22, m[1] - 0.33], [m[0] - 0.4, m[1] - 0.38]],
+    [m, [m[0] + 0.18, m[1] + 0.12], [m[0] + 0.28, m[1] + 0.3], [m[0] + 0.46, m[1] + 0.36]],
+    [m, [m[0] - 0.2, m[1] + 0.1], [m[0] - 0.3, m[1] + 0.26], [m[0] - 0.36, m[1] + 0.44]],
+    [m, [m[0] + 0.15, m[1] - 0.16], [m[0] + 0.36, m[1] - 0.22], [m[0] + 0.48, m[1] - 0.36]],
+  ];
+})();
+/** Is a point of the lid on one of those cracks (within `w` tiles)? */
+function onBranch(al: number, ac: number, w: number): boolean {
+  for (const b of BRANCHES) {
+    for (let i = 0; i + 1 < b.length; i++) {
+      const [a0, c0] = b[i];
+      const [a1, c1] = b[i + 1];
+      const da = a1 - a0;
+      const dc = c1 - c0;
+      const t = Math.max(0, Math.min(1, ((al - a0) * da + (ac - c0) * dc) / (da * da + dc * dc)));
+      if (Math.hypot(al - a0 - t * da, ac - c0 - t * dc) < w) return true;
+    }
+  }
+  return false;
+}
+
 /** Which of the lid's slabs are earth on a floor with `gone` of its flagstones gone. */
 function earthCells(gone: number): Set<number> {
   const n = Math.round(gone * 8 * 1.1);
@@ -427,12 +456,15 @@ function lidPieces(theme: Theme, way: Way): { pieces: Piece[]; hinge: [number, n
         const cv = Math.floor(ac * g * 3);
         const lump = hash(cu, cv, 515);
         const isRock = hash(Math.floor(al * 7), Math.floor(ac * 7), 516) < 0.22 && hash(Math.floor(al * 7 + 0.5), Math.floor(ac * 7 + 0.5), 517) < 0.6;
-        if (isRock) add(al, ac, 0, [0, 0, 1], 4, hash(Math.floor(al * 7), Math.floor(ac * 7), 518) < 0.4 ? 3 : 2);
+        if (onBranch(al, ac, 0.014)) add(al, ac, 0, [0, 0, 1], 3, 0);
+        else if (isRock) add(al, ac, 0, [0, 0, 1], 4, hash(Math.floor(al * 7), Math.floor(ac * 7), 518) < 0.4 ? 3 : 2);
         else add(al, ac, 0, [0, 0, 1], 3, lump > 0.86 ? 3 : lump < 0.1 ? 0 : hash(Math.floor(al * 3), Math.floor(ac * 3), 519) < 0.4 ? 2 : 1);
       } else {
         const up = !inner(cell, al - 0.045, ac) || !inner(cell, al, ac - 0.045);
         const down = !inner(cell, al + 0.035, ac) || !inner(cell, al, ac + 0.035);
         let idx = up ? 4 : down ? 1 : tone < 0.15 ? 2 : tone < 0.5 ? 3 : 4;
+        // (the cracks that branched off the first one, across its top)
+        if (onBranch(al, ac, 0.014)) idx = 0;
         if (!up && !down && hash(Math.round(al * 64), Math.round(ac * 64), 520 + cell) < 0.012) idx = 1;
         add(al, ac, 0, [0, 0, 1], 0, idx);
       }
@@ -714,7 +746,9 @@ function makeMoment(theme: Theme, way: Way): Moment {
   const LATE: readonly [string, string, string] = [DUSK, DUST[0], DUST[1]];
   const dirt = theme.earth?.dirt ?? DIRT;
   const rock = theme.earth?.rock ?? ROCK;
-  const CHIP_STONE: readonly [string, string, string] = [mix(theme.slab[3], '#ffffff', 0.35), mix(theme.slab[3], '#ffffff', 0.12), theme.slab[0]];
+  const CHIP_STONE: readonly [string, string, string] = [mix(theme.slab[3], '#ffffff', 0.1), theme.slab[2], theme.slab[0]];
+  /** A stone's chunk: its lit edge catching the light. */
+  const STONE_CHUNK: readonly [string, string, string] = [mix(theme.slab[3], '#ffffff', 0.22), theme.slab[3], theme.slab[0]];
   const CHIP_EARTH: readonly [string, string, string] = [mix(dirt[3], '#ffffff', 0.12), dirt[3], dirt[0]];
   const CHIP_ROCK: readonly [string, string, string] = [mix(rock[3], '#ffffff', 0.15), rock[3], rock[0]];
   const K = STAIR_KERB;
@@ -722,21 +756,37 @@ function makeMoment(theme: Theme, way: Way): Moment {
   const Wd = STAIR_WIDE;
 
   // ----- THE CRACKS: the lines of the lid and round the kerb, each opening from one end at a pace
-  interface Crack { pts: [number, number][]; f0: number; v: number; burst: number }
+  interface Crack { pts: [number, number][]; f0: number; v: number; burst: number; spurts: boolean }
   const cracks: Crack[] = [];
   /** A crack along a line `at(t)` for t 0..1 (along, across), `len` tiles long, opening from frame f0 at v tiles a frame. */
-  const crack = (at: (t: number) => [number, number], len: number, f0: number, v: number, burst = 0): void => {
+  const crack = (at: (t: number) => [number, number], len: number, f0: number, v: number, burst = 0, spurts = false): void => {
     const n = Math.max(2, Math.ceil(len * 40));
-    cracks.push({ pts: Array.from({ length: n + 1 }, (_, i) => at(i / n)), f0, v, burst });
+    cracks.push({ pts: Array.from({ length: n + 1 }, (_, i) => at(i / n)), f0, v, burst, spurts });
   };
   // (from the middle: the second row's split and the line between the second and third rows)
   const mA = L / 2;
   const mC = splitLine(1, mA - 0.01);
   // (bursting open at once a fifth of a tile each way from the middle on the shock)
-  crack((t) => [rowLine(2, mC * (1 - t)), mC * (1 - t)], mC, SHOCK, 0.16, 0.2);
-  crack((t) => [rowLine(2, mC + (Wd - mC) * t), mC + (Wd - mC) * t], Wd - mC, SHOCK, 0.16, 0.2);
-  crack((t) => [mA - (mA - 0.6) * t, splitLine(1, mA - (mA - 0.6) * t)], 0.6, SHOCK, 0.18, 0.2);
-  crack((t) => [mA + 0.6 * t, splitLine(2, mA + 0.6 * t)], 0.6, SHOCK, 0.18, 0.2);
+  crack((t) => [rowLine(2, mC * (1 - t)), mC * (1 - t)], mC, SHOCK, 0.16, 0.25, true);
+  crack((t) => [rowLine(2, mC + (Wd - mC) * t), mC + (Wd - mC) * t], Wd - mC, SHOCK, 0.16, 0.25, true);
+  crack((t) => [mA - (mA - 0.6) * t, splitLine(1, mA - (mA - 0.6) * t)], 0.6, SHOCK, 0.18, 0.25, true);
+  crack((t) => [mA + 0.6 * t, splitLine(2, mA + 0.6 * t)], 0.6, SHOCK, 0.18, 0.25, true);
+  // (the cracks that branch off the middle into the slabs: art/stairwell_open.ts, BRANCHES)
+  for (const br of BRANCHES) {
+    const lens = br.slice(1).map((q, i) => Math.hypot(q[0] - br[i][0], q[1] - br[i][1]));
+    const len = lens.reduce((u, v) => u + v, 0);
+    crack((t) => {
+      let d = t * len;
+      for (let i = 0; i < lens.length; i++) {
+        if (d <= lens[i] || i === lens.length - 1) {
+          const k = Math.min(1, d / lens[i]);
+          return [br[i][0] + (br[i + 1][0] - br[i][0]) * k, br[i][1] + (br[i + 1][1] - br[i][1]) * k];
+        }
+        d -= lens[i];
+      }
+      return br[br.length - 1] as [number, number];
+    }, len, SHOCK + 2, 0.14);
+  }
   // (the other two lines across, from where the splits meet them; the splits of the end rows)
   for (const r of [1, 3]) {
     const a = r === 1 ? 0.6 : 1.8;
@@ -755,8 +805,8 @@ function makeMoment(theme: Theme, way: Way): Moment {
   crack((t) => [L - 0.012, Wd * (1 - t)], Wd, SHOCK + 6, 0.5);
   // (the kerb's outline round its three sides, and its two ends at the top of the steps)
   for (const ac of [-K + 0.012, Wd + K - 0.012]) {
-    crack((t) => [mA * (1 - t), ac], mA, SHOCK + 4, 0.45);
-    crack((t) => [mA + (L + K - mA) * t, ac], L + K - mA, SHOCK + 4, 0.45);
+    crack((t) => [mA * (1 - t), ac], mA, SHOCK + 4, 0.45, 0, true);
+    crack((t) => [mA + (L + K - mA) * t, ac], L + K - mA, SHOCK + 4, 0.45, 0, true);
   }
   crack((t) => [L + K - 0.012, -K + (Wd + 2 * K) * t], Wd + 2 * K, SHOCK + 6, 0.6);
   crack((t) => [0.012, -K * t], K, SHOCK + 6, 0.2);
@@ -799,7 +849,7 @@ function makeMoment(theme: Theme, way: Way): Moment {
       const p = frontOf(c, f);
       if (!p || (f + ci) % 2) return;
       const [x, y] = XY(p[0], p[1]);
-      if ((f + ci) % 4 === 0) puff({ f0: f, x, y, z: 1, vx: 0, vy: 0, vz: 1.8 + 1.4 * h(f, ci, 542), r0: 2.4, big: 2.8 + 1.6 * h(ci, f, 543), life: 8, fall: 0.06 }, 2);
+      if (c.spurts && (f + ci) % 4 === 0) puff({ f0: f, x, y, z: 1, vx: 0, vy: 0, vz: 1.8 + 1.4 * h(f, ci, 542), r0: 2.4, big: 2.8 + 1.6 * h(ci, f, 543), life: 8, fall: 0.06 }, 2);
       chips.push({ f0: f, x, y, z: 0.5, vx: 0, vy: 0, vz: 3.5 + 2 * h(ci, f, 544), g: 1, size: 2, tones: CHIP_STONE });
     });
   }
@@ -819,11 +869,13 @@ function makeMoment(theme: Theme, way: Way): Moment {
     along.forEach(([al, ac, oa, oc], i) => {
       const [x, y] = XY(al, ac);
       const [vx, vy] = XY(oa * 0.12, oc * 0.12);
-      puff({ f0: HEAVE + (i % 2), x, y, z: 2, vx, vy, vz: 2 + 2 * h(i, 1, 545), r0: 3.5, big: 5 + 3 * h(i, 2, 545), life: 12 + Math.floor(3 * h(i, 3, 545)), fall: 0.05 }, 3);
+      puff({ f0: HEAVE + (i % 2), x, y, z: 3, vx, vy, vz: 2 + 2 * h(i, 1, 545), r0: 5, big: 6.5 + 3 * h(i, 2, 545), life: 12 + Math.floor(3 * h(i, 3, 545)), fall: 0.05 }, 3);
     });
-    for (let i = 0; i < 6; i++) {
-      const [x, y] = XY(0.3 + 1.8 * h(i, 1, 546), 0.2 + 0.85 * h(i, 2, 546));
-      puff({ f0: HEAVE, x, y, z: 2, vx: 0, vy: 0, vz: 3 + 2 * h(i, 3, 546), r0: 2.5, big: 3.5 + 2 * h(i, 4, 546), life: 11, fall: 0.06 }, 2);
+    // (and jets of it bursting straight up out of the lid's cracks, three billows each, one on another)
+    for (let i = 0; i < 5; i++) {
+      const al = rowLine(1 + (i % 3), 0.2 + 0.9 * h(i, 8, 546));
+      const [x, y] = XY(al, 0.15 + 0.95 * h(i, 9, 546));
+      for (let j = 0; j < 3; j++) puff({ f0: HEAVE + j, x, y, z: 2, vx: 0, vy: 0, vz: 6 + 3 * h(i, j, 547), r0: 2.4, big: 3 + 1.5 * j, life: 11 - j, fall: 0.35 }, 1);
     }
     for (let i = 0; i < 16; i++) {
       const [x, y] = XY(0.1 + 2.3 * h(i, 5, 546), -0.05 + 1.35 * h(i, 6, 546));
@@ -889,8 +941,8 @@ function makeMoment(theme: Theme, way: Way): Moment {
     const [vx, vy] = XY(ra * (0.14 + 0.12 * h(i, 2, 562)), rc * (0.14 + 0.12 * h(i, 3, 562)));
     puff({ f0: great + (i % 2), x, y, z: 4, vx, vy, vz: 1.5 + 1.5 * h(i, 4, 562), r0: 5, big: 6 + 5 * h(i, 5, 562), life: 16 + Math.floor(6 * h(i, 6, 562)), fall: 0.03 }, 2);
   }
-  for (let i = 0; i < 44; i++) {
-    const stone = i < 10;
+  for (let i = 0; i < 30; i++) {
+    const stone = i < 9;
     const al = 0.3 + (L - 0.6) * h(i, 1, 563);
     const ac = 0.2 + (Wd - 0.4) * h(i, 2, 563);
     const [x, y] = XY(al, ac);
@@ -901,7 +953,7 @@ function makeMoment(theme: Theme, way: Way): Moment {
     const far = low ? (al < L / 2 ? L - 0.35 : 0.3) : L - al + (h(i, 4, 563) - 0.5) * 0.8;
     const [tx, ty] = XY(Math.max(0.25, Math.min(L - 0.35, far)), Math.max(0.15, Math.min(Wd - 0.3, Wd - ac + (h(i, 5, 563) - 0.5) * 0.4)));
     const earthy = earth.size > 0 && h(i, 6, 563) < earth.size / 8;
-    chips.push({ f0: great + (i % 3), x, y, z: 2, vx: (tx - x) / T, vy: (ty - y) / T, vz, g: 1.3, size: stone ? 5 + (i % 2) : 3, tones: stone ? (earthy ? CHIP_ROCK : CHIP_STONE) : earthy ? (i % 2 ? CHIP_EARTH : CHIP_ROCK) : CHIP_STONE });
+    chips.push({ f0: great + Math.floor(h(i, 7, 563) * 6), x, y, z: 2, vx: (tx - x) / T, vy: (ty - y) / T, vz, g: 1.3, size: stone ? 5 + (i % 2) : 3, tones: stone ? (earthy ? CHIP_ROCK : STONE_CHUNK) : earthy ? (i % 2 ? CHIP_EARTH : CHIP_ROCK) : CHIP_STONE });
   }
 
   // ----- THE FRAMES
@@ -1022,13 +1074,13 @@ function makeMoment(theme: Theme, way: Way): Moment {
         const sp = Math.hypot(sx - qx, sy - qy);
         // (a short streak behind it, flying fast: a pixel wide, the way it came)
         if (sp > 3) {
-          const len = Math.min(sp, 7);
+          const len = Math.min(sp - 1, 4);
           const ux = (qx - sx) / sp;
           const uy = (qy - sy) / sp;
           const ox = c.size / 2 - 0.5;
           for (let s = 1; s <= len; s++) {
             const wz = z + ((pz - z) * s) / sp;
-            put(sx + ox + ux * (s + c.size / 2), sy + ox + uy * (s + c.size / 2), wz, s < len / 2 ? c.tones[1] : c.tones[2], -2, darkAt(-wz));
+            put(sx + ox + ux * (s + c.size / 2), sy + ox + uy * (s + c.size / 2), wz, c.tones[2], -2, darkAt(-wz));
           }
         }
       }
