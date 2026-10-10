@@ -1,0 +1,380 @@
+<title>Three Tunes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Pixelify+Sans:wght@500;700&display=swap">
+<style>
+  /* Layout: one column for a phone held upright, the same look as the band's sound check. Each clip is a
+     row: a square play button, its name, and a strip that shows what is played when (cyan: exploring;
+     pink and gold: the fight). */
+  :root {
+    color-scheme: dark;
+    --night: #0c0b14;        /* the dark of the game's world */
+    --stone: #161525;        /* a panel on it */
+    --seam: #2c2a44;         /* lines and empty lanes */
+    --parchment: #ebe6dc;    /* words */
+    --ash: #a19bb6;          /* quieter words */
+    --dream: #58d9ea;        /* holding back: the cyan a friend glows */
+    --dream-deep: #1d5b68;
+    --thrash: #ff5f9e;       /* at full: the pink and gold an enemy glows */
+    --gold: #ffc247;
+    --display: "Pixelify Sans", "Trebuchet MS", "Verdana", sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--night);
+    color: var(--parchment);
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.5;
+    padding-inline: 16px;
+    padding-block: 28px 56px;
+  }
+  main { max-width: 40rem; margin-inline: auto; display: grid; gap: 40px; }
+  h1, h2, h3, p, ul, ol { margin: 0; }
+  ul, ol { padding: 0; list-style: none; }
+
+  .eyebrow { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ash); }
+  h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem, 11vw, 3.6rem); line-height: 1; text-wrap: balance; }
+  h1 .thrash { background: linear-gradient(90deg, var(--thrash), var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  h2 { font-family: var(--display); font-weight: 500; font-size: 1.35rem; line-height: 1.2; text-wrap: balance; }
+  h3 { font-family: var(--body); font-weight: 700; font-size: 1.05rem; line-height: 1.25; }
+  .top { display: grid; gap: 14px; }
+  .lede { font-size: 1.08rem; max-width: 34rem; }
+  .how { border-left: 3px solid var(--gold); padding: 2px 0 2px 14px; color: var(--parchment); max-width: 34rem; }
+  .how b { color: var(--gold); font-weight: 700; }
+  .quiet { color: var(--ash); }
+
+  /* a clip */
+  .group { display: grid; gap: 22px; }
+  .group > p { max-width: 34rem; }
+  .clips { display: grid; gap: 30px; }
+  .clip { display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: 14px; row-gap: 12px; align-items: start; }
+  .clip .words { min-width: 0; display: grid; gap: 4px; }
+  .clip .words p { color: var(--ash); font-size: 0.95rem; }
+  .clip .under { grid-column: 1 / -1; display: grid; gap: 8px; }
+  .num { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--ash); text-transform: uppercase; }
+
+  .play {
+    width: 56px; height: 56px; padding: 0; border: 0; cursor: pointer;
+    background: var(--parchment); color: var(--night);
+    /* corners cut square, like a pixel-art button */
+    clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px);
+    display: grid; place-items: center;
+  }
+  .play:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; clip-path: none; }
+  .play svg { width: 24px; height: 24px; fill: currentColor; }
+  .play .pause, .play .wait { display: none; }
+  .clip[data-state="playing"] .play { background: var(--gold); }
+  .clip[data-state="playing"] .play .go, .clip[data-state="loading"] .play .go { display: none; }
+  .clip[data-state="playing"] .play .pause { display: block; }
+  .clip[data-state="loading"] .play .wait { display: block; animation: blink 0.7s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  @media (prefers-reduced-motion: reduce) { .clip[data-state="loading"] .play .wait { animation: none; } }
+
+  /* the strip: one lane cut into the stretches of the clip, a playhead across it */
+  .strip { position: relative; display: grid; padding-block: 6px; cursor: pointer; touch-action: none; }
+  .lane { position: relative; height: 22px; background: var(--seam); overflow: hidden; }
+  .lane i { position: absolute; top: 0; bottom: 0; display: block; border-right: 2px solid var(--night); }
+  .lane i.loud { background: linear-gradient(90deg, var(--thrash), var(--gold)); }
+  .lane i.soft { background: linear-gradient(90deg, var(--dream-deep), var(--dream)); }
+  .lane i span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--mono); font-style: normal; font-size: 0.66rem; letter-spacing: 0.02em; color: var(--night); font-weight: 500; white-space: nowrap; overflow: hidden; }
+  .lane i.soft span { color: #04161a; }
+  .head { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--parchment); transform: translateX(-1px); pointer-events: none; }
+  .head::before { content: ""; position: absolute; top: 0; left: -3px; width: 8px; height: 4px; background: var(--parchment); }
+  .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 14px; font-family: var(--mono); font-size: 0.74rem; color: var(--ash); font-variant-numeric: tabular-nums; }
+  .row .clock { color: var(--parchment); margin-left: auto; }
+  .trouble { grid-column: 1 / -1; color: var(--gold); font-size: 0.92rem; }
+
+  /* notes */
+  .notes { display: grid; gap: 26px; border-top: 1px solid var(--seam); padding-top: 28px; }
+  .notes section { display: grid; gap: 10px; }
+  .notes li { position: relative; padding-left: 18px; max-width: 36rem; }
+  .notes li + li { margin-top: 8px; }
+  .notes li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 7px; height: 7px; background: var(--dream); }
+  .notes .not li::before { background: var(--thrash); }
+  .notes p { max-width: 36rem; }
+  .tags { font-family: var(--mono); font-size: 0.86em; color: var(--dream); }
+  .facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; font-size: 0.95rem; }
+  .facts dt { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); padding-top: 3px; }
+  .facts dd { margin: 0; }
+</style>
+
+<main>
+  <header class="top">
+    <p class="eyebrow">Wordsmith · music · try-out 2, step 2 · 9 Oct 2026</p>
+    <h1>Three <span class="thrash">tunes</span></h1>
+    <p class="lede">The music itself, played by the band you said yes to, with a synth for the air. Three tunes to choose between. In each clip you explore, a fight breaks out, the room is cleared, and you explore again. None of it is in the game.</p>
+    <p class="how"><b>How to listen.</b> Each clip starts soft and turns loud at 0:22. Set your volume there, in the fight, then leave it alone: how much louder the fight is than the exploring is part of what you are judging.</p>
+  </header>
+
+  <section class="group">
+    <h2>The three tunes</h2>
+    <p class="quiet">The same band and the same fight each time: only the tune and its chords change. In every fight the drums go through all four ways: galloping, racing, half-time, then a blast.</p>
+    <div class="clips">
+      <article class="clip" data-src="clips/tune_a.mp3" data-len="60.5">
+        <button class="play" type="button" aria-label="Play: Tune A: bright and soaring"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 1</span>
+          <h3>Tune A: bright and soaring</h3>
+          <p>Long notes that climb.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="60" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="soft" style="left:0.00%;width:37.02%"><span>exploring</span></i><i class="loud" style="left:37.02%;width:37.02%"><span>the fight</span></i><i class="soft" style="left:74.05%;width:18.51%"><span>again</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span>0:22 a fight breaks out · 0:45 the room is clear</span><span class="clock">0:00 / 1:00</span></div>
+        </div>
+      </article>
+
+      <article class="clip" data-src="clips/tune_b.mp3" data-len="60.5">
+        <button class="play" type="button" aria-label="Play: Tune B: bittersweet and heroic"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 2</span>
+          <h3>Tune B: bittersweet and heroic</h3>
+          <p>A minor key that keeps lifting, on a long-short-long step.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="60" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="soft" style="left:0.00%;width:37.02%"><span>exploring</span></i><i class="loud" style="left:37.02%;width:37.02%"><span>the fight</span></i><i class="soft" style="left:74.05%;width:18.51%"><span>again</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span>0:22 a fight breaks out · 0:45 the room is clear</span><span class="clock">0:00 / 1:00</span></div>
+        </div>
+      </article>
+
+      <article class="clip" data-src="clips/tune_c.mp3" data-len="60.5">
+        <button class="play" type="button" aria-label="Play: Tune C: flowing, full of wonder"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 3</span>
+          <h3>Tune C: flowing, full of wonder</h3>
+          <p>It starts away from home and keeps moving.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="60" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="soft" style="left:0.00%;width:37.02%"><span>exploring</span></i><i class="loud" style="left:37.02%;width:37.02%"><span>the fight</span></i><i class="soft" style="left:74.05%;width:18.51%"><span>again</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span>0:22 a fight breaks out · 0:45 the room is clear</span><span class="clock">0:00 / 1:00</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>Two things you asked for, alone</h2>
+    <div class="clips">
+      <article class="clip" data-src="clips/heavier.mp3" data-len="29.0">
+        <button class="play" type="button" aria-label="Play: The heavy guitars: before, then heavier"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 4</span>
+          <h3>The heavy guitars: before, then heavier</h3>
+          <p>The same eight bars twice, with bass and drums: as in the sound check, then as they are now. Each is set as loud as the other, so what you judge is the weight, not the volume.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="29" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="loud" style="left:0.00%;width:48.97%"><span>as before</span></i><i class="loud" style="left:51.03%;width:48.97%"><span>heavier</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:29</span></div>
+        </div>
+      </article>
+
+      <article class="clip" data-src="clips/synth.mp3" data-len="30.7">
+        <button class="play" type="button" aria-label="Play: The synth alone"><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3v18l15-9z"/></svg><svg class="pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h5v18H5zM14 3h5v18h-5z"/></svg><svg class="wait" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4z"/></svg></button>
+        <div class="words">
+          <span class="num">Clip 5</span>
+          <h3>The synth alone</h3>
+          <p>The same chords twice: warm, as while you explore; then thin and bright, as in a fight, where it sits above the guitars.</p>
+        </div>
+        <div class="under">
+          <div class="strip" role="slider" aria-label="Where in the clip" aria-valuemin="0" aria-valuemax="31" aria-valuenow="0" tabindex="0">
+            <div class="lane"><i class="soft" style="left:0.00%;width:50.16%"><span>exploring</span></i><i class="loud" style="left:51.47%;width:48.53%"><span>in a fight</span></i></div>
+            <div class="head"></div>
+          </div>
+          <div class="row"><span class="clock">0:00 / 0:31</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="notes">
+    <section>
+      <h2>What changed, by your answers</h2>
+      <ul>
+        <li>“Heavier”: four heavy guitars where there were two, everything a tone lower, more gain, and more weight low down. The bass has more grit.</li>
+        <li>“The lead guitar”: it never holds a long note now. In a fight three guitars pick the tune fast, one of them an octave under. While you explore one guitar plucks it, with an echo.</li>
+        <li>“Calmer and dreamier”: a slow beat (the kick, a stick across the rim, the hi-hat), fewer notes, more echo and more hall.</li>
+        <li>“The air (Recommended)”: the synth holds soft chords behind the band all the way through.</li>
+        <li>“More”, of try-out 1's fight: the fight is now about 10 units louder than the exploring. In try-out 1 it was about 6.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>What I checked, since I can't hear</h2>
+      <ul>
+        <li>Every note of each tune was checked against the chord under it. None clashes.</li>
+        <li>The fight measures about 10 units louder than the exploring, on the loudness scale that radio and streaming use. On a phone's own speaker, which cannot play the fight's deepest sounds, it comes to between 8 and 9.</li>
+        <li>Nothing clips and nothing clicks.</li>
+        <li>Ringing chords and held notes are within 7 hundredths of a semitone of true pitch. Notes picked fast ring sharp in their first moments, as hard-struck strings do: the guitars by up to 20 hundredths, the bass's short notes by up to 34.</li>
+        <li>Three listening programs that name what they hear were asked about each stretch. The fights: <span class="tags">Heavy metal, Guitar, Drum kit</span>. The exploring: <span class="tags">Guitar, Tender music</span>. The synth alone: <span class="tags">Synthesizer, Ambient music</span> when warm, <span class="tags">Electronic music</span> when bright.</li>
+        <li>Clip 4, measured: set equally loud, the heavier guitars have about 2 units more in the low octaves. A phone's speaker cannot play those, so there the heavier half comes out about 1 unit quieter than the first. Judge clip 4 on headphones if you can.</li>
+      </ul>
+    </section>
+    <section class="not">
+      <h2>What nobody has checked</h2>
+      <ul>
+        <li>How it sounds. Nobody has heard this. You are the first.</li>
+        <li>Whether any of the three is a good tune. A tune can pass every check and still be dull.</li>
+        <li>How a tune comes round on itself, and how a fight would start in the middle of a bar. Here it starts on the bar.</li>
+        <li>The tuning of the soft bass: that check ran out of time.</li>
+        <li>A real phone, and how the music sits under the game's own sounds.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>The facts</h2>
+      <dl class="facts">
+        <dt>Each tune</dt><dd>Sixteen bars, 22.4 seconds once through. A beat is 0.35 seconds</dd>
+        <dt>Keys</dt><dd>A and C in C major, B in C minor</dd>
+        <dt>The band</dt><dd>The sound check's guitar, bass and drum kit (recordings), and a synth made in code</dd>
+        <dt>Files</dt><dd>MP3s, 1.2 MB for each tune's clip</dd>
+      </dl>
+    </section>
+  </section>
+</main>
+
+<script>
+(() => {
+  const clips = [...document.querySelectorAll('.clip')].map((el) => {
+    const audio = new Audio();
+    audio.preload = 'none';
+    audio.src = el.dataset.src;
+    return { el, audio, len: Number(el.dataset.len), src: el.dataset.src, way: 'file', tried: new Set(['file']), blob: null, mending: false, started: false,
+      button: el.querySelector('.play'), strip: el.querySelector('.strip'), head: el.querySelector('.head'), clock: el.querySelector('.clock') };
+  });
+  const mmss = (s) => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+  const state = (c, s) => { c.el.dataset.state = s; };
+  const trouble = (c, text) => {
+    let p = c.el.querySelector('.trouble');
+    if (!p) { p = document.createElement('p'); p.className = 'trouble'; c.el.appendChild(p); }
+    p.textContent = text;
+    p.hidden = !text;
+  };
+  const show = (c) => {
+    const t = Math.min(c.audio.currentTime || 0, c.len);
+    c.head.style.left = (100 * t / c.len) + '%';
+    c.strip.setAttribute('aria-valuenow', String(Math.round(t)));
+    if (c.clock) c.clock.textContent = mmss(t) + ' / ' + mmss(Math.round(c.len));
+  };
+  const tick = () => {
+    for (const c of clips) if (!c.audio.paused) show(c);
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+
+  // A clip can reach the player three ways: as a blob held in the page (best: it can be wound to any
+  // point), as text, or straight from its file. Each is tried until one works, so the page plays
+  // wherever it is opened.
+  const WAYS = ['blob', 'text', 'file'];
+  const asText = (blob) => new Promise((done, fail) => {
+    const r = new FileReader();
+    r.onload = () => done(r.result);
+    r.onerror = () => fail(r.error);
+    r.readAsDataURL(blob);
+  });
+  const fetched = async (c) => {
+    if (!c.blob) {
+      const got = await fetch(c.src);
+      if (!got.ok) throw new Error('fetch ' + got.status);
+      c.blob = new Blob([await got.arrayBuffer()], { type: 'audio/mpeg' });
+    }
+    return c.blob;
+  };
+  const give = async (c, way) => {
+    c.way = way;
+    c.tried.add(way);
+    c.audio.src = way === 'file' ? c.src : way === 'blob' ? URL.createObjectURL(await fetched(c)) : await asText(await fetched(c));
+    c.audio.preload = 'auto';
+    c.audio.load();
+  };
+  const mend = async (c, wasPlaying) => {
+    if (c.mending) return;
+    const next = WAYS.find((w) => !c.tried.has(w));
+    if (!next) { state(c, 'idle'); trouble(c, 'This clip will not play here. Tell me, and I will send the sound itself.'); return; }
+    c.mending = true;
+    if (wasPlaying) state(c, 'loading');
+    try {
+      await give(c, next);
+      c.mending = false;
+      if (!wasPlaying) return;
+      try { await c.audio.play(); } catch (e) {
+        if (e && e.name === 'NotAllowedError') { state(c, 'idle'); trouble(c, 'Ready now. Tap play once more.'); }
+        else if (!e || e.name !== 'AbortError') mend(c, true);
+      }
+    } catch (e) {
+      c.mending = false;
+      state(c, 'idle');
+      if (wasPlaying) trouble(c, 'This clip will not load here. Tell me, and I will send the sound itself.');
+    }
+  };
+
+  const stopOthers = (c) => { for (const o of clips) if (o !== c && !o.audio.paused) o.audio.pause(); };
+  const toggle = (c) => {
+    if (c.mending) return;
+    if (!c.audio.paused) { c.audio.pause(); return; }
+    stopOthers(c);
+    trouble(c, '');
+    state(c, 'loading');
+    c.started = true;
+    const p = c.audio.play();
+    if (p && p.catch) p.catch((e) => {
+      if (e && e.name === 'AbortError') return;
+      if (e && e.name === 'NotAllowedError') { state(c, 'idle'); return; }
+      mend(c, true);
+    });
+  };
+  const seek = (c, x) => {
+    const box = c.strip.getBoundingClientRect();
+    const t = Math.max(0, Math.min(1, (x - box.left) / box.width)) * c.len;
+    try { c.audio.currentTime = Math.min(t, Math.max(0, c.len - 0.05)); } catch (e) { /* not loaded yet: it starts from the top */ }
+    show(c);
+  };
+
+  for (const c of clips) {
+    state(c, 'idle');
+    show(c);
+    c.button.addEventListener('click', () => toggle(c));
+    c.audio.addEventListener('playing', () => { state(c, 'playing'); trouble(c, ''); });
+    c.audio.addEventListener('waiting', () => { if (!c.audio.paused) state(c, 'loading'); });
+    c.audio.addEventListener('pause', () => { if (!c.mending) state(c, 'idle'); show(c); });
+    c.audio.addEventListener('ended', () => { try { c.audio.currentTime = 0; } catch (e) { /* stays at the end */ } state(c, 'idle'); show(c); });
+    c.audio.addEventListener('error', () => { if (c.audio.error && !c.mending) mend(c, c.el.dataset.state === 'loading' || c.el.dataset.state === 'playing'); });
+    let held = false;
+    c.strip.addEventListener('pointerdown', (e) => { held = true; try { c.strip.setPointerCapture(e.pointerId); } catch (err) { /* no capture: taps still work */ } seek(c, e.clientX); });
+    c.strip.addEventListener('pointermove', (e) => { if (held) seek(c, e.clientX); });
+    const letGo = () => { held = false; };
+    c.strip.addEventListener('pointerup', letGo);
+    c.strip.addEventListener('pointercancel', letGo);
+    c.strip.addEventListener('keydown', (e) => {
+      const step = e.key === 'ArrowRight' ? 5 : e.key === 'ArrowLeft' ? -5 : 0;
+      if (!step) return;
+      e.preventDefault();
+      try { c.audio.currentTime = Math.max(0, Math.min(c.len - 0.05, (c.audio.currentTime || 0) + step)); } catch (err) { /* not loaded yet */ }
+      show(c);
+    });
+  }
+
+  // Fetch the clips one after another, in the order they are on the page, and hand each to its player
+  // as a blob before it is first played. A clip tapped before its turn plays straight from its file.
+  (async () => {
+    for (const c of clips) {
+      if (c.started) continue;
+      try {
+        await fetched(c);
+        if (c.started || c.mending) continue;
+        c.tried.delete('file');
+        await give(c, 'blob');
+      } catch (e) { /* it stays on its file */ }
+    }
+  })();
+})();
+</script>

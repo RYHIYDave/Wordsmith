@@ -174,7 +174,9 @@ def check(key):
 # ---------------------------------------------------------------- the amps of step 2
 
 # "Heavier": more gain, more thump low down, more bite up top; and four guitars, the second pair darker and thicker
-HEAVY = {**gtr.RHYTHM, 'g1': 30, 'g2': 6, 'g3': 3, 'thump_db': 5.5, 'bass_db': 6.5, 'bite_db': 5}
+# (and less of the first amp's scoop: a phone's speaker plays nothing under about 350 Hz, so there the guitars' weight
+# has to come from their body, 350 to 900 Hz, which a deep scoop takes away)
+HEAVY = {**gtr.RHYTHM, 'g1': 30, 'g2': 6, 'g3': 3, 'thump_db': 5.5, 'bass_db': 6.5, 'bite_db': 5, 'scoop_db': -5}
 THICK = {**gtr.RHYTHM, 'g1': 30, 'g2': 6, 'g3': 3, 'mid_f': 620, 'mid_db': 10, 'scoop_db': -4, 'bite_f': 3000, 'top': 4600, 'thump_db': 5.5}
 # the lead in a fight: every note picked fast, so it wants a bright, tight amp, not a singing one
 SHRED = dict(tight=220, mid_f=1100, mid_db=8, g1=36, bias=0.15, g2=7, g3=3.0, bass_db=0, scoop_f=600, scoop_db=-1, treble_db=2,
@@ -196,6 +198,9 @@ def wall(strokes, total, old=False):
         # the second pair sits inside the first, and the other way round (the one that reaches up, on the right)
         inner = np.stack([r2 * 0.775 + l2 * 0.225, r2 * 0.225 + l2 * 0.775], axis=1)
         g = wide(left, right) + inner * 0.7
+        # weight: a heavy record has far more between 100 and 300 Hz than the sound check's band had (measured
+        # against the usual slope of a record, about 2 dB less in each octave going up), so the wall's lows come up
+        g = filt(filt(g, 'lowshelf', 250, gain=6.0), 'peaking', 450, 0.7, 2.0)
     return g + fx.reverb(g, BOOTH) * 0.12
 
 
@@ -336,7 +341,8 @@ def fast_lead(notes, total):
 
 
 def bass_heavy(notes, total):
-    return centre(bass.amp(bass.play(notes, total), dict(grit=4, high=0.38, top=4000)))
+    x = bass.amp(bass.play(notes, total), dict(grit=4, high=0.2, top=4000))
+    return centre(filt(x, 'lowshelf', 150, gain=3.0))
 
 
 def bass_soft(notes, total):
@@ -347,19 +353,20 @@ def bass_soft(notes, total):
 
 WAYS = ['gallop'] * 4 + ['race'] * 4 + ['halftime'] * 4 + ['blast'] * 2 + ['race'] * 2
 PLAN = dict(before=16, fight=16, after=8)       # bars
-JUMP = 9.0                                       # how much louder the fight is than the exploring (try-out 1's was 6.3)
+JUMP = 10.0                                      # how much louder the fight is than the exploring, in LU (try-out 1: 6.3); on a phone's speaker, which cannot play the fight's lows, about 2 less
 TAIL = 4.5
 LOUDEST = -13.5                                  # the fight, in LUFS, in the finished clip
 
 
-def stems(key, plan=PLAN, pad_fight=synth.GLASS, pad_explore=synth.WARM, old_wall=False):
-    """Every part of the clip on its own, each the whole clip long: {name: two sides}."""
+def stems(key, plan=PLAN, only=None, old_wall=False):
+    """Every part of the clip on its own, each the whole clip long: {name: two sides}. only: just these parts."""
     t = TUNES[key]
     a, f, z = plan['before'], plan['fight'], plan['after']
     bars = a + f + z
     total = bars * BAR + TAIL
     ta, tf, tz = 0.0, a * BAR, (a + f) * BAR
     out = {}
+    want = lambda name: only is None or name in only
     # exploring, before and after
     strum, arp, lead, low_notes = explore_parts(t, a, ta)
     s2, a2, l2, b2 = explore_parts(t, z, tz)
@@ -369,56 +376,68 @@ def stems(key, plan=PLAN, pad_fight=synth.GLASS, pad_explore=synth.WARM, old_wal
     s2 += strings.damp(end - 0.03) + strings.strum(end, shape(home), True, 2, spread=0.03)
     a2 += strings.damp(end - 0.03) + [(end, 5, shape(home)[5], 2)]
     b2.append((end, deep(home), 'long', 1))
-    out['soft strum'] = soft_strum(strum + s2, total)
-    out['soft picked'] = soft_arp(arp + a2, total)
-    out['soft lead'] = soft_lead(lead + l2, total)
-    out['soft bass'] = bass_soft(low_notes + [(tf, 0, 'stop', 0)] + b2, total)
-    kit = Kit(total, seed=4)
-    for k in range(a):
-        explore_drums(kit, ta + k * BAR, k, first=(k % 8 == 0))
-    # the last half-bar before the fight: the snare rolls up into it
-    for i in range(8):
-        kit.hit('snare', tf - (8 - i) * STEP, 0.3 + 0.085 * i)
-    for k in range(z):
-        explore_drums(kit, tz + k * BAR, k, first=(k == 0))
-    kit.hit('kick', end, 0.5)
-    kit.hit('crash2', end, 0.42, pan=0.3)
-    d = kit.mix(dict(kick_click=3, kick_box=-4, kick_push=1.0, snare_push=1.0, over=1.1, cymbals=0.6, hats=0.55, kick_tick=9))
-    out['soft drums'] = d + fx.reverb(d, BOOTH, hp=300) * 0.25 + fx.reverb(d, HALL) * 0.14
-    chords_a = [(ta / BAR + b, notes) for b, notes in voiced(t['chords'][:a])]
-    chords_z = [(tz / BAR + b, notes) for b, notes in voiced((t['chords'] * 2)[:z] + [home])]
-    out['soft synth'] = synth.pad(synth.lead_in(chords_a, BAR, 1) + synth.lead_in(chords_z, BAR, 2), total, pad_explore)
+    if want('soft strum'):
+        out['soft strum'] = soft_strum(strum + s2, total)
+    if want('soft picked'):
+        out['soft picked'] = soft_arp(arp + a2, total)
+    if want('soft lead'):
+        out['soft lead'] = soft_lead(lead + l2, total)
+    if want('soft bass'):
+        out['soft bass'] = bass_soft(low_notes + [(tf, 0, 'stop', 0)] + b2, total)
+    if want('soft drums'):
+        kit = Kit(total, seed=4)
+        for k in range(a):
+            explore_drums(kit, ta + k * BAR, k, first=(k % 8 == 0))
+        # the last half-bar before the fight: the snare rolls up into it
+        for i in range(8):
+            kit.hit('snare', tf - (8 - i) * STEP, 0.3 + 0.085 * i)
+        for k in range(z):
+            explore_drums(kit, tz + k * BAR, k, first=(k == 0))
+        kit.hit('kick', end, 0.5)
+        kit.hit('crash2', end, 0.42, pan=0.3)
+        d = kit.mix(dict(kick_click=3, kick_box=-4, kick_push=1.0, snare_push=1.0, over=1.1, cymbals=0.6, hats=0.55, kick_tick=9))
+        out['soft drums'] = d + fx.reverb(d, BOOTH, hp=300) * 0.25 + fx.reverb(d, HALL) * 0.14
+    if want('soft synth'):
+        chords_a = [(ta / BAR + b, notes) for b, notes in voiced(t['chords'][:a])]
+        chords_z = [(tz / BAR + b, notes) for b, notes in voiced((t['chords'] * 2)[:z] + [home])]
+        out['soft synth'] = synth.pad(synth.lead_in(chords_a, BAR, 1) + synth.lead_in(chords_z, BAR, 2), total, synth.WARM)
     # the fight
     g, b, lead_f = fight_parts(t, f, WAYS, tf)
     # its last chord: everyone lands together on the first beat after it, and lets go
     g += [(tz, power(home), 'ring', 3), (tz + 2.6, [], 'stop', 0)]
     b += [(tz, deep(home), 'long', 3), (tz + 2.6, 0, 'stop', 0)]
-    wall_ = wall(g, total, old=old_wall)
     # (the last chord dies away under the soft band)
-    fade = np.ones(len(wall_))
+    fade = np.ones(int(total * SR))
     i0, i1 = int((tz + 0.4) * SR), int((tz + 2.6) * SR)
     fade[i0:i1] = np.linspace(1, 0, i1 - i0) ** 1.5
     fade[i1:] = 0
-    out['heavy guitars'] = wall_ * fade[:, None]
-    hb = bass_heavy(b, total)
-    out['heavy bass'] = hb * fade[:len(hb), None]
-    out['fast lead'] = fast_lead(lead_f, total)
-    kit = Kit(total, seed=3)
-    for k in range(f):
-        thrash(kit, tf + k * BAR, k, WAYS[k], fill=(k % 4 == 3), crash=(k % 2 == 0))
-    kit.hit('kick', tz, 1.0)
-    kit.hit('crash', tz, 1.0, pan=-0.3)
-    kit.hit('china', tz, 0.9)
-    d = kit.mix()
-    out['heavy drums'] = fx.shave(fx.squeeze(d + fx.reverb(d, BOOTH, hp=300) * 0.18, -16, 3, 0.012, 0.1))
-    chords_f = [(tf / BAR + bb, notes) for bb, notes in voiced(t['chords'][:f])]
-    out['fight synth'] = synth.pad(synth.lead_in(chords_f, BAR, 1), total, pad_fight)
+    if want('heavy guitars'):
+        wall_ = wall(g, total, old=old_wall)
+        out['heavy guitars'] = wall_ * fade[:len(wall_), None]
+    if want('heavy bass'):
+        hb = bass_heavy(b, total)
+        out['heavy bass'] = hb * fade[:len(hb), None]
+    if want('fast lead'):
+        out['fast lead'] = fast_lead(lead_f, total)
+    if want('heavy drums'):
+        kit = Kit(total, seed=3)
+        for k in range(f):
+            thrash(kit, tf + k * BAR, k, WAYS[k], fill=(k % 4 == 3), crash=(k % 2 == 0))
+        kit.hit('kick', tz, 1.0)
+        kit.hit('crash', tz, 1.0, pan=-0.3)
+        kit.hit('china', tz, 0.9)
+        d = kit.mix()
+        out['heavy drums'] = fx.shave(fx.squeeze(d + fx.reverb(d, BOOTH, hp=300) * 0.18, -16, 3, 0.012, 0.1))
+    if want('fight synth'):
+        chords_f = [(tf / BAR + bb, notes) for bb, notes in voiced(t['chords'][:f])]
+        out['fight synth'] = synth.pad(synth.lead_in(chords_f, BAR, 1), total, synth.AIR)
     return out, dict(total=total, fight=(tf, tz), bars=bars)
 
 
 # how loud each part is set before the two groups are set against each other (LUFS, of the part's own stretch)
-SOFT = {'soft strum': -24, 'soft picked': -23, 'soft lead': -22, 'soft bass': -24.5, 'soft drums': -24, 'soft synth': -24}
-LOUD = {'heavy guitars': -18, 'heavy bass': -20, 'heavy drums': -15, 'fast lead': -21, 'fight synth': -24}
+SOFT = {'soft strum': -26, 'soft picked': -25, 'soft lead': -20.5, 'soft bass': -24.5, 'soft drums': -24, 'soft synth': -25.5}
+# (the lead a few dB under the wall: lower and the tune is lost in it, and he is choosing between tunes)
+LOUD = {'heavy guitars': -15.5, 'heavy bass': -17, 'heavy drums': -14, 'fast lead': -19, 'fight synth': -26}
 
 
 def section(x, a, b):
@@ -445,7 +464,7 @@ def mix(parts, info, jump=JUMP):
     return soft * duck[:, None] + loud
 
 
-PARTS = 'v2'      # change this when anything that makes the parts changes, and they are made again
+PARTS = 'v4'      # change this when anything that makes the parts changes, and they are made again
 
 
 def kept(key, **kw):
@@ -460,6 +479,17 @@ def kept(key, **kw):
     if not kw:
         os.makedirs(OUT + 'music', exist_ok=True)
         np.savez(path, info=np.array(info, dtype=object), **{k: v.astype(np.float32) for k, v in parts.items()})
+    return parts, info
+
+
+def remake(key, names):
+    """Makes some of a tune's kept parts again (after a change to what makes them), leaving the rest."""
+    import os
+    from where import OUT
+    parts, info = kept(key)
+    fresh, info = stems(key, only=set(names))
+    parts.update(fresh)
+    np.savez(OUT + f'music/parts_{key}_{PARTS}.npz', info=np.array(info, dtype=object), **{k: v.astype(np.float32) for k, v in parts.items()})
     return parts, info
 
 
@@ -481,6 +511,12 @@ if __name__ == '__main__':
     args = sys.argv[1:] or ['a', 'b', 'c']
     if args[0] == 'check':
         sys.exit(1 if sum(check(k) for k in TUNES) else 0)
+    if args[0] == 'remake':
+        # python3 tunes.py remake "fight synth,heavy bass" [a b c]
+        for key in args[2:] or ['a', 'b', 'c']:
+            remake(key, args[1].split(','))
+            print('remade for tune', key, ':', args[1], flush=True)
+        sys.exit(0)
     os.makedirs(OUT + 'music', exist_ok=True)
     for key in args:
         y, parts, info = clip(key)

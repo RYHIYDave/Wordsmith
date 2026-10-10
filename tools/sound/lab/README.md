@@ -39,7 +39,11 @@ The listening models (the "borrowed ears") are the three sizes of CED from the r
 | `ear.py` | The listening models |
 | `pitch.py` | How far a note is from true pitch: a comb of its partials fitted to the sound (tested on made-up notes: `python3 pitch.py`) |
 | `sounds.py` | Try-out 2, step 1: the seven clips |
-| `check_play.py` | Are the notes the lab plays in tune? |
+| `synth.py` | The band's synth, made in code: soft held chords (warm for exploring, thin and bright for a fight) |
+| `tunes.py` | Try-out 2, step 2: three tunes, each played exploring, in a fight and exploring again; `check` tests every note against its chord; the parts are kept on disk and `remake` makes some again |
+| `extras.py` | Step 2's two small clips: the heavy guitars before and heavier, and the synth alone |
+| `check_music.py` | The checks on a tune's clip, stretch by stretch |
+| `check_play.py` | Are the notes the lab plays in tune? (`tunes`: the notes step 2 plays; slow, give it twenty minutes) |
 | `check_clips.py` | The checks on the finished MP3s: loudness, true peak, clicks, and what the models hear |
 | `search_amp.py` | The climb that found the heavy amp's settings |
 
@@ -62,3 +66,12 @@ The listening models (the "borrowed ears") are the three sizes of CED from the r
 - **The listening models stop naming instruments once three or four play together.** Pairs they
   name; a whole soft band is "music". So a whole mix is judged by what kind of music they call it,
   and its parts are judged alone.
+- **Weight is in the low octaves.** Against the usual slope of a heavy record, the sound check's
+  band was thin from 100 to 300 Hz; the wall's lows were brought up to match. A phone's speaker plays
+  none of that, so there the weight has to come from the guitars' body (350 to 900 Hz): less scoop.
+- **A note picked fast must not be cut at each stroke** (it sounds like a machine): each stroke dips
+  and dies away under the next (`gtr.tremolo`).
+- **A tune plucked on one string, each note cutting off the last, is taken for a keyboard.** On two
+  strings turn about, each note rings on under the next.
+- **Do not mix by the listening models alone.** Lower or duller drums make a fight read as video
+  game music; a buried lead pleases them and hides the tune.

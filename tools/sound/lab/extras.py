@@ -5,7 +5,8 @@
 - heavier.wav: the heavy guitars with bass and drums, first as the sound check had them, then heavier (his word
   for clip 1 of the sound check: "Heavier"). The same eight bars twice, each as loud as the other, so that what
   is judged is the weight and the bite and not the volume.
-- synth.wav: the synth alone, the same chords twice: its warm colour, then its glassy one."""
+- synth.wav: the synth alone, the same chords twice: as it plays while you explore (warm), then as it plays in a
+  fight (thin and bright, to sit over the wall of guitars)."""
 import os
 import numpy as np
 from dsp import SR, save
@@ -48,7 +49,7 @@ def band(chords, old):
     if old:
         low = centre(bass.amp(bass.play(b, total)))
         return together(at(wall(g, total, old=True), -19), at(low, -21), at(d, -16.5))
-    return together(at(wall(g, total), -18), at(bass_heavy(b, total), -20), at(d, -15))
+    return together(at(wall(g, total), tunes.LOUD['heavy guitars']), at(bass_heavy(b, total), tunes.LOUD['heavy bass']), at(d, tunes.LOUD['heavy drums']))
 
 
 def heavier():
@@ -63,7 +64,7 @@ def colours():
     chords = synth.lead_in(voiced(tunes.TUNES['a']['chords'][:8]), BAR, 2)
     total = 8 * BAR + 5.0
     a = trim(at(synth.pad(chords, total, synth.WARM), -18.0), floor=-45)
-    b = trim(at(synth.pad(chords, total, synth.GLASS), -18.0), floor=-45)
+    b = trim(at(synth.pad(chords, total, synth.AIR), -18.0), floor=-45)
     gap = np.zeros((int(0.4 * SR), 2))
     return np.concatenate([a, gap, b]), len(a) / SR, len(a) / SR + 0.4
 

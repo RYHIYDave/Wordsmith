@@ -80,6 +80,10 @@ WARM = dict(voices=6, spread=11.0, drift=2.5, low=520, high=1900, open=1.6, brea
 GLASS = dict(voices=6, spread=8.0, drift=2.0, low=900, high=4200, open=1.1, breathe=0.10, attack=0.5, release=2.6,
              sub=0.0, octave=0.45, hp=260, ens=0.7, hall=0.7, hall_s=5.0, air_db=1.5)
 
+# in a fight: thin and bright, to sit over the wall of guitars (which stop at about 5 kHz) and not in it
+AIR = dict(voices=6, spread=9.0, drift=2.0, low=2000, high=8000, open=0.8, breathe=0.08, attack=0.35, release=2.0,
+           sub=0.0, octave=0.7, hp=600, ens=0.7, hall=0.6, hall_s=4.2, air_db=4.0)
+
 _halls = {}
 
 

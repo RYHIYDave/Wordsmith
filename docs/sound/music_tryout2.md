@@ -6,7 +6,8 @@ recordings that are not in the repository. It goes into the game only through th
 the owner has heard the music and said yes.
 
 Try-out 2 has two steps. **Step 1, the band's sound check, is done and has his yes** (below).
-Step 2, the music itself, is being made.
+**Step 2, the music itself, went to him at 20:05 on 9 Oct 2026. He has not answered yet**, and the
+sound chat stopped there at his word (the end of this file).
 
 ## Why a band, and why real instruments
 
@@ -165,14 +166,63 @@ The sound chat cannot hear. What it measured, on the seven MP3s as sent (`tools/
 - `fetch_packs.sh` from nothing: its commands are the ones that fetched the packs, put into one
   script afterwards and run again only as far as reaching the three repositories.
 
-## Step 2, being made
+## Step 2: what he was sent (20:05)
 
-The music: exploring and the fight, played by this band with the synth for the air, with two or
-three tunes for him to choose between. By his answers: heavier guitars; a tune the guitar picks and
-never has to hold; exploring calmer and dreamier; the fight "More" than try-out 1's (his word then:
-“More”, of the option "Heavier and wilder, and louder against the exploring."); the four ways kept
-(his words:
-“I liked them all, and interchanging them gives different opportunities for different attacks.  Half time for slams, racing for a barrage of shots, that kind of thing”).
+The page "Three Tunes", https://claude.ai/artifact/1BqyJE3wgQUR5RBWbqmeZ1 (its source is
+`tools/sound/pages/three_tunes.html`; the clips are `tools/sound/lab/tunes.py`'s and `extras.py`'s, as
+MP3s at 160 kbps). **Not his yes: he has not answered. No questions were asked of him yet** (below).
+
+1. to 3. **Tune A** (bright and soaring; C major), **Tune B** (bittersweet and heroic; C minor),
+   **Tune C** (flowing, full of wonder; C major). Each clip is 60.5 s: sixteen bars exploring (to
+   22.4 s), sixteen of the fight (to 44.8 s; the drums gallop four bars, race four, half-time four,
+   blast two, race two), eight exploring again, a last chord. A tune is sixteen bars, a beat 0.35 s.
+4. **The heavy guitars: before, then heavier** (29.0 s): the same eight bars with bass and drums, as
+   in the sound check and as now, each half at the same loudness.
+5. **The synth alone** (30.7 s): the same chords warm (exploring), then thin and bright (the fight).
+
+What changed, by his answers: “Heavier”: four heavy guitars where there were two (the second pair
+through a darker, thicker amp), everything a tone lower (the lowest string at C), more gain, the
+wall's lows brought up, more grit on the bass. “The lead guitar”: no held notes; in a fight three
+guitars pick the tune every sixteenth (`gtr.tremolo`), one an octave under; exploring, one guitar
+plucks it an octave down on two strings turn about, with echo. “Calmer and dreamier”: kick on one, a
+stick across the rim on three, hi-hat on the beats; one strum a chord; more echo and hall.
+“The air (Recommended)”: the synth (`synth.py`, made in code) holds chords throughout, warm while
+exploring, thin and bright in the fight.
+
+### How it was checked (the MP3s as sent)
+
+- `tunes.py check`: every note against its chord, no faults in any of the three.
+- Loudness: exploring -23.9 LUFS, the fight -14.0 to -14.1, so the fight is 9.8 to 9.9 LU louder
+  (try-out 1: 6.3); as a phone's speaker plays it (nothing under 350 Hz) 8.3 to 8.6. True peak no
+  higher than -1.2 dBFS. Clicks 0 (in the WAVs the counter flags one kick drum's own attack).
+- The listening models: the fights Heavy metal 0.25 to 0.27, Guitar, Drum kit; the exploring Guitar,
+  Tender music (and New-age music in A and C); the synth alone Synthesizer 0.23 and Ambient music
+  0.23 warm, Electronic music 0.17 bright.
+- Clip 4, both halves -16.5 LUFS: the heavier half has 1.9 dB more in the 125 Hz and 250 Hz octaves
+  against 1 kHz, and on a phone's speaker is 1.0 LU quieter than the first. "Heavy metal" 0.33 and
+  0.34: the models do not tell the two apart.
+- Tuning (`check_play.py tunes`): ringing chords within 4.1 cents, stabs 6.0, the plucked tune 5.6,
+  the soft chords 6.5, the bass's long loud notes 5.0; muted strokes up to 15 sharp, picked notes up
+  to 20, the tune picked fast within 12.5, the bass's short notes up to 34 sharp (each over its first
+  moments). **The run timed out before the soft bass and the synth: not checked.**
+- The page as a phone shows it (390 and 320 px): no sideways scroll, no label cut, every clip plays,
+  winds, stops the others and goes back to the top; a refused file is fetched another way.
+
+### NOT CHECKED
+
+How it sounds; whether any of the three is a good tune; how a tune comes round on itself; a fight
+starting mid-bar; the soft bass's and the synth's tuning; a real phone; the music under the game's
+own sounds. On the home chord (C) the bass plays C2, the same octave as the guitars' root (its
+lowest good note is E1): one thing to try if he says "heavier still".
+
+### Where it stopped
+
+His words, 19:55: “Once you’re done with that I need you to stop and shut down for the time being.  I think you’re nuking my token usage”
+So the page was sent and the sound chat stopped: no questions asked, nothing scheduled, no post on
+the Chat Board (reading and posting there costs a good deal). **To pick up:** ask him, as pop-ups,
+our pick first: which tunes he likes (pick any; A, B, C, none); the fight, heavy enough now; the
+exploring, calm and dreamy enough; the lead, better in the fight and while exploring; the synth,
+more or less; the jump in loudness. Then post his answers on the board.
 
 ## For the main chat (nothing to do yet)
 
