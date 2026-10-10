@@ -39,7 +39,7 @@
 
 import { Px } from '../engine/px';
 import type { Light, Sprite } from '../engine/px';
-import { CRYPT_FLOORS, DIRT, OLD_IRON, OLD_RUST, ROCK, TIMBER } from './crypt';
+import { CRYPT_FLOORS, DIRT, OLD_IRON, ROCK, TIMBER } from './crypt';
 import type { Theme } from './ground';
 import { makeGateArt } from './gates';
 import type { GateArt, Mark } from './gates';
@@ -87,7 +87,8 @@ const HEAP_BONE: Ramp = ['#1a1630', '#28233e', '#47415f', '#5c5676', '#625c7a'];
 const IRONS: Ramp = OLD_IRON;
 const SMALL_IRON: Ramp = ['#1c1a3a', '#1c1a3a', '#4c4884', '#8480bc', '#a8a4dc'];
 const DIM_IRON: Ramp = ['#16142c', '#16142c', '#34305e', '#4c4880', '#4c4880'];
-const RUST: Ramp = OLD_RUST;
+/** Rust, a dull grey-brown (never the red of blood: floor 2's second look found rust by bones reading as spatter). */
+const RUST: Ramp = ['#221a24', '#221a24', '#3c2e3a', '#4c3e48', '#4c3e48'];
 const GLINT = '#9a96c8';
 /** Ore: dark rock, a dull metal glint in it. */
 const ORE: Ramp = ['#0e0c1a', '#16142a', '#262340', '#36334f', '#5c5880'];
@@ -2814,7 +2815,7 @@ function bonesStir(): Moment {
   const TWITCH: ReadonlyArray<readonly [number, number]> = [[2, 2], [5, 6], [7, 0], [11, 7], [13, 3]];
   // WHICH GO LOOSE: the skull on its top rolls off; others flung as the arm bursts up
   const topSkull = HEAP_BITS.findIndex((b) => b.kind === 'skull' && b.a[0] === 2 && b.a[1] === -2);
-  const flungIdx = HEAP_BITS.map((b, i) => i).filter((i) => i !== topSkull && i !== HEAP_EYES && HEAP_BITS[i].kind === 'bone' && Math.hypot((HEAP_BITS[i].a[0] + HEAP_BITS[i].b[0]) / 2, (HEAP_BITS[i].a[1] + HEAP_BITS[i].b[1]) / 2) < 9);
+  const flungIdx = HEAP_BITS.map((b, i) => i).filter((i) => i !== topSkull && i !== HEAP_EYES && HEAP_BITS[i].kind !== 'ribs' && Math.hypot(HEAP_BITS[i].kind === 'bone' ? (HEAP_BITS[i].a[0] + HEAP_BITS[i].b[0]) / 2 : HEAP_BITS[i].a[0], HEAP_BITS[i].kind === 'bone' ? (HEAP_BITS[i].a[1] + HEAP_BITS[i].b[1]) / 2 : HEAP_BITS[i].a[1]) < 12.5);
   /** A point of the heap's skin moved with it: drawn in toward its top, riding up and down with it. */
   const ride = (p: V3, f: number, i: number): V3 => {
     const s = slideAt(f);
@@ -2840,12 +2841,12 @@ function bonesStir(): Moment {
     const t = f - BURST;
     if (t < 0) return { p: add(sh, [1, 1, 4 + t * 3]), curl: 1.2 };
     // (up fast, overshooting, then swaying out toward the hero and back, a lunge at the end)
-    const up = [3, 19, 33, 42.6, 46.4, 44.2, 42.8][Math.min(t, 6)];
-    const sway = t < 6 ? 0 : Math.sin((t - 6) * 0.22) * 6;
-    const lunge = t > 30 ? Math.min(1, (t - 30) / 6) * 13 : 0;
+    const up = [3, 20, 34, 42, 45, 43, 42][Math.min(t, 6)];
+    const sway = t < 6 ? 0 : (5 - 5 * Math.cos((t - 6) * 0.3)) * Math.min(1, (t - 6) / 4) + 1.5 * Math.sin((t - 6) * 0.9);
+    const lunge = t > 30 ? Math.min(1, (t - 30) / 5) * 15 : 0;
     const out = 2 + Math.min(1, t / 6) * 3 + lunge;
     const curl = t < 4 ? 1.1 : [0.1, 0.2, 0.9, 1.3, 1.3, 0.8, 0.1, 0.05, 0.6, 1.3, 1.2, 0.3, 0.05, 0.05][Math.min(13, Math.floor((t - 4) / 3))];
-    return { p: add(sh, [out + sway * 0.7, out - sway * 0.7, up - lunge * 0.5 + Math.sin(t * 0.9) * 0.6]), curl };
+    return { p: add(sh, [out + sway * 0.7, out - sway * 0.7, up - lunge * 0.7 + Math.sin(t * 0.9) * 1.2]), curl };
   };
   // THE LOOSE ONES: the skull off its top; the bones flung off as the arm bursts up; the arm's own bones as it comes apart
   type What = 'skull' | 'bone' | 'upper' | 'fore' | 'hand';
@@ -2861,14 +2862,15 @@ function bonesStir(): Moment {
     return L;
   };
   mk('skull', topSkull, ROLL);
-  for (const i of flungIdx) mk('bone', i, BURST);
+  for (const i of flungIdx) mk(HEAP_BITS[i].kind === 'skull' ? 'skull' : 'bone', i, BURST);
   mk('upper', -1, GRASP_END);
-  mk('fore', -1, GRASP_END + 1);
+  mk('fore', -1, GRASP_END);
   mk('hand', -1, GRASP_END);
   const armAt = (f: number): { sh: V3; el: V3; wr: V3; curl: number; palm: V3 } => {
     const sh = shoulderAt(f);
     const h = handAt(f);
-    const { el, hand } = reach2(sh, h.p, HUP, HLOW, [-0.6, -0.6, 0.3]);
+    // (its elbow out to the side as the eye sees it, so the arm bends plain to see)
+    const { el, hand } = reach2(sh, h.p, HUP, HLOW, [0.75, -0.75, 0.1]);
     return { sh, el, wr: hand, curl: h.curl, palm: norm([0.8, 0.8, -0.4]) };
   };
   const states: Body[][] = [];
@@ -2884,7 +2886,8 @@ function bonesStir(): Moment {
         if (L.what === 'skull') {
           b.p = ride(src.a, f - 1, L.i);
           b.F = src.F;
-          b.v = [0.9, 1.1, 0.4];
+          const out = norm([b.p[0] + 0.5, b.p[1] + 0.5, 0]);
+          b.v = L.go === BURST ? [out[0] * 2.6, out[1] * 2.6, 4.6] : [0.9, 1.1, 0.4];
         } else {
           const a = ride(src.a, f - 1, L.i);
           const e = ride(src.b, f - 1, L.i);
