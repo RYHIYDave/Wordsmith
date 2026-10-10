@@ -2,7 +2,10 @@
 // and its floors opening up the deeper they go. The owner, 10 Oct 2026, 08:26: "rows of jail cells
 // along the wall.  Small rooms each with a door.  And I’d like for the current 5, as the floors get
 // less and less finished, I’d like to open up more and not be so confined and claustrophobic."
+// (the project type-checks without Node's own type package: these two imports are untyped)
+// @ts-ignore - node typings are not part of this project
 import { test } from 'node:test';
+// @ts-ignore
 import assert from 'node:assert/strict';
 import { CRYPT_LAYOUT, cryptLayoutFloor, generateFloor } from '../src/game/dungeon';
 import { doorTiles } from '../src/game/doors';

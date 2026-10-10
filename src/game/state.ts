@@ -7,6 +7,7 @@ import type { DoorInst } from './doors';
 import type { HazardInst } from './traps';
 import type { HeroMode } from './modes';
 import type { Attr, ClassId, Element, EquipSlot, Floor, Item, MonsterKind, PropKind, Stats, VoiceId, WordId } from './types';
+import type { Ways } from './ways';
 
 /** Everything worked out from class, level, attributes and gear. Rebuilt whenever one of those changes. */
 export interface Derived {
@@ -775,6 +776,8 @@ export interface Level {
   shut: Uint8Array | null;
   /** (THE TRAPS, game/traps.ts) The level's spike floors and dart walls, and where each is in its beat. None unless laid. */
   hazards: HazardInst[];
+  /** (THE WAYS, game/ways.ts, behind WAYS) The stairwell down, the waypoint and the gate of the way; null where they are off. */
+  ways: Ways | null;
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */

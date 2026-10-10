@@ -401,6 +401,47 @@ export class Renderer {
     }
   }
 
+  /**
+   * THE WAYS (game/ways.ts, behind WAYS; their pictures art/crypt_ways.ts): what of the level's
+   * stairwell (once its boss is dead and it has opened) and its waypoint lies on the floor, in that
+   * floor's stone (the town's in the first floor's).
+   */
+  private flatWays(g: CanvasRenderingContext2D, L: Game['level'], t: number): void {
+    const W = L.ways;
+    if (!W) return;
+    const art = cryptWays(L.town ? 1 : Math.max(1, cryptFloor(L.floor.depth)));
+    const cam = this.cam;
+    const st = W.stair;
+    if (st && st.open && L.explored[st.y * L.floor.w + st.x]) {
+      const sp = art.stair[st.way];
+      g.drawImage(sp.img, Math.round(wx(cam, st.x, st.y)) - sp.ax, Math.round(wy(cam, st.x, st.y)) - sp.ay, sp.w, sp.h);
+    }
+    const w = W.way;
+    if (w && L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) {
+      const sp = w.awake ? art.way.awake[Math.floor(t * 10) % WAY_FRAMES] : art.way.asleep;
+      const x = Math.round(wx(cam, w.x, w.y));
+      const y = Math.round(wy(cam, w.x, w.y));
+      g.drawImage(sp.img, x - sp.ax, y - sp.ay, sp.w, sp.h);
+      if (sp.lights) this.propLit.push({ s: sp, x, y });
+    }
+  }
+
+  /** THE WAYS: what stands over the level's waypoint: the motes of light while it is awake; the column of a warp, by the level's own time (`now`). */
+  private standWays(L: Game['level'], t: number, now: number): void {
+    const w = L.ways?.way;
+    if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) return;
+    const art = cryptWays(L.town ? 1 : Math.max(1, cryptFloor(L.floor.depth)));
+    const f = w.warpAt === null ? -1 : Math.floor((now - w.warpAt) * 20);
+    const warp = f >= 0 && f < WARP_FRAMES;
+    if (!warp && !w.awake) return;
+    const sp = warp ? art.way.warp[f] : art.way.motes[Math.floor(t * 10) % WAY_FRAMES];
+    const x = Math.round(wx(this.cam, w.x, w.y));
+    const y = Math.round(wy(this.cam, w.x, w.y));
+    // (a warp's column stands in front of the hero on the dais: it is what he goes into, and comes out of)
+    this.stand(w.x + w.y + (warp ? 0.05 : 0), sp, x, y);
+    if (sp.lights) this.propLit.push({ s: sp, x, y });
+  }
+
   /** (THE CRYPT) What stands over the waypoint: motes of light rising while it is awake; the column of a warp. */
   private standCrypt(L: Game['level'], t: number): void {
     const m = CRYPT.marks;
@@ -1203,6 +1244,8 @@ export class Renderer {
     };
     // (THE CRYPT, art/crypt.ts, behind CRYPT: the stairwell down and the waypoint, where a picture puts them)
     if (CRYPT.on && CRYPT.marks.level === L && pass <= 0) this.flatCrypt(g, L, t);
+    // (THE WAYS, game/ways.ts: the level's own stairwell and waypoint)
+    if (L.ways && pass <= 0) this.flatWays(g, L, t);
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] || !here(p.x, p.y)) continue;
       const sx = wx(cam, p.x, p.y);
@@ -1780,7 +1823,8 @@ export class Renderer {
           // (in town three tiles of the back wall are the gate: each carries its part of the arch, and the light in it moves)
           const part = L.town && ty === TOWN.gateWall.y ? tx - TOWN.gateWall.x : -1;
           // (THE CRYPT, a mock-up behind CRYPT: a town with a gate of the levels' in its wall has no field of light there)
-          if (part >= 0 && part < TOWN.gateWall.n && !(CRYPT.on && L.doors.length > 0)) {
+          // (THE WAYS, game/ways.ts: nor one whose gate is the way to the first floor)
+          if (part >= 0 && part < TOWN.gateWall.n && !(CRYPT.on && L.doors.length > 0) && !L.ways) {
             const sp = art.ground.gate[Math.floor(t * 6) % art.ground.gate.length][part];
             this.stand(s + 1, sp, px, py);
             if (sp.lights) this.propLit.push({ s: sp, x: Math.round(px), y: Math.round(py) });
@@ -1880,6 +1924,7 @@ export class Renderer {
     this.standHazards(game, cam);
     this.standDoors(L, cam);
     if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
+    if (L.ways) this.standWays(L, t, game.time);
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
       const lift = NAME_LIFT[st.kind];

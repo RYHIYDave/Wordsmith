@@ -41,7 +41,8 @@ import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
 import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
-import { DOORS } from './game/doors';
+import { DOORS, doorMiddle, doorTiles } from './game/doors';
+import { WAYS, stairMiddle, topStep } from './game/ways';
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import type { RunSave } from './game/game';
@@ -88,8 +89,12 @@ const SAVE_KEY = 'arpg.save';
 /** Build 1 kept only the run, under this name. Still read, so an old run carries over. */
 const OLD_SAVE_KEY = 'arpg.run';
 
-/** Things in the world that are used by standing next to them: the town's services, the way home from a dungeon, the fallen wordsmith. */
-type Spot = Station | 'portal' | 'body';
+/**
+ * Things in the world that are used by standing next to them: the town's services, the way home from a dungeon, the fallen wordsmith.
+ * (THE WAYS, game/ways.ts, behind WAYS: a waypoint, stood on and used; and 'through', a way that is
+ * taken by walking into it, the stairwell's top step or a gate's doorway: there is nothing to press.)
+ */
+type Spot = Station | 'portal' | 'body' | 'way' | 'through';
 /**
  * The town's furniture that counts, when it is touched, as the person whose it is: the anvil and
  * the forge are the armourer, the tent and the trader in it are the mystic (whose service is used
@@ -102,6 +107,9 @@ const SPOT_SIZE: Record<Spot | 'anvil' | 'forge' | 'tentBack' | 'runeSlab', read
   gate: [34, 70],
   portal: [26, 60],
   body: [22, 20],
+  // (THE WAYS: a waypoint's dais, a tile and a half across, and the motes over it; the stairwell's opening, 2.4 tiles by 1.25, from its middle)
+  way: [24, 26],
+  through: [30, 16],
   wordsmith: [18, 54],
   armourer: [18, 54],
   // (the mystic's is his table of wares, and what stands on it; and, by SPOT_OF, the trader behind it)
@@ -665,7 +673,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
     };
     /** The plate a service's name is written on, over it (render.ts), and a little round it for fingers: a name is touched like the thing it names. */
-    const named = (st: { kind: Station; x: number; y: number }): void => {
+    const named = (st: { kind: Station; x: number; y: number }, go: { kind: Spot; x: number; y: number } = st): void => {
       const half = (textWidth(STATION_NAME[st.kind], 'small') + 4) / 2 + 2;
       const sx = wx(cam, st.x, st.y);
       const top = wy(cam, st.x, st.y) - NAME_LIFT[st.kind];
@@ -673,11 +681,28 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const d = Math.hypot(px - sx, py - (top + 3));
       if (d < bd) {
         bd = d;
-        best = { kind: st.kind, x: st.x, y: st.y };
+        best = { kind: go.kind, x: go.x, y: go.y };
       }
     };
+    // (THE WAYS, game/ways.ts, behind WAYS: the stairwell down, once open; a waypoint, where it can be used; the gate of the way, where it is up or rises as he comes)
+    const W = L.ways;
+    const seen = (x: number, y: number): boolean => L.explored[Math.floor(y) * L.floor.w + Math.floor(x)] === 1;
+    if (W && W.way && (L.town ? W.way.awake : seen(W.way.x, W.way.y))) test('way', 'way', W.way.x, W.way.y, W.way.x, W.way.y);
+    if (W && W.stair && W.stair.open && seen(W.stair.x, W.stair.y)) {
+      const mid = stairMiddle(W.stair);
+      const top = topStep(W.stair);
+      test('through', 'through', mid.x, mid.y, top.x, top.y);
+    }
+    const wayGate = W && W.gate >= 0 ? L.doors[W.gate] : null;
     if (L.town) {
       for (const st of L.stations) {
+        // (THE WAYS: the town's gate is walked through, into its doorway)
+        if (st.kind === 'gate' && wayGate) {
+          const at = doorMiddle(wayGate.spot);
+          test('through', 'gate', st.x, st.y, at.x, at.y);
+          named(st, { kind: 'through', x: at.x, y: at.y });
+          continue;
+        }
         test(st.kind, st.kind, st.x, st.y, st.x, st.y);
         named(st);
       }
@@ -690,6 +715,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
     } else {
       if (L.portal && L.portal.state === 1) test('portal', 'portal', L.portal.x, L.portal.y, L.portal.x, L.portal.y);
+      // (THE WAYS: the first floor's gate, standing open: the way back to town, walked into; touched where its arch stands, on the room's side of the wall)
+      if (wayGate && wayGate.want === 1 && doorTiles(L.floor, wayGate.spot).some((i) => L.explored[i] === 1)) {
+        const at = doorMiddle(wayGate.spot);
+        const s = wayGate.spot;
+        test('through', 'gate', s.alongX ? at.x : at.x - s.out * 0.5, s.alongX ? at.y - s.out * 0.5 : at.y, at.x, at.y);
+      }
       // the fallen wordsmith, once it has been seen: pressing it sends the hero to search it
       const b = L.body;
       if (b && b.state === 0 && L.explored[b.ty * L.floor.w + b.tx]) test('body', 'body', b.x, b.y, b.x, b.y);
@@ -1176,13 +1207,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       e.t += dt;
       const d = Math.hypot(e.x - h.x, e.y - h.y);
       if (e.level !== g.level || moving || c.cast || c.evade || e.t > 12) errand = null;
-      else if (d < (e.kind === 'portal' ? 1.5 : e.kind === 'body' ? 1.0 : TUNE.useRange - 0.25)) {
+      else if (d < (e.kind === 'portal' ? 1.5 : e.kind === 'body' ? 1.0 : e.kind === 'way' ? 0.4 : e.kind === 'through' ? 0.3 : TUNE.useRange - 0.25)) {
         errand = null;
         c.mx = 0;
         c.my = 0;
-        if (e.kind === 'portal') c.interact = true;
-        // (the body is searched by being walked up to: there is nothing more to press)
-        else if (e.kind !== 'body') openStation(e.kind);
+        // (THE WAYS: on the waypoint, it is used)
+        if (e.kind === 'portal' || e.kind === 'way') c.interact = true;
+        // (the body is searched by being walked up to, and a way through is taken by being walked into: there is nothing more to press)
+        else if (e.kind !== 'body' && e.kind !== 'through') openStation(e.kind);
       } else {
         const f = g.level.floor;
         const walk = g.level.walk;
@@ -1190,7 +1222,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         const uy = (e.y - h.y) / d;
         // with a clear run to the spot beside it, walk straight; otherwise follow the path round what is in the way
         // (a ledge is in the way as a wall is: the way round it is by the stairs)
-        const straight = lineOfSight(walk, f.w, f.h, h.x, h.y, e.x - ux * 1.35, e.y - uy * 1.35) && g.walksStraight(h.x, h.y, e.x - ux * 1.35, e.y - uy * 1.35);
+        // (THE WAYS: a waypoint and a way through are walked onto, not up to: the run must be clear to the spot itself)
+        const short = e.kind === 'way' || e.kind === 'through' ? 0 : 1.35;
+        const straight = lineOfSight(walk, f.w, f.h, h.x, h.y, e.x - ux * short, e.y - uy * short) && g.walksStraight(h.x, h.y, e.x - ux * short, e.y - uy * short);
         const v = straight ? { x: ux, y: uy } : flowDir(e.flow, walk, f.w, f.h, h.x, h.y, undefined, g.level.step);
         if (v.x === 0 && v.y === 0) {
           // on its tile already, or no path the field knows: head straight for it
@@ -1521,7 +1555,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // what was done inside a panel last frame (a word set, a thing bought) is heard at once
       if (paused) drain(g);
       if (!paused || g.over) fx.update(gdt, dt);
-      renderer.goal = errand && errand.level === g.level && errand.kind !== 'portal' && errand.kind !== 'body' ? errand.kind : null;
+      renderer.goal = errand && errand.level === g.level && errand.kind !== 'portal' && errand.kind !== 'body' && errand.kind !== 'way' && errand.kind !== 'through' ? errand.kind : null;
       fx.hero.x = g.hero.x;
       fx.hero.y = g.hero.y;
       // The inventory takes half the screen: the world is seen, standing still, in the other half,
@@ -1553,6 +1587,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         cryptShown = crypt;
       }
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
+      // (THE WAYS, game/ways.ts, behind WAYS: the world darkening as he goes down a stairwell or through a gate, and lightening as he comes into the next level)
+      const dark = g.curtain();
+      if (dark > 0) {
+        cg.globalAlpha = dark;
+        cg.fillStyle = '#000';
+        cg.fillRect(0, 0, scr.w, scr.h);
+        cg.globalAlpha = 1;
+      }
       // (a hero who has just warped in says their line when they have come together: `arrived`)
       if (arrived && !paused) {
         arrived.t += dt;
@@ -1999,6 +2041,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      */
     cryptLayout: (on: boolean) => {
       CRYPT_LAYOUT.on = on;
+    },
+    /**
+     * THE WAYS (game/ways.ts, WAYS, off): the gate in town to the first floor, the stairwell down
+     * from every floor, the waypoints to town and back, on or off (a level made after has them).
+     * For pictures and films.
+     */
+    ways: (on: boolean) => {
+      WAYS.on = on;
     },
     /** (THE CRYPT) Where a picture puts the stairwell down and the waypoint on the level the hero is on (art/crypt.ts, CryptMarks). */
     cryptMarks: (m: Partial<CryptMarks>) => {

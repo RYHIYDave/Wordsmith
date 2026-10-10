@@ -20,7 +20,9 @@ import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
-import { AIM_MODES } from './state';
+import { AIM_MODES, emptyControls } from './state';
+import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, STAIR_LONG, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
+import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
@@ -39,6 +41,9 @@ const CHANNEL_POSE = 0.05;
 const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 /** The pack number of the dead that rise when a new player sets their first word. */
 const RISEN_PACK = -7;
+
+/** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -80,6 +85,8 @@ export interface RunSave {
   quest?: 'heart' | null;
   /** THE SKILL TREES (game/talents.ts): the talents taken, in the order taken (absent when none). */
   talents?: string[];
+  /** THE WAYS (game/ways.ts): the deepest floor whose waypoint the hero has reached (absent while WAYS is off). */
+  way?: number;
 }
 
 /** THE FIRST LEVELS: what the wordsmith says while his ring is dark. */
@@ -247,6 +254,12 @@ export class Game {
   guide: Guide | null = null;
   /** The fallen wordsmith of this character's first dungeon has been searched. */
   bodySearched = false;
+  /** THE WAYS (ways.ts, behind WAYS): the deepest floor whose waypoint the hero has reached, the town's waypoint warping him back to its start (0: none yet). */
+  wayDepth = 0;
+  /** THE WAYS: on his way out of this level (down the stairwell, through a gate, or by a waypoint), and how long since it began. Nothing he does meanwhile. */
+  leaving: { to: WayTo; t: number } | null = null;
+  /** THE WAYS: how long since he came into this level down a stairwell or through a gate (the screen lightens over CURTAIN_SECS). */
+  cameT = 99;
   /**
    * A word just picked up that has somewhere to go. The interface offers the inventory for it at
    * the next quiet moment, and clears this when it has.
@@ -618,6 +631,8 @@ export class Game {
       ...(FIRST_LEVELS.on ? { ring: h.ring, quest: h.quest } : {}),
       // (THE SKILL TREES: none can be taken while their switch is off, so nothing is written then)
       ...(h.talents.length ? { talents: [...h.talents] } : {}),
+      // (THE WAYS: nor the waypoint reached while theirs is off)
+      ...(WAYS.on ? { way: this.wayDepth } : {}),
     };
   }
 
@@ -646,6 +661,10 @@ export class Game {
     h.potionKills = Math.max(0, num(s.potionKills, 0));
     g.depth = Math.max(1, Math.floor(num(s.depth, 1)));
     g.cleared = Math.max(0, Math.floor(num(s.cleared, 0)));
+    g.wayDepth = Math.max(0, Math.floor(num(s.way, 0)));
+    // (THE WAYS: the town's waypoint, awake once there is a floor to warp back to)
+    const tw = g.level.ways?.way;
+    if (tw) tw.awake = g.wayDepth >= 2;
     g.kills = Math.max(0, Math.floor(num(s.kills, 0)));
     if (VOICE_IDS.includes(s.voice as VoiceId)) g.voice = s.voice as VoiceId;
     g.mode = HERO_MODES.includes(s.mode as HeroMode) ? (s.mode as HeroMode) : MODE_BEFORE;
@@ -932,7 +951,8 @@ export class Game {
     }
   }
 
-  enterTown(): void {
+  /** `by` (THE WAYS): come back through the gate from the first floor (standing just inside it), or by the waypoint (standing on the town's). */
+  enterTown(by: 'gate' | 'way' | null = null): void {
     this.clearLevel();
     this.level = makeTown(this.seed);
     this.inDungeon = false;
@@ -943,6 +963,31 @@ export class Game {
     h.y = f.start.y;
     h.fx = -0.7071;
     h.fy = -0.7071;
+    const W = this.level.ways;
+    if (W && W.way) W.way.awake = this.wayDepth >= 2;
+    if (W && by === 'gate') {
+      // (just inside the gate, which is up behind him as he comes through it, and falls once he has walked off: `updateWays`)
+      h.x = TOWN_GATE.a + 1.5;
+      h.y = TOWN_GATE.line + 2.2;
+      h.fx = 0.7071;
+      h.fy = 0.7071;
+      if (W.gate >= 0) {
+        const d = this.level.doors[W.gate];
+        d.open = 1;
+        d.want = 1;
+        for (const i of doorTiles(f, d.spot)) {
+          this.level.walk[i] = 1;
+          this.level.open[i] = 1;
+        }
+      }
+    } else if (W && W.way && by === 'way') {
+      h.x = W.way.x;
+      h.y = W.way.y;
+      h.fx = 0.7071;
+      h.fy = 0.7071;
+      // (he comes out of the column of light, the second half of a warp: art/crypt_ways.ts)
+      W.way.warpAt = -WARP_SECS;
+    }
     h.life = h.d.maxLife;
     h.mana = h.d.maxMana;
     h.potions = TUNE.potionMax;
@@ -986,7 +1031,8 @@ export class Game {
     this.won = -1;
   }
 
-  enterDungeon(): void {
+  /** `by` (THE WAYS): come back by the waypoint from town (standing on the floor's), or through the gate from town (just inside the first floor's). Otherwise where the floor begins. */
+  enterDungeon(by: 'way' | 'gate' | null = null): void {
     this.clearLevel();
     // (THE SKILL TREES: Unbreakable once in each dungeon)
     this.unbroken = false;
@@ -1008,6 +1054,26 @@ export class Game {
     // down and to the right on the screen: engine/iso.ts.)
     h.fx = 1;
     h.fy = 0;
+    // (THE WAYS: a floor's waypoint is reached as he comes into the floor beside it; back by it, he comes out of its light)
+    const W = this.level.ways;
+    if (W && W.way) {
+      this.wayDepth = Math.max(this.wayDepth, this.depth);
+      if (by === 'way') {
+        h.x = W.way.x;
+        h.y = W.way.y;
+        W.way.awake = true;
+        W.way.warpAt = -WARP_SECS;
+      }
+    }
+    if (W && by === 'gate' && W.gate >= 0) {
+      // (through the gate from town he comes in just inside the first floor's, looking into its first room)
+      const s = this.level.doors[W.gate].spot;
+      const m = doorMiddle(s);
+      h.x = s.alongX ? m.x : m.x - s.out * 1.7;
+      h.y = s.alongX ? m.y - s.out * 1.7 : m.y;
+      h.fx = s.alongX ? 0 : -s.out;
+      h.fy = s.alongX ? -s.out : 0;
+    }
     this.flow = new Uint16Array(f.w * f.h);
     this.spawnMonsters(seed);
     if (this.depth === 1 && this.cleared === 0) {
@@ -1329,6 +1395,9 @@ export class Game {
     this.runLater(dt);
     const px = this.hero.x;
     const py = this.hero.y;
+    // (THE WAYS: on his way out of the level he does nothing more in it)
+    if (this.leaving) c = emptyControls();
+    this.cameT += dt;
     this.updateHero(dt, c);
     if (this.over) return;
     // (a leap or a warp is not walking)
@@ -1336,6 +1405,8 @@ export class Game {
     if (TALENTS.on) this.updateTalents(dt, walked);
     this.updateVision(dt);
     this.updateDoors(dt);
+    // (THE WAYS: and where a way out of it has been taken, the rest is the next level's, from its next step)
+    if (this.level.ways && this.updateWays(dt)) return;
     this.updateHazards(dt);
     this.updateFlow(dt);
     this.updateMonsters(dt);
@@ -1357,6 +1428,134 @@ export class Game {
     if (this.level.town) this.updateTags();
     if (this.monsters.some((m) => m.dead)) this.monsters = this.monsters.filter((m) => !m.dead);
     if (this.guide) this.updateGuide(dt, walked);
+  }
+
+  // ===========================================================================================
+  // THE WAYS THROUGH THE CRYPT (game/ways.ts, behind WAYS): the gate in town and the first floor's,
+  // the stairwell down, the waypoints.
+
+  /** A step of the ways of the level he is on. Returns true if he has gone out of it into another. */
+  private updateWays(dt: number): boolean {
+    const L = this.level;
+    const W = L.ways;
+    if (!W) return false;
+    const h = this.hero;
+    if (this.leaving) {
+      this.leaving.t += dt;
+      const warp = this.leaving.to === 'warpTown' || this.leaving.to === 'warpBack';
+      if (this.leaving.t < (warp ? WARP_SECS : CURTAIN_SECS)) return false;
+      this.takeWay(this.leaving.to);
+      return true;
+    }
+    // THE GATE OF THE WAY. In town it rises as he comes and falls as he goes off (no shake: it is
+    // nothing to fear); on the first floor it stands open. Walking into its doorway while it is up
+    // takes him through.
+    if (W.gate >= 0) {
+      const d = L.doors[W.gate];
+      const at = doorMiddle(d.spot);
+      const far = Math.hypot(at.x - h.x, at.y - h.y);
+      if (L.town && d.want === 0 && far < GATE_RISE_AT) this.raiseGate(d);
+      else if (L.town && d.want === 1 && far > GATE_FALL_AT) {
+        d.want = 0;
+        for (const i of doorTiles(L.floor, d.spot)) {
+          L.walk[i] = 0;
+          L.open[i] = 0;
+        }
+        this.sfx('gateFall', 0.35);
+      }
+      const here = Math.floor(h.y) * L.floor.w + Math.floor(h.x);
+      if (d.open > 0.85 && doorTiles(L.floor, d.spot).includes(here)) {
+        this.leaving = { to: L.town ? 'gateIn' : 'gateOut', t: 0 };
+        return false;
+      }
+    }
+    // THE STAIRWELL, once open: stepping onto its top step takes him down.
+    if (W.stair && W.stair.open && onTopStep(W.stair, h.x, h.y)) {
+      this.leaving = { to: 'down', t: 0 };
+      return false;
+    }
+    // THE WAYPOINT wakes the first time he comes near it (the town's is awake while there is a floor to warp back to).
+    if (W.way && L.town) W.way.awake = this.wayDepth >= 2;
+    else if (W.way && !W.way.awake && Math.hypot(W.way.x - h.x, W.way.y - h.y) < WAY_WAKE) {
+      W.way.awake = true;
+      this.sfx('power', 0.5);
+    }
+    return false;
+  }
+
+  /** THE WAYS: what lies at the end of the way he has taken. */
+  private takeWay(to: WayTo): void {
+    this.leaving = null;
+    // (coming into a floor sounds as it always has: `enterDungeon`; coming into town, as a portal home)
+    if (to === 'down') {
+      // (a floor cleared, as a dungeon was when its portal was taken: `leaveDungeon`)
+      this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
+      this.cleared++;
+      this.depth++;
+      this.enterDungeon();
+      this.cameT = 0;
+    } else if (to === 'gateIn') {
+      this.depth = 1;
+      this.enterDungeon('gate');
+      this.cameT = 0;
+    } else if (to === 'gateOut') {
+      this.enterTown('gate');
+      this.cameT = 0;
+      this.sfx('portal');
+    } else if (to === 'warpTown') {
+      this.enterTown('way');
+      this.sfx('portal');
+    } else {
+      this.depth = Math.max(2, this.wayDepth);
+      this.enterDungeon('way');
+    }
+  }
+
+  /** THE WAYS: the boss is dead, and the stairwell opens in the floor of his hall. Nobody and nothing is left on its opening. */
+  private openStair(st: StairWay): void {
+    const L = this.level;
+    st.open = true;
+    for (const i of stairTiles(L.floor, st)) L.walk[i] = 0;
+    // (Whoever and whatever is on its opening, its top step with it, is put aside to the nearer of
+    // its long sides: the boss's hoard, which falls where he fell, the middle of his hall, is not
+    // lost down it, nor left where the hero must step to take it; and he is not taken down by
+    // standing where it opened. The ground a tile round it is plain floor: ways.ts, `stairSpots`.)
+    const along = (x: number, y: number): number => (st.way === 'x' ? x - st.x : y - st.y);
+    const across = (x: number, y: number): number => (st.way === 'x' ? y - st.y : x - st.x);
+    const on = (x: number, y: number): boolean => along(x, y) > -0.35 && along(x, y) < STAIR_LONG + 0.1 && across(x, y) > -0.3 && across(x, y) < STAIR_WIDE + 0.3;
+    const aside = (p: { x: number; y: number }): void => {
+      if (!on(p.x, p.y)) return;
+      const a = Math.max(-0.4, Math.min(STAIR_LONG + 0.4, along(p.x, p.y)));
+      const c = across(p.x, p.y) < STAIR_WIDE / 2 ? -0.5 : STAIR_WIDE + 0.5;
+      p.x = st.way === 'x' ? st.x + a : st.x + c;
+      p.y = st.way === 'x' ? st.y + c : st.y + a;
+    };
+    aside(this.hero);
+    for (const d of this.drops) aside(d);
+    for (const m of this.monsters) if (!m.dead) aside(m);
+    // (and what lay flat there, bones and rubble, is gone down it)
+    L.props = L.props.filter((p) => p.solid || !on(p.x, p.y));
+    // (the floor breaking open: stone and dust thrown up out of it, the ground shaking. A placeholder:
+    // the moment's own picture would be the art chat's, as big and wild as his rulebook asks)
+    const mid = stairMiddle(st);
+    this.emit({ t: 'burst', x: mid.x, y: mid.y, r: 2, el: 'phys', style: 'slam' });
+    this.emit({ t: 'shake', amount: 6 });
+    this.sfx('slam', 0.9);
+    this.msg('A stairwell opens in the floor. The way down.', MSG.good);
+  }
+
+  /** THE WAYS: how dark the screen is, 0 to 1: darkening as he goes down a stairwell or through a gate, lightening as he comes into the next level. (A warp needs none: its column of light hides him.) */
+  curtain(): number {
+    const l = this.leaving;
+    if (l && (l.to === 'down' || l.to === 'gateIn' || l.to === 'gateOut')) return Math.min(1, l.t / CURTAIN_SECS);
+    return Math.max(0, 1 - this.cameT / CURTAIN_SECS);
+  }
+
+  /** THE WAYS: the waypoint he is standing on, awake, if any. */
+  private wayHere(): boolean {
+    const W = this.level.ways;
+    const h = this.hero;
+    return !!W && !!W.way && W.way.awake && Math.hypot(W.way.x - h.x, W.way.y - h.y) < WAY_USE;
   }
 
   // ===========================================================================================
@@ -3660,10 +3859,18 @@ export class Game {
     if (m.boss) {
       this.boss = null;
       this.emit({ t: 'shake', amount: 6 });
-      const p = this.level.portal;
-      if (p) p.state = 1;
-      this.msg('The way back to town is open', MSG.good);
-      this.sfx('portal');
+      // (THE WAYS: the stairwell down opens in his hall, clear of where he fell; where the floor has none, the portal home as before)
+      const W = this.level.ways;
+      const st = W ? stairFor(W.stairs, m.x, m.y, this.hero.x, this.hero.y) : null;
+      if (W && st) {
+        W.stair = st;
+        this.openStair(st);
+      } else {
+        const p = this.level.portal;
+        if (p) p.state = 1;
+        this.msg('The way back to town is open', MSG.good);
+        this.sfx('portal');
+      }
     }
   }
 
@@ -5479,11 +5686,21 @@ export class Game {
       if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) this.lightRing(st.x, st.y);
     }
     if (c.interact) {
+      // (THE WAYS: standing on an awake waypoint, the use button warps him: to town, or from town back down)
+      if (this.wayHere() && !this.leaving) {
+        const W = this.level.ways;
+        if (W && W.way && (!this.level.town || this.wayDepth >= 2)) {
+          W.way.warpAt = this.time;
+          this.leaving = { to: this.level.town ? 'warpBack' : 'warpTown', t: 0 };
+          this.sfx('power', 0.7);
+          return;
+        }
+      }
       if (this.level.town) {
         // In town the rules only say which service was asked for; the interface opens its panel.
         const st = this.stationNear();
         if (st) this.emit({ t: 'station', kind: st });
-      } else if (this.interactHint() !== null) this.leaveDungeon();
+      } else if (!this.wayHere() && this.interactHint() !== null) this.leaveDungeon();
     }
   }
 
@@ -5518,6 +5735,8 @@ export class Game {
     let best: Station | null = null;
     let bd = TUNE.useRange;
     for (const s of this.level.stations) {
+      // (THE WAYS: the gate is walked through, not used)
+      if (s.kind === 'gate' && this.level.ways) continue;
       const d = Math.hypot(s.x - h.x, s.y - h.y);
       if (d < bd) {
         bd = d;
@@ -5529,6 +5748,11 @@ export class Game {
 
   /** What pressing "interact" would do right now, or null if nothing is in reach. */
   interactHint(): string | null {
+    // (THE WAYS: on an awake waypoint)
+    if (this.wayHere()) {
+      if (!this.level.town) return 'Waypoint: to town';
+      if (this.wayDepth >= 2) return `Waypoint: to dungeon ${this.wayDepth}`;
+    }
     if (this.level.town) {
       const st = this.stationNear();
       if (!st) return null;

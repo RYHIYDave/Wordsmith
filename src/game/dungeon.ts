@@ -37,6 +37,7 @@ import { TRAPS, TRAPS_FROM, layHazards, sealVault, unsealDoorless } from './trap
 import { flowField, UNREACHABLE } from './nav';
 import { laySunken, layTerraces } from './relief';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
+import { WAYS } from './ways';
 import type { Floor, MonsterKind, PackSpot, PropKind, PropSpot, Room, RoomKind } from './types';
 
 // ---------------------------------------------------------------------------------------------
@@ -130,6 +131,8 @@ export function cryptLayoutFloor(depth: number): number {
 }
 /** (the Crypt's floor of the level being planned, 0 if none: set by `planLevel` for the level it plans) */
 let cryptK = 0;
+/** THE WAYS (game/ways.ts, WAYS): the floor being laid is the first, with its gate to town in a back wall of its first room (set by `generateFloor`). */
+let squareStart = false;
 /** The side of a cell block that its cells hang off: its back wall along its length (3, the upper right on the screen, if it runs along x; 2, the upper left, if along y). */
 function blockBack(w: number, h: number): number {
   return w >= h ? 3 : 2;
@@ -659,6 +662,7 @@ function planLevel(rng: RNG, depth: number): Plan | null {
   pairsHere = MIX.on && MIX.pairs && depth >= MIX_FROM;
   // (THE CRYPT: its floor, while its layout is on; 0 otherwise, and not a die is thrown for it)
   cryptK = cryptLayoutFloor(depth);
+  squareStart = WAYS.on && depth === 1;
   const pathLen = pathRoomCount(depth);
   const used = new Set<number>();
   const rooms: RoomPlan[] = [];
@@ -818,6 +822,10 @@ function clipCorners(rng: RNG, size: number, rooms: readonly RoomPlan[], tiles: 
     const shortSide = Math.min(r.w, r.h);
     if (shortSide < 8 || !rng.chance(0.4)) continue;
     const clip = rng.int(1, shortSide >= 10 ? 3 : 2);
+    // (THE WAYS, game/ways.ts, behind WAYS: the first floor's first room keeps its corners, for the
+    // straight back wall its gate to town stands in; its dice are thrown all the same, and the rest
+    // of the floor is laid as it would be)
+    if (squareStart && r.id === 0) continue;
     const corners = [
       { x: r.x0, y: r.y0, sx: 1, sy: 1 },
       { x: r.x1, y: r.y0, sx: -1, sy: 1 },

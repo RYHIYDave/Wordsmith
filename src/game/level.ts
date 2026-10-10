@@ -10,6 +10,7 @@ import { buildOpenGrid, buildWalkGrid } from './nav';
 import type { Level, PropInst } from './state';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_PIT, T_VOID, T_WALL } from './types';
 import type { Floor, HazardSpot, PackSpot, PropSpot, Room } from './types';
+import { TOWN_WAY, WAYS, beforeGate, openGate, placeFirstGate, placeWay, stairSpots, townGate } from './ways';
 
 /**
  * A wall tile is drawn cut down low when floor lies behind it (up-screen), so walls never hide
@@ -55,6 +56,7 @@ function finish(f: Floor, town: boolean, portal: PropInst | null): Level {
     pier: pierGrid(f),
     shut: shutGrid(f),
     hazards: makeHazards(f),
+    ways: null,
   };
   // (DOORS: a shut door stops sight and shots as it holds monsters: its tile is shut in the grid they go by
   // until the door begins to open. It stays open to walking: the hero is never held by one. game.ts, `updateDoors`)
@@ -206,8 +208,22 @@ export function makeTown(seed: number): Level {
     packs: [],
     props,
   };
+  // (THE WAYS, ways.ts, behind WAYS: the gate in the wall is one of the levels' gates, in a doorway of three tiles opened to the dark)
+  const wayGate = WAYS.on ? townGate() : null;
+  if (wayGate) {
+    openGate(floor, wayGate);
+    floor.doors = [wayGate];
+  }
   // (the gate is in the wall: the town has no portal standing on its floor)
   const level = finish(floor, true, null);
+  if (wayGate) {
+    // (the gate down: its doorway is wall to whatever walks, flies, is shot or looks until it rises as the hero comes: game.ts)
+    for (const i of doorTiles(floor, wayGate)) {
+      level.walk[i] = 0;
+      level.open[i] = 0;
+    }
+    level.ways = { stair: null, stairs: [], way: { x: TOWN_WAY.x, y: TOWN_WAY.y, awake: false, warpAt: null }, gate: 0 };
+  }
   const lex = townProp(level, 'lexicon', TOWN.lexicon.x, TOWN.lexicon.y);
   const stash = townProp(level, 'stash', TOWN.stash.x, TOWN.stash.y);
   // the smithy
@@ -774,5 +790,33 @@ export function makeShapeRoom(kind: Shape, seed: number): Level {
 export function makeDungeon(depth: number, seed: number): Level {
   const floor = generateFloor(depth, seed);
   // The exit portal stands in the boss room and stays dark until the boss dies.
-  return finish(floor, false, portalAt(floor.boss.x, floor.boss.y, false));
+  if (!WAYS.on) return finish(floor, false, portalAt(floor.boss.x, floor.boss.y, false));
+  // THE WAYS (ways.ts, behind WAYS): no portal. The first floor's gate, cut in a back wall of its
+  // first room and standing open, the way back to town; the stairwell down in the boss's hall, shut
+  // until the boss dies; on every floor but the first, the waypoint beside where the hero comes in.
+  const gate = depth === 1 ? placeFirstGate(floor) : null;
+  if (gate) {
+    openGate(floor, gate);
+    (floor.doors ??= []).push(gate);
+    // (what stood or lay before it, a brazier against the wall, bones, is taken away: the hero comes in and goes out there)
+    floor.props = floor.props.filter((p) => !beforeGate(gate, p.x, p.y));
+  }
+  // (the places in the boss's hall where the stairwell may open; where the hall has no room for it, the portal home stands in it as before)
+  const solidSpot = new Set<number>();
+  for (const p of floor.props) if (SOLID_PROPS.includes(p.kind)) solidSpot.add(p.y * floor.w + p.x);
+  const stairs = stairSpots(floor, (i) => solidSpot.has(i));
+  const stair = stairs[0] ?? null;
+  const level = finish(floor, false, stair ? null : portalAt(floor.boss.x, floor.boss.y, false));
+  const solidAt = new Uint8Array(floor.w * floor.h);
+  for (const p of level.props) if (p.solid) solidAt[p.ty * floor.w + p.tx] = 1;
+  const way = depth >= 2 ? placeWay(floor, (i) => level.walk[i] === 1 && solidAt[i] === 0) : null;
+  // (what lies flat where its dais is, is taken away: bones, rubble; and where the stairwell opens, as it opens: game.ts, `openStair`)
+  level.props = level.props.filter((p) => p.solid || way === null || Math.abs(p.x - way.x) >= 1.6 || Math.abs(p.y - way.y) >= 1.6);
+  const g = gate ? level.doors.findIndex((d) => d.spot === gate) : -1;
+  if (g >= 0) {
+    level.doors[g].open = 1;
+    level.doors[g].want = 1;
+  }
+  level.ways = { stair, stairs, way, gate: g };
+  return level;
 }

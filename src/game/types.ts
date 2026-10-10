@@ -319,7 +319,8 @@ export interface PackSpot {
  *               only to a hit from an attack that carries its word; then it swings open as a
  *               door does, and stays open. Sealed, nothing passes it, nor a shot, nor sight.
  */
-export type DoorKind = 'door' | 'bossgate' | 'gate' | 'trapgate' | 'worddoor';
+/** (THE WAYS, game/ways.ts, behind WAYS: 'waygate', the gate of the way between town and the first floor.) */
+export type DoorKind = 'door' | 'bossgate' | 'gate' | 'trapgate' | 'worddoor' | 'waygate';
 
 /** (THE MIX) A LEVER: the tile it stands on (a prop of kind 'lever' stands there), and the room whose way in its gate bars. */
 export interface LeverSpot {

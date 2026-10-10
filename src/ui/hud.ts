@@ -16,7 +16,7 @@ import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Input } from '../engine/input';
 import { SKILLS, WORDS, xpToNext } from '../game/defs';
-import { doorTiles } from '../game/doors';
+import { doorMiddle, doorTiles } from '../game/doors';
 import type { Game } from '../game/game';
 import type { Hero, Level } from '../game/state';
 import { T_FLOOR, T_WALL, WORD_IDS } from '../game/types';
@@ -100,6 +100,28 @@ function globe(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, f
   if (f < 1) disc(g, mx, my, R, light, level, level + 1);
 }
 
+/**
+ * THE WAYS (game/ways.ts, behind WAYS) on a map: the level's waypoint (bright once awake, dim
+ * while asleep), its stairwell down once open, and the first floor's gate, the way back to town.
+ * Each as a tile, a colour, and whether it is the way down (for the legend). (The town's gate is
+ * the gate station's mark, as before.)
+ */
+function wayMarks(L: Level): { tx: number; ty: number; color: string; down: boolean }[] {
+  const W = L.ways;
+  if (!W) return [];
+  const f = L.floor;
+  const out: { tx: number; ty: number; color: string; down: boolean }[] = [];
+  const seen = (tx: number, ty: number): boolean => L.explored[ty * f.w + tx] === 1;
+  if (W.way && seen(Math.floor(W.way.x), Math.floor(W.way.y))) out.push({ tx: Math.floor(W.way.x), ty: Math.floor(W.way.y), color: W.way.awake ? P.tl4 : P.tl2, down: false });
+  const st = W.stair;
+  if (st && st.open && seen(st.x, st.y)) out.push({ tx: st.way === 'x' ? st.x + 1 : st.x, ty: st.way === 'x' ? st.y : st.y + 1, color: P.bn3, down: true });
+  if (!L.town && W.gate >= 0) {
+    const at = doorMiddle(L.doors[W.gate].spot);
+    if (seen(Math.floor(at.x), Math.floor(at.y))) out.push({ tx: Math.floor(at.x), ty: Math.floor(at.y), color: P.tl4, down: false });
+  }
+  return out;
+}
+
 function minimap(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, game: Game): void {
   const L = game.level;
   const f = L.floor;
@@ -134,6 +156,7 @@ function minimap(g: CanvasRenderingContext2D, x: number, y: number, w: number, h
   // (in town the way out is the gate in the back wall)
   const gate = L.town ? L.stations.find((q) => q.kind === 'gate') : undefined;
   if (gate) put(Math.floor(gate.x), Math.floor(gate.y) - 1, P.tl4, 2);
+  for (const m of wayMarks(L)) put(m.tx, m.ty, m.color, 2);
   // chests that have been seen and not yet opened, so a vault left for later can be found again
   for (const c of L.props) {
     if (c.kind === 'chest' && c.state === 0 && L.explored[c.ty * f.w + c.tx]) put(c.tx, c.ty, P.gd4, 2);
@@ -247,6 +270,8 @@ export function drawMap(ui: Ui, game: Game, t: number): boolean {
   if (p && L.explored[p.ty * f.w + p.tx]) put(p.tx, p.ty, p.state === 1 ? P.tl4 : P.tl2, 4);
   const gate = L.town ? L.stations.find((q) => q.kind === 'gate') : undefined;
   if (gate) put(Math.floor(gate.x), Math.floor(gate.y) - 1, P.tl4, 4);
+  const ways = wayMarks(L);
+  for (const m of ways) put(m.tx, m.ty, m.color, 4);
   for (const ch of L.props) {
     if (ch.kind === 'chest' && ch.state === 0 && L.explored[ch.ty * f.w + ch.tx]) put(ch.tx, ch.ty, P.gd4, 3);
     else if (ch.kind === 'body' && ch.state === 0 && L.explored[ch.ty * f.w + ch.tx]) put(ch.tx, ch.ty, P.tl5, 4);
@@ -269,6 +294,8 @@ export function drawMap(ui: Ui, game: Game, t: number): boolean {
   g.fillRect(0, H - 25, W, 25);
   const ly = H - 10;
   const items: [string, string][] = [[P.white, 'you'], [P.gd4, 'chest'], [P.fr5, 'guardian'], [P.bl4, 'boss'], [P.tl4, 'way home']];
+  // (THE WAYS: and the stairwell down, once it is open)
+  if (ways.some((m) => m.down)) items.push([P.bn3, 'way down']);
   let width = 0;
   for (const [, label] of items) width += 5 + textWidth(label, 'small') + 7;
   let lx = Math.floor((W - width) / 2);
