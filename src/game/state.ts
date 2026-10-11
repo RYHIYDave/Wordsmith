@@ -897,6 +897,10 @@ export type GameEvent =
   | { t: 'die'; x: number; y: number; kind: MonsterKind; elite: boolean; champion: boolean; boss: boolean; fx: number; fy: number }
   /** The hero has something to say about a big kill (see QUIPS). */
   | { t: 'quip'; text: string; boss: boolean }
+  /** (BOSS_INTRO) the boss's gate has fallen: he says his line (or none) and his name comes up, for `secs` */
+  | { t: 'bossIntro'; name: string; line: string | null; x: number; y: number; secs: number }
+  /** (FLOOR_NAMES) the hero has come into a floor: its name, and its level under it */
+  | { t: 'floorName'; name: string; level: string }
   /** One of the town's people has something to say as the hero walks up (see TAGS): who, what, and where they stand. */
   | { t: 'tag'; who: TownVoice; text: string; x: number; y: number }
   | { t: 'text'; x: number; y: number; text: string; color: string }

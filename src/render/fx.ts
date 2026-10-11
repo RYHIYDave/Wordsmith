@@ -32,7 +32,7 @@ import { CAPE, MK_CLOAK, MK_WOOD, OSSUARY, PALLOR, PLANK, SHROUD } from '../art/
 import { ELEMENT_RAMP, P } from '../art/palette';
 import type { Sfx } from '../engine/audio';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { RANGER_ARROW, WORDS } from '../game/defs';
+import { BOSS_INTRO, RANGER_ARROW, WORDS } from '../game/defs';
 import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
 import { Wild } from './wild';
@@ -409,6 +409,8 @@ export interface Fallen {
 /** How long a townsperson's line stays over them, and how far over their feet it is written (clear of their name, which hangs over them while the hero is near). */
 const TAG_TIME = 3;
 const TAG_LIFT: Record<TownVoice, number> = { armourer: 66, mystic: 102, wordsmith: 62, stranger: 56 };
+/** (BOSS_INTRO) how far over a boss's feet his line is said: over the Warden's horns */
+const BOSS_SAY_LIFT = 84;
 
 type Words = readonly WordId[];
 const has = (w: Words | undefined, id: WordId): boolean => !!w && w.includes(id);
@@ -485,6 +487,8 @@ export class Fx {
   arrival: { t: number } | null = null;
   /** What one of the town's people is saying as the hero comes up to them: where they stand, and how high over their feet it is written. */
   tag: { text: string; t: number; x: number; y: number; lift: number } | null = null;
+  /** (BOSS_INTRO) the boss's line, over his head, for `secs` */
+  bossSay: { text: string; t: number; x: number; y: number; lift: number; secs: number } | null = null;
   /** How far above the hero's feet things over their head begin, in game pixels (the renderer says, every frame: heroes are not all one height). */
   headroom = 32;
   /** Words slotted and not yet celebrated, and the time until the next one may be. */
@@ -541,6 +545,7 @@ export class Fx {
     this.glows = [];
     this.freeze = 0;
     this.quip = null;
+    this.bossSay = null;
     this.arrival = null;
     this.fallen = [];
     this.joins = [];
@@ -1194,6 +1199,9 @@ export class Fx {
         case 'tag':
           this.tag = { text: e.text, t: 0, x: e.x, y: e.y, lift: TAG_LIFT[e.who] };
           break;
+        case 'bossIntro':
+          if (e.line) this.bossSay = { text: e.line, t: 0, x: e.x, y: e.y, lift: BOSS_SAY_LIFT, secs: Math.min(e.secs, BOSS_INTRO.sayFor) };
+          break;
         case 'burst': {
           const w = e.words;
           const ramp = this.ramp(e.el);
@@ -1803,6 +1811,10 @@ export class Fx {
     if (this.tag) {
       this.tag.t += real;
       if (this.tag.t > TAG_TIME) this.tag = null;
+    }
+    if (this.bossSay) {
+      this.bossSay.t += real;
+      if (this.bossSay.t > this.bossSay.secs) this.bossSay = null;
     }
     this.joinWait -= real;
     if (this.joins.length && this.joinWait <= 0) {
@@ -2540,6 +2552,27 @@ export class Fx {
       g.fillRect(tx, foot + 2, 1, 1);
       g.globalAlpha = a;
       rows.forEach((r, i) => drawText(g, r, x, y + i * 10, q.t < 0.1 ? P.gd5 : P.white, { align: 'center', shadow: P.ink }));
+      g.globalAlpha = 1;
+    }
+    // (BOSS_INTRO) what the boss says as his gate falls: over his head, on a slip, his words in the enemy's gold
+    const say = this.bossSay;
+    if (say) {
+      const a = say.t < say.secs - 0.4 ? Math.min(1, say.t / 0.15) : Math.max(0, (say.secs - say.t) / 0.4);
+      const rows = textWidth(say.text) + 10 > viewW - 4 ? wrapText(say.text, viewW - 16) : [say.text];
+      const w = rows.reduce((n, r) => Math.max(n, textWidth(r)), 0) + 10;
+      const px = Math.round(wx(c, say.x, say.y));
+      const x = Math.max(Math.ceil(w / 2) + 2, Math.min(viewW - Math.ceil(w / 2) - 2, px));
+      const y = Math.max(4, Math.round(wy(c, say.x, say.y)) - say.lift - Math.round(Math.min(1, say.t / 0.12) * 4) - (rows.length - 1) * 10);
+      const foot = y + 1 + rows.length * 10;
+      g.globalAlpha = 0.8 * a;
+      g.fillStyle = P.ink;
+      g.fillRect(x - Math.floor(w / 2), y - 3, w, 4 + rows.length * 10);
+      const tx = Math.max(x - Math.floor(w / 2) + 3, Math.min(x + Math.floor(w / 2) - 4, px));
+      g.fillRect(tx - 2, foot, 5, 1);
+      g.fillRect(tx - 1, foot + 1, 3, 1);
+      g.fillRect(tx, foot + 2, 1, 1);
+      g.globalAlpha = a;
+      rows.forEach((r, i) => drawText(g, r, x, y + i * 10, '#ffd27a', { align: 'center', shadow: P.ink }));
       g.globalAlpha = 1;
     }
     // what one of the town's people says as the hero comes up: over their head, on a slip like the hero's own, kept on the screen

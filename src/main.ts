@@ -39,8 +39,10 @@ import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, CLASSES, COMBO, FIRST_LEVELS, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_NAMES, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
+import { drawBossCard, drawFloorCard } from './ui/cards';
+import type { BossCard, FloorCard } from './ui/cards';
 import { DOORS, doorMiddle, doorTiles } from './game/doors';
 import { WAYS, stairMiddle, topStep } from './game/ways';
 import { MIX, RELIEF } from './game/dungeon';
@@ -302,6 +304,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   let padPrompt = false;
   /** Something the player touched in order to use it: the hero walks there, and then it is used. */
   let errand: { kind: Spot; x: number; y: number; t: number; level: Level; flow: Uint16Array } | null = null;
+  // (BOSS_INTRO, FLOOR_NAMES: the boss's name and the floor's, across the screen: ui/cards.ts)
+  let bossCard: BossCard | null = null;
+  let floorCard: FloorCard | null = null;
   /** A class card pressed once while a saved run exists: a second press starts over. */
   let confirm: { cls: ClassId; t: number } | null = null;
   /**
@@ -1287,6 +1292,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       } else if (e.t === 'quip') {
         // the hero has something to say about a big kill: heard in their own voice (it is drawn by the effects)
         speak(g.hero.cls, g.voice, e.text);
+      } else if (e.t === 'bossIntro') {
+        bossCard = { name: e.name, t: 0, secs: e.secs };
+        floorCard = null;
+      } else if (e.t === 'floorName') {
+        floorCard = { name: e.name, level: e.level, t: 0, secs: FLOOR_NAMES.secs };
+        bossCard = null;
       } else if (e.t === 'tag') {
         // one of the town's people has a word for the hero as they come up (drawn by the effects, over whoever said it)
         speak(TOWN_VOICE[e.who][0], TOWN_VOICE[e.who][1], e.text, 0.55);
@@ -1602,6 +1613,17 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         cg.fillStyle = '#000';
         cg.fillRect(0, 0, scr.w, scr.h);
         cg.globalAlpha = 1;
+      }
+      // (BOSS_INTRO, FLOOR_NAMES in game/defs.ts: the boss's name and the floor's, across the screen; under the HUD)
+      if (floorCard) {
+        if (!paused) floorCard.t += dt;
+        if (floorCard.t > floorCard.secs) floorCard = null;
+        else drawFloorCard(cg, floorCard, scr.w, scr.h);
+      }
+      if (bossCard) {
+        if (!paused) bossCard.t += dt;
+        if (bossCard.t > bossCard.secs) bossCard = null;
+        else drawBossCard(cg, bossCard, scr.w, scr.h);
       }
       // (a hero who has just warped in says their line when they have come together: `arrived`)
       if (arrived && !paused) {
@@ -2057,6 +2079,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      */
     ways: (on: boolean) => {
       WAYS.on = on;
+    },
+    /** (BOSS_INTRO, FLOOR_NAMES in game/defs.ts) the boss's entrance and the floors' names, for pictures */
+    bossIntro: (on: boolean) => {
+      BOSS_INTRO.on = on;
+    },
+    floorNames: (on: boolean) => {
+      FLOOR_NAMES.on = on;
     },
     /** (THE CRYPT) Where a picture puts the stairwell down and the waypoint on the level the hero is on (art/crypt.ts, CryptMarks). */
     cryptMarks: (m: Partial<CryptMarks>) => {

@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, FRENZY, GAMBLE_KINDS, LEECH, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -256,6 +256,8 @@ export class Game {
   bodySearched = false;
   /** THE WAYS (ways.ts, behind WAYS): the deepest floor whose waypoint the hero has reached, the town's waypoint warping him back to its start (0: none yet). */
   wayDepth = 0;
+  /** (BOSS_INTRO) how much longer the boss stands saying his line */
+  introT = 0;
   /** (LEECH.cap) when the second Leech is counted in began, and what it has given back in it */
   private leechFrom = -1;
   private leechGiven = 0;
@@ -1092,7 +1094,9 @@ export class Game {
       this.placeBody();
     }
     this.updateVision(1);
-    this.msg(`Dungeon ${this.depth}`, MSG.head);
+    // (FLOOR_NAMES: the floor's own name comes up across the screen, its level under it, in place of the line)
+    if (FLOOR_NAMES.on && !this.practice) this.emit({ t: 'floorName', ...floorTitle(this.depth) });
+    else this.msg(`Dungeon ${this.depth}`, MSG.head);
     if (this.dungeonWords.length) this.msg(`Burned in: ${this.dungeonWords.map((w) => WORDS[w].name).join(', ')}`, MSG.word);
     this.sfx('portal');
     // NORMAL MODE (game/modes.ts): the hero as they came in, for a death to go back to. (A copy
@@ -1394,6 +1398,7 @@ export class Game {
     if (this.over) return;
     dt = Math.min(dt, 0.05);
     this.time += dt;
+    if (this.introT > 0) this.introT = Math.max(0, this.introT - dt);
     if (this.inDungeon) this.runTime += dt;
     this.bagFullT -= dt;
     this.denyT -= dt;
@@ -1603,8 +1608,10 @@ export class Game {
     for (const d of L.doors) {
       if (d.spot.kind !== 'bossgate') continue;
       const alive = this.boss !== null && !this.boss.dead;
-      if (d.want === 1 && alive && this.wellInside(d, h.x, h.y)) this.dropGate(d);
-      else if (d.want === 0 && !alive) this.raiseGate(d);
+      if (d.want === 1 && alive && this.wellInside(d, h.x, h.y)) {
+        this.dropGate(d);
+        if (BOSS_INTRO.on && this.boss) this.bossIntro(this.boss);
+      } else if (d.want === 0 && !alive) this.raiseGate(d);
     }
     // (THE MIX) A LEVER'S GATE, DOWN: the first time one is seen from near, a line says what it is
     for (const d of L.doors) {
@@ -1856,6 +1863,14 @@ export class Game {
     this.emit({ t: 'door', x: at.x, y: at.y, kind: 'fall' });
     this.emit({ t: 'shake', amount: 3 });
     this.sfx('gateFall');
+  }
+
+  /** (BOSS_INTRO) His gate down behind the hero, the boss stands and says his line, and his name comes up. */
+  private bossIntro(m: Monster): void {
+    this.introT = BOSS_INTRO.secs;
+    const lines = BOSS_LINES[m.kind];
+    const line = lines && lines.length ? lines[Math.floor(this.rng.next() * lines.length)] : null;
+    this.emit({ t: 'bossIntro', name: m.name, line, x: m.x, y: m.y, secs: BOSS_INTRO.secs });
   }
 
   /** A gate goes up, and its doorway is floor again (the boss is dead; THE MIX: a lever is pulled, a locking room's pack is dead). */
@@ -4256,7 +4271,8 @@ export class Game {
     }
     if (m.boss) {
       this.sfx('bossRoar');
-      this.msg(m.name, MSG.foe);
+      // (BOSS_INTRO: his name comes up across the screen as his gate falls, in place of the line)
+      if (!BOSS_INTRO.on) this.msg(m.name, MSG.foe);
     }
   }
 
@@ -4284,6 +4300,14 @@ export class Game {
         continue;
       }
       if (dist > 32) continue;
+      // (BOSS_INTRO: while he says his line, the boss stands and looks at the hero)
+      if (m.boss && this.introT > 0) {
+        if (dist > 0.01) {
+          m.fx = dx / dist;
+          m.fy = dy / dist;
+        }
+        continue;
+      }
       act.push(m);
       if (m.burnT > 0) m.burnT -= dt;
       if (m.chillT > 0) m.chillT -= dt;
@@ -5801,7 +5825,7 @@ export class Game {
     this.depth++;
     this.enterTown();
     this.sfx('portal');
-    this.msg(`Dungeon ${this.depth - 1} cleared`, MSG.good);
+    this.msg(FLOOR_NAMES.on ? `${floorTitle(this.depth - 1).level} cleared` : `Dungeon ${this.depth - 1} cleared`, MSG.good);
     // the first time back, say what the town is for
     if (this.cleared === 1) this.msg('Sell to the armourer or the mystic. The gate burns words into the next dungeon. The Lexicon is the book of what you know.', MSG.plain);
   }

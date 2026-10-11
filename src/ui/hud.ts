@@ -15,7 +15,7 @@ import { ELEMENT_RAMP, P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Input } from '../engine/input';
-import { SKILLS, WORDS, xpToNext } from '../game/defs';
+import { FLOOR_NAMES, SKILLS, WORDS, floorTitle, xpToNext } from '../game/defs';
 import { doorMiddle, doorTiles } from '../game/doors';
 import type { Game } from '../game/game';
 import type { Hero, Level } from '../game/state';
@@ -1047,7 +1047,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   let lx = 4;
   const btnY = touch ? TOP_GLOBE_Y + 19 : 24;
   const btnH = touch ? 18 : 13;
-  const place = game.practice ? 'Practice room' : game.level.town ? 'Town' : `Dungeon ${game.depth}`;
+  const place = game.practice ? 'Practice room' : game.level.town ? 'Town' : FLOOR_NAMES.on ? floorTitle(game.depth).level : `Dungeon ${game.depth}`;
   drawText(g, place, 4, 3, game.practice ? THEME.accent : THEME.text, { shadow: P.ink });
   const coin = art.icons.gold[0];
   const statX = touch ? lifeX + 19 : 4;

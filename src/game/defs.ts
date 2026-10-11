@@ -752,6 +752,41 @@ export function scaleDmg(depth: number): number {
  */
 export const LEECH = { cap: Infinity };
 
+/**
+ * THE BOSS'S ENTRANCE (the owner, 10 Oct 2026, 21:30: "I’d like the boss fights to go like this.  The
+ * gate closes and the boss says a little line.  And the boss’s name shows up all stylized on the
+ * screen."). As his gate falls behind the hero, the boss stands for `secs`: he says one of his lines
+ * over his head for `sayFor`, and from `nameAt` his name comes up across the screen (ui/cards.ts); then
+ * the fight. Behind the
+ * switch, off until his yes to its pictures (PICTURES FIRST). The lines are this chat's, each boss's
+ * own; a boss without lines of his own says none, and his name still comes up.
+ */
+export const BOSS_INTRO = { on: false, secs: 3.2, sayFor: 1.9, nameAt: 1.0 };
+export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
+  warden: ['None leave my halls.', 'Another one for the cells.', 'The keys are mine. So are you.'],
+};
+
+/**
+ * THE FLOORS' NAMES (the owner, 10 Oct 2026, 21:30, and his pick at 21:33, "A"): every floor, as the
+ * hero comes into it, shows a styled name of its own, of its boss or its place, with the level under
+ * it in a smaller hand: "Prison Level 2" (the first five, the Crypt, are the prison's levels). Behind
+ * the switch, off until his yes to its pictures. The names are this chat's; past the fifth floor
+ * (no set of five there yet) the deep's.
+ */
+export const FLOOR_NAMES = {
+  on: false,
+  names: ["The Warden's Tomb", "The Headsman's Yard", "The Chained One's Pit", 'The Ossuary', "The Fleshmancer's Lair"] as readonly string[],
+  beyond: 'The Deep Crypt',
+  /** how long the name stays, and how long it takes to come and to go, in seconds */
+  secs: 3.4,
+};
+
+/** A floor's name and its level, as the floors' names give them. */
+export function floorTitle(depth: number): { name: string; level: string } {
+  const name = FLOOR_NAMES.names[depth - 1] ?? FLOOR_NAMES.beyond;
+  return { name, level: `Prison Level ${depth}` };
+}
+
 // ---------------------------------------------------------------------------------------------
 // The town's two vendors.
 
