@@ -9,7 +9,7 @@ rulebook, How art is made 7), pictures to him first. Nothing of the game imports
 Chained One and the amalgamation with the bone beast, as they went to the main chat). Made by THE ART
 CHAT, from 11 Oct 2026. His brief, and HIS LOOK (his standing loop), WITH HIS YES (by 12:28, below); then
 HIS FOUR ATTACKS (the shards, the rings of hands, raising the dead, the sweeping fire) and what he sends out,
-made and filmed for him, NOT YET SEEN BY HIM; his glide, struck and his death come after them.
+made and filmed for him, WITH HIS YES (by 14:03, below); his glide, struck and his death come next.
 His look was drawn once (8d4b104), REMADE after a fresh look at it (a4a885d: at a phone's size the first
 read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again after a second fresh look
 (the third drawing, below: the second had accidental shapes in it, and a small, crouched body).
@@ -57,7 +57,12 @@ read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again a
   film of each attack, him casting it in a room as it would look in a fight; his walk, flinch and death
   after, shown the same way.
 
-## His attacks (the art chat, 11 Oct; not yet seen by him)
+- HIS ATTACKS, asked as a pop-up on the page "Fleshmancer Attacks" (11 Oct, by 14:03), "The fleshmancer and
+  his four attacks, on the Fleshmancer Attacks page: good as shown?": "Yes, on to his walk and death
+  (Recommended)", offered as: these go to the main chat to build his fight; his glide, flinch and death
+  next, shown the same way.
+
+## His attacks (the art chat, 11 Oct; with his yes by 14:03)
 
 Each is a move on his bones (`FLESHMANCER.attack`, and `FLESHMANCER.more`'s `rings`, `raise` and `fire`), at
 30 frames a second, beginning and ending in his rest pose (`FM_REST`); `prop` in each pose says which it is to
@@ -328,6 +333,5 @@ keep out of; his staff passes outside it (tested on its own).
 
 ## Next
 
-His four attacks to him (one picture of him and a film of each, as he asked). Then his glide, setting off
-and stopping, struck and his death ("His own dead drag him down": the hands of his rings bursting up round
+His glide, setting off and stopping, struck and his death ("His own dead drag him down": the hands of his rings bursting up round
 him and dragging him under), shown the same way; every move through the boss checks.
