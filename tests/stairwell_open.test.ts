@@ -296,15 +296,18 @@ for (const { label, k, way, at, m } of all) {
       const y0 = live[0].y;
       const top = Math.min(...live.map((a) => a.y));
       ups.push(y0 - top);
-      // into the hole, bit by bit: three frames or more from all of it showing to none
+      // into the hole, bit by bit: three frames or more from all of it showing to none, cut off by the floor's plane
+      // (its last a third of it or less, its top: never a speck)
       const last = live.length - 1;
-      assert.ok(live[last].shown <= 0.3, `${t.name} still shows ${live[last].shown.toFixed(2)} at the last`);
+      assert.ok(live[last].shown <= 0.35 && live[last].shown >= 0.15, `${t.name} shows ${live[last].shown.toFixed(2)} at the last`);
       const full = live.reduce((n, a, i) => (a.shown >= 0.85 ? i : n), -1);
       assert.ok(last - full >= 3, `${t.name} goes into the hole in ${last - full} frames`);
       assert.ok(live[last].i < N - 1, `${t.name} is still there at the end`);
     }
     // (some flung over a hero's head, 48 picture pixels: up 50 or more from where they came up)
     assert.ok(ups.filter((u) => u >= 50).length >= 2, `the highest go up ${ups.sort((a, b) => b - a).slice(0, 3).map((u) => u.toFixed(0)).join(', ')}`);
+    // (each goes down into the hole through the floor's plane while the dust stands over the hole, never in the open)
+    assert.ok(notes.bareSinks === 0, `${notes.bareSinks} frames a stone goes into the hole with no dust over it`);
   });
 
   if (k === 4) {

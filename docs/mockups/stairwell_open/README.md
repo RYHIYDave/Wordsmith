@@ -38,13 +38,17 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
   heights and sizes, flung further, so the top is ragged and lopsided.
 - **The burst frame's dark splinters:** the new sheet was being hidden by the fissure's pixels (lying
   at the floor's own height); a sheet is now hidden only by what stands above the floor.
-- **NOT MENDED: the last stone ending as specks (it darkens as it sinks), a stone going see-through,
-  and the stones appearing full-size on top of the sheet on frames 37 and 38.** A rework (stones
-  whole, never darker, cut off by the rim; rising out of the dust over the hole) was tried and
-  dropped: it broke the moment's checks (stones popping where the stairwell's steps and kerb come in
-  front of them, a stone left at the end, the pit's last pixels never under the dust) and could not be
-  settled in the time. The stones are as in the third cut. It is kept as a scratch file for the next
-  round.
+- **The stones (mended in the round after):** all twelve kept. None darkens, goes see-through or
+  thins away: each is drawn whole in its own tones, and only cut off by the floor's plane. Each comes
+  up out of the hole through that plane (the first frame its top third, then more each frame), and
+  goes back down into the hole the same way: about a fifth of it a frame through the plane (a whole
+  stone, then three quarters, a half, a third), and is gone when a third of it or less is left. A stone
+  thrown out over the floor strikes it once (a bounce and a puff) and is sent back into the hole. They
+  are thrown harder and fall faster than before, so all of them have gone into the hole by about 30
+  frames after the burst, while the heap of dust still stands over the hole; the code counts any frame
+  a stone goes down with no dust standing over it there, and the tests want none, so the kerb and the
+  steps never come in front of a stone. Left to judge by eye: a stone's last frame is its top third
+  or so, a flat cap; on the small dark clods of floor 4 that last cap is only a few game pixels.
 - **The faint dotted line along the joints on frames 1 and 2:** the top row of each flagstone's side
   peeked over the floor beside it; its sides now start a hair lower.
 
@@ -80,10 +84,8 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
 - **C. The stones popped.** There are now twelve, of mixed sizes (11 to 18 picture pixels), thrown a
   frame or more apart at different speeds: some high, well over a hero's head; some in arcs out over
   the kerb; some skipping low across the floor past the kerb, each strike on the floor a bounce and a
-  small puff (the first kicks it back off the kerb's lip toward the hole). Each comes up out of the pit,
-  hidden by the floor in front of it until it is up, and each ends falling straight down the shaft,
-  slowly enough to be seen going under the rim and into the dark (a smooth darkening, not in steps).
-  Over earth they are clods and rock.
+  small puff. Over earth they are clods and rock. (How each comes up out of the hole and goes back
+  into it was redone after the last look: see "The stones" above.)
 - **D. The fissure's jets stood as pillars.** They now lean out from the opening, and each one's
   billows spray apart as they rise and thin.
 - **E. The early fissure puffs read as pebbles.** They are now wisps: thin, low and long, curling off
@@ -202,12 +204,13 @@ joints.
   17, 19, 22, 24, 27 and 29, and strike at 21, 22, 25, 28, 31, 32, 35 and 37.
 - **The great burst** (frame 37, 1.23 s, the biggest jolt): the jet shoots up and tears apart at the
   top (A above), with the heap, skirt, plume and streamers of point 5.
-  - The stones come up out of the pit from this frame to frame 40.
+  - The stones come up out of the pit from this frame to frame 41, and all have gone back into it by
+    frame 64 or so (floor 1, way x).
   - The last of the fissure goes under the dust by frame 40.
   - The aftershock: frame 52 (a jolt, kick 4, and a second puff from the hole).
   - The pit starts to become the stairwell, pixel by pixel under the dust, at frame 55.
 - **It settles** over the last second: the skirt's sheets thin away first, then the slumped plume's,
-  then the heap over the stairwell. The last frame, frame 99 of 100 (3.33 s), is the stairwell.
+  then the heap over the stairwell. The last frame, frame 98 of 99 (3.30 s), is the stairwell.
 
 ## For the main chat, when he has said yes
 
@@ -275,7 +278,9 @@ One test checks how long the nine take to paint, and that each is kept. For each
   or more after it (each pixel under the dust: the code refuses otherwise).
 - **The stones:** twelve of them, 10 to 18 picture pixels across, thrown within 4 frames of the burst,
   none there whole at first (each comes up out of the pit); two or more go up 50 pixels or more (over a hero's head); each
-  goes into the hole over 3 frames or more and is gone before the end.
+  goes into the hole over 3 frames or more, its last frame showing between 15% and 35% of it, and is
+  gone before the end; and no stone goes down into the hole on a frame with no dust standing over it
+  there.
 - **Floor 4 only:** the earth breaks into clods; there is earth among the stones; the dust's plum body
   is there in quantity, and nothing is pinkish.
 

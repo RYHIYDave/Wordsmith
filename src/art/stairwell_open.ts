@@ -26,7 +26,8 @@
 //     different shape on every floor and each way); a heap of it over the opening, a skirt of it
 //     rushing out over the floor two or three tiles past the hero's feet, a plume, streamers; a dozen
 //     stones come up out of the pit, flung high or in arcs or skipping off the floor with a bounce and a
-//     puff, and fall back down the shaft into the dark. An aftershock half a second on: a jolt and a
+//     puff, and sink back into the hole, whole, cut off by the floor's plane, while the dust stands over
+//     it. An aftershock half a second on: a jolt and a
 //     second puff from the hole. Under the skirt the fissure goes; under the heap
 //     the pit becomes the stairwell: its steps and its kerb are there when the dust thins. The dust
 //     hangs, spreads and drifts; the plume slumps, and everything low spreads into broad sheets on the
@@ -513,6 +514,8 @@ export interface StairwellNotes {
   earthPieces: number;
   stones: number;
   earthStones: number;
+  /** The frames a stone went down into the hole with no dust standing over it there (none, so nothing nearer the eye is wanted in front of it). */
+  bareSinks: number;
   /** Every pixel that changes when the fissure goes, and when the pit becomes the stairwell, is under the dust that frame and the next. */
   hidden: boolean;
 }
@@ -1139,86 +1142,6 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
   const ROCK_TONES: Tones = [mix(rock[3], '#d0cce8', 0.3), rock[3], rock[2], rock[0]];
   const CLOD_TONES: Tones = [mix(dirt[3], '#a08494', 0.4), dirt[3], dirt[2], dirt[0]];
   const stones: Stone[] = [];
-  /** For each stone, the frame of its path it comes to rest on the floor (-1: it goes back into the hole); one at rest goes when the dust lies over it (found below). */
-  const rests: number[] = [];
-  {
-    // twelve, mixed: some flung up high, well over a hero's head, and back down into the hole; some in
-    // arcs out over the kerb onto the floor; some skipping low and fast across the floor past the kerb;
-    // each comes up out of the pit, behind the floor in front of it, a frame or two apart; each strike on
-    // the floor a bounce and a puff
-    const g = 1.3;
-    for (let i = 0; i < 12; i++) {
-      const r = (k: number): number => h(i + FSW, k, 662);
-      const kind = i % 4 === 0 || i % 4 === 2 ? (i < 6 ? 'high' : 'arc') : i % 4 === 1 ? 'arc' : 'skip';
-      // (toward the eye, or to the sides, in front of the dust and not lost behind it: high ones toward the eye)
-      const ang = kind === 'skip' ? (r(3) < 0.5 ? Math.PI / 2 : 0) + (r(4) - 0.5) * 1.4 : kind === 'high' ? Math.PI / 4 + (r(3) - 0.5) * 1.2 : -Math.PI / 4 + r(3) * Math.PI;
-      const sp = kind === 'high' ? 0.015 + 0.03 * r(5) : kind === 'arc' ? 0.07 + 0.05 * r(5) : 0.17 + 0.07 * r(5);
-      let va = Math.cos(ang) * sp;
-      let vc = Math.sin(ang) * sp;
-      // (from the side of the opening it is thrown away from, so that it is up out of the pit before it is over the floor)
-      let al = L / 2 - Math.sign(va) * L * (0.15 + 0.25 * r(1)) * Math.min(1, Math.abs(va) / 0.05);
-      let ac = Wd / 2 - Math.sign(vc) * Wd * (0.1 + 0.25 * r(2)) * Math.min(1, Math.abs(vc) / 0.05);
-      let z = -14;
-      let vz = kind === 'high' ? 14 + 3 * r(6) : kind === 'arc' ? 9.5 + 3 * r(6) : 6.5 + 2 * r(6);
-      const size = kind === 'high' ? 13 + Math.floor(4 * r(7)) : kind === 'arc' ? 11 + Math.floor(6 * r(7)) : 12 + Math.floor(6 * r(7));
-      const f0 = great + Math.floor(4 * r(8));
-      const col = floorAt(al, ac);
-      const tones = col && earthy.has(col) ? (i % 2 ? CLOD_TONES : ROCK_TONES) : STONE_TONES;
-      const path: V3[] = [];
-      let rest = -1;
-      let down = false;
-      let bounces = 0;
-      for (let k = 0; k < 70; k++) {
-        const [x, y] = XY(al, ac);
-        path.push([x, y, z]);
-        if (rest >= 0) continue;
-        al += va;
-        ac += vc;
-        const was = z;
-        vz -= g;
-        // (never faster than its own size a frame)
-        z += Math.max(-(size + 1), Math.min(size - 2, vz));
-        const overHole = al > 0.03 && al < L - 0.03 && ac > 0.03 && ac < Wd - 0.03;
-        if (vz < 0 && overHole && z < 0) down = true;
-        if (down) {
-          // (in the shaft: straight down)
-          va = 0;
-          vc = 0;
-          // (into the hole, falling no faster than its own size a frame, darker the deeper, until it is lost in the dark)
-          // (into the hole slowly enough to be seen going, under the rim in front of it and into the dark)
-          z = Math.max(was - Math.max(2.5, size * 0.21), z);
-          vz = Math.max(vz, -Math.max(2.5, size * 0.21));
-          if (z < -44) break;
-          continue;
-        }
-        if (z <= 0 && !overHole) {
-          if (vz < -2.4 || bounces <= 9) {
-            // a bounce, and a puff where it struck; the first kicks it back off the lip of the kerb toward the hole, the next on into it
-            z = 0;
-            vz = Math.max(-vz * 0.5, 4.5);
-            const back = bounces++ === 0 ? -0.75 : 0.8;
-            va *= back;
-            vc *= back;
-            const [px, py] = XY(al, ac);
-            blow({ f0: f0 + k + 1, x: px, y: py, z: 1, vx: va * 0.3, vy: vc * 0.3, vz: 0.5, r0: 2.2, grow: 3 + size * 0.15, life: 12, rest: 2, flat: 8, tall: 0.6, wide: 1.6, thick: 0.85 });
-          } else if (bounces > 9) {
-            z = 0;
-            vz = 0;
-            va *= 0.6;
-            vc *= 0.6;
-            if (Math.hypot(va, vc) < 0.012) {
-              // (at rest: the dust it kicks up settles over it, and it is gone under it)
-              rest = k + 1;
-              const [px, py] = XY(al, ac);
-              blow({ f0: f0 + k, x: px, y: py, z: size * 0.5, vx: 0, vy: 0, vz: 0.3, r0: size * 0.25, grow: size * 0.8, life: 18, rest: 5, flat: 9, tall: 0.9, wide: 1.4 });
-            }
-          }
-        }
-      }
-      stones.push({ f0, size, tones, path, spin: (r(9) - 0.5) * 0.6 });
-      rests.push(rest);
-    }
-  }
   /** A stone's shape: a rounded lump, turned `ang`, lit from the upper left; each pixel of it: 0 its lit face, 1 its body, 2 its shade, 3 its dark edge, -1 none. */
   const stoneShape = (size: number, ang: number, sd: number): number[][] => {
     const out: number[][] = [];
@@ -1247,6 +1170,153 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     }
     return out;
   };
+  /** For each stone, the frame of its path it comes to rest on the floor (-1: it goes back into the hole); one at rest goes when the dust lies over it (found below). */
+  const rests: number[] = [];
+  {
+    // twelve, mixed: some flung up high, over a hero's head, and back down into the hole; some in arcs
+    // out over the kerb onto the floor; some skipping low across the floor past the kerb; a frame or two
+    // apart. Each comes up out of the hole through the floor's plane, the part of it still below the
+    // floor not drawn, so that it is seen rising out of the hole, and goes down into it the same way,
+    // whole, cut off at the floor, never darker; one that lands on the floor bounces once, with a puff,
+    // back into the hole. All are gone into the hole while the dust stands over it (checked below)
+    const g = 2.2;
+    /** Inside the hole, by `m` from its sides. */
+    const inside = (pa: number, pc: number, m: number): boolean => pa > m && pa < L - m && pc > m && pc < Wd - m;
+    for (let i = 0; i < 12; i++) {
+      const r = (k: number): number => h(i + FSW, k, 662);
+      const kind = i % 4 === 0 || i % 4 === 2 ? (i < 6 ? 'high' : 'arc') : i % 4 === 1 ? 'arc' : 'skip';
+      const size = kind === 'high' ? 14 + Math.floor(4 * r(7)) : kind === 'arc' ? 11 + Math.floor(6 * r(7)) : 12 + Math.floor(6 * r(7));
+      // (kept by about its own width from the hole's sides while in it, so that the floor never cuts it)
+      const m = Math.min(0.3, (size * 0.5) / 36 + 0.05);
+      const f0 = great + Math.floor((kind === 'high' ? 3 : 4) * r(8));
+      // where it comes up, and where it comes down: the high ones back inside the hole; the others out on the floor
+      const ang = kind === 'skip' ? (r(3) < 0.5 ? Math.PI / 2 : 0) + (r(4) - 0.5) * 1.4 : -Math.PI / 4 + r(3) * Math.PI * 1.5;
+      const da = Math.cos(ang);
+      const dc = Math.sin(ang);
+      let al: number;
+      let ac: number;
+      let ta: number;
+      let tc: number;
+      let vz = kind === 'high' ? 16 + 2 * r(6) : kind === 'arc' ? 9.5 + 2 * r(6) : 6.5 + 1.5 * r(6);
+      if (kind === 'high') {
+        al = m + (L - 2 * m) * r(1);
+        ac = m + (Wd - 2 * m) * r(2);
+        ta = m + (L - 2 * m) * (0.25 + 0.5 * r(4));
+        tc = m + (Wd - 2 * m) * (0.25 + 0.5 * r(5));
+      } else {
+        // (it comes up on the side of the hole away from where it is thrown, and comes down beyond the far side, on the floor)
+        al = L / 2 - da * (L / 2 - m) * (0.4 + 0.5 * r(1));
+        ac = Wd / 2 - dc * (Wd / 2 - m) * (0.4 + 0.5 * r(2));
+        // (how far along its way from the middle the hole's side is)
+        const edge = Math.min(Math.abs(da) > 1e-3 ? L / 2 / Math.abs(da) : 99, Math.abs(dc) > 1e-3 ? Wd / 2 / Math.abs(dc) : 99);
+        const beyond = edge + (kind === 'arc' ? 0.35 + 0.45 * r(5) : 0.3 + 0.35 * r(5));
+        ta = L / 2 + da * beyond;
+        tc = Wd / 2 + dc * beyond;
+      }
+      /** Its flight's frames from the floor's plane back down to it, thrown up at `v`. */
+      const flight = (v: number): number => Math.max(2, Math.round((2 * v) / g));
+      let va = (ta - al) / flight(vz);
+      let vc = (tc - ac) / flight(vz);
+      const col = floorAt(al, ac);
+      const tones = col && earthy.has(col) ? (i % 2 ? CLOD_TONES : ROCK_TONES) : STONE_TONES;
+      const spin = (r(9) - 0.5) * 0.6;
+      /** How much of it shows at its path's frame `k` with its top `rows` rows above the floor's plane. */
+      const shows = (rows: number, k: number): number => {
+        const sh = stoneShape(size, spin * k, i * 1.7);
+        let all = 0;
+        let up = 0;
+        for (let dy = 0; dy < size; dy++) {
+          for (let dx = 0; dx < size; dx++) {
+            if (sh[dy][dx] < 0) continue;
+            all++;
+            if (dy < rows) up++;
+          }
+        }
+        return all ? up / all : 0;
+      };
+      /** The rows of it above the floor's plane (fewer than `below`) nearest to showing `want` of it at its path's frame `k`. */
+      const rowsFor = (want: number, k: number, below: number): number => {
+        let best = 1;
+        let off = 9;
+        for (let R = 1; R < below; R++) {
+          const d = Math.abs(shows(R, k) - want);
+          if (d < off) {
+            off = d;
+            best = R;
+          }
+        }
+        return best;
+      };
+      /** Its height with `rows` rows of it above the floor's plane, and the rows above it at a height. */
+      const zOf = (rows: number): number => (rows - size) / 2;
+      const rowsOf = (at: number): number => Math.max(0, Math.min(size, Math.ceil(size + 2 * at - 1e-9)));
+      // (its top, a third of it, above the floor's plane at first: never a speck)
+      let z = zOf(rowsFor(0.32, 0, size));
+      const path: V3[] = [];
+      let bounced = false;
+      let sinking = false;
+      for (let k = 0; k < 60; k++) {
+        const [x, y] = XY(al, ac);
+        path.push([x, y, z]);
+        // (gone into the hole when a third of it or so is left above the floor's plane: never a speck)
+        if (sinking && z < 0 && shows(rowsOf(z), k) <= 0.345) break;
+        let dz: number;
+        let ma = va;
+        let mc = vc;
+        if (!sinking && z < 0) {
+          // coming up out of the hole through the floor's plane, straight up, an eighth of itself a frame
+          dz = Math.min(vz, size * 0.12);
+          ma = 0;
+          mc = 0;
+        } else {
+          vz = Math.max(vz - g, -(size + 1));
+          dz = vz;
+          if (vz < 0 && inside(al + va, ac + vc, 0)) sinking = true;
+          if (sinking) {
+            // going down into the hole: slowing as it comes to the floor's plane (and through it a fifth of it a
+            // frame, below), drifting in from the hole's side if it came down near it
+            dz = Math.max(dz, -Math.max(1, z * 0.45));
+            if (z < size) {
+              va *= 0.6;
+              vc *= 0.6;
+            }
+            const ca = Math.max(m, Math.min(L - m, al + va));
+            const cc = Math.max(m, Math.min(Wd - m, ac + vc));
+            const fully = inside(al, ac, m);
+            ma = (ca - al) * (fully ? 1 : 0.5);
+            mc = (cc - ac) * (fully ? 1 : 0.5);
+          }
+        }
+        // (never faster than a little more than its own size a frame, across the screen and up it together)
+        const [ex, ey] = XY(ma, mc);
+        const fast = Math.hypot((ex - ey) * 32, (ex + ey) * 16 - dz);
+        const sc = fast > size + 2 ? (size + 2) / fast : 1;
+        al += ma * sc;
+        ac += mc * sc;
+        const was = z;
+        z += dz * sc;
+        if (sinking && z < 0) {
+          // (through the floor's plane a fifth of it a frame, by whole rows of it)
+          const now = was < 0 ? shows(rowsOf(was), k) : 1;
+          z = zOf(rowsFor(Math.max(now - 0.22, 0.3), k + 1, was < 0 ? rowsOf(was) : size));
+        }
+        if (!sinking && z <= 0 && vz < 0 && !inside(al, ac, 0)) {
+          // it strikes the floor: a bounce and a puff where it struck, and back into the hole
+          z = 0;
+          const [px, py] = XY(al, ac);
+          blow({ f0: f0 + k + 1, x: px, y: py, z: 1, vx: 0, vy: 0, vz: 0.5, r0: 2.2, grow: 3 + size * 0.15, life: 12, rest: 2, flat: 8, tall: 0.6, wide: 1.6, thick: 0.85 });
+          vz = bounced ? 4 : kind === 'skip' ? 5.5 : 6.5;
+          bounced = true;
+          const ba = m + (L - 2 * m) * (0.3 + 0.4 * r(10));
+          const bc = m + (Wd - 2 * m) * (0.3 + 0.4 * r(11));
+          va = (ba - al) / flight(vz);
+          vc = (bc - ac) / flight(vz);
+        }
+      }
+      stones.push({ f0, size, tones, path, spin });
+      rests.push(-1);
+    }
+  }
 
   // ----- THE FRAMES
   const tracks: Track[] = [];
@@ -1267,6 +1337,8 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
   /** The frame the fissure has gone, under the dust (found below). */
   /** For each pixel of the frame, the frame the fissure there goes, under the dust; for each pixel of the well, the frame the pit there becomes the stairwell, under the dust (found below). */
   let healAt: Int16Array | null = null;
+  /** The frames a stone went down into the hole where the dust was not standing over it. */
+  let bareSinks = 0;
   let swapAt: Int16Array | null = null;
   /** The pixels the fissure was drawn on in the last frame painted. */
   let cracked = new Uint8Array(FW * FH);
@@ -1342,7 +1414,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
         }
       });
     }
-    // THE STONES: each hidden by whatever is nearer the eye, the floor in front of the hole, the kerb, the dust
+    // THE STONES: each drawn whole over the scene and the dust, only what of it is below the floor's plane not drawn
     const stoneAt = (s: Stone): { x: number; y: number; z: number } | null => {
       const k = f - s.f0;
       if (k < 0 || k >= s.path.length) return null;
@@ -1355,7 +1427,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
       if (!q) return;
       const [sx, sy] = scr(q.x, q.y, q.z);
       const shape = stoneShape(s.size, s.spin * (f - s.f0), si * 1.7);
-      // (the dust it is thrown through it flies in front of; once at rest on the floor, the dust settling over it hides it)
+      // (the dust it is thrown through it flies in front of; one at rest on the floor (none now) the dust settling over it hides)
       const atRest = rests[si] >= 0 && f - s.f0 >= rests[si];
       let all = 0;
       let seen = 0;
@@ -1367,14 +1439,12 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
           const X = Math.floor(sx - s.size / 2 + dx);
           const Y = Math.floor(sy - s.size + dy);
           if (X < 0 || Y < 0 || X >= FW || Y >= FH) continue;
+          // (what of it is under the floor's plane is not drawn: it rises out of the hole, and sinks into it, whole)
           const zz = q.z + (s.size - dy) * 0.5;
-          const i = X + Y * FW;
-          if (zz <= (scene.has(X, Y) ? zb[i] : 0)) continue;
-          if (atRest && dd[i] > (24.6 * (Y + 0.5 - AY + zz)) / 16 + 0.49 * zz - 0.5) continue;
-          // (darker the deeper, smoothly: a stone goes into the dark a little every frame)
-          const dk = q.z < 0 ? Math.min(0.93, -q.z / 40) : 0;
-          target.set(X, Y, dk ? mix(s.tones[v], PIT_DARK, Math.round(dk * 12) / 12) : s.tones[v]);
-          seen += 1 - dk;
+          if (zz <= 0) continue;
+          if (atRest && dd[X + Y * FW] > (24.6 * (Y + 0.5 - AY + zz)) / 16 + 0.49 * zz - 0.5) continue;
+          target.set(X, Y, s.tones[v]);
+          seen += 1;
         }
       }
       stoneSeen[si] = { x: sx - AX, y: sy - AY, shown: all ? seen / all : 0 };
@@ -1385,6 +1455,22 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     const dustDepth = new Float32Array(FW * FH).fill(-1e9);
     const dust = paintDust(out, f, zb, scene, dustDepth);
     stones.forEach((s, si) => drawStone(s, si, out, dustDepth));
+    // (a stone going down through the floor's plane goes into the dust standing over the hole: count any frame it does not)
+    if (record) {
+      stones.forEach((s) => {
+        const q = stoneAt(s);
+        if (!q || q.z >= 0) return;
+        const [bx, by] = scr(q.x, q.y, 0);
+        for (const ox of [-s.size / 2, 0, s.size / 2]) {
+          const X = Math.floor(bx + ox);
+          const Y = Math.floor(by);
+          if (X < 0 || Y < 0 || X >= FW || Y >= FH || !dust[X + Y * FW]) {
+            bareSinks++;
+            return;
+          }
+        }
+      });
+    }
     if (record) {
       const seen = seenOf(zb, owner);
       cells.forEach((_c, ci) => {
@@ -1861,17 +1947,8 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     for (let f = great + 18; f < great + 70 && left > 0; f++) {
       const da = paintDust(new Px(FW, FH), f, SA.zb, SA.scene);
       const db = paintDust(new Px(FW, FH), f, SB.zb, SB.scene);
-      // (not where a stone is, this frame or the next)
+      // (a stone is drawn over whatever is under it, so the stairwell may come under one: no stone waits for it)
       const busy = new Uint8Array(FW * FH);
-      for (const st of stones) {
-        for (const g of [f, f + 1]) {
-          const k = g - st.f0;
-          if (k < 0 || k >= st.path.length) continue;
-          const [x, y, z] = st.path[k];
-          const [sx, sy] = scr(x, y, z);
-          for (let Y = Math.floor(sy - st.size - 2); Y <= sy + 2; Y++) for (let X = Math.floor(sx - st.size / 2 - 2); X <= sx + st.size / 2 + 2; X++) if (X >= 0 && Y >= 0 && X < FW && Y < FH) busy[Y * FW + X] = 1;
-        }
-      }
       for (let y = 0; y < BH; y++) {
         for (let x = 0; x < BW; x++) {
           const k = y * BW + x;
@@ -1894,7 +1971,8 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     swap = Math.min(swap, swapAt[k]);
     swapDone = Math.max(swapDone, swapAt[k]);
   }
-  let last = swapDone + 1;
+  // (on until the last stone has gone into the hole, and the last of the dust)
+  let last = Math.max(swapDone + 1, stonesGone);
   for (let f = swapDone; f < swapDone + 120; f++) if (billows.some((b) => billowAt(b, f))) last = f + 1;
   const N = last + 1;
 
@@ -1932,6 +2010,6 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
   const inOrder = cells.map((c, ci) => ci).sort((p, q) => cells[p].order - cells[q].order);
   const tips = inOrder.map((ci) => Math.min(...pieces.filter((p) => p.cell === ci).map(tipOf)));
   const impacts = inOrder.map((ci) => cutAt[ci]);
-  NOTES.set(m, { great, heal, swap, tips, impacts, kicks: jolts.map((j) => joltKick.get(j)!), pieces: pieces.length, earthPieces: pieces.filter((p) => p.earth).length, stones: stones.length, earthStones: stones.filter((s) => s.tones !== STONE_TONES).length, hidden: true });
+  NOTES.set(m, { great, heal, swap, tips, impacts, kicks: jolts.map((j) => joltKick.get(j)!), pieces: pieces.length, earthPieces: pieces.filter((p) => p.earth).length, stones: stones.length, earthStones: stones.filter((s) => s.tones !== STONE_TONES).length, bareSinks, hidden: true });
   return m;
 }
