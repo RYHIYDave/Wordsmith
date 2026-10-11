@@ -77,8 +77,11 @@ coal dropped at his side by an arm like a rod. So the third drawing, point by po
 
 - **The front makes no symbol.** No gold round the opening of his hood: its edge is dark, lit a little pink
   from inside; his cult's pink and gold are on the hood's OUTER brim, an arch over his brow, open below.
-  Nothing hangs from his face: below the mantle's edge the two edges of his robe where it parts run down to
-  the hem, pink edged with gold, unbroken, parting a little as they go (no band, no capsule).
+  Nothing hangs from his face. The mantle's edge dips to a soft point at his breast (never a straight bar
+  across him); a little under it, to either side of the dip, the two edges of his robe where it parts run
+  down to the hem unbroken, flaring apart as they go (an A, never a crossbar on two legs: a third look found
+  the straight bar and two parallel edges made a "Π"); the edge the light falls on is pink edged with gold,
+  the other sunk in shadow (no band, no capsule).
 - **His face** is the dark of the hood and two hot points of fire for eyes, each with a dimmer one beside
   it, the two not alike (one below, one slanting): no frame, no bars.
 - **The skull** is smaller: 14 across (it was 17; his hood is about 14), pale bone, not tan. Its sockets are
@@ -100,13 +103,16 @@ coal dropped at his side by an arm like a rod. So the third drawing, point by po
 - **The fire he draws from the skull** runs to his claw in a few short streaks, unevenly spaced, never a
   dotted line.
 - **The burst's embers** fly out, fall back to the floor and go out one by one over its last four frames;
-  the burst lasts 0.9 s (it was 0.6).
+  the burst lasts 0.9 s (it was 0.6). Each is a single streak slanting the way it flies, so that two never
+  meet in a corner (a "V", "L" or "Z") as they fade; its broken ring of fire is gone before they are.
 - **His body** is a man's a head taller than the knight: 55 tall (it was 50.5), upright (no hunch), the top of
   his hood 66.4 up at rest (the knight is 58, his head 9.8), and his robe hangs plumb from his hips to its
   hem (it no longer goes round his drawn-up legs, so it never bulges forward; nothing of his legs is
   painted). He is now the bigger thing; the skull is his emblem.
-- **The collar** is four ribs of bone rising from his collar at the sides of his hood and curving in over
-  it, a ribcage closing over his head, never higher than a few pixels over his hood; bone, never gold.
+- **The collar** is two ribs of bone rising from his collar at the sides of his hood and curving in over
+  it, a ribcage closing over his head, each tapering its own way with a knuckle where it bends, never higher
+  than a few pixels over his hood; bone, never gold. (Two more, behind his hood, made a straight bar over it
+  from in front, and were taken out.)
 - **The fling** is a throw: he winds his shoulders back across him with the fire in his claw before his
   chest, then lunges into it, his shoulders twisting round (18 degrees), his chest bending forward, his
   elbow leading with the claw raised behind it, his arm whipping out straight past where the fire leaves his

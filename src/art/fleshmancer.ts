@@ -112,6 +112,9 @@ export const FM_CANVAS: MobCanvas = { w: 320, h: 300, ax: 160, ay: 228 };
 
 /** His robe: near-black plum, its lit side a dark magenta (the cultists' violet is bright, the Shade's grey, the Headsman's coat blue-black, his hood red). */
 export const FM_ROBE: Ramp = ['#170a1b', '#170a1b', '#3a1440', '#6e2660', '#6e2660'];
+/** How far the front of his mantle's edge dips at his breast; and the dark the far edge of his robe's opening is sunk in. */
+const FM_MANTLE_DIP = 2.6;
+const FM_EDGE_DARK: Ramp = ['#1a0a1c', '#1a0a1c', '#34122f', '#521a46', '#521a46'];
 /** His hood: a step darker than his mantle, so that its round shape reads against his shoulders from in front and from behind. */
 const FM_HOOD: Ramp = ['#120816', '#120816', '#2e1036', '#56204e', '#56204e'];
 /** His mantle, stiff over his shoulders: his robe's plum, raised to his cult's magenta (so his shoulders read broad and his hem narrow). */
@@ -343,12 +346,12 @@ function tongueAt(st: Stage, put: Put, ref: V3, b: readonly [number, number], ta
  * AN EMBER, never a dot: with his pink edge round it a dot is a cross (+). A fleck slanting one way or the
  * other, three pixels long, dimming along it (by `seed`); at `p`, on the layer over everything.
  */
-function fleck(st: Stage, put: Put, p: V3, c: string, seed: number, part = 'embers'): void {
+function fleck(st: Stage, put: Put, p: V3, c: string, seed: number, part = 'embers', slant?: number): void {
   const [x, y] = st.at(p);
   const xi = Math.floor(x);
   const yi = Math.floor(y);
   const kind = ((Math.floor(seed * 7.13) % 4) + 4) % 4;
-  const dy = kind % 2 === 0 ? 1 : -1;
+  const dy = slant ?? (kind % 2 === 0 ? 1 : -1);
   const n = 3;
   const dim = FLAME[Math.max(0, FLAME.indexOf(c) - 1)];
   for (let i = 0; i < n; i++) put(part, part, { k: 'mote', p: screenStep(st, p, xi + i + 0.5 - x, yi + i * dy + 0.5 - y), c: i === 0 ? c : dim, size: 1 });
@@ -943,8 +946,9 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
       const a = (i / N) * Math.PI * 2;
       const rear = Math.max(0, -Math.cos(a));
       const p = add(capeC, add(mul(capeU, Math.cos(a)), mul(capeV, Math.sin(a))));
-      // (lower behind; stirring)
-      hemPts.push(add(p, [0, 0, -rear * 2.6 + Math.sin(ph * 2 + a * 3) * 0.4 - gale * rear * 1.5]));
+      // (lower behind; dipping to a soft point at his breast, never straight across him; stirring)
+      const fore = Math.max(0, Math.cos(a)) ** 3;
+      hemPts.push(add(p, [0, 0, -rear * 2.6 - fore * FM_MANTLE_DIP + Math.sin(ph * 2 + a * 3) * 0.4 - gale * rear * 1.5]));
     }
     mantle.push(
       { c: add(s.neck, mul(cu, 3.4)), u: mul(cf, 5.2), v: mul(cl, 6.0) },
@@ -963,9 +967,9 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
     }
   }
 
-  // --- THE FRONT OF HIS ROBE, where it parts below the mantle: two edges of it, each pink edged with gold, from under the mantle's edge down to the hem, unbroken, parting a little as they go down ---
+  // --- THE FRONT OF HIS ROBE, where it parts below the mantle: two edges of it, from a little under the dip of the mantle's edge down to the hem, unbroken, flaring apart as they go down (an A, never a crossbar on two legs); the edge the light falls on pink edged with gold, the other sunk in shadow ---
   {
-    const zTop = capeC[2] - 0.4;
+    const zTop = capeC[2] - FM_MANTLE_DIP - 2.4;
     const zEnd = hem.c[2] + 1.0;
     const steps = 14;
     let prev: V3[] | null = null;
@@ -974,28 +978,34 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
       const z = zTop + (zEnd - zTop) * k;
       const kz = clamp01((z - s.pelvis[2]) / Math.max(1, s.neck[2] - s.pelvis[2]));
       const mid0: V3 = [s.pelvis[0] + (s.neck[0] - s.pelvis[0]) * kz, s.pelvis[1] + (s.neck[1] - s.pelvis[1]) * kz, z];
-      const apart = 1.7 + 1.6 * k;
+      // (they start apart, to either side of the dip of the mantle's edge, so that nothing hangs from its point)
+      const apart = 1.9 + 3.0 * k;
       const pts: V3[] = [];
       for (const side of [-1, 1]) {
         const edge = onCloth(robeRings, add(add(mid0, mul(f, 30)), mul(l, side * apart * 7)), 0.6);
         pts.push(edge, add(edge, mul(l, side * 0.9)));
       }
       if (prev) {
+        // (the lit edge: the one on the side of him the light comes from, as the eye sees him)
+        const litFirst = st.at(prev[0])[0] < st.at(prev[2])[0];
         for (const j of [0, 2]) {
-          put('opening', 'opening', { k: 'rod', a: prev[j], b: pts[j], ra: 0.7, rb: 0.7, ramp: BAND });
-          put('opening', 'opening', { k: 'rod', a: prev[j + 1], b: pts[j + 1], ra: 0.45, rb: 0.45, ramp: GOLD });
+          const lit = (j === 0) === litFirst;
+          put('opening', 'opening', { k: 'rod', a: prev[j], b: pts[j], ra: 0.7, rb: 0.7, ramp: lit ? BAND : FM_EDGE_DARK });
+          if (lit) put('opening', 'opening', { k: 'rod', a: prev[j + 1], b: pts[j + 1], ra: 0.45, rb: 0.45, ramp: GOLD });
         }
       }
       prev = pts;
     }
   }
 
-  // --- THE COLLAR OF BONE: ribs of bone rising from his collar behind his hood and curving in over it like a ribcage closing over his head; bone, never gold, never higher than a little over his hood ---
+  // --- THE COLLAR OF BONE: two ribs of bone rising from his collar at the sides of his hood and curving in over it like a ribcage closing over his head, each tapering its own way; bone, never gold, never higher than a little over his hood ---
   {
     const hcTop = add(add(s.head, add(mul(ff, FM_HOOD_FWD), mul(fu, FM_HOOD_UP))), mul(fu, FM_HOOD_R[2]));
     const base0 = add(s.neck, mul(cu, 0.6));
     // (each rib: where round the back of him, how far over his hood its tip comes, how high it ends against the top of his hood)
-    const RIBS: ReadonlyArray<readonly [number, number, number]> = [[98, 0.72, 2.2], [128, 0.86, 4.2], [232, 0.86, 3.8], [262, 0.72, 1.8]];
+    const RIBS: ReadonlyArray<readonly [number, number, number]> = [[100, 0.74, 2.6], [258, 0.7, 1.4]];
+    // (each its own taper: thick at the root, one thinning fast and one slow, a knuckle on each where it bends)
+    const TAPER: ReadonlyArray<readonly number[]> = [[1.45, 1.05, 0.8, 0.5, 0.2], [1.3, 1.15, 0.75, 0.4, 0.25]];
     RIBS.forEach(([deg, over, up], i) => {
       const a = deg * D;
       const out: V3 = norm(add(mul(cf, Math.cos(a)), mul(cl, Math.sin(a))));
@@ -1010,9 +1020,9 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
         pts.push(lerp3(lerp3(b0, ctrl, u), lerp3(ctrl, tip, u), u));
       }
       for (let k = 0; k < 4; k++) {
-        put('collar', 'collar', { k: 'rod', a: pts[k], b: pts[k + 1], ra: 1.35 - k * 0.25, rb: 1.35 - (k + 1) * 0.25, ramp: STAY_BONE, far: true });
+        put('collar', 'collar', { k: 'rod', a: pts[k], b: pts[k + 1], ra: TAPER[i][k], rb: TAPER[i][k + 1], ramp: STAY_BONE, far: true });
       }
-      put('collar', 'collar', { k: 'ball', c: pts[1], ax: sphere(1.3), skin: STAY_BONE, far: true });
+      put('collar', 'collar', { k: 'ball', c: pts[i === 0 ? 1 : 2], ax: sphere(i === 0 ? 1.35 : 1.1), skin: STAY_BONE, far: true });
     });
   }
 
@@ -1112,13 +1122,13 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
             put('fire', 'fire', { k: 'mote', p: onFloor(x, y), c: d < 0.35 ? FLAME[4] : d < 0.65 ? FLAME[3] : FLAME[2], size: 1 });
           }
         }
-      } else if (kt < 0.55) {
-        const k = (kt - 0.13) / 0.42;
+      } else if (kt < 0.42) {
+        const k = (kt - 0.13) / 0.29;
         const rx = 15 + 12 * k;
         const c = k < 0.35 ? FLAME[2] : k < 0.7 ? FLAME[1] : FLAME[0];
         // (in unbroken arcs, some arcs gone, more of them as it goes out: never a lone pixel)
         for (let seg = 0; seg < 12; seg++) {
-          if (hash(seg, 3, 251) < 0.2 + 0.45 * k) continue;
+          if (hash(seg, 3, 251) < 0.15 + 0.25 * k) continue;
           const arc = new Set<number>();
           for (let j = 0; j <= 24; j++) {
             const a0 = ((seg + j / 24) / 12) * Math.PI * 2;
@@ -1148,7 +1158,14 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
         const ep: V3 = [FM_GOUT_SPOT[0] + Math.cos(a0) * out, FM_GOUT_SPOT[1] + Math.sin(a0) * out, Math.max(0.6, up)];
         if (behindHim(ep)) continue;
         const left = 1 - kt / life;
-        fleck(st, put, ep, left > 0.55 ? FLAME[3] : left > 0.25 ? FLAME[2] : FLAME[1], i * 2.3, 'embers');
+        // (its streak along the way it is flying, as the eye sees it: so two never meet in a corner)
+        const kb = Math.max(0, kt - 0.04);
+        const was: V3 = [FM_GOUT_SPOT[0] + Math.cos(a0) * (9 + 13 * hash(i, 2, 251)) * smooth(kb / 0.45), FM_GOUT_SPOT[1] + Math.sin(a0) * (9 + 13 * hash(i, 2, 251)) * smooth(kb / 0.45), Math.max(0.6, (5 + 9 * hash(i, 3, 251)) * Math.sin(Math.PI * Math.min(1, kb / life)))];
+        const [ex, ey] = st.at(ep);
+        const [wx0, wy0] = st.at(was);
+        const slant = (ex - wx0) * (ey - wy0) >= 0 ? 1 : -1;
+        if (i % 2 === 1 && left < 0.3) continue;
+        fleck(st, put, ep, left > 0.55 ? FLAME[3] : left > 0.25 ? FLAME[2] : FLAME[1], i * 2.3, 'embers', slant);
       }
       // (its light: swelling over two or three frames, dying away)
       // (from the light it had in flight, as it strikes, up over three or four frames, and dying away)
