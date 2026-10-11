@@ -245,7 +245,7 @@ function ironBall(p: Px, cx: number, cy: number, r: number, ramp: Ramp, seed = 0
 // tombstone, a helm, "TT" and a monogram: this is the one.)
 
 /** What a point of his mark is. */
-type MarkPart = 'iron' | 'rivet' | 'strap' | 'buckle' | 'eye' | 'brow' | 'nose' | 'face' | 'gap' | null;
+type MarkPart = 'iron' | 'rivet' | 'strap' | 'buckle' | 'eye' | 'nose' | 'face' | 'gap' | null;
 /** Where the cage's bands are, up his face (t, -1 at his chin to 1 at his crown): its top up over his cheeks, just under his eyes. */
 const MUZZLE_TOP = 0.06;
 const MUZZLE_MID = -0.42;
@@ -292,12 +292,13 @@ function muzzled(s: number, t: number, px = 0.08, skull = false, straps = true):
     const ch = cageHalf(t);
     const rim = Math.abs(as - ch) < w || Math.abs(t - bottom(s)) < w * 1.4;
     const band = Math.abs(t - MUZZLE_TOP) < w || Math.abs(t - MUZZLE_MID) < w;
-    // (the uprights drawing in toward the chin as the jaw does: a cage round a jaw, not a grille of teeth)
-    const ups = (t > MUZZLE_MID ? [-0.27, 0, 0.27] : [-0.15, 0.15]).map((u) => (u * ch) / CH);
-    const up = ups.some((u) => Math.abs(s - u) < w * 0.9) && t < MUZZLE_TOP && t > bottom(s);
+    // (few thick uprights, two between the top band and the middle one, one under it, each set between
+    // the bands and drawing in toward the chin as the jaw does: a cage round a jaw, never a row of teeth)
+    const ups = (t > MUZZLE_MID ? [-0.25, 0.25] : [0]).map((u) => (u * ch) / CH);
+    const up = ups.some((u) => Math.abs(s - u) < w * 1.5) && t < MUZZLE_TOP && t > bottom(s);
     if (rim || band || up) {
       const atBand = Math.abs(t - MUZZLE_TOP) < w * 1.6 || Math.abs(t - MUZZLE_MID) < w * 1.6;
-      const atUp = ups.some((u) => Math.abs(s - u) < w * 1.2) || Math.abs(as - ch) < w * 1.4;
+      const atUp = ups.some((u) => Math.abs(s - u) < w * 1.6) || Math.abs(as - ch) < w * 1.4;
       return atBand && atUp && !small ? 'rivet' : 'iron';
     }
     return as <= half(t) && t >= -0.94 ? 'gap' : null;
@@ -308,12 +309,10 @@ function muzzled(s: number, t: number, px = 0.08, skull = false, straps = true):
     if (t > 0.01 && t < 0.11 && as < 0.02 + (0.11 - t) * 0.7) return 'nose';
     return 'face';
   }
-  // deep-set eyes, each under its own heavy brow (two brows, never one bar across: the first look found a slit across read as a helm's)
-  for (const e of [-0.3, 0.3]) {
-    if (((s - e) / 0.16) ** 2 + ((t - 0.21) / Math.max(0.065, px * 0.75)) ** 2 <= 1) return 'eye';
-    const bt = 0.29 + 0.1 * ((s - e) / 0.2) * Math.sign(e);
-    if (Math.abs(s - e) < 0.2 && t > bt && t < bt + Math.max(0.07, px)) return 'brow';
-  }
+  // where his eyes are in the dark of it (seen only over his own gate, burning): two small round embers
+  // (the third look found slit eyes, a pale face and its bars a grinning skull's: the face is a dark
+  // hollow now in every use, and nothing of it shows but the iron and the leather)
+  for (const e of [-0.27, 0.27]) if (((s - e) / 0.1) ** 2 + ((t - 0.25) / Math.max(0.085, px * 0.9)) ** 2 <= 1) return 'eye';
   return 'face';
 }
 
@@ -498,11 +497,11 @@ function seamed(p: Px, layer: Px): void {
 }
 
 /**
- * THE BENT BARS: a barred opening in the wall, dark behind, where he came through: one bar still
- * straight, one bowed far over in one smooth curve, as something huge shoved past it; the third
- * snapped off on a slant low over the sill, its socket in the lintel torn empty.
- * Nothing across them. (The first fresh look found bars bent every way reading as letters: no stroke crosses
- * another now.)
+ * THE TORN BARS (the piece is still named "bent bars"): a barred opening in the wall, dark behind, where
+ * he came through: its two outer bars still standing, straight; the two between them torn out, leaving
+ * short jagged stubs down from the lintel and up from the sill and a dark gap between, the mortar round
+ * their sockets broken out and cracked. Nothing curved, nothing across. (The third look found any
+ * curved bar beside straight ones reading as a letter: "IG".)
  */
 function bentBars(p: Px): void {
   const U0 = -10;
@@ -513,30 +512,56 @@ function bentBars(p: Px): void {
   // its frame: a heavy lintel and sill, the jambs, proud of the face
   relief(p, FACE, (u, v) => u >= U0 - 3 && u <= U1 + 3 && v >= V0 - 4 && v <= V1 + 4 && !hole(u, v), U0 - 4, U1 + 4, V0 - 5, V1 + 5);
   for (let v = V0; v <= V1; v++) for (let u = U0; u <= U1; u++) p.set(fx(u), fy(v), v === V0 ? FACE[1] : DEEP);
-  // the sockets in the lintel and the sill, the last torn wide and chipped
-  for (const u of [-8, -3, 2]) p.set(fx(u), fy(V1 + 1), DEEP).set(fx(u + 1), fy(V1 + 1), DEEP);
-  for (const [u, v] of [[6, 45], [7, 45], [6, 46], [7, 46], [8, 46], [6, 15], [7, 15], [7, 14]] as const) p.set(fx(u), fy(v), DEEP);
-  for (const [u, v] of [[5, 47], [9, 47], [8, 13], [5, 14]] as const) p.set(fx(u), fy(v), FACE[4]);
+  // the standing bars' sockets
+  for (const u of [-8, 7]) p.set(fx(u), fy(V1 + 1), DEEP).set(fx(u + 1), fy(V1 + 1), DEEP);
+  // round the torn bars' sockets, in the lintel and the sill: the mortar broken out (dark holes, their far
+  // edges lit and fresh) and cracks running from them
+  const broken: ReadonlyArray<readonly [number, number, 1 | -1]> = [[-3, V1, 1], [2, V1, 1], [-3, V0, -1], [2, V0, -1]];
+  for (const [u0, v0, way] of broken) {
+    for (let dv = 1; dv <= 3; dv++) for (let du = -1; du <= 3; du++) {
+      const r = Math.hypot(du - 1, (dv - 0.5) * 1.2);
+      if (r > 2.4 + 0.8 * hash(u0 + du, dv * way, 391)) continue;
+      p.set(fx(u0 + du), fy(v0 + way * dv), DEEP);
+    }
+    for (const [du, dv] of [[3, 2], [-1, 3], [2, 4]] as const) p.set(fx(u0 + du), fy(v0 + way * dv), FACE[4]);
+    // a crack out from it, along the lintel or down into the sill
+    let cu = u0 + 1;
+    let cv = v0 + way * 3;
+    const side = hash(u0, way, 393) < 0.5 ? -1 : 1;
+    for (let k = 0; k < 5; k++) {
+      if (way > 0) {
+        cu += side;
+        cv = v0 + 2 + (k % 2);
+      } else {
+        cu += hash(u0, k + 9, 392) < 0.5 ? -1 : 1;
+        cv += way;
+      }
+      p.set(fx(cu), fy(cv), DEEP);
+    }
+  }
   const b = flat();
-  /** A bar from the sill to the lintel, bowed `bow` pixels to the left at its middle: one smooth curve. */
-  const bar = (u0: number, bow: number): void => {
-    for (let v = V0; v <= V1; v++) {
-      const t = (v - V0) / (V1 - V0);
-      // (bent most below the middle, where a shoulder shoved: not an even arc)
-      const U = Math.round(u0 - bow * Math.sin(Math.PI * t ** 0.75));
-      b.set(fx(U), fy(v), DIM_IRON[3]).set(fx(U + 1), fy(v), DIM_IRON[2]).set(fx(U + 2), fy(v), DIM_IRON[0]);
+  /** A straight bar from the sill to the lintel: lit on its left, dark on its right. */
+  const bar = (u0: number, from: number, to: number): void => {
+    for (let v = from; v <= to; v++) b.set(fx(u0), fy(v), DIM_IRON[3]).set(fx(u0 + 1), fy(v), DIM_IRON[2]).set(fx(u0 + 2), fy(v), DIM_IRON[0]);
+  };
+  bar(-8, V0, V1);
+  bar(7, V0, V1);
+  // the torn bars' stubs: short and blunt, each torn off square with one corner a pixel short (never
+  // pointed: pointed stubs top and bottom of the dark would read as fangs), its torn end lit
+  const stub = (u0: number, fromTop: boolean, len: number, short: number): void => {
+    for (let c = 0; c < 3; c++) {
+      const L = len - (c === short ? 1 : 0);
+      for (let k = 0; k < L; k++) {
+        const v = fromTop ? V1 - k : V0 + k;
+        const end = k === L - 1 && c !== 2;
+        b.set(fx(u0 + c), fy(v), end ? DIM_IRON[4] : [DIM_IRON[3], DIM_IRON[2], DIM_IRON[0]][c]);
+      }
     }
   };
-  // (the second fresh look found the three all bowed the same way, like ")))": now one stands straight,
-  // one is bowed hard, and the third is snapped)
-  bar(-8, 0);
-  bar(1, 5);
-  // the third, snapped: a stub up from the sill, straight, broken off on a slant; its top half gone, its socket in the lintel torn empty
-  for (let v = V0; v <= V0 + 9; v++) {
-    if (v <= V0 + 9) b.set(fx(6), fy(v), DIM_IRON[3]);
-    if (v <= V0 + 8) b.set(fx(7), fy(v), DIM_IRON[2]);
-    if (v <= V0 + 7) b.set(fx(8), fy(v), DIM_IRON[0]);
-  }
+  stub(-3, true, 3, 2);
+  stub(-3, false, 4, 0);
+  stub(2, true, 4, 0);
+  stub(2, false, 3, 2);
   seamed(p, b);
 }
 
@@ -631,22 +656,23 @@ const strapPart = (c: MarkPart): boolean => c === 'strap' || c === 'buckle';
 const HAND_GREY: Ramp = ['#1e1c24', '#3c3944', '#5e5a68', '#827d8c', '#a49eae'];
 /** Old leather, dark and grey with age: its shade, its body, its lit edge. */
 const STRAP_LEATHER = ['#1a1416', '#332826', '#4a3a34'] as const;
-/** The pale stone of a head carved in relief, standing out of the wall into the light: its shade, its body, its lit edge. */
-const RELIEF = ['#2a2834', '#3f3c4c', '#575366'] as const;
+/** The lit edge of a strap on his mark, so that it shows against the dark of the hollow. */
+const STRAP_LIT = '#5e4a40';
 /** The dark of a field sunk into the stone. */
 const SUNK = '#14123a';
 /**
- * HIS MUZZLED FACE CUT IN THE WALL, as his mark: a field sunk in the stone, and out of it his long
- * head standing pale in relief, lit along its upper left and dark along its lower right, its shadow
- * on the field; the muzzle-cage over its jaw in dark iron, the face in deep shadow between its bars;
- * his eyes deep under his brow.
+ * HIS MUZZLE-CAGE CUT IN THE WALL, as his mark: a field sunk in the stone, and in it the hollow of his
+ * long head sunk deeper, all in shadow (its edge away from the light lit), so that nothing of a face
+ * shows; standing out of the dark only the iron cage over where his jaw is (its bands, its few thick
+ * uprights, its rivets), lit along its upper left, and the leather straps round his head that hold
+ * it, with their buckles. (The third look found a pale face, slit eyes and its bars a grinning skull's.)
  */
 function cageCarved(p: Px): void {
   const S = 12;
   const T = 17;
   const cv = 31;
   const at = (u: number, v: number): MarkPart => muzzled((u + 0.5) / S, (v - cv) / T, 1 / S);
-  const inIt = (u: number, v: number): boolean => at(u, v) !== null;
+  const inHead = (u: number, v: number): boolean => muzzled((u + 0.5) / S, (v - cv) / T, 1 / S, false, false) !== null;
   // the field: a long round-topped panel sunk in the stone, its rim in shadow toward the light and lit away from it
   const field = (u: number, v: number): boolean => {
     const x = (u + 0.5) / (S * 0.98);
@@ -661,29 +687,20 @@ function cageCarved(p: Px): void {
       p.set(fx(u), fy(v), hiRim ? DEEP : loRim ? FACE[3] : SUNK);
     }
   }
-  // the head's shadow on the field, down and to the right of it
-  for (let v = cv - T - 3; v <= cv + T; v++) for (let u = -S - 2; u <= S + 2; u++) if (field(u, v) && !inIt(u, v) && (inIt(u - 1, v + 1) || inIt(u - 2, v + 1))) p.set(fx(u), fy(v), DEEP);
   for (let v = cv - T - 2; v <= cv + T + 1; v++) {
     for (let u = -S - 2; u <= S + 1; u++) {
       const c = at(u, v);
       if (!c) continue;
       if (ironPart(c)) {
-        // (dark iron over the grey skin: the second fresh look found pale bars over dark gaps reading as teeth)
         const hi = !ironPart(at(u - 1, v)) || !ironPart(at(u, v + 1));
-        p.set(fx(u), fy(v), c === 'rivet' ? RIVET_LIT : hi ? DIM_IRON[2] : DIM_IRON[0]);
-        continue;
-      }
-      if (c === 'buckle') p.set(fx(u), fy(v), RIVET_LIT);
-      else if (c === 'strap') p.set(fx(u), fy(v), !strapPart(at(u, v + 1)) ? STRAP_LEATHER[2] : !strapPart(at(u, v - 1)) ? STRAP_LEATHER[0] : STRAP_LEATHER[1]);
-      else if (c === 'eye' || c === 'nose') p.set(fx(u), fy(v), DEEP);
-      else if (c === 'gap') p.set(fx(u), fy(v), ironPart(at(u - 1, v + 1)) ? RELIEF[0] : RELIEF[1]);
-      else if (c === 'brow') p.set(fx(u), fy(v), RELIEF[0]);
+        const lo = !ironPart(at(u + 1, v)) || !ironPart(at(u, v - 1));
+        p.set(fx(u), fy(v), c === 'rivet' ? RIVET_LIT : hi ? DIM_IRON[3] : lo ? DIM_IRON[0] : DIM_IRON[2]);
+      } else if (c === 'buckle') p.set(fx(u), fy(v), RIVET_LIT);
+      else if (c === 'strap') p.set(fx(u), fy(v), !strapPart(at(u, v + 1)) ? STRAP_LIT : !strapPart(at(u, v - 1)) ? STRAP_LEATHER[1] : STRAP_LEATHER[2]);
       else {
-        const edgeHi = !inIt(u - 1, v) || !inIt(u, v + 1);
-        const edgeLo = !inIt(u + 1, v) || !inIt(u, v - 1);
-        // (a hollow under each cheekbone, toward the jaw: a starved face)
-        const hollow = Math.abs(Math.abs((u + 0.5) / S) - 0.42) < 0.12 && (v - cv) / T > 0.02 && (v - cv) / T < 0.12;
-        p.set(fx(u), fy(v), edgeHi ? RELIEF[2] : edgeLo || hollow || at(u, v + 1) === 'brow' ? RELIEF[0] : RELIEF[1]);
+        // the hollow of his head, in shadow; its edge away from the light lit, as a hollow's is
+        const lit_ = !inHead(u + 1, v) || !inHead(u, v - 1);
+        p.set(fx(u), fy(v), lit_ ? FACE[1] : DEEP);
       }
     }
   }
@@ -1324,21 +1341,22 @@ function smashedFlags(u: number, v: number): string | null {
   return side > 0.4 ? SLAB[3] : side < -0.4 ? SLAB[0] : SLAB[1 + (k % 2)];
 }
 
-/** HIS MUZZLE IN THE FLOOR, as his mark (as floor 2's \u201cthe hood in the floor\u201d): a dark slab let into the flags, his head laid big in it in grey stone, upright to the eye, the muzzle-cage over its jaw in dark iron, its straps round his head, his eyes dark under his brow. */
+/** HIS MUZZLE IN THE FLOOR, as his mark (as floor 2's \u201cthe hood in the floor\u201d): a dark slab let into the flags, the hollow of his head sunk in it in shadow, upright to the eye, and over it only the iron cage (bands, few thick uprights, rivets) and the leather straps round his head with their buckles. */
 function cageInFloor(u: number, v: number): string | null {
   const [x, y] = mid(u, v);
   /** His mark at this point, moved (dx, dy) picture pixels. */
   const at = (dx: number, dy: number): MarkPart => muzzled((x - y + dx / 32) / 0.42, -(x + y - 0.02 + dy / 16) / 0.74, 0.1, false, true);
   const c = at(0, 0);
-  if (ironPart(c)) return c === 'rivet' ? RIVET_LIT : !ironPart(at(-1, -1)) ? DIM_IRON[2] : DIM_IRON[0];
+  if (ironPart(c)) return c === 'rivet' ? RIVET_LIT : !ironPart(at(-1, -1)) ? DIM_IRON[3] : !ironPart(at(1, 1)) ? DIM_IRON[0] : DIM_IRON[2];
   if (c === 'buckle') return RIVET_LIT;
-  if (c === 'strap') return !strapPart(at(-1, -1)) ? STRAP_LEATHER[2] : !strapPart(at(1, 1)) ? STRAP_LEATHER[0] : STRAP_LEATHER[1];
-  if (c === 'eye' || c === 'nose') return DEEP;
-  if (c === 'gap') return ironPart(at(1, 1)) ? RELIEF[0] : RELIEF[1];
-  if (c === 'brow') return RELIEF[0];
-  if (c === 'face') return at(-1, -1) === null ? RELIEF[2] : at(1, 1) === null ? RELIEF[0] : RELIEF[1];
-  // the slab round it, dark, its shadow under the head
-  return at(-1, -2) !== null ? DEEP : SLAB[0];
+  if (c === 'strap') return !strapPart(at(-1, -1)) ? STRAP_LIT : !strapPart(at(1, 1)) ? STRAP_LEATHER[1] : STRAP_LEATHER[2];
+  if (c !== null) {
+    // the hollow of his head, in shadow; its edge away from the light lit
+    const inHead = (dx: number, dy: number): boolean => muzzled((x - y + dx / 32) / 0.42, -(x + y - 0.02 + dy / 16) / 0.74, 0.1, false, false) !== null;
+    return !inHead(1, 1) ? SLAB[1] : DEEP;
+  }
+  // the slab round it, dark
+  return SLAB[0];
 }
 
 /** A RING IN THE FLOOR: a great iron ring lying flat on its staple, let into a slab: thick, its top lit, the slab dark through its middle. */
@@ -2334,17 +2352,16 @@ const cageMark: Mark = (x, y, st, lit_, lightLow) => {
   // (the light's side: up, and along the plane toward its low end or its high one)
   const toward = lightLow ? -1 : 1;
   if (c === 'eye') {
-    const core = Math.abs((y + 0.4) / T - 0.2) < 0.05 && Math.abs(Math.abs(x / S) - 0.3) < 0.09;
-    return lit_ ? (core ? FLAME[4] : FLAME[3]) : core ? FLAME[2] : FLAME[1];
+    // his eyes, two pink embers in the dark of the hollow (only here, over his own gate)
+    const core = Math.abs((y + 0.4) / T - 0.25) < 0.05 && Math.abs(Math.abs(x / S) - 0.27) < 0.05;
+    return core ? FLAME[2] : FLAME[1];
   }
-  // (dark iron and straps over the face, the face between the bars in shade: never pale bars over dark gaps, which read as teeth)
-  if (ironPart(c) || c === 'strap') return ironPart(at(toward * 0.74, 0.74)) || at(toward * 0.74, 0.74) === 'strap' ? st.joint : st.dark;
+  // the iron cage standing out of the dark hollow of his head: lit on the light's side; the leather straps a step under it; the buckles lit
+  if (ironPart(c)) return ironPart(at(toward * 0.74, 0.74)) ? st.body : st.light;
+  if (c === 'strap') return strapPart(at(toward * 0.74, 0.74)) ? st.odd : st.body;
   if (c === 'buckle') return st.light;
-  if (c === 'gap') return st.dark;
-  if (c === 'brow') return st.dark;
-  if (c === 'face' || c === 'nose') return at(toward * 0.74, 0.74) === null ? st.light : at(-toward * 0.74, -0.74) === null ? st.dark : st.odd;
-  // the field: sunk and dark, the shadow of the head falling on it
-  if (at(-toward * 0.9, -0.9) !== null) return st.joint;
+  if (c !== null) return st.joint;
+  // the field: sunk and dark
   return st.dark;
 };
 
