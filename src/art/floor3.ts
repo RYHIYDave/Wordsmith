@@ -245,55 +245,73 @@ function ironBall(p: Px, cx: number, cy: number, r: number, ramp: Ramp, seed = 0
 // tombstone, a helm, "TT" and a monogram: this is the one.)
 
 /** What a point of his mark is. */
-type MarkPart = 'iron' | 'rivet' | 'strap' | 'eye' | 'brow' | 'nose' | 'face' | 'gap' | null;
-/** Where the cage's bands are, up his face (t, -1 at his chin to 1 at his crown). */
-const MUZZLE_TOP = -0.04;
-const MUZZLE_MID = -0.46;
+type MarkPart = 'iron' | 'rivet' | 'strap' | 'buckle' | 'eye' | 'brow' | 'nose' | 'face' | 'gap' | null;
+/** Where the cage's bands are, up his face (t, -1 at his chin to 1 at his crown): its top up over his cheeks, just under his eyes. */
+const MUZZLE_TOP = 0.06;
+const MUZZLE_MID = -0.42;
 /**
  * HIS MUZZLED FACE, flat, as a mark: a long head, round at the crown, broad at the cheekbones, its
- * jaw narrowing; deep-set eyes under a heavy brow; and the cage over his jaw. (s, t) across and up,
- * each -1 to 1; `px` how big a picture pixel is in that measure (so that no band is thinner than a
- * pixel, and the rivets are left off when it is small). `skull`: a skull's round sockets and the
- * hole of its nose, for a skull in one. `straps`: its straps (left off where it is small and flat).
+ * jaw narrowing; deep-set eyes under a heavy brow; and the cage over his jaw, up over his cheeks,
+ * narrower than his head, held on by leather straps round his head: one each side across the cheek
+ * from the cage's top to past his head's edge, buckled, and one each side up over the temple from the
+ * cage's top corner. (s, t) across and up, each -1 to 1; `px` how big a picture pixel is in that
+ * measure (so that no band is thinner than a pixel, and the rivets are left off when it is small).
+ * `skull`: a skull's round sockets and the hole of its nose, for a skull in one. `straps`: its straps.
+ * (The second fresh look found it a grinning skull with square teeth: a pale dome, slit eyes, an
+ * upright grille. Its users now paint the face grey, the iron dark over the skin, and the straps
+ * that say "muzzle".)
  */
 function muzzled(s: number, t: number, px = 0.08, skull = false, straps = true): MarkPart {
   const half = (tt: number): number => (tt > 0.12 ? 0.68 * Math.sqrt(Math.max(0, 1 - ((tt - 0.12) / 0.88) ** 2)) : tt > -0.3 ? 0.68 : 0.68 - 0.3 * ((-0.3 - tt) / 0.62) ** 1.5);
   const w = Math.max(0.055, px * 0.6);
   const bottom = (ss: number): number => -1 + 0.4 * (ss / 0.62) ** 2;
-  const cageHalf = (tt: number): number => half(Math.max(-0.92, Math.min(MUZZLE_TOP, tt))) + 0.07;
+  const cageHalf = (tt: number): number => half(Math.max(-0.92, Math.min(MUZZLE_TOP, tt))) - 0.16;
+  const CH = cageHalf(MUZZLE_TOP);
   const small = px >= 0.07;
-  // the straps: from the cage's top corners up and back behind the ears
-  if (straps) for (const sd of [-1, 1]) {
-    const a: V2 = [sd * (cageHalf(MUZZLE_TOP) - 0.04), MUZZLE_TOP + 0.02];
-    const b: V2 = [sd * 0.8, 0.3];
-    const dx = b[0] - a[0];
-    const dy = b[1] - a[1];
-    const k = Math.max(0, Math.min(1, ((s - a[0]) * dx + (t - a[1]) * dy) / (dx * dx + dy * dy)));
-    if (k > 0.05 && Math.hypot(s - a[0] - dx * k, t - a[1] - dy * k) < w * 1.2) return Math.abs(k - 0.55) < 0.12 && !small ? 'rivet' : 'strap';
+  const as = Math.abs(s);
+  if (straps) {
+    // round the head: across the cheek from the cage's side, a little under its top, to past the head's edge; a buckle on the cheek
+    const ts = MUZZLE_TOP - 0.06;
+    const sw = Math.max(w * 1.3, px * 0.9);
+    if (as >= CH && as <= half(t) + 0.1 && Math.abs(t - ts) < sw) {
+      const bk = CH + 0.1;
+      if (Math.abs(as - bk) < Math.max(0.045, px * 0.8)) return 'buckle';
+      return 'strap';
+    }
+    // up over the temple from the cage's top corner, past the head's edge
+    for (const sd of [-1, 1]) {
+      const a: V2 = [sd * (CH - 0.02), MUZZLE_TOP];
+      const b: V2 = [sd * 0.6, 0.46];
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
+      const k = Math.max(0, Math.min(1, ((s - a[0]) * dx + (t - a[1]) * dy) / (dx * dx + dy * dy)));
+      if (k > 0.04 && Math.hypot(s - a[0] - dx * k, t - a[1] - dy * k) < sw * 0.9) return 'strap';
+    }
   }
-  if (t <= MUZZLE_TOP + w && t >= bottom(s) - w * 1.4 && Math.abs(s) <= cageHalf(t) + w) {
+  if (t <= MUZZLE_TOP + w && t >= bottom(s) - w * 1.4 && as <= cageHalf(t) + w) {
     const ch = cageHalf(t);
-    const rim = Math.abs(Math.abs(s) - ch) < w || Math.abs(t - bottom(s)) < w * 1.4;
+    const rim = Math.abs(as - ch) < w || Math.abs(t - bottom(s)) < w * 1.4;
     const band = Math.abs(t - MUZZLE_TOP) < w || Math.abs(t - MUZZLE_MID) < w;
-    const ups = t > MUZZLE_MID ? [-0.3, 0, 0.3] : [-0.16, 0.16];
+    // (the uprights drawing in toward the chin as the jaw does: a cage round a jaw, not a grille of teeth)
+    const ups = (t > MUZZLE_MID ? [-0.27, 0, 0.27] : [-0.15, 0.15]).map((u) => (u * ch) / CH);
     const up = ups.some((u) => Math.abs(s - u) < w * 0.9) && t < MUZZLE_TOP && t > bottom(s);
     if (rim || band || up) {
       const atBand = Math.abs(t - MUZZLE_TOP) < w * 1.6 || Math.abs(t - MUZZLE_MID) < w * 1.6;
-      const atUp = ups.some((u) => Math.abs(s - u) < w * 1.2) || Math.abs(Math.abs(s) - ch) < w * 1.4;
+      const atUp = ups.some((u) => Math.abs(s - u) < w * 1.2) || Math.abs(as - ch) < w * 1.4;
       return atBand && atUp && !small ? 'rivet' : 'iron';
     }
-    return Math.abs(s) <= half(t) && t >= -0.94 ? 'gap' : null;
+    return as <= half(t) && t >= -0.94 ? 'gap' : null;
   }
-  if (t < -1 || t > 1 || Math.abs(s) > half(t)) return null;
+  if (t < -1 || t > 1 || as > half(t)) return null;
   if (skull) {
     for (const e of [-0.3, 0.3]) if (((s - e) / 0.19) ** 2 + ((t - 0.2) / 0.17) ** 2 <= 1) return 'eye';
-    if (t > 0.01 && t < 0.11 && Math.abs(s) < 0.02 + (0.11 - t) * 0.7) return 'nose';
+    if (t > 0.01 && t < 0.11 && as < 0.02 + (0.11 - t) * 0.7) return 'nose';
     return 'face';
   }
   // deep-set eyes, each under its own heavy brow (two brows, never one bar across: the first look found a slit across read as a helm's)
   for (const e of [-0.3, 0.3]) {
-    if (((s - e) / 0.16) ** 2 + ((t - 0.2) / Math.max(0.065, px * 0.75)) ** 2 <= 1) return 'eye';
-    const bt = 0.28 + 0.1 * ((s - e) / 0.2) * Math.sign(e);
+    if (((s - e) / 0.16) ** 2 + ((t - 0.21) / Math.max(0.065, px * 0.75)) ** 2 <= 1) return 'eye';
+    const bt = 0.29 + 0.1 * ((s - e) / 0.2) * Math.sign(e);
     if (Math.abs(s - e) < 0.2 && t > bt && t < bt + Math.max(0.07, px)) return 'brow';
   }
   return 'face';
@@ -309,8 +327,9 @@ function muzzleRods(R: number, burst = false): Rod[] {
   const A = R * 0.86;
   const at = (deg: number, up: number, k: number): V3 => [Math.cos(deg * D2R) * F * k, Math.sin(deg * D2R) * A * k, up];
   const rods: Rod[] = [];
-  const band = 0.075 * R;
-  const thin = 0.06 * R;
+  // (thin rods with wide gaps between: the second fresh look found thick ones reading as a solid plate with holes, a catcher's mask)
+  const band = 0.05 * R;
+  const thin = 0.038 * R;
   const LEVELS: ReadonlyArray<readonly [number, number]> = [[0, 1], [-0.5 * R, 0.9], [-0.98 * R, 0.56]];
   const SIDE = 104;
   // the three bands, round the front of the jaw from one side to the other (a gap in the middle one, burst)
@@ -331,10 +350,22 @@ function muzzleRods(R: number, burst = false): Rod[] {
   // the cup under the chin: two rods from the chin's band down and in to a boss under it
   const boss: V3 = [F * 0.2, 0, -1.14 * R];
   for (const d of [-64, 64]) rods.push({ a: at(d, LEVELS[2][0], LEVELS[2][1]), b: boss, r: thin });
-  // the straps, back from its top corners toward where his ears were: torn short
+  return rods;
+}
+/** Its leather straps, back from its top corners round where his head was (torn, `burst`: one long and trailing, one short), and up from them over his temples. */
+function muzzleStraps(R: number, burst = false): Rod[] {
+  const F = R;
+  const A = R * 0.86;
+  const at = (deg: number, up: number, k: number): V3 => [Math.cos(deg * D2R) * F * k, Math.sin(deg * D2R) * A * k, up];
+  const rods: Rod[] = [];
   for (const sd of [-1, 1]) {
-    const a = at(sd * SIDE, 0, 1);
-    rods.push({ a, b: add3(a, [-R * (burst ? 0.4 : 0.9), sd * R * 0.06, burst ? -R * 0.5 : R * 0.28]), r: band });
+    const a = at(sd * 104, -0.12 * R, 1);
+    const long = !burst || sd < 0;
+    const pts: V3[] = [a, add3(a, [-R * 0.35, sd * R * 0.12, -R * 0.05]), add3(a, [-R * 0.7, sd * R * 0.1, long ? -R * 0.55 : -R * 0.15]), add3(a, [-R * (long ? 0.9 : 0.75), sd * R * 0.05, long ? -R * 1.0 : -R * 0.25])];
+    for (let i = 1; i < (long ? pts.length : 3); i++) rods.push({ a: pts[i - 1], b: pts[i], r: 0.07 * R });
+    // up over the temple, from the cage's top corner: torn short
+    const c = at(sd * 70, 0, 1);
+    rods.push({ a: c, b: add3(c, [-R * 0.2, sd * R * 0.05, R * 0.45]), r: 0.06 * R });
   }
   return rods;
 }
@@ -467,9 +498,9 @@ function seamed(p: Px, layer: Px): void {
 }
 
 /**
- * THE BENT BARS: a barred opening in the wall, dark behind, where he came through: three bars bowed
- * far over the same way, each one smooth curve, as something huge shoved between them; where the
- * fourth was, a stub snapped off at the sill, its end jagged, its socket in the lintel torn empty.
+ * THE BENT BARS: a barred opening in the wall, dark behind, where he came through: one bar still
+ * straight, one bowed far over in one smooth curve, as something huge shoved past it; the third
+ * snapped off on a slant low over the sill, its socket in the lintel torn empty.
  * Nothing across them. (The first fresh look found bars bent every way reading as letters: no stroke crosses
  * another now.)
  */
@@ -496,12 +527,16 @@ function bentBars(p: Px): void {
       b.set(fx(U), fy(v), DIM_IRON[3]).set(fx(U + 1), fy(v), DIM_IRON[2]).set(fx(U + 2), fy(v), DIM_IRON[0]);
     }
   };
-  bar(-8, 1.6);
-  bar(-3, 2.6);
-  bar(2, 3.4);
-  // the fourth, snapped: a stub up from the sill, straight, its end jagged; its socket in the lintel torn empty
-  for (let v = V0; v <= V0 + 8; v++) b.set(fx(6), fy(v), DIM_IRON[3]).set(fx(7), fy(v), DIM_IRON[2]).set(fx(8), fy(v), DIM_IRON[0]);
-  b.set(fx(6), fy(V0 + 9), DIM_IRON[3]).set(fx(8), fy(V0 + 9), DIM_IRON[0]).set(fx(8), fy(V0 + 10), DIM_IRON[2]);
+  // (the second fresh look found the three all bowed the same way, like ")))": now one stands straight,
+  // one is bowed hard, and the third is snapped)
+  bar(-8, 0);
+  bar(1, 5);
+  // the third, snapped: a stub up from the sill, straight, broken off on a slant; its top half gone, its socket in the lintel torn empty
+  for (let v = V0; v <= V0 + 9; v++) {
+    if (v <= V0 + 9) b.set(fx(6), fy(v), DIM_IRON[3]);
+    if (v <= V0 + 8) b.set(fx(7), fy(v), DIM_IRON[2]);
+    if (v <= V0 + 7) b.set(fx(8), fy(v), DIM_IRON[0]);
+  }
   seamed(p, b);
 }
 
@@ -553,10 +588,21 @@ function bowlSide(b: Px, u0: number, v0: number, R: number): void {
     const half = dv === 0 ? R * 0.45 : R * Math.sqrt(Math.max(0, 1 - ((H - dv) / (H + 0.4)) ** 2));
     for (let u = Math.round(u0 - half); u <= Math.round(u0 + half); u++) b.set(fx(u), fy(v0 + dv), dv === 0 ? BOWL_WOOD[1] : u < u0 - R * 0.35 ? BOWL_WOOD[3] : u > u0 + R * 0.45 ? BOWL_WOOD[1] : BOWL_WOOD[2]);
   }
-  // the near rim, lit; the dark inside; the far rim
-  for (let u = Math.round(u0 - R); u <= Math.round(u0 + R); u++) b.set(fx(u), fy(v0 + H + 1), BOWL_WOOD[4]);
-  for (let u = Math.round(u0 - R + 1); u <= Math.round(u0 + R - 1); u++) b.set(fx(u), fy(v0 + H + 2), '#120d1a');
-  for (let u = Math.round(u0 - R + 2); u <= Math.round(u0 + R - 2); u++) b.set(fx(u), fy(v0 + H + 3), BOWL_WOOD[2]);
+  // its mouth seen from a little above: an oval rim, lit along its near edge, round the dark inside
+  // (the second fresh look found the old flat rim reading as loaves)
+  const ry = Math.max(2, R * 0.42);
+  const cv = v0 + H + 1;
+  for (let dv = -Math.ceil(ry); dv <= Math.ceil(ry); dv++) {
+    for (let u = Math.round(u0 - R); u <= Math.round(u0 + R); u++) {
+      const ox = (u - u0) / R;
+      const oy = dv / ry;
+      if (ox * ox + oy * oy > 1.05) continue;
+      const ix = (u - u0) / (R - 1.3);
+      const iy = (dv - 0.3) / (ry - 0.9);
+      const inside = ix * ix + iy * iy <= 1;
+      b.set(fx(u), fy(cv + dv), inside ? (iy < -0.5 ? '#1e1520' : '#120d1a') : dv < 0 ? BOWL_WOOD[4] : BOWL_WOOD[2]);
+    }
+  }
 }
 
 /**
@@ -577,10 +623,16 @@ function feedingSlot(p: Px): void {
   seamed(p, w);
 }
 
-/** Is a part of his mark iron (the cage, its rivets, its straps)? */
-const ironPart = (c: MarkPart): boolean => c === 'iron' || c === 'rivet' || c === 'strap';
+/** Is a part of his mark iron (the cage and its rivets)? */
+const ironPart = (c: MarkPart): boolean => c === 'iron' || c === 'rivet';
+/** Is a part of his mark the leather that holds it on (a strap, its buckle)? */
+const strapPart = (c: MarkPart): boolean => c === 'strap' || c === 'buckle';
+/** His hands' skin: pale grey, starved (the second fresh look could not see them as hands). */
+const HAND_GREY: Ramp = ['#1e1c24', '#3c3944', '#5e5a68', '#827d8c', '#a49eae'];
+/** Old leather, dark and grey with age: its shade, its body, its lit edge. */
+const STRAP_LEATHER = ['#1a1416', '#332826', '#4a3a34'] as const;
 /** The pale stone of a head carved in relief, standing out of the wall into the light: its shade, its body, its lit edge. */
-const RELIEF = ['#2b2763', '#433d8c', '#5a54a6'] as const;
+const RELIEF = ['#2a2834', '#3f3c4c', '#575366'] as const;
 /** The dark of a field sunk into the stone. */
 const SUNK = '#14123a';
 /**
@@ -616,13 +668,15 @@ function cageCarved(p: Px): void {
       const c = at(u, v);
       if (!c) continue;
       if (ironPart(c)) {
+        // (dark iron over the grey skin: the second fresh look found pale bars over dark gaps reading as teeth)
         const hi = !ironPart(at(u - 1, v)) || !ironPart(at(u, v + 1));
-        const lo = !ironPart(at(u + 1, v)) || !ironPart(at(u, v - 1));
-        p.set(fx(u), fy(v), c === 'rivet' ? RIVET_LIT : lo ? DIM_IRON[0] : hi ? RIVET_LIT : DIM_IRON[3]);
+        p.set(fx(u), fy(v), c === 'rivet' ? RIVET_LIT : hi ? DIM_IRON[2] : DIM_IRON[0]);
         continue;
       }
-      if (c === 'eye' || c === 'nose') p.set(fx(u), fy(v), DEEP);
-      else if (c === 'gap') p.set(fx(u), fy(v), at(u - 1, v + 1) === 'gap' ? GAP_FACE : BEHIND_BARS);
+      if (c === 'buckle') p.set(fx(u), fy(v), RIVET_LIT);
+      else if (c === 'strap') p.set(fx(u), fy(v), !strapPart(at(u, v + 1)) ? STRAP_LEATHER[2] : !strapPart(at(u, v - 1)) ? STRAP_LEATHER[0] : STRAP_LEATHER[1]);
+      else if (c === 'eye' || c === 'nose') p.set(fx(u), fy(v), DEEP);
+      else if (c === 'gap') p.set(fx(u), fy(v), ironPart(at(u - 1, v + 1)) ? RELIEF[0] : RELIEF[1]);
       else if (c === 'brow') p.set(fx(u), fy(v), RELIEF[0]);
       else {
         const edgeHi = !inIt(u - 1, v) || !inIt(u, v + 1);
@@ -636,9 +690,6 @@ function cageCarved(p: Px): void {
 }
 /** A rivet's lit head on iron set in stone. */
 const RIVET_LIT = '#57538e';
-/** The dark behind a cage's bars: the face in the cage's shadow, and where a little light gets in. */
-const BEHIND_BARS = '#0e0c1e';
-const GAP_FACE = '#231f52';
 
 /**
  * THE BALL'S CRATER: where his ball was swung into the wall: a shallow dish of stone smashed in, its
@@ -838,7 +889,9 @@ function chainPort(p: Px): void {
       p.set(fx(u), fy(v), v === 15 ? RIVET_LIT : u === -9 ? DIM_IRON[3] : v === 14 ? DIM_IRON[3] : u === 12 ? DIM_IRON[0] : DIM_IRON[2]);
     }
   }
-  for (const [u, v] of [[-8, 13], [11, 13], [-8, 3], [11, 3], [1, 13]] as const) p.set(fx(u), fy(v), DIM_IRON[4]).set(fx(u + 1), fy(v), DIM_IRON[0]);
+  // its arch's edge lit, over the mouth and down its left, so the dark reads as a hole in the iron
+  for (let v = 0; v <= 13; v++) for (let u = -7; u <= 10; u++) if (!mouth(u, v) && (mouth(u, v - 1) || mouth(u + 1, v))) p.set(fx(u), fy(v), RIVET_LIT);
+  for (const [u, v] of [[-8, 13], [11, 13], [-8, 3], [11, 3], [1, 14]] as const) p.set(fx(u), fy(v), DIM_IRON[4]).set(fx(u + 1), fy(v), DIM_IRON[0]);
   // the dark in it, its floor worn bright at the lip
   for (let v = 0; v <= 12; v++) for (let u = -6; u <= 9; u++) if (mouth(u, v)) p.set(fx(u), fy(v), v === 0 && Math.abs(u - 1) < 5 ? FACE[1] : DEEP);
   // the chain: along the foot of the wall from the left and into the mouth, dimming as it goes into the dark
@@ -1124,15 +1177,17 @@ function spareCage(p: Px): void {
   for (let v = cv - T - 2; v <= HOOK[1]; v++) {
     for (let u = -S - 2; u <= S + 2; u++) {
       if (strapAt(u, v) && !inIt(u, v)) {
-        c.set(fx(u), fy(v), strapPx.has(`${u},${v}`) ? IRONS[3] : IRONS[1]);
+        c.set(fx(u), fy(v), strapPx.has(`${u},${v}`) ? STRAP_LEATHER[2] : STRAP_LEATHER[0]);
         continue;
       }
       const k = at(u, v);
       if (!k) continue;
       if (ironPart(k)) {
-        const lo = !ironPart(at(u + 1, v)) || !ironPart(at(u, v - 1));
-        c.set(fx(u), fy(v), k === 'rivet' ? RIVET_LIT : lo ? IRONS[0] : IRONS[2]);
-      } else if (k === 'eye' || k === 'nose') c.set(fx(u), fy(v), DEEP);
+        const hi = !ironPart(at(u - 1, v)) || !ironPart(at(u, v + 1));
+        c.set(fx(u), fy(v), k === 'rivet' ? RIVET_LIT : hi ? IRONS[1] : IRONS[0]);
+      } else if (k === 'buckle') c.set(fx(u), fy(v), RIVET_LIT);
+      else if (k === 'strap') c.set(fx(u), fy(v), !strapPart(at(u, v + 1)) ? STRAP_LEATHER[2] : STRAP_LEATHER[1]);
+      else if (k === 'eye' || k === 'nose') c.set(fx(u), fy(v), DEEP);
       else if (k === 'gap') c.set(fx(u), fy(v), SKULL_BONE[1]);
       else {
         const edgeHi = !inIt(u - 1, v) || !inIt(u, v + 1);
@@ -1165,26 +1220,39 @@ const inTile = (x: number, y: number): boolean => {
   return x >= 32 - hw && x < 32 + hw;
 };
 
-/** OLD STRAW strewn on the flags: grey strands lying every way in ragged clumps, thick in their middles, a few stray. */
+/**
+ * A SOFT TUFT OF OLD STRAW at (cx, cy) on a picture, rx across and ry down: a low mat with a ragged,
+ * lumpy edge, mottled in soft patches (no single stalks: the second fresh look found crisp separate
+ * strokes reading as scratched letters), its top lit, its foot in shade. Only where `ok` lets it.
+ */
+function strawTuft(p: Px, cx: number, cy: number, rx: number, ry: number, seed: number, ok: (x: number, y: number) => boolean = () => true): void {
+  for (let y = Math.floor(cy - ry - 2); y <= Math.ceil(cy + ry + 2); y++) {
+    for (let x = Math.floor(cx - rx - 2); x <= Math.ceil(cx + rx + 2); x++) {
+      const dx = (x + 0.5 - cx) / rx;
+      const dy = (y + 0.5 - cy) / ry;
+      const a = Math.atan2(dy, dx);
+      const edge = 1 + 0.18 * Math.sin(4 * a + seed) + 0.1 * Math.sin(7 * a + seed * 2.3);
+      const d = Math.hypot(dx, dy) / edge;
+      if (d > 1 || !ok(x, y)) continue;
+      // soft patches, a few pixels each, lying along
+      const patch = hash(Math.floor((x + seed) / 3), Math.floor(y / 2), 353 + seed);
+      let tone = patch < 0.3 ? 3 : patch < 0.85 ? 2 : 1;
+      if (dy < -0.45 && d > 0.55) tone = Math.max(tone, 3);
+      if (dy > 0.4 && d > 0.6) tone = 1;
+      if (d > 0.88 && dy > 0) tone = 0;
+      if (dx < -0.4 && dy < -0.2 && patch < 0.5) tone = 4;
+      p.set(x, y, STRAW[Math.min(4, tone + 0)]);
+    }
+  }
+}
+
+/** OLD STRAW strewn on the flags: soft grey tufts and a trodden mat, lumpy edged, mottled. */
 function strawTile(): Sprite {
   const p = tileOf((u, v) => around(u, v));
-  const clumps: ReadonlyArray<readonly [number, number, number, number]> = [[0.42, 0.45, 0.26, 70], [0.66, 0.62, 0.16, 34], [0.3, 0.72, 0.13, 22]];
-  let i = 0;
-  for (const [cu, cv, R, n] of clumps) {
-    for (let k = 0; k < n; k++, i++) {
-      const r = Math.sqrt(hash(i, 1, 350)) * R;
-      const a = hash(i, 2, 350) * Math.PI * 2;
-      const [x, y] = xyOf(cu + Math.cos(a) * r, cv + Math.sin(a) * r);
-      const ang = hash(i, 3, 350) * Math.PI;
-      const L = 3 + hash(i, 4, 350) * 6;
-      const tone = hash(i, 5, 350) < 0.15 ? STRAW[4] : hash(i, 6, 350) < 0.55 ? STRAW[3] : STRAW[2];
-      for (let s = -L / 2; s <= L / 2; s += 0.5) {
-        const X = Math.round(x + Math.cos(ang) * s);
-        const Y = Math.round(y + Math.sin(ang) * s * 0.5);
-        if (inTile(X, Y)) p.set(X, Y, tone);
-        if (inTile(X, Y + 1) && hash(X, Y, 351) < 0.3) p.set(X, Y + 1, STRAW[1]);
-      }
-    }
+  const ok = (x: number, y: number): boolean => inTile(x, y);
+  for (const [cu, cv, R, seed] of [[0.42, 0.45, 0.26, 1], [0.68, 0.64, 0.15, 2], [0.28, 0.74, 0.12, 3]] as const) {
+    const [x, y] = xyOf(cu, cv);
+    strawTuft(p, x, y, R * 40, R * 20, seed, ok);
   }
   return p.sprite(32, 0, GRAIN);
 }
@@ -1256,15 +1324,17 @@ function smashedFlags(u: number, v: number): string | null {
   return side > 0.4 ? SLAB[3] : side < -0.4 ? SLAB[0] : SLAB[1 + (k % 2)];
 }
 
-/** HIS MUZZLED FACE IN THE FLOOR, as his mark: a dark slab let into the flags, his head laid big in it in paler stone, upright to the eye, the muzzle-cage over its jaw in dark iron, the face in shadow between its bars, his eyes dark under his brow. */
+/** HIS MUZZLE IN THE FLOOR, as his mark (as floor 2's \u201cthe hood in the floor\u201d): a dark slab let into the flags, his head laid big in it in grey stone, upright to the eye, the muzzle-cage over its jaw in dark iron, its straps round his head, his eyes dark under his brow. */
 function cageInFloor(u: number, v: number): string | null {
   const [x, y] = mid(u, v);
   /** His mark at this point, moved (dx, dy) picture pixels. */
-  const at = (dx: number, dy: number): MarkPart => muzzled((x - y + dx / 32) / 0.42, -(x + y - 0.02 + dy / 16) / 0.74, 0.1, false, false);
+  const at = (dx: number, dy: number): MarkPart => muzzled((x - y + dx / 32) / 0.42, -(x + y - 0.02 + dy / 16) / 0.74, 0.1, false, true);
   const c = at(0, 0);
-  if (ironPart(c)) return !ironPart(at(-1, -1)) ? RIVET_LIT : !ironPart(at(1, 1)) ? DIM_IRON[0] : DIM_IRON[3];
+  if (ironPart(c)) return c === 'rivet' ? RIVET_LIT : !ironPart(at(-1, -1)) ? DIM_IRON[2] : DIM_IRON[0];
+  if (c === 'buckle') return RIVET_LIT;
+  if (c === 'strap') return !strapPart(at(-1, -1)) ? STRAP_LEATHER[2] : !strapPart(at(1, 1)) ? STRAP_LEATHER[0] : STRAP_LEATHER[1];
   if (c === 'eye' || c === 'nose') return DEEP;
-  if (c === 'gap') return at(-1, -1) === 'gap' ? GAP_FACE : BEHIND_BARS;
+  if (c === 'gap') return ironPart(at(1, 1)) ? RELIEF[0] : RELIEF[1];
   if (c === 'brow') return RELIEF[0];
   if (c === 'face') return at(-1, -1) === null ? RELIEF[2] : at(1, 1) === null ? RELIEF[0] : RELIEF[1];
   // the slab round it, dark, its shadow under the head
@@ -1363,37 +1433,67 @@ function mantrap(shut: boolean): Sprite {
     const [px, py] = at(x, y, z);
     t.set(Math.round(px), Math.round(py), c);
   };
-  // the springs: flat bows of iron along x from the hinges outward
+  // the springs: flat bows of iron along x from the hinges outward, each with its dark shadow on the flags
   for (const s of [-1, 1]) {
-    for (let k = 0; k <= 14; k += 0.25) {
-      const x = s * (11 + k);
-      const z = 1 + 2.2 * Math.sin((k / 14) * Math.PI);
+    for (let k = 0; k <= 11; k += 0.25) {
+      const x = s * (13 + k);
+      const z = 1 + 2.4 * Math.sin((k / 11) * Math.PI);
+      for (const y of [-1.8, 1.8]) put(x + 0.6, y + 0.6, 0.2, DIM_IRON[0]);
       for (const y of [-1.6, 1.6]) put(x, y, z, y < 0 ? DIM_IRON[3] : DIM_IRON[2]);
-      put(x, 0, z + 0.6, DIM_IRON[3]);
+      put(x, 0, z + 0.6, RIVET_LIT);
     }
+  }
+  // its chain, from the far spring's end to an iron peg driven into the flags
+  {
+    const pts: [number, number][] = [];
+    for (let i = 0; i <= 8; i++) {
+      const k = i / 8;
+      pts.push(at(24 - 6 * k, -3 - 12 * k + 2 * Math.sin(k * Math.PI), 0.8));
+    }
+    chainAlong(t, pts, DIM_IRON, 0.7);
+    // the peg: a square head on a stub, lit on top
+    for (let x = -1.5; x <= 1.5; x += 0.3) for (let y = -1.5; y <= 1.5; y += 0.3) put(18 + x, -15 + y, 2.4, x + y < -1 ? RIVET_LIT : DIM_IRON[3]);
+    for (let z = 0; z <= 2.4; z += 0.3) put(19.5, -13.5, z, DIM_IRON[0]);
   }
   // the pan, under the jaws when they are shut
   if (shut) for (let x = -4; x <= 4; x += 0.4) for (let y = -4; y <= 4; y += 0.4) put(x, y, 1.3, Math.abs(x) > 3.6 || Math.abs(y) > 3.6 ? DIM_IRON[0] : DIM_IRON[2]);
   if (!shut) {
-    // the jaws, set: two long jaws of iron, each a long bar on short arms from the hinges, laid open
-    // flat either side of the pan, their teeth a big zigzag along their inner edges pointing in at
-    // each other; the far one first, then the pan (a square plate), then the near one. (The first
-    // fresh look found round jaws round a round pan reading as an eye or an @: nothing is round now.)
+    // the jaws, set: two half-moons of heavy iron laid open flat, the far one and the near one, their
+    // ends on the hinges either side, a dark gap between them there; their teeth along their inner
+    // edges pointing in, each tooth's tip bright; a dark plate in the middle. Each casts a dark line on
+    // the flags outside it. (The second fresh look found the last a grey zig-zag scribble at phone size.)
+    const RO = 12.5;
+    const RI = 9.6;
     const jaw = (side: -1 | 1): void => {
-      const tone = side < 0 ? DIM_IRON[2] : DIM_IRON[3];
-      // its arms, out from the hinges, and its long bar
-      for (const hx of [-10.5, 10.5]) for (let y = 0; y <= 9; y += 0.3) for (const dx of [-0.7, 0, 0.7]) put(hx + dx, side * y, 1.2, dx > 0.5 ? DIM_IRON[0] : tone);
-      for (let x = -10.5; x <= 10.5; x += 0.3) for (const dy of [0, 0.7, 1.4]) put(x, side * (9 + dy), 1.2, dy > 1 ? DIM_IRON[0] : tone);
-      // the teeth
-      for (let x = -9.5; x <= 9.5; x += 0.25) {
-        const tooth = 1 - Math.abs(((((x + 9.5) / 4.75) % 1) * 2) - 1);
-        // (each tooth lit along its side to the light, dark along the other)
-        const lit_ = (((x + 9.5) / 4.75) % 1) < 0.5;
-        for (let y = 9 - 6 * tooth; y < 9; y += 0.3) put(x, side * y, 1.4, lit_ ? (side < 0 ? DIM_IRON[3] : WALL_IRON[3]) : DIM_IRON[side < 0 ? 0 : 2]);
+      for (let a = 0.13; a <= Math.PI - 0.13; a += 0.012) {
+        const c = Math.cos(a);
+        const sn = Math.sin(a) * side;
+        // its shadow on the flags, outside it
+        put(c * (RO + 0.9) + 0.5, sn * (RO + 0.9) + 0.5, 0.2, '#0c0a1c');
+        for (let r = RI; r <= RO; r += 0.3) {
+          const lit_ = r > RO - 0.9 ? (side < 0 ? DIM_IRON[3] : DIM_IRON[2]) : r < RI + 0.7 ? DIM_IRON[0] : side < 0 ? DIM_IRON[2] : DIM_IRON[3];
+          put(c * r, sn * r, 1.4, lit_);
+        }
+      }
+      // the teeth: big triangles in from the inner edge, lit on one side, dark on the other, their tips bright
+      for (let k = 0; k < 7; k++) {
+        const a0 = 0.3 + (k / 7) * (Math.PI - 0.6);
+        const a1 = a0 + (Math.PI - 0.6) / 7;
+        for (let q = 0; q <= 1; q += 0.04) {
+          const tooth = 1 - Math.abs(q * 2 - 1);
+          const a = a0 + (a1 - a0) * q;
+          for (let r = RI - 4.2 * tooth; r <= RI; r += 0.3) {
+            const tipOf = r < RI - 3.2;
+            put(Math.cos(a) * r, Math.sin(a) * r * side, 1.5, tipOf ? '#6c68a8' : q < 0.5 ? DIM_IRON[3] : DIM_IRON[0]);
+          }
+        }
       }
     };
     jaw(-1);
-    for (let x = -3.5; x <= 3.5; x += 0.4) for (let y = -2.6; y <= 2.6; y += 0.4) put(x, y, 1.3, Math.abs(x) > 3.1 || Math.abs(y) > 2.2 ? DIM_IRON[0] : x + y < -2 ? DIM_IRON[3] : DIM_IRON[2]);
+    // the plate in the middle: dark, square, its rim lit to the light
+    for (let x = -3.4; x <= 3.4; x += 0.3) for (let y = -3.4; y <= 3.4; y += 0.3) put(x, y, 1.2, x < -3 || y < -3 ? DIM_IRON[2] : '#0c0a1c');
+    // the hinges: square blocks either side, where the jaws' ends and the springs meet
+    for (const s of [-1, 1]) for (let x = -1.6; x <= 1.6; x += 0.3) for (let y = -2.6; y <= 2.6; y += 0.3) put(s * 12 + x, y, 2.2, y < -2 ? RIVET_LIT : x > 1.2 ? DIM_IRON[0] : DIM_IRON[3]);
     jaw(1);
   } else {
     // snapped shut: the two jaws up over the pan in a round arch along x, side by side, teeth locked along its top
@@ -1411,34 +1511,33 @@ function mantrap(shut: boolean): Sprite {
 }
 
 /**
- * THE BALL HATCH: a square hatch in the wall at a man's chest, framed in iron, its heavy iron shutter
- * hinged over it and propped open on a bar; inside it in the dark one of his iron balls on the sill,
- * its chain running up into the dark, waiting to swing out; the stone under the sill gouged where it
- * has swung. (The first fresh look found an arch with a ball hung in it reading as a window with a
- * bell: nothing is arched now, and the ball sits.)
+ * THE BALL HATCH: a square hatch in the wall at a man's chest, framed in iron, set off to one side of
+ * its face; inside it in the dark one of his iron balls sits low on the sill, its chain running up
+ * into the dark, waiting to swing out; the stone under the sill gouged where it has swung. (The first
+ * fresh look found an arch with a ball hung in it reading as a window with a bell; the second found
+ * the hatch centred, so that on a corner its two faces made a pair of staring eyes, the shutter over
+ * each a brow: now there is one hatch, off to one side, so the two faces of a corner never match; no
+ * shutter over it; its lintel in shadow and its sill the lit edge, as a recess is.)
  */
 function ballHatch(p: Px): void {
-  const U0 = -7;
-  const U1 = 7;
-  const V0 = 24;
-  const V1 = 36;
+  const U0 = 1;
+  const U1 = 12;
+  const V0 = 22;
+  const V1 = 37;
   const hole = (u: number, v: number): boolean => u >= U0 && u <= U1 && v >= V0 && v <= V1;
-  // the iron frame round it, and the dark inside
-  for (let v = V0 - 2; v <= V1 + 2; v++) for (let u = U0 - 2; u <= U1 + 2; u++) {
-    if (hole(u, v)) p.set(fx(u), fy(v), v === V0 ? FACE[0] : DEEP);
-    else p.set(fx(u), fy(v), v === V1 + 2 || u === U0 - 2 ? DIM_IRON[3] : v === V0 - 2 || u === U1 + 2 ? DIM_IRON[0] : DIM_IRON[2]);
+  // the iron frame round it (its sill lit, its lintel in shadow), and the dark inside
+  for (let v = V0 - 2; v <= V1 + 1; v++) for (let u = U0 - 2; u <= U1 + 2; u++) {
+    if (hole(u, v)) p.set(fx(u), fy(v), v <= V0 + 1 ? FACE[0] : u === U0 ? FACE[0] : DEEP);
+    else p.set(fx(u), fy(v), v === V0 - 1 ? DIM_IRON[3] : v === V0 - 2 ? DIM_IRON[0] : u === U0 - 2 ? DIM_IRON[2] : DIM_IRON[0]);
   }
-  for (const [u, v] of [[U0 - 1, V0 - 1], [U1 + 1, V0 - 1], [U0 - 1, V1 + 1], [U1 + 1, V1 + 1]] as const) p.set(fx(u), fy(v), RIVET_LIT);
+  for (const [u, v] of [[U0 - 1, V0 - 2], [U1 + 1, V0 - 2]] as const) p.set(fx(u), fy(v), RIVET_LIT);
   // gouges in the stone under the sill, where it has swung out over it
-  for (const [u0, len] of [[-4, 6], [0, 8], [4, 5]] as const) for (let k = 0; k < len; k++) p.set(fx(u0 + Math.round(k * 0.3)), fy(V0 - 3 - k), k < len - 2 ? FACE[0] : FACE[1]).set(fx(u0 + 1 + Math.round(k * 0.3)), fy(V0 - 3 - k), FACE[3]);
+  for (const [u0, len] of [[3, 6], [7, 8], [10, 5]] as const) for (let k = 0; k < len; k++) p.set(fx(u0 + Math.round(k * 0.3)), fy(V0 - 3 - k), k < len - 2 ? FACE[0] : FACE[1]).set(fx(u0 + 1 + Math.round(k * 0.3)), fy(V0 - 3 - k), FACE[3]);
   const b = flat();
   // its chain, up from the ball into the dark over it
-  for (let v = V0 + 9; v <= V1; v++) b.set(fx(1), fy(v), v % 3 === 0 ? DIM_IRON[0] : DIM_IRON[2]);
-  // the ball, on the sill: dark iron, one highlight
-  ironBall(b, fx(0.5), fy(V0 + 5), 5, IRONS, 7, undefined, undefined, 0, false);
-  // the shutter: hinged on the frame's top, swung up and out, seen nearly edge on over it, riveted; the bar propping it
-  for (let v = V1 + 3; v <= V1 + 7; v++) for (let u = U0 - 1; u <= U1 + 1; u++) b.set(fx(u), fy(v), v === V1 + 7 ? DIM_IRON[3] : v === V1 + 3 ? DIM_IRON[0] : (u - U0) % 5 === 2 && v === V1 + 5 ? RIVET_LIT : DIM_IRON[2]);
-  for (let k = 0; k <= 5; k++) b.set(fx(U1 + 2), fy(V1 + 2 - k + 5), DIM_IRON[3]);
+  for (let v = V0 + 8; v <= V1; v++) b.set(fx(7), fy(v), v % 3 === 0 ? DIM_IRON[0] : DIM_IRON[2]);
+  // the ball, low on the sill: dark iron, one highlight
+  ironBall(b, fx(6.5), fy(V0 + 4), 4.5, IRONS, 7, undefined, undefined, 0, false);
   seamed(p, b);
 }
 
@@ -1751,8 +1850,12 @@ function tornBar(): Sprite {
   // the snapped end: jagged
   for (const [dx, dy] of [[-1, -2], [-2, 0], [-1, 1], [-3, -1]] as const) p.set(Math.round(A[0]) + dx, Math.round(A[1]) + dy, IRONS[1]);
   p.set(Math.round(A[0]) - 2, Math.round(A[1]) - 1, IRONS[3]);
-  // the lump of mortar on the other end
-  lit(p, STONE, [1, 2], [1, 2], (l) => l.poly([[E[0] - 2, E[1] - 4], [E[0] + 4, E[1] - 6], [E[0] + 9, E[1] - 2], [E[0] + 7, E[1] + 3], [E[0] + 1, E[1] + 4], [E[0] - 2, E[1] + 1]], INK));
+  // the lump of mortar on the other end, torn out with it: jagged and broken-cornered, a crack across
+  // it, crumbs of it by it (the second fresh look found a round knob reading as a drumstick)
+  lit(p, STONE, [1, 2], [1, 2], (l) => l.poly([[E[0] - 3, E[1] - 3], [E[0] + 1, E[1] - 7], [E[0] + 3, E[1] - 5], [E[0] + 7, E[1] - 8], [E[0] + 10, E[1] - 3], [E[0] + 8, E[1] - 1], [E[0] + 11, E[1] + 2], [E[0] + 6, E[1] + 5], [E[0] + 3, E[1] + 3], [E[0], E[1] + 5], [E[0] - 3, E[1] + 1]], INK));
+  for (const [dx, dy] of [[4, -6], [5, -5], [5, -4], [6, -3], [7, -2]] as const) p.set(Math.round(E[0]) + dx, Math.round(E[1]) + dy, INK);
+  for (const [dx, dy] of [[13, 4], [14, 4]] as const) p.set(Math.round(E[0]) + dx, Math.round(E[1]) + dy, STONE[2]);
+  p.set(Math.round(E[0]) + 13, Math.round(E[1]) + 5, STONE[0]);
   return compose(null, [p], null).sprite(LCX, LCY, GRAIN);
 }
 
@@ -1798,10 +1901,10 @@ function ironCage(): Sprite {
   const fi = new Iso(front, ox, oy);
   // its floor, dark; straw on it, and a chain
   bi.top(-A, -A, A, A, 0, (u, v) => (hash(Math.floor(u * 8), Math.floor(v * 8), 372) < 0.5 ? '#100d20' : '#151229'));
-  for (let i = 0; i < 46; i++) {
-    const [px, py] = bi.at(-A + 0.05 + hash(i, 1, 370) * (2 * A - 0.1), -A + 0.05 + hash(i, 2, 370) * (2 * A - 0.1), 1);
-    const ang = hash(i, 3, 370) * Math.PI;
-    mid_.line(Math.round(px), Math.round(py), Math.round(px + Math.cos(ang) * 4), Math.round(py + Math.sin(ang) * 2), hash(i, 4, 370) < 0.3 ? STRAW[3] : STRAW[2]);
+  // (old straw in soft tufts, trodden into a mat at the back: no single stalks)
+  for (const [u, v, rx, ry, seed] of [[-0.12, -0.18, 15, 6.5, 4], [0.2, 0.12, 9, 4, 5], [-0.26, 0.18, 7, 3.2, 6]] as const) {
+    const [px, py] = bi.at(u, v, 1);
+    strawTuft(mid_, px, py, rx, ry, seed);
   }
   const [c0x, c0y] = bi.at(-0.3, -0.25, 1);
   const [c1x, c1y] = bi.at(0.1, 0.05, 1);
@@ -2234,8 +2337,10 @@ const cageMark: Mark = (x, y, st, lit_, lightLow) => {
     const core = Math.abs((y + 0.4) / T - 0.2) < 0.05 && Math.abs(Math.abs(x / S) - 0.3) < 0.09;
     return lit_ ? (core ? FLAME[4] : FLAME[3]) : core ? FLAME[2] : FLAME[1];
   }
-  if (ironPart(c)) return ironPart(at(toward * 0.74, 0.74)) ? st.body : st.light;
-  if (c === 'gap') return st.joint;
+  // (dark iron and straps over the face, the face between the bars in shade: never pale bars over dark gaps, which read as teeth)
+  if (ironPart(c) || c === 'strap') return ironPart(at(toward * 0.74, 0.74)) || at(toward * 0.74, 0.74) === 'strap' ? st.joint : st.dark;
+  if (c === 'buckle') return st.light;
+  if (c === 'gap') return st.dark;
   if (c === 'brow') return st.dark;
   if (c === 'face' || c === 'nose') return at(toward * 0.74, 0.74) === null ? st.light : at(-toward * 0.74, -0.74) === null ? st.dark : st.odd;
   // the field: sunk and dark, the shadow of the head falling on it
@@ -2254,28 +2359,39 @@ export function chainedGates(): GateArt {
 
 /** His cage's iron: dark, a step under the old iron of what stands (the first fresh look found it pale lavender). */
 const CAGE_IRON: Ramp = ['#110f24', '#16142c', '#2a2650', '#47437a', '#47437a'];
-/** HIS MUZZLE-CAGE, torn off him where he fell: the trophy for the armourer. The cage of dark iron lying on the floor, tipped back on its rim with its bands and uprights to the eye (his mark, as over his gate), its middle band burst through and an upright snapped, its straps torn short. 60 x 50 at (30, 40). */
+/** Its straps' old leather, as a ramp. */
+const STRAP_RAMP: Ramp = [STRAP_LEATHER[0], STRAP_LEATHER[0], STRAP_LEATHER[1], STRAP_LEATHER[2], STRAP_LEATHER[2]];
+/** HIS MUZZLE-CAGE, torn off him where he fell: the trophy for the armourer. The cage of dark iron lying on the floor, tipped back on its rim with its bands and uprights to the eye (his mark, as over his gate): open thin bars with wide gaps (the second fresh look found thick ones a catcher's mask), its middle band burst through and an upright snapped, its leather straps torn, one long and trailing with its buckle. 72 x 60 at (36, 50). */
 function hisCage(): Sprite {
-  const W = 60;
-  const H = 50;
-  const cx = 30;
-  const foot = 40;
+  const W = 72;
+  const H = 60;
+  const cx = 36;
+  const foot = 50;
   const p = new Px(W, H);
   const deep = new Deep(p);
-  const R = 14;
+  const R = 18;
   const rods = muzzleRods(R, true);
-  const { view: v0, turn } = frontView(cx, foot - 12, 20, 6);
+  const straps = muzzleStraps(R, true);
+  const { view: v0, turn } = frontView(cx, foot - 16, 22, 10);
   // (set down so that its lowest point is on the floor)
   let low = -Infinity;
-  for (const r of rods) for (const q of [r.a, r.b]) low = Math.max(low, v0(q)[1] + r.r);
+  for (const r of [...rods, ...straps]) for (const q of [r.a, r.b]) low = Math.max(low, v0(q)[1] + r.r);
   const view: View = (q) => {
     const [x, y, d] = v0(q);
     return [x, y + (foot - 1 - low), d];
   };
-  paintRods(deep, rods, view, (q) => norm3(turn([q[0], q[1] / 0.86, R * 0.3])), CAGE_IRON);
+  const normal = (q: V3): V3 => norm3(turn([q[0], q[1] / 0.86, R * 0.3]));
+  paintRods(deep, straps, view, normal, STRAP_RAMP);
+  paintRods(deep, rods, view, normal, CAGE_IRON);
   for (const q of muzzleRivets(R)) {
     const [x, y, d] = view(q);
     if (d > -R * 0.2) deep.put(Math.round(x), Math.round(y), d + R, RIVET_LIT);
+  }
+  // a buckle on the long strap
+  {
+    const a: V3 = [Math.cos(-104 * D2R) * R, Math.sin(-104 * D2R) * R * 0.86, -0.12 * R];
+    const [x, y, d] = view(add3(a, [-R * 0.5, -R * 0.12, -R * 0.25]));
+    for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]] as const) deep.put(Math.round(x) + dx, Math.round(y) + dy, d + R, dy < 0 || dx < 0 ? RIVET_LIT : CAGE_IRON[2]);
   }
   return compose(null, [p], null).sprite(cx, foot, GRAIN);
 }
@@ -2345,7 +2461,7 @@ export function chainedPieces(): Piece[] {
     { name: 'ball grooves', kind: 'floor tile', frames: [onTile(ballGrooves)] },
     { name: 'the oubliette', kind: 'floor tile', frames: [onTile(oubliette)] },
     { name: 'the smashed flags', kind: 'floor tile', frames: [onTile(smashedFlags)] },
-    { name: 'the cage in the floor', kind: 'floor tile', frames: [onTile(cageInFloor, box(0.05, 0.95, 0.05, 0.95))] },
+    { name: 'his muzzle in the floor', kind: 'floor tile', frames: [onTile(cageInFloor, box(0.05, 0.95, 0.05, 0.95))] },
     { name: 'a ring in the floor', kind: 'floor tile', frames: [floorRingTile()] },
     // traps
     { name: 'the trip chain', kind: 'trap', frames: [tripChain(false), tripChain(true)] },
@@ -2378,7 +2494,7 @@ export function chainedPieces(): Piece[] {
     { name: 'the gate', kind: 'gate', gates: G, frames: [...G.arch(true, false, false).map((q) => q.s), G.pillar(false)] },
     { name: "the boss's gate", kind: 'gate', gates: G, frames: [...G.arch(true, true, false).map((q) => q.s), G.pillar(true)] },
     // quests
-    { name: "the Chained One's face-cage", kind: 'quest', frames: [hisCage()], shadow: 0.26 },
+    { name: "the Chained One's face-cage", kind: 'quest', frames: [hisCage()], shadow: 0.3 },
   ];
   return made;
 }
@@ -2581,13 +2697,21 @@ export interface Cloud { f0: number; o: V3; v: V3; r: number; hang: number; seed
 /** Dust: its dark belly, its body in shade, its body, its lit top (the floor's dust, a step either way). */
 const DUST: readonly [string, string, string, string] = ['#322e54', '#433f68', '#55517e', '#696594'];
 const CLOUD_GROW = [0.3, 0.6, 0.85] as const;
-const CLOUD_SHRINK = 6;
-const settleOf = (c: Cloud): number => Math.round(6 + Math.max(0, c.o[2]) / 6);
+/** How many frames a settled sheet takes to slide on and shrink away. */
+const CLOUD_SHRINK = 10;
+/** How many frames a cloud takes to sink onto the floor and flatten: longer the higher it hangs. */
+const settleOf = (c: Cloud): number => Math.round(8 + Math.max(0, c.o[2]) / 5);
 /** The last frame a cloud is seen on. */
 function cloudEnd(c: Cloud): number {
   return c.f0 + CLOUD_GROW.length + c.hang + settleOf(c) + CLOUD_SHRINK - 1;
 }
-/** Where a cloud is, how big, how flattened and how thin, `k` frames after it is born (null: not yet, or gone). */
+/**
+ * Where a cloud is, how big, how flattened and how thin, `k` frames after it is born (null: not yet,
+ * or gone). (The second fresh look found the old cloud dropping in ONE frame from the air to a flat
+ * strip on the floor, and the strip then fading where it lay: now it sinks and flattens together
+ * over many frames, easing in and out, and the sheet it becomes slides on along the floor as it
+ * shrinks away as one.)
+ */
 export function dustCloudAt(c: Cloud, k: number): { q: V3; r: number; sx: number; sy: number; thin: number } | null {
   if (k < 0) return null;
   const G = CLOUD_GROW.length;
@@ -2599,21 +2723,25 @@ export function dustCloudAt(c: Cloud, k: number): { q: V3; r: number; sx: number
   let sy = 1;
   const t0 = G + c.hang;
   const S = settleOf(c);
-  // thinning as it spreads
+  // darkening as it spreads
   let thin = Math.min(1, Math.max(0, k - G) / (c.hang + S));
   if (k >= t0) {
-    // settling: sinking onto the floor; flattening only as it meets it
-    const e = Math.min(1, (k - t0 + 1) / S) ** 1.6;
+    // settling: sinking onto the floor and flattening as it goes, both by time, easing in and out
+    const u = Math.min(1, (k - t0 + 1) / S);
+    const e = u * u * (3 - 2 * u);
     q = [q[0], q[1], q[2] * (1 - e) + 1 * e];
-    const low = Math.max(0, Math.min(1, (7 - q[2]) / 6));
-    sy = 1 - 0.68 * low;
-    sx = 1 + 0.4 * low;
+    sy = 1 - 0.62 * e;
+    sx = 1 + 0.4 * e;
   }
   if (k >= t0 + S) {
-    // a low sheet on the floor, shrinking away as one
+    // a low sheet on the floor, sliding on along it and shrinking away as one
     const t = (k - t0 - S + 1) / (CLOUD_SHRINK + 1);
     if (t >= 1) return null;
-    r *= 1 - t;
+    const along = Math.hypot(c.v[0], c.v[1]) || 1;
+    const slide = 0.9 * (k - t0 - S + 1);
+    q = [q[0] + (c.v[0] / along) * slide, q[1] + (c.v[1] / along) * slide, q[2]];
+    r *= Math.sqrt(1 - t);
+    sy *= 1 - 0.3 * t;
     thin = 1;
   }
   return { q, r, sx, sy, thin };
@@ -2629,43 +2757,42 @@ function lobesOf(seed: number): [number, number, number][] {
   return out;
 }
 /**
- * Paint a cloud on frame `f`, where `pic` puts a point of the moment on the picture: thick in its
- * middle, and round its edge every other pixel only (pixel art's way of showing what is seen through;
- * each pixel there still touches its neighbours at their corners, so none stands alone), the thick
- * middle shrinking as it thins.
+ * Paint a cloud on frame `f`, where `pic` puts a point of the moment on the picture: solid, its lobes
+ * each a round shaded swelling with a broken, scalloped edge (no see-through checker, which the second
+ * fresh look found reads as netting and shimmers on a phone), lit on top and dark in its belly, and
+ * a step darker as it spreads and settles.
  */
 function paintCloud(p: Px, c: Cloud, f: number, pic: (q: V3) => [number, number]): void {
   const k = f - c.f0;
   const at = dustCloudAt(c, k);
   if (!at) return;
   const { q, r, sx, sy, thin } = at;
-  if (r * sy * 0.5 < 0.6 || r < 1.2) return;
+  if (r < 1) return;
   const [cx, cy] = pic(q);
   // (its lobes boiling: each swelling and shrinking on its own, the outer ones drifting outward)
   const spread = 1 + 0.25 * Math.min(1, k / 10);
-  const lobes = lobesOf(c.seed).map(([x, y, lr], i) => [cx + x * spread * r * sx, cy + y * spread * r * sy, Math.max(0.9, lr * r * (1 + 0.1 * Math.sin(k * 0.6 + i * 1.7)))] as const);
-  const x0 = Math.floor(cx - r * sx * 1.5);
-  const x1 = Math.ceil(cx + r * sx * 1.5);
-  const y0 = Math.floor(cy - r * sy * 1.3);
-  const y1 = Math.ceil(cy + r * sy * 1.3);
-  const flat_ = sy < 0.55;
-  const core = 0.72 - 0.4 * thin;
+  const lobes = lobesOf(c.seed).map(([x, y, lr], i) => [cx + x * spread * r * sx, cy + y * spread * r * sy, Math.max(0.9, lr * r * (1 + 0.1 * Math.sin(k * 0.6 + i * 1.7))), i] as const);
+  const x0 = Math.floor(cx - r * sx * 1.6);
+  const x1 = Math.ceil(cx + r * sx * 1.6);
+  const y0 = Math.floor(cy - r * sy * 1.4);
+  const y1 = Math.ceil(cy + r * sy * 1.4);
+  const dim = (sy < 0.6 ? 1 : 0) + (thin > 0.7 ? 1 : 0);
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
       let best = -Infinity;
-      let deepest = 2;
-      for (const [lx, ly, lr] of lobes) {
+      for (const [lx, ly, lr, i] of lobes) {
         const dx = (x + 0.5 - lx) / (lr * sx);
         const dy = (y + 0.5 - ly) / (lr * sy);
+        // a scalloped rim: each lobe's edge bulging and notching round it, slowly turning
+        const a = Math.atan2(dy, dx);
+        const rim = 1 + 0.16 * Math.sin(5 * a + i * 2.1 + c.seed + k * 0.12) + 0.08 * Math.sin(9 * a + i * 1.3);
         const d2 = dx * dx + dy * dy;
-        if (d2 > 1) continue;
+        if (d2 > rim * rim) continue;
         best = Math.max(best, -0.45 * dx - 0.89 * dy);
-        deepest = Math.min(deepest, d2);
       }
       if (best === -Infinity) continue;
-      if (deepest > core * core && (x + y) % 2 !== 0) continue;
       const tone = best > 0.5 ? 3 : best > -0.15 ? 2 : best > -0.6 ? 1 : 0;
-      p.set(x, y, DUST[Math.max(0, tone - (flat_ ? 1 : 0))]);
+      p.set(x, y, DUST[Math.max(0, tone - dim)]);
     }
   }
 }
@@ -2827,7 +2954,18 @@ function chainsPull(alongX: boolean): Film & { yanks: number[]; rip: number; sla
   const FMAX = 160;
   const states: { pts: V3[][]; bolts: V3[]; out: number[] }[] = [];
   let slap = -1;
+  let slap2 = -1;
   for (let f = 0; f < FMAX; f++) {
+    if (slap > 0 && f === slap + 1) {
+      // (the whip's crack: the chain's free end lashes up off the floor and on toward the hero, to slap
+      // down a second time, as hard; the second fresh look's raise)
+      const r = ropes[0];
+      const L = Math.round(N * 0.6);
+      for (let k = 0; k <= L; k++) {
+        const sk = 1 - k / L;
+        r.p[k] = sub3(r.x[k], mul3([0.9 * sk, 2.2 * sk, 5.2 * sk], 1 / SUB));
+      }
+    }
     if (f === RIP) {
       // the first plate tears out: its chain's end, ring and plate on it, flung out into the room and
       // down, the chain behind it whipped into an S (each point thrown less the nearer the port it is,
@@ -2858,13 +2996,16 @@ function chainsPull(alongX: boolean): Film & { yanks: number[]; rip: number; sla
     // (it strikes the floor: the first frame it is down on it, or its fall stopped short)
     const z0 = ropes[0].x[0][2];
     if (f > RIP + 1 && slap < 0 && z0 <= R + 3 && states[f - 1].pts[0][0][2] - z0 > 4) slap = f;
+    else if (slap > 0 && f > slap + 4 && slap2 < 0 && z0 <= R + 3 && states[f - 1].pts[0][0][2] - z0 > 3) slap2 = f;
     states.push({ pts: ropes.map((r) => r.x.map((q) => [...q] as V3)), bolts: BOLTS.map((_, i) => boltAt(i, f)), out: BOLTS.map((_, i) => outLen(i, f)) });
   }
   if (slap < 0) throw new Error('the torn ring never strikes the floor');
+  if (slap2 < 0) throw new Error('the torn ring never strikes the floor a second time');
   // WHAT FLIES: chunks of the wall from where the plate tore out, thrown out in arcs toward the hero, bouncing
   const chunks = Array.from({ length: 6 }, (_, k) => ({
-    size: 2.4 + hash(k, 9, 477) * 1.4,
-    path: flung(RIP, add3(BOLTS[0], [(hash(k, 1, 477) - 0.5) * 6, 2, (hash(k, 2, 477) - 0.5) * 6]), [0.6 + (hash(k, 3, 477) - 0.4) * 3, 3.8 + hash(k, 4, 477) * 3, 1.2 + hash(k, 5, 477) * 2.6], FMAX, G, 0.45, 2.2),
+    // (bigger, and thrown harder toward the hero: the second fresh look's raise)
+    size: 3.6 + hash(k, 9, 477) * 2.2,
+    path: flung(RIP, add3(BOLTS[0], [(hash(k, 1, 477) - 0.5) * 6, 2, (hash(k, 2, 477) - 0.5) * 6]), [0.6 + (hash(k, 3, 477) - 0.4) * 3, 4.6 + hash(k, 4, 477) * 3.4, 1.6 + hash(k, 5, 477) * 2.6], FMAX, G, 0.5, 2.2),
   }));
   // mortar trickling from round the plates at first, pouring from the first as it tears
   interface Bit { f0: number; o: V3; v: V3 }
@@ -2893,9 +3034,22 @@ function chainsPull(alongX: boolean): Film & { yanks: number[]; rip: number; sla
     const q = states[slap].pts[0];
     clouds.push({ f0: slap, o: [q[0][0] + 6, q[0][1] - 6, 2], v: [0.6, 0.4, 0], r: 10, hang: 4, seed: 41 });
     clouds.push({ f0: slap + 1, o: [q[Math.round(N * 0.4)][0], q[Math.round(N * 0.4)][1], 2], v: [-0.4, 0.5, 0], r: 8, hang: 3, seed: 42 });
+    const q2 = states[slap2].pts[0];
+    clouds.push({ f0: slap2, o: [q2[0][0] + 4, q2[0][1] - 4, 2], v: [0.5, 0.6, 0], r: 9, hang: 3, seed: 43 });
   }
   /** His eyes in the dark of the port: how bright (0 to 4) on frame f. */
-  const eyesOf = (f: number): number => (f < EYES ? 0 : f < EYES + 3 ? f - EYES + 1 : f < RIP + 1 ? ([YANK1, YANK2].some((y) => f - y >= 0 && f - y < 3) ? 4 : 3) : Math.max(0, 3 - (f - RIP)));
+  // HIS EYES in the port: opening over three frames, then a steady matched pink pair until the rip;
+  // then drawing back into the hole over eight frames, smaller, nearer each other and dimmer
+  const EYES_BACK = 8;
+  const eyeAt = (f: number): { lvl: number; apart: number; w: number; h: number } => {
+    if (f < EYES) return { lvl: 0, apart: 9, w: 4, h: 2 };
+    if (f < EYES + 3) return { lvl: f - EYES + 1, apart: 9, w: f - EYES >= 1 ? 4 : 3, h: f - EYES >= 1 ? 2 : 1 };
+    if (f <= RIP) return { lvl: 3, apart: 9, w: 4, h: 2 };
+    const t = (f - RIP) / EYES_BACK;
+    if (t >= 1) return { lvl: 0, apart: 4, w: 1, h: 1 };
+    return { lvl: Math.ceil(3 * (1 - t)), apart: 9 - 5 * t, w: t < 0.3 ? 4 : t < 0.6 ? 3 : 2, h: t < 0.4 ? 2 : 1 };
+  };
+  const eyesOf = (f: number): number => eyeAt(f).lvl;
   // IT IS OVER when the chains have come to rest, the chunks lie still and the dust is gone
   let END = Math.max(...clouds.map(cloudEnd)) + 1;
   for (const c of chunks) {
@@ -2927,15 +3081,21 @@ function chainsPull(alongX: boolean): Film & { yanks: number[]; rip: number; sla
       }
     }
     for (const [du, v] of [[-11, 17], [10, 17], [-11, 3], [10, 3], [0, 17]] as const) put(pu + du, v, DIM_IRON[4]);
-    const eyes = eyesOf(f);
-    if (eyes > 0) {
-      // (a matched pair: each a pink slit three wide, its middle burning to gold as it flares)
+    // (his eyes go on their own layer, over the chains: steady, never covered by a link passing)
+    const eyesL = new Px(W, H);
+    const eye = eyeAt(f);
+    if (eye.lvl > 0) {
+      // (a matched pair high in the dark, each a pink slit, its middle the brightest; never the fire's gold)
       for (const s of [-1, 1]) {
-        const eu = Math.round(pu - 1 + s * 3.5) - 1;
-        if (eyes >= 2) put(eu, 10, FLAME[1]);
-        put(eu + 1, 10, FLAME[Math.min(3, eyes)]);
-        if (eyes >= 2) put(eu + 2, 10, FLAME[eyes >= 3 ? 2 : 1]);
-        if (eyes >= 3) put(eu + 1, 9, FLAME[1]);
+        const ec = pu - 0.5 + (s * eye.apart) / 2;
+        const eu = Math.round(ec - eye.w / 2);
+        const body = FLAME[Math.min(2, eye.lvl)];
+        const rim = FLAME[Math.max(0, eye.lvl - 2)];
+        for (let du = 0; du < eye.w; du++) {
+          const mid = eye.w >= 3 ? du >= 1 && du <= eye.w - 2 : true;
+          onWall(eyesL, ax, ay, alongX, M * (eu + du), 12, mid ? body : rim);
+          if (eye.h >= 2) onWall(eyesL, ax, ay, alongX, M * (eu + du), 11, mid ? rim : FLAME[0]);
+        }
       }
     }
     // THE PLATES (and the first's crater once it is gone), and the cracks round them
@@ -3009,6 +3169,7 @@ function chainsPull(alongX: boolean): Film & { yanks: number[]; rip: number; sla
     fastBlit(all, base, 0, 0);
     fastBlit(all, dust, 0, 0);
     fastBlit(all, fig, 0, 0);
+    fastBlit(all, eyesL, 0, 0);
     return all;
   };
   // THE FRAMES, to where it is all still
@@ -3040,12 +3201,12 @@ function chainsPull(alongX: boolean): Film & { yanks: number[]; rip: number; sla
   {
     const t: Track = { name: 'his eyes', at: [] };
     for (let f = 0; f <= END; f++) {
-      const [x, y] = see(PORT - 1, R, 10);
-      t.at.push({ x, y, shown: eyesOf(f) / 4, size: 4 });
+      const [x, y] = see(PORT - 1, R, 12);
+      t.at.push({ x, y, shown: eyesOf(f) / 3, size: 4 });
     }
     tracks.push(t);
   }
-  return { frames, before: [frames[0]], after: [frames[END]], tracks, jolts: [YANK1, YANK2, RIP, slap], yanks: [YANK1, YANK2], rip: RIP, slap };
+  return { frames, before: [frames[0]], after: [frames[END]], tracks, jolts: [YANK1, YANK2, RIP, slap, slap2], yanks: [YANK1, YANK2], rip: RIP, slap };
 }
 
 /** The way the eye looks, in the world: right across the picture, down it, and toward the eye (floor 2's TOWARD). */
@@ -3200,7 +3361,7 @@ function ballFalls(): Film & { impact: number; second: number; taut: number } {
   const BD = 5;
   const BH = 8;
   const blockBox = (q: V3): Box3 => [q[0] - BW, q[0] + BW, q[1] - BD, q[1] + BD, 0, BH];
-  const CHAIN_L = 84;
+  const CHAIN_L = 128;
   // the ball's own measure, turned as it rolls: its body's x, y, z as ways in the world
   const EYE: V3 = norm3([-0.3, -0.2, 0.93]);
   const eyeOf = (c: V3, m: [V3, V3, V3]): V3 => add3(c, mul3(add3(add3(mul3(m[0], EYE[0]), mul3(m[1], EYE[1])), mul3(m[2], EYE[2])), R + 0.6));
@@ -3235,7 +3396,8 @@ function ballFalls(): Film & { impact: number; second: number; taut: number } {
       const was = f > 0 ? ROCKS[f - 1] : 0;
       c = add3(HOME, mul3(D, s));
       rollBy(mul3(D, s - was));
-      if (f === GO - 1) v = [0.2, 2.5, 0];
+      // (tipped off the edge with a lurch, so that it falls clear of the heap the whole of its height: the second fresh look found it rolling down the face)
+      if (f === GO - 1) v = [0.3, 4.4, 1.0];
     } else if (stopped < 0) {
       for (let k = 0; k < SUB; k++) {
         const dt = 1 / SUB;
@@ -3260,7 +3422,7 @@ function ballFalls(): Film & { impact: number; second: number; taut: number } {
             if (impact < 0) impact = f;
             else if (second < 0 && f > impact + 3) second = f;
             // it bounces: high the first time, smaller the next; the blow takes a little of its way along the floor
-            v = [v[0] * 0.9, v[1] * 0.9, -v[2] * (second < 0 ? 0.56 : 0.34)];
+            v = [v[0] * 0.9, v[1] * 0.9, -v[2] * (second < 0 ? 0.64 : 0.34)];
           } else {
             v = [v[0], v[1], 0];
             // rolling on the stone: slowing, steadily (a heavy thing rolls on)
@@ -3356,7 +3518,8 @@ function ballFalls(): Film & { impact: number; second: number; taut: number } {
   }
   // WHAT GOES WITH IT: a pebble first; stones tumbling off the top after the ball; the flags' broken pieces jumping; chips
   const pebble = flung(2, [PEAK[1] - 3, PEAK[3] - 2, PEAK[5] + 1.5], [0.6, 0.9, 1.2], FMAX, G, 0.45, 1.5);
-  const stones = [0, 1].map((k) => ({ size: 3.4 - k * 0.6, path: flung(GO + 2 + k * 2, [PEAK[0] + 4 + k * 8, PEAK[3] + 1, PEAK[5] + 3], [0.4 - k * 0.8, 1.8 + k * 0.5, 0.9], FMAX, G, 0.42, 3) }));
+  // (part of the heap's top comes down with it: five stones, the second fresh look's raise)
+  const stones = [0, 1, 2, 3, 4].map((k) => ({ size: 3.8 - k * 0.3, path: flung(GO + 1 + k, [PEAK[0] + 2 + k * 3.2, PEAK[3] + 1, PEAK[5] + 2.5], [0.7 - k * 0.35, 1.6 + k * 0.3, 0.9], FMAX, G, 0.42, 3) }));
   const FLAGS = Array.from({ length: 5 }, (_, k) => {
     const a = (k / 5) * Math.PI * 2 + 0.4;
     const r = 13 + hash(k, 1, 541) * 4;
@@ -3535,15 +3698,34 @@ function ballFalls(): Film & { impact: number; second: number; taut: number } {
         if (col) dt.put(x, y, d, col);
       }
     });
-    chainInDepth(dt, [eyeOf(b.c, b.m), ...chains[f].slice(1)], ax, ay, 2, 999, 0.85, SMALL_IRON);
+    // (the chain's links begin a shackle's length off the ball: the second fresh look found the first
+    // link, lying on the ball's face, reading as a dark-ringed pupil as it rolled)
+    chainInDepth(dt, [eyeOf(b.c, b.m), ...chains[f].slice(1)], ax, ay, 6.5, 999, 0.85, SMALL_IRON);
     const [bx, by] = onPic(b.c[0], b.c[1], b.c[2]);
     ironBall(things, ax + bx, ay + by, R, BALL_IRON, 5, turnOf(b.m), dt, dot3(b.c, TOWARD));
-    // its eye, where the chain is fast: a raised lug, if it is on the side toward us
+    // its eye, where the chain is fast: a pale iron shackle, a short thick bar from the ball out to the
+    // first link (no ring, no hole), if it is on the side toward us
     const e = eyeOf(b.c, b.m);
     if (dot3(sub3(e, b.c), TOWARD) > -1) {
+      const nx = chains[f][1] ?? e;
+      const dir = sub3(nx, e);
+      const dl = len3(dir) || 1;
+      const tip = add3(e, mul3(dir, Math.min(6.5, dl) / dl));
       const [ex, ey] = onPic(e[0], e[1], e[2]);
+      const [tx, ty] = onPic(tip[0], tip[1], tip[2]);
       const lug = new Px(W, H);
-      lug.rect(Math.round(ax + ex) - 1, Math.round(ay + ey) - 1, 3, 2, SMALL_IRON[3]).set(Math.round(ax + ex) + 1, Math.round(ay + ey), SMALL_IRON[2]);
+      const n = Math.max(2, Math.ceil(Math.hypot(tx - ex, ty - ey) * 2));
+      for (let i = 0; i <= n; i++) {
+        const x = Math.round(ax + ex + ((tx - ex) * i) / n);
+        const y = Math.round(ay + ey + ((ty - ey) * i) / n);
+        lug.set(x, y + 1, SMALL_IRON[1]);
+      }
+      for (let i = 0; i <= n; i++) {
+        const x = Math.round(ax + ex + ((tx - ex) * i) / n);
+        const y = Math.round(ay + ey + ((ty - ey) * i) / n);
+        lug.set(x, y, SMALL_IRON[3]);
+      }
+      lug.set(Math.round(ax + ex), Math.round(ay + ey), SMALL_IRON[4]);
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
         const col = lug.get(x, y);
         if (col) dt.put(x, y, dot3(e, TOWARD) + 1, col);
@@ -3593,8 +3775,17 @@ function ballFalls(): Film & { impact: number; second: number; taut: number } {
     fastBlit(out, compose(null, [bits], null), 0, 0);
     return out;
   };
+  // (painted first, then the tail cut where nothing more than a few pixels changes: the last of the dust and the chain settling)
+  const painted: Px[] = [];
+  for (let f = 0; f <= END; f++) painted.push(paint(f));
+  const changed = (a: Px, b: Px): number => {
+    let n = 0;
+    for (let k = 0; k < a.d.length; k++) if (a.d[k] !== b.d[k]) n++;
+    return n;
+  };
+  while (END > impact + 12 && changed(painted[END], painted[END - 1]) < 24) END--;
   const frames: Sprite[] = [];
-  for (let f = 0; f <= END; f++) frames.push(cut(paint(f), ax, ay));
+  for (let f = 0; f <= END; f++) frames.push(cut(painted[f], ax, ay));
   // THE TRACKS
   const tr = (name: string, pos: (f: number) => V3 | null, size: number): Track => {
     const t: Track = { name, at: [] };
@@ -3720,8 +3911,13 @@ function barsShake(alongX: boolean): Film & { yanks: number[] } {
     { bar: 2, v: 38, side: -1 },
   ];
   /** How far in the dark his hands are (1: all dark, not come or gone), how far below where they grip, and how far his fingers are closed round the bars, on frame f. */
-  const handDim = (f: number): number => (f < HANDS[0] ? 1 : f < HANDS[1] ? 1 - smooth((f - HANDS[0]) / (HANDS[1] - HANDS[0])) : f < SINK[0] ? 0 : smooth((f - SINK[0] + 1) / (SINK[1] - SINK[0] + 1)));
-  const handLow = (f: number): number => (f < HANDS[1] ? 14 * (1 - smooth((f - HANDS[0] + 1) / (HANDS[1] - HANDS[0] + 1))) : f < SINK[0] - 1 ? 0 : 16 * smooth((f - SINK[0] + 2) / (SINK[1] - SINK[0] + 2)));
+  // (they come out of the dark rising; they go sliding down and back behind the sill, never darkening in place)
+  const handDim = (f: number): number => (f < HANDS[0] ? 1 : f < HANDS[1] ? 1 - smooth((f - HANDS[0]) / (HANDS[1] - HANDS[0])) : 0);
+  const SLIDE = 54;
+  const handLow = (f: number): number => (f < HANDS[1] ? 14 * (1 - smooth((f - HANDS[0] + 1) / (HANDS[1] - HANDS[0] + 1))) : f < SINK[0] - 1 ? 0 : SLIDE * smooth(Math.min(1, (f - SINK[0] + 2) / (SINK[1] - SINK[0] + 2))));
+  const handBack = (f: number): number => (f < SINK[0] - 1 ? 0 : 4 * smooth(Math.min(1, (f - SINK[0] + 2) / (SINK[1] - SINK[0] + 2))));
+  /** How much of a hand is seen (above the sill), on frame f. */
+  const handShown = (hnd: { v: number }, f: number): number => (1 - handDim(f)) * Math.max(0, Math.min(1, (hnd.v - handLow(f) + 8) / 24));
   const grip = (f: number): number => (f < HANDS[1] - 3 ? 0.15 : f < HANDS[1] + 1 ? 0.15 + 0.85 * smooth((f - HANDS[1] + 3) / 4) : f < LET_GO ? 1 : 1 - 0.8 * smooth((f - LET_GO + 1) / 4));
   // HIS EYES: how bright (0 to 4), how high, how far apart, how open (rows), on frame f
   const eyeOf = (f: number): { lvl: number; v: number; apart: number; open: number } => {
@@ -3812,46 +4008,72 @@ function barsShake(alongX: boolean): Film & { yanks: number[] } {
         if (e.open >= 2) for (let du = 0; du < 3; du++) put(back, eu + du, e.v - 1, 0, du === 1 ? body : rim);
       }
     }
-    // HIS HANDS, behind the bars: the backs of them in the dark beside the bars, and the great
-    // knuckled fingers wrapped round each bar over its front, one over the other, a dark crease
-    // between each, the thumb round the far side
+    // HIS HANDS, behind the bars: big and pale grey; the back of each in the dark beside its bar, the
+    // wrist under it and the forearm going down and back into the black; four fingers curled round
+    // the front of the bar, one over the other, a dark gap between each; the thumb wrapped across the
+    // near side of the bar under them. They go by sliding down and back behind the sill, the forearms
+    // first (the second fresh look found them darkening in place, and too small to read as hands).
+    const inOpening = (v: number): boolean => v >= 1;
     for (const hnd of GRIPS) {
       if (dim >= 1) continue;
       const v0 = hnd.v - low;
-      const d = 0.15 + 0.85 * dim;
+      const back_ = handBack(f);
+      const d = dim * 0.85;
+      const sd = hnd.side;
       const [bu, bb] = barAt(hnd.bar, v0, f);
-      // the back of the hand and the wrist under it, behind the bar, broad (more than the gap it is seen through), lit along its top
-      for (let v = v0 - 15; v <= v0 + 9; v++) for (let u = -5; u <= 11; u++) {
-        const wrist = v < v0 - 8;
-        const r = wrist ? ((u - 3) / 4.5) ** 2 : ((u - 3) / 8) ** 2 + ((v - v0) / 9) ** 2;
-        if (r > 1) continue;
-        const top = !wrist && v > v0 + 6;
-        const tone = top ? STARVED[3] : wrist ? STARVED[1] : r < 0.55 ? STARVED[2] : STARVED[1];
-        put(back, bu + hnd.side * u, v, Math.min(0, bb) - 1, dimmed(tone, d + (wrist ? 0.2 + 0.08 * (v0 - 8 - v) : 0)));
+      const bz = Math.min(0, bb) - 1 - back_;
+      const putIn = (p: Px, u: number, v: number, b: number, c: string): void => {
+        if (inOpening(v)) put(p, u, v, b, c);
+      };
+      // the forearm, down and back from the wrist into the dark, darker the further it goes
+      for (let v = v0 - 30; v < v0 - 12; v++) {
+        const t = (v0 - 12 - v) / 18;
+        const cu = bu + sd * (4.5 + 2.5 * t);
+        const hw = 3.2 + 0.8 * t;
+        for (let u = Math.floor(cu - hw); u <= Math.ceil(cu + hw); u++) {
+          const x = (u - cu) / hw;
+          if (Math.abs(x) > 1) continue;
+          const tone = x * sd < -0.5 ? HAND_GREY[2] : x * sd > 0.55 ? HAND_GREY[0] : HAND_GREY[1];
+          putIn(back, u, v, bz - 2 * t, dimmed(tone, Math.min(1, d + 0.25 + 0.7 * t)));
+        }
       }
-      // the fingers: four, one over the other, each a thick rounded finger curled round the front of the bar, lit along its top, its nail at its tip, a dark crease between it and the next
-      const fingers = [5, 1.5, -2, -5.5];
+      // the wrist, and the back of the hand over it, broad, lit along its top
+      for (let v = v0 - 13; v <= v0 + 8; v++) for (let u = -4; u <= 12; u++) {
+        const wrist = v < v0 - 6;
+        const r = wrist ? ((u - 4.5) / 3.6) ** 2 : ((u - 4) / 7.5) ** 2 + ((v - v0 - 0.5) / 7.5) ** 2;
+        if (r > 1) continue;
+        const top = !wrist && v > v0 + 4;
+        const tone = top ? HAND_GREY[3] : wrist ? HAND_GREY[1] : r < 0.5 ? HAND_GREY[2] : HAND_GREY[1];
+        putIn(back, bu + sd * u, v, bz, dimmed(tone, d + (wrist ? 0.15 : 0)));
+      }
+      // the fingers: four, curled round the front of the bar from the hand's side, shaded as one mass
+      // (lit along its top, in shade along its foot), their tips lit and each ending its own length,
+      // one dark gap between the middle two (stripes between all four read as a grille)
+      const fingers = [5.5, 2, -1.5, -5];
       fingers.forEach((dv, j) => {
-        const v = v0 + dv;
-        const [fu, fb] = barAt(hnd.bar, v, f);
-        const reach = (j === 1 || j === 2 ? 3.4 : 2.6) * g;
-        const from = -4;
-        const mid_ = (from + reach) / 2;
-        const half = (reach - from) / 2 + 0.6;
-        for (let s = from - 0.6; s <= reach + 0.6; s += 0.5) {
-          const nx = (s - mid_) / half;
-          for (let dy = -2; dy <= 2; dy++) {
-            const ny = dy / 1.7;
-            if (nx * nx + ny * ny > 1) continue;
-            const u = fu - hnd.side * s;
-            const c = ny > 0.45 ? STARVED[3] : ny < -0.45 ? STARVED[1] : nx > 0.55 && ny > -0.2 ? STARVED[4] : STARVED[2];
-            put(hands, u, v + dy, fb + 1, dimmed(c, d));
+        const reach = (j === 1 || j === 2 ? 3.8 : 2.8) * g - 0.8;
+        for (let dy = -1.5; dy <= 1.5; dy += 1) {
+          const v = v0 + dv + dy;
+          const [fu, fb] = barAt(hnd.bar, v, f);
+          const row = v - (v0 - 6.5);
+          const end = reach - (Math.abs(dy) > 1 ? 0.8 : 0);
+          for (let s_ = -5; s_ <= end; s_ += 0.5) {
+            const tip = s_ > end - 1;
+            const gap = j === 1 && dy < -1;
+            const c = gap ? HAND_GREY[0] : tip ? HAND_GREY[4] : row > 11.5 ? HAND_GREY[3] : row < 2 ? HAND_GREY[1] : HAND_GREY[2];
+            putIn(hands, fu - sd * s_, v, fb + 1, dimmed(c, d));
           }
         }
       });
-      // the thumb, round the far side of the bar, over the top finger
-      const [tu, tb] = barAt(hnd.bar, v0 + 8.5, f);
-      for (let s = 0; s <= 1.5 + 3 * g; s += 0.5) for (const [row, c] of [[1, STARVED[3]], [0, STARVED[2]], [-1, STARVED[1]]] as const) put(hands, tu + hnd.side * (s + 1.5), v0 + 8.5 + row, tb + 1, dimmed(c, d));
+      // the thumb, wrapped across the near side of the bar under the fingers, pointing up and over
+      const tv = v0 - 9.5;
+      const [tu, tb] = barAt(hnd.bar, tv, f);
+      const tl = 2 + 4 * g;
+      for (let s_ = -4; s_ <= tl - 4; s_ += 0.5) {
+        const lift = (s_ + 4) * 0.35;
+        const tip = s_ > tl - 5;
+        for (const [dy, c] of [[1, HAND_GREY[4]], [0, tip ? HAND_GREY[4] : HAND_GREY[3]], [-1, HAND_GREY[1]]] as const) putIn(hands, tu - sd * s_, tv + lift + dy, tb + 1.5, dimmed(c, d));
+      }
     }
     // THE BARS, thick, and where they moved fast a smear back toward where they were
     for (let k = 0; k < CG_BARS.length; k++) {
@@ -3871,9 +4093,16 @@ function barsShake(alongX: boolean): Film & { yanks: number[] } {
     const pn = pinPath[f];
     if (pn) {
       const [x, y] = pic(pn[0], pn[2], pn[1]);
-      bits.rect(Math.round(x) - 1, Math.round(y) - 1, 3, 3, IRONS[3]).set(Math.round(x) + 1, Math.round(y) + 1, IRONS[1]).set(Math.round(x) - 1, Math.round(y) - 1, GLINT);
+      // (bigger and brighter, and smeared back along its arc while it flies fast: the second fresh look could not see it)
+      const pp = f > 0 ? pinPath[f - 1] : null;
+      if (pp) {
+        const [x0, y0] = pic(pp[0], pp[2], pp[1]);
+        const L = Math.hypot(x - x0, y - y0);
+        if (L > 3) for (let t = 0.35; t < 1; t += 0.5 / L) bits.rect(Math.round(x0 + (x - x0) * t) - 1, Math.round(y0 + (y - y0) * t), 2, 2, IRONS[2]);
+      }
+      bits.rect(Math.round(x) - 2, Math.round(y) - 2, 5, 5, IRONS[3]).rect(Math.round(x) - 2, Math.round(y) - 2, 2, 2, GLINT).set(Math.round(x) + 2, Math.round(y) + 2, IRONS[0]).set(Math.round(x) + 2, Math.round(y) + 1, IRONS[1]).set(Math.round(x) + 1, Math.round(y) + 2, IRONS[1]);
       // (pinging off the stone: a glint either side of it as it strikes)
-      if (pings.has(f)) bits.set(Math.round(x) - 3, Math.round(y) - 1, GLINT).set(Math.round(x) + 3, Math.round(y) - 1, GLINT).set(Math.round(x) - 2, Math.round(y) - 2, IRONS[3]).set(Math.round(x) + 2, Math.round(y) - 2, IRONS[3]);
+      if (pings.has(f)) for (const [dx, dy] of [[-3, -1], [-4, -1], [3, -1], [4, -1], [0, -3], [0, -4]] as const) bits.set(Math.round(x) + dx, Math.round(y) + dy, Math.abs(dx) === 4 || dy === -4 ? IRONS[3] : GLINT);
     }
     for (const [k, st] of stones.entries()) {
       const q = st.path[f];
@@ -3945,7 +4174,7 @@ function barsShake(alongX: boolean): Film & { yanks: number[] } {
       const [u, b] = barAt(hnd.bar, hnd.v, f);
       const [x, y] = rel(...pic(u, hnd.v - handLow(f), b));
       const sp = prev ? Math.hypot(x - prev[0], y - prev[1]) : 0;
-      t.at.push({ x, y, shown: 1 - handDim(f), size: 12 + (sp > 3.5 ? sp * 0.6 : 0) });
+      t.at.push({ x, y, shown: handShown(hnd, f), size: 12 + (sp > 3.5 ? sp * 0.6 : 0) });
       prev = [x, y];
     }
     tracks.push(t);

@@ -296,7 +296,7 @@ else if (mode === 'room') {
   const fr = (n: string, k = 0): Sprite => (P(n).frames!.length === 4 ? P(n).frames![F % 4] : P(n).frames![k]);
   const tiles = new Map<string, Sprite>([
     ['4,4', fr('old straw')], ['2,7', fr('old straw')], ['5,5', fr('ball grooves')], ['6,5', fr('ball grooves')], ['8,4', fr('the oubliette')], ['5,8', fr('the smashed flags')],
-    ['4,6', fr('the cage in the floor')], ['7,7', fr('a ring in the floor')],
+    ['4,6', fr('his muzzle in the floor')], ['7,7', fr('a ring in the floor')],
   ]);
   const wallAt = (tx: number, ty: number): boolean => tx === 0 || ty === 0;
   const stands: Stand[] = [];
