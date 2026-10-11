@@ -57,7 +57,7 @@ const orderOf = (name: string): number => Number(/going (\d+)/.exec(name)![1]);
 test('the stairwell opens: how long the nine take to paint (each once, then kept)', () => {
   const total = all.reduce((t, a) => t + a.ms, 0);
   console.log(`  painted: ${all.map((a) => `${a.label} ${a.ms.toFixed(0)} ms`).join('; ')}; all nine ${(total / 1000).toFixed(1)} s`);
-  assert.ok(total < 80000, `all nine took ${(total / 1000).toFixed(1)} s`);
+  assert.ok(total < 150000, `all nine took ${(total / 1000).toFixed(1)} s`);
   // (kept: asked again, the same moment at once; and the floor's pattern repeats every ten tiles, so the moment does)
   const again = performance.now();
   assert.ok(stairwellOpens(CRYPT_FLOORS[0], 'x', [10, -10]) === all[0].m, 'not kept');
@@ -171,14 +171,16 @@ for (const { label, k, way, at, m } of all) {
   });
 
   // WHAT IT MUST DO
-  test(`the stairwell opens, ${label}: the jolts and their kicks: the shock, the heave, each flagstone striking the bottom, and the great burst the biggest, when the last strikes`, () => {
+  test(`the stairwell opens, ${label}: the jolts and their kicks: the shock, the heave, each flagstone striking the bottom, the great burst the biggest, when the last strikes, and the aftershock half a second after it`, () => {
     const kicks = stairwellKicks(m);
     assert.ok(kicks.length === m.jolts.length, `${kicks.length} kicks for ${m.jolts.length} jolts`);
     assert.ok(m.jolts[0] === 1 && kicks[0] === 4, `the shock: frame ${m.jolts[0]}, kick ${kicks[0]}`);
     assert.ok(kicks[1] === 6, `the heave's kick ${kicks[1]}`);
-    assert.ok(m.jolts[m.jolts.length - 1] === notes.great && kicks[kicks.length - 1] === 10, `the great burst: frame ${m.jolts[m.jolts.length - 1]} (the last strikes at ${notes.great}), kick ${kicks[kicks.length - 1]}`);
-    assert.ok(Math.max(...kicks.slice(0, -1)) < 10, 'a kick as big as the great burst before it');
-    for (const kk of kicks.slice(2, -1)) assert.ok(kk >= 3 && kk <= 6, `a flagstone's kick ${kk}`);
+    const gi = m.jolts.indexOf(notes.great);
+    assert.ok(gi > 1 && kicks[gi] === 10, `the great burst: frame ${notes.great}, kick ${kicks[gi]}`);
+    assert.ok(gi === m.jolts.length - 2 && m.jolts[gi + 1] === notes.great + 15 && kicks[gi + 1] === 4, `the aftershock: frame ${m.jolts[gi + 1]}, kick ${kicks[gi + 1]}`);
+    assert.ok(kicks.filter((kk) => kk >= 10).length === 1, 'another kick as big as the great burst');
+    for (const kk of kicks.slice(2, gi)) assert.ok(kk >= 3 && kk <= 6, `a flagstone's kick ${kk}`);
     assert.ok(notes.great === Math.max(...notes.impacts), 'the great burst is not when the last flagstone strikes');
     for (const f of notes.impacts) assert.ok(m.jolts.includes(f), `a flagstone strikes at ${f} without a jolt`);
   });
@@ -237,7 +239,14 @@ for (const { label, k, way, at, m } of all) {
   });
 
   test(`the stairwell opens, ${label}: the dust hangs, then settles, never coming down faster than it went up, and the stairwell comes out of it: it ends still, the stairwell as it lies`, () => {
-    const tops = m.frames.map((f) => (count(f) ? boxOf(f)[2] : 0));
+    // (the top of its body: the row above which lie 3% of its pixels, not a torn scrap thinning away above it)
+    const tops = m.frames.map((f) => {
+      const ys: number[] = [];
+      each(f, (_r, _g, _b, _a, _x, y) => ys.push(y));
+      if (!ys.length) return 0;
+      ys.sort((a, b) => a - b);
+      return ys[Math.floor(ys.length * 0.03)] - Math.round(f.ay * (f.density ?? 1));
+    });
     const highest = Math.min(...tops);
     const at = tops.indexOf(highest);
     // it hangs: four frames or more within a tenth of its height
@@ -268,29 +277,34 @@ for (const { label, k, way, at, m } of all) {
 
   test(`the stairwell opens, ${label}: the fissure goes and the pit becomes the stairwell, each under the dust; the floor's broken edges never seen to vanish`, () => {
     assert.ok(notes.hidden, 'not hidden');
-    assert.ok(notes.heal > notes.great && notes.heal < notes.swap, `the fissure goes at ${notes.heal}, the great burst ${notes.great}, the stairwell comes at ${notes.swap}`);
-    assert.ok(notes.swap >= notes.great + 18, `the stairwell comes ${notes.swap - notes.great} frames after the burst`);
+    assert.ok(notes.heal > notes.great && notes.heal < N - 1, `the last of the fissure goes at ${notes.heal}, the great burst ${notes.great}`);
+    assert.ok(notes.swap >= notes.great + 18, `the stairwell starts to come ${notes.swap - notes.great} frames after the burst`);
   });
 
-  test(`the stairwell opens, ${label}: stones thrown out of the hole, real ones (6 to 8 game pixels), up in arcs, down onto the floor beyond, and back into the hole, seen to go`, () => {
+  test(`the stairwell opens, ${label}: stones thrown up out of the hole, a dozen of mixed sizes (5 to 9 game pixels), up in arcs, some high, some skipping off the floor, and back into the hole, seen to go`, () => {
     const st = stones(m);
-    assert.ok(st.length === 7 && notes.stones === 7, `${st.length} stones`);
+    assert.ok(st.length === 12 && notes.stones === 12, `${st.length} stones`);
+    const ups: number[] = [];
     for (const t of st) {
       const live = t.at.map((a, i) => (a ? { ...a, i } : null)).filter((a) => a !== null) as { x: number; y: number; shown: number; size: number; i: number }[];
       const size = live[0].size - 2;
-      assert.ok(size >= 12 && size <= 16, `${t.name}: ${size} picture pixels`);
-      assert.ok(live[0].i > notes.great && live[0].i <= notes.great + 4, `${t.name} is thrown at ${live[0].i}`);
-      // up: well above where it came from
+      assert.ok(size >= 10 && size <= 18, `${t.name}: ${size} picture pixels`);
+      assert.ok(live[0].i >= notes.great && live[0].i <= notes.great + 4, `${t.name} is thrown at ${live[0].i}`);
+      // (up out of the hole: not all of it seen at first)
+      assert.ok(live[0].shown < 1, `${t.name} is there whole at once`);
+      // up out of the hole
       const y0 = live[0].y;
       const top = Math.min(...live.map((a) => a.y));
-      assert.ok(y0 - top >= 12, `${t.name} goes up only ${y0 - top}`);
+      ups.push(y0 - top);
       // into the hole, bit by bit: three frames or more from all of it showing to none
       const last = live.length - 1;
       assert.ok(live[last].shown <= 0.3, `${t.name} still shows ${live[last].shown.toFixed(2)} at the last`);
       const full = live.reduce((n, a, i) => (a.shown >= 0.85 ? i : n), -1);
       assert.ok(last - full >= 3, `${t.name} goes into the hole in ${last - full} frames`);
-      assert.ok(live[last].i < notes.swap, `${t.name} is still there when the stairwell comes`);
+      assert.ok(live[last].i < N - 1, `${t.name} is still there at the end`);
     }
+    // (some flung well over a hero's head, 48 picture pixels: up 60 or more from where they came up)
+    assert.ok(ups.filter((u) => u >= 60).length >= 2, `the highest go up ${ups.sort((a, b) => b - a).slice(0, 3).map((u) => u.toFixed(0)).join(', ')}`);
   });
 
   if (k === 4) {

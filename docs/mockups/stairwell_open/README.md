@@ -7,8 +7,9 @@ art/crypt_ways.ts, unchanged), to the pixel. It replaces the main chat's placeho
 burst and a shake). Nothing of the game imports `src/art/stairwell_open.ts`; when it plays, where, and
 what the game does round it are the main chat's, once he has said yes.
 
-**State of this branch (`mockup/floor3-4`):** the second cut, after the first fresh look (its verdict:
-at least a notch too low, with a hard pop), on top of 774da64 (floors 3 and 4 brought in; their files
+**State of this branch (`mockup/floor3-4`):** the third cut, after the second fresh look (a real step up;
+the dust tower read as a figure, the dust as clay, the stones popped), on top of the second cut (after the
+first fresh look: at least a notch too low, with a hard pop), on top of 774da64 (floors 3 and 4 brought in; their files
 are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.**
 
 ## His words
@@ -25,6 +26,49 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
 - (Not his: the main chat to the art chat, 10 Oct, 11:20, of its placeholder: "the stairwell's
   opening is the game's 'slam' burst (stone and dust) and a shake. He was told its real moment would
   be yours, big and wild by his rule.")
+
+## The second fresh look, and what the third cut does about it
+
+(The art chat's rulings on what the second fresh look found, in brief; not his words.)
+
+- **A. The dust tower formed a figure** (a hooded head on shoulders on way x, a snowman on way y), and
+  the same one on every floor. The burst now opens with a jet that shoots up about five heroes high in
+  three or four frames, leans (a different way on each floor and each way down), and tears apart at the
+  top, its highest billows flung apart and thinning where they hang. Every billow of the burst is placed
+  by the floor's own seed, so no two floors, nor the two ways, make the same shape. The flat cap is gone.
+- **B. The dust read as solid clay.** Each billow now has a thickness. Where the dust is thin its edge
+  breaks up and holes open in it, in blocks of two pixels and more (clumped, drifting slowly, stretched
+  along the floor), and as it thins away the holes grow until it is gone. Scraps under eight pixels are
+  never left, so there is no speck and no checkerboard. Floor 4's lit and dark dust tones are browner
+  (108, 98, 95 and 70, 60, 66), its body still the plum (91, 77, 103).
+- **C. The stones popped.** There are now twelve, of mixed sizes (11 to 18 picture pixels), thrown a
+  frame or more apart at different speeds: some high, well over a hero's head; some in arcs out over
+  the kerb; some skipping low across the floor past the kerb, each strike on the floor a bounce and a
+  small puff (the first kicks it back off the kerb's lip toward the hole). Each comes up out of the pit,
+  hidden by the floor in front of it until it is up, and each ends falling straight down the shaft,
+  slowly enough to be seen going under the rim and into the dark (a smooth darkening, not in steps).
+  Over earth they are clods and rock.
+- **D. The fissure's jets stood as pillars.** They now lean out from the opening, and each one's
+  billows spray apart as they rise and thin.
+- **E. The early fissure puffs read as pebbles.** They are now wisps: thin, low and long, curling off
+  along the floor, broken where they are thin.
+- **F. Blink-outs.** Nothing shrinks to a dab and vanishes now: everything thins away, holes opening.
+- **G. The dotted outline on frame 1.** The flagstones now cover a hair past their edges, so lying in
+  place they cover every pixel of the floor over the pit; nothing outlines the opening before the
+  fissure runs round it.
+- **H. Floor 4's ghost tile grid.** An earth slab's clods now meet on ragged lines across the slab, with
+  a lit lip on the far side and dark in the crack, not on straight lines along the tiles' joints. The
+  slabs themselves still break loose on the floor's joints (a lift of the earth along a joint shows as
+  a straight gap; see "Left" below).
+- **Raises.** The jet (above). An aftershock half a second after the burst: a jolt (kick 4) and a
+  second puff up out of the hole.
+- **How the fissure and the pit go, now that the dust has holes.** Pixel by pixel: each pixel of the
+  fissure goes at the first frame the dust is over it, and each pixel of the pit becomes the stairwell
+  at the first frame the dust is over it (painted either way) with no stone there. The code refuses to
+  make the moment if any pixel is never covered.
+- **Left:** lit lips on the tipping stone slabs and grit trickling from the plume were not done; the
+  earth still breaks loose on the tiles' joints between slabs (only the clods inside a slab are
+  ragged); painting a moment now takes 7 to 10 s here.
 
 ## The first fresh look's ten points, and what the second cut does about each
 
@@ -86,7 +130,7 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
    the cracks between them dark, tumbling as they fall. The fissure crumbles, four of the seven stones
    are clods and rock, and the dust is the floor's earth-plum.
 9. **Length.** 3.33 to 3.47 seconds (100 to 104 frames), depending on how the joints fall (checked at
-   128 places on the four floors, both ways).
+   128 places on the four floors, both ways; after the third cut, 3.27 to 3.47 s at the 41 places checked).
 10. **makeStairwell is unchanged**, and the last frame is its picture to the pixel. **For later:** way y
    (down to the lower left) reads weakly as steps in makeStairwell's own picture; it is not touched here.
 
@@ -120,18 +164,19 @@ joints.
   out of the fissure.
 - **The floor goes** (frames 12 to 37): the ripple described in point 2. The flagstones tip at 12, 14,
   17, 19, 22, 24, 27 and 29, and strike at 21, 22, 25, 28, 31, 32, 35 and 37.
-- **The great burst** (frame 37, 1.23 s, the biggest jolt): as described in point 5.
-  - The stones fly from the next frame.
-  - The fissure goes under the skirt at frame 41.
-  - The plume is at its highest at frame 53 (1.77 s).
-  - The pit becomes the stairwell under the heap at frame 62.
-- **It settles** over the last second: the skirt's sheets first, then the slumped plume's, then the
-  heap over the stairwell. The last frame, frame 101 of 102 (3.40 s), is the stairwell.
+- **The great burst** (frame 37, 1.23 s, the biggest jolt): the jet shoots up and tears apart at the
+  top (A above), with the heap, skirt, plume and streamers of point 5.
+  - The stones come up out of the pit from this frame to frame 40.
+  - The last of the fissure goes under the dust by frame 40.
+  - The aftershock: frame 52 (a jolt, kick 4, and a second puff from the hole).
+  - The pit starts to become the stairwell, pixel by pixel under the dust, at frame 55.
+- **It settles** over the last second: the skirt's sheets thin away first, then the slumped plume's,
+  then the heap over the stairwell. The last frame, frame 99 of 100 (3.33 s), is the stairwell.
 
 ## For the main chat, when he has said yes
 
 - **Line it up by the anchor.** Every frame is anchored at makeStairwell's anchor, and each is cut to
-  what is painted in it (the biggest is 508 x 298 picture pixels). Draw each frame by its anchor, as a
+  what is painted in it (the biggest is 488 x 384 picture pixels). Draw each frame by its anchor, as a
   sprite is drawn.
 - **Tell it the tile.** The floor it breaks is the game's floor at `at`, so `at` must be the tile the
   stairwell's anchor is on, or its first frames will not match the floor round them.
@@ -147,10 +192,11 @@ joints.
   - the heave: 6, dying away in 4 frames;
   - each flagstone striking the bottom: 3 for the first, rising to 6 for the last but one, each dying
     away in 4 frames;
-  - the great burst: 10, dying away over 15 frames (half a second).
+  - the great burst: 10, dying away over 15 frames (half a second);
+  - the aftershock, 15 frames after the burst: 4, dying away in 4 frames.
 
   The jolts are also the frames to hang a sound on.
-- **Paint it ahead of time.** It takes 3 to 6 s to paint each moment here (tsx), and a phone takes
+- **Paint it ahead of time.** It takes 7 to 10 s to paint each moment here (tsx), and a phone takes
   several times that. Paint the floor's one (its way, its tile) when the floor is first reached, or
   while the boss fight goes on, never at the death.
 - **What it shares with makeStairwell.** It holds a copy of makeStairwell's painter that takes the
@@ -177,19 +223,22 @@ One test checks how long the nine take to paint, and that each is kept. For each
   frame except on a jolt; at least 4 pixels change every frame; never more than 4 loose pixels in a
   frame.
 - **The jolts and kicks:** the shock 4; the heave 6; each flagstone 3 to 6, on the frame it strikes;
-  the great burst 10, the biggest, on the frame the last flagstone strikes.
+  the great burst 10, the biggest, on the frame the last flagstone strikes; the aftershock 4, 15 frames
+  after it.
 - **The ripple:** on average one flagstone strikes every 1 to 3 frames, never more than 4 apart; the
   first strikes by frame 24; one is already on its way within 8 frames of the heave.
 - **Each flagstone:** it tips for 3 frames or more, is seen as it starts, and goes from sight on the
   frame it strikes; they go in their order.
 - **The burst:** the dust is 150 picture pixels high or more within 20 frames of the burst; the skirt
   is out 150 to each side within 15 frames, half of that within 5.
-- **The settling:** the dust hangs 4 frames or more; it never comes down faster than it went up; it is
-  under half its height within 40 frames; it thins over the last second.
-- **The swaps:** the fissure goes, and the pit becomes the stairwell, under the dust, after the burst.
-- **The stones:** seven of them, 12 to 16 picture pixels across, thrown just after the burst; each goes
-  up 12 pixels or more, goes into the hole over 3 frames or more, and is gone before the stairwell
-  comes.
+- **The settling:** measured at the top of the dust's body (the row above which lie 3% of its pixels,
+  not a torn scrap thinning away above it): it hangs 4 frames or more; it never comes down faster than
+  it went up; it is under half its height within 40 frames; it thins over the last second.
+- **The swaps:** the last of the fissure goes after the burst; the stairwell starts to come 18 frames
+  or more after it (each pixel under the dust: the code refuses otherwise).
+- **The stones:** twelve of them, 10 to 18 picture pixels across, thrown within 4 frames of the burst,
+  none there whole at first (each comes up out of the pit); two or more go up 60 pixels or more; each
+  goes into the hole over 3 frames or more and is gone before the end.
 - **Floor 4 only:** the earth breaks into clods; there is earth among the stones; the dust's plum body
   is there in quantity, and nothing is pinkish.
 
