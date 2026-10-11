@@ -9,43 +9,47 @@
 // wild and kinetic and weighty as possible.  I’d rather it be a notch too high than a notch too low.”
 // And (07:53): “And I want all animations checked against this statement before I see them.”
 //
-// WHAT HAPPENS (frames at 30 a second; the numbers are the constants below):
-//   THE SHOCK (frame SHOCK, a jolt): a crack bursts open at the middle of where the stairwell will be
-//     and races out along the lines of the slabs to the opening's outline and round it, and round the
-//     kerb's outline, dust spurting and grit hopping where it runs (the floor shudders: the screen's
-//     to do, a tremor until the heave).
-//   THE HEAVE (frame HEAVE, a jolt): the kerb shoves up out of the floor round three sides, past its
-//     height and back, and every slab of the lid inside it jumps and drops back loose, dust blowing out
-//     of every crack; the slabs rattle and sag.
-//   THE SLABS GO, one after another down the line of the steps (from the top of the steps toward the
-//     eye): each tips, its far end dropping into the dark, slips off and falls, slams onto the steps
-//     (the deeper ones are jolts), and shoots on down them out of sight under the floor, chips and dust
-//     flung up from each. On the deeper floors some of the lid is earth: it crumbles and pours down in
-//     clods.
-//   THE GREAT BURST (the last slab's slam, a jolt): a column of dust blows up out of the hole, higher
-//     than the tallest hero three times over, a ring of it rolling out over the kerb across the floor,
-//     chips and stones flung up high; the dust falls fast and thins away as clouds, the chips rain back
-//     down into the hole; grit trickles off the kerb; and it is the stairwell, the steps going down into
-//     the dark, the kerb round it (its last frame is makeStairwell's picture, to the pixel).
+// WHAT HAPPENS (the frames are the constants and the notes below; at 30 a second):
+//   THE SHOCK (a jolt): a fissure bursts open in the floor at the middle of the opening's near side
+//     and races round its outline both ways, its broken edges catching the light, a few forks shooting
+//     off it out into the floor; where the floor is earth it crumbles, dirt spilling into it. Dust
+//     spurts where it runs. The floor inside it shudders on its own joints.
+//   THE HEAVE (a jolt): the floor inside the fissure jumps and drops back loose, its flagstones apart
+//     on their joints, the dark of a pit showing between them; jets of dust burst up through them.
+//   THE FLOOR GOES, flagstone by flagstone down the line of the steps, one every two or three frames:
+//     each tips on its uphill edge, its lit top swinging down toward the eye, then drops and darkens
+//     into the pit, dust welling up through the gap it leaves (the pit is never seen standing open);
+//     each strikes the bottom as it goes from sight, with a jolt and a spurt of dust up out of the pit.
+//     Where the floor is earth it crumbles as it goes, in four clods.
+//   THE GREAT BURST (the last one striking the bottom, the biggest jolt): dust bursts out of the whole
+//     hole, a heap of it over the opening and a skirt of it rushing out over the floor two or three
+//     tiles, past the hero's feet, and a plume of it up high, with streamers; stones are thrown out in
+//     arcs, land, bounce and drop back into the hole. Under the skirt the fissure goes; under the heap
+//     the pit becomes the stairwell: its steps and its kerb are there when the dust thins. The dust
+//     hangs, spreads and drifts; the plume slumps, and everything low spreads into broad sheets on the
+//     floor and thins, the stairwell coming out of the haze; its last frame is makeStairwell's
+//     picture, to the pixel.
 //
-// HOW IT IS PAINTED. Everything is in the world and painted as the eye sees it: the stairwell at the
-// kerb's height of each frame (a copy of makeStairwell's painter that takes the kerb's height and keeps,
-// for each pixel, how high in the world the thing it shows is, so that what falls into the hole is
-// hidden by what is nearer the eye: the kerb, the floor, the slabs still in place, the steps); the slabs
-// as solid stones, a top, an underside and four sides, turned as they fall and lit as each face turns to
-// the light (from the upper left); below the floor everything goes darker with depth in the five steps
-// the stairwell's own depth is painted in. Before the heave nothing of the floor is painted (the game's
-// own floor is all there is, under its cracks): the slabs and the kerb are painted from the frame they
-// first move, a jolt, so that the floor never changes under the eye while it lies still.
+// HOW IT IS PAINTED. Everything is in the world and painted as the eye sees it: the floor over the
+// opening is the game's own floor (the theme's ground, makeGroundArt: the moment is told which tile its
+// anchor is on, and its flagstones are the floor's, its earth the floor's earth), so that before it moves
+// it is the floor to the pixel and nothing changes under the eye; it breaks loose on the floor's own
+// joints. The pit under it and the stairwell after are a copy of makeStairwell's painter that takes the
+// kerb's height and whether the steps are there, and keeps how high in the world what each pixel shows
+// is, so that what falls into the hole is hidden by what is nearer the eye. The flagstones are solid
+// stones, lit as each face turns to the light (from the upper left); below the floor everything goes
+// darker with depth in the stairwell's own five steps. The dust is painted as one mass, billows joined
+// where they meet, lit along its tops and dark along its bellies, behind whatever is nearer the eye.
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { STAIR_KERB, STAIR_LONG, STAIR_WIDE, makeStairwell } from './crypt_ways';
-import { DIRT, ROCK } from './crypt';
-import { FLOOR_DUST, LIGHT_W } from './floor2';
+import { CRYPT_FLOORS, DIRT, ROCK, cryptGround } from './crypt';
+import { LIGHT_W } from './floor2';
 import { DEEP, fastBlit } from './floorkit';
 import type { Moment, Track } from './floorkit';
-import type { Theme } from './ground';
+import { makeGroundArt } from './ground';
+import type { GroundArt, Theme } from './ground';
 import { GRAIN, hash, mix } from './kit';
 
 type Way = 'x' | 'y';
@@ -110,14 +114,19 @@ function roughAt(run: number, depth: number, face: readonly string[], rock: read
   return mix(face[2], rock[1], 0.55);
 }
 
-/** The stairwell's picture with its kerb `h` picture pixels high, laid out as makeStairwell's (its anchor at (ox, oy)), and the height in the world of what each pixel shows (-Infinity: the dark). */
+/**
+ * The stairwell's picture with its kerb `h` picture pixels high, laid out as makeStairwell's (its
+ * anchor at (ox, oy)), and the height in the world of what each pixel shows (-Infinity: the dark).
+ * `steps` false: the shaft without its steps (the pit the lid falls into, before the dust clears);
+ * `h` 0: no kerb, the floor round the opening is the game's own (not painted).
+ */
 interface Well {
   p: Px;
   z: Float32Array;
   ox: number;
   oy: number;
 }
-function paintWell(theme: Theme, way: Way, h: number): Well {
+function paintWell(theme: Theme, way: Way, h: number, steps = true): Well {
   const LONG = STAIR_LONG;
   const WIDE = STAIR_WIDE;
   const K = STAIR_KERB;
@@ -175,6 +184,12 @@ function paintWell(theme: Theme, way: Way, h: number): Well {
           met = true;
           break;
         }
+        if (h === 0 && d === 0 && here !== 0) {
+          // (no kerb: the floor round the opening is the game's own)
+          hit = 0;
+          met = true;
+          break;
+        }
         if (here === 2) {
           if (z <= 0) {
             hit = 0;
@@ -214,7 +229,7 @@ function paintWell(theme: Theme, way: Way, h: number): Well {
             met = true;
             break;
           }
-        } else if (z < 0) {
+        } else if (z < 0 && steps) {
           const k = Math.floor(al / STEP) + 1;
           const top = -DROP * k;
           if (z <= top) {
@@ -255,98 +270,54 @@ function paintWell(theme: Theme, way: Way, h: number): Well {
   return { p, z: zs, ox, oy };
 }
 
+
 // =================================================================================================
-// THE LID: the slabs of the floor over the opening, four rows down the way the steps go, two across
-// each; their edges are the cracks. On the deeper floors some of them are earth, as the floor round
-// them is (his outline: "By floor 4 it’s about half dirt and rocks").
+// THE FLOOR AS THE GAME LAYS IT (art/ground.ts, makeGroundArt: GroundArt.floor(tx, ty), by where the
+// tile is), round the stairwell's anchor on tile `at`; and the pixels of a sprite, in the browser or not.
 
-const ROWS = 4;
-/** The crack between rows r-1 and r, where it crosses `ac` (tiles along the way down): jagged, straight between knots. */
-function rowLine(r: number, ac: number): number {
-  if (r <= 0) return 0;
-  if (r >= ROWS) return STAIR_LONG;
-  const s = ac / 0.17;
-  const i = Math.floor(s);
-  const t = s - i;
-  const a = (hash(i, r, 501) - 0.5) * 0.16;
-  const b = (hash(i + 1, r, 501) - 0.5) * 0.16;
-  return (STAIR_LONG / ROWS) * r + a + (b - a) * t;
+const GROUNDS = new Map<string, GroundArt>();
+function groundOf(theme: Theme): GroundArt {
+  const k = CRYPT_FLOORS.indexOf(theme);
+  if (k >= 0) return cryptGround(k + 1);
+  let g = GROUNDS.get(theme.id);
+  if (!g) GROUNDS.set(theme.id, (g = makeGroundArt(theme)));
+  return g;
 }
-/** The crack that splits row r in two across, where it crosses `al` (tiles across). */
-function splitLine(r: number, al: number): number {
-  const s = al / 0.15;
-  const i = Math.floor(s);
-  const t = s - i;
-  const a = (hash(i, r, 503) - 0.5) * 0.2;
-  const b = (hash(i + 1, r, 503) - 0.5) * 0.2;
-  return STAIR_WIDE * (0.45 + 0.12 * hash(r, 1, 504)) + a + (b - a) * t;
-}
-/** Which slab of the lid a point of the opening is in (row * 2 + side), or -1 outside it. */
-function cellAt(al: number, ac: number): number {
-  if (al < 0 || al >= STAIR_LONG || ac < 0 || ac >= STAIR_WIDE) return -1;
-  let r = 0;
-  while (r < ROWS - 1 && al >= rowLine(r + 1, ac)) r++;
-  return r * 2 + (ac < splitLine(r, al) ? 0 : 1);
-}
-/**
- * THE CRACKS THAT BRANCH OFF from the middle, where the first one bursts, into the slabs (they are not
- * where the slabs part: lines across their tops, as a flagstone cracked across has, from the first frame
- * to the last they are seen): each a few straight runs, (along, across) in tiles.
- */
-const BRANCHES: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = (() => {
-  const m: [number, number] = [STAIR_LONG / 2, splitLine(1, STAIR_LONG / 2 - 0.01)];
-  return [
-    [m, [m[0] - 0.14, m[1] - 0.2], [m[0] - 0.22, m[1] - 0.33], [m[0] - 0.4, m[1] - 0.38]],
-    [m, [m[0] + 0.18, m[1] + 0.12], [m[0] + 0.28, m[1] + 0.3], [m[0] + 0.46, m[1] + 0.36]],
-    [m, [m[0] - 0.2, m[1] + 0.1], [m[0] - 0.3, m[1] + 0.26], [m[0] - 0.36, m[1] + 0.44]],
-    [m, [m[0] + 0.15, m[1] - 0.16], [m[0] + 0.36, m[1] - 0.22], [m[0] + 0.48, m[1] - 0.36]],
-  ];
-})();
-/** Is a point of the lid on one of those cracks (within `w` tiles)? */
-function onBranch(al: number, ac: number, w: number): boolean {
-  for (const b of BRANCHES) {
-    for (let i = 0; i + 1 < b.length; i++) {
-      const [a0, c0] = b[i];
-      const [a1, c1] = b[i + 1];
-      const da = a1 - a0;
-      const dc = c1 - c0;
-      const t = Math.max(0, Math.min(1, ((al - a0) * da + (ac - c0) * dc) / (da * da + dc * dc)));
-      if (Math.hypot(al - a0 - t * da, ac - c0 - t * dc) < w) return true;
-    }
-  }
-  return false;
-}
-
-/** Which of the lid's slabs are earth on a floor with `gone` of its flagstones gone. */
-function earthCells(gone: number): Set<number> {
-  const n = Math.round(gone * 8 * 1.1);
-  return new Set([3, 4, 6, 1, 0, 7, 2, 5].slice(0, n));
+function pixelsOf(s: Sprite): Px {
+  const img = s.img as unknown;
+  if (img instanceof Px) return img;
+  const cv = s.img;
+  const d = (cv.getContext('2d') as CanvasRenderingContext2D).getImageData(0, 0, cv.width, cv.height);
+  const p = new Px(cv.width, cv.height);
+  p.d.set(d.data);
+  return p;
 }
 
 // =================================================================================================
-// THE TIMES (frames, at 30 a second)
+// THE TIMES (frames, at 30 a second) AND MEASURES
 
-/** The shock: the first crack. */
+/** The shock: the fissure bursts open. */
 const SHOCK = 1;
-/** The heave: the kerb shoves up and the lid jumps loose. */
-const HEAVE = 9;
-/** The kerb's height, frame by frame from the heave (then its own, 6, but a jump at the great burst). */
-const KERB_RISE = [5, 7, 8, 7, 6, 6, 6];
-/** The first slab tips, and the next row after it so many frames. */
-const TIP0 = 13;
-const ROW_GAP = 4;
-/** Frames a slab tips before it slips; its fall (picture pixels a frame each frame); how fast it shoots on down the steps. */
-const TIP_FOR = 4;
-const G = 2.6;
-const SLIDE_V = 0.06;
-const SLIDE_A = 0.03;
-const SLIDE_MAX = 0.2;
-/** Picture pixels across the floor to a tile (as floor 2's moments: art/floor2.ts, KT). */
+/** The floor inside the fissure starts to shudder on its joints; the heave throws it up loose. */
+const SHUDDER = 4;
+const HEAVE = 10;
+/** The first flagstone tips; one more every two or three frames (GAP on the average), down the line of the steps, all of them within RIPPLE frames. */
+const TIP0 = 12;
+const GAP = 2.5;
+const RIPPLE = 18;
+/** Frames a flagstone tips on its uphill edge before it drops, and how far over (radians). */
+const TIP_FOR = 5;
+const TIP = 1.3;
+/** Its fall (picture pixels a frame each frame), and the depth at which it strikes the bottom of the pit, out of sight. */
+const G = 1.7;
+const BOTTOM = 48;
+/** Picture pixels across the floor to a tile (as floor 2's moments: art/floor2.ts, KT); a flagstone's thickness. */
 const KT = 40;
-/** The slope of the steps' noses: picture pixels down for a tile along. */
-const NOSE = (DROP / STEP) * 1;
-/** A slab's thickness (picture pixels). */
-const THICK = 6;
+const THICK = 7;
+/** The screen's kick at each jolt, in the game's pixels (the main chat's to do: see the README). */
+const KICK_SHOCK = 4;
+const KICK_HEAVE = 6;
+const KICK_BURST = 10;
 
 /** Where the light comes from, and which way is toward the eye, in the world (x, y across the floor, z up). */
 const LIGHT: V3 = (() => {
@@ -357,163 +328,52 @@ const EYE: V3 = (() => {
   const n = Math.hypot(KT, KT, 32);
   return [KT / n, KT / n, 32 / n];
 })();
-const dot = (a: readonly number[], b: readonly number[]): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+/** The world's (x, y) from a point along the way down and across it, and back. */
+const toXY = (way: Way, al: number, ac: number): [number, number] => (way === 'x' ? [al, ac] : [ac, al]);
+const toAL = toXY;
+
+/** How dark a piece of the floor is at a depth: as deep things are, but not for sagging or tipping a few pixels. */
+const lidDark = (depth: number): number => darkAt(depth - 5);
+
+/** A colour a step toward the light (`k` more than 0) or into shade (less). */
+const SHIFTED = new Map<string, string>();
+function shifted(c: string, k: number): string {
+  if (!k) return c;
+  const key = c + k;
+  let out = SHIFTED.get(key);
+  if (!out) SHIFTED.set(key, (out = k > 0 ? mix(c, '#b4b0e0', Math.min(0.5, 0.13 * k)) : mix(c, '#05040c', Math.min(0.7, 0.2 * -k))));
+  return out;
+}
 
 // =================================================================================================
-// A PIECE OF THE LID: a slab, or a lump of earth, as points of its faces at rest about the slab's hinge
-// (the middle of its edge nearer the eye, along the way down), each with its face's way out and its
-// colours; turned and moved frame by frame.
+// THE FLOOR OVER THE OPENING: its flagstones, as the floor lies (they break loose on its own joints,
+// `theme.slabs` to a tile), each stone or earth as the floor is there.
 
+interface Cell {
+  a0: number;
+  a1: number;
+  c0: number;
+  c1: number;
+  earth: boolean;
+  /** Its place in the order they go: down the line of the steps, row by row. */
+  order: number;
+}
+/** A piece that moves: a flagstone, or a lump of an earth one; its rest (tiles), the uphill edge it hinges on, and the points of its sides and underside. */
 interface Piece {
   cell: number;
-  /** The points: [al, ac, z] from the hinge (picture pixels: KT to a tile), the way out of its face, its colours (a ramp, an index into it, and how it is lit at rest). */
+  a0: number;
+  a1: number;
+  c0: number;
+  c1: number;
+  earth: boolean;
+  lump: number;
+  hinge: [number, number];
   pts: Float32Array;
   nrm: Float32Array;
-  ramp: string[][];
-  rampOf: Uint8Array;
-  idx: Uint8Array;
-  lit0: Float32Array;
-  /** Its middle, from the hinge. */
-  mid: V3;
+  tone: Uint8Array;
+  /** How many pixels its top covers lying in its place. */
+  lying: number;
 }
-
-/** The world's (x, y) from a point along the way down and across it. */
-const toXY = (way: Way, al: number, ac: number): [number, number] => (way === 'x' ? [al, ac] : [ac, al]);
-
-/**
- * THE LID'S PIECES: for each slab, its points (the top at the floor's level, its underside a slab's
- * thickness down, its sides round its edges), its hinge, and, for earth, the lumps it breaks into.
- */
-function lidPieces(theme: Theme, way: Way): { pieces: Piece[]; hinge: [number, number][] } {
-  const earth = earthCells(theme.earth?.gone ?? 0);
-  const S = 96;
-  const GAP = 0.022;
-  const st = 1 / S;
-  /** In the slab, clear of its cracks. */
-  const inner = (cell: number, al: number, ac: number): boolean => cellAt(al, ac) === cell && cellAt(al - GAP, ac) === cell && cellAt(al + GAP, ac) === cell && cellAt(al, ac - GAP) === cell && cellAt(al, ac + GAP) === cell;
-  const slab = theme.slab;
-  const TOP = [theme.mortar, slab[0], slab[1], slab[2], slab[3], mix(slab[3], '#ffffff', 0.12)];
-  const SIDE = [theme.shade[0], theme.shade[1], theme.shade[2], theme.lit[1], theme.lit[2], theme.lit[3]];
-  const UNDER = [DIRT[0], theme.mortar, theme.shade[0], theme.shade[1]];
-  const dirt = theme.earth?.dirt ?? DIRT;
-  const rock = theme.earth?.rock ?? ROCK;
-  const SOIL = [dirt[0], dirt[1], dirt[2], dirt[3], mix(dirt[3], rock[3], 0.5)];
-  const STONE = [rock[0], rock[1], rock[2], rock[3], mix(rock[3], '#ffffff', 0.1)];
-  const SOIL_SIDE = [dirt[0], dirt[0], dirt[1], dirt[1], dirt[2], dirt[2]];
-  const ramps = [TOP, SIDE, UNDER, SOIL, STONE, SOIL_SIDE];
-  const pieces: Piece[] = [];
-  const hinge: [number, number][] = [];
-  const lightOf = (n: V3): number => {
-    const [x, y] = toXY(way, n[0], n[1]);
-    return dot([x, y, n[2]], LIGHT);
-  };
-  for (let cell = 0; cell < ROWS * 2; cell++) {
-    const r = cell >> 1;
-    const isEarth = earth.has(cell);
-    // its points on the grid, and its hinge
-    const grid: [number, number][] = [];
-    let alMax = -Infinity;
-    let acSum = 0;
-    let alMin = Infinity;
-    let acMin = Infinity;
-    let acMax = -Infinity;
-    for (let al = st / 2; al < STAIR_LONG; al += st) {
-      for (let ac = st / 2; ac < STAIR_WIDE; ac += st) {
-        if (!inner(cell, al, ac)) continue;
-        grid.push([al, ac]);
-        alMax = Math.max(alMax, al);
-        alMin = Math.min(alMin, al);
-        acMin = Math.min(acMin, ac);
-        acMax = Math.max(acMax, ac);
-        acSum += ac;
-      }
-    }
-    const ha = r === ROWS - 1 ? STAIR_LONG : alMax;
-    const hc = acSum / grid.length;
-    hinge.push([ha, hc]);
-    const has = new Set(grid.map(([a, c]) => `${Math.round(a * S - 0.5)},${Math.round(c * S - 0.5)}`));
-    const on = (a: number, c: number): boolean => has.has(`${Math.round(a * S - 0.5)},${Math.round(c * S - 0.5)}`);
-    // (one piece each: earth crumbles as it goes, shedding clods: the moment's chips)
-    const lumpOf = (_al: number, _ac: number): number => 0;
-    const parts = 1;
-    const bags = Array.from({ length: parts }, () => ({ p: [] as number[], n: [] as number[], ramp: [] as number[], idx: [] as number[], lit: [] as number[] }));
-    const tone = hash(cell, 1, 511);
-    const add = (al: number, ac: number, z: number, n: V3, ramp: number, idx: number): void => {
-      const b = bags[lumpOf(al, ac)];
-      b.p.push((al - ha) * KT, (ac - hc) * KT, z);
-      b.n.push(n[0], n[1], n[2]);
-      b.ramp.push(ramp);
-      b.idx.push(idx);
-      b.lit.push(lightOf(n));
-    };
-    for (const [al, ac] of grid) {
-      // ITS TOP: as the floor's flagstones are, a lit lip along its two edges up the screen, a shaded one
-      // along its two down it, one tone, a pit here and there (art/ground.ts, floorAt); or earth, in clods
-      // with rocks in it
-      if (isEarth) {
-        const g = 4;
-        const cu = Math.floor(al * g * 3);
-        const cv = Math.floor(ac * g * 3);
-        const lump = hash(cu, cv, 515);
-        const isRock = hash(Math.floor(al * 7), Math.floor(ac * 7), 516) < 0.22 && hash(Math.floor(al * 7 + 0.5), Math.floor(ac * 7 + 0.5), 517) < 0.6;
-        if (onBranch(al, ac, 0.014)) add(al, ac, 0, [0, 0, 1], 3, 0);
-        else if (isRock) add(al, ac, 0, [0, 0, 1], 4, hash(Math.floor(al * 7), Math.floor(ac * 7), 518) < 0.4 ? 3 : 2);
-        else add(al, ac, 0, [0, 0, 1], 3, lump > 0.86 ? 3 : lump < 0.1 ? 0 : hash(Math.floor(al * 3), Math.floor(ac * 3), 519) < 0.4 ? 2 : 1);
-      } else {
-        const up = !inner(cell, al - 0.045, ac) || !inner(cell, al, ac - 0.045);
-        const down = !inner(cell, al + 0.035, ac) || !inner(cell, al, ac + 0.035);
-        let idx = up ? 4 : down ? 1 : tone < 0.15 ? 2 : tone < 0.5 ? 3 : 4;
-        // (the cracks that branched off the first one, across its top)
-        if (onBranch(al, ac, 0.014)) idx = 0;
-        if (!up && !down && hash(Math.round(al * 64), Math.round(ac * 64), 520 + cell) < 0.012) idx = 1;
-        add(al, ac, 0, [0, 0, 1], 0, idx);
-      }
-      // ITS UNDERSIDE: rough, earth clinging to it
-      add(al, ac, -THICK, [0, 0, -1], isEarth ? 3 : 2, hash(Math.floor(al * 20), Math.floor(ac * 20), 521) < 0.4 ? 0 : 1);
-      // ITS SIDES, where its edge is (and, earth, round each lump)
-      for (const [da, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        const na = al + da * st;
-        const nc = ac + dc * st;
-        if (on(na, nc) && lumpOf(na, nc) === lumpOf(al, ac)) continue;
-        for (let z = -0.25; z > -THICK; z -= 0.5) {
-          const n: V3 = [da, dc, 0];
-          const lit = lightOf(n);
-          const base = Math.max(0, Math.min(5, Math.round(2.5 + 3 * lit)));
-          add(al + da * st * 0.5, ac + dc * st * 0.5, z, n, isEarth ? 5 : 1, z > -1 ? Math.min(5, base + 1) : z < -THICK + 1 ? Math.max(0, base - 2) : base);
-        }
-      }
-    }
-    for (const b of bags) {
-      if (!b.idx.length) continue;
-      const n = b.idx.length;
-      let mx = 0;
-      let my = 0;
-      let mz = 0;
-      for (let i = 0; i < n; i++) {
-        mx += b.p[i * 3];
-        my += b.p[i * 3 + 1];
-        mz += b.p[i * 3 + 2];
-      }
-      pieces.push({
-        cell,
-        pts: Float32Array.from(b.p),
-        nrm: Float32Array.from(b.n),
-        ramp: ramps,
-        rampOf: Uint8Array.from(b.ramp),
-        idx: Uint8Array.from(b.idx),
-        lit0: Float32Array.from(b.lit),
-        mid: [mx / n, my / n, mz / n],
-      });
-    }
-  }
-  return { pieces, hinge };
-}
-
-// =================================================================================================
-// HOW EACH SLAB GOES: its pose frame by frame. Turned about its hinge: `pitch` about the line across
-// the way down (more than 0: its far end down), `roll` about the line along it, `yaw` about the
-// upright; the hinge where it is (al, ac in tiles, z in picture pixels).
-
 interface Pose {
   al: number;
   ac: number;
@@ -521,77 +381,15 @@ interface Pose {
   pitch: number;
   roll: number;
   yaw: number;
-  /** Not there (before the heave, or gone down out of the picture). */
   off?: boolean;
 }
 
-/** When each slab tips: row by row down the way, the two of a row a frame apart, by turns which first. */
-function tipOf(cell: number): number {
-  const r = cell >> 1;
-  const c = cell & 1;
-  return TIP0 + ROW_GAP * r + (c === (r & 1) ? 0 : 1);
-}
-
-/** Where the hinge comes to rest on the steps' noses, how many frames its fall takes, and the frame it slams onto them. */
-function landOf(cell: number, hinge: readonly [number, number]): { al: number; z: number; fall: number; at: number } {
-  // (it falls forward, down into the hole under the slabs still in place, and lies on the steps there)
-  const al = hinge[0] + 0.3;
-  const z = -NOSE * al + THICK + 1;
-  const fall = Math.max(2, Math.round(Math.sqrt((2 * (1.5 - z)) / G)));
-  return { al, z, fall, at: tipOf(cell) + TIP_FOR + fall - 1 };
-}
-
-/** How far each slab tips before it slips: the first row hardly (the top of the steps holds its far end), the rest far over, but no steeper than the eye looks down (38 degrees): steeper, it would hang hidden under the slab beyond it. */
-const TIP_TO = [0.2, 0.4, 0.42, 0.42];
-/** Lying on the steps: as steep as their noses run. */
-const LIE = -Math.atan(NOSE / KT);
-
-function poseOf(cell: number, f: number, hinge: readonly [number, number]): Pose {
-  const r = cell >> 1;
-  const c = cell & 1;
-  const [ha, hc] = hinge;
-  const t0 = tipOf(cell);
-  const land = landOf(cell, hinge);
-  const sag = -1.5;
-  const wob = (k: number, s: number): number => Math.sin(k * 2.1 + r * 1.7 + c * 2.9 + s);
-  if (f < HEAVE) return { al: ha, ac: hc, z: 0, pitch: 0, roll: 0, yaw: 0, off: true };
-  /** THE HEAVE: thrown up and dropped back loose (the kerb shoving up past it: KERB_RISE), then sagging, rattling. */
-  const heaved = (g: number, rattle: number): number => {
-    const k = g - HEAVE;
-    return [4.5 + 0.5 * hash(cell, 1, 531), 6, 6, 4.5, 2.5, 0.5][k] ?? sag + rattle * 0.9 * wob(g, 0);
-  };
-  if (f < t0) return { al: ha, ac: hc, z: heaved(f, 1), pitch: 0.04 * wob(f, 1), roll: 0.052 * wob(f, 2), yaw: 0 };
-  const rollTo = (c === 0 ? 1 : -1) * (0.1 + 0.08 * hash(cell, 2, 531));
-  if (f < t0 + TIP_FOR) {
-    // IT TIPS: its far end dropping, faster and faster, about its hinge
-    const u = ((f - t0 + 1) / TIP_FOR) ** 2;
-    return { al: ha, ac: hc, z: heaved(f, 0), pitch: TIP_TO[r] * u, roll: rollTo * u, yaw: 0 };
-  }
-  if (f <= land.at) {
-    // IT SLIPS AND FALLS: its near end drops off its hinge, faster every frame, and it swings over to lie on the steps
-    const u = ((f - (t0 + TIP_FOR) + 1) / land.fall) ** 2;
-    const z0 = heaved(t0 + TIP_FOR - 1, 0);
-    return { al: ha + (land.al - ha) * u, ac: hc, z: z0 + (land.z - z0) * u, pitch: TIP_TO[r] + (LIE - TIP_TO[r]) * u, roll: rollTo * (1 - 0.6 * u), yaw: 0.12 * (c ? 1 : -1) * u };
-  }
-  // IT SLAMS ONTO THE STEPS AND SHOOTS ON DOWN THEM, rocking as it goes over each nose
-  const k = f - land.at;
-  // (faster and faster, to the pace of a slab sliding down a flight of steps; gone when it is deep under the floor)
-  const kMax = (SLIDE_MAX - SLIDE_V) / SLIDE_A;
-  const s = k < kMax ? SLIDE_V * k + 0.5 * SLIDE_A * k * k : SLIDE_V * kMax + 0.5 * SLIDE_A * kMax * kMax + SLIDE_MAX * (k - kMax);
-  const al = land.al + s;
-  const z = -NOSE * al + THICK + 1 - Math.abs(Math.sin((Math.PI * al) / STEP)) * 1.2;
-  const off = z < -75;
-  return { al, ac: hc, z, pitch: LIE + 0.16 * Math.exp(-k / 2.5) * Math.cos(k * 1.9), roll: rollTo * 0.4 * Math.exp(-k / 4), yaw: 0.12 * (c ? 1 : -1), off };
-}
-
-/** A rotation (3 x 3, rows) from a pose's turns: yaw after pitch after roll. */
+/** A rotation (3 x 3, rows) from a pose's turns: yaw after pitch after roll. Pitch more than 0: its uphill end down; less: its downhill end down. */
 function turnOf(P: Pose): number[] {
   const [cr, sr] = [Math.cos(P.roll), Math.sin(P.roll)];
   const [cp, sp] = [Math.cos(P.pitch), Math.sin(P.pitch)];
   const [cy, sy] = [Math.cos(P.yaw), Math.sin(P.yaw)];
-  // roll about al: (a, c, z) -> (a, c cr - z sr, c sr + z cr)
   const R1 = [1, 0, 0, 0, cr, -sr, 0, sr, cr];
-  // pitch about ac (far end down): (a, c, z) -> (a cp - z sp, c, a sp + z cp)
   const R2 = [cp, 0, -sp, 0, 1, 0, sp, 0, cp];
   const R3 = [cy, -sy, 0, sy, cy, 0, 0, 0, 1];
   const mul = (A: number[], B: number[]): number[] => {
@@ -603,31 +401,11 @@ function turnOf(P: Pose): number[] {
 }
 
 // =================================================================================================
-// WHAT FLIES: chips and stones flung up (a block of a colour or two and, flying fast, a streak behind
-// it), grit, and the dust. Chips and grit are not followed by the checks, as floor 2's grit is not:
-// each comes down where it went up from, into a crack or into the hole, out of sight.
+// DUST: billows, each born, blown up and out, slowed by the air, hanging and drifting, then sinking;
+// low down it spreads into a sheet on the floor and thins away, high up it thins where it hangs; all
+// painted together as one mass (paintDust), round lobes heaped on lobes.
 
-interface Chip {
-  f0: number;
-  /** From (tiles across the floor, picture pixels up), how fast (tiles, picture pixels a frame), how hard it falls. */
-  x: number;
-  y: number;
-  z: number;
-  vx: number;
-  vy: number;
-  vz: number;
-  g: number;
-  size: number;
-  /** Its lit top and left, its body, its shaded foot. */
-  tones: readonly [string, string, string];
-}
-const chipAt = (c: Chip, f: number): V3 => {
-  const k = f - c.f0;
-  return [c.x + c.vx * k, c.y + c.vy * k, c.z + c.vz * k - 0.5 * c.g * k * k];
-};
-
-/** A cloud of dust: born on frame `f0` at (x, y) tiles and z, blown up `vz` and out (vx, vy) a frame, slowed by the air and falling fast after; its size and its life. */
-interface Cloud {
+interface Billow {
   f0: number;
   x: number;
   y: number;
@@ -635,520 +413,1089 @@ interface Cloud {
   vx: number;
   vy: number;
   vz: number;
+  /** How much of its speed it keeps each frame. */
+  drag: number;
   r0: number;
-  big: number;
+  grow: number;
+  /** Frames it hangs before it sinks; how fast it comes to sink, and its fastest sinking (picture pixels a frame). */
+  rest: number;
+  sink: number;
+  sinkMax: number;
   life: number;
-  fall: number;
+  /** Frames at the end of its life it spreads into a sheet (or thins where it hangs) and goes. */
+  flat: number;
+  /** How tall for its width (a streamer, more than 1; the skirt along the floor, less). */
+  tall: number;
+  /** The air's slow drift (tiles a frame). */
+  wx: number;
+  wy: number;
   seed: number;
 }
-function cloudAt(d: Cloud, f: number): { x: number; y: number; z: number; r: number; age: number } | null {
-  const k = f - d.f0;
-  if (k < 0 || k >= d.life) return null;
-  const drag = (1 - 0.74 ** k) / 0.26;
-  const z = d.z + d.vz * drag - 0.5 * d.fall * k * k;
-  const r = (d.r0 + d.big * (1 - Math.exp(-k / 3))) * (1 - (k / d.life) ** 2);
-  return { x: d.x + d.vx * drag, y: d.y + d.vy * drag, z: Math.max(z, 1 + r * 0.3), r, age: k / d.life };
+interface BillowNow {
+  x: number;
+  y: number;
+  z: number;
+  rx: number;
+  ry: number;
 }
-
-/** How dark a piece of the lid is at a depth: as deep things are, but not for sagging a pixel or two (it is still at the floor's level). */
-const lidDark = (depth: number): number => darkAt(depth - 2.5);
-
-/**
- * A BILLOW OF DUST, `r` high and 1.3 times as wide, its rim ragged (different for each `seed`): lit on
- * its upper left, in shade on its lower right, so that a cloud of them has a body (floorkit's
- * dustCloud, with a third tone). `tones`: its shade, its body, its light.
- */
-function billow(p: Px, x: number, y: number, r: number, tones: readonly [string, string, string], seed: number): void {
-  const k = 0.32 * r;
-  for (let yy = Math.floor(y - r); yy <= y + r; yy++) {
-    for (let xx = Math.floor(x - r * 1.3); xx <= x + r * 1.3; xx++) {
-      const dx = (xx + 0.5 - x) / 1.3;
-      const dy = yy + 0.5 - y;
-      const q = (dx * dx + dy * dy) / (r * r);
-      // (its rim ragged in lumps of two pixels, not in single specks)
-      if (q > 1 || (q > 0.62 && hash(Math.floor(xx / 2), Math.floor(yy / 2), 150 + seed) < 0.28 + (q - 0.62) * 1.6)) continue;
-      // (a crescent of light round its upper left, of shade round its lower right: where a circle as big, moved the other way, does not reach)
-      const lit = (dx - k) ** 2 + (dy - k) ** 2 > r * r;
-      const dark = (dx + k) ** 2 + (dy + k) ** 2 > r * r;
-      p.set(xx, yy, lit ? tones[2] : dark ? tones[0] : tones[1]);
-    }
+const smooth = (u: number): number => {
+  const v = Math.max(0, Math.min(1, u));
+  return v * v * (3 - 2 * v);
+};
+/** A billow k frames into its life before it spreads or thins: how high it would be, and how big. */
+function freeAt(b: Billow, k: number): { mv: number; zFree: number; r: number } {
+  const mv = (1 - b.drag ** k) / (1 - b.drag);
+  const j = k - b.rest;
+  let down = 0;
+  if (j > 0) {
+    const t1 = b.sinkMax / b.sink;
+    down = j <= t1 ? 0.5 * b.sink * j * j : 0.5 * b.sink * t1 * t1 + b.sinkMax * (j - t1);
   }
+  // (thinning as it comes down)
+  return { mv, zFree: b.z + b.vz * mv - down, r: (b.r0 + b.grow * (1 - Math.exp(-k / 5))) * (1 - 0.3 * Math.min(1, down / 120)) };
+}
+/** The frame of its life a billow has come down to lie on the floor. */
+function landOf(b: Billow): number {
+  for (let k = b.rest + 1; k < 300; k++) {
+    const { zFree, r } = freeAt(b, k);
+    if (zFree <= r * b.tall * 1.1) return k;
+  }
+  return 300;
+}
+function billowAt(b: Billow, f: number): BillowNow | null {
+  const k = f - b.f0;
+  if (k < 0 || k >= b.life) return null;
+  const { mv, zFree, r } = freeAt(b, k);
+  const rx0 = r * 1.12;
+  const ry0 = r * b.tall;
+  // (at the end: on the floor it spreads into a sheet and thins; up in the air it thins where it hangs; last, it draws in to nothing)
+  const u = smooth((k - (b.life - b.flat)) / b.flat);
+  const low = smooth(1 - (zFree - ry0) / (2.5 * ry0 + 4));
+  const go = smooth((u - 0.55) / 0.45);
+  const spread = 0.5 * Math.min(1, r / 10);
+  const rx = rx0 * (1 + u * (spread * low - 0.35 * (1 - low))) * (1 - go);
+  const ry = ry0 * (1 - u * (0.45 * low + 0.45 * (1 - low))) * (1 - go);
+  if (ry < 2 || rx < 3) return null;
+  const z = Math.max(zFree, ry * 0.8);
+  return { x: b.x + b.vx * mv + b.wx * k, y: b.y + b.vy * mv + b.wy * k, z, rx, ry };
 }
 
 // =================================================================================================
 // THE MOMENT
 
+export interface StairwellNotes {
+  /** The frame the last flagstone strikes the bottom (the great burst); the frame the fissure goes, under the dust; the frame the pit becomes the stairwell, under the dust. */
+  great: number;
+  heal: number;
+  swap: number;
+  /** The frame each flagstone (or slab of earth) starts to tip, and the frame it strikes the bottom, in the order they go. */
+  tips: number[];
+  impacts: number[];
+  /** The screen's kick at each of the moment's jolts, in the game's pixels (the great burst's dying away over half a second). */
+  kicks: number[];
+  /** The flagstones and lumps of earth that go; the stones thrown, and how many of them are earth (clods and rock). */
+  pieces: number;
+  earthPieces: number;
+  stones: number;
+  earthStones: number;
+  /** Every pixel that changes when the fissure goes, and when the pit becomes the stairwell, is under the dust that frame and the next. */
+  hidden: boolean;
+}
+const NOTES = new WeakMap<Moment, StairwellNotes>();
+/** What the moment's checks and the main chat need beside the Moment: its kicks, when the pit becomes the stairwell. */
+export function stairwellNotes(m: Moment): StairwellNotes {
+  const n = NOTES.get(m);
+  if (!n) throw new Error('not a stairwell opening');
+  return n;
+}
+/** The screen's kick (game pixels) at each of the moment's jolts, in order. */
+export function stairwellKicks(m: Moment): number[] {
+  return stairwellNotes(m).kicks;
+}
+
 const cache = new Map<string, Moment>();
 
 /**
  * THE STAIRWELL OPENS, in the stone and earth of `theme` (one of CRYPT_FLOORS), its steps going down
- * toward +x (`way` 'x') or +y ('y'). Anchored as makeStairwell's picture is (the corner of the opening
- * up the screen); its frames are bigger than it (the dust goes up high and out wide) and each is cut to
- * what is painted in it: line them up by the anchor. `before`: none (nothing of it is there before it
- * plays; the floor is the game's own); `after`: makeStairwell's picture, its last frame to the pixel.
+ * toward +x (`way` 'x') or +y ('y'), its anchor (the corner of the opening up the screen) on the corner
+ * of tile `at` (whole tiles: the floor it breaks is the game's floor there, GroundArt.floor). Anchored
+ * as makeStairwell's picture is; its frames are bigger than it (the dust goes up high and out wide) and
+ * each is cut to what is painted in it: line them up by the anchor. `before`: none (nothing of it is
+ * there before it plays: the floor is the game's own, and its first frame is empty); `after`:
+ * makeStairwell's picture, its last frame to the pixel.
  */
-export function stairwellOpens(theme: Theme, way: Way): Moment {
-  const key = `${theme.id}:${way}`;
+export function stairwellOpens(theme: Theme, way: Way, at: readonly [number, number] = [0, 0]): Moment {
+  const P = 10;
+  const X = ((Math.round(at[0]) % P) + P) % P;
+  const Y = ((Math.round(at[1]) % P) + P) % P;
+  const key = `${theme.id}:${way}:${X},${Y}`;
   const made = cache.get(key);
   if (made) return made;
-  const m = makeMoment(theme, way);
+  const m = makeMoment(theme, way, X, Y);
   cache.set(key, m);
   return m;
 }
 
-function makeMoment(theme: Theme, way: Way): Moment {
+function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
   const final = makeStairwell(theme, way);
-  const wells = new Map<number, Well>();
-  const wellAt = (h: number): Well => {
-    let w = wells.get(h);
-    if (!w) wells.set(h, (w = paintWell(theme, way, h)));
+  const wells = new Map<string, Well>();
+  const wellAt = (h: number, steps: boolean): Well => {
+    const k = `${h}:${steps}`;
+    let w = wells.get(k);
+    if (!w) wells.set(k, (w = paintWell(theme, way, h, steps)));
     return w;
   };
-  const W0 = wellAt(KERB_H);
+  const W0 = wellAt(KERB_H, true);
   const BW = W0.p.w;
   const BH = W0.p.h;
   // the frame: the stairwell's picture with room round it for the dust
-  const PADX = 140;
+  const PADX = 240;
   const PADT = 300;
-  const PADB = 70;
+  const PADB = 170;
   const FW = BW + 2 * PADX;
   const FH = BH + PADT + PADB;
   const AX = W0.ox + PADX;
   const AY = W0.oy + PADT;
-  /** A point of the world (x, y tiles, z picture pixels) on the frame. */
+  /** A point of the world (x, y tiles from the anchor, z picture pixels) on the frame. */
   const scr = (x: number, y: number, z: number): [number, number] => [AX + (x - y) * 32, AY + (x + y) * 16 - z];
-  /** A point of the stairwell's ground (along the way down, across it) as x and y. */
   const XY = (al: number, ac: number): [number, number] => toXY(way, al, ac);
-
-  const { pieces, hinge } = lidPieces(theme, way);
-  /** How much of each piece shows lying in its place: the pixels of its top (what its `shown` is measured against). */
-  const lying = pieces.map((p) => {
-    const px = new Set<number>();
-    for (let i = 0; i < p.idx.length; i++) {
-      if (p.nrm[i * 3 + 2] < 0.9) continue;
-      const [x, y] = toXY(way, hinge[p.cell][0] + p.pts[i * 3] / KT, hinge[p.cell][1] + p.pts[i * 3 + 1] / KT);
-      px.add(Math.floor(AY + (x + y) * 16) * FW + Math.floor(AX + (x - y) * 32));
-    }
-    return px.size;
-  });
-  const lands = Array.from({ length: ROWS * 2 }, (_, c) => landOf(c, hinge[c]));
-  // the great burst: the last slab's slam
-  const great = Math.max(...lands.map((l) => l.at));
-  const kerbOf = (f: number): number => (f < HEAVE ? 0 : f - HEAVE < KERB_RISE.length ? KERB_RISE[f - HEAVE] : f === great || f === great + 1 ? [8, 7][f - great] : KERB_H);
-  const earth = earthCells(theme.earth?.gone ?? 0);
-  const gone = theme.earth?.gone ?? 0;
-  // THE DUST of this floor: the floor's dust (floor 2's), the more earth the more of a plum
-  const EARTHY = ['#3a2e44', '#4a3c54', '#5c4c66'];
-  const DUST = FLOOR_DUST.map((c, i) => mix(c, EARTHY[i], Math.min(0.8, gone * 1.7)));
-  /** Its shade; a billow rising (shade, body, light), and falling and thinning, a tone down. */
-  const DUSK = mix(DUST[0], '#07050a', 0.35);
-  const RISING: readonly [string, string, string] = [DUST[0], DUST[1], DUST[2]];
-  const LATE: readonly [string, string, string] = [DUSK, DUST[0], DUST[1]];
-  const dirt = theme.earth?.dirt ?? DIRT;
-  const rock = theme.earth?.rock ?? ROCK;
-  const CHIP_STONE: readonly [string, string, string] = [mix(theme.slab[3], '#ffffff', 0.1), theme.slab[2], theme.slab[0]];
-  /** A stone's chunk: its lit edge catching the light. */
-  const STONE_CHUNK: readonly [string, string, string] = [mix(theme.slab[3], '#ffffff', 0.22), theme.slab[3], theme.slab[0]];
-  const CHIP_EARTH: readonly [string, string, string] = [mix(dirt[3], '#ffffff', 0.12), dirt[3], dirt[0]];
-  const CHIP_ROCK: readonly [string, string, string] = [mix(rock[3], '#ffffff', 0.15), rock[3], rock[0]];
-  const K = STAIR_KERB;
   const L = STAIR_LONG;
   const Wd = STAIR_WIDE;
+  const K = STAIR_KERB;
+  const e = theme.earth;
+  const dirt = e?.dirt ?? DIRT;
+  const rock = e?.rock ?? ROCK;
+  const gone = e?.gone ?? 0;
+  const earthy = new Set([...(e ? [...e.dirt, ...e.rock] : [])].map((c) => c.toLowerCase()));
 
-  // ----- THE CRACKS: the lines of the lid and round the kerb, each opening from one end at a pace
-  interface Crack { pts: [number, number][]; f0: number; v: number; burst: number; spurts: boolean }
-  const cracks: Crack[] = [];
-  /** A crack along a line `at(t)` for t 0..1 (along, across), `len` tiles long, opening from frame f0 at v tiles a frame. */
-  const crack = (at: (t: number) => [number, number], len: number, f0: number, v: number, burst = 0, spurts = false): void => {
-    const n = Math.max(2, Math.ceil(len * 40));
-    cracks.push({ pts: Array.from({ length: n + 1 }, (_, i) => at(i / n)), f0, v, burst, spurts });
+  // ----- THE FLOOR AS IT LIES round the anchor (the game's own tiles), on the frame
+  const ground = groundOf(theme);
+  const floor = new Px(FW, FH);
+  for (let ty = -2; ty <= 4; ty++) {
+    for (let tx = -2; tx <= 4; tx++) {
+      const s = ground.floor(TX + tx, TY + ty);
+      const p = pixelsOf(s);
+      const [x, y] = scr(tx, ty, 0);
+      fastBlit(floor, p, Math.round(x - s.ax * (s.density ?? 1)), Math.round(y - s.ay * (s.density ?? 1)));
+    }
+  }
+  /** The floor's colour at the pixel a point of the floor (tiles along, across) lies on. */
+  const floorAt = (al: number, ac: number): string | null => {
+    const [x, y] = XY(al, ac);
+    const [sx, sy] = scr(x, y, 0);
+    return floor.get(Math.floor(sx), Math.floor(sy));
   };
-  // (from the middle: the second row's split and the line between the second and third rows)
-  const mA = L / 2;
-  const mC = splitLine(1, mA - 0.01);
-  // (bursting open at once a fifth of a tile each way from the middle on the shock)
-  crack((t) => [rowLine(2, mC * (1 - t)), mC * (1 - t)], mC, SHOCK, 0.16, 0.25, true);
-  crack((t) => [rowLine(2, mC + (Wd - mC) * t), mC + (Wd - mC) * t], Wd - mC, SHOCK, 0.16, 0.25, true);
-  crack((t) => [mA - (mA - 0.6) * t, splitLine(1, mA - (mA - 0.6) * t)], 0.6, SHOCK, 0.18, 0.25, true);
-  crack((t) => [mA + 0.6 * t, splitLine(2, mA + 0.6 * t)], 0.6, SHOCK, 0.18, 0.25, true);
-  // (the cracks that branch off the middle into the slabs: art/stairwell_open.ts, BRANCHES)
-  for (const br of BRANCHES) {
-    const lens = br.slice(1).map((q, i) => Math.hypot(q[0] - br[i][0], q[1] - br[i][1]));
-    const len = lens.reduce((u, v) => u + v, 0);
-    crack((t) => {
-      let d = t * len;
-      for (let i = 0; i < lens.length; i++) {
-        if (d <= lens[i] || i === lens.length - 1) {
-          const k = Math.min(1, d / lens[i]);
-          return [br[i][0] + (br[i + 1][0] - br[i][0]) * k, br[i][1] + (br[i + 1][1] - br[i][1]) * k];
+
+  // ----- THE FLAGSTONES over the opening: on the floor's joints (`slabs` to a tile), slivers kept with their neighbours
+  const S = theme.slabs;
+  const joints = (start: number, len: number): number[] => {
+    const out = [0];
+    for (let k = Math.ceil(start * S - 1e-9); k / S - start < len; k++) {
+      const j = k / S - start;
+      if (j > 0.22 && j < len - 0.22) out.push(j);
+    }
+    out.push(len);
+    return out;
+  };
+  const [A0, C0] = toAL(way, TX, TY);
+  const rows = joints(A0, L);
+  const cols = joints(C0, Wd);
+  const cells: Cell[] = [];
+  for (let r = 0; r + 1 < rows.length; r++) {
+    for (let c = 0; c + 1 < cols.length; c++) {
+      let n = 0;
+      let dirtN = 0;
+      for (let al = rows[r] + 0.03; al < rows[r + 1]; al += 0.06) {
+        for (let ac = cols[c] + 0.03; ac < cols[c + 1]; ac += 0.06) {
+          n++;
+          const col = floorAt(al, ac);
+          if (col && earthy.has(col)) dirtN++;
         }
-        d -= lens[i];
       }
-      return br[br.length - 1] as [number, number];
-    }, len, SHOCK + 2, 0.14);
+      cells.push({ a0: rows[r], a1: rows[r + 1], c0: cols[c], c1: cols[c + 1], earth: dirtN > 0.45 * n, order: 0 });
+    }
   }
-  // (the other two lines across, from where the splits meet them; the splits of the end rows)
-  for (const r of [1, 3]) {
-    const a = r === 1 ? 0.6 : 1.8;
-    const c0 = splitLine(r === 1 ? 1 : 2, a);
-    crack((t) => [rowLine(r, c0 * (1 - t)), c0 * (1 - t)], c0, SHOCK + 3, 0.3);
-    crack((t) => [rowLine(r, c0 + (Wd - c0) * t), c0 + (Wd - c0) * t], Wd - c0, SHOCK + 3, 0.3);
+  // (their order: down the steps row by row, across each row from the far side and the near by turns)
+  cells.forEach((c, i) => (c.order = i));
+  {
+    const nc = cols.length - 1;
+    cells.forEach((c, i) => {
+      const r = Math.floor(i / nc);
+      const k = i % nc;
+      c.order = r * nc + (r % 2 ? nc - 1 - k : k);
+    });
   }
-  crack((t) => [0.6 * (1 - t), splitLine(0, 0.6 * (1 - t))], 0.6, SHOCK + 4, 0.3);
-  crack((t) => [1.8 + 0.6 * t, splitLine(3, 1.8 + 0.6 * t)], 0.6, SHOCK + 4, 0.3);
-  // (the opening's outline: its long sides from where the middle line meets them, both ways; its ends from the corners)
-  for (const ac of [0.012, Wd - 0.012]) {
-    crack((t) => [mA * (1 - t), ac], mA, SHOCK + 3, 0.42);
-    crack((t) => [mA + (L - mA) * t, ac], L - mA, SHOCK + 3, 0.42);
+
+  // ----- THE PIECES: a flagstone each, or an earth one in four lumps
+  const pieces: Piece[] = [];
+  cells.forEach((c, ci) => {
+    const parts: [number, number, number, number][] = c.earth
+      ? [
+          [c.a0, (c.a0 + c.a1) / 2, c.c0, (c.c0 + c.c1) / 2],
+          [c.a0, (c.a0 + c.a1) / 2, (c.c0 + c.c1) / 2, c.c1],
+          [(c.a0 + c.a1) / 2, c.a1, c.c0, (c.c0 + c.c1) / 2],
+          [(c.a0 + c.a1) / 2, c.a1, (c.c0 + c.c1) / 2, c.c1],
+        ]
+      : [[c.a0, c.a1, c.c0, c.c1]];
+    parts.forEach(([a0, a1, c0, c1], lump) => {
+      const hinge: [number, number] = [a0, (c0 + c1) / 2];
+      const pts: number[] = [];
+      const nrm: number[] = [];
+      const tone: number[] = [];
+      const st = 0.45 / KT;
+      const add = (al: number, ac: number, z: number, n: V3, t: number): void => {
+        pts.push((al - hinge[0]) * KT, (ac - hinge[1]) * KT, z);
+        nrm.push(n[0], n[1], n[2]);
+        tone.push(t);
+      };
+      // its four sides, a flagstone's thickness, and its underside (its top is painted from the floor itself)
+      for (let z = -0.25; z > -THICK; z -= 0.45) {
+        const t = z > -1 ? 2 : z < -THICK + 1.2 ? 0 : 1;
+        for (let al = a0; al < a1; al += st) {
+          add(al, c0, z, [0, -1, 0], t);
+          add(al, c1, z, [0, 1, 0], t);
+        }
+        for (let ac = c0; ac < c1; ac += st) {
+          add(a0, ac, z, [-1, 0, 0], t);
+          add(a1, ac, z, [1, 0, 0], t);
+        }
+      }
+      for (let al = a0; al < a1; al += st * 1.4) for (let ac = c0; ac < c1; ac += st * 1.4) add(al, ac, -THICK, [0, 0, -1], 3 + (hash(Math.floor(al * 20), Math.floor(ac * 20), 601 + ci) < 0.4 ? 1 : 0));
+      pieces.push({ cell: ci, a0, a1, c0, c1, earth: c.earth, lump, hinge, pts: Float32Array.from(pts), nrm: Float32Array.from(nrm), tone: Uint8Array.from(tone), lying: 0 });
+    });
+  });
+  const SIDE_STONE = [theme.shade[0], theme.shade[1], mix(theme.slab[3], '#ffffff', 0.12), DIRT[0], theme.mortar];
+  const SIDE_EARTH = [dirt[0], dirt[1], dirt[3], dirt[0], DIRT[0]];
+  /** A broken edge of the floor where it catches the light: stone, earth. */
+  const LIT_EDGE = mix(theme.slab[3], '#ffffff', 0.2);
+  const EARTH_EDGE = dirt[3];
+
+  /** When each piece tips, and the frame it strikes the bottom. */
+  // (one every GAP frames; closer together where the floor's joints make more of them, so that it is never longer)
+  // (an earth one crumbles as it goes: its downhill lumps a frame before the uphill ones)
+  const gap = Math.min(GAP, RIPPLE / Math.max(1, cells.length - 1));
+  const tipOf = (p: Piece): number => TIP0 + Math.floor(gap * cells[p.cell].order) + (p.earth && p.lump < 2 ? 1 : 0);
+  /** The frame each flagstone (or slab of earth) strikes the bottom, out of sight: when it has gone from sight (found below, as it is painted). */
+  const cutAt = cells.map(() => Infinity);
+  // (the smaller a stone, the less it shudders and rattles: a sliver lost behind its neighbour for a pixel's sag is gone)
+  const jig = cells.map((c) => Math.min(1, Math.min(c.a1 - c.a0, c.c1 - c.c0) / 0.5));
+  /** How far over each tips, of TIP (less for one that would go under its downhill neighbour too fast to be seen going: found below). */
+  const tipScale = cells.map(() => 1);
+  const tipFor = (p: Piece): number => (p.earth ? 3 : TIP_FOR);
+  const SAG = -1;
+  const heaved = (p: Piece, f: number, rattle: number): number => {
+    const k = f - HEAVE;
+    return [3.5 + hash(p.cell, 1, 612), 2.5, 0.8, -0.6 * jig[p.cell]][k] ?? SAG * jig[p.cell] + rattle * 0.7 * Math.sin(f * 2.3 + p.cell * 1.7 + p.lump);
+  };
+  const poseOf = (p: Piece, f: number): Pose => {
+    const [ha, hc] = p.hinge;
+    const rest: Pose = { al: ha, ac: hc, z: 0, pitch: 0, roll: 0, yaw: 0 };
+    if (f < SHUDDER) return rest;
+    if (f < HEAVE) {
+      // (the floor shudders on its joints, each stone its own way)
+      const w = Math.sin(f * 2.9 + p.cell * 2.1 + p.lump) * jig[p.cell];
+      return { ...rest, z: 0.9 * w, roll: 0.025 * jig[p.cell] * Math.sin(f * 3.7 + p.cell), pitch: 0.02 * w };
+    }
+    const T = tipOf(p);
+    if (f < T) return { ...rest, z: heaved(p, f, jig[p.cell]), pitch: 0.035 * jig[p.cell] * Math.sin(f * 1.9 + p.cell), roll: 0.045 * jig[p.cell] * Math.sin(f * 2.6 + p.cell * 1.3) };
+    const TF = tipFor(p);
+    const turn = (p.earth ? 0.5 : TIP) * tipScale[p.cell];
+    const rollTo = (p.earth ? 0.35 : 0.14) * (hash(p.cell, p.lump, 613) < 0.5 ? -1 : 1);
+    if (f < T + TF) {
+      // IT TIPS ON ITS UPHILL EDGE: its downhill end dropping, faster and faster
+      const u = ((f - T + 1) / TF) ** 1.5;
+      return { ...rest, z: heaved(p, f, 0), pitch: -turn * u, roll: rollTo * u };
+    }
+    // AND DROPS INTO THE PIT, turning on over, darker the deeper
+    const kk = f - (T + TF - 1);
+    const z0 = heaved(p, T + TF - 1, 0);
+    const z = z0 - 0.5 * G * kk * kk;
+    const spin = p.earth ? 0.22 : 0.1;
+    // (gone when it has struck the bottom, out of sight)
+    return { al: ha + 0.025 * kk, ac: hc, z, pitch: -turn - spin * kk, roll: rollTo * (1 + 0.15 * kk), yaw: 0, off: f >= cutAt[p.cell] || z < -BOTTOM - 3 };
+  };
+
+  /**
+   * The floor over the opening in frame f, piece by piece, painted into `scene` over the pit (`zb` the
+   * heights of what it shows, `owner` each pixel's piece); each piece's size on the screen and its middle.
+   */
+  const drawPieces = (f: number, scene: Px, zb: Float32Array, owner: Int16Array): { sizes: number[]; mids: ([number, number] | null)[] } => {
+    /** Put a point (screen x, y; its height on the ray through the pixel's middle) if nothing nearer is there. */
+    const put = (sx: number, sy: number, z: number, c: string, who: number, dark: number): void => {
+      const X = Math.floor(sx);
+      const Y = Math.floor(sy);
+      if (X < 0 || Y < 0 || X >= FW || Y >= FH) return;
+      const i = Y * FW + X;
+      const zz = z + ((sy - (Y + 0.5)) * 100) / 132;
+      if (zz <= zb[i]) return;
+      zb[i] = zz;
+      owner[i] = who;
+      scene.set(X, Y, dark ? mix(c, PIT_DARK, dark) : c);
+    };
+    const sizes: number[] = [];
+    const mids: ([number, number] | null)[] = [];
+    {
+      pieces.forEach((p, pi) => {
+        const Pz = poseOf(p, f);
+        if (Pz.off) {
+          sizes.push(0);
+          mids.push(null);
+          return;
+        }
+        const R = turnOf(Pz);
+        const H: V3 = [Pz.al * KT, Pz.ac * KT, Pz.z];
+        const Hr: V3 = [p.hinge[0] * KT, p.hinge[1] * KT, 0];
+        const world = (la: number, lc: number, lz: number): V3 => {
+          const a = la - Hr[0];
+          const c = lc - Hr[1];
+          return [H[0] + R[0] * a + R[1] * c + R[2] * lz, H[1] + R[3] * a + R[4] * c + R[5] * lz, H[2] + R[6] * a + R[7] * c + R[8] * lz];
+        };
+        const onScreen = (w: V3): [number, number] => {
+          const [x, y] = XY(w[0] / KT, w[1] / KT);
+          return scr(x, y, w[2]);
+        };
+        // its top: every pixel it covers, found by where the eye's ray through it meets its face, coloured
+        // as the floor is where that point of it lay
+        const n: V3 = [R[2], R[5], R[8]];
+        const [nx, ny] = toXY(way, n[0], n[1]);
+        const lit = nx * LIGHT[0] + ny * LIGHT[1] + n[2] * LIGHT[2];
+        const step = Math.max(-2, Math.min(2, Math.round(4 * (lit - LIGHT[2]))));
+        const corners = [world(p.a0 * KT, p.c0 * KT, 0), world(p.a1 * KT, p.c0 * KT, 0), world(p.a1 * KT, p.c1 * KT, 0), world(p.a0 * KT, p.c1 * KT, 0)].map(onScreen);
+        const x0 = Math.floor(Math.min(...corners.map((q) => q[0]))) - 1;
+        const x1 = Math.ceil(Math.max(...corners.map((q) => q[0]))) + 1;
+        const y0 = Math.floor(Math.min(...corners.map((q) => q[1]))) - 1;
+        const y1 = Math.ceil(Math.max(...corners.map((q) => q[1]))) + 1;
+        const denom = n[0] * KT + n[1] * KT + n[2] * 32;
+        if (Math.abs(denom) > 1e-6 && nx * EYE[0] + ny * EYE[1] + n[2] * EYE[2] > 0.02) {
+          for (let py = Math.max(0, y0); py <= Math.min(FH - 1, y1); py++) {
+            for (let px = Math.max(0, x0); px <= Math.min(FW - 1, x1); px++) {
+              const sx = px + 0.5 - AX;
+              const sy = py + 0.5 - AY;
+              const gx = (sx / 32 + sy / 16) / 2;
+              const gy = (sy / 16 - sx / 32) / 2;
+              const [ga, gc] = toAL(way, gx, gy);
+              const G0: V3 = [ga * KT, gc * KT, 0];
+              const t = (n[0] * (H[0] - G0[0]) + n[1] * (H[1] - G0[1]) + n[2] * (H[2] - G0[2])) / denom;
+              const Pw: V3 = [G0[0] + t * KT, G0[1] + t * KT, t * 32];
+              // (back to where it lay: the turn undone)
+              const d0 = Pw[0] - H[0];
+              const d1 = Pw[1] - H[1];
+              const d2 = Pw[2] - H[2];
+              const la = (R[0] * d0 + R[3] * d1 + R[6] * d2 + Hr[0]) / KT;
+              const lc = (R[1] * d0 + R[4] * d1 + R[7] * d2 + Hr[1]) / KT;
+              if (la < p.a0 || la >= p.a1 || lc < p.c0 || lc >= p.c1) continue;
+              let col = floorAt(la, lc);
+              if (!col) continue;
+              const i = py * FW + px;
+              if (Pw[2] <= zb[i]) continue;
+              zb[i] = Pw[2];
+              owner[i] = pi;
+              // (an earth one, broken loose: its clods' crumbling edges, lit on the far sides, dark in the cracks between them)
+              if (p.earth && f >= HEAVE) {
+                const rag = 0.03 * hash(Math.floor(la * 30), Math.floor(lc * 30), 677);
+                if (Math.min(p.a1 - la, p.c1 - lc) < 0.028 + rag) col = DIRT[0];
+                else if (Math.min(la - p.a0, lc - p.c0) < 0.024 + rag) col = EARTH_EDGE;
+              }
+              const c2 = shifted(col, step);
+              const dk = lidDark(-Pw[2]);
+              scene.set(px, py, dk ? mix(c2, PIT_DARK, dk) : c2);
+            }
+          }
+        }
+        // its sides and underside (its broken edges, dark; the earth's, dirt)
+        const ramp = p.earth ? SIDE_EARTH : SIDE_STONE;
+        for (let i = 0; i < p.tone.length; i++) {
+          const na = p.nrm[i * 3];
+          const nc = p.nrm[i * 3 + 1];
+          const nz = p.nrm[i * 3 + 2];
+          const wa = R[0] * na + R[1] * nc + R[2] * nz;
+          const wc = R[3] * na + R[4] * nc + R[5] * nz;
+          const wz = R[6] * na + R[7] * nc + R[8] * nz;
+          const [ex, ey] = toXY(way, wa, wc);
+          if (ex * EYE[0] + ey * EYE[1] + wz * EYE[2] <= 0.02) continue;
+          const w = world(p.pts[i * 3] + Hr[0], p.pts[i * 3 + 1] + Hr[1], p.pts[i * 3 + 2]);
+          const [sx, sy] = onScreen(w);
+          const l = ex * LIGHT[0] + ey * LIGHT[1] + wz * LIGHT[2];
+          let c = ramp[p.tone[i]];
+          if (p.tone[i] < 3) c = shifted(c, l > 0.3 ? 1 : l < -0.2 ? -1 : 0);
+          put(sx, sy, w[2], c, pi, lidDark(-w[2]));
+        }
+        const xs = corners.map((q) => q[0]);
+        const ys = corners.map((q) => q[1]);
+        sizes.push(Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)));
+        const mid = onScreen(world(((p.a0 + p.a1) / 2) * KT, ((p.c0 + p.c1) / 2) * KT, -THICK / 2));
+        mids.push(mid);
+      });
+    }
+    return { sizes, mids };
+  };
+  /** How much of each piece shows, from what drawPieces painted (each pixel of it, less the deeper it is in the dark). */
+  const seenOf = (zb: Float32Array, owner: Int16Array): number[] => {
+    const seen = new Array<number>(pieces.length).fill(0);
+    for (let i = 0; i < owner.length; i++) if (owner[i] >= 0) seen[owner[i]] += 1 - lidDark(-zb[i]);
+    return seen;
+  };
+
+  // EACH STRIKES THE BOTTOM as it goes from sight (with a jolt, which is when it may go at once): the
+  // frame at which what shows of it falls by more than a third, or to almost nothing
+  // (and one that, tipping, would go under its downhill neighbour faster than that tips less far, and all is found again)
+  const pit = wellAt(0, false);
+  const dropFrom = cells.map((_, ci) => Math.max(...pieces.filter((p) => p.cell === ci).map((p) => tipOf(p) + tipFor(p))));
+  const tipFrom = cells.map((_, ci) => Math.min(...pieces.filter((p) => p.cell === ci).map(tipOf)));
+  for (let tries = 0; tries < 8; tries++) {
+    cutAt.fill(Infinity);
+    const lying = cells.map(() => 1);
+    const was = cells.map(() => 1);
+    const hidden = cells.map(() => false);
+    for (let f = SHOCK; f < TIP0 + RIPPLE + 40 && cutAt.some((c) => c === Infinity); f++) {
+      // (again, while any goes this frame: what goes uncovers what was behind it)
+      for (let again = true; again; ) {
+        again = false;
+        const scene = new Px(FW, FH);
+        const zb = new Float32Array(FW * FH);
+        const owner = new Int16Array(FW * FH).fill(-1);
+        fastBlit(scene, pit.p, PADX, PADT);
+        for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) zb[(y + PADT) * FW + x + PADX] = pit.z[y * BW + x];
+        drawPieces(f, scene, zb, owner);
+        const seen = seenOf(zb, owner);
+        const now = cells.map((_c, ci) => {
+          const s = pieces.reduce((t, p, pi) => t + (p.cell === ci ? seen[pi] : 0), 0);
+          if (f < tipFrom[ci]) lying[ci] = Math.max(lying[ci], s);
+          return Math.min(1, s / lying[ci]);
+        });
+        cells.forEach((_c, ci) => {
+          if (cutAt[ci] < Infinity || f < dropFrom[ci] || !(was[ci] - now[ci] > 0.3 || now[ci] < 0.12)) return;
+          cutAt[ci] = f;
+          again = true;
+        });
+        if (again) continue;
+        now.forEach((v, ci) => {
+          if (f >= tipFrom[ci] && f < dropFrom[ci] && was[ci] - v > 0.32) hidden[ci] = true;
+          was[ci] = v;
+        });
+      }
+    }
+    if (!hidden.some(Boolean)) break;
+    hidden.forEach((b, ci) => b && (tipScale[ci] *= 0.8));
   }
-  crack((t) => [0.012, Wd * t], Wd, SHOCK + 6, 0.5);
-  crack((t) => [L - 0.012, Wd * (1 - t)], Wd, SHOCK + 6, 0.5);
-  // (the kerb's outline round its three sides, and its two ends at the top of the steps)
-  for (const ac of [-K + 0.012, Wd + K - 0.012]) {
-    crack((t) => [mA * (1 - t), ac], mA, SHOCK + 4, 0.45, 0, true);
-    crack((t) => [mA + (L + K - mA) * t, ac], L + K - mA, SHOCK + 4, 0.45, 0, true);
-  }
-  crack((t) => [L + K - 0.012, -K + (Wd + 2 * K) * t], Wd + 2 * K, SHOCK + 6, 0.6);
-  crack((t) => [0.012, -K * t], K, SHOCK + 6, 0.2);
-  crack((t) => [0.012, Wd + K * t], K, SHOCK + 6, 0.2);
-  /** How much of a crack is open on frame f: its points up to there. */
+  const cellImpacts = cutAt;
+  const great = Math.max(...cutAt);
+
+  // ----- THE FISSURE: round the opening's outline from the middle of its near side both ways, and its forks out into the floor
+  interface Crack { pts: [number, number][]; f0: number; v: number; burst: number; width: number }
+  const cracks: Crack[] = [];
+  const line = (pts: [number, number][], f0: number, v: number, burst: number, width: number): void => {
+    // (points every fortieth of a tile)
+    const out: [number, number][] = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const [a0, c0] = pts[i - 1];
+      const [a1, c1] = pts[i];
+      const n = Math.max(1, Math.ceil(Math.hypot(a1 - a0, c1 - c0) * 40));
+      for (let k = 1; k <= n; k++) out.push([a0 + ((a1 - a0) * k) / n, c0 + ((c1 - c0) * k) / n]);
+    }
+    cracks.push({ pts: out, f0, v, burst, width });
+  };
+  const RIM = 0.006;
+  line([[L / 2, Wd - RIM], [L - RIM, Wd - RIM], [L - RIM, RIM], [L / 2 + 0.02, RIM]], SHOCK, 0.55, 0.22, 2);
+  line([[L / 2, Wd - RIM], [RIM, Wd - RIM], [RIM, RIM], [L / 2 - 0.02, RIM]], SHOCK, 0.55, 0.22, 2);
+  /** Where along the outline (tiles from the start, either way) a point is passed by the fissure, and on which frame. */
+  const passed = (dist: number): number => SHOCK + Math.max(0, Math.ceil((dist - 0.22) / 0.55));
+  // forks: out from the outline into the floor, each a few jagged runs
+  const FORKS: [number, number, number, number, number][] = [
+    // [along, across, out along, out across, how far along the fissure it is]
+    [L * 0.72, Wd, 0.25, 1, L * 0.22],
+    [L, Wd * 0.45, 1, -0.2, L / 2 + Wd * 0.55],
+    [0, Wd * 0.6, -1, 0.3, L / 2 + Wd * 0.4],
+    [L * 0.3, 0, -0.3, -1, L / 2 + Wd + L * 0.3],
+  ];
+  FORKS.forEach(([a, c, oa, oc, dist], i) => {
+    const len = 0.34 + 0.2 * hash(i, 1, 621);
+    const n = Math.hypot(oa, oc);
+    const [ua, uc] = [oa / n, oc / n];
+    const pts: [number, number][] = [[a, c]];
+    for (let k = 1; k <= 5; k++) {
+      const t = (len * k) / 5;
+      const side = (hash(i, k, 622) - 0.5) * 0.12;
+      pts.push([a + ua * t - uc * side, c + uc * t + ua * side]);
+    }
+    line(pts, passed(dist) + 1, 0.12, 0, 1);
+  });
   const openOf = (c: Crack, f: number): number => Math.min(c.pts.length - 1, Math.floor((c.burst + (f - c.f0 + 1) * c.v) * 40));
   const frontOf = (c: Crack, f: number): [number, number] | null => {
     if (f < c.f0) return null;
     const i = openOf(c, f);
-    const iPrev = f > c.f0 ? openOf(c, f - 1) : -1;
-    return i > iPrev ? c.pts[i] : null;
+    return i > (f > c.f0 ? openOf(c, f - 1) : -1) ? c.pts[i] : null;
   };
 
-  // ----- THE DUST AND WHAT FLIES
-  const clouds: Cloud[] = [];
-  const chips: Chip[] = [];
+  // ----- THE DUST of this floor: grey-violet stone dust, plum-mauve the more earth (floor 4's body 91, 77, 103)
+  const t4 = Math.min(1, gone / 0.45);
+  const DUST: readonly [string, string, string, string] = [
+    mix('#2c283c', '#2f2633', t4),
+    mix('#46425a', '#463a4e', t4),
+    mix('#56506a', '#5b4d67', t4),
+    mix('#6a6480', '#6e5f72', t4),
+  ];
+  const billows: Billow[] = [];
   let seed = 0;
   const h = (i: number, j: number, s: number): number => hash(i, j, s);
-  /** A billow of dust and, round it, `n - 1` smaller ones going with it, so that it reads as a cloud and never as a spot. */
-  const puff = (d: Omit<Cloud, 'seed'>, n = 3): void => {
-    const R = d.r0 + d.big;
-    for (let j = 0; j < n; j++) {
-      const a = (j / n) * Math.PI * 2 + hash(seed, j, 539) * 2;
-      const off = j ? ((0.5 + 0.4 * hash(seed, j, 538)) * R) / 32 : 0;
-      clouds.push({
-        ...d,
-        x: d.x + Math.cos(a) * off,
-        y: d.y + Math.sin(a) * off,
-        z: d.z + (j ? (hash(seed, j, 537) - 0.3) * R * 0.5 : 0),
-        r0: d.r0 * (j ? 0.8 : 1),
-        big: d.big * (j ? 0.55 + 0.25 * hash(seed, j, 536) : 1),
-        life: d.life - (j ? Math.floor(3 * hash(seed, j, 535)) : 0),
-        seed: seed++,
-      });
-    }
+  const blow = (b: Omit<Billow, 'seed' | 'drag' | 'tall' | 'sink' | 'sinkMax' | 'rest' | 'flat' | 'wx' | 'wy'> & Partial<Billow>): void => {
+    billows.push({ drag: 0.8, tall: 1, sink: 0.1, sinkMax: 2, rest: 6, flat: 10, wx: 0, wy: 0, ...b, seed: seed++ } as Billow);
   };
-  // THE CRACKS RUN: a spurt of dust and a hop of grit where each runs (every other frame), the grit back into its crack
+  /** A point on the opening's outline pushed out `out` tiles, a fraction `t` of the way round it; and which way is out there. */
+  const round = (t: number, out: number): [number, number, number, number] => {
+    const a0 = -out;
+    const a1 = L + out;
+    const c0 = -out;
+    const c1 = Wd + out;
+    const per = 2 * (a1 - a0 + c1 - c0);
+    let s = (((t % 1) + 1) % 1) * per;
+    if (s < a1 - a0) return [a0 + s, c0, 0, -1];
+    if ((s -= a1 - a0) < c1 - c0) return [a1, c0 + s, 1, 0];
+    if ((s -= c1 - c0) < a1 - a0) return [a1 - s, c1, 0, 1];
+    s -= a1 - a0;
+    return [a0, c1 - s, -1, 0];
+  };
+  // the fissure's fronts: dust puffs up where it runs, every frame on one side or the other, a low ridge along it
   for (let f = SHOCK; f < HEAVE; f++) {
-    cracks.forEach((c, ci) => {
+    cracks.slice(0, 2).forEach((c, ci) => {
       const p = frontOf(c, f);
-      if (!p || (f + ci) % 2) return;
+      if (!p) return;
       const [x, y] = XY(p[0], p[1]);
-      if (c.spurts && (f + ci) % 4 === 0) puff({ f0: f, x, y, z: 1, vx: 0, vy: 0, vz: 1.8 + 1.4 * h(f, ci, 542), r0: 2.4, big: 2.8 + 1.6 * h(ci, f, 543), life: 8, fall: 0.06 }, 2);
-      chips.push({ f0: f, x, y, z: 0.5, vx: 0, vy: 0, vz: 3.5 + 2 * h(ci, f, 544), g: 1, size: 2, tones: CHIP_STONE });
+      blow({ f0: f, x, y, z: 2, vx: 0, vy: 0, vz: 2.4 + h(f, ci, 631), r0: 2.6, grow: 3 + 1.5 * h(ci, f, 632), life: 11, rest: 3, sinkMax: 1, flat: 7, tall: 0.9 });
     });
   }
-  // THE SHOCK: a spurt of dust and grit out of the middle, where the first crack bursts open
-  {
-    const [x, y] = XY(mA, mC);
-    puff({ f0: SHOCK, x, y, z: 1, vx: 0, vy: 0, vz: 2.5, r0: 3.5, big: 4, life: 9, fall: 0.06 }, 3);
-    for (let i = 0; i < 4; i++) chips.push({ f0: SHOCK, x: x + (h(i, 1, 541) - 0.5) * 0.15, y: y + (h(i, 2, 541) - 0.5) * 0.15, z: 0.5, vx: 0, vy: 0, vz: 3.5 + 2.5 * h(i, 3, 541), g: 1, size: 2, tones: CHIP_STONE });
+  // the heave: jets of dust up through the joints, and a low spill all round the fissure
+  for (let i = 0; i < 6; i++) {
+    const cell = cells[Math.floor(h(i, 1, 633) * cells.length)];
+    const al = h(i, 2, 633) < 0.5 ? cell.a0 + 0.02 : cell.a1 - 0.02;
+    const ac = cell.c0 + (cell.c1 - cell.c0) * (0.2 + 0.6 * h(i, 3, 633));
+    const [x, y] = XY(Math.max(0.05, al), ac);
+    // (a jet: its billows thrown together, each slower than the one before, drawn out behind its head)
+    const v = 4.5 + 2.5 * h(i, 0, 634);
+    for (let j = 0; j < 3; j++) blow({ f0: HEAVE, x, y, z: 2, vx: 0, vy: 0, vz: v * (1 - 0.25 * j), r0: 3.8 - 0.4 * j, grow: 5 - j + 1.5 * h(j, i, 635), life: 15 - j, rest: 4, sinkMax: 2, flat: 8 });
   }
-  // THE HEAVE: dust blown out low from under the kerb as it shoves up, more at its corners; grit thrown up off it and out of the lid's cracks
-  {
-    const along: [number, number, number, number][] = [
-      // [al, ac, out along, out across]
-      [0.05, -K, -0.6, -0.8], [0.7, -K, 0, -1], [1.5, -K, 0.2, -1], [L + K, -K, 0.7, -0.7], [L + K, Wd / 2, 1, 0],
-      [L + K, Wd + K, 0.7, 0.7], [1.8, Wd + K, 0.1, 1], [1.0, Wd + K, 0, 1], [0.3, Wd + K, -0.3, 1], [0.05, Wd + K, -0.6, 0.8],
-    ];
-    along.forEach(([al, ac, oa, oc], i) => {
-      const [x, y] = XY(al, ac);
-      const [vx, vy] = XY(oa * 0.12, oc * 0.12);
-      puff({ f0: HEAVE + (i % 2), x, y, z: 3, vx, vy, vz: 2 + 2 * h(i, 1, 545), r0: 5, big: 6.5 + 3 * h(i, 2, 545), life: 12 + Math.floor(3 * h(i, 3, 545)), fall: 0.05 }, 3);
-    });
-    // (and jets of it bursting straight up out of the lid's cracks, three billows each, one on another)
-    for (let i = 0; i < 5; i++) {
-      const al = rowLine(1 + (i % 3), 0.2 + 0.9 * h(i, 8, 546));
-      const [x, y] = XY(al, 0.15 + 0.95 * h(i, 9, 546));
-      for (let j = 0; j < 3; j++) puff({ f0: HEAVE + j, x, y, z: 2, vx: 0, vy: 0, vz: 6 + 3 * h(i, j, 547), r0: 2.4, big: 3 + 1.5 * j, life: 11 - j, fall: 0.35 }, 1);
-    }
-    for (let i = 0; i < 16; i++) {
-      const [x, y] = XY(0.1 + 2.3 * h(i, 5, 546), -0.05 + 1.35 * h(i, 6, 546));
-      chips.push({ f0: HEAVE, x, y, z: 3, vx: 0, vy: 0, vz: 4.5 + 3 * h(i, 7, 546), g: 1.1, size: 2, tones: CHIP_STONE });
-    }
-  }
-  // EACH SLAB: grit pouring off its far end as it tips; at its slam dust blown up out of the hole and chips flung (more, the deeper it falls)
-  for (let cell = 0; cell < ROWS * 2; cell++) {
-    const r = cell >> 1;
-    const ld = lands[cell];
-    const isEarth = earth.has(cell);
-    const tones = isEarth ? CHIP_EARTH : CHIP_STONE;
-    for (let i = 0; i < 4; i++) {
-      const [x, y] = XY(Math.max(0.05, hinge[cell][0] - 0.55), 0.1 + 1.05 * h(cell, i, 547));
-      chips.push({ f0: tipOf(cell) + 1 + (i % 3), x, y, z: -1, vx: 0, vy: 0, vz: 0, g: 1.2, size: 2, tones });
-    }
-    // (earth crumbles as it goes: clods and stones shed off it, tumbling into the hole after it)
-    if (isEarth) {
-      for (let i = 0; i < 10; i++) {
-        const al = hinge[cell][0] - 0.08 - 0.5 * h(cell, i, 557);
-        const [x, y] = XY(al, (cell & 1 ? 0.65 : 0.1) + 0.5 * h(i, cell, 558));
-        chips.push({ f0: tipOf(cell) + 1 + (i % 5), x, y, z: -1 - 3 * h(i, cell, 559), vx: 0, vy: 0, vz: 1 + 2 * h(cell, i, 560), g: 1.3, size: 2 + (i % 3 === 0 ? 1 : 0), tones: i % 3 === 0 ? CHIP_ROCK : CHIP_EARTH });
-      }
-    }
-    // (up out of what is open of the hole, from where it fell back toward the top of the steps)
-    const n = r === 0 ? 4 : 4 + 4 * r;
-    for (let i = 0; i < n; i++) {
-      const al = Math.max(0.12, Math.min(hinge[cell][0] - 0.15, hinge[cell][0] - 0.2 - 0.6 * h(cell, i, 548)));
-      const [x, y] = XY(al, 0.12 + 1.0 * h(i, cell, 549));
-      // (each deeper slam a bigger column of its own, building to the great burst)
-      puff({ f0: ld.at + (i % 3), x, y, z: 1, vx: 0, vy: 0, vz: 5 + r * 6 + 6 * h(i, cell, 550), r0: 3, big: 4 + r * 3 + 3 * h(i, cell, 551), life: 15 + r * 3, fall: 0.5 }, 2);
-    }
-    for (let i = 0; i < 4 + 3 * r; i++) {
-      const al = Math.max(0.15, hinge[cell][0] - 0.25 - 0.4 * h(cell, i, 552));
-      const ac = 0.2 + 0.85 * h(i, cell, 553);
-      const [x, y] = XY(al, ac);
-      const vz = 6 + r * 2 + 4 * h(i, cell, 554);
-      const T = (2 * vz) / 1.3;
-      // (and back down into the hole: across it from where it went up)
-      const [tx, ty] = XY(Math.max(0.2, Math.min(hinge[cell][0] - 0.2, al + (h(cell, i, 555) - 0.5) * 0.6)), Wd - ac + (h(cell, i, 556) - 0.5) * 0.3);
-      chips.push({ f0: ld.at, x, y, z: 1, vx: (tx - x) / T, vy: (ty - y) / T, vz, g: 1.3, size: r >= 2 && i < 2 ? 4 : 2 + (i % 2), tones: isEarth ? (i % 2 ? CHIP_ROCK : CHIP_EARTH) : CHIP_STONE });
-    }
-  }
-  // THE GREAT BURST: a column of dust blown up out of the whole hole, high, spreading out as it goes; a
-  // ring of it rolling out over the kerb across the floor; chips and stones flung up high, across the
-  // hole and back down into it
-  const [cx, cy] = XY(L / 2, Wd / 2);
-  for (let i = 0; i < 56; i++) {
-    const al = 0.12 + (L - 0.24) * h(i, 1, 561);
-    const ac = 0.1 + (Wd - 0.2) * h(i, 2, 561);
+  for (let i = 0; i < 10; i++) {
+    const [al, ac, oa, oc] = round((i + 0.8 * h(i, 2, 636)) / 10, 0);
     const [x, y] = XY(al, ac);
-    const up = h(i, 3, 561) ** 0.6;
-    // (the higher it goes, the wider it spreads: it mushrooms out at the top)
-    const spread = 0.05 + 0.12 * up;
-    puff({ f0: great + (i % 3), x, y, z: 2, vx: (x - cx) * spread + (h(i, 4, 561) - 0.5) * 0.06, vy: (y - cy) * spread + (h(i, 5, 561) - 0.5) * 0.06, vz: 10 + 46 * up, r0: 4 + 2 * h(i, 6, 561), big: 7 + 13 * up + 3 * h(i, 7, 561), life: 22 + Math.floor(6 * h(i, 8, 561)), fall: 0.85 }, 1);
+    const v = 0.04 + 0.06 * h(i, 3, 636);
+    const [vx, vy] = XY(oa * v, oc * v);
+    blow({ f0: HEAVE + (i % 2), x, y, z: 2, vx, vy, vz: 1, r0: 3, grow: 3 + 4 * h(i, 1, 636), life: 14 + Math.floor(5 * h(i, 4, 636)), rest: 3, sinkMax: 1, flat: 8, tall: 0.75 });
   }
-  for (let i = 0; i < 24; i++) {
-    const a = (i / 24) * Math.PI * 2 + (h(i, 1, 562) - 0.5) * 0.5;
-    const ra = Math.cos(a);
-    const rc = Math.sin(a);
-    // (from the kerb, round the hole, out over the floor)
-    const reach = Math.min((L / 2 + K) / (Math.abs(ra) + 1e-6), (Wd / 2 + K) / (Math.abs(rc) + 1e-6));
-    const [x, y] = XY(L / 2 + ra * reach, Wd / 2 + rc * reach);
-    const [vx, vy] = XY(ra * (0.14 + 0.12 * h(i, 2, 562)), rc * (0.14 + 0.12 * h(i, 3, 562)));
-    puff({ f0: great + (i % 2), x, y, z: 4, vx, vy, vz: 1.5 + 1.5 * h(i, 4, 562), r0: 5, big: 6 + 5 * h(i, 5, 562), life: 16 + Math.floor(6 * h(i, 6, 562)), fall: 0.03 }, 2);
-  }
-  for (let i = 0; i < 30; i++) {
-    const stone = i < 9;
-    const al = 0.3 + (L - 0.6) * h(i, 1, 563);
-    const ac = 0.2 + (Wd - 0.4) * h(i, 2, 563);
-    const [x, y] = XY(al, ac);
-    // (some flung high, some low and long across the hole: each comes back down into it)
-    const low = i % 3 === 1;
-    const vz = stone ? 8 + 4.5 * h(i, 3, 563) : low ? 6 + 3 * h(i, 3, 563) : 10 + 8 * h(i, 3, 563);
-    const T = (2 * vz) / 1.3;
-    const far = low ? (al < L / 2 ? L - 0.35 : 0.3) : L - al + (h(i, 4, 563) - 0.5) * 0.8;
-    const [tx, ty] = XY(Math.max(0.25, Math.min(L - 0.35, far)), Math.max(0.15, Math.min(Wd - 0.3, Wd - ac + (h(i, 5, 563) - 0.5) * 0.4)));
-    const earthy = earth.size > 0 && h(i, 6, 563) < earth.size / 8;
-    chips.push({ f0: great + Math.floor(h(i, 7, 563) * 6), x, y, z: 2, vx: (tx - x) / T, vy: (ty - y) / T, vz, g: 1.3, size: stone ? 5 + (i % 2) : 3, tones: stone ? (earthy ? CHIP_ROCK : STONE_CHUNK) : earthy ? (i % 2 ? CHIP_EARTH : CHIP_ROCK) : CHIP_STONE });
-  }
-
-  // ----- THE FRAMES
-  const tracks: Track[] = [];
-  const pieceTrack = pieces.map((p, i) => {
-    const t: Track = { name: `${earth.has(p.cell) ? 'a slab of earth' : 'a slab'} (${i + 1}, row ${(p.cell >> 1) + 1})`, at: [] };
-    tracks.push(t);
-    return t;
+  // each flagstone as it goes: dust gushes up through the gap it leaves and hangs there over it (the pit
+  // is never seen open till the great burst has come and gone); and as it strikes the bottom a spurt of
+  // dust from below, up out of the pit, bigger down the line
+  pieces.forEach((p, pi) => {
+    if (p.earth && p.lump !== 3) return;
+    const c = cells[p.cell];
+    const k = c.order / Math.max(1, cells.length - 1);
+    const D = tipOf(p) + tipFor(p) - 1;
+    for (let j = 0; j < 4; j++) {
+      const [x, y] = XY(c.a0 + (c.a1 - c.a0) * (0.25 + 0.5 * h(pi, j, 641)), c.c0 + (c.c1 - c.c0) * (0.2 + 0.6 * h(j, pi, 642)));
+      const f0 = D + j;
+      // (some rising out of it, some welling up in it to the floor's level and filling it)
+      blow({ f0, x, y, z: -8, vx: 0, vy: 0, vz: j % 2 ? 1.1 + 0.6 * h(pi, j, 643) : 2.2 + 1.2 * h(pi, j, 643), r0: 3, grow: 4 + 2.5 * h(j, pi, 644), life: Math.max(20, great + 12 - f0), rest: 8, sink: 0.04, sinkMax: 0.5, flat: 10 });
+    }
+    const I = cellImpacts[p.cell];
+    for (let j = 0; j < 3; j++) {
+      const [x, y] = XY(c.a0 + (c.a1 - c.a0) * (0.2 + 0.6 * h(pi, j, 645)), c.c0 + (c.c1 - c.c0) * (0.2 + 0.6 * h(j, pi, 646)));
+      blow({ f0: I + (j % 2), x, y, z: -24, vx: 0, vy: 0, vz: 7 + 5 * k + 3 * h(pi, j, 647), r0: 3, grow: 3 + 3 * k + 2 * h(j, pi, 648), life: 22, rest: 5, sinkMax: 2, flat: 12 });
+    }
   });
-  const kerbTrack: Track = { name: 'the kerb', at: [] };
-  tracks.push(kerbTrack);
+  // THE GREAT BURST. A heap of dust over the whole opening and its kerb, higher in the middle (under it
+  // the pit becomes the stairwell), low along the near sides, which lie lower on the screen
+  {
+    let i = 0;
+    // (a dome: big billows high in the middle, smaller and lower toward its rim, never in rows)
+    for (let al = -0.28; al <= L + 0.55; al += 0.32) {
+      for (let ac = -0.28; ac <= Wd + 0.55; ac += 0.32, i++) {
+        const ja = al + (h(i, 1, 651) - 0.5) * 0.26;
+        const jc = ac + (h(i, 2, 651) - 0.5) * 0.26;
+        const [x, y] = XY(ja, jc);
+        const mid = Math.max(0, 1 - Math.hypot((ja - L / 2) / (L / 2 + 0.45), (jc - Wd / 2) / (Wd / 2 + 0.45)));
+        const big = h(i, 8, 651);
+        blow({ f0: great + (i % 2), x, y, z: 3 + 30 * mid ** 0.8 * (0.55 + 0.45 * h(i, 3, 651)), vx: 0, vy: 0, vz: 0.8 + 3 * mid * h(i, 4, 651), r0: 6 + 5 * mid + 3 * big, grow: 4 + 8 * big, life: 50 + Math.floor(6 * h(i, 6, 651)), rest: 20 + Math.floor(6 * h(i, 7, 651)), sink: 0.08, sinkMax: 1.2, flat: 22 });
+      }
+    }
+  }
+  // the plume: billows of every size blown up out of the hole, the slow ones low and the fast high, a
+  // column from the floor up, spreading as it goes and drifting; a few streamers shooting out of it
+  const [cx, cy] = XY(L / 2, Wd / 2);
+  const WX = 0.006;
+  const WY = -0.004;
+  for (let i = 0; i < 48; i++) {
+    const [x, y] = XY(0.15 + (L - 0.3) * h(i, 1, 652), 0.12 + (Wd - 0.24) * h(i, 2, 652));
+    const up = ((i + 0.5) / 48) ** 0.75;
+    const spread = 0.02 + 0.06 * up;
+    const big = h(i, 7, 652) ** 1.4;
+    blow({ f0: great + (i % 4), x, y, z: 4, vx: (x - cx) * spread + (h(i, 4, 652) - 0.5) * 0.04, vy: (y - cy) * spread + (h(i, 5, 652) - 0.5) * 0.04, vz: 6 + 26 * up * (0.85 + 0.3 * h(i, 3, 652)), drag: 0.78, r0: 3 + 5 * big, grow: 4 + 13 * big + 3 * up, life: 0, rest: 12 + Math.floor(6 * h(i, 8, 652)), sink: 0.5, sinkMax: 6, flat: 18, wx: WX, wy: WY });
+    // (it hangs, then the column slumps: each billow comes down onto the floor and spreads there into a sheet)
+    const b = billows[billows.length - 1];
+    b.life = landOf(b) + b.flat + 2;
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + 0.4;
+    const [x, y] = XY(L / 2 + Math.cos(a) * L * 0.3, Wd / 2 + Math.sin(a) * Wd * 0.3);
+    const [ox, oy] = XY(Math.cos(a), Math.sin(a));
+    const vz = 20 + 10 * h(i, 1, 653);
+    // (a streamer: a run of small billows thrown together, each a little slower, so that it draws out into a tail behind its head)
+    for (let j = 0; j < 6; j++) blow({ f0: great + 1, x, y, z: 8, vx: ox * 0.16 * (1 - 0.06 * j), vy: oy * 0.16 * (1 - 0.06 * j), vz: vz * (1 - 0.06 * j), r0: 3.6 - 0.3 * j, grow: 4 - 0.5 * j, life: 30 - 2 * j, rest: 9, sinkMax: 2, flat: 12, tall: 1.25, wx: WX, wy: WY });
+  }
+  // the skirt: rushing out low over the floor from all round the kerb, the fastest two or three tiles past
+  // where one stands beside it, rolling as it goes; then it lies and spreads into sheets
+  for (let i = 0; i < 56; i++) {
+    const [al, ac, oa, oc] = round(i / 56 + 0.005, K * 0.9);
+    const ra = al - L / 2;
+    const rc = ac - Wd / 2;
+    const rn = Math.hypot(ra, rc) || 1;
+    let da = oa + (0.7 * ra) / rn;
+    let dc = oc + (0.7 * rc) / rn;
+    const dn = Math.hypot(da, dc);
+    da /= dn;
+    dc /= dn;
+    const [x, y] = XY(al, ac);
+    // (fast and slow together, so that it covers the floor from the kerb out to its front, not in rings)
+    for (let j = 0; j < 3; j++) {
+      const t = (j + h(i, 2 + j, 654)) / 3;
+      const v = 0.1 + 0.48 * t;
+      const [vx, vy] = XY(da * v, dc * v);
+      blow({ f0: great + 1 + ((i + j) % 2), x, y, z: 3, vx, vy, vz: 0.5, drag: 0.87, r0: 5, grow: 5 + 8 * t + 2 * h(i, 5 + j, 654), life: 46 - Math.floor(12 * t) + Math.floor(4 * h(i, 8 + j, 654)), rest: 3, sink: 0.05, sinkMax: 0.4, flat: 22, tall: 0.72, wx: WX * 0.5, wy: WY * 0.5 });
+    }
+  }
 
-  const grit: Chip[] = [];
-  const paintFrame = (f: number, record: boolean): Px => {
-    const out = new Px(FW, FH);
-    const zb = new Float32Array(FW * FH).fill(0);
-    const owner = new Int16Array(FW * FH).fill(-1);
-    const kh = kerbOf(f);
-    const lidUp = f >= HEAVE;
-    // THE STAIRWELL at the kerb's height (from the heave on): what is under the lid, the kerb
-    if (lidUp) {
-      const w = wellAt(kh);
-      fastBlit(out, w.p, PADX, PADT);
-      for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) zb[(y + PADT) * FW + x + PADX] = w.z[y * BW + x];
-    }
-    /** Put a point of the world on the frame if nothing nearer the eye is there; darkened by its depth (`dark`). Its height is taken as on the ray through the pixel's middle: the eye's ray climbs 132 for every 100 down the screen. */
-    const put = (sx: number, sy: number, z: number, c: string, who: number, dark: number): boolean => {
-      const X = Math.floor(sx);
-      const Y = Math.floor(sy);
-      if (X < 0 || Y < 0 || X >= FW || Y >= FH) return false;
-      const i = Y * FW + X;
-      const zz = z + ((sy - (Y + 0.5)) * 100) / 132;
-      if (zz <= zb[i]) return false;
-      zb[i] = zz;
-      owner[i] = who;
-      out.set(X, Y, dark ? mix(c, PIT_DARK, dark) : c);
-      return true;
-    };
-    // THE PIECES OF THE LID
-    const sizes: number[] = [];
-    const mids: ([number, number] | null)[] = [];
-    pieces.forEach((p, pi) => {
-      const P = poseOf(p.cell, f, hinge[p.cell]);
-      if (P.off) {
-        sizes.push(0);
-        mids.push(null);
-        return;
-      }
-      const d = { da: 0, dc: 0, dz: 0 };
-      const R = turnOf(P);
-      let x0 = Infinity;
-      let x1 = -Infinity;
-      let y0 = Infinity;
-      let y1 = -Infinity;
-      const n = p.idx.length;
-      for (let i = 0; i < n; i++) {
-        const a = p.pts[i * 3];
-        const c = p.pts[i * 3 + 1];
-        const z = p.pts[i * 3 + 2];
-        const na = p.nrm[i * 3];
-        const nc = p.nrm[i * 3 + 1];
-        const nz = p.nrm[i * 3 + 2];
-        const wa = R[0] * na + R[1] * nc + R[2] * nz;
-        const wc = R[3] * na + R[4] * nc + R[5] * nz;
-        const wz = R[6] * na + R[7] * nc + R[8] * nz;
-        const [nx, ny] = toXY(way, wa, wc);
-        // (only the faces turned toward the eye)
-        if (nx * EYE[0] + ny * EYE[1] + wz * EYE[2] <= 0.02) continue;
-        const A = P.al + d.da + (R[0] * a + R[1] * c + R[2] * z) / KT;
-        const C = P.ac + d.dc + (R[3] * a + R[4] * c + R[5] * z) / KT;
-        const Z = P.z + d.dz + R[6] * a + R[7] * c + R[8] * z;
-        const [x, y] = toXY(way, A, C);
-        const ramp = p.ramp[p.rampOf[i]];
-        // (lit as its face turns to the light, from the upper left)
-        const lit = nx * LIGHT[0] + ny * LIGHT[1] + wz * LIGHT[2];
-        const k = Math.max(0, Math.min(ramp.length - 1, p.idx[i] + Math.round(3 * (lit - p.lit0[i]))));
-        const [sx, sy] = scr(x, y, Z);
-        put(sx, sy, Z, ramp[k], pi, lidDark(-Z));
-        x0 = Math.min(x0, sx);
-        x1 = Math.max(x1, sx);
-        y0 = Math.min(y0, sy);
-        y1 = Math.max(y1, sy);
-      }
-      sizes.push(Math.max(x1 - x0, y1 - y0));
-      const A = P.al + d.da + (R[0] * p.mid[0] + R[1] * p.mid[1] + R[2] * p.mid[2]) / KT;
-      const C = P.ac + d.dc + (R[3] * p.mid[0] + R[4] * p.mid[1] + R[5] * p.mid[2]) / KT;
-      const Z = P.z + d.dz + R[6] * p.mid[0] + R[7] * p.mid[1] + R[8] * p.mid[2];
-      const [mx, my] = toXY(way, A, C);
-      mids.push(scr(mx, my, Z));
-    });
-    // THE CRACKS, over the floor as it lies (before the heave): a dark line, its foot a joint's dark
-    if (!lidUp) {
-      for (const c of cracks) {
-        if (f < c.f0) continue;
-        const n = openOf(c, f);
-        for (let i = 0; i < n; i++) {
-          const [a0, c0] = c.pts[i];
-          const [a1, c1] = c.pts[i + 1];
-          // (a crack wanders: a pixel up or down here and there)
-          const j0 = Math.round((hash(Math.floor(i / 3), c.f0 * 7 + Math.round(a0 * 9), 581) - 0.5) * 1.6);
-          const [x0, y0] = scr(...XY(a0, c0), 0);
-          const [x1, y1] = scr(...XY(a1, c1), 0);
-          out.line(Math.floor(x0), Math.floor(y0) + j0, Math.floor(x1), Math.floor(y1) + j0, DEEP);
-          out.line(Math.floor(x0), Math.floor(y0) + j0 + 1, Math.floor(x1), Math.floor(y1) + j0 + 1, theme.mortar);
+  // ----- THE STONES thrown out of the hole in arcs: they land on the floor beyond the kerb, bounce, and drop back into the hole
+  // (each a chunk of the floor: its lit face, its body, its shade, its dark edge)
+  type Tones = readonly [string, string, string, string];
+  interface Stone { f0: number; size: number; tones: Tones; path: V3[]; spin: number }
+  const STONE_TONES: Tones = [mix(theme.slab[3], '#c8c6f0', 0.42), theme.slab[3], theme.slab[1], theme.slab[0]];
+  const ROCK_TONES: Tones = [mix(rock[3], '#d0cce8', 0.3), rock[3], rock[2], rock[0]];
+  const CLOD_TONES: Tones = [mix(dirt[3], '#a08494', 0.4), dirt[3], dirt[2], dirt[0]];
+  const stones: Stone[] = [];
+  {
+    // [launch along, across; where it lands on the floor beyond the far kerb or past the top of the steps;
+    // where it comes back down into the hole, near its far side, where the eye sees deep into the pit]
+    const K2 = K + 0.26;
+    const THROWS: [number, number, number, number, number, number, number][] = [
+      // [launch al, ac, land al, ac, back al, ac, size]
+      [L * 0.3, 0.3, L * 0.22, -K2, L * 0.32, 0.26, 16],
+      [L * 0.62, 0.3, L * 0.7, -K2 - 0.05, L * 0.56, 0.28, 14],
+      [0.3, Wd * 0.35, -K2, Wd * 0.25, 0.34, 0.28, 13],
+      [0.3, Wd * 0.75, -K2 + 0.05, Wd * 0.85, 0.42, 0.3, 12],
+      [L * 0.45, 0.25, L * 0.42, -K2 - 0.1, L * 0.46, 0.27, 13],
+      [L * 0.85, 0.3, L * 0.92, -K2, L * 0.6, 0.3, 12],
+      [0.6, Wd * 0.5, -K2 - 0.04, Wd * 0.6, 0.48, 0.26, 15],
+    ];
+    const g = 1.6;
+    THROWS.forEach(([a, c, la, lc, ba, bc, size], i) => {
+      const vz1 = (size >= 14 ? 8.4 : 7.6) + 0.5 * h(i, 2, 661);
+      const T1 = Math.round((2 * vz1) / g);
+      // (it strikes the floor and bounces back, lower, over the rim and down into the hole)
+      const [lx, ly] = XY(la, lc);
+      const [bx, by] = XY(ba, bc);
+      const dist = Math.hypot((bx - lx - (by - ly)) * 32, (bx - lx + by - ly) * 16);
+      const T2 = Math.max(4, Math.ceil(dist / 6));
+      // (high enough a bounce to clear the floor until it is over the hole)
+      let tEdge = 1;
+      for (let t = 0; t <= 1; t += 0.02) {
+        const al = la + (ba - la) * t;
+        const ac = lc + (bc - lc) * t;
+        if (al > 0.06 && al < L - 0.06 && ac > 0.06 && ac < Wd - 0.06) {
+          tEdge = t;
+          break;
         }
       }
-    }
-    // WHAT FLIES: chips and stones, streaked when fast; the grit
-    const fly = (c: Chip): void => {
-      const k = f - c.f0;
-      if (k < 0) return;
-      const [x, y, z] = chipAt(c, f);
-      if (z < -150) return;
-      const [sx, sy] = scr(x, y, z);
-      if (k > 0) {
-        const [px_, py_, pz] = chipAt(c, f - 1);
-        const [qx, qy] = scr(px_, py_, pz);
-        const sp = Math.hypot(sx - qx, sy - qy);
-        // (a short streak behind it, flying fast: a pixel wide, the way it came)
-        if (sp > 3) {
-          const len = Math.min(sp - 1, 4);
-          const ux = (qx - sx) / sp;
-          const uy = (qy - sy) / sp;
-          const ox = c.size / 2 - 0.5;
-          for (let s = 1; s <= len; s++) {
-            const wz = z + ((pz - z) * s) / sp;
-            put(sx + ox + ux * (s + c.size / 2), sy + ox + uy * (s + c.size / 2), wz, c.tones[2], -2, darkAt(-wz));
+      const vz2 = Math.max(0.45 * vz1, 0.5 * g * (tEdge * T2 + 1.5));
+      const path: V3[] = [];
+      let fall = 0;
+      for (let k = 0; ; k++) {
+        let al: number;
+        let ac: number;
+        let z: number;
+        if (k <= T1) {
+          const t = k / T1;
+          [al, ac] = [a + (la - a) * t, c + (lc - c) * t];
+          z = k === T1 ? 0 : 1 + vz1 * k - 0.5 * g * k * k;
+        } else {
+          const j = k - T1;
+          const t = Math.min(1, j / T2);
+          [al, ac] = [la + (ba - la) * t, lc + (bc - lc) * t];
+          z = vz2 * j - 0.5 * g * j * j;
+          // (into the hole, falling no faster than its own size a frame, darker the deeper, until it is lost in the dark)
+          if (z < 0) {
+            fall = Math.max(fall - (size + 1), Math.min(fall, z));
+            z = fall;
           }
+          if (z < -36) break;
         }
+        const [x, y] = XY(al, ac);
+        path.push([x, y, z]);
       }
-      for (let dy = 0; dy < c.size; dy++) {
-        for (let dx = 0; dx < c.size; dx++) {
-          const wz = z + (c.size - dy) * 0.3;
-          put(sx + dx, sy + dy, wz, dy === 0 || dx === 0 ? c.tones[0] : dx + dy >= 2 * c.size - 3 ? c.tones[2] : c.tones[1], -2, darkAt(-wz));
+      const tones = e && h(i, 3, 661) < gone * 1.6 ? (i % 2 ? CLOD_TONES : ROCK_TONES) : STONE_TONES;
+      stones.push({ f0: great + 1 + (i % 3), size, tones, path, spin: (h(i, 4, 661) - 0.5) * 0.6 });
+    });
+  }
+  /** A stone's shape: a rounded lump, turned `ang`, lit from the upper left; each pixel of it: 0 its lit face, 1 its body, 2 its shade, 3 its dark edge, -1 none. */
+  const stoneShape = (size: number, ang: number, sd: number): number[][] => {
+    const out: number[][] = [];
+    const r = size / 2;
+    for (let dy = 0; dy < size; dy++) {
+      const row: number[] = [];
+      for (let dx = 0; dx < size; dx++) {
+        const ox = dx + 0.5 - r;
+        const oy = dy + 0.5 - r;
+        const a = Math.atan2(oy, ox) - ang;
+        const rr = r * (0.88 + 0.08 * Math.cos(a * 3 + sd) + 0.05 * Math.cos(a * 5 + sd * 2));
+        const d = Math.hypot(ox, oy);
+        if (d > rr) {
+          row.push(-1);
+          continue;
         }
+        const nx = ox / rr;
+        const ny = oy / rr;
+        const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+        // (its faces: the top turned to the light flat, as a broken stone's are)
+        const lit = 0.9 * (-0.55 * nx - 0.7 * ny) + 0.5 * Math.round(nz * 2) / 2;
+        if (d > rr - 1.3 && ox + oy > -r * 0.2) row.push(3);
+        else row.push(lit > 0.55 ? 0 : lit > 0.12 ? 1 : lit > -0.25 ? 2 : 3);
       }
-    };
-    // (what is down in the hole first: the dust over the hole is in front of it)
-    chips.forEach((c) => f >= c.f0 && chipAt(c, f)[2] <= 0 && fly(c));
-    grit.forEach(fly);
-    // THE DUST, over all: older and farther first; rising, the floor's dust lit on its upper left; falling and thinning, a tone down
-    const live = clouds
-      .map((d) => ({ d, s: cloudAt(d, f) }))
-      .filter((q) => q.s !== null && q.s.r >= 1.5)
-      .sort((a, b) => a.d.f0 - b.d.f0 || a.s!.x + a.s!.y - (b.s!.x + b.s!.y));
-    for (const { d, s } of live) {
-      const [sx, sy] = scr(s!.x, s!.y, s!.z);
-      billow(out, sx, sy, s!.r, s!.age > 0.55 ? LATE : RISING, d.seed);
-    }
-    // (a cloud's rim is ragged, but never a lone speck of dust: his note on the rats, "Animations need run the checks")
-    if (live.length) {
-      const dusty = new Set([...DUST, DUSK].map((c) => c.toLowerCase()));
-      const lone: number[] = [];
-      for (let y = 0; y < FH; y++) {
-        for (let x = 0; x < FW; x++) {
-          if (!out.has(x, y)) continue;
-          let n = 0;
-          for (let dy = -1; dy <= 1 && !n; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && out.has(x + dx, y + dy)) n++;
-          if (!n && dusty.has(out.get(x, y)!)) lone.push(x, y);
-        }
-      }
-      for (let i = 0; i < lone.length; i += 2) out.erase(lone[i], lone[i + 1]);
-    }
-    // (what flies above the floor, over the dust: chips and stones flung out of it)
-    chips.forEach((c) => f >= c.f0 && chipAt(c, f)[2] > 0 && fly(c));
-    if (record) {
-      // (how much of each piece shows: what of it is not hidden, the less the deeper and darker it is)
-      const seen = new Array<number>(pieces.length).fill(0);
-      for (let i = 0; i < owner.length; i++) if (owner[i] >= 0) seen[owner[i]] += 1 - lidDark(-zb[i]);
-      pieces.forEach((_p, pi) => {
-        const m = mids[pi];
-        if (!m) {
-          pieceTrack[pi].at.push(null);
-          return;
-        }
-        pieceTrack[pi].at.push({ x: m[0] - AX, y: m[1] - AY, shown: Math.min(1, seen[pi] / lying[pi]), size: Math.max(8, sizes[pi]) });
-      });
-      kerbTrack.at.push(f < HEAVE ? null : { x: 0, y: -kh, shown: 1, size: 8 });
+      out.push(row);
     }
     return out;
   };
 
-  // HOW LONG: until every slab is gone down out of sight, every chip and stone into the hole, every cloud thinned away
-  let last = great + 1;
-  for (let f = great; f < great + 120; f++) {
-    const busy = clouds.some((d) => (cloudAt(d, f)?.r ?? 0) >= 1.5) || chips.some((c) => f >= c.f0 && chipAt(c, f)[2] > -40);
-    if (busy) last = f + 1;
+  // ----- THE FRAMES
+  const tracks: Track[] = [];
+  // (one for each flagstone, and for each slab of earth as it crumbles, all its lumps together)
+  const cellTrack = cells.map((c, i) => {
+    const t: Track = { name: `${c.earth ? 'a slab of earth' : 'a flagstone'} (${i + 1}, going ${c.order + 1})`, at: [] };
+    tracks.push(t);
+    return t;
+  });
+  const cellLying = cells.map(() => 0);
+  const stoneTrack = stones.map((_, i) => {
+    const t: Track = { name: `a stone thrown (${i + 1})`, fromEdge: true, at: [] };
+    tracks.push(t);
+    return t;
+  });
+
+  /** One frame: the scene (without the dust), the dust over it, and what of each piece and stone shows. */
+  /** The frame the fissure has gone, under the dust (found below). */
+  let heal = -1;
+  const paint = (f: number, swapped: boolean, record: boolean, healed = heal >= 0 && f >= heal): { out: Px; scene: Px; dust: Uint8Array } => {
+    const scene = new Px(FW, FH);
+    const zb = new Float32Array(FW * FH).fill(0);
+    const owner = new Int16Array(FW * FH).fill(-1);
+    if (f >= SHOCK) {
+      // THE PIT under the floor (and after it is the stairwell, under the dust, the stairwell)
+      const w = swapped ? wellAt(KERB_H, true) : wellAt(0, false);
+      fastBlit(scene, w.p, PADX, PADT);
+      for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) zb[(y + PADT) * FW + x + PADX] = w.z[y * BW + x];
+    }
+    // THE FLOOR OVER THE OPENING, piece by piece
+    const { sizes, mids } = f >= SHOCK && !swapped ? drawPieces(f, scene, zb, owner) : { sizes: [] as number[], mids: [] as ([number, number] | null)[] };
+    // THE FISSURE and its forks, over the floor (until the dust hides them going)
+    if (f >= SHOCK && !swapped && !healed) {
+      const crackAt = new Uint8Array(FW * FH);
+      cracks.forEach((c, ci) => {
+        if (f < c.f0) return;
+        const n = openOf(c, f);
+        /** A smooth wandering, -1 to 1, along the fissure (knots every `k` points). */
+        const wander = (i: number, k: number, s: number): number => {
+          const u = i / k;
+          const i0 = Math.floor(u);
+          const t = smooth(u - i0);
+          return 2 * (hash(i0, ci, s) * (1 - t) + hash(i0 + 1, ci, s) * t) - 1;
+        };
+        // (only on the floor, or on a stone of it still lying near its place: never over the pit)
+        const set = (X: number, Y: number, col: string): void => {
+          if (X < 0 || Y < 0 || X >= FW || Y >= FH) return;
+          const i = Y * FW + X;
+          if (scene.has(X, Y) && !crackAt[i] && !(owner[i] >= 0 && zb[i] > -3)) return;
+          scene.set(X, Y, col);
+          crackAt[i] = 1;
+        };
+        for (let i = 0; i < n; i++) {
+          const [a0, c0] = c.pts[i];
+          const [x0, y0] = scr(...XY(a0, c0), 0);
+          // (it wanders up and down, jagged; it opens narrow and gapes wider a frame or two after the front has passed)
+          const j = Math.round(2.2 * wander(i, 7, 671) + 0.6 * wander(i, 2, 674));
+          const X = Math.floor(x0);
+          const Y = Math.floor(y0) + j;
+          const age = f - (c.f0 - 1 + Math.ceil((i / 40 - c.burst) / c.v));
+          const gape = Math.max(1, Math.min(age + 1, c.width + Math.round(0.8 + 0.8 * wander(i, 5, 675))));
+          const col = floorAt(a0, c0);
+          const onEarth = !!col && earthy.has(col);
+          if (onEarth) {
+            // crumbling: wider and ragged, its broken edge the earth's lit clods, dirt spilling into it
+            set(X, Y - 1, EARTH_EDGE);
+            for (let g = 0; g <= gape; g++) set(X, Y + g, g === gape ? dirt[0] : DIRT[0]);
+            if (hash(i, ci, 672) < 0.45) set(X, Y + gape + 1, dirt[0]);
+            if (hash(i, ci, 673) < 0.35) set(X, Y - 2, dirt[1]);
+            if (hash(i, ci, 676) < 0.25 && gape > 1) set(X, Y + 1, dirt[1]);
+          } else {
+            set(X, Y - 1, LIT_EDGE);
+            for (let g = 0; g < gape; g++) set(X, Y + g, DEEP);
+            set(X, Y + gape, theme.mortar);
+          }
+        }
+      });
+    }
+    // THE STONES: under the dust while they are down in the hole, over it while they fly
+    const stoneAt = (s: Stone): { x: number; y: number; z: number } | null => {
+      const k = f - s.f0;
+      if (k < 0 || k >= s.path.length) return null;
+      const [x, y, z] = s.path[k];
+      return { x, y, z };
+    };
+    const stoneSeen: ({ x: number; y: number; shown: number } | null)[] = stones.map(() => null);
+    const drawStone = (s: Stone, si: number, target: Px, test: boolean): void => {
+      const q = stoneAt(s);
+      if (!q) return;
+      const [sx, sy] = scr(q.x, q.y, q.z);
+      const shape = stoneShape(s.size, s.spin * (f - s.f0), si * 1.7);
+      let all = 0;
+      let seen = 0;
+      for (let dy = 0; dy < s.size; dy++) {
+        for (let dx = 0; dx < s.size; dx++) {
+          const v = shape[dy][dx];
+          if (v < 0) continue;
+          all++;
+          const X = Math.floor(sx - s.size / 2 + dx);
+          const Y = Math.floor(sy - s.size + dy);
+          if (X < 0 || Y < 0 || X >= FW || Y >= FH) continue;
+          const zz = q.z + (s.size - dy) * 0.5;
+          if (test && zz <= zb[X + Y * FW]) continue;
+          const dk = darkAt(-q.z);
+          target.set(X, Y, dk ? mix(s.tones[v], PIT_DARK, dk) : s.tones[v]);
+          seen += 1 - dk;
+        }
+      }
+      stoneSeen[si] = { x: sx - AX, y: sy - AY, shown: all ? seen / all : 0 };
+    };
+    stones.forEach((s, si) => {
+      const q = stoneAt(s);
+      if (q && q.z < 0) drawStone(s, si, scene, true);
+    });
+    // THE DUST over all, as one mass
+    const out = new Px(FW, FH);
+    fastBlit(out, scene, 0, 0);
+    const dust = paintDust(out, f, zb, scene);
+    stones.forEach((s, si) => {
+      const q = stoneAt(s);
+      if (q && q.z >= 0) drawStone(s, si, out, false);
+    });
+    if (record) {
+      const seen = seenOf(zb, owner);
+      cells.forEach((_c, ci) => {
+        const mine = pieces.map((p, pi) => (p.cell === ci && mids[pi] ? pi : -1)).filter((pi) => pi >= 0);
+        if (!mine.length || f < SHOCK || swapped) {
+          cellTrack[ci].at.push(null);
+          return;
+        }
+        const s = mine.reduce((t, pi) => t + seen[pi], 0);
+        // (against all of it that shows lying in its place, before it tips)
+        if (f < Math.min(...pieces.filter((p) => p.cell === ci).map(tipOf))) cellLying[ci] = Math.max(cellLying[ci], s, 1);
+        const mx = mine.reduce((t, pi) => t + mids[pi]![0], 0) / mine.length;
+        const my = mine.reduce((t, pi) => t + mids[pi]![1], 0) / mine.length;
+        const size = Math.max(8, ...mine.map((pi) => sizes[pi]));
+        cellTrack[ci].at.push({ x: mx - AX, y: my - AY, shown: Math.min(1, s / cellLying[ci]), size });
+      });
+      stones.forEach((s, si) => {
+        const q = stoneSeen[si];
+        stoneTrack[si].at.push(q ? { x: q.x, y: q.y, shown: q.shown, size: s.size + 2 } : null);
+      });
+    }
+    return { out, scene, dust };
+  };
+
+  /**
+   * The dust of frame f painted over `out` (the scene, `zb` the heights of what it shows): every billow
+   * a round body with lobes round its rim, all of them one mass where they meet; lit from the upper
+   * left as its surface turns, its tops lit, its bellies and the creases between its lobes dark, the
+   * higher the lighter; behind whatever is nearer the eye (the floor in front of the pit hides dust
+   * still down in it). Never a lone speck. Its mask returned.
+   */
+  function paintDust(out: Px, f: number, zb: Float32Array, scene: Px): Uint8Array {
+    const mask = new Uint8Array(FW * FH);
+    const live: { b: Billow; s: BillowNow; sx: number; sy: number }[] = [];
+    for (const b of billows) {
+      const st = billowAt(b, f);
+      if (!st) continue;
+      const [sx, sy] = scr(st.x, st.y, st.z);
+      live.push({ b, s: st, sx, sy });
+    }
+    if (!live.length) return mask;
+    let X0 = FW;
+    let Y0 = FH;
+    let X1 = -1;
+    let Y1 = -1;
+    for (const { s, sx, sy } of live) {
+      X0 = Math.min(X0, Math.floor(sx - s.rx * 1.2));
+      X1 = Math.max(X1, Math.ceil(sx + s.rx * 1.2));
+      Y0 = Math.min(Y0, Math.floor(sy - s.ry * 1.2));
+      Y1 = Math.max(Y1, Math.ceil(sy + s.ry * 1.2));
+    }
+    X0 = Math.max(1, X0);
+    Y0 = Math.max(1, Y0);
+    X1 = Math.min(FW - 2, X1);
+    Y1 = Math.min(FH - 2, Y1);
+    if (X1 < X0 || Y1 < Y0) return mask;
+    const w = X1 - X0 + 1;
+    const hh = Y1 - Y0 + 1;
+    const n = w * hh;
+    // the mass: how much dust is at each pixel (where enough is, it is dust), and how near the eye its surface is
+    const F = new Float32Array(n);
+    const M = new Float32Array(n).fill(-1e9);
+    const Sm = new Float32Array(n);
+    const Zt = new Float32Array(n);
+    const KS = 4.5;
+    for (const { b, s, sx, sy } of live) {
+      const dep = 24.6 * (s.x + s.y) + 0.49 * s.z;
+      const R = Math.min(s.rx, s.ry * 1.3);
+      const k = f - b.f0;
+      const p3 = b.seed * 2.39 + k * 0.05;
+      const p5 = b.seed * 1.37 - k * 0.04;
+      const [c3, s3, c5, s5] = [Math.cos(p3), Math.sin(p3), Math.cos(p5), Math.sin(p5)];
+      const a3 = 0.075;
+      const a5 = 0.045;
+      const ya = Math.max(Y0, Math.floor(sy - s.ry * 1.2));
+      const yb = Math.min(Y1, Math.ceil(sy + s.ry * 1.2));
+      const xa = Math.max(X0, Math.floor(sx - s.rx * 1.2));
+      const xb = Math.min(X1, Math.ceil(sx + s.rx * 1.2));
+      for (let y = ya; y <= yb; y++) {
+        const dy = (y + 0.5 - sy) / s.ry;
+        for (let x = xa; x <= xb; x++) {
+          const dx = (x + 0.5 - sx) / s.rx;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > 1.44) continue;
+          const d = Math.sqrt(d2) + 1e-6;
+          const c = dx / d;
+          const sn = dy / d;
+          const cc = c * c;
+          const ss = sn * sn;
+          const lob = 1 + a3 * (c * (4 * cc - 3) * c3 - sn * (3 - 4 * ss) * s3) + a5 * (c * (16 * cc * cc - 20 * cc + 5) * c5 - sn * (16 * ss * ss - 20 * ss + 5) * s5);
+          const q = d2 / (lob * lob);
+          if (q >= 1.3) continue;
+          const o = (y - Y0) * w + x - X0;
+          if (q < 1) F[o] += 1 - q;
+          const hg = q < 1 ? dep + R * Math.sqrt(1 - q) : dep - R * (q - 1) * 0.8;
+          if (hg > M[o]) {
+            Sm[o] = Sm[o] * Math.exp((M[o] - hg) / KS) + 1;
+            M[o] = hg;
+            Zt[o] = s.z;
+          } else Sm[o] += Math.exp((hg - M[o]) / KS);
+        }
+      }
+    }
+    const T = 0.12;
+    const H = new Float32Array(n);
+    const inside = new Uint8Array(n);
+    for (let y = Y0; y <= Y1; y++) {
+      for (let x = X0; x <= X1; x++) {
+        const o = (y - Y0) * w + x - X0;
+        if (F[o] < T) continue;
+        const hg = M[o] + KS * Math.log(Sm[o]);
+        // (behind what is nearer the eye: the floor, a stone of it, the kerb)
+        const i = y * FW + x;
+        const zs = scene.d[i * 4 + 3] ? zb[i] : 0;
+        const ds = (24.6 * (y + 0.5 - AY + zs)) / 16 + 0.49 * zs;
+        if (hg < ds - 0.5) continue;
+        H[o] = hg;
+        inside[o] = 1;
+      }
+    }
+    // (its surface smoothed a little, so that close-packed billows make no ribs)
+    const Hs = new Float32Array(n);
+    for (let y = Y0; y <= Y1; y++) {
+      for (let x = X0; x <= X1; x++) {
+        const o = (y - Y0) * w + x - X0;
+        if (!inside[o]) continue;
+        let t = 0;
+        let c = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          if (y + dy < Y0 || y + dy > Y1) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            if (x + dx < X0 || x + dx > X1) continue;
+            const q = o + dy * w + dx;
+            if (!inside[q]) continue;
+            t += H[q];
+            c++;
+          }
+        }
+        Hs[o] = t / c;
+      }
+    }
+    H.set(Hs);
+    const LX = -0.47;
+    const LY = -0.74;
+    const LZ = 0.51;
+    for (let y = Y0; y <= Y1; y++) {
+      for (let x = X0; x <= X1; x++) {
+        const o = (y - Y0) * w + x - X0;
+        if (!inside[o]) continue;
+        const l = x > X0 && inside[o - 1];
+        const r = x < X1 && inside[o + 1];
+        const u = y > Y0 && inside[o - w];
+        const dn = y < Y1 && inside[o + w];
+        let nx: number;
+        let ny: number;
+        let nz: number;
+        if (l && r && u && dn) {
+          // (inside: as its surface turns)
+          const gx = (H[o + 1] - H[o - 1]) / 2;
+          const gy = (H[o + w] - H[o - w]) / 2;
+          const m = Math.hypot(gx, gy, 1);
+          [nx, ny, nz] = [-gx / m, -gy / m, 1 / m];
+        } else {
+          // (its rim: turned out, away from the mass)
+          const fx = (x < X1 ? F[o + 1] : 0) - (x > X0 ? F[o - 1] : 0);
+          const fy = (y < Y1 ? F[o + w] : 0) - (y > Y0 ? F[o - w] : 0);
+          const m = Math.hypot(fx, fy) || 1;
+          [nx, ny, nz] = [(-fx / m) * 0.92, (-fy / m) * 0.92, 0.39];
+        }
+        const lit = LX * nx + LY * ny + LZ * nz + 0.1 * Math.tanh((Zt[o] - 25) / 40);
+        out.set(x, y, DUST[lit > 0.74 ? 3 : lit > 0.36 ? 2 : lit > -0.18 ? 1 : 0]);
+        mask[y * FW + x] = 1;
+      }
+    }
+    // (never a lone speck: his note on the rats)
+    for (let y = Y0; y <= Y1; y++) {
+      for (let x = X0; x <= X1; x++) {
+        if (!mask[y * FW + x]) continue;
+        let k = 0;
+        for (let dy = -1; dy <= 1 && !k; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && out.has(x + dx, y + dy)) k++;
+        if (!k) {
+          out.erase(x, y);
+          mask[y * FW + x] = 0;
+        }
+      }
+    }
+    return mask;
   }
-  const N = last + 3;
-  // GRIT trickling off the kerb's inner edge on the far side, near the steps' foot, where the near kerb hides it as it falls: one grain every other frame, to the end
-  for (let i = 0; i < 9; i++) {
-    const [x, y] = XY(1.3 + 0.95 * hash(i, 1, 591), 0.03);
-    grit.push({ f0: N - 2 - 2 * i - (i % 2), x, y, z: 0, vx: 0, vy: 0, vz: 0, g: 0.8, size: 2, tones: CHIP_STONE });
-  }
+
+  // WHEN THE FISSURE GOES, AND WHEN THE PIT BECOMES THE STAIRWELL: each at the first frame at which the
+  // dust hides every pixel that changes, that frame and the next (the fissure and its forks while the skirt
+  // lies over the floor round the kerb; the pit after every stone has gone back into it)
+  /** Whether every pixel that differs between two ways of painting a frame is under the dust, both ways. */
+  const hidden = (g: number, A: [boolean, boolean], B: [boolean, boolean]): boolean => {
+    const a = paint(g, A[0], false, A[1]);
+    const b = paint(g, B[0], false, B[1]);
+    for (let i = 0; i < FW * FH; i++) {
+      const j = i * 4;
+      if (a.scene.d[j + 3] === b.scene.d[j + 3] && a.scene.d[j] === b.scene.d[j] && a.scene.d[j + 1] === b.scene.d[j + 1] && a.scene.d[j + 2] === b.scene.d[j + 2]) continue;
+      if (!a.dust[i] || !b.dust[i]) return false;
+    }
+    return true;
+  };
+  for (let f = great + 2; f < great + 24 && heal < 0; f++) if (hidden(f, [false, false], [false, true]) && hidden(f + 1, [false, false], [false, true])) heal = f;
+  if (heal < 0) throw new Error(`the stairwell opening (${theme.id}, ${way}): no frame in which the dust hides the fissure going`);
+  const stonesGone = Math.max(...stones.map((s) => s.f0 + s.path.length));
+  let swap = -1;
+  for (let f = Math.max(great + 18, stonesGone, heal + 1); f < great + 36 && swap < 0; f++) if (hidden(f, [false, true], [true, true]) && hidden(f + 1, [false, true], [true, true])) swap = f;
+  if (swap < 0) throw new Error(`the stairwell opening (${theme.id}, ${way}): no frame in which the dust hides the pit becoming the stairwell`);
+  let last = swap + 1;
+  for (let f = swap; f < swap + 120; f++) if (billows.some((b) => billowAt(b, f))) last = f + 1;
+  const N = last + 1;
+
   const frames: Sprite[] = [];
   const cut = (p: Px): Sprite => {
     const bb = p.bounds(GRAIN);
@@ -1157,13 +1504,19 @@ function makeMoment(theme: Theme, way: Way): Moment {
     fastBlit(q, p, -bb.x, -bb.y);
     return q.sprite(AX - bb.x, AY - bb.y, GRAIN);
   };
-  for (let f = 0; f < N - 1; f++) frames.push(cut(paintFrame(f, true)));
-  // the last: the stairwell at rest (makeStairwell's own picture, to the pixel: tests/stairwell_open.test.ts)
-  const lastPx = new Px(FW, FH);
-  fastBlit(lastPx, wellAt(KERB_H).p, PADX, PADT);
-  paintFrame(N - 1, true);
-  frames.push(cut(lastPx));
-  // THE JOLTS: the shock, the heave, the slams of the slabs that fall deep (the second and third rows' first), the great burst
-  const jolts = [SHOCK, HEAVE, Math.min(lands[2].at, lands[3].at), Math.min(lands[4].at, lands[5].at), great];
-  return { name: 'the stairwell opens', frames, fps: 30, before: null, after: [final], tracks, jolts: [...new Set(jolts)].sort((a, b) => a - b), holds: [] };
+  // (the first frame: nothing, and nothing of it followed)
+  tracks.forEach((t) => t.at.push(null));
+  for (let f = 0; f < N; f++) frames.push(cut(f === 0 ? new Px(FW, FH) : paint(f, f >= swap, true, f >= heal).out));
+  // THE JOLTS: the shock, the heave, each flagstone striking the bottom, the great burst
+  const joltKick = new Map<number, number>([[SHOCK, KICK_SHOCK], [HEAVE, KICK_HEAVE]]);
+  const orderOf = cells.map((c) => c.order);
+  cellImpacts.forEach((f, ci) => joltKick.set(f, Math.max(joltKick.get(f) ?? 0, Math.round(3 + (3 * orderOf[ci]) / Math.max(1, cells.length - 1)))));
+  joltKick.set(great, KICK_BURST);
+  const jolts = [...joltKick.keys()].sort((a, b) => a - b);
+  const m: Moment = { name: 'the stairwell opens', frames, fps: 30, before: null, after: [final], tracks, jolts, holds: [] };
+  const inOrder = cells.map((c, ci) => ci).sort((p, q) => cells[p].order - cells[q].order);
+  const tips = inOrder.map((ci) => Math.min(...pieces.filter((p) => p.cell === ci).map(tipOf)));
+  const impacts = inOrder.map((ci) => cutAt[ci]);
+  NOTES.set(m, { great, heal, swap, tips, impacts, kicks: jolts.map((j) => joltKick.get(j)!), pieces: pieces.length, earthPieces: pieces.filter((p) => p.earth).length, stones: stones.length, earthStones: stones.filter((s) => s.tones !== STONE_TONES).length, hidden: true });
+  return m;
 }
