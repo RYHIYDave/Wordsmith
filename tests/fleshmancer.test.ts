@@ -14,11 +14,17 @@
 //      enemy's), his pink edge round him, every pixel whole or empty but the edge;
 //   4. HUMAN SIZED: the top of his hood about the knight's height, a head taller at most; the skull of his
 //      staff above his hood;
-//   5. HE FLOATS, FEET JUST OFF THE FLOOR: in every frame of his stand his toes are off it, by no more than a
-//      hand's breadth, and the front of his robe's hem is above them;
+//   5. HE FLOATS, UNMISTAKABLY: in every frame of his stand the lowest of his robe's tails is clear of the floor
+//      by a few game pixels (a gap of floor under him), and he rises and sinks on nothing by 4 to 6 game
+//      pixels as he stands;
 //   6. his staff is in his right hand from in front and from behind: his back as the camera truly sees him;
 //      and it passes outside the mantle he wears over his shoulders (which his arms are under, as the
-//      Headsman's are under his cape: so it is not among the solids the review keeps his arms out of).
+//      Headsman's are under his cape: so it is not among the solids the review keeps his arms out of);
+//   7. THE GOUT OF FIRE HE FLINGS leaves his hand, arcs out beside him (from in front and from behind, clear
+//      of him) and bursts on the floor;
+//   8. HIS LIGHT NEVER WASHES OVER HIM IN ONE FRAME: from one frame of his stand to the next, all the light
+//      he gives off grows by two fifths at most (it swells over two or three frames);
+//   9. THE SKULL, the second thing he is known by, is wider than his hood.
 //   run: tsx --test tests/fleshmancer.test.ts
 
 // @ts-ignore
@@ -30,12 +36,12 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { FLESHMANCER, FLESHMANCER_SWITCH, FM_HEM_UP, FM_HOOD_UP, FM_MADE, FM_SHAPE, fmHoodTop, fmMantle, makeFleshmancerArt3, staffOf } from '../src/art/fleshmancer';
+import { FLESHMANCER, FLESHMANCER_SWITCH, FM_GOUT_LAND, FM_GOUT_LET, FM_GOUT_SPOT, FM_HOOD_R, FM_HOOD_UP, FM_MADE, FM_SHAPE, FM_SKULL_WIDE, fmGoutAt, fmHemOf, fmHoodTop, fmMantle, fmSolids, fmTails, makeFleshmancerArt3, staffOf } from '../src/art/fleshmancer';
 import { checkBoss, findingsSaid, framesOf, inLump } from '../src/art/boss_checks';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
 import { KNIGHT_BODY } from '../src/art/moves3';
-import { paintViewOf, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
+import { paintMob, paintViewOf, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
 import { project } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
@@ -132,17 +138,24 @@ test('4. human sized: his hood about the knight’s height, a head taller at mos
   assert.ok(FM_HOOD_UP > 0);
 });
 
-test('5. he floats, feet just off the floor: his toes off it by no more than a hand, the front of his hem above them', () => {
+test('5. he floats, unmistakably: a gap of floor under the lowest of his tails in every frame, and he rises and sinks by 4 to 6 game pixels', () => {
+  let lo = Infinity;
+  let hi = -Infinity;
   for (let i = 0; i < FLESHMANCER.idleFrames; i++) {
     const t = i / FLESHMANCER.idleFps;
     const s = skeletonAt(FLESHMANCER, 'stand', t);
-    const toes = Math.min(s.toeL[2], s.toeR[2]);
-    const heels = Math.min(s.heelL[2], s.heelR[2]);
-    assert.ok(toes > 2 && toes < 9, `at ${t.toFixed(1)} s his lowest toe is ${toes.toFixed(1)} off the floor`);
-    assert.ok(heels > toes, `at ${t.toFixed(1)} s his feet hang toes down`);
-    const hem = FM_HEM_UP - 1.1;
-    assert.ok(hem > Math.max(s.toeL[2], s.toeR[2]) + 3, `at ${t.toFixed(1)} s the front of his hem (${hem.toFixed(1)}) is above his toes`);
+    const q = posedOfMob(FLESHMANCER, 'stand', t);
+    const tails = fmTails(fmHemOf(s), (t / (FLESHMANCER.idleFrames / FLESHMANCER.idleFps)) * Math.PI * 2, q.gale);
+    const lowest = Math.min(...tails.flatMap((x) => x.pts.map((p) => p[2] - x.r)));
+    // (a gap of four game pixels at the least: eight of the picture's)
+    assert.ok(lowest > 8, `at ${t.toFixed(1)} s the lowest of his tails is ${lowest.toFixed(1)} off the floor`);
+    // (and nothing of his body down there either: his drawn-up feet are inside his robe, above its hem)
+    assert.ok(Math.min(s.toeL[2], s.toeR[2], s.heelL[2], s.heelR[2]) > 2, `at ${t.toFixed(1)} s a foot of his is near the floor`);
+    lo = Math.min(lo, fmHoodTop(s));
+    hi = Math.max(hi, fmHoodTop(s));
   }
+  const bob = (hi - lo) / 2;
+  assert.ok(bob >= 4 && bob <= 6, `he rises and sinks by ${bob.toFixed(1)} game pixels`);
 });
 
 test('6. his staff is in his right hand from in front and from behind (his back as the camera truly sees him), and passes outside his mantle', () => {
@@ -163,4 +176,45 @@ test('6. his staff is in his right hand from in front and from behind (his back 
     const deepest = Math.max(...(staff?.pts ?? []).map((p) => inLump(p, mantle)));
     assert.ok(staff && deepest + staff.r < 0.5, `frame ${i}: the staff is ${(deepest + (staff?.r ?? 0)).toFixed(1)} into his mantle`);
   }
+});
+
+test('7. the gout of fire he flings leaves his hand, arcs out beside him (clear of him, from in front and from behind) and bursts on the floor', () => {
+  const at = skeletonAt(FLESHMANCER, 'stand', FM_GOUT_LET);
+  const leaves = fmGoutAt(FM_GOUT_LET);
+  assert.ok(leaves !== null, 'it is in flight as it leaves his hand');
+  const from = leaves as readonly [number, number, number];
+  const fromHand = Math.hypot(from[0] - at.handL[0], from[1] - at.handL[1], from[2] - at.handL[2]);
+  assert.ok(fromHand < 6, `it leaves ${fromHand.toFixed(1)} from his hand`);
+  assert.ok(FM_GOUT_SPOT[2] === 0 && fmGoutAt(FM_GOUT_LAND) === null, 'it lands on the floor, and is gone from the air');
+  let topZ = -Infinity;
+  for (let t = FM_GOUT_LET; t < FM_GOUT_LAND; t += 0.02) {
+    const p = fmGoutAt(t);
+    if (!p) continue;
+    topZ = Math.max(topZ, p[2]);
+    const s = skeletonAt(FLESHMANCER, 'stand', t);
+    const { lumps } = fmSolids(s);
+    for (const o of lumps) assert.ok(inLump(p, o) < -1, `at ${t.toFixed(2)} s it passes through his ${o.name}`);
+  }
+  assert.ok(topZ > from[2] + 4, `it arcs (its top ${topZ.toFixed(1)} up, it left at ${from[2].toFixed(1)})`);
+  // (where it bursts is beside him as the eye sees him, from in front and from behind, not under him)
+  const s = skeletonAt(FLESHMANCER, 'stand', FM_GOUT_LAND);
+  for (const view of ['front', 'rear'] as const) {
+    const across = Math.abs(project(FM_GOUT_SPOT, view)[0] - project(s.pelvis, view)[0]) / 2;
+    assert.ok(across > 14, `${view}: it bursts ${across.toFixed(1)} game pixels across the picture from him`);
+  }
+});
+
+test('8. his light never washes over him in one frame: from one frame to the next it grows by two fifths at most', () => {
+  for (const view of ['front', 'back'] as const) {
+    const all: number[] = [];
+    for (let i = 0; i < FLESHMANCER.idleFrames; i++) all.push(paintMob(FLESHMANCER, 'stand', i / FLESHMANCER.idleFps, view).lights.reduce((a, l) => a + (l.a ?? 0.5) * l.r * l.r, 0));
+    all.forEach((v, i) => {
+      const next = all[(i + 1) % all.length];
+      assert.ok(next <= v * 1.4, `${view}: from frame ${i} to the next his light grows ${(next / v).toFixed(2)} times`);
+    });
+  }
+});
+
+test('9. the skull, the second thing he is known by, is wider than his hood', () => {
+  assert.ok(FM_SKULL_WIDE >= 2 * FM_HOOD_R[1] + 2, `the skull ${FM_SKULL_WIDE} across, his hood ${(2 * FM_HOOD_R[1]).toFixed(1)}`);
 });

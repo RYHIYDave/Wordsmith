@@ -20,7 +20,7 @@ import { toSprite } from '../art/kit';
 import { makeCultistArt, makeHighPriestArt } from '../art/monster_cultist';
 import { MOVES3 } from '../art/moves3';
 import { HEADSMAN } from '../art/bosses3';
-import { FLESHMANCER, FM_FLOAT, fmHoodTop, staffOf } from '../art/fleshmancer';
+import { FLESHMANCER, fmHemOf, fmHoodTop, fmTails, staffOf } from '../art/fleshmancer';
 import { SHADE, canvasOf, paintMob, skeletonAt } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
 import type { GameView } from '../art/skin';
@@ -117,11 +117,11 @@ function pane(x: number, y: number, w: number, h: number, S: number, who: Readon
   }
   g.restore();
 }
-/** The soft shadow under a figure (the game's: a soft oval, darkest under it). */
+/** The soft shadow under a figure, as the game lays it (render.ts `shadow`: a soft oval, darkest under the figure and gone at its rim, at 0.7). */
 function shadowAt(fx: number, fy: number, r: number, c: CanvasRenderingContext2D = g): void {
   const sh = c.createRadialGradient(fx, fy, 0, fx, fy, r);
-  sh.addColorStop(0, 'rgba(0,0,0,0.62)');
-  sh.addColorStop(0.65, 'rgba(0,0,0,0.42)');
+  sh.addColorStop(0, 'rgba(0,0,0,0.7)');
+  sh.addColorStop(0.4, 'rgba(0,0,0,0.6)');
   sh.addColorStop(1, 'rgba(0,0,0,0)');
   c.save();
   c.translate(fx, fy);
@@ -170,20 +170,22 @@ function widthOf(list: { sp: Sprite }[], S: number, PAD: number): number {
     return a + Math.max(l + r, 62) + GAP;
   }, GAP) * S + PAD * 2;
 }
-/** The top of his hood and of his skull's fire above the floor, at rest (picture pixels, as painted). */
-function heights(): { hood: number; skull: number } {
+/** The top of his hood, the middle of the skull, and the lowest of his tails above the floor, at the start of his stand (picture pixels, as painted). */
+function heights(): { hood: number; skull: number; gap: number } {
   const s = skeletonAt(FM, 'stand', 0);
-  return { hood: Math.round(fmHoodTop(s)), skull: Math.round(staffOf(s).skull[2] + 4) };
+  const tails = fmTails(fmHemOf(s), 0, 0);
+  const gap = Math.min(...tails.flatMap((x) => x.pts.map((p) => p[2] - x.r)));
+  return { hood: Math.round(fmHoodTop(s)), skull: Math.round(staffOf(s).skull[2]), gap: Math.round(gap) };
 }
 
 if (mode === 'sheet') {
   const S = Number(parts[1]) || 3;
   const PAD = 14;
-  const { hood, skull } = heights();
+  const { hood, skull, gap } = heights();
   const row1 = [
     { sp: spriteOf3(MOVES3.ktown, 0, 'front'), name: 'The knight', line: 'a hero, standing: 58 tall', shadow: 12, gold: false },
     { sp: KNIGHT(), name: 'The knight', line: 'ready to fight', shadow: 12, gold: false },
-    { sp: spOf(FM, 'stand', 0, 'front'), name: 'The Fleshmancer', line: `facing you: his hood ${hood} up, floating ${FM_FLOAT}`, shadow: FM.shadow, gold: true },
+    { sp: spOf(FM, 'stand', 0, 'front'), name: 'The Fleshmancer', line: `facing you: his hood ${hood} up, his tails ${gap} off the floor`, shadow: FM.shadow, gold: true },
     { sp: spOf(FM, 'stand', 0, 'back'), name: 'The Fleshmancer', line: `facing away: the skull ${skull} up`, shadow: FM.shadow, gold: true },
   ];
   const row2 = [
