@@ -7,7 +7,7 @@ rulebook, How art is made 7), pictures to him first. Nothing of the game imports
 
 **State of this branch (`mockup/fleshmancer`):** from `mockup/bosses` at 28f7368 (the Headsman, the
 Chained One and the amalgamation with the bone beast, as they went to the main chat). Made by THE ART
-CHAT, from 11 Oct 2026. His brief, and HIS LOOK (his standing loop), for his yes; his moves come after.
+CHAT, from 11 Oct 2026. His brief, and HIS LOOK (his standing loop), WITH HIS YES (by 12:28, below); his moves come next.
 His look was drawn once (8d4b104), REMADE after a fresh look at it (a4a885d: at a phone's size the first
 read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again after a second fresh look
 (the third drawing, below: the second had accidental shapes in it, and a small, crouched body).
@@ -46,6 +46,10 @@ read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again a
     never blood or open flesh).
   - His sound, for the sound chat: "An echoing voice and a shrieking skull" (his voice booms through the
     hall, and the skull on his staff shrieks when he casts).
+- HIS LOOK, asked as a pop-up on the page "Fleshmancer Look Review" (11 Oct, by 12:28), "The
+  fleshmancer's look and how he stands, as on the Fleshmancer Look Review page: good to animate as
+  shown?": "Yes, animate him (Recommended)", offered as: his glide, his attacks, his three spells and
+  his death made as films, every move through the boss checks, for him to see.
 
 ## What he is (his look; the art chat, 11 Oct, as remade)
 
