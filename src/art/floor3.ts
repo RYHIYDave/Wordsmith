@@ -46,7 +46,7 @@ import { COAL, EMBER, GOLD, column, hoop, stoneOf, tongue, trunk } from './props
 import type { TrunkLook } from './props';
 import { FLAME } from './mkit';
 import {
-  BEYOND, DEEP, LCX, LCY, PCX, PFOOT, block, box, darkened, dustCloud, fastBlit, fillWith, flame, flat, fx, fy, litSide, lying, mid, onFacePx, painted, recolor, relief, shadeSide, shaded, spotsFrom, sunk, tilesOf,
+  BEYOND, DEEP, LCX, LCY, PCX, PFOOT, block, box, darkened, dustCloud, fastBlit, fillWith, flame, flat, fx, fy, litSide, lying, mid, onFacePx, painted, recolor, relief, shadeSide, shaded, spotsFrom, sunk, tilesOf, wallSet,
 } from './floorkit';
 import type { Moment, Piece, PieceKind, Track } from './floorkit';
 import { Deep, FLOOR_DUST, KT, LIGHT_W, TOWARD, dot3, grainStream, onPic, paintGrains, paintPuffs, puffRing } from './floor2';
@@ -327,8 +327,8 @@ function muzzleRods(R: number, burst = false): Rod[] {
   const at = (deg: number, up: number, k: number): V3 => [Math.cos(deg * D2R) * F * k, Math.sin(deg * D2R) * A * k, up];
   const rods: Rod[] = [];
   // (thin rods with wide gaps between: the second fresh look found thick ones reading as a solid plate with holes, a catcher's mask)
-  const band = 0.05 * R;
-  const thin = 0.038 * R;
+  const band = 0.04 * R;
+  const thin = 0.034 * R;
   const LEVELS: ReadonlyArray<readonly [number, number]> = [[0, 1], [-0.5 * R, 0.9], [-0.98 * R, 0.56]];
   const SIDE = 104;
   // the three bands, round the front of the jaw from one side to the other (a gap in the middle one, burst)
@@ -340,9 +340,9 @@ function muzzleRods(R: number, burst = false): Rod[] {
   });
   // the rims down its sides, from band to band
   for (const sd of [-1, 1]) for (let j = 0; j < 2; j++) rods.push({ a: at(sd * SIDE, LEVELS[j][0], LEVELS[j][1]), b: at(sd * SIDE * 0.96, LEVELS[j + 1][0], LEVELS[j + 1][1]), r: thin });
-  // the uprights: three between the top band and the middle, two between the middle and the chin's, set between them
-  for (const d of [-36, 0, 36]) rods.push({ a: at(d, LEVELS[0][0], LEVELS[0][1]), b: at(d, LEVELS[1][0], LEVELS[1][1]), r: thin });
-  for (const d of [-19, 19]) {
+  // the uprights, as on his mark: two between the top band and the middle, one under it, set between them
+  for (const d of [-34, 34]) rods.push({ a: at(d, LEVELS[0][0], LEVELS[0][1]), b: at(d, LEVELS[1][0], LEVELS[1][1]), r: thin });
+  for (const d of [8]) {
     const b = at(d, LEVELS[2][0], LEVELS[2][1]);
     rods.push({ a: at(d, LEVELS[1][0], LEVELS[1][1]), b: burst && d > 0 ? lerp3(at(d, LEVELS[1][0], LEVELS[1][1]), b, 0.4) : b, r: thin });
   }
@@ -373,7 +373,7 @@ function muzzleRivets(R: number): V3[] {
   const F = R;
   const A = R * 0.86;
   const at = (deg: number, up: number, k: number): V3 => [Math.cos(deg * D2R) * F * k, Math.sin(deg * D2R) * A * k, up];
-  return [at(-36, 0, 1), at(0, 0, 1), at(36, 0, 1), at(-19, -0.5 * R, 0.9), at(19, -0.5 * R, 0.9), at(-104, 0, 1), at(104, 0, 1), [F * 0.2, 0, -1.14 * R]];
+  return [at(-34, 0, 1), at(34, 0, 1), at(8, -0.5 * R, 0.9), at(-104, 0, 1), at(104, 0, 1), [F * 0.2, 0, -1.14 * R]];
 }
 
 interface Rod { a: V3; b: V3; r: number }
@@ -1537,11 +1537,13 @@ function mantrap(shut: boolean): Sprite {
  * each a brow: now there is one hatch, off to one side, so the two faces of a corner never match; no
  * shutter over it; its lintel in shadow and its sill the lit edge, as a recess is.)
  */
-function ballHatch(p: Px): void {
+function ballHatch(p: Px, high: boolean): void {
+  // (high on the face turned to screen-left, low on the other: the last look found the two on a
+  // corner, side by side at one height, still a faint pair of eyes)
   const U0 = 1;
   const U1 = 12;
-  const V0 = 22;
-  const V1 = 37;
+  const V0 = high ? 33 : 13;
+  const V1 = V0 + 15;
   const hole = (u: number, v: number): boolean => u >= U0 && u <= U1 && v >= V0 && v <= V1;
   // the iron frame round it (its sill lit, its lintel in shadow), and the dark inside
   for (let v = V0 - 2; v <= V1 + 1; v++) for (let u = U0 - 2; u <= U1 + 2; u++) {
@@ -1549,8 +1551,7 @@ function ballHatch(p: Px): void {
     else p.set(fx(u), fy(v), v === V0 - 1 ? DIM_IRON[3] : v === V0 - 2 ? DIM_IRON[0] : u === U0 - 2 ? DIM_IRON[2] : DIM_IRON[0]);
   }
   for (const [u, v] of [[U0 - 1, V0 - 2], [U1 + 1, V0 - 2]] as const) p.set(fx(u), fy(v), RIVET_LIT);
-  // gouges in the stone under the sill, where it has swung out over it
-  for (const [u0, len] of [[3, 6], [7, 8], [10, 5]] as const) for (let k = 0; k < len; k++) p.set(fx(u0 + Math.round(k * 0.3)), fy(V0 - 3 - k), k < len - 2 ? FACE[0] : FACE[1]).set(fx(u0 + 1 + Math.round(k * 0.3)), fy(V0 - 3 - k), FACE[3]);
+  // (no gouges under the sill: the last look found them a fringe of lashes under an eye)
   const b = flat();
   // its chain, up from the ball into the dark over it
   for (let v = V0 + 8; v <= V1; v++) b.set(fx(7), fy(v), v % 3 === 0 ? DIM_IRON[0] : DIM_IRON[2]);
@@ -2386,10 +2387,11 @@ function hisCage(): Sprite {
   const foot = 50;
   const p = new Px(W, H);
   const deep = new Deep(p);
-  const R = 18;
+  const R = 20;
   const rods = muzzleRods(R, true);
   const straps = muzzleStraps(R, true);
-  const { view: v0, turn } = frontView(cx, foot - 16, 22, 10);
+  // (seen a little from above as it lies, so that the floor shows between its bars: the last look still found a plate with eye holes)
+  const { view: v0, turn } = frontView(cx, foot - 16, 22, 26);
   // (set down so that its lowest point is on the floor)
   let low = -Infinity;
   for (const r of [...rods, ...straps]) for (const q of [r.a, r.b]) low = Math.max(low, v0(q)[1] + r.r);
@@ -2483,7 +2485,12 @@ export function chainedPieces(): Piece[] {
     // traps
     { name: 'the trip chain', kind: 'trap', frames: [tripChain(false), tripChain(true)] },
     { name: 'the mantrap', kind: 'trap', frames: [mantrap(false), mantrap(true)] },
-    w('the ball hatch', 'trap', ballHatch),
+    // (the ball hatch: its own picture on each face, high on one and low on the other)
+    (() => {
+      const hi = wallSet((p) => ballHatch(p, true));
+      const lo = wallSet((p) => ballHatch(p, false));
+      return { name: 'the ball hatch', kind: 'trap' as PieceKind, left: hi.left, right: lo.right, spots: [{ du: 0, dv: 0, left: hi.left, right: lo.right }] };
+    })(),
     // breakables: whole, and what each leaves broken
     { name: 'straw bale', kind: 'breakable', frames: [strawBale(), brokenOf('bale')], shadow: 0.3 },
     { name: 'water jug', kind: 'breakable', frames: [waterJug(), brokenOf('jug')], shadow: 0.2 },
@@ -2710,7 +2717,7 @@ const smooth = (t: number): number => {
 // it never hides the blow.
 
 /** A cloud: born on frame `f0` at `o` (in the moment's own measure, picture pixels), thrown `v` a frame at first, growing to `r` across, hanging `hang` frames before it settles. */
-export interface Cloud { f0: number; o: V3; v: V3; r: number; hang: number; seed: number }
+export interface Cloud { f0: number; o: V3; v: V3; r: number; hang: number; seed: number; goTo?: (q: V3, r: number) => V3 }
 /** Dust: its dark belly, its body in shade, its body, its lit top (the floor's dust, a step either way). */
 const DUST: readonly [string, string, string, string] = ['#322e54', '#433f68', '#55517e', '#696594'];
 const CLOUD_GROW = [0.3, 0.6, 0.85] as const;
@@ -2729,7 +2736,7 @@ function cloudEnd(c: Cloud): number {
  * over many frames, easing in and out, and the sheet it becomes slides on along the floor as it
  * shrinks away as one.)
  */
-export function dustCloudAt(c: Cloud, k: number): { q: V3; r: number; sx: number; sy: number; thin: number } | null {
+export function dustCloudAt(c: Cloud, k: number): { q: V3; r: number; sx: number; sy: number; thin: number; leaving: boolean } | null {
   if (k < 0) return null;
   const G = CLOUD_GROW.length;
   // thrown out fast and slowing; then drifting on, slowly
@@ -2750,18 +2757,29 @@ export function dustCloudAt(c: Cloud, k: number): { q: V3; r: number; sx: number
     sy = 1 - 0.62 * e;
     sx = 1 + 0.4 * e;
   }
-  if (k >= t0 + S) {
-    // a low sheet on the floor, sliding on along it and shrinking away as one
-    const t = (k - t0 - S + 1) / (CLOUD_SHRINK + 1);
+  const leaving = k >= t0 + S;
+  if (leaving) {
+    // a low sheet on the floor, sliding off faster and faster (its own way on, or `away`: under the
+    // wall, behind the heap) as it shrinks, so that it is seen to go (the last look found it thinning
+    // where it lay)
+    const n = k - t0 - S + 1;
+    const t = n / (CLOUD_SHRINK + 1);
     if (t >= 1) return null;
-    const along = Math.hypot(c.v[0], c.v[1]) || 1;
-    const slide = 0.9 * (k - t0 - S + 1);
-    q = [q[0] + (c.v[0] / along) * slide, q[1] + (c.v[1] / along) * slide, q[2]];
-    r *= Math.sqrt(1 - t);
+    r *= Math.sqrt(1 - 0.85 * t);
+    if (c.goTo) {
+      // (to where it is out of sight, under the wall or the heap, by its last frame, faster and faster)
+      const to = c.goTo(q, r);
+      const e = Math.min(1, n / CLOUD_SHRINK) ** 1.6;
+      q = [q[0] + (to[0] - q[0]) * e, q[1] + (to[1] - q[1]) * e, q[2]];
+    } else {
+      const along = Math.hypot(c.v[0], c.v[1]) || 1;
+      const slide = 1.5 * n + 0.4 * n * n;
+      q = [q[0] + (c.v[0] / along) * slide, q[1] + (c.v[1] / along) * slide, q[2]];
+    }
     sy *= 1 - 0.3 * t;
     thin = 1;
   }
-  return { q, r, sx, sy, thin };
+  return { q, r, sx, sy, thin, leaving };
 }
 /** The lobes a cloud is made of: (across, down, how big), in its own size: a big one in the middle, six round it, each its own. */
 function lobesOf(seed: number): [number, number, number][] {
@@ -2779,11 +2797,13 @@ function lobesOf(seed: number): [number, number, number][] {
  * fresh look found reads as netting and shimmers on a phone), lit on top and dark in its belly, and
  * a step darker as it spreads and settles.
  */
-function paintCloud(p: Px, c: Cloud, f: number, pic: (q: V3) => [number, number]): void {
+function paintCloud(p: Px, c: Cloud, f: number, pic: (q: V3) => [number, number], hidden?: (x: number, y: number) => boolean): void {
   const k = f - c.f0;
   const at = dustCloudAt(c, k);
   if (!at) return;
-  const { q, r, sx, sy, thin } = at;
+  const { q, r, sx, sy, thin, leaving } = at;
+  // (once it is a sheet sliding off along the floor, what of it has gone under the wall is not seen)
+  const hide = leaving && hidden ? hidden : null;
   if (r < 1) return;
   const [cx, cy] = pic(q);
   // (its lobes boiling: each swelling and shrinking on its own, the outer ones drifting outward)
@@ -2807,7 +2827,7 @@ function paintCloud(p: Px, c: Cloud, f: number, pic: (q: V3) => [number, number]
         if (d2 > rim * rim) continue;
         best = Math.max(best, -0.45 * dx - 0.89 * dy);
       }
-      if (best === -Infinity) continue;
+      if (best === -Infinity || (hide && hide(x, y))) continue;
       const tone = best > 0.5 ? 3 : best > -0.15 ? 2 : best > -0.6 ? 1 : 0;
       p.set(x, y, DUST[Math.max(0, tone - dim)]);
     }
@@ -3062,9 +3082,13 @@ function chainsPull(alongX: boolean): Film & { yanks: number[]; rip: number; sla
     if (f < EYES) return { lvl: 0, apart: 9, w: 4, h: 2 };
     if (f < EYES + 3) return { lvl: f - EYES + 1, apart: 9, w: f - EYES >= 1 ? 4 : 3, h: f - EYES >= 1 ? 2 : 1 };
     if (f <= RIP) return { lvl: 3, apart: 9, w: 4, h: 2 };
-    const t = (f - RIP) / EYES_BACK;
-    if (t >= 1) return { lvl: 0, apart: 4, w: 1, h: 1 };
-    return { lvl: Math.ceil(3 * (1 - t)), apart: 9 - 5 * t, w: t < 0.3 ? 4 : t < 0.6 ? 3 : 2, h: t < 0.4 ? 2 : 1 };
+    // (narrowing to slits and closing, drawing in toward each other: never opening again (the last look
+    // found them narrowing, opening, then gone in one frame))
+    const n = f - RIP;
+    if (n >= EYES_BACK) return { lvl: 0, apart: 4, w: 1, h: 1 };
+    const SLIT: ReadonlyArray<readonly [number, number, number]> = [[3, 4, 2], [3, 4, 1], [3, 3, 1], [2, 3, 1], [2, 3, 1], [1, 3, 1], [1, 1, 1], [1, 1, 1]];
+    const [lvl, w, h] = SLIT[Math.min(SLIT.length - 1, n)];
+    return { lvl, apart: 9 - (5 * n) / EYES_BACK, w, h };
   };
   const eyesOf = (f: number): number => eyeAt(f).lvl;
   // IT IS OVER when the chains have come to rest, the chunks lie still and the dust is gone
@@ -3138,7 +3162,8 @@ function chainsPull(alongX: boolean): Film & { yanks: number[]; rip: number; sla
     });
     // THE DUST, under what moves
     const dust = new Px(W, H);
-    for (const c of clouds) paintCloud(dust, c, f, pic);
+    // (sliding off under the wall: what of it is above the wall's foot on the picture has gone under it)
+    for (const c of clouds) paintCloud(dust, { ...c, goTo: (q, r) => [q[0], -1.2 * r - 2, q[2]] }, f, pic, (x, y) => y < ay + (alongX ? 0.5 : -0.5) * (x - ax) - 1);
     // THE CHAINS: the farthest out from the wall last; each from its ring to the port, a link or two on into its dark
     const chainL = new Px(W, H);
     const order = [0, 1, 2].sort((m, n) => st.pts[m].reduce((t, q) => t + q[1], 0) - st.pts[n].reduce((t, q) => t + q[1], 0));
@@ -3677,7 +3702,7 @@ function ballFalls(): Film & { impact: number; second: number; taut: number } {
       }
     }
     // THE DUST, low, on the floor under all that stands and moves
-    for (const cl of clouds) paintCloud(floor, cl, f, (q) => {
+    for (const cl of clouds) paintCloud(floor, { ...cl, goTo: (q) => [(PEAK[0] + PEAK[1]) / 2, (PEAK[2] + PEAK[3]) / 2, q[2]] }, f, (q) => {
       const [x, y] = onPic(q[0], q[1], q[2]);
       return [ax + x, ay + y];
     });
@@ -3693,8 +3718,17 @@ function ballFalls(): Film & { impact: number; second: number; taut: number } {
       const bb = blockBox(b.b);
       const bp = new Px(W, H);
       new Iso(bp, ax, ay).box(bb[0] / KT, bb[2] / KT, bb[1] / KT, bb[3] / KT, bb[4], bb[5], { top: (u, vv) => (vv < 0.1 || u < 0.08 ? STONE[3] : STONE[2]), left: litSide(SR), right: shadeSide(SR) });
+      // its staple: a closed iron loop lying on its top, lit along its upper edge, dark in its middle
+      // (the last look found an open ring reading as a little "c")
       const [rx, ry] = onPic(b.b[0], b.b[1], BH + 0.5);
-      ironRing(bp, ax + rx, ay + ry, 2.6, 1.2, SMALL_IRON, 0.6);
+      const cx = Math.round(ax + rx);
+      const cy = Math.round(ay + ry);
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) {
+        const e = (dx / 3.2) ** 2 + (dy / 2.2) ** 2;
+        if (e > 1) continue;
+        const inner = (dx / 1.4) ** 2 + (dy / 0.8) ** 2 <= 1;
+        bp.set(cx + dx, cy + dy, inner ? SMALL_IRON[0] : dy < 0 ? SMALL_IRON[3] : dy > 0 ? SMALL_IRON[1] : SMALL_IRON[2]);
+      }
       for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
         const col = bp.get(x, y);
         if (col) dt.put(x, y, (boxDepth(x + 0.5 - ax, y + 0.5 - ay, [bb]) ?? dot3(add3(b.b, [0, 0, BH]), TOWARD)) + 0.5, col);
@@ -3995,7 +4029,8 @@ function barsShake(alongX: boolean): Film & { yanks: number[] } {
   });
   // IT IS OVER when the pin and the stones lie still, the eyes are gone, the hands are gone and the dust is down
   const still = (path: (V3 | null)[]): number => path.findIndex((q, i) => i > 3 && q !== null && path[i - 1] !== null && q[0] === path[i - 1]![0] && q[1] === path[i - 1]![1] && q[2] === path[i - 1]![2]) - 1;
-  const END = Math.max(EYES_GO[1] + 2, SINK[1] + 2, still(pinPath), ...stones.map((s) => still(s.path)), ...clouds.map(cloudEnd));
+  const END0 = Math.max(EYES_GO[1] + 2, SINK[1] + 2, still(pinPath), ...stones.map((s) => still(s.path)));
+  let END = Math.max(END0, ...clouds.map(cloudEnd));
   // THE GRATE'S STONE: the same on every frame
   const frame = flat();
   cellGrateFrame(frame);
@@ -4160,14 +4195,23 @@ function barsShake(alongX: boolean): Film & { yanks: number[] } {
       });
     }
     // the dust, under all that moves
-    for (const cl of clouds) paintCloud(out, cl, f, (q) => pic(q[0] * 0.8, q[2], q[1]));
+    for (const cl of clouds) paintCloud(out, { ...cl, goTo: (q, r) => [q[0], -1.2 * r - 2, q[2]] }, f, (q) => pic(q[0] * 0.8, q[2], q[1]), (x, y) => y < ay + (alongX ? 0.5 : -0.5) * (x - ax) - 1);
     let fig = compose(back, [bars, hands], bits);
     if (!alongX) fig = inShade(fig);
     fastBlit(out, fig, 0, 0);
     return out;
   };
   const frames: Sprite[] = [];
-  for (let f = 0; f <= END; f++) frames.push(cut(paint(f), ax, ay));
+  // (painted first, then the tail cut where no more than a few pixels change: the last of the dust gone under the wall)
+  const painted: Px[] = [];
+  for (let f = 0; f <= END; f++) painted.push(paint(f));
+  const changed = (a: Px, b: Px): number => {
+    let n = 0;
+    for (let k = 0; k < a.d.length; k++) if (a.d[k] !== b.d[k]) n++;
+    return n;
+  };
+  while (END > END0 && changed(painted[END], painted[END - 1]) < 24) END--;
+  for (let f = 0; f <= END; f++) frames.push(cut(painted[f], ax, ay));
   // THE TRACKS
   const rel = (x: number, y: number): [number, number] => [x - ax, y - ay];
   const tracks: Track[] = [];

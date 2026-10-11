@@ -402,7 +402,8 @@ else if (mode === 'moment') {
     // (where it plays: at the foot of the wall's face over (2, 0), or over (0, 4) for the face to screen-right; the ball on the floor)
     const [wx, wy] = right ? at(0, 4) : at(2, 0);
     const [px, py] = onWallM ? (right ? [wx + 8, wy + 12] : [wx - 8, wy + 12]) : at(2.6, 2.4);
-    const [hx, hy] = onWallM ? (right ? at(4.2, 4.6) : at(4.6, 4.2)) : at(3.3, 6.7);
+    // (for the ball, the warrior stands off the line of its roll, so that it stops in plain view and its chain never meets him)
+    const [hx, hy] = onWallM ? (right ? at(4.2, 4.6) : at(4.6, 4.2)) : at(5.6, 4.6);
     if (!onWallM) softShadow(px, py, 0.5);
     softShadow(hx, hy, 0.36);
     draw(fr, px, py);
