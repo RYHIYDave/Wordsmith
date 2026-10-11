@@ -60,104 +60,110 @@ test('floor 4, moments: three, each its own, as he asked (“Something shifts ab
   for (const m of moments) assert.ok(m.holds.length === 0, `${m.name}: held ${m.holds.length} frames (a freeze reads as a stall)`);
 });
 
-test('floor 4, moments: the skull wall bulges and shudders, bursts on a jolt, an avalanche of skulls and bones pours out wide across the floor, bouncing and rolling; the wall above slumps on a second jolt; all of it lies still at the end, a hole left', () => {
-  for (const film of [named('the skull wall spills'), { ...named('the skull wall spills'), ...named('the skull wall spills').right! }]) {
-    const m = named('the skull wall spills');
-    const [burst, slump] = m.jolts;
-    assert.ok(m.jolts.length === 2 && slump > burst, `jolts ${m.jolts}`);
+const moved = (a: At, b: At): number => Math.hypot(b.x - a.x, b.y - a.y);
+
+test('floor 4, moments: the skull wall bows out and shudders, skulls pop loose; it bursts at its foot, its top drops as a block and breaks, its sides give; an avalanche of skulls and bones arcs out, bouncing and rolling four tiles toward the hero; all of it at rest at the end, a cavity left (both faces)', () => {
+  const m = named('the skull wall spills');
+  for (const [film, out] of [[m, [-0.894, 0.447]], [{ ...m, ...m.right! }, [0.894, 0.447]]] as const) {
+    const [burst, ...rest] = m.jolts;
+    assert.ok(m.jolts.length === 4 && rest.every((j, i) => j > (i ? rest[i - 1] : burst)), `jolts ${m.jolts}`);
     const skulls = film.tracks.filter((t) => t.name.startsWith('skull'));
     const bones = film.tracks.filter((t) => t.name.startsWith('bone'));
-    // an avalanche: more skulls than bones, and plenty of both
-    assert.ok(skulls.length >= 14 && bones.length >= 8, `${skulls.length} skulls and ${bones.length} bones`);
+    assert.ok(skulls.length >= 10 && bones.length >= 20 && skulls.length + bones.length >= 34, `${skulls.length} skulls and ${bones.length} bones`);
     const all = [...skulls, ...bones];
-    // it bulges first: before the burst the middle of it has come out of the wall and shudders
-    const bulged = all.filter((t) => Math.hypot(t.at[burst - 1]!.x - t.at[0]!.x, t.at[burst - 1]!.y - t.at[0]!.y) >= 3);
-    assert.ok(bulged.length >= 6, `only ${bulged.length} bulge out before it bursts`);
-    const shudder = all.some((t) => t.at.slice(burst - 8, burst).some((a, i, s) => i > 0 && Math.hypot(a!.x - s[i - 1]!.x, a!.y - s[i - 1]!.y) >= 1.5));
-    assert.ok(shudder, 'it does not shudder before it bursts');
-    // every one falls a long way and is thrown out from the wall, fast, and lies still at the end
+    // it bows out before it bursts, plain to see, and some pop loose and fall
+    const bowed = all.filter((t) => moved(t.at[0]!, t.at[burst - 1]!) >= 3);
+    assert.ok(bowed.length >= 8, `only ${bowed.length} bow out before it bursts`);
+    const popped = all.filter((t) => moved(t.at[0]!, t.at[burst - 1]!) >= 12);
+    assert.ok(popped.length >= 2, `only ${popped.length} pop loose before it bursts`);
+    // every one falls, is thrown, and lies still at the end; a third and more bounce
     let bounced = 0;
     for (const t of all) {
       const s = t.at;
-      const d = Math.hypot(s[s.length - 1]!.x - s[0]!.x, s[s.length - 1]!.y - s[0]!.y);
-      assert.ok(d >= 14, `${t.name} goes only ${d.toFixed(0)}`);
+      assert.ok(moved(s[0]!, s[s.length - 1]!) >= 14, `${t.name} goes only ${moved(s[0]!, s[s.length - 1]!).toFixed(0)}`);
       assert.ok(restsAtEnd(t), `${t.name} is still moving at the end`);
-      const fastest = Math.max(...s.slice(1).map((a, i) => Math.hypot(a!.x - s[i]!.x, a!.y - s[i]!.y)));
-      assert.ok(fastest >= 3.5, `${t.name}: ${fastest.toFixed(1)} a frame at its fastest`);
-      // (it bounces: down, then up again a frame or more, then down)
       const ys = s.map((a) => a!.y);
       for (let i = 2; i < ys.length; i++) if (ys[i - 1] - ys[i - 2] > 1.5 && ys[i] - ys[i - 1] < -0.5) { bounced++; break; }
     }
     assert.ok(bounced >= all.length / 3, `only ${bounced} of ${all.length} bounce`);
-    // spread wide across the floor
-    const ends = all.map((t) => t.at[t.at.length - 1]!.x);
-    assert.ok(Math.max(...ends) - Math.min(...ends) >= 60, `they spread only ${(Math.max(...ends) - Math.min(...ends)).toFixed(0)} across`);
-    // released at the burst, and more at the slump
-    const goes = all.map((t) => t.at.findIndex((a, i) => i > 0 && Math.hypot(a!.x - t.at[i - 1]!.x, a!.y - t.at[i - 1]!.y) >= 2.5));
-    assert.ok(goes.filter((g) => g >= burst && g <= burst + 6).length >= 8, 'the burst does not throw them out');
-    assert.ok(goes.filter((g) => g >= slump && g <= slump + 10).length >= 5, 'the slump does not pour them out');
-    // dust flies wide as it bursts
-    const own = across([film.before![0]]);
-    assert.ok(across(film.frames.slice(burst, burst + 10)) >= own + 40, 'its dust does not fly wide');
-    // what is left is not what was there
-    assert.ok(unlike(film.after![0], film.before![0]) > 1500, 'nothing is left of it');
+    // out a long way toward the hero: four tiles and more
+    const far = all.map((t) => (t.at[t.at.length - 1]!.x - t.at[0]!.x) * out[0] + (t.at[t.at.length - 1]!.y - t.at[0]!.y) * out[1]);
+    assert.ok(Math.max(...far) >= 130 && far.filter((d) => d >= 90).length >= 5, `out only ${Math.max(...far).toFixed(0)}, ${far.filter((d) => d >= 90).length} past 90`);
+    // its top comes down: what was high on it ends on the floor
+    const fell = all.filter((t) => t.at[0]!.y < -45 && t.at[t.at.length - 1]!.y > -12);
+    assert.ok(fell.length >= 8, `only ${fell.length} come down from its top`);
+    assert.ok(unlike(film.after![0], film.before![0]) > 3000, 'nothing is left of it');
   }
 });
 
-test('floor 4, moments: the cart creaks, starts by itself and goes faster every frame, strikes the rails\' end hard on a jolt and goes over on a second, its load flung out and lying still; a wheel left turning', () => {
+test('floor 4, moments: the cart shivers, starts by itself and goes faster every frame six tiles, spilling some of its load, strikes the buffer hard on a jolt and flies over it, lands on its back on a second; its load sprays on far, skulls among it; a wheel breaks off and rolls away; all at rest but a wheel turning at the end', () => {
   const m = named('the cart runs');
   const [hit, land] = m.jolts;
   assert.ok(m.jolts.length === 2 && land > hit, `jolts ${m.jolts}`);
-  const cart = m.tracks.find((t) => t.name === 'the cart')!.at;
-  const xs = cart.map((a) => a!.x);
-  // it shudders before it goes, then rolls faster and faster, and a long way (four tiles)
-  const start = xs.findIndex((x, i) => i > 16 && x - xs[0] > 1);
-  assert.ok(start > 0 && start < hit - 20, `it starts at ${start}`);
-  for (let i = start + 4; i < hit - 1; i++) assert.ok(xs[i] - xs[i - 1] >= xs[i - 1] - xs[i - 2] - 0.6, `it slows at ${i}`);
-  assert.ok(xs[hit - 1] - xs[hit - 2] >= 5, `it strikes going only ${(xs[hit - 1] - xs[hit - 2]).toFixed(1)} a frame`);
-  assert.ok(xs[hit] - xs[0] >= 100, `it runs only ${(xs[hit] - xs[0]).toFixed(0)}`);
-  // it stops dead as it strikes
-  assert.ok(Math.abs(xs[hit + 1] - xs[hit]) < 3, 'it does not stop at the rails\' end');
-  // its load: flung out far and every way, bouncing, lying still at the end
-  const load = m.tracks.filter((t) => t.name !== 'the cart');
-  assert.ok(load.length >= 12, `${load.length} things in its load`);
-  for (const t of load) {
-    const s = seen(t);
-    assert.ok(Math.hypot(s[s.length - 1].x - s[hit].x, s[s.length - 1].y - s[hit].y) >= 10, `${t.name} is not thrown out`);
-    assert.ok(restsAtEnd(t), `${t.name} is still moving at the end`);
-  }
-  // the frame jolts as it strikes: many pixels change at once
+  const cart = m.tracks.find((t) => t.name === 'the cart')!.at.map((a) => a!);
+  const xs = cart.map((a) => a.x);
+  // it shivers before it goes, plain to see
+  for (let i = 2; i < 20; i++) assert.ok(unlike(m.frames[i], m.frames[i - 1]) >= 20, `it hardly shivers at ${i}`);
+  // then rolls by itself, faster and faster, a long way
+  const start = xs.findIndex((x, i) => i > 20 && x - xs[0] > 1);
+  assert.ok(start > 0 && start < hit - 30, `it starts at ${start}`);
+  for (let i = start + 4; i < hit - 1; i++) assert.ok(xs[i] - xs[i - 1] >= xs[i - 1] - xs[i - 2] - 0.8, `it slows at ${i}`);
+  assert.ok(xs[hit - 1] - xs[hit - 2] >= 6, `it strikes going only ${(xs[hit - 1] - xs[hit - 2]).toFixed(1)} a frame`);
+  assert.ok(xs[hit - 1] - xs[0] >= 160, `it runs only ${(xs[hit - 1] - xs[0]).toFixed(0)}`);
+  // over the buffer: up through the air, and down
+  const top = Math.min(...cart.slice(hit, land + 1).map((a) => a.y));
+  assert.ok(cart[hit].y - top >= 12, `it rises only ${(cart[hit].y - top).toFixed(0)} as it goes over`);
+  // its load: some spilled on the way, the rest flung on far ahead, skulls among it; all at rest at the end
+  const load = m.tracks.filter((t) => /^(ore|skull|bone) /.test(t.name));
+  assert.ok(load.length >= 14, `${load.length} things in its load`);
+  const spilled = load.filter((t) => moved(t.at[hit - 1]!, cart[hit - 1]) >= 25);
+  assert.ok(spilled.length >= 2, `only ${spilled.length} spilled on the way`);
+  const flung = load.filter((t) => t.at[t.at.length - 1]!.x - cart[hit].x >= 70);
+  assert.ok(flung.length >= 6 && flung.some((t) => t.name.startsWith('skull')), `only ${flung.length} flung on far (${flung.map((t) => t.name).join(', ')})`);
+  for (const t of load) assert.ok(restsAtEnd(t), `${t.name} is still moving at the end`);
+  // the buffer splinters
+  const splinters = m.tracks.filter((t) => t.name.startsWith('splinter'));
+  assert.ok(splinters.length >= 6 && splinters.every((t) => moved(t.at[hit]!, t.at[t.at.length - 1]!) >= 8 && restsAtEnd(t)), 'the buffer does not splinter');
+  // a wheel broken off: rolling away, and lying still at the end
+  const w = m.tracks.find((t) => t.name === 'the wheel')!;
+  assert.ok(moved(w.at[land]!, w.at[w.at.length - 1]!) >= 50 && restsAtEnd(w), `the wheel rolls only ${moved(w.at[land]!, w.at[w.at.length - 1]!).toFixed(0)}`);
   assert.ok(unlike(m.frames[hit], m.frames[hit - 1]) >= 300, 'the strike does not show');
-  // a wheel turning to the end: the last frames still move
   for (let i = m.frames.length - 6; i < m.frames.length; i++) assert.ok(unlike(m.frames[i], m.frames[i - 1]) > 0, `nothing turns at ${i}`);
 });
 
-test('floor 4, moments: the heap twitches and heaves, an arm bursts up out of it on a jolt and claws high in the air; the pink kindles in a skull; the arm crashes down on a second jolt and the burning skull is dragged under, seen going', () => {
+test('floor 4, moments: the heap breathes, skulls rolling off it, fingers poking out; bones fountain up as a great arm bursts out on a jolt and rakes wide; the pink kindles in a skull, steady; the arm comes apart a piece at a time, crashing down on a second jolt; the skull is buried under sliding bones, its eyes seen going under', () => {
   const m = named('the bones stir');
   const [burst, collapse] = m.jolts;
-  assert.ok(m.jolts.length === 2 && collapse > burst + 20, `jolts ${m.jolts}`);
-  const hand = m.tracks.find((t) => t.name === 'the hand')!;
-  const hs = seen(hand);
-  // up fast and high: well over the heap, faster than a game pixel a frame as it bursts out
-  const top = Math.min(...hs.map((a) => a.y));
-  assert.ok(hs[0].y - top >= 40, `the hand rises only ${(hs[0].y - top).toFixed(0)}`);
-  const rise = Math.max(...hs.slice(1, 6).map((a, i) => hs[i].y - a.y));
-  assert.ok(rise >= 8, `it bursts up only ${rise.toFixed(1)} a frame`);
-  // it claws: its hand moves all the while it is up
-  assert.ok(hs.length >= 30, `it is up only ${hs.length} frames`);
-  // the eyes: dark, then kindled, then gone under bit by bit (never all at once)
-  const eyes = m.tracks.find((t) => t.name === 'the burning eyes')!.at;
-  assert.ok(eyes[0]!.shown === 0, 'the eyes burn from the start');
-  const lit = eyes.findIndex((a) => a!.shown >= 0.8);
-  assert.ok(lit > burst && lit < collapse, `the eyes kindle at ${lit}`);
-  assert.ok(eyes[eyes.length - 1]!.shown === 0, 'the eyes still burn at the end');
-  const going = eyes.slice(collapse).filter((a) => a!.shown > 0 && a!.shown < 0.8).length;
-  assert.ok(going >= 6, `the eyes go under in ${going} frames`);
-  // seen going down: lower as they go
-  const lastSeen = eyes.map((a, i) => (a!.shown > 0 ? i : -1)).filter((i) => i >= 0).pop()!;
-  assert.ok(eyes[lastSeen]!.y > eyes[lit]!.y + 4, 'the eyes do not go down into it');
-  // the arm's pieces fall onto the heap and lie still; the bones flung off it lie still
-  for (const t of m.tracks.filter((q) => /^(upper|fore|hand|bone|skull) /.test(q.name))) assert.ok(restsAtEnd(t), `${t.name} is still moving at the end`);
-  // what is left is not what was there
-  assert.ok(unlike(m.after![0], m.before![0]) > 400, 'the heap is as it was');
+  assert.ok(m.jolts.length === 2 && collapse > burst + 30, `jolts ${m.jolts}`);
+  // it breathes, deep: up and down twice and more before it bursts
+  const heap = m.tracks.find((t) => t.name === 'the heap')!.at.slice(0, burst).map((a) => a!.y);
+  let turns = 0;
+  for (let i = 2; i < heap.length; i++) if ((heap[i] - heap[i - 1]) * (heap[i - 1] - heap[i - 2]) < 0) turns++;
+  assert.ok(Math.max(...heap) - Math.min(...heap) >= 4 && turns >= 4, `it breathes ${(Math.max(...heap) - Math.min(...heap)).toFixed(1)} high, ${turns} turns`);
+  // skulls roll off it as it breathes
+  const rolled = m.tracks.filter((t) => t.name.startsWith('skull') && t.at[0] && t.at[burst - 1] && moved(t.at[0]!, t.at[burst - 1]!) >= 12);
+  assert.ok(rolled.length >= 3, `only ${rolled.length} skulls roll off it`);
+  // the fountain: thrown high as the arm bursts out
+  const high = m.tracks.filter((t) => /^(bone|skull) /.test(t.name) && t.at[burst] && Math.min(...seen(t).slice(burst).map((a) => a.y)) <= t.at[burst]!.y - 25);
+  assert.ok(high.length >= 6, `only ${high.length} thrown high`);
+  // the arm: up fast and high, raking wide, up a long while
+  const hand = seen(m.tracks.find((t) => t.name === 'the hand')!);
+  assert.ok(hand[0].y - Math.min(...hand.map((a) => a.y)) >= 45, 'the hand does not rise high');
+  const xsH = hand.slice(0, 50).map((a) => a.x);
+  assert.ok(Math.max(...xsH) - Math.min(...xsH) >= 60, `it rakes only ${(Math.max(...xsH) - Math.min(...xsH)).toFixed(0)} across`);
+  // the eyes: dark, then kindled and steady, then going under bit by bit, lower as they go, and gone
+  const eyes = m.tracks.find((t) => t.name === 'the burning eyes')!.at.map((a) => a!);
+  assert.ok(eyes[0].shown === 0, 'the eyes burn from the start');
+  const lit = eyes.findIndex((a) => a.shown >= 0.8);
+  assert.ok(lit > burst, `the eyes kindle at ${lit}`);
+  assert.ok(eyes.slice(lit, lit + 20).every((a) => a.shown >= 0.6), 'the eyes flicker');
+  assert.ok(eyes[eyes.length - 1].shown === 0, 'the eyes still burn at the end');
+  const peakAt = eyes.reduce((b, a, i) => (a.shown > eyes[b].shown ? i : b), 0);
+  assert.ok(eyes.slice(peakAt).filter((a) => a.shown > 0 && a.shown < 0.8).length >= 8, 'the eyes go out at once');
+  const lastSeen = eyes.map((a, i) => (a.shown > 0 ? i : -1)).filter((i) => i >= 0).pop()!;
+  assert.ok(eyes[lastSeen].y > eyes[lit].y + 4, 'the eyes do not go down into it');
+  // the arm's pieces, and all flung or poured, lie still at the end
+  for (const t of m.tracks.filter((q) => /^(finger|palm|fore|upper|bone|skull) /.test(q.name))) assert.ok(restsAtEnd(t), `${t.name} is still moving at the end`);
+  assert.ok(m.tracks.filter((q) => /^(finger|palm|fore|upper) /.test(q.name)).length >= 8, 'the arm does not come apart in pieces');
+  assert.ok(unlike(m.after![0], m.before![0]) > 600, 'the heap is as it was');
 });

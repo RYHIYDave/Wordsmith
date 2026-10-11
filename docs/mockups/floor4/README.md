@@ -9,7 +9,7 @@ chat's, once he has said yes.
 
 **State of this branch (`mockup/floor4-ossuary`):** from `mockup/floor2-headsman` as it was at
 590af58 (floor 2 as he said yes to it, its moment helpers exported). Made by THE ART CHAT, 10 Oct
-2026. **Not yet seen by him.**
+2026; mended after the first fresh look the same day (see Looks). **Not yet seen by him.**
 
 ## His words
 
@@ -53,109 +53,155 @@ its column faced with the dead; the miners' breach, their timber, rails and cart
 tools, all old and rusted; the cult's black candles burning on skulls, its altar, its daub; and the
 amalgamation's doing: the dead dragged into heaps, the earth raked by its hands, the drag it leaves,
 the dead's arms reaching up out of the heaps. Its bone is the boss's own lavender grey, a step quieter
-(and darker still in the walls, darker than any word); its rust a dull grey-brown, never red.
+(and a step quieter again in the big things that stand in the room, and darker still in the walls,
+darker than any word); its rust a dull grey-brown, never red; no gold anywhere.
 
-Its marks, chosen with care: on its own gate THE MAW, a wide mouth with square-cut corners (never the
-almond of an eye) and a few great crooked fangs (never a row even enough to read as a letter), the
-pink of its fire inside; on its other gates three skulls heaped, one on two. Never a skull over
-crossed bones, never a cross. No carved words.
+Its marks, chosen with care: on its own gate THE MAW, a mouth roaring open, its corners cut square
+(never the almond of an eye), smaller than its roundel so that its shape shows in the stone, three
+fangs of every size in it, never up and down by turns (the first fresh look read the first maw's row
+of fangs as "WAW"), its fire pink and hottest low in it, never in rings; on its other gates ONE SKULL,
+face on, carved big enough to read as one (the three small skulls before it read as a ball). Never a
+skull over crossed bones, never a cross (the robe's second sleeve is folded under it for that). No
+carved words.
 
 ## What is in it (`ossuaryPieces()`, 49 pieces; `ossuaryMoments()`, 3)
 
-- Wall tiles (7): the skull wall (the wall's height and its whole width: courses of knuckled bone ends and bands of skulls, the dead further in behind; the first moment's own), bone-lined niche, the miners' breach (the wall's height: a hole knocked through into the dead stacked beyond, their timber set in it; its heap of rubble, bones and a skull is its `frames[0]`, to be drawn on the floor tile before it, before the wall), shored rock (the wall's height: rough rock held back by boards and two posts), the dead's arm (out of a crack, clawing the stone), seam of ore, the charnel layer (where the stone has fallen away: earth with the dead in it).
-- On the walls (8): miner's lantern (4 frames, with its light), pick in the wall, the cult's candle (a black candle burning on a skull on a spike, a stub beside it; 4 frames, with its light), garland of skulls, the miners' ladder (the wall's height), the miners' tools (a shovel and a sledge on spikes), the cult's daub (the maw daubed in soot), ribs on a spike.
-- Floor tiles (6): the rails (two frames: along x and along y), earth and bones, raked earth (five grooves of its hand), bone-paved floor, the drag (the furrow it hauls itself through, its hands' gouges by it), spilled ore.
-- Traps (3): bone spikes (and the warning: the sharpened bones risen in their holes), rotten boards (and giving: sagging, split), jaw slot (a row of the dead's jaws round a dart slot; a wall piece).
-- Breakables (4), each whole and then broken (`frames[1]`, what it leaves): ore sack, heap of skulls, oil jug, ore tub.
-- On the floor (7): empty boots, rib cage, broken ladder, drill steels, arm from a heap, a cultist's robe (empty, as a cultist dies), snapped prop.
-- Obstacles (10): the mine cart, the rails' end (the stop the cart strikes), the windlass over its shaft, pyramid of skulls, the charnel heap (the third moment's own), timber crib, the cult's altar (4 frames, with its light), the boulder (and the prop it broke), the bone column (up into the dark), the reliquary (the chest; closed and open).
-- Doors and gates (3): the door (the miners' rough planks on two battens, iron at its hinges, a rope loop), the gate (three skulls heaped, over it), the boss's gate (the maw, its fire pink). As `Piece.gates`, made by `makeGateArt(theme, look)` (`ossuaryGates()`).
-- Quest (1): the eldest skull: the first of the dead the amalgamation gathered, found where it burst apart, the fire gone out of it.
+- Wall tiles (7): the skull wall (the wall's height and its whole width: courses of knuckled bone ends and bands of skulls, the dead packed further in behind; the first moment's own), bone-lined niche, the miners' breach (the wall's height: a ragged hole knocked through the stone well above the floor, packed with the dead and earth, cracks run out from it; no timber, nothing that reads as a doorway; its heap of rubble, bones and skulls is its `frames[0]`, to be drawn on the floor tile before it, before the wall), shored rock (the wall's height: great lumps of raw rock bulging out between two boards askew and two round props, one leaning), the dead's arm (a small dark hole, and out of it a pale bony forearm, its hand spread flat on the stone), seam of ore (a jagged pale vein slanting across hacked rock, forking, nuggets of dull metal in it), the charnel layer (where the stone has fallen away: earth, long bones lying straight along it, three skulls half sunk).
+- On the walls (8): miner's lantern (a cage of iron round its glass, the flame inside, a peaked cap, hung by its ring from an iron bracket straight out from the wall; 4 frames, with its light), pick in the wall (its iron head lighter than the stone, one point in a crack it split), the cult's candle (4 frames, with its light), garland of skulls, the miners' ladder (the wall's height), the miners' tools, the cult's daub (the maw in soot, its three fangs in bone-white), ribs on a spike (an iron spike, the spine on it, four pairs of ribs curving and drooping).
+- Floor tiles (6): the rails (along x and along y), earth and bones (bones scattered every way, a skull off to one side), raked earth (four long furrows together, ridges lit, ends ragged, clods kicked out), bone-paved floor (big bones laid flat every way, packed), the drag (a trough gouged where it gripped, banks pushed up, bits of bone trailing), spilled ore (rough lumps in a fan, lit on their upper left, a glint of metal on some, each with its shadow).
+- Traps (3): bone spikes (and the warning), rotten boards (and giving), jaw slot (a black slot in a stone plate, three great pale fangs into it, two from above and one from below at its end; a wall piece).
+- Breakables (4), each whole and then broken (`frames[1]`): ore sack, heap of skulls, oil jug (broken: great curved shards, its neck whole with its plug and handle, the oil pooled), ore tub.
+- On the floor (7): empty boots (a pair, in profile, their tops folded over), rib cage (on its back, its ribs arching, its skull rolled from it face up), broken ladder, drill steels (three thick bars with flared bits, a square-headed hammer), arm from a heap (thick, its hand splayed and clawing), a cultist's robe (crumpled, its peaked hood, a cord round it, one sleeve out along its side), snapped prop (a squared post broken in two, long splinters at the break).
+- Obstacles (10): the mine cart (a deep iron tub banded and riveted, small solid flanged wheels under it, ore and three skulls heaped in it), the rails' end (one great timber block across the rails, iron-faced, strapped, two stakes behind it), the windlass (low and broad over a square shaft: two posts on sills, the drum waist high with its rope wound in slanting bands, a crank, the bucket of ore hanging over the shaft), pyramid of skulls, the charnel heap (the third moment's own), timber crib, the cult's altar (a great block of stone under a wine-dark cloth hanging to a ragged hem, a skull in the middle, black candles at each end; 4 frames, with its light), the boulder (dark, all facets, cracked; the prop it broke under it), the bone column (its skulls turned to the eye; up into the dark), the reliquary (a small peaked casket of dark wood and iron; open, a skull and the bones of a hand in it; no gold).
+- Doors and gates (3): the door (the miners' planks), the gate (a skull carved over it), the boss's gate (the maw, its fire pink). As `Piece.gates`, made by `makeGateArt(theme, look)` (`ossuaryGates()`).
+- Quest (1): the eldest skull (cracked, the fire gone out of it; no glint of gold).
 
 Anchors, shadows (`Piece.shadow`), lights (`Sprite.lights`) and wall pieces' places (`Piece.spots`:
 three each, low to high and across; never the same piece on two neighbouring tiles of a wall) are as
-on floors 1 and 2. The skull wall, the miners' breach and the jaw slot have one place each (the skull
-wall is the whole face; the breach lines up with its heap; the slot with its plate); the skull wall
-is meant to be laid along a stretch of wall, one tile after another.
+on floors 1 and 2. The skull wall, the miners' breach and the jaw slot have one place each; the skull
+wall is meant to be laid along a stretch of wall, one tile after another.
 
-**Round things are painted in depth.** Skulls, bones, the cart, the heap and much else are built in
-the world and painted pixel by pixel as the eye sees them (`Scene` in floor4.ts: ellipsoids, rods,
-boxes and planes in a depth buffer, a seam of ink where one thing ends in front of another), lit from
-the upper left; in a wall's face turned to screen-right, lit as that face is seen and a shade darker,
-as floorkit paints a flat picture into it (`inFaceLight`), so that the face in the light stays the
-lighter of the two.
+**Round things are painted in depth.** Skulls, bones, the cart, the heap, the dust and much else are
+built in the world and painted pixel by pixel as the eye sees them (`Scene` in floor4.ts: ellipsoids,
+rods, boxes and planes in a depth buffer, a seam of ink where one thing ends in front of another, none
+round the dust), lit from the upper left; in a wall's face turned to screen-right, lit as that face is
+seen and a shade darker, as floorkit paints a flat picture into it (`inFaceLight`).
 
 ## The moments (each at 30 frames a second; `before`, the frames, `after`)
 
 `before` is what is there before it plays, its first frame the moment's first; `after` what is left,
 the moment's last frame. Swap the one for the other. `jolts` are the frames for the screen's kick and
-the sound (the films show a kick: down 3 of the game's pixels and back).
+the sound. The films show a longer, harder kick than before, at every jolt: 2 of the game's pixels
+across and 5 down, then back and forth over six frames ((2, 5), (-2, -4), (2, 3), (-1, -2), (1, 1),
+(0, -1)).
 
-- **The skull wall spills** (112 frames, 3.7 s; in the skull wall, both faces, `right` for the face
-  to screen-right; anchored at the foot of the face under the middle of its tile, as the piece; its
-  `before` is the skull wall itself). Grit trickles from between the dead from the first frame; the
-  middle of the wall bulges out, swelling and shuddering harder and harder, the cracks round it
-  opening (frames 1 to 25), dust puffing out of its joints; at frame 26 (0.87 s, the first jolt) it
-  bursts: the middle first and its rim over the next five frames, an avalanche of skulls and long
-  bones thrown out across the floor, a cloud of dust blown out of the hole; at frame 39 (1.3 s, the
-  second jolt) the wall above slumps into the hole and pours out after them, with the dead from
-  further in (to frame 47). 15 skulls and 16 bones in all: they bounce, roll, knock into one another,
-  a skull come down on another rolls off it, and rocking onto its base it comes to rest with its face
-  to the room; all at rest by frame 91 (3 s), grit still trickling from the dark hole to the end.
-  What is left: the hole, and the spill across the floor a tile and more out from the wall. Its
-  frames are wider than the piece (200 x 168), out to the side the spill goes.
-- **The cart runs** (132 frames, 4.4 s; on the cart's own anchor, the middle of its tile; its frames
-  hold the cart and the rails' end four tiles on along x: lay the rails between them, along x, and
-  the moment takes the place of both while it plays). The cart creaks and shudders on its wheels,
-  rust sifting off it, and lurches (frames 9 to 12); from frame 16 it rolls by itself, faster every
-  frame, rattling over the rails' joints, sparks of an honest fire's orange flying from its wheels
-  from frame 30; at frame 50 (1.67 s, the first jolt) it strikes the rails' end at 3.6 of the game's
-  pixels a frame: it stops dead, the baulk jumps, sparks spray, its back end kicks up and its load
-  is flung on over the stop; it goes over onto its side with a crash at frame 65 (2.17 s, the second
-  jolt), the rest of its ore pouring out; the ore, a skull and a bone bounce and roll and lie still by
-  frame 88; one of its wheels turns on in the air to the end, slower and slower.
-- **The bones stir** (124 frames, 4.1 s; the charnel heap, on its own anchor; its `before` is the
-  heap itself). Bones on the heap twitch (frames 2 to 15); a skull rolls off its top and down its side
-  (from frame 9); the heap heaves twice, swelling, its bones grinding and sliding together (16 to 38);
-  at frame 38 (1.27 s, the first jolt) an arm of bone bursts up out of its top, to its full height in
-  four frames, flinging bones and skulls off it, and claws at the air, its elbow out, its hand
-  clenching and spreading, swaying and lunging out toward the hero; the pink kindles in the sockets of
-  a skull at the heap's front from frame 45, burning by 56 (its light, `Sprite.lights`, the enemy's
-  glow), its face turning to the hero; at frame 78 the arm comes apart and its pieces crash down onto
-  the heap (frame 84, 2.8 s, the second jolt), the heap slumping lower than it was; the burning skull
-  is dragged down into it, bones sliding over it, its eyes the last of it to go under (gone at frame
-  103: seen going down into the heap, never fading where it lies). At rest by frame 116. What
-  is left: the heap, lower and changed, the arm's bones on it, the flung bones about it.
+THE DUST, everywhere (the first fresh look found it a flat grey patch wearing away into specks): a few
+big clouds, each grown out of where something struck over its first three frames, shaded (its top lit,
+its belly dark), lumpy as a cloud is; blown out fast, then hanging and drifting up; then settling,
+sinking onto the floor and flattening into a low sheet that shrinks away as one. Painted in depth, it
+hides only what is behind it; kept off the key action (blown along the wall's foot, along the buffer).
+No grit, no single pixels.
+
+- **The skull wall spills** (168 frames, 5.6 s; in the skull wall, both faces, `right` for the face to
+  screen-right; anchored at the foot of the face under the middle of its tile, as the piece; frames
+  392 x 292, the anchor at (296, 132), or (96, 132) in the other face; its `before` is the skull wall).
+  From frame 1 its courses bow out, the whole height of it, up to 9 of the world's pixels at its middle,
+  shuddering harder and harder, the gaps between the dead opening; dust spurts from its joints (7, 11,
+  16, 21, 27); skulls pop loose from the bulge and fall (14, 20, 25). At 32 (1.07 s, the first jolt) the
+  foot of its middle bursts out: skulls and long bones thrown out and up in arcs, tumbling, two clouds
+  blown along the wall's foot; from 36 the top of its middle drops in one block and at 43 (1.43 s, the
+  second jolt) breaks on the heap, skulls and bones thrown every way; at 50 (1.67 s, the third) its
+  sides give and slump out, their tops dropping (54, 56) and breaking (61 and 63; 2.03 s, the fourth).
+  What comes down heaps against the wall in a deep cone that grows from 32 to about 72, its own dead
+  (thirty skulls and bones) rising with it out of it; the spill bounces and rolls on four tiles and
+  more toward the hero (the farthest past where he stands), each skull rocking to rest
+  with its face to the room; all at rest by 149, the last dust settling and gone on the last frame.
+  What is left: a great ragged cavity, the dead packed further in going dark in it, a few of its face
+  left at its rim and in its dark top; the cone; the spill. 35 skulls and bones of its face go, and the
+  cone's 30 rise.
+- **The cart runs** (190 frames, 6.3 s; on the cart's own anchor, the middle of its tile; frames 600 x
+  352, the anchor at (76, 116); they hold the cart and the rails' end six tiles on along x: lay the
+  rails between them, along x, past where the hero may stand, and the moment takes the place of both
+  while it plays). It rocks and shivers on its wheels (0 to 21), rust flaking off it and falling (3, 7,
+  11, 15, 19), lurching at 10 to 13; from 22 it rolls by itself, faster every frame, bucking at every
+  joint of the rails (a hop, its nose up and down, a sway), a skull bounced off it at the first joint and
+  a lump of ore at the third; sparks streak from its wheels from 40. At 66 (2.2 s, the first jolt) it
+  strikes the buffer at over 4 of the game's pixels a frame: the buffer splits, nine splinters fly,
+  sparks spray, two clouds blown out along it; the cart pitches over nose first, its load flung on ahead,
+  and flies on through the air (rising 32 pixels) turning right over, through every angle (its side,
+  its open tub, its riveted underside, never a blank slab, its wheels always on it); at 82 (2.73 s, the
+  second jolt) it lands on its back, three clouds along it, and bounces; a wheel breaks off and drops
+  from it, rolls away in a wobbling curve, slower and slower, tips and falls flat, rattling (at rest by
+  147); its load (twelve lumps of ore, three skulls, a bone) bounces and rolls on three and four tiles;
+  all at rest by 186; its last wheels turn on in the air to the end.
+- **The bones stir** (172 frames, 5.7 s; the charnel heap, on its own anchor; frames 352 x 272, the
+  anchor at (176, 164); its `before` is the heap). It breathes from frame 1, three times, deeper each
+  time (to 7 pixels), skulls rolling off it and down its sides (8, 17, 26, 34), fingers of bone poking
+  up out of it and drawing back (12, 22, 31). At 42 (1.4 s, the first jolt) a great arm bursts out of a
+  ragged dark hole in its top (no lid), its hand up 42 pixels in four frames (48 at its highest), eleven bones and skulls thrown
+  30 to 58 pixels high in a fountain and raining down all round; it rakes: down on its left and across
+  the front (55 to 64), round to its right (69), up and over (74), slamming down on its right (79) and
+  raking back toward the hero (to 89), reaching, its fingers clawing; its claws leave four grooves in the
+  earth. From 93 the pink kindles in the sockets of a skull at the heap's front right, clear of the arm,
+  its eyes great, lighting the bones about it, burning by 99, steady, one pink. From 94 the arm comes
+  apart a piece at a time: its fingers (94 to 98), its hand (99), its forearm's two bones (102, 103), its
+  upper arm (106; 3.53 s, the second jolt, as it lands). The heap slumps; from 112 bones slide down over
+  the burning skull and more are poured down from above (114 to 132), and it sinks into the heap under
+  them, its eyes glowing through the gaps until they go under (131 to 138), its glow on the bones going
+  with them; a last breath of dust at the heap's foot settles and is gone on the last frame. What is
+  left: the heap, lower and changed, the arm's bones on it, the flung bones about it, the earth raked.
 
 ## For the main chat, when he has said yes
 
-- Floor 4 is built on `src/art/floorkit.ts` and floor 2's exported moment helpers, as floors 2 and 3.
-  New here and worth sharing if another floor wants it: the depth painter (`Scene`, `skull`,
-  `knuckleBone`, `longBone`, `ribCage`, `wheel`, `inFaceLight`) and the loose-things stepper
-  (`stepBodies`: falling, bouncing, rolling, sliding, round things knocking into one another).
-- The moments' frames are bigger than the pieces' own (line them up by the anchor). Painting all
-  three takes about 9 s here, once (the skull wall's twice, one for each face); a phone several times
-  that: worth painting ahead, or when the floor is first reached.
-- The cart's moment needs the rails laid along x from the cart's tile to the rails' end, four tiles
-  on; the heap's light is the enemy's pink (Colour 3: his eyes in the dark), on its frames only.
+- Floor 4 is built on `src/art/floorkit.ts` and floor 2's exported moment helpers, as floors 2 and 3
+  (it no longer uses floor 2's puffs or grit). New here and worth sharing: the depth painter (`Scene`,
+  `skull`, `knuckleBone`, `longBone`, `ribCage`, `wheel`, `inFaceLight`), the loose-things stepper
+  (`stepBodies`: falling, tumbling, bouncing, rolling and sliding down slopes, round things knocking
+  into one another, at rest), and the dust (`Cloud`, `cloudAt`, `paintClouds`).
+- `ossuaryMoment(n)` paints one moment; `ossuaryFilm(n)` one film (the skull wall's two faces apart),
+  for a page that need not paint them all. Painting all four films takes about 30 s here: paint them
+  ahead, or when the floor is first reached, one at a time.
+- The cart's moment needs the rails laid along x from the cart's tile to the rails' end, six tiles on;
+  the heap's light is the enemy's pink (Colour 3: his eyes in the dark), on its frames only.
 
 ## Looks, and what was mended
 
-**No fresh pair of eyes yet.** The art chat's brief asks for two looks by a subagent who has not seen
-the code; this branch's helper could not start one, so those two looks are still to be had, on the
-pictures listed under Pictures. What was found and mended by the maker's own looks, piece by piece and
-frame by frame: small skulls read as round blobs, their sockets too small to see (now the sockets are
-never less than a game pixel across, set high and apart, and every skull turned a little toward the
-room); the cult's daub, first a fanged almond, read as an eye with lashes and tears (now a wide mouth
-with square-cut corners, a few crooked fangs, no drips), and its fangs in a regular row risked reading
-as letters (now few and of every length); the three skulls over the gate read as rings (now raised
-and solid); round things showed their undersides below the floor (now cut at the floor); the charnel
-heap read as a pot (now a low mound covered with the dead); the timber crib read as a cabinet (now
-round logs, their cut ends showing their rings); the bone column's cap read as a drum (now it goes up
-into the dark); the boulder showed a face in its spots (now flat facets); rust on the tools' blades
-was a mauve that could be read as blood (now a dull grey-brown); the burning eyes were hidden for a
-frame by the arm falling across them (the arm now reaches and falls to the other side); the spilled
-bones were dim (out in the room they take the room's brighter bone, by degrees as they leave the wall).
+**The first fresh look** (a subagent who had not seen the code, run by the art chat on 10 Oct) found a
+great deal; the art chat ruled on each finding, and each was mended:
+
+- Letters and symbols: the charnel layer's curled bones read as "3" and "C" (now straight bones along
+  it and three skulls); the windlass's rope as stamped lettering and its beam as a sign, the whole a
+  gallows or a well (now low and broad, its rope in slanting bands, a crank, the bucket over the shaft);
+  the boss's gate's maw as pink "WAW" (now the mouth above); the bone column's skulls a dark "+" (now
+  turned to the eye, fewer to a ring); the reliquary's sparkles plus signs and the altar's two skulls
+  with a bone behind each a skull and crossbones (both remade, below); the daub "VVV" (three fangs
+  now); the lantern's hook a "2" (now a bracket straight out, the lantern on it).
+- Gold: the reliquary was full of glowing gold (now a small peaked casket of dark wood and iron with a
+  skull and the bones of a hand in it); the eldest skull's gold glint is gone.
+- The heap's eyes flickered pink and red-orange by turns (they took the mages' flame ramp): one steady
+  pink now, never orange or red.
+- The miners' breach read as a doorway: now a ragged hole above the floor, the dead packed in it, no
+  timber frame.
+- Brightness: the column, the pyramid, the heap and the boulder as bright as the hero's armour: their
+  bone a step quieter (`BIG_BONE`), the boulder dark rock; all bone a little quieter.
+- Timber: the Crypt's ramp is kept as he said yes to it; its lit tones are no longer pushed past it
+  (`TIMBER_DIM` where light falls), and the lanterns stand in the room picture away from the heap and
+  the column.
+- Pieces that did not read, each remade as the fresh look asked: shored rock, seam of ore, jaw slot, the
+  dead's arm, ribs on a spike, pick in the wall, miner's lantern, bone-paved floor, raked earth, the drag,
+  spilled ore, earth and bones, mine cart, rails' end, altar, boulder, the gate's badge, arm from a heap,
+  cultist's robe, rib cage, snapped prop, empty boots, drill steels, the broken oil jug (all as above).
+  The bones' knobs are smaller beside their shafts, so that a skull by a bone end no longer reads as a
+  lollipop.
+- The moments: all three made anew to the fresh look's asks (above), and the dust everywhere. A
+  steel-blue glint it saw on a skull is gone: every film is now checked for anything near cyan.
+- The room: the lantern's flame sat over the charnel heap, so that it looked on fire: moved.
+- The 1-pixel sideways twitch every 10 frames seen in floor 3's films: checked in these: the frames'
+  anchors never move, and in the films the picture moves only at the jolts, by the kick.
+- Not mended here (shared): the black triangular cracks in the wall blocks, read as black pennants, are
+  in the Crypt's own walls (art/crypt.ts), not in floor 4's pieces.
+
+**The second fresh look** is to be run by the art chat, on the pictures listed below.
 
 ## The checks (`tests/floor4.test.ts`, 20)
 
@@ -164,15 +210,16 @@ loose pixels; Colour 3; Colour 4; Pixels 4; Pixels 7; his notes: every wall piec
 to high and across, within its tile, nothing in the fade, no band of the wall holding more than a
 third; the moments crisp, 30 a second, nothing popping in or out at the start, the end or the middle,
 nothing jumping, always moving, no frame with more than 4 loose pixels), and its own: three moments,
-none held. The skull wall: an avalanche, 14 skulls and more and 8 bones and more; it bulges and shudders
-before it bursts; every one goes a long way, fast, and lies still at the end; a third of them bounce;
-they spread 60 pixels and more across; the burst throws them out, the slump pours more out, each on
-its jolt; its dust flies wide; a hole is left; in both faces. The cart: it starts by itself and goes
-faster every frame, a long way; it strikes going five picture pixels across a frame and more, and stops dead; its
-load is thrown out and lies still; the strike shows; something still turns at the end. The heap: the
-arm bursts up fast and high and is up a second and more; the eyes are dark, then kindle after the
-burst, then go under bit by bit, going down as they go, and are gone at the end; everything flung or
-fallen lies still; what is left is changed.
+none held. The skull wall, in both faces: four jolts in turn; ten skulls and more and twenty bones;
+it bows out before it bursts and skulls pop loose; every one goes a long way and lies still at the end;
+a third and more bounce; out four tiles toward the hero; its top comes down; a cavity is left. The
+cart: it shivers plain to see; it starts by itself after 20 frames, goes faster every frame, a long way,
+strikes going six picture pixels across a frame and more; it rises going over; some of its load spills
+on the way, more flung on far with a skull among it, all at rest; the buffer splinters; the wheel
+rolls away and lies still; the strike shows; something still turns at the end. The heap: it breathes
+deep and often; skulls roll off it; a fountain of six and more thrown high; the hand rises high and
+rakes wide; the eyes dark, then kindled and steady, then going under bit by bit, lower as they go, and
+gone at the end; the arm comes apart in pieces; all at rest; the heap is changed.
 
 ## Pictures (not in the repository)
 
@@ -180,5 +227,5 @@ fallen lies still; what is left is changed.
 kind), `"spots:4"` (every wall piece at its three places), `"room:3"` (a room laid with them; n after
 the scale, the frame of what moves), `"moment:2:<n>"` (n: 0 the skull wall, 3 the skull wall in the
 other face, 1 the cart, 2 the heap; every frame in a grid, the page logs the grid), `"strip:4:<n>"`
-(twelve frames close), `"look:8:<n>"` (n: 0 to 5, a few pieces close). The page must be bigger than
-the picture.
+(twelve frames close), `"look:8:<n>"` (n: 0 to 5, a few pieces close), `"pick:8:<name>|<name>|..."`
+(the pieces named). The page must be bigger than the picture.

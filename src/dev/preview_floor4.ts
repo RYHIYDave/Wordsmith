@@ -10,7 +10,7 @@
 //             "cells <before> <frames> <after> <columns> <cell w> <cell h>" for the film's maker.
 // Scales are whole numbers only, so every pixel of the game is the same size in the picture.
 import { cryptGround } from '../art/crypt';
-import { ossuaryMoments, ossuaryPieces } from '../art/floor4';
+import { ossuaryFilm, ossuaryPieces } from '../art/floor4';
 import type { Piece, PieceKind } from '../art/floorkit';
 import { GATE_UP, PILLAR, POST, STRIP } from '../art/gates';
 import type { Strip } from '../art/gates';
@@ -235,6 +235,14 @@ else if (mode === 'look') {
   size(CW * PER + 40, Math.ceil(list.length / PER) * RH + 20);
   list.forEach((p, i) => cell(p, 56 + (i % PER) * CW, 10 + Math.floor(i / PER) * RH + 90));
 }
+else if (mode === 'pick') {
+  // the pieces named after the scale, split by '|', each in its cell as on the sheet
+  const list = decodeURIComponent(location.hash.slice(1)).split(':').slice(2).join(':').split('|').map(P);
+  const PER = 4;
+  const RH = 150;
+  size(CW * PER + 40, Math.ceil(list.length / PER) * RH + 20);
+  list.forEach((p, i) => cell(p, 56 + (i % PER) * CW, 10 + Math.floor(i / PER) * RH + 90));
+}
 else if (mode === 'spots') {
   // every wall piece at each of its places: a wall three tiles long, the piece at its first, second
   // and third place on the three, so that the eye can see it move about
@@ -297,8 +305,9 @@ else if (mode === 'room') {
   }
   // on the walls, each at one of its places: the far wall's faces turned to screen-left (along ty = 0),
   // the near-left wall's turned to screen-right (along tx = 0)
-  const onLeft: [number, string, number][] = [[1, 'the skull wall', 0], [2, 'the skull wall', 0], [3, 'the skull wall', 0], [4, "miner's lantern", 0], [5, "the miners' breach", 0], [6, 'bone-lined niche', 1], [7, "the cult's candle", 0], [8, 'shored rock', 0], [9, 'garland of skulls', 1]];
-  const onRight: [number, string, number][] = [[1, "the miners' ladder", 0], [2, "the miners' tools", 0], [3, 'the charnel layer', 1], [4, "miner's lantern", 1], [5, "the dead's arm", 0], [6, "the cult's daub", 1], [7, 'seam of ore', 2], [8, 'ribs on a spike', 0], [9, 'pick in the wall', 2]];
+  // (the lantern well clear of the charnel heap, so that its flame never sits over it: the first fresh look found it seeming on fire)
+  const onLeft: [number, string, number][] = [[1, 'the skull wall', 0], [2, 'the skull wall', 0], [3, 'the skull wall', 0], [4, 'garland of skulls', 0], [5, "the miners' breach", 0], [6, 'bone-lined niche', 1], [7, "the cult's candle", 0], [8, 'shored rock', 0], [9, "miner's lantern", 1]];
+  const onRight: [number, string, number][] = [[1, "the miners' ladder", 0], [2, "the miners' tools", 0], [3, 'the charnel layer', 1], [4, 'ribs on a spike', 0], [5, "the dead's arm", 0], [6, "the cult's daub", 1], [7, 'seam of ore', 2], [8, "miner's lantern", 1], [9, 'pick in the wall', 2]];
   for (const [tx, n, k] of onLeft) {
     const [x, y] = at(tx, 0);
     const l = P(n).spots![k].left;
@@ -332,22 +341,21 @@ else if (mode === 'moment') {
   //   n: 0 the skull wall spills (a face turned to screen-left), 3 the same in a face turned to
   //   screen-right, 1 the cart runs, 2 the bones stir
   const which = F;
-  const MS = ossuaryMoments();
-  const m = MS[which === 3 ? 0 : Math.min(which, MS.length - 1)];
+  const film = ossuaryFilm(which);
+  const m = film;
   const right = which === 3;
   const wallM = which === 0 || which === 3;
-  const film = right ? m.right! : m;
   const before = film.before ? (film.before.length > 1 ? [...film.before, ...film.before] : [film.before[0], film.before[0], film.before[0], film.before[0]]) : [];
   const after = film.after ? [film.after[0]] : [];
   const cells = [...before, ...film.frames, ...after];
-  const [CWm, CHm, TOP] = which === 1 ? [320, 210, 90] : [240, 220, 96];
+  const [CWm, CHm, TOP] = which === 1 ? [400, 250, 70] : wallM ? [360, 270, 110] : [300, 230, 100];
   const COLS = 10;
   size(CWm * Math.min(COLS, cells.length), CHm * Math.ceil(cells.length / COLS));
   console.log(`cells ${before.length} ${film.frames.length} ${after.length} ${COLS} ${CWm * S} ${CHm * S}`);
   // (THE SCREEN'S KICK at each jolt, as the game kicks it for a blow: the main chat's to do in the game, drawn here so that the film shows it)
-  const KICK: ReadonlyArray<readonly [number, number]> = [[1, 3], [-1, -2], [0, 1]];
+  const KICK: ReadonlyArray<readonly [number, number]> = [[2, 5], [-2, -4], [2, 3], [-1, -2], [1, 1], [0, -1]];
   cells.forEach((fr, i) => {
-    const ox = (i % COLS) * CWm + CWm / 2 + (which === 1 ? -40 : 0);
+    const ox = (i % COLS) * CWm + CWm / 2 + (which === 1 ? -120 : wallM ? (right ? -40 : 40) : 0);
     const oy = Math.floor(i / COLS) * CHm + TOP;
     g.save();
     g.beginPath();
@@ -360,7 +368,7 @@ else if (mode === 'moment') {
     if (wallM) {
       // a wall along the far side (or the left), the skull wall along it, the moment in its middle tile
       const wallAt = (tx: number, ty: number): boolean => (right ? tx === 0 : ty === 0);
-      for (let tx = 0; tx < 7; tx++) for (let ty = 0; ty < 7; ty++) {
+      for (let tx = 0; tx < 8; tx++) for (let ty = 0; ty < 8; ty++) {
         const [x, y] = at(tx, ty);
         if (!wallAt(tx, ty)) {
           draw(ground.floor(tx, ty), x, y);
@@ -377,16 +385,16 @@ else if (mode === 'moment') {
       }
       const [wx, wy] = right ? at(0, 2) : at(3, 0);
       const [px, py] = right ? [wx + 8, wy + 12] : [wx - 8, wy + 12];
-      const [hx, hy] = right ? at(4.6, 1.2) : at(1.2, 4.6);
+      const [hx, hy] = right ? at(5.4, 1.4) : at(1.4, 5.4);
       softShadow(hx, hy, 0.36);
       draw(fr, px, py);
       draw(hero.front.idle[0], hx, hy);
     } else {
-      for (let tx = -1; tx < 8; tx++) for (let ty = -1; ty < 7; ty++) draw(ground.floor(tx + 1, ty + 1), ...at(tx, ty));
+      for (let tx = -1; tx < 11; tx++) for (let ty = -1; ty < 7; ty++) draw(ground.floor(tx + 1, ty + 1), ...at(tx, ty));
       // (the cart's rails, laid as the floor's tiles, from its own tile to the rails' end)
-      if (which === 1) for (let tx = 0; tx <= 4; tx++) draw(P('the rails').frames![0], ...at(tx, 2));
+      if (which === 1) for (let tx = 0; tx <= 6; tx++) draw(P('the rails').frames![0], ...at(tx, 2));
       const [mx, my] = which === 1 ? at(0.5, 2.5) : at(2.6, 2.4);
-      const [hx, hy] = which === 1 ? at(2.6, 5.2) : at(0.8, 4.8);
+      const [hx, hy] = which === 1 ? at(3.4, 4.2) : at(0.8, 4.8);
       softShadow(mx, my, which === 1 ? 0.5 : 0.66);
       softShadow(hx, hy, 0.36);
       draw(fr, mx, my);
@@ -399,8 +407,7 @@ else if (mode === 'moment') {
 else if (mode === 'strip') {
   // twelve frames of one of its moments, close, side by side on the floor, for a look at its shapes
   //   n: 0 the skull wall, 1 the cart, 2 the heap; the frames picked evenly, and every jolt
-  const MS = ossuaryMoments();
-  const m = MS[Math.min(F, MS.length - 1)];
+  const m = ossuaryFilm(F);
   const n = m.frames.length;
   const pick = [...new Set([...Array.from({ length: 12 }, (_, i) => Math.round((i * (n - 1)) / 11)), ...m.jolts])].sort((a, b) => a - b).slice(0, 16);
   const CWs = F === 1 ? 300 : 180;
