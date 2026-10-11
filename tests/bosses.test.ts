@@ -319,7 +319,8 @@ test('11. his chains hang from his cuffs and his collar; a broken one is gone fr
 
 test('12. nothing of the game imports the chains or the checks either', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks/.test(f)) continue;
+    // (the fleshmancer, art/fleshmancer.ts, is a mock-up of the same kind, and is reviewed by the checks too: tests/fleshmancer.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }
