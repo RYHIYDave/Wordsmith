@@ -24,7 +24,7 @@ import type { GameView } from '../art/skin';
 import { drawAura, drawLights, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { FM_FLOOR } from "./fm_floor";
-import { DAGGER_CULTIST, KNIFE_BLOW, KNIFE_DIES, KNIFE_REST, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_RAISE, MINI_REST, knifeCowlTop, miniFireAt, miniFireTurn } from "../art/cultists";
+import { DAGGER_CULTIST, KNIFE_BLOW, KNIFE_DIES, KNIFE_REST, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_HALT, MINI_RAISE, MINI_REST, MINI_SET_OFF, knifeCowlTop, miniFireAt, miniFireTurn } from "../art/cultists";
 import { CRAWL_OUT } from '../art/mkit';
 import { makeSkeletonArt } from '../art/monster_bones';
 import type { AnimSet, Clip } from '../art/actor_types';
@@ -316,6 +316,8 @@ if (mode === 'strip') {
 //           dead: each body burns away and a skeleton crawls up out of the ground where it lay (the Warden's
 //           dead, as they come: art/mkit.ts crawlOut, the game's skeleton's `crawl`)
 //   fire    the mini fleshmancer sweeps his fire across the floor before him (art/fm_spells.ts, MINI_FIRE_SIZE)
+//   glide   the mini fleshmancer sets off, glides at the knight and stops
+//   struck  the dagger cultist flinches twice; the mini fleshmancer flinches twice, and dies (his own fire takes him)
 
 interface Fig { sp: Sprite; x: number; y: number; shadow: number; light?: boolean; alpha?: number }
 if (mode === 'film') {
@@ -330,11 +332,11 @@ if (mode === 'film') {
     return sp;
   };
   // (how much of the floor shows, in game pixels, and where on it his floor point is)
-  const VIEW: Record<string, [number, number, number, number]> = { charge: [220, 130, 120, 95], raise: [236, 140, 84, 98], fire: [220, 140, 90, 95] };
+  const VIEW: Record<string, [number, number, number, number]> = { charge: [220, 130, 120, 95], raise: [236, 140, 84, 98], fire: [220, 140, 90, 95], glide: [230, 140, 140, 100], struck: [220, 140, 110, 82] };
   const [GW, GH, hx, hy] = VIEW[which] ?? VIEW.charge;
   const at = (tx: number, ty: number): [number, number] => [hx + (tx - ty) * 16, hy + (tx + ty) * 8];
   // (the knight, in tiles from him; struck (MOVES3.kreel) when the blow lands or the fire sweeps over him)
-  const KN: Record<string, [number, number]> = { charge: [1.05, -0.65], raise: [3.8, -1.4], fire: [2.4, -0.5] };
+  const KN: Record<string, [number, number]> = { charge: [1.05, -0.65], raise: [3.8, -1.4], fire: [2.4, -0.5], glide: [1.4, 0.2], struck: [1.5, 1.5] };
   const [kx, ky] = KN[which];
   const REEL = MOVES3.kreel;
   const REEL_LONG = REEL.motion.keys[REEL.motion.keys.length - 1].at;
@@ -417,6 +419,71 @@ if (mode === 'film') {
       const lights: [number, number, number, number][] = [];
       const tb = t - LEAD - RUN;
       if (tb > KNIFE_BLOW.hit - 0.02 && tb < KNIFE_BLOW.hit + 0.25) lights.push([kxs - 6, kys - 8, 46, 0.9 * (1 - (tb - KNIFE_BLOW.hit + 0.02) / 0.27)]);
+      return { figs, under: () => {}, over: () => {}, lights };
+    };
+  } else if (which === 'glide') {
+    // THE MINI FLESHMANCER'S GLIDE: he stands, sets off, glides at the knight, stops, and stands.
+    const RUN: ReadonlyArray<readonly [string, number]> = [['stand', 0.4], ['setOff', MINI_SET_OFF], ['walk', 2.0], ['halt', MINI_HALT], ['stand', 0.8]];
+    const FROM = -3.4;
+    total = RUN.reduce((a, [, l]) => a + l, 0);
+    frameAt = (t) => {
+      let t0 = 0;
+      let along = FROM;
+      let sp: Sprite = posed(MINI, 'stand', 0);
+      for (const [i, [mv, l]] of RUN.entries()) {
+        const last = i === RUN.length - 1;
+        if (t < t0 + l || last) {
+          const tt = Math.min(l, t - t0);
+          if (mv !== 'stand') along += MINI.pace * tt;
+          sp = mv === 'stand' ? posed(MINI, 'stand', standAt(MINI, tt)) : mv === 'walk' ? posed(MINI, 'walk', (Math.floor(tt * MINI.walkFps + 1e-6) % MINI.walkFrames) / MINI.walkFps) : posed(MINI, mv, at30(tt));
+          break;
+        }
+        if (mv !== 'stand') along += MINI.pace * l;
+        t0 += l;
+      }
+      const [x, y] = at(along, 0);
+      const [kxs, kys] = at(kx, ky);
+      return { figs: [{ sp, x, y, shadow: MINI.shadow }, { sp: knightAt(t), x: kxs, y: kys, shadow: 12 }], under: () => {}, over: () => {}, lights: [] };
+    };
+  } else if (which === 'struck') {
+    // STRUCK: the dagger cultist flinches twice; the mini fleshmancer flinches twice, and dies.
+    const KNIFE_HITS = [0.4, 0.9];
+    const MINI_HITS = [1.4, 2.0];
+    const DIES_AT = 2.6;
+    total = DIES_AT + MINI_FM.dieTime + 0.9;
+    const C: [number, number] = [-0.2, 1.6];
+    const M: [number, number] = [1.4, -0.4];
+    /** Which move, and how far into it, at a moment, given when the blows land. */
+    const inBlow = (t: number, hits: readonly number[], long: number): number => {
+      for (const h of hits) if (t >= h && t < h + long) return t - h;
+      return -1;
+    };
+    const flipped = (key: string, make: () => Sprite): Sprite => sprite(`flip:${key}`, () => flipSprite(make()));
+    frameAt = (t) => {
+      const figs: Fig[] = [];
+      const tk = inBlow(t, KNIFE_HITS, KNIFE.reelTime);
+      const knife = tk >= 0 ? posed(KNIFE, 'reel', at30(tk)) : posed(KNIFE, 'stand', standAt(KNIFE, t));
+      const [cx, cy] = at(C[0], C[1]);
+      figs.push({ sp: knife, x: cx, y: cy, shadow: KNIFE.shadow });
+      // (the mini fleshmancer turned toward the knight: his picture facing you, the other way round)
+      let mini: Sprite;
+      let alive = true;
+      if (t >= DIES_AT) {
+        const k = Math.min(1, Math.round(((t - DIES_AT) / MINI.dieTime) * MINI.dieTime * 20) / (MINI.dieTime * 20));
+        mini = flipped(`die:${k.toFixed(3)}`, () => dead(MINI, k));
+        alive = false;
+      } else {
+        const tm = inBlow(t, MINI_HITS, MINI.reelTime);
+        mini = tm >= 0 ? flipped(`reel:${at30(tm).toFixed(3)}`, () => posed(MINI, 'reel', at30(tm))) : flipped(`stand:${standAt(MINI, t).toFixed(3)}`, () => posed(MINI, 'stand', standAt(MINI, t)));
+      }
+      const [mx, my] = at(M[0], M[1]);
+      figs.push({ sp: mini, x: mx, y: my, shadow: alive ? MINI.shadow : 0 });
+      const [kxs, kys] = at(kx, ky);
+      figs.push({ sp: knightAt(t), x: kxs, y: kys, shadow: 12 });
+      // (a flash where each blow lands)
+      const lights: [number, number, number, number][] = [];
+      for (const h of KNIFE_HITS) if (t >= h && t < h + 0.15) lights.push([cx, cy - 16, 30, 0.8 * (1 - (t - h) / 0.15)]);
+      for (const h of [...MINI_HITS, DIES_AT]) if (t >= h && t < h + 0.15) lights.push([mx, my - 22, 34, 0.8 * (1 - (t - h) / 0.15)]);
       return { figs, under: () => {}, over: () => {}, lights };
     };
   } else if (which === 'raise') {

@@ -25,7 +25,12 @@
 //      from his right to his left, never turning back; smaller than his master's; it pours from between his
 //      claws, in front of him;
 //  12. HIS CALL: his claws low as he bows, high over his hood as the dead come up (the blow of the clip);
-//  13. he floats through all of it.
+//  13. he floats through all of it (his glide, setting off and stopping, and struck too).
+// Then their other moves (his yes to their attacks, by 18:39: “Yes, on to their other moves (Recommended)”):
+//  14. THE MINI FLESHMANCER'S GLIDE goes round; setting off starts from his rest and ends on its first frame,
+//      stopping the other way;
+//  15. HIS DEATH: his own fire takes him: he burns down into the floor, nothing of him left above it, and
+//      what is left lies low on the floor (his robe in a heap, his mask on it), with no light in it.
 //   run: tsx --test tests/cultists.test.ts
 
 // @ts-ignore
@@ -37,7 +42,7 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { CULTISTS_SWITCH, DAGGER_CULTIST, KNIFE_BLOW, KNIFE_REST, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_RAISE, MINI_REST, knifeCowlTop, knifeTipOf, makeDaggerCultistArt3, makeMiniFleshmancerArt3, miniFireAt, miniFireTurn } from '../src/art/cultists';
+import { CULTISTS_SWITCH, DAGGER_CULTIST, KNIFE_BLOW, KNIFE_REST, MINI_DIES, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_GLIDE_LONG, MINI_HALT, MINI_RAISE, MINI_REEL, MINI_REST, MINI_SET_OFF, knifeCowlTop, knifeTipOf, makeDaggerCultistArt3, makeMiniFleshmancerArt3, miniFireAt, miniFireTurn } from '../src/art/cultists';
 import { FM_FIRE_SIZE } from '../src/art/fm_spells';
 import { DEATH_FPS } from '../src/art/mkit';
 import { TILE3, posedOfMob } from '../src/art/new_mobs3';
@@ -166,13 +171,13 @@ test('5. his master is painted in his own look: the default, and back to it afte
 // ---------------------------------------------------------------------------------------------
 // THEIR MOVES
 
-/** The moves made so far, by facing: what is alive in it, and what is dying. (The mini fleshmancer's glide, struck and death come after his yes to these.) */
+/** Their moves, by facing: what is alive in it, and what is dying. */
 function madeOf(mob: Mob, set: AnimSet): { living: [string, Sprite[]][]; dying: Sprite[] } {
   const c = set.clips ?? {};
   const living: [string, Sprite[]][] = [['attack', c.attack?.frames ?? []]];
   if (mob === DAGGER_CULTIST) living.push(['run', set.walk], ['struck', c.reel?.frames ?? []]);
-  else living.push(['raise', c.moves?.raise?.frames ?? []]);
-  return { living, dying: mob === DAGGER_CULTIST ? c.die?.frames ?? [] : [] };
+  else living.push(['raise', c.moves?.raise?.frames ?? []], ['glide', set.walk], ['setting off', c.moves?.setOff?.frames ?? []], ['stopping', c.moves?.halt?.frames ?? []], ['struck', c.reel?.frames ?? []]);
+  return { living, dying: c.die?.frames ?? [] };
 }
 
 test('6. each is made as the game takes a monster: both facings, its lists and clips, its blow on a frame', () => {
@@ -299,12 +304,42 @@ test('12. his call: his claws low as he bows, high over his hood as the dead com
   assert.ok(up.handL[2] > hood && up.handR[2] > hood, `his claws over his hood (${up.handL[2].toFixed(1)}, ${up.handR[2].toFixed(1)} against ${hood.toFixed(1)})`);
 });
 
-test('13. the mini fleshmancer floats through his fire and his call: a gap of floor under his tails in every frame', () => {
-  for (const [move, long] of [['attack', MINI_FIRE.long], ['raise', MINI_RAISE.long]] as const) {
+test('13. the mini fleshmancer floats through his fire, his call, his glide, setting off and stopping, and struck: a gap of floor under his tails in every frame', () => {
+  for (const [move, long] of [['attack', MINI_FIRE.long], ['raise', MINI_RAISE.long], ['walk', MINI_GLIDE_LONG], ['setOff', MINI_SET_OFF], ['halt', MINI_HALT], ['reel', MINI_REEL]] as const) {
     for (let i = 0; i <= Math.round(long * 30); i++) {
       const s = skeletonAt(MINI_FM, move, i / 30);
       const low = withFmLook(MINI_FM_LOOK, () => Math.min(...fmTails(fmHemOf(s), 0, 0).flatMap((x) => x.pts.map((p) => p[2] - x.r))));
       assert.ok(low >= 1, `${move} frame ${i}: his lowest tail ${low.toFixed(1)} off the floor`);
     }
+  }
+});
+
+test('14. the mini fleshmancer’s glide goes round; setting off starts from his rest and ends on its first frame; stopping the other way', () => {
+  const at = (move: string, t: number) => posedOfMob(MINI_FM, move, t);
+  const fields = ['pz', 'px', 'pitch', 'bend', 'lhx', 'lhz', 'rhx', 'rhz', 'gale'] as const;
+  const near = (a: Record<string, number>, b: Record<string, number>, what: string): void => {
+    for (const k of fields) assert.ok(Math.abs(a[k] - b[k]) < 0.05, `${what} (${k}: ${a[k].toFixed(2)} against ${b[k].toFixed(2)})`);
+  };
+  const rest = MINI_REST as unknown as Record<string, number>;
+  near(at('walk', 0) as unknown as Record<string, number>, at('walk', MINI_GLIDE_LONG) as unknown as Record<string, number>, 'the glide does not go round');
+  near(at('setOff', 0) as unknown as Record<string, number>, rest, 'setting off does not start from his rest');
+  near(at('setOff', MINI_SET_OFF) as unknown as Record<string, number>, at('walk', 0) as unknown as Record<string, number>, 'setting off does not end on the glide');
+  near(at('halt', 0) as unknown as Record<string, number>, at('walk', 0) as unknown as Record<string, number>, 'stopping does not start from the glide');
+  near(at('halt', MINI_HALT) as unknown as Record<string, number>, rest, 'stopping does not end at his rest');
+});
+
+test('15. his death: his own fire takes him; he burns down into the floor, nothing of him left above it; what is left lies low, with no light in it', () => {
+  const end = skeletonAt(MINI_FM, 'dying', MINI_DIES.long);
+  for (const [name, p] of [['his head', end.head], ['his left claw', end.handL], ['his right claw', end.handR], ['his hips', end.pelvis]] as const) assert.ok(p[2] < -4, `${name} still above the floor (${p[2].toFixed(1)})`);
+  const under = skeletonAt(MINI_FM, 'dying', MINI_DIES.under + 0.02);
+  assert.ok(under.head[2] < 0, `his hood under as the fire spits out his mask (${under.head[2].toFixed(1)})`);
+  for (const view of ['front', 'back'] as const) {
+    const die = makeMiniFleshmancerArt3()[view].clips?.die?.frames ?? [];
+    const last = die[die.length - 1];
+    const stand = makeMiniFleshmancerArt3()[view].idle[0];
+    assert.ok(last.h > 4 && last.h < stand.h * 0.3, `${view}: what is left (${last.h} high, against ${stand.h} standing)`);
+    assert.ok(!last.lights?.length, `${view}: light in what is left`);
+    // (and somewhere in the middle of it he is ablaze: light)
+    assert.ok(die.some((sp) => (sp.lights?.length ?? 0) > 0), `${view}: no fire as he dies`);
   }
 });

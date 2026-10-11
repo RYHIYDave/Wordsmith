@@ -30,8 +30,8 @@ import type { ActorArt } from './actor_types';
 import { INK, PINK, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME, SOCKET } from './mkit';
-import { FM_BODY, FM_LOOK, FM_REST, HAND_BONE, clamp01, curve, fleshmancerBits, fmGlide, fmHalt, fmReel, fmSetOff, pk, rampAt, sampled, screenStep, shiver, stamp, tr, unit2, withFmLook } from './fleshmancer';
-import type { FmLook, P2, Pix } from './fleshmancer';
+import { FM_BODY, FM_DYING, FM_LOOK, FM_REST, HAND_BONE, IVORY, clamp01, curve, fireAt, fleck, fleshmancerBits, pk, rampAt, sampled, screenStep, shiver, smooth, stamp, tr, unit2, withFmLook } from './fleshmancer';
+import type { FmLook, Keys, P2, Pix } from './fleshmancer';
 import { TILE3, mobSet, paintViewOf, skeletonAt, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
 import { onCloth, wornOn } from './skin';
@@ -129,6 +129,8 @@ export const MINI_FM_LOOK: FmLook = {
   timing: { raiseShriek: 1.1, raiseHold: 1.6, fireBurst: 17 / 30, fireStop: 2.1 },
   maw: (prop, t) => miniMaw(prop, t),
   jaw: () => 0,
+  // (his own death: his own fire takes him)
+  death: (st, m) => miniDeathBits(st, m),
 };
 
 /** Of a pose's numbers, those that are lengths (made smaller for him), and not angles or amounts. */
@@ -296,6 +298,309 @@ function miniFire(): Motion {
 /** How big his fire's stream is beside his master's (art/fm_spells.ts FireSize): it comes down closer before him, reaches about half as far, is thinner, and arcs down from his claws in a shorter curve. */
 export const MINI_FIRE_SIZE = { land: 0.6, reach: 2.6, thick: 0.7, bulge: 1.0 } as const;
 
+// ---------------------------------------------------------------------------------------------
+// HIS GLIDE, STRUCK AND HIS DEATH (the owner's yes to his attacks, by 18:39 on 11 Oct: “Yes, on to their other
+// moves (Recommended)”).
+
+/** His glide: once round in a second (as his master's), painted for MINI_PACE tiles a second. */
+export const MINI_GLIDE_LONG = 1;
+/** Setting off and stopping: how long each takes. */
+export const MINI_SET_OFF = 0.4;
+export const MINI_HALT = 0.5;
+/** HIS GLIDE, as tracks of the moment: every field, from the way round (`A`, radians). */
+function miniGlideFields(): Partial<Record<keyof Bones, (t: number) => number>> {
+  const R = MINI_REST;
+  const A = (t: number): number => (t / MINI_GLIDE_LONG) * Math.PI * 2;
+  return {
+    pz: (t) => R.pz + 2.2 * K * Math.sin(A(t)),
+    px: (t) => 0.7 * K * Math.sin(A(t) + 1),
+    pitch: (t) => R.pitch + 13 + Math.sin(A(t)),
+    bend: (t) => R.bend + 7 + Math.sin(A(t) + 0.5),
+    roll: (t) => 1.5 * Math.sin(A(t) + 2),
+    twist: (t) => R.twist + 3 * Math.sin(A(t)),
+    faceUp: (t) => R.faceUp - 3 + Math.sin(A(t)),
+    faceTurn: (t) => R.faceTurn - 2 + 2 * Math.sin(A(t) + 0.8),
+    // (both claws held out low at his sides and trailing back, their fire streaming, swaying each to its own beat)
+    lhx: (t) => -5 * K + K * Math.sin(A(t)),
+    lhy: () => 14 * K,
+    lhz: (t) => -8 * K + 1.4 * K * Math.sin(A(t) + 1),
+    le: () => 28,
+    rhx: (t) => -5 * K + K * Math.sin(A(t) + Math.PI),
+    rhy: () => -14 * K,
+    rhz: (t) => -8 * K + 1.4 * K * Math.sin(A(t) + Math.PI + 1),
+    re: () => 28,
+    draw: (t) => 0.3 + 0.08 * Math.sin(A(t) * 2),
+    pAz: () => 1.1,
+    pt: (t) => 0.25 + 0.1 * Math.sin(A(t)),
+    gale: (t) => 0.75 + 0.15 * Math.sin(A(t) * 2),
+  };
+}
+/**
+ * HIS GLIDE, as his master's (“Glides, feet just off the floor (Recommended)”): no step, no stride; he leans
+ * into his way and is borne along over the floor, rising and sinking once a second; but with no staff: both
+ * claws held out low at his sides and trailing back, their fire streaming, his robe and tails streaming back.
+ */
+function miniGlide(): Motion {
+  return { keys: sampled(MINI_GLIDE_LONG, miniGlideFields(), { prop: 0, pEl: 0 }), loop: 0 };
+}
+/** A bump that rises and falls back over a move (`at`: where in it it is highest, 0 to 1). */
+const bumpOf = (long: number, size: number, at = 0.5) => (t: number): number => {
+  const k = clamp01(t / long);
+  return size * (k < at ? Math.sin((Math.PI / 2) * (k / at)) : Math.cos((Math.PI / 2) * ((k - at) / (1 - at)))) ** 2;
+};
+/** From one pose to another (each by its fields), with bumps on the way. */
+function miniBetween(long: number, from: (f: keyof Bones) => number, to: (f: keyof Bones) => number, bumps: Partial<Record<keyof Bones, (t: number) => number>>): Motion {
+  const fields: Partial<Record<keyof Bones, (t: number) => number>> = {};
+  const names: (keyof Bones)[] = ['pz', 'px', 'py', 'pitch', 'bend', 'roll', 'twist', 'side', 'faceUp', 'faceTurn', 'faceTilt', 'rhx', 'rhy', 'rhz', 're', 'lhx', 'lhy', 'lhz', 'le', 'draw', 'pAz', 'pt', 'gale', 'yaw', 'out'];
+  for (const f of names) fields[f] = (t) => from(f) + (to(f) - from(f)) * smooth(t / long) + (bumps[f]?.(t) ?? 0);
+  return { keys: sampled(long, fields, { prop: 0, pEl: 0 }) };
+}
+/** SETTING OFF: he coils a moment, then surges into his glide, his robe snapping back. */
+function miniSetOff(): Motion {
+  const g = miniGlideFields();
+  const R = MINI_REST as unknown as Record<string, number>;
+  const L = MINI_SET_OFF;
+  return miniBetween(L, (f) => R[f] ?? 0, (f) => g[f]?.(0) ?? R[f] ?? 0, { px: bumpOf(L, -2.2 * K, 0.3), pz: bumpOf(L, -1.8 * K, 0.25), pitch: bumpOf(L, 6, 0.6), gale: bumpOf(L, 0.7, 0.6) });
+}
+/** STOPPING: borne on a little past where he stops, he rocks back upright, robe and tails swinging on past him, and settles. */
+function miniHalt(): Motion {
+  const g = miniGlideFields();
+  const R = MINI_REST as unknown as Record<string, number>;
+  const L = MINI_HALT;
+  return miniBetween(L, (f) => g[f]?.(0) ?? R[f] ?? 0, (f) => R[f] ?? 0, { px: bumpOf(L, 2.6 * K, 0.35), pitch: bumpOf(L, -5, 0.55), gale: bumpOf(L, 0.6, 0.4), pz: bumpOf(L, 1.4 * K, 0.5) });
+}
+/** How long his flinch takes. */
+export const MINI_REEL = 0.4;
+/** STRUCK: a blow throws him back at once, his mask snapping up, both claws flung out, the fire in them knocked half out; he rights himself. */
+function miniReel(): Motion {
+  const R = MINI_REST;
+  const L = MINI_REEL;
+  const k = (big: number, settle = 0.26): Keys => [[0, 0], [0.06, big], [0.12, big * 0.92], [settle, big * 0.3], [L, 0]];
+  const plus = (base: number, keys: Keys) => (t: number): number => base + curve(keys, t);
+  const keys = sampled(L, {
+    px: plus(0, k(-8 * K)),
+    pz: plus(R.pz, k(5 * K)),
+    pitch: plus(R.pitch, k(-15)),
+    bend: plus(R.bend, k(-19)),
+    twist: plus(R.twist, k(10)),
+    roll: plus(0, k(5)),
+    faceUp: plus(R.faceUp, k(26)),
+    faceTurn: plus(R.faceTurn, k(-10)),
+    lhx: plus(R.lhx, k(-5 * K)),
+    lhy: plus(R.lhy, k(4 * K)),
+    lhz: plus(R.lhz, k(10 * K)),
+    le: plus(R.le, k(20)),
+    rhx: plus(R.rhx, k(-5 * K)),
+    rhy: plus(R.rhy, k(-4 * K)),
+    rhz: plus(R.rhz, k(10 * K)),
+    re: plus(R.re, k(20)),
+    draw: plus(R.draw, k(-0.3)),
+    gale: plus(0, k(1)),
+    out: plus(0, k(0.5, 0.22)),
+  }, { prop: 0, pEl: 0 });
+  return { keys };
+}
+
+/** His death (seconds): struck; his fire runs wild in him; it bursts up round him; he burns down into it, his hood under; his mask spat out, landing, lying; the fire out. */
+export const MINI_DIES = { long: 2.0, struck: 0.1, burst: 0.45, under: 1.3, land: 1.66, out: 1.9 } as const;
+/**
+ * HIS DEATH: HIS OWN FIRE TAKES HIM. STRUCK (0 to 0.1 s): thrown back. HIS FIRE RUNS WILD (to 0.45): he
+ * convulses, his claws flung up and wide, his head thrown back, the fire in his claws swelling out of hand
+ * and running up his arms, flames spurting from his mask. IT BURSTS UP ROUND HIM (0.45), a roaring ring of it
+ * off the floor, and HE BURNS DOWN INTO IT, writhing, his claws reaching up, sinking slowly and then faster,
+ * his robe spreading at the floor as it goes; his hood goes under (1.3) and the fire SPITS OUT HIS MASK, which
+ * flies up, clatters down onto the heap of his empty robe (1.66), bounces and lies; the fire sinks to embers
+ * and goes out (1.9). Left lying: his robe in a heap, scorched, his skull mask on it (`miniDeathBits`).
+ */
+function miniDying(): Motion {
+  const R = MINI_REST;
+  const L = MINI_DIES.long;
+  const B = MINI_DIES.burst;
+  const wild = (t: number): number => rampAt(t, 0.1, 0.2) * (1 - rampAt(t, 0.5, 0.7));
+  const writhe = (t: number): number => rampAt(t, 0.4, 0.6) * (1 - rampAt(t, 1.35, 1.5));
+  const keys = sampled(L, {
+    pz: (t) => tr([[0, R.pz], [0.1, R.pz + 2 * K], [0.3, R.pz + 4 * K], [B, R.pz + 5 * K], [0.7, R.pz - 8 * K], [1.0, R.pz - 30 * K], [MINI_DIES.under, R.pz - 62 * K], [1.5, R.pz - 86 * K], [L, R.pz - 110 * K]])(t) + 0.8 * K * Math.sin(t * 29) * wild(t),
+    px: tr([[0, 0], [0.1, -3 * K], [B, -1 * K], [L, 0]]),
+    pitch: (t) => tr([[0, R.pitch], [0.1, R.pitch - 10], [B, R.pitch - 14], [0.8, R.pitch - 4], [L, R.pitch - 4]])(t) + 3 * Math.sin(t * 23) * wild(t),
+    bend: (t) => tr([[0, R.bend], [0.1, R.bend - 12], [B, R.bend - 16], [0.8, R.bend - 6], [L, R.bend - 6]])(t) + 4 * Math.sin(t * 19 + 1) * wild(t),
+    twist: (t) => R.twist + 14 * Math.sin(t * 7) * writhe(t),
+    roll: (t) => 5 * Math.sin(t * 9 + 2) * writhe(t),
+    faceUp: tr([[0, R.faceUp], [0.1, R.faceUp + 16], [B, R.faceUp + 30], [L, R.faceUp + 28]]),
+    faceTurn: (t) => R.faceTurn + 18 * Math.sin(t * 6 + 1) * writhe(t),
+    lhx: tr([[0, R.lhx], [0.1, R.lhx - 3 * K], [B, 0], [L, 1 * K]]),
+    lhy: tr([[0, R.lhy], [B, 16 * K], [0.8, 12 * K], [1.1, 6 * K], [L, 5 * K]]),
+    lhz: (t) => tr([[0, R.lhz], [0.1, R.lhz + 5 * K], [B, 22 * K], [0.8, 28 * K], [1.1, 32 * K], [L, 32 * K]])(t) + 2 * K * Math.sin(t * 17) * (wild(t) + writhe(t)),
+    le: tr([[0, R.le], [B, 70], [L, 72]]),
+    rhx: tr([[0, R.rhx], [0.1, R.rhx - 3 * K], [B, 0], [L, 1 * K]]),
+    rhy: tr([[0, R.rhy], [B, -16 * K], [0.8, -12 * K], [1.1, -6 * K], [L, -5 * K]]),
+    rhz: (t) => tr([[0, R.rhz], [0.1, R.rhz + 5 * K], [B, 22 * K], [0.8, 28 * K], [1.1, 32 * K], [L, 32 * K]])(t) + 2 * K * Math.sin(t * 15 + 2) * (wild(t) + writhe(t)),
+    re: tr([[0, R.re], [B, 70], [L, 72]]),
+    draw: tr([[0, R.draw], [0.1, 0.05], [B, 0], [L, 0]]),
+    pAz: tr([[0, 1], [0.1, 0.6], [B, 2], [L, 2]]),
+    pt: tr([[0, 0], [B, 1], [L, 1]]),
+    gale: (t) => tr([[0, 0], [0.1, 1], [L, 1]])(t) - 0.2 + 0.2 * Math.sin(t * 13),
+    out: tr([[0, 0], [0.1, 0.25], [0.3, 0.05], [L, 0]]),
+  }, { prop: FM_DYING, pEl: 0 });
+  return { keys };
+}
+
+/** His skull mask, as it flies and as it lies: face on, edge on, from behind, and lying face up on the floor (foreshortened). */
+const MASK_FACE: ReadonlyArray<string> = [
+  '..HHHHH..',
+  '.HLLLLLH.',
+  'HLLLLLLLH',
+  'LssLLLssL',
+  'LssLLLssL',
+  'LLLLsLLLL',
+  'MLLLsLLLM',
+  '.MLMLMLM.',
+  '..MMMMM..',
+];
+const MASK_EDGE: ReadonlyArray<string> = ['.HLLLLLH.', 'MLLLLLLLM', '.SMMMMMS.'];
+const MASK_BACK: ReadonlyArray<string> = ['..MMMMM..', '.MSSSSSM.', 'MSSDDDSSM', 'MSDDDDDSM', 'MSDDDDDSM', '.MSSSSSM.', '..MMMMM..'];
+const MASK_LYING: ReadonlyArray<string> = ['.HHLLLHH.', 'HLssLssLH', 'LLLLsLLLL', 'MLMLMLMLM', '.SSSSSSS.'];
+const MASK_COLOUR: Readonly<Record<string, string>> = { H: IVORY.H, L: IVORY.L, M: IVORY.M, S: IVORY.S, D: IVORY.D, s: SOCKET };
+/** One of the mask's little pictures, its middle at (cx, cy) on the picture. */
+function maskPix(rows: ReadonlyArray<string>, cx: number, cy: number): Pix {
+  const pix: Pix = new Map();
+  const x0 = Math.round(cx - rows[0].length / 2);
+  const y0 = Math.round(cy - rows.length / 2);
+  rows.forEach((row, j) => [...row].forEach((ch, i) => {
+    const c = MASK_COLOUR[ch];
+    if (c) pix.set(pk(x0 + i, y0 + j), c);
+  }));
+  return pix;
+}
+/** The heap of his robe left lying, and its scorch: its colours. */
+const HEAP: Ramp = ['#140a18', '#1c0e22', '#30183a', '#4e2c5c', '#6a3e7a'];
+const SCORCH = ['#0c0610', '#1c0e18'] as const;
+
+/**
+ * HIS DEATH, OVER AND ABOUT HIM (his painter cuts him away at the floor as he burns down into it): his fire
+ * running up his arms and spurting from his mask as it runs wild; the ring of it bursting up off the floor
+ * round him, a flash, and roaring as he burns down into it, sparks flying up; the scorch spreading on the
+ * floor and the heap of his empty robe; his mask spat up out of the fire, tumbling, clattering down onto the
+ * heap and lying; the embers going out.
+ */
+function miniDeathBits(st: Stage, m: Moment): Bit[] {
+  const { s, t } = m;
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => {
+    bits.push({ part, piece, shape });
+  };
+  const pc: V3 = [s.pelvis[0], s.pelvis[1], 0];
+  const ph = t * 9;
+  /** Behind him as the eye sees it, while he is above the floor: further than his chest, within his shape across the picture. */
+  const behindHim = (p: V3): boolean => {
+    if (st.near(p) > st.near(s.ribs) - 1.5) return false;
+    const top = s.head[2] + 8 * K;
+    if (top <= 0) return false;
+    const [x, y] = st.at(p);
+    const yTop = st.at([s.head[0], s.head[1], top])[1];
+    const yLow = st.at([pc[0], pc[1], Math.max(0, s.pelvis[2] - 16 * K)])[1];
+    if (y < yTop || y > yLow) return false;
+    const [cx] = st.at(s.neck);
+    return Math.abs(x - cx) < 12 * K;
+  };
+  // HIS FIRE RUNNING WILD: up his arms from his claws, and spurting from his mask
+  const wild = rampAt(t, 0.12, 0.4) * (1 - rampAt(t, 0.9, MINI_DIES.under));
+  if (wild > 0.05) {
+    for (const [hand, elbow, k] of [[s.handL, s.elbowL, 0], [s.handR, s.elbowR, 1]] as const) {
+      for (let i = 0; i < 3; i++) {
+        const p = lerp3(hand, elbow, 0.15 + i * 0.3);
+        if (p[2] < 0) continue;
+        fireAt(st, put, p, (5 + 5 * wild) * (1 - i * 0.2), 2.4, ph + i * 1.7 + k, 1.1, 3 + i + k * 3, behindHim, i === 0);
+      }
+    }
+    if (s.head[2] > 2) fireAt(st, put, add(s.head, [0, 0, 2 * K]), 9 * wild, 3, ph + 0.8, 1.2, 11, behindHim, false);
+  }
+  // THE RING OF FIRE bursting up off the floor round him, roaring as he burns down into it, sinking to embers
+  const B = MINI_DIES.burst;
+  const H = 56 * K * rampAt(t, B - 0.04, B + 0.08) * (1 - smooth((t - 1.15) / (MINI_DIES.out - 1.15)));
+  if (H > 2) {
+    for (let j = 0; j < 8; j++) {
+      const a = (j / 8) * Math.PI * 2 + 0.3;
+      const r = (8 + 3 * rampAt(t, B, B + 0.3)) * K;
+      const base: V3 = [pc[0] + Math.cos(a) * r, pc[1] + Math.sin(a) * r * 0.9, 0];
+      const tall = H * (0.55 + 0.35 * hash(j, 1, 711)) * (0.85 + 0.15 * Math.sin(ph * 1.7 + j));
+      fireAt(st, put, base, tall, 3.6, ph + j * 0.9, 1.2, 20 + j, behindHim, j % 2 === 0);
+    }
+    // (and up out of where he is going down: what of him is at the floor, ablaze)
+    fireAt(st, put, pc, H * 0.75, 6, ph + 0.4, 1.4, 31, undefined, true);
+    put('glow', 'glow', { k: 'glow', p: [pc[0], pc[1], 10 * K], c: FLAME[3], r: 26 + H * 0.3, a: 0.55 * clamp01(H / (40 * K)) });
+  }
+  // (the flash as it bursts)
+  const fl = (t - B) / 0.3;
+  if (fl > 0 && fl < 1) put('glow', 'glow', { k: 'glow', p: [pc[0], pc[1], 16 * K], c: FLAME[4], r: 44 - 14 * fl, a: 0.8 * (1 - fl) });
+  // SPARKS flying up off it
+  const spark = rampAt(t, B, B + 0.1) * (1 - rampAt(t, 1.5, MINI_DIES.out));
+  for (let i = 0; i < 12; i++) {
+    if (spark < 0.05 || hash(i, 2, 713) > spark) continue;
+    const life = (((t * 1.6 + hash(i, 3, 713)) % 1) + 1) % 1;
+    const a = hash(i, 4, 713) * Math.PI * 2;
+    const r = (6 + 10 * hash(i, 5, 713) + 6 * life) * K;
+    fleck(st, put, [pc[0] + Math.cos(a) * r, pc[1] + Math.sin(a) * r, 6 + life * 60 * K], life < 0.4 ? FLAME[3] : FLAME[2], i * 1.3 + Math.floor(t * 4), 'embers', i % 2 ? 1 : -1);
+  }
+  // THE SCORCH spreading on the floor, and THE HEAP of his empty robe
+  const sc = rampAt(t, B, 1.2);
+  if (sc > 0.05) put('scorch', 'scorch', { k: 'ball', c: [pc[0], pc[1], 0.1], ax: [[16 * K * sc, 0, 0], [0, 14 * K * sc, 0], [0, 0, 0.1]], skin: (u) => (Math.hypot(u[0], u[1]) > 0.8 ? SCORCH[1] : SCORCH[0]) });
+  const hp = rampAt(t, 0.95, MINI_DIES.under);
+  const heapTop = 5 * K * hp;
+  if (hp > 0.05) {
+    put('heap', 'heap', {
+      k: 'ball',
+      c: [pc[0], pc[1], heapTop * 0.35],
+      ax: [[13 * K * hp, 0, 0], [0, 11 * K * hp, 0], [0, 0, heapTop * 0.65]],
+      skin: (u) => {
+        const a = Math.atan2(u[1], u[0]);
+        const r = Math.hypot(u[0], u[1]);
+        // (its folds, lit from above and dark where it meets the floor; a scorched patch or two)
+        if (u[2] < 0.25) return HEAP[1];
+        if (hash(Math.round(a * 3), Math.round(r * 4), 717) < 0.12) return HEAP[0];
+        const fold = Math.sin(a * 5 + r * 7);
+        return u[2] > 0.7 ? (fold > 0 ? HEAP[4] : HEAP[3]) : fold > 0.35 ? HEAP[3] : HEAP[2];
+      },
+    });
+  }
+  // EMBERS in the heap, going out
+  const em = rampAt(t, MINI_DIES.under, MINI_DIES.under + 0.1) * (1 - rampAt(t, 1.75, MINI_DIES.out + 0.05));
+  for (let i = 0; i < 6; i++) {
+    if (em < 0.05 || hash(i, 6, 715) > em) continue;
+    const a = hash(i, 7, 715) * Math.PI * 2;
+    const r = (3 + 7 * hash(i, 8, 715)) * K;
+    const life = (((t * 1.1 + hash(i, 9, 715)) % 1) + 1) % 1;
+    fleck(st, put, [pc[0] + Math.cos(a) * r, pc[1] + Math.sin(a) * r, heapTop + 1 + life * 8], FLAME[2], i * 2.1, 'embers', i % 2 ? 1 : -1);
+  }
+  // HIS MASK, spat out of the fire as his hood goes under: tumbling up and over, clattering down onto the heap, a bounce, and lying
+  const T0 = MINI_DIES.under;
+  const LAND = MINI_DIES.land;
+  const BOUNCE = LAND + 0.14;
+  if (t >= T0) {
+    const from: V3 = [pc[0], pc[1], 4 * K];
+    const land: V3 = [pc[0] + 3 * K, pc[1] + 2 * K, 5 * K + 1];
+    const rest: V3 = [pc[0] + 4 * K, pc[1] + 3 * K, 5 * K + 0.5];
+    let p: V3;
+    let rows: ReadonlyArray<string>;
+    if (t < LAND) {
+      const k = (t - T0) / (LAND - T0);
+      p = [from[0] + (land[0] - from[0]) * k, from[1] + (land[1] - from[1]) * k, from[2] + (land[2] - from[2]) * k + 4 * 26 * K * k * (1 - k)];
+      rows = [MASK_FACE, MASK_EDGE, MASK_BACK, MASK_EDGE][Math.floor((t - T0) * 20) % 4];
+    } else if (t < BOUNCE) {
+      const k = (t - LAND) / (BOUNCE - LAND);
+      p = [land[0] + (rest[0] - land[0]) * k, land[1] + (rest[1] - land[1]) * k, land[2] + 4 * 3 * K * k * (1 - k)];
+      rows = k < 0.5 ? MASK_EDGE : MASK_LYING;
+    } else {
+      p = rest;
+      rows = MASK_LYING;
+    }
+    // (held a little toward the eye from where it is, so that none of it is cut away at the floor and it lies over the heap)
+    const at = add(p, mul(st.eye, 6));
+    const [cx, cy] = st.at(p);
+    stamp(st, put, 'mask', 'mask', maskPix(rows, cx, cy), at);
+  }
+  return bits;
+}
+
 export const MINI_PACE = 1.0;
 export const MINI_FM: Mob = {
   id: 'miniFleshmancer',
@@ -306,16 +611,16 @@ export const MINI_FM: Mob = {
   attack: { name: 'The mini fleshmancer sweeps fire across the floor', motion: miniFire(), rest: MINI_REST },
   idleFrames: 30,
   idleFps: 10,
-  walk: { name: 'The mini fleshmancer glides', motion: miniOf(fmGlide()), rest: MINI_REST, period: 1, ground: MINI_PACE * TILE3 },
+  walk: { name: 'The mini fleshmancer glides', motion: miniGlide(), rest: MINI_REST, period: MINI_GLIDE_LONG, ground: MINI_PACE * TILE3 },
   walkFrames: 8,
   walkFps: 8,
   pace: MINI_PACE,
-  reel: { name: 'The mini fleshmancer is struck', motion: miniOf(fmReel()), rest: MINI_REST },
-  reelTime: 0.5,
+  reel: { name: 'The mini fleshmancer is struck', motion: miniReel(), rest: MINI_REST },
+  reelTime: MINI_REEL,
   hit: MINI_FIRE.burst,
   warn: 0.4,
-  dieTime: 1.6,
-  dying: { name: 'The mini fleshmancer falls', motion: miniOf(fmReel()), rest: MINI_REST },
+  dieTime: MINI_DIES.long,
+  dying: { name: 'His own fire takes him', motion: miniDying(), rest: MINI_REST },
   aura: { x: MINI_CANVAS.ax - 2, y: MINI_CANVAS.ay - 38, r: 62, color: '#ff3a78', a: 0.16 },
   shadow: 7,
   canvas: MINI_CANVAS,
@@ -323,8 +628,8 @@ export const MINI_FM: Mob = {
   bits: (st, m) => withFmLook(MINI_FM_LOOK, () => fleshmancerBits(st, m)),
   more: {
     raise: { name: 'The mini fleshmancer calls up the dead', motion: miniRaise(), rest: MINI_REST },
-    setOff: { name: 'The mini fleshmancer sets off', motion: miniOf(fmSetOff()), rest: MINI_REST, period: 1, ground: MINI_PACE * TILE3 },
-    halt: { name: 'The mini fleshmancer stops', motion: miniOf(fmHalt()), rest: MINI_REST, period: 1, ground: MINI_PACE * TILE3 },
+    setOff: { name: 'The mini fleshmancer sets off', motion: miniSetOff(), rest: MINI_REST, period: MINI_GLIDE_LONG, ground: MINI_PACE * TILE3 },
+    halt: { name: 'The mini fleshmancer stops', motion: miniHalt(), rest: MINI_REST, period: MINI_GLIDE_LONG, ground: MINI_PACE * TILE3 },
   },
 };
 void FM_BODY;
@@ -855,8 +1160,8 @@ function knifeReel(): Motion {
   return {
     keys: [
       { at: 0, pose: {} },
-      { at: 0.06, pose: { px: R.px - 2.6, pitch: R.pitch - 10, bend: R.bend - 12, faceUp: R.faceUp + 14, twist: R.twist - 8, rhz: R.rhz + 3, rhy: R.rhy - 2, lhx: R.lhx - 5, lhz: R.lhz + 4, gale: 0.9 }, ease: 'out' },
-      { at: 0.16, pose: { px: R.px - 1.3, pitch: R.pitch - 3, bend: R.bend - 4, faceUp: R.faceUp + 5, gale: 0.45 }, ease: 'io' },
+      { at: 0.06, pose: { px: R.px - 4.2, pz: R.pz + 1.2, pitch: R.pitch - 15, bend: R.bend - 17, faceUp: R.faceUp + 22, twist: R.twist - 12, rhz: R.rhz + 5, rhy: R.rhy - 3, lhx: R.lhx - 7, lhz: R.lhz + 6, gale: 1 }, ease: 'out' },
+      { at: 0.16, pose: { px: R.px - 2.2, pitch: R.pitch - 5, bend: R.bend - 6, faceUp: R.faceUp + 8, twist: R.twist - 4, gale: 0.5 }, ease: 'io' },
       { at: 0.3, pose: {}, ease: 'io' },
     ],
   };

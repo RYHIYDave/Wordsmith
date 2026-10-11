@@ -649,6 +649,8 @@ export interface FmLook {
   ramps?: { robe: Ramp; hood: Ramp; mantle: Ramp; lining: Ramp };
   point?: number;
   fringe?: boolean;
+  /** HIS OWN DEATH, for one who does not die as the master does: what is painted over and about him as he dies (in place of the master's pit and his dead's hands); he is cut away at the floor as the master is. */
+  death?: (st: Stage, m: Moment) => Bit[];
 }
 /** How high a fleshmancer's pelvis is at rest, floating. */
 export function pelvisUpOf(look: FmLook): number {
@@ -895,7 +897,7 @@ export function fleshmancerBits(st: Stage, m: Moment): Bit[] {
   CUT_FLOOR.on = under;
   try {
     const bits = paintedBits(st, m);
-    if (under) bits.push(...deathBits(st, m));
+    if (under) bits.push(...(LOOK.death ?? deathBits)(st, m));
     return under ? floorCut(bits) : bits;
   } finally {
     CUT_FLOOR.on = false;
@@ -1128,8 +1130,8 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       }
     }
   });
-  // (the floor under him, lit faintly by his embers: there is floor between him and it)
-  if (lit > 0.05) {
+  // (the floor under him, lit faintly by his embers: there is floor between him and it; for one who dies his own death, none once he has gone down into it)
+  if (lit > 0.05 && !(LOOK.death && s.pelvis[2] < 0)) {
     put('glow', 'glow', { k: 'glow', p: [s.pelvis[0], s.pelvis[1], 0.5], c: SOCKET, r: 14 + 3 * gale, a: (0.34 + 0.06 * pulse) * lit });
     put('glow', 'glow', { k: 'glow', p: [s.pelvis[0], s.pelvis[1], 0.5], c: FLAME[3], r: 6, a: 0.22 * lit });
   }
