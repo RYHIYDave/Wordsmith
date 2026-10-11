@@ -89,6 +89,8 @@ const BIG_BONE: Ramp = ['#191528', '#252036', '#48425f', '#68618a', '#7d76a0'];
 const WALL_BONE: Ramp = ['#110e20', '#252038', '#3e3856', '#544e6c', '#605a76'];
 /** The amalgamation's fire, pink only (his Colour 3: the enemy's), from a dull kindling to burning: never orange, never red. */
 const PINK: Ramp = ['#3a0c2a', '#7a1058', '#c0206a', '#ff4f8a', '#ff4f8a'];
+/** The pink as it first kindles: a deep magenta (never a blood red). */
+const KINDLING = ['#2a0a36', '#6a1280'] as const;
 /** Bone fallen out of a wall, on the floor before it (the wall's piece, and as quiet). */
 const HEAP_BONE: Ramp = ['#1a1630', '#28233e', '#47415f', '#5c5676', '#625c7a'];
 /** Iron left in the damp and rusted (the Crypt's). Small iron things a little brighter, so they read. */
@@ -344,7 +346,7 @@ export interface SkullPose {
 function socketFire(burn: number, deep: number): string {
   if (burn <= 0.05) return DEEP;
   const k = burn * (1 - deep * 0.5);
-  return k > 0.62 ? PINK[3] : k > 0.4 ? PINK[2] : k > 0.18 ? PINK[1] : PINK[0];
+  return k > 0.62 ? PINK[3] : k > 0.4 ? PINK[2] : k > 0.18 ? KINDLING[1] : KINDLING[0];
 }
 /**
  * A SKULL: its cranium, the bones of its face, its jaw, painted in depth; its sockets, its nose and
@@ -731,7 +733,7 @@ function breachHeap(): Sprite {
   // lumps of broken stone and rock
   let n = 0;
   for (const [x, y, r] of [[-14, -12, 4.6], [-4, -16, 5.4], [8, -10, 4], [14, -14, 3.4], [-10, 0, 3], [2, -4, 3.2], [-18, -2, 2.6]] as const) {
-    S.egg([x, y, r * 0.55], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [r * 1.1, r * 0.9, r * 0.7], (nn) => toneAt(nn, n % 2 ? RAW : STONE), 600 + n++);
+    S.egg([x, y, r * 0.5], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [r, r * 0.85, r * 0.62], facetOf(ROCKY, 0.02), 600 + n++);
   }
   // the dead out of it (a step quieter than what lies in the room: it is the wall's)
   longBone(S, [-6, 4, 1.4], [8, 10, 1.6], 1.1, HEAP_BONE, 620);
@@ -808,14 +810,14 @@ const deadArm: WallMake = {
     const keep = (w: V3): boolean => (alongX ? w[1] : w[0]) >= -3;
     // the upper arm out of the hole, the elbow out from the wall, the forearm's two bones down across it
     const sh = W(-3.5, -2, 30);
-    const el = W(-12, 4, 22.5);
-    const wr = W(-5, 2, 13.5);
+    const el = W(-8, 4, 22);
+    const wr = W(-11, 2.4, 13.5);
     longBone(S, sh, el, 1.7, WALL_BONE, 700, keep);
     S.ball(el, 2.4, WALL_BONE, 701, keep);
     const side = sub(W(1.1, 0, 0), W(0, 0, 0));
     S.rod(add(el, side), add(wr, side), 1.2, 1, WALL_BONE, 702, keep);
     S.rod(sub(el, side), sub(wr, side), 1, 0.85, WALL_BONE, 703, keep);
-    flatHand(S, W, [-5, 1.6, 13.5], -Math.PI / 2 - 0.45, 1.2, WALL_BONE, 704, keep);
+    flatHand(S, W, [-11, 1.6, 13.5], -Math.PI / 2 - 0.25, 1.2, WALL_BONE, 704, keep);
   },
 };
 /** A HAND OF BONE SPREAD FLAT against a wall's face, from its wrist (along, out, up), its fingers fanned out round `ang` (in the face: 0 along it, up π/2), `size` its scale. */
@@ -850,7 +852,7 @@ function flatHand(S: Scene, W: (a: number, b: number, z: number) => V3, wr: V3, 
 }
 
 /** A SEAM OF ORE in rough rock where the miners dug: the rock hacked back round it, the scores of their picks; a jagged pale vein slanting across it, forking, and nuggets of metal in it catching the light (dull silver, never gold). */
-const VEIN = ['#2c2840', '#48425e', '#5a546e'] as const;
+const VEIN = ['#2c2840', '#504a6a', '#5e5878'] as const;
 function oreSeam(p: Px): void {
   const inside = (u: number, v: number): boolean => {
     const a = Math.atan2(v - 15, u + 0.5);
@@ -1114,19 +1116,26 @@ function mawAt(x: number, y: number): 'lip' | 'fang' | 'in' | 'throat' | null {
   return Math.hypot(x / 0.5, (yc + 0.05) / 0.38) < 1 ? 'throat' : 'in';
 }
 
-/** THE CULT'S DAUB: the maw, the amalgamation's, daubed large in old soot on the stone by those who serve it, its three fangs daubed in bone-white over it, the soot smeared out round it. */
+/** THE CULT'S DAUB: the maw, the amalgamation's, daubed on the stone by those who serve it: its lips in rough strokes of pale chalk, square at the corners, its three fangs stroked in, a smear off one corner; the stone showing through it all (never a filled black shape, which read as a hole, or as a famous bat in an oval). */
+const CHALK = ['#3a3450', '#4e4866', '#5e5878'] as const;
 function cultDaub(p: Px): void {
-  for (let v = 12; v <= 40; v++) {
+  for (let v = 10; v <= 42; v++) {
     for (let u = -15; u <= 14; u++) {
       const x = (u + 0.5) / 14;
       const y = (v - 26) / 14;
-      const k = mawAt(x, y);
-      if (k === 'in' || k === 'throat') p.set(fx(u), fy(v), SOOT[0]);
-      else if (k === 'lip') p.set(fx(u), fy(v), SOOT[1]);
-      else if (k === 'fang') p.set(fx(u), fy(v), mawAt((u - 0.5) / 14, y) === 'fang' ? WALL_BONE[3] : WALL_BONE[4]);
-      else if (Math.abs(x) < 1.1 && Math.abs(y) < 0.86 && hash(u >> 1, v >> 1, 545) < 0.4 - Math.abs(y) * 0.3) p.set(fx(u), fy(v), SOOT[2]);
+      if (Math.abs(x) > 1.02) continue;
+      const h = 0.66 * Math.sqrt(Math.max(0, 1 - Math.min(1, Math.abs(x)) ** 6)) + 0.035 * Math.sin(x * 11 + 0.6);
+      const yc = y + 0.08 * x - (y > 0 ? 0.1 * Math.max(0, x) : 0);
+      // (a stroke is a little ragged, its paint thinner here and there)
+      const gap = hash(u, v >> 1, 545) < 0.1;
+      const lip = (Math.abs(yc - h) < 0.085 || Math.abs(yc + h) < 0.085 || (Math.abs(x) > 0.93 && Math.abs(yc) < h + 0.05)) && !gap;
+      const fang = mawAt(x, y) === 'fang' && Math.abs(yc) < h - 0.02;
+      if (fang) p.set(fx(u), fy(v), mawAt((u - 0.5) / 14, y) === 'fang' ? CHALK[1] : CHALK[2]);
+      else if (lip) p.set(fx(u), fy(v), Math.abs(yc - h) < 0.04 || Math.abs(yc + h) < 0.04 ? CHALK[2] : CHALK[1]);
     }
   }
+  // a smear off its corner, and a drip of it run down (short, never like tears)
+  for (let k = 0; k < 5; k++) p.set(fx(14 - k), fy(29 + Math.round(k * 0.4)), CHALK[0]).set(fx(14 - k), fy(30 + Math.round(k * 0.4)), CHALK[1]);
 }
 
 /** A RIB CAGE ON A SPIKE: an iron spike driven into the wall, and on it, hung by the top of its spine, the ribs of one of the dead: the spine down its middle, the ribs curving out and round from it, drooping. */
@@ -1299,13 +1308,31 @@ const PAVED: ReadonlyArray<readonly [number, number, number, number, number]> = 
   }
   return out;
 })();
+/** A bone lying flat, bent a little along its length by `bend` (a share of its length, to one side). */
+function curvedBone(x: number, y: number, b: readonly [number, number, number, number, number], bend: number, ramp: Ramp): string | null {
+  const [x0, y0, x1, y1, w0] = b;
+  const L = Math.hypot(x1 - x0, y1 - y0) || 1;
+  const cx = (x0 + x1) / 2 - ((y1 - y0) / L) * bend * L;
+  const cy = (y0 + y1) / 2 + ((x1 - x0) / L) * bend * L;
+  const at = (t: number): [number, number] => [(1 - t) ** 2 * x0 + 2 * (1 - t) * t * cx + t * t * x1, (1 - t) ** 2 * y0 + 2 * (1 - t) * t * cy + t * t * y1];
+  let best: { d: number; t: number; side: number } | null = null;
+  for (let k = 0; k < 6; k++) {
+    const [ax, ay] = at(k / 6);
+    const [bx, by] = at((k + 1) / 6);
+    const sg = onSeg(x, y, ax, ay, bx, by);
+    if (!best || sg.d < best.d) best = { d: sg.d, t: (k + sg.t) / 6, side: sg.side };
+  }
+  const w = best!.t < 0.09 || best!.t > 0.91 ? w0 * 1.5 : w0;
+  if (best!.d < w) return best!.side < 0 ? (best!.d > w * 0.45 ? ramp[4] : ramp[3]) : best!.d > w * 0.55 ? ramp[1] : ramp[2];
+  return null;
+}
 function bonePaved(u: number, v: number): string | null {
   const [x, y] = mid(u, v);
   // a skull's crown among them
   const sk = Math.hypot((x + 0.12) / 1.05, y - 0.16);
   if (sk < 0.075) return sk > 0.058 ? (x + y < 0.04 ? WALL_BONE[4] : WALL_BONE[1]) : x + y < 0 ? WALL_BONE[3] : WALL_BONE[2];
   for (let i = PAVED.length - 1; i >= 0; i--) {
-    const c = flatBone(x, y, PAVED[i], WALL_BONE);
+    const c = curvedBone(x, y, PAVED[i], (hash(i, 6, 556) - 0.5) * 0.36, WALL_BONE);
     if (c) return c;
   }
   return hash(Math.floor(u * 30), Math.floor(v * 30), 557) < 0.3 ? EARTH[1] : EARTH[0];
@@ -1338,8 +1365,8 @@ function dragTrail(u: number, v: number): string | null {
       const gx = -0.36 + i * 0.18 + hash(i, 5, 559) * 0.05;
       const gy = c + (hash(i, 6, 559) - 0.5) * 0.18;
       const sg = onSeg(x, y, gx, gy, gx + 0.09, gy + (hash(i, 7, 559) - 0.5) * 0.04);
-      if (sg.d < 0.014 * (1 - Math.abs(sg.t - 0.5))) return DEEP;
-      if (sg.d < 0.03 && sg.side > 0) return EARTH[3];
+      if (sg.d < 0.022 * (1 - Math.abs(sg.t - 0.5) * 0.8)) return DEEP;
+      if (sg.d < 0.04 && sg.side > 0) return EARTH[3];
     }
     // the trough: smoothed, scored along
     if (hash(0, Math.floor((d + 0.2) * 60), 560) < 0.18) return EARTH[0];
@@ -1354,7 +1381,7 @@ const ORE_LUMPS: ReadonlyArray<readonly [number, number, number]> = (() => {
   for (let i = 0; i < 22; i++) {
     const a = -1 + hash(i, 1, 561) * 2;
     const r = Math.sqrt(hash(i, 2, 561)) * 0.5;
-    out.push([-0.26 + Math.cos(a) * r, -0.06 + Math.sin(a) * r * 0.75, 0.04 + 0.045 * hash(i, 3, 561) * (1 - r)]);
+    out.push([-0.26 + Math.cos(a) * r, -0.06 + Math.sin(a) * r * 0.75, 0.05 + 0.055 * hash(i, 3, 561) * (1 - r)]);
   }
   return out.sort((p, q) => p[0] + p[1] - (q[0] + q[1]));
 })();
@@ -1720,23 +1747,27 @@ function emptyRobe(): Sprite {
   const p = new Px(W, H);
   const bits = new Px(W, H);
   lit(p, ROBE, [1, 3], [1, 3], (l) => {
-    // its body: from its shoulders (to the left) to its hem (to the right), wider there, crumpled
-    l.poly([[cx - 12, cy - 6], [cx - 2, cy - 7], [cx + 10, cy - 8], [cx + 20, cy - 6], [cx + 23, cy + 2], [cx + 18, cy + 7], [cx + 6, cy + 6], [cx - 4, cy + 7], [cx - 13, cy + 5]], INK);
-    // a sleeve flung out along its side toward its hem, wide at the cuff (the other under it: never the shape of a cross)
-    l.poly([[cx - 9, cy - 6], [cx - 1, cy - 12], [cx + 9, cy - 15], [cx + 12, cy - 12], [cx + 2, cy - 7]], INK);
+    // its body: from its neck (to the left) fanning out to its hem (to the right)
+    l.poly([[cx - 12, cy - 5], [cx + 4, cy - 8], [cx + 19, cy - 12], [cx + 24, cy - 4], [cx + 24, cy + 5], [cx + 19, cy + 11], [cx + 4, cy + 8], [cx - 12, cy + 4]], INK);
+    // one sleeve, trailing off under it toward its hem (the other beneath it: never arms spread as a cross)
+    l.poly([[cx - 9, cy + 3], [cx - 2, cy + 6], [cx + 8, cy + 12], [cx + 13, cy + 14], [cx + 10, cy + 17], [cx - 1, cy + 12], [cx - 10, cy + 7]], INK);
   });
-  // its folds, long, down its length
-  for (const [x0, y0, x1, y1] of [[cx - 4, cy - 3, cx + 18, cy - 2], [cx - 2, cy + 2, cx + 20, cy + 3], [cx + 6, cy - 6, cx + 14, cy - 5]] as const) p.line(x0, y0, x1, y1, ROBE[1]);
-  // its hem, ragged
-  for (let y = cy - 5; y <= cy + 6; y++) if (hash(y, 0, 574) < 0.5) p.set(cx + 22 - Math.abs(y - cy) * 0.3, y, ROBE[0]);
-  // the cord round its middle, its end trailing
-  p.line(cx + 4, cy - 7, cx + 6, cy + 6, ROPE[2]).line(cx + 5, cy - 7, cx + 7, cy + 6, ROPE[3]);
-  p.line(cx + 7, cy + 6, cx + 11, cy + 11, ROPE[2]);
-  // the hood at its neck: a peaked cowl lying flat, its point out, the shade inside it a sliver
-  lit(bits, ROBE, [1, 2], [1, 2], (l) => l.poly([[cx - 12, cy - 5], [cx - 19, cy - 6], [cx - 27, cy - 1], [cx - 19, cy + 4], [cx - 12, cy + 4]], INK));
-  bits.line(cx - 13, cy - 3, cx - 16, cy + 2, DEEP).line(cx - 14, cy - 3, cx - 17, cy + 2, ROBE[0]);
+  // its folds, fanned out from its neck to its hem
+  for (const [x1, y1] of [[cx + 21, cy - 9], [cx + 23, cy - 1], [cx + 21, cy + 7]] as const) p.line(cx - 6, cy, x1, y1, ROBE[1]);
+  // its hem, ragged and fanned
+  for (let y = cy - 11; y <= cy + 10; y++) if (hash(y, 0, 574) < 0.55) p.set(cx + 24 - Math.round(Math.abs(y - cy) * 0.3), y, ROBE[0]);
+  // the cord round its middle, its two ends trailing out, tasselled
+  p.line(cx + 3, cy - 8, cx + 5, cy + 8, ROPE[2]).line(cx + 4, cy - 8, cx + 6, cy + 8, ROPE[3]);
+  for (const [x1, y1] of [[cx + 9, cy + 14], [cx + 3, cy + 14]] as const) {
+    p.line(cx + 5, cy + 8, x1, y1, ROPE[2]);
+    p.rect(x1 - 1, y1, 3, 2, ROPE[3]).set(x1 - 1, y1 + 2, ROPE[1]).set(x1 + 1, y1 + 2, ROPE[1]);
+  }
+  // the hood at its neck: a round cowl fallen back, its dark opening turned up
+  lit(bits, ROBE, [1, 2], [1, 2], (l) => l.ellipse(cx - 17, cy - 1, 6.5, 4.6, INK));
+  bits.ellipse(cx - 16.5, cy - 1.5, 3.8, 2.6, DEEP);
+  bits.set(cx - 20, cy - 3, ROBE[0]).set(cx - 13, cy + 1, ROBE[1]);
   // the candle stub, rolled clear
-  bits.rect(cx + 14, cy + 11, 5, 2, WAX[3]).set(cx + 13, cy + 11, WAX[1]).set(cx + 19, cy + 11, INK);
+  bits.rect(cx + 14, cy + 15, 5, 2, WAX[3]).set(cx + 13, cy + 15, WAX[1]).set(cx + 19, cy + 15, INK);
   return compose(null, [p, bits], null).sprite(cx, cy, GRAIN);
 }
 
@@ -1785,7 +1816,7 @@ export interface CartPose { o: V3; L: V3; Wd: V3; Up: V3; spin: number; upSpin: 
 export const CART = { l0: 12, w0: 7, l1: 15, w1: 10.4, z0: 6.6, z1: 30, wheelL: 8.4, wheelW: 7.8, wheelR: 4.6, wheelZ: 4.6 };
 /** What is heaped in it, from its middle (along, across, up), its size, and whether it is a skull (else ore). */
 export const CART_LOAD: ReadonlyArray<readonly [number, number, number, number, 0 | 1]> = [
-  [-10, -5, 28, 3.6, 0], [-3, -7, 28.4, 3.5, 0], [6, -6, 28, 3.8, 0], [11, -1, 27.6, 3.3, 0], [-11, 3, 28, 3.4, 0], [-4, 1, 30.6, 3.9, 0], [3, 0, 31.2, 3.6, 0], [10, 5, 28.2, 3.5, 0], [-1, 7, 28.6, 3.5, 0], [6, 6, 29.2, 3.2, 0], [0, -4, 32.6, 3.3, 0], [-7, -2, 32.2, 3.2, 0],
+  [-10, -5, 28, 3.6, 0], [-3, -7, 28.4, 3.5, 0], [6, -6, 28, 3.8, 0], [11, -1, 28.6, 4, 1], [-11, 3, 28, 3.4, 0], [-4, 1, 30.6, 3.9, 0], [3, 0, 31.2, 3.6, 0], [10, 5, 28.2, 3.5, 0], [-1, 7, 29.6, 4.1, 1], [6, 6, 29.2, 3.2, 0], [0, -4, 32.6, 3.3, 0], [-7, -2, 32.2, 3.2, 0],
   [8, -3, 33.4, 4.2, 1], [-8, 5, 32.6, 4, 1], [1, 4, 35.6, 4.4, 1],
 ];
 export const CART_STILL: CartPose = { o: [0, 0, 0], L: [1, 0, 0], Wd: [0, 1, 0], Up: [0, 0, 1], spin: 0, upSpin: 0, load: CART_LOAD.map(([a, b, c]) => [a, b, c]), bone: true };
@@ -1816,7 +1847,7 @@ function paintCart(S: Scene, k: CartPose, id0: number): void {
     }, id);
   };
   // its floor, inside
-  S.quad([b(-1, -1), b(1, -1), b(1, 1), b(-1, 1)], () => IRONS[0], id0);
+  S.quad([b(-1, -1), b(1, -1), b(1, 1), b(-1, 1)], (u, v) => (Math.abs(((u * 5) % 1) - 0.5) < 0.06 ? IRONS[2] : hash(Math.floor(u * 7), Math.floor(v * 5), 571) < 0.25 ? ORE[2] : IRONS[1]), id0);
   side([b(-1, 1), b(1, 1), t(1, 1), t(-1, 1)], id0);
   side([b(1, -1), b(-1, -1), t(-1, -1), t(1, -1)], id0);
   side([b(1, 1), b(1, -1), t(1, -1), t(1, 1)], id0);
@@ -1846,7 +1877,8 @@ function paintCart(S: Scene, k: CartPose, id0: number): void {
   if (k.bone) longBone(S, P(-11, 1, 34), P(10, -5, 35.4), 1.2, BONE, id0 + 30);
 }
 /** A WHEEL of iron, small and solid: its disc, its rim lit on its upper side, its hub, four bolts round it turned `spin` (so that it is seen to turn), and its flange behind it, wider; `face` the way its outer side looks, `A` and `B` across it. */
-export function wheel(S: Scene, c: V3, face: V3, A: V3, B: V3, R: number, spin: number, id: number): void {
+export function wheel(S: Scene, c: V3, face: V3, A: V3, B: V3, R: number, spin: number, id: number, pale = false): void {
+  const IR: Ramp = pale ? SMALL_IRON : IRONS;
   const F = norm(face);
   const Au = norm(sub(A, mul(F, dot(A, F))));
   const Bu = norm(cross(F, Au));
@@ -1859,15 +1891,15 @@ export function wheel(S: Scene, c: V3, face: V3, A: V3, B: V3, R: number, spin: 
     const b = dot(q, Bu);
     const r = Math.hypot(a, b);
     const up = dot(norm(add(mul(Au, a), mul(Bu, b))), [0, 0, 1]);
-    if (Math.abs(dot(n, F)) < 0.55) return up > 0.2 ? IRONS[3] : IRONS[1];
-    if (r > R - 1) return up > 0 ? IRONS[3] : IRONS[2];
+    if (Math.abs(dot(n, F)) < 0.55) return up > 0.2 ? IR[3] : IR[1];
+    if (r > R - 1) return up > 0 ? IR[3] : IR[2];
     if (r < 1.1) return SMALL_IRON[3];
     const ang = Math.atan2(b, a);
     for (let j = 0; j < 4; j++) {
       const t = spin + (j * Math.PI) / 2;
       if (Math.hypot(Math.cos(t) * R * 0.55 - a, Math.sin(t) * R * 0.55 - b) < 0.8) return SMALL_IRON[2];
     }
-    return toneAt(n, IRONS, 0.1 + 0 * ang);
+    return toneAt(n, IR, 0.1 + 0 * ang - (pale ? 0.25 : 0));
   }, id);
 }
 function mineCart(): Sprite {
@@ -1877,36 +1909,50 @@ function mineCart(): Sprite {
   return compose(null, [S.p], null).sprite(42, 56, GRAIN);
 }
 
-/** Where the rails' end's buffer is struck, and how big its block is (half its depth along the rails, half its width across them, half its height). */
-const BUFFER = { hx: 5.5, hy: 15, hz: 6.5 };
+/** Where the rails' end's beam is struck, from its middle along x. */
+const BUFFER = { face: 2.2 };
 /**
- * THE RAILS' END: a heavy timber buffer across the rails' end: one great squared block lying across
- * them, an iron plate on its face where the carts strike, two iron straps round it, two stakes driven
- * in behind it to hold it, earth heaped behind. Along x: the cart comes at it from -x. `shake` its
- * jump as it is struck; `split` how far it has split apart (0 whole).
+ * THE RAILS' END: two stout posts driven in either side of the rails, a crossbeam between them at the
+ * rails' own height, iron-faced where the carts strike it, the rails' ends curled up against it, earth
+ * heaped behind (nothing like a chest's lid: the second fresh look read the block as one). Along x: the
+ * cart comes at it from -x. `shake` its jump as it is struck; `split` how far its beam has split apart
+ * and its posts leaned out (0 whole).
  */
 export function paintStop(S: Scene, o: V3, shake: number, id: number, split = 0): void {
   const at = (v: V3): V3 => add(o, v);
   // earth heaped behind it
-  S.egg(at([12, 0, -2]), XYZ, [8, 15, 7.5], (n, w) => (hash(Math.floor(w[0] / 2), Math.floor(w[1] / 2) + Math.floor(w[2] / 2) * 9, 576) < 0.12 ? EARTH[3] : toneAt(n, EARTH_R, 0.1)), id);
-  // the stakes behind it, driven in, leaning back
-  for (const y of [-9, 9]) S.rod(at([7, y, 0]), at([9.5, y, 13]), 1.6, 1.4, TIMBER_DIM, id + 3);
-  // the block, iron-faced, strapped; split, its two halves pushed apart
-  const face = (f: number, u: number, v: number, n: V3): string => {
-    if (f === 1) {
-      if (u > 0.22 && u < 0.78 && v > 0.18 && v < 0.82) return (Math.abs(u - 0.25) < 0.03 || Math.abs(u - 0.75) < 0.03) && Math.abs(((v * 4) % 1) - 0.5) < 0.15 ? SMALL_IRON[3] : toneAt(n, IRONS, 0.3);
+  S.egg(at([14, 0, -2]), XYZ, [7, 14, 6.5], (n, w) => (hash(Math.floor(w[0] / 2), Math.floor(w[1] / 2) + Math.floor(w[2] / 2) * 9, 576) < 0.12 ? EARTH[3] : toneAt(n, EARTH_R, 0.1)), id);
+  // the rails' ends, curled up
+  for (const y of [-7.6, 7.6]) {
+    let prev = at([-18, y, 0.9]);
+    S.rod(prev, at([-2, y, 0.9]), 0.8, 0.8, SMALL_IRON, id + 4);
+    prev = at([-2, y, 0.9]);
+    for (let t = 0.125; t <= 1.0001; t += 0.125) {
+      const a = (t * Math.PI) / 2;
+      const q = at([-2 + 4.6 * Math.sin(a), y, 0.9 + 4.6 * (1 - Math.cos(a))]);
+      S.rod(prev, q, 0.8, 0.8, SMALL_IRON, id + 4);
+      prev = q;
     }
-    if ((f === 1 || f === 4 || f === 0) && (Math.abs(u - 0.2) < 0.04 || Math.abs(u - 0.8) < 0.04)) return IRONS[2];
-    if (f === 4) return Math.abs(((v * 4) % 1) - 0.5) < 0.06 ? TIMBER[2] : TIMBER[3];
-    if (f === 2 || f === 3) return Math.abs(Math.hypot(u - 0.5, v - 0.5) - 0.28) < 0.06 ? TIMBER[0] : TIMBER[1];
-    return Math.abs(((u * 6) % 1) - 0.5) < 0.05 ? TIMBER[0] : toneAt(n, TIMBER_DIM, -0.1);
+  }
+  // the posts, leaning out as the beam splits
+  for (const s of [-1, 1]) {
+    const lean = 0.35 * split * s;
+    const up = norm([0.25 * split, Math.sin(lean), Math.cos(lean)]);
+    const along = norm(cross([0, 1, 0], up));
+    S.box(add(at([6.5 + shake * 0.2, s * 12.5, 0]), mul(up, 7.5)), [along, norm(cross(up, along)), up], [2.4, 2.4, 7.5], timberFace, id + 1);
+  }
+  // the crossbeam, at the rails' height, iron-faced; split, its two halves thrown back
+  const face = (f: number, u: number, v: number, n: V3): string => {
+    if (f === 1 && v > 0.15 && v < 0.85) return Math.abs(((u * 6) % 1) - 0.5) < 0.06 ? SMALL_IRON[3] : toneAt(n, IRONS, 0.3);
+    if (f === 4) return Math.abs(((v * 3) % 1) - 0.5) < 0.08 ? TIMBER[2] : TIMBER[3];
+    if (f === 2 || f === 3) return Math.abs(Math.hypot(u - 0.5, v - 0.5) - 0.28) < 0.07 ? TIMBER[0] : TIMBER[1];
+    return Math.abs(((u * 7) % 1) - 0.5) < 0.05 ? TIMBER[0] : toneAt(n, TIMBER_DIM, -0.1);
   };
-  const { hx, hy, hz } = BUFFER;
-  if (split <= 0) S.box(at([shake * 0.3, 0, hz + Math.max(0, shake) * 0.3]), XYZ, [hx, hy, hz], face, id + 2);
+  if (split <= 0) S.box(at([BUFFER.face + 2.4 + shake * 0.3, 0, 6.4 + Math.max(0, shake) * 0.3]), XYZ, [2.4, 13.6, 2.6], face, id + 2);
   else {
     for (const s of [-1, 1]) {
-      const turn = norm([1, s * 0.25 * split, 0]);
-      S.box(at([shake * 0.3 + split * 2.4, s * (hy / 2 + split * 3.4), hz]), [turn, norm(cross([0, 0, 1], turn)), [0, 0, 1]], [hx, hy / 2 - 0.4, hz], face, id + 2 + (s > 0 ? 5 : 0));
+      const turn = norm([1, s * 0.5 * split, 0.3 * split]);
+      S.box(at([BUFFER.face + 2.4 + split * 4, s * (6.8 + split * 3), 6.4 + split * 1.5]), [turn, norm(cross([0, 0, 1], turn)), [0, 0, 1]], [2.4, 6.4, 2.6], face, id + 2 + (s > 0 ? 5 : 0));
     }
   }
 }
@@ -1944,8 +1990,8 @@ function windlass(): Sprite {
       const p: V3 = [xx, Math.cos(a) * r, DZ + Math.sin(a) * r];
       const n: V3 = [0, Math.cos(a), Math.sin(a)];
       if (dot(n, TOWARD) < -0.2) continue;
-      const band = (((xx * 0.42 + a / (Math.PI * 2)) % 1) + 1) % 1;
-      const c = coil ? (band < 0.18 ? ROPE[1] : toneAt(n, ROPE)) : toneAt(n, TIMBER_DIM, -0.1);
+      const band = (((xx * 0.3 + a / (Math.PI * 2)) % 1) + 1) % 1;
+      const c = coil ? (band < 0.1 ? ROPE[1] : band < 0.3 ? toneAt(n, ROPE, 0.25) : toneAt(n, ROPE)) : toneAt(n, TIMBER_DIM, -0.1);
       const [px, py] = S.at(p);
       S.put(Math.round(px), Math.round(py), dot(p, TOWARD), c, 4, p[2]);
     }
@@ -2025,7 +2071,7 @@ export const HEAP_BITS: readonly HeapBit[] = (() => {
   // (and spilled at its foot, on the floor)
   out.push({ kind: 'bone', a: [22, 18, 1.2], b: [34, 8, 1.2], r: 1.1, F: [1, 0, 0], U: [0, 0, 1] });
   out.push({ kind: 'bone', a: [-6, 30, 1.1], b: [10, 31, 1.1], r: 1, F: [1, 0, 0], U: [0, 0, 1] });
-  out.push({ kind: 'skull', a: [28, 23, 3.6], b: [0, 0, 0], r: 4.2, F: norm([0.9, 0.6, 0.3]), U: [0, 0, 1] });
+  out.push({ kind: 'skull', a: [28, 23, 3.6], b: [0, 0, 0], r: 4.2, F: norm([0.5, 0.8, 0.35]), U: [0, 0, 1] });
   sk(6, 14, 0.9);
   sk(17, 4, 0.5);
   sk(-7, -12, 0.3, 1.2);
@@ -2223,14 +2269,14 @@ function boneColumn(): Sprite {
  * its corners and along its ridge, a hasp on its front; opened, its lid thrown back, and in it what the
  * ossuary's keepers kept: a skull and the bones of a hand. No gold, nothing that glows. 56 x 56 at (28, 42).
  */
-const CASKET_WOOD: Ramp = ['#100a14', '#1a1220', '#2a1e2c', '#3a2a3a', '#46343f'];
+const CASKET_WOOD: Ramp = ['#1a1220', '#2a1c2c', '#433142', '#5b4556', '#6b5364'];
 function reliquary(open: boolean): Sprite {
   const S = new Scene(new Px(56, 56), 28, 42);
   const hx = 9;
   const hy = 6;
   const hz = 5.5;
   const wood = (f: number, u: number, v: number, n: V3): string => {
-    if ((f === 0 || f === 1) ? (u < 0.1 || u > 0.9) : (u < 0.07 || u > 0.93)) return toneAt(n, IRONS, 0.15);
+    if ((f === 0 || f === 1) ? (u < 0.1 || u > 0.9) : (u < 0.07 || u > 0.93)) return toneAt(n, SMALL_IRON, -0.1);
     if (f === 2 && Math.abs(u - 0.5) < 0.08 && v > 0.55 && v < 0.9) return SMALL_IRON[2];
     if (f === 4) return open ? IRONS[0] : CASKET_WOOD[3];
     return Math.abs(((v * 3) % 1) - 0.5) < 0.06 ? CASKET_WOOD[0] : toneAt(n, CASKET_WOOD);
@@ -2243,10 +2289,10 @@ function reliquary(open: boolean): Sprite {
   const lid = (turn: number): void => {
     const pivot: V3 = [0, -hy - 0.4, top];
     const T = (p: V3): V3 => add(pivot, rot(sub(p, pivot), [1, 0, 0], -turn));
-    const ridge = 5.5;
+    const ridge = 8.5;
     const slope = (s: number): [V3, V3, V3, V3] => [T([-hx - 0.6, s * (hy + 0.6), top]), T([hx + 0.6, s * (hy + 0.6), top]), T([hx + 0.6, 0, top + ridge]), T([-hx - 0.6, 0, top + ridge])];
     for (const s of [-1, 1]) {
-      S.quad(slope(s), (u, v) => (u < 0.06 || u > 0.94 || v > 0.9 ? IRONS[2] : Math.abs(((u * 4) % 1) - 0.5) < 0.05 ? CASKET_WOOD[1] : s > 0 ? CASKET_WOOD[3] : CASKET_WOOD[2]), 2);
+      S.quad(slope(s), (u, v) => (u < 0.06 || u > 0.94 || v > 0.88 ? SMALL_IRON[2] : Math.abs(((u * 4) % 1) - 0.5) < 0.05 ? CASKET_WOOD[1] : s > 0 ? CASKET_WOOD[3] : CASKET_WOOD[2]), 2);
     }
     for (const e of [-1, 1]) S.quad([T([e * (hx + 0.6), -hy - 0.6, top]), T([e * (hx + 0.6), hy + 0.6, top]), T([e * (hx + 0.6), 0.01, top + ridge]), T([e * (hx + 0.6), -0.01, top + ridge])], () => CASKET_WOOD[2], 2);
   };
@@ -2505,13 +2551,15 @@ const ease = (t: number): number => {
 
 /** The dust's tones: its belly to its lit top (the floor's own dust, a little lighter so that it shows). */
 const DUST: Ramp = ['#221f31', '#302c42', '#423d57', '#55506c', '#686282'];
+/** Dust settled on the floor: dark, as the floor's own. */
+const DUST_LOW: Ramp = ['#191624', '#211d2e', '#2a2639', '#332e44', '#3b3550'];
 interface Cloud { f0: number; p: V3; v: V3; R: number; hang: number; settle: number; life: number; seed: number }
 /** A cloud born on frame `f0` at `p` (in the world), blown out `v` a frame at first, `R` at its biggest; it hangs `hang` frames, settles over `settle`, and is gone `life` frames after it was born. */
 function cloud(f0: number, p: V3, v: V3, R: number, seed: number, life = 44, hang = 9, settle = 12): Cloud {
   return { f0, p, v, R, hang, settle, life, seed };
 }
 /** Where a cloud is on frame `f`: its middle, how far it reaches across and up (null: not there; gone on the frame `life` after it was born, its last frame `life - 1`). */
-function cloudAt(c: Cloud, f: number): { c: V3; rh: number; rv: number } | null {
+function cloudAt(c: Cloud, f: number): { c: V3; rh: number; rv: number; s: number } | null {
   const k = f - c.f0;
   if (k < 0 || k >= c.life) return null;
   // (grown out of where it was struck over three frames)
@@ -2531,7 +2579,7 @@ function cloudAt(c: Cloud, f: number): { c: V3; rh: number; rv: number } | null 
   const q = clamp01((k - c.hang - c.settle) / Math.max(1, c.life - 1 - c.hang - c.settle));
   rh *= Math.sqrt(1 - q);
   if (rh < 1.2) return null;
-  return { c: p, rh, rv: Math.max(rv, 0.9) };
+  return { c: p, rh, rv: Math.max(rv, 0.9), s };
 }
 /** The clouds on frame `f`, painted into `S` in depth (soft: no seam round them). `W` the frame they are in. */
 function paintClouds(S: Scene, cs: readonly Cloud[], f: number, W: (a: number, b: number, z: number) => V3 = (a, b, z) => [a, b, z]): void {
@@ -2542,7 +2590,11 @@ function paintClouds(S: Scene, cs: readonly Cloud[], f: number, W: (a: number, b
     const lobes: ReadonlyArray<readonly [number, number, number, number]> = [[0, 0, 0, 0.9], [0.55 + 0.2 * hash(c.seed, 1, 640), -0.25, 0.35, 0.62], [-0.5, 0.3 + 0.2 * hash(c.seed, 2, 640), 0.3, 0.58], [0.1, -0.1, 0.85, 0.55], [-0.2, -0.45, 0.6, 0.48], [0.35, 0.5, 0.15, 0.5]];
     for (const [dx, dy, dz, k] of lobes) {
       const w = W(a.c[0] + dx * a.rh, a.c[1] + dy * a.rh, a.c[2] + dz * a.rv);
-      S.egg(w, XYZ, [a.rh * k, a.rh * k, a.rv * k], (n) => toneAt(n, DUST, 0.05), SOFT + i);
+      // (settling, it darkens into the floor's own dust, broken in tone: never a pale puddle)
+      S.egg(w, XYZ, [a.rh * k, a.rh * k, a.rv * k], (n, q) => {
+        const t = toneAt(n, a.s > 0.4 ? DUST_LOW : DUST, 0.05);
+        return a.s > 0.4 && hash(Math.floor(q[0] / 2), Math.floor(q[1] / 2), 641) < 0.35 ? DUST_LOW[1] : t;
+      }, SOFT + i);
     }
   });
 }
@@ -2589,7 +2641,7 @@ const boneLow = (b: Body): number => Math.abs(b.F[2]) * b.len * 0.5 + b.r * (b.k
  * rest; a round one strikes those about it and is turned aside. Nothing goes back into the wall (b < 0
  * is the wall, `wallTop` how high it stands), nor through the ground.
  */
-function stepBodies(bodies: Body[], f: number, wallTop: number, rolling = 0.93, groundAt: (a: number, b: number) => number = () => 0): void {
+function stepBodies(bodies: Body[], f: number, wallTop: number, rolling = 0.93, groundAt: (a: number, b: number) => number = () => 0, fence: (a: number, b: number) => boolean = () => true): void {
   for (const b of bodies) {
     if (!b.free) continue;
     const low = (): number => (!isLong(b) ? skullReach(b) : boneLow(b));
@@ -2642,6 +2694,8 @@ function stepBodies(bodies: Body[], f: number, wallTop: number, rolling = 0.93, 
       const pull = isLong(b) ? 0.35 : 0.6;
       b.v = [b.v[0] - gx * pull, b.v[1] - gy * pull, 0];
       b.p = [b.p[0], b.p[1], groundAt(b.p[0], b.p[1]) + low()];
+      // (past its fence, it is brought up short: nothing rolls on off the floor it fell on)
+      if (!fence(b.p[0], b.p[1])) b.v = [b.v[0] * 0.5, b.v[1] * 0.5, 0];
       const sp = Math.hypot(b.v[0], b.v[1]);
       if (!isLong(b)) {
         const k = sp < 0.6 ? 0.8 : rolling;
@@ -2810,7 +2864,7 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
   /** What stays: the dead further in, and a few at its ragged rim and in its dark top. */
   const stays = (s: WallBit, i: number): boolean => s.back || (Math.abs(s.a) > 13.2 && hash(i, 1, 660) < 0.55) || (s.z > 70 && hash(i, 2, 660) < 0.7);
   /** How far the wall bows out at (a, z) as it bulges: most at its middle, the whole of its height. */
-  const prof = (a: number, z: number): number => Math.max(0, 1 - (a / 18) ** 2 - ((z - 34) / 44) ** 2);
+  const prof = (a: number, z: number): number => Math.max(0, 1 - (a / 21) ** 2 - ((z - 36) / 50) ** 2);
   // THE LOOSE ONES
   interface Loose { i: number; go: number; drop: number; brk: number; body: Body; pop: boolean }
   const loose: Loose[] = [];
@@ -2855,7 +2909,7 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
     const lean = f > BURST ? clamp01((f - BURST) / 14) * 3 * (segOf(s.a) ? 1 : 0.4) : 0;
     const amp = (0.2 + 1.5 * t * t) * k * (f > SIDE_DROP + 3 ? 0.2 : 1);
     const j = (q: number): number => (hash(i * 7 + f, q, 661) - 0.5) * 2;
-    return [j(1) * amp, (9 * t ** 1.3 + lean) * k + Math.max(0, j(2)) * amp * 0.5, j(3) * amp * 0.7 - 2.6 * t * t * k];
+    return [j(1) * amp, (13 * t ** 1.3 + lean) * k + Math.max(0, j(2)) * amp * 0.5, j(3) * amp * 0.7 - 3.4 * t * t * k];
   };
   /** A block as it drops: down, faster every frame, leaning out. */
   const fallOf = (L: Loose, f: number): V3 => {
@@ -2919,7 +2973,7 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
       letGo(b, v, L.i, b.kind === 'skull' ? 0.22 : 0.34);
       if (b.kind === 'skull') b.rest = norm([(alongX ? 0.45 : -0.45) + r(9) * 1.1, 1, 0.12]);
     });
-    if (f > 0) stepBodies(bodies, f, TALL, 0.965, groundAt(f));
+    if (f > 0) stepBodies(bodies, f, TALL, 0.955, groundAt(f), (a, b) => b < 132 && Math.abs(a) < 96);
     states.push(bodies.map((b, k) => {
       if (b.free) return copyBody(b);
       const L = loose[k];
@@ -2942,6 +2996,8 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
   for (const [f0, sgn, R, z, seed] of [[BURST, -1, 11, 7, 61], [BURST + 1, 1, 10, 9, 62], [BREAK, -1, 9, 10, 63], [BREAK, 1, 8.5, 12, 64], [SIDES, -1, 8.5, 8, 65], [SIDES + 1, 1, 8.5, 8, 66], [SIDE_BREAK, -1, 8, 10, 67], [SIDE_BREAK + 2, 1, 8, 10, 68]] as const) {
     clouds.push(cloud(f0, at(sgn * 8, 5, z), [sgn * 3.2, 1.1, 0.5], R, seed, N - 1 - f0 - (seed % 3) * 2, 14, 16));
   }
+  // (and a plume over its top as each top drops)
+  for (const [f0, a, seed] of [[DROP + 1, 0, 70], [SIDE_DROP + 1, -10, 71], [SIDE_DROP + 3, 10, 72]] as const) clouds.push(cloud(f0, at(a, 2, 74), [a * 0.04, 0.6, 0.9], 7, seed, N - 1 - f0 - 4, 16, 20));
   bodies.forEach((b, k) => {
     if (b.kind !== 'skull') return;
     const st = b.struck.find((q) => q.vz < -3.4);
@@ -2959,7 +3015,7 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
       const [A, B, U] = axesOf(W0);
       S.egg(W0(0, 0, 0), [A, B, U], [ra, rb, h], (n, w) => {
         const g = hash(Math.floor(w[0] / 3), Math.floor(w[1] / 3) + Math.floor(w[2] / 3) * 13, 663);
-        return g < 0.14 ? toneAt(n, WALL_BONE, -0.1) : toneAt(n, HEAP_EARTH, -0.05);
+        return g < 0.14 ? EARTH[0] : toneAt(n, HEAP_EARTH, -0.05);
       }, 900, keepWall);
       PILE.forEach((q, k) => {
         const p = pileAt(q, f);
@@ -3037,7 +3093,7 @@ function skullWallSpills(alongX: boolean): { frames: Sprite[]; before: Sprite[];
 
 /** Where the rails' end stands from the cart's tile, along x (six tiles on), and where its buffer's face is. */
 const STOP_X = 6 * KT;
-const STOP_FACE = STOP_X - BUFFER.hx;
+const STOP_FACE = STOP_X + BUFFER.face;
 /** The points of the cart that may touch the floor: its tub's corners, its wheels' rims. */
 function cartPoints(k: CartPose): V3[] {
   const out: V3[] = [];
@@ -3088,7 +3144,7 @@ function cartRuns(): Moment {
   const jig = (f: number): { dz: number; pitch: number; roll: number } => {
     if (f < CREAK) {
       const k = f / CREAK;
-      return { dz: (hash(f, 1, 670) - 0.5) * 1.4 * k, pitch: 0.06 * Math.sin(f * 1.9) * k, roll: 0.05 * Math.sin(f * 1.3 + 1) * k };
+      return { dz: Math.max(0, Math.sin(f * 1.7)) * 2.4 * k, pitch: 0.16 * Math.sin(f * 1.9) * k, roll: 0.12 * Math.sin(f * 1.3 + 1) * k };
     }
     let dz = 0;
     let pitch = 0;
@@ -3130,7 +3186,7 @@ function cartRuns(): Moment {
       const u = t - TL;
       th = Math.PI - 0.3 * Math.sin(Math.min(Math.PI, u * 0.45)) * Math.exp(-u / 9) * (u < 7 ? 1 : 0.6);
       x = xAt(HIT) + vx * TL + vx * 3.2 * (1 - Math.exp(-u / 3.2));
-      zc = u < 9 ? 7 * Math.sin((Math.PI * u) / 9) : 0;
+      zc = u < 10 ? 12 * Math.sin((Math.PI * u) / 10) : u < 16 ? 4 * Math.sin((Math.PI * (u - 10)) / 6) : 0;
     }
     const L: V3 = rot([1, 0, 0], [0, 1, 0], th);
     const Up: V3 = rot([0, 0, 1], [0, 1, 0], th);
@@ -3172,7 +3228,7 @@ function cartRuns(): Moment {
         if (i === BONE_I) b.F = norm([21, -6, 0.4]);
       } else b.p = p;
     });
-    if (f > 0) stepBodies(bodies, f, -1, 0.94);
+    if (f > 0) stepBodies(bodies, f, -1, 0.94, () => 0, (x, y) => x < STOP_X + 120 && Math.abs(y) < 60);
     states.push(bodies.map(copyBody));
   }
   if (states[N - 1].some((b) => !b.still)) throw new Error('the cart: its load is still moving at the end: ' + states[N - 1].filter((b) => !b.still).map((b) => `${b.kind} ${b.p.map((q) => q.toFixed(1))} v ${b.v.map((q) => q.toFixed(2))}`).join('; '));
@@ -3257,7 +3313,7 @@ function cartRuns(): Moment {
     paintCart(S, { ...k, load, bone: f < HIT }, 1);
     paintStop(S, [STOP_X, 0, 0], shakeAt(f), 100, splitAt(f));
     const w = wheelPoses[f];
-    if (w) wheel(S, w.c, w.face, w.A, w.B, R, w.spin, 120);
+    if (w) wheel(S, w.c, w.face, w.A, w.B, R, w.spin, 120, true);
     states[f].forEach((b, i) => {
       if (!b.free) return;
       paintBody(S, b, BONE, 200 + i);
@@ -3329,7 +3385,7 @@ function bonesStir(): Moment {
   const hAt = (f: number): number => {
     if (f < 1) return H0;
     if (f < BURST) {
-      const A = 3 + 5 * (f / BURST);
+      const A = 6 + 7 * (f / BURST);
       return H0 + A * 0.5 * (1 - Math.cos((2 * Math.PI * f) / 13.5));
     }
     if (f < GRASP_END) return H0 + 4 + 0.8 * Math.sin((f - BURST) * 0.4);
@@ -3351,7 +3407,7 @@ function bonesStir(): Moment {
   const ROLLS = [8, 17, 26, 34];
   const flung = HEAP_BITS.map((b, i) => i).filter((i) => !rollers.includes(i) && i !== HEAP_EYES && HEAP_BITS[i].kind !== 'ribs' && Math.hypot(...centre(HEAP_BITS[i])) < 17);
   // (the bones by the burning skull: left on the heap, to slide down over it as it is buried)
-  const buriers = HEAP_BITS.map((b, i) => i).filter((i) => HEAP_BITS[i].kind === 'bone' && !flung.includes(i) && Math.hypot(centre(HEAP_BITS[i])[0] - eyes.a[0], centre(HEAP_BITS[i])[1] - eyes.a[1]) < 16).slice(0, 3);
+  const buriers = HEAP_BITS.map((b, i) => i).filter((i) => HEAP_BITS[i].kind === 'bone' && !flung.includes(i) && !rollers.includes(i)).sort((p, q) => Math.hypot(centre(HEAP_BITS[p])[0] - eyes.a[0], centre(HEAP_BITS[p])[1] - eyes.a[1]) - Math.hypot(centre(HEAP_BITS[q])[0] - eyes.a[0], centre(HEAP_BITS[q])[1] - eyes.a[1])).slice(0, 3);
   type What = 'heap' | 'finger' | 'palm' | 'fore' | 'upper' | 'pour';
   interface Loose { what: What; i: number; go: number; body: Body }
   const loose: Loose[] = [];
@@ -3370,14 +3426,14 @@ function bonesStir(): Moment {
     add_('pour', i, SINK + 2 + k * 6, b.kind === 'skull' ? { ...body('skull', [0, 0, 0], b.r, 0, b.F), rest: norm([0.6, 1, 0.12]) } : body('bone', [0, 0, 0], b.r, Math.hypot(...sub(b.b, b.a)), norm(sub(b.b, b.a))));
   });
   // THE ARM: its shoulder in the heap's top; its upper arm and forearm long and thick; its hand great
-  const UP = 30;
-  const LOW = 28;
+  const UP = 27;
+  const LOW = 26;
   const HAND = 1.9;
   const shoulderAt = (f: number): V3 => [-2, -2, heapTop(0, 0, hAt(f)) - 3];
   /** Where its hand goes, frame by frame from the burst, and how its fingers claw (0 spread, 1.3 shut). */
   const KEYS: ReadonlyArray<readonly [number, V3, number]> = [
-    [0, [0, 0, 8], 1.2], [4, [4, 6, 70], 0.2], [7, [0, 4, 74], 0.1], [13, [-34, 14, 3], 0.4], [16, [-30, 22, 2], 0.9], [22, [6, 34, 2], 1.1], [27, [30, 6, 3], 0.6],
-    [32, [12, 0, 64], 0.1], [37, [36, -4, 3], 0.5], [40, [32, 8, 2], 1], [47, [-6, 40, 2], 1.2], [51, [-12, 42, 6], 0.3], [56, [-14, 44, 10], 0.05], [GRASP_END - BURST, [-10, 38, 9], 1.2],
+    [0, [0, 0, 8], 1.2], [4, [2, 2, 72], 0.2], [7, [0, 2, 74], 0.1], [13, [-42, 18, 5], 0.6], [16, [-38, 28, 5], 1], [22, [8, 46, 5], 1.2], [27, [42, 8, 5], 0.7],
+    [32, [14, 0, 60], 0.1], [37, [46, -4, 5], 0.6], [40, [42, 10, 5], 1.1], [47, [-8, 50, 5], 1.2], [51, [-14, 52, 8], 0.4], [56, [-16, 54, 10], 0.1], [GRASP_END - BURST, [-12, 50, 6], 1.1],
   ];
   const handAt = (f: number): { p: V3; curl: number } => {
     const t = f - BURST;
@@ -3397,7 +3453,7 @@ function bonesStir(): Moment {
     const sh = shoulderAt(g);
     const h = handAt(g);
     // (its elbow up high and out, as a thing of bone hauls itself: never folded flat)
-    const { el, hand } = reach2(sh, h.p, UP, LOW, [-0.3, -0.5, 1]);
+    const { el, hand } = reach2(sh, h.p, UP, LOW, norm([-0.45, -0.6, 0.8]));
     const along = norm(sub(hand, el));
     // (its palm down to the floor as it rakes, out to the hero as it reaches)
     const palm = norm(add(mul([0, 0, -1], 0.7), mul([0.3, 0.6, 0], 0.5)));
@@ -3427,7 +3483,7 @@ function bonesStir(): Moment {
     const base = ride(eyes.a, Math.min(f, SINK));
     const look = clamp01((f - KINDLE) / 10);
     const F = look === 0 ? eyes.F : norm(add(mul(eyes.F, 1 - look), mul([0.55, 0.7, 0.45], look)));
-    const k = ease((f - SINK) / (SUNK - SINK));
+    const k = ease((f - SINK - 14) / (SUNK - SINK - 14));
     if (k === 0) return { c: base, F };
     return { c: add(base, [-k * 2, -k * 2, -k * 12]), F: norm(add(F, [0, 0, -k * 0.5])) };
   };
@@ -3464,15 +3520,16 @@ function bonesStir(): Moment {
   if (states[N - 1].some((b) => !b.still)) throw new Error('the heap: something still moving at the end: ' + states[N - 1].filter((b) => !b.still).map((b) => `${b.kind} ${b.p.map((q) => q.toFixed(1))} v ${b.v.map((q) => q.toFixed(2))}`).join('; '));
   const collapse = Math.max(...loose.filter((L) => L.what === 'upper').map((L) => L.body.struck[0]?.f ?? GRASP_END + 16));
   // (the bones by it sliding down over it as it goes)
-  const coverAt = (p: V3, f: number, k: number): V3 => {
+  // (each slides down over it in turn and lies across it: low across its jaw, across its eyes, over its brow; the glow showing between them)
+  const coverAt = (p: V3, f: number, k: number, mid: V3): V3 => {
     const q = ride(p, Math.min(f, SINK));
-    const t = ease((f - SINK - 6) / 26);
+    const t = ease((f - SINK - 2 - k * 6) / 15);
     if (t === 0) return q;
-    const e = eyesAt(SINK).c;
-    const to: V3 = [e[0] + (k - 1) * 3.4, e[1] + 1 - (k % 2) * 2, 0];
-    const x = q[0] + (to[0] - q[0]) * t * 0.85;
-    const y = q[1] + (to[1] - q[1]) * t * 0.85;
-    return [x, y, heapTop(x, y, hAt(f)) + 1.4];
+    const e = eyesAt(f).c;
+    const target = add(e, [[3.4, 3.4, -0.6], [3, 3, 1.9], [1.8, 1.8, 4.4]][k] as V3);
+    const off = sub(q, ride(mid, Math.min(f, SINK)));
+    const to = add(target, [off[0] * 0.9, off[1] * 0.9, 0]);
+    return add(q, mul(sub(to, q), t));
   };
   // THE FINGERS that poke up out of it before it bursts, and draw back
   const POKES: ReadonlyArray<readonly [number, number, number]> = [[12, -12, 8], [22, 10, -6], [31, -4, 14]];
@@ -3536,7 +3593,10 @@ function bonesStir(): Moment {
         return { ...b, a: e.c, F: e.F };
       }
       const k = buriers.indexOf(i);
-      if (k >= 0) return { ...b, a: coverAt(b.a, f, k), b: coverAt(b.b, f, k) };
+      if (k >= 0) {
+        const m = mul(add(b.a, b.b), 0.5);
+        return { ...b, a: coverAt(b.a, f, k, m), b: coverAt(b.b, f, k, m) };
+      }
       return { ...b, a: ride(b.a, f), b: b.kind === 'bone' ? ride(b.b, f) : b.b };
     });
     paintHeap(S, hAt(f), bits, burnAt(f), 1);
@@ -3562,10 +3622,18 @@ function bonesStir(): Moment {
     const pieceGone = (what: What, i = 0): boolean => loose.some((L) => L.what === what && (what === 'fore' || what === 'finger' ? L.i === i : true) && f >= L.go);
     if (f >= BURST && f < GRASP_END + 13) {
       const A = armAt(f);
-      if (!pieceGone('upper')) longBone(S, A.sh, A.el, 2.8, BIG_BONE, 60);
-      if (!pieceGone('upper') || !pieceGone('fore', -1)) S.ball(A.el, 3.6, BIG_BONE, 61);
-      if (!pieceGone('fore', 1)) S.rod(add(A.el, [1.4, -1.4, 0]), add(A.wr, [1.1, -1.1, 0]), 2.1, 1.8, BIG_BONE, 61);
-      if (!pieceGone('fore', -1)) S.rod(add(A.el, [-1.4, 1.4, 0]), add(A.wr, [-1.1, 1.1, 0]), 1.8, 1.5, BIG_BONE, 61);
+      // (its bones tapered, knobbed at the joints: never two straight sticks)
+      if (!pieceGone('upper')) {
+        S.rod(A.sh, A.el, 3.3, 2.2, BIG_BONE, 60);
+        S.ball(A.sh, 3.6, BIG_BONE, 60);
+      }
+      if (!pieceGone('upper') || !pieceGone('fore', -1)) {
+        S.ball(add(A.el, [0.9, -0.9, 0.4]), 3.2, BIG_BONE, 61);
+        S.ball(add(A.el, [-0.9, 0.9, -0.2]), 2.8, BIG_BONE, 61);
+      }
+      if (!pieceGone('fore', 1)) S.rod(add(A.el, [1.3, -1.3, 0]), add(A.wr, [0.9, -0.9, 0]), 2.2, 1.4, BIG_BONE, 61);
+      if (!pieceGone('fore', -1)) S.rod(add(A.el, [-1.3, 1.3, 0]), add(A.wr, [-0.9, 0.9, 0]), 1.8, 1.2, BIG_BONE, 61);
+      if (!pieceGone('palm')) S.ball(A.wr, 2, BIG_BONE, 62);
       if (!pieceGone('palm')) {
         if (f < GRASP_END) boneHand(S, A.wr, A.along, A.palm, A.curl, BIG_BONE, 62, HAND);
         else {
@@ -3590,7 +3658,7 @@ function bonesStir(): Moment {
     for (let i = 0; i < S.id.length; i++) {
       if (S.id[i] !== ID_EYES) continue;
       const c = S.p.get(i % MW, Math.floor(i / MW))!;
-      if (PINK.includes(c) && c !== PINK[0]) n += c === PINK[3] ? 1 : c === PINK[2] ? 0.75 : 0.45;
+      if (c === PINK[3] || c === PINK[2] || c === KINDLING[1]) n += c === PINK[3] ? 1 : c === PINK[2] ? 0.75 : 0.45;
     }
     burnPx[f] = n;
     seenPeak = Math.max(seenPeak, n);
@@ -3603,7 +3671,7 @@ function bonesStir(): Moment {
         const x = i % MW;
         const y = Math.floor(i / MW);
         const c = S.p.get(x, y)!;
-        if (PINK.includes(c)) continue;
+        if (PINK.includes(c) || (KINDLING as readonly string[]).includes(c)) continue;
         const d = Math.hypot(x - ex, (y - ey) * 1.3);
         if (d < 16) S.p.set(x, y, mix(c, PINK[2], 0.32 * glow * (1 - d / 16)));
       }
@@ -3643,7 +3711,8 @@ function bonesStir(): Moment {
   peak = Math.max(1, ...burnPx);
   for (const a of tracks[1].at) if (a) a.shown = Math.min(1, a.shown / peak);
   for (const fr of frames) if (fr.lights) for (const l of fr.lights) l.a = Math.min(0.24, l.a ?? 0);
-  return { name: 'the bones stir', frames, fps: 30, before: [charnelHeap()], after: [frames[N - 1]], tracks, jolts: [BURST, collapse], holds: [] };
+  // (a jolt as it bursts out, as its hand slams down on each side, and as its upper arm crashes onto the heap)
+  return { name: 'the bones stir', frames, fps: 30, before: [charnelHeap()], after: [frames[N - 1]], tracks, jolts: [BURST, BURST + 13, BURST + 37, collapse], holds: [] };
 }
 
 const films = new Map<string, ReturnType<typeof skullWallSpills>>();

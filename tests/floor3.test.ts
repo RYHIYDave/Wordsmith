@@ -78,23 +78,27 @@ test('floor 3, moments: the dust (as the first fresh look asked): grows out of w
   assert.ok(go(1) - go(0) > 1.2 && go(6) - go(5) < (go(1) - go(0)) / 2, 'it does not blow out fast and slow');
   // spreading as it hangs
   assert.ok(at(6)!.r > at(3)!.r, 'it does not spread');
-  // settling: down onto the floor, and flat there
+  // settling: down onto the floor and flat there, over many frames, never in one (the second fresh look)
   let k = 7;
-  while (at(k) && at(k)!.q[2] > 1.5) k++;
+  while (at(k) && at(k)!.q[2] > 1.5) {
+    assert.ok(at(k + 1)!.sy > at(k)!.sy - 0.16 && at(k)!.q[2] - at(k + 1)!.q[2] < 9, `frame ${k + 1}: it drops or flattens at once`);
+    k++;
+  }
   assert.ok(at(k) !== null && at(k)!.sy <= 0.4 && at(k)!.sx >= 1.3, `it does not settle flat on the floor (${k})`);
-  // and shrinks away as one: smaller every frame to the last
+  // and slides on as it shrinks away as one: smaller every frame to the last, low on the floor
   let n = k;
   while (at(n + 1)) {
-    assert.ok(at(n + 1)!.r < at(n)!.r + 1e-9 && Math.abs(at(n + 1)!.q[2] - at(n)!.q[2]) < 0.5, `frame ${n + 1}: not shrinking where it lies`);
+    assert.ok(at(n + 1)!.r < at(n)!.r + 1e-9 && Math.abs(at(n + 1)!.q[2] - at(n)!.q[2]) < 0.5 && at(n + 1)!.q[1] > at(n)!.q[1], `frame ${n + 1}: not sliding on and shrinking as one`);
     n++;
   }
   assert.ok(n - k >= 4, 'it is gone too fast');
 });
 
-test('floor 3, moments: the chains pull: it starts at once (rings shuddering, his eyes in the port), two hauls each a jolt snatch the chains up and taut, the third rips a plate out (a jolt), its chain whips out across the floor toward the hero and slaps down (a jolt), bouncing; chunks of the wall fly and bounce; the others drop slack and swing', () => {
+test('floor 3, moments: the chains pull: it starts at once (rings shuddering, his eyes in the port), two hauls each a jolt snatch the chains up and taut, the third rips a plate out (a jolt), its chain whips out across the floor toward the hero and slaps down (a jolt), lashes up and slaps down again (a jolt); chunks of the wall fly and bounce; the others drop slack and swing', () => {
   const m = named('the chains pull');
-  const [y1, y2, rip, slap] = m.jolts;
-  assert.ok(m.jolts.length === 4 && y1 < y2 && y2 < rip && rip < slap, `jolts ${m.jolts.join(' ')}`);
+  const [y1, y2, rip, slap, slap2] = m.jolts;
+  // (the whipped chain slaps down twice, each a jolt: the second fresh look's raise)
+  assert.ok(m.jolts.length === 5 && y1 < y2 && y2 < rip && rip < slap && slap + 4 < slap2, `jolts ${m.jolts.join(' ')}`);
   assert.ok(y1 <= 10, `nothing hauls until frame ${y1}`);
   for (const film of [m, m.right!]) {
     // his eyes glint in the port before the first haul, and are gone at the end, going over frames
@@ -113,6 +117,7 @@ test('floor 3, moments: the chains pull: it starts at once (rings shuddering, hi
     assert.ok(Math.hypot(last(ring)!.x - ring[rip - 1]!.x, last(ring)!.y - ring[rip - 1]!.y) >= 50, 'the torn ring is not thrown far');
     assert.ok(last(ring)!.y - ring[rip - 1]!.y >= 40, 'the torn ring does not come out toward the hero');
     assert.ok(step(ring, slap) >= 5, `the torn ring strikes at only ${step(ring, slap).toFixed(1)} a frame`);
+    assert.ok(step(ring, slap2) >= 4, `the torn ring strikes the second time at only ${step(ring, slap2).toFixed(1)} a frame`);
     // (up off the floor after it strikes: above the line from where it strikes to where it lies a few frames on)
     let lift = 0;
     for (let i = slap + 1; i < slap + 7; i++) lift = Math.max(lift, ring[slap]!.y + ((ring[slap + 7]!.y - ring[slap]!.y) * (i - slap)) / 7 - ring[i]!.y);
