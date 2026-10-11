@@ -152,7 +152,7 @@ const SOFT = 1 << 20;
 const LIGHT_FACE_R: V3 = norm([0.45, 0.55, 0.7]);
 const light = { L: LIGHT_W as readonly number[], dimmed: 0 };
 /** Paint `f` in the light of a face (turned to screen-left: the world's own; to screen-right: as that face is seen), `k` of the way (1: in the face; 0: out in the room). */
-function inFaceLight<T>(alongX: boolean, k: number, f: () => T): T {
+export function inFaceLight<T>(alongX: boolean, k: number, f: () => T): T {
   const was = { L: light.L, dimmed: light.dimmed };
   if (!alongX && k > 0) {
     light.L = norm(add(mul(LIGHT_FACE_R, k), mul(LIGHT_W as V3, 1 - k)));
@@ -488,21 +488,21 @@ function fadeAt(c: string, v: number): string {
 const SHINE = new Set<string>([...EMBER, COAL[2], COAL[3], '#fff0a0', '#ffb070', '#ff4f8a', '#c0206a', '#7a1058']);
 
 /** What a wall piece is made of: a flat picture in the face (painted as floorkit's are, with fx and fy), and what stands out of it, built in the world with `w(a, b, z)` (a along the face in picture pixels of the world, 0.8 to a pixel across the face; b out of it; z up). */
-interface WallMake {
+export interface WallMake {
   flat?: (p: Px) => void;
   solid?: (S: Scene, w: (a: number, b: number, z: number) => V3, alongX: boolean) => void;
   /** Fire, over all (not shaded on the face in shade, nor faded); `alongX` the face it is on. */
   fire?: (p: Px, alongX: boolean) => void;
 }
 /** A face's axes in the world: along it, out of it, up. */
-function axesOf(W: (a: number, b: number, z: number) => V3): [V3, V3, V3] {
+export function axesOf(W: (a: number, b: number, z: number) => V3): [V3, V3, V3] {
   const o = W(0, 0, 0);
   return [norm(sub(W(1, 0, 0), o)), norm(sub(W(0, 1, 0), o)), [0, 0, 1]];
 }
 /** A way in the face's frame, in the world. */
-const dirOf = (W: (a: number, b: number, z: number) => V3) => (v: V3): V3 => sub(W(v[0], v[1], v[2]), W(0, 0, 0));
+export const dirOf = (W: (a: number, b: number, z: number) => V3) => (v: V3): V3 => sub(W(v[0], v[1], v[2]), W(0, 0, 0));
 /** A wall piece on one face, set `du` across and `dv` up: its flat picture skewed into the face and shaded as the face is, what stands out of it in front, a seam between. */
-function wallSprite(m: WallMake, alongX: boolean, du: number, dv: number, lights: Light[] = []): Sprite {
+export function wallSprite(m: WallMake, alongX: boolean, du: number, dv: number, lights: Light[] = []): Sprite {
   const base = new Px(PW, PH);
   if (m.flat) {
     const f = flat();
@@ -618,7 +618,7 @@ function boneEnd(S: Scene, W: (a: number, b: number, z: number) => V3, s: WallBi
   const { e, d, len } = wallBonePose(s);
   knuckleBone(S, W(e[0], e[1], e[2]), dirOf(W)(d), len, s.r, ramp, id, keep);
 }
-const inFront = (alongX: boolean) => (w: V3): boolean => (alongX ? w[1] : w[0]) >= -0.2;
+export const inFront = (alongX: boolean) => (w: V3): boolean => (alongX ? w[1] : w[0]) >= -0.2;
 /** The gaps between the dead in the skull wall: dark, a little earth showing. */
 function skullWallGaps(p: Px): void {
   for (let v = 0; v <= 79; v++) for (let u = -16; u <= 15; u++) p.set(fx(u), fy(v), hash(u >> 1, v >> 1, 512) < 0.18 ? EARTH[1] : EARTH[0]);
@@ -790,9 +790,9 @@ function breachHeap(): Sprite {
 }
 
 /** Facets of rough rock: each face of it one tone, as it is turned. */
-const facetOf = (r: Ramp, bias = 0.05) => (n: V3): string => toneAt(norm([Math.round(n[0] * 1.6) / 1.6, Math.round(n[1] * 1.6) / 1.6, Math.round(n[2] * 1.6) / 1.6 + 0.05]), r, bias);
+export const facetOf = (r: Ramp, bias = 0.05) => (n: V3): string => toneAt(norm([Math.round(n[0] * 1.6) / 1.6, Math.round(n[1] * 1.6) / 1.6, Math.round(n[2] * 1.6) / 1.6 + 0.05]), r, bias);
 /** Timber squared and old: its top lit, its grain along it, its end dark. */
-const timberFace = (f: number, u: number, _v: number, n: V3): string => (f === 4 ? TIMBER[3] : f < 2 ? TIMBER[1] : Math.abs(((u * 5) % 1) - 0.5) < 0.06 ? TIMBER[0] : toneAt(n, TIMBER, -0.1));
+export const timberFace = (f: number, u: number, _v: number, n: V3): string => (f === 4 ? TIMBER[3] : f < 2 ? TIMBER[1] : Math.abs(((u * 5) % 1) - 0.5) < 0.06 ? TIMBER[0] : toneAt(n, TIMBER, -0.1));
 
 /**
  * SHORED ROCK, the wall's height: the wall fallen in to raw rock, and the miners' timber holding it
@@ -866,7 +866,7 @@ const deadArm: WallMake = {
   },
 };
 /** A HAND OF BONE SPREAD FLAT against a wall's face, from its wrist (along, out, up), its fingers fanned out round `ang` (in the face: 0 along it, up π/2), `size` its scale. */
-function flatHand(S: Scene, W: (a: number, b: number, z: number) => V3, wr: V3, ang: number, size: number, ramp: Ramp, id: number, keep?: (w: V3) => boolean): void {
+export function flatHand(S: Scene, W: (a: number, b: number, z: number) => V3, wr: V3, ang: number, size: number, ramp: Ramp, id: number, keep?: (w: V3) => boolean): void {
   const at = (a: number, z: number, b = wr[1]): V3 => W(a, b, z);
   const way = (t: number): [number, number] => [Math.cos(t), Math.sin(t)];
   const [da, dz] = way(ang);
@@ -1237,13 +1237,13 @@ const jawSlot: WallMake = {
 // FLOOR TILES (a tile's picture, anchored at its top corner, as the floor's own)
 
 /** The earth the floor has gone to: dark plum, mottled, a clod lit here and there. */
-function earthAt(u: number, v: number, seed = 0): string {
+export function earthAt(u: number, v: number, seed = 0): string {
   const g = hash(Math.floor(u * 22), Math.floor(v * 22), 550 + seed);
   const m = hash(Math.floor(u * 6), Math.floor(v * 6), 551 + seed);
   return g < 0.07 ? EARTH[3] : g < 0.16 ? EARTH[0] : m < 0.4 ? EARTH[2] : EARTH[1];
 }
 /** Is (x, y) (from the tile's middle) within `w` of the segment from (x0, y0) to (x1, y1)? And how far along it, and to which side. */
-function onSeg(x: number, y: number, x0: number, y0: number, x1: number, y1: number): { d: number; t: number; side: number } {
+export function onSeg(x: number, y: number, x0: number, y0: number, x1: number, y1: number): { d: number; t: number; side: number } {
   const dx = x1 - x0;
   const dy = y1 - y0;
   const L2 = dx * dx + dy * dy || 1;
@@ -1279,7 +1279,7 @@ function railsTile(alongX: boolean) {
 }
 
 /** A bone lying flat on a tile, (x0, y0) to (x1, y1) (from the tile's middle), `w` thick: its colour at (x, y), or null. Lit on its side toward the light, its knobbed ends a little wider. */
-function flatBone(x: number, y: number, b: readonly [number, number, number, number, number], ramp: Ramp): string | null {
+export function flatBone(x: number, y: number, b: readonly [number, number, number, number, number], ramp: Ramp): string | null {
   const [x0, y0, x1, y1, w0] = b;
   const sg = onSeg(x, y, x0, y0, x1, y1);
   const w = sg.t < 0.09 || sg.t > 0.91 ? w0 * 1.5 : w0;
@@ -1354,7 +1354,7 @@ const PAVED: ReadonlyArray<readonly [number, number, number, number, number]> = 
   return out;
 })();
 /** A bone lying flat, bent a little along its length by `bend` (a share of its length, to one side). */
-function curvedBone(x: number, y: number, b: readonly [number, number, number, number, number], bend: number, ramp: Ramp): string | null {
+export function curvedBone(x: number, y: number, b: readonly [number, number, number, number, number], bend: number, ramp: Ramp): string | null {
   const [x0, y0, x1, y1, w0] = b;
   const L = Math.hypot(x1 - x0, y1 - y0) || 1;
   const cx = (x0 + x1) / 2 - ((y1 - y0) / L) * bend * L;
@@ -1667,7 +1667,7 @@ function brokenOf(kind: 'sack' | 'skulls' | 'jug' | 'tub'): Sprite {
 const LEATHER: Ramp = ['#0e0a12', '#18121c', '#30242e', '#483842', '#56444e'];
 
 /** A BOOT of old leather, in depth: its sole on the floor at `at`, its toe out along `toe`, its shaft up `up` (leaning as it slumps), its top folded over. */
-function boot(S: Scene, at: V3, toe: V3, up: V3, id: number): void {
+export function boot(S: Scene, at: V3, toe: V3, up: V3, id: number): void {
   const T = norm(toe);
   const Sd = norm(cross([0, 0, 1], T));
   // the sole and heel, dark, under it
@@ -1846,7 +1846,7 @@ function snappedProp(): Sprite {
 // STANDING THINGS, built in the world; anchored at the middle of their tile
 
 /** The axes of the world. */
-const XYZ: [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+export const XYZ: [V3, V3, V3] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
 
 /**
  * THE MINE CART, as it stands or goes: a deep tub of iron plate, wider at its top than at its foot,
@@ -1869,7 +1869,7 @@ export const CART_STILL: CartPose = { o: [0, 0, 0], L: [1, 0, 0], Wd: [0, 1, 0],
 const CART_SKULL_F: V3 = norm([0.5, 0.85, 0.25]);
 /** A point of the cart, from its own measures. */
 export const cartPt = (k: CartPose, l: number, w: number, u: number): V3 => add(k.o, add(add(mul(k.L, l), mul(k.Wd, w)), mul(k.Up, u)));
-function paintCart(S: Scene, k: CartPose, id0: number): void {
+export function paintCart(S: Scene, k: CartPose, id0: number): void {
   const P = (l: number, w: number, u: number): V3 => cartPt(k, l, w, u);
   const { l0, w0, l1, w1, z0, z1 } = CART;
   // the corners of its tub: foot (b) and top (t)
@@ -2595,16 +2595,16 @@ const ease = (t: number): number => {
 // with what it is among, so that it hides only what is behind it.
 
 /** The dust's tones: its belly to its lit top (the floor's own dust, a little lighter so that it shows). */
-const DUST: Ramp = ['#221f31', '#302c42', '#423d57', '#55506c', '#686282'];
+export const DUST: Ramp = ['#221f31', '#302c42', '#423d57', '#55506c', '#686282'];
 /** Dust settled on the floor: dark, as the floor's own. */
-const DUST_LOW: Ramp = ['#191624', '#211d2e', '#2a2639', '#332e44', '#3b3550'];
-interface Cloud { f0: number; p: V3; v: V3; R: number; hang: number; settle: number; life: number; seed: number }
+export const DUST_LOW: Ramp = ['#191624', '#211d2e', '#2a2639', '#332e44', '#3b3550'];
+export interface Cloud { f0: number; p: V3; v: V3; R: number; hang: number; settle: number; life: number; seed: number }
 /** A cloud born on frame `f0` at `p` (in the world), blown out `v` a frame at first, `R` at its biggest; it hangs `hang` frames, settles over `settle`, and is gone `life` frames after it was born. */
-function cloud(f0: number, p: V3, v: V3, R: number, seed: number, life = 44, hang = 9, settle = 12): Cloud {
+export function cloud(f0: number, p: V3, v: V3, R: number, seed: number, life = 44, hang = 9, settle = 12): Cloud {
   return { f0, p, v, R, hang, settle, life, seed };
 }
 /** Where a cloud is on frame `f`: its middle, how far it reaches across and up (null: not there; gone on the frame `life` after it was born, its last frame `life - 1`). */
-function cloudAt(c: Cloud, f: number): { c: V3; rh: number; rv: number; s: number } | null {
+export function cloudAt(c: Cloud, f: number): { c: V3; rh: number; rv: number; s: number } | null {
   const k = f - c.f0;
   if (k < 0 || k >= c.life) return null;
   // (grown out of where it was struck over three frames)
@@ -2627,7 +2627,7 @@ function cloudAt(c: Cloud, f: number): { c: V3; rh: number; rv: number; s: numbe
   return { c: p, rh, rv: Math.max(rv, 0.9), s };
 }
 /** The clouds on frame `f`, painted into `S` in depth (soft: no seam round them). `W` the frame they are in. */
-function paintClouds(S: Scene, cs: readonly Cloud[], f: number, W: (a: number, b: number, z: number) => V3 = (a, b, z) => [a, b, z]): void {
+export function paintClouds(S: Scene, cs: readonly Cloud[], f: number, W: (a: number, b: number, z: number) => V3 = (a, b, z) => [a, b, z]): void {
   cs.forEach((c, i) => {
     const a = cloudAt(c, f);
     if (!a) return;
@@ -2649,9 +2649,9 @@ function paintClouds(S: Scene, cs: readonly Cloud[], f: number, W: (a: number, b
 // rolling and sliding (down any slope they come to rest on), knocking into one another, at rest.
 
 /** How fast things fall, in the world's picture pixels a frame, each frame (fast: things fall fast and hit hard). */
-const FALL = 1.0;
+export const FALL = 1.0;
 /** A thing loose in a moment: where its middle is, how fast it goes, which way it is turned (a skull's face and crown; a bone's length), how it turns. In whatever frame the moment keeps (a wall's: along, out, up). */
-interface Body {
+export interface Body {
   kind: 'skull' | 'bone' | 'ore' | 'splinter';
   p: V3;
   v: V3;
@@ -2670,11 +2670,11 @@ interface Body {
   /** A skull: which way its face looks when it comes to rest. */
   rest?: V3;
 }
-const copyBody = (b: Body): Body => ({ ...b, p: [...b.p] as V3, v: [...b.v] as V3, F: [...b.F] as V3, U: [...b.U] as V3, axis: [...b.axis] as V3, struck: [...b.struck], rest: b.rest ? ([...b.rest] as V3) : undefined });
+export const copyBody = (b: Body): Body => ({ ...b, p: [...b.p] as V3, v: [...b.v] as V3, F: [...b.F] as V3, U: [...b.U] as V3, axis: [...b.axis] as V3, struck: [...b.struck], rest: b.rest ? ([...b.rest] as V3) : undefined });
 /** A new loose thing at `p`, at rest and not yet let go. */
 /** Long things (bones, splinters) lie along the ground; the rest are round. */
-const isLong = (b: Body): boolean => b.kind === 'bone' || b.kind === 'splinter';
-const body = (kind: Body['kind'], p: V3, r: number, len = 0, F: V3 = [1, 0, 0], U: V3 = [0, 0, 1]): Body => ({ kind, p, v: [0, 0, 0], F, U, axis: [0, 0, 1], spin: 0, r, len, free: false, ground: false, still: false, hits: 0, struck: [] });
+export const isLong = (b: Body): boolean => b.kind === 'bone' || b.kind === 'splinter';
+export const body = (kind: Body['kind'], p: V3, r: number, len = 0, F: V3 = [1, 0, 0], U: V3 = [0, 0, 1]): Body => ({ kind, p, v: [0, 0, 0], F, U, axis: [0, 0, 1], spin: 0, r, len, free: false, ground: false, still: false, hits: 0, struck: [] });
 /** A skull's (or a lump's) reach from its middle, as it lies. */
 const skullReach = (b: Body): number => (b.kind === 'ore' ? 0.95 : 0.9) * b.r;
 /** How low a bone reaches below its middle. */
@@ -2686,7 +2686,7 @@ const boneLow = (b: Body): number => Math.abs(b.F[2]) * b.len * 0.5 + b.r * (b.k
  * rest; a round one strikes those about it and is turned aside. Nothing goes back into the wall (b < 0
  * is the wall, `wallTop` how high it stands), nor through the ground.
  */
-function stepBodies(bodies: Body[], f: number, wallTop: number, rolling = 0.93, groundAt: (a: number, b: number) => number = () => 0, fence: (a: number, b: number) => boolean = () => true): void {
+export function stepBodies(bodies: Body[], f: number, wallTop: number, rolling = 0.93, groundAt: (a: number, b: number) => number = () => 0, fence: (a: number, b: number) => boolean = () => true): void {
   for (const b of bodies) {
     if (!b.free) continue;
     const low = (): number => (!isLong(b) ? skullReach(b) : boneLow(b));
@@ -2796,14 +2796,14 @@ function stepBodies(bodies: Body[], f: number, wallTop: number, rolling = 0.93, 
   }
 }
 /** Let a body go: its speed, and a tumble about a way of its own. */
-function letGo(b: Body, v: V3, seed: number, spin: number): void {
+export function letGo(b: Body, v: V3, seed: number, spin: number): void {
   b.free = true;
   b.v = v;
   b.axis = norm([hash(seed, 5, 650) - 0.5, hash(seed, 6, 650) - 0.5, (hash(seed, 7, 650) - 0.5) * 0.6]);
   b.spin = spin * (0.6 + 0.8 * hash(seed, 8, 650));
 }
 /** Paint a loose body into `S` in the frame `W` (the world's own if none), in `ramp`. */
-function paintBody(S: Scene, b: Body, ramp: Ramp, id: number, W: (a: number, b: number, z: number) => V3 = (a, bb, z) => [a, bb, z], keep?: (w: V3) => boolean): void {
+export function paintBody(S: Scene, b: Body, ramp: Ramp, id: number, W: (a: number, b: number, z: number) => V3 = (a, bb, z) => [a, bb, z], keep?: (w: V3) => boolean): void {
   const toW = (v: V3): V3 => sub(W(v[0], v[1], v[2]), W(0, 0, 0));
   if (b.kind === 'skull') skull(S, { c: W(b.p[0], b.p[1], b.p[2]), F: toW(b.F), U: toW(b.U), R: b.r, jaw: null }, ramp, id, keep);
   else if (b.kind === 'ore') S.ball(W(b.p[0], b.p[1], b.p[2]), b.r, ORE, id, keep, 0.1);
@@ -2814,19 +2814,19 @@ function paintBody(S: Scene, b: Body, ramp: Ramp, id: number, W: (a: number, b: 
   }
 }
 /** Where a point of a frame `W` is on the picture, from the anchor. */
-const onScreen = (W: (a: number, b: number, z: number) => V3, p: V3): [number, number] => {
+export const onScreen = (W: (a: number, b: number, z: number) => V3, p: V3): [number, number] => {
   const w = W(p[0], p[1], p[2]);
   return onPic(w[0], w[1], w[2]);
 };
 /** A track's place for a body, from its place now and on the frame before. */
-function trackAt(W: (a: number, b: number, z: number) => V3, p: V3, q: V3, base: number): { x: number; y: number; shown: number; size: number } {
+export function trackAt(W: (a: number, b: number, z: number) => V3, p: V3, q: V3, base: number): { x: number; y: number; shown: number; size: number } {
   const [x, y] = onScreen(W, p);
   const [px, py] = onScreen(W, q);
   return { x, y, shown: 1, size: base + 2 * Math.hypot(x - px, y - py) };
 }
 
 /** Two bones from a shoulder to a hand (`a` and `b` long): where the elbow is, bent toward `hint`; the hand within reach. */
-function reach2(sh: V3, target: V3, a: number, b: number, hint: V3): { el: V3; hand: V3 } {
+export function reach2(sh: V3, target: V3, a: number, b: number, hint: V3): { el: V3; hand: V3 } {
   let d = sub(target, sh);
   let L = Math.hypot(d[0], d[1], d[2]);
   const most = (a + b) * 0.995;
@@ -2846,7 +2846,7 @@ function reach2(sh: V3, target: V3, a: number, b: number, hint: V3): { el: V3; h
  * A HAND OF BONE at its wrist `wr`, its palm turned `n`, its fingers out along `along`: spread wide
  * (`curl` 0) or clawed shut (`curl` 1.3); each finger three bones, its thumb off to one side.
  */
-function boneHand(S: Scene, wr: V3, along: V3, n: V3, curl: number, ramp: Ramp, id: number, size = 1): void {
+export function boneHand(S: Scene, wr: V3, along: V3, n: V3, curl: number, ramp: Ramp, id: number, size = 1): void {
   const A = norm(along);
   const N = norm(sub(n, mul(A, dot(n, A))));
   const Sd = cross(A, N);

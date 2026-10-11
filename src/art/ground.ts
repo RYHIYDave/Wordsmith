@@ -80,6 +80,12 @@ export interface Earth {
   dirt: readonly [string, string, string, string];
   /** Rock, lying in the earth and in the walls: its shaded side, its body, an odd one, its lit edge. */
   rock: readonly [string, string, string, string];
+  /**
+   * DUG (floor 5, the deep workings; none on the four floors above): where the walls' stones are gone
+   * they are dug earth, not rough rock: packed earth in layers, stones in it, the scores of the picks;
+   * and what dressed stone there is stands only in the foot course, here and there.
+   */
+  dug?: boolean;
 }
 
 /** The Warden's vault: the dungeon of the first book. Deep blue flagstones, violet-blue walls. */
@@ -190,7 +196,7 @@ function earthAt(e: Earth, wu: number, wv: number, x: number, y: number): string
     for (let dv = -1; dv <= 1; dv++) {
       const a = (((cu + du) % n) + n) % n;
       const b = (((cv + dv) % n) + n) % n;
-      if (hash(a, b, 41) > 0.5) continue;
+      if (hash(a, b, 41) > (e.dug ? 0.22 : 0.5)) continue;
       const ou = gu - (cu + du + 0.25 + 0.5 * hash(a, b, 42));
       const ov = gv - (cv + dv + 0.25 + 0.5 * hash(a, b, 43));
       const r = 0.16 + 0.2 * hash(a, b, 44);
@@ -431,6 +437,7 @@ function wallFace(theme: Theme, spec: WallSpec, left: boolean, height: number): 
   // (rough rock, in the light of this face: the face turned to screen-left a step lighter than the one in shade)
   const rock = e ? (left ? e.rock.map((c) => mixHex(c, theme.lit[2], 0.25)) : e.rock.map((c) => mixHex(c, theme.shade[1], 0.45))) : null;
   const deep = e ? (left ? e.dirt[0] : mixHex(e.dirt[0], BEYOND, 0.3)) : joint;
+  const dug = e?.dug ? dugFace(e, theme, left, seed, rock!) : null;
   return (u, v) => {
     const row = v + skip;
     const course = Math.floor(row / COURSE);
@@ -444,7 +451,11 @@ function wallFace(theme: Theme, spec: WallSpec, left: boolean, height: number): 
     // where this course's upright joint is: in the middle of the face, or at the tile's edge
     // (the left face's last column and the right face's first are the block's front corner)
     const at = mid ? 15 : left ? 0 : 30;
-    if (e && rock && e.raw > 0) {
+    if (e && dug) {
+      // (the cult's dressed stone only in the foot course, the theme's share of it there three times over)
+      const which = mid ? (u < at ? 0 : 1) : 0;
+      if (course < TALL / COURSE - 1 || hash(course * 2 + which, spec.seed, seed + 17) < 1 - (1 - e.raw) * 3) return dug(u, row);
+    } else if (e && rock && e.raw > 0) {
       // A STONE THAT HAS FALLEN, OR WAS NEVER LAID: rough rock and earth where it would be, in lumps
       // a few pixels across, each lit along its upper-left edge, with dark earth between them
       const which = mid ? (u < at ? 0 : 1) : 0;
@@ -515,14 +526,80 @@ function wallFace(theme: Theme, spec: WallSpec, left: boolean, height: number): 
   };
 }
 
+/**
+ * DUG EARTH, a face of it (Earth.dug): packed earth in layers a few pixels deep, the layers' tones
+ * changing a little from one to the next, the line between two now and then lit along its lip; stones
+ * set in it, few and of every size, each lit along its upper left and throwing a little shadow to its
+ * lower right; the short slanting scores of the picks. On the face turned to the light a step lighter
+ * than on the one in shade. `u` 0..30 across the face, `row` 0..79 down it from the top of a whole wall;
+ * the layers meet where two faces stand side by side.
+ */
+function dugFace(e: Earth, theme: Theme, left: boolean, seed: number, rock: readonly string[]): (u: number, row: number) => string {
+  const toward = left ? theme.lit : theme.shade;
+  const k = left ? 0.34 : 0.3;
+  const [dk, lo, usual, hi, lip] = left
+    ? [mixHex(e.dirt[0], toward[0], 0.2), mixHex(e.dirt[1], toward[1], k), mixHex(e.dirt[2], toward[2], k), mixHex(e.dirt[3], toward[2], k), mixHex(e.dirt[3], toward[4], 0.42)]
+    : [mixHex(e.dirt[0], BEYOND, 0.3), mixHex(e.dirt[1], toward[1], k), mixHex(e.dirt[1], toward[2], k), mixHex(e.dirt[2], toward[2], k), mixHex(e.dirt[3], toward[4], 0.3)];
+  const G = 9;
+  const H = 8;
+  const NU = Math.ceil(31 / G);
+  /** The stone in a cell (or none): its middle and its half sizes. */
+  const stone = (cx: number, cy: number): [number, number, number, number] | null => {
+    const a = (((cx % NU) + NU) % NU) * 97 + cy;
+    if (hash(a, seed, 181) > 0.34) return null;
+    return [cx * G + 1.5 + hash(a, seed, 182) * (G - 3), cy * H + 1.5 + hash(a, seed, 183) * (H - 3), 1.6 + hash(a, seed, 184) * 2.4, 1.3 + hash(a, seed, 185) * 1.6];
+  };
+  return (u, row) => {
+    const cx = Math.floor(u / G);
+    const cy = Math.floor(row / H);
+    let shadow = false;
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      const st = stone(cx + dx, cy + dy);
+      if (!st) continue;
+      const ox = (u + 0.5 - st[0]) / st[2];
+      const oy = (row + 0.5 - st[1]) / st[3];
+      const d = Math.hypot(ox, oy) * (1 + 0.12 * Math.sin(Math.atan2(oy, ox) * 3 + st[0]));
+      if (d < 1) {
+        const l = -ox * 0.8 - oy * 0.9;
+        return l > 0.45 ? rock[3] : l < -0.4 ? rock[0] : hash(cx + dx, cy + dy, seed + 186) < 0.4 ? rock[2] : rock[1];
+      }
+      if (d < 1.45 && ox > 0.1 && oy > -0.2) shadow = true;
+    }
+    if (shadow) return dk;
+    // the scores of the picks: short grooves slanting down to the right, a lit lip over each
+    const gx = Math.floor(u / 7);
+    const gy = Math.floor(row / 10);
+    if (hash(gx, gy, seed + 187) < 0.3) {
+      const x0 = gx * 7 + 1 + Math.floor(hash(gx, gy, seed + 188) * 3);
+      const y0 = gy * 10 + 1 + Math.floor(hash(gx, gy, seed + 189) * 6);
+      const t = u - x0;
+      if (t >= 0 && t < 4 && row === y0 + Math.floor(t * 0.6)) return dk;
+      if (t >= 0 && t < 4 && row === y0 + Math.floor(t * 0.6) - 1) return lip;
+    }
+    // the layers: a little wavy, each its own tone, the line between two lit here and there
+    const w = row + Math.round(1.3 * Math.sin((Math.PI * u) / 15 + (seed % 7)));
+    const band = Math.floor(w / 6);
+    const inBand = ((w % 6) + 6) % 6;
+    if (inBand === 0 && hash(u >> 2, band, seed + 190) < 0.45) return hi;
+    if (inBand === 5 && hash(u >> 2, band, seed + 191) < 0.3) return lo;
+    // clods: little lumps two pixels across, their tops lit
+    const cl = hash(u >> 1, row >> 1, seed + 192);
+    if (cl > 0.9) return (row & 1) === 0 ? hi : usual;
+    if (cl < 0.05) return lo;
+    return hash(band, seed, 193) < 0.4 ? lo : usual;
+  };
+}
+
 function makeWall(theme: Theme, spec: WallSpec, height: number, which: 'both' | 'left' | 'right' = 'both'): Sprite {
   // (`which`: both faces under the top, as a wall block is; or ONE FACE ALONE and no top: for the look in which a wall is its faces)
   const p = new Px(TW, TH + height);
   const whole = height === TALL;
   const left = wallFace(theme, spec, true, height);
   const right = wallFace(theme, spec, false, height);
-  // the two faces, hung from the diamond's lower edges
-  for (let x = 1; x <= TW - 2; x++) {
+  // the two faces, hung from the diamond's lower edges (dug earth, Earth.dug, one column further each
+  // way: the column between two faces of a run, where the joint of the stone falls, filled with earth)
+  const reach = theme.earth?.dug ? 1 : 0;
+  for (let x = 1 - reach; x <= TW - 2 + reach; x++) {
     const yb = bottomRow(x);
     const isLeft = x < HALF;
     if ((which === 'left' && !isLeft) || (which === 'right' && isLeft)) continue;
