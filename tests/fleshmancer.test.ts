@@ -12,19 +12,22 @@
 //      (where every move of his to come will begin);
 //   3. his stand paints in every frame both ways round: nothing cyan (and no light that is not the
 //      enemy's), his pink edge round him, every pixel whole or empty but the edge;
-//   4. HUMAN SIZED: the top of his hood about the knight's height, a head taller at most; the skull of his
-//      staff above his hood;
+//   4. HUMAN SIZED: a man a head taller than the knight (the top of his hood 66 to 68 up at rest), and never
+//      more than that as he floats (his float lifts him, it does not grow him); the skull of his staff
+//      above his hood;
 //   5. HE FLOATS, UNMISTAKABLY: in every frame of his stand the lowest of his robe's tails is clear of the floor
 //      by a few game pixels (a gap of floor under him), and he rises and sinks on nothing by 4 to 6 game
 //      pixels as he stands;
 //   6. his staff is in his right hand from in front and from behind: his back as the camera truly sees him;
 //      and it passes outside the mantle he wears over his shoulders (which his arms are under, as the
 //      Headsman's are under his cape: so it is not among the solids the review keeps his arms out of);
-//   7. THE GOUT OF FIRE HE FLINGS leaves his hand, arcs out beside him (from in front and from behind, clear
-//      of him) and bursts on the floor;
+//   7. THE GOUT OF FIRE HE FLINGS leaves his hand, is thrown a long way out before him (toward you, from in
+//      front), clear of him, and bursts on the floor beside him from in front and from behind;
 //   8. HIS LIGHT NEVER WASHES OVER HIM IN ONE FRAME: from one frame of his stand to the next, all the light
 //      he gives off grows by two fifths at most (it swells over two or three frames);
-//   9. THE SKULL, the second thing he is known by, is wider than his hood.
+//   9. THE SKULL, the second thing he is known by, is about his hood's width (his emblem: the man is the mass);
+//  10. NO LONE PIXEL, in any frame either way round: with his pink edge round it, a pixel alone is a cross (+),
+//      and an ember or a spark of his is never one.
 //   run: tsx --test tests/fleshmancer.test.ts
 
 // @ts-ignore
@@ -36,13 +39,13 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { FLESHMANCER, FLESHMANCER_SWITCH, FM_GOUT_LAND, FM_GOUT_LET, FM_GOUT_SPOT, FM_HOOD_R, FM_HOOD_UP, FM_MADE, FM_SHAPE, FM_SKULL_WIDE, fmGoutAt, fmHemOf, fmHoodTop, fmMantle, fmSolids, fmTails, makeFleshmancerArt3, staffOf } from '../src/art/fleshmancer';
+import { FLESHMANCER, FLESHMANCER_SWITCH, FM_BODY, FM_GOUT_LAND, FM_GOUT_LET, FM_GOUT_SPOT, FM_HOOD_R, FM_HOOD_UP, FM_MADE, FM_REST, FM_SHAPE, FM_SKULL_WIDE, fmGoutAt, fmHemOf, fmHoodTop, fmMantle, fmSolids, fmTails, makeFleshmancerArt3, staffOf } from '../src/art/fleshmancer';
 import { checkBoss, findingsSaid, framesOf, inLump } from '../src/art/boss_checks';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
 import { KNIGHT_BODY } from '../src/art/moves3';
 import { paintMob, paintViewOf, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
-import { project } from '../src/art/skeleton';
+import { project, solve } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from './helpers';
@@ -122,18 +125,23 @@ test('3. his stand paints in every frame both ways round: nothing cyan, his edge
   }
 });
 
-test('4. human sized: his hood about the knight’s height, a head taller at most; the skull of his staff above it; its foot off the floor', () => {
+test('4. human sized: a man a head taller than the knight (his hood 66 to 68 up at rest), never more as he floats; the skull of his staff above his hood; its foot off the floor', () => {
   const knight = KNIGHT_BODY.tall;
   const head = KNIGHT_BODY.headR[2] * 2;
+  const rest = solve(FM_BODY, FM_REST);
+  const atRest = fmHoodTop(rest);
+  assert.ok(atRest >= 66 && atRest <= 68, `at rest the top of his hood is ${atRest.toFixed(1)} up (the knight ${knight}, his head ${head.toFixed(1)})`);
   for (let i = 0; i < FLESHMANCER.idleFrames; i++) {
     const s = skeletonAt(FLESHMANCER, 'stand', i / FLESHMANCER.idleFps);
     const top = fmHoodTop(s);
-    assert.ok(top > knight - 4 && top <= knight + head, `at ${(i / FLESHMANCER.idleFps).toFixed(1)} s the top of his hood is ${top.toFixed(1)} up (the knight ${knight}, his head ${head.toFixed(1)})`);
+    // (his own height: the top of his hood less how far his float has lifted him above where he floats at rest)
+    const own = top - (s.pelvis[2] - rest.pelvis[2]);
+    assert.ok(own > knight && own <= knight + head + 0.5, `at ${(i / FLESHMANCER.idleFps).toFixed(1)} s he is ${own.toFixed(1)} tall (the knight ${knight}, his head ${head.toFixed(1)})`);
     const skull = staffOf(s).skull;
     assert.ok(skull[2] > top + 8, `at ${(i / FLESHMANCER.idleFps).toFixed(1)} s the skull is ${skull[2].toFixed(1)} up, his hood ${top.toFixed(1)}`);
-    // (and the staff floats with him: its foot, a knob of bone 1.6 round, never in the floor)
+    // (and the staff floats with him: its foot, a knob of bone 1.8 round, never in the floor)
     const foot = staffOf(s).foot;
-    assert.ok(foot[2] > 1.6 + 0.5, `at ${(i / FLESHMANCER.idleFps).toFixed(1)} s the staff's foot is ${foot[2].toFixed(1)} up`);
+    assert.ok(foot[2] > 1.8 + 0.5, `at ${(i / FLESHMANCER.idleFps).toFixed(1)} s the staff's foot is ${foot[2].toFixed(1)} up`);
   }
   assert.ok(FM_HOOD_UP > 0);
 });
@@ -178,7 +186,7 @@ test('6. his staff is in his right hand from in front and from behind (his back 
   }
 });
 
-test('7. the gout of fire he flings leaves his hand, arcs out beside him (clear of him, from in front and from behind) and bursts on the floor', () => {
+test('7. the gout of fire he flings leaves his hand, is thrown a long way out before him, clear of him, and bursts on the floor beside him from in front and from behind', () => {
   const at = skeletonAt(FLESHMANCER, 'stand', FM_GOUT_LET);
   const leaves = fmGoutAt(FM_GOUT_LET);
   assert.ok(leaves !== null, 'it is in flight as it leaves his hand');
@@ -195,7 +203,11 @@ test('7. the gout of fire he flings leaves his hand, arcs out beside him (clear 
     const { lumps } = fmSolids(s);
     for (const o of lumps) assert.ok(inLump(p, o) < -1, `at ${t.toFixed(2)} s it passes through his ${o.name}`);
   }
-  assert.ok(topZ > from[2] + 4, `it arcs (its top ${topZ.toFixed(1)} up, it left at ${from[2].toFixed(1)})`);
+  // (it is thrown, not dropped: it goes a long way out across the floor from where it left his hand, and comes down in front of him, toward you)
+  const out = Math.hypot(FM_GOUT_SPOT[0] - from[0], FM_GOUT_SPOT[1] - from[1]);
+  assert.ok(out > 40 && topZ >= from[2], `it lands ${out.toFixed(1)} out from where it left his hand`);
+  const s0 = skeletonAt(FLESHMANCER, 'stand', FM_GOUT_LAND);
+  assert.ok(project(FM_GOUT_SPOT, 'front')[1] - project([s0.pelvis[0], s0.pelvis[1], 0], 'front')[1] > 8, 'from in front it comes down on the floor in front of him, toward you');
   // (where it bursts is beside him as the eye sees him, from in front and from behind, not under him)
   const s = skeletonAt(FLESHMANCER, 'stand', FM_GOUT_LAND);
   for (const view of ['front', 'rear'] as const) {
@@ -215,6 +227,26 @@ test('8. his light never washes over him in one frame: from one frame to the nex
   }
 });
 
-test('9. the skull, the second thing he is known by, is wider than his hood', () => {
-  assert.ok(FM_SKULL_WIDE >= 2 * FM_HOOD_R[1] + 2, `the skull ${FM_SKULL_WIDE} across, his hood ${(2 * FM_HOOD_R[1]).toFixed(1)}`);
+test('9. the skull, his emblem, is about his hood\u2019s width: not smaller, and not the bigger thing', () => {
+  assert.ok(FM_SKULL_WIDE >= 2 * FM_HOOD_R[1] - 1 && FM_SKULL_WIDE <= 2 * FM_HOOD_R[1] + 1, `the skull ${FM_SKULL_WIDE} across, his hood ${(2 * FM_HOOD_R[1]).toFixed(1)}`);
+});
+
+test('10. no lone pixel in any frame either way round (with his pink edge round it a pixel alone is a cross)', () => {
+  const art = makeFleshmancerArt3();
+  for (const view of ['front', 'back'] as const) {
+    art[view].idle.forEach((sp, i) => {
+      const { w, h, d } = paintingOf(sp);
+      const solid = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < w && y < h && d[(y * w + x) * 4 + 3] === 255;
+      const lone: string[] = [];
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (!solid(x, y)) continue;
+          let n = 0;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && solid(x + dx, y + dy)) n++;
+          if (n === 0) lone.push(`${x},${y}`);
+        }
+      }
+      assert.equal(lone.length, 0, `${view}, frame ${i}: lone pixels at ${lone.slice(0, 6).join(' ')}`);
+    });
+  }
 });

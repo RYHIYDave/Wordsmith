@@ -20,7 +20,8 @@ import { toSprite } from '../art/kit';
 import { makeCultistArt, makeHighPriestArt } from '../art/monster_cultist';
 import { MOVES3 } from '../art/moves3';
 import { HEADSMAN } from '../art/bosses3';
-import { FLESHMANCER, fmHemOf, fmHoodTop, fmTails, staffOf } from '../art/fleshmancer';
+import { FLESHMANCER, FM_REST, fmHemOf, fmHoodTop, fmTails, staffOf } from '../art/fleshmancer';
+import { solve } from '../art/skeleton';
 import { SHADE, canvasOf, paintMob, skeletonAt } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
 import type { GameView } from '../art/skin';
@@ -170,23 +171,24 @@ function widthOf(list: { sp: Sprite }[], S: number, PAD: number): number {
     return a + Math.max(l + r, 62) + GAP;
   }, GAP) * S + PAD * 2;
 }
-/** The top of his hood, the middle of the skull, and the lowest of his tails above the floor, at the start of his stand (picture pixels, as painted). */
+/** The top of his hood and the middle of the skull at rest (the middle of his bob), and the lowest of his tails above the floor at the bottom of his bob (picture pixels, as painted). */
 function heights(): { hood: number; skull: number; gap: number } {
+  const r = solve(FM.build, FM_REST);
   const s = skeletonAt(FM, 'stand', 0);
   const tails = fmTails(fmHemOf(s), 0, 0);
   const gap = Math.min(...tails.flatMap((x) => x.pts.map((p) => p[2] - x.r)));
-  return { hood: Math.round(fmHoodTop(s)), skull: Math.round(staffOf(s).skull[2]), gap: Math.round(gap) };
+  return { hood: Math.round(fmHoodTop(r)), skull: Math.round(staffOf(r).skull[2]), gap: Math.round(gap) };
 }
 
 if (mode === 'sheet') {
   const S = Number(parts[1]) || 3;
   const PAD = 14;
-  const { hood, skull, gap } = heights();
+  const { hood, gap } = heights();
   const row1 = [
     { sp: spriteOf3(MOVES3.ktown, 0, 'front'), name: 'The knight', line: 'a hero, standing: 58 tall', shadow: 12, gold: false },
     { sp: KNIGHT(), name: 'The knight', line: 'ready to fight', shadow: 12, gold: false },
-    { sp: spOf(FM, 'stand', 0, 'front'), name: 'The Fleshmancer', line: `facing you: his hood ${hood} up, his tails ${gap} off the floor`, shadow: FM.shadow, gold: true },
-    { sp: spOf(FM, 'stand', 0, 'back'), name: 'The Fleshmancer', line: `facing away: the skull ${skull} up`, shadow: FM.shadow, gold: true },
+    { sp: spOf(FM, 'stand', 0, 'front'), name: 'The Fleshmancer', line: `facing you: hood ${hood} up`, shadow: FM.shadow, gold: true },
+    { sp: spOf(FM, 'stand', 0, 'back'), name: 'The Fleshmancer', line: `away: tails ${gap} off the floor`, shadow: FM.shadow, gold: true },
   ];
   const row2 = [
     { sp: makeCultistArt().front.idle[0], name: 'A cultist', line: 'his flock', shadow: 11, gold: false },

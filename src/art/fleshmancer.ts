@@ -19,28 +19,35 @@
 //     never blood or open flesh).
 //   (His death, his attacks and his big spells are his brief's too, and come after this.)
 //
-// HIS LOOK, AS REMADE AFTER A FRESH LOOK (11 Oct): the first drawing read at a phone's size as a hooded
-// torch-bearer, weaker than the Headsman and drabber than his own cultists. So, as painted now:
-//   HIS SILHOUETTE is a master's: broad, stiff shoulders under a mantle, tapering to a narrow robe that
-//     ends off the floor in tattered tails curling up; behind his hood a high collar stiffened with stays
-//     of bone that rise past it, uneven and jagged, a dark crown of bone; his staff held out at his side,
-//     clear of him, his casting hand out at the other, so that he is wide where the others are narrow.
-//   HIS COLOURS are his cult's, raised: a robe of near-black plum, his mantle the same raised to magenta;
-//     down his front and his back a bold band of pink edged with gold (a scapular), the mantle's edge
-//     banded pink and gold, the hood's rim gold and pink; the pink lining showing in his sleeves and where
-//     his tails curl up.
-//   HIS HOOD is deep and round, its rim hard and lit pink from inside, the opening pitch black, and in it
-//     his eyes, two upright slits of fire, low and close together (the others' are slanting slashes); when
-//     he flares, only his eyes and the rim blaze, never his face.
+// HIS LOOK, AS REMADE AFTER TWO FRESH LOOKS (11 Oct): the first drawing read at a phone's size as a hooded
+// torch-bearer; the second as a big step up, but with accidental shapes in it (a symbol down his front, a
+// face like a wall socket, crosses for embers, numbers in a hand) and a small, crouched body. So, as painted
+// now:
+//   HIS BODY is a man's a head taller than the knight, upright, his robe hanging plumb from his hips: broad,
+//     stiff shoulders under a mantle, tapering to a narrow hem off the floor, its tattered tails curling
+//     up; behind his hood RIBS OF BONE rise from his collar and curve in over it, a ribcage closing over his
+//     head (bone, never gold); his staff held out at his side, clear of him, his casting hand out at the
+//     other.
+//   HIS COLOURS are his cult's, raised: a robe of near-black plum, his hood a step darker, his mantle the
+//     same raised to magenta, its edge clean and banded pink and gold all round; below the mantle the two
+//     edges of his robe where it parts, pink edged with gold, unbroken to the hem (nothing hangs from his
+//     face); the pink lining dark in his sleeves and where his tails curl up.
+//   HIS HOOD is deep and round; his cult's pink and gold are on its outer brim, an arch over his brow open
+//     below; the opening pitch black, its edge dark, lit a little pink from inside; and in it his eyes, two
+//     hot points of fire, not alike, no frame round them (the others' are slanting slashes). When he
+//     flares, only his eyes and the opening's edge blaze, never his face.
 //   HIS HANDS are the heart of him ("hands of power"): bare bony forearms out of pushed-back sleeves, and
 //     the casting hand half as big again as a man's, four long bone-pale fingers and a thumb splayed as a
 //     claw, their tips burning pink to gold, the fire held between them; the staff hand's long fingers
-//     wrapped round the bone, their tips lit.
+//     slanting across the bone, each its own length, pointed, their tips lit.
 //   HIS STAFF is bone, not a pole: warm ivory, knuckled segments each its own length, spurs off it, a crook
-//     near its head; on its head A SKULL WIDER THAN HIS HOOD, its jaw hanging open, the fire burning in its
-//     sockets and its mouth and licking up out of its sockets, and a lower flame from behind its crown.
+//     near its head; on its head A SKULL about as wide as his hood (his emblem: he is the mass), dark pits
+//     for eyes with the fire deep in them licking up and out over its temples, its teeth, its jaw hanging
+//     open on a dark mouth, and a ragged flame from behind its crown; it looks at you from in front and from
+//     behind alike.
 //   HE FLOATS, unmistakably: a clear gap of floor under him, lit by his own pink light and the embers that
-//     drip off his tails; he rises and sinks on nothing.
+//     drip off his tails; he rises and sinks on nothing. No ember of his is ever a lone pixel (with his pink
+//     edge round it, a lone pixel is a cross): each is a slanting fleck.
 //   THE SKULL, HIS HANDS AND THE FACE IN HIS HOOD are painted pixel by pixel (little pictures held square to
 //     the eye, each as near it as the thing it is), so that they read at a phone's size.
 //
@@ -69,7 +76,7 @@ import { FLAME, SOCKET } from './mkit';
 import { TILE3, mobSet, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing } from './boss_checks';
-import { onCloth, skirtOf, wornOn } from './skin';
+import { onCloth, wornOn } from './skin';
 import type { Ring, Skin, Stage } from './skin';
 import { add, bonesAt, buildOf, cross, dot, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Skeleton, V3 } from './skeleton';
@@ -90,32 +97,36 @@ const rampAt = (t: number, t0: number, t1: number): number => smooth((t - t0) / 
 // His body, his canvas, his colours
 
 /** His body: a man's (the knight is 58 tall), broad and stiff in the shoulders, narrow below, long in the arm. */
-export const FM_BODY: Build = buildOf(50.5, 1.12, { shoulders: 1.22, chest: 0.95, depth: 0.98, waist: 0.74, hips: 0.78, arms: 1.16, trunk: 1.06, limbs: 0.84, pad: 2.0 });
+export const FM_BODY: Build = buildOf(55, 1.06, { shoulders: 1.2, chest: 0.95, depth: 0.98, waist: 0.74, hips: 0.78, arms: 1.12, trunk: 1.06, limbs: 0.84, pad: 2.0 });
 const FB = FM_BODY;
 /** How far he floats at rest: his pelvis this far above where a body's would be, standing (his legs drawn up inside his robe). */
 export const FM_FLOAT = 5.0;
 /** How high the hem of his robe is off the floor at rest, before its tails (they hang and curl below it). */
-export const FM_HEM_UP = 19.5;
+export const FM_HEM_UP = 20.5;
 /** How much wider than his hips his robe is at its hem (narrow: he tapers from broad shoulders to it). */
 const FM_HEM_WIDE = 1.8;
+/** How high his pelvis is at rest, floating (his robe's hem keeps its height under it as he rises and sinks). */
+const FM_PELVIS_UP = FM_BODY.ankle + FM_BODY.shank + FM_BODY.thigh + FM_FLOAT;
 /** His canvas: room for his staff and its fire high over his hood, raised higher when he casts, and for the gout of fire he flings out to his side. */
 export const FM_CANVAS: MobCanvas = { w: 320, h: 300, ax: 160, ay: 228 };
 
 /** His robe: near-black plum, its lit side a dark magenta (the cultists' violet is bright, the Shade's grey, the Headsman's coat blue-black, his hood red). */
 export const FM_ROBE: Ramp = ['#170a1b', '#170a1b', '#3a1440', '#6e2660', '#6e2660'];
+/** His hood: a step darker than his mantle, so that its round shape reads against his shoulders from in front and from behind. */
+const FM_HOOD: Ramp = ['#120816', '#120816', '#2e1036', '#56204e', '#56204e'];
 /** His mantle, stiff over his shoulders: his robe's plum, raised to his cult's magenta (so his shoulders read broad and his hem narrow). */
 const FM_MANTLE: Ramp = ['#1f0b22', '#1f0b22', '#521a4c', '#8e2e74', '#8e2e74'];
 /** The pink lining of his robe, seen in his sleeves and where his tails curl up. */
-const FM_LINING: Ramp = ['#3c0c2e', '#3c0c2e', '#8a1c5a', '#c83478', '#c83478'];
+const FM_LINING: Ramp = ['#2e0a26', '#2e0a26', '#6e1a4e', '#9a2a68', '#9a2a68'];
 /** The band down his front and round his hood's rim: his cult's pink, bolder, and its edge of gold. */
 const BAND: Ramp = ['#6a0e4a', '#6a0e4a', '#c0206a', '#ff5a98', '#ff5a98'];
 const GOLD: Ramp = ['#5a2c18', '#5a2c18', '#b8742c', '#f4c060', '#f4c060'];
 /** Bone, warm and old: his staff's and the stays of his collar (a step darker than the skull), his forearms' (bone-pale). */
 const STAFF_BONE: Ramp = ['#3e2c2c', '#3e2c2c', '#9a7c62', '#d6bc94', '#d6bc94'];
-const STAY_BONE: Ramp = ['#34242a', '#34242a', '#86684f', '#c4a682', '#c4a682'];
+const STAY_BONE: Ramp = ['#3a2a2c', '#3a2a2c', '#907660', '#ccb494', '#ccb494'];
 const HAND_BONE: Ramp = ['#4a3a44', '#4a3a44', '#a48e8c', '#d4c2b6', '#d4c2b6'];
 /** The skull's ivory, warm, lit from the upper left: highlight, lit, middle, shade, deep shade. */
-const IVORY = { H: '#efddbb', L: '#d6bc96', M: '#ae8f6e', S: '#7a5d50', D: '#4e3840' } as const;
+const IVORY = { H: '#f0e7d4', L: '#d9ccb3', M: '#ae9f88', S: '#76665c', D: '#4e4048' } as const;
 /** His hands' bone, pale: highlight, lit, middle. */
 const PALE = { H: '#efe4d6', L: '#d4c2b6', M: '#a48e8c' } as const;
 
@@ -134,29 +145,31 @@ export function fmHoodTop(s: Skeleton): number {
 }
 
 /**
- * THE FACE IN HIS HOOD, as it is painted, pixel by pixel, on the hood where it faces the way he looks: a hard
- * rim round the opening, gold at its edge (g) and his cult's pink (p) lit brighter on its inside (P) by what
- * burns in there; the opening pitch black (k); and in it, low and close together, his eyes (e): two
- * upright slits of fire, not the slanting slashes of his cultists, the Shade and the Headsman.
+ * THE FACE IN HIS HOOD, as it is painted, pixel by pixel, on the hood where it faces the way he looks: the
+ * opening pitch black (k), its edge dark, lit a little pink from inside (r); and in it, low, his eyes, two
+ * hot points of fire (h), each with a dimmer one by it (e), the two not alike: no frame round them, no bars
+ * (the cultists', the Shade's and the Headsman's eyes are slanting slashes). His cult's pink (P) and gold (G)
+ * are on the hood's outer brim, an arch over his brow and down its sides, open below, well clear of the
+ * opening.
  */
 const HOOD_FACE: ReadonlyArray<string> = [
-  '....ggg....',
-  '...gpppg...',
-  '..gpPkPpg..',
-  '..gPkkkPg..',
-  '.gpPkkkPpg.',
-  '.gPkkkkkPg.',
-  '.gPkekekPg.',
-  '.gPkekekPg.',
-  '.gPkekekPg.',
-  '.gPkkkkkPg.',
-  '..gPkkkPg..',
-  '..gpPkPpg..',
-  '...gpppg...',
+  '....GGGGGGG....',
+  '..GGPPPPPPPGG..',
+  '.GPP.......PPG.',
+  '.GP..rrrrr..PG.',
+  'GP..rkkkkkr..PG',
+  'GP.rkkkkkkkr.PG',
+  'GP.rkkkkkkkr.PG',
+  'GP.rkhkkkhkr.PG',
+  'GP.rkekkkker.PG',
+  '.P.rkkkkkkkr.P.',
+  '...rkkkkkkkr...',
+  '....kkkkkkk....',
+  '....kkkkkkk....',
 ];
-/** The middle of the face (column, row): where the middle of the hood's opening is; and the row of the hearts of his eyes. */
-const HOOD_FACE_MID: P2 = [5, 7];
-const HOOD_EYE_ROW = 7;
+/** The middle of the face (column, row): where the middle of the hood's opening is; and where in it his eyes' hot points are. */
+const HOOD_FACE_MID: P2 = [7, 7];
+const HOOD_EYES: ReadonlyArray<P2> = [[5, 7], [9, 7]];
 
 // ---------------------------------------------------------------------------------------------
 // His staff
@@ -164,8 +177,8 @@ const HOOD_EYE_ROW = 7;
 /** HIS STAFF: from its foot to its head; where his right hand holds it, from its foot; the middle of the skull above its head (its chin rests on the staff's head), and the skull's half-lengths as the checks take it (front to back, across, up): wider than his hood. */
 export const STAFF_LEN = 60;
 const STAFF_GRIP = 28;
-const SKULL_UP = 11.5;
-export const SKULL_R: V3 = [7.0, 8.5, 11];
+const SKULL_UP = 9.5;
+export const SKULL_R: V3 = [6.0, 7.0, 9.5];
 /** Where along the staff its bones are fused (from its foot), and how far each joint is off its line (forward, to his left): no two segments alike, a crook out near its head. */
 const JOINTS: ReadonlyArray<readonly [number, number, number]> = [
   [0, 0, 0], [8.5, 0.6, -0.3], [15.5, -0.5, 0.4], [25, 0.4, 0.1], [33, -0.4, -0.3], [42, 0.5, -0.4], [50.5, 0.1, -2.2], [56, -0.3, -1.4], [60, 0, -0.4],
@@ -249,7 +262,9 @@ function fireAt(st: Stage, put: Put, base: V3, tall: number, wide: number, ph: n
       if (life > 0.7) continue;
       const x = Math.round(bx + (((j * 0.618 + seed * 0.37) % 1) - 0.5) * wide * 2.2 + Math.sin(life * 6 + j) * 1.5 + lean0 * life * 4);
       const y = Math.round(by - tall * (0.75 + life * 0.9));
+      // (a fleck of two, never one pixel alone)
       lit.set(y * 4096 + x, life < 0.35 ? FLAME[3] : FLAME[2]);
+      lit.set((y + (j % 2 ? 1 : -1)) * 4096 + x + 1, FLAME[2]);
     }
   }
   for (const [key, colour] of lit) {
@@ -292,24 +307,51 @@ function fireBall(st: Stage, put: Put, c: V3, r: number, back: readonly [number,
  * its body, deep pink at its tip (a step hotter with `hot` over 1.2). On the layer over everything, as near
  * the eye as `ref`; `skip` leaves a pixel alone.
  */
-function tongueAt(st: Stage, put: Put, ref: V3, b: readonly [number, number], tall: number, wide: number, lean: number, hot: number, skip?: (x: number, y: number) => boolean): void {
+function tongueAt(st: Stage, put: Put, ref: V3, b: readonly [number, number], tall: number, wide: number, lean: number, hot: number, skip?: (x: number, y: number) => boolean, steps?: number): void {
   const rows = Math.round(tall);
   if (rows < 1) return;
   const [rx, ry] = st.at(ref);
-  const step = hot > 1.2 ? 1 : 0;
+  const step = steps ?? (hot > 1.2 ? 1 : 0);
+  let was: [number, number] | null = null;
   for (let i = 0; i < rows; i++) {
     const k = rows > 1 ? i / (rows - 1) : 0;
     const hw = Math.max(0.5, (wide / 2) * (k < 0.3 ? 0.75 + k : 1.05 * ((1 - k) / 0.7) ** 0.8));
     const cx = b[0] + lean * k * k;
     const y = Math.floor(b[1]) - i;
-    const xa = Math.round(cx - hw);
-    const xb = Math.max(xa + 1, Math.round(cx + hw));
+    let xa = Math.round(cx - hw);
+    let xb = Math.max(xa + 1, Math.round(cx + hw));
+    // (each row touching the one below it: a flame is never broken into lone pixels)
+    if (was) {
+      if (xa > was[1]) {
+        xb -= xa - was[1];
+        xa = was[1];
+      } else if (xb < was[0]) {
+        xa += was[0] - xb;
+        xb = was[0];
+      }
+    }
+    was = [xa, xb];
     for (let x = xa; x < xb; x++) {
       if (skip?.(x, y)) continue;
-      const c = k < 0.3 ? FLAME[3 + step] : k < 0.7 ? FLAME[2 + step] : FLAME[1 + step];
+      const c = FLAME[Math.max(0, Math.min(4, (k < 0.3 ? 3 : k < 0.7 ? 2 : 1) + step))];
       put('fire', 'fire', { k: 'mote', p: screenStep(st, ref, x + 0.5 - rx, y + 0.5 - ry), c, size: 1 });
     }
   }
+}
+
+/**
+ * AN EMBER, never a dot: with his pink edge round it a dot is a cross (+). A fleck slanting one way or the
+ * other, three pixels long, dimming along it (by `seed`); at `p`, on the layer over everything.
+ */
+function fleck(st: Stage, put: Put, p: V3, c: string, seed: number, part = 'embers'): void {
+  const [x, y] = st.at(p);
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const kind = ((Math.floor(seed * 7.13) % 4) + 4) % 4;
+  const dy = kind % 2 === 0 ? 1 : -1;
+  const n = 3;
+  const dim = FLAME[Math.max(0, FLAME.indexOf(c) - 1)];
+  for (let i = 0; i < n; i++) put(part, part, { k: 'mote', p: screenStep(st, p, xi + i + 0.5 - x, yi + i * dy + 0.5 - y), c: i === 0 ? c : dim, size: 1 });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -451,24 +493,31 @@ function clawPix(wr: P2, way: P2, fan: P2, spread: number, curl: number, heat: n
 }
 
 /**
- * HIS STAFF HAND, round the bone (`g` where he holds it, `along` the staff's way up the picture, `toArm`
- * the way to his forearm across it): the back of his hand on the forearm's side, and four long fingers
- * wrapped across the bone one above another, their tips lit on its far side, pink to gold with `heat`.
+ * HIS STAFF HAND, round the bone (`g` where he holds it, `along` the staff's way up the picture, `toArm` the
+ * way to his forearm across it): the back of his hand on the forearm's side, its knuckles standing out of it
+ * one by one, and three long fingers slanting down across the bone, each its own length, pointed, their tips
+ * lit pink to gold with `heat` beyond its far side; his thumb hooked over it above them. Nothing of it closes
+ * on itself (a ring of finger round a gap reads at this size as a letter or a number).
  */
 function gripPix(g: P2, along: P2, toArm: P2, heat: number): Pix {
   const pix: Pix = new Map();
   const tip = heat > 0.7 ? FLAME[3] : heat > 0.3 ? FLAME[2] : FLAME[1];
-  // (the back of the hand, a knuckled ridge along the bone on the forearm's side)
-  for (let a = -3.0; a <= 2.5; a += 0.5) for (let b = 1.6; b <= 3.2; b += 0.5) {
-    const p = add2(add2(g, along, a), toArm, b);
-    pix.set(pk(Math.floor(p[0]), Math.floor(p[1])), b < 2.2 ? PALE.L : PALE.M);
+  const at = (a: number, b: number): P2 => add2(add2(g, along, a), toArm, b);
+  const dot1 = (p: P2, c: string): void => {
+    pix.set(pk(Math.floor(p[0]), Math.floor(p[1])), c);
+  };
+  // (the back of the hand: a narrow blob on the forearm's side, its edge not straight)
+  for (let a = -2.0; a <= 1.6; a += 0.5) for (let b = 2.2; b <= 3.4 - 0.25 * Math.abs(a); b += 0.5) dot1(at(a, b), b < 2.7 ? PALE.L : PALE.M);
+  // (three fingers: from a knuckle, down across the bone, each its own length, pointed and lit at its tip)
+  const FINGERS: ReadonlyArray<readonly [number, number]> = [[1.1, 4.4], [-0.9, 5.2], [-2.8, 3.8]];
+  for (const [a0, long] of FINGERS) {
+    dot1(at(a0, 2.0), PALE.H);
+    const from = at(a0, 1.6);
+    const to = at(a0 - 0.55 * long, 1.6 - long);
+    linePix(pix, from, to, (k) => (k > 0.82 ? tip : PALE.L));
   }
-  // (the fingers, across the bone, each a little lower at its tip: wrapped round it)
-  for (const o of [2.0, 0.0, -2.0, -3.6]) {
-    const a = add2(add2(g, along, o), toArm, 1.6);
-    const b = add2(add2(g, along, o - 0.6), toArm, -2.6);
-    linePix(pix, a, b, (k) => (k > 0.8 ? tip : PALE.H));
-  }
+  // (his thumb, hooked over the bone above them)
+  linePix(pix, at(1.8, 2.2), at(3.1, 0.1), (k) => (k > 0.7 ? PALE.M : PALE.L));
   return pix;
 }
 
@@ -476,60 +525,56 @@ function gripPix(g: P2, along: P2, toArm: P2, heat: number): Pix {
 // The skull at his staff's head
 
 /**
- * THE SKULL, as it is painted, pixel by pixel (17 across: wider than his hood), lit from the upper left:
- * a broad, low cranium; a heavy brow coming down over two deep sockets that slant in toward the nose (not
- * round: a scowl), the fire burning low in each, gold at its heart; the notch of the nose; a broken row of
- * upper teeth; below them the mouth, open, full of fire; and the jaw HANGING OPEN below it on its two
- * hinges, a few teeth left in it. (H highlight, L lit, M middle, S shade, D deep shade; k the dark of a hole;
- * the fire p deep pink, f pink, g gold, w white-gold, each a step hotter as it roars.)
+ * THE SKULL, as it is painted, pixel by pixel (14 across: about his hood's width, no more), pale bone lit from
+ * the upper left: a broad, low cranium; a heavy brow coming down over two deep sockets that slant in toward
+ * the nose (a scowl), DARK PITS, the fire deep in each low at its outer side (p), whence it licks up and out
+ * over the temple; the notch of the nose; a broken row of upper teeth; the mouth open below them, dark, at
+ * most a dim glow in it (d); and the jaw HANGING OPEN below it on its two hinges, a few teeth left in it. (H
+ * highlight, L lit, M middle, S shade; k the dark of a hole.)
  */
 const SKULL_PIX: ReadonlyArray<string> = [
-  '.....HHHLLLL.....',
-  '...HHHHHLLLLLM...',
-  '..HHHHHLLLLLLLM..',
-  '.HHHHHLLLLLLLLMS.',
-  '.HHHHLLLLLLLLLMS.',
-  'HHHHLLLLLLLLLLMSS',
-  'HHHLLLLLLLLLLLMSS',
-  'HHkkkLLLLLLLkkkSS',
-  'HLkpkkkLLLkkkpkSS',
-  'HLkkpkkkLkkkpkkSD',
-  'LLkkfkkkLkkkfkkSD',
-  '.LkfgfkLLLkfgfkS.',
-  '.LkfwfkLkLkfwfkS.',
-  '.MLkfkLkkkLkfkMS.',
-  '..MLLMMMkMMMLMS..',
-  '..LLkLLLkLkkLMS..',
-  '..LkpffgwgffpkS..',
-  '..LkkfgwwwgfkkS..',
-  '..LkkkpfgfpkkkS..',
-  '..MLLkLfLkLkLSS..',
-  '...MLLLMMMMMSS...',
-  '....MLMMMMMSS....',
-  '......MMMSS......',
+  '....HHHLLL....',
+  '..HHHHLLLLLM..',
+  '.HHHHLLLLLLLM.',
+  'HHHLLLLLLLLLMS',
+  'HHLLLLLLLLLLMS',
+  'HLLLLLLLLLLLMS',
+  'HLkkLLLLLLkkMS',
+  'LkkkkkLLkkkkkS',
+  'LpkkkkLLkkkkpS',
+  'LkpkkkLLkkkpkS',
+  '.LkkkLkkLkkkS.',
+  '.MLLMLkkLMLLS.',
+  '.LLkLLkLkLLkS.',
+  '.LkkkdddkkkkS.',
+  '.MkkkkddkkkkS.',
+  '..MkLLkLkLkS..',
+  '..MLLLMMMMMS..',
+  '...MLMMMMSS...',
+  '.....MMSS.....',
 ];
 /** How wide the skull is, as painted (picture pixels). */
 export const FM_SKULL_WIDE = Math.max(...SKULL_PIX.map((row) => row.length));
-/** Where its mouth's rows begin (the jaw drops below them as it roars), and where in it its sockets' fire, its mouth and its crown are (column, row). */
-const SKULL_MOUTH = 16;
-const SKULL_EYES: ReadonlyArray<P2> = [[3, 7], [13, 7]];
-const SKULL_MOUTH_AT: P2 = [8, 17];
+/** The row of the open mouth that its jaw drops below as it roars; where in it the fire in its sockets is (column, row), and which way each licks out. */
+const SKULL_MOUTH = 13;
+const SKULL_EYES: ReadonlyArray<readonly [number, number, number]> = [[1, 8, -1], [12, 8, 1]];
+const SKULL_MID: P2 = [7, 9];
 /** THE SKULL'S PIXELS, its top left at `x0`, `y0`; its fire as hot as `hot` (0 embers, 1 burning, 2 roaring), out if `lit` is; its jaw dropped `drop` pixels further. */
 function skullPix(x0: number, y0: number, hot: number, lit: number, drop: number): Pix {
   const pix: Pix = new Map();
-  // (as it roars only its hearts burn hotter, gold to white-gold: its fire stays pink round them; as it is drawn down out of it, it sinks to embers)
-  const shift = hot < 0.55 ? -1 : 0;
-  const fire = (i: number): string => (lit < 0.05 ? INK : FLAME[Math.max(0, Math.min(4, i + shift + (hot > 1.3 && i === 3 ? 1 : 0)))]);
+  // (the fire deep in its sockets: dim as it is drawn down out of it, hotter as it roars; the glow in its mouth never more than dim)
+  const pit = lit < 0.05 ? INK : hot > 1.3 ? FLAME[2] : hot < 0.55 ? FLAME[0] : FLAME[1];
+  const mouth = lit < 0.05 ? INK : hot > 1.3 ? FLAME[0] : '#4a0c38';
   const rows: string[] = [];
   SKULL_PIX.forEach((row, r) => {
     rows.push(row);
-    if (r === SKULL_MOUTH + 1) for (let d = 0; d < drop; d++) rows.push(row);
+    if (r === SKULL_MOUTH) for (let d = 0; d < drop; d++) rows.push(row.replace(/d/g, 'k'));
   });
   rows.forEach((row, j) => {
     for (let i = 0; i < row.length; i++) {
       const ch = row[i];
       if (ch === '.') continue;
-      const c = ch === 'k' ? INK : ch === 'p' ? fire(1) : ch === 'f' ? fire(2) : ch === 'g' ? fire(3) : ch === 'w' ? fire(4) : IVORY[ch as keyof typeof IVORY];
+      const c = ch === 'k' ? INK : ch === 'p' ? pit : ch === 'd' ? mouth : IVORY[ch as keyof typeof IVORY];
       pix.set(pk(x0 + i, y0 + j), c);
     }
   });
@@ -573,27 +618,45 @@ export function fmTails(hem: { c: V3; f: V3; l: V3; deep: number; wide: number }
     return { pts, r };
   });
 }
-/** His hem at a moment (its middle, its forward and left, its half-lengths), as his painter makes it: for the tests. */
-export function fmHemOf(s: Skeleton): { c: V3; f: V3; l: V3; deep: number; wide: number } {
+/**
+ * HIS ROBE BELOW HIS WAIST: it hangs PLUMB from his hips to its hem, a little narrower at the hem than at the
+ * hips, whatever his drawn-up legs are doing inside it (nothing of them is painted: there is nothing of him
+ * below his waist but robe), so that he stands upright in it and never sits; left behind as he moves
+ * (`lag`), kicked out by `gale`. Its rings, from the waist down. (For the painter and the tests.)
+ */
+function fmSkirt(s: Skeleton, gale = 0, lag: V3 = [0, 0, 0]): Ring[] {
   const B = FB;
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.6));
-  const top: Ring = { c: waistC, u: mul(s.belly[0], B.waistDeep + 2.0), v: mul(s.belly[1], B.waistHalf + 2.0) };
-  const hemZ = FM_HEM_UP + (s.pelvis[2] - (FB.ankle + FB.shank + FB.thigh + FM_FLOAT));
-  const skirt = skirtOf(s, B, { top, drop: Math.max(4, s.pelvis[2] - hemZ), wide: B.pelvisHalf + FM_HEM_WIDE, deep: B.pelvisDeep + FM_HEM_WIDE, pad: 1.2 });
-  const hem = skirt[skirt.length - 1];
-  return { c: hem.c, f: norm([hem.u[0], hem.u[1], 0], f), l: norm([hem.v[0], hem.v[1], 0], l), deep: len(hem.u), wide: len(hem.v) };
+  const hemZ = FM_HEM_UP + (s.pelvis[2] - FM_PELVIS_UP);
+  const hipZ = s.pelvis[2] - 1.5;
+  const rings: Ring[] = [{ c: waistC, u: mul(s.belly[0], B.waistDeep + 2.0), v: mul(s.belly[1], B.waistHalf + 2.0) }];
+  const N = 4;
+  for (let i = 0; i <= N; i++) {
+    const k = i / N;
+    const z = hipZ + (hemZ - hipZ) * k;
+    const c: V3 = [s.pelvis[0] + lag[0] * k, s.pelvis[1] + lag[1] * k, z];
+    const deep = B.pelvisDeep + 2.6 + (FM_HEM_WIDE - 2.6) * k + 1.5 * gale * k;
+    const wide = B.pelvisHalf + 2.6 + (FM_HEM_WIDE - 2.6) * k + 1.5 * gale * k;
+    rings.push({ c, u: mul(f, deep), v: mul(l, wide) });
+  }
+  return rings;
+}
+/** His hem at a moment (its middle, its forward and left, its half-lengths), as his painter makes it: for the tests. */
+export function fmHemOf(s: Skeleton): { c: V3; f: V3; l: V3; deep: number; wide: number } {
+  const hem = fmSkirt(s).slice(-1)[0];
+  return { c: hem.c, f: norm(hem.u), l: norm(hem.v), deep: len(hem.u), wide: len(hem.v) };
 }
 
 // ---------------------------------------------------------------------------------------------
 // The gout of fire he flings
 
 /** When it leaves his hand, when it strikes the floor, how long it burns there; where it lands (before him and to his left: beside him, from in front and from behind). */
-export const FM_GOUT_LET = 2.08;
-export const FM_GOUT_LAND = 2.5;
-export const FM_GOUT_BURN = 0.6;
-export const FM_GOUT_SPOT: V3 = [0, 42, 0];
+export const FM_GOUT_LET = 2.14;
+export const FM_GOUT_LAND = 2.54;
+export const FM_GOUT_BURN = 0.9;
+export const FM_GOUT_SPOT: V3 = [56, 8, 0];
 
 // ---------------------------------------------------------------------------------------------
 // Him, as solids
@@ -618,6 +681,18 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
   const pulse = 0.5 + 0.5 * Math.sin(ph * 4 + 0.4);
+  /** How far behind him a point is, as the eye sees it, 0 not at all to 1 well behind (for a light that goes behind him and comes out again: never all at once). */
+  const behindness = (p: V3): number => {
+    const deep = clamp01((st.near(s.ribs) - 1.5 - st.near(p)) / 3);
+    const [x, y] = st.at(p);
+    const [nx, ny] = st.at(s.neck);
+    const floorY = st.at([s.pelvis[0], s.pelvis[1], FM_HEM_UP])[1];
+    const [hx] = st.at([s.pelvis[0], s.pelvis[1], 0]);
+    const k = clamp01((y - ny) / Math.max(1, floorY - ny));
+    const half = y < ny - 3 ? 10 : 15 - 7 * k;
+    const inside = clamp01((half - Math.abs(x - (nx + (hx - nx) * k))) / 5) * clamp01((y - (ny - 16)) / 4) * clamp01((floorY - y) / 4);
+    return deep * inside;
+  };
   /** Behind him, as the eye sees it: further from the eye than his chest, and within his shape across the picture (for what is laid over everything: fire in a hand held out before him, seen from behind). */
   const behindHim = (p: V3): boolean => {
     if (st.near(p) > st.near(s.ribs) - 1.5) return false;
@@ -640,10 +715,7 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
     { c: s.ribs, u: mul(cf, B.ribDeep + 2.0), v: mul(cl, B.ribHalf + 2.2) },
     { c: waistC, u: mul(be[0], B.waistDeep + 2.0), v: mul(be[1], B.waistHalf + 2.0) },
   ];
-  const top: Ring = torso[torso.length - 1];
-  const hemZ = FM_HEM_UP + (s.pelvis[2] - (FB.ankle + FB.shank + FB.thigh + FM_FLOAT));
-  const drop = Math.max(4, s.pelvis[2] - hemZ);
-  const skirt = skirtOf(s, B, { top, drop, wide: B.pelvisHalf + FM_HEM_WIDE + 1.5 * gale, deep: B.pelvisDeep + FM_HEM_WIDE + 1.5 * gale, lag, wind: 0, gale: 0, pad: 1.2 });
+  const skirt = fmSkirt(s, gale, lag);
   const hem = skirt[skirt.length - 1];
   const hemF = norm([hem.u[0], hem.u[1], 0], f);
   const hemL = norm([hem.v[0], hem.v[1], 0], l);
@@ -668,7 +740,7 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
     for (let k = 0; k + 1 < pts.length; k++) {
       const ra = r * (1 - k / pts.length) + 0.25;
       const rb = r * (1 - (k + 1) / pts.length) + 0.2;
-      put(`tail${j % 3}`, 'robe', { k: 'rod', a: pts[k], b: pts[k + 1], ra, rb, ramp: k >= pts.length - 3 ? FM_LINING : FM_ROBE, far: true });
+      put(`tail${j % 3}`, 'robe', { k: 'rod', a: pts[k], b: pts[k + 1], ra, rb, ramp: k >= pts.length - 2 ? FM_LINING : FM_ROBE, far: true });
     }
     if (lit > 0.05) {
       // (an ember off its tip now and then, dripping down toward the floor and going out)
@@ -677,7 +749,7 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
       if (k < 0.65) {
         const tip = pts[pts.length - 1];
         const z = tip[2] - 9 * (k / 0.65) ** 1.6;
-        if (z > 0.5) put('embers', 'embers', { k: 'mote', p: [tip[0], tip[1], z], c: k < 0.2 ? FLAME[3] : k < 0.45 ? FLAME[2] : FLAME[1], size: 1 });
+        if (z > 0.5) fleck(st, put, [tip[0], tip[1], z], k < 0.2 ? FLAME[3] : k < 0.45 ? FLAME[2] : FLAME[1], j + Math.floor(life));
       }
     }
   });
@@ -766,14 +838,14 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
     stamp(st, put, 'handR', 'handR', gripPix([Math.floor(gx) + 0.5, Math.floor(gy) + 0.5], along, toArm, heat), add(s.handR, mul(st.eye, 2.4)));
   }
 
-  // --- THE SKULL AT ITS HEAD, looking at you whichever way he faces; the fire burning out of its sockets and its mouth ---
+  // --- THE SKULL AT ITS HEAD, looking at you whichever way he faces; the fire licking up and out of its sockets, a ragged flame off its crown ---
   {
     const sc = staff.skull;
     const suck = charge;
     const hot = lit * (1 + 0.8 * flare - 0.55 * suck);
     const [scx, scy] = st.at(sc);
-    const x0 = Math.round(scx) - 8;
-    const y0 = Math.round(scy) - 11;
+    const x0 = Math.round(scx) - SKULL_MID[0];
+    const y0 = Math.round(scy) - SKULL_MID[1];
     const drop = flare > 0.55 ? 2 : flare > 0.2 ? 1 : 0;
     const pix = skullPix(x0, y0, hot, lit, drop);
     stamp(st, put, 'skull', 'skull', pix, add(sc, mul(st.eye, 1.5)));
@@ -781,27 +853,41 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
       const behindSkull = grown(pix.keys(), 1);
       const atPx = (x: number, y: number): V3 => screenStep(st, sc, x + 0.5 - scx, y + 0.5 - scy);
       const roar = 1 + 0.15 * Math.sin(ph * 6 + 0.7) + 0.7 * flare - 0.6 * suck;
-      // OUT OF ITS SOCKETS: a tongue of fire licking up out of each, over the brow and back over the temple
-      SKULL_EYES.forEach(([ex, ey], i) => {
-        const lean = (i === 0 ? -1 : 1) * (2.2 + 0.8 * Math.sin(ph * 4 + i * 2));
-        tongueAt(st, put, sc, [x0 + ex + 0.5, y0 + ey], (5.5 + 1.5 * Math.sin(ph * 6 + i * 2.3)) * roar * lit, 2.4 + 0.8 * flare, lean, hot);
+      const step = hot > 1.3 ? 0 : -1;
+      // OUT OF ITS SOCKETS: from the fire deep in each, a tongue licking up and out over the temple, away from its face
+      SKULL_EYES.forEach(([ex, ey, out], i) => {
+        const lean = out * (3.2 + 1.0 * Math.sin(ph * 4 + i * 2));
+        tongueAt(st, put, sc, [x0 + ex + 0.5, y0 + ey + 1], (5 + 1.5 * Math.sin(ph * 6 + i * 2.3)) * roar * lit, 1.8 + 0.6 * flare, lean, 1, undefined, step);
       });
-      // OFF ITS CROWN, from behind it, lower than the skull is tall
-      fireAt(st, put, atPx(x0 + 8, y0 + 3), Math.min(13, (8 + 1.5 * pulse) * roar) * lit, 2.6 + 0.8 * flare, ph * 3 + 2.6, hot, 0.2, (_p, x, y) => behindSkull.has(pk(x, y)), true);
-      // (its light: over its crown, where the flames are, and a little in its sockets and mouth; never over the bone to wash it white)
-      put('glow', 'glow', { k: 'glow', p: atPx(x0 + 8, y0 - 12), c: FLAME[3], r: 14 + 2 * Math.sin(ph * 6 + 0.7) + 4 * flare - 3 * suck, a: Math.min(0.6, (0.34 + 0.14 * flare - 0.12 * suck) * lit) });
-      for (const [ex, ey] of SKULL_EYES) put('glow', 'glow', { k: 'glow', p: atPx(x0 + ex + (ex < 8 ? 1 : -1), y0 + ey + 4), c: SOCKET, r: 4 + 2 * flare, a: Math.min(0.6, (0.32 + 0.2 * flare) * lit) });
-      put('glow', 'glow', { k: 'glow', p: atPx(x0 + SKULL_MOUTH_AT[0], y0 + SKULL_MOUTH_AT[1] + drop), c: SOCKET, r: 5 + 2 * flare, a: Math.min(0.6, (0.3 + 0.2 * flare) * lit) });
+      // OFF ITS CROWN, from behind it: ragged, one tongue taller than the rest, lower than the skull is tall
+      const crown: ReadonlyArray<readonly [number, number, number, number]> = [[5, 9, 3.2, 0.5], [9, 3.5, 1.8, 1.9], [2, 2.2, 1.4, -1.4]];
+      crown.forEach(([cx, tall0, wide, lean], j) => {
+        const tall = Math.min(12, (tall0 + 1.8 * Math.sin(ph * (5 + j) + j * 1.9)) * roar) * lit;
+        tongueAt(st, put, sc, [x0 + cx + 0.5, y0 + 3], tall, wide + 0.6 * flare, lean + 0.7 * Math.sin(ph * 3 + j), 1, (x, y) => behindSkull.has(pk(x, y)), hot > 1.3 ? 1 : 0);
+      });
+      // (its light: over its crown, where the flame is, and a little at its sockets; never over the bone to wash it white)
+      put('glow', 'glow', { k: 'glow', p: atPx(x0 + 6, y0 - 9), c: FLAME[3], r: 14 + 2 * Math.sin(ph * 6 + 0.7) + 4 * flare - 3 * suck, a: Math.min(0.55, (0.32 + 0.12 * flare - 0.1 * suck) * lit) });
+      for (const [ex, ey] of SKULL_EYES) put('glow', 'glow', { k: 'glow', p: atPx(x0 + ex, y0 + ey - 1), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.5, (0.28 + 0.18 * flare) * lit) });
     }
-    // THE FIRE DRAWN DOWN OUT OF IT into his hand as he gathers it: a stream of pink motes
+    // THE FIRE DRAWN DOWN OUT OF IT into his hand as he gathers it: streaks of it, unevenly spaced, running down to his claw
     if (charge > 0.15 && lit > 0.05) {
       const to = add(s.handL, [0, 0, 3]);
-      for (let i = 0; i < 10; i++) {
-        const k = (((m.t * 2.2 + i / 10) % 1) + 1) % 1;
-        const p = add(lerp3(sc, to, k), [0, 0, Math.sin(Math.PI * k) * 8]);
-        if (hash(i, Math.floor(m.t * 10 + 1e-6), 227) < 0.2) continue;
-        put('embers', 'embers', { k: 'mote', p, c: k < 0.5 ? FLAME[2] : FLAME[3], size: k > 0.7 && charge > 0.6 ? 2 : 1 });
-      }
+      const along = (k: number): V3 => add(lerp3(sc, to, k), [0, 0, Math.sin(Math.PI * k) * 8]);
+      const OFFS = [0, 0.19, 0.27, 0.52, 0.78];
+      OFFS.forEach((o, i) => {
+        const k = (((m.t * 2.1 + o) % 1) + 1) % 1;
+        if (k < 0.08 || k > 0.94) return;
+        const long = 0.05 + 0.04 * hash(i, 3, 227);
+        const streak: Pix = new Map();
+        const [ax, ay] = st.at(along(k));
+        const [bx, by] = st.at(along(Math.max(0, k - long)));
+        linePix(streak, [ax, ay], [bx, by], (u) => (u < 0.4 ? (k > 0.6 ? FLAME[3] : FLAME[2]) : FLAME[1]));
+        if (streak.size < 2) streak.set(pk(Math.floor(ax) + 1, Math.floor(ay) + 1), FLAME[1]);
+        for (const [key, c] of streak) {
+          const [x, y] = pxOf(key);
+          put('embers', 'embers', { k: 'mote', p: screenStep(st, along(k), x + 0.5 - ax, y + 0.5 - ay), c, size: 1 });
+        }
+      });
     }
   }
 
@@ -839,11 +925,11 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
     }
     if (lit > 0.05 && handFire > 0.05) {
       const at = screenStep(st, s.handL, claw.heart[0] - wx, claw.heart[1] - wy);
-      put('glow', 'glow', { k: 'glow', p: at, c: FLAME[2], r: (12 + 3 * pulse + 7 * charge) * Math.min(1, handFire), a: Math.min(0.7, (0.38 + 0.1 * pulse + 0.2 * charge) * lit) * (hidden ? 0.3 : 1) });
+      put('glow', 'glow', { k: 'glow', p: at, c: FLAME[2], r: (12 + 3 * pulse + 7 * charge) * Math.min(1, handFire), a: Math.min(0.7, (0.38 + 0.1 * pulse + 0.2 * charge) * lit) * (1 - 0.7 * behindness(at)) });
     }
   }
 
-  // --- THE MANTLE: stiff and broad over his shoulders, its edge notched and banded gold and pink ---
+  // --- THE MANTLE: stiff and broad over his shoulders, its edge clean and banded gold and pink ---
   const face = wornOn(st, s, 12);
   const [ff, fl, fu] = face;
   const capeC = add(add(s.neck, mul(cu, -7.6)), mul(lag, 0.4));
@@ -857,16 +943,15 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
       const a = (i / N) * Math.PI * 2;
       const rear = Math.max(0, -Math.cos(a));
       const p = add(capeC, add(mul(capeU, Math.cos(a)), mul(capeV, Math.sin(a))));
-      // (lower behind; notched into a few broad points; stirring)
-      const notch = i % 4 === 0 ? 1.8 : 0;
-      hemPts.push(add(p, [0, 0, -rear * 2.6 - notch + Math.sin(ph * 2 + a * 3) * 0.5 - gale * rear * 1.5]));
+      // (lower behind; stirring)
+      hemPts.push(add(p, [0, 0, -rear * 2.6 + Math.sin(ph * 2 + a * 3) * 0.4 - gale * rear * 1.5]));
     }
     mantle.push(
       { c: add(s.neck, mul(cu, 3.4)), u: mul(cf, 5.2), v: mul(cl, 6.0) },
       { c: add(s.neck, mul(cu, -0.6)), u: mul(cf, B.ribDeep + 3.4), v: mul(cl, B.shoulderHalf + 5.4) },
       { c: capeC, u: capeU, v: capeV, pts: hemPts },
     );
-    put('mantle', 'mantle', { k: 'cloth', rings: mantle, ramp: FM_MANTLE, look: { folds: [35, -35, 80, -80, 130, -130, 180], lift: 0.3 } });
+    put('mantle', 'mantle', { k: 'cloth', rings: mantle, ramp: FM_MANTLE, look: { folds: [35, -35, 80, -80, 125, -125, 158, -158], lift: 0.3 } });
     // its edge: a band of pink, and gold at the very edge, round it (seen from in front and from behind)
     for (let i = 0; i < N; i++) {
       const a0 = hemPts[i];
@@ -878,99 +963,60 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
     }
   }
 
-  // --- THE STOLE DOWN HIS FRONT: a broad band of his cult's pink, edged with gold, from under his hood over the mantle and down the robe to its hem ---
+  // --- THE FRONT OF HIS ROBE, where it parts below the mantle: two edges of it, each pink edged with gold, from under the mantle's edge down to the hem, unbroken, parting a little as they go down ---
   {
-    const zTop = s.neck[2] + 0.5;
-    const zEnd = hem.c[2] + 1.2;
-    const steps = 16;
-    let prev: V3[] | null = null;
-    for (let i = 0; i <= steps; i++) {
-      const z = zTop + (zEnd - zTop) * (i / steps);
-      const onMantle = z > capeC[2] - 1.0;
-      const rings = onMantle ? mantle : robeRings;
-      const mid0: V3 = [s.pelvis[0] + (s.neck[0] - s.pelvis[0]) * clamp01((z - s.pelvis[2]) / Math.max(1, s.neck[2] - s.pelvis[2])), s.pelvis[1] + (s.neck[1] - s.pelvis[1]) * clamp01((z - s.pelvis[2]) / Math.max(1, s.neck[2] - s.pelvis[2])), z];
-      const fw: V3 = onMantle ? norm([cf[0], cf[1], 0], f) : f;
-      const lw: V3 = [-fw[1], fw[0], 0];
-      const p = onCloth(rings, add(mid0, mul(fw, 30)), 0.7);
-      const pts = [p, add(p, mul(lw, 2.5)), add(p, mul(lw, -2.5))];
-      if (prev) {
-        put('stole', 'stole', { k: 'rod', a: prev[0], b: pts[0], ra: 1.6, rb: 1.6, ramp: BAND });
-        put('stole', 'stole', { k: 'rod', a: prev[1], b: pts[1], ra: 0.5, rb: 0.5, ramp: GOLD });
-        put('stole', 'stole', { k: 'rod', a: prev[2], b: pts[2], ra: 0.5, rb: 0.5, ramp: GOLD });
-      }
-      prev = pts;
-    }
-  }
-
-  // (and down his back: it is a scapular, over his shoulders and hanging before and behind)
-  {
-    const zTop = s.neck[2] - 1.5;
-    const zEnd = hem.c[2] + 3.0;
+    const zTop = capeC[2] - 0.4;
+    const zEnd = hem.c[2] + 1.0;
     const steps = 14;
     let prev: V3[] | null = null;
     for (let i = 0; i <= steps; i++) {
-      const z = zTop + (zEnd - zTop) * (i / steps);
-      const onMantle = z > capeC[2] - 4.6;
-      const rings = onMantle ? mantle : robeRings;
+      const k = i / steps;
+      const z = zTop + (zEnd - zTop) * k;
       const kz = clamp01((z - s.pelvis[2]) / Math.max(1, s.neck[2] - s.pelvis[2]));
       const mid0: V3 = [s.pelvis[0] + (s.neck[0] - s.pelvis[0]) * kz, s.pelvis[1] + (s.neck[1] - s.pelvis[1]) * kz, z];
-      const fw: V3 = onMantle ? norm([cf[0], cf[1], 0], f) : f;
-      const lw: V3 = [-fw[1], fw[0], 0];
-      const p = onCloth(rings, add(mid0, mul(fw, -30)), 0.7);
-      const pts = [p, add(p, mul(lw, 2.5)), add(p, mul(lw, -2.5))];
+      const apart = 1.7 + 1.6 * k;
+      const pts: V3[] = [];
+      for (const side of [-1, 1]) {
+        const edge = onCloth(robeRings, add(add(mid0, mul(f, 30)), mul(l, side * apart * 7)), 0.6);
+        pts.push(edge, add(edge, mul(l, side * 0.9)));
+      }
       if (prev) {
-        put('scapular', 'stole', { k: 'rod', a: prev[0], b: pts[0], ra: 1.6, rb: 1.6, ramp: BAND });
-        put('scapular', 'stole', { k: 'rod', a: prev[1], b: pts[1], ra: 0.5, rb: 0.5, ramp: GOLD });
-        put('scapular', 'stole', { k: 'rod', a: prev[2], b: pts[2], ra: 0.5, rb: 0.5, ramp: GOLD });
+        for (const j of [0, 2]) {
+          put('opening', 'opening', { k: 'rod', a: prev[j], b: pts[j], ra: 0.7, rb: 0.7, ramp: BAND });
+          put('opening', 'opening', { k: 'rod', a: prev[j + 1], b: pts[j + 1], ra: 0.45, rb: 0.45, ramp: GOLD });
+        }
       }
       prev = pts;
     }
   }
 
-  // --- THE COLLAR OF BONE: a high stiff collar behind his hood, its stays of bone rising past it, uneven and jagged: a dark crown of bone ---
+  // --- THE COLLAR OF BONE: ribs of bone rising from his collar behind his hood and curving in over it like a ribcage closing over his head; bone, never gold, never higher than a little over his hood ---
   {
-    const back = mul(cf, -1);
-    const base = add(add(s.neck, mul(cu, 1.0)), mul(back, 1.0));
-    const ringU = B.ribDeep + 1.4;
-    const ringV = B.shoulderHalf + 0.8;
-    // (each stay: where round the back of him, how tall, how far it leans out)
-    const STAYS: ReadonlyArray<readonly [number, number, number]> = [[98, 8, 0.7], [118, 13, 0.55], [138, 17, 0.42], [158, 21, 0.3], [180, 16, 0.22], [200, 22, 0.3], [221, 17.5, 0.42], [241, 12.5, 0.55], [261, 8.5, 0.7]];
-    const webLow: V3[] = [];
-    const webHigh: V3[] = [];
-    STAYS.forEach(([deg, h, outLean], i) => {
+    const hcTop = add(add(s.head, add(mul(ff, FM_HOOD_FWD), mul(fu, FM_HOOD_UP))), mul(fu, FM_HOOD_R[2]));
+    const base0 = add(s.neck, mul(cu, 0.6));
+    // (each rib: where round the back of him, how far over his hood its tip comes, how high it ends against the top of his hood)
+    const RIBS: ReadonlyArray<readonly [number, number, number]> = [[98, 0.72, 2.2], [128, 0.86, 4.2], [232, 0.86, 3.8], [262, 0.72, 1.8]];
+    RIBS.forEach(([deg, over, up], i) => {
       const a = deg * D;
       const out: V3 = norm(add(mul(cf, Math.cos(a)), mul(cl, Math.sin(a))));
-      const b0 = add(base, add(mul(cf, Math.cos(a) * ringU), mul(cl, Math.sin(a) * ringV)));
-      const sway = Math.sin(ph * 2 + i * 1.3) * 0.3 + gale * 0.8;
-      const b1 = add(b0, add(mul(cu, h * 0.55), mul(out, h * outLean * 0.45 + sway)));
-      const b2 = add(b1, add(mul(cu, h * 0.45), mul(out, h * outLean * 0.8 + sway)));
-      webLow.push(b0);
-      webHigh.push(lerp3(b0, b1, 0.95));
-      put('collar', 'collar', { k: 'rod', a: b0, b: b1, ra: 1.25, rb: 0.95, ramp: STAY_BONE, far: true });
-      put('collar', 'collar', { k: 'rod', a: b1, b: b2, ra: 0.95, rb: 0.25, ramp: STAY_BONE, far: true });
-      put('collar', 'collar', { k: 'ball', c: b1, ax: sphere(1.2), skin: STAY_BONE, far: true });
+      const b0 = add(base0, add(mul(cf, Math.cos(a) * (B.ribDeep + 1.0)), mul(cl, Math.sin(a) * (B.shoulderHalf * 0.62))));
+      // (out and up first, then curling in toward the top of his hood)
+      const sway = Math.sin(ph * 2 + i * 1.3) * 0.25 + gale * 0.6;
+      const tip = add(add(add(hcTop, mul(fu, up)), mul(ff, -1.8)), mul(out, FM_HOOD_R[1] * (1 - over) + sway));
+      const ctrl = add(add(lerp3(b0, tip, 0.55), mul(out, 9.5 + 0.8 * Math.sin(i * 2.7))), mul(cu, 2.5));
+      const pts: V3[] = [];
+      for (let k = 0; k <= 4; k++) {
+        const u = k / 4;
+        pts.push(lerp3(lerp3(b0, ctrl, u), lerp3(ctrl, tip, u), u));
+      }
+      for (let k = 0; k < 4; k++) {
+        put('collar', 'collar', { k: 'rod', a: pts[k], b: pts[k + 1], ra: 1.35 - k * 0.25, rb: 1.35 - (k + 1) * 0.25, ramp: STAY_BONE, far: true });
+      }
+      put('collar', 'collar', { k: 'ball', c: pts[1], ax: sphere(1.3), skin: STAY_BONE, far: true });
     });
-    // the collar's cloth, stretched between the stays partway up them: dark and ragged
-    for (let i = 0; i + 1 < webLow.length; i++) {
-      const c = lerp3(lerp3(webLow[i], webLow[i + 1], 0.5), lerp3(webHigh[i], webHigh[i + 1], 0.5), 0.5);
-      const u = mul(sub(webLow[i + 1], webLow[i]), 0.5);
-      const v = mul(sub(lerp3(webHigh[i], webHigh[i + 1], 0.5), lerp3(webLow[i], webLow[i + 1], 0.5)), 0.5);
-      const ragged = hash(i, 7, 229);
-      const w = len(u);
-      const hgt = len(v);
-      put('collarCloth', 'collar', {
-        k: 'panel', c, u, v,
-        skin: (a0, b0, front, tone) => {
-          const k = (b0 / Math.max(0.1, hgt) + 1) / 2;
-          const notchTop = 1 - 0.4 * Math.abs(Math.sin((a0 / Math.max(0.1, w)) * 3 + ragged * 6));
-          if (k > notchTop) return null;
-          return FM_ROBE[Math.max(0, Math.min(3, (front ? tone : tone - 1) - 1))];
-        },
-      });
-    }
   }
 
-  // --- THE HOOD: deep and round; round its opening a hard rim, gold and pink, lit pink from inside; the opening pitch black; in it his eyes, two upright slits of fire, close together ---
+  // --- THE HOOD: deep and round, its point drooping behind; gold and pink on its outer brim; the opening pitch black, its edge lit a little from inside; in it his eyes, two hot points ---
   {
     const hc = add(s.head, add(mul(ff, FM_HOOD_FWD), mul(fu, FM_HOOD_UP)));
     const hr = FM_HOOD_R;
@@ -986,79 +1032,130 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
     const [ox, oy] = st.at(add(add(hc, mul(odLevel, hr[0] * 0.9)), [0, 0, -0.9]));
     const oxi = Math.floor(ox);
     const oyi = Math.floor(oy);
-    const faceColour = (ch: string, row: number): string | null => {
+    const faceColour = (ch: string): string | null => {
       switch (ch) {
-        case 'g':
-          return hot ? FLAME[4] : GOLD[3];
-        case 'p':
-          return hot ? FLAME[2] : BAND[2];
+        case 'G':
+          return GOLD[3];
         case 'P':
-          return hot ? FLAME[3] : BAND[3];
+          return hot ? FLAME[2] : BAND[2];
+        case 'r':
+          return lit < 0.05 ? INK : hot ? FLAME[1] : '#4a0c38';
         case 'k':
           return INK;
+        case 'h':
+          return lit < 0.05 ? INK : hot ? '#fffbe8' : FLAME[3];
         case 'e':
-          if (lit < 0.05) return INK;
-          return row === HOOD_EYE_ROW ? (hot ? '#fffbe8' : FLAME[3]) : row < HOOD_EYE_ROW ? (hot ? FLAME[3] : SOCKET) : hot ? FLAME[2] : FLAME[1];
+          return lit < 0.05 ? INK : hot ? FLAME[2] : FLAME[1];
         default:
           return null;
       }
     };
+    // (the face is painted only when it is turned toward the eye: from behind, the hood is the back of a hood)
+    const seenFace = dot(od, st.eye) > 0.15;
     const hoodSkin: Skin = (u, tone) => {
       const toOpen = u[0] * Math.cos(midA) + u[1] * Math.sin(midA);
-      if (toOpen > 0.15) {
+      if (seenFace && toOpen > -0.25) {
         const p = add(hc, add(add(mul(ff, u[0] * hr[0]), mul(fl, u[1] * hr[1])), mul(fu, u[2] * hr[2])));
         const [x, y] = st.at(p);
         const col = Math.floor(x) - oxi + HOOD_FACE_MID[0];
         const row = Math.floor(y) - oyi + HOOD_FACE_MID[1];
         const line = HOOD_FACE[row];
         if (line && col >= 0 && col < line.length) {
-          const c = faceColour(line[col], row);
+          const ch = line[col];
+          // (the brim round its sides, the opening only where the hood faces the way he looks)
+          const c = ch === 'G' || ch === 'P' || toOpen > 0.15 ? faceColour(ch) : null;
           if (c) return c;
         }
       }
-      return FM_ROBE[tone];
+      return FM_HOOD[tone];
     };
     put('hood', 'hood', { k: 'ball', c: hc, ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin: hoodSkin });
     // (the back of the hood falls to the mantle)
-    put('hood', 'hood', { k: 'ball', c: add(add(hc, mul(ff, -3.6)), mul(fu, -4.0)), ax: [mul(ff, 4.8), mul(fl, 5.8), mul(fu, 4.6)], skin: FM_ROBE });
+    put('hood', 'hood', { k: 'ball', c: add(add(hc, mul(ff, -3.6)), mul(fu, -4.0)), ax: [mul(ff, 4.8), mul(fl, 5.8), mul(fu, 4.6)], skin: FM_HOOD });
     if (lit > 0.05 && dot(od, st.eye) > 0.05) {
-      for (const k of [-1, 1]) put('glow', 'glow', { k: 'glow', p: screenStep(st, hc, ox + k * 1.0 - st.at(hc)[0], oy - st.at(hc)[1]), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.55, 0.3 * blaze) });
+      for (const [ex, ey] of HOOD_EYES) put('glow', 'glow', { k: 'glow', p: screenStep(st, hc, oxi + ex - HOOD_FACE_MID[0] + 0.5 - st.at(hc)[0], oyi + ey - HOOD_FACE_MID[1] + 0.5 - st.at(hc)[1]), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.55, 0.3 * blaze) });
     }
   }
 
-  // --- THE GOUT OF FIRE HE FLINGS: out of his hand, arcing out to his side, and bursting on the floor ---
+  // --- THE GOUT OF FIRE HE FLINGS: out of his hand, before him and down toward you, trailing; and bursting on the floor ---
   const g = q.pEl;
   if (g > 0.001 && g < 1.999 && lit > 0.05) {
+    const [sx, sy] = st.at(FM_GOUT_SPOT);
     if (g < 1) {
-      const p = goutAtU(g);
-      const prev = goutAtU(Math.max(0, g - 0.18));
+      const p = add(goutAtU(g), [0, 0, 1.5]);
+      const prev = add(goutAtU(Math.max(0, g - 0.2)), [0, 0, 1.5]);
       const [px1, py1] = st.at(p);
       const [px0, py0] = st.at(prev);
-      fireBall(st, put, add(p, [0, 0, 1.5]), 4.4 + 0.8 * (1 - g), [px0 - px1, py0 - py1], Math.min(12, Math.hypot(px0 - px1, py0 - py1) + 4), behindHim);
-      // (its trail: the way it has come, in sparks going out behind it)
-      for (let i = 1; i <= 6; i++) {
-        const u = g - i * 0.06;
+      const back: [number, number] = [px0 - px1, py0 - py1];
+      fireBall(st, put, p, 4.2 + 0.8 * (1 - g), back, Math.min(16, Math.hypot(back[0], back[1]) + 6), behindHim);
+      // (its trail: flecks of its fire left along the way it has come, going out)
+      for (let i = 1; i <= 7; i++) {
+        const u = g - i * 0.055 - 0.03 * hash(i, 9, 241);
         if (u <= 0) break;
-        const tp = add(goutAtU(u), [0, 0, 1.5 + Math.sin(i * 2.1 + g * 9) * 0.8]);
+        const tp = add(goutAtU(u), [0, 0, 1.5 + (hash(i, 8, 241) - 0.5) * 3]);
         if (behindHim(tp)) continue;
-        put('fire', 'fire', { k: 'mote', p: tp, c: i < 3 ? FLAME[3] : i < 5 ? FLAME[2] : FLAME[1], size: i < 3 ? 2 : 1 });
+        fleck(st, put, tp, i < 3 ? FLAME[3] : i < 5 ? FLAME[2] : FLAME[1], i * 1.7 + Math.floor(g * 5), 'fire');
       }
-      put('glow', 'glow', { k: 'glow', p, c: FLAME[3], r: 14, a: 0.55 * lit });
+      put('glow', 'glow', { k: 'glow', p, c: FLAME[3], r: 14, a: (0.5 - 0.2 * g) * lit });
     } else {
-      // (it strikes: fire standing up off the floor and dying down, a ring of embers thrown out)
-      const k = g - 1;
-      const rise = smooth(k / 0.3);
-      const fall = 1 - smooth((k - 0.25) / 0.75);
-      const tall = 14 * rise * fall;
-      if (tall > 1.5) fireAt(st, put, FM_GOUT_SPOT, tall, 3 + 2 * rise, ph * 4 + 1, 1.2 * fall, 7, behindHim, true);
-      for (let i = 0; i < 12; i++) {
-        const a = (i / 12) * Math.PI * 2 + hash(i, 1, 233);
-        const r = 2 + 12 * Math.sqrt(k) * (0.6 + 0.4 * hash(i, 2, 233));
-        const z = Math.max(0.4, 5 * Math.sin(Math.PI * Math.min(1, k * 1.6)) * hash(i, 3, 233));
-        if (k > 0.85 && hash(i, 4, 233) < k) continue;
-        put('embers', 'embers', { k: 'mote', p: [FM_GOUT_SPOT[0] + Math.cos(a) * r, FM_GOUT_SPOT[1] + Math.sin(a) * r * 0.9, z], c: k < 0.3 ? FLAME[3] : k < 0.6 ? FLAME[2] : FLAME[1], size: 1 });
+      // (seconds since it struck)
+      const kt = (g - 1) * FM_GOUT_BURN;
+      const onFloor = (x: number, y: number): V3 => screenStep(st, FM_GOUT_SPOT, x + 0.5 - sx, y + 0.5 - sy);
+      const hid = (x: number, y: number): boolean => behindHim(onFloor(x, y));
+      // THE FLASH where it strikes: a splash of white-gold and pink on the floor, as wide as he is; then a broken ring of it spreading out and going out
+      if (kt < 0.13) {
+        const rx = 11 + 30 * kt;
+        for (let y = Math.floor(sy - rx / 2) - 1; y <= Math.ceil(sy + rx / 2) + 1; y++) {
+          for (let x = Math.floor(sx - rx) - 1; x <= Math.ceil(sx + rx) + 1; x++) {
+            const d = Math.hypot((x + 0.5 - sx) / rx, (y + 0.5 - sy) / (rx / 2));
+            if (d > 1 || hid(x, y)) continue;
+            put('fire', 'fire', { k: 'mote', p: onFloor(x, y), c: d < 0.35 ? FLAME[4] : d < 0.65 ? FLAME[3] : FLAME[2], size: 1 });
+          }
+        }
+      } else if (kt < 0.55) {
+        const k = (kt - 0.13) / 0.42;
+        const rx = 15 + 12 * k;
+        const c = k < 0.35 ? FLAME[2] : k < 0.7 ? FLAME[1] : FLAME[0];
+        // (in unbroken arcs, some arcs gone, more of them as it goes out: never a lone pixel)
+        for (let seg = 0; seg < 12; seg++) {
+          if (hash(seg, 3, 251) < 0.2 + 0.45 * k) continue;
+          const arc = new Set<number>();
+          for (let j = 0; j <= 24; j++) {
+            const a0 = ((seg + j / 24) / 12) * Math.PI * 2;
+            arc.add(pk(Math.floor(sx + Math.cos(a0) * rx), Math.floor(sy + Math.sin(a0) * rx * 0.5)));
+          }
+          for (const key of arc) {
+            const [x, y] = pxOf(key);
+            if (!hid(x, y)) put('fire', 'fire', { k: 'mote', p: onFloor(x, y), c, size: 1 });
+          }
+        }
       }
-      put('glow', 'glow', { k: 'glow', p: [FM_GOUT_SPOT[0], FM_GOUT_SPOT[1], 4], c: FLAME[3], r: 10 + 14 * rise * fall, a: 0.6 * rise * fall * lit });
+      // THE BURST: tongues of fire standing up off the floor across it, ragged, rising fast and dying down
+      const rise = smooth(kt / 0.12);
+      const fall = 1 - smooth((kt - 0.15) / 0.5);
+      const TONGUES: ReadonlyArray<readonly [number, number, number]> = [[-11, 8, 2.4], [-6, 13, 3], [-1.5, 18, 3.6], [2.5, 15, 3.2], [7, 10, 2.8], [11.5, 6, 2.2]];
+      TONGUES.forEach(([dx, tall0, wide], j) => {
+        const tall = tall0 * rise * fall * (1 + 0.18 * Math.sin(ph * 7 + j * 2.3));
+        if (tall >= 1.5) tongueAt(st, put, FM_GOUT_SPOT, [sx + dx + 0.5, sy + 0.5 + Math.abs(dx) * 0.08], tall, wide, Math.sin(j * 1.9 + kt * 6) * 1.5, fall > 0.6 ? 1.3 : 0.8, hid);
+      });
+      // THE EMBERS it throws out: up and out, falling back to the floor, going out one by one over its last frames
+      for (let i = 0; i < 16; i++) {
+        const life = 0.45 + 0.4 * hash(i, 5, 251);
+        if (kt > life) continue;
+        const a0 = (i / 16) * Math.PI * 2 + hash(i, 1, 251);
+        const out = (9 + 13 * hash(i, 2, 251)) * smooth(kt / 0.45);
+        const up = (5 + 9 * hash(i, 3, 251)) * Math.sin(Math.PI * Math.min(1, kt / life));
+        const ep: V3 = [FM_GOUT_SPOT[0] + Math.cos(a0) * out, FM_GOUT_SPOT[1] + Math.sin(a0) * out, Math.max(0.6, up)];
+        if (behindHim(ep)) continue;
+        const left = 1 - kt / life;
+        fleck(st, put, ep, left > 0.55 ? FLAME[3] : left > 0.25 ? FLAME[2] : FLAME[1], i * 2.3, 'embers');
+      }
+      // (its light: swelling over two or three frames, dying away)
+      // (from the light it had in flight, as it strikes, up over three or four frames, and dying away)
+      const L = smooth(kt / 0.45) * (1 - smooth((kt - 0.42) / 0.45));
+      const fade = 1 - smooth((kt - 0.42) / 0.45);
+      const ga = (0.3 + 0.25 * L) * fade;
+      if (ga > 0.02) put('glow', 'glow', { k: 'glow', p: [FM_GOUT_SPOT[0], FM_GOUT_SPOT[1], 4], c: FLAME[3], r: 14 + 12 * L, a: ga * lit });
     }
   }
   return bits;
@@ -1075,80 +1172,102 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
  */
 export const FM_REST: Bones = {
   ...standing(FB),
-  pz: FM_FLOAT, px: 0, py: 0, yaw: -8, pitch: 3, roll: 0, twist: 4, bend: 8, side: 0,
-  faceTurn: 6, faceUp: -6, faceTilt: 0,
+  pz: FM_FLOAT, px: 0, py: 0, yaw: -8, pitch: -1, roll: 0, twist: 4, bend: 1, side: 0,
+  faceTurn: 6, faceUp: -2, faceTilt: 0,
   lfx: -1.0, lfy: 0.9, lfz: FM_FLOAT + 5.5, lfp: 44, lft: 12, lk: 10,
   rfx: -1.6, rfy: -0.9, rfz: FM_FLOAT + 6.0, rfp: 48, rft: -10, rk: -6,
-  rhIn: 0, rhx: 1.5, rhy: -13.5, rhz: -9.5, re: 28,
+  rhIn: 1, rhx: 1.5, rhy: -13.5, rhz: -9.5, re: 28,
   lhIn: 0, lhx: 3.5, lhy: 15.0, lhz: 1.5, le: 50,
   wAz: -90, wEl: 81, wRoll: 0,
   draw: 0.35, out: 0, gale: 0, prop: 0, pt: 0, pAz: 1, pEl: 0, stow: 0,
 };
-/** Where his casting hand goes as he gathers the fire (before his chest, where it is seen), and as he flings it (out to his left side, at his shoulder). */
-const LH_CHARGE: readonly [number, number, number] = [9.5, -2.5, -2.5];
-const LH_FLING: readonly [number, number, number] = [5.0, 15.5, 0.5];
+/**
+ * A CURVE THROUGH KEYS (seconds, value): smooth through each key, its slope there taken from the keys either
+ * side, so that it goes on through a key it does not stop at (and may overshoot), and stops only where two
+ * keys either side of one agree; flat before the first key and after the last.
+ */
+function curve(keys: ReadonlyArray<readonly [number, number]>, t: number): number {
+  const n = keys.length;
+  if (t <= keys[0][0]) return keys[0][1];
+  if (t >= keys[n - 1][0]) return keys[n - 1][1];
+  let i = 0;
+  while (t > keys[i + 1][0]) i++;
+  const [t0, v0] = keys[i];
+  const [t1, v1] = keys[i + 1];
+  const slope = (j: number): number => (j <= 0 || j >= n - 1 ? 0 : (keys[j + 1][1] - keys[j - 1][1]) / (keys[j + 1][0] - keys[j - 1][0]));
+  const m0 = slope(i) * (t1 - t0);
+  const m1 = slope(i + 1) * (t1 - t0);
+  const u = (t - t0) / (t1 - t0);
+  const u2 = u * u;
+  const u3 = u2 * u;
+  return (2 * u3 - 3 * u2 + 1) * v0 + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * v1 + (u3 - u2) * m1;
+}
+type Keys = ReadonlyArray<readonly [number, number]>;
+/**
+ * HIS CASTING HAND THROUGH HIS HABIT (from his shoulder, along his chest's forward, left and up; and how his
+ * elbow swings): at rest out at his side; drawn in before his chest to gather (where it is seen); wound back
+ * across him; then THE THROW, his elbow leading and the hand whipping after it, past where it lets go and
+ * on (the overshoot), and back; then home.
+ */
+const LH_KEYS: { x: Keys; y: Keys; z: Keys; e: Keys } = {
+  x: [[0, 3.5], [0.95, 3.5], [1.6, 10], [1.85, 8.5], [1.95, 8], [2.05, 8.5], [2.14, 13.5], [2.24, 17], [2.34, 15], [2.55, 12.5], [2.95, 9], [3.6, 3.5]],
+  y: [[0, 15], [0.95, 15], [1.6, 0.5], [1.85, -2], [1.95, 0], [2.05, 6], [2.14, 12], [2.24, 16.5], [2.34, 16.5], [2.55, 16], [2.95, 15.5], [3.6, 15]],
+  z: [[0, 1.5], [0.95, 1.5], [1.6, -2], [1.85, -1], [1.95, 2], [2.05, 5], [2.14, 3], [2.24, -3.5], [2.34, -2], [2.55, 0.5], [2.95, 1.5], [3.6, 1.5]],
+  e: [[0, 50], [0.95, 50], [1.6, 15], [1.85, 8], [1.95, 40], [2.05, 75], [2.14, 45], [2.24, -12], [2.34, -4], [2.55, 10], [2.95, 30], [3.6, 50]],
+};
 
 /**
  * STANDING, NEVER STILL (the art rulebook, Movement 6, "Alive when still"; and Animations 1, "as big and
- * wild and kinetic and weighty as possible"): 3.6 s round, 36 frames at ten a second. He floats, rising
- * and sinking slowly on nothing, swaying, unnaturally smooth; his robe, his tails and his sleeves ripple;
- * his hood turns as he looks about the hall; the skull's fire burns; his claw kneads the fire in it.
- * Once round, HIS HABIT. ANTICIPATION (1.0 to 1.9 s): he rises, his hood tilting back, his staff leaning
- * out, and draws the fire down out of the skull (its flames sink) into his hand, which he brings before
- * his chest, where it is seen, the fire swelling in his closing claw. THE SNAP (1.95 to 2.25 s): his arm
- * whips out to his left side, the fingers springing open, his body recoiling down and back and his tails
- * and sleeves kicked out; A GOUT OF FIRE LEAVES HIS HAND (2.08 s), arcs out beside him and bursts on the
- * floor (2.5 s), burning there and dying away; the skull's fire roars up a beat after the snap. Then he
- * settles, and the fire in his hand kindles again.
+ * wild and kinetic and weighty as possible"): 3.6 s round, 36 frames at ten a second. He floats upright,
+ * rising and sinking slowly on nothing, swaying, unnaturally smooth; his robe, his tails and his sleeves
+ * ripple; his hood turns as he looks about the hall; the skull's fire burns; his claw kneads the fire in it.
+ * Once round, HIS HABIT. ANTICIPATION (1.0 to 1.9 s): he rises, his hood tilting back, his staff leaning out,
+ * and draws the fire down out of the skull into his claw before his chest, the fire swelling in it, winding
+ * his shoulders back across him. THE THROW (1.9 to 2.25 s): he lunges into it, his shoulders twisting round,
+ * his elbow leading and his arm whipping after it and on past where the fire leaves his hand (2.08 s); A GOUT
+ * OF FIRE flies out before him and down toward you, trailing, and bursts on the floor (2.5 s), a flash and a
+ * burst as wide as he is, its embers falling and going out; the skull's fire roars up a beat after the throw,
+ * his tails and sleeves kick. Then he settles, and the fire in his claw kindles again.
  */
 function fmStand(): Motion {
   const R = FM_REST;
   const keys: Key3[] = [];
   const N = 36;
-  const lerpN = (a: number, b: number, k: number): number => a + (b - a) * k;
   for (let i = 0; i <= N; i++) {
     const t = i / 10;
     const a = phaseOf(t);
-    const charge = rampAt(t, 0.95, 1.85) * (1 - rampAt(t, 1.92, 2.2));
     const charged = rampAt(t, 0.95, 1.85);
-    const whip = rampAt(t, 1.9, 2.36) * (1 - rampAt(t, 2.6, 3.5));
-    const recoil = rampAt(t, 1.98, 2.22) * (1 - rampAt(t, 2.25, 3.0));
-    const flare = rampAt(t, 2.08, 2.38) * (1 - rampAt(t, 2.45, 3.2));
-    const kick = rampAt(t, 2.0, 2.2) * (1 - rampAt(t, 2.25, 3.0));
-    const quiet = (1 - charge) * (1 - whip);
+    const quiet = 1 - rampAt(t, 0.8, 1.2) * (1 - rampAt(t, 2.9, 3.4));
+    const flare = rampAt(t, 2.18, 2.48) * (1 - rampAt(t, 2.55, 3.25));
+    const kick = rampAt(t, 2.1, 2.28) * (1 - rampAt(t, 2.35, 3.05));
     // (his bob: slow, at its highest as the anticipation ends)
     const bob = 3.8 * Math.sin(a - 1.745);
-    // (the fire in his hand: as it burns, charged, gone as it is flung, kindling again)
-    const fire = t < 2.05 ? 1 + charged : 0.15 + 0.85 * rampAt(t, 2.5, 3.4);
+    // (the fire in his claw: as it burns, charged, gone as it is flung, kindling again)
+    const fire = t < 2.12 ? 1 + charged : 0.15 + 0.85 * rampAt(t, 2.6, 3.4);
     // (the gout: in flight from his hand, then burning on the floor)
     const gout = t < FM_GOUT_LET ? 0 : t < FM_GOUT_LAND ? (t - FM_GOUT_LET) / (FM_GOUT_LAND - FM_GOUT_LET) : t < FM_GOUT_LAND + FM_GOUT_BURN ? 1 + (t - FM_GOUT_LAND) / FM_GOUT_BURN : 0;
-    const hand = [0, 1, 2].map((k) => {
-      const restV = [R.lhx, R.lhy, R.lhz][k];
-      const base = lerpN(restV, LH_CHARGE[k], charge);
-      return lerpN(base, LH_FLING[k], whip);
-    });
     keys.push({
       at: t,
       ease: 'lin',
       pose: {
-        pz: R.pz + bob + 1.2 * charge - 2.8 * recoil,
-        py: 0.9 * Math.sin(a + 1.2) - 1.2 * recoil,
-        px: 0.5 * Math.sin(a + 2.0) - 2.0 * recoil,
-        roll: 1.4 * Math.sin(a + 1.2) + 3 * recoil,
-        pitch: R.pitch + 0.8 * Math.sin(a + 0.5) - 3 * charge - 5 * recoil,
-        bend: R.bend + 1.2 * Math.sin(a) - 4 * charge - 5 * recoil + 3 * whip,
-        twist: R.twist + 2 * Math.sin(a + 0.3) + 6 * charge + 10 * whip,
-        faceTurn: R.faceTurn + 12 * Math.sin(a - 0.6) * quiet + 4 * charge + 12 * whip,
-        faceUp: R.faceUp + 2.5 * Math.sin(2 * a) * quiet + 13 * charge - 9 * recoil,
+        pz: R.pz + bob + curve([[0, 0], [0.95, 0], [1.85, 0.4], [2.0, 0.3], [2.22, -2.4], [2.6, -0.8], [3.2, 0]], t),
+        px: 0.5 * Math.sin(a + 2.0) * quiet + curve([[0, 0], [1.0, 0], [1.85, -1.0], [2.15, 2.2], [2.45, 0.8], [3.1, 0]], t),
+        py: 0.9 * Math.sin(a + 1.2) * quiet + curve([[0, 0], [1.0, 0], [1.85, -0.8], [2.15, 1.6], [2.6, 0.4], [3.2, 0]], t),
+        roll: 1.4 * Math.sin(a + 1.2) * quiet + curve([[0, 0], [1.0, 0], [1.85, -2], [2.15, 4], [2.6, 0.5], [3.2, 0]], t),
+        pitch: R.pitch + 0.8 * Math.sin(a + 0.5) * quiet + curve([[0, 0], [0.95, 0], [1.8, -3], [1.92, -3], [2.15, 5], [2.4, 1.5], [3.1, 0]], t),
+        bend: R.bend + 1.0 * Math.sin(a) * quiet + curve([[0, 0], [1.0, 0], [1.8, -3], [1.95, -3], [2.2, 11], [2.45, 6], [2.8, 1], [3.3, 0]], t),
+        twist: R.twist + 2 * Math.sin(a + 0.3) * quiet + curve([[0, 0], [0.95, 0], [1.7, -9], [1.95, -12], [2.17, 18], [2.35, 15], [2.75, 5], [3.3, 0]], t),
+        faceTurn: R.faceTurn + 12 * Math.sin(a - 0.6) * quiet + curve([[0, 0], [1.0, 0], [1.7, -3], [2.1, 10], [2.6, 8], [3.3, 0]], t),
+        faceUp: R.faceUp + 2.5 * Math.sin(2 * a) * quiet + curve([[0, 0], [0.95, 0], [1.8, 9], [1.95, 9], [2.2, -8], [2.6, -4], [3.2, 0]], t),
         faceTilt: 3 * Math.sin(a + 2.2) * quiet,
-        rhx: R.rhx + 0.5 * Math.sin(a + 1.6) + 1.0 * recoil,
-        rhz: R.rhz + 0.6 * Math.sin(a + 0.8) + 1.5 * charge,
-        wEl: R.wEl - 9 * charge + 3 * recoil,
-        le: lerpN(lerpN(R.le, 10, charge), -10, whip),
-        lhx: hand[0] + 0.7 * Math.sin(a + 1.0) * quiet,
-        lhy: hand[1] + 0.5 * Math.sin(2 * a + 0.4) * quiet,
-        lhz: hand[2] + 0.8 * Math.sin(2 * a) * quiet,
-        draw: lerpN(lerpN(0.35 + 0.15 * Math.sin(3 * a), 0.85, charge), 0.0, whip * (1 - rampAt(t, 2.6, 3.4))),
+        rhx: R.rhx + 0.5 * Math.sin(a + 1.6) + curve([[0, 0], [1.95, 0], [2.2, -2.2], [2.45, -1.2], [2.9, 0]], t),
+        rhz: R.rhz + 0.6 * Math.sin(a + 0.8),
+        wEl: R.wEl + curve([[0, 0], [1.0, 0], [1.8, -1.5], [1.92, -1.5], [2.15, 1], [2.6, 0.3], [3.2, 0]], t),
+        le: curve(LH_KEYS.e, t),
+        lhx: curve(LH_KEYS.x, t) + 0.7 * Math.sin(a + 1.0) * quiet,
+        lhy: curve(LH_KEYS.y, t) + 0.5 * Math.sin(2 * a + 0.4) * quiet,
+        lhz: curve(LH_KEYS.z, t) + 0.8 * Math.sin(2 * a) * quiet,
+        draw: curve([[0, 0.35], [1.0, 0.4], [1.7, 0.85], [2.05, 0.9], [2.14, 0.1], [2.25, 0], [2.7, 0.05], [3.4, 0.35]], t) + 0.12 * Math.sin(3 * a) * quiet,
         pAz: fire,
         pEl: gout,
         pt: flare,
@@ -1160,14 +1279,15 @@ function fmStand(): Motion {
 }
 const FM_STAND_MOTION = fmStand();
 
-/** Where the gout of fire leaves his hand (worked out once, from his stand as it is at that moment), and the top of its arc. */
+/** Where the gout of fire leaves his hand (worked out once, from his stand as it is at that moment), and the point its flight bends toward. */
 let GOUT: { from: V3; apex: V3 } | null = null;
 function goutPath(): { from: V3; apex: V3 } {
   if (!GOUT) {
     const s = solve(FB, bonesAt(FM_STAND_MOTION.keys, FM_REST, FM_GOUT_LET));
-    const from = add(s.handL, [0, 0, 3]);
-    const half = lerp3(from, FM_GOUT_SPOT, 0.5);
-    GOUT = { from, apex: [half[0], half[1], from[2] + 20] };
+    const from = add(s.handL, [0, 0, 2]);
+    // (thrown out before him: it leaves level and a little up, and falls the faster the further it goes)
+    const near = lerp3(from, FM_GOUT_SPOT, 0.38);
+    GOUT = { from, apex: [near[0], near[1], from[2] + 6] };
   }
   return GOUT;
 }
@@ -1240,7 +1360,7 @@ function skirtLumps(s: Skeleton): CheckLump[] {
   const l: V3 = [-f[1], f[0], 0];
   const rot: readonly [V3, V3, V3] = [f, l, [0, 0, 1]];
   const topZ = s.pelvis[2] - B.thigh * 0.2;
-  const lowZ = FM_HEM_UP + (s.pelvis[2] - (FB.ankle + FB.shank + FB.thigh + FM_FLOAT));
+  const lowZ = FM_HEM_UP + (s.pelvis[2] - FM_PELVIS_UP);
   return [{ name: 'skirt', c: [s.pelvis[0], s.pelvis[1], (topZ + lowZ) / 2], rot, h: [B.pelvisDeep + 4.0, B.pelvisHalf + 4.4, (topZ - lowZ) / 2 + 1] }];
 }
 /**

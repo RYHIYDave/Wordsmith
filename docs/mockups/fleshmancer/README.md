@@ -8,8 +8,9 @@ rulebook, How art is made 7), pictures to him first. Nothing of the game imports
 **State of this branch (`mockup/fleshmancer`):** from `mockup/bosses` at 28f7368 (the Headsman, the
 Chained One and the amalgamation with the bone beast, as they went to the main chat). Made by THE ART
 CHAT, from 11 Oct 2026. His brief, and HIS LOOK (his standing loop), for his yes; his moves come after.
-His look was drawn once (8d4b104) and REMADE after a fresh look at it (the second drawing, below): at a
-phone's size the first read as a hooded torch-bearer, a monk with a lamp on a pole.
+His look was drawn once (8d4b104), REMADE after a fresh look at it (a4a885d: at a phone's size the first
+read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again after a second fresh look
+(the third drawing, below: the second had accidental shapes in it, and a small, crouched body).
 
 ## His words
 
@@ -58,59 +59,72 @@ as the Headsman: his staff stays in his right hand).
 THE FIRST DRAWING, AND WHY IT WAS REMADE. A fresh look at the first drawing (8d4b104), which the art chat
 agreed with: at a phone's size he read as a hooded torch-bearer, weaker than the Headsman and drabber than
 his own cultists; the skull read as a torch, the hands did not read, the float did not read, and his
-standing loop was a glow switching on. So the second drawing changes, point by point:
+standing loop was a glow switching on. The second drawing (a4a885d) mended those: a skull you read as a
+skull, a bony claw holding fire, a bone staff, a magenta mantle, a float, a loop that gathers and flings.
 
-- **The skull** is the head of his staff and the second thing he is known by: 17 of the picture's pixels
-  across (his hood is about 15), warm ivory, painted pixel by pixel so that it reads at a phone's size: a
-  broad low cranium, a heavy brow coming down over two deep sockets that slant in toward the nose (a scowl,
-  not round), the notch of the nose, a broken row of upper teeth, and the jaw hanging open below them on its
-  hinges with a few teeth left in it. The fire burns OUT OF ITS SOCKETS (a tongue licking up out of each and
-  back over the temple) and IN ITS OPEN MOUTH (pink, gold at the heart), and a lower flame burns up from
-  behind its crown, never taller than the skull. It looks at you whichever way he faces. Its light is over
-  its crown, so the bone stays ivory. (A hand of fused bone gripping it was tried in a first pass at this
-  drawing; at this size its fingers muddled the skull's face, so the skull rests on the staff's head.)
-- **The staff** is bone, not a pole: warm ivory (`STAFF_BONE`), nine bones of uneven lengths fused end to
-  end, each thinner in its middle than at its knuckles, five spurs grown out of it, away from him and hooked
-  upward, and a crook out near its head; 60 long, held 28 up it, out at his right side and leaning out, so
-  that he is wide.
-- **His hands** are the heart of him ("hands of power"). Both are painted pixel by pixel. His casting hand
-  (his left) is a claw half as big again as a man's hand: a bony wrist out of a sleeve pushed back to the
-  elbow (its pink lining showing), a narrow palm, four long bone-pale fingers and a thumb splayed wide, each
-  of three bones, their last two pixels burning pink to gold; the fire held in the claw shows between the
-  fingers (they are in front of it) and its flames rise between them. No sparkle. His staff hand is long
-  fingers wrapped across the bone one above another, their tips lit on its far side.
-- **The bead trim is gone.** In its place a broad band of his cult's pink edged with gold (a scapular) hangs
-  from under his hood down his front to his hem, and down his back; and the edge of his mantle is banded pink
-  and gold all round.
-- **The hood** is deep and round (no point), and the face in it is painted pixel by pixel where it faces the
-  way he looks: a hard rim round the opening, gold at its edge and pink lit brighter on its inside, the
-  opening pitch black, and in it his eyes: two upright slits of fire, low and close together (the
-  cultists', the Shade's and the Headsman's eyes are slanting slashes). When he flares only the rim and his
-  eyes blaze; the dark of his face stays black.
-- **Rank in his silhouette:** a broad, stiff mantle over his shoulders, tapering to a narrow hem; behind his
-  hood a high collar stiffened with nine stays of bone that rise past it, uneven and jagged (a dark crown of
-  bone), the collar's cloth ragged between them.
-- **The colours:** a robe of near-black plum (`FM_ROBE`), his mantle the same raised to his cult's magenta
-  (`FM_MANTLE`), the pink and gold bands, the pink lining in his sleeves and where his tails curl up, and his
-  own pink light: the skull's, his hand's, and a pool of it on the floor under him.
-- **The float:** no feet and no flat hem. His robe ends 19.5 off the floor at rest in tattered tails, short
-  before him and longer behind, each hanging and then curling out and up, rippling (his train lifts behind
-  him; it never drags); the lowest of them is 10 to 17 off the floor through his stand (five to eight of the
-  game's pixels), with a pool of his pink light on the floor under him and embers dripping into it off the
-  tails. He rises and sinks on nothing by 4.75 of the game's pixels.
-- **His size.** Human sized (his words: "Hes human sized"): his body is 50.5 tall (the knight's 58) and he
-  floats 5 off the floor (`FM_FLOAT`), so the top of his hood is 58 to 67.5 up through his stand: the
-  knight's height at the bottom of his bob, never a head over it (the knight's head is 9.8). The staff and
-  its skull rise above him (the skull's middle 77 to 85 up). His canvas is 320 by 300, the floor point at
-  (160, 228) (`FM_CANVAS`): room for the staff and for the fire he flings out to his side.
-- **Nothing gory** ("Nothing gory (Recommended)"). Bone, robe and pink fire only.
-- **What glows on him is the enemy's**, and nothing else glows: his eyes, his fingertips and the fire in his
-  hand, the skull's fire, the embers, the fire he flings (`FLAME`, pink burning to gold). Nothing on him is
-  cyan.
-- **Apart from the others hooded** (the sheet's second row): the cultists are bright violet with pointed
-  cowls and candles; their high priest the same with an ivory mask; the Shade small and grey; the Headsman
-  twice his size, red-hooded, dark. The fleshmancer alone has the ivory skull with fire in its eyes, the
-  crown of bone, the gold-rimmed face, and the burning claw.
+THE SECOND DRAWING, AND WHY IT WAS REMADE AGAIN. A second fresh look found accidental shapes in it, which
+must go before he sees him, and his body small and crouched: the gold-rimmed face, the band hanging from it
+and the mantle's edge across it made a loop on a stem with a crossbar (the female sign, an ankh, a
+keyhole); the band broken below the mantle's edge left a pink capsule at his crotch; the face in the hood
+was a wall socket (two matched pink bars in a gold frame); the skull drifted to a jack-o'-lantern (light
+through its eyes and mouth, pink marks like eyebrows, a three-pointed crown of flame) and was too big, a
+second head; every ember was a "+" (a lone pixel inside his pink edge), two of them above the staff a cross
+on it; the staff hands read as the numbers 3 and 6; from behind he was a purple lump with sticks on it and
+loose pink patches like sores; the fire he drew from the skull was a dotted line, a bead chain again; the
+burst's sparks went out in one frame; he was shorter than the knight and hunched, his robe bulging forward as
+if he sat on a stool; the collar of straight stays read as a witch-doctor's headdress; and the fling was a
+coal dropped at his side by an arm like a rod. So the third drawing, point by point:
+
+- **The front makes no symbol.** No gold round the opening of his hood: its edge is dark, lit a little pink
+  from inside; his cult's pink and gold are on the hood's OUTER brim, an arch over his brow, open below.
+  Nothing hangs from his face: below the mantle's edge the two edges of his robe where it parts run down to
+  the hem, pink edged with gold, unbroken, parting a little as they go (no band, no capsule).
+- **His face** is the dark of the hood and two hot points of fire for eyes, each with a dimmer one beside
+  it, the two not alike (one below, one slanting): no frame, no bars.
+- **The skull** is smaller: 14 across (it was 17; his hood is about 14), pale bone, not tan. Its sockets are
+  dark pits, the fire deep in each low at its outer side, licking up and out over the temple (no marks over
+  the brow, nothing lit in the middle of a socket); a broken row of upper teeth; the mouth dark, at most a
+  dim glow; the jaw hanging open with a few teeth in it; off its crown a ragged flame, one tongue taller than
+  the others, from behind it. It still looks at you from in front and from behind alike (it is the same
+  picture both ways, so it never mirrors or snaps as he turns), and it sits well above his hood.
+- **No embers are crosses.** Every ember, spark and fleck of his is a slanting streak of three pixels,
+  dimming along it, never one pixel alone (a test looks for a lone pixel in every frame both ways round);
+  nothing floats above the skull on the staff's line.
+- **The staff hands** are three fingers each slanting down across the bone, each its own length, pointed and
+  lit at the tip beyond the bone, their knuckles standing out of the back of the hand one by one, a thumb
+  hooked over above: no closed loop, no letter or number.
+- **From behind**: the hood a step darker than the mantle, so that its round shape reads against his
+  shoulders, and the face is never painted on its back; the mantle's edge one clean band all round (no
+  notches, no crease down its back); no band down his back; the lining of his tails a darker pink and only at
+  their tips (no loose pink patches).
+- **The fire he draws from the skull** runs to his claw in a few short streaks, unevenly spaced, never a
+  dotted line.
+- **The burst's embers** fly out, fall back to the floor and go out one by one over its last four frames;
+  the burst lasts 0.9 s (it was 0.6).
+- **His body** is a man's a head taller than the knight: 55 tall (it was 50.5), upright (no hunch), the top of
+  his hood 66.4 up at rest (the knight is 58, his head 9.8), and his robe hangs plumb from his hips to its
+  hem (it no longer goes round his drawn-up legs, so it never bulges forward; nothing of his legs is
+  painted). He is now the bigger thing; the skull is his emblem.
+- **The collar** is four ribs of bone rising from his collar at the sides of his hood and curving in over
+  it, a ribcage closing over his head, never higher than a few pixels over his hood; bone, never gold.
+- **The fling** is a throw: he winds his shoulders back across him with the fire in his claw before his
+  chest, then lunges into it, his shoulders twisting round (18 degrees), his chest bending forward, his
+  elbow leading with the claw raised behind it, his arm whipping out straight past where the fire leaves his
+  hand (2.14 s) and on (the overshoot), and back. The gout flies out before him and down toward you, a
+  comet with a long tail and a trail of flecks, 2.2 tiles out (56 of the figure's lengths from where it
+  left his hand, about two of his widths across the picture), and strikes the floor (2.54 s) in a flash as
+  wide as he is, fire standing up across it, a broken ring of it spreading out, embers thrown out.
+
+What stays from the second drawing: the staff of warm-ivory bone (nine uneven fused bones, spurs hooked
+upward, a crook near its head), held out at his right side; the casting claw, half as big again as a man's
+hand, four long bone-pale fingers and a thumb splayed, their tips burning pink to gold, the fire held between
+them; a robe of near-black plum and a mantle of it raised to magenta; his pink light, and a pool of it on the
+floor under him with embers dripping into it; his float (the lowest of his tails 9 to 17 off the floor through
+his stand, four to eight of the game's pixels, and he rises and sinks on nothing by 4.75 of them). Nothing
+gory: bone, robe and pink fire only. What glows on him is the enemy's and nothing else glows (`FLAME`, pink
+burning to gold); nothing on him is cyan. The skull, his hands and the face in his hood are painted pixel by
+pixel (little pictures held square to the eye, each as near it as the thing it is), so that they read at a
+phone's size.
 
 **His stand** (`stand`, 36 frames at 10 a second: 3.6 s round; the art rulebook, Movement 6, "Alive when
 still", and Animations 1, "as big and wild and kinetic and weighty as possible"): he floats, rising and
@@ -118,16 +132,20 @@ sinking slowly on nothing, swaying, unnaturally smooth; his hem, his tails, his 
 ripple throughout; his hood turns as he looks about the hall; the skull's fire burns and the fire in his claw.
 HIS HABIT, once round:
 
-- ANTICIPATION (1.0 to 1.9 s): he rises, his hood tilting back and his staff leaning out, and draws the fire
-  down out of the skull (its flames sink to embers, a stream of pink sparks running from it to his hand) into
-  his claw, which he brings before his chest, where it is seen, the fire swelling in it.
-- THE SNAP (1.9 to 2.35 s): his arm whips out to his left side, the claw thrown open; his body recoils down
-  and back and his tails and sleeves kick out; A GOUT OF FIRE LEAVES HIS HAND (2.08 s), arcs out beside him
-  trailing sparks, and bursts on the floor (2.5 s), standing up off it in a burst of flame and a ring of
-  embers that die away by 3.1 s. The skull flares a beat after the snap, its jaw dropping, its fire roaring up
-  over two or three frames; his eyes and his hood's rim blaze, his face stays black.
-- Then he settles, and the fire in his claw kindles again. From behind, the gout arcs out and bursts beside
-  him on the other side, and his claw shows over his shoulder.
+- ANTICIPATION (1.0 to 1.95 s): he rises, his hood tilting back and his staff leaning out, and draws the
+  fire down out of the skull (its flames sink, a few uneven streaks of it running down to his hand) into his
+  claw, which he brings before his chest, where it is seen, the fire swelling in it; his shoulders wind back
+  across him.
+- THE THROW (1.95 to 2.35 s): he lunges into it, his shoulders twisting round and his chest bending forward,
+  his elbow leading with the claw raised behind it, then his arm whipping out straight past where the fire
+  leaves his hand (2.14 s) and on, and back; A GOUT OF FIRE flies out before him and down toward you, a comet
+  trailing flecks, and strikes the floor (2.54 s) two of his widths away in a flash as wide as he is: fire
+  standing up across it, a broken ring of it spreading, embers thrown out that fall and go out one by one over
+  its last four frames (gone by 3.4 s). The skull flares a beat after the throw, its jaw dropping, its fire
+  roaring up over two or three frames; his eyes and the edge of his hood's opening blaze, his face stays
+  black; his tails and sleeves kick out.
+- Then he settles, and the fire in his claw kindles again. From behind, his claw shows over his shoulder,
+  and the gout flies out past him and bursts beyond his staff.
 - No light of his grows by more than two fifths from one frame to the next (the first drawing's flare washed
   pink over the whole of him in one frame).
 
@@ -153,25 +171,29 @@ keep out of; his staff passes outside it (tested on its own).
   its first again, to close it), from in front and from behind as the camera truly sees him: nothing found.
   SLIDE (nothing of him touches the floor), FLOOR, ARM, THROUGH, JERK (the loop closing too), ALIVE, and
   JUMP: from every frame of his stand into his rest pose, where each of his moves to come will begin. The
-  margins: his arms keep 0.4 clear of his body; his staff well clear; the fastest any point of him moves is
-  5.2 of the game's pixels a frame (his hand, in the snap, eased in and out); the most the picture leaps from
-  his stand into his rest pose is 2.5 (the limit is 3).
+  margins: his arms keep 0.3 clear of his body; his staff well clear; the fastest any point of him moves is
+  5.5 of the game's pixels a frame (his hand, in the throw, eased in and out); the most the picture leaps
+  from his stand into his rest pose is 2.4 (the limit is 3), and what he carries no more than the limit for
+  it (his staff is held from his shoulder along his body, not his chest, so that his twist into the throw does
+  not swing it).
 - **The review catches what it should on him:** a leap planted in his casting hand (one key moved 14) is found
   at once ("jerk handL turns straight back at speed").
-- `tests/fleshmancer.test.ts` (9): 1, the switch is off and nothing of the game imports him; 2, his stand
+- `tests/fleshmancer.test.ts` (10): 1, the switch is off and nothing of the game imports him; 2, his stand
   through every check, as above; 3, his stand paints in every frame both ways round: nothing cyan and no
   light that is not the enemy's, his pink edge round him, every pixel whole or empty but the edge; 4, human
-  sized: the top of his hood above the knight's height less 4 and no more than a head over it, the skull
-  above his hood, the staff's foot off the floor, in every frame; 5, he floats: the lowest of his tails more
-  than 8 off the floor in every frame (four of the game's pixels), nothing of his body near the floor, and he
-  rises and sinks by 4 to 6 of the game's pixels; 6, his staff in his right hand from in front and from
-  behind, and outside his mantle; 7, the gout leaves his hand, arcs, passes through nothing of him and bursts
-  on the floor beside him, more than 14 of the game's pixels across the picture from him from in front and
-  from behind; 8, his light never grows by more than two fifths from one frame to the next, either way
-  round; 9, the skull is wider than his hood. `tests/new_mobs3.test.ts` and `tests/bosses.test.ts` (12) let
+  sized: a man a head taller than the knight, the top of his hood 66 to 68 up at rest, and his own height
+  (less what his float lifts him) never more than the knight's and a head in any frame; the skull above his
+  hood; the staff's foot off the floor; 5, he floats: the lowest of his tails more than 8 off the floor in
+  every frame (four of the game's pixels), nothing of his body near the floor, and he rises and sinks by 4 to
+  6 of the game's pixels; 6, his staff in his right hand from in front and from behind, and outside his
+  mantle; 7, the gout leaves his hand, is thrown more than 40 out across the floor, comes down in front of him
+  (toward you, from in front), passes through nothing of him and bursts more than 14 of the game's pixels
+  across the picture from him from in front and from behind; 8, his light never grows by more than two fifths
+  from one frame to the next, either way round; 9, the skull about his hood's width; 10, no lone pixel in any
+  frame either way round (with his pink edge round it, a pixel alone is a cross). `tests/new_mobs3.test.ts` and `tests/bosses.test.ts` (12) let
   `art/fleshmancer.ts`, a mock-up of their kind, import the other mock-ups.
 - The whole unit suite passes on the branch; `tsc` is clean.
-- Painting a frame of his stand takes about 15 ms on this machine (the Headsman's, 20).
+- Painting a frame of his stand takes about 14 ms on this machine (the Headsman's, 22).
 
 ## The pictures (kept out of git; the art chat has them)
 
@@ -180,14 +202,15 @@ keep out of; his staff passes outside it (tested on its own).
 - `closeup.png` (`close:8`): him alone, big, both ways round.
 - `stand.gif` (`stand:3`, `tools/page_gif.mjs`): his stand twice round, both ways round, at its own ten frames
   a second; `stand_contact_front.png` and `stand_contact_back.png`: one round of it, every frame;
-  `stand_frames.png` (`poses:0,1.2,1.7,2,2.1,2.2,2.3,2.4,2.5,2.7,3:3`): eleven moments of it.
-- `floor4_phone.png`, `floor4_phone_charge.png` and `floor4_phone_burst.png` (`floor:2.5:0`, `floor:2.5:1.8`,
-  `floor:2.5:2.7`): him in a room of the Crypt's fourth floor (`CRYPT_FLOORS[3]`, its rocks and the miners'
+  `stand_frames.png` (`poses:0,1.2,1.7,1.95,2.05,2.15,2.25,2.35,2.5,2.7,3,3.3:3`): twelve moments of it.
+- `floor4_phone.png`, `floor4_phone_charge.png` and `floor4_phone_burst.png` (`floor:2.5:0`, `floor:2.5:1.9`,
+  `floor:2.5:2.8`): him in a room of the Crypt's fourth floor (`CRYPT_FLOORS[3]`, its rocks and the miners'
   rusted gear lying about), the knight come in, at the game's own size and in the game's own dark as
   `render.ts` lays it (the far floor 0.88 dark, the pools round the hero and the boss, a hole for every light
   he gives off, the vignette, then what glows), as a phone of 844 by 390 points shows it at three device
   pixels to a point: at rest, gathering the fire, and as it bursts; `*_1x.png` the same at one pixel to a
-  point; `floor4_phone_him.png`: the three of him cut out at the phone's own pixels, not enlarged. The floor
+  point; `floor4_phone_him.png`: the three of him cut out at the phone's own pixels, not enlarged;
+  `floor4_phone_1x_him_x2.png`: the three of him at one pixel to a point, doubled. The floor
   is on the floors' branches and not on this one: these were made on a copy of this branch with
   `mockup/floor3-4`'s (8ca2ec0) `src/art/ground.ts`, `crypt.ts` and `crypt_ways.ts` laid in and
   `src/dev/fm_floor.ts` made to name `CRYPT_FLOORS[3]` (its comment says how). On this branch alone the page
