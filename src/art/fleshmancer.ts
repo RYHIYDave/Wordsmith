@@ -89,13 +89,13 @@ import type { Bones, Build, Key3, Motion, Skeleton, V3 } from './skeleton';
 export const FLESHMANCER_SWITCH = { on: false };
 
 const D = Math.PI / 180;
-const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
-const smooth = (k: number): number => {
+export const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
+export const smooth = (k: number): number => {
   const v = clamp01(k);
   return v * v * (3 - 2 * v);
 };
 /** Smoothly from 0 to 1 between two moments. */
-const rampAt = (t: number, t0: number, t1: number): number => smooth((t - t0) / (t1 - t0));
+export const rampAt = (t: number, t0: number, t1: number): number => smooth((t - t0) / (t1 - t0));
 
 // ---------------------------------------------------------------------------------------------
 // His body, his canvas, his colours
@@ -118,24 +118,24 @@ export const FM_CANVAS: MobCanvas = { w: 320, h: 300, ax: 160, ay: 228 };
 export const FM_ROBE: Ramp = ['#170a1b', '#170a1b', '#3a1440', '#6e2660', '#6e2660'];
 /** How far the front of his mantle's edge dips at his breast; and the dark the far edge of his robe's opening is sunk in. */
 const FM_MANTLE_DIP = 2.6;
-const FM_EDGE_DARK: Ramp = ['#1a0a1c', '#1a0a1c', '#34122f', '#521a46', '#521a46'];
+export const FM_EDGE_DARK: Ramp = ['#1a0a1c', '#1a0a1c', '#34122f', '#521a46', '#521a46'];
 /** His hood: a step darker than his mantle, so that its round shape reads against his shoulders from in front and from behind. */
-const FM_HOOD: Ramp = ['#120816', '#120816', '#2e1036', '#56204e', '#56204e'];
+export const FM_HOOD: Ramp = ['#120816', '#120816', '#2e1036', '#56204e', '#56204e'];
 /** His mantle, stiff over his shoulders: his robe's plum, raised to his cult's magenta (so his shoulders read broad and his hem narrow). */
-const FM_MANTLE: Ramp = ['#1f0b22', '#1f0b22', '#521a4c', '#8e2e74', '#8e2e74'];
+export const FM_MANTLE: Ramp = ['#1f0b22', '#1f0b22', '#521a4c', '#8e2e74', '#8e2e74'];
 /** The pink lining of his robe, seen in his sleeves and where his tails curl up. */
-const FM_LINING: Ramp = ['#2e0a26', '#2e0a26', '#6e1a4e', '#9a2a68', '#9a2a68'];
+export const FM_LINING: Ramp = ['#2e0a26', '#2e0a26', '#6e1a4e', '#9a2a68', '#9a2a68'];
 /** The band down his front and round his hood's rim: his cult's pink, bolder, and its edge of gold. */
-const BAND: Ramp = ['#6a0e4a', '#6a0e4a', '#c0206a', '#ff5a98', '#ff5a98'];
-const GOLD: Ramp = ['#5a2c18', '#5a2c18', '#b8742c', '#f4c060', '#f4c060'];
+export const BAND: Ramp = ['#6a0e4a', '#6a0e4a', '#c0206a', '#ff5a98', '#ff5a98'];
+export const GOLD: Ramp = ['#5a2c18', '#5a2c18', '#b8742c', '#f4c060', '#f4c060'];
 /** Bone, warm and old: his staff's and the stays of his collar (a step darker than the skull), his forearms' (bone-pale). */
-const STAFF_BONE: Ramp = ['#3e2c2c', '#3e2c2c', '#9a7c62', '#d6bc94', '#d6bc94'];
-const STAY_BONE: Ramp = ['#3a2a2c', '#3a2a2c', '#907660', '#ccb494', '#ccb494'];
-const HAND_BONE: Ramp = ['#4a3a44', '#4a3a44', '#a48e8c', '#d4c2b6', '#d4c2b6'];
+export const STAFF_BONE: Ramp = ['#3e2c2c', '#3e2c2c', '#9a7c62', '#d6bc94', '#d6bc94'];
+export const STAY_BONE: Ramp = ['#3a2a2c', '#3a2a2c', '#907660', '#ccb494', '#ccb494'];
+export const HAND_BONE: Ramp = ['#4a3a44', '#4a3a44', '#a48e8c', '#d4c2b6', '#d4c2b6'];
 /** The skull's ivory, warm, lit from the upper left: highlight, lit, middle, shade, deep shade. */
-const IVORY = { H: '#f0e7d4', L: '#d9ccb3', M: '#ae9f88', S: '#76665c', D: '#4e4048' } as const;
+export const IVORY = { H: '#f0e7d4', L: '#d9ccb3', M: '#ae9f88', S: '#76665c', D: '#4e4048' } as const;
 /** His hands' bone, pale: highlight, lit, middle. */
-const PALE = { H: '#efe4d6', L: '#d4c2b6', M: '#a48e8c' } as const;
+export const PALE = { H: '#efe4d6', L: '#d4c2b6', M: '#a48e8c' } as const;
 
 // ---------------------------------------------------------------------------------------------
 // His hood
@@ -201,17 +201,18 @@ export function staffOf(s: Skeleton): { foot: V3; top: V3; skull: V3; way: V3; j
   const hf = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const fwd = norm(sub(hf, mul(way, dot(hf, way))), [1, 0, 0]);
   const left = norm(cross(way, fwd), [0, 1, 0]);
-  const foot = add(s.handR, mul(way, -STAFF_GRIP));
-  const joints = JOINTS.map(([at, f, l]) => add(add(foot, mul(way, at)), add(mul(fwd, f), mul(left, l))));
+  const sf = LOOK.staff;
+  const foot = add(s.handR, mul(way, -sf.grip));
+  const joints = sf.joints.map(([at, f, l]) => add(add(foot, mul(way, at)), add(mul(fwd, f), mul(left, l))));
   const top = joints[joints.length - 1];
-  return { foot, top, skull: add(top, mul(way, SKULL_UP)), way, joints, fwd, left };
+  return { foot, top, skull: add(top, mul(way, sf.skullUp)), way, joints, fwd, left };
 }
 
 // ---------------------------------------------------------------------------------------------
 // Fire, painted in the picture's own pixels
 
 /** A point of the figure that is seen `dx`, `dy` picture pixels across and down the picture from `c`, as near the eye as it. */
-function screenStep(st: Stage, c: V3, dx: number, dy: number): V3 {
+export function screenStep(st: Stage, c: V3, dx: number, dy: number): V3 {
   const b = st.back;
   return add(c, [b[0][0] * dx + b[0][1] * dy, b[1][0] * dx + b[1][1] * dy, b[2][0] * dx + b[2][1] * dy]);
 }
@@ -231,7 +232,7 @@ function tearAt(t: number): number {
  * Laid in the picture's own pixels, on the layer over everything; `hidden` says a pixel of it is behind
  * something of him.
  */
-function fireAt(st: Stage, put: Put, base: V3, tall: number, wide: number, ph: number, hot: number, seed: number, hidden?: (p: V3, x: number, y: number) => boolean, sparks = true, lean0 = 0): void {
+export function fireAt(st: Stage, put: Put, base: V3, tall: number, wide: number, ph: number, hot: number, seed: number, hidden?: (p: V3, x: number, y: number) => boolean, sparks = true, lean0 = 0): void {
   if (tall < 1.5) return;
   const [bx, by] = st.at(base);
   const lit = new Map<number, string>();
@@ -283,7 +284,7 @@ function fireAt(st: Stage, put: Put, base: V3, tall: number, wide: number, ph: n
   }
 }
 /** A ball of the enemy's fire, `r` picture pixels round, its heart gold, and a tail of it streaming back along `back` (a way in the picture), `tail` long. */
-function fireBall(st: Stage, put: Put, c: V3, r: number, back: readonly [number, number], tail: number, hidden?: (p: V3, x: number, y: number) => boolean, core: string = FLAME[4]): void {
+export function fireBall(st: Stage, put: Put, c: V3, r: number, back: readonly [number, number], tail: number, hidden?: (p: V3, x: number, y: number) => boolean, core: string = FLAME[4]): void {
   const [cx, cy] = st.at(c);
   const bl = Math.hypot(back[0], back[1]) || 1;
   const bx = back[0] / bl;
@@ -314,7 +315,7 @@ function fireBall(st: Stage, put: Put, c: V3, r: number, back: readonly [number,
  * its body, deep pink at its tip (a step hotter with `hot` over 1.2). On the layer over everything, as near
  * the eye as `ref`; `skip` leaves a pixel alone.
  */
-function tongueAt(st: Stage, put: Put, ref: V3, b: readonly [number, number], tall: number, wide: number, lean: number, hot: number, skip?: (x: number, y: number) => boolean, steps?: number): void {
+export function tongueAt(st: Stage, put: Put, ref: V3, b: readonly [number, number], tall: number, wide: number, lean: number, hot: number, skip?: (x: number, y: number) => boolean, steps?: number): void {
   const rows = Math.round(tall);
   if (rows < 1) return;
   const [rx, ry] = st.at(ref);
@@ -350,7 +351,7 @@ function tongueAt(st: Stage, put: Put, ref: V3, b: readonly [number, number], ta
  * AN EMBER, never a dot: with his pink edge round it a dot is a cross (+). A fleck slanting one way or the
  * other, three pixels long, dimming along it (by `seed`); at `p`, on the layer over everything.
  */
-function fleck(st: Stage, put: Put, p: V3, c: string, seed: number, part = 'embers', slant?: number): void {
+export function fleck(st: Stage, put: Put, p: V3, c: string, seed: number, part = 'embers', slant?: number): void {
   const [x, y] = st.at(p);
   const xi = Math.floor(x);
   const yi = Math.floor(y);
@@ -368,13 +369,13 @@ function fleck(st: Stage, put: Put, p: V3, c: string, seed: number, part = 'embe
 // thing it is: what of him is nearer hides it, and the style's dark seam goes round it as round any part.
 
 /** A point in the picture, in its own pixels (across, down). */
-type P2 = [number, number];
+export type P2 = [number, number];
 /** A little picture: a colour at each pixel it has (keyed by `pk`). */
-type Pix = Map<number, string>;
-const pk = (x: number, y: number): number => (y + 2048) * 4096 + (x + 2048);
-const pxOf = (k: number): P2 => [(k % 4096) - 2048, Math.floor(k / 4096) - 2048];
+export type Pix = Map<number, string>;
+export const pk = (x: number, y: number): number => (y + 2048) * 4096 + (x + 2048);
+export const pxOf = (k: number): P2 => [(k % 4096) - 2048, Math.floor(k / 4096) - 2048];
 /** The pixels of a little picture, and those beside, above and below them (`by` deep): what fire laid over it leaves alone, so that its seam shows. */
-function grown(keys: Iterable<number>, by = 1): Set<number> {
+export function grown(keys: Iterable<number>, by = 1): Set<number> {
   const out = new Set<number>();
   for (const k of keys) {
     const [x, y] = pxOf(k);
@@ -383,30 +384,30 @@ function grown(keys: Iterable<number>, by = 1): Set<number> {
   return out;
 }
 /** A line one pixel thick from `a` to `b`, each pixel coloured by how far along it is (0 to 1). */
-function linePix(pix: Pix, a: P2, b: P2, colour: (k: number) => string): void {
+export function linePix(pix: Pix, a: P2, b: P2, colour: (k: number) => string): void {
   const n = Math.max(1, Math.ceil(Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]))));
   for (let i = 0; i <= n; i++) {
     const k = i / n;
     pix.set(pk(Math.floor(a[0] + (b[0] - a[0]) * k), Math.floor(a[1] + (b[1] - a[1]) * k)), colour(k));
   }
 }
-const rot2 = (v: P2, deg: number): P2 => {
+export const rot2 = (v: P2, deg: number): P2 => {
   const a = deg * D;
   return [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a)];
 };
-const unit2 = (v: P2): P2 => {
+export const unit2 = (v: P2): P2 => {
   const l = Math.hypot(v[0], v[1]) || 1;
   return [v[0] / l, v[1] / l];
 };
-const add2 = (a: P2, b: P2, k = 1): P2 => [a[0] + b[0] * k, a[1] + b[1] * k];
+export const add2 = (a: P2, b: P2, k = 1): P2 => [a[0] + b[0] * k, a[1] + b[1] * k];
 
 /** A unit square to `a` (and as near `want` as can be). */
-function squareTo(a: V3, want: V3, or: V3): V3 {
+export function squareTo(a: V3, want: V3, or: V3): V3 {
   return norm(sub(want, mul(a, dot(want, a))), or);
 }
 
 /** A LITTLE PICTURE held square to the eye, as near it as `at`: a part of him like any other (seamed round, hidden by what is nearer). */
-function stamp(st: Stage, put: Put, part: string, piece: string, pix0: Pix, at: V3): void {
+export function stamp(st: Stage, put: Put, part: string, piece: string, pix0: Pix, at: V3): void {
   // (as he is dragged under the floor, what of a little picture of him is under it is cut away, pixel by pixel)
   let pix = pix0;
   if (CUT_FLOOR.on) {
@@ -453,7 +454,7 @@ function stamp(st: Stage, put: Put, part: string, piece: string, pix0: Pix, at: 
  * burning, pink to gold, hotter with `heat`. Its pixels, the heart of the claw (where the fire is held),
  * and its fingertips.
  */
-function clawPix(wr: P2, way: P2, fan: P2, spread: number, curl: number, heat: number, side: number, big = 1, bone: { H: string; L: string; M: string } = PALE): { pix: Pix; keep: Set<number>; heart: P2; tips: P2[] } {
+export function clawPix(wr: P2, way: P2, fan: P2, spread: number, curl: number, heat: number, side: number, big = 1, bone: { H: string; L: string; M: string } = PALE): { pix: Pix; keep: Set<number>; heart: P2; tips: P2[] } {
   const PALE_ = bone;
   const pix: Pix = new Map();
   /** Its fingers above their first knuckles: what the fire it holds stays off, so that they stand out of it, seamed. */
@@ -516,7 +517,7 @@ function clawPix(wr: P2, way: P2, fan: P2, spread: number, curl: number, heat: n
  * lit pink to gold with `heat` beyond its far side; his thumb hooked over it above them. Nothing of it closes
  * on itself (a ring of finger round a gap reads at this size as a letter or a number).
  */
-function gripPix(g: P2, along: P2, toArm: P2, heat: number): Pix {
+export function gripPix(g: P2, along: P2, toArm: P2, heat: number): Pix {
   const pix: Pix = new Map();
   const tip = heat > 0.7 ? FLAME[3] : heat > 0.3 ? FLAME[2] : FLAME[1];
   const at = (a: number, b: number): P2 => add2(add2(g, along, a), toArm, b);
@@ -584,10 +585,10 @@ function skullPix(x0: number, y0: number, hot: number, lit: number, drop: number
   const mouth = lit < 0.05 ? INK : maw > 0.6 ? FLAME[3] : maw > 0.25 ? FLAME[1] : hot > 1.3 ? FLAME[0] : '#4a0c38';
   const deep = lit < 0.05 || maw < 0.25 ? 'k' : maw > 0.6 ? 'd' : 'k';
   const rows: string[] = [];
-  SKULL_PIX.forEach((row, r) => {
+  LOOK.skull.pix.forEach((row, r) => {
     rows.push(row);
     // (the jaw dropped: the open mouth deeper, dark, or the fire in it showing as it blazes)
-    if (r === SKULL_MOUTH) for (let d = 0; d < drop; d++) rows.push(row.replace(/d/g, deep));
+    if (r === LOOK.skull.mouth) for (let d = 0; d < drop; d++) rows.push(row.replace(/d/g, deep));
   });
   rows.forEach((row, j) => {
     for (let i = 0; i < row.length; i++) {
@@ -598,6 +599,77 @@ function skullPix(x0: number, y0: number, hot: number, lit: number, drop: number
     }
   });
   return pix;
+}
+
+// ---------------------------------------------------------------------------------------------
+// WHICH OF THE CULT'S FLESHMANCERS IS PAINTED (11 Oct, the owner's two new cultists): the master, or the
+// lesser one the cult's elite are (art/cultists.ts, the mini fleshmancer). His painter takes from here every
+// measure in which the two differ; the master's are as they always were.
+
+/** A little picture of a skull, and where on it its middle, its mouth's row and the fire in its sockets are. */
+export interface SkullLook {
+  pix: ReadonlyArray<string>;
+  mid: P2;
+  mouth: number;
+  eyes: ReadonlyArray<readonly [number, number, number]>;
+  /** The flame off its crown: its tongues (column, how tall, how wide, how it leans). */
+  crown: ReadonlyArray<readonly [number, number, number, number]>;
+}
+/** A fleshmancer's look. */
+export interface FmLook {
+  /** His body, and his lengths beside the master's (what is laid on his bones in lengths of its own is made this much smaller). */
+  body: Build;
+  k: number;
+  /** How far he floats at rest; how high his robe's hem is off the floor at rest; how much wider than his hips it is there. */
+  float: number;
+  hemUp: number;
+  hemWide: number;
+  /** The ribs of bone rising over his hood, and the gold on his trims: the master's alone. */
+  crown: boolean;
+  gold: boolean;
+  /** His staff: from its foot to its head, where he holds it, its joints and its spurs, how far over its head the skull's middle is. */
+  staff: { long: number; grip: number; joints: ReadonlyArray<readonly [number, number, number]>; spurs: ReadonlyArray<readonly [number, number, number, number]>; skullUp: number };
+  skull: SkullLook;
+  /** His hood: its middle before and above his head, its half-lengths, and the face painted in it (its middle, his eyes). */
+  hood: { fwd: number; up: number; r: V3; face: ReadonlyArray<string>; mid: P2; eyes: ReadonlyArray<P2> };
+  /** His casting hand beside the master's; his robe's tails beside the master's. */
+  claw: number;
+  tails: number;
+  /** HIS OWN ATTACKS' MOMENTS, for one whose moves are not the master's: when raising the dead the skull shrieks and holds; when his fire bursts out and stops; how wide the skull's mouth blazes and how far its jaw drops, by attack and moment (as fmMawOf and fmJawOf are the master's). */
+  timing?: { raiseShriek: number; raiseHold: number; fireBurst: number; fireStop: number };
+  maw?: (prop: number, t: number) => number;
+  jaw?: (prop: number, t: number) => number;
+}
+/** How high a fleshmancer's pelvis is at rest, floating. */
+export function pelvisUpOf(look: FmLook): number {
+  return look.body.ankle + look.body.shank + look.body.thigh + look.float;
+}
+/** THE MASTER'S LOOK, as he has always been painted. */
+export const FM_LOOK: FmLook = {
+  body: FM_BODY,
+  k: 1,
+  float: FM_FLOAT,
+  hemUp: FM_HEM_UP,
+  hemWide: FM_HEM_WIDE,
+  crown: true,
+  gold: true,
+  staff: { long: STAFF_LEN, grip: STAFF_GRIP, joints: JOINTS, spurs: SPURS, skullUp: SKULL_UP },
+  skull: { pix: SKULL_PIX, mid: SKULL_MID, mouth: SKULL_MOUTH, eyes: SKULL_EYES, crown: [[5, 9, 3.2, 0.5], [9, 3.5, 1.8, 1.9], [2, 2.2, 1.4, -1.4]] },
+  hood: { fwd: FM_HOOD_FWD, up: FM_HOOD_UP, r: FM_HOOD_R, face: HOOD_FACE, mid: HOOD_FACE_MID, eyes: HOOD_EYES },
+  claw: 1,
+  tails: 1,
+};
+/** The look being painted (the master's, but while `withFmLook` paints another). */
+let LOOK: FmLook = FM_LOOK;
+/** Paint (or measure) in another fleshmancer's look, and go back to the master's after. */
+export function withFmLook<T>(look: FmLook, paint: () => T): T {
+  const was = LOOK;
+  LOOK = look;
+  try {
+    return paint();
+  } finally {
+    LOOK = was;
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -617,7 +689,9 @@ const TAILS: ReadonlyArray<readonly [number, number, number]> = [
  * (`lag`); never down on the floor. Each tail's points, thickest first. (For the painter and the tests.)
  */
 export function fmTails(hem: { c: V3; f: V3; l: V3; deep: number; wide: number }, ph: number, gale: number, lag: V3 = [0, 0, 0]): { pts: V3[]; r: number }[] {
-  return TAILS.map(([deg, long, r], j) => {
+  return TAILS.map(([deg, long0, r0], j) => {
+    const long = long0 * LOOK.tails;
+    const r = r0 * Math.sqrt(LOOK.k);
     const a = deg * D;
     const out: V3 = norm(add(mul(hem.f, Math.cos(a)), mul(hem.l, Math.sin(a))));
     const rear = Math.max(0, -Math.cos(a));
@@ -644,20 +718,21 @@ export function fmTails(hem: { c: V3; f: V3; l: V3; deep: number; wide: number }
  * (`lag`), kicked out by `gale`. Its rings, from the waist down. (For the painter and the tests.)
  */
 function fmSkirt(s: Skeleton, gale = 0, lag: V3 = [0, 0, 0]): Ring[] {
-  const B = FB;
+  const B = LOOK.body;
+  const K = LOOK.k;
   const f = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
   const l: V3 = [-f[1], f[0], 0];
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.6));
-  const hemZ = FM_HEM_UP + (s.pelvis[2] - FM_PELVIS_UP);
-  const hipZ = s.pelvis[2] - 1.5;
-  const rings: Ring[] = [{ c: waistC, u: mul(s.belly[0], B.waistDeep + 2.0), v: mul(s.belly[1], B.waistHalf + 2.0) }];
+  const hemZ = LOOK.hemUp + (s.pelvis[2] - pelvisUpOf(LOOK));
+  const hipZ = s.pelvis[2] - 1.5 * K;
+  const rings: Ring[] = [{ c: waistC, u: mul(s.belly[0], B.waistDeep + 2.0 * K), v: mul(s.belly[1], B.waistHalf + 2.0 * K) }];
   const N = 4;
   for (let i = 0; i <= N; i++) {
     const k = i / N;
     const z = hipZ + (hemZ - hipZ) * k;
     const c: V3 = [s.pelvis[0] + lag[0] * k, s.pelvis[1] + lag[1] * k, z];
-    const deep = B.pelvisDeep + 2.6 + (FM_HEM_WIDE - 2.6) * k + 1.5 * gale * k;
-    const wide = B.pelvisHalf + 2.6 + (FM_HEM_WIDE - 2.6) * k + 1.5 * gale * k;
+    const deep = B.pelvisDeep + 2.6 * K + (LOOK.hemWide - 2.6 * K) * k + 1.5 * K * gale * k;
+    const wide = B.pelvisHalf + 2.6 * K + (LOOK.hemWide - 2.6 * K) * k + 1.5 * K * gale * k;
     rings.push({ c, u: mul(f, deep), v: mul(l, wide) });
   }
   return rings;
@@ -692,7 +767,7 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
   const { s, q, t } = m;
   const sc = staff.skull;
   const [scx, scy] = st.at(sc);
-  const mouth: P2 = [xy[0] + 7, xy[1] + SKULL_MOUTH + 1 + drop];
+  const mouth: P2 = [xy[0] + LOOK.skull.mid[0], xy[1] + LOOK.skull.mouth + 1 + drop];
   const atPx = (x: number, y: number): V3 => screenStep(st, sc, x + 0.5 - scx, y + 0.5 - scy);
   const [tx, ty] = st.at(staff.top);
   const way = unit2([scx - tx, scy - ty]);
@@ -748,7 +823,9 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
     }
   } else if (q.prop === FM_ATTACKS.raise) {
     // THE SHRIEK, a ring of sparks bursting out of the skull
-    const k = (t - FM_RAISE.shriek) / 0.32;
+    const RS = LOOK.timing?.raiseShriek ?? FM_RAISE.shriek;
+    const RH = LOOK.timing?.raiseHold ?? FM_RAISE.hold;
+    const k = (t - RS) / 0.32;
     if (k >= 0 && k < 1) {
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * 360 + 9;
@@ -761,7 +838,7 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
       put('glow', 'glow', { k: 'glow', p: sc, c: FLAME[3], r: 26 - 10 * k, a: 0.5 * (1 - k) });
     }
     // HIS LIGHT PULLED UP OUT OF THE FLOOR, in streaks running up into his claw and the skull
-    const pull = rampAt(t, 0.62, 0.8) * (1 - rampAt(t, FM_RAISE.hold - 0.15, FM_RAISE.hold));
+    const pull = rampAt(t, RS - 0.1, RS + 0.08) * (1 - rampAt(t, RH - 0.15, RH));
     if (pull > 0.05) {
       for (let i = 0; i < 8; i++) {
         const ang = (i / 8) * Math.PI * 2 + 0.3;
@@ -785,11 +862,12 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
       }
     }
   } else if (q.prop === FM_ATTACKS.fire) {
-    const maw = fmMawOf(q.prop, t);
+    const maw = (LOOK.maw ?? fmMawOf)(q.prop, t);
     if (maw > 0.05) {
       // THE SKULL'S JAWS BLAZING, where the stream pours out of them (art/fm_spells.ts drawFireStream)
-      const burst = 1 - rampAt(t, FM_FIRE.burst, FM_FIRE.burst + 0.3);
-      const r = (2.5 + 1.2 * Math.sin(t * 31)) * maw + 5 * burst * rampAt(t, FM_FIRE.burst - 0.06, FM_FIRE.burst);
+      const FB0 = LOOK.timing?.fireBurst ?? FM_FIRE.burst;
+      const burst = 1 - rampAt(t, FB0, FB0 + 0.3);
+      const r = ((2.5 + 1.2 * Math.sin(t * 31)) * maw + 5 * burst * rampAt(t, FB0 - 0.06, FB0)) * LOOK.k;
       fireBall(st, put, atPx(mouth[0], mouth[1]), r, [0, -1], 3, undefined, FLAME[4]);
       put('glow', 'glow', { k: 'glow', p: atPx(mouth[0], mouth[1]), c: FLAME[3], r: 14 + 10 * burst, a: 0.45 * maw + 0.2 * burst });
     }
@@ -802,7 +880,7 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
 /** THE FLESHMANCER AS SOLIDS: his robe and its tails, his sleeves and bare forearms, his hands, the mantle and the collar of bone behind his hood, the band down his front, the hood and his eyes, the staff, the skull and its fire, the gout of fire he flings. */
 /** Whether what he paints is cut away below the floor (as he is dragged under it). */
 const CUT_FLOOR = { on: false };
-function fleshmancerBits(st: Stage, m: Moment): Bit[] {
+export function fleshmancerBits(st: Stage, m: Moment): Bit[] {
   const under = m.q.prop === FM_DYING;
   CUT_FLOOR.on = under;
   try {
@@ -946,7 +1024,8 @@ function deathBits(st: Stage, m: Moment): Bit[] {
 /** HIM, PAINTED: every part of him as solids, little pictures and fire (`fleshmancerBits` cuts it at the floor as he is dragged under). */
 function paintedBits(st: Stage, m: Moment): Bit[] {
   const { s, q } = m;
-  const B = FB;
+  const B = LOOK.body;
+  const K = LOOK.k;
   const bits: Bit[] = [];
   const put: Put = (part, piece, shape) => {
     bits.push({ part, piece, shape });
@@ -968,11 +1047,11 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     const deep = clamp01((st.near(s.ribs) - 1.5 - st.near(p)) / 3);
     const [x, y] = st.at(p);
     const [nx, ny] = st.at(s.neck);
-    const floorY = st.at([s.pelvis[0], s.pelvis[1], FM_HEM_UP])[1];
+    const floorY = st.at([s.pelvis[0], s.pelvis[1], LOOK.hemUp])[1];
     const [hx] = st.at([s.pelvis[0], s.pelvis[1], 0]);
     const k = clamp01((y - ny) / Math.max(1, floorY - ny));
-    const half = y < ny - 3 ? 10 : 15 - 7 * k;
-    const inside = clamp01((half - Math.abs(x - (nx + (hx - nx) * k))) / 5) * clamp01((y - (ny - 16)) / 4) * clamp01((floorY - y) / 4);
+    const half = (y < ny - 3 ? 10 : 15 - 7 * k) * K;
+    const inside = clamp01((half - Math.abs(x - (nx + (hx - nx) * k))) / 5) * clamp01((y - (ny - 16 * K)) / 4) * clamp01((floorY - y) / 4);
     return deep * inside;
   };
   /** Behind him, as the eye sees it: further from the eye than his chest, and within his shape across the picture (for what is laid over everything: fire in a hand held out before him, seen from behind). */
@@ -980,22 +1059,22 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     if (st.near(p) > st.near(s.ribs) - 1.5) return false;
     const [x, y] = st.at(p);
     const [nx, ny] = st.at(s.neck);
-    const floorY = st.at([s.pelvis[0], s.pelvis[1], FM_HEM_UP])[1];
+    const floorY = st.at([s.pelvis[0], s.pelvis[1], LOOK.hemUp])[1];
     const [hx] = st.at([s.pelvis[0], s.pelvis[1], 0]);
-    if (y < ny - 14 || y > floorY) return false;
+    if (y < ny - 14 * K || y > floorY) return false;
     const k = clamp01((y - ny) / Math.max(1, floorY - ny));
     // (his hood and the collar of bone above his shoulders; his mantle and robe below them, narrowing)
-    return Math.abs(x - (nx + (hx - nx) * k)) < (y < ny - 3 ? 10 : 15 - 7 * k);
+    return Math.abs(x - (nx + (hx - nx) * k)) < (y < ny - 3 ? 10 : 15 - 7 * k) * K;
   };
 
   // --- HIS ROBE: from his neck, broad over the chest, narrowing to a hem off the floor ---
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.6));
   const be = s.belly;
   const torso: Ring[] = [
-    { c: add(s.neck, mul(cu, 1.0)), u: mul(cf, 4.4), v: mul(cl, 5.4) },
-    { c: lerp3(s.ribs, s.neck, 0.7), u: mul(cf, B.ribDeep + 2.2), v: mul(cl, B.shoulderHalf + 0.4) },
-    { c: s.ribs, u: mul(cf, B.ribDeep + 2.0), v: mul(cl, B.ribHalf + 2.2) },
-    { c: waistC, u: mul(be[0], B.waistDeep + 2.0), v: mul(be[1], B.waistHalf + 2.0) },
+    { c: add(s.neck, mul(cu, 1.0 * K)), u: mul(cf, 4.4 * K), v: mul(cl, 5.4 * K) },
+    { c: lerp3(s.ribs, s.neck, 0.7), u: mul(cf, B.ribDeep + 2.2 * K), v: mul(cl, B.shoulderHalf + 0.4 * K) },
+    { c: s.ribs, u: mul(cf, B.ribDeep + 2.0 * K), v: mul(cl, B.ribHalf + 2.2 * K) },
+    { c: waistC, u: mul(be[0], B.waistDeep + 2.0 * K), v: mul(be[1], B.waistHalf + 2.0 * K) },
   ];
   const skirt = fmSkirt(s, gale, lag);
   const hem = skirt[skirt.length - 1];
@@ -1047,28 +1126,28 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     const el = side === 'L' ? s.elbowL : s.elbowR;
     const hand = side === 'L' ? s.handL : s.handR;
     const fore = norm(sub(hand, el), [0, 0, -1]);
-    put(`sleeve${side}`, `sleeve${side}`, { k: 'rod', a: sh, b: el, ra: 2.9, rb: 3.1, ramp: FM_ROBE, far: true });
+    put(`sleeve${side}`, `sleeve${side}`, { k: 'rod', a: sh, b: el, ra: 2.9 * K, rb: 3.1 * K, ramp: FM_ROBE, far: true });
     const e1 = squareTo(fore, [0, 0, 1], cu);
     const e2 = norm(cross(fore, e1));
-    const mouth = add(el, mul(fore, 1.4));
-    const sway = Math.sin(ph * 2 + (side === 'L' ? 0 : 1.7)) * 0.9;
-    const droop = 3.4 + 2.0 * gale;
+    const mouth = add(el, mul(fore, 1.4 * K));
+    const sway = Math.sin(ph * 2 + (side === 'L' ? 0 : 1.7)) * 0.9 * K;
+    const droop = (3.4 + 2.0 * gale) * K;
     const mouthPts: V3[] = [];
     for (let i = 0; i < 14; i++) {
       const a = (i / 14) * Math.PI * 2;
-      const r = 3.9 + 0.8 * gale;
+      const r = (3.9 + 0.8 * gale) * K;
       const p = add(mouth, add(mul(e1, Math.cos(a) * r), mul(e2, Math.sin(a) * r)));
       const under = Math.max(0, -Math.cos(a));
       mouthPts.push(add(p, add([0, 0, -under * droop + sway * under], mul(lag, under * 0.6))));
     }
     const rings: Ring[] = [
-      { c: lerp3(sh, el, 0.55), u: mul(e1, 2.9), v: mul(e2, 2.9) },
-      { c: el, u: mul(e1, 3.2), v: mul(e2, 3.2) },
-      { c: mouth, u: mul(e1, 3.9), v: mul(e2, 3.9), pts: mouthPts },
+      { c: lerp3(sh, el, 0.55), u: mul(e1, 2.9 * K), v: mul(e2, 2.9 * K) },
+      { c: el, u: mul(e1, 3.2 * K), v: mul(e2, 3.2 * K) },
+      { c: mouth, u: mul(e1, 3.9 * K), v: mul(e2, 3.9 * K), pts: mouthPts },
     ];
     put(`sleeve${side}`, `sleeve${side}`, { k: 'cloth', rings, ramp: FM_ROBE, look: { folds: [90, -90, 180], lift: 0.1, lining: 0.5 } });
     // (the pink lining inside its mouth, round the forearm)
-    put(`sleeve${side}`, `sleeve${side}`, { k: 'ball', c: add(mouth, mul(fore, -0.2)), ax: [mul(fore, 0.45), mul(e1, 3.3), mul(e2, 3.3)], skin: FM_LINING, far: true });
+    put(`sleeve${side}`, `sleeve${side}`, { k: 'ball', c: add(mouth, mul(fore, -0.2)), ax: [mul(fore, 0.45), mul(e1, 3.3 * K), mul(e2, 3.3 * K)], skin: FM_LINING, far: true });
     const wrist = add(hand, mul(fore, -0.4));
     put(`arm${side}`, `arm${side}`, { k: 'rod', a: add(mouth, mul(fore, -0.6)), b: wrist, ra: 1.0, rb: 0.8, ramp: HAND_BONE, far: true });
     put(`arm${side}`, `arm${side}`, { k: 'ball', c: wrist, ax: sphere(1.05), skin: HAND_BONE, far: true });
@@ -1097,7 +1176,7 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     });
     put('staff', 'staff', { k: 'ball', c: staff.foot, ax: sphere(1.8), skin: STAFF_BONE, far: true });
     // its spurs: bones grown out of its joints, away from him, hooked upward, pointed
-    for (const [i, fw, lf, long] of SPURS) {
+    for (const [i, fw, lf, long] of LOOK.staff.spurs) {
       const out = norm(add(mul(staff.fwd, fw), mul(staff.left, lf)));
       const way = norm(add(mul(out, 0.85), mul(staff.way, 0.5)));
       const b0 = J[i];
@@ -1127,10 +1206,10 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     const suck = q.prop === 0 ? charge : 0;
     const hot = lit * (1 + 0.8 * flare - 0.55 * suck);
     const [scx, scy] = st.at(sc);
-    const x0 = Math.round(scx) - SKULL_MID[0];
-    const y0 = Math.round(scy) - SKULL_MID[1];
-    const drop = Math.max(flare > 0.55 ? 2 : flare > 0.2 ? 1 : 0, Math.round(fmJawOf(q.prop, m.t)));
-    const maw = fmMawOf(q.prop, m.t);
+    const x0 = Math.round(scx) - LOOK.skull.mid[0];
+    const y0 = Math.round(scy) - LOOK.skull.mid[1];
+    const drop = Math.max(flare > 0.55 ? 2 : flare > 0.2 ? 1 : 0, Math.round((LOOK.jaw ?? fmJawOf)(q.prop, m.t)));
+    const maw = (LOOK.maw ?? fmMawOf)(q.prop, m.t);
     const pix = skullPix(x0, y0, hot, lit, drop, maw);
     stamp(st, put, 'skull', 'skull', pix, add(sc, mul(st.eye, 1.5)));
     if (lit > 0.05) {
@@ -1139,19 +1218,18 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       const roar = 1 + 0.15 * Math.sin(ph * 6 + 0.7) + 0.7 * flare - 0.6 * suck;
       const step = hot > 1.3 ? 0 : -1;
       // OUT OF ITS SOCKETS: from the fire deep in each, a tongue licking up and out over the temple, away from its face
-      SKULL_EYES.forEach(([ex, ey, out], i) => {
-        const lean = out * (3.2 + 1.0 * Math.sin(ph * 4 + i * 2));
-        tongueAt(st, put, sc, [x0 + ex + 0.5, y0 + ey + 1], (5 + 1.5 * Math.sin(ph * 6 + i * 2.3)) * roar * lit, 1.8 + 0.6 * flare, lean, 1, undefined, step);
+      LOOK.skull.eyes.forEach(([ex, ey, out], i) => {
+        const lean = out * (3.2 + 1.0 * Math.sin(ph * 4 + i * 2)) * K;
+        tongueAt(st, put, sc, [x0 + ex + 0.5, y0 + ey + 1], (5 + 1.5 * Math.sin(ph * 6 + i * 2.3)) * roar * lit * K, 1.8 + 0.6 * flare, lean, 1, undefined, step);
       });
       // OFF ITS CROWN, from behind it: ragged, one tongue taller than the rest, lower than the skull is tall
-      const crown: ReadonlyArray<readonly [number, number, number, number]> = [[5, 9, 3.2, 0.5], [9, 3.5, 1.8, 1.9], [2, 2.2, 1.4, -1.4]];
-      crown.forEach(([cx, tall0, wide, lean], j) => {
-        const tall = Math.min(12, (tall0 + 1.8 * Math.sin(ph * (5 + j) + j * 1.9)) * roar) * lit;
+      LOOK.skull.crown.forEach(([cx, tall0, wide, lean], j) => {
+        const tall = Math.min(12 * K, (tall0 + 1.8 * K * Math.sin(ph * (5 + j) + j * 1.9)) * roar) * lit;
         tongueAt(st, put, sc, [x0 + cx + 0.5, y0 + 3], tall, wide + 0.6 * flare, lean + 0.7 * Math.sin(ph * 3 + j), 1, (x, y) => behindSkull.has(pk(x, y)), hot > 1.3 ? 1 : 0);
       });
       // (its light: over its crown, where the flame is, and a little at its sockets; never over the bone to wash it white)
-      put('glow', 'glow', { k: 'glow', p: atPx(x0 + 6, y0 - 9), c: FLAME[3], r: 14 + 2 * Math.sin(ph * 6 + 0.7) + 4 * flare - 3 * suck, a: Math.min(0.55, (0.32 + 0.12 * flare - 0.1 * suck) * lit) });
-      for (const [ex, ey] of SKULL_EYES) put('glow', 'glow', { k: 'glow', p: atPx(x0 + ex, y0 + ey - 1), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.5, (0.28 + 0.18 * flare) * lit) });
+      put('glow', 'glow', { k: 'glow', p: atPx(x0 + LOOK.skull.mid[0] - 1, y0 - 9 * K), c: FLAME[3], r: (14 + 2 * Math.sin(ph * 6 + 0.7) + 4 * flare - 3 * suck) * K, a: Math.min(0.55, (0.32 + 0.12 * flare - 0.1 * suck) * lit) });
+      for (const [ex, ey] of LOOK.skull.eyes) put('glow', 'glow', { k: 'glow', p: atPx(x0 + ex, y0 + ey - 1), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.5, (0.28 + 0.18 * flare) * lit) });
     }
     // THE FIRE DRAWN DOWN OUT OF IT into his hand as he gathers it: streaks of it, unevenly spaced, running down to his claw
     if (charge > 0.15 && lit > 0.05 && q.prop === 0) {
@@ -1189,13 +1267,13 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     const [cx] = st.at(s.ribs);
     // (the thumb on the side away from his middle)
     const side = -way[1] * (wx - cx) >= 0 ? 1 : -1;
-    const claw = clawPix([wx, wy], way, fan, 128 - 38 * open, clamp01(q.draw) * (1 - open), heat, side);
+    const claw = clawPix([wx, wy], way, fan, 128 - 38 * open, clamp01(q.draw) * (1 - open), heat, side, LOOK.claw);
     const hidden = behindHim(s.handL);
     stamp(st, put, 'handL', 'handL', claw.pix, add(s.handL, mul(st.eye, 1.5)));
     if (lit > 0.05 && handFire > 0.05) {
       const keep = claw.keep;
       const at = screenStep(st, s.handL, claw.heart[0] - wx, claw.heart[1] - wy);
-      const r = (4.0 + 0.5 * pulse) * Math.min(1, handFire) + 1.4 * charge;
+      const r = ((4.0 + 0.5 * pulse) * Math.min(1, handFire) + 1.4 * charge) * LOOK.claw;
       // (what of it is behind him, as the eye sees it, is hidden by him; and his fingers stand in front of it)
       const skip = (x: number, y: number): boolean => keep.has(pk(x, y)) || behindHim(screenStep(st, s.handL, x + 0.5 - wx, y + 0.5 - wy));
       fireBall(st, put, at, r, [0, 1], 1.0, (_p, x, y) => skip(x, y), charge > 0.5 ? FLAME[4] : FLAME[3]);
@@ -1204,7 +1282,7 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       for (const [deg, k] of [[-34, 0], [0, 1], [34, 2]] as const) {
         const d = rot2(fan, deg);
         const foot: P2 = [hx + d[0] * 2.2, hy + d[1] * 2.2 + 1];
-        const tall = ((k === 1 ? 7 : 5) + 1.6 * Math.sin(ph * 6 + k * 2.1) + 4 * charge) * Math.min(1, handFire) * lit;
+        const tall = ((k === 1 ? 7 : 5) + 1.6 * Math.sin(ph * 6 + k * 2.1) + 4 * charge) * Math.min(1, handFire) * lit * LOOK.claw;
         tongueAt(st, put, at, foot, tall, 2.0 + 0.8 * charge, d[0] * 2 + 0.8 * Math.sin(ph * 4 + k), 0.9 + charge, skip);
       }
     }
@@ -1217,11 +1295,11 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
   // --- THE MANTLE: stiff and broad over his shoulders, its edge clean and banded gold and pink ---
   const face = wornOn(st, s, 12);
   const [ff, fl, fu] = face;
-  const capeC = add(add(s.neck, mul(cu, -7.6)), mul(lag, 0.4));
+  const capeC = add(add(s.neck, mul(cu, -7.6 * K)), mul(lag, 0.4));
   const mantle: Ring[] = [];
   {
-    const capeU = mul(cf, B.ribDeep + 4.4 + gale);
-    const capeV = mul(cl, B.shoulderHalf + 6.6 + gale);
+    const capeU = mul(cf, B.ribDeep + (4.4 + gale) * K);
+    const capeV = mul(cl, B.shoulderHalf + (6.6 + gale) * K);
     const hemPts: V3[] = [];
     const N = 28;
     for (let i = 0; i < N; i++) {
@@ -1230,11 +1308,11 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       const p = add(capeC, add(mul(capeU, Math.cos(a)), mul(capeV, Math.sin(a))));
       // (lower behind; dipping to a soft point at his breast, never straight across him; stirring)
       const fore = Math.max(0, Math.cos(a)) ** 3;
-      hemPts.push(add(p, [0, 0, -rear * 2.6 - fore * FM_MANTLE_DIP + Math.sin(ph * 2 + a * 3) * 0.4 - gale * rear * 1.5]));
+      hemPts.push(add(p, [0, 0, (-rear * 2.6 - fore * FM_MANTLE_DIP + Math.sin(ph * 2 + a * 3) * 0.4 - gale * rear * 1.5) * K]));
     }
     mantle.push(
-      { c: add(s.neck, mul(cu, 3.4)), u: mul(cf, 5.2), v: mul(cl, 6.0) },
-      { c: add(s.neck, mul(cu, -0.6)), u: mul(cf, B.ribDeep + 3.4), v: mul(cl, B.shoulderHalf + 5.4) },
+      { c: add(s.neck, mul(cu, 3.4 * K)), u: mul(cf, 5.2 * K), v: mul(cl, 6.0 * K) },
+      { c: add(s.neck, mul(cu, -0.6 * K)), u: mul(cf, B.ribDeep + 3.4 * K), v: mul(cl, B.shoulderHalf + 5.4 * K) },
       { c: capeC, u: capeU, v: capeV, pts: hemPts },
     );
     put('mantle', 'mantle', { k: 'cloth', rings: mantle, ramp: FM_MANTLE, look: { folds: [35, -35, 80, -80, 125, -125, 158, -158], lift: 0.3 } });
@@ -1245,14 +1323,14 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       const outA = norm([a0[0] - capeC[0], a0[1] - capeC[1], 0]);
       const outB = norm([b0[0] - capeC[0], b0[1] - capeC[1], 0]);
       put('trim', 'mantle', { k: 'rod', a: add(add(a0, mul(outA, 0.5)), [0, 0, 1.2]), b: add(add(b0, mul(outB, 0.5)), [0, 0, 1.2]), ra: 0.85, rb: 0.85, ramp: BAND });
-      put('trim', 'mantle', { k: 'rod', a: add(a0, mul(outA, 0.7)), b: add(b0, mul(outB, 0.7)), ra: 0.55, rb: 0.55, ramp: GOLD });
+      if (LOOK.gold) put('trim', 'mantle', { k: 'rod', a: add(a0, mul(outA, 0.7)), b: add(b0, mul(outB, 0.7)), ra: 0.55, rb: 0.55, ramp: GOLD });
     }
   }
 
   // --- THE FRONT OF HIS ROBE, where it parts below the mantle: two edges of it, from a little under the dip of the mantle's edge down to the hem, unbroken, flaring apart as they go down (an A, never a crossbar on two legs); the edge the light falls on pink edged with gold, the other sunk in shadow ---
   {
-    const zTop = capeC[2] - FM_MANTLE_DIP - 2.4;
-    const zEnd = hem.c[2] + 1.0;
+    const zTop = capeC[2] - (FM_MANTLE_DIP + 2.4) * K;
+    const zEnd = hem.c[2] + 1.0 * K;
     const steps = 14;
     let prev: V3[] | null = null;
     for (let i = 0; i <= steps; i++) {
@@ -1261,7 +1339,7 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       const kz = clamp01((z - s.pelvis[2]) / Math.max(1, s.neck[2] - s.pelvis[2]));
       const mid0: V3 = [s.pelvis[0] + (s.neck[0] - s.pelvis[0]) * kz, s.pelvis[1] + (s.neck[1] - s.pelvis[1]) * kz, z];
       // (they start apart, to either side of the dip of the mantle's edge, so that nothing hangs from its point)
-      const apart = 1.9 + 3.0 * k;
+      const apart = (1.9 + 3.0 * k) * K;
       const pts: V3[] = [];
       for (const side of [-1, 1]) {
         const edge = onCloth(robeRings, add(add(mid0, mul(f, 30)), mul(l, side * apart * 7)), 0.6);
@@ -1273,15 +1351,15 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
         for (const j of [0, 2]) {
           const lit = (j === 0) === litFirst;
           put('opening', 'opening', { k: 'rod', a: prev[j], b: pts[j], ra: 0.7, rb: 0.7, ramp: lit ? BAND : FM_EDGE_DARK });
-          if (lit) put('opening', 'opening', { k: 'rod', a: prev[j + 1], b: pts[j + 1], ra: 0.45, rb: 0.45, ramp: GOLD });
+          if (lit && LOOK.gold) put('opening', 'opening', { k: 'rod', a: prev[j + 1], b: pts[j + 1], ra: 0.45, rb: 0.45, ramp: GOLD });
         }
       }
       prev = pts;
     }
   }
 
-  // --- THE COLLAR OF BONE: two ribs of bone rising from his collar at the sides of his hood and curving in over it like a ribcage closing over his head, each tapering its own way; bone, never gold, never higher than a little over his hood ---
-  {
+  // --- THE COLLAR OF BONE: two ribs of bone rising from his collar at the sides of his hood and curving in over it like a ribcage closing over his head, each tapering its own way; bone, never gold, never higher than a little over his hood (the master's alone) ---
+  if (LOOK.crown) {
     const hcTop = add(add(s.head, add(mul(ff, FM_HOOD_FWD), mul(fu, FM_HOOD_UP))), mul(fu, FM_HOOD_R[2]));
     const base0 = add(s.neck, mul(cu, 0.6));
     // (each rib: where round the back of him, how far over his hood its tip comes, how high it ends against the top of his hood)
@@ -1310,8 +1388,9 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
 
   // --- THE HOOD: deep and round, its point drooping behind; gold and pink on its outer brim; the opening pitch black, its edge lit a little from inside; in it his eyes, two hot points ---
   {
-    const hc = add(s.head, add(mul(ff, FM_HOOD_FWD), mul(fu, FM_HOOD_UP)));
-    const hr = FM_HOOD_R;
+    const H = LOOK.hood;
+    const hc = add(s.head, add(mul(ff, H.fwd), mul(fu, H.up)));
+    const hr = H.r;
     const cam = Math.atan2(dot(st.eye, fl), dot(st.eye, ff)) / D;
     const toward = clamp01((110 - Math.abs(cam)) / 40);
     const midA = Math.max(-40, Math.min(40, cam * 0.8)) * toward * D;
@@ -1349,9 +1428,9 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       if (seenFace && toOpen > -0.25) {
         const p = add(hc, add(add(mul(ff, u[0] * hr[0]), mul(fl, u[1] * hr[1])), mul(fu, u[2] * hr[2])));
         const [x, y] = st.at(p);
-        const col = Math.floor(x) - oxi + HOOD_FACE_MID[0];
-        const row = Math.floor(y) - oyi + HOOD_FACE_MID[1];
-        const line = HOOD_FACE[row];
+        const col = Math.floor(x) - oxi + H.mid[0];
+        const row = Math.floor(y) - oyi + H.mid[1];
+        const line = H.face[row];
         if (line && col >= 0 && col < line.length) {
           const ch = line[col];
           // (the brim round its sides, the opening only where the hood faces the way he looks)
@@ -1363,9 +1442,9 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     };
     put('hood', 'hood', { k: 'ball', c: hc, ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin: hoodSkin });
     // (the back of the hood falls to the mantle)
-    put('hood', 'hood', { k: 'ball', c: add(add(hc, mul(ff, -3.6)), mul(fu, -4.0)), ax: [mul(ff, 4.8), mul(fl, 5.8), mul(fu, 4.6)], skin: FM_HOOD });
+    put('hood', 'hood', { k: 'ball', c: add(add(hc, mul(ff, -3.6 * K)), mul(fu, -4.0 * K)), ax: [mul(ff, 4.8 * K), mul(fl, 5.8 * K), mul(fu, 4.6 * K)], skin: FM_HOOD });
     if (lit > 0.05 && dot(od, st.eye) > 0.05) {
-      for (const [ex, ey] of HOOD_EYES) put('glow', 'glow', { k: 'glow', p: screenStep(st, hc, oxi + ex - HOOD_FACE_MID[0] + 0.5 - st.at(hc)[0], oyi + ey - HOOD_FACE_MID[1] + 0.5 - st.at(hc)[1]), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.55, 0.3 * blaze) });
+      for (const [ex, ey] of H.eyes) put('glow', 'glow', { k: 'glow', p: screenStep(st, hc, oxi + ex - H.mid[0] + 0.5 - st.at(hc)[0], oyi + ey - H.mid[1] + 0.5 - st.at(hc)[1]), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.55, 0.3 * blaze) });
     }
   }
 
@@ -1485,7 +1564,7 @@ export const FM_REST: Bones = {
  * side, so that it goes on through a key it does not stop at (and may overshoot), and stops only where two
  * keys either side of one agree; flat before the first key and after the last.
  */
-function curve(keys: ReadonlyArray<readonly [number, number]>, t: number): number {
+export function curve(keys: ReadonlyArray<readonly [number, number]>, t: number): number {
   const n = keys.length;
   if (t <= keys[0][0]) return keys[0][1];
   if (t >= keys[n - 1][0]) return keys[n - 1][1];
@@ -1501,7 +1580,7 @@ function curve(keys: ReadonlyArray<readonly [number, number]>, t: number): numbe
   const u3 = u2 * u;
   return (2 * u3 - 3 * u2 + 1) * v0 + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * v1 + (u3 - u2) * m1;
 }
-type Keys = ReadonlyArray<readonly [number, number]>;
+export type Keys = ReadonlyArray<readonly [number, number]>;
 /**
  * HIS CASTING HAND THROUGH HIS HABIT (from his shoulder, along his chest's forward, left and up; and how his
  * elbow swings): at rest out at his side; drawn in before his chest to gather (where it is seen); wound back
@@ -1598,9 +1677,9 @@ export const FM_FIRE = { long: 4.6, burst: 0.56, pour: 0.62, stop: 3.9 } as cons
 const FM_CLIP_FPS = 30;
 
 /** A track through keys (seconds, value): `curve`, as a function of the moment. */
-const tr = (keys: Keys) => (t: number): number => curve(keys, t);
+export const tr = (keys: Keys) => (t: number): number => curve(keys, t);
 /** A MOVE MADE FROM TRACKS: a key every frame (so that the curves are kept as they are), each field its own track. */
-function sampled(long: number, fields: Readonly<Partial<Record<keyof Bones, (t: number) => number>>>, fixed: Partial<Bones>): Key3[] {
+export function sampled(long: number, fields: Readonly<Partial<Record<keyof Bones, (t: number) => number>>>, fixed: Partial<Bones>): Key3[] {
   const keys: Key3[] = [];
   const n = Math.round(long * FM_CLIP_FPS);
   for (let i = 0; i <= n; i++) {
@@ -1616,7 +1695,7 @@ function sampled(long: number, fields: Readonly<Partial<Record<keyof Bones, (t: 
  * top (90) to pointing straight ahead (180), and leaning `lean` toward his left (its head in toward the
  * line of him, its foot out, clear of his arm) or, if negative, to his right. Its `wAz`, `wEl`.
  */
-function swungStaff(phi: number, lean: number): { wAz: number; wEl: number } {
+export function swungStaff(phi: number, lean: number): { wAz: number; wEl: number } {
   const f = -Math.cos(phi * D);
   const u = Math.sin(phi * D);
   const az = Math.atan2(lean, f) / D;
@@ -1624,7 +1703,7 @@ function swungStaff(phi: number, lean: number): { wAz: number; wEl: number } {
   return { wAz: az, wEl: el };
 }
 /** A move's keys with the staff's way (`wAz`) unwrapped from key to key, so that it turns the short way between any two. */
-function unwrapped(keys: Key3[]): Key3[] {
+export function unwrapped(keys: Key3[]): Key3[] {
   let was: number | undefined;
   for (const k of keys) {
     const az = k.pose.wAz;
@@ -1641,7 +1720,7 @@ function unwrapped(keys: Key3[]): Key3[] {
 }
 
 /** A tremble, for a pose that is held: never quite still (Movement 6), a few tenths of its own lengths. */
-const shiver = (t: number, a: number, k: number): number => a * (Math.sin(t * 37 + k) * 0.6 + Math.sin(t * 23 + 2 * k) * 0.4);
+export const shiver = (t: number, a: number, k: number): number => a * (Math.sin(t * 37 + k) * 0.6 + Math.sin(t * 23 + 2 * k) * 0.4);
 
 /**
  * THE BONE SHARDS, his basic attack (“Bone shards from the skull (Recommended)”). WIND-UP (0 to 0.45 s):
@@ -1872,7 +1951,7 @@ function glideTracks(): { phi: (t: number) => number; lean: (t: number) => numbe
  * leans into his way and is borne along over the floor, rising and sinking once a second, his staff carried
  * out before him, his claw held out at his side with its fire, his robe, tails and sleeves streaming back.
  */
-function fmGlide(): Motion {
+export function fmGlide(): Motion {
   const g = glideTracks();
   const keys = sampled(FM_GLIDE_LONG, { ...g.fields, wAz: (t) => swungStaff(g.phi(t), g.lean(t)).wAz, wEl: (t) => swungStaff(g.phi(t), g.lean(t)).wEl }, { prop: 0, pEl: 0 });
   return { keys: unwrapped(keys), loop: 0 };
@@ -1893,21 +1972,21 @@ const bumpOf = (long: number, size: number, at = 0.5) => (t: number): number => 
   return size * (k < at ? Math.sin((Math.PI / 2) * (k / at)) : Math.cos((Math.PI / 2) * ((k - at) / (1 - at)))) ** 2;
 };
 /** SETTING OFF: he coils a moment, then surges into his glide, his robe snapping back, and is borne away. */
-function fmSetOff(): Motion {
+export function fmSetOff(): Motion {
   const g = glideTracks();
   const R = FM_REST as unknown as Record<string, number>;
   const L = FM_SET_OFF;
   return between(L, (f) => R[f], (f) => g.fields[f]?.(0) ?? R[f], [90, g.phi(0)], { px: (t) => bumpOf(L, -2.2, 0.3)(t), pz: (t) => bumpOf(L, -1.6, 0.25)(t), pitch: (t) => bumpOf(L, 5, 0.6)(t), gale: (t) => bumpOf(L, 0.7, 0.6)(t), phi: (t) => bumpOf(L, 6, 0.6)(t) }, smooth);
 }
 /** STOPPING: he is borne on a little past where he stops, rocks back upright, his robe and tails swinging on past him, and settles. */
-function fmHalt(): Motion {
+export function fmHalt(): Motion {
   const g = glideTracks();
   const R = FM_REST as unknown as Record<string, number>;
   const L = FM_HALT;
   return between(L, (f) => g.fields[f]?.(0) ?? R[f], (f) => R[f], [g.phi(0), 90], { px: (t) => bumpOf(L, 2.6, 0.35)(t), pitch: (t) => bumpOf(L, -4, 0.55)(t), gale: (t) => bumpOf(L, 0.6, 0.4)(t), pz: (t) => bumpOf(L, 1.2, 0.5)(t) }, smooth);
 }
 /** STRUCK: a blow throws him back at once, hood snapping back, robes flung, his light knocked half out of him (the skull's fire gutters); he rights himself. */
-function fmReel(): Motion {
+export function fmReel(): Motion {
   const R = FM_REST;
   const L = FM_REEL;
   // (thrown back at once, held a beat, righting himself)
