@@ -73,7 +73,7 @@ carved words.
 - Traps (3): bone spikes (and the warning), rotten boards (and giving), jaw slot (a black slot in a stone plate, three great pale fangs into it, two from above and one from below at its end; a wall piece).
 - Breakables (4), each whole and then broken (`frames[1]`): ore sack, heap of skulls, oil jug (broken: great curved shards, its neck whole with its plug and handle, the oil pooled), ore tub.
 - On the floor (7): empty boots (a pair, in profile, their tops folded over), rib cage (on its back, its ribs arching, its skull rolled from it face up), broken ladder, drill steels (three thick bars with flared bits, a square-headed hammer), arm from a heap (thick, its hand splayed and clawing), a cultist's robe (dropped and crumpled, not even: its hood round with a dark opening, one sleeve trailing out, its hem fanned and ragged, folds from its neck, a cord round it with two tasselled ends, a candle stub by it), snapped prop (a squared post broken in two, long splinters at the break).
-- Obstacles (10): the mine cart (a deep iron tub banded and riveted, small solid flanged wheels under it, ore and three skulls heaped in it), the rails' end (the rails curling up out of a mound of earth, two posts and a crossbeam across them at the rails' height, iron-faced), the windlass (low and broad over a square shaft: two posts on sills, the drum waist high with its rope wound in slanting bands, a crank, the bucket of ore hanging over the shaft), pyramid of skulls, the charnel heap (the third moment's own), timber crib, the cult's altar (a great block of stone under a wine-dark cloth hanging to a ragged hem, a skull in the middle, black candles at each end; 4 frames, with its light), the boulder (dark, all facets, cracked; the prop it broke under it), the bone column (its skulls turned to the eye; up into the dark), the reliquary (a small casket with a high peaked lid, its wood a step brighter than the room's, trimmed in iron; open, a skull and the bones of a hand in it; no gold).
+- Obstacles (10): the mine cart (a deep iron tub banded and riveted, small solid flanged wheels under it, ore and three skulls heaped in it), the rails' end (the rails curling up out of a mound of earth, two posts and a crossbeam across them at the rails' height, iron-faced), the windlass (low and broad over a square shaft: two posts on sills, the drum waist high with its rope wound in slanting bands, a crank, the bucket of ore hanging over the shaft), pyramid of skulls, the charnel heap (the third moment's own), timber crib, the cult's altar (a great block of stone under a wine-dark cloth hanging to a ragged hem, a skull in the middle, black candles at each end; 4 frames, with its light), the boulder (dark, all facets, cracked; the prop it broke under it), the bone column (its skulls turned to the eye, their sockets and nose set on the picture's pixels as separate dark marks; up into the dark), the reliquary (a small casket with a high peaked lid, its wood a step brighter than the room's, trimmed in iron; open, a skull and the bones of a hand in it; no gold).
 - Doors and gates (3): the door (the miners' planks), the gate (a skull carved over it), the boss's gate (the maw, its fire pink). As `Piece.gates`, made by `makeGateArt(theme, look)` (`ossuaryGates()`).
 - Quest (1): the eldest skull (cracked, the fire gone out of it; no glint of gold).
 
@@ -146,8 +146,11 @@ No grit, no single pixels.
   a skull at the heap's front right kindle, deep magenta first, then pink, its eyes great, burning by 100,
   steady. From 94 the arm comes apart a piece at a time, fingers, hand, the forearm's two bones, its upper
   arm landing at 106 (3.53 s, the fourth jolt). The heap slumps; from 114 three bones slide down over the
-  burning skull one after another, its eyes glowing through the gaps between them, dimmer and dimmer,
-  until they are covered and gone (145). A last breath of dust at the heap's foot settles and is gone on
+  burning skull from above, one after another, never up across it: the first across its eyes, covering
+  them from the top down (119 to 130), the pink haze on the bones about it shrinking with them a little
+  each frame; then one over its brow, and one higher. A sliver of its eyes glows on, steady, through a
+  gap (130 to 139); the skull sinks into the heap a whole pixel at a time, the bones on it with it, and
+  the last of the glow is gone by 142. A last breath of dust at the heap's foot settles and is gone on
   the last frame. What is left: the heap, lower and changed, the arm's bones on it, the flung bones about
   it, the earth raked.
 
@@ -232,7 +235,17 @@ brightness all mended; the cart's crash meets his rule), and asked for these, ea
   rim and hub, its landing bounces twice; the heap breathes deeper, the arm slams twice and rakes the
   earth.
 
-Not done in this round: bigger skulls and bones in the wall's spill (as before), the arm dragging the
+**The last look** (11 Oct) found it clear of rule breaks, and asked for two small touches, both made:
+
+- The bones stir: the buried skull's eyes went almost out and came back, and the pink haze went in one
+  frame. The bones now come down over it from above and never cross its eyes on the way, it sinks a whole
+  pixel at a time so that what shows between the bones holds steady, and the haze shrinks a little each
+  frame as they cover it.
+- The bone column: the right-hand skull of each band had a small dark cross where its eye met its nose.
+  Its skulls' sockets and noses are now set on the picture's own pixels as separate marks, two blocks and
+  a dot (`SkullPose.snap`), and the skulls are turned a little more to the eye.
+
+Not done in the second round: bigger skulls and bones in the wall's spill (as before), the arm dragging the
 heap itself with it (it rakes the earth only). Not mended here (shared): the Crypt's own black wall
 cracks, as above.
 

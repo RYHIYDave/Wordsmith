@@ -61,12 +61,12 @@ wall's height, and the moment with the bars plays in one).
 - Wall tiles (9): bent bars (torn bars: the two outer bars standing straight, the two between torn out, leaving short blunt stubs at the lintel and the sill and a dark gap, the mortar round their sockets broken and cracked; nothing curved), claw-torn stone, the feeding slot (a wooden bowl on its lip), the cage carved (his muzzle-cage and its straps standing out of the dark hollow of his head, in a sunk field), the ball's crater (a shallow dented dish, cracks all round), the bowed wall (the wall's height: a crack up it, the courses beside it curving out), the torn-out ring (its plate wrenched half out and hanging by one bolt, the ring on it bent; a breach to one side; its heap of broken stone and the chain's snapped end as its `frames[0]`, drawn on the floor tile before it, before the wall), the chain port (a low iron-framed mouth at the wall's foot, its arch's edge lit, a heavy chain running into it), the cell grate (the wall's height: a cell's barred front, three thick bars, black inside).
 - On the walls (9): rings and chains (the wall's height: the chains reach the floor), balls on a rack (three dark balls apart, a highlight each), fire basket (4 frames, with its light), goad and catch-pole (a long pale spike; a rope noose hanging open; pegs), empty bowls (seen from the side and a little above: three stacked, one apart with its spoon, each mouth an oval rim round the dark inside), rags on a nail (an old grey-brown rag hung by its corners on two nails, sagging, its hem torn), the wall winch (the wall's height: its chain runs up into the dark), the jailers' lamp (an iron lantern on a bracket, 4 frames, with its light), a skull in its cage (a small pale skull, the dark iron muzzle round its jaw, its leather straps, hung by them from a hook).
 - Floor tiles (6): old straw (soft grey tufts and a trodden mat, no single stalks), ball grooves, the oubliette (a grate over a pit), the smashed flags, his muzzle in the floor (his mark, as floor 2's “the hood in the floor”; it was “the cage in the floor”), a ring in the floor.
-- Traps (3): the trip chain (and sprung), the mantrap (two half-moon jaws of heavy iron laid open, bright tooth tips, a dark plate in the middle, springs either side, a chain to a peg; and shut), the ball hatch (a wall piece: one square iron hatch set off to one side of its face, so that the two faces of a corner never make a pair; no shutter over it; a ball sitting low on its sill).
+- Traps (3): the trip chain (and sprung), the mantrap (two half-moon jaws of heavy iron laid open, bright tooth tips, a dark plate in the middle, springs either side, a chain to a peg; and shut), the ball hatch (a wall piece: one square iron hatch set off to one side of its face, high on the face turned to screen-left and low on the other, so that the two faces of a corner never make a pair; no shutter over it, no gouges under it; a ball sitting low on its sill).
 - Breakables (4), each whole and then broken (`frames[1]`, what it leaves): straw bale (warm grey, its stalks lying along it, two twine bands), water jug, meal sack, box of irons.
 - On the floor (6): a burst cuff, ball and chain, a snapped chain, a bowl kicked over (on its side, its dark mouth to us), his pallet (a flat straw mat, a rough grey blanket over half of it), a torn-out bar (straight, one sharp kink, a jagged broken lump of mortar on its end).
 - Obstacles (9): the cage (four thick pointed bars to a side, its floor dark with soft tufts of straw, its door swung wide, the lock hanging open), the chain post, the feed trough (planks on trestle feet), the great winch, the jailers' kettle (4 frames, with its light), the anvil, a heap of chains, the stone bench (a dark slab on two blocks, leg-irons on it), the jailers' chest (the chest; closed and open).
 - Doors and gates (3): the door (a cell door of iron plates riveted, a grille high in it, a great bolt), the gate (the ball and chain over it), the boss's gate (his muzzle-cage in the dark hollow of his head, his eyes two pink embers in it: the only place his eyes show). As `Piece.gates`, made by `makeGateArt(theme, look)` (`chainedGates()`).
-- Quest (1): the Chained One's face-cage: his muzzle-cage, open thin bars of dark iron with wide gaps in the jaw's shape of his mark, torn off him and lying on the floor, a band burst and an upright snapped, its leather straps torn, one long and trailing with its buckle.
+- Quest (1): the Chained One's face-cage: his muzzle-cage, open thin bars of dark iron with wide gaps (its uprights as on his mark: two above the middle band, one under it), seen a little from above so the floor shows between them, torn off him and lying on the floor, a band burst and an upright snapped, its leather straps torn, one long and trailing with its buckle.
 
 Anchors, shadows (`Piece.shadow`), lights (`Sprite.lights`) and wall pieces' places (`Piece.spots`:
 three each, low to high and across; never the same piece on two neighbouring tiles of a wall) are as
@@ -95,7 +95,8 @@ shade, the light still from the upper left).
   ring in an S across the floor and slapping down at frame 34 (1.13 s, a jolt), then lashing up
   off the floor and on toward the hero and slapping down again, as hard, at frame 41 (1.37 s, a
   jolt). Whatever pulled lets go: the eyes draw back into the hole over
-  eight frames (gone by frame 34), smaller, nearer each other and dimmer; the
+  eight frames (gone by frame 34), narrowing to slits, nearer each other and dimmer, closing to a
+  point (never opening again); the
   other two drop slack, swing out and back and hang still, the dust sinks onto the floor and is gone
   by frame 65. What is left: the torn plate, ring and chain lying out across the floor, the hole and
   the cracks, the two chains hanging, their rings bent, the chunks. On the face turned to
@@ -112,10 +113,10 @@ shade, the light still from the upper left).
   jolt) and bounces smaller, then rolls a long heavy way toward the hero, its chain (begun a
   shackle's length off the ball, so no link lies on its face) paying out until it goes taut, snatches the block off the heap's foot and drags it, and the
   ball rocks back on its chain and is still. What is left: the ball lying whole on the floor where it
-  stopped, its chain taut to the dragged block, the smashed flags, the chips and stones. Painted in
+  stopped, its chain taut to the dragged block (its staple a closed loop), the smashed flags, the chips and stones. Painted in
   depth (floor 2's `Deep`), so the heap, the ball, its chain and the block hide each other as they
   should.
-- **The bars shake** (66 frames, 2.2 s; a wall piece's anchor: `the cell grate` at its place (0,
+- **The bars shake** (65 frames, 2.17 s; a wall piece's anchor: `the cell grate` at its place (0,
   0); at its other places, shift the frames as the place shifts the piece). The cell's barred front,
   black inside (`before`). The bars tremble (frame 1); two pink eyes rise into the gaps high in the
   dark from frame 2, a matched pair; from frame 5 two huge pale grey hands come up out of the black
@@ -136,8 +137,9 @@ shade, the light still from the upper left).
 - **The dust**, in all three: fewer, bigger clouds, each growing out of the point it is struck
   from over three frames, blowing out fast, hanging and spreading, then settling: sinking and
   flattening together over many frames (eight or more, longer the higher it hangs), easing in and
-  out, never in one frame; then the low sheet slides on along the floor as it shrinks away as one
-  over ten frames. Solid, shaded as a round thing is (its top lit, its belly dark), its lobes' edges
+  out, never in one frame; then the low sheet slides off along the floor, faster and faster, as it
+  shrinks, and is gone by its tenth frame: under the wall in the chains and the bars (what has gone
+  past the wall's foot is not drawn), under the heap in the ball's. Solid, shaded as a round thing is (its top lit, its belly dark), its lobes' edges
   scalloped and broken; no see-through checker. Painted under whatever moves, so that it never hides
   a blow.
 
@@ -232,6 +234,14 @@ The art chat's own look at those pictures found two more, both done:
   pale skin, no slit eyes. Over the boss's gate only, two pink embers for eyes in the dark. The same in
   the wall, the floor and over the gate; the skull in its cage keeps its skull; the quest cage as it
   was.
+
+The last look before he sees it found these, all done: the chains' eyes narrowed, opened again and
+went in one frame (now they narrow to slits and close, never reopening); in the ball's film the ball
+stopped behind the warrior and its chain ran into his hands (the film's warrior now stands off the
+line of the roll, to its right); the dust's sheet thinned away where it lay (it slides off under the
+wall or the heap now, and is seen to go); the ball hatch on a corner still a faint pair of eyes with
+lashes (no gouges now, and its two faces at different heights); the block's staple an open ring like
+a "c" (closed); the quest cage still a plate with eye holes (open bars now).
 
 Not done: the ball goes off the heap's near edge, not its far one (it falls clear, but toward the
 hero, as the heap is drawn); the bars' pin is still small at a phone's size (two or three of the

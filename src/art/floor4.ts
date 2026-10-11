@@ -341,6 +341,12 @@ export interface SkullPose {
   burn?: number;
   /** Its sockets this much bigger than a skull's own (the burning skull's, so that its eyes read). */
   big?: number;
+  /**
+   * Its sockets and nose set on the picture's own pixels: two blocks and a dot below between them,
+   * always apart (a small skull turned aside, whose round sockets would otherwise run into its nose as
+   * a little dark cross).
+   */
+  snap?: boolean;
 }
 /** The enemy's fire in a skull's sockets, from a dull kindling to burning (his Colour 3: pink, the enemy's): steady, one pink, its middle the brightest. */
 function socketFire(burn: number, deep: number): string {
@@ -358,11 +364,25 @@ export function skull(S: Scene, k: SkullPose, ramp: Ramp, id: number, keep?: (w:
   const Sd = cross(F, U);
   const R = k.R;
   const burn = k.burn ?? 0;
+  /** With `snap`: where on the picture its sockets and nose fall, as pixels (their middles at x + 0.5). */
+  const marks = k.snap ? snapMarks(S, k, F, U, Sd) : null;
   const feature = (w: V3, onFace: boolean): string | null => {
     const q = sub(w, k.c);
     const f = dot(q, F) / R;
     const u = dot(q, U) / R;
     const s = dot(q, Sd) / R;
+    if (marks && f > 0.2) {
+      if (u > -0.5 && u < 0.6) {
+        const [px, py] = S.at(w);
+        const X = Math.floor(px);
+        const Y = Math.floor(py);
+        if (marks.eyes.has(`${X},${Y}`)) return burn > 0 ? socketFire(burn, 0.3) : DEEP;
+        if (marks.nose === `${X},${Y}`) return DEEP;
+        if (u > -0.3) return null;
+      }
+      if (onFace && u < -0.62 && u > -0.84 && f > 0.3) return Math.abs((s * (R < 5 ? 4 : 6.5) + 20) % 1 - 0.5) < 0.18 ? ramp[0] : ramp[3];
+      return null;
+    }
     if (f > 0.2) {
       // the sockets: two round hollows, big (never smaller than a game pixel across, so a small skull still reads as one)
       const rs = Math.max(0.28, 1.2 / R) * (k.big ?? 1);
@@ -398,6 +418,31 @@ export function skull(S: Scene, k: SkullPose, ramp: Ramp, id: number, keep?: (w:
       return toneAt(n, ramp);
     }, id, keep);
   }
+}
+/**
+ * Where a snapped skull's marks fall on the picture: each socket a block of two by two pixels on the
+ * pixel corner nearest its middle (one pixel wide, on its outer side, if the two would touch), and its
+ * nose one pixel below between them, a pixel clear of them.
+ */
+function snapMarks(S: Scene, k: SkullPose, F: V3, U: V3, Sd: V3): { eyes: Set<string>; nose: string } {
+  const R = k.R;
+  const es = Math.max(0.42, 1.9 / R);
+  const on = (s: number, u: number): [number, number] => S.at(add(k.c, add(mul(F, 0.9 * R), add(mul(U, u * R), mul(Sd, s * R)))));
+  const pts = [on(-es, 0.06), on(es, 0.06)].sort((a, b) => a[0] - b[0]);
+  const cx = pts.map((p) => Math.round(p[0]));
+  const cy = pts.map((p) => Math.round(p[1]));
+  const wide = cx[1] - cx[0] >= 3;
+  const eyes = new Set<string>();
+  for (let i = 0; i < 2; i++) {
+    const xs = wide ? [cx[i] - 1, cx[i]] : [i === 0 ? cx[0] - 1 : cx[1]];
+    for (const x of xs) for (const y of [cy[i] - 1, cy[i]]) eyes.add(`${x},${y}`);
+  }
+  const n = on(0, -0.45);
+  const left = wide ? cx[0] : cx[0] - 1;
+  const right = wide ? cx[1] - 1 : cx[1];
+  const nx = Math.min(right - 1, Math.max(left + 1, Math.floor(n[0])));
+  const ny = Math.max(Math.floor(n[1]), Math.max(cy[0], cy[1]) + 1);
+  return { eyes, nose: `${nx},${ny}` };
 }
 /** A LONG BONE: its shaft, and its knuckled ends, from `a` to `b`. */
 export function longBone(S: Scene, a: V3, b: V3, r: number, ramp: Ramp, id: number, keep?: (w: V3) => boolean): void {
@@ -2244,7 +2289,7 @@ function boneColumn(): Sprite {
       const a = (i / n) * Math.PI * 2 + (kind === 'end' ? (z % 2) * 0.2 : 0.2);
       const out: V3 = [Math.cos(a), Math.sin(a), 0];
       if (dot(out, TOWARD) < -0.3) continue;
-      if (kind === 'skull') skull(S, { c: [out[0] * (R + 1.2), out[1] * (R + 1.2), z], F: norm(add(mul(out, 0.55), mul(TOWARD as V3, 0.6))), U: [0, 0, 1], R: 4.2, jaw: null }, BIG_BONE, id++);
+      if (kind === 'skull') skull(S, { c: [out[0] * (R + 1.2), out[1] * (R + 1.2), z], F: norm(add(mul(out, 0.36), mul(TOWARD as V3, 0.8))), U: [0, 0, 1], R: 4.2, jaw: null, snap: true }, BIG_BONE, id++);
       else {
         const e: V3 = [out[0] * (R + 0.8), out[1] * (R + 0.8), z];
         const sd: V3 = [-out[1], out[0], 0];
@@ -3406,8 +3451,8 @@ function bonesStir(): Moment {
   const rollers = HEAP_BITS.map((b, i) => i).filter((i) => HEAP_BITS[i].kind === 'skull' && i !== HEAP_EYES && Math.hypot(...centre(HEAP_BITS[i])) > 6 && Math.hypot(...centre(HEAP_BITS[i])) < 22).slice(0, 4);
   const ROLLS = [8, 17, 26, 34];
   const flung = HEAP_BITS.map((b, i) => i).filter((i) => !rollers.includes(i) && i !== HEAP_EYES && HEAP_BITS[i].kind !== 'ribs' && Math.hypot(...centre(HEAP_BITS[i])) < 17);
-  // (the bones by the burning skull: left on the heap, to slide down over it as it is buried)
-  const buriers = HEAP_BITS.map((b, i) => i).filter((i) => HEAP_BITS[i].kind === 'bone' && !flung.includes(i) && !rollers.includes(i)).sort((p, q) => Math.hypot(centre(HEAP_BITS[p])[0] - eyes.a[0], centre(HEAP_BITS[p])[1] - eyes.a[1]) - Math.hypot(centre(HEAP_BITS[q])[0] - eyes.a[0], centre(HEAP_BITS[q])[1] - eyes.a[1])).slice(0, 3);
+  // (the bones by the burning skull and above it on the heap: left there, to slide down over it as it is buried, never up across its eyes)
+  const buriers = HEAP_BITS.map((b, i) => i).filter((i) => HEAP_BITS[i].kind === 'bone' && !flung.includes(i) && !rollers.includes(i) && centre(HEAP_BITS[i])[0] + centre(HEAP_BITS[i])[1] < eyes.a[0] + eyes.a[1] - 2).sort((p, q) => Math.hypot(centre(HEAP_BITS[p])[0] - eyes.a[0], centre(HEAP_BITS[p])[1] - eyes.a[1]) - Math.hypot(centre(HEAP_BITS[q])[0] - eyes.a[0], centre(HEAP_BITS[q])[1] - eyes.a[1])).slice(0, 3);
   type What = 'heap' | 'finger' | 'palm' | 'fore' | 'upper' | 'pour';
   interface Loose { what: What; i: number; go: number; body: Body }
   const loose: Loose[] = [];
@@ -3478,14 +3523,15 @@ function bonesStir(): Moment {
   // THE BURNING SKULL: kindling after the burst, steady; turning its face to the hero; then sinking into the heap under the poured bones
   const KINDLE = BURST + 49;
   const burnAt = (f: number): number => (f < KINDLE ? 0 : Math.min(1, (f - KINDLE) / 9));
-  const SUNK = SINK + 50;
+  const SUNK = SINK + 40;
   const eyesAt = (f: number): { c: V3; F: V3 } => {
     const base = ride(eyes.a, Math.min(f, SINK));
     const look = clamp01((f - KINDLE) / 10);
     const F = look === 0 ? eyes.F : norm(add(mul(eyes.F, 1 - look), mul([0.55, 0.7, 0.45], look)));
-    const k = ease((f - SINK - 14) / (SUNK - SINK - 14));
+    // (sinking a whole pixel of the picture at a time, so that it and the bones lying on it are drawn alike from frame to frame: what shows of its eyes between them never comes and goes)
+    const k = Math.round(ease((f - SINK - 14) / (SUNK - SINK - 14)) * 10.4) / 10.4;
     if (k === 0) return { c: base, F };
-    return { c: add(base, [-k * 2, -k * 2, -k * 12]), F: norm(add(F, [0, 0, -k * 0.5])) };
+    return { c: add(base, [-k * 2, -k * 2, -k * 12]), F };
   };
   // the run
   const bodies = loose.map((L) => L.body);
@@ -3520,13 +3566,13 @@ function bonesStir(): Moment {
   if (states[N - 1].some((b) => !b.still)) throw new Error('the heap: something still moving at the end: ' + states[N - 1].filter((b) => !b.still).map((b) => `${b.kind} ${b.p.map((q) => q.toFixed(1))} v ${b.v.map((q) => q.toFixed(2))}`).join('; '));
   const collapse = Math.max(...loose.filter((L) => L.what === 'upper').map((L) => L.body.struck[0]?.f ?? GRASP_END + 16));
   // (the bones by it sliding down over it as it goes)
-  // (each slides down over it in turn and lies across it: low across its jaw, across its eyes, over its brow; the glow showing between them)
+  // (each slides down over it in turn and lies across it: across its eyes first, then over its brow, then higher again; the glow showing between them, never uncovered again)
   const coverAt = (p: V3, f: number, k: number, mid: V3): V3 => {
     const q = ride(p, Math.min(f, SINK));
-    const t = ease((f - SINK - 2 - k * 6) / 15);
+    const t = ease((f - SINK - 2 - k * 6) / (k === 0 ? 10 : 15));
     if (t === 0) return q;
     const e = eyesAt(f).c;
-    const target = add(e, [[3.4, 3.4, -0.6], [3, 3, 1.9], [1.8, 1.8, 4.4]][k] as V3);
+    const target = add(e, [[3, 3, 1.9], [1.8, 1.8, 4.4], [0.8, 0.8, 6.9]][k] as V3);
     const off = sub(q, ride(mid, Math.min(f, SINK)));
     const to = add(target, [off[0] * 0.9, off[1] * 0.9, 0]);
     return add(q, mul(sub(to, q), t));
@@ -3572,6 +3618,7 @@ function bonesStir(): Moment {
   const ID_EYES = 2 + HEAP_EYES;
   let peak = 1;
   let seenPeak = 1;
+  let haze = 0;
   const burnPx: number[] = [];
   const paint = (f: number, record: boolean): Sprite => {
     const S = new Scene(new Px(MW, MH), ax, ay);
@@ -3662,8 +3709,10 @@ function bonesStir(): Moment {
     }
     burnPx[f] = n;
     seenPeak = Math.max(seenPeak, n);
-    // (only as much as its eyes show: covered, they light nothing)
-    const glow = burn * Math.min(1, n / Math.max(1, seenPeak));
+    // (only as much as its eyes show: covered, they light nothing; as the bones cover them it shrinks a little each frame, never all at once)
+    haze = f < SINK ? burn * Math.min(1, n / Math.max(1, seenPeak)) : Math.min(haze, Math.max(burn * Math.min(1, n / Math.max(1, seenPeak)), haze - 0.2));
+    const glow = haze;
+    const reach = 8 + 8 * glow;
     if (glow > 0.02) {
       for (let i = 0; i < S.id.length; i++) {
         const id = S.id[i];
@@ -3673,12 +3722,12 @@ function bonesStir(): Moment {
         const c = S.p.get(x, y)!;
         if (PINK.includes(c) || (KINDLING as readonly string[]).includes(c)) continue;
         const d = Math.hypot(x - ex, (y - ey) * 1.3);
-        if (d < 16) S.p.set(x, y, mix(c, PINK[2], 0.32 * glow * (1 - d / 16)));
+        if (d < reach) S.p.set(x, y, mix(c, PINK[2], 0.32 * glow * (1 - d / reach)));
       }
     }
     const out = compose(under, [S.p], null);
     const sp = out.sprite(ax, ay, GRAIN);
-    if (n > 0) sp.lights = [{ x: ex / GRAIN, y: ey / GRAIN, r: 10, color: PINK[3], a: 0.24 * Math.min(1, n / Math.max(1, peak)) }];
+    if (glow > 0.02) sp.lights = [{ x: ex / GRAIN, y: ey / GRAIN, r: 5 + 5 * glow, color: PINK[3], a: 0.24 * glow }];
     if (record) {
       const W = (a: number, b: number, z: number): V3 => [a, b, z];
       const arm = (which: 'hand' | 'fore' | 'upper', q: number): V3 | null => {
