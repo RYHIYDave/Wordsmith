@@ -120,7 +120,7 @@ class Flat {
 }
 
 /** Dressed stone: lighter than the wall it stands in (as the town's gate is: art/ground.ts, `gateAt`). */
-interface Stone {
+export interface Stone {
   joint: string;
   dark: string;
   body: string;
@@ -444,11 +444,17 @@ function carvedAt(x: number, y: number, st: Stone, lit: boolean, lightLow: boole
 }
 /** How much bigger than its own measure the emblem is painted. */
 const EMBLEM_SCALE = 1.35;
-function paintEmblem(F: Flat, mid: number, vc: number, st: Stone, lit: boolean, lightLow: boolean): void {
+/**
+ * A MARK carved over a gate: what it is at (x, y) from its middle (x along the plane, y up, in its
+ * own measure: twelve across to its rim), or null. (The boss's gate's is `carvedAt`, the Warden's
+ * rune; a floor of the Crypt themed after its boss may carve its own: art/floor1.ts.)
+ */
+export type Mark = (x: number, y: number, st: Stone, lit: boolean, lightLow: boolean) => string | null;
+function paintEmblem(F: Flat, mid: number, vc: number, st: Stone, lit: boolean, lightLow: boolean, mark: Mark = carvedAt): void {
   const reach = Math.ceil(13 * EMBLEM_SCALE);
   for (let py = -reach; py <= reach; py++) {
     for (let px = -reach; px <= reach; px++) {
-      const c = carvedAt(px / EMBLEM_SCALE, py / EMBLEM_SCALE, st, lit, lightLow);
+      const c = mark(px / EMBLEM_SCALE, py / EMBLEM_SCALE, st, lit, lightLow);
       if (c) F.set(mid + px, vc + py, c);
     }
   }
@@ -464,7 +470,7 @@ export function emblemMiddle(a: ArchShape): number {
  * thickness: its underside where that turns toward the eye, and the end of it over the far pillar.
  * Nothing of its top (the walls have none). `emblem`: the mark carved over the boss's gate, its cut in embers or alight.
  */
-export function makeArch(theme: Theme, alongX: boolean, a: ArchShape, emblem: 'none' | 'dim' | 'lit'): Strip[] {
+export function makeArch(theme: Theme, alongX: boolean, a: ArchShape, emblem: 'none' | 'dim' | 'lit', mark: Mark = carvedAt): Strip[] {
   const c = curveOf(a);
   const st = dressed(theme, alongX);
   const side = dressed(theme, !alongX);
@@ -511,9 +517,9 @@ export function makeArch(theme: Theme, alongX: boolean, a: ArchShape, emblem: 'n
       }
     }
   }
-  if (emblem !== 'none') paintEmblem(F, Math.floor(c.mid), emblemMiddle(a), st, emblem === 'lit', alongX);
+  if (emblem !== 'none') paintEmblem(F, Math.floor(c.mid), emblemMiddle(a), st, emblem === 'lit', alongX, mark);
   const out = F.strips(alongX);
-  if (emblem === 'lit') {
+  if (emblem === 'lit' && mark === carvedAt) {
     // (alight, the mark gives light: on the strip that has the middle of the arch)
     const mid = Math.floor(c.mid);
     const s0 = Math.floor(mid / STRIP) * STRIP;
@@ -640,7 +646,18 @@ export interface GateArt {
   seal(ex: number, ey: number, word: WordId, lit: boolean): Sprite;
 }
 
-export function makeGateArt(theme: Theme = VAULT): GateArt {
+/**
+ * (THE CRYPT, each floor themed after its boss: art/floor1.ts) A floor's own look for its doors and
+ * gates: the mark over its plain gates (none: no mark, as in the vault), the mark over its boss's
+ * gate (none: the Warden's rune), and the leaf of its doors (none: the iron one). With none of them
+ * given, every picture is as it always was.
+ */
+export interface GateLook {
+  gateMark?: Mark;
+  bossMark?: Mark;
+  leaf?: (ex: number, ey: number) => Sprite;
+}
+export function makeGateArt(theme: Theme = VAULT, look: GateLook = {}): GateArt {
   const lintels = new Map<number, Strip[]>();
   const leaves = new Map<number, Sprite>();
   const pillars = new Map<number, Sprite>();
@@ -670,7 +687,7 @@ export function makeGateArt(theme: Theme = VAULT): GateArt {
     leaf(ex, ey) {
       const key = (ex + 512) * 1024 + (ey + 512);
       let s = leaves.get(key);
-      if (!s) leaves.set(key, (s = makeDoorLeaf(ex, ey)));
+      if (!s) leaves.set(key, (s = look.leaf ? look.leaf(ex, ey) : makeDoorLeaf(ex, ey)));
       return s;
     },
     pillar(boss) {
@@ -682,7 +699,7 @@ export function makeGateArt(theme: Theme = VAULT): GateArt {
     arch(alongX, boss, lit) {
       const key = (alongX ? 4 : 0) + (boss ? 2 : 0) + (lit ? 1 : 0);
       let s = arches.get(key);
-      if (!s) arches.set(key, (s = makeArch(theme, alongX, shape(boss), boss ? (lit ? 'lit' : 'dim') : 'none')));
+      if (!s) arches.set(key, (s = boss ? makeArch(theme, alongX, shape(boss), lit ? 'lit' : 'dim', look.bossMark) : look.gateMark ? makeArch(theme, alongX, shape(boss), 'dim', look.gateMark) : makeArch(theme, alongX, shape(boss), 'none')));
       return s;
     },
     portcullis(alongX, boss, raise) {
