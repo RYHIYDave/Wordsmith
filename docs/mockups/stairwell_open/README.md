@@ -10,7 +10,7 @@ what the game does round it are the main chat's, once he has said yes.
 **State of this branch (`mockup/floor3-4`):** the third cut, after the second fresh look (a real step up;
 the dust tower read as a figure, the dust as clay, the stones popped), on top of the second cut (after the
 first fresh look: at least a notch too low, with a hard pop), on top of 774da64 (floors 3 and 4 brought in; their files
-are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.**
+are untouched here). Made for THE ART CHAT, 10 Oct 2026. **He has said yes to it, as shown** (11 Oct, by 06:34; his words below): the main chat's to build in.
 
 ## His words
 
@@ -26,6 +26,12 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
 - (Not his: the main chat to the art chat, 10 Oct, 11:20, of its placeholder: "the stairwell's
   opening is the game's 'slam' burst (stone and dust) and a shake. He was told its real moment would
   be yours, big and wild by his rule.")
+- 11 Oct, by 06:34, asked as pop-ups on the review page "Floors 3 and 4 Review": "Floors 3 and 4,
+  their pieces and moments, as on the Floors 3 and 4 Review page: good as shown?": "Yes, on to the
+  fleshmancer (Recommended)", offered as: both floors go to the main chat to build in, and the art chat
+  starts floor 5's boss; "The stairwell breaking open as a boss dies, as on the same page: good as
+  shown?": "Yes, as shown (Recommended)", offered as: it replaces the main chat's stand-in on every
+  floor.
 
 ## The last look before he sees it, and what was mended
 

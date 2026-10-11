@@ -9,7 +9,7 @@ chat's, once he has said yes.
 
 **State of this branch (`mockup/floor3-chained`):** from `mockup/floor2-headsman` at 590af58 (floor 2
 as he said yes to it, its moment helpers exported). Made by THE ART CHAT, 10 Oct 2026; mended the
-same day after the first fresh look (below). **Not yet seen by him.**
+same day after the first fresh look (below). **He has said yes to it, as shown** (11 Oct, by 06:34; his words below): the main chat's to build in.
 
 ## His words
 
@@ -33,6 +33,12 @@ same day after the first fresh look (below). **Not yet seen by him.**
   side.
 - Of the boss himself (9 Oct, on `mockup/bosses`): his pick, "A starved giant, muzzled (Recommended)";
   for his sound, "Chains and a muffled roar (Recommended)".
+- 11 Oct, by 06:34, asked as pop-ups on the review page "Floors 3 and 4 Review": "Floors 3 and 4,
+  their pieces and moments, as on the Floors 3 and 4 Review page: good as shown?": "Yes, on to the
+  fleshmancer (Recommended)", offered as: both floors go to the main chat to build in, and the art chat
+  starts floor 5's boss; "The stairwell breaking open as a boss dies, as on the same page: good as
+  shown?": "Yes, as shown (Recommended)", offered as: it replaces the main chat's stand-in on every
+  floor.
 
 ## The theme
 
