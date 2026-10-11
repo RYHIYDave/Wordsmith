@@ -90,10 +90,12 @@ test('their switch goes with the rules\' (Version 19.9), and only the bestiary, 
   assert.equal(NEW_MOBS.on, NEW_MONSTERS.on, 'the pictures are on just while the rules are');
   // (the art chat's three files: the monsters, what they throw drawn on the floor, and the rings that tell their packs apart)
   const mine = ['new_mobs3', 'mob_shots', 'pack_marks'];
+  // (and the bosses, a mock-up of their own built on them: art/bosses3.ts, art/boss_shots.ts, art/boss_chains.ts and art/boss_checks.ts, which nothing of the game imports either: tests/bosses.test.ts; and the fleshmancer, art/fleshmancer.ts and what he sends out, art/fm_spells.ts: tests/fleshmancer.test.ts; and the cult's two new fighters, art/cultists.ts: tests/cultists.test.ts)
+  const alsoMockUps = ['bosses3', 'boss_shots', 'boss_chains', 'boss_checks', 'fleshmancer', 'fm_spells', 'cultists'];
   const files = fs.readdirSync('src', { recursive: true }).filter((f) => f.endsWith('.ts') && !f.startsWith('dev'));
   const users: string[] = [];
   for (const f of files) {
-    if (mine.some((m) => f.endsWith(`${m}.ts`))) continue;
+    if ([...mine, ...alsoMockUps].some((m) => f.endsWith(`${m}.ts`))) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (mine.some((m) => new RegExp(`from '[./a-z_]*/${m}'`).test(text))) users.push(f.split('\\').join('/'));
   }

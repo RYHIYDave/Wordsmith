@@ -31,6 +31,8 @@ import type { Build, Skeleton, Solid, V3 } from './skeleton';
 
 /** One of the game's two views of a figure (the other two are these in a mirror). */
 export type GameView = 'front' | 'back';
+/** A view a figure is painted in: one of the game's two, or `rear`, its back as the camera truly sees it (skeleton.ts `project`), for a figure whose back pictures are painted so (`Mob.trueBack`). */
+export type PaintView = GameView | 'rear';
 
 /**
  * The canvas a hero on bones is painted on, and where on it the floor under them is. It is
@@ -110,7 +112,7 @@ type M3 = readonly [V3, V3, V3];
 
 /** Where the parts of one frame are painted, and how they are put together. */
 export interface Stage {
-  view: GameView;
+  view: PaintView;
   /** Two layers that get no dark seam round them: one under everything (a bowstring behind the archer), one over everything (a glowing crystal, sparks). */
   under: Px;
   over: Px;
@@ -135,14 +137,14 @@ export interface Stage {
   back: M3;
 }
 
-// Layers for the frame being painted: a pool, used again for the next frame.
-const pool: Sheet[] = [];
+// Layers for the frame being painted: a pool for each size of canvas, used again for the next frame.
+const pools = new Map<string, Sheet[]>();
 let taken = 0;
 let zbuf = new Float32Array(0);
 let idbuf = new Int16Array(0);
 
 const VIEWS: Record<string, { rows: M3; back: M3; eye: V3 }> = {};
-function viewOf(view: GameView): { rows: M3; back: M3; eye: V3 } {
+function viewOf(view: PaintView): { rows: M3; back: M3; eye: V3 } {
   const have = VIEWS[view];
   if (have) return have;
   const ex = project([1, 0, 0], view);
@@ -161,12 +163,22 @@ function viewOf(view: GameView): { rows: M3; back: M3; eye: V3 } {
   return (VIEWS[view] = { rows, back, eye: norm([back[0][2], back[1][2], back[2][2]]) });
 }
 
-export function stage(view: GameView, ax = CANVAS3.ax, ay = CANVAS3.ay): Stage {
+/**
+ * A STAGE to paint one frame on: the floor point under the figure at (`ax`, `ay`) on a canvas of
+ * `size` (the heroes' own, CANVAS3, unless a figure too big for it says otherwise: a boss).
+ */
+export function stage(view: PaintView, ax = CANVAS3.ax, ay = CANVAS3.ay, size: { readonly w: number; readonly h: number } = CANVAS3): Stage {
+  const W = size.w;
+  const H = size.h;
+  const key = `${W}x${H}`;
+  let pool = pools.get(key);
+  if (!pool) pools.set(key, (pool = []));
+  const own = pool;
   const parts: Sheet[] = [];
   taken = 0;
   const layer = (): Sheet => {
-    let p = pool[taken];
-    if (!p) p = pool[taken] = new Sheet(CANVAS3.w, CANVAS3.h);
+    let p = own[taken];
+    if (!p) p = own[taken] = new Sheet(W, H);
     else p.wipe();
     taken++;
     return p;
@@ -175,8 +187,6 @@ export function stage(view: GameView, ax = CANVAS3.ax, ay = CANVAS3.ay): Stage {
   const near = (p: V3): number => rows[2][0] * p[0] + rows[2][1] * p[1] + rows[2][2] * p[2];
   const under = layer();
   const over = layer();
-  const W = CANVAS3.w;
-  const H = CANVAS3.h;
   return {
     view,
     under,

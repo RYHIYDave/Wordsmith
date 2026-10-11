@@ -894,8 +894,13 @@ export type View = 'side' | 'front' | 'back';
 export const GRID = Math.sqrt(2 / 3);
 
 /** Where a point of the figure is seen: across and down the picture from the figure's place on the floor, and how near the eye it is. */
-export function project(p: V3, view: View): readonly [number, number, number] {
+export function project(p: V3, view: View | 'rear'): readonly [number, number, number] {
   if (view === 'side') return [p[0], -p[2], -p[1]];
+  // (from behind as the game's camera truly sees one who faces up the screen and to the right: over
+  // his right shoulder, not turned over, so that what is in his right hand is on the right of the
+  // picture. For a figure who holds one thing on one side and is seen beside himself from in front,
+  // where the mirror would put it in his other hand: the Headsman's axe.)
+  if (view === 'rear') return [GRID * (p[0] - p[1]), GRID * 0.5 * (-p[0] - p[1]) - p[2], 0.612 * (-p[0] - p[1]) + 0.5 * p[2]];
   // (from behind: his left is to the right of the picture and his way forward up it, see above)
   const a = view === 'front' ? p[0] : p[1];
   const b = view === 'front' ? p[1] : p[0];
