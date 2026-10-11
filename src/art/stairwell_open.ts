@@ -664,7 +664,8 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
         tone.push(t);
       };
       // its four sides, a flagstone's thickness, and its underside (its top is painted from the floor itself)
-      for (let z = -0.25; z > -THICK; z -= 0.45) {
+      // (from a hair under its top, so that lying in place no point of its side peeks over the floor beside it: no dotted line on the joints)
+      for (let z = -0.7; z > -THICK; z -= 0.45) {
         const t = z > -1 ? 2 : z < -THICK + 1.2 ? 0 : 1;
         for (let al = a0; al < a1; al += st) {
           add(al, c0, z, [0, -1, 0], t);
@@ -1087,7 +1088,9 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     const tear = up * up;
     const ta = h(i + FSW, 3, 655) * Math.PI * 2;
     const [tx, ty] = XY(Math.cos(ta) * 0.27 * tear, Math.sin(ta) * 0.27 * tear);
-    blow({ f0: great + (i % 2), x, y, z: 4, vx: lx * (0.6 + 1.6 * up) + tx, vy: ly * (0.6 + 1.6 * up) + ty, vz: 30 + 46 * up * (0.85 + 0.3 * h(i + FSW, 4, 655)), drag: 0.72, r0: 5 + 4 * h(i + FSW, 5, 655), grow: 10 + 9 * h(i + FSW, 6, 655) - 5 * up, tall: 1.1, life: 30 + Math.floor(10 * h(i + FSW, 7, 655)), rest: 7, sink: 0.25, sinkMax: 3, flat: 20 + Math.floor(6 * up), thick: 1 - 0.2 * up, wx: WX, wy: WY });
+    // (its top ragged and lopsided: the highest at very different heights and sizes, never two alike side by side)
+    const top = up > 0.6 ? 0.6 + 0.8 * h(i + FSW, 8, 655) : 1;
+    blow({ f0: great + (i % 2), x, y, z: 4, vx: lx * (0.6 + 1.6 * up) * (up > 0.6 ? 1.6 : 1) + tx, vy: ly * (0.6 + 1.6 * up) * (up > 0.6 ? 1.6 : 1) + ty, vz: (30 + 46 * up * (0.85 + 0.3 * h(i + FSW, 4, 655))) * top, drag: 0.72, r0: 5 + 4 * h(i + FSW, 5, 655), grow: (10 + 9 * h(i + FSW, 6, 655) - 5 * up) * (up > 0.6 ? 0.5 + 0.9 * h(i + FSW, 9, 655) : 1), tall: 1.1, life: 30 + Math.floor(10 * h(i + FSW, 7, 655)), rest: 7, sink: 0.25, sinkMax: 3, flat: 20 + Math.floor(6 * up), thick: 1 - 0.2 * up, wx: WX, wy: WY });
   }
   for (let i = 0; i < 48; i++) {
     const [x, y] = XY(0.15 + (L - 0.3) * h(i + FSW, 1, 652), 0.12 + (Wd - 0.24) * h(i + FSW, 2, 652));
@@ -1099,14 +1102,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     const b = billows[billows.length - 1];
     b.life = landOf(b) + b.flat + 2;
   }
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI * 2 + 0.4 + FSW * 0.61;
-    const [x, y] = XY(L / 2 + Math.cos(a) * L * 0.3, Wd / 2 + Math.sin(a) * Wd * 0.3);
-    const [ox, oy] = XY(Math.cos(a), Math.sin(a));
-    const vz = 20 + 10 * h(i + FSW, 1, 653);
-    // (a streamer: a run of small billows thrown together, each a little slower, so that it draws out into a tail behind its head)
-    for (let j = 0; j < 6; j++) blow({ f0: great + 1, x, y, z: 8, vx: ox * 0.16 * (1 - 0.06 * j), vy: oy * 0.16 * (1 - 0.06 * j), vz: vz * (1 - 0.06 * j), r0: 3.6 - 0.3 * j, grow: 4 - 0.5 * j, life: 30 - 2 * j, rest: 9, sinkMax: 2, flat: 12, tall: 1.25, wx: WX, wy: WY });
-  }
+  // (no streamers standing apart: the jet's torn top flings its pieces out instead)
   // the skirt: rushing out low over the floor from all round the kerb, the fastest two or three tiles past
   // where one stands beside it, rolling as it goes; then it lies and spreads into sheets
   for (let i = 0; i < 56; i++) {
@@ -1548,7 +1544,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     for (let y = Y0; y <= Y1; y++) {
       for (let x = X0; x <= X1; x++) {
         const o = (y - Y0) * w + x - X0;
-        const low = Zt[o] < SHEET;
+        const low = Zt[o] < SHEET && f >= great;
         if (low ? Fs[o] < 0.13 : F[o] < T + 0.55 * breakAt(x, y, f)) continue;
         if (low) thin[o] = Fs[o] >= 0.3 ? 0 : 1;
         const hg = M[o] + KS * Math.log(Sm[o]);
@@ -1557,7 +1553,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
         const zs = scene.d[i * 4 + 3] ? zb[i] : 0;
         const ds = (24.6 * (y + 0.5 - AY + zs)) / 16 + 0.49 * zs;
         // (a sheet lies on the floor: only what stands on it hides it)
-        if (hg < ds - 0.5 && !(low && !scene.d[i * 4 + 3])) {
+        if (hg < ds - 0.5 && !(low && (!scene.d[i * 4 + 3] || zs <= 1))) {
           hid[o] = 1;
           continue;
         }
@@ -1601,7 +1597,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
         let nx: number;
         let ny: number;
         let nz: number;
-        if (Zt[o] < SHEET) {
+        if (Zt[o] < SHEET && f >= great) {
           // (a sheet: flat, lit along its far rim, shaded along its near one)
           if (l && r && u && dn) [nx, ny, nz] = [0, 0, 1];
           else {
@@ -1650,7 +1646,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
       for (let o0 = 0; o0 < n; o0++) {
         const x0 = (o0 % w) + X0;
         const y0 = Math.floor(o0 / w) + Y0;
-        if (seenH[o0] || drawn[y0 * FW + x0] || hid[o0] || !(Zt[o0] > 0 && Zt[o0] < SHEET) || F[o0] <= 0) continue;
+        if (f < great || seenH[o0] || drawn[y0 * FW + x0] || hid[o0] || !(Zt[o0] > 0 && Zt[o0] < SHEET) || F[o0] <= 0) continue;
         st.length = 0;
         hole.length = 0;
         st.push(o0);

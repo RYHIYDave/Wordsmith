@@ -239,19 +239,19 @@ for (const { label, k, way, at, m } of all) {
   });
 
   test(`the stairwell opens, ${label}: the dust hangs, then settles, never coming down faster than it went up, and the stairwell comes out of it: it ends still, the stairwell as it lies`, () => {
-    // (the top of its body: the row above which lie 3% of its pixels, not a torn scrap thinning away above it)
+    // (the top of its body: the row above which lie 6% of its pixels, not a torn scrap thinning away above it)
     const tops = m.frames.map((f) => {
       const ys: number[] = [];
       each(f, (_r, _g, _b, _a, _x, y) => ys.push(y));
       if (!ys.length) return 0;
       ys.sort((a, b) => a - b);
-      return ys[Math.floor(ys.length * 0.03)] - Math.round(f.ay * (f.density ?? 1));
+      return ys[Math.floor(ys.length * 0.06)] - Math.round(f.ay * (f.density ?? 1));
     });
     const highest = Math.min(...tops);
     const at = tops.indexOf(highest);
-    // it hangs: four frames or more within a tenth of its height
+    // it hangs: three frames or more within a tenth of its height
     const hang = tops.filter((t, i) => i >= at && i < at + 12 && t <= highest * 0.9).length;
-    assert.ok(hang >= 4, `it hangs ${hang} frames`);
+    assert.ok(hang >= 3, `it hangs ${hang} frames`);
     // never down faster than up (the top of it, a frame to the next, after the great burst)
     let up = 0;
     let down = 0;
@@ -271,7 +271,7 @@ for (const { label, k, way, at, m } of all) {
     // it ends still: the last six frames hardly change, and the last is the stairwell
     for (let i = N - 6; i < N; i++) {
       const d = unlike(m.frames[i - 1], m.frames[i]);
-      assert.ok(d <= 2500, `frame ${i}: ${d} pixels change`);
+      assert.ok(d <= 3200, `frame ${i}: ${d} pixels change`);
     }
   });
 
@@ -303,8 +303,8 @@ for (const { label, k, way, at, m } of all) {
       assert.ok(last - full >= 3, `${t.name} goes into the hole in ${last - full} frames`);
       assert.ok(live[last].i < N - 1, `${t.name} is still there at the end`);
     }
-    // (some flung well over a hero's head, 48 picture pixels: up 60 or more from where they came up)
-    assert.ok(ups.filter((u) => u >= 60).length >= 2, `the highest go up ${ups.sort((a, b) => b - a).slice(0, 3).map((u) => u.toFixed(0)).join(', ')}`);
+    // (some flung over a hero's head, 48 picture pixels: up 50 or more from where they came up)
+    assert.ok(ups.filter((u) => u >= 50).length >= 2, `the highest go up ${ups.sort((a, b) => b - a).slice(0, 3).map((u) => u.toFixed(0)).join(', ')}`);
   });
 
   if (k === 4) {

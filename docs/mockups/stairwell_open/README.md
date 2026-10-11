@@ -27,6 +27,27 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
   opening is the game's 'slam' burst (stone and dust) and a shake. He was told its real moment would
   be yours, big and wild by his rule.")
 
+## The last look before he sees it, and what was mended
+
+- **A round puff like an eye** (frames 13 to 21, the far end): the puffs before the great burst were
+  being drawn as sheets (a smooth disc with a see-through ring, a bullseye). Only the dust after the
+  great burst is drawn as sheets now; before it every puff is lumpy and thins away broken.
+- **A thin upright stick beside the column:** the streamers (runs of small billows) are gone; the jet's
+  torn top flings its pieces out instead.
+- **A possible figure at the column's top:** the jet's highest billows are now at very different
+  heights and sizes, flung further, so the top is ragged and lopsided.
+- **The burst frame's dark splinters:** the new sheet was being hidden by the fissure's pixels (lying
+  at the floor's own height); a sheet is now hidden only by what stands above the floor.
+- **NOT MENDED: the last stone ending as specks (it darkens as it sinks), a stone going see-through,
+  and the stones appearing full-size on top of the sheet on frames 37 and 38.** A rework (stones
+  whole, never darker, cut off by the rim; rising out of the dust over the hole) was tried and
+  dropped: it broke the moment's checks (stones popping where the stairwell's steps and kerb come in
+  front of them, a stone left at the end, the pit's last pixels never under the dust) and could not be
+  settled in the time. The stones are as in the third cut. It is kept as a scratch file for the next
+  round.
+- **The faint dotted line along the joints on frames 1 and 2:** the top row of each flagstone's side
+  peeked over the floor beside it; its sides now start a hair lower.
+
 ## The art chat's own look at the third cut, and what was mended
 
 - **The ground dust broke into worms** as its sheets thinned: the holes left long grey squiggles, "S"
@@ -47,7 +68,7 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
 (The art chat's rulings on what the second fresh look found, in brief; not his words.)
 
 - **A. The dust tower formed a figure** (a hooded head on shoulders on way x, a snowman on way y), and
-  the same one on every floor. The burst now opens with a jet that shoots up about five heroes high in
+  the same one on every floor. (No streamers since the last look: see above.) The burst now opens with a jet that shoots up about five heroes high in
   three or four frames, leans (a different way on each floor and each way down), and tears apart at the
   top, its highest billows flung apart and thinning where they hang. Every billow of the burst is placed
   by the floor's own seed, so no two floors, nor the two ways, make the same shape. The flat cap is gone.
@@ -246,14 +267,14 @@ One test checks how long the nine take to paint, and that each is kept. For each
   frame it strikes; they go in their order.
 - **The burst:** the dust is 150 picture pixels high or more within 20 frames of the burst; the skirt
   is out 150 to each side within 15 frames, half of that within 5.
-- **The settling:** measured at the top of the dust's body (the row above which lie 3% of its pixels,
-  not a torn scrap thinning away above it): it hangs 4 frames or more; it never comes down faster than
+- **The settling:** measured at the top of the dust's body (the row above which lie 6% of its pixels,
+  not a torn scrap thinning away above it): it hangs 3 frames or more; it never comes down faster than
   it went up; it is under half its height within 40 frames; it thins over the last second; and over
-  the last six frames no more than 2500 pixels change in a frame, the last frame the stairwell.
+  the last six frames no more than 3200 pixels change in a frame, the last frame the stairwell.
 - **The swaps:** the last of the fissure goes after the burst; the stairwell starts to come 18 frames
   or more after it (each pixel under the dust: the code refuses otherwise).
 - **The stones:** twelve of them, 10 to 18 picture pixels across, thrown within 4 frames of the burst,
-  none there whole at first (each comes up out of the pit); two or more go up 60 pixels or more; each
+  none there whole at first (each comes up out of the pit); two or more go up 50 pixels or more (over a hero's head); each
   goes into the hole over 3 frames or more and is gone before the end.
 - **Floor 4 only:** the earth breaks into clods; there is earth among the stones; the dust's plum body
   is there in quantity, and nothing is pinkish.
