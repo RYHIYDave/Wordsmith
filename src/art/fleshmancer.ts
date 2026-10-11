@@ -1,7 +1,8 @@
 // THE FLESHMANCER, THE CRYPT'S LAIR BOSS ON FLOOR 5, ON THE HEROES' BONES (the art chat, 11 Oct 2026).
 // A MOCK-UP: NOT IN THE GAME. Nothing of the game imports this file, and `FLESHMANCER_SWITCH.on`, the
-// switch a later chat would put him in by, is off. THIS IS HIS LOOK ONLY: his standing loop, for the
-// owner's yes; his moves come after (docs/mockups/fleshmancer/README.md).
+// switch a later chat would put him in by, is off. HIS LOOK, HIS STAND, HIS GLIDE, HIS FOUR ATTACKS, STRUCK
+// AND HIS DEATH, each with the owner's yes (11 Oct: his look by 12:28, his attacks by 14:03, his glide and
+// death by 14:21); what he sends out is art/fm_spells.ts (docs/mockups/fleshmancer/README.md).
 //
 // His words, 9 Oct, 22:47, his outline of the Crypt (in the main chat): "Floor 5 will have the Lair
 // boss, which will be a very powerful cultist fleshmancer.  He is the one creating the ossuary guys and
@@ -17,7 +18,9 @@
 //     on the floor, then a sudden lurch when he casts);
 //   never, "Nothing gory (Recommended)" (grim like the rest of the Crypt: bone, robe and pink fire,
 //     never blood or open flesh).
-//   (His death, his attacks and his big spells are his brief's too, and come after this.)
+//   his death, "His own dead drag him down (Recommended)"; his basic attack, "Bone shards from the skull
+//     (Recommended)"; his big spells, "Rings of hands (Recommended)", "Raise the dead (Recommended)",
+//     "Sweeping fire".
 //
 // HIS LOOK, AS REMADE AFTER TWO FRESH LOOKS (11 Oct): the first drawing read at a phone's size as a hooded
 // torch-bearer; the second as a big step up, but with accidental shapes in it (a symbol down his front, a
@@ -76,7 +79,7 @@ import type { Sprite } from '../engine/px';
 import { ENEMY_RIM, FLAME, SOCKET } from './mkit';
 import { TILE3, mobSet, paintBits, paintViewOf, posedOfMob, skeletonAt, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
-import type { BossShape, CheckLimb, CheckLump, CheckThing } from './boss_checks';
+import type { BossShape, CheckLimb, CheckLump, CheckThing, Handover } from './boss_checks';
 import { onCloth, stage, wornOn } from './skin';
 import type { GameView, PaintView, Ring, Skin, Stage } from './skin';
 import { add, bonesAt, buildOf, cross, dot, len, lerp3, mul, norm, project, solve, standing, sub } from './skeleton';
@@ -403,7 +406,16 @@ function squareTo(a: V3, want: V3, or: V3): V3 {
 }
 
 /** A LITTLE PICTURE held square to the eye, as near it as `at`: a part of him like any other (seamed round, hidden by what is nearer). */
-function stamp(st: Stage, put: Put, part: string, piece: string, pix: Pix, at: V3): void {
+function stamp(st: Stage, put: Put, part: string, piece: string, pix0: Pix, at: V3): void {
+  // (as he is dragged under the floor, what of a little picture of him is under it is cut away, pixel by pixel)
+  let pix = pix0;
+  if (CUT_FLOOR.on) {
+    const [ax0, ay0] = st.at(at);
+    pix = new Map([...pix0].filter(([k]) => {
+      const [x, y] = pxOf(k);
+      return screenStep(st, at, x + 0.5 - ax0, y + 0.5 - ay0)[2] >= 0;
+    }));
+  }
   if (!pix.size) return;
   let x0 = Infinity;
   let x1 = -Infinity;
@@ -788,7 +800,151 @@ function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof sta
 // Him, as solids
 
 /** THE FLESHMANCER AS SOLIDS: his robe and its tails, his sleeves and bare forearms, his hands, the mantle and the collar of bone behind his hood, the band down his front, the hood and his eyes, the staff, the skull and its fire, the gout of fire he flings. */
+/** Whether what he paints is cut away below the floor (as he is dragged under it). */
+const CUT_FLOOR = { on: false };
 function fleshmancerBits(st: Stage, m: Moment): Bit[] {
+  const under = m.q.prop === FM_DYING;
+  CUT_FLOOR.on = under;
+  try {
+    const bits = paintedBits(st, m);
+    if (under) bits.push(...deathBits(st, m));
+    return under ? floorCut(bits) : bits;
+  } finally {
+    CUT_FLOOR.on = false;
+  }
+}
+/**
+ * WHAT OF HIM IS ABOVE THE FLOOR, as he is dragged down through it: a rod cut where it goes into it, a ball
+ * flattened down to it as it sinks into it (its top showing, its bottom at the floor), cloth that has gone
+ * under laid down at the floor (his robe spread into the pit's mouth), a light or a fleck under it gone.
+ */
+function floorCut(bits: Bit[]): Bit[] {
+  const out: Bit[] = [];
+  for (const b of bits) {
+    const sh = b.shape;
+    if (sh.k === 'rod' || sh.k === 'thread') {
+      const za = sh.a[2];
+      const zb = sh.b[2];
+      if (za < 0 && zb < 0) continue;
+      if (za >= 0 && zb >= 0) {
+        out.push(b);
+        continue;
+      }
+      const k = za / (za - zb);
+      const cut = lerp3(sh.a, sh.b, k);
+      out.push({ ...b, shape: za < 0 ? { ...sh, a: cut } : { ...sh, b: cut } } as Bit);
+    } else if (sh.k === 'ball') {
+      const hz = Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]);
+      const top = sh.c[2] + hz;
+      if (top <= 0.3) continue;
+      if (sh.c[2] - hz >= 0 || hz < 1e-6) {
+        out.push(b);
+        continue;
+      }
+      const f = top / 2 / hz;
+      const ax = sh.ax.map((v) => [v[0], v[1], v[2] * f] as V3) as unknown as typeof sh.ax;
+      out.push({ ...b, shape: { ...sh, c: [sh.c[0], sh.c[1], top / 2], ax } } as Bit);
+    } else if (sh.k === 'cloth') {
+      if (sh.rings.every((r) => r.c[2] < 0)) continue;
+      const rings = sh.rings.map((r) => (r.c[2] >= 0 && !r.pts?.some((p) => p[2] < 0) ? r : { ...r, c: [r.c[0], r.c[1], Math.max(0.1, r.c[2])] as V3, pts: r.pts?.map((p) => [p[0], p[1], Math.max(0.1, p[2])] as V3) }));
+      out.push({ ...b, shape: { ...sh, rings } } as Bit);
+    } else if (sh.k === 'mote' || sh.k === 'glow' || sh.k === 'dot') {
+      if (sh.p[2] >= 0) out.push(b);
+    } else out.push(b);
+  }
+  return out;
+}
+
+/** The pit his dead open under him as he dies: how wide it is (his own lengths), `t` seconds into his death. */
+export function fmPitAt(t: number): number {
+  return 21 * smooth((t - 0.15) / (FM_DEATH.grab - 0.15)) * (1 - smooth((t - FM_DEATH.shut) / (FM_DEATH.long - 0.03 - FM_DEATH.shut)));
+}
+/** The hands of his dead that drag him down: where round him each comes up (degrees from before him), and which of him it seizes (a point of his hem, so high up it). */
+const DEATH_HANDS: ReadonlyArray<readonly [number, number, number]> = [[20, 24, 0], [70, 32, 1], [125, 16, 2], [175, 26, 0], [-125, 34, 1], [-70, 20, 2], [-20, 30, 0]];
+/**
+ * HIS DEATH, OVER AND ABOVE HIM: the pit, burst open under him (its dark, his fire deep in it, the floor's
+ * stone heaved up round its mouth and falling back in after him as it closes); the hands of his dead,
+ * thrust up out of it round him, each seizing his robe at its hem and holding on as he goes down; and as
+ * the skull goes under, its fire bursting up out of the pit a last time in sparks.
+ */
+function deathBits(st: Stage, m: Moment): Bit[] {
+  const { s, t } = m;
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => {
+    bits.push({ part, piece, shape });
+  };
+  const pr = fmPitAt(t);
+  const pc: V3 = [s.pelvis[0], s.pelvis[1], 0];
+  if (pr > 1.2) {
+    put('pit', 'pit', {
+      k: 'ball',
+      c: [pc[0], pc[1], 0.12],
+      ax: [[pr, 0, 0], [0, pr * 0.92, 0], [0, 0, 0.12]],
+      skin: (u) => {
+        const r = Math.hypot(u[0], u[1]);
+        return r < 0.42 ? FLAME[0] : r < 0.66 ? '#2a0a26' : INK;
+      },
+    });
+    put('glow', 'glow', { k: 'glow', p: [pc[0], pc[1], 1], c: FLAME[3], r: 12 + pr * 0.6, a: 0.4 * clamp01(pr / 21) });
+  }
+  // the floor's stone round its mouth: heaved up as it bursts open, falling back in after him as it closes
+  for (let j = 0; j < 9; j++) {
+    const th = (j / 9) * Math.PI * 2 + hash(j, 4, 307) * 0.5;
+    const rad: V3 = [Math.cos(th), Math.sin(th), 0];
+    const tan: V3 = [-Math.sin(th), Math.cos(th), 0];
+    const burst = clamp01((t - 0.15) / 0.3);
+    const up = Math.max(0, Math.sin(Math.PI * burst)) * (5 + 6 * hash(j, 5, 307));
+    const big = (3.4 + 1.6 * hash(j, 6, 307)) * clamp01(pr / 6);
+    if (big < 1.2) continue;
+    const c = add(pc, add(mul(rad, pr + 2.4), [0, 0, 1 + up]));
+    const tip = (40 * Math.max(0, Math.sin(Math.PI * burst)) + 12) * D;
+    const radU = add(mul(rad, Math.cos(tip)), [0, 0, Math.sin(tip)]);
+    const upU = add(mul(rad, -Math.sin(tip)), [0, 0, Math.cos(tip)]);
+    put(`rim${j}`, `rim${j}`, { k: 'ball', c, ax: [mul(radU, big * 0.8), mul(tan, big), mul(upU, 1.2)], skin: HAND_STONE });
+  }
+  // THE HANDS OF HIS DEAD: thrust up out of the pit, each seizing his robe at its hem and holding on
+  const hem = fmHemOf(s);
+  DEATH_HANDS.forEach(([deg, up, kind], j) => {
+    const out = smooth((t - 0.16 - j * 0.02) / 0.12);
+    if (out < 0.05 || pr < 4) return;
+    const a = deg * D;
+    const dir = add(mul(hem.f, Math.cos(a)), mul(hem.l, Math.sin(a)));
+    // (seizing his robe at its side, from the hem up to his hips, a little out from it: the robe is wider as it goes up)
+    const grip = add(hem.c, add(mul(dir, Math.max(hem.deep, hem.wide) * (1.0 + up / 30)), [0, 0, up]));
+    const base = add(pc, add(mul(norm([dir[0], dir[1], 0]), Math.max(4, Math.min(pr - 1.5, 19))), [0, 0, -8]));
+    const wrist = lerp3(base, grip, out);
+    // (an arm, bent at the elbow away from him: its upper bone out of the pit, its two forearm bones up to his robe)
+    const outward = norm([dir[0], dir[1], 0], [1, 0, 0]);
+    const elbow = add(lerp3(base, wrist, 0.45), add(mul(outward, 10 * out), [0, 0, 3 * out]));
+    const side = norm(cross(norm(sub(wrist, elbow)), [0, 0, 1]), [0, 1, 0]);
+    put(`dh${j}`, `dh${j}`, { k: 'rod', a: base, b: elbow, ra: 1.9, rb: 1.6, ramp: HAND_BONE, far: true });
+    put(`dh${j}`, `dh${j}`, { k: 'ball', c: elbow, ax: sphere(1.9), skin: HAND_BONE, far: true });
+    for (const q of [-1, 1]) put(`dh${j}`, `dh${j}`, { k: 'rod', a: add(elbow, mul(side, q * 0.8)), b: add(wrist, mul(side, q * 0.6)), ra: 1.3, rb: 1.05, ramp: HAND_BONE, far: true });
+    put(`dh${j}`, `dh${j}`, { k: 'ball', c: wrist, ax: sphere(1.5), skin: HAND_BONE, far: true });
+    const [wx, wy] = st.at(wrist);
+    const [bx, by] = st.at(elbow);
+    const way = unit2([wx - bx, wy - by - 0.001]);
+    // (clawing as it comes; clenched on his robe once it has it)
+    const claw = clawPix([wx, wy], way, way, 110, out < 0.95 ? 0.2 : 0.8, 1.2, kind % 2 ? 1 : -1, 1.6);
+    put('glow', 'glow', { k: 'glow', p: wrist, c: FLAME[3], r: 9, a: 0.35 * out });
+    stamp(st, put, `dh${j}`, `dh${j}`, claw.pix, add(wrist, mul(st.eye, 1.4)));
+  });
+  // AS THE SKULL GOES UNDER: its fire bursting up out of the pit a last time, in sparks that fly up and go out
+  const k = (t - FM_DEATH.skull) / 0.36;
+  if (k > 0 && k < 1) {
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2 + 0.4;
+      const p: V3 = add(pc, [Math.cos(a) * (3 + 10 * k), Math.sin(a) * (3 + 10 * k), 2 + 26 * Math.sqrt(k) * (0.6 + 0.4 * hash(i, 7, 307))]);
+      if (k > 0.6 + 0.35 * hash(i, 8, 307)) continue;
+      fleck(st, put, p, k < 0.35 ? FLAME[3] : FLAME[2], i * 1.9, 'embers', i % 2 ? 1 : -1);
+    }
+    put('glow', 'glow', { k: 'glow', p: add(pc, [0, 0, 6]), c: FLAME[3], r: 24 - 10 * k, a: 0.6 * (1 - k) });
+  }
+  return bits;
+}
+
+/** HIM, PAINTED: every part of him as solids, little pictures and fire (`fleshmancerBits` cuts it at the floor as he is dragged under). */
+function paintedBits(st: Stage, m: Moment): Bit[] {
   const { s, q } = m;
   const B = FB;
   const bits: Bit[] = [];
@@ -1667,6 +1823,160 @@ function fmFire(): Motion {
   return { keys: unwrapped(keys) };
 }
 
+// ---------------------------------------------------------------------------------------------
+// HIS GLIDE, SETTING OFF AND STOPPING, STRUCK, AND HIS DEATH (his yes to his attacks by 14:03 on 11 Oct:
+// “Yes, on to his walk and death (Recommended)”)
+
+/** His glide's moments: once round in a second (FLESHMANCER.walkFrames at walkFps). */
+const FM_GLIDE_LONG = 1;
+/** Setting off and stopping, and struck (seconds). */
+export const FM_SET_OFF = 0.5;
+export const FM_HALT = 0.6;
+export const FM_REEL = 0.5;
+/** His death (seconds): struck, grabbed and yanked down, dragged under casting, the skull last; the pit closed over him. */
+export const FM_DEATH = { long: 3.0, struck: 0.1, grab: 0.34, under: 1.8, skull: 2.32, shut: 2.75 } as const;
+/** The number his painter knows his death by (`prop`): the floor cut away under him, the pit, his dead's hands. */
+export const FM_DYING = 5;
+
+/** HIS GLIDE, as tracks of the moment (once round in FM_GLIDE_LONG): the staff's swing and lean, and every other field. */
+function glideTracks(): { phi: (t: number) => number; lean: (t: number) => number; fields: Partial<Record<keyof Bones, (t: number) => number>> } {
+  const R = FM_REST;
+  const A = (t: number): number => (t / FM_GLIDE_LONG) * Math.PI * 2;
+  return {
+    phi: (t) => 76 + 2 * Math.sin(A(t) + 0.4),
+    lean: () => -0.156,
+    fields: {
+      pz: (t) => R.pz + 2.2 * Math.sin(A(t)),
+      px: (t) => 0.7 * Math.sin(A(t) + 1),
+      pitch: (t) => R.pitch + 12 + 1.0 * Math.sin(A(t)),
+      bend: (t) => R.bend + 6 + 1.0 * Math.sin(A(t) + 0.5),
+      roll: (t) => 1.5 * Math.sin(A(t) + 2),
+      twist: (t) => R.twist + 3 * Math.sin(A(t)),
+      faceUp: (t) => R.faceUp - 3 + Math.sin(A(t)),
+      faceTurn: (t) => R.faceTurn - 2 + 2 * Math.sin(A(t) + 0.8),
+      rhx: (t) => R.rhx - 2 + 0.4 * Math.sin(A(t)),
+      rhz: (t) => R.rhz + 1 + 0.5 * Math.sin(A(t) + 0.6),
+      lhx: (t) => 1 + Math.sin(A(t)),
+      lhy: () => 15,
+      lhz: (t) => 1 + 1.2 * Math.sin(A(t) + 1),
+      le: () => 46,
+      draw: (t) => 0.3 + 0.08 * Math.sin(A(t) * 2),
+      pAz: () => 1.1,
+      pt: (t) => 0.25 + 0.1 * Math.sin(A(t)),
+      gale: (t) => 0.75 + 0.15 * Math.sin(A(t) * 2),
+    },
+  };
+}
+/**
+ * HIS GLIDE (“Glides, feet just off the floor (Recommended)”): unnaturally smooth, no step, no stride: he
+ * leans into his way and is borne along over the floor, rising and sinking once a second, his staff carried
+ * out before him, his claw held out at his side with its fire, his robe, tails and sleeves streaming back.
+ */
+function fmGlide(): Motion {
+  const g = glideTracks();
+  const keys = sampled(FM_GLIDE_LONG, { ...g.fields, wAz: (t) => swungStaff(g.phi(t), g.lean(t)).wAz, wEl: (t) => swungStaff(g.phi(t), g.lean(t)).wEl }, { prop: 0, pEl: 0 });
+  return { keys: unwrapped(keys), loop: 0 };
+}
+/** From his rest pose to the first frame of his glide (or back), with a bump on the way: a move made from where it starts, where it ends, and what it does between. */
+function between(long: number, from: (f: keyof Bones) => number, to: (f: keyof Bones) => number, phis: [number, number], bumps: Partial<Record<keyof Bones | 'phi', (t: number) => number>>, ease: (k: number) => number): Motion {
+  const fields: Partial<Record<keyof Bones, (t: number) => number>> = {};
+  const names: (keyof Bones)[] = ['pz', 'px', 'py', 'pitch', 'bend', 'roll', 'twist', 'side', 'faceUp', 'faceTurn', 'faceTilt', 'rhx', 'rhy', 'rhz', 're', 'lhx', 'lhy', 'lhz', 'le', 'draw', 'pAz', 'pt', 'gale', 'yaw', 'out'];
+  for (const f of names) fields[f] = (t) => from(f) + (to(f) - from(f)) * ease(t / long) + (bumps[f]?.(t) ?? 0);
+  const phi = (t: number): number => phis[0] + (phis[1] - phis[0]) * ease(t / long) + (bumps.phi?.(t) ?? 0);
+  fields.wAz = (t) => swungStaff(phi(t), -0.156).wAz;
+  fields.wEl = (t) => swungStaff(phi(t), -0.156).wEl;
+  return { keys: unwrapped(sampled(long, fields, { prop: 0, pEl: 0 })) };
+}
+/** A bump that rises and falls back over a move (`at`: where in it it is highest, 0 to 1). */
+const bumpOf = (long: number, size: number, at = 0.5) => (t: number): number => {
+  const k = clamp01(t / long);
+  return size * (k < at ? Math.sin((Math.PI / 2) * (k / at)) : Math.cos((Math.PI / 2) * ((k - at) / (1 - at)))) ** 2;
+};
+/** SETTING OFF: he coils a moment, then surges into his glide, his robe snapping back, and is borne away. */
+function fmSetOff(): Motion {
+  const g = glideTracks();
+  const R = FM_REST as unknown as Record<string, number>;
+  const L = FM_SET_OFF;
+  return between(L, (f) => R[f], (f) => g.fields[f]?.(0) ?? R[f], [90, g.phi(0)], { px: (t) => bumpOf(L, -2.2, 0.3)(t), pz: (t) => bumpOf(L, -1.6, 0.25)(t), pitch: (t) => bumpOf(L, 5, 0.6)(t), gale: (t) => bumpOf(L, 0.7, 0.6)(t), phi: (t) => bumpOf(L, 6, 0.6)(t) }, smooth);
+}
+/** STOPPING: he is borne on a little past where he stops, rocks back upright, his robe and tails swinging on past him, and settles. */
+function fmHalt(): Motion {
+  const g = glideTracks();
+  const R = FM_REST as unknown as Record<string, number>;
+  const L = FM_HALT;
+  return between(L, (f) => g.fields[f]?.(0) ?? R[f], (f) => R[f], [g.phi(0), 90], { px: (t) => bumpOf(L, 2.6, 0.35)(t), pitch: (t) => bumpOf(L, -4, 0.55)(t), gale: (t) => bumpOf(L, 0.6, 0.4)(t), pz: (t) => bumpOf(L, 1.2, 0.5)(t) }, smooth);
+}
+/** STRUCK: a blow throws him back at once, hood snapping back, robes flung, his light knocked half out of him (the skull's fire gutters); he rights himself. */
+function fmReel(): Motion {
+  const R = FM_REST;
+  const L = FM_REEL;
+  // (thrown back at once, held a beat, righting himself)
+  const k = (big: number, settle = 0.3): Keys => [[0, 0], [0.067, big], [0.13, big * 0.92], [settle, big * 0.3], [L, 0]];
+  const plus = (base: number, keys: Keys) => (t: number): number => base + curve(keys, t);
+  const keys = sampled(L, {
+    px: plus(0, k(-9)),
+    pz: plus(R.pz, k(5)),
+    pitch: plus(R.pitch, k(-14)),
+    bend: plus(R.bend, k(-18)),
+    twist: plus(R.twist, k(10)),
+    roll: plus(0, k(5)),
+    faceUp: plus(R.faceUp, k(24)),
+    faceTurn: plus(R.faceTurn, k(-10)),
+    rhz: plus(R.rhz, k(7)),
+    rhx: plus(R.rhx, k(-4)),
+    lhx: plus(R.lhx, k(-6)),
+    lhz: plus(R.lhz, k(10)),
+    le: plus(R.le, k(20)),
+    draw: plus(R.draw, k(-0.3)),
+    gale: plus(0, k(1)),
+    out: plus(0, k(0.5, 0.25)),
+  }, { prop: 0, pEl: 0 });
+  return { keys };
+}
+/**
+ * HIS DEATH (“His own dead drag him down (Recommended)”). STRUCK (0 to 0.1 s): thrown back. GRABBED (0.15
+ * to 0.34): the floor under him splits open into a pit, pink fire deep in it, and the hands of his own dead
+ * burst up out of it round him, seize his robe and his tails and YANK him down (0.34). DRAGGED UNDER, STILL
+ * CASTING (to 2.44): he throws his claw up high, blazing, and holds the staff up over his head, the skull
+ * roaring, twisting against them as they haul him down into the pit, slowly and then faster; his hood goes
+ * under (1.8), then his claw (2.0), and last the skull, its fire put out by going under (2.32 to 2.44). THE PIT
+ * CLOSES over him (2.75 to 3.0), its broken stone falling in after him.
+ */
+function fmDying(): Motion {
+  const R = FM_REST;
+  const L = FM_DEATH.long;
+  const G = FM_DEATH.grab;
+  const fight = (t: number): number => rampAt(t, 0.45, 0.7) * (1 - rampAt(t, 2.2, 2.6));
+  const phi = tr([[0, 90], [0.1, 86], [0.34, 96], [0.7, 100], [L, 100]]);
+  const lean = tr([[0, -0.156], [0.5, 0.14], [L, 0.14]]);
+  const keys = sampled(L, {
+    pz: tr([[0, R.pz], [0.1, R.pz + 2], [0.25, R.pz + 1], [G, R.pz - 7], [0.5, R.pz - 9], [1.0, R.pz - 20], [1.5, R.pz - 44], [2.0, R.pz - 82], [2.4, R.pz - 116], [2.7, R.pz - 140], [L, R.pz - 150]]),
+    px: tr([[0, 0], [0.1, -3], [G, -1], [1.0, 0], [L, 0]]),
+    pitch: (t) => tr([[0, R.pitch], [0.1, R.pitch - 8], [0.25, R.pitch - 6], [G, R.pitch + 6], [0.5, R.pitch + 3], [0.8, R.pitch - 6], [L, R.pitch - 6]])(t) + 2.5 * Math.sin(t * 9) * fight(t),
+    bend: (t) => tr([[0, R.bend], [0.1, R.bend - 10], [0.25, R.bend - 8], [G, R.bend + 10], [0.5, R.bend + 6], [0.8, R.bend - 10], [L, R.bend - 10]])(t) + 3 * Math.sin(t * 7 + 1) * fight(t),
+    twist: (t) => R.twist + 12 * Math.sin(t * 5.5) * fight(t),
+    roll: (t) => 4 * Math.sin(t * 6 + 2) * fight(t),
+    faceUp: tr([[0, R.faceUp], [0.1, R.faceUp + 14], [G, R.faceUp - 6], [0.8, R.faceUp + 20], [L, R.faceUp + 22]]),
+    faceTurn: (t) => R.faceTurn + 15 * Math.sin(t * 4 + 1) * fight(t),
+    rhx: tr([[0, R.rhx], [0.5, R.rhx + 1], [L, R.rhx + 1]]),
+    rhy: tr([[0, R.rhy], [0.5, R.rhy - 1.5], [L, R.rhy - 1.5]]),
+    rhz: (t) => tr([[0, R.rhz], [0.1, R.rhz + 4], [G, R.rhz - 2], [0.75, R.rhz + 24], [L, R.rhz + 26]])(t) + 1.2 * Math.sin(t * 11) * fight(t),
+    re: tr([[0, R.re], [0.75, 72], [L, 74]]),
+    wAz: (t) => swungStaff(phi(t), lean(t)).wAz,
+    wEl: (t) => swungStaff(phi(t), lean(t)).wEl,
+    lhx: tr([[0, R.lhx], [0.1, R.lhx - 3], [G, 8], [0.75, 4], [L, 3]]),
+    lhy: tr([[0, R.lhy], [G, 12], [0.75, 9], [L, 8.5]]),
+    lhz: (t) => tr([[0, R.lhz], [0.1, R.lhz + 5], [G, -6], [0.75, 24], [L, 26]])(t) + 1.5 * Math.sin(t * 13 + 2) * fight(t),
+    le: tr([[0, R.le], [G, 20], [0.75, 70], [L, 72]]),
+    draw: tr([[0, R.draw], [0.1, 0.05], [G, 0.7], [0.75, 0.05], [L, 0.05]]),
+    pAz: tr([[0, 1], [0.1, 0.6], [G, 0.9], [0.75, 2], [L, 2]]),
+    pt: tr([[0, 0], [0.1, 0.1], [G, 0.5], [0.75, 1], [L, 1]]),
+    gale: tr([[0, 0], [0.1, 1], [0.25, 0.7], [G, 1], [0.7, 0.9], [L, 1]]),
+    out: tr([[0, 0], [0.1, 0.25], [0.3, 0.05], [L, 0]]),
+  }, { prop: FM_DYING, pEl: 0 });
+  return { keys: unwrapped(keys) };
+}
+
 const FM_SHARDS_MOTION = fmShards();
 const FM_RINGS_MOTION = fmRings();
 const FM_RAISE_MOTION = fmRaise();
@@ -1727,18 +2037,7 @@ export function fmGoutAt(t: number): V3 | null {
   return goutAtU((t - FM_GOUT_LET) / (FM_GOUT_LAND - FM_GOUT_LET));
 }
 
-/** A move not yet made: he floats at rest, held (a placeholder until it is: his moves come after his look). */
-function heldOf(len0: number): Motion {
-  return { keys: [{ at: 0, pose: {} }, { at: len0, pose: {} }] };
-}
-/** His glide not yet made: he floats at rest (a placeholder until it is). */
-function heldGlide(): Motion {
-  const keys: Key3[] = [];
-  for (let i = 0; i <= 8; i++) keys.push({ at: i / 8, pose: {}, ease: 'lin' });
-  return { keys, loop: 0 };
-}
-
-/** How fast he glides, in tiles a second (the rules' own: a placeholder until his glide is made). */
+/** How fast he glides, in tiles a second (the rules' own are the main chat's: his glide is painted for this). */
 export const FLESHMANCER_PACE = 1.0;
 export const FLESHMANCER: Mob = {
   id: 'fleshmancer',
@@ -1749,30 +2048,32 @@ export const FLESHMANCER: Mob = {
   attack: { name: 'The Fleshmancer spits bone shards from the skull', motion: FM_SHARDS_MOTION, rest: FM_REST, trail: (s) => [staffOf(s).skull], trailOver: (t) => t > FM_SHARDS.hit - 0.1 && t < FM_SHARDS.hit + 0.06, trailSpan: 2.4 },
   idleFrames: 36,
   idleFps: 10,
-  walk: { name: 'The Fleshmancer glides (not made yet)', motion: heldGlide(), rest: FM_REST, period: 1, ground: FLESHMANCER_PACE * TILE3 },
+  walk: { name: 'The Fleshmancer glides', motion: fmGlide(), rest: FM_REST, period: FM_GLIDE_LONG, ground: FLESHMANCER_PACE * TILE3 },
   walkFrames: 8,
   walkFps: 8,
   pace: FLESHMANCER_PACE,
-  reel: { name: 'The Fleshmancer is struck (not made yet)', motion: heldOf(0.3), rest: FM_REST },
-  reelTime: 0.3,
+  reel: { name: 'The Fleshmancer is struck', motion: fmReel(), rest: FM_REST },
+  reelTime: FM_REEL,
   hit: FM_SHARDS.hit,
   warn: 0.35,
-  dieTime: 1.0,
-  dying: { name: 'His own dead drag him down (not made yet)', motion: heldOf(1.0), rest: FM_REST },
+  dieTime: FM_DEATH.long,
+  dying: { name: 'His own dead drag him down', motion: fmDying(), rest: FM_REST },
   aura: { x: FM_CANVAS.ax - 2, y: FM_CANVAS.ay - 44, r: 80, color: '#ff3a78', a: 0.18 },
   shadow: 8,
   canvas: FM_CANVAS,
   trueBack: true,
   bits: (st, m) => fleshmancerBits(st, m),
   more: {
+    setOff: { name: 'The Fleshmancer sets off', motion: fmSetOff(), rest: FM_REST, period: FM_GLIDE_LONG, ground: FLESHMANCER_PACE * TILE3 },
+    halt: { name: 'The Fleshmancer stops', motion: fmHalt(), rest: FM_REST, period: FM_GLIDE_LONG, ground: FLESHMANCER_PACE * TILE3 },
     rings: { name: 'The Fleshmancer calls up rings of hands', motion: FM_RINGS_MOTION, rest: FM_REST },
     raise: { name: 'The Fleshmancer raises the dead', motion: FM_RAISE_MOTION, rest: FM_REST },
     fire: { name: 'The Fleshmancer sweeps the room with fire', motion: FM_FIRE_MOTION, rest: FM_REST },
   },
 };
 
-/** HIS MOVES MADE SO FAR, the ones the checks review: his stand and his four attacks (his glide, struck and his death are held placeholders until they are made). */
-export const FM_MADE: ReadonlyArray<string> = ['stand', 'attack', 'rings', 'raise', 'fire'];
+/** HIS MOVES, every one the checks review: his stand, his glide, setting off and stopping, his four attacks, struck, and his death. */
+export const FM_MADE: ReadonlyArray<string> = ['stand', 'walk', 'setOff', 'halt', 'attack', 'rings', 'raise', 'fire', 'reel', 'dying'];
 
 /** THE FLESHMANCER, as the game holds a monster (see art/new_mobs3.ts makeShadeArt3). */
 export function makeFleshmancerArt3(pace = FLESHMANCER.pace): ActorArt {
@@ -1972,4 +2273,32 @@ export const FM_SHAPE: BossShape = {
     ];
     return out;
   },
+  // (into his glide and out of it by setting off and stopping; every other move from his stand and back to it; his death from his stand)
+  handovers: [
+    { from: 'stand', at: 0, to: 'setOff', toAt: 0 },
+    { from: 'setOff', at: 'end', to: 'walk', toAt: 0 },
+    { from: 'walk', at: 0, to: 'halt', toAt: 0 },
+    { from: 'halt', at: 'end', to: 'stand', toAt: 0 },
+    { from: 'stand', at: 0, to: 'dying', toAt: 0 },
+    ...['attack', 'reel', 'rings', 'raise', 'fire'].flatMap((m): Handover[] => [
+      { from: 'stand', at: 0, to: m, toAt: 0 },
+      { from: m, at: 'end', to: 'stand', toAt: 0 },
+    ]),
+  ],
+};
+/**
+ * HIM AS THE CHECKS SEE HIM AS HE DIES: as FM_SHAPE, but DRAGGED DOWN UNDER THE FLOOR into the pit his dead
+ * open under him, so nothing of him is held out of the floor (what goes under it is cut away as it goes:
+ * his painter), and his neck is not looked for in it once it is under.
+ */
+export const FM_SHAPE_UNDER: BossShape = {
+  ...FM_SHAPE,
+  body: (s, q) => {
+    const b = fmSolids(s);
+    return { limbs: b.limbs.filter((l) => l.name !== 'neck' || Math.min(l.a[2], l.b[2]) > 5), lumps: b.lumps };
+  },
+  low: { knee: -1e6, elbow: -1e6, hand: -1e6, heel: -1e6, toe: -1e6 },
+  floorFree: ['hood', 'chest', 'belly', 'hips', 'skirt'],
+  // (nothing of him stands on the floor: he floats, and is dragged down through it)
+  grips: () => [],
 };

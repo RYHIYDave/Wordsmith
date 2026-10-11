@@ -9,7 +9,8 @@ rulebook, How art is made 7), pictures to him first. Nothing of the game imports
 Chained One and the amalgamation with the bone beast, as they went to the main chat). Made by THE ART
 CHAT, from 11 Oct 2026. His brief, and HIS LOOK (his standing loop), WITH HIS YES (by 12:28, below); then
 HIS FOUR ATTACKS (the shards, the rings of hands, raising the dead, the sweeping fire) and what he sends out,
-made and filmed for him, WITH HIS YES (by 14:03, below); his glide, struck and his death come next.
+made and filmed for him, WITH HIS YES (by 14:03, below); and HIS GLIDE, SETTING OFF AND STOPPING, STRUCK
+AND HIS DEATH, WITH HIS YES (by 14:21, below). Every move of his is made: he is whole.
 His look was drawn once (8d4b104), REMADE after a fresh look at it (a4a885d: at a phone's size the first
 read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again after a second fresh look
 (the third drawing, below: the second had accidental shapes in it, and a small, crouched body).
@@ -61,6 +62,36 @@ read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again a
   his four attacks, on the Fleshmancer Attacks page: good as shown?": "Yes, on to his walk and death
   (Recommended)", offered as: these go to the main chat to build his fight; his glide, flinch and death
   next, shown the same way.
+
+- HIS GLIDE, STRUCK AND HIS DEATH, asked as a pop-up on the same page (11 Oct, by 14:21), "His glide, how he
+  flinches when hit, and his death, now at the top of the Fleshmancer Attacks page: good as shown?": "Yes, on
+  to floor 5 (Recommended)", offered as: he's done and goes to the main chat whole; the art chat starts floor 5
+  as he described it, with the mine shaft up to town.
+
+## His glide, setting off and stopping, struck, and his death (the art chat, 11 Oct; with his yes by 14:21)
+
+- **HIS GLIDE** (`walk`, "Glides, feet just off the floor (Recommended)"; 8 frames at 8 a second, once round in
+  1 s, painted for 1 tile a second, `FLESHMANCER_PACE`): no step, no stride: he leans into his way and is borne
+  along over the floor, rising and sinking once a second, his staff trailing at his side, his claw held out
+  with its fire, his robe, tails and sleeves streaming back.
+- **SETTING OFF** (`more.setOff`, 0.5 s, `FM_SET_OFF`) from his rest pose to the first frame of his glide: he
+  coils a moment and surges into it, his robe snapping back. **STOPPING** (`more.halt`, 0.6 s, `FM_HALT`) from
+  the first frame of his glide to his rest pose: borne on a little past where he stops, he rocks back upright,
+  his robe swinging on past him, and settles.
+- **STRUCK** (`reel`, 0.5 s, `FM_REEL`; `reelTime`): the blow throws him back and up at once, hood snapping
+  back, robes flung, his light knocked half out of him (the skull's fire gutters), held a beat, and he rights
+  himself.
+- **HIS DEATH** ("His own dead drag him down (Recommended)"; `dying`, 3.0 s, `FM_DEATH`, at the game's 20 frames
+  a second, no edge of light round him as he dies). Struck (0 to 0.1 s), thrown back. The floor under him
+  splits open into a pit (from 0.15, `fmPitAt`), his fire deep in it, its stone heaved up round its mouth, and
+  seven arms of his own dead burst up out of it round him, bent at the elbow, and seize his robe from its hem
+  up to his chest (0.16 to 0.4); they YANK him down (0.34). Dragged under, still casting: his claw thrown up
+  high and blazing, the staff held up over his head, the skull roaring, twisting against them as they haul him
+  down, slowly and then faster; his hood goes under at 1.8, his claw at 2.0, and last the skull, from 2.32 to
+  2.44, its fire bursting up out of the pit a last time in sparks. The pit closes over him (2.75 to 3.0): by
+  the last frame nothing of him is left. What goes under the floor is cut away as it goes (his painter cuts
+  every part of him at the floor: `floorCut`), so the game draws him where he died, nothing more. For the
+  checks he is `FM_SHAPE_UNDER` as he dies: dragged down through the floor, nothing of him is held out of it.
 
 ## His attacks (the art chat, 11 Oct; with his yes by 14:03)
 
@@ -242,6 +273,9 @@ on the staff where his fist is round it); the end he strikes with (the skull, wh
 shards). His mantle is worn over his arms, as the Headsman's cape is, so it is not among the solids his arms
 keep out of; his staff passes outside it (tested on its own).
 
+- **Every move of his through every check** (tests/fleshmancer.test.ts 2): his glide (the loop closing too),
+  into it by setting off and out of it by stopping, struck, and his death as FM_SHAPE_UNDER has it; nothing
+  found.
 - **His four attacks through every check**, as his stand below: every frame of each at 30 a second, from in
   front and from behind, from every frame of his stand into each and from each back into his stand: nothing
   found. The end he strikes with is the skull (the shards; the BLOW review: drawn right back, held, carried
@@ -278,9 +312,12 @@ keep out of; his staff passes outside it (tested on its own).
   the staff's foot within 9 of the floor as it strikes, and each kind of hand paints, stands up high and has
   less than a third of itself left in its last frame; 14, raising the dead: both hands over his hood while
   they come up, the skull's jaws open; 15, the fire: the skull more than 25 over his hood while it pours, its
-  jaws open, and the stream round once. `tests/new_mobs3.test.ts` and `tests/bosses.test.ts` (12) let
+  jaws open, and the stream round once; 16, his glide: no foot near the floor, his tails more than 4 off it, and
+  he leans into his way in every frame; 17, his death: the pit opens and closes, his hood is under while the
+  skull is still up, then the skull goes under, no lone pixel in any frame, and fewer than 60 pixels of him in
+  the last (17 in all). `tests/new_mobs3.test.ts` and `tests/bosses.test.ts` (12) let
   `art/fleshmancer.ts`, a mock-up of their kind, import the other mock-ups.
-- The whole unit suite passes on the branch, 876 of 876 with the attacks (`tests/new_mobs3.test.ts` and
+- The whole unit suite passes on the branch, 878 of 878 with every move of his (`tests/new_mobs3.test.ts` and
   `tests/bosses.test.ts` now know `art/fm_spells.ts` for a mock-up too); `tsc` is clean.
 - Painting a frame of his stand takes about 14 ms on this machine (the Headsman's, 22).
 
@@ -309,11 +346,17 @@ keep out of; his staff passes outside it (tested on its own).
   Crypt's fourth floor at the game's size, doubled) and `him_x2.png` (him and the knight, doubled again);
   `shards.gif`, `rings.gif`, `raise.gif`, `fire.gif` (`film:<attack>:4`, `tools/page_gif.mjs`: him standing a
   moment, the attack, and standing again, what he sends out where the game would put it, the knight come in,
-  at four screen pixels to a game pixel, 30 frames a second), made on the same copy with floor 4's floor.
+  at four screen pixels to a game pixel, 30 frames a second), made on the same copy with floor 4's floor; and
+  `glide.gif` (`film:glide:4`: setting off, gliding 2 s, stopping), `reel.gif` (`film:reel:4`: struck twice),
+  `death.gif` (`film:death:4`). The page "Fleshmancer Attacks" has them all as films.
 
 ## For the main chat
 
-- HIS ATTACKS, when he says yes: `FLESHMANCER.attack` (the shards) and `FLESHMANCER.more` (`rings`, `raise`,
+- HIS GLIDE AND HIS DEATH, with his yes: `FLESHMANCER.walk` (at `walkFpsAt` for another pace), into it by
+  `more.setOff` and out of it by `more.halt` (both carried along at his pace, as the other bosses' are), struck
+  (`reel`), his death (`dying`: the die clip of `makeFleshmancerArt3()`); `FM_SHAPE.handovers` say which move
+  hands over to which. His death leaves nothing where he fell: floor 5 ends in the mine shaft, not a stairwell.
+- HIS ATTACKS, with his yes: `FLESHMANCER.attack` (the shards) and `FLESHMANCER.more` (`rings`, `raise`,
   `fire`), each from his rest pose and back, handing over from any frame of his stand (the checks hold them);
   `makeFleshmancerArt3()` has them as clips (`clips.attack`, `clips.moves`). Their moments are `FM_SHARDS`,
   `FM_RINGS`, `FM_RAISE`, `FM_FIRE`; where the skull's jaws are (where the shards leave and the fire pours
@@ -333,5 +376,4 @@ keep out of; his staff passes outside it (tested on its own).
 
 ## Next
 
-His glide, setting off and stopping, struck and his death ("His own dead drag him down": the hands of his rings bursting up round
-him and dragging him under), shown the same way; every move through the boss checks.
+Nothing more of him unless the owner asks: he goes to the main chat whole. Next in the art chat: floor 5.

@@ -20,12 +20,12 @@ import { toSprite } from '../art/kit';
 import { makeCultistArt, makeHighPriestArt } from '../art/monster_cultist';
 import { MOVES3 } from '../art/moves3';
 import { HEADSMAN } from '../art/bosses3';
-import { FLESHMANCER, FM_FIRE, FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, FM_HAND_TIME, FM_RAISE, FM_REST, FM_RINGS, FM_SHARDS, fmFireTurn, fmHemOf, fmHoodTop, fmMouthAt, fmSkullAt, fmTails, makeRingHandArt, staffOf } from '../art/fleshmancer';
+import { FLESHMANCER, FM_DEATH, FM_HALT, FM_REEL, FM_SET_OFF, FM_FIRE, FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, FM_HAND_TIME, FM_RAISE, FM_REST, FM_RINGS, FM_SHARDS, fmFireTurn, fmHemOf, fmHoodTop, fmMouthAt, fmSkullAt, fmTails, makeRingHandArt, staffOf } from '../art/fleshmancer';
 import { FM_RAISE_STIR, FM_RINGS_LAID, FM_SHARD, FM_SHARD_BREAK, FM_WAVE_SPEED, drawBoneShard, drawFireStream, drawHandCrack, drawRaiseGlow, drawScorch, drawShardBreak, drawShardShadow, drawSlamWave, glowAt } from '../art/fm_spells';
 import { DIE3_TIME, STAND3, deathOf3, paintSkeleton3 } from '../art/monster_bones3';
 import { TILE3 } from '../art/new_mobs3';
 import { solve } from '../art/skeleton';
-import { SHADE, canvasOf, paintMob, skeletonAt } from '../art/new_mobs3';
+import { SHADE, canvasOf, deathOfMob, paintMob, skeletonAt } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
 import { CANVAS3 } from '../art/skin';
 import type { GameView } from '../art/skin';
@@ -454,16 +454,35 @@ if (mode === 'film') {
   const FPS = 30;
   const LEAD = 0.4;
   const move = which === 'shards' ? 'attack' : which;
-  const LONG: Record<string, number> = { shards: FM_SHARDS.long, rings: FM_RINGS.long, raise: FM_RAISE.long, fire: FM_FIRE.long };
-  const AFTER: Record<string, number> = { shards: 1.0, rings: 1.9, raise: 1.4, fire: 0.6 };
+  const LONG: Record<string, number> = { shards: FM_SHARDS.long, rings: FM_RINGS.long, raise: FM_RAISE.long, fire: FM_FIRE.long, glide: 0, reel: 0, death: 0 };
+  const AFTER: Record<string, number> = { shards: 1.0, rings: 1.9, raise: 1.4, fire: 0.6, glide: 0, reel: 0, death: 0 };
+  // (his glide, struck and his death: a run of his moves one after another, as the game would play them)
+  const RUNS: Record<string, ReadonlyArray<readonly [string, number]>> = {
+    glide: [['stand', 0.4], ['setOff', FM_SET_OFF], ['walk', 2], ['halt', FM_HALT], ['stand', 0.8]],
+    reel: [['stand', 0.4], ['reel', FM_REEL], ['stand', 0.5], ['reel', FM_REEL], ['stand', 0.8]],
+    death: [['stand', 0.4], ['dying', FM_DEATH.long], ['gone', 0.6]],
+  };
+  const run = RUNS[which];
   const GW = which === 'shards' ? 300 : 320;
   const GH = which === 'shards' ? 190 : which === 'fire' ? 226 : 210;
   // (his floor point on the screen, and the knight's, in tiles from his)
-  const hx = which === 'shards' ? 78 : GW / 2 - 8;
+  const hx = which === 'shards' || which === 'glide' ? 78 : GW / 2 - 8;
   const hy = which === 'shards' ? 92 : which === 'fire' ? 136 : 116;
-  const KN: Record<string, [number, number]> = { shards: [3.4, 0.25], rings: [3.6, 0.2], raise: [3.0, 0.4], fire: [3.3, 0.6] };
+  const KN: Record<string, [number, number]> = { shards: [3.4, 0.25], rings: [3.6, 0.2], raise: [3.0, 0.4], fire: [3.3, 0.6], glide: [5.2, -1.4], reel: [1.6, 0.3], death: [2.6, 0.4] };
   const at = (tx: number, ty: number): [number, number] => [hx + (tx - ty) * 16, hy + (tx + ty) * 8];
-  const total = LEAD + LONG[which] + AFTER[which];
+  const total = run ? run.reduce((a, [, l]) => a + l, 0) : LEAD + LONG[which] + AFTER[which];
+  /** Where in the run a moment of the film is: the move, how far into it, and how far he has glided along the floor (tiles) by then. */
+  const runAt = (t: number): { mv: string; tt: number; along: number } => {
+    let t0 = 0;
+    let along = 0;
+    for (const [i, [mv, l]] of (run ?? []).entries()) {
+      const moving = mv === 'setOff' || mv === 'walk' || mv === 'halt';
+      if (t < t0 + l || i === (run ?? []).length - 1) return { mv, tt: Math.min(l, t - t0), along: along + (moving ? FM.pace * Math.min(l, t - t0) : 0) };
+      if (moving) along += FM.pace * l;
+      t0 += l;
+    }
+    return { mv: 'stand', tt: 0, along };
+  };
   const TICKS = Math.round(total * FPS);
   const knight = flipSprite(KNIGHT('back'));
   const litter = FM_FLOOR.litter();
@@ -471,6 +490,14 @@ if (mode === 'film') {
   // (his move at a moment of the film: his stand before and after it, at its own frames a second)
   const standAt = (t: number): number => (Math.floor(t * FM.idleFps + 1e-6) % FM.idleFrames) / FM.idleFps;
   const himAt = (t: number): [string, number] => {
+    if (run) {
+      const r = runAt(t);
+      if (r.mv === 'stand') return ['stand', standAt(r.tt)];
+      if (r.mv === 'walk') return ['walk', (Math.floor(r.tt * FM.walkFps + 1e-6) % FM.walkFrames) / FM.walkFps];
+      if (r.mv === 'dying') return ['dying', Math.round(r.tt * 20) / 20];
+      if (r.mv === 'gone') return ['gone', 0];
+      return [r.mv, Math.round(r.tt * 30) / 30];
+    }
     if (t < LEAD) return ['stand', standAt(t)];
     if (t < LEAD + LONG[which]) return [move, Math.round((t - LEAD) * 30) / 30];
     return ['stand', standAt(t - LEAD - LONG[which])];
@@ -481,7 +508,8 @@ if (mode === 'film') {
     if (!sp) cache.set(key, (sp = make()));
     return sp;
   };
-  const himSp = (mv: string, t: number): Sprite => sprite(`fm:${mv}:${t.toFixed(3)}`, () => spOf(FM, mv, t, 'front'));
+  const himSp = (mv: string, t: number): Sprite =>
+    sprite(`fm:${mv}:${t.toFixed(3)}`, () => (mv === 'dying' || mv === 'gone' ? toSprite(deathOfMob(FM, mv === 'gone' ? 1 : t / FM.dieTime, 'front'), null, canvasOf(FM).ax, canvasOf(FM).ay) : spOf(FM, mv, t, 'front')));
   // THE RINGS OF HANDS: each ring as the wave reaches it, a gap in each, turned its own way
   const hands: { x: number; y: number; t0: number; kind: number; seed: number }[] = [];
   if (which === 'rings') {
@@ -590,7 +618,9 @@ if (mode === 'film') {
     // THE FIGURES, nearest last
     const [mv, mt] = himAt(t);
     const him = himSp(mv, mt);
-    const figs: Figure[] = [{ sp: him, x: hx, y: hy, light: true }];
+    // (gliding, he is borne along the floor the way he faces)
+    const [gx, gy] = run ? at(runAt(t).along, 0) : [hx, hy];
+    const figs: Figure[] = [{ sp: him, x: gx, y: gy, light: true }];
     const [kxs, kys] = at(kx, ky);
     figs.push({ sp: knight, x: kxs, y: kys, light: true });
     if (which === 'rings') {
@@ -624,7 +654,7 @@ if (mode === 'film') {
     // (the stream goes behind him when it pours away from you)
     const way = which === 'fire' ? fireWay(t) : null;
     const streamFirst = !!way && way[0] + way[1] < -0.2;
-    const mouth = fmMouthAt(mv, mt);
+    const mouth = run ? [0, 0] : fmMouthAt(mv, mt);
     const mx = hx + mouth[0] / 2;
     const my = hy + mouth[1] / 2;
     const stream = (): void => {
@@ -683,8 +713,9 @@ if (mode === 'film') {
     };
     spot(kxs, kys - 8, 150, 0.85);
     spot(GW / 2, GH / 2, 300, 0.3);
-    spot(hx, hy - 16, 70, 0.75);
-    for (const l of him.lights ?? []) if (l.r >= 7) spot(hx + l.x - him.ax, hy + l.y - him.ay + 6, l.r * 2.6, (l.a ?? 0.5) * 1.1);
+    spot(gx, gy - 16, 70, 0.75);
+    for (const l of him.lights ?? []) if (l.r >= 7) spot(gx + l.x - him.ax, gy + l.y - him.ay + 6, l.r * 2.6, (l.a ?? 0.5) * 1.1);
+    if (mv === 'dying') spot(gx, gy, 50, 0.8);
     for (const [x, y, r, a] of lights) spot(x, y, r, a);
     dg.globalAlpha = 1;
     dg.globalCompositeOperation = 'source-over';
