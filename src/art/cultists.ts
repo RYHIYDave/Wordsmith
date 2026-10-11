@@ -75,23 +75,30 @@ const LESSER_SKULL: ReadonlyArray<string> = [
   '...MMSS...',
 ];
 /**
- * THE FACE IN HIS HOOD, as his master's (art/fleshmancer.ts HOOD_FACE), smaller and without the gold: the
- * opening pitch black (k), its edge lit a little pink from inside (r), his cult's pink on the outer brim (P);
- * his eyes two hot points (h), each with a dimmer one by it (e), the two not alike.
+ * THE MASK IN HIS HOOD, where his master has only darkness and two points of fire: A MASK OF BONE, a skull's
+ * face, pale, lit from the upper left (H, L, M, S), in the dark of the hood's opening (k); its sockets dark
+ * (s), his fire burning low in each (h); the notch of its nose, its teeth. Told from his master at a glance.
  */
 const LESSER_FACE: ReadonlyArray<string> = [
-  '....PPPPP....',
-  '..PP.....PP..',
-  '.P..rrrrr..P.',
-  '.P.rkkkkkr.P.',
-  'P.rkkkkkkkr.P',
-  'P.rkhkkkhkr.P',
-  'P.rkekkkker.P',
-  '.P.rkkkkkr.P.',
-  '...rkkkkkr...',
+  '...kkkkkkk...',
+  '..kHHLLLLMk..',
+  '.kHLLLLLLLMk.',
+  '.kLLLLLLLLMk.',
+  '.kLssLLLssMk.',
+  '.kLshLLLhsMk.',
+  '.kLLLLkLLLSk.',
+  '..kLMkkkMSk..',
+  '..kMLkLkLSk..',
+  '...kkMMMkk...',
   '....kkkkk....',
-  '.....kkk.....',
 ];
+/** His colours: his master's plum, darker and duller (no magenta, no pink and gold bands), the pink kept for the lining. */
+const MINI_RAMPS: NonNullable<FmLook['ramps']> = {
+  robe: ['#140a18', '#140a18', '#30183a', '#4e2c5c', '#4e2c5c'],
+  hood: ['#0f0814', '#0f0814', '#26122e', '#40244c', '#40244c'],
+  mantle: ['#180c1e', '#180c1e', '#3a1e44', '#5c3a68', '#5c3a68'],
+  lining: ['#2a0a22', '#2a0a22', '#5a1844', '#82285e', '#82285e'],
+};
 
 /** HIS LOOK, for his master's painter: smaller in every length, no gold, no ribs of bone over his hood, a shorter staff and a smaller skull, a smaller claw. */
 export const MINI_FM_LOOK: FmLook = {
@@ -113,6 +120,11 @@ export const MINI_FM_LOOK: FmLook = {
   hood: { fwd: FM_LOOK.hood.fwd * K, up: FM_LOOK.hood.up * K, r: mul(FM_LOOK.hood.r, K), face: LESSER_FACE, mid: [6, 5], eyes: [[4, 5], [8, 5]] },
   claw: 0.8,
   tails: 0.8,
+  // HIS OWN LOOK (the owner's pick, 11 Oct: “Mini fleshmancer: less like the boss”): no staff, a claw of fire in each hand; the mask; a point to his hood; a fringe of small bones round his mantle; darker robes
+  bare: true,
+  ramps: MINI_RAMPS,
+  point: 8,
+  fringe: true,
 };
 
 /** Of a pose's numbers, those that are lengths (made smaller for him), and not angles or amounts. */
@@ -121,6 +133,8 @@ const LENGTHS = new Set<keyof Bones>(['px', 'py', 'pz', 'lhx', 'lhy', 'lhz', 'rh
 export const MINI_REST: Bones = (() => {
   const out = { ...FM_REST } as Record<string, number>;
   for (const k of LENGTHS) out[k] = FM_REST[k] * K;
+  // (no staff: his right hand held out at his side as his left is, a claw of fire in each)
+  Object.assign(out, { rhIn: 0, rhx: 4.0 * K, rhy: -14.0 * K, rhz: 3.0 * K, re: 46, yaw: -4, twist: 2 });
   return out as unknown as Bones;
 })();
 /** One of his master's moves, made his: every key's lengths made smaller (his master's moves, at his size). */
@@ -169,7 +183,9 @@ function miniStand(): Motion {
         lhx: R.lhx + 0.8 * Math.sin(a + 1.0),
         lhy: R.lhy + 0.6 * Math.sin(2 * a + 0.4),
         lhz: R.lhz + 1.2 * Math.sin(2 * a),
-        rhz: R.rhz + 0.5 * Math.sin(a + 0.8),
+        rhx: R.rhx + 0.8 * Math.sin(a + 2.6),
+        rhy: R.rhy - 0.6 * Math.sin(2 * a + 1.3),
+        rhz: R.rhz + 1.2 * Math.sin(2 * a + 1.9),
         draw: 0.35 + 0.3 * Math.sin(2 * a + 0.6),
         // (the fire in his claw swelling as it is drawn down out of the skull, twice round, and sinking again)
         pAz: 1 + 0.3 * Math.max(0, Math.sin(2 * a - 0.4)),

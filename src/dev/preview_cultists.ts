@@ -191,9 +191,9 @@ if (mode === 'sheet') {
   ];
   const row2 = [
     { sp: makeCultistArt().front.idle[0], name: 'A cultist', line: 'the cult’s flock', shadow: 11, gold: false },
-    { sp: spOf(KNIFE, 'stand', 0, 'front'), name: 'The dagger cultist', line: 'new', shadow: KNIFE.shadow, gold: true },
+    { sp: spOf(KNIFE, 'stand', 0, 'front'), name: 'Dagger cultist', line: 'new', shadow: KNIFE.shadow, gold: true },
     { sp: makeHighPriestArt().front.idle[0], name: 'The high priest', line: 'their leader', shadow: 11, gold: false },
-    { sp: spOf(MINI, 'stand', 0, 'front'), name: 'The mini fleshmancer', line: 'new', shadow: MINI.shadow, gold: true },
+    { sp: spOf(MINI, 'stand', 0, 'front'), name: 'Mini fleshmancer', line: 'new', shadow: MINI.shadow, gold: true },
     { sp: spOf(FM, 'stand', 0, 'front'), name: 'The Fleshmancer', line: `floor 5’s boss: hood ${h.master} up`, shadow: FM.shadow, gold: false },
   ];
   const W = Math.max(1100, widthOf(row1, S, PAD), widthOf(row2, 2, PAD));

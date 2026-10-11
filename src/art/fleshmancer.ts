@@ -639,6 +639,16 @@ export interface FmLook {
   timing?: { raiseShriek: number; raiseHold: number; fireBurst: number; fireStop: number };
   maw?: (prop: number, t: number) => number;
   jaw?: (prop: number, t: number) => number;
+  /**
+   * A LOOK OF HIS OWN, for one who is to be told from the master at a glance (the owner, 11 Oct, of the mini
+   * fleshmancer: “Mini fleshmancer: less like the boss”): no staff, a claw in each hand (`bare`); his robe's
+   * colours (`ramps`); a point to his hood, drooping behind (`point`, its length); a fringe of small bones
+   * hanging round the edge of his mantle in place of the master's bands (`fringe`).
+   */
+  bare?: boolean;
+  ramps?: { robe: Ramp; hood: Ramp; mantle: Ramp; lining: Ramp };
+  point?: number;
+  fringe?: boolean;
 }
 /** How high a fleshmancer's pelvis is at rest, floating. */
 export function pelvisUpOf(look: FmLook): number {
@@ -1026,6 +1036,10 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
   const { s, q } = m;
   const B = LOOK.body;
   const K = LOOK.k;
+  const R_ROBE = LOOK.ramps?.robe ?? FM_ROBE;
+  const R_HOOD = LOOK.ramps?.hood ?? FM_HOOD;
+  const R_MANTLE = LOOK.ramps?.mantle ?? FM_MANTLE;
+  const R_LINING = LOOK.ramps?.lining ?? FM_LINING;
   const bits: Bit[] = [];
   const put: Put = (part, piece, shape) => {
     bits.push({ part, piece, shape });
@@ -1093,7 +1107,7 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     skirt[skirt.length - 1] = { ...hem, pts };
   }
   const robeRings = [...torso, ...skirt.slice(1)];
-  put('robe', 'robe', { k: 'cloth', rings: robeRings, ramp: FM_ROBE, look: { folds: [30, -30, 70, -70, 115, -115, 160, -160], lift: 0.06 } });
+  put('robe', 'robe', { k: 'cloth', rings: robeRings, ramp: R_ROBE, look: { folds: [30, -30, 70, -70, 115, -115, 160, -160], lift: 0.06 } });
 
   // HIS TAILS: tattered, curling up at their ends, the pink lining showing as they curl; and the embers that drip off them
   const tails = fmTails({ c: hem.c, f: hemF, l: hemL, deep: hemDeep, wide: hemWide }, ph, gale, lag);
@@ -1101,7 +1115,7 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     for (let k = 0; k + 1 < pts.length; k++) {
       const ra = r * (1 - k / pts.length) + 0.25;
       const rb = r * (1 - (k + 1) / pts.length) + 0.2;
-      put(`tail${j % 3}`, 'robe', { k: 'rod', a: pts[k], b: pts[k + 1], ra, rb, ramp: k >= pts.length - 2 ? FM_LINING : FM_ROBE, far: true });
+      put(`tail${j % 3}`, 'robe', { k: 'rod', a: pts[k], b: pts[k + 1], ra, rb, ramp: k >= pts.length - 2 ? R_LINING : R_ROBE, far: true });
     }
     if (lit > 0.05) {
       // (an ember off its tip now and then, dripping down toward the floor and going out)
@@ -1126,7 +1140,7 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     const el = side === 'L' ? s.elbowL : s.elbowR;
     const hand = side === 'L' ? s.handL : s.handR;
     const fore = norm(sub(hand, el), [0, 0, -1]);
-    put(`sleeve${side}`, `sleeve${side}`, { k: 'rod', a: sh, b: el, ra: 2.9 * K, rb: 3.1 * K, ramp: FM_ROBE, far: true });
+    put(`sleeve${side}`, `sleeve${side}`, { k: 'rod', a: sh, b: el, ra: 2.9 * K, rb: 3.1 * K, ramp: R_ROBE, far: true });
     const e1 = squareTo(fore, [0, 0, 1], cu);
     const e2 = norm(cross(fore, e1));
     const mouth = add(el, mul(fore, 1.4 * K));
@@ -1145,17 +1159,17 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       { c: el, u: mul(e1, 3.2 * K), v: mul(e2, 3.2 * K) },
       { c: mouth, u: mul(e1, 3.9 * K), v: mul(e2, 3.9 * K), pts: mouthPts },
     ];
-    put(`sleeve${side}`, `sleeve${side}`, { k: 'cloth', rings, ramp: FM_ROBE, look: { folds: [90, -90, 180], lift: 0.1, lining: 0.5 } });
+    put(`sleeve${side}`, `sleeve${side}`, { k: 'cloth', rings, ramp: R_ROBE, look: { folds: [90, -90, 180], lift: 0.1, lining: 0.5 } });
     // (the pink lining inside its mouth, round the forearm)
-    put(`sleeve${side}`, `sleeve${side}`, { k: 'ball', c: add(mouth, mul(fore, -0.2)), ax: [mul(fore, 0.45), mul(e1, 3.3 * K), mul(e2, 3.3 * K)], skin: FM_LINING, far: true });
+    put(`sleeve${side}`, `sleeve${side}`, { k: 'ball', c: add(mouth, mul(fore, -0.2)), ax: [mul(fore, 0.45), mul(e1, 3.3 * K), mul(e2, 3.3 * K)], skin: R_LINING, far: true });
     const wrist = add(hand, mul(fore, -0.4));
     put(`arm${side}`, `arm${side}`, { k: 'rod', a: add(mouth, mul(fore, -0.6)), b: wrist, ra: 1.0, rb: 0.8, ramp: HAND_BONE, far: true });
     put(`arm${side}`, `arm${side}`, { k: 'ball', c: wrist, ax: sphere(1.05), skin: HAND_BONE, far: true });
   }
 
-  // --- THE STAFF: bone, knuckled, spurred, a crook near its head ---
+  // --- THE STAFF: bone, knuckled, spurred, a crook near its head (none, for one who goes bare-handed) ---
   const staff = staffOf(s);
-  {
+  if (!LOOK.bare) {
     const J = staff.joints;
     for (let i = 0; i + 1 < J.length; i++) {
       const a = J[i];
@@ -1187,7 +1201,7 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     }
   }
   // HIS STAFF HAND, its long fingers wrapped round the bone, their tips lit
-  {
+  if (!LOOK.bare) {
     const [gx, gy] = st.at(s.handR);
     const [tx, ty] = st.at(staff.top);
     const [fx, fy] = st.at(staff.foot);
@@ -1200,7 +1214,7 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
   }
 
   // --- THE SKULL AT ITS HEAD, looking at you whichever way he faces; the fire licking up and out of its sockets, a ragged flame off its crown ---
-  {
+  if (!LOOK.bare) {
     const sc = staff.skull;
     // (in his stand he draws the skull's fire down into his claw, and it sinks; in his attacks it roars)
     const suck = q.prop === 0 ? charge : 0;
@@ -1254,11 +1268,13 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     if (lit > 0.05 && q.prop) attackFire(st, put, m, staff, [x0, y0], drop, behindHim);
   }
 
-  // --- HIS CASTING HAND: the claw, the fire held between its fingers ---
-  {
+  // --- HIS CASTING HAND: the claw, the fire held between its fingers (and, for one who goes bare-handed, a claw of fire in each hand) ---
+  for (const hs of LOOK.bare ? (['L', 'R'] as const) : (['L'] as const)) {
+    const hand = hs === 'L' ? s.handL : s.handR;
+    const ph1 = ph + (hs === 'L' ? 0 : 1.9);
     const heat = lit * (0.7 + 0.25 * pulse + 0.6 * charge);
-    const [wx, wy] = st.at(s.handL);
-    const [ex, ey] = st.at(s.elbowL);
+    const [wx, wy] = st.at(hand);
+    const [ex, ey] = st.at(hs === 'L' ? s.elbowL : s.elbowR);
     const way = unit2([wx - ex, wy - ey]);
     // (held up round the fire, its fingers rising; thrown out straight along the arm as he flings it, and gathering again)
     const open = clamp01((1 - handFire) / 0.8);
@@ -1268,26 +1284,25 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     // (the thumb on the side away from his middle)
     const side = -way[1] * (wx - cx) >= 0 ? 1 : -1;
     const claw = clawPix([wx, wy], way, fan, 128 - 38 * open, clamp01(q.draw) * (1 - open), heat, side, LOOK.claw);
-    const hidden = behindHim(s.handL);
-    stamp(st, put, 'handL', 'handL', claw.pix, add(s.handL, mul(st.eye, 1.5)));
+    stamp(st, put, `hand${hs}`, `hand${hs}`, claw.pix, add(hand, mul(st.eye, 1.5)));
     if (lit > 0.05 && handFire > 0.05) {
       const keep = claw.keep;
-      const at = screenStep(st, s.handL, claw.heart[0] - wx, claw.heart[1] - wy);
+      const at = screenStep(st, hand, claw.heart[0] - wx, claw.heart[1] - wy);
       const r = ((4.0 + 0.5 * pulse) * Math.min(1, handFire) + 1.4 * charge) * LOOK.claw;
       // (what of it is behind him, as the eye sees it, is hidden by him; and his fingers stand in front of it)
-      const skip = (x: number, y: number): boolean => keep.has(pk(x, y)) || behindHim(screenStep(st, s.handL, x + 0.5 - wx, y + 0.5 - wy));
+      const skip = (x: number, y: number): boolean => keep.has(pk(x, y)) || behindHim(screenStep(st, hand, x + 0.5 - wx, y + 0.5 - wy));
       fireBall(st, put, at, r, [0, 1], 1.0, (_p, x, y) => skip(x, y), charge > 0.5 ? FLAME[4] : FLAME[3]);
       // (its flames, rising between his fingers)
       const [hx, hy] = st.at(at);
       for (const [deg, k] of [[-34, 0], [0, 1], [34, 2]] as const) {
         const d = rot2(fan, deg);
         const foot: P2 = [hx + d[0] * 2.2, hy + d[1] * 2.2 + 1];
-        const tall = ((k === 1 ? 7 : 5) + 1.6 * Math.sin(ph * 6 + k * 2.1) + 4 * charge) * Math.min(1, handFire) * lit * LOOK.claw;
-        tongueAt(st, put, at, foot, tall, 2.0 + 0.8 * charge, d[0] * 2 + 0.8 * Math.sin(ph * 4 + k), 0.9 + charge, skip);
+        const tall = ((k === 1 ? 7 : 5) + 1.6 * Math.sin(ph1 * 6 + k * 2.1) + 4 * charge) * Math.min(1, handFire) * lit * LOOK.claw;
+        tongueAt(st, put, at, foot, tall, 2.0 + 0.8 * charge, d[0] * 2 + 0.8 * Math.sin(ph1 * 4 + k), 0.9 + charge, skip);
       }
     }
     if (lit > 0.05 && handFire > 0.05) {
-      const at = screenStep(st, s.handL, claw.heart[0] - wx, claw.heart[1] - wy);
+      const at = screenStep(st, hand, claw.heart[0] - wx, claw.heart[1] - wy);
       put('glow', 'glow', { k: 'glow', p: at, c: FLAME[2], r: (12 + 3 * pulse + 7 * charge) * Math.min(1, handFire), a: Math.min(0.7, (0.38 + 0.1 * pulse + 0.2 * charge) * lit) * (1 - 0.7 * behindness(at)) });
     }
   }
@@ -1315,15 +1330,24 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
       { c: add(s.neck, mul(cu, -0.6 * K)), u: mul(cf, B.ribDeep + 3.4 * K), v: mul(cl, B.shoulderHalf + 5.4 * K) },
       { c: capeC, u: capeU, v: capeV, pts: hemPts },
     );
-    put('mantle', 'mantle', { k: 'cloth', rings: mantle, ramp: FM_MANTLE, look: { folds: [35, -35, 80, -80, 125, -125, 158, -158], lift: 0.3 } });
+    put('mantle', 'mantle', { k: 'cloth', rings: mantle, ramp: R_MANTLE, look: { folds: [35, -35, 80, -80, 125, -125, 158, -158], lift: 0.3 } });
     // its edge: a band of pink, and gold at the very edge, round it (seen from in front and from behind)
     for (let i = 0; i < N; i++) {
       const a0 = hemPts[i];
       const b0 = hemPts[(i + 1) % N];
       const outA = norm([a0[0] - capeC[0], a0[1] - capeC[1], 0]);
       const outB = norm([b0[0] - capeC[0], b0[1] - capeC[1], 0]);
-      put('trim', 'mantle', { k: 'rod', a: add(add(a0, mul(outA, 0.5)), [0, 0, 1.2]), b: add(add(b0, mul(outB, 0.5)), [0, 0, 1.2]), ra: 0.85, rb: 0.85, ramp: BAND });
+      if (!LOOK.fringe) put('trim', 'mantle', { k: 'rod', a: add(add(a0, mul(outA, 0.5)), [0, 0, 1.2]), b: add(add(b0, mul(outB, 0.5)), [0, 0, 1.2]), ra: 0.85, rb: 0.85, ramp: BAND });
       if (LOOK.gold) put('trim', 'mantle', { k: 'rod', a: add(a0, mul(outA, 0.7)), b: add(b0, mul(outB, 0.7)), ra: 0.55, rb: 0.55, ramp: GOLD });
+      // A FRINGE OF SMALL BONES (a look that has one): every other point of the edge, a finger bone hanging from it on a short cord, each its own length, swinging, kicked out as he lurches
+      if (LOOK.fringe && i % 2 === 0) {
+        const long = (3.2 + 1.6 * hash(i, 1, 331)) * K;
+        const sw = Math.sin(ph * 2 + i * 0.8) * 0.6 + gale * 1.4;
+        const top = add(a0, mul(outA, 0.4));
+        const end = add(top, add([0, 0, -long], add(mul(outA, sw * 0.6), mul(lag, 0.5))));
+        put('fringe', 'mantle', { k: 'rod', a: top, b: end, ra: 0.6 * K + 0.15, rb: 0.75 * K + 0.15, ramp: STAY_BONE });
+        put('fringe', 'mantle', { k: 'ball', c: end, ax: sphere(0.85 * K + 0.2), skin: STAY_BONE });
+      }
     }
   }
 
@@ -1417,6 +1441,14 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
           return lit < 0.05 ? INK : hot ? '#fffbe8' : FLAME[3];
         case 'e':
           return lit < 0.05 ? INK : hot ? FLAME[2] : FLAME[1];
+        // (a mask of bone in the hood, for a look that wears one: lit from the upper left; its holes dark)
+        case 'H':
+        case 'L':
+        case 'M':
+        case 'S':
+          return IVORY[ch];
+        case 's':
+          return INK;
         default:
           return null;
       }
@@ -1438,11 +1470,24 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
           if (c) return c;
         }
       }
-      return FM_HOOD[tone];
+      return R_HOOD[tone];
     };
     put('hood', 'hood', { k: 'ball', c: hc, ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin: hoodSkin });
     // (the back of the hood falls to the mantle)
-    put('hood', 'hood', { k: 'ball', c: add(add(hc, mul(ff, -3.6 * K)), mul(fu, -4.0 * K)), ax: [mul(ff, 4.8 * K), mul(fl, 5.8 * K), mul(fu, 4.6 * K)], skin: FM_HOOD });
+    put('hood', 'hood', { k: 'ball', c: add(add(hc, mul(ff, -3.6 * K)), mul(fu, -4.0 * K)), ax: [mul(ff, 4.8 * K), mul(fl, 5.8 * K), mul(fu, 4.6 * K)], skin: R_HOOD });
+    // ITS POINT (a look that has one): from the top of the back of the hood, drooping back and down, tapering, left behind as he goes
+    if (LOOK.point) {
+      let at = add(hc, add(mul(fu, hr[2] * 0.7), mul(ff, -hr[0] * 0.45)));
+      const R0 = [3.0, 2.3, 1.6, 0.9, 0.35].map((r) => r * K);
+      const step = LOOK.point / 4;
+      for (let i = 0; i < 4; i++) {
+        const k = (i + 1) / 4;
+        const sway = Math.sin(ph * 2 + i * 0.9) * 0.5 * k + gale * 0.8 * k;
+        const next = add(at, add(add(mul(ff, -step * 0.8), mul(fu, step * (0.45 - 0.9 * k))), add(mul(fl, sway), mul(lag, 0.4 * k))));
+        put('hood', 'hood', { k: 'rod', a: at, b: next, ra: R0[i], rb: R0[i + 1], ramp: R_HOOD });
+        at = next;
+      }
+    }
     if (lit > 0.05 && dot(od, st.eye) > 0.05) {
       for (const [ex, ey] of H.eyes) put('glow', 'glow', { k: 'glow', p: screenStep(st, hc, oxi + ex - H.mid[0] + 0.5 - st.at(hc)[0], oyi + ey - H.mid[1] + 0.5 - st.at(hc)[1]), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.55, 0.3 * blaze) });
     }
