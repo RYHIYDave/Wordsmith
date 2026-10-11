@@ -359,6 +359,20 @@ export const FM_FIRE_REACH = 4.8;
 /** How long the floor it has swept burns on after it (seconds), dying down. */
 export const FM_FIRE_BURN = 0.6;
 
+/** How big a stream is: where it comes down onto the floor and how far it rushes on (tiles from him), how thick it is beside the master's (1). */
+export interface FireSize {
+  /** Where it comes down, tiles from his floor point along its way. */
+  land: number;
+  /** How far it runs on along the floor, tiles. */
+  reach: number;
+  /** How thick its rope and how tall its flames, beside the master's. */
+  thick: number;
+  /** How far out its rope bulges as it arcs down, tiles (the master's 2.2). */
+  bulge?: number;
+}
+/** The master's. */
+export const FM_FIRE_SIZE: FireSize = { land: FM_FIRE_LAND, reach: FM_FIRE_REACH, thick: 1 };
+
 /** The way the stream goes, as a way on the floor (tiles), at a moment: or null if it is not pouring then. */
 export type FireWay = (t: number) => readonly [number, number] | null;
 
@@ -367,8 +381,10 @@ export type FireWay = (t: number) => readonly [number, number] | null;
  * streaks burned into the floor from where it came down out to its reach, a few embers still in them. Laid on
  * the floor, under everything; it stays (how long is the game's).
  */
-export function drawScorch(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, way: FireWay, t: number, from = 0): void {
+export function drawScorch(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, way: FireWay, t: number, from = 0, size: FireSize = FM_FIRE_SIZE): void {
   const was = g.globalAlpha;
+  const FM_FIRE_LAND = size.land;
+  const FM_FIRE_REACH = size.reach;
   for (let s = from; s < t - FM_FIRE_BURN * 0.5; s += 1 / 30) {
     const w = way(s);
     if (!w) continue;
@@ -397,8 +413,12 @@ export function drawScorch(g: CanvasRenderingContext2D, at: FloorAt, x: number, 
  * it. As it starts (the burst) it shoots out to its reach in a tenth of a second; as it stops, what is left of
  * it is flung on out and falls.
  */
-export function drawFireStream(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, mx: number, my: number, way: FireWay, t: number, start: number, stop: number): void {
+export function drawFireStream(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, mx: number, my: number, way: FireWay, t: number, start: number, stop: number, size: FireSize = FM_FIRE_SIZE): void {
   const was = g.globalAlpha;
+  // (the master's stream, or a smaller one: where it comes down, how far it reaches, how thick it is)
+  const FM_FIRE_LAND = size.land;
+  const FM_FIRE_REACH = size.reach;
+  const TH = size.thick;
   // THE FLOOR IT HAS SWEPT, still burning, its flames sinking
   for (let i = Math.ceil(Math.max(start, t - FM_FIRE_BURN) * 10); i / 10 < t - 1 / 30; i++) {
     const s = i / 10;
@@ -410,7 +430,7 @@ export function drawFireStream(g: CanvasRenderingContext2D, at: FloorAt, x: numb
       if (d > FM_FIRE_REACH) continue;
       const [px, py] = at(x + w[0] * d, y + w[1] * d);
       // (each a flame standing where the stream passed, sinking down into the floor as it dies)
-      const tall = (6 + 5 * hash(i, j, 295)) * left * (0.85 + 0.15 * Math.sin(t * 30 + i + j));
+      const tall = (6 + 5 * hash(i, j, 295)) * left * (0.85 + 0.15 * Math.sin(t * 30 + i + j)) * TH;
       if (tall >= 4) tongue(g, px, py, tall, 3, Math.sin(i * 1.3 + j) * 1.5, left > 0.5 ? 1.3 : 0.9);
     }
   }
@@ -425,7 +445,8 @@ export function drawFireStream(g: CanvasRenderingContext2D, at: FloorAt, x: numb
   }
   const [fx, fy] = at(x + wl[0] * FM_FIRE_LAND, y + wl[1] * FM_FIRE_LAND);
   // THE ROPE OF FIRE, from the jaws out and down to the floor: a curve bulging out the way it pours
-  const [ox, oy] = at(x + wl[0] * 2.2, y + wl[1] * 2.2);
+  const BULGE = size.bulge ?? 2.2;
+  const [ox, oy] = at(x + wl[0] * BULGE, y + wl[1] * BULGE);
   const cx = mx + (ox - mx) * 0.55;
   const cy = my - 6 + (oy - my) * 0.05;
   const rope = (k: number): [number, number] => [(1 - k) * (1 - k) * mx + 2 * (1 - k) * k * cx + k * k * fx, (1 - k) * (1 - k) * my + 2 * (1 - k) * k * cy + k * k * fy];
@@ -439,7 +460,7 @@ export function drawFireStream(g: CanvasRenderingContext2D, at: FloorAt, x: numb
       const [px, py] = rope(k);
       // (its heart rushing down it: brighter where a surge of it is)
       const surge = 0.5 + 0.5 * Math.sin(k * 22 - t * 40);
-      const r = [2.3 + 1.6 * k, 1.5 + 1.1 * k, 0.6 + 0.6 * k * surge][pass];
+      const r = [2.3 + 1.6 * k, 1.5 + 1.1 * k, 0.6 + 0.6 * k * surge][pass] * TH;
       const c = [FLAME[2], FLAME[3], FLAME[4]][pass];
       if (r < 0.5) continue;
       const R = Math.ceil(r);
@@ -463,12 +484,12 @@ export function drawFireStream(g: CanvasRenderingContext2D, at: FloorAt, x: numb
       const flow = (((d - t * 6) % 0.66) + 0.66) % 0.66 / 0.66;
       const [px, py] = at(x + wl[0] * d, y + wl[1] * d);
       const near = 1 - 0.3 * ((d - FM_FIRE_LAND) / (FM_FIRE_REACH - FM_FIRE_LAND));
-      const tall = (6 + 9 * Math.sin(Math.PI * flow) + 2 * Math.sin(t * 37 + j)) * near;
+      const tall = (6 + 9 * Math.sin(Math.PI * flow) + 2 * Math.sin(t * 37 + j)) * near * TH;
       tongue(g, px + (hash(j, 1, 297) - 0.5) * 3, py, tall, 4, Math.sin(t * 20 + j) * 2, 1.3);
     }
     // THE SPLASH where it ends: taller tongues, sparks flung up and on
     const [ex, ey] = at(x + wl[0] * reach, y + wl[1] * reach);
-    for (let j = 0; j < 3; j++) tongue(g, ex + (j - 1) * 3, ey + (j === 1 ? 1 : 0), 8 + 5 * Math.abs(Math.sin(t * 25 + j * 2)), 3, (j - 1) * 2, 1.3);
+    for (let j = 0; j < 3; j++) tongue(g, ex + (j - 1) * 3, ey + (j === 1 ? 1 : 0), (8 + 5 * Math.abs(Math.sin(t * 25 + j * 2))) * TH, 3, (j - 1) * 2, 1.3);
     for (let i = 0; i < 5; i++) {
       const life = (((t * 3 + hash(i, 2, 297)) % 1) + 1) % 1;
       if (life > 0.8) continue;

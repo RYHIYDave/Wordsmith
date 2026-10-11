@@ -1307,6 +1307,36 @@ function paintedBits(st: Stage, m: Moment): Bit[] {
     }
   }
 
+  // --- ONE WHO GOES BARE-HANDED (the mini fleshmancer, art/cultists.ts): HIS ATTACKS' FIRE, in his own hands ---
+  if (LOOK.bare && lit > 0.05) {
+    const maw = (LOOK.maw ?? fmMawOf)(q.prop, m.t);
+    if (q.prop === FM_ATTACKS.fire && maw > 0.05) {
+      // HIS FIRE POURING OUT FROM BETWEEN HIS CLAWS, thrust out before him (art/fm_spells.ts drawFireStream, smaller): a blaze there, white-gold at its heart, a burst as it starts
+      const FB0 = LOOK.timing?.fireBurst ?? FM_FIRE.burst;
+      const burst = 1 - rampAt(m.t, FB0, FB0 + 0.25);
+      const c = add(lerp3(s.handL, s.handR, 0.5), add(mul(cf, 2.5 * K), [0, 0, 1]));
+      const r = ((2.6 + 1.0 * Math.sin(m.t * 31)) * maw + 4.5 * burst * rampAt(m.t, FB0 - 0.06, FB0)) * K;
+      fireBall(st, put, c, r, [0, -1], 3, (p) => behindHim(p), FLAME[4]);
+      put('glow', 'glow', { k: 'glow', p: c, c: FLAME[3], r: (14 + 10 * burst) * K, a: 0.45 * maw + 0.2 * burst });
+    }
+    if (q.prop === FM_ATTACKS.raise) {
+      // EMBERS RISING OFF THE FLOOR ROUND HIM as his claws come up (the Warden's call: the dead come up with them)
+      const RS = LOOK.timing?.raiseShriek ?? FM_RAISE.shriek;
+      const RH = LOOK.timing?.raiseHold ?? FM_RAISE.hold;
+      const pull = rampAt(m.t, RS - 0.5, RS - 0.1) * (1 - rampAt(m.t, RH, RH + 0.3));
+      for (let i = 0; i < 16; i++) {
+        if (hash(i, 9, 341) > pull + 0.05) continue;
+        const life = (((m.t * 1.3 + hash(i, 1, 341)) % 1) + 1) % 1;
+        const a = hash(i, 2, 341) * Math.PI * 2;
+        const r = (9 + 10 * hash(i, 3, 341)) * K;
+        const p: V3 = [s.pelvis[0] + Math.cos(a) * r, s.pelvis[1] + Math.sin(a) * r, 1 + life * 34 * K];
+        if (behindHim(p)) continue;
+        fleck(st, put, p, life < 0.4 ? FLAME[3] : FLAME[2], i * 1.7 + Math.floor(m.t * 3), 'embers', i % 2 ? 1 : -1);
+      }
+      if (pull > 0.05) put('glow', 'glow', { k: 'glow', p: [s.pelvis[0], s.pelvis[1], 2], c: FLAME[3], r: 22 * K, a: 0.3 * pull });
+    }
+  }
+
   // --- THE MANTLE: stiff and broad over his shoulders, its edge clean and banded gold and pink ---
   const face = wornOn(st, s, 12);
   const [ff, fl, fu] = face;

@@ -5,6 +5,7 @@
 //   hash = sheet[:<scale>]: each standing, facing you and facing away, beside the knight for size; under them,
 //            beside the cult's others (a cultist, the high priest, the fleshmancer)
 //          close[:<scale>]: the two alone, big
+//          film:<charge | raise | fire>[:<screen pixels to a game pixel>]: their attacks, as films (page_gif.mjs)
 import { makeGroundArt } from '../art/ground';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
@@ -23,7 +24,10 @@ import type { GameView } from '../art/skin';
 import { drawAura, drawLights, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { FM_FLOOR } from "./fm_floor";
-import { DAGGER_CULTIST, MINI_FM, MINI_REST, MINI_FM_LOOK, KNIFE_REST, knifeCowlTop } from "../art/cultists";
+import { DAGGER_CULTIST, KNIFE_BLOW, KNIFE_DIES, KNIFE_REST, MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_FM_LOOK, MINI_RAISE, MINI_REST, knifeCowlTop, miniFireAt, miniFireTurn } from "../art/cultists";
+import { CRAWL_OUT } from '../art/mkit';
+import { makeSkeletonArt } from '../art/monster_bones';
+import type { AnimSet, Clip } from '../art/actor_types';
 import { withFmLook } from "../art/fleshmancer";
 
 const parts = decodeURIComponent(location.hash.slice(1)).split(':');
@@ -169,6 +173,18 @@ function widthOf(list: { sp: Sprite }[], S: number, PAD: number): number {
   }, GAP) * S + PAD * 2;
 }
 
+/** A page that shows itself frame by frame (tools/page_gif.mjs). */
+function filmPage(ticks: number, fps: number, draw: (tick: number) => void): void {
+  draw(0);
+  win.__frames = ticks;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cv.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
 const KNIFE = DAGGER_CULTIST;
 const MINI = MINI_FM;
 /** The top of the dagger cultist's cowl and of the mini fleshmancer's hood at rest (picture pixels). */
@@ -257,4 +273,331 @@ if (mode === 'loop') {
   }
   console.log(`cells ${n} ${COLS} ${CW * S} ${CH * S}`);
   win.__ready = true;
+}
+
+if (mode === 'strip') {
+  // ONE MOVE, frame by frame in a grid: <scale>:<0 the dagger cultist | 1 the mini fleshmancer>:<move>:<front | back>:<frames a second>
+  const S = Number(parts[1]) || 2;
+  const which = Number(parts[2]) || 0;
+  const move = parts[3] || 'attack';
+  const view = (parts[4] || 'front') as GameView;
+  const fps = Number(parts[5]) || 30;
+  const mob = which === 0 ? KNIFE : MINI;
+  const long = move === 'dying' ? mob.dieTime : move === 'walk' ? mob.walkFrames / mob.walkFps : move === 'stand' ? mob.idleFrames / mob.idleFps : move === 'reel' ? mob.reelTime : (() => {
+    const mv = move === 'attack' ? mob.attack : mob.more?.[move];
+    const ks = mv!.motion.keys;
+    return ks[ks.length - 1].at;
+  })();
+  const n = Math.round(long * fps) + (move === 'walk' || move === 'stand' ? 0 : 1);
+  const CW = 120;
+  const CH = which === 0 ? 100 : 120;
+  const COLS = 8;
+  cv.width = CW * S * COLS;
+  cv.height = CH * S * Math.ceil(n / COLS);
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  for (let i = 0; i < n; i++) {
+    const x = (i % COLS) * CW * S;
+    const y = Math.floor(i / COLS) * CH * S;
+    const t = i / fps;
+    const sp = move === 'dying' ? toSprite(deathOfMob(mob, t / mob.dieTime, view), null, canvasOf(mob).ax, canvasOf(mob).ay) : spOf(mob, move, t, view);
+    pane(x, y, CW * S, CH * S, S, [{ sp, fx: x + CW * S * 0.45, fy: y + (CH - 22) * S, shadow: mob.shadow }]);
+    text(`${i}`, x + 4, y + 2, 12, '#cfc8ff', 600);
+  }
+  console.log(`cells ${n} ${COLS} ${CW * S} ${CH * S}`);
+  win.__ready = true;
+}
+
+// =============================================================================================
+// THEIR ATTACKS AS FILMS (tools/page_gif.mjs): in a room of the lair's floor, in the game's own pixels, the
+// dark over it as the game lays it, the knight come in; what they send out where the game would put it.
+//   charge  the dagger cultist runs at the knight, leaps and plunges his dagger
+//   raise   a dagger cultist falls dead beside another of the cult's dead; the mini fleshmancer calls up the
+//           dead: each body burns away and a skeleton crawls up out of the ground where it lay (the Warden's
+//           dead, as they come: art/mkit.ts crawlOut, the game's skeleton's `crawl`)
+//   fire    the mini fleshmancer sweeps his fire across the floor before him (art/fm_spells.ts, MINI_FIRE_SIZE)
+
+interface Fig { sp: Sprite; x: number; y: number; shadow: number; light?: boolean; alpha?: number }
+if (mode === 'film') {
+  const which = parts[1] || 'charge';
+  const DS = Number(parts[2]) || 4;
+  const RES = 2;
+  const FPS = 30;
+  const cache = new Map<string, Sprite>();
+  const sprite = (key: string, make: () => Sprite): Sprite => {
+    let sp = cache.get(key);
+    if (!sp) cache.set(key, (sp = make()));
+    return sp;
+  };
+  // (how much of the floor shows, in game pixels, and where on it his floor point is)
+  const VIEW: Record<string, [number, number, number, number]> = { charge: [220, 130, 120, 95], raise: [236, 140, 84, 98], fire: [220, 140, 90, 95] };
+  const [GW, GH, hx, hy] = VIEW[which] ?? VIEW.charge;
+  const at = (tx: number, ty: number): [number, number] => [hx + (tx - ty) * 16, hy + (tx + ty) * 8];
+  // (the knight, in tiles from him; struck (MOVES3.kreel) when the blow lands or the fire sweeps over him)
+  const KN: Record<string, [number, number]> = { charge: [1.05, -0.65], raise: [3.8, -1.4], fire: [2.4, -0.5] };
+  const [kx, ky] = KN[which];
+  const REEL = MOVES3.kreel;
+  const REEL_LONG = REEL.motion.keys[REEL.motion.keys.length - 1].at;
+  let struckAt = -1;
+  const knightAt = (t: number): Sprite => {
+    const tr = t - struckAt;
+    if (struckAt < 0 || tr < 0 || tr >= REEL_LONG) return sprite('knight', () => flipSprite(KNIGHT('back')));
+    const q = Math.round(tr * 30) / 30;
+    return sprite(`kreel:${q.toFixed(3)}`, () => flipSprite(spriteOf3(REEL, q, 'back')));
+  };
+  const litter = FM_FLOOR.litter();
+  const LITTER: ReadonlyArray<readonly [number, number, number]> = [[-3.5, 2.6, 0], [-2.6, -3.6, 1], [2.8, -2.6, 4], [-5.5, -1.6, 5], [5.4, 3.2, 2], [-1.6, 4.6, 6], [5.6, -3.4, 7], [-6.4, 1.5, 3], [1.0, 5.2, 8]];
+  const posed = (mob: Mob, mv: string, t: number): Sprite => sprite(`${mob.id}:${mv}:${t.toFixed(3)}`, () => spOf(mob, mv, t, 'front'));
+  const dead = (mob: Mob, k: number): Sprite => sprite(`${mob.id}:dying:${k.toFixed(3)}`, () => toSprite(deathOfMob(mob, k, 'front'), null, canvasOf(mob).ax, canvasOf(mob).ay));
+  const standAt = (mob: Mob, t: number): number => (Math.floor(t * mob.idleFps + 1e-6) % mob.idleFrames) / mob.idleFps;
+  const at30 = (t: number): number => Math.round(t * 30) / 30;
+  const scene = document.createElement('canvas');
+  scene.width = GW * RES;
+  scene.height = GH * RES;
+  const c = scene.getContext('2d') as CanvasRenderingContext2D;
+  const dark = document.createElement('canvas');
+  dark.width = GW * RES;
+  dark.height = GH * RES;
+  const dg = dark.getContext('2d') as CanvasRenderingContext2D;
+  const pool = document.createElement('canvas');
+  pool.width = 128;
+  pool.height = 128;
+  {
+    const pc = pool.getContext('2d') as CanvasRenderingContext2D;
+    const grd = pc.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grd.addColorStop(0, 'rgba(0,0,0,1)');
+    grd.addColorStop(0.5, 'rgba(0,0,0,0.7)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    pc.fillStyle = grd;
+    pc.fillRect(0, 0, 128, 128);
+  }
+  /** Where a sprite's painted pixels are, about its floor point (game pixels): their middle. */
+  const middleOf = (sp: Sprite): [number, number] => {
+    const im = sp.img as HTMLCanvasElement;
+    const d = (im.getContext('2d') as CanvasRenderingContext2D).getImageData(0, 0, im.width, im.height).data;
+    let [x0, y0, x1, y1] = [im.width, im.height, 0, 0];
+    for (let y = 0; y < im.height; y++) for (let x = 0; x < im.width; x++) if (d[(y * im.width + x) * 4 + 3] > 60) {
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+    return [((x0 + x1) / 2) * (sp.w / im.width) - sp.ax, ((y0 + y1) / 2) * (sp.h / im.height) - sp.ay];
+  };
+
+  // ---- WHAT HAPPENS, AND WHEN ----
+  let total = 0;
+  /** What a moment of a film holds: its figures; what is drawn on the floor under them; what is drawn among them at a depth (screen y: figures further up the screen go before it); what is drawn over them; the lights. */
+  type Frame = { figs: Fig[]; under: () => void; among?: { y: number; draw: () => void }; over: () => void; lights: [number, number, number, number][] };
+  let frameAt: (t: number) => Frame;
+
+  if (which === 'charge') {
+    // He stands, then runs at the knight from four tiles off, leaps and plunges his dagger, and stands.
+    const LEAD = 0.4;
+    const FROM = -4.2;
+    const RUN = -FROM / KNIFE.pace;
+    const BLOW = KNIFE_BLOW.long;
+    total = LEAD + RUN + BLOW + 0.9;
+    struckAt = LEAD + RUN + KNIFE_BLOW.hit;
+    frameAt = (t) => {
+      let sp: Sprite;
+      let along = FROM;
+      if (t < LEAD) sp = posed(KNIFE, 'stand', standAt(KNIFE, t));
+      else if (t < LEAD + RUN) {
+        const tt = t - LEAD;
+        sp = posed(KNIFE, 'walk', (Math.floor(tt * KNIFE.walkFps + 1e-6) % KNIFE.walkFrames) / KNIFE.walkFps);
+        along = FROM + KNIFE.pace * tt;
+      } else if (t < LEAD + RUN + BLOW) {
+        sp = posed(KNIFE, 'attack', at30(t - LEAD - RUN));
+        along = 0;
+      } else {
+        sp = posed(KNIFE, 'stand', standAt(KNIFE, t - LEAD - RUN - BLOW));
+        along = 0;
+      }
+      const [x, y] = at(along, 0);
+      const [kxs, kys] = at(kx, ky);
+      const figs: Fig[] = [{ sp, x, y, shadow: KNIFE.shadow }, { sp: knightAt(t), x: kxs, y: kys, shadow: 12 }];
+      const lights: [number, number, number, number][] = [];
+      const tb = t - LEAD - RUN;
+      if (tb > KNIFE_BLOW.hit - 0.02 && tb < KNIFE_BLOW.hit + 0.25) lights.push([kxs - 6, kys - 8, 46, 0.9 * (1 - (tb - KNIFE_BLOW.hit + 0.02) / 0.27)]);
+      return { figs, under: () => {}, over: () => {}, lights };
+    };
+  } else if (which === 'raise') {
+    // A dagger cultist stands and is struck dead, beside another of the cult's dead; the mini fleshmancer calls up the dead.
+    CRAWL_OUT.on = true;
+    const SKEL: AnimSet = makeSkeletonArt().front;
+    const crawl = SKEL.clips?.moves?.crawl as Clip;
+    const CRAWL_LONG = crawl.frames.length / crawl.fps;
+    const clipAt = (cl: Clip, t: number): Sprite => cl.frames[Math.min(cl.frames.length - 1, Math.floor(t * cl.fps + 1e-6))];
+    const skelStand = (t: number): Sprite => SKEL.idle[Math.floor(t * (SKEL.idleFps ?? 2)) % SKEL.idle.length];
+    const LEAD = 0.3;
+    const DIES = KNIFE_DIES.long;
+    const CALL = LEAD + DIES + 0.15;
+    const RISE = CALL + MINI_RAISE.rise;
+    // (the two bodies: where each lies, whether it is turned the other way, and how long after the rise its dead one comes)
+    const A: [number, number] = [1.6, -1.2];
+    const B: [number, number] = [0.4, 2.2];
+    const bodyA = dead(KNIFE, 1);
+    const bodyB = sprite('bodyB', () => flipSprite(dead(KNIFE, 1)));
+    const [maX, maY] = middleOf(bodyA);
+    const [mbX, mbY] = middleOf(bodyB);
+    const BODIES = [
+      { tile: A, mid: [maX, maY + 1] as const, late: 0.0 },
+      { tile: B, mid: [mbX, mbY + 1] as const, late: 0.16 },
+    ];
+    const BURN = 0.32;
+    total = RISE + 0.16 + CRAWL_LONG + 1.0;
+    frameAt = (t) => {
+      const figs: Fig[] = [];
+      const lights: [number, number, number, number][] = [];
+      // HIM
+      const tm = t - CALL;
+      const him = tm >= 0 && tm < MINI_RAISE.long ? posed(MINI, 'raise', at30(tm)) : posed(MINI, 'stand', standAt(MINI, tm < 0 ? t : tm - MINI_RAISE.long));
+      const [mx, my] = at(0, 0);
+      figs.push({ sp: him, x: mx, y: my, shadow: MINI.shadow });
+      // THE KNIGHT
+      const [kxs, kys] = at(kx, ky);
+      figs.push({ sp: knightAt(t), x: kxs, y: kys, shadow: 12 });
+      // THE BODIES, AND THE DEAD THAT COME UP OUT OF THE GROUND WHERE THEY LAY
+      const glows: (() => void)[] = [];
+      BODIES.forEach((b, i) => {
+        const [bx, by] = at(b.tile[0], b.tile[1]);
+        const sx = bx + b.mid[0];
+        const sy = by + b.mid[1];
+        const start = RISE + b.late;
+        let body: Sprite | null;
+        if (i === 0) body = t < LEAD ? posed(KNIFE, 'stand', standAt(KNIFE, t)) : t < LEAD + DIES ? dead(KNIFE, Math.round(((t - LEAD) / DIES) * DIES * 30) / (DIES * 30)) : bodyA;
+        else body = bodyB;
+        // (it burns away as the ground opens under it)
+        const burnt = (t - (start - 0.12)) / BURN;
+        if (body && burnt < 1) figs.push({ sp: body, x: bx, y: by, shadow: t < LEAD + KNIFE_DIES.buckle && i === 0 ? KNIFE.shadow : 0, alpha: 1 - Math.max(0, Math.min(1, burnt)) });
+        const tc = t - start;
+        if (tc >= 0) {
+          const sp = tc < CRAWL_LONG ? clipAt(crawl, tc) : skelStand(tc - CRAWL_LONG);
+          figs.push({ sp, x: sx, y: sy + 0.02, shadow: tc < CRAWL_LONG * 0.75 ? 0 : 9 });
+        }
+        const tau = t - (start - 0.3);
+        glows.push(() => drawRaiseGlow(c, sx, sy, tau, CRAWL_LONG * 0.55));
+        if (tau > 0 && tau < 0.3 + CRAWL_LONG * 0.55 + 0.3) lights.push([sx, sy - 6, 34, 0.75]);
+      });
+      return { figs, under: () => {}, over: () => glows.forEach((f) => f()), lights };
+    };
+  } else {
+    // THE FIRE: he stands, sweeps his fire across the floor before him, and stands.
+    const LEAD = 0.4;
+    total = LEAD + MINI_FIRE.long + 0.9;
+    const fireWay = (t: number): readonly [number, number] | null => {
+      const tt = t - LEAD;
+      if (tt < MINI_FIRE.burst - 0.001 || tt > MINI_FIRE.stop + 0.001) return null;
+      const a = miniFireTurn(tt);
+      return [Math.cos(a), -Math.sin(a)];
+    };
+    {
+      const aK = Math.atan2(-ky, kx);
+      for (let tt = MINI_FIRE.pour; tt <= MINI_FIRE.stop; tt += 1 / 60) if (miniFireTurn(tt) >= aK) { struckAt = LEAD + tt; break; }
+    }
+    frameAt = (t) => {
+      const tt = t - LEAD;
+      const firing = tt >= 0 && tt < MINI_FIRE.long;
+      const him = firing ? posed(MINI, 'attack', at30(tt)) : posed(MINI, 'stand', standAt(MINI, tt < 0 ? t : tt - MINI_FIRE.long));
+      const [gx, gy] = at(0, 0);
+      const [kxs, kys] = at(kx, ky);
+      const figs: Fig[] = [{ sp: him, x: gx, y: gy, shadow: MINI.shadow }, { sp: knightAt(t), x: kxs, y: kys, shadow: 12 }];
+      const lights: [number, number, number, number][] = [];
+      const way = fireWay(t);
+      const src = firing ? miniFireAt(at30(tt)) : [0, 0];
+      const sx = gx + src[0] / 2;
+      const sy = gy + src[1] / 2;
+      const stream = (): void => drawFireStream(c, at, 0, 0, sx, sy, fireWay, t, LEAD + MINI_FIRE.burst, LEAD + MINI_FIRE.stop, MINI_FIRE_SIZE);
+      // (it goes behind him when it pours away from you; and behind the knight where it passes behind him)
+      const behind = !!way && way[0] + way[1] < -0.2;
+      const wl = way ?? fireWay(LEAD + MINI_FIRE.stop - 1 / 60);
+      const dK = Math.hypot(kx, ky);
+      const depth = behind ? gy - 0.5 : Math.max(gy + 0.5, wl ? at(wl[0] * dK, wl[1] * dK)[1] : gy + 0.5);
+      if (way) {
+        for (const d of [0.8, 1.6, 2.4]) {
+          const [x, y] = at(way[0] * d, way[1] * d);
+          lights.push([x, y - 4, 34, 0.8]);
+        }
+        lights.push([sx, sy, 26, 0.8]);
+      }
+      return {
+        figs,
+        under: () => drawScorch(c, at, 0, 0, fireWay, t, LEAD + MINI_FIRE.burst, MINI_FIRE_SIZE),
+        among: { y: depth, draw: stream },
+        over: () => {},
+        lights,
+      };
+    };
+  }
+
+  const TICKS = Math.round(total * FPS);
+  cv.width = Math.round(GW * DS);
+  cv.height = Math.round(GH * DS);
+  filmPage(TICKS, FPS, (tick) => {
+    const t = tick / FPS;
+    const f = frameAt(t);
+    c.setTransform(RES, 0, 0, RES, 0, 0);
+    c.imageSmoothingEnabled = false;
+    c.globalAlpha = 1;
+    c.fillStyle = '#07050a';
+    c.fillRect(0, 0, GW, GH);
+    for (let ty = -16; ty <= 16; ty++) {
+      for (let tx = -16; tx <= 16; tx++) {
+        const [px, py] = at(tx, ty);
+        if (px < -40 || px > GW + 40 || py < -30 || py > GH + 30) continue;
+        const sp = ground.floor(tx + 40, ty + 40);
+        c.drawImage(sp.img, px - sp.ax, py - 8 - sp.ay, sp.img.width / 2, sp.img.height / 2);
+      }
+    }
+    for (const [tx, ty, k] of LITTER) {
+      const sp = litter[k % litter.length];
+      const [px, py] = at(tx, ty);
+      c.drawImage(sp.img, Math.round(px - sp.ax), Math.round(py - sp.ay), sp.w, sp.h);
+    }
+    f.under();
+    for (const fg of f.figs) if (fg.shadow > 0) shadowAt(fg.x, fg.y, fg.shadow, c);
+    const figs = [...f.figs].sort((a, b) => a.y - b.y);
+    let among = f.among;
+    for (const fg of figs) {
+      if (among && fg.y > among.y) {
+        among.draw();
+        among = undefined;
+      }
+      c.globalAlpha = fg.alpha ?? 1;
+      drawAura(c, fg.sp, fg.x, fg.y);
+      c.drawImage(fg.sp.img, Math.round(fg.x - fg.sp.ax), Math.round(fg.y - fg.sp.ay), fg.sp.w, fg.sp.h);
+      c.globalAlpha = 1;
+    }
+    if (among) among.draw();
+    f.over();
+    // THE DARK (render.ts `light`), thinner round the figures and wherever fire is
+    dg.setTransform(RES, 0, 0, RES, 0, 0);
+    dg.globalCompositeOperation = 'source-over';
+    dg.clearRect(0, 0, GW, GH);
+    dg.fillStyle = 'rgba(6,4,14,0.8)';
+    dg.fillRect(0, 0, GW, GH);
+    dg.globalCompositeOperation = 'destination-out';
+    dg.imageSmoothingEnabled = true;
+    const spot = (x: number, y: number, r: number, strength: number): void => {
+      dg.globalAlpha = Math.min(1, strength);
+      dg.drawImage(pool, Math.round(x - r), Math.round(y - r * 0.62), Math.round(r * 2), Math.round(r * 1.24));
+    };
+    const [kxs, kys] = at(kx, ky);
+    spot(kxs, kys - 8, 150, 0.85);
+    spot(GW / 2, GH / 2, 300, 0.3);
+    for (const fg of f.figs) {
+      if (fg.x === kxs && fg.y === kys) continue;
+      spot(fg.x, fg.y - 14, 56, 0.7 * (fg.alpha ?? 1));
+      for (const l of fg.sp.lights ?? []) if (l.r >= 7) spot(fg.x + l.x - fg.sp.ax, fg.y + l.y - fg.sp.ay + 6, l.r * 2.6, (l.a ?? 0.5) * 1.1 * (fg.alpha ?? 1));
+    }
+    for (const [x, y, r, a] of f.lights) spot(x, y, r, a);
+    dg.globalAlpha = 1;
+    dg.globalCompositeOperation = 'source-over';
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.drawImage(dark, 0, 0);
+    c.setTransform(RES, 0, 0, RES, 0, 0);
+    for (const fg of figs) if (fg.light !== false && (fg.alpha ?? 1) > 0.3) drawLights(c, fg.sp, fg.x, fg.y);
+    for (const [x, y, r, a] of f.lights) glowAt(c, x, y, r * 0.5, a * 0.35);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(scene, 0, 0, cv.width, cv.height);
+  });
 }
