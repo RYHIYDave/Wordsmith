@@ -83,8 +83,8 @@ test('the switch is off, and no file of the game imports the mock-up', () => {
   assert.equal(NEW_MOBS.on, false);
   // (the mock-up is three files: the monsters, what they throw drawn on the floor, and the rings that tell their packs apart)
   const mine = ['new_mobs3', 'mob_shots', 'pack_marks'];
-  // (and the bosses, a mock-up of their own built on them: art/bosses3.ts, art/boss_shots.ts, art/boss_chains.ts and art/boss_checks.ts, which nothing of the game imports either: tests/bosses.test.ts; and the fleshmancer, art/fleshmancer.ts: tests/fleshmancer.test.ts)
-  const alsoMockUps = ['bosses3', 'boss_shots', 'boss_chains', 'boss_checks', 'fleshmancer'];
+  // (and the bosses, a mock-up of their own built on them: art/bosses3.ts, art/boss_shots.ts, art/boss_chains.ts and art/boss_checks.ts, which nothing of the game imports either: tests/bosses.test.ts; and the fleshmancer, art/fleshmancer.ts and what he sends out, art/fm_spells.ts: tests/fleshmancer.test.ts)
+  const alsoMockUps = ['bosses3', 'boss_shots', 'boss_chains', 'boss_checks', 'fleshmancer', 'fm_spells'];
   const files = fs.readdirSync('src', { recursive: true }).filter((f) => f.endsWith('.ts') && !f.startsWith('dev'));
   for (const f of files) {
     if ([...mine, ...alsoMockUps].some((m) => f.endsWith(`${m}.ts`))) continue;

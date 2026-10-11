@@ -70,15 +70,16 @@
 //   out   the light going out of him, 0 lit to 1 dark
 
 import type { ActorArt } from './actor_types';
-import { INK, hash } from './kit';
-import type { Ramp } from './kit';
-import { FLAME, SOCKET } from './mkit';
-import { TILE3, mobSet, sphere } from './new_mobs3';
+import { INK, hash, lazyFrames, toSprite } from './kit';
+import type { Painted, Ramp } from './kit';
+import type { Sprite } from '../engine/px';
+import { ENEMY_RIM, FLAME, SOCKET } from './mkit';
+import { TILE3, mobSet, paintBits, paintViewOf, posedOfMob, skeletonAt, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing } from './boss_checks';
-import { onCloth, wornOn } from './skin';
-import type { Ring, Skin, Stage } from './skin';
-import { add, bonesAt, buildOf, cross, dot, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
+import { onCloth, stage, wornOn } from './skin';
+import type { GameView, PaintView, Ring, Skin, Stage } from './skin';
+import { add, bonesAt, buildOf, cross, dot, len, lerp3, mul, norm, project, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF. Nothing of the game reads this file; a chat that puts him in, on the owner's yes, does it behind this. */
@@ -440,23 +441,24 @@ function stamp(st: Stage, put: Put, part: string, piece: string, pix: Pix, at: V
  * burning, pink to gold, hotter with `heat`. Its pixels, the heart of the claw (where the fire is held),
  * and its fingertips.
  */
-function clawPix(wr: P2, way: P2, fan: P2, spread: number, curl: number, heat: number, side: number): { pix: Pix; keep: Set<number>; heart: P2; tips: P2[] } {
+function clawPix(wr: P2, way: P2, fan: P2, spread: number, curl: number, heat: number, side: number, big = 1, bone: { H: string; L: string; M: string } = PALE): { pix: Pix; keep: Set<number>; heart: P2; tips: P2[] } {
+  const PALE_ = bone;
   const pix: Pix = new Map();
   /** Its fingers above their first knuckles: what the fire it holds stays off, so that they stand out of it, seamed. */
   const outer: Pix = new Map();
   const across: P2 = [-way[1] * side, way[0] * side];
   const c = clamp01(curl);
   // THE PALM, narrow and bony: lit on its upper edge
-  for (let a = 0; a <= 3.4; a += 0.5) {
-    const half = 1.1 + 0.5 * (a / 3.4);
+  for (let a = 0; a <= 3.4 * big; a += 0.5) {
+    const half = (1.1 + 0.5 * (a / (3.4 * big))) * big;
     for (let b = -half; b <= half + 1e-6; b += 0.5) {
       const p = add2(add2(wr, way, a), across, b);
       const up = across[1] * b < -0.4;
-      pix.set(pk(Math.floor(p[0]), Math.floor(p[1])), up ? PALE.L : PALE.M);
+      pix.set(pk(Math.floor(p[0]), Math.floor(p[1])), up ? PALE_.L : PALE_.M);
     }
   }
   // THE FINGERS: from the knuckles along the palm's far edge, fanned wide, each hooked in toward the claw's middle
-  const kn = add2(wr, way, 3.6);
+  const kn = add2(wr, way, 3.6 * big);
   const sgn = fan[0] * across[1] - fan[1] * across[0] >= 0 ? 1 : -1;
   const LONG = [7.4, 8.8, 9.0, 7.6];
   const tips: P2[] = [];
@@ -469,7 +471,7 @@ function clawPix(wr: P2, way: P2, fan: P2, spread: number, curl: number, heat: n
     for (let j = 0; j < 3; j++) {
       const next = add2(at, d, long * parts[j]);
       const last = j === 2;
-      const colour = (k: number): string => (last && k > 0.5 ? (k > 0.8 ? hotB : hotA) : j === 0 && k < 0.2 ? PALE.H : PALE.L);
+      const colour = (k: number): string => (last && k > 0.5 ? (k > 0.8 ? hotB : hotA) : j === 0 && k < 0.2 ? PALE_.H : PALE_.L);
       linePix(pix, at, next, colour);
       if (j > 0) linePix(outer, at, next, colour);
       at = next;
@@ -479,16 +481,16 @@ function clawPix(wr: P2, way: P2, fan: P2, spread: number, curl: number, heat: n
   };
   for (let i = 0; i < 4; i++) {
     const t = (i - 1.5) / 1.5;
-    const base = add2(kn, across, t * 1.5);
+    const base = add2(kn, across, t * 1.5 * big);
     const d0 = unit2(rot2(fan, sgn * t * (spread / 2)));
-    const long = LONG[i] * (1 - 0.18 * c);
+    const long = LONG[i] * (1 - 0.18 * c) * big;
     tips.push(finger(base, d0, long, -sgn * t * (3 + 13 * c)));
   }
   // THE THUMB, off the palm's side
   {
-    const base = add2(add2(wr, way, 1.6), across, 1.7);
+    const base = add2(add2(wr, way, 1.6 * big), across, 1.7 * big);
     const d0 = unit2(rot2(fan, sgn * (spread / 2 + 26)));
-    tips.push(finger(base, d0, 6.4 * (1 - 0.15 * c), -sgn * (8 + 16 * c)));
+    tips.push(finger(base, d0, 6.4 * (1 - 0.15 * c) * big, -sgn * (8 + 16 * c)));
   }
   // (the fire sits in the hollow of the claw, over the palm and the roots of the fingers)
   const heart = add2(kn, fan, 3.6 + 0.6 * (1 - c));
@@ -562,16 +564,18 @@ export const FM_SKULL_WIDE = Math.max(...SKULL_PIX.map((row) => row.length));
 const SKULL_MOUTH = 13;
 const SKULL_EYES: ReadonlyArray<readonly [number, number, number]> = [[1, 8, -1], [12, 8, 1]];
 const SKULL_MID: P2 = [7, 9];
-/** THE SKULL'S PIXELS, its top left at `x0`, `y0`; its fire as hot as `hot` (0 embers, 1 burning, 2 roaring), out if `lit` is; its jaw dropped `drop` pixels further. */
-function skullPix(x0: number, y0: number, hot: number, lit: number, drop: number): Pix {
+/** THE SKULL'S PIXELS, its top left at `x0`, `y0`; its fire as hot as `hot` (0 embers, 1 burning, 2 roaring), out if `lit` is; its jaw dropped `drop` pixels further; and its mouth on fire (`maw`, 0 dark to 1 blazing: as it spits, shrieks or pours). */
+function skullPix(x0: number, y0: number, hot: number, lit: number, drop: number, maw = 0): Pix {
   const pix: Pix = new Map();
-  // (the fire deep in its sockets: dim as it is drawn down out of it, hotter as it roars; the glow in its mouth never more than dim)
+  // (the fire deep in its sockets: dim as it is drawn down out of it, hotter as it roars; the glow in its mouth never more than dim, but as it spits, shrieks or pours)
   const pit = lit < 0.05 ? INK : hot > 1.3 ? FLAME[2] : hot < 0.55 ? FLAME[0] : FLAME[1];
-  const mouth = lit < 0.05 ? INK : hot > 1.3 ? FLAME[0] : '#4a0c38';
+  const mouth = lit < 0.05 ? INK : maw > 0.6 ? FLAME[3] : maw > 0.25 ? FLAME[1] : hot > 1.3 ? FLAME[0] : '#4a0c38';
+  const deep = lit < 0.05 || maw < 0.25 ? 'k' : maw > 0.6 ? 'd' : 'k';
   const rows: string[] = [];
   SKULL_PIX.forEach((row, r) => {
     rows.push(row);
-    if (r === SKULL_MOUTH) for (let d = 0; d < drop; d++) rows.push(row.replace(/d/g, 'k'));
+    // (the jaw dropped: the open mouth deeper, dark, or the fire in it showing as it blazes)
+    if (r === SKULL_MOUTH) for (let d = 0; d < drop; d++) rows.push(row.replace(/d/g, deep));
   });
   rows.forEach((row, j) => {
     for (let i = 0; i < row.length; i++) {
@@ -660,6 +664,125 @@ export const FM_GOUT_LET = 2.14;
 export const FM_GOUT_LAND = 2.54;
 export const FM_GOUT_BURN = 0.9;
 export const FM_GOUT_SPOT: V3 = [56, 8, 0];
+
+// ---------------------------------------------------------------------------------------------
+// The fire of his attacks, in his own picture (what he sends out is art/fm_spells.ts's)
+
+/**
+ * THE FIRE OF HIS ATTACKS, AT THE SKULL AND IN HIS HANDS: as the skull SPITS its shards, a blast of fire out
+ * of its jaws the way it points, flung on after them and burning out as it goes, sparks sprayed in a fan;
+ * as he SLAMS the floor for the rings of hands, a flash in his claw and where the staff's foot strikes; as he
+ * RAISES THE DEAD, the skull's shriek bursting out of it as a ring of sparks, and his light pulled up out of
+ * the floor into his claw and the skull in streaks; as the fire POURS, the skull's jaws blazing, a gout at
+ * the burst. (`xy`: the skull's top left in the picture; `drop`: how far its jaw hangs.)
+ */
+function attackFire(st: Stage, put: Put, m: Moment, staff: ReturnType<typeof staffOf>, xy: P2, drop: number, behindHim: (p: V3) => boolean): void {
+  const { s, q, t } = m;
+  const sc = staff.skull;
+  const [scx, scy] = st.at(sc);
+  const mouth: P2 = [xy[0] + 7, xy[1] + SKULL_MOUTH + 1 + drop];
+  const atPx = (x: number, y: number): V3 => screenStep(st, sc, x + 0.5 - scx, y + 0.5 - scy);
+  const [tx, ty] = st.at(staff.top);
+  const way = unit2([scx - tx, scy - ty]);
+  if (q.prop === FM_ATTACKS.shards) {
+    // THE SKULL'S FIRE SMEARED BEHIND IT through the swing: a swathe of it, broad at the skull, thinning back along the way it came
+    const tr0 = m.trails?.[0];
+    if (tr0 && tr0.length > 1) {
+      for (let i = 0; i + 1 < tr0.length; i++) {
+        const [ax, ay] = st.at(tr0[i]);
+        const [bx, by] = st.at(tr0[i + 1]);
+        const k = i / (tr0.length - 1);
+        const wide = Math.max(1, Math.round(5 * (1 - k)));
+        const streak: Pix = new Map();
+        for (let w = -wide; w <= wide; w++) {
+          const n = unit2([-(by - ay), bx - ax]);
+          linePix(streak, [ax + n[0] * w * 0.6, ay + n[1] * w * 0.6], [bx + n[0] * w * 0.6, by + n[1] * w * 0.6], () => (Math.abs(w) < wide * 0.4 && k < 0.5 ? FLAME[3] : k < 0.6 ? FLAME[2] : FLAME[1]));
+        }
+        for (const [key, c] of streak) {
+          const [x, y] = pxOf(key);
+          if (Math.hypot(x - scx, y - scy) < 8) continue;
+          put('fire', 'fire', { k: 'mote', p: screenStep(st, tr0[i], x + 0.5 - ax, y + 0.5 - ay), c, size: 1 });
+        }
+      }
+    }
+    const k = (t - FM_SHARDS.hit) / 0.22;
+    if (k >= -0.16 && k < 1) {
+      const u = clamp01(k);
+      // THE BLAST, out of its jaws the way it points: thrown on after the shards, burning down as it goes
+      const out = 3 + 34 * (1 - (1 - u) ** 2);
+      const c = add2(mouth, way, out);
+      const r = 2 + 5 * (1 - u);
+      fireBall(st, put, atPx(c[0], c[1]), r, [-way[0], -way[1]], 5 + 10 * (1 - u), undefined, u < 0.35 ? FLAME[4] : FLAME[3]);
+      // (sparks sprayed in a fan, each a slanting fleck flying out)
+      for (let i = 0; i < 7; i++) {
+        const a = (i - 3) * 13 + (hash(i, 1, 263) - 0.5) * 8;
+        const d = rot2(way, a);
+        const far = 6 + (20 + 16 * hash(i, 2, 263)) * Math.sqrt(u);
+        if (u > 0.55 + 0.4 * hash(i, 3, 263)) continue;
+        const p = add2(mouth, d, far);
+        fleck(st, put, atPx(p[0], p[1]), u < 0.3 ? FLAME[3] : FLAME[2], i * 1.7, 'fire', d[0] * d[1] >= 0 ? 1 : -1);
+      }
+      put('glow', 'glow', { k: 'glow', p: atPx(mouth[0] + way[0] * 8, mouth[1] + way[1] * 8), c: FLAME[3], r: 20 - 8 * u, a: 0.6 * (1 - u) });
+    }
+  } else if (q.prop === FM_ATTACKS.rings) {
+    const k = (t - FM_RINGS.hit) / 0.3;
+    if (k >= -0.1 && k < 1) {
+      const u = clamp01(k);
+      // THE SLAM: a flash where the staff's foot strikes, and in his claw
+      const foot = add(staff.foot, [0, 0, 0.5]);
+      if (!behindHim(foot)) fireBall(st, put, foot, 2 + 5 * (1 - u), [0, 1], 2, undefined, u < 0.3 ? FLAME[4] : FLAME[3]);
+      put('glow', 'glow', { k: 'glow', p: foot, c: FLAME[3], r: 18 - 6 * u, a: 0.55 * (1 - u) });
+      put('glow', 'glow', { k: 'glow', p: s.handL, c: FLAME[3], r: 16 - 6 * u, a: 0.5 * (1 - u) });
+    }
+  } else if (q.prop === FM_ATTACKS.raise) {
+    // THE SHRIEK, a ring of sparks bursting out of the skull
+    const k = (t - FM_RAISE.shriek) / 0.32;
+    if (k >= 0 && k < 1) {
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * 360 + 9;
+        const d = rot2([1, 0], a);
+        const far = 9 + 26 * Math.sqrt(k);
+        if (k > 0.6 + 0.35 * hash(i, 4, 263)) continue;
+        const p = add2([scx, scy], d, far);
+        fleck(st, put, atPx(p[0], p[1]), k < 0.3 ? FLAME[3] : FLAME[2], i * 2.1, 'fire', d[0] * d[1] >= 0 ? 1 : -1);
+      }
+      put('glow', 'glow', { k: 'glow', p: sc, c: FLAME[3], r: 26 - 10 * k, a: 0.5 * (1 - k) });
+    }
+    // HIS LIGHT PULLED UP OUT OF THE FLOOR, in streaks running up into his claw and the skull
+    const pull = rampAt(t, 0.62, 0.8) * (1 - rampAt(t, FM_RAISE.hold - 0.15, FM_RAISE.hold));
+    if (pull > 0.05) {
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2 + 0.3;
+        const from: V3 = [s.pelvis[0] + Math.cos(ang) * 26, s.pelvis[1] + Math.sin(ang) * 22, 0.5];
+        const to = i % 2 ? add(s.handL, [0, 0, 2]) : sc;
+        const along = (u: number): V3 => add(lerp3(from, to, u), mul([Math.cos(ang), Math.sin(ang), 0], Math.sin(Math.PI * u) * 6));
+        const ku = (((t * 1.8 + i * 0.37) % 1) + 1) % 1;
+        if (ku < 0.06 || ku > 0.94) continue;
+        const p0 = along(ku);
+        const p1 = along(Math.max(0, ku - 0.09));
+        if (behindHim(p0)) continue;
+        const [ax, ay] = st.at(p0);
+        const [bx, by] = st.at(p1);
+        const streak: Pix = new Map();
+        linePix(streak, [ax, ay], [bx, by], (u) => (u < 0.35 ? FLAME[3] : FLAME[2]));
+        if (streak.size < 2) streak.set(pk(Math.floor(ax), Math.floor(ay) + 1), FLAME[2]);
+        for (const [key, c] of streak) {
+          const [x, y] = pxOf(key);
+          put('embers', 'embers', { k: 'mote', p: screenStep(st, p0, x + 0.5 - ax, y + 0.5 - ay), c, size: 1 });
+        }
+      }
+    }
+  } else if (q.prop === FM_ATTACKS.fire) {
+    const maw = fmMawOf(q.prop, t);
+    if (maw > 0.05) {
+      // THE SKULL'S JAWS BLAZING, where the stream pours out of them (art/fm_spells.ts drawFireStream)
+      const burst = 1 - rampAt(t, FM_FIRE.burst, FM_FIRE.burst + 0.3);
+      const r = (2.5 + 1.2 * Math.sin(t * 31)) * maw + 5 * burst * rampAt(t, FM_FIRE.burst - 0.06, FM_FIRE.burst);
+      fireBall(st, put, atPx(mouth[0], mouth[1]), r, [0, -1], 3, undefined, FLAME[4]);
+      put('glow', 'glow', { k: 'glow', p: atPx(mouth[0], mouth[1]), c: FLAME[3], r: 14 + 10 * burst, a: 0.45 * maw + 0.2 * burst });
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------------------------
 // Him, as solids
@@ -844,13 +967,15 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
   // --- THE SKULL AT ITS HEAD, looking at you whichever way he faces; the fire licking up and out of its sockets, a ragged flame off its crown ---
   {
     const sc = staff.skull;
-    const suck = charge;
+    // (in his stand he draws the skull's fire down into his claw, and it sinks; in his attacks it roars)
+    const suck = q.prop === 0 ? charge : 0;
     const hot = lit * (1 + 0.8 * flare - 0.55 * suck);
     const [scx, scy] = st.at(sc);
     const x0 = Math.round(scx) - SKULL_MID[0];
     const y0 = Math.round(scy) - SKULL_MID[1];
-    const drop = flare > 0.55 ? 2 : flare > 0.2 ? 1 : 0;
-    const pix = skullPix(x0, y0, hot, lit, drop);
+    const drop = Math.max(flare > 0.55 ? 2 : flare > 0.2 ? 1 : 0, Math.round(fmJawOf(q.prop, m.t)));
+    const maw = fmMawOf(q.prop, m.t);
+    const pix = skullPix(x0, y0, hot, lit, drop, maw);
     stamp(st, put, 'skull', 'skull', pix, add(sc, mul(st.eye, 1.5)));
     if (lit > 0.05) {
       const behindSkull = grown(pix.keys(), 1);
@@ -873,7 +998,7 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
       for (const [ex, ey] of SKULL_EYES) put('glow', 'glow', { k: 'glow', p: atPx(x0 + ex, y0 + ey - 1), c: SOCKET, r: 3 + 2 * flare, a: Math.min(0.5, (0.28 + 0.18 * flare) * lit) });
     }
     // THE FIRE DRAWN DOWN OUT OF IT into his hand as he gathers it: streaks of it, unevenly spaced, running down to his claw
-    if (charge > 0.15 && lit > 0.05) {
+    if (charge > 0.15 && lit > 0.05 && q.prop === 0) {
       const to = add(s.handL, [0, 0, 3]);
       const along = (k: number): V3 => add(lerp3(sc, to, k), [0, 0, Math.sin(Math.PI * k) * 8]);
       const OFFS = [0, 0.19, 0.27, 0.52, 0.78];
@@ -892,6 +1017,7 @@ function fleshmancerBits(st: Stage, m: Moment): Bit[] {
         }
       });
     }
+    if (lit > 0.05 && q.prop) attackFire(st, put, m, staff, [x0, y0], drop, behindHim);
   }
 
   // --- HIS CASTING HAND: the claw, the fire held between its fingers ---
@@ -1296,6 +1422,287 @@ function fmStand(): Motion {
 }
 const FM_STAND_MOTION = fmStand();
 
+// ---------------------------------------------------------------------------------------------
+// HIS ATTACKS (the owner's picks by 08:36 on 11 Oct; made after his yes to his look, by 12:28,
+// “Yes, animate him (Recommended)”, and his word of the same day: “I don’t need the whole mock up
+// sheet, just show me what he looks like and what the attacks look like”). Each a move on his
+// bones (`FLESHMANCER.attack`, `.more`), through every boss check; what he sends out is drawn by
+// art/fm_spells.ts in the game's own pixels, where the game puts it.
+//   prop  which of his attacks a pose is (his painter's own numbering): 1 the shards, 2 the rings
+//         of hands, 3 raising the dead, 4 the sweeping fire (0: none of them)
+
+/** His attacks, by the number his painter knows each by (`prop`). */
+export const FM_ATTACKS = { shards: 1, rings: 2, raise: 3, fire: 4 } as const;
+/** How long each attack is (seconds), and its moments (seconds from its start). */
+export const FM_SHARDS = { long: 1.4, hit: 0.8 } as const;
+export const FM_RINGS = { long: 2.2, hit: 0.86 } as const;
+export const FM_RAISE = { long: 2.6, shriek: 0.72, hold: 1.9 } as const;
+export const FM_FIRE = { long: 4.6, burst: 0.56, pour: 0.62, stop: 3.9 } as const;
+/** The frames a second his attacks are made at (as every boss's moves but his stand and walk). */
+const FM_CLIP_FPS = 30;
+
+/** A track through keys (seconds, value): `curve`, as a function of the moment. */
+const tr = (keys: Keys) => (t: number): number => curve(keys, t);
+/** A MOVE MADE FROM TRACKS: a key every frame (so that the curves are kept as they are), each field its own track. */
+function sampled(long: number, fields: Readonly<Partial<Record<keyof Bones, (t: number) => number>>>, fixed: Partial<Bones>): Key3[] {
+  const keys: Key3[] = [];
+  const n = Math.round(long * FM_CLIP_FPS);
+  for (let i = 0; i <= n; i++) {
+    const t = i / FM_CLIP_FPS;
+    const pose: Partial<Bones> = { ...fixed };
+    for (const [k, f] of Object.entries(fields) as [keyof Bones, (t: number) => number][]) (pose as Record<string, number>)[k] = f(t);
+    keys.push({ at: t, ease: 'lin', pose });
+  }
+  return keys;
+}
+/**
+ * THE STAFF SWUNG IN A PLANE AT HIS RIGHT SIDE: `phi` degrees from pointing straight back (0) over the
+ * top (90) to pointing straight ahead (180), and leaning `lean` toward his left (its head in toward the
+ * line of him, its foot out, clear of his arm) or, if negative, to his right. Its `wAz`, `wEl`.
+ */
+function swungStaff(phi: number, lean: number): { wAz: number; wEl: number } {
+  const f = -Math.cos(phi * D);
+  const u = Math.sin(phi * D);
+  const az = Math.atan2(lean, f) / D;
+  const el = Math.asin(Math.max(-1, Math.min(1, u / Math.hypot(f, lean, u)))) / D;
+  return { wAz: az, wEl: el };
+}
+/** A move's keys with the staff's way (`wAz`) unwrapped from key to key, so that it turns the short way between any two. */
+function unwrapped(keys: Key3[]): Key3[] {
+  let was: number | undefined;
+  for (const k of keys) {
+    const az = k.pose.wAz;
+    if (az === undefined) continue;
+    let a = az;
+    if (was !== undefined) {
+      while (a - was > 180) a -= 360;
+      while (a - was < -180) a += 360;
+    }
+    (k.pose as { wAz: number }).wAz = a;
+    was = a;
+  }
+  return keys;
+}
+
+/** A tremble, for a pose that is held: never quite still (Movement 6), a few tenths of its own lengths. */
+const shiver = (t: number, a: number, k: number): number => a * (Math.sin(t * 37 + k) * 0.6 + Math.sin(t * 23 + 2 * k) * 0.4);
+
+/**
+ * THE BONE SHARDS, his basic attack (“Bone shards from the skull (Recommended)”). WIND-UP (0 to 0.45 s):
+ * he swells up off the floor and rears back, his hips and chest turning away, and cocks the staff back
+ * over his right shoulder, the skull behind his head, its jaw dropping open, its fire roaring; his casting
+ * hand thrust out before him, aimed at you. THE WARNING (0.45 to 0.7): held so, trembling. THE SPIT (0.7 to
+ * 0.8): his hips swing round, then his chest, and the staff comes over his head and down like a hammer
+ * until the skull points at you, and SPITS (0.8 s): a fan of shards out of its jaws. Through it he lunges,
+ * the staff dipping on past the spit (the follow-through) and kicked back up by it (the recoil); then he
+ * settles (1.4).
+ */
+function fmShards(): Motion {
+  const R = FM_REST;
+  const H = FM_SHARDS.hit;
+  const L = FM_SHARDS.long;
+  const held = (t: number): number => rampAt(t, 0.38, 0.44) * (1 - rampAt(t, 0.56, 0.6));
+  // (the staff: cocked back over his right shoulder, held, swung over and down until the skull points at you, on past it, kicked back up)
+  const phi = tr([[0, 90], [0.15, 80], [0.3, 48], [0.4, 33], [0.5, 30], [0.6, 30], [0.633, 34], [0.667, 46], [0.7, 68], [0.733, 100], [0.767, 140], [H, 178], [0.833, 196], [0.867, 202], [0.9, 200], [0.95, 188], [1.05, 165], [1.2, 125], [L, 90]]);
+  const lean = tr([[0, -0.156], [0.25, 0], [0.45, 0.2], [0.95, 0.2], [1.1, 0], [L, -0.156]]);
+  const keys = sampled(L, {
+    pz: (t) => tr([[0, R.pz], [0.4, R.pz + 4.6], [0.5, R.pz + 5], [0.6, R.pz + 4.8], [H, R.pz - 1.5], [0.9, R.pz - 2.4], [1.1, R.pz - 0.6], [L, R.pz]])(t) + shiver(t, 0.25, 1) * held(t),
+    px: tr([[0, 0], [0.4, -2.0], [0.6, -2.4], [H, 2.6], [0.92, 3.6], [1.12, 1.6], [L, 0]]),
+    yaw: tr([[0, R.yaw], [0.4, R.yaw - 14], [0.6, R.yaw - 15], [0.667, R.yaw - 6], [0.733, R.yaw + 5], [H, R.yaw + 10], [0.9, R.yaw + 13], [1.1, R.yaw + 6], [L, R.yaw]]),
+    pitch: tr([[0, R.pitch], [0.4, R.pitch - 7], [0.6, R.pitch - 7.4], [0.7, R.pitch - 2], [H, R.pitch + 5], [0.9, R.pitch + 7], [1.1, R.pitch + 3], [L, R.pitch]]),
+    bend: tr([[0, R.bend], [0.4, R.bend - 11], [0.62, R.bend - 12], [0.7, R.bend - 5], [0.767, R.bend + 5], [H, R.bend + 11], [0.9, R.bend + 14], [1.1, R.bend + 6], [L, R.bend]]),
+    twist: tr([[0, R.twist], [0.4, R.twist - 18], [0.62, R.twist - 19], [0.667, R.twist - 14], [0.733, R.twist - 2], [H, R.twist + 10], [0.9, R.twist + 15], [1.1, R.twist + 7], [L, R.twist]]),
+    faceUp: tr([[0, R.faceUp], [0.4, R.faceUp + 9], [0.62, R.faceUp + 8], [H, R.faceUp - 6], [1.0, R.faceUp - 3], [L, R.faceUp]]),
+    faceTurn: tr([[0, R.faceTurn], [0.4, R.faceTurn + 6], [0.62, R.faceTurn + 6], [H, R.faceTurn - 2], [L, R.faceTurn]]),
+    rhx: tr([[0, R.rhx], [0.4, R.rhx - 5], [0.6, R.rhx - 5.5], [0.7, R.rhx - 1.5], [H, R.rhx + 8], [0.92, R.rhx + 10], [1.12, R.rhx + 6], [L, R.rhx]]),
+    rhy: tr([[0, R.rhy], [0.4, R.rhy + 2.5], [0.6, R.rhy + 2.5], [H, R.rhy + 2], [L, R.rhy]]),
+    rhz: (t) => tr([[0, R.rhz], [0.4, R.rhz + 20], [0.6, R.rhz + 21], [0.7, R.rhz + 18], [H, R.rhz + 6], [0.92, R.rhz + 3], [1.12, R.rhz + 3], [L, R.rhz]])(t) + shiver(t, 0.25, 2) * held(t),
+    re: tr([[0, R.re], [0.4, 60], [0.6, 62], [H, 40], [L, R.re]]),
+    wAz: (t) => swungStaff(phi(t), lean(t)).wAz,
+    wEl: (t) => swungStaff(phi(t), lean(t)).wEl,
+    lhx: tr([[0, R.lhx], [0.34, 13], [0.6, 14], [H, 9], [0.92, 3], [1.12, 2.5], [L, R.lhx]]),
+    lhy: tr([[0, R.lhy], [0.34, 8], [0.6, 7.5], [H, 10], [0.92, 13.5], [1.12, 14.5], [L, R.lhy]]),
+    lhz: (t) => tr([[0, R.lhz], [0.34, 4], [0.6, 4.5], [H, 3], [0.92, 0], [L, R.lhz]])(t) + shiver(t, 0.3, 3) * held(t),
+    le: tr([[0, R.le], [0.34, 22], [0.6, 20], [H, 34], [1.12, 46], [L, R.le]]),
+    draw: tr([[0, R.draw], [0.34, 0.12], [0.6, 0.1], [H, 0.3], [1.12, 0.45], [L, R.draw]]),
+    pAz: tr([[0, 1], [0.34, 1.5], [0.6, 1.7], [H, 1.2], [1.2, 1], [L, 1]]),
+    pt: tr([[0, 0], [0.4, 0.65], [0.6, 0.85], [H, 1], [0.98, 0.95], [1.22, 0.3], [L, 0]]),
+    gale: tr([[0, 0], [0.4, 0.25], [0.6, 0.2], [0.84, 1], [1.1, 0.45], [L, 0]]),
+  }, { prop: FM_ATTACKS.shards, pEl: 0 });
+  return { keys: unwrapped(keys), hit: H };
+}
+
+/**
+ * THE RINGS OF HANDS (“Rings of hands (Recommended)”). WIND-UP (0 to 0.5 s): he rises high, arching back,
+ * his hood thrown back, the staff hauled up overhead in his right hand and his casting hand raised high,
+ * its fire swelling. THE WARNING (0.5 to 0.76): held so, trembling, the skull roaring. THE SLAM (0.76 to
+ * 0.86): he drops, folding forward, and drives the staff's foot down into the floor (0.86 s), his claw
+ * slammed down after it; the floor round him cracks and the first ring of hands bursts up (art/fm_spells.ts).
+ * He holds, low, claw lifting as if pulling them up, while the rings go out (to 1.6), and rises back (2.2).
+ */
+function fmRings(): Motion {
+  const R = FM_REST;
+  const H = FM_RINGS.hit;
+  const L = FM_RINGS.long;
+  const held = (t: number): number => rampAt(t, 0.46, 0.52) * (1 - rampAt(t, 0.72, 0.76));
+  // (the staff upright, leaning in over his head, its foot out clear of his arm, as he hauls it up)
+  const phi = tr([[0, 90], [0.2, 100], [0.46, 96], [0.74, 96], [H, 94], [1.6, 94], [1.9, 100], [L, 90]]);
+  const lean = tr([[0, -0.156], [0.3, 0.12], [1.6, 0.12], [2.0, -0.05], [L, -0.156]]);
+  const keys = sampled(L, {
+    pz: (t) => tr([[0, R.pz], [0.46, R.pz + 8], [0.62, R.pz + 8.6], [0.74, R.pz + 8], [H, R.pz - 3.2], [0.94, R.pz - 4.2], [1.1, R.pz - 3.2], [1.6, R.pz - 2.8], [L, R.pz]])(t) + shiver(t, 0.3, 2) * held(t),
+    px: tr([[0, 0], [0.46, -1.5], [0.74, -1.8], [H, 2.2], [0.96, 2.8], [1.6, 2.2], [L, 0]]),
+    yaw: tr([[0, R.yaw], [0.46, R.yaw - 7], [0.72, R.yaw - 7.5], [0.8, R.yaw - 1], [H, R.yaw + 3], [1.0, R.yaw + 4], [1.6, R.yaw + 3], [L, R.yaw]]),
+    pitch: tr([[0, R.pitch], [0.46, R.pitch - 6], [0.72, R.pitch - 6.5], [0.8, R.pitch + 2], [H, R.pitch + 8], [0.96, R.pitch + 10], [1.2, R.pitch + 7], [1.6, R.pitch + 6], [L, R.pitch]]),
+    bend: tr([[0, R.bend], [0.46, R.bend - 8], [0.73, R.bend - 9], [0.81, R.bend + 4], [H, R.bend + 13], [0.96, R.bend + 16], [1.2, R.bend + 11], [1.6, R.bend + 10], [L, R.bend]]),
+    twist: tr([[0, R.twist], [0.46, R.twist - 5], [0.73, R.twist - 5.5], [H, R.twist + 4], [1.6, R.twist + 4], [L, R.twist]]),
+    faceUp: tr([[0, R.faceUp], [0.46, R.faceUp + 13], [0.74, R.faceUp + 14], [H, R.faceUp - 9], [1.0, R.faceUp - 6], [1.6, R.faceUp - 4], [L, R.faceUp]]),
+    rhx: tr([[0, R.rhx], [0.46, R.rhx + 2], [0.74, R.rhx + 2], [H, R.rhx + 5], [1.6, R.rhx + 5], [L, R.rhx]]),
+    rhy: tr([[0, R.rhy], [0.46, R.rhy + 1.5], [0.74, R.rhy + 1.5], [H, R.rhy + 1], [L, R.rhy]]),
+    rhz: (t) => tr([[0, R.rhz], [0.46, R.rhz + 25], [0.62, R.rhz + 26], [0.74, R.rhz + 25], [0.8, R.rhz + 12], [H, R.rhz - 4], [0.94, R.rhz - 6.5], [1.1, R.rhz - 5], [1.6, R.rhz - 4.5], [L, R.rhz]])(t) + shiver(t, 0.3, 3) * held(t),
+    re: tr([[0, R.re], [0.46, 70], [0.74, 72], [H, 34], [1.6, 34], [L, R.re]]),
+    wAz: (t) => swungStaff(phi(t), lean(t)).wAz,
+    wEl: (t) => swungStaff(phi(t), lean(t)).wEl,
+    lhx: tr([[0, R.lhx], [0.46, 5], [0.74, 5.5], [H, 12], [0.96, 13], [1.2, 11], [1.6, 10], [L, R.lhx]]),
+    lhy: tr([[0, R.lhy], [0.46, 11], [0.74, 11], [H, 9], [1.6, 10], [L, R.lhy]]),
+    lhz: (t) => tr([[0, R.lhz], [0.46, 20], [0.62, 21], [0.74, 20.5], [H, -11], [0.94, -13], [1.2, -6], [1.6, -3], [L, R.lhz]])(t) + shiver(t, 0.35, 4) * held(t),
+    le: tr([[0, R.le], [0.46, 78], [0.74, 80], [H, 18], [1.2, 30], [1.6, 36], [L, R.le]]),
+    draw: tr([[0, R.draw], [0.46, 0.05], [0.74, 0.05], [H, 0.15], [1.2, 0.55], [1.6, 0.6], [L, R.draw]]),
+    pAz: tr([[0, 1], [0.46, 1.8], [0.74, 2], [H, 1.4], [1.6, 1.2], [L, 1]]),
+    pt: tr([[0, 0], [0.46, 0.6], [0.74, 0.8], [H, 1], [1.2, 0.8], [1.6, 0.6], [L, 0]]),
+    gale: tr([[0, 0], [0.74, 0.15], [0.9, 1], [1.3, 0.55], [1.6, 0.5], [L, 0]]),
+  }, { prop: FM_ATTACKS.rings, pEl: 0 });
+  return { keys: unwrapped(keys), hit: H };
+}
+
+/**
+ * RAISING THE DEAD (“Raise the dead (Recommended)”). GATHERING (0 to 0.55 s): he sinks, folding over,
+ * staff and claw drawn down to the floor, his hood bowed. THE SHRIEK (0.55 to 0.8): he flings both arms
+ * up, the staff high over his head and his claw spread wide, and rises, arching back, his hood thrown back;
+ * the skull's jaw drops and it SHRIEKS (0.72 s), its fire roaring up, and his light is pulled up out of the
+ * floor into his hands. He holds so, shaking, while the dead come up (to 1.9), and comes down (2.6).
+ */
+function fmRaise(): Motion {
+  const R = FM_REST;
+  const S = FM_RAISE.shriek;
+  const L = FM_RAISE.long;
+  const held = (t: number): number => rampAt(t, 0.78, 0.9) * (1 - rampAt(t, 1.8, 1.92));
+  const phi = tr([[0, 90], [0.3, 102], [0.5, 108], [S, 97], [1.9, 97], [2.3, 100], [L, 90]]);
+  const lean = tr([[0, -0.156], [0.35, 0.15], [1.9, 0.15], [2.35, -0.05], [L, -0.156]]);
+  const keys = sampled(L, {
+    pz: (t) => tr([[0, R.pz], [0.5, R.pz - 2.6], [0.58, R.pz - 2.8], [S, R.pz + 7], [0.84, R.pz + 10], [1.3, R.pz + 10.6], [1.9, R.pz + 10], [2.25, R.pz + 2], [L, R.pz]])(t) + shiver(t, 0.4, 5) * held(t),
+    px: tr([[0, 0], [0.5, 1.2], [S, -1.5], [0.9, -2], [1.9, -1.8], [L, 0]]),
+    yaw: tr([[0, R.yaw], [0.5, R.yaw + 2], [S, R.yaw - 2], [1.9, R.yaw - 2], [L, R.yaw]]),
+    pitch: tr([[0, R.pitch], [0.5, R.pitch + 6], [0.58, R.pitch + 6.3], [S, R.pitch - 6], [0.86, R.pitch - 8], [1.9, R.pitch - 7], [L, R.pitch]]),
+    bend: (t) => tr([[0, R.bend], [0.5, R.bend + 14], [0.58, R.bend + 15], [S, R.bend - 10], [0.86, R.bend - 14], [1.9, R.bend - 13], [2.3, R.bend + 2], [L, R.bend]])(t) + shiver(t, 0.6, 6) * held(t),
+    twist: tr([[0, R.twist], [0.5, R.twist + 3], [S, R.twist - 2], [1.9, R.twist - 2], [L, R.twist]]),
+    faceUp: tr([[0, R.faceUp], [0.5, R.faceUp - 14], [0.58, R.faceUp - 15], [S, R.faceUp + 18], [0.86, R.faceUp + 24], [1.9, R.faceUp + 22], [2.3, R.faceUp + 2], [L, R.faceUp]]),
+    faceTurn: tr([[0, R.faceTurn], [0.5, R.faceTurn - 2], [S, R.faceTurn], [L, R.faceTurn]]),
+    rhx: tr([[0, R.rhx], [0.5, R.rhx + 6], [S, R.rhx + 1], [0.86, R.rhx], [1.9, R.rhx], [L, R.rhx]]),
+    rhy: tr([[0, R.rhy], [0.5, R.rhy + 2], [S, R.rhy + 2.5], [1.9, R.rhy + 2.5], [L, R.rhy]]),
+    rhz: (t) => tr([[0, R.rhz], [0.5, R.rhz - 4], [0.58, R.rhz - 4.2], [S, R.rhz + 24], [0.86, R.rhz + 28], [1.9, R.rhz + 27], [2.3, R.rhz + 4], [L, R.rhz]])(t) + shiver(t, 0.4, 7) * held(t),
+    re: tr([[0, R.re], [0.5, 20], [S, 74], [0.86, 80], [1.9, 78], [L, R.re]]),
+    wAz: (t) => swungStaff(phi(t), lean(t)).wAz,
+    wEl: (t) => swungStaff(phi(t), lean(t)).wEl,
+    lhx: tr([[0, R.lhx], [0.5, 9], [0.58, 9.4], [S, 4], [0.86, 3], [1.9, 3], [L, R.lhx]]),
+    lhy: tr([[0, R.lhy], [0.5, 8], [S, 9], [0.86, 8.5], [1.9, 8.5], [L, R.lhy]]),
+    lhz: (t) => tr([[0, R.lhz], [0.5, -13], [0.58, -13.5], [S, 21], [0.86, 26], [1.9, 25], [2.3, 4], [L, R.lhz]])(t) + shiver(t, 0.5, 8) * held(t),
+    le: tr([[0, R.le], [0.5, 12], [S, 64], [0.86, 72], [1.9, 70], [L, R.le]]),
+    draw: tr([[0, R.draw], [0.5, 0.8], [0.58, 0.85], [S, 0.05], [1.9, 0.05], [2.3, 0.4], [L, R.draw]]),
+    pAz: tr([[0, 1], [0.5, 1.2], [S, 2], [1.9, 1.9], [2.3, 1.1], [L, 1]]),
+    pt: tr([[0, 0], [0.5, 0.2], [S, 1], [1.9, 1], [2.3, 0.3], [L, 0]]),
+    gale: tr([[0, 0], [0.5, 0.1], [0.8, 1], [1.9, 0.75], [2.3, 0.2], [L, 0]]),
+  }, { prop: FM_ATTACKS.raise, pEl: 0 });
+  return { keys: unwrapped(keys) };
+}
+
+/** Which way the sweeping fire pours, `t` seconds into it (radians on the floor from the way he faces, turning to his left: once round). */
+export function fmFireTurn(t: number): number {
+  const k = clamp01((t - FM_FIRE.pour) / (FM_FIRE.stop - FM_FIRE.pour));
+  // (it sets off slowly, sweeps, and slows to its end)
+  return -0.35 + Math.PI * 2 * (k * 0.86 + 0.14 * smooth(k));
+}
+/**
+ * THE SWEEPING FIRE (“Sweeping fire”). WIND-UP (0 to 0.5 s): he rises and hauls the staff up high over his
+ * head, the skull's jaw dropping, his claw thrown out before him, and ducks into it; THE BURST (0.56 s):
+ * the stream bursts out of the skull's jaws, kicking it back; THE POUR (0.62 to 3.9): it pours out from over
+ * his head down onto the floor, round the room once like a clock hand (`fmFireTurn`; art/fm_spells.ts), his
+ * whole body heaving after it, his robes thrashing; then he lowers the staff (4.6).
+ */
+function fmFire(): Motion {
+  const R = FM_REST;
+  const L = FM_FIRE.long;
+  const P = FM_FIRE.pour;
+  const S = FM_FIRE.stop;
+  const pouring = (t: number): number => rampAt(t, P - 0.04, P + 0.2) * (1 - rampAt(t, S - 0.2, S + 0.05));
+  const turn = (t: number): number => fmFireTurn(t);
+  // (the staff hauled up over his head, leaning in, its foot out clear of his arm; kicked back as the fire bursts out, shaking as it pours)
+  const phi = (t: number): number => tr([[0, 90], [0.3, 100], [0.5, 99], [FM_FIRE.burst, 92], [0.72, 98], [S, 98], [4.3, 100], [L, 90]])(t) + 2 * Math.sin(t * 11) * pouring(t);
+  const lean = tr([[0, -0.156], [0.35, 0.2], [S, 0.2], [4.35, -0.05], [L, -0.156]]);
+  const keys = sampled(L, {
+    pz: (t) => tr([[0, R.pz], [0.4, R.pz + 7], [0.5, R.pz + 7.5], [FM_FIRE.burst, R.pz + 6], [0.7, R.pz + 7.4], [S, R.pz + 7], [4.3, R.pz + 2], [L, R.pz]])(t) + 0.9 * Math.sin(t * 9) * pouring(t),
+    px: (t) => tr([[0, 0], [0.4, 0.8], [0.5, 1.2], [FM_FIRE.burst, -1.2], [0.72, -0.6], [S, -0.4], [L, 0]])(t) + 1.2 * Math.cos(turn(t)) * pouring(t),
+    py: (t) => 1.2 * Math.sin(turn(t)) * pouring(t),
+    pitch: (t) => tr([[0, R.pitch], [0.4, R.pitch + 3], [0.5, R.pitch + 4], [FM_FIRE.burst, R.pitch - 5], [0.72, R.pitch - 3], [S, R.pitch - 3], [L, R.pitch]])(t) + 2.5 * Math.cos(turn(t)) * pouring(t),
+    roll: (t) => -2.5 * Math.sin(turn(t)) * pouring(t),
+    bend: (t) => tr([[0, R.bend], [0.4, R.bend + 5], [0.5, R.bend + 6], [FM_FIRE.burst, R.bend - 7], [0.72, R.bend - 4], [S, R.bend - 4], [L, R.bend]])(t) + 3 * Math.cos(turn(t)) * pouring(t),
+    twist: (t) => R.twist + 12 * Math.sin(turn(t)) * pouring(t),
+    side: (t) => -3 * Math.sin(turn(t)) * pouring(t),
+    faceUp: tr([[0, R.faceUp], [0.4, R.faceUp + 8], [0.5, R.faceUp + 9], [FM_FIRE.burst, R.faceUp + 2], [S, R.faceUp + 1], [L, R.faceUp]]),
+    faceTurn: (t) => R.faceTurn + 22 * Math.sin(turn(t)) * pouring(t),
+    rhx: tr([[0, R.rhx], [0.4, R.rhx + 3], [S, R.rhx + 3], [L, R.rhx]]),
+    rhy: tr([[0, R.rhy], [0.4, R.rhy - 1.5], [S, R.rhy - 1.5], [L, R.rhy]]),
+    rhz: (t) => tr([[0, R.rhz], [0.4, R.rhz + 24], [0.5, R.rhz + 25], [FM_FIRE.burst, R.rhz + 27], [0.7, R.rhz + 25.5], [S, R.rhz + 25], [4.3, R.rhz + 4], [L, R.rhz]])(t) + 0.8 * Math.sin(t * 13 + 1) * pouring(t),
+    re: tr([[0, R.re], [0.4, 72], [S, 72], [L, R.re]]),
+    wAz: (t) => swungStaff(phi(t), lean(t)).wAz,
+    wEl: (t) => swungStaff(phi(t), lean(t)).wEl,
+    lhx: (t) => tr([[0, R.lhx], [0.4, 12], [S, 12], [L, R.lhx]])(t) + 2.5 * Math.cos(turn(t)) * pouring(t),
+    lhy: (t) => tr([[0, R.lhy], [0.4, 9], [S, 9], [L, R.lhy]])(t) + 2.5 * Math.sin(turn(t)) * pouring(t),
+    lhz: (t) => tr([[0, R.lhz], [0.4, 6], [S, 6], [L, R.lhz]])(t) + 1.5 * Math.sin(t * 7) * pouring(t),
+    le: tr([[0, R.le], [0.4, 30], [S, 30], [L, R.le]]),
+    draw: tr([[0, R.draw], [0.4, 0.1], [S, 0.1], [L, R.draw]]),
+    pAz: tr([[0, 1], [0.4, 1.6], [S, 1.6], [L, 1]]),
+    pt: tr([[0, 0], [0.4, 0.8], [FM_FIRE.burst, 1], [S, 1], [4.3, 0.3], [L, 0]]),
+    gale: (t) => tr([[0, 0], [0.4, 0.2], [FM_FIRE.burst, 1], [0.8, 0.7], [S, 0.7], [4.3, 0.1], [L, 0]])(t) + 0.2 * Math.sin(t * 17) * pouring(t),
+  }, { prop: FM_ATTACKS.fire, pEl: 0 });
+  return { keys: unwrapped(keys) };
+}
+
+const FM_SHARDS_MOTION = fmShards();
+const FM_RINGS_MOTION = fmRings();
+const FM_RAISE_MOTION = fmRaise();
+const FM_FIRE_MOTION = fmFire();
+
+/** How hot the skull's mouth burns (0 dark to 1 blazing), `t` seconds into an attack (by `prop`): as it spits, shrieks or pours. */
+export function fmMawOf(prop: number, t: number): number {
+  switch (prop) {
+    case FM_ATTACKS.shards:
+      return t < FM_SHARDS.hit - 0.04 ? 0.45 * rampAt(t, 0.3, 0.6) : 1 - 0.75 * rampAt(t, FM_SHARDS.hit + 0.2, 1.25);
+    case FM_ATTACKS.rings:
+      return 0.45 * rampAt(t, 0.5, 0.86) * (1 - rampAt(t, 1.5, 2.0));
+    case FM_ATTACKS.raise:
+      return rampAt(t, 0.6, FM_RAISE.shriek) * (1 - rampAt(t, FM_RAISE.hold, 2.3));
+    case FM_ATTACKS.fire:
+      return rampAt(t, 0.35, FM_FIRE.burst) * (1 - rampAt(t, FM_FIRE.stop, 4.25));
+    default:
+      return 0;
+  }
+}
+/** How far the skull's jaw hangs open (extra picture pixels), `t` seconds into an attack (by `prop`). */
+export function fmJawOf(prop: number, t: number): number {
+  switch (prop) {
+    case FM_ATTACKS.shards:
+      return t < FM_SHARDS.hit ? 3 * rampAt(t, 0.15, 0.5) : 4 * (1 - rampAt(t, 1.0, 1.3));
+    case FM_ATTACKS.rings:
+      return 2 * rampAt(t, 0.3, 0.6) + 2 * rampAt(t, 0.8, 0.86) - 4 * rampAt(t, 1.5, 2.0);
+    case FM_ATTACKS.raise:
+      return 4 * rampAt(t, 0.58, FM_RAISE.shriek) * (1 - rampAt(t, FM_RAISE.hold, 2.3)) + (t > 0.8 && t < 1.85 ? Math.round(0.5 + 0.5 * Math.sin(t * 40)) : 0);
+    case FM_ATTACKS.fire:
+      return 4 * rampAt(t, 0.25, 0.5) * (1 - rampAt(t, FM_FIRE.stop, 4.25));
+    default:
+      return 0;
+  }
+}
+
 /** Where the gout of fire leaves his hand (worked out once, from his stand as it is at that moment), and the point its flight bends toward. */
 let GOUT: { from: V3; apex: V3 } | null = null;
 function goutPath(): { from: V3; apex: V3 } {
@@ -1339,7 +1746,7 @@ export const FLESHMANCER: Mob = {
   size: 'a boss: a man’s height, floating',
   build: FB,
   stand: { name: 'The Fleshmancer floats, his staff burning', motion: FM_STAND_MOTION, rest: FM_REST },
-  attack: { name: 'The Fleshmancer (his blow: not made yet)', motion: heldOf(1.0), rest: FM_REST },
+  attack: { name: 'The Fleshmancer spits bone shards from the skull', motion: FM_SHARDS_MOTION, rest: FM_REST, trail: (s) => [staffOf(s).skull], trailOver: (t) => t > FM_SHARDS.hit - 0.1 && t < FM_SHARDS.hit + 0.06, trailSpan: 2.4 },
   idleFrames: 36,
   idleFps: 10,
   walk: { name: 'The Fleshmancer glides (not made yet)', motion: heldGlide(), rest: FM_REST, period: 1, ground: FLESHMANCER_PACE * TILE3 },
@@ -1348,8 +1755,8 @@ export const FLESHMANCER: Mob = {
   pace: FLESHMANCER_PACE,
   reel: { name: 'The Fleshmancer is struck (not made yet)', motion: heldOf(0.3), rest: FM_REST },
   reelTime: 0.3,
-  hit: 0.5,
-  warn: 0.3,
+  hit: FM_SHARDS.hit,
+  warn: 0.35,
   dieTime: 1.0,
   dying: { name: 'His own dead drag him down (not made yet)', motion: heldOf(1.0), rest: FM_REST },
   aura: { x: FM_CANVAS.ax - 2, y: FM_CANVAS.ay - 44, r: 80, color: '#ff3a78', a: 0.18 },
@@ -1357,14 +1764,144 @@ export const FLESHMANCER: Mob = {
   canvas: FM_CANVAS,
   trueBack: true,
   bits: (st, m) => fleshmancerBits(st, m),
+  more: {
+    rings: { name: 'The Fleshmancer calls up rings of hands', motion: FM_RINGS_MOTION, rest: FM_REST },
+    raise: { name: 'The Fleshmancer raises the dead', motion: FM_RAISE_MOTION, rest: FM_REST },
+    fire: { name: 'The Fleshmancer sweeps the room with fire', motion: FM_FIRE_MOTION, rest: FM_REST },
+  },
 };
 
-/** HIS STAND, the only move of his made so far: the one the checks review (his other moves are held placeholders until they are made). */
-export const FM_MADE: ReadonlyArray<string> = ['stand'];
+/** HIS MOVES MADE SO FAR, the ones the checks review: his stand and his four attacks (his glide, struck and his death are held placeholders until they are made). */
+export const FM_MADE: ReadonlyArray<string> = ['stand', 'attack', 'rings', 'raise', 'fire'];
 
 /** THE FLESHMANCER, as the game holds a monster (see art/new_mobs3.ts makeShadeArt3). */
 export function makeFleshmancerArt3(pace = FLESHMANCER.pace): ActorArt {
   return { front: mobSet(FLESHMANCER, 'front', pace), back: mobSet(FLESHMANCER, 'back', pace) };
+}
+
+/**
+ * WHERE THE SKULL'S JAWS ARE, `t` seconds into one of his moves, seen from in front or from behind: picture
+ * pixels across and down the picture from his floor point (half that in the game's own pixels). Where his
+ * shards leave it and his fire pours out of it (art/fm_spells.ts).
+ */
+export function fmMouthAt(which: string, t: number, view: GameView = 'front'): [number, number] {
+  const s = skeletonAt(FLESHMANCER, which, t);
+  const q = posedOfMob(FLESHMANCER, which, t);
+  const p = project(staffOf(s).skull, paintViewOf(FLESHMANCER, view));
+  const flare = clamp01(q.pt);
+  const drop = Math.max(flare > 0.55 ? 2 : flare > 0.2 ? 1 : 0, Math.round(fmJawOf(q.prop, t)));
+  return [Math.round(p[0]), Math.round(p[1]) - SKULL_MID[1] + SKULL_MOUTH + 1 + drop];
+}
+/** Where the skull is, `t` seconds into one of his moves, on his own lengths: forward, to his left and up from his floor point (a tile is TILE3 of them along the floor; up, one is a picture pixel). */
+export function fmSkullAt(which: string, t: number): V3 {
+  return staffOf(skeletonAt(FLESHMANCER, which, t)).skull;
+}
+
+// ---------------------------------------------------------------------------------------------
+// ONE OF HIS RINGS OF HANDS: a hand of his own dead, bursting up out of the floor
+
+/** Its canvas (picture pixels; the hole on the anchor), its frames a second, how many, how long. */
+export const FM_HAND_CANVAS: MobCanvas = { w: 96, h: 120, ax: 48, ay: 90 };
+export const FM_HAND_FPS = 20;
+export const FM_HAND_FRAMES = 24;
+export const FM_HAND_TIME = FM_HAND_FRAMES / FM_HAND_FPS;
+/** When it is all the way up (seconds from when it bursts out), when it is dragged back down, and when it is gone under. */
+export const FM_HAND_UP = 0.1;
+export const FM_HAND_SINK = 0.72;
+export const FM_HAND_UNDER = 0.98;
+/** The floor's stone broken round it (the dungeon's own greys, as the amalgamation's arms break it). */
+const HAND_STONE: Ramp = ['#2a2331', '#2a2331', '#4d4252', '#655868', '#857888'];
+/** The bone of his dead's hands: his staff's warm bone (a step darker than his own pale hands). */
+const DEAD_HAND = { H: '#d6bc94', L: '#b89c78', M: '#8a7058' } as const;
+/** How many ways it is made (each leaning its own way, grasping to its own beat), so that a ring of them is never one hand over and over. */
+export const FM_HAND_KINDS = 3;
+
+/**
+ * A HAND OF HIS OWN DEAD (his rings of hands, and the arms that drag him down as he dies), `t` seconds after
+ * it bursts out: the floor bursts open, its stone flung up, and a bony forearm THRUSTS up out of the dark,
+ * a claw like his own at its end, its long fingers burning pink at their tips; it grabs at the air, snapping
+ * shut and open, swaying (0.1 to 0.72 s); then it is DRAGGED back down into the dark, closing into a fist
+ * as it goes (to 0.98), and the broken stone falls back over the hole. Before it, a crack glows where it
+ * will come (the warning: art/fm_spells.ts drawHandWarning); after it, the cracks are left.
+ */
+export function paintRingHand(t: number, view: PaintView = 'front', kind = 0): Painted {
+  const can = FM_HAND_CANVAS;
+  const st = stage(view, can.ax, can.ay, can);
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => {
+    bits.push({ part, piece, shape });
+  };
+  const seed = kind * 7 + 3;
+  // (how far up it is: thrust up fast, past where it stops, and back; held, swaying; dragged down, faster and faster)
+  const out = t < FM_HAND_UP ? 1.18 * (1 - (1 - t / FM_HAND_UP) ** 2) : t < 0.2 ? 1.18 - 0.18 * smooth((t - FM_HAND_UP) / 0.1) : t < FM_HAND_SINK ? 1 : Math.max(0, 1 - ((t - FM_HAND_SINK) / (FM_HAND_UNDER - FM_HAND_SINK)) ** 1.7);
+  // (how wide the hole is: burst open at once, closing after it once it is under)
+  const open = t < FM_HAND_UNDER ? 1 : 1 - smooth((t - FM_HAND_UNDER) / (FM_HAND_TIME - FM_HAND_UNDER - 0.02));
+  const hr = 5.5 * open;
+  if (open > 0.15) {
+    put('hole', 'hole', {
+      k: 'ball',
+      c: [0, 0, 0.15],
+      ax: [[hr, 0, 0], [0, hr * 0.9, 0], [0, 0, 0.15]],
+      skin: (u) => {
+        const r = Math.hypot(u[0], u[1]);
+        return r < 0.38 ? FLAME[0] : r < 0.6 ? '#2a0a26' : INK;
+      },
+    });
+    put('glow', 'glow', { k: 'glow', p: [0, 0, 1], c: FLAME[3], r: 9 * open, a: 0.3 * open });
+  }
+  // the floor's stone round it, heaved up and flung as it bursts out, falling back, settling back over the hole as it goes under
+  for (let j = 0; j < 6; j++) {
+    const th = (j / 6) * Math.PI * 2 + hash(j, seed, 271) * 0.6;
+    const rad: V3 = [Math.cos(th), Math.sin(th), 0];
+    const tan: V3 = [-Math.sin(th), Math.cos(th), 0];
+    const vz = 34 + 26 * hash(j, seed + 1, 271);
+    const fl = (2 * vz) / 300;
+    const tt = Math.min(t, fl);
+    const z = Math.max(0, vz * tt - 150 * tt * tt);
+    const tip = (t < fl ? 55 : 25 * (1 - smooth((t - FM_HAND_SINK) / 0.3))) * D * (0.6 + 0.4 * hash(j, seed + 2, 271));
+    const r0 = hr + 2.6 + 5 * tt;
+    const c: V3 = add(mul(rad, r0), [0, 0, 0.9 + z]);
+    const radU = add(mul(rad, Math.cos(tip)), [0, 0, Math.sin(tip)]);
+    const upU = add(mul(rad, -Math.sin(tip)), [0, 0, Math.cos(tip)]);
+    const big = (2.4 + 1.2 * hash(j, seed + 3, 271)) * Math.sqrt(Math.max(0, open));
+    if (big < 1.2) continue;
+    put(`slab${j}`, `slab${j}`, { k: 'ball', c: [c[0], c[1], c[2] * open], ax: [mul(radU, big * 0.8), mul(tan, big), mul(upU, 1.0)], skin: HAND_STONE });
+  }
+  // chips of stone, flung up and out, falling back down to the floor
+  for (let j = 0; j < 10; j++) {
+    const th = hash(j, seed + 4, 271) * Math.PI * 2;
+    const sp = 18 + 26 * hash(j, seed + 5, 271);
+    const vz = 46 + 50 * hash(j, seed + 6, 271);
+    const z = vz * t - 330 * t * t;
+    if (z < 0) continue;
+    put('chips', 'chips', { k: 'mote', p: [Math.cos(th) * (3 + sp * t), Math.sin(th) * (3 + sp * t), z], c: j % 3 ? HAND_STONE[3] : HAND_STONE[4], size: j % 4 ? 1 : 2 });
+  }
+  // THE ARM: a bony forearm thrust up out of the dark, leaning its own way, swaying as it grabs
+  if (out > 0.12) {
+    const lean0 = hash(kind, 9, 271) * Math.PI * 2;
+    const sway = t > FM_HAND_UP && t < FM_HAND_SINK ? Math.sin(t * 9 + kind * 2.1) * 0.22 : 0;
+    const dir: V3 = norm([Math.cos(lean0) * (0.22 + sway), Math.sin(lean0) * (0.22 + sway), 1]);
+    const base: V3 = [0, 0, 0.3];
+    const wrist = add(base, mul(dir, 30 * out));
+    const side = norm(cross(dir, [0, 0, 1]), [0, 1, 0]);
+    // (its two bones, the dark of the deep on them low down; a knob of bone at the wrist)
+    for (const q of [-1, 1]) put('arm', 'arm', { k: 'rod', a: add(base, mul(side, q * 0.95)), b: add(wrist, mul(side, q * 0.6)), ra: 1.7, rb: 1.25, ramp: STAFF_BONE, far: true });
+    put('arm', 'arm', { k: 'ball', c: wrist, ax: sphere(1.6), skin: STAFF_BONE, far: true });
+    // ITS CLAW, as his own: grabbing at the air, snapping shut and open; a fist as it is dragged under
+    const grab = t < FM_HAND_UP ? 0 : t < FM_HAND_SINK ? 0.5 + 0.5 * Math.sin((t - FM_HAND_UP) * 15 + kind * 1.3 - Math.PI / 2) : 0.6 + 0.4 * smooth((t - FM_HAND_SINK) / 0.15);
+    const [wx, wy] = st.at(wrist);
+    const [bx, by] = st.at(base);
+    const way = unit2([wx - bx, wy - by - 0.001]);
+    const claw = clawPix([wx, wy], way, way, 120 - 40 * grab, grab, 1.2, kind % 2 ? 1 : -1, 1.45, DEAD_HAND);
+    stamp(st, put, 'claw', 'claw', claw.pix, add(wrist, mul(st.eye, 1.5)));
+    put('glow', 'glow', { k: 'glow', p: add(wrist, mul(dir, 8)), c: FLAME[3], r: 10, a: 0.4 * Math.min(1, out) });
+  }
+  const lights = paintBits(st, bits, [0, 0, 8]);
+  return { px: st.whole(ENEMY_RIM), lights };
+}
+/** ONE KIND OF HIS RING'S HANDS, as the game holds a picture that plays once (FM_HAND_FRAMES at FM_HAND_FPS; the hole on the anchor). */
+export function makeRingHandArt(view: GameView = 'front', kind = 0): Sprite[] {
+  return lazyFrames(FM_HAND_FRAMES, (i) => toSprite(paintRingHand(i / FM_HAND_FPS, paintViewOf(FLESHMANCER, view), kind), null, FM_HAND_CANVAS.ax, FM_HAND_CANVAS.ay));
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1419,7 +1956,8 @@ export function fmMantle(s: Skeleton): CheckLump {
 export const FM_SHAPE: BossShape = {
   body: fmSolids,
   // (the end he strikes with: the skull at his staff's head, which spits his bone shards)
-  tip: (_move, _t, s) => staffOf(s).skull,
+  // (but calling up the rings of hands, his casting hand, slammed down at the floor)
+  tip: (move, _t, s) => (move === 'rings' ? s.handL : staffOf(s).skull),
   things: (_move, _t, s) => {
     const { joints, skull: sc } = staffOf(s);
     const shaft: V3[] = [];

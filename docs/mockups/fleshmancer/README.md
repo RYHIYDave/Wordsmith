@@ -7,7 +7,9 @@ rulebook, How art is made 7), pictures to him first. Nothing of the game imports
 
 **State of this branch (`mockup/fleshmancer`):** from `mockup/bosses` at 28f7368 (the Headsman, the
 Chained One and the amalgamation with the bone beast, as they went to the main chat). Made by THE ART
-CHAT, from 11 Oct 2026. His brief, and HIS LOOK (his standing loop), WITH HIS YES (by 12:28, below); his moves come next.
+CHAT, from 11 Oct 2026. His brief, and HIS LOOK (his standing loop), WITH HIS YES (by 12:28, below); then
+HIS FOUR ATTACKS (the shards, the rings of hands, raising the dead, the sweeping fire) and what he sends out,
+made and filmed for him, NOT YET SEEN BY HIM; his glide, struck and his death come after them.
 His look was drawn once (8d4b104), REMADE after a fresh look at it (a4a885d: at a phone's size the first
 read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again after a second fresh look
 (the third drawing, below: the second had accidental shapes in it, and a small, crouched body).
@@ -50,6 +52,64 @@ read as a hooded torch-bearer, a monk with a lamp on a pole), and remade again a
   fleshmancer's look and how he stands, as on the Fleshmancer Look Review page: good to animate as
   shown?": "Yes, animate him (Recommended)", offered as: his glide, his attacks, his three spells and
   his death made as films, every move through the boss checks, for him to see.
+- 11 Oct, after that, in the art chat: "I don’t need the whole mock up sheet, just show me what he looks
+  like and what the attacks look like". Read as (and told him so): no big sheet; one picture of him and a
+  film of each attack, him casting it in a room as it would look in a fight; his walk, flinch and death
+  after, shown the same way.
+
+## His attacks (the art chat, 11 Oct; not yet seen by him)
+
+Each is a move on his bones (`FLESHMANCER.attack`, and `FLESHMANCER.more`'s `rings`, `raise` and `fire`), at
+30 frames a second, beginning and ending in his rest pose (`FM_REST`); `prop` in each pose says which it is to
+his painter (`FM_ATTACKS`). What he sends out is drawn by `src/art/fm_spells.ts` in the game's own pixels,
+where the game puts it, as `art/boss_shots.ts` draws the other bosses'; the hands of his rings are pictures
+(`makeRingHandArt`). Every one checked against Animations 1 (each first cut was made bigger: the staff
+cocked right back and swung over in a smear of fire, the hands made taller and of his staff's bone, the fire
+a solid rope and a river of flames).
+
+- **THE BONE SHARDS** ("Bone shards from the skull (Recommended)"; his basic attack, `attack`, 1.4 s, the
+  blow at 0.8 s, `FM_SHARDS`). 0 to 0.4 s: he swells up off the floor, rears back, hips and chest turned
+  away, and cocks the staff back over his right shoulder, the skull behind his head, its jaws dropping
+  open; his casting hand thrust out at you. 0.4 to 0.6: held, trembling (the warning). 0.6 to 0.8: his hips
+  swing round, then his chest, and the staff comes over his head and down like a hammer, the skull's fire
+  smeared behind it, until the skull points at you, and at 0.8 it SPITS: a blast of fire out of its jaws,
+  sparks sprayed. He lunges through it, the staff dipping on past (to 0.87) and kicked back up; settled by
+  1.4. What it spits (`fm_spells.ts`, `FM_SHARD`): 7 shards in a fan, 12 degrees apart, at 9 tiles a second,
+  each a splinter of bone with his fire streaming off it, its shadow under it (`drawBoneShard`,
+  `drawShardShadow`); where one strikes (or at 6.5 tiles, the floor) it bursts into burning splinters,
+  0.4 s (`drawShardBreak`). They leave the skull's jaws: `fmMouthAt('attack', 0.8)`.
+- **THE RINGS OF HANDS** ("Rings of hands (Recommended)"; `rings`, 2.2 s, the slam at 0.86 s, `FM_RINGS`).
+  0 to 0.46 s: he rises high, arching back, hood thrown back, the staff hauled up overhead and his claw
+  raised high, its fire swelling. 0.46 to 0.76: held, trembling, the skull roaring. 0.76 to 0.86: he drops,
+  folding forward, slams his claw down at the floor and drives the staff's foot into it (0.86: a flash at
+  each). He holds low, his claw lifting as if pulling them up, to 1.6, and rises back by 2.2. What it calls
+  up (`fm_spells.ts`): from the slam the floor cracks out from him and a WAVE of his light runs out over it
+  at 3.6 tiles a second (`drawSlamWave`, 1.6 s); where it passes, RINGS OF HANDS burst up: as the films lay
+  them (`FM_RINGS_LAID`), 8 hands at 1.5 tiles, 14 at 2.9, 20 at 4.3, each ring with a gap of 2, 3 and 4
+  hands to slip through, bursting up 0.42, 0.81 and 1.19 s after the slam. EACH HAND (`paintRingHand`,
+  `makeRingHandArt`, three kinds, 24 frames at 20 a second, 1.2 s, the hole on the anchor): the floor bursts
+  open and a bony forearm of his staff's bone thrusts up out of the dark (up by 0.1 s), a claw like his own at
+  its end, its fingertips burning; it grabs at the air, snapping shut and open (to 0.72), and is dragged
+  back down into the dark, closing (under by 0.98); the broken stone falls back over the hole by 1.2. Its
+  crack glows 0.4 s before it comes (the warning) and is left 0.6 s after (`drawHandCrack`).
+- **RAISING THE DEAD** ("Raise the dead (Recommended)"; `raise`, 2.6 s, the shriek at 0.72 s, `FM_RAISE`).
+  0 to 0.55 s: he sinks, folding over, staff and claw drawn down to the floor, hood bowed. 0.55 to 0.8: he
+  flings both arms up, the staff high overhead and his claw spread, and rises, arching back, hood thrown
+  back; the skull's jaws drop and it SHRIEKS (0.72), a ring of sparks bursting out of it, and his light is
+  pulled up out of the floor into his hands. He holds, shaking, to 1.9, and comes down by 2.6. THE DEAD: on
+  a heap of bones, his fire licks up among them (0.3 s, `FM_RAISE_STIR`); then one of the dead is snatched
+  back up out of it: the game's own skeleton's death (art/monster_bones3.ts `deathOf3`, the game's die clip)
+  PLAYED BACKWARDS over its 1.0 s, its bones yanked up off the heap and slammed together, a flash as they
+  meet (`drawRaiseGlow`); it ends standing as the skeleton stands, ready to be handed over to it. In the
+  film three heaps go, 0, 0.14 and 0.27 s after the shriek. Whom he raises is the main chat's.
+- **THE SWEEPING FIRE** ("Sweeping fire"; `fire`, 4.6 s, `FM_FIRE`). 0 to 0.5 s: he rises and hauls the staff
+  up high over his head, the skull's jaws dropping, his claw thrown out before him. 0.56: the stream BURSTS
+  out of the skull's jaws, kicking it back. 0.62 to 3.9: it pours from over his head in a rope of fire,
+  arcing down onto the floor 1 tile out, and rushes on along it as a river of flames to 4.8 tiles, splashing
+  up where it ends (`drawFireStream`); it goes round the room once like a clock hand, setting off a little to
+  his right of where he faces and turning to his left (`fmFireTurn`), his body heaving after it, his robes
+  thrashing; the floor it has swept burns on 0.6 s, its flames sinking, and is left scorched (`drawScorch`).
+  At 3.9 it stops (what is left of it is flung on out), and he lowers the staff by 4.6.
 
 ## What he is (his look; the art chat, 11 Oct, as remade)
 
@@ -177,6 +237,12 @@ on the staff where his fist is round it); the end he strikes with (the skull, wh
 shards). His mantle is worn over his arms, as the Headsman's cape is, so it is not among the solids his arms
 keep out of; his staff passes outside it (tested on its own).
 
+- **His four attacks through every check**, as his stand below: every frame of each at 30 a second, from in
+  front and from behind, from every frame of his stand into each and from each back into his stand: nothing
+  found. The end he strikes with is the skull (the shards; the BLOW review: drawn right back, held, carried
+  through; his hips first, then his chest, then the skull), and for the rings his casting hand, slammed down
+  at the floor. His staff is swung in a plane at his right side, its head leaning in over him and its foot
+  out, clear of his arm, when it is raised (`swungStaff`).
 - **His stand through every check** (`checkBoss(FLESHMANCER, FM_SHAPE, FM_MADE)`): all 37 frames (the loop and
   its first again, to close it), from in front and from behind as the camera truly sees him: nothing found.
   SLIDE (nothing of him touches the floor), FLOOR, ARM, THROUGH, JERK (the loop closing too), ALIVE, and
@@ -200,9 +266,17 @@ keep out of; his staff passes outside it (tested on its own).
   (toward you, from in front), passes through nothing of him and bursts more than 14 of the game's pixels
   across the picture from him from in front and from behind; 8, his light never grows by more than two fifths
   from one frame to the next, either way round; 9, the skull about his hood's width; 10, no lone pixel in any
-  frame either way round (with his pink edge round it, a pixel alone is a cross). `tests/new_mobs3.test.ts` and `tests/bosses.test.ts` (12) let
+  frame either way round (with his pink edge round it, a pixel alone is a cross); and for his attacks (15 in
+  all now): 11, every frame of all four paints both ways round, nothing cyan, his edge round him, no lone
+  pixel; 12, the shards: the skull more than 15 behind him held back, more than 30 before him as it spits, its
+  jaws wide, its jaws further on and lower in the picture; 13, the rings: his claw comes down more than 40,
+  the staff's foot within 9 of the floor as it strikes, and each kind of hand paints, stands up high and has
+  less than a third of itself left in its last frame; 14, raising the dead: both hands over his hood while
+  they come up, the skull's jaws open; 15, the fire: the skull more than 25 over his hood while it pours, its
+  jaws open, and the stream round once. `tests/new_mobs3.test.ts` and `tests/bosses.test.ts` (12) let
   `art/fleshmancer.ts`, a mock-up of their kind, import the other mock-ups.
-- The whole unit suite passes on the branch; `tsc` is clean.
+- The whole unit suite passes on the branch, 876 of 876 with the attacks (`tests/new_mobs3.test.ts` and
+  `tests/bosses.test.ts` now know `art/fm_spells.ts` for a mock-up too); `tsc` is clean.
 - Painting a frame of his stand takes about 14 ms on this machine (the Headsman's, 22).
 
 ## The pictures (kept out of git; the art chat has them)
@@ -226,10 +300,25 @@ keep out of; his staff passes outside it (tested on its own).
   `src/dev/fm_floor.ts` made to name `CRYPT_FLOORS[3]` (its comment says how). On this branch alone the page
   puts him on the vault's floor.
 
+- THE ATTACKS' PICTURES, for him (`scratchpad/flesh/atk/`): `him.png` (`floor:2:0.3`, him in a room of the
+  Crypt's fourth floor at the game's size, doubled) and `him_x2.png` (him and the knight, doubled again);
+  `shards.gif`, `rings.gif`, `raise.gif`, `fire.gif` (`film:<attack>:4`, `tools/page_gif.mjs`: him standing a
+  moment, the attack, and standing again, what he sends out where the game would put it, the knight come in,
+  at four screen pixels to a game pixel, 30 frames a second), made on the same copy with floor 4's floor.
+
 ## For the main chat
 
-- Nothing to put in yet: this is his look, for his yes. When his moves are made, each will begin and end in
-  his rest pose (`FM_REST`), or hand over from any frame of his stand, as the checks hold them.
+- HIS ATTACKS, when he says yes: `FLESHMANCER.attack` (the shards) and `FLESHMANCER.more` (`rings`, `raise`,
+  `fire`), each from his rest pose and back, handing over from any frame of his stand (the checks hold them);
+  `makeFleshmancerArt3()` has them as clips (`clips.attack`, `clips.moves`). Their moments are `FM_SHARDS`,
+  `FM_RINGS`, `FM_RAISE`, `FM_FIRE`; where the skull's jaws are (where the shards leave and the fire pours
+  from) is `fmMouthAt(move, t, view)`, and the skull itself `fmSkullAt(move, t)`; the fire's way round is
+  `fmFireTurn(t)`. What he sends out is `src/art/fm_spells.ts` (its head says what each is), drawn in the
+  game's own pixels given `FloorAt`; the hands are `makeRingHandArt(view, kind)` (three kinds). The numbers
+  in `FM_SHARD`, `FM_RINGS_LAID`, `FM_WAVE_SPEED`, `FM_FIRE_REACH` are the films', for the pictures: how many,
+  how far and how fast in the fight are yours. Raising the dead is the game's skeleton's own die clip played
+  backwards (its frames reversed), with `drawRaiseGlow` on its heap; it ends on the skeleton's stand. The
+  screen's kick: the spit, the slam and the shriek are the attacks' blows (Animations 1).
 - His canvas, his pool of light (`aura`, pink, 80 round) and the shadow the dev page gives him (8) are on
   `FLESHMANCER`. In the game a monster's shadow is the engine's soft oval sized by its radius
   (`render.ts`, `shadow`): for him the smaller and darker it is, the better his float reads. The pictures
@@ -239,5 +328,6 @@ keep out of; his staff passes outside it (tested on its own).
 
 ## Next
 
-His look to him first (the sheet, the close-up, his stand, him on the Crypt's floor). Then his glide, his
-attacks and his death as films; every move through the boss checks; pictures to him first.
+His four attacks to him (one picture of him and a film of each, as he asked). Then his glide, setting off
+and stopping, struck and his death ("His own dead drag him down": the hands of his rings bursting up round
+him and dragging him under), shown the same way; every move through the boss checks.

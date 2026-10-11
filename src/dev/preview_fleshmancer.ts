@@ -20,10 +20,14 @@ import { toSprite } from '../art/kit';
 import { makeCultistArt, makeHighPriestArt } from '../art/monster_cultist';
 import { MOVES3 } from '../art/moves3';
 import { HEADSMAN } from '../art/bosses3';
-import { FLESHMANCER, FM_REST, fmHemOf, fmHoodTop, fmTails, staffOf } from '../art/fleshmancer';
+import { FLESHMANCER, FM_FIRE, FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, FM_HAND_TIME, FM_RAISE, FM_REST, FM_RINGS, FM_SHARDS, fmFireTurn, fmHemOf, fmHoodTop, fmMouthAt, fmSkullAt, fmTails, makeRingHandArt, staffOf } from '../art/fleshmancer';
+import { FM_RAISE_STIR, FM_RINGS_LAID, FM_SHARD, FM_SHARD_BREAK, FM_WAVE_SPEED, drawBoneShard, drawFireStream, drawHandCrack, drawRaiseGlow, drawScorch, drawShardBreak, drawShardShadow, drawSlamWave, glowAt } from '../art/fm_spells';
+import { DIE3_TIME, STAND3, deathOf3, paintSkeleton3 } from '../art/monster_bones3';
+import { TILE3 } from '../art/new_mobs3';
 import { solve } from '../art/skeleton';
 import { SHADE, canvasOf, paintMob, skeletonAt } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
+import { CANVAS3 } from '../art/skin';
 import type { GameView } from '../art/skin';
 import { drawAura, drawLights, flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -262,6 +266,26 @@ if (mode === 'poses') {
   win.__ready = true;
 }
 
+if (mode === 'aposes') {
+  // aposes:<move>:<seconds,seconds,...>[:<scale>]: a row of frames of one of his moves, facing you and away
+  const which = parts[1] || 'attack';
+  const ts = (parts[2] || '0').split(',').map(Number);
+  const S = Number(parts[3]) || 3;
+  const PAD = 10;
+  const rows = (['front', 'back'] as const).map((view) => ts.map((t) => ({ sp: spOf(FM, which, t, view), name: `${t} s`, line: view, shadow: FM.shadow, gold: false })));
+  const W = Math.max(...rows.map((r) => widthOf(r, S, PAD)));
+  const [, , up, down] = reachAll(rows.flat().map((f) => f.sp));
+  const h = (up + down + 14) * S + 50;
+  cv.width = W;
+  cv.height = 40 + h * 2 + PAD;
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  text(`The Fleshmancer: ${which}`, PAD, 8, 18, '#ffd866', 700);
+  row(rows[0], 40, S, PAD, W);
+  row(rows[1], 40 + h, S, PAD, W);
+  win.__ready = true;
+}
+
 // =============================================================================================
 // HIS STAND AS A FILM (tools/page_gif.mjs): twice round, at its own frames a second, as the game shows it
 
@@ -414,4 +438,263 @@ if (mode === 'floor') {
   g.imageSmoothingEnabled = false;
   g.drawImage(scene, 0, 0, cv.width, cv.height);
   win.__ready = true;
+}
+
+// =============================================================================================
+// HIS ATTACKS AS FILMS (tools/page_gif.mjs): in a room of the Crypt's floor, in the game's own pixels, the
+// knight come in; him standing a moment, the attack, and standing again; what he sends out where the game
+// would put it (art/fm_spells.ts).
+//   film:<shards | rings | raise | fire>[:<screen pixels to a game pixel: 4, a phone's size doubled>]
+
+interface Figure { sp: Sprite; x: number; y: number; light?: boolean }
+if (mode === 'film') {
+  const which = parts[1] || 'shards';
+  const DS = Number(parts[2]) || 4;
+  const RES = 2;
+  const FPS = 30;
+  const LEAD = 0.4;
+  const move = which === 'shards' ? 'attack' : which;
+  const LONG: Record<string, number> = { shards: FM_SHARDS.long, rings: FM_RINGS.long, raise: FM_RAISE.long, fire: FM_FIRE.long };
+  const AFTER: Record<string, number> = { shards: 1.0, rings: 1.9, raise: 1.4, fire: 0.6 };
+  const GW = which === 'shards' ? 300 : 320;
+  const GH = which === 'shards' ? 190 : which === 'fire' ? 226 : 210;
+  // (his floor point on the screen, and the knight's, in tiles from his)
+  const hx = which === 'shards' ? 78 : GW / 2 - 8;
+  const hy = which === 'shards' ? 92 : which === 'fire' ? 136 : 116;
+  const KN: Record<string, [number, number]> = { shards: [3.4, 0.25], rings: [3.6, 0.2], raise: [3.0, 0.4], fire: [3.3, 0.6] };
+  const at = (tx: number, ty: number): [number, number] => [hx + (tx - ty) * 16, hy + (tx + ty) * 8];
+  const total = LEAD + LONG[which] + AFTER[which];
+  const TICKS = Math.round(total * FPS);
+  const knight = flipSprite(KNIGHT('back'));
+  const litter = FM_FLOOR.litter();
+  const LITTER: ReadonlyArray<readonly [number, number, number]> = [[-3.5, 2.2, 0], [-2.2, -3.6, 1], [1.8, -2.4, 4], [-5.5, -1.2, 5], [5.4, 3.0, 2], [-1.8, 4.6, 6], [5.6, -3.2, 7], [-6, 0.5, 3], [0.6, 5.2, 8]];
+  // (his move at a moment of the film: his stand before and after it, at its own frames a second)
+  const standAt = (t: number): number => (Math.floor(t * FM.idleFps + 1e-6) % FM.idleFrames) / FM.idleFps;
+  const himAt = (t: number): [string, number] => {
+    if (t < LEAD) return ['stand', standAt(t)];
+    if (t < LEAD + LONG[which]) return [move, Math.round((t - LEAD) * 30) / 30];
+    return ['stand', standAt(t - LEAD - LONG[which])];
+  };
+  const cache = new Map<string, Sprite>();
+  const sprite = (key: string, make: () => Sprite): Sprite => {
+    let sp = cache.get(key);
+    if (!sp) cache.set(key, (sp = make()));
+    return sp;
+  };
+  const himSp = (mv: string, t: number): Sprite => sprite(`fm:${mv}:${t.toFixed(3)}`, () => spOf(FM, mv, t, 'front'));
+  // THE RINGS OF HANDS: each ring as the wave reaches it, a gap in each, turned its own way
+  const hands: { x: number; y: number; t0: number; kind: number; seed: number }[] = [];
+  if (which === 'rings') {
+    const slam = LEAD + FM_RINGS.hit;
+    FM_RINGS_LAID.forEach((ring, i) => {
+      const g0 = [5, 1, 9][i];
+      for (let j = 0; j < ring.n; j++) {
+        if (((j - g0 + ring.n) % ring.n) < ring.gap) continue;
+        const a = (j / ring.n) * Math.PI * 2 + i * 0.37;
+        hands.push({ x: Math.cos(a) * ring.r, y: Math.sin(a) * ring.r, t0: slam + ring.r / FM_WAVE_SPEED + ((j * 7) % 5) * 0.012, kind: j % FM_HAND_KINDS, seed: i * 31 + j });
+      }
+    });
+  }
+  const handArt = [0, 1, 2].map((k) => makeRingHandArt('front', k));
+  // RAISING THE DEAD: three heaps of bones round the room, each one of the dead coming back up out of it
+  const PILES: ReadonlyArray<readonly [number, number, number]> = [[2.4, -2.3, 0], [3.3, 2.0, 0.14], [-1.6, 2.7, 0.27]];
+  const pileAt = (t: number, i: number): { sp: Sprite; k: number; tau: number } => {
+    const tau = t - (LEAD + FM_RAISE.shriek + PILES[i][2]);
+    if (tau < FM_RAISE_STIR) return { sp: sprite('pile', () => toSprite(deathOf3(1, 'front'), null, CANVAS3.ax, CANVAS3.ay)), k: 1, tau };
+    if (tau < FM_RAISE_STIR + DIE3_TIME) {
+      const k = 1 - (tau - FM_RAISE_STIR) / DIE3_TIME;
+      const kk = Math.round(k * DIE3_TIME * 30) / (DIE3_TIME * 30);
+      return { sp: sprite(`die:${kk.toFixed(3)}`, () => toSprite(deathOf3(kk, 'front'), null, CANVAS3.ax, CANVAS3.ay)), k, tau };
+    }
+    const st = Math.round((tau - FM_RAISE_STIR - DIE3_TIME) * 30) / 30;
+    return { sp: sprite(`sk:${(st % 1.2).toFixed(3)}`, () => toSprite(paintSkeleton3(STAND3, st % 1.2, 'front'), null, CANVAS3.ax, CANVAS3.ay)), k: 0, tau };
+  };
+  // THE SWEEPING FIRE: which way it pours on the floor (tiles), from the way he faces turning to his left
+  const fireWay = (t: number): readonly [number, number] | null => {
+    const tt = t - LEAD;
+    if (tt < FM_FIRE.burst - 0.001 || tt > FM_FIRE.stop + 0.001) return null;
+    const a = fmFireTurn(tt);
+    return [Math.cos(a), -Math.sin(a)];
+  };
+  // THE SHARDS: a fan from where the skull is as it spits, the middle one at the knight
+  const spit = LEAD + FM_SHARDS.hit;
+  const skull0 = fmSkullAt('attack', FM_SHARDS.hit);
+  const mouth0 = fmMouthAt('attack', FM_SHARDS.hit);
+  const from: [number, number] = [skull0[0] / TILE3, -skull0[1] / TILE3];
+  const h0 = (from[0] + from[1]) * 8 - mouth0[1] / 2;
+  const [kx, ky] = KN[which];
+  const toKnight = Math.hypot(kx - from[0], ky - from[1]);
+  const aim = Math.atan2(ky - from[1], kx - from[0]);
+  const shardAt = (i: number, d: number): { x: number; y: number; z: number } => {
+    const a = aim + ((i - (FM_SHARD.fan - 1) / 2) * FM_SHARD.apart * Math.PI) / 180;
+    const [x, y] = at(from[0] + Math.cos(a) * d, from[1] + Math.sin(a) * d);
+    return { x, y, z: h0 * (1 - d / FM_SHARD.reach) + 4 * (d / FM_SHARD.reach) * (1 - d / FM_SHARD.reach) * 4 };
+  };
+  const shardEnd = (i: number): number => (i === (FM_SHARD.fan - 1) / 2 ? toKnight - 0.15 : FM_SHARD.reach);
+  const scene = document.createElement('canvas');
+  scene.width = GW * RES;
+  scene.height = GH * RES;
+  const c = scene.getContext('2d') as CanvasRenderingContext2D;
+  const dark = document.createElement('canvas');
+  dark.width = GW * RES;
+  dark.height = GH * RES;
+  const dg = dark.getContext('2d') as CanvasRenderingContext2D;
+  const pool = document.createElement('canvas');
+  pool.width = 128;
+  pool.height = 128;
+  {
+    const pc = pool.getContext('2d') as CanvasRenderingContext2D;
+    const grd = pc.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grd.addColorStop(0, 'rgba(0,0,0,1)');
+    grd.addColorStop(0.5, 'rgba(0,0,0,0.7)');
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    pc.fillStyle = grd;
+    pc.fillRect(0, 0, 128, 128);
+  }
+  cv.width = Math.round(GW * DS);
+  cv.height = Math.round(GH * DS);
+  filmPage(TICKS, FPS, (tick) => {
+    const t = tick / FPS;
+    c.setTransform(RES, 0, 0, RES, 0, 0);
+    c.imageSmoothingEnabled = false;
+    c.fillStyle = '#07050a';
+    c.fillRect(0, 0, GW, GH);
+    for (let ty = -16; ty <= 16; ty++) {
+      for (let tx = -16; tx <= 16; tx++) {
+        const [px, py] = at(tx, ty);
+        if (px < -40 || px > GW + 40 || py < -30 || py > GH + 30) continue;
+        const sp = ground.floor(tx + 40, ty + 40);
+        c.drawImage(sp.img, px - sp.ax, py - 8 - sp.ay, sp.img.width / 2, sp.img.height / 2);
+      }
+    }
+    for (const [tx, ty, k] of LITTER) {
+      const sp = litter[k % litter.length];
+      const [px, py] = at(tx, ty);
+      c.drawImage(sp.img, Math.round(px - sp.ax), Math.round(py - sp.ay), sp.w, sp.h);
+    }
+    const lights: [number, number, number, number][] = [];
+    // ON THE FLOOR, under everything
+    if (which === 'fire') drawScorch(c, at, 0, 0, fireWay, t, LEAD + FM_FIRE.burst);
+    if (which === 'rings') {
+      drawSlamWave(c, at, 0, 0, t - (LEAD + FM_RINGS.hit));
+      for (const h of hands) drawHandCrack(c, at, h.x, h.y, t - h.t0, FM_HAND_TIME, h.seed);
+    }
+    if (which === 'shards') {
+      for (let i = 0; i < FM_SHARD.fan; i++) {
+        const d = 0.3 + FM_SHARD.speed * (t - spit);
+        if (t < spit || d >= shardEnd(i)) continue;
+        const p = shardAt(i, d);
+        drawShardShadow(c, p.x, p.y);
+      }
+    }
+    // THE FIGURES, nearest last
+    const [mv, mt] = himAt(t);
+    const him = himSp(mv, mt);
+    const figs: Figure[] = [{ sp: him, x: hx, y: hy, light: true }];
+    const [kxs, kys] = at(kx, ky);
+    figs.push({ sp: knight, x: kxs, y: kys, light: true });
+    if (which === 'rings') {
+      for (const h of hands) {
+        const f = Math.floor((t - h.t0) * FM_HAND_FPS);
+        if (f < 0 || f >= FM_HAND_FRAMES) continue;
+        const [x, y] = at(h.x, h.y);
+        figs.push({ sp: handArt[h.kind][f], x, y });
+        lights.push([x, y - 10, 26, 0.6]);
+      }
+    }
+    const piles: { x: number; y: number; tau: number }[] = [];
+    if (which === 'raise') {
+      // (each heap: bones of others lying round the one that comes up)
+      const heap = sprite('heap', () => toSprite(deathOf3(1, 'back'), null, CANVAS3.ax, CANVAS3.ay));
+      const heapF = sprite('heapF', () => flipSprite(toSprite(deathOf3(1, 'front'), null, CANVAS3.ax, CANVAS3.ay)));
+      PILES.forEach((p) => {
+        for (const [dx, dy, k] of [[-0.35, -0.25, 0], [0.3, -0.3, 1], [-0.1, 0.35, 1], [0.38, 0.22, 0]] as const) {
+          const [x, y] = at(p[0] + dx, p[1] + dy);
+          figs.push({ sp: k ? heapF : heap, x, y, light: false });
+        }
+      });
+      PILES.forEach((p, i) => {
+        const r = pileAt(t, i);
+        const [x, y] = at(p[0], p[1]);
+        figs.push({ sp: r.sp, x, y: y + 0.01 });
+        piles.push({ x, y, tau: r.tau });
+        lights.push([x, y - 8, 30, 0.7]);
+      });
+    }
+    // (the stream goes behind him when it pours away from you)
+    const way = which === 'fire' ? fireWay(t) : null;
+    const streamFirst = !!way && way[0] + way[1] < -0.2;
+    const mouth = fmMouthAt(mv, mt);
+    const mx = hx + mouth[0] / 2;
+    const my = hy + mouth[1] / 2;
+    const stream = (): void => {
+      if (which === 'fire') drawFireStream(c, at, 0, 0, mx, my, fireWay, t, LEAD + FM_FIRE.burst, LEAD + FM_FIRE.stop);
+    };
+    if (streamFirst) stream();
+    figs.sort((a, b) => a.y - b.y);
+    for (const f of figs) {
+      drawAura(c, f.sp, f.x, f.y);
+      c.drawImage(f.sp.img, Math.round(f.x - f.sp.ax), Math.round(f.y - f.sp.ay), f.sp.w, f.sp.h);
+    }
+    if (!streamFirst) stream();
+    // OVER THE FIGURES: the shards in flight and where they strike
+    if (which === 'shards') {
+      for (let i = 0; i < FM_SHARD.fan; i++) {
+        const end = shardEnd(i);
+        const d = 0.3 + FM_SHARD.speed * (t - spit);
+        if (t < spit) continue;
+        if (d < end) {
+          const p = shardAt(i, d);
+          const q = shardAt(i, Math.max(0, d - 0.15));
+          drawBoneShard(c, p.x, p.y, p.z, p.x - q.x, p.y - p.z - (q.y - q.z), t - spit, i * 1.7);
+          lights.push([p.x, p.y - p.z, 18, 0.5]);
+        } else {
+          const tb = t - spit - (end - 0.3) / FM_SHARD.speed;
+          const p = shardAt(i, end);
+          const q = shardAt(i, end - 0.15);
+          drawShardBreak(c, p.x, p.y, p.z, p.x - q.x, p.y - p.z - (q.y - q.z), tb);
+          if (tb < FM_SHARD_BREAK) lights.push([p.x, p.y - p.z, 26, 0.7 * (1 - tb / FM_SHARD_BREAK)]);
+        }
+      }
+    }
+    if (which === 'raise') for (const p of piles) drawRaiseGlow(c, p.x, p.y, p.tau, DIE3_TIME);
+    if (way) {
+      for (const d of [1, 2.2, 3.4, 4.6]) {
+        const [x, y] = at(way[0] * d, way[1] * d);
+        lights.push([x, y - 4, 40, 0.8]);
+      }
+      lights.push([mx, my, 30, 0.8]);
+    }
+    if (which === 'rings') {
+      const tw = t - (LEAD + FM_RINGS.hit);
+      if (tw >= 0 && tw < 1.4) lights.push([hx, hy, 40 + 70 * Math.min(1, tw), 0.8 * (1 - tw / 1.4)]);
+    }
+    // THE DARK (render.ts `light`), thinner round him and the knight and wherever his fire is
+    dg.setTransform(RES, 0, 0, RES, 0, 0);
+    dg.globalCompositeOperation = 'source-over';
+    dg.clearRect(0, 0, GW, GH);
+    dg.fillStyle = 'rgba(6,4,14,0.8)';
+    dg.fillRect(0, 0, GW, GH);
+    dg.globalCompositeOperation = 'destination-out';
+    dg.imageSmoothingEnabled = true;
+    const spot = (x: number, y: number, r: number, strength: number): void => {
+      dg.globalAlpha = Math.min(1, strength);
+      dg.drawImage(pool, Math.round(x - r), Math.round(y - r * 0.62), Math.round(r * 2), Math.round(r * 1.24));
+    };
+    spot(kxs, kys - 8, 150, 0.85);
+    spot(GW / 2, GH / 2, 300, 0.3);
+    spot(hx, hy - 16, 70, 0.75);
+    for (const l of him.lights ?? []) if (l.r >= 7) spot(hx + l.x - him.ax, hy + l.y - him.ay + 6, l.r * 2.6, (l.a ?? 0.5) * 1.1);
+    for (const [x, y, r, a] of lights) spot(x, y, r, a);
+    dg.globalAlpha = 1;
+    dg.globalCompositeOperation = 'source-over';
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.drawImage(dark, 0, 0);
+    c.setTransform(RES, 0, 0, RES, 0, 0);
+    for (const f of figs) if (f.light !== false) drawLights(c, f.sp, f.x, f.y);
+    for (const [x, y, r, a] of lights) glowAt(c, x, y, r * 0.5, a * 0.35);
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(scene, 0, 0, cv.width, cv.height);
+  });
 }

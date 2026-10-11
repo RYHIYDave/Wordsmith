@@ -27,7 +27,19 @@
 //      he gives off grows by two fifths at most (it swells over two or three frames);
 //   9. THE SKULL, the second thing he is known by, is about his hood's width (his emblem: the man is the mass);
 //  10. NO LONE PIXEL, in any frame either way round: with his pink edge round it, a pixel alone is a cross (+),
-//      and an ember or a spark of his is never one.
+//      and an ember or a spark of his is never one;
+//  11. HIS ATTACKS (his picks by 08:36 on 11 Oct; his word that day: “I don’t need the whole mock up sheet,
+//      just show me what he looks like and what the attacks look like”) paint in every frame both ways round,
+//      nothing cyan, his edge round him, no lone pixel;
+//  12. THE SHARDS (“Bone shards from the skull (Recommended)”): the skull cocked back behind him, then swung
+//      over until it points at you, its jaws open, on the blow; the shards leave its jaws then;
+//  13. THE RINGS OF HANDS (“Rings of hands (Recommended)”): his claw raised high, then slammed down at the
+//      floor on the blow, the staff's foot striking the floor with it; each of the hands bursts up out of
+//      the floor, grabs, and is dragged back under (nothing of it left above the floor);
+//  14. RAISING THE DEAD (“Raise the dead (Recommended)”): both his hands up over his hood while the dead come
+//      up, the skull's jaws wide (it shrieks);
+//  15. THE SWEEPING FIRE (“Sweeping fire”): the skull high over his hood while it pours, its jaws wide, and the
+//      stream goes round the room once.
 //   run: tsx --test tests/fleshmancer.test.ts
 
 // @ts-ignore
@@ -39,7 +51,7 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { FLESHMANCER, FLESHMANCER_SWITCH, FM_BODY, FM_GOUT_LAND, FM_GOUT_LET, FM_GOUT_SPOT, FM_HOOD_R, FM_HOOD_UP, FM_MADE, FM_REST, FM_SHAPE, FM_SKULL_WIDE, fmGoutAt, fmHemOf, fmHoodTop, fmMantle, fmSolids, fmTails, makeFleshmancerArt3, staffOf } from '../src/art/fleshmancer';
+import { FLESHMANCER, FLESHMANCER_SWITCH, FM_ATTACKS, FM_BODY, FM_FIRE, FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, FM_HAND_UNDER, FM_RAISE, FM_RINGS, FM_SHARDS, fmFireTurn, fmJawOf, fmMouthAt, makeRingHandArt, paintRingHand, FM_GOUT_LAND, FM_GOUT_LET, FM_GOUT_SPOT, FM_HOOD_R, FM_HOOD_UP, FM_MADE, FM_REST, FM_SHAPE, FM_SKULL_WIDE, fmGoutAt, fmHemOf, fmHoodTop, fmMantle, fmSolids, fmTails, makeFleshmancerArt3, staffOf } from '../src/art/fleshmancer';
 import { checkBoss, findingsSaid, framesOf, inLump } from '../src/art/boss_checks';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
@@ -100,14 +112,14 @@ function looked(sp: Sprite): { n: number; rim: number; cyan: boolean; odd: numbe
 test('1. the switch is off, and nothing of the game imports him', () => {
   assert.equal(FLESHMANCER_SWITCH.on, false);
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/fleshmancer.ts') continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/fleshmancer.ts' || f === 'art/fm_spells.ts') continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
-    assert.ok(!/from ['"][^'"]*fleshmancer['"]/.test(text), `src/${f} imports the fleshmancer`);
+    assert.ok(!/from ['"][^'"]*(fleshmancer|fm_spells)['"]/.test(text), `src/${f} imports the fleshmancer`);
   }
 });
 
-test('2. HIS STAND THROUGH EVERY CHECK: every frame, from in front and from behind, and into his rest pose from every frame of it', () => {
-  assert.equal(FM_MADE.join(','), 'stand');
+test('2. HIS STAND AND HIS FOUR ATTACKS THROUGH EVERY CHECK: every frame, from in front and from behind, and from every frame of his stand into each and back', () => {
+  assert.equal(FM_MADE.join(','), 'stand,attack,rings,raise,fire');
   assert.equal(framesOf(FLESHMANCER, 'stand').length, FLESHMANCER.idleFrames + 1);
   const found = checkBoss(FLESHMANCER, FM_SHAPE, FM_MADE);
   assert.equal(found.length, 0, `the fleshmancer: ${findingsSaid(found).slice(0, 12).join('; ')}`);
@@ -249,4 +261,92 @@ test('10. no lone pixel in any frame either way round (with his pink edge round 
       assert.equal(lone.length, 0, `${view}, frame ${i}: lone pixels at ${lone.slice(0, 6).join(' ')}`);
     });
   }
+});
+
+const ART = makeFleshmancerArt3();
+/** Of a move's frames both ways round: what each paints (as test 3 asks), and any lone pixel. */
+function frameFaults(which: string): string[] {
+  const out: string[] = [];
+  for (const view of ['front', 'back'] as const) {
+    const clips = ART[view].clips;
+    const frames = (which === 'attack' ? clips?.attack?.frames : clips?.moves?.[which]?.frames) ?? [];
+    if (!frames.length) out.push(`${which} ${view}: no frames`);
+    for (const [i, sp] of frames.entries()) {
+      const f = looked(sp);
+      if (!(f.n > 900 && !f.cyan && f.rim > 60 && f.odd === 0)) out.push(`${which} ${view} ${i}: ${f.n} pixels, ${f.rim} edge, ${f.odd} odd${f.cyan ? ', cyan' : ''}`);
+      const { w, h, d } = paintingOf(sp);
+      const solid = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < w && y < h && d[(y * w + x) * 4 + 3] === 255;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (!solid(x, y)) continue;
+          let m = 0;
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && solid(x + dx, y + dy)) m++;
+          if (m === 0) out.push(`${which} ${view} ${i}: a lone pixel at ${x},${y}`);
+        }
+      }
+    }
+  }
+  return out;
+}
+
+test('11. his four attacks paint in every frame both ways round: nothing cyan, his edge round him, every pixel whole or empty but the edge, no lone pixel', () => {
+  for (const which of ['attack', 'rings', 'raise', 'fire']) {
+    const faults = frameFaults(which);
+    assert.equal(faults.length, 0, faults.slice(0, 8).join('; '));
+  }
+});
+
+test('12. the shards: the skull cocked back behind him, then swung over until it points at you, its jaws open, on the blow', () => {
+  assert.equal(FLESHMANCER.attack.motion.hit, FM_SHARDS.hit);
+  const held = skeletonAt(FLESHMANCER, 'attack', 0.5);
+  const spit = skeletonAt(FLESHMANCER, 'attack', FM_SHARDS.hit);
+  const back = staffOf(held).skull[0] - held.pelvis[0];
+  const out = staffOf(spit).skull[0] - spit.pelvis[0];
+  assert.ok(back < -15, `held back, the skull is ${back.toFixed(1)} before him (behind him)`);
+  assert.ok(out > 30, `on the blow the skull is ${out.toFixed(1)} before him`);
+  assert.ok(fmJawOf(FM_ATTACKS.shards, FM_SHARDS.hit) >= 3.5, 'its jaws wide as it spits');
+  // (where the shards leave it, from in front: before him and lower than where it was held, toward you)
+  const m0 = fmMouthAt('attack', 0.5);
+  const m1 = fmMouthAt('attack', FM_SHARDS.hit);
+  assert.ok(m1[0] > m0[0] + 30 && m1[1] > m0[1], `the jaws at ${m0} held back, at ${m1} as it spits`);
+});
+
+test('13. the rings of hands: his claw raised high, slammed down at the floor on the blow, the staff striking the floor; each hand bursts up, grabs, and goes back under', () => {
+  assert.equal(FLESHMANCER.more?.rings.motion.hit, FM_RINGS.hit);
+  const up = skeletonAt(FLESHMANCER, 'rings', 0.6);
+  const down = skeletonAt(FLESHMANCER, 'rings', FM_RINGS.hit);
+  assert.ok(up.handL[2] - down.handL[2] > 40, `his claw comes down ${(up.handL[2] - down.handL[2]).toFixed(1)}`);
+  const foot = staffOf(down).foot[2];
+  assert.ok(foot > 0 && foot < 9, `the staff's foot ${foot.toFixed(1)} off the floor as it strikes it`);
+  for (let k = 0; k < FM_HAND_KINDS; k++) {
+    const art = makeRingHandArt('front', k);
+    assert.equal(art.length, FM_HAND_FRAMES);
+    const sizes = art.map((sp) => looked(sp));
+    for (const [i, f] of sizes.entries()) assert.ok(!f.cyan && f.odd === 0, `hand ${k}, frame ${i}: ${f.odd} odd${f.cyan ? ', cyan' : ''}`);
+    // (up high, then nothing of the arm left above the floor once it is under: only its hole and the stone round it)
+    const high = Math.max(...sizes.slice(2, 10).map((f) => f.n));
+    const last = sizes[FM_HAND_FRAMES - 1].n;
+    assert.ok(high > 250 && last < high * 0.3, `hand ${k}: ${high} pixels up, ${last} in its last frame`);
+    assert.ok(FM_HAND_UNDER < FM_HAND_FRAMES / FM_HAND_FPS);
+  }
+  assert.ok(paintRingHand(0.3).lights.length > 0, 'its fingers burn');
+});
+
+test('14. raising the dead: both his hands up over his hood while they come up, the skull shrieking', () => {
+  for (let t = 0.9; t < FM_RAISE.hold; t += 0.1) {
+    const s = skeletonAt(FLESHMANCER, 'raise', t);
+    const hood = fmHoodTop(s);
+    assert.ok(s.handL[2] > hood && staffOf(s).skull[2] > hood + 20, `at ${t.toFixed(1)} s his claw is ${s.handL[2].toFixed(0)} up, the skull ${staffOf(s).skull[2].toFixed(0)}, his hood ${hood.toFixed(0)}`);
+    assert.ok(fmJawOf(FM_ATTACKS.raise, t) >= 3.5, `at ${t.toFixed(1)} s the skull's jaws are open`);
+  }
+});
+
+test('15. the sweeping fire: the skull high over his hood while it pours, its jaws wide, and the stream goes round once', () => {
+  for (let t = FM_FIRE.pour; t < FM_FIRE.stop; t += 0.2) {
+    const s = skeletonAt(FLESHMANCER, 'fire', t);
+    assert.ok(staffOf(s).skull[2] > fmHoodTop(s) + 25, `at ${t.toFixed(1)} s the skull is ${staffOf(s).skull[2].toFixed(0)} up`);
+    assert.ok(fmJawOf(FM_ATTACKS.fire, t) >= 3.5, `at ${t.toFixed(1)} s the skull's jaws are open`);
+  }
+  const round = fmFireTurn(FM_FIRE.stop) - fmFireTurn(FM_FIRE.pour);
+  assert.ok(Math.abs(round - Math.PI * 2) < 0.01, `it goes ${(round / Math.PI / 2).toFixed(2)} times round`);
 });
