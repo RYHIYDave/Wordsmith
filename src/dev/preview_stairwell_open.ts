@@ -87,7 +87,7 @@ function cell(fr: Sprite | null, f: number, x: number, y: number, w: number, h: 
   const [dx, dy] = shakeAt(f);
   g.translate(dx, dy);
   const at = (tx: number, ty: number): [number, number] => [ox + (tx - ty) * 16, oy + (tx + ty) * 8];
-  for (let tx = -5; tx < 8; tx++) for (let ty = -5; ty < 8; ty++) draw(ground.floor(AT[0] + tx, AT[1] + ty), ...at(tx, ty));
+  for (let tx = -10; tx < 13; tx++) for (let ty = -10; ty < 13; ty++) draw(ground.floor(AT[0] + tx, AT[1] + ty), ...at(tx, ty));
   if (fr) draw(fr, ox, oy);
   // (the warrior a tile and a half off the near side: the skirt of dust rushes past his feet)
   const [hx, hy] = way === 'x' ? at(1.0, 3.0) : at(3.0, 1.0);

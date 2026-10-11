@@ -27,6 +27,21 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
   opening is the game's 'slam' burst (stone and dust) and a shake. He was told its real moment would
   be yours, big and wild by his rule.")
 
+## The art chat's own look at the third cut, and what was mended
+
+- **The ground dust broke into worms** as its sheets thinned: the holes left long grey squiggles, "S"
+  and "2" shapes and rings. Now the dust low on the floor (each pixel's dust whose billow lies under 26
+  picture pixels up) is drawn as broad sheets: its thickness is smoothed wide (so no gap between two
+  billows opens into a slit or a ring), it is flat, lit along its far rim and shaded along its near
+  one, and it thins by going see-through: where it is thin it is drawn a step of the way toward the
+  floor's own colour under it, and its edge draws in evenly, as smooth lobes, from the outside in. Any
+  gap of fewer than 260 pixels inside a sheet is closed, so the only openings are a few big round ones
+  well inside. A sheet lies on the floor and only what stands on it hides it. The plume and the rest
+  are as they were. Only the dust that is not see-through counts as hiding what is under it (for the
+  fissure going and the pit becoming the stairwell).
+- (The dev page now lays the floor out over the whole of each cell, so that the see-through sheets far
+  out are seen over the floor, as in the game.)
+
 ## The second fresh look, and what the third cut does about it
 
 (The art chat's rulings on what the second fresh look found, in brief; not his words.)
@@ -52,7 +67,7 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
   billows spray apart as they rise and thin.
 - **E. The early fissure puffs read as pebbles.** They are now wisps: thin, low and long, curling off
   along the floor, broken where they are thin.
-- **F. Blink-outs.** Nothing shrinks to a dab and vanishes now: everything thins away, holes opening.
+- **F. Blink-outs.** Nothing shrinks to a dab and vanishes now: everything thins away (the plume with holes opening; the sheets on the floor see-through, as above).
 - **G. The dotted outline on frame 1.** The flagstones now cover a hair past their edges, so lying in
   place they cover every pixel of the floor over the pit; nothing outlines the opening before the
   fissure runs round it.
@@ -66,7 +81,7 @@ are untouched here). Made for THE ART CHAT, 10 Oct 2026. **Not yet seen by him.*
   fissure goes at the first frame the dust is over it, and each pixel of the pit becomes the stairwell
   at the first frame the dust is over it (painted either way) with no stone there. The code refuses to
   make the moment if any pixel is never covered.
-- **Left:** lit lips on the tipping stone slabs and grit trickling from the plume were not done; the
+- **Left:** lit lips on the tipping stone slabs and grit trickling from the plume were not done (still not, after the art chat's look); the
   earth still breaks loose on the tiles' joints between slabs (only the clods inside a slab are
   ragged); painting a moment now takes 7 to 10 s here.
 
@@ -233,7 +248,8 @@ One test checks how long the nine take to paint, and that each is kept. For each
   is out 150 to each side within 15 frames, half of that within 5.
 - **The settling:** measured at the top of the dust's body (the row above which lie 3% of its pixels,
   not a torn scrap thinning away above it): it hangs 4 frames or more; it never comes down faster than
-  it went up; it is under half its height within 40 frames; it thins over the last second.
+  it went up; it is under half its height within 40 frames; it thins over the last second; and over
+  the last six frames no more than 2500 pixels change in a frame, the last frame the stairwell.
 - **The swaps:** the last of the fissure goes after the burst; the stairwell starts to come 18 frames
   or more after it (each pixel under the dust: the code refuses otherwise).
 - **The stones:** twelve of them, 10 to 18 picture pixels across, thrown within 4 frames of the burst,

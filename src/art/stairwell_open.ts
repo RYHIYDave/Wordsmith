@@ -586,8 +586,8 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
   // ----- THE FLOOR AS IT LIES round the anchor (the game's own tiles), on the frame
   const ground = groundOf(theme);
   const floor = new Px(FW, FH);
-  for (let ty = -2; ty <= 4; ty++) {
-    for (let tx = -2; tx <= 4; tx++) {
+  for (let ty = -7; ty <= 9; ty++) {
+    for (let tx = -7; tx <= 9; tx++) {
       const s = ground.floor(TX + tx, TY + ty);
       const p = pixelsOf(s);
       const [x, y] = scr(tx, ty, 0);
@@ -1413,6 +1413,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     return { out, scene, dust, zb };
   };
 
+  const SEE = new Map<string, string>();
   /** How hard it is for thin dust to show at a pixel (0 to 1): blocks of two pixels, clumped, drifting slowly, stretched along the floor. */
   const breakAt = (x: number, y: number, f: number): number => {
     const bx = Math.floor(x / 2);
@@ -1434,7 +1435,9 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
    * still down in it). Never a lone speck. Its mask returned.
    */
   function paintDust(out: Px, f: number, zb: Float32Array, scene: Px, depth?: Float32Array): Uint8Array {
+    // (mask: where the dust hides what is under it; drawn: where it is drawn at all, see-through or not)
     const mask = new Uint8Array(FW * FH);
+    const drawn = new Uint8Array(FW * FH);
     const live: { b: Billow; s: BillowNow; sx: number; sy: number }[] = [];
     for (const b of billows) {
       const st = billowAt(b, f);
@@ -1463,6 +1466,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     const n = w * hh;
     // the mass: how much dust is at each pixel (where enough is, it is dust), and how near the eye its surface is
     const F = new Float32Array(n);
+    const Flo = new Float32Array(n);
     const M = new Float32Array(n).fill(-1e9);
     const Sm = new Float32Array(n);
     const Zt = new Float32Array(n);
@@ -1495,7 +1499,10 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
           const q = d2 / (lob * lob);
           if (q >= 1.3) continue;
           const o = (y - Y0) * w + x - X0;
-          if (q < 1) F[o] += s.a * (1 - q);
+          if (q < 1) {
+            F[o] += s.a * (1 - q);
+            if (s.z < 26) Flo[o] += s.a * (1 - q);
+          }
           const hg = q < 1 ? dep + R * Math.sqrt(1 - q) : dep - R * (q - 1) * 0.8;
           if (hg > M[o]) {
             Sm[o] = Sm[o] * Math.exp((M[o] - hg) / KS) + 1;
@@ -1507,18 +1514,53 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     }
     // (where it is thin its edge breaks up and holes open in it, in blocks of two pixels and more, never a speck)
     const T = 0.12;
+    // (the ground sheets, low on the floor: their thickness smoothed broad, so that no gap between two
+    // billows opens into a worm or a ring; they thin by going see-through, their edge drawing in evenly)
+    const Fs = new Float32Array(n);
+    {
+      const tmp = new Float32Array(n);
+      const R = 10;
+      Fs.set(Flo);
+      for (let pass = 0; pass < 2; pass++) {
+        for (let y = 0; y < hh; y++) {
+          let acc = 0;
+          for (let x = -R; x < w + R; x++) {
+            if (x + R < w) acc += Fs[y * w + x + R];
+            if (x - R - 1 >= 0) acc -= Fs[y * w + x - R - 1];
+            if (x >= 0 && x < w) tmp[y * w + x] = acc / (2 * R + 1);
+          }
+        }
+        for (let x = 0; x < w; x++) {
+          let acc = 0;
+          for (let y = -R; y < hh + R; y++) {
+            if (y + R < hh) acc += tmp[(y + R) * w + x];
+            if (y - R - 1 >= 0) acc -= tmp[(y - R - 1) * w + x];
+            if (y >= 0 && y < hh) Fs[y * w + x] = acc / (2 * R + 1);
+          }
+        }
+      }
+    }
+    const SHEET = 26;
     const H = new Float32Array(n);
     const inside = new Uint8Array(n);
+    const thin = new Uint8Array(n);
+    const hid = new Uint8Array(n);
     for (let y = Y0; y <= Y1; y++) {
       for (let x = X0; x <= X1; x++) {
         const o = (y - Y0) * w + x - X0;
-        if (F[o] < T + 0.55 * breakAt(x, y, f)) continue;
+        const low = Zt[o] < SHEET;
+        if (low ? Fs[o] < 0.13 : F[o] < T + 0.55 * breakAt(x, y, f)) continue;
+        if (low) thin[o] = Fs[o] >= 0.3 ? 0 : 1;
         const hg = M[o] + KS * Math.log(Sm[o]);
         // (behind what is nearer the eye: the floor, a stone of it, the kerb)
         const i = y * FW + x;
         const zs = scene.d[i * 4 + 3] ? zb[i] : 0;
         const ds = (24.6 * (y + 0.5 - AY + zs)) / 16 + 0.49 * zs;
-        if (hg < ds - 0.5) continue;
+        // (a sheet lies on the floor: only what stands on it hides it)
+        if (hg < ds - 0.5 && !(low && !scene.d[i * 4 + 3])) {
+          hid[o] = 1;
+          continue;
+        }
         H[o] = hg;
         inside[o] = 1;
       }
@@ -1559,7 +1601,16 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
         let nx: number;
         let ny: number;
         let nz: number;
-        if (l && r && u && dn) {
+        if (Zt[o] < SHEET) {
+          // (a sheet: flat, lit along its far rim, shaded along its near one)
+          if (l && r && u && dn) [nx, ny, nz] = [0, 0, 1];
+          else {
+            const gx = (x < X1 ? Fs[o + 1] : 0) - (x > X0 ? Fs[o - 1] : 0);
+            const gy = (y < Y1 ? Fs[o + w] : 0) - (y > Y0 ? Fs[o - w] : 0);
+            const m = Math.hypot(gx, gy) || 1;
+            [nx, ny, nz] = [(-gx / m) * 0.92, (-gy / m) * 0.92, 0.39];
+          }
+        } else if (l && r && u && dn) {
           // (inside: as its surface turns)
           const gx = (H[o + 1] - H[o - 1]) / 2;
           const gy = (H[o + w] - H[o - w]) / 2;
@@ -1573,20 +1624,97 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
           [nx, ny, nz] = [(-fx / m) * 0.92, (-fy / m) * 0.92, 0.39];
         }
         const lit = LX * nx + LY * ny + LZ * nz + 0.1 * Math.tanh((Zt[o] - 25) / 40);
-        out.set(x, y, DUST[lit > 0.74 ? 3 : lit > 0.36 ? 2 : lit > -0.18 ? 1 : 0]);
-        mask[y * FW + x] = 1;
+        let col = DUST[lit > 0.74 ? 3 : lit > 0.36 ? 2 : lit > -0.18 ? 1 : 0];
+        if (thin[o]) {
+          // (going see-through: a step of the way toward what lies under it)
+          const under = scene.get(x, y) ?? floor.get(x, y);
+          if (under) {
+            const key = col + under + thin[o];
+            let c2 = SEE.get(key);
+            if (!c2) SEE.set(key, (c2 = mix(col, under, 0.45)));
+            col = c2;
+          }
+        }
+        out.set(x, y, col);
+        drawn[y * FW + x] = 1;
+        if (!thin[o]) mask[y * FW + x] = 1;
         if (depth) depth[y * FW + x] = H[o];
+      }
+    }
+    // (no small hole in a sheet: a gap of fewer than 260 pixels inside one is closed, see-through as the
+    // thin sheet round it; only a few round openings well inside it, never a slit, a stroke or a ring)
+    {
+      const seenH = new Uint8Array(n);
+      const st: number[] = [];
+      const hole: number[] = [];
+      for (let o0 = 0; o0 < n; o0++) {
+        const x0 = (o0 % w) + X0;
+        const y0 = Math.floor(o0 / w) + Y0;
+        if (seenH[o0] || drawn[y0 * FW + x0] || hid[o0] || !(Zt[o0] > 0 && Zt[o0] < SHEET) || F[o0] <= 0) continue;
+        st.length = 0;
+        hole.length = 0;
+        st.push(o0);
+        seenH[o0] = 1;
+        let open = false;
+        while (st.length) {
+          const o = st.pop()!;
+          hole.push(o);
+          const ox = o % w;
+          const oy = Math.floor(o / w);
+          if (ox === 0 || oy === 0 || ox === w - 1 || oy === hh - 1) open = true;
+          for (const q of [o - 1, o + 1, o - w, o + w]) {
+            if (q < 0 || q >= n || seenH[q]) continue;
+            const qx = (q % w) + X0;
+            const qy = Math.floor(q / w) + Y0;
+            if (drawn[qy * FW + qx]) continue;
+            seenH[q] = 1;
+            if (hid[q] || F[q] <= 0) open = true;
+            st.push(q);
+          }
+          if (hole.length > 260) open = true;
+          if (open && hole.length > 260) break;
+        }
+        if (open) {
+          // (mark the rest of it as seen)
+          while (st.length) {
+            const o = st.pop()!;
+            for (const q of [o - 1, o + 1, o - w, o + w]) {
+              if (q < 0 || q >= n || seenH[q]) continue;
+              const qx = (q % w) + X0;
+              const qy = Math.floor(q / w) + Y0;
+              if (drawn[qy * FW + qx]) continue;
+              seenH[q] = 1;
+              st.push(q);
+            }
+          }
+          continue;
+        }
+        for (const o of hole) {
+          const ox = (o % w) + X0;
+          const oy = Math.floor(o / w) + Y0;
+          let col = DUST[2];
+          const under = scene.get(ox, oy) ?? floor.get(ox, oy);
+          if (under) {
+            const key = col + under + 1;
+            let c2 = SEE.get(key);
+            if (!c2) SEE.set(key, (c2 = mix(col, under, 0.45)));
+            col = c2;
+          }
+          out.set(ox, oy, col);
+          drawn[oy * FW + ox] = 1;
+        }
       }
     }
     // (never a lone speck: his note on the rats)
     for (let y = Y0; y <= Y1; y++) {
       for (let x = X0; x <= X1; x++) {
-        if (!mask[y * FW + x]) continue;
+        if (!drawn[y * FW + x]) continue;
         let k = 0;
         for (let dy = -1; dy <= 1 && !k; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && out.has(x + dx, y + dy)) k++;
         if (!k) {
           out.erase(x, y);
           mask[y * FW + x] = 0;
+          drawn[y * FW + x] = 0;
         }
       }
     }
@@ -1597,7 +1725,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
     for (let y = Y0; y <= Y1; y++) {
       for (let x = X0; x <= X1; x++) {
         const o0 = (y - Y0) * w + x - X0;
-        if (done[o0] || !mask[y * FW + x]) continue;
+        if (done[o0] || !drawn[y * FW + x]) continue;
         stack.length = 0;
         scrap.length = 0;
         stack.push(o0);
@@ -1613,7 +1741,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
               const ny = oy + dy;
               if ((!dx && !dy) || nx < X0 || nx > X1 || ny < Y0 || ny > Y1) continue;
               const q = (ny - Y0) * w + nx - X0;
-              if (done[q] || !mask[ny * FW + nx]) continue;
+              if (done[q] || !drawn[ny * FW + nx]) continue;
               done[q] = 1;
               stack.push(q);
             }
@@ -1631,7 +1759,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
                 const ny = oy + dy;
                 if ((!dx && !dy) || nx < X0 || nx > X1 || ny < Y0 || ny > Y1) continue;
                 const q = (ny - Y0) * w + nx - X0;
-                if (done[q] || !mask[ny * FW + nx]) continue;
+                if (done[q] || !drawn[ny * FW + nx]) continue;
                 done[q] = 1;
                 stack.push(q);
               }
@@ -1646,6 +1774,7 @@ function makeMoment(theme: Theme, way: Way, TX: number, TY: number): Moment {
           if (was) out.set(ox, oy, was);
           else out.erase(ox, oy);
           mask[oy * FW + ox] = 0;
+          drawn[oy * FW + ox] = 0;
           if (depth) depth[oy * FW + ox] = -1e9;
         }
       }

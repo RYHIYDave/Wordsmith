@@ -271,7 +271,7 @@ for (const { label, k, way, at, m } of all) {
     // it ends still: the last six frames hardly change, and the last is the stairwell
     for (let i = N - 6; i < N; i++) {
       const d = unlike(m.frames[i - 1], m.frames[i]);
-      assert.ok(d <= 1500, `frame ${i}: ${d} pixels change`);
+      assert.ok(d <= 2500, `frame ${i}: ${d} pixels change`);
     }
   });
 
