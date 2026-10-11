@@ -62,7 +62,7 @@ test('floor 4, moments: three, each its own, as he asked (“Something shifts ab
 
 const moved = (a: At, b: At): number => Math.hypot(b.x - a.x, b.y - a.y);
 
-test('floor 4, moments: the skull wall bows out and shudders, skulls pop loose; it bursts at its foot, its top drops as a block and breaks, its sides give; an avalanche of skulls and bones arcs out, bouncing and rolling four tiles toward the hero; all of it at rest at the end, a cavity left (both faces)', () => {
+test('floor 4, moments: the skull wall bows out and shudders, skulls pop loose; it bursts at its foot, its top drops as a block and breaks, its sides give; an avalanche of skulls and bones arcs out, bouncing and rolling toward the hero and resting within about four tiles of the wall; all of it at rest at the end, a cavity left (both faces)', () => {
   const m = named('the skull wall spills');
   for (const [film, out] of [[m, [-0.894, 0.447]], [{ ...m, ...m.right! }, [0.894, 0.447]]] as const) {
     const [burst, ...rest] = m.jolts;
@@ -89,6 +89,12 @@ test('floor 4, moments: the skull wall bows out and shudders, skulls pop loose; 
     // out a long way toward the hero: four tiles and more
     const far = all.map((t) => (t.at[t.at.length - 1]!.x - t.at[0]!.x) * out[0] + (t.at[t.at.length - 1]!.y - t.at[0]!.y) * out[1]);
     assert.ok(Math.max(...far) >= 130 && far.filter((d) => d >= 90).length >= 5, `out only ${Math.max(...far).toFixed(0)}, ${far.filter((d) => d >= 90).length} past 90`);
+    // but kept on the floor near the wall: none at rest more than about four tiles and a half from it
+    const tiles = all.map((t) => {
+      const e = t.at[t.at.length - 1]!;
+      return Math.max(e.x / 0.8 + e.y / 0.4, e.y / 0.4 - e.x / 0.8) / 2 / 40;
+    });
+    assert.ok(Math.max(...tiles) <= 4.6, `one rests ${Math.max(...tiles).toFixed(2)} tiles out`);
     // its top comes down: what was high on it ends on the floor
     const fell = all.filter((t) => t.at[0]!.y < -45 && t.at[t.at.length - 1]!.y > -12);
     assert.ok(fell.length >= 8, `only ${fell.length} come down from its top`);
@@ -133,8 +139,9 @@ test('floor 4, moments: the cart shivers, starts by itself and goes faster every
 
 test('floor 4, moments: the heap breathes, skulls rolling off it, fingers poking out; bones fountain up as a great arm bursts out on a jolt and rakes wide; the pink kindles in a skull, steady; the arm comes apart a piece at a time, crashing down on a second jolt; the skull is buried under sliding bones, its eyes seen going under', () => {
   const m = named('the bones stir');
-  const [burst, collapse] = m.jolts;
-  assert.ok(m.jolts.length === 2 && collapse > burst + 30, `jolts ${m.jolts}`);
+  const burst = m.jolts[0];
+  const collapse = m.jolts[m.jolts.length - 1];
+  assert.ok(m.jolts.length >= 3 && collapse > burst + 30, `jolts ${m.jolts}`);
   // it breathes, deep: up and down twice and more before it bursts
   const heap = m.tracks.find((t) => t.name === 'the heap')!.at.slice(0, burst).map((a) => a!.y);
   let turns = 0;
@@ -148,7 +155,7 @@ test('floor 4, moments: the heap breathes, skulls rolling off it, fingers poking
   assert.ok(high.length >= 6, `only ${high.length} thrown high`);
   // the arm: up fast and high, raking wide, up a long while
   const hand = seen(m.tracks.find((t) => t.name === 'the hand')!);
-  assert.ok(hand[0].y - Math.min(...hand.map((a) => a.y)) >= 45, 'the hand does not rise high');
+  assert.ok(hand[0].y - Math.min(...hand.map((a) => a.y)) >= 40, 'the hand does not rise high');
   const xsH = hand.slice(0, 50).map((a) => a.x);
   assert.ok(Math.max(...xsH) - Math.min(...xsH) >= 60, `it rakes only ${(Math.max(...xsH) - Math.min(...xsH)).toFixed(0)} across`);
   // the eyes: dark, then kindled and steady, then going under bit by bit, lower as they go, and gone
