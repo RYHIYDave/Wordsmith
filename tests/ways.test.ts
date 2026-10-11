@@ -124,6 +124,7 @@ test('the switch is on in the game (Version 20.2; his "Good" of 10 Oct, 11:15); 
     g.depth = 2;
     g.enterDungeon();
     const boss = g.monsters.find((m) => m.boss)!;
+    g.bossReady();
     inner(g).damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
     assert.equal(g.level.portal!.state, 1, 'the boss dead, the portal home is lit');
   });
@@ -360,6 +361,7 @@ test('the boss dead, the stairwell opens in his hall, clear of where he fell: by
         g.hero.x = L.floor.start.x;
         g.hero.y = L.floor.start.y;
         g.events.length = 0;
+        g.bossReady();
         inner(g).damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
         const st = W.stair!;
         const at = `dungeon ${d}, the boss falling ${onMiddle ? 'on' : 'away from'} the middle`;
@@ -396,6 +398,7 @@ test('whoever and whatever is on the stairwell\'s opening as it opens is put asi
       g.hero.y = st.y + 0.6;
       g.drops.push({ x: st.x + 0.5, y: st.y + 0.6, kind: 'gold', gold: 5, item: null, word: null, age: 0 });
       const cleared = g.cleared;
+      g.bossReady();
       inner(g).damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
       assert.equal(W.stair, st);
       assert.equal(st.open, true);

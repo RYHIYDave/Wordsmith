@@ -757,11 +757,14 @@ export const LEECH = { cap: Infinity };
  * gate closes and the boss says a little line.  And the boss’s name shows up all stylized on the
  * screen."). As his gate falls behind the hero, the boss stands for `secs`: he says one of his lines
  * over his head for `sayFor`, and from `nameAt` his name comes up across the screen (ui/cards.ts); then
- * the fight. Behind the
- * switch, off until his yes to its pictures (PICTURES FIRST). The lines are this chat's, each boss's
- * own; a boss without lines of his own says none, and his name still comes up.
+ * the fight. Behind the switch (PICTURES FIRST). The lines are this chat's, each boss's
+ * own; a boss without lines of his own says none, and his name still comes up. With it the boss
+ * waits at the back of his hall, and nothing harms him until his gate has fallen and his line is said
+ * (his words, 21:49: "Makes sure the boss spawns far enough back so it can’t be hit before your
+ * character enters the gate"). ON for the first five floors' version: his yes to films of it in the
+ * game, 21:49, "Yeah man looks awesome."
  */
-export const BOSS_INTRO = { on: false, secs: 3.2, sayFor: 1.9, nameAt: 1.0 };
+export const BOSS_INTRO = { on: true, secs: 3.2, sayFor: 1.9, nameAt: 1.0 };
 export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   warden: ['None leave my halls.', 'Another one for the cells.', 'The keys are mine. So are you.'],
 };
@@ -770,11 +773,11 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
  * THE FLOORS' NAMES (the owner, 10 Oct 2026, 21:30, and his pick at 21:33, "A"): every floor, as the
  * hero comes into it, shows a styled name of its own, of its boss or its place, with the level under
  * it in a smaller hand: "Prison Level 2" (the first five, the Crypt, are the prison's levels). Behind
- * the switch, off until his yes to its pictures. The names are this chat's; past the fifth floor
- * (no set of five there yet) the deep's.
+ * the switch; ON for the first five floors' version, his yes to a film of it, 21:49 ("Yeah man looks
+ * awesome."). The names are this chat's; past the fifth floor (no set of five there yet) the deep's.
  */
 export const FLOOR_NAMES = {
-  on: false,
+  on: true,
   names: ["The Warden's Tomb", "The Headsman's Yard", "The Chained One's Pit", 'The Ossuary', "The Fleshmancer's Lair"] as readonly string[],
   beyond: 'The Deep Crypt',
   /** how long the name stays, and how long it takes to come and to go, in seconds */

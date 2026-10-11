@@ -469,6 +469,7 @@ test('going down the stairwell records the deepest floor reached (the ways on, a
   g.hero.invuln = 1e9;
   g.enterDungeon();
   const boss = g.monsters.find((m) => m.boss)!;
+  g.bossReady();
   (g as unknown as { damageMonster: (m: unknown, d: number, el: string, c: boolean, s: number) => void }).damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
   const st = g.level.ways!.stair!;
   assert.ok(st.open, 'the stairwell opened');

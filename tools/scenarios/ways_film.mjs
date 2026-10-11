@@ -104,7 +104,7 @@ export default async function (page, snap) {
   came = -1;
   const b = await film('b', 200, async (i) => {
     if (i === 6) {
-      const fell = await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.boss && !q.dead); if (!m) return null; const at = [+m.x.toFixed(2), +m.y.toFixed(2)]; g.damageMonster(m, m.life + m.shield + 1, 'phys', false, -1); const st = g.level.ways.stair; return { at, stair: [st.x, st.y], open: st.open }; });
+      const fell = await page.evaluate(() => { const g = window.__dbg.game(); const m = g.monsters.find((q) => q.boss && !q.dead); if (!m) return null; const at = [+m.x.toFixed(2), +m.y.toFixed(2)]; g.bossReady(); g.damageMonster(m, m.life + m.shield + 1, 'phys', false, -1); const st = g.level.ways.stair; return { at, stair: [st.x, st.y], open: st.open }; });
       log('b', `the boss falls: ${JSON.stringify(fell)}`);
     }
     if (i === 30) {

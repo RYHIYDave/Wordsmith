@@ -1,4 +1,4 @@
-// THE BOSS'S ENTRANCE AND THE FLOORS' NAMES (game/defs.ts BOSS_INTRO and FLOOR_NAMES, off; ui/cards.ts):
+// THE BOSS'S ENTRANCE AND THE FLOORS' NAMES (game/defs.ts BOSS_INTRO and FLOOR_NAMES, on; ui/cards.ts):
 // pictures for the owner, from the game. His words, 10 Oct 2026, 21:30: "I’d like the boss fights to go
 // like this.  The gate closes and the boss says a little line.  And the boss’s name shows up all
 // stylized on the screen.  And I like the first 5 levels to be called Prison Level 1, Prison Level 2,

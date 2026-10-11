@@ -160,7 +160,8 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     c.aimY = target.y;
     // (near enough for the quick attack to get there: a wave fades after a short way)
     const want = melee ? 1.1 + target.r : Math.min(5.5, basic.range * 0.7);
-    if (best > want || !sees) walkTo(target.x, target.y);
+    // (BOSS_INTRO: a boss who waits for his gate to fall is not to be shot at from its doorway: walk in to him)
+    if (best > want || !sees || g.bossWaits(target)) walkTo(target.x, target.y);
     else if (!melee && best < 3) {
       c.mx = -(target.x - h.x) / best;
       c.my = -(target.y - h.y) / best;

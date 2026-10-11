@@ -1,5 +1,5 @@
-// THE NAME CARDS ACROSS THE SCREEN (behind BOSS_INTRO and FLOOR_NAMES in game/defs.ts, both off until
-// the owner's yes to their pictures). His words, 10 Oct 2026, 21:30: "The gate closes and the boss says
+// THE NAME CARDS ACROSS THE SCREEN (behind BOSS_INTRO and FLOOR_NAMES in game/defs.ts, both on since
+// the owner's yes to films of them, 21:49: "Yeah man looks awesome."). His words, 10 Oct 2026, 21:30: "The gate closes and the boss says
 // a little line.  And the boss’s name shows up all stylized on the screen.  [...] when you enter the
 // next dungeon it’s called something that relates to the boss or the location.  And that is also
 // stylized with the actual level under that in smaller font"; his pick at 21:33, "A": every floor's

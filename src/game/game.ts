@@ -258,6 +258,8 @@ export class Game {
   wayDepth = 0;
   /** (BOSS_INTRO) how much longer the boss stands saying his line */
   introT = 0;
+  /** (BOSS_INTRO) when a blow at a waiting boss was last told of ("Not yet") */
+  private waitTold = -1;
   /** (LEECH.cap) when the second Leech is counted in began, and what it has given back in it */
   private leechFrom = -1;
   private leechGiven = 0;
@@ -1137,12 +1139,19 @@ export class Game {
         this.spawn(def.kind, s.x, s.y, pi, p.tier === 'elite' && i === 0 ? 1 : 0, false, rng, lot);
       });
     });
-    // The boss waits a little in front of the dark portal.
+    // The boss waits a little in front of the dark portal (BOSS_INTRO: at the back of his hall, far
+    // from its way in: the owner, 21:49, "Makes sure the boss spawns far enough back so it can’t be hit
+    // before your character enters the gate").
     let bx = f.boss.x + 1;
     let by = f.boss.y + 2;
     if (!this.free(this.level.walk, bx, by, 0.42)) {
       bx = f.boss.x;
       by = f.boss.y;
+    }
+    const back = BOSS_INTRO.on ? this.backOfHall() : null;
+    if (back) {
+      bx = back.x;
+      by = back.y;
     }
     this.boss = this.spawn('warden', bx, by, -2, 0, true, rng, lot);
   }
@@ -1863,6 +1872,52 @@ export class Game {
     this.emit({ t: 'door', x: at.x, y: at.y, kind: 'fall' });
     this.emit({ t: 'shake', amount: 3 });
     this.sfx('gateFall');
+  }
+
+  /**
+   * (BOSS_INTRO) WHERE THE BOSS WAITS: the open floor of his hall furthest in from its gate, a tile and
+   * more clear of its walls and of what stands there, near the line straight in from the gate. Null
+   * where the hall has no gate.
+   */
+  private backOfHall(): { x: number; y: number } | null {
+    const L = this.level;
+    const f = L.floor;
+    const gate = L.doors.find((d) => d.spot.kind === 'bossgate');
+    const hall = f.rooms.find((r) => r.kind === 'boss');
+    if (!gate || !hall) return null;
+    const s = gate.spot;
+    const mid = s.a + 1.5;
+    let best: { x: number; y: number } | null = null;
+    let bs = -Infinity;
+    for (let y = hall.y; y < hall.y + hall.h; y++) {
+      for (let x = hall.x; x < hall.x + hall.w; x++) {
+        const px = x + 0.5;
+        const py = y + 0.5;
+        if (!this.free(L.walk, px, py, 1.3)) continue;
+        const score = insideBy(s, px, py) - 0.35 * Math.abs((s.alongX ? px : py) - mid);
+        if (score > bs) {
+          bs = score;
+          best = { x: px, y: py };
+        }
+      }
+    }
+    return best;
+  }
+
+  /**
+   * (BOSS_INTRO) THE BOSS WAITS: until his gate has fallen behind the hero and his line is said, he
+   * stands where he is, and nothing harms him.
+   */
+  bossWaits(m: Monster): boolean {
+    if (!BOSS_INTRO.on || !m.boss) return false;
+    if (this.introT > 0) return true;
+    return this.level.doors.some((d) => d.spot.kind === 'bossgate' && d.want === 1);
+  }
+
+  /** (BOSS_INTRO) For tests and playtests that strike the boss down by hand: his wait over, as if the hero had walked into his hall and heard him out (his gate down, his line said). */
+  bossReady(): void {
+    for (const d of this.level.doors) if (d.spot.kind === 'bossgate' && d.want === 1 && this.boss && !this.boss.dead) this.dropGate(d);
+    this.introT = 0;
   }
 
   /** (BOSS_INTRO) His gate down behind the hero, the boss stands and says his line, and his name comes up. */
@@ -3829,6 +3884,14 @@ export class Game {
   private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false, dot = false): void {
     // (what is shut in a room is out of reach, of an arc of lightning and of what burns on the ground too: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
+    // (BOSS_INTRO: nor is a boss who waits, until his gate has fallen and his line is said: `bossWaits`)
+    if (this.bossWaits(m)) {
+      if (this.time - this.waitTold > 0.7) {
+        this.waitTold = this.time;
+        this.emit({ t: 'text', x: m.x, y: m.y, text: 'Not yet', color: '#ffd27a' });
+      }
+      return;
+    }
     // (THE SKILL TREES: Overload, a shocked enemy takes more from everything)
     if (m.shockT > 0 && this.has('overload')) dmg = Math.max(1, Math.round(dmg * TALENT_TUNE.overload));
     // (GUARDING, on a monster: its shield takes the harm first)
@@ -4300,8 +4363,8 @@ export class Game {
         continue;
       }
       if (dist > 32) continue;
-      // (BOSS_INTRO: while he says his line, the boss stands and looks at the hero)
-      if (m.boss && this.introT > 0) {
+      // (BOSS_INTRO: until his gate has fallen and his line is said, the boss stands and looks at the hero)
+      if (m.boss && this.bossWaits(m)) {
         if (dist > 0.01) {
           m.fx = dx / dist;
           m.fy = dy / dist;

@@ -413,7 +413,7 @@ export default async function (page, snap) {
     let q = await walkTo(beyond.x, beyond.y, site.i, () => false, 2600);
     check('   with real input he walks at it for two seconds and more, and is held inside', q.inside >= 0.25 && q.want === 0, `${q.inside.toFixed(2)} tiles inside its line`);
     // the boss dies: it rises
-    await page.evaluate(() => { const g = window.__dbg.game(); if (g.boss) g.damageMonster(g.boss, 1e9, 'phys', false, -1); });
+    await page.evaluate(() => { const g = window.__dbg.game(); if (g.boss) { g.bossReady(); g.damageMonster(g.boss, 1e9, 'phys', false, -1); } });
     await page.waitForTimeout(1700);
     ds = await doorState(site.i);
     check('   the boss dies: it rises', ds.open === 1 && ds.want === 1, `open ${ds.open}`);

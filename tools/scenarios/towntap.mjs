@@ -209,6 +209,7 @@ export default async function (page, snap) {
       g.depth = 2; g.bodySearched = true; g.enterDungeon();
       const L = g.level; const f = L.floor;
       const b = g.monsters.find((m) => m.boss);
+      g.bossReady();
       g.damageMonster(b, b.life + b.shield + 1, 'phys', false, -1);
       for (const m of g.monsters) m.dead = true;
       const st = L.ways.stair;
