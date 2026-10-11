@@ -7,8 +7,9 @@ they come, how often, and what each does in a fight are the main chat's (with hi
 
 **State of this branch (`mockup/cultists`):** from `mockup/fleshmancer` at 25c6373 (the Fleshmancer whole,
 as he went to the main chat). Made by THE ART CHAT, 11 Oct 2026. THEIR LOOKS, WITH HIS YES (by 17:43,
-below); THEIR ATTACKS, made and filmed for him: the dagger cultist's run and his leap and plunge, and his
-death; the mini fleshmancer's call that raises the dead out of the cult's bodies, and his fire. Not made
+below); THEIR ATTACKS, made and filmed for him, WITH HIS YES (by 18:39, below): the dagger cultist's run and
+his leap and plunge, and his death; the mini fleshmancer's call that raises the dead out of the cult's
+bodies, and his fire. Not made
 yet: the mini fleshmancer's glide, how he flinches when hit and his death; the dagger cultist's flinch is
 made but not yet shown.
 
@@ -32,7 +33,12 @@ made but not yet shown.
   bones round his shoulders. Are both good to animate as shown?", by 17:43: "Yes, animate them
   (Recommended)", offered as: the dagger cultist's run and his leaping stab, and the mini fleshmancer
   raising skeletons and his smaller sweeping fire, as films.
-- THEIR ATTACKS: on the page "Cultist Attacks" (three films), with him for his yes.
+- THEIR ATTACKS, on the page "Cultist Attacks" (three films: the dagger cultist's charge, the mini
+  fleshmancer raising the dead out of the cult's bodies, his fire), asked as a pop-up, "The cultists'
+  attacks are on the Cultist Attacks page: the dagger cultist's charge, the mini fleshmancer raising the
+  dead from cult bodies, and his smaller fire. Good as shown?", by 18:39: "Yes, on to their other moves
+  (Recommended)", offered as: next the mini fleshmancer's glide, flinch and death, and the dagger
+  cultist's flinch, shown the same way.
 
 ## What is in it
 
