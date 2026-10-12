@@ -356,6 +356,35 @@ wait
 run new_monsters_pc    --scenario $S/new_monsters.mjs &
 run new_monsters_phone $P --scenario $S/new_monsters.mjs &
 wait
+# THE FIRST FIVE FLOORS (Version 21.0): the painter beside the game (and the game with none), each floor laid
+# with its pieces and its moments played, each boss's fight, the cult, the stairwell breaking open, the mine
+# shaft up to town, the titles, the new start screen
+DEPTH=2 run first5_painter2 --scenario $S/first5_painter.mjs &
+DEPTH=3 run first5_painter3_phone $P --scenario $S/first5_painter.mjs &
+DEPTH=5 FIGHT=1 run first5_painter5_fight --scenario $S/first5_painter.mjs &
+DEPTH=2 run first5_painter_off --hash painter=off --scenario $S/first5_painter.mjs &
+wait
+DEPTH=1 run first5_floor1 --scenario $S/first5_floor.mjs &
+DEPTH=2 run first5_floor2 --scenario $S/first5_floor.mjs &
+DEPTH=3 run first5_floor3 $P --scenario $S/first5_floor.mjs &
+DEPTH=4 run first5_floor4 --scenario $S/first5_floor.mjs &
+DEPTH=5 run first5_floor5 $U --scenario $S/first5_floor.mjs &
+wait
+DEPTH=2 run first5_boss2 --scenario $S/first5_boss.mjs &
+DEPTH=3 CLS=ranger run first5_boss3 --scenario $S/first5_boss.mjs &
+DEPTH=4 CLS=mage run first5_boss4 $P --scenario $S/first5_boss.mjs &
+DEPTH=5 run first5_boss5 --scenario $S/first5_boss.mjs &
+DEPTH=4 run first5_cult4 --scenario $S/first5_cult.mjs &
+DEPTH=5 run first5_cult5 $P --scenario $S/first5_cult.mjs &
+wait
+DEPTH=1 run first5_stair1 --scenario $S/first5_stair.mjs &
+DEPTH=3 run first5_stair3_phone $P --scenario $S/first5_stair.mjs &
+run first5_shaft --scenario $S/first5_shaft.mjs &
+run first5_shaft_upright $U --scenario $S/first5_shaft.mjs &
+run first5_titles --scenario $S/first5_titles.mjs &
+run first5_titles_phone $P --scenario $S/first5_titles.mjs &
+run title_smith3_phone $P --scenario $S/title_smith3.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &
