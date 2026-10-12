@@ -21,7 +21,8 @@ mock-up paint to show the shapes, not art for the game.
     node tools/preview.mjs src/dev/preview_cliff.ts previews/cliff_three_ways.png 1280 800
 
 Sent to him by 18:27 as previews/cliff_three_ways.png, with the planning chat's pick, 3. HIS
-ANSWER, 18:33: "Yeah I really like the rounded edges". So Act 1's outdoor edges stay on today's
+ANSWER, 18:33: "Yeah I really like the rounded edges"; and 18:34: "We’ll have to work on the sky
+but the rock and the curves look good". So Act 1's outdoor edges stay on today's
 tiles, with the edge painted rounded and ragged over them; quartering the tiles stays in reserve.
 Nothing is built: how the edge is painted in the game is the art chat's, and the renderer's part
 the main chat's, pictures to him first.
