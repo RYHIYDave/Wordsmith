@@ -88,8 +88,8 @@ not all of it may be held at once (floor 4's three films are 365 MB).
 - [x] 5 the pieces (game/first5.ts; render/pieces.ts; art/floors.ts; tests 6 to 8; tools/scenarios/first5_floor.mjs)
 - [x] 6 the moments (render/pieces.ts; the same playtest: every floor's three play)
 - [x] 7 the cultists (tools/scenarios/first5_cult.mjs: a mini fleshmancer's pack on floor 5; his raised dead)
-- [ ] tests, playtests, the regression
-- [ ] pictures and a page for him; the notes
+- [x] tests, playtests, the regression (the unit suite 1236 of 1236; the regression all 182 clean; the published page all 74 clean: `docs/NEXT_VERSION.md`)
+- [x] pictures and a page for him (the try-out page and the films page); the notes
 
 ## More calls made for him
 
