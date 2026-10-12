@@ -350,7 +350,10 @@ export class Game {
     this.depth = Math.max(1, Math.min(5, Math.floor(n)));
     this.cleared = this.depth - 1;
     this.wayDepth = this.depth;
+    // (the practice room's lines are not true here: on a floor of the Crypt the hero can fall)
+    this.events = this.events.filter((e) => e.t !== 'msg');
     this.enterDungeon();
+    this.msg('Try-out. Every word is yours: open the INVENTORY.', MSG.word);
   }
 
   // ===========================================================================================
