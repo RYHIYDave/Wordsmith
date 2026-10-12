@@ -20,10 +20,11 @@ import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
+import { BOSSES5, BossRules, bossKind, gaitOf } from './bosses';
 import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, STAIR_LONG, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
-import type { AimMode, Channel, Controls, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
+import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -206,6 +207,10 @@ export class Game {
   volleys: Volley[] = [];
   /** THE MONSTERS' ATTACKS: the dead the Warden has called, still crawling out of the ground (game/defs.ts SUMMON). */
   risers: Riser[] = [];
+  /** THE FIRST FIVE FLOORS (game/bosses.ts): what the bosses of floors 2 to 5 leave on the floor and send across it; the cult's bodies where they fell; and the rules of them all. */
+  perils: Peril[] = [];
+  corpses: Corpse[] = [];
+  readonly bosses: BossRules = new BossRules(this);
   /** THE NEW MONSTERS (game/defs.ts SPEAR): the Bonewards' spears lying on the floor, each until its Boneward picks it up. */
   spears: Spear[] = [];
   /** The orb set down by the staff's quick attack (one at a time), and the mage's familiars. */
@@ -921,6 +926,8 @@ export class Game {
     this.traps = [];
     this.volleys = [];
     this.risers = [];
+    this.perils = [];
+    this.corpses = [];
     this.spears = [];
     this.orbs = [];
     this.familiars = [];
@@ -952,6 +959,7 @@ export class Game {
     h.combo = 0;
     h.comboT = 0;
     h.step = null;
+    h.held = 0;
     for (const s of h.skills) {
       s.cd = 0;
       s.charges = s.maxCharges;
@@ -1153,7 +1161,8 @@ export class Game {
       bx = back.x;
       by = back.y;
     }
-    this.boss = this.spawn('warden', bx, by, -2, 0, true, rng, lot);
+    // (THE FIRST FIVE FLOORS: each floor's own boss, game/bosses.ts; the Warden on the first, and past the fifth)
+    this.boss = this.spawn(bossKind(this.depth), bx, by, -2, 0, true, rng, lot);
   }
 
   /**
@@ -1312,7 +1321,7 @@ export class Game {
    * `pack`: MONSTER PACKS, one of a blue or a yellow pack (fillPack), with the pack's words: then its
    * words are those, at full strength or (a minion) at half; a leader is of rank 1.
    */
-  private spawn(kind: MonsterKind, x: number, y: number, packId: number, rank: 0 | 1 | 2, boss: boolean, rng: RNG, lot: RNG | null = null, pack: { rarity: 'blue' | 'leader' | 'minion'; words: readonly WordId[] } | null = null): Monster {
+  spawn(kind: MonsterKind, x: number, y: number, packId: number, rank: 0 | 1 | 2, boss: boolean, rng: RNG, lot: RNG | null = null, pack: { rarity: 'blue' | 'leader' | 'minion'; words: readonly WordId[] } | null = null): Monster {
     const def = MONSTERS[kind];
     const elite = rank > 0;
     const champion = rank === 2;
@@ -1377,7 +1386,8 @@ export class Game {
     }
     let name = def.name;
     if (elite || boss || (pack && pack.rarity === 'blue')) name = [...words.slice(0, want).map((w) => WORDS[w].front), champion ? 'Guardian' : def.name].join(' ');
-    if (greater) name = 'Greater ' + name;
+    // (THE FIRST FIVE FLOORS: the Fleshmancer, the Crypt's lair boss, is himself: only a Warden of a fifth floor is a "Greater" one)
+    if (greater && kind === 'warden') name = 'Greater ' + name;
     const m: Monster = {
       id: this.nextId++, kind, name, x, y, r: def.radius * (champion ? TUNE.guardianSize : elite ? 1.12 : 1), fx: 0.7071, fy: 0.7071,
       life: Math.round(life), maxLife: Math.round(life), dmgMin: def.dmgMin * dm, dmgMax: def.dmgMax * dm,
@@ -1394,7 +1404,7 @@ export class Game {
   }
 
   /** MONSTER PACKS: what a minion's blow carries of its leader's words, to be weighed where it lands (hurtHero). None for any other. */
-  private halfOf(m: Monster): HalfWords | undefined {
+  halfOf(m: Monster): HalfWords | undefined {
     // (THE NEW MONSTERS: rallied by the skeleton champion's cry, its leader's words are whole for a while: RALLY)
     if (m.rallyT !== undefined && m.rallyT > 0) return undefined;
     return m.half && m.half.length ? { words: m.half, base: MONSTERS[m.kind].element } : undefined;
@@ -1436,6 +1446,7 @@ export class Game {
     this.updateOrbs(dt);
     this.updateFamiliars(dt);
     this.updateZones(dt);
+    if (this.perils.length || this.corpses.length) this.bosses.stepPerils(dt);
     this.updateDots(dt);
     if (this.ringWord) {
       this.ringWord.t -= dt;
@@ -1961,7 +1972,7 @@ export class Game {
   // ===========================================================================================
   // Small helpers
 
-  private emit(e: GameEvent): void {
+  emit(e: GameEvent): void {
     this.events.push(e);
   }
 
@@ -1969,7 +1980,7 @@ export class Game {
     this.emit({ t: 'msg', text, color });
   }
 
-  private sfx(name: Sfx, vol?: number): void {
+  sfx(name: Sfx, vol?: number): void {
     this.emit({ t: 'sfx', name, vol });
   }
 
@@ -1981,7 +1992,7 @@ export class Game {
    * is on. So a ledge is as solid to it as a wall, and a flight of stairs is entered at its ends.
    * Whatever flies goes by the open grid, and is not asked.
    */
-  private free(grid: Uint8Array, x: number, y: number, r: number, flat = false, held = false): boolean {
+  free(grid: Uint8Array, x: number, y: number, r: number, flat = false, held = false): boolean {
     const f = this.level.floor;
     // (DOORS: `held` is a monster's step. A shut door holds a monster, walking or flying; nobody else. game/doors.ts)
     const shut = held ? this.level.shut : null;
@@ -2141,7 +2152,7 @@ export class Game {
    * monster that already lies over a shut door's tile, set down there by the dice, is not held:
    * it walks out of it, either way.
    */
-  private slide(b: { x: number; y: number }, r: number, dx: number, dy: number, grid: Uint8Array, held = false): void {
+  slide(b: { x: number; y: number }, r: number, dx: number, dy: number, grid: Uint8Array, held = false): void {
     if (held) {
       const shut = this.level.shut;
       held = shut !== null && !this.overShut(shut, b.x, b.y, r);
@@ -2271,7 +2282,7 @@ export class Game {
     ease(false);
   }
 
-  private isOpen(x: number, y: number): boolean {
+  isOpen(x: number, y: number): boolean {
     const f = this.level.floor;
     const tx = Math.floor(x);
     const ty = Math.floor(y);
@@ -2483,6 +2494,11 @@ export class Game {
       }
     }
 
+    // (THE FIRST FIVE FLOORS: hooked by the Chained One, he cannot walk or dodge: he goes where he is dragged. game/bosses.ts)
+    if (h.held && h.held > 0) {
+      h.held = Math.max(0, h.held - dt);
+      c = { ...c, mx: 0, my: 0, evade: false };
+    }
     // A leap or roll in progress carries the hero and nothing else happens.
     if (h.move) {
       const mv = h.move;
@@ -3853,6 +3869,11 @@ export class Game {
 
   /** An attack `m` was winding up is broken off, with the warning of a blow it was about to bring down. */
   private breakOff(m: Monster): void {
+    // (THE FIRST FIVE FLOORS: an act of its own, game/bosses.ts)
+    if (m.state === 'act') {
+      this.bosses.breakOff(m);
+      return;
+    }
     if (m.state !== 'windup' && m.state !== 'charge' && m.state !== 'pickup') return;
     m.state = 'chase';
     m.anim = 'idle';
@@ -3864,7 +3885,7 @@ export class Game {
   }
 
   /** Heavy on a monster: its blow, from (fromX, fromY), knocks the hero back a step (walls stop it); `share`, a minion's half a step (MONSTER PACKS). */
-  private knockHero(fromX: number, fromY: number, share = 1): void {
+  knockHero(fromX: number, fromY: number, share = 1): void {
     const h = this.hero;
     let dx = h.x - fromX;
     let dy = h.y - fromY;
@@ -3908,14 +3929,16 @@ export class Game {
     if (m.life <= 0) this.kill(m);
   }
 
-  private kill(m: Monster): void {
+  kill(m: Monster): void {
     if (m.dead) return;
     m.dead = true;
     this.kills++;
     // (THE MONSTERS' ATTACKS: the line of a charge it was making goes with it)
     if (m.charge || m.state === 'windup') this.dropLane(m);
     const h = this.hero;
-    this.emit({ t: 'die', x: m.x, y: m.y, kind: m.kind, elite: m.elite, champion: m.champion, boss: m.boss, fx: m.fx, fy: m.fy });
+    this.emit({ t: 'die', x: m.x, y: m.y, kind: m.kind, elite: m.elite, champion: m.champion, boss: m.boss, fx: m.fx, fy: m.fy, ...(m.form ? { form: m.form } : {}) });
+    // (THE FIRST FIVE FLOORS: a cultist's body lies where it fell; an amalgamation's beasts fall apart with it)
+    if (BOSSES5.on || this.corpses.length) this.bosses.died(m);
     if (m.frozenT > 0) {
       this.emit({ t: 'shatter', x: m.x, y: m.y });
       this.sfx('shatter', 0.8);
@@ -4064,14 +4087,14 @@ export class Game {
   // ===========================================================================================
   // Being hurt
 
-  private monsterElement(m: Monster): Element {
+  monsterElement(m: Monster): Element {
     for (const w of m.words) {
       if (w === 'fire' || w === 'frost' || w === 'lightning') return w;
     }
     return MONSTERS[m.kind].element;
   }
 
-  private rollMonsterDmg(m: Monster): number {
+  rollMonsterDmg(m: Monster): number {
     return this.rng.range(m.dmgMin, m.dmgMax);
   }
 
@@ -4313,6 +4336,27 @@ export class Game {
   // ===========================================================================================
   // Monsters
 
+  /** (game/bosses.ts) The way a monster at `m` should step to come at the hero: by the flow of the floor, or straight at him (`straight`: he is near and in its sight). */
+  wayTo(m: { x: number; y: number }, straight = false): { x: number; y: number } {
+    const L = this.level;
+    const f = L.floor;
+    const h = this.hero;
+    if (straight) {
+      const dx = h.x - m.x;
+      const dy = h.y - m.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 0.01 && (!L.step || this.walksStraight(m.x, m.y, h.x, h.y))) return { x: dx / d, y: dy / d };
+    }
+    const v = flowDir(this.flow, L.walk, f.w, f.h, m.x, m.y, this.tmp, L.step);
+    return { x: v.x, y: v.y };
+  }
+
+  /** (game/bosses.ts) As many as `n` places to stand round (x, y), the nearest first (the first is (x, y)'s own tile, if it is free). */
+  spotsRound(x: number, y: number, n: number): { x: number; y: number }[] {
+    const f = this.level.floor;
+    return scatter(this.level.walk, f.w, f.h, x, y, n, this.rng);
+  }
+
   private wakeUp(m: Monster): void {
     if (m.state !== 'sleep') return;
     const pack = m.packId;
@@ -4407,6 +4451,11 @@ export class Game {
       m.cd -= dt * rage;
       const def = MONSTERS[m.kind];
       const slow = m.chillT > 0 ? 1 - m.chill : 1;
+      // (THE FIRST FIVE FLOORS: one with a gait and acts of its own, a boss of floors 2 to 5, a bone beast, a mini fleshmancer, is run by game/bosses.ts)
+      if (gaitOf(m.kind)) {
+        this.bosses.step(m, def, dt, slow, rage, dx, dy, dist);
+        continue;
+      }
       // (THE MONSTERS' ATTACKS: its big moves cool down too)
       const moves = movesOf(m);
       if (moves && m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= dt * rage;

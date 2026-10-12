@@ -3,7 +3,7 @@
 
 import type { VendorId } from './state';
 import type { AbilityId, Attr, ClassId, Element, Limit, MonsterKind, Slot, WeaponKind, WordId } from './types';
-import { NEW_KINDS } from './types';
+import { FIRST5_KINDS, NEW_KINDS } from './types';
 
 export type { Limit } from './types';
 
@@ -396,7 +396,43 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // THE TROLL CHIEFTAIN, leader of green trolls: bigger than the red troll; his trolls' swing and slam, a
   // fifth slower (his pictures, in art/monster_brute.ts), heavier; no bellow, by his word.
   chieftain: { kind: 'chieftain', name: 'Troll Chieftain', life: 49, dmgMin: 14, dmgMax: 20, speed: 1.6, radius: 0.62, range: 1.9, windup: 1.03, cooldown: 2.8, xp: 18, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 1.9, minDepth: 99, weight: 0, size: 'medium' },
+  // THE FIRST FIVE FLOORS (game/bosses.ts; the art chat's art/bosses3.ts, art/fleshmancer.ts, art/cultists.ts).
+  // THE BOSSES OF FLOORS 2 TO 5, each in no pack (no weight): what each does is game/bosses.ts BOSS_ACTS,
+  // and these are his body and his blows' weight. Their paces are their pictures' own (HEADSMAN_PACE,
+  // CHAINED_PACE, AMALGAM_PACE, the Fleshmancer's): slow, with blows that reach far.
+  headsman: { kind: 'headsman', name: 'Headsman', life: 440, dmgMin: 20, dmgMax: 28, speed: 0.8, radius: 0.7, range: 2.9, windup: 0.9, cooldown: 2.2, xp: 190, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  chained: { kind: 'chained', name: 'Chained One', life: 450, dmgMin: 18, dmgMax: 25, speed: 1.1, radius: 0.7, range: 2.6, windup: 0.86, cooldown: 2.0, xp: 230, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  amalgam: { kind: 'amalgam', name: 'Ossuary Amalgamation', life: 470, dmgMin: 19, dmgMax: 27, speed: 0.8, radius: 1.1, range: 2.2, windup: 0.82, cooldown: 2.0, xp: 270, ranged: false, projSpeed: 4, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (THE BONE BEAST: a piece of the amalgamation broken off it; quick, and it bites. Never in a pack.)
+  beast: { kind: 'beast', name: 'Bone Beast', life: 24, dmgMin: 7, dmgMax: 11, speed: 2.6, radius: 0.36, range: 1.0, windup: 0.62, cooldown: 1.5, xp: 4, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // (THE FLESHMANCER, the Crypt's lair boss: human-sized, a caster; his fire is the enemy's, and burns)
+  fleshmancer: { kind: 'fleshmancer', name: 'Fleshmancer', life: 330, dmgMin: 17, dmgMax: 24, speed: 1.0, radius: 0.42, range: 6, windup: 0.8, cooldown: 1.6, xp: 320, ranged: false, projSpeed: 9, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // THE CULT'S TWO FIGHTERS (his word of 11 Oct, 14:57: "They start showing up in floor 4, then all over
+  // floor 5"). THE DAGGER CULTIST, small: he runs at you and plunges his dagger (his blow lands when his
+  // picture's does, art/cultists.ts KNIFE_BLOW.hit); how many packs are his is `cultWeight`, below.
+  dagger: { kind: 'dagger', name: 'Dagger Cultist', life: 17, dmgMin: 6, dmgMax: 9, speed: 2.6, radius: 0.3, range: 1.1, windup: 19 / 30, cooldown: 1.6, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 4, weight: 2.5, size: 'small' },
+  // THE MINI FLESHMANCER, "elite": never a pack of his own: a yellow pack of dagger cultists' leader
+  // (LEADERS), with their life (three times it, as a leader); his fire and his call are game/bosses.ts.
+  minifm: { kind: 'minifm', name: 'Mini Fleshmancer', life: 20, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.34, range: 2.2, windup: 17 / 30, cooldown: 2.4, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
 };
+
+/**
+ * THE CULT ON FLOORS 4 AND 5 (his word of 11 Oct 2026, 14:57, to the art chat: "When you’re finished with
+ * that I’d like 2 more cultist enemies.  A melee cultist the runs at you with a sacrificial dagger, and a
+ * mini fleshmancer elite that uses cultist corpses to raise skeletons (can just use the same animation as
+ * the warden) and does a smaller version of the fire laser from the boss.  They start showing up in floor
+ * 4, then all over floor 5."). Behind the switch. How many, and how often led, are this chat's:
+ * on floor 4 about one pack in eight is of dagger cultists (their weight in MONSTERS); on floor 5 they and
+ * the cult's old fire-throwers are about half of all packs (`five`: their weights there), and one pack of
+ * dagger cultists in three is a yellow one, led by a mini fleshmancer (`led`; one in five on floor 4;
+ * 1 in 10 for every other kind: PACKS). Past floor 5 (no set of five there yet), as floor 4.
+ */
+export const CULT = { on: true, five: { dagger: 14, cultist: 5 }, led: { four: 0.2, five: 0.34 } };
+/** How heavily a kind is drawn for a pack on a floor (its weight, but the cult's on floor 5). */
+function cultWeight(m: MonsterDef, depth: number): number {
+  if (!CULT.on || depth !== 5) return m.weight;
+  return m.kind === 'dagger' ? CULT.five.dagger : m.kind === 'cultist' ? CULT.five.cultist : m.weight;
+}
 
 /**
  * MONSTER PACKS (Version 19.7). THEIR SIZES: the owner, 9 Oct 2026, 07:49: "Let’s add a few rules to
@@ -489,11 +525,15 @@ export function packRarity(eliteRoom: boolean, depth: number, roll: number, kind
   if (eliteRoom && led) return 'yellow';
   if (depth < PACKS.from) return 'plain';
   if (!led) return roll < PACKS.blue ? 'blue' : 'plain';
-  return roll < PACKS.yellow ? 'yellow' : roll < PACKS.yellow + PACKS.blue ? 'blue' : 'plain';
+  // (THE CULT: a pack of dagger cultists is yellow oftener, led by a mini fleshmancer: CULT.led)
+  const yellow = kind === 'dagger' && CULT.on ? (depth === 5 ? CULT.led.five : CULT.led.four) : PACKS.yellow;
+  return roll < yellow ? 'yellow' : roll < yellow + PACKS.blue ? 'blue' : 'plain';
 }
 /** Which monsters a pack may be of, `depth` dungeons down (an elite room's, `elite`: never bats, whose packs are never yellow). */
 export function packKinds(depth: number, elite = false): MonsterDef[] {
-  return Object.values(MONSTERS).filter((m) => m.weight > 0 && m.minDepth <= depth && (NEW_MONSTERS.on || !NEW_KINDS.includes(m.kind)) && !(elite && m.kind === 'bat'));
+  const pool = Object.values(MONSTERS).filter((m) => m.weight > 0 && m.minDepth <= depth && (NEW_MONSTERS.on || !NEW_KINDS.includes(m.kind)) && (CULT.on || !FIRST5_KINDS.includes(m.kind)) && !(elite && m.kind === 'bat'));
+  // (THE CULT: on floor 5 its packs are drawn oftener; on every other floor each kind as it is)
+  return CULT.on && depth === 5 ? pool.map((m) => ({ ...m, weight: cultWeight(m, depth) })) : pool;
 }
 /**
  * How much of word `w`'s power a monster has: all of it, PACKS.minion of it (a minion, of its
@@ -708,9 +748,10 @@ export const RALLY = { dur: 5, reach: 8 };
  * trolls by the troll chieftain (the art chat's, each with his yes); any other by one of its own.
  * (Bats have no yellow packs: packRarity.)
  */
-export const LEADERS: Partial<Record<MonsterKind, MonsterKind>> = { skeleton: 'champion', archer: 'marksman', cultist: 'priest', brute: 'chieftain' };
-/** What leads a yellow pack of `kind`. */
+export const LEADERS: Partial<Record<MonsterKind, MonsterKind>> = { skeleton: 'champion', archer: 'marksman', cultist: 'priest', brute: 'chieftain', dagger: 'minifm' };
+/** What leads a yellow pack of `kind`. (THE CULT: dagger cultists, a mini fleshmancer, by his word; that needs no other switch than theirs.) */
 export function leaderKind(kind: MonsterKind): MonsterKind {
+  if (kind === 'dagger') return CULT.on ? 'minifm' : kind;
   return (NEW_MONSTERS.on && LEADERS[kind]) || kind;
 }
 /**
@@ -767,6 +808,12 @@ export const LEECH = { cap: Infinity };
 export const BOSS_INTRO = { on: true, secs: 3.2, sayFor: 1.9, nameAt: 1.0 };
 export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   warden: ['None leave my halls.', 'Another one for the cells.', 'The keys are mine. So are you.'],
+  // (THE FIRST FIVE FLOORS: the Headsman, headless under his hood; the Chained One, muzzled, who can only
+  // roar; the amalgamation, all its dead at once; the Fleshmancer, whose voice echoes)
+  headsman: ['Kneel.', 'The block is waiting.', 'Your name is on my list.'],
+  chained: ['HRRRNNGH!', 'Mmmph... FREE...', 'GRRRAAAH!'],
+  amalgam: ['Join us.', 'More bones. More.', 'We are many. Be one of us.'],
+  fleshmancer: ['Your bones will serve.', 'Fall, and rise for me.', 'The cult thanks you for the flesh.'],
 };
 
 /**

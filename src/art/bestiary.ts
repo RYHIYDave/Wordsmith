@@ -19,9 +19,13 @@
 // longer in the game.
 
 import type { Sprite } from '../engine/px';
-import { MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
+import { BOSSES5 } from '../game/bosses';
+import { CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
 import type { MonsterKind } from '../game/types';
 import type { ActorArt, AnimSet } from './actor_types';
+import { BOSSES, makeAmalgamArt3, makeBoneBeastArt3, makeChainedArt3, makeHeadsmanArt3 } from './bosses3';
+import { CULTISTS_SWITCH, makeDaggerCultistArt3, makeMiniFleshmancerArt3 } from './cultists';
+import { FLESHMANCER_SWITCH, makeFleshmancerArt3 } from './fleshmancer';
 import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
 import { makeArcherArt, makeSkeletonArt } from './monster_bones';
@@ -75,16 +79,36 @@ export const SKELETON3 = { on: false };
  */
 export const ARCHER3 = { on: false };
 
-/** The figures there are: one for each kind of monster, and the guardian. */
-export type MonsterFigure = MonsterKind | 'guardian';
+/**
+ * THE FIRST FIVE FLOORS (game/bosses.ts BOSSES5, game/defs.ts CULT): the art chat's own switches for the
+ * bosses of floors 2 to 5, the Fleshmancer and the cult's two fighters (off while each was a mock-up
+ * nothing of the game used) go on and off with the rules that put them in the game.
+ */
+export function useFirstFive(bosses: boolean, cult: boolean): void {
+  BOSSES5.on = bosses;
+  BOSSES.on = bosses;
+  FLESHMANCER_SWITCH.on = bosses;
+  CULT.on = cult;
+  CULTISTS_SWITCH.on = cult;
+}
+useFirstFive(BOSSES5.on, CULT.on);
+
+/** The figures there are: one for each kind of monster, and the guardian; and the Chained One as he is with his left chain broken, and free of the ball too. */
+export type MonsterFigure = MonsterKind | 'guardian' | 'chained1' | 'chained2';
 /** The figures of Version 14 (painted with the painter's kit: the tests of their pictures go through these). */
 export type ClassicFigure = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'guardian' | 'warden';
 export const MONSTER_FIGURES: readonly ClassicFigure[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'guardian', 'warden'];
 /** THE NEW MONSTERS' figures (Version 19.9), the art chat's, painted on the heroes' bones (art/new_mobs3.ts). */
 export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'];
 
-/** The figure a monster is shown as. (In the rules a guardian is a brute, and more.) */
-export function figureOf(m: { kind: MonsterKind; champion: boolean }): MonsterFigure {
+/** THE FIRST FIVE FLOORS' figures: the bosses of floors 2 to 5 (the Chained One in each of his three states), the bone beast, and the cult's two. */
+export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm'];
+/** Those of them that are heavy to paint and to hold (art/bosses3.ts: seconds of painting, tens of megabytes): made for the floor they are on, and let go of after it (Bestiary.forget). */
+export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer'];
+
+/** The figure a monster is shown as. (In the rules a guardian is a brute, and more; the Chained One is one monster, as free as he is: `form`.) */
+export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: number }): MonsterFigure {
+  if (m.kind === 'chained') return m.form === 1 ? 'chained1' : m.form && m.form >= 2 ? 'chained2' : 'chained';
   return m.kind === 'warden' ? 'warden' : m.champion ? 'guardian' : m.kind;
 }
 
@@ -111,6 +135,18 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   priest: { top: 30, half: 9 },
   // (his antlers are of his head, as the Warden's horns are of his)
   chieftain: { top: 58, half: 23 },
+  // THE FIRST FIVE FLOORS (measured off their pictures as the others are: tests/first5_bosses.test.ts)
+  headsman: { top: 61, half: 18 },
+  // (hunched: the top of his head, not of his shoulders behind it)
+  chained: { top: 48, half: 20 },
+  chained1: { top: 48, half: 20 },
+  chained2: { top: 48, half: 20 },
+  amalgam: { top: 34, half: 46 },
+  beast: { top: 14, half: 17 },
+  // (he floats: his hood, not the skull on his staff over it)
+  fleshmancer: { top: 35, half: 14 },
+  dagger: { top: 28, half: 9 },
+  minifm: { top: 30, half: 11 },
 };
 
 export interface Bestiary {
@@ -124,6 +160,13 @@ export interface Bestiary {
    * begin their attacks together would each want thirty new frames).
    */
   warm(figures: ReadonlyArray<MonsterFigure>): boolean;
+  /**
+   * THE FIRST FIVE FLOORS: let go of a figure's pictures (the boss of a floor that has been left: tens of
+   * megabytes each). They are made again, frame by frame as they are wanted, if it is ever asked for again.
+   */
+  forget(figure: MonsterFigure): void;
+  /** How many frames of these figures are still to be painted ahead (for the painting ahead, and its tests). */
+  left(figures: ReadonlyArray<MonsterFigure>): number;
 }
 
 /** The last frame painted ahead of need. Kept only so that the reading of it cannot be optimised away. */
@@ -171,6 +214,18 @@ export function makeBestiary(): Bestiary {
         : figure === 'champion' ? makeChampionArt3(MONSTERS.champion.speed)
         : figure === 'marksman' ? makeMarksmanArt3(MONSTERS.marksman.speed)
         : figure === 'priest' ? makeHighPriestArt()
+        // THE FIRST FIVE FLOORS: the bosses, the beast and the mini fleshmancer at their pictures' own
+        // paces (the rules carry them by a clock of their own: game/bosses.ts, Monster.gait); the dagger
+        // cultist's run at the pace the rules give him
+        : figure === 'headsman' ? makeHeadsmanArt3()
+        : figure === 'chained' ? makeChainedArt3(undefined, 0)
+        : figure === 'chained1' ? makeChainedArt3(undefined, 1)
+        : figure === 'chained2' ? makeChainedArt3(undefined, 2)
+        : figure === 'amalgam' ? makeAmalgamArt3()
+        : figure === 'beast' ? makeBoneBeastArt3()
+        : figure === 'fleshmancer' ? makeFleshmancerArt3()
+        : figure === 'dagger' ? makeDaggerCultistArt3(MONSTERS.dagger.speed)
+        : figure === 'minifm' ? makeMiniFleshmancerArt3()
         : makeChieftainArt();
       made.set(figure, art);
     }
@@ -199,7 +254,8 @@ export function makeBestiary(): Bestiary {
         (a) => [a.walk],
         (a) => [a.clips?.attack?.frames ?? a.attack],
         (a) => [a.clips?.heavy?.frames ?? a.heavy ?? []],
-        (a) => Object.values(a.clips?.moves ?? {}).map((c) => c.frames),
+        // (but a move that is pictures only and never played: the Headsman's `holds`, art/bosses3.ts)
+        (a) => Object.entries(a.clips?.moves ?? {}).filter(([name]) => name !== 'holds').map(([, c]) => c.frames),
         (a) => [a.clips?.die?.frames ?? []],
       ];
       for (const pick of picks) {
@@ -228,5 +284,46 @@ export function makeBestiary(): Bestiary {
       paint();
       return true;
     },
+    forget(figure: MonsterFigure): void {
+      const art = made.get(figure);
+      made.delete(figure);
+      todo.delete(figure);
+      if (art) for (const set of [art.front, art.back]) for (const frames of framesOf(set)) freeFrames(frames);
+    },
+    left(figures: ReadonlyArray<MonsterFigure>): number {
+      let n = 0;
+      for (const f of figures) n += listOf(f).left.length;
+      return n;
+    },
   };
+}
+
+/** Every list of frames a figure seen one way round has. */
+export function framesOf(set: AnimSet): Sprite[][] {
+  const out: Sprite[][] = [set.idle, set.walk];
+  const c = set.clips;
+  if (c) {
+    for (const clip of [c.attack, c.heavy, c.die, c.reel]) if (clip) out.push(clip.frames);
+    for (const clip of Object.values(c.moves ?? {})) out.push(clip.frames);
+  }
+  return out;
+}
+
+/**
+ * Give back the room the frames of a list take, those that have been painted (one that has not been is
+ * left unpainted: reading it is what would paint it, art/kit.ts lazyFrames). A canvas's room is given
+ * back by taking its size to nothing; a picture handed over by the painter (an ImageBitmap) by closing it.
+ */
+export function freeFrames(frames: Sprite[]): void {
+  for (let i = 0; i < frames.length; i++) {
+    const d = Object.getOwnPropertyDescriptor(frames, i);
+    const s = d && 'value' in d ? (d.value as Sprite | undefined) : undefined;
+    if (!s) continue;
+    const img = s.img as unknown as { close?: () => void; width: number; height: number };
+    if (typeof img.close === 'function') img.close();
+    else {
+      img.width = 0;
+      img.height = 0;
+    }
+  }
 }

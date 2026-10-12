@@ -44,7 +44,7 @@ import { STAIR_N, STAIR_W, levelAt } from '../game/height';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_LEFT_LOW, CUT_NEAR, CUT_NEAR_LOW, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
 import type { ClassId, Element, WordId } from '../game/types';
-import { Figure, attackClip, attackFrame, clipFrame, monsterAttackAge, moveFrame, PHASE_APART } from './figure';
+import { Figure, attackClip, attackFrame, clipFrame, gaitFrame, monsterAttackAge, moveFrame, PHASE_APART } from './figure';
 import { drawChargeLane } from '../art/charge_lane';
 import { drawAimLine, drawBurningSmoke, drawGreatArrow, drawSkullBurst, drawSkullShadow, drawSpearLying, drawSpearShot } from '../art/mob_shots';
 import { skullAt, spearHeight } from './mob_world';
@@ -53,6 +53,8 @@ import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
+import { BossFx } from './bossfx';
+import { gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
 import { LEAP_LIFT, drawWildArrow, drawWildWave } from './wild';
@@ -707,9 +709,13 @@ export class Renderer {
    */
   skip = new Set<string>();
 
+  /** THE FIRST FIVE FLOORS: what the bosses of floors 2 to 5 do to the floor and send across it (render/bossfx.ts). */
+  private readonly bossFx: BossFx;
+
   constructor(private art: Art) {
     this.dark = document.createElement('canvas');
     this.dg = this.dark.getContext('2d') as CanvasRenderingContext2D;
+    this.bossFx = new BossFx(art.bestiary);
   }
 
   /**
@@ -1287,6 +1293,8 @@ export class Renderer {
         }
       }
     }
+    // (THE FIRST FIVE FLOORS: what the bosses of floors 2 to 5 warn of, leave and cast shadows of on the floor: render/bossfx.ts)
+    if (game.perils.length || game.boss || game.monsters.some((m) => m.state === 'act')) this.bossFx.ground(g, this.floorAt, game, t, here);
     for (const z of game.zones) {
       // (THE MONSTERS' ATTACKS: the line a red troll will charge along, in the red circle's own reds: art/charge_lane.ts)
       if (z.kind === 'lane') {
@@ -1662,6 +1670,8 @@ export class Renderer {
     const art = this.monsterArt(m);
     const more = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves;
     const flip = (s: Sprite): Sprite => (m.fx - m.fy < 0 ? flipSprite(s) : s);
+    // (THE FIRST FIVE FLOORS: one with a gait and acts of its own is shown by them: figure.ts, gaitFrame)
+    if (gaitOf(m.kind)) return flip(gaitFrame(m.fx + m.fy < -0.2 ? art.back : art.front, m));
     // (THE NEW MONSTERS: a Boneward whose spear is gone stands and plods with its hand empty, and
     // stoops for its spear when it comes to it)
     const bare = m.bare && more?.standBare && more.walkBare ? more : null;
@@ -1711,6 +1721,7 @@ export class Renderer {
    * looks the same on a fast screen and a slow one. It also thins out when the air is full.
    */
   draw(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
+    this.bossFx.begin();
     const live = pace > 0;
     const amb = pace * fx.room();
     const art = this.art;
@@ -1979,11 +1990,22 @@ export class Renderer {
       const f = game.level.floor;
       if (r.age < 0 || game.level.visible[Math.floor(m.y) * f.w + Math.floor(m.x)] !== 1) continue;
       const art = this.monsterArt(m);
+      // (THE FIRST FIVE FLOORS: one the Fleshmancer raises: its bones snatched up off a heap and slammed together: render/bossfx.ts)
+      if (r.way === 'gather') {
+        const gs = this.bossFx.gathering(art, m.fx + m.fy < -0.2, r.age);
+        if (gs) this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(gs) : gs, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
+        continue;
+      }
       const c = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves?.crawl;
       if (!c) continue;
       const sp = clipFrame(c, r.age);
       this.stand(m.x + m.y, m.fx - m.fy < 0 ? flipSprite(sp) : sp, wx(cam, m.x, m.y), wy(cam, m.x, m.y));
     }
+    // (THE FIRST FIVE FLOORS: what the bosses send out that stands among the figures: an axe, a hook, a ball in flight, arms and hands out of the floor, skulls on the wing)
+    this.bossFx.standing(this.floorAt, game, (d, sp, x, y) => {
+      if (sp.lights) this.monsterLit.push({ s: sp, x: Math.round(x), y: Math.round(y) });
+      this.stand(d, sp, x, y);
+    }, (x, y) => game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
     for (const m of game.monsters) {
       if (m.dead || !m.seen) continue;
       let sx = wx(cam, m.x, m.y);
@@ -2529,6 +2551,9 @@ export class Renderer {
       g.globalAlpha = 1;
     }
 
+    // (THE FIRST FIVE FLOORS: what the bosses send over what stands: chains, shards, fire)
+    this.bossFx.air(g, this.floorAt, game, (x, y) => onScreen(x, y) && game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
+
     // ---- darkness, with holes cut by every light ----------------------------------------------
     this.light(W, H, game, t, fx);
     g.drawImage(this.dark, 0, 0);
@@ -2840,6 +2865,8 @@ export class Renderer {
 
     // (THE NEW WORDS, a mock-up behind a switch that is off)
     if (WORDS3.on) lights3(spot, cam, game, t);
+    // (THE FIRST FIVE FLOORS: what of the bosses' doings lights the dark)
+    this.bossFx.lights(spot);
     // a burst of fire or a bolt of lightning lights up the room for a moment
     for (const l of fx.glows) spot(wx(cam, l.x, l.y), wy(cam, l.x, l.y) - 8, l.r, 0.9 * (1 - l.t / l.dur));
     for (const m of game.monsters) {

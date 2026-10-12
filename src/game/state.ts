@@ -171,6 +171,8 @@ export interface Hero {
   comboT: number;
   /** A swing's step forward that is not yet over: how far it has still to go along x and along y, and the seconds it has left. */
   step: { dx: number; dy: number; t: number } | null;
+  /** THE FIRST FIVE FLOORS (game/bosses.ts): seconds more that he is held (the Chained One's hook has him): he cannot walk or dodge, and goes where he is dragged. */
+  held?: number;
   /**
    * An attack takes a moment to make (since Version 11: the owner asked that "spells have a cast
    * time even if they are really short"). `attackAge` is how long ago the one being made was
@@ -240,7 +242,8 @@ export interface Hero {
  * ('charge': THE MONSTERS' ATTACKS, the red troll running down the line he marked: game/defs.ts CHARGE.
  * 'pickup': THE NEW MONSTERS, the Boneward stooping for its spear: game/defs.ts SPEAR.)
  */
-export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover' | 'charge' | 'pickup';
+/** ('act': THE FIRST FIVE FLOORS, game/bosses.ts: it is making one of its acts, a move with a clock of its own: `Monster.act`.) */
+export type MonsterState = 'sleep' | 'chase' | 'windup' | 'recover' | 'charge' | 'pickup' | 'act';
 
 export interface Monster {
   id: number;
@@ -328,6 +331,22 @@ export interface Monster {
   bare?: boolean;
   /** THE NEW MONSTERS (game/defs.ts RALLY): a minion's seconds left of its leader's words whole, since the skeleton champion's cry. */
   rallyT?: number;
+  /**
+   * THE FIRST FIVE FLOORS (game/bosses.ts). HOW IT GOES OVER THE FLOOR (`gait`), for one whose pictures
+   * set off, walk and stop (the bosses of floors 2 to 5, the bone beast, the mini fleshmancer): what it
+   * is doing, and how long it has been at it (`t`: seconds of its pictures; a walk's is how far round its
+   * loop it is). `stop`: it means to stop as its walk next comes round.
+   */
+  gait?: { mode: GaitMode; t: number; stop?: boolean };
+  /**
+   * THE ACT IT IS MAKING (state 'act'): which (`id`), its clock (`t`, seconds of its picture), its own
+   * number (`n`: what it leaves on the floor is tied to it), the hand it is drawn with (`hand`: 1, or -1
+   * where its picture is turned over, so that what goes to its left in the picture goes to its left on
+   * the floor), and what the act itself needs to keep (`a`, `b`, `x`, `y`: BossRules).
+   */
+  act?: { id: ActId; t: number; n: number; hand: 1 | -1; a: number; b: number; x: number; y: number };
+  /** The Chained One: how many of his chains he has broken (0, 1 his left, 2 the ball's too). */
+  form?: number;
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
@@ -458,6 +477,69 @@ export interface Zone {
 export interface Riser {
   m: Monster;
   age: number;
+  /**
+   * THE FIRST FIVE FLOORS (game/bosses.ts): how it comes. Absent, the Warden's way: it crawls out of the
+   * ground (and so the mini fleshmancer's dead, out of the ground where a cultist's body lay). 'gather':
+   * the Fleshmancer's way: its bones are snatched up off a heap and slam together (after `stir` seconds
+   * of his fire on the heap). `rise`: seconds until it is out and one of the monsters (SUMMON.rise if absent).
+   */
+  way?: 'gather';
+  rise?: number;
+}
+
+/** THE FIRST FIVE FLOORS (game/bosses.ts): how one with a gait of its own is going over the floor. */
+export type GaitMode = 'stand' | 'raise' | 'carry' | 'setOff' | 'walk' | 'halt' | 'lower';
+/** The acts of the bosses of floors 2 to 5, of the bone beast and of the mini fleshmancer (game/bosses.ts ACTS). */
+export type ActId =
+  | 'chop' | 'sentence' | 'sweep' | 'axe'
+  | 'lash' | 'hook' | 'whirl' | 'ball' | 'breakL' | 'breakBall'
+  | 'swipe' | 'floorArms' | 'swarm' | 'devour' | 'burst'
+  | 'bite' | 'emerge' | 'dragged'
+  | 'shards' | 'rings' | 'raise' | 'fire'
+  | 'miniFire' | 'miniRaise';
+
+/**
+ * THE FIRST FIVE FLOORS (game/bosses.ts): WHAT A BOSS LEAVES ON THE FLOOR OR SENDS OUT ACROSS IT that
+ * goes on by itself, whatever he does next: the crack his chop leaves, the burning split of his sentence,
+ * arms of the dead bursting up, skulls and shards in flight, a ring of hands, a scorch. (What is his
+ * while he makes an act, the line a blow will fall on, an axe in flight, is drawn from the act itself.)
+ */
+export type PerilKind = 'crack' | 'split' | 'crash' | 'left' | 'arm' | 'skull' | 'shard' | 'wave' | 'ring' | 'scorch';
+export interface Peril {
+  kind: PerilKind;
+  /** Where (tiles), and the way it lies or flies. */
+  x: number;
+  y: number;
+  fx: number;
+  fy: number;
+  /** Its clock (seconds: below 0, not yet begun), the moment its blow lands (if it has one), and when it is gone. */
+  t: number;
+  hit: number;
+  dur: number;
+  /** What its blow does (the hurt before armour), and whose it was. */
+  dmg: number;
+  el: Element;
+  words: WordId[];
+  half?: HalfWords;
+  from: string;
+  /** How many of its blows have landed (a split's ticks; 1 once a skull or a shard has burst). */
+  done: number;
+  /** Numbers of its own, by kind (BossRules says which). */
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  hand: 1 | -1;
+}
+
+/** THE FIRST FIVE FLOORS: a cultist's body where it fell (the mini fleshmancer raises the dead out of them: game/bosses.ts). */
+export interface Corpse {
+  x: number;
+  y: number;
+  /** Seconds it has lain. */
+  t: number;
+  /** It is being raised out of: gone when that is done. */
+  taken?: boolean;
 }
 
 /**
@@ -894,7 +976,9 @@ export type GameEvent =
   | { t: 'freeze'; x: number; y: number }
   | { t: 'shatter'; x: number; y: number }
   /** A monster has been killed. (`fx`, `fy`: the way it was facing: its fall is played, and its body lies, that way round.) */
-  | { t: 'die'; x: number; y: number; kind: MonsterKind; elite: boolean; champion: boolean; boss: boolean; fx: number; fy: number }
+  | { t: 'die'; x: number; y: number; kind: MonsterKind; elite: boolean; champion: boolean; boss: boolean; fx: number; fy: number; form?: number; carry?: boolean; quiet?: boolean }
+  /** (THE FIRST FIVE FLOORS) a cultist's body is burned away as the dead are raised out of it; a bone beast is eaten back by its maker (no body is left of either) */
+  | { t: 'gone'; x: number; y: number; what: 'corpse' | 'beast' }
   /** The hero has something to say about a big kill (see QUIPS). */
   | { t: 'quip'; text: string; boss: boolean }
   /** (BOSS_INTRO) the boss's gate has fallen: he says his line (or none) and his name comes up, for `secs` */

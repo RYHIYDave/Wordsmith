@@ -17,7 +17,7 @@ let errors = 0;
 pg.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') console.log(`[${m.type()}]`, m.text()); else console.log('[log]', m.text()); });
 pg.on('pageerror', e => { errors++; console.log('[pageerror]', e.message); });
 await pg.goto('file://' + html + (hash ? '#' + hash : ''));
-try { await pg.waitForFunction('window.__ready === true', null, { timeout: 15000 }); }
+try { await pg.waitForFunction('window.__ready === true', null, { timeout: +(process.env.PREVIEW_TIMEOUT || 15000) }); }
 catch { console.log('[timeout] window.__ready was never set'); errors++; }
 const outPath = path.resolve(ROOT, out);
 await pg.screenshot({ path: outPath, fullPage: true });

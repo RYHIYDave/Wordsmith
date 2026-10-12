@@ -310,6 +310,16 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   marksman: [BONE[4], BONE[2], MK_CLOAK[3], MK_WOOD[3]],
   priest: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
   chieftain: [FLESH[4], FLESH[2], FLESH[0], PLUM[2]],
+  // THE FIRST FIVE FLOORS (each has its own death, painted, so these are only its colours)
+  headsman: [GLOOM[4], GLOOM[2], IRON[4], M_FLAME[3]],
+  chained: [IRON[4], IRON[2], PALLOR[3], M_FLAME[3]],
+  chained1: [IRON[4], IRON[2], PALLOR[3], M_FLAME[3]],
+  chained2: [IRON[4], IRON[2], PALLOR[3], M_FLAME[3]],
+  amalgam: [OSSUARY[4], OSSUARY[2], BONE[4], M_FLAME[3]],
+  beast: [OSSUARY[4], OSSUARY[2], M_FLAME[3]],
+  fleshmancer: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[4]],
+  dagger: [GLOOM[4], GLOOM[2], PINK[2], BONE[3]],
+  minifm: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);

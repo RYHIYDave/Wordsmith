@@ -34,11 +34,20 @@ export type Element = 'phys' | 'fire' | 'frost' | 'lightning';
  * the `champion` of a Monster, which is a guardian); 'marksman', the bone marksman, bone archers;
  * 'priest', the high priest, cultists; and 'chieftain', the troll chieftain, green trolls.
  */
-export type MonsterKind = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain';
+export type MonsterKind =
+  | 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain'
+  // THE FIRST FIVE FLOORS (game/bosses.ts): the bosses of floors 2 to 5, the amalgamation's bone beast, and the cult's two fighters
+  | 'headsman' | 'chained' | 'amalgam' | 'beast' | 'fleshmancer' | 'dagger' | 'minifm';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
 export const NEW_KINDS: readonly MonsterKind[] = ['shade', 'boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'];
+/**
+ * THE FIRST FIVE FLOORS (game/bosses.ts): the art chat's bosses of floors 2 to 5 (the Headsman, the
+ * Chained One, the ossuary amalgamation with the bone beasts that break off it, and the Fleshmancer),
+ * and the cult's two fighters of floors 4 and 5 (the dagger cultist and the mini fleshmancer).
+ */
+export const FIRST5_KINDS: readonly MonsterKind[] = ['headsman', 'chained', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm'];
 
 // ---------------------------------------------------------------------------------------------
 // Stats. Every number a character has is one of these keys. Percentages are whole numbers
@@ -415,6 +424,8 @@ export interface Floor {
   levers?: LeverSpot[];
   /** (THE TRAPS) The spike floors and dart walls of the level; absent where there are none (game/traps.ts). */
   hazards?: HazardSpot[];
+  /** (THE FIRST FIVE FLOORS) The bone heaps of the Fleshmancer's hall, where he raises his dead (game/bosses.ts); absent where there are none. */
+  heaps?: Vec[];
 }
 
 /**

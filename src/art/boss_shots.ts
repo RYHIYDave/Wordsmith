@@ -251,15 +251,16 @@ export function throwPathAt(u: number, from: readonly [number, number, number], 
  * THE THROW'S WARNING, while he holds the axe back (`k`: how far through the hold): its way traced on
  * the floor, out and round and back, a dashed line of light running along it the way the axe will go.
  */
-export function drawThrowPath(g: CanvasRenderingContext2D, at: FloorAt, x0: number, y0: number, fx: number, fy: number, from: readonly [number, number, number], to: readonly [number, number, number], k: number, t: number): void {
+export function drawThrowPath(g: CanvasRenderingContext2D, at: FloorAt, x0: number, y0: number, fx: number, fy: number, from: readonly [number, number, number], to: readonly [number, number, number], k: number, t: number, far = 4.2): void {
   if (k <= 0) return;
   const was = g.globalAlpha;
-  const n = 120;
+  // (`far`: how far out its loop goes, as throwPathAt's: the main chat, 11 Oct, for a throw at a hero who stands further off than the films' 4.2 tiles; a longer way is traced with more points)
+  const n = Math.round(120 * Math.max(1, far / 4.2));
   const run = (t * 1.2) % 1;
   for (let i = 0; i <= n; i++) {
     const u = i / n;
     if (u > clamp01(k * 1.4)) break;
-    const [a, b] = throwPathAt(u, from, to);
+    const [a, b] = throwPathAt(u, from, to, far);
     // (the figure's left is the floor's -y when he faces +x: turned to the way he faces)
     const x = x0 + fx * a + fy * b;
     const y = y0 + fy * a - fx * b;

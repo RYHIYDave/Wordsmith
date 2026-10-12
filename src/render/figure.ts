@@ -14,7 +14,9 @@ import type { Sprite } from '../engine/px';
 import { Tails } from '../engine/tails';
 import { TUNE } from '../game/defs';
 import type { MonsterMove, SkillKind } from '../game/defs';
-import type { ClassId } from '../game/types';
+import { actDef } from '../game/bosses';
+import type { ActId } from '../game/state';
+import type { ClassId, MonsterKind } from '../game/types';
 
 /** What the rules know about the hero that the picture needs. */
 export interface FigureState {
@@ -230,6 +232,43 @@ export function moveClip(set: AnimSet, mv: MonsterMove): Clip | undefined {
       return clips?.heavy ?? clips?.attack;
     default:
       return clips?.attack;
+  }
+}
+
+/**
+ * THE FIRST FIVE FLOORS (game/bosses.ts): the picture of one that has a gait and acts of its own (a boss
+ * of floors 2 to 5, a bone beast, a mini fleshmancer), seen one way round. An act is played by its own
+ * clock from start to end; standing, setting off, walking and stopping by the gait's (a walk's loop by
+ * how far round it the rules have carried it: its feet grip the floor at whatever pace it goes). The
+ * Headsman's `carry` is his axe held across him: where taking it up, stopping and every blow of his end.
+ */
+export function gaitFrame(set: AnimSet, m: { state: string; animT: number; frozenT: number; gait?: { mode: string; t: number }; act?: { id: string; t: number }; kind: MonsterKind }): Sprite {
+  const more = set.clips?.moves ?? {};
+  const stand = (t: number): Sprite => set.idle[Math.floor(Math.max(0, t) * (set.idleFps ?? 2) + 1e-6) % set.idle.length];
+  if (m.frozenT > 0) return set.idle[0];
+  if (m.state === 'act' && m.act) {
+    const a = actDef(m as { kind: MonsterKind; act: { id: ActId } });
+    const clip = a ? (a.clip === 'attack' ? set.clips?.attack : more[a.clip]) : undefined;
+    if (clip) return clipFrame(clip, m.act.t);
+  }
+  const gt = m.gait;
+  if (!gt) return stand(m.animT);
+  const last = (c: Clip | undefined): Sprite | null => (c && c.frames.length ? c.frames[c.frames.length - 1] : null);
+  switch (gt.mode) {
+    case 'raise':
+      return more.raise ? clipFrame(more.raise, gt.t) : stand(gt.t);
+    case 'lower':
+      return more.lower ? clipFrame(more.lower, gt.t) : stand(gt.t);
+    case 'carry':
+      return last(more.raise) ?? stand(gt.t);
+    case 'setOff':
+      return more.setOff ? clipFrame(more.setOff, gt.t) : stand(gt.t);
+    case 'halt':
+      return more.halt ? clipFrame(more.halt, gt.t) : stand(gt.t);
+    case 'walk':
+      return set.walk[Math.floor(Math.max(0, gt.t) * (set.walkFps ?? 8) + 1e-6) % set.walk.length];
+    default:
+      return stand(gt.t);
   }
 }
 

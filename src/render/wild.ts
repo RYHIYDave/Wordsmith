@@ -79,6 +79,18 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   marksman: { bits: [BONE[4], BONE[3], BONE[2]], sparks: false, blood: false, dust: true },
   priest: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: true, dust: false },
   chieftain: { bits: [FLESH[2]], sparks: false, blood: true, dust: true },
+  // THE FIRST FIVE FLOORS: scraps of the Headsman's coat and sparks off his axe; sparks and flakes off
+  // the Chained One's irons; bone and dust off the amalgamation and its beasts; scraps of robe off the
+  // Fleshmancer and the cult's two (nothing gory: his word for the Fleshmancer, "Nothing gory")
+  headsman: { bits: [GLOOM[4], GLOOM[2], IRON[2]], sparks: true, blood: false, dust: false },
+  chained: { bits: [IRON[4], IRON[2]], sparks: true, blood: false, dust: true },
+  chained1: { bits: [IRON[4], IRON[2]], sparks: true, blood: false, dust: true },
+  chained2: { bits: [IRON[4], IRON[2]], sparks: true, blood: false, dust: true },
+  amalgam: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
+  beast: { bits: [OSSUARY[4], OSSUARY[3], OSSUARY[2]], sparks: false, blood: false, dust: true },
+  fleshmancer: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
+  dagger: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
+  minifm: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);
