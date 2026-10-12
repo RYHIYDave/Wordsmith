@@ -57,6 +57,10 @@ not all of it may be held at once (floor 4's three films are 365 MB).
   under it; coming into a boss's room, his name across the screen and his line as his gate falls; both
   built from his idea of 10 Oct (FLOOR_NAMES, BOSS_INTRO, on), each new boss with his own name and lines.
 
+- 11 Oct 2026, 21:33: "ETA for the completed 5 levels?" Answered (21:34): early tomorrow morning, around
+  5 or 6 a.m. his time, a guess from how the work had gone; what was done and what was left; a try-out
+  page of the four boss fights offered for that night if he wanted one.
+
 ## Calls made for him (to tell him, each his to change)
 
 - The bosses' lines (game/defs.ts BOSS_LINES): the Headsman, the Chained One, the amalgamation, the
@@ -74,12 +78,27 @@ not all of it may be held at once (floor 4's three films are 365 MB).
 ## Progress
 
 - [x] the art merged, measured
-- [ ] 1 the painter
-- [ ] 2 the bosses
-- [ ] 3 floor 5 and the shaft
-- [ ] 4 the stairwell's opening
-- [ ] 5 the pieces
-- [ ] 6 the moments
-- [ ] 7 the cultists
+- [x] 1 the painter (render/painter.ts; tools/scenarios/first5_painter.mjs: floors 2 to 5 at 60 frames
+  a second while the boss is painted beside the game; with no painter, `#painter=off`, the game paints
+  for itself, one heavy frame every fourth world drawn)
+- [x] 2 the bosses (tests/first5_bosses.test.ts)
+- [x] 3 floor 5 and the shaft (game/ways.ts placeShaft, SHAFT; render/dress.ts; tests/first5_floors.test.ts 1 to 4;
+  tools/scenarios/first5_shaft.mjs)
+- [x] 4 the stairwell's opening (STAIR_OPENING; tools/scenarios/first5_stair.mjs; test 5)
+- [x] 5 the pieces (game/first5.ts; render/pieces.ts; art/floors.ts; tests 6 to 8; tools/scenarios/first5_floor.mjs)
+- [x] 6 the moments (render/pieces.ts; the same playtest: every floor's three play)
+- [x] 7 the cultists (tools/scenarios/first5_cult.mjs: a mini fleshmancer's pack on floor 5; his raised dead)
 - [ ] tests, playtests, the regression
 - [ ] pictures and a page for him; the notes
+
+## More calls made for him
+
+- Floor 5's shaft stands a tile off the back walls of the Fleshmancer's hall, as on the art chat's review
+  page; it is walked into from before its gate only (its timbers either side and behind it are solid).
+- When the Fleshmancer dies, the dead he raised fall with him (and a mini fleshmancer's with him).
+- The stairwell takes 3.5 s to break open (its film is 3 to 3.5 s); its top step takes nobody down until then.
+- How much of each floor is laid with its pieces: about one wall face in four; a floor tile in 22; a
+  thing that stands for every 38 tiles of a room, at most three; each moment once, as he comes within
+  five and a half tiles and sees where it is.
+- The quest pieces (the Warden's horn, the Headsman's hood, the face-cage, the eldest skull, his book) are
+  not laid: there is no quest for them yet.

@@ -15,7 +15,7 @@ import { UNREACHABLE, flowField } from '../src/game/nav';
 import { emptyControls } from '../src/game/state';
 import type { Station } from '../src/game/state';
 import { CLASS_IDS, EQUIP_SLOTS, WORD_IDS } from '../src/game/types';
-import { WAYS, topStep } from '../src/game/ways';
+import { WAYS, topStep, STAIR_OPENING } from '../src/game/ways';
 
 /** THE WAYS (game/ways.ts, on since Version 20.2), set for the length of `run` and put back. */
 function waysSet<T>(on: boolean, run: () => T): T {
@@ -473,6 +473,8 @@ test('going down the stairwell records the deepest floor reached (the ways on, a
   (g as unknown as { damageMonster: (m: unknown, d: number, el: string, c: boolean, s: number) => void }).damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
   const st = g.level.ways!.stair!;
   assert.ok(st.open, 'the stairwell opened');
+  // (THE FIRST FIVE FLOORS: it takes STAIR_OPENING to break open; here it is long open)
+  st.t = STAIR_OPENING;
   const top = topStep(st);
   g.hero.x = top.x;
   g.hero.y = top.y;

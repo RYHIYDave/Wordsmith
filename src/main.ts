@@ -80,6 +80,9 @@ import { THEME, Ui } from './ui/ui';
 import { WORDS3, demo3, events3 } from './render/words3';
 
 declare const __BUILD__: string;
+/** THE TRY-OUT PAGE (tools/build_tryout.mjs): its options offer a seasoned hero, straight to a floor. Absent in every other build. */
+declare const __TRYOUT__: boolean | undefined;
+const TRYOUT = typeof __TRYOUT__ !== 'undefined' && __TRYOUT__ === true;
 
 /**
  * THE PAINTER (render/painter.ts): this script's own text, as the page holds it, for making the painter's
@@ -630,6 +633,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
 
   /** Picking a class starts a run at once, unless that would throw away a saved one. */
   const pickClass = (cls: ClassId): void => {
+    if (titleUi.practice && titleUi.trying) {
+      // (THE TRY-OUT PAGE ONLY: the practice room's seasoned hero, straight to a floor of the first five)
+      sfx('click');
+      titleUi.trying = false;
+      const g = Game.forPractice(cls, (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0, 'arena');
+      g.setLimit(meta.limit);
+      g.tryFloor(titleUi.tryFloor ?? 1);
+      begin(g);
+      return;
+    }
     if (titleUi.practice) {
       sfx('click');
       startPractice(cls);
@@ -1467,6 +1480,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         mode: MODES.on && !titleUi.practice ? meta.mode : null,
         speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? CLASS_IDS[voiceTry.i - 1] : null,
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
+        tryout: TRYOUT,
       }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
       // the voices being tried out: warrior, ranger, mage, a breath apart
       if (voiceTry && (titleUi.page !== 'class' || titleLex)) voiceTry = null;

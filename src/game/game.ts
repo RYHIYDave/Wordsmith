@@ -341,6 +341,18 @@ export class Game {
     return g;
   }
 
+  /**
+   * THE TRY-OUT PAGE ONLY (main.ts): the practice room's seasoned hero taken straight to floor `n` of the
+   * Crypt, as if the floors before it were cleared: no longer the practice room (its waves, its arena).
+   */
+  tryFloor(n: number): void {
+    this.practice = false;
+    this.depth = Math.max(1, Math.min(5, Math.floor(n)));
+    this.cleared = this.depth - 1;
+    this.wayDepth = this.depth;
+    this.enterDungeon();
+  }
+
   // ===========================================================================================
   // The practice room
 

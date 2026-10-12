@@ -245,6 +245,27 @@ export interface TitleUi {
   page: 'menu' | 'class' | 'options';
   /** The class cards were opened for the practice room. */
   practice: boolean;
+  /** THE TRY-OUT PAGE ONLY (tools/build_tryout.mjs): the floor a seasoned hero is taken straight to; and whether the class cards were opened for it. */
+  tryFloor?: number;
+  trying?: boolean;
+}
+
+/** THE TRY-OUT PAGE ONLY: its two options, the floor to try (pressed, the next one) and going there. */
+function tryItems(st: TitleUi, opt: TitleIn): { id: string; label: string; sub: string; lit: boolean }[] {
+  if (!opt.tryout) return [];
+  return [
+    { id: 'trynext', label: `TRY: FLOOR ${st.tryFloor ?? 1}`, sub: 'The try-out only: a seasoned hero, straight to a floor', lit: false },
+    { id: 'trygo', label: `GO TO FLOOR ${st.tryFloor ?? 1}`, sub: 'The try-out only: a seasoned hero, straight to a floor', lit: true },
+  ];
+}
+/** What the try-out's two options do when pressed. */
+function tryPressed(st: TitleUi, pressed: string): void {
+  if (pressed === 'trynext') st.tryFloor = ((st.tryFloor ?? 1) % 5) + 1;
+  else if (pressed === 'trygo') {
+    st.page = 'class';
+    st.practice = true;
+    st.trying = true;
+  } else if (pressed === 'practice' || pressed === 'new') st.trying = false;
 }
 
 export function newTitleUi(): TitleUi {
@@ -296,6 +317,8 @@ export interface TitleIn {
    * two stand back; nothing on the cards can be pressed. Null when no one is. (See `enterLength`.)
    */
   entering?: { cls: ClassId; t: number } | null;
+  /** THE TRY-OUT PAGE ONLY: its options offer a seasoned hero, straight to a floor of the first five. */
+  tryout?: boolean;
 }
 
 /** How long a hero who has made ready on their card takes to warp away from it, in seconds. */
@@ -476,6 +499,7 @@ function drawSmithMenu(ui: Ui, smith: SmithPicture, t: number, title: string, st
         { id: 'limit', label: opt.limit === 'mana' ? 'ABILITIES: MANA' : 'ABILITIES: COOLDOWNS', sub: opt.limit === 'mana' ? 'No cooldowns: use them until you run dry' : 'No mana: each waits its turn', lit: false },
         ...(opt.aim ? [{ id: 'aim', label: aimLabel(opt.aim), sub: '', lit: false }] : []),
         { id: 'guide', label: opt.guide ? 'PROMPTS: ON' : 'PROMPTS: OFF', sub: '', lit: false },
+        ...tryItems(st, opt),
         { id: 'practice', label: 'PRACTICE ROOM', sub: '', lit: false },
         ...(opt.turn ? [{ id: 'turn', label: opt.turn, sub: '', lit: false }] : []),
         { id: 'back', label: 'BACK', sub: '', lit: false },
@@ -517,6 +541,7 @@ function drawSmithMenu(ui: Ui, smith: SmithPicture, t: number, title: string, st
   // (what the abilities' switch means, in a line over the options)
   const hint = st.page === 'options' ? menu.find((m) => m.sub) : undefined;
   if (hint && ui.width(hint.sub, true) <= W - 8) drawText(g, hint.sub, Math.floor(W / 2), rowsTop - 9, THEME.dim, { align: 'center', font: 'small', shadow: P.black });
+  tryPressed(st, pressed);
   if (pressed === 'resume') out.resume = true;
   else if (pressed === 'new') {
     st.page = 'class';
@@ -582,6 +607,7 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
           // (the owner is trying a new way of aiming on a phone: this goes back to the old one)
           ...(opt.aim ? [{ id: 'aim', label: aimLabel(opt.aim), sub: '', lit: false }] : []),
           { id: 'guide', label: opt.guide ? 'PROMPTS: ON' : 'PROMPTS: OFF', sub: '', lit: false },
+          ...tryItems(st, opt),
           { id: 'practice', label: 'PRACTICE ROOM', sub: '', lit: false },
           ...(opt.turn ? [{ id: 'turn', label: opt.turn, sub: '', lit: false }] : []),
           { id: 'back', label: 'BACK', sub: '', lit: false },
@@ -621,6 +647,7 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
         drawText(g, sub, r.x + Math.floor(r.w / 2), r.y + bh + 1, THEME.dim, { align: 'center', font: 'small' });
       }
     }
+    tryPressed(st, pressed);
     if (pressed === 'resume') out.resume = true;
     else if (pressed === 'new') {
       st.page = 'class';

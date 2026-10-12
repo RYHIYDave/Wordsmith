@@ -4,6 +4,7 @@
 //   node tools/build_to.mjs dist/first5.html
 //   DEPTH=1 node tools/playtest.mjs --file dist/first5.html --scenario tools/scenarios/first5_floor.mjs --out shots/first5/floor1
 // DEPTH: which floor. ROOMS: how many rooms to photograph (4). MOMENTS=0: none of the moments.
+// FILM=1: each moment filmed (a frame every 15th of a second of the game's time, SECS long: 6.5).
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {
@@ -53,6 +54,19 @@ export default async function (page, snap) {
       }
       if (best) { g.hero.x = best.x; g.hero.y = best.y; g.hero.fx = -0.7; g.hero.fy = -0.7; }
     }, [x, y]);
+    if (process.env.FILM) {
+      // (a film of it: a frame every 15th of a second of the game's time, the game slowed four times)
+      await page.evaluate(() => { window.__dbg.slowmo = 0.25; });
+      const t0 = Date.now();
+      const secs = Number(process.env.SECS || 6.5);
+      for (let i = 0; i < Math.round(secs * 15); i++) {
+        const wait = t0 + (i * 1000) / 15 / 0.25 - Date.now();
+        if (wait > 0) await page.waitForTimeout(wait);
+        await snap(`m${n}_f${String(i).padStart(4, '0')}`);
+      }
+      await page.evaluate(() => { window.__dbg.slowmo = 1; });
+      continue;
+    }
     for (const at of [0.3, 1.2, 2.2, 3.4, 6.5]) {
       await page.waitForTimeout(at === 0.3 ? 300 : (at - [0.3, 1.2, 2.2, 3.4, 6.5][[0.3, 1.2, 2.2, 3.4, 6.5].indexOf(at) - 1]) * 1000);
       await snap(`moment${n}_${String(at).replace('.', '')}`);

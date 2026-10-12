@@ -23,7 +23,7 @@ import type { Controls, GameEvent, Monster } from '../src/game/state';
 import { CLASS_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { land, seasoned } from './helpers';
-import { WAYS, topStep } from '../src/game/ways';
+import { WAYS, topStep, STAIR_OPENING } from '../src/game/ways';
 
 /** The game as it was before THE WAYS (game/ways.ts, on since Version 20.2): the portal home from a dungeon. */
 function waysOff<T>(run: () => T): T {
@@ -776,6 +776,8 @@ test('a new level clears an attack that was still being made', () => {
         assert.ok(st, `${name}: a stairwell`);
         if (!st) return;
         (g as unknown as { openStair: (s: typeof st) => void }).openStair(st);
+        // (THE FIRST FIVE FLOORS: it takes STAIR_OPENING to break open; here it is long open)
+        st.t = STAIR_OPENING;
         const top = topStep(st);
         h.x = top.x;
         h.y = top.y;
