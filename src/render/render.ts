@@ -3,7 +3,7 @@
 // -> darkness with holes cut by lights -> glowing effects -> labels and health bars.
 
 import type { ActorArt } from '../art/actor_types';
-import { FIGURE_SIZE, figureOf } from '../art/bestiary';
+import { FIGURE_SIZE, HEAVY_FIGURES, figureOf } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import type { HeroArt } from '../art/heroes';
 import { WORD_COLOR } from '../art/icons';
@@ -54,6 +54,7 @@ import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import { BossFx } from './bossfx';
+import type { Painter } from './painter';
 import { gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
@@ -115,6 +116,8 @@ const VIGNETTE_FROM = 0.5;
 const VIGNETTE = 0.62;
 const VIGNETTE_TOWN = 0.4;
 const WARM_MS = 2;
+/** Where there is no painter (render/painter.ts): one frame of a heavy figure is painted every this many times the world is drawn. */
+const HEAVY_EVERY = 4;
 const WARM_ENTER_MS = 90;
 
 /** A light on a monster's picture lights the floor too if it is at least this big, in game pixels. */
@@ -340,6 +343,10 @@ export class Renderer {
   private propLit: { s: Sprite; x: number; y: number }[] = [];
   /** The figures in this dungeon, for painting their frames ahead of need (see Bestiary.warm). */
   private figures: MonsterFigure[] = [];
+  /** Those of them that are heavy (art/bestiary.ts HEAVY_FIGURES) and the game's own to paint, there being no painter. */
+  private heavy: MonsterFigure[] = [];
+  /** THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (render/painter.ts), if the game has one. */
+  painter: Painter | null = null;
   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
   private warmedFor: unknown = null;
   /** Frames drawn, for the hero's and the monsters' turns at painting ahead (see heroArt). */
@@ -1619,8 +1626,28 @@ export class Renderer {
       // (THE MONSTERS' ATTACKS: the Warden calls up skeletons: their crawling out of the ground is painted ahead)
       if (m.boss && movesOf(m) && !figs.includes('skeleton')) figs.push('skeleton');
     }
+    // THE FIRST FIVE FLOORS: a heavy figure (a boss of floors 2 to 5: a thousand frames, each ten times
+    // an ordinary monster's to paint) is the painter's (render/painter.ts), beside the game. Where there
+    // is no painter the game paints it too, but only one frame every HEAVY_EVERY times the world is drawn.
+    const heavy = this.heavy;
+    heavy.length = 0;
+    for (let i = figs.length - 1; i >= 0; i--) {
+      const f = figs[i];
+      if (!HEAVY_FIGURES.includes(f)) continue;
+      figs.splice(i, 1);
+      // (the Chained One as he will be with his next chain broken, too; and as he was, never again: let go of)
+      const wanted: MonsterFigure[] = f === 'chained' ? ['chained', 'chained1'] : f === 'chained1' ? ['chained1', 'chained2'] : [f];
+      if (f === 'chained' && this.painter && !this.painter.small) wanted.push('chained2');
+      for (const w of wanted) if (!this.painter || !this.painter.mob(w)) heavy.push(w);
+      const past: MonsterFigure[] = f === 'chained1' ? ['chained'] : f === 'chained2' ? ['chained', 'chained1'] : [];
+      for (const w of past) {
+        this.painter?.done(w);
+        this.art.bestiary.forget(w);
+      }
+    }
     const budget = this.warmedFor === game.level ? WARM_MS : WARM_ENTER_MS;
     this.warmedFor = game.level;
+    if (heavy.length > 0 && this.warmFrame % HEAVY_EVERY === 0) this.art.bestiary.warm(heavy);
     const began = performance.now();
     const hero = (): boolean => this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);

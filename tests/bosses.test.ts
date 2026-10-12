@@ -47,9 +47,9 @@
 //      out; the beast lands clear of all six of its arms and its heap, flung out of its flank.
 //   run: tsx --test tests/bosses.test.ts
 
-// @ts-ignore
 import '../src/art/bestiary';
 import { BOSSES5 } from '../src/game/bosses';
+// @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
@@ -145,7 +145,7 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*(bosses3|boss_shots)['"]/.test(text)) users.push(f);
   }
-  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/bossfx.ts'], 'the game files that draw them');
+  assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw them');
 });
 
 test('2. the Headsman paints in every frame both ways round: nothing cyan, his edge while he lives, none as he dies', () => {

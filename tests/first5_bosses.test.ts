@@ -32,6 +32,7 @@ import { GRAIN } from '../src/art/kit';
 import { TILE3, handAt, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
 import type { Mob } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
+import { hookHigh } from '../src/render/bossfx';
 import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
@@ -243,6 +244,8 @@ test("2. the rules' numbers are the pictures' own", () => {
     near(p.fwd, q.at[0], 0.02, `the hook at ${t.toFixed(2)} s, before him`);
     near(p.left, q.at[1], 0.02, `the hook at ${t.toFixed(2)} s, to his left`);
     assert.equal(p.flying, q.flying, `the hook at ${t.toFixed(2)} s: flying`);
+    // (and how high it is drawn: the renderer's own sum, so that it need not work out his chains where the game is played)
+    near(hookHigh(t), q.at[2], 0.05, `the hook at ${t.toFixed(2)} s: how high`);
   }
   assert.equal(hookAt(CO_HOOK_LET - 0.01), null, 'in his hand until he lets go');
   near(hookAt(CO_HOOK_BITE, 7)!.fwd, 7, 1e-6, 'thrown further, it bites further off');

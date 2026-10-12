@@ -14,7 +14,7 @@
 import type { ActorArt } from '../art/actor_types';
 import type { Bestiary } from '../art/bestiary';
 import { SENTENCE_FROM, drawArmCrack, drawAxeShadow, drawBallCrash, drawBallShadow, drawChainOut, drawChopCrack, drawClawRake, drawScrape, drawSentenceLine, drawSentenceSplit, drawSweepRing, drawThrowPath, throwPathAt } from '../art/boss_shots';
-import { AXE_SHOT_FRAMES, BALL_SHOT_FRAMES, FLOOR_ARM_FPS, FLOOR_ARM_FRAMES, FLOOR_ARM_TIME, HEADSMAN as HS_MOB, HOOK_SHOT_FRAMES, HS_CATCH, HS_THROW_HIT, SWARM_SKULL_FPS, SWARM_SKULL_FRAMES, amRakeAt, coBallPath, coCollarAt, coCuffAt, coHookPath, coWhirlReach, makeAxeShotArt, makeBallShotArt, makeFloorArmArt, makeHookShotArt, makeLeftBehindArt, makeSwarmSkullArt } from '../art/bosses3';
+import { AXE_SHOT_FRAMES, BALL_SHOT_FRAMES, FLOOR_ARM_FPS, FLOOR_ARM_FRAMES, FLOOR_ARM_TIME, HEADSMAN as HS_MOB, HOOK_SHOT_FRAMES, HS_CATCH, HS_THROW_HIT, SWARM_SKULL_FPS, SWARM_SKULL_FRAMES, amRakeAt, coBallPath, coCollarAt, coCuffAt, coWhirlReach, makeAxeShotArt, makeBallShotArt, makeFloorArmArt, makeHookShotArt, makeLeftBehindArt, makeSwarmSkullArt } from '../art/bosses3';
 import { MINI_FIRE_SIZE, miniFireAt } from '../art/cultists';
 import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, FM_HAND_TIME, fmMouthAt, makeRingHandArt } from '../art/fleshmancer';
 import { FM_FIRE_SIZE, drawBoneShard, drawFireStream, drawHandCrack, drawRaiseGlow, drawScorch, drawShardBreak, drawShardShadow, drawSlamWave } from '../art/fm_spells';
@@ -45,6 +45,20 @@ export type SpotFn = (x: number, y: number, r: number, a: number) => void;
 /** Which of a figure's two pictures shows one facing (fx, fy), and whether it is turned over. */
 function viewOf(fx: number, fy: number): { view: GameView; flip: boolean } {
   return { view: backView(fx, fy) ? 'back' : 'front', flip: flipped(fx, fy) };
+}
+
+/** How high the Chained One's hook leaves his hand, in game pixels (the art's: coHookPath, art/bosses3.ts; held equal in tests/first5_bosses.test.ts). */
+export const HOOK_FROM_HIGH = 78.172;
+/**
+ * How high his hook is over the floor, in game pixels, `t` seconds into his hook and drag: thrown low from
+ * his hand to bite the floor, then hauled back along it. (The art's own answer, coHookPath, works out his
+ * chains first: a second and more of work the first time, which is not for where the game is being played.)
+ */
+export function hookHigh(t: number): number {
+  const H = CHAINED.hook;
+  if (t >= H.bite) return 1;
+  const k = Math.max(0, (t - H.let) / (H.bite - H.let));
+  return HOOK_FROM_HIGH + (1 - HOOK_FROM_HIGH) * k + 14 * Math.sin(Math.PI * k);
 }
 
 export class BossFx {
@@ -271,8 +285,7 @@ export class BossFx {
         const p = hookAt(T, act.a);
         if (!p) continue;
         const w = B(p.fwd, p.left);
-        const art = coHookPath(T);
-        const high = art ? art.at[2] : 1;
+        const high = hookHigh(T);
         const set = (this.hooks ?? (this.hooks = { front: makeHookShotArt('front'), back: makeHookShotArt('back') }))[view];
         const [sx, sy] = at(w.x, w.y);
         stand(w.x + w.y, turned(p.flying ? set[Math.floor((T * 2.5 * HOOK_SHOT_FRAMES) % HOOK_SHOT_FRAMES)] : set[HOOK_SHOT_FRAMES]), sx, sy - high);
@@ -338,13 +351,12 @@ export class BossFx {
       const B = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
       if (act.id === 'hook') {
         const p = hookAt(T, act.a);
-        const art = coHookPath(T);
-        if (!p || !art) continue;
+        if (!p) continue;
         const w = B(p.fwd, p.left);
         const [sx, sy] = at(w.x, w.y);
         const c = coCuffAt('hook', T);
         const [cx, cy] = this.onPicture(at, m, c[0] / TILE3, c[1] / TILE3, c[2] / 2);
-        drawChainOut(g, cx, cy, sx, sy - art.at[2], p.flying ? 6 : 1);
+        drawChainOut(g, cx, cy, sx, sy - hookHigh(T), p.flying ? 6 : 1);
       } else if (act.id === 'ball') {
         const b = coBallPath(T);
         if (!b) continue;

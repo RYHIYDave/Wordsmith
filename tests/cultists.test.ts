@@ -33,9 +33,9 @@
 //      what is left lies low on the floor (his robe in a heap, his mask on it), with no light in it.
 //   run: tsx --test tests/cultists.test.ts
 
-// @ts-ignore
 import '../src/art/bestiary';
 import { CULT } from '../src/game/defs';
+// @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
@@ -137,7 +137,7 @@ test('1. their switch goes with the rules\' (game/defs.ts CULT), and only the be
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*cultists['"]/.test(text)) users.push(f);
   }
-  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/bossfx.ts'], 'the game files that draw them');
+  assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw them');
 });
 
 test('2. their stands paint in every frame both ways round: nothing cyan, the pink edge round each, every pixel whole or empty but the edge, no lone pixel', () => {

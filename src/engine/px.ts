@@ -401,11 +401,36 @@ export function drawAura(g: CanvasRenderingContext2D, s: Sprite, x: number, y: n
 }
 
 const flipped = new WeakMap<Sprite, Sprite>();
+/**
+ * THE FIRST FIVE FLOORS: the mirror images of BIG pictures (a boss's frames: over a thousand of them, each
+ * tens of thousands of pixels) are kept only up to FLIP_BUDGET pixels, the longest unused let go of first;
+ * one that is wanted again is made again (a tenth of a millisecond). Kept for good, as the small ones are,
+ * they would double the room a boss takes.
+ */
+const bigFlips = new Map<Sprite, Sprite>();
+let bigFlipPx = 0;
+/** A picture of this many pixels or more is a big one. */
+const BIG_FLIP = 9000;
+/** About 20 megabytes of pictures (four bytes a pixel). */
+export const FLIP_BUDGET = 5_000_000;
+/** How many pixels of big mirror images are being kept (for the tests). */
+export function flippedPixels(): number {
+  return bigFlipPx;
+}
 
 /** The sprite mirrored left-to-right (anchor and lights mirrored too). */
 export function flipSprite(s: Sprite): Sprite {
-  let f = flipped.get(s);
-  if (f) return f;
+  const area = s.img.width * s.img.height;
+  const big = area >= BIG_FLIP;
+  let f = big ? bigFlips.get(s) : flipped.get(s);
+  if (f) {
+    if (big) {
+      // (used: it goes to the back of the line of those to let go of)
+      bigFlips.delete(s);
+      bigFlips.set(s, f);
+    }
+    return f;
+  }
   const cv = document.createElement('canvas');
   cv.width = s.img.width;
   cv.height = s.img.height;
@@ -420,8 +445,60 @@ export function flipSprite(s: Sprite): Sprite {
   if (s.aura) f.aura = { ...s.aura, x: s.w - s.aura.x };
   if (s.tails) f.tails = s.tails.map((r) => ({ ...r, x: s.w - r.x }));
   if (s.charge) f.charge = { ...s.charge, x: s.w - s.charge.x };
-  flipped.set(s, f);
+  if (!big) {
+    flipped.set(s, f);
+    return f;
+  }
+  bigFlips.set(s, f);
+  bigFlipPx += area;
+  // (whoever still holds one let go of here, a picture drawn this frame, keeps it: only this list forgets it)
+  for (const [key, old] of bigFlips) {
+    if (bigFlipPx <= FLIP_BUDGET || key === s) break;
+    bigFlips.delete(key);
+    bigFlipPx -= old.img.width * old.img.height;
+  }
   return f;
+}
+
+/** A picture of nothing: what a sprite that has been let go of shows (so that whoever still holds it draws nothing, and nothing breaks). */
+let nothing: HTMLCanvasElement | null = null;
+function blank(s: Sprite): void {
+  if (!nothing) {
+    // (where there is no page, in the unit tests: a stand-in of the same size)
+    nothing = typeof document !== 'undefined' ? document.createElement('canvas') : ({ width: 1, height: 1 } as HTMLCanvasElement);
+    nothing.width = 1;
+    nothing.height = 1;
+  }
+  const img = s.img as unknown as { close?: () => void; width: number; height: number };
+  if ((img as unknown) === nothing) return;
+  s.img = nothing;
+  // (a picture handed over by the painter, an ImageBitmap, gives its room back when it is closed; a canvas when its size is taken to nothing)
+  if (typeof img.close === 'function') img.close();
+  else {
+    img.width = 0;
+    img.height = 0;
+  }
+}
+
+/**
+ * THE FIRST FIVE FLOORS: give back the room a picture takes, now, and that of its mirror image and its
+ * silhouettes (a boss's frames and a floor's films are tens of megabytes, and a browser is slow to notice
+ * that nobody holds a picture any more). The sprite is left showing nothing.
+ */
+export function releaseSprite(s: Sprite): void {
+  const area = s.img.width * s.img.height;
+  const f = bigFlips.get(s) ?? flipped.get(s);
+  if (bigFlips.delete(s)) bigFlipPx -= area;
+  flipped.delete(s);
+  for (const one of f ? [s, f] : [s]) {
+    const m = tinted.get(one);
+    if (m) {
+      for (const t of m.values()) blank(t);
+      tintedPx -= m.size * area;
+      tinted.delete(one);
+    }
+    blank(one);
+  }
 }
 
 /** Where each sprite asked about is painted, in squares of COVER_CELL game pixels: worked out once for each. */
@@ -440,7 +517,15 @@ export function spriteCovers(s: Sprite, x: number, y: number): boolean {
     const cols = Math.ceil(s.w / COVER_CELL);
     const rows = Math.ceil(s.h / COVER_CELL);
     const on = new Uint8Array(cols * rows);
-    const cv = s.img as HTMLCanvasElement;
+    let cv = s.img as HTMLCanvasElement;
+    // (a picture handed over by the painter, an ImageBitmap, is read by drawing it on a canvas first)
+    if (typeof cv.getContext !== 'function' && typeof document !== 'undefined' && cv.width > 0) {
+      const copy = document.createElement('canvas');
+      copy.width = cv.width;
+      copy.height = cv.height;
+      copy.getContext('2d')?.drawImage(cv, 0, 0);
+      cv = copy;
+    }
     const g = typeof cv.getContext === 'function' ? cv.getContext('2d') : null;
     if (g) {
       const data = g.getImageData(0, 0, cv.width, cv.height).data;

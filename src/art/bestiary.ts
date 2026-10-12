@@ -18,6 +18,7 @@
 // ahead of need. The art of the first builds (monsters.ts, and the Warden in boss.ts) is no
 // longer in the game.
 
+import { releaseSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { BOSSES5 } from '../game/bosses';
 import { CULT, MONSTERS, MONSTER_ATTACKS, NEW_MONSTERS } from '../game/defs';
@@ -310,20 +311,60 @@ export function framesOf(set: AnimSet): Sprite[][] {
 }
 
 /**
+ * A figure's frames in the order they are painted ahead of need, each as [which way round (0 the front, 1
+ * the back), which list (its place in `framesOf`), which frame]: standing (the first thing seen of a
+ * monster), walking, its attacks from start to finish, its other moves (THE MONSTERS' ATTACKS:
+ * art/actor_types.ts, AnimSet.clips.moves; but not one that is pictures only and never played: the
+ * Headsman's `holds`, art/bosses3.ts), and last its death: by the time one of them is killed, how it falls
+ * is painted: the order of the game's own painting ahead (Bestiary.warm). The painter (render/painter.ts)
+ * goes by it, and so a frame is the same frame to the painter and to the game.
+ */
+export function paintOrder(art: ActorArt): [number, number, number][] {
+  const sets = [art.front, art.back];
+  const lists = sets.map(framesOf);
+  const picks: ((a: AnimSet) => readonly (readonly Sprite[])[])[] = [
+    (a) => [a.idle],
+    (a) => [a.walk],
+    (a) => [a.clips?.attack?.frames ?? []],
+    (a) => [a.clips?.heavy?.frames ?? a.heavy ?? []],
+    (a) => Object.entries(a.clips?.moves ?? {}).filter(([name]) => name !== 'holds').map(([, c]) => c.frames),
+    (a) => [a.clips?.die?.frames ?? []],
+  ];
+  const out: [number, number, number][] = [];
+  for (const pick of picks) {
+    for (let v = 0; v < sets.length; v++) {
+      for (const frames of pick(sets[v])) {
+        const l = lists[v].indexOf(frames as Sprite[]);
+        if (l < 0) continue;
+        for (let i = 0; i < frames.length; i++) out.push([v, l, i]);
+      }
+    }
+  }
+  return out;
+}
+
+/**
  * Give back the room the frames of a list take, those that have been painted (one that has not been is
- * left unpainted: reading it is what would paint it, art/kit.ts lazyFrames). A canvas's room is given
- * back by taking its size to nothing; a picture handed over by the painter (an ImageBitmap) by closing it.
+ * left unpainted: reading it is what would paint it, art/kit.ts lazyFrames), and that of their mirror
+ * images (engine/px.ts releaseSprite).
  */
 export function freeFrames(frames: Sprite[]): void {
   for (let i = 0; i < frames.length; i++) {
     const d = Object.getOwnPropertyDescriptor(frames, i);
     const s = d && 'value' in d ? (d.value as Sprite | undefined) : undefined;
-    if (!s) continue;
-    const img = s.img as unknown as { close?: () => void; width: number; height: number };
-    if (typeof img.close === 'function') img.close();
-    else {
-      img.width = 0;
-      img.height = 0;
-    }
+    if (s) releaseSprite(s);
   }
+}
+
+/**
+ * THE PAINTER (render/painter.ts) has painted a frame of a figure: it is the figure's, unless the game
+ * has painted that frame itself meanwhile (then false, and the picture is not wanted).
+ */
+export function giveFrame(art: ActorArt, v: number, l: number, i: number, s: Sprite): boolean {
+  const frames = framesOf(v === 0 ? art.front : art.back)[l];
+  if (!frames || i < 0 || i >= frames.length) return false;
+  const d = Object.getOwnPropertyDescriptor(frames, i);
+  if (!d || typeof d.get !== 'function') return false;
+  Object.defineProperty(frames, i, { value: s, writable: true, configurable: true, enumerable: true });
+  return true;
 }

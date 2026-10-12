@@ -47,9 +47,9 @@
 //      (no edge of light round him as he dies, nothing cyan, no lone pixel).
 //   run: tsx --test tests/fleshmancer.test.ts
 
-// @ts-ignore
 import '../src/art/bestiary';
 import { BOSSES5 } from '../src/game/bosses';
+// @ts-ignore
 import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
@@ -128,7 +128,7 @@ test('1. his switch goes with the rules\' (game/bosses.ts BOSSES5), and only the
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*(fleshmancer|fm_spells)['"]/.test(text)) users.push(f);
   }
-  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/bossfx.ts'], 'the game files that draw him');
+  assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw him');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY CHECK: every frame, from in front and from behind, and from every frame of his stand into each and back, into his glide and out of it; his death as he is dragged down through the floor', () => {

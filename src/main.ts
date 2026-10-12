@@ -60,6 +60,7 @@ import { CLASS_IDS, WORD_IDS } from './game/types';
 import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, wx, wy } from './render/fx';
 import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
+import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
@@ -75,6 +76,22 @@ import { THEME, Ui } from './ui/ui';
 import { WORDS3, demo3, events3 } from './render/words3';
 
 declare const __BUILD__: string;
+
+/**
+ * THE PAINTER (render/painter.ts): this script's own text, as the page holds it, for making the painter's
+ * worker from. It can only be asked for here, while the script is first being run. (None: a page that
+ * was not put together as the game's is, or the worker itself. Then there is no painter, and the game
+ * paints for itself.)
+ */
+const SOURCE: string | null = (() => {
+  try {
+    const me = typeof document !== 'undefined' ? document.currentScript : null;
+    const text = me ? me.textContent : null;
+    return text && text.includes(PAINTER_MARK) ? text : null;
+  } catch {
+    return null;
+  }
+})();
 
 /** Working title only. Change it here. */
 // (the owner, 4 Oct 2026: "Let's try Wordsmith for now"; before that it was Wordhoard)
@@ -209,6 +226,13 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const ui = new Ui();
   const fx = new Fx();
   const renderer = new Renderer(art);
+  // THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (the bosses of floors 2 to 5,
+  // the floors' films). A page opened with #painter=off has none (and #painter=1 or 2 that many workers): for the tests.
+  const painterAsk = new URLSearchParams(location.hash.slice(1)).get('painter');
+  const painter = new Painter(painterAsk === 'off' ? null : SOURCE, () => art.bestiary, { small: scr.touch, ...(painterAsk === '1' || painterAsk === '2' ? { many: Number(painterAsk) } : {}) });
+  renderer.painter = painter;
+  /** The place whose pictures the painter has been asked for (a level, or null: none, the starting screen). */
+  let paintedFor: Level | null = null;
   const input = new Input(scr.canvas, scr.toGame, (x, y) => ui.blocks(x, y), () => scr.w);
   input.touchMode = scr.touch;
   input.onTouch = () => scr.sawTouch();
@@ -1393,6 +1417,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     ui.release = input.uiRelease;
 
     if (mode === 'title' || !game) {
+      // (THE PAINTER: no place is being shown: what the last one's pictures took is given back)
+      if (paintedFor) {
+        paintedFor = null;
+        painter.restart();
+      }
       if (confirm && clock - confirm.t >= 5) confirm = null;
       // (a hero who has been picked is making ready on their card: see `entering`. The warp is
       // heard as they begin to go; a press anywhere lets them go at once.)
@@ -1604,6 +1633,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         art.ground = crypt ? cryptGround(crypt) : vault.ground;
         art.props = crypt ? cryptProps(crypt) : vault.props;
         cryptShown = crypt;
+      }
+      // (THE PAINTER: a new place: what the last one's heavy pictures took is given back, and its
+      // workers ended; this one's are asked for as it is drawn)
+      if (g.level !== paintedFor) {
+        paintedFor = g.level;
+        painter.restart();
       }
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (THE WAYS, game/ways.ts, behind WAYS: the world darkening as he goes down a stairwell or through a gate, and lightening as he comes into the next level)
@@ -1950,6 +1985,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     renderer,
     /** How many frames of art have been painted so far, and how long that took in all (art/kit.ts). */
     painting: PAINTING,
+    /** THE PAINTER (render/painter.ts): whether there is one, and what it has done. */
+    painter,
     /** The level-up choice opens by itself in a quiet moment. Tests that need an uninterrupted fight switch this off. */
     autoLevel: true,
     /** The inventory opens by itself for a new word that has somewhere to go. Likewise. */
@@ -2157,4 +2194,6 @@ function boot(): void {
   }
 }
 
-boot();
+// (THE PAINTER: the same script, started as the painter's worker, paints and does nothing else)
+if ((globalThis as { __PAINT_WORKER__?: boolean }).__PAINT_WORKER__) paintWorkerMain();
+else boot();
