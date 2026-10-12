@@ -46,7 +46,7 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Level, Monster } from '../src/game/state';
 import { T_FLOOR, T_VOID, T_WALL } from '../src/game/types';
 import type { Element } from '../src/game/types';
-import { CURTAIN_SECS, FIRST5, shaftTiles, GATE_FALL_AT, GATE_RISE_AT, STAIR_APART, STAIR_CLEAR, STAIR_LONG, STAIR_SPOTS, STAIR_WIDE, TOWN_GATE, TOWN_WAY, WARP_SECS, WAYS, WAY_WAKE, nearStair, onTopStep, stairTiles, topStep } from '../src/game/ways';
+import { CURTAIN_SECS, FIRST5, STAIR_OPENING, shaftTiles, GATE_FALL_AT, GATE_RISE_AT, STAIR_APART, STAIR_CLEAR, STAIR_LONG, STAIR_SPOTS, STAIR_WIDE, TOWN_GATE, TOWN_WAY, WARP_SECS, WAYS, WAY_WAKE, nearStair, onTopStep, stairTiles, topStep } from '../src/game/ways';
 
 const DT = 1 / 60;
 const SEEDS = Array.from({ length: 24 }, (_, i) => 3001 + i * 7919);
@@ -416,6 +416,9 @@ test('whoever and whatever is on the stairwell\'s opening as it opens is put asi
       for (const p of g.drops) assert.ok(!onIt(p), `dungeon ${d}: a drop put aside (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`);
       // (nor is he taken down by standing where it opened)
       steps(g, 30);
+      assert.equal(g.level, L);
+      // (THE FIRST FIVE FLOORS: it takes STAIR_OPENING to break open, and takes nobody down until it has)
+      steps(g, Math.ceil(STAIR_OPENING * 60));
       assert.equal(g.level, L);
       // stepping onto its top step: down to the next floor, a floor cleared
       const top = topStep(st);

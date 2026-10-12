@@ -7,12 +7,15 @@
 // the stills stand in for it: the shaft empty while he lives, its cage down once its film's time is over.
 
 import { BEYOND } from '../art/floorkit';
-import type { ShaftFilm } from '../art/films';
+import { stairKey } from '../art/films';
+import type { ShaftFilm, StairFilm } from '../art/films';
+import { floorLook } from '../art/floors';
 import { riderDark, shaftStill } from '../art/shaft';
 import { rgba } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import type { Game } from '../game/game';
-import { SHAFT } from '../game/ways';
+import { SHAFT, stairMiddle } from '../game/ways';
+import type { StairWay } from '../game/ways';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
 import type { Painter } from './painter';
@@ -30,12 +33,53 @@ const FPS = 30;
 /** How far the shaft's soft shadow reaches, in tiles (art/floor5.ts, its piece's `shadow`). */
 const SHAFT_SHADOW = 0.7;
 
+/** A kick of the screen and a blow heard, from a film's jolt (game pixels; the sound's loudness). */
+export interface Kick {
+  amount: number;
+  vol: number;
+}
+
 export class FloorDress {
   constructor(private readonly painter: () => Painter | null) {}
+  /** The stairwell whose opening is being played from its film (it was there when the stairwell began to open), and the last of its frames played. */
+  private stairPlay: { st: StairWay; film: StairFilm; f: number } | null = null;
+  /** The kicks of the jolts played since the game last asked (`kicks`). */
+  private kicked: Kick[] = [];
 
-  private film(key: string): ShaftFilm | null {
+  private film<T = ShaftFilm>(key: string): T | null {
     const p = this.painter();
-    return p ? p.filmOf<ShaftFilm>(key) : null;
+    return p ? p.filmOf<T>(key) : null;
+  }
+
+  /** The film of the opening of this level's stairwell where it is opening, if it has been made. */
+  stairFilm(game: Game): StairFilm | null {
+    const st = game.level.ways?.stair;
+    if (!st) return null;
+    return this.film<StairFilm>(stairKey(floorLook(game.level.floor.depth), st));
+  }
+
+  /**
+   * THE STAIRWELL HAS BEGUN TO OPEN (the rules' event): true if it is played from its film; false, and the
+   * game shows the placeholder it had before (main.ts), if there is none.
+   */
+  stairOpened(game: Game): boolean {
+    const st = game.level.ways?.stair;
+    const film = st ? this.stairFilm(game) : null;
+    this.stairPlay = st && film ? { st, film, f: -1 } : null;
+    return !!this.stairPlay;
+  }
+
+  /** Is the stairwell's opening being played now (its picture as it stands is not drawn until it is over)? */
+  stairPlaying(game: Game): boolean {
+    const p = this.stairPlay;
+    return !!p && game.level.ways?.stair === p.st && (p.st.t ?? Infinity) * FPS < p.film.frames.length;
+  }
+
+  /** The kicks of the jolts played since this was last asked (main.ts kicks the screen and sounds a blow for each). */
+  kicks(): Kick[] {
+    const out = this.kicked;
+    this.kicked = [];
+    return out;
   }
 
   /** What lies on the floor: the shaft's shadow. */
@@ -45,9 +89,26 @@ export class FloorDress {
     stage.shadow(g, wx(stage.cam, sh.x + 0.5, sh.y + 0.5), wy(stage.cam, sh.x + 0.5, sh.y + 0.5), SHAFT_SHADOW);
   }
 
-  /** What stands: the shaft, empty, its cage coming down, down, or going up (its two layers, the hero between them: `rider`). */
+  /** What stands: the stairwell breaking open; the shaft, empty, its cage coming down, down, or going up (its two layers, the hero between them: `rider`). */
   standing(game: Game, stage: Stage): void {
     const L = game.level;
+    const p = this.stairPlay;
+    if (p && this.stairPlaying(game)) {
+      // (drawn in depth at the opening's middle, by the stairwell's own anchor: the art chat's README)
+      const st = p.st;
+      const k = Math.max(0, Math.min(p.film.frames.length - 1, Math.floor((st.t ?? 0) * FPS)));
+      for (let f = p.f + 1; f <= k; f++) {
+        const j = p.film.jolts.indexOf(f);
+        if (j >= 0) this.kicked.push({ amount: p.film.kicks[j] ?? 4, vol: Math.min(1, 0.4 + (p.film.kicks[j] ?? 4) * 0.06) });
+      }
+      p.f = k;
+      const m = stairMiddle(st);
+      const s = p.film.frames[k];
+      const x = Math.round(wx(stage.cam, st.x, st.y));
+      const y = Math.round(wy(stage.cam, st.x, st.y));
+      stage.stand(m.x + m.y, s, x, y);
+      if (s.lights) stage.lit(s, x, y);
+    }
     const sh = L.ways?.shaft;
     if (!sh || !L.explored[sh.y * L.floor.w + sh.x]) return;
     const x = Math.round(wx(stage.cam, sh.x + 0.5, sh.y + 0.5));

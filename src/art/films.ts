@@ -84,6 +84,11 @@ export function filmRoom(key: string): number {
   return 57;
 }
 
+/** The key of the film of a stairwell's opening: on floor `floor` (its look, 1 to 4), its steps going down `way`, its anchor on tile (x, y). */
+export function stairKey(floor: number, s: { x: number; y: number; way: 'x' | 'y' }): string {
+  return `stair:${floor}:${s.way}:${s.x}:${s.y}`;
+}
+
 /** Make the film of that name. Throws for a name that is none. (Seconds of work: not where the game is being played.) */
 export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm {
   const [kind, a, b, c, d] = key.split(':');

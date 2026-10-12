@@ -66,7 +66,11 @@ export interface StairWay {
   y: number;
   way: 'x' | 'y';
   open: boolean;
+  /** THE FIRST FIVE FLOORS: how long since it began to break open, in seconds (none: long since). Its top step takes nobody down until STAIR_OPENING. */
+  t?: number;
 }
+/** How long the stairwell takes to break open, in seconds: the art chat's film of it is 3 to 3.5 s (art/stairwell_open.ts; tests/first5_floors.test.ts). */
+export const STAIR_OPENING = 3.5;
 
 /** A WAYPOINT: its middle; awake once the hero has come near (in town, once there is a floor to go back to); when a warp began on it, in the level's own time (null: none). */
 export interface WayPoint {

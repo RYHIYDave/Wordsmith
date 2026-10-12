@@ -18,6 +18,7 @@ import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, forgetCrypt } from './art/crypt';
 import { floorLook, lookGround, lookProps } from './art/floors';
+import { stairKey } from './art/films';
 import type { CryptMarks } from './art/crypt';
 import { CRYPT_LAYOUT, CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
@@ -54,7 +55,7 @@ import type { Hall } from './game/level';
 import { LOCK, LockOn, aimAhead, autoTargets, placedAim } from './game/lock';
 import { AIM_MODES, emptyControls } from './game/state';
 import { flowDir, flowField, lineOfSight } from './game/nav';
-import type { AimMode, Controls, Level, Meta, Monster, PropInst, Station, TownVoice } from './game/state';
+import type { AimMode, Controls, GameEvent, Level, Meta, Monster, PropInst, Station, TownVoice } from './game/state';
 import { rollItem } from './game/items';
 import { RNG } from './engine/rng';
 import { CLASS_IDS, WORD_IDS } from './game/types';
@@ -1299,8 +1300,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
 
   const drain = (g: Game): void => {
     if (!g.events.length) return;
+    /** What the effects are given besides the rules' own events (the stairwell's placeholder, where it has no film). */
+    const more: GameEvent[] = [];
     for (const e of g.events) {
       if (e.t === 'station' && !bot) openStation(e.kind);
+      // (THE FIRST FIVE FLOORS: the stairwell breaking open is played from its film, render/dress.ts; where
+      // there is none, the burst of stone and dust it had before, and the ground shaking)
+      else if (e.t === 'stairOpens') {
+        if (!renderer.dress.stairOpened(g)) more.push({ t: 'burst', x: e.x, y: e.y, r: 2, el: 'phys', style: 'slam' }, { t: 'shake', amount: 6 }, { t: 'sfx', name: 'slam', vol: 0.9 });
+      }
       // (words set in the inventory may be moved about before it closes: what came of it is shown then)
       else if (e.t === 'worded' && panels.open !== 'inv') fx.wordJoined(g.hero.x, g.hero.y, e.word, e.name);
       else if (e.t === 'moveOpen') moveToast = { skill: e.skill, t: 0 };
@@ -1337,7 +1345,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
     }
     const levelled = g.events.some((e) => e.t === 'levelup');
-    fx.handle(g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
+    fx.handle(more.length ? [...g.events, ...more] : g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
     // (the new words' looks, called up by what the rules say happened: render/words3.ts)
     if (WORDS3.on) events3(g.events, g, fx);
     g.events.length = 0;
@@ -1641,13 +1649,25 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (g.level !== paintedFor) {
         paintedFor = g.level;
         painter.restart();
-        // (the films this place will want: the fifth floor's cage coming down and going up)
-        if (g.level.ways?.shaft) {
+        // (the films this place will want: the fifth floor's cage coming down and going up; on the four
+        // above it, its stairwell breaking open where it most likely will, and where next, room allowing)
+        const W = g.level.ways;
+        if (W?.shaft) {
           painter.film('shaft:down', true);
           painter.film('shaft:up', true);
         }
+        const look = g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
+        if (W && look >= 1 && look <= 4 && W.stairs.length > 0) {
+          painter.film(stairKey(look, W.stairs[0]), true);
+          if (W.stairs[1] && !painter.small) painter.film(stairKey(look, W.stairs[1]));
+        }
       }
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
+      // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
+      for (const k of renderer.dress.kicks()) {
+        fx.shake = Math.max(fx.shake, k.amount);
+        sfx('slam', { vol: k.vol });
+      }
       // (THE WAYS, game/ways.ts, behind WAYS: the world darkening as he goes down a stairwell or through a gate, and lightening as he comes into the next level)
       const dark = g.curtain();
       if (dark > 0) {

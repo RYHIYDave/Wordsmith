@@ -350,8 +350,8 @@ export class Renderer {
   private heavy: MonsterFigure[] = [];
   /** THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (render/painter.ts), if the game has one. */
   painter: Painter | null = null;
-  /** THE FIRST FIVE FLOORS, drawn: the mine shaft and its cage (render/dress.ts). */
-  private readonly dress: FloorDress;
+  /** THE FIRST FIVE FLOORS, drawn: the mine shaft and its cage, the stairwell's opening (render/dress.ts). */
+  readonly dress: FloorDress;
   /** What the renderer lends it. */
   private readonly stage: Stage;
   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
@@ -422,13 +422,14 @@ export class Renderer {
    * stairwell (once its boss is dead and it has opened) and its waypoint lies on the floor, in that
    * floor's stone (the town's in the first floor's).
    */
-  private flatWays(g: CanvasRenderingContext2D, L: Game['level'], t: number): void {
+  private flatWays(g: CanvasRenderingContext2D, L: Game['level'], t: number, game: Game): void {
     const W = L.ways;
     if (!W) return;
     const art = lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
     const cam = this.cam;
     const st = W.stair;
-    if (st && st.open && L.explored[st.y * L.floor.w + st.x]) {
+    // (THE FIRST FIVE FLOORS: while its opening is played from its film, the film is the stairwell: render/dress.ts)
+    if (st && st.open && L.explored[st.y * L.floor.w + st.x] && !this.dress.stairPlaying(game)) {
       const sp = art.stair[st.way];
       g.drawImage(sp.img, Math.round(wx(cam, st.x, st.y)) - sp.ax, Math.round(wy(cam, st.x, st.y)) - sp.ay, sp.w, sp.h);
     }
@@ -1272,7 +1273,7 @@ export class Renderer {
     // (THE CRYPT, art/crypt.ts, behind CRYPT: the stairwell down and the waypoint, where a picture puts them)
     if (CRYPT.on && CRYPT.marks.level === L && pass <= 0) this.flatCrypt(g, L, t);
     // (THE WAYS, game/ways.ts: the level's own stairwell and waypoint)
-    if (L.ways && pass <= 0) this.flatWays(g, L, t);
+    if (L.ways && pass <= 0) this.flatWays(g, L, t, game);
     if (L.ways && pass <= 0) this.dress.flat(g, game, this.stage);
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] || !here(p.x, p.y)) continue;

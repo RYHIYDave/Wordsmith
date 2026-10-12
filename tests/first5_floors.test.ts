@@ -15,7 +15,7 @@ import { cageDown, cageUp } from '../src/art/shaft';
 import { doorTiles } from '../src/game/doors';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
-import { FIRST5, SHAFT, shaftTiles } from '../src/game/ways';
+import { FIRST5, SHAFT, STAIR_OPENING, shaftTiles } from '../src/game/ways';
 import { flowField } from '../src/game/nav';
 import { paintWithoutCanvas, seasoned } from './helpers';
 
@@ -143,4 +143,31 @@ test('4. the dead the Fleshmancer raised fall with him, worth nothing; those of 
   assert.ok(!other.dead, 'another skeleton stands');
   assert.equal(g.kills, kills + 1, 'only he is counted');
   assert.ok(g.hero.xp - xp <= boss.xp * 3, 'no more than his worth');
+});
+
+test('5. the stairwell breaks open for as long as its film (3 to 3.5 s: art/stairwell_open.ts): it says so to the renderer, and takes nobody down until it has', () => {
+  for (const depth of [1, 2, 3, 4]) {
+    const g = floor(depth, 900 + depth);
+    const L = g.level;
+    const boss = g.monsters.find((m) => m.boss)!;
+    const st0 = L.ways!.stairs[0];
+    boss.x = st0.x + 1.2;
+    boss.y = st0.y + 6;
+    g.kill(boss);
+    const st = L.ways!.stair!;
+    assert.ok(st.open && st.t === 0, `floor ${depth}: it begins to open as he dies`);
+    assert.ok(g.events.some((e) => e.t === 'stairOpens'), `floor ${depth}: and the renderer is told`);
+    assert.ok(!g.events.some((e) => e.t === 'burst'), `floor ${depth}: no placeholder burst from the rules (main.ts shows one where there is no film)`);
+    // (on its top step at once: nothing, until it has broken open)
+    g.hero.x = st.x + 0.5;
+    g.hero.y = st.y + 0.62;
+    let t = 0;
+    while (g.level === L && t < 6) {
+      g.update(1 / 60, emptyControls());
+      t += 1 / 60;
+    }
+    assert.ok(g.level !== L, `floor ${depth}: down at last`);
+    assert.ok(t >= STAIR_OPENING - 0.02 && t <= STAIR_OPENING + 0.6, `floor ${depth}: once it had broken open (${t.toFixed(2)} s)`);
+  }
+  assert.ok(STAIR_OPENING >= 3.5, 'no sooner than its longest film is over');
 });

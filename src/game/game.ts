@@ -22,7 +22,7 @@ import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, bossKind, gaitOf } from './bosses';
 import { AIM_MODES, emptyControls } from './state';
-import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
+import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
@@ -1500,8 +1500,9 @@ export class Game {
         return false;
       }
     }
-    // THE STAIRWELL, once open: stepping onto its top step takes him down.
-    if (W.stair && W.stair.open && onTopStep(W.stair, h.x, h.y)) {
+    // THE STAIRWELL, once open: stepping onto its top step takes him down (once it has broken open).
+    if (W.stair && W.stair.open && W.stair.t !== undefined && W.stair.t < STAIR_OPENING) W.stair.t += dt;
+    if (W.stair && W.stair.open && (W.stair.t ?? STAIR_OPENING) >= STAIR_OPENING && onTopStep(W.stair, h.x, h.y)) {
       this.leave('down');
       return false;
     }
@@ -1634,12 +1635,12 @@ export class Game {
     for (const m of this.monsters) if (!m.dead) aside(m);
     // (and what lay flat there, bones and rubble, is gone down it)
     L.props = L.props.filter((p) => p.solid || !on(p.x, p.y));
-    // (the floor breaking open: stone and dust thrown up out of it, the ground shaking. A placeholder:
-    // the moment's own picture would be the art chat's, as big and wild as his rulebook asks)
+    // (the floor breaking open: THE FIRST FIVE FLOORS, the art chat's film of it, its flagstones dropping
+    // into the dark one after another and the dust bursting up, the screen kicked at each: render/dress.ts.
+    // Where there is no film of it, the placeholder it had before: a burst of stone and dust, a shake: main.ts)
     const mid = stairMiddle(st);
-    this.emit({ t: 'burst', x: mid.x, y: mid.y, r: 2, el: 'phys', style: 'slam' });
-    this.emit({ t: 'shake', amount: 6 });
-    this.sfx('slam', 0.9);
+    st.t = 0;
+    this.emit({ t: 'stairOpens', x: mid.x, y: mid.y });
     this.msg('A stairwell opens in the floor. The way down.', MSG.good);
   }
 
