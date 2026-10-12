@@ -5600,6 +5600,14 @@ Chained One's three states about 167 MB, painted a little at a time, two of his 
 device); whether the fights are too hard or too easy. **Not on GitHub**: this chat was refused permission to
 push (11 Oct, 19:47); the branch `first5` went to his PC as a git bundle, and he was told and asked to decide.
 
+### Version 21.1: the floor's name before the first dungeon's prompt
+
+**What he said.** 12 Oct 2026, 07:45: "One thing I noticed is you cant see the warden level introduction.  It gets hidden by the tap to attack pop up". To pictures of the fix (`previews/cardfirst/floor_name_first.png`), at 07:51: "Looks good". Of the testing, 07:57: "Two hours to move some text?"; 07:59: "I don’t think this is the sort of thing that needs extensive testing".
+
+**What is in it.** While a floor's name is up (`FLOOR_NAMES.secs`, 3.4 s), the first dungeon's prompt at the top of the screen waits; it comes as the name goes (`FLOOR_CARD_FIRST`, `game/defs.ts`, on; `main.ts`). The hud marks where the prompt is (`ui.mark('banner')`) for the playtests.
+
+**How it was tested.** `tools/scenarios/floorcard_first.mjs` (the first pack woken a few tiles off so the fight prompt is due at once, or walking): no prompt over the name, and one once it has gone; it fails on the game as it was. In the regression on a phone and on PC. On the published page (`tools/wrap211.sh`, eight playtests: the two above, the guide three ways, the titles, fingers, mouse and keys): all 8 clean. Not run for this one, at his word: the unit suite and the full regression. Published 12 Oct, 08:03 ("Version 58", version id `1791806586-42d6`).
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold

@@ -4,7 +4,7 @@
 # with a selection of the regression's playtests played on it two at a time.
 #   cd <the frozen copy> && bash wrap210.sh
 # The playtests are taken from tools/regress.sh as they stand there (their settings and screen sizes),
-# by name; each one's log is in shots/wrap/<name>.log, the verdicts in shots/wrap/summary.txt.
+# by name (NAMES="a b c" plays only those); each one's log is in shots/wrap/<name>.log, the verdicts in shots/wrap/summary.txt.
 set -u
 mkdir -p shots/wrap
 rm -f shots/wrap/*.log shots/wrap/summary.txt
@@ -28,7 +28,7 @@ run() {
   elif [ "$last" != "finished clean" ]; then echo "DID NOT FINISH CLEAN ($last)   $name"
   else echo "finished clean   $name"; fi
 }
-NAMES="input touch_wide touch_tall town town_phone save towntap_phone enter_pc enter_phone enter_upright
+NAMES="${NAMES:-input touch_wide touch_tall town town_phone save towntap_phone enter_pc enter_phone enter_upright
 practice words_warrior words_ranger words_mage boss look_pc look_phone pages_pc pages_phone plates_phone
 slots3_phone monsters_pc monsters_phone dungeon_pc dungeon_phone guide_pc_warrior guide_phone_mage
 guide_upright_ranger guide_narrow_warrior half_phone hud_pc hud_phone spells_pc spells_phone spells_upright
@@ -37,7 +37,7 @@ packs_wild_pc monster_attacks_pc new_monsters_pc
 first5_painter2 first5_painter3_phone first5_painter5_fight first5_painter_off first5_floor1 first5_floor2
 first5_floor3 first5_floor4 first5_floor5 first5_boss2 first5_boss3 first5_boss4 first5_boss5 first5_cult4
 first5_cult5 first5_stair1 first5_stair3_phone first5_shaft first5_shaft_upright first5_titles
-first5_titles_phone title_smith3_phone floorcard_phone floorcard_pc monkey_1 monkey_2 soak"
+first5_titles_phone title_smith3_phone floorcard_phone floorcard_pc monkey_1 monkey_2 soak}"
 (
 for name in $NAMES; do
   line=$(grep -E "(^|[[:space:]])run[[:space:]]+$name[[:space:]]" tools/regress.sh | head -1 | sed -E 's/[[:space:]]*&[[:space:]]*$//; s/#.*$//')
@@ -47,12 +47,12 @@ for name in $NAMES; do
   sleep 1
 done
 wait
-# the frame rate alone
-run perf --scenario $S/perf.mjs
+# the frame rate alone (PERF=0: not)
+[ "${PERF:-1}" = 1 ] && run perf --scenario $S/perf.mjs
 ) 2>&1 | tee shots/wrap/summary.txt
 total=$(grep -c . shots/wrap/summary.txt)
 clean=$(grep -c '^finished clean ' shots/wrap/summary.txt)
-grep -h "frame rate\|longest single frame" shots/wrap/perf.log
+[ -f shots/wrap/perf.log ] && grep -h "frame rate\|longest single frame" shots/wrap/perf.log
 if [ "$total" = "$clean" ]; then echo "ALL $total FINISHED CLEAN"; exit 0; fi
 echo "$((total - clean)) OF $total DID NOT FINISH CLEAN:"
 grep -v '^finished clean ' shots/wrap/summary.txt
