@@ -44,7 +44,7 @@ import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_NAMES, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { drawBossCard, drawFloorCard } from './ui/cards';
 import type { BossCard, FloorCard } from './ui/cards';
@@ -1729,8 +1729,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // the HUD is always drawn, but only listens when nothing is open on top of it
       const press = ui.press;
       if (paused) ui.press = null;
-      // (the first dungeon's prompt gives way to whatever is open on top of the game)
-      const banner = paused ? null : guideBanner(g, input.touchMode);
+      // (the first dungeon's prompt gives way to whatever is open on top of the game; and it waits
+      // while the floor's name is up, which it would cover. The owner, 12 Oct 2026, 07:45: "One thing
+      // I noticed is you cant see the warden level introduction.  It gets hidden by the tap to attack
+      // pop up". FLOOR_CARD_FIRST, game/defs.ts)
+      const banner = paused || (floorCard && FLOOR_CARD_FIRST.on) ? null : guideBanner(g, input.touchMode);
       // (a fight is on while something awake can be seen on the screen: the attacks written along
       // the bottom are not buttons then, so that a press meant for a monster is never a press on one)
       const fightOn = !paused && g.monsters.some((m) => {
@@ -2178,6 +2181,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     },
     floorNames: (on: boolean) => {
       FLOOR_NAMES.on = on;
+    },
+    /** (FLOOR_CARD_FIRST in game/defs.ts) the first dungeon's prompt waiting while the floor's name is up */
+    floorCardFirst: (on: boolean) => {
+      FLOOR_CARD_FIRST.on = on;
     },
     /** (THE CRYPT) Where a picture puts the stairwell down and the waypoint on the level the hero is on (art/crypt.ts, CryptMarks). */
     cryptMarks: (m: Partial<CryptMarks>) => {
