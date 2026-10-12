@@ -54,6 +54,9 @@ import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import { BossFx } from './bossfx';
+import { FloorDress } from './dress';
+import type { Stage } from './dress';
+import { floorLook, lookWays } from '../art/floors';
 import type { Painter } from './painter';
 import { gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
@@ -347,6 +350,10 @@ export class Renderer {
   private heavy: MonsterFigure[] = [];
   /** THE FIRST FIVE FLOORS: the painter of what is too heavy to paint here (render/painter.ts), if the game has one. */
   painter: Painter | null = null;
+  /** THE FIRST FIVE FLOORS, drawn: the mine shaft and its cage (render/dress.ts). */
+  private readonly dress: FloorDress;
+  /** What the renderer lends it. */
+  private readonly stage: Stage;
   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
   private warmedFor: unknown = null;
   /** Frames drawn, for the hero's and the monsters' turns at painting ahead (see heroArt). */
@@ -395,7 +402,7 @@ export class Renderer {
    */
   private flatCrypt(g: CanvasRenderingContext2D, L: Game['level'], t: number): void {
     const m = CRYPT.marks;
-    const art = cryptWays(Math.max(1, cryptFloor(L.floor.depth)));
+    const art = lookWays(Math.max(1, floorLook(L.floor.depth)));
     const cam = this.cam;
     if (m.stair) {
       const sp = art.stair[m.stair.way];
@@ -418,7 +425,7 @@ export class Renderer {
   private flatWays(g: CanvasRenderingContext2D, L: Game['level'], t: number): void {
     const W = L.ways;
     if (!W) return;
-    const art = cryptWays(L.town ? 1 : Math.max(1, cryptFloor(L.floor.depth)));
+    const art = lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
     const cam = this.cam;
     const st = W.stair;
     if (st && st.open && L.explored[st.y * L.floor.w + st.x]) {
@@ -439,7 +446,7 @@ export class Renderer {
   private standWays(L: Game['level'], t: number, now: number): void {
     const w = L.ways?.way;
     if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) return;
-    const art = cryptWays(L.town ? 1 : Math.max(1, cryptFloor(L.floor.depth)));
+    const art = lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
     const f = w.warpAt === null ? -1 : Math.floor((now - w.warpAt) * 20);
     const warp = f >= 0 && f < WARP_FRAMES;
     if (!warp && !w.awake) return;
@@ -455,7 +462,7 @@ export class Renderer {
   private standCrypt(L: Game['level'], t: number): void {
     const m = CRYPT.marks;
     if (!m.way || m.way.state === 'asleep') return;
-    const art = cryptWays(Math.max(1, cryptFloor(L.floor.depth)));
+    const art = lookWays(Math.max(1, floorLook(L.floor.depth)));
     // (a warp is over when its last frame has been shown: nothing stands over the dais then)
     const f = Math.max(0, Math.floor((t - m.way.t0) * 20));
     if (m.way.state === 'warp' && f >= WARP_FRAMES) return;
@@ -723,6 +730,13 @@ export class Renderer {
     this.dark = document.createElement('canvas');
     this.dg = this.dark.getContext('2d') as CanvasRenderingContext2D;
     this.bossFx = new BossFx(art.bestiary);
+    this.dress = new FloorDress(() => this.painter);
+    this.stage = {
+      cam: this.cam,
+      stand: (d, sp, x, y) => this.stand(d, sp, x, y),
+      lit: (sp, x, y) => this.propLit.push({ s: sp, x: Math.round(x), y: Math.round(y) }),
+      shadow: (g, x, y, r) => this.shadow(g, x, y, r, SHADOW),
+    };
   }
 
   /**
@@ -1259,6 +1273,7 @@ export class Renderer {
     if (CRYPT.on && CRYPT.marks.level === L && pass <= 0) this.flatCrypt(g, L, t);
     // (THE WAYS, game/ways.ts: the level's own stairwell and waypoint)
     if (L.ways && pass <= 0) this.flatWays(g, L, t);
+    if (L.ways && pass <= 0) this.dress.flat(g, game, this.stage);
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] || !here(p.x, p.y)) continue;
       const sx = wx(cam, p.x, p.y);
@@ -1963,6 +1978,7 @@ export class Renderer {
     this.standDoors(L, cam);
     if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
     if (L.ways) this.standWays(L, t, game.time);
+    if (L.ways) this.dress.standing(game, this.stage);
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
       const lift = NAME_LIFT[st.kind];
@@ -2203,7 +2219,10 @@ export class Renderer {
       const coming = Math.max(warped && warped.t < PHASE_IN ? 1 - warped.t / PHASE_IN : 0, arrived);
       // a rolling hero is drawn faint, to read as a blur
       this.heroLit = null;
-      if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
+      // (THE FIRST FIVE FLOORS: riding up the mine shaft in its cage, lifted with it and taken into the dark: render/dress.ts)
+      const ride = this.dress.rider(game, sp);
+      if (ride) this.stand(ride.d, ride.sp, sx, sy - ride.up);
+      else if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
         this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, coming > 0 ? 1 - coming * coming * 0.85 : 1, fig, coming);
         // (THE NEW WORDS, a mock-up behind a switch that is off: a frenzy of three or more shivers the hero in its colour)
         const copies = WORDS3.on ? heroCopies3(t) : null;

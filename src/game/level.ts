@@ -10,7 +10,7 @@ import { buildOpenGrid, buildWalkGrid } from './nav';
 import type { Level, PropInst } from './state';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_PIT, T_VOID, T_WALL } from './types';
 import type { Floor, HazardSpot, PackSpot, PropSpot, Room } from './types';
-import { TOWN_WAY, WAYS, beforeGate, openGate, placeFirstGate, placeWay, stairSpots, townGate } from './ways';
+import { FIRST5, TOWN_WAY, WAYS, beforeGate, openGate, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, townGate } from './ways';
 
 /**
  * A wall tile is drawn cut down low when floor lies behind it (up-screen), so walls never hide
@@ -801,13 +801,17 @@ export function makeDungeon(depth: number, seed: number): Level {
     // (what stood or lay before it, a brazier against the wall, bones, is taken away: the hero comes in and goes out there)
     floor.props = floor.props.filter((p) => !beforeGate(gate, p.x, p.y));
   }
+  // (THE FIRST FIVE FLOORS: the fifth floor has no stairwell: the miners' shaft at the back of its boss's
+  // hall, and the ride up to town. What stood or lay where it stands is taken away.)
+  const shaftAt = FIRST5.on && depth === 5 ? placeShaft(floor) : null;
+  if (shaftAt) floor.props = floor.props.filter((p) => Math.abs(p.x - shaftAt.x) > 1 || Math.abs(p.y - shaftAt.y) > 1);
   // (the places in the boss's hall where the stairwell may open; where the hall has no room for it, the portal home stands in it as before)
   const solidSpot = new Set<number>();
   for (const p of floor.props) if (SOLID_PROPS.includes(p.kind)) solidSpot.add(p.y * floor.w + p.x);
-  let stairs = stairSpots(floor, (i) => solidSpot.has(i));
+  let stairs = shaftAt ? [] : stairSpots(floor, (i) => solidSpot.has(i));
   // (a hall so crowded that it has fewer than two: its barrels and urns are what give way, those on
   // the places taken away; its fires and pillars stay. Its places run along x: stairSpots.)
-  if (stairs.length < 2) {
+  if (stairs.length < 2 && !shaftAt) {
     const breaks = (k: string): boolean => k === 'barrel' || k === 'urn';
     const fixed = new Set<number>();
     for (const p of floor.props) if (SOLID_PROPS.includes(p.kind) && !breaks(p.kind)) fixed.add(p.y * floor.w + p.x);
@@ -819,7 +823,9 @@ export function makeDungeon(depth: number, seed: number): Level {
     }
   }
   const stair = stairs[0] ?? null;
-  const level = finish(floor, false, stair ? null : portalAt(floor.boss.x, floor.boss.y, false));
+  const level = finish(floor, false, stair || shaftAt ? null : portalAt(floor.boss.x, floor.boss.y, false));
+  // (the shaft's timbers, and its middle while the cage is up, are stood on by nobody)
+  if (shaftAt) for (const i of [...shaftTiles(floor, shaftAt), shaftAt.y * floor.w + shaftAt.x]) level.walk[i] = 0;
   const solidAt = new Uint8Array(floor.w * floor.h);
   for (const p of level.props) if (p.solid) solidAt[p.ty * floor.w + p.tx] = 1;
   const way = depth >= 2 ? placeWay(floor, (i) => level.walk[i] === 1 && solidAt[i] === 0) : null;
@@ -830,6 +836,6 @@ export function makeDungeon(depth: number, seed: number): Level {
     level.doors[g].open = 1;
     level.doors[g].want = 1;
   }
-  level.ways = { stair, stairs, way, gate: g };
+  level.ways = { stair, stairs, way, gate: g, shaft: shaftAt ? { x: shaftAt.x, y: shaftAt.y, state: 'empty', t: 0 } : null };
   return level;
 }

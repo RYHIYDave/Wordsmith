@@ -30,6 +30,13 @@
 import { SOLID_PROPS, T_FLOOR, T_VOID, T_WALL } from './types';
 import type { DoorSpot, Floor } from './types';
 
+/**
+ * THE FIRST FIVE FLOORS, the switch of what is the floors' own beyond their bosses (game/bosses.ts) and
+ * the cult (game/defs.ts CULT): floor 5's mine shaft in place of a stairwell, and the ride up to town
+ * (here); every floor laid with its own pieces (game/first5.ts). Off, a floor is as Version 20.2 had it.
+ */
+export const FIRST5 = { on: true };
+
 /** THE SWITCH. ON SINCE VERSION 20.2: the owner, 10 Oct 2026, 11:15, of films of them in the game: "Good". */
 export const WAYS = { on: true };
 
@@ -69,8 +76,68 @@ export interface WayPoint {
   warpAt: number | null;
 }
 
+/**
+ * THE MINE SHAFT, the fifth floor's way out, in place of a stairwell (the owner, in the art chat, 11 Oct
+ * 2026: "Instead of stairs at the end I’d like a mine shaft you ride up"; asked where to: "Up, out to
+ * town"): the tile its middle stands on, at the back of the boss's hall; and how its cage is: up out of
+ * sight while the boss lives ('empty'); coming down as he dies ('coming', `t` seconds since: the film of
+ * it is SHAFT.down long, art/shaft.ts); down at the landing with its gate open ('down': walking into it
+ * takes him up); and going up with him in it ('going': Game.leaving).
+ */
+export interface ShaftWay {
+  x: number;
+  y: number;
+  state: 'empty' | 'coming' | 'down' | 'going';
+  t: number;
+}
+/**
+ * The shaft's times, in seconds, each the art chat's film's own (art/shaft.ts: cageDown, 129 frames at
+ * 30 a second, its cage striking the catches at frames 50 and 60; cageUp, 101 frames, its gate slamming
+ * at 10 and the cable snapping taut at 30; held equal in tests/first5_floors.test.ts).
+ */
+export const SHAFT = { down: 129 / 30, downJolts: [50 / 30, 60 / 30], up: 101 / 30, upJolts: [10 / 30, 30 / 30] };
+
+/** The tiles of a shaft that nobody walks on: its two sides and its back (its timbers and its guides). Its middle, too, until the cage is down: then that is the way in, from before it (+y). */
+export function shaftTiles(f: Floor, s: { x: number; y: number }): number[] {
+  return [s.y * f.w + s.x - 1, s.y * f.w + s.x + 1, (s.y - 1) * f.w + s.x];
+}
+
+/**
+ * WHERE THE FIFTH FLOOR'S SHAFT STANDS: in its boss's hall, as near the hall's far corner (the top of
+ * the screen) as there is room, a tile off its back walls: the three tiles by three round its middle
+ * plain floor (what stands or lies there is taken away: level.ts), none of them before a door or a
+ * gate, its middle three tiles or more from where the boss stands. Null where the hall has no room.
+ */
+export function placeShaft(f: Floor): { x: number; y: number } | null {
+  const hall = f.rooms.find((r) => r.kind === 'boss');
+  if (!hall) return null;
+  const doors = f.doors ?? [];
+  const ok = (x: number, y: number): boolean => {
+    for (let ty = y - 1; ty <= y + 1; ty++) {
+      for (let tx = x - 1; tx <= x + 1; tx++) {
+        if (!plain(f, tx, ty) || doors.some((d) => beforeGate(d, tx, ty))) return false;
+      }
+    }
+    return Math.hypot(x + 0.5 - f.boss.x, y + 0.5 - f.boss.y) >= 3;
+  };
+  let best: { x: number; y: number } | null = null;
+  let bestD = Infinity;
+  for (let y = hall.y + 1; y + 1 < hall.y + hall.h; y++) {
+    for (let x = hall.x + 1; x + 1 < hall.x + hall.w; x++) {
+      const d = x - hall.x + (y - hall.y) + 0.01 * Math.abs(x - hall.x - (y - hall.y));
+      if (d < bestD && ok(x, y)) {
+        best = { x, y };
+        bestD = d;
+      }
+    }
+  }
+  return best;
+}
+
 /** The ways of one level. */
 export interface Ways {
+  /** THE FIRST FIVE FLOORS: the fifth floor's mine shaft (then it has no stairwell); null on every other level. */
+  shaft?: ShaftWay | null;
   /** The stairwell down: where it will open (the first of `stairs`) until it opens, and then where it did. */
   stair: StairWay | null;
   /** The places in the boss's hall where it may open (`stairSpots`): the first, by the hall's middle, unless the boss falls on or by it. */

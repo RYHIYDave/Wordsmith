@@ -16,7 +16,8 @@ import { MODES } from './game/modes';
 import { TALENTS } from './game/talents';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
-import { CRYPT, cryptFloor, cryptGround, cryptProps, forgetCrypt } from './art/crypt';
+import { CRYPT, forgetCrypt } from './art/crypt';
+import { floorLook, lookGround, lookProps } from './art/floors';
 import type { CryptMarks } from './art/crypt';
 import { CRYPT_LAYOUT, CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
@@ -1628,10 +1629,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       questFromRules(g);
       // (THE CRYPT, behind CRYPT: this floor's pictures, made the first time it is reached)
       // (the practice room is no floor of the Crypt: it keeps the vault's stone, as it always had)
-      const crypt = CRYPT.on && g.inDungeon && !g.practice ? cryptFloor(g.depth) : 0;
+      // (THE FIRST FIVE FLOORS: the fifth floor the Fleshmancer's lair, art/floors.ts)
+      const crypt = CRYPT.on && g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
       if (crypt !== cryptShown) {
-        art.ground = crypt ? cryptGround(crypt) : vault.ground;
-        art.props = crypt ? cryptProps(crypt) : vault.props;
+        art.ground = crypt ? lookGround(crypt) : vault.ground;
+        art.props = crypt ? lookProps(crypt) : vault.props;
         cryptShown = crypt;
       }
       // (THE PAINTER: a new place: what the last one's heavy pictures took is given back, and its
@@ -1639,6 +1641,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (g.level !== paintedFor) {
         paintedFor = g.level;
         painter.restart();
+        // (the films this place will want: the fifth floor's cage coming down and going up)
+        if (g.level.ways?.shaft) {
+          painter.film('shaft:down', true);
+          painter.film('shaft:up', true);
+        }
       }
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (THE WAYS, game/ways.ts, behind WAYS: the world darkening as he goes down a stairwell or through a gate, and lightening as he comes into the next level)

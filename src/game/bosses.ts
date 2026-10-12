@@ -1117,6 +1117,16 @@ export class BossRules {
       // (its bone beasts fall apart with it)
       for (const o of [...g.monsters]) if (!o.dead && o.kind === 'beast' && o.packId === m.packId) g.kill(o);
     }
+    if (m.kind === 'fleshmancer' || m.kind === 'minifm') {
+      // (THE DEAD HE RAISED FALL WITH HIM: they were up by his will alone. Those still coming up go back
+      // into the ground; those up fall where they stand, worth nothing: they were his)
+      g.risers = g.risers.filter((r) => r.m.packId !== m.packId || r.m.kind !== 'skeleton');
+      for (const o of g.monsters) {
+        if (o.dead || o === m || o.kind !== 'skeleton' || o.packId !== m.packId) continue;
+        o.dead = true;
+        g.emit({ t: 'die', x: o.x, y: o.y, kind: o.kind, elite: o.elite, champion: o.champion, boss: false, fx: o.fx, fy: o.fy });
+      }
+    }
     if (CORPSES.kinds.includes(m.kind)) {
       g.corpses.push({ x: m.x, y: m.y, t: 0 });
       if (g.corpses.length > CORPSES.most) g.corpses.shift();

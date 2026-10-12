@@ -22,7 +22,7 @@ import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, bossKind, gaitOf } from './bosses';
 import { AIM_MODES, emptyControls } from './state';
-import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, STAIR_LONG, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
+import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
@@ -44,7 +44,7 @@ const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 const RISEN_PACK = -7;
 
 /** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
-type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack';
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -1470,10 +1470,11 @@ export class Game {
     const W = L.ways;
     if (!W) return false;
     const h = this.hero;
+    if (W.shaft) this.stepShaft(dt);
     if (this.leaving) {
       this.leaving.t += dt;
       const warp = this.leaving.to === 'warpTown' || this.leaving.to === 'warpBack';
-      if (this.leaving.t < (warp ? WARP_SECS : CURTAIN_SECS)) return false;
+      if (this.leaving.t < (this.leaving.to === 'up' ? SHAFT.up : warp ? WARP_SECS : CURTAIN_SECS)) return false;
       this.takeWay(this.leaving.to);
       return true;
     }
@@ -1504,6 +1505,20 @@ export class Game {
       this.leave('down');
       return false;
     }
+    // THE MINE SHAFT, once its cage is down: walking into the cage takes him up to town. He stands in
+    // the middle of it, looking out of its gate, and nothing touches him on the way up.
+    const sh = W.shaft;
+    if (sh && sh.state === 'down' && Math.floor(h.x) === sh.x && Math.floor(h.y) === sh.y) {
+      this.leave('up');
+      sh.state = 'going';
+      sh.t = 0;
+      h.x = sh.x + 0.5;
+      h.y = sh.y + 0.5;
+      h.fx = Math.SQRT1_2;
+      h.fy = Math.SQRT1_2;
+      h.invuln = Math.max(h.invuln, SHAFT.up + 1);
+      return false;
+    }
     // THE WAYPOINT wakes the first time he comes near it (the town's is awake while there is a floor to warp back to).
     if (W.way && L.town) W.way.awake = this.wayDepth >= 2;
     else if (W.way && !W.way.awake && Math.hypot(W.way.x - h.x, W.way.y - h.y) < WAY_WAKE) {
@@ -1526,9 +1541,50 @@ export class Game {
     h.comboT = 0;
   }
 
+  /**
+   * THE MINE SHAFT, a step of its cage: coming down (the screen kicked as it strikes the catches, and
+   * again as it bounces), then down, its gate open, its middle the way in; going up with him (the gate
+   * slamming shut, the cable snapping taut). The times are the films' own (ways.ts, SHAFT).
+   */
+  private stepShaft(dt: number): void {
+    const L = this.level;
+    const sh = L.ways?.shaft;
+    if (!sh || (sh.state !== 'coming' && sh.state !== 'going')) return;
+    const was = sh.t;
+    sh.t += dt;
+    const jolts = sh.state === 'coming' ? SHAFT.downJolts : SHAFT.upJolts;
+    jolts.forEach((j, k) => {
+      if (was < j && sh.t >= j) {
+        this.emit({ t: 'shake', amount: sh.state === 'coming' ? (k === 0 ? 7 : 4) : k === 0 ? 2 : 4 });
+        this.sfx(sh.state === 'going' && k === 0 ? 'gateFall' : 'slam', sh.state === 'coming' && k === 0 ? 1 : 0.6);
+      }
+    });
+    if (sh.state === 'coming' && sh.t >= SHAFT.down) {
+      sh.state = 'down';
+      const i = sh.y * L.floor.w + sh.x;
+      L.walk[i] = 1;
+      // (the cage is the hero's way out: no monster steps into it, as none passes a shut door: game/doors.ts)
+      if (!L.shut) L.shut = new Uint8Array(L.floor.w * L.floor.h);
+      L.shut[i] = 1;
+      // (what fell into it as he died is put out before its gate)
+      for (const d of this.drops) if (Math.floor(d.x) === sh.x && Math.floor(d.y) === sh.y) d.y = sh.y + 1.5;
+      this.msg('The cage has come down the shaft. The way up.', MSG.good);
+    }
+  }
+
   /** THE WAYS: what lies at the end of the way he has taken. */
   private takeWay(to: WayTo): void {
     this.leaving = null;
+    if (to === 'up') {
+      // (THE FIRST FIVE FLOORS: up the mine shaft from the fifth floor, out to town: the Crypt cleared)
+      this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
+      this.cleared++;
+      const from = this.depth;
+      this.enterTown();
+      this.cameT = 0;
+      this.msg(FLOOR_NAMES.on ? `${floorTitle(from).level} cleared` : `Dungeon ${from} cleared`, MSG.good);
+      return;
+    }
     // (coming into a floor sounds as it always has: `enterDungeon`; coming into town, as a portal home)
     if (to === 'down') {
       // (a floor cleared, as a dungeon was when its portal was taken: `leaveDungeon`)
@@ -1591,6 +1647,8 @@ export class Game {
   curtain(): number {
     const l = this.leaving;
     if (l && (l.to === 'down' || l.to === 'gateIn' || l.to === 'gateOut')) return Math.min(1, l.t / CURTAIN_SECS);
+    // (up the shaft: the cage goes up into the dark, and over the ride's last moments the screen darkens)
+    if (l && l.to === 'up') return Math.max(0, Math.min(1, (l.t - (SHAFT.up - CURTAIN_SECS)) / CURTAIN_SECS));
     return Math.max(0, 1 - this.cameT / CURTAIN_SECS);
   }
 
@@ -3993,7 +4051,12 @@ export class Game {
       // (THE WAYS: the stairwell down opens in his hall, clear of where he fell; where the floor has none, the portal home as before)
       const W = this.level.ways;
       const st = W ? stairFor(W.stairs, m.x, m.y, this.hero.x, this.hero.y) : null;
-      if (W && st) {
+      if (W && W.shaft) {
+        // (THE FIRST FIVE FLOORS: on the fifth floor the cage comes crashing down the mine shaft at the back of his hall)
+        W.shaft.state = 'coming';
+        W.shaft.t = 0;
+        this.sfx('thunder', 0.35);
+      } else if (W && st) {
         W.stair = st;
         this.openStair(st);
       } else {
