@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (10 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 20.2).**
+**Status (12 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 21.0).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -209,6 +209,13 @@ in town opens as you come and takes you to floor 1, whose own gate takes you hom
 boss dies a stairwell opens down to the next; from floor 2 a waypoint where you come in warps you
 to town and back. A lever is never shut in by barrels now, and a tap to walk somewhere goes round
 a pillar.
+Version 21.0: the first five floors. A boss on every floor: the Warden, the Headsman, the Chained
+One, the amalgamation with its bone beasts, and on floor 5 the Fleshmancer, each named as his gate
+shuts, with a line of his own; each floor named as you come in, "Prison Level N" under it. The cult
+on floors 4 and 5: dagger cultists, and mini fleshmancers who burn and raise the cult's dead. Every
+floor dressed with its own art and three moments that play as you come near; the floor breaks open
+into the stairwell as a boss dies; on floor 5 the cage crashes down the mine shaft and rides you up
+to town. A new start screen.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which

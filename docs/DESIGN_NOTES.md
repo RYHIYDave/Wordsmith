@@ -5538,6 +5538,68 @@ of the ways in the game (by 11:12), at 11:15: "Good". Asked for his direct OK fo
 - **The published page itself** (`wrap202.sh` in the scratchpad, 16:06:55 to 16:35:31): **88 OF 88 PLAYTESTS
   CLEAN** (20.1's 86, and fingers on a phone held upright, and the soak). Published at 16:42 ("Version 56", version id `1791664967-f0c9`, label "Version 20.2"); the file published is the kept copy, `v202c/release/artifact.html`, byte for byte the copy's `dist/artifact.html`. main on GitHub fast-forwarded from `c0b62a5` to `f352d4c` (the branch `crypt`, with the release `Play.html`).
 
+### Version 21.0: the first five floors
+
+**What he said.** 11 Oct 2026, 19:45: "Please add all the new assets and finish the game up to level 5 and
+the mineshaft leading back up to town". 20:37: "Don’t forget the level titles when you enter the level and
+the boss titles when you enter the boss room" (read back as the floors' names and the bosses' entrances of
+his idea of 10 Oct, 21:30, each new boss with his own name and lines). 21:33: "ETA for the completed 5
+levels?" (answered 21:34: early the next morning, around 5 or 6 a.m. his time, a guess). The art in it has
+his yes, each piece given to the art chat (the board has his words): floors 1 to 5, their pieces and moments,
+the stairwell's opening, floor 5's look and the mine shaft, the Headsman, the Chained One, the amalgamation
+and the bone beast, the Fleshmancer, the two cultists, and the new start screen (by 21:27, "Yes, send it to
+main (Recommended)"). Asked for his direct OK in a plain message at 01:59 on 12 Oct ("Is it OK to put Version
+21.0 live?"), at 07:27: "Yep good to go".
+
+**What is in it.** (`docs/NEXT_VERSION.md` has it whole; `docs/first5_build.md` the costs measured and every
+call made for him.)
+
+- **The bosses of floors 2 to 5** (`game/bosses.ts`, rules; `render/bossfx.ts`, what they send out): the
+  Headsman, the Chained One (his chains breaking at two thirds and a third of his life), the amalgamation and
+  its bone beasts, the Fleshmancer (his raised dead fall with him); every move's times the pictures' own.
+- **The cult** on floors 4 and 5 (`game/defs.ts` `CULT`): packs of dagger cultists, some led by a mini
+  fleshmancer who burns with his fire and raises the cult's fallen as skeletons.
+- **The painter** (`render/painter.ts`): the bosses' frames (about a thousand each) and the floors' films
+  painted in a worker made from the game's own script, beside the game; on a machine of two processors or
+  fewer it rests between pieces of work; with none the game paints for itself and does without the films.
+- **Floor 5, the Fleshmancer's Lair** (`art/floors.ts`), and **the mine shaft** at the back of his hall
+  (`game/ways.ts` `placeShaft`, `SHAFT`): the cage crashes down as he dies; walking into it rides up to town,
+  the Crypt cleared (`render/dress.ts` draws him between the cage's layers).
+- **The stairwell breaking open** on floors 1 to 4, the art chat's film (`STAIR_OPENING`, 3.5 s; its top step
+  takes nobody down until then).
+- **Every floor laid with its own pieces** (`game/first5.ts`; `render/pieces.ts`): about one wall face in four,
+  a floor tile in 22, a thing that stands for every 38 tiles of a room (at most three, never cutting the floor),
+  small things about, the floors' own braziers, chests, breakables, pillars, bones, traps and gates; **the
+  fifteen moments**, each played once as he comes within 5.5 tiles and sees it. The quest pieces are not laid
+  (no quest for them yet).
+- **The titles**: every floor's name, "Prison Level N" under it, and every boss's entrance and lines.
+- **The new start screen** (the art chat's `art/title_smith3.ts`, `TITLE_SMITH3` on).
+
+**How it was tested.**
+
+- The unit suite: 1236 of 1236 at `b26f530` (23:52:02 to 00:02:12) and again in the frozen copy (01:15:36 to
+  01:25:57); `tsc` clean. New: `tests/first5_floors.test.ts`, `tests/first5_bosses.test.ts`.
+- The first regression (an earlier copy, before the new start screen): 152 of 160 clean; the eight mended in
+  the playtests (the walls' and the new monsters' taught the dressed walls and the cult) and in the game (the
+  painter's rest on two processors: the guide's warriors, loading while a boss was painted, had walked into
+  the first floor's gate); each clean after.
+- **THE REGRESSION** on the frozen copy `dist/final.html` (`b26f530`), now with the first five floors' 22
+  playtests in `tools/regress.sh`, 00:02:13 to 01:11:43, two at a time, nothing else running: **ALL 182
+  FINISHED CLEAN**. The soak to floor 5 (cleared 4). Speed: the frame-rate run 54 frames a second (20.2: 57.5),
+  longest frame 50 ms (20.2: 66.7); the word-combination runs' slowest fights 52.7 to 58.9, longest frame 100 ms.
+- `find src -newer dist/final.html` named nothing. THE RELEASE BUILD in the copy (the scratchpad's
+  `v210a/arpg_frozen`) at 01:25: `Play.html` 1,994,073 bytes, `dist/artifact.html` 1,993,751, V21.0; kept in
+  `v210a/release/`.
+- **The published page itself** (`tools/wrap210.sh`, 01:26 to 01:55:28): **ALL 74 FINISHED CLEAN** (73 of the
+  regression's playtests, the first five floors' 22 among them, and the frame rate alone, 54.7).
+- Published at 07:27 on 12 Oct ("Version 57", version id `1791804462-0133`, label "Version 21.0"); the file
+  published is the kept copy, `v210a/release/artifact.html`.
+
+**Not checked.** A real phone with the big bosses (their frames take memory: the Headsman about 55 MB, the
+Chained One's three states about 167 MB, painted a little at a time, two of his states at a time on a small
+device); whether the fights are too hard or too easy. **Not on GitHub**: this chat was refused permission to
+push (11 Oct, 19:47); the branch `first5` went to his PC as a git bundle, and he was told and asked to decide.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
