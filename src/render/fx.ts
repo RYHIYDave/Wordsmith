@@ -1494,6 +1494,14 @@ export class Fx {
           this.shatter(e.x, e.y);
           break;
         }
+        case 'gone': {
+          // (THE FIRST FIVE FLOORS: a body raised by a mini fleshmancer is gone from where it lay: game/bosses.ts)
+          if (e.what === 'corpse') {
+            const k = this.fallen.findIndex((f) => Math.abs(f.x - e.x) < 0.05 && Math.abs(f.y - e.y) < 0.05);
+            if (k >= 0) this.fallen.splice(k, 1);
+          }
+          break;
+        }
         case 'die': {
           const colors = DEATH_COLORS[figureOf(e)];
           // (it falls as its figure falls, facing the way it was; the renderer leaves it out if its figure has no death)
