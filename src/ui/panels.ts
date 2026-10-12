@@ -391,7 +391,12 @@ const SMITH_NIGHT = '#05040f';
  * far above the bottom of the screen the picture wants that row, `headTop` the row of the top of
  * his head.
  */
-export type SmithPicture = Smith2Title;
+export type SmithPicture = Smith2Title & {
+  /** If it has one, how far its life throws the picture at time `t` (the screen kicks on its big moment), in its own pixels. */
+  kick?(t: number): readonly [number, number];
+  /** ... and a flash over the whole picture at time `t`: its colour and how strong (0, none). */
+  flash?(t: number): readonly [string, number];
+};
 /** The least the table's edge may be above the bottom of the screen: a row of buttons, flush under it. */
 const SMITH_LEAST = 26;
 /** Held upright, how far under the table's front edge the first button hangs: the band of runes, then a line of small writing (what an option means; who Continue carries on with). */
@@ -509,9 +514,18 @@ function drawSmithMenu(ui: Ui, smith: SmithPicture, t: number, title: string, st
   const { lift, rowsTop, oy } = lay;
   const rects = menu.map((m, i) => ({ m, r: lay.rects[i] }));
   // --- the picture, and its life ---
-  const ox = Math.floor((W - smith.w) / 2);
-  g.drawImage(smith.still, ox, oy);
-  g.drawImage(smith.life(t), ox, oy);
+  // (the screen kicks on the picture's big moment, if it has one: the picture, not the buttons)
+  const [kx, ky] = smith.kick ? smith.kick(t) : [0, 0];
+  const ox = Math.floor((W - smith.w) / 2) + kx;
+  g.drawImage(smith.still, ox, oy + ky);
+  g.drawImage(smith.life(t), ox, oy + ky);
+  const [flashColor, flash] = smith.flash ? smith.flash(t) : ['', 0];
+  if (flash > 0) {
+    g.globalAlpha = flash;
+    g.fillStyle = flashColor;
+    g.fillRect(0, 0, W, H);
+    g.globalAlpha = 1;
+  }
   if (!menuPage) return false;
   // (behind the options, which stand higher than the table's edge, the picture is put back a little)
   // (the dark comes on in three thin steps: a hard edge would cut straight across his hand)

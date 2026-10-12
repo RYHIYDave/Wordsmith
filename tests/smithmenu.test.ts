@@ -13,13 +13,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SMITH_H, SMITH_LIP, SMITH_SAFE, SMITH_W } from '../src/art/title_smith';
 import { SMITH2_H, SMITH2_HEAD_TOP, SMITH2_LIFT, SMITH2_LIP, SMITH2_W } from '../src/art/title_smith2';
+import { SMITH3_H, SMITH3_HEAD_TOP, SMITH3_LIFT, SMITH3_LIP, SMITH3_W } from '../src/art/title_smith3';
 import { textWidth } from '../src/engine/font';
 import { SMITH_MOST, SMITH_UNDER, smithLayout } from '../src/ui/panels';
 
-/** The two pictures the screen may be laid out for: the first painting (a bust behind his table), and the one seen from the floor. */
+/** The pictures the screen may be laid out for: the first painting (a bust behind his table), the one seen from the floor, and the same made new for the new wordsmith (art/title_smith3.ts). */
 const PICTURES: { name: string; w: number; h: number; lip: number; lift: number; headTop: number }[] = [
   { name: 'the first painting', w: SMITH_W, h: SMITH_H, lip: SMITH_LIP, lift: 38, headTop: SMITH_SAFE.top },
   { name: 'from the floor', w: SMITH2_W, h: SMITH2_H, lip: SMITH2_LIP, lift: SMITH2_LIFT, headTop: SMITH2_HEAD_TOP },
+  { name: 'from the floor, made new for the new wordsmith', w: SMITH3_W, h: SMITH3_H, lip: SMITH3_LIP, lift: SMITH3_LIFT, headTop: SMITH3_HEAD_TOP },
 ];
 
 const NAME_W = textWidth('WORDSMITH');

@@ -32,6 +32,7 @@ import { makeTitleArt } from './art/title';
 import { makeSmithTitle } from './art/title_smith';
 import type { SmithTake } from './art/title_smith';
 import { SMITH2_CHOSEN, makeSmith2Title } from './art/title_smith2';
+import { TITLE_SMITH3, makeSmith3Title } from './art/title_smith3';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
 import { initAudio, isMuted, setMuted, sfx, speak } from './engine/audio';
@@ -228,7 +229,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // said yes (23:08: "everything else looks great"): 'floor' since Version 15. The test hook
   // `__dbg.titleLook('library')` still shows the old one. A picture is painted the first time
   // it is asked for.
-  let titleLook: 'library' | 'smith' | 'floor' = 'floor';
+  // 'smith3' is the same picture made new for the wordsmith as he is since Version 19.6 (art/title_smith3.ts,
+  // the owner's ask of 11 Oct 2026, 19:46), shown only while its switch TITLE_SMITH3 is on: on, on his yes of 21:27.
+  let titleLook: 'library' | 'smith' | 'floor' | 'smith3' = TITLE_SMITH3.on ? 'smith3' : 'floor';
   let smithTitle: SmithPicture | null = null;
   const ui = new Ui();
   const fx = new Fx();
@@ -1481,7 +1484,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? CLASS_IDS[voiceTry.i - 1] : null,
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
         tryout: TRYOUT,
-      }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
+      }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'smith3' ? makeSmith3Title() : titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
       // the voices being tried out: warrior, ranger, mage, a breath apart
       if (voiceTry && (titleUi.page !== 'class' || titleLex)) voiceTry = null;
       if (voiceTry && clock >= voiceTry.at) {
@@ -2008,7 +2011,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       titleLex = false;
     },
     /** Which start screen is shown: the library and the dream, or the wordsmith at his forge table (not yet approved by the owner). */
-    titleLook: (look: 'library' | 'smith' | 'floor', take?: SmithTake) => {
+    titleLook: (look: 'library' | 'smith' | 'floor' | 'smith3', take?: SmithTake) => {
       titleLook = look;
       // (each picture is painted when it is first shown: a change of look, or of the first painting's moment, paints afresh)
       smithTitle = look === 'smith' && take ? makeSmithTitle(take) : null;
