@@ -10,6 +10,7 @@ import { buildOpenGrid, buildWalkGrid } from './nav';
 import type { Level, PropInst } from './state';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_PIT, T_VOID, T_WALL } from './types';
 import type { Floor, HazardSpot, PackSpot, PropSpot, Room } from './types';
+import { dress } from './first5';
 import { FIRST5, TOWN_WAY, WAYS, beforeGate, openGate, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, townGate } from './ways';
 
 /**
@@ -837,5 +838,7 @@ export function makeDungeon(depth: number, seed: number): Level {
     level.doors[g].want = 1;
   }
   level.ways = { stair, stairs, way, gate: g, shaft: shaftAt ? { x: shaftAt.x, y: shaftAt.y, state: 'empty', t: 0 } : null };
+  // (THE FIRST FIVE FLOORS: the floor laid with its own pieces, last, by dice of its own: game/first5.ts)
+  level.dress = dress(level, depth, seed);
   return level;
 }

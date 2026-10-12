@@ -8,6 +8,7 @@ import type { HazardInst } from './traps';
 import type { HeroMode } from './modes';
 import type { Attr, ClassId, Element, EquipSlot, Floor, Item, MonsterKind, PropKind, Stats, VoiceId, WordId } from './types';
 import type { Ways } from './ways';
+import type { Dress } from './first5';
 
 /** Everything worked out from class, level, attributes and gear. Rebuilt whenever one of those changes. */
 export interface Derived {
@@ -660,6 +661,8 @@ export interface Drop {
  */
 export type PropType =
   | PropKind
+  /** THE FIRST FIVE FLOORS: one of a floor's own pieces, by its name (game/first5.ts). */
+  | 'piece'
   | 'portal'
   | 'body'
   | 'lexicon'
@@ -826,6 +829,8 @@ export interface PropInst {
   /** Chest: 1 = opened. Barrel / urn: 1 = broken. Portal: 1 = active. */
   state: number;
   variant: number;
+  /** THE FIRST FIVE FLOORS: a floor's own piece's name (kind 'piece': game/first5.ts). */
+  name?: string;
 }
 
 export interface Level {
@@ -860,6 +865,8 @@ export interface Level {
   hazards: HazardInst[];
   /** (THE WAYS, game/ways.ts, behind WAYS) The stairwell down, the waypoint and the gate of the way; null where they are off. */
   ways: Ways | null;
+  /** THE FIRST FIVE FLOORS: what the floor is laid with in its walls and its floor, and where its moments play (game/first5.ts); absent elsewhere. */
+  dress?: Dress | null;
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */

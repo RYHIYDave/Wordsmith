@@ -17,8 +17,10 @@ import { TALENTS } from './game/talents';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, forgetCrypt } from './art/crypt';
-import { floorLook, lookGround, lookProps } from './art/floors';
-import { stairKey } from './art/films';
+import { floorLook, forgetPieces, lookGates, lookGround, lookHazards, lookProps } from './art/floors';
+import { FLOOR_SETS } from './game/first5';
+import { FIRST5 } from './game/ways';
+import { momentKeys, stairKey } from './art/films';
 import type { CryptMarks } from './art/crypt';
 import { CRYPT_LAYOUT, CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
@@ -209,7 +211,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   };
   // THE CRYPT (art/crypt.ts, behind CRYPT, off): each of its floors has a ground and props of its
   // own, swapped in as the hero goes down; the vault's are the town's, and every dungeon's with it off.
-  const vault = { ground: art.ground, props: art.props };
+  const vault = { ground: art.ground, props: art.props, gates: art.gates, hazards: art.hazards };
   let cryptShown = 0;
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
@@ -1642,6 +1644,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (crypt !== cryptShown) {
         art.ground = crypt ? lookGround(crypt) : vault.ground;
         art.props = crypt ? lookProps(crypt) : vault.props;
+        // (THE FIRST FIVE FLOORS: each floor's own doors and gates, and its traps: art/floors.ts; the other floors' pieces let go of)
+        const own = FIRST5.on && crypt >= 1 && crypt <= 5;
+        art.gates = own ? lookGates(crypt) : vault.gates;
+        art.hazards = own ? lookHazards(crypt, FLOOR_SETS[crypt - 1].traps) : vault.hazards;
+        forgetPieces(crypt);
         cryptShown = crypt;
       }
       // (THE PAINTER: a new place: what the last one's heavy pictures took is given back, and its
@@ -1661,13 +1668,17 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           painter.film(stairKey(look, W.stairs[0]), true);
           if (W.stairs[1] && !painter.small) painter.film(stairKey(look, W.stairs[1]));
         }
+        // (and its three moments, where it is laid with them: render/pieces.ts)
+        if (g.level.dress) for (const key of momentKeys(g.level.dress.floor)) painter.film(key);
       }
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)
-      for (const k of renderer.dress.kicks()) {
+      for (const k of renderer.kicks()) {
         fx.shake = Math.max(fx.shake, k.amount);
         sfx('slam', { vol: k.vol });
       }
+      // (a moment that has cleared a tile: the cart gone off down its rails)
+      for (const i of renderer.pieces.freedTiles()) g.freeTile(i);
       // (THE WAYS, game/ways.ts, behind WAYS: the world darkening as he goes down a stairwell or through a gate, and lightening as he comes into the next level)
       const dark = g.curtain();
       if (dark > 0) {

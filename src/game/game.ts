@@ -1573,6 +1573,14 @@ export class Game {
     }
   }
 
+  /** THE FIRST FIVE FLOORS: a tile that something stood on and has gone from (a moment's cart, run off down its rails: render/pieces.ts) is walked on now. */
+  freeTile(i: number): void {
+    const L = this.level;
+    if (i < 0 || i >= L.walk.length || L.floor.tiles[i] !== T_FLOOR) return;
+    for (const p of L.props) if (p.kind === 'piece' && p.ty * L.floor.w + p.tx === i) p.solid = false;
+    if (!L.props.some((p) => p.solid && p.ty * L.floor.w + p.tx === i)) L.walk[i] = 1;
+  }
+
   /** THE WAYS: what lies at the end of the way he has taken. */
   private takeWay(to: WayTo): void {
     this.leaving = null;

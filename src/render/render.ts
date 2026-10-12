@@ -55,6 +55,8 @@ import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
+import type { Kick } from './dress';
+import { FloorPieces } from './pieces';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
 import type { Painter } from './painter';
@@ -354,6 +356,15 @@ export class Renderer {
   readonly dress: FloorDress;
   /** What the renderer lends it. */
   private readonly stage: Stage;
+  /** THE FIRST FIVE FLOORS, drawn: each floor's own pieces and its moments (render/pieces.ts). */
+  readonly pieces: FloorPieces;
+  /** Whether this frame's level is laid with them. */
+  private dressed = false;
+
+  /** The kicks of the screen this frame's films ask for (main.ts kicks it, and sounds a blow for each). */
+  kicks(): Kick[] {
+    return [...this.dress.kicks(), ...this.pieces.kicks()];
+  }
   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
   private warmedFor: unknown = null;
   /** Frames drawn, for the hero's and the monsters' turns at painting ahead (see heroArt). */
@@ -732,6 +743,7 @@ export class Renderer {
     this.dg = this.dark.getContext('2d') as CanvasRenderingContext2D;
     this.bossFx = new BossFx(art.bestiary);
     this.dress = new FloorDress(() => this.painter);
+    this.pieces = new FloorPieces(() => this.painter);
     this.stage = {
       cam: this.cam,
       stand: (d, sp, x, y) => this.stand(d, sp, x, y),
@@ -1275,12 +1287,17 @@ export class Renderer {
     // (THE WAYS, game/ways.ts: the level's own stairwell and waypoint)
     if (L.ways && pass <= 0) this.flatWays(g, L, t, game);
     if (L.ways && pass <= 0) this.dress.flat(g, game, this.stage);
+    if (this.dressed) this.pieces.shadows(g, game, this.stage, here);
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] || !here(p.x, p.y)) continue;
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -60 || sx > W + 60 || sy < -30 || sy > H + 60) continue;
-      if (p.kind === 'bones' || p.kind === 'rubble' || ((p.kind === 'barrel' || p.kind === 'urn') && p.state === 1)) {
+      // (THE FIRST FIVE FLOORS: the floor's own bones, and what its breakables leave: render/pieces.ts)
+      const own = this.dressed ? this.pieces.flat(p) : undefined;
+      if (own !== undefined) {
+        if (own) g.drawImage(own.img, Math.round(sx) - own.ax, Math.round(sy) - own.ay, own.w, own.h);
+      } else if (p.kind === 'bones' || p.kind === 'rubble' || ((p.kind === 'barrel' || p.kind === 'urn') && p.state === 1)) {
         // (what is left of a barrel is staves and a hoop; of an urn, shards)
         const list = p.kind === 'bones' ? art.props.bones : p.kind === 'barrel' ? art.props.staves : p.kind === 'urn' ? art.props.shards : art.props.rubble;
         const sp = list[p.variant % list.length];
@@ -1765,6 +1782,9 @@ export class Renderer {
    */
   draw(g: CanvasRenderingContext2D, W: number, H: number, game: Game, fx: Fx, t: number, pace = 1): Cam {
     this.bossFx.begin();
+    // (THE FIRST FIVE FLOORS: this level's own pieces, and a step of its moments)
+    this.dressed = this.pieces.begin(game);
+    if (this.dressed) this.pieces.step(game);
     const live = pace > 0;
     const amb = pace * fx.room();
     const art = this.art;
@@ -1854,7 +1874,8 @@ export class Renderer {
           }
           if (sunk && sunk[idx] < 0) continue;
           // (the flagstones are laid on the world, not on the tiles: a tile's picture goes by where it is)
-          const sp = art.ground.floor(tx, ty);
+          // (THE FIRST FIVE FLOORS: or one of the floor's own tiles laid there: render/pieces.ts)
+          const sp = (this.dressed && this.pieces.tile(idx)) || art.ground.floor(tx, ty);
           g.drawImage(sp.img, px - sp.ax, py - sp.ay, sp.w, sp.h);
           // the shadow of a wall that stands over it (the light is from the upper left)
           // (THE WALLS' LOOK: a wall that is cut away throws no shadow)
@@ -1896,6 +1917,8 @@ export class Renderer {
               this.stand(s + 1, art.ground.faceRight[v % n], px, py);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
+            // (THE FIRST FIVE FLOORS: what is set in its faces: render/pieces.ts)
+            if (which && this.dressed) this.pieces.wall(game, idx, which, s, px, py, t, this.stage);
           } else if (!(lowGrid[idx] && WALL_LOOK.front === 'none')) {
             const sp = lowGrid[idx] ? art.ground.wallsLow[v % art.ground.wallsLow.length] : art.ground.wallsTall[v % art.ground.wallsTall.length];
             const thin = !lowGrid[idx] && this.overHero(px, py, s + 1, WALL_LOOK.tall) ? SEEN_THROUGH : 1;
@@ -1946,7 +1969,10 @@ export class Renderer {
       const sy = wy(cam, p.x, p.y);
       if (sx < -40 || sx > W + 40 || sy < -30 || sy > H + 70) continue;
       let sp: Sprite | null = null;
-      switch (p.kind) {
+      // (THE FIRST FIVE FLOORS: the floor's own pieces, and its own of the game's things: render/pieces.ts)
+      const own = this.dressed ? this.pieces.standing(game, p, t) : undefined;
+      if (own !== undefined) sp = own;
+      else switch (p.kind) {
         case 'brazier': sp = art.props.brazier[(Math.floor(t * 8) + p.variant) % 4]; break;
         case 'chest': sp = p.state === 1 ? art.props.chestOpen : art.props.chest; break;
         case 'barrel': sp = p.state === 0 ? art.props.barrel : null; break;
@@ -1980,6 +2006,7 @@ export class Renderer {
     if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
     if (L.ways) this.standWays(L, t, game.time);
     if (L.ways) this.dress.standing(game, this.stage);
+    if (this.dressed) this.pieces.standMoments(game, this.stage);
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
       const lift = NAME_LIFT[st.kind];
