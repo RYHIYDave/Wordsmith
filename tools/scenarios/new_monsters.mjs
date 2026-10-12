@@ -247,7 +247,8 @@ export default async function (page, snap) {
         for (const pack of Object.values(packs)) {
           const leader = pack.find((m) => m.rarity === 'leader');
           const minion = pack.find((m) => m.rarity === 'minion');
-          if (leader && minion && leader.kind !== minion.kind) misled.push(`${minion.kind}s led by a ${leader.kind}`);
+          // (THE FIRST FIVE FLOORS: the cult's dagger packs, led by a mini fleshmancer, are the cult's switch's, game/defs.ts CULT, not this one's)
+          if (leader && minion && leader.kind !== minion.kind && !(minion.kind === 'dagger' && leader.kind === 'minifm')) misled.push(`${minion.kind}s led by a ${leader.kind}`);
         }
       }
     }

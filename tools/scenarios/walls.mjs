@@ -29,6 +29,8 @@ const SOLID = 28;
 
 export default async function (page, snap) {
   const hands = await makeHands(page);
+  // (the floors' names, game/defs.ts FLOOR_NAMES, come up across the screen as a floor is come into, over where the walls are read: not here)
+  await page.evaluate(() => window.__dbg.floorNames(false));
   const touch = hands.touch;
   const client = hands.client;
   const cls = process.env.CLS || 'warrior';
@@ -144,10 +146,16 @@ export default async function (page, snap) {
     const doorAt = new Set();
     for (const q of f.doors || []) { const line = q.out > 0 ? q.plane : q.plane - 1; for (let k = 0; k < 3; k++) doorAt.add(q.alongX ? line * f.w + q.a + k : (q.a + k) * f.w + line); }
     const DOOR = (x, y) => doorAt.has(y * f.w + x);
+    // (THE FIRST FIVE FLOORS: a wall that has one of its floor's pieces set in it, or a moment that plays there, is not
+    // read: a piece may reach up into the dark, as the art chat drew them, his yes: a crack, a fire. game/first5.ts)
+    const dressed = new Set();
+    for (const w of (L.dress && L.dress.wall) || []) dressed.add(w.i);
+    for (const m of (L.dress && L.dress.moments) || []) if (m.i !== undefined) dressed.add(m.i);
+    const BARE = (x, y) => !dressed.has(y * f.w + x);
     for (let y = 1; y < f.h - 1; y++) for (let x = 1; x < f.w - 1; x++) {
       if (T(x, y) !== 2 || C(x, y) !== 0) continue;
       // a wall that stands, its face turned to screen-left, floor at its foot, and nothing but the dark behind it and above it on the screen
-      if (!LOW(x, y) && dark(x - 7, y - 7, x + 2, y) && clear(x + 0.5, y + 1.5, 2.2)) {
+      if (!LOW(x, y) && BARE(x, y) && dark(x - 7, y - 7, x + 2, y) && clear(x + 0.5, y + 1.5, 2.2)) {
         if (!out.back && plain(x, y + 1) && plain(x, y + 2) && plain(x, y + 3) && free(x + 0.5, y + 3.5)) out.back = { x, y, hero: [x + 0.5, y + 3.5] };
         if (!out.raised && plain(x, y + 1, 1) && T(x, y + 2) === 1 && T(x, y + 3) === 1 && free(x + 0.5, y + 3.5)) out.raised = { x, y, hero: [x + 0.5, y + 3.5] };
       }

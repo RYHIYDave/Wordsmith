@@ -500,9 +500,14 @@ export function paintWorkerMain(): void {
     }
   }
 
-  // (between one piece of work and the next the worker goes back to its queue, so that what has been asked of it meanwhile is heard)
+  // (between one piece of work and the next the worker goes back to its queue, so that what has been asked of it meanwhile is heard;
+  // on a machine of two cores or fewer it rests as long as it worked, so that the game, on the other, is never starved)
   const channel = new MessageChannel();
-  const again = (): void => channel.port2.postMessage(0);
+  const cores = typeof navigator !== 'undefined' && navigator.hardwareConcurrency ? navigator.hardwareConcurrency : 4;
+  const again = (): void => {
+    if (cores <= 2) setTimeout(() => channel.port2.postMessage(0), CHUNK_MS);
+    else channel.port2.postMessage(0);
+  };
   const pump = (): void => {
     if (jobs.length === 0) {
       going = false;
