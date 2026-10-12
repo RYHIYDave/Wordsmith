@@ -1124,7 +1124,11 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   let noticeEnd = 0;
   if (inp.toast) noticeEnd = drawToast(ui, art, inp.toast.word, inp.toast.t, bossUp && W >= 380 ? 24 : W >= 380 ? 4 : NARROW_TOP, !!inp.toast.big);
   else if (inp.moveToast) noticeEnd = drawMoveToast(ui, art, h, inp.moveToast.skill, inp.moveToast.t, bossUp && W >= 380 ? 24 : W >= 380 ? 4 : NARROW_TOP);
-  else if (banner && !bossUp) noticeEnd = drawBanner(ui, banner, t);
+  else if (banner && !bossUp) {
+    noticeEnd = drawBanner(ui, banner, t);
+    // (for the playtests: where the prompt is)
+    ui.mark('banner', 0, 0, W, noticeEnd);
+  }
 
   // ---- messages -----------------------------------------------------------------------------
   const msgW = Math.max(120, Math.floor(W / 2) - 62);

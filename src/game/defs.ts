@@ -835,9 +835,10 @@ export const FLOOR_NAMES = {
  * The floor's name before the first dungeon's prompt: while a floor's name is up (FLOOR_NAMES.secs), the
  * prompt at the top of the screen (ui/guide.ts) waits, since it would cover the name; it comes as the name
  * goes. The owner, 12 Oct 2026, 07:45: "One thing I noticed is you cant see the warden level introduction.
- * It gets hidden by the tap to attack pop up". Off until he has seen it in pictures and said yes.
+ * It gets hidden by the tap to attack pop up". To the pictures of it (previews/cardfirst/floor_name_first.png), at
+ * 07:51: "Looks good".
  */
-export const FLOOR_CARD_FIRST = { on: false };
+export const FLOOR_CARD_FIRST = { on: true };
 
 /** A floor's name and its level, as the floors' names give them. */
 export function floorTitle(depth: number): { name: string; level: string } {

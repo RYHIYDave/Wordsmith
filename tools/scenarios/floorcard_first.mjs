@@ -2,13 +2,16 @@
 // 12 Oct 2026, 07:45: "One thing I noticed is you cant see the warden level introduction.  It gets hidden by
 // the tap to attack pop up". A new player's first floor, the first pack woken a few tiles off so that the
 // fight prompt is due at once (FIGHT=1, the default; FIGHT=0 the walking prompt), pictures as the floor's
-// name comes and goes. With FLOOR_CARD_FIRST on (CARDFIRST=1) the prompt waits while the name is up.
+// name comes and goes. With FLOOR_CARD_FIRST as the game has it (on since 21.1, his "Looks good" of 07:51)
+// the prompt waits while the name is up, and comes once it has gone: both are checked. CARDFIRST=0 shows
+// the game as it was (the prompt over the name), for pictures.
 //   node tools/build_to.mjs dist/card.html
-//   CARDFIRST=1 node tools/playtest.mjs --file dist/card.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/floorcard_first.mjs --out shots/card/after
+//   node tools/playtest.mjs --file dist/card.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/floorcard_first.mjs --out shots/card/after
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {
-  const on = process.env.CARDFIRST === '1';
+  const fail = async (msg) => { console.log('  !! ' + msg); await page.evaluate((m) => console.error(m), 'floorcard: ' + msg); };
+  const on = process.env.CARDFIRST !== '0';
   const fight = process.env.FIGHT !== '0';
   const cls = process.env.CLS || 'warrior';
   await page.evaluate(([o, c]) => {
@@ -46,8 +49,12 @@ export default async function (page, snap) {
   for (const at of [700, 1700, 2700, 3900, 5200]) {
     const wait = at - (Date.now() - t0);
     if (wait > 0) await page.waitForTimeout(wait);
-    const s = await page.evaluate(() => ({ step: window.__dbg.game().guideStep() }));
-    log(`at ${(at / 1000).toFixed(1)} s`, `prompt due: ${s.step}`);
+    const s = await page.evaluate(() => ({ step: window.__dbg.game().guideStep(), banner: window.__dbg.ui.marks.has('banner') }));
+    log(`at ${(at / 1000).toFixed(1)} s`, `prompt due: ${s.step}; shown: ${s.banner}`);
     await snap(`t${String(at).padStart(4, '0')}`);
+    if (!on) continue;
+    // the name is up for FLOOR_NAMES.secs (3.4 s): the prompt waits through it, and is shown after
+    if (at <= 2700 && s.banner) await fail(`at ${at / 1000} s the prompt is shown over the floor's name`);
+    if (at >= 5200 && s.step && !s.banner) await fail(`at ${at / 1000} s the floor's name has gone, a prompt is due (${s.step}), and none is shown`);
   }
 }

@@ -384,6 +384,9 @@ run first5_shaft_upright $U --scenario $S/first5_shaft.mjs &
 run first5_titles --scenario $S/first5_titles.mjs &
 run first5_titles_phone $P --scenario $S/first5_titles.mjs &
 run title_smith3_phone $P --scenario $S/title_smith3.mjs &
+# the floor's name before the first dungeon's prompt (FLOOR_CARD_FIRST, Version 21.1): with a fight due, and walking
+run floorcard_phone $P --scenario $S/floorcard_first.mjs &
+FIGHT=0 run floorcard_pc --scenario $S/floorcard_first.mjs &
 wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
