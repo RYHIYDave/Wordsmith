@@ -10,9 +10,13 @@
 // Rough mock-up paint to show the shapes and the feel of each, not art for the game; the knight
 // stands in each for scale. Nothing of the game imports it.
 //   node tools/preview.mjs src/dev/preview_act1.ts previews/act1_levels.png 1280 800
+// With the hash "see", the near walls drawn whole and see-through round whoever is behind them
+// (his question of 19:17), beside the game's way today:
+//   node tools/preview.mjs src/dev/preview_act1.ts previews/act1_see_through.png 1280 800 see
 import { spriteOf3 } from '../art/heroes3';
 import { hash } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
+import { makeDaggerCultistArt3 } from '../art/cultists';
 
 type RGB = [number, number, number];
 const F = 2; // picture pixels per game pixel
@@ -278,9 +282,40 @@ interface Level {
 
 const enum K { Floor = 1, Face = 2, Top = 3, Cut = 4, Water = 5, Bank = 6, Out = 7 }
 
-function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level): void {
+/** How a level is painted: the near walls left out (as the game does), or drawn whole and see-through round whoever stands behind them. */
+interface Way {
+  full?: boolean;
+  /** Enemies standing in it, besides the knight. */
+  foes?: [number, number][];
+}
+const cultist = makeDaggerCultistArt3();
+
+function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way = {}): void {
   const img = g.createImageData(PW, PH);
   const d = img.data;
+  // what stands in front of the ground (the near walls, drawn whole), on a layer of its own over the figures
+  const occ = g.createImageData(PW, PH);
+  const od = occ.data;
+  const windows = [L.hero, ...(way.foes ?? [])].map(([x, y]) => {
+    const [sx, sy] = toScreen(x, y);
+    return [sx, sy - 15 * F] as [number, number];
+  });
+  const R = 26 * F;
+  const seeThrough = (px: number, py: number): number => {
+    let a = 1;
+    for (const [sx, sy] of windows) {
+      const dd = Math.hypot(px - sx, (py - sy) * 0.8);
+      a = Math.min(a, dd < R * 0.62 ? 0.22 : dd > R ? 1 : 0.22 + (0.78 * (dd - R * 0.62)) / (R * 0.38));
+    }
+    return a;
+  };
+  const putOcc = (px: number, py: number, c: RGB, a: number): void => {
+    const i = (py * PW + px) * 4;
+    od[i] = c[0];
+    od[i + 1] = c[1];
+    od[i + 2] = c[2];
+    od[i + 3] = Math.round(255 * a);
+  };
   const kind = new Uint8Array(PW * PH);
   const depth = new Float32Array(PW * PH);
   const put = (px: number, py: number, c: RGB): void => {
@@ -299,6 +334,17 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level): void {
       if (W(x, y)) {
         kind[py * PW + px] = K.Floor;
         put(px, py, L.floor(x, y, px, py));
+        if (way.full && H > 0) {
+          // does a wall nearer the eye stand over this bit of ground?
+          for (let h = H; h >= 1; h--) {
+            const [qx, qy] = toWorld(px + 0.5, py + 0.5 + h);
+            if (!W(qx, qy)) {
+              const c = h === H ? L.outside(qx, qy, px, py) : L.face(shadeOf(L.gr, qx, qy), h, px, qx, qy);
+              putOcc(px, py, c, seeThrough(px, py));
+              break;
+            }
+          }
+        }
         continue;
       }
       if (H > 0) {
@@ -314,7 +360,7 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level): void {
         if (hit === H) {
           const [qx, qy] = toWorld(px + 0.5, py + 0.5 + H);
           let cut = false;
-          for (let k2 = 1; k2 <= H; k2 += 2) {
+          for (let k2 = 1; k2 <= (way.full ? 0 : H); k2 += 2) {
             const [fx, fy] = toWorld(px + 0.5, py + 0.5 - k2);
             if (W(fx, fy)) {
               cut = true;
@@ -414,6 +460,17 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level): void {
       gg.drawImage(knight.img, sx - knight.ax * F, sy - knight.ay * F, (knight.img.width / dens) * F, (knight.img.height / dens) * F);
     },
   }];
+  for (const [fx, fy] of way.foes ?? []) {
+    stands.push({ x: fx, y: fy, draw: (gg, sx, sy) => {
+      const sp = cultist.front.idle[0];
+      gg.fillStyle = 'rgba(25, 18, 40, 0.35)';
+      gg.beginPath();
+      gg.ellipse(sx, sy, 8 * F, 3.5 * F, 0, 0, Math.PI * 2);
+      gg.fill();
+      const dens = sp.density ?? 1;
+      gg.drawImage(sp.img, sx - sp.ax * F, sy - sp.ay * F, (sp.img.width / dens) * F, (sp.img.height / dens) * F);
+    } });
+  }
   stands.sort((a, b) => a.x + a.y - (b.x + b.y));
   g.save();
   g.beginPath();
@@ -442,6 +499,34 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level): void {
     g.globalAlpha = 1;
   }
   g.restore();
+  if (way.full) {
+    // the near walls' own line of light along their top edge, then the layer over the figures
+    for (let py = 1; py < PH; py++) {
+      for (let px = 0; px < PW; px++) {
+        const i = (py * PW + px) * 4;
+        const j = ((py - 1) * PW + px) * 4;
+        if (od[i + 3] > 0 && od[j + 3] === 0) {
+          od[i] = Math.min(255, od[i] + 60);
+          od[i + 1] = Math.min(255, od[i + 1] + 55);
+          od[i + 2] = Math.min(255, od[i + 2] + 45);
+        }
+      }
+    }
+    if (L.tint) {
+      for (let i = 0; i < od.length; i += 4) {
+        if (!od[i + 3]) continue;
+        const c = L.tint([od[i], od[i + 1], od[i + 2]]);
+        od[i] = c[0];
+        od[i + 1] = c[1];
+        od[i + 2] = c[2];
+      }
+    }
+    const layer = document.createElement('canvas');
+    layer.width = PW;
+    layer.height = PH;
+    (layer.getContext('2d') as CanvasRenderingContext2D).putImageData(occ, 0, 0);
+    g.drawImage(layer, 0, top);
+  }
   if (L.after) L.after(g, kind, top);
 }
 
@@ -882,7 +967,16 @@ const fen: Level = {
 // ---------------------------------------------------------------------------------------------
 // The page
 
-const LEVELS = [quarry, canyon, pinewood, fen];
+const SEE = decodeURIComponent(location.hash.slice(1)) === 'see';
+const canyonFoe: [number, number] = [14.8, cYc(14.8) + 1.0];
+const quarryFoe = at(300, 372) as [number, number];
+const LEVELS: { L: Level; way?: Way }[] = SEE
+  ? [
+    { L: { ...canyon, title: 'Echo Canyon, as the game does it today', note: 'the near wall left out: everything on the ground in view' }, way: { foes: [canyonFoe] } },
+    { L: { ...canyon, title: 'Echo Canyon, the near wall drawn', note: 'see-through round the knight and the cultist, like the tent' }, way: { full: true, foes: [canyonFoe] } },
+    { L: { ...quarry, title: 'The Quarry, the near walls drawn', note: 'the same: see-through round whoever is behind a wall' }, way: { full: true, foes: [quarryFoe] } },
+  ]
+  : [quarry, canyon, pinewood, fen].map((L) => ({ L }));
 const HEAD = 70;
 const TITLE = 96;
 const FW = PW;
@@ -894,10 +988,10 @@ const fine = cv.getContext('2d') as CanvasRenderingContext2D;
 fine.fillStyle = '#14122a';
 fine.fillRect(0, 0, FW, FH);
 const tops: number[] = [];
-LEVELS.forEach((L, k) => {
+LEVELS.forEach(({ L, way }, k) => {
   const top = TITLE / Z + k * (HEAD / Z + PH) + HEAD / Z;
   tops.push(top);
-  paintLevel(fine, top, L);
+  paintLevel(fine, top, L, way);
 });
 
 const out = document.createElement('canvas');
@@ -910,8 +1004,8 @@ g.imageSmoothingEnabled = false;
 g.drawImage(cv, 0, 0, FW * Z, FH * Z);
 g.fillStyle = '#e9ecff';
 g.font = '600 40px system-ui, sans-serif';
-g.fillText('Act 1: the other levels', 28, 62);
-LEVELS.forEach((L, k) => {
+g.fillText(SEE ? 'Walls you can see through' : 'Act 1: the other levels', 28, 62);
+LEVELS.forEach(({ L }, k) => {
   const y = (tops[k] - HEAD / Z) * Z;
   g.fillStyle = '#e9ecff';
   g.font = '600 30px system-ui, sans-serif';

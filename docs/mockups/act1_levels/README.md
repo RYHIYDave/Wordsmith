@@ -31,3 +31,21 @@ reads as one.
     node tools/preview.mjs src/dev/preview_act1.ts previews/act1_levels.png 1280 800
 
 Sent to him by 19:06 as previews/act1_levels.png. His answer is not in yet.
+
+## See-through walls (his question of 19:17)
+
+His words, 19:17: "Can we do for the walls that would block the view of the character or enemies
+the same thing that the mystic’s tent does where is becomes translucent when you pass by it?"
+
+With the hash `see` the page paints Echo Canyon as the game does it today (the near wall left
+out), then the canyon and the quarry with the near walls drawn whole, see-through in a window
+round the knight and a dagger cultist (as the tent's roof is seen through, Version 14.5):
+
+    node tools/preview.mjs src/dev/preview_act1.ts previews/act1_see_through.png 1280 800 see
+
+What it shows: walls this tall (75 game pixels in the canyon, 50 in the quarry), drawn whole,
+cover most of the ground behind them, so the windows show the figures but not the ground round
+them (traps, loot, the danger marks of monsters' attacks), against his art rulebook's "The hero
+and every warning stay in sight". The planning chat's pick, put to him: keep the near walls cut
+away, and use the tent's see-through for tall things that stand in front (trees, pillars, the
+crane, dead trees). Sent to him by 19:19 as previews/act1_see_through.png; his answer not in yet.
