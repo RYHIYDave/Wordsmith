@@ -4,7 +4,7 @@
 // "Hooded priest, hands of power"; "A staff topped with a skull"; "Glides, feet just off the floor
 // (Recommended)"; "Nothing gory (Recommended)". And, 9 Oct, 23:35: "I need all bosses ran through all checks
 // from now on.  These boss fights are important" (the art rulebook, How art is made 7). So:
-//   1. the switch is off, and nothing of the game imports him;
+//   1. his switch goes with the rules' (in the game since the main chat's first-five-floors work), and only the bestiary and the bosses' own effects draw him;
 //   2. HIS STAND THROUGH EVERY CHECK, the whole review the other bosses had (src/art/boss_checks.ts), every
 //      frame, from in front and from behind as the camera truly sees him: nothing through him (his arms,
 //      his staff, its skull), nothing of him in the floor, nothing jerky (his loop closing too), alive when
@@ -48,6 +48,8 @@
 //   run: tsx --test tests/fleshmancer.test.ts
 
 // @ts-ignore
+import '../src/art/bestiary';
+import { BOSSES5 } from '../src/game/bosses';
 import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
@@ -114,14 +116,19 @@ function looked(sp: Sprite): { n: number; rim: number; cyan: boolean; odd: numbe
   return { n, rim, cyan, odd };
 }
 
-test('1. the switch is off, and nothing of the game imports him', () => {
-  assert.equal(FLESHMANCER_SWITCH.on, false);
+// (THE FIRST FIVE FLOORS, the main chat, 11 Oct 2026: he is in the game, on the branch first5, every move of
+// his with the owner's yes (by 14:03 and 14:21). Until then this test held that the switch was off and that
+// nothing of the game imported him.)
+test('1. his switch goes with the rules\' (game/bosses.ts BOSSES5), and only the bestiary and the bosses\' own effects draw him', () => {
+  assert.equal(FLESHMANCER_SWITCH.on, BOSSES5.on, 'his pictures are on just while the rules are (art/bestiary.ts, useFirstFive)');
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (art/cultists.ts, the cult's new fighters, is a mock-up too: its mini fleshmancer is painted by his painter)
+    // (art/cultists.ts, the cult's new fighters: its mini fleshmancer is painted by his painter)
     if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/fleshmancer.ts' || f === 'art/fm_spells.ts' || f === 'art/cultists.ts') continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
-    assert.ok(!/from ['"][^'"]*(fleshmancer|fm_spells)['"]/.test(text), `src/${f} imports the fleshmancer`);
+    if (/from ['"][^'"]*(fleshmancer|fm_spells)['"]/.test(text)) users.push(f);
   }
+  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/bossfx.ts'], 'the game files that draw him');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY CHECK: every frame, from in front and from behind, and from every frame of his stand into each and back, into his glide and out of it; his death as he is dragged down through the floor', () => {

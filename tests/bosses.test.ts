@@ -8,7 +8,7 @@
 // still facing away the axe is in his wrong hand"; of his fall, by 21:28: "The elbows stick straight
 // up.  No one falls over like that", and of the fall redone, by 21:33: "Yes, keep it (Recommended)".
 // So:
-//   1. the switch is off, and nothing of the game imports the bosses;
+//   1. their switch goes with the rules' (in the game since the main chat's first-five-floors work), and only the bestiary and the bosses' own effects draw them;
 //   2. THE HEADSMAN paints in every frame both ways round, nothing cyan, the pink edge while he lives
 //      and none as he dies;
 //   3. HIS AXE NEVER GOES THROUGH HIM, in any frame of any move: its haft and its blade are clear of
@@ -48,6 +48,8 @@
 //   run: tsx --test tests/bosses.test.ts
 
 // @ts-ignore
+import '../src/art/bestiary';
+import { BOSSES5 } from '../src/game/bosses';
 import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
@@ -131,13 +133,19 @@ const MOVES: ReadonlyArray<[string, number]> = [
 /** While the throw's axe is out of his hands. */
 const thrown = (mv: string, t: number): boolean => mv === 'throw' && t >= 0.8 && t < 2.3;
 
-test('1. the switch is off, and nothing of the game imports the bosses', () => {
-  assert.equal(BOSSES.on, false);
+// (THE FIRST FIVE FLOORS, the main chat, 11 Oct 2026: the bosses are in the game, on the branch first5, on his
+// yes of 10 Oct, 01:58, "just throw them in". Until then this test held that the switch was off and that
+// nothing of the game imported them.)
+test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only the bestiary and the bosses\' own effects draw them', () => {
+  assert.equal(BOSSES.on, BOSSES5.on, 'the pictures are on just while the rules are (art/bestiary.ts, useFirstFive)');
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots/.test(f)) continue;
+    // (the fleshmancer and the cult's two are built on them: art/fleshmancer.ts, art/cultists.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
-    assert.ok(!/from ['"][^'"]*(bosses3|boss_shots)['"]/.test(text), `src/${f} imports the bosses`);
+    if (/from ['"][^'"]*(bosses3|boss_shots)['"]/.test(text)) users.push(f);
   }
+  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/bossfx.ts'], 'the game files that draw them');
 });
 
 test('2. the Headsman paints in every frame both ways round: nothing cyan, his edge while he lives, none as he dies', () => {

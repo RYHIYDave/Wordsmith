@@ -99,7 +99,8 @@ test('their switch goes with the rules\' (Version 19.9), and only the bestiary, 
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (mine.some((m) => new RegExp(`from '[./a-z_]*/${m}'`).test(text))) users.push(f.split('\\').join('/'));
   }
-  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/fx.ts', 'render/render.ts', 'render/wild.ts'], 'the game files that draw them');
+  // (render/bossfx.ts: THE FIRST FIVE FLOORS, the bosses' own effects, which use the Golem's skull's shadow and burst and the marksman's line)
+  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/bossfx.ts', 'render/fx.ts', 'render/render.ts', 'render/wild.ts'], 'the game files that draw them');
 });
 
 test('each painter paints every pose of the pictures without throwing, and paints something', () => {

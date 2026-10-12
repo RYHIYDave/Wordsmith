@@ -4,7 +4,7 @@
 // that uses cultist corpses to raise skeletons (can just use the same animation as the warden) and does a
 // smaller version of the fire laser from the boss.  They start showing up in floor 4, then all over floor
 // 5.” So, first their looks:
-//   1. the switch is off, and nothing of the game imports them;
+//   1. their switch goes with the rules' (in the game since the main chat's first-five-floors work), and only the bestiary and the bosses' own effects draw them;
 //   2. their stands paint in every frame both ways round: nothing cyan (and no light that is not the
 //      enemy's), the enemy's pink edge round each, every pixel whole or empty but the edge, no lone pixel;
 //   3. SIZES: the dagger cultist a little shorter than the knight (58); the mini fleshmancer the knight's
@@ -34,6 +34,8 @@
 //   run: tsx --test tests/cultists.test.ts
 
 // @ts-ignore
+import '../src/art/bestiary';
+import { CULT } from '../src/game/defs';
 import nodeTest from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
@@ -124,13 +126,18 @@ function faults(name: string, frames: ReadonlyArray<Sprite>): string[] {
   return out;
 }
 
-test('1. the switch is off, and nothing of the game imports them', () => {
-  assert.equal(CULTISTS_SWITCH.on, false);
+// (THE FIRST FIVE FLOORS, the main chat, 11 Oct 2026: the cult's two are in the game, on the branch first5, on
+// his yes by 19:01, "Yes, send them to main (Recommended)". Until then this test held that the switch was off
+// and that nothing of the game imported them.)
+test('1. their switch goes with the rules\' (game/defs.ts CULT), and only the bestiary and the bosses\' own effects draw them', () => {
+  assert.equal(CULTISTS_SWITCH.on, CULT.on, 'the pictures are on just while the rules are (art/bestiary.ts, useFirstFive)');
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/cultists.ts') continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
-    assert.ok(!/from ['"][^'"]*cultists['"]/.test(text), `src/${f} imports the cultists`);
+    if (/from ['"][^'"]*cultists['"]/.test(text)) users.push(f);
   }
+  assert.deepEqual(users.sort(), ['art/bestiary.ts', 'render/bossfx.ts'], 'the game files that draw them');
 });
 
 test('2. their stands paint in every frame both ways round: nothing cyan, the pink edge round each, every pixel whole or empty but the edge, no lone pixel', () => {

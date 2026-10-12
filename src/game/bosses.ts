@@ -393,19 +393,18 @@ export class BossRules {
     m.anim = 'walk';
     const before = gait.t;
     gait.t += (dt * sp) / G.pace;
-    // (it means to stop: an act is ready and the hero in its reach, or it will have come near enough by the time it has stopped, or there is no way on)
-    const lead = G.pace * (G.cycle - (gait.t % G.cycle) + G.halt);
-    const arrive = want >= 0 || forced >= 0 || (los && dist - lead <= G.stopAt) || (v.x === 0 && v.y === 0);
+    // (it means to stop where its walk next comes round to its first frame: an act is ready and the hero
+    // in its reach, or there is no way on; or, there, stopping would leave it as near him as it likes to stand)
+    gait.stop = want >= 0 || forced >= 0 || (v.x === 0 && v.y === 0);
+    const here = gait.stop || (los && dist - G.pace * G.halt <= G.stopAt);
     if (gait.mode === 'setOff') {
       if (gait.t >= G.setOff) {
         // (its walk's first frame: where stopping begins too)
-        if (arrive) to('halt');
+        if (here) to('halt');
         else to('walk');
       }
     } else if (gait.mode === 'walk') {
-      if (arrive) gait.stop = true;
-      else if (gait.stop && dist - lead > G.stopAt + G.slack) gait.stop = false;
-      if (gait.stop && Math.floor(gait.t / G.cycle) > Math.floor(before / G.cycle)) to('halt');
+      if (here && Math.floor(gait.t / G.cycle) > Math.floor(before / G.cycle)) to('halt');
     } else if (gait.t >= G.halt) {
       to(G.raise > 0 ? 'carry' : 'stand');
       m.anim = 'idle';
