@@ -413,7 +413,7 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   dagger: { kind: 'dagger', name: 'Dagger Cultist', life: 17, dmgMin: 6, dmgMax: 9, speed: 2.6, radius: 0.3, range: 1.1, windup: 19 / 30, cooldown: 1.6, xp: 8, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 4, weight: 2.5, size: 'small' },
   // THE MINI FLESHMANCER, "elite": never a pack of his own: a yellow pack of dagger cultists' leader
   // (LEADERS), with their life (three times it, as a leader); his fire and his call are game/bosses.ts.
-  minifm: { kind: 'minifm', name: 'Mini Fleshmancer', life: 20, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.34, range: 2.2, windup: 17 / 30, cooldown: 2.4, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  minifm: { kind: 'minifm', name: 'Mini Fleshmancer', life: 17, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.34, range: 2.2, windup: 17 / 30, cooldown: 2.4, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
 };
 
 /**

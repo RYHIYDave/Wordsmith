@@ -46,7 +46,7 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Level, Monster } from '../src/game/state';
 import { T_FLOOR, T_VOID, T_WALL } from '../src/game/types';
 import type { Element } from '../src/game/types';
-import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, STAIR_APART, STAIR_CLEAR, STAIR_LONG, STAIR_SPOTS, STAIR_WIDE, TOWN_GATE, TOWN_WAY, WARP_SECS, WAYS, WAY_WAKE, nearStair, onTopStep, stairTiles, topStep } from '../src/game/ways';
+import { CURTAIN_SECS, FIRST5, shaftTiles, GATE_FALL_AT, GATE_RISE_AT, STAIR_APART, STAIR_CLEAR, STAIR_LONG, STAIR_SPOTS, STAIR_WIDE, TOWN_GATE, TOWN_WAY, WARP_SECS, WAYS, WAY_WAKE, nearStair, onTopStep, stairTiles, topStep } from '../src/game/ways';
 
 const DT = 1 / 60;
 const SEEDS = Array.from({ length: 24 }, (_, i) => 3001 + i * 7919);
@@ -154,10 +154,19 @@ test('on, every floor has places for its stairwell in the boss\'s hall on plain 
             // THE STAIRWELL'S PLACES: in the boss's hall, two at least, the first across its middle, apart; under each and a tile
             // round it plain floor with nothing standing on it, and no trap
             const st = W!.stair;
+            const hall = f.rooms.find((r) => r.kind === 'boss')!;
+            // (THE FIRST FIVE FLOORS: the fifth floor has none: the mine shaft at the back of its boss's hall, its
+            // middle and its timbers shut to walking until its cage comes down: tests/first5_floors.test.ts)
+            if (FIRST5.on && d === 5) {
+              const sh = W!.shaft!;
+              assert.ok(sh && sh.state === 'empty' && st === null && W!.stairs.length === 0, `${at}: the shaft, and no stairwell`);
+              assert.ok(sh.x > hall.x && sh.y > hall.y && sh.x + 1 < hall.x + hall.w && sh.y + 1 < hall.y + hall.h, `${at}: the shaft in the boss's hall`);
+              for (const i of [...shaftTiles(f, sh), sh.y * f.w + sh.x]) assert.equal(L.walk[i], 0, `${at}: the shaft shut to walking`);
+            } else {
             assert.ok(st && !st.open, `${at}: its stairwell, shut`);
             assert.ok(W!.stairs.length >= 2 && W!.stairs.length <= STAIR_SPOTS && W!.stairs[0] === st, `${at}: its places (${W!.stairs.length})`);
             assert.deepEqual([st!.x, st!.y], [Math.floor(f.boss.x) - 1, Math.floor(f.boss.y) - 1], `${at}: the first across the hall's middle`);
-            const hall = f.rooms.find((r) => r.kind === 'boss')!;
+            }
             for (const [k, sp] of W!.stairs.entries()) {
               assert.ok(sp.x >= hall.x && sp.y >= hall.y && sp.x + 3 <= hall.x + hall.w && sp.y + 2 <= hall.y + hall.h, `${at}: in the boss's hall`);
               for (const o of W!.stairs.slice(0, k)) assert.ok(Math.hypot(o.x - sp.x, o.y - sp.y) >= STAIR_APART);

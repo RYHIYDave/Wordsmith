@@ -45,6 +45,7 @@ import type { Sprite } from '../src/engine/px';
 import { RNG } from '../src/engine/rng';
 import { CHARGE, MONSTERS, MONSTER_ATTACKS, MONSTER_MOVES, SUMMON, TUNE, movesOf, sizeOf } from '../src/game/defs';
 import type { MonsterMove, MoveId } from '../src/game/defs';
+import { ACTS } from '../src/game/bosses';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -167,9 +168,12 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // own may have one more: the skeleton champion's cry. His word of 08:24: "Pack leaders that are
       // different mobs can have an extra attack if it seems right".)
       const moves = all ? all.filter((mv) => mv.id !== 'bash') : null;
+      // (THE FIRST FIVE FLOORS: a boss of floors 2 to 5, the bone beast and the mini fleshmancer make their
+      // moves by game/bosses.ts, ACTS: those they choose, not those forced on them, a chain breaking)
+      const acts = ACTS[kind as keyof typeof ACTS];
       // (one that has no moves has its one attack, as before)
-      const n = moves ? moves.length : 1;
-      const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' ? 1 : 0;
+      const n = acts ? acts.filter((a) => !a.forced).length : moves ? moves.length : 1;
+      const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
       const what = `${kind}${champion ? ' (a guardian: the red troll)' : ''}, ${size}`;
       assert.ok(n >= want[size][0] && n <= want[size][1] + leads, `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);
       if (!moves) continue;

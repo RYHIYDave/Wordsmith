@@ -38,6 +38,7 @@ import { makeDungeonProps } from '../src/art/props';
 import type { Sprite } from '../src/engine/px';
 import { CRYPT_LAYOUT, CRYPT_LITTER, LEVER_CLEAR, generateFloor } from '../src/game/dungeon';
 import { WAYS } from '../src/game/ways';
+import { CULT } from '../src/game/defs';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
 interface Assert {
@@ -147,7 +148,10 @@ test('both switches are on in the game (Version 20.2); with them off nothing of 
 test('nothing of the game changes with the switches off (and the Crypt\'s layout and ways, and a lever\'s sides kept clear, game/dungeon.ts LEVER_CLEAR): every dungeon the map-maker makes, as at aaa8310', () => {
   const c = createHash('sha1');
   const was = LEVER_CLEAR.on;
+  const cult = CULT.on;
   LEVER_CLEAR.on = false;
+  // (and THE FIRST FIVE FLOORS' cult, whose packs come on floors 4 and 5: game/defs.ts CULT)
+  CULT.on = false;
   try {
     for (let d = 1; d <= 6; d++) {
       for (let s = 1; s <= 25; s++) {
@@ -157,6 +161,7 @@ test('nothing of the game changes with the switches off (and the Crypt\'s layout
     }
   } finally {
     LEVER_CLEAR.on = was;
+    CULT.on = cult;
   }
   assert.equal(c.digest('hex').slice(0, 16), 'a89c4a6c51c4eba8', '150 dungeons as they were');
 });
