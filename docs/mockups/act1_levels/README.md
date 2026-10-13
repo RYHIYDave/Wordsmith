@@ -249,3 +249,25 @@ Board so the art chat can start on the real pictures?", his pick by 09:00: "Yes,
 (Recommended)". Posted on the board to the art chat at 09:04 (13 Oct): the five looks with his words,
 and his rules for every level (rounded edges, tops dressed, the near cliff's face, the sky's own layer,
 the cult's pink). The real pictures are the art chat's, with him; nothing of this is in the game.
+
+## A cult stronghold, at its door
+
+His words, 13 Oct, 09:27: "How about a cultist stronghold?" Read as: one painted the way the levels
+were, as one screen of the game. The Quarry's (the first he would meet), as his doc proposes it: an
+overseers' redoubt cut into an old terrace. With the hash `hold` (`holdShot`, `facade`, `tower`,
+`altar`, `brazier`):
+
+    node tools/preview.mjs src/dev/preview_act1.ts shots/hold_world.png 1014 468 hold
+
+A gatehouse in the terrace's face between two towers of the quarry's stone, the cult's keep behind,
+its violet banners, braziers of its pink fire; the door sealed with the cult's mark burning pink;
+before it an altar of the quarry's stone with three empty hollows the shape of a rune stone, one
+for each word given, each in the game's own look for a place that will take a word (the dark of a
+slot, its rim in the accent at rest, as the attack bar's empty word slots); a groove from each to
+the door. Its two guards rare, drawn as the game draws a yellow pack's leader
+(render/pack_marks.ts drawPackMark, rarity 'leader': the gold ring of letters; the name in
+yellow): a Flame Mini Fleshmancer and a Heavy Dagger Cultist. The altar is the planning chat's
+reading of "sacrifice a word to the door"; offered him beside it: the hollows in the door itself.
+Sent as previews/hold_in_game.png by 09:48; asked "Is this the cult's stronghold door?", his pick
+by 09:52: "Yes, this is it (Recommended)", offered as: gatehouse in the terrace, sealed door, altar
+for words, two rare guards; next, the last room inside.

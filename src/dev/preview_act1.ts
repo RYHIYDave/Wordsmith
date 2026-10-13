@@ -27,8 +27,9 @@ import { hash } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
 import { makeDaggerCultistArt3, makeMiniFleshmancerArt3 } from '../art/cultists';
 import { drawText } from '../engine/font';
-import { P } from '../art/palette';
+import { P, RARITY_COLOR } from '../art/palette';
 import { THEME } from '../ui/ui';
+import { drawPackMark } from '../render/pack_marks';
 
 type RGB = [number, number, number];
 const F = 2; // picture pixels per game pixel
@@ -45,8 +46,11 @@ const FEN_SHOT = decodeURIComponent(location.hash.slice(1)) === 'fen';
 const PINE_SHOT = decodeURIComponent(location.hash.slice(1)) === 'pine';
 /** "quarry": the Quarry as one screen of the game. */
 const QUARRY_SHOT = decodeURIComponent(location.hash.slice(1)) === 'quarry';
-const PW = SHOT || LEDGE || FEN_SHOT || PINE_SHOT || QUARRY_SHOT ? 1014 : 320 * F;
-const PH = SHOT || LEDGE || FEN_SHOT || PINE_SHOT || QUARRY_SHOT ? 468 : 220 * F;
+/** "hold": the Quarry's cult stronghold, at its door, as one screen of the game. */
+const HOLD_SHOT = decodeURIComponent(location.hash.slice(1)) === 'hold';
+const ONE_SCREEN = SHOT || LEDGE || FEN_SHOT || PINE_SHOT || QUARRY_SHOT || HOLD_SHOT;
+const PW = ONE_SCREEN ? 1014 : 320 * F;
+const PH = ONE_SCREEN ? 468 : 220 * F;
 const HWf = 16 * F;
 const HHf = 8 * F;
 const OX = PW / 2;
@@ -3002,6 +3006,510 @@ if (QUARRY_SHOT) {
   // the cult's overseers, in both pits
   paintLevel(qg, 0, quarryShot, { shadow: 1.3, foes: [at(470, 296), at(860, 158), at(805, 186)] as [number, number][] });
   placeHud(qg, 'The Quarry', QW, quarryShot.hero);
+  showAlone(cvs);
+}
+
+// ---------------------------------------------------------------------------------------------
+// A CULT STRONGHOLD, AT ITS DOOR, as one screen of the game. His question (13 Oct, 09:27): "How about a
+// cultist stronghold?" His plan (12 Oct, 17:21), as the doc has it: on every level from 6 to 10, off the
+// main path, always one and never more than two; a couple of rare mobs guard the door; it opens only
+// for a word given to it, up to three, each used up, each past the first making the mobs inside harder
+// and the rewards richer; the last room drops runedust. The Quarry's, as the doc proposes: an overseers'
+// redoubt cut into an old terrace. So: its gate set into the terrace's face between two towers of the
+// quarry's own stone, the cult's keep behind; the cult's violet banners and braziers of its pink fire;
+// the door sealed with the cult's mark in pink; over the arch, three empty sockets where words go; two
+// guards, rare, drawn as the game draws a yellow pack's
+// leader (the gold ring of letters at its feet, its name in yellow).
+
+const HOLD_H = 150;
+const [HXD, HY0] = at(660, 238); // the door's foot, its middle
+const holdCourt: Shape = (x, y) => x > HXD - 3.3 && x < HXD + 3.3 && y >= HY0 && y < HY0 + 3.4;
+const holdOpen = area(480, 336, 6.2, 4.0, 0.25);
+const holdRoad = path(atAll([[-20, 350], [200, 410], [470, 362], [780, 394], [1040, 342]]), 3.2);
+const holdEast = area(890, 326, 3.0, 2.4, -0.2);
+const holdFore = union(area(690, 336, 3.0, 2.0, -0.2), area(780, 318, 2.4, 1.8, -0.2));
+const holdGround = ground((x, y) => {
+  if (y < HY0 + 0.7 && x > HXD - 4.1 && x < HXD + 4.1) return false; // the terrace the redoubt is cut into
+  return holdOpen(x, y) || holdRoad(x, y) || holdEast(x, y) || holdFore(x, y);
+}, holdCourt);
+const HW_ = holdGround.walk;
+const hKind = (px: number, py: number): number => {
+  const [x, y] = toWorld(px + 0.5, py + 0.5);
+  if (HW_(x, y)) return SK.Floor;
+  const [qx, qy] = toWorld(px + 0.5, py + 0.5 + HOLD_H);
+  return HW_(qx, qy) ? SK.Face : SK.Top;
+};
+const FLAG = ramp('#8a8290', '#9c94a1', '#aea6b1', '#bfb7c0');
+const holdShot: Level = {
+  ...quarry,
+  title: '',
+  note: '',
+  gr: holdGround,
+  outsideH: HOLD_H,
+  floor: (x, y, px, py) => {
+    if (holdCourt(x, y)) {
+      // the forecourt: big flagstones of the quarry's stone, laid in rows; worn pale down the middle to the door
+      const fx = x - HXD;
+      const fy = y - HY0;
+      const row = Math.floor(fy / 0.8);
+      const sx = fx + (row % 2) * 0.45 + 3;
+      const col = Math.floor(sx / 0.9);
+      const ux = sx - col * 0.9;
+      const vy = fy - row * 0.8;
+      let c = pick(FLAG, 0.25 + 0.5 * hash(col, row, 901) + 0.4 * (fbm(x * 3, y * 3, 903) - 0.5), px, py);
+      if (Math.abs(fx) < 0.75) c = mix(c, hex('#d6ced3'), 0.16 * (1 - Math.abs(fx) / 0.75));
+      if (ux < 0.05 || vy < 0.06) c = hex('#5c5565'); // the joints
+      else if (ux < 0.1 || vy < 0.11) c = mix(c, hex('#d9d1d8'), 0.22); // each stone's worn edge, catching the light
+      if (Math.abs(fbm(x * 2.6, y * 2.6, 905) - 0.5) < 0.01) c = hex('#655e6e'); // cracks
+      return c;
+    }
+    let c = pick(Q_FLOOR, fbm(x * 2.3, y * 2.3, 11) * 1.1 - 0.05, px, py);
+    if (hash(px >> 1, py >> 1, 13) > 0.94) c = Q_FLOOR[0]; // grit
+    if (fbm(x * 0.9, y * 0.9, 801) > 0.62) c = mix(c, hex('#e9e1d6'), 0.35); // the white dust of the cutting
+    return c;
+  },
+  outside: (x, y, px, py) => {
+    let c = fbm(x * 0.9, y * 0.9, 21) > 0.46 ? pick(Q_GRASS, fbm(x * 4, y * 4, 23), px, py) : pick(Q_TOPROCK, fbm(x * 3, y * 3, 25), px, py);
+    if (hash(px >> 1, py >> 1, 803) > 0.985) c = [hex('#e8dd8a'), hex('#f2f0e8')][Math.floor(hash(px >> 1, py >> 1, 805) * 2)]; // mountain flowers
+    return c;
+  },
+  props: [],
+  hero: at(482, 292) as [number, number],
+  tint: (c) => [c[0] * 1.0, c[1] * 0.99, Math.min(255, c[2] * 1.03)],
+};
+
+if (HOLD_SHOT) {
+  const [DX, DY] = toScreen(HXD, HY0);
+  /** A point of the redoubt: u tiles along the terrace (x), v tiles out from its face (y), z picture pixels up. */
+  const PP = (u: number, v: number, z: number): [number, number] => [DX + (u - v) * HWf, DY + (u + v) * HHf - z];
+  const poly = (g: CanvasRenderingContext2D, pts: [number, number][], c: string): void => {
+    g.fillStyle = c;
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.closePath();
+    g.fill();
+  };
+  /** A piece of a face looking out of the terrace (toward the lower left), u0 to u1 along it, z0 to z1 up, v out. */
+  const front = (g: CanvasRenderingContext2D, u0: number, u1: number, v: number, z0: number, z1: number, c: string): void =>
+    poly(g, [PP(u0, v, z0), PP(u1, v, z0), PP(u1, v, z1), PP(u0, v, z1)], c);
+  /** A piece of a face looking along the terrace (toward the lower right), v0 to v1 out, at u. */
+  const side = (g: CanvasRenderingContext2D, u: number, v0: number, v1: number, z0: number, z1: number, c: string): void =>
+    poly(g, [PP(u, v0, z0), PP(u, v1, z0), PP(u, v1, z1), PP(u, v0, z1)], c);
+  const line = (g: CanvasRenderingContext2D, a: [number, number], b: [number, number], c: string, w = F): void => {
+    g.strokeStyle = c;
+    g.lineWidth = w;
+    g.beginPath();
+    g.moveTo(a[0], a[1]);
+    g.lineTo(b[0], b[1]);
+    g.stroke();
+  };
+  const glow = (g: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, a: number): void => {
+    const gr = g.createRadialGradient(x, y, 1, x, y, rx);
+    gr.addColorStop(0, `rgba(255, 95, 210, ${a})`);
+    gr.addColorStop(1, 'rgba(255, 95, 210, 0)');
+    g.fillStyle = gr;
+    g.save();
+    g.translate(x, y);
+    g.scale(1, ry / rx);
+    g.translate(-x, -y);
+    g.beginPath();
+    g.arc(x, y, rx, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  };
+  const glow2 = (g: CanvasRenderingContext2D, x: number, y: number, r: number, c: string): void => {
+    const gr = g.createRadialGradient(x, y, 1, x, y, r);
+    gr.addColorStop(0, c);
+    gr.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    g.fillStyle = gr;
+    g.fillRect(x - r, y - r, 2 * r, 2 * r);
+  };
+  /** The cult's mark (as on its banners), h pixels tall, standing on the face at (u, v, z): pink, burning. */
+  const cultMark = (g: CanvasRenderingContext2D, u: number, v: number, z: number, h: number, burning: boolean): void => {
+    const s = h / 10;
+    const draw = (c: string, grow: number): void => {
+      front(g, u - 0.07 * s - grow, u + 0.07 * s + grow, v, z - grow * 16, z + h + grow * 16, c);
+      front(g, u - 0.22 * s - grow, u + 0.22 * s + grow, v, z + h * 0.55 - grow * 16, z + h * 0.55 + 2.4 * s + grow * 16, c);
+    };
+    if (burning) {
+      g.save();
+      g.shadowColor = 'rgba(255, 95, 210, 0.95)';
+      g.shadowBlur = 14;
+      draw('#ff5fd2', 0.03);
+      g.restore();
+      draw('#ffc2ef', 0);
+    } else draw('#ff5fd2', 0);
+  };
+
+  // ---- the keep behind, on the terrace's top
+  const KEEP = box(2.6, 1.4, 34, hex('#9a92a0'), hex('#837a8c'), hex('#564e60'));
+  const keepAt = PP(0.3, -1.1, HOLD_H);
+  // ---- the towers
+  const TOWER_H = 176;
+  const TW = 0.7; // half its width along the terrace
+  const tower = (g: CanvasRenderingContext2D, uc: number): void => {
+    const v0 = -0.6;
+    const v1 = 0.8;
+    // its shadow on the floor, thrown away from the light (from the upper left), along the terrace
+    poly(g, [PP(uc + TW, 0, 0), PP(uc + TW + 1.5, 0, 0), PP(uc + TW + 1.5, v1 - 0.1, 0), PP(uc + TW, v1, 0)], 'rgba(34, 24, 46, 0.26)');
+    // its faces: the front lit, the side in shadow (its back half in the terrace, seen only over it);
+    // courses of the quarry's big blocks
+    const TOPZ = HOLD_H + 6;
+    front(g, uc - TW, uc + TW, v1, 0, TOWER_H, '#958b9b');
+    side(g, uc + TW, v1, 0, 0, TOWER_H, '#5f5769');
+    side(g, uc + TW, 0, v0, TOPZ, TOWER_H, '#5f5769');
+    for (let z = 18; z < TOWER_H; z += 18) {
+      line(g, PP(uc - TW, v1, z), PP(uc + TW, v1, z), '#6f6678', F);
+      line(g, PP(uc + TW, v1, z), PP(uc + TW, z > TOPZ ? v0 : 0, z), '#463f50', F);
+      line(g, PP(uc - TW, v1, z + F), PP(uc + TW, v1, z + F), '#aaa1ae', 1);
+      const j = Math.floor(z / 18);
+      for (let k = 0; k < 3; k++) {
+        const u = uc - TW + ((k + (j % 2) * 0.5 + 0.25) / 2.5) * (2 * TW);
+        if (u > uc - TW + 0.08 && u < uc + TW - 0.08) line(g, PP(u, v1, z - 18), PP(u, v1, z), '#6f6678', F);
+      }
+    }
+    // a band of carved stone round it, high up
+    front(g, uc - TW, uc + TW, v1, 136, 142, '#7b7284');
+    side(g, uc + TW, v1, 0, 136, 142, '#4a4354');
+    // arrow slits, lit from within by the cult's fire
+    for (const zz of [150, 76]) {
+      front(g, uc - 0.05, uc + 0.05, v1, zz, zz + 20, '#1a1220');
+      front(g, uc - 0.015, uc + 0.015, v1, zz + 4, zz + 16, '#c2318f');
+    }
+    side(g, uc + TW, 0.32, 0.4, 150, 170, '#130d18');
+    // its top, and the merlons round it
+    poly(g, [PP(uc - TW, v0, TOWER_H), PP(uc + TW, v0, TOWER_H), PP(uc + TW, v1, TOWER_H), PP(uc - TW, v1, TOWER_H)], '#b3aab6');
+    const merlon = box(0.24, 0.24, 14, hex('#c2b9c4'), hex('#9b91a1'), hex('#665e70'));
+    const spots: [number, number][] = [];
+    for (let i = 0; i < 4; i++) {
+      const u = uc - TW + 0.12 + (i / 3) * (2 * TW - 0.24);
+      spots.push([u, v0 + 0.12], [u, v1 - 0.12]);
+    }
+    for (let i = 1; i < 4; i++) {
+      const v = v0 + 0.12 + (i / 4) * (v1 - v0 - 0.24);
+      spots.push([uc - TW + 0.12, v], [uc + TW - 0.12, v]);
+    }
+    spots.sort((a, b) => a[0] + a[1] - (b[0] + b[1]));
+    for (const [u, v] of spots) {
+      const [mx, my] = PP(u, v, TOWER_H);
+      merlon(g, mx, my);
+    }
+    // the cult's banner down its front: violet, swallow-tailed, the pink mark on it
+    const bv = v1 + 0.02;
+    line(g, PP(uc - 0.38, bv, 132), PP(uc + 0.38, bv, 132), '#2a1d16', 2 * F);
+    poly(g, [PP(uc - 0.3, bv, 130), PP(uc + 0.3, bv, 130), PP(uc + 0.3, bv, 44), PP(uc, bv, 58), PP(uc - 0.3, bv, 44)], '#4a2a63');
+    poly(g, [PP(uc + 0.19, bv, 130), PP(uc + 0.3, bv, 130), PP(uc + 0.3, bv, 44), PP(uc + 0.19, bv, 51)], '#3a2050');
+    cultMark(g, uc, bv, 82, 30, false);
+  };
+  // ---- the gate: an arch cut in the terrace, its door set back in it
+  const GW = 0.85;
+  const GZ = 60;
+  const RISE = 34;
+  const arch = (w: number, v: number, z0: number, rise: number): [number, number][] => {
+    const pts: [number, number][] = [PP(-w, v, 0), PP(-w, v, z0)];
+    for (let k = 0; k <= 24; k++) {
+      const u = -w + (2 * w * k) / 24;
+      pts.push(PP(u, v, z0 + rise * Math.sqrt(Math.max(0, 1 - (u / w) ** 2))));
+    }
+    pts.push(PP(w, v, z0), PP(w, v, 0));
+    return pts;
+  };
+  const archZ = (u: number, w: number, z0: number, rise: number): number => z0 + rise * Math.sqrt(Math.max(0, 1 - (u / w) ** 2));
+  const DEEP = 0.32; // how far the door is set back
+
+  const facade = (g: CanvasRenderingContext2D): void => {
+    // the keep, behind
+    KEEP(g, keepAt[0], keepAt[1]);
+    {
+      // its lit windows and its flag
+      const [kx, ky] = keepAt;
+      for (const [ox, oy] of [[-16, -22], [8, -12]]) {
+        g.fillStyle = '#1a1220';
+        g.fillRect(kx + ox, ky + oy - 12, 3, 12);
+        g.fillStyle = '#c2318f';
+        g.fillRect(kx + ox + 1, ky + oy - 9, 1, 6);
+      }
+      g.fillStyle = '#2a1d16';
+      g.fillRect(kx + 30, ky - 80, 3, 50);
+      poly(g, [[kx + 33, ky - 78], [kx + 62, ky - 72], [kx + 52, ky - 64], [kx + 62, ky - 56], [kx + 33, ky - 60]], '#4a2a63');
+      g.fillStyle = '#ff5fd2';
+      g.fillRect(kx + 41, ky - 74, 3, 10);
+      g.fillRect(kx + 38, ky - 70, 9, 2);
+    }
+    // the dressed face of the terrace: the quarry's stone, cut in big blocks, laid in courses
+    for (let z = 0, j = 0; z < HOLD_H; z += 16, j++) {
+      const zt = Math.min(HOLD_H, z + 16);
+      for (let u = -3.3 - (j % 2) * 0.31; u < 3.3; u += 0.62) {
+        const a = Math.max(-3.3, u);
+        const b = Math.min(3.3, u + 0.62);
+        const shade = ['#82788a', '#8a8092', '#91889a', '#7a7183'][Math.floor(hash(Math.round(u * 10), j, 911) * 4)];
+        front(g, a, b, 0, z, zt, shade);
+        front(g, a, b, 0, zt - F, zt, '#a39aa8');
+        line(g, PP(a, 0, z), PP(a, 0, zt), '#5a5264', F);
+      }
+      line(g, PP(-3.3, 0, z), PP(3.3, 0, z), '#5a5264', F);
+    }
+    // weathering: dark streaks down from the top
+    for (let i = 0; i < 9; i++) {
+      const u = -2.8 + 5.6 * hash(i, 1, 913);
+      const len = 30 + 60 * hash(i, 2, 913);
+      front(g, u, u + 0.05 + 0.08 * hash(i, 3, 913), 0, HOLD_H - len, HOLD_H, 'rgba(50, 40, 60, 0.22)');
+    }
+    // the parapet along its top, and its merlons
+    front(g, -3.3, 3.3, 0, HOLD_H, HOLD_H + 6, '#8f8597');
+    poly(g, [PP(-3.3, -0.3, HOLD_H + 6), PP(3.3, -0.3, HOLD_H + 6), PP(3.3, 0, HOLD_H + 6), PP(-3.3, 0, HOLD_H + 6)], '#b1a8b4');
+    const merlon = box(0.28, 0.26, 13, hex('#c2b9c4'), hex('#9b91a1'), hex('#665e70'));
+    for (let u = -3.15; u < 3.3; u += 0.5) {
+      const [mx, my] = PP(u + 0.14, -0.13, HOLD_H + 6);
+      merlon(g, mx, my);
+    }
+    // over the arch, a band of the cult's script cut into the stone
+    {
+      const FZ0 = GZ + RISE + 17;
+      front(g, -1.15, 1.15, 0, FZ0, FZ0 + 14, '#a79eab');
+      front(g, -1.1, 1.1, 0, FZ0 + 2, FZ0 + 12, '#776e80');
+      for (let i = 0; i < 16; i++) {
+        const u = -1.0 + i * 0.133;
+        const k = hash(i, 1, 935);
+        front(g, u, u + 0.04, 0, FZ0 + 4, FZ0 + 10, '#4a4254');
+        if (k > 0.4) front(g, u, u + 0.09, 0, FZ0 + (k > 0.7 ? 9 : 4), FZ0 + (k > 0.7 ? 10 : 5), '#4a4254');
+      }
+    }
+    // the arch: its jambs and its ring of wedge stones, paler than the wall
+    poly(g, arch(GW + 0.24, 0, GZ, RISE + 12), '#aaa1ae');
+    for (let z = 0; z < GZ; z += 16) {
+      line(g, PP(-GW - 0.24, 0, z), PP(-GW, 0, z), '#6d6476', F);
+      line(g, PP(GW, 0, z), PP(GW + 0.24, 0, z), '#6d6476', F);
+    }
+    for (let k = 1; k < 11; k++) {
+      const a = Math.PI - (k / 11) * Math.PI;
+      const ui = Math.cos(a) * GW;
+      const uo = Math.cos(a) * (GW + 0.24);
+      line(g, PP(ui, 0, archZ(ui, GW, GZ, RISE)), PP(uo, 0, archZ(uo, GW + 0.24, GZ, RISE + 12)), '#6d6476', F);
+    }
+    // the keystone, bigger
+    {
+      const z = GZ + RISE;
+      front(g, -0.12, 0.12, 0, z - 4, z + 14, '#c0b7c2');
+      front(g, -0.12, 0.12, 0, z + 12, z + 14, '#d6ced8');
+    }
+    // the opening: dark; its left side and its floor seen, the door set back in it
+    poly(g, arch(GW, 0, GZ, RISE), '#130e19');
+    poly(g, [PP(-GW, 0, 0), PP(-GW, -DEEP, 0), PP(-GW, -DEEP, GZ), PP(-GW, 0, GZ)], '#4c4456');
+    poly(g, [PP(-GW, 0, 0), PP(GW, 0, 0), PP(GW, -DEEP, 0), PP(-GW, -DEEP, 0)], '#6c6475');
+    // the door: two leaves of dark wood bound in iron, sealed with the cult's mark burning across them
+    poly(g, arch(GW - 0.02, -DEEP, GZ, RISE), '#35272b');
+    for (let u = -GW + 0.16; u < GW - 0.05; u += 0.16) line(g, PP(u, -DEEP, 0), PP(u, -DEEP, archZ(u, GW, GZ, RISE) - 1), '#241a1e', F);
+    for (const z of [16, 42, 68]) {
+      const w = z > GZ ? GW * Math.sqrt(Math.max(0, 1 - ((z - GZ) / RISE) ** 2)) - 0.04 : GW - 0.04;
+      front(g, -w, w, -DEEP, z, z + 5, '#4b4453');
+      g.fillStyle = '#9a92a3';
+      for (let u = -w + 0.08; u < w; u += 0.2) {
+        const [sx, sy] = PP(u, -DEEP, z + 3);
+        g.fillRect(Math.round(sx), Math.round(sy), F, F);
+      }
+    }
+    // the seal: the mark across both leaves, and its light running down the seam between them
+    g.save();
+    g.shadowColor = 'rgba(255, 95, 210, 0.9)';
+    g.shadowBlur = 10;
+    line(g, PP(0, -DEEP, 2), PP(0, -DEEP, GZ + RISE - 2), '#ff5fd2', F);
+    g.restore();
+    cultMark(g, 0, -DEEP, 18, 52, true);
+    // the seal's light on the floor in front of the door
+    {
+      const [gx, gy] = PP(0, 0.6, 0);
+      glow(g, gx, gy, 70, 26, 0.2);
+    }
+    // the dust and grit gathered at the foot of the terrace
+    for (let i = 0; i < 40; i++) {
+      const u = -3.3 + 6.6 * hash(i, 5, 917);
+      if (Math.abs(u) < GW + 0.3) continue;
+      const [sx, sy] = PP(u, 0.06 + 0.12 * hash(i, 6, 917), 0);
+      g.fillStyle = hash(i, 7, 917) > 0.5 ? '#c9bfb6' : '#8e8580';
+      g.fillRect(Math.round(sx), Math.round(sy - F), 2 * F, F);
+    }
+  };
+  /** Fire as tongues licking up, leaning and of different heights: the cult's pink, its heart near white. */
+  const tongues = (g: CanvasRenderingContext2D, bx: number, by: number, h: number, w: number): void => {
+    const set: [number, number, number, number][] = [[-0.55, 0.62, -0.25, 0.42], [0.45, 0.72, 0.3, 0.4], [-0.05, 1.0, 0.12, 0.5], [0.15, 0.45, 0.5, 0.3], [-0.35, 0.38, -0.6, 0.28]];
+    const draw = (scale: number, c: string): void => {
+      g.fillStyle = c;
+      for (const [dx, hh0, lean0, ww0] of set) {
+        const x = bx + dx * w * scale;
+        const hh = hh0 * h * scale;
+        const ww = ww0 * w * scale;
+        const lean = lean0 * w;
+        g.beginPath();
+        g.moveTo(x - ww, by);
+        g.bezierCurveTo(x - ww * 1.2, by - hh * 0.45, x + lean - ww * 0.4, by - hh * 0.72, x + lean, by - hh);
+        g.bezierCurveTo(x + lean + ww * 0.15, by - hh * 0.62, x + ww * 1.2, by - hh * 0.4, x + ww, by);
+        g.closePath();
+        g.fill();
+      }
+    };
+    g.save();
+    g.shadowColor = 'rgba(255, 95, 210, 0.85)';
+    g.shadowBlur = 14;
+    draw(1, '#c2318f');
+    g.restore();
+    draw(0.74, '#ff5fd2');
+    draw(0.42, '#ffd6f4');
+    g.fillStyle = '#ff9fe6'; // embers
+    for (let i = 0; i < 5; i++) g.fillRect(Math.round(bx + (hash(i, 1, 931) - 0.5) * w * 2.4), Math.round(by - h * (1.05 + 0.6 * hash(i, 2, 931))), F, F);
+  };
+  /** A brazier on three iron legs, burning the cult's pink. */
+  const brazier = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+    glow(g, sx, sy, 46, 18, 0.26);
+    glow(g, sx, sy - 40, 40, 40, 0.16);
+    g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+    g.beginPath();
+    g.ellipse(sx + 4, sy + 1, 14, 5, 0, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = '#2c2530';
+    g.lineWidth = 2 * F;
+    g.beginPath();
+    g.moveTo(sx - 10, sy);
+    g.lineTo(sx - 4, sy - 22);
+    g.moveTo(sx + 10, sy + 2);
+    g.lineTo(sx + 4, sy - 22);
+    g.moveTo(sx + 1, sy - 4);
+    g.lineTo(sx, sy - 22);
+    g.stroke();
+    blob(g, sx, sy - 26, 13, 6, '#3d3542');
+    blob(g, sx, sy - 28, 12, 4, '#6b6274');
+    blob(g, sx, sy - 28, 10, 3, '#2a1824');
+    tongues(g, sx, sy - 28, 30, 9);
+  };
+  /**
+   * The altar before the door, where a word is given: a block of the quarry's stone, the cult's; on its top
+   * three hollows the shape of a rune stone, empty, in the game's own look for a place that will take a
+   * word (the dark of a slot, its rim in the accent at rest); a groove from each to the door's foot.
+   */
+  const ALTAR = box(1.3, 0.64, 24, hex('#bdb4bf'), hex('#9a90a0'), hex('#625a6c'));
+  const altar = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+    // the grooves cut in the flagstones, from the altar to the door
+    for (const du of [-0.3, 0, 0.3]) {
+      line(g, PP(du - 0.1, 1.15, 0), PP(du * 0.4, 0.02, 0), '#5c5565', 2 * F);
+      line(g, PP(du - 0.1, 1.15, 0), PP(du * 0.4, 0.02, 0), '#3f3948', F);
+    }
+    g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+    g.beginPath();
+    g.ellipse(sx + 10, sy + 2, 30, 9, 0, 0, Math.PI * 2);
+    g.fill();
+    ALTAR(g, sx, sy);
+    // its top's lip, and the three hollows in it
+    const T = (u: number, v: number): [number, number] => [sx + (u - v) * HWf, sy + (u + v) * HHf - 24];
+    for (const du of [-0.38, 0, 0.38]) {
+      const quad = (a: number, b: number, c: number, d: number, col: string): void => poly(g, [T(du - a, -c), T(du + b, -c), T(du + b, d), T(du - a, d)], col);
+      quad(0.15, 0.15, 0.2, 0.2, '#22a8c0');
+      quad(0.12, 0.12, 0.17, 0.17, '#0e0c24');
+      quad(0.12, -0.08, 0.17, 0.17, '#1a1838'); // its far wall, seen
+      const [cx, cy] = T(du, 0);
+      glow2(g, cx, cy, 14, 'rgba(34, 168, 192, 0.2)');
+    }
+  };
+  const guardA = [HXD - 1.9, HY0 + 1.7] as [number, number];
+  const guardB = [HXD + 3.1, HY0 + 2.3] as [number, number];
+  const ringAt = (g: CanvasRenderingContext2D, x: number, y: number, words: ('fire' | 'heavy')[]): void => {
+    g.save();
+    g.scale(F, F);
+    drawPackMark(g, (wx, wy) => {
+      const [sx, sy] = toScreen(wx, wy);
+      return [sx / F, sy / F];
+    }, x, y, 0.34, { rarity: 'leader', words }, 0.8);
+    g.restore();
+  };
+  const props: Prop[] = [
+    // the redoubt itself, drawn from behind everything that stands in front of it
+    { x: HXD - 3.2, y: HY0 - 0.2, draw: (g) => facade(g) },
+    { x: HXD - 2.55, y: HY0 + 0.05, draw: (g) => tower(g, -2.55) },
+    { x: HXD + 2.55, y: HY0 + 0.05, draw: (g) => tower(g, 2.55) },
+    { x: HXD - 0.1, y: HY0 + 1.45, draw: altar },
+    { x: HXD - 1.12, y: HY0 + 0.35, draw: brazier },
+    { x: HXD + 1.12, y: HY0 + 0.35, draw: brazier },
+    // the guards: rare, each with a yellow pack leader's ring at its feet
+    { x: guardA[0] - 0.02, y: guardA[1] - 0.02, draw: (g) => ringAt(g, guardA[0], guardA[1], ['fire']) },
+    { x: guardB[0] - 0.02, y: guardB[1] - 0.02, draw: (g) => ringAt(g, guardB[0], guardB[1], ['heavy']) },
+    { x: guardA[0], y: guardA[1], draw: sprite(miniFm.front.idle[0]) },
+    { x: guardB[0], y: guardB[1], draw: sprite(cultist.front.idle[0]) },
+    // the quarry's own things on the floor
+    { x: at(300, 300)[0], y: at(300, 300)[1], draw: STONE_BLOCK },
+    { x: at(300, 300)[0], y: at(300, 300)[1], draw: (g, sx, sy) => STONE_BLOCK(g, sx, sy - 22) },
+    { x: at(332, 314)[0], y: at(332, 314)[1], draw: STONE_BLOCK },
+    { x: at(870, 330)[0], y: at(870, 330)[1], draw: qCart },
+    { x: at(640, 372)[0], y: at(640, 372)[1], draw: greyRock(0.2) },
+    { x: at(654, 380)[0], y: at(654, 380)[1], draw: greyRock(0.13) },
+    { x: at(205, 392)[0], y: at(205, 392)[1], draw: greyRock(0.24) },
+  ];
+  for (const pr of props.slice(10)) if (!HW_(pr.x, pr.y)) console.warn('hold prop off the floor', toScreen(pr.x, pr.y));
+  // the tops, dressed as the Quarry's: pines, rocks, tufts, a stacked block; never over the floor, nor over the redoubt
+  const hClear = (px: number, py: number, hw: number, h: number): boolean => {
+    if (px > 510 - hw && px < 830 + hw && py < 320) return false;
+    for (let yy = py + 4; yy >= py - h; yy -= 3) {
+      for (let xx = px - hw; xx <= px + hw; xx += 3) {
+        if (xx < 0 || yy < 0 || xx >= PW || yy >= PH) continue;
+        if (hKind(xx, yy) === SK.Floor) return false;
+      }
+    }
+    return hKind(px, py) === SK.Top && hKind(px - 8, py + 2) === SK.Top && hKind(px + 8, py + 2) === SK.Top;
+  };
+  const onHoldTop = (px: number, py: number, draw: Prop['draw']): Prop => {
+    const [x, y] = toWorld(px, py + HOLD_H);
+    return { x, y, draw: (g, sx, sy) => draw(g, sx, sy - HOLD_H) };
+  };
+  let n = 0;
+  for (let gy = 6; gy < PH + 20; gy += 20) {
+    for (let gx = 6; gx < PW; gx += 26) {
+      n++;
+      const px = Math.round(gx + (hash(gx, gy, 921) - 0.5) * 20);
+      const py = Math.round(gy + (hash(gx, gy, 922) - 0.5) * 14);
+      const roll = hash(gx, gy, 923);
+      const [wx0, wy0] = toWorld(px, py + HOLD_H);
+      const grove = fbm(wx0 * 0.35, wy0 * 0.35, 924);
+      let draw: Prop['draw'] | null = null;
+      let hw = 12;
+      let h = 16;
+      if (grove > 0.6 && roll < 0.5) {
+        draw = pine(0.4 + 0.5 * hash(gx, gy, 925), n);
+        hw = 22;
+        h = 64;
+      } else if (roll < 0.12) draw = greyRock(0.16 + 0.18 * hash(gx, gy, 926));
+      else if (roll < 0.2) draw = tuft(n);
+      else if (roll < 0.21) {
+        draw = STONE_BLOCK;
+        hw = 30;
+        h = 30;
+      }
+      if (!draw || !hClear(px, py, hw, h)) continue;
+      props.push(onHoldTop(px, py, draw));
+    }
+  }
+  holdShot.props = props;
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = PH;
+  const hg = cvs.getContext('2d') as CanvasRenderingContext2D;
+  hg.imageSmoothingEnabled = false;
+  paintLevel(hg, 0, holdShot, { shadow: 1.3 });
+  // the guards' life and names over them, as the game writes a yellow pack's leader's: in yellow
+  hg.save();
+  hg.scale(F, F);
+  for (const [[gx, gy], name, top] of [[guardA, 'Flame Mini Fleshmancer', 30], [guardB, 'Heavy Dagger Cultist', 28]] as [[number, number], string, number][]) {
+    const [sx0, sy0] = toScreen(gx, gy);
+    const sx = Math.round(sx0 / F);
+    const sy = Math.round(sy0 / F) - top - 5;
+    const w = 24;
+    hg.fillStyle = P.ink;
+    hg.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 4);
+    hg.fillStyle = P.bl1;
+    hg.fillRect(sx - w / 2, sy, w, 2);
+    hg.fillStyle = P.fr4;
+    hg.fillRect(sx - w / 2, sy, w, 2);
+    drawText(hg, name, sx, sy - 8, RARITY_COLOR[2], { align: 'center', font: 'small', shadow: P.ink });
+  }
+  hg.restore();
+  placeHud(hg, 'The Quarry', HW_, holdShot.hero);
   showAlone(cvs);
 }
 
