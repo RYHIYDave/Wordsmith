@@ -241,3 +241,11 @@ cliff's side, as a face rises from its foot, and the floor stays in sight; Echo 
 (its faces are thin slivers). Asked "The shadowed cliff face now rises from the floor's edge so it
 never hides the floor. Is that OK?", his pick: "Yes, keep the floor in sight (Recommended)", offered as:
 the face sits on the cliff's side of the edge; this becomes the rule.
+
+## Posted for the art chat
+
+Asked as a pop-up "All five levels now have a look you've said yes to. Should I post them on the Chat
+Board so the art chat can start on the real pictures?", his pick by 09:00: "Yes, post them
+(Recommended)". Posted on the board to the art chat at 09:04 (13 Oct): the five looks with his words,
+and his rules for every level (rounded edges, tops dressed, the near cliff's face, the sky's own layer,
+the cult's pink). The real pictures are the art chat's, with him; nothing of this is in the game.
