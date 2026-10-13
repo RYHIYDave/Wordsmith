@@ -183,6 +183,11 @@ there is to show it on), the knight coming up the cut onto its fire trap; its fr
 at about 8 a second (the fires leaping, the trap's warning and its going off once). `sheet` is every piece
 at the game's size.
 
+Asked as a pop-up "Is this the cult's camp?" (offered: "Yes, on to the Unfinished (Recommended)", "Change
+some first", "Yes, but golems first"), his answer by 13:36 (13 Oct): "[No preference]". Read as, and told
+him so: the camp stays as shown, the order is the art chat's, so the Unfinished next (standing, before
+anything moves); he can still ask for changes to the camp.
+
 ## The Unfinished: his brief (13 Oct, by 12:42)
 
 Asked as pop-ups (his art rulebook's questions for a new character): how big, "Twice the Warden
@@ -196,6 +201,33 @@ as: like a statue forced to walk, slow to start, every step a shudder, grit fall
 floor. The planning chat's, with his yes (12 Oct, 18:07): fused to the quarry wall at first, it tears
 itself free at half life; a fist slam (basic), a rockslide (boulders rolling down lanes), a hurled block
 that stays as cover, a stomp that cracks the terrace.
+
+### The Unfinished, standing (13 Oct, the first look)
+
+`src/art/unfinished.ts` (switch `UNFINISHED_ON`, off): built as every boss is, on the heroes' bones and in
+their solids (a `Mob` of art/new_mobs3.ts; its stand only so far, the rest its stand as placeholders, not
+for use). 224 tall: twice the Warden (tested: 2.1 times his picture's height). Its RIGHT side the finished
+statue (`POLISHED`: smooth, pale, a shine where the light falls full; a carved shoulder, arm and fist with
+its knuckles and thumb, a shaped thigh, kneecap, calf and foot with its toes, the belly's carved lines, the
+breast's edge; half a face: the band round the brow, the brow, a blank eye with the cult's fire waking in
+it, the nose, half the mouth). Its LEFT side the raw stone (`RAW`): blocks, each face broken into flat
+planes as the point took the stone off, the claw's scored lines, pocks, rows of drill holes; a fist as big
+as a man's chest, cracked. Down its middle, the drilled groove where the carvers stopped. On its chest, on a
+face dressed flat for it, the cult's mark cut deep and burning (pink at the cut's edges, gold in it, its
+tongues licking up), and its light. Its breath (2.4 s round): the stone heaves up, its weight grinding
+over onto its raw leg; a shudder runs through it and it settles; grit trickles off its raw side and is
+shaken off by the shudder. `UNFINISHED_FUSED`: the same, still one with the wall, the cliff's own stone in
+its benches holding its back and its raw side (the fight's first half).
+
+    node tools/preview.mjs src/dev/preview_unfinished.ts shots/uf_look.png 1014 1000 look
+    node tools/preview.mjs src/dev/preview_unfinished.ts shots/uf_cut.png 1014 468 cut
+
+`look` is it from in front and behind (close, and at the game's size beside the knight and the Warden) and
+one with the wall; `cut` one screen of its arena, the Unfinished Cut: a cut in the quarry with its far wall
+as high as the colossus (the ground's `rise` 230 there, the Quarry's own 110), it still one with that wall,
+two of the cult and the knight come in. `tests/unfinished.test.ts` (6): crisp, its pink edge, nothing cyan,
+every light the cult's fire, twice the Warden, the mark burning in every frame, and the boss review
+(art/boss_checks.ts) of its stand, free and fused.
 
 ## For the main chat
 
