@@ -41,9 +41,50 @@ painted the same way here), a little shorter than the knight, the enemy's pink e
   pot swinging below on its two cords, the fuse burning pink to gold and spitting sparks, its light. Its stand
   (2.0 s round): shifting under its load, the pots jiggling, the slung pot swinging, its cowl turning.
 
-Their other moves are their stand for now: placeholders, not for use.
 
     node tools/preview.mjs src/dev/preview_act1_cult.ts shots/act1_cult_look.png 1014 640 look
     node tools/preview.mjs src/dev/preview_act1_cult.ts shots/ch_stand.png 900 2140 film:chanter:stand:10:2.4:front
     python3 tools/film_strip.py shots/ch_stand.png shots/chanter_stand.gif 24 10 300 3 2 260
     (the firepot thrower: film:pots:stand:10:2.0:front, 900 x 1820, 20 frames)
+
+Asked as a pop-up "Are these the Chanter and the Firepot thrower?", his pick by 18:35 (13 Oct): "Yes, animate
+them (Recommended)", offered as: next their walks, their attacks (the cursed bolt, the lobbed pot), flinches and
+deaths, as films.
+
+## Their moves
+
+Every move of both through the whole review the bosses have (art/boss_checks.ts; their shapes in
+tests/act1_cult_shape.ts): nothing through the body, feet that grip, nothing into the floor, nothing that jerks,
+blows that wind up and follow through (their throws streaked on the frames they fly), breath when still.
+- THE CHANTER (`CH_PACE` 1.0 tiles a second): walk, a slow procession (8 frames at 8 a second); attack, THE
+  BOLT OF CURSED WORDS (`CH_BOLT`: 1.2 s; it heaves the book up before it, the script blazing, held (the
+  warning, from 0.25); thrusts the book out at you, its pages turned to you, at 19/30 s, and the bolt leaves
+  them, from `chanterBookAt()`); reel (0.3 s); dying, "Its book burns" (`CH_DIES`: 1.6 s; thrown back, the
+  book catches the cult's fire at 0.14, on its knees at 0.5 holding it burning, on its face at 0.9, its feet
+  where it stood; the book burns away to a heap of ash by 1.35; no light at the end). The bolt in flight:
+  `curseBolt(0..3)` (a knot of the cult's script whirling round a burning heart; its light; no edge). ITS WARD,
+  for the cultists it shields (his pick's "the cultists it shields glow faintly pink"): `chantWard(0..3)`, a
+  faint ring of pink marks turning at one's feet (8 a second), a floor piece. How far it shields and how much
+  are the main chat's.
+- THE FIREPOT THROWER (`POTS_PACE` 1.1): walk, a hunched trudge (8 frames at 8 a second); attack, THE LOB
+  (`POTS_LOB`: 1.7 s; it hauls the sling up and whirls the pot round over its head, faster and faster, the fuse
+  flaring (the warning, from 0.4); heaves forward and lets it fly at 27/30 s (`potsPotAt()` where the pot is);
+  the sling empty, it reaches back over its shoulder to its rack and has another pot in the sling by 1.36);
+  reel (0.3 s); dying, "Its own pots go off" (`POTS_DIES`: 1.9 s; on its knees at 0.36, on its face at 0.68,
+  its feet where it stood; the pots on its back burst at 0.74 in a whoosh of the cult's fire, shards flung,
+  the fire out by 1.75; the slung pot comes down by its hand; no light at the end). The pot in flight:
+  `firepotFlying(turn)` (`FIREPOT_FRAMES` 8 a turn, the enemy's edge, its fuse's light); where it comes down,
+  `firepotFire(0..3)` the burst, then `firepotFire(4..7)` the fire burning on the floor, round and round for as
+  long as the game keeps it (a floor piece; its light). How far, how long it burns and what it hurts are the
+  main chat's.
+
+    node tools/preview.mjs src/dev/preview_act1_cult.ts shots/ch_seq.png 900 10660 seq:chanter:20
+    python3 tools/film_strip.py shots/ch_seq.png shots/chanter_moves.gif 122 20 300 3 1 260
+    node tools/preview.mjs src/dev/preview_act1_cult.ts shots/ch_shot.png 1280 7600 shotfilm:chanter:20
+    python3 tools/film_strip.py shots/ch_shot.png shots/chanter_bolt.gif 37 20 640 2 1 400
+    (the thrower: seq:pots:20, 900 x 11180, 128 frames; shotfilm:pots:20, 1280 x 9600, 47 frames)
+
+`tests/act1_cultists.test.ts` (8): the switch off and nothing importing it; crisp, the pink edge on the
+living and none on the dying; nothing cyan, every light the cult's fire; nothing cut off at the canvas's
+edge; about the knight's height; the whole review; the book burning and the pots going off, no light at the
+end; what they send crisp.

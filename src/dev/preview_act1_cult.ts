@@ -7,7 +7,10 @@
 //   node tools/preview.mjs src/dev/preview_act1_cult.ts shots/strip.png <w> <h> film:<who>:<move>:<fps>:<secs>:<view>
 //     a move as a strip of frames, three to a row, cells 300 x 260 at twice the game's size (tools/film_strip.py)
 
-import { CHANTER, FIREPOT_THROWER } from '../art/act1_cultists';
+import { BOLT_FRAMES, CHANTER, CH_BOLT, CH_DIES, FIREPOT_BURST_FRAMES, FIREPOT_FRAMES, FIREPOT_THROWER, POTS_DIES, POTS_LOB, chanterBookAt, chantWard, curseBolt, firepotFire, firepotFlying, potsPotAt } from '../art/act1_cultists';
+import { TILE3 } from '../art/new_mobs3';
+import { project } from '../art/skeleton';
+import type { V3 } from '../art/skeleton';
 import { DAGGER_CULTIST } from '../art/cultists';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
@@ -118,5 +121,121 @@ function film(): void {
   done(cvs);
 }
 
-if (HASH.startsWith('film')) film();
+/**
+ * ITS ATTACK AS THE GAME WOULD PLAY IT, with what it sends (hash `shotfilm:<who>:<fps>`): the Chanter's bolt
+ * from its book, flying 4 tiles in 0.4 s; the Firepot thrower's pot lobbed 3.5 tiles in an arc over 0.7 s, its
+ * shadow under it, bursting into the cult's fire where it comes down and burning on. Cells of 640 x 400, two to
+ * a row. (How far and how fast are the game's.)
+ */
+function shotFilm(): void {
+  const [, who, fpsS] = HASH.split(':');
+  const fps = Number(fpsS);
+  const chanter = who === 'chanter';
+  const mob = WHO[who];
+  const H = chanter ? CH_BOLT.hit : POTS_LOB.hit;
+  const FLY = chanter ? 0.4 : 0.7;
+  const long = (chanter ? CH_BOLT.long : POTS_LOB.long) + 0.6;
+  const n = Math.round(long * fps) + 1;
+  const W = 640;
+  const Hc = 400;
+  const k = 2;
+  const FX = 140;
+  const FY = 230;
+  const cols = 2;
+  const cvs = document.createElement('canvas');
+  cvs.width = W * cols;
+  cvs.height = Hc * Math.ceil(n / cols);
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const from: V3 = chanter ? chanterBookAt() : potsPotAt();
+  const to: V3 = chanter ? [4 * TILE3, 0.6 * TILE3, from[2]] : [3.2 * TILE3, 0.3 * TILE3, 0];
+  const scr = (p: V3): [number, number] => {
+    const [x, y] = project(p, 'front');
+    return [x * k, y * k];
+  };
+  for (let i = 0; i < n; i++) {
+    const t = i / fps;
+    const ox = (i % cols) * W;
+    const oy = Math.floor(i / cols) * Hc;
+    bed(g, ox, oy, W, Hc, 32);
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, W, Hc);
+    g.clip();
+    shadow(g, ox + FX, oy + FY, 36);
+    const long0 = chanter ? CH_BOLT.long : POTS_LOB.long;
+    drawBig(g, frameOf(mob, t < long0 ? 'attack' : 'stand', t < long0 ? t : t - long0, 'front'), ox + FX, oy + FY, k);
+    if (t >= H) {
+      const u = (t - H) / FLY;
+      if (u < 1) {
+        const p: V3 = [from[0] + (to[0] - from[0]) * u, from[1] + (to[1] - from[1]) * u, chanter ? from[2] : from[2] + (POT_Z - from[2]) * u + 34 * Math.sin(Math.PI * u)];
+        const [sx, sy] = scr([p[0], p[1], 0]);
+        shadow(g, ox + FX + sx, oy + FY + sy, chanter ? 6 : 8);
+        const [cx, cy] = scr(p);
+        drawBig(g, chanter ? curseBolt(Math.floor(u * 8) % BOLT_FRAMES) : firepotFlying(u * 1.25), ox + FX + cx, oy + FY + cy, k);
+      } else if (!chanter) {
+        const f = Math.floor((t - H - FLY) * 10);
+        const [cx, cy] = scr(to);
+        drawBig(g, firepotFire(f < FIREPOT_BURST_FRAMES ? f : FIREPOT_BURST_FRAMES + ((f - FIREPOT_BURST_FRAMES) % 4)), ox + FX + cx, oy + FY + cy, k);
+      }
+    }
+    g.restore();
+  }
+  done(cvs);
+}
+const POT_Z = 3;
+void FIREPOT_FRAMES;
+void chantWard;
+void CH_DIES;
+void POTS_DIES;
+
+/** ITS WALK, A FLINCH AND ITS DEATH, as the game would play them (hash `seq:<who>:<fps>`): walking 2 s (the floor carried under it at its pace), standing, struck, standing, dying and lying there. Cells 300 x 260, three to a row. */
+function seq(): void {
+  const [, who, fpsS] = HASH.split(':');
+  const mob = WHO[who];
+  const fps = Number(fpsS);
+  const parts: [string, number][] = [['walk', 2.0], ['stand', 0.6], ['reel', mob.reelTime], ['stand', 0.6], ['dying', mob.dieTime + 1.0]];
+  const list: [string, number, number][] = [];
+  let T = 0;
+  for (const [mv, long] of parts) {
+    for (let i = 0; i < Math.round(long * fps); i++) list.push([mv, i / fps, mv === 'walk' ? T + i / fps : -1]);
+    if (mv === 'walk') T += long;
+  }
+  const W = 300;
+  const Hc = 260;
+  const k = 2;
+  const cols = 3;
+  const cvs = document.createElement('canvas');
+  cvs.width = W * cols;
+  cvs.height = Hc * Math.ceil(list.length / cols);
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  list.forEach(([mv, t, walked], i) => {
+    const ox = (i % cols) * W;
+    const oy = Math.floor(i / cols) * Hc;
+    const tile = 32;
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, W, Hc);
+    g.clip();
+    // (the floor carried under it as it walks, at its pace: the camera following)
+    const went = walked >= 0 ? walked : T;
+    const [dx, dy] = project([mob.pace * TILE3 * went, 0, 0], 'front');
+    g.translate(-(((dx * k) % (tile * 4)) + tile * 4) % (tile * 4), -(((dy * k) % (tile * 2)) + tile * 2) % (tile * 2));
+    bed(g, ox, oy, W + tile * 4, Hc + tile * 2, tile);
+    g.restore();
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, W, Hc);
+    g.clip();
+    if (mv !== 'dying') shadow(g, ox + 130, oy + 190, 34);
+    drawBig(g, frameOf(mob, mv, mv === 'dying' ? Math.min(t, mob.dieTime) : t, 'front'), ox + 130, oy + 190, k);
+    g.restore();
+  });
+  done(cvs);
+}
+
+if (HASH.startsWith('seq')) seq();
+else if (HASH.startsWith('shotfilm')) shotFilm();
+else if (HASH.startsWith('film')) film();
 else look();
