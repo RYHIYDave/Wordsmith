@@ -67,3 +67,29 @@ With the hash `canyon` the page paints two answers:
 
 The planning chat's pick, put to him: both together (mostly up the screen; where it turns across,
 B). Sent to him by 20:22 as previews/canyon_both_sides.png; his answer not in yet.
+
+## Echo Canyon in the game's own frame (his ask after 20:22)
+
+His words: "Can I get a shot of how it would actually look in game, just a little more detail?"
+
+With the hash `shot` the page paints one phone screen (1014 x 468 picture pixels, the game's
+507 x 234 at 2 picture pixels each) of the pick, both ways together: the canyon running up the
+screen at the top and bottom, turning across in the middle, its near wall cut away with its
+shadow on the floor; two hoodoos (round banded rock columns with a harder cap, `hoodoo()`) stand
+out of the near wall, the one in front of the knight seen through at the game's own amount
+(SEEN_THROUGH, 0.38), the other solid. More detail than the sheets: wind ripples in the sand, the
+cult's wheel ruts, river stones, desert varnish down the far wall, scrub and cracks on the mesa,
+a cult banner, the broken wagon and spilled crates, the mini fleshmancer leading two dagger
+cultists. The place name and the map are painted by the page.
+
+    node tools/preview.mjs src/dev/preview_act1.ts shots/canyon_world.png 1014 468 shot
+
+(It ends with a thrown error, "shot painted", on purpose: the rest of the page is the sheets.)
+The game's real HUD is then laid over it: two screenshots of the game on a phone held sideways
+(844 x 390 at 3x) with the world painted black, then white, give the HUD and how see-through it
+is pixel by pixel; the old place name, the NEW TALENT button and the inside of the map are taken
+out. The result is previews/canyon_in_game.png, sent to him by 20:33.
+
+For the main chat, if he says yes: the game sees through only things both wide and tall (60 x 70
+game pixels, render/render.ts), so a hoodoo 26 game pixels wide would stay solid; a canyon's
+spires would need their own rule.

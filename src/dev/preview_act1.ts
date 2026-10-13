@@ -16,16 +16,24 @@
 // With the hash "canyon", two ways to have Echo Canyon's walls on both sides with none in front
 // (his word of 20:19), the canyon run up the screen, or across it with the near wall's shadow:
 //   node tools/preview.mjs src/dev/preview_act1.ts previews/canyon_both_sides.png 1280 800 canyon
+// With the hash "shot", the two together as one screen of the game on a phone held sideways,
+// 507 by 234 game pixels at 2 picture pixels to one, to lay under the game's real HUD:
+//   node tools/preview.mjs src/dev/preview_act1.ts shots/canyon_world.png 1014 468 shot
 import { spriteOf3 } from '../art/heroes3';
 import { hash } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
-import { makeDaggerCultistArt3 } from '../art/cultists';
+import { makeDaggerCultistArt3, makeMiniFleshmancerArt3 } from '../art/cultists';
+import { drawText } from '../engine/font';
+import { P } from '../art/palette';
+import { THEME } from '../ui/ui';
 
 type RGB = [number, number, number];
 const F = 2; // picture pixels per game pixel
 const Z = 2; // screen pixels per picture pixel
-const PW = 320 * F;
-const PH = 220 * F;
+/** "shot": one picture the size of the game's own screen on a phone held sideways (507 by 234 game pixels), to lay under the game's real HUD. */
+const SHOT = decodeURIComponent(location.hash.slice(1)) === 'shot';
+const PW = SHOT ? 1014 : 320 * F;
+const PH = SHOT ? 468 : 220 * F;
 const HWf = 16 * F;
 const HHf = 8 * F;
 const OX = PW / 2;
@@ -521,7 +529,7 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way
       const me = s.x + s.y;
       for (const [fx, fy] of [L.hero, ...(way.foes ?? [])]) {
         const [ox, oy] = toScreen(fx, fy);
-        if (fx + fy < me && Math.abs(ox - sx) < 34 && oy < sy + 4 && oy > sy - s.seeFor - 10) alpha = 0.35;
+        if (fx + fy < me && Math.abs(ox - sx) < (SHOT ? 46 : 34) && oy < sy + 4 && oy > sy - s.seeFor - 10) alpha = 0.38; // as the game: SEEN_THROUGH in render/render.ts
       }
     }
     g.globalAlpha = alpha;
@@ -1026,6 +1034,188 @@ const spire = (h: number, k: number) => (g: CanvasRenderingContext2D, sx: number
     z += th;
   });
 };
+/** A hoodoo: a round column of banded rock with a harder cap, painted pixel by pixel, lit from the left. */
+const hoodoo = (h: number, R: number, k: number) => {
+  const W = 2 * R + 10;
+  const Hc = h + R + 12;
+  const cx = R + 5;
+  const cy = Hc - R * 0.5 - 4;
+  let img: HTMLCanvasElement | null = null;
+  const r = (v: number): number => {
+    const t = Math.max(0, Math.min(1, v / h));
+    if (t > 0.86) return R * (0.74 + 0.04 * Math.sin(v / 3 + k));
+    const neck = 1 - 0.42 * t - 0.12 * Math.exp(-(((t - 0.8) / 0.06) ** 2));
+    const ledge = 1 + 0.1 * Math.exp(-(((t - 0.38) / 0.035) ** 2)) + 0.08 * Math.exp(-(((t - 0.62) / 0.03) ** 2));
+    return R * neck * ledge * (1 + 0.06 * Math.sin(v / 11 + k * 3) + 0.035 * Math.sin(v / 4.3 + k));
+  };
+  const paint = (): HTMLCanvasElement => {
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = Hc;
+    const cg = c.getContext('2d') as CanvasRenderingContext2D;
+    const id = cg.createImageData(W, Hc);
+    const d = id.data;
+    const rh = r(h);
+    for (let y = 0; y < Hc; y++) {
+      for (let x = 0; x < W; x++) {
+        const u = x - cx + 0.5;
+        const v0 = cy - y;
+        const rv = r(Math.max(0, v0));
+        let col: RGB | null = null;
+        if (Math.abs(u) <= rv) {
+          const v = v0 + 0.5 * Math.sqrt(rv * rv - u * u);
+          const nx = u / rv;
+          if (v >= 0 && v <= h) {
+            const cap = v > h * 0.86;
+            const shade = 0.2 - 0.95 * nx;
+            col = cap ? C_WALL[shade > 0.35 ? 1 : shade < -0.35 ? 2 : 1][shade > 0.35 ? 1 : 2] : strata(C_WALL, shade, v, u * 1.6 + 60 + k * 40, 90 + k, 10, 0.25);
+            col = mix(col, [40, 18, 20], Math.max(0, nx) * 0.22);
+            if (u < -rv + 1.6) col = mix(col, [255, 214, 170], 0.35); // the lit edge
+            if (!cap && v > h * 0.82) col = mix(col, [50, 22, 24], 0.45); // shade under the cap
+            if (v < 6) col = mix(col, [70, 34, 28], 0.3 * (1 - v / 6)); // where it meets the sand
+          }
+        }
+        const dy = y - (cy - h);
+        if (!col && (u / rh) ** 2 + (dy / (rh / 2)) ** 2 <= 1) {
+          col = pick(C_TOP, fbm(x * 0.2, y * 0.2, 60 + k), x, y);
+          if ((u / rh) ** 2 + ((dy + 1.5) / (rh / 2)) ** 2 > 1) col = mix(col, [255, 220, 180], 0.3);
+        }
+        if (!col) continue;
+        const i = (y * W + x) * 4;
+        d[i] = col[0];
+        d[i + 1] = col[1];
+        d[i + 2] = col[2];
+        d[i + 3] = 255;
+      }
+    }
+    cg.putImageData(id, 0, 0);
+    return c;
+  };
+  return (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+    img ??= paint();
+    g.fillStyle = 'rgba(45, 16, 12, 0.32)';
+    g.beginPath();
+    g.ellipse(sx + R * 0.7, sy + 3, R * 1.5, R * 0.55, 0, 0, Math.PI * 2);
+    g.fill();
+    g.drawImage(img, Math.round(sx - cx), Math.round(sy - cy));
+  };
+};
+// ---------------------------------------------------------------------------------------------
+// THE SHOT: Echo Canyon both ways at once, as the game would show it
+
+const shotLine = atAll([[300, -80], [330, 30], [365, 120], [425, 186], [507, 236], [598, 266], [668, 300], [712, 380], [736, 540]]);
+const shotGround = ground(union(path(shotLine, 3.7), area(560, 250, 1.6, 1.2, 0.3)));
+const lineAt = (x: number, y: number): number => lineDist(shotLine, x, y);
+const SHOT_H = 150;
+const shotLevel: Level = {
+  ...canyon,
+  title: '',
+  note: '',
+  gr: shotGround,
+  outsideH: SHOT_H,
+  floor: (x, y, px, py) => {
+    let c = pick(C_SAND, fbm(x * 1.6, y * 1.6, 31), px, py);
+    // ripples the wind has left in the sand
+    const rip = Math.sin(x * 5.2 + y * 1.6 + 3 * fbm(x * 0.7, y * 0.7, 201));
+    if (rip > 0.93) c = mix(c, hex('#f3cf9c'), 0.5);
+    else if (rip < -0.95) c = mix(c, hex('#a96f47'), 0.35);
+    const dl = lineAt(x, y);
+    // the cult's wheel ruts, down the middle of the road
+    if (Math.abs(dl - 0.55) < 0.06 || Math.abs(dl - 0.05) < 0.04) c = mix(c, hex('#8f5a3c'), 0.45);
+    // river-worn stones, off to one side of the ruts
+    if (dl > 0.8 && dl < 1.35) {
+      const cs = 0.3;
+      const i = Math.floor(x / cs);
+      const j = Math.floor(y / cs);
+      if (hash(i, j, 33) > 0.55) {
+        const cx = (i + 0.5) * cs;
+        const cy = (j + 0.5) * cs;
+        const dd = Math.hypot(x - cx, (y - cy) * 1.2);
+        if (dd < 0.1) c = dd < 0.045 && x < cx ? hex('#f0e2cd') : hex('#c9ae93');
+      }
+    }
+    if (fbm(x * 7, y * 7, 35) > 0.74) c = mix(c, hex('#8f5f43'), 0.35); // cracked mud
+    return c;
+  },
+  face: (shade, v, px) => {
+    let c = strata(C_WALL, shade, v, px, 81, 14, 0.4);
+    const col = Math.floor(px / 3);
+    // desert varnish, streaked down the face from its top
+    if (hash(col, 0, 211) > 0.8 && v > SHOT_H * (0.3 + 0.5 * hash(col, 1, 211))) c = mix(c, [70, 34, 34], 0.32);
+    if (v > SHOT_H - 6) c = mix(c, [60, 28, 30], 0.4); // the shadow under the lip of the top
+    return c;
+  },
+  outside: (x, y, px, py) => {
+    let c = pick(C_TOP, fbm(x * 1.4, y * 1.4, 41), px, py);
+    if (fbm(x * 3.1, y * 3.1, 43) > 0.66) c = hash(px >> 1, py >> 1, 45) > 0.4 ? hex('#7d7a3b') : hex('#9a9548'); // scrub
+    if (Math.abs(fbm(x * 0.9, y * 0.9, 47) - 0.5) < 0.012) c = hex('#7e3f2c'); // cracks in the mesa
+    return c;
+  },
+  props: [],
+  hero: at(507, 246) as [number, number],
+  tint: (c) => [Math.min(255, c[0] * 1.04), c[1] * 0.99, c[2] * 0.9],
+};
+const pt = (px: number, py: number): { x: number; y: number } => {
+  const [x, y] = at(px, py);
+  return { x, y };
+};
+const shrub = (k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.strokeStyle = hash(k, 1, 5) > 0.5 ? '#7d6a3e' : '#94804a';
+  g.lineWidth = F;
+  for (let i = 0; i < 7; i++) {
+    const a = -Math.PI / 2 + (hash(i, k, 2) - 0.5) * 2.2;
+    const r = (5 + 5 * hash(i, k, 3)) * F;
+    g.beginPath();
+    g.moveTo(sx, sy);
+    g.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r * 0.7);
+    g.stroke();
+  }
+};
+const banner = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  // a cult banner staked in the sand: violet cloth, the cult's pink mark
+  g.fillStyle = '#3e2a1e';
+  g.fillRect(sx - F, sy - 46 * F, 2 * F, 46 * F);
+  g.fillStyle = '#4a2a63';
+  g.fillRect(sx + F, sy - 44 * F, 14 * F, 22 * F);
+  g.fillStyle = '#3a2050';
+  g.fillRect(sx + F, sy - 24 * F, 14 * F, 3 * F);
+  g.fillStyle = '#ff5fd2';
+  g.fillRect(sx + 6 * F, sy - 38 * F, 4 * F, 10 * F);
+  g.fillRect(sx + 4 * F, sy - 34 * F, 8 * F, 2 * F);
+};
+const sprite = (sp: { img: HTMLCanvasElement; ax: number; ay: number; density?: number }) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.fillStyle = 'rgba(25, 18, 40, 0.35)';
+  g.beginPath();
+  g.ellipse(sx, sy, 8 * F, 3.5 * F, 0, 0, Math.PI * 2);
+  g.fill();
+  const dens = sp.density ?? 1;
+  g.drawImage(sp.img, sx - sp.ax * F, sy - sp.ay * F, (sp.img.width / dens) * F, (sp.img.height / dens) * F);
+};
+const miniFm = makeMiniFleshmancerArt3();
+shotLevel.props = [
+  { ...pt(560, 262), draw: canyon.props[3].draw }, // the broken wagon
+  { ...pt(600, 300), draw: box(0.45, 0.45, 12, hex('#9a7550'), hex('#866444'), hex('#5e4430')) }, // spilled crates
+  { ...pt(622, 292), draw: box(0.4, 0.4, 10, hex('#9a7550'), hex('#866444'), hex('#5e4430')) },
+  { ...pt(445, 214), draw: banner },
+  { ...pt(420, 150), draw: boulder(0.36, '#e8a777', '#c47a50', '#8c4d37') },
+  { ...pt(690, 352), draw: boulder(0.3, '#e8a777', '#c47a50', '#8c4d37') },
+  { ...pt(470, 268), draw: (g, sx, sy) => {
+    g.fillStyle = '#ece3d3';
+    g.fillRect(sx - 6 * F, sy - 2 * F, 12 * F, 2 * F);
+    g.fillRect(sx - 2 * F, sy - 5 * F, 3 * F, 3 * F);
+  } },
+  { ...pt(340, 70), draw: shrub(1) },
+  { ...pt(395, 110), draw: shrub(2) },
+  { ...pt(650, 330), draw: shrub(3) },
+  { ...pt(745, 470), draw: shrub(4) },
+  // the near wall's spires, see-through only while someone is behind
+  { ...pt(470, 330), seeFor: 150, draw: hoodoo(150, 26, 1) },
+  { ...pt(345, 250), seeFor: 120, draw: hoodoo(120, 21, 2) },
+  // the mini fleshmancer, leading the cultists up the road
+  { ...pt(372, 112), draw: sprite(miniFm.front.idle[0]) },
+];
+const shotFoes: [number, number][] = [at(398, 160) as [number, number], at(620, 330 - 40) as [number, number]];
+
 const nearAt = (x: number): [number, number] => {
   const half = 2.0 + 0.5 * Math.sin(0.5 * x + 1.2) + 1.0 * Math.exp(-(((x - 13.5) / 1.6) ** 2));
   return [x, cYc(x) + half * 0.9 + 0.75];
@@ -1056,6 +1246,55 @@ const LEVELS: { L: Level; way?: Way }[] = BOTH
     { L: { ...quarry, title: 'The Quarry, the near walls drawn', note: 'the same: see-through round whoever is behind a wall' }, way: { full: true, foes: [quarryFoe] } },
   ]
   : [quarry, canyon, pinewood, fen].map((L) => ({ L }));
+if (SHOT) {
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = PH;
+  cvs.style.position = 'static';
+  cvs.style.display = 'block';
+  const sg = cvs.getContext('2d') as CanvasRenderingContext2D;
+  sg.imageSmoothingEnabled = false;
+  paintLevel(sg, 0, shotLevel, { shadow: 1.5, foes: shotFoes });
+  // a soft vignette, as the game lays one
+  const vg = sg.createRadialGradient(PW / 2, PH / 2, PH * 0.45, PW / 2, PH / 2, PW * 0.62);
+  vg.addColorStop(0, 'rgba(30,14,10,0)');
+  vg.addColorStop(1, 'rgba(30,14,10,0.32)');
+  sg.fillStyle = vg;
+  sg.fillRect(0, 0, PW, PH);
+  // the HUD's two things that must be this place's own: its name, and its map
+  sg.save();
+  sg.scale(2, 2);
+  drawText(sg, 'Echo Canyon', 4, 3, THEME.text, { shadow: P.ink });
+  sg.restore();
+  const [mx, my, mw, mh] = [437 * 2 + 3, 4 * 2 + 3, 66 * 2 - 6, 46 * 2 - 6];
+  sg.fillStyle = '#100e22';
+  sg.fillRect(mx, my, mw, mh);
+  const [hx0, hy0] = shotLevel.hero;
+  const k = 0.11;
+  for (let yy = 0; yy < mh; yy += 2) {
+    for (let xx = 0; xx < mw; xx += 2) {
+      const a = (xx - mw / 2) / (HWf * k);
+      const b = (yy - mh / 2) / (HHf * k);
+      const wxx = hx0 + (a + b) / 2;
+      const wyy = hy0 + (b - a) / 2;
+      if (shotGround.walk(wxx, wyy)) {
+        sg.fillStyle = '#5b55c7';
+        sg.fillRect(mx + xx, my + yy, 2, 2);
+      }
+    }
+  }
+  sg.fillStyle = '#28dcf0';
+  sg.fillRect(mx + mw / 2 - 2, my + mh / 2 - 2, 4, 4);
+  for (const el of [document.documentElement, document.body]) {
+    el.style.height = 'auto';
+    el.style.overflow = 'visible';
+  }
+  document.body.style.margin = '0';
+  document.body.style.width = `${PW}px`;
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+  throw new Error('shot painted'); // the rest of the page is the other sheets
+}
 const HEAD = 70;
 const TITLE = 96;
 const FW = PW;
