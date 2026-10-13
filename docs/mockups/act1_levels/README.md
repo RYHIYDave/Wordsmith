@@ -198,3 +198,21 @@ it), its arms coiling out under the water past the ruin, two of them curling up 
 ripples round them. Sent as previews/fen_eye_in_game.png; asked "Is this the Sunken Fen and the
 Drowned Eye now?", his pick by 07:40: "Yes, this is it (Recommended)", offered as: the fen, the Eye
 risen under its pool with its arms out, the obelisks and the town across the water go in the plan.
+
+## The Pinewood
+
+His words, 13 Oct, 08:18, offered the Pinewood painted the same way: "Let’s see it"; and at 08:19:
+"I’d like the forest to be very open.  Really big open areas that cross the river on little bridges".
+With the hash `pine` the page paints it as one screen of the game (`pineShot`, `PINE_RIVER`,
+`pineBridge()`, `twistedPine()`, `cabin`):
+
+    node tools/preview.mjs src/dev/preview_act1.ts shots/pine_world.png 1014 468 pine
+
+Wide open meadow; the river out of the canyon winding through it; three little footbridges where the
+trails cross it; the pines in groves and along the far edge, never a wall (seen through, the tent's
+way, while someone is behind one); light in long shafts through the trees, fog low; a hunter's old
+cabin by the river; the cult's siege camp glimpsed through the trees at the top, a patrol out of it;
+toward the swamp, east, the trees dark and twisted and a violet sickness in the ground. Sent as
+previews/pine_in_game.png; asked "Is this the Pinewood?", his pick by 08:23: "Yes, this is it
+(Recommended)", offered as: big open meadows, the river with little bridges, groves, twisted trees
+toward the swamp; goes in the plan.

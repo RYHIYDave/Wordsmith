@@ -41,8 +41,10 @@ const REVEAL = decodeURIComponent(location.hash.slice(1)) === 'reveal';
 const LEDGE = decodeURIComponent(location.hash.slice(1)) === 'ledge' || REVEAL;
 /** "fen": the Sunken Fen as one screen of the game, at the Drowned Eye's pool. */
 const FEN_SHOT = decodeURIComponent(location.hash.slice(1)) === 'fen';
-const PW = SHOT || LEDGE || FEN_SHOT ? 1014 : 320 * F;
-const PH = SHOT || LEDGE || FEN_SHOT ? 468 : 220 * F;
+/** "pine": the Pinewood as one screen of the game. */
+const PINE_SHOT = decodeURIComponent(location.hash.slice(1)) === 'pine';
+const PW = SHOT || LEDGE || FEN_SHOT || PINE_SHOT ? 1014 : 320 * F;
+const PH = SHOT || LEDGE || FEN_SHOT || PINE_SHOT ? 468 : 220 * F;
 const HWf = 16 * F;
 const HHf = 8 * F;
 const OX = PW / 2;
@@ -2516,6 +2518,314 @@ const fenShot: Level = {
     }
   },
 };
+// ---------------------------------------------------------------------------------------------
+// THE PINEWOOD as one screen of the game. His "Let’s see it" (13 Oct, 08:18), and at 08:19: "I’d like
+// the forest to be very open.  Really big open areas that cross the river on little bridges". So: big
+// open meadows among the pines, the river (out of the canyon) winding through them, little footbridges
+// where the trails cross it; the trees in groves and along the far edge, never a wall; darker and more
+// twisted toward the swamp, east (the doc: "The trees get more twisted the closer the player gets to the
+// swamp"); the cult's siege camp glimpsed through the trees, a patrol out of it; a hunter's old cabin.
+
+const PINE_RIVER: number[][] = [[110, -30], [170, 70], [250, 150], [330, 236], [420, 318], [560, 368], [710, 398], [880, 470]];
+const pineRiverW = atAll(PINE_RIVER);
+const pineTop = (px: number): number => 70 + 26 * Math.sin(px / 120 + 0.6) + 18 * fbm(px / 60, 0, 701) - 30 * Math.exp(-(((px - 690) / 70) ** 2));
+const pineGroves: [number, number, number, number][] = [[150, 360, 1.5, 1.0], [880, 330, 1.7, 1.2], [600, 120, 0.9, 0.6], [80, 180, 0.8, 0.6], [960, 160, 1.0, 0.7]];
+const inPineRiver = (x: number, y: number): boolean => lineDist(pineRiverW, x, y) < 0.55;
+const inGrove = (x: number, y: number): boolean => pineGroves.some(([px, py, rx, ry]) => area(px, py, rx, ry, 0)(x, y));
+/** A little footbridge across the river at a screen point, square to the water there. */
+function pineBridge(px: number, py: number): Shape {
+  let best = 0;
+  let bd = Infinity;
+  for (let i = 0; i + 1 < PINE_RIVER.length; i++) {
+    const [ax, ay] = PINE_RIVER[i];
+    const [bx, by] = PINE_RIVER[i + 1];
+    const d = Math.hypot((ax + bx) / 2 - px, (ay + by) / 2 - py);
+    if (d < bd) {
+      bd = d;
+      best = i;
+    }
+  }
+  const [ax, ay] = PINE_RIVER[best];
+  const [bx, by] = PINE_RIVER[best + 1];
+  const len = Math.hypot(bx - ax, by - ay);
+  const nx = -(by - ay) / len;
+  const ny = (bx - ax) / len;
+  return path(atAll([[px - 30 * nx, py - 30 * ny], [px + 30 * nx, py + 30 * ny]]), 0.75);
+}
+const PINE_BRIDGES = [[212, 112], [376, 278], [640, 384]].map(([px, py]) => pineBridge(px, py));
+const onPineBridge = (x: number, y: number): boolean => PINE_BRIDGES.some((b) => b(x, y));
+const pineShotGround = ground((x, y) => {
+  if (inPineRiver(x, y) || inGrove(x, y)) return false;
+  const [sx, sy] = toScreen(x, y);
+  return sy > pineTop(sx);
+}, onPineBridge);
+const PW_GROUND = pineShotGround.walk;
+const PINE_TRAILS = [
+  atAll([[40, 40], [212, 112], [380, 196], [507, 240], [700, 246], [880, 236], [1060, 206]]),
+  atAll([[376, 278], [300, 360], [200, 450]]),
+  atAll([[640, 384], [610, 300], [507, 240]]),
+];
+/** A pine gone wrong near the swamp: its trunk bent, its needles dark and thin, a violet sickness in them. */
+function twistedPine(size: number, k: number) {
+  const dark = ramp('#262c2c', '#2e3536', '#3a3a48', '#4a4360');
+  return (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+    const h = (70 + 40 * size) * F * 0.5;
+    const w = (18 + 10 * size) * F * 0.5;
+    const lean = (hash(k, 1, 711) - 0.5) * 28;
+    g.fillStyle = 'rgba(20,24,30,0.35)';
+    g.beginPath();
+    g.ellipse(sx, sy, w * 0.9, w * 0.45, 0, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = '#3a2f34';
+    g.lineWidth = 4 * F * 0.5 + 2;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(sx, sy);
+    g.quadraticCurveTo(sx - lean, sy - h * 0.4, sx + lean * 0.6, sy - h * 0.75);
+    g.stroke();
+    for (let t = 0; t < 4; t++) {
+      const yb = sy - h * 0.25 - t * h * 0.19;
+      const cx = sx + lean * (t / 4) * 0.8 - lean * 0.3;
+      const ww = w * (1 - t * 0.22) * (0.8 + 0.4 * hash(t, k, 713));
+      const yt = yb - h * 0.3;
+      g.fillStyle = rgb(dark[0]);
+      g.beginPath();
+      g.moveTo(cx + (hash(t, k, 715) - 0.5) * 8, yt);
+      g.lineTo(cx + ww, yb + (hash(t, k, 717) - 0.5) * 6);
+      g.lineTo(cx - ww, yb);
+      g.closePath();
+      g.fill();
+      g.fillStyle = rgb(dark[2 + (hash(t, k, 719) > 0.5 ? 1 : 0)]);
+      g.beginPath();
+      g.moveTo(cx, yt);
+      g.lineTo(cx - ww * 0.15, yb - 2);
+      g.lineTo(cx - ww, yb);
+      g.closePath();
+      g.fill();
+    }
+  };
+}
+/** A hunter's old cabin: logs, a mossy roof, its door hanging open. */
+const cabin = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  const L = (dx: number, dy: number): [number, number] => [sx + dx * F, sy + dy * F];
+  const poly = (pts: [number, number][], c: string): void => {
+    g.fillStyle = c;
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.closePath();
+    g.fill();
+  };
+  g.fillStyle = 'rgba(20,30,20,0.35)';
+  g.beginPath();
+  g.ellipse(sx + 6 * F, sy, 34 * F, 12 * F, 0, 0, Math.PI * 2);
+  g.fill();
+  // walls of logs: the face toward the lower left lit, toward the lower right in shade
+  poly([L(-28, -2), L(0, 12), L(0, -12), L(-28, -26)], '#8a6844');
+  poly([L(0, 12), L(26, -1), L(26, -25), L(0, -12)], '#5e4630');
+  g.fillStyle = 'rgba(40,26,16,0.6)';
+  for (let i = 0; i < 6; i++) {
+    const y = -4 - i * 4;
+    g.fillRect(sx - 28 * F, sy + (y + 0.5) * F - (14 - i) * 0, 28 * F, F * 0.6);
+  }
+  poly([L(-16, 6), L(-8, 10), L(-8, -4), L(-16, -8)], '#2a1c14'); // the door, open
+  poly([L(-6, 0), L(-1, 2), L(-1, -6), L(-6, -8)], '#e8c27a'); // a window, the light gone from it
+  poly([L(-6, 0), L(-1, 2), L(-1, -6), L(-6, -8)], 'rgba(30,30,40,0.7)');
+  // the roof, moss on it
+  poly([L(-32, -24), L(-1, -42), L(-1, -12 - 2), L(-32, 4 - 30)], '#5b6a3c');
+  poly([L(-1, -42), L(30, -27), L(30, -24 + 0), L(-1, -12 - 2)], '#45512f');
+  poly([L(-32, -24), L(-1, -42), L(30, -27), L(-1, -12 - 2)], '#6a7a44');
+  g.fillStyle = '#7f924f';
+  for (let i = 0; i < 9; i++) g.fillRect(sx + (-26 + i * 6) * F, sy + (-32 + Math.abs(i - 4) * 2) * F, 3 * F, 2 * F);
+};
+const campfire = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  const glow = g.createRadialGradient(sx, sy, 2, sx, sy, 40);
+  glow.addColorStop(0, 'rgba(255,170,80,0.5)');
+  glow.addColorStop(1, 'rgba(255,170,80,0)');
+  g.fillStyle = glow;
+  g.fillRect(sx - 40, sy - 40, 80, 80);
+  g.fillStyle = '#ffb347';
+  g.beginPath();
+  g.moveTo(sx - 6, sy);
+  g.quadraticCurveTo(sx - 4, sy - 10, sx, sy - 18);
+  g.quadraticCurveTo(sx + 4, sy - 8, sx + 6, sy);
+  g.closePath();
+  g.fill();
+  g.fillStyle = '#ffe2a0';
+  g.fillRect(sx - 2, sy - 8, 4, 6);
+};
+const fern = (k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.strokeStyle = hash(k, 0, 721) > 0.5 ? '#4f7a36' : '#3f6a2e';
+  g.lineWidth = 1.5;
+  for (let i = 0; i < 6; i++) {
+    const a = -Math.PI / 2 + (i - 2.5) * 0.45;
+    g.beginPath();
+    g.moveTo(sx, sy);
+    g.quadraticCurveTo(sx + Math.cos(a) * 10, sy + Math.sin(a) * 12, sx + Math.cos(a) * 18, sy + Math.sin(a) * 9 + 4);
+    g.stroke();
+  }
+};
+const mushrooms = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  for (let i = 0; i < 3; i++) {
+    const x = sx + (i - 1) * 6;
+    g.fillStyle = '#e9e1cf';
+    g.fillRect(x - 1, sy - 5, 2, 5);
+    g.fillStyle = i === 1 ? '#c8443a' : '#b23a32';
+    g.beginPath();
+    g.ellipse(x, sy - 6, 4, 2.5, 0, Math.PI, 0);
+    g.fill();
+    g.fillStyle = '#fff4e0';
+    g.fillRect(x - 1, sy - 8, 1, 1);
+  }
+};
+const fallenLog = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.fillStyle = 'rgba(20,30,20,0.35)';
+  g.beginPath();
+  g.ellipse(sx + 4, sy + 2, 40, 9, -0.35, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = '#5a4230';
+  g.lineWidth = 12;
+  g.lineCap = 'butt';
+  g.beginPath();
+  g.moveTo(sx - 34, sy + 10);
+  g.lineTo(sx + 34, sy - 14);
+  g.stroke();
+  g.strokeStyle = '#7a5c40';
+  g.lineWidth = 4;
+  g.beginPath();
+  g.moveTo(sx - 34, sy + 6);
+  g.lineTo(sx + 34, sy - 18);
+  g.stroke();
+  g.fillStyle = '#b08a5e';
+  g.beginPath();
+  g.ellipse(sx + 34, sy - 14, 4, 6, -0.35, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#6f8f3e';
+  for (let i = 0; i < 5; i++) g.fillRect(sx - 26 + i * 12, sy + 2 - i * 4.5, 6, 3);
+};
+const pineShot: Level = {
+  ...pinewood,
+  title: '',
+  note: '',
+  gr: pineShotGround,
+  floor: (x, y, px, py) => {
+    if (onPineBridge(x, y)) {
+      // a little footbridge: planks across, a rail along each side
+      const along = (((x + y) * 3.2) % 1 + 1) % 1;
+      return along < 0.14 ? hex('#4a3322') : pick(P_DIRT, 0.55 + 0.35 * fbm(x * 6, y * 2, 77), px, py);
+    }
+    const [sx] = toScreen(x, y);
+    const east = Math.max(0, Math.min(1, (sx - 640) / 360));
+    const onTrail = PINE_TRAILS.some((t) => lineDist(t, x, y) < 0.2 + 0.07 * vn(x * 2, y * 2, 723));
+    let c = onTrail ? pick(P_DIRT, fbm(x * 3, y * 3, 51), px, py) : pick(P_GRASS, fbm(x * 1.8, y * 1.8, 53) * 0.8 + pineShotGround.field(x, y) * 0.3, px, py);
+    if (!onTrail && fbm(x * 0.9 + 4, y * 0.9, 725) > 0.66) c = pick(ramp('#7a5a36', '#8a6a42', '#9a7a4e'), fbm(x * 4, y * 4, 727), px, py); // needles
+    if (!onTrail && hash(px >> 1, py >> 1, 55) > 0.975) c = [hex('#e8dd8a'), hex('#f2f0e8'), hex('#c9a3e0')][Math.floor(hash(px >> 1, py >> 1, 57) * 3)]; // flowers
+    if (east > 0) c = mix(c, hex('#4a4058'), east * 0.32); // the swamp's sickness, creeping in from the east
+    return c;
+  },
+  outside: (x, y, px, py) => {
+    if (inPineRiver(x, y)) {
+      const t = fbm(x * 2.5 + y * 0.5, y * 1.2, 61);
+      let c = pick(P_WATER, t, px, py);
+      const d = lineDist(pineRiverW, x, y);
+      if (d > 0.47) c = hex('#c9e4e6'); // foam along the banks
+      else if (d > 0.4) c = hex('#5c6b4a'); // its bank
+      if (Math.abs(((fbm(x * 0.9, y * 0.9, 729) * 7) % 1) - 0.5) < 0.04) c = mix(c, hex('#d9f0f2'), 0.5);
+      return c;
+    }
+    let c = pick(P_UNDER, fbm(x * 2, y * 2, 63), px, py);
+    if (hash(px >> 1, py >> 1, 65) > 0.93) c = hex('#6b5536'); // needles
+    const [sx] = toScreen(x, y);
+    const east = Math.max(0, Math.min(1, (sx - 640) / 360));
+    if (east > 0) c = mix(c, hex('#2c2838'), east * 0.4);
+    return c;
+  },
+  props: [],
+  hero: at(507, 240) as [number, number],
+  after: (g, _kind, top) => {
+    // light coming down through the trees from the upper left, in long shafts
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    for (let n = 0; n < 5; n++) {
+      const x0 = 80 + n * 210 + 60 * hash(n, 0, 731);
+      const grd = g.createLinearGradient(x0, top, x0 + 160, top + PH);
+      grd.addColorStop(0, 'rgba(255,240,190,0.10)');
+      grd.addColorStop(1, 'rgba(255,240,190,0)');
+      g.fillStyle = grd;
+      g.beginPath();
+      g.moveTo(x0, top);
+      g.lineTo(x0 + 46, top);
+      g.lineTo(x0 + 46 + 220, top + PH);
+      g.lineTo(x0 + 220, top + PH);
+      g.closePath();
+      g.fill();
+    }
+    g.restore();
+    // fog, low through the trees, thicker toward the swamp
+    for (let n = 0; n < 16; n++) {
+      const x = hash(n, 1, 733) * PW;
+      const y = top + 40 + (PH - 40) * hash(n, 2, 733);
+      const r = 50 + 60 * hash(n, 3, 733);
+      const east = Math.max(0, Math.min(1, (x - 500) / 500));
+      const grd = g.createRadialGradient(x, y, 4, x, y, r);
+      grd.addColorStop(0, `rgba(225,232,226,${0.12 + 0.12 * east})`);
+      grd.addColorStop(1, 'rgba(225,232,226,0)');
+      g.fillStyle = grd;
+      g.beginPath();
+      g.ellipse(x, y, r * 1.8, r * 0.6, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  },
+};
+if (PINE_SHOT) {
+  const onPine = (px: number, py: number, draw: Prop['draw'], extra: Partial<Prop> = {}): Prop => {
+    const [x, y] = at(px, py);
+    return { x, y, draw, ...extra };
+  };
+  const props: Prop[] = [];
+  // the trees: thick along the far edge, in groves out in the open; darker and twisted toward the swamp
+  for (let gy = -60; gy < PH + 60; gy += 22) {
+    for (let gx = -40; gx < PW + 40; gx += 26) {
+      const px = gx + (hash(gx, gy, 741) - 0.5) * 22;
+      const py = gy + (hash(gx, gy, 742) - 0.5) * 16;
+      const [x, y] = at(px, py);
+      if (inPineRiver(x, y)) continue;
+      let clear = true;
+      for (const [dx, dy] of [[0, 0], [0.35, 0], [-0.35, 0], [0, 0.35], [0, -0.35]]) if (PW_GROUND(x + dx, y + dy) || inPineRiver(x + dx, y + dy)) clear = false;
+      if (!clear || hash(gx, gy, 743) > 0.8) continue;
+      const east = Math.max(0, Math.min(1, (px - 640) / 360));
+      const size = hash(gx, gy, 744);
+      const k = gx * 31 + gy;
+      const draw = hash(gx, gy, 745) < east * 0.85 ? (hash(gx, gy, 746) > 0.8 ? deadTree(k) : twistedPine(size, k)) : pine(size, k);
+      props.push(onPine(px, py, draw, { seeFor: 110 }));
+    }
+  }
+  props.push(
+    onPine(170, 250, cabin),
+    onPine(560, 318, fallenLog),
+    onPine(470, 300, fern(1)),
+    onPine(300, 200, fern(2)),
+    onPine(820, 260, fern(3)),
+    onPine(120, 300, fern(4)),
+    onPine(585, 300, mushrooms),
+    onPine(260, 300, boulder(0.26, '#a7a7a0', '#868780', '#5c5f5a')),
+    onPine(760, 300, boulder(0.3, '#a7a7a0', '#868780', '#5c5f5a')),
+    // the cult's siege camp, glimpsed through the trees
+    onPine(700, 42, cultTent),
+    onPine(650, 56, campfire),
+    onPine(748, 64, banner),
+  );
+  pineShot.props = props;
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = PH;
+  const pg = cvs.getContext('2d') as CanvasRenderingContext2D;
+  pg.imageSmoothingEnabled = false;
+  // a patrol out of the camp
+  paintLevel(pg, 0, pineShot, { foes: [at(770, 132), at(812, 122)] as [number, number][] });
+  placeHud(pg, 'The Pinewood', PW_GROUND, pineShot.hero);
+  showAlone(cvs);
+}
+
 if (FEN_SHOT) {
   FEN_VISTA = paintFenVista();
   const onFen = (px: number, py: number, draw: Prop['draw'], extra: Partial<Prop> = {}): Prop => {
