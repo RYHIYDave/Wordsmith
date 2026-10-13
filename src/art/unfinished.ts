@@ -29,6 +29,10 @@
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
+import { between, feetFor, plantBy, smooth01 } from './act1_feet';
+import { HOLE, RAW, block, limbFrame, rawFace } from './act1_stone';
+import type { FaceSkin } from './act1_stone';
+import type { Plant } from './act1_feet';
 import { shriekAt } from './floor5';
 import { hash, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
@@ -70,12 +74,8 @@ export const UF_CANVAS: MobCanvas = { w: 600, h: 560, ax: 260, ay: 396 };
 
 /** The finished statue: the quarry's limestone dressed and rubbed smooth, a shine where the light falls full (a figure's ramp: three tones and the polish). */
 export const POLISHED: Ramp = ['#4b4357', '#4b4357', '#a2978b', '#d3c8b7', '#ebe3d4'];
-/** The raw stone: the same limestone as it came out of the bed, a little greyer, never rubbed. */
-export const RAW: Ramp = ['#463e4c', '#463e4c', '#8d8381', '#b3a99d', '#b3a99d'];
 /** The quarry's wall as it is round the fused colossus (art/quarry.ts Q_WALL's middle row): its shade to its lit face. */
 const WALL: Ramp = ['#5e5458', '#76696a', '#a29587', '#c9bdb0', '#c9bdb0'];
-/** The deep of a drill hole or a cut. */
-const HOLE = '#1f1826';
 /** The cult's mark cut into it: the dark of the cut, where the fire is not. */
 const CUT_DARK = '#2a0f22';
 
@@ -101,154 +101,10 @@ function rawSkin(seed: number): SkinFn {
   };
 }
 
-/** A face of a block: which (0 +F, 1 -F, 2 +L, 3 -L, 4 +U, 5 -U), `a` and `b` across it (the figure's lengths, from its middle), the light on it. */
-type FaceSkin = (face: number, a: number, b: number, tone: number) => string | null;
-/**
- * THE RAW STONE ON A BLOCK'S FACE: each face broken into two or three flat planes a tone apart, the
- * claw's scored lines slanting across, the point's pocks, its edges knocked (a tone lighter where the
- * light catches them); `holes`: a row of drill holes on that face, where it says.
- */
-function rawFace(seed: number, holes?: (face: number, a: number, b: number) => boolean): FaceSkin {
-  return (face, a, b, tone) => {
-    if (holes && holes(face, a, b)) return HOLE;
-    // (its planes: slanting, of no one size, as the point took the stone off)
-    const ca = Math.floor((a + b * 0.55 + hash(face, 1, seed) * 9) / (8 + hash(face, 2, seed) * 5));
-    const cb = Math.floor((b - a * 0.35 + hash(face, 3, seed) * 9) / (10 + hash(face, 4, seed) * 6));
-    const k = hash(ca * 5 + face, cb, seed);
-    let t = tone + (k > 0.78 ? 1 : k < 0.18 ? -1 : 0);
-    if (fr((a * 0.6 + b) / 5.2 + seed * 0.17) < 0.09) t -= 1;
-    if (hash(Math.floor(a / 1.6), Math.floor(b / 1.6) * 31 + face, seed + 3) > 0.96) t = Math.min(t, 1);
-    return RAW[Math.max(0, Math.min(4, t))];
-  };
-}
-/**
- * A BLOCK of the raw stone, turned as `A` (its forward, left and up: right-handed), its half-sizes `h`:
- * each face a flat panel lit as one, as a block cut from the bed is.
- */
-function block(put: Put, part: string, piece: string, c: V3, A: readonly [V3, V3, V3], h: V3, skin: FaceSkin): void {
-  for (let k = 0; k < 3; k++) {
-    const k1 = (k + 1) % 3;
-    const k2 = (k + 2) % 3;
-    for (const sgn of [1, -1] as const) {
-      const face = k * 2 + (sgn > 0 ? 0 : 1);
-      const fc = add(c, mul(A[k], sgn * h[k]));
-      // (its two edges ordered so that the panel's own normal is the face's outward one)
-      const U = mul(A[sgn > 0 ? k1 : k2], h[sgn > 0 ? k1 : k2]);
-      const V = mul(A[sgn > 0 ? k2 : k1], h[sgn > 0 ? k2 : k1]);
-      put(part, piece, { k: 'panel', c: fc, u: U, v: V, skin: (a, b, front, tone) => (front ? skin(face, a, b, tone) : null) });
-    }
-  }
-}
-/** A frame along a limb from `from` to `to` (its up, toward `from`), facing as near `fwd` as it can. */
-function limbFrame(from: V3, to: V3, fwd: V3): [V3, V3, V3] {
-  const U = norm(sub(from, to), [0, 0, 1]);
-  const F = norm(sub(fwd, mul(U, dot(fwd, U))), [1, 0, 0]);
-  return [F, cross(U, F), U];
-}
-
 // ---------------------------------------------------------------------------------------------
-// ITS FEET ON THE FLOOR: a foot put down stays where it is until it lifts (the art rulebook: "Feet grip
-// the floor"). These are art/bosses3.ts's own (`Plant`, `plantOf`, `footwork`), copied here word for word
-// in what they do: the game's own tests keep its other figures from drawing on that file.
+// ITS FEET ON THE FLOOR: a foot put down stays where it is until it lifts (art/act1_feet.ts).
 
-const DEG = Math.PI / 180;
-const rotY = (v: V3, a: number): V3 => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
-const rotZ = (v: V3, a: number): V3 => [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a), v[2]];
-function footOff(on: 'toe' | 'heel', turn: number, pitch: number): V3 {
-  return rotZ(rotY(on === 'toe' ? [B.ball, 0, -B.ankle] : [-B.heel, 0, -B.ankle], pitch * DEG), turn * DEG);
-}
-/** A foot put down: its toe (or heel) on this spot of the floor (forward, to the left), turned `turn` degrees left, tipped `pitch` toes-down. */
-interface Plant {
-  at: readonly [number, number];
-  turn: number;
-  pitch?: number;
-  on?: 'toe' | 'heel';
-}
-function footOn(side: 'L' | 'R', p: Plant, lift = 0): P {
-  const pitch = p.pitch ?? 0;
-  const o = footOff(p.on ?? 'toe', p.turn, pitch);
-  const fx = p.at[0] - o[0];
-  const fy = p.at[1] - o[1] - (side === 'L' ? 1 : -1) * B.stance;
-  const fz = lift - o[2] - B.ankle;
-  return side === 'L' ? { lfx: fx, lfy: fy, lfz: fz, lfp: pitch, lft: p.turn } : { rfx: fx, rfy: fy, rfz: fz, rfp: pitch, rft: p.turn };
-}
-function plantOf(side: 'L' | 'R', pose: P, rest: Bones, on: 'toe' | 'heel' = 'toe'): Plant {
-  const q = { ...rest, ...pose } as Bones;
-  const L = side === 'L';
-  const turn = L ? q.lft : q.rft;
-  const pitch = L ? q.lfp : q.rfp;
-  const o = footOff(on, turn, pitch);
-  return { at: [(L ? q.lfx : q.rfx) + o[0], (L ? q.lfy : q.rfy) + (L ? 1 : -1) * B.stance + o[1]], turn, pitch, on };
-}
-function heldBy(side: 'L' | 'R', p: Plant, on: 'toe' | 'heel'): Plant {
-  if ((p.on ?? 'toe') === on) return p;
-  return plantOf(side, footOn(side, p), {} as Bones, on);
-}
-function plantBy(p: Plant, dx: number, dy: number, dt = 0, more: Partial<Plant> = {}): Plant {
-  return { ...p, at: [p.at[0] + dx, p.at[1] + dy], turn: p.turn + dt, ...more };
-}
-interface FootMove {
-  t0: number;
-  t1: number;
-  to: Plant;
-  lift?: number;
-}
-interface FootTrack {
-  start: Plant;
-  moves: ReadonlyArray<FootMove>;
-}
-const smooth01 = (u: number): number => {
-  const k = clamp01(u);
-  return k * k * (3 - 2 * k);
-};
-/** Its feet through a move: each where its track has it, a step lifting the foot straight up off its spot and setting it straight down on the next. */
-function footwork(tracks: Partial<Record<'L' | 'R', FootTrack>>, carry = 0): (t: number) => P {
-  const back = (p: Plant, t: number): Plant => (carry ? { ...p, at: [p.at[0] - carry * t, p.at[1]] } : p);
-  return (t) => {
-    const out: P = {};
-    for (const side of ['L', 'R'] as const) {
-      const tr = tracks[side];
-      if (!tr) continue;
-      let at: Plant = tr.start;
-      let pose: P | null = null;
-      for (const mv of tr.moves) {
-        if (t >= mv.t1) {
-          at = mv.to;
-          continue;
-        }
-        if (t <= mv.t0) break;
-        const u = (t - mv.t0) / (mv.t1 - mv.t0);
-        const lift = mv.lift ?? 0;
-        if (lift > 0) {
-          const a = heldBy(side, at, 'toe');
-          const b = heldBy(side, mv.to, 'toe');
-          const g = smooth01((u - 0.12) / 0.76);
-          const h = lift * Math.pow(Math.sin(Math.PI * clamp01(u)), 0.6);
-          const pitch = (a.pitch ?? 0) * (1 - g) + (b.pitch ?? 0) * g;
-          pose = footOn(side, back({ at: [a.at[0] + (b.at[0] - a.at[0]) * g, a.at[1] + (b.at[1] - a.at[1]) * g], turn: a.turn + (b.turn - a.turn) * g, pitch, on: 'toe' }, t), h);
-        } else {
-          const on = mv.to.on ?? 'toe';
-          const a = heldBy(side, at, on);
-          const g = smooth01(u);
-          pose = footOn(side, back({ at: a.at, turn: a.turn + (mv.to.turn - a.turn) * g, pitch: (a.pitch ?? 0) + ((mv.to.pitch ?? 0) - (a.pitch ?? 0)) * g, on }, t));
-        }
-        break;
-      }
-      Object.assign(out, pose ?? footOn(side, back(at, t)));
-    }
-    return out;
-  };
-}
-/** A pose part way from one to another (every number mixed; how a hand is measured, the nearer's). */
-function between(a: P, b: P, k: number, rest: Bones): P {
-  const out: Record<string, unknown> = {};
-  for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
-    const va = (a as Record<string, unknown>)[key] ?? (rest as unknown as Record<string, unknown>)[key];
-    const vb = (b as Record<string, unknown>)[key] ?? (rest as unknown as Record<string, unknown>)[key];
-    out[key] = typeof va === 'number' && typeof vb === 'number' && !key.endsWith('In') ? va + (vb - va) * k : k < 0.5 ? va : vb;
-  }
-  return out as P;
-}
+const { footOn, plantOf, footwork } = feetFor(B);
 
 // ---------------------------------------------------------------------------------------------
 // HOW IT STANDS: a statue forced to stand: its feet planted wide, its knees a little bent under the

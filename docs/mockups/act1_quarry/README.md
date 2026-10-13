@@ -311,6 +311,58 @@ Unfinished is done; floor 6 goes to the main chat together once its own mobs, th
 rubblings, are drawn with his yes (the cult's two new kinds, the Chanter and the Firepot thrower, are the
 set's, for every floor of the five, and come after).
 
+## Floor 6's mobs: his brief (13 Oct, by 15:05)
+
+Asked as pop-ups (his art rulebook's questions for a new character; their sizes are the planning chat's,
+kept with his yes: the quarry golem medium, the rubbling tiny): THE QUARRY GOLEM, the one thing to know it by:
+"Cut blocks bound in chains (Recommended)", offered as: quarry blocks stacked into a body, lashed with the
+cult's iron chains, its skull mark burning on its chest block; how it dies: "Bursts apart", offered as: the
+blocks are flung outward. THE RUBBLING, the one thing to know it by: "A scuttling heap of chips
+(Recommended)", offered as: a little mound of stone chips on stubby stone legs, a pink spark glowing inside;
+how it dies: "Pops into grit (Recommended)", offered as: its spark goes out and it bursts into a puff of grit
+and chips.
+
+### The quarry golem and the rubbling, drawn (13 Oct)
+
+`src/art/floor6_mobs.ts`, behind `FLOOR6_MOBS_ON` (off); nothing of the game imports it. Looked at on
+`src/dev/preview_floor6_mobs.ts`:
+`node tools/preview.mjs src/dev/preview_floor6_mobs.ts shots/f6m_look.png 1014 620 look` (both standing,
+front and back, beside the knight and the Warden), `seq:<golem|rubbling>:<fps>` (its blow, struck and death
+one after another), `walk:<golem|rubbling>:<fps>:<view>`, `film:<who>:<move>:<fps>:<secs>:<view>`.
+
+- THE QUARRY GOLEM, `QUARRY_GOLEM`, a `Mob` on the heroes' bones (art/new_mobs3.ts), 88 tall (the knight's
+  bones 58: half as tall again), squat and broad. Every part a block of the quarry's dressed stone (the
+  claw's tooling in rows, chipped arrises; art/act1_stone.ts, shared with the Unfinished), its head a small
+  block sunk between its shoulders with two slits burning; the cult's skull burning on its chest block, hot
+  pink at the edge of each stroke, gold at its heart (as the Unfinished's); lashed with the cult's iron
+  chains: two down its front by the chest's edges and over its shoulders, one round its belly, one round
+  each thigh, one round each wrist with a broken length hanging and swinging after the arm.
+  - stand (2 s round: the blocks heave, the head turns, the mark pulses); walk, a heavy plod (12 frames at
+    8 a second, painted for 1 tile a second, `QG_PACE`; grit shaken off at each step); setOff and halt
+    (0.6 s each, its feet gripping, art/act1_feet.ts, shared with the Unfinished); attack, THE HAMMER
+    (both fists raised together high over its head, held, the mark flaring: the warning, `warn` 0.5; its
+    hips go and both fists come down on the floor before it, `QG_HIT` 0.95 s, chips and dust; it hauls them
+    up again by 1.8 s); reel (0.3 s, rocked back, grit shaken off); dying, "Bursts apart" (1.6 s,
+    `QG_DIE_TIME`: it swells, its arms flung out, the mark white-hot; at 0.42 s, `QG_BURST`, it bursts, its
+    chains snap and every block is flung out, tumbling, and lands round where it stood; the last frame is
+    what is left, no edge and no light). Its canvas 340 x 312 (room for the burst).
+  - Through the whole boss review (tests/golem_shape.ts), every move, from in front and from behind.
+- THE RUBBLING, its own painter (`rubblingPainted`, `makeRubblingArt()` as the game holds a monster's
+  pictures), no bones: twelve chips of the cut stone heaped on four stubby legs of stone, a pink spark
+  showing in a gap low at its front; under half the knight's height.
+  - stand (1 s round: the heap breathes, a leg shifts, the spark pulses); walk, a scuttle (8 frames at 24 a
+    second, painted for 2 tiles a second, `RB_PACE`; its legs two and two, each foot gripping the floor
+    while it is down, `rubblingWalkFeet`); attack, the butt (0.8 s: crouched, its spark flaring, the
+    warning; springs at you, `RB_HIT` 0.42 s, grit; scuttles back to where it stood); reel (0.27 s, knocked
+    back off its feet, legs kicking up, chips knocked off it); dying, "Pops into grit" (0.8 s: its spark
+    flares and goes out; at 0.16 s, `RB_POP`, it pops, its chips and the stones of its legs flung out in a
+    puff of grit, tumbling, landing flat round where it stood).
+  - Its grit is laid on after its pink edge, so that it stays the stone's colour.
+- Checks: tests/floor6_mobs.test.ts 10 (crisp; the pink edge on the living, none on the dying; nothing
+  cyan, every light the cult's fire; nothing cut off at the canvas's edge; their sizes; the mark and the
+  spark; the golem's boss review; the rubbling's feet; its loops; as the game holds a monster).
+  tests/new_mobs3.test.ts knows the floor 6 mock-ups (it had not been told of the Unfinished either).
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a

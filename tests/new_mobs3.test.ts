@@ -90,8 +90,8 @@ test('their switch goes with the rules\' (Version 19.9), and only the bestiary, 
   assert.equal(NEW_MOBS.on, NEW_MONSTERS.on, 'the pictures are on just while the rules are');
   // (the art chat's three files: the monsters, what they throw drawn on the floor, and the rings that tell their packs apart)
   const mine = ['new_mobs3', 'mob_shots', 'pack_marks'];
-  // (and the bosses, a mock-up of their own built on them: art/bosses3.ts, art/boss_shots.ts, art/boss_chains.ts and art/boss_checks.ts, which nothing of the game imports either: tests/bosses.test.ts; and the fleshmancer, art/fleshmancer.ts and what he sends out, art/fm_spells.ts: tests/fleshmancer.test.ts; and the cult's two new fighters, art/cultists.ts: tests/cultists.test.ts)
-  const alsoMockUps = ['bosses3', 'boss_shots', 'boss_chains', 'boss_checks', 'fleshmancer', 'fm_spells', 'cultists'];
+  // (and the bosses, a mock-up of their own built on them: art/bosses3.ts, art/boss_shots.ts, art/boss_chains.ts and art/boss_checks.ts, which nothing of the game imports either: tests/bosses.test.ts; and the fleshmancer, art/fleshmancer.ts and what he sends out, art/fm_spells.ts: tests/fleshmancer.test.ts; and the cult's two new fighters, art/cultists.ts: tests/cultists.test.ts; and floor 6's, the Unfinished, art/unfinished.ts, and the quarry golem and the rubbling, art/floor6_mobs.ts, with their stone and footwork, art/act1_stone.ts and art/act1_feet.ts: tests/unfinished.test.ts and tests/floor6_mobs.test.ts)
+  const alsoMockUps = ['bosses3', 'boss_shots', 'boss_chains', 'boss_checks', 'fleshmancer', 'fm_spells', 'cultists', 'unfinished', 'floor6_mobs', 'act1_stone', 'act1_feet'];
   const files = fs.readdirSync('src', { recursive: true }).filter((f) => f.endsWith('.ts') && !f.startsWith('dev'));
   const users: string[] = [];
   for (const f of files) {
