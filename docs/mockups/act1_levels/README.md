@@ -216,3 +216,28 @@ toward the swamp, east, the trees dark and twisted and a violet sickness in the 
 previews/pine_in_game.png; asked "Is this the Pinewood?", his pick by 08:23: "Yes, this is it
 (Recommended)", offered as: big open meadows, the river with little bridges, groves, twisted trees
 toward the swamp; goes in the plan.
+
+## The Quarry
+
+His word, 13 Oct, 08:28, offered the Quarry painted the same way: "Yes". With the hash `quarry` the
+page paints it as one screen of the game (`quarryShot`, `qShotGround`, `qObelisk`, `qCrane`, `qCart`):
+
+    node tools/preview.mjs src/dev/preview_act1.ts shots/quarry_world.png 1014 468 quarry
+
+As first sent (previews/quarry_in_game.png): two pits joined by a narrow cut, another narrow cut down to
+the next terrace; the far walls stepped with the benches the stone came off in; the giant obelisk lying
+where it was split from the rock (chisel marks, the cult's mark); a wooden crane with a block on its
+chain; minecart rails through to the other pit, a cart of rubble; the cult's overseers; the tops
+dressed (pines, rocks, stacked blocks, scaffolding, a banner). Asked "Is this the Quarry?", his pick:
+"More open", offered as: bigger pits, less rock between them. So one great pit floor with the second
+opening off it broadly, the rock pushed to the edges (previews/quarry2_in_game.png); asked "Is this
+the Quarry now?", his pick by 08:48: "Yes, this is it (Recommended)".
+
+### The near cliff's face, turned the right way up
+
+The Quarry's narrow cuts showed the near cliff's shadowed face, hanging down from the ridge over the
+floor, could hide a whole path. Now (`paintLevel`, `NEAR_FACE`) it rises from the floor's edge on the
+cliff's side, as a face rises from its foot, and the floor stays in sight; Echo Canyon looks as before
+(its faces are thin slivers). Asked "The shadowed cliff face now rises from the floor's edge so it
+never hides the floor. Is that OK?", his pick: "Yes, keep the floor in sight (Recommended)", offered as:
+the face sits on the cliff's side of the edge; this becomes the rule.

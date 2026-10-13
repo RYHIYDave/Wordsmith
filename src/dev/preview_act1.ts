@@ -43,8 +43,10 @@ const LEDGE = decodeURIComponent(location.hash.slice(1)) === 'ledge' || REVEAL;
 const FEN_SHOT = decodeURIComponent(location.hash.slice(1)) === 'fen';
 /** "pine": the Pinewood as one screen of the game. */
 const PINE_SHOT = decodeURIComponent(location.hash.slice(1)) === 'pine';
-const PW = SHOT || LEDGE || FEN_SHOT || PINE_SHOT ? 1014 : 320 * F;
-const PH = SHOT || LEDGE || FEN_SHOT || PINE_SHOT ? 468 : 220 * F;
+/** "quarry": the Quarry as one screen of the game. */
+const QUARRY_SHOT = decodeURIComponent(location.hash.slice(1)) === 'quarry';
+const PW = SHOT || LEDGE || FEN_SHOT || PINE_SHOT || QUARRY_SHOT ? 1014 : 320 * F;
+const PH = SHOT || LEDGE || FEN_SHOT || PINE_SHOT || QUARRY_SHOT ? 468 : 220 * F;
 const HWf = 16 * F;
 const HHf = 8 * F;
 const OX = PW / 2;
@@ -475,25 +477,6 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way
         // its side looks down and to the right, toward us and away from the light: its sheer face shows,
         // in shadow, hanging straight down from the ridge to the floor, NEAR_FACE picture pixels tall.
         // Elsewhere the floor runs to the near cliff's top with no line of its own.
-        if (!way.full && H > 0) {
-          let hit = 0;
-          for (let h = 1; h <= NEAR_FACE; h++) {
-            const kk = kindAt(px, py - h);
-            if (kk === K.Floor) continue;
-            if (kk === K.Top || kk === K.Cut) hit = h;
-            break;
-          }
-          if (hit) {
-            const ang = edgeAngle(px, py - hit + 1);
-            if (ang < -90) {
-              const [qx, qy] = toWorld(px + 0.5, py - hit + 0.5);
-              let c = mix(L.face(-1, NEAR_FACE - hit, px, qx, qy), [22, 16, 32], 0.5);
-              if (hit >= NEAR_FACE - 1) c = mix(c, [16, 12, 24], 0.5); // its foot
-              put(px, py, c);
-              continue;
-            }
-          }
-        }
         let under = false;
         for (let k2 = 1; k2 <= 3; k2++) if (kindAt(px, py + k2) === K.Cut) under = true;
         if (under) continue;
@@ -506,6 +489,27 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way
           }
         }
       } else if (k0 === K.Top && kindAt(px, py + 1) === K.Face) put(px, py, mix(L.outside(...toWorld(px, py + H), px, py), [255, 250, 240], 0.35));
+      else if ((k0 === K.Top || k0 === K.Cut) && !way.full && H > 0) {
+        // the near cliff's sheer face, where it shows: rising from the floor's edge, NEAR_FACE picture
+        // pixels, on the cliff's side of it, so that the floor stays in sight; black in shadow, as it
+        // looks down and to the right, away from the light
+        let hit = 0;
+        for (let d = 1; d <= NEAR_FACE; d++) {
+          const kk = kindAt(px, py + d);
+          if (kk === K.Floor) hit = d;
+          if (kk !== K.Top && kk !== K.Cut) break;
+        }
+        if (hit) {
+          const ang = edgeAngle(px, py + hit);
+          if (ang < -90 || ang > 172) {
+            const [qx, qy] = toWorld(px + 0.5, py + hit - 0.5);
+            let c = mix(L.face(-1, hit, px, qx, qy), [22, 16, 32], 0.5);
+            if (hit <= 2) c = mix(c, [16, 12, 24], 0.5); // its foot
+            else if (hit >= NEAR_FACE) c = mix(L.outside(...toWorld(px, py + H), px, py), [255, 250, 240], 0.3); // its lit top edge
+            put(px, py, c);
+          }
+        }
+      }
     }
   }
   if (way.shadow && H > 0) {
@@ -2776,6 +2780,231 @@ const pineShot: Level = {
     }
   },
 };
+// ---------------------------------------------------------------------------------------------
+// THE QUARRY as one screen of the game. His "Yes" (13 Oct, 08:28) to painting it the same way. His word
+// of 18:56 (12 Oct): "I’d like the quarry and forest to be mostly open with minimal narrow paths between
+// open areas". The doc: terraces stepping down the mountain, with cranes, chains and minecart rails; the
+// cult's captives cutting giant obelisks; overseers. His rules since: the near cliff cut away with its
+// sheer face in shadow only where its ridge slants back past straight down; the tops dressed.
+
+const QH = 110;
+const Q_RAILS_SHOT = atAll([[150, 318], [330, 286], [470, 262], [600, 222], [700, 192], [800, 166], [920, 140], [1060, 120]]);
+const qShotGround = ground(union(
+  area(480, 290, 6.8, 5.4, 0.2),
+  area(860, 150, 3.7, 2.7, -0.2),
+  path(atAll([[560, 230], [680, 196], [800, 166]]), 2.6),
+  path(atAll([[300, 330], [220, 382], [150, 440], [110, 480]]), 1.05),
+  path(atAll([[340, 170], [270, 120], [210, 70], [180, 20]]), 1.0),
+));
+const QW = qShotGround.walk;
+const qKind = (px: number, py: number): number => {
+  const [x, y] = toWorld(px + 0.5, py + 0.5);
+  if (QW(x, y)) return SK.Floor;
+  const [qx, qy] = toWorld(px + 0.5, py + 0.5 + QH);
+  return QW(qx, qy) ? SK.Face : SK.Top;
+};
+const qOnTop = (px: number, py: number, draw: Prop['draw']): Prop => {
+  const [x, y] = toWorld(px, py + QH);
+  return { x, y, draw: (g, sx, sy) => draw(g, sx, sy - QH) };
+};
+const qClear = (px: number, py: number, hw: number, h: number): boolean => {
+  for (let yy = py + 4; yy >= py - h; yy -= 3) {
+    for (let xx = px - hw; xx <= px + hw; xx += 3) {
+      if (xx < 0 || yy < 0 || xx >= PW || yy >= PH) continue;
+      if (qKind(xx, yy) === SK.Floor) return false;
+    }
+  }
+  return qKind(px, py) === SK.Top && qKind(px - 8, py + 2) === SK.Top && qKind(px + 8, py + 2) === SK.Top;
+};
+const greyRock = (r: number) => boulder(r, '#d6cbc0', '#aea194', '#706563');
+/** A wooden crane over the pit, a block of stone hanging from its chain. */
+const qCrane = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.fillStyle = 'rgba(40,36,44,0.3)';
+  g.beginPath();
+  g.ellipse(sx + 10, sy + 2, 30, 9, 0, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = '#5c4331';
+  g.lineWidth = 6;
+  g.lineCap = 'round';
+  g.beginPath();
+  g.moveTo(sx - 12, sy);
+  g.lineTo(sx, sy - 120);
+  g.lineTo(sx + 12, sy);
+  g.moveTo(sx - 7, sy - 46);
+  g.lineTo(sx + 7, sy - 46);
+  g.stroke();
+  g.strokeStyle = '#7a5a42';
+  g.lineWidth = 7;
+  g.beginPath();
+  g.moveTo(sx - 20, sy - 112);
+  g.lineTo(sx + 96, sy - 140);
+  g.stroke();
+  // the chain, link by link, and the block on it
+  g.fillStyle = '#4a4650';
+  for (let y = sy - 134; y < sy - 92; y += 5) g.fillRect(sx + 88, y, 3, 3);
+  STONE_BLOCK(g, sx + 90, sy - 50);
+  g.strokeStyle = '#4a4650';
+  g.lineWidth = 2;
+  g.beginPath();
+  g.moveTo(sx + 89, sy - 94);
+  g.lineTo(sx + 66, sy - 82);
+  g.moveTo(sx + 89, sy - 94);
+  g.lineTo(sx + 112, sy - 82);
+  g.stroke();
+  g.fillStyle = 'rgba(40,36,44,0.3)'; // its shadow on the floor
+  g.beginPath();
+  g.ellipse(sx + 96, sy + 6, 26, 9, 0, 0, Math.PI * 2);
+  g.fill();
+};
+/** The giant obelisk the captives are cutting, lying where it was split from the rock, chisels and wedges by it. */
+const qObelisk = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  box(3.4, 0.85, 26, hex('#e6dccf'), hex('#cbbfb1'), hex('#8f8290'))(g, sx, sy);
+  g.fillStyle = 'rgba(80,70,80,0.55)';
+  for (let i = 0; i < 14; i++) g.fillRect(Math.round(sx - 40 + i * 9), Math.round(sy - 22 - i * 4.5), 2, 6); // the chisel marks
+  g.fillStyle = '#ff5fd2'; // the cult's mark, cut in and painted
+  g.fillRect(Math.round(sx + 6), Math.round(sy - 50), 4, 10);
+  g.fillRect(Math.round(sx + 2), Math.round(sy - 46), 12, 3);
+  g.fillStyle = '#6b6470';
+  for (let i = 0; i < 3; i++) g.fillRect(Math.round(sx - 70 + i * 10), Math.round(sy + 22 - i * 3), 8, 3); // wedges and a hammer
+  g.fillStyle = '#7a5a42';
+  g.fillRect(Math.round(sx - 40), Math.round(sy + 24), 14, 3);
+};
+const qCart = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  box(0.75, 0.55, 16, hex('#7c5e46'), hex('#6a4f3b'), hex('#4a3729'))(g, sx, sy);
+  g.fillStyle = '#2a2420';
+  g.beginPath();
+  g.ellipse(sx - 14, sy + 4, 5, 5, 0, 0, Math.PI * 2);
+  g.ellipse(sx + 12, sy + 8, 5, 5, 0, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#b6aca3';
+  for (let i = 0; i < 4; i++) g.fillRect(Math.round(sx - 10 + i * 6), Math.round(sy - 24 - (i % 2) * 3), 6, 4); // rubble in it
+};
+const qScaffold = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.strokeStyle = '#6b4f38';
+  g.lineWidth = 3;
+  for (let i = 0; i < 3; i++) {
+    g.beginPath();
+    g.moveTo(sx - 20 + i * 20, sy);
+    g.lineTo(sx - 20 + i * 20, sy - 44);
+    g.stroke();
+  }
+  g.lineWidth = 4;
+  for (const y of [-14, -30, -44]) {
+    g.beginPath();
+    g.moveTo(sx - 24, sy + y);
+    g.lineTo(sx + 24, sy + y);
+    g.stroke();
+  }
+};
+const quarryShot: Level = {
+  ...quarry,
+  title: '',
+  note: '',
+  gr: qShotGround,
+  outsideH: QH,
+  floor: (x, y, px, py) => {
+    let c = pick(Q_FLOOR, fbm(x * 2.3, y * 2.3, 11) * 1.1 - 0.05, px, py);
+    if (hash(px >> 1, py >> 1, 13) > 0.94) c = Q_FLOOR[0]; // grit
+    if (fbm(x * 0.9, y * 0.9, 801) > 0.62) c = mix(c, hex('#e9e1d6'), 0.35); // the white dust of the cutting
+    const dr = lineDist(Q_RAILS_SHOT, x, y);
+    if (Math.abs(dr - 0.2) < 0.045) c = hex('#6a6470'); // the rails
+    else if (Math.abs(dr - 0.2) < 0.075 && hash(Math.floor(x * 30), Math.floor(y * 30), 3) > 0.2) c = hex('#a8a4b0');
+    else if (dr < 0.3 && ((x * 3.3 + y * 0.6) % 1 + 1) % 1 < 0.22) c = hex('#6e5442'); // the sleepers
+    return c;
+  },
+  outside: (x, y, px, py) => {
+    let c = fbm(x * 0.9, y * 0.9, 21) > 0.46 ? pick(Q_GRASS, fbm(x * 4, y * 4, 23), px, py) : pick(Q_TOPROCK, fbm(x * 3, y * 3, 25), px, py);
+    if (hash(px >> 1, py >> 1, 803) > 0.985) c = [hex('#e8dd8a'), hex('#f2f0e8')][Math.floor(hash(px >> 1, py >> 1, 805) * 2)]; // mountain flowers
+    return c;
+  },
+  props: [],
+  hero: at(507, 240) as [number, number],
+  tint: (c) => [c[0] * 1.0, c[1] * 1.0, Math.min(255, c[2] * 1.03)],
+  after: (g, _kind, top) => {
+    // the dust of the cutting, hanging in the air
+    for (let n = 0; n < 10; n++) {
+      const x = hash(n, 1, 807) * PW;
+      const y = top + PH * hash(n, 2, 807);
+      const r = 50 + 50 * hash(n, 3, 807);
+      const grd = g.createRadialGradient(x, y, 4, x, y, r);
+      grd.addColorStop(0, 'rgba(240,236,228,0.14)');
+      grd.addColorStop(1, 'rgba(240,236,228,0)');
+      g.fillStyle = grd;
+      g.beginPath();
+      g.ellipse(x, y, r * 1.6, r * 0.7, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  },
+};
+if (QUARRY_SHOT) {
+  const onQ = (px: number, py: number, draw: Prop['draw']): Prop => {
+    const [x, y] = at(px, py);
+    if (!QW(x, y)) console.warn('quarry prop off the floor', px, py);
+    return { x, y, draw };
+  };
+  const props: Prop[] = [
+    onQ(420, 200, qObelisk),
+    onQ(560, 300, qCrane),
+    onQ(690, 196, qCart),
+    onQ(300, 250, STONE_BLOCK),
+    onQ(300, 250, (g, sx, sy) => STONE_BLOCK(g, sx, sy - 22)),
+    onQ(330, 262, STONE_BLOCK),
+    onQ(880, 170, STONE_BLOCK),
+    onQ(610, 260, greyRock(0.24)),
+    onQ(622, 268, greyRock(0.15)),
+    onQ(380, 300, greyRock(0.2)),
+    onQ(800, 130, greyRock(0.26)),
+  ];
+  // the tops, dressed: pines, rocks, stacked blocks, scaffolding, the cult's banner; never over the floor
+  let n = 0;
+  let banners = 0;
+  for (let gy = 6; gy < PH + 20; gy += 20) {
+    for (let gx = 6; gx < PW; gx += 26) {
+      n++;
+      const px = Math.round(gx + (hash(gx, gy, 811) - 0.5) * 20);
+      const py = Math.round(gy + (hash(gx, gy, 812) - 0.5) * 14);
+      const roll = hash(gx, gy, 813);
+      const [wx0, wy0] = toWorld(px, py + QH);
+      const grove = fbm(wx0 * 0.35, wy0 * 0.35, 814);
+      let draw: Prop['draw'] | null = null;
+      let hw = 12;
+      let h = 16;
+      if (grove > 0.64 && roll < 0.45) {
+        draw = pine(0.4 + 0.5 * hash(gx, gy, 815), n);
+        hw = 22;
+        h = 64;
+      } else if (roll < 0.12) draw = greyRock(0.16 + 0.18 * hash(gx, gy, 816));
+      else if (roll < 0.2) draw = tuft(n);
+      else if (roll < 0.21) {
+        draw = STONE_BLOCK;
+        hw = 30;
+        h = 30;
+      } else if (roll < 0.225) {
+        draw = qScaffold;
+        hw = 26;
+        h = 48;
+      } else if (roll < 0.235 && banners < 2) {
+        draw = banner;
+        hw = 18;
+        h = 50;
+      }
+      if (!draw || !qClear(px, py, hw, h)) continue;
+      if (draw === banner) banners++;
+      props.push(qOnTop(px, py, draw));
+    }
+  }
+  quarryShot.props = props;
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = PH;
+  const qg = cvs.getContext('2d') as CanvasRenderingContext2D;
+  qg.imageSmoothingEnabled = false;
+  // the cult's overseers, in both pits
+  paintLevel(qg, 0, quarryShot, { shadow: 1.3, foes: [at(470, 296), at(860, 158), at(805, 186)] as [number, number][] });
+  placeHud(qg, 'The Quarry', QW, quarryShot.hero);
+  showAlone(cvs);
+}
+
 if (PINE_SHOT) {
   const onPine = (px: number, py: number, draw: Prop['draw'], extra: Partial<Prop> = {}): Prop => {
     const [x, y] = at(px, py);
