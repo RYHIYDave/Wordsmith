@@ -118,3 +118,46 @@ The result with the HUD laid over it is previews/canyon_tops_in_game.png, sent t
 Asked as a pop-up "Are the cliff tops dressed the way you pictured?", his pick by 20:42: "Yes,
 like this (Recommended)", offered as: this much dressing becomes the plan for the canyon's tops,
 and the same idea for the other levels' tops.
+
+## The Ledge Road's sky (his word of 18:34), and the near cliff's face
+
+### The sky
+
+With the hash `ledge` the page paints the Ledge Road as one screen of the game:
+
+    node tools/preview.mjs src/dev/preview_act1.ts shots/ledge_world.png 1014 468 ledge
+
+A first go looked down off the ledge: the mountain wall behind the road, the drop in front sinking
+into clouds, the land far below (previews/ledge_sky_in_game.png). Asked as a pop-up "Is this the
+Ledge Road's sky?", his answer: "Nah, I’m not a fan of the sky. I was thinking more like if we use
+the same perspective as the canyon, the rear wall is gone and that where you see the sky".
+
+So now: the mountain's slope is on the near side, cut away as the canyon's near cliff is, with firs
+on it (never standing over the road); behind the road there is no wall: past its far edge (a line
+of light) you look out at open sky, far snowy ranges, the valley far off in the haze, clouds
+drifting below the ledge and vultures circling. A rope rail along the drop; the cult's lookouts on
+an outcrop. In the game the sky would be a layer of its own, sliding slower than the ground.
+Sent as previews/ledge_sky2_in_game.png; asked "Is this the Ledge Road's sky now?", his pick:
+"Yes, this is it (Recommended)", offered as: mountain in front, cut away; open sky, far ranges and
+clouds past the road's edge; goes in the plan. (previews/ledge_sky3_in_game.png is the same under
+the near-cliff rule below.)
+
+### The near cliff's face
+
+His words: 20:50, "The black line at the edge of the foreground cliff doesn’t give the correct
+perspective"; 21:01, "You just need to get the black shadow on the south east facing edges"; with
+a picture of the canyon he painted black on, 21:24, "I painted black where I think the shadows would
+be to force the perspective", and 21:25, "It shows the wall face as opposed to the top of mesa.
+Light wouldn’t hit the wall so it’s shadowed". Tries in between (a lit rim with the floor's shadow
+under it; black only on edges facing down-right; black only on the near-vertical stretches, then
+thicker) each got "Still wrong" or "Close, but adjust", until by 21:40: "When the ridge line runs
+back to the right any angle past straight down, you would see the sheer face of the cliff in
+shadow.  So it’s not just a line on the ridge, it’s cliff face running vertically".
+
+The rule now (`paintLevel`, `NEAR_FACE`): the floor runs to the near cliff's top with no line of
+its own; where the near cliff's ridge, followed down the screen, slants back past straight down,
+its side looks toward us and away from the light, so its sheer face shows, in shadow: rock hanging
+straight down from the ridge to the floor, 40 picture pixels tall, narrow where the ridge only just
+passes straight down and wider where it slants more. Sent as previews/canyon_face_in_game.png;
+asked "...Is this the right idea?", his pick by 21:41: "Yes, that's it (Recommended)", offered as:
+this becomes the rule for near cliffs on every level.
