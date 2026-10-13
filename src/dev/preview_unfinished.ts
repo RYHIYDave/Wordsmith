@@ -13,7 +13,10 @@ import { makeWardenArt } from '../art/monster_warden';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { QUARRY_LOOK } from '../art/quarry';
-import { UF_BREATH, UF_PACE, unfinishedFrame, unfinishedStanding } from '../art/unfinished';
+import { UF_BREATH, UF_HURL_HIT, UF_PACE, UF_SLIDE_HIT, UF_STOMP_HIT, UNFINISHED, BLOCK_FLY_Z, BLOCK_H, blockFlight, boulderRolling, hurledBlock, stompCracks, unfinishedFrame, unfinishedStanding } from '../art/unfinished';
+import { skeletonAt } from '../art/new_mobs3';
+import { lerp3 } from '../art/skeleton';
+import type { V3 } from '../art/skeleton';
 import { TILE3 } from '../art/new_mobs3';
 import { project } from '../art/skeleton';
 import { drawText } from '../engine/font';
@@ -27,6 +30,7 @@ const T = Number(HASH.split(':')[1] ?? 0.4);
 if (HASH.startsWith('cut')) cut();
 else if (HASH.startsWith('strip')) strip();
 else if (HASH.startsWith('walkfilm')) walkFilm();
+else if (HASH.startsWith('bigfilm')) bigFilm();
 else look();
 
 function label(g: CanvasRenderingContext2D, text: string, x: number, y: number): void {
@@ -197,6 +201,99 @@ function walkFilm(): void {
     drawAt(g, unfinishedFrame(mv, t, view), fx, fy);
     g.restore();
   });
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+}
+
+/**
+ * ONE OF ITS BIG MOVES AS THE GAME WOULD PLAY IT (hash `bigfilm:<move>:<frames a second>:<seconds>`), with
+ * what it leaves: the stomp's cracks under its foot; the block flying and landing as cover; boulders
+ * rolling down their lanes after the rockslide, and the screen's kick at each blow. Cells of 540 x 600,
+ * two to a row (tools/film_strip.py: `film_strip.py <strip> <gif> <frames> <fps> 540 2 1 600`).
+ */
+function bigFilm(): void {
+  const [, move, fpsS, longS] = HASH.split(':');
+  const fps = Number(fpsS);
+  const n = Math.round(Number(longS) * fps) + 1;
+  const CW = 540;
+  const CH = 600;
+  const cols = 2;
+  const cvs = document.createElement('canvas');
+  cvs.width = CW * cols;
+  cvs.height = CH * Math.ceil(n / cols);
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const at = (p: V3, ox: number, oy: number): [number, number] => {
+    const [x, y] = project(p, 'front');
+    return [ox + x, oy + y];
+  };
+  const hit = move === 'stomp' ? UF_STOMP_HIT : move === 'hurl' ? UF_HURL_HIT : UF_SLIDE_HIT;
+  const toe = skeletonAt(UNFINISHED, 'stomp', UF_STOMP_HIT + 0.1).toeR;
+  const sHit = skeletonAt(UNFINISHED, 'hurl', UF_HURL_HIT);
+  const from = lerp3(sHit.handL, sHit.handR, 0.5);
+  const LAND: V3 = [260, -10, BLOCK_H[2]];
+  const FLY = 0.55;
+  for (let i = 0; i < n; i++) {
+    const t = i / fps;
+    const since = t - hit;
+    const again = move === 'rockslide' ? t - (UF_SLIDE_HIT + 0.56) : -1;
+    const kick = (k: number): number => (k >= 0 && k < 0.25 ? Math.round(Math.sin(k * 60) * 4 * (1 - k / 0.25)) : 0);
+    const shake = move === 'rockslide' ? kick(since) + kick(again) : move === 'stomp' ? kick(since) : 0;
+    const ox = (i % cols) * CW;
+    const oy = Math.floor(i / cols) * CH;
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, CW, CH);
+    g.clip();
+    g.fillStyle = '#b8b0a8';
+    g.fillRect(ox, oy, CW, CH);
+    g.translate(0, shake);
+    g.fillStyle = '#a69e98';
+    for (let y = -32; y < CH + 32; y += 32) for (let x = ((y / 32) % 2 ? 0 : 64); x < CW; x += 128) g.fillRect(ox + x, oy + y, 64, 32);
+    const fx = ox + 150;
+    const fy = oy + 420;
+    if (move === 'stomp' && since >= 0) {
+      const [cx, cy] = at([toe[0] - 6, toe[1], 0], fx, fy);
+      drawAt(g, stompCracks(since < 0.04 ? 0 : since < 0.09 ? 1 : since < 0.15 ? 2 : 3), cx, cy);
+    }
+    g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+    g.beginPath();
+    g.ellipse(fx, fy, 64, 26, 0, 0, Math.PI * 2);
+    g.fill();
+    drawAt(g, unfinishedFrame(move, Math.min(t, Number(longS)), 'front'), fx, fy);
+    if (move === 'hurl' && since >= 0) {
+      const k = Math.min(1, since / FLY);
+      if (k < 1) {
+        const p = blockFlight(from, LAND, k);
+        const [bx, by] = at([p[0], p[1], 0], fx, fy);
+        const [sx, sy] = at([p[0], p[1], p[2] - BLOCK_FLY_Z], fx, fy);
+        g.fillStyle = 'rgba(25, 18, 40, 0.25)';
+        g.beginPath();
+        g.ellipse(bx, by, 34, 14, 0, 0, Math.PI * 2);
+        g.fill();
+        drawAt(g, hurledBlock(Math.floor(since * 14) % 4), sx, sy);
+      } else {
+        const [bx, by] = at([LAND[0], LAND[1], 0], fx, fy);
+        drawAt(g, hurledBlock(4), bx, by);
+      }
+    }
+    if (move === 'rockslide' && since >= 0.2) {
+      for (const [x, start, speed] of [[150, 0.2, 260], [70, 0.55, 230], [230, 0.9, 280]] as const) {
+        const k = since - start;
+        if (k < 0) continue;
+        const p: V3 = [x, -260 + speed * k, 0];
+        const [bx, by] = at(p, fx, fy);
+        g.fillStyle = 'rgba(25, 18, 40, 0.25)';
+        g.beginPath();
+        g.ellipse(bx, by, 24, 10, 0, 0, Math.PI * 2);
+        g.fill();
+        drawAt(g, boulderRolling(Math.floor(k * speed / 18) % 8), bx, by - Math.abs(Math.sin(k * 9)) * 4);
+      }
+    }
+    g.restore();
+  }
   document.body.style.margin = '0';
   document.body.style.background = '#0d1030';
   document.body.appendChild(cvs);

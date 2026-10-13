@@ -13,13 +13,12 @@ import nodeAssert from 'node:assert/strict';
 import * as nodeFs from 'node:fs';
 
 import { checkBoss, findingsSaid } from '../src/art/boss_checks';
-import type { BossShape, CheckLimb, CheckLump, Handover } from '../src/art/boss_checks';
+import { MADE, ufShape } from './unfinished_shape';
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { makeWardenArt } from '../src/art/monster_warden';
-import { CR, UF_BODY, UF_BREATH, UNFINISHED, UNFINISHED_FUSED, UNFINISHED_ON, chestOf, unfinishedStanding } from '../src/art/unfinished';
-import { add, lerp3, mul } from '../src/art/skeleton';
-import type { Skeleton } from '../src/art/skeleton';
+import { UF_BREATH, UNFINISHED, UNFINISHED_FUSED, UNFINISHED_ON, boulderRolling, hurledBlock, stompCracks, unfinishedStanding } from '../src/art/unfinished';
+import { WORD_COLOR } from '../src/art/icons';
 import { rgba } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from './helpers';
@@ -30,50 +29,6 @@ const fs = nodeFs as { readdirSync(p: string, o: { recursive: boolean }): string
 paintWithoutCanvas();
 
 
-/** THE UNFINISHED AS THE BOSS REVIEW SEES IT (art/boss_checks.ts): its outside as solids; the end it strikes with; how its moves hand over. */
-const B = UF_BODY;
-function ufShape(): BossShape {
-  return {
-    body: (s: Skeleton) => {
-      const [rH, rK, rA] = B.legR;
-      const [r0, r1] = B.armR;
-      const limbs: CheckLimb[] = [
-        { name: 'legL', a: s.hipL, b: s.kneeL, r: rH * 1.0 },
-        { name: 'shinL', a: s.kneeL, b: s.ankleL, r: rK * 0.95 },
-        { name: 'legR', a: s.hipR, b: s.kneeR, r: rH * 0.9 },
-        { name: 'shinR', a: s.kneeR, b: s.ankleR, r: rK * 0.8 },
-        { name: 'footL', a: s.heelL, b: s.toeL, r: rA * 0.6 },
-        { name: 'footR', a: s.heelR, b: s.toeR, r: rA * 0.5 },
-        { name: 'upperL', a: s.shoulderL, b: s.elbowL, r: r0 * 1.0 },
-        { name: 'foreL', a: s.elbowL, b: s.handL, r: r1 * 1.1 },
-        { name: 'upperR', a: s.shoulderR, b: s.elbowR, r: r0 * 0.9 },
-        { name: 'foreR', a: s.elbowR, b: s.handR, r: r1 * 0.85 },
-        { name: 'neck', a: s.neck, b: s.skull, r: B.headR[1] * 0.9 },
-      ];
-      const lumps: CheckLump[] = [
-        { name: 'chest', c: chestOf(s), rot: s.chest, h: CR },
-        { name: 'belly', c: lerp3(s.waist, s.ribs, 0.4), rot: s.belly, h: [B.waistDeep + 5, B.waistHalf + 6, B.ribs * 0.9] },
-        { name: 'hips', c: add(s.pelvis, mul(s.hips[2], B.waist * 0.2)), rot: s.hips, h: [B.pelvisDeep + 4, B.pelvisHalf + 6, B.waist * 0.95] },
-        { name: 'head', c: s.head, rot: s.face, h: [B.headR[0] * 1.25, B.headR[1] * 1.28, B.headR[2] * 1.2] },
-      ];
-      return { limbs, lumps };
-    },
-    tip: (move, _t, s) => (move === 'attack' ? s.handR : null),
-    low: { knee: B.legR[1], elbow: B.armR[1], hand: B.armR[2] },
-    handovers: [
-      { from: 'stand', at: 0, to: 'setOff', toAt: 0 },
-      { from: 'setOff', at: 'end', to: 'walk', toAt: 0 },
-      { from: 'walk', at: 0, to: 'halt', toAt: 0 },
-      { from: 'halt', at: 'end', to: 'stand', toAt: 0 },
-      ...['attack', 'reel'].flatMap((m): Handover[] => [
-        { from: 'stand', at: 0, to: m, toAt: 0 },
-        { from: m, at: 'end', to: 'stand', toAt: 0 },
-      ]),
-    ],
-  };
-}
-/** Its moves made so far (its death and its other moves are still its stand, not for use). */
-const MADE = ['stand', 'walk', 'setOff', 'halt', 'attack', 'reel'];
 
 const FIRE = new Set(FLAME.map((c) => rgba(c).slice(0, 3).join(',')));
 /** Its stand, every frame the game would show (at its own frames a second), from in front and from behind, free and still one with the wall. */
@@ -153,5 +108,39 @@ test('the boss review (art/boss_checks.ts) of every move made so far: free; and 
   for (const [mob, moves] of [[UNFINISHED, MADE], [UNFINISHED_FUSED, ['stand']]] as const) {
     const found = checkBoss(mob, ufShape(), moves);
     assert.ok(found.length === 0, `${mob.id}:\n  ${findingsSaid(found).join('\n  ')}`);
+  }
+});
+
+test('what its big moves leave (the flying and landed block, the boulders, the stomp\'s cracks): crisp, no loose pixels, nothing cyan or pink, duller than every word', () => {
+  const nine = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison'];
+  const dullest = Math.min(...nine.map((w) => hue(...(rgba((WORD_COLOR as Record<string, string>)[w]).slice(0, 3) as [number, number, number]))[1]));
+  const left: [string, Sprite][] = [
+    ...[0, 1, 2, 3, 4].map((f): [string, Sprite] => [`block ${f}`, hurledBlock(f)]),
+    ...[0, 1, 2, 3, 4, 5, 6, 7].map((f): [string, Sprite] => [`boulder ${f}`, boulderRolling(f)]),
+    ...[0, 1, 2, 3].map((k): [string, Sprite] => [`cracks ${k}`, stompCracks(k)]),
+  ];
+  for (const [name, sp] of left) {
+    const q = paintingOf(sp);
+    let soft = 0;
+    let loose = 0;
+    let most = 0;
+    for (let y = 0; y < q.h; y++) {
+      for (let x = 0; x < q.w; x++) {
+        const i = (y * q.w + x) * 4;
+        const a = q.d[i + 3];
+        if (a === 0) continue;
+        if (a !== 255) soft++;
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && q.has(x + dx, y + dy)) n++;
+        if (n === 0) loose++;
+        const [h, sat] = hue(q.d[i], q.d[i + 1], q.d[i + 2]);
+        if (Math.max(q.d[i], q.d[i + 1], q.d[i + 2]) < 51) continue;
+        most = Math.max(most, sat);
+        if (sat > 0.25) assert.ok(!(h > 165 && h < 205) && !(h > 300 || h < 10), `${name}: ${q.d[i]},${q.d[i + 1]},${q.d[i + 2]}`);
+      }
+    }
+    assert.ok(soft === 0, `${name}: ${soft} soft pixels`);
+    assert.ok(loose <= 2, `${name}: ${loose} loose pixels`);
+    assert.ok(most < dullest, `${name}: ${most.toFixed(2)} against the dullest word's ${dullest.toFixed(2)}`);
   }
 });

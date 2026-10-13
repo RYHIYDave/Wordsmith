@@ -255,6 +255,30 @@ checks, and from importing art/bosses3.ts, whose footwork is copied here).
     node tools/preview.mjs src/dev/preview_unfinished.ts shots/uf_slam_strip.png 1080 4680 strip:attack:15:2.5:front
     python3 tools/film_strip.py shots/uf_slam_strip.png shots/uf_slam.gif 38 15 360 3
 
+Asked as a pop-up "Are the Unfinished's walk, fist slam and flinch right?", his pick (13 Oct, by 14:14):
+"Yes, on to the big moves (Recommended)", offered as: these stay; next the rockslide, the hurled block, the
+stomp, tearing free, and its death.
+
+### The Unfinished, its three big moves
+
+Each winds up and is held, the mark flaring gold (the warning), lands with all its weight and follows
+through; the boss review passes all three. THE STOMP (`UF_STOMP_HIT` 1.3 s; 2.6 s): its weight over onto
+its raw leg, its carved knee hauled up high, arms flung out; held, trembling; stamped down toe then heel
+(`ufStompFeet`), its bulk dropping after it; it steps back. It leaves `stompCracks(k)` (a floor piece,
+the cracks growing over 4 frames). THE HURLED BLOCK (`UF_HURL_HIT` 2.0 s; 3.2 s): it stoops, grips a block
+of the terrace before it, tears it up (`UF_HURL_TEAR` 0.85 s: chips and grit), heaves it up past its face
+and over its head, holds it, leaning back, and hurls it. The block (`BLOCK_H`, cover-sized, a little lower
+than the knight) is the game's to fly: `hurledBlock(0..3)` tumbling, its middle `BLOCK_FLY_Z` over the
+anchor, `blockFlight(from, to, k)` an arc for it; `hurledBlock(4)` landed, standing as cover. THE ROCKSLIDE
+(`UF_SLIDE_HIT` 1.6 s; 3.4 s): reared up roaring, both fists locked over its head, held; brought down on
+the terrace, and again; the game's kick at each blow, and boulders come down the lanes:
+`boulderRolling(0..7)` (an eighth of a turn each, rolling toward +y). Which lanes, how fast, and what
+hurts are the main chat's. `prop` on the keys says where a blow lands, for its chips.
+
+    node tools/preview.mjs src/dev/preview_unfinished.ts shots/uf_stomp_strip.png 1080 12000 bigfilm:stomp:15:2.6
+    python3 tools/film_strip.py shots/uf_stomp_strip.png shots/uf_stomp.gif 40 15 540 2 1 600
+    (hurl: 1080 15000 bigfilm:hurl:15:3.2, 49 frames; rockslide: 1080 15600 bigfilm:rockslide:15:3.4, 52)
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a

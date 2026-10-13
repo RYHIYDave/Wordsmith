@@ -27,14 +27,15 @@
 // The colours are a figure's (three tones and the polish), so it stands out from the quarry, which is
 // duller than every word; what glows on it is the cult's fire only (FLAME), and nothing on it is cyan.
 
+import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { shriekAt } from './floor5';
 import { hash, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
-import { TILE3, at3, canvasOf, paintMob, sphere } from './new_mobs3';
+import { TILE3, at3, canvasOf, paintBits, paintMob, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, MobMove, Moment, Put } from './new_mobs3';
-import { wornOn } from './skin';
+import { stage, wornOn } from './skin';
 import type { GameView, Stage } from './skin';
 import { add, buildOf, cross, dot, lerp3, mul, norm, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Skeleton, V3 } from './skeleton';
@@ -429,6 +430,163 @@ function slamGlint(t: number): number {
   return t < 0.5 ? 0 : t < 0.9 ? (t - 0.5) / 0.4 : t < UF_SLAM_HIT ? 1 : t < UF_SLAM_HIT + 0.15 ? 1 - (t - UF_SLAM_HIT) / 0.15 : 0;
 }
 
+// ---------------------------------------------------------------------------------------------
+// ITS THREE BIG MOVES (the planning chat's, his yes 12 Oct, 18:07): THE STOMP that cracks the terrace,
+// THE HURLED BLOCK that stays as cover, THE ROCKSLIDE that sends boulders down lanes. Each winds up and
+// is held a moment, the mark on its chest flaring gold (the warning), lands with all its weight, and
+// follows through. `prop` says where a blow lands, for its chips: 1 its right fist, 2 both fists, 3 its
+// right foot, 4 none (a throw).
+
+/** THE STOMP: its weight over onto its raw left leg, its carved right knee hauled up high, its arms flung out; held, trembling; then stamped down before it, toe and then heel, the whole bulk dropping after it, the terrace cracking out from under its foot. */
+export const UF_STOMP_HIT = 1.3;
+/** Where the stamped foot's toe comes down: a little before where it stood. */
+const STOMP_AT = ((): Plant => {
+  const r = plantOf('R', {}, UF_REST);
+  return plantBy(r, 18, -2, 0, { pitch: 0 });
+})();
+function ufStomp(): Motion {
+  const R = UF_REST;
+  const H = UF_STOMP_HIT;
+  const out: P = { lhIn: 1, lhx: 18, lhy: 64, lhz: -26, le: -50, rhIn: 1, rhx: 18, rhy: -64, rhz: -26, re: 50 };
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: { prop: 3 } },
+      // (its weight over onto its left, slowly)
+      { at: 0.4, pose: { prop: 3, py: 6, roll: -3.5, pz: R.pz + 1, side: -2, lhIn: 1, lhx: 16, lhy: 40, lhz: -70, le: -30, rhIn: 1, rhx: 16, rhy: -40, rhz: -70, re: 30 }, ease: 'io' },
+      // (the knee hauled up, the arms flung out, leaning back to hold it)
+      { at: 0.78, pose: { prop: 3, py: 8, roll: -4, pz: R.pz + 3, side: -3, pitch: -4, bend: -2, faceUp: 10, ...out }, ease: 'out' },
+      { at: 0.92, pose: { prop: 3, py: 8.4, roll: -4.4, pz: R.pz + 3.4, side: -3, pitch: -4.5, bend: -2, faceUp: 11, ...out, lhz: -24 }, ease: 'io' },
+      { at: 1.06, pose: { prop: 3, py: 7.8, roll: -3.8, pz: R.pz + 2.8, side: -3, pitch: -3.5, bend: -2, faceUp: 10, ...out, rhz: -28 }, ease: 'io' },
+      // (and down: the whole bulk dropping after the foot)
+      { at: 1.16, pose: { prop: 3, py: 6, roll: -2, pz: R.pz + 1, side: -2, pitch: 2, bend: 4, faceUp: 4, ...out, lhz: -40, rhz: -40 }, ease: 'in' },
+      { at: H, pose: { prop: 3, py: 2, roll: 1, pz: R.pz - 10, side: 0, pitch: 12, bend: 12, faceUp: -10, lhIn: 1, lhx: 20, lhy: 46, lhz: -80, le: -30, rhIn: 1, rhx: 20, rhy: -46, rhz: -80, re: 30, lk: 20, rk: -22 }, ease: 'lin' },
+      { at: H + 0.2, pose: { prop: 3, py: 1, roll: 1.5, pz: R.pz - 18, pitch: 16, bend: 16, faceUp: -16, lhIn: 1, lhx: 22, lhy: 40, lhz: -92, le: -26, rhIn: 1, rhx: 22, rhy: -40, rhz: -92, re: 26, lk: 22, rk: -24 }, ease: 'out' },
+      { at: H + 0.5, pose: { prop: 3, pz: R.pz - 14, pitch: 13, bend: 14, faceUp: -10, lhIn: 1, lhx: 20, lhy: 34, lhz: -90, le: -24, rhIn: 1, rhx: 20, rhy: -34, rhz: -90, re: 24, lk: 20, rk: -22 }, ease: 'io' },
+      { at: 2.6, pose: { prop: 3 }, ease: 'io' },
+    ],
+  };
+}
+/** Its feet through the stomp: its left where it stands; its right hauled up, held, stamped down toe and then heel, and stepped back. */
+function ufStompFeet(): (t: number) => P {
+  const H = UF_STOMP_HIT;
+  const r0 = plantOf('R', {}, UF_REST);
+  return (t) => {
+    if (t <= 0.42 || t >= 2.42) return footOn('R', r0);
+    if (t < 1.16) {
+      // (hauled up and forward a little, toes up, held trembling)
+      const u = smooth01((t - 0.42) / 0.36);
+      const tremble = t > 0.8 ? 1.2 * Math.sin((t - 0.8) * 40) : 0;
+      return footOn('R', { at: [r0.at[0] + 8 * u, r0.at[1] - 2 * u], turn: r0.turn, pitch: -12 * u }, 58 * u + tremble);
+    }
+    if (t < H) {
+      // (stamped down, fast: its toe first)
+      const u = (t - 1.16) / (H - 1.16);
+      const g = u * u;
+      return footOn('R', { at: [r0.at[0] + 8 + (STOMP_AT.at[0] - r0.at[0] - 8) * g, r0.at[1] - 2 + (STOMP_AT.at[1] - r0.at[1] + 2) * g], turn: r0.turn, pitch: -12 + 30 * g }, 58 * (1 - g));
+    }
+    if (t < H + 0.08) {
+      // (and the heel slammed down after it, the toe where it struck)
+      const u = smooth01((t - H) / 0.08);
+      return footOn('R', { ...STOMP_AT, pitch: 18 * (1 - u) });
+    }
+    if (t < 1.98) return footOn('R', STOMP_AT);
+    // (stepped back to where it stood)
+    const u = (t - 1.98) / 0.44;
+    const g = smooth01((u - 0.12) / 0.76);
+    return footOn('R', { at: [STOMP_AT.at[0] + (r0.at[0] - STOMP_AT.at[0]) * g, STOMP_AT.at[1] + (r0.at[1] - STOMP_AT.at[1]) * g], turn: r0.turn, pitch: 0 }, 12 * Math.pow(Math.sin(Math.PI * clamp01(u)), 0.6));
+  };
+}
+
+/**
+ * THE HURLED BLOCK: it stoops and drives its hands into the terrace either side of a block of it, tears
+ * it up out of the floor (chips and grit bursting), heaves it up over its head and holds it there,
+ * trembling, leaning back; then hurls it before it with all its weight, following through, and rises.
+ * The block flies on as the game throws it, and lands and stays as cover (`hurledBlock`).
+ */
+export const UF_HURL_HIT = 2.0;
+/** When the block is torn up out of the floor. */
+export const UF_HURL_TEAR = 0.85;
+/** Where the block lies in the floor before it, and its half-sizes. */
+const BLOCK_AT: V3 = [72, 0, 0];
+export const BLOCK_H: V3 = [24, 26, 23];
+function ufHurl(): Motion {
+  const R = UF_REST;
+  const H = UF_HURL_HIT;
+  const hands = (x: number, z: number, w = BLOCK_H[1] + 4): P => ({ rhIn: 2, rhx: x, rhy: -w, rhz: z, lhIn: 2, lhx: x, lhy: w, lhz: z });
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: { prop: 4 } },
+      // (its hands brought forward, clear of its legs, as it starts to stoop)
+      { at: 0.2, pose: { prop: 4, pz: R.pz - 8, pitch: 14, bend: 10, faceUp: -6, lk: 18, rk: -18, rhIn: 1, rhx: 42, rhy: 6, rhz: -100, re: 28, lhIn: 1, lhx: 42, lhy: -6, lhz: -100, le: -28 }, ease: 'in' },
+      // (stooping to it, its hands going down either side)
+      { at: 0.45, pose: { prop: 4, pz: R.pz - 30, pitch: 40, bend: 30, faceUp: -18, lk: 30, rk: -30, ...hands(BLOCK_AT[0], 24), re: 30, le: -30 }, ease: 'out' },
+      // (gripping, straining: it will not come)
+      { at: 0.62, pose: { prop: 4, pz: R.pz - 33, pitch: 38, bend: 30, faceUp: -12, lk: 32, rk: -32, ...hands(BLOCK_AT[0] - 1, 22), re: 30, le: -30 }, ease: 'io' },
+      { at: 0.76, pose: { prop: 4, pz: R.pz - 31, pitch: 36, bend: 28, faceUp: -8, lk: 32, rk: -32, ...hands(BLOCK_AT[0] - 2, 24), re: 30, le: -30 }, ease: 'io' },
+      // (torn up out of the floor)
+      { at: UF_HURL_TEAR + 0.08, pose: { prop: 4, pz: R.pz - 24, pitch: 26, bend: 22, faceUp: 0, lk: 26, rk: -26, ...hands(BLOCK_AT[0] + 2, 52), re: 30, le: -30 }, ease: 'out' },
+      // (heaved up before it, clear of its head, and over)
+      { at: 1.08, pose: { prop: 4, pz: R.pz - 6, pitch: 6, bend: 4, faceUp: 10, lk: 18, rk: -18, ...hands(88, 172), re: 34, le: -34 }, ease: 'in' },
+      { at: 1.3, pose: { prop: 4, pz: R.pz + 2, pitch: -6, bend: -6, faceUp: 18, lk: 14, rk: -14, ...hands(14, 292), re: 40, le: -40 }, ease: 'out' },
+      // (held, trembling, leaning back: the warning)
+      { at: 1.5, pose: { prop: 4, pz: R.pz + 2.6, pitch: -8, bend: -8, faceUp: 20, lk: 14, rk: -14, ...hands(10, 294), re: 40, le: -40 }, ease: 'io' },
+      { at: 1.66, pose: { prop: 4, pz: R.pz + 2, pitch: -9, bend: -9, faceUp: 19, lk: 14, rk: -14, ...hands(6, 292), re: 40, le: -40 }, ease: 'io' },
+      { at: 1.8, pose: { prop: 4, pz: R.pz + 3, pitch: -12, bend: -11, faceUp: 22, lk: 14, rk: -14, ...hands(-6, 290), re: 42, le: -42 }, ease: 'io' },
+      // (hurled: its weight forward after it)
+      { at: 1.92, pose: { prop: 4, pz: R.pz - 2, pitch: 4, bend: 4, faceUp: 8, lk: 18, rk: -18, ...hands(40, 286), re: 36, le: -36 }, ease: 'in' },
+      { at: H, pose: { prop: 4, pz: R.pz - 8, pitch: 16, bend: 14, faceUp: 0, lk: 20, rk: -20, ...hands(70, 236), re: 32, le: -32 }, ease: 'lin' },
+      { at: H + 0.22, pose: { prop: 4, pz: R.pz - 14, pitch: 26, bend: 22, faceUp: -10, lk: 22, rk: -22, ...hands(84, 150, 22), re: 28, le: -28 }, ease: 'out' },
+      { at: H + 0.6, pose: { prop: 4, pz: R.pz - 8, pitch: 16, bend: 16, faceUp: -6, lk: 18, rk: -18, rhIn: 1, rhx: 30, rhy: -16, rhz: -76, re: 24, lhIn: 1, lhx: 30, lhy: 16, lhz: -76, le: -24 }, ease: 'io' },
+      { at: 3.2, pose: { prop: 4 }, ease: 'io' },
+    ],
+  };
+}
+/** The block in its hands: from when it grips it, till it lets it go. */
+const blockHeld = (t: number): boolean => t >= 0.5 && t < UF_HURL_HIT;
+
+/**
+ * THE ROCKSLIDE: it rears up, roaring, its two fists locked together high over its head, and holds them
+ * there, trembling; then brings them down on the terrace before it with everything it has, and again: the
+ * whole cut shakes, and boulders come down off the cliffs and roll (`boulderRolling`: the game's lanes).
+ */
+export const UF_SLIDE_HIT = 1.6;
+function ufRockslide(): Motion {
+  const R = UF_REST;
+  const H = UF_SLIDE_HIT;
+  const fists = (x: number, z: number, w = 8): P => ({ rhIn: 2, rhx: x, rhy: -w, rhz: z, lhIn: 2, lhx: x, lhy: w + 2, lhz: z });
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: { prop: 2 } },
+      { at: 0.5, pose: { prop: 2, pz: R.pz + 2, pitch: -8, bend: -8, faceUp: 22, ...fists(8, 296), re: 36, le: -36 }, ease: 'io' },
+      // (reared up, roaring: held, trembling: the warning)
+      { at: 0.9, pose: { prop: 2, pz: R.pz + 4, pitch: -13, bend: -12, faceUp: 28, ...fists(-12, 302), re: 40, le: -40 }, ease: 'out' },
+      { at: 1.08, pose: { prop: 2, pz: R.pz + 4.6, pitch: -14, bend: -12.5, faceUp: 29, ...fists(-13, 304), re: 40, le: -40 }, ease: 'io' },
+      { at: 1.26, pose: { prop: 2, pz: R.pz + 4, pitch: -13.5, bend: -12, faceUp: 28, ...fists(-12, 302), re: 40, le: -40 }, ease: 'io' },
+      { at: 1.4, pose: { prop: 2, pz: R.pz + 4.4, pitch: -14, bend: -13, faceUp: 28, ...fists(-14, 303), re: 40, le: -40 }, ease: 'io' },
+      // (down with everything it has)
+      { at: 1.48, pose: { prop: 2, pz: R.pz + 1, pitch: -2, bend: -2, faceUp: 14, ...fists(18, 290), re: 34, le: -34 }, ease: 'in' },
+      { at: 1.54, pose: { prop: 2, pz: R.pz - 10, pitch: 16, bend: 14, faceUp: 0, ...fists(48, 190), re: 28, le: -28 }, ease: 'lin' },
+      { at: H, pose: { prop: 2, pz: R.pz - 26, pitch: 34, bend: 30, faceUp: -18, lk: 24, rk: -24, ...fists(60, 27), re: 22, le: -22 }, ease: 'lin' },
+      { at: H + 0.2, pose: { prop: 2, pz: R.pz - 30, pitch: 37, bend: 32, faceUp: -22, lk: 26, rk: -26, ...fists(72, 28), re: 20, le: -20 }, ease: 'out' },
+      // (and again)
+      { at: H + 0.42, pose: { prop: 2, pz: R.pz - 22, pitch: 28, bend: 26, faceUp: -8, lk: 22, rk: -22, ...fists(64, 110), re: 26, le: -26 }, ease: 'io' },
+      { at: H + 0.56, pose: { prop: 2, pz: R.pz - 30, pitch: 36, bend: 31, faceUp: -20, lk: 26, rk: -26, ...fists(70, 28), re: 22, le: -22 }, ease: 'in' },
+      { at: H + 0.9, pose: { prop: 2, pz: R.pz - 24, pitch: 30, bend: 27, faceUp: -12, lk: 24, rk: -24, ...fists(72, 30), re: 22, le: -22 }, ease: 'out' },
+      { at: H + 1.3, pose: { prop: 2, pz: R.pz - 8, pitch: 14, bend: 14, rhIn: 1, rhx: 26, rhy: -14, rhz: -76, re: 24, lhIn: 1, lhx: 26, lhy: 14, lhz: -76, le: -24 }, ease: 'io' },
+      { at: 3.4, pose: { prop: 2 }, ease: 'io' },
+    ],
+  };
+}
+/** The second blow of the rockslide's (grit shaken again). */
+const SLIDE_AGAIN = UF_SLIDE_HIT + 0.56;
+/** The warning of a blow held from `from` to its full at `full`, and gone just after `hit`. */
+function heldGlint(from: number, full: number, hit: number): (t: number) => number {
+  return (t) => (t < from ? 0 : t < full ? (t - from) / (full - from) : t < hit ? 1 : t < hit + 0.15 ? 1 - (t - hit) / 0.15 : 0);
+}
+
 /** STRUCK: it barely gives: a jolt back through the stone, its head knocked up, chips flying; then it grinds back. */
 function ufStruck(): Motion {
   const R = UF_REST;
@@ -660,10 +818,28 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
       }
     }
   }
-  // --- A BLOW LANDING: chips of the stone flung up from where its fist strikes the floor, and a ring of dust running out ---
-  if (m.since !== undefined && m.since >= 0 && m.since < 0.7 && q.rhIn === 2) {
-    const k = m.since;
-    const at0: V3 = [s.handR[0] + 6, s.handR[1], 0];
+  // --- THE BLOCK IN ITS HANDS (the hurled block's): gripped by its sides ---
+  if (m.skull) {
+    // (lying on the floor till it is torn up; then between its hands, rising from where it lay)
+    const lift = smooth01((m.t - UF_HURL_TEAR) / 0.1);
+    const bc = m.t < UF_HURL_TEAR ? ([BLOCK_AT[0] - 2, BLOCK_AT[1], BLOCK_H[2]] as V3) : add(lerp3(s.handL, s.handR, 0.5), [0, 0, -4 * (1 - lift)]);
+    const across = norm(sub(s.handL, s.handR), cl);
+    const fwd = norm(cross(across, [0, 0, 1]), cf);
+    block(put, 'block', 'block', bc, [fwd, across, cross(fwd, across)], BLOCK_H, rawFace(71, (face, a, b) => face === 4 && Math.abs(a - 2) < 1.4 && fr(b / 6) < 0.3));
+  }
+  // --- A BLOW LANDING: chips of the stone flung up from where it strikes the floor (its fist, both fists, its foot; a block torn up), and a ring of dust running out ---
+  const landsAt = (): V3 | null => {
+    if (m.charge > 0) return [BLOCK_AT[0], BLOCK_AT[1], 0];
+    if (m.since === undefined || m.since < 0 || m.since >= 0.7) return null;
+    if (q.prop === 4) return null;
+    if (q.prop === 3) return [s.toeR[0] - 6, s.toeR[1], 0];
+    if (q.prop === 2) return lerp3(add(s.handL, [6, 0, 0]), add(s.handR, [6, 0, 0]), 0.5);
+    return q.rhIn === 2 && s.handR[2] < 50 ? [s.handR[0] + 6, s.handR[1], 0] : null;
+  };
+  const at1 = landsAt();
+  if (at1) {
+    const k = m.charge > 0 ? m.charge - 0.001 : (m.since as number);
+    const at0: V3 = [at1[0], at1[1], 0];
     for (let i = 0; i < 22; i++) {
       const a = hash(i, 1, 83) * Math.PI * 2;
       const v = 50 + hash(i, 2, 83) * 90;
@@ -714,6 +890,9 @@ function ufMob(look: UfLook): Mob {
     more: {
       setOff: { name: 'The Unfinished sets off', motion: ufSetOff(), rest: UF_REST, ground: UF_GROUND, feet: ufSetOffFeet() },
       halt: { name: 'The Unfinished stops', motion: ufHalt(), rest: UF_REST, ground: UF_GROUND, feet: ufHaltFeet(), rally: (t) => shaken(t - UF_HALT) },
+      stomp: { name: 'The stomp', motion: ufStomp(), rest: UF_REST, feet: ufStompFeet(), glint: heldGlint(0.5, 0.85, UF_STOMP_HIT), rally: (t) => shaken(t - UF_STOMP_HIT) },
+      hurl: { name: 'The hurled block', motion: ufHurl(), rest: UF_REST, glint: heldGlint(1.2, 1.55, UF_HURL_HIT), skull: blockHeld, rally: (t) => shaken(t - UF_HURL_TEAR), charge: (t) => shaken(t - UF_HURL_TEAR) },
+      rockslide: { name: 'The rockslide', motion: ufRockslide(), rest: UF_REST, glint: heldGlint(0.6, 0.95, UF_SLIDE_HIT), rally: (t) => (t >= SLIDE_AGAIN ? shaken(t - SLIDE_AGAIN) : shaken(t - UF_SLIDE_HIT)) },
     },
     reel: { name: 'The Unfinished is struck', motion: ufStruck(), rest: UF_REST, rally: (t) => shaken(t) },
     reelTime: 0.4,
@@ -751,3 +930,89 @@ export function unfinishedPainted(t: number, view: GameView = 'front', fused = f
 
 /** ITS BREATH'S ROUND, in seconds (for its frames). */
 export const UF_BREATH = 2.4;
+
+// ---------------------------------------------------------------------------------------------
+// WHAT ITS BIG MOVES LEAVE: for the game to draw where its rules say (the main chat's)
+
+/** A solid painted alone, as the figures are (lit, the seam), with no pink edge: a thing of the place now. */
+function paintAlone(w: number, h: number, ax: number, ay: number, make: (put: Put) => void): Sprite {
+  const st = stage('front', ax, ay, { w, h });
+  const bits: Bit[] = [];
+  make((part, piece, shape) => bits.push({ part, piece, shape }));
+  const lights = paintBits(st, bits, [0, 0, 20]);
+  return toSprite({ px: st.whole(null), lights }, null, ax, ay);
+}
+
+/**
+ * THE HURLED BLOCK: as it flies, tumbling end over end (`frame` 0 to 3, an eighth of a turn each), its
+ * middle at the anchor; and `landed` (frame 4), come to rest on the floor where it fell, a block of the
+ * terrace as cover, dust settling round its foot. 160 x 168 at (80, 124).
+ */
+export function hurledBlock(frame: number): Sprite {
+  return paintAlone(160, 168, 80, 124, (put) => {
+    if (frame >= 4) {
+      block(put, 'block', 'block', [0, 0, BLOCK_H[2]], [norm([1, 0.25, 0]), norm([-0.25, 1, 0]), [0, 0, 1]], BLOCK_H, rawFace(71, (face, a, b) => face === 4 && Math.abs(a - 2) < 1.4 && fr(b / 6) < 0.3));
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        put('dust', 'dust', { k: 'mote', p: [Math.cos(a) * (BLOCK_H[0] + 6), Math.sin(a) * (BLOCK_H[1] + 6), 1], c: i % 2 ? POLISHED[3] : RAW[3], size: 2 });
+      }
+      return;
+    }
+    const ang = frame * (Math.PI / 4);
+    const F: V3 = [Math.cos(ang), 0, -Math.sin(ang)];
+    const U: V3 = [Math.sin(ang), 0, Math.cos(ang)];
+    block(put, 'block', 'block', [0, 0, BLOCK_FLY_Z], [F, [0, 1, 0], U], BLOCK_H, rawFace(71, (face, a, b) => face === 4 && Math.abs(a - 2) < 1.4 && fr(b / 6) < 0.3));
+  });
+}
+/** In a flying frame of the hurled block, how far its middle is above the anchor (figure's lengths). */
+export const BLOCK_FLY_Z = 44;
+/** Where the hurled block's middle is in the air as it flies, `k` from 0 (let go) to 1 (down), from where it was let go to where it lands (figure's lengths, on its floor). */
+export function blockFlight(from: V3, to: V3, k: number): V3 {
+  const p = lerp3(from, to, k);
+  return [p[0], p[1], p[2] + 70 * Math.sin(Math.PI * k)];
+}
+
+/** A BOULDER OF THE ROCKSLIDE, rolling (`frame` 0 to 7, an eighth of a turn each, rolling toward the lower left): a great round lump of the quarry's raw stone, faceted. 96 x 96 at (48, 80). */
+export function boulderRolling(frame: number): Sprite {
+  return paintAlone(96, 96, 48, 80, (put) => {
+    const R = 24;
+    const ang = (frame / 8) * Math.PI * 2;
+    // (rolling toward +y: turned about x)
+    const A: [V3, V3, V3] = [[1, 0, 0], [0, Math.cos(ang), Math.sin(ang)], [0, -Math.sin(ang), Math.cos(ang)]];
+    put('boulder', 'boulder', { k: 'ball', c: [0, 0, R * 0.92], ax: [mul(A[0], R), mul(A[1], R * 0.95), mul(A[2], R * 0.9)], skin: rawSkin(91) });
+    put('boulder', 'boulder', { k: 'ball', c: add([0, 0, R * 0.92], mul(A[2], R * 0.55)), ax: [mul(A[0], R * 0.6), mul(A[1], R * 0.55), mul(A[2], R * 0.5)], skin: rawSkin(92) });
+  });
+}
+
+/**
+ * THE STOMP'S CRACKS in the terrace, run out from under its foot (`k` 0 to 3: the cracks growing; 3, as
+ * they stay): dark splits in the stone, their lips knocked pale, wandering out in eight ways, branching.
+ * A floor piece, its middle where the foot came down: 320 x 160 at (160, 80).
+ */
+export function stompCracks(k: number): Sprite {
+  const W = 320;
+  const H = 160;
+  const p = new Px(W, H);
+  const reach = [0.35, 0.6, 0.85, 1][Math.max(0, Math.min(3, k))];
+  const crack = (x0: number, y0: number, ang: number, len: number, seed: number, depth: number): void => {
+    let x = x0;
+    let y = y0;
+    let a = ang;
+    const steps = Math.round(len * reach);
+    for (let i = 0; i < steps; i++) {
+      a += (hash(i, seed, 95) - 0.5) * 0.7;
+      x += Math.cos(a) * 1.6;
+      y += Math.sin(a) * 0.8;
+      const xi = Math.round(x);
+      const yi = Math.round(y);
+      const wide = i < steps * 0.55 - depth * 6 ? 1 : 0;
+      p.set(xi, yi, '#2a2330').set(xi + wide, yi, '#2a2330').set(xi, yi + wide, '#2a2330');
+      p.set(xi, yi - 1, '#cfc5b6');
+      if (depth < 2 && hash(i, seed, 96) > 0.93) crack(x, y, a + (hash(i, seed, 97) > 0.5 ? 0.9 : -0.9), (len - i) * 0.5, seed * 7 + i, depth + 1);
+    }
+  };
+  for (let j = 0; j < 9; j++) crack(W / 2, H / 2, (j / 9) * Math.PI * 2 + hash(j, 1, 98) * 0.4, 62 + hash(j, 2, 98) * 40, j + 1, 0);
+  // the hollow it stamped
+  for (let y = -10; y <= 10; y++) for (let x = -22; x <= 22; x++) if ((x / 22) ** 2 + (y / 10) ** 2 < 1) p.set(W / 2 + x, H / 2 + y, (x / 22) ** 2 + (y / 10) ** 2 > 0.6 ? '#5e5458' : '#76696a');
+  return p.sprite(W / 2, H / 2, 2);
+}
