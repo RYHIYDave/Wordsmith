@@ -16,7 +16,7 @@
 
 import type { Px, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
-import { between, feetFor, plantBy } from './act1_feet';
+import { between, feetFor, plantBy, smooth01 } from './act1_feet';
 import { HOLE, block, limbFrame } from './act1_stone';
 import type { FaceSkin } from './act1_stone';
 import { shriekAt } from './floor5';
@@ -163,10 +163,42 @@ function golemBits(st: Stage, m: Moment): Bit[] {
     chain(put, `chestChain${sd > 0 ? 'L' : 'R'}`, 'chest', edge, low, 0, 1.7);
   }
   chainRound(put, 'bellyChain', 'belly', lerp3(s.waist, s.ribs, 0.4), mul(s.belly[0], B.waistDeep + 3.6), mul(s.belly[1], B.waistHalf + 4.6), 26, 1.7);
-  // the shoulders: blocks
+  // the shoulders: blocks; the right one with its top torn off for a throw (`jaw`), and knitting back
   for (const side of ['L', 'R'] as const) {
     const sh = side === 'L' ? s.shoulderL : s.shoulderR;
-    block(put, `shoulder${side}`, `shoulder${side}`, add(sh, mul(cu, B.armR[0] * 0.3)), s.chest, [B.armR[0] * 1.15, B.armR[0] * 1.15, B.armR[0] * 1.0], cutFace(side === 'L' ? 10 : 11));
+    const torn = side === 'R' ? m.jaw ?? 0 : 0;
+    const top = B.armR[0] * (1.0 - 0.5 * torn);
+    const c = add(sh, mul(cu, B.armR[0] * 0.3 - (B.armR[0] - top)));
+    block(put, `shoulder${side}`, `shoulder${side}`, c, s.chest, [B.armR[0] * 1.15, B.armR[0] * 1.15, top], cutFace(side === 'L' ? 10 : 11));
+    if (torn > 0.02 && !m.skull) {
+      // (the cult's fire knitting it back: a glow at the break, grit drawn up into it)
+      const scar = add(c, mul(cu, top));
+      put('knit', 'knit', { k: 'glow', p: scar, c: FLAME[2], r: 10 + 8 * torn, a: 0.35 * torn * lit });
+      for (let i = 0; i < 6; i++) {
+        const k2 = fr(m.t * 2.2 + i / 6);
+        const from = add(scar, [(hash(i, 1, 64) - 0.5) * 22 * (1 - k2), (hash(i, 2, 64) - 0.5) * 22 * (1 - k2), -14 * (1 - k2)]);
+        put('knitGrit', 'knitGrit', { k: 'mote', p: from, c: i % 2 ? CUT[3] : CUT[2], size: 2 });
+      }
+    }
+  }
+  // the chunk torn off it, in its left fist, to be thrown
+  if (m.skull) {
+    const el = s.elbowL;
+    const hand = s.handL;
+    const fore = norm(sub(hand, el), [0, 0, -1]);
+    const ff = limbFrame(el, hand, cf);
+    block(put, 'chunk', 'chunk', chunkIn(hand, fore), ff, CHUNK_H, cutFace(11));
+  }
+  // the chunk torn away: chips and grit burst off the shoulder
+  if (m.charge > 0) {
+    const k = m.charge - 0.001;
+    const from = add(s.shoulderR, mul(cu, B.armR[0] * 1.2));
+    for (let i = 0; i < 12; i++) {
+      const a = hash(i, 1, 65) * Math.PI * 2;
+      const v = 18 + hash(i, 2, 65) * 30;
+      const p: V3 = [from[0] + Math.cos(a) * v * k, from[1] + Math.sin(a) * v * k, from[2] + (30 + 30 * hash(i, 3, 65)) * k - 200 * k * k];
+      if (p[2] > 1) put('tear', 'tear', { k: 'mote', p, c: i % 2 ? CUT[3] : CUT[2], size: i % 3 ? 2 : 3 });
+    }
   }
   // the arms: blocks, and great square fists; chains round the wrists, a broken length of chain hanging from each
   for (const side of ['L', 'R'] as const) {
@@ -206,9 +238,9 @@ function golemBits(st: Stage, m: Moment): Bit[] {
     }
   }
   // its blow landing: chips and dust from where its fists strike the floor
-  if (m.since !== undefined && m.since >= 0 && m.since < 0.5 && !m.dying) {
+  const at0 = lerp3(s.handL, s.handR, 0.5);
+  if (m.since !== undefined && m.since >= 0 && m.since < 0.5 && !m.dying && at0[2] < 22) {
     const k = m.since;
-    const at0 = lerp3(s.handL, s.handR, 0.5);
     for (let i = 0; i < 14; i++) {
       const a = hash(i, 3, 62) * Math.PI * 2;
       const v = 30 + hash(i, 4, 62) * 50;
@@ -322,6 +354,48 @@ function qgHammer(): Motion {
 const qgGlint = (t: number): number => (t < 0.3 ? 0 : t < 0.6 ? (t - 0.3) / 0.3 : t < QG_HIT ? 1 : t < QG_HIT + 0.12 ? 1 - (t - QG_HIT) / 0.12 : 0);
 const qgShaken = (since: number): number => (since >= 0 && since < 0.7 ? since + 0.001 : 0);
 
+/**
+ * ITS THROW, "a chunk torn off its body and thrown" (the planning chat's, kept with his yes): its left hand
+ * reaches across and grips the top of its right shoulder; it wrenches a chunk of it away in a burst of chips;
+ * winds the chunk back over its left shoulder, leaning back, held, the mark flaring (the warning); its hips go,
+ * its chest comes round and it hurls the chunk overhand; it follows through, and the cult's fire knits its
+ * shoulder whole again.
+ */
+export const QG_THROW_HIT = 1.12;
+/** When it tears the chunk away, and how long the throw is. */
+export const QG_TEAR = 0.45;
+export const QG_THROW = 2.0;
+/** The chunk's half-sizes (figure's lengths). */
+export const CHUNK_H: V3 = [5.2, 6.0, 4.4];
+/** Where the chunk is held: just past the end of its left fist, along its forearm (`fore`, from the elbow to the hand). */
+export function chunkIn(hand: V3, fore: V3): V3 {
+  return add(hand, mul(fore, B.armR[2] * 2.7 + CHUNK_H[2] + 0.6));
+}
+function qgThrow(): Motion {
+  const R = QG_REST;
+  const H = QG_THROW_HIT;
+  const lh = (x: number, y: number, z: number): P => ({ lhIn: 2, lhx: x * K, lhy: y * K, lhz: z * K });
+  const rh = (x: number, y: number, z: number): P => ({ rhIn: 2, rhx: x * K, rhy: y * K, rhz: z * K });
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.3, pose: { pz: R.pz + 0.5, pitch: R.pitch, bend: R.bend + 2, twist: -8, faceTurn: -10, ...lh(8, -9, 57), le: -60, ...rh(10, -30, 22) }, ease: 'io' },
+      { at: QG_TEAR - 0.05, pose: { pz: R.pz + 0.8, pitch: R.pitch - 1, bend: R.bend + 1, twist: -10, faceTurn: -12, ...lh(7, -10, 58), le: -62, ...rh(10, -30, 22) }, ease: 'io' },
+      { at: QG_TEAR + 0.1, pose: { pz: R.pz + 1.6, pitch: R.pitch - 3, bend: R.bend - 2, twist: -4, faceTurn: -6, roll: 2, ...lh(10, 0, 66), le: -50, ...rh(9, -30, 24) }, ease: 'out' },
+      { at: 0.85, pose: { pz: R.pz + 2, pitch: -6, bend: -6, twist: 14, faceTurn: 8, faceUp: 8, roll: -2, ...lh(-12, 26, 72), le: -40, ...rh(18, -24, 42), re: 30 }, ease: 'io' },
+      { at: 1.0, pose: { pz: R.pz + 2.2, pitch: -7, bend: -7, twist: 16, faceTurn: 9, faceUp: 9, roll: -2.4, ...lh(-14, 27, 73), le: -40, ...rh(19, -24, 43), re: 30 }, ease: 'io' },
+      { at: H - 0.04, pose: { pz: R.pz, pitch: 4, bend: 4, twist: 0, faceTurn: 0, faceUp: 4, roll: 0, ...lh(10, 22, 70), le: -26, ...rh(10, -28, 34), re: 30 }, ease: 'in' },
+      { at: H + 0.06, pose: { pz: R.pz - 3, pitch: 9, bend: 8, twist: -12, faceTurn: -6, faceUp: 0, ...lh(30, 10, 48), le: -16, ...rh(-2, -30, 32), re: 30 }, ease: 'out' },
+      { at: H + 0.3, pose: { pz: R.pz - 4, pitch: 11, bend: 9, twist: -15, faceTurn: -8, faceUp: -2, lk: 18, rk: -18, ...lh(26, 2, 38), le: -20, ...rh(-4, -30, 26), re: 30 }, ease: 'out' },
+      { at: QG_THROW, pose: {}, ease: 'io' },
+    ],
+  };
+}
+const qgThrowGlint = (t: number): number => (t < 0.6 ? 0 : t < 0.85 ? (t - 0.6) / 0.25 : t < QG_THROW_HIT ? 1 : t < QG_THROW_HIT + 0.12 ? 1 - (t - QG_THROW_HIT) / 0.12 : 0);
+/** How much of its right shoulder is gone (0 whole, 1 torn): torn away at QG_TEAR, knitting back from just after the throw. */
+const qgTorn = (t: number): number => (t < QG_TEAR - 0.02 ? 0 : t < QG_TEAR + 0.04 ? (t - QG_TEAR + 0.02) / 0.06 : t < QG_THROW_HIT + 0.1 ? 1 : t < QG_THROW - 0.15 ? 1 - smooth01((t - QG_THROW_HIT - 0.1) / (QG_THROW - 0.15 - QG_THROW_HIT - 0.1)) : 0);
+
 /** STRUCK: rocked back a little, its chains rattling, grit shaken off. */
 function qgStruck(): Motion {
   const R = QG_REST;
@@ -381,6 +455,7 @@ function qgMob(): Mob {
     more: {
       setOff: { name: 'The quarry golem sets off', motion: qgSetOff(), rest: QG_REST, ground: QG_GROUND, feet: qgSetOffFeet() },
       halt: { name: 'The quarry golem stops', motion: qgHalt(), rest: QG_REST, ground: QG_GROUND, feet: qgHaltFeet() },
+      throw: { name: 'The quarry golem tears a chunk off itself and throws it', motion: qgThrow(), rest: QG_REST, glint: qgThrowGlint, jaw: qgTorn, skull: (t) => t >= QG_TEAR && t < QG_THROW_HIT, charge: (t) => (t >= QG_TEAR && t < QG_TEAR + 0.6 ? t - QG_TEAR + 0.001 : 0), rally: (t) => (t >= QG_THROW_HIT ? qgShaken(t - QG_THROW_HIT) : qgShaken(t - QG_TEAR)) },
     },
     reel: { name: 'The quarry golem is struck', motion: qgStruck(), rest: QG_REST, rally: (t) => qgShaken(t) },
     reelTime: 0.3,
@@ -405,6 +480,57 @@ export function golemFrame(which: string, t: number, view: GameView = 'front'): 
   return toSprite(paintMob(QUARRY_GOLEM, which, t, view, ENEMY_RIM), null, can.ax, can.ay);
 }
 
+/**
+ * THE CHUNK IN FLIGHT, thrown: the block torn off its shoulder, tumbling end over end (`turn`, 0..1 once
+ * round), the enemy's edge round it (it is the golem's, and it hurts). Its middle on the anchor; the game flies
+ * it from `handAt(QUARRY_GOLEM, 'throw', QG_THROW_HIT, 'L')`.
+ */
+export function golemChunk(turn: number, view: GameView = 'front'): Sprite {
+  const st = stage(view, 32, 32, { w: 64, h: 64 });
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const a = turn * Math.PI * 2;
+  const F: V3 = [Math.cos(a), 0, -Math.sin(a)];
+  const U: V3 = [Math.sin(a), 0, Math.cos(a)];
+  block(put, 'chunk', 'chunk', [0, 0, 0], [F, [0, 1, 0], U], CHUNK_H, cutFace(11));
+  const lights = paintBits(st, bits, [0, 0, 0]);
+  return toSprite({ px: st.whole(ENEMY_RIM), lights }, null, 32, 32);
+}
+/** The frames of the chunk in flight, once round. */
+export const CHUNK_FRAMES = 8;
+export function makeGolemChunkArt(view: GameView = 'front'): Sprite[] {
+  return lazyFrames(CHUNK_FRAMES, (i) => golemChunk(i / CHUNK_FRAMES, view));
+}
+/**
+ * THE CHUNK SHATTERING where it comes down (`frame` 0 to 4, at 12 a second; 4 is what is left): it strikes
+ * and splits, its pieces flung out and tumbling down round where it struck, a puff of grit; then a few
+ * chips lying. A floor piece, its middle where the chunk came down: 128 x 96 at (64, 64). No edge, no light.
+ */
+export function chunkShatter(frame: number): Sprite {
+  const st = stage('front', 64, 64, { w: 128, h: 96 });
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const k = Math.min(1, frame / 4);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + hash(i, 1, 66) * 0.6;
+    const far = (6 + 12 * hash(i, 2, 66)) * Math.sqrt(k) + 2;
+    const h: V3 = [1.8 + 1.4 * hash(i, 3, 66), 1.6 + 1.2 * hash(i, 4, 66), 1.3 + 0.8 * hash(i, 5, 66)];
+    const up = frame >= 4 ? 0 : (6 + 8 * hash(i, 6, 66)) * Math.sin(Math.PI * Math.min(1, k * 1.25));
+    const tilt = frame >= 4 ? 0 : (hash(i, 7, 66) - 0.5) * 3 * k;
+    const yaw = hash(i, 8, 66) * 6.3;
+    const f: V3 = [Math.cos(yaw), Math.sin(yaw), 0];
+    const l0: V3 = [-Math.sin(yaw), Math.cos(yaw), 0];
+    block(put, `bit${i}`, `bit${i}`, [Math.cos(a) * far, Math.sin(a) * far, h[2] + up], [f, add(mul(l0, Math.cos(tilt)), [0, 0, Math.sin(tilt)]), add(mul(l0, -Math.sin(tilt)), [0, 0, Math.cos(tilt)])], h, cutFace(80 + i));
+  }
+  if (frame < 4) for (let i = 0; i < 16; i++) {
+    const a = hash(i, 1, 67) * Math.PI * 2;
+    const r = (4 + 18 * hash(i, 2, 67)) * Math.sqrt(k + 0.2);
+    put('grit', 'grit', { k: 'mote', p: [Math.cos(a) * r, Math.sin(a) * r, Math.max(0.5, (4 + 12 * hash(i, 3, 67)) * (1 - k * 0.7))], c: i % 2 ? CUT[3] : CUT[2], size: i % 3 ? 2 : 3 });
+  }
+  const lights = paintBits(st, bits, [0, 0, 4]);
+  return toSprite({ px: st.whole(null), lights }, null, 64, 64);
+}
+
 // =============================================================================================
 // THE RUBBLING (tiny): a heap of chips on four stubby legs of stone, a pink spark glowing in its
 // middle. Not a body of bones: its own solids, frame by frame.
@@ -424,6 +550,8 @@ export const RB_ATTACK = 0.8;
 export const RB_REEL = 0.27;
 export const RB_DIE = 0.8;
 export const RB_POP = 0.16;
+/** Rising out of a rock pile: how long. */
+export const RB_EMERGE = 0.7;
 /** Its four legs: where each comes out of the heap (forward, left), and where its foot rests (forward, left). */
 const RB_LEGS: ReadonlyArray<readonly [number, number, number, number]> = [
   [5, 5, 8, 10],
@@ -440,6 +568,11 @@ interface RbPose {
   tip: number;
   feet: ReadonlyArray<readonly [number, number, number]>;
   spark: number;
+  /** Its maw: the top of its heap hinged up off its front (0 shut, 1 wide), the spark blazing in the gap. */
+  gape?: number;
+  /** Risen out of a pile (0 a low pile of chips, 1 standing); `shiver`: its chips trembling. */
+  rise?: number;
+  shiver?: number;
 }
 const RB_STILL: RbPose = { x: 0, z: 9, squash: 0, tip: 0, feet: RB_LEGS.map(([, , fx, fy]) => [fx, fy, 0] as const), spark: 0.6 };
 const at0 = (fx: number, fy: number, dx = 0, z = 0): readonly [number, number, number] => [fx + dx, fy, z];
@@ -471,12 +604,21 @@ function chipFrame(yaw: number, tilt: number): [V3, V3, V3] {
 
 /** THE RUBBLING AS SOLIDS: its heap of chips, its legs, the spark in its middle. */
 function rubblingBits(p: RbPose, t: number, put: Put): void {
+  const rise = p.rise ?? 1;
   const c: V3 = [p.x, 0, p.z];
-  const k = 1 - 0.35 * p.squash;
-  const wide = 1 + 0.18 * p.squash;
+  const k = (1 - 0.35 * p.squash) * (0.3 + 0.7 * Math.min(1, rise));
+  const wide = (1 + 0.18 * p.squash) * (1 + 0.35 * (1 - Math.min(1, rise)));
   const tipF = (v: V3): V3 => [v[0] * wide + v[2] * Math.sin(p.tip), v[1] * wide, v[2] * Math.cos(p.tip)];
-  // the legs: each two short blocks of stone, knee up, to its foot
-  RB_LEGS.forEach(([lx, ly], i) => {
+  // (its maw: the upper chips hinged up about the back of its heap)
+  const phi = 0.85 * (p.gape ?? 0);
+  const hinge = (v: V3): V3 => {
+    if (phi === 0 || v[2] < 4) return v;
+    const dx = v[0] + 4.5;
+    const dz = v[2] - 3;
+    return [-4.5 + dx * Math.cos(phi) - dz * Math.sin(phi), v[1], 3 + dx * Math.sin(phi) + dz * Math.cos(phi)];
+  };
+  // the legs: each two short blocks of stone, knee up, to its foot (tucked in under it while it is a pile)
+  if (rise > 0.3) RB_LEGS.forEach(([lx, ly], i) => {
     const hip: V3 = add(c, tipF([lx, ly, -2]));
     const [fx, fy, fz] = p.feet[i];
     const foot: V3 = [fx, fy, fz + 1.5];
@@ -486,14 +628,16 @@ function rubblingBits(p: RbPose, t: number, put: Put): void {
   });
   // the heap
   RB_CHIPS.forEach((ch, i) => {
-    const [hx, hy, hz] = ch.home;
-    block(put, 'heap', `chip${i}`, add(c, tipF([hx, hy, hz * k])), chipFrame(ch.yaw, ch.tilt), [ch.h[0], ch.h[1], ch.h[2] * k], cutFace(70 + i));
+    const [hx, hy, hz] = hinge(ch.home);
+    const sh = p.shiver ? (hash(i, Math.floor(t * 30), 78) - 0.5) * p.shiver : 0;
+    const tilt = ch.tilt + (ch.home[2] >= 4 ? phi * 0.8 : 0);
+    block(put, 'heap', `chip${i}`, add(c, tipF([hx + sh, hy - sh, hz * k])), chipFrame(ch.yaw, tilt), [ch.h[0], ch.h[1], ch.h[2] * Math.max(0.6, k)], cutFace(70 + i));
   });
   // the spark, showing in the gap at its front
   if (p.spark > 0.05) {
     const sc = add(c, tipF([4.6, 0, 2.6 * k]));
     const flick = hash(Math.floor(t * 12), 1, 73);
-    put('spark', 'spark', { k: 'ball', c: sc, ax: sphere(1.8 + Math.min(1, p.spark)), skin: (_u, tone) => (p.spark < 0.3 ? FLAME[1] : p.spark > 1.05 ? FLAME[4] : tone >= 3 && (p.spark > 0.85 || flick > 0.6) ? FLAME[3] : tone >= 2 ? FLAME[2] : FLAME[1]) });
+    put('spark', 'spark', { k: 'ball', c: sc, ax: sphere(1.8 + Math.min(1, p.spark) + 1.2 * (p.gape ?? 0)), skin: (_u, tone) => (p.spark < 0.3 ? FLAME[1] : p.spark > 1.05 ? FLAME[4] : tone >= 3 && (p.spark > 0.85 || flick > 0.6) ? FLAME[3] : tone >= 2 ? FLAME[2] : FLAME[1]) });
     put('spark', 'sparkGlow', { k: 'glow', p: sc, c: FLAME[2], r: 10 + 10 * Math.min(1.4, p.spark), a: Math.min(0.7, 0.3 + 0.3 * p.spark) });
   }
 }
@@ -554,13 +698,13 @@ export function rubblingPainted(which: string, t: number, view: GameView = 'fron
     const feet = rubblingWalkFeet(t);
     p = { ...RB_STILL, z: 9.2 + 1.3 * Math.abs(Math.sin(ph * Math.PI * 2)), tip: 0.12, squash: 0.1 * Math.abs(Math.cos(ph * Math.PI * 2)), feet, spark: 0.7 };
   } else if (which === 'attack') {
-    // (crouched, its spark flaring: the warning; it springs at you, butts, and drops back)
+    // (THE BITE: crouched, the top of its heap hinged open on the blazing spark: the warning; it springs at you and snaps shut; it drops back)
     if (t < 0.28) {
       const u = t / 0.28;
-      p = { ...RB_STILL, z: 9 - 3 * u, squash: 0.4 * u, tip: -0.15 * u, spark: 0.6 + 0.4 * u };
+      p = { ...RB_STILL, z: 9 - 3 * u, squash: 0.4 * u, tip: -0.15 * u, spark: 0.6 + 0.6 * u, gape: smooth01(u) };
     } else if (t < RB_HIT) {
       const u = (t - 0.28) / (RB_HIT - 0.28);
-      p = { ...RB_STILL, x: 16 * u, z: 6 + 18 * Math.sin(Math.PI * u * 0.8), squash: 0.4 * (1 - u) - 0.15 * Math.sin(Math.PI * u), tip: 0.35 * u, spark: 1, feet: RB_STILL.feet.map(([fx, fy]) => at0(fx, fy, 16 * u, Math.max(0, 14 * Math.sin(Math.PI * u * 0.8) - 2))) };
+      p = { ...RB_STILL, x: 16 * u, z: 6 + 18 * Math.sin(Math.PI * u * 0.8), squash: 0.4 * (1 - u) - 0.15 * Math.sin(Math.PI * u), tip: 0.35 * u, spark: 1.2, gape: u < 0.6 ? 1 : 1 - smooth01((u - 0.6) / 0.4), feet: RB_STILL.feet.map(([fx, fy]) => at0(fx, fy, 16 * u, Math.max(0, 14 * Math.sin(Math.PI * u * 0.8) - 2))) };
     } else if (t < 0.6) {
       const u = (t - RB_HIT) / (0.6 - RB_HIT);
       p = { ...RB_STILL, x: 16 - 4 * u, z: 10 - 2 * u, squash: 0.25 * (1 - u), tip: 0.35 * (1 - u), spark: 1 - 0.3 * u, feet: RB_STILL.feet.map(([fx, fy]) => at0(fx, fy, 16 - 4 * u)) };
@@ -570,6 +714,21 @@ export function rubblingPainted(which: string, t: number, view: GameView = 'fron
       const u = (t - 0.6) / (RB_ATTACK - 0.6);
       const g = u * u * (3 - 2 * u);
       p = { ...RB_STILL, x: 12 * (1 - g), feet: RB_STILL.feet.map(([fx, fy], i) => at0(fx, fy, 12 * (1 - g), (i === 0 || i === 3 ? Math.sin(Math.PI * u * 2) : Math.sin(Math.PI * u * 2 + Math.PI)) > 0 ? 2 : 0)) };
+    }
+  } else if (which === 'emerge') {
+    // (OUT OF A ROCK PILE: a low pile of chips that trembles, a pink glow waking in it; it heaves up, its legs kick out, its spark lights; it settles and stands)
+    const sp = (u: number): number => u * u * (3 - 2 * u);
+    if (t < 0.22) {
+      const u = t / 0.22;
+      p = { ...RB_STILL, z: 3, rise: 0, shiver: 0.4 + 1.2 * u, spark: 0.15 + 0.25 * u, feet: RB_STILL.feet.map(([fx, fy]) => at0(fx * 0.4, fy * 0.4)) };
+    } else if (t < 0.5) {
+      const u = (t - 0.22) / 0.28;
+      const r = 1.12 * sp(u);
+      p = { ...RB_STILL, z: 3 + 7 * sp(u), rise: r, shiver: 1.6 * (1 - u), spark: 0.4 + 0.8 * u, feet: RB_STILL.feet.map(([fx, fy]) => at0(fx * (0.4 + 0.6 * sp(u)), fy * (0.4 + 0.6 * sp(u)), 0, 3 * Math.sin(Math.PI * u))) };
+      for (let i = 0; i < 6; i++) motes.push([[(hash(i, 1, 79) - 0.5) * 16, (hash(i, 2, 79) - 0.5) * 16, Math.max(0.5, 12 * u - 14 * u * u + 2)], grit(i), 2]);
+    } else {
+      const u = clamp01((t - 0.5) / (RB_EMERGE - 0.5));
+      p = { ...RB_STILL, z: 10 - 1 * sp(u), rise: 1.12 - 0.12 * sp(u), squash: 0.2 * Math.sin(Math.PI * u), spark: 1.2 - 0.6 * sp(u) };
     }
   } else if (which === 'reel') {
     // (knocked back off its feet, legs kicking up, chips knocked off it; it lands squashed and springs back)
@@ -633,7 +792,7 @@ export function makeRubblingArt(): ActorArt {
       attack: lazyFrames(3, (i) => attack.frames[[6, 13, 19][i]]),
       idleFps: 8,
       walkFps: RB_WALK_FPS,
-      clips: { attack, die, reel },
+      clips: { attack, die, reel, moves: { emerge: { frames: lazyFrames(Math.round(RB_EMERGE * 30) + 1, (i) => frame('emerge', i / 30)), fps: 30 } } },
     };
   };
   return { front: set('front'), back: set('back') };

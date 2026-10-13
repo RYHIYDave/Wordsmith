@@ -19,7 +19,8 @@ import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { spriteOf3 } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
-import { FLOOR6_MOBS_ON, QG_DIE_TIME, QUARRY_GOLEM, RB_ATTACK, RB_DIE, RB_PACE, RB_REEL, RB_WALK, golemFrame, makeRubblingArt, rubblingPainted, rubblingWalkFeet } from '../src/art/floor6_mobs';
+import { CHUNK_FRAMES, FLOOR6_MOBS_ON, QG_DIE_TIME, QUARRY_GOLEM, RB_ATTACK, RB_DIE, RB_EMERGE, RB_PACE, RB_REEL, RB_WALK, chunkShatter, golemChunk, golemFrame, makeRubblingArt, rubblingPainted, rubblingWalkFeet } from '../src/art/floor6_mobs';
+import { WORD_COLOR } from '../src/art/icons';
 import { TILE3, deathOfMob, paintMob } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
 import type { Px, Sprite } from '../src/engine/px';
@@ -53,7 +54,7 @@ for (let i = 0; i <= QG_DIE_TIME * 20; i++) for (const view of VIEWS) {
 /** Every frame of the rubbling, at thirty a second. */
 const rbLiving: Frame[] = [];
 const rbDying: Frame[] = [];
-for (const [mv, long] of [['stand', 1], ['walk', RB_WALK.frames / RB_WALK.fps], ['attack', RB_ATTACK], ['reel', RB_REEL], ['dying', RB_DIE]] as const) {
+for (const [mv, long] of [['stand', 1], ['walk', RB_WALK.frames / RB_WALK.fps], ['attack', RB_ATTACK], ['reel', RB_REEL], ['emerge', RB_EMERGE], ['dying', RB_DIE]] as const) {
   for (let i = 0; i <= Math.round(long * 30); i++) for (const view of VIEWS) {
     const p = rubblingPainted(mv, i / 30, view);
     (mv === 'dying' ? rbDying : rbLiving).push({ name: `rubbling ${mv} ${view} ${(i / 30).toFixed(2)}`, px: p.px, lights: p.lights });
@@ -187,6 +188,7 @@ test('the rubbling as the game holds a monster: both facings, every list and cli
     const set = art[view];
     assert.ok(set.idle.length > 0 && set.walk.length === RB_WALK.frames && set.attack.length === 3, `${view}: its lists`);
     for (const k of ['attack', 'die', 'reel'] as const) assert.ok((set.clips?.[k]?.frames.length ?? 0) > 3, `${view}: its ${k}`);
+    assert.ok((set.clips?.moves?.emerge?.frames.length ?? 0) > 3, `${view}: its rise out of a rock pile`);
     const die = set.clips!.die!;
     const last = paintingOf(die.frames[die.frames.length - 1]);
     let some = 0;
@@ -195,3 +197,42 @@ test('the rubbling as the game holds a monster: both facings, every list and cli
     assert.ok((die.frames[die.frames.length - 1].lights ?? []).length === 0, `${view}: no light once it has popped`);
   }
 });
+
+test('what the golem throws: the chunk in flight crisp, its pink edge round it, the stone\'s colours; its shattering crisp, no edge, no loose pixels, duller than every word', () => {
+  const nine = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison'];
+  const dullest = Math.min(...nine.map((w) => hue(...(rgba((WORD_COLOR as Record<string, string>)[w]).slice(0, 3) as [number, number, number]))[1]));
+  const [pr, pg, pb] = rgba(ENEMY_RIM);
+  for (let i = 0; i < CHUNK_FRAMES; i++) for (const view of VIEWS) {
+    const q = paintingOf(golemChunk(i / CHUNK_FRAMES, view));
+    let soft = 0;
+    let rim = 0;
+    for (let j = 0; j < q.d.length; j += 4) {
+      const a = q.d[j + 3];
+      if (a === 0 || a === 255) continue;
+      if (a === RIM_ALPHA && q.d[j] === pr && q.d[j + 1] === pg && q.d[j + 2] === pb) rim++;
+      else soft++;
+    }
+    assert.ok(soft === 0 && rim > 20, `the chunk ${i} ${view}: ${soft} soft pixels, ${rim} of its edge`);
+  }
+  for (let f = 0; f <= 4; f++) {
+    const sp = chunkShatter(f);
+    const q = paintingOf(sp);
+    let soft = 0;
+    let loose = 0;
+    let most = 0;
+    for (let y = 0; y < q.h; y++) for (let x = 0; x < q.w; x++) {
+      const i = (y * q.w + x) * 4;
+      if (q.d[i + 3] === 0) continue;
+      if (q.d[i + 3] !== 255) soft++;
+      let n = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && q.has(x + dx, y + dy)) n++;
+      if (n === 0) loose++;
+      if (Math.max(q.d[i], q.d[i + 1], q.d[i + 2]) >= 51) most = Math.max(most, hue(q.d[i], q.d[i + 1], q.d[i + 2])[1]);
+    }
+    assert.ok(soft === 0, `shattering ${f}: ${soft} soft pixels`);
+    assert.ok(loose <= 2, `shattering ${f}: ${loose} loose pixels`);
+    assert.ok(most < dullest, `shattering ${f}: ${most.toFixed(2)} against the dullest word's ${dullest.toFixed(2)}`);
+    assert.ok((sp.lights ?? []).length === 0, `shattering ${f}: no light`);
+  }
+});
+

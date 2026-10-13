@@ -14,7 +14,9 @@
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { makeWardenArt } from '../art/monster_warden';
-import { QG_DIE_TIME, QG_HIT, QG_PACE, RB_ATTACK, RB_DIE, RB_PACE, RB_POP, RB_REEL, golemFrame, rubblingFrame } from '../art/floor6_mobs';
+import { CHUNK_H, QG_DIE_TIME, QG_HIT, QG_PACE, QG_THROW, QG_THROW_HIT, QUARRY_GOLEM, RB_ATTACK, RB_DIE, RB_EMERGE, RB_PACE, RB_POP, RB_REEL, chunkShatter, golemChunk, golemFrame, rubblingFrame } from '../art/floor6_mobs';
+import { handAt } from '../art/new_mobs3';
+import type { V3 } from '../art/skeleton';
 import { TILE3 } from '../art/new_mobs3';
 import { project } from '../art/skeleton';
 import { P } from '../art/palette';
@@ -168,7 +170,7 @@ function walk(): void {
     g.beginPath();
     g.rect(ox, oy, C.w, C.h);
     g.clip();
-    g.translate(-(((dx * 2 * C.k) % (tile * 4)) + tile * 4) % (tile * 4), -(((dy * 2 * C.k) % (tile * 2)) + tile * 2) % (tile * 2));
+    g.translate(-(((dx * C.k) % (tile * 4)) + tile * 4) % (tile * 4), -(((dy * C.k) % (tile * 2)) + tile * 2) % (tile * 2));
     bed(g, ox, oy, C.w + tile * 4, C.h + tile * 2, tile);
     g.restore();
     g.save();
@@ -191,7 +193,7 @@ function seq(): void {
   const [, who, fpsS] = HASH.split(':');
   const fps = Number(fpsS);
   const golem = who === 'golem';
-  const parts: [string, number][] = [['stand', 1.0], ['attack', golem ? QG_HIT + 0.85 : RB_ATTACK], ['stand', 0.6], ['reel', golem ? 0.3 : RB_REEL], ['stand', 0.8], ['dying', (golem ? QG_DIE_TIME : RB_DIE) + 1.0]];
+  const parts: [string, number][] = [...(golem ? [] : [['emerge', RB_EMERGE] as [string, number]]), ['stand', 1.0], ['attack', golem ? QG_HIT + 0.85 : RB_ATTACK], ['stand', 0.6], ['reel', golem ? 0.3 : RB_REEL], ['stand', 0.8], ['dying', (golem ? QG_DIE_TIME : RB_DIE) + 1.0]];
   const list: [string, number][] = [];
   for (const [mv, long] of parts) for (let i = 0; i < Math.round(long * fps); i++) list.push([mv, i / fps]);
   const C = SEQ_CELLS[who];
@@ -217,7 +219,65 @@ function seq(): void {
   done(cvs);
 }
 
-if (HASH.startsWith('seq')) seq();
+/**
+ * ITS THROW AS THE GAME WOULD PLAY IT (hash `throwfilm:<fps>`): the golem tears the chunk off its shoulder and
+ * throws it; the chunk flies (here 0.55 s, 3.5 tiles, along an arc: the flight is the game's) from where its
+ * hand lets it go, its shadow under it, and shatters where it comes down. Cells of 720 x 480, two to a row.
+ */
+function throwFilm(): void {
+  const fps = Number(HASH.split(':')[1]);
+  const FLY = 0.55;
+  const long = QG_THROW + 0.5;
+  const n = Math.round(long * fps) + 1;
+  const W = 720;
+  const H = 480;
+  const k = 2;
+  const FX = 170;
+  const FY = 300;
+  const cols = 2;
+  const cvs = document.createElement('canvas');
+  cvs.width = W * cols;
+  cvs.height = H * Math.ceil(n / cols);
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const from = handAt(QUARRY_GOLEM, 'throw', QG_THROW_HIT, 'L');
+  const to: V3 = [3.5 * TILE3, 0.4 * TILE3, 0];
+  const scr = (p: V3): [number, number] => {
+    const [x, y] = project(p, 'front');
+    return [x * k, y * k];
+  };
+  for (let i = 0; i < n; i++) {
+    const t = i / fps;
+    const ox = (i % cols) * W;
+    const oy = Math.floor(i / cols) * H;
+    bed(g, ox, oy, W, H, 32);
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, W, H);
+    g.clip();
+    shadow(g, ox + FX, oy + FY, 80);
+    drawBig(g, t < QG_THROW ? golemFrame('throw', t, 'front') : golemFrame('stand', t - QG_THROW, 'front'), ox + FX, oy + FY, k);
+    if (t >= QG_THROW_HIT) {
+      const u = (t - QG_THROW_HIT) / FLY;
+      if (u < 1) {
+        const p: V3 = [from[0] + (to[0] - from[0]) * u, from[1] + (to[1] - from[1]) * u, from[2] + (CHUNK_H[2] - from[2]) * u + 40 * Math.sin(Math.PI * u)];
+        const [sx, sy] = scr([p[0], p[1], 0]);
+        shadow(g, ox + FX + sx, oy + FY + sy, 10 + 6 * u);
+        const [cx, cy] = scr(p);
+        drawBig(g, golemChunk(u * 1.5, 'front'), ox + FX + cx, oy + FY + cy, k);
+      } else {
+        const f = Math.min(4, Math.floor((t - QG_THROW_HIT - FLY) * 12));
+        const [cx, cy] = scr(to);
+        drawBig(g, chunkShatter(f), ox + FX + cx, oy + FY + cy, k);
+      }
+    }
+    g.restore();
+  }
+  done(cvs);
+}
+
+if (HASH.startsWith('throwfilm')) throwFilm();
+else if (HASH.startsWith('seq')) seq();
 else if (HASH.startsWith('film')) film();
 else if (HASH.startsWith('walk')) walk();
 else look();

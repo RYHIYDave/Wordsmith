@@ -369,6 +369,33 @@ answer by 16:58 (13 Oct): "[No preference]". Read as, and told him so: the two s
 to the main chat all at once, as his word of 14:56 had it; nothing of it goes live until the main chat has
 his OK.
 
+### The golem's throw, the rubbling's bite and its rise out of a rock pile (13 Oct)
+
+The planning chat's mob table (his doc, kept with his yes) gives the golem "A rock slam; a chunk torn off its
+body and thrown" (a medium monster has two attacks by his rules) and the rubbling "A bite. Fist-sized stone
+mites that swarm out of rock piles"; drawn so, and he was told:
+- THE GOLEM'S THROW, `more.throw` (`QG_THROW` 2.0 s): its left hand reaches across and grips the top of its
+  right shoulder; at `QG_TEAR` 0.45 it wrenches a chunk away (chips and grit; the shoulder's top gone, `jaw`);
+  winds it back over its left shoulder, leaning back, held, the mark flaring (the warning, from 0.6); hurls it
+  overhand, let go at `QG_THROW_HIT` 1.12 (`handAt(QUARRY_GOLEM, 'throw', QG_THROW_HIT, 'L')` is where); follows
+  through; the cult's fire knits the shoulder whole by 1.85 (a glow at the break, grit drawn up into it). The
+  chunk in flight: `golemChunk(turn, view)`, `makeGolemChunkArt(view)` (`CHUNK_FRAMES` 8 a turn), the enemy's
+  pink edge round it; where it comes down, `chunkShatter(0..4)` (12 a second; 4 is what is left), a floor
+  piece, no edge, no light. Its flight, how far, and what it hurts are the main chat's. Through the boss review
+  (the chunk held is a thing of its own there).
+- THE RUBBLING'S BITE, its attack in place of the butt (the same times: `RB_HIT` 0.42 of `RB_ATTACK` 0.8): it
+  crouches and the top of its heap hinges up off its front, the spark blazing in the gap (the warning); it
+  springs and snaps shut on you at 0.42; drops back.
+- ITS RISE OUT OF A ROCK PILE, `clips.moves.emerge` (`RB_EMERGE` 0.7 s): a low pile of chips that trembles, a
+  pink glow waking in it; it heaves up at 0.22, its legs kick out, its spark lights; it stands by 0.7.
+- tests/floor6_mobs.test.ts 11 (the throw in the review; the chunk and its shattering; the rise among its moves).
+- The walk films sent before had the floor sliding twice as fast as the figure (the page's fault, not the
+  figures'): mended, sent again, he was told.
+
+Asked as a pop-up "Are the golem's throw and the rubbling's bite right?", his pick by 17:31 (13 Oct): "Yes,
+send them to main (Recommended)", offered as: they join floor 6 with the main chat, then the cult's two new
+fighters.
+
 ## Their sounds (for the sound chat)
 
 His sound rulebook's rule 7 (a sound brief with every new monster) had not been asked for these three; asked

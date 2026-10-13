@@ -3,8 +3,8 @@
 // figures from importing the checks (tests/bosses.test.ts, 12).
 
 import type { BossShape, CheckLimb, CheckLump, Handover } from '../src/art/boss_checks';
-import { QG_BODY } from '../src/art/floor6_mobs';
-import { add, lerp3, mul } from '../src/art/skeleton';
+import { CHUNK_H, QG_BODY, QG_TEAR, QG_THROW_HIT, chunkIn } from '../src/art/floor6_mobs';
+import { add, lerp3, mul, norm, sub } from '../src/art/skeleton';
 import type { Skeleton } from '../src/art/skeleton';
 
 const B = QG_BODY;
@@ -35,15 +35,16 @@ export function golemShape(): BossShape {
       ];
       return { limbs, lumps };
     },
-    tip: (move, _t, s) => (move === 'attack' ? lerp3(s.handL, s.handR, 0.5) : null),
-    things: () => [],
+    tip: (move, _t, s) => (move === 'attack' ? lerp3(s.handL, s.handR, 0.5) : move === 'throw' ? s.handL : null),
+    // (the chunk torn off its shoulder, in its left fist till it is thrown)
+    things: (move, t, s) => (move === 'throw' && t >= QG_TEAR && t < QG_THROW_HIT ? [{ name: 'the chunk', pts: [chunkIn(s.handL, norm(sub(s.handL, s.elbowL), [0, 0, -1]))], r: Math.max(...CHUNK_H) * 0.9, may: ['foreL', 'upperL'] }] : []),
     low: { knee: B.legR[1], elbow: B.armR[1], hand: B.armR[2] },
     handovers: [
       { from: 'stand', at: 0, to: 'setOff', toAt: 0 },
       { from: 'setOff', at: 'end', to: 'walk', toAt: 0 },
       { from: 'walk', at: 0, to: 'halt', toAt: 0 },
       { from: 'halt', at: 'end', to: 'stand', toAt: 0 },
-      ...['attack', 'reel'].flatMap((m): Handover[] => [
+      ...['attack', 'throw', 'reel'].flatMap((m): Handover[] => [
         { from: 'stand', at: 0, to: m, toAt: 0 },
         { from: m, at: 'end', to: 'stand', toAt: 0 },
       ]),
@@ -52,4 +53,4 @@ export function golemShape(): BossShape {
   };
 }
 /** Its moves. */
-export const GOLEM_MOVES = ['stand', 'walk', 'setOff', 'halt', 'attack', 'reel', 'dying'];
+export const GOLEM_MOVES = ['stand', 'walk', 'setOff', 'halt', 'attack', 'throw', 'reel', 'dying'];
