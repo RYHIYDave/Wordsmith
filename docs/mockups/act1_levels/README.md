@@ -288,6 +288,6 @@ on the floor; a yellow pack of four quarry golems (rough paint: blocks of the qu
 the cult's mark burning on the chest and in the eyes), the leader with the gold ring of letters and
 his name ("Volatile Quarry Golem"), the others with the broken ring of a leader's minions
 (drawPackMark, rarity 'minion'). The place name, "Overseers' Redoubt", is the planning chat's. The
-runedust it drops is not shown. Sent as previews/holdin_in_game.png by 10:15; asked "Is this the
+runedust it drops is not shown. Sent as previews/holdin_in_game.png (finished at 10:04); asked "Is this the
 stronghold's last room?", his pick by 10:19: "Yes, this is it (Recommended)", offered as: the hall, the
 half-cut obelisk in the cult's ring, a golem pack; then posted for the art chat.
