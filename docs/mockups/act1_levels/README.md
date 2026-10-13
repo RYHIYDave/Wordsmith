@@ -49,3 +49,21 @@ them (traps, loot, the danger marks of monsters' attacks), against his art ruleb
 and every warning stay in sight". The planning chat's pick, put to him: keep the near walls cut
 away, and use the tent's see-through for tall things that stand in front (trees, pillars, the
 crane, dead trees). Sent to him by 19:19 as previews/act1_see_through.png; his answer not in yet.
+
+## Echo Canyon's walls on both sides (his word of 20:19)
+
+His words, 20:19: "I feel like a canyon needs to feel that on both sides.  But I don’t like the
+walls being up either.  So I don’t know what to do".
+
+With the hash `canyon` the page paints two answers:
+
+- A. THE CANYON RUN UP THE SCREEN, winding: its walls stand to the left and the right and none in
+  front, so nothing is cut away; each wall's face shows where the canyon bends.
+- B. ACROSS THE SCREEN, THE NEAR WALL FELT: cut away as now, but its shadow lies across the floor
+  (`Way.shadow`, 1.6 tiles, its edge ragged), and rock spires stand out of it that go see-through,
+  the tent's way, only while someone is behind them (`Prop.seeFor`).
+
+    node tools/preview.mjs src/dev/preview_act1.ts previews/canyon_both_sides.png 1280 800 canyon
+
+The planning chat's pick, put to him: both together (mostly up the screen; where it turns across,
+B). Sent to him by 20:22 as previews/canyon_both_sides.png; his answer not in yet.

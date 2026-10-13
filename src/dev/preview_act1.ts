@@ -13,6 +13,9 @@
 // With the hash "see", the near walls drawn whole and see-through round whoever is behind them
 // (his question of 19:17), beside the game's way today:
 //   node tools/preview.mjs src/dev/preview_act1.ts previews/act1_see_through.png 1280 800 see
+// With the hash "canyon", two ways to have Echo Canyon's walls on both sides with none in front
+// (his word of 20:19), the canyon run up the screen, or across it with the near wall's shadow:
+//   node tools/preview.mjs src/dev/preview_act1.ts previews/canyon_both_sides.png 1280 800 canyon
 import { spriteOf3 } from '../art/heroes3';
 import { hash } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
@@ -260,6 +263,8 @@ interface Prop {
   draw: (g: CanvasRenderingContext2D, sx: number, sy: number) => void;
   /** Tall enough to hide the ground behind it: drawn see-through where it would. */
   tall?: boolean;
+  /** Drawn see-through only while someone stands behind it (the tent's way), up to this many picture pixels tall. */
+  seeFor?: number;
 }
 interface Level {
   title: string;
@@ -285,6 +290,8 @@ const enum K { Floor = 1, Face = 2, Top = 3, Cut = 4, Water = 5, Bank = 6, Out =
 /** How a level is painted: the near walls left out (as the game does), or drawn whole and see-through round whoever stands behind them. */
 interface Way {
   full?: boolean;
+  /** The near wall's shadow across the ground, this many tiles deep (the wall stays cut away). */
+  shadow?: number;
   /** Enemies standing in it, besides the knight. */
   foes?: [number, number][];
 }
@@ -437,6 +444,22 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way
       }
     }
   }
+  if (way.shadow && H > 0) {
+    // the near wall's shadow, so that a wall is felt on that side though none is drawn
+    for (let py = 0; py < PH; py++) {
+      for (let px = 0; px < PW; px++) {
+        if (kind[py * PW + px] !== K.Floor) continue;
+        const [x, y] = toWorld(px + 0.5, py + 0.5);
+        const reach = way.shadow * (0.75 + 0.5 * vn(x * 0.9 - y * 0.9, 0, 101));
+        for (let t = 0.1; t <= reach; t += 0.1) {
+          if (!W(x + t, y + t)) {
+            darken(px, py, t > reach - 0.25 ? 0.22 : 0.36);
+            break;
+          }
+        }
+      }
+    }
+  }
   if (L.tint) {
     for (let i = 0; i < d.length; i += 4) {
       const c = L.tint([d[i], d[i + 1], d[i + 2]]);
@@ -493,6 +516,13 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way
         }
       }
       if (hidden > 10) alpha = 0.4;
+    }
+    if (s.seeFor) {
+      const me = s.x + s.y;
+      for (const [fx, fy] of [L.hero, ...(way.foes ?? [])]) {
+        const [ox, oy] = toScreen(fx, fy);
+        if (fx + fy < me && Math.abs(ox - sx) < 34 && oy < sy + 4 && oy > sy - s.seeFor - 10) alpha = 0.35;
+      }
     }
     g.globalAlpha = alpha;
     s.draw(g, sx, sy + top);
@@ -715,6 +745,7 @@ const C_WALL = [ramp('#f2a670', '#da8855', '#bf6c43', '#8f4b35'), ramp('#d08256'
 const C_SAND = ramp('#b47a50', '#c58a5a', '#d59c67', '#e2af7a', '#ecc290');
 const C_TOP = ramp('#a95f3f', '#bd6f49', '#cf8156');
 const cYc = (x: number): number => 12 + 0.9 * Math.sin(0.33 * x + 0.4) + 0.55 * Math.sin(0.85 * x + 2.1);
+let canyonChannel = (x: number, y: number): number => Math.abs(y - cYc(x) - 0.3 * Math.sin(x * 0.9));
 const canyonShape: Shape = (x, y) => {
   const half = 2.0 + 0.5 * Math.sin(0.5 * x + 1.2) + 1.0 * Math.exp(-(((x - 13.5) / 1.6) ** 2));
   return y > cYc(x) - half && y < cYc(x) + half * 0.9 && x > -4 && x < 30;
@@ -727,7 +758,7 @@ const canyon: Level = {
   floor: (x, y, px, py) => {
     let c = pick(C_SAND, fbm(x * 1.6, y * 1.6, 31), px, py);
     // the dry channel down the middle: river-worn stones
-    const ch = Math.abs(y - cYc(x) - 0.3 * Math.sin(x * 0.9));
+    const ch = canyonChannel(x, y);
     if (ch < 0.55) {
       c = mix(c, hex('#a87a5e'), 0.35);
       const cs = 0.3;
@@ -967,10 +998,58 @@ const fen: Level = {
 // ---------------------------------------------------------------------------------------------
 // The page
 
-const SEE = decodeURIComponent(location.hash.slice(1)) === 'see';
 const canyonFoe: [number, number] = [14.8, cYc(14.8) + 1.0];
 const quarryFoe = at(300, 372) as [number, number];
-const LEVELS: { L: Level; way?: Way }[] = SEE
+const HASH = decodeURIComponent(location.hash.slice(1));
+const SEE = HASH === 'see';
+const BOTH = HASH === 'canyon';
+
+/** A canyon that runs up the screen, toward the eye: its two walls stand to the left and the right, and none in front. */
+const upMid = (sy: number): number => 320 + 120 * Math.sin(sy / 70 + 0.2) + 24 * Math.sin(sy / 29 + 1.3);
+const upHalf = (sy: number): number => 66 + 14 * Math.sin(sy / 57 + 0.5) + 30 * Math.exp(-(((sy - 250) / 55) ** 2));
+const upShape: Shape = (x, y) => {
+  const [sx, sy] = toScreen(x, y);
+  return Math.abs(sx - upMid(sy)) < upHalf(sy);
+};
+const upChannel = (x: number, y: number): number => {
+  const [sx, sy] = toScreen(x, y);
+  return Math.abs(sx - upMid(sy) - 10 * Math.sin(sy / 20)) / HWf;
+};
+
+/** A spire of rock standing out of the near wall, see-through when someone is behind it. */
+const spire = (h: number, k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  const tiers: [number, number][] = [[1.0, h * 0.45], [0.72, h * 0.32], [0.45, h * 0.23]];
+  let z = 0;
+  tiers.forEach(([w, th], i) => {
+    const lit = C_WALL[0][1 + ((i + k) % 2)];
+    box(w, w, th, C_TOP[2], lit, C_WALL[2][1 + ((i + k) % 2)])(g, sx + (hash(i, k, 7) - 0.5) * 6 * F, sy - z);
+    z += th;
+  });
+};
+const nearAt = (x: number): [number, number] => {
+  const half = 2.0 + 0.5 * Math.sin(0.5 * x + 1.2) + 1.0 * Math.exp(-(((x - 13.5) / 1.6) ** 2));
+  return [x, cYc(x) + half * 0.9 + 0.75];
+};
+const LEVELS: { L: Level; way?: Way }[] = BOTH
+  ? [
+    { L: { ...canyon, gr: ground(upShape), floor: (x, y, px, py) => {
+      const keep = canyonChannel;
+      canyonChannel = upChannel;
+      const c = canyon.floor(x, y, px, py);
+      canyonChannel = keep;
+      return c;
+    }, title: 'A. Run the canyon up the screen', note: 'a wall on both sides, left and right; none in front', props: [
+      { x: at(300, 120)[0], y: at(300, 120)[1], draw: boulder(0.4, '#e8a777', '#c47a50', '#8c4d37') },
+      { x: at(360, 300)[0], y: at(360, 300)[1], draw: canyon.props[3].draw },
+      { x: at(255, 360)[0], y: at(255, 360)[1], draw: boulder(0.25, '#e8a777', '#c47a50', '#8c4d37') },
+    ], hero: at(300, 250) as [number, number] }, way: { foes: [at(340, 140) as [number, number]] } },
+    { L: { ...canyon, title: 'B. Across the screen, the near wall felt', note: 'cut away as now, but its shadow lies across the floor, and a few spires stand out of it', props: [
+      ...canyon.props,
+      { x: nearAt(8.6)[0], y: nearAt(8.6)[1], seeFor: 150, draw: spire(150, 1) },
+      { x: nearAt(15.6)[0], y: nearAt(15.6)[1], seeFor: 130, draw: spire(130, 2) },
+    ] }, way: { shadow: 1.6, foes: [canyonFoe] } },
+  ]
+  : SEE
   ? [
     { L: { ...canyon, title: 'Echo Canyon, as the game does it today', note: 'the near wall left out: everything on the ground in view' }, way: { foes: [canyonFoe] } },
     { L: { ...canyon, title: 'Echo Canyon, the near wall drawn', note: 'see-through round the knight and the cultist, like the tent' }, way: { full: true, foes: [canyonFoe] } },
@@ -1004,7 +1083,7 @@ g.imageSmoothingEnabled = false;
 g.drawImage(cv, 0, 0, FW * Z, FH * Z);
 g.fillStyle = '#e9ecff';
 g.font = '600 40px system-ui, sans-serif';
-g.fillText(SEE ? 'Walls you can see through' : 'Act 1: the other levels', 28, 62);
+g.fillText(BOTH ? 'Echo Canyon: walls on both sides' : SEE ? 'Walls you can see through' : 'Act 1: the other levels', 28, 62);
 LEVELS.forEach(({ L }, k) => {
   const y = (tops[k] - HEAD / Z) * Z;
   g.fillStyle = '#e9ecff';
