@@ -78,6 +78,13 @@ pit, the cart on them), and dresses the tops by its rule (pines in groves, a few
 and scaffolding, each only where `clearOfFloor` says it stands clear of the floor); a tall piece (the
 crane, the scaffolding) is seen through at the game's 0.38 while a figure stands behind it.
 
+### His answer
+
+Asked as a pop-up "Are these the Quarry's pieces?", his pick by 10:45 (13 Oct): "Yes, on to the rest
+(Recommended)", offered as: these stay; next the rest of the Quarry's 25 (things on the cliff faces,
+breakables, its gate, a trap, a quest piece) and the set's 25 cult camp pieces for all five floors, then
+the Unfinished.
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a
