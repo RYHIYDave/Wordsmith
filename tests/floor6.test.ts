@@ -14,6 +14,7 @@ import nodeAssert from 'node:assert/strict';
 
 import { CULT_FIRE } from '../src/art/act1_cult';
 import { quarryPieces } from '../src/art/floor6';
+import { REDOUBT, redoubtGround, redoubtPieces } from '../src/art/redoubt';
 import { WORD_COLOR } from '../src/art/icons';
 import type { Sprite } from '../src/engine/px';
 import { anchor, count, each, hsv, sprites } from './floor_checks';
@@ -23,9 +24,9 @@ const test = nodeTest as (name: string, fn: () => void) => void;
 const assert = nodeAssert as { ok(v: unknown, msg?: string): void };
 paintWithoutCanvas();
 
-const pieces = quarryPieces();
+const pieces = [...quarryPieces(), ...redoubtPieces()];
 /** What burns with the cult's fire (his Colour 3: pink burning to gold is the enemy's): its braziers, and its mark on the redoubt's sealed door. Nothing else glows. */
-const BURNS = new Set(["the cult's brazier", "the redoubt's gatehouse"]);
+const BURNS = new Set(["the cult's brazier", "the redoubt's gatehouse", 'the half-cut obelisk', "the cult's ring of magic"]);
 const FIRE = new Set(CULT_FIRE.map((c) => c.toLowerCase()));
 const hexOf = (r: number, g: number, b: number): string => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 const rgbOf = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
@@ -123,10 +124,25 @@ test('Places 4: what stands stands on its foot (nothing of it far below its anch
           const hw = 2 * Math.min(y + 0.5, 32 - (y + 0.5));
           assert.ok(Math.abs(x + 0.5 - ax) <= hw + 0.5, `${p.name}: (${x}, ${y}) outside its diamond`);
         });
+      } else if (p.name === "the cult's ring of magic") {
+        // (laid on the floor by its middle, as what lies is)
+        continue;
       } else {
         // its foot's diamond reaches at most a tile and three quarters toward the eye (the obelisk, lying along x)
         assert.ok(lowest - ay <= 60, `${p.name}: ${lowest - ay} picture pixels below its anchor`);
       }
     }
   }
+});
+
+test('the redoubt inside: its own stone (not the Crypt\'s), duller than every word, painted by the ground\'s own painters', () => {
+  const nine = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison'];
+  const dullest = Math.min(...nine.map((w) => hsv(...rgbOf((WORD_COLOR as Record<string, string>)[w]))[1]));
+  for (const c of [...REDOUBT.slab, ...REDOUBT.lit, ...REDOUBT.shade, REDOUBT.mortar]) {
+    const [h, sat, val] = hsv(...rgbOf(c));
+    assert.ok(sat < dullest, `${c}: ${sat.toFixed(2)}`);
+    if (val > 0.2) assert.ok(!(h > 165 && h < 205) && !(h > 300 || h < 10) || sat < 0.15, `${c} is no glow's colour`);
+  }
+  const G = redoubtGround();
+  assert.ok(count(G.floor(0, 0)) > 400 && G.faceLeft.length > 0 && G.faceRight.length > 0, 'its floor and faces painted');
 });

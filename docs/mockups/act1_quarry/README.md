@@ -85,6 +85,39 @@ Asked as a pop-up "Are these the Quarry's pieces?", his pick by 10:45 (13 Oct): 
 breakables, its gate, a trap, a quest piece) and the set's 25 cult camp pieces for all five floors, then
 the Unfinished.
 
+## The Overseers' Redoubt, the Quarry's cult stronghold
+
+`src/art/floor6.ts`: THE REDOUBT'S GATEHOUSE (a 'gate' piece; frames 0 to 3 sealed, the cult's mark
+burning on the door and flickering, at about 6 a second; frame 4 opened), THE COURT'S FLAGSTONES (a floor
+tile; its third frame worn down the middle to the door). `src/art/act1_cult.ts`, THE SET'S, for every
+stronghold of floors 6 to 10: THE ALTAR OF THE WORDS (its three hollows' places on the picture,
+`ALTAR_HOLLOWS`, for the game to set each word given there in its own look of a rune stone), THE CULT'S
+BRAZIER (4 frames, its pink light), THE CULT'S BANNER (4 frames, stirring). The cult's mark is floor 5's
+shrieking skull (`shriekAt`), not the planning chat's rough cross: he was told (13 Oct, 10:47).
+
+    node tools/preview.mjs src/dev/preview_hold.ts shots/hold_door.png 1014 468
+    node tools/preview.mjs src/dev/preview_hold.ts shots/hold_open.png 1014 468 open
+
+Asked as a pop-up "Is this the Overseers' Redoubt at its door?", his pick (13 Oct, by 12:05): "Yes, on to
+the last room (Recommended)", offered as: the door stays as shown; next the stronghold's last room.
+
+### The last room
+
+`src/art/redoubt.ts`: THE REDOUBT'S STONE INSIDE (`REDOUBT`, a Theme of the ground's own painters, and
+`redoubtGround()`, as the Crypt's floors are made: the quarry's limestone dressed and coursed, in a hall's
+dim, greyer and warmer than the Crypt), and its last room's pieces (`redoubtPieces()`): THE HALF-CUT
+OBELISK (its far end still one with a raw mass of the bedrock; down its top three of the cult's skulls
+and the channel between them burning pink, 4 frames; its light), THE CULT'S RING OF MAGIC (on the floor,
+laid by its middle, 4.2 by 2.6 tiles; its rings and the skull at its quarters burning, 4 frames; its
+light), THE CULT'S HANGING (on a wall). No lettering: his rulebook keeps letters for where a word is at
+work, so what burns on the obelisk is the cult's mark and channels of power.
+
+    node tools/preview.mjs src/dev/preview_holdin.ts shots/hold_in.png 1014 468
+
+The room is stood as the game stands a dungeon's (render/walls.ts `wallFaces`: only the back walls'
+faces, the near ones cut away; floor tiles with the walls' shades, the line of light at the near edge).
+The quarry golems round the obelisk are the floor's mobs, still to draw.
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a
