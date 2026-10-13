@@ -305,6 +305,12 @@ third of its death is crisp, pink-edged while it lives and not as it dies, and n
     python3 tools/film_strip.py shots/uf_tear_strip.png shots/uf_tear.gif 51 15 540 2 1 600
     (its death: 1080 13800 bigfilm:dying:15:3.0, 46 frames)
 
+Asked as a pop-up "Is the Unfinished done?", his pick (13 Oct, by 14:56): "Yes, but keep it here", offered
+as: hold it until floor 6's mobs are done too, then send floor 6 to main all at once. Read as: the
+Unfinished is done; floor 6 goes to the main chat together once its own mobs, the quarry golems and the
+rubblings, are drawn with his yes (the cult's two new kinds, the Chanter and the Firepot thrower, are the
+set's, for every floor of the five, and come after).
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a
