@@ -123,6 +123,20 @@ Asked as a pop-up "Is this the redoubt's last room?", his pick (13 Oct, by 12:15
 faces, breakables, a trap, a quest piece) and the cult's camp pieces for the set, then the Unfinished and
 the golems.
 
+## The Unfinished: his brief (13 Oct, by 12:42)
+
+Asked as pop-ups (his art rulebook's questions for a new character): how big, "Twice the Warden
+(Recommended)", offered as: a towering colossus, its head near the top of the quarry's cliff, menacing
+from across the pit; the one thing to know it by, his own words: "One and two", that is both of the first
+two offered: half carved, half raw rock (one side a finished, polished statue, the other still rough quarry
+stone with chisel marks and drill holes) and the cult's mark burning (the shrieking skull cut into its
+chest, burning pink where the chanting woke it); how it moves, "Grinding and heavy (Recommended)", offered
+as: like a statue forced to walk, slow to start, every step a shudder, grit falling off it; how it dies,
+"Topples and shatters", offered as: it falls like a felled statue and breaks into great blocks on the
+floor. The planning chat's, with his yes (12 Oct, 18:07): fused to the quarry wall at first, it tears
+itself free at half life; a fist slam (basic), a rockslide (boulders rolling down lanes), a hurled block
+that stays as cover, a stomp that cracks the terrace.
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a
