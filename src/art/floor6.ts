@@ -27,7 +27,10 @@
 // down it to the left), heights in picture pixels; each picture anchored at the middle of its foot.
 
 import { Px } from '../engine/px';
-import type { Sprite } from '../engine/px';
+import type { Light, Sprite } from '../engine/px';
+import { CLOTH, PAINT, PAINT_SHADE, SLATE, pinkBrazier, cultBanner, wordAltar } from './act1_cult';
+import { shriekAt } from './floor5';
+import { FLAME } from './mkit';
 import { Scene, XYZ, facetOf, toneAt } from './floor4';
 import type { V3 } from './floor4';
 import { TOWARD } from './floor2';
@@ -184,23 +187,6 @@ function stackedBlocks(): Sprite {
 }
 
 /**
- * THE SHRIEKING SKULL, the cult's mark (floor 5's own: face on, its jaw dropped wide open), as it is cut
- * into a face: is the place (a, b) (in units, a down the mark, b across it, its size `s`) in its cut?
- */
-function inMark(a: number, b: number, s: number): 'cut' | 'lip' | null {
-  const x = b / s;
-  const y = a / s;
-  const skull = (x * x) / 0.7 + ((y + 0.35) * (y + 0.35)) / 0.62 < 1; // the cranium
-  const jaw = Math.abs(x) < 0.5 - Math.max(0, y - 0.6) * 0.6 && y > 0.25 && y < 1.15; // the jaw dropped
-  const mouth = Math.abs(x) < 0.3 && y > 0.4 && y < 1.0; // its mouth wide open
-  const eye = (Math.hypot(x - 0.32, y + 0.25) < 0.2 || Math.hypot(x + 0.32, y + 0.25) < 0.2);
-  const outline = (skull || jaw) && !((x * x) / 0.58 + ((y + 0.35) * (y + 0.35)) / 0.5 < 1 && !jaw) && !(jaw && Math.abs(x) < 0.38 - Math.max(0, y - 0.6) * 0.6 && y > 0.32 && y < 1.08);
-  if (eye || mouth) return 'cut';
-  if (outline) return 'lip';
-  return null;
-}
-
-/**
  * THE GREAT OBELISK, lying where it was split from the rock: a long tapering shaft of the fresh stone
  * along x, its point (the pyramidion) toward +x, still rough at its base end; the marks of the picks
  * down its top in rows; the cult's mark cut into its top near the base and chalked, its first runes
@@ -225,9 +211,9 @@ function obelisk(): Sprite {
   S.quad(top, (u, v) => {
     const a = (u - 0.14) * LEN;
     const b = (v - 0.5) * (2 * (W0 + (W1 - W0) * u));
-    const m = inMark(a, b, 12);
-    if (m === 'cut') return CUT;
-    if (m === 'lip') return FRESH[1];
+    const m = shriekAt(b / 11, -a / 12);
+    if (m === 'dark') return CUT;
+    if (m === 'bone') return FRESH[2];
     // the chalk lines where the next faces are to be dressed, along it
     if (u > 0.3 && Math.abs(v - 0.16) < 0.02) return CHALK;
     // the base end still rough, not yet dressed
@@ -557,6 +543,194 @@ export function boulder(size: number, seed: number): Sprite {
 }
 
 // =================================================================================================
+// THE OVERSEERS' REDOUBT: THE QUARRY'S CULT STRONGHOLD, AT ITS DOOR
+//
+// As the planning chat painted it with his yes (13 Oct, by 09:52: "Yes, this is it (Recommended)"): an
+// overseers' redoubt cut into an old terrace; its gate set into the terrace's face between two towers
+// of the quarry's own stone, the cult's keep behind; the cult's violet banners and braziers of its pink
+// fire; the door sealed with the cult's mark burning pink; before it an altar with three hollows for the
+// words given (art/act1_cult.ts, `wordAltar`), the court paved with the quarry's dressed stone.
+
+/** The redoubt's dressed stone: the quarry's limestone squared and coursed, a little greyer than the fresh-cut, weathered. */
+export const DRESSED: Ramp = ['#655c74', '#837a8f', '#a39a9f', '#c4bbb4', '#d9d0c6'];
+/** The court's flagstones: the same stone, laid. */
+export const FLAG: Ramp = ['#5f5868', '#8a8290', '#9c94a1', '#aea6b1', '#c4bcc4'];
+
+/**
+ * COURSED ASHLAR: the colour of a dressed wall at the world's point `w`, its face turned `n`: courses
+ * 12 picture pixels high, blocks of 20 to 32 units along the course, their joints dark, each block a
+ * shade of its own, now and then one weathered darker, the course's top edge lit where the face is in
+ * the light.
+ */
+function ashlar(w: V3, n: V3, seed: number, r: Ramp = DRESSED): string {
+  const along = Math.abs(n[1]) > Math.abs(n[0]) ? w[0] : w[1];
+  const z = w[2];
+  const course = Math.floor(z / 12);
+  const zin = z - course * 12;
+  const len = 22 + Math.floor(hash(course, 1, seed) * 3) * 4;
+  const off = hash(course, 2, seed) * len;
+  const block = Math.floor((along + off) / len);
+  const ain = along + off - block * len;
+  if (zin < 1.05 || ain < 1.3) return r[0]; // the joints
+  const base = toneAt(n, r, (hash(block, course, seed + 1) - 0.5) * 0.24);
+  if (zin > 10.9 && dot(n, [-0.55, 0.45, 0.7]) > 0) return r[Math.min(4, r.indexOf(base) + 1)]; // its top edge, lit
+  if (hash(block, course, seed + 2) > 0.93) return mix(base, r[0], 0.3); // a stone weathered
+  return base;
+}
+
+/** The arch of the redoubt's gate: its opening's half width, the height its sides go up to, its round top. */
+const GATE = { half: 17, spring: 50, recess: 6 };
+const inOpening = (x: number, z: number): boolean => Math.abs(x) < GATE.half && (z < GATE.spring || Math.hypot(x, z - GATE.spring) < GATE.half);
+
+/**
+ * THE REDOUBT'S GATEHOUSE, its door shut and sealed (`open` false: the cult's mark burning pink on the
+ * door, `f` its flicker, 4 frames) or open (the door gone down, the dark of the way in, steps going
+ * back). Built on the grid as the terrace's face runs, along x, looking out down the screen to the left:
+ * the gate wall with its round arch of voussoirs and its battlements, a tower either side standing out
+ * from the face with its merlons and arrow slits, the cult's banner hung down each tower's front, and
+ * the keep rising behind on the terrace's top, its own banner flying. 212 x 312 at (72, 282).
+ */
+function gatehouse(open: boolean, f: number): Sprite {
+  const S = new Scene(new Px(290, 424), 98, 382);
+  /** It is built a third again as big as it is measured here, its stones with it. */
+  const K = 1.35;
+  const big = (v: V3): V3 => [v[0] * K, v[1] * K, v[2] * K];
+  const face = (q: [V3, V3, V3, V3], id: number, paint: (w: V3, n: V3) => string | null): void => {
+    const n = seenNormal(q);
+    S.quad([big(q[0]), big(q[1]), big(q[2]), big(q[3])], (_u, _v, w) => paint([w[0] / K, w[1] / K, w[2] / K], n), id);
+  };
+  const blockOf = (x0: number, y0: number, x1: number, y1: number, z0: number, z1: number, id: number, seed: number, skip?: (w: V3, n: V3) => boolean): void => {
+    // its top, its front (+y) and its side to the right (+x): what the eye sees of a box
+    face([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], id, (w, n) => (hash(Math.floor(w[0] / 9), Math.floor(w[1] / 9), seed) > 0.7 ? DRESSED[3] : toneAt(n, DRESSED, 0.05)));
+    face([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], id, (w, n) => (skip && skip(w, n) ? null : ashlar(w, n, seed)));
+    face([[x1, y1, z0], [x1, y0, z0], [x1, y0, z1], [x1, y1, z1]], id, (w, n) => (skip && skip(w, n) ? null : ashlar(w, n, seed + 5)));
+  };
+  /** Merlons along a box's front and right edges at its top. */
+  const merlons = (x0: number, y0: number, x1: number, y1: number, z: number, id: number, seed: number): void => {
+    for (let x = x0; x + 6 <= x1 + 0.1; x += 12) blockOf(x, y1 - 5, Math.min(x + 7, x1), y1, z, z + 9, id, seed);
+    for (let y = y1 - 12; y - 7 >= y0 - 0.1; y -= 12) blockOf(x1 - 5, y - 7, x1, y, z, z + 9, id, seed);
+  };
+
+  // THE KEEP, behind, on the terrace's top (its foot at the terrace's height)
+  const TOP = 110 / K;
+  blockOf(-40, -92, 40, -44, TOP, 176, 1, 970);
+  merlons(-40, -92, 40, -44, 176, 1, 970);
+  // its window, dark, and its banner flying from a pole on its top
+  face([[-6, -44.1, 140], [6, -44.1, 140], [6, -44.1, 158], [-6, -44.1, 158]], 2, (w) => (Math.hypot(w[0], w[2] - 154) < 6 || w[2] < 154 ? '#120e1a' : null));
+  S.rod(big([30, -50, 185]), big([30, -50, 214]), 0.9, 0.9, TIMBER, 3);
+  for (let k = 0; k < 14; k++) {
+    const tail = k / 13;
+    face([[30, -50 - k * 2, 212 - tail * 2], [30, -52 - k * 2, 212 - tail * 2], [30, -52 - k * 2, 203 + tail * 4], [30, -50 - k * 2, 203 + tail * 4]], 4, (_w, n) => toneAt(n, CLOTH, 0.1));
+  }
+
+  // THE GATE WALL between the towers, its arch, its battlements
+  const W0 = -30;
+  const W1 = 30;
+  const WALL_Z = 98;
+  blockOf(W0, -24, W1, 0, 0, WALL_Z, 5, 971, (w, n) => n[1] > 0.5 && inOpening(w[0], w[2]));
+  merlons(W0, -24, W1, 0, WALL_Z, 5, 971);
+  // the voussoirs round the arch, a paler ring, cut radially
+  face([[W0, 0.05, 0], [W1, 0.05, 0], [W1, 0.05, 90], [W0, 0.05, 90]], 6, (w, n) => {
+    const x = w[0];
+    const z = w[2];
+    if (inOpening(x, z)) return null;
+    const r = Math.hypot(x, z - GATE.spring);
+    if (z >= GATE.spring - 2 && r < GATE.half + 7) {
+      const a = Math.atan2(z - GATE.spring, x);
+      const k = fr(a / (Math.PI / 9));
+      if (k < 0.08 || r > GATE.half + 6) return DRESSED[0];
+      return toneAt(n, FRESH, k > 0.5 ? 0.08 : 0);
+    }
+    if (Math.abs(x) < GATE.half + 4 && Math.abs(x) >= GATE.half && z < GATE.spring) return toneAt(n, FRESH, 0); // the jambs' dressed edges
+    return null;
+  });
+  // the left jamb, seen in shade, from the face back to the door
+  face([[-GATE.half, 0, 0], [-GATE.half, -GATE.recess, 0], [-GATE.half, -GATE.recess, GATE.spring + 12], [-GATE.half, 0, GATE.spring + 12]], 7, (w, n) => (inOpening(-GATE.half + 0.01, w[2]) || w[2] < GATE.spring ? ashlar(w, n, 972) : null));
+  // THE DOOR, set back in the arch
+  const lights: Light[] = [];
+  face([[-GATE.half, -GATE.recess, 0], [GATE.half, -GATE.recess, 0], [GATE.half, -GATE.recess, GATE.spring + GATE.half], [-GATE.half, -GATE.recess, GATE.spring + GATE.half]], 8, (w, n) => {
+    const x = w[0];
+    const z = w[2];
+    if (!inOpening(x, z)) return null;
+    if (open) {
+      // the way in, dark; the first steps down going back, their lips catching what light there is
+      const step = Math.floor(z / 6);
+      if (z < 18 && fr(z / 6) > 0.8) return step % 2 ? '#2a2434' : '#221d2c';
+      return '#0c0a12';
+    }
+    // a slab of the cult's slate, the mark cut huge in it and burning
+    const m = shriekAt(x / 13, (z - 34) / 15);
+    const flick = [0, 1, 0, 2][f % 4];
+    if (m === 'dark') return FLAME[Math.min(4, 3 + (flick === 2 ? 1 : 0))];
+    if (m === 'bone') return FLAME[1 + (flick ? 1 : 0)];
+    // the slab's own stone, a band of iron across it, studs
+    if (Math.abs(z - 12) < 1.5 || Math.abs(z - 58) < 1.5) return toneAt(n, IRON, 0.2);
+    return toneAt(n, SLATE, (hash(Math.floor(x / 6), Math.floor(z / 6), 973) - 0.5) * 0.2);
+  });
+  if (!open) {
+    const [lx, ly] = S.at(big([0, -GATE.recess, 34]));
+    lights.push({ x: lx / GRAIN, y: ly / GRAIN, r: 30 + (f % 2) * 3, color: FLAME[2], a: 0.38 });
+  }
+
+  // THE TOWERS, standing out from the face either side
+  for (const [x0, x1, seed] of [[-72, -30, 974], [30, 72, 975]] as const) {
+    const TZ = 152;
+    blockOf(x0, -28, x1, 12, 0, TZ, 10 + (x0 > 0 ? 1 : 0), seed, (w, n) => {
+      // its arrow slits, dark, two to a face
+      const along = Math.abs(n[1]) > 0.5 ? w[0] - (x0 + x1) / 2 : w[1] + 8;
+      return (Math.abs(along) < 1.4 && ((w[2] > 96 && w[2] < 114) || (w[2] > 40 && w[2] < 56)));
+    });
+    merlons(x0, -28, x1, 12, TZ, 10 + (x0 > 0 ? 1 : 0), seed);
+    // the slits behind the masks, dark
+    face([[x0 + (x1 - x0) / 2 - 1.5, 11.9, 96], [x0 + (x1 - x0) / 2 + 1.5, 11.9, 96], [x0 + (x1 - x0) / 2 + 1.5, 11.9, 114], [x0 + (x1 - x0) / 2 - 1.5, 11.9, 114]], 12, () => '#100c18');
+    face([[x0 + (x1 - x0) / 2 - 1.5, 11.9, 40], [x0 + (x1 - x0) / 2 + 1.5, 11.9, 40], [x0 + (x1 - x0) / 2 + 1.5, 11.9, 56], [x0 + (x1 - x0) / 2 - 1.5, 11.9, 56]], 12, () => '#100c18');
+    // the cult's banner hung down its front, the skull painted on it, its foot cut into tails
+    const bx0 = x0 + 7;
+    const bx1 = x1 - 7;
+    face([[bx0, 12.6, 58], [bx1, 12.6, 58], [bx1, 12.6, 138], [bx0, 12.6, 138]], 13, (w, n) => {
+      const u = (w[0] - bx0) / (bx1 - bx0);
+      const tail = Math.abs(fr(u * 3) - 0.5) * 2;
+      if (w[2] < 58 + 8 * (1 - tail)) return null;
+      const m = shriekAt((u - 0.5) * 2.4, (w[2] - 108) / 13);
+      if (m === 'bone') return u > 0.62 ? PAINT_SHADE : PAINT;
+      if (w[2] > 135) return IRON[3]; // its iron rod
+      const fold = Math.sin(u * 12);
+      return CLOTH[fold > 0.5 ? 3 : fold < -0.5 ? 1 : 2] ?? toneAt(n, CLOTH, 0);
+    });
+  }
+
+  S.seams();
+  const sp = compose(null, [S.p], null).sprite(98, 382, GRAIN);
+  if (lights.length) sp.lights = lights;
+  return sp;
+}
+
+/**
+ * THE COURT'S FLAGSTONES, a floor tile: two great slabs of the quarry's dressed stone to a tile, laid
+ * in rows, their joints dark, each stone's edge worn pale; worn paler down the middle of the way to the
+ * door (`worn`). 64 x 33 at (32, 0).
+ */
+function flagstones(worn: boolean, seed: number): Sprite {
+  const p = new Px(64, 33);
+  for (let py = 0; py < 33; py++) {
+    for (let px = 0; px < 64; px++) {
+      const uv = tileUV(px, py);
+      if (!uv) continue;
+      const [U, V] = uv;
+      const half = U < 32 ? 0 : 1;
+      const k = hash(half, seed, 976);
+      let c = FLAG[k > 0.66 ? 3 : k > 0.25 ? 2 : 1];
+      if (worn && Math.abs(U - 32) < 18) c = mix(c, FLAG[4], 0.25 * (1 - Math.abs(U - 32) / 18));
+      if (V < 1.5 || U < 1.5 || Math.abs(U - 32) < 1) c = FLAG[0]; // the joints
+      else if (V < 3.5 || (U >= 32 && U < 34.5) || U < 3.5) c = mix(c, FLAG[4], 0.35); // the worn edge, in the light
+      if (hash(px >> 1, py, seed + 977) > 0.97) c = FLAG[1];
+      p.set(px, py, c);
+    }
+  }
+  return p.sprite(32, 0, GRAIN);
+}
+
+// =================================================================================================
 // THE LIST
 
 let made: Piece[] | null = null;
@@ -580,6 +754,13 @@ export function quarryPieces(): Piece[] {
     // on the floor
     { name: 'splitting tools', kind: 'on the floor', frames: [splittingTools()] },
     { name: 'chippings', kind: 'on the floor', frames: [chippings(0), chippings(1)], shadow: 0.3 },
+    // the overseers' redoubt, the Quarry's stronghold
+    { name: "the redoubt's gatehouse", kind: 'gate', frames: [0, 1, 2, 3].map((f) => gatehouse(false, f)).concat([gatehouse(true, 0)]), shadow: 1.2 },
+    { name: "the court's flagstones", kind: 'floor tile', frames: [flagstones(false, 1), flagstones(false, 2), flagstones(true, 3)] },
+    // the cult's (the set's, art/act1_cult.ts: at every stronghold of the five floors)
+    { name: 'the altar of the words', kind: 'obstacle', frames: [wordAltar()], shadow: 0.7 },
+    { name: "the cult's brazier", kind: 'obstacle', frames: [0, 1, 2, 3].map(pinkBrazier), shadow: 0.3 },
+    { name: "the cult's banner", kind: 'obstacle', frames: [0, 1, 2, 3].map(cultBanner), shadow: 0.2 },
     // the mountain's (for the tops and the set)
     { name: 'pine', kind: 'obstacle', frames: [pine(0.2, 3), pine(0.55, 11), pine(0.9, 17)], shadow: 0.4 },
     { name: 'boulder', kind: 'obstacle', frames: [boulder(0, 5), boulder(1, 9), boulder(2, 13)], shadow: 0.36 },
