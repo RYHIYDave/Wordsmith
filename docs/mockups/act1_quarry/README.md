@@ -363,6 +363,22 @@ one after another), `walk:<golem|rubbling>:<fps>:<view>`, `film:<who>:<move>:<fp
   spark; the golem's boss review; the rubbling's feet; its loops; as the game holds a monster).
   tests/new_mobs3.test.ts knows the floor 6 mock-ups (it had not been told of the Unfinished either).
 
+Asked as a pop-up "Are the quarry golem and the rubbling right?" (offered: "Yes, send floor 6 to main
+(Recommended)", "Yes, but keep floor 6 here", "Change the golem first", "Change the rubbling first"), his
+answer by 16:58 (13 Oct): "[No preference]". Read as, and told him so: the two stay as shown, and floor 6 goes
+to the main chat all at once, as his word of 14:56 had it; nothing of it goes live until the main chat has
+his OK.
+
+## Their sounds (for the sound chat)
+
+His sound rulebook's rule 7 (a sound brief with every new monster) had not been asked for these three; asked
+as pop-ups, his picks by 17:17 (13 Oct): THE UNFINISHED, "Grinding stone, a deep roar (Recommended)", offered
+as: stone grinds with every move; a deep roar comes out of the rock; its blows crash like falling cliff. THE
+QUARRY GOLEM, "Grinding blocks, clinking chains (Recommended)", offered as: its blocks grind as it plods; the
+cult's chains clink and rattle; a deep thud as its fists land. THE RUBBLING, "Clattering pebbles, a fizzing
+spark (Recommended)", offered as: its chips clatter as it scuttles, its spark fizzes, and it pops with a
+crunch.
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a
