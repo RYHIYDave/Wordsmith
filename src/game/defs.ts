@@ -1034,6 +1034,14 @@ export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly numb
 // the wordsmith gives the word (22:12, "The wordsmith should give you the word after the altar powers up"; art/quest3.ts POWER.done).
 export const QUEST_ITEM = { name: 'Master Rune-stone', the: 'the MASTER RUNE-STONE', promptSecs: 6, ringSecs: 4.7 };
 /**
+ * QUEST ITEMS ARE GIVEN BY USING THE ONE THEY ARE FOR, NOT BY WALKING PAST HIM. His word, 13 Oct
+ * 2026, 14:25 (to the planning chat): “I’d like the quest turn ins to be triggered by interacting
+ * with the npcs not just when you walk by.” With it on, the master rune-stone is given to the
+ * wordsmith when the hero uses him (the use button beside him, his prompt, or a tap on him), and
+ * his prompt says so (`prompt`); walked past, nothing happens. Off until his yes to pictures of it.
+ */
+export const HAND_IN = { on: false, prompt: 'Give the rune-stone' };
+/**
  * The first dungeon, gentler, with the first levels on: about half the monsters of a first
  * dungeon (its budget, against `monsterBudget(1)`'s 120), in packs of two to four, one room of
  * elites, and every blow struck in it soft (GUIDE.softDmg, everywhere in it, not only before the

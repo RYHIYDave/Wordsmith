@@ -42,7 +42,8 @@ The planning chat's branch `meld/words`, from `main` at a60d618. NOTHING OF IT I
   Lexicon (my reading: the Lexicon keeps the words as found); sold to the wordsmith like any word.
 - RUNEDUST AND THE MELDSTONE: the Fleshmancer drops runedust each time he dies (`fleshmancerDust`, 3),
   and the Meldstone until it has been brought to the wordsmith. Walked up to with it, the wordsmith
-  takes it and can meld. Runedust is the hero's (`Hero.dust`); melding, once the Meldstone has been
+  takes it and can meld (with HAND_IN on, from the branch quest/hand-in: given by using him, his prompt "Give the
+  Meldstone", not by walking up). Runedust is the hero's (`Hero.dust`); melding, once the Meldstone has been
   brought, is open for every hero after on that device (`Meta.meld`), as the wordsmith's ring is (my
   reading, following the ring). Both are saved only while MELD is on.
 - AT THE WORDSMITH (src/ui/meld.ts): a MELD tab on his half once he can meld; two hollows, the

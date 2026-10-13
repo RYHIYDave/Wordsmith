@@ -14,9 +14,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { RNG } from '../src/engine/rng';
 import { SKILLS, WORDS } from '../src/game/defs';
+import { HAND_IN } from '../src/game/defs';
 import { Game, newMeta } from '../src/game/game';
 import type { ItemRef } from '../src/game/game';
-import { MELD, MELD_TUNE, isDamageWord, meldOf, meldProblem, partsOf, savedMeta, withParts } from '../src/game/melds';
+import { MELD, MELD_HAND_IN, MELD_TUNE, isDamageWord, meldOf, meldProblem, partsOf, savedMeta, withParts } from '../src/game/melds';
 import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster, Resolved } from '../src/game/state';
 import { ALL_WORD_IDS, MELD_IDS, MELD_OF, WORD_IDS } from '../src/game/types';
@@ -701,4 +702,38 @@ test('the wordsmith melds two spare damage words into one, for runedust; both ar
   assert.equal(g.meldProblem('power', 'fire'), 'Not yet');
   const saved = JSON.parse(JSON.stringify(g.save())) as Record<string, unknown>;
   assert.ok(!('dust' in saved) && !('meld' in saved), 'no runedust and no Meldstone in a save');
+});
+
+test('with HAND_IN on, the Meldstone is given by using the wordsmith, not by walking up to him', () => {
+  melding(() => {
+    const was = HAND_IN.on;
+    HAND_IN.on = true;
+    try {
+      const g = seasoned(new Game('warrior', 15), 10);
+      const h = g.hero;
+      h.meld = 'stone';
+      const st = g.level.stations.find((q) => q.kind === 'wordsmith')!;
+      let best = { x: h.x, y: h.y, d: 1e9 };
+      const f = g.level.floor;
+      for (let ty = 0; ty < f.h; ty++) for (let tx = 0; tx < f.w; tx++) {
+        if (g.level.walk[ty * f.w + tx] !== 1) continue;
+        const d = Math.hypot(tx + 0.5 - st.x, ty + 0.5 - st.y);
+        if (d < best.d) best = { x: tx + 0.5, y: ty + 0.5, d };
+      }
+      h.x = best.x;
+      h.y = best.y;
+      const c = emptyControls();
+      for (let k = 0; k < 10; k++) g.update(DT, c);
+      assert.equal(h.meld, 'stone', 'walked up to: still carried');
+      assert.equal(g.interactHint(), MELD_HAND_IN, 'his prompt says it is given');
+      c.interact = true;
+      g.events.length = 0;
+      g.update(DT, c);
+      assert.equal(h.meld, 'open', 'used: given, and he can meld');
+      assert.ok(!g.events.some((e) => e.t === 'station'), 'his panel does not open');
+      assert.equal(g.interactHint(), 'Wordsmith');
+    } finally {
+      HAND_IN.on = was;
+    }
+  });
 });

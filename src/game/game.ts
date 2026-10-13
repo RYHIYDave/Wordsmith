@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -26,7 +26,7 @@ import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPEN
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
-import { MELD, MELD_DUST_COLOR, MELD_TUNE, isDamageWord, meldOf, meldProblem, savedWords, withParts, wordIds } from './melds';
+import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, isDamageWord, meldOf, meldProblem, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
 
@@ -6174,20 +6174,16 @@ export class Game {
     const b = this.level.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < 1.3) this.searchBody(b);
     // THE FIRST LEVELS: the quest item brought to the wordsmith in town: walk up to him, and his ring is lit
-    if (h.quest && this.level.town) {
+    // (HAND_IN: no longer by walking up; by using him, below)
+    if (h.quest && this.level.town && !HAND_IN.on) {
       const st = this.level.stations.find((s) => s.kind === 'wordsmith');
       if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) this.lightRing(st.x, st.y);
     }
     // WORDMELDING: the Meldstone brought to the wordsmith: walk up to him, and he can meld
-    if (h.meld === 'stone' && this.level.town) {
+    // (HAND_IN: no longer by walking up; by using him)
+    if (h.meld === 'stone' && this.level.town && !HAND_IN.on) {
       const st = this.level.stations.find((s) => s.kind === 'wordsmith');
-      if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) {
-        h.meld = 'open';
-        if (!this.practice) this.meta.meld = true;
-        this.emit({ t: 'text', x: st.x, y: st.y, text: 'MELDING', color: MELD_DUST_COLOR });
-        this.sfx('rare');
-        this.msg('The wordsmith takes the MELDSTONE. He can meld words now.', MSG.word);
-      }
+      if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) this.takeMeldstone(st.x, st.y);
     }
     if (c.interact) {
       // (THE WAYS: standing on an awake waypoint, the use button warps him: to town, or from town back down)
@@ -6202,8 +6198,9 @@ export class Game {
       }
       if (this.level.town) {
         // In town the rules only say which service was asked for; the interface opens its panel.
+        // (HAND_IN: beside the one a quest item is for, using him gives it, in place of his panel)
         const st = this.stationNear();
-        if (st) this.emit({ t: 'station', kind: st });
+        if (st && !this.handIn()) this.emit({ t: 'station', kind: st });
       } else if (!this.wayHere() && this.interactHint() !== null) this.leaveDungeon();
     }
   }
@@ -6233,6 +6230,36 @@ export class Game {
     this.msg('A fallen wordsmith. In the satchel: full flasks, and a WORD.', MSG.word);
   }
 
+  /**
+   * HAND_IN (game/defs.ts): what the hero would give the one he stands beside in town, if anything:
+   * the master rune-stone, to the wordsmith. Null with HAND_IN off (then it is given by walking up).
+   */
+  handInNear(): 'stone' | 'meldstone' | null {
+    if (!HAND_IN.on || !this.level.town || this.stationNear() !== 'wordsmith') return null;
+    // (WORDMELDING: the Meldstone, to the wordsmith too)
+    return this.hero.quest ? 'stone' : this.hero.meld === 'stone' ? 'meldstone' : null;
+  }
+
+  /** HAND_IN: give what `handInNear` says, if anything. True if something was given. */
+  private handIn(): boolean {
+    const what = this.handInNear();
+    const st = this.level.stations.find((s) => s.kind === 'wordsmith');
+    if (!what || !st) return false;
+    if (what === 'meldstone') this.takeMeldstone(st.x, st.y);
+    else this.lightRing(st.x, st.y);
+    return true;
+  }
+
+  /** WORDMELDING: the wordsmith, at (x, y), takes the Meldstone: he can meld from now on (and for every hero after, on this device). */
+  private takeMeldstone(x: number, y: number): void {
+    const h = this.hero;
+    h.meld = 'open';
+    if (!this.practice) this.meta.meld = true;
+    this.emit({ t: 'text', x, y, text: 'MELDING', color: MELD_DUST_COLOR });
+    this.sfx('rare');
+    this.msg('The wordsmith takes the MELDSTONE. He can meld words now.', MSG.word);
+  }
+
   /** The town service within reach of the hero, if any (the nearest when several are). */
   stationNear(): Station | null {
     const h = this.hero;
@@ -6260,6 +6287,9 @@ export class Game {
     if (this.level.town) {
       const st = this.stationNear();
       if (!st) return null;
+      // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
+      const giving = this.handInNear();
+      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : HAND_IN.prompt;
       return st === 'gate' ? `Gate: dungeon ${this.depth}` : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     const p = this.level.portal;

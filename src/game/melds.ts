@@ -24,6 +24,9 @@ import type { MeldId, WordId } from './types';
 
 export const MELD = { on: false };
 
+/** HAND_IN (game/defs.ts): the wordsmith's prompt beside him with the Meldstone. */
+export const MELD_HAND_IN = 'Give the Meldstone';
+
 /** The colour runedust is told in (what glows on a friend is cyan, his rule). */
 export const MELD_DUST_COLOR = '#5ce8f8';
 
