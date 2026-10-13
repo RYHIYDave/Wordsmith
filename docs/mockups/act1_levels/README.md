@@ -161,3 +161,19 @@ straight down from the ridge to the floor, 40 picture pixels tall, narrow where 
 passes straight down and wider where it slants more. Sent as previews/canyon_face_in_game.png;
 asked "...Is this the right idea?", his pick by 21:41: "Yes, that's it (Recommended)", offered as:
 this becomes the rule for near cliffs on every level.
+
+## The reveal from the Ledge Road
+
+His words, 21:54, offered the town's first sight from the cliff next: "Okay let’s see it".
+With the hash `reveal` the page paints the Ledge Road (his view, above) at the place where the town
+first comes into view (`paintVista()`, laid over the view under the clouds; `TOWN`, `SWAMP`):
+
+    node tools/preview.mjs src/dev/preview_act1.ts shots/reveal_world.png 1014 468 reveal
+
+The clouds part; far below, the walled town, smoke rising inside it, a ring of the cult's violet
+tents and their fires round it, and over it a dome of the cult's pink magic (rim bright, cracks of
+power across it); off to the left the swamp under a dark violet glow, lines of magic running from it
+to the dome. Pink, as pink and gold glows are the enemy's. Sent as previews/ledge_reveal_in_game.png;
+asked "Is this the reveal, with the siege magic as a dome?", his pick by 21:57: "Yes, the dome
+(Recommended)", offered as: settles the open question in your doc: the siege magic is a pink dome,
+fed by lines from the swamp.

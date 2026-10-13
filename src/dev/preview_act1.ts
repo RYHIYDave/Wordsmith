@@ -36,7 +36,9 @@ const Z = 2; // screen pixels per picture pixel
 /** "shot": one picture the size of the game's own screen on a phone held sideways (507 by 234 game pixels), to lay under the game's real HUD. */
 const SHOT = decodeURIComponent(location.hash.slice(1)) === 'shot';
 /** "ledge": the Ledge Road as one screen of the game, for its sky (his word of 18:34). */
-const LEDGE = decodeURIComponent(location.hash.slice(1)) === 'ledge';
+/** "reveal": the same, at the place along it where the besieged town first comes into view. */
+const REVEAL = decodeURIComponent(location.hash.slice(1)) === 'reveal';
+const LEDGE = decodeURIComponent(location.hash.slice(1)) === 'ledge' || REVEAL;
 const PW = SHOT || LEDGE ? 1014 : 320 * F;
 const PH = SHOT || LEDGE ? 468 : 220 * F;
 const HWf = 16 * F;
@@ -1767,6 +1769,141 @@ function slopeAt(x: number, y: number, px: number, py: number): RGB {
   return c;
 }
 
+// --- THE REVEAL. The doc's Ledge Road: "From the open cliff, the player sees the town far below under
+// a sickly dome of magic. Siege camps ring the town, and a dark glow hangs over the swamp beyond", and its
+// Sunken Fen: "Lines of magic run from the swamp to the dome over the town". What the siege magic looks
+// like is an open question in his doc; shown here as the dome the doc proposes, the finale being built on
+// it (it flickers as the obelisks fall and shatters as the Drowned Eye dies). Its glow is the cult's
+// pink: pink and gold glows are the enemy's.
+const TOWN: [number, number] = [320, 172];
+const SWAMP: [number, number] = [118, 146];
+let VISTA: ImageData | null = null;
+function paintVista(): ImageData {
+  const c = document.createElement('canvas');
+  c.width = PW;
+  c.height = PH;
+  const g = c.getContext('2d') as CanvasRenderingContext2D;
+  const [tx, ty] = TOWN;
+  const [sx, sy] = SWAMP;
+  // the swamp, far off: murky, a dark violet glow hanging over it
+  const sg = g.createRadialGradient(sx, sy - 4, 2, sx, sy - 4, 70);
+  sg.addColorStop(0, 'rgba(120, 40, 120, 0.55)');
+  sg.addColorStop(1, 'rgba(120, 40, 120, 0)');
+  g.fillStyle = sg;
+  g.beginPath();
+  g.ellipse(sx, sy - 4, 70, 28, 0, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = 'rgba(46, 58, 50, 0.85)';
+  for (let i = 0; i < 12; i++) {
+    g.beginPath();
+    g.ellipse(sx - 50 + i * 9, sy + (hash(i, 0, 501) - 0.5) * 4, 8 + 5 * hash(i, 1, 501), 3 + 2 * hash(i, 2, 501), 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  // the camps ringing the town: tents in the cult's violet, their fires
+  for (let i = 0; i < 34; i++) {
+    const a = (i / 34) * Math.PI * 2 + (hash(i, 0, 503) - 0.5) * 0.2;
+    const r = 1 + 0.12 * (hash(i, 1, 503) - 0.5);
+    const x = tx + Math.cos(a) * 96 * r;
+    const y = ty + Math.sin(a) * 28 * r;
+    g.fillStyle = 'rgba(74, 42, 99, 0.9)';
+    g.beginPath();
+    g.moveTo(x - 3.5, y + 1.5);
+    g.lineTo(x, y - 3.5);
+    g.lineTo(x + 3.5, y + 1.5);
+    g.closePath();
+    g.fill();
+    if (hash(i, 2, 503) > 0.45) {
+      g.fillStyle = 'rgba(255, 179, 71, 0.95)';
+      g.fillRect(Math.round(x + 4), Math.round(y), 2, 2);
+    }
+  }
+  // the town: its wall, roofs, a keep, the smoke of what burns inside
+  g.strokeStyle = 'rgba(196, 188, 176, 0.95)';
+  g.lineWidth = 3;
+  g.beginPath();
+  g.ellipse(tx, ty, 60, 17, 0, 0, Math.PI * 2);
+  g.stroke();
+  for (let i = 0; i < 90; i++) {
+    const a = hash(i, 0, 505) * Math.PI * 2;
+    const r = Math.sqrt(hash(i, 1, 505)) * 0.9;
+    const x = tx + Math.cos(a) * 56 * r;
+    const y = ty + Math.sin(a) * 14 * r;
+    g.fillStyle = ['#9c4f3a', '#7e4636', '#b8835a', '#8a5a44'][Math.floor(hash(i, 2, 505) * 4)];
+    g.fillRect(Math.round(x - 2), Math.round(y - 2), 4 + Math.round(hash(i, 3, 505) * 3), 3);
+  }
+  g.fillStyle = '#cfc8bd';
+  g.fillRect(tx - 5, ty - 20, 10, 19);
+  g.fillStyle = '#6e4a3a';
+  g.beginPath();
+  g.moveTo(tx - 6, ty - 20);
+  g.lineTo(tx, ty - 31);
+  g.lineTo(tx + 6, ty - 20);
+  g.closePath();
+  g.fill();
+  for (let i = 0; i < 3; i++) {
+    const x0 = tx - 32 + i * 28;
+    for (let k = 0; k < 7; k++) {
+      g.fillStyle = `rgba(90, 84, 96, ${0.45 - k * 0.06})`;
+      g.beginPath();
+      g.ellipse(x0 + k * 4, ty - 6 - k * 8, 3.5 + k * 1.3, 2.8 + k * 0.9, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  }
+  // all that far off, in the air's blue
+  g.globalCompositeOperation = 'source-atop';
+  g.fillStyle = 'rgba(201, 224, 246, 0.32)';
+  g.fillRect(0, 0, PW, PH);
+  g.globalCompositeOperation = 'source-over';
+  // the lines of magic from the swamp to the dome
+  for (let i = 0; i < 3; i++) {
+    const bend = -26 - i * 9;
+    for (const [w, a] of [[3, 0.22], [1, 0.85]] as const) {
+      g.strokeStyle = `rgba(255, 95, 210, ${a})`;
+      g.lineWidth = w;
+      g.beginPath();
+      g.moveTo(sx + 6 - i * 6, sy - 3);
+      g.quadraticCurveTo((sx + tx) / 2, sy + bend, tx - 52 + i * 30, ty - 46 + i * 6);
+      g.stroke();
+    }
+  }
+  // the dome: the sickly pink of the cult's magic, its rim bright, cracks of its power across it
+  const rx = 80;
+  const ry = 64;
+  const dg = g.createRadialGradient(tx - 20, ty - 34, 6, tx, ty - 12, rx);
+  dg.addColorStop(0, 'rgba(255, 150, 230, 0.12)');
+  dg.addColorStop(0.75, 'rgba(230, 80, 200, 0.22)');
+  dg.addColorStop(1, 'rgba(200, 60, 180, 0.42)');
+  g.fillStyle = dg;
+  g.beginPath();
+  g.ellipse(tx, ty + 2, rx, ry, 0, Math.PI, 0);
+  g.ellipse(tx, ty + 2, rx, 22, 0, 0, Math.PI);
+  g.fill();
+  g.strokeStyle = 'rgba(255, 120, 220, 0.9)';
+  g.lineWidth = 2;
+  g.beginPath();
+  g.ellipse(tx, ty + 2, rx, ry, 0, Math.PI, 0);
+  g.stroke();
+  g.strokeStyle = 'rgba(255, 210, 245, 0.75)';
+  g.lineWidth = 1.5;
+  g.beginPath();
+  g.ellipse(tx, ty + 2, rx - 9, ry - 9, 0, Math.PI * 1.15, Math.PI * 1.45);
+  g.stroke();
+  g.strokeStyle = 'rgba(255, 160, 235, 0.6)';
+  for (let i = 0; i < 4; i++) {
+    let x = tx - 50 + i * 28;
+    let y = ty - 32 - 12 * hash(i, 0, 507);
+    g.beginPath();
+    g.moveTo(x, y);
+    for (let k = 0; k < 4; k++) {
+      x += 5 + 6 * hash(i, k, 508);
+      y += (hash(i, k, 509) - 0.5) * 12;
+      g.lineTo(x, y);
+    }
+    g.stroke();
+  }
+  return g.getImageData(0, 0, PW, PH);
+}
+
 /** The Ledge Road as one screen of the game. */
 function paintLedge(g: CanvasRenderingContext2D): Uint8Array {
   const img = g.createImageData(PW, PH);
@@ -1807,9 +1944,14 @@ function paintLedge(g: CanvasRenderingContext2D): Uint8Array {
   const below: [number, number, number, boolean][] = [];
   for (let i = 0, px = -40; px < PW + 60; px += 60 + 40 * hash(i, 0, 440), i++) {
     const far = ledgeFar(Math.max(0, Math.min(PW - 1, px)));
+    if (REVEAL && px > TOWN[0] - 140 && px < TOWN[0] + 140) continue; // a clear gap in the clouds where the town is
     below.push([px, far - 14 - 26 * hash(i, 1, 440), 22 + 18 * hash(i, 2, 440), hash(i, 3, 440) > 0.6]);
   }
-  for (let i = 0; i < 7; i++) below.push([hash(i, 0, 445) * PW, HORIZON + 18 + 30 * hash(i, 1, 445), 12 + 10 * hash(i, 2, 445), true]);
+  for (let i = 0; i < 7; i++) {
+    const px = hash(i, 0, 445) * PW;
+    if (REVEAL && px > TOWN[0] - 140 && px < TOWN[0] + 140) continue;
+    below.push([px, HORIZON + 18 + 30 * hash(i, 1, 445), 12 + 10 * hash(i, 2, 445), true]);
+  }
   paintPuffs(heaps(below, 50), col, on);
   // what each pixel is: 0 the view, 1 the road, 2 the slope in front
   const kind = new Uint8Array(PW * PH);
@@ -1843,7 +1985,16 @@ function paintLedge(g: CanvasRenderingContext2D): Uint8Array {
         if (on[py * PW + px]) {
           const o = (py * PW + px) * 3;
           put(px, py, [col[o], col[o + 1], col[o + 2]]);
-        } else put(px, py, viewAt(px, py));
+        } else {
+          let c = viewAt(px, py);
+          if (VISTA) {
+            // the reveal: the town, its siege and the magic over it, laid over the view
+            const o = (py * PW + px) * 4;
+            const a = VISTA.data[o + 3] / 255;
+            if (a > 0) c = mix(c, [VISTA.data[o], VISTA.data[o + 1], VISTA.data[o + 2]], a);
+          }
+          put(px, py, c);
+        }
         continue;
       }
       if (k === 1) {
@@ -2068,9 +2219,10 @@ if (LEDGE) {
   cvs.height = PH;
   const lg = cvs.getContext('2d') as CanvasRenderingContext2D;
   lg.imageSmoothingEnabled = false;
+  if (REVEAL) VISTA = paintVista();
   paintLedge(lg);
   // vultures, circling out over the drop
-  vulture(26 * F, 0.3, 1)(lg, 300, 120);
+  vulture(26 * F, 0.3, 1)(lg, REVEAL ? 520 : 300, REVEAL ? 112 : 120);
   vulture(18 * F, -0.5, 2)(lg, 600, 96);
   vulture(12 * F, 0.2, 3)(lg, 860, 150);
   // what stands, from the back
