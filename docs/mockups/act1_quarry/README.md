@@ -146,6 +146,43 @@ boulders; the cult's altar, brazier, banner, ring and hanging are the set's.
 far wall); `dressed` now has them in the screen too (the face, ladder, rope and hand at the far faces'
 feet, found by `faceFoot`; the trap two tiles, its spikes up out of one).
 
+Asked as a pop-up "Are these the rest of the Quarry's pieces?", his pick (13 Oct, by 13:16): "Yes, on to
+the cult camp (Recommended)", offered as: these stay as shown; next the cult's camp pieces for floors 6 to
+10 (tents, fires, cages, barricades), then the Unfinished.
+
+## The cult's camp: the set's pieces for floors 6 to 10
+
+`src/art/act1_camp.ts`, `campPieces()`: twenty of the set's 25 (the other five are the strongholds':
+the altar of the words, the brazier, the banner, the ring of magic, the hanging), the cult on the march
+and dug in, in the look of the planning chat's camps he said yes to (violet tents, pink fires, banners,
+crates, a hoist at a cliff's edge):
+- where they sleep: THE CULT'S TENT (a ridge tent, the skull painted bone-pale on its side; shut, or its
+  door open), THE CULT'S PAVILION (its leader's round tent, striped, a valance, a pennant, the skull either
+  side of its door), A BEDROLL (laid out, or rolled), A LEAN-TO (stitched hides on a ridge pole);
+- where they eat and keep warm: THE CULT'S WATCHFIRE (4 frames, its pink light), A COLD FIRE, THE CULT'S
+  CAULDRON (on three poles over the cult's fire, its brew bubbling; 4 frames, its light);
+- their stores, breakables whole and broken: SUPPLY CRATES (the skull painted on), SACKS OF GRAIN,
+  FIREPOTS (the firepot throwers' stock);
+- their arms, captives and lines: A WEAPON RACK (spears, two of the cult's wavy bone daggers), THE
+  CAPTIVES' CAGE (shut, or broken open), STAKES (a barricade, along x or y), THE SKULL STANDARD, THE CULT'S
+  LOOKOUT (a watchtower, tall: seen through), THE CULT'S HOIST (for a cliff's edge);
+- their rites and war: AN OFFERING BOWL, THE WAR DRUM (its head toward the eye, the skull painted dark on
+  it), A DEAD TREE (two, a rag of the cult's violet tied on: for the canyon's tops and the wood toward
+  the swamp);
+- their trap, THE CULT'S FIRE TRAP: a plate of planks over a buried firepot (a floor tile), its warning
+  (the fire pink through its cracks, a little light), then a column of the cult's fire up out of it, three
+  frames (bursting with the planks flung, at its height, dying down), each with its light.
+Only the watchfire, the cauldron and the fire trap give light, in the cult's fire. `tests/act1_camp.test.ts`
+(6) holds them to the rulebook. floor6.ts's small helpers are exported for it.
+
+    node tools/preview.mjs src/dev/preview_camp.ts shots/camp.png 1014 468 camp:<0 to 15>
+    node tools/preview.mjs src/dev/preview_camp.ts shots/camp_sheet.png 1014 1272 sheet
+
+`camp` is a camp of the cult on a terrace of the Quarry (the camp is the set's; the Quarry is the ground
+there is to show it on), the knight coming up the cut onto its fire trap; its frames 0 to 15 are a film
+at about 8 a second (the fires leaping, the trap's warning and its going off once). `sheet` is every piece
+at the game's size.
+
 ## The Unfinished: his brief (13 Oct, by 12:42)
 
 Asked as pop-ups (his art rulebook's questions for a new character): how big, "Twice the Warden

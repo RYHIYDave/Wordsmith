@@ -63,25 +63,25 @@ const CUT = '#4a4258';
 // =================================================================================================
 // Little helpers in the world's own measure
 
-const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const mul = (a: V3, k: number): V3 => [a[0] * k, a[1] * k, a[2] * k];
-const dot = (a: readonly number[], b: readonly number[]): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-const norm = (a: V3): V3 => {
+export const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+export const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+export const mul = (a: V3, k: number): V3 => [a[0] * k, a[1] * k, a[2] * k];
+export const dot = (a: readonly number[], b: readonly number[]): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+export const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+export const norm = (a: V3): V3 => {
   const n = Math.hypot(a[0], a[1], a[2]) || 1;
   return [a[0] / n, a[1] / n, a[2] / n];
 };
-const fr = (t: number): number => t - Math.floor(t);
+export const fr = (t: number): number => t - Math.floor(t);
 
 /** The way a flat piece of the world turned to the eye looks: the normal of q, seen side out. */
-function seenNormal(q: readonly [V3, V3, V3, V3]): V3 {
+export function seenNormal(q: readonly [V3, V3, V3, V3]): V3 {
   const n = norm(cross(sub(q[1], q[0]), sub(q[3], q[0])));
   return dot(n, TOWARD) >= 0 ? n : mul(n, -1);
 }
 
 /** Axes for a beam from a to b: along it, then two across it. */
-function beamAxes(a: V3, b: V3): [V3, V3, V3] {
+export function beamAxes(a: V3, b: V3): [V3, V3, V3] {
   const A = norm(sub(b, a));
   const up: V3 = Math.abs(A[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1];
   const B = norm(cross(up, A));
@@ -90,7 +90,7 @@ function beamAxes(a: V3, b: V3): [V3, V3, V3] {
 }
 
 /** A SQUARED TIMBER from a to b, `t` half as thick: its grain along it, its end grain dark, an iron band where `bands` say (0..1 along it). */
-function timber(S: Scene, a: V3, b: V3, t: number, id: number, bands: readonly number[] = []): void {
+export function timber(S: Scene, a: V3, b: V3, t: number, id: number, bands: readonly number[] = []): void {
   const ax = beamAxes(a, b);
   const len = Math.hypot(...sub(b, a));
   S.box(mul(add(a, b), 0.5), ax, [len / 2, t, t], (f, u, v, n) => {
@@ -103,7 +103,7 @@ function timber(S: Scene, a: V3, b: V3, t: number, id: number, bands: readonly n
 }
 
 /** A ROPE from a to b, sagging `sag` at its middle: a line of the rope's tones, thin. */
-function rope(S: Scene, a: V3, b: V3, sag: number, id: number, r = 0.55): void {
+export function rope(S: Scene, a: V3, b: V3, sag: number, id: number, r = 0.55): void {
   const n = Math.max(2, Math.ceil(Math.hypot(...sub(b, a)) / 6));
   let prev = a;
   for (let i = 1; i <= n; i++) {
@@ -115,7 +115,7 @@ function rope(S: Scene, a: V3, b: V3, sag: number, id: number, r = 0.55): void {
 }
 
 /** A WHEEL of iron, small and solid: its rim lit on its upper side, its hub and bolts. `face` the way its outer side looks. */
-function ironWheel(S: Scene, c: V3, face: V3, R: number, id: number): void {
+export function ironWheel(S: Scene, c: V3, face: V3, R: number, id: number): void {
   const F = norm(face);
   const Au = norm(cross(F, [0, 0, 1]));
   const Bu = norm(cross(F, Au));
@@ -134,7 +134,7 @@ function ironWheel(S: Scene, c: V3, face: V3, R: number, id: number): void {
 }
 
 /** Finish a scene: its seams, and the indigo seam round it, anchored at (ox, oy). */
-function finish(S: Scene, ox: number, oy: number, under: Px | null = null): Sprite {
+export function finish(S: Scene, ox: number, oy: number, under: Px | null = null): Sprite {
   S.seams();
   return compose(under, [S.p], null).sprite(ox, oy, GRAIN);
 }
@@ -395,7 +395,7 @@ function rubbleCart(heaped: boolean, alongY = false): Sprite {
 }
 
 /** A tile's pixel (in a 64 x 32 diamond, its top corner at (32, 0)) in the tile's own measure, 64 to a tile along x (U) and y (V); null off it. */
-function tileUV(px: number, py: number): [number, number] | null {
+export function tileUV(px: number, py: number): [number, number] | null {
   const U = px - 32 + 2 * py + 1.5;
   const V = 2 * py - (px - 32) + 0.5;
   if (U < 0 || V < 0 || U >= 64 || V >= 64) return null;
