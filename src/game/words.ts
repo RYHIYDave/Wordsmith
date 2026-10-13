@@ -6,7 +6,8 @@
 import { ATTR_GIVES, ATTR_NAME, CLASSES, FRENZY, GUARD, HEAVY, MANA_MODE, PRECISE, SKILLS, TUNE, WORDS, holdSkill, tapSkill, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
-import type { Attr, ClassId, Element, WeaponKind, WordId } from './types';
+import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
+import { MELD_TUNE, isDamageWord, isMeld, partsOf } from './melds';
 
 const pct = (n: number): string => `${Math.round(n)}%`;
 
@@ -19,8 +20,9 @@ function attrOf(word: WordId, d: Derived): number {
 export function socketProblem(group: readonly (WordId | null)[], word: WordId): string | null {
   if (!group.includes(null)) return 'No free socket';
   if (group.includes(word)) return 'Already there';
-  // ONE DAMAGE WORD A SIDE (his answer, 8 Oct 2026, 16:53: "Yes, one a side (Recommended)"; before, one element a side)
-  if (WORDS[word].kind === 'damage' && group.some((w) => w !== null && WORDS[w].kind === 'damage')) return 'One damage word per side';
+  // ONE DAMAGE WORD A SIDE (his answer, 8 Oct 2026, 16:53: "Yes, one a side (Recommended)"; before, one element a side).
+  // (WORDMELDING: a melded word takes that place, his pick of 13 Oct 2026, 12:36: "Yes, it takes that place (Recommended)")
+  if (isDamageWord(word) && group.some((w) => w !== null && isDamageWord(w))) return 'One damage word per side';
   return null;
 }
 
@@ -41,7 +43,12 @@ export function skillName(def: SkillDef, front: readonly (WordId | null)[], behi
  * no mana. 'mana': they cost mana and need only a moment between uses.
  */
 export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], behind: readonly (WordId | null)[], grows: Attr | ClassId, d: Derived, limit: Limit = 'cooldown'): Resolved {
-  const has = (g: readonly (WordId | null)[], w: WordId): boolean => g.includes(w);
+  // (WORDMELDING: a melded word does the work of both its words, so for all that follows it is both of
+  // them; its own twist is added after, by `meld` and `meldBehind`)
+  const has = (g: readonly (WordId | null)[], w: WordId): boolean => g.some((x) => x !== null && (x === w || partsOf(x).includes(w)));
+  const meldIn = (g: readonly (WordId | null)[]): MeldId | null => (g.find((x): x is MeldId => x !== null && isMeld(x)) ?? null);
+  const meld = meldIn(front);
+  const meldBehind = meldIn(behind);
   // (one enemy at a time: a blade, a shot, a familiar's bolt. A word that makes "the hit" bigger gives these a splash.)
   const single = def.kind === 'melee' || def.kind === 'projectile' || def.kind === 'summon';
   const lines: string[] = [def.desc];
@@ -73,8 +80,8 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   const r: Resolved = {
     id: def.id, name: skillName(def, front, behind), element, dmgMult: 0, size: 1, rate: 0, cooldown: 0, mana: 0,
     count: 1, countDmg: 1, splash: 0, splashDmg: 0, pierce: false, projSpeed: 0,
-    ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0,
-    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, lines,
+    ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0, meld,
+    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, meldBehind, lines,
   };
 
   // ----- in front: the hit -----
@@ -151,7 +158,9 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     const arc = 40 + 0.5 * a;
     r.arcs = 2 + Math.floor(d.int / 40);
     r.arcDmg = arc / 100;
-    lines.push(`Lightning: lightning damage, arcs to ${r.arcs} more enemies for ${pct(arc)}.`);
+    // (THUNDER: one big bolt instead of arcs: its twist, below)
+    if (meld === 'thunder') lines.push('Lightning: lightning damage.');
+    else lines.push(`Lightning: lightning damage, arcs to ${r.arcs} more enemies for ${pct(arc)}.`);
   }
   if (has(front, 'leech')) {
     r.leech = 1 + 0.08 * attrOf('leech', d);
@@ -161,8 +170,9 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     // a weaker hit, and the poison does the work: every hit adds a dose
     const dose = 20 + 0.4 * attrOf('poison', d);
     r.poison = dose / 100;
-    dmgMult *= 0.8;
-    lines.push(`Poison: hits 20% softer; poisons for ${pct(dose)} of the hit a second for ${TUNE.poisonTime} s. Up to ${TUNE.poisonStacks} doses add up.`);
+    // (BLIGHT: the hit is not weakened)
+    if (meld !== 'blight') dmgMult *= 0.8;
+    lines.push(`Poison: ${meld === 'blight' ? 'poisons' : 'hits 20% softer; poisons'} for ${pct(dose)} of the hit a second for ${TUNE.poisonTime} s. Up to ${TUNE.poisonStacks} doses add up.`);
   }
   if (has(front, 'volatile')) {
     const boom = 12 + 0.2 * attrOf('volatile', d);
@@ -218,7 +228,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     r.echo = again / 100;
     lines.push(`of Echoes: repeats a moment later for ${pct(again)}.`);
   }
-  for (const w of behind) {
+  for (const w of behind.flatMap((x) => (x === null ? [] : partsOf(x)))) {
     if (w !== 'fire' && w !== 'frost' && w !== 'lightning') continue;
     const a = attrOf(w, d);
     softer = true;
@@ -273,6 +283,61 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`of Warding: leaves a ward circle for ${GUARD.wardTime} s; inside it you take ${pct(r.ward * 100)} less damage.`);
   }
   if (softer) dmgMult *= 0.7;
+
+  // ----- WORDMELDING: each melded word's twist, in front and behind (game/melds.ts) -----
+  if (meld) {
+    const T = MELD_TUNE;
+    const twist = (s: string): void => {
+      lines.push(`${WORDS[meld].name}: ${s}`);
+    };
+    if (meld === 'eruption') twist(`the blast leaves a pool of molten ground that burns for ${pct(T.eruption.poolDps * 100)} of the hit a second.`);
+    else if (meld === 'avalanche') twist(`shoves enemies ${T.avalanche.shove} tiles back; one that is stopped by a wall or another is frozen.`);
+    else if (meld === 'thunder') {
+      // one big bolt instead of arcs, and it stuns
+      r.arcs = 0;
+      r.arcDmg = 0;
+      dmgMult *= 1 + T.thunder.bolt;
+      r.stun = Math.max(r.stun, T.thunder.stun);
+      twist(`one bolt ${pct(T.thunder.bolt * 100)} harder instead of arcs; it stuns for ${T.thunder.stun} s.`);
+    } else if (meld === 'blight') twist(`the hit is not weakened, and its poison bites up to ${T.blight.most} times harder as the enemy's life runs out.`);
+    else if (meld === 'scald') twist(`a burning enemy that gets chilled, or a chilled one set burning, cracks for ${pct(T.scald.crack * 100)} of the hit.`);
+    else if (meld === 'wildfire') twist('its arcs set burning what they strike.');
+    else if (meld === 'fumes') twist(`an enemy both burning and poisoned gives off a toxic cloud.`);
+    else if (meld === 'hailstorm') twist('its arcs chill what they strike; a frozen enemy passes the arc on.');
+    else if (meld === 'frostbite') twist(`a chilled enemy loses ${pct(T.frostbite.bite * 100)} of the hit a second, a frozen one twice that.`);
+    else if (meld === 'contagion') twist('every enemy its arcs strike is poisoned.');
+  }
+  if (meldBehind) {
+    const T = MELD_TUNE;
+    const twist = (s: string): void => {
+      lines.push(`${WORDS[meldBehind].behind}: ${s}`);
+    };
+    // (a line of one of its words that its twist does in another way)
+    const drop = (start: string): void => {
+      const k = lines.findIndex((l) => l.startsWith(start));
+      if (k >= 0) lines.splice(k, 1);
+    };
+    if (meldBehind === 'eruption') twist(`each hit builds heat; at ${T.eruption.heat}, the next hit erupts for ${pct(T.eruption.blast * 100)}.`);
+    else if (meldBehind === 'avalanche') twist(`every hit on a chilled enemy, ${pct(T.avalanche.chilled * 100)} harder.`);
+    else if (meldBehind === 'thunder') twist(`every ${T.thunder.every} hits, a thunderclap bursts around you for ${pct(T.thunder.clap * 100)}.`);
+    else if (meldBehind === 'blight') twist(`an enemy it poisons takes ${pct(T.blight.more * 100)} more damage from everything while poisoned.`);
+    else if (meldBehind === 'scald') {
+      // fire meeting ice on the ground: steam, in place of either
+      drop('of Flame:');
+      const a = attrOf('fire', d);
+      r.zone = { kind: 'steam', element: 'fire', dps: T.scald.steamDps + 0.004 * a, slow: T.scald.slow, dur: T.scald.dur };
+      twist(`fire meets ice: it leaves steam that hurts and slows by ${pct(T.scald.slow * 100)}, and hides you while you stand in it.`);
+    } else if (meldBehind === 'wildfire') twist(`the burning ground throws sparks at enemies within ${T.wildfire.reach} tiles.`);
+    else if (meldBehind === 'fumes') twist('the poison cloud explodes when anything burning comes into it.');
+    else if (meldBehind === 'hailstorm') {
+      // a storm of ice: the storm, slowing (in place of the ice)
+      drop('of Frost:');
+      const a = attrOf('lightning', d);
+      r.zone = { kind: 'storm', element: 'lightning', dps: (30 + 0.6 * a) / 100, slow: T.hailstorm.slow, dur: 4 };
+      twist(`a storm of ice that strikes and slows by ${pct(T.hailstorm.slow * 100)}.`);
+    } else if (meldBehind === 'frostbite') twist('the ice on the ground poisons what crosses it.');
+    else if (meldBehind === 'contagion') twist('the poison cloud shocks whatever stands in it.');
+  }
 
   r.dmgMult = dmgMult;
   r.size = size;

@@ -10,7 +10,7 @@
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { P } from './palette';
-import { WORD_IDS } from '../game/types';
+import { ALL_WORD_IDS, MELD_OF } from '../game/types';
 import type { AbilityId, Element, IconKey, WordId } from '../game/types';
 import { makeAbilityIcons } from './ability_icons';
 
@@ -27,6 +27,10 @@ export interface IconArt {
   gold: Sprite[];
   /** 8x8 glowing red orb lying on the floor, anchor (4, 7). */
   lifeOrb: Sprite;
+  /** (WORDMELDING) A little heap of runedust lying on the floor, glowing cyan, 10x7, anchor bottom-centre. */
+  runedust: Sprite;
+  /** (WORDMELDING) The Meldstone lying on the floor: a rune stone of two halves fused along a cyan seam, 12x12, anchor (6, 10). */
+  meldstone: Sprite;
   /** The Mage's Orb projectile: 3 looping frames, 10x10, anchor (5, 5). No outline. */
   orb: Record<Element, Sprite[]>;
   /** The Ranger's Trap lying on the floor: 2 frames (idle, armed blink), painted two picture pixels to a game pixel; its anchor is the floor point under its middle. */
@@ -49,6 +53,19 @@ export const WORD_COLOR: Record<WordId, string> = {
   precise: '#eef4fa',
   frenzied: '#ff5c33',
   guarding: '#30a868',
+  // (WORDMELDING: the melded words' colours, the planning chat's placeholders until the art chat's,
+  // pictures to him first; each picked as far, as the eye sees colour, from every other word, the
+  // friend's cyan and the enemy's pink and gold as it could be)
+  eruption: '#ff9a5a',
+  avalanche: '#b8dcff',
+  thunder: '#c8a8ff',
+  blight: '#8aa040',
+  scald: '#e0b0c0',
+  wildfire: '#d86040',
+  fumes: '#c89838',
+  hailstorm: '#e8f0c0',
+  frostbite: '#6898b0',
+  contagion: '#90e0a0',
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -919,6 +936,27 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   frenzied: ['X..X..', 'X..X..', '.X..X.', '.X..X.', '..X..X', '..o..o'],
   // a shield
   guarding: ['XXXXXX', 'X.oo.X', 'X.oo.X', 'X....X', '.X..X.', '..XX..'],
+  // (WORDMELDING: the melded words' runes, the planning chat's placeholders until the art chat's)
+  // a mountain blowing its top
+  eruption: ['.o..o.', '..oo..', '..XX..', '.XXXX.', '.XXoX.', 'XXXXXX'],
+  // a block of snow coming down on a heap
+  avalanche: ['..XX..', '.XooX.', '..XX..', 'X....X', 'XX..XX', 'XXXXXX'],
+  // one great bolt
+  thunder: ['..XXX.', '.XXX..', 'XXXXXo', '..XXX.', '.XX...', 'XX....'],
+  // a wilted flower
+  blight: ['..XX..', '.XooX.', '..XX..', '...X..', 'XX.X..', '.XXX..'],
+  // steam rising off a pot
+  scald: ['X.X.X.', '.X.X.X', 'X.X.X.', '......', 'XooooX', '.XXXX.'],
+  // a flame and the spark it throws
+  wildfire: ['X.....', '.X..X.', '..XXX.', '.XXoX.', 'XXooXX', '.XXXX.'],
+  // a cloud over a flame
+  fumes: ['..XX..', '.XXXX.', 'XXooXX', '.XXXX.', '..X...', '.X.X..'],
+  // a cloud and its hail
+  hailstorm: ['.XXXX.', 'XXooXX', '.XXXX.', '......', 'X.X.X.', '.X.X.X'],
+  // a fang
+  frostbite: ['XXXXXX', 'X.XX.X', '..XX..', '..oo..', '..XX..', '...X..'],
+  // what one passes to the next
+  contagion: ['XX..XX', 'XX..XX', '..oo..', '..oo..', 'XX..XX', 'XX..XX'],
 };
 
 /** The lighter tone used for each glyph's glowing core. */
@@ -936,6 +974,17 @@ export const WORD_GLOW: Record<WordId, string> = {
   precise: '#ffffff',
   frenzied: '#ff9670',
   guarding: '#8ae4ac',
+  // (WORDMELDING: halfway to white from each one's colour)
+  eruption: '#ffccac',
+  avalanche: '#dcedff',
+  thunder: '#e4d4ff',
+  blight: '#c4d0a0',
+  scald: '#f0d8e0',
+  wildfire: '#ecb0a0',
+  fumes: '#e4cc9c',
+  hailstorm: '#f4f8e0',
+  frostbite: '#b4ccd8',
+  contagion: '#c8f0d0',
 };
 
 function runeSprite(word: WordId): Sprite {
@@ -970,12 +1019,18 @@ function runeSprite(word: WordId): Sprite {
       if (on(gx, gy)) p.set(3 + gx, 3 + gy, rows[gy].charAt(gx) === 'o' ? WORD_GLOW[word] : WORD_COLOR[word]);
     }
   }
+  // (WORDMELDING: a melded word's stone carries its two words' colours along its foot, where they were fused)
+  const of = (MELD_OF as Partial<Record<WordId, readonly [WordId, WordId]>>)[word];
+  if (of) {
+    for (const x of [2, 3, 4]) p.set(x, 10, WORD_COLOR[of[0]]);
+    for (const x of [7, 8, 9]) p.set(x, 10, WORD_COLOR[of[1]]);
+  }
   return p.outline(P.ink).sprite(6, 10);
 }
 
 function makeWordRunes(): Record<WordId, Sprite> {
   const out = {} as Record<WordId, Sprite>;
-  for (const w of WORD_IDS) out[w] = runeSprite(w);
+  for (const w of ALL_WORD_IDS) out[w] = runeSprite(w);
   return out;
 }
 
@@ -1056,6 +1111,38 @@ function lifeOrbSprite(): Sprite {
     '..2333..',
     '........',
   ], P.bl5, P.bl4, P.bl3).outline(P.ink).sprite(4, 7);
+}
+
+// (WORDMELDING, behind MELD: the planning chat's placeholders, pictures to him first, the art chat's to draw)
+/** Runedust: a heap of glittering dust, the friend's cyan (what glows on a friend is cyan, his rule). */
+function runedustSprite(): Sprite {
+  return grid('runedust', [
+    '..........',
+    '....W.....',
+    '...121....',
+    '..12321.W.',
+    '.1233321..',
+    '123333321.',
+    '..........',
+  ], '#c8f8ff', '#5ce8f8', '#1c9cb4').outline(P.ink).sprite(5, 6);
+}
+
+/** The Meldstone: a rune stone split down the middle into two stones' colours, fused along a seam of cyan light. */
+function meldstoneSprite(): Sprite {
+  return grid('meldstone', [
+    '............',
+    '..11111444..',
+    '.1222225554.',
+    '.1222275554.',
+    '.1222725554.',
+    '.1222275554.',
+    '.1222227554.',
+    '.1222275554.',
+    '.1222725554.',
+    '.1222275554.',
+    '..33336666..',
+    '............',
+  ], P.st6, P.st5, P.st3, P.tl4, P.tl3, P.tl2, '#5ce8f8').outline(P.ink).sprite(6, 10);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1229,6 +1316,8 @@ export function makeIconArt(): IconArt {
     potion: potionSprite(),
     gold: goldPiles(),
     lifeOrb: lifeOrbSprite(),
+    runedust: runedustSprite(),
+    meldstone: meldstoneSprite(),
     orb,
     trap,
   };

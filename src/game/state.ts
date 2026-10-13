@@ -6,7 +6,7 @@ import type { Limit, SkillId, SkillKind } from './defs';
 import type { DoorInst } from './doors';
 import type { HazardInst } from './traps';
 import type { HeroMode } from './modes';
-import type { Attr, ClassId, Element, EquipSlot, Floor, Item, MonsterKind, PropKind, Stats, VoiceId, WordId } from './types';
+import type { Attr, ClassId, Element, EquipSlot, Floor, Item, MeldId, MonsterKind, PropKind, Stats, VoiceId, WordId } from './types';
 import type { Ways } from './ways';
 import type { Dress } from './first5';
 
@@ -84,6 +84,8 @@ export interface Resolved {
   frenzy: boolean;
   /** GUARDING in front: each use gives the hero a shield of this fraction of their life (0 = none). */
   shield: number;
+  /** WORDMELDING (game/melds.ts): the melded word in front, whose twist the hit carries, or null. */
+  meld: MeldId | null;
   // --- behind: the wake ---
   /** Each use adds this % damage for a few seconds (stacks). */
   might: number;
@@ -92,7 +94,7 @@ export interface Resolved {
   /** The ability repeats once at this damage fraction. 0 = no echo. */
   echo: number;
   /** Ground left where the ability hits (or along a projectile's path). */
-  zone: null | { kind: 'burn' | 'ice' | 'storm'; element: Element; dps: number; slow: number; dur: number };
+  zone: null | { kind: 'burn' | 'ice' | 'storm' | 'steam'; element: Element; dps: number; slow: number; dur: number };
   /** Chance that an enemy it kills drops a life orb. */
   orbChance: number;
   /** A rune left at the impact that detonates for this fraction of the hit. 0 = none. */
@@ -107,6 +109,8 @@ export interface Resolved {
   frenzyFeed: boolean;
   /** GUARDING behind: a ward circle left where it hits; inside it the hero takes this fraction less damage. 0 = none. */
   ward: number;
+  /** WORDMELDING: the melded word behind, whose twist what it leaves carries, or null. */
+  meldBehind: MeldId | null;
   /** Plain-language lines for the character panel. */
   lines: string[];
 }
@@ -197,6 +201,7 @@ export interface Hero {
   gear: Record<EquipSlot, Item | null>;
   bag: (Item | null)[];
   /** Spare power words carried, by count. */
+  /** (WORDMELDING: with MELD off, only the thirteen words found in the dungeon are counted here: game/melds.ts, wordIds) */
   words: Record<WordId, number>;
   /** Single target, area, evasive. */
   skills: SkillState[];
@@ -234,6 +239,13 @@ export interface Hero {
    */
   ring: boolean;
   quest: 'heart' | null;
+  /**
+   * WORDMELDING (game/melds.ts, MELD, off until his yes): the runedust carried, which melding uses;
+   * and melding at the wordsmith: 'stone' while the hero carries the Meldstone to him, 'open' once
+   * it is brought.
+   */
+  dust: number;
+  meld: 'stone' | 'open' | null;
   /** THE SKILL TREES (game/talents.ts, TALENTS, off until his yes): the talents taken, in the order taken. */
   talents: string[];
   d: Derived;
@@ -307,6 +319,15 @@ export interface Monster {
   markT: number;
   /** THE SKILL TREES: seconds left shocked by a lightning hit (Overload's mark; nothing else reads it). */
   shockT: number;
+  /**
+   * WORDMELDING (game/melds.ts), each absent until a melded word first touches it: seconds before
+   * Scald may crack it again, and before Fumes' cloud may rise off it again; Frostbite's bite (a
+   * share of a hit, a second, while it is chilled); seconds left of Blight's mark on it.
+   */
+  scaldCd?: number;
+  fumesCd?: number;
+  biteDps?: number;
+  blightT?: number;
   /** Guarding: what is left of the shield it carries, which takes damage before its life does. */
   shield: number;
   /** Which hero ability last hurt it (for effects that trigger on a kill), or -1. */
@@ -440,7 +461,7 @@ export interface Spear {
 /** ('lane': THE MONSTERS' ATTACKS, the line a red troll will charge along: from (x, y) to (x1, y1), `r` half its width.) */
 /** ('skull': THE NEW MONSTERS, a skull the Golem has hurled: thrown from (x1, y1), coming down on (x, y) at `dur`, bursting after: game/defs.ts SKULL.) */
 /** ('aim': the bone marksman's line of aim for his great shot, from (x, y) to (x1, y1), its `t` of `dur` how far he has drawn: game/defs.ts AIM. 'smoke': the high priest's burning smoke, that burns the hero in it: SMOKE.) */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke';
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke' | 'steam';
 
 export interface Zone {
   x: number;
@@ -468,6 +489,10 @@ export interface Zone {
   x1?: number;
   y1?: number;
   gone?: number;
+  /** WORDMELDING: the melded word behind the ability that left it, whose twist it carries (game/melds.ts). */
+  meld?: MeldId;
+  /** WORDMELDING: seconds until it may do its twist again (Wildfire's spark). */
+  meldT?: number;
 }
 
 /**
@@ -643,7 +668,8 @@ export interface Familiar {
 export interface Drop {
   x: number;
   y: number;
-  kind: 'gold' | 'item' | 'word' | 'orb';
+  /** (WORDMELDING: 'dust', runedust, as much as `gold` says; 'stone', the Meldstone) */
+  kind: 'gold' | 'item' | 'word' | 'orb' | 'dust' | 'stone';
   gold: number;
   item: Item | null;
   word: WordId | null;
@@ -790,6 +816,8 @@ export interface Meta {
   mode: HeroMode;
   /** THE FIRST LEVELS: the wordsmith's ring has been lit on this device (a hero has brought him the quest item). */
   ring: boolean;
+  /** WORDMELDING (game/melds.ts): the Meldstone has been brought to the wordsmith on this device, so every hero after can meld (absent while MELD is off). */
+  meld?: boolean;
 }
 
 /**
@@ -948,7 +976,7 @@ export type GameEvent =
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
   | { t: 'echo'; x: number; y: number; dx: number; dy: number; kind: SkillKind; delay: number }
   /** A patch of ground or a rune has just been laid. (`dur`: cracks and wards, its seconds; laid again where one already is, it lasts that long from now.) */
-  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward'; x: number; y: number; r: number; el: Element; dur?: number }
+  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam'; x: number; y: number; r: number; el: Element; dur?: number }
   /**
    * THE NEW WORDS AT WORK (Version 19.3), for their looks (render/words3.ts): a Heavy hit lands
    * (`big`: an area ability's, out to `r`); monster `id` is stunned for `secs` / staggered by a blow

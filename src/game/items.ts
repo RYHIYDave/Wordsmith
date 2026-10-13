@@ -20,8 +20,8 @@
 
 import type { RNG } from '../engine/rng';
 import { CLASSES } from './defs';
-import type { Affix, ClassId, IconKey, Imbue, Item, Limit, OffhandKind, OldWeaponKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
-import { SLOTS } from './types';
+import type { Affix, BaseWordId, ClassId, IconKey, Imbue, Item, Limit, OffhandKind, OldWeaponKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
+import { MELD_OF, SLOTS } from './types';
 
 type Range = readonly [number, number];
 type Three<T> = readonly [T, T, T];
@@ -362,7 +362,7 @@ interface ImbueRule {
  * gloves, ring and amulet get the offensive version; off-hand, helm, chest, belt and boots the
  * protective one.
  */
-const IMBUE_TABLE: Record<WordId, readonly ImbueRule[]> = {
+const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
   power: [
     { slots: OFFENCE_SLOTS, options: [['prefix', 'physPct'], ['suffix', 'str']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'armor'], ['suffix', 'str']] },
@@ -1028,14 +1028,16 @@ for (const f of AFFIX_FAMILIES) if (f.stat !== 'damage') FAMILY_BY_STAT.set(f.st
 
 /** What a word may become on gear, as the Lexicon tells it: for each group of slots, the stats it can turn into there. */
 export function imbueRules(word: WordId): { slots: readonly Slot[]; stats: StatKey[] }[] {
-  return (IMBUE_TABLE[word] ?? IMBUE_TABLE.power).map((r) => ({ slots: r.slots, stats: r.options.map((o) => o[1]) }));
+  return (IMBUE_TABLE[word as BaseWordId] ?? IMBUE_TABLE.power).map((r) => ({ slots: r.slots, stats: r.options.map((o) => o[1]) }));
 }
 
 /** The 1-2 modifiers this word can become on this slot at this item level. Never empty. */
 export function imbueOptions(word: WordId, slot: Slot, ilvl: number): ImbueOption[] {
+  // (WORDMELDING: a melded word is for attacks only, for now, his words: nothing on gear)
+  if (word in MELD_OF) return [];
   const level = cleanLevel(ilvl);
   // The table covers every word and slot; the fallbacks only keep a bad save from breaking the game.
-  const rules = IMBUE_TABLE[word] ?? IMBUE_TABLE.power;
+  const rules = IMBUE_TABLE[word as BaseWordId] ?? IMBUE_TABLE.power;
   const rule = rules.find((r) => r.slots.includes(slot)) ?? rules[0];
   return rule.options.map(([kind, stat]) => {
     const family = FAMILY_BY_STAT.get(stat);
@@ -1078,6 +1080,7 @@ export function imbueOptionsFor(item: Item, word: WordId): ImbueOption[] {
 
 /** Why this word cannot be burned into this piece, or null if it can. */
 export function imbueProblem(item: Item, word: WordId): string | null {
+  if (word in MELD_OF) return 'A melded word goes on attacks only';
   if (itemRoom(item) <= 0) return 'That piece is full';
   if (imbueOptionsFor(item, word).length === 0) return 'It already has what this word gives';
   return null;
