@@ -1,0 +1,68 @@
+# Floor 6, the Quarry: the real art (the art chat for floors 6 to 10, from 13 Oct 2026)
+
+The owner opened this chat on 13 Oct 2026 at 09:27: "Please check the art chat and begin work on
+levels 6-10". Asked as a pop-up whether this chat takes on the art chat's job for them, his pick:
+"Yes, the art (Recommended)"; where to start: "Floor 6, the Quarry (Recommended)", offered as: its
+ground, cliffs and rounded edges first, then its pieces, then the Unfinished; then floors 7 to 10 in
+order.
+
+The brief is the planning chat's: its posts to the art chat on the Chat Board (12 Oct 18:10, 13 Oct
+09:04), the project's `claude/act1_descent.md` (his words), and its mock-ups
+(`docs/mockups/act1_levels/README.md`; `src/dev/preview_act1.ts`, hash `quarry`, is the Quarry he said
+yes to by 08:48 on 13 Oct: "Yes, this is it (Recommended)").
+
+NOTHING OF THE GAME IMPORTS ANY OF THIS YET. Pictures to him first; the main chat puts it in.
+
+## The ground
+
+- `src/art/terrain.ts`: THE OUTDOOR GROUND, for every level of Act 1. A `Floor`'s own tiles in (a cut
+  tile its floor half), its ground out: the walkable tiles blurred into a smooth field, the floor where
+  the field stands over a threshold that wanders, so the edge is painted round and ragged over today's
+  tiles (his "Yeah I really like the rounded edges", 12 Oct, 18:33), the game still walking by the
+  tiles. The rock stands `rise` picture pixels over the floor; its tops seen above, its far faces seen
+  where they look toward the eye, its near side cut away as the game cuts walls, with his near-face rule
+  (12 Oct, by 21:40, and "Yes, keep the floor in sight (Recommended)", 13 Oct): where the ridge slants
+  back past straight down, the face shows in shadow, rising from the floor's edge on the cliff's side.
+  The near cliff's shadow across the floor, as the planning chat's mock-ups have it.
+- `src/art/quarry.ts`: THE QUARRY'S LOOK (`QUARRY_LOOK`): the bed (great slabs where the stone was
+  lifted, a slab lifted out a step lower, pick scars, dust drifted against the walls, chippings), the
+  quarried walls (a bench for each lift of stone, its tread in the sun, the joints, the rows of
+  half-drill marks along a bench's top, water stains), the tops (thin alpine grass, grey mountain rock,
+  stones in the grass, the pale caprock's rim along every edge, cracked). Rise 110 picture pixels, as the
+  mock-up he said yes to.
+- `tests/terrain.test.ts`: his rules held (every walkable tile's middle painted floor and no rock
+  tile's; a pixel is floor exactly where the ground is; near faces on the cliff's side, within their
+  height; the near face only where the edge looks back past straight down; no cyan or pink; duller than
+  the nine words; light from the upper left), and that two pieces side by side are one picture, the
+  same every time.
+
+### Pictures
+
+    node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_ground.png 1014 468 shot
+    node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_tiles.png 1014 468 tiles
+    node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_close.png 1014 936 close
+    node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_cost.png 600 200 cost
+
+`shot` is one phone screen (the game's 507 x 234 game pixels at 2 picture pixels each) of a Quarry laid
+by hand on today's tiles in the shape of the mock-up he said yes to, the knight and three of the cult's
+dagger cultists standing in it; `tiles` the same with the tiles the game walks by drawn over it;
+`close` four close-ups at four times; `cost` what painting costs.
+
+## For the main chat
+
+- `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a
+  desktop browser); `paintTerrain(T, x0, y0, w, h)` paints any piece of the world's picture (picture
+  pixels, 2 to a game pixel, the world's origin at (0, 0): `pictureOf`, `worldOf`) as RGBA with what each
+  pixel shows (`TK`). It touches no canvas, so it can run in the painter's worker. Two pieces side by
+  side meet without a seam (tested), so the ground can be painted in pieces near the camera and kept.
+  A piece of 256 x 256 costs 40 to 150 ms here (more where there is rock to look down through); a phone
+  will be slower: painting ahead, a few pieces a frame at most, or in the worker.
+- Nothing it paints stands over the walkable floor (tested pixel by pixel), so the whole ground can lie
+  under every figure and prop as one layer, in place of the floor tiles and the walls' faces.
+- What stands on a top is drawn `rise` picture pixels up from the place it stands; `clearOfFloor` says
+  whether a thing of a size, there, is clear of the walkable floor (his rule: nothing on a top stands
+  over the floor).
+- Not in it yet: terraces at more than one height (the Quarry's "narrow cuts down to the next terraces"),
+  the light of day in place of a dungeon's dark (the game's `FAR_DARK`, the hero's pool of light and the
+  vignette are a dungeon's; the Quarry is in daylight).
+- How the Quarry is laid (its pits and its cuts) is the main chat's.
