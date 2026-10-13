@@ -13,7 +13,7 @@ import { makeWardenArt } from '../art/monster_warden';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { QUARRY_LOOK } from '../art/quarry';
-import { UF_BREATH, UF_HURL_HIT, UF_PACE, UF_SLIDE_HIT, UF_STOMP_HIT, UNFINISHED, BLOCK_FLY_Z, BLOCK_H, blockFlight, boulderRolling, hurledBlock, stompCracks, unfinishedFrame, unfinishedStanding } from '../art/unfinished';
+import { UF_BREATH, UF_HURL_HIT, UF_PACE, UF_FALLS, UF_SLIDE_HIT, UF_STOMP_HIT, UF_TEAR_HIT, UNFINISHED, BLOCK_FLY_Z, BLOCK_H, blockFlight, boulderRolling, hurledBlock, stompCracks, unfinishedDeath, unfinishedFrame, unfinishedStanding } from '../art/unfinished';
 import { skeletonAt } from '../art/new_mobs3';
 import { lerp3 } from '../art/skeleton';
 import type { V3 } from '../art/skeleton';
@@ -229,7 +229,7 @@ function bigFilm(): void {
     const [x, y] = project(p, 'front');
     return [ox + x, oy + y];
   };
-  const hit = move === 'stomp' ? UF_STOMP_HIT : move === 'hurl' ? UF_HURL_HIT : UF_SLIDE_HIT;
+  const hit = move === 'stomp' ? UF_STOMP_HIT : move === 'hurl' ? UF_HURL_HIT : move === 'rockslide' ? UF_SLIDE_HIT : -99;
   const toe = skeletonAt(UNFINISHED, 'stomp', UF_STOMP_HIT + 0.1).toeR;
   const sHit = skeletonAt(UNFINISHED, 'hurl', UF_HURL_HIT);
   const from = lerp3(sHit.handL, sHit.handR, 0.5);
@@ -240,7 +240,7 @@ function bigFilm(): void {
     const since = t - hit;
     const again = move === 'rockslide' ? t - (UF_SLIDE_HIT + 0.56) : -1;
     const kick = (k: number): number => (k >= 0 && k < 0.25 ? Math.round(Math.sin(k * 60) * 4 * (1 - k / 0.25)) : 0);
-    const shake = move === 'rockslide' ? kick(since) + kick(again) : move === 'stomp' ? kick(since) : 0;
+    const shake = move === 'rockslide' ? kick(since) + kick(again) : move === 'stomp' ? kick(since) : move === 'dying' ? kick(t - UF_FALLS) : move === 'tearFree' ? kick(t - UF_TEAR_HIT) : 0;
     const ox = (i % cols) * CW;
     const oy = Math.floor(i / cols) * CH;
     g.save();
@@ -262,7 +262,8 @@ function bigFilm(): void {
     g.beginPath();
     g.ellipse(fx, fy, 64, 26, 0, 0, Math.PI * 2);
     g.fill();
-    drawAt(g, unfinishedFrame(move, Math.min(t, Number(longS)), 'front'), fx, fy);
+    const tt = Math.min(t, Number(longS));
+    drawAt(g, move === 'dying' ? unfinishedDeath(tt) : unfinishedFrame(move, tt, 'front', move === 'tearFree'), fx, fy);
     if (move === 'hurl' && since >= 0) {
       const k = Math.min(1, since / FLY);
       if (k < 1) {

@@ -33,12 +33,12 @@ import { shriekAt } from './floor5';
 import { hash, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
-import { TILE3, at3, canvasOf, paintBits, paintMob, sphere } from './new_mobs3';
-import type { Bit, Mob, MobCanvas, MobMove, Moment, Put } from './new_mobs3';
+import { TILE3, at3, canvasOf, deathOfMob, paintBits, paintMob, sphere } from './new_mobs3';
+import type { Bit, Fall, Mob, MobCanvas, MobMove, Moment, Put } from './new_mobs3';
 import { stage, wornOn } from './skin';
 import type { GameView, Stage } from './skin';
-import { add, buildOf, cross, dot, lerp3, mul, norm, standing, sub } from './skeleton';
-import type { Bones, Build, Key3, Motion, Skeleton, V3 } from './skeleton';
+import { add, buildOf, cross, dot, lerp3, mul, norm, solve, standing, sub } from './skeleton';
+import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF: nothing of the game reads this file. */
 export const UNFINISHED_ON = { on: false };
@@ -58,8 +58,12 @@ export const UF_TALL = 236;
 export const UF_BODY: Build = buildOf(UF_TALL, 0.95, { shoulders: 1.55, chest: 1.45, depth: 1.3, waist: 1.2, hips: 1.25, legs: 0.84, arms: 1.24, trunk: 1.04, limbs: 2.0, pad: 5 });
 const B = UF_BODY;
 
-/** Its canvas: room for it standing, a fist raised over its head, and the rock of the wall behind it. */
-export const UF_CANVAS: MobCanvas = { w: 520, h: 440, ax: 260, ay: 396 };
+/** The middle of its chest, and the chest's half-sizes (its solids, and the checks'). */
+export const chestOf = (s: Skeleton): V3 => add(s.ribs, add(mul(s.chest[2], B.chest * 0.44), mul(s.chest[0], 1.0)));
+export const CR: V3 = [B.ribDeep + 3, B.ribHalf + 8, B.chest * 0.66];
+
+/** Its canvas: room for it standing, a fist or a block raised over its head, the rock of the wall behind it, and it lying where it fell. */
+export const UF_CANVAS: MobCanvas = { w: 600, h: 560, ax: 260, ay: 396 };
 
 // ---------------------------------------------------------------------------------------------
 // ITS STONE
@@ -587,6 +591,154 @@ function heldGlint(from: number, full: number, hit: number): (t: number) => numb
   return (t) => (t < from ? 0 : t < full ? (t - from) / (full - from) : t < hit ? 1 : t < hit + 0.15 ? 1 - (t - hit) / 0.15 : 0);
 }
 
+// ---------------------------------------------------------------------------------------------
+// TEARING FREE, at half its life (the planning chat's, his yes 12 Oct, 18:07: "fused to the wall at first,
+// it tears itself free at half life"): it strains forward against the wall, roaring, trembling, the stone
+// between them cracking, its own fire running in the cracks; then rips itself free with a lunge, the
+// wall's stone that held it breaking away behind it in great lumps; it catches itself, and stands free.
+// Played by the one still in the wall (`UNFINISHED_FUSED`); it ends standing as the free one stands.
+
+export const UF_TEAR_HIT = 1.4;
+function ufTearFree(): Motion {
+  const R = UF_REST;
+  const H = UF_TEAR_HIT;
+  const pull: P = { prop: 5, rhIn: 1, rhx: 54, rhy: -30, rhz: -40, re: 30, lhIn: 1, lhx: 54, lhy: 30, lhz: -40, le: -30 };
+  const keys: Key3[] = [{ at: 0, pose: { prop: 5 } }];
+  // (straining forward, trembling harder and harder)
+  for (let i = 1; i <= 8; i++) {
+    const t = 0.15 * i;
+    if (t >= H - 0.15) break;
+    const k = t / H;
+    const sh = (i % 2 ? 1 : -1) * (0.6 + 1.6 * k);
+    keys.push({ at: t, pose: { ...pull, pz: R.pz - 4 * k, px: 3 * k, pitch: R.pitch + 10 * k, bend: R.bend + 6 * k, faceUp: R.faceUp + 18 * k, roll: sh, py: sh * 0.8, lk: 18, rk: -18 }, ease: 'io' });
+  }
+  keys.push(
+    // (ripped free: lunging forward, faster and faster, and on)
+    { at: H - 0.08, pose: { ...pull, pz: R.pz - 5, px: 5, pitch: R.pitch + 12, bend: R.bend + 7, faceUp: R.faceUp + 19, roll: 0, py: 0, lk: 19, rk: -19, rhx: 56, lhx: 56, rhz: -36, lhz: -36 }, ease: 'io' },
+    { at: H, pose: { ...pull, pz: R.pz - 8, px: 8, pitch: R.pitch + 16, bend: R.bend + 10, faceUp: R.faceUp + 18, roll: 0, py: 0, lk: 20, rk: -20, rhx: 62, lhx: 62, rhz: -32, lhz: -32 }, ease: 'in' },
+    { at: H + 0.25, pose: { ...pull, pz: R.pz - 14, px: 12, pitch: R.pitch + 22, bend: R.bend + 14, faceUp: R.faceUp + 8, lk: 22, rk: -22, rhx: 72, lhx: 72, rhz: -40, lhz: -40 }, ease: 'out' },
+    // (caught: it straightens, and roars, free)
+    { at: H + 0.8, pose: { prop: 5, pz: R.pz + 2, px: 2, pitch: R.pitch - 8, bend: R.bend - 8, faceUp: R.faceUp + 26, lk: 14, rk: -14, rhIn: 1, rhx: 20, rhy: -60, rhz: -40, re: 50, lhIn: 1, lhx: 20, lhy: 60, lhz: -40, le: -50 }, ease: 'io' },
+    { at: H + 1.2, pose: { prop: 5, pz: R.pz + 2.4, px: 1.5, pitch: R.pitch - 9, bend: R.bend - 9, faceUp: R.faceUp + 28, lk: 14, rk: -14, rhIn: 1, rhx: 20, rhy: -62, rhz: -38, re: 50, lhIn: 1, lhx: 20, lhy: 62, lhz: -38, le: -50 }, ease: 'io' },
+    { at: H + 1.9, pose: { prop: 5 }, ease: 'io' },
+  );
+  return { hit: H, keys };
+}
+/** How far the stone between it and the wall has cracked as it strains (0 to 1). */
+const tearStrain = (t: number): number => clamp01((t - 0.15) / (UF_TEAR_HIT - 0.25));
+
+/** Where the wall's stone that held it was, as it stood in the wall: lumps of it break from each (its middle, how many, a seed). */
+const TORN_FROM: ReadonlyArray<readonly [V3, number, number]> = ((): [V3, number, number][] => {
+  const s0 = solve(B, UF_REST as Posed);
+  const c = chestOf(s0);
+  const [cf, cl, cu] = s0.chest;
+  return [
+    [add(add(c, mul(cf, -CR[0] * 1.6)), mul(cu, -CR[2] * 0.2)), 9, 201],
+    [add(add(s0.shoulderL, mul(cl, B.armR[0] * 1.8)), mul(cf, -CR[0] * 0.5)), 5, 202],
+    [add(lerp3(s0.hipL, s0.kneeL, 0.5), add(mul(cl, B.legR[0] * 1.6), mul(cf, -B.legR[0] * 1.0))), 4, 203],
+  ];
+})();
+
+// ---------------------------------------------------------------------------------------------
+// ITS DEATH (his pick by 12:42, "Topples and shatters": it falls like a felled statue and breaks into
+// great blocks on the floor). Struck, it rocks back; the fire goes out of its mark and its eye; it
+// teeters, stiff, grit pouring off it; and topples forward all of a piece, about its toes, faster and
+// faster, like a felled statue; it strikes the floor and breaks into great blocks, the head rolling on
+// furthest, dust bursting up along its length. What is left lies there (the last frame of its death).
+
+export const UF_DIE_TIME = 3.0;
+/** When it strikes the floor and shatters. */
+export const UF_FALLS = 1.75;
+const FELL_FROM = 0.9;
+/** Its front toes: what it topples about. */
+const FALL_TOE = Math.max(plantOf('L', {}, UF_REST).at[0], plantOf('R', {}, UF_REST).at[0]);
+/** Its back heels: what it rocks back about. */
+const FALL_HEEL = Math.min(plantOf('L', {}, UF_REST, 'heel').at[0], plantOf('R', {}, UF_REST, 'heel').at[0]);
+const S0 = solve(B, UF_REST as Posed);
+/** Its pose toppled `deg` degrees forward about its front toes, all of a piece. */
+function toppled(deg: number, out: number): P {
+  const R = UF_REST;
+  const a = (deg * Math.PI) / 180;
+  // (forward about its front toes; rocked back, about its heels)
+  const back = deg < 0;
+  const pivot = back ? FALL_HEEL : FALL_TOE;
+  const rot = (p: V3): V3 => {
+    const x = p[0] - pivot;
+    return [pivot + x * Math.cos(a) + p[2] * Math.sin(a), p[1], -x * Math.sin(a) + p[2] * Math.cos(a)];
+  };
+  const pv = rot(S0.pelvis);
+  // each foot set where its toe (or heel) is carried round to, tipped as the body is
+  const foot = (side: 'L' | 'R'): P => {
+    const on = back ? 'heel' : 'toe';
+    const p0 = plantOf(side, {}, R, on);
+    const q = rot([p0.at[0], p0.at[1], 0]);
+    return footOn(side, { at: [q[0], q[1]], turn: p0.turn, pitch: deg, on }, Math.max(0, q[2]));
+  };
+  // (its arms held a little out from its sides, stiff, as a statue's are)
+  return { px: R.px + pv[0] - S0.pelvis[0], pz: R.pz + pv[2] - S0.pelvis[2], pitch: R.pitch + deg, faceUp: R.faceUp - deg, ...foot('L'), ...foot('R'), lhy: R.lhy + 5, rhy: R.rhy - 5, out };
+}
+/** As far as it topples before it strikes the floor: as far as it can go with its knees, elbows and hands still clear of the floor. */
+const FELL_TO = ((): number => {
+  let best = 50;
+  for (let d = 50; d <= 86; d++) {
+    const s = solve(B, { ...UF_REST, ...toppled(d, 1) } as Posed);
+    // (and its trunk and head, as solids, not into the floor)
+    const under = (c: V3, rot: readonly [V3, V3, V3], h: V3): number => c[2] - Math.hypot(h[0] * rot[0][2], h[1] * rot[1][2], h[2] * rot[2][2]);
+    const solids = Math.min(
+      under(chestOf(s), s.chest, CR),
+      under(lerp3(s.waist, s.ribs, 0.4), s.belly, [B.waistDeep + 5, B.waistHalf + 6, B.ribs * 0.9]),
+      under(add(s.pelvis, mul(s.hips[2], B.waist * 0.2)), s.hips, [B.pelvisDeep + 4, B.pelvisHalf + 6, B.waist * 0.95]),
+      under(s.head, s.face, [B.headR[0] * 1.25, B.headR[1] * 1.28, B.headR[2] * 1.2]),
+    );
+    const ok = solids > 1 && Math.min(s.kneeL[2], s.kneeR[2]) > B.legR[1] + 2 && Math.min(s.handL[2], s.handR[2]) > B.armR[2] + 2 && Math.min(s.elbowL[2], s.elbowR[2]) > B.armR[1] + 2;
+    if (ok) best = d;
+  }
+  return best;
+})();
+function ufDying(): Motion {
+  const keys: Key3[] = [];
+  const FPS = 20;
+  const n = Math.round(UF_DIE_TIME * FPS);
+  for (let i = 0; i <= n; i++) {
+    const t = i / FPS;
+    let deg: number;
+    let out: number;
+    let more: P = {};
+    if (t < 0.12) {
+      // (rocked back by the blow)
+      deg = -5 * (t / 0.12);
+      out = 0.3 * (t / 0.12);
+      more = { faceUp: UF_REST.faceUp + 8 * (t / 0.12) };
+    } else if (t < FELL_FROM) {
+      // (teetering, stiff, the fire going out of it)
+      const k = (t - 0.12) / (FELL_FROM - 0.12);
+      deg = -5 + 9 * smooth01(k);
+      out = 0.3 + 0.7 * smooth01(k);
+    } else {
+      // (toppling all of a piece, faster and faster, about its toes)
+      const k = Math.min(1, (t - FELL_FROM) / (UF_FALLS - FELL_FROM));
+      deg = 4 + (FELL_TO - 4) * Math.pow(k, 2.2);
+      out = 1;
+    }
+    const pose = toppled(deg, out);
+    keys.push({ at: t, ease: 'lin', pose: { ...pose, faceUp: (pose.faceUp as number) + ((more.faceUp as number) ?? UF_REST.faceUp) - UF_REST.faceUp } });
+  }
+  return { keys };
+}
+/** How each piece of it breaks away as it strikes the floor: the head rolling on furthest, the rest lying along where it fell, a little apart. */
+function ufFall(piece: string): Fall | null {
+  if (/^(grit|dust|chips|glow|eye|crackGlow|wall|block)/.test(piece)) return null;
+  let h = 0;
+  for (let i = 0; i < piece.length; i++) h = (h * 31 + piece.charCodeAt(i)) | 0;
+  const a = hash(h, 1, 11);
+  const b = hash(h, 2, 11);
+  const from = UF_FALLS + a * 0.06;
+  if (piece === 'head' || piece === 'headRaw') return { from, to: [56 + 10 * b, -14 + 8 * a], spin: 70, lay: 'keep', hop: 6, rise: 8 };
+  const side = /L$|Raw$/.test(piece) ? 1 : -1;
+  const rod = /^(thighR|shinR|upperR|foreR|footL|footR|thighL|shinL|upperL|foreL)$/.test(piece);
+  return { from, to: [(b - 0.3) * 24, side * (6 + 16 * a)], spin: (a - 0.5) * 50, lay: rod ? 'axis' : 'keep', hop: 2 + 3 * b };
+}
+
 /** STRUCK: it barely gives: a jolt back through the stone, its head knocked up, chips flying; then it grinds back. */
 function ufStruck(): Motion {
   const R = UF_REST;
@@ -608,9 +760,6 @@ export interface UfLook {
   fused: boolean;
 }
 
-/** The middle of its chest, and the chest's half-sizes (its solids, and the checks'). */
-export const chestOf = (s: Skeleton): V3 => add(s.ribs, add(mul(s.chest[2], B.chest * 0.44), mul(s.chest[0], 1.0)));
-export const CR: V3 = [B.ribDeep + 3, B.ribHalf + 8, B.chest * 0.66];
 
 /** THE UNFINISHED AS SOLIDS. */
 function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
@@ -663,12 +812,12 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
   const [hf, hl, hu] = s.hips;
   const pc = add(s.pelvis, mul(hu, B.waist * 0.2));
   const PH: V3 = [B.pelvisDeep + 4, B.pelvisHalf + 6, B.waist * 0.95];
-  put('hips', 'body', { k: 'ball', c: pc, ax: [mul(hf, PH[0]), mul(hl, PH[1]), mul(hu, PH[2])], skin: polishedSkin((u) => (u[2] > 0.36 && u[2] < 0.62 ? (u[2] > 0.5 ? 1 : -1) : null)) });
+  put('hips', 'hips', { k: 'ball', c: pc, ax: [mul(hf, PH[0]), mul(hl, PH[1]), mul(hu, PH[2])], skin: polishedSkin((u) => (u[2] > 0.36 && u[2] < 0.62 ? (u[2] > 0.5 ? 1 : -1) : null)) });
   block(put, 'hips', 'hipsRaw', add(pc, mul(hl, PH[1] * 0.5)), s.hips, [PH[0] * 1.02, PH[1] * 0.56, PH[2] * 0.98], rawFace(21));
   const be = s.belly;
   const bc = lerp3(s.waist, s.ribs, 0.4);
   const BH: V3 = [B.waistDeep + 5, B.waistHalf + 6, B.ribs * 0.9];
-  put('belly', 'body', { k: 'ball', c: bc, ax: [mul(be[0], BH[0]), mul(be[1], BH[1]), mul(be[2], BH[2])], skin: polishedSkin((u) => (u[0] > 0.4 && (Math.abs(u[1] + 0.24) < 0.04 || Math.abs(fr((u[2] + 1) * 1.6) - 0.5) > 0.46) ? -1 : null)) });
+  put('belly', 'belly', { k: 'ball', c: bc, ax: [mul(be[0], BH[0]), mul(be[1], BH[1]), mul(be[2], BH[2])], skin: polishedSkin((u) => (u[0] > 0.4 && (Math.abs(u[1] + 0.24) < 0.04 || Math.abs(fr((u[2] + 1) * 1.6) - 0.5) > 0.46) ? -1 : null)) });
   block(put, 'belly', 'bellyRaw', add(bc, mul(be[1], BH[1] * 0.5)), be, [BH[0] * 1.03, BH[1] * 0.56, BH[2] * 1.0], rawFace(22));
   const chestC = chestOf(s);
   // THE CULT'S MARK, cut deep across the middle of its chest and burning: where a point of the chest is on it
@@ -681,6 +830,7 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
     const mk = shriekAt(-dot(d, cl) / MW, dot(d, cu) / MH);
     if (mk === 'dark') return CUT_DARK;
     if (mk !== 'bone') return null;
+    if (lit < 0.08) return CUT_DARK;
     if (lit < 0.3) return FLAME[0];
     // (burning: hottest at the heart of each stroke, the fire's tongues licking up it by turns)
     const x = -dot(d, cl) / MW;
@@ -694,16 +844,16 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
     if (u[0] > 0.3 && u[1] < -0.06 && Math.abs(u[2] + 0.28 - 0.3 * (u[1] + 0.5) ** 2) < 0.05) return -2;
     return null;
   });
-  put('chest', 'body', { k: 'ball', c: chestC, ax: [mul(cf, CR[0]), mul(cl, CR[1]), mul(cu, CR[2])], skin: chestSkin });
+  put('chest', 'chest', { k: 'ball', c: chestC, ax: [mul(cf, CR[0]), mul(cl, CR[1]), mul(cu, CR[2])], skin: chestSkin });
   block(put, 'chest', 'chestRaw', add(chestC, add(mul(cl, CR[1] * 0.52), mul(cu, CR[2] * 0.05))), s.chest, [CR[0] * 1.02, CR[1] * 0.58, CR[2] * 1.02], rawFace(23, (face, a, b) => face === 4 && Math.abs(b) < 1.2 && fr(a / 6) < 0.3));
   // the mark itself: cut into the face the carvers dressed flat for it across the middle of the chest, its own part
-  put('mark', 'mark', { k: 'panel', c: add(mc, mul(cf, CR[0] * 0.14 + 0.8)), u: mul(cl, MW), v: mul(cu, MH), skin: (a, b, front) => (front ? markAt(add(mc, add(mul(cl, a), mul(cu, b)))) : null) });
+  put('mark', 'chest', { k: 'panel', c: add(mc, mul(cf, CR[0] * 0.14 + 0.8)), u: mul(cl, MW), v: mul(cu, MH), skin: (a, b, front) => (front ? markAt(add(mc, add(mul(cl, a), mul(cu, b)))) : null) });
   // the groove where the carvers stopped, drilled, from its belt to its collar
   for (let i = 0; i < 9; i++) {
     const k = i / 8;
     const p = add(lerp3(add(pc, mul(hf, PH[0] * 0.98)), add(chestC, add(mul(cf, CR[0] * 0.96), mul(cu, CR[2] * 0.8))), k), mul(cl, CR[1] * -0.02));
     if (k > 0.45 && k < 0.88) continue; // (the mark is there)
-    put('chest', 'hole', { k: 'dot', p, c: HOLE, facing: cf, c2: HOLE });
+    put('chest', 'chest', { k: 'dot', p, c: HOLE, facing: cf, c2: HOLE });
   }
   // its light
   put('glow', 'glow', { k: 'glow', p: add(mc, mul(cf, 6)), c: FLAME[2], r: 54 + 30 * m.glint, a: (0.36 + 0.3 * m.glint) * lit });
@@ -712,7 +862,7 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
   // --- THE SHOULDERS: the right a carved shoulder; the left a great block of the stone, unshaped ---
   {
     const [r0] = B.armR;
-    put('shoulderR', 'armR', { k: 'ball', c: add(s.shoulderR, add(mul(cu, r0 * 0.2), mul(cl, r0 * 0.15))), ax: [mul(cf, r0 * 1.0), mul(cl, r0 * 1.05), mul(cu, r0 * 0.92)], skin: P, far: true });
+    put('shoulderR', 'shoulderR', { k: 'ball', c: add(s.shoulderR, add(mul(cu, r0 * 0.2), mul(cl, r0 * 0.15))), ax: [mul(cf, r0 * 1.0), mul(cl, r0 * 1.05), mul(cu, r0 * 0.92)], skin: P, far: true });
     block(put, 'shoulderL', 'shoulderL', add(s.shoulderL, add(mul(cu, r0 * 0.4), mul(cl, r0 * 0.2))), s.chest, [r0 * 1.25, r0 * 1.3, r0 * 1.1], rawFace(31));
   }
 
@@ -765,7 +915,7 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
       const ex = (u[1] + 0.42) / 0.24;
       const ez = (u[2] - 0.06) / 0.15;
       if (ex * ex + ez * ez < 1) {
-        if (ex * ex * 2.2 + ez * ez * 2.2 < 1) return lit > 0.3 ? (hash(frame, 2, 77) > 0.4 ? FLAME[3] : FLAME[2]) : RAW[1];
+        if (ex * ex * 2.2 + ez * ez * 2.2 < 1) return lit > 0.3 ? (hash(frame, 2, 77) > 0.4 ? FLAME[3] : FLAME[2]) : lit > 0.08 ? FLAME[0] : POLISHED[0];
         return POLISHED[0];
       }
       if (u[2] > 0.2 && u[2] < 0.32 && u[1] < -0.1) return 1; // the brow's ridge, in the light
@@ -780,11 +930,21 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
   }
 
   // --- FUSED TO THE WALL (the fight's first half): the cliff's own rock still holds its back and its raw side ---
-  if (look.fused) {
+  // (tearing free: `jaw` how far the stone between it and the wall has cracked, its own fire in the cracks; once it has torn free, `since`, the wall's stone that held it falls away)
+  const torn = q.prop === 5 && m.since !== undefined && m.since >= 0;
+  const strain = q.prop === 5 ? (m.jaw ?? 0) : 0;
+  if (look.fused && !torn) {
     // (the cliff's own stone, in its benches: the wall it is still part of, behind it and holding its raw side)
     const cliff = (seed: number): FaceSkin => {
       const raw = rawFace(seed);
       return (face, a, b, tone) => {
+        if (strain > 0 && face < 4) {
+          // the cracks running through it, wider as it strains
+          const c = Math.abs(fr((a * 0.35 + b * 0.8 + 7 * Math.sin(a * 0.11 + b * 0.05 + seed) + hash(face, seed, 7) * 30) / 34) - 0.5);
+          const c2 = Math.abs(fr((a * 0.9 - b * 0.3 + 9 * Math.sin(b * 0.09 - a * 0.04 + seed * 2) + hash(face, seed, 8) * 30) / 47) - 0.5);
+          if (c < 0.03 * strain || c2 < 0.025 * strain) return strain > 0.6 && hash(Math.floor(a), Math.floor(b), seed + frame) > 0.5 ? FLAME[3] : FLAME[2];
+          if (c < 0.06 * strain || c2 < 0.05 * strain) return CUT_DARK;
+        }
         if (face < 4 && fr((b + 40) / 13.5) < 0.09) return WALL[Math.max(0, tone - 1)];
         if (face === 4 || face === 5) return raw(face, a, b, tone);
         const c = raw(face, a, b, tone);
@@ -795,6 +955,34 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
     block(put, 'wall', 'wall', add(back, mul(cu, -CR[2] * 0.2)), s.chest, [CR[0] * 0.8, CR[1] * 2.1, CR[2] * 2.5], cliff(61));
     block(put, 'wall', 'wall2', add(add(s.shoulderL, mul(cl, B.armR[0] * 1.8)), mul(cf, -CR[0] * 0.5)), s.chest, [CR[0] * 1.0, B.armR[0] * 1.5, CR[2] * 2.3], cliff(62));
     block(put, 'wall', 'wall3', add(lerp3(s.hipL, s.kneeL, 0.5), add(mul(cl, B.legR[0] * 1.6), mul(cf, -B.legR[0] * 1.0))), s.hips, [B.legR[0] * 1.3, B.legR[0] * 1.3, B.thigh * 1.0], cliff(63));
+    if (strain > 0.2) put('glow', 'crackGlow', { k: 'glow', p: add(chestC, mul(cf, -CR[0] * 1.2)), c: FLAME[2], r: 40 + 40 * strain, a: 0.3 * strain });
+  }
+  if (look.fused && torn && (m.since as number) < 1.4) {
+    // (the wall's stone that held it, broken off as it tears free, falling away behind it in great lumps, and dust)
+    const k = m.since as number;
+    for (const [c0, n, seed] of TORN_FROM) {
+      for (let i = 0; i < n; i++) {
+        const off: V3 = [(hash(i, 1, seed) - 0.7) * 50, (hash(i, 2, seed) - 0.5) * 80, (hash(i, 3, seed) - 0.5) * 120];
+        const v: V3 = [-30 - hash(i, 4, seed) * 50, (hash(i, 5, seed) - 0.5) * 50, hash(i, 6, seed) * 12];
+        // (each lump falls, strikes the floor, and crumbles)
+        const land = Math.sqrt((2 * Math.max(1, c0[2] + off[2])) / 520);
+        const r = (7 + hash(i, 7, seed) * 9) * (k < land + 0.15 ? 1 : Math.max(0, 1 - (k - land - 0.15) / 0.35));
+        if (r < 2.5) continue;
+        const z0 = c0[2] + off[2];
+        const z = Math.max(r * 0.8, z0 + v[2] * k - 520 * k * k);
+        const c: V3 = [c0[0] + off[0] + v[0] * k, c0[1] + off[1] + v[1] * k, z];
+        const spin = k * (hash(i, 8, seed) - 0.5) * 6;
+        const A: [V3, V3, V3] = [[Math.cos(spin), 0, -Math.sin(spin)], [0, 1, 0], [Math.sin(spin), 0, Math.cos(spin)]];
+        block(put, `lump${seed}${i}`, `lump${seed}${i}`, c, A, [r, r * 1.1, r * 0.9], rawFace(seed + i));
+      }
+    }
+    if (k < 0.9) {
+      for (let i = 0; i < 26; i++) {
+        const a = hash(i, 9, 77) * Math.PI * 2;
+        const rr = 30 + k * 120 * hash(i, 10, 77);
+        put('dust', 'dust', { k: 'mote', p: [TORN_FROM[0][0][0] + Math.cos(a) * rr, Math.sin(a) * rr, 2 + hash(i, 11, 77) * 30 * (1 - k)], c: i % 2 ? WALL[3] : RAW[3], size: 3 });
+      }
+    }
   }
 
   // --- GRIT, trickling off its raw side, and shaken off after the shudder ---
@@ -818,6 +1006,28 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
       }
     }
   }
+  // --- DYING: grit pouring off it as its fire goes out, and the dust of its fall ---
+  if (m.dying) {
+    const t = m.t;
+    if (t < UF_FALLS) {
+      for (let i = 0; i < 10; i++) {
+        const ph = fr(t * 1.4 + i / 10);
+        const from = i % 3 === 0 ? s.shoulderL : i % 3 === 1 ? s.head : s.elbowL;
+        const p = add(add(from, [(hash(i, 1, 85) - 0.5) * 16, (hash(i, 2, 85) - 0.5) * 16, 0]), [0, 0, -ph * ph * 80]);
+        if (p[2] > 1) put('grit', 'grit', { k: 'mote', p, c: i % 2 ? RAW[2] : RAW[3], size: 2 });
+      }
+    } else if (t < UF_FALLS + 1.1) {
+      const k = t - UF_FALLS;
+      for (let i = 0; i < 80; i++) {
+        const a = hash(i, 3, 85) * Math.PI * 2;
+        const along = hash(i, 4, 85) * 240 - 20;
+        const rr = 14 + Math.sqrt(k) * 80 * hash(i, 5, 85);
+        if (hash(i, 6, 85) < k * 0.9) continue;
+        const z = 2 + (10 + 50 * hash(i, 7, 85)) * Math.sin(Math.PI * Math.min(1, k * 1.2));
+        put('dust', 'dust', { k: 'mote', p: [FALL_TOE + along + Math.cos(a) * rr, Math.sin(a) * rr * 1.4, z], c: i % 3 ? POLISHED[3] : RAW[3], size: i % 4 ? 4 : 3 });
+      }
+    }
+  }
   // --- THE BLOCK IN ITS HANDS (the hurled block's): gripped by its sides ---
   if (m.skull) {
     // (lying on the floor till it is torn up; then between its hands, rising from where it lay)
@@ -831,7 +1041,7 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
   const landsAt = (): V3 | null => {
     if (m.charge > 0) return [BLOCK_AT[0], BLOCK_AT[1], 0];
     if (m.since === undefined || m.since < 0 || m.since >= 0.7) return null;
-    if (q.prop === 4) return null;
+    if (q.prop === 4 || q.prop === 5 || m.dying) return null;
     if (q.prop === 3) return [s.toeR[0] - 6, s.toeR[1], 0];
     if (q.prop === 2) return lerp3(add(s.handL, [6, 0, 0]), add(s.handR, [6, 0, 0]), 0.5);
     return q.rhIn === 2 && s.handR[2] < 50 ? [s.handR[0] + 6, s.handR[1], 0] : null;
@@ -893,13 +1103,15 @@ function ufMob(look: UfLook): Mob {
       stomp: { name: 'The stomp', motion: ufStomp(), rest: UF_REST, feet: ufStompFeet(), glint: heldGlint(0.5, 0.85, UF_STOMP_HIT), rally: (t) => shaken(t - UF_STOMP_HIT) },
       hurl: { name: 'The hurled block', motion: ufHurl(), rest: UF_REST, glint: heldGlint(1.2, 1.55, UF_HURL_HIT), skull: blockHeld, rally: (t) => shaken(t - UF_HURL_TEAR), charge: (t) => shaken(t - UF_HURL_TEAR) },
       rockslide: { name: 'The rockslide', motion: ufRockslide(), rest: UF_REST, glint: heldGlint(0.6, 0.95, UF_SLIDE_HIT), rally: (t) => (t >= SLIDE_AGAIN ? shaken(t - SLIDE_AGAIN) : shaken(t - UF_SLIDE_HIT)) },
+      ...(look.fused ? { tearFree: { name: 'The Unfinished tears itself free', motion: ufTearFree(), rest: UF_REST, jaw: tearStrain, glint: heldGlint(0.4, 1.2, UF_TEAR_HIT), rally: (t: number) => shaken(t - UF_TEAR_HIT) } } : {}),
     },
     reel: { name: 'The Unfinished is struck', motion: ufStruck(), rest: UF_REST, rally: (t) => shaken(t) },
     reelTime: 0.4,
     hit: UF_SLAM_HIT,
     warn: 0.6,
-    dieTime: 2,
-    dying: stand,
+    dieTime: UF_DIE_TIME,
+    dying: { name: 'The Unfinished topples and shatters', motion: ufDying(), rest: UF_REST },
+    fall: ufFall,
     aura: { x: UF_CANVAS.ax, y: UF_CANVAS.ay - 120, r: 140, color: '#ff3a78', a: 0.18 },
     shadow: 64,
     canvas: UF_CANVAS,
@@ -911,6 +1123,11 @@ export const UNFINISHED: Mob = ufMob({ fused: false });
 /** THE UNFINISHED, still one with the wall (the fight's first half). */
 export const UNFINISHED_FUSED: Mob = ufMob({ fused: true });
 
+/** A frame of its death, `t` seconds in (as the game holds a death: no edge of light, no pool of light). */
+export function unfinishedDeath(t: number, view: GameView = 'front'): Sprite {
+  const can = canvasOf(UNFINISHED);
+  return toSprite(deathOfMob(UNFINISHED, Math.min(1, t / UF_DIE_TIME), view), null, can.ax, can.ay);
+}
 /** One frame of one of its moves, as the game holds a figure (cut down, its lights in game pixels; no pool of light). */
 export function unfinishedFrame(which: string, t: number, view: GameView = 'front', fused = false): Sprite {
   const mob = fused ? UNFINISHED_FUSED : UNFINISHED;

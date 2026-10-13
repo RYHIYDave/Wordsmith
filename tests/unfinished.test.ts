@@ -1,8 +1,8 @@
-// FLOOR 6'S BOSS, THE UNFINISHED, STANDING (src/art/unfinished.ts; a mock-up nothing of the game imports),
-// held to his rulebook before he sees it: crisp, the enemy's pink edge round it, nothing cyan and every light
-// the cult's fire, its size his ("Twice the Warden (Recommended)"), the cult's mark burning on its chest,
-// and the boss review (art/boss_checks.ts) of its stand: nothing of it into itself or the floor, nothing
-// jerks, and it is alive standing (its chest rises, its hips sway).
+// FLOOR 6'S BOSS, THE UNFINISHED (src/art/unfinished.ts; a mock-up nothing of the game imports), held to
+// his rulebook before he sees it: crisp in every move, the enemy's pink edge round it while it lives and
+// none as it dies, nothing cyan and every light the cult's fire, its size his ("Twice the Warden
+// (Recommended)"), the cult's mark burning on its chest, what its big moves leave crisp and duller than
+// every word, and the whole boss review (art/boss_checks.ts) of every move: free, and still in the wall.
 //   run: tsx --test tests/unfinished.test.ts
 
 // @ts-ignore
@@ -13,11 +13,12 @@ import nodeAssert from 'node:assert/strict';
 import * as nodeFs from 'node:fs';
 
 import { checkBoss, findingsSaid } from '../src/art/boss_checks';
-import { MADE, ufShape } from './unfinished_shape';
+import { MADE, MADE_FUSED, ufShape } from './unfinished_shape';
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { makeWardenArt } from '../src/art/monster_warden';
-import { UF_BREATH, UNFINISHED, UNFINISHED_FUSED, UNFINISHED_ON, boulderRolling, hurledBlock, stompCracks, unfinishedStanding } from '../src/art/unfinished';
+import { UF_BREATH, UF_DIE_TIME, UNFINISHED, UNFINISHED_FUSED, UNFINISHED_ON, boulderRolling, hurledBlock, stompCracks, unfinishedDeath, unfinishedFrame, unfinishedStanding } from '../src/art/unfinished';
+import { framesOf } from '../src/art/boss_checks';
 import { WORD_COLOR } from '../src/art/icons';
 import { rgba } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
@@ -31,7 +32,7 @@ paintWithoutCanvas();
 
 
 const FIRE = new Set(FLAME.map((c) => rgba(c).slice(0, 3).join(',')));
-/** Its stand, every frame the game would show (at its own frames a second), from in front and from behind, free and still one with the wall. */
+/** Its stand (every third frame the game would show), from in front and from behind, free and still one with the wall; and every fourth frame of every other move it lives through. */
 const frames: { name: string; sp: Sprite }[] = [];
 for (const fused of [false, true]) {
   for (const view of ['front', 'back'] as const) {
@@ -39,6 +40,18 @@ for (const fused of [false, true]) {
     for (let i = 0; i < n; i += 3) frames.push({ name: `${fused ? 'fused ' : ''}${view} ${i}`, sp: unfinishedStanding(i / UNFINISHED.idleFps, view, fused) });
   }
 }
+const living: { name: string; sp: Sprite }[] = [...frames];
+for (const [mob, moves, fused] of [[UNFINISHED, MADE, false], [UNFINISHED_FUSED, MADE_FUSED, true]] as const) {
+  for (const mv of moves) {
+    if (mv === 'stand' || mv === 'dying') continue;
+    framesOf(mob, mv).forEach((t, i) => {
+      if (i % 4 === 0) for (const view of ['front', 'back'] as const) living.push({ name: `${fused ? 'fused ' : ''}${mv} ${view} ${t.toFixed(2)}`, sp: unfinishedFrame(mv, t, view, fused) });
+    });
+  }
+}
+/** Its death, every third frame at the game's twenty a second. */
+const dying: { name: string; sp: Sprite }[] = [];
+for (let i = 0; i <= UF_DIE_TIME * 20; i += 3) for (const view of ['front', 'back'] as const) dying.push({ name: `dying ${view} ${(i / 20).toFixed(2)}`, sp: unfinishedDeath(i / 20, view) });
 function hue(r: number, g: number, b: number): [number, number] {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
@@ -58,9 +71,15 @@ test('the switch is off, and nothing of the game imports it', () => {
   }
 });
 
-test('crisp: every pixel all there or not at all (but its pink edge), and the pink edge round it', () => {
+test('crisp: every pixel all there or not at all (but its pink edge), and the pink edge round it while it lives, none as it dies', () => {
   const [pr, pg, pb] = rgba(ENEMY_RIM);
-  for (const { name, sp } of frames) {
+  for (const { name, sp } of dying) {
+    const d = paintingOf(sp).d;
+    let soft = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] !== 0 && d[i + 3] !== 255) soft++;
+    assert.ok(soft === 0, `${name}: ${soft} soft pixels (an edge of light, or soft)`);
+  }
+  for (const { name, sp } of living) {
     const d = paintingOf(sp).d;
     let soft = 0;
     let rim = 0;
@@ -76,7 +95,7 @@ test('crisp: every pixel all there or not at all (but its pink edge), and the pi
 });
 
 test('nothing cyan, and every light it gives is the cult\'s fire', () => {
-  for (const { name, sp } of frames) {
+  for (const { name, sp } of [...living, ...dying]) {
     const d = paintingOf(sp).d;
     for (let i = 0; i < d.length; i += 4) {
       if (d[i + 3] === 0) continue;
@@ -105,8 +124,8 @@ test('the cult\'s mark burns on its chest, in every frame from in front', () => 
 });
 
 test('the boss review (art/boss_checks.ts) of every move made so far: free; and its stand one with the wall', () => {
-  for (const [mob, moves] of [[UNFINISHED, MADE], [UNFINISHED_FUSED, ['stand']]] as const) {
-    const found = checkBoss(mob, ufShape(), moves);
+  for (const [mob, moves, fused] of [[UNFINISHED, MADE, false], [UNFINISHED_FUSED, MADE_FUSED, true]] as const) {
+    const found = checkBoss(mob, ufShape(fused), moves);
     assert.ok(found.length === 0, `${mob.id}:\n  ${findingsSaid(found).join('\n  ')}`);
   }
 });

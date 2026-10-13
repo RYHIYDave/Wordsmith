@@ -3,13 +3,13 @@
 // tests keep its figures from importing the checks (tests/bosses.test.ts, 12).
 
 import type { BossShape, CheckLimb, CheckLump, Handover } from '../src/art/boss_checks';
-import { CR, UF_BODY, UF_HURL_HIT, UF_HURL_TEAR, chestOf } from '../src/art/unfinished';
+import { CR, UF_BODY, UF_HURL_HIT, UF_HURL_TEAR, UNFINISHED, chestOf } from '../src/art/unfinished';
 import { add, lerp3, mul } from '../src/art/skeleton';
 import type { Skeleton } from '../src/art/skeleton';
 
 /** THE UNFINISHED AS THE BOSS REVIEW SEES IT (art/boss_checks.ts): its outside as solids; the end it strikes with; how its moves hand over. */
 const B = UF_BODY;
-export function ufShape(): BossShape {
+export function ufShape(fused = false): BossShape {
   return {
     body: (s: Skeleton) => {
       const [rH, rK, rA] = B.legR;
@@ -47,8 +47,13 @@ export function ufShape(): BossShape {
         { from: 'stand', at: 0, to: m, toAt: 0 },
         { from: m, at: 'end', to: 'stand', toAt: 0 },
       ]),
+      { from: 'stand', at: 0, to: 'dying', toAt: 0 },
+      // (still in the wall: it tears itself free, and stands as the free one stands)
+      ...(fused ? [{ from: 'stand', at: 0, to: 'tearFree', toAt: 0 }, { from: 'tearFree', at: 'end', to: 'stand', toAt: 0, mob: UNFINISHED } as Handover] : []),
     ],
   };
 }
 /** Its moves made so far (its death and its other moves are still its stand, not for use). */
-export const MADE = ['stand', 'walk', 'setOff', 'halt', 'attack', 'reel', 'stomp', 'hurl', 'rockslide'];
+export const MADE = ['stand', 'walk', 'setOff', 'halt', 'attack', 'reel', 'stomp', 'hurl', 'rockslide', 'dying'];
+/** Its moves still in the wall (the fight's first half): it stands, and tears itself free. */
+export const MADE_FUSED = ['stand', 'tearFree'];

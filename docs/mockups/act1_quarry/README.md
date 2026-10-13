@@ -279,6 +279,32 @@ hurts are the main chat's. `prop` on the keys says where a blow lands, for its c
     python3 tools/film_strip.py shots/uf_stomp_strip.png shots/uf_stomp.gif 40 15 540 2 1 600
     (hurl: 1080 15000 bigfilm:hurl:15:3.2, 49 frames; rockslide: 1080 15600 bigfilm:rockslide:15:3.4, 52)
 
+Asked as a pop-up "Are the stomp, hurled block and rockslide right?", his pick (13 Oct, by 14:35): "Yes, on
+to tearing free (Recommended)", offered as: these stay; next tearing free of the wall at half life, then its
+death (topples and shatters).
+
+### The Unfinished, tearing free and its death
+
+TEARING FREE (`tearFree`, a move of `UNFINISHED_FUSED` only; `UF_TEAR_HIT` 1.4 s; 3.3 s): it strains
+forward against the wall, roaring, trembling harder and harder, the stone between them cracking and its
+own fire running in the cracks (`jaw`), the mark flaring; rips free with a lunge, the kick of it, the
+wall's stone that held it breaking away behind it in great lumps that fall and crumble to dust; it
+catches itself, straightens and roars, and stands as the free one stands (the review hands it over to
+`UNFINISHED`'s stand). ITS DEATH (`UF_DIE_TIME` 3.0 s; painted as the game paints a death, `deathOfMob`:
+`unfinishedDeath(t)`): rocked back about its heels by the blow, the fire going out of its mark and its eye
+(the cut left dark); teetering, stiff, grit pouring off it; toppling all of a piece about its toes, faster
+and faster, like a felled statue (`toppled`), as far as it can go with nothing of it into the floor; at
+`UF_FALLS` (1.75 s) it strikes the floor and breaks into great blocks (`ufFall`: every piece lets go, the
+head rolling on furthest, the limbs lying along where it fell, the raw blocks tumbled), the kick, dust
+bursting up along its length. The last frame is what lies there. The canvas is 600 x 560 now, to hold it
+lying. The boss review passes every move, free and in the wall; every fourth frame of every move and every
+third of its death is crisp, pink-edged while it lives and not as it dies, and nothing on it cyan
+(tests/unfinished.test.ts, 7).
+
+    node tools/preview.mjs src/dev/preview_unfinished.ts shots/uf_tear_strip.png 1080 15600 bigfilm:tearFree:15:3.3
+    python3 tools/film_strip.py shots/uf_tear_strip.png shots/uf_tear.gif 51 15 540 2 1 600
+    (its death: 1080 13800 bigfilm:dying:15:3.0, 46 frames)
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a
