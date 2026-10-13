@@ -48,7 +48,9 @@ const PINE_SHOT = decodeURIComponent(location.hash.slice(1)) === 'pine';
 const QUARRY_SHOT = decodeURIComponent(location.hash.slice(1)) === 'quarry';
 /** "hold": the Quarry's cult stronghold, at its door, as one screen of the game. */
 const HOLD_SHOT = decodeURIComponent(location.hash.slice(1)) === 'hold';
-const ONE_SCREEN = SHOT || LEDGE || FEN_SHOT || PINE_SHOT || QUARRY_SHOT || HOLD_SHOT;
+/** "holdin": the same stronghold's last room, inside. */
+const HOLDIN_SHOT = decodeURIComponent(location.hash.slice(1)) === 'holdin';
+const ONE_SCREEN = SHOT || LEDGE || FEN_SHOT || PINE_SHOT || QUARRY_SHOT || HOLD_SHOT || HOLDIN_SHOT;
 const PW = ONE_SCREEN ? 1014 : 320 * F;
 const PH = ONE_SCREEN ? 468 : 220 * F;
 const HWf = 16 * F;
@@ -308,6 +310,8 @@ interface Level {
   tint?: (c: RGB) => RGB;
   /** Drawn after the tint (fog, glows). */
   after?: (g: CanvasRenderingContext2D, kind: Uint8Array, top: number) => void;
+  /** Drawn over the ground before anything that stands. */
+  under?: (g: CanvasRenderingContext2D, kind: Uint8Array, top: number) => void;
 }
 
 const enum K { Floor = 1, Face = 2, Top = 3, Cut = 4, Water = 5, Bank = 6, Out = 7 }
@@ -541,6 +545,7 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way
     }
   }
   g.putImageData(img, 0, top);
+  if (L.under) L.under(g, kind, top);
   // what stands: in order from the back, the tall ones see-through where they would hide the ground behind them
   const knight = spriteOf3(MOVES3.rear, 0, 'front');
   const stands: Prop[] = [...L.props, {
@@ -3510,6 +3515,390 @@ if (HOLD_SHOT) {
   }
   hg.restore();
   placeHud(hg, 'The Quarry', HW_, holdShot.hero);
+  showAlone(cvs);
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE STRONGHOLD'S LAST ROOM, as one screen of the game. His pick by 09:52 (13 Oct), to the Quarry's
+// stronghold at its door: "Yes, this is it (Recommended)", offered as: next, the last room inside. The
+// doc's for the Quarry: a golem pack around a half-carved obelisk; the last room drops runedust. Inside,
+// as the game draws a dungeon's room: the far walls stand, the near ones are cut away, black beyond. A
+// hall cut in the terrace, its walls the redoubt's dressed stone; in the middle the obelisk the cult is
+// cutting, still joined to the bedrock at one end, its runes burning pink in a ring of the cult's magic
+// on the floor; round it a yellow pack of quarry golems (rough paint: the golems are the art chat's to
+// draw with him), its leader with the gold ring of letters and his name, the others with the broken ring
+// of a leader's minions.
+
+const [RX0, RY0] = at(600, 110); // the hall's far corner
+const RX1 = RX0 + 12;
+const RY1 = RY0 + 10;
+const HALL_H = 104;
+const hallRoom: Shape = (x, y) => x >= RX0 && x < RX1 && y >= RY0 && y < RY1;
+const hallGround = ground(() => false, hallRoom);
+const HALL_FLAG = ramp('#4c4556', '#564e60', '#61586b', '#6b6375');
+const OB = [RX0 + 5.3, RY0 + 4.0] as const; // the obelisk's middle
+const hallShot: Level = {
+  title: '',
+  note: '',
+  gr: hallGround,
+  outsideH: HALL_H,
+  floor: (x, y, px, py) => {
+    // big flagstones of the quarry's stone, cut and laid by the cult's captives, dark in here
+    const row = Math.floor((y - RY0) / 0.85);
+    const sx = x - RX0 + (row % 2) * 0.5;
+    const col = Math.floor(sx / 1.0);
+    const ux = sx - col;
+    const vy = y - RY0 - row * 0.85;
+    let c = pick(HALL_FLAG, 0.2 + 0.55 * hash(col, row, 941) + 0.4 * (fbm(x * 3, y * 3, 943) - 0.5), px, py);
+    if (fbm(x * 0.8, y * 0.8, 947) > 0.6) c = mix(c, hex('#8d8592'), 0.3); // the stone's white dust, tracked in
+    if (ux < 0.05 || vy < 0.06) c = hex('#2e2836');
+    else if (ux < 0.1 || vy < 0.11) c = mix(c, hex('#8a8294'), 0.25);
+    if (Math.abs(fbm(x * 2.2, y * 2.2, 945) - 0.5) < 0.01) c = hex('#353041'); // cracks
+    if (hash(px >> 1, py >> 1, 949) > 0.97) c = hex('#9a92a0'); // chips of stone
+    return c;
+  },
+  face: (_shade, v, px, x, y) => {
+    // the redoubt's dressed stone, in courses; the wall along the hall's far right side looks to the lower
+    // left, toward the light; the one along its far left side to the lower right, away from it
+    const right = RY0 - y < RX0 - x ? false : true;
+    const along = right ? x - RX0 : y - RY0;
+    const row = Math.floor(v / 16);
+    const f = (v - row * 16) / 16;
+    const blk = Math.floor((along + (row % 2) * 0.3) / 0.6);
+    const lit = right ? 1 : 0;
+    const ramps = [ramp('#3d3647', '#463f51', '#4f475a', '#2a2432'), ramp('#5d5568', '#675f72', '#716a7c', '#3c3546')];
+    let c = ramps[lit][Math.floor(hash(blk, row, 951) * 3)];
+    if (f < 0.1) c = ramps[lit][3];
+    else if (f > 0.88) c = mix(c, hex('#a69fae'), 0.25);
+    const ab = along + (row % 2) * 0.3 - blk * 0.6;
+    if (ab < 0.04) c = ramps[lit][3];
+    // pilasters every so often, standing out of the wall, paler
+    const pil = ((along % 2.4) + 2.4) % 2.4;
+    if (pil > 1.0 && pil < 1.34) {
+      c = mix(ramps[lit][2], hex('#8d8698'), 0.35);
+      if (pil < 1.04 || (pil > 1.3 && !right)) c = ramps[lit][3];
+      if (v % 16 < 1.5) c = ramps[lit][3];
+    }
+    if (v > HALL_H - 8) c = mix(ramps[lit][2], hex('#a69fae'), 0.2); // its coping
+    if (hash(px, Math.floor(v), 953) > 0.985) c = ramps[lit][3];
+    return c;
+  },
+  outside: () => hex('#07050a'),
+  props: [],
+  hero: at(450, 318) as [number, number],
+  under: (g, kind) => {
+    // the far walls stand whole to the room's corners, as the game draws a room's walls: where the
+    // painter took the rock in front of the room for cut away, what stands behind it is the wall
+    const img = g.getImageData(0, 0, PW, PH);
+    const dd = img.data;
+    for (let py = 0; py < PH; py++) {
+      for (let px = 0; px < PW; px++) {
+        const k = kind[py * PW + px];
+        if (k !== K.Cut && k !== K.Top) continue;
+        let d = 0;
+        for (let h = 1; h <= HALL_H && py + h < PH; h++) {
+          if (kind[(py + h) * PW + px] === K.Floor) {
+            d = h;
+            break;
+          }
+        }
+        if (!d) continue;
+        const [x, y] = toWorld(px + 0.5, py + d - 0.5);
+        if (!(x < RX0 || y < RY0) || x > RX1 || y > RY1) continue;
+        const i = (py * PW + px) * 4;
+        let c = hallShot.face(0, d, px, x, y);
+        if (d >= HALL_H - 1) c = mix(c, [255, 250, 240], 0.3);
+        dd[i] = c[0];
+        dd[i + 1] = c[1];
+        dd[i + 2] = c[2];
+        dd[i + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    // the floor's thickness at its near edges, as the game shows a room's slab, then the dark beyond
+    for (let py = 1; py < PH; py++) {
+      for (let px = 0; px < PW; px++) {
+        const k = kind[py * PW + px];
+        if (k === K.Floor) continue;
+        for (let d = 1; d <= 6; d++) {
+          if (kind[(py - d) * PW + px] === K.Floor) {
+            const [x, y] = toWorld(px + 0.5, py - d + 0.5);
+            if (y > RY1 - 0.3 || x > RX1 - 0.3) {
+              g.fillStyle = d === 1 ? '#3a3344' : '#1d1824';
+              g.fillRect(px, py, 1, 1);
+            }
+            break;
+          }
+          if (py - d <= 0) break;
+        }
+      }
+    }
+  },
+};
+
+if (HOLDIN_SHOT) {
+  const W = (x: number, y: number, z: number): [number, number] => {
+    const [sx, sy] = toScreen(x, y);
+    return [sx, sy - z];
+  };
+  const poly = (g: CanvasRenderingContext2D, pts: [number, number][], c: string): void => {
+    g.fillStyle = c;
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.closePath();
+    g.fill();
+  };
+  const glowAt = (g: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, a: number): void => {
+    const gr = g.createRadialGradient(x, y, 1, x, y, rx);
+    gr.addColorStop(0, `rgba(255, 95, 210, ${a})`);
+    gr.addColorStop(1, 'rgba(255, 95, 210, 0)');
+    g.save();
+    g.fillStyle = gr;
+    g.translate(x, y);
+    g.scale(1, ry / rx);
+    g.beginPath();
+    g.arc(0, 0, rx, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  };
+  /** The cult's banner on a wall: a piece of violet cloth hung from a rod, swallow-tailed, its pink mark. */
+  const wallBanner = (g: CanvasRenderingContext2D, x: number, y: number, along: 'x' | 'y'): void => {
+    const P = (a: number, z: number): [number, number] => (along === 'x' ? W(x + a, y + 0.02, z) : W(x + 0.02, y + a, z));
+    poly(g, [P(-0.3, 92), P(0.3, 92), P(0.3, 22), P(0, 34), P(-0.3, 22)], '#3e2354');
+    poly(g, [P(0.18, 92), P(0.3, 92), P(0.3, 22), P(0.18, 28)], '#301a42');
+    poly(g, [P(-0.36, 94), P(0.36, 94), P(0.36, 90), P(-0.36, 90)], '#2a1d16');
+    poly(g, [P(-0.05, 76), P(0.05, 76), P(0.05, 50), P(-0.05, 50)], '#ff5fd2');
+    poly(g, [P(-0.16, 66), P(0.16, 66), P(0.16, 61), P(-0.16, 61)], '#ff5fd2');
+  };
+  /** Fire as tongues licking up: the cult's pink, its heart near white. */
+  const tongues = (g: CanvasRenderingContext2D, bx: number, by: number, h: number, w: number): void => {
+    const set: [number, number, number, number][] = [[-0.55, 0.62, -0.25, 0.42], [0.45, 0.72, 0.3, 0.4], [-0.05, 1.0, 0.12, 0.5], [0.15, 0.45, 0.5, 0.3], [-0.35, 0.38, -0.6, 0.28]];
+    const draw = (scale: number, c: string): void => {
+      g.fillStyle = c;
+      for (const [dx, hh0, lean0, ww0] of set) {
+        const x = bx + dx * w * scale;
+        const hh = hh0 * h * scale;
+        const ww = ww0 * w * scale;
+        const lean = lean0 * w;
+        g.beginPath();
+        g.moveTo(x - ww, by);
+        g.bezierCurveTo(x - ww * 1.2, by - hh * 0.45, x + lean - ww * 0.4, by - hh * 0.72, x + lean, by - hh);
+        g.bezierCurveTo(x + lean + ww * 0.15, by - hh * 0.62, x + ww * 1.2, by - hh * 0.4, x + ww, by);
+        g.closePath();
+        g.fill();
+      }
+    };
+    g.save();
+    g.shadowColor = 'rgba(255, 95, 210, 0.85)';
+    g.shadowBlur = 14;
+    draw(1, '#c2318f');
+    g.restore();
+    draw(0.74, '#ff5fd2');
+    draw(0.42, '#ffd6f4');
+  };
+  const brazier = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+    glowAt(g, sx, sy, 70, 30, 0.3);
+    glowAt(g, sx, sy - 40, 60, 60, 0.12);
+    g.strokeStyle = '#1e1a24';
+    g.lineWidth = 2 * F;
+    g.beginPath();
+    g.moveTo(sx - 10, sy);
+    g.lineTo(sx - 4, sy - 22);
+    g.moveTo(sx + 10, sy + 2);
+    g.lineTo(sx + 4, sy - 22);
+    g.moveTo(sx + 1, sy - 4);
+    g.lineTo(sx, sy - 22);
+    g.stroke();
+    blob(g, sx, sy - 26, 13, 6, '#2e2834');
+    blob(g, sx, sy - 28, 12, 4, '#575062');
+    blob(g, sx, sy - 28, 10, 3, '#2a1824');
+    tongues(g, sx, sy - 28, 30, 9);
+  };
+  /** The ring of the cult's magic on the floor round the obelisk: two pink lines and its marks between. */
+  const ritualRing = (g: CanvasRenderingContext2D): void => {
+    const ring = (r: number, w: number, c: string): void => {
+      g.strokeStyle = c;
+      g.lineWidth = w;
+      g.beginPath();
+      for (let i = 0; i <= 96; i++) {
+        const a = (i / 96) * Math.PI * 2;
+        const [sx, sy] = toScreen(OB[0] + 0.6 + Math.cos(a) * r, OB[1] + Math.sin(a) * r);
+        if (i) g.lineTo(sx, sy);
+        else g.moveTo(sx, sy);
+      }
+      g.stroke();
+    };
+    g.save();
+    g.shadowColor = 'rgba(255, 95, 210, 0.8)';
+    g.shadowBlur = 8;
+    ring(3.1, F, '#c2318f');
+    ring(2.75, F, '#c2318f');
+    g.restore();
+    ring(3.1, 1, '#ff8fe0');
+    ring(2.75, 1, '#ff8fe0');
+    g.fillStyle = '#ff5fd2';
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2;
+      const [sx, sy] = toScreen(OB[0] + 0.6 + Math.cos(a) * 2.92, OB[1] + Math.sin(a) * 2.92);
+      g.fillRect(Math.round(sx - F), Math.round(sy - 3), F, 6);
+      if (i % 2) g.fillRect(Math.round(sx - 3), Math.round(sy - F), 6, F);
+    }
+  };
+  /** The obelisk the cult is cutting, lying where it was split, still joined to the bedrock at its far end; its runes burning. */
+  const OBELISK = box(3.6, 0.9, 26, hex('#e2d9cf'), hex('#c4b9ae'), hex('#8a7e8a'));
+  const BEDROCK = box(1.7, 2.0, 50, hex('#6b6372'), hex('#59515f'), hex('#3a3342'));
+  const obelisk = (g: CanvasRenderingContext2D): void => {
+    const [sx, sy] = toScreen(OB[0], OB[1]);
+    g.fillStyle = 'rgba(10, 6, 16, 0.35)';
+    g.beginPath();
+    g.ellipse(sx + 20, sy + 6, 80, 22, 0.46, 0, Math.PI * 2);
+    g.fill();
+    OBELISK(g, sx, sy);
+    // its runes, cut along its side and burning the cult's pink
+    g.save();
+    g.shadowColor = 'rgba(255, 95, 210, 0.9)';
+    g.shadowBlur = 8;
+    g.fillStyle = '#ff5fd2';
+    for (let i = 0; i < 9; i++) {
+      const [rx, ry] = W(OB[0] - 1.5 + i * 0.36, OB[1] + 0.46, 8 + (i % 3) * 4);
+      g.fillRect(Math.round(rx), Math.round(ry - 6), F, 8);
+      if (i % 2) g.fillRect(Math.round(rx - 2), Math.round(ry - 3), 6, F);
+    }
+    g.restore();
+    // the chisel marks along its top
+    g.fillStyle = 'rgba(40, 32, 48, 0.55)';
+    for (let i = 0; i < 12; i++) {
+      const [cx, cy] = W(OB[0] - 1.6 + i * 0.28, OB[1], 26);
+      g.fillRect(Math.round(cx), Math.round(cy - 1), 2, 4);
+    }
+  };
+  const bedrock = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+    BEDROCK(g, sx, sy);
+    // its rough top and drill marks: the stone not yet cut
+    g.fillStyle = 'rgba(30, 24, 38, 0.6)';
+    for (let i = 0; i < 10; i++) {
+      const [dx, dy] = W(OB[0] + 2.65 + (i % 5) * 0.28, OB[1] - 1.0 + Math.floor(i / 5) * 0.02 + 0.05, 40 - Math.floor(i / 5) * 18);
+      g.fillRect(Math.round(dx), Math.round(dy), 2, 12);
+    }
+    g.fillStyle = '#7d7584';
+    for (let i = 0; i < 7; i++) {
+      const [cx, cy] = W(OB[0] + 2.0 + hash(i, 1, 961) * 1.4, OB[1] - 0.8 + hash(i, 2, 961) * 1.6, 50);
+      g.fillRect(Math.round(cx), Math.round(cy), 6, 3);
+    }
+    // a cut half-way down its front, where the obelisk is being split from it
+    g.strokeStyle = '#1b1622';
+    g.lineWidth = 2;
+    g.beginPath();
+    const a = W(OB[0] + 1.85, OB[1] + 0.95, 0);
+    const b = W(OB[0] + 1.85, OB[1] + 0.95, 30);
+    g.moveTo(a[0], a[1]);
+    g.lineTo(b[0], b[1]);
+    g.stroke();
+  };
+  /** A quarry golem, rough paint: cut blocks of the quarry's stone bound in chains, the cult's mark burning on its chest and in its eyes. */
+  const golem = (s: number, k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+    const STONE = (w: number, d: number, h: number) => box(w * s, d * s, h * s, hex('#9c9198'), hex('#7b7081'), hex('#4b4355'));
+    g.fillStyle = 'rgba(10, 6, 16, 0.4)';
+    g.beginPath();
+    g.ellipse(sx + 4 * s, sy + 2 * s, 34 * s, 11 * s, 0, 0, Math.PI * 2);
+    g.fill();
+    const lean = (hash(k, 1, 971) - 0.5) * 4 * s;
+    // its far arm, its legs, its body, its head, its near arm
+    STONE(0.32, 0.3, 46)(g, sx + 24 * s, sy - 10 * s);
+    STONE(0.34, 0.34, 22)(g, sx - 9 * s, sy - 2 * s);
+    STONE(0.34, 0.34, 22)(g, sx + 9 * s, sy + 2 * s);
+    STONE(0.95, 0.66, 36)(g, sx + lean, sy - 20 * s);
+    STONE(0.4, 0.36, 16)(g, sx + lean + 3 * s, sy - 56 * s);
+    // its chains, across the body
+    g.strokeStyle = '#2b2530';
+    g.lineWidth = 2 * s;
+    g.beginPath();
+    g.moveTo(sx + lean - 28 * s, sy - 34 * s);
+    g.lineTo(sx + lean + 4 * s, sy - 22 * s);
+    g.lineTo(sx + lean + 28 * s, sy - 40 * s);
+    g.stroke();
+    // the cult's mark, burning on its chest; and its eyes
+    g.save();
+    g.shadowColor = 'rgba(255, 95, 210, 0.95)';
+    g.shadowBlur = 10;
+    g.fillStyle = '#ff5fd2';
+    g.fillRect(Math.round(sx + lean - 10 * s), Math.round(sy - 48 * s), Math.max(2, Math.round(3 * s)), Math.round(14 * s));
+    g.fillRect(Math.round(sx + lean - 15 * s), Math.round(sy - 42 * s), Math.round(12 * s), Math.max(2, Math.round(3 * s)));
+    g.fillRect(Math.round(sx + lean - 4 * s), Math.round(sy - 64 * s), Math.round(4 * s), Math.max(2, Math.round(2 * s)));
+    g.fillRect(Math.round(sx + lean + 4 * s), Math.round(sy - 60 * s), Math.round(4 * s), Math.max(2, Math.round(2 * s)));
+    g.restore();
+    // cracks in its stone
+    g.strokeStyle = 'rgba(30, 24, 38, 0.8)';
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(sx + lean + 14 * s, sy - 50 * s);
+    g.lineTo(sx + lean + 10 * s, sy - 40 * s);
+    g.lineTo(sx + lean + 16 * s, sy - 30 * s);
+    g.stroke();
+    // its near arm, hanging to the floor, a fist of stone
+    STONE(0.34, 0.32, 48)(g, sx - 28 * s, sy + 2 * s);
+    STONE(0.42, 0.4, 12)(g, sx - 28 * s, sy + 6 * s);
+  };
+  const ringAt = (g: CanvasRenderingContext2D, x: number, y: number, rarity: 'leader' | 'minion', r: number): void => {
+    g.save();
+    g.scale(F, F);
+    drawPackMark(g, (wx, wy) => {
+      const [sx, sy] = toScreen(wx, wy);
+      return [sx / F, sy / F];
+    }, x, y, r, { rarity, words: ['volatile'] }, 1.1);
+    g.restore();
+  };
+  const leader = [OB[0] - 2.0, OB[1] + 1.9] as [number, number];
+  const minions: [number, number][] = [[OB[0] - 1.2, OB[1] - 1.6], [OB[0] + 1.0, OB[1] + 2.4], [OB[0] + 3.9, OB[1] + 1.6]];
+  const props: Prop[] = [
+    // on the walls: the cult's banners, braziers by them
+    { x: RX0 + 3.2, y: RY0, draw: (g) => wallBanner(g, RX0 + 3.2, RY0, 'x') },
+    { x: RX0 + 8.6, y: RY0, draw: (g) => wallBanner(g, RX0 + 8.6, RY0, 'x') },
+    { x: RX0, y: RY0 + 3.6, draw: (g) => wallBanner(g, RX0, RY0 + 3.6, 'y') },
+    { x: RX0, y: RY0 + 7.4, draw: (g) => wallBanner(g, RX0, RY0 + 7.4, 'y') },
+    { x: RX0 + 1.8, y: RY0 + 0.7, draw: brazier },
+    { x: RX0 + 10.4, y: RY0 + 0.7, draw: brazier },
+    { x: RX0 + 0.7, y: RY0 + 8.8, draw: brazier },
+    // the ring of the cult's magic, the obelisk and the bedrock it is cut from
+    { x: OB[0] - 3.4, y: OB[1] - 3.4, draw: (g) => ritualRing(g) },
+    { x: OB[0], y: OB[1], draw: (g) => obelisk(g) },
+    { x: OB[0] + 2.65, y: OB[1], draw: bedrock },
+    // scaffolding against the bedrock, chips of stone round it
+    { x: OB[0] + 4.0, y: OB[1] - 0.4, draw: qScaffold },
+    { x: OB[0] - 2.6, y: OB[1] - 0.6, draw: STONE_BLOCK },
+    { x: OB[0] + 4.6, y: OB[1] + 3.4, draw: greyRock(0.18) },
+    // the golems: the pack's leader and his minions
+    { x: leader[0] - 0.02, y: leader[1] - 0.02, draw: (g) => ringAt(g, leader[0], leader[1], 'leader', 0.6) },
+    ...minions.map(([mx, my]) => ({ x: mx - 0.02, y: my - 0.02, draw: (g: CanvasRenderingContext2D) => ringAt(g, mx, my, 'minion', 0.5) })),
+    { x: leader[0], y: leader[1], draw: golem(1.15, 1) },
+    ...minions.map(([mx, my], i) => ({ x: mx, y: my, draw: golem(0.88, i + 2) })),
+  ];
+  for (const pr of props) if (!hallRoom(pr.x + 0.01, pr.y + 0.01) && pr.y !== RY0 && pr.x !== RX0) console.warn('hall prop off the floor', toScreen(pr.x, pr.y));
+  hallShot.props = props;
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = PH;
+  const hg = cvs.getContext('2d') as CanvasRenderingContext2D;
+  hg.imageSmoothingEnabled = false;
+  hg.fillStyle = '#07050a';
+  hg.fillRect(0, 0, PW, PH);
+  paintLevel(hg, 0, hallShot);
+  // the leader's life and name over him, as the game writes a yellow pack's leader's
+  hg.save();
+  hg.scale(F, F);
+  {
+    const [sx0, sy0] = toScreen(leader[0], leader[1]);
+    const sx = Math.round(sx0 / F);
+    const sy = Math.round(sy0 / F) - 41 - 5;
+    const w = 24;
+    hg.fillStyle = P.ink;
+    hg.fillRect(sx - w / 2 - 1, sy - 1, w + 2, 4);
+    hg.fillStyle = P.fr4;
+    hg.fillRect(sx - w / 2, sy, w, 2);
+    drawText(hg, 'Volatile Quarry Golem', sx, sy - 8, RARITY_COLOR[2], { align: 'center', font: 'small', shadow: P.ink });
+  }
+  hg.restore();
+  placeHud(hg, "Overseers' Redoubt", hallRoom, hallShot.hero);
   showAlone(cvs);
 }
 

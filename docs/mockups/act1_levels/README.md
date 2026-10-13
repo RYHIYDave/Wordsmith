@@ -271,3 +271,23 @@ reading of "sacrifice a word to the door"; offered him beside it: the hollows in
 Sent as previews/hold_in_game.png by 09:48; asked "Is this the cult's stronghold door?", his pick
 by 09:52: "Yes, this is it (Recommended)", offered as: gatehouse in the terrace, sealed door, altar
 for words, two rare guards; next, the last room inside.
+
+## The stronghold's last room
+
+With the hash `holdin` (`hallShot`, `obelisk`, `bedrock`, `golem`, `ritualRing`):
+
+    node tools/preview.mjs src/dev/preview_act1.ts shots/holdin_world.png 1014 468 holdin
+
+The doc's last room for the Quarry: a golem pack around a half-carved obelisk. Drawn as the game draws a
+dungeon's room: the far walls stand to the room's corners, the near ones cut away, black beyond
+(`under`: the walls' fill before anything stands; a slab's thickness at the near edges). A hall cut in
+the terrace in the redoubt's dressed stone, the cult's banners and pink braziers; in the middle the
+obelisk the cult is cutting, pale, its runes burning pink, still joined at its far end to the bedrock
+it is split from (drill marks, a cut down its front, scaffolding); round it a ring of the cult's magic
+on the floor; a yellow pack of four quarry golems (rough paint: blocks of the quarry's stone in chains,
+the cult's mark burning on the chest and in the eyes), the leader with the gold ring of letters and
+his name ("Volatile Quarry Golem"), the others with the broken ring of a leader's minions
+(drawPackMark, rarity 'minion'). The place name, "Overseers' Redoubt", is the planning chat's. The
+runedust it drops is not shown. Sent as previews/holdin_in_game.png by 10:15; asked "Is this the
+stronghold's last room?", his pick by 10:19: "Yes, this is it (Recommended)", offered as: the hall, the
+half-cut obelisk in the cult's ring, a golem pack; then posted for the art chat.
