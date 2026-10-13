@@ -93,3 +93,28 @@ out. The result is previews/canyon_in_game.png, sent to him by 20:33.
 For the main chat, if he says yes: the game sees through only things both wide and tall (60 x 70
 game pixels, render/render.ts), so a hoodoo 26 game pixels wide would stay solid; a canyon's
 spires would need their own rule.
+
+His pick by 20:35, asked as a pop-up "Is this how Echo Canyon should look?": "Yes, this is it
+(Recommended)", offered as: the canyon runs up the screen mostly, with the near wall's shadow and
+see-through pillars where it turns; goes in the plan.
+
+## The cliff tops dressed (his word of 20:35)
+
+His words, 20:35: "If we really decorate the tops of the cliffs it will look really good"; to the
+reading of it (junipers, sage, yucca, dead trees, boulders, small hoodoos, the cult's things up
+there), 20:36: "Nice".
+
+The `shot` page now dresses the tops (`topDecor()`): groves of junipers where a slow noise is
+high, sagebrush, yucca (some in flower), shrubs, boulders, a few dead trees and small hoodoos, up to
+three cairns and one bleached skull, spaced so bare ground shows between them; on the far top the
+cult's lookout (a tent in the cult's violet, a watchfire burning the cult's pink, a banner, crates)
+and a hoist whose crate hangs down the cliff over the road. The tops' ground has a rim of pale
+caprock along every cliff edge and slabs of it out across the top, with irregular cracks. Nothing
+is placed where it would stand over the canyon's floor (`clearOfFloor`), so the hero and every
+warning stay in sight. A thing on a top is drawn at the top's height (`onTop`); its place in the
+drawing order is its true place on the top.
+
+The result with the HUD laid over it is previews/canyon_tops_in_game.png, sent to him by 20:41.
+Asked as a pop-up "Are the cliff tops dressed the way you pictured?", his pick by 20:42: "Yes,
+like this (Recommended)", offered as: this much dressing becomes the plan for the canyon's tops,
+and the same idea for the other levels' tops.

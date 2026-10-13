@@ -1147,8 +1147,19 @@ const shotLevel: Level = {
   },
   outside: (x, y, px, py) => {
     let c = pick(C_TOP, fbm(x * 1.4, y * 1.4, 41), px, py);
-    if (fbm(x * 3.1, y * 3.1, 43) > 0.66) c = hash(px >> 1, py >> 1, 45) > 0.4 ? hex('#7d7a3b') : hex('#9a9548'); // scrub
-    if (Math.abs(fbm(x * 0.9, y * 0.9, 47) - 0.5) < 0.012) c = hex('#7e3f2c'); // cracks in the mesa
+    // the hard pale caprock: a rim of it along the cliff's edge, and slabs of it out across the top
+    const rimW = 2.2 + 0.3 * vn(x * 1.3, y * 1.3, 49) - lineAt(x, y);
+    const slabW = fbm(x * 0.55, y * 0.55, 48) - 0.6;
+    const on = Math.max(rimW, slabW * 3);
+    if (on > 0) {
+      c = pick(ramp('#c98b63', '#d69b70', '#e2ab7f'), 0.2 + 0.7 * fbm(x * 2.4, y * 2.4, 46), px, py);
+      if (Math.abs(fbm(x * 2.2, y * 2.2, 42) - 0.5) < 0.014 || Math.abs(fbm(x * 1.1 + 7, y * 1.1, 42) - 0.5) < 0.01) c = hex('#8e5039'); // its cracks
+      else if (on < 0.06) c = mix(c, hex('#7e3f2c'), 0.45); // its worn edge
+      return c;
+    }
+    if (fbm(x * 3.1, y * 3.1, 43) > 0.68) c = hash(px >> 1, py >> 1, 45) > 0.4 ? hex('#7d7a3b') : hex('#9a9548'); // scrub
+    if (Math.abs(fbm(x * 0.9, y * 0.9, 47) - 0.5) < 0.008) c = hex('#7e3f2c'); // cracks in the mesa
+    if (hash(px >> 1, py >> 1, 44) > 0.985) c = hash(px >> 1, py >> 1, 43) > 0.5 ? hex('#e9b88f') : hex('#6e3a2a'); // pebbles
     return c;
   },
   props: [],
@@ -1192,6 +1203,323 @@ const sprite = (sp: { img: HTMLCanvasElement; ax: number; ay: number; density?: 
   g.drawImage(sp.img, sx - sp.ax * F, sy - sp.ay * F, (sp.img.width / dens) * F, (sp.img.height / dens) * F);
 };
 const miniFm = makeMiniFleshmancerArt3();
+
+// ---- THE CLIFF TOPS, DRESSED. His word at 20:35: "If we really decorate the tops of the cliffs it will
+// look really good". High desert up there: junipers, sage, yucca, dead trees, boulders, small hoodoos,
+// cairns and a bleached skull; and the cult's lookout on the far top (a tent, a pink watchfire, a
+// banner, a hoist that lets its crates down the cliff to the road). Nothing up there may stand over the
+// canyon's floor, so the hero and every warning stay in sight.
+const SK = { Floor: 1, Top: 2, Face: 3 } as const;
+const shotKind = (px: number, py: number): number => {
+  const [x, y] = toWorld(px + 0.5, py + 0.5);
+  if (shotGround.walk(x, y)) return SK.Floor;
+  const [qx, qy] = toWorld(px + 0.5, py + 0.5 + SHOT_H);
+  return shotGround.walk(qx, qy) ? SK.Face : SK.Top;
+};
+const groundShadow = (g: CanvasRenderingContext2D, sx: number, sy: number, rx: number, ry: number): void => {
+  g.fillStyle = 'rgba(60, 20, 14, 0.3)';
+  g.beginPath();
+  g.ellipse(sx + rx * 0.35, sy + 1, rx, ry, 0, 0, Math.PI * 2);
+  g.fill();
+};
+const blob = (g: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, c: string): void => {
+  g.fillStyle = c;
+  g.beginPath();
+  g.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+  g.fill();
+};
+/** A twisted juniper: a gnarled grey trunk and clumps of dark blue-green, lit from the upper left. */
+const juniper = (k: number, s: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  groundShadow(g, sx + 6 * F * s, sy, 13 * F * s, 4 * F * s);
+  g.strokeStyle = '#5b4438';
+  g.lineCap = 'round';
+  g.lineWidth = 2.6 * F * s;
+  const tx = sx + (hash(k, 2, 9) - 0.5) * 8 * F * s;
+  const ty = sy - 11 * F * s;
+  g.beginPath();
+  g.moveTo(sx, sy);
+  g.quadraticCurveTo(sx + (hash(k, 1, 9) - 0.5) * 10 * F * s, sy - 6 * F * s, tx, ty);
+  g.stroke();
+  const n = 3 + Math.floor(hash(k, 3, 9) * 3);
+  const clumps: [number, number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    clumps.push([tx + (hash(i, k, 11) - 0.5) * 22 * F * s, ty - (3 + 11 * hash(i, k, 12)) * F * s, (4.5 + 3 * hash(i, k, 13)) * F * s]);
+  }
+  g.lineWidth = 1.3 * F * s;
+  for (const [cx, cy] of clumps) {
+    g.beginPath();
+    g.moveTo(tx, ty);
+    g.lineTo(cx, cy + 2 * F * s);
+    g.stroke();
+  }
+  clumps.sort((a, b) => a[1] - b[1]);
+  for (const [cx, cy, r] of clumps) blob(g, cx, cy, r, r * 0.72, '#2d4636');
+  for (const [cx, cy, r] of clumps) blob(g, cx - r * 0.18, cy - r * 0.16, r * 0.78, r * 0.55, '#456447');
+  for (const [cx, cy, r] of clumps) blob(g, cx - r * 0.4, cy - r * 0.34, r * 0.38, r * 0.26, '#6c8d5e');
+  g.fillStyle = '#9bb3c4'; // the berries, a dusty blue
+  for (let i = 0; i < 6; i++) {
+    const [cx, cy, r] = clumps[i % clumps.length];
+    g.fillRect(Math.round(cx + (hash(i, k, 14) - 0.5) * r), Math.round(cy + (hash(i, k, 15) - 0.5) * r * 0.6), F, F);
+  }
+};
+/** A clump of sagebrush: low grey-green domes. */
+const sage = (k: number, s: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  groundShadow(g, sx + 2 * F * s, sy, 9 * F * s, 3 * F * s);
+  const n = 2 + Math.floor(hash(k, 1, 21) * 3);
+  for (let i = 0; i < n; i++) {
+    const cx = sx + (i - (n - 1) / 2) * 5 * F * s + (hash(i, k, 22) - 0.5) * 3 * F;
+    const r = (3 + 2.5 * hash(i, k, 23)) * F * s;
+    blob(g, cx, sy - r * 0.6, r, r * 0.75, '#6a7552');
+    blob(g, cx - r * 0.2, sy - r * 0.75, r * 0.75, r * 0.5, '#8d9a6e');
+    blob(g, cx - r * 0.4, sy - r * 0.95, r * 0.35, r * 0.24, '#b6c096');
+  }
+};
+/** A yucca: a rosette of spikes, sometimes with a tall stalk of cream flowers. */
+const yucca = (k: number, s: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  groundShadow(g, sx + 3 * F * s, sy, 8 * F * s, 3 * F * s);
+  g.lineCap = 'round';
+  g.lineWidth = 1.1 * F;
+  for (let i = 0; i < 13; i++) {
+    const a = -Math.PI / 2 + (i / 12 - 0.5) * 2.6 + (hash(i, k, 31) - 0.5) * 0.3;
+    const len = (6 + 6 * hash(i, k, 32)) * F * s;
+    g.strokeStyle = hash(i, k, 33) > 0.45 ? '#6f8c4b' : '#9ab567';
+    g.beginPath();
+    g.moveTo(sx, sy - 2 * F);
+    g.lineTo(sx + Math.cos(a) * len, sy - 2 * F + Math.sin(a) * len * 0.9);
+    g.stroke();
+  }
+  if (hash(k, 4, 31) > 0.45) {
+    g.strokeStyle = '#7c6a46';
+    g.lineWidth = 1.2 * F;
+    g.beginPath();
+    g.moveTo(sx, sy - 6 * F);
+    g.lineTo(sx + F, sy - 30 * F * s);
+    g.stroke();
+    for (let i = 0; i < 7; i++) blob(g, sx + F + (hash(i, k, 34) - 0.5) * 5 * F, sy - (22 + 9 * hash(i, k, 35)) * F * s, 1.6 * F, 1.3 * F, i % 3 ? '#efe4bd' : '#cbbd8f');
+  }
+};
+/** A cairn: flat stones stacked by someone who came this way before. */
+const cairn = (k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  groundShadow(g, sx + 3 * F, sy, 9 * F, 3 * F);
+  let y = sy;
+  for (let i = 0; i < 5; i++) {
+    const w = (8 - i * 1.3) * F;
+    const h = (2.6 + hash(i, k, 41)) * F;
+    const x = sx + (hash(i, k, 42) - 0.5) * 2 * F;
+    blob(g, x, y - h * 0.5, w, h * 0.7, '#7e6a5e');
+    blob(g, x - w * 0.15, y - h * 0.7, w * 0.8, h * 0.45, '#ab9584');
+    blob(g, x - w * 0.4, y - h * 0.85, w * 0.3, h * 0.2, '#d6c3ae');
+    y -= h * 1.1;
+  }
+};
+/** A bleached skull of some great horned beast, half in the dust. */
+const skull = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  groundShadow(g, sx + 2 * F, sy, 8 * F, 2.5 * F);
+  g.strokeStyle = '#e8dfcc';
+  g.lineWidth = 1.6 * F;
+  g.lineCap = 'round';
+  g.beginPath();
+  g.moveTo(sx - 3 * F, sy - 5 * F);
+  g.quadraticCurveTo(sx - 10 * F, sy - 6 * F, sx - 11 * F, sy - 11 * F);
+  g.moveTo(sx + 3 * F, sy - 5 * F);
+  g.quadraticCurveTo(sx + 10 * F, sy - 6 * F, sx + 11 * F, sy - 11 * F);
+  g.stroke();
+  blob(g, sx, sy - 4 * F, 4 * F, 3 * F, '#efe8d8');
+  blob(g, sx, sy - F, 2.4 * F, 2.2 * F, '#e1d6c1');
+  g.fillStyle = '#4a3530';
+  g.fillRect(sx - 3 * F, sy - 5 * F, 2 * F, 2 * F);
+  g.fillRect(sx + F, sy - 5 * F, 2 * F, 2 * F);
+};
+/** The cult's watchfire: a ring of stones, its fire burning the cult's pink. */
+const watchfire = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  const glow = g.createRadialGradient(sx, sy, 2 * F, sx, sy, 20 * F);
+  glow.addColorStop(0, 'rgba(255, 95, 210, 0.34)');
+  glow.addColorStop(1, 'rgba(255, 95, 210, 0)');
+  g.fillStyle = glow;
+  g.beginPath();
+  g.ellipse(sx, sy, 20 * F, 10 * F, 0, 0, Math.PI * 2);
+  g.fill();
+  blob(g, sx, sy, 9 * F, 4.5 * F, '#2a1824');
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2;
+    const x = sx + Math.cos(a) * 9 * F;
+    const y = sy + Math.sin(a) * 4.5 * F;
+    blob(g, x, y - F, 2.6 * F, 1.8 * F, '#6e5650');
+    blob(g, x - 0.6 * F, y - 1.6 * F, 1.4 * F, F, '#a58c80');
+  }
+  const flame = (h: number, w: number, dx: number, c: string): void => {
+    g.fillStyle = c;
+    g.beginPath();
+    g.moveTo(sx + dx - w, sy - F);
+    g.quadraticCurveTo(sx + dx - w * 0.8, sy - h * 0.5, sx + dx + w * 0.2, sy - h);
+    g.quadraticCurveTo(sx + dx + w * 0.7, sy - h * 0.45, sx + dx + w, sy - F);
+    g.closePath();
+    g.fill();
+  };
+  flame(20 * F, 6 * F, 0, '#c2318f');
+  flame(15 * F, 4.5 * F, -2 * F, '#ff5fd2');
+  flame(9 * F, 2.6 * F, -F, '#ffc2ef');
+  for (let i = 0; i < 4; i++) blob(g, sx + (i - 1) * 3 * F + 2 * F, sy - (26 + i * 9) * F, (3 + i) * F, (2.2 + i * 0.6) * F, `rgba(120, 100, 120, ${0.32 - i * 0.06})`);
+};
+/** A cult tent, its cloth the cult's violet, the pink mark on its flap. */
+const cultTent = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  groundShadow(g, sx + 10 * F, sy, 24 * F, 7 * F);
+  const L = (dx: number, dy: number): [number, number] => [sx + dx * F, sy + dy * F];
+  const poly = (pts: [number, number][], c: string): void => {
+    g.fillStyle = c;
+    g.beginPath();
+    pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.closePath();
+    g.fill();
+  };
+  // the ridge runs from front-left to back-right; the near end is a triangle, the long side a slope
+  poly([L(-16, 0), L(0, -26), L(22, -37), L(22, -11), L(6, -3)], '#3a2150'); // the side in shade
+  poly([L(0, -26), L(22, -37), L(30, -14), L(10, -3)], '#2e1a40');
+  poly([L(-16, 0), L(0, -26), L(12, 0)], '#5b3780'); // the near end, lit
+  poly([L(-6, 0), L(0, -14), L(5, 0)], '#1c1022'); // its door
+  g.fillStyle = '#ff5fd2';
+  g.fillRect(sx - 9 * F, sy - 13 * F, 2 * F, 5 * F);
+  g.fillRect(sx - 10 * F, sy - 11 * F, 4 * F, F);
+  g.strokeStyle = '#6b4b33';
+  g.lineWidth = 1.4 * F;
+  g.beginPath();
+  g.moveTo(sx, sy - 26 * F);
+  g.lineTo(sx, sy - 31 * F);
+  g.stroke();
+};
+/** The cult's hoist at the top of the far cliff, a crate let down on its rope to the road below. */
+const hoist = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  groundShadow(g, sx + 4 * F, sy, 14 * F, 4 * F);
+  g.strokeStyle = '#6b4b33';
+  g.lineCap = 'round';
+  g.lineWidth = 2.2 * F;
+  g.beginPath();
+  g.moveTo(sx - 9 * F, sy + F);
+  g.lineTo(sx, sy - 30 * F);
+  g.lineTo(sx + 9 * F, sy - F);
+  g.moveTo(sx - 5 * F, sy - 12 * F);
+  g.lineTo(sx + 5 * F, sy - 12 * F);
+  g.stroke();
+  // the arm out over the edge, toward the road
+  const ax = sx - 20 * F;
+  const ay = sy - 24 * F;
+  g.lineWidth = 2.6 * F;
+  g.strokeStyle = '#7d5a3e';
+  g.beginPath();
+  g.moveTo(sx + 4 * F, sy - 32 * F);
+  g.lineTo(ax, ay);
+  g.stroke();
+  blob(g, ax, ay + F, 2.6 * F, 2.6 * F, '#3b2a22');
+  blob(g, ax, ay + F, 1.2 * F, 1.2 * F, '#a08060');
+  const drop = ay + 2 * F + SHOT_H * 0.62;
+  g.fillStyle = '#d8c7a2';
+  g.fillRect(ax - F * 0.5, ay + 2 * F, F, drop - ay - 2 * F);
+  box(0.42, 0.42, 13, hex('#9a7550'), hex('#866444'), hex('#5e4430'))(g, ax, drop + 14);
+};
+/** One thing on the top: its foot at the screen point (px, py), raised to the top's height. */
+const onTop = (px: number, py: number, draw: (g: CanvasRenderingContext2D, sx: number, sy: number) => void): Prop => {
+  const [x, y] = toWorld(px, py + SHOT_H);
+  return { x, y, draw: (g, sx, sy) => draw(g, sx, sy - SHOT_H) };
+};
+/** Is the screen box over the foot (px, py) all top or cliff face, none of the canyon's floor? */
+const clearOfFloor = (px: number, py: number, hw: number, h: number): boolean => {
+  for (let yy = py + 4; yy >= py - h; yy -= 3) {
+    for (let xx = px - hw; xx <= px + hw; xx += 3) {
+      if (xx < 0 || yy < 0 || xx >= PW || yy >= PH) continue;
+      if (shotKind(xx, yy) === SK.Floor) return false;
+    }
+  }
+  return shotKind(px, py) === SK.Top && shotKind(px - 8, py + 2) === SK.Top && shotKind(px + 8, py + 2) === SK.Top;
+};
+const topDecor = (): Prop[] => {
+  const out: Prop[] = [];
+  const taken: [number, number][] = [];
+  const room = (px: number, py: number, r: number): boolean => taken.every(([tx, ty]) => Math.hypot(px - tx, (py - ty) * 1.6) > r);
+  // the cult's lookout on the far top: tent, fire, banner, crates, and the hoist at the edge
+  const camp: [number, number, (g: CanvasRenderingContext2D, sx: number, sy: number) => void, number][] = [
+    [742, 70, cultTent, 40],
+    [690, 92, watchfire, 30],
+    [785, 104, banner, 18],
+    [650, 70, box(0.45, 0.45, 12, hex('#9a7550'), hex('#866444'), hex('#5e4430')), 14],
+    [664, 62, box(0.38, 0.38, 10, hex('#9a7550'), hex('#866444'), hex('#5e4430')), 12],
+  ];
+  for (const [px, py, draw, r] of camp) {
+    if (shotKind(px, py) !== SK.Top) console.warn('camp piece off the top', px, py);
+    out.push(onTop(px, py, draw));
+    taken.push([px, py]);
+    void r;
+  }
+  // the hoist: at the top of the far cliff, over the road by the wagon
+  for (let py = 0; py < PH - 1; py++) {
+    if (shotKind(612, py) === SK.Top && shotKind(612, py + 1) === SK.Face) {
+      out.push(onTop(612, py - 5, hoist));
+      taken.push([612, py - 5]);
+      break;
+    }
+  }
+  // the rest scattered, in groves and bare patches, a few of each rare thing
+  const caps = { skull: 1, cairn: 3, dead: 4, hoodoo: 4 };
+  let n = 0;
+  for (let gy = 8; gy < PH + 20; gy += 19) {
+    for (let gx = 6; gx < PW; gx += 25) {
+      n++;
+      const px = Math.round(gx + (hash(gx, gy, 51) - 0.5) * 20);
+      const py = Math.round(gy + (hash(gx, gy, 52) - 0.5) * 14);
+      const [wx0, wy0] = toWorld(px, py + SHOT_H);
+      const grove = fbm(wx0 * 0.35, wy0 * 0.35, 53);
+      const roll = hash(gx, gy, 54);
+      let draw: ((g: CanvasRenderingContext2D, sx: number, sy: number) => void) | null = null;
+      let hw = 10;
+      let h = 16;
+      let r = 30;
+      let cap: keyof typeof caps | null = null;
+      if (grove > 0.64 && roll < 0.45) {
+        const s = 0.75 + 0.4 * hash(gx, gy, 55);
+        draw = juniper(n, s);
+        hw = 26 * s;
+        h = 42 * s;
+        r = 40;
+      } else if (roll < 0.13) {
+        draw = sage(n, 0.8 + 0.5 * hash(gx, gy, 56));
+      } else if (roll < 0.18) {
+        draw = yucca(n, 0.9 + 0.3 * hash(gx, gy, 57));
+        h = 32;
+      } else if (roll < 0.24) {
+        draw = boulder(0.2 + 0.22 * hash(gx, gy, 58), '#e8a777', '#c47a50', '#8c4d37');
+        hw = 16;
+      } else if (roll < 0.27 && grove < 0.5) {
+        draw = deadTree(n);
+        hw = 20;
+        h = 44;
+        r = 40;
+        cap = 'dead';
+      } else if (roll < 0.3) {
+        const hh = 36 + 30 * hash(gx, gy, 59);
+        const R = 8 + 5 * hash(gx, gy, 60);
+        draw = hoodoo(hh, R, n);
+        hw = R + 4;
+        h = hh + R;
+        r = 40;
+        cap = 'hoodoo';
+      } else if (roll < 0.315) {
+        draw = cairn(n);
+        h = 18;
+        cap = 'cairn';
+      } else if (roll < 0.325) {
+        draw = skull;
+        cap = 'skull';
+      } else if (roll < 0.4) {
+        draw = shrub(n);
+        r = 22;
+      }
+      if (!draw || (cap && caps[cap] <= 0) || !room(px, py, r) || !clearOfFloor(px, py, hw, h)) continue;
+      if (cap) caps[cap]--;
+      out.push(onTop(px, py, draw));
+      taken.push([px, py]);
+    }
+  }
+  return out;
+};
 shotLevel.props = [
   { ...pt(560, 262), draw: canyon.props[3].draw }, // the broken wagon
   { ...pt(600, 300), draw: box(0.45, 0.45, 12, hex('#9a7550'), hex('#866444'), hex('#5e4430')) }, // spilled crates
@@ -1213,6 +1541,7 @@ shotLevel.props = [
   { ...pt(345, 250), seeFor: 120, draw: hoodoo(120, 21, 2) },
   // the mini fleshmancer, leading the cultists up the road
   { ...pt(372, 112), draw: sprite(miniFm.front.idle[0]) },
+  ...topDecor(),
 ];
 const shotFoes: [number, number][] = [at(398, 160) as [number, number], at(620, 330 - 40) as [number, number]];
 
