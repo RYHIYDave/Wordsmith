@@ -118,6 +118,11 @@ The room is stood as the game stands a dungeon's (render/walls.ts `wallFaces`: o
 faces, the near ones cut away; floor tiles with the walls' shades, the line of light at the near edge).
 The quarry golems round the obelisk are the floor's mobs, still to draw.
 
+Asked as a pop-up "Is this the redoubt's last room?", his pick (13 Oct, by 12:15): "Yes, on to the rest
+(Recommended)", offered as: the room stays as shown; next the rest of the Quarry's pieces (the cliff
+faces, breakables, a trap, a quest piece) and the cult's camp pieces for the set, then the Unfinished and
+the golems.
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a
