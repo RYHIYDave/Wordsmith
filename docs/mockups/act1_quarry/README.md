@@ -123,6 +123,29 @@ Asked as a pop-up "Is this the redoubt's last room?", his pick (13 Oct, by 12:15
 faces, breakables, a trap, a quest piece) and the cult's camp pieces for the set, then the Unfinished and
 the golems.
 
+## The rest of the Quarry's pieces
+
+`src/art/floor6.ts`, in `quarryPieces()`: against the far faces (anchored at a face's foot, upright),
+THE LADDER and THE ROPE AND BUCKET; THE GREAT FACE, HALF CARVED (a relief as high as the cliff, painted by
+`relief()`: its left half a finished statue's face, crowned, heavy-browed, a blank eye, the long nose,
+the closed mouth, dressed paler; its right half the block roughed out in flat planes, pocked and
+scored; drill holes down the line where the carvers stopped and down the block's far edge); THE GREAT
+HAND, HALF CARVED (an obstacle at a face's foot: an open stone hand raised out of the squared raw block,
+the block's drill holes along its front). Breakables, whole and broken: THE WATER BARREL, THE BASKET OF
+CHIPPINGS. The trap, THE DRILL HOLES (a floor tile; its second frame the points glinting down the
+holes, the warning; then the stone's spikes up out of each hole, four heights, `drillSpike`, stood by the
+game at the holes' places, front to back). The quest piece, THE MASTER MASON'S MALLET (no quest yet; no
+mark on it: a mason's mark read as a letter). The Quarry now has 26 pieces of its own (counted in the
+code), counting the redoubt's gatehouse, flagstones and half-cut obelisk, and the mountain's pines and
+boulders; the cult's altar, brazier, banner, ring and hanging are the set's.
+
+    node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_rest.png 1014 640 rest
+    node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_dressed.png 1014 468 dressed
+
+`rest` is the new pieces at the game's size (what stands against a face drawn against the Quarry's own
+far wall); `dressed` now has them in the screen too (the face, ladder, rope and hand at the far faces'
+feet, found by `faceFoot`; the trap two tiles, its spikes up out of one).
+
 ## The Unfinished: his brief (13 Oct, by 12:42)
 
 Asked as pop-ups (his art rulebook's questions for a new character): how big, "Twice the Warden

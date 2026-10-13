@@ -37,7 +37,7 @@ import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
 const PW = 1014;
-const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 960 : 468;
+const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 960 : HASH === 'rest' ? 640 : 468;
 
 // ---------------------------------------------------------------------------------------------------
 // The mock-up's shapes, in the mock-up's own world (its panel 1014 x 468, world (12, 12) at its middle),
@@ -308,6 +308,22 @@ if (HASH === 'shot' || HASH === 'tiles') {
 
 if (HASH === 'dressed') dressedShot();
 else if (HASH === 'pieces') pieceSheet();
+else if (HASH === 'rest') restSheet();
+
+/**
+ * Where a far face's foot is, down the panel's column `px`: the first floor pixel under a run of at
+ * least `tall` face pixels (or -1).
+ */
+function faceFoot(kinds: Uint8Array, px: number, tall = 60, h = 468): number {
+  let run = 0;
+  for (let py = 0; py < h; py++) {
+    const k = kinds[py * PW + px];
+    if (k === TK.Face) run++;
+    else if (k === TK.Floor && run >= tall) return py;
+    else run = 0;
+  }
+  return -1;
+}
 
 /** A piece by name and frame. */
 function piece(name: string, frame = 0): Sprite {
@@ -365,6 +381,38 @@ function dressedShot(): void {
   onFloor(380, 312, 'chippings', 1);
   onFloor(560, 168, 'chippings', 0);
   onFloor(470, 168, 'scaffolding', 0, true);
+  // the rest of its pieces: against the far faces, at their feet, and on the bed
+  const againstFace = (px: number, name: string, lift = 0): void => {
+    const py = faceFoot(kinds, px, 90);
+    if (py < 0) return console.warn('no far face at', px);
+    const [x, y] = worldOf(VX + px, VY + py + 1);
+    stands.push({ x, y, sp: piece(name), lift, tall: true, shadow: quarryPieces().find((q) => q.name === name)?.shadow });
+  };
+  againstFace(330, 'the great face, half carved', 4);
+  againstFace(662, 'ladder against the face');
+  againstFace(516, 'rope and bucket');
+  againstFace(712, 'the great hand, half carved');
+  onFloor(372, 214, 'water barrel', 0);
+  onFloor(398, 230, 'basket of chippings', 0);
+  onFloor(545, 345, 'basket of chippings', 1);
+  onFloor(612, 340, 'water barrel', 1);
+  onFloor(640, 318, "the master mason's mallet");
+  // the trap: two tiles of the drill holes, the spikes up out of the nearer one
+  {
+    const [wx, wy] = at(452, 352);
+    const tx0 = Math.floor(wx);
+    const ty0 = Math.floor(wy);
+    for (const [tx, ty, up] of [[tx0, ty0 - 1, 0], [tx0, ty0, 4]] as [number, number, number][]) {
+      if (!whole(tx, ty)) console.warn('the trap off the floor', tx, ty);
+      const [sx, sy] = pictureOf(tx, ty);
+      drawAt(g, piece('the drill holes', up ? 1 : 0), sx - VX, sy - VY);
+      if (!up) continue;
+      const holes: [number, number][] = [];
+      for (const U of [8, 24, 40, 56]) for (const V of [8, 24, 40, 56]) holes.push([U, V]);
+      holes.sort((a, b) => a[0] + a[1] - (b[0] + b[1]));
+      for (const [U, V] of holes) drawAt(g, piece('the drill holes', 1 + up), sx - VX + (U - V - 1) / 2, sy - VY + (U + V - 2) / 4);
+    }
+  }
   // the tops, dressed: pines in groves, rocks, a stacked block, scaffolding; never over the floor
   const RISE = QUARRY_LOOK.rise;
   for (let gy = 4; gy < PH + 30; gy += 18) {
@@ -457,6 +505,89 @@ function pieceSheet(): void {
     drawText(g, it.name, ox / 2 + 1, oy / 2 + 1, THEME.text, { shadow: P.ink });
     g.restore();
   });
+  show(cvs);
+}
+
+/**
+ * THE REST OF THE QUARRY'S PIECES, at the game's size: what stands against a far face drawn against
+ * one (a piece of the Quarry's own far wall, its foot where the piece's foot is), the rest on the bed;
+ * the trap's spikes drawn up out of its holes as the game would stand them.
+ */
+function restSheet(): void {
+  g.fillStyle = '#0d1030';
+  g.fillRect(0, 0, PW, PH);
+  // the far wall's tallest face in the screen of the mock-up, for the pieces against a face
+  const off = document.createElement('canvas');
+  off.width = PW;
+  off.height = 468;
+  const kinds = paintPanel(off.getContext('2d') as CanvasRenderingContext2D, VX, VY, PW, 468);
+  let best = { px: 600, py: -1, run: 0 };
+  for (let px = 520; px < 700; px += 2) {
+    const py = faceFoot(kinds, px, 100);
+    if (py < 0) continue;
+    let run = 0;
+    while (kinds[(py - 1 - run) * PW + px] === TK.Face) run++;
+    if (run > best.run) best = { px, py, run };
+  }
+  const COLS = 5;
+  const CW = Math.floor(PW / COLS);
+  const CH = 212;
+  const bw = CW - 6;
+  const bh = CH - 22;
+  const patch = (x0: number, y0: number): HTMLCanvasElement => {
+    const p = paintTerrain(T, x0, y0, bw, bh);
+    const c = document.createElement('canvas');
+    c.width = bw;
+    c.height = bh;
+    (c.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(p.rgba, bw, bh), 0, 0);
+    return c;
+  };
+  const FOOT = 34; // the face's foot, this far up from the bottom of a cell's patch
+  const wall = patch(VX + best.px - bw / 2, VY + best.py - (bh - FOOT));
+  const bed = patch(VX + 400, VY + 150);
+  type Cell = [string, HTMLCanvasElement, (ax: number, ay: number) => void];
+  const one = (name: string, frame = 0) => (ax: number, ay: number): void => drawAt(g, piece(name, frame), ax, ay);
+  /** the trap's tile, its spikes `k` steps up out of each hole (0: none), front to back */
+  const trap = (frame: number, k: number) => (ax: number, ay: number): void => {
+    const top = ay - (bh - 22) / 2 + 2;
+    drawAt(g, piece('the drill holes', frame), ax, top);
+    if (!k) return;
+    const holes: [number, number][] = [];
+    for (const U of [8, 24, 40, 56]) for (const V of [8, 24, 40, 56]) holes.push([U, V]);
+    holes.sort((a, b) => a[0] + a[1] - (b[0] + b[1]));
+    for (const [U, V] of holes) {
+      const px = 32 + (U - V - 1) / 2;
+      const py = (U + V - 2) / 4;
+      drawAt(g, piece('the drill holes', 1 + k), ax - 32 + px, top + py);
+    }
+  };
+  const cells: Cell[] = [
+    ['ladder', wall, one('ladder against the face')],
+    ['rope and bucket', wall, one('rope and bucket')],
+    ['half-carved face', wall, one('the great face, half carved')],
+    ['half-carved hand', wall, (ax, ay) => drawAt(g, piece('the great hand, half carved'), ax, ay + 18)],
+    ["mason's mallet", bed, one("the master mason's mallet")],
+    ['water barrel', bed, one('water barrel', 0)],
+    ['barrel, broken', bed, one('water barrel', 1)],
+    ['basket', bed, one('basket of chippings', 0)],
+    ['basket, broken', bed, one('basket of chippings', 1)],
+    ['drill holes (trap)', bed, trap(0, 0)],
+    ['the holes glint', bed, trap(1, 0)],
+    ['spikes rising', bed, trap(1, 1)],
+    ['spikes half up', bed, trap(1, 2)],
+    ['spikes up', bed, trap(1, 4)],
+  ];
+  cells.forEach(([label, bg, draw], n) => {
+    const ox = (n % COLS) * CW + 3;
+    const oy = Math.floor(n / COLS) * CH + 2;
+    g.drawImage(bg, ox, oy + 18);
+    draw(ox + Math.round(bw / 2), oy + 18 + bh - FOOT);
+    g.save();
+    g.scale(2, 2);
+    drawText(g, label, ox / 2 + 1, oy / 2 + 1, THEME.text, { shadow: P.ink });
+    g.restore();
+  });
+  console.log('the far face used:', JSON.stringify(best));
   show(cvs);
 }
 

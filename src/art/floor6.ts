@@ -731,6 +731,335 @@ function flagstones(worn: boolean, seed: number): Sprite {
 }
 
 // =================================================================================================
+// THE FAR CLIFFS' OWN: what stands against a quarried face, and what was begun in it
+//
+// The far faces are the ground's (art/terrain.ts), round and ragged; what stands against one is anchored
+// at its foot on the floor and stands upright, as a ladder or a rope hangs whichever way the face runs.
+
+/** A LADDER of timber leaned against a quarried face, its foot on the bed, rungs lashed, its top over a bench's tread. 48 x 132 at (24, 122). */
+function ladder(): Sprite {
+  const S = new Scene(new Px(48, 132), 24, 122);
+  // its two rails, leaning back up the face (toward -y, away from the eye), and its rungs
+  for (const x of [-7, 7]) S.rod([x, 2, 0], [x, -14, 100], 1.4, 1.2, TIMBER, 1);
+  for (let k = 1; k < 9; k++) {
+    const t = k / 9;
+    S.rod([-7, 2 - 16 * t, 100 * t], [7, 2 - 16 * t, 100 * t], 0.9, 0.9, TIMBER, 2);
+    S.egg([-7, 2 - 16 * t, 100 * t], XYZ, [1.6, 1.6, 1.2], (n) => toneAt(n, ROPE, 0.1), 3);
+  }
+  return finish(S, 24, 122);
+}
+
+/** A ROPE DOWN A FACE, from a stake at the cliff's top to a bucket of the chippings on the bed below it: the rope taut, the bucket of staves bound in iron. 40 x 132 at (20, 122). */
+function ropeAndBucket(): Sprite {
+  const S = new Scene(new Px(40, 132), 20, 122);
+  rope(S, [0, -6, 110], [0, -1, 18], 0, 1, 0.6);
+  // the bucket, its staves and hoops, its bail
+  for (let z = 0; z <= 14; z += 0.5) {
+    const r = 5.6 - z * 0.06;
+    for (let a = -Math.PI; a < Math.PI; a += 0.12) {
+      const n: V3 = [Math.cos(a), Math.sin(a), 0];
+      if (dot(n, TOWARD) < -0.2) continue;
+      const q: V3 = [n[0] * r, n[1] * r, z];
+      const [x, y] = S.at(q);
+      const hoop = Math.abs(z - 2) < 0.7 || Math.abs(z - 12) < 0.7;
+      S.put(Math.round(x), Math.round(y), dot(q, TOWARD), hoop ? toneAt(n, IRON, 0.25) : Math.abs(fr((a * 7) / Math.PI) - 0.5) < 0.08 ? TIMBER[1] : toneAt(n, TIMBER, 0), 2, z);
+    }
+  }
+  S.egg([0, 0, 14.4], XYZ, [5, 5, 1.2], (_n, w) => (hash(Math.floor(w[0] / 1.5), Math.floor(w[1] / 1.5), 990) > 0.5 ? FRESH[3] : STONE[2]), 3);
+  S.rod([-5.4, 0, 14], [0, -1, 18.4], 0.5, 0.5, IRON, 4);
+  S.rod([5.4, 0, 14], [0, -1, 18.4], 0.5, 0.5, IRON, 4);
+  return finish(S, 20, 122);
+}
+
+/**
+ * A CLIFF'S PICTURE IN RELIEF, upright, facing the eye: `paint` gives what the stone is at (x, y) (x
+ * across from its middle, y up from its foot, in picture pixels) as a height out of the face (0: the
+ * face itself, nothing painted) and its stone; it is lit as the walls are, from the upper left, by how
+ * its height falls away, and what stands out throws its shade down and to the right, onto itself and
+ * onto the face.
+ */
+function relief(W: number, H: number, paint: (x: number, y: number) => { h: number; r: Ramp; tone?: number } | null): Sprite {
+  const p = new Px(W, H);
+  const cx = W / 2;
+  const foot = H - 2;
+  const at = (x: number, y: number): number => {
+    const q = paint(x, y);
+    return q ? q.h : 0;
+  };
+  /** in the shade of what stands out up and to the left of it (the light at about 45 degrees) */
+  const shaded = (x: number, y: number, h: number): boolean => {
+    for (let k = 1; k <= 5; k++) if (at(x - k, y + k) - h > k * 1.3) return true;
+    return false;
+  };
+  for (let py = 0; py < H; py++) {
+    for (let px = 0; px < W; px++) {
+      const x = px + 0.5 - cx;
+      const y = foot - (py + 0.5);
+      const q = paint(x, y);
+      if (!q || q.h <= 0) {
+        if (shaded(x, y, 0)) p.set(px, py, '#857879'); // (the face's own shade, opaque: crisp)
+        continue;
+      }
+      if (q.tone !== undefined) {
+        p.set(px, py, q.r[q.tone]);
+        continue;
+      }
+      // the slope of its height, to the light from the upper left: rising to the right, or falling away upward, is lit
+      const gx = at(x + 1, y) - at(x - 1, y);
+      const gy = at(x, y + 1) - at(x, y - 1);
+      const l = (gx - gy) * 0.7;
+      let t = l > 1.2 ? 4 : l > 0.35 ? 3 : l > -0.35 ? 2 : l > -1.2 ? 1 : 0;
+      if (shaded(x, y, q.h)) t = Math.min(t, 1);
+      p.set(px, py, q.r[t]);
+    }
+  }
+  return p.sprite(cx, foot, GRAIN);
+}
+
+/** The stone of the faces, in the light (art/quarry.ts Q_WALL's middle row, as a ramp): its deep shade to its lit edge. */
+const FACE: Ramp = ['#76696a', '#a29587', '#b1a497', '#c9bdb0', '#ddd2c6'];
+/** The same stone dressed and rubbed smooth, paler than the raw face (what the carvers finished). */
+const POLISHED: Ramp = ['#857a7c', '#b0a59b', '#c6bbaf', '#dcd2c5', '#ede6da'];
+
+const bell = (d: number): number => (d >= 1 ? 0 : 1 - d * d);
+
+/**
+ * The finished face, as its carvers meant it, at `ax` across from its middle (either side the same) and
+ * `y` up from its foot: a statue's calm face, crowned with a plain band, heavy-browed, its eyes blank,
+ * the long nose, the full closed mouth, the chin; its height out of the face, or null outside it.
+ */
+function faceHeight(ax: number, y: number): number | null {
+  const ny = (y - 52) / 48;
+  if (ny < -1 || ny > 1) return null;
+  let w = ny > -0.2 ? 34 : 34 - ((-0.2 - ny) / 0.8) * 14;
+  if (ny > 0.62) w = 34 * Math.sqrt(Math.max(0, 1 - ((ny - 0.62) / 0.38) ** 2));
+  if (ax > w) return null;
+  let h = 9 * Math.min(1, (w - ax) / 5) * Math.min(1, (y - 4) / 5);
+  h += 2.5 * bell(Math.abs(y - 86) / 3.2) * (ax < w - 2 ? 1 : 0); // the crown's band
+  h += 3 * bell(Math.abs(y - 69) / 3.5) * (ax < 27 ? 1 : 0); // the brow
+  const socket = Math.hypot((ax - 13) / 10, (y - 60) / 6);
+  h -= 7 * bell(socket);
+  h += 4 * bell(Math.hypot((ax - 13) / 5.5, (y - 59.5) / 3)); // the blank eye
+  if (y > 34 && y < 67) {
+    const nw = 3 + ((67 - y) / 33) * 4.5;
+    if (ax < nw) h += (1 - (ax / nw) ** 2) * (3 + ((67 - y) / 33) * 6);
+  }
+  h -= 2 * bell(Math.hypot((ax - 5) / 2.6, (y - 35.5) / 1.6)); // a nostril
+  h += 2 * bell(Math.hypot((ax - 19) / 10, (y - 46) / 9)); // the cheekbone
+  if (ax < 13) {
+    h += 2.2 * bell(Math.abs(y - 28) / 2) * (1 - ax / 13); // the upper lip
+    h += 2.6 * bell(Math.abs(y - 22.5) / 2.4) * (1 - ax / 14); // the lower lip
+  }
+  h += 2.5 * bell(Math.hypot(ax / 12, (y - 12) / 8)); // the chin
+  return Math.max(0.6, h);
+}
+
+/**
+ * A GREAT FACE HALF CARVED INTO THE CLIFF, the Unfinished's kin, begun and given up: its left half
+ * finished (crowned, heavy-browed, a blank eye, the long nose, the full mouth, the chin, dressed smooth
+ * and paler), its right half still the block it was coming out of, roughed into flat planes, pocked by
+ * the point and scored by the claw chisel; the drill holes down the line where the carvers stopped, and
+ * down the block's far edge where it was to be split from the cliff. Stands against a far face, its
+ * foot at the face's foot, as high as the cliff. 104 x 112 at (52, 110).
+ */
+function carvedFace(): Sprite {
+  return relief(104, 112, (x, y) => {
+    if (y < 1 || y > 104) return null;
+    if (x <= 1.5) {
+      // the finished half, and the groove the carvers cut round it
+      const h = faceHeight(-x, y);
+      if (h === null) return faceHeight(-x - 2, y) !== null || faceHeight(-x, y - 2) !== null ? { h: 0.5, r: FACE, tone: 1 } : null;
+      if (x > -0.5 && Math.floor(y) % 6 < 2) return { h: 1, r: FACE, tone: 0 }; // the drill holes down the line
+      if (Math.abs(y - 25.4) < 0.7 && -x < 10) return { h, r: POLISHED, tone: 0 }; // the line of the closed mouth
+      return { h, r: POLISHED };
+    }
+    // the raw half: a squared block, its edge broken
+    const edge = 38 + (hash(0, Math.floor(y / 4), 994) - 0.5) * 4;
+    if (x > edge || y > 102 - hash(Math.floor(x / 4), 1, 994) * 3) return null;
+    if (x > edge - 2.5 && Math.floor(y) % 7 < 2) return { h: 1, r: FACE, tone: 0 }; // where it was to be split from the cliff
+    const meant = faceHeight(x, y);
+    let h = meant === null ? 8 : 8 + Math.round((meant - 8) / 3.5) * 3; // roughed out in flat planes
+    h += (hash(Math.floor(x / 3), Math.floor(y / 3), 995) - 0.5) * 2.2;
+    if (fr((x + y) / 5) < 0.2) h -= 0.8; // the claw chisel's scoring
+    if (hash(Math.floor(x), Math.floor(y), 996) > 0.94) return { h, r: FACE, tone: 1 }; // the point's pocks
+    return { h: Math.max(1, h), r: FACE };
+  });
+}
+
+/**
+ * A GREAT HAND HALF CARVED, raised out of a rough block at the cliff's foot: the colossus's that never
+ * was, its open hand finished (the palm toward the eye, four fingers and the thumb spread, dressed
+ * smooth), its forearm still roughed out of the raw block, the block's drill holes where it was
+ * to be split free, along the block's front. An obstacle on the floor before a far face. 96 x 124 at (48, 114).
+ */
+function carvedHand(): Sprite {
+  const S = new Scene(new Px(96, 124), 48, 114);
+  const H: V3 = norm([1, -1, 0]); // across the eye's view
+  const T: V3 = norm([1, 1, 0]); // toward the eye
+  const Z: V3 = [0, 0, 1];
+  const P = (a: number, t: number, z: number): V3 => add(add(mul(H, a), mul(T, t)), mul(Z, z));
+  // the raw rock: the squared block it was coming out of, pocked, a row of drill holes along its front
+  // where it was to be split free; the forearm roughed out of its top
+  const ang = 0.35;
+  const Hb: V3 = add(mul(H, Math.cos(ang)), mul(T, Math.sin(ang)));
+  const Tb: V3 = add(mul(T, Math.cos(ang)), mul(H, -Math.sin(ang)));
+  S.box(P(0, -5, 9), [Hb, Tb, Z], [19, 13, 9], (f, u, v, n) => {
+    if (f === 2 && Math.abs(u - 0.55) < 0.1 && Math.abs(fr(v * 6) - 0.5) < 0.13) return '#3a3242';
+    const k = hash(Math.floor(u * 9), Math.floor(v * 9) + f * 31, 998);
+    return toneAt(n, STONE, (k - 0.5) * 0.3);
+  }, 1);
+  S.rod(P(0, -3, 17), P(0, -0.5, 47), 9, 6.8, STONE, 2);
+  // the palm toward the eye, and the heel of the hand
+  S.egg(P(0, 0, 60), [H, T, Z], [14, 5, 17], (n) => toneAt(n, POLISHED, 0.08), 4);
+  // the fingers, spread, the middle longest, their tips leaning a little toward the eye
+  const fingers: [number, number][] = [[-10, 22], [-3.4, 27], [3.4, 25], [10, 19]];
+  fingers.forEach(([a, L], k) => {
+    const base = P(a, 0.5, 72);
+    const mid = P(a * 1.18, 1.5, 72 + L * 0.55);
+    const tip = P(a * 1.32, 3.5, 72 + L);
+    S.rod(base, mid, 3.3, 3.1, POLISHED, 5 + k);
+    S.rod(mid, tip, 3.1, 2.5, POLISHED, 5 + k);
+  });
+  // the thumb, out to the side
+  S.rod(P(-12, 1, 54), P(-20, 2.5, 64), 3.6, 3.2, POLISHED, 9);
+  S.rod(P(-20, 2.5, 64), P(-25, 4, 74), 3.2, 2.6, POLISHED, 9);
+  return finish(S, 48, 114);
+}
+
+/** A WATER BARREL of staves bound in iron, a dipper hung on its rim; and broken, its staves sprung and lying, a hoop, the water gone dark into the dust. 44 x 54 at (22, 46). */
+function waterBarrel(broken: boolean): Sprite {
+  const S = new Scene(new Px(44, 54), 22, 46);
+  if (!broken) {
+    for (let z = 0; z <= 30; z += 0.5) {
+      const r = 8.5 + Math.sin((z / 30) * Math.PI) * 1.8;
+      for (let a = -Math.PI; a < Math.PI; a += 0.08) {
+        const n: V3 = [Math.cos(a), Math.sin(a), 0];
+        if (dot(n, TOWARD) < -0.25) continue;
+        const q: V3 = [n[0] * r, n[1] * r, z];
+        const [x, y] = S.at(q);
+        const hoop = [3.5, 15, 26.5].some((b) => Math.abs(z - b) < 1);
+        S.put(Math.round(x), Math.round(y), dot(q, TOWARD), hoop ? toneAt(n, IRON, 0.25) : Math.abs(fr((a * 8) / Math.PI) - 0.5) < 0.07 ? TIMBER[1] : toneAt(n, TIMBER, 0), 1, z);
+      }
+    }
+    S.egg([0, 0, 30], XYZ, [8.5, 8.5, 0.6], (_n, w) => (Math.hypot(w[0], w[1]) > 7.2 ? TIMBER[3] : '#3e4a5a'), 2);
+    S.rod([6, -3, 31], [13, -5, 27], 0.7, 0.7, TIMBER, 3);
+    S.egg([13.5, -5.2, 26], XYZ, [2, 2, 1.4], (n) => toneAt(n, TIMBER, 0), 3);
+  } else {
+    // the dark of the spilt water in the dust, the staves sprung and lying every way, a hoop, the head
+    S.egg([1, 1, 0], XYZ, [16, 13, 0.4], (_n, w) => (Math.hypot((w[0] - 1) / 16, (w[1] - 1) / 13) > 0.8 ? '#6c6674' : '#5d5868'), 1);
+    for (let k = 0; k < 8; k++) {
+      const a = (k / 8) * Math.PI * 2 + 0.3 + hash(k, 1, 997) * 0.4;
+      const r0 = 3 + hash(k, 2, 997) * 3;
+      const r1 = r0 + 9 + hash(k, 3, 997) * 4;
+      const tw = (hash(k, 4, 997) - 0.5) * 0.6;
+      S.rod([Math.cos(a) * r0, Math.sin(a) * r0, 1.2], [Math.cos(a + tw) * r1, Math.sin(a + tw) * r1, 1.2], 1.3, 1.3, TIMBER, 2 + k);
+    }
+    S.egg([-5, 5, 1], XYZ, [8.5, 8.5, 0.8], (_n, w) => (Math.hypot(w[0] + 5, w[1] - 5) > 7.4 ? IRON[3] : null), 11);
+    S.egg([6, -5, 1.2], XYZ, [6.5, 6.5, 0.8], (n) => toneAt(n, TIMBER, 0.2), 12);
+  }
+  return finish(S, 22, 46);
+}
+
+/** A BASKET of the chippings, wicker, its rim lit, heaped; and broken, tipped on its side, its mouth toward the eye, the chippings spilt out of it. 44 x 38 at (22, 30). */
+function chipBasket(broken: boolean): Sprite {
+  const S = new Scene(new Px(44, 38), 22, 30);
+  const weave = (n: V3, w: V3, along: number): string => {
+    const k = (Math.floor(along / 2) + Math.floor(Math.atan2(w[1], w[0]) * 4)) & 1;
+    return toneAt(n, ROPE, k ? 0.1 : -0.15);
+  };
+  if (!broken) {
+    for (let z = 0; z <= 12; z += 0.5) {
+      const r = 6 + z * 0.18;
+      for (let a = -Math.PI; a < Math.PI; a += 0.12) {
+        const n: V3 = [Math.cos(a), Math.sin(a), 0];
+        if (dot(n, TOWARD) < -0.25) continue;
+        const q: V3 = [n[0] * r, n[1] * r, z];
+        const [x, y] = S.at(q);
+        S.put(Math.round(x), Math.round(y), dot(q, TOWARD), z > 11.4 ? ROPE[4] : weave(n, q, z), 1, z);
+      }
+    }
+    for (let i = 0; i < 7; i++) S.egg([-4 + (i % 3) * 4 + hash(i, 1, 992) * 2, -3 + Math.floor(i / 3) * 3, 13 + hash(i, 2, 992) * 2], XYZ, [2.4, 2, 1.6], facetOf(i % 2 ? FRESH : STONE, 0.05), 2);
+  } else {
+    // lying along A, its foot back up the screen, its mouth toward the eye and to the right
+    const A: V3 = norm([1, 0.25, 0]);
+    const U: V3 = [0, 0, 1];
+    const B: V3 = norm(cross(A, U));
+    const c: V3 = [-12, -3, 0];
+    for (let t = 0; t <= 12; t += 0.5) {
+      const r = 6 + t * 0.18;
+      for (let a = -Math.PI; a < Math.PI; a += 0.1) {
+        const n: V3 = add(mul(U, Math.cos(a)), mul(B, Math.sin(a)));
+        if (dot(n, TOWARD) < -0.3) continue;
+        const q: V3 = add(add(c, mul(A, t)), add(mul(n, r), [0, 0, 6.6]));
+        const [x, y] = S.at(q);
+        S.put(Math.round(x), Math.round(y), dot(q, TOWARD), t > 11.4 ? ROPE[4] : weave(n, q, t), 1, q[2]);
+      }
+    }
+    // the dark inside it, through its mouth
+    S.egg(add(add(c, mul(A, 12)), [0, 0, 6.6]), [A, B, U], [0.4, 7.4, 7.4], () => '#3e3546', 2);
+    // the chippings spilt from its mouth in a fan along the floor
+    for (let i = 0; i < 14; i++) {
+      const s = 2 + hash(i, 1, 993) * 14;
+      const off = (hash(i, 2, 993) - 0.5) * (4 + s * 0.9);
+      const q = add(add(c, mul(A, 13 + s)), mul(B, off));
+      S.egg([q[0], q[1], 1], XYZ, [1.6 + hash(i, 3, 993) * 1.2, 1.4 + hash(i, 4, 993), 1.2], facetOf(i % 2 ? FRESH : STONE, 0.05), 3 + i);
+    }
+  }
+  return finish(S, 22, 30);
+}
+
+/**
+ * THE TRAP OF THE QUARRY: THE DRILL HOLES, a floor tile: the bed drilled for splitting in rows, each
+ * hole dark, its lip lit (`glint`: the light catching the points waiting down them); from them the
+ * stone's own spikes come up (`drillSpike`, k steps of 4). 64 x 33 at (32, 0).
+ */
+function drillHoles(glint: boolean): Sprite {
+  const p = new Px(64, 33);
+  for (let py = 0; py < 33; py++) {
+    for (let px = 0; px < 64; px++) {
+      const uv = tileUV(px, py);
+      if (!uv) continue;
+      const [U, V] = uv;
+      // the holes in a grid of four by four, each an ellipse on the floor
+      const hu = fr((U - 8) / 16);
+      const hv = fr((V - 8) / 16);
+      const du = (hu - 0.5) * 16;
+      const dv = (hv - 0.5) * 16;
+      const d = Math.hypot(du / 4, dv / 4);
+      if (d < 0.75) p.set(px, py, glint && d < 0.42 ? FRESH[4] : '#2a2432');
+      else if (d < 1.05 && du + dv > 0) p.set(px, py, FRESH[3]);
+      else if (d < 1.05) p.set(px, py, STONE[1]);
+    }
+  }
+  return p.sprite(32, 0, GRAIN);
+}
+/** A spike of the stone, up out of a drill hole, `k` steps of 4 up (1 to 4): a sharp splinter of the fresh stone, lit on its left. 16 x 28 at (8, 26). */
+function drillSpike(k: number): Sprite {
+  const p = new Px(16, 28);
+  const h = 4 + k * 5;
+  for (let y = 0; y < h; y++) {
+    const w = Math.max(0.5, 3.2 * (1 - y / h));
+    for (let x = Math.floor(8 - w); x < Math.ceil(8 + w); x++) p.set(x, 26 - y, x < 8 ? FRESH[3] : x < 9 ? FRESH[2] : STONE[1]);
+  }
+  p.set(7, 26 - h, FRESH[4]);
+  return compose(null, [p], null).sprite(8, 26, GRAIN);
+}
+
+/**
+ * THE MASTER MASON'S MALLET (a quest piece, with no quest yet): the great mallet of the quarry's master,
+ * its head of oak bound in iron at both ends, its haft long and worn dark where his hands held it. Lying
+ * on the floor. 72 x 44 at (36, 30).
+ */
+function masonsMallet(): Sprite {
+  const S = new Scene(new Px(72, 44), 36, 30);
+  S.rod([-26, 7, 2.6], [10, -3, 4.4], 1.8, 2.1, TIMBER, 1);
+  S.rod([-26, 7, 2.6], [-17, 4.6, 3], 2, 2, ['#2a201c', '#3a2b28', '#4a3830', '#5a4636', '#6a5442'], 2);
+  const ax = beamAxes([14, -12, 8], [16, 6, 8]);
+  S.box([15, -4, 8], ax, [11, 6.6, 6.6], (_f, u, _v, n) => (u < 0.1 || u > 0.9 ? toneAt(n, IRON, 0.2) : toneAt(n, TIMBER, 0.1)), 3);
+  return finish(S, 36, 30);
+}
+
+// =================================================================================================
 // THE LIST
 
 let made: Piece[] | null = null;
@@ -754,6 +1083,18 @@ export function quarryPieces(): Piece[] {
     // on the floor
     { name: 'splitting tools', kind: 'on the floor', frames: [splittingTools()] },
     { name: 'chippings', kind: 'on the floor', frames: [chippings(0), chippings(1)], shadow: 0.3 },
+    // the far cliffs' own
+    { name: 'ladder against the face', kind: 'on the wall', frames: [ladder()], shadow: 0.25 },
+    { name: 'rope and bucket', kind: 'on the wall', frames: [ropeAndBucket()], shadow: 0.2 },
+    { name: 'the great face, half carved', kind: 'on the wall', frames: [carvedFace()] },
+    { name: 'the great hand, half carved', kind: 'obstacle', frames: [carvedHand()], shadow: 0.6 },
+    // breakables: whole, and broken
+    { name: 'water barrel', kind: 'breakable', frames: [waterBarrel(false), waterBarrel(true)], shadow: 0.22 },
+    { name: 'basket of chippings', kind: 'breakable', frames: [chipBasket(false), chipBasket(true)], shadow: 0.2 },
+    // the trap: the drill holes and the stone's spikes up out of them
+    { name: 'the drill holes', kind: 'trap', frames: [drillHoles(false), drillHoles(true), drillSpike(1), drillSpike(2), drillSpike(3), drillSpike(4)] },
+    // the quest's (no quest yet)
+    { name: "the master mason's mallet", kind: 'quest', frames: [masonsMallet()], shadow: 0.2 },
     // the overseers' redoubt, the Quarry's stronghold
     { name: "the redoubt's gatehouse", kind: 'gate', frames: [0, 1, 2, 3].map((f) => gatehouse(false, f)).concat([gatehouse(true, 0)]), shadow: 1.2 },
     { name: "the court's flagstones", kind: 'floor tile', frames: [flagstones(false, 1), flagstones(false, 2), flagstones(true, 3)] },
