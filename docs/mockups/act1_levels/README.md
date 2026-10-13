@@ -177,3 +177,24 @@ to the dome. Pink, as pink and gold glows are the enemy's. Sent as previews/ledg
 asked "Is this the reveal, with the siege magic as a dome?", his pick by 21:57: "Yes, the dome
 (Recommended)", offered as: settles the open question in your doc: the siege magic is a pink dome,
 fed by lines from the swamp.
+
+## The Sunken Fen, at the Drowned Eye's pool
+
+His word, 13 Oct, 06:48, offered the Sunken Fen painted the same way, from the swamp's end of the
+lines of magic, where the Drowned Eye waits: "Yep". With the hash `fen` the page paints it as one
+screen of the game (`fenShot`, `paintFenVista()`, `fenWater()`):
+
+    node tools/preview.mjs src/dev/preview_act1.ts shots/fen_world.png 1014 468 fen
+
+No walls (his word of 18:56): dark water, mud islands with reeds and dead trees, boardwalks between,
+mist low over everything. A sunken ruin, a ring of old paving round a deep pool; three of the
+quarry's obelisks on it, their runes burning pink, cultists chanting at them; from each obelisk's tip
+a line of magic arcs away over the water to the dome over the town, which glows on the far shore
+under a murky sky (the far side opens as on the Ledge Road). Sent as previews/fen_in_game.png; asked
+"Is this the Sunken Fen?", his pick: "More of the Eye", offered as: let more of the horror show under
+the water: bigger, closer to surfacing. So the pool is bigger and the Eye risen close under its
+surface (a pale veined eyeball, its iris burning gold, a slit of a pupil, the water rippling over
+it), its arms coiling out under the water past the ruin, two of them curling up out of it with
+ripples round them. Sent as previews/fen_eye_in_game.png; asked "Is this the Sunken Fen and the
+Drowned Eye now?", his pick by 07:40: "Yes, this is it (Recommended)", offered as: the fen, the Eye
+risen under its pool with its arms out, the obelisks and the town across the water go in the plan.

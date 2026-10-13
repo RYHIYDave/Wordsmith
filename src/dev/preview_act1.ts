@@ -39,8 +39,10 @@ const SHOT = decodeURIComponent(location.hash.slice(1)) === 'shot';
 /** "reveal": the same, at the place along it where the besieged town first comes into view. */
 const REVEAL = decodeURIComponent(location.hash.slice(1)) === 'reveal';
 const LEDGE = decodeURIComponent(location.hash.slice(1)) === 'ledge' || REVEAL;
-const PW = SHOT || LEDGE ? 1014 : 320 * F;
-const PH = SHOT || LEDGE ? 468 : 220 * F;
+/** "fen": the Sunken Fen as one screen of the game, at the Drowned Eye's pool. */
+const FEN_SHOT = decodeURIComponent(location.hash.slice(1)) === 'fen';
+const PW = SHOT || LEDGE || FEN_SHOT ? 1014 : 320 * F;
+const PH = SHOT || LEDGE || FEN_SHOT ? 468 : 220 * F;
 const HWf = 16 * F;
 const HHf = 8 * F;
 const OX = PW / 2;
@@ -2211,6 +2213,342 @@ function showAlone(cvs: HTMLCanvasElement): never {
   document.body.appendChild(cvs);
   (window as unknown as { __ready: boolean }).__ready = true;
   throw new Error('shot painted'); // the rest of the page is the other sheets
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE SUNKEN FEN, AT THE DROWNED EYE'S POOL, as one screen of the game. His "Yep" (13 Oct, 06:48) to
+// painting the Sunken Fen the same way, from the swamp's end of the lines of magic, where the Drowned
+// Eye waits. As the doc has it: ancient ruins half-drowned in the mire, linked by boardwalks; the
+// town's lights across the water the whole way; the quarry's obelisks standing round the arena with
+// cultists chanting at them; the horror under the water. No walls (his word of 18:56). As the Ledge
+// Road is seen, the far side opens: past the fen, across open water, the town under its dome, the
+// lines of magic running to it from the obelisks. Pink and gold glows are the enemy's.
+
+const FHZ = 98; // the horizon, down the screen
+const TOWN_F: [number, number] = [262, 96];
+const POOL: [number, number] = [752, 262];
+const fenShoreTop = (px: number): number => FHZ - 5 - 5 * fbm(px / 40, 0, 611) - 9 * Math.exp(-(((px - TOWN_F[0]) / 80) ** 2));
+const FEN_SKY = ramp('#24223a', '#2e2c48', '#3b3a56', '#4c4c62', '#5f6466', '#737d6c');
+function fenSky(px: number, py: number): RGB {
+  let c = pick(FEN_SKY, py / FHZ, px, py, 0.9);
+  const cd = fbm(px / 150, py / 20, 613) + 0.1 * (vn(px / 30, py / 9, 615) - 0.5);
+  if (cd > 0.57) c = cd > 0.65 ? hex('#4a4862') : hex('#3e3c56');
+  // the dome's light, low in the sky over the town
+  const dg = Math.max(0, 1 - Math.hypot((px - TOWN_F[0]) / 150, (py - FHZ) / 70));
+  if (dg > 0) c = mix(c, hex('#a0428c'), Math.floor((dg * 0.45 + (bayer(px, py) - 0.5) * 0.1) * 6) / 6);
+  return c;
+}
+/** The fen's water: open lake toward the horizon, its own murk nearer; the Eye in its pool. */
+function fenWater(x: number, y: number, px: number, py: number): RGB {
+  // the Drowned Eye's pool (his pick, "More of the Eye"): the eye risen close under the surface, pale
+  // and veined, its iris burning gold, the water rippling over it
+  const pdx = (px - POOL[0]) / 62;
+  const pdy = (py - POOL[1]) / 41;
+  const pd = Math.hypot(pdx, pdy);
+  if (pd < 1.1) {
+    let c = mix(hex('#0b1615'), hex('#16302b'), Math.max(0, pd - 0.75) * 2);
+    const eb = Math.hypot(pdx / 0.92, pdy / 0.8);
+    if (eb < 1) {
+      // the eyeball, its curve shaded, red veins running in to the iris
+      c = mix(hex('#8c8a5c'), hex('#3b4630'), Math.min(1, eb * eb * 1.1));
+      const ang = Math.atan2(pdy, pdx);
+      const vein = Math.abs(Math.sin(ang * 7 + 2.5 * fbm(px / 9, py / 9, 631) * 3));
+      if (vein < 0.09 && eb > 0.45) c = mix(c, hex('#7a2a2c'), 0.6);
+      const iris = Math.hypot(pdx * 1.05, pdy * 1.25);
+      if (iris < 0.5) {
+        c = iris > 0.44 ? hex('#5a3a12') : mix(hex('#f0c040'), hex('#a06a14'), iris / 0.44);
+        if (Math.abs(((iris * 22) % 1) - 0.5) < 0.12 && iris > 0.18) c = mix(c, hex('#ffe08a'), 0.35); // its rays
+        if (Math.abs(pdx) < 0.055 + 0.05 * (1 - Math.abs(pdy) / 0.4) && Math.abs(pdy) < 0.4) c = hex('#050404'); // the slit
+      }
+      if (eb > 0.55 && eb < 0.62 && pdy < 0 && pdx < 0) c = mix(c, hex('#e9edd0'), 0.5); // the wet light on it
+    }
+    // the water over it, rippling
+    if (Math.abs(((pd * 9 - fbm(px / 20, py / 20, 633)) % 1) - 0.5) < 0.06) c = mix(c, hex('#9fc7b8'), 0.25);
+    return mix(c, hex('#1d3a33'), 0.18);
+  }
+  let c = pick(F_WATER, fbm(x * 1.2, y * 1.2, 93), px, py);
+  const open = Math.max(0, 1 - (py - FHZ) / 110);
+  // the dome on the water: a few broken streaks of its light, under it
+  if (py < FHZ + 46 && py % 3 === 0 && Math.abs(px - TOWN_F[0] - 6 * Math.sin(py * 1.7)) < 60 - (py - FHZ) * 1.1 && hash(px >> 3, py, 617) > 0.62) c = mix(c, hex('#d04ab0'), 0.38 * open);
+  if (open < 0.6) {
+    // ripples, lily pads and scum
+    if (Math.abs(((fbm(x * 0.8, y * 0.8, 95) * 9) % 1) - 0.5) < 0.05) c = hex('#3f6a5c');
+    const lp = fbm(x * 2.4, y * 2.4, 97);
+    if (lp > 0.68) c = hash(px >> 2, py >> 2, 99) > 0.25 ? hex('#4c7238') : hex('#6c9548');
+    else if (lp > 0.62) c = hex('#35574a');
+  }
+  {
+    // its arms, reaching out under the water past the ruin
+    const ax = px - POOL[0];
+    const ay = (py - POOL[1]) * 1.5;
+    const r = Math.hypot(ax, ay);
+    if (r > 50 && r < 330) {
+      const th = Math.atan2(ay, ax);
+      for (let k = 0; k < 6; k++) {
+        const a0 = (k / 6) * Math.PI * 2 + 0.4;
+        const want = a0 + 0.9 * Math.sin(r / 60 + k) + (r - 50) / 260;
+        let dth = th - want;
+        dth = Math.atan2(Math.sin(dth), Math.cos(dth));
+        const w = (30 * (1 - (r - 50) / 300)) / r;
+        if (Math.abs(dth) < w) {
+          c = mix(c, hex('#040b0a'), 0.8 * (1 - (r - 50) / 360));
+          if (Math.abs(dth) < w * 0.3 && hash(Math.floor(r / 9), k, 635) > 0.5) c = mix(c, hex('#2c4a40'), 0.4); // the suckers
+          break;
+        }
+      }
+    }
+  } // 1 at the horizon, 0 well out in the fen
+  if (open > 0) c = mix(c, hex('#4d5266'), Math.floor((open * 0.85 + (bayer(px, py) - 0.5) * 0.12) * 6) / 6);
+  // the dome on the water, broken into streaks
+  return c;
+}
+let FEN_VISTA: ImageData | null = null;
+/** The town far across the water, under its dome, its lights; the siege camps' fires along the far shore. */
+function paintFenVista(): ImageData {
+  const c = document.createElement('canvas');
+  c.width = PW;
+  c.height = PH;
+  const g = c.getContext('2d') as CanvasRenderingContext2D;
+  const [tx, ty] = TOWN_F;
+  for (let i = 0; i < 30; i++) {
+    const x = tx - 150 + 300 * hash(i, 0, 621);
+    if (Math.abs(x - tx) < 44) continue;
+    g.fillStyle = 'rgba(255, 179, 71, 0.9)';
+    g.fillRect(Math.round(x), Math.round(ty - 3 - 3 * hash(i, 1, 621)), 1, 1);
+  }
+  g.fillStyle = '#3a3a44';
+  g.beginPath();
+  g.ellipse(tx, ty - 4, 38, 7, 0, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = '#8c8790';
+  g.lineWidth = 2;
+  g.beginPath();
+  g.ellipse(tx, ty - 4, 38, 7, 0, Math.PI, 0);
+  g.stroke();
+  for (let i = 0; i < 46; i++) {
+    const a = hash(i, 0, 623) * Math.PI * 2;
+    const r = Math.sqrt(hash(i, 1, 623)) * 0.9;
+    const x = tx + Math.cos(a) * 34 * r;
+    const y = ty - 6 + Math.sin(a) * 5 * r;
+    g.fillStyle = ['#5a3a34', '#4a3430', '#6a4a3c'][Math.floor(hash(i, 2, 623) * 3)];
+    g.fillRect(Math.round(x - 2), Math.round(y - 2), 3, 2);
+    if (hash(i, 3, 623) > 0.6) {
+      g.fillStyle = '#ffd27a'; // its windows, lit
+      g.fillRect(Math.round(x), Math.round(y - 1), 1, 1);
+    }
+  }
+  g.fillStyle = '#6a6470';
+  g.fillRect(tx - 4, ty - 22, 8, 15);
+  g.fillStyle = '#3e3038';
+  g.beginPath();
+  g.moveTo(tx - 5, ty - 22);
+  g.lineTo(tx, ty - 31);
+  g.lineTo(tx + 5, ty - 22);
+  g.closePath();
+  g.fill();
+  g.fillStyle = '#ffd27a';
+  g.fillRect(tx - 1, ty - 17, 2, 2);
+  const rx = 70;
+  const ry = 58;
+  const dg = g.createRadialGradient(tx - 18, ty - 30, 6, tx, ty - 10, rx);
+  dg.addColorStop(0, 'rgba(255, 150, 230, 0.14)');
+  dg.addColorStop(0.75, 'rgba(230, 80, 200, 0.26)');
+  dg.addColorStop(1, 'rgba(210, 70, 190, 0.5)');
+  g.fillStyle = dg;
+  g.beginPath();
+  g.ellipse(tx, ty, rx, ry, 0, Math.PI, 0);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = 'rgba(255, 130, 225, 0.95)';
+  g.lineWidth = 2;
+  g.beginPath();
+  g.ellipse(tx, ty, rx, ry, 0, Math.PI, 0);
+  g.stroke();
+  g.strokeStyle = 'rgba(255, 215, 245, 0.75)';
+  g.lineWidth = 1.5;
+  g.beginPath();
+  g.ellipse(tx, ty, rx - 8, ry - 8, 0, Math.PI * 1.15, Math.PI * 1.45);
+  g.stroke();
+  return g.getImageData(0, 0, PW, PH);
+}
+const ring = (x: number, y: number): boolean => area(POOL[0], POOL[1], 3.5, 3.0, 0)(x, y) && !area(POOL[0], POOL[1], 1.95, 1.62, 0)(x, y);
+const fBoardsShot = union(
+  path(atAll([[-40, 304], [150, 286], [300, 266], [440, 250]]), 0.85),
+  path(atAll([[560, 248], [640, 252]]), 0.85),
+  path(atAll([[470, 280], [400, 318], [320, 350]]), 0.8),
+  path(atAll([[860, 300], [920, 360]]), 0.8),
+);
+const fenShotGround = ground(union(
+  area(500, 238, 1.7, 1.4, 0.2),
+  area(250, 380, 2.2, 1.5, 0.5),
+  area(940, 400, 1.7, 1.2, 0),
+  area(590, 160, 1.0, 0.7, 0),
+  ring,
+), fBoardsShot);
+const FW_GROUND = fenShotGround.walk;
+const fenObelisk = (k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  // a quarry obelisk the cult hauled down here, its runes burning with the Eye's pink
+  box(0.55, 0.55, 92, hex('#7a7486'), hex('#625c70'), hex('#423d50'))(g, sx, sy);
+  g.fillStyle = '#ff5fd2';
+  for (let i = 0; i < 6; i++) g.fillRect(Math.round(sx - 7 - (i % 2) * 2), Math.round(sy - 16 - i * 13), 4, 3);
+  g.fillStyle = '#ffd0f4';
+  g.fillRect(Math.round(sx - 2), Math.round(sy - 100 - 2 * k), 4, 4);
+};
+/** One of the Eye's arms, curled up out of the water, ripples round it. */
+const fenArm = (k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.strokeStyle = 'rgba(160, 200, 190, 0.45)';
+  g.lineWidth = 1;
+  for (let i = 1; i <= 3; i++) {
+    g.beginPath();
+    g.ellipse(sx, sy, 12 * i + 6, 4 * i + 3, 0, 0, Math.PI * 2);
+    g.stroke();
+  }
+  // the arm: thick at the water, curling over at its tip
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 20;
+    const curl = t * t * 3.4;
+    pts.push([sx + Math.sin(curl) * 34 * t * (k ? -1 : 1), sy - 118 * t + (1 - Math.cos(curl)) * 30 * t]);
+  }
+  for (let i = 0; i < pts.length - 1; i++) {
+    const t = i / 20;
+    const w = 20 * (1 - t) + 3;
+    g.strokeStyle = '#26332c';
+    g.lineWidth = w;
+    g.lineCap = 'round';
+    g.beginPath();
+    g.moveTo(pts[i][0], pts[i][1]);
+    g.lineTo(pts[i + 1][0], pts[i + 1][1]);
+    g.stroke();
+    g.strokeStyle = '#3d5246';
+    g.lineWidth = w * 0.45;
+    g.beginPath();
+    g.moveTo(pts[i][0] - w * 0.2, pts[i][1]);
+    g.lineTo(pts[i + 1][0] - w * 0.2, pts[i + 1][1]);
+    g.stroke();
+    if (i % 3 === 1) {
+      g.fillStyle = '#b8a77a'; // its suckers, pale
+      g.fillRect(Math.round(pts[i][0] + w * 0.25), Math.round(pts[i][1]), 2, 2);
+    }
+  }
+};
+const fenObelisks: [number, number][] = [[648, 222], [858, 238], [688, 308]];
+const fenShot: Level = {
+  ...fen,
+  title: '',
+  note: '',
+  gr: fenShotGround,
+  floor: (x, y, px, py) => {
+    if (fBoardsShot(x, y)) {
+      const t = (x - y) * 3.2;
+      if (((t % 1) + 1) % 1 < 0.14) return hex('#3a2a1f');
+      return pick(F_PLANK, 0.25 + 0.6 * hash(Math.floor(t), 1, 85), px, py, 0.3);
+    }
+    if (ring(x, y)) {
+      // old paving, sunk and cracked, moss in the joints
+      const u = x * 1.6;
+      const v = y * 1.6;
+      const joint = Math.min(((u % 1) + 1) % 1, ((v % 1) + 1) % 1) < 0.07;
+      if (joint) return fbm(x * 3, y * 3, 81) > 0.45 ? hex('#4d6a3a') : F_STONE[0];
+      return pick(F_STONE, 0.3 + 0.6 * hash(Math.floor(u), Math.floor(v), 83), px, py, 0.3);
+    }
+    let c = pick(F_MUD, fbm(x * 2.2, y * 2.2, 87), px, py);
+    if (fbm(x * 1.3, y * 1.3, 89) > 0.5) c = pick(F_GRASS, fbm(x * 5, y * 5, 91), px, py);
+    return c;
+  },
+  face: (_shade, v, px, x, y) => (fBoardsShot(x, y) ? (px % 18 < 3 ? hex('#2e221a') : hex('#4b3626')) : ring(x, y) ? hex(v < 2 ? '#5a5466' : '#3e3a4a') : v < 2 ? hex('#3a3426') : hex('#2b281e')),
+  outside: (x, y, px, py) => {
+    let c: RGB;
+    if (py < fenShoreTop(px)) c = fenSky(px, py);
+    else if (py < FHZ) c = mix(hex('#262b27'), hex('#4c4a5c'), 0.3 + 0.2 * fbm(px / 20, 0, 619)); // the far shore
+    else c = fenWater(x, y, px, py);
+    if (FEN_VISTA) {
+      const o = (py * PW + px) * 4;
+      const a = FEN_VISTA.data[o + 3] / 255;
+      if (a > 0) c = mix(c, [FEN_VISTA.data[o], FEN_VISTA.data[o + 1], FEN_VISTA.data[o + 2]], a);
+    }
+    return c;
+  },
+  props: [],
+  hero: at(507, 236) as [number, number],
+  tint: (c) => [c[0] * 0.82, c[1] * 0.8, c[2] * 0.9],
+  after: (g, _kind, top) => {
+    // the obelisks' light on the water and the Eye's under it
+    for (const [px, py] of fenObelisks) {
+      const grd = g.createRadialGradient(px, top + py - 40, 2, px, top + py - 40, 70);
+      grd.addColorStop(0, 'rgba(255,95,210,0.28)');
+      grd.addColorStop(1, 'rgba(255,95,210,0)');
+      g.fillStyle = grd;
+      g.fillRect(px - 70, top + py - 110, 140, 140);
+    }
+    const eg = g.createRadialGradient(POOL[0], top + POOL[1], 4, POOL[0], top + POOL[1], 80);
+    eg.addColorStop(0, 'rgba(240,195,80,0.34)');
+    eg.addColorStop(1, 'rgba(240,195,80,0)');
+    g.fillStyle = eg;
+    g.fillRect(POOL[0] - 80, top + POOL[1] - 80, 160, 160);
+    // the lines of magic, from each obelisk's tip, up and away over the water to the dome
+    for (const [k, [px, py]] of fenObelisks.entries()) {
+      const x0 = px;
+      const y0 = py - 102 - 2 * k;
+      const x1 = TOWN_F[0] + 40 - k * 26;
+      const y1 = TOWN_F[1] - 50 + k * 8;
+      for (const [w, a] of [[5, 0.16], [2.5, 0.35], [1, 0.95]] as const) {
+        g.strokeStyle = `rgba(255, ${a > 0.5 ? 170 : 95}, 225, ${a})`;
+        g.lineWidth = w;
+        g.beginPath();
+        g.moveTo(x0, top + y0);
+        g.quadraticCurveTo((x0 + x1) / 2, top + Math.min(y0, y1) - 60 - 10 * k, x1, top + y1);
+        g.stroke();
+      }
+    }
+    // mist, low over the water
+    for (let n = 0; n < 14; n++) {
+      const x = hash(n, 1, 73) * PW;
+      const y = top + FHZ + (PH - FHZ) * hash(n, 2, 73);
+      const r = 50 + 60 * hash(n, 3, 73);
+      const grd = g.createRadialGradient(x, y, 4, x, y, r);
+      grd.addColorStop(0, 'rgba(170,190,180,0.2)');
+      grd.addColorStop(1, 'rgba(170,190,180,0)');
+      g.fillStyle = grd;
+      g.beginPath();
+      g.ellipse(x, y, r * 1.8, r * 0.6, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+  },
+};
+if (FEN_SHOT) {
+  FEN_VISTA = paintFenVista();
+  const onFen = (px: number, py: number, draw: Prop['draw'], extra: Partial<Prop> = {}): Prop => {
+    const [x, y] = at(px, py);
+    if (!FW_GROUND(x, y)) console.warn('fen prop off the ground', px, py);
+    return { x, y, draw, ...extra };
+  };
+  fenShot.props = [
+    ...fenObelisks.map(([px, py], k) => onFen(px, py, fenObelisk(k), { seeFor: 110 })),
+    onFen(700, 214, box(0.4, 0.4, 34, hex('#9b96a4'), hex('#878192'), hex('#5f5a6a'))),
+    onFen(806, 318, box(0.4, 0.4, 22, hex('#9b96a4'), hex('#878192'), hex('#5f5a6a'))),
+    onFen(842, 296, box(0.45, 0.45, 12, hex('#878192'), hex('#736d7e'), hex('#5f5a6a'))),
+    onFen(236, 372, deadTree(1)),
+    onFen(960, 392, deadTree(2)),
+    { ...((): { x: number; y: number } => { const [x, y] = at(560, 330); return { x, y }; })(), draw: fenArm(0) },
+    { ...((): { x: number; y: number } => { const [x, y] = at(905, 196); return { x, y }; })(), draw: fenArm(1) },
+    onFen(596, 158, deadTree(3)),
+    onFen(300, 392, reeds(1)),
+    onFen(214, 396, reeds(2)),
+    onFen(470, 222, reeds(3)),
+    onFen(910, 410, reeds(4)),
+    onFen(574, 166, reeds(5)),
+  ];
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = PH;
+  const fg = cvs.getContext('2d') as CanvasRenderingContext2D;
+  fg.imageSmoothingEnabled = false;
+  // the cultists, chanting at the obelisks
+  const chant: [number, number][] = [at(646, 262), at(830, 264), at(712, 330)] as [number, number][];
+  paintLevel(fg, 0, fenShot, { foes: chant });
+  placeHud(fg, 'The Sunken Fen', FW_GROUND, fenShot.hero);
+  showAlone(cvs);
 }
 
 if (LEDGE) {
