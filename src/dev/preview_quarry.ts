@@ -16,13 +16,18 @@
 //     close-ups at four times (a far wall's benches, the bed, a cut's near face, the rim)
 //   node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_cost.png 600 200 cost
 //     what painting it costs, a piece of 256 x 256 picture pixels at a time
+//   node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_dressed.png 1014 468 dressed
+//     the phone screen with the Quarry's pieces (art/floor6.ts) set as the mock-up has them, the tops dressed
+//   node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_pieces.png 1014 760 pieces
+//     every piece so far, each on the Quarry's bed, at the game's size, with its name
 
 import { makeDaggerCultistArt3 } from '../art/cultists';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
+import { quarryPieces } from '../art/floor6';
 import { QUARRY_LOOK } from '../art/quarry';
-import { HHP, HWP, TK, paintTerrain, pictureOf, terrainOf, worldOf } from '../art/terrain';
+import { HHP, HWP, TK, clearOfFloor, fbm, paintTerrain, pictureOf, terrainOf, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
 import { drawText } from '../engine/font';
 import type { Sprite } from '../engine/px';
@@ -32,7 +37,7 @@ import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
 const PW = 1014;
-const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : 468;
+const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 960 : 468;
 
 // ---------------------------------------------------------------------------------------------------
 // The mock-up's shapes, in the mock-up's own world (its panel 1014 x 468, world (12, 12) at its middle),
@@ -163,8 +168,13 @@ function standAt(g: CanvasRenderingContext2D, sp: Sprite, x: number, y: number, 
   g.beginPath();
   g.ellipse(sx, sy, r * 2, r * 0.9, 0, 0, Math.PI * 2);
   g.fill();
-  const dens = sp.density ?? 1;
-  g.drawImage(sp.img, sx - (sp.ax * 2) / dens, sy - (sp.ay * 2) / dens, (sp.img.width / dens) * 2, (sp.img.height / dens) * 2);
+  drawAt(g, sp, sx, sy);
+}
+/** A sprite with its anchor at picture pixel (sx, sy) of the panel, at the panel's grain (two picture pixels to a game pixel). */
+function drawAt(g: CanvasRenderingContext2D, sp: Sprite, sx: number, sy: number, alpha = 1): void {
+  g.globalAlpha = alpha;
+  g.drawImage(sp.img, Math.round(sx - sp.ax * 2), Math.round(sy - sp.ay * 2), sp.w * 2, sp.h * 2);
+  g.globalAlpha = 1;
 }
 
 function nameAndMap(g: CanvasRenderingContext2D, hero: [number, number]): void {
@@ -294,6 +304,166 @@ if (HASH === 'shot' || HASH === 'tiles') {
   drawText(g, line, 4, 4, THEME.text, { shadow: P.ink });
   g.restore();
   show(cvs);
+}
+
+if (HASH === 'dressed') dressedShot();
+else if (HASH === 'pieces') pieceSheet();
+
+/** A piece by name and frame. */
+function piece(name: string, frame = 0): Sprite {
+  const pc = quarryPieces().find((q) => q.name === name);
+  if (!pc || !pc.frames) throw new Error(`no piece ${name}`);
+  return pc.frames[frame];
+}
+
+interface Stand {
+  x: number;
+  y: number;
+  sp: Sprite;
+  /** Drawn this many picture pixels up (it stands on a top). */
+  lift?: number;
+  /** A figure (the tall pieces are seen through while one is behind them). */
+  figure?: boolean;
+  tall?: boolean;
+  shadow?: number;
+}
+
+/** THE QUARRY DRESSED: the pieces where the mock-up he said yes to has them, the tops dressed by its rule. */
+function dressedShot(): void {
+  const kinds = paintPanel(g, VX, VY, PW, PH);
+  const stands: Stand[] = [];
+  const onFloor = (px: number, py: number, name: string, frame = 0, tall = false): void => {
+    const [x, y] = at(px, py);
+    if (!T.ground(x, y)) console.warn('off the floor:', name, px, py);
+    const pc = quarryPieces().find((q) => q.name === name);
+    stands.push({ x, y, sp: piece(name, frame), tall, shadow: pc?.shadow });
+  };
+  // the rails along y through the passage to the other pit, over the whole floor tiles at the cart's column
+  const [cx, cy] = at(700, 200);
+  const tx = Math.floor(cx);
+  const rail = piece('rails', 1);
+  const whole = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < FLOOR.w && y < FLOOR.h && FLOOR.tiles[y * FLOOR.w + x] === T_FLOOR && !(FLOOR.cut && FLOOR.cut[y * FLOOR.w + x]);
+  let y0 = Math.floor(cy);
+  let y1 = Math.floor(cy);
+  while (whole(tx, y0 - 1)) y0--;
+  while (whole(tx, y1 + 1)) y1++;
+  for (let ty = y0; ty <= y1; ty++) {
+    const [sx, sy] = pictureOf(tx, ty);
+    drawAt(g, ty === y0 ? piece('rails', 3) : rail, sx - VX, sy - VY);
+  }
+  stands.push({ x: tx + 0.5, y: Math.floor(cy) + 0.5, sp: piece('cart of rubble', 1), shadow: 0.42 });
+  onFloor(420, 200, 'the great obelisk');
+  onFloor(470, 232, 'splitting tools');
+  onFloor(560, 300, 'the crane', 0, true);
+  onFloor(300, 250, 'stacked blocks');
+  onFloor(338, 268, 'cut block');
+  onFloor(880, 170, 'block split from the bed');
+  onFloor(640, 250, 'block marked to split');
+  onFloor(255, 305, 'sledge on rollers');
+  onFloor(610, 262, 'boulder', 1);
+  onFloor(624, 272, 'boulder', 0);
+  onFloor(380, 312, 'chippings', 1);
+  onFloor(560, 168, 'chippings', 0);
+  onFloor(470, 168, 'scaffolding', 0, true);
+  // the tops, dressed: pines in groves, rocks, a stacked block, scaffolding; never over the floor
+  const RISE = QUARRY_LOOK.rise;
+  for (let gy = 4; gy < PH + 30; gy += 18) {
+    for (let gx = 4; gx < PW; gx += 24) {
+      const px = Math.round(gx + (hashOf(gx, gy, 1) - 0.5) * 18);
+      const py = Math.round(gy + (hashOf(gx, gy, 2) - 0.5) * 12);
+      const roll = hashOf(gx, gy, 3);
+      const [wx, wy] = worldOf(VX + px, VY + py + RISE);
+      const grove = fbm(wx * 0.35, wy * 0.35, 814);
+      let sp: Sprite | null = null;
+      let hw = 12;
+      let h = 16;
+      if (grove > 0.6 && roll < 0.4) {
+        const k = hashOf(gx, gy, 4) < 0.33 ? 0 : hashOf(gx, gy, 4) < 0.7 ? 1 : 2;
+        sp = piece('pine', k);
+        hw = 30;
+        h = sp.h * 2;
+      } else if (roll < 0.045) {
+        sp = piece('boulder', Math.floor(hashOf(gx, gy, 5) * 3));
+        hw = 22;
+        h = 30;
+      } else if (roll < 0.05) {
+        sp = piece('stacked blocks');
+        hw = 34;
+        h = 70;
+      } else if (roll < 0.056) {
+        sp = piece('scaffolding');
+        hw = 40;
+        h = 100;
+      }
+      if (!sp || !clearOfFloor(T, VX + px, VY + py, hw, h)) continue;
+      stands.push({ x: wx, y: wy, sp, lift: RISE });
+    }
+  }
+  for (const [x, y] of FOES) stands.push({ x, y, sp: cultist.front.idle[0], figure: true, shadow: 0.45 });
+  stands.push({ x: HERO[0], y: HERO[1], sp: knight, figure: true, shadow: 0.5 });
+  stands.sort((a, b) => a.x + a.y - (b.x + b.y));
+  const figures = stands.filter((s) => s.figure);
+  for (const s of stands) {
+    const [sx0, sy0] = pictureOf(s.x, s.y);
+    const sx = sx0 - VX;
+    const sy = sy0 - VY - (s.lift ?? 0);
+    if (s.shadow) {
+      g.fillStyle = 'rgba(25, 18, 40, 0.32)';
+      g.beginPath();
+      g.ellipse(sx, sy, s.shadow * HWP * 1.1, s.shadow * HHP * 1.1, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    // a tall thing seen through while someone stands behind it (the game's SEEN_THROUGH, 0.38)
+    let alpha = 1;
+    if (s.tall) {
+      for (const f of figures) {
+        if (f.x + f.y >= s.x + s.y) continue;
+        const [fx, fy] = pictureOf(f.x, f.y);
+        const ox = fx - VX;
+        const oy = fy - VY;
+        if (ox > sx - s.sp.ax * 2 && ox < sx - s.sp.ax * 2 + s.sp.w * 2 && oy < sy && oy > sy - s.sp.ay * 2) alpha = 0.38;
+      }
+    }
+    drawAt(g, s.sp, sx, sy, alpha);
+  }
+  void kinds;
+  nameAndMap(g, HERO);
+  show(cvs);
+}
+
+/** Every piece so far, each on a patch of the bed, at the game's size, named. */
+function pieceSheet(): void {
+  g.fillStyle = '#0d1030';
+  g.fillRect(0, 0, PW, PH);
+  const all = quarryPieces().flatMap((pc) => (pc.frames ?? []).map((sp, i) => ({ name: (pc.frames!.length > 1 ? `${pc.name} ${i + 1}` : pc.name), sp, kind: pc.kind })));
+  const COLS = 5;
+  const CW = Math.floor(PW / COLS);
+  const CH = 190;
+  const bed = paintTerrain(T, VX + 300, VY + 240, CW - 6, CH - 22);
+  const tmp = document.createElement('canvas');
+  tmp.width = bed.w;
+  tmp.height = bed.h;
+  (tmp.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(bed.rgba, bed.w, bed.h), 0, 0);
+  all.forEach((it, n) => {
+    const ox = (n % COLS) * CW + 3;
+    const oy = Math.floor(n / COLS) * CH + 2;
+    g.drawImage(tmp, ox, oy + 18);
+    const floorTile = it.kind === 'floor tile';
+    const ax = ox + CW / 2;
+    const ay = floorTile ? oy + 18 + (CH - 22) / 2 - 16 : oy + CH - 18;
+    drawAt(g, it.sp, ax, ay);
+    g.save();
+    g.scale(2, 2);
+    drawText(g, it.name, ox / 2 + 1, oy / 2 + 1, THEME.text, { shadow: P.ink });
+    g.restore();
+  });
+  show(cvs);
+}
+
+function hashOf(x: number, y: number, k: number): number {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(k | 0, 2147483647)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
 // (for the tests' eyes: what the panel shows where)

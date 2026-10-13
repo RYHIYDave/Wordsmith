@@ -48,6 +48,36 @@ by hand on today's tiles in the shape of the mock-up he said yes to, the knight 
 dagger cultists standing in it; `tiles` the same with the tiles the game walks by drawn over it;
 `close` four close-ups at four times; `cost` what painting costs.
 
+### His answer
+
+Asked as a pop-up "Is this the Quarry's ground?", his pick by 10:19 (13 Oct): "Yes, keep it
+(Recommended)", offered as: the ground stays as shown, slabs and all, and the art chat moves on to its
+pieces: the obelisk, crane, rails, cart, blocks and the dressed tops.
+
+## The pieces, the first of them
+
+`src/art/floor6.ts`, `quarryPieces()`: built as the Crypt's were (floor 4's painter in depth, `Scene`;
+the indigo seam, `compose`), in the Quarry's daylight colours: the cut block (plain, split from the bed
+with its drill holes, marked in chalk to split), stacked blocks, the great obelisk lying where it was
+split (tapering to its point, pick marks in rows, the cult's mark, floor 5's shrieking skull, cut into
+its top near the base, the chalk lines of its next faces; nothing glows: its runes are lit at the Fen),
+the crane (a wooden derrick: mast on crossed sills, stays, the boom out toward -y, the topping rope, the
+hoist rope, chain and hook, a block slung on it; a windlass at its foot), the cart of rubble and the
+empty cart (along x or along y), the sledge on rollers with a block on it, scaffolding, the rails (a
+floor tile along x or along y, and its end), the splitting tools (sledgehammer, wedges, a chisel), heaps
+of chippings, and the mountain's pines (three sizes) and boulders (three) for the tops and the set.
+`tests/floor6.test.ts` holds them to the rulebook (crisp, no loose pixels, no light, no cyan or pink,
+duller than the nine words, light from the upper left, standing on their feet, a floor tile inside its
+diamond).
+
+    node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_dressed.png 1014 468 dressed
+    node tools/preview.mjs src/dev/preview_quarry.ts shots/quarry_pieces.png 1014 960 pieces
+
+`dressed` sets them where the mock-up has them (the rails laid along y through the passage to the other
+pit, the cart on them), and dresses the tops by its rule (pines in groves, a few rocks, stacked blocks
+and scaffolding, each only where `clearOfFloor` says it stands clear of the floor); a tall piece (the
+crane, the scaffolding) is seen through at the game's 0.38 while a figure stands behind it.
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a

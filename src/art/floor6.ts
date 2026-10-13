@@ -1,0 +1,588 @@
+// FLOOR 6, THE QUARRY: ITS PIECES, the first of them (a mock-up; nothing of the game imports it).
+//
+// The owner, 13 Oct 2026, to the Quarry's ground (art/quarry.ts) at 10:19, asked "Is this the Quarry's
+// ground?": "Yes, keep it (Recommended)", offered as: the ground stays as shown, slabs and all, and the
+// art chat moves on to its pieces: the obelisk, crane, rails, cart, blocks and the dressed tops.
+//
+// THE QUARRY AS HE SAID YES TO IT (13 Oct, by 08:48, to the planning chat's mock-up; the project's
+// claude/act1_descent.md): one great pit floor with the next opening broadly off it; the giant obelisk
+// lying where it was split from the rock (chisel marks, the cult's mark); a wooden crane with a block on
+// its chain; minecart rails through to the other pit, a cart of rubble; the cult's overseers; the tops
+// dressed (pines, rocks, stacked blocks, scaffolding, a banner). His rule for a set of floors from the
+// second on (10 Oct, 14:54): "Going forward, let’s do 25 that are the theme of the 5 levels, then 25 for
+// each boss." This floor's boss is the Unfinished, the stone colossus the cult half-carved out of the
+// quarry wall: so its floor's pieces are the quarry's own, the stone and the cutting of it.
+//
+// THE STORY IN THEM: the cult's captives cut the giant obelisks here, that will stand round the Drowned
+// Eye's pool on floor 10 burning pink. Here they are only cut and chalked: the cult's mark (the
+// shrieking skull, face on, its jaw dropped wide: floor 5's) is cut into the obelisk and chalked, and
+// nothing glows. (His rulebook, Colour 3: nothing in a place glows pink.)
+//
+// THE RULES THEY KEEP: crisp pixels, two to a game pixel; light from the upper left (floor 4's painter in
+// depth, Scene, lit as every piece of the Crypt was); the indigo seam where one thing ends before another
+// (compose); in daylight, so a step brighter than the Crypt's pieces, and still a step quieter than the
+// figures and duller than any word; each thing's soft shadow the game's (a piece's `shadow`).
+//
+// Measures as floor 4's Scene: across the floor 40 units to a tile (x down the screen to the right, y
+// down it to the left), heights in picture pixels; each picture anchored at the middle of its foot.
+
+import { Px } from '../engine/px';
+import type { Sprite } from '../engine/px';
+import { Scene, XYZ, facetOf, toneAt } from './floor4';
+import type { V3 } from './floor4';
+import { TOWARD } from './floor2';
+import type { Piece } from './floorkit';
+import { GRAIN, compose, hash, mix } from './kit';
+import type { Ramp } from './kit';
+
+// =================================================================================================
+// The colours: the quarry's own, in daylight
+
+/** THE CUT LIMESTONE, the walls' own (art/quarry.ts Q_WALL): its deep shade, shade, body, lit, top in the sun. */
+export const STONE: Ramp = ['#6f6680', '#8f8598', '#b1a497', '#d4c7b7', '#ebe1d3'];
+/** Stone freshly cut: a little warmer and paler (the obelisk, the blocks just lifted). */
+export const FRESH: Ramp = ['#746a7e', '#94899a', '#b7ab9e', '#d6cbbb', '#e8dfd1'];
+/** Weathered pine timber, warm and grey (never toward pink). */
+export const TIMBER: Ramp = ['#3a2b28', '#55402f', '#765a42', '#937455', '#ad8e6c'];
+/** Iron, dark and blue-grey, its edges catching the light. */
+export const IRON: Ramp = ['#24222e', '#353342', '#4e4c5e', '#727083', '#9a98aa'];
+/** Hemp rope, pale. */
+export const ROPE: Ramp = ['#56493b', '#6d5d4a', '#8b7a61', '#a99678', '#c2b192'];
+/** The mountain's grey rock (art/quarry.ts Q_ROCK), as what stands and lies. */
+export const ROCK: Ramp = ['#45404f', '#5e5866', '#78717e', '#928b96', '#a8a1aa'];
+/** The pines of the mountain, deep green, darker than any word. */
+export const PINE: Ramp = ['#142519', '#1c3322', '#27452c', '#355a37', '#4a7245'];
+/** Chalk, bone-pale: the cult's marks drawn on the stone before it is cut. */
+const CHALK = '#e9e4dc';
+/** The deep dark of a cut into the stone. */
+const CUT = '#4a4258';
+
+// =================================================================================================
+// Little helpers in the world's own measure
+
+const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const mul = (a: V3, k: number): V3 => [a[0] * k, a[1] * k, a[2] * k];
+const dot = (a: readonly number[], b: readonly number[]): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const norm = (a: V3): V3 => {
+  const n = Math.hypot(a[0], a[1], a[2]) || 1;
+  return [a[0] / n, a[1] / n, a[2] / n];
+};
+const fr = (t: number): number => t - Math.floor(t);
+
+/** The way a flat piece of the world turned to the eye looks: the normal of q, seen side out. */
+function seenNormal(q: readonly [V3, V3, V3, V3]): V3 {
+  const n = norm(cross(sub(q[1], q[0]), sub(q[3], q[0])));
+  return dot(n, TOWARD) >= 0 ? n : mul(n, -1);
+}
+
+/** Axes for a beam from a to b: along it, then two across it. */
+function beamAxes(a: V3, b: V3): [V3, V3, V3] {
+  const A = norm(sub(b, a));
+  const up: V3 = Math.abs(A[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1];
+  const B = norm(cross(up, A));
+  const C = norm(cross(A, B));
+  return [A, B, C];
+}
+
+/** A SQUARED TIMBER from a to b, `t` half as thick: its grain along it, its end grain dark, an iron band where `bands` say (0..1 along it). */
+function timber(S: Scene, a: V3, b: V3, t: number, id: number, bands: readonly number[] = []): void {
+  const ax = beamAxes(a, b);
+  const len = Math.hypot(...sub(b, a));
+  S.box(mul(add(a, b), 0.5), ax, [len / 2, t, t], (f, u, v, n) => {
+    if (f < 2) return TIMBER[0]; // its ends
+    const along = f === 2 || f === 3 ? v : u; // (a side's own measures: along the beam is its second on +-A1, its first on +-A2)
+    for (const k of bands) if (Math.abs(along - k) < 0.025) return toneAt(n, IRON, 0.2);
+    if (Math.abs(fr(along * 3 + hash(f, id, 900) * 0.7) - 0.5) < 0.04) return TIMBER[1]; // a crack along its grain
+    return toneAt(n, TIMBER, -0.05);
+  }, id);
+}
+
+/** A ROPE from a to b, sagging `sag` at its middle: a line of the rope's tones, thin. */
+function rope(S: Scene, a: V3, b: V3, sag: number, id: number, r = 0.55): void {
+  const n = Math.max(2, Math.ceil(Math.hypot(...sub(b, a)) / 6));
+  let prev = a;
+  for (let i = 1; i <= n; i++) {
+    const t = i / n;
+    const p = add(add(a, mul(sub(b, a), t)), [0, 0, -sag * 4 * t * (1 - t)]);
+    S.rod(prev, p, r, r, ROPE, id);
+    prev = p;
+  }
+}
+
+/** A WHEEL of iron, small and solid: its rim lit on its upper side, its hub and bolts. `face` the way its outer side looks. */
+function ironWheel(S: Scene, c: V3, face: V3, R: number, id: number): void {
+  const F = norm(face);
+  const Au = norm(cross(F, [0, 0, 1]));
+  const Bu = norm(cross(F, Au));
+  S.egg(sub(c, mul(F, 0.9)), [F, Au, Bu], [0.5, R + 0.7, R + 0.7], () => IRON[0], id);
+  S.egg(c, [F, Au, Bu], [0.75, R, R], (n, w) => {
+    const q = sub(w, c);
+    const a = dot(q, Au);
+    const b = dot(q, Bu);
+    const r = Math.hypot(a, b);
+    const up = b / (r || 1);
+    if (Math.abs(dot(n, F)) < 0.55) return up < -0.2 ? IRON[3] : IRON[1];
+    if (r > R - 1) return up < 0 ? IRON[3] : IRON[2];
+    if (r < 1.1) return IRON[4];
+    return toneAt(n, IRON, 0.1);
+  }, id);
+}
+
+/** Finish a scene: its seams, and the indigo seam round it, anchored at (ox, oy). */
+function finish(S: Scene, ox: number, oy: number, under: Px | null = null): Sprite {
+  S.seams();
+  return compose(under, [S.p], null).sprite(ox, oy, GRAIN);
+}
+
+// =================================================================================================
+// THE STONE AND THE CUTTING OF IT
+
+/**
+ * How the face of a block is dressed: the tool marks of the cutting in rows across its top, the
+ * half-drill holes along its edges where it was split from the bed (on the sides that were split), a
+ * chip off a corner. `u`, `v` 0..1 across the face; `w`, `h` its size in picture pixels, roughly.
+ */
+function dressed(r: Ramp, n: V3, face: number, u: number, v: number, seed: number, split: boolean): string {
+  const base = toneAt(n, r, 0.02);
+  if (face === 4) {
+    // its top: the marks of the pick in rows, all one way, the lit tone and the body's
+    const row = fr(v * 7 + hash(seed, 1, 910) * 0.5);
+    const col = fr(u * 11 + Math.floor(v * 7) * 0.37);
+    if (row < 0.14 && col < 0.42) return r[3];
+    return base;
+  }
+  if (split && v < 0.32) {
+    // the half-drill holes down from its top edge on a side it was split along
+    const k = fr(u * 9 + hash(seed, face, 911) * 0.5);
+    if (k < 0.1) return r[Math.max(0, r.indexOf(base) - 1)] ?? r[1];
+  }
+  if (v > 0.9) return mix(base, r[0], 0.35); // its foot in the dust
+  return base;
+}
+
+/** A CUT BLOCK of the limestone, about waist high, `k` its look (0: plain; 1: split from the bed, its drill holes on two sides; 2: with a chalk line where it is to be split again). 64 x 64 at (32, 46). */
+function cutBlock(k: number): Sprite {
+  const S = new Scene(new Px(64, 66), 32, 46);
+  const h = 15 + (k === 2 ? 2 : 0);
+  S.box([0, 0, h], XYZ, [16, 15, h], (f, u, v, n) => {
+    let c = dressed(k === 0 ? STONE : FRESH, n, f, u, v, 30 + k, k === 1);
+    if (k === 2 && f === 4 && Math.abs(u - 0.52) < 0.035) c = CHALK; // the chalk line across its top
+    return c;
+  }, 1);
+  return finish(S, 32, 46);
+}
+
+/** TWO CUT BLOCKS STACKED, the upper set back and turned on it, wooden wedges under its corner. 72 x 92 at (36, 70). */
+function stackedBlocks(): Sprite {
+  const S = new Scene(new Px(72, 92), 36, 70);
+  S.box([0, 0, 15], XYZ, [17, 15, 15], (f, u, v, n) => dressed(STONE, n, f, u, v, 41, true), 1);
+  S.box([-2, 2, 30 + 14], XYZ, [14, 12, 14], (f, u, v, n) => dressed(FRESH, n, f, u, v, 42, false), 2);
+  S.box([11, 12, 31], XYZ, [2.6, 2, 1.2], (_f, _u, _v, n) => toneAt(n, TIMBER, 0.1), 3);
+  return finish(S, 36, 70);
+}
+
+/**
+ * THE SHRIEKING SKULL, the cult's mark (floor 5's own: face on, its jaw dropped wide open), as it is cut
+ * into a face: is the place (a, b) (in units, a down the mark, b across it, its size `s`) in its cut?
+ */
+function inMark(a: number, b: number, s: number): 'cut' | 'lip' | null {
+  const x = b / s;
+  const y = a / s;
+  const skull = (x * x) / 0.7 + ((y + 0.35) * (y + 0.35)) / 0.62 < 1; // the cranium
+  const jaw = Math.abs(x) < 0.5 - Math.max(0, y - 0.6) * 0.6 && y > 0.25 && y < 1.15; // the jaw dropped
+  const mouth = Math.abs(x) < 0.3 && y > 0.4 && y < 1.0; // its mouth wide open
+  const eye = (Math.hypot(x - 0.32, y + 0.25) < 0.2 || Math.hypot(x + 0.32, y + 0.25) < 0.2);
+  const outline = (skull || jaw) && !((x * x) / 0.58 + ((y + 0.35) * (y + 0.35)) / 0.5 < 1 && !jaw) && !(jaw && Math.abs(x) < 0.38 - Math.max(0, y - 0.6) * 0.6 && y > 0.32 && y < 1.08);
+  if (eye || mouth) return 'cut';
+  if (outline) return 'lip';
+  return null;
+}
+
+/**
+ * THE GREAT OBELISK, lying where it was split from the rock: a long tapering shaft of the fresh stone
+ * along x, its point (the pyramidion) toward +x, still rough at its base end; the marks of the picks
+ * down its top in rows; the cult's mark cut into its top near the base and chalked, its first runes
+ * scored after it (nothing glows: they are lit at the Fen); the half-drill holes along its foot where
+ * it came off the bed. 3 tiles and a half long. 184 x 124 at (88, 76).
+ */
+function obelisk(): Sprite {
+  const S = new Scene(new Px(184, 124), 88, 76);
+  const X0 = -66;
+  const X1 = 58;
+  const TIP = 84;
+  const W0 = 15;
+  const W1 = 10;
+  const H0 = 28;
+  const H1 = 18;
+  const top: [V3, V3, V3, V3] = [[X0, -W0, H0], [X1, -W1, H1], [X1, W1, H1], [X0, W0, H0]];
+  const side: [V3, V3, V3, V3] = [[X0, W0, 0], [X1, W1, 0], [X1, W1, H1], [X0, W0, H0]];
+  const nTop = seenNormal(top);
+  const nSide = seenNormal(side);
+  const LEN = X1 - X0;
+  // its top: rows of pick marks, the mark and the runes
+  S.quad(top, (u, v) => {
+    const a = (u - 0.14) * LEN;
+    const b = (v - 0.5) * (2 * (W0 + (W1 - W0) * u));
+    const m = inMark(a, b, 12);
+    if (m === 'cut') return CUT;
+    if (m === 'lip') return FRESH[1];
+    // the chalk lines where the next faces are to be dressed, along it
+    if (u > 0.3 && Math.abs(v - 0.16) < 0.02) return CHALK;
+    // the base end still rough, not yet dressed
+    if (u < 0.05) return hash(Math.floor(u * 90), Math.floor(v * 20), 921) > 0.5 ? FRESH[2] : FRESH[3];
+    const row = fr(u * 26);
+    const col = fr(v * 6 + Math.floor(u * 26) * 0.45);
+    if (row < 0.16 && col < 0.5) return FRESH[3];
+    return toneAt(nTop, FRESH, 0.04);
+  }, 1);
+  // its side toward the eye: the drill holes along its foot, the pick marks fainter
+  S.quad(side, (u, v) => {
+    if (v < 0.22) {
+      const k = fr(u * 30);
+      if (k < 0.12) return FRESH[1];
+    }
+    if (v > 0.93) return FRESH[3]; // its top edge catching the light
+    if (u < 0.04) return FRESH[2];
+    const row = fr(u * 26 + 0.5);
+    if (row < 0.1 && v > 0.35 && v < 0.85) return FRESH[2];
+    return toneAt(nSide, FRESH, 0);
+  }, 1);
+  // its point: four faces to the tip; the two seen
+  const A: V3 = [TIP, 0, H1 * 0.5];
+  const P2: V3 = [X1, W1, 0];
+  const P3: V3 = [X1, W1, H1];
+  const P4: V3 = [X1, -W1, H1];
+  const tf: [V3, V3, V3, V3] = [P4, P3, A, A];
+  const sf: [V3, V3, V3, V3] = [P2, P3, A, A];
+  S.quad(tf, (u, v) => (v < 0.08 ? FRESH[4] : toneAt(seenNormal(tf), FRESH, 0.05)), 2);
+  S.quad(sf, (u, v) => (v < 0.06 ? FRESH[3] : toneAt(seenNormal(sf), FRESH, -0.04)), 2);
+  return finish(S, 88, 76);
+}
+
+/**
+ * WEDGES AND A SLEDGE: the tools of the splitting left on the bed: a long-handled sledgehammer lying,
+ * its iron head; three iron wedges and their feathers; a chisel. Lying on the floor. 64 x 40 at (32, 22).
+ */
+function splittingTools(): Sprite {
+  const S = new Scene(new Px(64, 40), 32, 22);
+  // the sledgehammer: its haft along, its head across at the end
+  S.rod([-18, -6, 1.4], [14, 6, 1.4], 1.1, 1.1, TIMBER, 1);
+  S.box([16, 7, 3], beamAxes([16, 2, 3], [16, 12, 3]), [6, 2.6, 2.6], (_f, _u, _v, n) => toneAt(n, IRON, 0.15), 2);
+  // the wedges, small and dark, in a row, their struck heads lit
+  for (let i = 0; i < 3; i++) {
+    const c: V3 = [-14 + i * 7, 10 + i * 2, 1.4];
+    S.box(c, XYZ, [2.6, 1.3, 1.4], (f, _u, _v, n) => (f === 0 ? IRON[4] : toneAt(n, IRON, 0.1)), 3 + i);
+  }
+  // a chisel
+  S.rod([-4, -12, 1], [8, -9, 1], 0.7, 0.5, IRON, 7);
+  return finish(S, 32, 22);
+}
+
+/**
+ * A HEAP OF CHIPPINGS: the spoil of the cutting, swept up against the wall or by the cart: a low mound
+ * of dust and broken stone, lumps of the fresh stone in it and on it. 72 x 44 at (36, 30).
+ */
+function chippings(k: number): Sprite {
+  const S = new Scene(new Px(80, 44), 40, 30);
+  // the heap: a few low lobes run together, the broken stone's grey with flakes of the fresh in it
+  const lobes: [number, number, number, number, number][] = [[0, 0, 22 + k * 3, 16, 7 + k], [-14, 6, 13, 10, 4], [15, -4, 12, 10, 4.5], [5, 10, 10, 8, 3.5]];
+  lobes.forEach(([x, y, rx, ry, rz], i) => {
+    S.egg([x, y, 0], beamAxes([0, 0, 0], [1, (i - 1.5) * 0.3, 0]), [rx, ry, rz], (n, w) => {
+      const g = hash(Math.floor(w[0] / 1.6), Math.floor(w[1] / 1.6), 930 + k);
+      if (g > 0.84) return n[2] > 0.5 ? FRESH[4] : FRESH[3];
+      if (g < 0.05) return STONE[1];
+      return toneAt(n, STONE, -0.02);
+    }, 1);
+  });
+  // lumps on it and round its foot, each faceted
+  for (let i = 0; i < 6; i++) {
+    const a = hash(i, 1, 931 + k) * Math.PI * 2;
+    const r = 4 + hash(i, 2, 931 + k) * 22;
+    const x = Math.cos(a) * r;
+    const y = Math.sin(a) * r * 0.7;
+    const top = (7 + k) * Math.sqrt(Math.max(0, 1 - (x / (22 + k * 3)) ** 2 - (y / 16) ** 2));
+    const sz = 1.8 + hash(i, 3, 931) * 2.4;
+    S.egg([x, y, Math.max(0.6, top - 0.8)], beamAxes([0, 0, 0], [1, hash(i, 6, 931) - 0.5, 0.3]), [sz * 1.2, sz, sz * 0.8], facetOf(i % 2 ? FRESH : STONE, 0.05), 1);
+  }
+  return finish(S, 40, 30);
+}
+
+// =================================================================================================
+// THE WORKINGS: crane, cart, rails, sledge, scaffold
+
+/**
+ * THE CRANE: a wooden derrick over the pit: its mast up from a cross of sills on the bed, two stays to
+ * the sills' ends, its boom leaning out up the screen to the right from the mast's foot, the topping rope
+ * from the mast's head to the boom's end, the hoist rope down from there to a chain, a hook, and a block
+ * of the stone slung on it, hanging; a windlass at the mast's foot with the rope wound on it. Tall: the
+ * game sees it through while someone is behind it (the tent's way, his rule). 132 x 196 at (52, 168).
+ */
+function crane(): Sprite {
+  const S = new Scene(new Px(132, 196), 52, 168);
+  // the sills, crossed on the bed
+  timber(S, [-30, 0, 2.4], [30, 0, 2.4], 2.4, 1, [0.08, 0.92]);
+  timber(S, [0, -28, 2.4], [0, 28, 2.4], 2.4, 2, [0.08, 0.92]);
+  // the mast, its head bound in iron
+  timber(S, [0, 0, 4], [0, 0, 150], 3, 3, [0.32, 0.96]);
+  // its stays, back to the sills' ends
+  timber(S, [-1, 1, 120], [-28, 0, 5], 1.8, 4);
+  timber(S, [1, 1, 120], [0, 26, 5], 1.8, 5);
+  // the boom, out and up toward -y
+  const tip: V3 = [0, -74, 132];
+  timber(S, [0, -3, 18], tip, 2.4, 6, [0.5, 0.97]);
+  // the topping rope, mast head to boom end
+  rope(S, [0, -1.5, 148], add(tip, [0, 0, 1]), 2, 7);
+  // the hoist rope down, a chain, the hook, the slings and the block
+  const hang = 62;
+  rope(S, tip, [0, -74, hang + 14], 0, 8, 0.6);
+  for (let z = hang + 14; z > hang + 4; z -= 2.4) S.ball([0, -74, z], 0.9, IRON, 9, undefined, 0.1);
+  S.rod([0, -74, hang + 4], [0, -74, hang + 1], 0.9, 0.6, IRON, 10);
+  const B: V3 = [0, -74, hang - 14];
+  for (const [dx, dy] of [[-11, -10], [11, -10], [-11, 10], [11, 10]] as const) rope(S, [0, -74, hang + 1], [dx, -74 + dy, hang - 2], 0, 11, 0.5);
+  S.box(B, XYZ, [12, 11, 12], (f, u, v, n) => dressed(FRESH, n, f, u, v, 50, true), 12);
+  // the windlass at its foot: a drum of rope between two posts, a handle each end
+  timber(S, [10, 14, 0], [10, 14, 20], 1.6, 13);
+  timber(S, [24, 14, 0], [24, 14, 20], 1.6, 14);
+  S.rod([11, 14, 14], [23, 14, 14], 4.2, 4.2, ROPE, 15);
+  S.rod([8, 14, 14], [26, 14, 14], 1, 1, IRON, 16);
+  S.rod([26, 14, 14], [26, 20, 9], 0.8, 0.8, IRON, 17);
+  S.rod([8, 14, 14], [8, 8, 19], 0.8, 0.8, IRON, 18);
+  return finish(S, 52, 168);
+}
+
+/**
+ * THE CART OF RUBBLE: a wooden tub on an iron chassis, wider at its top than its foot, iron straps down
+ * its corners, four small iron wheels flanged for the rails; heaped with the broken stone of the
+ * cutting. Along x, as the rails run. 84 x 76 at (42, 54).
+ */
+function rubbleCart(heaped: boolean, alongY = false): Sprite {
+  const S = new Scene(new Px(84, 76), 42, 54);
+  // its own axes: along it, across it (along x, or turned to run along y)
+  const L: V3 = alongY ? [0, 1, 0] : [1, 0, 0];
+  const Wd: V3 = alongY ? [1, 0, 0] : [0, 1, 0];
+  const P = (l: number, w: number, z: number): V3 => add(add(mul(L, l), mul(Wd, w)), [0, 0, z]);
+  const l0 = 13;
+  const w0 = 8;
+  const l1 = 16;
+  const w1 = 11;
+  const z0 = 7;
+  const z1 = 28;
+  const b = (sl: number, sw: number): V3 => P(sl * l0, sw * w0, z0);
+  const t = (sl: number, sw: number): V3 => P(sl * l1, sw * w1, z1);
+  const mid: V3 = [0, 0, (z0 + z1) / 2];
+  const side = (q: [V3, V3, V3, V3], id: number): void => {
+    const n0 = norm(cross(sub(q[1], q[0]), sub(q[3], q[0])));
+    const out = dot(n0, sub(q[0], mid)) > 0 ? n0 : mul(n0, -1);
+    const seen = dot(out, TOWARD) > 0;
+    S.quad(q, (u, v) => {
+      if (!seen) return v > 0.92 ? TIMBER[3] : toneAt(mul(out, -1), TIMBER, -0.3);
+      if (v > 0.92) return toneAt(out, TIMBER, 0.45); // its rim
+      if (u < 0.07 || u > 0.93) return toneAt(out, IRON, u < 0.07 ? 0.3 : 0.15); // the corner straps
+      if (Math.abs(fr(v * 4) - 0.5) < 0.05) return TIMBER[1]; // the boards
+      if (Math.abs(v - 0.5) < 0.06) return toneAt(out, IRON, 0.25); // a band of iron round it
+      return toneAt(out, TIMBER, 0);
+    }, id);
+  };
+  S.quad([b(-1, -1), b(1, -1), b(1, 1), b(-1, 1)], () => TIMBER[1], 1);
+  side([b(-1, 1), b(1, 1), t(1, 1), t(-1, 1)], 1);
+  side([b(1, -1), b(-1, -1), t(-1, -1), t(1, -1)], 1);
+  side([b(1, 1), b(1, -1), t(1, -1), t(1, 1)], 1);
+  side([b(-1, -1), b(-1, 1), t(-1, 1), t(-1, -1)], 1);
+  // the chassis and the axles
+  S.box([0, 0, 5], alongY ? [Wd, L, [0, 0, 1]] : XYZ, alongY ? [6, 12, 1.6] : [12, 6, 1.6], (_f, _u, _v, n) => toneAt(n, IRON, 0), 2);
+  for (const sl of [-1, 1]) {
+    S.rod(P(sl * 9, -8.5, 5), P(sl * 9, 8.5, 5), 0.9, 0.9, IRON, 3);
+    for (const sw of [-1, 1]) ironWheel(S, P(sl * 9, sw * 8.4, 5), mul(Wd, sw), 4.8, 4 + (sl + 1) + (sw + 1) / 2);
+  }
+  // the load: the broken stone heaped over its rim
+  if (heaped) {
+    for (let i = 0; i < 14; i++) {
+      const x = -12 + (i % 5) * 6 + hash(i, 1, 940) * 3;
+      const y = -8 + Math.floor(i / 5) * 7 + hash(i, 2, 940) * 3;
+      const z = z1 - 1 + (Math.abs(x) < 8 && Math.abs(y) < 6 ? 5 : 1) + hash(i, 3, 940) * 3;
+      S.egg(P(x, y, z), XYZ, [3.4 + hash(i, 4, 940) * 1.5, 3 + hash(i, 5, 940), 2.6 + hash(i, 6, 940)], facetOf(i % 3 ? FRESH : STONE, 0.05), 10 + i);
+    }
+  }
+  return finish(S, 42, 54);
+}
+
+/** A tile's pixel (in a 64 x 32 diamond, its top corner at (32, 0)) in the tile's own measure, 64 to a tile along x (U) and y (V); null off it. */
+function tileUV(px: number, py: number): [number, number] | null {
+  const U = px - 32 + 2 * py + 1.5;
+  const V = 2 * py - (px - 32) + 0.5;
+  if (U < 0 || V < 0 || U >= 64 || V >= 64) return null;
+  return [U, V];
+}
+
+/**
+ * THE RAILS, a floor tile: two iron rails on timber sleepers bedded in the dust, along x (`alongY`
+ * false) or along y; one tile of them, laid end to end by the game (each rail one picture pixel thick,
+ * crisp: its top lit, its side under it in shade). `end`: the last tile, its sleepers stopping and the
+ * rails' ends. 64 x 33 at (32, 0).
+ */
+function railsTile(alongY: boolean, end: boolean): Sprite {
+  const p = new Px(64, 33);
+  for (let py = 0; py < 33; py++) {
+    for (let px = 0; px < 64; px++) {
+      const uv = tileUV(px, py);
+      if (!uv) continue;
+      const along = alongY ? uv[1] : uv[0];
+      const across = alongY ? uv[0] : uv[1];
+      if (end && along > 46) continue;
+      // the sleepers: one every quarter tile, each a little crooked, their lit top row and shaded foot
+      const s = along % 16;
+      const k = Math.floor(along / 16);
+      const jog = Math.floor(hash(k, 1, 950) * 3) - 1;
+      if (s >= 2 && s < 8 && across >= 11 + jog && across < 53 + jog) {
+        const row = s < 4 ? 3 : s >= 6.5 ? 1 : 2;
+        p.set(px, py, TIMBER[row]);
+      }
+      // the ballast showing between them: a little darker grit, in clumps
+      else if (across >= 13 && across < 51 && hash(px >> 1, py, 951) > 0.8) p.set(px, py, STONE[1]);
+      // the rails
+      for (const r of [17, 45]) {
+        if (across >= r && across < r + 2) p.set(px, py, IRON[4]);
+        else if (across >= r + 2 && across < r + 4) p.set(px, py, IRON[1]);
+      }
+    }
+  }
+  return p.sprite(32, 0, GRAIN);
+}
+
+/**
+ * A SLEDGE ON ROLLERS: how the great stones are moved: a block of the fresh stone on a sledge of two
+ * squared runners, the runners on three logs laid across, a rope made fast to the sledge's front and
+ * lying out along the bed toward whoever will haul it. 96 x 76 at (48, 52).
+ */
+function sledge(): Sprite {
+  const S = new Scene(new Px(96, 76), 48, 52);
+  for (let i = 0; i < 3; i++) S.rod([-16 + i * 16, -16, 3.2], [-16 + i * 16, 16, 3.2], 3.2, 3.2, TIMBER, 1 + i);
+  for (const y of [-9, 9]) timber(S, [-26, y, 8.6], [26, y, 8.6], 2.4, 5 + (y > 0 ? 1 : 0));
+  timber(S, [24, -12, 9], [24, 12, 9], 2, 7);
+  S.box([0, 0, 11 + 13], XYZ, [20, 14, 13], (f, u, v, n) => dressed(FRESH, n, f, u, v, 60, true), 8);
+  rope(S, [26, 0, 9], [44, 6, 0.8], 0, 9, 0.7);
+  rope(S, [44, 6, 0.8], [54, -2, 0.8], 0, 9, 0.7);
+  return finish(S, 48, 52);
+}
+
+/**
+ * SCAFFOLDING against a face: three poles, two ledgers lashed across them, planks laid on the upper, a
+ * brace across, the lashings of rope at the joints; for a far wall's foot, or a top (where it stands
+ * clear of the floor). 88 x 128 at (44, 104).
+ */
+function scaffold(): Sprite {
+  const S = new Scene(new Px(88, 128), 44, 104);
+  const poles: V3[] = [[-26, 2, 0], [0, 0, 0], [26, -2, 0]];
+  poles.forEach((q, i) => S.rod(q, add(q, [0, 0, 92 - i * 4]), 1.6, 1.4, TIMBER, 1 + i));
+  for (const z of [30, 62]) S.rod([-30, 2.4, z], [30, -2.4, z], 1.3, 1.3, TIMBER, 5);
+  // the planks on the upper ledger, a little out toward the eye
+  S.box([0, 4, 64.5], XYZ, [28, 5, 1.2], (f, u, _v, n) => (f === 4 && Math.abs(fr(u * 4) - 0.5) < 0.05 ? TIMBER[1] : toneAt(n, TIMBER, 0.1)), 6);
+  // a brace across
+  S.rod([-26, 2.4, 6], [0, 0.6, 58], 1.1, 1.1, TIMBER, 7);
+  // the lashings
+  for (const q of poles) for (const z of [30, 62]) S.egg(add(q, [0, 0.4, z]), XYZ, [2.4, 2.4, 1.4], (n) => toneAt(n, ROPE, 0.1), 8);
+  return finish(S, 44, 104);
+}
+
+// =================================================================================================
+// THE MOUNTAIN: pines and rocks (for the tops, and for every floor of the set where the mountain is)
+
+/**
+ * A PINE OF THE MOUNTAIN: a straight dark trunk, its branches in tiers that droop and taper to its top,
+ * each tier lit on its upper left and shaded under and to the right, ragged at its foot; `size` 0..1.
+ * Painted flat, as a tree is seen. 72 x (64 to 132) at (36, foot).
+ */
+export function pine(size: number, seed: number): Sprite {
+  const H = Math.round(70 + size * 66);
+  const W = 76;
+  const cx = 38;
+  const foot = H - 6;
+  const p = new Px(W, H);
+  // its trunk, showing under the lowest boughs
+  for (let y = foot - 14; y <= foot; y++) for (let x = cx - 2; x <= cx + 1; x++) p.set(x, y, x < cx - 1 ? TIMBER[2] : x > cx ? TIMBER[0] : TIMBER[1]);
+  const tiers = 5 + Math.round(size * 2);
+  const top = 5;
+  const bottom = foot - 10;
+  const wide = (W / 2 - 4) * (0.78 + 0.22 * size);
+  // from the lowest tier up, so that each tier lies over the one below it
+  for (let t = tiers - 1; t >= 0; t--) {
+    const k = (t + 1) / tiers;
+    const ty = top + (bottom - top) * Math.pow(t / tiers, 1.05);
+    const by = top + (bottom - top) * Math.pow(k, 1.05);
+    const half = 5 + wide * Math.pow(k, 0.9);
+    for (let y = Math.floor(ty); y <= Math.ceil(by) + 2; y++) {
+      const f = Math.max(0, (y - ty) / (by - ty || 1));
+      for (let x = Math.floor(cx - half - 3); x <= Math.ceil(cx + half + 3); x++) {
+        const dx = x + 0.5 - cx;
+        const ad = Math.abs(dx);
+        // its sides: branch tips in a saw, pointing down and out
+        const saw = fr((y - ty) / 3.2 + (dx < 0 ? 0.37 : 0) + seed * 0.13);
+        const reach = half * Math.min(1, f * 1.05) * (0.86 + 0.14 * saw);
+        if (ad > reach) continue;
+        // its foot: the boughs hanging lowest at their tips, lifting between them toward the trunk
+        const tip = 0.5 + 0.5 * Math.cos(dx * 0.62 + seed);
+        const lowest = by + 2 * tip * (ad / (half + 1)) - (1 - ad / (half + 1)) * 1.5;
+        if (y > lowest) continue;
+        const side = dx / (half + 1);
+        const under = lowest - y; // how far above its own foot
+        let tone = 2;
+        if (side < -0.25) tone = 3; // the upper left of the tier, in the sun
+        if (side > 0.35) tone = 1; // its right, in shade
+        if (under < 1.5 && side > -0.1) tone = Math.max(0, tone - 1); // the shade under its boughs
+        if (side < -0.45 && f < 0.6 && hash(x >> 1, y >> 1, seed) > 0.55) tone = 4; // needles catching the light
+        if (side > 0.6 && under < 2.5) tone = 0;
+        p.set(x, y, PINE[tone]);
+      }
+    }
+  }
+  // its leader, a spire at the top
+  p.set(cx - 1, top - 3, PINE[2]).set(cx - 1, top - 2, PINE[3]).set(cx - 1, top - 1, PINE[3]).set(cx, top - 1, PINE[2]);
+  return compose(null, [p], null).sprite(cx, foot, GRAIN);
+}
+
+/** A BOULDER of the mountain's grey rock, faceted, a lichen of the grass's green on its top here and there; `size` 0..2. 72 x 58 at (36, 42). */
+export function boulder(size: number, seed: number): Sprite {
+  const S = new Scene(new Px(72, 58), 36, 42);
+  const r = 10 + size * 5;
+  const facet = facetOf(ROCK, 0.05);
+  S.egg([0, 0, r * 0.55], beamAxes([0, 0, 0], [1, 0.4, 0]), [r * 1.15, r * 0.9, r * 0.75], (n, w) => {
+    const c = facet(n);
+    if (n[2] > 0.8 && hash(Math.floor(w[0] / 3), Math.floor(w[1] / 3), seed) > 0.86) return '#5f7c48';
+    return c;
+  }, 1);
+  S.egg([r * 0.6, r * 0.5, r * 0.32], XYZ, [r * 0.6, r * 0.55, r * 0.42], facet, 2);
+  return finish(S, 36, 42);
+}
+
+// =================================================================================================
+// THE LIST
+
+let made: Piece[] | null = null;
+/** THE QUARRY'S PIECES SO FAR (the first of its 25), by name, made once. */
+export function quarryPieces(): Piece[] {
+  if (made) return made;
+  made = [
+    // obstacles
+    { name: 'cut block', kind: 'obstacle', frames: [cutBlock(0)], shadow: 0.45 },
+    { name: 'block split from the bed', kind: 'obstacle', frames: [cutBlock(1)], shadow: 0.45 },
+    { name: 'block marked to split', kind: 'obstacle', frames: [cutBlock(2)], shadow: 0.45 },
+    { name: 'stacked blocks', kind: 'obstacle', frames: [stackedBlocks()], shadow: 0.5 },
+    { name: 'the great obelisk', kind: 'obstacle', frames: [obelisk()], shadow: 0.9 },
+    { name: 'the crane', kind: 'obstacle', frames: [crane()], shadow: 0.6 },
+    { name: 'cart of rubble', kind: 'obstacle', frames: [rubbleCart(true), rubbleCart(true, true)], shadow: 0.42 },
+    { name: 'empty cart', kind: 'obstacle', frames: [rubbleCart(false), rubbleCart(false, true)], shadow: 0.42 },
+    { name: 'sledge on rollers', kind: 'obstacle', frames: [sledge()], shadow: 0.6 },
+    { name: 'scaffolding', kind: 'obstacle', frames: [scaffold()], shadow: 0.5 },
+    // floor tiles
+    { name: 'rails', kind: 'floor tile', frames: [railsTile(false, false), railsTile(true, false), railsTile(false, true), railsTile(true, true)] },
+    // on the floor
+    { name: 'splitting tools', kind: 'on the floor', frames: [splittingTools()] },
+    { name: 'chippings', kind: 'on the floor', frames: [chippings(0), chippings(1)], shadow: 0.3 },
+    // the mountain's (for the tops and the set)
+    { name: 'pine', kind: 'obstacle', frames: [pine(0.2, 3), pine(0.55, 11), pine(0.9, 17)], shadow: 0.4 },
+    { name: 'boulder', kind: 'obstacle', frames: [boulder(0, 5), boulder(1, 9), boulder(2, 13)], shadow: 0.36 },
+  ];
+  return made;
+}
