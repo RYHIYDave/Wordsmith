@@ -54,7 +54,7 @@ type SkinFn = (u: V3, tone: number, x: number, y: number) => string | null;
 // amalgamation 110); a statue's: shoulders broad as a gate, a deep chest, short heavy legs, long arms,
 // limbs as thick as pillars, a head small for its bulk.
 
-export const UF_TALL = 224;
+export const UF_TALL = 236;
 export const UF_BODY: Build = buildOf(UF_TALL, 0.95, { shoulders: 1.55, chest: 1.45, depth: 1.3, waist: 1.2, hips: 1.25, legs: 0.84, arms: 1.24, trunk: 1.04, limbs: 2.0, pad: 5 });
 const B = UF_BODY;
 

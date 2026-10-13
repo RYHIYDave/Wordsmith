@@ -206,7 +206,8 @@ that stays as cover, a stomp that cracks the terrace.
 
 `src/art/unfinished.ts` (switch `UNFINISHED_ON`, off): built as every boss is, on the heroes' bones and in
 their solids (a `Mob` of art/new_mobs3.ts; its stand only so far, the rest its stand as placeholders, not
-for use). 224 tall: twice the Warden (tested: 2.1 times his picture's height). Its RIGHT side the finished
+for use). 236 tall: twice the Warden (its picture 131 game pixels high, stooping, to his 66: 1.98 times; tested
+to lie between 1.8 and 2.4). Its RIGHT side the finished
 statue (`POLISHED`: smooth, pale, a shine where the light falls full; a carved shoulder, arm and fist with
 its knuckles and thumb, a shaped thigh, kneecap, calf and foot with its toes, the belly's carved lines, the
 breast's edge; half a face: the band round the brow, the brow, a blank eye with the cult's fire waking in
