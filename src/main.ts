@@ -44,7 +44,7 @@ import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { drawBossCard, drawFloorCard } from './ui/cards';
 import type { BossCard, FloorCard } from './ui/cards';
@@ -1262,6 +1262,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         c.my = 0;
         // (THE WAYS: on the waypoint, it is used)
         if (e.kind === 'portal' || e.kind === 'way') c.interact = true;
+        // (HAND_IN: beside the one a quest item is for, it is given, by the rules, in place of his panel opening)
+        else if (g.handInNear()) c.interact = true;
         // (the body is searched by being walked up to, and a way through is taken by being walked into: there is nothing more to press)
         else if (e.kind !== 'body' && e.kind !== 'through') openStation(e.kind);
       } else {
@@ -2174,6 +2176,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      */
     ways: (on: boolean) => {
       WAYS.on = on;
+    },
+    /** (HAND_IN, game/defs.ts) quest items given by using the one they are for, for pictures and playtests */
+    handIn: (on: boolean) => {
+      HAND_IN.on = on;
     },
     /** (BOSS_INTRO, FLOOR_NAMES in game/defs.ts) the boss's entrance and the floors' names, for pictures */
     bossIntro: (on: boolean) => {
