@@ -19,6 +19,9 @@
 // With the hash "shot", the two together as one screen of the game on a phone held sideways,
 // 507 by 234 game pixels at 2 picture pixels to one, to lay under the game's real HUD:
 //   node tools/preview.mjs src/dev/preview_act1.ts shots/canyon_world.png 1014 468 shot
+// With the hash "ledge", the Ledge Road the same way, for its sky (his word of 18:34: "We’ll have to
+// work on the sky but the rock and the curves look good"):
+//   node tools/preview.mjs src/dev/preview_act1.ts shots/ledge_world.png 1014 468 ledge
 import { spriteOf3 } from '../art/heroes3';
 import { hash } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
@@ -32,8 +35,10 @@ const F = 2; // picture pixels per game pixel
 const Z = 2; // screen pixels per picture pixel
 /** "shot": one picture the size of the game's own screen on a phone held sideways (507 by 234 game pixels), to lay under the game's real HUD. */
 const SHOT = decodeURIComponent(location.hash.slice(1)) === 'shot';
-const PW = SHOT ? 1014 : 320 * F;
-const PH = SHOT ? 468 : 220 * F;
+/** "ledge": the Ledge Road as one screen of the game, for its sky (his word of 18:34). */
+const LEDGE = decodeURIComponent(location.hash.slice(1)) === 'ledge';
+const PW = SHOT || LEDGE ? 1014 : 320 * F;
+const PH = SHOT || LEDGE ? 468 : 220 * F;
 const HWf = 16 * F;
 const HHf = 8 * F;
 const OX = PW / 2;
@@ -426,12 +431,35 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way
     d[i + 1] *= 1 - t;
     d[i + 2] *= 1 - t;
   };
+  /** Does the floor's edge at (px, py) face south-east (down and to the right on the screen)? Read from where the floor lies round it. */
+  const facesSE = (px: number, py: number): boolean => {
+    let vx = 0;
+    let vy = 0;
+    for (let dy = -12; dy <= 12; dy++) {
+      for (let dx = -12; dx <= 12; dx++) {
+        if (kindAt(px + dx, py + dy) === K.Floor) {
+          vx += dx;
+          vy += dy;
+        }
+      }
+    }
+    const len = Math.hypot(vx, vy);
+    return len > 0 && -(vx + vy) / (len * Math.SQRT2) > 0.5;
+  };
   for (let py = 0; py < PH; py++) {
     for (let px = 0; px < PW; px++) {
       const k0 = kind[py * PW + px];
       if (k0 === K.Floor) {
         const below = kindAt(px, py + 1);
         const below2 = kindAt(px, py + 2);
+        // (his words, 20:50: "The black line at the edge of the foreground cliff doesn’t give the
+        // correct perspective"; then "Road still looks raised"; then, 21:01: "You just need to get the
+        // black shadow on the south east facing edges". So where the near cliff's top is in front,
+        // the floor runs to it with no line of its own; the black shadow under the edge is drawn
+        // only where the edge faces south-east, down and to the right on the screen.)
+        let under = false;
+        for (let k2 = 1; k2 <= 3; k2++) if (kindAt(px, py + k2) === K.Cut) under = true;
+        if (under) continue;
         if (L.lip && below !== K.Floor && below !== 0) put(px, py, L.lip);
         else if (L.lip && below2 !== K.Floor && below2 !== 0) put(px, py, mix(L.lip, [d[(py * PW + px) * 4], d[(py * PW + px) * 4 + 1], d[(py * PW + px) * 4 + 2]], 0.5));
         for (let k2 = 1; k2 <= 7; k2++) {
@@ -442,10 +470,11 @@ function paintLevel(g: CanvasRenderingContext2D, top: number, L: Level, way: Way
         }
       } else if (k0 === K.Top && kindAt(px, py + 1) === K.Face) put(px, py, mix(L.outside(...toWorld(px, py + H), px, py), [255, 250, 240], 0.35));
       else if (k0 === K.Cut) {
-        // the near wall, cut away: its cut face a band of dark rock under the ground's edge, as the game's walls toward the eye are left out
+        // the near cliff, cut away: its top runs right to the floor; the black shadow under the edge
+        // only where the edge faces south-east
         for (let k2 = 1; k2 <= 8; k2++) {
           if (kindAt(px, py - k2) === K.Floor) {
-            put(px, py, k2 <= 1 ? [24, 18, 34] : k2 >= 7 ? mix(L.outside(...toWorld(px, py + H), px, py), [30, 22, 40], 0.5) : [44, 36, 56]);
+            if (facesSE(px, py - k2)) put(px, py, k2 <= 1 ? [24, 18, 34] : k2 >= 7 ? mix(L.outside(...toWorld(px, py + H), px, py), [30, 22, 40], 0.5) : [44, 36, 56]);
             break;
           }
         }
@@ -1575,6 +1604,507 @@ const LEVELS: { L: Level; way?: Way }[] = BOTH
     { L: { ...quarry, title: 'The Quarry, the near walls drawn', note: 'the same: see-through round whoever is behind a wall' }, way: { full: true, foes: [quarryFoe] } },
   ]
   : [quarry, canyon, pinewood, fen].map((L) => ({ L }));
+// ---------------------------------------------------------------------------------------------
+// THE LEDGE ROAD'S SKY. His word of 18:34: "We’ll have to work on the sky but the rock and the curves
+// look good". The rock, the path and the round edge are the Ledge Road mock-up's (mockup/ledge-road,
+// his yes); the sky is new. The camera looks down, so what lies past the drop is what the knight
+// would see looking down off a mountain: cloud tops below him, birds gliding under the ledge, and the
+// land far below lost in the blue of the air. In the game it would be a layer of its own, sliding
+// slower than the ground as he walks, so that it feels far away.
+
+const L_PATH = ramp('#4f4552', '#62576a', '#77697b', '#8c7e8d', '#a395a1');
+const L_GRASS = ramp('#4f6b3e', '#66854a', '#7fa05a', '#9cbb6c');
+const L_PEBBLE = ramp('#5a5060', '#9b8f9c', '#c3b8c2');
+const L_LIP = hex('#d9cfd6');
+const L_ROCK = [
+  ramp('#e2d4c8', '#c7b6aa', '#ab9b95', '#7f7080'),
+  ramp('#ab9da5', '#928592', '#7b6f80', '#5a5067'),
+  ramp('#736a85', '#5e5672', '#4b4460', '#36304a'),
+];
+/** The ledge's middle down the screen at each column: in from the left, past the knight, out on the outcrop, then up round the mountain's shoulder. */
+const L_PTS: [number, number][] = [[-80, 192], [120, 204], [320, 222], [507, 236], [640, 246], [780, 214], [900, 180], [1100, 142]];
+const ledgeMid = (px: number): number => {
+  for (let i = 0; i + 1 < L_PTS.length; i++) {
+    const [x0, y0] = L_PTS[i];
+    const [x1, y1] = L_PTS[i + 1];
+    if (px <= x1) {
+      const t = (1 - Math.cos((Math.max(0, px - x0) / (x1 - x0)) * Math.PI)) / 2;
+      return y0 + (y1 - y0) * t;
+    }
+  }
+  return L_PTS[L_PTS.length - 1][1];
+};
+const outcrop = (px: number): number => 52 * Math.exp(-(((px - 690) / 62) ** 2));
+const ledgeTop = (px: number): number => ledgeMid(px) - 25 - 5 * Math.sin(px / 37 + 0.3) - 8 * Math.exp(-(((px - 160) / 45) ** 2));
+const ledgeBot = (px: number): number => ledgeMid(px) + 25 + 6 * Math.sin(px / 53 + 1) + outcrop(px);
+const ledgeShape: Shape = (x, y) => {
+  const [sx, sy] = toScreen(x, y);
+  return sy > ledgeTop(sx) && sy < ledgeBot(sx);
+};
+const ledgeGround = ground(ledgeShape);
+const LW = ledgeGround.walk;
+/** How high the mountain stands over the ledge before its crest: high but for a saddle up and to the left of the knight, where the sky opens over it. */
+const wallUp = (px: number): number => 245 - 168 * Math.exp(-(((px - 300) / 140) ** 2)) + 10 * Math.sin(px / 41) + 6 * Math.sin(px / 13 + 1);
+const SKY = ramp('#4a8ae0', '#5f9be6', '#78ade9', '#94c0ee', '#b3d4f3', '#d2e6f8');
+/** The far range seen through the saddle: its ridge line down the screen at each column. */
+const rangeAt = (px: number): number => 100 - 22 * fbm(px / 60, 0, 351) - 30 * Math.exp(-(((px - 255) / 34) ** 2)) - 16 * Math.exp(-(((px - 372) / 26) ** 2));
+/** The sky over the crest, looking out: blue, the far range snowy in the haze, clouds before it. */
+function skyAbove(px: number, py: number): RGB {
+  let c = pick(SKY, py / 125, px, py, 0.9);
+  const r = rangeAt(px);
+  if (py > r) {
+    // the far range: lit on its faces toward the left, snow on its tops
+    const lit = rangeAt(px - 3) > rangeAt(px + 3);
+    c = lit ? hex('#b4c4e6') : hex('#97a9d6');
+    const snow = py < r + 9 + 8 * vn(px / 9, 0, 353) && r < 92;
+    if (snow) c = lit ? hex('#f1f6fd') : hex('#c8d4ef');
+    c = mix(c, SKY[5], 0.25);
+  }
+  const cd = fbm(px / 110, py / 26, 361) + 0.16 * (vn(px / 22, py / 9, 363) - 0.5) - Math.max(0, (60 - py) / 200);
+  if (cd > 0.6) {
+    const below = fbm(px / 110, (py + 4) / 26, 361) + 0.16 * (vn(px / 22, (py + 4) / 9, 363) - 0.5);
+    c = below < cd - 0.02 ? hex('#c3d5ec') : cd > 0.66 ? hex('#ffffff') : hex('#e6f0fb');
+  }
+  return c;
+}
+const L_DROP = 64;
+
+// --- the air past the drop
+const HAZE_HI = hex('#d3e7f8');
+const HAZE_LO = hex('#6fa6e6');
+const FIELDS = ramp('#7a9358', '#8ea563', '#a8ad6e', '#b39f68', '#8b7b5a');
+const CLOUD = ramp('#a3b2da', '#bdcbe8', '#d7e3f4', '#eef4fc', '#ffffff');
+/** The land far below, seen from above, very small: fields, woods, a river and a road. */
+function landBelow(px: number, py: number): RGB {
+  // fields: cells of a jittered grid, each its own crop
+  const cs = 15;
+  const ci = Math.floor(px / cs);
+  const cj = Math.floor(py / (cs * 0.6));
+  let best = Infinity;
+  let second = Infinity;
+  let pickI = 0;
+  let pickJ = 0;
+  for (let a = -1; a <= 1; a++) {
+    for (let b = -1; b <= 1; b++) {
+      const i = ci + a;
+      const j = cj + b;
+      const cx = (i + hash(i, j, 301)) * cs;
+      const cy = (j + hash(i, j, 302)) * cs * 0.6;
+      const d = Math.hypot(px - cx, (py - cy) * 1.4);
+      if (d < best) {
+        second = best;
+        best = d;
+        pickI = i;
+        pickJ = j;
+      } else if (d < second) second = d;
+    }
+  }
+  let c = FIELDS[Math.floor(hash(pickI, pickJ, 303) * FIELDS.length)];
+  if (second - best < 1.2) c = mix(c, hex('#5e6b45'), 0.35); // the hedges between them
+  // woods
+  const wood = fbm(px / 70, py / 45, 305);
+  if (wood > 0.56) c = hash(px, py, 306) > 0.3 ? hex('#3e5b3c') : hex('#2f4a33');
+  // the river, winding, and a road beside it
+  const rv = py - (380 + 40 * Math.sin(px / 110 + 0.4) + 14 * Math.sin(px / 37));
+  if (Math.abs(rv) < 2.2) c = Math.abs(rv) < 0.9 && hash(px >> 1, 1, 307) > 0.5 ? hex('#f4fbff') : hex('#a9d3ec');
+  else if (Math.abs(rv - 9 - 4 * Math.sin(px / 23)) < 0.8) c = hex('#d8c8a0');
+  return c;
+}
+/** The air past the drop at a pixel, under the clouds: the land, far below, deep in the blue of the air. */
+function airAt(px: number, py: number, shadow = false): RGB {
+  const depth = Math.min(1, Math.max(0, (py - 120) / 360));
+  const haze = mix(HAZE_HI, HAZE_LO, depth);
+  let land = landBelow(px, py);
+  if (shadow) land = mix(land, hex('#26304a'), 0.45);
+  const thick = 0.8 - 0.08 * depth;
+  return mix(land, haze, Math.floor((thick + (bayer(px, py) - 0.5) * 0.12) * 8) / 8);
+}
+
+interface Puff { x: number; y: number; r: number; far: boolean }
+/** The clouds under the ledge: heaps of round puffs seen from above, the far ones small and pale, and a bank of them against the mountain's foot. */
+function cloudPuffs(footOf: Float32Array): Puff[] {
+  const out: Puff[] = [];
+  const foot = (x: number): number => footOf[Math.max(0, Math.min(PW - 1, Math.round(x)))];
+  const heap = (cx: number, cy: number, size: number, far: boolean, k: number): void => {
+    // a broad base of big lumps, smaller lumps heaped on it toward the middle
+    const n = 9 + Math.floor(hash(k, 1, 401) * 7);
+    for (let i = 0; i < n; i++) {
+      const t = i / n;
+      const spread = 1 - 0.55 * t;
+      out.push({
+        x: cx + (hash(i, k, 402) - 0.5) * size * 2.4 * spread,
+        y: cy + (hash(i, k, 403) - 0.5) * size * 0.7 * spread - t * size * 0.3,
+        r: size * (0.42 + 0.3 * hash(i, k, 404)) * (1 - 0.45 * t),
+        far,
+      });
+    }
+  };
+  for (let k = 0; k < 16; k++) {
+    const cx = hash(k, 0, 410) * (PW + 60) - 30;
+    const cy = 260 + hash(k, 1, 410) * 230;
+    if (cy < foot(cx) + 20) continue;
+    heap(cx, cy, 14 + 12 * hash(k, 2, 410), true, k);
+  }
+  for (let k = 0; k < 9; k++) {
+    const cx = hash(k, 0, 421) * (PW + 100) - 50;
+    const cy = 330 + hash(k, 1, 421) * 170;
+    if (cy < foot(cx) + 40) continue;
+    heap(cx, cy, 34 + 26 * hash(k, 2, 421), false, 100 + k);
+  }
+  // the bank against the mountain's foot, the cliff sinking into it
+  for (let i = 0, px = -30; px < PW + 40; px += 46 + 24 * hash(i, 0, 430), i++) {
+    heap(px, foot(px) + 6 + 10 * hash(i, 1, 430), 26 + 18 * hash(i, 2, 430), false, 200 + i);
+  }
+  out.sort((p1, p2) => (p1.far === p2.far ? p1.y + p1.r * 0.3 - (p2.y + p2.r * 0.3) : p1.far ? -1 : 1));
+  return out;
+}
+/** Paint the puffs, back to front, each a round heap lit from the lower left, into a sheet of their own. */
+function paintPuffs(puffs: Puff[]): { col: Uint8ClampedArray; on: Uint8Array } {
+  const col = new Uint8ClampedArray(PW * PH * 3);
+  const on = new Uint8Array(PW * PH);
+  const L = [-0.42, 0.5, 0.76];
+  for (const p of puffs) {
+    const ry = p.r * 0.62;
+    for (let py = Math.max(0, Math.floor(p.y - ry - 3)); py <= Math.min(PH - 1, Math.ceil(p.y + ry + 3)); py++) {
+      for (let px = Math.max(0, Math.floor(p.x - p.r - 3)); px <= Math.min(PW - 1, Math.ceil(p.x + p.r + 3)); px++) {
+        const dx = (px - p.x) / p.r;
+        const dy = (py - p.y) / ry;
+        const d2 = dx * dx + dy * dy + 0.14 * (vn(px / 4, py / 3, 431) - 0.5);
+        if (d2 > 1) continue;
+        const nz = Math.sqrt(Math.max(0, 1 - Math.min(1, dx * dx + dy * dy)));
+        const lam = dx * L[0] + dy * L[1] + nz * L[2];
+        let i = Math.floor((lam * 0.8 + 0.42 + (bayer(px, py) - 0.5) * 0.16) * 5);
+        i = Math.max(0, Math.min(4, i));
+        if (d2 > 0.9 && lam < 0.2) i = Math.min(i, 2); // the shaded rim
+        let c = CLOUD[i];
+        if (p.far) c = mix(c, HAZE_HI, 0.55);
+        const o = (py * PW + px) * 3;
+        col[o] = c[0];
+        col[o + 1] = c[1];
+        col[o + 2] = c[2];
+        on[py * PW + px] = p.far ? 1 : 2;
+      }
+    }
+  }
+  return { col, on };
+}
+
+/** The Ledge Road as one screen of the game. */
+function paintLedge(g: CanvasRenderingContext2D): Uint8Array {
+  const img = g.createImageData(PW, PH);
+  const d = img.data;
+  const put = (px: number, py: number, c: RGB): void => {
+    const i = (py * PW + px) * 4;
+    d[i] = c[0];
+    d[i + 1] = c[1];
+    d[i + 2] = c[2];
+    d[i + 3] = 255;
+  };
+  const walk = new Uint8Array(PW * PH);
+  for (let py = 0; py < PH; py++) {
+    for (let px = 0; px < PW; px++) {
+      const [x, y] = toWorld(px + 0.5, py + 0.5);
+      walk[py * PW + px] = LW(x, y) ? 1 : 0;
+    }
+  }
+  // the ledge down each column, as one band (a speck of its rounded edge counts with it)
+  const bandA = new Int32Array(PW).fill(-1);
+  const bandB = new Int32Array(PW).fill(-1);
+  for (let px = 0; px < PW; px++) {
+    let a = -1;
+    let b = -1;
+    let run = 0;
+    for (let py = 0; py < PH; py++) {
+      if (walk[py * PW + px]) {
+        run++;
+        if (run === 3 && a < 0) a = py - 2;
+        if (run >= 3) b = py + 1;
+      } else run = 0;
+    }
+    bandA[px] = a;
+    bandB[px] = b;
+  }
+  const footOf = new Float32Array(PW);
+  for (let px = 0; px < PW; px++) footOf[px] = bandB[px] < 0 ? -1e9 : bandB[px] + L_DROP;
+  const { col: cloudCol, on: cloudOn } = paintPuffs(cloudPuffs(footOf));
+  // what each pixel is: 0 the air, 1 the ledge, 2 the mountain or the sky over it, 3 the drop
+  const kind = new Uint8Array(PW * PH);
+  for (let py = 0; py < PH; py++) {
+    for (let px = 0; px < PW; px++) {
+      const sx = px - 24;
+      const sy = py - 32;
+      const shadow = sx >= 0 && sy >= 0 && cloudOn[sy * PW + sx] === 2;
+      put(px, py, airAt(px, py, shadow));
+    }
+  }
+  for (let px = 0; px < PW; px++) {
+    const a = bandA[px];
+    const b = bandB[px];
+    if (a < 0) continue;
+    // the mountain over the ledge, its light from the slope of the ledge it stands on (smoothed), dithered where it turns
+    const wallSlope = (ledgeTop(px + 30) - ledgeTop(px - 30)) / 60;
+    const up = wallUp(px);
+    for (let py = Math.floor(a - up - 9); py >= 0; py--) {
+      put(px, py, skyAbove(px, py));
+      kind[py * PW + px] = 2;
+    }
+    for (let v = 1; v <= up + 8; v++) {
+      const py = a - v;
+      if (py < 0) break;
+      kind[py * PW + px] = 2;
+      if (v > up) {
+        // the crest: a grassy top, lit along its near edge
+        put(px, py, v - up <= 2 ? L_LIP : mix(L_GRASS[1 + (hash(px >> 1, v, 93) > 0.5 ? 1 : 0)], HAZE_HI, 0.3));
+        continue;
+      }
+      const shade = Math.max(-1, Math.min(1, wallSlope / 0.4 + (bayer(px, py) - 0.5) * 0.5));
+      let c = strata(L_ROCK, shade, v, px, 71, 12, 0.3);
+      // tufts of grass and moss along the layers' lit tops
+      if (c === L_ROCK[0][0] || c === L_ROCK[1][0]) {
+        if (hash(px >> 1, Math.floor(v / 4), 91) > 0.72) c = L_GRASS[1 + (hash(px, v, 92) > 0.5 ? 1 : 0)];
+      }
+      // the higher, the more of the air's blue in it
+      const hz = Math.max(0, (v - 50) / 260);
+      if (hz > 0) c = mix(c, HAZE_HI, Math.floor((hz * 0.55 + (bayer(px, py) - 0.5) * 0.1) * 6) / 6);
+      // a drift of cloud across the mountain's face, high up
+      const wisp = fbm(px / 150, py / 12, 341) - 0.5 + 0.3 * Math.exp(-(((py - 40) / 16) ** 2)) - 0.35;
+      if (wisp > 0.04) c = mix(c, CLOUD[wisp > 0.11 ? 4 : 3], wisp > 0.11 ? 0.8 : 0.45);
+      put(px, py, c);
+    }
+    // the ledge
+    for (let py = a; py < b; py++) {
+      kind[py * PW + px] = 1;
+      const [x, y] = toWorld(px + 0.5, py + 0.5);
+      let c = pick(L_PATH, fbm(x * 2.4, y * 2.4, 11) * 1.1 - 0.1, px, py);
+      const gfield = fbm(x * 1.1 + 3, y * 1.1, 21);
+      const inner = ledgeGround.field(x, y);
+      if (gfield > 0.62 || (inner < 0.5 && gfield > 0.48)) c = pick(L_GRASS, fbm(x * 6, y * 6, 25), px, py);
+      // pebbles
+      const cs = 0.42;
+      const ci = Math.floor(x / cs);
+      const cj = Math.floor(y / cs);
+      if (hash(ci, cj, 31) < 0.4) {
+        const cx = (ci + 0.2 + 0.6 * hash(ci, cj, 32)) * cs;
+        const cy = (cj + 0.2 + 0.6 * hash(ci, cj, 33)) * cs;
+        const r = 0.05 + 0.06 * hash(ci, cj, 34);
+        const [qx, qy] = toScreen(cx, cy);
+        const dx = (px - qx) / (r * HWf * 1.6);
+        const dy = (py - qy) / (r * HHf * 2.1);
+        const dd = dx * dx + dy * dy;
+        if (dd < 1) c = dy < -0.35 && dx < 0.3 ? L_PEBBLE[2] : dd > 0.55 && dy > 0 ? L_PEBBLE[0] : L_PEBBLE[1];
+      }
+      // wildflowers in the grass
+      if ((c === L_GRASS[1] || c === L_GRASS[2]) && hash(px >> 1, py >> 1, 37) > 0.975) c = [hex('#f4e27c'), hex('#ea92b6'), hex('#ffffff'), hex('#a8bcff')][Math.floor(hash(px >> 1, py >> 1, 38) * 4)];
+      if (py - a < 7) c = mix(c, [40, 34, 56], py - a < 3 ? 0.45 : 0.26); // the mountain's shadow at its foot
+      if (b - py <= 2) c = L_LIP; // the edge catches the light
+      put(px, py, c);
+    }
+    // the drop under it, lost in the air
+    const dropSlope = (ledgeBot(px + 20) - ledgeBot(px - 20)) / 40;
+    for (let v = 0; v < L_DROP + 60; v++) {
+      const py = b + v;
+      if (py >= PH) break;
+      const t = (v - L_DROP + 20) / 70;
+      const q = t <= 0 ? 0 : Math.min(1, Math.floor(t * 5 + bayer(px, py)) / 5);
+      if (q >= 1) continue;
+      kind[py * PW + px] = 3;
+      const shade = Math.max(-1, Math.min(1, dropSlope / 0.4 + (bayer(px, py) - 0.5) * 0.5));
+      let c = strata(L_ROCK, shade, L_DROP - v, px, 81, 12, 0.3);
+      if (v < 3) c = L_ROCK[2][3]; // the shadow under the lip
+      // roots and grass hanging over the lip
+      if (v < 10 && hash(px >> 1, 0, 95) > 0.7 && v < 3 + 7 * hash(px >> 1, 1, 95)) c = L_GRASS[hash(px, 2, 95) > 0.5 ? 0 : 1];
+      if (q > 0) c = mix(c, airAt(px, py), q);
+      put(px, py, c);
+    }
+  }
+  // the clouds, over the air and over the cliff where it sinks into them
+  for (let py = 0; py < PH; py++) {
+    for (let px = 0; px < PW; px++) {
+      const k = kind[py * PW + px];
+      if (!cloudOn[py * PW + px] || (k !== 0 && k !== 3)) continue;
+      const o = (py * PW + px) * 3;
+      put(px, py, [cloudCol[o], cloudCol[o + 1], cloudCol[o + 2]]);
+    }
+  }
+  g.putImageData(img, 0, 0);
+  return walk;
+}
+
+/** A vulture gliding far under the ledge, seen from above: broad wings, fingered tips, a pale ruff. */
+const vulture = (span: number, tilt: number, k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.save();
+  g.translate(sx, sy);
+  g.rotate(tilt);
+  const w = span / 2;
+  g.fillStyle = 'rgba(40, 60, 100, 0.22)'; // its shadow on the cloud below
+  g.beginPath();
+  g.ellipse(18, 22, w * 0.9, w * 0.18, 0, 0, Math.PI * 2);
+  g.fill();
+  const wing = (dir: number, c: string, s: number): void => {
+    g.fillStyle = c;
+    g.beginPath();
+    g.moveTo(0, -w * 0.06);
+    g.quadraticCurveTo(dir * w * 0.5, -w * 0.2 * s, dir * w, -w * 0.06);
+    // the fingered tips
+    for (let f = 0; f < 4; f++) g.lineTo(dir * (w - f * w * 0.07), w * (0.04 + 0.05 * f) + (f % 2 ? w * 0.02 : 0));
+    g.quadraticCurveTo(dir * w * 0.45, w * 0.2, 0, w * 0.12);
+    g.closePath();
+    g.fill();
+  };
+  wing(-1, '#3d2f2b', 1);
+  wing(1, '#3d2f2b', 1);
+  g.fillStyle = '#5c4a40';
+  g.fillRect(-w * 0.55, -w * 0.05, w * 0.3, Math.max(1, w * 0.06));
+  g.fillRect(w * 0.25, -w * 0.05, w * 0.3, Math.max(1, w * 0.06));
+  g.fillStyle = '#2c2220';
+  g.beginPath();
+  g.ellipse(0, w * 0.05, w * 0.1, w * 0.26, 0, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = '#e8dccb'; // the ruff
+  g.fillRect(-w * 0.06, -w * 0.22, w * 0.12, w * 0.08);
+  g.fillStyle = '#b48a7a'; // the bare head
+  g.fillRect(-w * 0.04, -w * 0.3, w * 0.08, w * 0.08);
+  void k;
+  g.restore();
+};
+/** A rope rail along the edge: stakes and a sagging rope, the road's own. */
+const railPost = (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  g.fillStyle = '#4e3a2c';
+  g.fillRect(sx - F, sy - 14 * F, 2 * F, 14 * F);
+  g.fillStyle = '#7a5d45';
+  g.fillRect(sx - F, sy - 14 * F, F, 14 * F);
+};
+const tuft = (k: number) => (g: CanvasRenderingContext2D, sx: number, sy: number): void => {
+  for (let i = 0; i < 9; i++) {
+    const x = sx + (hash(i, k, 61) - 0.5) * 10 * F;
+    const h = (3 + 5 * hash(i, k, 62)) * F;
+    g.fillStyle = ['#4f6b3e', '#66854a', '#7fa05a', '#9cbb6c'][Math.floor(hash(i, k, 63) * 4)];
+    g.fillRect(x, sy - h, F, h);
+  }
+};
+const greyBoulder = (r: number) => boulder(r, '#d6cbc6', '#a99ca4', '#6e6378');
+
+function ledgeProps(): Prop[] {
+  const onL = (px: number, py: number, draw: Prop['draw'], extra: Partial<Prop> = {}): Prop => {
+    const [x, y] = toWorld(px, py);
+    if (!LW(x, y)) console.warn('ledge prop off the ledge', px, py);
+    return { x, y, draw, ...extra };
+  };
+  const out: Prop[] = [
+    onL(150, 196, pine(0.9, 3)),
+    onL(250, 205, greyBoulder(0.34)),
+    onL(272, 212, greyBoulder(0.2)),
+    onL(905, 166, pine(1.1, 5)),
+    onL(850, 184, greyBoulder(0.3)),
+    onL(612, 236, greyBoulder(0.22)),
+    onL(80, 214, tuft(1)),
+    onL(380, 236, tuft(2)),
+    onL(560, 248, tuft(3)),
+    onL(980, 176, tuft(4)),
+    // the cult's lookouts on the outcrop, their banner at its edge
+    onL(735, 272, banner),
+    onL(700, 300, box(0.45, 0.45, 12, hex('#9a7550'), hex('#866444'), hex('#5e4430'))),
+  ];
+  // the rope rail along the edge past the knight
+  for (let px = 380; px <= 560; px += 45) {
+    const py = Math.round(ledgeBot(px)) - 9;
+    out.push(onL(px, py, railPost));
+  }
+  return out;
+}
+
+/** The two things of the HUD that are the place's own: its name and its map. */
+function placeHud(g: CanvasRenderingContext2D, name: string, walkAt: Shape, hero: [number, number]): void {
+  const vg = g.createRadialGradient(PW / 2, PH / 2, PH * 0.45, PW / 2, PH / 2, PW * 0.62);
+  vg.addColorStop(0, 'rgba(20,16,36,0)');
+  vg.addColorStop(1, 'rgba(20,16,36,0.28)');
+  g.fillStyle = vg;
+  g.fillRect(0, 0, PW, PH);
+  g.save();
+  g.scale(2, 2);
+  drawText(g, name, 4, 3, THEME.text, { shadow: P.ink });
+  g.restore();
+  const [mx, my, mw, mh] = [437 * 2 + 3, 4 * 2 + 3, 66 * 2 - 6, 46 * 2 - 6];
+  g.fillStyle = '#100e22';
+  g.fillRect(mx, my, mw, mh);
+  const k = 0.11;
+  for (let yy = 0; yy < mh; yy += 2) {
+    for (let xx = 0; xx < mw; xx += 2) {
+      const a = (xx - mw / 2) / (HWf * k);
+      const b = (yy - mh / 2) / (HHf * k);
+      if (walkAt(hero[0] + (a + b) / 2, hero[1] + (b - a) / 2)) {
+        g.fillStyle = '#5b55c7';
+        g.fillRect(mx + xx, my + yy, 2, 2);
+      }
+    }
+  }
+  g.fillStyle = '#28dcf0';
+  g.fillRect(mx + mw / 2 - 2, my + mh / 2 - 2, 4, 4);
+}
+
+function showAlone(cvs: HTMLCanvasElement): never {
+  for (const el of [document.documentElement, document.body]) {
+    el.style.height = 'auto';
+    el.style.overflow = 'visible';
+  }
+  document.body.style.margin = '0';
+  document.body.style.width = `${PW}px`;
+  cvs.style.position = 'static';
+  cvs.style.display = 'block';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+  throw new Error('shot painted'); // the rest of the page is the other sheets
+}
+
+if (LEDGE) {
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = PH;
+  const lg = cvs.getContext('2d') as CanvasRenderingContext2D;
+  lg.imageSmoothingEnabled = false;
+  paintLedge(lg);
+  // the birds, gliding far under the ledge
+  vulture(30 * F, 0.25, 1)(lg, 240, 380);
+  vulture(22 * F, -0.4, 2)(lg, 345, 430);
+  vulture(26 * F, 0.6, 3)(lg, 860, 360);
+  vulture(14 * F, -0.1, 4)(lg, 960, 300);
+  // what stands on the ledge, from the back
+  const hero = at(507, 238) as [number, number];
+  const knight = spriteOf3(MOVES3.rear, 0, 'front');
+  const figure = (sp: { img: HTMLCanvasElement; ax: number; ay: number; density?: number }) => (gg: CanvasRenderingContext2D, sx: number, sy: number): void => {
+    gg.fillStyle = 'rgba(25, 18, 40, 0.35)';
+    gg.beginPath();
+    gg.ellipse(sx, sy, 8.5 * F, 3.8 * F, 0, 0, Math.PI * 2);
+    gg.fill();
+    const dens = sp.density ?? 1;
+    gg.drawImage(sp.img, sx - sp.ax * F, sy - sp.ay * F, (sp.img.width / dens) * F, (sp.img.height / dens) * F);
+  };
+  const stands: Prop[] = [
+    ...ledgeProps(),
+    { x: hero[0], y: hero[1], draw: figure(knight) },
+    { ...pt(662, 268), draw: figure(cultist.front.idle[0]) },
+    { ...pt(722, 280), draw: figure(cultist.front.idle[0]) },
+  ];
+  stands.sort((p1, p2) => p1.x + p1.y - (p2.x + p2.y));
+  for (const st of stands) {
+    const [sx, sy] = toScreen(st.x, st.y);
+    st.draw(lg, sx, sy);
+  }
+  // the rope between the rail's stakes, sagging
+  lg.strokeStyle = '#cdb88f';
+  lg.lineWidth = F;
+  lg.beginPath();
+  for (let px = 380; px < 560; px += 45) {
+    const y0 = Math.round(ledgeBot(px)) - 9 - 12 * F;
+    const y1 = Math.round(ledgeBot(px + 45)) - 9 - 12 * F;
+    lg.moveTo(px, y0);
+    lg.quadraticCurveTo(px + 22, (y0 + y1) / 2 + 7, px + 45, y1);
+  }
+  lg.stroke();
+  placeHud(lg, 'The Ledge Road', LW, hero);
+  showAlone(cvs);
+}
+
 if (SHOT) {
   const cvs = document.createElement('canvas');
   cvs.width = PW;
