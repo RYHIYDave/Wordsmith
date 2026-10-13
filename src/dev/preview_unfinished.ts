@@ -13,7 +13,9 @@ import { makeWardenArt } from '../art/monster_warden';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { QUARRY_LOOK } from '../art/quarry';
-import { UF_BREATH, unfinishedStanding } from '../art/unfinished';
+import { UF_BREATH, UF_PACE, unfinishedFrame, unfinishedStanding } from '../art/unfinished';
+import { TILE3 } from '../art/new_mobs3';
+import { project } from '../art/skeleton';
 import { drawText } from '../engine/font';
 import type { Sprite } from '../engine/px';
 import { THEME } from '../ui/ui';
@@ -23,6 +25,8 @@ const HASH = decodeURIComponent(location.hash.slice(1)) || 'look';
 const T = Number(HASH.split(':')[1] ?? 0.4);
 
 if (HASH.startsWith('cut')) cut();
+else if (HASH.startsWith('strip')) strip();
+else if (HASH.startsWith('walkfilm')) walkFilm();
 else look();
 
 function label(g: CanvasRenderingContext2D, text: string, x: number, y: number): void {
@@ -99,4 +103,102 @@ function cut(): void {
   S.lights();
   S.nameAndMap('The Unfinished Cut', HERO);
   S.show();
+}
+
+/**
+ * A MOVE AS A STRIP OF FRAMES for a film (hash `strip:<move>:<frames a second>:<seconds>:<view>`): every
+ * frame in a cell of 360 x 360, three to a row, on the quarry's bed, its shadow under it; cut into a film
+ * by tools/film_strip.py.
+ */
+function strip(): void {
+  const [, move, fpsS, longS, viewS] = HASH.split(':');
+  const fps = Number(fpsS);
+  const n = Math.round(Number(longS) * fps) + 1;
+  const view = (viewS || 'front') as 'front' | 'back';
+  const CW = 360;
+  const CH = 360;
+  const cols = 3;
+  const cvs = document.createElement('canvas');
+  cvs.width = CW * cols;
+  cvs.height = CH * Math.ceil(n / cols);
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  for (let i = 0; i < n; i++) {
+    const ox = (i % cols) * CW;
+    const oy = Math.floor(i / cols) * CH;
+    g.fillStyle = '#b8b0a8';
+    g.fillRect(ox, oy, CW, CH);
+    g.fillStyle = '#a69e98';
+    for (let y = 0; y < CH; y += 32) for (let x = ((y / 32) % 2 ? 0 : 64); x < CW; x += 128) g.fillRect(ox + x, oy + y, 64, 32);
+    const fx = ox + 140;
+    const fy = oy + 290;
+    g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+    g.beginPath();
+    g.ellipse(fx, fy, 64, 26, 0, 0, Math.PI * 2);
+    g.fill();
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, CW, CH);
+    g.clip();
+    drawAt(g, unfinishedFrame(move, i / fps, view), fx, fy);
+    g.restore();
+  }
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+}
+
+/**
+ * ITS WALK AS THE GAME PLAYS IT (hash `walkfilm:<frames a second>:<view>`): setting off from its stance,
+ * once round its walk, and stopping, carried on over the floor at its pace as the game carries it; each
+ * frame a cell of 360 x 360, three to a row (tools/film_strip.py).
+ */
+function walkFilm(): void {
+  const [, fpsS, viewS] = HASH.split(':');
+  const fps = Number(fpsS);
+  const view = (viewS || 'front') as 'front' | 'back';
+  const parts: [string, number][] = [['setOff', 1.0], ['walk', 3.0], ['halt', 1.0]];
+  const seq: [string, number, number][] = [];
+  let T = 0;
+  for (const [mv, long] of parts) {
+    const n = Math.round(long * fps);
+    for (let i = 0; i < n; i++) seq.push([mv, i / fps, T + i / fps]);
+    T += long;
+  }
+  seq.push(['stand', 0, T]);
+  const CW = 360;
+  const CH = 360;
+  const cols = 3;
+  const cvs = document.createElement('canvas');
+  cvs.width = CW * cols;
+  cvs.height = CH * Math.ceil(seq.length / cols);
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const ground = UF_PACE * TILE3;
+  seq.forEach(([mv, t, at], i) => {
+    const ox = (i % cols) * CW;
+    const oy = Math.floor(i / cols) * CH;
+    g.fillStyle = '#b8b0a8';
+    g.fillRect(ox, oy, CW, CH);
+    g.fillStyle = '#a69e98';
+    for (let y = 0; y < CH; y += 32) for (let x = ((y / 32) % 2 ? 0 : 64); x < CW; x += 128) g.fillRect(ox + x, oy + y, 64, 32);
+    const [dx, dy] = project([ground * at, 0, 0], view);
+    const fx = ox + 110 + dx;
+    const fy = oy + 260 + dy;
+    g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+    g.beginPath();
+    g.ellipse(fx, fy, 64, 26, 0, 0, Math.PI * 2);
+    g.fill();
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, CW, CH);
+    g.clip();
+    drawAt(g, unfinishedFrame(mv, t, view), fx, fy);
+    g.restore();
+  });
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
 }

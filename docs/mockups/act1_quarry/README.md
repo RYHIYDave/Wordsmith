@@ -230,6 +230,31 @@ two of the cult and the knight come in. `tests/unfinished.test.ts` (6): crisp, i
 every light the cult's fire, twice the Warden, the mark burning in every frame, and the boss review
 (art/boss_checks.ts) of its stand, free and fused.
 
+Asked as a pop-up "Is this the Unfinished?", his pick (13 Oct, by 14:00): "Yes, animate it (Recommended)",
+offered as: next its grinding walk, the fist slam, rockslide, hurled block, stomp, tearing free at half
+life, and its fall.
+
+### The Unfinished, its first moves
+
+`src/art/unfinished.ts`: ITS WALK (24 frames at 8 a second, painted for 0.9 tiles a second): each foot
+hauled up, swung through stiff and brought down hard; its bulk drops onto it and shudders, its head jolts,
+its weight grinds over onto the foot that is down, grit shaken off at every step; SETTING OFF (1 s: its
+weight over onto its left first, slowly, before its right foot is hauled forward) and STOPPING (1 s, a
+shudder as it settles), so that nothing leaps into or out of the walk. THE FIST SLAM, its basic blow
+(`UF_SLAM_HIT` 1.2 s; 2.5 s in all): the carved fist drawn up and back over its head, turning away, the
+raw arm out before it; held, trembling, the mark on its chest flaring gold (the warning, `glint`); its
+hips go first, then its chest, then the fist comes over and down onto the floor before it to its right
+(`SLAM_AT`), its knees dropping; the fist skids on, chips of stone fly and a ring of dust runs out; it
+hauls itself back up into its stance. STRUCK (0.4 s): a jolt back through the stone, its head knocked
+up, grit shaken off. The boss review passes all of them, both ways round (tests/unfinished.test.ts; the
+review's view of it, `ufShape`, is in the test: the game's own tests keep its figures from importing the
+checks, and from importing art/bosses3.ts, whose footwork is copied here).
+
+    node tools/preview.mjs src/dev/preview_unfinished.ts shots/uf_walk_strip.png 1080 5040 walkfilm:8:front
+    python3 tools/film_strip.py shots/uf_walk_strip.png shots/uf_walk.gif 41 8 360 3
+    node tools/preview.mjs src/dev/preview_unfinished.ts shots/uf_slam_strip.png 1080 4680 strip:attack:15:2.5:front
+    python3 tools/film_strip.py shots/uf_slam_strip.png shots/uf_slam.gif 38 15 360 3
+
 ## For the main chat
 
 - `terrainOf(floor, look)` works the field out once (18 ms for a floor 48 tiles square, here, in a

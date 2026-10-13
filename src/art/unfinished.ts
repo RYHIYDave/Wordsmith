@@ -32,13 +32,12 @@ import { shriekAt } from './floor5';
 import { hash, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
-import { at3, canvasOf, paintMob, sphere } from './new_mobs3';
+import { TILE3, at3, canvasOf, paintMob, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, MobMove, Moment, Put } from './new_mobs3';
-import type { BossShape, CheckLimb, CheckLump } from './boss_checks';
 import { wornOn } from './skin';
 import type { GameView, Stage } from './skin';
 import { add, buildOf, cross, dot, lerp3, mul, norm, standing, sub } from './skeleton';
-import type { Bones, Build, Motion, Posed, Skeleton, V3 } from './skeleton';
+import type { Bones, Build, Key3, Motion, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF: nothing of the game reads this file. */
 export const UNFINISHED_ON = { on: false };
@@ -143,6 +142,110 @@ function limbFrame(from: V3, to: V3, fwd: V3): [V3, V3, V3] {
 }
 
 // ---------------------------------------------------------------------------------------------
+// ITS FEET ON THE FLOOR: a foot put down stays where it is until it lifts (the art rulebook: "Feet grip
+// the floor"). These are art/bosses3.ts's own (`Plant`, `plantOf`, `footwork`), copied here word for word
+// in what they do: the game's own tests keep its other figures from drawing on that file.
+
+const DEG = Math.PI / 180;
+const rotY = (v: V3, a: number): V3 => [v[0] * Math.cos(a) + v[2] * Math.sin(a), v[1], -v[0] * Math.sin(a) + v[2] * Math.cos(a)];
+const rotZ = (v: V3, a: number): V3 => [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a), v[2]];
+function footOff(on: 'toe' | 'heel', turn: number, pitch: number): V3 {
+  return rotZ(rotY(on === 'toe' ? [B.ball, 0, -B.ankle] : [-B.heel, 0, -B.ankle], pitch * DEG), turn * DEG);
+}
+/** A foot put down: its toe (or heel) on this spot of the floor (forward, to the left), turned `turn` degrees left, tipped `pitch` toes-down. */
+interface Plant {
+  at: readonly [number, number];
+  turn: number;
+  pitch?: number;
+  on?: 'toe' | 'heel';
+}
+function footOn(side: 'L' | 'R', p: Plant, lift = 0): P {
+  const pitch = p.pitch ?? 0;
+  const o = footOff(p.on ?? 'toe', p.turn, pitch);
+  const fx = p.at[0] - o[0];
+  const fy = p.at[1] - o[1] - (side === 'L' ? 1 : -1) * B.stance;
+  const fz = lift - o[2] - B.ankle;
+  return side === 'L' ? { lfx: fx, lfy: fy, lfz: fz, lfp: pitch, lft: p.turn } : { rfx: fx, rfy: fy, rfz: fz, rfp: pitch, rft: p.turn };
+}
+function plantOf(side: 'L' | 'R', pose: P, rest: Bones, on: 'toe' | 'heel' = 'toe'): Plant {
+  const q = { ...rest, ...pose } as Bones;
+  const L = side === 'L';
+  const turn = L ? q.lft : q.rft;
+  const pitch = L ? q.lfp : q.rfp;
+  const o = footOff(on, turn, pitch);
+  return { at: [(L ? q.lfx : q.rfx) + o[0], (L ? q.lfy : q.rfy) + (L ? 1 : -1) * B.stance + o[1]], turn, pitch, on };
+}
+function heldBy(side: 'L' | 'R', p: Plant, on: 'toe' | 'heel'): Plant {
+  if ((p.on ?? 'toe') === on) return p;
+  return plantOf(side, footOn(side, p), {} as Bones, on);
+}
+function plantBy(p: Plant, dx: number, dy: number, dt = 0, more: Partial<Plant> = {}): Plant {
+  return { ...p, at: [p.at[0] + dx, p.at[1] + dy], turn: p.turn + dt, ...more };
+}
+interface FootMove {
+  t0: number;
+  t1: number;
+  to: Plant;
+  lift?: number;
+}
+interface FootTrack {
+  start: Plant;
+  moves: ReadonlyArray<FootMove>;
+}
+const smooth01 = (u: number): number => {
+  const k = clamp01(u);
+  return k * k * (3 - 2 * k);
+};
+/** Its feet through a move: each where its track has it, a step lifting the foot straight up off its spot and setting it straight down on the next. */
+function footwork(tracks: Partial<Record<'L' | 'R', FootTrack>>, carry = 0): (t: number) => P {
+  const back = (p: Plant, t: number): Plant => (carry ? { ...p, at: [p.at[0] - carry * t, p.at[1]] } : p);
+  return (t) => {
+    const out: P = {};
+    for (const side of ['L', 'R'] as const) {
+      const tr = tracks[side];
+      if (!tr) continue;
+      let at: Plant = tr.start;
+      let pose: P | null = null;
+      for (const mv of tr.moves) {
+        if (t >= mv.t1) {
+          at = mv.to;
+          continue;
+        }
+        if (t <= mv.t0) break;
+        const u = (t - mv.t0) / (mv.t1 - mv.t0);
+        const lift = mv.lift ?? 0;
+        if (lift > 0) {
+          const a = heldBy(side, at, 'toe');
+          const b = heldBy(side, mv.to, 'toe');
+          const g = smooth01((u - 0.12) / 0.76);
+          const h = lift * Math.pow(Math.sin(Math.PI * clamp01(u)), 0.6);
+          const pitch = (a.pitch ?? 0) * (1 - g) + (b.pitch ?? 0) * g;
+          pose = footOn(side, back({ at: [a.at[0] + (b.at[0] - a.at[0]) * g, a.at[1] + (b.at[1] - a.at[1]) * g], turn: a.turn + (b.turn - a.turn) * g, pitch, on: 'toe' }, t), h);
+        } else {
+          const on = mv.to.on ?? 'toe';
+          const a = heldBy(side, at, on);
+          const g = smooth01(u);
+          pose = footOn(side, back({ at: a.at, turn: a.turn + (mv.to.turn - a.turn) * g, pitch: (a.pitch ?? 0) + ((mv.to.pitch ?? 0) - (a.pitch ?? 0)) * g, on }, t));
+        }
+        break;
+      }
+      Object.assign(out, pose ?? footOn(side, back(at, t)));
+    }
+    return out;
+  };
+}
+/** A pose part way from one to another (every number mixed; how a hand is measured, the nearer's). */
+function between(a: P, b: P, k: number, rest: Bones): P {
+  const out: Record<string, unknown> = {};
+  for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const va = (a as Record<string, unknown>)[key] ?? (rest as unknown as Record<string, unknown>)[key];
+    const vb = (b as Record<string, unknown>)[key] ?? (rest as unknown as Record<string, unknown>)[key];
+    out[key] = typeof va === 'number' && typeof vb === 'number' && !key.endsWith('In') ? va + (vb - va) * k : k < 0.5 ? va : vb;
+  }
+  return out as P;
+}
+
+// ---------------------------------------------------------------------------------------------
 // HOW IT STANDS: a statue forced to stand: its feet planted wide, its knees a little bent under the
 // weight, its back bowed, its head pushed forward, its arms hanging, its fists by its knees.
 
@@ -176,6 +279,169 @@ function ufStand(): Motion {
 /** When the shudder runs through it, in its breath (grit shaken off falls from then). */
 const SHUDDER = 1.25;
 
+/** How long since it was shaken (`rally`, as the moment carries it: 0 for not shaken; else the seconds since, and a thousandth). */
+const shaken = (since: number): number => (since >= 0 && since < 0.9 ? since + 0.001 : 0);
+
+// ---------------------------------------------------------------------------------------------
+// ITS WALK (his pick by 12:42, "Grinding and heavy (Recommended)": like a statue forced to walk, slow to
+// start, every step a shudder, grit falling off it). Twenty frames at eight a second, painted for 0.7
+// tiles a second: each foot hauled up, swung through stiff, and brought down hard; the whole bulk drops
+// onto it and shudders, its head jolting, its arms swinging a little and late; the weight grinding over
+// onto the foot that is down. Grit is shaken off at every step. A foot that is down stays where it is.
+
+const UF_WALK_FRAMES = 24;
+const UF_WALK_FPS = 8;
+export const UF_PACE = 0.9;
+const UF_GROUND = UF_PACE * TILE3;
+const UF_STRIDE = UF_GROUND / UF_WALK_FPS;
+/** Its walk at frame `j` (0 to 23: its right foot just down before it at 0, its left at 12). */
+function ufWalkPose(j: number): P {
+  const R = UF_REST;
+  const n = UF_WALK_FRAMES;
+  const d = UF_STRIDE;
+  const foot = (k: number): [number, number, number] => {
+    if (k <= 14) return [7 * d - d * k, 0, 0];
+    const u = (k - 14) / 10;
+    // (hauled up off its toes, swung through, and brought down flat and hard)
+    return [-7 * d + 14 * d * smooth01(u * 1.08 - 0.04), 24 * Math.pow(Math.sin(Math.PI * u), 0.7), 14 * (1 - u) - 12 * u * (1 - u)];
+  };
+  const a = (j / n) * Math.PI * 2;
+  const k = j % 12;
+  // (the jolt of a foot coming down, dying away)
+  const jolt = [1, 0.75, 0.42, 0.18, 0.05, 0, 0, 0, 0, 0, 0, 0.25][k];
+  const [rx, rz, rp] = foot(j);
+  const [lx, lz, lp] = foot((j + 12) % n);
+  return {
+    px: 1, py: -4.4 * Math.sin(a), pz: R.pz - 2 + 1.6 * Math.cos(2 * a) - 4.4 * jolt,
+    yaw: R.yaw + 4 * Math.cos(a), twist: R.twist - 3 * Math.cos(a), pitch: R.pitch + 2 + 1.4 * jolt, bend: R.bend + 1 + 1.5 * jolt,
+    roll: 3.2 * Math.sin(a) + 1.2 * jolt * (j < 12 ? -1 : 1), side: 1.4 * Math.sin(a),
+    faceUp: R.faceUp - 2 - 6 * jolt, faceTurn: R.faceTurn - 3 * Math.cos(a), faceTilt: -2 * Math.sin(a),
+    rfx: rx, rfz: rz, rfy: R.rfy, rft: R.rft, rfp: rp, rk: -14,
+    lfx: lx, lfz: lz, lfy: R.lfy, lft: R.lft, lfp: lp, lk: 14,
+    rhx: R.rhx - 7 * Math.cos(a - 0.5), rhz: R.rhz - 4 * jolt, lhx: R.lhx + 7 * Math.cos(a - 0.5), lhz: R.lhz - 4 * jolt,
+  };
+}
+function ufWalk(): Motion {
+  const keys: Key3[] = [];
+  for (let i = 0; i <= UF_WALK_FRAMES; i++) keys.push({ at: i / UF_WALK_FPS, ease: 'lin', pose: ufWalkPose(i % UF_WALK_FRAMES) });
+  return { keys, loop: 0 };
+}
+/** Grit shaken off at each step (a foot comes down at 0 and at half way round). */
+const walkShaken = (t: number): number => shaken(t % ((UF_WALK_FRAMES / UF_WALK_FPS) / 2));
+
+/**
+ * SETTING OFF AND STOPPING ("slow to start"): it leans, its weight grinding over onto its left, and
+ * hauls its right foot up and forward a stride, the game carrying it on at its pace; stopping, its left
+ * comes through and down beside its right, and it settles back into its stance with a shudder.
+ */
+const UF_SET_OFF = Math.max(1.0, (plantOf('L', {}, UF_REST).at[0] - plantOf('L', ufWalkPose(0), UF_REST).at[0]) / UF_GROUND);
+const UF_HALT = Math.max(1.0, (plantOf('R', ufWalkPose(0), UF_REST).at[0] - plantOf('R', {}, UF_REST).at[0]) / UF_GROUND);
+function ufSetOff(): Motion {
+  const w0 = ufWalkPose(0);
+  const T = UF_SET_OFF;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      // (its weight over onto its left foot, slowly, before anything else moves)
+      { at: T * 0.3, pose: { ...between({}, w0, 0.15, UF_REST), py: 3.2, roll: -2.4, pz: UF_REST.pz - 0.5 }, ease: 'io' },
+      { at: T * 0.7, pose: { ...between({}, w0, 0.6, UF_REST), py: 1.5, pz: UF_REST.pz + 0.8 }, ease: 'io' },
+      { at: T, pose: w0, ease: 'in' },
+    ],
+  };
+}
+function ufSetOffFeet(): (t: number) => P {
+  const T = UF_SET_OFF;
+  const R1 = plantOf('R', ufWalkPose(0), UF_REST);
+  return footwork({
+    L: { start: plantOf('L', {}, UF_REST), moves: [] },
+    R: { start: plantOf('R', {}, UF_REST), moves: [{ t0: T * 0.32, t1: T - 0.02, to: plantBy(R1, UF_GROUND * T, 0), lift: 22 }] },
+  }, UF_GROUND);
+}
+function ufHalt(): Motion {
+  const w0 = ufWalkPose(0);
+  const T = UF_HALT;
+  return {
+    keys: [
+      { at: 0, pose: w0 },
+      { at: T * 0.55, pose: { ...between(w0, {}, 0.55, UF_REST), pz: UF_REST.pz - 0.5 }, ease: 'io' },
+      { at: T * 0.85, pose: { pz: UF_REST.pz - 2.4, bend: UF_REST.bend + 2, faceUp: UF_REST.faceUp - 3 }, ease: 'in' },
+      { at: T, pose: {}, ease: 'out' },
+    ],
+  };
+}
+function ufHaltFeet(): (t: number) => P {
+  const T = UF_HALT;
+  const L0 = plantOf('L', {}, UF_REST);
+  return footwork({
+    L: { start: plantOf('L', ufWalkPose(0), UF_REST), moves: [{ t0: 0.04, t1: T * 0.85, to: plantBy(L0, UF_GROUND * T * 0.85, 0), lift: 22 }] },
+    R: { start: plantOf('R', ufWalkPose(0), UF_REST), moves: [] },
+  }, UF_GROUND);
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE FIST SLAM, its basic blow (the planning chat's, his yes 12 Oct, 18:07). It draws its carved right
+// fist up and back over its head, turning away to its right, leaning back on its heels, its raw arm out
+// before it; it holds it there, the stone grinding and the mark on its chest flaring (the warning); then
+// its hips go, its chest comes round after them, and the fist comes over and down onto the floor before
+// it with all its weight, its knees dropping (the game's freeze); the fist skids on, grinding, and grit
+// and chips fly; it hauls itself up and back into its stance.
+
+export const UF_SLAM_HIT = 1.2;
+/** Where the fist comes down: before it and to its right, on the floor (from its floor point). */
+const SLAM_AT: V3 = [80, -26, 27];
+const SLAM_TOP: P = {
+  pz: UF_REST.pz + 3, yaw: -16, twist: -14, pitch: -6, bend: -4, roll: 2, side: 2, faceUp: 14, faceTurn: 6,
+  rhIn: 1, rhx: -18, rhy: -8, rhz: 92, re: 40,
+  lhIn: 1, lhx: 46, lhy: 22, lhz: -60, le: -20,
+  lk: 16, rk: -20,
+};
+function ufSlam(): Motion {
+  const H = UF_SLAM_HIT;
+  const R = UF_REST;
+  const tremble = (dz: number, more: P = {}): P => ({ ...SLAM_TOP, rhz: (SLAM_TOP.rhz as number) + dz, ...more });
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.32, pose: { ...between({}, SLAM_TOP, 0.5, R), pz: R.pz + 1 }, ease: 'in' },
+      { at: 0.62, pose: SLAM_TOP, ease: 'out' },
+      // (held: the stone grinding, the fist trembling, the mark flaring)
+      { at: 0.76, pose: tremble(0.8, { roll: 2.6 }), ease: 'io' },
+      { at: 0.9, pose: tremble(-0.6, { roll: 1.6 }), ease: 'io' },
+      { at: 0.98, pose: tremble(0.6, { yaw: -17, twist: -15 }), ease: 'io' },
+      // (the hips go first: they turn into the blow while the chest and the fist stay back)
+      { at: 1.04, pose: tremble(1.4, { yaw: -6, twist: -26, pz: R.pz + 1, pitch: -2 }), ease: 'in' },
+      // (then the chest comes round, and the fist starts over)
+      { at: 1.1, pose: { pz: R.pz - 4, yaw: 2, twist: -8, pitch: 6, bend: 6, roll: 0, side: 0, faceUp: 4, faceTurn: 0, rhIn: 2, rhx: 30, rhy: -30, rhz: 270, re: 30, lhIn: 1, lhx: 40, lhy: 26, lhz: -70, le: -20, lk: 18, rk: -22 }, ease: 'lin' },
+      { at: 1.15, pose: { pz: R.pz - 12, yaw: 6, twist: 4, pitch: 18, bend: 16, faceUp: -6, rhIn: 2, rhx: 68, rhy: -28, rhz: 170, re: 22, lhIn: 1, lhx: 30, lhy: 30, lhz: -80, le: -18, lk: 20, rk: -24 }, ease: 'lin' },
+      { at: H, pose: { pz: R.pz - 22, yaw: 8, twist: 8, pitch: 28, bend: 26, faceUp: -18, rhIn: 2, rhx: SLAM_AT[0], rhy: SLAM_AT[1], rhz: SLAM_AT[2], re: 16, lhIn: 1, lhx: 26, lhy: 32, lhz: -86, le: -16, lk: 22, rk: -26 }, ease: 'lin' },
+      // (the fist skids on, grinding; the weight goes on down after it)
+      { at: H + 0.22, pose: { pz: R.pz - 27, yaw: 9, twist: 10, pitch: 33, bend: 30, faceUp: -22, rhIn: 2, rhx: SLAM_AT[0] + 14, rhy: SLAM_AT[1] - 2, rhz: SLAM_AT[2] + 1, re: 14, lhIn: 1, lhx: 24, lhy: 32, lhz: -88, le: -16, lk: 22, rk: -26 }, ease: 'out' },
+      { at: H + 0.42, pose: { pz: R.pz - 24, yaw: 8, twist: 8, pitch: 30, bend: 27, faceUp: -16, rhIn: 2, rhx: SLAM_AT[0] + 15, rhy: SLAM_AT[1] - 2, rhz: SLAM_AT[2] + 3, re: 14, lhIn: 1, lhx: 26, lhy: 32, lhz: -86, le: -16, lk: 22, rk: -26 }, ease: 'io' },
+      // (hauled up and back into its stance)
+      { at: H + 0.85, pose: { ...between({}, { pz: R.pz - 10, pitch: 16, bend: 14, rhIn: 1, rhx: 30, rhy: -20, rhz: -70, re: 24 }, 0.9, R), rhIn: 1 }, ease: 'io' },
+      { at: H + 1.3, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** The warning: the mark flaring as it holds the fist up (0 none to 1). */
+function slamGlint(t: number): number {
+  return t < 0.5 ? 0 : t < 0.9 ? (t - 0.5) / 0.4 : t < UF_SLAM_HIT ? 1 : t < UF_SLAM_HIT + 0.15 ? 1 - (t - UF_SLAM_HIT) / 0.15 : 0;
+}
+
+/** STRUCK: it barely gives: a jolt back through the stone, its head knocked up, chips flying; then it grinds back. */
+function ufStruck(): Motion {
+  const R = UF_REST;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.07, pose: { px: -2.6, pz: R.pz - 0.6, pitch: R.pitch - 4, bend: R.bend - 4, faceUp: R.faceUp + 8, faceTilt: -4, roll: 1.2 }, ease: 'out' },
+      { at: 0.2, pose: { px: -1.4, pz: R.pz - 0.8, pitch: R.pitch - 1.5, bend: R.bend - 1.5, faceUp: R.faceUp + 3, roll: 0.4 }, ease: 'io' },
+      { at: 0.4, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
 // ---------------------------------------------------------------------------------------------
 // ITS SOLIDS
 
@@ -185,8 +451,8 @@ export interface UfLook {
 }
 
 /** The middle of its chest, and the chest's half-sizes (its solids, and the checks'). */
-const chestOf = (s: Skeleton): V3 => add(s.ribs, add(mul(s.chest[2], B.chest * 0.44), mul(s.chest[0], 1.0)));
-const CR: V3 = [B.ribDeep + 3, B.ribHalf + 8, B.chest * 0.66];
+export const chestOf = (s: Skeleton): V3 => add(s.ribs, add(mul(s.chest[2], B.chest * 0.44), mul(s.chest[0], 1.0)));
+export const CR: V3 = [B.ribDeep + 3, B.ribHalf + 8, B.chest * 0.66];
 
 /** THE UNFINISHED AS SOLIDS. */
 function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
@@ -262,8 +528,8 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
     const x = -dot(d, cl) / MW;
     const y = dot(d, cu) / MH;
     const edge = shriekAt(x + 0.07, y) !== 'bone' || shriekAt(x - 0.07, y) !== 'bone' || shriekAt(x, y + 0.06) !== 'bone' || shriekAt(x, y - 0.06) !== 'bone';
-    if (edge) return FLAME[2];
-    return fr(y * 3 - frame * 0.25 + hash(Math.floor(x * 6), 1, 93) * 0.5) < 0.3 ? FLAME[4] : FLAME[3];
+    if (edge) return m.glint > 0.6 ? FLAME[3] : FLAME[2];
+    return fr(y * 3 - frame * 0.25 + hash(Math.floor(x * 6), 1, 93) * 0.5) < 0.3 + 0.5 * m.glint ? FLAME[4] : FLAME[3];
   };
   const chestSkin = polishedSkin((u) => {
     // (the carved breast: its lower edge, curving)
@@ -282,8 +548,8 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
     put('chest', 'hole', { k: 'dot', p, c: HOLE, facing: cf, c2: HOLE });
   }
   // its light
-  put('glow', 'glow', { k: 'glow', p: add(mc, mul(cf, 6)), c: FLAME[2], r: 54, a: 0.36 * lit });
-  put('glow', 'glow', { k: 'glow', p: add(mc, mul(cf, 6)), c: FLAME[3], r: 18, a: 0.32 * lit });
+  put('glow', 'glow', { k: 'glow', p: add(mc, mul(cf, 6)), c: FLAME[2], r: 54 + 30 * m.glint, a: (0.36 + 0.3 * m.glint) * lit });
+  put('glow', 'glow', { k: 'glow', p: add(mc, mul(cf, 6)), c: FLAME[3], r: 18 + 14 * m.glint, a: (0.32 + 0.3 * m.glint) * lit });
 
   // --- THE SHOULDERS: the right a carved shoulder; the left a great block of the stone, unshaped ---
   {
@@ -376,7 +642,8 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
   // --- GRIT, trickling off its raw side, and shaken off after the shudder ---
   {
     const n = 6;
-    const after = m.t - SHUDDER;
+    // (how long since it was last shaken: its shudder, a step coming down, a blow landing: `rally`, the move's own)
+    const after = m.rally > 0 ? m.rally - 0.001 : -1;
     for (let i = 0; i < n; i++) {
       const ph = fr(m.t * 0.9 + i / n);
       const from = i % 3 === 0 ? s.shoulderL : i % 3 === 1 ? s.elbowL : lerp3(s.handL, s.elbowL, 0.3);
@@ -384,12 +651,35 @@ function ufBits(st: Stage, m: Moment, look: UfLook): Bit[] {
       const p = add(add(from, off), [0, 0, -ph * ph * 60]);
       if (p[2] > 1) put('grit', 'grit', { k: 'mote', p, c: i % 2 ? RAW[2] : RAW[3], size: 2 });
     }
-    if (after > 0 && after < 0.9) {
+    if (after >= 0 && after < 0.9) {
       for (let i = 0; i < 8; i++) {
         const from = i % 2 ? s.shoulderL : s.head;
         const off: V3 = [(hash(i, 3, 82) - 0.5) * 18, (hash(i, 4, 82) - 0.3) * 20, 0];
         const p = add(add(from, off), [0, 0, -after * after * 120 - hash(i, 5, 82) * 6]);
         if (p[2] > 1) put('grit', 'grit', { k: 'mote', p, c: i % 2 ? RAW[2] : RAW[3], size: 2 });
+      }
+    }
+  }
+  // --- A BLOW LANDING: chips of the stone flung up from where its fist strikes the floor, and a ring of dust running out ---
+  if (m.since !== undefined && m.since >= 0 && m.since < 0.7 && q.rhIn === 2) {
+    const k = m.since;
+    const at0: V3 = [s.handR[0] + 6, s.handR[1], 0];
+    for (let i = 0; i < 22; i++) {
+      const a = hash(i, 1, 83) * Math.PI * 2;
+      const v = 50 + hash(i, 2, 83) * 90;
+      const up = 90 + hash(i, 3, 83) * 140;
+      const p: V3 = [at0[0] + Math.cos(a) * v * k, at0[1] + Math.sin(a) * v * k, Math.max(0, up * k - 320 * k * k)];
+      if (p[2] <= 0 && k > 0.25) continue;
+      put('chips', 'chips', { k: 'mote', p, c: i % 3 ? POLISHED[3] : RAW[2], size: i % 3 === 0 ? 4 : 3 });
+    }
+    // (the ring of dust running out over the floor, and up)
+    if (k < 0.6) {
+      const r = 16 + Math.sqrt(k) * 70;
+      for (let i = 0; i < 30; i++) {
+        if (hash(i, 7, 84) < k * 1.2) continue;
+        const a = (i / 30) * Math.PI * 2 + hash(i, 4, 84) * 0.2;
+        const z = 1 + (3 + 8 * hash(i, 6, 84)) * Math.sin(Math.PI * Math.min(1, k * 1.6));
+        put('dust', 'dust', { k: 'mote', p: [at0[0] + Math.cos(a) * r * 1.2, at0[1] + Math.sin(a) * r, z], c: i % 2 ? POLISHED[3] : RAW[3], size: 3 });
       }
     }
   }
@@ -402,30 +692,33 @@ function len3(a: V3, b: V3): number {
 }
 
 // ---------------------------------------------------------------------------------------------
-// THE UNFINISHED AS A MONSTER OF THE BONES (its stand only, so far: the rest are its stand, not for use)
+// THE UNFINISHED AS A MONSTER OF THE BONES: its stand, its walk (and setting off and stopping), its fist
+// slam, and struck; its other moves (the rockslide, the hurled block, the stomp, tearing free) and its
+// death are still to come (until then its stand, not for use).
 
-function ufMove(name: string, motion: Motion): MobMove {
-  return { name, motion, rest: UF_REST };
-}
 function ufMob(look: UfLook): Mob {
-  const stand = ufMove('stand', ufStand());
+  const stand: MobMove = { name: 'The Unfinished stands, grinding', motion: ufStand(), rest: UF_REST, rally: (t) => shaken(t - SHUDDER) };
   return {
     id: look.fused ? 'unfinished-fused' : 'unfinished',
     name: 'The Unfinished',
     size: 'a boss: twice the Warden',
     build: B,
     stand,
-    attack: stand,
+    attack: { name: 'The fist slam', motion: ufSlam(), rest: UF_REST, glint: slamGlint, rally: (t) => shaken(t - UF_SLAM_HIT) },
     idleFrames: 24,
     idleFps: 10,
-    walk: stand,
-    walkFrames: 8,
-    walkFps: 8,
-    pace: 0.6,
-    reel: stand,
-    reelTime: 0.5,
-    hit: 1,
-    warn: 0.5,
+    walk: { name: 'The Unfinished walks, grinding', motion: ufWalk(), rest: UF_REST, period: UF_WALK_FRAMES / UF_WALK_FPS, ground: UF_GROUND, rally: walkShaken },
+    walkFrames: UF_WALK_FRAMES,
+    walkFps: UF_WALK_FPS,
+    pace: UF_PACE,
+    more: {
+      setOff: { name: 'The Unfinished sets off', motion: ufSetOff(), rest: UF_REST, ground: UF_GROUND, feet: ufSetOffFeet() },
+      halt: { name: 'The Unfinished stops', motion: ufHalt(), rest: UF_REST, ground: UF_GROUND, feet: ufHaltFeet(), rally: (t) => shaken(t - UF_HALT) },
+    },
+    reel: { name: 'The Unfinished is struck', motion: ufStruck(), rest: UF_REST, rally: (t) => shaken(t) },
+    reelTime: 0.4,
+    hit: UF_SLAM_HIT,
+    warn: 0.6,
     dieTime: 2,
     dying: stand,
     aura: { x: UF_CANVAS.ax, y: UF_CANVAS.ay - 120, r: 140, color: '#ff3a78', a: 0.18 },
@@ -439,6 +732,12 @@ export const UNFINISHED: Mob = ufMob({ fused: false });
 /** THE UNFINISHED, still one with the wall (the fight's first half). */
 export const UNFINISHED_FUSED: Mob = ufMob({ fused: true });
 
+/** One frame of one of its moves, as the game holds a figure (cut down, its lights in game pixels; no pool of light). */
+export function unfinishedFrame(which: string, t: number, view: GameView = 'front', fused = false): Sprite {
+  const mob = fused ? UNFINISHED_FUSED : UNFINISHED;
+  const can = canvasOf(mob);
+  return toSprite(paintMob(mob, which, t, view, ENEMY_RIM), null, can.ax, can.ay);
+}
 /** One picture of it standing, `t` seconds into its breath, as the game holds a figure (cut down, its lights in game pixels; no pool of light). */
 export function unfinishedStanding(t: number, view: GameView = 'front', fused = false): Sprite {
   const mob = fused ? UNFINISHED_FUSED : UNFINISHED;
@@ -452,39 +751,3 @@ export function unfinishedPainted(t: number, view: GameView = 'front', fused = f
 
 /** ITS BREATH'S ROUND, in seconds (for its frames). */
 export const UF_BREATH = 2.4;
-
-// ---------------------------------------------------------------------------------------------
-// THE UNFINISHED AS THE CHECKS SEE IT (art/boss_checks.ts): its outside as solids.
-
-export function ufShape(): BossShape {
-  return {
-    body: (s: Skeleton, q: Posed) => {
-      void q;
-      const [rH, rK, rA] = B.legR;
-      const [r0, r1, r2] = B.armR;
-      const limbs: CheckLimb[] = [
-        { name: 'legL', a: s.hipL, b: s.kneeL, r: rH * 1.0 },
-        { name: 'shinL', a: s.kneeL, b: s.ankleL, r: rK * 0.95 },
-        { name: 'legR', a: s.hipR, b: s.kneeR, r: rH * 0.9 },
-        { name: 'shinR', a: s.kneeR, b: s.ankleR, r: rK * 0.8 },
-        { name: 'footL', a: s.heelL, b: s.toeL, r: rA * 0.6 },
-        { name: 'footR', a: s.heelR, b: s.toeR, r: rA * 0.5 },
-        { name: 'upperL', a: s.shoulderL, b: s.elbowL, r: r0 * 1.0 },
-        { name: 'foreL', a: s.elbowL, b: s.handL, r: r1 * 1.1 },
-        { name: 'upperR', a: s.shoulderR, b: s.elbowR, r: r0 * 0.9 },
-        { name: 'foreR', a: s.elbowR, b: s.handR, r: r1 * 0.85 },
-        { name: 'neck', a: s.neck, b: s.skull, r: B.headR[1] * 0.9 },
-      ];
-      const lumps: CheckLump[] = [
-        { name: 'chest', c: chestOf(s), rot: s.chest, h: CR },
-        { name: 'belly', c: lerp3(s.waist, s.ribs, 0.4), rot: s.belly, h: [B.waistDeep + 5, B.waistHalf + 6, B.ribs * 0.9] },
-        { name: 'hips', c: add(s.pelvis, mul(s.hips[2], B.waist * 0.2)), rot: s.hips, h: [B.pelvisDeep + 4, B.pelvisHalf + 6, B.waist * 0.95] },
-        { name: 'head', c: s.head, rot: s.face, h: [B.headR[0] * 1.25, B.headR[1] * 1.28, B.headR[2] * 1.2] },
-      ];
-      void r2;
-      void rA;
-      return { limbs, lumps };
-    },
-    low: { knee: B.legR[1], elbow: B.armR[1], hand: B.armR[2] },
-  };
-}
