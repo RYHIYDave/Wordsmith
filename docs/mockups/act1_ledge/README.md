@@ -232,6 +232,28 @@ exactly as he tapped them:
 
 Read as, not asked: it is the cult's flock, so an enemy: pink (its eyes and its edge), nothing cyan.
 
-NEXT: the vultures' standing sheet, front and back, beside a hero for size, for him to see first; then its walk, its
-attack and its death as films; then his yes. After that the cliff crawlers' brief; then her eyrie peak with the city
-view (the reveal); then floors 8 to 10.
+## The vulture's standing sheet (14 Oct; behind `VULTURE_ON`, off: his yes first)
+
+Drawn as the brief asks (src/art/ledge_vultures.ts, `VULTURE`), on the heroes' bones at the knight's height, hunched: a
+bird on a man's bones, its wings folded down its back like a ragged mantle; its bald head grey-tan (never pink), its
+hooked beak dull horn; a dark ruff round the foot of its bare, wrinkled neck; its legs bare and scaled under feather
+trousers, the great toes and the talons; the cult's shackle on its left leg, and the broken iron chain dragging out to
+the side (in sight from in front and from behind); its eyes the enemy's pink, its edge the enemy's pink; nothing cyan.
+
+Its pictures, for him: `shots/vulture_look.png` (beside the knight at the game's size; the close-ups from in front and
+from behind, three times the top row's size) and `shots/vulture_head.png` (the head from in front and from behind,
+eight times; the feet from in front, six times). Both come from src/dev/preview_vulture.ts (the hashes `look` and `head`).
+
+Changed while drawing it, for the record: the ruff darkened (pale, it read as a crown and hid the bald head); the chain
+set to drag out to its side (behind the leg it was hidden from in front); the eyes moved out to the head's sides (the
+brow and the beak hid them). From in front one eye shows past the beak; the other is on the far side of the turned head.
+
+Checks: tests/ledge_vultures.test.ts 6 of 6 (the switch off and nothing of the game imports it; crisp in every frame of
+its stand, walk, attack, reel and dying, in both views; nothing cyan, every light the enemy's, nothing cut off at its
+canvas's edge; two pink eye lights; about the knight's height standing; the bald head pale and the iron chain in sight
+from both views). tests/new_mobs3.test.ts 8 of 8, its list of mock-ups now naming the vultures. tsc clean. NOT RUN: the
+full unit suite and the full regression; a real phone.
+
+NEXT: his yes to this standing sheet (asked as a pop-up when he is next here). Then its walk, its dive (its one attack),
+its flinch and its death, knocked from the air and down on its back, as films, each for his yes; its sound timings to
+the sound chat. Then the cliff crawlers' brief; then her eyrie peak with the city view (the reveal); then floors 8 to 10.
