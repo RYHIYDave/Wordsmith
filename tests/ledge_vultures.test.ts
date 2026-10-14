@@ -13,7 +13,8 @@ import * as nodeFs from 'node:fs';
 
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME, IRON } from '../src/art/mkit';
-import { VULTURE_ON, vulturePainted, vultureStanding } from '../src/art/ledge_vultures';
+import { VULTURE, VULTURE_BODY, VULTURE_ON, VULTURE_REST, vulturePainted, vultureStanding } from '../src/art/ledge_vultures';
+import { bonesAt, solve } from '../src/art/skeleton';
 import { spriteOf3 } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
 import { rgba } from '../src/engine/px';
@@ -28,7 +29,7 @@ paintWithoutCanvas();
 const FIRE = new Set(FLAME.map((c) => rgba(c).slice(0, 3).join(',')));
 const IRON_SET = new Set(IRON.map((c) => rgba(c).slice(0, 3).join(',')));
 
-// every move it has (its walk, dive, flinch and death are still the standing motion, placeholders), both views, frame by frame
+// every move it has (its dive, flinch and death are still the standing motion, placeholders), both views, frame by frame
 const frames: { name: string; move: string; t: number; view: 'front' | 'back' }[] = [];
 for (const view of ['front', 'back'] as const) {
   for (let i = 0; i <= 24; i += 3) frames.push({ name: `stand ${view} ${i}`, move: 'stand', t: i / 10, view });
@@ -127,5 +128,33 @@ test('its bald head pale at the top of the picture, and its broken cult chain in
     assert.ok(chain > 20, `${view}: ${chain} pixels of the cult's iron (the chain and the shackle)`);
     // (from behind the bald crown shows as a small pale patch only, the ruff and mantle hiding the rest)
     assert.ok(pale > (view === 'front' ? 30 : 12), `${view}: ${pale} pale pixels at the top (the bald head and neck)`);
+  }
+});
+
+test('its walk is flight: its feet off the floor all the round, its wings beating up and down once a round', () => {
+  let lowest = Infinity;
+  let lo = Infinity;
+  let hi = -Infinity;
+  const N = 64;
+  for (let i = 0; i <= N; i++) {
+    const s = solve(VULTURE_BODY, bonesAt(VULTURE.walk.motion.keys, VULTURE_REST, i / N));
+    for (const p of [s.heelL, s.heelR, s.toeL, s.toeR, s.ankleL, s.ankleR]) lowest = Math.min(lowest, p[2]);
+    lo = Math.min(lo, s.handL[2]);
+    hi = Math.max(hi, s.handL[2]);
+  }
+  assert.ok(lowest > 4, `its lowest foot point is ${lowest.toFixed(1)} above the floor (it must not stand on it)`);
+  assert.ok(hi - lo > 6, `its hand goes ${(hi - lo).toFixed(1)} up and down in a round`);
+  assert.equal(VULTURE.walk.period, VULTURE.walkFrames / VULTURE.walkFps, 'one round is its frames at its frame rate');
+});
+
+test('its walk round closes: its first and last moments are the same picture, from either side', () => {
+  for (const view of ['front', 'back'] as const) {
+    const a = vulturePainted(0, view, 'walk').px;
+    const b = vulturePainted(1, view, 'walk').px;
+    assert.equal(a.w, b.w);
+    assert.equal(a.h, b.h);
+    let diff = 0;
+    for (let i = 0; i < a.d.length; i++) if (a.d[i] !== b.d[i]) diff++;
+    assert.ok(diff === 0, `${view}: ${diff} values differ between the round's start and its end`);
   }
 });

@@ -232,7 +232,7 @@ exactly as he tapped them:
 
 Read as, not asked: it is the cult's flock, so an enemy: pink (its eyes and its edge), nothing cyan.
 
-## The vulture's standing sheet (14 Oct; behind `VULTURE_ON`, off: his yes first)
+## The vulture's standing sheet (14 Oct; HIS YES, 10:34: "Yes"; behind `VULTURE_ON`, off)
 
 Drawn as the brief asks (src/art/ledge_vultures.ts, `VULTURE`), on the heroes' bones at the knight's height, hunched: a
 bird on a man's bones, its wings folded down its back like a ragged mantle; its bald head grey-tan (never pink), its
@@ -254,6 +254,41 @@ canvas's edge; two pink eye lights; about the knight's height standing; the bald
 from both views). tests/new_mobs3.test.ts 8 of 8, its list of mock-ups now naming the vultures. tsc clean. NOT RUN: the
 full unit suite and the full regression; a real phone.
 
-NEXT: his yes to this standing sheet (asked as a pop-up when he is next here). Then its walk, its dive (its one attack),
-its flinch and its death, knocked from the air and down on its back, as films, each for his yes; its sound timings to
-the sound chat. Then the cliff crawlers' brief; then her eyrie peak with the city view (the reveal); then floors 8 to 10.
+Its walk is the next section.
+
+## The vulture's walk: circling flight (14 Oct; behind `VULTURE_ON`, off: his yes first)
+
+His yes to the standing sheet came as “Yes” (10:34), read as yes to the picture as shown. The walk is drawn now, for him.
+
+Its walk is circling flight (his brief: “Circling, then a sudden dive (Recommended)”). It is a flier, not a walker: its
+feet are tucked up under it and off the floor all the round, so the footwork that grips the floor (art/act1_feet.ts)
+does not apply. Its wings beat once a round, a second: the downstroke from the top (0.00 s) to the bottom (0.50 s), the
+upstroke back to the top (1.00 s). Its body lifts a little on the downstroke and sinks on the upstroke. It is banked to
+the figure's right, pitched forward into its turn, and its head is held down, laid against the bank. In flight its
+wings are spread: the primaries fan out from the wrist and trail back, the secondaries trail back from the forearm.
+At rest the wings stay folded as the standing sheet has them (the standing pixels are checked to the byte).
+
+The numbers, in src/art/ledge_vultures.ts: VULTURE_PACE, 1.2 tiles a second (the drift of its circling: mine to set; the
+game's own speed for it is the main chat's); VULTURE_WALK, eight frames at eight a second (one round a second, its
+frames at the game's rate); FLY_BODY 12 and FLY_FEET 20, picture pixels up. Its walk's keys are `vultureWalkPose`.
+
+Its picture: `shots/vulture_walk.gif` (src/dev/preview_vulture.ts, the hash `walkfilm`): three seconds, from in front and
+from behind, its shadow left on the floor under it. Drawn larger than the look sheet's game size, so its wings can be read.
+
+Checks: tests/ledge_vultures.test.ts 8 of 8 (the two new: its lowest foot point stays more than 4 picture pixels above
+the floor all the round, and its hand goes up and down by more than 6 in a round; its round closes, its first and last
+moments the same picture from both views). tests/new_mobs3.test.ts 8 of 8. The standing picture is the same to the byte
+(a sha256 of its pixels at four moments, both views: 1f9ac615…). tsc clean. NOT RUN: the full unit suite, the full
+regression, a real phone.
+
+Its sound (sound rule 7; the timings posted to the sound chat): in seconds from the start of a round, a whoosh as the
+wings sweep down, 0.00 to 0.50 (loudest about 0.25); a soft thump as the body lifts at 0.50; a lighter swish as the
+wings come up, 0.50 to 1.00. Quiet otherwise, as his option has it.
+
+NOT YET: its dive (its one attack), its flinch and its death (knocked from the air, down on its back): still the
+standing motion, placeholders that no picture shows.
+
+NEXT: his yes to the walk, asked as a pop-up ("Yes, on to its dive (Recommended)"; "Its wings should beat faster"; "It
+should bank less"). Then the dive as a film; then the flinch and the death; each for his yes, each with its sound
+timings to the sound chat. Then the cliff crawlers' brief; then her eyrie peak with the city view (the reveal); then
+floors 8 to 10.

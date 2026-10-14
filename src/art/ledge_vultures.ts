@@ -10,7 +10,7 @@
 // its sound, “A harsh shriek on the dive” (its own words: quiet while it circles, a screech as it dives, its wings
 // flapping).
 //
-// THIS FILE, SO FAR: how it looks, standing (pictures first). It is built as every monster is, on the heroes' bones
+// ITS STANDING PICTURE: his yes, 14 Oct (his words, 10:34: "Yes"). It is built as every monster is, on the heroes' bones
 // (art/skeleton.ts), at the knight's height (KNIGHT_BODY's 58), dressed in solids through art/new_mobs3.ts's painter,
 // lit from the upper left, the enemy's pink edge round it: a bird on a man's bones, hunched, its wings folded down its
 // back like a ragged mantle, its feathers hung from the arm's bones; its legs his, bare and scaled below the
@@ -18,9 +18,10 @@
 // hooked beak dull horn, its eyes the enemy's fire. On its left leg the cult's shackle, its chain broken, dragging.
 // Dull and dusty: never a songbird, never a proud eagle, never a sleek crow.
 //
-// Its walk, its dive (its one attack), its death (knocked from the air, down on its back) and its flinch come
-// after his yes to this standing picture; until then they are placeholders (the standing motion again) that no
-// picture shows.
+// ITS WALK: circling flight, drawn for his yes (`VULTURE_WALK`, below): a flier, its feet tucked up and off the
+// floor all the round, one wing beat a round. Its dive (its one attack), its flinch and its death (knocked from the
+// air, down on its back) come after his yes to the walk; until then they are placeholders (the standing motion
+// again) that no picture shows.
 
 import type { Sprite } from '../engine/px';
 import { hash, toSprite } from './kit';
@@ -30,7 +31,7 @@ import { at3, canvasOf, paintMob, sphere, TILE3 } from './new_mobs3';
 import type { Bit, Mob, MobMove, Moment, Put } from './new_mobs3';
 import type { GameView, Stage } from './skin';
 import { add, buildOf, cross, dot, lerp3, mul, norm, standing, sub } from './skeleton';
-import type { Bones, Build, Motion, Skeleton, V3 } from './skeleton';
+import type { Bones, Build, Key3, Motion, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF: nothing of the game reads this file. */
 export const VULTURE_ON = { on: false };
@@ -137,8 +138,13 @@ const mantled = (u: V3, tone: number): string => {
   return c === PLUME[0] || c === PLUME[1] ? MANTLE[1] : c === PLUME[2] ? MANTLE[2] : c === PLUME[3] ? MANTLE[3] : MANTLE[4];
 };
 
-/** ITS WING on one side, folded down its back: the coverts over the arm, the secondaries down from the forearm, the primaries from the wrist. */
-function vWing(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
+/**
+ * ITS WING on one side, folded down its back: the coverts over the arm, the secondaries down from the forearm, the
+ * primaries from the wrist. IN FLIGHT (`flying`: its feet tucked up, see vBits) the same wing is spread: its primaries
+ * fan out from the wrist along the arm and trail back, its secondaries trail back from the forearm, so that the wing is
+ * a sheet that beats up and down rather than a cloak. At rest (the approved standing picture) nothing of this is used.
+ */
+function vWing(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3, flying = false): void {
   const sh = side === 'L' ? s.shoulderL : s.shoulderR;
   const el = side === 'L' ? s.elbowL : s.elbowR;
   const wr = side === 'L' ? s.handL : s.handR;
@@ -147,15 +153,18 @@ function vWing(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
   const out = norm(sub(wr, sh), [0, sgn, 0]);
   // (a folded wing hangs: down, a little back, out at the tips)
   const hangDir = (k: number): V3 => norm(add(add(mul(Z, -1), mul(cf, -0.1 - 0.2 * k)), mul(out, 0.2 * (1 - k))));
+  // (in flight: out along the arm, back, and a little down; the far feathers swing further out and back)
+  const fanDir = (k: number): V3 => norm(add(add(mul(out, 0.85 - k * 0.25), mul(cf, -0.55 - 0.25 * k)), mul(Z, -0.1)));
+  const trailDir = (k: number): V3 => norm(add(add(mul(cf, -0.95), mul(out, 0.25 * (1 - k))), mul(Z, -0.15)));
   const base = side === 'L' ? 3000 : 3100;
   for (let i = 0; i < 6; i++) {
     const k = i / 5;
-    const dir = norm(add(add(mul(Z, -1), mul(cf, -0.1 * k)), mul(out, 0.9 - k * 0.8)));
+    const dir = flying ? fanDir(k) : norm(add(add(mul(Z, -1), mul(cf, -0.1 * k)), mul(out, 0.9 - k * 0.8)));
     feather(put, part, add(wr, mul(out, 1.5 - k * 3)), dir, out, 20 - k * 3, 2.6, QUILL, base + i);
   }
   for (let i = 0; i < 6; i++) {
     const k = i / 5;
-    feather(put, part, lerp3(wr, el, k), hangDir(k), out, 18 - k * 3, 2.8, QUILL, base + 20 + i);
+    feather(put, part, lerp3(wr, el, k), flying ? trailDir(k) : hangDir(k), out, 18 - k * 3, 2.8, QUILL, base + 20 + i);
   }
   for (let i = 0; i < 3; i++) {
     const k = i / 2;
@@ -257,9 +266,10 @@ function vBits(st: Stage, m: Moment): Bit[] {
   const bodyLen = Math.hypot(...sub(add(chestC, mul(cu, VCR[2] * 0.6)), s.pelvis));
   put('body', 'body', { k: 'ball', c: lerp3(s.pelvis, add(chestC, mul(cu, VCR[2] * 0.6)), 0.5), ax: [mul(bodyF, VCR[0] + 1), mul(bodyL, VCR[1] * 0.9), mul(spineUp, bodyLen * 0.62)], skin: plumed });
 
-  // --- ITS WINGS, folded down its back ---
-  vWing(put, s, 'L', cf);
-  vWing(put, s, 'R', cf);
+  // --- ITS WINGS, folded down its back (spread, in flight: its feet tucked up, which its standing pose never has) ---
+  const flying = q.lfz > 10;
+  vWing(put, s, 'L', cf, flying);
+  vWing(put, s, 'R', cf, flying);
 
   // --- ITS RUFF: a ring of dull pale feathers round the foot of its neck: short, sunk, never a crown ---
   const nr = add(s.neck, mul(cf, 1));
@@ -299,8 +309,61 @@ function vBits(st: Stage, m: Moment): Bit[] {
 }
 
 // ---------------------------------------------------------------------------------------------
-// ITS MOB. The walk, the dive, the flinch and the death are placeholders (the standing motion) until his yes to
-// the standing picture; no picture of them is made from this file yet.
+// ITS WALK: CIRCLING FLIGHT (his brief: "Circling, then a sudden dive (Recommended)"). It is a flier, not a walker:
+// its feet are tucked up under it and off the floor all the round (there is no floor for them to grip, so
+// art/act1_feet.ts's footwork does not apply); its wings beat once a round (a second: down, its body lifting on the
+// stroke, then up again); its body is banked and pitched into its turn, and its head held down toward the ground it
+// circles over.
+
+/** ITS PACE, tiles a second: the drift of its circling. Mine to set (the game's own speed for it is the main chat's). */
+export const VULTURE_PACE = 1.2;
+/** ITS WALK: one round is one wing beat, eight frames at eight a second (the game's walk: `walkFrames`, `walkFps`). */
+export const VULTURE_WALK = { frames: 8, fps: 8 } as const;
+/** How far its body is lifted over its standing height, and its feet over the floor, in picture pixels. */
+const FLY_BODY = 12;
+const FLY_FEET = 20;
+
+/**
+ * ITS POSE `t` seconds into a round of its walk. `k` runs from 1 (its wings up) through 0 to -1 (its wings down,
+ * half a round on) and back: the downstroke lifts its body, the upstroke lets it sink a little. Its wings are spread
+ * out to either side, their hands rising and falling with the stroke; its feet are drawn up under its belly.
+ */
+export function vultureWalkPose(t: number): Partial<Bones> {
+  const R = VULTURE_REST;
+  const ph = 2 * Math.PI * t;
+  const k = Math.cos(ph);
+  const s = Math.sin(ph);
+  const wingY = ARM * 0.88;
+  const wingZ = -ARM * 0.15 + ARM * 0.6 * k;
+  const fp = 14;
+  return {
+    pz: R.pz + FLY_BODY - 2.5 * k,
+    pitch: R.pitch + 14 + 1.5 * k,
+    roll: 9,
+    yaw: 5 * s,
+    faceUp: R.faceUp - 8,
+    faceTurn: R.faceTurn + 4 * s,
+    faceTilt: -5,
+    lhx: R.lhx, lhy: wingY, lhz: wingZ, le: R.le,
+    rhx: R.rhx, rhy: -wingY, rhz: wingZ, re: R.re,
+    lfx: R.lfx + 4, lfy: R.lfy - 0.45 * VB.stance, lfz: FLY_FEET, lfp: fp, lk: R.lk + fp * 0.3,
+    rfx: R.rfx + 4, rfy: R.rfy + 0.45 * VB.stance, rfz: FLY_FEET, rfp: fp, rk: R.rk - fp * 0.3,
+  };
+}
+
+/** Its walk's keys: a key at each of its frames, so that the round is exactly the frames it is shown in. */
+function vultureWalkKeys(): Key3[] {
+  const keys: Key3[] = [];
+  for (let i = 0; i <= VULTURE_WALK.frames; i++) {
+    const t = i / VULTURE_WALK.fps;
+    keys.push({ at: t, ease: 'lin', pose: vultureWalkPose(t) });
+  }
+  return keys;
+}
+
+// ---------------------------------------------------------------------------------------------
+// ITS MOB. The dive, the flinch and the death are placeholders (the standing motion) until his yes to the walk;
+// no picture of them is made from this file yet.
 
 function vMove(name: string, motion: Motion): MobMove {
   return { name, motion, rest: VULTURE_REST };
@@ -316,10 +379,10 @@ export const VULTURE: Mob = {
   attack: { ...vMove('The vulture dives (placeholder)', vStand()) },
   idleFrames: 24,
   idleFps: 10,
-  walk: { ...vMove('The vulture shuffles (placeholder)', vStand()), period: 1, ground: 0.6 * TILE3 },
-  walkFrames: 8,
-  walkFps: 8,
-  pace: 0.6,
+  walk: { name: 'The vulture circles', motion: { keys: vultureWalkKeys(), loop: 0 }, rest: VULTURE_REST, period: VULTURE_WALK.frames / VULTURE_WALK.fps, ground: VULTURE_PACE * TILE3 },
+  walkFrames: VULTURE_WALK.frames,
+  walkFps: VULTURE_WALK.fps,
+  pace: VULTURE_PACE,
   reel: vMove('The vulture is struck (placeholder)', vStand()),
   reelTime: 0.4,
   hit: 0.5,
@@ -335,6 +398,12 @@ export const VULTURE: Mob = {
 export function vultureStanding(t: number, view: GameView = 'front'): Sprite {
   const can = canvasOf(VULTURE);
   return toSprite(paintMob(VULTURE, 'stand', t, view, ENEMY_RIM), null, can.ax, can.ay);
+}
+
+/** One picture of the vulture in any of its moves, `t` seconds into it, as the game holds a figure. */
+export function vultureFrame(move: string, t: number, view: GameView = 'front'): Sprite {
+  const can = canvasOf(VULTURE);
+  return toSprite(paintMob(VULTURE, move, t, view, ENEMY_RIM), null, can.ax, can.ay);
 }
 
 /** The same, painted (for the checks). */
