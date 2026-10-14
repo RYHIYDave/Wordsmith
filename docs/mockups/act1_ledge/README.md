@@ -89,5 +89,89 @@ drop, within its height; the lip lit; nothing on a top over the drop; pieces sea
 than every word, ground and sky; the sky opaque, the same every time, seamless where it comes round and between
 pieces; the sky's parts; light from the upper left.
 
-NEXT: the Ledge Road's own pieces (a rope rail along the drop, the cult's things on the trail, and the rest of
-its 25), then the Carrion Queen's brief (her peak looking out over the city).
+## Its 25 pieces (src/art/floor7.ts, `ledgePieces()`)
+
+Themed after the floor's boss, the Carrion Queen, and the cliff trail (his rule for a set of floors from the
+second on: 25 for the set's theme, 25 for each boss). Nothing of them glows; nothing pink or red: what the flock
+has picked is bone and dry hide, never raw.
+- THE TRAIL: the rope rail along the drop (`railPost`, and `railSpan(dx, dy)` the rope between any two posts the
+  game lays, about a tile apart), a post broken and leaning out, its ropes dangling; planks over a cleft (a floor
+  tile, along x or y); cracks across the trail (a floor tile); a rockfall; a cairn.
+- THE CARRION: a pack mule picked clean; bones and feathers (two); a vulture's nest; the great egg (a quest
+  piece, no quest yet); a dead vulture; a perching rock where the flock sits, whitened (tall: see it through).
+- THE CULT'S: its perch where its vultures are chained (tall), its feather standard (tall), its supply cart gone
+  over, its cage for the flock broken open; THE GATE, its barricade across the trail (along x or y; closed and
+  dragged open).
+- ON THE WALL: iron rings and chains; a nest on a ledge; icicles under a lip.
+- WHAT BREAKS: a water jar; a basket of the flock's feathers (each whole and broken).
+- THE TRAP, the crumbling ledge (a floor tile laid over the trail): 0 hairline cracks; 1 its warning, the cracks
+  opening round the place, grit trickling; 2 giving, the rock inside sinking; 3 gone, a ragged hole into the drop.
+- THE HEIGHTS: snow drifts (two).
+
+Shown the first 16 and asked “Are these the Ledge Road's first pieces?”: “Change some”; asked which: “The steps I
+think can go.  It’ll probably just confuse the player that they can’t go up them” (steps cut in the wall,
+dropped). Shown all 25 and asked “Are these the Ledge Road's 25 pieces?”: “Yes, on to the Queen (Recommended)”.
+
+    node tools/preview.mjs src/dev/preview_ledge.ts shots/ledge_dressed.png 1014 468 dressed
+    node tools/preview.mjs src/dev/preview_ledge.ts shots/ledge_pieces.png 1014 2210 pieces
+
+`tests/floor7.test.ts` (6): nothing of the game imports them; their pictures, names, no light; crisp, no loose
+pixels (the rail's spans too); no cyan, no pink or red, duller than every word; what stands on its foot, a floor
+tile or the trap inside its diamond, a span from post head to post head; 25 of them, the steps gone.
+
+## The Carrion Queen, floor 7's boss (src/art/carrion_queen.ts, behind `CARRION_QUEEN_ON`, off)
+
+The planning chat's, with his yes (12 Oct, 18:07): a huge cult-bound vulture nesting on an outcrop over the
+drop; the ledge crumbles section by section as the fight goes on; a talon rake (basic), a wing gust that shoves
+you toward the edge, a dive along a marked line, a call that brings her flock. His brief, asked as his art
+rulebook's questions (13 Oct, asked after 22:25): how big, “Wings wider than the trail (Recommended)”, offered as: huge:
+perched, about the Unfinished's height; wings spread, wider than the trail is across; menacing. The one thing to
+know her by, “Bone crown and cult chains (Recommended)”, offered as: a ruff of pale bone-white feathers like a
+crown, a broken cult shackle and chain on one leg, the cult's mark burning pink on her breast. How she moves,
+“Hunched hops, a blur in the air (Recommended)”, offered as: heavy and lurching on the ground, hopping and
+dragging her wings; then terrifyingly fast once she takes off. How she dies: “All these are great.  I think I
+want to see them all” (offered: she topples backwards off her eyrie into the drop, feathers bursting and
+swirling up after her; the crumbling eyrie breaks under her and she falls with it; the cult's mark flares and
+she comes apart in a storm of black feathers): all three to be drawn, for him to pick. Her sound, “A shrieking
+screech, beating wings (Recommended)”, offered as: a harsh, rasping screech when she calls or dives; the heavy
+whump of her wings; the chain on her leg clinking. What she must never look like, “Not like a phoenix or
+eagle”, offered as: no proud, noble bird look: ugly, a carrion eater.
+
+STANDING (the first look): a Mob on the heroes' bones (her wings his arms, her feathers hung from them as panels;
+her legs his, the thighs in feathered trousers, the shanks bare and scaled, great taloned toes), about the
+Unfinished's height (`CQ_TALL` 264), MANTLED: hunched, her wings held half open and drooping round her like a
+ragged cloak; her small feathers scalloped in rows, matte; her crown of bone-white spikes round the root of her
+bare grey neck, her head carried low and forward of it (`headOf`), her hooked beak, her eyes the cult's fire; the
+cult's mark burning on her upper breast; the cult's shackle on her left leg, its chain broken and dragging. Her
+breath (2.6 s): her bulk heaves and her weight goes over, her wings lift a little, her head jerks round to look
+and holds. Canvas 820 x 600. Through the boss review (her stand).
+
+    node tools/preview.mjs src/dev/preview_carrion_queen.ts shots/cq_look.png 1014 1000 look
+
+Asked “Is this the Carrion Queen?”: “Yes, animate her (Recommended)”, offered as: next her hopping walk, the
+talon rake and her flinch as films; then her three big moves, and all three deaths for him to pick.
+
+HER HOP (`cqWalk`, 1 s a round, 16 frames): settled on both feet, carried back under her as she goes; she crouches
+and her wings open and rise; she springs, both feet tucked and swung through under her, her wings held up; she
+lands heavy on both and sinks. Her pace 0.8 tiles a second, carried over the floor as the game carries a boss. It
+stops only at her stand. Film: `preview_carrion_queen.ts` hash `walkfilm`, 4 frames a second
+(`node tools/page_gif.mjs src/dev/preview_carrion_queen.ts "walkfilm" shots/cq_walk.gif 4`).
+
+HER TALON RAKE (`cqRake`, 1.7 s, the blow lands at 28/30 s, the warning from 0.56 s): a leap, not a stab. She
+crouches, springs off both feet, hangs in the air with her wings high and wide and both feet thrust out before
+her, talons spread (the warning, trembling); her body pitches forward, her wings beat down, and both feet rake
+down and back through whoever is before her; she comes down heavy where she stood, hunched over what she struck,
+and draws back into her mantle. (The first try, one foot raised, lost its talons under her bulk.) Her flinch
+(`cqReel`, 0.4 s): her head snaps back, her wings jerk up, she is knocked back on her feet and hunches again.
+Film: hash `rakefilm`, 30 frames a second (`shots/cq_rake.gif`). Both through the boss review
+(`tests/carrion_queen_shape.ts`, `MADE`: stand, walk, attack, reel).
+
+Asked “Are her hop and talon rake right?”: “Yes, on to her big moves (Recommended)”, offered as: her hop and rake
+stay; next her wing gust, her dive and her call.
+
+`tests/carrion_queen.test.ts` (6): the switch off, nothing imports her; crisp, her pink edge; nothing cyan, every
+light the cult's fire, nothing cut off; her size (about the Unfinished's); her crown pale, the mark burning;
+the boss review of what of her moves, and every frame of her stand, hop, rake and flinch held to the crisp, the pink
+edge and the canvas. `tests/new_mobs3.test.ts` knows her among the mock-ups.
+
+NEXT: her wing gust, her dive and her call (after his yes to the hop and rake); then her three deaths.

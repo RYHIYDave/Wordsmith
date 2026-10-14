@@ -28,6 +28,7 @@
 
 import { makeDaggerCultistArt3 } from '../art/cultists';
 import { quarryPieces } from '../art/floor6';
+import { ledgePieces, railSpan } from '../art/floor7';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
@@ -42,7 +43,7 @@ import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
 const PW = HASH === 'sky' ? 1024 : HASH === 'cost' ? 600 : 1014;
-const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'sky' ? 400 : 468;
+const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'sky' ? 400 : HASH === 'pieces' ? 2210 : 468;
 
 // ---------------------------------------------------------------------------------------------------
 // The mock-up's shapes, in the mock-up's own world (its panel 1014 x 468, world (12, 12) at its middle),
@@ -398,7 +399,9 @@ cvs.style.display = 'block';
 const g = cvs.getContext('2d') as CanvasRenderingContext2D;
 g.imageSmoothingEnabled = false;
 
-if (HASH === 'shot' || HASH === 'tiles' || HASH === 'bend' || HASH === 'first') {
+if (HASH === 'pieces') pieceSheet();
+else if (HASH === 'dressed') dressedShot();
+else if (HASH === 'shot' || HASH === 'tiles' || HASH === 'bend' || HASH === 'first') {
   paintPanel(g, VX, VY, PW, PH);
   if (HASH === 'tiles') tileLines(g);
   const stands: Stand[] = [];
@@ -497,6 +500,146 @@ if (HASH === 'shot' || HASH === 'tiles' || HASH === 'bend' || HASH === 'first') 
   g.scale(2, 2);
   drawText(g, line, 4, 4, THEME.text, { shadow: P.ink });
   g.restore();
+  show(cvs);
+}
+
+/** A patch of the trail's own ground, w by h picture pixels, plain (no edges): its road, or with `wall` the mountain's wall over a strip of road at its foot (its foot `foot` pixels up from the bottom). */
+function patch(w: number, h: number, wall: boolean, foot = 44): HTMLCanvasElement {
+  const out = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = 4000 + x;
+      const py = 3000 + y;
+      const [wx, wy] = worldOf(px, py);
+      const up = h - foot - y;
+      const c = wall && up > 0 ? LOOK.face(0, up, px, py, wx, wy) : LOOK.floor(wx, wy, px, py, 1);
+      const t = wall && up <= 0 && up > -7 ? (up > -4 ? LOOK.foot[0] : LOOK.foot[1]) : 0;
+      const o = (y * w + x) * 4;
+      out[o] = c[0] * (1 - t);
+      out[o + 1] = c[1] * (1 - t);
+      out[o + 2] = c[2] * (1 - t);
+      out[o + 3] = 255;
+    }
+  }
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  (cv.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(out, w, h), 0, 0);
+  return cv;
+}
+
+/** Every piece of the Ledge Road's so far, at twice the game's size, each on its ground, named: what stands on the wall against a piece of the wall. */
+function pieceSheet(): void {
+  g.fillStyle = '#0d1030';
+  g.fillRect(0, 0, PW, PH);
+  const all = ledgePieces().flatMap((pc) => (pc.frames ?? []).map((sp, i) => ({ name: pc.frames!.length > 1 ? `${pc.name} ${i + 1}` : pc.name, sp, kind: pc.kind })));
+  const COLS = 4;
+  const CW = Math.floor(PW / COLS);
+  const CH = 220;
+  const K = 2;
+  const road = patch(Math.ceil((CW - 6) / K), Math.ceil((CH - 22) / K), false);
+  const wall = patch(Math.ceil((CW - 6) / K), Math.ceil((CH - 22) / K), true, 24);
+  all.forEach((it, n) => {
+    const ox = (n % COLS) * CW + 3;
+    const oy = Math.floor(n / COLS) * CH + 2;
+    const onWall = it.kind === 'on the wall';
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy + 18, CW - 6, CH - 22);
+    g.clip();
+    g.drawImage(onWall ? wall : road, ox, oy + 18, (onWall ? wall : road).width * K, (onWall ? wall : road).height * K);
+    const floorTile = it.kind === 'floor tile' || it.kind === 'trap';
+    const ax = ox + CW / 2;
+    const ay = floorTile ? oy + 18 + (CH - 22) / 2 - 32 : onWall ? oy + CH - 4 - 24 * K + 4 : oy + CH - 26;
+    g.drawImage(it.sp.img, Math.round(ax - it.sp.ax * 2 * K), Math.round(ay - it.sp.ay * 2 * K), it.sp.w * 2 * K, it.sp.h * 2 * K);
+    g.restore();
+    g.save();
+    g.scale(2, 2);
+    drawText(g, it.name, ox / 2 + 1, oy / 2 + 1, THEME.text, { shadow: P.ink });
+    g.restore();
+  });
+  show(cvs);
+}
+
+/** Where the wall's foot is down the panel's column `px`: the first floor pixel under a run of at least `tall` wall pixels (or -1). */
+function wallFoot(kinds: Uint8Array, px: number, tall = 60): number {
+  let run = 0;
+  for (let py = 0; py < PH; py++) {
+    const k = kinds[py * PW + px];
+    if (k === TK.Face) run++;
+    else if (k === TK.Floor && run >= tall) return py;
+    else run = 0;
+  }
+  return -1;
+}
+
+/** THE TRAIL DRESSED with its pieces so far, as the game might lay them: the rope rail along the drop, the carrion and the flock's leavings, the cult's perch and standard, things against the wall. */
+function dressedShot(): void {
+  const kinds = paintPanel(g, VX, VY, PW, PH);
+  const stands: Stand[] = [];
+  const pc = (name: string, frame = 0): Sprite => {
+    const q = ledgePieces().find((x) => x.name === name);
+    if (!q || !q.frames) throw new Error(`no piece ${name}`);
+    return q.frames[frame];
+  };
+  const shadowOf = (name: string): number | undefined => ledgePieces().find((x) => x.name === name)?.shadow;
+  const onTrail = (px: number, py: number, name: string, frame = 0): void => {
+    const [x, y] = at(px, py);
+    if (!T.ground(x, y)) console.warn('off the trail:', name, px, py);
+    stands.push({ x, y, sp: pc(name, frame), shadow: shadowOf(name) });
+  };
+  const againstWall = (px: number, name: string): void => {
+    const py = wallFoot(kinds, px);
+    if (py < 0) return console.warn('no wall at', px);
+    const [x, y] = worldOf(VX + px, VY + py + 2);
+    stands.push({ x, y, sp: pc(name), shadow: shadowOf(name) });
+  };
+  // the rope rail along the drop: posts along the trail's lower edge, a span between each two
+  const posts: [number, number][] = [];
+  for (let px = 600; px <= PW - 12; px += 52) {
+    let py = PH - 1;
+    while (py > 0 && kinds[py * PW + px] !== TK.Floor) py--;
+    const [x, y] = worldOf(VX + px, VY + py - 5);
+    posts.push([x, y]);
+  }
+  posts.forEach(([x, y], i) => {
+    const broken = i === 4;
+    stands.push({ x, y, sp: pc(broken ? 'rope rail, broken' : 'rope rail'), shadow: 0.12 });
+    const nx = posts[i + 1];
+    if (nx && !broken && i !== 3) stands.push({ x, y, sp: railSpan((nx[0] - x) * 40, (nx[1] - y) * 40) });
+  });
+  // floor tiles first, on the trail's ground: the crumbling ledge in its warning, cracks across the trail
+  const tileAt = (px: number, py: number, name: string, frame: number): void => {
+    const [x, y] = at(px, py);
+    const [sx, sy] = pictureOf(Math.floor(x), Math.floor(y));
+    drawAt(g, pc(name, frame), sx - VX, sy - VY);
+  };
+  tileAt(452, 262, 'the crumbling ledge', 1);
+  tileAt(612, 272, 'cracks across the trail', 0);
+  againstWall(560, 'icicles in the wall');
+  againstWall(650, 'iron rings in the wall');
+  againstWall(930, 'a nest in the wall');
+  onTrail(598, 238, 'snow drift', 0);
+  onTrail(684, 264, "the cult's barricade", 1);
+  onTrail(724, 240, 'water jar');
+  onTrail(746, 247, "basket of the flock's feathers");
+  onTrail(930, 256, 'a pack mule, picked clean');
+  onTrail(845, 248, "the cult's perch");
+  onTrail(890, 286, 'bones and feathers', 1);
+  onTrail(566, 286, 'a dead vulture');
+  onTrail(398, 240, 'a perching rock');
+  onTrail(338, 166, 'cairn');
+  onTrail(312, 120, 'rockfall');
+  onTrail(372, 196, "the cult's feather standard");
+  onTrail(296, 64, "the cult's cage for the flock");
+  stands.push({ x: at(520, 270)[0], y: at(520, 270)[1], sp: knight, figure: true, shadow: 0.5 });
+  for (const [px, py] of [[760, 270], [800, 262]]) {
+    const [x, y] = at(px, py);
+    stands.push({ x, y, sp: cultist.front.idle[0], figure: true, shadow: 0.45 });
+  }
+  dressSlope(stands);
+  drawStands(g, stands);
+  nameAndMap(g, at(520, 270));
   show(cvs);
 }
 
