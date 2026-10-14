@@ -212,19 +212,26 @@ light the cult's fire, nothing cut off; her size (about the Unfinished's); her c
 the boss review of what of her moves, and every frame of her stand, hop, rake and flinch held to the crisp, the pink
 edge and the canvas. `tests/new_mobs3.test.ts` knows her among the mock-ups.
 
-## The vultures (floor 7's small mobs; his brief in progress, 14 Oct)
+## The vultures (floor 7's small mobs): his brief, complete (14 Oct)
 
 The Ledge Road's vultures (the plan's table: “Vultures (small)”): the flock that circles over the drop, and that the
-cult chains on its perch. His brief, asked as his art rulebook's questions for a new character, his picks:
+cult chains on its perch. Asked as his art rulebook's questions for a new character, each his pick, the labels
+exactly as he tapped them:
 - HOW BIG: “About your height (Recommended)”, asked as “The floor 7 vulture: how big? (They circle over the drop,
   and the cult chains some on its perch.)”.
 - THE ONE THING TO KNOW IT BY: “Bald head, hooked beak (Recommended)”.
-- HOW IT MOVES: “Circling, then a sudden dive (Recommended)”. Read as its one attack: the dive (small monsters have
-  one attack: his rules of 9 Oct, in the gameplay rulebook).
+- HOW IT MOVES: “Circling, then a sudden dive (Recommended)”.
+- WHAT IT CARRIES, AND HOW IT ATTACKS, asked “The floor 7 vulture: what does it carry, and how does it attack?”:
+  “A broken cult chain on one leg”, whose own words also say its attack is still the dive. Not the recommended pick;
+  his pick stands. Small monsters have one attack (his rules of 9 Oct, in the gameplay rulebook): the dive.
+- HOW IT DIES, asked “The floor 7 vulture: how does it die?”: “Knocked from the air, lands on its back (Recommended)”.
+- WHAT IT MUST NEVER LOOK LIKE, asked “The floor 7 vulture: what must it never look like?”: “Not a cute or heroic
+  bird (Recommended)”.
+- ITS SOUND (sound rule 7), asked “The floor 7 vulture: what does it sound like?”: “A harsh shriek on the dive”, whose
+  own words also say it is quiet while it circles and its wings flap. Not the recommended pick; his pick stands.
 
-STILL TO ASK HIM, as pop-ups: what it must never look like; how it dies; its sound (sound rule 7). Nothing of it is
-drawn yet: its standing sheet comes only once the brief is whole, then its walk, its attack and its death, each for
-his yes.
+Read as, not asked: it is the cult's flock, so an enemy: pink (its eyes and its edge), nothing cyan.
 
-NEXT: the vultures' brief (the three questions above); then the vultures' standing sheet, their films and his yes;
-then the cliff crawlers; then her eyrie peak with the city view (the reveal); then floors 8 to 10.
+NEXT: the vultures' standing sheet, front and back, beside a hero for size, for him to see first; then its walk, its
+attack and its death as films; then his yes. After that the cliff crawlers' brief; then her eyrie peak with the city
+view (the reveal); then floors 8 to 10.
