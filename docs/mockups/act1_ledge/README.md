@@ -356,4 +356,29 @@ Its walk is the next section.
 
 **Not yet:** nothing of the vulture is in the game. It stays behind `VULTURE_ON` (off), and comes into floor 7 whole, with its mobs and its films, once the main chat brings it in.
 
-**Next:** the cliff crawlers' brief; then her eyrie peak with the city view; then floors 8 to 10.
+**Next:** the cliff crawler's brief (the section below, answered 14 Oct); then its standing sheet and films, for his yes; then her eyrie peak with the city view; then floors 8 to 10.
+
+## The cliff crawler's brief (14 Oct; his picks, asked as pop-ups)
+
+The Ledge Road's cliff crawlers (the plan's table: "Cliff Crawlers (medium, his pick in place of goats)"). A medium monster: two attacks (his rules of 9 Oct: "medium two"; a basic single-target blow, and one big move) and packs of 3 to 5. Asked as his art rulebook's questions for a new character, in two pop-ups, each his pick, the labels exactly as he tapped them:
+- WHAT IT IS, AND WHERE IT LIVES, asked "The cliff crawler: what is it, and where does it live? (Floor 7, the Ledge Road. A medium monster, in packs of 3 to 5.)": "Low, many-legged beast on the cliff face (Recommended)".
+- HOW BIG, AND HOW IT SHOULD FEEL, asked "The cliff crawler: how big, and how should it feel? (Fun to smash, or menacing? Medium, packs of 3 to 5.)": "Waist-high and wide, fun to smash (Recommended)".
+- HOW IT MOVES, asked "The cliff crawler: how does it move? (Medium, packs of 3 to 5.)": "Wild and skittering, never still". Not the recommended pick; his pick stands. (Ours was "Scuttles in quick bursts, then freezes (Recommended)".)
+- THE ONE THING TO KNOW IT BY, asked "The cliff crawler: what is the one thing you would know it by at a glance?": "Its many legs, splayed low on the rock (Recommended)".
+- WHAT IT CARRIES, AND HOW IT ATTACKS, asked "The cliff crawler: what does it carry, and how does it attack? (Medium: a basic blow between its big moves, and one big move.)": "Nothing it carries; a claw swipe, then a leap onto you (Recommended)".
+- HOW IT DIES, asked "The cliff crawler: how does it die?": "It curls up, and its shell cracks open". Not the recommended pick; his pick stands. (Ours was "Its legs give way; it slides down the cliff face (Recommended)".)
+- WHAT IT MUST NEVER LOOK LIKE, asked "The cliff crawler: is there anything it must never look like?": "Not a cute or friendly creature (Recommended)".
+- ITS SOUND (sound rule 7), asked "The cliff crawler: what does it sound like? (Sound rule 7: a sound brief with every new monster.)": "Clicking, scraping claws on stone (Recommended)".
+
+**Read as, not asked** (stated plainly here; the pictures will show whether they are right):
+- Friend or enemy: an enemy, as the cult's and the Ledge Road's monsters are. Its eyes and its edge are the enemy's pink while it lives; nothing cyan.
+- Wild: no cult mark, no chain, no cult colour. It is not the cult's.
+- "Never still": at rest it never settles. Its legs keep shifting and its body keeps a restless tremble, so its standing loop has motion in it, and no frozen pose. Its walk has no pause.
+- Its legs: read as six, which is "many" without being a spider.
+- Its size: waist-high to the knight, and wide; a pack of 3 to 5.
+- Its attacks: the claw swipe is its basic blow; the leap, after a crouch, is its big move. Its reach and its cooldown are the main chat's to set, by the gameplay rulebook's rule: the bigger the hit, the longer the cooldown.
+- Its death: its shell splits along its back and it lies curled up, its legs drawn in, where it fell.
+
+**Not yet:** nothing of the crawler is drawn or in the game. Its standing sheet comes first, beside a hero, front and back; then its walk, its attack, its flinch and its death as films, each checked against docs/art/RULEBOOK.md before he sees it; behind a switch that is off.
+
+**Next:** its standing sheet, for his yes; then her eyrie peak with the city view; then floors 8 to 10.
