@@ -171,7 +171,7 @@ stay; next her wing gust, her dive and her call.
 
 HER BIG MOVES (her three, as her own moves: `more.gust`, `more.dive`, `more.call`), drawn after his yes to the hop and
 the rake, for him to see before anything is set in the game:
-- HER WING GUST (`cqGust`, 1.5 s, the blow at 0.8 s, held and trembling from 0.3 s): she puffs up on her feet and
+- HER WING GUST (`cqGust`, 1.5 s, the blow at 0.8 s, held from 0.3 s and trembling from 0.4 s): she puffs up on her feet and
   throws her wings wide and high; then beats them down and forward, hard, shoving the air before her; her wings
   sweep through and up, and she settles back into her mantle. The hips go first, then the chest, then the wings.
   Film: hash `gustfilm` (`shots/cq_gustfilm.gif`).
@@ -204,11 +204,27 @@ HIS PICK OF HER DEATH (14 Oct), asked with the three films (cq_edgefilm.gif, cq_
 cq_featherfilm.gif): “Topples off the edge (Recommended)”, offered as: she staggers back and goes off the edge of the
 eyrie into the drop (the first of the three, as the most plainly a fall); the other two (goes down with the ledge;
 bursts into feathers) stay as variants (CQ_DEATHS) for the record. CARRION_QUEEN's `dying` is now the edge death
-(2 s). Her sound brief for it is for the sound chat (the board, 14 Oct).
+(2 s). Her sound brief for it is for the sound chat (the board, 14 Oct). Its timings for her gust, dive and call went
+to the sound chat too (the board, 14 Oct).
 
 `tests/carrion_queen.test.ts` (8): the switch off, nothing imports her; crisp, her pink edge; nothing cyan, every
 light the cult's fire, nothing cut off; her size (about the Unfinished's); her crown pale, the mark burning;
 the boss review of what of her moves, and every frame of her stand, hop, rake and flinch held to the crisp, the pink
 edge and the canvas. `tests/new_mobs3.test.ts` knows her among the mock-ups.
 
-NEXT: her sound brief for the edge death (posted to sound); then her eyrie peak with the city view (the reveal), then floor 7's mobs (the vultures and the cliff crawlers).
+## The vultures (floor 7's small mobs; his brief in progress, 14 Oct)
+
+The Ledge Road's vultures (the plan's table: “Vultures (small)”): the flock that circles over the drop, and that the
+cult chains on its perch. His brief, asked as his art rulebook's questions for a new character, his picks:
+- HOW BIG: “About your height (Recommended)”, asked as “The floor 7 vulture: how big? (They circle over the drop,
+  and the cult chains some on its perch.)”.
+- THE ONE THING TO KNOW IT BY: “Bald head, hooked beak (Recommended)”.
+- HOW IT MOVES: “Circling, then a sudden dive (Recommended)”. Read as its one attack: the dive (small monsters have
+  one attack: his rules of 9 Oct, in the gameplay rulebook).
+
+STILL TO ASK HIM, as pop-ups: what it must never look like; how it dies; its sound (sound rule 7). Nothing of it is
+drawn yet: its standing sheet comes only once the brief is whole, then its walk, its attack and its death, each for
+his yes.
+
+NEXT: the vultures' brief (the three questions above); then the vultures' standing sheet, their films and his yes;
+then the cliff crawlers; then her eyrie peak with the city view (the reveal); then floors 8 to 10.
