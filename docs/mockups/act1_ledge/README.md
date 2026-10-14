@@ -535,12 +535,56 @@ The Ledge Road's cliff crawlers (the plan's table: "Cliff Crawlers (medium, his 
 6. It is painted from its own solids (rods and balls), not on the heroes' bones. Monsters 8 names only the skeleton and the bone archer for that.
 7. Its flakes are its own shell and last half a second. The canvas is `CR_CANVAS`, 176 by 144, its feet at (88, 94).
 
-**Asked, not answered yet** (four pop-up questions, sent with the pictures; nothing goes live until he says yes; our pick is first and marked):
+**Asked with the revision, not answered yet** (superseded by the upgrade below, which asks again with its own pictures):
 - The look: "Yes, the look as shown (Recommended)", or not yet.
 - The walk, in its new colours: "Yes, the walk as shown (Recommended)", or not yet.
 - The attacks, the swipe and the leap: "Yes, the attacks as shown (Recommended)", or "Shorter follow-through, a couple of frames" (Movement 3's allowance). The follow-through is the one line that is longer than the rule's words.
 - The flinch and the death: "Yes, the flinch and the death as shown (Recommended)", or not yet.
 
 **Checks:** tests/ledge_crawlers.test.ts 19 of 19; `tsc --noEmit` clean; the full unit suite (`tsx --test tests/*.test.ts`), 1361 of 1361, run on this tree (it includes tests/ledge_vultures.test.ts and tests/new_mobs3.test.ts). Since that run only comments in src/art/ledge_crawlers.ts have changed; the crawler, vulture and new_mobs3 tests were run again on the final tree: 57 of 57. NOT RUN: the full regression (`tools/regress.sh`), and a real phone.
+
+---
+
+## The cliff crawler, upgraded: fluid, high-end, punchy (14 Oct, 18:09)
+
+His words: "Act as an expert motion designer and creative coder. I want to upgrade the animations to make them feel fluid, high-end, and punchy." Read as: every move of the crawler, its walk included (its colours changed in the revision, so its walk is shown again). Not touched: the vulture and the Carrion Queen, which he approved as shown.
+
+The key times stay as the sound chat has them, so the sound posts stand, with one correction: the death holds still from 0.80 s, not 0.60 s. Its body hits the rock at 0.60 s and rebounds a little until 0.80 s.
+
+**What changed** (src/art/ledge_crawlers.ts; each move keeps its key times):
+- **The curves.** Wind-ups overshoot and settle; knocks snap and give way; the death falls faster as it falls. No move is a straight line from one pose to the next.
+- **The claw swipe.** The claw rears back past its warning, to about 34 picture pixels up, and settles on 30 by 0.22 s. The body lunges 8 into the blow and stretches out long on the whip. The blow squashes it flat for a tenth of a second, and it springs back out. The follow-through overshoots and settles, back on its stand by 0.85 s.
+- **The leap.** Its shell stretches out as it launches: its middle is about 47 picture pixels up at the top (0.54 s), and its highest point is 59 (the knight stands 58). The landing squashes it flat and short, held for its tenth. The hop back overshoots and settles on its stand at 1.30 s.
+- **The flinch.** The knock snaps as the freeze ends: at 0.16 s the body is back about 13 and the head about 14. Then it gives way, rocks once more, and is back on its stand by 0.4 s.
+- **The death.** Thrown back 20 and up 26 (was 16 and 22). It falls faster and faster and hits the rock at 0.60 s, its middle then 8.8 up at its lowest; it rebounds about 2.5 and is still at 0.80 s. A burst of its shell flies off where it lands, gone by 0.80 s.
+- **The walk.** Its middle rises and falls on a smooth curve, with no kink at each landing. Same height, same cycle, same feet.
+- **The head** follows its body two frames late (0.07 s), so the whip, the knock and the throw carry on through it. Its stand has no lag, so every move still ends on exactly its stand.
+
+**The limits** (tests/ledge_crawlers.test.ts; the reason is a comment there). The largest step from one frame to the next: the flinch's raised from 9 to 15, because its knock snaps as its freeze ends (14.6 picture pixels in the first frame of the knock, on one continuous arc). The others stand, with the measured values: stand 2 (0.5), walk 4 (2.7), leap 14 (11.2), death 15 (14.1), the swipe's body 6 (4.6), its striking leg 30 (28.1).
+
+**The check, rule by rule** (docs/art/RULEBOOK.md; made before he sees the pictures):
+
+| Rule | The crawler | Result |
+| --- | --- | --- |
+| Animations 1: as far as it will go | Every curve is wilder, with the same key times. The bursts are the flinch's snap and the death's throw | Pass by the numbers; his eye decides the notch |
+| Movement 1: weight first | The landing squashes and sinks; the death falls faster as it falls and rebounds on the rock | Pass by eye |
+| Movement 3: wind-up and follow-through | Wind-ups overshoot and settle. The swipe's blow at 0.38 s, back on its stand at 0.85 s: 0.47 s after the blow, longer than the rule's "a couple of frames" | OPEN: his answer, in the pop-up |
+| Movement 5: slick, nothing jerky | Every curve continuous, tested frame by frame at 30 a second. The flinch's snap and the death's throw are the bursts Animations 1 asks for | Pass by test; the bursts are his to judge |
+| Movement 6: alive when still | The stand is never still; its head sways | Pass |
+| Movement 7: heavy blows freeze a tenth | The leap's blow holds 0.72 s to 0.82 s; the flinch and the death freeze a tenth at their blow; the swipe is light, no freeze | Pass (tests) |
+| Movement 8: feet grip the floor | The feet are as they were: the walk's feet keep their spots; the swipe and the leap lift a foot only to move | Pass (tests) |
+| Hits 3 and 5 | Every hit shows: a flash, a knock, a rock. The death is a throw, a fall and a rebound, then still | Pass by eye |
+| Colour 5: neon on dark | Unchanged from the revision: violet, pale claws | Pass by eye; the look is asked below |
+| The numbers: stand 10, walk 16, attacks and moves 30 | Unchanged | Pass |
+
+**Checks:** tests/ledge_crawlers.test.ts 19 of 19; with tests/ledge_vultures.test.ts and tests/new_mobs3.test.ts, 57 of 57; `tsc --noEmit` clean. NOT RUN: the full unit suite and the full regression on this change; a real phone.
+
+**Its pictures** (in `shots/`, re-made): `crawler_walk.gif`, `crawler_stand.gif`, `crawler_swipe.gif`, `crawler_leap.gif`, `crawler_reel.gif`, `crawler_death.gif`; `crawler_phone.png` and `crawler_phonedown.png` (844 by 390, beside the knight); `crawler_look.png`; `crawler_sheet_attack.png`, `crawler_sheet_leap.png`, `crawler_sheet_reel.png`, `crawler_sheet_dying.png` (frame by frame).
+
+**Asked with these pictures** (one pop-up of four; nothing goes live until he says yes; our pick is first and marked):
+- The look, unchanged in this upgrade (it is the revision he said "Not yet" to): what would give it pizzazz? "Brighter, more colour (Recommended)", or "Bigger spines and jaws", or his own words.
+- The walk, now smoother: "Yes, the walk as shown (Recommended)", or "Not yet".
+- The attacks, the swipe and the leap: "Yes, the attacks as shown (Recommended)", or "Shorter follow-through, a couple of frames".
+- The flinch and the death: "Yes, the flinch and the death as shown (Recommended)", or "Not yet".
 
 **Next:** his answers to the four questions above; then her eyrie peak with the city view; then floors 8 to 10.

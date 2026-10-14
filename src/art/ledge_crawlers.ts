@@ -33,8 +33,17 @@
 // of a second (Movement 7) and its sink (Movement 1), and the hop back to where it stood; the flinch (Hits 3), knocked back
 // and rocked, its front feet kicking up and coming down where they stood; and the death, thirty a second (REVISED, see
 // above): thrown up and back and rolled over, its legs flailing, it crashes down, its shell cracks open (Hits 5, Hits 2),
-// its legs tuck in under it (each foot flies out and comes down where it lands), its eyes go out by 0.5 s, and it lies
-// still from 0.6 s. Nothing of it is ever below the rock (Movement 1).
+// its legs tuck in under it (each foot flies out and comes down where it lands), its eyes go out by 0.5 s, its body hits the
+// rock at 0.6 s and rebounds a little, and it lies still from 0.8 s. Nothing of it is ever below the rock (Movement 1).
+//
+// UPGRADED 14 Oct, 18:09, on his words, “Act as an expert motion designer and creative coder. I want to upgrade the
+// animations to make them feel fluid, high-end, and punchy.” The key times stay as the sound chat has them (the swipe's
+// warning, blow and follow-through; the leap's warning, spring, landing freeze and hop; the flinch's freeze and knock; the
+// death's throw, crash, crack and still). What changed is the curve of each: the wind-ups overshoot and settle; the swipe's
+// body lunges, stretches out and is squashed flat by its blow; the leap's shell stretches as it launches and squashes as it
+// lands, and its hop back overshoots and settles; the flinch snaps as its freeze ends and then gives way, and rocks once
+// more; the death falls as a weight does and rebounds on the rock; its head follows its body two frames late (HEAD_LAG),
+// except on its stand, which has no lag so that every move comes back to exactly its stand.
 
 import type { Px, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
@@ -57,6 +66,16 @@ const sm = (v: number): number => {
   return c * c * (3 - 2 * c);
 };
 const fr = (t: number): number => t - Math.floor(t);
+/** Ease out, quick then slow (a knock that snaps and then gives way). */
+const eoutq = (v: number): number => {
+  const c = cl01(v);
+  return 1 - (1 - c) * (1 - c);
+};
+/** Ease out, with a little overshoot that settles (the follow-through: it goes past its place and comes back). 0 at 0, 1 at 1. */
+const backOut = (v: number): number => {
+  const c = cl01(v) - 1;
+  return 1 + 2.5 * c * c * c + 1.5 * c * c;
+};
 const lerpV = (a: V3, b: V3, s: number): V3 => [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s];
 
 // ---------------------------------------------------------------------------------------------
@@ -149,6 +168,11 @@ interface CrPose {
   alive: boolean;
   /** Its flakes of shell in the air or on the floor: each its place, colour and size. */
   chips: [V3, string, number][];
+  /** How long its shell is (0 at rest; a whip or a launch stretches it, a blow's squash shortens it). Optional: 0 when left out. */
+  stretch?: number;
+  /** Its head's tip and turn, a few frames behind its body (set by `poseOf`): the head follows through. Optional. */
+  headPitch?: number;
+  headYaw?: number;
 }
 
 /** A foot as the walk puts it: `ph` the phase in the cycle (0 to 1). Down for the first half, its body gone over it; swung through the air for the second. */
@@ -205,7 +229,8 @@ function walkPose(t: number): CrPose {
   const feet = REST.map((_, i) => stepFoot(i, fr(ph + OFF[i])));
   return {
     x: 0,
-    z: BODY_Z + 1.0 * Math.abs(Math.sin(Math.PI * 2 * ph)),
+    // (its middle rises and falls as a smooth curve, sin squared: no kink where it turns at each landing)
+    z: BODY_Z + Math.pow(Math.sin(Math.PI * 2 * ph), 2),
     yaw: 0.04 * Math.sin(Math.PI * 2 * ph),
     pitch: 0,
     squash: 0,
@@ -236,44 +261,54 @@ function swipePose(t: number): CrPose {
   const G: V3 = [R0[0] + 46, R0[1] - 36, 12];
   const shake = (k: number): number => 1.2 * Math.sin(t * 190 + k);
   if (t < CR_SWIPE.warn) {
-    const s = sm(t / CR_SWIPE.warn);
-    P.feet[0] = lerpV(R0, C, s);
-    P.z = BODY_Z + 4 * s;
-    P.pitch = -0.25 * s;
-    P.mouth = 0.2 + 0.8 * s;
-    P.eyes = 0.9 + 0.7 * s;
+    // (it rears back a little past its warning and settles on it: the wind-up overshoots, as a blow gathers)
+    const w = t / CR_SWIPE.warn;
+    P.feet[0] = lerpV(R0, C, backOut(w));
+    P.z = BODY_Z + 4 * sm(w);
+    P.pitch = -0.3 * sm(w);
+    P.mouth = 0.2 + 0.8 * sm(w);
+    P.eyes = 0.9 + 0.7 * sm(w);
   } else if (t < SWING_AT) {
     P.feet[0] = [C[0] + shake(1), C[1] + shake(2), C[2] + shake(3)];
     P.z = BODY_Z + 4;
-    P.pitch = -0.25;
+    P.pitch = -0.3;
     P.mouth = 1;
     P.eyes = 1.6;
   } else if (t < CR_SWIPE.hit) {
+    // (the whip: the claw sweeps through, and its body lunges into it and stretches out long)
     const s = sm((t - SWING_AT) / (CR_SWIPE.hit - SWING_AT));
     P.feet[0] = lerpV(C, F, s);
-    P.x = 6 * s;
-    P.z = BODY_Z + 4 - 6 * s;
-    P.pitch = -0.25 + 0.45 * s;
+    P.x = 8 * s;
+    P.z = BODY_Z + 4 - 8 * s;
+    P.pitch = -0.3 + 0.5 * s;
     P.yaw = 0.15 * s;
+    P.stretch = 0.25 * s;
     P.mouth = 1 - 0.4 * s;
     P.eyes = 1.6;
   } else if (t < 0.5) {
-    const s = sm((t - CR_SWIPE.hit) / 0.12);
+    // (the blow: its body is squashed flat by it, and dies back out of that over the follow-through)
+    const u = (t - CR_SWIPE.hit) / 0.12;
+    const s = sm(u);
+    const k = (1 - u) * (1 - u);
     P.feet[0] = lerpV(F, G, s);
     P.x = 6;
     P.z = BODY_Z - 2;
+    P.squash = 0.25 * k;
+    P.stretch = -0.3 * k;
     P.pitch = 0.2 + 0.05 * s;
     P.yaw = 0.15 - 0.2 * s;
     P.mouth = 0.6 - 0.2 * s;
     P.eyes = 1.2 - 0.2 * s;
   } else if (t < 0.85) {
+    // (back to its stand: its claw and its body overshoot their places a little and settle on them; the claw arcs up over the rock)
     const s = sm((t - 0.5) / 0.35);
-    const f = lerpV(G, R0, s);
-    P.feet[0] = [f[0], f[1], f[2] + 14 * Math.sin(Math.PI * s)];
+    const o = backOut((t - 0.5) / 0.35);
+    P.feet[0] = [G[0] + (R0[0] - G[0]) * o, G[1] + (R0[1] - G[1]) * o, G[2] + (R0[2] - G[2]) * s + 14 * Math.sin(Math.PI * s)];
     P.x = 6 * (1 - s);
-    P.z = (BODY_Z - 2) * (1 - s) + BODY_Z * s;
-    P.pitch = 0.25 * (1 - s);
-    P.yaw = -0.05 * (1 - s);
+    P.z = BODY_Z - 2 + 2 * o;
+    // (its body's tip and turn are back by 0.78 s, so its head, following a couple of frames behind, is back by 0.85 s)
+    P.pitch = 0.25 * (1 - sm((t - 0.5) / 0.25));
+    P.yaw = -0.05 * (1 - sm((t - 0.5) / 0.25));
     P.mouth = 0.4 - 0.2 * s;
     P.eyes = 1 - 0.1 * s;
   }
@@ -312,6 +347,8 @@ function leapPose(t: number): CrPose {
       yaw: 0.18 * Math.sin(2 * Math.PI * s),
       kneeUp: REST.map(() => KNEE_UP + 12 - 8 * s),
       kneeOut: KNEE_OUT + 10 * (1 - s) + 14 * Math.sin(Math.PI * s) + 4 * s,
+      // (its shell stretches out long as it launches, and is longest at the top of the arc)
+      stretch: 0.25 * Math.sin(Math.PI * s),
       mouth: 1,
       eyes: 1.6,
       feet: REST.map((r, i): V3 => {
@@ -321,19 +358,21 @@ function leapPose(t: number): CrPose {
       }),
     };
   } else if (tt < CR_LEAP.hit + CR_LEAP.freeze) {
-    P = { ...stand, x: LX, z: 12, squash: 0.6, pitch: 0.3, kneeUp: REST.map(() => KNEE_UP + 4), kneeOut: KNEE_OUT + 4, mouth: 1, eyes: 1.6, feet: landing };
+    // (the blow lands: its shell is squashed flat and short by it, and held so for the freeze)
+    P = { ...stand, x: LX, z: 12, squash: 0.6, stretch: -0.2, pitch: 0.3, kneeUp: REST.map(() => KNEE_UP + 4), kneeOut: KNEE_OUT + 4, mouth: 1, eyes: 1.6, feet: landing };
   } else if (t < 0.95) {
     // (its landing sinks: the middle drops onto its feet, which stay where they came down, and its shell stays clear of the rock)
     const s = sm((t - 0.82) / 0.13);
-    P = { ...stand, x: LX, z: 12 - 3 * s, squash: 0.6 + 0.4 * s, pitch: 0.3 * (1 - s), kneeUp: REST.map(() => KNEE_UP + 4 - 8 * s), kneeOut: KNEE_OUT + 4, mouth: 1 - 0.5 * s, eyes: 1.6 - 0.6 * s, feet: landing };
+    P = { ...stand, x: LX, z: 12 - 3 * s, squash: 0.6 + 0.4 * s, stretch: -0.2 + 0.2 * s, pitch: 0.3 * (1 - s), kneeUp: REST.map(() => KNEE_UP + 4 - 8 * s), kneeOut: KNEE_OUT + 4, mouth: 1 - 0.5 * s, eyes: 1.6 - 0.6 * s, feet: landing };
   } else {
     // (the hop back: all its feet lift and swing to where they stood, its middle with them; it lands there)
     const s = cl01((t - 0.95) / 0.35);
     const g = sm(s);
     P = {
       ...stand,
-      x: LX * (1 - g),
-      z: 9 + 10 * g + 12 * Math.sin(Math.PI * s),
+      // (the hop back overshoots a little, and settles on its stand)
+      x: LX * (1 - backOut(s)),
+      z: 9 + 10 * backOut(s) + 12 * Math.sin(Math.PI * s),
       squash: 1 - g,
       pitch: 0,
       kneeUp: REST.map((_, i) => (KNEE_UP - 4) * (1 - g) + stand.kneeUp[i] * g),
@@ -359,12 +398,16 @@ function leapPose(t: number): CrPose {
 function reelPose(t: number): CrPose {
   if (t < CR_REEL.freeze) return { ...standPose(0), eyes: 1.4 };
   const k = cl01((t - CR_REEL.freeze) / (CR_REEL.long - CR_REEL.freeze));
-  const arc = Math.sin(Math.PI * k);
+  // (the knock snaps: it is quick as the freeze ends, then gives way slowly, so the snap is the blow's own punch)
+  // (it is back by 0.7 of the way through, so that its head, following a few frames behind, is back by its end)
+  const kk = cl01(k / 0.7);
+  const arc = Math.sin(Math.PI * eoutq(kk));
   return {
     ...standPose(0),
     x: -14 * arc,
     z: BODY_Z + 12 * arc,
-    yaw: 0.2 * Math.sin(2 * Math.PI * k) * (1 - k),
+    // (after the knock it rocks, and each rock is smaller than the last until it is still)
+    yaw: 0.25 * Math.sin(3 * Math.PI * kk) * (1 - kk) * (1 - kk),
     pitch: -0.6 * arc,
     squash: 0.25 * arc,
     mouth: 0.2 + 0.8 * arc,
@@ -385,15 +428,18 @@ function deathPose(t: number): CrPose {
   // (dead from the blow: its pink edge goes at once, and it is still dead through its freeze)
   if (t < CR_DIE.freeze) return { ...standPose(0), eyes: 1.4, alive: false };
   const thrown = t < 0.35 ? Math.sin(Math.PI * cl01((t - CR_DIE.freeze) / 0.25)) : 0;
-  const crash = sm(cl01((t - 0.35) / 0.25));
+  // (it falls as a weight does: slow at first, faster and faster, and hits hardest at 0.6 s)
+  const fall = cl01((t - 0.35) / 0.25);
+  const crash = fall * fall;
   // (the legs snap in as it hits: the tuck is done by 0.55 s, and nothing of a foot moves after it)
   const tuckK = sm(cl01((t - 0.35) / 0.2));
   const lift2 = cl01((t - 0.35) / 0.2);
   const tuck: V3[] = REST.map((r) => [r[0] * 0.45, r[1] * 0.3, 0] as V3);
   const eyes = 1.4 * (1 - sm((t - CR_DIE.freeze) / (CR_DIE.eyesOut - CR_DIE.freeze)));
   return {
-    x: -16 * thrown,
-    z: BODY_Z + 22 * thrown - 10.2 * crash,
+    // (its rebound: after it hits the rock it bounces a little, and is still by 0.8 s)
+    x: -20 * thrown,
+    z: BODY_Z + 26 * thrown - 10.2 * crash + 2.5 * Math.sin(Math.PI * cl01((t - 0.6) / 0.2)),
     yaw: 0.4 * thrown,
     pitch: -0.9 * thrown + 0.5 * crash,
     squash: crash,
@@ -410,17 +456,38 @@ function deathPose(t: number): CrPose {
     eyes,
     crack: sm((t - 0.3) / 0.2),
     alive: false,
-    chips: flakes([2, 0, 14], 0.3, t, 22, 41, 70, 26),
+    // (its shell cracks and flies from 0.3 s, and a burst of it flies off the rock where it lands at 0.6 s; all gone by 0.8 s)
+    chips: [...flakes([2, 0, 14], 0.3, t, 22, 41, 70, 26), ...flakes([2, 0, 8], 0.6, t, 12, 52, 60, 22, 0.2)],
   };
 }
 
-function poseOf(which: string, t: number): CrPose {
+function basePose(which: string, t: number): CrPose {
   if (which === 'stand') return standPose(t);
   if (which === 'walk') return walkPose(t);
   if (which === 'attack') return swipePose(t);
   if (which === 'leap') return leapPose(t);
   if (which === 'reel') return reelPose(t);
   return deathPose(t);
+}
+
+/** Its head follows its body this long after (two frames at thirty a second): the head is the follow-through of each move. */
+const HEAD_LAG = 0.07;
+
+function poseOf(which: string, t: number): CrPose {
+  const P = basePose(which, t);
+  // (its stand has no lag, so that every move comes back to exactly its stand; its walk wraps round its loop; a leap's head
+  // is held through the landing's freeze, as the rest of it is)
+  if (which === 'stand') return P;
+  let tl = t - HEAD_LAG;
+  if (which === 'walk') tl = ((tl % CR_WALK.period) + CR_WALK.period) % CR_WALK.period;
+  else {
+    tl = Math.max(0, tl);
+    if (which === 'leap' && t >= CR_LEAP.hit) tl = Math.max(tl, CR_LEAP.hit);
+  }
+  const L = basePose(which, tl);
+  P.headPitch = L.pitch;
+  P.headYaw = L.yaw;
+  return P;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -453,7 +520,9 @@ function crawlerBits(P: CrPose, put: Put): void {
   const bz = P.z;
   const sq = P.squash;
   // its body: one long, low, domed carapace (its top about 30 up: waist-high to the knight), and a small head tucked under its front edge
-  put('body', 'carapace', { k: 'ball', c: [1 + bx, 0, bz], ax: [[21, 0, 0], [0, 18 * (1 + 0.08 * sq), 0], [0, 0, 11 * (1 - 0.25 * sq)]], skin: carapaceSkin(P.crack, 1) });
+  // (stretched, it is longer and narrower; squashed by a blow, it is wider and lower: the shape gives the force)
+  const st = P.stretch ?? 0;
+  put('body', 'carapace', { k: 'ball', c: [1 + bx, 0, bz], ax: [[21 * (1 + 0.1 * st), 0, 0], [0, 18 * (1 + 0.08 * sq) * (1 - 0.05 * st), 0], [0, 0, 11 * (1 - 0.25 * sq)]], skin: carapaceSkin(P.crack, 1) });
   // its spines: four along its back, each with a bone-pale tip (its bold silhouette: Pillar 2, “Bold figures, rich places”)
   [-9, -3, 3, 9].forEach((dx, k) => {
     const c: V3 = [1 + bx + dx, 0, bz + 7.5 - 2.5 * sq];
@@ -461,7 +530,10 @@ function crawlerBits(P: CrPose, put: Put): void {
     put('body', `spineTip${k}`, { k: 'ball', c: [c[0], 0, c[2] + 4.8], ax: sphere(1.3), skin: CLAW });
   });
   const HR: V3 = [8, 8, 6];
-  const H: V3 = [20 + bx + 2 * P.pitch, 6 * P.yaw, Math.max(bz - 4 - 10 * P.pitch, HEAD_FLOOR)];
+  // (its head follows its body a few frames late: `headPitch` and `headYaw` are the body's turn that long ago)
+  const hp = P.headPitch ?? P.pitch;
+  const hy = P.headYaw ?? P.yaw;
+  const H: V3 = [20 + bx + 2 * hp, 6 * hy, Math.max(bz - 4 - 10 * hp, HEAD_FLOOR)];
   put('head', 'head', { k: 'ball', c: H, ax: [[HR[0], 0, 0], [0, HR[1], 0], [0, 0, HR[2]]], skin: SHELL });
   // its jaws: two thick, curved horns, pale at the tips, opening with `mouth`; held above the rock
   for (const side of [1, -1] as const) {
