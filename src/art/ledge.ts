@@ -482,3 +482,13 @@ export function paintSky(x0: number, y0: number, w: number, h: number): Uint8Cla
   }
   return out;
 }
+
+/**
+ * Whether a cloud below the ledge (the bank, the low ones, the ones under them) covers the sky's own point
+ * (x, y), as `paintSky` lays them: for what is painted into the land far below, which they hide. Changes no
+ * picture by itself.
+ */
+export function cloudBelow(x: number, y: number): boolean {
+  const px = mod(x, SKY_WRAP);
+  return cloudTone(BANK, px, y, false) >= 0 || cloudTone(LOW, px, y, false) >= 0 || cloudTone(UNDER, px, y, false) >= 0;
+}

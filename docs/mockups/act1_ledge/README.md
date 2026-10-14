@@ -589,4 +589,41 @@ The key times stay as the sound chat has them, so the sound posts stand, with on
 
 **Status:** the walk, the attacks, and the flinch and the death have his yes as shown. The look has no yes: it is the revision he said "Not yet" to, and it stays unapproved until he says so. Nothing is in the game (behind CRAWLER_ON, off), and the crawler is not for a version until floor 7 comes in whole.
 
-**Next:** his answers to the four questions above; then her eyrie peak with the city view; then floors 8 to 10.
+**Next:** the look, when he gives a choice; then her eyrie peak with the city view (the section below); then floors 8 to 10.
+
+---
+
+## The Queen's eyrie: her peak, looking out over the city (14 Oct, for his yes)
+
+His words, 13 Oct, 20:59: "Or we can just have the trail sort of work out one direction primarily, then have the boss area be on some peak where we can see the city.  I’ll wait for the new drawing and we can figure it out". Asked which way the Ledge Road goes, his pick: "Mostly one way, views at turns (Recommended)", offered as: the trail runs mostly one way; a few turns round the mountain open a view; the boss's peak looks out over the city. His go-ahead to this, 14 Oct, 19:08: "K go".
+
+**Read as, not asked** (the picture shows whether it is right): the trail's end comes along a narrow ridge onto the mountain's top, a bare floor of rock jutting out over the drop, with nothing over it. Past its far edge there is only sky, and far below in the haze the town under the cult's dome, as in the reveal he said yes to ("Yes, the dome (Recommended)"). The Queen stands on her eyrie at the far edge, her nest and the great egg beside her, the flock's bones about, the cult's perch and feather standard at the ridge. The knight comes up onto the top from below.
+
+**Made of what he has said yes to:** the Ledge Road's ground and sky (src/art/ledge.ts, painted by src/art/terrain.ts from tiles laid here); floor 7's pieces (src/art/floor7.ts: the crumbling ledge, cracks across the trail, a vulture's nest, the great egg, bones and feathers, a dead vulture, the cult's perch, the cult's feather standard, a perching rock); the Queen as she stands (src/art/carrion_queen.ts, `queenStanding`); the knight.
+
+**New here:**
+- The shape of the top: a ragged oval about 660 picture pixels across, its cliff face hanging under its near edge; the ridge in from the right. Laid in tiles, as the game would walk it (src/dev/preview_eyrie.ts).
+- The town far below, painted crisp (two picture pixels to a game pixel) into the sky's land: its wall and roofs, its keep, smoke rising, the cult's violet tents ringing it with their orange cooking fires; the dome over it, see-through (every other pixel), its rim lit from the upper left, cracks of its power burning pink to gold; three thin lines of magic running to it from the swamp, which lies under its dark violet haze. The low clouds below the ledge pass in front of it.
+- `cloudBelow` in src/art/ledge.ts: whether a low cloud covers a point of the sky, so that what is painted into the land is hidden behind it. It changes no picture by itself.
+- The sky starts where its low clouds leave the town clearest. The game scrolls the sky, so every start is a true view.
+
+**The check, rule by rule** (docs/art/RULEBOOK.md; before he sees it):
+
+| Rule | The eyrie | Result |
+| --- | --- | --- |
+| Pixels 1 and 3: crisp; one camera | Every pixel there or not (the shadows are the game's soft ovals); the iso view of the game | Pass |
+| Pixels 4: light from the upper left | The ground and the pieces by their painters; the dome's rim lit at its upper left | Pass |
+| Colour 3: glows are reserved | Pink only on the enemy's: the cult's dome and its lines, the Queen's eyes and edge. The camps' fires are orange (honest fire). Nothing cyan but the knight's blade and the map's dot | Pass |
+| Colour 5: neon on dark | The dome's pink against the haze; the Ledge Road's palette under it | Pass by eye; his call |
+| Places 2 and 3: a step quieter; each place its own | The ground and sky are the Ledge Road's, quieter than the figures | Pass |
+| Places 4: solid, not flat | The top's cliff face hangs under its edge; the pieces stand on it with soft shadows | Pass |
+| Places 7: themed after its boss | Her nest and egg, the flock's leavings, the cult's perch and standard: floor 7's own pieces | Pass |
+| Animations 4: the hero stays in sight | Nothing covers the knight; the Queen stands clear of him | Pass |
+
+**Checks:** `tsc --noEmit` clean; tests/carrion_queen.test.ts, tests/floor7.test.ts, tests/ledge.test.ts, tests/ledge_crawlers.test.ts and tests/ledge_vultures.test.ts together, 77 of 77. Nothing of the game imports the new page or the new function. NOT RUN: the full unit suite, the full regression, a real phone.
+
+**The pictures:** `shots/eyrie_world.png`, one phone screen (1014 by 468 picture pixels: the game's 507 by 234 at two to one), with the floor's name and its map as the game shows them; `shots/eyrie_city.png`, the town at four times, to check its pixels.
+
+**Asked with the picture** (one pop-up; our pick first and marked): "Is this the Queen's eyrie, her peak looking out over the city?"
+
+**Next:** his answer; then floors 8 to 10.
