@@ -293,7 +293,8 @@ function sheet(move: string, view: 'front' | 'back'): void {
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#0d1030';
   g.fillRect(0, 0, cvs.width, cvs.height);
-  label(g, `The cliff crawler, ${move}, from ${view === 'front' ? 'in front' : 'behind'}: frame by frame (${every > 1 ? 'every ' + every + 'th' : 'every'} frame at ${fps} a second)`, 8, 6);
+  const ord = every === 2 ? '2nd' : every === 3 ? '3rd' : `${every}th`;
+  label(g, `The cliff crawler, ${move}, from ${view === 'front' ? 'in front' : 'behind'}: frame by frame (${every > 1 ? 'every ' + ord : 'every'} frame at ${fps} a second)`, 8, 6);
   times.forEach((t, k) => {
     const x0 = (k % cols) * cw;
     const y0 = 30 + Math.floor(k / cols) * ch;

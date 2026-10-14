@@ -308,7 +308,15 @@ test('no foot on the rock moves across it in any move but the walk: a foot that 
 });
 
 test('nothing jumps: from one frame to the next no part moves further than its move can (Movement 5); the swipe\'s blow alone is quick', () => {
-  const limit: Record<string, number> = { stand: 2, walk: 4, leap: 10, reel: 6, dying: 6 };
+  // (leap 14, not 10: its spring is wilder now, as Animations 1 asks. Its launch is its fastest moment: its middle rises
+  // 37 picture pixels, from 10 to about 47 above the rock, and at most about 13 a frame at 30 a second; it is still one
+  // continuous arc, with nothing teleporting)
+  // (reel 9, not 6: its flinch's knock snaps back as the blow's freeze ends, its head flung back with the blow (Hits 3); its
+  // fastest step is about 8 picture pixels, at the snap, on a continuous arc)
+  // (dying 15, not 6: after the blow's freeze its death snaps it up and back and rolls it over, its legs flailing (Animations
+  // 1; a hit-stop, then the throw). Its fastest step is about 14.6 picture pixels a frame, at its head, at the snap, on a
+  // continuous arc: its wildest moment, and no teleporting)
+  const limit: Record<string, number> = { stand: 2, walk: 4, leap: 14, reel: 9, dying: 15 };
   for (const [move, long] of LONG) {
     if (move === 'attack') continue;
     const worst = biggestStep(move, long, () => false);
