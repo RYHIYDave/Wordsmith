@@ -256,39 +256,51 @@ full unit suite and the full regression; a real phone.
 
 Its walk is the next section.
 
-## The vulture's walk: circling flight (14 Oct; behind `VULTURE_ON`, off: his yes first)
+## The vulture's walk and dive (14 Oct; behind `VULTURE_ON`, off: his yes first)
 
-His yes to the standing sheet came as “Yes” (10:34), read as yes to the picture as shown. The walk is drawn now, for him.
+**What he has said.** His yes to the standing sheet: "Yes" (10:34). His yes to the walk as first shown (the film of 10:48): "Yes" (11:41), read as yes to that walk.
 
-Its walk is circling flight (his brief: “Circling, then a sudden dive (Recommended)”). It is a flier, not a walker: its
-feet are tucked up under it and off the floor all the round, so the footwork that grips the floor (art/act1_feet.ts)
-does not apply. Its wings beat once a round, a second: the downstroke from the top (0.00 s) to the bottom (0.50 s), the
-upstroke back to the top (1.00 s). Its body lifts a little on the downstroke and sinks on the upstroke. It is banked to
-the figure's right, pitched forward into its turn, and its head is held down, laid against the bank. In flight its
-wings are spread: the primaries fan out from the wrist and trail back, the secondaries trail back from the forearm.
-At rest the wings stay folded as the standing sheet has them (the standing pixels are checked to the byte).
+**That walk was shown to him before it was checked against the art rulebook.** The rulebook asks for that check first (Animations 1: "Every animation is checked against this rule before you see it"). The check ran on 14 Oct, after his yes. It failed the walk in four places (the table below), so the walk has been revised. The revised walk and the dive are new pictures: his yes is asked again for both.
 
-The numbers, in src/art/ledge_vultures.ts: VULTURE_PACE, 1.2 tiles a second (the drift of its circling: mine to set; the
-game's own speed for it is the main chat's); VULTURE_WALK, eight frames at eight a second (one round a second, its
-frames at the game's rate); FLY_BODY 12 and FLY_FEET 20, picture pixels up. Its walk's keys are `vultureWalkPose`.
+**The check, rule by rule** (docs/art/RULEBOOK.md; "as shown" means the pictures in this section):
 
-Its picture: `shots/vulture_walk.gif` (src/dev/preview_vulture.ts, the hash `walkfilm`): three seconds, from in front and
-from behind, its shadow left on the floor under it. Drawn larger than the look sheet's game size, so its wings can be read.
+| Rule | What the vulture does now | Result |
+| --- | --- | --- |
+| The numbers: monsters walk 16 | Walk at 16 frames a second, was 8: FAILED before, fixed (test) | Pass |
+| The numbers: attacks and moves 30 | Dive at 30 frames a second, a key each frame (test) | Pass |
+| Animations 1: as big, wild, kinetic and weighty as possible | Walk: wing stroke 0.95 of an arm's length each way (was 0.6), elbows fold on the way up and straighten on the way down, body heaves 8 picture pixels (was 5), pitch and roll swing, head dips with the beat. Dive: a stoop head first, its body pitched 130 degrees at the strike, wings up high then swept back, a wide pull-out. FAILED before (too calm), now bigger; whether it is "a notch too high" is his to judge | Pass by the numbers; his eye decides the notch |
+| Animations 2: the Wave is the measure | Judged by eye on the films | Judged, not measured |
+| Animations 3: wild in its own way | A flier; the dive is its own | Judged |
+| Animations 4: the warning stays in sight | Nothing is drawn over the vulture, and its warning hold is clear | Pass |
+| Animations 5: power you can see | Its eyes flare from pink toward gold through the warning and the stoop (the glow up to 2.5 times as strong) | Pass |
+| Animations 6 to 8 | Nothing of it was animated before; no words and no effects on it | Not applicable |
+| Movement 1: weight first | The stoop and strike are the blow: the body turns (its pitch), carries through into the pull-out, and the pull-out is slow to start | Pass by eye |
+| Movement 3: every attack winds up and follows through | Warning from 0.25 s; the follow-through runs to 1.20 s (test) | Pass |
+| Movement 4: loose things follow | Its chain and its tail stream back from the history of its foot and its pelvis, in flight. FAILED before (both static), now they trail | Pass by eye (no test) |
+| Movement 5: slick | Walk and dive at their frame rates, no jerks between frames | Pass (tests) |
+| Movement 6: alive when still | The standing picture is unchanged to the byte (checksum 1f9ac615...) | Pass |
+| Movement 7: a heavy blow lands with a freeze | The strike is held for a tenth of a second, 0.70 s to 0.80 s (test). Counted as a heavy blow: the whole dive goes into the talons | Pass; his eye decides whether the dive counts as heavy |
+| Movement 8: feet grip the floor | Its feet never land: in the air all the round, the lowest foot point 10.5 picture pixels above the floor at the strike (test) | NOT SETTLED: the rule says a foot stays where it lands, and a flier's feet never land. His decision (asked) |
+| Monsters 1: true to what it is | It flaps and circles, as his sound pick has it ("its wings flapping") | Pass (his pick) |
+| Monsters 4: the warning is a pose | The hold at the top, 0.25 s to 0.50 s, wings up and trembling, body rearing back (test) | Pass |
+| Monsters 6: pink is theirs | Pink eyes and pink edge; nothing cyan (tests) | Pass |
+| Monsters 8: built on bones | On the heroes' bones | Pass |
+| Pixels 1 and 2: crisp, 2D that looks solid | Every frame of the walk, the dive and the strike: crisp (test) | Pass |
+| How art is approved 1: pictures first | Walk and dive behind `VULTURE_ON` (off) | Pass |
+| How art is approved 6: checked at phone size | shots/vulture_phone.png, 844 by 390, the game's size: looked at | Pass (looked at; not on a real phone) |
 
-Checks: tests/ledge_vultures.test.ts 8 of 8 (the two new: its lowest foot point stays more than 4 picture pixels above
-the floor all the round, and its hand goes up and down by more than 6 in a round; its round closes, its first and last
-moments the same picture from both views). tests/new_mobs3.test.ts 8 of 8. The standing picture is the same to the byte
-(a sha256 of its pixels at four moments, both views: 1f9ac615…). tsc clean. NOT RUN: the full unit suite, the full
-regression, a real phone.
+**The walk, revised** (src/art/ledge_vultures.ts, `VULTURE_WALK`, `vultureWalkPose`): sixteen frames at sixteen a second; one round a second, one wing beat a round. Downstroke from the top (0.00 s) to the bottom (0.50 s), upstroke back to the top (1.00 s). Its hands sweep 35 to 61 picture pixels above the floor; its feet never come lower than 18.6. Its body heaves 8 picture pixels and pitches 5 degrees; it banks 13 degrees across the round. The chain and the tail follow the flight: each link and feather is where the foot or the pelvis was a little earlier (`trailOfFlight`, the mob's trail), so they stream back as it turns. Sound: the stroke still splits at 0.50 s, so the sound timings sent to the sound chat stand.
 
-Its sound (sound rule 7; the timings posted to the sound chat): in seconds from the start of a round, a whoosh as the
-wings sweep down, 0.00 to 0.50 (loudest about 0.25); a soft thump as the body lifts at 0.50; a lighter swish as the
-wings come up, 0.50 to 1.00. Quiet otherwise, as his option has it.
+**The dive, new** (`VULTURE_DIVE`, `vultureDivePose`, `vultureDive`): 1.20 s, 36 frames at 30 a second. Starts on the walk's first pose. Climbs and rears back (0.00 to 0.25 s); holds at the top, wings up and trembling, the eyes burning (THE WARNING, from 0.25 s, held to 0.50 s); stoops head first (0.50 to 0.70 s), its body pitched 130 degrees at the strike (the head down), its wings swept back, its talons out before it; STRIKES at 0.70 s and is held for a tenth of a second (0.70 to 0.80 s, the same picture each frame); pulls out heavily (0.80 to 1.00 s), wings snapped wide, the tail trailing; comes back to the walk's first pose by 1.20 s, so the walk takes it up with no jump. The talons' lowest point is 10.5 picture pixels above the floor: the blow lands on its target's body, the feet never touch the floor.
 
-NOT YET: its dive (its one attack), its flinch and its death (knocked from the air, down on its back): still the
-standing motion, placeholders that no picture shows.
+**Its sound** (sound rule 7; the timings are the sound chat's to set): the walk's as before (a whoosh on the downstroke, 0.00 to 0.50 s; a soft thump at 0.50 s; a lighter swish on the upstroke, 0.50 to 1.00 s). The dive: the warning from 0.25 s, the stoop from 0.50 s, THE STRIKE at 0.70 s, held to 0.80 s, the pull-out 0.80 to 1.00 s, back to the walk by 1.20 s.
 
-NEXT: his yes to the walk, asked as a pop-up ("Yes, on to its dive (Recommended)"; "Its wings should beat faster"; "It
-should bank less"). Then the dive as a film; then the flinch and the death; each for his yes, each with its sound
-timings to the sound chat. Then the cliff crawlers' brief; then her eyrie peak with the city view (the reveal); then
-floors 8 to 10.
+**Pictures, for him:** `shots/vulture_walk.gif` (sixteen frames a second, three seconds, from in front and from behind); `shots/vulture_dive.gif` (thirty a second, from in front and from behind); `shots/vulture_phone.png` (844 by 390, the game's size: the knight, the vulture circling, the vulture at its strike). From src/dev/preview_vulture.ts: the hashes `walkfilm`, `divefilm` and `phone:0.4`.
+
+**Checks:** tests/ledge_vultures.test.ts 16 of 16 (the eight new are the rulebook checks: sixteen frames a second; thirty a second with a key each frame; the strike held a tenth of a second; the warning held and trembling; the stoop past upright at the strike; the wings swept back from the warning to the strike; the feet off the floor through the dive; the dive ends on the walk's first pose). tests/new_mobs3.test.ts 8 of 8. tsc clean. The standing picture unchanged (checksum 1f9ac615...). NOT RUN: the full unit suite, the full regression, a real phone.
+
+**Not yet:** its flinch and its death (knocked from the air, down on its back). Both are still the standing motion: placeholders that no picture shows.
+
+**Asked, as pop-ups:** (1) the revised walk, yes or what to change; (2) the dive, yes or what to change; (3) whether a flier is an exception to "Feet grip the floor" (a rule change, so his yes).
+
+**Next:** his answers. Then the flinch and the death as films, each with its sound timings to the sound chat. Then the cliff crawlers' brief; then her eyrie peak with the city view; then floors 8 to 10.

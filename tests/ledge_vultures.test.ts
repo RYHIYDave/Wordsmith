@@ -13,7 +13,7 @@ import * as nodeFs from 'node:fs';
 
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME, IRON } from '../src/art/mkit';
-import { VULTURE, VULTURE_BODY, VULTURE_ON, VULTURE_REST, vulturePainted, vultureStanding } from '../src/art/ledge_vultures';
+import { VULTURE, VULTURE_BODY, VULTURE_DIVE, VULTURE_ON, VULTURE_REST, VULTURE_WALK, vultureDivePose, vulturePainted, vultureStanding, vultureWalkPose } from '../src/art/ledge_vultures';
 import { bonesAt, solve } from '../src/art/skeleton';
 import { spriteOf3 } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
@@ -36,6 +36,7 @@ for (const view of ['front', 'back'] as const) {
   for (const move of ['walk', 'attack', 'reel', 'dying'] as const) {
     for (let i = 0; i <= 24; i += 3) frames.push({ name: `${move} ${view} ${i}`, move, t: i / 10, view });
   }
+  for (const t of [0.7, 0.75, 0.8]) frames.push({ name: `the strike ${view} ${t}`, move: 'attack', t, view });
 }
 
 function hue(r: number, g: number, b: number): [number, number] {
@@ -157,4 +158,68 @@ test('its walk round closes: its first and last moments are the same picture, fr
     for (let i = 0; i < a.d.length; i++) if (a.d[i] !== b.d[i]) diff++;
     assert.ok(diff === 0, `${view}: ${diff} values differ between the round's start and its end`);
   }
+});
+
+// THE RULEBOOK'S CHECKS, added on 14 Oct for the walk's revision and the dive (docs/art/RULEBOOK.md: Animations 1, Movement
+// 1 to 7, Monsters 4 and 6, the frame rates): each one a test that runs every time.
+const nums = (p: object): Record<string, number> => Object.fromEntries(Object.entries(p).filter(([, v]) => typeof v === 'number')) as Record<string, number>;
+const ARM = VULTURE_BODY.upperArm + VULTURE_BODY.foreArm;
+
+test('its walk is sixteen frames a second: the rulebook\'s "monsters walk 16"', () => {
+  assert.equal(VULTURE_WALK.fps, 16);
+  assert.equal(VULTURE_WALK.frames, 16);
+});
+
+test('its dive is thirty frames a second, a key every frame, ending at its long', () => {
+  assert.equal(VULTURE_DIVE.fps, 30);
+  const keys = VULTURE.attack.motion.keys;
+  assert.ok(Math.abs(keys[1].at - keys[0].at - 1 / 30) < 1e-9, 'a key each thirtieth of a second');
+  assert.ok(Math.abs(keys[keys.length - 1].at - VULTURE_DIVE.long) < 1e-9, 'it ends at its long');
+});
+
+test('its dive holds its strike for a tenth of a second, and moves again after it (Movement 7)', () => {
+  const a = nums(vultureDivePose(VULTURE_DIVE.hit));
+  for (const t of [VULTURE_DIVE.hit + 1 / 30, VULTURE_DIVE.hit + 2 / 30, VULTURE_DIVE.hit + VULTURE_DIVE.freeze]) {
+    const b = nums(vultureDivePose(t));
+    for (const f of Object.keys(a)) assert.ok(Math.abs(a[f] - b[f]) < 1e-9, `${f} moves during the freeze, at ${t.toFixed(3)} s`);
+  }
+  const after = nums(vultureDivePose(VULTURE_DIVE.hit + 0.2));
+  assert.ok(Math.abs(after.pitch - a.pitch) > 5, 'it moves again after the freeze');
+});
+
+test('its dive winds up: it holds the warning at the top, its wings up high and trembling, its body rearing back (Monsters 4)', () => {
+  const hands: number[] = [];
+  for (let t = VULTURE_DIVE.warn + 0.02; t < 0.5; t += 0.02) {
+    const p = nums(vultureDivePose(t));
+    assert.ok(p.lhz > 0.9 * ARM, `at ${t.toFixed(2)} s its wings are only ${p.lhz.toFixed(1)} up`);
+    assert.ok(Math.abs(p.pitch - (VULTURE_REST.pitch - 6)) < 3, `at ${t.toFixed(2)} s its body is ${p.pitch.toFixed(1)}`);
+    hands.push(p.lhz);
+  }
+  assert.ok(Math.max(...hands) - Math.min(...hands) > 0.5, 'and its wings tremble in the hold');
+});
+
+test('its dive stoops head down: at the strike its body is pitched well past upright (Animations 1)', () => {
+  const p = nums(vultureDivePose(VULTURE_DIVE.hit));
+  assert.ok(p.pitch >= VULTURE_REST.pitch + 100, `pitched ${p.pitch.toFixed(0)} degrees forward at the strike`);
+});
+
+test('its dive sweeps its wings back from the warning to the strike (Animations 1)', () => {
+  const up = nums(vultureDivePose(0.35)).lhz;
+  const back = nums(vultureDivePose(VULTURE_DIVE.hit)).lhz;
+  assert.ok(up - back > ARM * 0.8, `its wings go from ${up.toFixed(1)} to ${back.toFixed(1)} from the warning to the strike`);
+});
+
+test('its dive keeps its feet off the floor all the way, the talons at the strike too (Feet and Movement 1)', () => {
+  let lowest = Infinity;
+  for (let i = 0; i <= 72; i++) {
+    const s = solve(VULTURE_BODY, bonesAt(VULTURE.attack.motion.keys, VULTURE_REST, i / 60));
+    for (const p of [s.heelL, s.heelR, s.toeL, s.toeR, s.ankleL, s.ankleR]) lowest = Math.min(lowest, p[2]);
+  }
+  assert.ok(lowest > 4, `its lowest foot point is ${lowest.toFixed(1)} above the floor`);
+});
+
+test('its dive ends on the walk\'s first pose, so the walk takes it up again with no jump (Movement 3)', () => {
+  const end = nums(vultureDivePose(VULTURE_DIVE.long));
+  const w0 = nums(vultureWalkPose(0));
+  for (const f of Object.keys(w0)) assert.ok(Math.abs(end[f] - w0[f]) < 1e-6, `${f}: ${end[f]} against the walk's ${w0[f]}`);
 });

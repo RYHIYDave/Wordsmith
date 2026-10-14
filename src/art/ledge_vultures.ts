@@ -18,10 +18,11 @@
 // hooked beak dull horn, its eyes the enemy's fire. On its left leg the cult's shackle, its chain broken, dragging.
 // Dull and dusty: never a songbird, never a proud eagle, never a sleek crow.
 //
-// ITS WALK: circling flight, drawn for his yes (`VULTURE_WALK`, below): a flier, its feet tucked up and off the
-// floor all the round, one wing beat a round. Its dive (its one attack), its flinch and its death (knocked from the
-// air, down on its back) come after his yes to the walk; until then they are placeholders (the standing motion
-// again) that no picture shows.
+// ITS WALK: circling flight, sixteen frames a second (`VULTURE_WALK`, below): a flier, its feet tucked up and off the
+// floor all the round, one wing beat a round, its chain and tail streaming behind it. ITS DIVE, its one attack
+// (`VULTURE_DIVE`): the warning, the head-first stoop, the strike held a tenth of a second, the pull-out. Both are drawn
+// for his yes (14 Oct; his "Yes" to the first walk came before the rulebook check, so the walk was revised: see the
+// README). Its flinch and its death (knocked from the air, down on its back) are still placeholders no picture shows.
 
 import type { Sprite } from '../engine/px';
 import { hash, toSprite } from './kit';
@@ -185,7 +186,7 @@ function vWing(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3, flying = false): 
 }
 
 /** ITS LEG on one side: the thigh lost in a trouser of dark feathers, the bare scaled shank, the great toes and talons; on its left, the cult's shackle, its chain broken, dragging. */
-function vLeg(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
+function vLeg(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3, trail?: V3[]): void {
   const hip = side === 'L' ? s.hipL : s.hipR;
   const knee = side === 'L' ? s.kneeL : s.kneeR;
   const ankle = side === 'L' ? s.ankleL : s.ankleR;
@@ -221,7 +222,13 @@ function vLeg(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
     put('shackle', 'shackle', { k: 'ball', c: rc, ax: [mul(sf, rK * 0.7), mul(cross(su, sf), rK * 0.7), mul(su, 1.6)], skin: IRON });
     for (let i = 0; i < 6; i++) {
       const k = (i + 1) / 6;
-      const p = add(add(rc, mul(cl, rK * 0.6 + k * 9)), [0, 0, -(rc[2] - 0.5) * Math.min(1, k * 1.6)]);
+      let p = add(add(rc, mul(cl, rK * 0.6 + k * 9)), [0, 0, -(rc[2] - 0.5) * Math.min(1, k * 1.6)]);
+      // IN FLIGHT the chain streams back and down from the foot: each link where the foot was a little earlier
+      // (`trail`: the foot's own history, newest first), and dragged back and down by the air
+      if (trail) {
+        const was = trail[Math.min(trail.length - 1, Math.round(k * 8))];
+        p = add(add(rc, mul(sub(was, trail[0]), 0.6)), add(mul(cf, -(3 + 9 * k)), mul(Z, -(2 + 10 * k))));
+      }
       put('shackle', 'shackle', { k: 'ball', c: p, ax: sphere(1.1), skin: IRON });
     }
   }
@@ -246,15 +253,23 @@ function vBits(st: Stage, m: Moment): Bit[] {
   const lit = 1 - clamp01(q.out);
 
   // --- ITS LEGS ---
-  vLeg(put, s, 'L', cf);
+  vLeg(put, s, 'L', cf, m.trails?.[0]);
   vLeg(put, s, 'R', cf);
 
   // --- ITS TAIL: a short fan of worn feathers behind ---
   const [hf, hl, hu] = s.hips;
+  const tailTrail = m.trails?.[1];
   for (let i = 0; i < 5; i++) {
     const k = (i - 2) / 2;
     const root = add(s.pelvis, add(mul(hf, -VB.pelvisDeep - 1), mul(hl, k * 4)));
-    const dir = norm(add(add(mul(hf, -0.7), mul(hu, -0.8)), mul(hl, k * 0.3)));
+    let dir = norm(add(add(mul(hf, -0.7), mul(hu, -0.8)), mul(hl, k * 0.3)));
+    // IN FLIGHT the tail streams back as the body has been: each feather stays on the body, and points back the way the
+    // pelvis came (the air streams it out behind)
+    if (tailTrail) {
+      const lag = sub(tailTrail[Math.min(tailTrail.length - 1, 2 + i)], tailTrail[0]);
+      const len = Math.hypot(...lag);
+      if (len > 1e-6) dir = norm(add(dir, mul(lag, 0.7 / len)));
+    }
     feather(put, 'tail', root, dir, hl, 20 - Math.abs(k) * 2.5, 2.4, QUILL, 3300 + i);
   }
 
@@ -299,11 +314,13 @@ function vBits(st: Stage, m: Moment): Bit[] {
   put('beak', 'beak', { k: 'rod', a: b0, b: b1, ra: hr[2] * 0.55, rb: hr[2] * 0.42, ramp: HORN });
   put('beak', 'beak', { k: 'ball', c: b1, ax: [mul(ff, hr[2] * 0.5), mul(fl, hr[2] * 0.45), mul(fu, hr[2] * 0.55)], skin: HORN });
   put('beak', 'beak', { k: 'rod', a: add(b1, mul(ff, hr[2] * 0.2)), b: b2, ra: hr[2] * 0.36, rb: 0.6, ramp: TALON });
-  // its eyes, burning pink (the enemy's fire, as the Queen's)
+  // its eyes, burning pink (the enemy's fire, as the Queen's), burning hotter and going to gold as it winds up and
+  // strikes (`glint`; at rest it is 0, the standing picture as it was)
+  const g = clamp01(m.glint);
   for (const sgn of [1, -1]) {
     const e = at3(head, s.face, hr[0] * 0.3, sgn * hr[1] * 0.9, hr[2] * 0.35);
-    put('head', 'eye', { k: 'dot', p: e, c: lit > 0.3 ? FLAME[2] : BALD[1], facing: add(mul(fl, sgn), mul(ff, 0.6)), c2: lit > 0.3 ? FLAME[3] : undefined });
-    if (lit > 0.3) put('glow', 'glow', { k: 'glow', p: e, c: FLAME[2], r: 6, a: 0.4 * lit });
+    put('head', 'eye', { k: 'dot', p: e, c: lit > 0.3 ? (g > 0.6 ? FLAME[3] : FLAME[2]) : BALD[1], facing: add(mul(fl, sgn), mul(ff, 0.6)), c2: lit > 0.3 ? FLAME[3] : undefined });
+    if (lit > 0.3) put('glow', 'glow', { k: 'glow', p: e, c: FLAME[2], r: 6 + 4 * g, a: 0.4 * lit * (1 + 1.5 * g) });
   }
   return bits;
 }
@@ -317,8 +334,8 @@ function vBits(st: Stage, m: Moment): Bit[] {
 
 /** ITS PACE, tiles a second: the drift of its circling. Mine to set (the game's own speed for it is the main chat's). */
 export const VULTURE_PACE = 1.2;
-/** ITS WALK: one round is one wing beat, eight frames at eight a second (the game's walk: `walkFrames`, `walkFps`). */
-export const VULTURE_WALK = { frames: 8, fps: 8 } as const;
+/** ITS WALK: one round is one wing beat, sixteen frames at sixteen a second (the rulebook's: monsters walk 16). */
+export const VULTURE_WALK = { frames: 16, fps: 16 } as const;
 /** How far its body is lifted over its standing height, and its feet over the floor, in picture pixels. */
 const FLY_BODY = 12;
 const FLY_FEET = 20;
@@ -334,18 +351,21 @@ export function vultureWalkPose(t: number): Partial<Bones> {
   const k = Math.cos(ph);
   const s = Math.sin(ph);
   const wingY = ARM * 0.88;
-  const wingZ = -ARM * 0.15 + ARM * 0.6 * k;
+  // THE STROKE, kinetic (the rulebook's Animations 1, a notch high): its hands go a long way up (k = 1) and a long way
+  // down (k = -1); its elbows fold on the way up and straighten on the way down; its body heaves up on each downstroke
+  // and banks, and its head dips with the beat
+  const wingZ = -ARM * 0.1 + ARM * 0.95 * k;
   const fp = 14;
   return {
-    pz: R.pz + FLY_BODY - 2.5 * k,
-    pitch: R.pitch + 14 + 1.5 * k,
-    roll: 9,
+    pz: R.pz + FLY_BODY - 4 * k,
+    pitch: R.pitch + 14 + 2.5 * k,
+    roll: 9 + 4 * s,
     yaw: 5 * s,
-    faceUp: R.faceUp - 8,
+    faceUp: R.faceUp - 8 - 1.5 * k,
     faceTurn: R.faceTurn + 4 * s,
     faceTilt: -5,
-    lhx: R.lhx, lhy: wingY, lhz: wingZ, le: R.le,
-    rhx: R.rhx, rhy: -wingY, rhz: wingZ, re: R.re,
+    lhx: R.lhx, lhy: wingY, lhz: wingZ, le: R.le + 22 * k,
+    rhx: R.rhx, rhy: -wingY, rhz: wingZ, re: R.re + 22 * k,
     lfx: R.lfx + 4, lfy: R.lfy - 0.45 * VB.stance, lfz: FLY_FEET, lfp: fp, lk: R.lk + fp * 0.3,
     rfx: R.rfx + 4, rfy: R.rfy + 0.45 * VB.stance, rfz: FLY_FEET, rfp: fp, rk: R.rk - fp * 0.3,
   };
@@ -362,8 +382,111 @@ function vultureWalkKeys(): Key3[] {
 }
 
 // ---------------------------------------------------------------------------------------------
-// ITS MOB. The dive, the flinch and the death are placeholders (the standing motion) until his yes to the walk;
-// no picture of them is made from this file yet.
+// ITS LOOSE THINGS FOLLOW (the rulebook's Movement 4): in flight its chain and its tail stream back as its body has
+// been, so the flight leaves them where its foot and its pelvis were a little earlier (`trail`, newest first).
+
+/** The points of it whose way the flight streams: its left foot (the chain's end) and its pelvis (the tail's root). */
+const trailOfFlight = (s: Skeleton): V3[] => [s.ankleL, s.pelvis];
+
+// ---------------------------------------------------------------------------------------------
+// ITS DIVE, its one attack (the rulebook: every attack winds up, holds its warning, strikes and follows through). It
+// climbs with its wings up high and holds there, trembling (THE WARNING, from 0.25 s); it stoops head first, its wings
+// folded back and its talons out before it; it strikes at 0.70 s and holds for a tenth of a second (Movement 7: a heavy
+// blow lands with a freeze); it pulls out heavily, its wings snapped wide, and comes back to its circling. It ends on
+// the walk's first pose, so the walk takes it up again with no jump. Thirty frames a second (attacks and moves 30).
+
+/** ITS DIVE, in seconds: how long; when the warning begins; when the blow lands; how long it holds after that. */
+export const VULTURE_DIVE = { long: 1.2, warn: 0.25, hit: 0.7, freeze: 0.1, fps: 30 } as const;
+
+/**
+ * A smooth way from one (time, value) point to the next: 'io' (the default, slow at both ends), 'in' (speeding up) or
+ * 'out' (slowing down). The point's own ease is the stretch that leaves it. Held at the ends.
+ */
+function stretch(t: number, pts: ReadonlyArray<readonly [number, number, ('in' | 'out')?]>): number {
+  if (t <= pts[0][0]) return pts[0][1];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [a, va, how] = pts[i];
+    const [b, vb] = pts[i + 1];
+    if (t <= b) {
+      const u = (t - a) / (b - a);
+      const e = how === 'in' ? u * u : how === 'out' ? 1 - (1 - u) * (1 - u) : (1 - Math.cos(Math.PI * u)) / 2;
+      return va + (vb - va) * e;
+    }
+  }
+  return pts[pts.length - 1][1];
+}
+
+/** The dive's pose `te` seconds in, not counting the freeze: its wind-up, its hold, its stoop, its strike, its pull-out. */
+function divePoseAt(te: number): Partial<Bones> {
+  const R = VULTURE_REST;
+  const W = (f: keyof Bones): number => vultureWalkPose(0)[f] as number;
+  const A = ARM;
+  // (hanging at the top, the warning: its wings and its tucked feet tremble, as the Queen's do)
+  const w0 = VULTURE_DIVE.warn;
+  const tremble = te > w0 && te < 0.5 ? Math.sin((te - w0) * 2 * Math.PI * 11) * Math.sin(((te - w0) / (0.5 - w0)) * Math.PI) : 0;
+  const lhy = stretch(te, [[0, W('lhy')], [0.25, A], [0.5, A * 1.05, 'in'], [0.7, A * 0.55], [0.9, A * 1.15], [1.1, W('lhy')]]);
+  const lhz = stretch(te, [[0, W('lhz')], [0.25, A * 1.05], [0.5, A * 1.05, 'in'], [0.7, -A * 0.5], [0.9, A * 0.7], [1.1, W('lhz')]]) + 2.2 * tremble;
+  const le = stretch(te, [[0, W('le')], [0.25, R.le + 30], [0.5, R.le + 30, 'in'], [0.7, R.le + 52], [0.9, R.le + 8], [1.1, W('le')]]);
+  // (its head pointing down at the strike: well past upright, the body's belly to the ground)
+  const pitch = stretch(te, [[0, W('pitch')], [0.25, R.pitch - 6], [0.5, R.pitch - 6, 'in'], [0.7, R.pitch + 120], [0.9, R.pitch - 4], [1.1, W('pitch')]]);
+  const pz = stretch(te, [[0, W('pz')], [0.25, R.pz + 26], [0.5, R.pz + 26, 'in'], [0.7, R.pz + 12], [0.9, R.pz + 20], [1.1, W('pz')]]);
+  const px = stretch(te, [[0, R.px], [0.25, -4], [0.5, -4, 'in'], [0.7, 28], [0.9, 28], [1.1, R.px]]);
+  const roll = stretch(te, [[0, W('roll')], [0.25, 0], [0.5, 0, 'in'], [0.7, 12], [0.9, 4], [1.1, W('roll')]]);
+  const faceUp = stretch(te, [[0, W('faceUp')], [0.25, R.faceUp - 4], [0.5, R.faceUp - 4, 'in'], [0.7, R.faceUp - 20], [0.9, R.faceUp - 6], [1.1, W('faceUp')]]);
+  const faceTurn = stretch(te, [[0, W('faceTurn')], [0.25, R.faceTurn + 6], [0.5, R.faceTurn + 6], [0.7, R.faceTurn + 2], [0.9, R.faceTurn], [1.1, W('faceTurn')]]);
+  // its feet: tucked up under it, then its talons thrust out before it for the strike, then trailed back
+  const fx = (rest: number, end: number): number => stretch(te, [[0, end], [0.25, rest - 3], [0.5, rest - 3, 'in'], [0.7, rest + 26], [0.9, rest - 4], [1.1, end]]);
+  const fz = stretch(te, [[0, FLY_FEET], [0.25, FLY_FEET + 6], [0.5, FLY_FEET + 6, 'in'], [0.7, 14], [0.9, FLY_FEET + 6], [1.1, FLY_FEET]]);
+  const fp = stretch(te, [[0, 14], [0.25, 20], [0.5, 20, 'in'], [0.7, 42], [0.9, 24], [1.1, 14]]);
+  return {
+    px, pz, pitch, roll, yaw: 0, faceUp, faceTurn, faceTilt: -5,
+    lhx: R.lhx, lhy, lhz, le,
+    rhx: R.rhx, rhy: -lhy, rhz: lhz, re: le,
+    lfx: fx(R.lfx, W('lfx')), lfy: R.lfy - 0.45 * VB.stance, lfz: fz, lfp: fp + 2.5 * tremble, lk: R.lk + 14 * 0.3,
+    rfx: fx(R.rfx, W('rfx')), rfy: R.rfy + 0.45 * VB.stance, rfz: fz, rfp: fp - 2.5 * tremble, rk: R.rk - 14 * 0.3,
+  };
+}
+
+/** ITS DIVE `t` seconds in, as the game holds it: the strike's freeze taken out of the time the pose moves in. */
+export function vultureDivePose(t: number): Partial<Bones> {
+  const { hit, freeze, long } = VULTURE_DIVE;
+  const te = t <= hit ? t : t < hit + freeze ? hit : t - freeze;
+  return divePoseAt(Math.min(te, long - freeze));
+}
+
+/** Its dive's keys: a key at each frame (thirty a second), the last at `long`, on the walk's first pose. */
+function vultureDiveKeys(): Key3[] {
+  const keys: Key3[] = [];
+  const n = Math.round(VULTURE_DIVE.long * VULTURE_DIVE.fps);
+  for (let i = 0; i <= n; i++) {
+    const t = i / VULTURE_DIVE.fps;
+    keys.push({ at: t, ease: 'lin', pose: vultureDivePose(t) });
+  }
+  return keys;
+}
+
+/** Its eyes: they burn hotter as it winds up (the warning), flare as it stoops, and fade after the strike. `glint`, 0 to 1. */
+function vultureDiveGlint(t: number): number {
+  const { warn, hit, freeze } = VULTURE_DIVE;
+  if (t < warn) return 0;
+  if (t < 0.5) return (t - warn) / (0.5 - warn);
+  if (t < hit + freeze) return 1;
+  return Math.max(0, 1 - (t - hit - freeze) / 0.3);
+}
+
+/** ITS DIVE, its one attack: the warning, the strike and the pull-out; its chain and its tail stream as it goes. */
+const vultureDive: MobMove = {
+  name: 'The vulture dives',
+  motion: { keys: vultureDiveKeys(), hit: VULTURE_DIVE.hit },
+  rest: VULTURE_REST,
+  glint: vultureDiveGlint,
+  trail: trailOfFlight,
+  trailOver: () => true,
+  trailSpan: 10,
+};
+
+// ---------------------------------------------------------------------------------------------
+// ITS MOB. The flinch and the death are placeholders (the standing motion); no picture of them is made from this file yet.
 
 function vMove(name: string, motion: Motion): MobMove {
   return { name, motion, rest: VULTURE_REST };
@@ -376,17 +499,17 @@ export const VULTURE: Mob = {
   size: 'small: about your height; it circles over the drop',
   build: VB,
   stand: vMove('The vulture, hunched', vStand()),
-  attack: { ...vMove('The vulture dives (placeholder)', vStand()) },
+  attack: vultureDive,
   idleFrames: 24,
   idleFps: 10,
-  walk: { name: 'The vulture circles', motion: { keys: vultureWalkKeys(), loop: 0 }, rest: VULTURE_REST, period: VULTURE_WALK.frames / VULTURE_WALK.fps, ground: VULTURE_PACE * TILE3 },
+  walk: { name: 'The vulture circles', motion: { keys: vultureWalkKeys(), loop: 0 }, rest: VULTURE_REST, period: VULTURE_WALK.frames / VULTURE_WALK.fps, ground: VULTURE_PACE * TILE3, trail: trailOfFlight, trailOver: () => true, trailSpan: 12 },
   walkFrames: VULTURE_WALK.frames,
   walkFps: VULTURE_WALK.fps,
   pace: VULTURE_PACE,
   reel: vMove('The vulture is struck (placeholder)', vStand()),
   reelTime: 0.4,
-  hit: 0.5,
-  warn: 0.3,
+  hit: VULTURE_DIVE.hit,
+  warn: VULTURE_DIVE.warn,
   dieTime: 1.2,
   dying: vMove('The vulture dies (placeholder)', vStand()),
   aura: { x: 84, y: 92, r: 60, color: '#ff3a78', a: 0.08 },

@@ -5,13 +5,17 @@
 //     close-ups of the whole figure from in front and from behind, three times the top row's size (the bottom row)
 //   node tools/preview.mjs src/dev/preview_vulture.ts shots/vulture_head.png 1014 360 head
 //     the head from in front and from behind, eight times the top row's size; its feet from in front, six times
+//   node tools/preview.mjs src/dev/preview_vulture.ts shots/vulture_phone.png 844 390 phone:0.4
+//     the phone's size: the knight, the vulture circling (T seconds into its round), and the vulture at its strike
 //   node tools/page_gif.mjs src/dev/preview_vulture.ts "walkfilm" shots/vulture_walk.gif 0
-//     its walk, the circling flight, as the game plays it: three seconds, from in front and from behind
+//     its walk, the circling flight, as the game plays it: sixteen frames a second, three seconds, from in front and behind
+//   node tools/page_gif.mjs src/dev/preview_vulture.ts "divefilm" shots/vulture_dive.gif 0
+//     its dive, its one attack, as the game plays it: thirty frames a second, from in front and from behind
 
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { VULTURE, VULTURE_PACE, VULTURE_WALK, vultureFrame, vultureStanding } from '../art/ledge_vultures';
+import { VULTURE, VULTURE_DIVE, VULTURE_PACE, VULTURE_WALK, vultureFrame, vultureStanding } from '../art/ledge_vultures';
 import { TILE3 } from '../art/new_mobs3';
 import { project } from '../art/skeleton';
 import { drawText } from '../engine/font';
@@ -116,10 +120,42 @@ function head(): void {
   (window as unknown as { __ready: boolean }).__ready = true;
 }
 
+/**
+ * THE PHONE'S SIZE: 844 by 390, as the game is shown in landscape. The knight; the vulture circling, T seconds into its
+ * round, from in front; and the vulture at the strike of its dive, from in front; each at the game's own size.
+ */
+function phone(): void {
+  const H = 390;
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  floor(g, PW, H);
+  const FOOT = 300;
+  const shadow = (x: number, rx: number): void => {
+    g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+    g.beginPath();
+    g.ellipse(x, FOOT, rx, rx * 0.4, 0, 0, Math.PI * 2);
+    g.fill();
+  };
+  shadow(160, 26);
+  drawAt(g, spriteOf3(MOVES3.rear, 0, 'front'), 160, FOOT);
+  shadow(420, 34);
+  drawAt(g, vultureFrame('walk', T, 'front'), 420, FOOT);
+  shadow(640, 34);
+  drawAt(g, vultureFrame('attack', VULTURE_DIVE.hit, 'front'), 640, FOOT);
+  label(g, 'the knight; the vulture circling; the vulture at its strike (the game\'s size)', 8, 6);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+}
+
 // ---------------------------------------------------------------------------------------------
 // FILMS (tools/page_gif.mjs): the page draws any one frame of them on asking. THE WALK: its circling flight as the game
-// plays it (eight frames a second, one wing beat a round), at its pace, from in front and from behind. Its shadow stays
-// on the floor under it while it flies.
+// plays it (sixteen frames a second, one wing beat a round), at its pace, from in front and from behind. Its shadow stays
+// on the floor under it while it flies. THE DIVE: its one attack as the game plays it (thirty a second).
 
 const win = window as unknown as { __ready: boolean; __frames: number; __tickMs: number; __frame: (i: number) => string };
 const PANE_W = 560;
@@ -194,8 +230,15 @@ function filmBeats(beats: Beat[], fps: number, title: string, at: ReadonlyArray<
 
 if (HASH.startsWith('look')) look();
 if (HASH.startsWith('head')) head();
+if (HASH.startsWith('phone')) phone();
 if (HASH === 'walkfilm') {
   filmBeats(beatsOf([['walk', 3]], VULTURE_WALK.fps), VULTURE_WALK.fps, 'The vulture circles, as the game plays it (its pace)', [
+    { view: 'front', x: 200, y: 330 },
+    { view: 'back', x: 200, y: 330 },
+  ]);
+}
+if (HASH === 'divefilm') {
+  filmBeats(beatsOf([['attack', VULTURE_DIVE.long]], VULTURE_DIVE.fps), VULTURE_DIVE.fps, 'The vulture dives: warning 0.25 s, strike 0.70 s, held 0.1 s (30 a second)', [
     { view: 'front', x: 200, y: 330 },
     { view: 'back', x: 200, y: 330 },
   ]);
