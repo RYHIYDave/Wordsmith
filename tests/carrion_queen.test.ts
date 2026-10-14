@@ -16,7 +16,7 @@ import { checkBoss, findingsSaid } from '../src/art/boss_checks';
 import { MADE, queenShape } from './carrion_queen_shape';
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
-import { CARRION_QUEEN, CARRION_QUEEN_ON, CQ_BREATH, CQ_RAKE, CROWN, queenPainted, queenStanding } from '../src/art/carrion_queen';
+import { CARRION_QUEEN, CARRION_QUEEN_ON, CQ_BREATH, CQ_CALL, CQ_DIVE, CQ_GUST, CQ_RAKE, CROWN, queenPainted, queenStanding } from '../src/art/carrion_queen';
 import { unfinishedStanding } from '../src/art/unfinished';
 import { rgba } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
@@ -35,6 +35,9 @@ for (const view of ['front', 'back'] as const) {
   for (let i = 0; i < CARRION_QUEEN.walkFrames; i += 2) frames.push({ name: `walk ${view} ${i}`, move: 'walk', t: i / CARRION_QUEEN.walkFps, view });
   for (let i = 0; i <= Math.round(CQ_RAKE.long * 30); i += 4) frames.push({ name: `attack ${view} ${i}`, move: 'attack', t: i / 30, view });
   for (let i = 0; i <= Math.round(CARRION_QUEEN.reelTime * 30); i += 3) frames.push({ name: `reel ${view} ${i}`, move: 'reel', t: i / 30, view });
+  for (const [move, long] of [['gust', CQ_GUST.long], ['dive', CQ_DIVE.long], ['call', CQ_CALL.long]] as const) {
+    for (let i = 0; i <= Math.round(long * 30); i += 4) frames.push({ name: `${move} ${view} ${i}`, move, t: i / 30, view });
+  }
 }
 function hue(r: number, g: number, b: number): [number, number] {
   const max = Math.max(r, g, b);

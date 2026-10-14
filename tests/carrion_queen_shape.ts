@@ -38,19 +38,19 @@ export function queenShape(): BossShape {
       return { limbs, lumps };
     },
     // (she rakes with her right foot's talons)
-    tip: (move, _t, s) => (move === 'attack' ? s.toeR : null),
+    tip: (move, _t, s) => (move === 'attack' ? s.toeR : move === 'dive' ? lerp3(s.toeL, s.toeR, 0.5) : move === 'gust' ? lerp3(s.handL, s.handR, 0.5) : null),
     low: { knee: B.legR[1], elbow: B.armR[1], hand: B.armR[2] },
     // her stand into each move and back; into her hop from her stand, and out of it where its round begins
     // (her stand: never out of the air), as the game's bosses stop (game/bosses.ts)
     handovers: [
       { from: 'stand', at: 0, to: 'walk', toAt: 0 },
       { from: 'walk', at: 0, to: 'stand', toAt: 0 },
-      ...['attack', 'reel'].flatMap((m): Handover[] => [
+      ...['attack', 'reel', 'gust', 'dive', 'call'].flatMap((m): Handover[] => [
         { from: 'stand', at: 0, to: m, toAt: 0 },
         { from: m, at: 'end', to: 'stand', toAt: 0 },
       ]),
     ],
   };
 }
-/** Her moves made so far: her stand, her hop, her talon rake, her flinch (her big moves and her deaths to come). */
-export const MADE = ['stand', 'walk', 'attack', 'reel'];
+/** Her moves made so far: her stand, her hop, her talon rake, her flinch, her wing gust, her dive and her call (her deaths to come). */
+export const MADE = ['stand', 'walk', 'attack', 'reel', 'gust', 'dive', 'call'];

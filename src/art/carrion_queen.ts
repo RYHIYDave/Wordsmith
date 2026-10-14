@@ -262,6 +262,115 @@ function cqRake(): Motion {
   return { keys, hit: CQ_RAKE.hit };
 }
 
+// ---------------------------------------------------------------------------------------------
+// HER BIG MOVES (her brief: “Hunched hops, a blur in the air”, her three big moves to come: the gust that shoves
+// you toward the edge, the dive along a marked line, the call that brings her flock)
+
+/** HER WING GUST: how long; when the blow lands (its warning from `warn`, held). */
+export const CQ_GUST = { long: 1.5, hit: 0.8, warn: 0.3 } as const;
+/**
+ * HER WING GUST: she puffs up on her feet and throws her wings wide and high, held and trembling (THE WARNING);
+ * then beats them down and forward, hard, so that the air is shoved out before her (`CQ_GUST.hit`); carried
+ * forward a little, her wings sweep through and up, and she settles back into her mantle. Her feet grip
+ * throughout.
+ */
+function cqGust(): Motion {
+  const R = CQ_REST;
+  const { long, warn, hit } = CQ_GUST;
+  const c = (pts: Track): ((t: number) => number) => curve(pts);
+  const pz = c([[0, 0], [0.3, 3], [0.7, 4.5], [0.8, -1], [0.95, -3], [1.2, -1], [long, 0]]);
+  const pitch = c([[0, 0], [0.3, -9], [0.6, -9.5], [0.72, -4], [0.84, 14], [0.95, 18], [1.2, 8], [long, 0]]);
+  const bend = c([[0, 0], [0.3, -4], [0.6, -4], [0.72, 0], [0.84, 6], [0.95, 8], [long, 0]]);
+  const faceUp = c([[0, 0], [0.3, 8], [0.7, 10], [0.8, -4], [long, 0]]);
+  // her wings: up and wide, held (lift 1.38); beaten down and forward (lift below 0, forward); swept up again
+  const lift = c([[0, 0], [0.3, 1.0], [0.45, 1.35], [0.7, 1.38], [0.8, 1.0], [0.9, -0.5], [0.97, -0.35], [1.2, 0.1], [long, 0]]);
+  const wx = c([[0, 0], [0.3, -6], [0.7, -8], [0.82, 4], [0.92, 14], [0.97, 10], [1.2, 2], [long, 0]]);
+  const we = c([[0, 0], [0.3, 6], [0.7, 8], [0.82, 0], [0.92, -16], [0.97, -10], [long, 0]]);
+  // (held, trembling: the warning)
+  const shiver = (t: number): number => (t > warn + 0.1 && t < hit - 0.05 ? Math.sin((t - warn) * Math.PI * 2 * 11) * Math.sin(((t - warn) / (hit - warn)) * Math.PI) : 0);
+  const keys = byCurves(long, 30, (t) => ({
+    pz: R.pz + pz(t),
+    pitch: R.pitch + pitch(t),
+    bend: R.bend + bend(t),
+    faceUp: R.faceUp + faceUp(t),
+    ...wings(lift(t), { x: wx(t), z: 2.2 * shiver(t), e: we(t) }),
+  }));
+  return { keys, hit };
+}
+
+/** HER DIVE: how long, when she strikes (her talons at the floor, along the marked line), when she warns (hanging, trembling). */
+export const CQ_DIVE = { long: 1.9, hit: 1.25, warn: 0.6 } as const;
+/**
+ * HER DIVE, A SWOOP ALONG A MARKED LINE: she crouches, springs off both feet and climbs, her wings beating up;
+ * at the top she hangs, trembling, her feet tucked up under her (THE WARNING); then she folds her wings back
+ * and drops head first, out along the line, talons thrust out before her, and strikes at the floor at the
+ * line's far end (`CQ_DIVE.hit`); she pulls up out of it, her wings opening, and climbs back to her perch,
+ * feet down again. Her body comes back to where it began: a swoop, not a walk.
+ */
+function cqDive(): Motion {
+  const R = CQ_REST;
+  const { long, warn, hit } = CQ_DIVE;
+  const c = (pts: Track): ((t: number) => number) => curve(pts);
+  const pz = c([[0, 0], [0.15, -1.5], [0.3, -1], [0.6, 40], [0.7, 46], [0.85, 46], [hit, 6], [1.5, 30], [1.75, 30], [long, 0]]);
+  const px = c([[0, 0], [0.3, 0], [0.6, -4], [0.85, -4], [hit, 40], [1.5, 40], [long, 0]]);
+  const pitch = c([[0, 0], [0.3, 0], [0.45, -2], [0.6, -14], [0.7, -16], [0.85, -16], [hit, 46], [1.5, 24], [long, 0]]);
+  const bend = c([[0, 0], [0.3, 0], [0.45, 0], [0.6, -6], [0.85, -6], [hit, 14], [1.5, 6], [long, 0]]);
+  const faceUp = c([[0, 0], [0.6, -4], [0.85, -6], [hit, 10], [1.6, 0], [long, 0]]);
+  // her wings: beaten up as she climbs, held up trembling at the top, folded back in the dive, open as she pulls up
+  const lift = c([[0, 0], [0.3, 0.3], [0.6, 1.2], [0.7, 1.25], [0.85, 1.25], [1.1, -0.3], [hit, -0.3], [1.5, 0.6], [long, 0]]);
+  const wx = c([[0, 0], [0.7, -4], [0.85, -10], [1.1, -14], [hit, -14], [1.5, -4], [long, 0]]);
+  const we = c([[0, 0], [0.7, 4], [0.85, 10], [hit, 12], [1.5, 0], [long, 0]]);
+  // her feet: tucked up under her in the air, thrust out before her for the strike, down again to land
+  const fx = c([[0, 0], [0.3, 0], [0.6, -8], [0.85, -10], [1.1, -6], [hit, 14], [1.4, 30], [1.5, 22], [long, 0]]);
+  const fz = c([[0, 0], [0.3, 0], [0.45, 10], [0.6, 18], [0.85, 18], [1.1, 10], [hit, 0], [1.5, 6], [long, 0]]);
+  const fp = c([[0, 0], [0.3, 0], [0.6, 20], [0.85, 20], [1.1, 8], [hit, 0], [long, 0]]);
+  // (hanging there, the warning: her wings and her tucked feet trembling)
+  const shiver = (t: number): number => (t > warn && t < 0.85 ? Math.sin((t - warn) * Math.PI * 2 * 11) * Math.sin(((t - warn) / (0.85 - warn)) * Math.PI) : 0);
+  const keys = byCurves(long, 30, (t) => ({
+    px: px(t),
+    pz: R.pz + pz(t),
+    pitch: R.pitch + pitch(t),
+    bend: R.bend + bend(t),
+    faceUp: R.faceUp + faceUp(t),
+    ...wings(lift(t), { x: wx(t), z: 2.2 * shiver(t), e: we(t) }),
+    lfx: R.lfx + fx(t),
+    lfz: fz(t),
+    lfp: fp(t) + 2.5 * shiver(t),
+    rfx: R.rfx + fx(t),
+    rfz: fz(t),
+    rfp: fp(t) - 2.5 * shiver(t),
+  }));
+  return { keys, hit };
+}
+
+/** HER CALL: how long. (It brings her flock: the flock is theirs, not drawn here.) */
+export const CQ_CALL = { long: 1.6 } as const;
+/**
+ * HER CALL: she rears up tall, her head thrown back on her long neck, her beak open to the sky, her wings flung
+ * up and held, beating once, then twice, in the air; then she folds them down and settles to her stand. Her feet
+ * grip throughout.
+ */
+function cqCall(): Motion {
+  const R = CQ_REST;
+  const { long } = CQ_CALL;
+  const c = (pts: Track): ((t: number) => number) => curve(pts);
+  const pz = c([[0, 0], [0.3, 8], [0.6, 12], [1.1, 12], [1.35, 6], [long, 0]]);
+  const pitch = c([[0, 0], [0.3, -22], [0.6, -26], [1.1, -26], [1.35, -6], [long, 0]]);
+  const bend = c([[0, 0], [0.3, -12], [0.6, -14], [1.1, -14], [1.35, -4], [long, 0]]);
+  const faceUp = c([[0, 0], [0.3, 30], [0.6, 36], [1.1, 34], [1.35, 8], [long, 0]]);
+  // her wings: flung up, beating twice in the air, then folding
+  const lift = c([[0, 0], [0.3, 1.0], [0.5, 1.35], [0.7, 1.1], [0.85, 1.35], [1.0, 1.1], [1.2, 1.3], [1.35, 0.5], [long, 0]]);
+  const wx = c([[0, 0], [0.3, -4], [1.35, -4], [long, 0]]);
+  const keys = byCurves(long, 30, (t) => ({
+    pz: R.pz + pz(t),
+    pitch: R.pitch + pitch(t),
+    bend: R.bend + bend(t),
+    faceUp: R.faceUp + faceUp(t),
+    ...wings(lift(t), { x: wx(t) }),
+  }));
+  return { keys };
+}
+
 /** STRUCK: her head snaps back, her wings jerk up, she is knocked back on her feet, hunches again. */
 function cqReel(): Motion {
   const R = CQ_REST;
@@ -577,6 +686,11 @@ export const CARRION_QUEEN: Mob = (() => {
     walkFps: CQ_WALK.fps,
     pace: CQ_PACE,
     reel: cqMove('The Carrion Queen is struck', cqReel()),
+    more: {
+      gust: cqMove('The Carrion Queen beats her wings', cqGust()),
+      dive: cqMove('The Carrion Queen dives', cqDive()),
+      call: cqMove('The Carrion Queen calls', cqCall()),
+    },
     reelTime: 0.4,
     hit: CQ_RAKE.hit,
     warn: CQ_RAKE.warn,

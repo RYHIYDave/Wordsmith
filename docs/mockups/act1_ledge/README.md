@@ -169,9 +169,27 @@ Film: hash `rakefilm`, 30 frames a second (`shots/cq_rake.gif`). Both through th
 Asked “Are her hop and talon rake right?”: “Yes, on to her big moves (Recommended)”, offered as: her hop and rake
 stay; next her wing gust, her dive and her call.
 
+HER BIG MOVES (her three, as her own moves: `more.gust`, `more.dive`, `more.call`), drawn after his yes to the hop and
+the rake, for him to see before anything is set in the game:
+- HER WING GUST (`cqGust`, 1.5 s, the blow at 0.8 s, held and trembling from 0.3 s): she puffs up on her feet and
+  throws her wings wide and high; then beats them down and forward, hard, shoving the air before her; her wings
+  sweep through and up, and she settles back into her mantle. The hips go first, then the chest, then the wings.
+  Film: hash `gustfilm` (`shots/cq_gustfilm.gif`).
+- HER DIVE (`cqDive`, 1.9 s, the strike at 1.25 s, hanging and trembling from 0.6 s): she springs off both feet and
+  climbs; hangs at the top, feet tucked; folds her wings back and drops head first out along the marked line, talons
+  thrust out before her, and strikes at the floor at the line's far end; pulls up out of it and climbs back to her
+  perch (the body comes back where it began: a swoop, not a walk). Film: hash `divefilm` (`shots/cq_divefilm.gif`).
+  The line is the game's floor marking; her travel along it is the game's to carry.
+- HER CALL (`cqCall`, 1.6 s): she rears up tall, her head thrown back, her wings flung up and beating twice in the air;
+  then folds them down. Film: hash `callfilm` (`shots/cq_callfilm.gif`). Her flock is theirs, not drawn here.
+
+All three through the boss review (tests/carrion_queen_shape.ts: MADE is stand, walk, attack, reel, gust, dive,
+call) and every frame held to the crisp, the pink edge and the canvas (tests/carrion_queen.test.ts). Not yet asked
+of him: his yes to each.
+
 `tests/carrion_queen.test.ts` (6): the switch off, nothing imports her; crisp, her pink edge; nothing cyan, every
 light the cult's fire, nothing cut off; her size (about the Unfinished's); her crown pale, the mark burning;
 the boss review of what of her moves, and every frame of her stand, hop, rake and flinch held to the crisp, the pink
 edge and the canvas. `tests/new_mobs3.test.ts` knows her among the mock-ups.
 
-NEXT: her wing gust, her dive and her call (after his yes to the hop and rake); then her three deaths.
+NEXT: his answer on her wing gust, her dive and her call; then her three deaths for him to pick.

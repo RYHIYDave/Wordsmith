@@ -14,7 +14,7 @@
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { CARRION_QUEEN, CQ_PACE, CQ_RAKE, queenFrame, queenStanding } from '../art/carrion_queen';
+import { CARRION_QUEEN, CQ_CALL, CQ_DIVE, CQ_GUST, CQ_PACE, CQ_RAKE, queenFrame, queenStanding } from '../art/carrion_queen';
 import { TILE3 } from '../art/new_mobs3';
 import { project } from '../art/skeleton';
 import { unfinishedStanding } from '../art/unfinished';
@@ -157,6 +157,14 @@ if (HASH === 'look') look();
 else if (HASH === 'walkfilm') {
   const fps = CARRION_QUEEN.walkFps;
   film([['stand', 0.5], ['walk', 3], ['stand', 0.75]], fps, 'The Carrion Queen hops (as the game plays it, at her pace)', [{ view: 'front', x: 190, y: 340 }, { view: 'back', x: 190, y: 400 }]);
+} else if (HASH === 'gustfilm') {
+  const at = (b: Beat): string => (b.move === 'gust' && Math.abs(b.t - CQ_GUST.hit) < 0.05 ? 'the wings beat down' : b.move === 'gust' && b.t < CQ_GUST.hit ? 'held, trembling' : '');
+  film([['stand', 0.4], ['gust', CQ_GUST.long], ['stand', 0.5]], 30, 'The Carrion Queen: her wing gust', [{ view: 'front', x: 250, y: 400 }, { view: 'back', x: 250, y: 420 }], at);
+} else if (HASH === 'divefilm') {
+  const at = (b: Beat): string => (b.move === 'dive' && Math.abs(b.t - CQ_DIVE.hit) < 0.05 ? 'her talons strike' : b.move === 'dive' && b.t >= CQ_DIVE.warn && b.t < 0.85 ? 'hangs, trembling' : '');
+  film([['stand', 0.4], ['dive', CQ_DIVE.long], ['stand', 0.5]], 30, 'The Carrion Queen: her dive along the line', [{ view: 'front', x: 250, y: 400 }, { view: 'back', x: 250, y: 420 }], at);
+} else if (HASH === 'callfilm') {
+  film([['stand', 0.4], ['call', CQ_CALL.long], ['stand', 0.5]], 30, 'The Carrion Queen: her call', [{ view: 'front', x: 250, y: 400 }, { view: 'back', x: 250, y: 420 }]);
 } else if (HASH === 'rakefilm') {
   const hitAt = (b: Beat): string => (b.move === 'attack' && Math.abs(b.t - CQ_RAKE.hit) < 0.05 ? 'her talons land' : b.move === 'reel' ? 'struck' : '');
   film([['stand', 0.4], ['attack', CQ_RAKE.long], ['stand', 0.5], ['reel', 0.4], ['stand', 0.6]], 30, 'The Carrion Queen: her talon rake, then struck', [{ view: 'front', x: 250, y: 400 }, { view: 'back', x: 250, y: 420 }], hitAt);
