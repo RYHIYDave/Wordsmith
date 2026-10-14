@@ -382,3 +382,85 @@ The Ledge Road's cliff crawlers (the plan's table: "Cliff Crawlers (medium, his 
 **Not yet:** nothing of the crawler is drawn or in the game. Its standing sheet comes first, beside a hero, front and back; then its walk, its attack, its flinch and its death as films, each checked against docs/art/RULEBOOK.md before he sees it; behind a switch that is off.
 
 **Next:** its standing sheet, for his yes; then her eyrie peak with the city view; then floors 8 to 10.
+
+## The cliff crawler: its standing sheet and films (14 Oct; for his yes; behind `CRAWLER_ON`, off)
+
+**What is drawn.** src/art/ledge_crawlers.ts, painted in code (no art files), behind `CRAWLER_ON = { on: false }`; nothing of the game imports it. Tests: tests/ledge_crawlers.test.ts, 19 of 19. The dev page: src/dev/preview_crawler.ts (the command for each picture is in its header). Its canvas is 176 by 136 picture pixels, its feet on the point (88, 86) (`CR_CANVAS`).
+
+**The look, as his brief has it** (`shots/crawler_look.png`: the top row at the game's size beside the knight, from in front and from behind; the bottom row close up, from both sides):
+- One long, low, plated back, its top about 29 picture pixels up: waist-high to the knight, which stands 58 high. Wide, as the brief asks.
+- A small head tucked under its front edge, with two jaw rods, and four eyes, pink burning to gold.
+- Six legs, splayed low on the rock: a thigh, a knee, a shin and a claw at each foot.
+- Nothing cyan. Its edge is the enemy's pink while it lives, and a faint pool of the enemy's pink lies under it.
+
+**Its films** (in `shots/`; each is made at the speed it plays):
+- `crawler_stand.gif`: the stand, ten frames a second, twelve frames in a 1.2 s loop. Never still: its legs shift and its body trembles; its feet stay put.
+- `crawler_walk.gif`: the walk, sixteen frames a second, a 0.5 s cycle, at 1.4 tiles a second (its pace). Three legs are down at a time, and the two sets of three take turns every quarter second. A foot on the rock stays on its spot while it is down.
+- `crawler_swipe.gif`: the claw swipe, its basic blow, thirty frames a second. Wind-up to 0.22 s, the claw cocked up; held and trembling to 0.30 s; THE BLOW at 0.38 s; the follow-through to 0.85 s, back on its stand. Shell flakes fly from the blow and are gone half a second later.
+- `crawler_leap.gif`: the leap, its one big move, thirty frames a second. The crouch to 0.23 s, its warning held to 0.35 s; the spring, in the air to 0.72 s, carried 24 picture pixels forward; THE BLOW at 0.72 s, held a tenth of a second (to 0.82 s); the landing sinks (0.82 to 0.95 s); the hop back to where it stood, by 1.30 s. Flakes fly from the landing and are gone half a second later.
+- `crawler_reel.gif`: its flinch, struck: frozen a tenth, knocked back and rocked, its eyes flash and fade, back on its feet by 0.30 s.
+- `crawler_death.gif`: its death, thirty frames a second. Frozen a tenth; it buckles and its legs tuck in under it (0.10 to 0.55 s); its shell cracks open along its back (0.30 to 0.50 s); its eyes are out by 0.50 s; still from 0.80 s to its end at 1.00 s. Flakes fly from 0.30 s and are gone by 0.80 s.
+- `crawler_phone.png` (walking, and at its leap's landing) and `crawler_phonedown.png` (struck, and dead with its shell cracked): 844 by 390, the game's size, beside the knight.
+
+**The check, rule by rule** (docs/art/RULEBOOK.md; made before he sees the pictures):
+
+| Rule | The crawler | Result |
+| --- | --- | --- |
+| Animations 1: as big, wild, kinetic and weighty as it will go | The leap is its big move: 24 picture pixels forward on a long arc, a held blow, a sinking landing. The swipe is wide and quick. The death buckles and cracks; it does not fade. Whether that is "a notch too high" is his to judge | Pass by the numbers; his eye decides the notch |
+| Animations 4: the hero and every warning stay in sight | Its flakes are small, low on the rock, and gone half a second after the blow. Nothing of it covers the knight or its warning (tests) | Pass |
+| Movement 1: weight first | The leap's crouch is slow to start; the blow carries through; the landing sinks and squashes | Pass by eye |
+| Movement 3: every attack winds up and follows through | Wind-up: the swipe 0.22 s, the leap 0.35 s (tests). Follow-through: the swipe's blow at 0.38 s, then back on its stand at 0.85 s, about half a second. The rule's "a couple of frames" was set for a change to the hero's swipe, and the swipe's blow is quick. His vulture dive, approved as shown, has a pull-out of about the same length | Pass; one question for him (in the pop-up) |
+| Movement 4: loose things follow | Nothing loose on it: no cloth, hair or chain | Not applicable |
+| Movement 5: slick | Frames at their rates; nothing jumps from one frame to the next (test) | Pass |
+| Movement 6: alive when still | Never still: its legs shift and its body trembles, its feet fixed (test) | Pass |
+| Movement 7: a heavy blow lands with a freeze | The leap's blow holds a tenth of a second (0.72 to 0.82 s). Its flinch and its death also hold a tenth at the blow that struck it. The swipe is the light blow, with no freeze | Pass; his eye decides whether the swipe is light |
+| Movement 8: feet grip the floor | Stand: feet fixed. Walk: a foot on the rock keeps its spot at its pace (test). Leap: the feet land where planned and stay; the hop back sets each foot where it stood. Death: each foot lifts only to move, then comes down where it lands (tests). It is not a flier, so the exception does not apply | Pass (tests) |
+| Monsters 1: true to what it is | Its legs bend at the knee and the foot as a legged thing's do; its walk is a tripod | Pass by eye |
+| Monsters 2: small ones are fun to smash | Medium, with his pick "fun to smash": a big reaction to a hit, knocked back and rocked, its head thrown back (test), flakes flying | Pass by eye |
+| Monsters 4: the warning is a pose | The swipe's wind-up, the claw cocked up; the leap's crouch, held to 0.35 s (tests) | Pass |
+| Monsters 5: weapons rest low | Its claw rests on the rock and rises only for its wind-up | Pass by eye |
+| Monsters 6: pink is theirs | Eyes pink burning to gold; edge pink while it lives; nothing cyan; no blood (tests) | Pass |
+| Monsters 7: equal to the heroes | Painted at the heroes' grain; bold plates, fine claws and eyes | Judged by eye |
+| Monsters 8: built on bones | Not on the heroes' bones. The rule names the skeleton and the bone archer for that, and says other monsters "follow one at a time, each shown to you first": this one is shown to him first | Pass by the rule's own words |
+| Pixels 1 and 2: crisp; 2D that looks solid | Every pixel there or not at all (test); painted in 3D in code, shown as flat pixels | Pass (test) |
+| Pixels 3: one camera | Front and back, the two facings a monster has; the same isometric camera | Pass |
+| Pixels 4: light from the upper left | The shading comes from the upper left | Pass by eye |
+| Pixels 5: a one-pixel edge | The enemy's pink edge while it lives; none once dead (test) | Pass (test) |
+| Pixels 7: soft shadows | The game's soft oval under it | Pass by eye |
+| Colour 3: glows are reserved | Its eyes and its faint pool of light are the enemy's pink and gold. Its flakes and its crack give no light (tests) | Pass |
+| Hits 1 and 2: no blood where there is none | No blood (test); its shell chips and crumbles | Pass (test) |
+| Hits 3: every hit shows | Its eyes flash and fade on a hit; it is knocked back; a heavy blow rocks it (test) | Pass |
+| Hits 4: what flies off is the monster's | Its flakes are its own shell, not the weapon's | Pass |
+| Hits 5: small things die quick, big things die heavy | A medium monster: its death takes a full second, buckling, tucking, cracking, still from 0.80 s | Pass by eye |
+| The numbers: standing 10 | The stand at ten frames a second | Pass |
+| The numbers: monsters walk 16 | The walk at sixteen frames a second | Pass |
+| The numbers: attacks and moves 30 | The swipe, the leap, the flinch and the death at thirty frames a second (the death: see note 2 below) | Pass |
+| A new character | All eight questions answered (his brief); this sheet, front and back, beside the knight; its films | Pass |
+| How art is made and approved: 1 pictures first; 5 painted in code; 6 checked at phone size; 8 your words, exactly | Behind the switch, which is off; no art files; the two phone pictures at 844 by 390 (looked at, not on a real phone); each quote in its brief is as he tapped it | Pass |
+
+**Read as, not asked** (stated plainly; the pictures show whether they are right):
+- An enemy, as the Ledge Road's monsters are: pink (its eyes, its edge, its pool of light); nothing cyan.
+- No blood: it is a shell creature, and its hits throw its own shell flakes, as the skeletons' bone and dust do. His brief did not name blood either way.
+- Wild: no cult mark, no chain, no cult colour.
+- "Never still": at rest its legs shift and its body trembles; its walk has no pause.
+- Six legs: "many" without being a spider.
+- The swipe is its basic blow (light, quick, no freeze). The leap, after its crouch, is its one big move (heavy, with the tenth's freeze). Its reach and its cooldown are the main chat's to set, by the gameplay rulebook: the bigger the hit, the longer the cooldown.
+
+**Notes for the main chat** (none of this is in the game; for when floor 7 comes in whole):
+1. Behind `CRAWLER_ON` (off). Not for a version until floor 7 comes in whole, with its packs and its films.
+2. Its death plays at thirty frames a second, by "attacks and moves 30". The game's die clip runs at `DEATH_FPS`, twenty a second (src/art/mkit.ts). Yours to decide, as for the vulture.
+3. Its walk is timed for `CR_PACE`, 1.4 tiles a second. At any other speed its feet slide on the rock. The speed in the game is yours; the walk must match it.
+4. The leap carries it 24 picture pixels forward inside the picture (`CR_LEAP_X`). Do not add a second forward move, or it will overshoot.
+5. The swipe is light (no freeze); the leap is heavy (a tenth's freeze from 0.72 s). Reach, cooldown and pack behaviour are yours.
+6. It is painted from its own solids (rods and balls), not on the heroes' bones. Monsters 8 names only the skeleton and the bone archer for that.
+7. Its flakes are its own shell and last half a second. The canvas is `CR_CANVAS`, 176 by 136, its feet at (88, 86).
+
+**Asked, not answered yet** (four pop-up questions, sent with the pictures; nothing goes live until he says yes; our pick is first and marked):
+- The look: "Yes, the look as shown (Recommended)", or not yet.
+- The walk: "Yes, the walk as shown (Recommended)", or not yet.
+- The attacks, the swipe and the leap: "Yes, the attacks as shown (Recommended)", or not yet. The swipe's follow-through is the one line he may want shorter.
+- The flinch and the death: "Yes, the flinch and the death as shown (Recommended)", or not yet.
+
+**Checks:** tests/ledge_crawlers.test.ts 19 of 19; with tests/ledge_vultures.test.ts (30) and tests/new_mobs3.test.ts (8), 57 of 57; `tsc --noEmit` clean. tests/new_mobs3.test.ts now names this module among the mock-ups it does not count as a game file that draws the monsters, as it does the vultures: it was failing because the module imports the monster painters and was counted. The full unit suite was started on this tree and was still running as this was written (its count goes on the board). NOT RUN: the full regression, and a real phone.
+
+**Next:** his answers to the four questions above; then her eyrie peak with the city view; then floors 8 to 10.
