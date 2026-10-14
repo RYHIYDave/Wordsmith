@@ -56,7 +56,7 @@ export const CQ_BODY: Build = { ...BASE, neck: 0.13 * CQ_TALL, headFwd: 0.05 * C
 const B = CQ_BODY;
 
 /** Her canvas: room for her standing mantled, and (to come) her wings spread wider than the trail. */
-export const CQ_CANVAS: MobCanvas = { w: 820, h: 640, ax: 410, ay: 520 };
+export const CQ_CANVAS: MobCanvas = { w: 820, h: 780, ax: 410, ay: 520 };
 
 // ---------------------------------------------------------------------------------------------
 // HER COLOURS: a figure's (her deep twice, the body, the lit, the sheen)
@@ -549,7 +549,7 @@ const plumed = (u: V3, tone: number): string => {
 };
 
 /** THE CARRION QUEEN AS SOLIDS. */
-function cqBits(st: Stage, m: Moment): Bit[] {
+function cqBits(st: Stage, m: Moment, opts: { burst?: boolean } = {}): Bit[] {
   void st;
   const { s, q } = m;
   const bits: Bit[] = [];
@@ -658,6 +658,7 @@ function cqBits(st: Stage, m: Moment): Bit[] {
     put('head', 'eye', { k: 'dot', p: e, c: lit > 0.3 ? FLAME[3] : BARE[1], facing: add(mul(fl, sgn), mul(ff, 0.6)), c2: lit > 0.3 ? FLAME[2] : undefined });
     if (lit > 0.3) put('glow', 'glow', { k: 'glow', p: e, c: FLAME[2], r: 10, a: 0.4 * lit });
   }
+  if (opts.burst && m.dying) cqBurst(put, s, m.t);
   return bits;
 }
 
@@ -668,7 +669,125 @@ function cqBits(st: Stage, m: Moment): Bit[] {
 function cqMove(name: string, motion: Motion): MobMove {
   return { name, motion, rest: CQ_REST };
 }
-export const CARRION_QUEEN: Mob = (() => {
+
+// ---------------------------------------------------------------------------------------------
+// HER DEATHS: three, for him to pick (her brief, “All these are great.  I think I want to see them all”). Each is
+// a variant of her with her own dying move (`dieTime` seconds). Nothing of them is in the game yet.
+
+/** How long each of her deaths is (seconds). */
+export const CQ_DIE_LONG = 2.0;
+/** When the feathers burst from her, in her death (seconds). */
+const BURST_AT = 0.6;
+const BURST_N = 34;
+
+/**
+ * THE BURST (her feathers, a storm of them, as the cult's mark flares and she bursts): from `BURST_AT`, feathers
+ * fly out of her breast all round, turning as they go, slowing and falling, and lie on the floor where they land
+ * (each one solid, the same panels as her own).
+ */
+function cqBurst(put: Put, s: Skeleton, t: number): void {
+  const tau = t - BURST_AT;
+  if (tau < 0) return;
+  const c0 = chestOf(s);
+  for (let i = 0; i < BURST_N; i++) {
+    const r = (k: number): number => fr(Math.sin((i + 1) * 12.9898 + k * 78.233) * 43758.5453);
+    const a = r(1) * Math.PI * 2;
+    const up = 0.25 + r(2) * 0.75;
+    const out = Math.sqrt(1 - up * up);
+    const dir: V3 = [out * Math.cos(a), out * Math.sin(a), up];
+    const v = 90 + r(3) * 110;
+    const tt = Math.min(tau, 1.4);
+    const root = add(c0, add(mul(dir, v * tt), [0, 0, (-260 * tt * tt) / 2]));
+    const spin = tau * (4 + r(4) * 6);
+    const d = norm(add(mul(dir, 0.6), [Math.cos(a + spin) * 0.7, Math.sin(a + spin) * 0.7, -0.2]), [0, 0, 1]);
+    const across = norm(cross(d, Z), [1, 0, 0]);
+    const lying: V3 = [root[0], root[1], Math.max(root[2], 2)];
+    feather(put, `burst${i}`, lying, d, across, 24 + r(5) * 9, 4.6, i % 3 === 0 ? QUILLS : PLUMAGE, 3800 + i);
+  }
+}
+
+/** Her dying moves, as keys (one-shot: the last pose is where she lies). */
+function cqDieEdge(): Motion {
+  const R = CQ_REST;
+  const c = (pts: Track): ((t: number) => number) => curve(pts);
+  const L = CQ_DIE_LONG;
+  // struck, she staggers back, her feet losing their grip; she topples backward off the edge of the eyrie into the drop
+  const pitch = c([[0, 0], [0.12, -20], [0.4, -28], [0.7, -70], [1.0, -96], [1.4, -112], [L, -120]]);
+  const px = c([[0, 0], [0.12, -2], [0.4, -8], [0.7, -28], [1.0, -50], [1.4, -68], [L, -80]]);
+  const pz = c([[0, 0], [0.4, 0], [0.7, -10], [1.0, -30], [1.4, -60], [L, -90]]);
+  const roll = c([[0, 0], [0.7, 6], [1.4, -14], [L, -22]]);
+  const bend = c([[0, 0], [0.12, -4], [0.4, -6], [0.7, -20], [L, -30]]);
+  const faceUp = c([[0, 0], [0.12, 22], [0.4, 26], [1.0, 30], [L, 34]]);
+  const lift = c([[0, 0], [0.12, 1.2], [0.4, 1.3], [0.7, 1.0], [1.0, 0.7], [1.4, 0.45], [L, 0.3]]);
+  const wx = c([[0, 0], [0.12, -6], [0.7, -10], [L, -14]]);
+  const we = c([[0, 0], [0.12, -10], [0.4, -6], [0.7, 4], [L, 12]]);
+  const fz = c([[0, 0], [0.4, 0], [0.6, 14], [1.0, 24], [L, 28]]);
+  const fx = c([[0, 0], [0.4, 0], [0.7, -8], [L, -20]]);
+  const fp = c([[0, 0], [0.4, 0], [0.6, 12], [L, 22]]);
+  return {
+    keys: byCurves(L, 30, (t) => ({
+      px: px(t), pz: R.pz + pz(t), pitch: R.pitch + pitch(t), roll: roll(t), bend: R.bend + bend(t), faceUp: R.faceUp + faceUp(t),
+      ...wings(lift(t), { x: wx(t), e: we(t) }),
+      lfx: R.lfx + fx(t), lfz: fz(t), lfp: fp(t), rfx: R.rfx + fx(t), rfz: fz(t), rfp: fp(t),
+    })),
+  };
+}
+function cqDieLedge(): Motion {
+  const R = CQ_REST;
+  const c = (pts: Track): ((t: number) => number) => curve(pts);
+  const L = CQ_DIE_LONG;
+  // the eyrie's rock gives way under her: one foot slips off the edge, she lurches and rocks, and goes down with it
+  const pz = c([[0, 0], [0.3, -3], [0.55, -8], [0.8, -22], [1.2, -50], [L, -96]]);
+  const px = c([[0, 0], [0.4, 0], [0.7, -6], [1.0, -14], [1.5, -22], [L, -26]]);
+  const pitch = c([[0, 0], [0.35, 0], [0.55, -10], [0.8, -22], [1.2, -42], [L, -64]]);
+  const roll = c([[0, 0], [0.35, 4], [0.6, 8], [0.9, 3], [1.25, 14], [1.6, -10], [L, 20]]);
+  const bend = c([[0, 0], [0.3, -2], [0.8, 4], [L, 14]]);
+  const faceUp = c([[0, 0], [0.12, 8], [0.5, 14], [1.0, 20], [L, 26]]);
+  const lift = c([[0, 0], [0.25, 0.6], [0.55, 1.1], [0.85, 0.9], [1.2, 0.45], [1.6, 0], [L, -0.2]]);
+  const wx = c([[0, 0], [0.5, -6], [1.0, -10], [L, -14]]);
+  // (her right foot lifts off the rock as it sinks, and scrabbles at the air)
+  const rfz = c([[0, 0], [0.3, 0], [0.45, 4], [0.7, 8], [L, 20]]);
+  // (her foot held where it is as her body leans, until it lifts; then it scrabbles at the air)
+  const rfx = c([[0, 0], [0.4, 0], [0.6, -6], [0.8, 4], [1.2, -8], [1.6, 6], [L, -2]]);
+  const lfz = c([[0, 0], [1.0, 0], [1.3, 12], [L, 24]]);
+  return {
+    keys: byCurves(L, 30, (t) => ({
+      px: px(t), pz: R.pz + pz(t), pitch: R.pitch + pitch(t), roll: roll(t), bend: R.bend + bend(t), faceUp: R.faceUp + faceUp(t),
+      ...wings(lift(t), { x: wx(t) }),
+      lfz: lfz(t), rfz: rfz(t), rfx: R.rfx + rfx(t),
+    })),
+  };
+}
+function cqDieFeathers(): Motion {
+  const R = CQ_REST;
+  const c = (pts: Track): ((t: number) => number) => curve(pts);
+  const L = CQ_DIE_LONG;
+  // struck, she shudders and her chest heaves; the cult's mark flares; she bursts (the feathers, `cqBurst`) and
+  // sinks to her knees, her wings collapsing down round her, and lies there hunched
+  const pitch = c([[0, 0], [0.15, -8], [0.3, -4], [0.5, 6], [0.6, 12], [0.75, 14], [1.0, 20], [L, 22]]);
+  const pz = c([[0, 0], [0.4, 2], [0.6, -6], [1.0, -18], [L, -22]]);
+  const bend = c([[0, 0], [0.5, 4], [0.6, 14], [1.0, 22], [L, 24]]);
+  const faceUp = c([[0, 0], [0.15, 14], [0.4, 18], [0.6, 6], [1.0, -8], [L, -10]]);
+  const lift = c([[0, 0], [0.2, 1.3], [0.4, 1.5], [0.55, 1.4], [0.65, -0.3], [1.0, -0.8], [L, -0.9]]);
+  return {
+    keys: byCurves(L, 30, (t) => ({
+      pz: R.pz + pz(t), pitch: R.pitch + pitch(t), bend: R.bend + bend(t), faceUp: R.faceUp + faceUp(t),
+      ...wings(lift(t)),
+    })),
+  };
+}
+
+/** HER MOB, with the death it is given (her one picked death goes in `dying`; the other two are variants of her). */
+function queenAs(dying: MobMove, dieTime: number, burst: boolean): Mob {
+  return queenBody(dying, dieTime, burst);
+}
+export const CQ_DEATHS = {
+  edge: queenAs(cqMove('The Carrion Queen topples off the edge', cqDieEdge()), CQ_DIE_LONG, false),
+  ledge: queenAs(cqMove('The Carrion Queen goes down with the ledge', cqDieLedge()), CQ_DIE_LONG, false),
+  feathers: queenAs(cqMove('The Carrion Queen bursts into feathers', cqDieFeathers()), CQ_DIE_LONG, true),
+};
+
+function queenBody(dying: MobMove, dieTime: number, burst: boolean): Mob {
   const stand = cqMove('The Carrion Queen, mantled', cqStand());
   const walk: MobMove = { ...cqMove('The Carrion Queen hops', cqWalk()), period: CQ_WALK.frames / CQ_WALK.fps, ground: CQ_PACE * TILE3 };
   const attack: MobMove = { ...cqMove('The Carrion Queen rakes with her talons', cqRake()), trail: (sk) => [sk.toeR], trailOver: (t) => t > 0.8 && t <= CQ_RAKE.hit + 0.05, trailSpan: 3 };
@@ -694,14 +813,16 @@ export const CARRION_QUEEN: Mob = (() => {
     reelTime: 0.4,
     hit: CQ_RAKE.hit,
     warn: CQ_RAKE.warn,
-    dieTime: 2,
-    dying: stand,
+    dieTime,
+    dying,
     aura: { x: CQ_CANVAS.ax, y: CQ_CANVAS.ay - 120, r: 150, color: '#ff3a78', a: 0.16 },
     shadow: 80,
     canvas: CQ_CANVAS,
-    bits: (st, m) => cqBits(st, m),
+    bits: (st, m) => cqBits(st, m, { burst }),
   };
-})();
+}
+/** Her mob as it stands: her one picked death is not yet set (her stand stands in for it). */
+export const CARRION_QUEEN: Mob = queenAs(cqMove('The Carrion Queen, mantled', cqStand()), 2, false);
 
 /** One picture of her in a move, `t` seconds in, as the game holds a figure. */
 export function queenFrame(move: string, t: number, view: GameView = 'front'): Sprite {

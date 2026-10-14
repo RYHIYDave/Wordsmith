@@ -10,11 +10,17 @@
 //   node tools/page_gif.mjs src/dev/preview_carrion_queen.ts "rakefilm" shots/cq_rake.gif 6
 //     A FILM (30 frames a second): standing, her talon rake, standing, struck, standing; the moment her
 //     talons land marked under the picture
+//   node tools/page_gif.mjs src/dev/preview_carrion_queen.ts "gustfilm" shots/cq_gustfilm.gif 6   (also divefilm, callfilm)
+//   node tools/page_gif.mjs src/dev/preview_carrion_queen.ts "edgefilm" shots/cq_edge.gif 6   (also ledgefilm, featherfilm: her three deaths, 30 frames a second)
 
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { CARRION_QUEEN, CQ_CALL, CQ_DIVE, CQ_GUST, CQ_PACE, CQ_RAKE, queenFrame, queenStanding } from '../art/carrion_queen';
+import { CARRION_QUEEN, CQ_CALL, CQ_DEATHS, CQ_DIE_LONG, CQ_DIVE, CQ_GUST, CQ_PACE, CQ_RAKE, queenFrame, queenStanding } from '../art/carrion_queen';
+import { deathOfMob } from '../art/new_mobs3';
+import type { Mob } from '../art/new_mobs3';
+import { toSprite } from '../art/kit';
+import { ENEMY_RIM } from '../art/mkit';
 import { TILE3 } from '../art/new_mobs3';
 import { project } from '../art/skeleton';
 import { unfinishedStanding } from '../art/unfinished';
@@ -87,7 +93,7 @@ const PANE_W = 560;
 const PANE_H = 500;
 const TOP = 30;
 /** What she does at each moment of a film: which move, how far into it, how far she has come over the floor. */
-type Beat = { move: string; t: number; ground: number };
+type Beat = { move: string; t: number; ground: number; die?: { mob: Mob; k: number } };
 /** A run of moves one after another (`[move, seconds]`), a frame at each 1/fps: her stand goes on breathing from where it was. */
 function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number): Beat[] {
   const out: Beat[] = [];
@@ -105,7 +111,9 @@ function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number): Be
   return out;
 }
 function film(run: ReadonlyArray<readonly [string, number]>, fps: number, title: string, at: ReadonlyArray<{ view: 'front' | 'back'; x: number; y: number }>, note?: (b: Beat) => string): void {
-  const beats = beatsOf(run, fps);
+  filmBeats(beatsOf(run, fps), fps, title, at, note);
+}
+function filmBeats(beats: Beat[], fps: number, title: string, at: ReadonlyArray<{ view: 'front' | 'back'; x: number; y: number }>, note?: (b: Beat) => string): void {
   const cvs = document.createElement('canvas');
   cvs.width = PANE_W * at.length;
   cvs.height = TOP + PANE_H;
@@ -133,7 +141,7 @@ function film(run: ReadonlyArray<readonly [string, number]>, fps: number, title:
       g.beginPath();
       g.ellipse(fx, fy, 90, 36, 0, 0, Math.PI * 2);
       g.fill();
-      drawAt(g, queenFrame(b.move, b.t, view), fx, fy);
+      drawAt(g, b.die ? toSprite(deathOfMob(b.die.mob, b.die.k, view), null, b.die.mob.canvas?.ax ?? 0, b.die.mob.canvas?.ay ?? 0) : queenFrame(b.move, b.t, view), fx, fy);
       g.restore();
       label(g, view === 'front' ? 'from in front' : 'from behind', ox + 10, TOP + PANE_H - 26);
     });
@@ -153,6 +161,17 @@ function film(run: ReadonlyArray<readonly [string, number]>, fps: number, title:
   win.__ready = true;
 }
 
+/** A DEATH as a film: standing, the blow (`struck`), then her death from start to lying, held a moment. */
+function deathFilm(mob: Mob, title: string, fps: number): void {
+  const beats: Beat[] = [];
+  for (let i = 0; i < Math.round(0.6 * fps); i++) beats.push({ move: 'stand', t: i / fps, ground: 0 });
+  const n = Math.round(CQ_DIE_LONG * fps);
+  for (let i = 0; i <= n; i++) beats.push({ move: 'dead', t: i / fps, ground: 0, die: { mob, k: i / n } });
+  for (let i = 0; i < Math.round(0.6 * fps); i++) beats.push({ move: 'dead', t: 0, ground: 0, die: { mob, k: 1 } });
+  const at = (b: Beat): string => (b.die ? (b.die.k * CQ_DIE_LONG < 0.12 ? 'struck' : '') : '');
+  filmBeats(beats, fps, title, [{ view: 'front', x: 250, y: 400 }, { view: 'back', x: 250, y: 420 }], at);
+}
+
 if (HASH === 'look') look();
 else if (HASH === 'walkfilm') {
   const fps = CARRION_QUEEN.walkFps;
@@ -165,6 +184,12 @@ else if (HASH === 'walkfilm') {
   film([['stand', 0.4], ['dive', CQ_DIVE.long], ['stand', 0.5]], 30, 'The Carrion Queen: her dive along the line', [{ view: 'front', x: 250, y: 400 }, { view: 'back', x: 250, y: 420 }], at);
 } else if (HASH === 'callfilm') {
   film([['stand', 0.4], ['call', CQ_CALL.long], ['stand', 0.5]], 30, 'The Carrion Queen: her call', [{ view: 'front', x: 250, y: 400 }, { view: 'back', x: 250, y: 420 }]);
+} else if (HASH === 'edgefilm') {
+  deathFilm(CQ_DEATHS.edge, 'The Carrion Queen: she topples off the edge', 30);
+} else if (HASH === 'ledgefilm') {
+  deathFilm(CQ_DEATHS.ledge, 'The Carrion Queen: she goes down with the ledge', 30);
+} else if (HASH === 'featherfilm') {
+  deathFilm(CQ_DEATHS.feathers, 'The Carrion Queen: she bursts into feathers', 30);
 } else if (HASH === 'rakefilm') {
   const hitAt = (b: Beat): string => (b.move === 'attack' && Math.abs(b.t - CQ_RAKE.hit) < 0.05 ? 'her talons land' : b.move === 'reel' ? 'struck' : '');
   film([['stand', 0.4], ['attack', CQ_RAKE.long], ['stand', 0.5], ['reel', 0.4], ['stand', 0.6]], 30, 'The Carrion Queen: her talon rake, then struck', [{ view: 'front', x: 250, y: 400 }, { view: 'back', x: 250, y: 420 }], hitAt);

@@ -187,9 +187,21 @@ All three through the boss review (tests/carrion_queen_shape.ts: MADE is stand, 
 call) and every frame held to the crisp, the pink edge and the canvas (tests/carrion_queen.test.ts). Not yet asked
 of him: his yes to each.
 
+HER THREE DEATHS (`CQ_DEATHS`: three variants of her, each with its own dying move, 2 s; one picked later into
+`dying`). Shown in films for his pick. Each through the boss review (the floor rule set aside for the two falls
+over the edge: her body is in the drop there, and the review has no drop) and every frame crisp, nothing cyan,
+nothing cut off. As the game paints every monster's death, without the pink edge.
+- A. TOPPLES OFF THE EDGE (`cqDieEdge`): struck, she staggers back, her feet losing their grip; she topples backward,
+  wings flung out, off the edge of the eyrie into the drop. Film: hash `edgefilm` (`shots/cq_edgefilm.gif`).
+- B. GOES DOWN WITH THE LEDGE (`cqDieLedge`): the eyrie's rock gives way under her; one foot lifts off the rock as it
+  sinks, she lurches and rocks, and goes down with it. Film: hash `ledgefilm` (`shots/cq_ledgefilm.gif`).
+- C. BURSTS INTO FEATHERS (`cqDieFeathers`): struck, she shudders; from 0.6 s a storm of her feathers flies out of her
+  breast, turning, slowing, and lies on the floor where it lands (`cqBurst`, solids only in her death); she sinks to
+  her knees, her wings collapsing round her. Film: hash `featherfilm` (`shots/cq_featherfilm.gif`).
+
 `tests/carrion_queen.test.ts` (6): the switch off, nothing imports her; crisp, her pink edge; nothing cyan, every
 light the cult's fire, nothing cut off; her size (about the Unfinished's); her crown pale, the mark burning;
 the boss review of what of her moves, and every frame of her stand, hop, rake and flinch held to the crisp, the pink
 edge and the canvas. `tests/new_mobs3.test.ts` knows her among the mock-ups.
 
-NEXT: his answer on her wing gust, her dive and her call; then her three deaths for him to pick.
+NEXT: his pick of her death (one into `dying`); then her sound brief for her deaths; then her eyrie peak with the city view.

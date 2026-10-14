@@ -16,7 +16,9 @@ import { checkBoss, findingsSaid } from '../src/art/boss_checks';
 import { MADE, queenShape } from './carrion_queen_shape';
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
-import { CARRION_QUEEN, CARRION_QUEEN_ON, CQ_BREATH, CQ_CALL, CQ_DIVE, CQ_GUST, CQ_RAKE, CROWN, queenPainted, queenStanding } from '../src/art/carrion_queen';
+import { CARRION_QUEEN, CARRION_QUEEN_ON, CQ_BREATH, CQ_CALL, CQ_DIE_LONG, CQ_DEATHS, CQ_DIVE, CQ_GUST, CQ_RAKE, CROWN, queenPainted, queenStanding } from '../src/art/carrion_queen';
+import { deathOfMob } from '../src/art/new_mobs3';
+import { checkBoss as checkBossAgain, findingsSaid as findingsSaidAgain } from '../src/art/boss_checks';
 import { unfinishedStanding } from '../src/art/unfinished';
 import { rgba } from '../src/engine/px';
 import type { Sprite } from '../src/engine/px';
@@ -124,4 +126,41 @@ test('the one thing to know her by: her crown bone-pale, the cult\'s mark burnin
 test('the whole review (art/boss_checks.ts) of what of her moves', () => {
   const found = checkBoss(CARRION_QUEEN, queenShape(), MADE);
   assert.ok(found.length === 0, `the Carrion Queen:\n  ${findingsSaid(found).join('\n  ')}`);
+});
+
+// HER DEATHS (three variants, one picked later): held to the same pictures as her moves, frame by frame
+const DEATHS = [['edge', CQ_DEATHS.edge], ['ledge', CQ_DEATHS.ledge], ['feathers', CQ_DEATHS.feathers]] as const;
+test('her three deaths: crisp, nothing cyan, every light the cult\'s fire, nothing cut off', () => {
+  const [pr, pg, pb] = rgba(ENEMY_RIM);
+  for (const [name, mob] of DEATHS) for (const view of ['front', 'back'] as const) for (let i = 0; i <= Math.round(CQ_DIE_LONG * 30); i += 4) {
+    const { px, lights } = deathOfMob(mob, i / (30 * CQ_DIE_LONG), view);
+    const tag = `${name} ${view} ${i}`;
+    let soft = 0;
+    let rim = 0;
+    for (let k = 0; k < px.d.length; k += 4) {
+      const a = px.d[k + 3];
+      if (a === 0) continue;
+      const [h, sat] = hue(px.d[k], px.d[k + 1], px.d[k + 2]);
+      assert.ok(!(sat > 0.4 && Math.max(px.d[k], px.d[k + 1], px.d[k + 2]) > 140 && h >= 165 && h <= 205), `${tag}: cyan`);
+      if (a === 255) continue;
+      if (a === RIM_ALPHA && px.d[k] === pr && px.d[k + 1] === pg && px.d[k + 2] === pb) rim++;
+      else soft++;
+    }
+    assert.ok(soft === 0, `${tag}: ${soft} soft pixels`);
+    // (the game paints every monster's death without its pink edge, as fallApart does: hers too)
+    void rim;
+    for (const L of lights) assert.ok(FIRE.has(rgba(L.color).slice(0, 3).join(',')), `${tag}: her light ${L.color}`);
+    let cut = 0;
+    for (let x = 0; x < px.w; x++) for (const y of [0, px.h - 1]) if (px.d[(y * px.w + x) * 4 + 3] > 0) cut++;
+    for (let y = 0; y < px.h; y++) for (const x of [0, px.w - 1]) if (px.d[(y * px.w + x) * 4 + 3] > 0) cut++;
+    assert.ok(cut === 0, `${tag}: ${cut} pixels on her canvas's edge`);
+  }
+});
+
+test('her three deaths through the whole review; the floor rule set aside where she goes over the edge (her body is in the drop there, and the review has no drop)', () => {
+  for (const [name, mob] of DEATHS) {
+    const found = checkBossAgain(mob, queenShape(), ['dying']);
+    const kept = found.filter((f) => !(name !== 'feathers' && f.kind === 'floor'));
+    assert.ok(kept.length === 0, `the Carrion Queen's ${name} death:\n  ${findingsSaidAgain(kept).join('\n  ')}`);
+  }
 });
