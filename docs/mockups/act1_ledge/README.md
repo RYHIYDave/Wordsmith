@@ -184,8 +184,9 @@ the rake, for him to see before anything is set in the game:
   then folds them down. Film: hash `callfilm` (`shots/cq_callfilm.gif`). Her flock is theirs, not drawn here.
 
 All three through the boss review (tests/carrion_queen_shape.ts: MADE is stand, walk, attack, reel, gust, dive,
-call) and every frame held to the crisp, the pink edge and the canvas (tests/carrion_queen.test.ts). Not yet asked
-of him: his yes to each.
+call, dying) and every frame held to the crisp, the pink edge and the canvas (tests/carrion_queen.test.ts).
+Asked “Are her three big moves right?” (cq_gustfilm.gif, cq_divefilm.gif, cq_callfilm.gif): “Yes, on to her deaths
+(Recommended)”, offered as: the gust, dive and call stay; next her three deaths for him to pick.
 
 HER THREE DEATHS (`CQ_DEATHS`: three variants of her, each with its own dying move, 2 s; one picked later into
 `dying`). Shown in films for his pick. Each through the boss review (the floor rule set aside for the two falls
@@ -199,9 +200,15 @@ nothing cut off. As the game paints every monster's death, without the pink edge
   breast, turning, slowing, and lies on the floor where it lands (`cqBurst`, solids only in her death); she sinks to
   her knees, her wings collapsing round her. Film: hash `featherfilm` (`shots/cq_featherfilm.gif`).
 
-`tests/carrion_queen.test.ts` (6): the switch off, nothing imports her; crisp, her pink edge; nothing cyan, every
+HIS PICK OF HER DEATH (14 Oct), asked with the three films (cq_edgefilm.gif, cq_ledgefilm.gif,
+cq_featherfilm.gif): “Topples off the edge (Recommended)”, offered as: she staggers back and goes off the edge of the
+eyrie into the drop (the first of the three, as the most plainly a fall); the other two (goes down with the ledge;
+bursts into feathers) stay as variants (CQ_DEATHS) for the record. CARRION_QUEEN's `dying` is now the edge death
+(2 s). Her sound brief for it is for the sound chat (the board, 14 Oct).
+
+`tests/carrion_queen.test.ts` (8): the switch off, nothing imports her; crisp, her pink edge; nothing cyan, every
 light the cult's fire, nothing cut off; her size (about the Unfinished's); her crown pale, the mark burning;
 the boss review of what of her moves, and every frame of her stand, hop, rake and flinch held to the crisp, the pink
 edge and the canvas. `tests/new_mobs3.test.ts` knows her among the mock-ups.
 
-NEXT: his pick of her death (one into `dying`); then her sound brief for her deaths; then her eyrie peak with the city view.
+NEXT: her sound brief for the edge death (posted to sound); then her eyrie peak with the city view (the reveal), then floor 7's mobs (the vultures and the cliff crawlers).

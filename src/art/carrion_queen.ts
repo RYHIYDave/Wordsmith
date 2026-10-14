@@ -663,8 +663,8 @@ function cqBits(st: Stage, m: Moment, opts: { burst?: boolean } = {}): Bit[] {
 }
 
 // ---------------------------------------------------------------------------------------------
-// THE CARRION QUEEN AS A MONSTER OF THE BONES (her stand, her hop, her talon rake and her flinch, so far: her
-// death is her stand, not for use)
+// THE CARRION QUEEN AS A MONSTER OF THE BONES (her stand, her hop, her talon rake, her flinch, her wing gust, her
+// dive and her call; her death is his pick: she topples off the edge)
 
 function cqMove(name: string, motion: Motion): MobMove {
   return { name, motion, rest: CQ_REST };
@@ -821,8 +821,8 @@ function queenBody(dying: MobMove, dieTime: number, burst: boolean): Mob {
     bits: (st, m) => cqBits(st, m, { burst }),
   };
 }
-/** Her mob as it stands: her one picked death is not yet set (her stand stands in for it). */
-export const CARRION_QUEEN: Mob = queenAs(cqMove('The Carrion Queen, mantled', cqStand()), 2, false);
+/** HER MOB, as she is for the game: her death is his pick (14 Oct: "Topples off the edge (Recommended)"), she topples backward off the edge. */
+export const CARRION_QUEEN: Mob = queenAs(cqMove('The Carrion Queen topples off the edge', cqDieEdge()), CQ_DIE_LONG, false);
 
 /** One picture of her in a move, `t` seconds in, as the game holds a figure. */
 export function queenFrame(move: string, t: number, view: GameView = 'front'): Sprite {

@@ -123,9 +123,10 @@ test('the one thing to know her by: her crown bone-pale, the cult\'s mark burnin
   assert.ok(fire > 30, `the cult's mark burning: ${fire} pixels`);
 });
 
-test('the whole review (art/boss_checks.ts) of what of her moves', () => {
+test('the whole review (art/boss_checks.ts) of what of her moves, her death included (the floor rule set aside for the fall over the edge)', () => {
   const found = checkBoss(CARRION_QUEEN, queenShape(), MADE);
-  assert.ok(found.length === 0, `the Carrion Queen:\n  ${findingsSaid(found).join('\n  ')}`);
+  const kept = found.filter((f) => !(f.move === 'dying' && f.kind === 'floor'));
+  assert.ok(kept.length === 0, `the Carrion Queen:\n  ${findingsSaid(kept).join('\n  ')}`);
 });
 
 // HER DEATHS (three variants, one picked later): held to the same pictures as her moves, frame by frame

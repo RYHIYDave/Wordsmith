@@ -52,5 +52,5 @@ export function queenShape(): BossShape {
     ],
   };
 }
-/** Her moves made so far: her stand, her hop, her talon rake, her flinch, her wing gust, her dive and her call (her deaths to come). */
-export const MADE = ['stand', 'walk', 'attack', 'reel', 'gust', 'dive', 'call'];
+/** Her moves made so far: her stand, her hop, her talon rake, her flinch, her wing gust, her dive, her call, and her death (his pick: she topples off the edge). */
+export const MADE = ['stand', 'walk', 'attack', 'reel', 'gust', 'dive', 'call', 'dying'];
