@@ -88,3 +88,7 @@ blows that wind up and follow through (their throws streaked on the frames they 
 living and none on the dying; nothing cyan, every light the cult's fire; nothing cut off at the canvas's
 edge; about the knight's height; the whole review; the book burning and the pots going off, no light at the
 end; what they send crisp.
+
+Asked as a pop-up "Are the Chanter's and the Firepot thrower's moves right?", his pick by 19:26 (13 Oct): "Yes,
+send them to main (Recommended)", offered as: both go to the main chat; then floor 7, the Ledge Road, its
+ground and sky first.

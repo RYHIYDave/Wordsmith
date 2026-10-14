@@ -24,7 +24,6 @@
 // hero, before anything moves). Their other moves are their stand for now, placeholders, not for use.
 
 import type { ActorArt } from './actor_types';
-import { HAND_BONE, clamp01, curve, rampAt } from './fleshmancer';
 import { INK, PINK, hash, toSprite } from './kit';
 import type { Ramp } from './kit';
 import { ENEMY_RIM, FLAME, SOCKET } from './mkit';
@@ -43,6 +42,31 @@ export const ACT1_CULT_ON = { on: false };
 
 const D = Math.PI / 180;
 const fr = (t: number): number => t - Math.floor(t);
+const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
+/** 0 before `t0`, 1 after `t1`, smoothly between. */
+const rampAt = (t: number, t0: number, t1: number): number => {
+  const v = clamp01((t - t0) / (t1 - t0));
+  return v * v * (3 - 2 * v);
+};
+/** A curve through keys (seconds, value), smooth through each (as art/fleshmancer.ts's `curve`; its own here, so that nothing of this mock-up draws on his file). */
+function curve(keys: ReadonlyArray<readonly [number, number]>, t: number): number {
+  const n = keys.length;
+  if (t <= keys[0][0]) return keys[0][1];
+  if (t >= keys[n - 1][0]) return keys[n - 1][1];
+  let i = 0;
+  while (t > keys[i + 1][0]) i++;
+  const [t0, v0] = keys[i];
+  const [t1, v1] = keys[i + 1];
+  const slope = (j: number): number => (j <= 0 || j >= n - 1 ? 0 : (keys[j + 1][1] - keys[j - 1][1]) / (keys[j + 1][0] - keys[j - 1][0]));
+  const m0 = slope(i) * (t1 - t0);
+  const m1 = slope(i + 1) * (t1 - t0);
+  const u = (t - t0) / (t1 - t0);
+  const u2 = u * u;
+  const u3 = u2 * u;
+  return (2 * u3 - 3 * u2 + 1) * v0 + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * v1 + (u3 - u2) * m1;
+}
+/** Their skin: pale, bony (the fleshmancer's hands' colours). */
+const HAND_BONE: Ramp = ['#4a3a44', '#4a3a44', '#a48e8c', '#d4c2b6', '#d4c2b6'];
 
 // =============================================================================================
 // THE FLOCK'S CLOTH AND THEIR COWLS (as the dagger cultist's: art/cultists.ts)
