@@ -11,11 +11,17 @@
 //     its walk, the circling flight, as the game plays it: sixteen frames a second, three seconds, from in front and behind
 //   node tools/page_gif.mjs src/dev/preview_vulture.ts "divefilm" shots/vulture_dive.gif 0
 //     its dive, its one attack, as the game plays it: thirty frames a second, from in front and from behind
+//   node tools/page_gif.mjs src/dev/preview_vulture.ts "reelfilm" shots/vulture_reel.gif 0
+//     its flinch, struck in the air: the freeze, the knock, back on its circling by 0.40 s; thirty a second
+//   node tools/page_gif.mjs src/dev/preview_vulture.ts "deathfilm" shots/vulture_death.gif 0
+//     its death, knocked from the air and down on its back: thirty a second, one second long
+//   node tools/preview.mjs src/dev/preview_vulture.ts shots/vulture_phonedown.png 844 390 phonedown
+//     the phone's size: the knight; the vulture struck in the air; the vulture dead, on its back
 
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { VULTURE, VULTURE_DIVE, VULTURE_PACE, VULTURE_WALK, vultureFrame, vultureStanding } from '../art/ledge_vultures';
+import { VULTURE, VULTURE_DEATH, VULTURE_DIVE, VULTURE_PACE, VULTURE_REEL, VULTURE_WALK, vultureFrame, vultureStanding } from '../art/ledge_vultures';
 import { TILE3 } from '../art/new_mobs3';
 import { project } from '../art/skeleton';
 import { drawText } from '../engine/font';
@@ -169,12 +175,12 @@ function zoomAt(g: CanvasRenderingContext2D, sp: Sprite, x: number, y: number, s
 }
 /** What it does at each moment of a film: which move, how far into it, how far it has come over the floor. */
 type Beat = { move: string; t: number; ground: number };
-/** A run of moves one after another (`[move, seconds]`), a frame at each 1/fps. */
-function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number): Beat[] {
+/** A run of moves one after another (`[move, seconds]`), a frame at each 1/fps; `last`: the frame at the move's end too. */
+function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number, last = false): Beat[] {
   const out: Beat[] = [];
   let ground = 0;
   for (const [move, long] of run) {
-    const n = Math.round(long * fps);
+    const n = Math.round(long * fps) + (last ? 1 : 0);
     for (let i = 0; i < n; i++) {
       out.push({ move, t: i / fps, ground });
       if (move === 'walk') ground += (VULTURE_PACE * TILE3) / fps;
@@ -230,13 +236,55 @@ function filmBeats(beats: Beat[], fps: number, title: string, at: ReadonlyArray<
 
 if (HASH.startsWith('look')) look();
 if (HASH.startsWith('head')) head();
-if (HASH.startsWith('phone')) phone();
+if (HASH.startsWith('phone:')) phone();
 if (HASH === 'walkfilm') {
   filmBeats(beatsOf([['walk', 3]], VULTURE_WALK.fps), VULTURE_WALK.fps, 'The vulture circles, as the game plays it (its pace)', [
     { view: 'front', x: 200, y: 330 },
     { view: 'back', x: 200, y: 330 },
   ]);
 }
+/** THE PHONE'S SIZE, the vulture struck and the vulture dead: the knight; the vulture struck in the air (0.15 s into its flinch); the vulture on its back. */
+function phonedown(): void {
+  const H = 390;
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  floor(g, PW, H);
+  const FOOT = 300;
+  const shadow = (x: number, rx: number): void => {
+    g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+    g.beginPath();
+    g.ellipse(x, FOOT, rx, rx * 0.4, 0, 0, Math.PI * 2);
+    g.fill();
+  };
+  shadow(160, 26);
+  drawAt(g, spriteOf3(MOVES3.rear, 0, 'front'), 160, FOOT);
+  shadow(420, 34);
+  drawAt(g, vultureFrame('reel', VULTURE_REEL.freeze + 0.05, 'front'), 420, FOOT);
+  shadow(640, 34);
+  drawAt(g, vultureFrame('dying', VULTURE_DEATH.long, 'front'), 640, FOOT);
+  label(g, 'the knight; the vulture struck; the vulture dead on its back (the game\'s size)', 8, 6);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+}
+
+if (HASH === 'reelfilm') {
+  filmBeats(beatsOf([['reel', VULTURE_REEL.long]], VULTURE_REEL.fps, true), VULTURE_REEL.fps, 'The vulture is struck in the air: the freeze, the knock, back on its circling (30 a second)', [
+    { view: 'front', x: 200, y: 330 },
+    { view: 'back', x: 200, y: 330 },
+  ]);
+}
+if (HASH === 'deathfilm') {
+  filmBeats(beatsOf([['dying', VULTURE_DEATH.long]], VULTURE_DEATH.fps, true), VULTURE_DEATH.fps, 'The vulture is knocked from the air and dies on its back (30 a second)', [
+    { view: 'front', x: 200, y: 330 },
+    { view: 'back', x: 200, y: 330 },
+  ]);
+}
+if (HASH === 'phonedown') phonedown();
 if (HASH === 'divefilm') {
   filmBeats(beatsOf([['attack', VULTURE_DIVE.long]], VULTURE_DIVE.fps), VULTURE_DIVE.fps, 'The vulture dives: warning 0.25 s, strike 0.70 s, held 0.1 s (30 a second)', [
     { view: 'front', x: 200, y: 330 },

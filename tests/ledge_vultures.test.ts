@@ -13,7 +13,9 @@ import * as nodeFs from 'node:fs';
 
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME, IRON } from '../src/art/mkit';
-import { VULTURE, VULTURE_BODY, VULTURE_DIVE, VULTURE_ON, VULTURE_REST, VULTURE_WALK, vultureDivePose, vulturePainted, vultureStanding, vultureWalkPose } from '../src/art/ledge_vultures';
+import { VULTURE, VULTURE_BODY, VULTURE_DEATH, VULTURE_DIVE, VULTURE_ON, VULTURE_REEL, VULTURE_REST, VULTURE_WALK, lowestOf, vultureDeathPose, vultureDeathSolids, vultureDivePose, vultureDyingPainted, vultureFlinchPose, vulturePainted, vultureStanding, vultureWalkPose } from '../src/art/ledge_vultures';
+import { canvasOf, dyingMoment, momentOf } from '../src/art/new_mobs3';
+import { stage } from '../src/art/skin';
 import { bonesAt, solve } from '../src/art/skeleton';
 import { spriteOf3 } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
@@ -29,12 +31,17 @@ paintWithoutCanvas();
 const FIRE = new Set(FLAME.map((c) => rgba(c).slice(0, 3).join(',')));
 const IRON_SET = new Set(IRON.map((c) => rgba(c).slice(0, 3).join(',')));
 
-// every move it has (its dive, flinch and death are still the standing motion, placeholders), both views, frame by frame
+// every move it has (its walk, dive, flinch and death), both views, frame by frame; the flinch and the death every
+// twentieth of a second through their own length, as well as the long run
 const frames: { name: string; move: string; t: number; view: 'front' | 'back' }[] = [];
 for (const view of ['front', 'back'] as const) {
   for (let i = 0; i <= 24; i += 3) frames.push({ name: `stand ${view} ${i}`, move: 'stand', t: i / 10, view });
-  for (const move of ['walk', 'attack', 'reel', 'dying'] as const) {
+  for (const move of ['walk', 'attack'] as const) {
     for (let i = 0; i <= 24; i += 3) frames.push({ name: `${move} ${view} ${i}`, move, t: i / 10, view });
+  }
+  for (const move of ['reel', 'dying'] as const) {
+    for (let i = 0; i <= 24; i += 3) frames.push({ name: `${move} ${view} ${i}`, move, t: i / 10, view });
+    for (let i = 0; i <= 20; i++) frames.push({ name: `${move} ${view} ${i / 20}`, move, t: i / 20, view });
   }
   for (const t of [0.7, 0.75, 0.8]) frames.push({ name: `the strike ${view} ${t}`, move: 'attack', t, view });
 }
@@ -82,7 +89,9 @@ test('crisp: every pixel all there or not at all (but the pink edge round it)', 
       else soft++;
     }
     assert.ok(soft === 0, `${f.name}: ${soft} soft pixels`);
-    assert.ok(rim > 80, `${f.name}: its pink edge, ${rim} pixels`);
+    // (a dying thing gives its pink edge up, as the game holds a dying monster: deathOfMob has none)
+    if (f.move === 'dying') assert.equal(rim, 0, `${f.name}: ${rim} pixels of pink edge (a dying thing gives it up)`);
+    else assert.ok(rim > 80, `${f.name}: its pink edge, ${rim} pixels`);
   }
 });
 
@@ -222,4 +231,149 @@ test('its dive ends on the walk\'s first pose, so the walk takes it up again wit
   const end = nums(vultureDivePose(VULTURE_DIVE.long));
   const w0 = nums(vultureWalkPose(0));
   for (const f of Object.keys(w0)) assert.ok(Math.abs(end[f] - w0[f]) < 1e-6, `${f}: ${end[f]} against the walk's ${w0[f]}`);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ITS FLINCH AND ITS DEATH (14 Oct; checked against the art rulebook before he sees them, as his rulebook asks: Hits 3
+// and 5, Movement 1, 3, 7 and 8, Animations 1 and 4, Monsters 4 and 6, and the frame rates).
+
+test('its flinch holds for a tenth of a second when it is struck (Movement 7: a heavy blow freezes), then is knocked back', () => {
+  const a = nums(vultureFlinchPose(0));
+  for (const t of [0.02, 0.05, VULTURE_REEL.freeze]) {
+    const b = nums(vultureFlinchPose(t));
+    for (const f of Object.keys(a)) assert.ok(Math.abs(a[f] - b[f]) < 1e-9, `${f} moves during the freeze, at ${t} s`);
+  }
+  const later = nums(vultureFlinchPose(0.2));
+  assert.ok(Math.abs(later.pitch - a.pitch) > 5, 'it moves again after the freeze');
+});
+
+test('its head snaps back and its wings are flung out wide as it is struck (Animations 1)', () => {
+  const w0 = nums(vultureWalkPose(0));
+  const snap = nums(vultureFlinchPose(VULTURE_REEL.freeze + 0.06));
+  assert.ok(snap.faceUp >= w0.faceUp + 20, `its head comes up ${(snap.faceUp - w0.faceUp).toFixed(0)} degrees: a snap`);
+  assert.ok(snap.lhy > w0.lhy + 0.2 * ARM, `its wings are flung out (${snap.lhy.toFixed(1)} against ${w0.lhy.toFixed(1)})`);
+});
+
+test('its flinch ends on its walk\'s first pose, so the walk takes it up again with no jump (Movement 3)', () => {
+  const end = nums(vultureFlinchPose(VULTURE_REEL.long));
+  const w0 = nums(vultureWalkPose(0));
+  for (const f of Object.keys(w0)) if (f in end) assert.ok(Math.abs(end[f] - w0[f]) < 1e-6, `${f}: ${end[f]} against the walk's ${w0[f]}`);
+});
+
+test('its flinch is thirty frames a second, a key every frame, and ends at its long (moves 30)', () => {
+  assert.equal(VULTURE_REEL.fps, 30);
+  const keys = VULTURE.reel!.motion.keys;
+  for (let i = 1; i < keys.length; i++) assert.ok(Math.abs(keys[i].at - keys[i - 1].at - 1 / 30) < 1e-9, `a key each thirtieth of a second (key ${i})`);
+  assert.ok(Math.abs(keys[keys.length - 1].at - VULTURE_REEL.long) < 1e-9, 'it ends at its long');
+});
+
+test('its eyes flash gold as it is struck, and fade back to pink in three tenths of a second (Animations 4)', () => {
+  const glint = VULTURE.reel!.glint!;
+  assert.equal(glint(0.05), 1);
+  assert.ok(glint(0.15) > 0 && glint(0.15) < 1, `${glint(0.15).toFixed(2)} at 0.15 s: fading`);
+  assert.equal(glint(0.4), 0);
+});
+
+test('what a blow throws off (feathers and drops of its blood) lasts half a second, and comes only in its flinch and its death', () => {
+  const can = canvasOf(VULTURE);
+  const st = stage('front', can.ax, can.ay, can);
+  const count = (bits: ReadonlyArray<{ part: string }>): number => bits.filter((b) => b.part === 'shed' || b.part === 'blood').length;
+  for (const mv of [VULTURE.stand, VULTURE.attack, VULTURE.walk!]) {
+    for (const t of [0, 0.3, 0.6, 0.9]) assert.equal(count(VULTURE.bits(st, momentOf(VULTURE, mv, t))), 0, `${mv.name} at ${t} s throws nothing off`);
+  }
+  assert.ok(count(VULTURE.bits(st, momentOf(VULTURE, VULTURE.reel!, 0.2))) > 0, 'its flinch throws feathers and blood off at the blow');
+  assert.equal(count(VULTURE.bits(st, momentOf(VULTURE, VULTURE.reel!, 0.6))), 0, 'and none by 0.6 s');
+  assert.ok(count(VULTURE.bits(st, dyingMoment(VULTURE, 0.2))) > 0, 'its death throws feathers and blood off');
+  assert.equal(count(VULTURE.bits(st, dyingMoment(VULTURE, 0.7))), 0, 'and none by 0.7 s');
+});
+
+test('its death is thirty frames a second, a key every frame, and ends at its long: a small thing dies quick (Hits 5, moves 30)', () => {
+  assert.equal(VULTURE_DEATH.fps, 30);
+  const keys = VULTURE.dying!.motion.keys;
+  for (let i = 1; i < keys.length; i++) assert.ok(Math.abs(keys[i].at - keys[i - 1].at - 1 / 30) < 1e-9, `a key each thirtieth of a second (key ${i})`);
+  assert.ok(Math.abs(keys[keys.length - 1].at - VULTURE_DEATH.long) < 1e-9, 'it ends at its long');
+  assert.equal(VULTURE.dieTime, VULTURE_DEATH.long);
+  assert.ok(VULTURE.dieTime <= 1.0 + 1e-9, `it dies in ${VULTURE.dieTime} s`);
+});
+
+test('its death knocks it from the air and over onto its back by its end, its feet up in the air (Hits 5, Animations 1)', () => {
+  const end = nums(vultureDeathPose(VULTURE_DEATH.long));
+  assert.ok(end.pitch <= -80, `pitched ${end.pitch.toFixed(0)} degrees: over onto its back`);
+  assert.ok(end.lfz > 20 && end.rfz > 20, `its feet are up, ${end.lfz.toFixed(0)} and ${end.rfz.toFixed(0)}`);
+});
+
+test('it never sinks into the floor at any moment of its death, and at its end it touches the floor (Movement 1 and 3)', () => {
+  for (let i = 0; i <= 30; i++) {
+    const t = i / 30;
+    const low = lowestOf(vultureDeathSolids(t));
+    assert.ok(low >= -0.5, `at ${t.toFixed(2)} s its lowest point is ${low.toFixed(2)}: under the floor`);
+  }
+  const end = lowestOf(vultureDeathSolids(VULTURE_DEATH.long));
+  assert.ok(end <= 0.5, `at its end its lowest point is ${end.toFixed(2)}: it lies on the floor`);
+});
+
+test('its feet stay off the floor through its death: it is a flier, and it never lands on them (Movement 8)', () => {
+  for (let i = 20; i <= 30; i++) {
+    const t = i / 30;
+    const legs = vultureDeathSolids(t).filter((b) => b.part === 'legL' || b.part === 'legR');
+    const low = lowestOf(legs);
+    assert.ok(low > 3, `at ${t.toFixed(2)} s its feet are ${low.toFixed(1)} off the floor`);
+  }
+});
+
+test('its body falls steadily from the top of its knock to its landing: it only comes down (Movement 3)', () => {
+  const pelvisAt = (t: number): number => solve(VULTURE_BODY, bonesAt(VULTURE.dying!.motion.keys, VULTURE_REST, t)).pelvis[2];
+  let prev = pelvisAt(0.2);
+  for (let i = 7; i <= 18; i++) {
+    const t = i / 30;
+    const h = pelvisAt(t);
+    assert.ok(h <= prev + 0.05, `at ${t.toFixed(2)} s it rises to ${h.toFixed(2)} from ${prev.toFixed(2)}`);
+    prev = h;
+  }
+});
+
+/** The furthest a part of its solids reaches toward −x (its head's side). */
+function xReach(bits: ReadonlyArray<{ part: string; shape: any }>, part: string): number {
+  let lo = Infinity;
+  for (const b of bits) {
+    if (b.part !== part) continue;
+    const sh = b.shape;
+    if (sh.k === 'rod') lo = Math.min(lo, sh.a[0] - sh.ra, sh.b[0] - sh.rb);
+    else if (sh.k === 'ball') lo = Math.min(lo, sh.c[0] - Math.hypot(sh.ax[0][0], sh.ax[1][0], sh.ax[2][0]));
+    else if (sh.k === 'panel') for (const x of [1, -1]) for (const y of [1, -1]) lo = Math.min(lo, sh.c[0] + x * sh.u[0] + y * sh.v[0]);
+    else if (sh.k === 'dot' || sh.k === 'mote' || sh.k === 'glow') lo = Math.min(lo, sh.p[0]);
+  }
+  return lo;
+}
+
+test('its wings lie back along the floor at its end, not forward over its head (the stick it had, measured)', () => {
+  const bits = vultureDeathSolids(VULTURE_DEATH.long);
+  const head = xReach(bits, 'head');
+  for (const w of ['wingL', 'wingR']) {
+    const reach = xReach(bits, w);
+    assert.ok(reach >= head - 12, `its ${w} reaches ${reach.toFixed(1)}, past its head at ${head.toFixed(1)}`);
+  }
+});
+
+test('it lies still from 0.75 s to its end: every solid holds, its chain and tail too, and its picture is the same (Animations 1)', () => {
+  // (each number to a millionth: the last key is solved by a different path, which differs only in the fifteenth place)
+  const solids = (t: number): string => JSON.stringify(vultureDeathSolids(t), (_k, v) => (typeof v === 'number' ? Math.round(v * 1e6) : v));
+  const still = solids(VULTURE_DEATH.still);
+  for (const t of [0.8, 0.9, VULTURE_DEATH.long]) assert.equal(solids(t), still, `something moves at ${t} s`);
+  const a = vultureDyingPainted(VULTURE_DEATH.still).px;
+  for (const t of [0.8, 0.9, VULTURE_DEATH.long]) {
+    const b = vultureDyingPainted(t).px;
+    assert.equal(b.w, a.w);
+    assert.equal(b.h, a.h);
+    let diff = 0;
+    for (let i = 0; i < a.d.length; i++) if (a.d[i] !== b.d[i]) diff++;
+    assert.ok(diff === 0, `${diff} values differ at ${t} s from its picture at ${VULTURE_DEATH.still} s`);
+  }
+});
+
+test('its eyes go out as it lands: its death holds no fire light at its end (Animations 4)', () => {
+  for (const view of ['front', 'back'] as const) {
+    const { lights } = vultureDyingPainted(VULTURE_DEATH.long, view);
+    assert.equal(lights.length, 0, `${view}: ${lights.length} lights at its end`);
+  }
 });

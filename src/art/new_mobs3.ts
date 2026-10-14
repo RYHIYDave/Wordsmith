@@ -581,7 +581,7 @@ export function canvasOf(mob: Mob): MobCanvas {
   return mob.canvas ?? CANVAS3;
 }
 
-function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
+export function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Moment {
   const q = posedAt(mv, t);
   const s = solve(mob.build, q);
   const before = solve(mob.build, posedAt(mv, t - FR));
@@ -753,10 +753,24 @@ const easeIO = (k: number): number => {
   return v * v * (3 - 2 * v);
 };
 
-/** The bones of one dying at a moment (before the pieces let go). */
-function dyingMoment(mob: Mob, t: number): Moment {
+/**
+ * The bones of one dying at a moment (before the pieces let go). A dying move that says its loose things follow (`trail`,
+ * as in flight: the vulture's chain and tail) gets their way through the death too; no other dying move does.
+ */
+export function dyingMoment(mob: Mob, t: number): Moment {
   const q = posedAt(mob.dying, t);
-  return { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: mob.dying.glint ? Math.max(0, mob.dying.glint(t)) : 0, bare: false, skull: false, rally: 0, charge: 0, dying: true, jaw: mob.dying.jaw ? clamp01(mob.dying.jaw(t)) : undefined, ropes: mob.dying.ropes ? mob.dying.ropes(t) : undefined };
+  const m: Moment = { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: mob.dying.glint ? Math.max(0, mob.dying.glint(t)) : 0, bare: false, skull: false, rally: 0, charge: 0, dying: true, jaw: mob.dying.jaw ? clamp01(mob.dying.jaw(t)) : undefined, ropes: mob.dying.ropes ? mob.dying.ropes(t) : undefined };
+  const mv = mob.dying;
+  if (mv.trail && (mv.trailOver === undefined || mv.trailOver(t))) {
+    const T: V3[][] = [];
+    for (let i = 0; i <= 8; i++) {
+      const qi = posedAt(mv, t - (FR * (mv.trailSpan ?? 1.6) * i) / 8);
+      const pts = mv.trail(solve(mob.build, qi), qi);
+      pts.forEach((p, j) => (T[j] ??= []).push(p));
+    }
+    m.trails = T;
+  }
+  return m;
 }
 
 const THEN = new Map<string, Bit[]>();

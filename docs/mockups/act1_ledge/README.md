@@ -299,8 +299,61 @@ Its walk is the next section.
 
 **Checks:** tests/ledge_vultures.test.ts 16 of 16 (the eight new are the rulebook checks: sixteen frames a second; thirty a second with a key each frame; the strike held a tenth of a second; the warning held and trembling; the stoop past upright at the strike; the wings swept back from the warning to the strike; the feet off the floor through the dive; the dive ends on the walk's first pose). tests/new_mobs3.test.ts 8 of 8. tsc clean. The standing picture unchanged (checksum 1f9ac615...). NOT RUN: the full unit suite, the full regression, a real phone.
 
-**Not yet:** its flinch and its death (knocked from the air, down on its back). Both are still the standing motion: placeholders that no picture shows.
+**Not yet:** its flinch and its death: drawn now, in the section below, for his yes.
 
 **His answers, to the pop-up sent with the pictures (by 12:17):** the revised walk, "Yes, the walk as shown (Recommended)"; the dive, "Yes, the dive as shown (Recommended)"; a flier as an exception to "Feet grip the floor", "Yes, add it (Recommended)", now in Movement 8 of docs/art/RULEBOOK.md (the copy in this repo; his living doc not yet edited by this chat). His "Yes" at 11:41 was to the walk as first shown, before the rulebook check.
 
-**Next:** his answers. Then the flinch and the death as films, each with its sound timings to the sound chat. Then the cliff crawlers' brief; then her eyrie peak with the city view; then floors 8 to 10.
+**Next:** his answers to the flinch and the death (the section below). Then the cliff crawlers' brief; then her eyrie peak with the city view; then floors 8 to 10.
+
+## The vulture's flinch and death (14 Oct; drawn for his yes; behind `VULTURE_ON`, off)
+
+**What it does.** Struck in the air, it holds for a tenth of a second (the blow's freeze), then is knocked back: its head snaps up, its wings fling out wider than on its walk, its feet kick up, its eyes flash gold and fade by 0.40 s; it is back on its circling by then, from its walk's first pose, with no jump. Six of its feathers and five drops of its blood come off at the blow and are gone by 0.50 s. Its death: the same freeze and knock; then it is thrown back and over, its wings spread and its feet kicked up; it falls backward and lies on its back by 0.63 s; it gives a little on the landing and is still from 0.73 s. Its feet stay in the air the whole time (it is a flier: they never land, Movement 8). Its eyes go dark as it falls. A dead vulture has no pink edge: the rulebook's edge is for living monsters.
+
+**The check, rule by rule** (docs/art/RULEBOOK.md; "as shown" means the films below):
+
+| Rule | What it does now | Result |
+| --- | --- | --- |
+| The numbers: attacks and moves 30 | Flinch and death at 30 frames a second, a key on every frame (tests) | Pass |
+| The numbers, and Monsters 6: the enemy's edge is for living monsters | Pink edge and pink eyes while it lives; the dying vulture drops its edge, as the game holds a dying monster (test) | Pass |
+| Monsters 1: true to what it is | A bird knocked out of the air: wings spread, feet up, then over onto its back | Pass by eye |
+| Hits 1: a splash, then gone | Five drops of its blood come off at the blow and are gone by 0.50 s (no stain drawn: the rule says "may") | Pass |
+| Hits 3: every hit shows | Flashes gold at the blow, freezes, is knocked back and up (tests) | Pass |
+| Hits 4: what flies off is the monster's | Six of its own feathers and its blood, not a weapon's | Pass |
+| Hits 5: deaths are true to what died; small things die quick | Dies in 1.0 s, falling backward onto its back | Pass |
+| Movement 1: weight first | The blow turns the body and carries through into the fall; the landing gives, then settles | Pass by eye |
+| Movement 4: loose things follow | Its chain and tail stream during the flight and the fall; they stop as it lies, so nothing moves after 0.73 s (test) | Pass |
+| Movement 5: slick | Thirty a second, a key on every frame, no jumps (tests) | Pass |
+| Movement 7: a heavy blow lands with a freeze | Everything holds for 0.10 s from the blow (tests) | Pass |
+| Movement 8: feet grip the floor (the flier's exception) | Its feet are in the air through the flinch and the death: never lower than 7.1 picture pixels above the floor from 0.67 s (test) | Pass: a flier is the exception, his yes (14 Oct) |
+| Animations 1: as far as it will go | Head snaps up 40 degrees; the walk's pitch of 26.5 degrees snaps back 34 degrees; wings flung wider; a fall over backward to -90 degrees; a landing that bounces (tests on the numbers) | Pass by the numbers; his eye decides the notch |
+| Animations 4: the warning and the hero stay in sight | The blood and feathers are small, for half a second, and cover nothing of the knight | Pass |
+| Animations 5: power you can see | Its eyes flash gold at the blow and fade; they go out when it dies (tests) | Pass |
+| How art is approved 1: pictures first | Behind `VULTURE_ON` (off) | Pass |
+| How art is approved 6: checked at phone size | shots/vulture_phonedown.png, 844 by 390 (the game's size): the knight, the vulture struck, the vulture dead on its back | Pass (looked at; not on a real phone) |
+| How art is approved 7: the boss review | A boss rule; the vulture is a small monster. Its tests cover the same points: feet, sinking, loose things, colours, crisp pixels | Not applicable |
+| Movement 3 and 6; Animations 2, 3, 6 to 8 | Its flinch and death are not attacks, and a dead thing does not breathe; its standing picture is unchanged (checksum 1f9ac615...); the rest are judged by eye or do not apply | Pass or not applicable |
+
+**The numbers, in seconds from the blow** (the picture's own clock; the game's speed for it is the main chat's to set):
+
+- 0.00 to 0.10: the freeze. Its eyes flash gold; the shed feathers and blood begin.
+- Flinch: 0.10 to 0.17, the snap (its head up 40 degrees; its pitch back 34 degrees, from 26.5 to -7.5); 0.17 to 0.40, back to its circling. The shed feathers and blood are gone by 0.50.
+- Death: 0.10 to 0.20, thrown back and up (its body at its highest, 0.20, with its pelvis 40.8 picture pixels above the floor); 0.20 to 0.63, the fall: its pitch -20 at 0.20, -36 at 0.40, -56 at 0.50, -90 at 0.63 (on its back).
+- Death, the ground: its eyes begin to go out at 0.46 and are dark by 0.68; its body first touches the floor at 0.59; the landing at 0.63; a bounce up 2.5 picture pixels at 0.68; still from 0.73 (every part, the chain and the tail with it).
+
+**Its sound** (sound rule 7; the timings sent to the sound chat): flinch: the blow at 0.00; the wings rustle and snap from 0.10 to 0.17; the feathers fall to 0.50. Death: the blow at 0.00; the wings beat wide from 0.10; the fall from 0.20 to 0.63 (a rasp of the body going over); the landing at 0.63 (a soft heavy thud, the body gives); the bounce at 0.68; still from 0.73.
+
+**Pictures, for him:** `shots/vulture_reel.gif` (the flinch, thirty a second, from in front and from behind); `shots/vulture_death.gif` (the death, thirty a second, from in front and from behind); `shots/vulture_phonedown.png` (844 by 390, the game's size). From src/dev/preview_vulture.ts: the hashes `reelfilm`, `deathfilm` and `phonedown`.
+
+**Checks:** tests/ledge_vultures.test.ts 30 of 30 (fourteen new, for the flinch and the death: the freeze holds 0.10 s; the head snaps back; the flinch ends on the walk's first pose; a key a thirtieth of a second and ends at 0.40 s; the eyes flash and fade; the shed lasts half a second and comes only in the flinch and the death; the death: a key each frame, ends at 1.00 s; ends on its back, feet up; never sinks; its feet stay in the air; its body only falls; its wings lie back, not over its head; still from 0.75 s to its end; no fire light at its end). tests/new_mobs3.test.ts 8 of 8. The other 11 test files that use the mob kit: 125 of 125. tsc clean. The standing checksum unchanged (1f9ac615...7faf). The standing, walk and dive pictures identical to HEAD on 190 frames, both views. NOT RUN: the full unit suite, the full regression, a real phone.
+
+**Notes for the main chat** (not in the game; nothing of the vulture is):
+1. The game's die clip runs at `DEATH_FPS`, 20 a second (src/art/mkit.ts, used for a monster's death clip; boss_checks.ts too). The vulture's death is drawn at 30 a second, by the rule "attacks and moves 30". A vulture that came in through the mob set's die path would play its death at 20. Nothing else is changed here: the other monsters keep their rate.
+2. The flinch and the death start on the walk's first pose, which is in flight. The game must enter them from the walk's own phase (or blend in), or they will jump.
+3. The death uses `deathOfMob` (no pink edge, no pool of light). `dyingMoment` (src/art/new_mobs3.ts) now sets `trails` when a dying move has a `trail`; no other monster sets one. `momentOf` is exported, with no change of behaviour.
+4. The living rulebook (his claude.ai doc) is not edited by this chat; the copy in this repo carries the walk, dive and flier rules.
+
+**His answers:** not yet. The pictures are sent with the pop-up.
+
+**Not yet:** nothing of the vulture is in the game. Its flinch and death wait for his yes; then the vulture comes into floor 7 whole, with its mobs and its films.
+
+**Next:** his yes to the flinch and the death; then the cliff crawlers' brief; then her eyrie peak with the city view; then floors 8 to 10.
