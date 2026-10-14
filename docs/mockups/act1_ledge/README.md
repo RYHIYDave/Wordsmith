@@ -624,6 +624,8 @@ His words, 13 Oct, 20:59: "Or we can just have the trail sort of work out one di
 
 **The pictures:** `shots/eyrie_world.png`, one phone screen (1014 by 468 picture pixels: the game's 507 by 234 at two to one), with the floor's name and its map as the game shows them; `shots/eyrie_city.png`, the town at four times, to check its pixels.
 
-**Asked with the picture** (one pop-up; our pick first and marked): "Is this the Queen's eyrie, her peak looking out over the city?"
+**Asked with the picture** (one pop-up; our pick first and marked): "Is this the Queen's eyrie, her peak looking out over the city?" (offered: "Yes, this is it (Recommended)", or "Bring the city closer").
 
-**Next:** his answer; then floors 8 to 10.
+**His answer, 14 Oct:** "Yes, this is it (Recommended)". The boss area goes in the plan as shown: the mountain's top over the drop, the town under the cult's dome far below past its far edge, the Queen's eyrie at the far edge. Nothing of it is in the game; the main chat lays the real floor when floor 7 comes in whole.
+
+**Next:** floors 8 to 10.
