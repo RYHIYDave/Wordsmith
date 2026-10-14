@@ -581,10 +581,12 @@ The key times stay as the sound chat has them, so the sound posts stand, with on
 
 **Its pictures** (in `shots/`, re-made): `crawler_walk.gif`, `crawler_stand.gif`, `crawler_swipe.gif`, `crawler_leap.gif`, `crawler_reel.gif`, `crawler_death.gif`; `crawler_phone.png` and `crawler_phonedown.png` (844 by 390, beside the knight); `crawler_look.png`; `crawler_sheet_attack.png`, `crawler_sheet_leap.png`, `crawler_sheet_reel.png`, `crawler_sheet_dying.png` (frame by frame).
 
-**Asked with these pictures** (one pop-up of four; nothing goes live until he says yes; our pick is first and marked):
-- The look, unchanged in this upgrade (it is the revision he said "Not yet" to): what would give it pizzazz? "Brighter, more colour (Recommended)", or "Bigger spines and jaws", or his own words.
-- The walk, now smoother: "Yes, the walk as shown (Recommended)", or "Not yet".
-- The attacks, the swipe and the leap: "Yes, the attacks as shown (Recommended)", or "Shorter follow-through, a couple of frames".
-- The flinch and the death: "Yes, the flinch and the death as shown (Recommended)", or "Not yet".
+**His answers to these pictures** (the pop-up, 14 Oct; each as he tapped it):
+- The look, unchanged in this upgrade: "[No preference]". No choice made; the look stays as shown, and is not approved.
+- The walk: "Yes, the walk as shown (Recommended)". Approved as shown.
+- The attacks, the swipe and the leap: "Yes, the attacks as shown (Recommended)". Approved as shown, with the follow-through as it is (his call on the rule's "a couple of frames").
+- The flinch and the death: "Yes, the flinch and the death as shown (Recommended)". Approved as shown.
+
+**Status:** the walk, the attacks, and the flinch and the death have his yes as shown. The look has no yes: it is the revision he said "Not yet" to, and it stays unapproved until he says so. Nothing is in the game (behind CRAWLER_ON, off), and the crawler is not for a version until floor 7 comes in whole.
 
 **Next:** his answers to the four questions above; then her eyrie peak with the city view; then floors 8 to 10.
