@@ -256,7 +256,7 @@ full unit suite and the full regression; a real phone.
 
 Its walk is the next section.
 
-## The vulture's walk and dive (14 Oct; behind `VULTURE_ON`, off: his yes first)
+## The vulture's walk and dive (14 Oct; his yes to both, by 12:17; behind `VULTURE_ON`, off)
 
 **What he has said.** His yes to the standing sheet: "Yes" (10:34). His yes to the walk as first shown (the film of 10:48): "Yes" (11:41), read as yes to that walk.
 
@@ -280,7 +280,7 @@ Its walk is the next section.
 | Movement 5: slick | Walk and dive at their frame rates, no jerks between frames | Pass (tests) |
 | Movement 6: alive when still | The standing picture is unchanged to the byte (checksum 1f9ac615...) | Pass |
 | Movement 7: a heavy blow lands with a freeze | The strike is held for a tenth of a second, 0.70 s to 0.80 s (test). Counted as a heavy blow: the whole dive goes into the talons | Pass; his eye decides whether the dive counts as heavy |
-| Movement 8: feet grip the floor | Its feet never land: in the air all the round, the lowest foot point 10.5 picture pixels above the floor at the strike (test) | NOT SETTLED: the rule says a foot stays where it lands, and a flier's feet never land. His decision (asked) |
+| Movement 8: feet grip the floor | Its feet never land: in the air all the round, the lowest foot point 10.5 picture pixels above the floor at the strike (test) | Pass: a flier is the exception, by his yes ("Yes, add it (Recommended)", by 12:17); Movement 8 now says so |
 | Monsters 1: true to what it is | It flaps and circles, as his sound pick has it ("its wings flapping") | Pass (his pick) |
 | Monsters 4: the warning is a pose | The hold at the top, 0.25 s to 0.50 s, wings up and trembling, body rearing back (test) | Pass |
 | Monsters 6: pink is theirs | Pink eyes and pink edge; nothing cyan (tests) | Pass |
@@ -301,6 +301,6 @@ Its walk is the next section.
 
 **Not yet:** its flinch and its death (knocked from the air, down on its back). Both are still the standing motion: placeholders that no picture shows.
 
-**Asked, as pop-ups:** (1) the revised walk, yes or what to change; (2) the dive, yes or what to change; (3) whether a flier is an exception to "Feet grip the floor" (a rule change, so his yes).
+**His answers, to the pop-up sent with the pictures (by 12:17):** the revised walk, "Yes, the walk as shown (Recommended)"; the dive, "Yes, the dive as shown (Recommended)"; a flier as an exception to "Feet grip the floor", "Yes, add it (Recommended)", now in Movement 8 of docs/art/RULEBOOK.md (the copy in this repo; his living doc not yet edited by this chat). His "Yes" at 11:41 was to the walk as first shown, before the rulebook check.
 
 **Next:** his answers. Then the flinch and the death as films, each with its sound timings to the sound chat. Then the cliff crawlers' brief; then her eyrie peak with the city view; then floors 8 to 10.

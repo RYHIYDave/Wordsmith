@@ -17,6 +17,8 @@ Oct 8, 2026
 > **CHANGED BY THE OWNER, 10 Oct 2026: MOMENTS AROUND YOU.** His idea at 07:52 ("I’d also like a couple environmental things happening around you for immersion unique for each floor."); asked whether it should be a rule, his pick: "Yes, add it (Recommended)". So Places has a new rule 8, and the doc is at rev 81 with it.
 >
 > **CHANGED BY THE OWNER, 11 Oct 2026: 25 FOR A SET, 25 FOR EACH BOSS.** His words to the art chat, 10 Oct, 14:54: "Going forward, let’s do 25 that are the theme of the 5 levels, then 25 for each boss.  Save you some time.  Instead of 250 it’s 150"; 14:55: "Like forward on the next 5". Read as: from the second set of five floors on; the Crypt keeps its 40 to 50 a floor. Asked whether it should go into the rulebook, his pick by 06:34: "Yes, add it (Recommended)". So Places 7 says so, and the doc is at rev 82 with it.
+>
+> **CHANGED BY THE OWNER, 14 Oct 2026: A FLIER IS THE EXCEPTION TO "FEET GRIP THE FLOOR".** Asked whether a flier is an exception to "Feet grip the floor" (Movement 8), his pick by 12:17: "Yes, add it (Recommended)". So Movement 8 says so. This copy has it; his living doc does not yet (this chat has not edited it).
 
 Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. You said yes to it on 8 Oct, so every chat that makes art for the game follows it, and it changes only with your yes.
 
@@ -125,7 +127,7 @@ Weight is the test for every animation, and every character moves its own way, a
 5. **Slick.** Smooth, plenty of frames, nothing jerky. In your words: "I want the animations to be really slick".
 6. **Alive when still.** A figure left standing breathes, shifts its weight and has small habits of its own.
 7. **Heavy blows land with a freeze.** The moment a heavy blow lands, everything holds for a tenth of a second. You chose it on 8 Oct.
-8. **Feet grip the floor.** A foot stays where it lands; a running figure moves its legs faster rather than slide. You chose it on 8 Oct.
+8. **Feet grip the floor.** A foot stays where it lands; a running figure moves its legs faster rather than slide. You chose it on 8 Oct. A flier is the exception: its feet are off the floor and never land, so this does not hold for it (added on his yes, 14 Oct: "Yes, add it (Recommended)").
 
 ## Hits, blood and deaths
 
