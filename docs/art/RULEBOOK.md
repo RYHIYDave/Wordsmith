@@ -18,7 +18,7 @@ Oct 8, 2026
 >
 > **CHANGED BY THE OWNER, 11 Oct 2026: 25 FOR A SET, 25 FOR EACH BOSS.** His words to the art chat, 10 Oct, 14:54: "Going forward, let’s do 25 that are the theme of the 5 levels, then 25 for each boss.  Save you some time.  Instead of 250 it’s 150"; 14:55: "Like forward on the next 5". Read as: from the second set of five floors on; the Crypt keeps its 40 to 50 a floor. Asked whether it should go into the rulebook, his pick by 06:34: "Yes, add it (Recommended)". So Places 7 says so, and the doc is at rev 82 with it.
 >
-> **CHANGED BY THE OWNER, 14 Oct 2026: A FLIER IS THE EXCEPTION TO "FEET GRIP THE FLOOR".** Asked whether a flier is an exception to "Feet grip the floor" (Movement 8), his pick by 12:17: "Yes, add it (Recommended)". So Movement 8 says so. This copy has it; his living doc does not yet (this chat has not edited it).
+> **CHANGED BY THE OWNER, 14 Oct 2026: A FLIER IS THE EXCEPTION TO "FEET GRIP THE FLOOR".** Asked whether a flier is an exception to "Feet grip the floor" (Movement 8), his pick, 14 Oct: "Yes, add it (Recommended)". So Movement 8 says so. This copy has it; his living doc does not yet (this chat has not edited it).
 
 Wordsmith looks cool and fun: crisp pixel art, a dark world where every place has colours of its own, bold and stylish heroes, monsters true to what they are, and everything moving with weight. You said yes to it on 8 Oct, so every chat that makes art for the game follows it, and it changes only with your yes.
 
