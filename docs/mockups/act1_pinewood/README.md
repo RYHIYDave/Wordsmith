@@ -95,3 +95,30 @@ His design doc ("Wordsmith Act 1: The Descent (Levels 6–10)", the planning cha
 "A great stag hollowed out by the swamp's influence, with a blinking eye visible through its ribs. It foreshadows
 the Drowned Eye." Its floor is the Hollow Wood. "Moves: an antler gore (its basic attack); a charge that splinters
 trees; lines of roots bursting toward you; a bellow that wolves answer from the fog."
+
+His brief, asked as his art rulebook's questions in two pop-ups, his picks as he tapped them, 15 Oct, the first
+four by 11:26, the rest by 11:47:
+- HOW BIG: "Huge: elk-sized, antlers towering (Recommended)", offered as: shoulder above the knight's head, antlers
+  spreading wide over him.
+- THE ONE THING TO KNOW IT BY: "The eye blinking in its open ribs (Recommended)", offered as: its chest hollowed,
+  ribs bare, a great gold eye inside that blinks and looks at you, like the Drowned Eye to come.
+- HOW HOLLOWED: "Half rotted: hide hanging, bone and roots showing (Recommended)", offered as: a dark hide in
+  tatters over bone, roots knotted through where flesh was.
+- HOW IT MOVES: "Restless, stamping, snorting", offered as: always shifting, pawing the ground. Not the recommended
+  pick; his pick stands.
+- HOW IT DIES: "Roots drag it down into the ground", offered as: the swamp takes it back: roots pull it under. Not the
+  recommended pick; his pick stands.
+- ITS EYE: "Gold, like the Drowned Eye's (Recommended)", offered as: a pale veined eyeball, its iris burning gold, a
+  slit pupil: a small copy of the boss to come.
+- WHAT IT MUST NOT LOOK LIKE: "Not a gory zombie", offered as: rotted, but no blood and guts. Not the recommended
+  pick; his pick stands.
+- ITS SOUND (sound rule 7): "A deep bellow, creaking wood, a wet blink (Recommended)", offered as: its bellow echoing
+  through the trees, its bones and roots creaking, a soft wet sound when the eye blinks.
+
+READ AS, NOT ASKED (the pictures will show whether it is right): an enemy, so its eye burns gold (his pick; pink and
+gold glows are the enemy's) and its edge is pink while it lives, nothing cyan; rotted but clean: dark hide, pale
+bone, roots and moss, never red flesh or blood; its stand restless (shifting its weight, tossing its head, pawing
+and stamping a forefoot, snorting a breath of fog), its moves still to come: the antler gore, the charge that
+splinters trees, the roots bursting toward you, the bellow the wolves answer.
+
+NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
