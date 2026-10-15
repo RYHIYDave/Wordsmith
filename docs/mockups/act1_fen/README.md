@@ -125,3 +125,41 @@ quick pop-ups on its look, then its picture, then its moves from his design doc;
 16:01 (the clock read 16:01:21 just after): "Yes, on to the Drowned Eye (Recommended)".
 
 NEXT: the Drowned Eye, floor 10's boss: its brief by pop-ups, its look, then its moves from his design doc.
+
+## The Drowned Eye, floor 10's boss and the act's
+
+HIS DESIGN DOC (the planning chat's "Wordsmith Act 1: The Descent (Levels 6–10)", Level 10, read 15 Oct): the Act 1
+finale; the look of his pick of 13 Oct ("a pale, veined eyeball with a burning gold iris and a slit pupil", risen close
+under the pool's surface, its arms coiling out under the water past the ruin, two curling up out of it); three phases:
+1, it stays under the water, tentacles bursting up round the player while chanters shield it; 2, it surfaces, "a huge
+eye and maw rising out of the ruins", and spawns smaller horrors from the muck; 3, it pulls the siege magic back into
+itself, the dome fades and the whole arena turns hostile; the obelisks are its anchors; the collected pages let the
+player speak the chant backwards to stun the Eye or break a phase.
+
+HIS BRIEF, his art rulebook's questions in two pop-ups (15 Oct, by 16:04, each his pick, the labels as he tapped them):
+how big, "Huge: its eye as wide as the pool (Recommended)"; what rises when it surfaces, "The eye splits open into a
+maw" (not the recommended pick); its arms, "Pale veined tentacles, as in the plan's picture (Recommended)"; what you
+see of it under the water, "Its eye glowing gold under the water (Recommended)"; in phase 3, "The obelisks' pink lines
+bend into it; its veins blaze (Recommended)"; how it dies, "It sinks, its eye going dark, as the dome shatters
+(Recommended)"; what it must never look like, "Not a cartoon googly eye (Recommended)"; its sound (sound rule 7), "A
+deep drowned groan, wet slaps, the chant (Recommended)".
+
+HIS WORDS, in this chat, 15 Oct: 16:02, "Remember the drowned eye is the Act Boss.  I’d like him to have a couple of
+different phases, and a significant moveset"; 16:04, "And I want the fight to be engaging and long and exciting a very
+cool.  Lots of tentacle dodging and spells". Read as (told him so): the act's boss, a long fight and a big moveset;
+three phases as his doc has them, each adding moves; every move with a warning to read and dodge; how long the fight
+runs and when its phases change is the main chat's to build, and his doc's.
+
+HIS MOVES, his picks in one pop-up (15 Oct, by 16:12): its tentacles, "Burst up under you from glowing cracks
+(Recommended)", "Sweep across the whole ring (Recommended)", "Rear up high and slam down in a line (Recommended)"; its
+spells, "His gaze: a gold beam sweeping the arena (Recommended)", "The siege's pink bolts raining down (Recommended)",
+"Bile spat in arcs, leaving pools (Recommended)"; its maw, "Breathes in, pulling you close, then bites (Recommended)",
+"Spews eyespawn out of the muck (Recommended)", and in his own words, "I like the water idea for the roar, but instead
+it picks its bulk up and splashes down"; its phases, "Three, as your plan has, each harder (Recommended)". Read as
+(told him so): the splash, it heaves its whole bulk up out of the pool and crashes down, a wave rolling out over the
+arena to jump or dash through. Shared out as offered to him (the main chat's to time): phase 1, under the water, the
+burst, the sweep and the slam; phase 2, surfaced, those and the gaze, the bile, the breath and bite, the eyespawn and
+the splash; phase 3, the siege magic pulled in, all of them and the siege's bolts raining down.
+
+NEXT: its look (risen, front and back, beside the knight; under the water; torn open into its maw; blazing), then its
+moves a group at a time, each filmed for his yes.
