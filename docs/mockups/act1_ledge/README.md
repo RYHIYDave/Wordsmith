@@ -692,7 +692,7 @@ His words, 19:22: "Hey can you redo the carrion queen.  She kinda looks like shi
 
 ---
 
-## The Carrion Queen's moves, rebuilt (14 Oct; for his yes; behind `CARRION_QUEEN_ON`, off)
+## The Carrion Queen's moves, rebuilt (14 Oct; HIS YES TO ALL OF THEM, AS SHOWN; behind `CARRION_QUEEN_ON`, off)
 
 His words on the moves of the section above: "Absolutely not.  Scrap all the animations and do them differently.  Following the rules". A new plan for all eight moves went to him as a message, and the pop-up "Build the Carrion Queen's moves this way?" came back "Yes, build these (Recommended)". His standing word on her, 19:23: "Make sure she hits all the checks in the art book rules including the wild and big animations".
 
@@ -739,4 +739,8 @@ His words on the moves of the section above: "Absolutely not.  Scrap all the ani
 
 **The pictures** (in `shots/`): films `cq_walkfilm.gif` (sixteen frames a second), `cq_rakefilm.gif` (the rake, then struck), `cq_gustfilm.gif`, `cq_divefilm.gif`, `cq_callfilm.gif`, `cq_edgefilm.gif` (thirty a second), each with a contact sheet (`.sheet.png`); `eyrie_dive.png`, her dive's hang on the eyrie's phone screen; `cq_look.png` and `eyrie_world.png`, her look as approved.
 
-**Next:** his answer to the moves; then floors 8 to 10.
+**Asked with the films and `eyrie_dive.png`** (one pop-up, three questions; our pick first and marked; offered: "Yes, as shown (Recommended)", or "Not yet"): "Her hop and her talon rake: are these right?"; "Her wing gust and her dive: are these right?"; "Her call, her flinch and her death off the edge: are these right?"
+
+**His answers, 14 Oct, by 21:12:** all three "Yes, as shown (Recommended)". So her look and all eight of her moves have his yes, as shown. She stays behind `CARRION_QUEEN_ON` (off) and is not for a version until floor 7 comes in whole; the dive's warning in the game is the main chat's mark on her line.
+
+**Next:** floors 8 to 10.
