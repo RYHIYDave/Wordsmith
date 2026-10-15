@@ -320,7 +320,13 @@ waist).
 Shown `shots/scorpion_look.png` and `shots/scorpion_stand.gif` and asked "Is this the Canyon Scorpion?" (offered:
 "Yes, animate it (Recommended)"; "Not yet"), his answer, 15 Oct, by 08:38: "Yes, animate it (Recommended)".
 
-## The Canyon Scorpion's moves (15 Oct; for his yes; behind `SCORPION_ON`, off)
+## The Canyon Scorpion's moves (15 Oct; HIS YES TO ALL OF THEM, AS SHOWN; behind `SCORPION_ON`, off)
+
+**His answers, 15 Oct, by 08:45** (the clock read 08:45:54 just after): "The scorpion's darting scuttle: is it
+right?" "Yes, as shown (Recommended)"; "Its pincer snap and its tail strike: are these right?" "Yes, as shown
+(Recommended)"; "Its flinch and its death (flipped on its back, legs curling): are these right?" "Yes, as shown
+(Recommended)". So its look and all its moves have his yes. It is still off (`SCORPION_ON`) until the main chat puts
+it in the game. NEXT on floor 8: the Dust Devils (small: one attack), brief by pop-ups, then look, then moves.
 
 Each from its own poses, frame by frame (src/art/canyon_scorpions.ts); the times are seconds into the move.
 - **Stand** (1.6 s round, ten frames a second): as shown with its look.
