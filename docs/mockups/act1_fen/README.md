@@ -201,3 +201,11 @@ crowned with seven raked horns; seven arms rearing (270 to 340 of its own length
 outer edge; four more coiled sideways along the bottom; under the water, two breaking the surface in arcs; the brow a
 scowl that lifts as the maw opens. THE ARENA: EYE_POOL 2.9 by 2.5 tiles (was the plan's 1.95 by 1.62), EYE_RING, the
 paving, out to 6.0 by 5.2 (was 3.5 by 3.0).
+
+Shown again (`shots/eye_close.png`, `shots/eye_look.png`), asked "Is this the Drowned Eye now, with the bigger
+arena?" (offered: "Yes, animate him (Recommended)", next his stand under the water and risen, then his tentacle
+moves, filmed; "Even bigger and more monstrous"; "Not yet"), his answer, 15 Oct, by 16:42 (the clock read 16:42:30
+just after): "Yes, animate him (Recommended)".
+
+NEXT: his stand (under the water, and risen), then his tentacle moves (the burst from glowing cracks, the sweep, the
+slam), filmed for his yes.
