@@ -430,3 +430,58 @@ the main chat puts it in the game.
 
 NEXT: the Fog Wolves (small: "A bite. They circle to come at you from behind."), their brief by pop-ups, then their
 look, then their moves.
+
+## The Fog Wolves, floor 9's small mob
+
+His design doc: "Fog Wolves | Small | A bite. They circle to come at you from behind."
+
+His brief, asked as his art rulebook's questions in two pop-ups, his picks as he tapped them, 15 Oct, by 14:20 (the
+clock read 14:20:59 just after):
+- WHAT THEY ARE: "Wolves made of fog", offered as: bodies of drifting mist; only their eyes and teeth are solid. Not
+  the recommended pick; his pick stands.
+- HOW BIG: "Lean, hip-high to the knight (Recommended)", offered as: a big wolf, smaller than the deer, fun to smash in
+  a pack of 4 to 7.
+- HOW THEY MOVE: "A ghostly glide", offered as: their legs are lost in the fog, so they seem to float. Not the
+  recommended pick; his pick stands.
+- THE ONE THING TO KNOW THEM BY: "Eyes burning in the fog", offered as: two pink-gold eyes that show before the rest of
+  them. Not the recommended pick; his pick stands.
+- ITS BITE: "A lunge out of the fog (Recommended)", offered as: it surges in, its head and jaws coming solid just for
+  the snap.
+- HOW IT DIES: "It blows apart into fog (Recommended)", offered as: torn into wisps that drift and thin away; its eyes
+  are the last to go out.
+- WHAT IT MUST NEVER LOOK LIKE: "Not a friendly ghost dog (Recommended)", offered as: nothing soft or cute: gaunt,
+  hungry, all teeth and eyes.
+- ITS SOUND (sound rule 7): "Growls and a howl in the fog (Recommended)", offered as: low growls as they circle, and a
+  howl that answers the Stag's bellow.
+
+READ AS (told him so): a wolf's shape of drifting grey fog, churning, dense at its chest and ruff and thinning to wisps
+at its legs, haunch and tail; its legs lost in the fog, never touching the ground, so it glides, and his rule that feet
+grip the floor (Movement 8) does not hold for it, as for a flier; its eyes burning the enemy's pink to gold, the first
+thing you see of it; its jaws come solid, white fangs, for the bite; its edge pink while it lives; nothing cyan. How
+they circle to come at you from behind is the game's.
+
+### Its look (src/art/fog_wolves.ts, behind `WOLF_ON`, off; FOR HIS YES)
+
+Its own solids, as the Stag's and the Deer's. Lean and hip-high: the top of its back about 31 up (the knight's hip), its
+ears about 37. A wolf's shape, long-muzzled, its head carried low and forward, hunting: a deep chest and a thick ruff of
+fog at its shoulders, a narrow waist, a lean haunch fraying into puffs that stream back off it, a low tail; tufts of fog
+standing up along its neck and back. All of it one body of pale grey fog with a cold violet in it, lit from the upper
+left, broad bands of paler fog curling back along it and churning as they go. Its legs: fog at the top, lost below in
+loose grains of it, short of the ground. ITS EYES, the one thing to know it by: each a burning point of gold and white
+ringed in the enemy's pink, set in a dark hollow of the fog, with a light of their own. Its fangs bone-white, bared only
+as it growls or bites. Its loose fog is laid grain by grain over the picture after its pink edge, so that it frays the
+wolf's outline: wisps streaming back off its body, its back, its tail and its legs, and its fog lying low on the ground
+round it, coming and going.
+
+ITS STAND, HOVERING (his pick, a ghostly glide; a 2.4 s loop, fifteen frames a second): it hangs in its own fog,
+rising and sinking a little, its legs drifting as though wading, its fog churning; it growls, 0.7 to 1.55 s, its head
+lowered, its lips drawn back off its fangs, its jaw a little open, its ears flat, its eyes flaring, fog breathed out of
+its jaws; it glances aside and back, 1.7 to 2.3 s.
+
+    node tools/preview.mjs src/dev/preview_fog_wolves.ts shots/wolf_look.png 1014 640 look
+    node tools/page_gif.mjs src/dev/preview_fog_wolves.ts "standfilm" shots/wolf_stand.gif 6
+
+`tests/fog_wolves.test.ts` (9): the switch off and nothing of the game imports it; crisp, its pink edge; nothing cyan,
+every light the enemy's fire, its eyes at least two pixels by two; nothing cut off; its size; nothing below the floor
+and its legs never on it (its solid fog ends at least 4 above it); no leg through another; never still, nothing leaping,
+its loop closing; its growl, fangs bared, and its glance; its loose fog, in every frame, its loop closing.
