@@ -189,3 +189,15 @@ its flesh, its veins burning.
 it; crisp, its pink edge, nothing cyan, every light the enemy's fire; nothing cut off; huge; its eye burning and
 looking at you, its back its flesh; under the water, its iris burning through, nothing beyond the pool, no edge round
 what is under; its maw, teeth and gullet; blazing.
+
+SHOWN (the look above, at 16:24 or so), asked "Is this the Drowned Eye?", his pick, by 16:33: "Bigger and more
+monstrous" (offered as: push his size, his arms and his menace further before anything moves). Read as (told him so):
+bigger, a towering hood of flesh behind the eye; seven arms rearing instead of five, longer and thicker, bone hooks
+along them; a heavy scowling brow coming down over the eye in a V, a narrower slit, spines along his back. His word,
+16:35: "The ring should be bigger, outer ring and inner ring.  He looks squished in the middle and the warrior needs
+room to maneuver". Read as (told him so): the pool half again as wide, the paved ring about three tiles wide, nearly
+twice the room. REDONE: EYE_R 70; EYE_CANVAS 760 by 700, the pool's middle at (380, 500); a hood of flesh behind the eye
+crowned with seven raked horns; seven arms rearing (270 to 340 of its own lengths long), bone hooks raked along their
+outer edge; four more coiled sideways along the bottom; under the water, two breaking the surface in arcs; the brow a
+scowl that lifts as the maw opens. THE ARENA: EYE_POOL 2.9 by 2.5 tiles (was the plan's 1.95 by 1.62), EYE_RING, the
+paving, out to 6.0 by 5.2 (was 3.5 by 3.0).

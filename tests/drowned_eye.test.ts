@@ -18,7 +18,7 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
-import { EYE_CANVAS, EYE_ON, EYE_POOL, EYE_R, eyeLookPainted } from '../src/art/drowned_eye';
+import { EYE_CANVAS, EYE_ON, EYE_POOL, EYE_R, eyeLookPainted, eyeLookUnder } from '../src/art/drowned_eye';
 import type { EyeLook } from '../src/art/drowned_eye';
 import { RIM_ALPHA } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
@@ -106,9 +106,10 @@ test('nothing of it cut off at its canvas\'s edge', () => {
   }
 });
 
-test('huge (his pick): its eye as wide as the pool, and it towers over the knight', () => {
-  // (the pool 1.95 by 1.62 tiles from its middle to its rim; its eye at least three quarters as wide as the pool's narrow way)
-  assert.ok(2 * EYE_R >= 0.75 * 2 * EYE_POOL.ry, `its eye ${2 * EYE_R} across, the pool ${(2 * EYE_POOL.ry).toFixed(0)} at its narrowest`);
+test('huge (his pick): its eye near as wide as the pool, room round it, and it towers over the knight', () => {
+  // (his pick, “Huge: its eye as wide as the pool”; then his word that the pool and ring grow, “He looks squished in the
+  // middle”: its eye well over half the pool's narrow way, and not wider than it)
+  assert.ok(2 * EYE_R >= 0.6 * 2 * EYE_POOL.ry && 2 * EYE_R <= 2 * EYE_POOL.ry, `its eye ${2 * EYE_R} across, the pool ${(2 * EYE_POOL.ry).toFixed(0)} at its narrowest`);
   let top = Infinity;
   each(painted('risen', 'front'), (_r, _g, _b, _a, _x, y) => (top = Math.min(top, y)));
   // (the knight stands about 56 picture pixels tall)
@@ -129,6 +130,7 @@ test('under the water (his pick): its iris still burning through it; nothing of 
   let fire = 0;
   let beyond = 0;
   let rim = 0;
+  const under = eyeLookUnder('under', 'front');
   each(p, (r, g, bl, a, x, y) => {
     // (every burning pixel of its tinted iris is still hot: reds and golds over 140)
     const [h, s, v] = hsv(r, g, bl);
@@ -140,7 +142,7 @@ test('under the water (his pick): its iris still burning through it; nothing of 
     const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
     const fx = b[0][0] * sx + b[0][1] * sy + b[0][2] * n0;
     const fy = b[1][0] * sx + b[1][1] * sy + b[1][2] * n0;
-    if ((fx / EYE_POOL.rx) ** 2 + (fy / EYE_POOL.ry) ** 2 > 1.15 && sy > 0) beyond++;
+    if (under[y * EYE_CANVAS.w + x] && (fx / EYE_POOL.rx) ** 2 + (fy / EYE_POOL.ry) ** 2 > 1.0001) beyond++;
   });
   assert.ok(fire > 300, `its iris burning through the water: ${fire}`);
   assert.equal(beyond, 0, `${beyond} pixels of it under the paving beyond the pool`);

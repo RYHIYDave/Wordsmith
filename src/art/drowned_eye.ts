@@ -79,6 +79,8 @@ const SUCKER: Ramp = ['#3a3234', '#665a58', '#968678', '#baaa98', '#d6c8b2'];
 const MAW: Ramp = ['#120812', '#24102a', '#3a1a40', '#552858', '#723a70'];
 const TOOTH: Ramp = ['#4a4436', '#7a705a', '#aea286', '#d4caae', '#efe7cf'];
 const WEED: Ramp = ['#152014', '#21301c', '#304426', '#435a32', '#586e3e'];
+/** Its spines and hooks: old horn and bone. */
+const HORN: Ramp = ['#1c1418', '#33262a', '#54443e', '#7a6a5a', '#a6947c'];
 const BARNACLE: Ramp = ['#38383a', '#58585a', '#7e7c7a', '#a4a09a', '#c6c2ba'];
 /** Its pupil: a black slit. */
 const PUPIL = '#100810';
@@ -93,17 +95,25 @@ const BURNS = new Set<string>([...FLAME].map((c) => c.toLowerCase()));
 // ITS MEASURES, in its own lengths (TILE3 to a tile)
 
 /** Its eye's radius: his pick, “Huge: its eye as wide as the pool”. */
-export const EYE_R = 58;
+export const EYE_R = 70;
 /** Its eye's middle over the water when it has risen, and under it when it lurks (phase 1), staring up through it. */
-export const EYE_HIGH = 30;
-export const EYE_DEEP = -70;
-/** The pool it lives in, as the planning chat's fen has it (its rim at 1.95 tiles across x and 1.62 across y; the level's own pool is the main chat's): what of it is under the water is seen only within it. */
-export const EYE_POOL = { rx: 1.95 * TILE3, ry: 1.62 * TILE3 };
+export const EYE_HIGH = 38;
+export const EYE_DEEP = -82;
+/**
+ * The pool it lives in: the planning chat's fen had its rim at 1.95 tiles across x and 1.62 across y, the ruin's ring of
+ * paving out to 3.5 and 3.0; his word, 15 Oct, 16:35, “The ring should be bigger, outer ring and inner ring.  He looks
+ * squished in the middle and the warrior needs room to maneuver”: the pool half again as wide, 2.9 by 2.5, the paving
+ * out to 6.0 by 5.2, about three tiles of it to fight on (the level's own pool and ring are the main chat's). What of it
+ * is under the water is seen only within the pool.
+ */
+export const EYE_POOL = { rx: 2.9 * TILE3, ry: 2.5 * TILE3 };
+/** The ruin's ring of paving round the pool, out to its edge (as above). */
+export const EYE_RING = { rx: 6.0 * TILE3, ry: 5.2 * TILE3 };
 /** How deep under the water anything of it is still seen. */
 const SEEN_DEEP = 40;
 /** Its canvas, and where on it the middle of the pool is, at the water. */
-export const EYE_CANVAS = { w: 600, h: 560, ax: 300, ay: 400 };
-const EYE_AURA = { x: EYE_CANVAS.ax, y: EYE_CANVAS.ay - 60, r: 150, color: '#ff3a78', a: 0.07 };
+export const EYE_CANVAS = { w: 760, h: 700, ax: 380, ay: 500 };
+const EYE_AURA = { x: EYE_CANVAS.ax, y: EYE_CANVAS.ay - 80, r: 190, color: '#ff3a78', a: 0.07 };
 
 /** Its own way: forward (toward whoever stands before the pool), its left, up; in the figure's own space, facing the eye when seen from in front. */
 const FW: V3 = [Math.SQRT1_2, -Math.SQRT1_2, 0];
@@ -167,26 +177,28 @@ export interface EyePose {
   alive: boolean;
 }
 
-/** ITS CROWN OF ARMS, risen: five rearing high round its eye, their tips curling out; four more coiled out under the water. */
+/** ITS CROWN OF ARMS, risen: seven rearing high round its eye, their tips curling; four more coiled out under the water. */
 const ARMS_RISEN: ArmPose[] = [
-  { a: 52, r0: 50, z0: -26, long: 214, thick: 13, rise: 72, bend: 16, curl: -170, wave: 8, phase: 0.3 },
-  { a: -56, r0: 50, z0: -26, long: 196, thick: 12.5, rise: 70, bend: 20, curl: -180, wave: 9, phase: 2.1 },
-  { a: 112, r0: 54, z0: -28, long: 250, thick: 14, rise: 78, bend: 8, curl: -150, wave: 10, phase: 1.2 },
-  { a: -118, r0: 54, z0: -28, long: 236, thick: 14, rise: 79, bend: 6, curl: -160, wave: 10, phase: 4.4 },
-  { a: 178, r0: 56, z0: -30, long: 206, thick: 13.5, rise: 82, bend: 2, curl: 150, wave: 7, phase: 5.1 },
-  { a: 22, r0: 56, z0: -24, long: 150, thick: 11, rise: 0, bend: 2, curl: 50, wave: 18, phase: 0.8 },
-  { a: -24, r0: 56, z0: -24, long: 146, thick: 11, rise: 0, bend: 2, curl: -50, wave: 17, phase: 3.0 },
-  { a: 146, r0: 58, z0: -26, long: 130, thick: 11, rise: 0, bend: 2, curl: 40, wave: 16, phase: 2.6 },
-  { a: -150, r0: 58, z0: -26, long: 130, thick: 11, rise: 0, bend: 2, curl: -40, wave: 16, phase: 5.6 },
+  { a: 40, r0: 62, z0: -30, long: 270, thick: 17, rise: 70, bend: 18, curl: -175, wave: 9, phase: 0.3 },
+  { a: -44, r0: 62, z0: -30, long: 256, thick: 16.5, rise: 68, bend: 22, curl: -185, wave: 10, phase: 2.1 },
+  { a: 82, r0: 66, z0: -32, long: 318, thick: 18.5, rise: 76, bend: 10, curl: -150, wave: 12, phase: 1.2 },
+  { a: -88, r0: 66, z0: -32, long: 300, thick: 18, rise: 77, bend: 8, curl: -160, wave: 12, phase: 4.4 },
+  { a: 128, r0: 68, z0: -34, long: 340, thick: 19, rise: 80, bend: 4, curl: 140, wave: 10, phase: 3.7 },
+  { a: -134, r0: 68, z0: -34, long: 326, thick: 19, rise: 81, bend: 4, curl: 150, wave: 10, phase: 0.9 },
+  { a: 178, r0: 70, z0: -34, long: 290, thick: 18, rise: 84, bend: 2, curl: 160, wave: 8, phase: 5.1 },
+  { a: 18, r0: 70, z0: -28, long: 170, thick: 14, rise: 0, bend: 2, curl: 50, wave: 20, phase: 0.8 },
+  { a: -20, r0: 70, z0: -28, long: 166, thick: 14, rise: 0, bend: 2, curl: -50, wave: 19, phase: 3.0 },
+  { a: 156, r0: 72, z0: -30, long: 150, thick: 13, rise: 0, bend: 2, curl: 40, wave: 18, phase: 2.6 },
+  { a: -158, r0: 72, z0: -30, long: 150, thick: 13, rise: 0, bend: 2, curl: -40, wave: 18, phase: 5.6 },
 ];
 /** UNDER THE WATER: its arms coiled out under it, two breaking the surface in arcs, like a serpent's back. */
 const ARMS_UNDER: ArmPose[] = [
-  { a: 40, r0: 54, z0: -34, long: 170, thick: 12.5, rise: 38, bend: -120, curl: 0, wave: 10, phase: 0.3 },
-  { a: -70, r0: 54, z0: -34, long: 160, thick: 12, rise: 42, bend: -130, curl: 0, wave: 9, phase: 2.1 },
-  { a: 110, r0: 56, z0: -30, long: 150, thick: 11, rise: 0, bend: 2, curl: 50, wave: 18, phase: 1.2 },
-  { a: -120, r0: 56, z0: -30, long: 150, thick: 11, rise: 0, bend: 2, curl: -50, wave: 18, phase: 4.4 },
-  { a: 175, r0: 56, z0: -30, long: 130, thick: 11, rise: 0, bend: 2, curl: 40, wave: 16, phase: 5.1 },
-  { a: 5, r0: 56, z0: -28, long: 140, thick: 11, rise: 0, bend: 2, curl: -40, wave: 18, phase: 0.8 },
+  { a: 40, r0: 62, z0: -22, long: 132, thick: 16, rise: 64, bend: -170, curl: 0, wave: 10, phase: 0.3 },
+  { a: -70, r0: 62, z0: -22, long: 124, thick: 15.5, rise: 66, bend: -175, curl: 0, wave: 9, phase: 2.1 },
+  { a: 110, r0: 68, z0: -22, long: 170, thick: 14, rise: 0, bend: 2, curl: 50, wave: 20, phase: 1.2 },
+  { a: -120, r0: 68, z0: -22, long: 170, thick: 14, rise: 0, bend: 2, curl: -50, wave: 20, phase: 4.4 },
+  { a: 175, r0: 70, z0: -22, long: 150, thick: 13, rise: 0, bend: 2, curl: 40, wave: 18, phase: 5.1 },
+  { a: 5, r0: 70, z0: -20, long: 160, thick: 13, rise: 0, bend: 2, curl: -40, wave: 20, phase: 0.8 },
 ];
 
 /** Where it looks to look at you: toward the eye of whoever looks from in front, a little down. */
@@ -195,10 +207,10 @@ const AT_YOU: V3 = norm([0.9, 0, 0.36]);
 /** Its poses for its look: risen (phase 2), lurking under the water (phase 1), torn open into its maw, blazing (phase 3). */
 export type EyeLook = 'risen' | 'under' | 'maw' | 'blaze';
 export function lookPose(kind: EyeLook): EyePose {
-  const P: EyePose = { zE: EYE_HIGH, heave: [0, 0, 0], tilt: 14, lid: 0.22, split: 0, look: AT_YOU, slit: 0.14, blaze: 0, glow: 1, arms: ARMS_RISEN, alive: true };
+  const P: EyePose = { zE: EYE_HIGH, heave: [0, 0, 0], tilt: 14, lid: 0.22, split: 0, look: AT_YOU, slit: 0.09, blaze: 0, glow: 1, arms: ARMS_RISEN, alive: true };
   if (kind === 'under') return { ...P, zE: EYE_DEEP, tilt: 72, look: norm([1, 0, 0.12]), lid: 0.1, glow: 1.4, arms: ARMS_UNDER };
-  if (kind === 'maw') return { ...P, zE: EYE_HIGH + 6, lid: 0, split: 1, slit: 0.1, glow: 1.3 };
-  if (kind === 'blaze') return { ...P, lid: 0.05, blaze: 1, slit: 0.2, glow: 1.7 };
+  if (kind === 'maw') return { ...P, zE: EYE_HIGH + 6, lid: 0, split: 1, slit: 0.07, glow: 1.3 };
+  if (kind === 'blaze') return { ...P, lid: 0.1, blaze: 1, slit: 0.13, glow: 1.7 };
   return P;
 }
 
@@ -295,9 +307,13 @@ export function armSpine(P: EyePose, A: ArmPose, n = 26): { p: V3; r: number; in
   const step = A.long / n;
   for (let i = 0; i <= n; i++) {
     const s = i / n;
-    const ang = (A.rise + A.bend * s + A.curl * Math.pow(s, 3) + (A.rise > 10 ? 14 * Math.sin(s * Math.PI * 2 + A.phase) * s : 0)) * D;
-    const dir = add(mul(rh, Math.cos(ang)), mul(UP, Math.sin(ang)));
-    const left = add(mul(rh, -Math.sin(ang)), mul(UP, Math.cos(ang)));
+    const flat = A.rise <= 10;
+    const ang = (A.rise + A.bend * s + (flat ? 0 : A.curl * Math.pow(s, 3)) + (flat ? 0 : 14 * Math.sin(s * Math.PI * 2 + A.phase) * s)) * D;
+    // (an arm lying under the water coils sideways, along the bottom)
+    const yaw = flat ? A.curl * Math.pow(s, 2) * D : 0;
+    const rhs = add(mul(rh, Math.cos(yaw)), mul(sd, Math.sin(yaw)));
+    const dir = add(mul(rhs, Math.cos(ang)), mul(UP, Math.sin(ang)));
+    const left = add(mul(rhs, -Math.sin(ang)), mul(UP, Math.cos(ang)));
     const wob = mul(sd, A.wave * Math.sin(s * Math.PI * 2.2 + A.phase) * Math.min(1, s * 3));
     out.push({ p: add(p, wob), r: A.thick * Math.pow(1 - 0.92 * s, 1.25) + 0.55, inner: A.rise > 10 && A.curl >= 0 ? left : mul(left, -1) });
     p = add(p, mul(dir, step));
@@ -321,6 +337,14 @@ function armBits(P: EyePose, A: ArmPose, i: number, put: Put): void {
       const tw1 = Math.sin((k + 1) * 0.8 + i * 1.7) * 0.7;
       const o1 = mul(norm(add(mul(b.inner, -1), mul(cross(b.inner, t1), tw1))), b.r * 0.88);
       put(part, `${part}_v${k}`, { k: 'rod', a: add(a.p, o0), b: add(b.p, o1), ra: 0.95, rb: 0.95, ramp: P.blaze > 0.5 ? BLAZING : VEIN });
+    }
+    // bone hooks along its outer side, raked toward its tip
+    if (A.rise > 10 && k > 2 && k < sp.length - 5 && k % 3 === 1) {
+      const outer = mul(a.inner, -1);
+      const base = add(a.p, mul(outer, a.r * 0.85));
+      const hl = a.r * 0.95 + 2;
+      const tip = add(base, add(mul(outer, hl * 0.75), mul(t1, hl * 0.7)));
+      put(`${part}h`, `${part}_h${k}`, { k: 'rod', a: base, b: tip, ra: Math.max(1.4, a.r * 0.24), rb: 0.35, ramp: HORN });
     }
     // its suckers along its inner side, paler rings, smaller toward its tip
     if (k > 2 && k < sp.length - 3) {
@@ -351,6 +375,20 @@ function eyeBits(P: EyePose, put: Put): void {
   const lookLocal: V3 = [dot(look, FW), dot(look, LF), dot(look, UP)];
   // ITS BULK, behind its eye and round it, the most of it under the water
   put('bulk', 'bulk', { k: 'ball', c: add(E, add(mul(F, -R * 0.92), mul(U, R * 0.05))), ax: [mul(F, R * 1.0), mul(Lx, R * 1.32), mul(U, R * 1.22)], skin: bulkSkin(3, 6, P.blaze) });
+  // ITS HOOD: a great cowl of its flesh towering behind its eye, a ridge of spines along its crown
+  const hoodC = add(E, add(mul(F, -R * 0.85), mul(U, R * 0.62)));
+  put('bulk', 'hood', { k: 'ball', c: hoodC, ax: [mul(F, R * 0.66), mul(Lx, R * 1.05), mul(U, R * 0.95)], skin: bulkSkin(17, 7, P.blaze) });
+  for (let k = -3; k <= 3; k++) {
+    const th = (k / 3) * 70 * D;
+    const base = add(hoodC, add(mul(Lx, Math.sin(th) * R * 0.98), add(mul(U, Math.cos(th) * R * 0.88), mul(F, -R * 0.1))));
+    const out = norm(add(mul(Lx, Math.sin(th)), add(mul(U, Math.cos(th)), mul(F, -0.35))));
+    const long = R * (0.7 + 0.4 * Math.cos(th)) * (0.9 + 0.2 * hash(k, 4, 85));
+    // (each a horn raked back, thick at its root, hooked at its tip)
+    const mid = add(base, add(mul(out, long * 0.55), mul(F, -long * 0.1)));
+    const tip = add(mid, add(mul(out, long * 0.25), mul(F, -long * 0.45)));
+    put(`spine${k}`, 'spine', { k: 'rod', a: base, b: mid, ra: 6.5, rb: 3.6, ramp: HORN });
+    put(`spine${k}`, 'spineTip', { k: 'rod', a: mid, b: tip, ra: 3.6, rb: 0.5, ramp: HORN });
+  }
   // ITS RIM: a ring of knotted flesh round the face of its eye, heaviest over it (its brow), its lids
   const rimC = add(E, mul(F, R * 0.5));
   const rimR = R * 0.9;
@@ -359,8 +397,10 @@ function eyeBits(P: EyePose, put: Put): void {
     const th = (k / 28) * Math.PI * 2;
     const up = Math.sin(th);
     const across = Math.cos(th);
-    const heavy = up > 0 ? 0.24 + 0.1 * up : 0.18 - 0.03 * up;
-    const c = add(add(rimC, mul(Lx, across * rimR)), mul(U, up * rimR - (up > 0 ? lidDrop * up : 0)));
+    const heavy = up > 0 ? 0.26 + 0.14 * up : 0.18 - 0.03 * up;
+    // (its scowl: the brow dropping toward its middle over the eye, a V)
+    const scowl = up > 0 ? R * 0.26 * (1 - P.split) * up * Math.max(0, 1 - Math.abs(across) * 1.3) : 0;
+    const c = add(add(rimC, mul(Lx, across * rimR)), mul(U, up * rimR - (up > 0 ? lidDrop * up : 0) - scowl));
     const out = norm(add(mul(Lx, across), mul(U, up)));
     const r = R * heavy * (0.85 + 0.3 * hash(k, 1, 81));
     if (P.split > 0.001 && Math.abs(across) < 0.3) continue;
@@ -408,7 +448,7 @@ function eyeBits(P: EyePose, put: Put): void {
     }
     // ITS MAW: rings on rings of teeth going down into its gullet, burning at the bottom
     const g = add(E, mul(F, -R * 0.15));
-    put('gullet', 'gullet', { k: 'ball', c: g, ax: [mul(F, R * 0.55), mul(Lx, R * 0.9), mul(U, R * 0.9)], skin: (u, tone) => {
+    put('gullet', 'gullet', { k: 'ball', c: g, ax: [mul(F, R * 0.62), mul(Lx, R * 0.96), mul(U, R * 0.96)], skin: (u, tone) => {
       if (u[0] < 0) return MAW[0];
       const rr = Math.hypot(u[1], u[2]);
       // its gullet burning at the bottom
@@ -476,7 +516,7 @@ function paintPose(P: EyePose, view: GameView): Painted {
     zAt[k] = b[2][0] * sx + b[2][1] * sy + b[2][2] * near[k];
   }
   const px = st0.whole(P.alive ? ENEMY_RIM : null);
-  drown(px, zAt, st0, view);
+  lastUnder = drown(px, zAt, st0, view);
   for (const L of lights) if (L.y > EYE_CANVAS.ay - 2 && P.zE < 0) L.a = (L.a ?? 0.5) * 0.7;
   return { px, lights };
 }
@@ -488,7 +528,7 @@ function inPool(x: number, y: number, view: GameView): boolean {
 }
 
 /** Under the water: each pixel of it that is under the surface seen through the water, darker the deeper; none deeper than SEEN_DEEP, or beyond the pool's rim; no edge round what is under; a line of the water's light where it breaks the surface. */
-function drown(px: Px, zAt: Float32Array, st: Stage, view: GameView): void {
+function drown(px: Px, zAt: Float32Array, st: Stage, view: GameView): Uint8Array {
   const { w, h } = EYE_CANVAS;
   const b = st.back;
   const under = new Uint8Array(w * h);
@@ -564,12 +604,20 @@ function drown(px: Px, zAt: Float32Array, st: Stage, view: GameView): void {
       d[i + 2] = v[2];
     }
   }
+  for (let k = 0; k < w * h; k++) if (gone[k]) under[k] = 0;
+  return under;
 }
 const rgbOf = (c: string): V3 => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
 
 // ---------------------------------------------------------------------------------------------
 // WHAT THE PAGES AND TESTS ASK OF IT
 
+let lastUnder: Uint8Array = new Uint8Array(0);
+/** Which pixels of one of its looks are of it under the water, seen through it (for the tests). */
+export function eyeLookUnder(kind: EyeLook, view: GameView = 'front'): Uint8Array {
+  paintPose(lookPose(kind), view);
+  return lastUnder;
+}
 /** One of its looks, painted (for the look sheet and the tests). */
 export function eyeLookPainted(kind: EyeLook, view: GameView = 'front'): Painted {
   return paintPose(lookPose(kind), view);

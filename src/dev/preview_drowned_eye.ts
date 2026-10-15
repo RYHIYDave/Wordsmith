@@ -1,7 +1,7 @@
 // Dev page: FLOOR 10'S BOSS, THE DROWNED EYE (art/drowned_eye.ts), for the owner to look at. Nothing of the game
 // imports it.
 //
-//   node tools/preview.mjs src/dev/preview_drowned_eye.ts shots/eye_look.png 1014 900 look
+//   node tools/preview.mjs src/dev/preview_drowned_eye.ts shots/eye_look.png 1014 1772 look
 //     it risen in its pool on the ruin, from in front and from behind, the knight on the ring beside it at the game's
 //     size; below, under the water (phase 1), torn open into its maw, and blazing (phase 3)
 //   big:kind:view:scale   one of its looks large
@@ -10,7 +10,8 @@ import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { fenLook } from '../art/fen';
-import { eyeLookFrame } from '../art/drowned_eye';
+import { EYE_POOL, EYE_RING, eyeLookFrame } from '../art/drowned_eye';
+import { TILE3 } from '../art/new_mobs3';
 import type { EyeLook } from '../art/drowned_eye';
 import { pictureOf, worldOf } from '../art/terrain';
 import { drawText } from '../engine/font';
@@ -50,8 +51,8 @@ function litAt(g: CanvasRenderingContext2D, sp: Sprite, x: number, y: number, k 
 /** THE POOL AND ITS RUIN, as the fen's ground paints them (the planning chat's shapes): the pool's middle at world (PCX, PCY). */
 const PCX = 20;
 const PCY = 20;
-const poolDist = (x: number, y: number): number => Math.hypot((x - PCX) / 1.95, (y - PCY) / 1.62);
-const ringDist = (x: number, y: number): number => Math.hypot((x - PCX) / 3.5, (y - PCY) / 3.0);
+const poolDist = (x: number, y: number): number => Math.hypot((x - PCX) / (EYE_POOL.rx / TILE3), (y - PCY) / (EYE_POOL.ry / TILE3));
+const ringDist = (x: number, y: number): number => Math.hypot((x - PCX) / (EYE_RING.rx / TILE3), (y - PCY) / (EYE_RING.ry / TILE3));
 const LOOK = fenLook({ pool: poolDist, paved: (x, y) => ringDist(x, y) < 1 && poolDist(x, y) >= 1 });
 /** The fen round the pool, `w` by `h`, with the pool's middle at (cx, cy). */
 function ground(g: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number, cx: number, cy: number): void {
@@ -75,7 +76,7 @@ function ground(g: CanvasRenderingContext2D, x0: number, y0: number, w: number, 
 }
 const knight = spriteOf3(MOVES3.rear, 0, 'front');
 /** The knight on the ring, where he stands beside it. */
-const KNIGHT_AT: [number, number] = [PCX - 0.3, PCY + 2.4];
+const KNIGHT_AT: [number, number] = [PCX - 0.6, PCY + 3.7];
 
 function panel(g: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number, cx: number, cy: number, sp: Sprite, withKnight: boolean, name: string): void {
   g.save();
@@ -101,7 +102,7 @@ function panel(g: CanvasRenderingContext2D, x0: number, y0: number, w: number, h
 }
 
 function look(): void {
-  const H = 900;
+  const H = 1772;
   const cvs = document.createElement('canvas');
   cvs.width = PW;
   cvs.height = H;
@@ -109,10 +110,11 @@ function look(): void {
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#0d1030';
   g.fillRect(0, 0, PW, H);
-  panel(g, 0, 0, 505, 470, 252, 330, eyeLookFrame('risen', 'front'), true, 'The Drowned Eye, risen: from in front');
-  panel(g, 509, 0, 505, 470, 252, 330, eyeLookFrame('risen', 'back'), true, 'from behind');
-  const kinds: [EyeLook, string][] = [['under', 'under the water (phase 1)'], ['maw', 'torn open into its maw'], ['blaze', 'blazing (phase 3)']];
-  kinds.forEach(([k, name], i) => panel(g, i * 338, 474, 334, 426, 167, 330, eyeLookFrame(k, 'front'), false, name));
+  panel(g, 0, 0, PW, 640, 507, 450, eyeLookFrame('risen', 'front'), true, 'The Drowned Eye, risen in his pool on the ruin\'s ring: from in front');
+  panel(g, 0, 644, 505, 562, 252, 420, eyeLookFrame('risen', 'back'), true, 'from behind');
+  panel(g, 509, 644, 505, 562, 252, 420, eyeLookFrame('under', 'front'), false, 'under the water (phase 1)');
+  panel(g, 0, 1210, 505, 562, 252, 420, eyeLookFrame('maw', 'front'), false, 'torn open into his maw');
+  panel(g, 509, 1210, 505, 562, 252, 420, eyeLookFrame('blaze', 'front'), false, 'blazing (phase 3)');
   document.body.style.margin = '0';
   document.body.style.background = '#0d1030';
   document.body.appendChild(cvs);
