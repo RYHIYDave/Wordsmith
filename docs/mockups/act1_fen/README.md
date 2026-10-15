@@ -190,7 +190,7 @@ it; crisp, its pink edge, nothing cyan, every light the enemy's fire; nothing cu
 looking at you, its back its flesh; under the water, its iris burning through, nothing beyond the pool, no edge round
 what is under; its maw, teeth and gullet; blazing.
 
-SHOWN (the look above, at 16:24 or so), asked "Is this the Drowned Eye?", his pick, by 16:33: "Bigger and more
+SHOWN (the look above), asked "Is this the Drowned Eye?", his pick, before his 16:35 message: "Bigger and more
 monstrous" (offered as: push his size, his arms and his menace further before anything moves). Read as (told him so):
 bigger, a towering hood of flesh behind the eye; seven arms rearing instead of five, longer and thicker, bone hooks
 along them; a heavy scowling brow coming down over the eye in a V, a narrower slit, spines along his back. His word,
