@@ -445,7 +445,14 @@ art/dust_devils.ts, as it lets floor 7's; it passes, 8 of 8.
 
 NEXT: its moves, filmed, for his yes.
 
-## The Dust Devil's moves (15 Oct; for his yes; behind `DEVIL_ON`, off)
+## The Dust Devil's moves (15 Oct; HIS YES TO ALL OF THEM, AS SHOWN; behind `DEVIL_ON`, off)
+
+**His answers, 15 Oct, by 10:10** (the clock read 10:10:52 just after): "The Dust Devil's weave: is it right?" "Yes,
+as shown (Recommended)"; "Its sand lash: is it right?" "Yes, as shown (Recommended)"; "Its stutter when struck, and
+its death (the bell drops and cracks): are these right?" "Yes, as shown (Recommended)" (offered as: both go in as
+filmed, the stutter's jerkiness included). So its look and all its moves have his yes. It is still off (`DEVIL_ON`)
+until the main chat puts it in the game. WITH IT, ALL OF FLOOR 8'S ART HAS HIS YES: its ground, its 25 pieces, the
+Cantor, the Canyon Scorpion and the Dust Devil.
 
 Each from its own poses, frame by frame (src/art/dust_devils.ts); the times are seconds into the move.
 - **Stand** (1.5 s round, sixteen frames a second): as shown with its look.
@@ -494,6 +501,8 @@ packs and speed are the main chat's.
 | Pixels 1 and 5: crisp; the pink edge | Every pixel crisp; its pink edge while it lives, none as it dies | Pass (test) |
 | Nothing cut off | No frame touches its canvas's edge | Pass (test) |
 
-**Checks:** tests/dust_devils.test.ts 12 of 12; `tsc --noEmit` clean.
+**Checks:** tests/dust_devils.test.ts 12 of 12; `tsc --noEmit` clean. The full unit suite, file by file through the
+morning on this branch (103 files): 1406 of 1406 passed, with tests/new_mobs3.test.ts run again after its fix (above)
+and the dust devils' own file at its first 7 (it has 12 now, all passing).
 
     node tools/page_gif.mjs src/dev/preview_dust_devils.ts "walkfilm" shots/devil_walk.gif 4   (also lashfilm, deathfilm)
