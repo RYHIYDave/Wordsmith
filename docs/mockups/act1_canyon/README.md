@@ -182,7 +182,7 @@ seconds into the move; his staff is held where each move says, his hands on it w
   while his pipes draw in light, the cult's fire streaming into their mouths (from 0.1 s; held trembling, THE
   WARNING, 0.6 to 0.86 s); lunges a stride forward, his arms flung back, his jaw dropping wide (0.86 to 1.0 s); all
   nine pipes and his mouth blast pink at you (1.0 s, for 0.3 s), rings of sound flung out of his mouth; a
-  shockwave rolls out across the floor before him to about four and a half tiles (1.0 to 1.5 s), and comes back
+  shockwave rolls out across the floor before him to about five tiles (1.0 to 1.5 s), and comes back
   from beyond you, off the far wall (1.45 to 1.95 s). His staff stays planted, braced.
 - **Sound-copies** (`cantorCopies`, 2.2 s): spreads his arms and raises the staff high over his head in his one
   hand (to 0.45 s); rings the bell, shaking it (rings of sound out of it at 0.55, 0.78 and 1.0 s); two see-through
@@ -225,7 +225,7 @@ he sees him):
 
 | Rule | The Cantor | Result |
 | --- | --- | --- |
-| Animations 1: as far as it will go | The staff heaved to twice his height and brought down 103 ahead of him; the shout's shockwave rolls out four and a half tiles and back; two copies of him tear away 46 each side; six rocks come down; his death bursts nine pipes and shatters him | Pass by the numbers; his eye decides the notch |
+| Animations 1: as far as it will go | The staff heaved to twice his height and brought down 103 ahead of him; the shout's shockwave rolls out about five tiles (191 of the figure's lengths) and back; two copies of him tear away 46 each side; six rocks come down; his death bursts nine pipes and shatters him | Pass by the numbers; his eye decides the notch |
 | Animations 3: wild in his own way | Sound: rings and blasts of the cult's pink, and the canyon's dust and rock; nothing borrowed | Pass by eye |
 | Animations 4: warnings in sight | The strike's overhead hold, the shout's swell and the rocks' shadows are in sight; nothing covers them | Pass by eye |
 | Monsters 4: the warning is a pose | The strike held overhead 0.45 to 0.85 s; the shout swelled 0.6 to 0.86 s, trembling | Pass (review: BLOW) |
