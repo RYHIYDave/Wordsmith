@@ -163,3 +163,29 @@ the splash; phase 3, the siege magic pulled in, all of them and the siege's bolt
 
 NEXT: its look (risen, front and back, beside the knight; under the water; torn open into its maw; blazing), then its
 moves a group at a time, each filmed for his yes.
+
+HIS WORDS, 15 Oct, 16:14: "Above all I need it to look epic and cool as hell". Read as (told him so): above everything
+else, spectacle: a huge burning eye glaring up out of the black water, arms rearing over the ruin, every move pushed as
+far as it will go (his rulebook, Animations 1).
+
+### Its look (src/art/drowned_eye.ts, behind EYE_ON, off)
+
+Its own solids, in the same painter as the Hollow Stag. EYE_CANVAS 600 by 560, the pool's middle at the water at
+(300, 400). Its eye EYE_R 58 of its own lengths across from its middle (his pick, as wide as the pool), set in a ring of
+knotted flesh (its brow and lids), a fringe of feelers on it, weed hanging from its brow, a great drowned bulk behind
+it, barnacled; its iris the enemy's pink burning to gold, a black slit; its white veined with the swamp's violet. A
+crown of five pale veined arms rearing out of the water round it, suckers along them, their tips curling; four more
+coiled out under the water. WHAT OF IT IS UNDER THE WATER is seen through it, darker the deeper, the water's ripples
+over it, none of it deeper than 40 of its own lengths and none beyond the pool's rim (EYE_POOL, the planning chat's
+pool, 1.95 by 1.62 tiles; beyond it is the ruin's paving), and no edge round it; its iris shows through brighter.
+Under the water (phase 1) its eye lies 70 under, turned up, staring up through the pool. Torn open (his pick): its eye
+splits down its slit, each half swung back on a hinge at its outer edge, teeth along the tear, baring a maw of rings on
+rings of hooked teeth going down to its gullet, burning. Blazing (phase 3): cracks of the siege's pink fire through
+its flesh, its veins burning.
+
+    node tools/preview.mjs src/dev/preview_drowned_eye.ts shots/eye_look.png 1014 900 look
+
+`tests/drowned_eye.test.ts` (8, its look only; the whole boss review comes with its moves): nothing of the game imports
+it; crisp, its pink edge, nothing cyan, every light the enemy's fire; nothing cut off; huge; its eye burning and
+looking at you, its back its flesh; under the water, its iris burning through, nothing beyond the pool, no edge round
+what is under; its maw, teeth and gullet; blazing.

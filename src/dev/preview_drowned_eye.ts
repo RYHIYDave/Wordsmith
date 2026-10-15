@@ -1,0 +1,142 @@
+// Dev page: FLOOR 10'S BOSS, THE DROWNED EYE (art/drowned_eye.ts), for the owner to look at. Nothing of the game
+// imports it.
+//
+//   node tools/preview.mjs src/dev/preview_drowned_eye.ts shots/eye_look.png 1014 900 look
+//     it risen in its pool on the ruin, from in front and from behind, the knight on the ring beside it at the game's
+//     size; below, under the water (phase 1), torn open into its maw, and blazing (phase 3)
+//   big:kind:view:scale   one of its looks large
+
+import { spriteOf3 } from '../art/heroes3';
+import { MOVES3 } from '../art/moves3';
+import { P } from '../art/palette';
+import { fenLook } from '../art/fen';
+import { eyeLookFrame } from '../art/drowned_eye';
+import type { EyeLook } from '../art/drowned_eye';
+import { pictureOf, worldOf } from '../art/terrain';
+import { drawText } from '../engine/font';
+import type { Sprite } from '../engine/px';
+import { THEME } from '../ui/ui';
+import { PW, drawAt } from './act1_stage';
+
+const HASH = decodeURIComponent(location.hash.slice(1)) || 'look';
+
+function label(g: CanvasRenderingContext2D, text: string, x: number, y: number): void {
+  g.save();
+  g.scale(2, 2);
+  drawText(g, text, Math.round(x / 2), Math.round(y / 2), THEME.text, { shadow: P.ink });
+  g.restore();
+}
+function hexA(c: string, a: number): string {
+  const n = parseInt(c.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+/** A sprite's lights, added over the picture as the game adds them, at `k` picture pixels to a game pixel. */
+function litAt(g: CanvasRenderingContext2D, sp: Sprite, x: number, y: number, k = 2): void {
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  for (const L of sp.lights ?? []) {
+    const lx = x + (L.x - sp.ax) * k;
+    const ly = y + (L.y - sp.ay) * k;
+    const r = L.r * k;
+    const gr = g.createRadialGradient(lx, ly, 1, lx, ly, r);
+    gr.addColorStop(0, hexA(L.color, (L.a ?? 0.5) * 0.55));
+    gr.addColorStop(1, hexA(L.color, 0));
+    g.fillStyle = gr;
+    g.fillRect(lx - r, ly - r, 2 * r, 2 * r);
+  }
+  g.restore();
+}
+
+/** THE POOL AND ITS RUIN, as the fen's ground paints them (the planning chat's shapes): the pool's middle at world (PCX, PCY). */
+const PCX = 20;
+const PCY = 20;
+const poolDist = (x: number, y: number): number => Math.hypot((x - PCX) / 1.95, (y - PCY) / 1.62);
+const ringDist = (x: number, y: number): number => Math.hypot((x - PCX) / 3.5, (y - PCY) / 3.0);
+const LOOK = fenLook({ pool: poolDist, paved: (x, y) => ringDist(x, y) < 1 && poolDist(x, y) >= 1 });
+/** The fen round the pool, `w` by `h`, with the pool's middle at (cx, cy). */
+function ground(g: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number, cx: number, cy: number): void {
+  const [p0x, p0y] = pictureOf(PCX, PCY);
+  const img = new ImageData(w, h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = Math.round(x - cx + p0x);
+      const py = Math.round(y - cy + p0y);
+      const [wx, wy] = worldOf(px, py);
+      const paved = ringDist(wx, wy) < 1 && poolDist(wx, wy) >= 1;
+      const c = paved ? LOOK.floor(wx, wy, px, py, 1) : LOOK.top(wx, wy, px, py, 1, 0);
+      const o = (y * w + x) * 4;
+      img.data[o] = c[0];
+      img.data[o + 1] = c[1];
+      img.data[o + 2] = c[2];
+      img.data[o + 3] = 255;
+    }
+  }
+  g.putImageData(img, x0, y0);
+}
+const knight = spriteOf3(MOVES3.rear, 0, 'front');
+/** The knight on the ring, where he stands beside it. */
+const KNIGHT_AT: [number, number] = [PCX - 0.3, PCY + 2.4];
+
+function panel(g: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number, cx: number, cy: number, sp: Sprite, withKnight: boolean, name: string): void {
+  g.save();
+  g.beginPath();
+  g.rect(x0, y0, w, h);
+  g.clip();
+  ground(g, x0, y0, w, h, cx, cy);
+  const [p0x, p0y] = pictureOf(PCX, PCY);
+  const [kx, ky] = pictureOf(KNIGHT_AT[0], KNIGHT_AT[1]);
+  const kAt: [number, number] = [x0 + cx + kx - p0x, y0 + cy + ky - p0y];
+  // (the knight is nearer the eye than the pool's middle, so he is laid after it)
+  drawAt(g, sp, x0 + cx, y0 + cy);
+  litAt(g, sp, x0 + cx, y0 + cy);
+  if (withKnight) {
+    g.fillStyle = 'rgba(25, 18, 40, 0.35)';
+    g.beginPath();
+    g.ellipse(kAt[0], kAt[1], 26, 11, 0, 0, Math.PI * 2);
+    g.fill();
+    drawAt(g, knight, kAt[0], kAt[1]);
+  }
+  g.restore();
+  label(g, name, x0 + 6, y0 + 4);
+}
+
+function look(): void {
+  const H = 900;
+  const cvs = document.createElement('canvas');
+  cvs.width = PW;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = '#0d1030';
+  g.fillRect(0, 0, PW, H);
+  panel(g, 0, 0, 505, 470, 252, 330, eyeLookFrame('risen', 'front'), true, 'The Drowned Eye, risen: from in front');
+  panel(g, 509, 0, 505, 470, 252, 330, eyeLookFrame('risen', 'back'), true, 'from behind');
+  const kinds: [EyeLook, string][] = [['under', 'under the water (phase 1)'], ['maw', 'torn open into its maw'], ['blaze', 'blazing (phase 3)']];
+  kinds.forEach(([k, name], i) => panel(g, i * 338, 474, 334, 426, 167, 330, eyeLookFrame(k, 'front'), false, name));
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+}
+
+function big(): void {
+  const [, kind, view, sc] = HASH.split(':');
+  const k = Number(sc ?? 2);
+  const sp = eyeLookFrame((kind || 'risen') as EyeLook, (view || 'front') as 'front' | 'back');
+  const W = Math.min(1600, sp.w * 2 * k + 40);
+  const H = Math.min(1400, sp.h * 2 * k + 40);
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  ground(g, 0, 0, W, H, W / 2, H - 40 - (sp.h - sp.ay) * 2 * k);
+  // (the ground at the game's size under a figure drawn larger: only for looking at the figure close)
+  g.drawImage(sp.img, Math.round(W / 2 - sp.ax * 2 * k), Math.round(H - 40 - sp.h * 2 * k), sp.w * 2 * k, sp.h * 2 * k);
+  document.body.style.margin = '0';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+}
+
+if (HASH === 'look') look();
+else if (HASH.startsWith('big')) big();
