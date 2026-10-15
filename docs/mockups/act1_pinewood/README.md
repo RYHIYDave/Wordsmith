@@ -503,7 +503,7 @@ READ AS (told him so): gaps through it, fog pouring off it, its eyes bigger and 
   its fog thins away, its edge goes with it.
 - FOG POURING OFF IT: fog pouring down from its belly and chest to the ground, and back off its back in a long trail,
   on top of the wisps it had.
-- ITS EYES: half as big again, gold to white at their heart, ringed in pink, in a deeper hollow; their light brighter;
+- ITS EYES: about a third bigger across (each 3.4 of its own lengths wide, was 2.5), gold to white at their heart, ringed in pink, in a deeper hollow; their light brighter;
   embers of their fire streaming back off them.
 
 `tests/fog_wolves.test.ts` 9 of 9, as before (its pink edge now counted round what of it is solid).
