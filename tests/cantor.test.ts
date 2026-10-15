@@ -1,7 +1,8 @@
 // FLOOR 8'S BOSS, THE CANTOR (src/art/cantor.ts; a mock-up behind CANTOR_ON, off; nothing of the game imports
-// it), held to his art rulebook before he sees him: crisp, his pink edge; nothing cyan, every light the cult's
-// fire; nothing of him cut off at his canvas's edge; his size, his brief's (half again the knight); and the whole
-// boss review (art/boss_checks.ts) of what of his moves are made.
+// it), held to his art rulebook before he sees him, in every move and his death, from in front and from behind:
+// crisp, his pink edge while he lives; nothing cyan, every light the cult's fire; nothing of him or of what his
+// moves throw off cut off at his canvas's edge; his size, his brief's (half again the knight); and the whole boss
+// review (art/boss_checks.ts) of every move.
 //   run: tsx --test tests/cantor.test.ts
 
 // @ts-ignore
@@ -11,9 +12,11 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
-import { checkBoss, findingsSaid } from '../src/art/boss_checks';
-import { CANTOR, CANTOR_BODY, CANTOR_ON, CANTOR_STAND_LONG, cantorPainted } from '../src/art/cantor';
+import { checkBoss, findingsSaid, framesOf } from '../src/art/boss_checks';
+import { CANTOR, CANTOR_BODY, CANTOR_ON, cantorEchoPainted, cantorPainted } from '../src/art/cantor';
 import { RIM_ALPHA } from '../src/art/kit';
+import type { Painted } from '../src/art/kit';
+import { deathOfMob } from '../src/art/new_mobs3';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { rgba } from '../src/engine/px';
 import { MADE, cantorShape } from './cantor_shape';
@@ -25,10 +28,26 @@ const fs = nodeFs as { readdirSync(p: string, o: { recursive: boolean }): string
 paintWithoutCanvas();
 
 const FIRE = new Set(FLAME.map((c) => rgba(c).slice(0, 3).join(',')));
-const frames: { name: string; move: string; t: number; view: 'front' | 'back' }[] = [];
+/** Every move (but his death) every few frames as the game plays it, from in front and from behind; his death as the game paints it (no edge). Painted once, for every test. */
+type Frame = { name: string; dying: boolean; painted: () => Painted };
+const frames: Frame[] = [];
+const memo = (f: () => Painted): (() => Painted) => {
+  let p: Painted | null = null;
+  return () => (p ??= f());
+};
 for (const view of ['front', 'back'] as const) {
-  const n = Math.round(CANTOR_STAND_LONG * CANTOR.idleFps);
-  for (let i = 0; i < n; i += 4) frames.push({ name: `stand ${view} ${i}`, move: 'stand', t: i / CANTOR.idleFps, view });
+  for (const move of MADE) {
+    if (move === 'dying') {
+      const n = Math.round(CANTOR.dieTime * 20);
+      for (let i = 0; i <= n; i += 3) frames.push({ name: `dying ${view} ${i}`, dying: true, painted: memo(() => deathOfMob(CANTOR, i / n, view)) });
+      continue;
+    }
+    const ts = framesOf(CANTOR, move);
+    const step = move === 'stand' ? 4 : 3;
+    for (let i = 0; i < ts.length; i += step) frames.push({ name: `${move} ${view} ${ts[i].toFixed(2)}`, dying: false, painted: memo(() => cantorPainted(ts[i], view, move)) });
+  }
+  // (one of his sound-copies as a figure of its own, in two of his moves)
+  for (const [move, t] of [['stand', 0.4], ['attack', 1.0]] as const) frames.push({ name: `a copy, ${move} ${view} ${t}`, dying: false, painted: memo(() => cantorEchoPainted(move, t, view)) });
 }
 function hue(r: number, g: number, b: number): [number, number] {
   const max = Math.max(r, g, b);
@@ -49,10 +68,10 @@ test('the switch is off, and nothing of the game imports him', () => {
   }
 });
 
-test('crisp: every pixel all there or not at all (but the pink edge); his pink edge round him', () => {
+test('crisp: every pixel all there or not at all (but the pink edge); his pink edge round him while he lives', () => {
   const [pr, pg, pb] = rgba(ENEMY_RIM);
   for (const f of frames) {
-    const { px } = cantorPainted(f.t, f.view, f.move);
+    const { px } = f.painted();
     let soft = 0;
     let rim = 0;
     for (let i = 0; i < px.d.length; i += 4) {
@@ -62,13 +81,14 @@ test('crisp: every pixel all there or not at all (but the pink edge); his pink e
       else soft++;
     }
     assert.ok(soft === 0, `${f.name}: ${soft} soft pixels`);
-    assert.ok(rim > 200, `${f.name}: his pink edge, ${rim} pixels`);
+    if (f.dying) assert.ok(rim === 0, `${f.name}: an edge as he dies`);
+    else assert.ok(rim > 200, `${f.name}: his pink edge, ${rim} pixels`);
   }
 });
 
 test('nothing cyan, every light the cult\'s fire, and nothing of him cut off at his canvas\'s edge', () => {
   for (const f of frames) {
-    const { px, lights } = cantorPainted(f.t, f.view, f.move);
+    const { px, lights } = f.painted();
     for (let i = 0; i < px.d.length; i += 4) {
       if (px.d[i + 3] === 0) continue;
       const [h, sat] = hue(px.d[i], px.d[i + 1], px.d[i + 2]);
@@ -87,7 +107,7 @@ test('his size, his brief\'s: half again the knight\'s height (58)', () => {
   assert.ok(k > 1.4 && k < 1.6, `${k.toFixed(2)} times the knight's height`);
 });
 
-test('the whole review (art/boss_checks.ts) of what of his moves are made', () => {
+test('the whole review (art/boss_checks.ts) of every move', () => {
   const found = checkBoss(CANTOR, cantorShape(), MADE);
   assert.ok(found.length === 0, `the Cantor:\n  ${findingsSaid(found).join('\n  ')}`);
 });

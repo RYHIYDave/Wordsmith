@@ -153,3 +153,100 @@ cyan, every light the cult's fire, nothing cut off; his size (1.48 times the kni
 
 Asked "Is this the Cantor?" (offered: "Yes, animate him (Recommended)"; "Not yet"), his answer, 14 Oct, by 22:48:
 "Yes, animate him (Recommended)".
+
+## The Cantor's moves (15 Oct; for his yes; behind `CANTOR_ON`, off)
+
+A plan for all eight moves went to him as a message, and the pop-up "Build the Cantor's moves this way?" came
+back "Yes, build these (Recommended)". The plan's own words: "His style is "stately, then sudden": slow and grand,
+then a snap of violence, and every blow comes back as an echo a beat later."
+
+**His moves** (src/art/cantor.ts; each a smooth curve through its key poses, a key every frame; the times are
+seconds into the move; his staff is held where each move says, his hands on it wherever his body goes):
+- **Stand** (`cantorStand`, 3.2 s round, ten frames a second): as approved with his look.
+- **Walk, a procession** (`cantorWalk`, a round of 24 frames at 16 a second, 1.5 s, for a pace of 0.8 tiles a
+  second): slow, grand strides, his weight going over onto each foot, his robe swaying; his left hand raised,
+  beating time; his head held high and level. Once a round he swings the staff forward and plants it ahead of him
+  as his left foot comes down (1.05 s), and walks on past it; the bell tolls a ring of pink sound across the floor
+  from its foot, and its echo a beat after (1.23 s), both gone before the round comes round. Each foot, and the
+  staff's foot, is carried back with the floor while down.
+- **Staff strike** (`cantorStrike`, 2.2 s; his basic blow): takes the staff up in both hands (to 0.12 s), steps
+  forward and heaves it overhead, the staff thrust up through his hands until its bell is 179 over the floor, twice
+  his height (to 0.45 s); holds it there, trembling, the bell shaking (THE WARNING, 0.45 to 0.85 s); brings it down
+  in one sudden, huge arc, hips first, then his back, then the staff, fastest as it lands (0.85 to 1.0 s), a streak
+  of pink sound behind its head; the bell clangs on the rock 103 ahead of him, about two and a half tiles (1.0 s),
+  held a tenth (to 1.1 s): rings of pink sound, the rock cracked, dust and chips of red rock; it skids on a little
+  (to 1.25 s); he holds there bent over it, and a ghostly pink echo of the staff swings down and strikes the same
+  spot again (1.45 s), the floor ringing weaker; he heaves it upright (1.5 to 1.85 s), lets it slide down through
+  his hand to the floor, planted (to 2.2 s), and steps back (1.62 to 1.84 s).
+- **Shout** (`cantorShout`, 2.2 s): rears back and swells, his arms spread wide, his head back, his mouth shut,
+  while his pipes draw in light, the cult's fire streaming into their mouths (from 0.1 s; held trembling, THE
+  WARNING, 0.6 to 0.86 s); lunges a stride forward, his arms flung back, his jaw dropping wide (0.86 to 1.0 s); all
+  nine pipes and his mouth blast pink at you (1.0 s, for 0.3 s), rings of sound flung out of his mouth; a
+  shockwave rolls out across the floor before him to about four and a half tiles (1.0 to 1.5 s), and comes back
+  from beyond you, off the far wall (1.45 to 1.95 s). His staff stays planted, braced.
+- **Sound-copies** (`cantorCopies`, 2.2 s): spreads his arms and raises the staff high over his head in his one
+  hand (to 0.45 s); rings the bell, shaking it (rings of sound out of it at 0.55, 0.78 and 1.0 s); two see-through
+  pink copies of him tear away from him, the first to his left (0.62 s), the second to his right (0.86 s), 46 out
+  to each side, each a beat behind the last in all it does (0.18 and 0.36 s behind him); he lowers the staff and
+  plants it, and they do the same a beat after him. Painted as he is, then laid under him in the cult's pink every
+  other game pixel, their seams whole. `cantorEchoPainted(move, t, view)` paints one as a figure of its own, for
+  the game's copies once they are torn away (they repeat his last move: the game's).
+- **Rockfall** (`cantorRockfall`, 2.6 s): lifts the staff and drives it down, planted (0.4 s), the bell tolling;
+  throws his head back, his left hand raised high, and sings straight up at the rim, his mouth wide and burning,
+  his pipes and his mouth blasting pink skyward, rings of sound rising (0.75 to 1.9 s); dust pours down in streams
+  and grit sifts down all round (from 0.8 s); six rocks of the rim's red rock come down round him (1.3, 1.42, 1.54,
+  1.66, 1.78 and 1.9 s), each turning as it falls for half a second, its shadow darkening on the floor before it
+  (the warning), each smashing in a burst of dust and chips; he lowers his head (to 2.6 s). Where the rocks fall in
+  the game is the game's (floor 8's rockfall trap).
+- **Flinch** (`cantorReel`, 0.7 s): his head snaps back and his pipes clatter in their roots, spitting a burst of
+  pink and the cult's fire (to 0.12 s; their clatter dies away by about 0.45 s); he staggers half a step back (his
+  right foot, 0.05 to 0.2 s), then straightens slowly to glare, stepping in again (0.36 to 0.56 s).
+- **Death, his pick: his last note tears him apart** (`cantorDie`, 2.6 s): struck, he throws his head back, his
+  arms flung wide, and screams one last note, trembling, rings of sound out of his mouth, his mouth and pipes
+  blazing; his pipes burst one after another, from the outside in, in shards of bone (0.36 to 1.04 s); pink light
+  splits through him (0.95 to 1.35 s); he shatters (1.35 s), shards of him flung out in a flash of pink; his robe,
+  mantle and stole collapse empty to the floor (1.35 to about 1.8 s), his staff topples and the bell clangs a last
+  time (1.85 s); his echoes ring out across the floor, each weaker (1.35, 1.65, 1.95, 2.2 s), gone by 2.6 s. What is
+  left: the empty robe in a heap, the staff and its bell, the shards.
+
+**His effects** (Animations 3, his own way of being wild: his sound, the cult's pink rings and blasts, and the
+canyon's dust and rock; each a crisp mote of whole pixels): rings of pink sound across the floor and in the air;
+the strike's streak, its cracks in the rock, its ghostly echo; the cult's fire drawn into his pipes and blasted out;
+the shockwave and its return; the copies; the rockfall's dust, rocks and shadows; shards of bone and of him.
+
+**Elsewhere:**
+- His canvas `CANTOR_CANVAS` is now 600 by 660, his feet at (300, 470) (was 420 by 460, feet at (210, 360)): his
+  shout's shockwave, his rockfall's rocks and his strike's staff reach that far.
+- src/dev/preview_cantor.ts: films (walkfilm, strikefilm, shoutfilm, copiesfilm, rockfallfilm, deathfilm), `frame:`
+  and `phone:` (one moment as a phone shows it).
+
+**The check, rule by rule** (docs/art/RULEBOOK.md; How art is made 7, every boss through every check; made before
+he sees him):
+
+| Rule | The Cantor | Result |
+| --- | --- | --- |
+| Animations 1: as far as it will go | The staff heaved to twice his height and brought down 103 ahead of him; the shout's shockwave rolls out four and a half tiles and back; two copies of him tear away 46 each side; six rocks come down; his death bursts nine pipes and shatters him | Pass by the numbers; his eye decides the notch |
+| Animations 3: wild in his own way | Sound: rings and blasts of the cult's pink, and the canyon's dust and rock; nothing borrowed | Pass by eye |
+| Animations 4: warnings in sight | The strike's overhead hold, the shout's swell and the rocks' shadows are in sight; nothing covers them | Pass by eye |
+| Monsters 4: the warning is a pose | The strike held overhead 0.45 to 0.85 s; the shout swelled 0.6 to 0.86 s, trembling | Pass (review: BLOW) |
+| Monsters 5: weapons rest low | His staff planted beside him standing and walking; up only to strike or ring | Pass |
+| Movement 1: weight first | The strike's lunge over his front foot, hips first; the stagger | Pass (review: HIPS) |
+| Movement 3: wind-up and follow-through | The strike and the shout drawn back, held, carried on (the staff skids, the shout lunges on) | Pass (review: BLOW) |
+| Movement 4: loose things follow | His hem left behind as he goes; the bell swings and rings; his robe falls empty | Pass by eye |
+| Movement 5: slick | No frame leaps, stalls, turns back at speed, or starts or stops at its fastest; no jump from his stand into any move and back | Pass (review: JERK, JUMP) |
+| Movement 6: alive when still | His stand as approved | Pass (review: ALIVE) |
+| Movement 7: heavy blows freeze | The strike held a tenth as the bell lands (1.0 to 1.1 s) | Pass |
+| Movement 8: feet grip | No foot slides while down; the planted staff's foot does not slide either | Pass (review: SLIDE; by construction for the staff) |
+| Heroes 6: clean bodies | No arm through his body; his staff through nothing of him but his hands | Pass (review: ARM, THROUGH) |
+| Hits 5: deaths true to what died | His last note tears him apart; his robe crumples empty | Pass by eye |
+| Monsters 6 and Colour 3: pink is theirs | Every light the cult's pink and gold; nothing cyan | Pass (test) |
+| Pixels 1 and 5: crisp; the pink edge | Every pixel crisp; his pink edge while he lives, none as he dies | Pass (test) |
+| Nothing cut off | No frame of any move, his death or a copy touches his canvas's edge | Pass (test) |
+| How art is made 6: checked at phone size | Six moments at the game's size on a phone's 844 by 390 | Looked at |
+
+**Checks:** tests/cantor.test.ts 5 of 5 (the whole boss review of every move, from in front and from behind;
+crisp; nothing cyan; nothing cut off, his copies too; his size); `tsc --noEmit` clean.
+
+**The pictures** (in `shots/`): films `cantor_walk.gif` (sixteen frames a second), `cantor_strike.gif` (the strike,
+then struck), `cantor_shout.gif`, `cantor_copies.gif`, `cantor_rockfall.gif`, `cantor_death.gif` (thirty a second),
+each with a contact sheet (`.sheet.png`).

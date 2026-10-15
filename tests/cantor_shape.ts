@@ -2,8 +2,8 @@
 // his moves hand over. Here and not in src/art/cantor.ts: the game's own tests keep figures from importing the
 // checks (tests/bosses.test.ts, 12).
 
-import type { BossShape, CheckLimb, CheckLump } from '../src/art/boss_checks';
-import { CANTOR_BODY, pipesOf, staffOf } from '../src/art/cantor';
+import type { BossShape, CheckLimb, CheckLump, Handover } from '../src/art/boss_checks';
+import { CANTOR_BODY, CANTOR_DIE, pipesOf, staffOf } from '../src/art/cantor';
 import { add, lerp3, mul, sub } from '../src/art/skeleton';
 import type { Skeleton } from '../src/art/skeleton';
 
@@ -38,15 +38,29 @@ export function cantorShape(): BossShape {
       ];
       return { limbs, lumps };
     },
-    // his staff, in his right hand: through nothing of him but that hand
-    things: (_move, _t, s) => {
-      const { foot, head } = staffOf(s);
-      return [{ name: 'staff', pts: [foot, lerp3(foot, head, 0.5), head], r: 0.9, may: ['foreR', 'handR'] }];
+    // his staff, in his right hand: through nothing of him but that hand (and his left, where it grips it too);
+    // once he has shattered, it is not in his hands (it topples to the floor)
+    things: (move, t, s, q) => {
+      if (move === 'dying' && t >= CANTOR_DIE.shatter) return [];
+      const { foot, head } = staffOf(s, q);
+      return [{ name: 'staff', pts: [foot, lerp3(foot, head, 0.25), lerp3(foot, head, 0.5), lerp3(foot, head, 0.75), head], r: 0.9, may: ['foreR', 'handR', 'foreL'] }];
     },
-    tip: (move, _t, s) => (move === 'attack' ? staffOf(s).head : null),
+    // (the end he strikes with: his staff's head; shouting, his head)
+    tip: (move, _t, s, q) => (move === 'attack' ? staffOf(s, q).head : move === 'shout' ? s.head : null),
     low: { knee: B.legR[1], elbow: B.armR[1], hand: B.armR[2] },
+    // his stand into each move and back; into his walk from his stand, and out of it where its round begins, as
+    // the game's bosses stop (game/bosses.ts)
+    handovers: [
+      { from: 'stand', at: 0, to: 'walk', toAt: 0 },
+      { from: 'walk', at: 0, to: 'stand', toAt: 0 },
+      ...['attack', 'reel', 'shout', 'copies', 'rockfall'].flatMap((m): Handover[] => [
+        { from: 'stand', at: 0, to: m, toAt: 0 },
+        { from: m, at: 'end', to: 'stand', toAt: 0 },
+      ]),
+      { from: 'stand', at: 0, to: 'dying', toAt: 0 },
+    ],
   };
 }
-/** His moves made so far: his stand. */
-export const MADE = ['stand'];
+/** His moves: his stand, his walk, his staff strike, struck, his death, his shout, his sound-copies, his rockfall. */
+export const MADE = ['stand', 'walk', 'attack', 'reel', 'dying', 'shout', 'copies', 'rockfall'];
 void sub;
