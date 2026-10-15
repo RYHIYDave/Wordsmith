@@ -268,3 +268,12 @@ his stand starts from it and hands back to it; THE WARNING, each held (the slam'
 sweep's under 20), the slam's arm burning, the burst's cracks glowing with no arm yet; THE BLOWS LAND, the slam lying
 along its aim. NOT IN THE REVIEW YET: nothing of him passing through his own body (his arms are many and wild; to come
 with the rest of his moves).
+
+Shown `shots/eye_slam.gif`, `shots/eye_sweep.gif` and `shots/eye_burst.gif`, asked in one pop-up "His slam: right?",
+"His sweep: right?", "His bursts from glowing cracks: right?" (each offered: "Yes, as shown (Recommended)"; "Bigger and
+wilder"; "Not yet"), his answers, 15 Oct, by 17:53 (the clock read 17:53:13 just after): each "Yes, as shown
+(Recommended)".
+
+NEXT: his spells (his gold gaze beam sweeping the arena; the siege's pink bolts raining down; bile spat in arcs,
+leaving pools) and his maw (breathing in, pulling you close, then biting; spewing eyespawn; heaving his bulk up and
+splashing down), then his phase changes, struck, and his death.
