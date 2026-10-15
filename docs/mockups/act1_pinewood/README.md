@@ -507,3 +507,9 @@ READ AS (told him so): gaps through it, fog pouring off it, its eyes bigger and 
   embers of their fire streaming back off them.
 
 `tests/fog_wolves.test.ts` 9 of 9, as before (its pink edge now counted round what of it is solid).
+
+Shown `shots/wolf_look.png` and `shots/wolf_stand.gif` again and asked "Is this the Fog Wolf now?" (offered: "Yes,
+animate it (Recommended)", next its moves: the glide, the lunging bite, its flinch, and blowing apart into fog; "Not
+yet"), his answer, 15 Oct, by 14:46 (the clock read 14:46:08 just after): "Yes, animate it (Recommended)".
+
+NEXT: its moves, filmed, for his yes.
