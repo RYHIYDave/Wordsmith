@@ -22,7 +22,7 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
-import { ROOT_BURST, ROOT_CANVAS, STAG_BELLOW, STAG_CHARGE, STAG_DIE, STAG_FEET, STAG_GORE, STAG_HABITS, STAG_ON, STAG_PACE, STAG_REEL, STAG_ROOTS, STAG_STAND, STAG_WALK, makeStagArt, rootBurstPainted, stagChipCount, stagFeet, stagLid, stagLong, stagPainted, stagSolids } from '../src/art/hollow_stag';
+import { ROOT_CANVAS, ROOT_SNAKE, ROOT_STRETCH, STAG_BOUNDS, STAG_BELLOW, STAG_CHARGE, STAG_DIE, STAG_FEET, STAG_GORE, STAG_HABITS, STAG_ON, STAG_PACE, STAG_REEL, STAG_ROOTS, STAG_STAND, STAG_WALK, makeStagArt, rootSnakePainted, stagChipCount, stagFeet, stagLid, stagLong, stagPainted, stagSolids } from '../src/art/hollow_stag';
 import { TILE3 } from '../src/art/new_mobs3';
 import { RIM_ALPHA } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
@@ -219,10 +219,10 @@ test('THROUGH: no leg passes through another, in any frame of any move (Heroes 6
 
 test('JERK: nothing leaps from one frame to the next in any move (Movement 5): its blows quick, the rest of it slow; its stand and walk close their loops', () => {
   // (picture pixels a piece's middle may move in a thirtieth of a second, by move: its legs; its head and antlers,
-  // whose far tips swing widest; the rest of it. Its blows are quick by their nature: the gore's hook up through you
-  // (its antlers' far tips 18), the gallop's legs and the crash (17, 19), the slam as it comes down off its rearing
+  // whose far tips swing widest; the rest of it. Its blows are quick by their nature: the gore's hook up through you,
+  // harder on his word (its antlers' far tips 24 in its last frame); its stotting's bounds (its body 12, its antlers 18), the gallop's legs and the crash (17, 19), the slam as it comes down off its rearing
   // (its antlers' tips 34 in its last frame), the flinch's snap (18), each on one continuous arc: the blow's own punch)
-  const limit: Record<string, [number, number, number]> = { stand: [11, 9, 3.2], walk: [8, 5, 2], attack: [8, 20, 9], charge: [19, 21, 7], roots: [15, 36, 16], bellow: [2, 19, 4], reel: [3, 19, 6], dying: [5, 12, 10] };
+  const limit: Record<string, [number, number, number]> = { stand: [11, 9, 3.2], walk: [12, 19, 13], attack: [8, 26, 10], charge: [19, 21, 7], roots: [15, 36, 16], bellow: [2, 19, 4], reel: [3, 19, 6], dying: [5, 12, 10] };
   const leg = (p: string): boolean => /^(hoof|pastern|fet|cannon|knob|fore|arm|wrap|thigh|shank)\d/.test(p);
   const crown = (p: string): boolean => /^(beam|tine|burr|moss|ear|cranium|muzzle|jaw|mouth|socket|poll|nostril)/.test(p);
   for (const [move, long] of LONG) {
@@ -251,7 +251,7 @@ function pointsOf(move: string, t: number, view: 'front' | 'back'): number[][] {
 /** How far the picture leaps from one moment to another: the mean of its points, in game pixels. */
 const leap = (a: number[][], b: number[][]): number => a.reduce((s, p, i) => s + Math.hypot(p[0] - b[i][0], p[1] - b[i][1]), 0) / a.length / 2;
 
-test('JUMP: where one move hands over to the next (its stand, from whatever frame it has come to, into each move and back; into its walk and out of it), the picture does not leap (Movement 5; the review\'s 3 game pixels)', () => {
+test('JUMP: where one move hands over to the next (its stand, from whatever frame it has come to, into each move and back; into its stotting and out of it as it lands), the picture does not leap (Movement 5; the review\'s 3 game pixels)', () => {
   for (const view of ['front', 'back'] as const) {
     const stands = Array.from({ length: STAG_STAND.frames }, (_, i) => pointsOf('stand', i / STAG_STAND.fps, view));
     const rest = pointsOf('stand', 0, view);
@@ -261,9 +261,12 @@ test('JUMP: where one move hands over to the next (its stand, from whatever fram
       for (let i = 0; i < stands.length; i++) assert.ok(leap(stands[i], first) <= 3, `${view}: its stand at ${(i / STAG_STAND.fps).toFixed(2)} s into its ${move} leaps ${leap(stands[i], first).toFixed(2)}`);
       if (move !== 'dying' && move !== 'walk') assert.ok(leap(pointsOf(move, stagLong(move), view), rest) <= 3, `${view}: its ${move}'s end back to its stand leaps`);
     }
+    // (stotting, it can stop only landed, never in the air: the game ends its bounding as its hoofs come down)
     for (let i = 0; i < STAG_WALK.frames; i++) {
-      const w = pointsOf('walk', i / STAG_WALK.fps, view);
-      assert.ok(leap(w, rest) <= 3, `${view}: its walk at ${(i / STAG_WALK.fps).toFixed(3)} s back to its stand leaps ${leap(w, rest).toFixed(2)}`);
+      const t = i / STAG_WALK.fps;
+      if (!stagFeet('walk', t).every((f) => f[2] < 1e-6)) continue;
+      const w = pointsOf('walk', t, view);
+      assert.ok(leap(w, rest) <= 3, `${view}: its walk at ${t.toFixed(3)} s back to its stand leaps ${leap(w, rest).toFixed(2)}`);
     }
   }
 });
@@ -322,17 +325,21 @@ test('what its stand throws off comes and goes: clods as it stamps, fog as it sn
   for (const t of [0, 0.3, 0.8, STAG_STAND.period - 0.02]) assert.equal(stagChipCount('stand', t), 0, `something thrown off at ${t} s`);
 });
 
-test('SLIDE in its moves: walking and running, a hoof down stays on its spot while the floor goes by under it at its pace; in every other move a hoof down stays where it is (Movement 8)', () => {
+test('SLIDE in its moves: stotting and running, a hoof down stays on its spot while the floor goes by under it at its pace; in every other move a hoof down stays where it is (Movement 8)', () => {
   const dt = 1 / 600;
   const V = STAG_PACE * TILE3;
-  let fewest = 4;
+  // (stotting: all four hoofs land together and leave together; landed, they stay on their spots as the floor goes by)
   for (let t = 0; t < STAG_WALK.period * 2; t += dt) {
     const a = stagFeet('walk', t);
     const b = stagFeet('walk', t + dt);
-    fewest = Math.min(fewest, a.filter((f) => f[2] < 1e-6).length);
+    const down = a.filter((f) => f[2] < 1e-6).length;
+    assert.ok(down === 0 || down === 4, `stotting, ${down} hoofs down at ${t.toFixed(4)} s`);
     for (let i = 0; i < 4; i++) if (a[i][2] < 1e-6 && b[i][2] < 1e-6) assert.ok(Math.abs(b[i][0] - a[i][0] + V * dt) < 1e-6 && Math.abs(b[i][1] - a[i][1]) < 1e-9, `walk: hoof ${i} slips at ${t.toFixed(4)} s`);
   }
-  assert.ok(fewest >= 2, `walking, only ${fewest} hoofs on the floor at some moment`);
+  for (const l of STAG_BOUNDS.land) {
+    assert.ok(stagFeet('walk', l + 0.01).every((f) => f[2] < 1e-6), `landed at ${l} s`);
+    assert.ok(stagFeet('walk', l + STAG_BOUNDS.down + 0.1).every((f) => f[2] > 5), `bounding up after ${l} s`);
+  }
   const C = STAG_CHARGE;
   const Vc = C.pace * TILE3;
   for (let t = 0; t + dt < C.long; t += dt) {
@@ -441,35 +448,48 @@ test('what its moves throw off comes and goes: gone by the end of every move', (
   assert.ok(stagChipCount('attack', 0.8) > 10, 'the gore rakes the earth');
   assert.ok(stagChipCount('roots', STAG_ROOTS.slam + 0.2) > 10, 'the slam bursts the earth');
   assert.ok(stagChipCount('dying', 0.5) > 6, 'the roots burst the earth as it dies');
-  for (const t of [0, 0.3, 0.6]) assert.equal(stagChipCount('walk', t), 0, `walking, something thrown off at ${t}`);
+  for (const t of [0.05, 0.47]) assert.ok(stagChipCount('walk', t) > 6, `stotting, dust as it lands, at ${t}`);
+  for (const t of [0.3, 0.7]) assert.equal(stagChipCount('walk', t), 0, `stotting, something thrown off at ${t}`);
 });
 
-test('its roots\' bursts: their crack glowing before them (the warning), the roots shooting up and sinking back; crisp, their pink edge, nothing cyan, every light the enemy\'s fire, nothing cut off; gone after', () => {
-  const B = ROOT_BURST;
+test('its roots worming through the ground (his words): a crack glowing before its head (the warning), the root arching up out of the ground and back down, hump after hump, a furrow behind it; crisp, its pink edge, nothing cyan, every light the enemy\'s fire, nothing cut off; stretches laid end to end one root; gone after', () => {
   const [pr, pg, pb] = rgba(ENEMY_RIM);
+  const R = ROOT_SNAKE;
+  const passes = (R.body + ROOT_STRETCH) / R.speed;
   for (const view of ['front', 'back'] as const) {
-    for (let t = -B.warn; t <= B.gone + 0.05; t += 1 / 30) {
-      const { px, lights } = rootBurstPainted(t, view, 3);
-      let rim = 0;
-      let seen = 0;
-      for (let i = 0; i < px.d.length; i += 4) {
-        const a = px.d[i + 3];
-        if (a === 0) continue;
-        seen++;
-        if (a === RIM_ALPHA && px.d[i] === pr && px.d[i + 1] === pg && px.d[i + 2] === pb) rim++;
-        else assert.equal(a, 255, `${view} ${t.toFixed(2)}: a soft pixel`);
-        const [h, sat] = hue(px.d[i], px.d[i + 1], px.d[i + 2]);
-        assert.ok(!(sat > 0.4 && Math.max(px.d[i], px.d[i + 1], px.d[i + 2]) > 140 && h >= 165 && h <= 205), `${view} ${t.toFixed(2)}: cyan`);
+    for (const along of [0, 35, -60, 90]) {
+      let rooted = 0;
+      for (let t = -0.3; t <= passes + 0.6; t += 1 / 30) {
+        const { px, lights } = rootSnakePainted(t, view, along, 3);
+        let rim = 0;
+        for (let i = 0; i < px.d.length; i += 4) {
+          const a = px.d[i + 3];
+          if (a === 0) continue;
+          if (a === RIM_ALPHA && px.d[i] === pr && px.d[i + 1] === pg && px.d[i + 2] === pb) rim++;
+          else assert.equal(a, 255, `${view} ${along} ${t.toFixed(2)}: a soft pixel`);
+          const [h, sat] = hue(px.d[i], px.d[i + 1], px.d[i + 2]);
+          assert.ok(!(sat > 0.4 && Math.max(px.d[i], px.d[i + 1], px.d[i + 2]) > 140 && h >= 165 && h <= 205), `${view} ${t.toFixed(2)}: cyan`);
+        }
+        if (rim > 20) rooted++;
+        for (const L of lights) assert.ok(FIRE.has(rgba(L.color).slice(0, 3).join(',')), `its light ${L.color}`);
+        for (let x = 0; x < px.w; x++) for (const y of [0, px.h - 1]) assert.equal(px.d[(y * px.w + x) * 4 + 3], 0, `${view} ${along} ${t.toFixed(2)}: cut off`);
+        for (let y = 0; y < px.h; y++) for (const x of [0, px.w - 1]) assert.equal(px.d[(y * px.w + x) * 4 + 3], 0, `${view} ${along} ${t.toFixed(2)}: cut off`);
+        if (t < -0.04 && t > -R.crack / R.speed + 0.04) assert.ok(lights.length > 0, `${view} ${along} ${t.toFixed(2)}: its crack glows before its head`);
       }
-      for (const L of lights) assert.ok(FIRE.has(rgba(L.color).slice(0, 3).join(',')), `its light ${L.color}`);
-      for (let x = 0; x < px.w; x++) for (const y of [0, px.h - 1]) assert.equal(px.d[(y * px.w + x) * 4 + 3], 0, `${view} ${t.toFixed(2)}: cut off`);
-      for (let y = 0; y < px.h; y++) for (const x of [0, px.w - 1]) assert.equal(px.d[(y * px.w + x) * 4 + 3], 0, `${view} ${t.toFixed(2)}: cut off`);
-      if (t > 0.03 && t < B.hold) assert.ok(rim > 40, `${view} ${t.toFixed(2)}: its roots' pink edge`);
-      if (t < -0.05) assert.ok(lights.length > 0 && seen > 0, `${view} ${t.toFixed(2)}: its crack glows before it bursts`);
+      assert.ok(rooted > 4, `${view} ${along}: its root is seen arching out of the ground (${rooted} frames)`);
+      assert.equal(rootSnakePainted(passes + 0.6, view, along, 3).px.d.some((v: number, i: number) => i % 4 === 3 && v > 0), false, 'gone after');
     }
-    assert.equal(rootBurstPainted(B.gone + 0.01, view, 3).px.d.some((v, i) => i % 4 === 3 && v > 0), false, 'gone after');
   }
-  assert.ok(ROOT_CANVAS.w > 0);
+  // (laid end to end, each hump of the root is drawn by one stretch: the stretch its middle is in)
+  const humps = (t: number): number => {
+    let n = 0;
+    for (const k of [-1, 0, 1]) {
+      const { px } = rootSnakePainted(t + (k * ROOT_STRETCH) / R.speed, 'front', 0, 3);
+      for (let i = 3; i < px.d.length; i += 4) if (px.d[i] === RIM_ALPHA) n++;
+    }
+    return n;
+  };
+  assert.ok(humps(0.25) > 0, 'its root is drawn along the stretches');
 });
 
 test('its pictures as the game holds them: standing fifteen a second, walking sixteen; its gore, charge, roots and bellow, struck and its death at thirty', () => {

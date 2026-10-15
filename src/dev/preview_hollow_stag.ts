@@ -15,7 +15,7 @@
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { ROOT_CANVAS, STAG_BELLOW, STAG_CANVAS, STAG_CHARGE, STAG_DIE, STAG_GORE, STAG_HABITS, STAG_PACE, STAG_REEL, STAG_ROOTS, STAG_STAND, STAG_WALK, rootBurstPainted, stagFrame, stagPainted, stagRootTime } from '../art/hollow_stag';
+import { ROOT_CANVAS, STAG_BELLOW, STAG_CANVAS, STAG_CHARGE, STAG_DIE, STAG_GORE, STAG_HABITS, STAG_PACE, STAG_REEL, STAG_ROOTS, STAG_STAND, STAG_WALK, ROOT_SNAKE, ROOT_STRETCH, rootSnakePainted, stagFrame, stagPainted, stagRootTime } from '../art/hollow_stag';
 import { pinewoodPieces } from '../art/floor9';
 import { TILE3 } from '../art/new_mobs3';
 import { project } from '../art/skeleton';
@@ -259,7 +259,7 @@ if (HASH.startsWith('look')) look();
 else if (HASH === 'standfilm') standFilm();
 else if (HASH === 'walkfilm') {
   const fps = STAG_WALK.fps;
-  film(beatsOf([['stand', 0.5], ['walk', STAG_WALK.period * 2], ['stand', 0.5]], fps), fps, 'The Hollow Stag walks, slow and heavy (at its pace)', { w: 700, h: 640, fx: 200, fy: 520, k: 3 });
+  film(beatsOf([['stand', 0.5], ['walk', STAG_WALK.period * 2], ['stand', 0.5]], fps), fps, 'The Hollow Stag stots, bounding on all four legs (at its pace)', { w: 700, h: 640, fx: 200, fy: 520, k: 3 });
 } else if (HASH === 'gorefilm') {
   const G = STAG_GORE;
   const at = (b: Beat): string => (b.move === 'attack' ? (b.t >= G.warn && b.t < G.thrust ? 'antlers aimed, trembling' : b.t >= G.hit && b.t < G.hit + G.freeze ? 'the gore' : '') : b.move === 'reel' ? 'struck' : '');
@@ -276,21 +276,21 @@ else if (HASH === 'walkfilm') {
 } else if (HASH === 'rootsfilm') {
   const R = STAG_ROOTS;
   const lines = [-24, 0, 24];
-  const at = (b: Beat): string => (b.move === 'roots' ? (b.t >= R.rear && b.t < 0.85 ? 'reared up' : b.t >= R.slam && b.t < R.slam + R.freeze ? 'the slam' : b.t >= R.slam + R.freeze && b.t < 2.2 ? 'roots burst toward you' : '') : '');
+  const at = (b: Beat): string => (b.move === 'roots' ? (b.t >= R.rear && b.t < 0.85 ? 'reared up' : b.t >= R.slam && b.t < R.slam + R.freeze ? 'the slam' : b.t >= R.slam + R.freeze && b.t < 2.4 ? 'roots worm toward you' : '') : '');
   const bursts = (b: Beat, view: 'front' | 'back'): Extra[] => {
     if (b.move !== 'roots') return [];
     const out: Extra[] = [];
     lines.forEach((deg, j) => {
-      for (let d = 1.2; d <= R.reach + 1e-9; d += 0.6) {
+      for (let d = ROOT_SNAKE.from + ROOT_STRETCH / 2; d <= R.reach + 1e-9; d += ROOT_STRETCH) {
         const tt = b.t - stagRootTime(d);
-        if (tt < -0.3 || tt > 0.85) continue;
+        if (tt < -0.4 || tt > 1.2) continue;
         const a = (deg * Math.PI) / 180;
-        out.push({ at: [Math.cos(a) * d * TILE3, Math.sin(a) * d * TILE3], sp: toSprite(rootBurstPainted(tt, view, j * 13 + Math.round(d * 10)), null, ROOT_CANVAS.ax, ROOT_CANVAS.ay), k: 1 });
+        out.push({ at: [Math.cos(a) * d * TILE3, Math.sin(a) * d * TILE3], sp: toSprite(rootSnakePainted(tt, view, deg, j * 13 + Math.round(d * 10)), null, ROOT_CANVAS.ax, ROOT_CANVAS.ay), k: 1 });
       }
     });
     return out;
   };
-  film(beatsOf([['stand', 0.3], ['roots', R.long], ['stand', 0.4]], 30), 30, 'The Hollow Stag: lines of roots burst toward you', { w: 840, h: 720, fx: 170, fy: 430, k: 2 }, at, bursts);
+  film(beatsOf([['stand', 0.3], ['roots', R.long], ['stand', 0.4]], 30), 30, 'The Hollow Stag: lines of roots worm through the ground toward you', { w: 840, h: 720, fx: 170, fy: 430, k: 2 }, at, bursts);
 } else if (HASH === 'bellowfilm') {
   const B = STAG_BELLOW;
   const at = (b: Beat): string => (b.move === 'bellow' ? (b.t >= B.warn && b.t < B.roar ? 'head thrown up' : b.t >= B.roar && b.t < B.quiet ? 'the bellow' : '') : '');

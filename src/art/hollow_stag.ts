@@ -320,16 +320,18 @@ function fog(nose: [V3, V3], ahead: V3, t0: number, t: number, seed: number, lif
 // bursting toward you; a bellow that wolves answer from the fog"; and his pick for its death, "Roots drag it down into
 // the ground")
 
-/** How fast it walks (tiles a second): slow, stalking. Its walk is painted for it, so each hoof down stays on its spot. */
-export const STAG_PACE = 0.8;
-/** Its walk: a four-beat stalk, sixteen frames a second, one round of 0.875 s (its left hind, left fore, right hind, right fore). */
-export const STAG_WALK = { frames: 14, fps: 16, period: 0.875 } as const;
-/** Its basic blow, the antler gore: its head lowered, antlers aimed, held trembling (the warning) from `warn`; the thrust from `thrust`, its antlers raking the earth and hooking up through you at `hit`, held a tenth (`freeze`); flung up high after; `reach`: how far before its feet its antlers sweep (its own lengths). */
-export const STAG_GORE = { long: 1.7, warn: 0.38, thrust: 0.6, hit: 0.9, freeze: 0.1, reach: 66, fps: 30 } as const;
+/** How fast it goes (tiles a second): fast, stotting. Its stotting is painted for it, so its hoofs down stay on their spot. */
+export const STAG_PACE = 3;
+/** Its walk is stotting (his words, 15 Oct: “The movement is like to be a thing that deer do called Stotting where they kind of bounce on all four legs.  I’d like it to move fast and erratic bouncing or stotting all over the arena.”): bounding on all four stiff legs, all four hoofs leaving the floor together and landing together; a high bound and a low one by turns, jinking one way and the other in the air. Sixteen frames a second, a round of 0.75 s. */
+export const STAG_WALK = { frames: 12, fps: 16, period: 0.75 } as const;
+/** Its bounds in a round: its hoofs land at `land` (and stay down 0.08 s), how high each bound lifts it (its own lengths). Where it bounds to, erratic all over the arena, is the game's: it may change its way only as it lands. */
+export const STAG_BOUNDS = { land: [0, 0.42], down: 0.08, high: [30, 16] } as const;
+/** Its basic blow, the antler gore: its head lowered, antlers aimed, held trembling (the warning) from `warn`; the thrust from `thrust`, its antlers raking the earth and hooking up through you at `hit`, a flash of its gold, held (`freeze`); flung up high after; `reach`: how far before its feet its antlers sweep (its own lengths). */
+export const STAG_GORE = { long: 1.6, warn: 0.38, thrust: 0.6, hit: 0.8, freeze: 0.12, reach: 66, fps: 30 } as const;
 /** Its charge that splinters trees: head lowered, pawing, snorting (the warning, from `warn`); THE RUN from `run` to `crash`, the game carrying it `pace` tiles a second; at `crash` its antlers smash into what is before it, held (`freeze`), splinters flying; it shakes its head and steps back onto its stand. */
 export const STAG_CHARGE = { long: 2.7, warn: 0.3, run: 0.84, crash: 1.74, freeze: 0.12, pace: 6, fps: 30 } as const;
-/** Its roots: it rears up on its hind legs (by `rear`), forelegs pawing the air, held (the warning); it slams its forefeet down at `slam`, held (`freeze`); lines of roots burst out from it toward you, `speed` tiles a second, out to `reach` tiles (each burst painted by `rootBurstPainted`, laid by the game along its lines). */
-export const STAG_ROOTS = { long: 2.6, rear: 0.55, slam: 1.0, freeze: 0.1, speed: 7, reach: 6, fps: 30 } as const;
+/** Its roots: it rears up on its hind legs (by `rear`), forelegs pawing the air, held (the warning); it slams its forefeet down at `slam`, held (`freeze`); lines of roots worm through the ground from it toward you, out to `reach` tiles (`ROOT_SNAKE`; each stretch painted by `rootSnakePainted`, laid by the game along its lines). */
+export const STAG_ROOTS = { long: 2.6, rear: 0.55, slam: 1.0, freeze: 0.1, reach: 6, fps: 30 } as const;
 /** Its bellow: it draws in its breath, its ribs swelling; throws its head up, its jaw opening (the warning, from `warn`); THE BELLOW from `roar` to `quiet`, rings of fog rolling from its mouth and fog pouring out over the ground round it (the wolves answer from the fog: the game's). */
 export const STAG_BELLOW = { long: 2.6, warn: 0.45, roar: 0.75, quiet: 1.75, fps: 30 } as const;
 /** Struck: held a moment; its head thrown back, rocked, its eye flinching shut, bone and moss flying off it; back on its stand by `long`. */
@@ -425,43 +427,59 @@ function pawAt(t: number, a: number, b: number, c: number, up: number, fold: num
   return { foot: [F[0] - 3.5 * (1 - v) + 4 * Math.sin(Math.PI * v), F[1], up * (1 - v * v)], fold: fold * (1 - v) - 18 * Math.sin(Math.PI * v) };
 }
 
-// --- ITS WALK ---
-const WALK_DUTY = 0.6;
-/** When each hoof comes down in its round: its right fore, left fore, right hind, left hind (its left hind, left fore, right hind, right fore, a quarter of a round apart; the round begins where its hoofs are nearest where they stand, so that it steps off its stand without a leap). */
-const WALK_DOWN = [0.375, 0.875, 0.125, 0.625];
-function walkFoot(i: number, ph: number): { foot: V3; fold: number } {
-  const r = STAG_FEET[i];
-  const front = i < 2;
-  const span = STAG_PACE * TILE3 * STAG_WALK.period;
-  const half = (span * WALK_DUTY) / 2;
-  const u = fr(ph - WALK_DOWN[i]);
-  if (u < WALK_DUTY) return { foot: [r[0] + half - span * u, r[1], 0], fold: 0 };
-  const v = (u - WALK_DUTY) / (1 - WALK_DUTY);
-  return { foot: [r[0] - half + 2 * half * sm(v), r[1], (front ? 7.5 : 5.5) * Math.sin(Math.PI * v)], fold: (front ? 64 : 24) * Math.sin(Math.PI * v) };
-}
-/** Its walk: slow and heavy, its head nodding with its forefeet, its weight rolling from side to side; its eye on you. */
-function walkPose(t: number): StagPose {
-  const ph = fr(t / STAG_WALK.period);
-  const a = Math.PI * 2 * ph;
-  const fs = [0, 1, 2, 3].map((i) => walkFoot(i, ph));
+// --- ITS WALK: STOTTING ---
+/** Its stotting: where it is in its round (which bound, landed or in the air, how far through), its hoofs and body as they go. */
+function stotPose(t: number): StagPose {
+  const P0 = STAG_WALK.period;
+  const tt = fr(t / P0) * P0;
+  const [l1, l2] = STAG_BOUNDS.land;
+  const dn = STAG_BOUNDS.down;
+  const V = STAG_PACE * TILE3;
+  const s = (V * dn) / 2;
+  const a = (Math.PI * 2 * tt) / P0;
+  // (the two bounds: landed from `l`, off the floor at `l + dn`, landed again at the next)
+  const bound = tt < l2 ? 0 : 1;
+  const l = bound ? l2 : l1;
+  const next = bound ? P0 : l2;
+  const high = STAG_BOUNDS.high[bound];
+  const jink = bound ? -8 : 10;
+  let lift = 0;
+  let fwd: number;
+  let squash = 0;
+  let v = 0;
+  if (tt < l + dn) {
+    // (landed: all four hoofs down, the floor going by under them; it sinks onto its stiff legs and springs off)
+    const c = (tt - l) / dn;
+    fwd = s - V * (tt - l);
+    squash = Math.sin(Math.PI * c);
+  } else {
+    v = (tt - l - dn) / (next - l - dn);
+    lift = high * 4 * v * (1 - v);
+    fwd = -s + 2 * s * sm(v);
+  }
+  const air = tt < l + dn ? 0 : Math.sin(Math.PI * v);
+  const feet = STAG_FEET.map((f): V3 => [f[0] + fwd, f[1], lift]);
+  const fold = [12 * air, 12 * air, 6 * air, 6 * air];
+  // (its body rocks: nose up as it springs, down as it lands)
+  const rock = tt < l + dn ? -4 + 8 * (1 - sm((tt - l) / dn)) : -4 + 8 * sm(v);
   return {
     ...STAND0,
     x: 0,
-    y: 0.9 * Math.sin(a + 0.4),
-    z: 0.9 * Math.cos(2 * a),
-    yaw: 1.5 * Math.sin(a),
-    pitch: 1.3 * Math.sin(a),
-    roll: 1.8 * Math.sin(a),
-    neck: 3 * Math.sin(2 * a + 0.8),
-    head: [4 * Math.sin(a), 4 * Math.sin(2 * a + 1.2), 2 * Math.sin(a)],
-    ears: 0,
-    tail: [6 * Math.sin(2 * a), 10 * Math.sin(a)],
-    feet: fs.map((f) => f.foot),
-    fold: fs.map((f) => f.fold),
+    y: 0,
+    z: lift - 3.2 * squash,
+    yaw: jink * air,
+    pitch: rock * 0.8,
+    roll: (bound ? -4 : 5) * air,
+    neck: -3 + 3 * squash,
+    head: [-jink * 0.5 * air, -5 + 5 * squash + 3 * air, (bound ? 5 : -5) * air],
+    ears: -20,
+    tail: [52, 8 * Math.sin(a * 2)],
+    feet,
+    fold,
     breath: Math.sin(a),
     look: [0, 0],
     lid: 0,
-    glow: 1 + 0.1 * Math.sin(a),
+    glow: 1.2 + 0.1 * Math.sin(a),
     chips: [],
     flares: [],
   };
@@ -470,10 +488,10 @@ function walkPose(t: number): StagPose {
 // --- ITS ANTLER GORE ---
 // (its head down low, its antlers' tines aimed forward at a man's height; driven in lower still, its brow tines raking
 // the earth; hooked up through him; flung on up)
-const G_LOW = keyed({ x: -5, z: -4, pitch: 6, neck: 72, hp: 52, hy: -9, hr: -4, ears: -25, glow: 1.6 });
-const G_SCRAPE = keyed({ x: 5, z: -5, pitch: 9, neck: 82, hp: 62, hy: -4, hr: -2, ears: -30, glow: 1.8 });
-const G_HIT = keyed({ x: 10, z: -1, pitch: 2, neck: 36, hp: 22, hy: 8, hr: 5, ears: -30, glow: 2 });
-const G_FLUNG = keyed({ x: 7, z: 2, pitch: -6, neck: 0, hp: -14, hy: 12, hr: 8, ears: -20, glow: 1.5 });
+const G_LOW = keyed({ x: -7, z: -4.5, pitch: 6, neck: 72, hp: 52, hy: -9, hr: -4, ears: -25, glow: 1.7 });
+const G_SCRAPE = keyed({ x: 5, z: -5, pitch: 9, neck: 82, hp: 62, hy: -4, hr: -2, ears: -30, glow: 1.9 });
+const G_HIT = keyed({ x: 11, z: -0.5, pitch: 1, neck: 34, hp: 20, hy: 9, hr: 6, ears: -32, glow: 2.3 });
+const G_FLUNG = keyed({ x: 8, z: 2.5, pitch: -7, neck: -2, hp: -16, hy: 13, hr: 8, ears: -20, glow: 1.6 });
 /**
  * The antler gore, its basic blow: it lowers its head, its antlers aimed at you, crouched on its haunches, cocked to
  * one side (the warning, held, trembling, snorting); then it drives forward, its antlers raking the earth and hooking up
@@ -487,17 +505,17 @@ function gorePose(t: number): StagPose {
     [0, K0, lin],
     [G.warn, G_LOW, swell],
     [G.thrust, G_LOW, lin],
-    [0.68, G_SCRAPE, easeIn],
-    [G.hit, G_HIT, (v) => Math.pow(cl01(v), 1.3)],
+    [0.66, G_SCRAPE, easeIn],
+    [G.hit, G_HIT, (v) => Math.pow(cl01(v), 1.2)],
     [G.hit + G.freeze, G_HIT, lin],
-    [1.32, G_FLUNG, easeOut],
+    [1.22, G_FLUNG, easeOut],
     [G.long, K0, swell],
   ]);
   if (tt > G.warn && tt < G.thrust) K = plus(K, shiver(tt, sm((tt - G.warn) / 0.08)));
-  const lift = 3.5 * bump(tt, 1.0, 1.44);
+  const lift = 6 * bump(tt, G.hit + G.freeze, 1.4);
   const feet = STAG_FEET.map((f, i): V3 => (i < 2 ? [f[0], f[1], lift] : f));
-  const P = fromKey(K, feet, [28 * lift / 3.5, 28 * lift / 3.5, 0, 0]);
-  P.tail = [30 * bump(tt, 0.6, 1.4), 0];
+  const P = fromKey(K, feet, [40 * lift / 6, 40 * lift / 6, 0, 0]);
+  P.tail = [34 * bump(tt, 0.55, 1.4), 0];
   return P;
 }
 
@@ -589,8 +607,8 @@ const R_GLARE = keyed({ neck: 10, hp: 18, ears: -15, glow: 1.7 });
 /**
  * Its roots: it gathers itself on its haunches, then rears up on its hind legs, its forelegs pawing the air, its head
  * thrown up (the warning, held); it slams its forefeet down onto the spots they left, held a tenth, the earth bursting
- * under them; and lines of roots burst out from it toward you (painted by `rootBurstPainted`, laid by the game). It
- * glares after them, heaving, and settles.
+ * under them; and lines of roots worm through the ground from it toward you (painted by `rootSnakePainted`, laid by
+ * the game). It glares after them, heaving, and settles.
  */
 function rootsPose(t: number): StagPose {
   const R = STAG_ROOTS;
@@ -710,7 +728,7 @@ function deathPose(t: number): StagPose {
 
 function basePose(which: string, t: number): StagPose {
   if (which === 'stand') return standBase(t);
-  if (which === 'walk') return walkPose(t);
+  if (which === 'walk') return stotPose(t);
   if (which === 'attack') return gorePose(t);
   if (which === 'charge') return chargePose(t);
   if (which === 'roots') return rootsPose(t);
@@ -810,33 +828,62 @@ function poseOf(which: string, t: number, view: GameView = 'front'): StagPose {
     P.chips = [...clods(STAG_FEET[0], s1, tt, 14, 91), ...clods(STAG_FEET[0], s2, tt, 10, 93)];
     const nose: [V3, V3] = [H.p([19.5, 1.2, -1.2]), H.p([19.5, -1.2, -1.2])];
     P.chips.push(...fog(nose, norm(add(H.f, [0, 0, -0.35])), STAG_HABITS.snort, tt, 95));
+  } else if (which === 'walk') {
+    // (dust puffed up from under its hoofs as it lands)
+    const tt = fr(t / STAG_WALK.period) * STAG_WALK.period;
+    P.chips = [];
+    for (const [k, l] of STAG_BOUNDS.land.entries()) {
+      const s = tt - l;
+      if (s < 0 || s >= 0.24) continue;
+      STAG_FEET.forEach((f, i) => P.chips.push(...burst([f[0], f[1], 0.6], 0, s, 6, 171 + i * 7 + k, ['#9a8a70', '#b4a486', '#7e6e58'], { speed: 30, up: 14, life: 0.24 })));
+    }
   } else if (which === 'attack') {
     const G = STAG_GORE;
     const nose: [V3, V3] = [H.p([19.5, 1.2, -1.2]), H.p([19.5, -1.2, -1.2])];
     P.chips = [...fog(nose, norm(add(H.f, [0, 0, -0.6])), 0.48, t, 97, 0.36)];
     // (its antlers rake the earth before it as they come up: clods and needles thrown forward)
-    P.chips.push(...burst([52, 0, 0.6], 0.7, t, 26, 101, [...CLOD, '#6a5a3a'], { speed: 40, up: 46, ahead: [1.1, 0, 0], life: 0.6 }));
-    // (the sweep of its antlers through the blow, a pale arc trailing their tips, held with the blow)
-    if (t >= 0.74 && t < G.hit + G.freeze + 0.14) {
+    P.chips.push(...burst([52, 0, 0.6], 0.66, t, 40, 101, [...CLOD, '#6a5a3a', '#4c6a34'], { speed: 50, up: 56, ahead: [1.2, 0, 0], life: 0.7, size: 3 }));
+    // (the sweep of its antlers through the blow: a crescent of its gold burning along their tips' way, the enemy's pink
+    // at its edge, held with the blow, then fading)
+    const after = t - G.hit - G.freeze;
+    if (t >= 0.68 && after < 0.16) {
       const until = Math.min(t, G.hit);
-      const fade = t > G.hit + G.freeze ? 1 - (t - G.hit - G.freeze) / 0.14 : 1;
+      const fade = after > 0 ? 1 - after / 0.16 : 1;
+      const hot = t >= G.hit;
       for (const sd of [1, -1]) {
         let last = antlerTip(basePose('attack', until), sd);
-        for (let j = 1; j <= 14; j++) {
+        for (let j = 1; j <= 20; j++) {
           const tj = until - j * 0.006;
-          if (tj < 0.72) break;
+          if (tj < 0.66) break;
           const q = antlerTip(basePose('attack', tj), sd);
-          const steps = Math.max(1, Math.ceil(len(sub(q, last)) / 1.6));
+          const steps = Math.max(1, Math.ceil(len(sub(q, last)) / 1.2));
           for (let m = 0; m < steps; m++) {
-            if (hash(j * 31 + m, sd + 3, 5) > fade * (1 - j / 18)) continue;
-            out(P, lerpV(last, q, m / steps), j < 5 ? ANTLER[4] : FOG[j < 9 ? 0 : 1], j < 6 ? 3 : 2);
+            if (hash(j * 31 + m, sd + 3, 5) > fade * (1 - j / 24)) continue;
+            const at = lerpV(last, q, m / steps);
+            const col = hot ? (j < 5 ? FLAME[4] : j < 11 ? FLAME[3] : FLAME[2]) : j < 5 ? ANTLER[4] : FOG[j < 9 ? 0 : 1];
+            out(P, at, col, j < 8 ? 3 : 2);
+            if (hot && j < 12 && m % 2 === 0) out(P, add(at, [0, 0, -2.5]), FLAME[j < 6 ? 3 : 2], 2);
           }
           last = q;
         }
       }
     }
+    if (t >= G.hit && after < 0.3) {
+      // (the blow: its gold flaring where its antlers strike, sparks of it thrown on, a ring of dust round its forefeet)
+      const strike = lerpV(antlerTip(basePose('attack', G.hit), 1), antlerTip(basePose('attack', G.hit), -1), 0.5);
+      const s = t < G.hit + G.freeze ? 0.02 : after + 0.02;
+      if (t < G.hit + G.freeze + 0.08) P.flares.push([strike, 34, 0.55 * (t < G.hit + G.freeze ? 1 : 1 - (after / 0.08))]);
+      P.chips.push(...burst(strike, 0, s, 26, 102, [FLAME[4], FLAME[3], FLAME[3], FLAME[2]], { speed: 70, up: 30, ahead: [0.7, 0, 0.2], life: 0.28, size: 2 }));
+      const k = s / 0.4;
+      if (k < 1) for (let i = 0; i < 34; i++) {
+        if (hash(i, 5, 104) < k * 0.9) continue;
+        const a = (i / 34) * Math.PI * 2;
+        const r = 10 + 44 * easeOut(k);
+        out(P, [24 + Math.cos(a) * r, Math.sin(a) * r * 0.9, 1 + 3 * hash(i, 6, 104)], ['#9a8a70', '#b4a486', '#7e6e58'][i % 3], 3);
+      }
+    }
     // (moss torn off its antlers by the throw)
-    P.chips.push(...burst(antlerTip(P, 1), 1.04, t, 8, 103, [MOSS[3], MOSS[2], MOSS[4]], { speed: 20, up: 30, ahead: [-0.6, 0, 0], life: 0.45 }));
+    P.chips.push(...burst(antlerTip(P, 1), G.hit + G.freeze + 0.02, t, 10, 103, [MOSS[3], MOSS[2], MOSS[4]], { speed: 24, up: 32, ahead: [-0.6, 0, 0], life: 0.45 }));
   } else if (which === 'charge') {
     const C = STAG_CHARGE;
     const nose: [V3, V3] = [H.p([19.5, 1.2, -1.2]), H.p([19.5, -1.2, -1.2])];
@@ -1403,59 +1450,119 @@ export function stagSolids(which: string, t: number, view: GameView = 'front'): 
 }
 
 // ---------------------------------------------------------------------------------------------
-// ITS ROOTS' BURSTS, laid by the game along its lines
+// ITS ROOTS, worming through the ground toward you, laid by the game along its lines
 
-/** One burst of its roots, from where it bursts: a crack in the earth glowing the enemy's pink burning to gold before it (the warning, `warn` seconds), then roots shooting up out of it (`up`), writhing (to `hold`), and sinking back (by `gone`). */
-export const ROOT_BURST = { warn: 0.25, up: 0.1, hold: 0.45, gone: 0.8 } as const;
-/** The canvas a burst is painted on, and its floor point on it. */
-export const ROOT_CANVAS = { w: 140, h: 130, ax: 70, ay: 98 };
-/** When a burst of its roots comes, `d` tiles out along one of its lines, from the start of its roots move. */
+/**
+ * Its roots (his words, 15 Oct: “I’d like the roots to worm or snake through the ground more”): along each line one
+ * long root slithers through the earth toward you, `speed` tiles a second, from `from` tiles before it out to its reach:
+ * arching up out of the ground and back down into it, hump after hump, the humps travelling with it, `body` tiles of it
+ * at a time, `wave` tiles from hump to hump, `high` of its own lengths at the most; a crack glowing the enemy's pink
+ * burning to gold runs `crack` tiles ahead of its head (the warning); behind it a furrow of torn earth, closing.
+ */
+export const ROOT_SNAKE = { speed: 5, from: 0.6, body: 2.2, wave: 1.0, high: 13, crack: 0.7 } as const;
+/** How long a stretch of a line one picture holds (tiles): the game lays one every so far along each line. */
+export const ROOT_STRETCH = 0.6;
+/** The canvas a stretch is painted on, and the floor point of its middle on it. */
+export const ROOT_CANVAS = { w: 160, h: 120, ax: 80, ay: 84 };
+/** When its root's head passes `d` tiles out along a line, from the start of its roots move. */
 export function stagRootTime(d: number): number {
-  return STAG_ROOTS.slam + STAG_ROOTS.freeze + d / STAG_ROOTS.speed;
+  return STAG_ROOTS.slam + STAG_ROOTS.freeze + (d - ROOT_SNAKE.from) / ROOT_SNAKE.speed;
 }
-/** A burst of roots `t` seconds from its bursting (negative: its crack, the warning), from in front or behind; `seed` makes each its own. */
-export function rootBurstPainted(t: number, view: GameView = 'front', seed = 0): Painted {
-  const B = ROOT_BURST;
+/**
+ * One stretch of a line of its roots, `t` seconds from when the root's head passes the stretch's middle (negative: its
+ * crack coming, then its head), the line running `along` degrees round from its forward on the floor, from in front or
+ * behind; `seed` makes each its own. A hump of the root belongs to the stretch its middle is in, so that the stretches
+ * laid end to end are one root.
+ */
+export function rootSnakePainted(t: number, view: GameView = 'front', along = 0, seed = 0): Painted {
+  const R = ROOT_SNAKE;
+  const T = TILE3;
+  const v = R.speed * T;
+  const lam = R.wave * T;
+  const body = R.body * T;
+  const half = (ROOT_STRETCH * T) / 2;
+  const head = v * t;
+  const dir: V3 = [Math.cos(along * D), Math.sin(along * D), 0];
+  const side: V3 = [-dir[1], dir[0], 0];
   const st = stage(view, ROOT_CANVAS.ax, ROOT_CANVAS.ay, ROOT_CANVAS);
   const bits: Bit[] = [];
-  const put: Put = (part, piece, shape) => {
-    bits.push({ part, piece, shape });
-  };
   const chips: [V3, string, number][] = [];
   const lights: { x: number; y: number; r: number; color: string; a: number }[] = [];
-  // (the crack: a jagged line across the earth, glowing, before the roots and as they burst)
-  if (t >= -B.warn && t < B.up + 0.15) {
-    const k = t < 0 ? (t + B.warn) / B.warn : 1 - (t - 0) / (B.up + 0.15);
-    const ang = hash(seed, 1, 151) * Math.PI;
-    for (let i = -9; i <= 9; i++) {
-      const jag = 2.2 * (hash(seed, i + 20, 153) - 0.5);
-      const p: V3 = [Math.cos(ang) * i * 1.3 - Math.sin(ang) * jag, Math.sin(ang) * i * 1.3 + Math.cos(ang) * jag, 0.6];
-      if (Math.abs(i) <= 9 * Math.min(1, k * 1.6)) chips.push([p, Math.abs(i) < 4 * k ? FLAME[3] : FLAME[2], 2]);
+  /** A point of the root `b` behind its head (its own lengths along the line), and how high it is there. */
+  const env = (b: number): number => Math.pow(Math.sin(Math.PI * cl01(b / body)), 0.7);
+  const height = (b: number): number => R.high * env(b) * Math.sin((2 * Math.PI * b) / lam);
+  const wiggle = (b: number): number => 2.6 * Math.sin((2 * Math.PI * b) / (lam * 1.7) + 0.8) * env(b);
+  const at = (u: number, z: number): V3 => {
+    const b = head - u;
+    return add(add(mul(dir, u), mul(side, wiggle(b))), [0, 0, z]);
+  };
+  // (its humps: each the stretch of root between two of its dives, drawn by the stretch its middle is in)
+  const first = Math.floor((head - half - lam) / (lam / 2));
+  for (let k = first; k <= first + 8; k++) {
+    // (between dives b0 and b1 behind its head the root is above the ground when the wave is)
+    const b0 = k * (lam / 2);
+    const b1 = b0 + lam / 2;
+    if (b1 <= 0 || b0 >= body) continue;
+    if (Math.sin((2 * Math.PI * (b0 + lam / 4)) / lam) <= 0) continue;
+    const mid = head - (b0 + b1) / 2;
+    if (mid < -half || mid >= half) continue;
+    const n = 7;
+    let last: V3 | null = null;
+    for (let j = 0; j <= n; j++) {
+      const b = Math.max(0, b0 + ((b1 - b0) * j) / n);
+      const u = head - b;
+      const z = Math.max(0, height(b));
+      const q = at(u, z - 1.5);
+      if (last) {
+        const r = 1.3 + 2.9 * env(b);
+        bits.push({ part: `root${k}`, piece: `root${k}_${j}`, shape: { k: 'rod', a: last, b: q, ra: r, rb: r, ramp: ROOT } });
+        // (a few side roots, thorny, off its back)
+        if (j === 3 && env(b) > 0.4) {
+          const tip = add(q, add(mul(side, (hash(k, 3, seed) - 0.5) * 9), [0, 0, 5 + 3 * hash(k, 4, seed)]));
+          bits.push({ part: `root${k}`, piece: `spur${k}`, shape: { k: 'rod', a: q, b: tip, ra: 1.1, rb: 0.35, ramp: ROOT } });
+        }
+      }
+      last = q;
     }
-    const [x, y] = st.at([0, 0, 0]);
-    lights.push({ x, y, r: 18 + 10 * k, color: FLAME[3], a: 0.3 * k });
-  }
-  // (its roots: shooting up, writhing, sinking back into the earth)
-  if (t >= 0 && t < B.gone) {
-    const rise = t < B.up ? easeOut(t / B.up) : t < B.hold ? 1 : 1 - sm((t - B.hold) / (B.gone - B.hold));
-    for (let r = 0; r < 5; r++) {
-      const a0 = (r / 5) * Math.PI * 2 + hash(seed, r, 155) * 0.9;
-      const rad = 2.5 + 3 * hash(seed, r, 157);
-      const tall = (16 + 12 * hash(seed, r, 159)) * rise * (r === 0 ? 1.35 : 1);
-      const lean = 0.35 + 0.4 * hash(seed, r, 161);
-      let last: V3 = [Math.cos(a0) * rad, Math.sin(a0) * rad, 0];
-      const n = 6;
-      for (let j = 1; j <= n; j++) {
-        const k = j / n;
-        const writhe = 2.2 * Math.sin(t * 18 + r * 1.7 + k * 4) * k * (t < B.hold ? 1 : 0.5);
-        const q: V3 = [Math.cos(a0) * (rad + lean * tall * k * k) + writhe * -Math.sin(a0), Math.sin(a0) * (rad + lean * tall * k * k) + writhe * Math.cos(a0), tall * k];
-        put(`root${r}`, `root${r}_${j}`, { k: 'rod', a: last, b: q, ra: 2.6 * (1 - 0.8 * (k - 1 / n)), rb: 2.6 * (1 - 0.8 * k) + 0.2, ramp: ROOT });
-        last = q;
+    // (the earth broken where it comes up out of the ground and goes back down)
+    for (const b of [b0, b1]) {
+      const p = at(head - b, 0);
+      for (let i = 0; i < 6; i++) {
+        const a = hash(k * 13 + i, b === b0 ? 1 : 2, seed + 7) * Math.PI * 2;
+        const rr = 2 + 3.5 * hash(k * 13 + i, 3, seed);
+        chips.push([[p[0] + Math.cos(a) * rr, p[1] + Math.sin(a) * rr, 0.6 + 1.5 * hash(i, k, 5)], CLOD[i % CLOD.length], i % 2 ? 2 : 3]);
       }
     }
-    for (const c of burst([0, 0, 0.6], 0, t, 16, 163 + seed, CLOD, { speed: 26, up: 40, life: 0.45 })) chips.push(c);
   }
-  paintBits(st, bits, [0, 0, 10]);
+  // (its furrow: the earth torn along where it has gone, closing a little after its tail has passed)
+  for (let i = 0; i < 26; i++) {
+    const u = -half + ((i + hash(i, 9, seed)) / 26) * 2 * half;
+    const b = head - u;
+    if (b < 0) continue;
+    const age = (b - body) / v;
+    if (age > 0.5) continue;
+    if (age > 0 && hash(i, 11, seed) < age / 0.5) continue;
+    const p = at(u, 0);
+    const off = (hash(i, 12, seed) - 0.5) * 6;
+    chips.push([add(add(p, mul(side, off)), [0, 0, 0.6]), ['#30221a', '#463426', '#604834'][i % 3], 2]);
+  }
+  // (the crack running before its head: its warning, glowing)
+  const crack = R.crack * T;
+  let lit = 0;
+  for (let i = -16; i <= 16; i++) {
+    const u = (i / 16) * half;
+    const ahead = u - head;
+    if (ahead <= 0 || ahead > crack) continue;
+    const jag = 1.6 * (hash(i + 40, 5, seed) - 0.5);
+    const p = add(add(mul(dir, u), mul(side, jag)), [0, 0, 0.6]);
+    chips.push([p, ahead < crack * 0.4 ? FLAME[3] : FLAME[2], 2]);
+    lit++;
+  }
+  if (lit) {
+    const [x, y] = st.at([0, 0, 0]);
+    lights.push({ x, y, r: 22, color: FLAME[3], a: Math.min(0.35, 0.02 * lit) });
+  }
+  paintBits(st, bits, [0, 0, 6]);
   const px = st.whole(bits.length ? ENEMY_RIM : null);
   for (const [pt, col, size] of chips) laid(px, st, pt, col, size);
   return { px, lights };
@@ -1477,7 +1584,7 @@ export function makeStagArt(): ActorArt {
     return {
       idle: lazyFrames(STAG_STAND.frames, (i) => frame('stand', i / STAG_STAND.fps)),
       walk: lazyFrames(STAG_WALK.frames, (i) => frame('walk', i / STAG_WALK.fps)),
-      attack: lazyFrames(3, (i) => attack.frames[[12, 22, 27][i]]),
+      attack: lazyFrames(3, (i) => attack.frames[[12, 20, 24][i]]),
       idleFps: STAG_STAND.fps,
       walkFps: STAG_WALK.fps,
       clips: {

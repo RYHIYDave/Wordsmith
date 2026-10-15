@@ -262,3 +262,34 @@ Shown the six films (`shots/stag_walk.gif`, `stag_gore.gif`, `stag_charge.gif`, 
 after): "Its walk and its antler gore: are they right?" "Not yet"; "Its charge and its lines of roots: are they right?"
 "Not yet"; "Its bellow, its flinch and its death: are they right?" "Yes, as shown (Recommended)". So its bellow, its
 flinch and its death have his yes as shown; its walk, gore, charge and roots wait on what he wants changed.
+
+### Redone on his words (15 Oct, by 13:08)
+
+Asked what to change (one pop-up, two questions, any picks and his own words), his answers, 15 Oct, by 12:58: for its
+walk and gore, "The gore needs more punch (Recommended)" and, in his words, "The movement is like to be a thing that
+deer do called Stotting where they kind of bounce on all four legs.  I’d like it to move fast and erratic bouncing or
+stotting all over the arena."; for its charge and roots, "The roots look wrong" and, in his words, "I’d like the roots
+to worm or snake through the ground more".
+
+READ AS (told him so): its walk becomes stotting; the gore gets more punch; the roots worm through the ground; the
+charge stays as filmed (his notes were on the roots).
+- ITS WALK IS STOTTING (STAG_WALK 0.75 s round, 12 frames at 16 a second, STAG_PACE now 3 tiles a second): bounding on
+  all four stiff legs, all four hoofs landing together (at 0 and 0.42 s, down 0.08 s, a puff of dust from each) and
+  leaving together; a high bound (30 of its own lengths) and a low one (16) by turns, jinking one way then the other in
+  the air, its tail up. Where it bounds to, erratic all over the arena, is the game's: it may change its way only as
+  it lands, and stop only landed (STAG_BOUNDS).
+- THE GORE, HARDER (1.6 s): drawn back further and lower; the hook quicker, THE GORE at 0.8 s, held 0.12 s to 0.92 s;
+  a crescent of its gold burning along its antlers' way, the enemy's pink at its edge, flaring at the blow (its light),
+  sparks of it thrown on; a bigger spray of earth from 0.66 s; a ring of dust round its forefeet; flung on up to
+  1.22 s, its forefeet off the floor higher (0.92 to 1.4 s); settled by 1.6 s.
+- THE ROOTS WORM THROUGH THE GROUND (ROOT_SNAKE): along each line one long root slithers through the earth toward you,
+  5 tiles a second, from 0.6 tiles before it out to 6, arching up out of the ground and back down into it, hump after
+  hump (a hump each tile, up to 13 of its own lengths high), the humps travelling with it, 2.2 tiles of it at a time; a
+  crack glowing pink burning to gold runs 0.7 tiles ahead of its head (THE WARNING); behind it a furrow of torn earth,
+  closing. `rootSnakePainted(t, view, along, seed)` paints one stretch of 0.6 tiles (ROOT_STRETCH), `t` from when its
+  head passes the stretch's middle, `along` the line's way in degrees; laid end to end they are one root (each hump
+  belongs to the stretch its middle is in); its head passes `d` tiles out at `stagRootTime(d)`, 1.1 s + (d - 0.6) / 5.
+
+The review (tests/hollow_stag.test.ts) holds all of it, 22 of 22: stotting, all four hoofs down together or none, and
+down they stay on their spot as the floor goes by; the hand-over from its stand into its stotting and out of it as it
+lands (worst 2.95 game pixels); the harder hook's antlers' far tips at most 26 picture pixels a thirtieth of a second.
