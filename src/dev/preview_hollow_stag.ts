@@ -5,12 +5,20 @@
 //     it standing, from in front and from behind, the knight beside it at the game's size; close-ups of it
 //   node tools/page_gif.mjs src/dev/preview_hollow_stag.ts "standfilm" shots/stag_stand.gif 6
 //     A FILM (15 frames a second): its restless stand, from in front and from behind, at four times the game's size
+//   node tools/page_gif.mjs src/dev/preview_hollow_stag.ts "walkfilm" shots/stag_walk.gif 6
+//     FILMS of its moves as the game plays them, from in front and from behind, at three times the game's size:
+//     walkfilm, gorefilm (its antler gore, then struck), chargefilm (into a pine), rootsfilm (its lines of roots),
+//     bellowfilm, deathfilm
 //   frames:move:t1,t2,...   several moments of one move side by side, from in front above and from behind below
+//   big:move:t:scale[:raw]   one moment large, from in front and from behind
 
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { STAG_CANVAS, STAG_HABITS, STAG_STAND, stagFrame, stagPainted } from '../art/hollow_stag';
+import { ROOT_CANVAS, STAG_BELLOW, STAG_CANVAS, STAG_CHARGE, STAG_DIE, STAG_GORE, STAG_HABITS, STAG_PACE, STAG_REEL, STAG_ROOTS, STAG_STAND, STAG_WALK, rootBurstPainted, stagFrame, stagPainted, stagRootTime } from '../art/hollow_stag';
+import { pinewoodPieces } from '../art/floor9';
+import { TILE3 } from '../art/new_mobs3';
+import { project } from '../art/skeleton';
 import { toSprite } from '../art/kit';
 import { drawText } from '../engine/font';
 import type { Sprite } from '../engine/px';
@@ -157,8 +165,141 @@ function standFilm(): void {
   win.__ready = true;
 }
 
+/** What it does at each moment of a film: which move, how far into it, how far it has come over the floor. */
+type Beat = { move: string; t: number; ground: number };
+function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number): Beat[] {
+  const out: Beat[] = [];
+  let ground = 0;
+  let breath = 0;
+  let stride = 0;
+  for (const [mv, long] of run) {
+    const n = Math.round(long * fps);
+    for (let i = 0; i < n; i++) {
+      const t = i / fps;
+      out.push({ move: mv, t: mv === 'stand' ? breath + t : mv === 'walk' ? stride + t : t, ground });
+      if (mv === 'walk') ground += (STAG_PACE * TILE3) / fps;
+      if (mv === 'charge' && t >= STAG_CHARGE.run && t < STAG_CHARGE.crash) ground += (STAG_CHARGE.pace * TILE3) / fps;
+    }
+    if (mv === 'stand') breath += n / fps;
+    if (mv === 'walk') stride += n / fps;
+  }
+  return out;
+}
+/** Something drawn in a film beside it, at a place on the floor (its own lengths, forward and to its left), before or behind it as it is nearer or further. */
+type Extra = { at: [number, number]; sp: Sprite; k?: number };
+function film(beats: Beat[], fps: number, title: string, o: { w: number; h: number; fx: number; fy: number; k: number }, note?: (b: Beat) => string, extras?: (b: Beat, view: 'front' | 'back') => Extra[]): void {
+  const TOP = 30;
+  const cvs = document.createElement('canvas');
+  cvs.width = o.w * 2;
+  cvs.height = TOP + o.h;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const K = o.k;
+  const draw = (i: number): void => {
+    const b = beats[i];
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, cvs.width, cvs.height);
+    label(g, title, 8, 6);
+    (['front', 'back'] as const).forEach((view, k) => {
+      const ox = k * o.w;
+      g.save();
+      g.beginPath();
+      g.rect(ox + 2, TOP, o.w - 4, o.h - 2);
+      g.clip();
+      g.translate(ox, TOP);
+      meadow(g, o.w, o.h);
+      g.translate(-ox, -TOP);
+      const [dx, dy] = project([b.ground, 0, 0], view);
+      // (its sprites are in game pixels, two picture pixels each; the floor's places are in picture pixels)
+      const fx = ox + o.fx + (dx * K) / 2;
+      const fy = TOP + o.fy + (dy * K) / 2;
+      const placed = (extras?.(b, view) ?? []).map((e) => {
+        const [ex, ey, near] = project([e.at[0], e.at[1], 0], view);
+        return { e, x: ox + o.fx + (ex * K) / 2, y: TOP + o.fy + (ey * K) / 2, near };
+      });
+      const [, , meNear] = project([b.ground, 0, 0], view);
+      const put = (sp: Sprite, x: number, y: number, kk: number): void => {
+        g.drawImage(sp.img, Math.round(x - sp.ax * kk), Math.round(y - sp.ay * kk), sp.w * kk, sp.h * kk);
+      };
+      for (const p of placed) if (p.near <= meNear) put(p.e.sp, p.x, p.y, (p.e.k ?? 1) * K);
+      g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+      g.beginPath();
+      g.ellipse(fx, fy, 24 * K, 10 * K, 0, 0, Math.PI * 2);
+      g.fill();
+      const sp = toSprite(stagPainted(b.move, b.t, view), null, STAG_CANVAS.ax, STAG_CANVAS.ay);
+      put(sp, fx, fy, K);
+      for (const p of placed) if (p.near > meNear) put(p.e.sp, p.x, p.y, (p.e.k ?? 1) * K);
+      litAt(g, sp, fx, fy, K);
+      for (const p of placed) litAt(g, p.e.sp, p.x, p.y, (p.e.k ?? 1) * K);
+      g.restore();
+      label(g, view === 'front' ? 'from in front' : 'from behind', ox + 10, TOP + o.h - 26);
+    });
+    const said = note?.(b);
+    if (said) label(g, said, cvs.width - said.length * 10 - 12, 6);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = beats.length;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+const hold = (beats: Beat[], n: number): Beat[] => {
+  const last = beats[beats.length - 1];
+  for (let i = 0; i < n; i++) beats.push({ ...last });
+  return beats;
+};
+
 if (HASH.startsWith('look')) look();
 else if (HASH === 'standfilm') standFilm();
+else if (HASH === 'walkfilm') {
+  const fps = STAG_WALK.fps;
+  film(beatsOf([['stand', 0.5], ['walk', STAG_WALK.period * 2], ['stand', 0.5]], fps), fps, 'The Hollow Stag walks, slow and heavy (at its pace)', { w: 700, h: 640, fx: 200, fy: 520, k: 3 });
+} else if (HASH === 'gorefilm') {
+  const G = STAG_GORE;
+  const at = (b: Beat): string => (b.move === 'attack' ? (b.t >= G.warn && b.t < G.thrust ? 'antlers aimed, trembling' : b.t >= G.hit && b.t < G.hit + G.freeze ? 'the gore' : '') : b.move === 'reel' ? 'struck' : '');
+  film(beatsOf([['stand', 0.4], ['attack', G.long], ['stand', 0.5], ['reel', STAG_REEL.long], ['stand', 0.4]], 30), 30, 'The Hollow Stag: its antler gore, then struck', { w: 700, h: 640, fx: 280, fy: 520, k: 3 }, at);
+} else if (HASH === 'chargefilm') {
+  const C = STAG_CHARGE;
+  const pieces = pinewoodPieces();
+  const pine = (pieces.find((p) => p.name === 'old pine')?.frames ?? [])[0] as unknown as Sprite;
+  const stump = (pieces.find((p) => p.name === 'stump')?.frames ?? [])[0] as unknown as Sprite;
+  const spot = C.pace * TILE3 * (C.crash - C.run) + 62;
+  const at = (b: Beat): string => (b.move === 'charge' ? (b.t >= C.warn && b.t < C.run ? 'head low, pawing' : b.t >= C.run && b.t < C.crash ? 'the charge' : b.t >= C.crash && b.t < C.crash + 0.5 ? 'the pine splinters' : '') : '');
+  const beats = hold(beatsOf([['stand', 0.4], ['charge', C.long], ['stand', 0.4]], 30), 10);
+  film(beats, 30, 'The Hollow Stag: its charge, into a pine', { w: 820, h: 700, fx: 150, fy: 430, k: 2.2 }, at, (b) => [{ at: [spot, 0], sp: b.move === 'charge' && b.t < C.crash ? pine : b.move === 'stand' && beats.indexOf(b) < 12 ? pine : stump }]);
+} else if (HASH === 'rootsfilm') {
+  const R = STAG_ROOTS;
+  const lines = [-24, 0, 24];
+  const at = (b: Beat): string => (b.move === 'roots' ? (b.t >= R.rear && b.t < 0.85 ? 'reared up' : b.t >= R.slam && b.t < R.slam + R.freeze ? 'the slam' : b.t >= R.slam + R.freeze && b.t < 2.2 ? 'roots burst toward you' : '') : '');
+  const bursts = (b: Beat, view: 'front' | 'back'): Extra[] => {
+    if (b.move !== 'roots') return [];
+    const out: Extra[] = [];
+    lines.forEach((deg, j) => {
+      for (let d = 1.2; d <= R.reach + 1e-9; d += 0.6) {
+        const tt = b.t - stagRootTime(d);
+        if (tt < -0.3 || tt > 0.85) continue;
+        const a = (deg * Math.PI) / 180;
+        out.push({ at: [Math.cos(a) * d * TILE3, Math.sin(a) * d * TILE3], sp: toSprite(rootBurstPainted(tt, view, j * 13 + Math.round(d * 10)), null, ROOT_CANVAS.ax, ROOT_CANVAS.ay), k: 1 });
+      }
+    });
+    return out;
+  };
+  film(beatsOf([['stand', 0.3], ['roots', R.long], ['stand', 0.4]], 30), 30, 'The Hollow Stag: lines of roots burst toward you', { w: 840, h: 720, fx: 170, fy: 430, k: 2 }, at, bursts);
+} else if (HASH === 'bellowfilm') {
+  const B = STAG_BELLOW;
+  const at = (b: Beat): string => (b.move === 'bellow' ? (b.t >= B.warn && b.t < B.roar ? 'head thrown up' : b.t >= B.roar && b.t < B.quiet ? 'the bellow' : '') : '');
+  film(beatsOf([['stand', 0.4], ['bellow', B.long], ['stand', 0.4]], 30), 30, 'The Hollow Stag: its bellow (the wolves answer from the fog)', { w: 700, h: 640, fx: 300, fy: 520, k: 3 }, at);
+} else if (HASH === 'deathfilm') {
+  const Dd = STAG_DIE;
+  const at = (b: Beat): string => (b.move === 'dying' ? (b.t < Dd.freeze ? 'struck' : b.t < Dd.sink ? 'roots burst up round it' : b.t < Dd.under ? 'dragged down' : '') : '');
+  film(hold(beatsOf([['stand', 0.4], ['dying', Dd.long]], 30), 18), 30, 'The Hollow Stag: roots drag it down into the ground', { w: 700, h: 640, fx: 300, fy: 520, k: 3 }, at);
+}
 else if (HASH.startsWith('big:')) {
   // (one moment large, from in front and from behind: `big:move:t:scale`, the scale in picture pixels)
   const [, mv, at, k0, raw] = HASH.split(':');

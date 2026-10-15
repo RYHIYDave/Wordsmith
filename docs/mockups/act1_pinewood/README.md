@@ -178,3 +178,81 @@ its flinch and its death; "Not yet"), his answer, 15 Oct, by 12:13 (the clock re
 animate it (Recommended)".
 
 NEXT: its moves, filmed, for his yes.
+
+## The Hollow Stag's moves (src/art/hollow_stag.ts; FOR HIS YES; behind `STAG_ON`, off)
+
+His design doc's four (an antler gore, its basic attack; a charge that splinters trees; lines of roots bursting toward
+you; a bellow that wolves answer from the fog), its walk, struck, and the death he picked. Times in seconds from each
+move's start.
+- WALK (0.875 s round, 16 frames a second, painted for STAG_PACE 0.8 tiles a second): slow and heavy, a four-beat
+  stalk, its hoofs down at 0.11 (right hind), 0.33 (right fore), 0.55 (left hind) and 0.77 s (left fore); its head
+  nodding, its weight rolling; its eye on you. Its round begins where its hoofs are nearest where they stand, so it
+  steps off its stand without a leap.
+- ANTLER GORE, its basic blow (1.7 s): its head down low, its antlers aimed forward at a man's height, 0 to 0.38 s;
+  HELD, TREMBLING, a huff of breath at 0.48 s (THE WARNING), to 0.6 s; driven in lower, its brow tines raking the
+  earth (clods thrown forward from 0.7 s); hooked up through you, THE GORE at 0.9 s, held a tenth to 1.0 s, a pale
+  arc trailing its antlers' tips; flung on up to 1.32 s, its forefeet lifted off the floor by the force (1.0 to
+  1.44 s), moss torn off its antlers; settled by 1.7 s. Its antlers sweep through STAG_GORE.reach, 66 of its own
+  lengths (about 1.7 tiles) before its feet.
+- CHARGE THAT SPLINTERS TREES (2.7 s): its head down, antlers forward, crouched, by 0.3 s; it paws (stamps at 0.5
+  and 0.68 s) and snorts (0.6 s) (THE WARNING); THE RUN from 0.84 to 1.74 s, a gallop, the game carrying it at
+  STAG_CHARGE.pace, 6 tiles a second (5.4 tiles in all), its hind pair and fore pair landing by turns, earth kicked up
+  behind it; THE CRASH at 1.74 s, its forefeet braced, held to 1.86 s; splinters of pine, bark and needles burst from
+  before its antlers and fly to 2.66 s, a ring of dust round its forefeet; its head jolted up, then shaken (2.14 to
+  2.54 s), splinters shaken off; it steps back onto its stand by 2.7 s. In the film it runs into a pine, which is a
+  stump after the crash (the pine's breaking is the game's).
+- LINES OF ROOTS (2.6 s): it gathers itself, 0 to 0.2 s; REARS UP on its hind legs, forefeet off the floor, by 0.55 s;
+  HELD UP HIGH, its forelegs pawing the air (THE WARNING), to 0.8 s; comes down, THE SLAM at 1.0 s, its forefeet on
+  the spots they left, held to 1.1 s, the earth bursting under them, a ring of dust; it glares after the roots,
+  heaving, to 1.8 s; settled by 2.6 s. THE ROOTS: lines of bursts out from it toward you, `rootBurstPainted(t, view,
+  seed)`, each a crack in the earth glowing pink burning to gold for 0.25 s before it (ITS WARNING), roots shooting up
+  in 0.1 s, writhing to 0.45 s, sinking back by 0.8 s; a burst d tiles out comes at `stagRootTime(d)`, 1.1 s + d / 7
+  (the film: three lines in a fan, a burst every 0.6 tiles from 1.2 to 6 tiles).
+- BELLOW (2.6 s): it draws in its breath, its ribs swelling, to 0.4 s; throws its head up, its jaw opening, to
+  0.69 s, held trembling to 0.75 s (THE WARNING); THE BELLOW from 0.75 to 1.75 s, its jaw wide, its whole body
+  shaking, its eye blazing, rings of fog rolling from its mouth at 0.75, 1.0, 1.25 and 1.5 s, fog pouring out over the
+  ground round it from 0.85 s; its jaw shuts and its head lowers, 1.75 to 1.98 s; the fog thinning, gone by 2.56 s;
+  settled by 2.6 s. The wolves that answer from the fog are the game's.
+- STRUCK (0.6 s): held to 0.06 s; its head thrown back, rocked back and up, its eye flinching shut (to about
+  0.4 s), bone, moss and dark hide flying off it; back on its stand by 0.6 s.
+- DEATH (3.2 s; his pick, "Roots drag it down into the ground"): held to 0.12 s; it throws up its head, jaw open,
+  to 0.42 s; roots burst up out of the earth round its legs from 0.2 s and climb them; DRAGGED DOWN from 0.55 s, a
+  sudden drop, then steadily, its legs folding, roots arching over its back, the earth heaving round it; it thrashes
+  its head, 1.1 to 1.6 s; its eye shuts, 2.0 to 2.22 s, and is out by 2.3 s; under by 2.6 s, only its antlers standing
+  up out of the heaved earth, roots coiled over it; still from 2.75 s. THE FLOOR SWALLOWS IT: nothing of it below the
+  floor is painted (the painter takes it away pixel by pixel).
+
+    node tools/page_gif.mjs src/dev/preview_hollow_stag.ts "walkfilm" shots/stag_walk.gif 8
+    (and gorefilm, chargefilm, rootsfilm, bellowfilm, deathfilm)
+
+FOR THE GAME, LATER: its canvas STAG_CANVAS 420 by 400, its feet at (190, 312) (was 300 by 300, feet at (140, 232):
+its rearing antlers and the charge's splinters); makeStagArt(): stand 36 frames at 15 a second, walk 14 at 16, attack
+= the gore (hit 0.9 s, a tenth's freeze), reel 0.6 s, dying 3.2 s, and in `clips.moves`: charge (hit = the crash,
+1.74 s; the game carries it from 0.84 s to 1.74 s), roots (hit = the slam, 1.0 s), bellow (hit = the bellow's start,
+0.75 s). The root bursts are a painter of their own (ROOT_CANVAS 140 by 130, feet at (70, 98)), laid by the game along
+its lines.
+
+THE REVIEW, AS A BOSS, for every move (tests/hollow_stag.test.ts, 22): crisp, its pink edge while it lives and none
+as it dies; nothing cyan, every light the enemy's fire; nothing cut off; FLOOR (nothing below the floor, its death
+aside, where the floor swallows it); SLIDE (walking and running, a hoof down stays on its spot as the floor goes by
+at its pace; in every other move a hoof down stays put; every move ends with its hoofs on their spots); THROUGH (no leg
+through another); JERK (by move, legs, head and antlers, the rest; its blows quick, on one continuous arc); JUMP (from
+any frame of its stand into each move and back, into its walk and out: the mean of its points at most 3 game pixels;
+worst 2.95, its stand into its walk); BLOW (each warning a pose, held; the gore, the crash and the slam each held a
+tenth; follow-throughs); struck; its death (roots up round it, dragged under, nothing of it seen below the floor, its
+eye out, its antlers left standing); what it throws off gone by each move's end; the root bursts (their crack before
+them, crisp, their pink edge, nothing cut off, gone after); its pictures as the game holds them.
+
+| His rule | How its moves keep it |
+| --- | --- |
+| Movement 1: weight | a slow, heavy stalk; the gore driven from its haunches; the slam comes down off its rearing |
+| Movement 3: wind up, follow through | every blow wound up and carried on after: the hook flung on up, the crash recoiling, the slam's glare |
+| Movement 5: slick, no jumps | the review's JERK and JUMP, every frame, both sides |
+| Movement 7: heavy blows freeze | the gore, the crash and the slam, each a tenth |
+| Movement 8: feet grip | walking and galloping, hoofs down stay on their spots; it steps back onto its stand |
+| Monsters 3, 4: menacing; the warning is a pose | head down, antlers aimed, trembling; pawing before the charge; reared up high before the roots; head thrown up before the bellow |
+| Hits 2, 4: no blood; what flies off is its own | bone, moss, dark hide; splinters from what it smashes; no blood |
+| Hits 5: deaths true; big things die heavy | dragged down by roots into the earth, his pick |
+| Animations 1: as big and wild as it will go | rearing twice its height, a gallop of 6 tiles a second, splinters, earth bursting, fog rolling, roots in lines to 6 tiles |
+| Animations 4: warnings in sight | each root burst's glowing crack before it; its own warnings are poses in plain sight |
+| Pillars 4: enemy colours | its eye pink to gold; the roots' cracks pink to gold; nothing cyan |
