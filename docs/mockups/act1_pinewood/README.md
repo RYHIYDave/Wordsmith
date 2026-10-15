@@ -50,7 +50,7 @@ pieces (Recommended)".
 NEXT: its pieces (25, his rule of 10 Oct: “Going forward, let's do 25 that are the theme of the 5 levels, then 25
 for each boss.”), themed after the Pinewood and the Hollow Stag.
 
-## Its 25 pieces (src/art/floor9.ts, `pinewoodPieces()`; for his yes)
+## Its 25 pieces (src/art/floor9.ts, `pinewoodPieces()`; HIS YES)
 
 The first 13, the wood's own, shown as `shots/pine_pieces.png` and asked "Are these the Pinewood's own pieces?"
 (offered: "Yes, on to the rest (Recommended)"; "Not yet"), his answer, 15 Oct, by 11:13 (the clock read 11:13:17
@@ -83,3 +83,15 @@ The cult's fire (art/act1_cult.ts `pinkBrazier`) and banner (`cultBanner`) are t
 `tests/floor9.test.ts` (7): nothing of the game imports them; each has pictures and its own name, none gives light;
 crisp, no loose pixels; no cyan, no pink or red, duller than every word; what stands stands on its foot, a floor
 tile's and the trap's inside the diamond; nothing cut off; 25 of them.
+
+All 25, with the screen dressed with them (`shots/pine_dressed.png`, `shots/pine_pieces.png`), asked "Are these the rest
+of the Pinewood's pieces?" (offered: "Yes, on to the Hollow Stag (Recommended)", next the boss's brief as a few quick
+questions, then his look; "Not yet"), his answer, 15 Oct, by 11:24 (the clock read 11:24:10 just after): "Yes, on to
+the Hollow Stag (Recommended)".
+
+## The Hollow Stag, floor 9's boss
+
+His design doc ("Wordsmith Act 1: The Descent (Levels 6–10)", the planning chat's, with his yes of 12 Oct, 18:07):
+"A great stag hollowed out by the swamp's influence, with a blinking eye visible through its ribs. It foreshadows
+the Drowned Eye." Its floor is the Hollow Wood. "Moves: an antler gore (its basic attack); a charge that splinters
+trees; lines of roots bursting toward you; a bellow that wolves answer from the fog."
