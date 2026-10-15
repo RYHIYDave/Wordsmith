@@ -565,4 +565,11 @@ closing, trailing it as it glides; its pictures as the game holds them.
 | Animations 1: as big and wild as it will go | its jaws thrown wide in a lunge of more than a tile; fog bursting from its jaws; it bursts apart in a cloud of wisps |
 | Pillars 4: enemy colours | its eyes pink to gold; nothing cyan |
 
-NEXT: his yes on its moves (the three films), then floor 10, the Sunken Fen.
+Shown `shots/wolf_walk.gif`, `wolf_bite.gif` (its flinch after it) and `wolf_death.gif` and asked as one pop-up, three
+questions, his answers, 15 Oct, by 15:05 (the clock read 15:05:17 just after): "The Fog Wolf's glide: is it right?"
+"Yes, as shown (Recommended)"; "Its bite and its flinch: are they right?" "Yes, as shown (Recommended)"; "Its death,
+blowing apart into fog: is it right?" "Yes, as shown (Recommended)". SO ALL OF THE FOG WOLF HAS HIS YES, AS SHOWN, AND
+WITH IT ALL OF FLOOR 9'S ART: its ground, its 25 pieces, the Hollow Stag, the Twisted Deer and the Fog Wolves. All of
+it is still off until the main chat puts floor 9 in the game.
+
+NEXT: floor 10, the Sunken Fen and the Drowned Eye, on his word.
