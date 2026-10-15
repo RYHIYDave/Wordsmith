@@ -23,7 +23,8 @@ import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { pinewoodLook } from '../art/pinewood';
-import { HHP, HWP, TK, paintTerrain, pictureOf, terrainOf, vnoise } from '../art/terrain';
+import { pinewoodPieces } from '../art/floor9';
+import { HHP, HWP, TK, paintTerrain, pictureOf, terrainOf, vnoise, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
 import { drawText } from '../engine/font';
 import type { Sprite } from '../engine/px';
@@ -33,7 +34,7 @@ import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
 const PW = 1014;
-const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : 468;
+const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 1840 : 468;
 
 // ---------------------------------------------------------------------------------------------------
 // The mock-up's shapes, in the mock-up's own world (its panel 1014 x 468, world (12, 12) at its middle),
@@ -403,3 +404,72 @@ if (HASH === 'shot' || HASH === 'tiles' || HASH === 'kinds') {
   show(cvs);
 }
 
+
+// ---------------------------------------------------------------------------------------------------
+// THE PIECES (art/floor9.ts): a sheet of them
+
+/** A patch of the Pinewood's own meadow for a piece to stand on. */
+function patch(w: number, h: number): HTMLCanvasElement {
+  const L = pinewoodLook({});
+  const out = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = 5200 + x;
+      const py = 3600 + y;
+      const [wx, wy] = worldOf(px, py);
+      const c = L.floor(wx, wy, px, py, 1);
+      const o = (y * w + x) * 4;
+      out[o] = c[0];
+      out[o + 1] = c[1];
+      out[o + 2] = c[2];
+      out[o + 3] = 255;
+    }
+  }
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  (cv.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(out, w, h), 0, 0);
+  return cv;
+}
+
+/** Every piece of the Pinewood's so far, at the game's size (twice it where it fits), each on its ground, named. */
+function pieceSheet(): void {
+  g.fillStyle = '#0d1030';
+  g.fillRect(0, 0, PW, PH);
+  const all = pinewoodPieces().flatMap((q) => (q.frames ?? []).map((sp, i) => ({ name: q.frames!.length > 1 ? `${q.name} ${i + 1}` : q.name, sp, kind: q.kind, shadow: q.shadow })));
+  const COLS = 4;
+  const CW = Math.floor(PW / COLS);
+  const CH = 260;
+  const ground = patch(CW - 6, CH - 22);
+  all.forEach((it, n) => {
+    const ox = (n % COLS) * CW + 3;
+    const oy = Math.floor(n / COLS) * CH + 2;
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy + 18, CW - 6, CH - 22);
+    g.clip();
+    g.drawImage(ground, ox, oy + 18);
+    const floorTile = it.kind === 'floor tile' || it.kind === 'trap';
+    const ax = ox + CW / 2;
+    const K = it.sp.h * 4 <= CH - 34 && it.sp.w * 4 <= CW - 10 ? 2 : 1;
+    const ay = floorTile ? oy + 18 + (CH - 22) / 2 - 16 * K : oy + CH - 30;
+    if (it.shadow) {
+      g.fillStyle = 'rgba(25, 18, 40, 0.32)';
+      g.beginPath();
+      g.ellipse(ax, ay, it.shadow * HWP * 1.1 * K, it.shadow * HHP * 1.1 * K, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.drawImage(it.sp.img, Math.round(ax - it.sp.ax * 2 * K), Math.round(ay - it.sp.ay * 2 * K), it.sp.w * 2 * K, it.sp.h * 2 * K);
+    g.restore();
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, CW - 6, 18);
+    g.clip();
+    g.scale(2, 2);
+    drawText(g, it.name, ox / 2 + 1, oy / 2 + 1, THEME.text, { shadow: P.ink });
+    g.restore();
+  });
+  show(cvs);
+}
+
+if (HASH === 'pieces') pieceSheet();
