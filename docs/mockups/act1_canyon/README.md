@@ -412,7 +412,7 @@ in their own colour) and is still knocked back a little (Hits 3); packs and numb
 
 NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
 
-## The Dust Devil's look (src/art/dust_devils.ts, behind `DEVIL_ON`, off; for his yes)
+## The Dust Devil's look (src/art/dust_devils.ts, behind `DEVIL_ON`, off; HIS YES)
 
 Painted from its own solids, as the scorpion is, in the same painter: rings of streaks of its sand up a funnel,
 each streak sweeping round it and climbing as it goes; its bell in the hollow at its heart; grit round it.
@@ -434,3 +434,13 @@ each streak sweeping round it and climbing as it goes; its bell in the hollow at
 `tests/dust_devils.test.ts` (7): the switch off and nothing of the game imports it; crisp, its pink edge; nothing
 cyan, every light the cult's fire, nothing cut off; its size; nothing under the rock; its stand never still and
 closing its loop; its pictures as the game holds them.
+
+Shown `shots/devil_look.png` and `shots/devil_stand.gif` and asked "Is this the Dust Devil?" (offered: "Yes, animate
+it (Recommended)"; "Not yet"), his answer, 15 Oct, by 09:28 (the clock read 09:28:48 just after): "Yes, animate it
+(Recommended)".
+
+A FAULT FOUND, FIXED IN TESTS ONLY: tests/new_mobs3.test.ts failed since the Cantor (its check of which files draw
+on art/new_mobs3.ts did not know floor 8's mock-ups). It now lets art/cantor.ts, art/canyon_scorpions.ts and
+art/dust_devils.ts, as it lets floor 7's; it passes, 8 of 8.
+
+NEXT: its moves, filmed, for his yes.
