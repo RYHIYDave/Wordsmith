@@ -10,7 +10,8 @@ import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { fenLook } from '../art/fen';
-import { EYE_POOL, EYE_RING, eyeLookFrame } from '../art/drowned_eye';
+import { EYE_CANVAS, EYE_HABITS, EYE_LURK, EYE_POOL, EYE_RING, EYE_STAND, eyeLong, eyeLookFrame, eyePainted } from '../art/drowned_eye';
+import { toSprite } from '../art/kit';
 import { TILE3 } from '../art/new_mobs3';
 import type { EyeLook } from '../art/drowned_eye';
 import { pictureOf, worldOf } from '../art/terrain';
@@ -140,5 +141,60 @@ function big(): void {
   (window as unknown as { __ready: boolean }).__ready = true;
 }
 
+const win = window as unknown as { __ready: boolean; __frames: number; __tickMs: number; __frame: (i: number) => string };
+
+/** A FILM of one of its moves at the game's size, from in front, on the ruin's ring, the knight on it for size: `n` frames at `fps`, `note(t)` what is happening. */
+function film(which: string, title: string, fps: number, n: number, note: (t: number) => string): void {
+  const W = PW;
+  const H = 640;
+  const cx = 507;
+  const cy = 450;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const floor = document.createElement('canvas');
+  floor.width = W;
+  floor.height = H;
+  ground(floor.getContext('2d') as CanvasRenderingContext2D, 0, 0, W, H, cx, cy);
+  const [p0x, p0y] = pictureOf(PCX, PCY);
+  const [kx, ky] = pictureOf(KNIGHT_AT[0], KNIGHT_AT[1]);
+  const kAt: [number, number] = [cx + kx - p0x, cy + ky - p0y];
+  const draw = (i: number): void => {
+    const t = i / fps;
+    g.drawImage(floor, 0, 0);
+    const sp = toSprite(eyePainted(which, t, 'front'), null, EYE_CANVAS.ax, EYE_CANVAS.ay);
+    drawAt(g, sp, cx, cy);
+    litAt(g, sp, cx, cy);
+    g.fillStyle = 'rgba(25, 18, 40, 0.35)';
+    g.beginPath();
+    g.ellipse(kAt[0], kAt[1], 26, 11, 0, 0, Math.PI * 2);
+    g.fill();
+    drawAt(g, knight, kAt[0], kAt[1]);
+    label(g, title, 8, 6);
+    const say = note(t);
+    if (say) label(g, say, W - say.length * 12 - 16, 6);
+    label(g, `${t.toFixed(2)} s`, 8, H - 28);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = n;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
 if (HASH === 'look') look();
+else if (HASH === 'standfilm') film('stand', 'The Drowned Eye, risen (the game\'s size)', EYE_STAND.fps, EYE_STAND.frames, (t) => (t >= EYE_HABITS.blink[0] && t < EYE_HABITS.blink[1] ? 'blinks' : t >= EYE_HABITS.dart[0] && t < EYE_HABITS.dart[1] ? 'his eye darts' : ''));
+else if (HASH === 'lurkfilm') film('lurk', 'The Drowned Eye under the water, phase 1 (the game\'s size)', EYE_LURK.fps, EYE_LURK.frames, () => '');
+else if (HASH.startsWith('film:')) {
+  const which = HASH.split(':')[1];
+  film(which, `The Drowned Eye: ${which}`, 30, Math.round(eyeLong(which) * 30) + 1, () => '');
+}
 else if (HASH.startsWith('big')) big();

@@ -175,6 +175,10 @@ export interface EyePose {
   glow: number;
   arms: ArmPose[];
   alive: boolean;
+  /** Water falling off it: where each drop is, its colour and size (laid over all, no seam). */
+  drops?: [V3, string, number][];
+  /** Rings spreading on the water's surface: their middles (on the surface), and how far out each ring is. */
+  ripples?: [V3, number][];
 }
 
 /** ITS CROWN OF ARMS, risen: seven rearing high round its eye, their tips curling; four more coiled out under the water. */
@@ -215,6 +219,124 @@ export function lookPose(kind: EyeLook): EyePose {
 }
 
 // ---------------------------------------------------------------------------------------------
+// ITS STANDS: never still (his words, 16:43: “We want really wild and big for these animations.  Lots of motion”)
+
+/** RISEN (phases 2 and 3): heaving, its arms thrashing and writhing all through, its eye darting, blinking once; water pouring off it. */
+export const EYE_STAND = { frames: 45, fps: 15, period: 3.0 } as const;
+/** UNDER THE WATER (phase 1): its eye glowing up through the pool, pulsing, roving; its arms rolling at the surface; rings spreading. */
+export const EYE_LURK = { frames: 45, fps: 15, period: 3.0 } as const;
+/** Its blink, in its stand. */
+export const EYE_HABITS = { blink: [2.2, 2.52], dart: [1.05, 1.7] } as const;
+
+const TAU = Math.PI * 2;
+/** A swell from nothing at `a` to its fullest half way and back to nothing at `b`, smooth at both ends. */
+const bump = (t: number, a: number, b: number): number => (t <= a || t >= b ? 0 : Math.pow(Math.sin((Math.PI * (t - a)) / (b - a)), 2));
+/** An arm in motion: its base pose stirred by `t` seconds of a round of `T` (whole turns only, so the round closes); `wild` how hard. */
+function writhing(A: ArmPose, i: number, t: number, T: number, wild: number): ArmPose {
+  const w = (TAU * t) / T;
+  if (A.rise <= 10) {
+    // lying under the water: coiling and uncoiling sideways, rolling along the bottom
+    return { ...A, a: A.a + 7 * wild * Math.sin(w + i), curl: A.curl + 45 * wild * Math.sin(w + 1.7 * i), wave: A.wave * (1 + 0.4 * Math.sin(2 * w + i)), phase: A.phase + 2 * w };
+  }
+  return {
+    ...A,
+    a: A.a + 9 * wild * Math.sin(w + 0.9 * i),
+    rise: A.rise + 9 * wild * Math.sin(w + 1.3 * i),
+    bend: A.bend + 30 * wild * Math.sin(2 * w + 0.7 * i),
+    curl: A.curl + 70 * wild * Math.sin(w + 2.1 * i) * Math.sign(A.curl || 1),
+    wave: A.wave * (1 + 0.6 * Math.sin(w + i)),
+    phase: A.phase + (i % 2 ? 2 : 1) * w,
+  };
+}
+/** Drops of water falling off its arms and brow: `n` of them through a round, each from where it let go, falling. */
+function dripping(P0: (t: number) => EyePose, t: number, T: number, n: number): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const LIFE = 0.55;
+  for (let i = 0; i < n; i++) {
+    const t0 = fr(i * 0.618 + 0.11) * T;
+    const dt = fr((t - t0) / T) * T;
+    if (dt > LIFE) continue;
+    const P = P0(t0);
+    const rearing = P.arms.filter((A) => A.rise > 10);
+    if (!rearing.length) continue;
+    const A = rearing[i % rearing.length];
+    const sp = armSpine(P, A, 26);
+    const at = sp[Math.floor(8 + hash(i, 1, 99) * 15)];
+    const from = add(at.p, mul(at.inner, -at.r * 0.9));
+    const p: V3 = [from[0], from[1], from[2] - 0.5 * 620 * dt * dt];
+    if (p[2] < 0) continue;
+    out.push([p, hash(i, 2, 99) > 0.5 ? '#8c9e92' : '#b4c0b6', 2]);
+    // (a long fall streaks)
+    if (dt > 0.2) out.push([[p[0], p[1], p[2] + 3 + dt * 8], '#6e8076', 2]);
+  }
+  return out;
+}
+
+/** ITS STAND, risen: `t` seconds in. */
+export function standPose(t0: number): EyePose {
+  const T = EYE_STAND.period;
+  const t = fr(t0 / T) * T;
+  const w = (TAU * t) / T;
+  const base = lookPose('risen');
+  const pose = (tt: number): EyePose => {
+    const ww = (TAU * tt) / T;
+    const dart = bump(tt, EYE_HABITS.dart[0], EYE_HABITS.dart[1]);
+    return {
+      ...base,
+      heave: [3 * Math.sin(ww) * FW[0] + 4 * Math.sin(ww) * LF[0], 3 * Math.sin(ww) * FW[1] + 4 * Math.sin(ww) * LF[1], 6 * Math.sin(2 * ww + 0.6)],
+      zE: EYE_HIGH + 6 * Math.sin(2 * ww + 0.6),
+      tilt: base.tilt + 5 * Math.sin(ww + 0.4),
+      look: norm([0.9, 0.22 * Math.sin(ww) + 0.38 * dart, 0.36 + 0.12 * Math.sin(2 * ww)]),
+      lid: base.lid + (1 - base.lid) * bump(tt, EYE_HABITS.blink[0], EYE_HABITS.blink[1]) + 0.12 * Math.sin(2 * ww),
+      slit: 0.09 + 0.03 * Math.sin(2 * ww + 1),
+      glow: 1 + 0.25 * Math.sin(2 * ww),
+      arms: base.arms.map((A, i) => writhing(A, i, tt, T, 1)),
+    };
+  };
+  const P = pose(t);
+  P.drops = dripping(pose, t, T, 26);
+  // rings where its arms break the water, and round its bulk
+  P.ripples = [];
+  for (let k = 0; k < 3; k++) P.ripples.push([[0, 0, 0], EYE_R * 0.9 + 60 * fr(t / T * 2 + k / 3)]);
+  void w;
+  return P;
+}
+
+/** ITS LURK, under the water: `t` seconds in. */
+export function lurkPose(t0: number): EyePose {
+  const T = EYE_LURK.period;
+  const t = fr(t0 / T) * T;
+  const w = (TAU * t) / T;
+  const base = lookPose('under');
+  const P: EyePose = {
+    ...base,
+    heave: [0, 0, 3 * Math.sin(w)],
+    zE: EYE_DEEP + 3 * Math.sin(w),
+    tilt: base.tilt + 6 * Math.sin(w + 1),
+    look: norm([1, 0.3 * Math.sin(w), 0.12 + 0.15 * Math.sin(2 * w)]),
+    glow: 1.4 + 0.45 * Math.sin(2 * w),
+    slit: 0.09 + 0.04 * Math.sin(2 * w + 1),
+    arms: base.arms.map((A, i) => (A.rise > 10 ? { ...A, rise: A.rise + 12 * Math.sin(w + i * 2), bend: A.bend + 25 * Math.sin(w + i * 2 + 1), a: A.a + 10 * Math.sin(w + i), phase: A.phase + 2 * w, wave: A.wave * (1 + 0.5 * Math.sin(w)) } : writhing(A, i, t, T, 1.2))),
+  };
+  // rings spreading over its eye, and where its arms break the surface
+  P.ripples = [];
+  const iris = W(18, 0, 0);
+  for (let k = 0; k < 3; k++) P.ripples.push([iris, 70 * fr(t / T * 2 + k / 3)]);
+  return P;
+}
+
+/** How long each of its moves lasts (a stand: its round). */
+export function eyeLong(which: string): number {
+  if (which === 'stand') return EYE_STAND.period;
+  if (which === 'lurk') return EYE_LURK.period;
+  return 1;
+}
+function poseOf(which: string, t: number): EyePose {
+  if (which === 'lurk') return lurkPose(t);
+  return standPose(t);
+}
+
+// ---------------------------------------------------------------------------------------------
 // ITS SKINS
 
 /** A soft noise of the figure's space (for mottling), 0 to 1. */
@@ -243,10 +365,21 @@ function eyeSkin(P: EyePose, look: V3, face: V3): (u: V3, tone: number) => strin
   const h = norm(cross(UP, L), LF);
   const v = cross(L, h);
   const IR = 0.46;
+  const faceUp = norm(cross(face, [0, 1, 0]));
+  const upper = 1 - 2 * cl01(P.lid);
+  const lower = -1 + 0.55 * cl01(P.lid);
   return (u, tone) => {
     const n = norm(u);
     // (its back half sunk in its flesh)
     if (dot(n, face) < 0.2) return back(n, tone, 0, 0);
+    // its lids: the upper one heavy over it, sliding down to shut it, the lower one rising a little to meet it
+    const lv = dot(n, faceUp);
+    if (lv > upper || lv < lower) {
+      const edge = lv > upper ? lv - upper : lower - lv;
+      if (edge < 0.06) return BULK[0];
+      if (fr(edge * 9 + 0.3 * Math.sin(dot(n, [0, 1, 0]) * 8)) < 0.2) return BULK[Math.max(0, tone - 1)];
+      return MOTTLE[Math.max(0, Math.min(4, tone))];
+    }
     const c = dot(n, L);
     const a = dot(n, h);
     const b = dot(n, v);
@@ -477,6 +610,8 @@ function eyeBits(P: EyePose, put: Put): void {
   }
   // ITS ARMS
   P.arms.forEach((A, i) => armBits(P, A, i, put));
+  // THE WATER pouring off it
+  for (const [p, c, size] of P.drops ?? []) put('drops', 'drop', { k: 'mote', p, c, size });
   // ITS IRIS'S LIGHT, the enemy's fire (under the water, less)
   const iris = add(E, mul(look, R));
   if (P.alive && P.split < 0.5) put('eye', 'glow', { k: 'glow', p: iris, c: FLAME[3], r: 48 * P.glow, a: (P.zE < 0 ? 0.45 : 0.5) * Math.min(1.2, P.glow) });
@@ -517,6 +652,7 @@ function paintPose(P: EyePose, view: GameView): Painted {
   }
   const px = st0.whole(P.alive ? ENEMY_RIM : null);
   lastUnder = drown(px, zAt, st0, view);
+  if (P.ripples && P.ripples.length) ripple(px, st0, view, P.ripples, zAt);
   for (const L of lights) if (L.y > EYE_CANVAS.ay - 2 && P.zE < 0) L.a = (L.a ?? 0.5) * 0.7;
   return { px, lights };
 }
@@ -607,12 +743,64 @@ function drown(px: Px, zAt: Float32Array, st: Stage, view: GameView): Uint8Array
   for (let k = 0; k < w * h; k++) if (gone[k]) under[k] = 0;
   return under;
 }
+/** RINGS ON THE WATER: spreading out on the pool's surface round where it stirs the water, a line of the water's light on what of it is under the surface or on the bare water, never on what stands out of it. */
+function ripple(px: Px, st: Stage, view: GameView, rings: [V3, number][], zAt: Float32Array): void {
+  const { w, h } = EYE_CANVAS;
+  const b = st.back;
+  const d = px.d;
+  const lit = rgbOf(FOAM);
+  const pale = rgbOf('#71867a');
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const k = y * w + x;
+      // (what stands out of the water is over the rings)
+      if (zAt[k] === zAt[k] && zAt[k] >= 0) continue;
+      const sx = x + 0.5 - EYE_CANVAS.ax;
+      const sy = y + 0.5 - EYE_CANVAS.ay;
+      const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+      const fx = b[0][0] * sx + b[0][1] * sy + b[0][2] * n0;
+      const fy = b[1][0] * sx + b[1][1] * sy + b[1][2] * n0;
+      if (!inPool(fx, fy, view)) continue;
+      for (const [c, r] of rings) {
+        if (r <= 1) continue;
+        const dd = Math.hypot(fx - c[0], fy - c[1]);
+        if (Math.abs(dd - r) > 1.3) continue;
+        // (broken, and fading as it spreads)
+        const a = Math.atan2(fy - c[1], fx - c[0]);
+        if (hash(Math.floor((a + 4) * 5), Math.floor(r / 6), 97) < 0.25 + r / 120) continue;
+        const col = r < 24 ? pale : lit;
+        const i = k * 4;
+        d[i] = col[0];
+        d[i + 1] = col[1];
+        d[i + 2] = col[2];
+        d[i + 3] = 255;
+        break;
+      }
+    }
+  }
+}
 const rgbOf = (c: string): V3 => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
 
 // ---------------------------------------------------------------------------------------------
 // WHAT THE PAGES AND TESTS ASK OF IT
 
 let lastUnder: Uint8Array = new Uint8Array(0);
+/** One frame of it: `which` (stand, lurk; its moves to come), `t` seconds in, from in front or behind. */
+export function eyePainted(which: string, t: number, view: GameView = 'front'): Painted {
+  return paintPose(poseOf(which, t), view);
+}
+/** The same, as the game holds a figure. */
+export function eyeFrame(which: string, t: number, view: GameView = 'front'): Sprite {
+  return toSprite(eyePainted(which, t, view), EYE_AURA, EYE_CANVAS.ax, EYE_CANVAS.ay);
+}
+/** Every solid of one moment of it, as the tests read them. */
+export function eyeSolids(which: string, t: number): Bit[] {
+  const bits: Bit[] = [];
+  eyeBits(poseOf(which, t), (part, piece, shape) => {
+    bits.push({ part, piece, shape });
+  });
+  return bits;
+}
 /** Which pixels of one of its looks are of it under the water, seen through it (for the tests). */
 export function eyeLookUnder(kind: EyeLook, view: GameView = 'front'): Uint8Array {
   paintPose(lookPose(kind), view);
