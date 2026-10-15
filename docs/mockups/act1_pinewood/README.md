@@ -463,7 +463,7 @@ they circle to come at you from behind is the game's.
 ### Its look (src/art/fog_wolves.ts, behind `WOLF_ON`, off; FOR HIS YES)
 
 Its own solids, as the Stag's and the Deer's. Lean and hip-high: the top of its back about 31 up (the knight's hip), its
-ears about 37. A wolf's shape, long-muzzled, its head carried low and forward, hunting: a deep chest and a thick ruff of
+ears about 33. A wolf's shape, long-muzzled, its head carried low and forward, hunting: a deep chest and a thick ruff of
 fog at its shoulders, a narrow waist, a lean haunch fraying into puffs that stream back off it, a low tail; tufts of fog
 standing up along its neck and back. All of it one body of pale grey fog with a cold violet in it, lit from the upper
 left, broad bands of paler fog curling back along it and churning as they go. Its legs: fog at the top, lost below in
