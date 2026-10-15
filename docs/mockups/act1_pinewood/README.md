@@ -359,4 +359,65 @@ Shown `shots/deer_look.png` and `shots/deer_stand.gif` and asked "Is this the Tw
 death splitting into roots and bark; "Not yet"), his answer, 15 Oct, by 13:38 (the clock read 13:38:06 just after):
 "Yes, animate it (Recommended)".
 
-NEXT: its moves, filmed, for his yes.
+### Its moves (src/art/twisted_deer.ts; FOR HIS YES; behind `TWISTED_DEER_ON`, off)
+
+His design doc's two (an antler gore; a rearing stomp), its limp, struck, and the death he picked. Times in seconds
+from each move's start.
+- ITS LIMP, FAST AND HITCHING (his pick; DEER_WALK 0.5 s round, 8 frames at 16 a second, painted for DEER_PACE 1.8
+  tiles a second): its sound legs down 0.28 s each (left fore at 0, left hind at 0.125, right fore at 0.25 s), its root
+  leg down only 0.15 s (from 0.31 s): as it comes down the deer drops onto it, its body lurching down and rolling that
+  way, its head jerked down and round; it springs off it again; a puff of the forest floor where its root foot drags.
+- ANTLER GORE, its basic blow (DEER_GORE 1.1 s): its head dropped low, its thorned antlers aimed at you, drawn back on
+  its haunches, by 0.28 s; HELD, TREMBLING (THE WARNING), to 0.44 s; THE LUNGE, its hind feet kicking earth up behind
+  it, and THE GORE at 0.55 s, hooking up through you, held a tenth to 0.65 s; its antlers raking up the earth before it;
+  its head flung on up to 0.82 s; settled by 1.1 s. Its antlers sweep out DEER_GORE.reach, 44 of its own lengths (about
+  1.1 tiles), before its feet.
+- REARING STOMP (DEER_STOMP 1.5 s; his pick, "Thorns burst from the ground"): it gathers, to 0.14 s; REARS UP on its
+  hind legs by 0.36 s; HELD UP, its forelegs pawing the air (THE WARNING), to 0.58 s; comes down, THE STOMP at 0.7 s,
+  its forefeet on the spots they left, held a tenth to 0.8 s, earth bursting from under them; THE THORNS: nine thorny
+  roots burst up out of the ground in a ring round it, 25 to 46 of its own lengths out (about 0.6 to 1.2 tiles), one
+  after another within 0.05 s, each shooting up in 0.08 s to 17 to 26 of its lengths tall (up to about its belly),
+  the earth heaved and flung up round it, held, and sunk back into the ground by 1.47 s (what of them is still under
+  the ground, the floor swallows, pixel by pixel); it settles by 1.5 s.
+- STRUCK (DEER_REEL 0.45 s): held to 0.05 s; knocked back, its head snapped round, its body rocked; bark, splinters
+  and moss flying off it; back on its stand by 0.45 s.
+- DEATH (DEER_DIE 1.5 s; his pick, "It splits apart into roots and bark"): held to 0.1 s; it convulses, cracking, its
+  head thrown up and its back arched, to 0.4 s; IT SPLITS APART at 0.4 s, bark and splinters bursting from it: its body,
+  haunch, ridge, neck, head, each antler, each leg, the roots on its back and sides and its tail each break away and
+  fall, the big pieces tipping as they drop, the small ones flung tumbling; its eyes go out by 0.52 s; its pieces land
+  by 0.95 s with a bounce and a puff of earth, and lie on the floor; still from 1.1 s.
+
+    node tools/page_gif.mjs src/dev/preview_twisted_deer.ts "walkfilm" shots/deer_walk.gif 6
+    (and gorefilm, with struck after it; stompfilm; deathfilm)
+
+FOR THE GAME, LATER: its canvas DEER_CANVAS 280 by 250, its feet at (130, 186) (was smaller: the stomp's ring of
+thorns is painted on its own canvas, round it); makeDeerArt(): stand 30 frames at 15 a second, walk 8 at 16, attack =
+the gore (hit 0.55 s, a tenth's freeze), reel 0.45 s, dying 1.5 s, and in `clips.moves`: stomp (hit = the stomp,
+0.7 s; the thorns come with it). How far its thorns reach to hurt is the game's.
+
+THE REVIEW (tests/twisted_deer.test.ts, 18, every frame the game would show, from in front and from behind): crisp,
+its pink edge while it lives and none dead; nothing cyan, every light the enemy's fire, its eyes burning while it
+lives; nothing cut off; its size; FLOOR (nothing of it below the floor in any move, its death too; its thorns come up
+out of the ground, and the floor swallows what of them is under it, tested on the picture); SLIDE (limping, a foot
+down stays on its spot as the floor goes by at its pace, its root leg down about half as long as its others; in every
+other move a foot down stays put); THROUGH; JERK (by move: legs, head and antlers, the rest; its blows quick, on one
+continuous arc); JUMP (from any frame of its stand into each move and back, and from any frame of its limp back to its
+stand: at most 3 game pixels); BLOW (each warning a pose, held; the gore and the stomp each held a tenth; the thorns up
+and gone); struck; its death (in pieces, apart, lying on the floor, its eyes out, still); what it throws off gone by
+each move's end; its pictures as the game holds them.
+
+| His rule | How its moves keep it |
+| --- | --- |
+| Movement 1: weight | it drops its weight onto its root leg each step; the gore driven from its haunches; the stomp comes down off its rearing |
+| Movement 3: wind up, follow through | drawn back before the gore, its head flung up after; reared before the stomp, the thorns after |
+| Movement 5: slick, no jumps | the review's JERK and JUMP, every frame, both sides |
+| Movement 7: heavy blows freeze | the gore and the stomp, each a tenth |
+| Movement 8: feet grip | limping, its feet down stay on their spots; its forefeet come down where they left |
+| Monsters 1: true to what it is | a deer gone to wood: it limps on its root leg; dead, it falls apart like a rotten tree |
+| Monsters 4: the warning is a pose | head down, antlers aimed, trembling; reared up high, pawing |
+| Hits 2, 4: no blood; what flies off is its own | bark, splinters, moss; earth from the ground it tears; no blood |
+| Hits 5: deaths true | it splits apart into roots and bark, his pick |
+| Animations 1: as big and wild as it will go | a hard hitch every step; a lunge that kicks up earth; reared up on its hind legs; nine thorny roots bursting up round it; it bursts into pieces |
+| Pillars 4: enemy colours | its eyes pink to gold; nothing cyan |
+
+NEXT: his yes on its moves (the four films), then the Fog Wolves.

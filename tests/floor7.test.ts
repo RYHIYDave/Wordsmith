@@ -30,10 +30,10 @@ const spans = SPANS.map(([dx, dy]) => railSpan(dx, dy));
 const rgbOf = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
 
 test('nothing of the game imports them', () => {
-  // (floor 8's pieces, art/floor8.ts, a mock-up too, take some of their colours from these: nothing of the game
-  // imports them either, tests/floor8.test.ts)
+  // (floor 8's and floor 9's pieces, art/floor8.ts and art/floor9.ts, mock-ups too, take some of their colours from
+  // these: nothing of the game imports them either, tests/floor8.test.ts and tests/floor9.test.ts)
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('floor7.ts') || f.endsWith('floor8.ts')) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('floor7.ts') || f.endsWith('floor8.ts') || f.endsWith('floor9.ts')) continue;
     assert.ok(!/from ['"][^'"]*\/floor7['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports floor 7's pieces`);
   }
 });

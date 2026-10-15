@@ -4,13 +4,18 @@
 //     it standing, from in front and from behind, the knight beside it at the game's size; close-ups of it
 //   node tools/page_gif.mjs src/dev/preview_twisted_deer.ts "standfilm" shots/deer_stand.gif 6
 //     A FILM (15 frames a second): its stand, from in front and from behind, at four times the game's size
+//   walkfilm, gorefilm, stompfilm, deathfilm: FILMS (thirty frames a second; its limp sixteen) of its moves: its limp
+//     over the meadow at its pace; its antler gore, then struck; its rearing stomp, thorns bursting from the ground;
+//     its death, split apart into roots and bark
 //   frames:move:t1,t2,...   several moments of one move side by side
 //   big:move:t:scale[:raw]   one moment large, from in front and from behind
 
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { DEER_CANVAS, DEER_HABITS, DEER_STAND, deerFrame, deerPainted } from '../art/twisted_deer';
+import { DEER_CANVAS, DEER_DIE, DEER_GORE, DEER_HABITS, DEER_PACE, DEER_REEL, DEER_STAND, DEER_STOMP, DEER_WALK, deerFrame, deerPainted } from '../art/twisted_deer';
+import { TILE3 } from '../art/new_mobs3';
+import { project } from '../art/skeleton';
 import { toSprite } from '../art/kit';
 import { drawText } from '../engine/font';
 import type { Sprite } from '../engine/px';
@@ -154,8 +159,100 @@ function standFilm(): void {
   win.__ready = true;
 }
 
+/** What it does at each moment of a film: which move, how far into it, how far it has come over the floor. */
+type Beat = { move: string; t: number; ground: number };
+function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number): Beat[] {
+  const out: Beat[] = [];
+  let ground = 0;
+  let breath = 0;
+  let stride = 0;
+  for (const [mv, long] of run) {
+    const n = Math.round(long * fps);
+    for (let i = 0; i < n; i++) {
+      const t = i / fps;
+      out.push({ move: mv, t: mv === 'stand' ? breath + t : mv === 'walk' ? stride + t : t, ground });
+      if (mv === 'walk') ground += (DEER_PACE * TILE3) / fps;
+    }
+    if (mv === 'stand') breath += n / fps;
+    if (mv === 'walk') stride += n / fps;
+  }
+  return out;
+}
+function film(beats: Beat[], fps: number, title: string, o: { w: number; h: number; fx: number; fy: number; k: number; by?: number }, note?: (b: Beat) => string): void {
+  const TOP = 30;
+  const cvs = document.createElement('canvas');
+  cvs.width = o.w * 2;
+  cvs.height = TOP + o.h;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const K = o.k;
+  const draw = (i: number): void => {
+    const b = beats[i];
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, cvs.width, cvs.height);
+    label(g, title, 8, 6);
+    (['front', 'back'] as const).forEach((view, k) => {
+      const ox = k * o.w;
+      g.save();
+      g.beginPath();
+      g.rect(ox + 2, TOP, o.w - 4, o.h - 2);
+      g.clip();
+      g.translate(ox, TOP);
+      meadow(g, o.w, o.h);
+      g.translate(-ox, -TOP);
+      const [dx, dy] = project([b.ground, 0, 0], view);
+      // (its sprites are in game pixels, two picture pixels each; the floor's places are in picture pixels)
+      const fx = ox + o.fx + (dx * K) / 2;
+      const fy = TOP + o.fy + (view === 'back' ? o.by ?? 0 : 0) + (dy * K) / 2;
+      g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+      g.beginPath();
+      g.ellipse(fx, fy, 22 * K, 9 * K, 0, 0, Math.PI * 2);
+      g.fill();
+      const sp = toSprite(deerPainted(b.move, b.t, view), null, DEER_CANVAS.ax, DEER_CANVAS.ay);
+      g.drawImage(sp.img, Math.round(fx - sp.ax * K), Math.round(fy - sp.ay * K), sp.w * K, sp.h * K);
+      litAt(g, sp, fx, fy, K);
+      g.restore();
+      label(g, view === 'front' ? 'from in front' : 'from behind', ox + 10, TOP + o.h - 26);
+    });
+    const said = note?.(b);
+    if (said) label(g, said, cvs.width - said.length * 12 - 16, 6);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = beats.length;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+const hold = (beats: Beat[], n: number): Beat[] => {
+  const last = beats[beats.length - 1];
+  for (let i = 0; i < n; i++) beats.push({ ...last });
+  return beats;
+};
+
 if (HASH.startsWith('look')) look();
 else if (HASH === 'standfilm') standFilm();
+else if (HASH === 'walkfilm') {
+  const fps = DEER_WALK.fps;
+  film(beatsOf([['stand', 0.5], ['walk', DEER_WALK.period * 4], ['stand', 0.5]], fps), fps, 'The Twisted Deer limps, fast and hitching (at its pace)', { w: 820, h: 660, fx: 220, fy: 390, k: 5, by: 140 });
+} else if (HASH === 'gorefilm') {
+  const G = DEER_GORE;
+  const at = (b: Beat): string => (b.move === 'attack' ? (b.t >= G.warn && b.t < 0.44 ? 'antlers aimed, trembling' : b.t >= 0.44 && b.t < G.hit ? 'the lunge' : b.t >= G.hit && b.t < G.hit + G.freeze ? 'the gore' : '') : b.move === 'reel' ? 'struck' : '');
+  film(beatsOf([['stand', 0.4], ['attack', G.long], ['stand', 0.5], ['reel', DEER_REEL.long], ['stand', 0.4]], 30), 30, 'The Twisted Deer: its antler gore, then struck', { w: 700, h: 620, fx: 290, fy: 500, k: 5 }, at);
+} else if (HASH === 'stompfilm') {
+  const S = DEER_STOMP;
+  const at = (b: Beat): string => (b.move === 'stomp' ? (b.t >= S.rear && b.t < 0.58 ? 'reared up, pawing' : b.t >= S.hit && b.t < S.hit + S.freeze ? 'the stomp' : b.t >= S.hit + S.freeze && b.t < 1.42 ? 'thorns burst from the ground' : '') : '');
+  film(beatsOf([['stand', 0.4], ['stomp', S.long], ['stand', 0.4]], 30), 30, 'The Twisted Deer: its rearing stomp', { w: 820, h: 700, fx: 410, fy: 480, k: 5 }, at);
+} else if (HASH === 'deathfilm') {
+  const Dd = DEER_DIE;
+  const at = (b: Beat): string => (b.move === 'dying' ? (b.t < Dd.freeze ? 'struck' : b.t < Dd.split ? 'it cracks' : b.t < Dd.still ? 'it splits apart into roots and bark' : '') : '');
+  film(hold(beatsOf([['stand', 0.4], ['dying', Dd.long]], 30), 18), 30, 'The Twisted Deer: its death', { w: 700, h: 620, fx: 330, fy: 480, k: 5 }, at);
+}
 else if (HASH.startsWith('big:')) {
   const [, mv, at, k0, raw] = HASH.split(':');
   const K = Number(k0 ?? 3) * 2;
