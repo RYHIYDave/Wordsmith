@@ -295,3 +295,24 @@ scuttle and its stand dead still but for its tail swaying and its breathing; sti
 table, so two attacks; packs and numbers are the main chat's.
 
 NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
+
+## The Canyon Scorpion's look (src/art/canyon_scorpions.ts, behind `SCORPION_ON`, off)
+
+Painted from its own solids, as the cliff crawler is, in the same painter; its own frame, eight legs, two pincers, a
+tail of five segments and its sting.
+- KNEE-HIGH: its back about 12 up (the knight's knee about 17), longer than the knight is tall from its pincers to
+  the end of its back; its tail raised and curled over its back to about his waist (about 31 up).
+- ITS SHELL, banded as the canyon's rock is but bold and dark against the canyon's pale sand: deep plum-black plates
+  lit at their edges, and bands of hot rust-orange lit to gold between them (the rock's red beds under its dark
+  varnish); its legs dark, their joints the bands' orange; its pincers' fingers and its barb black at their tips.
+- ITS STING: a swollen bulb burning the cult's pink under a dark cap, and a black barb; its two small eyes high on
+  its head-plate and a few at its front corners, the cult's pink. Its pink edge while it lives. Nothing cyan.
+- ITS STAND (1.6 s round, ten frames a second): dead still, its feet where they are; it breathes; its tail sways
+  slowly high over its back, curling and uncurling a little; its pincers open and shut by turns; its sting pulses.
+
+    node tools/preview.mjs src/dev/preview_canyon_scorpions.ts shots/scorpion_look.png 1014 700 look
+    node tools/page_gif.mjs src/dev/preview_canyon_scorpions.ts "standfilm" shots/scorpion_stand.gif 4
+
+`tests/canyon_scorpions.test.ts` (4): the switch off and nothing of the game imports it; crisp, its pink edge;
+nothing cyan, every light the cult's fire, nothing cut off; its size (knee-high, its tail to about the knight's
+waist).
