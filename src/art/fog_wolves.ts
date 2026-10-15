@@ -27,8 +27,8 @@ import type { Px, Sprite } from '../engine/px';
 import { INK, RIM_ALPHA, hash, lazyFrames, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
-import { paintBits } from './new_mobs3';
-import type { ActorArt, AnimSet } from './actor_types';
+import { TILE3, paintBits } from './new_mobs3';
+import type { ActorArt, AnimSet, Clip } from './actor_types';
 import type { Bit, Put } from './new_mobs3';
 import type { Skin } from './skin';
 import { stage } from './skin';
@@ -88,6 +88,8 @@ const LEG_LONG = [7.5, 6.5];
 const LEG_SOLID = 0.45;
 const NECK_ROOT: V3 = [14, 0, 24.5];
 const NECK_LONG = 8;
+/** How far its jaw drops at its widest (degrees). */
+const JAW = 55;
 /** Its neck's way at rest: forward and a little up; its head carried low, level with its back, hunting. */
 const NECK_REST: V3 = [10, 0, 2.5];
 
@@ -102,6 +104,20 @@ export const WOLF_HABITS = { growl: [0.7, 1.55], glance: [1.7, 2.3] } as const;
 /** The canvas it is painted on, and its floor point on it. */
 export const WOLF_CANVAS = { w: 200, h: 160, ax: 96, ay: 118 };
 const WOLF_AURA = { x: WOLF_CANVAS.ax, y: WOLF_CANVAS.ay - 18, r: 30, color: '#ff3a78', a: 0.08 };
+
+// ITS MOVES (his design doc's: "A bite. They circle to come at you from behind."; his picks: “A ghostly glide”, “A
+// lunge out of the fog (Recommended)”, “It blows apart into fog (Recommended)”)
+
+/** How fast it glides (tiles a second): quick, to circle round behind you. Its legs never land, so nothing slides at any other pace; its fog trails it. */
+export const WOLF_PACE = 3;
+/** Its glide (his pick): sixteen frames a second, a round of 0.75 s: a slow lope of its legs in the fog while it skims along, level, its head low and forward, its ears back, its tail streaming, its fog trailing. */
+export const WOLF_WALK = { frames: 12, fps: 16, period: 0.75 } as const;
+/** Its bite (his pick, a lunge out of the fog): crouched, its eyes flaring, its fangs bared, held trembling (the warning) from `warn`; it surges in from `lunge`, its jaws thrown wide and its head and jaws coming solid; THE SNAP at `hit`, its jaws shut `reach` of its own lengths before its floor point; it shakes its head, tugging, and falls back into its fog. A small one's blow: no freeze. */
+export const WOLF_BITE = { long: 1.0, warn: 0.22, lunge: 0.38, hit: 0.5, reach: 48, fps: 30 } as const;
+/** Struck: held a moment; its fog blown open where the blow went through, knocked back, its head snapped round, wisps torn off it; its fog flowing back together by its end. */
+export const WOLF_REEL = { long: 0.45, freeze: 0.05, fps: 30 } as const;
+/** Its death (his pick, it blows apart into fog): held as the blow lands (`freeze`); it bursts apart at `burst`, torn into wisps that drift and thin; its body gone by `gone`; its eyes, left hanging where they were, the last to go out, by `out`; nothing left from `still`. */
+export const WOLF_DIE = { long: 1.4, freeze: 0.08, burst: 0.12, gone: 0.7, out: 1.1, still: 1.3, fps: 30 } as const;
 
 // ---------------------------------------------------------------------------------------------
 // ITS POSES
@@ -128,10 +144,14 @@ interface WolfPose {
   churn: number;
   eyes: number;
   alive: boolean;
+  /** How solid its fog is (1: no gaps through it, for its bite); how far it is torn open (struck); how far it has blown away (its death). */
+  solid: number;
+  tear: number;
+  fade: number;
   drag: V3;
 }
 
-const REST: WolfPose = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, neck: 0, head: [0, 0, 0], gape: 0, snarl: 0, ears: 0, tail: 0, swing: [0, 0, 0, 0], bend: [0, 0, 0, 0], churn: 0, eyes: 1, alive: true, drag: [0, 0, 0] };
+const REST: WolfPose = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, roll: 0, neck: 0, head: [0, 0, 0], gape: 0, snarl: 0, ears: 0, tail: 0, swing: [0, 0, 0, 0], bend: [0, 0, 0, 0], churn: 0, eyes: 1, alive: true, solid: 0, tear: 0, fade: 0, drag: [0, 0, 0] };
 
 /**
  * Its stand, hovering (his pick, a ghostly glide): it hangs low in its own fog, rising and sinking a little, its legs
@@ -166,18 +186,157 @@ function standPose(t0: number): WolfPose {
   };
 }
 
-function basePose(which: string, t: number): WolfPose {
-  void which;
-  return standPose(t);
+const STAND0 = standPose(0);
+/** A pose as numbers, to be blended. */
+type Key = Record<string, number>;
+const FIELDS = ['x', 'y', 'z', 'yaw', 'pitch', 'roll', 'neck', 'gape', 'snarl', 'ears', 'tail', 'eyes', 'solid', 'tear', 'fade'] as const;
+function keyOf(P: WolfPose): Key {
+  const k: Key = {};
+  for (const f of FIELDS) k[f] = P[f] as number;
+  P.head.forEach((v, i) => (k[`h${i}`] = v));
+  P.swing.forEach((v, i) => (k[`s${i}`] = v));
+  P.bend.forEach((v, i) => (k[`b${i}`] = v));
+  return k;
 }
-/** A move's length (its stand: once round). */
+const K0 = keyOf(STAND0);
+const keyed = (d: Key): Key => ({ ...K0, ...d });
+function along(t: number, keys: [number, Key, (v: number) => number][]): Key {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 1; i < keys.length; i++) {
+    const [t1, k1, ease] = keys[i];
+    const [t0, k0] = keys[i - 1];
+    if (t < t1) {
+      const e = ease((t - t0) / (t1 - t0));
+      const o: Key = {};
+      for (const f of Object.keys(k0)) o[f] = k0[f] + (k1[f] - k0[f]) * e;
+      return o;
+    }
+  }
+  return keys[keys.length - 1][1];
+}
+function fromKey(K: Key, churn: number): WolfPose {
+  return {
+    ...REST,
+    x: K.x, y: K.y, z: K.z, yaw: K.yaw, pitch: K.pitch, roll: K.roll, neck: K.neck, gape: K.gape, snarl: K.snarl, ears: K.ears, tail: K.tail, eyes: K.eyes, solid: K.solid, tear: K.tear, fade: K.fade,
+    head: [K.h0, K.h1, K.h2],
+    swing: [K.s0, K.s1, K.s2, K.s3],
+    bend: [K.b0, K.b1, K.b2, K.b3],
+    churn,
+  };
+}
+const plus = (K: Key, d: Key): Key => {
+  const o = { ...K };
+  for (const f of Object.keys(d)) o[f] = (o[f] ?? 0) + d[f];
+  return o;
+};
+
+// --- ITS GLIDE ---
+/** Its glide: skimming along level in its own fog, its legs loping slowly through it and never landing, its head low and forward, its ears laid back, its tail streaming out behind. */
+function glidePose(t: number): WolfPose {
+  const ph = fr(t / WOLF_WALK.period);
+  const a = TAU * ph;
+  return {
+    ...REST,
+    y: 0.5 * Math.sin(a),
+    z: 1.4 + 1.0 * Math.sin(2 * a + 0.6),
+    pitch: 2.2 * Math.sin(2 * a),
+    roll: 2 * Math.sin(a),
+    yaw: 2 * Math.sin(a + 0.5),
+    neck: -6 + 2 * Math.sin(2 * a + 1.2),
+    head: [3 * Math.sin(a + 1), 4 - 3 * Math.sin(2 * a + 1.4), -2 * Math.sin(a + 1)],
+    gape: 0.06,
+    ears: -50,
+    tail: 22 + 5 * Math.sin(2 * a),
+    swing: [30 * Math.sin(a), 30 * Math.sin(a + 0.6), 30 * Math.sin(a + Math.PI), 30 * Math.sin(a + Math.PI + 0.6)],
+    bend: [26 + 22 * Math.sin(a - 0.9), 26 + 22 * Math.sin(a - 0.3), 30 + 22 * Math.sin(a + Math.PI - 0.9), 30 + 22 * Math.sin(a + Math.PI - 0.3)],
+    churn: ph,
+    eyes: 1.35,
+  };
+}
+
+// --- ITS BITE ---
+const B_CROUCH = keyed({ x: -4.5, z: -1.6, pitch: 5, neck: 12, h1: 8, h0: 0, h2: 0, gape: 0.3, snarl: 1, ears: -55, tail: -6, eyes: 2.1, solid: 0.35, s0: -14, s1: -12, s2: 18, s3: 16, b0: 40, b1: 38, b2: 48, b3: 46 });
+const B_WIDE = keyed({ x: 12, z: 1.8, pitch: -5, neck: -12, h1: -12, h0: 0, h2: 0, gape: 1, snarl: 1, ears: -60, tail: 14, eyes: 2.2, solid: 1, s0: 38, s1: 34, s2: -32, s3: -30, b0: 10, b1: 12, b2: 20, b3: 22 });
+const B_SNAP = keyed({ x: 16, z: 1.2, pitch: -1, neck: -8, h1: 2, h0: 0, h2: 0, gape: 0, snarl: 1, ears: -60, tail: 16, eyes: 2.2, solid: 1, s0: 30, s1: 28, s2: -26, s3: -24, b0: 18, b1: 20, b2: 26, b3: 28 });
+const B_TUG = keyed({ x: 13, z: 0.6, pitch: 2, neck: 4, h1: 8, h0: 0, h2: 0, gape: 0, snarl: 1, ears: -50, tail: 10, eyes: 1.9, solid: 1, s0: 12, s1: 10, s2: -8, s3: -6, b0: 24, b1: 24, b2: 30, b3: 30 });
+const B_BACK = keyed({ x: -1.5, z: 0.4, pitch: 0, neck: 2, h1: 3, gape: 0.08, snarl: 0.3, ears: -20, eyes: 1.4, solid: 0 });
+/** Its bite: it crouches, drawn back into its fog, its eyes flaring and its fangs bared, and holds there trembling (the warning); it surges in, its jaws thrown wide and its head and jaws coming solid; THE SNAP; it tugs, shaking its head, and falls back into its fog. */
+function bitePose(t: number): WolfPose {
+  const B = WOLF_BITE;
+  let K = along(t, [
+    [0, K0, sm],
+    [B.warn, B_CROUCH, sm],
+    [B.lunge, B_CROUCH, sm],
+    [B.hit, B_SNAP, sm],
+    [0.64, B_TUG, sm],
+    [0.82, B_BACK, sm],
+    [B.long, K0, sm],
+  ]);
+  // (its jaws: thrown wide as it surges in, and snapped shut at the blow; its legs flung out, reaching and thrusting)
+  if (t > B.lunge && t < B.hit) {
+    const k = (t - B.lunge) / (B.hit - B.lunge);
+    const wide = Math.sqrt(bump(k, 0, 0.88));
+    K = { ...K, gape: K.gape + (1 - K.gape) * wide };
+    for (const [f, v] of Object.entries(B_WIDE)) if (/^[sb]\d$/.test(f)) K[f] += (v - K[f]) * Math.sin(Math.PI * k) * 0.6;
+  }
+  if (t > B.warn && t < B.lunge) {
+    const k = sm((t - B.warn) / 0.05);
+    K = plus(K, { h0: 1.4 * Math.sin(t * 180) * k, z: 0.35 * Math.sin(t * 150 + 1) * k, h1: Math.sin(t * 130 + 2) * k });
+  }
+  // (the tug: its head shaken, side to side)
+  const shake = bump(t, B.hit, 0.8);
+  K = plus(K, { h0: 16 * Math.sin((t - B.hit) * 36) * shake, h2: 8 * Math.sin((t - B.hit) * 36) * shake });
+  // (its fog churning on, two turns over the bite, so that it ends as its stand begins)
+  return fromKey(K, (2 * t) / B.long);
+}
+
+// --- STRUCK ---
+/** Struck: held a moment; its fog blown open where the blow went through; knocked back, its head snapped round; wisps torn off it; flowing back together by its end. */
+function reelPose(t: number): WolfPose {
+  const R = WOLF_REEL;
+  if (t < R.freeze) return { ...STAND0, tear: 1, eyes: 1.9 };
+  const k = cl01((t - R.freeze) / (R.long - R.freeze));
+  const kk = cl01(k / 0.75);
+  const arc = Math.sin(Math.PI * (1 - (1 - kk) * (1 - kk)));
+  const K = plus(K0, { x: -5 * arc, z: 1.2 * arc, pitch: -6 * arc, roll: 5 * Math.sin(3 * Math.PI * kk) * (1 - kk), neck: -6 * arc, h0: 20 * arc, h1: -10 * arc, h2: 10 * arc, ears: -40 * arc, eyes: 0.6 * (1 - k), tail: 12 * arc, tear: Math.pow(1 - k, 1.5) });
+  return fromKey(K, 2 * k);
+}
+
+// --- ITS DEATH ---
+/** Its death: held as the blow lands; flung back, bursting apart into fog; its body thinning away to nothing; its eyes left hanging where its head was, flickering, the last to go out. */
+function deathPose(t: number): WolfPose {
+  const Dd = WOLF_DIE;
+  if (t < Dd.freeze) return { ...STAND0, alive: false, tear: 0.5, eyes: 2 };
+  const k = sm((t - Dd.freeze) / (Dd.gone - Dd.freeze));
+  const K = plus(K0, { x: -7 * k, z: 2 * k, pitch: -8 * k, neck: -10 * k, h1: -16 * k, h0: 8 * k, ears: -50 * k, gape: 0.5 * k, tail: 20 * k, s0: 20 * k, s1: 16 * k, s2: -20 * k, s3: -16 * k });
+  const P = fromKey(K, STAND0.churn + 2 * Math.min(t, Dd.gone));
+  P.alive = false;
+  P.tear = 0.5 + 0.5 * k;
+  P.fade = t < Dd.burst ? 0 : sm((t - Dd.burst) / (Dd.gone - Dd.burst));
+  // (its eyes: burning on, then flickering and going out)
+  const out = cl01((t - (Dd.out - 0.25)) / 0.25);
+  P.eyes = t >= Dd.out ? 0 : 2 * (1 - out) * (out > 0 ? 0.55 + 0.45 * Math.abs(Math.sin(t * 70)) : 1);
+  return P;
+}
+
+function basePose(which: string, t: number): WolfPose {
+  if (which === 'stand') return standPose(t);
+  if (which === 'walk') return glidePose(t);
+  const tt = Math.max(0, t);
+  if (which === 'attack') return bitePose(tt);
+  if (which === 'reel') return reelPose(tt);
+  return deathPose(tt);
+}
+/** A move's length (its stand and glide: once round). */
 export function wolfLong(which: string): number {
-  return ({ stand: WOLF_STAND.period } as Record<string, number>)[which];
+  return ({ stand: WOLF_STAND.period, walk: WOLF_WALK.period, attack: WOLF_BITE.long, reel: WOLF_REEL.long, dying: WOLF_DIE.long } as Record<string, number>)[which];
 }
 function poseOf(which: string, t: number): WolfPose {
   const P = basePose(which, t);
   const before = basePose(which, t - 0.1);
   P.drag = sub(worldOf(P, [0, 0, 22]), worldOf(before, [0, 0, 22]));
+  // (gliding, the air it moves through drags its fog back)
+  if (which === 'walk') P.drag = add(P.drag, [WOLF_PACE * TILE3 * 0.04, 0, 0]);
   return P;
 }
 
@@ -316,7 +475,7 @@ function wolfBits(P: WolfPose, put: Put, view: GameView): void {
   const hinge = H.p([3, 0, -1.6]);
   const jawDir = turn([1, 0, 0], 0, 0, 0);
   void jawDir;
-  const jd = norm(add(mul(H.f, Math.cos(P.gape * 38 * D)), mul(H.u, -Math.sin(P.gape * 38 * D))));
+  const jd = norm(add(mul(H.f, Math.cos(P.gape * JAW * D)), mul(H.u, -Math.sin(P.gape * JAW * D))));
   const jawTip = add(hinge, mul(jd, 7.4));
   put('jaw', 'jaw', { k: 'rod', a: hinge, b: jawTip, ra: 1.5, rb: 0.9, ramp: FOG });
   if (P.gape > 0.08) {
@@ -328,10 +487,10 @@ function wolfBits(P: WolfPose, put: Put, view: GameView): void {
   if (bare > 0.15) {
     for (const s of [1, -1]) {
       const up = H.p([9.2, s * 0.9, -1.1]);
-      put('fangs', `fang${s}`, { k: 'rod', a: up, b: add(up, add(mul(H.u, -1.7 * bare), mul(H.f, 0.2))), ra: 0.55, rb: 0.2, ramp: FANG });
+      put('fangs', `fang${s}`, { k: 'rod', a: up, b: add(up, add(mul(H.u, -(1.7 + 0.9 * cl01(P.gape)) * bare), mul(H.f, 0.2))), ra: 0.55 + 0.25 * cl01(P.gape), rb: 0.2, ramp: FANG });
       const lo = add(hinge, add(mul(jd, 6.6), mul(H.l, s * 0.8)));
-      const lu = norm(add(mul(H.u, Math.cos(P.gape * 38 * D)), mul(H.f, Math.sin(P.gape * 38 * D))));
-      put('fangs', `lfang${s}`, { k: 'rod', a: lo, b: add(lo, mul(lu, 1.3 * bare)), ra: 0.5, rb: 0.2, ramp: FANG });
+      const lu = norm(add(mul(H.u, Math.cos(P.gape * JAW * D)), mul(H.f, Math.sin(P.gape * JAW * D))));
+      put('fangs', `lfang${s}`, { k: 'rod', a: lo, b: add(lo, mul(lu, (1.3 + 0.8 * cl01(P.gape)) * bare)), ra: 0.5 + 0.2 * cl01(P.gape), rb: 0.2, ramp: FANG });
     }
   }
   // ITS EYES: the one thing to know it by, burning the enemy's pink to gold; a light of their own
@@ -376,15 +535,27 @@ function bitsOf(which: string, t: number, view: GameView): { P: WolfPose; bits: 
 // ITS LOOSE FOG: wisps streaming off it, and its fog low on the ground round it, laid grain by grain over its picture
 
 type Grain = [V3, string, number];
+/** How long a wisp lives, for a move: gliding, a whole number of them to its round, so that its loop closes. */
+function lifeFor(which: string, life: number): number {
+  if (which !== 'walk') return life;
+  return life <= 0.3 ? WOLF_WALK.period / 3 : life <= 0.65 ? WOLF_WALK.period / 2 : WOLF_WALK.period;
+}
+/** The wind of its going: gliding, its fog is left behind it (in part: it drags some along). */
+function windOf(which: string): V3 {
+  return which === 'walk' ? [-0.35 * WOLF_PACE * TILE3, 0, 0] : [0, 0, 0];
+}
 /**
  * Wisps streaming off a place on it: `n` of them, each living `life` seconds (a whole number of them to its stand's
  * round, so that its loop closes), leaving from where the place was when it left (so that, moving, it trails them),
- * drifting `drift` a second and spreading, thinning and greying as they go.
+ * drifting `drift` a second and spreading, thinning and greying as they go. Dying, nothing leaves it after it bursts.
  */
-function stream(which: string, t: number, from: (P: WolfPose) => V3, n: number, life: number, drift: V3, spread: number, seed: number): Grain[] {
+function stream(which: string, t: number, from: (P: WolfPose) => V3, n: number, life0: number, drift0: V3, spread: number, seed: number): Grain[] {
   const out: Grain[] = [];
+  const life = lifeFor(which, life0);
+  const drift = add(drift0, windOf(which));
   for (let i = 0; i < n; i++) {
     const age = fr((t + (life * i) / n + 0.13 * life * hash(i, 1, seed)) / life) * life;
+    if (which === 'dying' && t - age > WOLF_DIE.burst) continue;
     const k = age / life;
     const P = basePose(which, t - age);
     const a = hash(i, 2, seed) * TAU;
@@ -395,17 +566,47 @@ function stream(which: string, t: number, from: (P: WolfPose) => V3, n: number, 
   }
   return out;
 }
-/** Its fog low on the ground round it: a drift of grains under it, each fading in and out where it lies. */
-function groundFog(t: number, cx: number, n: number, seed: number): Grain[] {
+/** Its fog low on the ground round it: a drift of grains under it, each fading in and out where it lies; gliding, left behind it; dying, thinning away. */
+function groundFog(which: string, t: number, cx: number, n: number, seed: number, fade: number): Grain[] {
   const out: Grain[] = [];
-  const T = WOLF_STAND.period;
+  const T = which === 'walk' ? WOLF_WALK.period : WOLF_STAND.period;
+  const flow = which === 'walk' ? 0.35 * WOLF_PACE * TILE3 * T : 3;
   for (let i = 0; i < n; i++) {
+    if (hash(i, 6, seed) < fade) continue;
     const ph = fr(t / T + hash(i, 1, seed));
     // (each lies a while, then is gone a while)
     if (ph > 0.7) continue;
     const a = hash(i, 2, seed) * TAU + ph * 0.6;
     const r = 4 + 16 * Math.sqrt(hash(i, 3, seed));
-    out.push([[cx + Math.cos(a) * r * 1.4 - 3 * ph, Math.sin(a) * r * 0.8, 0.6 + 1.6 * hash(i, 4, seed)], WISP[1 + Math.floor(hash(i, 5, seed) * 3)], ph < 0.25 || ph > 0.55 ? 1 : 2]);
+    out.push([[cx + Math.cos(a) * r * 1.4 - flow * ph + (which === 'walk' ? flow * 0.3 : 0), Math.sin(a) * r * 0.8, 0.6 + 1.6 * hash(i, 4, seed)], WISP[1 + Math.floor(hash(i, 5, seed) * 3)], ph < 0.25 || ph > 0.55 ? 1 : 2]);
+  }
+  return out;
+}
+/** Points on its body's fog (its chest, ruff, waist, haunch and neck), each given by its own frame: where its fog leaves it. */
+const SKIN: V3[] = [[8.5, 0, 22], [9, 0, 26.6], [-2.5, 0, 22.8], [-11.5, 0, 22.2], [17, 0, 26]];
+const RAD: V3[] = [[7.5, 5, 7.4], [6.6, 5.2, 4.4], [8.5, 4, 4.8], [6.2, 4.6, 5.8], [3.4, 3.4, 4]];
+function onBody(j: number, seed: number): V3 {
+  const b = j % SKIN.length;
+  const a1 = hash(j, 7, seed) * TAU;
+  const a2 = (hash(j, 8, seed) - 0.3) * Math.PI;
+  return [SKIN[b][0] + RAD[b][0] * Math.cos(a1) * Math.cos(a2), SKIN[b][1] + RAD[b][1] * Math.sin(a1) * Math.cos(a2), SKIN[b][2] + RAD[b][2] * Math.sin(a2)];
+}
+/** Its fog blown out of it at `t0` (struck, or bursting apart): `n` wisps flung off its body, slowing, rising a little, thinning and gone, each after its own while (`life`, a span). */
+function blown(P: WolfPose, t: number, t0: number, n: number, seed: number, speed: number, life: [number, number]): Grain[] {
+  const out: Grain[] = [];
+  const s = t - t0;
+  if (s < 0) return out;
+  for (let i = 0; i < n; i++) {
+    const L = life[0] + (life[1] - life[0]) * hash(i, 1, seed);
+    if (s >= L) continue;
+    const on = onBody(i, seed);
+    const mid = SKIN[i % SKIN.length];
+    const dir = turned(P, norm(add(sub(on, mid), [(hash(i, 2, seed) - 0.5) * 6, (hash(i, 3, seed) - 0.5) * 6, (hash(i, 4, seed) - 0.3) * 4])));
+    const far = (speed * (0.5 + 0.8 * hash(i, 5, seed)) * (1 - Math.exp(-3 * s))) / 3;
+    const q = add(add(worldOf(P, on), mul(dir, far)), [0, 0, 5 * s]);
+    const k = s / L;
+    if (k > 0.6 && hash(i, 6, seed) < (k - 0.6) * 2) continue;
+    out.push([[q[0], q[1], Math.max(0.4, q[2])], WISP[Math.min(4, Math.floor(k * 4 + hash(i, 7, seed) * 0.8))], k < 0.4 ? 2 : 1]);
   }
   return out;
 }
@@ -413,33 +614,29 @@ function groundFog(t: number, cx: number, n: number, seed: number): Grain[] {
 function grainsOf(which: string, t: number): Grain[] {
   const legEnd = (i: number) => (P: WolfPose): V3 => legOf(P, i)[2];
   const out: Grain[] = [];
-  for (let i = 0; i < 4; i++) out.push(...stream(which, t, legEnd(i), 8, 0.6, [-6, 0, -8], 3.5, 31 + i));
-  out.push(...stream(which, t, (P) => worldOf(P, [-30, 0, 15]), 7, 0.8, [-9, 0, 3], 4, 41));
-  out.push(...stream(which, t, (P) => worldOf(P, [-19, 0, 26]), 5, 0.6, [-8, 0, 4], 4, 43));
-  for (let j = 0; j < 4; j++) out.push(...stream(which, t, (P) => worldOf(P, [12 - j * 6, 0, 30.5 - j]), 3, 0.8, [-6, 0, 6], 2.5, 45 + j * 7));
-  out.push(...stream(which, t, (P) => worldOf(P, [-3, 0, 17]), 4, 0.6, [-4, 0, -8], 3, 47));
-  // (its outline fraying: wisps leaving it from all over its body and drifting back off it)
-  const SKIN: V3[] = [[8.5, 0, 22], [9, 0, 26.6], [-2.5, 0, 22.8], [-11.5, 0, 22.2], [17, 0, 26]];
-  const RAD: V3[] = [[7.5, 5, 7.4], [6.6, 5.2, 4.4], [8.5, 4, 4.8], [6.2, 4.6, 5.8], [3.4, 3.4, 4]];
-  for (let j = 0; j < 22; j++) {
-    const b = j % SKIN.length;
-    const a1 = hash(j, 7, 53) * TAU;
-    const a2 = (hash(j, 8, 53) - 0.3) * Math.PI;
-    const on: V3 = [SKIN[b][0] + RAD[b][0] * Math.cos(a1) * Math.cos(a2), SKIN[b][1] + RAD[b][1] * Math.sin(a1) * Math.cos(a2), SKIN[b][2] + RAD[b][2] * Math.sin(a2)];
-    out.push(...stream(which, t, (P) => worldOf(P, on), 1, 0.6, [-7, 0, 2.5], 2.5, 60 + j));
-  }
-  // (its breath, as it growls: fog from its jaws, rolling down)
-  out.push(...stream(which, t, (P) => headFrame(P).p([10, 0, -2]), 6, 0.6, [6, 0, -6], 4, 49).filter((g, i) => {
-    void g;
-    const P = basePose(which, t - (i / 6) * 0.6);
-    return P.snarl + P.gape > 0.35;
-  }));
-  out.push(...groundFog(t, -2, 34, 51));
-  // (its lower legs lost in the fog: loose grains of it, thick at the top and thinning, churning)
   const P = basePose(which, t);
+  for (let i = 0; i < 4; i++) out.push(...stream(which, t, legEnd(i), 8, 0.6, [-6, 0, -8], 3.5, 31 + i));
+  out.push(...stream(which, t, (Q) => worldOf(Q, [-30, 0, 15]), 7, 0.8, [-9, 0, 3], 4, 41));
+  out.push(...stream(which, t, (Q) => worldOf(Q, [-19, 0, 26]), 5, 0.6, [-8, 0, 4], 4, 43));
+  for (let j = 0; j < 4; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [12 - j * 6, 0, 30.5 - j]), 3, 0.8, [-6, 0, 6], 2.5, 45 + j * 7));
+  out.push(...stream(which, t, (Q) => worldOf(Q, [-3, 0, 17]), 4, 0.6, [-4, 0, -8], 3, 47));
+  // (its outline fraying: wisps leaving it from all over its body and drifting back off it)
+  for (let j = 0; j < 22; j++) {
+    const on = onBody(j, 53);
+    out.push(...stream(which, t, (Q) => worldOf(Q, on), 1, 0.6, [-7, 0, 2.5], 2.5, 60 + j));
+  }
+  // (its breath, as it growls or bites: fog from its jaws, rolling down)
+  out.push(...stream(which, t, (Q) => headFrame(Q).p([10, 0, -2]), 6, 0.6, [6, 0, -6], 4, 49).filter((g, i) => {
+    void g;
+    const Q = basePose(which, t - (i / 6) * lifeFor(which, 0.6));
+    return Q.snarl + Q.gape > 0.35 && Q.fade === 0;
+  }));
+  out.push(...groundFog(which, t, -2, 34, 51, P.fade));
+  // (its lower legs lost in the fog: loose grains of it, thick at the top and thinning, churning; dying, blown away)
   for (let i = 0; i < 4; i++) {
     const [, mid, end] = legOf(P, i);
     for (let j = 0; j < 16; j++) {
+      if (hash(i, j + 60, 55) < P.fade) continue;
       const k = LEG_SOLID + (1 - LEG_SOLID) * Math.pow(j / 16, 0.8);
       const a = TAU * (hash(i, j, 55) + P.churn * (1 + (j % 2)));
       const r = 1.3 * (1 - 0.5 * (j / 16)) * (0.3 + 0.7 * hash(i, j + 20, 55));
@@ -450,16 +647,39 @@ function grainsOf(which: string, t: number): Grain[] {
   // (its tail's tip, the same)
   const tip = worldOf(P, [-28.5, 0, 17.5]);
   for (let j = 0; j < 10; j++) {
+    if (hash(j, 9, 57) < P.fade) continue;
     const a = TAU * (hash(j, 1, 57) + P.churn);
     out.push([add(tip, [Math.cos(a) * 1.8 * hash(j, 2, 57) - j * 0.35, Math.sin(a) * 1.2, (hash(j, 3, 57) - 0.5) * 2.4]), WISP[j % 4], j < 5 ? 2 : 1]);
   }
   // (fog pouring off it: down from its belly and chest to the ground, and back off its back in a long trail)
-  for (let j = 0; j < 5; j++) out.push(...stream(which, t, (P) => worldOf(P, [12 - j * 6, (j % 2 ? 1 : -1) * 2, 16 + 0.6 * j]), 6, 0.6, [-3, 0, -14], 3, 71 + j));
-  for (let j = 0; j < 3; j++) out.push(...stream(which, t, (P) => worldOf(P, [-14 - j * 3, (j - 1) * 2.5, 26 - j]), 6, 0.8, [-11, 0, 3], 4.5, 81 + j));
-  // (its eyes burning: embers of their fire streaming back off them)
+  for (let j = 0; j < 5; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [12 - j * 6, (j % 2 ? 1 : -1) * 2, 16 + 0.6 * j]), 6, 0.6, [-3, 0, -14], 3, 71 + j));
+  for (let j = 0; j < 3; j++) out.push(...stream(which, t, (Q) => worldOf(Q, [-14 - j * 3, (j - 1) * 2.5, 26 - j]), 6, 0.8, [-11, 0, 3], 4.5, 81 + j));
+  // (its eyes burning: embers of their fire streaming back off them, while they burn)
   for (const s of [1, -1]) {
-    const em = stream(which, t, (P) => headFrame(P).p([4, s * 3.6, 2.2]), 4, 0.3, [-12, 0, 5], 3, s > 0 ? 91 : 93);
-    em.forEach((g, i) => out.push([g[0], [FLAME[4], FLAME[3], FLAME[3], FLAME[2]][i], 1]));
+    const em = stream(which, t, (Q) => headFrame(Q).p([4, s * 3.6, 2.2]), 4, 0.3, [-12, 0, 5], 3, s > 0 ? 91 : 93);
+    if (P.eyes > 0.05) em.forEach((g, i) => out.push([g[0], [FLAME[4], FLAME[3], FLAME[3], FLAME[2]][i], 1]));
+  }
+  // (struck: wisps torn off it; dying: it bursts apart into fog, and what is left of it is torn away after)
+  if (which === 'reel') out.push(...blown(basePose('reel', 0), t, WOLF_REEL.freeze, 20, 101, 36, [0.25, 0.38]));
+  // (its bite: as its jaws snap shut, fog bursts from them)
+  if (which === 'attack') {
+    const s0 = t - WOLF_BITE.hit;
+    if (s0 >= 0 && s0 < 0.3) {
+      const jaws = headFrame(basePose('attack', WOLF_BITE.hit)).p([11, 0, -1.4]);
+      for (let i = 0; i < 18; i++) {
+        const L = 0.18 + 0.12 * hash(i, 1, 107);
+        if (s0 >= L) continue;
+        const a = hash(i, 2, 107) * TAU;
+        const far = 28 * (0.5 + 0.7 * hash(i, 3, 107)) * (1 - Math.exp(-4 * s0)) / 4;
+        const q: V3 = add(jaws, [Math.cos(a) * far * 0.6 + far * 0.6, Math.sin(a) * far, (hash(i, 4, 107) - 0.3) * far]);
+        out.push([[q[0], q[1], Math.max(0.4, q[2])], i % 4 === 0 ? FANG[4] : WISP[Math.min(4, Math.floor((s0 / L) * 4))], s0 / L < 0.5 ? 2 : 1]);
+      }
+    }
+  }
+  if (which === 'dying') {
+    const Dd = WOLF_DIE;
+    out.push(...blown(basePose('dying', Dd.burst), t, Dd.burst, 110, 103, 42, [0.5, 1.15]));
+    out.push(...blown(basePose('dying', 0.45), t, 0.45, 50, 105, 26, [0.35, 0.7]));
   }
   return out;
 }
@@ -488,7 +708,8 @@ function thinned(px: Px, st: Stage, P: WolfPose): void {
   const L2 = Math.max(1, dx * dx + dy * dy);
   const ang = Math.PI * P.churn;
   const ox = 1.6 * Math.cos(ang), oy = 1.6 * Math.sin(ang);
-  const keep = new Set([...FLAME, ...FANG].map((c) => c.toLowerCase()));
+  // (dying, only its eyes outlast it)
+  const keep = new Set([...FLAME, ...(P.fade > 0 ? [] : FANG)].map((c) => c.toLowerCase()));
   const [ir, ig, ib] = [parseInt(INK.slice(1, 3), 16), parseInt(INK.slice(3, 5), 16), parseInt(INK.slice(5, 7), 16)];
   const W = px.w;
   // (0: kept; 1: thinned to a mist, every other pixel; 2: gone)
@@ -497,14 +718,15 @@ function thinned(px: Px, st: Stage, P: WolfPose): void {
   for (let y = 0; y < px.h; y++) {
     for (let x = 0; x < W; x++) {
       const i = (y * W + x) * 4;
-      if (px.d[i + 3] === 0 || edgeAt(i)) continue;
-      if (eyes.some(([ex, ey]) => Math.abs(x + 0.5 - ex) < 4 && Math.abs(y + 0.5 - ey) < 4)) continue;
+      if (px.d[i + 3] === 0 || (edgeAt(i) && P.fade === 0)) continue;
+      if (P.fade === 0 && eyes.some(([ex, ey]) => Math.abs(x + 0.5 - ex) < 4 && Math.abs(y + 0.5 - ey) < 4)) continue;
       const hex = '#' + [px.d[i], px.d[i + 1], px.d[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
       if (keep.has(hex)) continue;
       const k = Math.max(0, Math.min(1, ((x - hx) * dx + (y - hy) * dy) / L2));
       // (below the line from its head to its tail: its belly, thinning)
       const below = y - (hy + dy * k) - 2;
-      const thr = 0.79 - 0.27 * k - 0.05 * Math.max(0, Math.min(2, below / 4));
+      // (solid for its bite; torn open, struck; blown away, dying)
+      const thr = 0.79 - 0.27 * k - 0.05 * Math.max(0, Math.min(2, below / 4)) + 0.5 * P.solid - 0.4 * P.tear - 1.4 * P.fade;
       const n = 0.78 * noise2(x * 0.24 + ox, y * 0.34 + oy, 61) + 0.22 * noise2(x * 0.6 - oy, y * 0.7 + ox, 63);
       cut[y * W + x] = n > thr + 0.07 ? 2 : n > thr ? 1 : 0;
     }
@@ -539,7 +761,7 @@ function thinned(px: Px, st: Stage, P: WolfPose): void {
   }
 }
 
-/** One frame of the wolf: `which` (stand), `t` seconds in, from in front or behind. */
+/** One frame of the wolf: `which` (stand, walk: its glide, attack: its bite, reel, dying), `t` seconds in, from in front or behind. */
 export function wolfPainted(which: string, t: number, view: GameView = 'front'): Painted {
   eyeOf(view);
   const { P, bits } = bitsOf(which, t, view);
@@ -571,12 +793,24 @@ export function wolfGrains(which: string, t: number): V3[] {
   return grainsOf(which, t).map((g) => g[0]);
 }
 
-/** THE FOG WOLF, as the game holds a monster's pictures: so far its stand (its moves come next). */
+/** THE FOG WOLF, as the game holds a monster's pictures: its stand, its glide (walk), its bite (attack), struck, and its death. */
 export function makeWolfArt(): ActorArt {
   const set = (view: GameView): AnimSet => {
     const frame = (which: string, t: number): Sprite => wolfFrame(which, t, view);
-    const idle = lazyFrames(WOLF_STAND.frames, (i) => frame('stand', i / WOLF_STAND.fps));
-    return { idle, walk: idle, attack: lazyFrames(3, (i) => idle[i * 12]), idleFps: WOLF_STAND.fps, walkFps: WOLF_STAND.fps };
+    const clip = (which: string, long: number, fps: number, hit?: number): Clip => {
+      const c: Clip = { frames: lazyFrames(Math.round(long * fps) + 1, (i) => frame(which, i / fps)), fps };
+      if (hit !== undefined) c.hit = hit;
+      return c;
+    };
+    const attack = clip('attack', WOLF_BITE.long, WOLF_BITE.fps, WOLF_BITE.hit);
+    return {
+      idle: lazyFrames(WOLF_STAND.frames, (i) => frame('stand', i / WOLF_STAND.fps)),
+      walk: lazyFrames(WOLF_WALK.frames, (i) => frame('walk', i / WOLF_WALK.fps)),
+      attack: lazyFrames(3, (i) => attack.frames[[8, 14, 16][i]]),
+      idleFps: WOLF_STAND.fps,
+      walkFps: WOLF_WALK.fps,
+      clips: { attack, die: clip('dying', WOLF_DIE.long, WOLF_DIE.fps), reel: clip('reel', WOLF_REEL.long, WOLF_REEL.fps) },
+    };
   };
   return { front: set('front'), back: set('back') };
 }

@@ -512,4 +512,57 @@ Shown `shots/wolf_look.png` and `shots/wolf_stand.gif` again and asked "Is this 
 animate it (Recommended)", next its moves: the glide, the lunging bite, its flinch, and blowing apart into fog; "Not
 yet"), his answer, 15 Oct, by 14:46 (the clock read 14:46:08 just after): "Yes, animate it (Recommended)".
 
-NEXT: its moves, filmed, for his yes.
+### Its moves (src/art/fog_wolves.ts; FOR HIS YES; behind `WOLF_ON`, off)
+
+His design doc's bite, its glide (his pick), struck, and the death he picked. Times in seconds from each move's start.
+- ITS GLIDE (his pick, "A ghostly glide"; WOLF_WALK 0.75 s round, 12 frames at 16 a second, WOLF_PACE 3 tiles a
+  second, quick, to circle round behind you): it skims along level in its own fog, rising and sinking a little, its
+  legs loping slowly through the fog and never landing, its head low and forward, its ears laid back, its tail
+  streaming out behind; its fog is left behind it in trails and its ground fog drifts back. Its legs never land, so
+  nothing of it slides at any pace; how it circles is the game's.
+- ITS BITE (his pick, "A lunge out of the fog"; WOLF_BITE 1.0 s; a small one's blow, no freeze): it crouches, drawn
+  back into its fog, its eyes flaring, its fangs bared, its fog firming, by 0.22 s; HELD, TREMBLING (THE WARNING), to
+  0.38 s; THE LUNGE, its jaws thrown wide (widest about 0.43 s), its legs flung out reaching and thrusting, its head
+  and jaws coming solid (no gaps through it); THE SNAP at 0.5 s, its jaws shut WOLF_BITE.reach, 48 of its own lengths
+  (about 1.2 tiles), before its floor point, fog bursting from them (to 0.8 s); it tugs, shaking its head, to 0.8 s, and
+  falls back into its fog by 0.82 s; settled by 1.0 s.
+- STRUCK (WOLF_REEL 0.45 s): held to 0.05 s, its fog blown open where the blow went through; knocked back, its head
+  snapped round, wisps torn off it; whole again, on its stand, by 0.45 s.
+- ITS DEATH (his pick, "It blows apart into fog"; WOLF_DIE 1.4 s): held to 0.08 s, torn open; flung back, IT BURSTS at
+  0.12 s into wisps flung out of it, rising and thinning; what is left of it torn away again at 0.45 s; its body gone by
+  0.7 s; ITS EYES, left hanging where its head was, the last of it, flickering from 0.85 s and out by 1.1 s; nothing
+  left from 1.3 s.
+
+    node tools/page_gif.mjs src/dev/preview_fog_wolves.ts "walkfilm" shots/wolf_walk.gif 6
+    (and bitefilm, with struck after it; deathfilm)
+
+FOR THE GAME, LATER: its canvas WOLF_CANVAS 200 by 160, its feet at (96, 118); makeWolfArt(): stand 36 frames at 15 a
+second, walk = its glide, 12 frames at 16, attack = the bite (hit 0.5 s, no freeze), reel 0.45 s, dying 1.4 s (nothing
+left). Small: one attack, by his gameplay rulebook; how the pack circles to come at you from behind is the game's.
+
+THE REVIEW (tests/fog_wolves.test.ts, 14, every frame the game would show, from in front and from behind): crisp; its
+pink edge round what of it is solid while it lives (at least 50 pixels a frame; struck and torn open, at least 15),
+none dead; nothing cyan, every light the enemy's fire, its eyes at least two pixels by two while it lives; nothing cut
+off; its size; FLOOR AND A GLIDE (nothing below the floor; its legs' solid fog at least 4 above it in every move);
+THROUGH; JERK (by move; its bite's lunge on one continuous arc); JUMP (from any frame of its stand into each move and
+back, and from any frame of its glide: at most 3 game pixels); ALIVE; BLOW (crouched and held trembling; its jaws wide,
+then shut at the blow 48 before it; more of it painted, solid, at the snap than at rest; fog bursting from its jaws;
+back on its stand); struck (held, blown open, knocked back, wisps torn off, whole again); its death (it bursts, its
+body and its outline gone while its eyes still burn, then nothing left and no light); its loose fog, its loops
+closing, trailing it as it glides; its pictures as the game holds them.
+
+| His rule | How its moves keep it |
+| --- | --- |
+| Movement 1: weight | it crouches before it lunges, and its legs thrust; it is light, as fog is, and floats |
+| Movement 3: wind up, follow through | crouched and held before the bite; the tug and the fall back after it |
+| Movement 5: slick, no jumps | the review's JERK and JUMP, every frame, both sides |
+| Movement 7: heavy blows freeze | its bite is a small one's quick blow: no freeze |
+| Movement 8: feet grip | read as for a flier (his pick, a ghostly glide): its legs never touch the ground |
+| Monsters 2: small ones fun to smash | struck, its fog is blown open and torn; dying, it bursts |
+| Monsters 4: the warning is a pose | crouched, its eyes flaring, its fangs bared, trembling |
+| Hits 2, 4: no blood; what flies off is its own | wisps of its fog; no blood |
+| Hits 5: deaths true | it blows apart into fog, its eyes the last to go out, his pick |
+| Animations 1: as big and wild as it will go | its jaws thrown wide in a lunge of more than a tile; fog bursting from its jaws; it bursts apart in a cloud of wisps |
+| Pillars 4: enemy colours | its eyes pink to gold; nothing cyan |
+
+NEXT: his yes on its moves (the three films), then floor 10, the Sunken Fen.

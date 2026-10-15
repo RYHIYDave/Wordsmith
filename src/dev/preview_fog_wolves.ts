@@ -4,13 +4,17 @@
 //     one standing, from in front and from behind, the knight beside it at the game's size; close-ups of it
 //   node tools/page_gif.mjs src/dev/preview_fog_wolves.ts "standfilm" shots/wolf_stand.gif 6
 //     A FILM (15 frames a second): its stand, from in front and from behind, at six times the game's size
+//   walkfilm, bitefilm, deathfilm: FILMS (thirty frames a second; its glide sixteen) of its moves: its glide over the
+//     meadow at its pace; its bite, then struck; its death, blown apart into fog
 //   frames:move:t1,t2,...   several moments of one move side by side
 //   big:move:t:scale[:raw]   one moment large, from in front and from behind
 
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { WOLF_CANVAS, WOLF_HABITS, WOLF_STAND, wolfFrame, wolfPainted } from '../art/fog_wolves';
+import { WOLF_BITE, WOLF_CANVAS, WOLF_DIE, WOLF_HABITS, WOLF_PACE, WOLF_REEL, WOLF_STAND, WOLF_WALK, wolfFrame, wolfPainted } from '../art/fog_wolves';
+import { TILE3 } from '../art/new_mobs3';
+import { project } from '../art/skeleton';
 import { toSprite } from '../art/kit';
 import { drawText } from '../engine/font';
 import type { Sprite } from '../engine/px';
@@ -154,8 +158,96 @@ function standFilm(): void {
   win.__ready = true;
 }
 
+/** What it does at each moment of a film: which move, how far into it, how far it has come over the floor. */
+type Beat = { move: string; t: number; ground: number };
+function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number): Beat[] {
+  const out: Beat[] = [];
+  let ground = 0;
+  let breath = 0;
+  let stride = 0;
+  for (const [mv, long] of run) {
+    const n = Math.round(long * fps);
+    for (let i = 0; i < n; i++) {
+      const t = i / fps;
+      out.push({ move: mv, t: mv === 'stand' ? breath + t : mv === 'walk' ? stride + t : t, ground });
+      if (mv === 'walk') ground += (WOLF_PACE * TILE3) / fps;
+    }
+    if (mv === 'stand') breath += n / fps;
+    if (mv === 'walk') stride += n / fps;
+  }
+  return out;
+}
+function film(beats: Beat[], fps: number, title: string, o: { w: number; h: number; fx: number; fy: number; k: number; by?: number }, note?: (b: Beat) => string): void {
+  const TOP = 30;
+  const cvs = document.createElement('canvas');
+  cvs.width = o.w * 2;
+  cvs.height = TOP + o.h;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const K = o.k;
+  const draw = (i: number): void => {
+    const b = beats[i];
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, cvs.width, cvs.height);
+    label(g, title, 8, 6);
+    (['front', 'back'] as const).forEach((view, k) => {
+      const ox = k * o.w;
+      g.save();
+      g.beginPath();
+      g.rect(ox + 2, TOP, o.w - 4, o.h - 2);
+      g.clip();
+      g.translate(ox, TOP);
+      meadow(g, o.w, o.h);
+      g.translate(-ox, -TOP);
+      const [dx, dy] = project([b.ground, 0, 0], view);
+      // (its sprites are in game pixels, two picture pixels each; the floor's places are in picture pixels)
+      const fx = ox + o.fx + (dx * K) / 2;
+      const fy = TOP + o.fy + (view === 'back' ? o.by ?? 0 : 0) + (dy * K) / 2;
+      g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+      g.beginPath();
+      g.ellipse(fx, fy, 16 * K, 7 * K, 0, 0, Math.PI * 2);
+      g.fill();
+      const sp = toSprite(wolfPainted(b.move, b.t, view), null, WOLF_CANVAS.ax, WOLF_CANVAS.ay);
+      g.drawImage(sp.img, Math.round(fx - sp.ax * K), Math.round(fy - sp.ay * K), sp.w * K, sp.h * K);
+      litAt(g, sp, fx, fy, K);
+      g.restore();
+      label(g, view === 'front' ? 'from in front' : 'from behind', ox + 10, TOP + o.h - 26);
+    });
+    const said = note?.(b);
+    if (said) label(g, said, cvs.width - said.length * 12 - 16, 6);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = beats.length;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+const hold = (beats: Beat[], n: number): Beat[] => {
+  const last = beats[beats.length - 1];
+  for (let i = 0; i < n; i++) beats.push({ ...last });
+  return beats;
+};
+
 if (HASH.startsWith('look')) look();
 else if (HASH === 'standfilm') standFilm();
+else if (HASH === 'walkfilm') {
+  const fps = WOLF_WALK.fps;
+  film(beatsOf([['stand', 0.5], ['walk', WOLF_WALK.period * 2], ['stand', 0.5]], fps), fps, 'The Fog Wolf glides, its legs lost in its fog (at its pace)', { w: 820, h: 640, fx: 200, fy: 330, k: 5, by: 190 });
+} else if (HASH === 'bitefilm') {
+  const B = WOLF_BITE;
+  const at = (b: Beat): string => (b.move === 'attack' ? (b.t >= B.warn && b.t < B.lunge ? 'crouched, eyes flaring' : b.t >= B.lunge && b.t < B.hit ? 'the lunge' : b.t >= B.hit && b.t < 0.62 ? 'the snap' : '') : b.move === 'reel' ? 'struck' : '');
+  film(beatsOf([['stand', 0.4], ['attack', B.long], ['stand', 0.5], ['reel', WOLF_REEL.long], ['stand', 0.4]], 30), 30, 'The Fog Wolf: its bite, a lunge out of the fog; then struck', { w: 700, h: 560, fx: 300, fy: 420, k: 6 }, at);
+} else if (HASH === 'deathfilm') {
+  const Dd = WOLF_DIE;
+  const at = (b: Beat): string => (b.move === 'dying' ? (b.t < Dd.freeze ? 'struck' : b.t < Dd.gone ? 'it blows apart into fog' : b.t < Dd.out ? 'its eyes, last' : '') : '');
+  film(hold(beatsOf([['stand', 0.4], ['dying', Dd.long]], 30), 15), 30, 'The Fog Wolf: its death', { w: 700, h: 560, fx: 320, fy: 420, k: 6 }, at);
+}
 else if (HASH.startsWith('big:')) {
   const [, mv, at, k0, raw] = HASH.split(':');
   const K = Number(k0 ?? 3) * 2;
