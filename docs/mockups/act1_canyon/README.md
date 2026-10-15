@@ -411,3 +411,26 @@ its own swaying as well as in how the game steers it; struck, it flickers and st
 in their own colour) and is still knocked back a little (Hits 3); packs and numbers are the main chat's.
 
 NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
+
+## The Dust Devil's look (src/art/dust_devils.ts, behind `DEVIL_ON`, off; for his yes)
+
+Painted from its own solids, as the scorpion is, in the same painter: rings of streaks of its sand up a funnel,
+each streak sweeping round it and climbing as it goes; its bell in the hollow at its heart; grit round it.
+- WAIST-HIGH, THIN AND TALL: its top 29 to 31 up (the knight is 58, his waist about 30), 15 to 18 across; a thin
+  neck on the floor widening as it rises, its top open and spilling.
+- ITS SAND: the near streaks deep rust-red lit to hot orange, each outlined dark; the far ones, seen through the gaps,
+  nearly black-red, and the cult's pink where its bell lights them; dark and pale grit flung round it; a ring of dust
+  whirled along the floor round its foot. No face, no eyes.
+- ITS BELL: old bronze lit gold, about 14 to 16 up, tumbling; its mouth burning the cult's pink, a pink glow behind
+  it on the far side of its hollow, its light the cult's pink; the streaks before it thinned away so it is seen. Its
+  pink edge while it lives. Nothing cyan.
+- ITS STAND (1.5 s round, sixteen frames a second): never still: spinning two turns a round, its sand rising up it
+  and spilling off its top; swaying, its top wandering and a snake running up it; its foot weaving on the spot; its
+  bell tumbling and pulsing.
+
+    node tools/preview.mjs src/dev/preview_dust_devils.ts shots/devil_look.png 1014 700 look
+    node tools/page_gif.mjs src/dev/preview_dust_devils.ts "standfilm" shots/devil_stand.gif 6
+
+`tests/dust_devils.test.ts` (7): the switch off and nothing of the game imports it; crisp, its pink edge; nothing
+cyan, every light the cult's fire, nothing cut off; its size; nothing under the rock; its stand never still and
+closing its loop; its pictures as the game holds them.
