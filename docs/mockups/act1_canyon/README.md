@@ -70,3 +70,42 @@ Shown `shots/canyon_ground.png` and `shots/canyon_close.png`, with a word that t
 sketch by his rule that places stay duller than the words, and asked "Is this Echo Canyon's ground?" (offered:
 "Yes, on to its pieces (Recommended)"; "Brighter rock", closer to the sketch's orange, past the "duller than the
 words" rule; "Not yet"), his answer, 14 Oct, by 22:13: "Yes, on to its pieces (Recommended)".
+
+## Its 25 pieces (src/art/floor8.ts, `canyonPieces()`)
+
+Themed after the floor's boss, the Cantor, the cult's choirmaster, and the canyon as the cult's supply road (his
+rule for a set of floors from the second on: 25 for the set's theme, 25 for each boss). Nothing of them glows;
+nothing cyan, pink or red (the canyon's rock is red-orange, its hue kept off the pinks); the cult's violet only on
+what is the cult's, its mark in bone-pale paint.
+- THE CANYON'S OWN: hoodoos (three sizes; banded red rock bulging and necking, a cap of pale caprock; tall: seen
+  through while someone is behind one, as in the sketch he said yes to); red boulders (three); junipers (three;
+  tall, seen through); a dead juniper; yucca (one in flower); sagebrush (two); a steer's skull.
+- THE CULT'S SUPPLY ROAD: its wagon, hooped and covered in its violet, the mark on its side; the same broken down
+  (a front wheel off and lying, its nose in the sand, its cover torn, its stores spilt); a crate of stores and
+  sacks of meal (breakables: whole, and broken); wheel ruts (a floor tile, along x or y); its hoist on the wall
+  (a crate slung on a rope let down the face); its lookout tent for the tops.
+- THE CANTOR'S: his lectern, the great book of the chant open on it; a frame of the cult's bells; the cult's great
+  horn; singing stones, pierced for the wind; the chant carved in the wall; a torn page of the chant (the quest
+  piece: the ritual's pages hidden through the descent, his design doc's word hook).
+- THE REST: an obelisk on its dray (the siege's thread: the quarry's obelisks hauled downhill); rockfall from the
+  rim (the trap, a floor tile: 0 grit fallen, the sign; 1 its warning, the shadow of what will fall; 2 the rock
+  come down in a burst of dust; 3 the rubble); the waystation's gate (the canyon's cult stronghold; along x or y,
+  shut or dragged open); a seep in the wall (the old river still running in the rock); driftwood.
+
+The dressed screen sets them where the sketch has things: the hoodoos where the canyon turns (the one in front of
+the knight seen through), the broken-down wagon by the knight and its stores, the Cantor's lectern and bells by
+the cult's banner, the chant and the seep in the far wall, the lookout on the far top with the set's brazier and
+banner and its hoist down the wall; the tops dressed by the rule he said yes to (junipers in groves with bare
+ground between, sage, yucca, boulders, a dead tree, small hoodoos, never over the road).
+
+    node tools/preview.mjs src/dev/preview_canyon.ts shots/canyon_dressed.png 1014 468 dressed
+    node tools/preview.mjs src/dev/preview_canyon.ts shots/canyon_pieces.png 1014 2530 pieces
+
+`tests/floor8.test.ts` (7): nothing of the game imports them; their pictures, names, no light; crisp, no loose
+pixels; no cyan, pink or red, duller than every word; what stands on its foot, a floor tile or the trap inside its
+diamond; nothing cut off at a picture's edge; 25 of them.
+
+Shown the first 14 (`canyon_dressed.png`, `canyon_pieces.png`) and asked "Are these Echo Canyon's first pieces?"
+(offered: "Yes, on to the rest (Recommended)"; "Change some"): "Yes, on to the rest (Recommended)". Shown all 25 and
+asked "Are these Echo Canyon's 25 pieces?" (offered: "Yes, on to the Cantor (Recommended)"; "Change some"), his
+answer, 14 Oct, by 22:34: "Yes, on to the Cantor (Recommended)".
