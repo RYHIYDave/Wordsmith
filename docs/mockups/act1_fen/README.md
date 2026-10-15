@@ -274,6 +274,53 @@ Shown `shots/eye_slam.gif`, `shots/eye_sweep.gif` and `shots/eye_burst.gif`, ask
 wilder"; "Not yet"), his answers, 15 Oct, by 17:53 (the clock read 17:53:13 just after): each "Yes, as shown
 (Recommended)".
 
-NEXT: his spells (his gold gaze beam sweeping the arena; the siege's pink bolts raining down; bile spat in arcs,
-leaving pools) and his maw (breathing in, pulling you close, then biting; spewing eyespawn; heaving his bulk up and
-splashing down), then his phase changes, struck, and his death.
+### His spells (`eyePainted('gaze' | 'gazeBack' | 'call' | 'spit', t, view, aim, clock)`; `boltPainted`, `bilePainted`)
+
+His picks: "His gaze: a gold beam sweeping the arena (Recommended)", "The siege's pink bolts raining down
+(Recommended)", "Bile spat in arcs, leaving pools (Recommended)". As made (src/art/drowned_eye.ts at c1179b3):
+
+- HIS GAZE (EYE_GAZE, 3.4 s; `gaze` sweeps toward his left, `gazeBack` toward his right): he rears, the arms by where
+  it will start swung aside, his eye narrowing, sparks streaming into his slit, a dashed line of his light flickering on
+  the stones where it will start, pink brightening to gold (THE WARNING), 0 to 1.0 s; it bursts on at 1.05 s with a
+  flash at his eye: a fan of gold light from his eye down to a line on the floor from the pool's rim to the ring's edge,
+  its heart a thick shaft of white gold, rays running outward, a star of light at his eye, the line burning, flames
+  licking up off it, a flare at its far end, sparks and steam; it sweeps 120 degrees centred on its aim, 1.05 to
+  2.45 s (`gazeAngle(t, aim, back)` says where it lies); the stones it passes glow, smoulder and are left scorched; it
+  dies by 2.62 s; he blinks hard; the stones clean by 3.4 s.
+- HIS CALL (EYE_CALL, 2.4 s): he rears, his arms lifted high and writhing, his eye rolled up to the dome, his veins
+  catching the siege's fire, its sparks streaming up off him, 0 to 0.6 s; held to 1.8 s; he sinks back by 2.4 s.
+- THE SIEGE'S BOLTS (EYE_BOLT, 1.9 s each, on their own BOLT_CANVAS 260 by 480, the middle on the floor at (130, 400),
+  for the game to lay while he calls): a circle of the siege's runes opens where it will fall, an outer ring dashed and
+  turning, an inner ring turning the other way, filling from its middle, pink brightening to gold, a tear opening in
+  the dome high above (THE WARNING), 0 to 1.0 s; THE BOLT at 1.0 s, pink lightning re-forking every frame, a blast of
+  fire 1.3 of its reach out, sparks and stones flung; the stones scorched and smouldering; clean by 1.9 s. It hurts
+  within EYE_BOLT.reach, 0.9 tiles. The film lays six round the ring, one where the knight stands.
+- HIS BILE (EYE_SPIT, 2.6 s): he rears back, his eye splitting open into his maw, bile drooling off its lips (THE
+  WARNING), 0 to 0.7 s; three lurches forward, a glob spat from his maw at 0.85, 1.12 and 1.39 s, each flying 0.8 s
+  high over the ring, a ring of the bile's colour on the stones where it will land, its shadow growing and darkening in
+  it; each splashes down; his maw closes 1.6 to 2.2 s. Where each lands: `bileLanding(aim, i)`.
+- HIS BILE'S POOLS (EYE_BILE, 6.0 s each, on their own BILE_CANVAS 260 by 190, the middle on the floor at (130, 120)):
+  splashing out by 0.25 s, a ragged pool a tile across from its middle, blotched, bubbling and steaming, dull (no light);
+  drying 5.0 to 6.0 s; gone by its end. It hurts within EYE_BILE.reach, 1.0 tile, from 0.25 s till 5.0 s.
+
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "gazefilm" shots/eye_gaze.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "callfilm" shots/eye_bolts.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "spitfilm" shots/eye_spit.gif 6
+
+`tests/drowned_eye.test.ts` now 21: THE REVIEW takes in his gaze both ways, his call, his spit (every third frame,
+aimed four ways, from in front and behind), every other frame of a bolt and of a pool; then HIS GAZE (never leaping;
+from his stand and back, the stones clean), HIS GAZE'S WARNING (its line burning where it will start, wherever he does
+not hide it, before it burns; then burning on its aim halfway), HIS CALL (from his stand and back; his veins burning),
+THE SIEGE'S BOLTS (runes, no bolt yet; the bolt; clean by the end; the runes as wide as where it hurts), HIS BILE (from
+his stand and back; the ring round each landing before it lands), HIS BILE'S POOLS (no light; as wide as where they
+hurt; gone by their end), and NOTHING THROUGH HIS EYE (his rulebook, How art 7): no arm goes into the face of his eye in
+any move (it found his arms reaching back over his eye in the gaze and the call, and curling into it in the spit;
+fixed before he saw them).
+
+Shown `shots/eye_gaze.gif`, `shots/eye_bolts.gif` and `shots/eye_spit.gif`, asked in one pop-up "His gaze
+(eye_gaze.gif): good?", "The siege's bolts (eye_bolts.gif): good?", "His bile (eye_spit.gif): good?" (each offered:
+"Yes, as shown (Recommended)"; "Bigger and wilder"; "Not yet"), his answers, 15 Oct, by 19:43 (the clock read 19:43:31
+just after): each "Yes, as shown (Recommended)".
+
+NEXT: his maw (breathing in, pulling you close, then biting; spewing eyespawn; heaving his bulk up and splashing down),
+then his phase changes, struck, and his death.
