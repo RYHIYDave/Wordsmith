@@ -5,7 +5,7 @@ offered as: in the same order as before: its ground, its pieces, the Hollow Stag
 Wolves, each shown to you first. This branch starts from `mockup/act1-canyon` at 5a7122a (floor 8, all of it with
 his yes). Nothing here is in the game.
 
-## Its ground (src/art/pinewood.ts, painted by src/art/terrain.ts; for his yes)
+## Its ground (src/art/pinewood.ts, painted by src/art/terrain.ts; HIS YES)
 
 The measure is the planning chat's Pinewood he said yes to (13 Oct, by 08:23, "Yes, this is it (Recommended)";
 src/dev/preview_act1.ts, hash `pine`, on `mockup/act1-levels`), and his words: 13 Oct, 08:19, "I’d like the forest
@@ -41,3 +41,11 @@ in the mock-up's shape (`PINE_SHAPE`); how the real Pinewood is laid is the main
 walls (only floor and the forest floor painted, a pixel floor exactly where the ground is); the water where the
 level puts it, under the bridge too; two pieces one picture, the same every time; opaque; no cyan, no pink, every
 colour duller than the dullest word's (Colour 3 and 4); every blade and tuft lit at its top, its shade under it.
+
+Shown `shots/pine_ground.png` and `shots/pine_close.png` and asked "Is this the Pinewood's ground?" (offered: "Yes, on
+to its pieces (Recommended)", next: the pines, groves, footbridges, the hunter's cabin, the cult's camp, twisted trees
+toward the swamp; "Not yet"), his answer, 15 Oct, by 11:04 (the clock read 11:04:15 just after): "Yes, on to its
+pieces (Recommended)".
+
+NEXT: its pieces (25, his rule of 10 Oct: “Going forward, let's do 25 that are the theme of the 5 levels, then 25
+for each boss.”), themed after the Pinewood and the Hollow Stag.
