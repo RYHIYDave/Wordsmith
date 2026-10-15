@@ -632,7 +632,7 @@ His words, 13 Oct, 20:59: "Or we can just have the trail sort of work out one di
 
 ---
 
-## The Carrion Queen, redone (14 Oct; for his yes; behind `CARRION_QUEEN_ON`, off)
+## The Carrion Queen, redone (14 Oct; behind `CARRION_QUEEN_ON`, off; HER LOOK HAS HIS YES; her moves here were turned down and are SUPERSEDED by "The Carrion Queen's moves, rebuilt" at the end of this file)
 
 His words, 19:22: "Hey can you redo the carrion queen.  She kinda looks like shit and the animations are uninspired". Asked as a pop-up which way her look should go, his pick, 19:23: "Black-violet, raw bald head, burning crown (Recommended)", offered as: deep black plumage with a violet sheen, ragged fingered wings, a bald wrinkled red head and neck, her bone crown and the cult's mark burning pink and gold. And, 19:23: "Make sure she hits all the checks in the art book rules including the wild and big animations".
 
@@ -688,4 +688,55 @@ His words, 19:22: "Hey can you redo the carrion queen.  She kinda looks like shi
 
 **The pictures** (in `shots/`): `cq_look.png` (standing, from in front and behind, beside the knight and the Unfinished); `eyrie_world.png` (her eyrie, one phone screen); films `cq_walkfilm.gif`, `cq_rakefilm.gif` (the rake, then struck), `cq_gustfilm.gif`, `cq_divefilm.gif`, `cq_callfilm.gif`, `cq_edgefilm.gif`, each with a contact sheet (`.sheet.png`).
 
-**Next:** his answer to the pictures; then floors 8 to 10.
+**His answers, 14 Oct, to the pop-up sent with these pictures:** her look, "Yes, the look as shown (Recommended)"; her moves, "Absolutely not.  Scrap all the animations and do them differently.  Following the rules". Her look stands as shown here. Her moves were planned again from nothing (the next section).
+
+---
+
+## The Carrion Queen's moves, rebuilt (14 Oct; for his yes; behind `CARRION_QUEEN_ON`, off)
+
+His words on the moves of the section above: "Absolutely not.  Scrap all the animations and do them differently.  Following the rules". A new plan for all eight moves went to him as a message, and the pop-up "Build the Carrion Queen's moves this way?" came back "Yes, build these (Recommended)". His standing word on her, 19:23: "Make sure she hits all the checks in the art book rules including the wild and big animations".
+
+**Read as:** every move made new, its own shape, its own timing; none of the old key times kept, so the sound chat has new timings (below, and on the board). Her look is the one he said yes to and is unchanged.
+
+**Her moves** (src/art/carrion_queen.ts; each a smooth curve through its key poses, a key every frame; the times are seconds into the move):
+- **Stand** (`cqStand`, a 2.6 s round, ten frames a second): her head snakes low from side to side (20 degrees each way, at 0.65 and 1.95 s), her wings breathe like bellows and her bulk heaves with them (fullest at 1.3 s), her crown's fire flickers, and once a round she rouses, every feather shaken up and out (1.85 to 2.3 s).
+- **Hop** (`cqWalk`, one hop a second, sixteen frames): she gathers low (to 0.24 s), bounds long and low from 0.3 s, her body level, her wings swept back like a cloak, talons first; lands heavy at 0.64 s, flaring her wings to brake, dust kicked off the rock (0.64 to 0.94 s); sinks (to 0.78 s); still a beat from 0.9 s. Her head is held level all the way, locked on you.
+- **Talon rake** (`cqRake`, 1.8 s): bursts up off the rock in two great wingbeats (at about 0.3 and 0.72 s); hangs with her talons cocked up and forward, trembling (THE WARNING, from 0.42 s); drops and rakes both feet down and back through you at 0.9 s, three burning claw-streaks where her talons go; comes down on the spot at 1.0 s, rock chips and dust flying (to 1.6 s), and mantles over it, wings spread low and forward, head down; hops back to where she stood (1.4 to 1.7 s).
+- **Wing gust** (`cqGust`, 1.6 s): rears to her full height, wings drawn far back and trembling, her crown flaring (THE WARNING, 0.35 to 0.66 s); claps them forward in one huge stroke at 0.82 s: a blast of grit, driven air, torn feathers off her wingtips and the cult's embers out before her, a ring of dust off the rock; her own blow rocks her back on her feet (to 0.98 s); settled by 1.6 s.
+- **Dive** (`cqDive`, 2.3 s): launches straight up at 0.18 s, beating hard, a downdraft of dust off the rock; climbs out of sight above, 240 over the rock by 0.62 s, and hangs there (0.55 to 0.78 s; on a phone screen only her talons show at the top, so the warning is the game's mark on her line); plunges back in a stoop with her wings folded and a speed-streak behind her (0.78 s), striking talons-first 92 along the line at 1.08 s, held a tenth (to 1.18 s); rips free, her talons dragged on through the rock, a crater of chips and a ring of dust (from 1.18 s); beats back up (wingbeats at about 1.42 and 1.98 s) and home by 2.3 s.
+- **Call** (`cqCall`, 2.0 s): rears to her full height, wings flung wide, head thrown back, beak to the sky (to 0.6 s); held trembling, screeching (0.6 to 1.5 s); her crown and mark blaze (from 0.2 s), embers rising off her crown; rings of the cult's fire pulse out over the rock at 0.45, 0.85 and 1.25 s; she folds her wings and settles (1.5 to 2.0 s). Her flock wheeling in is the game's.
+- **Flinch** (`cqReel`, 0.45 s): her head whips back and her wings snap open (0.08 s), feathers bursting from her breast (to 0.4 s); her head snaps forward, low, to glare (0.22 s); back on her stand by 0.45 s.
+- **Death, his pick: off the edge** (`cqDieEdge`, 2.0 s): she screams, head back, wings flung up (to 0.15 s); her mark flares and gutters out and her crown's fire goes out (0.15 to 0.8 s); she staggers back two steps (0.15 to 0.5 s) and claws at the rock, her feet scrabbling (to 0.85 s); topples backward off the edge from 0.85 s, wings flailing (beats at about 1.15 and 1.75 s), her feathers swirling up after her.
+
+**Her effects** (Animations 3, her own way of being wild: grit, feathers and the cult's fire; each a crisp mote of whole pixels): dust rings and rock chips off the Ledge Road's rock in its own colours; the rake's three claw-streaks in the cult's fire; the gust's blast; the dive's speed-streak in her own quills; rings of the cult's fire; embers off her crown when it burns hot (each warning and the call); feathers torn from her in the flinch, the gust and the death.
+
+**Elsewhere:**
+- Her canvas `CQ_CANVAS` 900 by 1060, her feet at (490, 720) (was 900 by 860, feet at (490, 520)): her dive climbs 605 picture pixels over her feet.
+- src/dev/preview_carrion_queen.ts: the dive's film and the death's are 800 tall (the others 760); new labels for the warnings. src/dev/preview_eyrie.ts: a hash `move:seconds` draws her at that moment of a move on the eyrie's screen (`dive:0.66`, her dive's hang).
+
+**The check, rule by rule** (docs/art/RULEBOOK.md; How art is made 7, every boss through every check; made before he sees her):
+
+| Rule | The Queen | Result |
+| --- | --- | --- |
+| Animations 1: as far as it will go | The rake bursts up 66 in two wingbeats; the gust rears 16, her wings drawn 28 back and clapped 28 forward; the dive climbs 240, out of sight, and strikes 92 along the line; the call rears 28, her head thrown back 58 degrees | Pass by the numbers; his eye decides the notch |
+| Animations 3: wild in her own way | Grit, torn feathers and the cult's fire, nothing borrowed from the heroes | Pass by eye |
+| Animations 4: warnings in sight | The rake's hang and the gust's held wings are in sight, and no effect covers them; the dive's hang is above a phone screen (only her talons show), so its warning is the game's mark on her line | Pass, the dive with the game's mark |
+| Monsters 4: the warning is a pose | Each attack holds a wound-up pose, trembling: the rake 0.42 to 0.8 s, the gust 0.35 to 0.66 s, the dive 0.55 to 0.78 s | Pass (review: BLOW) |
+| Movement 1: weight first | Deep gathers, heavy landings that sink, rocked back by her own blow | Pass (review) |
+| Movement 3: wind-up and follow-through | Each blow drawn back, held, and carried through | Pass (review: BLOW, HIPS) |
+| Movement 4: loose things follow | Her torn feathers fly, turn and fall; her chain hangs and lies on the rock | Pass by eye |
+| Movement 5: slick | No frame leaps, stalls, turns back at speed, or starts or stops at its fastest; no jump from her stand into any move and back | Pass (review: JERK, JUMP) |
+| Movement 6: alive when still | Head snaking, bellows, the rouse | Pass (review: ALIVE) |
+| Movement 7: heavy blows freeze | The dive's strike held a tenth of a second (1.08 to 1.18 s) | Pass |
+| Movement 8: feet grip | No foot slides while down | Pass (review: SLIDE) |
+| Nothing below the rock | Bones (review: FLOOR) and everything painted of her (test) | Pass |
+| Hits 3 and 4: every hit shows; what flies off is hers | Knocked back, her own feathers burst from her | Pass |
+| Monsters 6 and Colour 3: pink is theirs; glows reserved | Her mark, eyes, crown's fire, streaks, embers and rings the cult's pink and gold; nothing cyan | Pass (test) |
+| Pixels 1 and 5: crisp; the pink edge | Every pixel crisp; her pink edge in every frame | Pass (test) |
+| Nothing cut off | No frame of any move or death touches her canvas's edge | Pass (test) |
+
+**Checks:** tests/carrion_queen.test.ts 9 of 9 (the whole boss review of every move and her three deaths, from in front and behind; crisp; nothing cyan; nothing cut off; her size; her crown and mark; nothing under the rock); the full unit suite (`tsx --test tests/*.test.ts`), 1362 of 1362, on her final code (the two dev pages were changed after it started; no test imports them); `tsc --noEmit` clean, after. NOT RUN: the full regression; a real phone.
+
+**The pictures** (in `shots/`): films `cq_walkfilm.gif` (sixteen frames a second), `cq_rakefilm.gif` (the rake, then struck), `cq_gustfilm.gif`, `cq_divefilm.gif`, `cq_callfilm.gif`, `cq_edgefilm.gif` (thirty a second), each with a contact sheet (`.sheet.png`); `eyrie_dive.png`, her dive's hang on the eyrie's phone screen; `cq_look.png` and `eyrie_world.png`, her look as approved.
+
+**Next:** his answer to the moves; then floors 8 to 10.

@@ -89,10 +89,12 @@ function look(): void {
 // FILMS (tools/page_gif.mjs): the page draws any one frame of them on asking
 
 const win = window as unknown as { __ready: boolean; __frames: number; __tickMs: number; __frame: (i: number) => string };
-// (bigger than at first, 560 by 500: her wilder moves reach up to 473 picture pixels over her feet, 388 to her
-// right, and in her fall off the edge 414 to her left and 288 below; each film places her to fit)
+// (bigger than at first, 560 by 500: her moves rebuilt on 14 Oct reach up to 476 picture pixels over her feet in the
+// rake, 361 to her right in the dive, 284 to her left in the call; her dive climbs 605 over her feet and her fall off
+// the edge goes 419 to her left and 327 below, so those two films are taller; each film places her to fit)
 const PANE_W = 840;
 const PANE_H = 760;
+const PANE_TALL = 800;
 const TOP = 30;
 /** What she does at each moment of a film: which move, how far into it, how far she has come over the floor. */
 type Beat = { move: string; t: number; ground: number; die?: { mob: Mob; k: number } };
@@ -112,10 +114,11 @@ function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number): Be
   }
   return out;
 }
-function film(run: ReadonlyArray<readonly [string, number]>, fps: number, title: string, at: ReadonlyArray<{ view: 'front' | 'back'; x: number; y: number }>, note?: (b: Beat) => string): void {
-  filmBeats(beatsOf(run, fps), fps, title, at, note);
+function film(run: ReadonlyArray<readonly [string, number]>, fps: number, title: string, at: ReadonlyArray<{ view: 'front' | 'back'; x: number; y: number }>, note?: (b: Beat) => string, paneH = PANE_H): void {
+  filmBeats(beatsOf(run, fps), fps, title, at, note, paneH);
 }
-function filmBeats(beats: Beat[], fps: number, title: string, at: ReadonlyArray<{ view: 'front' | 'back'; x: number; y: number }>, note?: (b: Beat) => string): void {
+function filmBeats(beats: Beat[], fps: number, title: string, at: ReadonlyArray<{ view: 'front' | 'back'; x: number; y: number }>, note?: (b: Beat) => string, PANE_H_ = PANE_H): void {
+  const PANE_H = PANE_H_;
   const cvs = document.createElement('canvas');
   cvs.width = PANE_W * at.length;
   cvs.height = TOP + PANE_H;
@@ -171,7 +174,7 @@ function deathFilm(mob: Mob, title: string, fps: number): void {
   for (let i = 0; i <= n; i++) beats.push({ move: 'dead', t: i / fps, ground: 0, die: { mob, k: i / n } });
   for (let i = 0; i < Math.round(0.6 * fps); i++) beats.push({ move: 'dead', t: 0, ground: 0, die: { mob, k: 1 } });
   const at = (b: Beat): string => (b.die ? (b.die.k * CQ_DIE_LONG < 0.12 ? 'struck' : '') : '');
-  filmBeats(beats, fps, title, [{ view: 'front', x: 440, y: 450 }, { view: 'back', x: 440, y: 450 }], at);
+  filmBeats(beats, fps, title, [{ view: 'front', x: 440, y: 450 }, { view: 'back', x: 440, y: 450 }], at, PANE_TALL);
 }
 
 if (HASH === 'look') look();
@@ -179,11 +182,11 @@ else if (HASH === 'walkfilm') {
   const fps = CARRION_QUEEN.walkFps;
   film([['stand', 0.5], ['walk', 3], ['stand', 0.75]], fps, 'The Carrion Queen hops (as the game plays it, at her pace)', [{ view: 'front', x: 300, y: 500 }, { view: 'back', x: 300, y: 500 }]);
 } else if (HASH === 'gustfilm') {
-  const at = (b: Beat): string => (b.move === 'gust' && Math.abs(b.t - CQ_GUST.hit) < 0.05 ? 'the wings beat down' : b.move === 'gust' && b.t < CQ_GUST.hit ? 'held, trembling' : '');
+  const at = (b: Beat): string => (b.move === 'gust' && Math.abs(b.t - CQ_GUST.hit) < 0.05 ? 'the wings clap forward' : b.move === 'gust' && b.t >= CQ_GUST.warn && b.t < 0.66 ? 'held, trembling' : '');
   film([['stand', 0.4], ['gust', CQ_GUST.long], ['stand', 0.5]], 30, 'The Carrion Queen: her wing gust', [{ view: 'front', x: 400, y: 500 }, { view: 'back', x: 400, y: 500 }], at);
 } else if (HASH === 'divefilm') {
-  const at = (b: Beat): string => (b.move === 'dive' && Math.abs(b.t - CQ_DIVE.hit) < 0.05 ? 'her talons strike' : b.move === 'dive' && b.t >= CQ_DIVE.warn && b.t < 0.85 ? 'hangs, trembling' : '');
-  film([['stand', 0.4], ['dive', CQ_DIVE.long], ['stand', 0.5]], 30, 'The Carrion Queen: her dive along the line', [{ view: 'front', x: 400, y: 500 }, { view: 'back', x: 400, y: 500 }], at);
+  const at = (b: Beat): string => (b.move === 'dive' && b.t >= CQ_DIVE.hit && b.t < CQ_DIVE.hit + CQ_DIVE.freeze + 0.02 ? 'her talons strike' : b.move === 'dive' && b.t >= CQ_DIVE.warn && b.t < CQ_DIVE.stoop ? 'hangs, trembling' : '');
+  film([['stand', 0.4], ['dive', CQ_DIVE.long], ['stand', 0.5]], 30, 'The Carrion Queen: her dive', [{ view: 'front', x: 400, y: 650 }, { view: 'back', x: 400, y: 650 }], at, PANE_TALL);
 } else if (HASH === 'callfilm') {
   film([['stand', 0.4], ['call', CQ_CALL.long], ['stand', 0.5]], 30, 'The Carrion Queen: her call', [{ view: 'front', x: 400, y: 500 }, { view: 'back', x: 400, y: 500 }]);
 } else if (HASH === 'edgefilm') {
@@ -193,6 +196,6 @@ else if (HASH === 'walkfilm') {
 } else if (HASH === 'featherfilm') {
   deathFilm(CQ_DEATHS.feathers, 'The Carrion Queen: she bursts into feathers', 30);
 } else if (HASH === 'rakefilm') {
-  const hitAt = (b: Beat): string => (b.move === 'attack' && Math.abs(b.t - CQ_RAKE.hit) < 0.05 ? 'her talons land' : b.move === 'reel' ? 'struck' : '');
+  const hitAt = (b: Beat): string => (b.move === 'attack' && Math.abs(b.t - CQ_RAKE.hit) < 0.05 ? 'her talons rake' : b.move === 'attack' && b.t >= CQ_RAKE.warn && b.t < 0.8 ? 'hangs, talons cocked' : b.move === 'reel' ? 'struck' : '');
   film([['stand', 0.4], ['attack', CQ_RAKE.long], ['stand', 0.5], ['reel', 0.4], ['stand', 0.6]], 30, 'The Carrion Queen: her talon rake, then struck', [{ view: 'front', x: 400, y: 500 }, { view: 'back', x: 400, y: 500 }], hitAt);
 }

@@ -23,9 +23,11 @@
 //     one phone screen (507 x 234 game pixels at 2 picture pixels each)
 //   node tools/preview.mjs src/dev/preview_eyrie.ts shots/eyrie_city.png 1014 468 city
 //     the town far below, at four times, to check its pixels
+//   node tools/preview.mjs src/dev/preview_eyrie.ts shots/eyrie_dive.png 1014 468 dive:0.66
+//     the same screen with the Queen at a moment of one of her moves (here her dive's hang, high over the top)
 
 import { ledgePieces } from '../art/floor7';
-import { queenStanding } from '../art/carrion_queen';
+import { queenFrame, queenStanding } from '../art/carrion_queen';
 import { spriteOf3 } from '../art/heroes3';
 import { FLAME } from '../art/mkit';
 import { MOVES3 } from '../art/moves3';
@@ -455,7 +457,9 @@ if (HASH === 'city') {
   piece(880, 306, "the cult's feather standard");
   piece(240, 316, 'a perching rock');
   // the Queen, standing on her eyrie at the far edge; the knight coming up onto the top from below
-  onTopAt(660, 276, queenStanding(0, 'front'), 1.6);
+  // (or, `#move:seconds`, her at that moment of a move, as this screen would show it: `#dive:0.66`, her dive's hang)
+  const [mv, sec] = HASH.split(':');
+  onTopAt(660, 276, mv && mv !== 'shot' && sec !== undefined ? queenFrame(mv, Number(sec), 'front') : queenStanding(0, 'front'), 1.6);
   const hero = at(430, 372);
   onTopAt(430, 372, spriteOf3(MOVES3.rear, 0, 'front'), 0.5);
   drawStands(g, stands);
