@@ -123,7 +123,7 @@ splinters trees, the roots bursting toward you, the bellow the wolves answer.
 
 NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
 
-## The Hollow Stag's look (src/art/hollow_stag.ts, behind `STAG_ON`, off; FOR HIS YES)
+## The Hollow Stag's look (src/art/hollow_stag.ts, behind `STAG_ON`, off; HIS YES)
 
 Painted from its own solids, as the canyon scorpion is, in the same painter (four legs and antlers have no place on
 the heroes' bones).
@@ -172,4 +172,9 @@ blink; what it throws off gone before its loop comes round.
 | Animations 4: warnings in sight | (for its moves, to come) |
 | How art is made 7: every boss through every check | the review above, every frame, both sides |
 
-NEXT: his answer; then its moves.
+Shown `shots/stag_look.png` and `shots/stag_stand.gif` and asked "Is this the Hollow Stag?" (offered: "Yes, animate
+it (Recommended)", its look in the plan as shown, next its moves: the antler gore, the charge, the roots, the bellow,
+its flinch and its death; "Not yet"), his answer, 15 Oct, by 12:13 (the clock read 12:13:56 just after): "Yes,
+animate it (Recommended)".
+
+NEXT: its moves, filmed, for his yes.
