@@ -492,6 +492,8 @@ export interface Moment {
   jaw?: number;
   charge: number;
   dying?: boolean;
+  /** The name of the move this is a moment of (its MobMove's), for a figure whose painting differs by move. */
+  move?: string;
   /** A boss's chains as they are now (MobMove.ropes). */
   ropes?: Ropes;
 }
@@ -594,6 +596,7 @@ export function momentOf(mob: Mob, mv: MobMove, t: number, blurAt?: number): Mom
   const m: Moment = { s, q, t: folded(mv, t), come, wind, blur, glint: mv.glint ? Math.max(0, mv.glint(t)) : 0, bare: mv.bare ? mv.bare(t) : false, skull: mv.skull ? mv.skull(t) : false, rally: mv.rally ? Math.max(0, mv.rally(t)) : 0, charge: mv.charge ? Math.max(0, mv.charge(t)) : 0 };
   if (mv.jaw) m.jaw = clamp01(mv.jaw(t));
   if (mv.ropes) m.ropes = mv.ropes(folded(mv, t));
+  m.move = mv.name;
   if (mv.motion.hit !== undefined && !loops) m.since = t - mv.motion.hit;
   if (mv.dust) m.dust = true;
   if ((blur || (mv.trailOver !== undefined && mv.trailOver(t))) && mv.trail) {
@@ -761,6 +764,7 @@ export function dyingMoment(mob: Mob, t: number): Moment {
   const q = posedAt(mob.dying, t);
   const m: Moment = { s: solve(mob.build, q), q, t, come: [0, 0, 0], wind: windOf(t), blur: false, glint: mob.dying.glint ? Math.max(0, mob.dying.glint(t)) : 0, bare: false, skull: false, rally: 0, charge: 0, dying: true, jaw: mob.dying.jaw ? clamp01(mob.dying.jaw(t)) : undefined, ropes: mob.dying.ropes ? mob.dying.ropes(t) : undefined };
   const mv = mob.dying;
+  m.move = mv.name;
   if (mv.trail && (mv.trailOver === undefined || mv.trailOver(t))) {
     const T: V3[][] = [];
     for (let i = 0; i <= 8; i++) {

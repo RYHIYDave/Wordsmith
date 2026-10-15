@@ -17,7 +17,7 @@ import { MADE, queenShape } from './carrion_queen_shape';
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { CARRION_QUEEN, CARRION_QUEEN_ON, CQ_BREATH, CQ_CALL, CQ_DIE_LONG, CQ_DEATHS, CQ_DIVE, CQ_GUST, CQ_RAKE, CROWN, queenPainted, queenStanding } from '../src/art/carrion_queen';
-import { deathOfMob } from '../src/art/new_mobs3';
+import { deathOfMob, momentOf } from '../src/art/new_mobs3';
 import { checkBoss as checkBossAgain, findingsSaid as findingsSaidAgain } from '../src/art/boss_checks';
 import { unfinishedStanding } from '../src/art/unfinished';
 import { rgba } from '../src/engine/px';
@@ -127,6 +127,27 @@ test('the whole review (art/boss_checks.ts) of what of her moves, her death incl
   const found = checkBoss(CARRION_QUEEN, queenShape(), MADE);
   const kept = found.filter((f) => !(f.move === 'dying' && f.kind === 'floor'));
   assert.ok(kept.length === 0, `the Carrion Queen:\n  ${findingsSaid(kept).join('\n  ')}`);
+});
+
+// (redone 14 Oct: her wings beat down harder; a feather that would reach under the rock lies along it; the chain hangs
+// from her leg in the air and lies on the rock where it reaches it; her toes rest on the rock)
+test('nothing painted of her goes under the rock, in any frame of any move (her deaths aside: she goes over the edge into the drop)', () => {
+  const Q = CARRION_QUEEN as any;
+  const moves: [string, any, number][] = [['stand', Q.stand, CQ_BREATH], ['walk', Q.walk, CARRION_QUEEN.walkFrames / CARRION_QUEEN.walkFps], ['attack', Q.attack, CQ_RAKE.long], ['reel', Q.reel, CARRION_QUEEN.reelTime], ['gust', Q.more.gust, CQ_GUST.long], ['dive', Q.more.dive, CQ_DIVE.long], ['call', Q.more.call, CQ_CALL.long]];
+  const lowOf = (sh: any): number => {
+    if (sh.k === 'panel') return Math.min(...[-1, 1].flatMap((a) => [-1, 1].map((b) => sh.c[2] + a * sh.u[2] + b * sh.v[2])));
+    if (sh.k === 'ball') return sh.c[2] - Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]);
+    if (sh.k === 'rod') return Math.min(sh.a[2] - sh.ra, sh.b[2] - sh.rb);
+    return Infinity;
+  };
+  for (const [name, mv, long] of moves) {
+    for (let i = 0; i <= Math.round(long * 30); i++) {
+      for (const b of Q.bits(null, momentOf(Q, mv, i / 30))) {
+        const z = lowOf(b.shape);
+        assert.ok(z >= -0.5, `${name} at ${(i / 30).toFixed(2)} s: her ${b.part} is ${(-z).toFixed(1)} under the rock`);
+      }
+    }
+  }
 });
 
 // HER DEATHS (three variants, one picked later): held to the same pictures as her moves, frame by frame

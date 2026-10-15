@@ -3,7 +3,7 @@
 // checks (tests/bosses.test.ts, 12).
 
 import type { BossShape, CheckLimb, CheckLump, Handover } from '../src/art/boss_checks';
-import { CQ_BODY, CR, chestOf, headOf } from '../src/art/carrion_queen';
+import { CQ_BODY, CQ_HEAD, CR, chestOf, headOf } from '../src/art/carrion_queen';
 import { add, lerp3, mul, norm, sub } from '../src/art/skeleton';
 import type { Skeleton } from '../src/art/skeleton';
 
@@ -32,7 +32,7 @@ export function queenShape(): BossShape {
       const up = norm(sub(top, s.pelvis), s.chest[2]);
       const lumps: CheckLump[] = [
         { name: 'body', c: lerp3(s.pelvis, top, 0.5), rot: s.chest, h: [CR[0] * 0.95, CR[1] * 0.8, Math.hypot(...sub(top, s.pelvis)) * 0.6] },
-        { name: 'head', c: headOf(s), rot: s.face, h: [B.headR[0] * 1.3, B.headR[1] * 1.05, B.headR[2] * 0.95] },
+        { name: 'head', c: headOf(s), rot: s.face, h: CQ_HEAD },
       ];
       void up;
       return { limbs, lumps };

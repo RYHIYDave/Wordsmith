@@ -55,28 +55,37 @@ const BASE: Build = buildOf(CQ_TALL, 0.85, { shoulders: 1.25, chest: 1.55, depth
 export const CQ_BODY: Build = { ...BASE, neck: 0.13 * CQ_TALL, headFwd: 0.05 * CQ_TALL };
 const B = CQ_BODY;
 
-/** Her canvas: room for her standing mantled, and (to come) her wings spread wider than the trail. */
-export const CQ_CANVAS: MobCanvas = { w: 820, h: 780, ax: 410, ay: 520 };
+/** Her canvas: room for her standing mantled, her wings spread wider than the trail, and her fall back off the edge. */
+// (80 more on the left and 80 more below than the first, 820 by 780, feet at (410, 520): her wilder fall backward
+// off the edge reached both; the room above her and to her right is as it was)
+export const CQ_CANVAS: MobCanvas = { w: 900, h: 860, ax: 490, ay: 520 };
 
 // ---------------------------------------------------------------------------------------------
 // HER COLOURS: a figure's (her deep twice, the body, the lit, the sheen)
 
-/** Her plumage: brown-black, a dull sheen where the light lies along it. */
-export const PLUMAGE: Ramp = ['#1d1820', '#1d1820', '#4a3e45', '#6e5e66', '#8c7a80'];
+// REDONE 14 Oct on his words, 19:22: “Hey can you redo the carrion queen.  She kinda looks like shit and the
+// animations are uninspired”; his pick for her look, 19:23: “Black-violet, raw bald head, burning crown
+// (Recommended)”, offered as: deep black plumage with a violet sheen, ragged fingered wings, a bald wrinkled red
+// head and neck, her bone crown and the cult's mark burning pink and gold; and, 19:23: “Make sure she hits all the
+// checks in the art book rules including the wild and big animations”. (She was brown-grey all over, Colour 5's
+// “never mud-brown all over”.)
+
+/** Her plumage: black, a violet sheen where the light lies along it (Colour 5, “Neon on dark”). */
+export const PLUMAGE: Ramp = ['#08060c', '#08060c', '#171122', '#2a1d44', '#58399a'];
 /** The feathers cloaking her back: as her plumage, never in its sheen (they lie up into the light). */
-export const MANTLE: Ramp = ['#1d1820', '#1d1820', '#3e343a', '#5a4c54', '#5a4c54'];
-/** Her flight feathers: a step browner and more worn. */
-export const QUILLS: Ramp = ['#201a1e', '#201a1e', '#514248', '#76646a', '#927f84'];
+export const MANTLE: Ramp = ['#08060c', '#08060c', '#140e1e', '#231838', '#231838'];
+/** Her flight feathers: black, worn, their edges catching the violet. */
+export const QUILLS: Ramp = ['#060409', '#060409', '#151021', '#271d42', '#4a3984'];
 /** Her crown: the ruff of bone-white feathers. */
 export const CROWN: Ramp = ['#5a4e48', '#5a4e48', '#b0a492', '#d8cdb9', '#ece4d4'];
-/** Her bare head and neck: wrinkled grey-tan skin (never pink). */
-export const BARE: Ramp = ['#3c3434', '#3c3434', '#857770', '#a89a90', '#bfb3a8'];
-/** Her shanks and toes: grey, scaled. */
-export const SCALES: Ramp = ['#2c2830', '#2c2830', '#6a6270', '#8a8290', '#a39ca8'];
+/** Her bare head and neck: raw, wrinkled red skin, a carrion eater's (a deep crimson, never the cult's pink). */
+export const BARE: Ramp = ['#3a0b12', '#3a0b12', '#8c1d2a', '#b9323c', '#dc5656'];
+/** Her shanks and toes: dark grey, scaled. */
+export const SCALES: Ramp = ['#1c1824', '#1c1824', '#4c4458', '#6c6278', '#8c8298'];
 /** Her talons and the tip of her beak: near black, glossy. */
-export const TALON: Ramp = ['#121014', '#121014', '#2c2830', '#4a4450', '#6a6470'];
-/** Her beak: pale horn. */
-export const BEAK: Ramp = ['#4a4038', '#4a4038', '#b8aa90', '#d9ccb2', '#ece2cc'];
+export const TALON: Ramp = ['#0e0c12', '#0e0c12', '#2a2632', '#48424e', '#6a6470'];
+/** Her beak: pale yellowed horn. */
+export const BEAK: Ramp = ['#4a3f2e', '#4a3f2e', '#bfae86', '#e0d1a8', '#f2e8c8'];
 
 // ---------------------------------------------------------------------------------------------
 // HOW SHE STANDS: MANTLED. Hunched over, her body tipped forward, her head low on her sunk neck; her wings
@@ -88,8 +97,9 @@ export const CQ_REST: Bones = {
   pz: -10, px: 0, yaw: 0, pitch: 28, roll: 0, twist: 0, bend: 16, side: 0,
   faceTurn: -16, faceUp: -18, faceTilt: 4,
   lfx: 2, lfy: 10, lft: 16, lk: 12, rfx: -3, rfy: -10, rft: -14, rk: -12,
-  lhIn: 0, lhx: 10, lhy: ARM * 0.6, lhz: -ARM * 0.2, le: 60,
-  rhIn: 0, rhx: 10, rhy: -ARM * 0.6, rhz: -ARM * 0.2, re: 60,
+  // (her wings held out and up from her hunched shoulders, a ragged cloak spread round her: the shape you dread)
+  lhIn: 0, lhx: 10, lhy: ARM * 0.7, lhz: ARM * 0.02, le: 60,
+  rhIn: 0, rhx: 10, rhy: -ARM * 0.7, rhz: ARM * 0.02, re: 60,
 };
 
 /** HER BREATH: her bulk heaves, her wings stir and settle, her head jerks round to look, then back. 2.6 s round. */
@@ -99,11 +109,13 @@ function cqStand(): Motion {
     loop: 0,
     keys: [
       { at: 0, pose: {} },
-      // (her bulk heaves up and her weight goes over onto her left foot, her wings lifting a little with it)
-      { at: 0.9, pose: { pz: R.pz + 2, py: 3, roll: -1.4, bend: R.bend - 2, lhy: R.lhy + 4, rhy: R.rhy - 4, lhz: R.lhz + 3, rhz: R.rhz + 3 }, ease: 'io' },
-      // (her head jerks round to look, and holds)
-      { at: 1.15, pose: { pz: R.pz + 1.6, py: 2.6, roll: -1.2, faceTurn: R.faceTurn + 22, faceUp: R.faceUp + 4, faceTilt: R.faceTilt - 6 }, ease: 'out' },
-      { at: 1.7, pose: { pz: R.pz + 0.8, py: 1.2, roll: -0.4, faceTurn: R.faceTurn + 24, faceUp: R.faceUp + 3, faceTilt: R.faceTilt - 6 }, ease: 'io' },
+      // (her bulk heaves up and her weight goes over onto her left foot, her cloak of wings lifting and opening with it)
+      // (as far as the handover allows: the game may start any move from any frame of her stand, so it stays within a
+      // step of her rest; the review's JUMP)
+      { at: 0.9, pose: { pz: R.pz + 3, py: 3.5, roll: -1.8, bend: R.bend - 3, lhy: R.lhy + 5, rhy: R.rhy - 5, lhz: R.lhz + 5, rhz: R.rhz + 5 }, ease: 'io' },
+      // (her head whips round to look, and holds)
+      { at: 1.1, pose: { pz: R.pz + 2.6, py: 3, roll: -1.5, lhy: R.lhy + 4, rhy: R.rhy - 4, lhz: R.lhz + 4, rhz: R.rhz + 4, faceTurn: R.faceTurn + 24, faceUp: R.faceUp + 6, faceTilt: R.faceTilt - 8 }, ease: 'io' },
+      { at: 1.7, pose: { pz: R.pz + 1.2, py: 1.6, roll: -0.6, lhy: R.lhy + 1.5, rhy: R.rhy - 1.5, lhz: R.lhz + 2, rhz: R.rhz + 2, faceTurn: R.faceTurn + 26, faceUp: R.faceUp + 4, faceTilt: R.faceTilt - 8 }, ease: 'io' },
       { at: 2.6, pose: {}, ease: 'io' },
     ],
   };
@@ -186,19 +198,24 @@ function cqWalk(): Motion {
   const { off, land } = CQ_WALK;
   const v = CQ_PACE * TILE3;
   const loop = (pts: Track): ((t: number) => number) => curve(pts, T);
-  const pz = loop([[0, 0], [0.1, -2], [0.22, -7.5], [0.45, 13], [0.57, 6], [0.64, -1], [0.72, -8], [0.86, -2]]);
-  const pitch = loop([[0, 0], [0.12, 2], [0.22, 6.5], [0.46, -5], [0.6, -1], [0.72, 7], [0.88, 1]]);
-  const bend = loop([[0, 0], [0.12, 2], [0.22, 7.5], [0.46, -2], [0.6, 0], [0.72, 7], [0.88, 1]]);
-  const faceUp = loop([[0, 0], [0.22, -4.2], [0.46, 6], [0.62, 2], [0.74, -6], [0.9, -1]]);
-  const lift = loop([[0, 0], [0.12, 0.15], [0.26, 0.6], [0.34, 0.98], [0.4, 1], [0.52, 0.93], [0.66, 0.86], [0.8, 0.3], [0.92, 0.04]]);
+  // (wild, as Animations 1 asks: a deep crouch, a hop near twice as high as before, her wings flung high, a heavy landing)
+  // (the crouch eased in from the round's start, so that her body's drop and her wings' rise flow into one)
+  // (the landing's sink: every part of it at its lowest on one beat, 0.78, so that all of her stops there together)
+  const pz = loop([[0, 0], [0.12, -5.5], [0.24, -11], [0.45, 24], [0.57, 12], [0.64, -2], [0.78, -9], [0.93, -2]]);
+  // (she tips forward and is still there by 0.20, before she springs: her head and wings never thrown back on the turn)
+  const pitch = loop([[0, 0], [0.1, 5.5], [0.2, 9], [0.46, -9], [0.6, -2], [0.78, 8], [0.93, 1]]);
+  const bend = loop([[0, 0], [0.1, 6], [0.2, 10], [0.46, -4], [0.6, 0], [0.78, 8], [0.93, 1]]);
+  const faceUp = loop([[0, 0], [0.2, -7], [0.46, 10], [0.62, 3], [0.78, -6], [0.93, -1]]);
+  // (her wings rise at an even speed, are held high through the top of the hop, and come down as she lands)
+  const lift = loop([[0, 0], [0.12, 0.25], [0.24, 0.75], [0.36, 1.25], [0.46, 1.4], [0.56, 1.38], [0.68, 1.05], [0.8, 0.45], [0.92, 0.08]]);
   /** Her feet: carried back with the floor while down; tucked and swung through while she is in the air. */
   const feet = (t: number): Partial<Bones> => {
     const air = t > off && t < land;
     const u = (t - off) / (land - off);
     const g = u * u * u * (u * (u * 6 - 15) + 10);
     const fx = !air ? v * (t <= off ? -t : T - t) : -v * off + v * (T - land + off) * g;
-    const fz = air ? 20 * Math.sin(Math.PI * u) : 0;
-    const fp = air ? 22 * Math.sin(Math.PI * u) : 0;
+    const fz = air ? 28 * Math.sin(Math.PI * u) : 0;
+    const fp = air ? 30 * Math.sin(Math.PI * u) : 0;
     return { lfx: R.lfx + fx, lfz: fz, lfp: fp, rfx: R.rfx + fx, rfz: fz, rfp: fp, lk: R.lk + fp * 0.3, rk: R.rk - fp * 0.3 };
   };
   const keys = byCurves(T, CQ_WALK.fps, (t) => ({
@@ -226,22 +243,26 @@ function cqRake(): Motion {
   const R = CQ_REST;
   const { long } = CQ_RAKE;
   const c = (pts: Track): ((t: number) => number) => curve(pts);
-  const pz = c([[0, 0], [0.24, -8], [0.3, -7], [0.46, 30], [0.56, 35], [0.76, 36], [0.92, 16], [1.05, -2], [1.13, -9], [1.42, -3], [long, 0]]);
-  const px = c([[0, 0], [0.25, -2], [0.52, -8], [0.76, -8.5], [0.97, 6], [1.12, 14], [1.25, 15], [1.45, 6], [long, 0]]);
-  const pitch = c([[0, 0], [0.24, 7], [0.3, 7], [0.52, -24], [0.72, -26], [0.94, 8], [1.08, 22], [1.2, 24], [1.45, 10], [long, 0]]);
-  const bend = c([[0, 0], [0.24, 6], [0.32, 6], [0.54, -12], [0.75, -12.5], [0.96, 4], [1.1, 8], [1.45, 4], [long, 0]]);
-  const faceUp = c([[0, 0], [0.24, -4], [0.52, 14], [0.75, 15], [0.96, -2], [1.12, -9], [1.45, -3], [long, 0]]);
-  const faceTurn = c([[0, 0], [0.5, 10], [0.75, 10.5], [0.98, -4], [1.15, -6], [long, 0]]);
+  // (wild: a leap half as high again as before, her wings flung up past her head, a longer reach, a heavier landing)
+  const pz = c([[0, 0], [0.24, -12], [0.3, -11], [0.46, 42], [0.56, 50], [0.76, 52], [0.92, 22], [1.05, -3], [1.13, -13], [1.42, -4], [long, 0]]);
+  const px = c([[0, 0], [0.25, -3], [0.52, -12], [0.76, -12.5], [0.97, 8], [1.12, 20], [1.25, 21], [1.45, 8], [long, 0]]);
+  const pitch = c([[0, 0], [0.24, 10], [0.3, 10], [0.52, -32], [0.72, -34], [0.94, 10], [1.08, 30], [1.2, 32], [1.45, 13], [long, 0]]);
+  const bend = c([[0, 0], [0.24, 8], [0.32, 8], [0.54, -16], [0.75, -16.5], [0.96, 6], [1.1, 11], [1.45, 5], [long, 0]]);
+  const faceUp = c([[0, 0], [0.24, -6], [0.52, 20], [0.75, 21], [0.96, -3], [1.12, -13], [1.45, -4], [long, 0]]);
+  const faceTurn = c([[0, 0], [0.5, 14], [0.75, 14.5], [0.98, -6], [1.15, -9], [long, 0]]);
   // her wings: rising as she crouches; beating as she springs; high and wide as she hangs; beating down as
   // she rakes; spread low over what she struck
-  const lift = c([[0, 0], [0.26, 0.9], [0.4, 0.45], [0.56, 1.3], [0.76, 1.32], [1.0, -0.3], [1.2, -0.4], [1.5, -0.15], [long, 0]]);
-  const wx = c([[0, 0], [0.52, -8], [0.76, -8], [0.97, 4], [1.12, 9], [1.45, 3], [long, 0]]);
-  const we = c([[0, 0], [0.26, 10], [0.4, -8], [0.56, 20], [0.76, 21], [0.97, -6], [1.12, -18], [1.45, -6], [long, 0]]);
+  // (beaten down as far as her wingtips can go and stay above the rock)
+  const lift = c([[0, 0], [0.26, 1.1], [0.4, 0.5], [0.56, 1.65], [0.76, 1.68], [1.0, -0.12], [1.2, -0.16], [1.5, -0.06], [long, 0]]);
+  const wx = c([[0, 0], [0.52, -11], [0.76, -11], [0.97, 6], [1.12, 13], [1.45, 4], [long, 0]]);
+  const we = c([[0, 0], [0.26, 14], [0.4, -10], [0.56, 26], [0.76, 27], [0.97, -8], [1.12, -24], [1.45, -8], [long, 0]]);
   // both feet: off the floor as she springs, tucked, then thrust out before her, talons spread; raked down and
   // back; down where they stood
-  const fx = c([[0, 0], [0.3, 0], [0.42, 4], [0.56, 22], [0.78, 23], [0.94, 9], [1.06, 0], [long, 0]]);
-  const fz = c([[0, 0], [0.3, 0], [0.42, 12], [0.56, 30], [0.78, 31], [0.94, 12], [1.06, 0], [long, 0]]);
-  const fp = c([[0, 0], [0.3, 0], [0.42, 20], [0.56, -40], [0.78, -42], [0.96, 8], [1.06, 0], [long, 0]]);
+  // (each foot leaves the rock before it goes forward: it never slides while down)
+  const fx = c([[0, 0], [0.36, 0], [0.46, 6], [0.56, 30], [0.78, 31], [0.94, 12], [1.06, 0], [long, 0]]);
+  // (and tips only once it is clear of the rock)
+  const fz = c([[0, 0], [0.3, 0], [0.4, 18], [0.56, 40], [0.78, 41], [0.94, 16], [1.06, 0], [long, 0]]);
+  const fp = c([[0, 0], [0.38, 0], [0.56, -52], [0.78, -54], [0.96, 10], [1.06, 0], [long, 0]]);
   // (hanging there, the warning: her wings and her talons trembling)
   const shiver = (t: number): number => (t > 0.56 && t < 0.78 ? Math.sin((t - 0.56) * Math.PI * 2 * 11) * Math.sin(((t - 0.56) / 0.22) * Math.PI) : 0);
   const keys = byCurves(long, 30, (t) => ({
@@ -251,13 +272,13 @@ function cqRake(): Motion {
     bend: R.bend + bend(t),
     faceUp: R.faceUp + faceUp(t),
     faceTurn: R.faceTurn + faceTurn(t),
-    ...wings(lift(t), { x: wx(t), z: 2.2 * shiver(t), e: we(t) }),
+    ...wings(lift(t), { x: wx(t), z: 3.2 * shiver(t), e: we(t) }),
     lfx: R.lfx + fx(t),
     lfz: fz(t),
-    lfp: fp(t) + 2.5 * shiver(t),
+    lfp: fp(t) + 3.5 * shiver(t),
     rfx: R.rfx + fx(t),
     rfz: fz(t),
-    rfp: fp(t) - 2.5 * shiver(t),
+    rfp: fp(t) - 3.5 * shiver(t),
   }));
   return { keys, hit: CQ_RAKE.hit };
 }
@@ -278,14 +299,16 @@ function cqGust(): Motion {
   const R = CQ_REST;
   const { long, warn, hit } = CQ_GUST;
   const c = (pts: Track): ((t: number) => number) => curve(pts);
-  const pz = c([[0, 0], [0.3, 3], [0.7, 4.5], [0.8, -1], [0.95, -3], [1.2, -1], [long, 0]]);
-  const pitch = c([[0, 0], [0.3, -9], [0.6, -9.5], [0.72, -4], [0.84, 14], [0.95, 18], [1.2, 8], [long, 0]]);
-  const bend = c([[0, 0], [0.3, -4], [0.6, -4], [0.72, 0], [0.84, 6], [0.95, 8], [long, 0]]);
-  const faceUp = c([[0, 0], [0.3, 8], [0.7, 10], [0.8, -4], [long, 0]]);
-  // her wings: up and wide, held (lift 1.38); beaten down and forward (lift below 0, forward); swept up again
-  const lift = c([[0, 0], [0.3, 1.0], [0.45, 1.35], [0.7, 1.38], [0.8, 1.0], [0.9, -0.5], [0.97, -0.35], [1.2, 0.1], [long, 0]]);
-  const wx = c([[0, 0], [0.3, -6], [0.7, -8], [0.82, 4], [0.92, 14], [0.97, 10], [1.2, 2], [long, 0]]);
-  const we = c([[0, 0], [0.3, 6], [0.7, 8], [0.82, 0], [0.92, -16], [0.97, -10], [long, 0]]);
+  // (wild: her wings thrown right up over her, held trembling, then beaten down below her body, hard)
+  const pz = c([[0, 0], [0.3, 6], [0.7, 8], [0.8, -2], [0.95, -6], [1.2, -2], [long, 0]]);
+  const pitch = c([[0, 0], [0.3, -13], [0.6, -14], [0.72, -6], [0.84, 22], [0.95, 28], [1.2, 12], [long, 0]]);
+  const bend = c([[0, 0], [0.3, -6], [0.6, -6], [0.72, 0], [0.84, 9], [0.95, 12], [long, 0]]);
+  const faceUp = c([[0, 0], [0.3, 12], [0.7, 15], [0.8, -6], [long, 0]]);
+  // her wings: up and wide, held (lift 1.75); beaten down and forward (lift below 0, forward); swept up again
+  // (beaten down as far as her wingtips can go and stay above the rock)
+  const lift = c([[0, 0], [0.3, 1.25], [0.45, 1.7], [0.7, 1.75], [0.8, 1.2], [0.9, -0.12], [0.97, -0.06], [1.2, 0.15], [long, 0]]);
+  const wx = c([[0, 0], [0.3, -9], [0.7, -12], [0.82, 6], [0.92, 22], [0.97, 16], [1.2, 3], [long, 0]]);
+  const we = c([[0, 0], [0.3, 9], [0.7, 12], [0.82, 0], [0.92, -24], [0.97, -15], [long, 0]]);
   // (held, trembling: the warning)
   const shiver = (t: number): number => (t > warn + 0.1 && t < hit - 0.05 ? Math.sin((t - warn) * Math.PI * 2 * 11) * Math.sin(((t - warn) / (hit - warn)) * Math.PI) : 0);
   const keys = byCurves(long, 30, (t) => ({
@@ -293,7 +316,7 @@ function cqGust(): Motion {
     pitch: R.pitch + pitch(t),
     bend: R.bend + bend(t),
     faceUp: R.faceUp + faceUp(t),
-    ...wings(lift(t), { x: wx(t), z: 2.2 * shiver(t), e: we(t) }),
+    ...wings(lift(t), { x: wx(t), z: 3.2 * shiver(t), e: we(t) }),
   }));
   return { keys, hit };
 }
@@ -311,19 +334,20 @@ function cqDive(): Motion {
   const R = CQ_REST;
   const { long, warn, hit } = CQ_DIVE;
   const c = (pts: Track): ((t: number) => number) => curve(pts);
-  const pz = c([[0, 0], [0.15, -1.5], [0.3, -1], [0.6, 40], [0.7, 46], [0.85, 46], [hit, 6], [1.5, 30], [1.75, 30], [long, 0]]);
-  const px = c([[0, 0], [0.3, 0], [0.6, -4], [0.85, -4], [hit, 40], [1.5, 40], [long, 0]]);
-  const pitch = c([[0, 0], [0.3, 0], [0.45, -2], [0.6, -14], [0.7, -16], [0.85, -16], [hit, 46], [1.5, 24], [long, 0]]);
-  const bend = c([[0, 0], [0.3, 0], [0.45, 0], [0.6, -6], [0.85, -6], [hit, 14], [1.5, 6], [long, 0]]);
-  const faceUp = c([[0, 0], [0.6, -4], [0.85, -6], [hit, 10], [1.6, 0], [long, 0]]);
+  // (wild: a climb half as high again, a swoop further out along the line, her wings folded tight in the drop)
+  const pz = c([[0, 0], [0.15, -3], [0.3, -2], [0.6, 58], [0.7, 66], [0.85, 66], [hit, 8], [1.5, 40], [1.75, 40], [long, 0]]);
+  const px = c([[0, 0], [0.3, 0], [0.6, -6], [0.85, -6], [hit, 56], [1.5, 56], [long, 0]]);
+  const pitch = c([[0, 0], [0.3, 0], [0.45, -3], [0.6, -20], [0.7, -22], [0.85, -22], [hit, 60], [1.5, 30], [long, 0]]);
+  const bend = c([[0, 0], [0.3, 0], [0.45, 0], [0.6, -8], [0.85, -8], [hit, 18], [1.5, 8], [long, 0]]);
+  const faceUp = c([[0, 0], [0.6, -6], [0.85, -8], [hit, 14], [1.6, 0], [long, 0]]);
   // her wings: beaten up as she climbs, held up trembling at the top, folded back in the dive, open as she pulls up
-  const lift = c([[0, 0], [0.3, 0.3], [0.6, 1.2], [0.7, 1.25], [0.85, 1.25], [1.1, -0.3], [hit, -0.3], [1.5, 0.6], [long, 0]]);
-  const wx = c([[0, 0], [0.7, -4], [0.85, -10], [1.1, -14], [hit, -14], [1.5, -4], [long, 0]]);
-  const we = c([[0, 0], [0.7, 4], [0.85, 10], [hit, 12], [1.5, 0], [long, 0]]);
+  const lift = c([[0, 0], [0.3, 0.4], [0.6, 1.55], [0.7, 1.6], [0.85, 1.6], [1.1, -0.5], [hit, -0.5], [1.5, 0.8], [long, 0]]);
+  const wx = c([[0, 0], [0.7, -6], [0.85, -13], [1.1, -19], [hit, -19], [1.5, -6], [long, 0]]);
+  const we = c([[0, 0], [0.7, 5], [0.85, 13], [hit, 16], [1.5, 0], [long, 0]]);
   // her feet: tucked up under her in the air, thrust out before her for the strike, down again to land
-  const fx = c([[0, 0], [0.3, 0], [0.6, -8], [0.85, -10], [1.1, -6], [hit, 14], [1.4, 30], [1.5, 22], [long, 0]]);
-  const fz = c([[0, 0], [0.3, 0], [0.45, 10], [0.6, 18], [0.85, 18], [1.1, 10], [hit, 0], [1.5, 6], [long, 0]]);
-  const fp = c([[0, 0], [0.3, 0], [0.6, 20], [0.85, 20], [1.1, 8], [hit, 0], [long, 0]]);
+  const fx = c([[0, 0], [0.3, 0], [0.6, -10], [0.85, -13], [1.1, -8], [hit, 18], [1.4, 40], [1.5, 30], [long, 0]]);
+  const fz = c([[0, 0], [0.3, 0], [0.45, 13], [0.6, 24], [0.85, 24], [1.1, 13], [hit, 0], [1.5, 8], [long, 0]]);
+  const fp = c([[0, 0], [0.3, 0], [0.6, 26], [0.85, 26], [1.1, 10], [hit, 0], [long, 0]]);
   // (hanging there, the warning: her wings and her tucked feet trembling)
   const shiver = (t: number): number => (t > warn && t < 0.85 ? Math.sin((t - warn) * Math.PI * 2 * 11) * Math.sin(((t - warn) / (0.85 - warn)) * Math.PI) : 0);
   const keys = byCurves(long, 30, (t) => ({
@@ -354,13 +378,14 @@ function cqCall(): Motion {
   const R = CQ_REST;
   const { long } = CQ_CALL;
   const c = (pts: Track): ((t: number) => number) => curve(pts);
-  const pz = c([[0, 0], [0.3, 8], [0.6, 12], [1.1, 12], [1.35, 6], [long, 0]]);
-  const pitch = c([[0, 0], [0.3, -22], [0.6, -26], [1.1, -26], [1.35, -6], [long, 0]]);
-  const bend = c([[0, 0], [0.3, -12], [0.6, -14], [1.1, -14], [1.35, -4], [long, 0]]);
-  const faceUp = c([[0, 0], [0.3, 30], [0.6, 36], [1.1, 34], [1.35, 8], [long, 0]]);
+  // (wild: she rears up tall, her head thrown right back, her wings flung up and beating hard, twice)
+  const pz = c([[0, 0], [0.3, 14], [0.6, 22], [1.1, 22], [1.35, 9], [long, 0]]);
+  const pitch = c([[0, 0], [0.3, -30], [0.6, -36], [1.1, -36], [1.35, -9], [long, 0]]);
+  const bend = c([[0, 0], [0.3, -16], [0.6, -19], [1.1, -19], [1.35, -6], [long, 0]]);
+  const faceUp = c([[0, 0], [0.3, 40], [0.6, 52], [1.1, 50], [1.35, 12], [long, 0]]);
   // her wings: flung up, beating twice in the air, then folding
-  const lift = c([[0, 0], [0.3, 1.0], [0.5, 1.35], [0.7, 1.1], [0.85, 1.35], [1.0, 1.1], [1.2, 1.3], [1.35, 0.5], [long, 0]]);
-  const wx = c([[0, 0], [0.3, -4], [1.35, -4], [long, 0]]);
+  const lift = c([[0, 0], [0.3, 1.3], [0.5, 1.75], [0.7, 1.05], [0.85, 1.75], [1.0, 1.05], [1.2, 1.7], [1.35, 0.6], [long, 0]]);
+  const wx = c([[0, 0], [0.3, -6], [1.35, -6], [long, 0]]);
   const keys = byCurves(long, 30, (t) => ({
     pz: R.pz + pz(t),
     pitch: R.pitch + pitch(t),
@@ -377,8 +402,9 @@ function cqReel(): Motion {
   return {
     keys: [
       { at: 0, pose: {} },
-      { at: 0.09, pose: { pitch: R.pitch - 10, bend: R.bend - 6, px: -5, pz: R.pz + 2, faceUp: R.faceUp + 16, faceTurn: R.faceTurn + 12, faceTilt: R.faceTilt - 10, lhz: R.lhz + 22, rhz: R.rhz + 22, lhy: R.lhy + 8, rhy: R.rhy - 8 }, ease: 'out' },
-      { at: 0.22, pose: { pitch: R.pitch - 4, bend: R.bend - 2, px: -3, pz: R.pz + 0.6, faceUp: R.faceUp + 6, faceTurn: R.faceTurn + 6, lhz: R.lhz + 8, rhz: R.rhz + 8 }, ease: 'io' },
+      // (wild: knocked back near three times as far as before, her head flung back, her wings thrown up)
+      { at: 0.09, pose: { pitch: R.pitch - 18, bend: R.bend - 10, px: -13, pz: R.pz + 5, faceUp: R.faceUp + 30, faceTurn: R.faceTurn + 22, faceTilt: R.faceTilt - 16, lhz: R.lhz + 40, rhz: R.rhz + 40, lhy: R.lhy + 14, rhy: R.rhy - 14 }, ease: 'out' },
+      { at: 0.22, pose: { pitch: R.pitch - 7, bend: R.bend - 4, px: -8, pz: R.pz + 1.6, faceUp: R.faceUp + 10, faceTurn: R.faceTurn + 9, lhz: R.lhz + 14, rhz: R.rhz + 14, lhy: R.lhy + 4, rhy: R.rhy - 4 }, ease: 'io' },
       { at: 0.4, pose: {}, ease: 'io' },
     ],
   };
@@ -396,8 +422,18 @@ export const CR: V3 = [B.ribDeep + 10, B.ribHalf + 10, B.chest * 0.8];
  * A FEATHER, as a long flat panel: from `root` along `dir`, `len` long and `w` half-wide, its face across
  * `across`; its shaft a tone up, its vane a tone down at its edges, its tip worn ragged (by `seed`).
  */
-function feather(put: Put, part: string, root: V3, dir: V3, across: V3, len: number, w: number, ramp: Ramp, seed: number): void {
-  const d = norm(dir, [0, 0, -1]);
+function feather(put: Put, part: string, root: V3, dir: V3, across: V3, len: number, w: number, ramp: Ramp, seed: number, shaft = true, floor = -Infinity): void {
+  let d = norm(dir, [0, 0, -1]);
+  // (one that would reach under the rock lies along it instead, its tip bent out over the floor: never through it)
+  // (its edges as well as its middle: its tip kept a half-width above the rock)
+  const lim = floor + w;
+  if (floor > -Infinity && root[2] + d[2] * len < lim) {
+    // (a feather already down on the rock lies flat along it)
+    const dz = root[2] > lim ? Math.max(-1, (lim - root[2]) / len) : 0;
+    const level: V3 = [d[0], d[1], 0];
+    const h = Math.hypot(level[0], level[1]) > 1e-3 ? norm(level) : norm([across[0], across[1], 0], [1, 0, 0]);
+    d = norm(add(mul(h, Math.sqrt(1 - dz * dz)), [0, 0, dz]));
+  }
   const a0 = norm(sub(across, mul(d, dot(across, d))), [0, 1, 0]);
   const c = add(root, mul(d, len / 2));
   // (a feather lying flat, as when her wings are raised and spread, faces up into the light: never in its
@@ -415,15 +451,45 @@ function feather(put: Put, part: string, root: V3, dir: V3, across: V3, len: num
       // ragged: a notch out of its worn tip, by the feather
       if (along > 0.86 && hash(seed, Math.floor(b * 0.8 + 9), 3101) > 0.62) return null;
       const t = flat ? Math.min(tone, 2) : tone;
-      if (Math.abs(b) < 0.7 && along < 0.9) return ramp[Math.min(flat ? 3 : 4, t + 1)]; // its shaft
+      if (shaft && Math.abs(b) < 0.7 && along < 0.9) return ramp[Math.min(flat ? 3 : 4, t + 1)]; // its shaft
       if (Math.abs(b) > half - 1.1) return ramp[Math.max(0, t - 1)]; // its edge
       return ramp[t];
     },
   });
 }
 
+/** Her moves' names, as the painter is told them (what is torn from her differs by move). */
+const NAME_REEL = 'The Carrion Queen is struck';
+const NAME_GUST = 'The Carrion Queen beats her wings';
+const NAME_EDGE = 'The Carrion Queen topples off the edge';
+
+/**
+ * FEATHERS TORN FROM HER (what flies off her is her own: Hits 4): `n` from `origin`, from `t0`, thrown out along
+ * `toward` and spread round it, turning as they go; quick at first, then the air takes them, and they fall (or,
+ * `fall` below 0, are carried up). Each a feather as her own. Gone `life` seconds after `t0`.
+ */
+function featherSpray(put: Put, origin: V3, toward: V3, t: number, t0: number, n: number, seed: number, o: { speed: number; spread: number; life: number; fall: number; part: string }): void {
+  const tau = t - t0;
+  if (tau < 0 || tau >= o.life) return;
+  const way = norm(toward, Z);
+  const side = norm(cross(way, Z), [0, 1, 0]);
+  const up = norm(cross(side, way), Z);
+  for (let i = 0; i < n; i++) {
+    const r = (k: number): number => hash(i, k, seed);
+    const a = r(1) * Math.PI * 2;
+    const off = o.spread * Math.sqrt(r(2));
+    const dir = norm(add(way, add(mul(side, Math.cos(a) * off), mul(up, Math.sin(a) * off))), way);
+    const v = o.speed * (0.6 + 0.8 * r(3));
+    const go = (1 - Math.exp(-tau * 5)) / 5;
+    const p = add(origin, add(mul(dir, v * go), [0, 0, -o.fall * tau * tau]));
+    const spin = tau * (5 + r(4) * 7) + r(5) * 6;
+    const d = norm([Math.cos(spin) * 0.8, Math.sin(spin) * 0.8, Math.sin(spin * 0.7) * 0.6], Z);
+    feather(put, `${o.part}${i}`, [p[0], p[1], Math.max(p[2], 6.5)], d, norm(cross(d, Z), [1, 0, 0]), 18 + r(6) * 10, 4.2, i % 3 === 0 ? QUILLS : PLUMAGE, seed + i, false, 2);
+  }
+}
+
 /** HER WING on one side, hung from the arm's bones: coverts over the arm, the secondaries down from the forearm, the primaries fanned from the wrist; `spread` 0 drooping (mantled) to 1 spread (to come). */
-function wing(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
+function wing(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3, floor: number): void {
   const sh = side === 'L' ? s.shoulderL : s.shoulderR;
   const el = side === 'L' ? s.elbowL : s.elbowR;
   const wr = side === 'L' ? s.handL : s.handR;
@@ -438,26 +504,26 @@ function wing(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
   // (the way the feathers hang: down, drooping, a little back, as a mantle hangs; or trailing, spread)
   const hangDir = (k: number): V3 => toward(norm(add(add(mul(Z, -1), mul(cf, -0.12 - 0.22 * k)), mul(out, 0.12 * (1 - k)))), norm(add(back, mul(Z, -0.25))));
   const base = side === 'L' ? 3000 : 3100;
-  // the primaries, from the wrist, the longest, hanging down and a little out, splayed at their tips
+  // the primaries, from the wrist, the longest: the vulture's fingers, fanned wide and each one apart at its end
+  for (let i = 0; i < 6; i++) {
+    const k = i / 5;
+    // (fanned like a hand's fingers, from out at the wing's tip to down, a gap between each two)
+    const dir = toward(norm(add(add(mul(Z, -1), mul(cf, -0.16 * k)), mul(out, 1.3 - k * 1.15))), norm(add(add(mul(out, 1 - k * 0.75), mul(back, 0.15 + k * 0.85)), mul(Z, -0.2 + k * 0.1))));
+    feather(put, part, add(wr, add(mul(out, 4 - k * 6), mul(cf, -k * 4))), dir, out, 112 - k * 12, 7.5, QUILLS, base + i, true, floor);
+  }
+  // the secondaries, down from the forearm, broad and overlapping, their ragged ends a saw along the wing's edge
   for (let i = 0; i < 7; i++) {
     const k = i / 6;
-    // (fanned like fingers, from out and down at the wing's tip to straight down, each separate at its end)
-    const dir = toward(norm(add(add(mul(Z, -1), mul(cf, -0.12 * k)), mul(out, 0.95 - k * 0.85))), norm(add(add(mul(out, 1 - k * 0.7), mul(back, 0.2 + k * 0.8)), mul(Z, -0.15))));
-    feather(put, part, add(wr, add(mul(out, 3 - k * 5), mul(cf, -k * 3))), dir, out, 88 - k * 10, 7, QUILLS, base + i);
-  }
-  // the secondaries, down from the forearm, overlapping
-  for (let i = 0; i < 9; i++) {
-    const k = i / 8;
     const root = lerp3(wr, el, k);
     const dir = hangDir(k);
-    feather(put, part, root, dir, out, 96 - k * 10, 8, QUILLS, base + 20 + i);
+    feather(put, part, root, dir, out, 98 - k * 10 + (i % 2) * 8, 11, QUILLS, base + 20 + i, false, floor);
   }
   // the tertials, from the elbow in toward the body
   for (let i = 0; i < 4; i++) {
     const k = i / 3;
     const root = lerp3(el, sh, k * 0.65);
     const dir = norm(add(hangDir(1), mul(cf, -0.3)));
-    feather(put, part, root, dir, out, 74 - k * 10, 8.5, PLUMAGE, base + 40 + i);
+    feather(put, part, root, dir, out, 74 - k * 10, 10, PLUMAGE, base + 40 + i, false, floor);
   }
   // the leading edge over the bones: a thick feathered edge (rows of small round feathers), not a bare arm
   for (let i = 0; i <= 12; i++) {
@@ -471,7 +537,7 @@ function wing(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
       const k = i / 7;
       const root = add(lerp3(wr, sh, k * 0.9), mul(Z, 6 - row * 12));
       const dir = hangDir(k);
-      feather(put, part, root, dir, out, 34 - row * 4, 7.5, PLUMAGE, base + 60 + row * 10 + i);
+      feather(put, part, root, dir, out, 34 - row * 4, 8.5, PLUMAGE, base + 60 + row * 10 + i, false, floor);
     }
   }
 }
@@ -489,7 +555,7 @@ function leg(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
   const tc = lerp3(hip, knee, 0.62);
   const tu = norm(sub(hip, knee), Z);
   const tf = norm(sub(cf, mul(tu, dot(cf, tu))), [1, 0, 0]);
-  put(part, part, { k: 'ball', c: tc, ax: [mul(tf, rH * 1.35), mul(cross(tu, tf), rH * 1.3), mul(tu, (Math.hypot(...sub(hip, knee)) / 2) * 1.25)], skin: (u, tone) => (fr((u[2] + 1) * 3 + u[1] * 0.6) < 0.16 ? PLUMAGE[Math.max(0, tone - 1)] : PLUMAGE[tone]) });
+  put(part, part, { k: 'ball', c: tc, ax: [mul(tf, rH * 1.35), mul(cross(tu, tf), rH * 1.3), mul(tu, (Math.hypot(...sub(hip, knee)) / 2) * 1.25)], skin: plumed });
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * Math.PI * 2;
     const r = add(lerp3(hip, knee, 0.95), add(mul(tf, Math.cos(a) * rH * 0.9), mul(cross(tu, tf), Math.sin(a) * rH * 0.9)));
@@ -505,11 +571,12 @@ function leg(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
   toes.forEach(([ang, len]) => {
     const dir = norm(add(mul(fwd, Math.cos(ang)), mul(acr, Math.sin(ang))));
     const a = add(ankle, mul(Z, -rA * 0.4));
-    const kn = add(a, add(mul(dir, len * 0.55), [0, 0, -rA * 0.7]));
-    const end = add(kn, add(mul(dir, len * 0.45), [0, 0, -1.5]));
+    // (her toes rest on the rock, their undersides on it, never sunk into it; each talon hooks down to touch it)
+    const kn = add(a, add(mul(dir, len * 0.55), [0, 0, -rA * 0.15]));
+    const end = add(kn, add(mul(dir, len * 0.45), [0, 0, -0.5]));
     put(part, part, { k: 'rod', a, b: kn, ra: rA * 0.42, rb: rA * 0.36, ramp: SCALES });
     put(part, part, { k: 'rod', a: kn, b: end, ra: rA * 0.36, rb: rA * 0.3, ramp: SCALES });
-    put(part, part, { k: 'rod', a: end, b: add(end, add(mul(dir, 7), [0, 0, -3.5])), ra: rA * 0.32, rb: 0.6, ramp: TALON });
+    put(part, part, { k: 'rod', a: end, b: add(end, add(mul(dir, 7), [0, 0, -1.6])), ra: rA * 0.32, rb: 0.6, ramp: TALON });
   });
   // the cult's shackle on her left leg, its chain broken, dragging on the floor
   if (side === 'L') {
@@ -517,35 +584,45 @@ function leg(put: Put, s: Skeleton, side: 'L' | 'R', cf: V3): void {
     const sf = norm(sub(cf, mul(su, dot(cf, su))), [1, 0, 0]);
     const rc = lerp3(ankle, knee, 0.22);
     put('shackle', 'shackle', { k: 'ball', c: rc, ax: [mul(sf, rK * 0.82), mul(cross(su, sf), rK * 0.82), mul(su, 3.4)], skin: IRON });
+    // (the chain hangs from the shackle, swinging below her foot when she is in the air, and lies back along the rock
+    // where it reaches it: never through the rock)
+    const back = norm([-cf[0], -cf[1], 0], [-1, 0, 0]);
+    const high = Math.max(0, rc[2] - 2.2);
     for (let i = 0; i < 9; i++) {
-      const k = (i + 1) / 9;
-      const p = add(add(rc, mul(sf, -rK * 0.7 - k * 26)), [0, 0, -(rc[2] - 1.5) * Math.min(1, k * 1.6)]);
-      put('shackle', 'shackle', { k: 'ball', c: p, ax: sphere(2.1), skin: IRON });
+      const along = ((i + 1) / 9) * 46;
+      const hang = Math.min(along, high);
+      const lie = along - hang;
+      put('shackle', 'shackle', { k: 'ball', c: add(rc, [back[0] * (hang * 0.3 + lie), back[1] * (hang * 0.3 + lie), -hang]), ax: sphere(2.1), skin: IRON });
     }
   }
 }
+
+/** Her bare head's half-sizes: big, a carrion eater's, lumpen (her solids, and the checks'). */
+export const CQ_HEAD: V3 = [B.headR[0] * 1.55, B.headR[1] * 1.25, B.headR[2] * 1.15];
 
 /** Where her head is: low, forward of the root of her neck (in her crown), turned as her face is. */
 export const headOf = (s: Skeleton): V3 => {
   const f = s.face[0];
   const flat = norm([f[0], f[1], 0], [1, 0, 0]);
-  return add(add(s.neck, mul(s.chest[0], 2)), add(mul(flat, 26), [0, 0, 6 + f[2] * 10]));
+  return add(add(s.neck, mul(s.chest[0], 2)), add(mul(flat, 33), [0, 0, 4 + f[2] * 10]));
 };
 
-/** Her plumage on a round solid: the scalloped tips of the small feathers in rows, each row's tips a tone down. */
+/**
+ * Her plumage on a round solid: shaggy, never in tidy rings. Each small feather a long ragged point hanging down
+ * her, of its own length and set at its own place; their tips dark; the violet sheen where the light lies on them.
+ */
 const plumed = (u: V3, tone: number): string => {
-  // (matte: no sheen on the small feathers. Each a scallop, its rounded tip a dark line, the rows laid down
-  // her like tiles, each row's feathers between the last's)
-  const t = Math.min(3, tone);
-  const rowF = (u[2] + 1) * 7;
-  const row = Math.floor(rowF);
-  const around = (Math.atan2(u[1], u[0]) + Math.PI) * 3.2 + row * 0.5;
+  // (the feathers in loose columns round her, each column's points at their own heights, so no ring runs round her)
+  const around = (Math.atan2(u[1], u[0]) + Math.PI) * 5.5;
+  const col = Math.floor(around);
   const cx = fr(around) - 0.5;
-  const fy = fr(rowF);
-  const edge = fy < 0.1 + 1.6 * cx * cx && fy > 1.6 * cx * cx - 0.06;
-  if (edge) return PLUMAGE[Math.max(0, t - 2)];
-  if (fy < 0.3 + 1.6 * cx * cx) return PLUMAGE[Math.max(0, t - 1)];
-  return PLUMAGE[t];
+  const len = 0.28 + 0.2 * hash(col, 1, 3901);
+  const fy = fr((u[2] + 1) / len + hash(col, 2, 3901) * 3);
+  // a point: wide at its root, narrowing to its tip at the bottom of each feather
+  const point = Math.abs(cx) < 0.5 * (1 - fy * 0.9);
+  if (!point) return PLUMAGE[Math.max(0, tone - 2)];
+  if (fy > 0.82) return PLUMAGE[Math.max(0, tone - 1)];
+  return PLUMAGE[tone];
 };
 
 /** THE CARRION QUEEN AS SOLIDS. */
@@ -559,6 +636,8 @@ function cqBits(st: Stage, m: Moment, opts: { burst?: boolean } = {}): Bit[] {
   const [cf, cl, cu] = s.chest;
   const lit = 1 - clamp01(q.out);
   const frame = Math.floor(m.t * 8);
+  // (the rock her feathers may not pass through: none in her deaths, where she goes over the edge into the drop)
+  const floorZ = m.dying ? -Infinity : 2;
 
   // --- HER LEGS ---
   leg(put, s, 'L', cf);
@@ -570,7 +649,7 @@ function cqBits(st: Stage, m: Moment, opts: { burst?: boolean } = {}): Bit[] {
     const k = (i - 3) / 3;
     const root = add(s.pelvis, add(mul(hf, -B.pelvisDeep - 6), mul(hl, k * 10)));
     const dir = norm(add(add(mul(hf, -0.7), mul(hu, -0.75)), mul(hl, k * 0.3)));
-    feather(put, 'tail', root, dir, hl, 46 - Math.abs(k) * 6, 7, QUILLS, 3300 + i);
+    feather(put, 'tail', root, dir, hl, 46 - Math.abs(k) * 6, 7, QUILLS, 3300 + i, true, floorZ);
   }
 
   // --- HER BODY: the belly, the great chest, her back's mantle of feathers ---
@@ -596,8 +675,8 @@ function cqBits(st: Stage, m: Moment, opts: { burst?: boolean } = {}): Bit[] {
   const mn = norm(add(cf, mul(cu, 0.5)));
   const mup = norm(cross(cl, mn));
   const mc = add(chestC, mul(mn, Math.hypot(CR[0] * 0.89, CR[2] * 0.45) + 1.4));
-  const MW = CR[1] * 0.45;
-  const MH = CR[2] * 0.42;
+  const MW = CR[1] * 0.56;
+  const MH = CR[2] * 0.52;
   const markAt = (p: V3): string | null => {
     const d = sub(p, mc);
     const x = -dot(d, cl) / MW;
@@ -613,11 +692,11 @@ function cqBits(st: Stage, m: Moment, opts: { burst?: boolean } = {}): Bit[] {
   // the cult's mark on her breast, burning
   const mr = mul(cl, -1);
   put('mark', 'mark', { k: 'panel', c: mc, u: mul(mr, MW), v: mul(mup, MH), skin: (a, b, front) => (front ? markAt(add(mc, add(mul(mr, a), mul(mup, b)))) : null) });
-  put('glow', 'glow', { k: 'glow', p: add(mc, mul(mn, 8)), c: FLAME[2], r: 46, a: 0.3 * lit });
+  put('glow', 'glow', { k: 'glow', p: add(mc, mul(mn, 8)), c: FLAME[2], r: 66, a: 0.42 * lit });
 
   // --- HER WINGS, mantled round her ---
-  wing(put, s, 'L', cf);
-  wing(put, s, 'R', cf);
+  wing(put, s, 'L', cf, floorZ);
+  wing(put, s, 'R', cf, floorZ);
 
   // --- HER CROWN: the ruff of bone-white feathers round the root of her neck, standing up and out like a crown ---
   const nr = add(s.neck, mul(cf, 2));
@@ -625,40 +704,67 @@ function cqBits(st: Stage, m: Moment, opts: { burst?: boolean } = {}): Bit[] {
     const a = (i / 16) * Math.PI * 2;
     const radial = norm(add(mul(cf, Math.cos(a)), mul(cl, Math.sin(a))));
     const root = add(nr, mul(radial, 12));
-    // (stiff and standing, a crown's points, the longest behind and at the sides)
-    const dir = norm(add(mul(radial, 0.42), Z));
-    feather(put, 'crown', root, dir, cross(dir, radial), 30 + (i % 2) * 10 - Math.max(0, Math.cos(a)) * 10, 3.8, CROWN, 3500 + i);
+    // (stiff and standing, a crown's points, the longest behind and at the sides, raked out and back)
+    const dir = norm(add(mul(radial, 0.5), Z));
+    const long = 40 + (i % 2) * 16 - Math.max(0, Math.cos(a)) * 14;
+    feather(put, 'crown', root, dir, cross(dir, radial), long, 4.2, CROWN, 3500 + i);
+    // (THE CROWN BURNING: each long point's tip alight with the cult's fire, pink burning to gold)
+    // (each tongue of fire licking up off a point, flickering, never a round ball on a stick)
+    if (i % 2 === 1) {
+      const tip = add(root, mul(dir, long - 6));
+      const lick = norm(add(add(dir, mul(Z, 1.2)), mul(radial, 0.25 * Math.sin(m.t * 9 + i))));
+      const fl = 13 + 4 * Math.sin(m.t * 13 + i * 2.1);
+      put('crown', 'crown', { k: 'rod', a: tip, b: add(tip, mul(lick, fl)), ra: 3.4, rb: 0.5, ramp: [FLAME[1], FLAME[1], FLAME[2], FLAME[3], FLAME[4]] });
+      if (lit > 0.3) put('glow', 'glow', { k: 'glow', p: add(tip, mul(lick, 5)), c: FLAME[2], r: 16, a: 0.4 * lit });
+    }
   }
   put('crown', 'crown', { k: 'ball', c: add(nr, mul(cu, 2)), ax: [mul(cf, 15), mul(cl, 15), mul(cu, 8)], skin: (u, tone) => (fr((u[0] + 3) * 4 + (u[1] + 3) * 3) < 0.2 ? CROWN[Math.max(0, tone - 1)] : CROWN[tone]) });
 
   // --- HER BARE NECK, sunk and curving forward out of the crown, wrinkled; HER HEAD, small and bare; HER HOOKED BEAK; her eyes the cult's fire ---
   const [ff, fl, fu] = s.face;
-  const hr: V3 = [B.headR[0] * 1.3, B.headR[1] * 1.05, B.headR[2] * 0.95];
+  const hr: V3 = CQ_HEAD;
   // (sunk: her head carried low, forward of her crown, on the curve of her bare neck; turned as her face is)
   const head = headOf(s);
   const mid = add(lerp3(nr, head, 0.5), mul(Z, 9));
-  const wrinkled = (u: V3, tone: number): string => (fr((u[2] + 1) * 6 + u[0] * 2) < 0.18 ? BARE[Math.max(0, tone - 1)] : BARE[tone]);
-  put('neck', 'neck', { k: 'rod', a: add(nr, mul(cu, 4)), b: mid, ra: 8, rb: 6.4, ramp: BARE });
-  put('neck', 'neck', { k: 'rod', a: mid, b: head, ra: 6.4, rb: 5.6, ramp: BARE });
+  // raw skin, wrinkled in folds and lumped with warts, a carrion eater's
+  const wrinkled = (u: V3, tone: number): string => {
+    const wart = hash(Math.floor((u[0] + 2) * 7), Math.floor((u[1] + 2) * 7) + Math.floor((u[2] + 2) * 7) * 40, 3903) > 0.88;
+    if (wart) return BARE[Math.min(4, tone + 1)];
+    return fr((u[2] + 1) * 7 + u[0] * 2 + 0.3 * Math.sin(u[1] * 9)) < 0.2 ? BARE[Math.max(0, tone - 1)] : BARE[tone];
+  };
+  put('neck', 'neck', { k: 'rod', a: add(nr, mul(cu, 4)), b: mid, ra: 9, rb: 7.4, ramp: BARE });
+  put('neck', 'neck', { k: 'rod', a: mid, b: head, ra: 7.4, rb: 6.6, ramp: BARE });
+  // (the bare neck's wattles: loose folds of skin hanging under it)
+  for (let i = 0; i < 3; i++) put('neck', 'neck', { k: 'ball', c: add(lerp3(mid, head, 0.2 + i * 0.25), mul(Z, -6)), ax: sphere(4.2 - i * 0.6), skin: wrinkled });
   put('head', 'head', { k: 'ball', c: head, ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin: wrinkled });
   // her brow, a heavy ridge over the eye (a scowl, never a noble look)
   put('head', 'head', { k: 'ball', c: at3(head, s.face, hr[0] * 0.25, 0, hr[2] * 0.62), ax: [mul(ff, hr[0] * 0.7), mul(fl, hr[1] * 1.02), mul(fu, hr[2] * 0.32)], skin: BARE });
   // her beak: deep at its root, hooked down hard at its tip, the tip dark
+  // (the beak sized from a smaller head than hers, so that her raw head, not her beak, is what you see)
+  const bk: V3 = [B.headR[0] * 1.3, B.headR[1] * 1.05, B.headR[2] * 0.95];
   const b0 = at3(head, s.face, hr[0] * 0.7, 0, 0);
-  const b1 = at3(head, s.face, hr[0] * 1.65, 0, hr[2] * 0.05);
-  const b2 = at3(head, s.face, hr[0] * 2.0, 0, -hr[2] * 0.85);
-  put('beak', 'beak', { k: 'rod', a: b0, b: b1, ra: hr[2] * 0.66, rb: hr[2] * 0.52, ramp: BEAK });
-  put('beak', 'beak', { k: 'ball', c: b1, ax: [mul(ff, hr[2] * 0.5), mul(fl, hr[2] * 0.45), mul(fu, hr[2] * 0.55)], skin: BEAK });
-  put('beak', 'beak', { k: 'rod', a: add(b1, mul(ff, hr[2] * 0.3)), b: b2, ra: hr[2] * 0.42, rb: 1, ramp: TALON });
+  const b1 = at3(head, s.face, hr[0] + bk[0] * 0.62, 0, bk[2] * 0.05);
+  const b2 = at3(head, s.face, hr[0] + bk[0] * 0.98, 0, -bk[2] * 0.85);
+  put('beak', 'beak', { k: 'rod', a: b0, b: b1, ra: bk[2] * 0.66, rb: bk[2] * 0.52, ramp: BEAK });
+  put('beak', 'beak', { k: 'ball', c: b1, ax: [mul(ff, bk[2] * 0.5), mul(fl, bk[2] * 0.45), mul(fu, bk[2] * 0.55)], skin: BEAK });
+  put('beak', 'beak', { k: 'rod', a: add(b1, mul(ff, bk[2] * 0.3)), b: b2, ra: bk[2] * 0.42, rb: 1, ramp: TALON });
   // the lower beak under it, and the dark gape between
-  put('beak', 'beak', { k: 'rod', a: at3(head, s.face, hr[0] * 0.75, 0, -hr[2] * 0.5), b: at3(head, s.face, hr[0] * 1.5, 0, -hr[2] * 0.5), ra: hr[2] * 0.3, rb: hr[2] * 0.22, ramp: BEAK });
+  put('beak', 'beak', { k: 'rod', a: at3(head, s.face, hr[0] * 0.75, 0, -bk[2] * 0.5), b: at3(head, s.face, hr[0] + bk[0] * 0.5, 0, -bk[2] * 0.5), ra: bk[2] * 0.3, rb: bk[2] * 0.22, ramp: BEAK });
   // her eyes, burning
   for (const sgn of [1, -1]) {
     const e = at3(head, s.face, hr[0] * 0.5, sgn * hr[1] * 0.78, hr[2] * 0.3);
     put('head', 'eye', { k: 'dot', p: e, c: lit > 0.3 ? FLAME[3] : BARE[1], facing: add(mul(fl, sgn), mul(ff, 0.6)), c2: lit > 0.3 ? FLAME[2] : undefined });
-    if (lit > 0.3) put('glow', 'glow', { k: 'glow', p: e, c: FLAME[2], r: 10, a: 0.4 * lit });
+    if (lit > 0.3) put('glow', 'glow', { k: 'glow', p: e, c: FLAME[2], r: 16, a: 0.6 * lit });
   }
   if (opts.burst && m.dying) cqBurst(put, s, m.t);
+  // WHAT IS TORN FROM HER (Hits 4; Animations 1): struck, her feathers burst from her breast; her gust's beat throws
+  // feathers off her wingtips, forward on the wind she makes; going over the edge, her feathers burst from her and
+  // swirl up after her as she falls (her brief's own words for that death)
+  if (m.move === NAME_REEL) featherSpray(put, chestOf(s), add(mul(cf, 0.7), [0, 0, 0.7]), m.t, 0, 10, 3950, { speed: 420, spread: 0.9, life: 0.4, fall: 160, part: 'torn' });
+  if (m.move === NAME_GUST && m.since !== undefined) {
+    for (const [hand, seed] of [[s.handL, 3970], [s.handR, 3990]] as const) featherSpray(put, hand, add(cf, [0, 0, -0.2]), m.t, CQ_GUST.hit, 7, seed, { speed: 520, spread: 0.6, life: CQ_GUST.long - CQ_GUST.hit, fall: 60, part: `blown${seed}` });
+  }
+  if (m.move === NAME_EDGE) featherSpray(put, chestOf(s), Z, m.t, 0.35, 16, 4010, { speed: 300, spread: 1.3, life: CQ_DIE_LONG - 0.35, fall: -24, part: 'swirl' });
   return bits;
 }
 
@@ -712,18 +818,20 @@ function cqDieEdge(): Motion {
   const c = (pts: Track): ((t: number) => number) => curve(pts);
   const L = CQ_DIE_LONG;
   // struck, she staggers back, her feet losing their grip; she topples backward off the edge of the eyrie into the drop
-  const pitch = c([[0, 0], [0.12, -20], [0.4, -28], [0.7, -70], [1.0, -96], [1.4, -112], [L, -120]]);
-  const px = c([[0, 0], [0.12, -2], [0.4, -8], [0.7, -28], [1.0, -50], [1.4, -68], [L, -80]]);
-  const pz = c([[0, 0], [0.4, 0], [0.7, -10], [1.0, -30], [1.4, -60], [L, -90]]);
-  const roll = c([[0, 0], [0.7, 6], [1.4, -14], [L, -22]]);
-  const bend = c([[0, 0], [0.12, -4], [0.4, -6], [0.7, -20], [L, -30]]);
-  const faceUp = c([[0, 0], [0.12, 22], [0.4, 26], [1.0, 30], [L, 34]]);
-  const lift = c([[0, 0], [0.12, 1.2], [0.4, 1.3], [0.7, 1.0], [1.0, 0.7], [1.4, 0.45], [L, 0.3]]);
-  const wx = c([[0, 0], [0.12, -6], [0.7, -10], [L, -14]]);
-  const we = c([[0, 0], [0.12, -10], [0.4, -6], [0.7, 4], [L, 12]]);
-  const fz = c([[0, 0], [0.4, 0], [0.6, 14], [1.0, 24], [L, 28]]);
-  const fx = c([[0, 0], [0.4, 0], [0.7, -8], [L, -20]]);
-  const fp = c([[0, 0], [0.4, 0], [0.6, 12], [L, 22]]);
+  // (wild: she reels further back, and her wings beat as she goes over, clawing at the air, her feathers
+  // bursting from her and swirling up after her: `NAME_EDGE` in her solids)
+  const pitch = c([[0, 0], [0.12, -26], [0.4, -34], [0.7, -76], [1.0, -100], [1.4, -116], [L, -124]]);
+  const px = c([[0, 0], [0.12, -4], [0.4, -12], [0.7, -34], [1.0, -56], [1.4, -74], [L, -86]]);
+  const pz = c([[0, 0], [0.4, 0], [0.7, -12], [1.0, -34], [1.4, -66], [L, -100]]);
+  const roll = c([[0, 0], [0.7, 9], [1.4, -18], [L, -26]]);
+  const bend = c([[0, 0], [0.12, -6], [0.4, -8], [0.7, -22], [L, -32]]);
+  const faceUp = c([[0, 0], [0.12, 28], [0.4, 32], [1.0, 36], [L, 40]]);
+  const lift = c([[0, 0], [0.12, 1.5], [0.4, 1.0], [0.62, 1.6], [0.85, 0.7], [1.08, 1.45], [1.3, 0.7], [1.55, 1.2], [L, 0.5]]);
+  const wx = c([[0, 0], [0.12, -8], [0.7, -12], [L, -16]]);
+  const we = c([[0, 0], [0.12, -12], [0.4, -8], [0.7, 5], [L, 14]]);
+  const fz = c([[0, 0], [0.4, 0], [0.6, 18], [1.0, 30], [L, 34]]);
+  const fx = c([[0, 0], [0.4, 0], [0.7, -10], [L, -24]]);
+  const fp = c([[0, 0], [0.4, 0], [0.6, 16], [L, 26]]);
   return {
     keys: byCurves(L, 30, (t) => ({
       px: px(t), pz: R.pz + pz(t), pitch: R.pitch + pitch(t), roll: roll(t), bend: R.bend + bend(t), faceUp: R.faceUp + faceUp(t),
@@ -782,7 +890,7 @@ function queenAs(dying: MobMove, dieTime: number, burst: boolean): Mob {
   return queenBody(dying, dieTime, burst);
 }
 export const CQ_DEATHS = {
-  edge: queenAs(cqMove('The Carrion Queen topples off the edge', cqDieEdge()), CQ_DIE_LONG, false),
+  edge: queenAs(cqMove(NAME_EDGE, cqDieEdge()), CQ_DIE_LONG, false),
   ledge: queenAs(cqMove('The Carrion Queen goes down with the ledge', cqDieLedge()), CQ_DIE_LONG, false),
   feathers: queenAs(cqMove('The Carrion Queen bursts into feathers', cqDieFeathers()), CQ_DIE_LONG, true),
 };
@@ -804,9 +912,9 @@ function queenBody(dying: MobMove, dieTime: number, burst: boolean): Mob {
     walkFrames: CQ_WALK.frames,
     walkFps: CQ_WALK.fps,
     pace: CQ_PACE,
-    reel: cqMove('The Carrion Queen is struck', cqReel()),
+    reel: cqMove(NAME_REEL, cqReel()),
     more: {
-      gust: cqMove('The Carrion Queen beats her wings', cqGust()),
+      gust: cqMove(NAME_GUST, cqGust()),
       dive: cqMove('The Carrion Queen dives', cqDive()),
       call: cqMove('The Carrion Queen calls', cqCall()),
     },
@@ -822,7 +930,7 @@ function queenBody(dying: MobMove, dieTime: number, burst: boolean): Mob {
   };
 }
 /** HER MOB, as she is for the game: her death is his pick (14 Oct: "Topples off the edge (Recommended)"), she topples backward off the edge. */
-export const CARRION_QUEEN: Mob = queenAs(cqMove('The Carrion Queen topples off the edge', cqDieEdge()), CQ_DIE_LONG, false);
+export const CARRION_QUEEN: Mob = queenAs(cqMove(NAME_EDGE, cqDieEdge()), CQ_DIE_LONG, false);
 
 /** One picture of her in a move, `t` seconds in, as the game holds a figure. */
 export function queenFrame(move: string, t: number, view: GameView = 'front'): Sprite {

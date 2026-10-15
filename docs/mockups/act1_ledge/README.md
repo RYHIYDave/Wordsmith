@@ -119,7 +119,7 @@ dropped). Shown all 25 and asked “Are these the Ledge Road's 25 pieces?”: �
 pixels (the rail's spans too); no cyan, no pink or red, duller than every word; what stands on its foot, a floor
 tile or the trap inside its diamond, a span from post head to post head; 25 of them, the steps gone.
 
-## The Carrion Queen, floor 7's boss (src/art/carrion_queen.ts, behind `CARRION_QUEEN_ON`, off)
+## The Carrion Queen, floor 7's boss (src/art/carrion_queen.ts, behind `CARRION_QUEEN_ON`, off; her look and moves SUPERSEDED by "The Carrion Queen, redone" at the end of this file)
 
 The planning chat's, with his yes (12 Oct, 18:07): a huge cult-bound vulture nesting on an outcrop over the
 drop; the ledge crumbles section by section as the fight goes on; a talon rake (basic), a wing gust that shoves
@@ -629,3 +629,63 @@ His words, 13 Oct, 20:59: "Or we can just have the trail sort of work out one di
 **His answer, 14 Oct:** "Yes, this is it (Recommended)". The boss area goes in the plan as shown: the mountain's top over the drop, the town under the cult's dome far below past its far edge, the Queen's eyrie at the far edge. Nothing of it is in the game; the main chat lays the real floor when floor 7 comes in whole.
 
 **Next:** floors 8 to 10.
+
+---
+
+## The Carrion Queen, redone (14 Oct; for his yes; behind `CARRION_QUEEN_ON`, off)
+
+His words, 19:22: "Hey can you redo the carrion queen.  She kinda looks like shit and the animations are uninspired". Asked as a pop-up which way her look should go, his pick, 19:23: "Black-violet, raw bald head, burning crown (Recommended)", offered as: deep black plumage with a violet sheen, ragged fingered wings, a bald wrinkled red head and neck, her bone crown and the cult's mark burning pink and gold. And, 19:23: "Make sure she hits all the checks in the art book rules including the wild and big animations".
+
+**Read as** (told him so): all of her, her look and every move: stand, hop, rake, gust, dive, call, flinch, and the edge death he picked. Her brief stands: huge, hunched, the bone crown, the cult's chain and mark, ugly, never noble. Why she failed: grey-brown all over (Colour 5: "never mud-brown all over"), her body in stacked rings like a grub, her wings flat slabs, no bright point to catch the eye; her moves too small for Animations 1. Every key time is kept, so the sound chat's timings stand.
+
+**Her look** (src/art/carrion_queen.ts):
+- Plumage black with a violet sheen (`PLUMAGE`, #08060c to #58399a; was brown-grey, #1d1820 to #8c7a80), shaggy points hanging down her in loose columns (was tidy scalloped rings).
+- Her bare head and neck raw red, wrinkled and warty (`BARE`, #3a0b12 to #dc5656; was grey-tan), the head bigger (`CQ_HEAD`: 1.55, 1.25 and 1.15 times the bones' head; was 1.3, 1.05 and 0.95), set further out from her crown, with loose wattles under the neck. The beak is kept at its old size, so the head, not the beak, is what you see.
+- Her crown taller, its long points each burning with a tongue of the cult's fire, pink to gold, flickering (the bone stays bone: `CROWN`).
+- The cult's mark bigger (0.56 by 0.52 of her chest; was 0.45 by 0.42), its glow stronger (66 across at 0.42; was 46 at 0.3); her eyes' glow stronger (16 at 0.6; was 10 at 0.4).
+- Her wings held out and up from her hunched shoulders, a spread cloak (wrists 0.7 of the arm out and level with her shoulders; were 0.6 out and 0.2 below): the shape you dread. Six primaries 112 to 100 long (were seven, 88 to 78), fanned like fingers with a gap between each; seven broad secondaries (were nine thin ones); no shaft line on the small feathers (the streaks were what made them read as curtains).
+
+**Her moves**, each on its old key times (the rake's blow at 28/30 s, the gust's at 0.8 s, the dive's strike at 1.25 s, the call 1.6 s, the flinch 0.4 s, the death 2.0 s):
+- The hop: up 24 (was 13), a deeper crouch, wings flung up to 1.4 (was 1.0).
+- The talon rake: leaps to 52 (was 36), reaches out 31 (was 23), lands 21 forward (was 15), wings up to 1.68 (was 1.32).
+- The wing gust: wings thrown up to 1.75 (was 1.38) and held trembling, beaten down with her body pitched 28 forward (was 18); 14 feathers torn off her wingtips at the beat, flung forward on the wind (gone by 1.5 s).
+- The dive: climbs to 66 (was 46), swoops 56 out along the line (was 40), pitched 60 into the strike (was 46).
+- The call: rears up 22 (was 12), her head thrown back 52 (was 36), her wings beating to 1.75 (was 1.35).
+- The flinch: knocked back 13 (was 5), her head flung back 30 (was 16), her wings thrown up 40 (was 22); 10 feathers burst from her breast (gone by 0.4 s).
+- The edge death: she reels further and goes back 86 and down 100 (was 80 and 90), her wings beating four times as she goes over; 16 of her feathers burst from her at 0.35 s and swirl up after her (her brief's own words for this death).
+- The stand: as big as the handover allows (the game may start any move from any frame of her stand, so it stays within a step of her rest): her heave 3 (was 2), her cloak of wings opening 5 (was 3), her head whipping round 24 (was 22).
+
+**Kept clear of the rock** (new, and a test): her beaten-down wings' feathers, which would have reached 40 picture pixels under the rock, now bend out to lie along it; the cult's chain hangs from her leg in the air and lies back along the rock where it reaches it (it reached under the rock in the rake); her toes rest on the rock (they were drawn 7.8 into it). The test: nothing painted of her is more than half a picture pixel under the rock in any frame of any move (her deaths aside: she goes over the edge).
+
+**Elsewhere:**
+- Her canvas `CQ_CANVAS` 900 by 860, her feet at (490, 520) (was 820 by 780, feet at (410, 520)): her fall back off the edge reached its left and bottom edges.
+- src/art/new_mobs3.ts: a moment now carries its move's name (`Moment.move`, set by `momentOf` and `dyingMoment`), so that she can throw feathers in her flinch, her gust and her death. It changes no picture by itself.
+- The film panels in src/dev/preview_carrion_queen.ts are 840 by 760 (were 560 by 500), each film placing her to fit; the boss review's head (tests/carrion_queen_shape.ts) is `CQ_HEAD`.
+
+**The check, rule by rule** (docs/art/RULEBOOK.md; How art is made 7, every boss through every check; made before he sees her):
+
+| Rule | The Queen | Result |
+| --- | --- | --- |
+| Animations 1: as far as it will go | Every move bigger, on its old key times (the numbers above); feathers torn from her on the flinch, the gust and the death | Pass by the numbers; his eye decides the notch |
+| Animations 4: warnings in sight | The rake's hang, the gust's held wings and the dive's hang are held and trembling; nothing covers them | Pass |
+| Movement 1: weight first | Deep crouches, heavy landings that sink; she falls as a weight | Pass (review) |
+| Movement 3: wind-up and follow-through | Each blow drawn back, held, and carried through | Pass (review: BLOW, HIPS) |
+| Movement 4: loose things follow | Her feathers torn off fly, turn and fall; her chain hangs and lies on the rock | Pass by eye |
+| Movement 5: slick | No frame leaps, stalls, turns back at speed, or starts or stops at its fastest; no jump from her stand into any move and back | Pass (review: JERK, JUMP) |
+| Movement 6: alive when still | Her chest rises and her weight shifts | Pass (review: ALIVE) |
+| Movement 7: heavy blows freeze | As before | Unchanged |
+| Movement 8: feet grip | No foot slides while down | Pass (review: SLIDE) |
+| Nothing below the rock | Bones (review: FLOOR) and everything painted of her (new test) | Pass |
+| Hits 3 and 4: every hit shows; what flies off is hers | Knocked back, her feathers burst from her | Pass |
+| Monsters 3: big ones are menacing | Wings spread wider than the trail, a dark cloak, a burning crown | Pass by eye; his call |
+| Monsters 6 and Colour 3: pink is theirs; glows reserved | Her mark, eyes and crown's fire the cult's pink and gold; nothing cyan; every light the cult's fire | Pass (test) |
+| Colour 5: neon on dark | Black with a violet sheen; raw red head; pink-gold fire | Pass by eye |
+| Pixels 1 and 5: crisp; the pink edge | Every pixel crisp; her pink edge in every frame | Pass (test) |
+| Never: cute, plastic | A ragged, ugly carrion eater; her plumage shaggy, matte | Pass by eye |
+| Checked at phone size | `shots/eyrie_world.png`: her in her eyrie as a phone shows it | Looked at |
+
+**Checks:** tests/carrion_queen.test.ts 9 of 9 (the whole boss review of every move and her three deaths, from in front and behind; crisp; nothing cyan; nothing cut off; her size; her crown and mark; nothing under the rock); `tsc --noEmit` clean; the full unit suite (`tsx --test tests/*.test.ts`), 1362 of 1362, on this tree. NOT RUN: the full regression; a real phone.
+
+**The pictures** (in `shots/`): `cq_look.png` (standing, from in front and behind, beside the knight and the Unfinished); `eyrie_world.png` (her eyrie, one phone screen); films `cq_walkfilm.gif`, `cq_rakefilm.gif` (the rake, then struck), `cq_gustfilm.gif`, `cq_divefilm.gif`, `cq_callfilm.gif`, `cq_edgefilm.gif`, each with a contact sheet (`.sheet.png`).
+
+**Next:** his answer to the pictures; then floors 8 to 10.
