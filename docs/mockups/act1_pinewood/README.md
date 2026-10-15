@@ -485,3 +485,25 @@ its jaws; it glances aside and back, 1.7 to 2.3 s.
 every light the enemy's fire, its eyes at least two pixels by two; nothing cut off; its size; nothing below the floor
 and its legs never on it (its solid fog ends at least 4 above it); no leg through another; never still, nothing leaping,
 its loop closing; its growl, fangs bared, and its glance; its loose fog, in every frame, its loop closing.
+
+Shown `shots/wolf_look.png` and `shots/wolf_stand.gif` and asked "Is this the Fog Wolf?" (offered: "Yes, animate it
+(Recommended)", next its moves; "Not yet"), his answer, 15 Oct: "Not yet". Asked what to change (one pop-up, any picks
+and his own words), his picks, by 14:40 (the clock read 14:40:39 just after): "More fog, less solid wolf (Recommended)",
+offered as: let it dissolve: gaps you can see through, fog pouring off it; and "Eyes bigger and brighter", offered as:
+its burning eyes stand out much more.
+
+### Redone on his words (15 Oct)
+
+READ AS (told him so): gaps through it, fog pouring off it, its eyes bigger and brighter.
+- GAPS THROUGH IT: once it is painted, its fog is thinned away in drifting patches, churning with it: few at its head,
+  more and more toward its haunch and tail and under its belly; where a gap opens, the fog round it thins first to a
+  pale mist (every other pixel), and where a gap reaches its outline, its outline goes with it, so that it frays.
+  Only its eyes and its fangs are never thinned (his pick's offer: only their eyes and teeth are solid). ITS PINK EDGE
+  stays round what of it is solid (its head, its chest and its back), at least 89 pixels of it in every frame; where
+  its fog thins away, its edge goes with it.
+- FOG POURING OFF IT: fog pouring down from its belly and chest to the ground, and back off its back in a long trail,
+  on top of the wisps it had.
+- ITS EYES: half as big again, gold to white at their heart, ringed in pink, in a deeper hollow; their light brighter;
+  embers of their fire streaming back off them.
+
+`tests/fog_wolves.test.ts` 9 of 9, as before (its pink edge now counted round what of it is solid).

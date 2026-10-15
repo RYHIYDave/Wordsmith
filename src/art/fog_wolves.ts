@@ -24,7 +24,7 @@
 // anything moves), and its stand: hovering, never still.
 
 import type { Px, Sprite } from '../engine/px';
-import { hash, lazyFrames, toSprite } from './kit';
+import { INK, RIM_ALPHA, hash, lazyFrames, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
 import { paintBits } from './new_mobs3';
@@ -243,7 +243,7 @@ function fogSkin(seed: number, churn: number, thin: number): Skin {
 /** Its eyes: burning, the enemy's pink at their rim, gold to white at their heart. */
 const EYE_SKIN: Skin = (u) => {
   const r = Math.hypot(u[1], u[2]);
-  return r < 0.45 ? FLAME[4] : r < 0.8 ? FLAME[3] : FLAME[2];
+  return r < 0.55 ? FLAME[4] : r < 0.85 ? FLAME[3] : FLAME[2];
 };
 
 const VIEWS = new Map<GameView, V3>();
@@ -336,12 +336,12 @@ function wolfBits(P: WolfPose, put: Put, view: GameView): void {
   }
   // ITS EYES: the one thing to know it by, burning the enemy's pink to gold; a light of their own
   for (const s of [1, -1]) {
-    const e = H.p([3.9, s * 3.2, 1.9]);
+    const e = H.p([4, s * 3.4, 2]);
     // (a dark hollow of fog round each, for it to burn in)
-    put('fog', `socket${s}`, { k: 'ball', c: H.p([3.6, s * 2.5, 1.9]), ax: [mul(H.f, 1.7), mul(H.l, 1.3), mul(H.u, 1.6)], skin: DEEP });
+    put('fog', `socket${s}`, { k: 'ball', c: H.p([3.6, s * 2.5, 2]), ax: [mul(H.f, 2.2), mul(H.l, 1.4), mul(H.u, 2)], skin: DEEP });
     if (P.eyes > 0.05) {
-      put('eyes', `eye${s}`, { k: 'ball', c: e, ax: [mul(H.f, 1.25), mul(H.l, 1.2), mul(H.u, 1.15)], skin: EYE_SKIN });
-      if (dot(norm(add(mul(H.l, s), mul(H.f, 0.6))), eyeOf(view)) > -0.3) put('glow', `eyeglow${s}`, { k: 'glow', p: e, c: FLAME[2], r: 5 * Math.min(1.6, P.eyes), a: Math.min(0.5, 0.32 * P.eyes) });
+      put('eyes', `eye${s}`, { k: 'ball', c: e, ax: [mul(H.f, 1.7), mul(H.l, 1.6), mul(H.u, 1.6)], skin: EYE_SKIN });
+      if (dot(norm(add(mul(H.l, s), mul(H.f, 0.6))), eyeOf(view)) > -0.3) put('glow', `eyeglow${s}`, { k: 'glow', p: e, c: FLAME[3], r: 6 * Math.min(1.5, P.eyes), a: Math.min(0.55, 0.4 * P.eyes) });
     }
     // (its ears, pricked, laid flat as it snarls)
     const base = H.p([-0.6, s * 2, 3]);
@@ -441,7 +441,7 @@ function grainsOf(which: string, t: number): Grain[] {
     const [, mid, end] = legOf(P, i);
     for (let j = 0; j < 16; j++) {
       const k = LEG_SOLID + (1 - LEG_SOLID) * Math.pow(j / 16, 0.8);
-      const a = TAU * (hash(i, j, 55) + P.churn * (0.5 + hash(i, j + 40, 55)));
+      const a = TAU * (hash(i, j, 55) + P.churn * (1 + (j % 2)));
       const r = 1.3 * (1 - 0.5 * (j / 16)) * (0.3 + 0.7 * hash(i, j + 20, 55));
       const c = add(lerpV(mid, end, k), [Math.cos(a) * r, Math.sin(a) * r, 0]);
       out.push([c, i === 0 || i === 2 ? WISP[3 + (j % 2)] : WISP[1 + (j % 3)], j < 10 && j % 3 !== 2 ? 2 : 1]);
@@ -453,7 +453,90 @@ function grainsOf(which: string, t: number): Grain[] {
     const a = TAU * (hash(j, 1, 57) + P.churn);
     out.push([add(tip, [Math.cos(a) * 1.8 * hash(j, 2, 57) - j * 0.35, Math.sin(a) * 1.2, (hash(j, 3, 57) - 0.5) * 2.4]), WISP[j % 4], j < 5 ? 2 : 1]);
   }
+  // (fog pouring off it: down from its belly and chest to the ground, and back off its back in a long trail)
+  for (let j = 0; j < 5; j++) out.push(...stream(which, t, (P) => worldOf(P, [12 - j * 6, (j % 2 ? 1 : -1) * 2, 16 + 0.6 * j]), 6, 0.6, [-3, 0, -14], 3, 71 + j));
+  for (let j = 0; j < 3; j++) out.push(...stream(which, t, (P) => worldOf(P, [-14 - j * 3, (j - 1) * 2.5, 26 - j]), 6, 0.8, [-11, 0, 3], 4.5, 81 + j));
+  // (its eyes burning: embers of their fire streaming back off them)
+  for (const s of [1, -1]) {
+    const em = stream(which, t, (P) => headFrame(P).p([4, s * 3.6, 2.2]), 4, 0.3, [-12, 0, 5], 3, s > 0 ? 91 : 93);
+    em.forEach((g, i) => out.push([g[0], [FLAME[4], FLAME[3], FLAME[3], FLAME[2]][i], 1]));
+  }
   return out;
+}
+
+/** A smooth noise across the picture (0 to 1), cells `k` pixels across. */
+function noise2(x: number, y: number, seed: number): number {
+  const xi = Math.floor(x), yi = Math.floor(y);
+  const fx = x - xi, fy = y - yi;
+  const s = (v: number): number => v * v * (3 - 2 * v);
+  const h = (i: number, j: number): number => hash(xi + i, yi + j, seed);
+  const a = h(0, 0) + (h(1, 0) - h(0, 0)) * s(fx);
+  const b = h(0, 1) + (h(1, 1) - h(0, 1)) * s(fx);
+  return a + (b - a) * s(fy);
+}
+/**
+ * More fog than wolf (his word): gaps through it you can see the ground through, drifting as its fog churns: few at its
+ * head, more and more toward its haunch and tail and under its belly, fraying its outline where they reach it. Its eyes
+ * and its fangs stay whole (only they are solid).
+ */
+function thinned(px: Px, st: Stage, P: WolfPose): void {
+  const H = headFrame(P);
+  const [hx, hy] = st.at(H.p([2, 0, 0.5]));
+  const [tx, ty] = st.at(worldOf(P, [-24, 0, 21]));
+  const eyes = [1, -1].map((s) => st.at(H.p([4, s * 3.4, 2])));
+  const dx = tx - hx, dy = ty - hy;
+  const L2 = Math.max(1, dx * dx + dy * dy);
+  const ang = Math.PI * P.churn;
+  const ox = 1.6 * Math.cos(ang), oy = 1.6 * Math.sin(ang);
+  const keep = new Set([...FLAME, ...FANG].map((c) => c.toLowerCase()));
+  const [ir, ig, ib] = [parseInt(INK.slice(1, 3), 16), parseInt(INK.slice(3, 5), 16), parseInt(INK.slice(5, 7), 16)];
+  const W = px.w;
+  // (0: kept; 1: thinned to a mist, every other pixel; 2: gone)
+  const cut = new Uint8Array(W * px.h);
+  const edgeAt = (i: number): boolean => px.d[i + 3] === RIM_ALPHA || (px.d[i] === ir && px.d[i + 1] === ig && px.d[i + 2] === ib);
+  for (let y = 0; y < px.h; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      if (px.d[i + 3] === 0 || edgeAt(i)) continue;
+      if (eyes.some(([ex, ey]) => Math.abs(x + 0.5 - ex) < 4 && Math.abs(y + 0.5 - ey) < 4)) continue;
+      const hex = '#' + [px.d[i], px.d[i + 1], px.d[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('');
+      if (keep.has(hex)) continue;
+      const k = Math.max(0, Math.min(1, ((x - hx) * dx + (y - hy) * dy) / L2));
+      // (below the line from its head to its tail: its belly, thinning)
+      const below = y - (hy + dy * k) - 2;
+      const thr = 0.79 - 0.27 * k - 0.05 * Math.max(0, Math.min(2, below / 4));
+      const n = 0.78 * noise2(x * 0.24 + ox, y * 0.34 + oy, 61) + 0.22 * noise2(x * 0.6 - oy, y * 0.7 + ox, 63);
+      cut[y * W + x] = n > thr + 0.07 ? 2 : n > thr ? 1 : 0;
+    }
+  }
+  // (its outline goes with the fog inside it: an edge beside a gap is gone too, and then the edge beside that)
+  for (let pass = 0; pass < 2; pass++) {
+    // (each pass reads the gaps as they stood before it, so that a gap eats one step outward, not along the edge)
+    const was = cut.slice();
+    for (let y = 0; y < px.h; y++) {
+      for (let x = 0; x < W; x++) {
+        const k = y * W + x;
+        const i = k * 4;
+        if (cut[k] || px.d[i + 3] === 0 || !edgeAt(i)) continue;
+        let gone = 0;
+        for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const xx = x + ax, yy = y + ay;
+          if (xx >= 0 && yy >= 0 && xx < W && yy < px.h && was[yy * W + xx] === 2) gone++;
+        }
+        if (gone) cut[k] = 2;
+      }
+    }
+  }
+  for (let k = 0; k < W * px.h; k++) {
+    const i = k * 4;
+    if (cut[k] === 2 || (cut[k] === 1 && ((k % W) + Math.floor(k / W)) % 2 === 1)) px.d[i + 3] = 0;
+    else if (cut[k] === 1) {
+      // (a mist: pale, every other pixel)
+      px.d[i] = 0xca;
+      px.d[i + 1] = 0xc6;
+      px.d[i + 2] = 0xd0;
+    }
+  }
 }
 
 /** One frame of the wolf: `which` (stand), `t` seconds in, from in front or behind. */
@@ -463,6 +546,7 @@ export function wolfPainted(which: string, t: number, view: GameView = 'front'):
   const st = stage(view, WOLF_CANVAS.ax, WOLF_CANVAS.ay, WOLF_CANVAS);
   const lights = paintBits(st, bits, worldOf(P, PIVOT));
   const px = st.whole(P.alive ? ENEMY_RIM : null);
+  thinned(px, st, P);
   for (const [pt, col, size] of grainsOf(which, t)) laid(px, st, pt, col, size);
   return { px, lights };
 }

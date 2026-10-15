@@ -3,7 +3,7 @@
 //   node tools/preview.mjs src/dev/preview_fog_wolves.ts shots/wolf_look.png 1014 640 look
 //     one standing, from in front and from behind, the knight beside it at the game's size; close-ups of it
 //   node tools/page_gif.mjs src/dev/preview_fog_wolves.ts "standfilm" shots/wolf_stand.gif 6
-//     A FILM (15 frames a second): its stand, from in front and from behind, at five times the game's size
+//     A FILM (15 frames a second): its stand, from in front and from behind, at six times the game's size
 //   frames:move:t1,t2,...   several moments of one move side by side
 //   big:move:t:scale[:raw]   one moment large, from in front and from behind
 
@@ -102,7 +102,7 @@ function standFilm(): void {
   const PANE = 520;
   const TOP = 30;
   const PH = 440;
-  const K = 5;
+  const K = 6;
   const cvs = document.createElement('canvas');
   cvs.width = PANE * 2;
   cvs.height = TOP + PH;
@@ -116,7 +116,7 @@ function standFilm(): void {
   const draw = (i: number): void => {
     g.fillStyle = '#0d1030';
     g.fillRect(0, 0, cvs.width, cvs.height);
-    label(g, 'The Fog Wolf hovers, never still (five times the game\'s size)', 8, 6);
+    label(g, 'The Fog Wolf hovers, never still (six times the game\'s size)', 8, 6);
     const note = said(i / fps);
     if (note) label(g, note, cvs.width - note.length * 12 - 16, 6);
     (['front', 'back'] as const).forEach((view, k) => {

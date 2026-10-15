@@ -84,8 +84,9 @@ test('the switch is off, and nothing of the game imports it', () => {
   }
 });
 
-test('crisp: every pixel all there or not at all (but the pink edge); its pink edge round it', () => {
+test('crisp: every pixel all there or not at all (but the pink edge); its pink edge round what of it is solid (where its fog thins away, its edge goes with it: his word, more fog than wolf)', () => {
   const [pr, pg, pb] = rgba(ENEMY_RIM);
+  let least = Infinity;
   for (const f of frames) {
     const { px } = f.painted();
     let soft = 0;
@@ -97,8 +98,10 @@ test('crisp: every pixel all there or not at all (but the pink edge); its pink e
       else soft++;
     }
     assert.ok(soft === 0, `${f.name}: ${soft} soft pixels`);
-    assert.ok(rim > 100, `${f.name}: its pink edge, ${rim} pixels`);
+    assert.ok(rim > 50, `${f.name}: its pink edge, ${rim} pixels`);
+    least = Math.min(least, rim);
   }
+  console.log(`its pink edge: at least ${least} pixels in a frame`);
 });
 
 test('nothing cyan, every light the enemy\'s fire, its eyes burning (his pick, the one thing to know it by), and nothing of it cut off at its canvas\'s edge', () => {
