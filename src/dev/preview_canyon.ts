@@ -19,13 +19,19 @@
 //     close-ups at four times (a far wall's beds, the riverbed, the near face and its shadow, the mesa's rim)
 //   node tools/preview.mjs src/dev/preview_canyon.ts shots/canyon_cost.png 1014 200 cost
 //     what painting it costs, a piece of 256 x 256 picture pixels at a time
+//   node tools/preview.mjs src/dev/preview_canyon.ts shots/canyon_dressed.png 1014 468 dressed
+//     the phone screen with the canyon's pieces (art/floor8.ts) where the mock-up has them, the tops dressed
+//   node tools/preview.mjs src/dev/preview_canyon.ts shots/canyon_pieces.png 1014 1610 pieces
+//     every piece so far, each on the canyon's own ground, at the game's size, with its name
 
+import { cultBanner, pinkBrazier } from '../art/act1_cult';
 import { makeDaggerCultistArt3 } from '../art/cultists';
+import { canyonPieces } from '../art/floor8';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { CANYON_LOOK } from '../art/canyon';
-import { HHP, HWP, TK, paintTerrain, pictureOf, terrainOf } from '../art/terrain';
+import { HHP, HWP, TK, clearOfFloor, fbm, paintTerrain, pictureOf, terrainOf, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
 import { drawText } from '../engine/font';
 import type { Sprite } from '../engine/px';
@@ -35,7 +41,7 @@ import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
 const PW = 1014;
-const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : 468;
+const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 1610 : 468;
 
 // ---------------------------------------------------------------------------------------------------
 // The mock-up's shapes, in the mock-up's own world (its panel 1014 x 468, world (12, 12) at its middle),
@@ -313,3 +319,244 @@ if (HASH === 'shot' || HASH === 'tiles' || HASH === 'kinds') {
   g.restore();
   show(cvs);
 }
+
+// ---------------------------------------------------------------------------------------------------
+// THE PIECES (art/floor8.ts): a sheet of them, and the screen dressed with them
+
+function pc(name: string, frame = 0): Sprite {
+  const q = canyonPieces().find((x) => x.name === name);
+  if (!q || !q.frames) throw new Error(`no piece ${name}`);
+  return q.frames[Math.min(frame, q.frames.length - 1)];
+}
+const shadowOf = (name: string): number | undefined => canyonPieces().find((x) => x.name === name)?.shadow;
+
+function hashOf(x: number, y: number, k: number): number {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(k | 0, 2147483647)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** A patch of the canyon's own ground for a piece to stand on: the riverbed, or a wall rising from it. */
+function patch(w: number, h: number, wall: boolean, foot = 40): HTMLCanvasElement {
+  const L = CANYON_LOOK;
+  const out = new Uint8ClampedArray(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const px = 5200 + x;
+      const py = 3600 + y;
+      const [wx, wy] = worldOf(px, py);
+      const up = h - foot - y;
+      const c = wall && up > 0 ? L.face(0.6, up, px, py, wx, wy) : L.floor(wx, wy, px, py, 1);
+      const t = wall && up <= 0 && up > -7 ? (up > -4 ? L.foot[0] : L.foot[1]) : 0;
+      const o = (y * w + x) * 4;
+      out[o] = c[0] * (1 - t);
+      out[o + 1] = c[1] * (1 - t);
+      out[o + 2] = c[2] * (1 - t);
+      out[o + 3] = 255;
+    }
+  }
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  (cv.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(out, w, h), 0, 0);
+  return cv;
+}
+
+/** Every piece of Echo Canyon's so far, at the game's size, each on its ground, named: what stands on the wall against a piece of the wall. */
+function pieceSheet(): void {
+  g.fillStyle = '#0d1030';
+  g.fillRect(0, 0, PW, PH);
+  const all = canyonPieces().flatMap((q) => (q.frames ?? []).map((sp, i) => ({ name: q.frames!.length > 1 ? `${q.name} ${i + 1}` : q.name, sp, kind: q.kind })));
+  const COLS = 4;
+  const CW = Math.floor(PW / COLS);
+  const CH = 230;
+  const road = patch(CW - 6, CH - 22, false);
+  const wall = patch(CW - 6, CH - 22, true, 30);
+  all.forEach((it, n) => {
+    const ox = (n % COLS) * CW + 3;
+    const oy = Math.floor(n / COLS) * CH + 2;
+    const onWall = it.kind === 'on the wall';
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy + 18, CW - 6, CH - 22);
+    g.clip();
+    g.drawImage(onWall ? wall : road, ox, oy + 18);
+    const floorTile = it.kind === 'floor tile' || it.kind === 'trap';
+    const ax = ox + CW / 2;
+    // at twice the game's size where it fits, else at the game's
+    const K = it.sp.h * 4 <= CH - 34 && it.sp.w * 4 <= CW - 10 ? 2 : 1;
+    const ay = floorTile ? oy + 18 + (CH - 22) / 2 - 16 * K : onWall ? oy + CH - 4 - 30 + 2 : oy + CH - 40;
+    g.drawImage(it.sp.img, Math.round(ax - it.sp.ax * 2 * K), Math.round(ay - it.sp.ay * 2 * K), it.sp.w * 2 * K, it.sp.h * 2 * K);
+    g.restore();
+    g.save();
+    g.beginPath();
+    g.rect(ox, oy, CW - 6, 18);
+    g.clip();
+    g.scale(2, 2);
+    drawText(g, it.name, ox / 2 + 1, oy / 2 + 1, THEME.text, { shadow: P.ink });
+    g.restore();
+  });
+  show(cvs);
+}
+
+/** Where the far wall's foot is down the panel's column `px`: the first floor pixel under a run of at least `tall` face pixels (or -1). */
+function wallFoot(kinds: Uint8Array, px: number, tall = 60): number {
+  let run = 0;
+  for (let py = 0; py < PH; py++) {
+    const k = kinds[py * PW + px];
+    if (k === TK.Face) run++;
+    else if (k === TK.Floor && run >= tall) return py;
+    else run = 0;
+  }
+  return -1;
+}
+
+interface Stand { x: number; y: number; sp: Sprite; lift?: number; shadow?: number; figure?: boolean; tall?: boolean }
+
+/** The tops dressed, by the rule he said yes to: junipers in groves with bare ground between, sage, yucca, a few dead trees, boulders, small hoodoos; never over the road. */
+function dressTops(stands: Stand[]): void {
+  const RISE = CANYON_LOOK.rise;
+  for (let gy = -40; gy < PH + 60; gy += 17) {
+    for (let gx = 4; gx < PW; gx += 21) {
+      const px = Math.round(gx + (hashOf(gx, gy, 1) - 0.5) * 16);
+      const py = Math.round(gy + (hashOf(gx, gy, 2) - 0.5) * 12);
+      const roll = hashOf(gx, gy, 3);
+      const [wx, wy] = worldOf(VX + px, VY + py + RISE);
+      if (T.ground(wx, wy)) continue;
+      const grove = fbm(wx * 0.32, wy * 0.32, 714);
+      let sp: Sprite | null = null;
+      let hw = 12;
+      let h = 16;
+      let tall = false;
+      if (grove > 0.63 && roll < 0.16) {
+        const k = hashOf(gx, gy, 4) < 0.35 ? 0 : hashOf(gx, gy, 4) < 0.75 ? 1 : 2;
+        sp = pc('juniper', k);
+        hw = 28;
+        h = sp.h * 2;
+        tall = true;
+      } else if (roll < 0.06) {
+        sp = pc('sagebrush', hashOf(gx, gy, 5) < 0.5 ? 0 : 1);
+        hw = 18;
+        h = 24;
+      } else if (roll < 0.085) {
+        sp = pc('yucca', hashOf(gx, gy, 6) < 0.6 ? 0 : 1);
+        hw = 16;
+        h = sp.h * 2;
+      } else if (roll < 0.095) {
+        sp = pc('red boulder', Math.floor(hashOf(gx, gy, 7) * 3));
+        hw = 24;
+        h = 34;
+      } else if (roll < 0.1) {
+        sp = pc('dead juniper');
+        hw = 30;
+        h = 90;
+        tall = true;
+      } else if (roll < 0.104) {
+        sp = pc('hoodoo', 0);
+        hw = 24;
+        h = 100;
+        tall = true;
+      }
+      if (!sp || !clearOfFloor(T, VX + px, VY + py, hw, h)) continue;
+      stands.push({ x: wx, y: wy, sp, lift: RISE, tall });
+    }
+  }
+}
+
+/** ECHO CANYON DRESSED: the pieces where the mock-up he said yes to has them, the tops dressed by its rule. */
+function dressedShot(): void {
+  const kinds = paintPanel(g, VX, VY, PW, PH);
+  const stands: Stand[] = [];
+  // the cult's wheel ruts down the road, a floor tile along it, first, on the ground
+  const line = [[300, -80], [330, 30], [365, 120], [425, 186], [507, 236], [598, 266], [668, 300], [712, 380], [736, 540]].map(([a, b]) => at(a, b));
+  for (let ty = 0; ty < CANYON_FLOOR.h; ty++) {
+    for (let tx = 0; tx < CANYON_FLOOR.w; tx++) {
+      if (CANYON_FLOOR.tiles[ty * CANYON_FLOOR.w + tx] !== T_FLOOR || (CANYON_FLOOR.cut && CANYON_FLOOR.cut[ty * CANYON_FLOOR.w + tx])) continue;
+      let best = Infinity;
+      let alongY = false;
+      for (let i = 0; i + 1 < line.length; i++) {
+        const [ax, ay] = line[i];
+        const [bx, by] = line[i + 1];
+        const dx = bx - ax;
+        const dy = by - ay;
+        const t = Math.max(0, Math.min(1, ((tx + 0.5 - ax) * dx + (ty + 0.5 - ay) * dy) / (dx * dx + dy * dy)));
+        const d = Math.hypot(tx + 0.5 - ax - t * dx, ty + 0.5 - ay - t * dy);
+        if (d < best) {
+          best = d;
+          alongY = Math.abs(dy) > Math.abs(dx);
+        }
+      }
+      if (best > 0.55) continue;
+      const [sx, sy] = pictureOf(tx, ty);
+      drawAt(g, pc('wheel ruts', alongY ? 1 : 0), sx - VX, sy - VY);
+    }
+  }
+  const onFloor = (px: number, py: number, name: string, frame = 0, tall = false): void => {
+    const [x, y] = at(px, py);
+    if (!T.ground(x, y)) console.warn('off the floor:', name, px, py);
+    stands.push({ x, y, sp: pc(name, frame), shadow: shadowOf(name), tall });
+  };
+  const againstWall = (px: number, name: string): void => {
+    const py = wallFoot(kinds, px);
+    if (py < 0) return console.warn('no wall at', px);
+    const [x, y] = worldOf(VX + px, VY + py + 2);
+    stands.push({ x, y, sp: pc(name), shadow: shadowOf(name) });
+  };
+  const onTop = (px: number, py: number, sp: Sprite, shadow?: number): void => {
+    const [x, y] = worldOf(VX + px, VY + py + CANYON_LOOK.rise);
+    if (T.ground(x, y)) console.warn('on the floor, not a top:', px, py);
+    stands.push({ x, y, sp, lift: CANYON_LOOK.rise, shadow });
+  };
+  // the hoodoos standing out of the near wall where the canyon turns (the mock-up's two), seen through
+  onFloor(345, 250, 'hoodoo', 1, true);
+  onFloor(452, 314, 'hoodoo', 2, true);
+  // the cult's broken-down wagon and its spilt stores, on the road by the knight
+  onFloor(586, 246, "the cult's wagon, broken down");
+  onFloor(640, 292, 'crate of stores', 0);
+  onFloor(474, 196, 'sacks of meal', 0);
+  onFloor(684, 330, 'crate of stores', 1);
+  onFloor(392, 150, 'sagebrush', 0);
+  onFloor(705, 410, 'a steer\'s skull');
+  stands.push({ x: at(445, 172)[0], y: at(445, 172)[1], sp: cultBanner(0), shadow: 0.2 });
+  // the cult's lookout on the far top, its fire burning the cult's pink, its hoist letting crates down the wall
+  onTop(736, 50, pc("the cult's lookout tent"), 0.9);
+  onTop(674, 68, pinkBrazier(1), 0.3);
+  onTop(800, 64, cultBanner(2), 0.2);
+  againstWall(700, "the cult's hoist");
+  for (const [x, y] of FOES) stands.push({ x, y, sp: cultist.front.idle[0], figure: true, shadow: 0.45 });
+  stands.push({ x: HERO[0], y: HERO[1], sp: knight, figure: true, shadow: 0.5 });
+  dressTops(stands);
+  stands.sort((a, b) => a.x + a.y - (b.x + b.y));
+  const figures = stands.filter((st) => st.figure);
+  for (const st of stands) {
+    const [sx0, sy0] = pictureOf(st.x, st.y);
+    const sx = sx0 - VX;
+    const sy = sy0 - VY - (st.lift ?? 0);
+    if (st.shadow) {
+      g.fillStyle = 'rgba(25, 18, 40, 0.32)';
+      g.beginPath();
+      g.ellipse(sx, sy, st.shadow * HWP * 1.1, st.shadow * HHP * 1.1, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    // a tall thing seen through while someone stands behind it (the game's SEEN_THROUGH, 0.38)
+    let alpha = 1;
+    if (st.tall) {
+      // (where the figure's picture and its own overlap)
+      const l = sx - st.sp.ax * 2;
+      const t = sy - st.sp.ay * 2;
+      for (const f of figures) {
+        if (f.x + f.y >= st.x + st.y) continue;
+        const [fx, fy] = pictureOf(f.x, f.y);
+        const fl = fx - VX - f.sp.ax * 2;
+        const ft = fy - VY - f.sp.ay * 2;
+        if (fl < l + st.sp.w * 2 && fl + f.sp.w * 2 > l && ft < t + st.sp.h * 2 && ft + f.sp.h * 2 > t) alpha = 0.38;
+      }
+    }
+    drawAt(g, st.sp, sx, sy, alpha);
+  }
+  nameAndMap(g, HERO);
+  show(cvs);
+}
+
+if (HASH === 'pieces') pieceSheet();
+else if (HASH === 'dressed') dressedShot();
