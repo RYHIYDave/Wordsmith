@@ -118,3 +118,10 @@ the boardwalk's halves one walk; twenty-five.
 | Original designs only | the statue's head, the tablet's eye and script, all made here |
 | Tall things seen through (12 Oct) | the game's own; the dressed picture does it as the game does, for the dead trees, the column, the obelisks |
 | Light from the upper left | every piece lit from there; the water's rings lit on that side |
+
+Shown `shots/fen_dressed.png` (the phone screen dressed with them) and `shots/fen_pieces.png` (each one by one) and
+asked "Are these the Sunken Fen's 25 pieces?" (offered: "Yes, on to the Drowned Eye (Recommended)", next the boss: a few
+quick pop-ups on its look, then its picture, then its moves from his design doc; "Not yet"), his answer, 15 Oct, by
+16:01 (the clock read 16:01:21 just after): "Yes, on to the Drowned Eye (Recommended)".
+
+NEXT: the Drowned Eye, floor 10's boss: its brief by pop-ups, its look, then its moves from his design doc.
