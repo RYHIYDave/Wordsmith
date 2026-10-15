@@ -21,7 +21,7 @@
 //     what painting it costs, a piece of 256 x 256 picture pixels at a time
 //   node tools/preview.mjs src/dev/preview_canyon.ts shots/canyon_dressed.png 1014 468 dressed
 //     the phone screen with the canyon's pieces (art/floor8.ts) where the mock-up has them, the tops dressed
-//   node tools/preview.mjs src/dev/preview_canyon.ts shots/canyon_pieces.png 1014 1610 pieces
+//   node tools/preview.mjs src/dev/preview_canyon.ts shots/canyon_pieces.png 1014 2530 pieces
 //     every piece so far, each on the canyon's own ground, at the game's size, with its name
 
 import { cultBanner, pinkBrazier } from '../art/act1_cult';
@@ -41,7 +41,7 @@ import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
 const PW = 1014;
-const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 1610 : 468;
+const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 2530 : 468;
 
 // ---------------------------------------------------------------------------------------------------
 // The mock-up's shapes, in the mock-up's own world (its panel 1014 x 468, world (12, 12) at its middle),
@@ -498,7 +498,22 @@ function dressedShot(): void {
   };
   const againstWall = (px: number, name: string): void => {
     const py = wallFoot(kinds, px);
-    if (py < 0) return console.warn('no wall at', px);
+    if (py < 0) {
+      const runs: string[] = [];
+      let last = -1;
+      let n = 0;
+      for (let yy = 0; yy < PH; yy++) {
+        const k = kinds[yy * PW + px];
+        if (k === last) n++;
+        else {
+          if (last >= 0) runs.push(`${last}x${n}`);
+          last = k;
+          n = 1;
+        }
+      }
+      runs.push(`${last}x${n}`);
+      return console.warn('no wall at', px, runs.join(' '));
+    }
     const [x, y] = worldOf(VX + px, VY + py + 2);
     stands.push({ x, y, sp: pc(name), shadow: shadowOf(name) });
   };
@@ -522,7 +537,21 @@ function dressedShot(): void {
   onTop(736, 50, pc("the cult's lookout tent"), 0.9);
   onTop(674, 68, pinkBrazier(1), 0.3);
   onTop(800, 64, cultBanner(2), 0.2);
-  againstWall(700, "the cult's hoist");
+  againstWall(756, "the cult's hoist");
+  againstWall(700, 'the chant carved in the wall');
+  againstWall(664, 'a seep in the wall');
+  // the Cantor's: his lectern and the cult's bells where the road turns; a page of the chant dropped; driftwood
+  // in the old bed; the rim's rock ready to fall
+  onFloor(424, 132, "the Cantor's lectern");
+  onFloor(462, 118, "a frame of the cult's bells");
+  onFloor(566, 284, 'a torn page of the chant');
+  onFloor(704, 372, 'driftwood');
+  {
+    const [x, y] = at(652, 336);
+    const [sx, sy] = pictureOf(Math.floor(x), Math.floor(y));
+    drawAt(g, pc('rockfall from the rim', 1), sx - VX, sy - VY);
+  }
+  onTop(150, 262, pc('singing stones'), 0.7);
   for (const [x, y] of FOES) stands.push({ x, y, sp: cultist.front.idle[0], figure: true, shadow: 0.45 });
   stands.push({ x: HERO[0], y: HERO[1], sp: knight, figure: true, shadow: 0.5 });
   dressTops(stands);

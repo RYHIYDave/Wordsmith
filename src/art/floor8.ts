@@ -29,7 +29,7 @@ import { CLOTH, PAINT } from './act1_cult';
 import { C_SAND } from './canyon';
 import { Scene, XYZ, facetOf, toneAt } from './floor4';
 import type { V3 } from './floor4';
-import { IRON, ROPE, TIMBER, add, beamAxes, cross, dot, finish, fr, mul, norm, rope, sub, tileUV, timber } from './floor6';
+import { FRESH, IRON, ROPE, TIMBER, add, beamAxes, cross, dot, finish, fr, mul, norm, rope, seenNormal, sub, tileUV, timber } from './floor6';
 import { BONE, DRIFT, SACKING } from './floor7';
 import type { Piece } from './floorkit';
 import { GRAIN, hash } from './kit';
@@ -489,10 +489,356 @@ function lookoutTent(): Sprite {
 }
 
 // =================================================================================================
+// THE CANTOR'S: his chant, his bells, his horn, the stones that sing
+
+/** Bronze, the cult's bells: dark, dull, a little green in its hollows (never the friend's cyan). */
+export const BRONZE: Ramp = ['#3a2e26', '#584634', '#7a6442', '#9c8656', '#b8a26e'];
+/** Parchment, the chant's pages, old and sun-yellowed. */
+export const PARCH: Ramp = ['#6e6252', '#958870', '#b8ab90', '#d4c8ac', '#e6dcc4'];
+/** The cult's ink: a dull violet-black. */
+const INK = '#2e2638';
+
+/**
+ * THE CANTOR'S LECTERN: a tall stand of dark carved wood planted in the road, its top slanted toward the singers,
+ * the great book of the chant lying open on it, lines of the chant across its pages; the cult's violet hung from
+ * its desk, the mark on it in bone-pale. Where he leads the chant down the supply road.
+ */
+function lectern(): Sprite {
+  const S = new Scene(new Px(64, 92), 32, 80);
+  // its foot: a cross of timbers; its post
+  timber(S, [-9, 0, 1.4], [9, 0, 1.4], 1.4, 1);
+  timber(S, [0, -9, 1.4], [0, 9, 1.4], 1.4, 1);
+  S.rod([0, 0, 2], [0, 0, 40], 2.4, 2, TIMBER, 2);
+  // its desk, slanting down toward the eye (+x +y)
+  const deskC: V3 = [0, 0, 44];
+  const tilt = norm([0.45, 0.45, 1]);
+  const along = norm([1, -1, 0]);
+  const down = norm(cross(tilt, along));
+  S.box(deskC, [along, down, tilt], [11, 8, 1.2], (f, _u, _v, n) => (f === 4 ? TIMBER[2] : toneAt(n, TIMBER, -0.05)), 3);
+  // the book open on it: two pages bowed up a little from the spine, lines of the chant across each
+  for (const sg of [1, -1]) {
+    const c = add(add(deskC, mul(along, sg * 5)), mul(tilt, 2));
+    S.egg(c, [along, down, tilt], [5.2, 6.6, 1.4], (n, w) => {
+      const q = sub(w, c);
+      const a = dot(q, along);
+      const d = dot(q, down);
+      if (dot(n, tilt) < 0.5) return PARCH[1]; // the pages' edges
+      if (Math.abs(fr(d / 1.7) - 0.5) < 0.18 && Math.abs(a) < 4 && Math.abs(d) < 5.4 && hash(Math.floor(a * 1.2), Math.floor(d / 1.7), sg + 3) > 0.25) return INK;
+      return toneAt(n, PARCH, 0.15);
+    }, 4 + (sg > 0 ? 0 : 1));
+  }
+  // the cult's violet hanging from the desk's lower edge toward the eye, the mark on it
+  const top = add(deskC, mul(down, 8));
+  S.quad([add(top, mul(along, -6)), add(top, mul(along, 6)), add(add(top, mul(along, 5)), [0, 0, -20]), add(add(top, mul(along, -5)), [0, 0, -20])], (u, v) => {
+    if (Math.abs(u - 0.5) < 0.06 && v > 0.25 && v < 0.75) return PAINT;
+    if (Math.abs(v - 0.4) < 0.05 && Math.abs(u - 0.5) < 0.18) return PAINT;
+    if (v > 0.93 && fr(u * 5) < 0.5) return null; // its ragged hem
+    return CLOTH[u < 0.15 ? 3 : 2];
+  }, 6);
+  return finish(S, 32, 80);
+}
+
+/** A BELL of the cult's, hanging: its crown, its waist, its flared lip; its mouth dark. */
+function bell(S: Scene, top: V3, h: number, id: number): void {
+  const n = Math.ceil(h / 1.2);
+  for (let k = 0; k <= n; k++) {
+    const t = k / n;
+    const z = top[2] - t * h;
+    const r = h * (0.32 + 0.12 * t + 0.28 * Math.pow(t, 4));
+    S.egg([top[0], top[1], z], XYZ, [r, r, 1.1], (nn) => (k === n ? '#1c1716' : toneAt(nn, BRONZE, t > 0.85 ? 0.15 : 0)), id);
+  }
+  S.ball([top[0], top[1], top[2] + 1], h * 0.22, BRONZE, id, undefined, 0.1);
+}
+
+/** A FRAME OF THE CULT'S BELLS: two posts and a beam of rough timber, three bronze bells of three sizes hung from it, the cords to ring them hanging. */
+function bellFrame(): Sprite {
+  const S = new Scene(new Px(96, 104), 48, 90);
+  const L: V3 = [1, -1, 0];
+  const Ln = norm(L);
+  const at = (l: number, z: number): V3 => add(mul(Ln, l), [0, 0, z]);
+  timber(S, at(-26, 0), at(-26, 64), 1.8, 1);
+  timber(S, at(26, 0), at(26, 64), 1.8, 1);
+  timber(S, at(-30, 62), at(30, 62), 1.9, 2, [0.12, 0.88]);
+  // the bells, their sizes as the notes of the chant
+  const bells: [number, number][] = [[-14, 15], [1, 19], [16, 12]];
+  bells.forEach(([l, h], i) => {
+    rope(S, at(l, 60), at(l, 56), 0, 3, 0.55);
+    bell(S, at(l, 55), h, 4 + i);
+    rope(S, at(l, 56 - h), at(l + 1, 56 - h - 14), 0, 7, 0.45);
+  });
+  return finish(S, 48, 90);
+}
+
+/** THE CULT'S GREAT HORN: a long horn of bone and old brass resting on two forked stands, its mouth flared and turned down the canyon, to carry the call from wall to wall. */
+function greatHorn(): Sprite {
+  const S = new Scene(new Px(160, 84), 72, 62);
+  // two forked stands
+  for (const x of [-18, 16]) {
+    S.rod([x, 0, 0], [x, 0, 18], 1.2, 1, TIMBER, 1);
+    S.rod([x, 0, 18], [x - 2, -3, 23], 0.8, 0.6, TIMBER, 1);
+    S.rod([x, 0, 18], [x + 2, 3, 23], 0.8, 0.6, TIMBER, 1);
+  }
+  // the horn along x, curving up at its mouth end, its tube widening
+  const pt = (t: number): V3 => [-46 + t * 100, 0, 21 + 12 * Math.pow(t, 3) - 4 * t * (1 - t)];
+  const N = 30;
+  for (let k = 0; k < N; k++) {
+    const t0 = k / N;
+    const t1 = (k + 1) / N;
+    const r0 = 1.5 + 5.5 * Math.pow(t0, 2.6);
+    const r1 = 1.5 + 5.5 * Math.pow(t1, 2.6);
+    const band = k % 7 === 3 || k === N - 1;
+    S.rod(pt(t0), pt(t1), r0, r1, band ? BRONZE : BONE, band ? 3 : 2);
+  }
+  // its mouth, open and dark, a rim of brass round it
+  const m = pt(1);
+  S.egg(add(m, [0.6, 0, 1.2]), beamAxes([0, 0, 0], [0.9, 0, 0.45]), [0.9, 8, 8], (n) => (n[0] > 0.4 ? '#1c1716' : toneAt(n, BRONZE, 0.1)), 4);
+  // the mouthpiece
+  S.ball(pt(0), 1.6, BRONZE, 5, undefined, 0.1);
+  return finish(S, 72, 62);
+}
+
+/** SINGING STONES: three standing stones of the red rock, pierced through with round holes where the wind moans, a fourth fallen. */
+function singingStones(): Sprite {
+  const S = new Scene(new Px(104, 96), 52, 80);
+  const stones: [number, number, number, number, number][] = [[-14, -8, 52, 7, 0.3], [8, -14, 64, 8, -0.2], [18, 8, 44, 6.5, 0.6]];
+  stones.forEach(([x, y, h, r, turn], i) => {
+    const A = beamAxes([0, 0, 0], [Math.cos(turn), Math.sin(turn), 0]);
+    const c: V3 = [x, y, h / 2];
+    S.box(c, [A[0], A[1], [0, 0, 1]], [r, r * 0.6, h / 2], (f, u, v, n) => {
+      // its holes, through it: dark, lit along their lower lip
+      for (let k = 0; k < 3; k++) {
+        const hv = 0.3 + k * 0.22 + hash(i, k, 999) * 0.06;
+        const hu = 0.35 + hash(i, k + 5, 999) * 0.3;
+        const d = Math.hypot((u - hu) * r * 2, (v - hv) * h * 0.55);
+        if ((f === 0 || f === 2 || f === 1 || f === 3) && d < 2.4) return '#1e1618';
+        if ((f === 0 || f === 2) && d < 3.3 && v < hv) return RROCK[4];
+      }
+      if (f === 4) return RROCK[3];
+      if (fr(v * h / 7 + i * 0.3) < 0.12) return toneAt(n, RROCK, -0.4); // its beds
+      return toneAt(n, RROCK, -0.05);
+    }, 1 + i);
+  });
+  // the fourth, fallen and broken
+  S.box([-6, 18, 4], beamAxes([0, 0, 0], [1, 0.4, 0]), [16, 5, 4], (f, _u, _v, n) => (f === 4 ? RROCK[3] : toneAt(n, RROCK, -0.08)), 4);
+  return finish(S, 52, 80);
+}
+
+/** THE CHANT CARVED IN THE WALL (on the wall): a panel of the face smoothed flat and cut with the chant's lines, row under row, the grooves dark and lit along their lower lips; the cult's mark at its head. */
+function chantInWall(): Sprite {
+  const S = new Scene(new Px(80, 130), 40, 120);
+  const y0 = -7;
+  const at = (x: number, z: number): V3 => [x * 0.75 - 3, y0 - x * 0.75, z];
+  S.quad([at(-22, 98), at(22, 98), at(22, 34), at(-22, 34)], (u, v) => {
+    const x = (u - 0.5) * 44;
+    const z = 98 - v * 64;
+    // its border, a groove round it
+    if (u < 0.04 || u > 0.96 || v < 0.05 || v > 0.96) return u < 0.02 || u > 0.98 || v < 0.025 || v > 0.985 ? RROCK[1] : RBAND[3];
+    // the mark at its head
+    if (z > 84) {
+      if (Math.abs(x) < 1.2 && z < 95) return RROCK[0];
+      if (Math.abs(z - 91) < 1 && Math.abs(x) < 4) return RROCK[0];
+      return RBAND[2];
+    }
+    // the rows of the chant: glyphs cut as short strokes, a groove dark over a lip lit
+    const row = (84 - z) / 6;
+    const ri = Math.floor(row);
+    const rf = row - ri;
+    const gi = Math.floor((x + 22) / 3.2);
+    const cut = hash(ri, gi, 1001) > 0.3;
+    if (cut && rf > 0.2 && rf < 0.55 && fr((x + 22) / 3.2) < 0.65) return RROCK[0];
+    if (cut && rf >= 0.55 && rf < 0.7 && fr((x + 22) / 3.2) < 0.65) return RBAND[4];
+    return RBAND[2];
+  }, 1);
+  return finish(S, 40, 120);
+}
+
+/** A SEEP IN THE WALL (on the wall): where the old river still runs inside the rock, water weeping from a crack, the face dark and stained under it, maidenhair fern in a fringe, a little pool at its foot. */
+function seep(): Sprite {
+  const S = new Scene(new Px(72, 118), 36, 100);
+  const at = (x: number, z: number): V3 => [x * 0.75 - 3, -6 - x * 0.75, z];
+  // the wet stain down the face from the crack: the rock darkened, ragged at its edges, streaked
+  S.quad([at(-9, 76), at(9, 76), at(12, 2), at(-12, 2)], (u, v) => {
+    const half = 0.18 + 0.3 * v + 0.06 * Math.sin(v * 23 + 1) + 0.04 * Math.sin(v * 51);
+    const d = Math.abs(u - 0.5);
+    if (d > half) return null;
+    if (v < 0.05 && d < 0.12) return '#3a2c28'; // the crack it weeps from
+    if (hash(Math.floor(u * 16), Math.floor(v * 40), 1002) > 0.86) return '#9a7262'; // a wet glint, dull
+    return d > half - 0.05 ? '#8a604c' : '#7a5444';
+  }, 1);
+  // the fern: little fronds out of the crack and down the stain
+  for (let k = 0; k < 22; k++) {
+    const x = (hash(k, 1, 1003) - 0.5) * 16;
+    const z = 74 - hash(k, 2, 1003) * 60;
+    const c = at(x, z);
+    const d: V3 = [3 + hash(k, 3, 1003) * 3, 3 + hash(k, 4, 1003) * 3, -2 - hash(k, 5, 1003) * 3];
+    S.rod(c, add(c, d), 1.1, 0.4, JUNIPER, 2 + (k % 2));
+  }
+  // its pool at the foot, dark and still
+  S.egg([5, 3, 0.2], XYZ, [12, 9, 0.4], (_n, w) => (Math.hypot((w[0] - 5) / 12, (w[1] - 3) / 9) > 0.78 ? '#6a5a52' : '#3e4450'), 4);
+  return finish(S, 36, 100);
+}
+
+/** A TORN PAGE OF THE CHANT (a quest piece: the ritual's pages, hidden through the descent): a leaf of the chant torn from its book, weighed down on the sand by a stone, the cult's lines on it. */
+function chantPage(): Sprite {
+  const S = new Scene(new Px(44, 30), 22, 20);
+  S.quad([[-9, -6, 0.6], [8, -8, 0.6], [10, 7, 0.6], [-8, 8, 0.6]], (u, v) => {
+    if ((u > 0.9 && hash(Math.floor(v * 14), 1, 1004) > 0.45) || (v > 0.92 && hash(Math.floor(u * 14), 2, 1004) > 0.5)) return null; // its torn edges
+    if (fr(v * 7) < 0.22 && u > 0.12 && u < 0.85 && hash(Math.floor(u * 9), Math.floor(v * 7), 1005) > 0.2) return INK;
+    return v < 0.06 || u < 0.04 ? PARCH[2] : PARCH[3];
+  }, 1);
+  S.egg([7, -6, 2], beamAxes([0, 0, 0], [1, 0.4, 0]), [3.6, 2.8, 2], facetOf(RROCK, 0), 2);
+  return finish(S, 22, 20);
+}
+
+/**
+ * AN OBELISK ON ITS DRAY: one of the quarry's great obelisks, roped down along a long low dray of timber on four
+ * small solid wheels, bound for the swamp (the siege's thread: the obelisks hauled downhill); the cult's mark cut in
+ * its top, its point toward the canyon's mouth.
+ */
+function obeliskDray(): Sprite {
+  const S = new Scene(new Px(180, 112), 90, 70);
+  // the dray
+  S.box([0, 0, 6], XYZ, [46, 12, 2], (f, u, v, n) => (f === 4 && Math.abs(fr(v * 5) - 0.5) < 0.08 ? TIMBER[1] : toneAt(n, TIMBER, 0)), 1);
+  for (const [x, y] of [[-34, 13], [34, 13], [-34, -13], [34, -13]]) {
+    S.egg([x, y, 4], [[0, 1, 0], [1, 0, 0], [0, 0, 1]], [1.4, 4, 4], (n) => (Math.abs(n[1]) > 0.6 ? toneAt(n, TIMBER, 0.1) : toneAt(n, TIMBER, -0.1)), 2);
+    S.ball([x, y + Math.sign(y) * 1.5, 4], 1, IRON, 3, undefined, 0.1);
+  }
+  timber(S, [46, 0, 6], [66, 0, 2], 1.3, 4);
+  // the obelisk lying along it: tapering, its point toward +x
+  const X0 = -44;
+  const X1 = 34;
+  const top: [V3, V3, V3, V3] = [[X0, -11, 30], [X1, -7, 23], [X1, 7, 23], [X0, 11, 30]];
+  const side: [V3, V3, V3, V3] = [[X0, 11, 8], [X1, 7, 8], [X1, 7, 23], [X0, 11, 30]];
+  const nTop = seenNormal(top);
+  const nSide = seenNormal(side);
+  S.quad(top, (u, v) => {
+    const a = u * (X1 - X0);
+    const b = (v - 0.5) * 20;
+    // the mark, cut near its foot end
+    if (Math.abs(a - 14) < 1.2 && Math.abs(b) < 6) return '#4a4250';
+    if (Math.abs(b) < 1.2 && Math.abs(a - 14) < 4) return '#4a4250';
+    return toneAt(nTop, FRESH, 0.05);
+  }, 5);
+  S.quad(side, (u, v) => (v > 0.94 ? FRESH[3] : fr(u * 18) < 0.06 && v > 0.3 ? FRESH[1] : toneAt(nSide, FRESH, 0)), 6);
+  // its point
+  S.quad([[X1, -7, 23], [X1 + 14, 0, 15], [X1, 7, 23], [X1, 0, 24]], () => FRESH[3], 7);
+  S.quad([[X1, 7, 8], [X1 + 14, 0, 15], [X1, 7, 23], [X1, 7, 15]], () => toneAt(nSide, FRESH, -0.1), 7);
+  // the ropes over it, lashed to the dray
+  for (const x of [-30, -6, 20]) {
+    const w = 11 - ((x - X0) / (X1 - X0)) * 4;
+    const h = 30 - ((x - X0) / (X1 - X0)) * 7;
+    rope(S, [x, -13, 7], [x, -w, h + 0.6], 0, 8, 0.6);
+    rope(S, [x, -w, h + 0.6], [x, w, h + 0.6], 0, 8, 0.6);
+    rope(S, [x, w, h + 0.6], [x, 13, 7], 0, 8, 0.6);
+  }
+  return finish(S, 90, 70);
+}
+
+/**
+ * ROCKFALL FROM THE RIM (the trap, a floor tile; the Cantor's voice shakes the rim loose): 0, grit and pebbles
+ * fallen on the sand, the sign; 1, its warning: a shadow on the sand where the rock will land, grit trickling into
+ * it; 2, the rock come down: broken blocks of the red rock in a burst of dust; 3, the rubble left.
+ */
+function rockfallTile(f: number): Sprite {
+  const p = new Px(64, 34);
+  const SH = SAND;
+  for (let py = 0; py < 34; py++) {
+    for (let px = 0; px < 64; px++) {
+      const uv = tileUV(px, py);
+      if (!uv) continue;
+      const [u, v] = uv;
+      const du = (u - 32) / 32;
+      const dv = (v - 32) / 32;
+      const d = Math.hypot(du, dv);
+      const n = hash(px >> 1, py >> 1, 1006 + f);
+      const g2 = hash(px >> 1, py, 1016 + f);
+      if (f === 1 && d < 0.62 + 0.06 * Math.sin(Math.atan2(dv, du) * 5)) p.set(px, py, d > 0.5 ? SH[1] : SH[0]); // the shadow of what will fall
+      if (f === 2 && d < 0.95 && n > 0.62) p.set(px, py, d < 0.5 ? SH[5] : SH[4]); // the dust's burst
+      if ((f === 0 || f === 1) && g2 > 0.9 && d < 0.85) p.set(px, py, RROCK[2]); // the grit, two pixels a grain
+      // the blocks, come down (and lying, in 3)
+      if (f >= 2) {
+        const blocks: [number, number, number][] = [[0, 0, 0.28], [0.3, -0.25, 0.18], [-0.3, 0.22, 0.2], [0.18, 0.36, 0.14], [-0.34, -0.2, 0.13]];
+        for (const [bu, bv, r] of blocks) {
+          const q = Math.max(Math.abs(du - bu), Math.abs(dv - bv) * 0.9);
+          if (q < r) {
+            const lit = du - bu < 0 || dv - bv < 0;
+            p.set(px, py, q > r - 0.06 ? RROCK[1] : lit ? RROCK[3] : RROCK[2]);
+          }
+        }
+      }
+      if (f === 3 && g2 > 0.84 && d < 0.95 && d > 0.4) p.set(px, py, RROCK[1]);
+    }
+  }
+  return p.sprite(32, 0, GRAIN);
+}
+
+/**
+ * THE WAYSTATION'S GATE (the canyon's cult stronghold, a walled waystation on the supply road): a gate of
+ * lashed logs between two great posts, the cult's violet on the left post, a skull of the canyon's cattle over it;
+ * along x or along y, shut or dragged open.
+ */
+function waystationGate(alongY: boolean, open: boolean): Sprite {
+  const S = new Scene(new Px(140, 128), 70, 98);
+  const L: V3 = alongY ? [0, 1, 0] : [1, 0, 0];
+  const at = (l: number, z: number, o = 0): V3 => add(add(mul(L, l), mul(alongY ? [1, 0, 0] : [0, 1, 0], o)), [0, 0, z]);
+  // the posts and the lintel
+  S.rod(at(-30, 0), at(-30, 78), 3.4, 3, TIMBER, 1);
+  S.rod(at(30, 0), at(30, 78), 3.4, 3, TIMBER, 1);
+  timber(S, at(-36, 74), at(36, 74), 2.2, 2);
+  // the gate: two leaves of logs side by side, bound across with timber
+  const leaf = (from: number, to: number, swing: number, id: number): void => {
+    for (let l = from; l * Math.sign(to - from) < to * Math.sign(to - from); l += Math.sign(to - from) * 4.6) {
+      const k = (l - from) / (to - from);
+      const base = add(at(from, 0), add(mul(L, (l - from) * Math.cos(swing)), mul(alongY ? [1, 0, 0] : [0, 1, 0], (l - from) * Math.sin(swing))));
+      const h = 56 + 4 * Math.sin(k * 7 + id);
+      S.rod(base, add(base, [0, 0, h]), 2.1, 1.6, TIMBER, id);
+      S.ball(add(base, [0, 0, h]), 1.7, TIMBER, id, undefined, -0.1);
+    }
+  };
+  if (!open) {
+    leaf(-27, 0, 0, 3);
+    leaf(27, 0.5, 0, 4);
+    timber(S, at(-27, 16, 2.4), at(27, 16, 2.4), 1.2, 5);
+    timber(S, at(-27, 44, 2.4), at(27, 44, 2.4), 1.2, 5);
+  } else {
+    leaf(-27, -4, 1.25, 3);
+    leaf(27, 4, -1.25, 4);
+  }
+  // the cult's violet hung on the left post, the mark on it
+  S.quad([at(-27, 70, 3.5), at(-19, 70, 3.5), at(-19, 40, 3.5), at(-27, 40, 3.5)], (u, v) => {
+    if (Math.abs(u - 0.5) < 0.09 && v > 0.25 && v < 0.75) return PAINT;
+    if (Math.abs(v - 0.4) < 0.06 && Math.abs(u - 0.5) < 0.24) return PAINT;
+    if (v > 0.94 && fr(u * 3) < 0.5) return null;
+    return CLOTH[2];
+  }, 6);
+  // a steer's skull over the gate
+  const sc = at(0, 82, 2);
+  S.egg(sc, XYZ, [4, 3.4, 3.6], (n, w) => (Math.abs(w[2] - sc[2] + 0.2) < 1 && n[0] + n[1] > 0.5 && Math.abs((alongY ? w[1] : w[0]) - (alongY ? sc[1] : sc[0])) > 1.4 ? '#2a2420' : toneAt(n, BONE, 0.05)), 7);
+  for (const sg of [1, -1]) S.rod(add(sc, mul(L, sg * 3)), add(add(sc, mul(L, sg * 14)), [0, 0, 5]), 1.3, 0.5, BONE, 8);
+  return finish(S, 70, 98);
+}
+
+/** DRIFTWOOD from the old river: a bleached log the last flood left in the bed, its root ball dragged after it, a branch stub. */
+function driftwood(): Sprite {
+  const S = new Scene(new Px(104, 50), 52, 34);
+  const a: V3 = [-30, 6, 3.4];
+  const b: V3 = [26, -8, 2.6];
+  S.rod(a, b, 3.6, 2.6, DRIFT, 1);
+  // the root ball at its foot end: roots splayed every way
+  for (let k = 0; k < 9; k++) {
+    const t = (k / 9) * Math.PI * 2;
+    const d: V3 = [Math.cos(t) * 2 - 6, Math.sin(t) * 9, Math.cos(t * 1.7) * 6 + 5];
+    S.rod(a, add(a, d), 1.6, 0.5, DRIFT, 2);
+  }
+  S.rod(add(a, mul(sub(b, a), 0.55)), add(add(a, mul(sub(b, a), 0.55)), [4, 8, 7]), 1.4, 0.6, DRIFT, 3);
+  return finish(S, 52, 34);
+}
+
+// =================================================================================================
 // THE LIST
 
 let made: Piece[] | null = null;
-/** ECHO CANYON'S PIECES SO FAR (the first of its 25), by name, made once. */
+/** ECHO CANYON'S 25 PIECES, by name, made once. */
 export function canyonPieces(): Piece[] {
   if (made) return made;
   made = [
@@ -512,6 +858,19 @@ export function canyonPieces(): Piece[] {
     { name: 'wheel ruts', kind: 'floor tile', frames: [rutsTile(false), rutsTile(true)] },
     { name: "the cult's hoist", kind: 'on the wall', frames: [hoist()], shadow: 0.15 },
     { name: "the cult's lookout tent", kind: 'obstacle', frames: [lookoutTent()], shadow: 0.9 },
+    // the Cantor's
+    { name: "the Cantor's lectern", kind: 'obstacle', frames: [lectern()], shadow: 0.3 },
+    { name: "a frame of the cult's bells", kind: 'obstacle', frames: [bellFrame()], shadow: 0.5 },
+    { name: "the cult's great horn", kind: 'obstacle', frames: [greatHorn()], shadow: 0.6 },
+    { name: 'singing stones', kind: 'obstacle', frames: [singingStones()], shadow: 0.7 },
+    { name: 'the chant carved in the wall', kind: 'on the wall', frames: [chantInWall()] },
+    { name: 'a torn page of the chant', kind: 'quest', frames: [chantPage()] },
+    // the road's and the canyon's, the rest
+    { name: 'an obelisk on its dray', kind: 'obstacle', frames: [obeliskDray()], shadow: 1.1 },
+    { name: 'rockfall from the rim', kind: 'trap', frames: [0, 1, 2, 3].map(rockfallTile) },
+    { name: "the waystation's gate", kind: 'gate', frames: [waystationGate(false, false), waystationGate(false, true), waystationGate(true, false), waystationGate(true, true)], shadow: 0.9 },
+    { name: 'a seep in the wall', kind: 'on the wall', frames: [seep()] },
+    { name: 'driftwood', kind: 'on the floor', frames: [driftwood()], shadow: 0.4 },
   ];
   return made;
 }

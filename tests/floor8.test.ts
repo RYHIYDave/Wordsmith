@@ -114,3 +114,7 @@ test('nothing of a piece is cut off at its picture\'s edge', () => {
     }
   }
 });
+
+test('his twenty-five: the floor\'s own pieces number 25 (his rule of 10 Oct: 25 for each boss)', () => {
+  assert.equal(pieces.length, 25);
+});
