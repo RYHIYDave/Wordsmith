@@ -57,4 +57,64 @@ Shown `shots/fen_ground.png` and `shots/fen_close.png` and asked "Is this the Su
 its pieces (Recommended)", next its 25 pieces: boardwalks, dead trees, the obelisks and the rest; "Not yet"), his answer,
 15 Oct, by 15:22 (the clock read 15:22:34 just after): "Yes, on to its pieces (Recommended)".
 
-NEXT: its 25 pieces, themed after the fen and the Drowned Eye.
+## Its 25 pieces (src/art/floor10.ts, `fenPieces()`)
+
+After his yes to the ground, its pieces, by his rule of 10 Oct (25 that are the theme of the 5 levels, then 25 for each
+boss): the old fen's, the drowned ruin's, the cult's at its work here, and the Eye's. What they are follows the planning
+chat's Sunken Fen he said yes to on 13 Oct: dark water, mud islands with reeds and dead trees, boardwalks between, the
+arena a sunken ruin, a ring of old paving round a deep pool, three of the quarry's obelisks on it, their runes burning
+pink, cultists chanting at them.
+
+| | Piece | Kind | Pictures |
+| --- | --- | --- | --- |
+| 1 | dead swamp tree (grey, cracked, moss hanging in strands, on roots like knees in the water) | obstacle | 2 |
+| 2 | drowned stump (splintered, slime at the water, its roots arching into it) | obstacle | 1 |
+| 3 | arching roots | obstacle | 1 |
+| 4 | sunken log (moss, slime, a row of toadstools) | obstacle | 1 |
+| 5 | cattails (reeds and their brown heads in the shallows) | on the floor | 2 |
+| 6 | sedge tussock | on the floor | 2 |
+| 7 | lily pads (one dull cream flower) | on the floor | 1 |
+| 8 | pale toadstools | on the floor | 1 |
+| 9 | a drowned beast's ribs (half in the mud, its long skull) | obstacle | 1 |
+| 10 | a sunken rowboat (an oar in it) | obstacle | 1 |
+| 11 | mossy stones (in the water) | on the floor | 1 |
+| 12 | the boardwalk | floor tile | 6 |
+| 13 | a marker post (rope, an old lantern, dark) | obstacle | 1 |
+| 14 | a broken column (leaning on its plinth, fluted, broken jagged) | obstacle | 1 |
+| 15 | fallen column drums | obstacle | 1 |
+| 16 | a sunken statue's head (of the people before the cult; original) | obstacle | 1 |
+| 17 | a broken stair (down into the water) | obstacle | 1 |
+| 18 | the cult's obelisk (three of its skulls and the channel between, burning pink to gold, pulsing; it lights what is round it) | obstacle | 4 |
+| 19 | the cult's raft (its stores under a violet cloth) | obstacle | 1 |
+| 20 | the cult's supply crates (its mark on them) | breakable | 2 |
+| 21 | a cage of offerings (wicker on a stake, a skull and beads in it) | breakable | 2 |
+| 22 | eyespawn eggs (pale, veined with the swamp's violet, an eye's shadow in each) | breakable | 2 |
+| 23 | the sucking bog (still, bubbling, whirling, swallowing) | trap | 4 |
+| 24 | the drowned pilgrim's tablet (an eye over waves carved on it, an old script) | quest | 1 |
+| 25 | the Eye's reach (pale cords of its flesh broken up through the mud, violet veins) | obstacle | 1 |
+
+FOR THE MAIN CHAT: the boardwalk is a floor tile in six pictures, in this order: whole along x, whole along y, and the
+four halves the map-maker keeps where the way runs straight across the screen or up and down it (as the fen's are
+laid): the upper half (the tile cut `CUT_NEAR`), the lower (`CUT_FAR`), the left (`CUT_RIGHT`) and the right
+(`CUT_LEFT`), `WALK_FORMS` in floor10.ts. The halves' planks run across the way and go on from one half into the
+next, so halves laid together are one walk (tested). The ground paints water under the boardwalk; the pieces lie over
+it. Things standing in the water have its rings round their foot, painted under them. Only the obelisk gives light
+(the cult's pink).
+
+    node tools/preview.mjs src/dev/preview_fen.ts shots/fen_pieces.png 1014 2870 pieces
+    node tools/preview.mjs src/dev/preview_fen.ts shots/fen_dressed.png 1014 468 dressed
+
+`tests/floor10.test.ts` (8): nothing of the game imports them; each its pictures and its own name, only the cult's
+obelisk gives light and its light is the cult's fire; crisp, no loose pixels; no cyan, no pink or red but the cult's
+fire on the obelisk, duller than every word; standing on its foot, floor tiles inside their diamond; nothing cut off;
+the boardwalk's halves one walk; twenty-five.
+
+| His rule | How the pieces keep it |
+| --- | --- |
+| Places 2: a step quieter | dusk colours: grey dead wood, weathered planks, dark slime; the quarry's stone gone grey in the fen |
+| Colour 3: nothing of a place glows; pink is the enemy's | only the cult's obelisk burns, its runes and its light in the cult's own fire |
+| Colour 4: duller than any word | tested |
+| The sickness a dull violet | the eggs' and the Eye's reach's veins |
+| Original designs only | the statue's head, the tablet's eye and script, all made here |
+| Tall things seen through (12 Oct) | the game's own; the dressed picture does it as the game does, for the dead trees, the column, the obelisks |
+| Light from the upper left | every piece lit from there; the water's rings lit on that side |
