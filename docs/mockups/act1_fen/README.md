@@ -231,3 +231,40 @@ Asked "His two stands, risen and under the water: wild enough?" (offered: "Yes, 
 on to his tentacle moves (Recommended)".
 
 NEXT: his tentacle moves: arms bursting up under you from glowing cracks, the sweep across the ring, the slam.
+
+### His tentacle moves (`eyePainted(which, t, view, aim, clock)`; `burstPainted(t, view, seed)`)
+
+Each from either stand: `slam`, `sweep` risen; `slamUnder`, `sweepUnder` from under the water. `aim`: the way the blow
+goes, degrees round from his forward toward his left (the game aims it at you); `clock`: where his stand was when the
+move began (the stand runs on under the move, so a move starts from the stand as it was and hands back to it as it
+will be). EYE_CANVAS is now 760 by 790 (the pool's middle still at (380, 500)), for the slam's reach.
+
+- THE SLAM (EYE_SLAM, 2.4 s): the greatest of his arms rears up out of the pool just inside its rim and out over you
+  like a cobra, its tip hooked down at you, its veins burning brighter and brighter the enemy's fire, 0 to 0.7 s; HELD,
+  trembling, its shadow falling along its line and darkening (THE WARNING), to 1.15 s; it falls like a tree, faster and
+  faster, its tip lagging then cracking down; THE SLAM at 1.3 s, along its line, 250 of his lengths long from where it
+  leaves the pool (about 6.4 tiles from his middle at the most); the stones cracked along it, rubble, dust and water
+  flung; his bulk jolting down; bouncing, writhing on the stones; dragged back into the pool 1.62 to 2.2 s.
+- THE SWEEP (EYE_SWEEP, 2.4 s): an arm rises out of the pool on the side before you and coils back high, cocked and
+  trembling, burning (THE WARNING), 0 to 1.0 s; THE SWEEP 1.0 to 1.42 s: whipped round 170 degrees through its aim, low
+  over the stones (knee-high to the knight), out to 6.2 tiles from his middle, its tip trailing, spray and rubble flung
+  behind it; overshoots to 1.68 s; sinks back by 2.3 s.
+- THE BURST (EYE_BURST, 2.0 s, on its own BURST_CANVAS 340 by 420, its middle on the floor at (170, 320), for the game
+  to lay where you stand, several at once): the paving cracks, nine cracks spreading about a tile out, glowing the
+  enemy's pink and brightening to gold, sparks rising (THE WARNING), 0 to 0.8 s; IT BURSTS at 0.8 s, an arm shooting up
+  through it 200 of his lengths tall by 0.94 s, stones and dust flung; it thrashes; drawn back down 1.48 to 1.84 s; the
+  hole and the cracks' glow dying. The film lays four, each 0.12 s after the last, round the knight.
+
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "slamfilm" shots/eye_slam.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "sweepfilm" shots/eye_sweep.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "burstfilm" shots/eye_burst.gif 6
+
+`tests/drowned_eye.test.ts` now 14: his look (8, as above) and THE REVIEW of his stands and tentacle moves: every frame
+of his stands and every third of his moves (aimed four ways), from in front and from behind, and of the burst, crisp,
+nothing cyan, every light the enemy's fire, nothing cut off; ALIVE, his stands never still, each round closing; JERK,
+his arms' tips under 25 picture pixels a frame standing, under 60 in his moves but for the blow itself (under 200, the
+fall and the whip, as fast as they will go), his eye and bulk under 6 a frame always; JUMP, a move begun at any moment of
+his stand starts from it and hands back to it; THE WARNING, each held (the slam's arm trembling under 18 a frame, the
+sweep's under 20), the slam's arm burning, the burst's cracks glowing with no arm yet; THE BLOWS LAND, the slam lying
+along its aim. NOT IN THE REVIEW YET: nothing of him passing through his own body (his arms are many and wild; to come
+with the rest of his moves).

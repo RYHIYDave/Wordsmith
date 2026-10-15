@@ -112,7 +112,7 @@ export const EYE_RING = { rx: 6.0 * TILE3, ry: 5.2 * TILE3 };
 /** How deep under the water anything of it is still seen. */
 const SEEN_DEEP = 40;
 /** Its canvas, and where on it the middle of the pool is, at the water. */
-export const EYE_CANVAS = { w: 760, h: 700, ax: 380, ay: 500 };
+export const EYE_CANVAS = { w: 760, h: 790, ax: 380, ay: 500 };
 const EYE_AURA = { x: EYE_CANVAS.ax, y: EYE_CANVAS.ay - 80, r: 190, color: '#ff3a78', a: 0.07 };
 
 /** Its own way: forward (toward whoever stands before the pool), its left, up; in the figure's own space, facing the eye when seen from in front. */
@@ -152,6 +152,10 @@ export interface ArmPose {
   curl: number;
   wave: number;
   phase: number;
+  /** Its veins burning with the enemy's fire as it gathers to strike (0 to 1). */
+  burn?: number;
+  /** How far its tip trails round sideways, degrees (an arm whipped round, its tip lagging). */
+  yaw?: number;
 }
 
 export interface EyePose {
@@ -179,6 +183,17 @@ export interface EyePose {
   drops?: [V3, string, number][];
   /** Rings spreading on the water's surface: their middles (on the surface), and how far out each ring is. */
   ripples?: [V3, number][];
+  /** Marks on the ruin's floor under it: a slam's shadow falling (the warning), the stones cracked along its line. */
+  marks?: FloorMark[];
+}
+/** A mark on the floor: a shadow along a line, `w` wide, `k` how dark (0 to 1); or the cracks it leaves, `k` how fresh. */
+export interface FloorMark {
+  kind: 'shadow' | 'crack';
+  a: V3;
+  b: V3;
+  w: number;
+  k: number;
+  seed: number;
 }
 
 /** ITS CROWN OF ARMS, risen: seven rearing high round its eye, their tips curling; four more coiled out under the water. */
@@ -325,15 +340,215 @@ export function lurkPose(t0: number): EyePose {
   return P;
 }
 
+// ---------------------------------------------------------------------------------------------
+// HIS TENTACLE MOVES (his picks, by 16:12): “Rear up high and slam down in a line”, “Sweep across the whole ring”, and
+// (painted on its own, below) “Burst up under you from glowing cracks”. Each from either stand: risen, or under the
+// water (phase 1), its arms coming up out of the pool. `aim`: the way the blow goes, degrees round from his forward
+// toward his left (the game aims it at you).
+
+/** THE SLAM: an arm rears up out of the pool, towering, held high and trembling as its shadow falls along its line (the warning); it falls like a tree and slams the stones along the line, cracking them, rubble flying; held; it drags back into the pool. `reach` in tiles, from the pool's middle. */
+export const EYE_SLAM = { long: 2.4, rear: 0.7, fall: 1.15, hit: 1.3, freeze: 0.12, drag: [1.62, 2.2], length: 250, fps: 30 } as const;
+/** THE SWEEP: an arm rises out of the pool to one side and coils back, cocked and trembling (the warning); it whips round the ring low over the stones through `arc` degrees, centred on its aim, spray and rubble flying, overshoots, and sinks back. */
+export const EYE_SWEEP = { long: 2.4, cock: 0.6, sweep: [1.0, 1.42], over: 1.68, back: [1.75, 2.3], arc: 170, reach: 6.2, fps: 30 } as const;
+
+const sm = (v: number): number => {
+  const c = cl01(v);
+  return c * c * (3 - 2 * c);
+};
+const easeIn = (v: number): number => cl01(v) * cl01(v) * cl01(v);
+/** Where along the floor `r` of its lengths out on the line `aim` lies (on the floor). */
+const onLine = (aim: number, r: number): V3 => W(Math.cos(aim * D) * r, Math.sin(aim * D) * r, 0);
+/** The pool's rim on the line `aim` (in its own lengths). */
+function rimOn(aim: number): number {
+  const d = onLine(aim, 1);
+  return 1 / Math.hypot(d[0] / EYE_POOL.rx, d[1] / EYE_POOL.ry);
+}
+/** Flung things: `n` of them from `at` (a point or a spread of points) from `t0`, flying `speed` out and up, falling, `life` long. */
+function flung(t: number, t0: number, n: number, from: (i: number) => V3, speed: number, up: number, life: number, cols: string[], seed: number, size = 2): [V3, string, number][] {
+  const out: [V3, string, number][] = [];
+  const dt = t - t0;
+  if (dt < 0 || dt > life) return out;
+  for (let i = 0; i < n; i++) {
+    const a = hash(i, 1, seed) * TAU;
+    const v = speed * (0.4 + 0.8 * hash(i, 2, seed));
+    const vz = up * (0.5 + 0.8 * hash(i, 3, seed));
+    const o = from(i);
+    const p: V3 = [o[0] + Math.cos(a) * v * dt, o[1] + Math.sin(a) * v * dt, o[2] + vz * dt - 0.5 * 700 * dt * dt];
+    if (p[2] < 0) continue;
+    out.push([p, cols[i % cols.length], hash(i, 4, seed) > 0.7 ? size + 1 : size]);
+  }
+  return out;
+}
+/** Water thrown up: its colours. */
+const SPRAY = ['#9aaaa0', '#c0cac2', '#748a7e', '#dfe6e0'];
+/** The ruin's stones broken: their colours. */
+const RUBBLE = ['#4e4a56', '#64606c', '#7c7884', '#3a3741', '#2e3a22'];
+
+/** The arm that strikes, from where it leaves the pool on `aim`. */
+function striker(aim: number, long: number, thick: number, rise: number, bend: number, curl: number, wave: number, phase: number, z0 = -24, r0 = 42): ArmPose {
+  return { a: aim, r0, z0, long, thick, rise, bend, curl, wave, phase };
+}
+
+function slamPose(t: number, under: boolean, aim: number, clock = 0): EyePose {
+  const S = EYE_SLAM;
+  const base = under ? lurkPose(clock + t) : standPose(clock + t);
+  // (it comes up out of the pool just inside its rim, clear of his bulk, the greatest of his arms: towering, and as long on the stones)
+  const r0 = rimOn(aim) - 20;
+  const long = S.length;
+  const reach = r0 + long;
+  let A: ArmPose | null = null;
+  let lean = 0;
+  if (t < S.rear) {
+    const e = sm(t / S.rear);
+    // (it rears up and out over you like a cobra, its tip hooked down at you)
+    A = { ...striker(aim, 40 + (long - 40) * e, 30, 40 + 32 * e, 34 * e, -175 * e, 8, t * 9, -30 + 8 * e, r0), burn: 0.5 * e };
+    lean = e;
+  } else if (t < S.fall) {
+    // held high, trembling, coiled to strike
+    const tr = Math.sin(t * 46) * (0.3 + 0.7 * (t - S.rear) / (S.fall - S.rear));
+    A = { ...striker(aim, long, 30, 72 + 1.5 * tr, 34, -175 + 5 * tr, 3, S.rear * 9 + (t - S.rear) * 3, -22, r0), burn: 0.5 + 0.5 * (t - S.rear) / (S.fall - S.rear) };
+    lean = 1;
+  } else if (t < S.hit) {
+    // it falls like a tree, faster and faster, its tip lagging and then cracking down
+    const f = easeIn((t - S.fall) / (S.hit - S.fall));
+    A = { ...striker(aim, long, 30, 72 - 68 * f, 34 - 42 * f, -175 * (1 - f) + 60 * Math.sin(Math.PI * f), 4, t * 9, -22 + 18 * f, r0), burn: 1 };
+    // (his bulk comes down with it, but heavily, not in one leap)
+    lean = 1 - 0.45 * sm((t - S.fall) / (S.hit - S.fall));
+  } else if (t < S.hit + 0.3) {
+    lean = 0.55 * (1 - sm((t - S.hit) / 0.3));
+  }
+  if (t >= S.hit && t < S.drag[0]) {
+    // slammed down along its line, bouncing, writhing on the stones
+    const k = (t - S.hit) / (S.drag[0] - S.hit);
+    const bounce = 7 * Math.exp(-6 * k) * Math.sin(k * 26);
+    A = { ...striker(aim, long, 30, 4 + Math.max(0, bounce), -8, 0, 5 + 6 * k, t * 14, -4, r0), burn: 1 - k };
+  } else if (t >= S.drag[0] && t < S.drag[1]) {
+    // dragged back into the pool, rising off the stones as it goes
+    const k = sm((t - S.drag[0]) / (S.drag[1] - S.drag[0]));
+    A = striker(aim, long - (long - 30) * k, 30, 4 + 26 * k, -8 + 8 * k, 0, 9, t * 14, -4 - 26 * k, r0);
+  }
+  const P: EyePose = { ...base, arms: A && A.long > 32 ? [...base.arms, A] : base.arms };
+  // its whole bulk rears back as the arm rears, and jolts down at the slam
+  const jolt = t >= S.hit && t < S.hit + 0.3 ? -7 * Math.pow(Math.sin((Math.PI * (t - S.hit)) / 0.3), 2) : 0;
+  P.heave = add(base.heave, add(mul(FW, -10 * lean), [0, 0, 4 * lean + jolt]));
+  P.zE = base.zE + 4 * lean * (under ? 0 : 1) + jolt;
+  P.look = norm([Math.cos(aim * D), Math.sin(aim * D), under ? 0.1 : 0.15]);
+  P.glow = base.glow + 0.8 * lean + (t >= S.hit && t < S.hit + 0.3 ? 0.8 : 0);
+  P.slit = 0.05 + 0.04 * (1 - lean);
+  P.lid = under ? base.lid : 0.12;
+  const rim = rimOn(aim);
+  const from = onLine(aim, rim);
+  const to = onLine(aim, reach);
+  P.marks = [];
+  // its shadow falling along its line as it rears (the warning), darkening, widest as it falls
+  if (t > S.rear * 0.6 && t < S.hit) P.marks.push({ kind: 'shadow', a: from, b: to, w: 16 + 22 * sm((t - S.rear * 0.6) / (S.hit - S.rear * 0.6)), k: sm((t - S.rear * 0.6) / (S.fall - S.rear * 0.6)), seed: 1 });
+  // the stones cracked along its line
+  if (t >= S.hit) P.marks.push({ kind: 'crack', a: onLine(aim, rim + 4), b: onLine(aim, reach + 8), w: 10, k: 1 - cl01((t - 2.0) / 0.4), seed: 7 });
+  if (t >= S.hit) for (const side of [-1, 1]) P.marks.push({ kind: 'crack', a: add(onLine(aim, rim + 20), onLine(aim + 90 * side, 14)), b: add(onLine(aim, reach - 20), onLine(aim + 90 * side, 18)), w: 8, k: 1 - cl01((t - 2.0) / 0.4), seed: 8 + side });
+  // water thrown up where it leaves the pool, rubble and dust flung along the line at the slam
+  const drops = [...(base.drops ?? [])];
+  drops.push(...flung(t, 0.05, 26, () => onLine(aim, r0 + 30), 90, 260, 0.75, SPRAY, 41));
+  drops.push(...flung(t, S.hit, 90, (i) => onLine(aim, rim + ((reach - rim) * (i + 0.5)) / 90), 80, 300, 0.75, RUBBLE, 43, 4));
+  drops.push(...flung(t, S.hit, 70, (i) => onLine(aim, rim + ((reach - rim) * (i + 0.5)) / 70), 40, 120, 0.5, ['#5e5a52', '#7a7468', '#46423e'], 44, 3));
+  drops.push(...flung(t, S.hit, 40, (i) => onLine(aim, rim + ((reach - rim) * (i + 0.5)) / 40), 140, 180, 0.5, SPRAY, 45, 3));
+  drops.push(...flung(t, S.drag[0], 18, () => onLine(aim, rim), 80, 220, 0.6, SPRAY, 47));
+  P.drops = drops;
+  return P;
+}
+
+function sweepPose(t: number, under: boolean, aim: number, clock = 0): EyePose {
+  const S = EYE_SWEEP;
+  const base = under ? lurkPose(clock + t) : standPose(clock + t);
+  const reach = S.reach * TILE3;
+  // (it rises out of the pool on the side before you, coils back, and whips round past you and on behind)
+  const a0 = aim + S.arc / 2;
+  const a1 = aim - S.arc / 2;
+  const way = Math.sign(a1 - a0);
+  const r0 = rimOn(a0) - 22;
+  const long = reach - r0;
+  let A: ArmPose | null = null;
+  let cock = 0;
+  let speed = 0;
+  let ang = a0;
+  if (t < S.cock) {
+    const e = sm(t / S.cock);
+    A = { ...striker(a0 - 14 * way * e, 40 + (long - 40) * e, 27, 40 + 20 * e, 22 * e, -130 * e, 8, t * 9, -26 + 18 * e, r0), burn: 0.4 * e };
+    cock = e;
+  } else if (t < S.sweep[0]) {
+    // cocked back, coiled high and trembling, drawn round further, burning (the warning)
+    const k = (t - S.cock) / (S.sweep[0] - S.cock);
+    const tr = Math.sin(t * 46) * (0.3 + 0.7 * k);
+    A = { ...striker(a0 - (14 + 12 * sm(k)) * way, long, 27, 60 + 1.5 * tr, 22, -130 + 5 * tr, 4, S.cock * 9 + (t - S.cock) * 3, -8, r0), burn: 0.4 + 0.6 * k };
+    cock = 1;
+    ang = a0 - (14 + 12 * sm(k)) * way;
+  } else if (t < S.sweep[1]) {
+    // THE SWEEP: whipped round the ring, low over the stones, its tip trailing
+    const k = (t - S.sweep[0]) / (S.sweep[1] - S.sweep[0]);
+    const e = k < 0.5 ? 2 * k * k : 1 - 2 * (1 - k) * (1 - k);
+    ang = a0 - 26 * way + (a1 + 12 * way - (a0 - 26 * way)) * e;
+    speed = Math.sin(Math.PI * k);
+    cock = 1 - sm(k * 1.5);
+    const flat = sm(k * 4);
+    A = { ...striker(ang, long, 27, 60 - 46 * flat, 22 - 34 * flat, -130 * (1 - flat), 3, t * 9, -8 + 4 * flat, r0), yaw: -70 * way * speed * flat, burn: 1 - k * 0.5 };
+  } else if (t < S.over) {
+    // overshoot, slowing, its tip whipping on round
+    const k = (t - S.sweep[1]) / (S.over - S.sweep[1]);
+    ang = a1 + (12 + 14 * sm(k)) * way;
+    A = { ...striker(ang, long, 27, 14 + 6 * k, -12, 0, 5, t * 9, -4, r0), yaw: 50 * way * Math.sin(Math.PI * k), burn: 0.5 * (1 - k) };
+  } else if (t < S.back[1]) {
+    const k = sm((t - S.back[0]) / (S.back[1] - S.back[0]));
+    ang = a1 + 26 * way;
+    A = striker(ang, long - (long - 30) * k, 27, 20 + 20 * k, -12 + 12 * k, 0, 8, t * 9, -4 - 24 * k, r0);
+  }
+  const P: EyePose = { ...base, arms: A && A.long > 32 ? [...base.arms, A] : base.arms };
+  P.heave = add(base.heave, add(mul(W(Math.cos(a0 * D), Math.sin(a0 * D), 0), -8 * cock), [0, 0, 5 * cock]));
+  const seen = Math.max(-70, Math.min(70, ang));
+  P.look = norm([Math.cos(seen * D), Math.sin(seen * D), under ? 0.1 : 0.15]);
+  P.glow = base.glow + 0.6 * cock + 0.8 * speed;
+  P.slit = 0.05 + 0.04 * (1 - cock);
+  P.lid = under ? base.lid : 0.1;
+  // spray where it rises; spray and rubble flung off the stones along its path, streaks of water behind it
+  const drops = [...(base.drops ?? [])];
+  drops.push(...flung(t, 0.05, 24, () => onLine(a0, r0 + 24), 90, 240, 0.7, SPRAY, 51));
+  if (speed > 0.15) {
+    for (let i = 0; i < 30; i++) {
+      const r = rimOn(ang) + ((reach - rimOn(ang)) * (i + 0.5)) / 30;
+      const behind = ang - (6 + 30 * hash(i, 1, 53)) * way;
+      const lift = 8 + 30 * hash(i, 2, 53) * speed;
+      drops.push([add(onLine(behind, r), [0, 0, lift]), SPRAY[i % SPRAY.length], hash(i, 3, 53) > 0.6 ? 3 : 2]);
+      if (i % 3 === 0) drops.push([add(onLine(ang - 5 * way, r), [0, 0, 4 + 18 * hash(i, 4, 53)]), RUBBLE[i % RUBBLE.length], 3]);
+    }
+  }
+  P.drops = drops;
+  return P;
+}
+
 /** How long each of its moves lasts (a stand: its round). */
 export function eyeLong(which: string): number {
   if (which === 'stand') return EYE_STAND.period;
   if (which === 'lurk') return EYE_LURK.period;
+  if (which.startsWith('slam')) return EYE_SLAM.long;
+  if (which.startsWith('sweep')) return EYE_SWEEP.long;
   return 1;
 }
-function poseOf(which: string, t: number): EyePose {
-  if (which === 'lurk') return lurkPose(t);
-  return standPose(t);
+/**
+ * Its pose: `which` (stand, lurk; slam and sweep, risen; slamUnder and sweepUnder, from under the water), `t` seconds
+ * in, `aim` the way its blow goes; `clock` where its stand (or lurk) was when the move began (its own clock, so that
+ * the move starts from the stand as it was, and hands back to it as it will be: the stand runs on under the move).
+ */
+function poseOf(which: string, t: number, aim = 0, clock = 0): EyePose {
+  if (which === 'lurk') return lurkPose(clock + t);
+  if (which === 'slam' || which === 'slamUnder') return slamPose(t, which === 'slamUnder', aim, clock);
+  if (which === 'sweep' || which === 'sweepUnder') return sweepPose(t, which === 'sweepUnder', aim, clock);
+  return standPose(clock + t);
+}
+/** Where the tips of its arms are, and its eye's middle, at one moment (for the tests). */
+export function eyeMarks(which: string, t: number, aim = 0, clock = 0): { tips: V3[]; eye: V3 } {
+  const P = poseOf(which, t, aim, clock);
+  return { tips: P.arms.map((A) => {
+    const sp = armSpine(P, A);
+    return sp[sp.length - 1].p;
+  }), eye: add([0, 0, P.zE], P.heave) };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -443,7 +658,7 @@ export function armSpine(P: EyePose, A: ArmPose, n = 26): { p: V3; r: number; in
     const flat = A.rise <= 10;
     const ang = (A.rise + A.bend * s + (flat ? 0 : A.curl * Math.pow(s, 3)) + (flat ? 0 : 14 * Math.sin(s * Math.PI * 2 + A.phase) * s)) * D;
     // (an arm lying under the water coils sideways, along the bottom)
-    const yaw = flat ? A.curl * Math.pow(s, 2) * D : 0;
+    const yaw = (flat ? A.curl : A.yaw ?? 0) * Math.pow(s, 2) * D;
     const rhs = add(mul(rh, Math.cos(yaw)), mul(sd, Math.sin(yaw)));
     const dir = add(mul(rhs, Math.cos(ang)), mul(UP, Math.sin(ang)));
     const left = add(mul(rhs, -Math.sin(ang)), mul(UP, Math.cos(ang)));
@@ -469,7 +684,9 @@ function armBits(P: EyePose, A: ArmPose, i: number, put: Put): void {
       const o0 = mul(norm(add(mul(a.inner, -1), mul(side, tw))), a.r * 0.88);
       const tw1 = Math.sin((k + 1) * 0.8 + i * 1.7) * 0.7;
       const o1 = mul(norm(add(mul(b.inner, -1), mul(cross(b.inner, t1), tw1))), b.r * 0.88);
-      put(part, `${part}_v${k}`, { k: 'rod', a: add(a.p, o0), b: add(b.p, o1), ra: 0.95, rb: 0.95, ramp: P.blaze > 0.5 ? BLAZING : VEIN });
+      const burning = P.blaze > 0.5 || (A.burn ?? 0) > fr(k * 0.37 + 0.2);
+      put(part, `${part}_v${k}`, { k: 'rod', a: add(a.p, o0), b: add(b.p, o1), ra: burning && A.burn ? 1.3 : 0.95, rb: burning && A.burn ? 1.3 : 0.95, ramp: burning ? BLAZING : VEIN });
+      if ((A.burn ?? 0) > 0.3 && k % 6 === 2) put(part, `${part}_g${k}`, { k: 'glow', p: a.p, c: FLAME[2], r: 26 * (A.burn ?? 0), a: 0.35 * (A.burn ?? 0) });
     }
     // bone hooks along its outer side, raked toward its tip
     if (A.rise > 10 && k > 2 && k < sp.length - 5 && k % 3 === 1) {
@@ -651,6 +868,7 @@ function paintPose(P: EyePose, view: GameView): Painted {
     zAt[k] = b[2][0] * sx + b[2][1] * sy + b[2][2] * near[k];
   }
   const px = st0.whole(P.alive ? ENEMY_RIM : null);
+  if (P.marks && P.marks.length) floorMarks(st0, px, P.marks);
   lastUnder = drown(px, zAt, st0, view);
   if (P.ripples && P.ripples.length) ripple(px, st0, view, P.ripples, zAt);
   for (const L of lights) if (L.y > EYE_CANVAS.ay - 2 && P.zE < 0) L.a = (L.a ?? 0.5) * 0.7;
@@ -779,24 +997,216 @@ function ripple(px: Px, st: Stage, view: GameView, rings: [V3, number][], zAt: F
     }
   }
 }
+/** MARKS ON THE FLOOR, laid under it (no seam): a shadow falling along a line, crisp, every other pixel dark, the darker the nearer it comes; the stones cracked along a line, a dark crack lit along its upper edge, branching. */
+function floorMarks(st: Stage, px: Px, marks: FloorMark[]): void {
+  // (only where nothing of it is: under it)
+  const p = { w: px.w, h: px.h, set: (x: number, y: number, c: string): void => {
+    if (x < 0 || y < 0 || x >= px.w || y >= px.h || px.d[(y * px.w + x) * 4 + 3] > 0) return;
+    px.set(x, y, c);
+  } };
+  for (const m of marks) {
+    const L = len(sub(m.b, m.a));
+    if (L < 1) continue;
+    const along = norm(sub(m.b, m.a));
+    const across: V3 = [-along[1], along[0], 0];
+    if (m.kind === 'shadow') {
+      const [x0, y0] = st.at(m.a);
+      const [x1, y1] = st.at(m.b);
+      const minX = Math.floor(Math.min(x0, x1) - m.w * 1.6);
+      const maxX = Math.ceil(Math.max(x0, x1) + m.w * 1.6);
+      const minY = Math.floor(Math.min(y0, y1) - m.w * 1.6);
+      const maxY = Math.ceil(Math.max(y0, y1) + m.w * 1.6);
+      const b = st.back;
+      for (let y = Math.max(0, minY); y <= Math.min(p.h - 1, maxY); y++) {
+        for (let x = Math.max(0, minX); x <= Math.min(p.w - 1, maxX); x++) {
+          const sx = x + 0.5 - EYE_CANVAS.ax;
+          const sy = y + 0.5 - EYE_CANVAS.ay;
+          const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+          const f: V3 = [b[0][0] * sx + b[0][1] * sy + b[0][2] * n0, b[1][0] * sx + b[1][1] * sy + b[1][2] * n0, 0];
+          const q = sub(f, m.a);
+          const t = dot(q, along) / L;
+          if (t < 0 || t > 1) continue;
+          const off = Math.abs(dot(q, across));
+          // (wider toward its tip, as the arm's shadow is)
+          const half = m.w * (0.55 + 0.45 * t);
+          if (off > half) continue;
+          // (every other pixel, the darker the nearer it comes; its middle solid only as it falls)
+          const solid = off < half * 0.4 && m.k > 0.92;
+          if (solid || (x + y) % 2 === 0) p.set(x, y, m.k > 0.5 ? '#060807' : '#0e1411');
+        }
+      }
+    } else {
+      // the crack: jagged along the line, branching, its upper edge catching the light
+      const pts: V3[] = [];
+      const n = Math.max(2, Math.round(L / 7));
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const jag = (hash(i, 1, m.seed) - 0.5) * m.w;
+        pts.push(add(add(m.a, mul(along, L * t)), mul(across, jag)));
+      }
+      const line = (a: V3, c: V3, dark: string, lit: string): void => {
+        const [xa, ya] = st.at(a);
+        const [xb, yb] = st.at(c);
+        const steps = Math.ceil(Math.max(Math.abs(xb - xa), Math.abs(yb - ya)));
+        for (let k = 0; k <= steps; k++) {
+          const x = Math.round(xa + ((xb - xa) * k) / Math.max(1, steps));
+          const y = Math.round(ya + ((yb - ya) * k) / Math.max(1, steps));
+          p.set(x, y, dark);
+          p.set(x + 1, y, dark);
+          if (m.k > 0.3) p.set(x, y - 1, lit);
+        }
+      };
+      const dark = '#0a090e';
+      const lit = '#8a8692';
+      for (let i = 0; i + 1 < pts.length; i++) {
+        line(pts[i], pts[i + 1], dark, lit);
+        if (hash(i, 2, m.seed) > 0.55) {
+          const side = hash(i, 3, m.seed) > 0.5 ? 1 : -1;
+          const twig = add(pts[i], add(mul(across, side * m.w * (1 + hash(i, 4, m.seed))), mul(along, 4)));
+          line(pts[i], twig, dark, lit);
+        }
+      }
+    }
+  }
+}
 const rgbOf = (c: string): V3 => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+
+// ---------------------------------------------------------------------------------------------
+// THE BURST (his pick, “Burst up under you from glowing cracks”), painted on its own so that the game lays it where you
+// stand, several at once: the paving cracks, the cracks glowing the enemy's pink and brightening to gold (the warning);
+// it bursts open, an arm shooting up through it, stones flung; the arm thrashes; it is drawn back down; the broken
+// stones are left, their glow dying.
+
+/** Its own canvas, and where on it the middle of the burst is, on the floor. */
+export const BURST_CANVAS = { w: 340, h: 420, ax: 170, ay: 320 };
+export const EYE_BURST = { long: 2.0, burst: 0.8, up: 0.94, sink: [1.48, 1.84], fps: 30, reach: 1.0 } as const;
+
+/** One frame of a burst: `t` seconds in, `seed` to make each one its own. */
+export function burstPainted(t: number, view: GameView = 'front', seed = 0): Painted {
+  const B = EYE_BURST;
+  const st0 = stage(view, BURST_CANVAS.ax, BURST_CANVAS.ay, BURST_CANVAS);
+  const sheets: Sheet[] = [];
+  const st: Stage = { ...st0, part: (where) => { const sh = st0.part(where); sheets.push(sh); return sh; } };
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const P: EyePose = { ...lookPose('risen'), arms: [] };
+  // THE ARM: shooting up out of the floor, thrashing, drawn back down
+  let long = 0;
+  if (t >= B.burst && t < B.sink[1]) {
+    if (t < B.up) long = 200 * sm((t - B.burst) / (B.up - B.burst));
+    else if (t < B.sink[0]) long = 200;
+    else long = 200 * (1 - sm((t - B.sink[0]) / (B.sink[1] - B.sink[0])));
+  }
+  if (long > 6) {
+    const k = cl01((t - B.burst) / 0.7);
+    const thrash = Math.sin(t * 13 + seed) * (0.4 + 0.6 * k);
+    const A: ArmPose = { a: hash(seed, 1, 101) * 360, r0: 0, z0: -46, long: long + 46, thick: 17, rise: 86 + 6 * thrash, bend: 30 * Math.sin(t * 9 + seed), curl: (hash(seed, 2, 101) > 0.5 ? 1 : -1) * (110 + 70 * thrash), wave: 6, phase: t * 11, burn: t < B.up + 0.15 ? 1 : 0.4 };
+    armBits(P, A, 0, put);
+  }
+  // stones flung from it as it bursts, and dust
+  const drops: [V3, string, number][] = [];
+  drops.push(...flung(t, B.burst, 34, () => [0, 0, 2], 70, 280, 0.8, RUBBLE, 103 + seed, 4));
+  drops.push(...flung(t, B.burst, 26, () => [0, 0, 2], 110, 120, 0.5, ['#6a6460', '#857e76', '#4c4844'], 105 + seed, 3));
+  // the glow of the cracks before it bursts: sparks rising
+  if (t > 0.3 && t < B.burst) for (let i = 0; i < 8; i++) {
+    const f = fr(t * 2.2 + i / 8);
+    const a = (i / 8) * TAU + seed;
+    drops.push([[Math.cos(a) * 14 * (1 - f), Math.sin(a) * 14 * (1 - f), 4 + 40 * f], i % 2 ? FLAME[3] : FLAME[2], 2]);
+  }
+  for (const [p, c, size] of drops) put('drops', 'drop', { k: 'mote', p, c, size });
+  // the cracks' light
+  const glowing = t < B.burst ? sm(t / B.burst) : Math.max(0, 1 - (t - B.burst) / 0.5);
+  if (glowing > 0.05) put('drops', 'light', { k: 'glow', p: [0, 0, 2], c: t < B.burst * 0.6 ? FLAME[2] : FLAME[3], r: 40 + 50 * glowing, a: 0.6 * glowing });
+  const lights = paintBits(st, bits, [0, 0, 40]);
+  // the floor swallows what of the arm is below it
+  const b = st0.back;
+  for (const sh of sheets) {
+    for (let y = 0; y < sh.h; y++) {
+      for (let x = 0; x < sh.w; x++) {
+        if (!sh.has(x, y)) continue;
+        const k = y * sh.w + x;
+        const n = sh.z[k] !== sh.z[k] ? sh.near : sh.z[k];
+        const sx = x + 0.5 - BURST_CANVAS.ax;
+        const sy = y + 0.5 - BURST_CANVAS.ay;
+        if (b[2][0] * sx + b[2][1] * sy + b[2][2] * n < 0) {
+          sh.erase(x, y);
+          sh.z[k] = NaN;
+        }
+      }
+    }
+  }
+  const px = st0.whole(ENEMY_RIM);
+  // THE CRACKS, on the floor under all of it: spreading out from where it will burst, glowing pink, then gold, the
+  // stones heaved open round a dark hole while the arm is up, then dark and dying
+  const grow = sm(t / (B.burst * 0.85));
+  const R = B.reach * TILE3;
+  const free = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < px.w && y < px.h && px.d[(y * px.w + x) * 4 + 3] === 0;
+  const set = (pt: V3, c: string, w2 = false): void => {
+    const [x, y] = st0.at(pt);
+    const xi = Math.round(x - 0.5);
+    const yi = Math.round(y - 0.5);
+    if (free(xi, yi)) px.set(xi, yi, c);
+    if (w2 && free(xi + 1, yi)) px.set(xi + 1, yi, c);
+  };
+  const hot = t < B.burst ? (t < B.burst * 0.5 ? FLAME[1] : t < B.burst * 0.85 ? FLAME[2] : FLAME[3]) : t < B.burst + 0.35 ? FLAME[2] : t < B.burst + 0.7 ? FLAME[0] : '#0a090e';
+  const core = t < B.burst ? FLAME[Math.min(4, 2 + Math.floor(grow * 2.5))] : hot;
+  for (let i = 0; i < 9; i++) {
+    let a = (i / 9) * TAU + hash(i, 1, 107 + seed) * 0.5;
+    const long2 = R * (0.55 + 0.45 * hash(i, 2, 107 + seed)) * grow;
+    let p: V3 = [0, 0, 0];
+    const steps = Math.max(1, Math.round(long2 / 2));
+    for (let k = 0; k < steps; k++) {
+      a += (hash(i, k, 109 + seed) - 0.5) * 0.35;
+      p = add(p, [Math.cos(a) * 2, Math.sin(a) * 2, 0]);
+      set(p, k < steps * 0.4 ? core : hot, true);
+      if (k < steps * 0.3) set(add(p, [0.8, -0.8, 0]), core, true);
+      if (k === Math.floor(steps * 0.5) && hash(i, 3, 107 + seed) > 0.4) {
+        let q = p;
+        let b2 = a + (hash(i, 4, 107 + seed) > 0.5 ? 0.8 : -0.8);
+        for (let j = 0; j < steps * 0.4; j++) {
+          b2 += (hash(i, j, 111 + seed) - 0.5) * 0.4;
+          q = add(q, [Math.cos(b2) * 2, Math.sin(b2) * 2, 0]);
+          set(q, hot);
+        }
+      }
+    }
+  }
+  // the hole it bursts from, while it is up, and the heaved stones round it
+  if (t >= B.burst && t < B.sink[1] + 0.1) {
+    for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) {
+      if (!free(x, y)) continue;
+      const sx = x + 0.5 - BURST_CANVAS.ax;
+      const sy = y + 0.5 - BURST_CANVAS.ay;
+      const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+      const fx = b[0][0] * sx + b[0][1] * sy + b[0][2] * n0;
+      const fy = b[1][0] * sx + b[1][1] * sy + b[1][2] * n0;
+      const d = Math.hypot(fx, fy);
+      if (d < 19) px.set(x, y, d < 16 ? '#050605' : '#2e2a32');
+    }
+  }
+  return { px, lights };
+}
+/** The same, as the game holds it. */
+export function burstFrame(t: number, view: GameView = 'front', seed = 0): Sprite {
+  return toSprite(burstPainted(t, view, seed), null, BURST_CANVAS.ax, BURST_CANVAS.ay);
+}
 
 // ---------------------------------------------------------------------------------------------
 // WHAT THE PAGES AND TESTS ASK OF IT
 
 let lastUnder: Uint8Array = new Uint8Array(0);
-/** One frame of it: `which` (stand, lurk; its moves to come), `t` seconds in, from in front or behind. */
-export function eyePainted(which: string, t: number, view: GameView = 'front'): Painted {
-  return paintPose(poseOf(which, t), view);
+/** One frame of it: `which` (stand, lurk, slam, slamUnder, sweep, sweepUnder), `t` seconds in, from in front or behind; `aim` the way its blow goes (degrees round from its forward, toward its left). */
+export function eyePainted(which: string, t: number, view: GameView = 'front', aim = 0, clock = 0): Painted {
+  return paintPose(poseOf(which, t, aim, clock), view);
 }
 /** The same, as the game holds a figure. */
-export function eyeFrame(which: string, t: number, view: GameView = 'front'): Sprite {
-  return toSprite(eyePainted(which, t, view), EYE_AURA, EYE_CANVAS.ax, EYE_CANVAS.ay);
+export function eyeFrame(which: string, t: number, view: GameView = 'front', aim = 0, clock = 0): Sprite {
+  return toSprite(eyePainted(which, t, view, aim, clock), EYE_AURA, EYE_CANVAS.ax, EYE_CANVAS.ay);
 }
 /** Every solid of one moment of it, as the tests read them. */
-export function eyeSolids(which: string, t: number): Bit[] {
+export function eyeSolids(which: string, t: number, aim = 0): Bit[] {
   const bits: Bit[] = [];
-  eyeBits(poseOf(which, t), (part, piece, shape) => {
+  eyeBits(poseOf(which, t, aim), (part, piece, shape) => {
     bits.push({ part, piece, shape });
   });
   return bits;

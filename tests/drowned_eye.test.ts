@@ -164,3 +164,161 @@ test('blazing (his pick, its veins blaze): more of the enemy\'s fire on it than 
   assert.ok(fireCount(blaze) > fireCount(risen) * 1.2, `blazing ${fireCount(blaze)}, risen ${fireCount(risen)}`);
   assert.ok(blaze.lights.length > risen.lights.length, 'more lights');
 });
+
+// ---------------------------------------------------------------------------------------------
+// HIS STANDS AND HIS TENTACLE MOVES: the boss review (his rulebook, How art is made 7), every frame of his stands and
+// every third of his moves at thirty a second, from in front and from behind; and the bursts, every third.
+
+import { BURST_CANVAS, EYE_BURST, EYE_LURK, EYE_SLAM, EYE_STAND, EYE_SWEEP, burstPainted, eyeMarks, eyePainted } from '../src/art/drowned_eye';
+
+type Frame = { name: string; painted: () => Painted; w: number; h: number };
+const reviewed: Frame[] = [];
+const once = (f: () => Painted): (() => Painted) => {
+  let p: Painted | null = null;
+  return () => (p ??= f());
+};
+/** The way to the knight in the films: the moves are reviewed aimed there, and at three other ways. */
+const AIMS = [-54, 20, 120, -160];
+for (const view of ['front', 'back'] as const) {
+  for (let i = 0; i < EYE_STAND.frames; i++) reviewed.push({ name: `stand ${view} ${i}`, painted: once(() => eyePainted('stand', i / EYE_STAND.fps, view)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
+  for (let i = 0; i < EYE_LURK.frames; i++) reviewed.push({ name: `lurk ${view} ${i}`, painted: once(() => eyePainted('lurk', i / EYE_LURK.fps, view)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
+  for (const [move, long] of [['slam', EYE_SLAM.long], ['sweep', EYE_SWEEP.long], ['slamUnder', EYE_SLAM.long], ['sweepUnder', EYE_SWEEP.long]] as [string, number][]) {
+    const n = Math.round(long * 30);
+    for (let i = 0; i <= n; i += 3) {
+      const aim = AIMS[(i / 3) % AIMS.length];
+      reviewed.push({ name: `${move} ${view} ${i}/30 aim ${aim}`, painted: once(() => eyePainted(move, i / 30, view, aim)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
+    }
+  }
+  for (let i = 0; i <= Math.round(EYE_BURST.long * 30); i += 3) reviewed.push({ name: `burst ${view} ${i}/30`, painted: once(() => burstPainted(i / 30, view, i)), w: BURST_CANVAS.w, h: BURST_CANVAS.h });
+}
+
+test('THE REVIEW: every frame crisp, nothing cyan, every light the enemy\'s fire, nothing cut off', () => {
+  for (const f of reviewed) {
+    const p = f.painted();
+    let soft = 0;
+    let edge = 0;
+    each(p, (r, g, b, a, x, y) => {
+      if (a !== 255 && !(a === RIM_ALPHA && key(r, g, b) === RIM)) soft++;
+      const [h, s, v] = hsv(r, g, b);
+      assert.ok(!(s > 0.4 && v > 0.55 && h > 165 && h < 205), `${f.name}: cyan ${r},${g},${b}`);
+      if (x === 0 || y === 0 || x === f.w - 1 || y === f.h - 1) edge++;
+    });
+    assert.equal(soft, 0, `${f.name}: soft pixels`);
+    assert.equal(edge, 0, `${f.name}: ${edge} pixels on its canvas's edge`);
+    for (const L of p.lights) assert.ok(FIRE.has(rgba(L.color).slice(0, 3).join(',')), `${f.name}: its light ${L.color} is the enemy's fire`);
+  }
+});
+
+test('ALIVE: his stands are never still, and each round closes on itself', () => {
+  for (const [which, S] of [['stand', EYE_STAND], ['lurk', EYE_LURK]] as const) {
+    const at = (t: number): Uint8ClampedArray => eyePainted(which, t, 'front').px.d;
+    const a = at(0);
+    const b = at(S.period);
+    let same = 0;
+    for (let i = 0; i < a.length; i++) same += a[i] === b[i] ? 1 : 0;
+    assert.equal(same, a.length, `${which}: its round closes`);
+    for (let i = 0; i < S.frames; i += 5) {
+      const p = at(i / S.fps);
+      const q = at((i + 1) / S.fps);
+      let moved = 0;
+      for (let k = 3; k < p.length; k += 4) if (p[k] !== q[k]) moved++;
+      assert.ok(moved > 80, `${which} at frame ${i}: ${moved} pixels moved (never still)`);
+    }
+  }
+});
+
+const STAGE = stage('front', EYE_CANVAS.ax, EYE_CANVAS.ay, EYE_CANVAS);
+/** How far its arms' tips and its eye go from one frame to the next, at thirty a second, in picture pixels. */
+function travel(which: string, long: number, aim: number, from: number, to: number): { tip: number; eye: number } {
+  let tip = 0;
+  let eye = 0;
+  let prev = eyeMarks(which, from, aim);
+  for (let t = from + 1 / 30; t <= to + 1e-9; t += 1 / 30) {
+    const cur = eyeMarks(which, Math.min(t, long), aim);
+    for (let k = 0; k < Math.min(prev.tips.length, cur.tips.length); k++) {
+      const [ax, ay] = STAGE.at(prev.tips[k]);
+      const [bx, by] = STAGE.at(cur.tips[k]);
+      tip = Math.max(tip, Math.hypot(ax - bx, ay - by));
+    }
+    const [ax, ay] = STAGE.at(prev.eye);
+    const [bx, by] = STAGE.at(cur.eye);
+    eye = Math.max(eye, Math.hypot(ax - bx, ay - by));
+    prev = cur;
+  }
+  return { tip, eye };
+}
+
+test('JERK: nothing of him leaps from one frame to the next (but the blow itself, as fast as it will go: his rulebook, Animations 1)', () => {
+  // (his stands: arms writhing, never leaping; his eye and bulk never more than 6 picture pixels a frame, ever)
+  for (const [which, S] of [['stand', EYE_STAND], ['lurk', EYE_LURK]] as const) {
+    const m = travel(which, S.period, 0, 0, S.period);
+    assert.ok(m.tip < 25 && m.eye < 6, `${which}: tips ${m.tip.toFixed(1)}, eye ${m.eye.toFixed(1)}`);
+  }
+  for (const under of ['', 'Under']) {
+    for (const aim of AIMS) {
+      const slam = `slam${under}`;
+      const sweep = `sweep${under}`;
+      // outside the blow: under 60 a frame; the blow (the slam's fall, the sweep's whip): under 200, a smear
+      const before = travel(slam, EYE_SLAM.long, aim, 0, EYE_SLAM.fall);
+      const after = travel(slam, EYE_SLAM.long, aim, EYE_SLAM.hit + 0.05, EYE_SLAM.long);
+      const blow = travel(slam, EYE_SLAM.long, aim, EYE_SLAM.fall, EYE_SLAM.hit + 0.05);
+      assert.ok(before.tip < 60 && after.tip < 60 && blow.tip < 200, `${slam} aim ${aim}: ${before.tip.toFixed(0)}, ${blow.tip.toFixed(0)}, ${after.tip.toFixed(0)}`);
+      assert.ok(Math.max(before.eye, after.eye, blow.eye) < 6, `${slam} aim ${aim}: his eye ${Math.max(before.eye, after.eye, blow.eye).toFixed(1)}`);
+      const s0 = travel(sweep, EYE_SWEEP.long, aim, 0, EYE_SWEEP.sweep[0]);
+      const s2 = travel(sweep, EYE_SWEEP.long, aim, EYE_SWEEP.over, EYE_SWEEP.long);
+      const s1 = travel(sweep, EYE_SWEEP.long, aim, EYE_SWEEP.sweep[0], EYE_SWEEP.over);
+      assert.ok(s0.tip < 60 && s2.tip < 60 && s1.tip < 200, `${sweep} aim ${aim}: ${s0.tip.toFixed(0)}, ${s1.tip.toFixed(0)}, ${s2.tip.toFixed(0)}`);
+      assert.ok(Math.max(s0.eye, s1.eye, s2.eye) < 6, `${sweep} aim ${aim}: his eye ${Math.max(s0.eye, s1.eye, s2.eye).toFixed(1)}`);
+    }
+  }
+});
+
+test('JUMP: a move begun at any moment of his stand starts from it and hands back to it', () => {
+  for (const [move, base, long] of [['slam', 'stand', EYE_SLAM.long], ['sweep', 'stand', EYE_SWEEP.long], ['slamUnder', 'lurk', EYE_SLAM.long], ['sweepUnder', 'lurk', EYE_SWEEP.long]] as [string, string, number][]) {
+    for (const clock of [0, 0.7, 1.9]) {
+      const a = eyeMarks(move, 0, -54, clock);
+      const b = eyeMarks(base, clock, 0);
+      for (let k = 0; k < b.tips.length; k++) assert.ok(Math.hypot(...(STAGE.at(a.tips[k]).map((v, i) => v - STAGE.at(b.tips[k])[i]) as [number, number])) < 0.5, `${move} from ${clock}: its arm ${k} where the stand had it`);
+      // (the striking arm is still coming up out of the water at its start; by its end it is gone back under)
+      assert.ok(a.tips.length === b.tips.length + 1, `${move}: the striking arm is there from its start`);
+      const c = eyeMarks(move, long, -54, clock);
+      const d = eyeMarks(base, clock + long, 0);
+      assert.equal(c.tips.length, d.tips.length, `${move}: the striking arm gone back by its end`);
+      for (let k = 0; k < d.tips.length; k++) assert.ok(Math.hypot(...(STAGE.at(c.tips[k]).map((v, i) => v - STAGE.at(d.tips[k])[i]) as [number, number])) < 0.5, `${move} from ${clock}: hands back to the stand`);
+    }
+  }
+});
+
+test('THE WARNING IS A POSE: the slam\'s arm held high and trembling, the sweep\'s held cocked, the burst\'s cracks glowing before it bursts', () => {
+  for (const aim of AIMS) {
+    const slam = travel('slam', EYE_SLAM.long, aim, EYE_SLAM.rear + 0.05, EYE_SLAM.fall);
+    // (held: its tip trembling, and swaying a little with his heaving bulk, against the 172 a frame of its fall)
+    assert.ok(slam.tip < 18, `the slam aim ${aim}: held, its tip trembling ${slam.tip.toFixed(1)} a frame`);
+    const sweep = travel('sweep', EYE_SWEEP.long, aim, EYE_SWEEP.cock + 0.05, EYE_SWEEP.sweep[0]);
+    assert.ok(sweep.tip < 20, `the sweep aim ${aim}: held cocked, ${sweep.tip.toFixed(1)} a frame`);
+  }
+  // the slam's shadow and its burning arm while held
+  const held = eyePainted('slam', (EYE_SLAM.rear + EYE_SLAM.fall) / 2, 'front', -54);
+  assert.ok(fireCount(held) > 60, `the slam's arm burning while held: ${fireCount(held)}`);
+  // the burst: the cracks glowing, no arm yet; then the arm up
+  const glow = burstPainted(EYE_BURST.burst * 0.9, 'front', 1);
+  const up = burstPainted((EYE_BURST.up + EYE_BURST.sink[0]) / 2, 'front', 1);
+  // (its arm's own skin: the pale of his arms)
+  const ARM = new Set(['#4a443e', '#736a5e', '#9c9282', '#c2b6a0'].map((c) => rgba(c).slice(0, 3).join(',')));
+  let armGlow = 0;
+  let armUp = 0;
+  each(glow, (r, g, b) => (armGlow += ARM.has(key(r, g, b)) ? 1 : 0));
+  each(up, (r, g, b) => (armUp += ARM.has(key(r, g, b)) ? 1 : 0));
+  assert.ok(fireCount(glow) > 40, `the cracks glow: ${fireCount(glow)}`);
+  assert.ok(armGlow === 0 && armUp > 300, `no arm before it bursts (${armGlow}), the arm up after (${armUp})`);
+});
+
+test('THE BLOWS LAND WHERE THEY ARE AIMED: the slam lies along its aim, the sweep passes through its aim', () => {
+  for (const aim of AIMS) {
+    const m = eyeMarks('slam', EYE_SLAM.hit + 0.1, aim);
+    const tip = m.tips[m.tips.length - 1];
+    const dir = Math.atan2(tip[0] * Math.SQRT1_2 + tip[1] * Math.SQRT1_2, tip[0] * Math.SQRT1_2 - tip[1] * Math.SQRT1_2) * (180 / Math.PI);
+    const off = Math.abs(((dir - aim + 540) % 360) - 180);
+    assert.ok(off < 8 && tip[2] < 25, `the slam aim ${aim}: its tip lies ${off.toFixed(1)} degrees off its line, ${tip[2].toFixed(0)} high`);
+  }
+});
