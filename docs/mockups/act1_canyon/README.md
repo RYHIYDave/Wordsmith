@@ -316,3 +316,62 @@ tail of five segments and its sting.
 `tests/canyon_scorpions.test.ts` (4): the switch off and nothing of the game imports it; crisp, its pink edge;
 nothing cyan, every light the cult's fire, nothing cut off; its size (knee-high, its tail to about the knight's
 waist).
+
+Shown `shots/scorpion_look.png` and `shots/scorpion_stand.gif` and asked "Is this the Canyon Scorpion?" (offered:
+"Yes, animate it (Recommended)"; "Not yet"), his answer, 15 Oct, by 08:20: "Yes, animate it (Recommended)".
+
+## The Canyon Scorpion's moves (15 Oct; for his yes; behind `SCORPION_ON`, off)
+
+Each from its own poses, frame by frame (src/art/canyon_scorpions.ts); the times are seconds into the move.
+- **Stand** (1.6 s round, ten frames a second): as shown with its look.
+- **Scuttle** (`SC_WALK`, a cycle of eight frames at sixteen a second, 0.5 s, for a pace of 2 tiles a second): its
+  legs in two sets of four taking turns (its left first, right second, left third and right fourth together), four
+  feet always down, each down foot carried back with the floor; its middle bobbing and rocking, its tail swaying
+  high, its pincers held out. ITS DARTING is how the game moves it: short dashes, then a dead stop (its stand); the
+  film shows a dash, a stop and a dash.
+- **Pincer snap** (`SC_SNAP`, 0.7 s; its basic blow, light): it rears, its pincers drawn back and spread wide and
+  open (to 0.18 s), held trembling (THE WARNING, to 0.24 s); it lunges and both pincers snap shut far before it at
+  0.3 s (THE BLOW), a click of pale sparks where the fingers meet and sand kicked up under its front feet; they squeeze
+  on to 0.42 s; it settles back onto its stand by 0.7 s, overshooting a little.
+- **Tail strike** (`SC_STING`, 1.35 s; its big move, heavy): it crouches and draws its tail back high over itself,
+  its pincers raised and open (to 0.3 s); holds it there, the tail rattling and its sting burning (THE WARNING, to
+  0.58 s); whips the tail over its shoulder and stabs before it as it lunges (THE BLOW at 0.66 s, held a tenth, to
+  0.76 s), a flash of pink at its barb; a jet of its venom shoots on and bursts on the floor two tiles before where it
+  stood (at about 0.86 s), a splash of the cult's pink (gone by 1.31 s); it draws the tail back and settles by 1.35 s.
+- **Flinch** (`SC_REEL`, 0.45 s): frozen a moment (to 0.08 s); knocked back and up, its nose thrown up, its pincers
+  flung wide, its tail lashing, its front feet kicked up and set down where they were; flakes of its shell fly; it
+  rocks, and is back on its stand by 0.45 s. Fun to smash, as he picked: a big reaction for its size.
+- **Death, his pick: it flips onto its back, its legs curling** (`SC_DIE`, 1.1 s): frozen a tenth; thrown up and
+  rolled over onto its back, its legs drawn in, its tail flung out straight behind it, its shell flaking (0.1 to 0.5
+  s); it comes down on its back with a bounce and a puff of dust; its legs kick in the air (to 0.75 s), then curl in
+  over its belly (to 0.95 s), its tail curling up over it; its sting's glow and its eyes go out by 0.6 s; still from
+  0.95 s.
+
+**For the game, later:** its canvas `SC_CANVAS` 280 by 200, its feet at (140, 130); its tail strike's venom bursts
+`SC_STING.reach`, 78 of its own lengths (two tiles), before where it stood; its scuttle is painted for 2 tiles a
+second, and at any other pace its feet slide (as the crawler's); `makeScorpionArt()` holds its pictures as the game
+holds a monster's (its tail strike in `clips.moves.sting`). Its numbers, packs and cooldowns are the main chat's.
+
+**The check, rule by rule** (docs/art/RULEBOOK.md):
+
+| Rule | The scorpion | Result |
+| --- | --- | --- |
+| Animations 1: as far as it will go | Its pincers spread 22 wide and snap 37 before it; its tail drawn back high and whipped over its shoulder; its venom bursting two tiles on; struck, it is knocked back 10 and up; dying, thrown 20 up and rolled onto its back | Pass by the numbers; his eye decides the notch |
+| Monsters 2: small ones fun to smash | His pick, "Knee-high, fun to smash": knocked about when struck, its shell flying | Pass by eye |
+| Monsters 4: the warning is a pose | The snap's wide pincers, held trembling; the strike's tail drawn back, rattling | Pass (test) |
+| Movement 3: wind-up and follow-through | Each blow drawn back, held, carried on through, and back on its stand | Pass (test) |
+| Movement 5: slick | No part leaps; its blows quick on one continuous arc, each with its reason in the test | Pass (test) |
+| Movement 6: alive when still | Its breath, its tail swaying, its pincers working | Pass (test) |
+| Movement 7: heavy blows freeze | The tail's stab held a tenth (0.66 to 0.76 s) | Pass (test) |
+| Movement 8: feet grip | Every foot down stays on its spot; scuttling, carried back with the floor at its pace | Pass (test) |
+| Nothing below the rock | Its lowest point in every frame of every move on the rock or above it | Pass (test) |
+| Hits 4: what flies off is its own | Its shell's flakes as it is struck and dies; the sand under it | Pass (test) |
+| Hits 5: deaths true to what died | On its back, its legs curling, as he picked | Pass by eye |
+| Monsters 6 and Colour 3: pink is theirs | Its sting, venom and eyes the cult's pink and gold; nothing cyan | Pass (test) |
+| Pixels 1 and 5: crisp; the pink edge | Every pixel crisp; its pink edge while it lives, none as it dies | Pass (test) |
+| Nothing cut off | No frame touches its canvas's edge | Pass (test) |
+
+**Checks:** tests/canyon_scorpions.test.ts 16 of 16; `tsc --noEmit` clean.
+
+    node tools/page_gif.mjs src/dev/preview_canyon_scorpions.ts "walkfilm" shots/scorpion_walk.gif 3   (also snapfilm, stingfilm, deathfilm)
+
