@@ -293,3 +293,13 @@ charge stays as filmed (his notes were on the roots).
 The review (tests/hollow_stag.test.ts) holds all of it, 22 of 22: stotting, all four hoofs down together or none, and
 down they stay on their spot as the floor goes by; the hand-over from its stand into its stotting and out of it as it
 lands (worst 2.95 game pixels); the harder hook's antlers' far tips at most 26 picture pixels a thirtieth of a second.
+
+Shown `shots/stag_walk.gif`, `stag_gore.gif` and `stag_roots.gif` and asked "Its stotting, its harder gore and its
+worming roots: are they right?" (offered: "Yes, as shown (Recommended)", all three go in as filmed, and with the
+charge, bellow, flinch and death that makes all of the Stag yes; "Not yet"), his answer, 15 Oct, by 13:13 (the clock
+read 13:13:27 just after): "Yes, as shown (Recommended)". SO ALL OF THE HOLLOW STAG HAS HIS YES, AS SHOWN: its look,
+its stand, its stotting, its gore, its charge, its roots, its bellow, its flinch and its death. It is still off
+(`STAG_ON`) until the main chat puts it in the game.
+
+NEXT: the Twisted Deer (medium: "An antler gore; a rearing stomp"), its brief by pop-ups, then its look, then its moves;
+then the Fog Wolves.
