@@ -209,3 +209,25 @@ just after): "Yes, animate him (Recommended)".
 
 NEXT: his stand (under the water, and risen), then his tentacle moves (the burst from glowing cracks, the sweep, the
 slam), filmed for his yes.
+
+HIS WORDS, 15 Oct, 16:43: "We want really wild and big for these animations.  Lots of motion". Read as (told him so):
+nothing of him calm, even standing: his arms thrashing and writhing all through, his bulk heaving, water pouring off
+him, his eye darting; every attack a huge wind-up, a whip-fast strike, stones and water flying.
+
+### His stands (`eyePainted('stand' | 'lurk', t, view)`)
+
+RISEN (phases 2 and 3), EYE_STAND, 45 frames at 15 a second, a 3 s round: heaving twice a round, swaying; every arm
+writhing (rising and falling, bending, curling and uncurling, waving), each its own way; his eye roving, darting aside
+1.05 to 1.7 s; a heavy lid, and a blink 2.2 to 2.52 s (shut at about 2.36 s); his pupil's slit and his iris's fire
+pulsing; drops of water falling off his arms. UNDER THE WATER (phase 1), EYE_LURK, 45 frames at 15, a 3 s round: his
+eye glowing up through the pool, pulsing, roving; the two arms that break the surface rolling, the rest coiling along
+the bottom; rings spreading on the water over his eye. His eye now has real lids, the upper sliding down to shut it.
+
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "standfilm" shots/eye_stand.gif 9
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "lurkfilm" shots/eye_lurk.gif 9
+
+Asked "His two stands, risen and under the water: wild enough?" (offered: "Yes, on to his tentacle moves
+(Recommended)"; "Wilder still"; "Not yet"), his answer, 15 Oct, by 16:51 (the clock read 16:50:59 just after): "Yes,
+on to his tentacle moves (Recommended)".
+
+NEXT: his tentacle moves: arms bursting up under you from glowing cracks, the sweep across the ring, the slam.
