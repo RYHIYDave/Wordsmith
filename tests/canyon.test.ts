@@ -79,8 +79,10 @@ const WHOLE = paintTerrain(T, X0, Y0, WW, HH);
 const kindAt = (px: number, py: number): number => WHOLE.kind[(py - Y0) * WW + (px - X0)];
 
 test('nothing of the game imports it (a mock-up for his yes)', () => {
+  // (floor 8's own pieces, art/floor8.ts, take its sand's colours from it: they are a mock-up too, and nothing of
+  // the game imports them, tests/floor8.test.ts)
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('canyon.ts')) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('canyon.ts') || f.endsWith('floor8.ts')) continue;
     assert.ok(!/from ['"][^'"]*\/canyon['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports Echo Canyon's ground`);
   }
 });

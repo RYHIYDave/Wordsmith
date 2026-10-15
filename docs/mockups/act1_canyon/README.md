@@ -154,7 +154,7 @@ cyan, every light the cult's fire, nothing cut off; his size (1.48 times the kni
 Asked "Is this the Cantor?" (offered: "Yes, animate him (Recommended)"; "Not yet"), his answer, 14 Oct, by 22:48:
 "Yes, animate him (Recommended)".
 
-## The Cantor's moves (15 Oct; for his yes; behind `CANTOR_ON`, off)
+## The Cantor's moves (15 Oct; HIS YES TO ALL OF THEM, AS SHOWN; behind `CANTOR_ON`, off)
 
 A plan for all eight moves went to him as a message, and the pop-up "Build the Cantor's moves this way?" came
 back "Yes, build these (Recommended)". The plan's own words: "His style is "stately, then sudden": slow and grand,
@@ -250,3 +250,18 @@ crisp; nothing cyan; nothing cut off, his copies too; his size); `tsc --noEmit` 
 **The pictures** (in `shots/`): films `cantor_walk.gif` (sixteen frames a second), `cantor_strike.gif` (the strike,
 then struck), `cantor_shout.gif`, `cantor_copies.gif`, `cantor_rockfall.gif`, `cantor_death.gif` (thirty a second),
 each with a contact sheet (`.sheet.png`).
+
+**Asked with the films** (one pop-up, three questions; our pick first and marked; offered: "Yes, as shown
+(Recommended)", or "Not yet"): "The Cantor's walk and his staff strike (with its echo): are these right?"; "His
+shout, his sound-copies and his rockfall: are these right?"; "His flinch and his death (his last note tears him
+apart): are these right?"
+
+**His answers, 15 Oct, by 07:35:** all three "Yes, as shown (Recommended)". So his look and all eight of his moves
+have his yes, as shown. He stays behind `CANTOR_ON` (off) and is not for a version until floor 8 comes in whole.
+
+**A fault found by the full unit suite, fixed:** tests/canyon.test.ts held that nothing imports Echo Canyon's
+ground, but floor 8's own pieces (src/art/floor8.ts, a mock-up too) take its sand's colours from it. The test now
+lets them; tests/floor8.test.ts still holds that nothing of the game imports the pieces.
+
+**Next:** the mobs, the Canyon Scorpions and the Dust Devils.
+
