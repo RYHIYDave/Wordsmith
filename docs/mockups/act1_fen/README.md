@@ -52,3 +52,9 @@ the same every time; every pixel opaque; no cyan or pink, and duller than every 
 | Places 6: old, broken | the ruin's flagstones sunk, tilted and cracked, slime in their joints |
 | Colour 3, 4: no cyan, no pink, duller than any word | the water's green held clear of cyan; the sickness's violet dull; tested |
 | Light from the upper left | tilted stones lit along their upper left edge; puddles lit along their far edge |
+
+Shown `shots/fen_ground.png` and `shots/fen_close.png` and asked "Is this the Sunken Fen's ground?" (offered: "Yes, on to
+its pieces (Recommended)", next its 25 pieces: boardwalks, dead trees, the obelisks and the rest; "Not yet"), his answer,
+15 Oct, by 15:22 (the clock read 15:22:34 just after): "Yes, on to its pieces (Recommended)".
+
+NEXT: its 25 pieces, themed after the fen and the Drowned Eye.
