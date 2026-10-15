@@ -354,4 +354,9 @@ cyan, every light the enemy's fire, its eyes burning, nothing cut off; its size;
 grip, only its root leg lifting and coming down on its spot; no leg through another; never still, nothing leaping,
 its loop closing.
 
-NEXT: his answer; then its moves.
+Shown `shots/deer_look.png` and `shots/deer_stand.gif` and asked "Is this the Twisted Deer?" (offered: "Yes, animate it
+(Recommended)", next its moves: the hitching limp, the antler gore, the rearing stomp with thorns, its flinch, and its
+death splitting into roots and bark; "Not yet"), his answer, 15 Oct, by 13:38 (the clock read 13:38:06 just after):
+"Yes, animate it (Recommended)".
+
+NEXT: its moves, filmed, for his yes.
