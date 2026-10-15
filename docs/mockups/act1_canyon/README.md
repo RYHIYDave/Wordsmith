@@ -109,3 +109,47 @@ Shown the first 14 (`canyon_dressed.png`, `canyon_pieces.png`) and asked "Are th
 (offered: "Yes, on to the rest (Recommended)"; "Change some"): "Yes, on to the rest (Recommended)". Shown all 25 and
 asked "Are these Echo Canyon's 25 pieces?" (offered: "Yes, on to the Cantor (Recommended)"; "Change some"), his
 answer, 14 Oct, by 22:34: "Yes, on to the Cantor (Recommended)".
+
+## The Cantor, floor 8's boss (src/art/cantor.ts, behind `CANTOR_ON`, off)
+
+The planning chat's, with his yes (12 Oct, 18:07): the cult's choirmaster, leading the chant down the supply
+road; everything he does echoes off the canyon walls a beat later. A staff strike (his basic attack); a shout
+whose shockwave comes back off the wall behind you, so you dodge twice; sound-copies of him that repeat his last
+move; rockfall shaken loose by his voice.
+
+His brief, asked as his art rulebook's questions in two pop-ups (14 Oct, by 22:40), his picks as he tapped them:
+- How big: "Tall and gaunt, menacing (Recommended)", offered as: half again your height, robed, looming over you
+  like a preacher over his flock.
+- The one thing to know him by: "Bone pipes rising from his back (Recommended)", offered as: a fan of bone organ
+  pipes grows from his shoulders; they blast pink when he shouts.
+- How he moves: "Stately, then sudden (Recommended)", offered as: slow and grand, conducting with sweeping arms;
+  then he lunges fast.
+- What he carries: "A long staff topped with a bell (Recommended)", offered as: he strikes with the staff, and the
+  bell rings with every blow.
+- How he dies: "His last note tears him apart (Recommended)", offered as: he screams one last note; his pipes
+  crack, he shatters, and his echoes ring on and fade after him.
+- Never: "Not a wizard in a pointy hat (Recommended)", offered as: magic is the mage's; he's a singer and a
+  preacher, not a spellcaster.
+- His sound: "A choir of voices, echoing (Recommended)", offered as: his voice is many voices at once, and each
+  comes back off the walls.
+
+STANDING: a Mob on the heroes' bones, 86 tall (half again the knight's 58), gaunt (narrow chest and waist, long
+arms); bare-headed (no hat, no hood: the flock wear cowls), his long hairless head pale and grey, a hard brow, a
+hooked nose, his eyes the cult's pink, his mouth a dark slot that burns when he sings; a mantle over his shoulders
+edged in pink, a robe to the floor, the cult's pink stole; long bony hands, the left raised before him as if to
+lead a choir; his staff in his right hand planted beside him, a crook at its head and a bronze bell hung in it;
+NINE PIPES OF BONE rising from between his shoulder blades side by side behind his head, the middle tallest, each
+open at its top, a slot cut in its back near its foot as an organ pipe's mouth, their tops and slots glowing the
+cult's pink with his breath. His canvas 420 by 460, his feet at (210, 360). His stand (3.2 s round): he breathes
+deep and slow, his weight going over from foot to foot, his raised hand beating a slow time, his head turning to
+look over his flock, his pipes glowing and dimming with his breath.
+
+    node tools/preview.mjs src/dev/preview_cantor.ts shots/cantor_look.png 1014 1000 look
+    node tools/page_gif.mjs src/dev/preview_cantor.ts "standfilm" shots/cantor_stand.gif 4
+
+`tests/cantor.test.ts` (5): the switch off and nothing of the game imports him; crisp, his pink edge; nothing
+cyan, every light the cult's fire, nothing cut off; his size (1.48 times the knight); the boss review of his stand
+(tests/cantor_shape.ts: his solids, his staff through nothing but his right hand).
+
+Asked "Is this the Cantor?" (offered: "Yes, animate him (Recommended)"; "Not yet"), his answer, 14 Oct, by 22:48:
+"Yes, animate him (Recommended)".
