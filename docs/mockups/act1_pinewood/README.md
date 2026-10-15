@@ -122,3 +122,54 @@ and stamping a forefoot, snorting a breath of fog), its moves still to come: the
 splinters trees, the roots bursting toward you, the bellow the wolves answer.
 
 NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
+
+## The Hollow Stag's look (src/art/hollow_stag.ts, behind `STAG_ON`, off; FOR HIS YES)
+
+Painted from its own solids, as the canyon scorpion is, in the same painter (four legs and antlers have no place on
+the heroes' bones).
+- HUGE, ELK-SIZED, ANTLERS TOWERING: its withers 68.6 up (the knight is 58), its antlers' tips 145.5 up, two and a
+  half times his height, spreading 93 across; long legs, the elbow bent back and the stifle forward, as a deer's.
+- THE EYE IN ITS OPEN RIBS: its ribs bare under its torn hide, three snapped on each side to open a window; in the
+  dark of its hollow, behind the window of the side you see, a great eye in a nest of roots: pale, veined, its iris
+  the enemy's pink burning to gold, a black slit pupil; it looks at you. (From in front you look in through its right
+  side and from behind through its left, along your line of sight, so the two windows are not opposite each other.)
+  Its light gold.
+- HALF ROTTED, NOT A GORY ZOMBIE: a dark hide in tatters, torn along its back to the bare knobs of its spine; its
+  shoulder blades and hip bones worn through to bone; a hole in its haunch, roots in the dark there; its left forearm
+  bare bone with a root wound round it; tatters of hide and roots hanging from it; the skull of its face bare, dark
+  sockets; moss on its back and hanging from its antlers; the swamp's dark violet roots through it. No red flesh, no
+  blood. Its pink edge while it lives; nothing cyan.
+- ITS STAND, RESTLESS (his pick; a 2.4 s loop, fifteen frames a second): its weight shifting side to side, its ribs
+  heaving as it breathes; it tosses its head, 0.24 to 0.92 s; it lifts its right forefoot and strikes it down on the
+  spot it left, twice (stamps at 1.22 and 1.54 s, clods flying, its body jolted); it lowers its head and snorts a
+  breath of fog at 1.84 s; its tail flicks; its eye glances off and back, and blinks, 2.04 to 2.24 s; what hangs from
+  it swings with its moving.
+
+    node tools/preview.mjs src/dev/preview_hollow_stag.ts shots/stag_look.png 1014 820 look
+    node tools/page_gif.mjs src/dev/preview_hollow_stag.ts "standfilm" shots/stag_stand.gif 6
+
+THE REVIEW, AS A BOSS (How art is made 7): art/boss_checks.ts is made for figures on the heroes' bones, so its rules
+are written out for the Stag in `tests/hollow_stag.test.ts` (11), every frame of its stand from in front and from
+behind: the switch off and nothing of the game imports it; crisp, its pink edge; nothing cyan, every light the enemy's
+fire, nothing cut off; its size; FLOOR, nothing below the floor; SLIDE, its hoofs stay where they stand, the pawing
+foot down only on its own spot; THROUGH, no leg through another; JERK, nothing leaps (its striking hoof at most 10 a
+thirtieth of a second, its antlers' far tips at most 9, the rest of it 3) and its loop closes; ALIVE, never still,
+its ribs heaving, its hips swaying, its tatters swinging; its eye seen from either side, looking at you, and its
+blink; what it throws off gone before its loop comes round.
+
+| His rule | How the Stag keeps it |
+| --- | --- |
+| Pillars 3, Movement 1: weight | its stamps jolt its whole body down; its head drops before it snorts |
+| Pillars 4, Monsters 6: enemy pink, gold | its eye pink burning to gold, its light gold; its pink edge; nothing cyan |
+| Pixels 1, 4, 5 | crisp; lit from the upper left; ink seams, no black outline |
+| Colour 5: neon on dark | a dark beast, its gold eye the brightest thing on it; never mud-brown all over: bone, moss, roots, gold |
+| Monsters 1: true to what it is | a deer's legs: the elbow back, the stifle forward; hoofs; a deer's skull |
+| Monsters 3: big ones menacing | half again the knight's height at the shoulder, antlers two and a half |
+| Movement 4: loose things follow | its mane, tatters, roots and moss swing with its moving |
+| Movement 6: alive when still | restless, his pick: breathing, shifting, tossing, pawing, snorting, blinking |
+| Movement 8: feet grip | a hoof down stays put; the pawing hoof comes down on its own spot |
+| Hits 2, his word: no gore | rotted but clean: no red flesh, no blood |
+| Animations 4: warnings in sight | (for its moves, to come) |
+| How art is made 7: every boss through every check | the review above, every frame, both sides |
+
+NEXT: his answer; then its moves.
