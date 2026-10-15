@@ -65,3 +65,8 @@ at the turn); how the real Echo Canyon is laid is the main chat's.
 tile's; nothing painted over the floor; the near face on the cliff's side, within its height; pieces seamless,
 the same every time; opaque, every kind of ground painted; no cyan or pink, duller than every word; light from
 the upper left; three tones or so a material.
+
+Shown `shots/canyon_ground.png` and `shots/canyon_close.png`, with a word that the rock is a step duller than the
+sketch by his rule that places stay duller than the words, and asked "Is this Echo Canyon's ground?" (offered:
+"Yes, on to its pieces (Recommended)"; "Brighter rock", closer to the sketch's orange, past the "duller than the
+words" rule; "Not yet"), his answer, 14 Oct, by 22:13: "Yes, on to its pieces (Recommended)".
