@@ -331,4 +331,27 @@ and its edge is pink while it lives, nothing cyan; a deer gone to wood: one hind
 splay of roots for a foot (so it limps), the others bark and root below the knee; bark plates and roots grown out along
 its back; roots burst through its sides; moss; its antlers crooked, uneven, bramble-thorned; gaunt, never soft.
 
-NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
+### Its look (src/art/twisted_deer.ts, behind `TWISTED_DEER_ON`, off; FOR HIS YES)
+
+Its own solids, as the Stag's. Pony-sized: its back about 40 up (the knight's chest), its antlers' tips about 60 to 70
+(to his head). Hunched, its head carried low before it, its antlers rising from it. A sickly grey-taupe hide gone patchy,
+dark bark broken through it, moss on the bark; a ridge of bark plates down its back and three crooked, thorned roots
+grown up out of it; roots burst out through its sides and back in; its face masked in bark, its eyes burning the
+enemy's pink to gold; long ears, one torn; ITS ANTLERS, the one thing to know it by: dead wood bleached pale, crooked,
+forked, barbed all along like brambles, their thorns' points black; its left long and twisting, its right short and
+bent aside. Its right hind leg wholly a twisted root, a braid of root and bark, ending in a splay of roots for a foot;
+the others deer legs, bark below the knee, a root wound round each. Its pink edge; nothing cyan.
+
+ITS STAND, JERKY AND WRONG (his pick; a 2 s loop, fifteen frames a second): quick shallow breaths; its head wrenched
+round at 0.3 s and at 1.2 s, held, let back slowly; its root leg lifted 0.78 to 1.04 s and set down on its spot with a
+jolt; a shudder through it 1.0 to 1.2 s; its ears and tail twitching.
+
+    node tools/preview.mjs src/dev/preview_twisted_deer.ts shots/deer_look.png 1014 700 look
+    node tools/page_gif.mjs src/dev/preview_twisted_deer.ts "standfilm" shots/deer_stand.gif 5
+
+`tests/twisted_deer.test.ts` (8): the switch off and nothing of the game imports it; crisp, its pink edge; nothing
+cyan, every light the enemy's fire, its eyes burning, nothing cut off; its size; nothing below the floor; its feet
+grip, only its root leg lifting and coming down on its spot; no leg through another; never still, nothing leaping,
+its loop closing.
+
+NEXT: his answer; then its moves.
