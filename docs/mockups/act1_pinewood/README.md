@@ -256,3 +256,9 @@ them, crisp, their pink edge, nothing cut off, gone after); its pictures as the 
 | Animations 1: as big and wild as it will go | rearing twice its height, a gallop of 6 tiles a second, splinters, earth bursting, fog rolling, roots in lines to 6 tiles |
 | Animations 4: warnings in sight | each root burst's glowing crack before it; its own warnings are poses in plain sight |
 | Pillars 4: enemy colours | its eye pink to gold; the roots' cracks pink to gold; nothing cyan |
+
+Shown the six films (`shots/stag_walk.gif`, `stag_gore.gif`, `stag_charge.gif`, `stag_roots.gif`, `stag_bellow.gif`,
+`stag_death.gif`) and asked as one pop-up, three questions, his answers, 15 Oct, by 12:55 (the clock read 12:55:25 just
+after): "Its walk and its antler gore: are they right?" "Not yet"; "Its charge and its lines of roots: are they right?"
+"Not yet"; "Its bellow, its flinch and its death: are they right?" "Yes, as shown (Recommended)". So its bellow, its
+flinch and its death have his yes as shown; its walk, gore, charge and roots wait on what he wants changed.
