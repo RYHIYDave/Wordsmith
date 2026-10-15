@@ -381,3 +381,33 @@ holds a monster's (its tail strike in `clips.moves.sting`). Its numbers, packs a
 
     node tools/page_gif.mjs src/dev/preview_canyon_scorpions.ts "walkfilm" shots/scorpion_walk.gif 3   (also snapfilm, stingfilm, deathfilm)
 
+
+## The Dust Devils' brief (15 Oct; for the look; behind `DEVIL_ON`, off)
+
+Floor 8's small mob, by the planning chat's table (with his yes). A small monster has one attack (his gameplay
+rulebook). Asked as his art rulebook's questions for a new character, in two pop-ups; his picks as he tapped them,
+15 Oct, the first four by 08:51, the rest by 09:00:
+- WHAT IT IS: "Red sand whirlwind, a cult bell inside (Recommended)", offered as: a spinning column of canyon dust;
+  a small bronze bell of the cult tumbles at its heart, burning pink.
+- HOW BIG: "Waist-high, thin and tall (Recommended)", offered as: about half the knight's height; a pack of them
+  swirling round you.
+- HOW IT MOVES: "Weaving, never still (Recommended)", offered as: always spinning, swerving side to side as they come
+  at you, sand trailing behind.
+- ITS ONE ATTACK: "Lashes you with a whip of sand (Recommended)", offered as: it spins up faster and taller (the
+  warning), then a tendril of grit cracks out at you.
+- HOW IT DIES: "The wind dies, the bell drops and cracks (Recommended)", offered as: it spins down and sags; its
+  sand pours to the floor in a heap; its bell falls out, rings once and its pink goes out.
+- WHEN IT IS HIT: "Flickers and stutters", offered as: its spin stalls a beat and its pink flickers. Not the
+  recommended pick; his pick stands.
+- WHAT IT MUST NOT LOOK LIKE: "Not a cartoon tornado with a face (Recommended)", offered as: no mouth or cute eyes on
+  a funnel; the bell's glow is its only 'face'.
+- ITS SOUND (sound rule 7): "Howling wind, hissing sand, its bell (Recommended)", offered as: the wind and grit, and
+  its little bell jangling as it spins.
+
+READ AS, NOT ASKED (the pictures will show whether it is right): an enemy, so its bell's glow and its edge are the
+cult's pink while it lives, nothing cyan; its sand the canyon's red rock, but darker and bolder than the pale floor it
+spins on (Colour 5), so it reads against it; no face, no eyes; it has no feet, so it glides, and its weaving is in
+its own swaying as well as in how the game steers it; struck, it flickers and stutters (Hits 2: magic things flicker
+in their own colour) and is still knocked back a little (Hits 3); packs and numbers are the main chat's.
+
+NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
