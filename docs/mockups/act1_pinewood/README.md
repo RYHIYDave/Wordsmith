@@ -303,3 +303,32 @@ its stand, its stotting, its gore, its charge, its roots, its bellow, its flinch
 
 NEXT: the Twisted Deer (medium: "An antler gore; a rearing stomp"), its brief by pop-ups, then its look, then its moves;
 then the Fog Wolves.
+
+## The Twisted Deer, floor 9's medium mob
+
+His design doc: "Twisted Deer | Medium | An antler gore; a rearing stomp."
+
+His brief, asked as his art rulebook's questions in two pop-ups, his picks as he tapped them, 15 Oct, by 13:17 (the
+clock read 13:17:23 just after):
+- WHAT IT IS: "A deer grown through with roots", offered as: half deer, half twisted tree: bark and roots where its
+  legs and back were. Not the recommended pick; his pick stands.
+- HOW BIG: "Pony-sized, dangerous in a pack (Recommended)", offered as: its back about the knight's chest, its antlers
+  up to his head.
+- HOW IT MOVES: "Jerky and wrong, a fast hitching limp (Recommended)", offered as: its twisted legs make it lurch and
+  jerk, then burst forward.
+- THE ONE THING TO KNOW IT BY: "Its antlers grown crooked into thorns (Recommended)", offered as: uneven, twisted
+  antlers, barbed like brambles.
+- ITS REARING STOMP: "Thorns burst from the ground", offered as: it stamps, and thorny roots spike up round it. Not the
+  recommended pick; his pick stands.
+- HOW IT DIES: "It splits apart into roots and bark", offered as: it cracks open and falls to pieces like a rotten
+  tree. Not the recommended pick; his pick stands.
+- WHAT IT MUST NEVER LOOK LIKE: "Not a cute Bambi (Recommended)", offered as: nothing sweet or soft about it.
+- ITS SOUND (sound rule 7): "Creaking wood, a strangled bleat (Recommended)", offered as: its rooted body creaking as it
+  moves, and a wrong, choked deer's call.
+
+READ AS, NOT ASKED (the pictures will show whether it is right): an enemy, so its eyes burn the enemy's pink to gold
+and its edge is pink while it lives, nothing cyan; a deer gone to wood: one hind leg wholly a twisted root ending in a
+splay of roots for a foot (so it limps), the others bark and root below the knee; bark plates and roots grown out along
+its back; roots burst through its sides; moss; its antlers crooked, uneven, bramble-thorned; gaunt, never soft.
+
+NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
