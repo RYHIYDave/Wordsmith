@@ -10,8 +10,9 @@ import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { fenLook } from '../art/fen';
-import { BURST_CANVAS, EYE_BURST, burstPainted, EYE_CANVAS, EYE_HABITS, EYE_LURK, EYE_POOL, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, eyeLong, eyeLookFrame, eyePainted } from '../art/drowned_eye';
+import { BILE_CANVAS, BOLT_CANVAS, BURST_CANVAS, EYE_BILE, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_GAZE, EYE_SPIT, bileLanding, bilePainted, boltPainted, burstPainted, EYE_CANVAS, EYE_HABITS, EYE_LURK, EYE_POOL, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, eyeLong, eyeLookFrame, eyePainted } from '../art/drowned_eye';
 import { toSprite } from '../art/kit';
+import { stage } from '../art/skin';
 import { TILE3 } from '../art/new_mobs3';
 import type { EyeLook } from '../art/drowned_eye';
 import { pictureOf, worldOf } from '../art/terrain';
@@ -197,6 +198,138 @@ function film(which: string, title: string, fps: number, n: number, note: (t: nu
 }
 
 /** THE BURSTS FILMED: under the water he lurks; four arms burst up round the knight from glowing cracks, one after another. */
+/** HIS CALL: he lifts his arms to the dome, and the siege's bolts rain down round the ring, one where you stand. */
+function callFilm(): void {
+  const fps = EYE_BOLT.fps;
+  // where they fall (world tiles from his middle) and when, after he begins his call
+  const bolts: [number, number, number][] = [[2.8, 3.4, 0.35], [-4.0, 1.6, 0.5], [KNIGHT_AT[0] - PCX, KNIGHT_AT[1] - PCY, 0.65], [-2.0, -3.6, 0.8], [4.2, 0.6, 0.95], [3.5, -3.0, 1.1]];
+  const long = Math.max(...bolts.map((b) => b[2])) + EYE_BOLT.long + 0.1;
+  const n = Math.round(long * fps) + 1;
+  const W = PW;
+  const H = 640;
+  const cx = 507;
+  const cy = 450;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const floor = document.createElement('canvas');
+  floor.width = W;
+  floor.height = H;
+  ground(floor.getContext('2d') as CanvasRenderingContext2D, 0, 0, W, H, cx, cy);
+  const [p0x, p0y] = pictureOf(PCX, PCY);
+  const spot = (x: number, y: number): [number, number] => {
+    const [px, py] = pictureOf(x, y);
+    return [cx + px - p0x, cy + py - p0y];
+  };
+  const draw = (i: number): void => {
+    const t = i / fps;
+    g.drawImage(floor, 0, 0);
+    const things: [number, () => void][] = [];
+    const boss = toSprite(t <= EYE_CALL.long ? eyePainted('call', t, 'front') : eyePainted('stand', t, 'front'), null, EYE_CANVAS.ax, EYE_CANVAS.ay);
+    things.push([PCX + PCY, () => {
+      drawAt(g, boss, cx, cy);
+      litAt(g, boss, cx, cy);
+    }]);
+    bolts.forEach(([bx, by, t0], k) => {
+      const tb = t - t0;
+      if (tb < 0 || tb > EYE_BOLT.long) return;
+      const sp = toSprite(boltPainted(tb, 'front', k * 5 + 1), null, BOLT_CANVAS.ax, BOLT_CANVAS.ay);
+      const [sx, sy] = spot(PCX + bx, PCY + by);
+      things.push([PCX + bx + PCY + by, () => {
+        drawAt(g, sp, sx, sy);
+        litAt(g, sp, sx, sy);
+      }]);
+    });
+    const [kx, ky] = spot(KNIGHT_AT[0], KNIGHT_AT[1]);
+    things.push([KNIGHT_AT[0] + KNIGHT_AT[1] + 0.01, () => {
+      g.fillStyle = 'rgba(25, 18, 40, 0.35)';
+      g.beginPath();
+      g.ellipse(kx, ky, 26, 11, 0, 0, Math.PI * 2);
+      g.fill();
+      drawAt(g, knight, kx, ky);
+    }]);
+    things.sort((a, b) => a[0] - b[0]);
+    for (const [, f] of things) f();
+    label(g, 'The Drowned Eye: the siege\'s bolts', 8, 6);
+    const say = t < EYE_CALL.raise ? 'he calls on the siege' : t < bolts[0][2] + EYE_BOLT.strike ? 'runes open where they will fall (the warning)' : t < bolts[bolts.length - 1][2] + EYE_BOLT.strike + 0.3 ? 'BOLTS' : '';
+    if (say) label(g, say, W - say.length * 12 - 16, 6);
+    label(g, `${t.toFixed(2)} s`, 8, H - 28);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = n;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
+/** HIS BILE: three globs spat high over the ring, their shadows where they will land, pools of it left bubbling. */
+function spitFilm(): void {
+  const fps = EYE_SPIT.fps;
+  const long = EYE_SPIT.long + 1.2;
+  const n = Math.round(long * fps) + 1;
+  const W = PW;
+  const H = 640;
+  const cx = 507;
+  const cy = 450;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const floor = document.createElement('canvas');
+  floor.width = W;
+  floor.height = H;
+  ground(floor.getContext('2d') as CanvasRenderingContext2D, 0, 0, W, H, cx, cy);
+  const ST = stage('front', EYE_CANVAS.ax, EYE_CANVAS.ay, EYE_CANVAS);
+  const [p0x, p0y] = pictureOf(PCX, PCY);
+  const [kx0, ky0] = pictureOf(KNIGHT_AT[0], KNIGHT_AT[1]);
+  const kAt: [number, number] = [cx + kx0 - p0x, cy + ky0 - p0y];
+  const draw = (i: number): void => {
+    const t = i / fps;
+    g.drawImage(floor, 0, 0);
+    // the pools, on the floor under all
+    EYE_SPIT.spits.forEach((ts, k) => {
+      const tp = t - (ts + EYE_SPIT.fly);
+      if (tp < 0 || tp > EYE_BILE.long) return;
+      const [sx, sy] = ST.at(bileLanding(AIM_KNIGHT, k));
+      const sp = toSprite(bilePainted(tp, 'front', k * 3 + 2), null, BILE_CANVAS.ax, BILE_CANVAS.ay);
+      drawAt(g, sp, cx + sx - EYE_CANVAS.ax, cy + sy - EYE_CANVAS.ay);
+    });
+    const boss = toSprite(t <= EYE_SPIT.long ? eyePainted('spit', t, 'front', AIM_KNIGHT) : eyePainted('stand', t, 'front'), null, EYE_CANVAS.ax, EYE_CANVAS.ay);
+    drawAt(g, boss, cx, cy);
+    litAt(g, boss, cx, cy);
+    g.fillStyle = 'rgba(25, 18, 40, 0.35)';
+    g.beginPath();
+    g.ellipse(kAt[0], kAt[1], 26, 11, 0, 0, Math.PI * 2);
+    g.fill();
+    drawAt(g, knight, kAt[0], kAt[1]);
+    label(g, 'The Drowned Eye: his bile', 8, 6);
+    const S = EYE_SPIT;
+    const say = t < S.spits[0] ? 'his maw opens, drooling (the warning)' : t < S.spits[2] + S.fly ? 'SPAT: their shadows show where they land' : t < S.long ? 'pools of it, bubbling' : 'pools of it, bubbling';
+    label(g, say, W - say.length * 12 - 16, 6);
+    label(g, `${t.toFixed(2)} s`, 8, H - 28);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = n;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
 function burstFilm(): void {
   const fps = EYE_BURST.fps;
   const lag = 0.12;
@@ -268,6 +401,8 @@ function burstFilm(): void {
 
 if (HASH === 'look') look();
 else if (HASH === 'burstfilm') burstFilm();
+else if (HASH === 'callfilm') callFilm();
+else if (HASH === 'spitfilm') spitFilm();
 else if (HASH === 'standfilm') film('stand', 'The Drowned Eye, risen (the game\'s size)', EYE_STAND.fps, EYE_STAND.frames, (t) => (t >= EYE_HABITS.blink[0] && t < EYE_HABITS.blink[1] ? 'blinks' : t >= EYE_HABITS.dart[0] && t < EYE_HABITS.dart[1] ? 'his eye darts' : ''));
 else if (HASH === 'lurkfilm') film('lurk', 'The Drowned Eye under the water, phase 1 (the game\'s size)', EYE_LURK.fps, EYE_LURK.frames, () => '');
 else if (HASH === 'slamfilm' || HASH === 'slamunderfilm') {
@@ -278,6 +413,10 @@ else if (HASH === 'slamfilm' || HASH === 'slamunderfilm') {
   const S = EYE_SWEEP;
   film(HASH === 'sweepfilm' ? 'sweep' : 'sweepUnder', `The Drowned Eye: the sweep${HASH === 'sweepfilm' ? '' : ', from under the water'}`, S.fps, Math.round(S.long * S.fps) + 1, (t) =>
     t < S.cock ? 'rises to one side' : t < S.sweep[0] ? 'cocked back (the warning)' : t < S.sweep[1] ? 'SWEEP' : t < S.over ? 'overshoots' : t < S.back[1] ? 'sinks back' : '');
+} else if (HASH === 'gazefilm') {
+  const G = EYE_GAZE;
+  film('gazeBack', 'The Drowned Eye: his gaze', G.fps, Math.round(G.long * G.fps) + 1, (t) =>
+    t < G.gather ? 'his eye narrows, gathering (the warning)' : t < G.sweep[0] ? '' : t < G.sweep[1] ? 'HIS GAZE sweeps' : t < G.fade ? 'it dies' : 'he blinks');
 } else if (HASH.startsWith('film:')) {
   const which = HASH.split(':')[1];
   film(which, `The Drowned Eye: ${which}`, 30, Math.round(eyeLong(which) * 30) + 1, () => '');

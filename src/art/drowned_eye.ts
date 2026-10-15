@@ -185,10 +185,16 @@ export interface EyePose {
   ripples?: [V3, number][];
   /** Marks on the ruin's floor under it: a slam's shadow falling (the warning), the stones cracked along its line. */
   marks?: FloorMark[];
+  /** His gaze: a fan of light from his eye (`from`) down onto the floor along a line (`a` to `b`), `k` how strong. */
+  beams?: { from: V3; a: V3; b: V3; k: number; t: number }[];
+  /** The stones his gaze has swept, from `from` degrees round to `to`: how long since it passed each (`age`), all of it fading as `fade` falls. */
+  burnt?: { from: number; to: number; age: (deg: number) => number; fade: number };
+  /** Globs of his bile in flight: where each is, which way it flies, how big. */
+  globs?: { at: V3; dir: V3; r: number }[];
 }
 /** A mark on the floor: a shadow along a line, `w` wide, `k` how dark (0 to 1); or the cracks it leaves, `k` how fresh. */
 export interface FloorMark {
-  kind: 'shadow' | 'crack';
+  kind: 'shadow' | 'crack' | 'scorch' | 'aim' | 'spot';
   a: V3;
   b: V3;
   w: number;
@@ -363,6 +369,13 @@ function rimOn(aim: number): number {
   const d = onLine(aim, 1);
   return 1 / Math.hypot(d[0] / EYE_POOL.rx, d[1] / EYE_POOL.ry);
 }
+/** The ring's outer edge on the line `aim` (in its own lengths). */
+function ringOn(aim: number): number {
+  const d = onLine(aim, 1);
+  return 1 / Math.hypot(d[0] / EYE_RING.rx, d[1] / EYE_RING.ry);
+}
+/** Degrees round from `from`, wrapped to within half a turn of it. */
+const near180 = (deg: number, from: number): number => from + ((((deg - from) % 360) + 540) % 360) - 180;
 /** Flung things: `n` of them from `at` (a point or a spread of points) from `t0`, flying `speed` out and up, falling, `life` long. */
 function flung(t: number, t0: number, n: number, from: (i: number) => V3, speed: number, up: number, life: number, cols: string[], seed: number, size = 2): [V3, string, number][] {
   const out: [V3, string, number][] = [];
@@ -383,6 +396,9 @@ function flung(t: number, t0: number, n: number, from: (i: number) => V3, speed:
 const SPRAY = ['#9aaaa0', '#c0cac2', '#748a7e', '#dfe6e0'];
 /** The ruin's stones broken: their colours. */
 const RUBBLE = ['#4e4a56', '#64606c', '#7c7884', '#3a3741', '#2e3a22'];
+/** His bile: a sickly yellow-green, dull (it gives no light). */
+const BILE: Ramp = ['#262a0e', '#424a16', '#646e20', '#8c982e', '#b6bf52'];
+const BILE_DROPS = [BILE[2], BILE[3], BILE[1], BILE[4]];
 
 /** The arm that strikes, from where it leaves the pool on `aim`. */
 function striker(aim: number, long: number, thick: number, rise: number, bend: number, curl: number, wave: number, phase: number, z0 = -24, r0 = 42): ArmPose {
@@ -523,12 +539,226 @@ function sweepPose(t: number, under: boolean, aim: number, clock = 0): EyePose {
   return P;
 }
 
+/**
+ * HIS GAZE (his pick, “His gaze: a gold beam sweeping the arena”). The warning: he rears, his arms spreading out of its
+ * way, his eye narrowing on where it will fall, the light gathering into his slit, sparks drawn into it, and a line of
+ * his light flickering on the stones where it will start, pink brightening to gold. Then a fan of his gold light falls
+ * from his eye onto the floor along a line from the pool's rim to the ring's edge, and sweeps round through `arc`
+ * degrees centred on its aim (`gaze` toward his left, `gazeBack` toward his right), the stones burning along it, flames
+ * and sparks off them, the stones it has passed glowing, then smouldering, then scorched; it dies; he blinks hard.
+ * Where it hurts, at any time: the line from the pool's rim to the ring's edge at its angle (`gazeAngle`).
+ */
+export const EYE_GAZE = { long: 3.4, gather: 1.0, sweep: [1.05, 2.45], arc: 120, fade: 2.62, fps: 30 } as const;
+
+/** Where his gaze falls at time `t` (degrees round from his front), or null when it is not burning. */
+export function gazeAngle(t: number, aim: number, back = false): number | null {
+  const G = EYE_GAZE;
+  if (t < G.sweep[0] || t > G.fade) return null;
+  const [a0, a1] = back ? [aim + G.arc / 2, aim - G.arc / 2] : [aim - G.arc / 2, aim + G.arc / 2];
+  return a0 + (a1 - a0) * sm((t - G.sweep[0]) / (G.sweep[1] - G.sweep[0]));
+}
+
+function gazePose(t: number, aim: number, clock = 0, blaze = 0, back = false): EyePose {
+  const G = EYE_GAZE;
+  const base = standPose(clock + t);
+  const P: EyePose = { ...base };
+  const [a0, a1] = back ? [aim + G.arc / 2, aim - G.arc / 2] : [aim - G.arc / 2, aim + G.arc / 2];
+  const span = G.sweep[1] - G.sweep[0];
+  const k = t < G.sweep[0] ? 0 : sm((t - G.sweep[0]) / span);
+  const ang = a0 + (a1 - a0) * k;
+  const gather = sm(t / G.gather);
+  // (it bursts on, burns, and dies)
+  const strong = t < G.sweep[0] ? 0 : t < G.sweep[1] ? Math.min(1, (t - G.sweep[0]) / 0.06) : Math.max(0, 1 - (t - G.sweep[1]) / (G.fade - G.sweep[1]));
+  const narrow = t < G.fade ? Math.max(gather, strong > 0 ? 1 : 0) : Math.max(0, 1 - (t - G.fade) / 0.3);
+  const rim = rimOn(ang);
+  const reach = ringOn(ang) - 3;
+  // he rears, his bulk lifting as it burns
+  P.heave = add(base.heave, [0, 0, 16 * narrow]);
+  P.tilt = base.tilt + 6 * narrow;
+  const E: V3 = add([0, 0, P.zE], P.heave);
+  const mid = onLine(ang, rim + (reach - rim) * 0.55);
+  const toward = norm(sub(mid, E));
+  const lv: V3 = [dot(toward, FW), dot(toward, LF), dot(toward, UP)];
+  P.look = norm(add(mul(base.look, 1 - narrow), mul(lv, narrow)));
+  const blink = bump(t, G.fade, G.fade + 0.42);
+  P.lid = base.lid * (1 - narrow) + 0.5 * narrow + (1 - 0.5 * narrow) * blink;
+  P.slit = base.slit * (1 - narrow) + 0.02 * narrow;
+  // (a flash as it bursts on)
+  P.glow = base.glow + 1.3 * narrow + 1.5 * bump(t, G.sweep[0] - 0.04, G.sweep[0] + 0.2);
+  P.blaze = blaze;
+  // his arms spread out of its way, those by where it will start swung aside (its light falls over the rest); never
+  // back over his eye
+  P.arms = base.arms.map((A) => {
+    if (A.rise <= 10) return A;
+    const d0 = near180(A.a, a0) - a0;
+    const aside = Math.abs(d0) < 70 ? Math.tanh(d0 / 10) * (1 - Math.abs(d0) / 70) * 70 * narrow : 0;
+    return { ...A, rise: Math.min(A.rise + 10 * narrow, Math.max(A.rise, 80)), curl: A.curl * (1 - (0.5 * Math.abs(aside)) / 70), yaw: (A.yaw ?? 0) + aside };
+  });
+  const iris = add(E, mul(toward, EYE_R * 0.98));
+  const drops = [...(base.drops ?? [])];
+  // the light drawn into his slit as he gathers: sparks streaming in from all round
+  if (gather > 0.04 && t < G.sweep[0] + 0.05) for (let i = 0; i < 22; i++) {
+    const f = fr(t * 1.4 + hash(i, 5, 121));
+    const a = (i / 22) * TAU + t * 1.5;
+    const r = (30 + 120 * hash(i, 6, 121)) * (1 - f) * gather;
+    drops.push([add(iris, [Math.cos(a) * r, Math.sin(a) * r * 0.7, Math.sin(a * 2 + i) * r * 0.5]), f > 0.7 ? FLAME[4] : FLAME[3], f > 0.7 ? 3 : 2]);
+  }
+  // sparks and steam flying off where it falls
+  if (strong > 0.2) for (let i = 0; i < 26; i++) {
+    const f = fr(t * 2.6 + hash(i, 3, 121));
+    const at = onLine(ang + (hash(i, 1, 121) - 0.5) * 5, rim + (reach - rim) * hash(i, 2, 121));
+    const out = (hash(i, 4, 121) - 0.5) * 30 * f;
+    drops.push([add(at, [out, out * 0.5, 3 + 46 * f]), f < 0.35 ? FLAME[4] : f < 0.65 ? FLAME[3] : '#8c8890', f < 0.35 ? 3 : 2]);
+  }
+  P.drops = drops;
+  P.beams = strong > 0 ? [{ from: iris, a: onLine(ang, rim + 2), b: onLine(ang, reach), k: strong, t }] : [];
+  // the warning on the stones: a line of his light where it will start, flickering, pink brightening to gold
+  P.marks = [];
+  if (t < G.sweep[0]) {
+    const w = sm((t - 0.15) / (G.gather - 0.15));
+    if (w > 0) P.marks.push({ kind: 'aim', a: onLine(a0, rimOn(a0) + 3), b: onLine(a0, ringOn(a0) - 3), w: 1 + 2.4 * w, k: w, seed: Math.floor(t * 20) });
+  }
+  // the stones it has swept: glowing, smouldering, scorched; all of it gone as he settles
+  if (t > G.sweep[0]) {
+    const lo = Math.min(a0, a1);
+    const hi = Math.max(a0, a1);
+    P.burnt = {
+      from: a0,
+      to: ang,
+      fade: 1 - sm((t - (G.long - 0.55)) / 0.5),
+      age: (deg: number): number => {
+        const d = near180(deg, aim);
+        if (d < lo || d > hi) return -1;
+        const kk = (d - a0) / (a1 - a0);
+        if (kk > k) return -1;
+        // (when it passed there: the sweep's easing turned back)
+        const u = 0.5 - Math.sin(Math.asin(Math.max(-1, Math.min(1, 1 - 2 * kk))) / 3);
+        return t - (G.sweep[0] + u * span);
+      },
+    };
+  }
+  return P;
+}
+
+/**
+ * HIS CALL (his pick, “The siege's pink bolts raining down”): he rears and lifts his arms high, his eye rolled up to
+ * the dome, his veins catching the siege's fire, its sparks streaming up off him; held while the bolts fall (each
+ * painted on its own, `boltPainted`, laid by the game where it falls); he sinks back.
+ */
+export const EYE_CALL = { long: 2.4, raise: 0.6, hold: [0.6, 1.8], fps: 30 } as const;
+
+function callPose(t: number, clock = 0): EyePose {
+  const C = EYE_CALL;
+  const base = standPose(clock + t);
+  const P: EyePose = { ...base };
+  const up = t < C.hold[1] ? sm(t / C.raise) : 1 - sm((t - C.hold[1]) / (C.long - C.hold[1]));
+  const throb = 0.5 + 0.5 * Math.sin(t * 9);
+  P.heave = add(base.heave, [0, 0, 14 * up]);
+  P.zE = base.zE + 10 * up;
+  P.tilt = base.tilt - 10 * up;
+  // his eye rolled up to the dome, wide, burning
+  P.look = norm(add(mul(base.look, 1 - up), mul(norm([0.35, 0, 1]) as V3, up)));
+  P.lid = base.lid * (1 - up) + 0.04 * up;
+  P.slit = base.slit * (1 - up) + 0.05 * up;
+  P.glow = base.glow + up * (0.8 + 0.5 * throb);
+  P.blaze = up * (0.55 + 0.25 * throb);
+  // his arms lifted high, writhing
+  // (high, but never back over his eye)
+  P.arms = base.arms.map((A, i) => (A.rise <= 10 ? A : { ...A, rise: A.rise + (Math.max(A.rise, 82) - A.rise) * up, bend: A.bend - 10 * up, curl: A.curl * (1 - 0.6 * up), wave: A.wave + 4 * up, phase: A.phase + up * Math.sin(t * 5 + i) * 0.8 }));
+  // the siege's sparks streaming up off him to the dome
+  const drops = [...(base.drops ?? [])];
+  if (up > 0.05) for (let i = 0; i < 26; i++) {
+    const f = fr(t * 0.9 + hash(i, 1, 151));
+    const a = hash(i, 2, 151) * TAU;
+    const r = 30 + 60 * hash(i, 3, 151);
+    const z = P.zE + 40 + 300 * f;
+    if (f > 0.92) continue;
+    drops.push([[Math.cos(a) * r * (1 - 0.6 * f), Math.sin(a) * r * (1 - 0.6 * f), z], f < 0.5 ? FLAME[2] : f < 0.8 ? FLAME[1] : FLAME[0], up > 0.5 && f < 0.3 ? 3 : 2]);
+  }
+  P.drops = drops;
+  return P;
+}
+
+/**
+ * HIS BILE (his pick, “Bile spat in arcs, leaving pools”): he rears back, his eye splitting half open into his maw,
+ * bile drooling off its lips (the warning); he lurches forward three times, spitting a glob of it each time, high
+ * over the ring, its shadow on the stones where it will land growing and darkening as it falls; each splashes down
+ * (its pool painted on its own, `bilePainted`, laid by the game where it lands, `bileLanding`); his maw closes.
+ */
+export const EYE_SPIT = { long: 2.6, open: 0.7, spits: [0.85, 1.12, 1.39], fly: 0.8, close: [1.6, 2.2], fps: 30 } as const;
+/** Where each glob lands: degrees off its aim, and how far out across the ring (0 its inner edge, 1 its outer). */
+const SPIT_AT: [number, number][] = [[0, 0.42], [-22, 0.75], [24, 0.18]];
+
+/** Where glob `i` of a spit aimed `aim` lands, on the floor (the figure's own measures). */
+export function bileLanding(aim: number, i: number): V3 {
+  const [off, far] = SPIT_AT[i % SPIT_AT.length];
+  const a = aim + off;
+  const rim = rimOn(a) + 8;
+  return onLine(a, rim + (ringOn(a) - 8 - rim) * far);
+}
+/** Where a glob spat at time `ts` flies, `t` into the spit (null before it leaves his maw or once it has landed). */
+function globAt(t: number, ts: number, from: V3, to: V3, high: number): V3 | null {
+  const s = (t - ts) / EYE_SPIT.fly;
+  if (s < 0 || s >= 1) return null;
+  return add(add(from, mul(sub(to, from), s)), [0, 0, 4 * high * s * (1 - s)]);
+}
+
+function spitPose(t: number, aim: number, clock = 0): EyePose {
+  const S = EYE_SPIT;
+  const base = standPose(clock + t);
+  const P: EyePose = { ...base };
+  const open = t < S.close[0] ? sm(t / S.open) : 1 - sm((t - S.close[0]) / (S.close[1] - S.close[0]));
+  // each spit: a lurch forward, his maw gaping wider
+  let lurch = 0;
+  for (const ts of S.spits) lurch = Math.max(lurch, bump(t, ts - 0.12, ts + 0.22));
+  const F = norm(add(mul(FW, Math.cos(base.tilt * D)), mul(UP, Math.sin(base.tilt * D))));
+  P.heave = add(add(base.heave, mul(FW, -10 * open + 16 * lurch)), [0, 0, 6 * open - 4 * lurch]);
+  P.tilt = base.tilt + 8 * open - 6 * lurch;
+  P.split = Math.min(1, 0.72 * open + 0.28 * lurch);
+  P.lid = base.lid * (1 - open);
+  P.glow = base.glow + 0.4 * open;
+  P.arms = base.arms.map((A, i) => (A.rise <= 10 ? A : { ...A, rise: A.rise - 12 * lurch, phase: A.phase + 0.4 * lurch * Math.sin(i) }));
+  const E: V3 = add([0, 0, base.zE], P.heave);
+  const M = add(E, mul(F, EYE_R * 0.95));
+  const drops = [...(base.drops ?? [])];
+  // bile drooling off his lips as his maw opens
+  if (open > 0.2) for (let i = 0; i < 10; i++) {
+    const f = fr(t * 1.3 + hash(i, 1, 181));
+    const x = (hash(i, 2, 181) - 0.5) * EYE_R * 0.9;
+    drops.push([add(add(M, mul(LF, x)), [0, 0, -14 - 70 * f * f]), BILE_DROPS[i % 4], f < 0.3 ? 3 : 2]);
+  }
+  // THE GLOBS, flying high, dripping; and their splash as they land
+  P.marks = [];
+  S.spits.forEach((ts, i) => {
+    const to = bileLanding(aim, i);
+    const high = 120 + 40 * i;
+    const g = globAt(t, ts, M, to, high);
+    // (its shadow where it will land: from as it leaves, growing, darkening)
+    const s = (t - ts) / S.fly;
+    if (s > -0.15 && s < 1) P.marks!.push({ kind: 'spot', a: to, b: to, w: EYE_BILE.reach * TILE3, k: cl01(s), seed: i });
+    if (g) {
+      drops.push([g, BILE[3], 4]);
+      for (let k = 1; k <= 4; k++) {
+        const back = globAt(t - k * 0.035, ts, M, to, high);
+        if (back) drops.push([add(back, [0, 0, -2 * k]), BILE_DROPS[k % 4], k < 3 ? 3 : 2]);
+      }
+      P.globs = [...(P.globs ?? []), { at: g, dir: norm(sub(globAt(t + 0.02, ts, M, to, high) ?? to, g)), r: 15 - i }];
+    }
+    drops.push(...flung(t, ts + S.fly, 18, () => add(to, [0, 0, 2]), 70, 160, 0.38, BILE_DROPS, 183 + i, 2));
+  });
+  P.drops = drops;
+  return P;
+}
+
 /** How long each of its moves lasts (a stand: its round). */
 export function eyeLong(which: string): number {
   if (which === 'stand') return EYE_STAND.period;
   if (which === 'lurk') return EYE_LURK.period;
   if (which.startsWith('slam')) return EYE_SLAM.long;
   if (which.startsWith('sweep')) return EYE_SWEEP.long;
+  if (which.startsWith('gaze')) return EYE_GAZE.long;
+  if (which === 'call') return EYE_CALL.long;
+  if (which === 'spit') return EYE_SPIT.long;
   return 1;
 }
 /**
@@ -536,10 +766,13 @@ export function eyeLong(which: string): number {
  * in, `aim` the way its blow goes; `clock` where its stand (or lurk) was when the move began (its own clock, so that
  * the move starts from the stand as it was, and hands back to it as it will be: the stand runs on under the move).
  */
-function poseOf(which: string, t: number, aim = 0, clock = 0): EyePose {
+export function poseOf(which: string, t: number, aim = 0, clock = 0): EyePose {
   if (which === 'lurk') return lurkPose(clock + t);
   if (which === 'slam' || which === 'slamUnder') return slamPose(t, which === 'slamUnder', aim, clock);
   if (which === 'sweep' || which === 'sweepUnder') return sweepPose(t, which === 'sweepUnder', aim, clock);
+  if (which === 'gaze' || which === 'gazeBack') return gazePose(t, aim, clock, 0, which === 'gazeBack');
+  if (which === 'call') return callPose(t, clock);
+  if (which === 'spit') return spitPose(t, aim, clock);
   return standPose(clock + t);
 }
 /** Where the tips of its arms are, and its eye's middle, at one moment (for the tests). */
@@ -829,6 +1062,16 @@ function eyeBits(P: EyePose, put: Put): void {
   P.arms.forEach((A, i) => armBits(P, A, i, put));
   // THE WATER pouring off it
   for (const [p, c, size] of P.drops ?? []) put('drops', 'drop', { k: 'mote', p, c, size });
+  // GLOBS OF HIS BILE, stretched the way they fly, blotched, a dull sheen on them
+  (P.globs ?? []).forEach((g, i) => {
+    const side = norm(Math.abs(g.dir[2]) > 0.95 ? cross(g.dir, LF) : cross(g.dir, UP));
+    const up2 = norm(cross(side, g.dir));
+    put(`glob${i}`, 'glob', { k: 'ball', c: g.at, ax: [mul(g.dir, g.r * 1.35), mul(side, g.r), mul(up2, g.r * 0.9)], skin: (u, tone) => {
+      if (u[2] > 0.55 && u[1] > -0.2 && u[1] < 0.45) return BILE[4];
+      const blot = Math.sin(u[0] * 7 + i) * Math.sin(u[1] * 6 - i) > 0.45;
+      return BILE[Math.max(0, Math.min(4, tone - (blot ? 1 : 0)))];
+    } });
+  });
   // ITS IRIS'S LIGHT, the enemy's fire (under the water, less)
   const iris = add(E, mul(look, R));
   if (P.alive && P.split < 0.5) put('eye', 'glow', { k: 'glow', p: iris, c: FLAME[3], r: 48 * P.glow, a: (P.zE < 0 ? 0.45 : 0.5) * Math.min(1.2, P.glow) });
@@ -869,8 +1112,31 @@ function paintPose(P: EyePose, view: GameView): Painted {
   }
   const px = st0.whole(P.alive ? ENEMY_RIM : null);
   if (P.marks && P.marks.length) floorMarks(st0, px, P.marks);
+  if (P.burnt) burntFloor(st0, px, P.burnt);
+  for (const m of P.marks ?? []) {
+    if (m.kind !== 'aim') continue;
+    for (let i = 0; i <= 3; i++) {
+      const [x, y] = st0.at(add(m.a, mul(sub(m.b, m.a), i / 3)));
+      lights.push({ x, y, r: 36, color: m.k > 0.7 ? FLAME[3] : FLAME[2], a: 0.45 * m.k });
+    }
+  }
   lastUnder = drown(px, zAt, st0, view);
   if (P.ripples && P.ripples.length) ripple(px, st0, view, P.ripples, zAt);
+  for (const B of P.beams ?? []) {
+    beam(px, st0, B);
+    // its light: at his eye, and all along where it falls
+    for (let i = 0; i <= 6; i++) {
+      const [x, y] = st0.at(add(B.a, mul(sub(B.b, B.a), i / 6)));
+      lights.push({ x, y, r: 48 * B.k, color: FLAME[3], a: 0.5 * B.k });
+    }
+    // (and down the fan)
+    for (let i = 1; i <= 3; i++) {
+      const [x, y] = st0.at(add(B.from, mul(sub(add(B.a, mul(sub(B.b, B.a), 0.55)), B.from), i / 4)));
+      lights.push({ x, y, r: 40 * B.k, color: FLAME[3], a: 0.35 * B.k });
+    }
+    const [x, y] = st0.at(B.from);
+    lights.push({ x, y, r: 80 * B.k, color: FLAME[4], a: 0.6 * B.k });
+  }
   for (const L of lights) if (L.y > EYE_CANVAS.ay - 2 && P.zE < 0) L.a = (L.a ?? 0.5) * 0.7;
   return { px, lights };
 }
@@ -1005,10 +1271,60 @@ function floorMarks(st: Stage, px: Px, marks: FloorMark[]): void {
     px.set(x, y, c);
   } };
   for (const m of marks) {
+    if (m.kind === 'spot') {
+      // where a glob will land: a ring of its bile's colour round where it will spread (`w` out), dashed, then whole;
+      // its shadow in it, growing and darkening as it falls, solid in its middle as it nears
+      const [x0, y0] = st.at(m.a);
+      const R2 = m.w * 1.155;
+      const r = R2 * (0.3 + 0.55 * m.k);
+      for (let y = Math.floor(y0 - R2 * 0.6) - 1; y <= Math.ceil(y0 + R2 * 0.6) + 1; y++) {
+        for (let x = Math.floor(x0 - R2) - 1; x <= Math.ceil(x0 + R2) + 1; x++) {
+          const ex = (x + 0.5 - x0) / R2;
+          const ey = (y + 0.5 - y0) / (R2 * 0.5);
+          const D2 = Math.hypot(ex, ey);
+          if (Math.abs(D2 - 1) < 0.07 && (m.k > 0.5 || fr(Math.atan2(ey, ex) / TAU * 20) < 0.6)) {
+            p.set(x, y, m.k > 0.75 ? BILE[3] : BILE[2]);
+            continue;
+          }
+          const d = Math.hypot((x + 0.5 - x0) / r, (y + 0.5 - y0) / (r * 0.5));
+          if (d > 1) continue;
+          if ((d < 0.6 && m.k > 0.6) || (x + y) % 2 === 0) p.set(x, y, m.k > 0.5 ? '#050604' : '#0c0f0b');
+        }
+      }
+      continue;
+    }
     const L = len(sub(m.b, m.a));
     if (L < 1) continue;
     const along = norm(sub(m.b, m.a));
     const across: V3 = [-along[1], along[0], 0];
+    if (m.kind === 'aim') {
+      // where a spell will fall: a line of his light flickering on the stones, dashed, pink brightening to gold
+      const [x0, y0] = st.at(m.a);
+      const [x1, y1] = st.at(m.b);
+      const steps = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
+      const col = m.k > 0.7 ? FLAME[3] : m.k > 0.35 ? FLAME[2] : FLAME[1];
+      for (let k = 0; k <= steps; k++) {
+        if ((k + m.seed * 3) % 9 >= 6 && m.k < 0.85) continue;
+        const x = Math.round(x0 + ((x1 - x0) * k) / Math.max(1, steps));
+        const y = Math.round(y0 + ((y1 - y0) * k) / Math.max(1, steps));
+        const half = Math.floor(Math.round(m.w) / 2);
+        for (let d = -half; d < Math.round(m.w) - half; d++) p.set(x, y + d, d === 0 && m.k > 0.6 ? (m.k > 0.85 ? FLAME[4] : FLAME[3]) : col);
+      }
+      continue;
+    }
+    if (m.kind === 'scorch') {
+      // the stones burnt along a line: glowing while fresh (`k` near 1), then dark
+      const [x0, y0] = st.at(m.a);
+      const [x1, y1] = st.at(m.b);
+      const steps = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
+      const col = m.k > 0.75 ? FLAME[2] : m.k > 0.5 ? FLAME[1] : m.k > 0.25 ? FLAME[0] : '#140c14';
+      for (let k = 0; k <= steps; k++) {
+        const x = Math.round(x0 + ((x1 - x0) * k) / Math.max(1, steps));
+        const y = Math.round(y0 + ((y1 - y0) * k) / Math.max(1, steps));
+        for (let d = -Math.round(m.w); d <= Math.round(m.w); d++) p.set(x, y + d, Math.abs(d) <= 1 && m.k > 0.5 ? (m.k > 0.85 ? FLAME[3] : col) : (x + y + d) % 2 === 0 ? col : '#120a10');
+      }
+      continue;
+    }
     if (m.kind === 'shadow') {
       const [x0, y0] = st.at(m.a);
       const [x1, y1] = st.at(m.b);
@@ -1066,6 +1382,126 @@ function floorMarks(st: Stage, px: Px, marks: FloorMark[]): void {
           line(pts[i], twig, dark, lit);
         }
       }
+    }
+  }
+}
+/**
+ * HIS GAZE, painted over all of him, crisp: rays of his gold light fanning from his eye down to the line where it falls,
+ * dashed and running outward, its two edges solid; its heart a thick shaft of white gold; a star of light at his eye;
+ * where it falls, a burning line with flames licking up off it and a flare at its far end.
+ */
+function beam(px: Px, st: Stage, B: { from: V3; a: V3; b: V3; k: number; t: number }): void {
+  if (B.k <= 0.02) return;
+  const [ix, iy] = st.at(B.from);
+  const [ax, ay] = st.at(B.a);
+  const [bx, by] = st.at(B.b);
+  const set = (x: number, y: number, c: string): void => {
+    x = Math.round(x);
+    y = Math.round(y);
+    if (x >= 0 && y >= 0 && x < px.w && y < px.h) px.set(x, y, c);
+  };
+  const tick = Math.floor(B.t * 30);
+  // a line from (x0, y0) to (x1, y1), each pixel's colour asked of `col` (how far along, 0 to 1; its step), or none
+  const line = (x0: number, y0: number, x1: number, y1: number, col: (f: number, k: number) => string | null): void => {
+    const steps = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
+    for (let k = 0; k <= steps; k++) {
+      const f = k / Math.max(1, steps);
+      const c = col(f, k);
+      if (c) set(x0 + (x1 - x0) * f, y0 + (y1 - y0) * f, c);
+    }
+  };
+  // THE FAN: rays to the line where it falls, dashed, running outward
+  const N = 10;
+  for (let i = 1; i < N; i++) {
+    const ex = ax + ((bx - ax) * i) / N;
+    const ey = ay + ((by - ay) * i) / N;
+    line(ix, iy, ex, ey, (f, k) => (f < 0.08 || (k - tick * 3 + i * 5) % 10 >= 6 + Math.round(3 * B.k) ? null : f > 0.8 ? FLAME[4] : FLAME[3]));
+  }
+  // its edges, solid
+  for (const [ex, ey] of [[ax, ay], [bx, by]] as [number, number][]) {
+    line(ix, iy, ex, ey, (f) => (f < 0.05 ? null : FLAME[3]));
+    line(ix + 1, iy, ex + 1, ey, (f) => (f < 0.05 ? null : FLAME[2]));
+  }
+  // ITS HEART: a thick shaft of white gold from his eye to where it falls
+  const mx = ax + (bx - ax) * 0.55;
+  const my = ay + (by - ay) * 0.55;
+  const lx = mx - ix;
+  const ly = my - iy;
+  const ll = Math.hypot(lx, ly) || 1;
+  const heart = 1.5 + 3.5 * B.k;
+  const minX = Math.floor(Math.min(ix, mx)) - 12;
+  const maxX = Math.ceil(Math.max(ix, mx)) + 12;
+  const minY = Math.floor(Math.min(iy, my)) - 12;
+  const maxY = Math.ceil(Math.max(iy, my)) + 12;
+  for (let y = Math.max(0, minY); y <= Math.min(px.h - 1, maxY); y++) {
+    for (let x = Math.max(0, minX); x <= Math.min(px.w - 1, maxX); x++) {
+      const cx = x + 0.5;
+      const cy = y + 0.5;
+      const along = ((cx - ix) * lx + (cy - iy) * ly) / (ll * ll);
+      if (along < 0 || along > 1.01) continue;
+      const off = Math.abs((cx - ix) * ly - (cy - iy) * lx) / ll;
+      const half = heart * (0.7 + 0.7 * along) * (1 + 0.12 * Math.sin(along * 40 - B.t * 50));
+      if (off > half + 1) continue;
+      set(x, y, off < half * 0.5 ? FLAME[4] : off < half ? FLAME[3] : FLAME[2]);
+    }
+  }
+  // WHERE IT FALLS: a burning line, white gold at its heart, flames licking up off it
+  const steps = Math.ceil(Math.max(Math.abs(bx - ax), Math.abs(by - ay)));
+  for (let k = 0; k <= steps; k++) {
+    const x = Math.round(ax + ((bx - ax) * k) / Math.max(1, steps));
+    const y = Math.round(ay + ((by - ay) * k) / Math.max(1, steps));
+    for (let d = -2; d <= 2; d++) set(x, y + d, Math.abs(d) <= 1 ? FLAME[4] : FLAME[3]);
+    set(x, y + 3, FLAME[2]);
+    const lick = hash(x, tick, 131);
+    if (lick > 0.55) {
+      const hgt = Math.round((3 + 9 * (lick - 0.55) / 0.45) * B.k);
+      for (let u = 3; u <= hgt + 2; u++) set(x, y - u, u > hgt ? FLAME[2] : u > hgt * 0.5 ? FLAME[3] : FLAME[4]);
+    }
+  }
+  // a flare at its far end, and a star of light at his eye
+  const flare = (x: number, y: number, r: number): void => {
+    for (let d = -r; d <= r; d++) {
+      const c = Math.abs(d) < r * 0.4 ? FLAME[4] : FLAME[3];
+      set(x + d, y, c);
+      set(x, y + d * 0.6, c);
+      if (Math.abs(d) < r * 0.5) {
+        set(x + d * 0.7, y + d * 0.42, FLAME[3]);
+        set(x + d * 0.7, y - d * 0.42, FLAME[3]);
+      }
+    }
+  };
+  flare(bx, by, Math.round((5 + 3 * hash(tick, 1, 132)) * B.k));
+  flare(ix, iy, Math.round((10 + 6 * hash(tick, 2, 132)) * B.k));
+}
+/** The stones his gaze has swept, under him: glowing just behind it, then smouldering (a scatter of embers), then scorched (a dark scatter), all of it fading as `fade` falls. */
+function burntFloor(st: Stage, px: Px, B: NonNullable<EyePose['burnt']>): void {
+  if (B.fade <= 0) return;
+  const { ax, ay } = EYE_CANVAS;
+  const b = st.back;
+  const span = Math.hypot(EYE_RING.rx, EYE_RING.ry) * 0.83;
+  for (let y = Math.max(0, Math.floor(ay - span * 0.55)); y <= Math.min(px.h - 1, Math.ceil(ay + span * 0.55)); y++) {
+    for (let x = Math.max(0, Math.floor(ax - span * 1.05)); x <= Math.min(px.w - 1, Math.ceil(ax + span * 1.05)); x++) {
+      if (px.d[(y * px.w + x) * 4 + 3] > 0) continue;
+      const sx = x + 0.5 - ax;
+      const sy = y + 0.5 - ay;
+      const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+      const f: V3 = [b[0][0] * sx + b[0][1] * sy + b[0][2] * n0, b[1][0] * sx + b[1][1] * sy + b[1][2] * n0, 0];
+      if (Math.hypot(f[0] / EYE_POOL.rx, f[1] / EYE_POOL.ry) < 1.02) continue;
+      if (Math.hypot(f[0] / EYE_RING.rx, f[1] / EYE_RING.ry) > 0.99) continue;
+      const deg = Math.atan2(dot(f, LF), dot(f, FW)) / D;
+      const age = B.age(deg);
+      if (age < 0) continue;
+      const h = hash(x, y, 141);
+      const odd = (x + y) % 2 === 0;
+      let c: string | null = null;
+      if (age < 0.06) c = odd ? FLAME[3] : h < 0.4 ? FLAME[2] : null;
+      else if (age < 0.3) c = odd && h < 0.8 * (1 - (age - 0.06) / 0.24) ? (h < 0.2 ? FLAME[2] : FLAME[1]) : null;
+      if (!c) {
+        const ember = (age < 1.2 ? 0.03 : 0.012) * B.fade;
+        if (h < ember) c = age < 0.7 ? FLAME[2] : FLAME[1];
+        else if (odd && h < ember + 0.5 * B.fade) c = h < ember + 0.25 ? '#0c070a' : '#1a1216';
+      }
+      if (c) px.set(x, y, c);
     }
   }
 }
@@ -1189,6 +1625,254 @@ export function burstPainted(t: number, view: GameView = 'front', seed = 0): Pai
 /** The same, as the game holds it. */
 export function burstFrame(t: number, view: GameView = 'front', seed = 0): Sprite {
   return toSprite(burstPainted(t, view, seed), null, BURST_CANVAS.ax, BURST_CANVAS.ay);
+}
+
+// ---------------------------------------------------------------------------------------------
+// THE SIEGE'S BOLTS (his pick, “The siege's pink bolts raining down”), each painted on its own so that the game lays
+// it where it falls, several at once while he calls: a circle of the siege's runes opens on the stones where it will
+// fall, filling and brightening, pink to gold (the warning), a tear opening in the dome high above it; a bolt of pink
+// lightning cracks down; a blast of fire, sparks and stones; the stones left scorched, smouldering, then clean.
+
+/** Its own canvas, and where on it the middle of where it falls is, on the floor. */
+export const BOLT_CANVAS = { w: 260, h: 480, ax: 130, ay: 400 };
+export const EYE_BOLT = { long: 1.9, strike: 1.0, fps: 30, reach: 0.9, sky: 340 } as const;
+
+/** One frame of a bolt: `t` seconds in, `seed` to make each one its own. Where it hurts: within `reach` tiles of its middle, the moment it strikes. */
+export function boltPainted(t: number, view: GameView = 'front', seed = 0): Painted {
+  const B = EYE_BOLT;
+  const st0 = stage(view, BOLT_CANVAS.ax, BOLT_CANVAS.ay, BOLT_CANVAS);
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const R = B.reach * TILE3;
+  const since = t - B.strike;
+  // sparks and stones flung up as it strikes, smoke after
+  const drops: [V3, string, number][] = [];
+  drops.push(...flung(t, B.strike, 30, () => [0, 0, 3], 120, 200, 0.6, [FLAME[4], FLAME[3], FLAME[2]], 161 + seed, 2));
+  drops.push(...flung(t, B.strike, 16, () => [0, 0, 2], 70, 220, 0.75, RUBBLE, 163 + seed, 3));
+  if (since > 0.25) for (let i = 0; i < 10; i++) {
+    const f = fr((since - 0.25) * 0.8 + i / 10);
+    // (thinning away as it ends)
+    if (hash(i, 3, 165 + seed) > 1.4 * (1 - (since - 0.25) / (B.long - B.strike - 0.3))) continue;
+    const a = hash(i, 1, 165 + seed) * TAU;
+    const r = R * 0.6 * hash(i, 2, 165 + seed);
+    if (since - 0.25 < f * 1.25) continue;
+    drops.push([[Math.cos(a) * r, Math.sin(a) * r, 6 + 70 * f], f < 0.4 ? '#4a4248' : '#2e2a30', f < 0.5 ? 3 : 2]);
+  }
+  // the tear in the dome, sparking as it opens
+  const tear = t < B.strike ? sm((t - 0.2) / (B.strike - 0.2)) : Math.max(0, 1 - since / 0.4);
+  if (tear > 0) for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * TAU + t * 4 + seed;
+    const r = (4 + 14 * hash(i, Math.floor(t * 20), 167)) * tear;
+    drops.push([[Math.cos(a) * r, Math.sin(a) * r * 0.5, B.sky + Math.sin(a) * r * 0.4], i % 2 ? FLAME[2] : FLAME[3], 2]);
+  }
+  for (const [p, c, size] of drops) put('drops', 'drop', { k: 'mote', p, c, size });
+  const lights = paintBits(st0, bits, [0, 0, 20]);
+  const px = st0.whole(null);
+  const { w, h } = BOLT_CANVAS;
+  const set = (x: number, y: number, c: string): void => {
+    x = Math.round(x);
+    y = Math.round(y);
+    if (x >= 0 && y >= 0 && x < w && y < h) px.set(x, y, c);
+  };
+  const free = (x: number, y: number): boolean => px.d[(y * w + x) * 4 + 3] === 0;
+  // THE FLOOR: the runes' circle, filling as it nears; the blast's fire; the scorch
+  const b = st0.back;
+  const grow = sm(t / 0.3);
+  const fill = cl01(t / B.strike);
+  const spin = t * 1.6 + seed;
+  const ring = t < B.strike * 0.45 ? FLAME[1] : t < B.strike * 0.8 ? FLAME[2] : FLAME[3];
+  const blast = since < 0 ? 0 : since < 0.12 ? since / 0.12 : Math.max(0, 1 - (since - 0.12) / 0.35);
+  const scorch = since < 0 ? 0 : since < B.long - B.strike - 0.5 ? 1 : Math.max(0, 1 - (since - (B.long - B.strike - 0.5)) / 0.45);
+  const [cx0, cy0] = st0.at([0, 0, 0]);
+  const span = R * 1.5;
+  for (let y = Math.max(0, Math.floor(cy0 - span)); y <= Math.min(h - 1, Math.ceil(cy0 + span)); y++) {
+    for (let x = Math.max(0, Math.floor(cx0 - span * 1.25)); x <= Math.min(w - 1, Math.ceil(cx0 + span * 1.25)); x++) {
+      if (!free(x, y)) continue;
+      const sx = x + 0.5 - BOLT_CANVAS.ax;
+      const sy = y + 0.5 - BOLT_CANVAS.ay;
+      const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+      const fx = b[0][0] * sx + b[0][1] * sy + b[0][2] * n0;
+      const fy = b[1][0] * sx + b[1][1] * sy + b[1][2] * n0;
+      const d = Math.hypot(fx, fy) / R;
+      const ang = Math.atan2(fy, fx);
+      const odd = (x + y) % 2 === 0;
+      const hh = hash(x, y, 169 + seed);
+      let c: string | null = null;
+      if (since < 0) {
+        // its runes: an outer ring, dashed and turning; an inner ring turning the other way, its marks between; filling from its middle
+        const g = d / Math.max(0.05, grow);
+        if (Math.abs(g - 1) < 0.06) c = fr((ang / TAU) * 24 + spin) < 0.75 ? ring : null;
+        else if (Math.abs(g - 0.72) < 0.045) c = fr((ang / TAU) * 6 - spin * 1.5) < 0.82 ? ring : null;
+        else if (g > 0.76 && g < 0.95) {
+          // (its runes: little bars across the band, six of them, turning)
+          const q = fr((ang / TAU) * 6 + spin * 0.7);
+          if (q > 0.42 && q < 0.58 && (g < 0.8 || g > 0.91 || Math.abs(q - 0.5) < 0.03)) c = ring;
+        }
+        if (!c && g < 1 && d < fill * grow && odd) c = fill > 0.75 ? FLAME[2] : FLAME[1];
+        if (!c && d < 0.07 && fill > 0.3) c = FLAME[3];
+      } else {
+        // the blast's fire spreading out, then the stones scorched, smouldering
+        const fire = 1.3 * Math.min(1, since / 0.12);
+        if (blast > 0 && d < fire) {
+          const edge = fire - d;
+          c = edge < 0.12 ? FLAME[2] : d < 0.45 * blast ? FLAME[4] : odd || blast > 0.6 ? FLAME[3] : null;
+        }
+        if (!c && scorch > 0 && d < 1.05) {
+          const ember = (since < 0.8 ? 0.045 : 0.02) * scorch;
+          if (hh < ember) c = since < 0.6 ? FLAME[2] : FLAME[1];
+          else if (hh < ember + 0.55 * scorch * (1 - 0.35 * d) && odd) c = d < 0.5 ? '#0c070a' : '#1a1216';
+        }
+      }
+      if (c) px.set(x, y, c);
+    }
+  }
+  // THE BOLT: cracking down from the tear to the stones, jagged, re-forking each frame
+  const [tx, ty] = st0.at([0, 0, B.sky]);
+  const bolt = since < 0 ? 0 : since < 0.2 ? 1 : Math.max(0, 1 - (since - 0.2) / 0.12);
+  if (bolt > 0) {
+    const tick = Math.floor(t * 30);
+    const N = 14;
+    const pts: [number, number][] = [];
+    for (let i = 0; i <= N; i++) {
+      const f = i / N;
+      const jag = i === 0 || i === N ? 0 : (hash(i, tick, 171 + seed) - 0.5) * 22;
+      pts.push([tx + (cx0 - tx) * f + jag, ty + (cy0 - ty) * f]);
+    }
+    const seg = (a: [number, number], c2: [number, number], wd: number, col: (o: number) => string): void => {
+      const steps = Math.ceil(Math.max(Math.abs(c2[0] - a[0]), Math.abs(c2[1] - a[1])));
+      for (let k = 0; k <= steps; k++) {
+        const x = a[0] + ((c2[0] - a[0]) * k) / Math.max(1, steps);
+        const y = a[1] + ((c2[1] - a[1]) * k) / Math.max(1, steps);
+        for (let o = -wd; o <= wd; o++) set(x + o, y, col(Math.abs(o)));
+      }
+    };
+    const wd = Math.round(1 + 2.5 * bolt);
+    for (let i = 0; i < N; i++) seg(pts[i], pts[i + 1], wd, (o) => (o <= wd - 2 ? FLAME[4] : o < wd ? FLAME[2] : FLAME[1]));
+    // its forks
+    for (let j = 0; j < 3; j++) {
+      const at = 3 + Math.floor(hash(j, tick, 173 + seed) * (N - 5));
+      let p = pts[at];
+      const side = hash(j, tick, 175 + seed) > 0.5 ? 1 : -1;
+      for (let k = 0; k < 4; k++) {
+        const q: [number, number] = [p[0] + side * (6 + 8 * hash(j * 5 + k, tick, 177)), p[1] + 8 + 6 * hash(j * 5 + k, tick, 179)];
+        seg(p, q, 0, () => (k < 2 ? FLAME[2] : FLAME[1]));
+        p = q;
+      }
+    }
+  }
+  // the tear itself: a slit of the siege's fire high above
+  if (tear > 0) {
+    const half = Math.round(4 + 12 * tear);
+    for (let o = -half; o <= half; o++) {
+      const thick = Math.round((1 - Math.abs(o) / (half + 1)) * 3 * tear);
+      for (let d = -thick; d <= thick; d++) set(tx + o, ty + d, Math.abs(d) < thick || thick === 0 ? (Math.abs(o) < half * 0.4 ? FLAME[4] : FLAME[2]) : FLAME[1]);
+    }
+  }
+  // its lights: the runes', the tear's, the bolt's, the blast's
+  if (since < 0) lights.push({ x: cx0, y: cy0, r: 36 + 20 * fill, color: fill > 0.8 ? FLAME[3] : FLAME[2], a: 0.25 + 0.3 * fill });
+  if (tear > 0) lights.push({ x: tx, y: ty, r: 30 * tear, color: FLAME[2], a: 0.5 * tear });
+  if (bolt > 0) for (let i = 0; i <= 4; i++) lights.push({ x: tx + ((cx0 - tx) * i) / 4, y: ty + ((cy0 - ty) * i) / 4, r: 46, color: FLAME[2], a: 0.5 * bolt });
+  if (blast > 0) lights.push({ x: cx0, y: cy0, r: 80 * blast + 20, color: FLAME[3], a: 0.7 * blast });
+  return { px, lights };
+}
+/** The same, as the game holds it. */
+export function boltFrame(t: number, view: GameView = 'front', seed = 0): Sprite {
+  return toSprite(boltPainted(t, view, seed), null, BOLT_CANVAS.ax, BOLT_CANVAS.ay);
+}
+
+// ---------------------------------------------------------------------------------------------
+// HIS BILE'S POOLS (his pick, “Bile spat in arcs, leaving pools”), each painted on its own so that the game lays it
+// where a glob lands (`bileLanding`): splashing out, a ragged pool of it, blotched, bubbling and steaming, lasting;
+// drying away, a stain, then nothing. Dull: it gives no light.
+
+/** Its own canvas, and where on it the middle of the pool is, on the floor. */
+export const BILE_CANVAS = { w: 260, h: 190, ax: 130, ay: 120 };
+/** Where it hurts: within `reach` tiles of its middle, from `form` till `dry[0]`. */
+export const EYE_BILE = { long: 6.0, form: 0.25, dry: [5.0, 6.0], reach: 1.0, fps: 15 } as const;
+
+/** One frame of a pool of his bile: `t` seconds after its glob lands, `seed` to make each one its own. */
+export function bilePainted(t: number, view: GameView = 'front', seed = 0): Painted {
+  const B = EYE_BILE;
+  const st0 = stage(view, BILE_CANVAS.ax, BILE_CANVAS.ay, BILE_CANVAS);
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const R = B.reach * TILE3;
+  const size = t < B.form ? 0.35 + 0.65 * sm(t / B.form) : t < B.dry[0] ? 1 : 1 - 0.3 * sm((t - B.dry[0]) / (B.dry[1] - B.dry[0]));
+  const dry = t < B.dry[0] ? 0 : sm((t - B.dry[0]) / (B.dry[1] - B.dry[0]));
+  // its ragged edge, its own
+  const s1 = hash(seed, 1, 191) * TAU;
+  const s2 = hash(seed, 2, 191) * TAU;
+  const edge = (a: number): number => R * size * (0.88 + 0.12 * Math.sin(3 * a + s1) + 0.08 * Math.sin(5 * a + s2) + 0.05 * Math.sin(9 * a + s1 * 2));
+  // its splash as it lands; its bubbles rising and bursting; its steam
+  const drops: [V3, string, number][] = [];
+  drops.push(...flung(t, 0, 16, () => [0, 0, 2], 90, 110, 0.4, BILE_DROPS, 193 + seed, 2));
+  if (t > B.form && dry < 0.8) {
+    for (let i = 0; i < 6; i++) {
+      const per = 0.9 + 0.7 * hash(i, 3, 195 + seed);
+      const ph = fr(t / per + hash(i, 4, 195 + seed));
+      const n = Math.floor(t / per + hash(i, 4, 195 + seed));
+      const a = hash(i, n, 197 + seed) * TAU;
+      const r = edge(a) * 0.7 * Math.sqrt(hash(i, n + 1, 197 + seed));
+      const at: V3 = [Math.cos(a) * r, Math.sin(a) * r, 0];
+      if (ph < 0.75) {
+        // (a bubble swelling)
+        const br = 1.5 + 3 * (ph / 0.75);
+        put(`bub${i}`, 'bubble', { k: 'ball', c: add(at, [0, 0, br * 0.3]), ax: [[br, 0, 0], [0, br, 0], [0, 0, br * 0.8]], skin: (u, tone) => (u[2] > 0.5 && u[0] < 0 ? BILE[4] : BILE[Math.min(4, tone + 1)]) });
+      } else if (ph < 0.9) {
+        // (bursting)
+        for (let k = 0; k < 5; k++) {
+          const b2 = (k / 5) * TAU;
+          const f = (ph - 0.75) / 0.15;
+          drops.push([add(at, [Math.cos(b2) * 5 * f, Math.sin(b2) * 5 * f, 3 + 8 * f * (1 - f)]), BILE_DROPS[k % 4], 2]);
+        }
+      }
+    }
+    for (let i = 0; i < 7; i++) {
+      const f = fr(t * 0.45 + i / 7);
+      const a = hash(i, 5, 199 + seed) * TAU;
+      const r = R * 0.6 * hash(i, 6, 199 + seed);
+      drops.push([[Math.cos(a) * r + 6 * Math.sin(f * 5 + i), Math.sin(a) * r, 4 + 46 * f], f < 0.5 ? '#6e7258' : '#4c5040', f < 0.4 ? 3 : 2]);
+    }
+  }
+  for (const [p, c, sz] of drops) put('drops', 'drop', { k: 'mote', p, c, size: sz });
+  paintBits(st0, bits, [0, 0, 6]);
+  const px = st0.whole(null);
+  // THE POOL, on the floor under its bubbles
+  const b = st0.back;
+  const { w, h, ax, ay } = BILE_CANVAS;
+  const free = (x: number, y: number): boolean => px.d[(y * w + x) * 4 + 3] === 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!free(x, y)) continue;
+      const sx = x + 0.5 - ax;
+      const sy = y + 0.5 - ay;
+      const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+      const fx = b[0][0] * sx + b[0][1] * sy + b[0][2] * n0;
+      const fy = b[1][0] * sx + b[1][1] * sy + b[1][2] * n0;
+      const a = Math.atan2(fy, fx);
+      const d = Math.hypot(fx, fy) / edge(a);
+      const hh = hash(x, y, 201 + seed);
+      let c: string | null = null;
+      if (d < 1) {
+        // (its rim dark, a swirl of lighter and darker in it, a dull sheen on its far side)
+        const swirl = Math.sin(fx * 0.22 + Math.sin(fy * 0.18 + seed) * 2 + t * 0.6) + Math.sin(fy * 0.25 - t * 0.4 + seed);
+        c = d > 0.86 ? BILE[1] : swirl > 1.1 ? BILE[3] : swirl < -1.1 ? BILE[1] : BILE[2];
+        if (d < 0.7 && fy - fx > R * 0.25 * size && fy - fx < R * 0.4 * size && hh < 0.5) c = BILE[4];
+        // (drying: darkening to a stain, the stain gone)
+        if (dry > 0) c = hh < dry ? null : d > 0.8 || hh < dry + 0.3 ? '#1e200e' : BILE[1];
+      } else if (d < 1.25 && t < B.dry[0]) {
+        // (its spatter round it)
+        const sp = hash(Math.round(fx / 3), Math.round(fy / 3), 203 + seed);
+        if (sp > 0.82 + (d - 1) * 0.6) c = sp > 0.93 ? BILE[3] : BILE[1];
+      }
+      if (c) px.set(x, y, c);
+    }
+  }
+  return { px, lights: [] };
+}
+/** The same, as the game holds it. */
+export function bileFrame(t: number, view: GameView = 'front', seed = 0): Sprite {
+  return toSprite(bilePainted(t, view, seed), null, BILE_CANVAS.ax, BILE_CANVAS.ay);
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -24,6 +24,7 @@ import { RIM_ALPHA } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { stage } from '../src/art/skin';
+import { TILE3 } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
 import { paintWithoutCanvas } from './helpers';
 
@@ -169,7 +170,8 @@ test('blazing (his pick, its veins blaze): more of the enemy\'s fire on it than 
 // HIS STANDS AND HIS TENTACLE MOVES: the boss review (his rulebook, How art is made 7), every frame of his stands and
 // every third of his moves at thirty a second, from in front and from behind; and the bursts, every third.
 
-import { BURST_CANVAS, EYE_BURST, EYE_LURK, EYE_SLAM, EYE_STAND, EYE_SWEEP, burstPainted, eyeMarks, eyePainted } from '../src/art/drowned_eye';
+import { BILE_CANVAS, BOLT_CANVAS, EYE_BILE, EYE_BOLT, EYE_CALL, EYE_SPIT, bileLanding, bilePainted, boltPainted } from '../src/art/drowned_eye';
+import { BURST_CANVAS, EYE_BURST, EYE_GAZE, EYE_LURK, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, burstPainted, eyeMarks, eyePainted, gazeAngle } from '../src/art/drowned_eye';
 
 type Frame = { name: string; painted: () => Painted; w: number; h: number };
 const reviewed: Frame[] = [];
@@ -182,7 +184,7 @@ const AIMS = [-54, 20, 120, -160];
 for (const view of ['front', 'back'] as const) {
   for (let i = 0; i < EYE_STAND.frames; i++) reviewed.push({ name: `stand ${view} ${i}`, painted: once(() => eyePainted('stand', i / EYE_STAND.fps, view)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
   for (let i = 0; i < EYE_LURK.frames; i++) reviewed.push({ name: `lurk ${view} ${i}`, painted: once(() => eyePainted('lurk', i / EYE_LURK.fps, view)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
-  for (const [move, long] of [['slam', EYE_SLAM.long], ['sweep', EYE_SWEEP.long], ['slamUnder', EYE_SLAM.long], ['sweepUnder', EYE_SWEEP.long]] as [string, number][]) {
+  for (const [move, long] of [['slam', EYE_SLAM.long], ['sweep', EYE_SWEEP.long], ['slamUnder', EYE_SLAM.long], ['sweepUnder', EYE_SWEEP.long], ['gaze', EYE_GAZE.long], ['gazeBack', EYE_GAZE.long], ['call', EYE_CALL.long], ['spit', EYE_SPIT.long]] as [string, number][]) {
     const n = Math.round(long * 30);
     for (let i = 0; i <= n; i += 3) {
       const aim = AIMS[(i / 3) % AIMS.length];
@@ -190,6 +192,8 @@ for (const view of ['front', 'back'] as const) {
     }
   }
   for (let i = 0; i <= Math.round(EYE_BURST.long * 30); i += 3) reviewed.push({ name: `burst ${view} ${i}/30`, painted: once(() => burstPainted(i / 30, view, i)), w: BURST_CANVAS.w, h: BURST_CANVAS.h });
+  for (let i = 0; i <= Math.round(EYE_BILE.long * EYE_BILE.fps); i += 2) reviewed.push({ name: `bile ${view} ${i}/${EYE_BILE.fps}`, painted: once(() => bilePainted(i / EYE_BILE.fps, view, i)), w: BILE_CANVAS.w, h: BILE_CANVAS.h });
+  for (let i = 0; i <= Math.round(EYE_BOLT.long * 30); i += 2) reviewed.push({ name: `bolt ${view} ${i}/30`, painted: once(() => boltPainted(i / 30, view, i)), w: BOLT_CANVAS.w, h: BOLT_CANVAS.h });
 }
 
 test('THE REVIEW: every frame crisp, nothing cyan, every light the enemy\'s fire, nothing cut off', () => {
@@ -320,5 +324,221 @@ test('THE BLOWS LAND WHERE THEY ARE AIMED: the slam lies along its aim, the swee
     const dir = Math.atan2(tip[0] * Math.SQRT1_2 + tip[1] * Math.SQRT1_2, tip[0] * Math.SQRT1_2 - tip[1] * Math.SQRT1_2) * (180 / Math.PI);
     const off = Math.abs(((dir - aim + 540) % 360) - 180);
     assert.ok(off < 8 && tip[2] < 25, `the slam aim ${aim}: its tip lies ${off.toFixed(1)} degrees off its line, ${tip[2].toFixed(0)} high`);
+  }
+});
+
+// ---------------------------------------------------------------------------------------------
+// HIS SPELLS
+
+/** Where on the floor `r` out along the line `deg` falls (his front toward you, in front view). */
+const floorAt = (deg: number, r: number): [number, number, number] => {
+  const c = Math.cos((deg * Math.PI) / 180) * r * Math.SQRT1_2;
+  const s = Math.sin((deg * Math.PI) / 180) * r * Math.SQRT1_2;
+  return [c + s, -c + s, 0];
+};
+const between = (deg: number): number => {
+  const d = floorAt(deg, 1);
+  const rim = 1 / Math.hypot(d[0] / EYE_POOL.rx, d[1] / EYE_POOL.ry);
+  const ring = 1 / Math.hypot(d[0] / EYE_RING.rx, d[1] / EYE_RING.ry);
+  return (rim + ring) / 2;
+};
+
+test('HIS GAZE: never leaping; begun at any moment of his stand, it starts from it and hands back to it, the stones clean again', () => {
+  for (const aim of AIMS) {
+    for (const which of ['gaze', 'gazeBack']) {
+      const m = travel(which, EYE_GAZE.long, aim, 0, EYE_GAZE.long);
+      assert.ok(m.tip < 60 && m.eye < 6, `${which} aim ${aim}: tips ${m.tip.toFixed(1)}, eye ${m.eye.toFixed(1)} a frame`);
+    }
+  }
+  for (const clock of [0, 0.7, 1.9]) {
+    for (const [t, base] of [[0, clock], [EYE_GAZE.long, clock + EYE_GAZE.long]]) {
+      const a = eyePainted('gaze', t, 'front', -54, clock).px.d;
+      const b = eyePainted('stand', base, 'front').px.d;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff += a[i] !== b[i] ? 1 : 0;
+      assert.equal(diff, 0, `the gaze at ${t} from ${clock}: as his stand`);
+    }
+  }
+});
+
+test('HIS GAZE\'S WARNING: his light flickering on the stones where it will start before it burns; then it burns along its line, through its aim', () => {
+  for (const aim of AIMS) {
+    // the warning: a line of fire on the floor where it will start, wherever he does not hide it; no beam yet
+    for (const back of [false, true]) {
+      const which = back ? 'gazeBack' : 'gaze';
+      const start = back ? aim + EYE_GAZE.arc / 2 : aim - EYE_GAZE.arc / 2;
+      const calm = eyePainted(which, 0.1, 'front', aim);
+      const warn = eyePainted(which, EYE_GAZE.gather * 0.9, 'front', aim);
+      let lit = 0;
+      let seen = 0;
+      for (let i = 1; i <= 7; i++) {
+        const d = floorAt(start, 1);
+        const rim = 1 / Math.hypot(d[0] / EYE_POOL.rx, d[1] / EYE_POOL.ry);
+        const ring = 1 / Math.hypot(d[0] / EYE_RING.rx, d[1] / EYE_RING.ry);
+        const [x, y] = STAGE.at(floorAt(start, rim + ((ring - rim) * i) / 8));
+        // (seen: nothing of him there, before it or as it warns)
+        let hot = false;
+        let him = false;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+          const q = (Math.round(y + dy) * warn.px.w + Math.round(x + dx)) * 4;
+          if (FIRE.has(key(warn.px.d[q], warn.px.d[q + 1], warn.px.d[q + 2]))) hot = true;
+          else if (warn.px.d[q + 3] > 0 || calm.px.d[q + 3] > 0) him = true;
+        }
+        if (him && !hot) continue;
+        seen++;
+        if (hot) lit++;
+      }
+      assert.ok(lit >= seen - 1, `${which} aim ${aim}: the warning burns along where it will start (${lit} of the ${seen} seen)`);
+      assert.equal(gazeAngle(EYE_GAZE.gather * 0.9, aim, back), null, 'not burning while it warns');
+    }
+    const burn = eyePainted('gaze', (EYE_GAZE.sweep[0] + EYE_GAZE.sweep[1]) / 2, 'front', aim);
+    assert.ok(fireCount(burn) > 800, `aim ${aim}: it burns (${fireCount(burn)})`);
+    // halfway through its sweep it lies on its aim, burning there
+    const mid = gazeAngle((EYE_GAZE.sweep[0] + EYE_GAZE.sweep[1]) / 2, aim) as number;
+    assert.ok(Math.abs(mid - aim) < 1, `aim ${aim}: halfway, it lies at ${mid.toFixed(1)}`);
+    const [x, y] = STAGE.at(floorAt(aim, between(aim)));
+    let hot = 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      const k = (Math.round(y + dy) * burn.px.w + Math.round(x + dx)) * 4;
+      if (FIRE.has(key(burn.px.d[k], burn.px.d[k + 1], burn.px.d[k + 2]))) hot++;
+    }
+    assert.ok(hot > 6, `aim ${aim}: burning on its line (${hot})`);
+  }
+});
+
+test('HIS CALL: never leaping; begun at any moment of his stand, it starts from it and hands back to it', () => {
+  const m = travel('call', EYE_CALL.long, 0, 0, EYE_CALL.long);
+  assert.ok(m.tip < 60 && m.eye < 6, `the call: tips ${m.tip.toFixed(1)}, eye ${m.eye.toFixed(1)} a frame`);
+  for (const clock of [0, 0.7, 1.9]) {
+    for (const [t, base] of [[0, clock], [EYE_CALL.long, clock + EYE_CALL.long]]) {
+      const a = eyePainted('call', t, 'front', 0, clock).px.d;
+      const b = eyePainted('stand', base, 'front').px.d;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff += a[i] !== b[i] ? 1 : 0;
+      assert.equal(diff, 0, `the call at ${t} from ${clock}: as his stand`);
+    }
+  }
+  // held: his veins burning with the siege's fire, more than as he stands
+  const held = eyePainted('call', (EYE_CALL.hold[0] + EYE_CALL.hold[1]) / 2, 'front');
+  const calm = eyePainted('stand', (EYE_CALL.hold[0] + EYE_CALL.hold[1]) / 2, 'front');
+  assert.ok(fireCount(held) > fireCount(calm) + 400, `his veins burn as he calls (${fireCount(held)} against ${fireCount(calm)})`);
+});
+
+test('THE SIEGE\'S BOLTS: their runes on the stones before, no bolt yet; the bolt cracking down; the stones clean by the end', () => {
+  for (const seed of [0, 3, 7]) {
+    const [cx, cy] = stage('front', BOLT_CANVAS.ax, BOLT_CANVAS.ay, BOLT_CANVAS).at([0, 0, 0]);
+    // (the fire between the stones and the tear in the dome high above: the bolt's)
+    const high = (p: Painted): number => {
+      let n = 0;
+      each(p, (r, g, b, a, x, y) => (n += a === 255 && y < cy - 60 && y > cy - EYE_BOLT.sky + 40 && Math.abs(x - cx) < 40 && FIRE.has(key(r, g, b)) ? 1 : 0));
+      return n;
+    };
+    const warn = boltPainted(EYE_BOLT.strike * 0.8, 'front', seed);
+    const strike = boltPainted(EYE_BOLT.strike + 0.05, 'front', seed);
+    const end = boltPainted(EYE_BOLT.long, 'front', seed);
+    assert.ok(fireCount(warn) > 150, `seed ${seed}: the runes glow (${fireCount(warn)})`);
+    assert.ok(high(warn) < 30, `seed ${seed}: no bolt before it strikes (${high(warn)})`);
+    assert.ok(high(strike) > 400, `seed ${seed}: the bolt (${high(strike)})`);
+    let left = 0;
+    each(end, (r, g, b, a) => (left += a > 0 ? 1 : 0));
+    assert.equal(left, 0, `seed ${seed}: the stones clean by its end`);
+    // its runes no wider than where it hurts, and as wide
+    let far = 0;
+    const b = stage('front', BOLT_CANVAS.ax, BOLT_CANVAS.ay, BOLT_CANVAS).back;
+    each(warn, (r, g, bb, a, x, y) => {
+      if (!FIRE.has(key(r, g, bb)) || y < cy - 60) return;
+      const sx = x + 0.5 - BOLT_CANVAS.ax;
+      const sy = y + 0.5 - BOLT_CANVAS.ay;
+      const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+      const fx = b[0][0] * sx + b[0][1] * sy + b[0][2] * n0;
+      const fy = b[1][0] * sx + b[1][1] * sy + b[1][2] * n0;
+      far = Math.max(far, Math.hypot(fx, fy) / (EYE_BOLT.reach * TILE3));
+    });
+    assert.ok(far > 0.95 && far < 1.12, `seed ${seed}: its runes reach ${far.toFixed(2)} of where it hurts`);
+  }
+});
+
+const BILE_SEEN = new Set(['#424a16', '#646e20', '#8c982e', '#b6bf52'].map((c) => rgba(c).slice(0, 3).join(',')));
+
+test('HIS BILE: never leaping; from his stand and back to it; his maw open and the rings where it will land before each glob comes down', () => {
+  for (const aim of AIMS) {
+    const m = travel('spit', EYE_SPIT.long, aim, 0, EYE_SPIT.long);
+    assert.ok(m.tip < 60 && m.eye < 6, `the spit aim ${aim}: tips ${m.tip.toFixed(1)}, eye ${m.eye.toFixed(1)} a frame`);
+  }
+  for (const clock of [0, 0.7, 1.9]) {
+    for (const [t, base] of [[0, clock], [EYE_SPIT.long, clock + EYE_SPIT.long]]) {
+      const a = eyePainted('spit', t, 'front', -54, clock).px.d;
+      const b = eyePainted('stand', base, 'front').px.d;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff += a[i] !== b[i] ? 1 : 0;
+      assert.equal(diff, 0, `the spit at ${t} from ${clock}: as his stand`);
+    }
+  }
+  // the rings where they will land, round each landing, before it lands
+  for (const aim of [-54, 20]) {
+    EYE_SPIT.spits.forEach((ts, i) => {
+      const p = eyePainted('spit', ts + EYE_SPIT.fly * 0.6, 'front', aim);
+      const [x, y] = STAGE.at(bileLanding(aim, i));
+      const r = EYE_BILE.reach * TILE3 * 1.155;
+      let ring = 0;
+      each(p, (rr, g, b, a, px, py) => {
+        if (!BILE_SEEN.has(key(rr, g, b))) return;
+        const d = Math.hypot((px + 0.5 - x) / r, (py + 0.5 - y) / (r * 0.5));
+        if (Math.abs(d - 1) < 0.12) ring++;
+      });
+      assert.ok(ring > 40, `aim ${aim}, glob ${i}: its ring (${ring})`);
+    });
+  }
+});
+
+test('HIS BILE\'S POOLS: no light; as wide as where they hurt; gone by their end', () => {
+  for (const seed of [0, 4, 9]) {
+    const p = bilePainted(2, 'front', seed);
+    assert.equal(p.lights.length, 0, 'it gives no light');
+    let far = 0;
+    let n = 0;
+    const st = stage('front', BILE_CANVAS.ax, BILE_CANVAS.ay, BILE_CANVAS);
+    const b = st.back;
+    each(p, (r, g, bb, a, x, y) => {
+      if (a === 0) return;
+      n++;
+      const sx = x + 0.5 - BILE_CANVAS.ax;
+      const sy = y + 0.5 - BILE_CANVAS.ay;
+      const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+      const fx = b[0][0] * sx + b[0][1] * sy + b[0][2] * n0;
+      const fy = b[1][0] * sx + b[1][1] * sy + b[1][2] * n0;
+      if (y > BILE_CANVAS.ay - 30) far = Math.max(far, Math.hypot(fx, fy) / (EYE_BILE.reach * TILE3));
+    });
+    assert.ok(n > 1500, `seed ${seed}: a pool (${n} pixels)`);
+    assert.ok(far > 0.95 && far < 1.4, `seed ${seed}: it spreads ${far.toFixed(2)} of where it hurts`);
+    let left = 0;
+    each(bilePainted(EYE_BILE.long, 'front', seed), (r, g, bb, a) => (left += a > 0 ? 1 : 0));
+    assert.equal(left, 0, `seed ${seed}: gone by its end`);
+  }
+});
+
+import { EYE_R as RADIUS, armSpine, eyeLong, poseOf } from '../src/art/drowned_eye';
+
+test('NOTHING THROUGH HIS EYE (his rulebook, How art 7): no arm of his goes into the face of his eye, in any move', () => {
+  const D = Math.PI / 180;
+  for (const m of ['stand', 'lurk', 'slam', 'sweep', 'slamUnder', 'sweepUnder', 'gaze', 'gazeBack', 'call', 'spit']) {
+    const long = eyeLong(m);
+    for (const aim of AIMS) {
+      for (let i = 0; i <= Math.round(long * 30); i += 2) {
+        const P = poseOf(m, i / 30, aim, 0);
+        const F = [Math.SQRT1_2 * Math.cos(P.tilt * D), -Math.SQRT1_2 * Math.cos(P.tilt * D), Math.sin(P.tilt * D)];
+        const E = [P.heave[0], P.heave[1], P.zE + P.heave[2]];
+        P.arms.forEach((A, k) => {
+          armSpine(P, A).forEach((s, j) => {
+            if (j < 2) return;
+            const q = [s.p[0] - E[0], s.p[1] - E[1], s.p[2] - E[2]];
+            if (q[0] * F[0] + q[1] * F[1] + q[2] * F[2] < -s.r) return;
+            // (where they rise from beside it, the rim of his flesh round it hides a little of them: no more)
+            const deep = RADIUS * 0.97 - (Math.hypot(q[0], q[1], q[2]) - s.r);
+            assert.ok(deep < 15, `${m} aim ${aim} at ${(i / 30).toFixed(2)}: arm ${k} ${deep.toFixed(1)} into his eye`);
+          });
+        });
+      }
+    }
   }
 });
