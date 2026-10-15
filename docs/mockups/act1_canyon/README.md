@@ -444,3 +444,56 @@ on art/new_mobs3.ts did not know floor 8's mock-ups). It now lets art/cantor.ts,
 art/dust_devils.ts, as it lets floor 7's; it passes, 8 of 8.
 
 NEXT: its moves, filmed, for his yes.
+
+## The Dust Devil's moves (15 Oct; for his yes; behind `DEVIL_ON`, off)
+
+Each from its own poses, frame by frame (src/art/dust_devils.ts); the times are seconds into the move.
+- **Stand** (1.5 s round, sixteen frames a second): as shown with its look.
+- **Weave** (`DD_WALK`, sixteen frames at sixteen a second, 1.0 s; its trail painted for `DD_PACE` 2.4 tiles a
+  second): spinning twice as fast as it stands; its foot swerving 6 to one side (at 0.25 s) and the other (at 0.75 s)
+  and surging; leaning into its way, its top swerving after its foot a beat late; dust kicked back off the floor
+  behind it, left on the sand as it goes. How the game steers it is the main chat's.
+- **Lash** (`DD_LASH`, 0.9 s; its one attack, light): it spins up, over a quarter taller and a fifth thinner, leaning
+  back, its bell burning brighter, grit sucked up off the floor into it, its whip of sand curling up at its side (to
+  0.28 s); held there, trembling (THE WARNING, to 0.42 s); the whip cracks out up and over and down onto what is
+  before it, 50 of its lengths off (about 1.3 tiles), as it lunges after it (THE BLOW at 0.5 s): a star of the cult's
+  fire where its tip snaps, grit and sand bursting (gone by 0.8 s); the whip snaps on past (to 0.64 s), coils back
+  into it (by about 0.84 s), and it settles back onto its stand by 0.9 s.
+- **Flinch, his pick: it flickers and stutters** (`DD_REEL`, 0.45 s): its spin stalls, its rings jolted this way
+  and that a frame at a time and its bell's pink flickering on and off (to 0.26 s); knocked back 7 and squashed down
+  as it is struck (by 0.06 s), grit spat off it; spinning on its stand again by 0.45 s.
+- **Death, his pick: the wind dies, the bell drops and cracks** (`DD_DIE`, 1.4 s): struck, stuttering (to 0.1 s);
+  its spin running down (to 0.75 s), it sags (to 0.7 s) and pours down, its sand raining into a heap on the floor
+  (built by 0.75 s); its bell held up trembling by the last of the wind (to 0.46 s), then dropped: it lands on the
+  heap at 0.72 s with a bounce and rings once (a ring of the cult's pink, gone by 1.12 s), rolls onto its side
+  (0.78 to 0.94 s), cracks at 0.88 s (a flash of pink through the crack, a chip of bronze off it), and its pink goes
+  out by 1.12 s. Still from 1.2 s: the heap of red sand, the cracked bell lying on it.
+
+**For the game, later:** its canvas `DD_CANVAS` 180 by 150, its feet at (90, 110); its lash lands `DD_LASH.reach`, 50 of its
+own lengths, before it; its weave's trail is painted for 2.4 tiles a second, and at any other pace its dust drifts a
+little (it has no feet to slide); `makeDevilArt()` holds its pictures as the game holds a monster's. Its numbers,
+packs and speed are the main chat's.
+
+**The check, rule by rule** (docs/art/RULEBOOK.md):
+
+| Rule | The dust devil | Result |
+| --- | --- | --- |
+| Animations 1: as far as it will go | Its lash: spun up over a quarter taller, its whip cracking 1.3 tiles out with a star of fire and a burst of grit; struck, knocked back 7 and squashed, its rings jolted 3.6 each way; dying, all of it pouring into a heap, its bell dropped from about 17 up | Pass by the numbers; his eye decides the notch |
+| Monsters 2: small ones fun to smash | Struck, it is knocked about, stutters and spits grit | Pass by eye |
+| Monsters 4: the warning is a pose | Tall, thin, trembling, its whip curled at its side, held 0.28 to 0.42 s | Pass (test) |
+| Movement 3: wind-up and follow-through | Spun up and held; the whip snaps on past and coils back; back on its stand | Pass (test) |
+| Movement 5: slick | Its bell never leaps further a frame than its move can (the flinch's knock the most, on one line). ITS STUTTER JERKS ON PURPOSE: his pick, "Flickers and stutters" | Pass (test); the stutter is his call |
+| Movement 6: alive when still | Never still: spinning, rising, swaying, weaving | Pass (test) |
+| Movement 7: heavy blows freeze | Its lash is light (a small monster's): no freeze | Pass |
+| Movement 8: feet grip | It has no feet: it glides | Does not apply |
+| Nothing below the rock | Its lowest point in every frame on the rock or above it | Pass (test) |
+| Hits 2 and 3: magic things flicker; every hit shows | Its pink flickers, its spin stalls; knocked back | Pass (test) |
+| Hits 4: what flies off is its own | Its grit and sand | Pass by eye |
+| Hits 5: deaths true to what died | The wind dies into a heap; its bell drops and cracks, as he picked | Pass (test) |
+| Monsters 6 and Colour 3: pink is theirs | Its bell's mouth, its glow, its crack and the ring the cult's pink; nothing cyan | Pass (test) |
+| Pixels 1 and 5: crisp; the pink edge | Every pixel crisp; its pink edge while it lives, none as it dies | Pass (test) |
+| Nothing cut off | No frame touches its canvas's edge | Pass (test) |
+
+**Checks:** tests/dust_devils.test.ts 12 of 12; `tsc --noEmit` clean.
+
+    node tools/page_gif.mjs src/dev/preview_dust_devils.ts "walkfilm" shots/devil_walk.gif 4   (also lashfilm, deathfilm)

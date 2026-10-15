@@ -8,7 +8,9 @@
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
-import { DD_CANVAS, DD_STAND, LOOK, devilFrame, devilPainted } from '../art/dust_devils';
+import { DD_CANVAS, DD_DIE, DD_LASH, DD_PACE, DD_REEL, DD_STAND, DD_WALK, LOOK, devilFrame, devilPainted } from '../art/dust_devils';
+import { TILE3 } from '../art/new_mobs3';
+import { project } from '../art/skeleton';
 import { toSprite } from '../art/kit';
 import { drawText } from '../engine/font';
 import type { Sprite } from '../engine/px';
@@ -174,7 +176,93 @@ function tries(): void {
   win.__ready = true;
 }
 
+/** What it does at each moment of a film: which move, how far into it, how far it has come over the floor. */
+type Beat = { move: string; t: number; ground: number };
+function beatsOf(run: ReadonlyArray<readonly [string, number]>, fps: number): Beat[] {
+  const out: Beat[] = [];
+  let ground = 0;
+  let spun = 0;
+  let weave = 0;
+  for (const [mv, long] of run) {
+    const n = Math.round(long * fps);
+    for (let i = 0; i < n; i++) {
+      const t = i / fps;
+      out.push({ move: mv, t: mv === 'stand' ? spun + t : mv === 'walk' ? weave + t : t, ground });
+      if (mv === 'walk') ground += (DD_PACE * TILE3) / fps;
+    }
+    if (mv === 'stand') spun += n / fps;
+    if (mv === 'walk') weave += n / fps;
+  }
+  return out;
+}
+const K = 6;
+function film(beats: Beat[], fps: number, title: string, o: { w: number; h: number; fx: number; fy: number; fyBack?: number }, note?: (b: Beat) => string): void {
+  const TOP = 30;
+  const cvs = document.createElement('canvas');
+  cvs.width = o.w * 2;
+  cvs.height = TOP + o.h;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const draw = (i: number): void => {
+    const b = beats[i];
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, cvs.width, cvs.height);
+    label(g, title, 8, 6);
+    (['front', 'back'] as const).forEach((view, k) => {
+      const ox = k * o.w;
+      g.save();
+      g.beginPath();
+      g.rect(ox + 2, TOP, o.w - 4, o.h - 2);
+      g.clip();
+      g.translate(ox, TOP);
+      sand(g, o.w, o.h);
+      g.translate(-ox, -TOP);
+      const [dx, dy] = project([b.ground, 0, 0], view);
+      const fx = ox + o.fx + dx * (K / 2);
+      const fy = TOP + (view === 'back' ? o.fyBack ?? o.fy : o.fy) + dy * (K / 2);
+      if (b.move !== 'dying') {
+        g.fillStyle = 'rgba(25, 18, 40, 0.3)';
+        g.beginPath();
+        g.ellipse(fx, fy, 60, 22, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      const sp = toSprite(devilPainted(b.move, b.t, view), null, DD_CANVAS.ax, DD_CANVAS.ay);
+      g.drawImage(sp.img, Math.round(fx - sp.ax * K), Math.round(fy - sp.ay * K), sp.w * K, sp.h * K);
+      litAt(g, sp, fx, fy, K);
+      g.restore();
+      label(g, view === 'front' ? 'from in front' : 'from behind', ox + 10, TOP + o.h - 26);
+    });
+    const said = note?.(b);
+    if (said) label(g, said, cvs.width - said.length * 10 - 12, 6);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = beats.length;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+const PANE = { w: 560, h: 440, fx: 220, fy: 330 };
+
 if (HASH.startsWith('look')) look();
+else if (HASH === 'walkfilm') {
+  // (carried over the floor at its pace, as the game would; its weave is its own)
+  const fps = DD_WALK.fps;
+  film(beatsOf([['stand', 0.5], ['walk', 1.0], ['stand', 0.5]], fps), fps, 'A Dust Devil weaves (as the game would carry it, at its pace)', { w: 720, h: 520, fx: 110, fy: 200, fyBack: 470 });
+} else if (HASH === 'lashfilm') {
+  const L = DD_LASH;
+  const at = (b: Beat): string => (b.move === 'attack' ? (b.t < L.warn ? 'spinning up' : b.t < L.throw ? 'the warning: tall, trembling' : Math.abs(b.t - L.hit) < 0.02 ? 'the lash' : '') : b.move === 'reel' ? 'struck: it stutters' : '');
+  film(beatsOf([['stand', 0.4], ['attack', L.long], ['stand', 0.5], ['reel', DD_REEL.long], ['stand', 0.5]], 30), 30, 'A Dust Devil: its lash, then struck', PANE, at);
+} else if (HASH === 'deathfilm') {
+  const beats = beatsOf([['stand', 0.4], ['dying', DD_DIE.long]], 30);
+  for (let i = 0; i < 18; i++) beats.push({ move: 'dying', t: DD_DIE.long, ground: 0 });
+  film(beats, 30, 'A Dust Devil: the wind dies, its bell drops and cracks', { ...PANE, w: 460, fx: 230 }, (b) => (b.move === 'dying' && b.t < DD_DIE.freeze ? 'struck' : ''));
+}
 else if (HASH.startsWith('tries:')) tries();
 else if (HASH === 'standfilm') standFilm();
 else if (HASH.startsWith('frames:')) {
