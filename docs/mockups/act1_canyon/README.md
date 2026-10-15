@@ -265,3 +265,33 @@ lets them; tests/floor8.test.ts still holds that nothing of the game imports the
 
 **Next:** the mobs, the Canyon Scorpions and the Dust Devils.
 
+
+## The Canyon Scorpion's brief (15 Oct)
+
+Floor 8's mobs (the planning chat's table, with his yes): Canyon Scorpions (medium) and Dust Devils (small), with
+the cult's own. A medium monster has two attacks (his gameplay rulebook). Asked as his art rulebook's questions for a
+new character, in two pop-ups; his picks as he tapped them, 15 Oct, by 08:15:
+- WHAT IT IS, AND WHERE IT LIVES: "Armoured scorpion of the red rock (Recommended)", offered as: a wild scorpion as
+  big as a dog, its shell banded like the canyon walls; it lives in the cracks and under the sand.
+- HOW BIG, AND HOW IT SHOULD FEEL: "Knee-high, fun to smash", offered as: smaller, in bigger packs; knocked about
+  when hit. Not the recommended pick; his pick stands.
+- HOW IT MOVES: "Darting bursts, then dead still (Recommended)", offered as: skitters fast in short bursts, then
+  freezes with its tail raised and swaying.
+- THE ONE THING TO KNOW IT BY: "Its tail raised high, stinger glowing (Recommended)", offered as: a great curled
+  tail over its back, the stinger burning the cult's pink.
+- HOW IT ATTACKS: "Pincer snap, then a long tail strike (Recommended)", offered as: snaps its pincers up close as its
+  basic blow; its big move whips the tail over its head and stabs you from two tiles off, a burst of pink.
+- HOW IT DIES: "Flips onto its back, legs curling (Recommended)", offered as: knocked over, its legs kicking, then
+  curling in; its stinger's glow goes out.
+- WHAT IT MUST NEVER LOOK LIKE: "Not cute or cartoonish (Recommended)", offered as: no big friendly eyes; a real
+  predator, small eyes in a hard shell.
+- ITS SOUND (sound rule 7): "Dry clicks and a rattling tail (Recommended)", offered as: legs clicking on stone, its
+  tail rattling before the strike, a hiss on the sting.
+
+READ AS, NOT ASKED (the pictures will show whether it is right): an enemy, its pink edge while it lives, nothing
+cyan; wild, no cult mark; knee-high to the knight with its tail raised over it; eight legs, two pincers, the tail of
+segments curled over its back; its darting is how the game moves it (short dashes, then a stop), its walk a fast
+scuttle and its stand dead still but for its tail swaying and its breathing; still a medium monster by the plan's
+table, so two attacks; packs and numbers are the main chat's.
+
+NEXT: its standing sheet beside the knight, front and back, for his yes; then its moves.
