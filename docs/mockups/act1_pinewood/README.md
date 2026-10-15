@@ -420,4 +420,13 @@ each move's end; its pictures as the game holds them.
 | Animations 1: as big and wild as it will go | a hard hitch every step; a lunge that kicks up earth; reared up on its hind legs; nine thorny roots bursting up round it; it bursts into pieces |
 | Pillars 4: enemy colours | its eyes pink to gold; nothing cyan |
 
-NEXT: his yes on its moves (the four films), then the Fog Wolves.
+Shown `shots/deer_walk.gif`, `deer_gore.gif` (its flinch after it), `deer_stomp.gif` and `deer_death.gif` and asked as
+one pop-up, three questions, his answers, 15 Oct, by 14:17 (the clock read 14:17:40 just after): "The Twisted Deer's
+limp and its antler gore: are they right?" "Yes, as shown (Recommended)"; "Its rearing stomp, with the thorns bursting
+up out of the ground: is it right?" "Yes, as shown (Recommended)"; "Its flinch and its death, splitting apart into
+roots and bark: are they right?" "Yes, as shown (Recommended)". SO ALL OF THE TWISTED DEER HAS HIS YES, AS SHOWN: its
+look, its stand, its limp, its gore, its stomp, its flinch and its death. It is still off (`TWISTED_DEER_ON`) until
+the main chat puts it in the game.
+
+NEXT: the Fog Wolves (small: "A bite. They circle to come at you from behind."), their brief by pop-ups, then their
+look, then their moves.
