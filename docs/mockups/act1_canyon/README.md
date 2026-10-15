@@ -318,7 +318,7 @@ nothing cyan, every light the cult's fire, nothing cut off; its size (knee-high,
 waist).
 
 Shown `shots/scorpion_look.png` and `shots/scorpion_stand.gif` and asked "Is this the Canyon Scorpion?" (offered:
-"Yes, animate it (Recommended)"; "Not yet"), his answer, 15 Oct, by 08:20: "Yes, animate it (Recommended)".
+"Yes, animate it (Recommended)"; "Not yet"), his answer, 15 Oct, by 08:38: "Yes, animate it (Recommended)".
 
 ## The Canyon Scorpion's moves (15 Oct; for his yes; behind `SCORPION_ON`, off)
 
