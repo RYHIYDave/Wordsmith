@@ -49,3 +49,37 @@ pieces (Recommended)".
 
 NEXT: its pieces (25, his rule of 10 Oct: “Going forward, let's do 25 that are the theme of the 5 levels, then 25
 for each boss.”), themed after the Pinewood and the Hollow Stag.
+
+## Its 25 pieces (src/art/floor9.ts, `pinewoodPieces()`; for his yes)
+
+The first 13, the wood's own, shown as `shots/pine_pieces.png` and asked "Are these the Pinewood's own pieces?"
+(offered: "Yes, on to the rest (Recommended)"; "Not yet"), his answer, 15 Oct, by 11:13 (the clock read 11:13:17
+just after): "Yes, on to the rest (Recommended)".
+
+- THE WOOD'S OWN (13): old pine (3 sizes; flat-painted as floor 6's are, a trunk of red-brown plated bark, a crown
+  in lopsided tiers lit at their upper left, a spire), young pine (2), pine snag (dead, grey, broken top, woodpecker
+  holes), fallen pine (a trunk torn up by its roots, moss along it, its broken end splintered), stump (the hunter's,
+  its rings, the axe's last step), mossy boulder (2), ferns (2), bilberries (blue-black, never red), toadstools (a
+  ring, pale caps, never the fly agaric's red), a stag's skull and antlers, twisted pine (2; toward the swamp, bent,
+  dead bark, drooping tufts, the sickness's dull violet in them), cattails, river stones. The tall ones (pines, snag,
+  twisted pines) are seen through while someone stands behind them.
+- THE HUNTER'S (6): the footbridge (a floor tile, along x and along y: planks nailed across two logs; the water runs
+  on under it, painted by the ground), the hunter's cabin (round logs, a mossy shingle roof, a stone chimney, its door
+  ajar, antlers over it, a bench), his woodpile and chopping block (a breakable: stacked, then knocked about), his
+  drying rack (hides stretched on poles), his snare (THE TRAP: 4 frames, hidden under needles, its jaws seen, it
+  springs, shut), his journal (THE QUEST PIECE: open in the grass, a stag drawn on its leaf).
+- THE CULT'S CAMP IN THE WOOD (5): the cult's siege tent (a great violet bell tent, the mark on it), siege ladders
+  (made from the wood's pines, on trestles, one half finished), a battering ram, half built (a pine trunk slung in a
+  wheeled frame, its head iron-bound, the cult's violet on it), barrels of pitch (a breakable), felled pines, stacked.
+  Read as, not asked: the siege of the town is fed from this wood; the cult fells its pines for ladders and a ram.
+- THE STAG'S (1): the Stag's shrine: a post of dead pine, a stag's antlers lashed to its top with the cult's violet,
+  the mark daubed on it, a ring of stones, bones, the sickness in the grass round it.
+
+The cult's fire (art/act1_cult.ts `pinkBrazier`) and banner (`cultBanner`) are the cult's own, as on every floor.
+
+    node tools/preview.mjs src/dev/preview_pinewood.ts shots/pine_pieces.png 1014 2610 pieces
+    node tools/preview.mjs src/dev/preview_pinewood.ts shots/pine_dressed.png 1014 468 dressed
+
+`tests/floor9.test.ts` (7): nothing of the game imports them; each has pictures and its own name, none gives light;
+crisp, no loose pixels; no cyan, no pink or red, duller than every word; what stands stands on its foot, a floor
+tile's and the trap's inside the diamond; nothing cut off; 25 of them.

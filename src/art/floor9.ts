@@ -27,8 +27,9 @@ import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { Scene, XYZ, facetOf, toneAt } from './floor4';
 import type { V3 } from './floor4';
-import { add, beamAxes, finish, fr, mul } from './floor6';
-import { BONE, DRIFT } from './floor7';
+import { IRON, ROPE, TIMBER, add, beamAxes, finish, fr, mul, rope, tileUV } from './floor6';
+import { BONE, DRIFT, HIDE, SACKING } from './floor7';
+import { CLOTH, PAINT } from './act1_cult';
 import type { Piece } from './floorkit';
 import { GRAIN, compose, hash } from './kit';
 import type { Ramp } from './kit';
@@ -412,8 +413,397 @@ function riverStones(seed: number): Sprite {
 }
 
 // =================================================================================================
+// THE HUNTER'S: his cabin by the river, his woodpile, his rack, his snare, his journal; the footbridges
 
-/** THE PINEWOOD'S PIECES, so far: the wood's own. */
+/** Shingles, weathered grey. */
+const SHINGLE: Ramp = ['#3a383c', '#504c50', '#686260', '#827a72', '#9a9086'];
+/** Earth, at a root plate, a cabin's foot. */
+const EARTH: Ramp = ['#2a2018', '#3a2c20', '#4e3c2c', '#62503c', '#766450'];
+
+/**
+ * A FOOTBRIDGE over the river (a floor tile, walked on; the water runs on under it, painted by the ground): planks
+ * across the way, each a little crooked, nailed to two logs along it, its ends on the banks. `alongY`: its way along y.
+ */
+function footbridge(alongY: boolean): Sprite {
+  const p = new Px(64, 34);
+  for (let py = 0; py < 34; py++) {
+    for (let px = 0; px < 64; px++) {
+      const uv = tileUV(px, py);
+      if (!uv) continue;
+      const along = alongY ? uv[1] : uv[0];
+      const across = alongY ? uv[0] : uv[1];
+      // the two logs along it, under the planks' ends, round: lit along their tops
+      for (const c of [10, 54]) {
+        const d = across - c;
+        if (Math.abs(d) < 4 && along > 1 && along < 63) p.set(px, py, d < -2 ? PBARK[3] : d > 2 ? PBARK[0] : PBARK[2]);
+      }
+      // the planks across it, a gap between each, each a little crooked and its own tone
+      const k = Math.floor((along - 2) / 6);
+      const inPlank = fr((along - 2) / 6) < 0.8 && along > 2 && along < 62;
+      const skew = (hash(k, 1, 121) - 0.5) * 4;
+      if (inPlank && across > 6 + skew && across < 58 + skew * 0.5) {
+        const t = hash(k, 2, 121);
+        const edge = fr((along - 2) / 6) < 0.16 ? 3 : fr((along - 2) / 6) > 0.66 ? 1 : 2;
+        let c = TIMBER[Math.max(0, Math.min(4, edge + (t > 0.7 ? 1 : t < 0.2 ? -1 : 0)))];
+        if (Math.abs(across - 10) < 1 && fr((along - 2) / 6) > 0.3 && fr((along - 2) / 6) < 0.5) c = IRON[1]; // a nail
+        if (Math.abs(across - 54) < 1 && fr((along - 2) / 6) > 0.3 && fr((along - 2) / 6) < 0.5) c = IRON[1];
+        if (hash(px >> 1, py, 122 + k) < 0.04) c = MOSS[2];
+        p.set(px, py, c);
+      }
+    }
+  }
+  return p.sprite(32, 0, GRAIN);
+}
+
+/**
+ * THE HUNTER'S OLD CABIN by the river: walls of round logs notched at the corners, a roof of grey shingles grown
+ * with moss, a chimney of the wood's grey stones up its end, its door of planks ajar, a shuttered window, a bench
+ * and a pair of antlers nailed over the door. Long empty: the cult came through.
+ */
+function cabin(): Sprite {
+  const S = new Scene(new Px(190, 170), 95, 120);
+  const L = 34;
+  const D = 26;
+  const H = 34;
+  // its walls: logs one on another, round, their ends past the corners
+  for (let z = 3; z < H; z += 6) {
+    for (const [a, b] of [[[-L, -D, z], [L, -D, z]], [[-L, D, z], [L, D, z]], [[-L, -D, z + 3], [-L, D, z + 3]], [[L, -D, z + 3], [L, D, z + 3]]] as [V3, V3][]) {
+      const A = beamAxes(a, b);
+      S.rod(add(a, mul(A[0], -4)), add(b, mul(A[0], 4)), 3.2, 3.2, z % 12 === 3 ? PBARK : TIMBER, 1);
+    }
+  }
+  // its door, in the wall toward the eye (+x), ajar, dark within; antlers over it
+  S.quad([[L + 3.4, -8, 0], [L + 3.4, 6, 0], [L + 3.4, 6, 26], [L + 3.4, -8, 26]], (u) => (u < 0.18 ? '#17121c' : fr(u * 4) < 0.1 ? TIMBER[0] : TIMBER[u < 0.5 ? 3 : 2]), 2);
+  for (const sg of [1, -1]) {
+    let prev: V3 = [L + 4, -1, 30];
+    for (let k = 1; k <= 4; k++) {
+      const pnt: V3 = [L + 4 + k * 0.4, -1 + sg * k * 3, 30 + k * 2.6];
+      S.rod(prev, pnt, 0.9, 0.7, BONE, 3);
+      if (k === 2) S.rod(pnt, add(pnt, [0.5, 0, 4]), 0.6, 0.4, BONE, 3);
+      prev = pnt;
+    }
+  }
+  // a shuttered window in its long wall that looks down the screen to the left (+y)
+  S.quad([[-6, D + 3.4, 12], [10, D + 3.4, 12], [10, D + 3.4, 24], [-6, D + 3.4, 24]], (u, v) => (fr(u * 3) < 0.12 || v < 0.1 || v > 0.9 ? TIMBER[0] : TIMBER[2]), 4);
+  // its roof: two pitches of shingles from a ridge along x, overhanging, moss on it
+  const ridge = H + 22;
+  for (const sy of [1, -1]) {
+    const a: V3 = [-L - 7, 0, ridge];
+    const b: V3 = [L + 7, 0, ridge];
+    const c: V3 = [L + 7, sy * (D + 9), H - 2];
+    const d: V3 = [-L - 7, sy * (D + 9), H - 2];
+    S.quad([a, b, c, d], (u, v, w) => {
+      const row = Math.floor(v * 9);
+      const col = Math.floor(u * 22 + (row % 2) * 0.5);
+      if (hash(Math.floor(w[0] / 5), Math.floor(w[1] / 4), 131) > 0.72) return MOSS[sy > 0 ? 3 : 1];
+      if (fr(v * 9) < 0.18) return SHINGLE[0];
+      return SHINGLE[(sy > 0 ? 3 : 1) + (hash(col, row, 132) > 0.7 ? -1 : 0)];
+    }, 5 + (sy > 0 ? 0 : 1));
+  }
+  // the chimney of grey stones up its far end
+  for (let z = 0; z < ridge + 10; z += 4) {
+    S.egg([-L - 6, -4, z + 2], XYZ, [5.5, 6, 2.4], (n, w) => (hash(Math.floor(w[1] / 4) + Math.floor(z / 4), Math.floor(w[0] / 4), 133) > 0.8 ? toneAt(n, GRANITE, -0.4) : facetOf(GRANITE, 0)(n)), 7);
+  }
+  // a bench by the door
+  S.box([L + 12, 14, 6], XYZ, [3, 9, 0.9], (_f, _u, _v, n) => toneAt(n, TIMBER, 0), 8);
+  S.rod([L + 12, 7, 0], [L + 12, 7, 5], 0.8, 0.8, TIMBER, 8);
+  S.rod([L + 12, 21, 0], [L + 12, 21, 5], 0.8, 0.8, TIMBER, 8);
+  return finish(S, 95, 120);
+}
+
+/** THE HUNTER'S WOODPILE and his chopping block, the axe left in it; `split`: knocked down, the logs rolled about, the block on its side. A breakable. */
+function woodpile(split: boolean): Sprite {
+  const S = new Scene(new Px(110, 80), 55, 54);
+  const logEnd = (n: V3, w: V3, c: V3, A: [V3, V3, V3]): string => {
+    const q: V3 = [w[0] - c[0], w[1] - c[1], w[2] - c[2]];
+    const along = q[0] * A[0][0] + q[1] * A[0][1] + q[2] * A[0][2];
+    if (Math.abs(along) > 7) return fr(Math.hypot(q[0] * A[1][0] + q[1] * A[1][1], q[2]) / 1.4) < 0.25 ? '#8a6c4c' : '#bea07c';
+    return toneAt(n, PBARK, 0);
+  };
+  if (!split) {
+    // the stack: three rows of split logs along y
+    for (let r = 0; r < 3; r++) {
+      for (let i = 0; i < 4 - r; i++) {
+        const c: V3 = [-10 + (hash(i, r, 141) - 0.5) * 2, -12 + i * 7 + r * 3.5, 3 + r * 5.6];
+        const A = beamAxes([0, 0, 0], [1, 0.08, 0]);
+        S.egg(c, A, [8.6, 3.2, 3], (n, w) => logEnd(n, w, c, A), 1 + r);
+      }
+    }
+    // the chopping block, the axe in it
+    S.rod([14, 10, 0], [14, 10, 9], 6, 5.6, PBARK, 5);
+    S.egg([14, 10, 9.2], XYZ, [5.6, 5.6, 0.6], (n) => (n[2] > 0.5 ? '#bea07c' : toneAt(n, PBARK, 0)), 6);
+    S.rod([14, 10, 10], [18, 15, 22], 0.8, 0.8, TIMBER, 7);
+    S.box([13.6, 9.6, 10.5], beamAxes([0, 0, 0], [0.6, 0.6, 0.3]), [2.6, 0.6, 1.6], (_f, _u, _v, n) => toneAt(n, IRON, 0.1), 8);
+  } else {
+    // knocked down: the logs rolled about, the block on its side
+    for (let i = 0; i < 8; i++) {
+      const a = hash(i, 1, 142) * Math.PI * 2;
+      const d = 6 + hash(i, 2, 142) * 20;
+      const c: V3 = [Math.cos(a) * d, Math.sin(a) * d, 3];
+      const A = beamAxes([0, 0, 0], [Math.cos(a * 1.7), Math.sin(a * 1.7), 0]);
+      S.egg(c, A, [8.6, 3.2, 3], (n, w) => logEnd(n, w, c, A), 1 + (i % 4));
+    }
+    S.rod([16, 6, 6], [24, 12, 6], 6, 5.6, PBARK, 5);
+  }
+  return finish(S, 55, 54);
+}
+
+/** THE HUNTER'S DRYING RACK: a frame of poles lashed together, hides stretched on it, a string of them drying, a deer's skull on its post. */
+function dryingRack(): Sprite {
+  const S = new Scene(new Px(110, 110), 55, 92);
+  const posts: V3[] = [[-4, -20, 0], [-4, 20, 0]];
+  for (const q of posts) S.rod(q, add(q, [0, 0, 46]), 1.4, 1.2, DRIFT, 1);
+  S.rod([-4, -24, 44], [-4, 24, 44], 1.2, 1.2, DRIFT, 2);
+  S.rod([-4, -22, 8], [-4, 22, 8], 1.0, 1.0, DRIFT, 2);
+  // two hides stretched in it, lashed at their corners
+  for (const [y0, y1] of [[-18, -2], [2, 18]] as const) {
+    S.quad([[-3, y0, 40], [-3, y1, 40], [-3, y1 - 1, 12], [-3, y0 + 1, 12]], (u, v, w) => {
+      const r = Math.hypot(u - 0.5, (v - 0.5) * 1.3);
+      if (r > 0.52 + 0.06 * Math.sin(u * 12 + v * 9)) return null; // the hide's ragged edge
+      return hash(Math.floor(w[1] / 3), Math.floor(w[2] / 3), 151) > 0.85 ? HIDE[2] : HIDE[r < 0.3 ? 4 : 3];
+    }, 3);
+    for (const [y, z] of [[y0, 40], [y1, 40], [y0 + 1, 12], [y1 - 1, 12]] as const) rope(S, [-4, y + (y < 0 ? -2 : 2), z + 2], [-3, y, z], 0, 4, 0.4);
+  }
+  S.ball([-4, -20, 50], 3, BONE, 5);
+  return finish(S, 55, 92);
+}
+
+/**
+ * THE HUNTER'S SNARE (the trap): a spring trap of iron jaws hidden under the needles. 0, hidden: needles and leaves
+ * over it, a glint of iron; 1, seen: its jaws open, its pan, its chain to a stake; 2, it springs: the jaws snapping
+ * up, needles thrown; 3, shut.
+ */
+function snareTile(f: number): Sprite {
+  const p = new Px(64, 34);
+  for (let py = 0; py < 34; py++) {
+    for (let px = 0; px < 64; px++) {
+      const uv = tileUV(px, py);
+      if (!uv) continue;
+      const du = (uv[0] - 32) / 32;
+      const dv = (uv[1] - 32) / 32;
+      const d = Math.hypot(du, dv);
+      const n = hash(px >> 1, py, 161 + f);
+      if (f === 0) {
+        // needles and leaves over it, a glint of iron through them
+        if (d < 0.55 && n > 0.45) p.set(px, py, n > 0.85 ? '#8c704d' : n > 0.65 ? '#70583e' : '#56432f');
+        if (d < 0.42 && d > 0.36 && hash(px, py, 162) > 0.85) p.set(px, py, IRON[3]);
+        continue;
+      }
+      // its chain to a stake
+      if (Math.abs(dv - 0.55) < 0.04 && du > -0.1 && du < 0.5 && fr(du * 18) < 0.6) p.set(px, py, IRON[2]);
+      if (Math.hypot(du - 0.55, dv - 0.55) < 0.07) p.set(px, py, TIMBER[3]);
+      // its ring of jaws: open (a wide ring lying flat, teeth inward), snapping (risen, closing), shut (a bar)
+      const open = f === 1 ? 1 : f === 2 ? 0.45 : 0;
+      if (open > 0) {
+        const R = 0.38 * (0.5 + 0.5 * open);
+        const ring = Math.abs(d - R);
+        if (ring < 0.05) p.set(px, py, du + dv < 0 ? IRON[4] : IRON[1]);
+        else if (d < R && d > R - 0.12 && fr(Math.atan2(dv, du) * 3) < 0.4) p.set(px, py, IRON[3]); // teeth
+        if (d < 0.12) p.set(px, py, d < 0.08 ? IRON[2] : IRON[0]); // the pan
+      } else {
+        if (Math.abs(dv - du * 0.2) < 0.07 && Math.abs(du) < 0.42) p.set(px, py, Math.abs(dv - du * 0.2) < 0.03 ? IRON[4] : IRON[1]);
+      }
+      if (f === 2 && d > 0.45 && d < 0.9 && n > 0.86) p.set(px, py, '#8c704d'); // needles thrown
+    }
+  }
+  return p.sprite(32, 0, GRAIN);
+}
+
+/** THE HUNTER'S JOURNAL (the quest piece): his book of notes lying open in the grass, its pages ruled with his hand, a quill's feather in it, a sketch of a stag on the open leaf. */
+function journal(): Sprite {
+  const S = new Scene(new Px(48, 32), 24, 22);
+  for (const side of [-1, 1]) {
+    S.quad([[-8, side * 0.4, 1.2 + (side > 0 ? 0 : 0.3)], [8, side * 0.4, 1.2], [8, side * 10, 0.6], [-8, side * 10, 0.6]], (u, v) => {
+      if (side > 0 && u > 0.2 && u < 0.8 && v > 0.25 && v < 0.8) {
+        // the stag he drew, its antlers
+        const x = (u - 0.5) * 2;
+        const y = (v - 0.5) * 2;
+        if (Math.abs(y - 0.2) < 0.12 && Math.abs(x) < 0.5) return '#3a3028';
+        if (Math.abs(x + 0.2 * Math.sin(y * 6)) < 0.06 && y < 0.1 && y > -0.6) return '#3a3028';
+      }
+      if (side < 0 && fr(v * 8) < 0.2 && u > 0.12 && u < 0.88) return '#5a4e40';
+      return v > 0.92 ? '#8a7a60' : '#d6ccb2';
+    }, 1 + (side > 0 ? 0 : 1));
+  }
+  // its leather cover, showing past the pages
+  S.box([0, 0, 0.3], XYZ, [9, 11, 0.3], (_f, _u, _v, n) => toneAt(n, HIDE, 0), 3);
+  S.rod([2, -6, 1.6], [12, -14, 4], 0.5, 0.2, BONE, 4);
+  return finish(S, 24, 22);
+}
+
+// =================================================================================================
+// THE CULT'S CAMP IN THE WOOD: the siege is fed from here, its pines felled for ladders and a ram
+
+/** THE CULT'S SIEGE TENT: a great bell tent of its violet cloth on a centre pole, guyed out all round, the mark painted on its side in bone-pale, its door flap tied back, dark within. */
+function siegeTent(): Sprite {
+  const S = new Scene(new Px(150, 130), 75, 92);
+  const R = 30;
+  const H = 52;
+  const N = 16;
+  for (let i = 0; i < N; i++) {
+    const a0 = (i / N) * Math.PI * 2;
+    const a1 = ((i + 1) / N) * Math.PI * 2;
+    const q: [V3, V3, V3, V3] = [[Math.cos(a0) * R, Math.sin(a0) * R, 0], [Math.cos(a1) * R, Math.sin(a1) * R, 0], [Math.cos(a1) * 4, Math.sin(a1) * 4, H - 4], [Math.cos(a0) * 4, Math.sin(a0) * 4, H - 4]];
+    const door = i === 1;
+    S.quad(q, (u, v) => {
+      if (door && u > 0.2 && u < 0.8 && v < 0.6 - Math.abs(u - 0.5) * 0.6) return '#17121f';
+      // the mark, bone-pale, on the panels toward the eye
+      if ((i === 0 || i === 15) && Math.abs(v - 0.4) < 0.05 && u > 0.3) return PAINT;
+      if (i === 0 && Math.abs(u - 0.6) < 0.06 && v > 0.2 && v < 0.6) return PAINT;
+      if (v > 0.94) return CLOTH[1];
+      return CLOTH[i % 2 === 0 ? 3 : 2];
+    }, 1 + (i % 2));
+  }
+  S.rod([0, 0, H - 6], [0, 0, H + 10], 1.2, 1.0, TIMBER, 3);
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.3;
+    rope(S, [Math.cos(a) * R * 0.85, Math.sin(a) * R * 0.85, 10], [Math.cos(a) * (R + 14), Math.sin(a) * (R + 14), 0], 0, 4, 0.4);
+  }
+  return finish(S, 75, 92);
+}
+
+/** SIEGE LADDERS the cult is making from the wood's pines: three long rough ladders stacked on trestles, rungs lashed with rope, one half finished, shavings under them. For the town's walls. */
+function siegeLadders(): Sprite {
+  const S = new Scene(new Px(200, 100), 100, 66);
+  for (const x of [-34, 30]) {
+    S.rod([x, -12, 0], [x, -12, 14], 1.0, 1.0, TIMBER, 1);
+    S.rod([x, 12, 0], [x, 12, 14], 1.0, 1.0, TIMBER, 1);
+    S.rod([x, -14, 14], [x, 14, 14], 1.2, 1.2, TIMBER, 1);
+  }
+  for (let l = 0; l < 3; l++) {
+    const z = 16 + l * 3.4;
+    const y0 = -9 + l * 2;
+    S.rod([-62, y0, z], [60, y0, z], 1.6, 1.4, PBARK, 2 + l);
+    S.rod([-62, y0 + 10, z], [60, y0 + 10, z], 1.6, 1.4, PBARK, 2 + l);
+    for (let k = 0; k < (l === 2 ? 5 : 11); k++) {
+      const x = -56 + k * 11;
+      S.rod([x, y0, z + 0.6], [x, y0 + 10, z + 0.6], 0.9, 0.9, DRIFT, 5 + l);
+      S.ball([x, y0, z + 1.2], 1.0, ROPE, 8, undefined, 0.1);
+    }
+  }
+  for (let i = 0; i < 14; i++) S.egg([-40 + hash(i, 1, 171) * 80, -16 + hash(i, 2, 171) * 32, 0.6], XYZ, [1.6, 0.8, 0.5], () => '#c4a882', 9);
+  return finish(S, 100, 66);
+}
+
+/** A BATTERING RAM, half built: a great pine trunk slung by ropes from a frame of timbers on four solid wheels, its head bound in iron, the cult's violet hung from its roof-beam. For the town's gate. */
+function batteringRam(): Sprite {
+  const S = new Scene(new Px(200, 130), 100, 92);
+  // the frame: four posts, two beams along x, a roof-beam
+  for (const x of [-34, 30]) for (const y of [-14, 14]) S.rod([x, y, 8], [x, y, 44], 1.6, 1.4, TIMBER, 1);
+  for (const y of [-14, 14]) S.rod([-38, y, 44], [34, y, 44], 1.8, 1.8, TIMBER, 2);
+  S.rod([-38, 0, 50], [34, 0, 50], 1.8, 1.8, TIMBER, 2);
+  for (const x of [-34, 30]) S.rod([x, -14, 44], [x, 0, 50], 1.2, 1.2, TIMBER, 2);
+  for (const x of [-34, 30]) S.rod([x, 14, 44], [x, 0, 50], 1.2, 1.2, TIMBER, 2);
+  for (const x of [-34, 30]) for (const y of [-14, 14]) S.rod([x, y, 8], [x + (x < 0 ? 4 : -4), y, 8], 1.4, 1.4, TIMBER, 2);
+  // its wheels: solid discs of planks
+  for (const x of [-30, 26]) for (const y of [-17, 17]) {
+    S.egg([x, y, 8], beamAxes([0, 0, 0], [0, 1, 0]), [1.6, 8, 8], (n, w) => (fr((w[0] - x) / 4) < 0.15 ? TIMBER[0] : toneAt(n, TIMBER, 0)), 3);
+  }
+  // the ram: a pine trunk slung from the roof-beam, its head iron-bound
+  S.rod([-58, 0, 28], [52, 0, 28], 4.6, 4.2, PBARK, 4);
+  S.egg([56, 0, 28], beamAxes([0, 0, 0], [1, 0, 0]), [6, 5.4, 5.4], (n) => toneAt(n, IRON, 0.1), 5);
+  for (const x of [-20, 16]) rope(S, [x, 0, 50], [x, 0, 33], 0, 6, 0.6);
+  // the cult's violet hung from the roof-beam
+  S.quad([[-6, 0.5, 49], [10, 0.5, 49], [10, 0.5, 36], [-6, 0.5, 36]], (u, v) => (Math.abs(u - 0.5) < 0.06 && v > 0.3 && v < 0.8 ? PAINT : CLOTH[2]), 7);
+  return finish(S, 100, 92);
+}
+
+/** BARRELS OF PITCH for the siege's fire-pots: three tarred barrels, one tipped with its pitch spilt black; `broken`: staves sprung, the pitch spread. A breakable. */
+function pitchBarrels(broken: boolean): Sprite {
+  const S = new Scene(new Px(90, 70), 45, 48);
+  const TAR: Ramp = ['#141216', '#1e1b20', '#2a262c', '#3a3540', '#4e4856'];
+  // a barrel: a cylinder of staves bellied a little, two iron hoops, its head black with pitch
+  const barrel = (c: V3, up: V3, id: number): void => {
+    const u = up;
+    const base = add(c, mul(u, -7.5));
+    for (let k = 0; k < 5; k++) {
+      const t0 = k / 5;
+      const t1 = (k + 1) / 5;
+      const r0 = 5.6 + 0.9 * Math.sin(Math.PI * t0);
+      const r1 = 5.6 + 0.9 * Math.sin(Math.PI * t1);
+      S.rod(add(base, mul(u, 15 * t0)), add(base, mul(u, 15 * t1)), r0, r1, k === 1 || k === 3 ? IRON : TIMBER, id);
+    }
+    S.egg(add(base, mul(u, 15.2)), beamAxes([0, 0, 0], u), [0.5, 5.4, 5.4], (n) => toneAt(n, TAR, 0.3), id);
+  };
+  if (!broken) {
+    barrel([-8, -6, 8], [0, 0, 1], 1);
+    barrel([8, -12, 8], [0, 0, 1], 2);
+    barrel([6, 10, 6.4], [0.37, 0.93, 0], 3);
+    S.egg([12, 22, 0.4], XYZ, [9, 6, 0.4], () => '#1a171c', 4);
+  } else {
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2;
+      S.rod([Math.cos(a) * 6, Math.sin(a) * 6, 0.8], [Math.cos(a) * 16, Math.sin(a) * 16, 2], 1.2, 1.2, TIMBER, 1);
+    }
+    S.egg([0, 0, 0.5], XYZ, [16, 13, 0.5], () => '#1a171c', 2);
+    barrel([12, -12, 8], [0, 0, 1], 3);
+  }
+  return finish(S, 45, 48);
+}
+
+/** FELLED PINES, stacked: trunks cut and limbed by the cult, piled three high against stakes, their cut ends pale toward the eye, an axe and a saw left on them. */
+function felledPines(): Sprite {
+  const S = new Scene(new Px(190, 90), 95, 60);
+  const rows = [[0, -12, 5.4], [0, 0, 5.4], [0, 12, 5.4], [0, -6, 15], [0, 6, 15], [0, 0, 24.4]];
+  rows.forEach(([x, y, z], i) => {
+    S.rod([x - 56, y, z], [x + 52, y, z], 5.4, 5.2, PBARK, 1 + (i % 3));
+    S.egg([x + 52.5, y, z], beamAxes([0, 0, 0], [1, 0, 0]), [0.6, 5.2, 5.2], (n, w) => (n[0] > 0.5 ? (fr(Math.hypot(w[1] - y, w[2] - z) / 1.4) < 0.25 ? '#9a7c5c' : '#c4a884') : toneAt(n, PBARK, 0)), 4 + (i % 2));
+  });
+  for (const x of [-40, 30]) for (const y of [-19, 19]) S.rod([x, y, 0], [x, y, 22], 1.2, 1.0, DRIFT, 7);
+  S.rod([-20, 8, 30], [-6, 2, 32], 0.6, 0.6, TIMBER, 8);
+  S.box([-21, 8.6, 30], beamAxes([0, 0, 0], [0.9, -0.4, 0]), [2.4, 0.5, 1.6], (_f, _u, _v, n) => toneAt(n, IRON, 0.1), 9);
+  return finish(S, 95, 60);
+}
+
+/**
+ * THE STAG'S SHRINE (the Hollow Stag's): where the cult bound the wood's old stag to the swamp. A post of dead pine
+ * driven into the ground, a great stag's antlers lashed to its top with the cult's violet cloth, the cult's mark
+ * daubed on it, a ring of the wood's stones round it, bones and a stag's skull at its foot, the swamp's dull violet
+ * sickness spread in the grass round it.
+ */
+function stagShrine(): Sprite {
+  const S = new Scene(new Px(130, 140), 65, 106);
+  S.rod([0, 0, 0], [0.5, -0.4, 58], 4, 3.2, SICKBARK, 1);
+  // the antlers at its top, branching wide
+  for (const sg of [1, -1]) {
+    let prev: V3 = [0.5, -0.4, 58];
+    for (let k = 1; k <= 7; k++) {
+      const t = k / 7;
+      // (spread across the eye's view, to its left and its right, sweeping up and back)
+      const pnt: V3 = [0.5 + sg * t * 19 - t * 5, -0.4 - sg * t * 19 - t * 5, 58 + t * 26 - t * t * 8];
+      S.rod(prev, pnt, 2.2 - t * 1.1, 2.2 - (t + 1 / 7) * 1.1, BONE, 2);
+      if (k % 2 === 0) S.rod(pnt, add(pnt, [2 + sg * 1.5, 2 - sg * 1.5, 9 - t * 3]), 1.1, 0.45, BONE, 2);
+      prev = pnt;
+    }
+  }
+  S.ball([1.5, -0.4, 58], 3.2, BONE, 3);
+  // the cult's violet lashed round it under the antlers, the mark daubed on it
+  S.rod([0.5, -0.4, 42], [0.5, -0.4, 54], 4.6, 4.2, CLOTH, 4);
+  S.egg([4.4, 3.6, 48], XYZ, [0.8, 0.8, 3.4], () => PAINT, 5);
+  S.quad([[3.5, 3.5, 44], [5, 5, 44], [7, 7, 28], [5, 5, 26]], (u, v) => (v > 0.85 && fr(u * 4) < 0.5 ? null : CLOTH[v > 0.5 ? 2 : 3]), 4);
+  rope(S, [0.5, -3.8, 54], [6, -9, 40], 0.3, 6, 0.6);
+  // a ring of stones round it, and bones, a skull
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2;
+    S.egg([Math.cos(a) * 18, Math.sin(a) * 15, 2.4], beamAxes([0, 0, 0], [Math.cos(a), Math.sin(a), 0]), [3.6, 3, 2.6], facetOf(GRANITE, 0), 7);
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = 1 + i * 1.3;
+    S.rod([Math.cos(a) * 6, Math.sin(a) * 5, 0.8], [Math.cos(a) * 12, Math.sin(a) * 9, 1.2], 0.8, 0.7, BONE, 8);
+  }
+  S.ball([8, 4, 2.6], 2.6, BONE, 9);
+  // the sickness in the grass round it: dull violet tufts
+  for (let i = 0; i < 12; i++) {
+    const a = hash(i, 1, 181) * Math.PI * 2;
+    const d = 9 + hash(i, 2, 181) * 16;
+    S.egg([Math.cos(a) * d, Math.sin(a) * d * 0.8, 1], XYZ, [2.4, 2.4, 1.6], (n) => toneAt(n, SICKV, 0), 10);
+  }
+  return finish(S, 65, 106);
+}
+
+// =================================================================================================
+
+/** THE PINEWOOD'S PIECES: the wood's own; the hunter's; the cult's camp in it; the Stag's shrine. */
 export function pinewoodPieces(): Piece[] {
   return [
     { name: 'old pine', kind: 'obstacle', frames: [pineOf(150, 0.2, 3), pineOf(186, 0.22, 7), pineOf(222, 0.24, 11)], shadow: 0.6 },
@@ -429,5 +819,17 @@ export function pinewoodPieces(): Piece[] {
     { name: 'twisted pine', kind: 'obstacle', frames: [twistedPine(2), twistedPine(5)], shadow: 0.5 },
     { name: 'cattails', kind: 'on the floor', frames: [cattails(3)] },
     { name: 'river stones', kind: 'on the floor', frames: [riverStones(5)] },
+    { name: 'footbridge', kind: 'floor tile', frames: [footbridge(false), footbridge(true)] },
+    { name: "the hunter's cabin", kind: 'obstacle', frames: [cabin()], shadow: 1.2 },
+    { name: "the hunter's woodpile", kind: 'breakable', frames: [woodpile(false), woodpile(true)], shadow: 0.35 },
+    { name: "the hunter's drying rack", kind: 'obstacle', frames: [dryingRack()], shadow: 0.45 },
+    { name: "the hunter's snare", kind: 'trap', frames: [0, 1, 2, 3].map(snareTile) },
+    { name: "the hunter's journal", kind: 'quest', frames: [journal()] },
+    { name: "the cult's siege tent", kind: 'obstacle', frames: [siegeTent()], shadow: 0.9 },
+    { name: 'siege ladders', kind: 'obstacle', frames: [siegeLadders()], shadow: 0.9 },
+    { name: 'a battering ram, half built', kind: 'obstacle', frames: [batteringRam()], shadow: 1.0 },
+    { name: 'barrels of pitch', kind: 'breakable', frames: [pitchBarrels(false), pitchBarrels(true)], shadow: 0.3 },
+    { name: 'felled pines, stacked', kind: 'obstacle', frames: [felledPines()], shadow: 0.9 },
+    { name: "the Stag's shrine", kind: 'obstacle', frames: [stagShrine()], shadow: 0.5 },
   ];
 }

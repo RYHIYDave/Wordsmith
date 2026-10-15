@@ -17,6 +17,11 @@
 //     close-ups at four times (the meadow, the river and a bank, the wood's edge and its floor, the sickness)
 //   node tools/preview.mjs src/dev/preview_pinewood.ts shots/pine_cost.png 1014 200 cost
 //     what painting it costs, a piece of 256 x 256 picture pixels at a time
+//   node tools/preview.mjs src/dev/preview_pinewood.ts shots/pine_pieces.png 1014 2610 pieces
+//     every piece (art/floor9.ts), each on the meadow, at the game's size (twice it where it fits), with its name
+//   node tools/preview.mjs src/dev/preview_pinewood.ts shots/pine_dressed.png 1014 468 dressed
+//     the phone screen dressed with the pieces where the mock-up has them: the groves, the wood's edge, the cabin,
+//     the bridges, the cult's camp, the twisted pines toward the swamp
 
 import { makeDaggerCultistArt3 } from '../art/cultists';
 import { spriteOf3 } from '../art/heroes3';
@@ -24,6 +29,7 @@ import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { pinewoodLook } from '../art/pinewood';
 import { pinewoodPieces } from '../art/floor9';
+import { cultBanner, pinkBrazier } from '../art/act1_cult';
 import { HHP, HWP, TK, paintTerrain, pictureOf, terrainOf, vnoise, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
 import { drawText } from '../engine/font';
@@ -34,7 +40,7 @@ import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
 const PW = 1014;
-const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 1840 : 468;
+const PH = HASH === 'close' ? 936 : HASH === 'cost' ? 200 : HASH === 'pieces' ? 2610 : 468;
 
 // ---------------------------------------------------------------------------------------------------
 // The mock-up's shapes, in the mock-up's own world (its panel 1014 x 468, world (12, 12) at its middle),
@@ -472,4 +478,113 @@ function pieceSheet(): void {
   show(cvs);
 }
 
+
+// ---------------------------------------------------------------------------------------------------
+// THE PINEWOOD DRESSED: its pieces where the mock-up he said yes to has its things
+
+let PIECES: ReturnType<typeof pinewoodPieces> | null = null;
+const pieces = (): ReturnType<typeof pinewoodPieces> => (PIECES ??= pinewoodPieces());
+function pc(name: string, frame = 0): Sprite {
+  const q = pieces().find((x) => x.name === name);
+  if (!q || !q.frames) throw new Error(`no piece ${name}`);
+  return q.frames[Math.min(frame, q.frames.length - 1)];
+}
+const shadowOf = (name: string): number | undefined => pieces().find((x) => x.name === name)?.shadow;
+interface Stand { x: number; y: number; sp: Sprite; shadow?: number; figure?: boolean; tall?: boolean }
+function hashOf(x: number, y: number, k: number): number {
+  let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(k | 0, 2147483647)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+function dressedShot(): void {
+  paintPanel(g, VX, VY, PW, PH);
+  const stands: Stand[] = [];
+  // the footbridges, floor tiles, first, on the ground: every walkable tile of a crossing over the river
+  for (let ty = 0; ty < PINE_FLOOR.h; ty++) {
+    for (let tx = 0; tx < PINE_FLOOR.w; tx++) {
+      if (PINE_FLOOR.tiles[ty * PINE_FLOOR.w + tx] !== T_FLOOR) continue;
+      if (!onBridge(tx + 0.5, ty + 0.5) || river(tx + 0.5, ty + 0.5) > RIVER_HALF + 0.35) continue;
+      // its way across the water: along x or along y, whichever crosses the river more squarely
+      const alongY = Math.abs(river(tx + 0.5, ty + 1.5) - river(tx + 0.5, ty - 0.5)) > Math.abs(river(tx + 1.5, ty + 0.5) - river(tx - 0.5, ty + 0.5));
+      const [sx, sy] = pictureOf(tx, ty);
+      drawAt(g, pc('footbridge', alongY ? 1 : 0), sx - VX, sy - VY);
+    }
+  }
+  const put = (px: number, py: number, name: string, frame = 0, tall = false): void => {
+    const [x, y] = at(px, py);
+    stands.push({ x, y, sp: pc(name, frame), shadow: shadowOf(name), tall });
+  };
+  // the groves and the wood's far edge: pines on the forest floor, thick, the old with the young; twisted toward the swamp
+  for (let gy = -60; gy < PH + 60; gy += 22) {
+    for (let gx = -10; gx < PW + 20; gx += 26) {
+      const px = Math.round(gx + (hashOf(gx, gy, 1) - 0.5) * 20);
+      const py = Math.round(gy + (hashOf(gx, gy, 2) - 0.5) * 14);
+      const [x, y] = at(px, py);
+      if (T.ground(x, y) || river(x, y) < RIVER_HALF + 0.9) continue;
+      const roll = hashOf(gx, gy, 3);
+      const east = sick(x, y);
+      if (east > 0.35 && roll < 0.5) stands.push({ x, y, sp: pc('twisted pine', roll < 0.25 ? 0 : 1), shadow: 0.5, tall: true });
+      else if (roll < 0.62) stands.push({ x, y, sp: pc('old pine', Math.floor(hashOf(gx, gy, 4) * 3)), shadow: 0.6, tall: true });
+      else if (roll < 0.8) stands.push({ x, y, sp: pc('young pine', hashOf(gx, gy, 5) < 0.5 ? 0 : 1), shadow: 0.4, tall: true });
+      else if (roll < 0.86) stands.push({ x, y, sp: pc('ferns', hashOf(gx, gy, 6) < 0.5 ? 0 : 1) });
+      else if (roll < 0.9) stands.push({ x, y, sp: pc('pine snag'), shadow: 0.35, tall: true });
+    }
+  }
+  // the hunter's cabin by the river, his woodpile and rack; reeds and stones in the river
+  put(150, 170, "the hunter's cabin");
+  put(206, 196, "the hunter's woodpile");
+  put(98, 222, "the hunter's drying rack");
+  put(268, 300, 'cattails');
+  put(470, 356, 'cattails');
+  put(545, 395, 'river stones');
+  // the meadow's own: a fallen pine, a stump, a boulder, bilberries, toadstools, the stag's skull
+  put(712, 334, 'fallen pine');
+  put(420, 250, 'stump');
+  put(660, 180, 'mossy boulder', 1);
+  put(330, 120, 'bilberries');
+  put(250, 400, 'toadstools');
+  put(600, 196, "a stag's skull and antlers");
+  // the cult's camp glimpsed through the trees at the top right, a patrol out of it; its felled pines and ladders
+  put(720, 40, "the cult's siege tent");
+  put(860, 54, 'siege ladders');
+  stands.push({ x: at(690, 82)[0], y: at(690, 82)[1], sp: pinkBrazier(1), shadow: 0.3 });
+  stands.push({ x: at(752, 74)[0], y: at(752, 74)[1], sp: cultBanner(1), shadow: 0.2 });
+  put(940, 120, 'felled pines, stacked');
+  // toward the swamp: the Stag's shrine in the sick grass
+  put(930, 300, "the Stag's shrine");
+  for (const [x, y] of FOES) stands.push({ x, y, sp: cultist.front.idle[0], figure: true, shadow: 0.45 });
+  stands.push({ x: HERO[0], y: HERO[1], sp: knight, figure: true, shadow: 0.5 });
+  stands.sort((a, b) => a.x + a.y - (b.x + b.y));
+  const figures = stands.filter((st) => st.figure);
+  for (const st of stands) {
+    const [sx0, sy0] = pictureOf(st.x, st.y);
+    const sx = sx0 - VX;
+    const sy = sy0 - VY;
+    if (st.shadow) {
+      g.fillStyle = 'rgba(25, 18, 40, 0.32)';
+      g.beginPath();
+      g.ellipse(sx, sy, st.shadow * HWP * 1.1, st.shadow * HHP * 1.1, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    // a tall thing seen through while someone stands behind it (the game's SEEN_THROUGH, 0.38)
+    let alpha = 1;
+    if (st.tall) {
+      const l = sx - st.sp.ax * 2;
+      const t = sy - st.sp.ay * 2;
+      for (const f of figures) {
+        if (f.x + f.y >= st.x + st.y) continue;
+        const [fx, fy] = pictureOf(f.x, f.y);
+        const fl = fx - VX - f.sp.ax * 2;
+        const ft = fy - VY - f.sp.ay * 2;
+        if (fl < l + st.sp.w * 2 && fl + f.sp.w * 2 > l && ft < t + st.sp.h * 2 && ft + f.sp.h * 2 > t) alpha = 0.38;
+      }
+    }
+    drawAt(g, st.sp, sx, sy, alpha);
+  }
+  nameAndMap(g, HERO);
+  show(cvs);
+}
+
 if (HASH === 'pieces') pieceSheet();
+else if (HASH === 'dressed') dressedShot();
