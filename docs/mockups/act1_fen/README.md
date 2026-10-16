@@ -566,4 +566,41 @@ shown (Recommended)"; then "Faster and wilder", "Bigger and wilder" or "Bigger s
 by 00:54 (the clock read 00:54:36 just after): each "Yes, as shown (Recommended)". ALL OF THE BOG LEECHES NOW HAVE HIS
 YES.
 
-NEXT: the Eyespawn (medium; they hatch from his eggs), by its brief, look and moves.
+## The Eyespawn, floor 10's medium mob (src/art/eyespawn.ts, behind SPAWN_ON, off)
+
+They hatch from the Drowned Eye's eggs (art/drowned_eye.ts, `spawnPainted`; the game brings one out where an egg
+bursts). His brief, two pop-ups, 16 Oct, by 00:58 (the clock read 00:58:07 just after): "An eye on tentacles
+(Recommended)" (offered as: a pale veined eyeball as big as a barrel, hauled along on a cluster of short pale tentacles:
+his child); "The knight's height (Recommended)" (3 to 5 a pack; menacing, each one a real fight); how they move,
+"Hauling on its tentacles (Recommended)" (heaving itself along in wet, quick lurches, the eye rolling to keep on you);
+what you know them by, "Its one staring eye (Recommended)" (his own: the pink-to-gold iris, the slit, darting about and
+fixing on you); its basic attack, "A tentacle lash (Recommended)" (it rears back and whips a tentacle across you); its
+big attack, "A gold gaze beam (Recommended)" (its eye narrows and a line of light flickers on the floor (the warning),
+then a short burning beam along it: his gaze, small); how they die, "Its eye bursts (Recommended)" (it swells and
+shudders, its eye ruptures in a gush, and it slumps into a slack heap of tentacles); their sound, "Wet slaps and a thin
+shriek (Recommended)". Kept from their father's brief, as I told him: "Not a cartoon googly eye (Recommended)".
+
+### Its look
+
+Its own painter, no bones. His eye, small: a ball 15 of the figure's lengths round (the knight is 58 tall), its middle
+40 up; his white veined with the swamp's violet, his iris of the enemy's fire, pink at its rim burning to gold, his black
+slit; wide open, staring; a brow of his flesh scowling down over its iris in a V; set in a cup of his drowned flesh,
+veined, a knotted rim round it, weed and feelers hanging under it. Under it seven of his pale arms, short, suckered and
+veined along their tops: five it stands on, each arching out and down to the floor and curling along it; two it lashes
+with, rearing out and up from its sides and curling over at their tips. Its iris gives the enemy's gold light. His
+colours are copied into its file, so that nothing need import his. Its stand (2.4 s): heaving on its legs, swaying,
+its two arms writhing, its front left leg lifted and set down again 0.3 to 0.9 s, its eye darting about 0.6 to 1.5 s
+and then fixing on you, a blink 1.95 to 2.25 s.
+
+    node tools/preview.mjs src/dev/preview_eyespawn.ts shots/eyespawn_look.png 1014 900 look
+    node tools/page_gif.mjs src/dev/preview_eyespawn.ts "standfilm" shots/eyespawn_stand.gif 6
+
+`tests/eyespawn.test.ts` 6: the switch off and nothing of the game importing it; crisp, its pink edge; nothing cyan,
+every light the enemy's fire; nothing cut off; its size (the knight's height, standing on its legs); its eye (from in
+front its iris, open but for its blink, its light gold; from behind its flesh; shut and dark as it blinks).
+
+Shown `shots/eyespawn_look.png` and `shots/eyespawn_stand.gif`, asked "Is this the Eyespawn (eyespawn_look.png,
+eyespawn_stand.gif)?" (offered: "Yes, animate it (Recommended)"; "Bigger and more monstrous"; "More of the eye"; "Not
+yet"), his answer, 16 Oct, by 08:07 (the clock read 08:07:55 just after): "Yes, animate it (Recommended)".
+
+NEXT: its moves: hatching out of his egg, its haul, its lash, its gaze beam, struck, its death.
