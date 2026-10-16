@@ -496,4 +496,37 @@ shambling (drowned_rise.gif): how is it?", "Its grab: arms flung up and wide, th
 offered: "Yes, as shown (Recommended)"; "Bigger and wilder"; "Not yet"), his answers, 15 Oct, by 23:32 (the clock read
 23:32:12 just after): each "Yes, as shown (Recommended)". ALL OF THE DROWNED NOW HAS HIS YES.
 
-NEXT: the Bog Leeches (tiny), then the Eyespawn (medium; they hatch from his eggs), each by its brief, look and moves.
+## The Bog Leeches, floor 10's tiny mob (src/art/bog_leech.ts, behind LEECH_ON, off)
+
+His brief, two pop-ups, 15 Oct, by 23:35 (the clock read 23:35:18 just after): "Fat swamp leeches (Recommended)"
+(offered as: slick, ringed bodies, black-green, as long as a forearm, glistening wet); "Tiny, in swarms (Recommended)"
+(knee-high to the knight when they rear; 6 to 10 a pack, like the bats; fun to smash, sickening up close); how they
+move, "Slithering like snakes" (not the recommended pick; offered as: low, wriggling, fast); what you know them by, "A
+round mouth of teeth (Recommended)" (as it rears, a ring of hooked teeth flares open on a pink gullet); their one
+attack, "Leap, latch on, suck (Recommended)" (it rears and quivers, mouth flaring (the warning), springs at you, clamps
+on and swells, then drops off fat); their death, "Burst in a dark splash (Recommended)" (popping in a splash of dark
+blood and bog water; the fatter, the bigger the splash); "Not a cartoon worm (Recommended)"; their sound, "Wet
+squelches, a sucking slurp (Recommended)".
+
+### Its look
+
+Its own painter, no bones, as the rubbling's: a chain of fourteen segments along a spine, 40 of the figure's lengths
+long (the knight is 58 tall), fattest behind its middle, its tail a broad sucker; black-green, its belly paler, two
+dull olive stripes down its back, a wet glint running along its top. Its head opens into THE ROUND MOUTH: its lips
+flare wide on a ring of eleven hooked teeth round a pink gullet and a dark throat; the gullet gives the enemy's light
+while it is open. Its stand (1.6 s): coiled in an S on the floor, writhing, the front of it reared like a snake's
+(its mouth 13 to 15 up, about the knight's knee), weaving; once a round, 0.9 to 1.35 s, its mouth flares open and shuts.
+
+    node tools/preview.mjs src/dev/preview_leech.ts shots/leech_look.png 1014 700 look
+    node tools/page_gif.mjs src/dev/preview_leech.ts "standfilm" shots/leech_stand.gif 6
+
+`tests/bog_leech.test.ts` 6: the switch off and nothing of the game importing it; crisp, its pink edge; nothing cyan,
+every light the enemy's fire; nothing cut off; its size (its length; reared to about the knight's knee; well under half
+his height); its mouth (shut, no pink and no light, but once a round flared on its pink gullet, its light the enemy's).
+
+Shown `shots/leech_look.png` and `shots/leech_stand.gif`, asked "Is this the Bog Leech (leech_look.png,
+leech_stand.gif)?" (offered: "Yes, animate it (Recommended)"; "Bigger"; "More horrible"; "Not yet"), his answer, 15
+Oct, by 23:46 (the clock read 23:46:44 just after): "Yes, animate it (Recommended)".
+
+NEXT: its moves (its slither, the leap and latch, struck, its burst), then the Eyespawn (medium; they hatch from his
+eggs), by its brief, look and moves.
