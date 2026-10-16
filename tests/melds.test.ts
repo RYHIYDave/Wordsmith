@@ -506,6 +506,19 @@ test('Fumes behind: the poison cloud explodes when anything burning comes into i
   });
 });
 
+test('Fumes behind on a cloud already there: that cloud is Fumes\' from then on, and goes up in fire', () => {
+  melding(() => {
+    // a plain poison cloud first, where the strike lands; then the strike with Fumes behind lays its cloud over it
+    const s = arena(['poison'], ['fumes']);
+    const h = s.g.hero;
+    s.g.zones.push({ x: h.x + 1.1, y: h.y, r: 1.5, t: 0, dur: 5, kind: 'venom', element: 'phys', dmg: 1, slow: 0, tick: 0.2, hostile: false, skill: 0, words: [], from: '' });
+    strike(s);
+    const clouds = s.g.zones.filter((q) => q.kind === 'venom' && !q.hostile);
+    assert.equal(clouds.length, 1, 'one cloud, laid again: they do not pile up');
+    assert.equal(clouds[0].meld, 'fumes', 'and it is Fumes\' cloud now');
+  });
+});
+
 test('Hailstorm, Frostbite and Contagion behind: a storm that slows; ice that poisons; a cloud that shocks', () => {
   melding(() => {
     const at = (w: MeldId, kind: string, check: (m: Monster, s: Arena) => void): void => {

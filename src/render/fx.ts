@@ -35,6 +35,7 @@ import { drawText, textWidth, wrapText } from '../engine/font';
 import { BOSS_INTRO, RANGER_ARROW, WORDS } from '../game/defs';
 import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
+import { meldLookWords, meldOwnsEvent } from './melds3';
 import { Wild } from './wild';
 
 /** Where the world origin sits on screen this frame. */
@@ -1031,6 +1032,8 @@ export class Fx {
 
   handle(events: GameEvent[], play: (name: Sfx, vol?: number) => void): void {
     for (const e of events) {
+      // (WORDMELDING's looks, behind MELD3, off: a melded word's own bolts, blasts and patches are drawn by render/melds3.ts)
+      if (meldOwnsEvent(e)) continue;
       switch (e.t) {
         case 'hit': {
           if (e.poison) {
@@ -1045,7 +1048,9 @@ export class Fx {
           if (e.onHero) this.float(e.x, e.y, `-${e.amount}`, P.bl4, false, 30);
           else this.float(e.x, e.y, e.crit ? `${e.amount}!` : `${e.amount}`, e.crit ? P.gd4 : e.el === 'phys' ? P.white : ramp[ramp.length - 2], e.crit || !!e.heavy);
           this.spray(e.x, e.y, e.onHero ? 5 : 3, e.onHero ? [P.bl4, P.bl3] : ramp, 2.2, 50, 12);
-          if (e.heavy) {
+          // (WORDMELDING's looks, behind MELD3, off: a melded word's own look stands in for its two words' marks, and for Power's weight)
+          const w = meldLookWords(e.words);
+          if (e.heavy && w === e.words) {
             // Power lands: a burst of light on the target, and the game holds its breath
             this.flashes.push({ x: e.x, y: e.y, z: 12, r: 0.5, t: 0, dur: 0.1, colors: POWER_HOT });
             this.spray(e.x, e.y, 6, POWER_HOT, 3.5, 80, 12);
@@ -1053,7 +1058,6 @@ export class Fx {
             this.hold(0.045);
           }
           // each word in front leaves its own mark on what it hits
-          const w = e.words;
           if (w) {
             if (has(w, 'swift')) {
               this.streaks(e.x, e.y, 6, WIND, 9, 6, { life: 0.13, z: 12 });
@@ -1215,7 +1219,8 @@ export class Fx {
           if (e.line) this.bossSay = { text: e.line, t: 0, x: e.x, y: e.y, lift: BOSS_SAY_LIFT, secs: Math.min(e.secs, BOSS_INTRO.sayFor) };
           break;
         case 'burst': {
-          const w = e.words;
+          // (WORDMELDING's looks, behind MELD3, off: as for a hit)
+          const w = meldLookWords(e.words);
           const ramp = this.ramp(e.el);
           const power = has(w, 'power');
           const second = (e.n ?? 0) > 0;

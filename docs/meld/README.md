@@ -54,6 +54,8 @@ The planning chat's branch `meld/words`, from `main` at a60d618. NOTHING OF IT I
   foot), runedust and the Meldstone on the floor (`runedust`, `meldstone`), the steam
   (src/render/render.ts, src/render/fx.ts), runedust beside the gold in the inventory. A melded word's
   attack looks like its two words' (`withParts`).
+- THE LOOKS DRAWN (16 Oct, his yes by 16:29): the ten runes, colours and looks at work, behind
+  MELD3 (off), in place of the placeholders above: docs/meld/LOOKS.md, branch `meld/looks`.
 - Saves: with MELD off nothing of it is written (`savedWords`, `savedMeta`); with it on, the melded
   words, the runedust and the Meldstone are, and come back.
 

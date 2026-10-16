@@ -54,6 +54,7 @@ import { LIFE_BAR, LifeBar, barPixels } from './lifebar';
 import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
+import { MELD3, airM3, floorM3, heroAlphaM3, lightsM3, overM3, ownsZone, rotting, shiftM3, tickM3, tintM3 } from './melds3';
 import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
@@ -1373,6 +1374,8 @@ export class Renderer {
       if (z.kind !== 'warn' && this.skip.has('ground')) continue;
       // (Heavy's cracked ground and Guarding's ward are drawn with the new words' looks: words3.ts, floor3)
       if (z.kind === 'cracks' || z.kind === 'ward') continue;
+      // (a melded word's patch has a look of its own, behind MELD3, off: render/melds3.ts, floorM3)
+      if (ownsZone(z)) continue;
       if (z.kind === 'warn') {
         ellipse(g, cx, cy, z.r, P.bl3, 0.16 + 0.3 * k);
         ellipse(g, cx, cy, z.r * k, P.bl4, 0.3);
@@ -1510,6 +1513,7 @@ export class Renderer {
     }
     // (THE NEW WORDS, a mock-up behind a switch that is off: what they leave on the floor)
     if (WORDS3.on && !this.skip.has('ground')) floor3(g, cam, t, game, here);
+    if (MELD3.on && !this.skip.has('ground')) floorM3(g, cam, t, game, here);
     for (const tr of game.traps) {
       if (!here(tr.x, tr.y)) continue;
       const frames = art.icons.trap[tr.element];
@@ -1811,6 +1815,8 @@ export class Renderer {
     fx.arcane = arcane;
     // (THE NEW WORDS, a mock-up behind a switch that is off: render/words3.ts)
     if (WORDS3.on) tick3(pace / 60, game, fx);
+    // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts)
+    if (MELD3.on) tickM3(pace / 60, game, fx);
     const cam = this.cam;
     // Where on the screen the hero stands: the middle, or the middle of the part left to the world.
     // The picture glides from the one to the other, by the wall clock (the world may be standing
@@ -2126,6 +2132,12 @@ export class Renderer {
         sx += ox;
         sy += oy;
       }
+      // (WORDMELDING's looks, behind a switch that is off: Avalanche's shove, slid)
+      if (MELD3.on) {
+        const [ox, oy] = shiftM3(m);
+        sx += ox;
+        sy += oy;
+      }
       const sp = this.monsterSprite(m);
       // (ice gives off no light)
       if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
@@ -2159,13 +2171,21 @@ export class Renderer {
           overA = tn[1];
         }
       }
+      // (WORDMELDING's looks, behind a switch that is off: Blight's rot, Frostbite's bite, Thunder's stun)
+      if (MELD3.on && (!over || m.flash <= 0)) {
+        const tn = tintM3(m, t);
+        if (tn && (!over || tn[1] > overA)) {
+          over = silhouette(sp, tn[0]);
+          overA = tn[1];
+        }
+      }
       this.stand(m.x + m.y, sp, sx, sy, over, overA);
       // (THE NEW WORDS, a mock-up behind a switch that is off: a slowed monster's echoes linger after it)
       if (WORDS3.on) for (const e of echoes3(m)) this.stand(e.x + e.y - 0.02, silhouette(sp, e.color), wx(cam, e.x, e.y), wy(cam, e.x, e.y), null, 0, 1, e.alpha);
       hid?.(m.x, m.y);
       if (m.burnT > 0 && Math.random() < 0.55 * amb) fx.flames(m.x, m.y, 0.22, 1, 0.9);
       if (m.chillT > 0 && m.frozenT <= 0 && Math.random() < 0.12 * amb) fx.mote(m.x + (Math.random() - 0.5) * 0.5, m.y + (Math.random() - 0.5) * 0.5, [P.white, P.bu5]);
-      if (m.poisonT > 0 && Math.random() < Math.min(0.5, 0.12 + m.poisonN * 0.05) * amb) fx.bubbles(m.x, m.y, 0.25, 1);
+      if (m.poisonT > 0 && !rotting(m) && Math.random() < Math.min(0.5, 0.12 + m.poisonN * 0.05) * amb) fx.bubbles(m.x, m.y, 0.25, 1);
       // a guardian smoulders in the colour of its first word
       if (m.champion && m.words.length && Math.random() < 0.25 * amb) fx.mote(m.x + (Math.random() - 0.5) * 0.8, m.y + (Math.random() - 0.5) * 0.8, [WORD_COLOR[m.words[0]], P.white]);
     }
@@ -2273,7 +2293,8 @@ export class Renderer {
       const ride = this.dress.rider(game, sp);
       if (ride) this.stand(ride.d, ride.sp, sx, sy - ride.up);
       else if (!(h.move && h.move.kind === 'roll' && !tumbles && Math.floor(t * 30) % 2 === 0)) {
-        this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, coming > 0 ? 1 - coming * coming * 0.85 : 1, fig, coming);
+        // (WORDMELDING's looks, behind a switch that is off: standing in Scald's steam, the hero is hidden, seen faint through it)
+        this.stand(h.x + h.y, sp, sx, sy, over, overA, 1, (coming > 0 ? 1 - coming * coming * 0.85 : 1) * (MELD3.on ? heroAlphaM3(t) : 1), fig, coming);
         // (THE NEW WORDS, a mock-up behind a switch that is off: a frenzy of three or more shivers the hero in its colour)
         const copies = WORDS3.on ? heroCopies3(t) : null;
         if (copies) for (const dx of copies.dx) this.stand(h.x + h.y - 0.01, silhouette(sp, copies.color), sx + dx, sy, null, 0, 1, copies.alpha);
@@ -2686,7 +2707,7 @@ export class Renderer {
     }
     const wisps: number[] = [];
     for (const z of game.zones) {
-      if (z.kind !== 'storm' || this.skip.has('cloud')) continue;
+      if (z.kind !== 'storm' || this.skip.has('cloud') || ownsZone(z)) continue;
       // Lightning behind: a thundercloud hangs over its patch of ground and flickers
       // (the small patches a shot leaves along its path get a wisp of cloud each, lower down, so a
       // trail of them does not roof the whole room over)
@@ -2750,7 +2771,7 @@ export class Renderer {
       g.globalAlpha = 1;
     }
     for (const z of game.zones) {
-      if (z.kind !== 'venom' || this.skip.has('cloud')) continue;
+      if (z.kind !== 'venom' || this.skip.has('cloud') || ownsZone(z)) continue;
       // Poison behind: puffs of it turn slowly over the slick, low enough to stand in
       const fade = Math.min(1, z.t / 0.25, (z.dur - z.t) * 2);
       const seed = Math.floor(z.x * 7 + z.y * 13);
@@ -2770,7 +2791,7 @@ export class Renderer {
       g.globalAlpha = 1;
     }
     for (const z of game.zones) {
-      if (z.kind !== 'steam' || this.skip.has('cloud')) continue;
+      if (z.kind !== 'steam' || this.skip.has('cloud') || ownsZone(z)) continue;
       // (WORDMELDING, behind MELD) Scald behind: steam billows up off the wet floor, thick enough
       // that what stands in it can't see out
       const fade = Math.min(1, z.t / 0.25, (z.dur - z.t) * 2);
@@ -2793,7 +2814,9 @@ export class Renderer {
     }
     // (THE NEW WORDS, a mock-up behind a switch that is off: what glows over the dark)
     if (WORDS3.on && !this.skip.has('fx')) air3(g, cam, t, game, fx);
+    if (MELD3.on && !this.skip.has('fx')) airM3(g, cam, t, game);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
+    if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     this.drawWordDrops(g, W, H, game, t);
     this.drawBeacon(g, game, t);
     this.drawBars(g, game, t);
@@ -2963,6 +2986,7 @@ export class Renderer {
     for (const z of game.zones) {
       if (this.skip.has('zlight')) break;
       if (z.kind !== 'burn' && z.kind !== 'storm' && z.kind !== 'rune' && z.kind !== 'ice' && z.kind !== 'venom') continue;
+      if (ownsZone(z)) continue;
       const small = z.r < 1.2;
       if (small) {
         let near = false;
@@ -2983,6 +3007,7 @@ export class Renderer {
 
     // (THE NEW WORDS, a mock-up behind a switch that is off)
     if (WORDS3.on) lights3(spot, cam, game, t);
+    if (MELD3.on) lightsM3(spot, cam, game, t);
     // (THE FIRST FIVE FLOORS: what of the bosses' doings lights the dark)
     this.bossFx.lights(spot);
     // a burst of fire or a bolt of lightning lights up the room for a moment

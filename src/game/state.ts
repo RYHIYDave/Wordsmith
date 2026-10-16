@@ -493,6 +493,8 @@ export interface Zone {
   meld?: MeldId;
   /** WORDMELDING: seconds until it may do its twist again (Wildfire's spark). */
   meldT?: number;
+  /** WORDMELDING: the melded word whose look it has, for the pictures only (render/melds3.ts): a patch its twist in front left (Eruption's molten pool, Fumes' cloud), or what one behind left (as `meld`). */
+  look?: MeldId;
 }
 
 /**
@@ -913,7 +915,7 @@ export type GameEvent =
    * 'shock' is the knock of a Power hit on the enemies around its target; 'ruin' is a rune going off.
    * `words`, `n`, `echo` as for a swing.
    */
-  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl'; words?: readonly WordId[]; n?: number; echo?: boolean }
+  | { t: 'burst'; x: number; y: number; r: number; el: Element; style: 'slam' | 'nova' | 'blast' | 'land' | 'warp' | 'shock' | 'ruin' | 'whirl'; words?: readonly WordId[]; n?: number; echo?: boolean; meld?: MeldId }
   /** An ability leaves the hero: where from, which way, the words in front of it and behind it. */
   | { t: 'cast'; x: number; y: number; dx: number; dy: number; kind: SkillKind; el: Element; words: readonly WordId[]; behind: readonly WordId[]; echo: boolean }
   /** A word was set into an ability: `name` is the ability's new name. */
@@ -969,14 +971,18 @@ export type GameEvent =
   | { t: 'volleyEnd'; x: number; y: number; el: Element }
   /** A monster takes its first dose of poison. */
   | { t: 'poisoned'; x: number; y: number }
-  /** `sky`: the bolt comes down from above onto (x1, y1) instead of jumping along the ground. */
-  | { t: 'arc'; x0: number; y0: number; x1: number; y1: number; sky?: boolean }
+  /**
+   * `sky`: the bolt comes down from above onto (x1, y1) instead of jumping along the ground.
+   * `meld` (WORDMELDING, for the looks only: render/melds3.ts): the melded word whose bolt it is (Thunder's one bolt,
+   * Wildfire's, Hailstorm's and Contagion's arcs, the sparks and strikes of what they leave behind).
+   */
+  | { t: 'arc'; x0: number; y0: number; x1: number; y1: number; sky?: boolean; meld?: MeldId }
   /** What a word behind an ability gives the hero: "of Power" stacks might, "of Swiftness" gives haste. */
   | { t: 'buff'; kind: 'might' | 'haste'; x: number; y: number; stacks: number }
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
   | { t: 'echo'; x: number; y: number; dx: number; dy: number; kind: SkillKind; delay: number }
   /** A patch of ground or a rune has just been laid. (`dur`: cracks and wards, its seconds; laid again where one already is, it lasts that long from now.) */
-  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam'; x: number; y: number; r: number; el: Element; dur?: number }
+  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam'; x: number; y: number; r: number; el: Element; dur?: number; meld?: MeldId }
   /**
    * THE NEW WORDS AT WORK (Version 19.3), for their looks (render/words3.ts): a Heavy hit lands
    * (`big`: an area ability's, out to `r`); monster `id` is stunned for `secs` / staggered by a blow
@@ -984,7 +990,13 @@ export type GameEvent =
    * from the way (dx, dy)).
    */
   | { t: 'heavy'; x: number; y: number; r: number; big: boolean }
-  | { t: 'stun'; id: number; x: number; y: number; secs: number }
+  /**
+   * WORDMELDING, for the looks only (render/melds3.ts): Avalanche in front shoves monster `id` from (x, y) to
+   * (x1, y1), and `frozen` if it was stopped short and froze; Avalanche behind, a hit on a chilled one
+   * at (x, y) crushes it harder (x1, y1 the same).
+   */
+  | { t: 'meldFx'; what: 'shove' | 'crush'; id: number; x: number; y: number; x1: number; y1: number; frozen?: boolean }
+  | { t: 'stun'; id: number; x: number; y: number; secs: number; meld?: MeldId }
   | { t: 'stagger'; id: number; x: number; y: number; fromX: number; fromY: number }
   | { t: 'markOn'; id: number; x: number; y: number; secs: number }
   | { t: 'markSpent'; id: number; x: number; y: number; dx: number; dy: number }
