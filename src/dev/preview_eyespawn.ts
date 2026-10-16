@@ -1,8 +1,11 @@
 // THE EYESPAWN, floor 10's medium mob, as mock-ups for the owner (art/eyespawn.ts, behind SPAWN_ON, off).
 // Hashes: `look` (it standing beside the knight, the Drowned and one of the Eye's eggs it hatches from, at the game's
-// size, and close up); `standfilm` (its stand, moving, three times the game's size).
+// size, and close up); `standfilm` (its stand, moving, three times the game's size); `seq:hatch` (his egg landing and
+// hatching, it hauling itself across) and `seq:attack` (its lash, its gaze beam, struck, its death), twice the game's
+// size, from in front and behind.
 
-import { ES_IDLE, ES_STAND, eyespawnFrame } from '../art/eyespawn';
+import { ES_DIE, ES_GAZE, ES_HATCH, ES_IDLE, ES_LASH, ES_PACE, ES_REEL, ES_STAND, ES_WALK, eyespawnFrame } from '../art/eyespawn';
+import { EYE_SPAWN } from '../art/drowned_eye';
 import { DROWNED } from '../art/drowned';
 import { spawnFrame } from '../art/drowned_eye';
 import { spriteOf3 } from '../art/heroes3';
@@ -113,5 +116,95 @@ function standFilm(): void {
   };
 }
 
+
+/** A sprite at `k` times, turned to face the other way. */
+function drawFlip(g: CanvasRenderingContext2D, sp: Sprite, x: number, y: number, k: number): void {
+  g.save();
+  g.translate(Math.round(x), 0);
+  g.scale(-1, 1);
+  g.drawImage(sp.img, Math.round(-sp.ax * 2 * k), Math.round(y - sp.ay * 2 * k), sp.w * 2 * k, sp.h * 2 * k);
+  g.restore();
+}
+/**
+ * ITS MOVES AS THE GAME WOULD PLAY THEM, one after another (hash `seq:<name>`), twice the game's size, from in front
+ * (left) and behind (right): `hatch`, one of his eggs landing, rocking, bursting, and it hatching out of it, standing,
+ * hauling itself across at its pace, standing; `attack`, its lash, its gaze beam, struck, its death and what is left.
+ * From behind, the knight stands before it where its lash reaches, facing it; from in front he would hide it.
+ */
+function seqFilm(): void {
+  const which = HASH.split(':')[1];
+  const parts: [string, number][] = which === 'hatch'
+    ? [['egg', EYE_SPAWN.hatch], ['hatch', ES_HATCH.long], ['stand', 0.4], ['walk', ES_WALK.frames / ES_WALK.fps * 2], ['stand', 0.6]]
+    : [['stand', 0.4], ['attack', ES_LASH.long], ['stand', 0.3], ['gaze', ES_GAZE.long], ['stand', 0.3], ['reel', ES_REEL], ['stand', 0.4], ['dying', ES_DIE.long], ['dead', 0.6]];
+  const fps = 15;
+  const list: [string, number, number][] = [];
+  let T = 0;
+  for (const [mv, long] of parts) {
+    const n = Math.round(long * fps);
+    for (let i = 0; i < n; i++) list.push([mv, i / fps, T + i / fps]);
+    T += long;
+  }
+  const W = PW;
+  const H = 560;
+  const k = 2;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const walkStart = parts.slice(0, parts.findIndex((p) => p[0] === 'walk')).reduce((a, p) => a + p[1], 0);
+  const walkLong = which === 'hatch' ? (ES_WALK.frames / ES_WALK.fps) * 2 : 0;
+  const P3 = 0.8165 * k;
+  const draw = (i: number): void => {
+    const [mv, t, at] = list[Math.min(i, list.length - 1)];
+    paving(g, 0, 0, W, H);
+    for (const [x0, y0, view] of [[which === 'hatch' ? 170 : 230, which === 'hatch' ? 360 : 400, 'front'], [which === 'hatch' ? 620 : 700, 470, 'back']] as [number, number, 'front' | 'back'][]) {
+      const dn = view === 'front' ? 0.5 : -0.5;
+      const went = which === 'hatch' ? Math.max(0, Math.min(at, walkStart + walkLong) - walkStart) * ES_PACE * 39.19 : 0;
+      const x = x0 + went * P3;
+      const y = y0 + went * P3 * dn;
+      if (which === 'attack' && view === 'back') {
+        const kx = x0 + 50 * P3;
+        const ky = y0 - 50 * P3 * 0.5;
+        shadow(g, kx, ky, 28);
+        drawFlip(g, spriteOf3(MOVES3.rear, 0, 'front'), kx, ky, k);
+      }
+      if (mv === 'egg') {
+        drawBig(g, spawnFrame(t + 0, view, 1), x, y, k);
+        continue;
+      }
+      if (mv !== 'dying' && mv !== 'dead') shadow(g, x, y, 52);
+      const sp = mv === 'dead' ? eyespawnFrame('dying', ES_DIE.long, view) : eyespawnFrame(mv, t, view);
+      drawBig(g, sp, x, y, k);
+      // (the burst egg's shell under it as it hatches)
+      if (mv === 'hatch' && t < 0.45) drawBig(g, spawnFrame(EYE_SPAWN.hatch + t, view, 1), x, y, k);
+    }
+    const say: Record<string, string> = {
+      egg: t < EYE_SPAWN.hatch - 0.5 ? 'his egg lands, rocking' : 'it shakes and bulges (the warning)',
+      hatch: t < 0.75 ? 'it hatches, unfurling' : 'its eye snaps open',
+      walk: 'it hauls itself along',
+      attack: t < ES_LASH.warn[1] ? 'its lash: coiled back (the warning)' : t < ES_LASH.hit + 0.1 ? 'IT LASHES' : '',
+      gaze: t < ES_GAZE.beam[0] ? 'its gaze: its eye narrows, the line flickers (the warning)' : t < ES_GAZE.beam[1] ? 'ITS BEAM BURNS' : '',
+      reel: 'struck',
+      dying: t < ES_DIE.burst ? 'it swells' : 'its eye bursts',
+      dead: '',
+      stand: '',
+    };
+    label(g, 'The Eyespawn (twice the game\'s size)', 8, 6);
+    if (say[mv]) label(g, say[mv], W - say[mv].length * 12 - 16, 34);
+    label(g, `${at.toFixed(2)} s`, 8, H - 28);
+  };
+  draw(0);
+  done(cvs);
+  const win = window as unknown as { __frames: number; __tickMs: number; __frame: (i: number) => string };
+  win.__frames = list.length;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+}
+
 if (HASH.startsWith('look')) look();
+else if (HASH.startsWith('seq:')) seqFilm();
 else if (HASH === 'standfilm') standFilm();
