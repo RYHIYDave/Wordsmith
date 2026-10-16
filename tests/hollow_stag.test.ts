@@ -1,5 +1,5 @@
-// FLOOR 9'S BOSS, THE HOLLOW STAG (src/art/hollow_stag.ts; a mock-up behind STAG_ON, off; nothing of the game
-// imports it), held to his art rulebook before he sees it, as a boss (How art is made 7: the whole review, in every
+// FLOOR 9'S BOSS, THE HOLLOW STAG (src/art/hollow_stag.ts; in the game through art/act1_figs/stag.ts and what its
+// roots draw, render/act1_fx/stag.ts, its switch STAG_ON on with the descent), held to his art rulebook before he sees it, as a boss (How art is made 7: the whole review, in every
 // frame, from in front and from behind). Its four legs and its antlers are not on the heroes' bones, so the review
 // (art/boss_checks.ts, made for figures on them) is written out here for it, rule by rule:
 //   - crisp pixels; its pink edge while it lives; nothing cyan; every light the enemy's fire; nothing cut off;
@@ -22,6 +22,8 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { FIG } from '../src/art/act1_figs/stag';
+import { useAct1Figs } from '../src/art/bestiary';
 import { ROOT_CANVAS, ROOT_SNAKE, ROOT_STRETCH, STAG_BOUNDS, STAG_BELLOW, STAG_CHARGE, STAG_DIE, STAG_FEET, STAG_GORE, STAG_HABITS, STAG_ON, STAG_PACE, STAG_REEL, STAG_ROOTS, STAG_STAND, STAG_WALK, makeStagArt, rootSnakePainted, stagChipCount, stagFeet, stagLid, stagLong, stagPainted, stagSolids } from '../src/art/hollow_stag';
 import { TILE3 } from '../src/art/new_mobs3';
 import { RIM_ALPHA } from '../src/art/kit';
@@ -121,12 +123,19 @@ function segGap(p1: number[], q1: number[], p2: number[], q2: number[]): number 
   return best;
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(STAG_ON.on, false);
-  for (const f of fs.readdirSync('src', { recursive: true })) {
+test('it is in the game through art/act1_figs/stag.ts (and its roots through render/act1_fx/stag.ts) alone, and its switch goes on with the descent', () => {
+  const users: string[] = [];
+  for (const f0 of fs.readdirSync('src', { recursive: true })) {
+    const f = f0.split('\\').join('/');
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('hollow_stag.ts')) continue;
-    assert.ok(!/from ['"][^'"]*\/hollow_stag['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Stag`);
+    if (/from ['"][^'"]*\/hollow_stag['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
+  assert.equal(users.sort().join(', '), 'art/act1_figs/stag.ts, render/act1_fx/stag.ts', 'only its figure and what its roots draw import it');
+  assert.ok(FIG !== null && (FIG.switches ?? []).includes(STAG_ON), 'its figure holds its switch');
+  useAct1Figs(true);
+  assert.equal(STAG_ON.on, true, 'on with the descent');
+  useAct1Figs(false);
+  assert.equal(STAG_ON.on, false, 'and off without it');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge); its pink edge round it while it lives', () => {

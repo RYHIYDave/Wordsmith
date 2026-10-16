@@ -36,6 +36,8 @@ import { hookHigh } from '../src/render/bossfx';
 import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
+import { ACT1_FLOORS } from '../src/game/act1';
+import { act1Rules } from '../src/game/act1_rules/index';
 import { beside, handOf } from '../src/game/facing';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -145,7 +147,9 @@ const firstHurt = (s: Seen): number => (s.hurts.length ? s.hurts[0].t - s.began 
 
 test('1. each floor has its own boss; past the fifth, and with the switch off, the Warden', () => {
   assert.equal(BOSSES5.on, true, 'on, on this branch (not live until he has seen it)');
-  assert.deepEqual([1, 2, 3, 4, 5, 6, 9, 10].map(bossKind), ['warden', 'headsman', 'chained', 'amalgam', 'fleshmancer', 'warden', 'warden', 'warden']);
+  assert.deepEqual([1, 2, 3, 4, 5].map(bossKind), ['warden', 'headsman', 'chained', 'amalgam', 'fleshmancer']);
+  // (ACT 1, THE DESCENT: floors 6 to 10 each have their own boss once his rules are built, the Warden until then: game/act1_rules/)
+  for (const d of [6, 7, 8, 9, 10]) assert.equal(bossKind(d), act1Rules(ACT1_FLOORS[d].boss) ? ACT1_FLOORS[d].boss : 'warden', `floor ${d}'s boss`);
   const names: Record<number, string> = { 2: 'Headsman', 3: 'Chained One', 4: 'Ossuary Amalgamation', 5: 'Fleshmancer' };
   for (const depth of [2, 3, 4, 5]) {
     for (const seed of [3, 17]) {
