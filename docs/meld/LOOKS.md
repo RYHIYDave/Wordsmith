@@ -87,6 +87,8 @@ It does not go to the main chat until he has seen the pictures and said yes.
   game's own clock (the game stands still while each picture is taken):
   `node tools/build_to.mjs dist/meld_looks.html`, then
   `WORD=eruption node tools/playtest.mjs --file dist/meld_looks.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/meld_looks.mjs --out shots/ml/eruption/eruption`
+- The full unit suite at 9aaa2f5: 1268 of 1268 (tests/melds.test.ts 28); tsc clean. Not run: the
+  full regression; the published page's playtests; a real phone.
 - tools/meld_films.py makes the films for his phone (MP4, cut round the hero, the word's name and
   what it does over them); tools/meld_runes.py the sheet of rune stones. Kept out of the
   repository, as all pictures are.
