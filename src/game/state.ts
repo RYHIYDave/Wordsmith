@@ -10,6 +10,7 @@ import type { Attr, ClassId, Element, EquipSlot, Floor, Item, MeldId, MonsterKin
 import type { Ways } from './ways';
 import type { Dress } from './first5';
 import type { Land } from './act1_layout';
+import type { HoldState } from './act1_holds';
 import type { Act1Dress } from './act1_dress';
 
 /** Everything worked out from class, level, attributes and gear. Rebuilt whenever one of those changes. */
@@ -915,6 +916,8 @@ export interface Level {
    */
   land?: Land;
   act1?: Act1Dress;
+  /** ACT 1: the cult's strongholds on it, as they stand now (game/act1_holds.ts), each as Land.holds has it. */
+  holds?: HoldState[];
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */
@@ -1052,6 +1055,8 @@ export type GameEvent =
   | { t: 'door'; x: number; y: number; kind: 'open' | 'fall' | 'rise' }
   | { t: 'shake'; amount: number }
   | { t: 'station'; kind: Station }
+  /** ACT 1: the hero uses a stronghold's altar (game/act1_holds.ts): the interface opens it beside the inventory. */
+  | { t: 'altar'; n: number }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */

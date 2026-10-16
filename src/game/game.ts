@@ -23,6 +23,10 @@ import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, bossKind, gaitOf } from './bosses';
 import { ACT1 } from './act1';
 import { act1Rules } from './act1_rules/index';
+import { blobDist } from './act1_layout';
+import { HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE } from './act1_holds';
+import { act1Ready } from './act1_mobs';
+import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
@@ -47,7 +51,7 @@ const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 const RISEN_PACK = -7;
 
 /** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
-type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up';
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -271,6 +275,10 @@ export class Game {
   wayDepth = 0;
   /** (BOSS_INTRO) how much longer the boss stands saying his line */
   introT = 0;
+  /** (ACT 1) the stronghold whose door he is going through (game/act1_holds.ts), or -1. */
+  holdGoing = -1;
+  /** (BOSS_INTRO, ACT 1) out on the open ground there is no gate to fall behind the hero: whether he has come into the boss's ground on this level yet (his line said then). */
+  bossMet = false;
   /** (BOSS_INTRO) when a blow at a waiting boss was last told of ("Not yet") */
   private waitTold = -1;
   /** (LEECH.cap) when the second Leech is counted in began, and what it has given back in it */
@@ -956,6 +964,10 @@ export class Game {
   }
 
   private clearLevel(): void {
+    this.bossMet = false;
+    // (ACT 1: words laid on a stronghold's altar and not burned go back to the hero)
+    for (const q of this.level?.holds ?? []) if (!q.open) for (const w of q.words.splice(0)) this.hero.words[w] = (this.hero.words[w] ?? 0) + 1;
+    this.holdGoing = -1;
     // (a word the wordsmith was about to give is given now, not lost with the level)
     if (this.ringWord) this.giveRingWord();
     this.monsters = [];
@@ -1129,6 +1141,8 @@ export class Game {
     }
     this.flow = new Uint16Array(f.w * f.h);
     this.spawnMonsters(seed);
+    // (ACT 1: the strongholds, and their guards before their doors)
+    this.holdsMade(seed);
     if (this.depth === 1 && this.cleared === 0) {
       // (THE WAYS: the first floor may be come back to before it is cleared, through its gate from
       // town; the fallen wordsmith, once searched, is laid there searched: nothing more comes of him)
@@ -1486,6 +1500,8 @@ export class Game {
     if (TALENTS.on) this.updateTalents(dt, walked);
     this.updateVision(dt);
     this.updateDoors(dt);
+    this.meetOutdoorBoss();
+    if (this.level.holds) this.updateHolds();
     // (THE WAYS: and where a way out of it has been taken, the rest is the next level's, from its next step)
     if (this.level.ways && this.updateWays(dt)) return;
     this.updateHazards(dt);
@@ -1572,6 +1588,12 @@ export class Game {
       h.invuln = Math.max(h.invuln, SHAFT.up + 1);
       return false;
     }
+    // ACT 1: THE WAY ON, once awake: walking into its light takes him on (game/ways.ts, Ways.onward).
+    const on = W.onward;
+    if (on && on.awake && Math.hypot(on.x - h.x, on.y - h.y) < WAY_USE) {
+      this.leave('on');
+      return false;
+    }
     // THE WAYPOINT wakes the first time he comes near it (the town's is awake while there is a floor to warp back to).
     if (W.way && L.town) W.way.awake = this.wayDepth >= 2;
     else if (W.way && !W.way.awake && Math.hypot(W.way.x - h.x, W.way.y - h.y) < WAY_WAKE) {
@@ -1636,14 +1658,37 @@ export class Game {
   /** THE WAYS: what lies at the end of the way he has taken. */
   private takeWay(to: WayTo): void {
     this.leaving = null;
+    if (to === 'holdIn' || to === 'holdOut') {
+      this.throughHoldDoor(to === 'holdIn');
+      return;
+    }
     if (to === 'up') {
       // (THE FIRST FIVE FLOORS: up the mine shaft from the fifth floor, out to town: the Crypt cleared)
       this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
       this.cleared++;
       const from = this.depth;
+      // (ACT 1, THE DESCENT: the Prison cleared, the town's waypoint takes him on to the first floor of the descent)
+      if (ACT1.on && from === 5) this.wayDepth = Math.max(this.wayDepth, 6);
       this.enterTown();
       this.cameT = 0;
       this.msg(FLOOR_NAMES.on ? `${floorTitle(from).level} cleared` : `Dungeon ${from} cleared`, MSG.good);
+      return;
+    }
+    if (to === 'on') {
+      // (ACT 1, THE DESCENT: on down the mountain to the next floor; from the tenth, the Fen, home to town: the siege broken)
+      this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
+      this.cleared++;
+      if (this.depth >= 10) {
+        const from = this.depth;
+        this.enterTown();
+        this.cameT = 0;
+        this.sfx('portal');
+        this.msg(`${floorTitle(from).level} cleared. The siege is broken.`, MSG.good);
+        return;
+      }
+      this.depth++;
+      this.enterDungeon();
+      this.cameT = 0;
       return;
     }
     // (coming into a floor sounds as it always has: `enterDungeon`; coming into town, as a portal home)
@@ -1707,7 +1752,7 @@ export class Game {
   /** THE WAYS: how dark the screen is, 0 to 1: darkening as he goes down a stairwell or through a gate, lightening as he comes into the next level. (A warp needs none: its column of light hides him.) */
   curtain(): number {
     const l = this.leaving;
-    if (l && (l.to === 'down' || l.to === 'gateIn' || l.to === 'gateOut')) return Math.min(1, l.t / CURTAIN_SECS);
+    if (l && (l.to === 'down' || l.to === 'on' || l.to === 'holdIn' || l.to === 'holdOut' || l.to === 'gateIn' || l.to === 'gateOut')) return Math.min(1, l.t / CURTAIN_SECS);
     // (up the shaft: the cage goes up into the dark, and over the ride's last moments the screen darkens)
     if (l && l.to === 'up') return Math.max(0, Math.min(1, (l.t - (SHAFT.up - CURTAIN_SECS)) / CURTAIN_SECS));
     return Math.max(0, 1 - this.cameT / CURTAIN_SECS);
@@ -2041,11 +2086,207 @@ export class Game {
   bossWaits(m: Monster): boolean {
     if (!BOSS_INTRO.on || !m.boss) return false;
     if (this.introT > 0) return true;
+    // (ACT 1: out on the open ground, until the hero has come into his ground)
+    if (this.level.land) return !this.bossMet;
     return this.level.doors.some((d) => d.spot.kind === 'bossgate' && d.want === 1);
+  }
+
+  /**
+   * (BOSS_INTRO, ACT 1: game/act1_layout.ts) OUT ON THE OPEN GROUND THE BOSS WAITS for the hero to come into
+   * his ground (its area: well inside it, or within a few tiles of him), and then says his line as a boss
+   * whose gate has fallen does; he is woken by it.
+   */
+  private meetOutdoorBoss(): void {
+    const L = this.level;
+    const b = this.boss;
+    if (this.bossMet || !L.land || !b || b.dead) return;
+    const h = this.hero;
+    const area = L.land.areas.find((a) => a.role === 'boss');
+    const inside = area ? blobDist(area.blob, h.x, h.y) < 0.8 : false;
+    if (!inside && Math.hypot(b.x - h.x, b.y - h.y) > 6) return;
+    this.bossMet = true;
+    if (b.state === 'sleep') this.wakeUp(b);
+    if (BOSS_INTRO.on) this.bossIntro(b);
+  }
+
+  // ===========================================================================================
+  // ACT 1: THE CULT'S STRONGHOLDS (game/act1_holds.ts)
+
+  /** The level's strongholds as they stand at first, and their two guards each before its door. */
+  private holdsMade(seed: number): void {
+    const L = this.level;
+    const land = L.land;
+    if (!land || !land.holds.length) return;
+    L.holds = land.holds.map((q) => ({ words: [], open: false, entered: false, won: false, pack: HOLD_PACK_ID(q.n) }));
+    const rng = new RNG((seed ^ 0x51ed270b) >>> 0);
+    const lot = new RNG((seed ^ 0x1b873593) >>> 0);
+    for (const q of land.holds) {
+      // (one of the two always carries a word: the word the door asks for can be won at its foot)
+      const carrier = rng.int(0, 1);
+      q.guards.forEach((at, k) => {
+        const kind = HOLD_GUARDS[k % HOLD_GUARDS.length];
+        const words = this.bareDungeon() ? [] : this.drawWords(rng, this.depth >= 6 ? 2 : 1);
+        const m = this.spawn(kind, at.x, at.y, HOLD_GUARD_ID(q.n, k), 1, false, rng, null, { rarity: 'leader', words });
+        if (k === carrier && words.length && this.wordsFall()) m.carries = [lot.pick(words)];
+        // (they stand facing the way up to the door)
+        m.fx = Math.SQRT1_2;
+        m.fy = Math.SQRT1_2;
+      });
+    }
+  }
+
+  /** The stronghold whose altar the hero stands at, its door shut; -1: none. */
+  altarNear(): number {
+    const L = this.level;
+    const land = L.land;
+    if (!land || !L.holds || L.town) return -1;
+    const h = this.hero;
+    for (const q of land.holds) {
+      const st = L.holds[q.n];
+      if (st && !st.open && Math.hypot(q.altar.x - h.x, q.altar.y - h.y) < HOLD_TUNE.near) return q.n;
+    }
+    return -1;
+  }
+
+  /** Why `word` may not be laid on stronghold `n`'s altar, or null. */
+  altarProblem(n: number, word: WordId): string | null {
+    const st = this.level.holds?.[n];
+    if (!st || st.open) return 'The door is open';
+    if (!(this.hero.words[word] > 0)) return 'No spare word';
+    if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks only';
+    if (st.words.length >= HOLD_TUNE.most) return `At most ${HOLD_TUNE.most} words`;
+    if (st.words.includes(word)) return 'Already on the altar';
+    if (WORDS[word].element && st.words.some((w) => WORDS[w].element)) return 'One element per stronghold';
+    return null;
+  }
+
+  /** Lay a spare word on stronghold `n`'s altar (it is burned when its door is opened; until then it may be taken back). */
+  altarWord(n: number, word: WordId): string | null {
+    const why = this.altarProblem(n, word);
+    if (why) return why;
+    this.hero.words[word]--;
+    this.level.holds![n].words.push(word);
+    this.sfx('word');
+    return null;
+  }
+
+  /** Take word `i` back off stronghold `n`'s altar. */
+  unaltarWord(n: number, i: number): void {
+    const st = this.level.holds?.[n];
+    const w = st?.words[i];
+    if (!st || !w || st.open) return;
+    st.words.splice(i, 1);
+    this.hero.words[w] = (this.hero.words[w] ?? 0) + 1;
+    this.sfx('click');
+  }
+
+  /** OPEN THE DOOR of stronghold `n`: the words on its altar are burned, its seal breaks, and its door stands open. False: none was given. */
+  openHold(n: number): boolean {
+    const L = this.level;
+    const st = L.holds?.[n];
+    const q = L.land?.holds.find((o) => o.n === n);
+    if (!st || !q || st.open || st.words.length === 0) return false;
+    st.open = true;
+    for (const p of L.props) if (p.kind === 'piece' && p.name === HOLD.gate(L.act1?.floor ?? 6) && p.tx === q.gx && p.ty === q.gy) p.state = 1;
+    this.emit({ t: 'burst', x: q.gx, y: q.gy + 0.2, r: 1.6, el: 'fire', style: 'shock' });
+    this.emit({ t: 'shake', amount: 4 });
+    this.sfx('power', 0.9);
+    this.msg(`The altar takes ${st.words.length === 1 ? 'the word' : `${st.words.length} words`}. The door's seal breaks.`, MSG.word);
+    return true;
+  }
+
+  /** A step of the strongholds: through an open door into the hall, out of the hall by its threshold; its last fight won. */
+  private updateHolds(): void {
+    const L = this.level;
+    const land = L.land;
+    if (!land || !L.holds || this.leaving) return;
+    const h = this.hero;
+    for (const q of land.holds) {
+      const st = L.holds[q.n];
+      if (!st) continue;
+      // (into the door: the two tiles of its doorway)
+      if (st.open && Math.floor(h.y) === q.gy && (Math.floor(h.x) === q.gx - 1 || Math.floor(h.x) === q.gx) && h.y < q.gy + 0.6) {
+        this.holdGoing = q.n;
+        this.leave('holdIn');
+        this.sfx('door', 0.6);
+        return;
+      }
+      // (out by the hall's threshold, the middle of its near side)
+      const r = q.inside;
+      if (h.x >= r.x && h.x < r.x + r.w && h.y >= r.y && h.y < r.y + r.h && h.y > r.y + r.h - HOLD_TUNE.out && Math.abs(h.x - (r.x + r.w / 2)) < 1.3) {
+        this.holdGoing = q.n;
+        this.leave('holdOut');
+        this.sfx('door', 0.5);
+        return;
+      }
+      // (its last fight won: the reward)
+      if (st.entered && !st.won && !this.monsters.some((m) => !m.dead && m.packId === st.pack)) {
+        st.won = true;
+        const n = st.words.length;
+        const at = q.fight;
+        if (MELD.on && HOLD_TUNE.dust[n] > 0) this.addDrop('dust', at.x, at.y, HOLD_TUNE.dust[n], null, null);
+        for (let i = 0; i < HOLD_TUNE.items[n]; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i === 0 ? 2 : 1), null);
+        this.addDrop('gold', at.x, at.y, this.rng.int(15, 30) * Math.max(1, this.depth) * n, null, null);
+        this.sfx('rare');
+        this.msg('The stronghold falls.', MSG.good);
+      }
+    }
+  }
+
+  /** Through a stronghold's door (the screen dark): into its hall, its last fight met the first time; or out of it, before its door. */
+  private throughHoldDoor(inward: boolean): void {
+    const L = this.level;
+    const q = L.land?.holds.find((o) => o.n === this.holdGoing);
+    const st = L.holds?.[this.holdGoing];
+    this.holdGoing = -1;
+    if (!q || !st) return;
+    const h = this.hero;
+    this.cameT = 0;
+    if (inward) {
+      h.x = q.entry.x;
+      h.y = q.entry.y;
+      h.fx = -Math.SQRT1_2;
+      h.fy = -Math.SQRT1_2;
+      if (!st.entered) {
+        st.entered = true;
+        this.holdFight(q.n);
+      }
+    } else {
+      h.x = q.gx - 1.5;
+      h.y = q.gy + 1.5;
+      h.fx = Math.SQRT1_2;
+      h.fy = Math.SQRT1_2;
+    }
+    // (what is beyond is seen at once)
+    this.visionT = 0;
+  }
+
+  /** A stronghold's last room: a yellow pack of the floor's own medium kind round its obelisk, every one with the words burned at its door, harder for each past the first. */
+  private holdFight(n: number): void {
+    const L = this.level;
+    const q = L.land?.holds.find((o) => o.n === n);
+    const st = L.holds?.[n];
+    if (!q || !st) return;
+    const own = HOLD_PACK[L.act1?.floor ?? 6] ?? 'brute';
+    const kind: MonsterKind = act1Ready(own) ? own : 'brute';
+    const rng = new RNG((Math.imul(this.seed, 31) + n * 7919 + this.depth) >>> 0);
+    const f = L.floor;
+    const spots = scatter(L.walk, f.w, f.h, q.fight.x, q.fight.y + 1.2, HOLD_TUNE.pack, rng);
+    const lead = this.bareDungeon() ? [] : this.drawWords(rng, 2).filter((w) => !st.words.includes(w));
+    const more = 1 + HOLD_TUNE.life * Math.max(0, st.words.length - 1);
+    spots.forEach((s, i) => {
+      const m = this.spawn(i === 0 ? this.leaderOf(kind) : kind, s.x, s.y, st.pack, i === 0 ? 1 : 0, false, rng, null, { rarity: i === 0 ? 'leader' : 'minion', words: lead });
+      // (the words burned at the door are every one's, whole, as a word burned into a dungeon at the gate is)
+      for (const w of st.words) if (!m.words.includes(w)) m.words.push(w);
+      if (m.half) m.half = m.half.filter((w) => !st.words.includes(w));
+      m.life = m.maxLife = Math.round(m.maxLife * more);
+      m.state = 'chase';
+    });
   }
 
   /** (BOSS_INTRO) For tests and playtests that strike the boss down by hand: his wait over, as if the hero had walked into his hall and heard him out (his gate down, his line said). */
   bossReady(): void {
+    this.bossMet = true;
     for (const d of this.level.doors) if (d.spot.kind === 'bossgate' && d.want === 1 && this.boss && !this.boss.dead) this.dropGate(d);
     this.introT = 0;
   }
@@ -4254,7 +4495,13 @@ export class Game {
       // (THE WAYS: the stairwell down opens in his hall, clear of where he fell; where the floor has none, the portal home as before)
       const W = this.level.ways;
       const st = W ? stairFor(W.stairs, m.x, m.y, this.hero.x, this.hero.y) : null;
-      if (W && W.shaft) {
+      if (W && W.onward) {
+        // (ACT 1, THE DESCENT: the way on wakes at the far end of his ground: down the mountain, or from the Fen, home)
+        W.onward.awake = true;
+        W.onward.warpAt = this.time;
+        this.sfx('power', 0.8);
+        this.msg(this.depth >= 10 ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
+      } else if (W && W.shaft) {
         // (THE FIRST FIVE FLOORS: on the fifth floor the cage comes crashing down the mine shaft at the back of his hall)
         W.shaft.state = 'coming';
         W.shaft.t = 0;
@@ -6218,6 +6465,12 @@ export class Game {
           return;
         }
       }
+      // (ACT 1: at a stronghold's altar, while its door is shut, the use button opens it: the interface's)
+      const hn = this.altarNear();
+      if (hn >= 0) {
+        this.emit({ t: 'altar', n: hn });
+        return;
+      }
       if (this.level.town) {
         // In town the rules only say which service was asked for; the interface opens its panel.
         // (HAND_IN: beside the one a quest item is for, using him gives it, in place of his panel)
@@ -6301,10 +6554,12 @@ export class Game {
 
   /** What pressing "interact" would do right now, or null if nothing is in reach. */
   interactHint(): string | null {
+    // (ACT 1: at a stronghold's altar)
+    if (this.altarNear() >= 0) return 'Altar: give words to open the door';
     // (THE WAYS: on an awake waypoint)
     if (this.wayHere()) {
       if (!this.level.town) return 'Waypoint: to town';
-      if (this.wayDepth >= 2) return `Waypoint: to dungeon ${this.wayDepth}`;
+      if (this.wayDepth >= 2) return this.wayDepth >= 6 && FLOOR_NAMES.on ? `Waypoint: to ${floorTitle(this.wayDepth).level}` : `Waypoint: to dungeon ${this.wayDepth}`;
     }
     if (this.level.town) {
       const st = this.stationNear();

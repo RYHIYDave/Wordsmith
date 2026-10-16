@@ -11,7 +11,7 @@
 //     that nothing is cut off), its few big ones, and its small things that lie about (walked over);
 //   AGAINST ITS FAR CLIFFS' FEET, what stands against a face (a ladder, the great face half carved);
 //   A CAMP OF THE CULT in one of its areas (the set's tents, fires, crates, stakes);
-//   AT EACH STRONGHOLD (game/act1_holds.ts has its rules): its gate in the yard's back wall, the altar of the
+//   AT EACH STRONGHOLD (game/act1_holds.ts and Game's strongholds have its rules): its gate in the yard's back wall, the altar of the
 //     words before it, the cult's braziers and banners about its court;
 //   IN EACH STRONGHOLD'S HALL: the cult's ring of magic on the floor and the half-cut obelisk in it, the
 //     cult's braziers along its walls;
@@ -223,6 +223,9 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     // (the gate stands on the court's back line, over the two tiles of its door: what the rules know of it is game/act1_holds.ts)
     put(HOLD.gate(n), q.gx, q.gy, false, 0, { x: q.gx, y: q.gy });
     put(HOLD.altar, q.gx, q.gy + 1, true, 0, { x: q.altar.x, y: q.altar.y });
+    // (the altar stands over the corner of two tiles: both are its)
+    taken[(q.gy + 1) * W + q.gx - 1] = 1;
+    L.walk[(q.gy + 1) * W + q.gx - 1] = 0;
     put(HOLD.brazier, q.gx - 3, q.gy + 1, true, 1, { x: q.gx - 2.3, y: q.gy + 1.1 });
     put(HOLD.brazier, q.gx + 2, q.gy + 1, true, 3, { x: q.gx + 2.3, y: q.gy + 1.1 });
     put(HOLD.banner, q.gx - 3, q.gy + 2, true, 0, { x: q.gx - 2.6, y: q.gy + 2.7 });
@@ -237,6 +240,9 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
     put(HOLD.brazier, r.x + r.w - 2, r.y + 1, true, 2);
     put(HOLD.brazier, r.x + 1, r.y + r.h - 3, true, 1);
     put(HOLD.brazier, r.x + r.w - 2, r.y + r.h - 3, true, 3);
+    // (the way out: the threshold at the middle of its near side, the court's worn flagstones: Game's strongholds)
+    const mid = Math.floor(r.x + r.w / 2);
+    for (const tx of [mid - 1, mid]) layTile((r.y + r.h - 1) * W + tx, HOLD.court, 2);
   }
 
   // ---- FLOOR TILES: the Quarry's rails, the Pinewood's footbridges, the Fen's boardwalks, the floor's own here and there

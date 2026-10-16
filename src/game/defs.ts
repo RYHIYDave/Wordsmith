@@ -863,6 +863,13 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   chained: ['HRRRNNGH!', 'Mmmph... FREE...', 'GRRRAAAH!'],
   amalgam: ['Join us.', 'More bones. More.', 'We are many. Be one of us.'],
   fleshmancer: ['Your bones will serve.', 'Fall, and rise for me.', 'The cult thanks you for the flesh.'],
+  // (ACT 1, THE DESCENT: the Unfinished, the quarry's half-cut giant; the Carrion Queen, a bird, who can only
+  // screech; the Cantor, whose voice is his weapon; the Hollow Stag, a beast, who bellows; the Drowned Eye)
+  unfinished: ['The chisel never finished me.', 'Stone does not tire.', 'Lie still. Be carved.'],
+  queen: ['SKRAAAAA!', 'KRAAA-AAK!', 'SKREEEEE!'],
+  cantor: ['Hear the hymn.', 'Your echo is mine now.', 'Sing with me. Scream with me.'],
+  stag: ['HRRAAAWWNN!', 'BRRRAAAWN!', 'HAAARRRNN!'],
+  eye: ['You are seen.', 'Drown.', 'The siege is my dream. Sleep in it.'],
 };
 
 /**
@@ -1075,7 +1082,7 @@ export const QUEST_ITEM = { name: 'Master Rune-stone', the: 'the MASTER RUNE-STO
  * wordsmith when the hero uses him (the use button beside him, his prompt, or a tap on him), and
  * his prompt says so (`prompt`); walked past, nothing happens. Off until his yes to pictures of it.
  */
-export const HAND_IN = { on: false, prompt: 'Give the rune-stone' };
+export const HAND_IN = { on: true, prompt: 'Give the rune-stone' };
 /**
  * The first dungeon, gentler, with the first levels on: about half the monsters of a first
  * dungeon (its budget, against `monsterBudget(1)`'s 120), in packs of two to four, one room of

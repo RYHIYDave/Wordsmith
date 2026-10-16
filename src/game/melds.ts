@@ -22,7 +22,7 @@ import { ALL_WORD_IDS, MELD_IDS, MELD_OF, WORD_IDS } from './types';
 import type { Meta } from './state';
 import type { MeldId, WordId } from './types';
 
-export const MELD = { on: false };
+export const MELD = { on: true };
 
 /** HAND_IN (game/defs.ts): the wordsmith's prompt beside him with the Meldstone. */
 export const MELD_HAND_IN = 'Give the Meldstone';

@@ -32,6 +32,7 @@ import type { Line, Panels } from './panels';
 import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { drawWordTile } from './words';
+import { HOLD_TUNE } from '../game/act1_holds';
 
 /** The air between a half's edge and its own things. */
 export const SIDE_M = 6;
@@ -451,6 +452,119 @@ export function gateSide(ui: Ui, game: Game, art: Art, inv: InvUi, r: Rect, ente
         g.drawImage(boss.img, Math.round(bx - boss.ax), Math.round(feet - boss.ay), boss.w, boss.h);
       }
       ui.drawButton(enterR.x, enterR.y, enterR.w, enterR.h, label, { primary: true, lit: true });
+    },
+  };
+}
+
+// =============================================================================================
+// ACT 1: a stronghold's altar of the words (game/act1_holds.ts), at its door, beside the inventory as the
+// town's gate was: its three hollows (his yes to its look, 13 Oct: "three empty hollows shaped like rune
+// stones, one for each word given... the same dark slot with a cyan rim as an empty word slot"), and the way in.
+
+export interface AltarOut {
+  open: boolean;
+}
+
+/** The altar's place for a word: its next free hollow. */
+const ALTAR = 'altar';
+
+/**
+ * The altar's half: stronghold `n`'s three hollows and OPEN THE DOOR (pressed, or `openKey`: the door opens
+ * with what lies in them, burned). `out.open` is set when it is to open.
+ */
+export function altarSide(ui: Ui, game: Game, art: Art, inv: InvUi, r: Rect, n: number, openKey: boolean, out: AltarOut): Side {
+  const g = ui.g;
+  const T = ui.touch;
+  const x0 = r.x + SIDE_M;
+  const bw = r.w - 2 * SIDE_M;
+  const bodyY = r.y + 2 + sideHead(ui) + 2;
+  const intro = wrapText('The door opens only to words given to it. Lay up to three spare words in the altar: they are burned. Each past the first makes the cult within harder, and its runedust richer.', bw, 'small');
+  const capY = bodyY + intro.length * 6 + 4;
+  const y0 = capY + 8;
+  const rowH = CELL + 6;
+  const laid = game.level.holds?.[n]?.words ?? [];
+  const socks = Array.from({ length: 3 }, (_, i) => ({ i, r: { x: x0, y: y0 + i * rowH, w: CELL, h: CELL }, word: (laid[i] ?? null) as WordId | null }));
+  for (const s of socks) ui.mark(`altar:${s.i}`, s.r.x, s.r.y, s.r.w, s.r.h);
+  const rowsEnd = y0 + 3 * rowH - 6;
+  const bh = T ? 20 : 15;
+  const label = 'OPEN THE DOOR';
+  const openW = Math.min(bw, textWidth(label) + 24);
+  const body = sideBody(r, ui.w, ui.h);
+  const openR: Rect = { x: r.x + r.w - SIDE_M - openW, y: body.y + body.h - bh - 6, w: openW, h: bh };
+  const next = socks.find((s) => !s.word);
+  const lower = (s: string): string => `${s.charAt(0).toLowerCase()}${s.slice(1)}`;
+  const can = laid.length > 0;
+  return {
+    primary: true,
+
+    press(say): void {
+      if (ui.pressIn(openR.x, openR.y, openR.w, openR.h) || openKey) {
+        if (can) out.open = true;
+        else say('Give the altar a word first');
+      }
+      for (const s of socks) {
+        const row: Rect = { x: r.x, y: s.r.y - 3, w: r.w, h: rowH };
+        const quick = ui.pressIn(row.x, row.y, row.w, row.h, 2);
+        if (!quick && !ui.pressIn(row.x, row.y, row.w, row.h)) continue;
+        if (s.word) {
+          game.unaltarWord(n, s.i);
+          putDown(inv);
+        } else if (inv.word && !quick) {
+          const why = game.altarWord(n, inv.word);
+          if (why) say(why);
+          else putDown(inv);
+        } else say(T ? 'Tap one of your words first, or drag it here' : 'Pick one of your words first, or drag it here');
+      }
+    },
+
+    wordAt: (x, y) => (inside(r, x, y) ? ALTAR : null),
+    wordRect: () => (next ? next.r : null),
+    wordProblem: (w) => game.altarProblem(n, w),
+    wordDrop: (w) => game.altarWord(n, w),
+    wordHint: (w) => `Burned at the door, every one of the cult within: ${lower(WORDS[w].monsterText)}`,
+    wordButtons: (w) => [{ label: 'TO THE ALTAR', act: () => game.altarWord(n, w), lit: game.altarProblem(n, w) === null, disabled: game.altarProblem(n, w) !== null }],
+
+    draw(over: SideOver): void {
+      sideFrame(ui, r, 'ALTAR OF THE WORDS');
+      intro.forEach((l, k) => drawText(g, l, x0, bodyY + 1 + k * 6, THEME.text, { font: 'small' }));
+      drawText(g, 'GIVEN TO THE DOOR', x0, capY, THEME.dim, { font: 'small' });
+      const tx = x0 + CELL + 5;
+      const tw = bw - CELL - 5;
+      const ok = !!over.hand && game.altarProblem(n, over.hand) === null;
+      const hang = over.at === ALTAR && (over.dragging || (!!next && ui.hover(r.x, next.r.y - 3, r.w, rowH))) ? over.hand : null;
+      for (const s of socks) {
+        const here = s === next;
+        const w = s.word ?? (here && hang && ok ? hang : null);
+        if (s.word) drawWordTile(ui, art, s.r.x, s.r.y, CELL, CELL, s.word, 'name', { stone: true, lit: ui.hover(r.x, s.r.y - 3, r.w, rowH) });
+        else if (w) {
+          ui.box(s.r.x, s.r.y, CELL, CELL, THEME.accentBg, P.white);
+          drawWordTile(ui, art, s.r.x, s.r.y, CELL, CELL, w, 'name', { stone: true, lit: true, edge: P.white, alpha: T ? 0.6 : 0.95 });
+        } else {
+          // an empty hollow: the dark slot with a cyan rim of an empty word slot, a plus in it, lit while the word in hand could go in
+          const lit = here && ok;
+          ui.box(s.r.x, s.r.y, CELL, CELL, lit ? (over.blink ? THEME.accentBg : THEME.accentBg2) : THEME.slot, lit ? (over.blink ? THEME.accent : THEME.accentLo) : THEME.edge);
+          const px = s.r.x + Math.floor(CELL / 2);
+          const py = s.r.y + Math.floor(CELL / 2);
+          g.fillStyle = lit ? THEME.accent : THEME.edge;
+          g.fillRect(px - 3, py, 7, 1);
+          g.fillRect(px, py - 3, 1, 7);
+        }
+        if (w) {
+          drawText(g, WORDS[w].name.toUpperCase(), tx, s.r.y + 1, WORD_COLOR[w]);
+          small(ui, `Every one within: ${lower(WORDS[w].monsterText)}`, tx, s.r.y + 11, tw, s.word ? THEME.text : THEME.dim);
+        } else if (here && hang && over.hand) {
+          const why = game.altarProblem(n, over.hand);
+          if (why) drawText(g, why, tx, s.r.y + 6, THEME.bad);
+        } else if (here && !laid.length) {
+          small(ui, T ? 'Tap one of your words, then here. Or drag it here.' : 'Click one of your words, then here. Or drag it here.', tx, s.r.y + 4, tw, THEME.faint);
+        }
+      }
+      let y = rowsEnd + 5;
+      const room = openR.y - 3;
+      const dust = HOLD_TUNE.dust[laid.length] ?? 0;
+      if (laid.length && y + 6 <= room) y = small(ui, `Within: a yellow pack of the cult's best. Reward: ${dust} runedust, and gear.`, x0, y, bw, THEME.accent) + 2;
+      void y;
+      ui.drawButton(openR.x, openR.y, openR.w, openR.h, label, { primary: true, lit: can, disabled: !can });
     },
   };
 }

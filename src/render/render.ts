@@ -458,8 +458,9 @@ export class Renderer {
       const sp = art.stair[st.way];
       g.drawImage(sp.img, Math.round(wx(cam, st.x, st.y)) - sp.ax, Math.round(wy(cam, st.x, st.y)) - sp.ay, sp.w, sp.h);
     }
-    const w = W.way;
-    if (w && L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) {
+    // (ACT 1: and the way on, once it has woken: a waypoint's own picture, awake: nothing is there before)
+    for (const w of [W.way, W.onward && W.onward.awake ? W.onward : null]) {
+      if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) continue;
       const sp = w.awake ? art.way.awake[Math.floor(t * 10) % WAY_FRAMES] : art.way.asleep;
       const x = Math.round(wx(cam, w.x, w.y));
       const y = Math.round(wy(cam, w.x, w.y));
@@ -470,18 +471,20 @@ export class Renderer {
 
   /** THE WAYS: what stands over the level's waypoint: the motes of light while it is awake; the column of a warp, by the level's own time (`now`). */
   private standWays(L: Game['level'], t: number, now: number): void {
-    const w = L.ways?.way;
-    if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) return;
-    const art = lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
-    const f = w.warpAt === null ? -1 : Math.floor((now - w.warpAt) * 20);
-    const warp = f >= 0 && f < WARP_FRAMES;
-    if (!warp && !w.awake) return;
-    const sp = warp ? art.way.warp[f] : art.way.motes[Math.floor(t * 10) % WAY_FRAMES];
-    const x = Math.round(wx(this.cam, w.x, w.y));
-    const y = Math.round(wy(this.cam, w.x, w.y));
-    // (a warp's column stands in front of the hero on the dais: it is what he goes into, and comes out of)
-    this.stand(w.x + w.y + (warp ? 0.05 : 0), sp, x, y);
-    if (sp.lights) this.propLit.push({ s: sp, x, y });
+    // (ACT 1: the way on too, once awake: its column flares as it wakes, as a warp's)
+    for (const w of [L.ways?.way, L.ways?.onward && L.ways.onward.awake ? L.ways.onward : null]) {
+      if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) continue;
+      const art = lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
+      const f = w.warpAt === null ? -1 : Math.floor((now - w.warpAt) * 20);
+      const warp = f >= 0 && f < WARP_FRAMES;
+      if (!warp && !w.awake) continue;
+      const sp = warp ? art.way.warp[f] : art.way.motes[Math.floor(t * 10) % WAY_FRAMES];
+      const x = Math.round(wx(this.cam, w.x, w.y));
+      const y = Math.round(wy(this.cam, w.x, w.y));
+      // (a warp's column stands in front of the hero on the dais: it is what he goes into, and comes out of)
+      this.stand(w.x + w.y + (warp ? 0.05 : 0), sp, x, y);
+      if (sp.lights) this.propLit.push({ s: sp, x, y });
+    }
   }
 
   /** (THE CRYPT) What stands over the waypoint: motes of light rising while it is awake; the column of a warp. */

@@ -30,7 +30,9 @@ export type Sel = { kind: 'bag'; i: number } | { kind: 'gear'; slot: EquipSlot }
 export interface Panels {
   /** The inventory (words, attacks and gear), a choice, the pause menu, the dungeon map, or one of the town's services. */
   /** (Both vendors have the one screen, 'vendor': which of them it is, is the game's `vendor`.) */
-  open: 'none' | 'inv' | 'level' | 'pause' | 'map' | 'vendor' | Exclude<Station, VendorId>;
+  open: 'none' | 'inv' | 'level' | 'pause' | 'map' | 'vendor' | 'altar' | Exclude<Station, VendorId>;
+  /** (ACT 1) which stronghold's altar is open ('altar'): game/act1_holds.ts. */
+  altar: number;
   sel: Sel | null;
   /** At one of the town's services: the thing of its own that is picked (a cell's name), and the word picked at the wordsmith. */
   pick: string | null;
@@ -46,7 +48,7 @@ export interface Panels {
 }
 
 export function newPanels(): Panels {
-  return { open: 'none', sel: null, pick: null, pick2: null, carry: null, note: '', noteT: 0, meldPage: false, meldIn: [null, null] };
+  return { open: 'none', altar: -1, sel: null, pick: null, pick2: null, carry: null, note: '', noteT: 0, meldPage: false, meldIn: [null, null] };
 }
 
 export interface Line {

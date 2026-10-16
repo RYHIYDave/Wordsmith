@@ -78,7 +78,7 @@ import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
 import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
 import type { SmithPicture } from './ui/panels';
-import { gateSide, stashSide, vendorSide } from './ui/town';
+import { altarSide, gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
 import { meldOpen, meldSide } from './ui/meld';
 import { THEME, Ui } from './ui/ui';
@@ -193,7 +193,7 @@ const TOWN_PANELS: readonly string[] = TUNE.tradesOpen ? ['gate', 'vendor', 'lex
 /** The voice each of the town's people speaks a line in (the heroes' voices, more quietly: they have none of their own yet). */
 const TOWN_VOICE: Record<TownVoice, readonly [Speaker, SpeakerVoice]> = { armourer: ['warrior', 'male'], mystic: ['mage', 'male'], wordsmith: ['mage', 'male'], stranger: ['ranger', 'male'] };
 /** The inventory is on the screen: by itself, or beside one of those. */
-const withInventory = (open: string): boolean => open === 'inv' || TOWN_PANELS.includes(open);
+const withInventory = (open: string): boolean => open === 'inv' || open === 'altar' || TOWN_PANELS.includes(open);
 
 function start(carried: unknown, hot: HotHook | undefined): void {
   const scr = createScreen();
@@ -1331,6 +1331,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const more: GameEvent[] = [];
     for (const e of g.events) {
       if (e.t === 'station' && !bot) openStation(e.kind);
+      // (ACT 1: a stronghold's altar, beside the inventory: ui/town.ts altarSide)
+      if (e.t === 'altar' && !bot) {
+        input.eat('KeyE', 'KeyF', 'Enter');
+        panels.open = 'altar';
+        panels.altar = e.n;
+        panels.sel = null;
+        panels.pick = null;
+        panels.pick2 = null;
+        panels.carry = null;
+      }
       // (THE FIRST FIVE FLOORS: the stairwell breaking open is played from its film, render/dress.ts; where
       // there is none, the burst of stone and dust it had before, and the ground shaking)
       else if (e.t === 'stairOpens') {
@@ -1574,7 +1584,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (input.pressed('KeyM') && !g.level.town && (panels.open === 'none' || panels.open === 'map')) panels.open = panels.open === 'map' ? 'none' : 'map';
         if (input.pressed('Escape')) panels.open = panels.open === 'none' ? 'pause' : 'none';
         // the key that opened a town panel also closes it (the gate keeps E for "enter")
-        else if (TOWN_PANELS.includes(panels.open) && panels.open !== 'gate' && (input.pressed('KeyE') || input.pressed('KeyF'))) {
+        else if ((TOWN_PANELS.includes(panels.open) || panels.open === 'altar') && panels.open !== 'gate' && (input.pressed('KeyE') || input.pressed('KeyF'))) {
           panels.open = 'none';
           input.eat('KeyE', 'KeyF');
         }
@@ -1852,6 +1862,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // The inventory; and, at one of the town's services, that service in the other half of the screen.
         const half = gameRect(scr.w, scr.h);
         const gate = { enter: false };
+        const altar = { open: false };
         const at = panels.open;
         const side: Side | null =
           at === 'vendor'
@@ -1870,7 +1881,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
                       : wordsmithSide(ui, g, art, meta, panels, invUi, half)
                     : at === 'stranger'
                       ? gambleSide(ui, g, art, panels, invUi, half)
-                      : null;
+                      : at === 'altar'
+                        ? altarSide(ui, g, art, invUi, half, panels.altar, input.pressed('Enter'), altar)
+                        : null;
         if (drawInventory(ui, g, art, invUi, clock, dt, side)) {
           panels.open = 'none';
           sfx('click');
@@ -1879,6 +1892,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           input.eat('KeyE', 'KeyF', 'Enter');
           panels.open = 'none';
           g.enterDungeon();
+        }
+        if (altar.open) {
+          input.eat('KeyE', 'KeyF', 'Enter');
+          if (g.openHold(panels.altar)) panels.open = 'none';
         }
       } else if (panels.open === 'map') {
         // any press closes it, except the press that opened it
