@@ -45,7 +45,7 @@ import type { Sprite } from '../src/engine/px';
 import { RNG } from '../src/engine/rng';
 import { CHARGE, MONSTERS, MONSTER_ATTACKS, MONSTER_MOVES, SUMMON, TUNE, movesOf, sizeOf } from '../src/game/defs';
 import type { MonsterMove, MoveId } from '../src/game/defs';
-import { ACTS } from '../src/game/bosses';
+import { actsOf } from '../src/game/bosses';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -169,8 +169,9 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // different mobs can have an extra attack if it seems right".)
       const moves = all ? all.filter((mv) => mv.id !== 'bash') : null;
       // (THE FIRST FIVE FLOORS: a boss of floors 2 to 5, the bone beast and the mini fleshmancer make their
-      // moves by game/bosses.ts, ACTS: those they choose, not those forced on them, a chain breaking)
-      const acts = ACTS[kind as keyof typeof ACTS];
+      // moves by game/bosses.ts, ACTS: those they choose, not those forced on them, a chain breaking; and
+      // ACT 1, each of the descent's own kinds once built, by its rules, game/act1_rules/: actsOf has both)
+      const acts = actsOf({ kind });
       // (one that has no moves has its one attack, as before)
       const n = acts ? acts.filter((a) => !a.forced).length : moves ? moves.length : 1;
       const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
