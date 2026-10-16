@@ -761,4 +761,48 @@ His words on the moves of the section above: "Absolutely not.  Scrap all the ani
 
 **Tested** (`tests/carrion_queen2.test.ts`, 7): the switch off and nothing of the game importing her; crisp, her pink edge round her, nothing cyan, every light the cult's fire, nothing cut off at her canvas's edge, in every other frame of her stand from both sides; about the Unfinished's height as she stands, her wings more than four tiles across hand to hand in every frame; her crown bone-pale and the cult's fire (her mark, her crown's tips, her eyes) in her stand and her flare; nothing of her under the rock in any frame; never still (no frame of her stand like the one before) and her head darting at least a quarter of a tile in a fifteenth of a second several times a round. `tests/new_mobs3.test.ts` knows her as a mock-up.
 
-**Next:** his yes to her look and stand; then all her moves made new, fast and vicious (her hop, talon rake, wing gust, dive, call, flinch and her death off the edge), through the whole boss review.
+**Asked with the pictures** (one pop-up; our pick first and marked): "Is this the Carrion Queen now?" (offered: "Yes, animate her (Recommended)": her look and stand kept, all her moves made new, fast and vicious; "Close, but change some things"; "Not right yet").
+
+**His answer, 16 Oct, by 09:40:** "Yes, animate her (Recommended)". Her look has his yes.
+
+**Next:** all her moves made new, fast and vicious (her hop, talon rake, wing gust, dive, call, flinch and her death off the edge), through the whole boss review (the section below).
+
+## The Carrion Queen made new: her moves (16 Oct; src/art/carrion_queen2_moves.ts, behind `QUEEN2_ON`, off; for his yes)
+
+**On his yes to her look** ("Yes, animate her (Recommended)", offered as: her look and stand kept, all her moves made new, fast and vicious) and his pick for how she moves ("Fast and vicious (Recommended)": darting, snapping, quick hops and lunges, wings flaring, never still, never slow). Her brief's moves (13 Oct): her hop, her talon rake (her blow), her wing gust that shoves you toward the edge, her dive along a marked line, her call that brings her flock, her flinch, her death off the edge (his pick).
+
+**How they are made.** Each move a smooth curve through key poses of her (`through`): her body, her head, each wing bone by bone, its bones turned from one key's way to the next at an even pace that runs on through the keys (never cut across the middle, so a wing sweeps over several frames and never flicks). Her feet on their own tracks: a foot down stays where it came down. Every move starts on the first frame of her stand and ends on it. In her stoop her wings are held in the frame of her body's pitch (`wingPitch`). Over the drop, nothing of her is laid along the rock (`drop`).
+
+**One change to her stand, for the rule** (Movement 5, no jump where one move hands over to the next): her great flare (her wings thrown up and wide once a round) would leap whenever the game breaks into a move from it, so it is now her call's and her gust's; standing, she rouses instead (every feather shaken up and out, her fingers spread, her tail fanned, a shudder, her crown flaring, a hiss), her wings' twitches smaller, her head snapping over two frames (0.14 s).
+
+**Her moves** (times in seconds into the move; lengths in tiles of the game, 39.19 of her lengths a tile, she built at 1.12):
+- **Stand** (2.0 s, 30 frames at 15 a second): her head snapping from place to place, a tremor always; a jab low with a hiss (0.62 to 0.86 s); her rouse (1.22 to 1.72 s).
+- **Hop** (her walk: 12 frames at 20 a second, 0.6 s a hop, painted for 1.5 tiles a second, 0.9 tiles a hop): gathering (to 0.14 s), both feet leave the rock at 0.14 s with a wingbeat down; down again at 0.44 s, her wings braking open, her head thrust forward, grit puffed off the rock; her round begins and ends standing as she stands (the game's bosses stop as their walk comes round).
+- **Talon rake** (her blow, 1.45 s): gathered, her wings thrown up (to 0.2 s); bursts up in one hard wingbeat (0.32 s); THE WARNING (0.46 to 0.62 s): hung high, her talons cocked up and forward, open and trembling, her wings flung up and wide; THE RAKE at 0.72 s: dropped, both feet driven down and through, 1.9 tiles ahead of where she stood, three burning claw-streaks of the cult's fire where her talons go; down on the spot at 0.8 s (a tile forward), rock chips and dust flying, mantled over it, her head stabbing (to 0.96 s); hops back to where she stood (1.02 to 1.24 s).
+- **Wing gust** (shoves you toward the edge, 1.45 s): rears to her full height (to 0.3 s); THE WARNING (0.3 to 0.5 s): her wings drawn far back and up, trembling, her head back, hissing, her crown flaring, embers off it; THE CLAP (0.5 to 0.68 s): her wings driven forward, her body thrown after them, her beak wide, the blow at 0.68 s: a blast of grit, driven air, her torn feathers and the cult's embers out before her, a ring of dust off the rock; rocked back by her own blow (to 0.82 s); settled.
+- **Dive** (along a marked line, 2.2 s): crouches, her wings up (to 0.2 s); leaves the rock at 0.24 s in a downdraft of grit, beating up (0.34, 0.46, 0.56 s); hung up there (0.56 to 0.8 s), over 370 of the picture's pixels above the rock (the warning is the game's mark on her line); THE STOOP from 0.8 s: nose down, her wings swept back along her, a streak of her own quills behind her; brakes, her wings flung open, her talons thrown forward (0.98 to 1.04 s); THE STRIKE at 1.08 s, 2.9 tiles along her line, talons in the rock, held a tenth (to 1.18 s), a crater of chips and a ring of dust; rips free and beats home (1.32, 1.48, 1.64 s); down where she stood at 1.86 s.
+- **Call** (brings her flock, 1.7 s): rears up, her wings flung wide and high (to 0.38 s); THE SCREECH (0.36 to 1.24 s): her head thrown back, her beak open to the sky, trembling, her crown and mark at their hottest, embers rising off her crown; three rings of the cult's fire go out over the rock from her (at 0.45, 0.8 and 1.15 s, each out to about 7 tiles in half a second); folds her wings and settles (to 1.7 s). Her flock wheeling in is the game's.
+- **Struck** (0.45 s): her head whipped back, her wings snapping half open, her feathers bursting from her breast (0.08 s); her head snapped forward, low, glaring (0.2 s); back on her stand.
+- **Death, his pick: off the edge** (2.0 s, at 20 a second): screams, her head back, her wings flung up (0.2 s); staggers back two steps (0.18 to 0.56 s) and claws at the rock (to 0.77 s), grit flying; her mark gutters out to a dark scar and her crown's fire and her eyes go out (gone by 0.85 s); over the edge backward at 0.85 s into the drop behind her, her wings flailing (a stroke every 0.28 s), her feathers swirling up after her; 150 of her lengths down by its end. (Painted without her pink edge, as the game paints every monster's death.)
+
+**Her pictures as the game holds them** (`makeQueen2Art`): standing 30 frames at 15 a second; hopping 12 at 20; her rake (`attack`, its blow at `Q2_RAKE.hit`), gust and dive (`clips.moves`, their blows at `Q2_GUST.hit` and `Q2_DIVE.hit`), call and struck at 30 a second; her death at 20. Her canvas `Q2_CANVAS` 1000 by 1200, her feet at (500, 720).
+
+**The films** (`node tools/page_gif.mjs src/dev/preview_queen2.ts "film:<move>" shots/<name>.gif 6`, at the game's size, from in front and behind, each with its contact sheet): `q2_stand.gif`, `q2_hop.gif` (`film:walk`), `q2_rake.gif` (`film:attack`), `q2_gust.gif`, `q2_dive.gif`, `q2_call.gif`, `q2_reel.gif`, `q2_death.gif` (`film:dying`: with a stand-in edge and drop behind her; the game lays the eyrie's).
+
+**The whole boss review** (tests/carrion_queen2.test.ts, 19: she is not on the heroes' bones, so the review is written out for her rule by rule, as the Hollow Stag's):
+
+| Rule | The Queen | Result |
+| --- | --- | --- |
+| Pixels 1, 5; Colour 3; Monsters 6 | Crisp; her pink edge while she lives (none on her death); nothing cyan; every light the cult's fire; nothing cut off; every other frame of every move from in front and behind | Pass (test) |
+| FLOOR | Nothing of her under the rock in any frame of any move but her fall | Pass (test) |
+| SLIDE (Movement 8) | A foot down stays put; hopping, it goes back under her at her pace; she lands a hop on | Pass (test) |
+| THROUGH (Heroes 6) | No leg through the other; no wing's bone through her body | Pass (test) |
+| JERK (Movement 5) | A wing's bone turns no more than 32 to 40 degrees a frame (12 standing); her body and head move within each move's limit (the stoop, a blur, the fastest); her stand and hop close their loops | Pass (test) |
+| JUMP (Movement 5) | From every frame of her stand into each move, her body, wings and feet leap under 3 game pixels, her head no further than it snaps in her stand; each move's end back to her stand; out of her hop as it comes round | Pass (test) |
+| BLOW (Movement 3, 7; Monsters 4) | The rake's cocked talons and the gust's drawn wings held as the warning; the strike ahead of her and carried through; rocked back by her gust; the dive's strike held a tenth | Pass (test) |
+| ALIVE (Movement 6) | Never still; breathes, sways; her head darts | Pass (test) |
+| Hits 3, 4 | Struck: head whipped back, her own feathers burst from her | Pass (test) |
+| Animations 1: as far as it will go | The rake bursts up 70 of her lengths; the dive climbs over 300 and strikes 2.9 tiles along her line; the gust's wings drawn far back and clapped forward; the call's wings flung to their widest | Pass by the numbers; his eye decides the notch |
+| Animations 3: wild in her own way | Grit and chips in the rock's colours, her torn feathers, the cult's fire (claw-streaks, embers, rings) | Pass by eye |
+| Animations 4: warnings in sight | The rake's hang and the gust's held wings in sight, nothing over them; the dive's warning the game's mark on her line | Pass |
+

@@ -26,9 +26,8 @@
 // was until he has said yes to this one.
 
 import type { Sprite } from '../engine/px';
-import type { ActorArt, AnimSet } from './actor_types';
 import { shriekAt } from './floor5';
-import { hash, lazyFrames, toSprite } from './kit';
+import { hash, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
 import { paintBits } from './new_mobs3';
@@ -51,6 +50,10 @@ const mix = (a: number, b: number, k: number): number => a + (b - a) * k;
 const D = Math.PI / 180;
 const TAU = Math.PI * 2;
 const UP: V3 = [0, 0, 1];
+/** How far over the rock what lies on it is kept (her own lengths). */
+const FLOOR_GAP = 0.6;
+/** Whether there is rock under her as she is being built (none as she falls into the drop). */
+let ROCK = true;
 
 // ---------------------------------------------------------------------------------------------
 // HER COLOURS (kept, his pick): black with a violet sheen, a raw red head and neck, her bone crown burning
@@ -82,7 +85,7 @@ const IRON: Ramp = ['#16141a', '#16141a', '#3a3640', '#5c5864', '#86828e'];
 // HER MEASURES, in the figure's own lengths (the knight is 58 tall)
 
 /** Her canvas, and where her feet are on it (her floor point, between her feet). */
-export const Q2_CANVAS = { w: 1000, h: 1060, ax: 500, ay: 720 } as const;
+export const Q2_CANVAS = { w: 1000, h: 1200, ax: 500, ay: 720 } as const;
 /** Her body: its half-lengths (forward, across, up); her breast's. Lean: a narrow keel. */
 const TORSO: V3 = [40, 18, 22];
 const BREAST: V3 = [24, 15, 20];
@@ -138,6 +141,10 @@ export interface QueenPose {
   heat: number;
   lit: number;
   ruffle: number;
+  /** How far the frame her wings are held in is pitched nose down (less than 0) or up, as in her stoop (degrees; none: level). */
+  wingPitch?: number;
+  /** Over the drop, with no rock under her (her fall off the edge): nothing of her is laid along the rock. */
+  drop?: boolean;
 }
 
 /** Her body's frame: forward, her left, up. */
@@ -207,15 +214,27 @@ export function wingBones(P: QueenPose, sd: 1 | -1): WingBones {
   const W = P.wings[sd === 1 ? 0 : 1];
   const F3 = frameOf(P);
   // (her wings are held as she holds them, whatever her body's pitch: in the frame of the way she faces, level)
-  const f = norm([F3[0][0], F3[0][1], 0], [1, 0, 0]);
-  const ls: V3 = [-f[1] * sd, f[0] * sd, 0];
-  const g = (v: V3): V3 => norm(add(add(mul(f, v[0]), mul(ls, v[1])), mul(UP, v[2])));
+  const f0 = norm([F3[0][0], F3[0][1], 0], [1, 0, 0]);
+  const ls: V3 = [-f0[1] * sd, f0[0] * sd, 0];
+  const wp = (P.wingPitch ?? 0) * D;
+  const f = add(mul(f0, Math.cos(wp)), mul(UP, Math.sin(wp)));
+  const uw = sub(mul(UP, Math.cos(wp)), mul(f0, Math.sin(wp)));
+  const g = (v: V3): V3 => norm(add(add(mul(f, v[0]), mul(ls, v[1])), mul(uw, v[2])));
   const sh = at(P, F3, 14, 12 * sd, 12);
   const hum = g(W.arm);
-  const fore = g(W.fore);
-  const hand = g(W.hand);
   const el = add(sh, mul(hum, HUM));
+  let fore = g(W.fore);
+  // (her wrist and the tip of her hand never under the rock: a bone that would go there is turned up along it)
+  const keep = (from: V3, d: V3, L: number, low: number): V3 => {
+    if (P.drop || from[2] + d[2] * L >= low || from[2] <= low) return d;
+    const z = (low - from[2]) / L;
+    const hz = Math.hypot(d[0], d[1]) || 1;
+    const k = Math.sqrt(Math.max(0, 1 - z * z)) / hz;
+    return [d[0] * k, d[1] * k, z];
+  };
+  fore = keep(el, fore, FORE, 7);
   const wr = add(el, mul(fore, FORE));
+  const hand = keep(wr, g(W.hand), HAND, 5);
   const tip = add(wr, mul(hand, HAND));
   // (each bone's upper face, square to it; the way its feathers trail, square to both)
   const faceOf = (b: V3, t: V3): V3 => norm(sub(t, mul(b, dot(t, b))), UP);
@@ -245,9 +264,21 @@ function halfBreadth(kind: Kind, s: number, w: number): number {
   }
 }
 /** One feather, a flat blade: its root, the way it lies, its upper face; how long and broad; its kind; whether it is a flight feather (silver under). */
-function feather(put: Put, part: string, name: string, root: V3, along: V3, face: V3, L: number, W: number, kind: Kind, seed: number, flight: boolean): void {
-  const a = norm(along);
-  const across = norm(cross(face, a), [0, 1, 0]);
+function feather(put: Put, part: string, name: string, root0: V3, along: V3, face: V3, L: number, W: number, kind: Kind, seed: number, flight: boolean): void {
+  let root = root0;
+  let a = norm(along);
+  let across = norm(cross(face, a), [0, 1, 0]);
+  // (a feather that would reach under the rock lies along it instead, its tip dragged on the rock; its root kept over it)
+  const rootLow = FLOOR_GAP + (Math.abs(across[2]) * W) / 2;
+  if (ROCK && root[2] > 0 && root[2] < rootLow) root = [root[0], root[1], rootLow];
+  const need = (FLOOR_GAP - root[2] + (Math.abs(across[2]) * W) / 2) / L;
+  if (ROCK && root[2] > FLOOR_GAP && a[2] < need) {
+    const z = Math.min(0.95, need);
+    const hz = Math.hypot(a[0], a[1]) || 1;
+    const k = Math.sqrt(1 - z * z) / hz;
+    a = [a[0] * k, a[1] * k, z];
+    across = norm(cross(face, a), [0, 1, 0]);
+  }
   const top = flight ? QUILLS : kind === 'covert' ? COVERTS : PLUMAGE;
   const jit = hash(seed, 3, 7103) > 0.72 ? 1 : hash(seed, 3, 7103) < 0.22 ? -1 : 0;
   const skin: PanelSkin = (x, y, front, tone) => {
@@ -269,6 +300,9 @@ function feather(put: Put, part: string, name: string, root: V3, along: V3, face
     if (flight && Math.abs(y + 0.15 * hw) < 0.45 && s < 0.9) return ramp[Math.max(0, tone - 1)];
     return ramp[tone];
   };
+  // (and whatever is still under it, lifted clear)
+  const low = Math.min(root[2], root[2] + a[2] * L) - (Math.abs(across[2]) * W) / 2;
+  if (ROCK && root0[2] > 0 && low < FLOOR_GAP) root = [root[0], root[1], root[2] + FLOOR_GAP - low];
   put(part, name, { k: 'panel', c: add(root, mul(a, L / 2)), u: mul(a, L / 2), v: mul(across, W / 2), skin });
 }
 
@@ -397,6 +431,7 @@ function bareSkin(seed: number, rings: number): (u: V3, tone: number, x: number,
 
 /** THE CARRION QUEEN AS SOLIDS. */
 function queenBits(P: QueenPose, t: number, put: Put): void {
+  ROCK = !P.drop;
   const F = frameOf(P);
   const [f, l, u] = F;
   const lit = cl01(P.lit);
@@ -439,12 +474,14 @@ function queenBits(P: QueenPose, t: number, put: Put): void {
         const rr = add(r, mul(fwd, Math.sin(a) * 5.2));
         put(part, `shk${k}`, { k: 'ball', c: add(sh0, rr), ax: [[1.9, 0, 0], [0, 1.9, 0], [0, 0, 1.9]], skin: IRON });
       }
-      // (the chain: down to the rock, then lying back along it, link by link)
-      const drop: V3 = [sh0[0] - 4, sh0[1] + 3, 1];
+      // (the chain: hanging from it, link by link, as far as the rock, then lying back along it; in the air, hanging)
       const pts: V3[] = [];
+      let cur: V3 = sh0;
       for (let k = 0; k < 11; k++) {
-        if (k < 4) pts.push(lerp3(sh0, drop, (k + 1) / 4));
-        else pts.push(add(drop, [-(k - 3) * 5 + Math.sin(k + t * 2) * 0.6, (k - 3) * 1.6 + Math.sin(k * 1.3) * 1.5, 0]));
+        const sway = Math.sin(k * 0.9 + t * 7) * 0.9;
+        if (!ROCK || cur[2] > 1.2 + 4.6) cur = add(cur, [-0.9 + sway * 0.4, 0.6 + sway * 0.3, -4.6]);
+        else cur = [cur[0] - 4.8 + Math.sin(k + t * 2) * 0.5, cur[1] + 1.4 + Math.sin(k * 1.3) * 1.2, 1.2];
+        pts.push(cur);
       }
       pts.forEach((p, k) => {
         const prev = k ? pts[k - 1] : sh0;
@@ -497,7 +534,8 @@ function queenBits(P: QueenPose, t: number, put: Put): void {
       const mk = shriekAt(a / MW, b / MH);
       if (mk === 'dark') return PLUMAGE[0];
       if (mk !== 'bone') return null;
-      if (lit < 0.3) return FLAME[0];
+      // (gone out: a dark scar)
+      if (lit < 0.3) return '#2a1018';
       const edge = shriekAt((a + 0.7) / MW, b / MH) !== 'bone' || shriekAt((a - 0.7) / MW, b / MH) !== 'bone';
       if (edge) return FLAME[2];
       return fr(b * 0.3 - t * 3 + hash(Math.floor(a), 1, 703) * 0.5) < 0.3 ? FLAME[4] : FLAME[3];
@@ -628,52 +666,77 @@ function scaled(sh: Shape, k: number): Shape {
   }
 }
 
-/** A grain laid on her picture after its edge (grit, feathers' flecks, embers). */
-type Grain = [V3, string, number];
+/** A grain laid on her picture after its edge (grit, feathers' flecks, embers): where (in her own lengths, as her solids), its colour, its size in picture pixels; `under`: only where nothing of her is painted (it is behind her). */
+export type Grain = [V3, string, number, boolean?];
 /** One frame of her from a pose, living (her pink edge) or not. */
-function paintQueen(view: GameView, P: QueenPose, t: number, grains: Grain[], living: boolean): Painted {
+export function paintQueen(view: GameView, P: QueenPose, t: number, grains: Grain[], living: boolean): Painted {
   const st = stage(view, Q2_CANVAS.ax, Q2_CANVAS.ay, Q2_CANVAS);
   const bits = queen2Bits(P, t);
   const lights = paintBits(st, bits, mul(P.body, Q2_SCALE));
   const px = st.whole(living ? ENEMY_RIM : null);
-  for (const [pt, col, size] of grains) {
-    const [x, y] = st.at(pt);
-    const xi = Math.round(x - 0.5);
-    const yi = Math.round(y - 0.5);
-    for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) if (xi + dx >= 0 && yi + dy >= 0 && xi + dx < px.w && yi + dy < px.h) px.set(xi + dx, yi + dy, col);
+  for (const [pt, col, size, under] of grains) {
+    const [x, y] = st.at(mul(pt, Q2_SCALE));
+    // (on whole game pixels: two of the picture's to one)
+    const xi = 2 * Math.round((x - 1) / 2);
+    const yi = 2 * Math.round((y - 1) / 2);
+    for (let dy = 0; dy < size; dy++) {
+      for (let dx = 0; dx < size; dx++) {
+        const X = xi + dx;
+        const Y = yi + dy;
+        if (X < 0 || Y < 0 || X >= px.w || Y >= px.h) continue;
+        if (under && px.d[(Y * px.w + X) * 4 + 3] > 0) continue;
+        px.set(X, Y, col);
+      }
+    }
   }
   return { px, lights };
 }
 
 // ---------------------------------------------------------------------------------------------
-// HER STAND: never still. Crouched, her neck snaking, her head snapping from one place to the next as a bird's does,
-// jabbing low with a hiss; her wings held half open and raised about her like a cloak, twitching; once a round she
-// flares them wide, her tail and every feather with them, and snaps them shut again.
+// HER STAND: never still. Crouched in her mantle, her neck snaking, her head snapping from one place to the next as a
+// bird's does, jabbing low with a hiss; her wings held half open and raised about her like a cloak, twitching; once a
+// round she rouses, every feather shaken up and out, her fingers spread, her tail fanned, her crown flaring. (Her
+// great flare, her wings thrown up and wide, is her call's and her gust's: in her stand it would leap when the game
+// breaks into a move from it, Movement 5.)
 
 /** Her stand: a 2.0 s round. */
 export const Q2_STAND = 2.0;
-/** In her stand: when she jabs and hisses; when she flares her wings. */
-export const Q2_HABITS = { jab: [0.62, 0.86], flare: [1.22, 1.72] } as const;
+/** In her stand: when she jabs and hisses; when she rouses. */
+export const Q2_HABITS = { jab: [0.62, 0.86], rouse: [1.22, 1.72] } as const;
+/** How long her head takes to snap from one place to the next (seconds): two frames of her stand. */
+const SNAP = 0.14;
 /** Her wings folded on her back. */
 export const FOLDED: WingPose = { arm: [-0.85, 0.3, -0.35], fore: [0.95, 0.25, 0.1], hand: [-0.97, 0.18, 0.1], top: [0, 1, 0.25], tipTop: [0, 1, 0.25], open: 0, fan: 0 };
 /** Her mantle, as she stands: half open about her, her wrists high over her shoulders, her hands hanging, their fingers down. */
 export const MANTLE: WingPose = { arm: [-0.15, 0.6, 0.78], fore: [0.2, 0.92, 0.25], hand: [0.2, 0.4, -0.9], top: [-0.85, 0, 0.5], tipTop: [-0.9, 0.2, 0.1], open: 0.9, fan: 0.75 };
 /** Her wings flared: thrown up and open wide, every feather spread. */
 export const FLARE: WingPose = { arm: [-0.1, 0.62, 0.78], fore: [0.05, 0.85, 0.52], hand: [0.1, 0.92, 0.38], top: [-0.9, 0, 0.4], tipTop: [-0.85, 0.1, 0.5], open: 1, fan: 1 };
+/** Two of her wing's poses blended: each bone turned evenly from one way to the other (so that a wing sweeps at an even pace, never flicking through the middle). */
 export function mixWing(a: WingPose, b: WingPose, k: number): WingPose {
-  return { arm: lerp3(a.arm, b.arm, k), fore: lerp3(a.fore, b.fore, k), hand: lerp3(a.hand, b.hand, k), top: lerp3(a.top, b.top, k), tipTop: lerp3(a.tipTop, b.tipTop, k), open: mix(a.open, b.open, k), fan: mix(a.fan, b.fan, k) };
+  return { arm: slerp(a.arm, b.arm, k), fore: slerp(a.fore, b.fore, k), hand: slerp(a.hand, b.hand, k), top: slerp(a.top, b.top, k), tipTop: slerp(a.tipTop, b.tipTop, k), open: mix(a.open, b.open, k), fan: mix(a.fan, b.fan, k) };
+}
+/** A way turned evenly toward another, `k` of the way. */
+function slerp(a0: V3, b0: V3, k: number): V3 {
+  const a = norm(a0);
+  const b = norm(b0);
+  const c = Math.max(-1, Math.min(1, dot(a, b)));
+  const th = Math.acos(c);
+  if (th < 1e-4) return lerp3(a, b, k);
+  if (th > Math.PI - 1e-3) return norm(lerp3(a, b, k), UP);
+  const s = Math.sin(th);
+  return add(mul(a, Math.sin((1 - k) * th) / s), mul(b, Math.sin(k * th) / s));
 }
 /** Where her head goes as she stands: snapping from one place to the next and holding there (where, the way it looks). */
 const HEADS: [number, V3, V3][] = [
   [0, [88, 0, 128], [1, 0, -0.35]],
-  [0.3, [92, 20, 122], [0.85, 0.45, -0.4]],
-  [0.62, [122, -4, 92], [1, -0.05, -0.8]],
-  [0.86, [80, -20, 134], [0.85, -0.5, -0.2]],
-  [1.22, [76, 0, 152], [1, 0, 0.2]],
-  [1.72, [90, 10, 124], [0.9, 0.3, -0.35]],
-];
+  [0.3, [92, 13, 125], [0.85, 0.45, -0.4]],
+  [0.62, [104, -3, 110], [1, -0.05, -0.75]],
+  [0.86, [85, -13, 131], [0.85, -0.5, -0.25]],
+  [1.22, [84, 0, 134], [1, 0, -0.05]],
+  [1.72, [90, 7, 126], [0.9, 0.3, -0.35]],
+]
 /** A wing's pose with a little life in it: raised a few degrees (its arm and forearm turned up about her body's line). */
-function lifted(W: WingPose, deg: number): WingPose {
+export function lifted(W: WingPose, deg: number): WingPose {
   const up = (v: V3): V3 => {
     const c = Math.cos(deg * D);
     const sn = Math.sin(deg * D);
@@ -692,41 +755,43 @@ export function standPose(t: number): QueenPose {
     const [t0, h1, l1] = HEADS[i];
     if (T >= t0) {
       const prev = HEADS[i === 0 ? HEADS.length - 1 : i - 1];
-      const s = sm((T - t0) / 0.08);
+      const s = sm((T - t0) / SNAP);
       head = lerp3(prev[1], h1, s);
       look = lerp3(prev[2], l1, s);
     }
   }
   if (T < HEADS[1][0]) {
     const prev = HEADS[HEADS.length - 1];
-    const s = sm(T / 0.08);
+    const s = sm(T / SNAP);
     head = lerp3(prev[1], HEADS[0][1], s);
     look = lerp3(prev[2], HEADS[0][2], s);
   }
   // (a tremor through her head and neck, never still)
-  head = add(head, [0.8 * Math.sin(T * 41), 0.8 * Math.sin(T * 37 + 1), 0.6 * Math.sin(T * 47)]);
+  head = add(head, [0.8 * Math.sin(a * 13), 0.8 * Math.sin(a * 12 + 1), 0.6 * Math.sin(a * 15)]);
   const jab = T > Q2_HABITS.jab[0] && T < Q2_HABITS.jab[1] ? Math.sin((Math.PI * (T - Q2_HABITS.jab[0])) / (Q2_HABITS.jab[1] - Q2_HABITS.jab[0])) : 0;
-  const flare = T > Q2_HABITS.flare[0] && T < Q2_HABITS.flare[1] ? sm(Math.min((T - Q2_HABITS.flare[0]) / 0.1, (Q2_HABITS.flare[1] - T) / 0.16)) : 0;
-  // (her wings twitching in their mantle, never quite still)
-  const twitch = Math.max(0, Math.sin(T * 16)) ** 6 * (1 - flare);
-  const w = mixWing(MANTLE, FLARE, flare);
-  const w0 = lifted(w, 8 * twitch + 3 * Math.sin(a * 2) + 6 * jab);
-  const w1 = lifted(w, 8 * twitch + 3 * Math.sin(a * 2 + 1) + 6 * jab);
+  const rouse = T > Q2_HABITS.rouse[0] && T < Q2_HABITS.rouse[1] ? sm(Math.min((T - Q2_HABITS.rouse[0]) / 0.12, (Q2_HABITS.rouse[1] - T) / 0.2)) : 0;
+  // (as she rouses, a shudder through her)
+  const shudder = rouse * Math.sin(a * 22) * 1.5;
+  // (her wings twitching in their mantle, never quite still; hitched up a little as she rouses)
+  const twitch = Math.max(0, Math.sin(a * 5)) ** 6 * (1 - rouse);
+  const w = { ...MANTLE, open: mix(MANTLE.open, 1, rouse), fan: mix(MANTLE.fan, 1, rouse) };
+  const w0 = lifted(w, 3.5 * twitch + 1.5 * Math.sin(a * 2) + 2 * jab + 1.5 * rouse + shudder * 0.6);
+  const w1 = lifted(w, 3.5 * twitch + 1.5 * Math.sin(a * 2 + 1) + 2 * jab + 1.5 * rouse - shudder * 0.6);
   return {
-    body: [-2 + 4 * jab, 0, 80 + 2.4 * Math.sin(2 * a) - 5 * jab],
-    pitch: 26 + 3 * Math.sin(2 * a + 0.5) - 10 * jab + 6 * flare,
+    body: [-2 + 1.5 * jab, 0, 80 + 2.4 * Math.sin(2 * a) - 2 * jab + 1 * rouse],
+    pitch: 26 + 3 * Math.sin(2 * a + 0.5) - 4 * jab + 1.5 * rouse,
     yaw: 3 * Math.sin(a),
-    roll: 2 * Math.sin(a + 1),
+    roll: 2 * Math.sin(a + 1) + shudder,
     head,
     look,
-    gape: Math.max(jab, 0.8 * flare),
+    gape: Math.max(jab, 0.45 * rouse),
     wings: [w0, w1],
     feet: [[4, 20, 0], [-3, -20, 0]],
     grasp: [0.25 + 0.6 * jab, 0.25 + 0.6 * jab],
-    tail: 0.35 + 0.65 * flare,
-    heat: 0.35 + 0.6 * flare + 0.3 * jab,
+    tail: 0.35 + 0.65 * rouse,
+    heat: 0.35 + 0.6 * rouse + 0.3 * jab,
     lit: 1,
-    ruffle: 0.2 + 0.8 * flare,
+    ruffle: 0.2 + 0.8 * rouse,
   };
 }
 
@@ -749,14 +814,5 @@ export function queen2Painted(which: string, t: number, view: GameView = 'front'
 export function queen2Frame(which: string, t: number, view: GameView = 'front'): Sprite {
   return toSprite(queen2Painted(which, t, view), null, Q2_CANVAS.ax, Q2_CANVAS.ay);
 }
-/** Her stand's frames: 30 at fifteen a second. */
+/** Her stand's frames: 30 at fifteen a second. (Her pictures as the game holds them: art/carrion_queen2_moves.ts, `makeQueen2Art`.) */
 export const Q2_IDLE = { frames: 30, fps: 15 } as const;
-/** THE CARRION QUEEN, as the game holds a monster's pictures (her stand only, for now). */
-export function makeQueen2Art(): ActorArt {
-  const set = (view: GameView): AnimSet => {
-    const frame = (t: number): Sprite => toSprite(queen2Painted('stand', t, view), { x: Q2_CANVAS.ax, y: Q2_CANVAS.ay - 120, r: 140, color: '#ff3a78', a: 0.08 }, Q2_CANVAS.ax, Q2_CANVAS.ay);
-    const idle = lazyFrames(Q2_IDLE.frames, (i) => frame(i / Q2_IDLE.fps));
-    return { idle, walk: idle, attack: idle, idleFps: Q2_IDLE.fps, walkFps: Q2_IDLE.fps, clips: {} };
-  };
-  return { front: set('front'), back: set('back') };
-}
