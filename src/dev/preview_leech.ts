@@ -1,8 +1,10 @@
 // THE BOG LEECHES, floor 10's tiny mob, as mock-ups for the owner (art/bog_leech.ts, behind LEECH_ON, off).
 // Hashes: `look` (them standing beside the knight, the Drowned and a rubbling, at the game's size, a pack of them,
-// and close up); `standfilm` (their stand, moving, three times the game's size).
+// and close up); `standfilm` (their stand, moving, three times the game's size); `seq:slither` (it slithers across
+// the mud, carried at its pace) and `seq:attack` (its leap and latch on the knight, struck, its burst), three times the
+// game's size, from in front and behind.
 
-import { BL_IDLE, BL_STAND, leechFrame } from '../art/bog_leech';
+import { BL_ATTACK, BL_DIE, BL_IDLE, BL_LATCH, BL_PACE, BL_REEL, BL_STAND, leechFrame } from '../art/bog_leech';
 import { DROWNED } from '../art/drowned';
 import { rubblingFrame } from '../art/floor6_mobs';
 import { spriteOf3 } from '../art/heroes3';
@@ -125,5 +127,85 @@ function standFilm(): void {
   };
 }
 
+
+/** A sprite three times the game's size, turned to face the other way. */
+function drawBigFlip(g: CanvasRenderingContext2D, sp: Sprite, x: number, y: number, k: number): void {
+  g.save();
+  g.translate(Math.round(x), 0);
+  g.scale(-1, 1);
+  g.drawImage(sp.img, Math.round(-sp.ax * 2 * k), Math.round(y - sp.ay * 2 * k), sp.w * 2 * k, sp.h * 2 * k);
+  g.restore();
+}
+/**
+ * ITS MOVES AS THE GAME WOULD PLAY THEM, one after another (hash `seq:<name>`), three times the game's size, from in
+ * front (left) and behind (right): `slither`, standing, slithering 1.6 s carried across at its pace, standing;
+ * `attack`, its leap and latch on the knight, standing where it clamps on and facing it (from in front he stands
+ * before it and would hide it, so there he is drawn faint), struck, its burst, and what is left a while after.
+ */
+function seqFilm(): void {
+  const which = HASH.split(':')[1];
+  const parts: [string, number][] = which === 'slither' ? [['stand', 0.4], ['walk', 1.6], ['stand', 0.5]] : [['stand', 0.4], ['attack', BL_ATTACK], ['stand', 0.3], ['reel', BL_REEL], ['stand', 0.4], ['dying', BL_DIE], ['dead', 0.6]];
+  const fps = 15;
+  const list: [string, number, number][] = [];
+  let T = 0;
+  for (const [mv, long] of parts) {
+    const n = Math.round(long * fps);
+    for (let i = 0; i < n; i++) list.push([mv, i / fps, T + i / fps]);
+    T += long;
+  }
+  const W = PW;
+  const H = 420;
+  const k = 3;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const walkStart = parts[0][1];
+  // (one of the figure's lengths on the floor, as the screen shows it at three times: forward is 0.82 across and 0.41 down (in front) or up (behind) a picture pixel)
+  const P3 = 0.8165 * k;
+  const draw = (i: number): void => {
+    const [mv, t, at] = list[Math.min(i, list.length - 1)];
+    mud(g, 0, 0, W, H);
+    for (const [x0, y0, view] of [[180, 330, 'front'], [600, 330, 'back']] as [number, number, 'front' | 'back'][]) {
+      const dn = view === 'front' ? 0.5 : -0.5;
+      // (slithering, it is carried on at its pace)
+      const went = which === 'slither' ? Math.max(0, Math.min(at, walkStart + 1.6) - walkStart) * BL_PACE * 39.19 : 0;
+      const x = x0 + went * P3;
+      const y = y0 + went * P3 * dn;
+      const knightAt: [number, number] = [x0 + (BL_LATCH[0] + 7) * P3, y0 + (BL_LATCH[0] + 7) * P3 * dn];
+      const knight = (): void => {
+        shadow(g, knightAt[0], knightAt[1], 40);
+        drawBigFlip(g, spriteOf3(MOVES3.rear, 0, view === 'front' ? 'back' : 'front'), knightAt[0], knightAt[1], k);
+      };
+      // (the knight behind it, where it is seen from behind; in front of it he would hide it, so there he is drawn faint, over it)
+      if (which === 'attack' && view === 'back') knight();
+      if (mv !== 'dying' && mv !== 'dead') shadow(g, x, y, 40);
+      const sp = mv === 'dead' ? leechFrame('dying', BL_DIE, view) : leechFrame(mv, t, view);
+      drawBig(g, sp, x, y, k);
+      if (which === 'attack' && view === 'front') {
+        g.globalAlpha = 0.3;
+        knight();
+        g.globalAlpha = 1;
+      }
+    }
+    if (which === 'attack') label(g, 'in front: the knight drawn faint', 8, H - 56);
+    const say: Record<string, string> = { walk: 'it slithers', attack: t < 0.5 ? 'it rears and quivers, its mouth flared (the warning)' : t < 0.64 ? 'IT LEAPS' : t < 1.25 ? 'clamped on, drinking, swelling' : t < 1.4 ? 'it drops off, fat' : 'and wriggles back', reel: 'struck', dying: 'it bursts', dead: '', stand: '' };
+    label(g, 'A bog leech (three times the game\'s size)', 8, 6);
+    if (say[mv]) label(g, say[mv], W - say[mv].length * 12 - 16, 34);
+    label(g, `${at.toFixed(2)} s`, 8, H - 28);
+  };
+  draw(0);
+  done(cvs);
+  const win = window as unknown as { __frames: number; __tickMs: number; __frame: (i: number) => string };
+  win.__frames = list.length;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+}
+
 if (HASH.startsWith('look')) look();
+else if (HASH.startsWith('seq:')) seqFilm();
 else if (HASH === 'standfilm') standFilm();

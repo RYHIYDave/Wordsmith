@@ -11,7 +11,9 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
-import { BL_LONG, BL_STAND, GULLET, LEECH_ON, leechPainted, makeLeechArt, standPose } from '../src/art/bog_leech';
+import { BL_ATTACK, BL_DIE, BL_HIT, BL_LAND, BL_LATCH, BL_LETGO, BL_LONG, BL_PACE, BL_POP, BL_REEL, BL_STAND, BL_WALK, BL_WARN, GULLET, LEECH_ON, attackPose, leechPainted, makeLeechArt, reelPose, slitherPose, standPose } from '../src/art/bog_leech';
+import { TILE3 } from '../src/art/new_mobs3';
+import type { V3 } from '../src/art/skeleton';
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
 import { spriteOf3 } from '../src/art/heroes3';
@@ -34,6 +36,18 @@ for (let i = 0; i < Math.round(BL_STAND * 30); i++) for (const view of VIEWS) {
   const p = leechPainted('stand', i / 30, view);
   living.push({ name: `leech stand ${view} ${(i / 30).toFixed(2)}`, t: i / 30, view, px: p.px, lights: p.lights });
 }
+const moving: Frame[] = [];
+const moves: [string, number, number][] = [['walk', BL_WALK.frames / BL_WALK.fps, 1], ['attack', BL_ATTACK, 2], ['reel', BL_REEL, 1]];
+for (const [mv, long, every] of moves) for (let i = 0; i <= Math.round(long * 30); i += every) for (const view of VIEWS) {
+  const p = leechPainted(mv, i / 30, view);
+  moving.push({ name: `leech ${mv} ${view} ${(i / 30).toFixed(2)}`, t: i / 30, view, px: p.px, lights: p.lights });
+}
+const dying: Frame[] = [];
+for (let i = 0; i <= BL_DIE * 20; i++) for (const view of VIEWS) {
+  const p = leechPainted('dying', i / 20, view);
+  dying.push({ name: `leech dying ${view} ${(i / 20).toFixed(2)}`, t: i / 20, view, px: p.px, lights: p.lights });
+}
+const spineGap = (a: V3[], b: V3[]): number => Math.max(...a.map((q, i) => Math.hypot(q[0] - b[i][0], q[1] - b[i][1], q[2] - b[i][2])));
 function hue(r: number, g: number, b: number): [number, number] {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
@@ -70,7 +84,7 @@ test('the switch is off, and nothing of the game imports it', () => {
 
 test('crisp: every pixel all there or not at all (but the pink edge), and the pink edge round it while it lives', () => {
   const [pr, pg, pb] = rgba(ENEMY_RIM);
-  for (const { name, px } of living) {
+  for (const { name, px } of [...living, ...moving]) {
     let soft = 0;
     let rim = 0;
     for (let i = 0; i < px.d.length; i += 4) {
@@ -84,8 +98,16 @@ test('crisp: every pixel all there or not at all (but the pink edge), and the pi
   }
 });
 
+test('crisp as it dies, and no pink edge once it is dying', () => {
+  for (const { name, px } of dying) {
+    let soft = 0;
+    for (let i = 0; i < px.d.length; i += 4) if (px.d[i + 3] !== 0 && px.d[i + 3] !== 255) soft++;
+    assert.ok(soft === 0, `${name}: ${soft} soft pixels`);
+  }
+});
+
 test('nothing cyan, and every light it gives is the enemy\'s fire', () => {
-  for (const { name, px, lights } of living) {
+  for (const { name, px, lights } of [...living, ...moving, ...dying]) {
     for (let i = 0; i < px.d.length; i += 4) {
       if (px.d[i + 3] === 0) continue;
       const [h, sat] = hue(px.d[i], px.d[i + 1], px.d[i + 2]);
@@ -96,7 +118,7 @@ test('nothing cyan, and every light it gives is the enemy\'s fire', () => {
 });
 
 test('nothing of it cut off at its canvas\'s edge, in any frame', () => {
-  for (const { name, px } of living) {
+  for (const { name, px } of [...living, ...moving, ...dying]) {
     let cut = 0;
     for (let x = 0; x < px.w; x++) for (const y of [0, px.h - 1]) if (px.d[(y * px.w + x) * 4 + 3] > 0) cut++;
     for (let y = 0; y < px.h; y++) for (const x of [0, px.w - 1]) if (px.d[(y * px.w + x) * 4 + 3] > 0) cut++;
@@ -128,5 +150,91 @@ test('its round mouth of teeth (his pick): shut most of its stand; once a round 
     const open = leechPainted('stand', 1.12, view);
     assert.ok(view === 'back' || pinkOf(open.px) >= 12, `${view}: its gullet showing, ${pinkOf(open.px)} pixels`);
     assert.ok(open.lights.length > 0, `${view}: its gullet's light`);
+  }
+});
+
+test('ITS SLITHER (his pick: like a snake): its body on one track on the floor, every point of it following its head, never sliding off it sideways; its round closing', () => {
+  const V = BL_PACE * TILE3;
+  const T = BL_WALK.frames / BL_WALK.fps;
+  for (let i = 0; i < 24; i++) {
+    const t = (i / 24) * T;
+    const dt = 1 / 120;
+    const a = slitherPose(t).spine.map((q) => [q[0] + V * t, q[1]] as [number, number]);
+    const b = slitherPose(t + dt).spine.map((q) => [q[0] + V * (t + dt), q[1]] as [number, number]);
+    // (each point of it a moment later lies on the track its body lay along a moment before; its head goes on ahead onto new track)
+    for (let k = 1; k < b.length - 1; k++) {
+      let best = Infinity;
+      for (let j = 0; j < a.length - 1; j++) {
+        const [x0, y0] = a[j];
+        const [x1, y1] = a[j + 1];
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const f = Math.max(0, Math.min(1, ((b[k][0] - x0) * dx + (b[k][1] - y0) * dy) / (dx * dx + dy * dy)));
+        best = Math.min(best, Math.hypot(b[k][0] - x0 - f * dx, b[k][1] - y0 - f * dy));
+      }
+      assert.ok(best < 0.6, `at ${t.toFixed(3)} s its point ${k} off its track by ${best.toFixed(2)}`);
+    }
+  }
+  assert.ok(spineGap(slitherPose(0).spine, slitherPose(T).spine) < 0.05, 'its round closes');
+  let long = 0;
+  const s = slitherPose(0.1).spine;
+  for (let k = 1; k < s.length; k++) long += Math.hypot(s[k][0] - s[k - 1][0], s[k][1] - s[k - 1][1], s[k][2] - s[k - 1][2]);
+  assert.ok(Math.abs(long - BL_LONG) < 1.5, `its length slithering ${long.toFixed(1)}`);
+});
+
+test('ITS LEAP AND LATCH (his pick): from its stand; reared to your knee, its mouth flared and its gullet\'s light (the warning); its mouth on you at the blow; swelling as it drinks; down on the floor once it lets go; back as it stood', () => {
+  const s0 = standPose(0).spine;
+  assert.ok(spineGap(attackPose(0).spine, s0) < 0.01, 'from its stand');
+  for (let t = BL_WARN[0]; t <= BL_WARN[1]; t += 0.05) {
+    const p = attackPose(t);
+    assert.ok(p.gape > 0.95 && p.spine[0][2] > 14, `${t.toFixed(2)} s: reared ${p.spine[0][2].toFixed(1)}, its mouth ${p.gape.toFixed(2)}`);
+    assert.ok(leechPainted('attack', t, 'front').lights.length > 0, `${t.toFixed(2)} s: its gullet's light`);
+  }
+  const hit = attackPose(BL_HIT).spine[0];
+  const off = Math.hypot(hit[0] - BL_LATCH[0], hit[1] - BL_LATCH[1], hit[2] - BL_LATCH[2]);
+  assert.ok(off < 1, `its mouth on you at the blow (${off.toFixed(2)} off)`);
+  let last = -1;
+  for (let t = BL_HIT; t < BL_LETGO; t += 0.05) {
+    const f = attackPose(t).fat;
+    assert.ok(f >= last - 1e-9, `swelling as it drinks (${f.toFixed(2)} at ${t.toFixed(2)} s)`);
+    last = f;
+  }
+  assert.ok(attackPose(BL_LETGO - 0.01).fat > 0.95, 'gorged as it lets go');
+  assert.ok(Math.max(...attackPose(BL_LAND).spine.map((q) => q[2])) < 5, 'down on the floor');
+  assert.ok(spineGap(attackPose(BL_ATTACK).spine, s0) < 0.01 && attackPose(BL_ATTACK).fat < 0.01, 'back as it stood');
+});
+
+test('STRUCK: from its stand, flung back and gaping, and back as it stood', () => {
+  const s0 = standPose(0).spine;
+  assert.ok(spineGap(reelPose(0).spine, s0) < 0.01, 'from its stand');
+  assert.ok(spineGap(reelPose(BL_REEL).spine, s0) < 0.01, 'back as it stood');
+  assert.ok(spineGap(reelPose(BL_REEL * 0.4).spine, s0) > 6, 'flung');
+});
+
+test('ITS DEATH (his pick: it bursts in a dark splash): swelling, then nothing of its body: a dark stain, scraps and drops; no light once it has burst', () => {
+  const before = leechPainted('dying', BL_POP - 0.02, 'front');
+  const after = leechPainted('dying', BL_DIE, 'front');
+  let n0 = 0;
+  let n1 = 0;
+  for (let i = 3; i < before.px.d.length; i += 4) if (before.px.d[i] === 255) n0++;
+  for (let i = 3; i < after.px.d.length; i += 4) if (after.px.d[i] === 255) n1++;
+  assert.ok(n0 > 300, `swollen before it bursts (${n0} pixels)`);
+  assert.ok(n1 > 200, `its stain, scraps and drops left (${n1} pixels)`);
+  for (const f of dying.filter((d) => d.t >= BL_POP)) assert.equal(f.lights.length, 0, `${f.name}: no light once it has burst`);
+  // (nothing left standing: what is left lies on the floor, its picture no taller than the stain's)
+  let top = after.px.h;
+  for (let y = 0; y < after.px.h; y++) for (let x = 0; x < after.px.w; x++) if (after.px.d[(y * after.px.w + x) * 4 + 3] === 255) top = Math.min(top, y);
+  assert.ok(108 - top < 30, `lying on the floor (${108 - top} up)`);
+});
+
+test('as the game holds a monster: both facings, its slither, its blow on its frame, its flinch and death', () => {
+  const art = makeLeechArt();
+  for (const v of ['front', 'back'] as const) {
+    const a = art[v];
+    assert.equal(a.walk.length, BL_WALK.frames);
+    assert.equal(a.walkFps, BL_WALK.fps);
+    assert.equal(a.clips?.attack?.hit, BL_HIT);
+    assert.equal(a.clips?.attack?.frames.length, Math.round(BL_ATTACK * 30) + 1);
+    assert.ok((a.clips?.die?.frames.length ?? 0) > 10 && (a.clips?.reel?.frames.length ?? 0) > 5, 'its death and flinch');
   }
 });
