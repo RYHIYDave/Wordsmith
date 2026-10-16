@@ -28,7 +28,7 @@ export const SCORPION = {
   /** The snap: its pincers shut 1.28 tiles before it (the picture's); what is in this strip before it is struck. */
   snap: { fwd: [0.2, 1.7] as const, half: 0.55 },
   /** The tail strike: the stab at the act's `hit`, held a tenth; its venom's jet reaches the floor `burst` seconds in, `reach` tiles before it, and bursts within `r`; the warning ring from `warnFrom`. What it bursts on is poisoned with `poison` of the harm it took, over the hero's poison time. */
-  sting: { burst: 0.86, reach: 78 / 39.19, r: 0.7, warnFrom: 0.3, poison: 0.6 },
+  sting: { burst: 0.86, reach: 78 / 39.19, r: 0.7, warnFrom: 0.3, poison: 0.5 },
   /** Its darting: dashes of `dash` of its walk's rounds (a range), then still for `still` seconds (a range). */
   dash: [1, 2] as const,
   still: [0.35, 0.75] as const,
@@ -40,7 +40,7 @@ const ACTS: readonly ActDef[] = [
   // its pincer snap: its basic blow
   { id: 'scorpion:snap', clip: 'attack', long: 0.7, hit: 0.3, dmg: 1, cooldown: 0, first: 0, after: 1.0, near: 0, far: 1.7 },
   // its tail strike, from range: its big move (heavy: held a tenth at the stab)
-  { id: 'scorpion:sting', clip: 'sting', long: 1.35, hit: 0.66, dmg: 0.8, cooldown: 6, first: 2, after: 0.6, near: 1.3, far: 2.6 },
+  { id: 'scorpion:sting', clip: 'sting', long: 1.35, hit: 0.66, dmg: 1.1, cooldown: 6, first: 2, after: 0.6, near: 1.3, far: 2.6 },
 ];
 
 /** What it keeps (Monster.a1): `dash` its walk's rounds still to go; `still` seconds still to stand; `ph` its walk's place in its round when last seen; `back` its dart back's rounds still to go, the way (`bx`, `by`). */
