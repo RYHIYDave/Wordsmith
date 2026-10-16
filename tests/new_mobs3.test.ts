@@ -96,6 +96,10 @@ test('their switch goes with the rules\' (Version 19.9), and only the bestiary, 
   const users: string[] = [];
   for (const f of files) {
     if ([...mine, ...alsoMockUps].some((m) => f.endsWith(`${m}.ts`))) continue;
+    // (ACT 1: the descent's kinds' pictures and what they draw are the bestiary's and the renderer's own, each in a file of
+    // its own: art/act1_figs/ and render/act1_fx/)
+    const at = f.split('\\').join('/');
+    if (at.startsWith('art/act1_figs/') || at.startsWith('render/act1_fx/')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (mine.some((m) => new RegExp(`from '[./a-z_]*/${m}'`).test(text))) users.push(f.split('\\').join('/'));
   }

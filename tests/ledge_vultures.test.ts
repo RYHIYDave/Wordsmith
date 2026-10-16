@@ -11,6 +11,7 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { FIG as FIG_VULTURE } from '../src/art/act1_figs/vulture';
 import { RIM_ALPHA } from '../src/art/kit';
 import { ENEMY_RIM, FLAME, IRON } from '../src/art/mkit';
 import { VULTURE, VULTURE_BODY, VULTURE_DEATH, VULTURE_DIVE, VULTURE_ON, VULTURE_REEL, VULTURE_REST, VULTURE_WALK, lowestOf, vultureDeathPose, vultureDeathSolids, vultureDivePose, vultureDyingPainted, vultureFlinchPose, vulturePainted, vultureStanding, vultureWalkPose } from '../src/art/ledge_vultures';
@@ -68,10 +69,14 @@ function tallOf(sp: Sprite): number {
   return bottom - top + 1;
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(VULTURE_ON.on, false);
+// (ACT 1 IN THE GAME: no longer a mock-up nothing imports. The game holds its pictures through art/act1_figs/vulture.ts
+// alone, and its switch goes on with the descent, as the bestiary throws the switches of every kind of it.)
+test('in the game through art/act1_figs/vulture.ts alone, its switch thrown with the descent', () => {
+  assert.ok(FIG_VULTURE !== null && (FIG_VULTURE.switches ?? []).includes(VULTURE_ON), 'its switch is one the bestiary throws with the descent');
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('ledge_vultures.ts')) continue;
+    const at = f.split('\\').join('/');
+    if (at === 'art/act1_figs/vulture.ts') continue;
     assert.ok(!/from ['"][^'"]*ledge_vultures['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the vulture`);
   }
 });
