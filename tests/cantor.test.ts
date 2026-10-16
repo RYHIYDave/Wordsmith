@@ -1,5 +1,5 @@
-// FLOOR 8'S BOSS, THE CANTOR (src/art/cantor.ts; a mock-up behind CANTOR_ON, off; nothing of the game imports
-// it), held to his art rulebook before he sees him, in every move and his death, from in front and from behind:
+// FLOOR 8'S BOSS, THE CANTOR (src/art/cantor.ts; in the game through art/act1_figs/cantor.ts, his switch CANTOR_ON on
+// with the descent), held to his art rulebook before he sees him, in every move and his death, from in front and from behind:
 // crisp, his pink edge while he lives; nothing cyan, every light the cult's fire; nothing of him or of what his
 // moves throw off cut off at his canvas's edge; his size, his brief's (half again the knight); and the whole boss
 // review (art/boss_checks.ts) of every move.
@@ -12,6 +12,8 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { FIG } from '../src/art/act1_figs/cantor';
+import { useAct1Figs } from '../src/art/bestiary';
 import { checkBoss, findingsSaid, framesOf } from '../src/art/boss_checks';
 import { CANTOR, CANTOR_BODY, CANTOR_ON, cantorEchoPainted, cantorPainted } from '../src/art/cantor';
 import { RIM_ALPHA } from '../src/art/kit';
@@ -60,12 +62,28 @@ function hue(r: number, g: number, b: number): [number, number] {
   return [(h + 360) % 360, (max - min) / max];
 }
 
-test('the switch is off, and nothing of the game imports him', () => {
-  assert.equal(CANTOR_ON.on, false);
-  for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('cantor.ts')) continue;
-    assert.ok(!/from ['"][^'"]*\/cantor['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Cantor`);
+test('he is in the game through art/act1_figs/cantor.ts alone, and his switch goes on with the descent', () => {
+  // (who of the game imports this file: by where each import leads, not by its name)
+  const users: string[] = [];
+  for (const f0 of fs.readdirSync('src', { recursive: true })) {
+    const f = f0.split('\\').join('/');
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/cantor.ts') continue;
+    const dir = f.split('/').slice(0, -1);
+    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const bit of spec.split('/')) {
+        if (bit === '..') parts.pop();
+        else if (bit !== '.') parts.push(bit);
+      }
+      if (parts.join('/') === 'art/cantor') users.push(f);
+    }
   }
+  assert.equal(users.sort().join(', '), 'art/act1_figs/cantor.ts', 'only his figure imports him');
+  assert.ok(FIG !== null && (FIG.switches ?? []).includes(CANTOR_ON), 'his figure holds his switch');
+  useAct1Figs(true);
+  assert.equal(CANTOR_ON.on, true, 'on with the descent');
+  useAct1Figs(false);
+  assert.equal(CANTOR_ON.on, false, 'and off without it');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge); his pink edge round him while he lives', () => {

@@ -472,8 +472,10 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // the Cantor, the Hollow Stag, and the Drowned Eye, the act's, a bigger event than the cult's lair boss.
   unfinished: { kind: 'unfinished', name: 'The Unfinished', life: 480, dmgMin: 22, dmgMax: 30, speed: 0.9, radius: 1.0, range: 2.6, windup: 1.2, cooldown: 2.4, xp: 330, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   queen: { kind: 'queen', name: 'The Carrion Queen', life: 420, dmgMin: 18, dmgMax: 26, speed: 1.5, radius: 0.9, range: 2.2, windup: 0.72, cooldown: 1.8, xp: 340, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
-  cantor: { kind: 'cantor', name: 'The Cantor', life: 440, dmgMin: 19, dmgMax: 27, speed: 0.8, radius: 0.55, range: 2.8, windup: 1.0, cooldown: 2.2, xp: 350, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
-  stag: { kind: 'stag', name: 'The Hollow Stag', life: 460, dmgMin: 20, dmgMax: 28, speed: 3.0, radius: 0.8, range: 1.9, windup: 0.8, cooldown: 1.9, xp: 360, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (THE CANTOR: as the Headsman, slow and far-reaching; his pace his procession's, CANTOR_PACE; his blow his staff strike's, game/act1_rules/cantor.ts)
+  cantor: { kind: 'cantor', name: 'The Cantor', life: 440, dmgMin: 19, dmgMax: 27, speed: 0.8, radius: 0.55, range: 3.1, windup: 1.0, cooldown: 2.2, xp: 350, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (THE HOLLOW STAG: elk-sized; its pace its stotting's, STAG_PACE; its blow its antler gore's, game/act1_rules/stag.ts)
+  stag: { kind: 'stag', name: 'The Hollow Stag', life: 460, dmgMin: 20, dmgMax: 28, speed: 3.0, radius: 0.8, range: 2.3, windup: 0.8, cooldown: 1.9, xp: 360, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   eye: { kind: 'eye', name: 'The Drowned Eye', life: 1300, dmgMin: 22, dmgMax: 32, speed: 0, radius: 2.4, range: 9, windup: 1.3, cooldown: 2.2, xp: 900, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
