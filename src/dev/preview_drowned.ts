@@ -84,4 +84,37 @@ function look(): void {
   done(cvs);
 }
 
+/** ITS STAND, moving, at twice the game's size, from in front and behind (hash `standfilm`). */
+function standFilm(): void {
+  const fps = 10;
+  const n = Math.round(DROWNED.idleFrames);
+  const W = PW;
+  const H = 440;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const draw = (i: number): void => {
+    const t = i / fps;
+    bed(g, 0, 0, W, H);
+    for (const [x, view, k] of [[260, 'front', 0], [560, 'back', 0], [820, 'front', 1.3]] as [number, 'front' | 'back', number][]) {
+      shadow(g, x, 400, 50);
+      drawBig(g, frameOf(DROWNED, 'stand', t + k, view), x, 400, 3);
+    }
+    label(g, 'The Drowned, standing (three times the game\'s size)', 8, 6);
+    label(g, `${t.toFixed(1)} s`, 8, H - 28);
+  };
+  draw(0);
+  done(cvs);
+  const win = window as unknown as { __frames: number; __tickMs: number; __frame: (i: number) => string };
+  win.__frames = n;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+}
+
 if (HASH.startsWith('look')) look();
+else if (HASH === 'standfilm') standFilm();
