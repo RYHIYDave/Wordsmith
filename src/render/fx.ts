@@ -320,6 +320,25 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   fleshmancer: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[4]],
   dagger: [GLOOM[4], GLOOM[2], PINK[2], BONE[3]],
   minifm: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
+  // ACT 1, THE DESCENT (game/act1.ts): each has its own death, painted, so these are only its colours
+  chanter: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
+  firepot: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[4]],
+  qgolem: ['#d6cbbb', '#b1a497', '#8f8598', '#6f6680'],
+  rubbling: ['#d6cbbb', '#b1a497', '#8f8598', '#6f6680'],
+  vulture: ['#2a1f33', '#463452', '#b0453a', '#e8dcc0'],
+  crawler: ['#5b3a7a', '#8a5bb0', '#3b2650', '#d8c0e8'],
+  scorpion: ['#8c4a2e', '#b8683e', '#5e301e', '#e8b070'],
+  devil: ['#c88a5c', '#9c6c52', '#e6b694', '#6e4a34'],
+  deer: ['#5a4a3c', '#7a6450', '#3e2c4a', '#c8b89a'],
+  wolf: ['#8a909c', '#b0b6c0', '#5a6070', '#e0e4ea'],
+  drowned: ['#3a4a3c', '#556650', '#28331c', '#a0a890'],
+  leech: ['#3a2c22', '#5e4a38', '#8a3a3a', '#26301c'],
+  spawn: ['#d8c8b8', '#b0988a', '#8a5a6a', '#ffb347'],
+  unfinished: ['#d6cbbb', '#b1a497', '#8f8598', '#6f6680'],
+  queen: ['#2a1f33', '#463452', '#b0453a', '#e8dcc0'],
+  cantor: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
+  stag: ['#5a4a3c', '#7a6450', '#3e2c4a', '#c8b89a'],
+  eye: ['#d8c8b8', '#b0988a', '#8a5a6a', '#ffb347'],
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);

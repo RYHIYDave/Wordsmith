@@ -9,6 +9,8 @@ import type { HeroMode } from './modes';
 import type { Attr, ClassId, Element, EquipSlot, Floor, Item, MeldId, MonsterKind, PropKind, Stats, VoiceId, WordId } from './types';
 import type { Ways } from './ways';
 import type { Dress } from './first5';
+import type { Land } from './act1_layout';
+import type { Act1Dress } from './act1_dress';
 
 /** Everything worked out from class, level, attributes and gear. Rebuilt whenever one of those changes. */
 export interface Derived {
@@ -369,6 +371,13 @@ export interface Monster {
   act?: { id: ActId; t: number; n: number; hand: 1 | -1; a: number; b: number; x: number; y: number };
   /** The Chained One: how many of his chains he has broken (0, 1 his left, 2 the ball's too). */
   form?: number;
+  /**
+   * ACT 1, THE DESCENT (game/act1/): what a kind's own rules keep on one of them, by name (a leech latched
+   * on, a vulture up in the air, the Eye's phase): each kind's rules say what.
+   */
+  a1?: Record<string, number>;
+  /** ACT 1: seconds since it was last struck (its `reel` picture plays from it: render/figure.ts gaitFrame). */
+  struckT?: number;
   /** Set when it dies; the body is swept out of the list at the end of the frame. */
   dead: boolean;
   xp: number;
@@ -522,7 +531,9 @@ export type ActId =
   | 'swipe' | 'floorArms' | 'swarm' | 'devour' | 'burst'
   | 'bite' | 'emerge' | 'dragged'
   | 'shards' | 'rings' | 'raise' | 'fire'
-  | 'miniFire' | 'miniRaise';
+  | 'miniFire' | 'miniRaise'
+  // ACT 1, THE DESCENT (game/act1/): each kind's own, by its name: 'qgolem:smash', 'queen:dive'
+  | `${string}:${string}`;
 
 /**
  * THE FIRST FIVE FLOORS (game/bosses.ts): WHAT A BOSS LEAVES ON THE FLOOR OR SENDS OUT ACROSS IT that
@@ -530,7 +541,7 @@ export type ActId =
  * arms of the dead bursting up, skulls and shards in flight, a ring of hands, a scorch. (What is his
  * while he makes an act, the line a blow will fall on, an axe in flight, is drawn from the act itself.)
  */
-export type PerilKind = 'crack' | 'split' | 'crash' | 'left' | 'arm' | 'skull' | 'shard' | 'wave' | 'ring' | 'scorch';
+export type PerilKind = 'crack' | 'split' | 'crash' | 'left' | 'arm' | 'skull' | 'shard' | 'wave' | 'ring' | 'scorch' | 'act1';
 export interface Peril {
   kind: PerilKind;
   /** Where (tiles), and the way it lies or flies. */
@@ -556,6 +567,8 @@ export interface Peril {
   c: number;
   d: number;
   hand: 1 | -1;
+  /** ACT 1 (kind 'act1'): whose and which, by name ('qgolem:chunk'): game/act1/ steps it, render/act1_fx/ draws it. */
+  a1?: string;
 }
 
 /** THE FIRST FIVE FLOORS: a cultist's body where it fell (the mini fleshmancer raises the dead out of them: game/bosses.ts). */
@@ -895,6 +908,13 @@ export interface Level {
   ways: Ways | null;
   /** THE FIRST FIVE FLOORS: what the floor is laid with in its walls and its floor, and where its moments play (game/first5.ts); absent elsewhere. */
   dress?: Dress | null;
+  /**
+   * ACT 1, THE DESCENT (game/act1_layout.ts): a floor of open ground, not a dungeon's rooms: what only it
+   * has (the drop, the river, the boardwalks, its strongholds), for the painter of its ground and its rules;
+   * and what it is laid with (game/act1_dress.ts). Absent on every other level.
+   */
+  land?: Land;
+  act1?: Act1Dress;
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */

@@ -36,6 +36,9 @@ import { makeCultistArt, makeHighPriestArt } from './monster_cultist';
 import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
+import { ACT1 } from '../game/act1';
+import { ACT1_KINDS } from '../game/types';
+import { ACT1_FIGS, act1Fig } from './act1_figs/index';
 
 /**
  * THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS): the rules of the monsters' moves
@@ -94,6 +97,15 @@ export function useFirstFive(bosses: boolean, cult: boolean): void {
 }
 useFirstFive(BOSSES5.on, CULT.on);
 
+/**
+ * ACT 1, THE DESCENT (game/act1.ts): the art chat's switches for each of its kinds (off while each was a
+ * mock-up nothing of the game used) go on and off with the descent (art/act1_figs/).
+ */
+export function useAct1Figs(on: boolean): void {
+  for (const f of Object.values(ACT1_FIGS)) for (const sw of f?.switches ?? []) sw.on = on;
+}
+useAct1Figs(ACT1.on);
+
 /** The figures there are: one for each kind of monster, and the guardian; and the Chained One as he is with his left chain broken, and free of the ball too. */
 export type MonsterFigure = MonsterKind | 'guardian' | 'chained1' | 'chained2';
 /** The figures of Version 14 (painted with the painter's kit: the tests of their pictures go through these). */
@@ -103,9 +115,9 @@ export const MONSTER_FIGURES: readonly ClassicFigure[] = ['skeleton', 'archer', 
 export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'];
 
 /** THE FIRST FIVE FLOORS' figures: the bosses of floors 2 to 5 (the Chained One in each of his three states), the bone beast, and the cult's two. */
-export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm'];
+export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...ACT1_KINDS.filter((k) => act1Fig(k) !== null)];
 /** Those of them that are heavy to paint and to hold (art/bosses3.ts: seconds of painting, tens of megabytes): made for the floor they are on, and let go of after it (Bestiary.forget). */
-export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer'];
+export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...ACT1_KINDS.filter((k) => act1Fig(k)?.heavy)];
 
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more; the Chained One is one monster, as free as he is: `form`.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: number }): MonsterFigure {
@@ -148,6 +160,27 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   fleshmancer: { top: 35, half: 14 },
   dagger: { top: 28, half: 9 },
   minifm: { top: 30, half: 11 },
+  // ACT 1, THE DESCENT (game/act1.ts): the art chat's; measured off their pictures as they come in
+  chanter: { top: 30, half: 9 },
+  firepot: { top: 30, half: 10 },
+  qgolem: { top: 44, half: 16 },
+  rubbling: { top: 12, half: 7 },
+  vulture: { top: 26, half: 14 },
+  crawler: { top: 24, half: 16 },
+  scorpion: { top: 22, half: 18 },
+  devil: { top: 28, half: 10 },
+  deer: { top: 40, half: 14 },
+  wolf: { top: 22, half: 12 },
+  drowned: { top: 28, half: 9 },
+  leech: { top: 12, half: 8 },
+  spawn: { top: 36, half: 16 },
+  unfinished: { top: 110, half: 40 },
+  queen: { top: 110, half: 50 },
+  cantor: { top: 70, half: 16 },
+  stag: { top: 80, half: 30 },
+  eye: { top: 120, half: 60 },
+  // (each as its pictures stand, once they are in: art/act1_figs/)
+  ...Object.fromEntries(ACT1_KINDS.flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
 };
 
 export interface Bestiary {
@@ -200,8 +233,11 @@ export function makeBestiary(): Bestiary {
     }
     let art = made.get(figure);
     if (!art) {
+      // (ACT 1, THE DESCENT: its own kinds' pictures, as the art chat hands them over: art/act1_figs/)
+      const a1 = act1Fig(figure);
       art =
-        figure === 'skeleton' ? makeSkeletonArt()
+        a1 ? a1.make()
+        : figure === 'skeleton' ? makeSkeletonArt()
         : figure === 'archer' ? makeArcherArt()
         : figure === 'cultist' ? makeCultistArt()
         : figure === 'bat' ? makeBatArt()

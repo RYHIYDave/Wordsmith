@@ -91,6 +91,25 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   fleshmancer: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
   dagger: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
   minifm: { bits: [GLOOM[4], GLOOM[2]], sparks: false, blood: false, dust: false },
+  // ACT 1, THE DESCENT: chips and dust off the stone ones, sand off the dust devil, a little blood off the beasts, scraps off the cult's
+  chanter: { bits: [GLOOM[4], GLOOM[2], '#ff4f9a'], sparks: false, blood: false, dust: false },
+  firepot: { bits: [GLOOM[4], GLOOM[2], '#ff4f9a'], sparks: false, blood: false, dust: false },
+  qgolem: { bits: ['#d6cbbb', '#b1a497', '#8f8598'], sparks: true, blood: false, dust: true },
+  rubbling: { bits: ['#d6cbbb', '#b1a497', '#8f8598'], sparks: true, blood: false, dust: true },
+  vulture: { bits: ['#2a1f33', '#463452', '#b0453a'], sparks: false, blood: true, dust: false },
+  crawler: { bits: ['#5b3a7a', '#8a5bb0', '#3b2650'], sparks: false, blood: true, dust: false },
+  scorpion: { bits: ['#8c4a2e', '#b8683e', '#5e301e'], sparks: false, blood: true, dust: false },
+  devil: { bits: ['#c88a5c', '#9c6c52', '#e6b694'], sparks: false, blood: false, dust: true },
+  deer: { bits: ['#5a4a3c', '#7a6450', '#3e2c4a'], sparks: false, blood: true, dust: false },
+  wolf: { bits: ['#8a909c', '#b0b6c0', '#5a6070'], sparks: false, blood: true, dust: false },
+  drowned: { bits: ['#3a4a3c', '#556650', '#28331c'], sparks: false, blood: true, dust: false },
+  leech: { bits: ['#3a2c22', '#5e4a38', '#8a3a3a'], sparks: false, blood: true, dust: false },
+  spawn: { bits: ['#d8c8b8', '#b0988a', '#8a5a6a'], sparks: false, blood: true, dust: false },
+  unfinished: { bits: ['#d6cbbb', '#b1a497', '#8f8598'], sparks: true, blood: false, dust: true },
+  queen: { bits: ['#2a1f33', '#463452', '#b0453a'], sparks: false, blood: true, dust: false },
+  cantor: { bits: [GLOOM[4], GLOOM[2], '#ff4f9a'], sparks: false, blood: false, dust: false },
+  stag: { bits: ['#5a4a3c', '#7a6450', '#3e2c4a'], sparks: false, blood: true, dust: false },
+  eye: { bits: ['#d8c8b8', '#b0988a', '#8a5a6a'], sparks: false, blood: true, dust: false },
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);

@@ -1,6 +1,7 @@
 // The game's content tables: classes, abilities, power words, monsters, and the numbers that
 // tune them. Change the game's feel here; the rules that read these tables live in game.ts.
 
+import { act1Def } from './act1';
 import type { VendorId } from './state';
 import type { AbilityId, Attr, ClassId, Element, Limit, MonsterKind, Slot, WeaponKind, WordId } from './types';
 import { FIRST5_KINDS, MELD_OF, NEW_KINDS } from './types';
@@ -431,6 +432,37 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // THE MINI FLESHMANCER, "elite": never a pack of his own: a yellow pack of dagger cultists' leader
   // (LEADERS), with their life (three times it, as a leader); his fire and his call are game/bosses.ts.
   minifm: { kind: 'minifm', name: 'Mini Fleshmancer', life: 17, dmgMin: 7, dmgMax: 10, speed: 1.6, radius: 0.34, range: 2.2, windup: 17 / 30, cooldown: 2.4, xp: 12, ranged: false, projSpeed: 0, keepMax: 0, element: 'fire', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // ACT 1, THE DESCENT (game/act1.ts; game/act1_mobs.ts says who is on which floor, and in what packs; the
+  // art chat's pictures, each with his yes). Never in a pack of the Crypt's (no weight): each floor of the
+  // descent draws its own. Their blows land when their pictures' do (`windup`: the art's own times), and
+  // they go at the paces their walks were painted for. Small ones one attack, medium two, by his rule.
+  // THE CHANTER, small: a bolt of cursed words; nearby cultists take less harm while it lives.
+  chanter: { kind: 'chanter', name: 'Chanter', life: 15, dmgMin: 5, dmgMax: 8, speed: 1.0, radius: 0.3, range: 7, windup: 19 / 30, cooldown: 2.6, xp: 8, ranged: true, projSpeed: 7, keepMax: 6, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // THE FIREPOT THROWER, small: lobs pots that leave burning ground.
+  firepot: { kind: 'firepot', name: 'Firepot Thrower', life: 16, dmgMin: 7, dmgMax: 10, speed: 1.1, radius: 0.3, range: 7.5, windup: 27 / 30, cooldown: 3.2, xp: 8, ranged: true, projSpeed: 0, keepMax: 6.5, element: 'fire', aoe: 1.2, minDepth: 99, weight: 0, size: 'small' },
+  // FLOOR 6, THE QUARRY: the quarry golem, medium (its hammer and its thrown chunk); the rubblings, tiny (a bite).
+  qgolem: { kind: 'qgolem', name: 'Quarry Golem', life: 46, dmgMin: 12, dmgMax: 18, speed: 1.0, radius: 0.5, range: 1.7, windup: 0.95, cooldown: 2.2, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  rubbling: { kind: 'rubbling', name: 'Rubbling', life: 7, dmgMin: 3, dmgMax: 5, speed: 2.0, radius: 0.22, range: 0.8, windup: 0.42, cooldown: 1.1, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
+  // FLOOR 7, THE LEDGE ROAD: the vultures, small (they circle, then dive); the cliff crawlers, medium (a swipe; a leap).
+  vulture: { kind: 'vulture', name: 'Vulture', life: 13, dmgMin: 5, dmgMax: 8, speed: 1.2, radius: 0.3, range: 1.4, windup: 0.7, cooldown: 2.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  crawler: { kind: 'crawler', name: 'Cliff Crawler', life: 38, dmgMin: 10, dmgMax: 15, speed: 1.4, radius: 0.45, range: 1.3, windup: 0.4, cooldown: 1.8, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // FLOOR 8, ECHO CANYON: the canyon scorpions, medium (a pincer snap; a poison tail strike from range); the dust devils, small (a lash).
+  scorpion: { kind: 'scorpion', name: 'Canyon Scorpion', life: 40, dmgMin: 10, dmgMax: 15, speed: 2.0, radius: 0.45, range: 1.2, windup: 0.3, cooldown: 1.5, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  devil: { kind: 'devil', name: 'Dust Devil', life: 14, dmgMin: 5, dmgMax: 8, speed: 2.4, radius: 0.3, range: 1.3, windup: 0.5, cooldown: 1.6, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // FLOOR 9, THE PINEWOOD: the twisted deer, medium (an antler gore; a rearing stomp); the fog wolves, small (a bite).
+  deer: { kind: 'deer', name: 'Twisted Deer', life: 44, dmgMin: 11, dmgMax: 16, speed: 1.8, radius: 0.5, range: 1.1, windup: 0.55, cooldown: 1.8, xp: 15, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  wolf: { kind: 'wolf', name: 'Fog Wolf', life: 15, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.3, range: 1.2, windup: 0.5, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // FLOOR 10, THE SUNKEN FEN: the Drowned, small (they rise and grab); the bog leeches, tiny (they latch on and drink); the eyespawn, medium (a lash; a gaze beam).
+  drowned: { kind: 'drowned', name: 'Drowned', life: 18, dmgMin: 6, dmgMax: 9, speed: 0.7, radius: 0.32, range: 1.0, windup: 0.667, cooldown: 2.0, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  leech: { kind: 'leech', name: 'Bog Leech', life: 7, dmgMin: 2, dmgMax: 4, speed: 2.4, radius: 0.22, range: 0.95, windup: 0.633, cooldown: 2.2, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
+  spawn: { kind: 'spawn', name: 'Eyespawn', life: 40, dmgMin: 10, dmgMax: 14, speed: 1.1, radius: 0.48, range: 1.15, windup: 0.533, cooldown: 1.8, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // THE FIVE BOSSES OF THE DESCENT (game/act1_bosses.ts: what each does): the Unfinished, the Carrion Queen,
+  // the Cantor, the Hollow Stag, and the Drowned Eye, the act's, a bigger event than the cult's lair boss.
+  unfinished: { kind: 'unfinished', name: 'The Unfinished', life: 480, dmgMin: 22, dmgMax: 30, speed: 0.9, radius: 1.0, range: 2.6, windup: 1.2, cooldown: 2.4, xp: 330, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  queen: { kind: 'queen', name: 'The Carrion Queen', life: 420, dmgMin: 18, dmgMax: 26, speed: 1.5, radius: 0.9, range: 2.2, windup: 0.72, cooldown: 1.8, xp: 340, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  cantor: { kind: 'cantor', name: 'The Cantor', life: 440, dmgMin: 19, dmgMax: 27, speed: 0.8, radius: 0.55, range: 2.8, windup: 1.0, cooldown: 2.2, xp: 350, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  stag: { kind: 'stag', name: 'The Hollow Stag', life: 460, dmgMin: 20, dmgMax: 28, speed: 3.0, radius: 0.8, range: 1.9, windup: 0.8, cooldown: 1.9, xp: 360, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  eye: { kind: 'eye', name: 'The Drowned Eye', life: 1300, dmgMin: 22, dmgMax: 32, speed: 0, radius: 2.4, range: 9, windup: 1.3, cooldown: 2.2, xp: 900, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
 /**
@@ -859,6 +891,9 @@ export const FLOOR_CARD_FIRST = { on: true };
 
 /** A floor's name and its level, as the floors' names give them. */
 export function floorTitle(depth: number): { name: string; level: string } {
+  // (ACT 1, THE DESCENT: out of the Prison and down the mountain, each floor its boss's place, his doc's names; game/act1.ts)
+  const a = act1Def(depth);
+  if (a) return { name: a.name, level: `${a.place}, Level ${depth}` };
   const name = FLOOR_NAMES.names[depth - 1] ?? FLOOR_NAMES.beyond;
   return { name, level: `Prison Level ${depth}` };
 }

@@ -21,6 +21,8 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, bossKind, gaitOf } from './bosses';
+import { ACT1 } from './act1';
+import { act1Rules } from './act1_rules/index';
 import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
@@ -358,7 +360,7 @@ export class Game {
    */
   tryFloor(n: number): void {
     this.practice = false;
-    this.depth = Math.max(1, Math.min(5, Math.floor(n)));
+    this.depth = Math.max(1, Math.min(10, Math.floor(n)));
     this.cleared = this.depth - 1;
     this.wayDepth = this.depth;
     // (the practice room's lines are not true here: on a floor of the Crypt the hero can fall)
@@ -1197,8 +1199,19 @@ export class Game {
       bx = back.x;
       by = back.y;
     }
+    // (ACT 1: where a boss of the descent's own stands, as his rules have it: the eyrie's edge, the Eye's pool)
+    const bk = bossKind(this.depth);
+    const placed = ACT1.on ? act1Rules(bk)?.bossAt?.(this.level) ?? null : null;
+    if (placed) {
+      bx = placed.x;
+      by = placed.y;
+    }
     // (THE FIRST FIVE FLOORS: each floor's own boss, game/bosses.ts; the Warden on the first, and past the fifth)
-    this.boss = this.spawn(bossKind(this.depth), bx, by, -2, 0, true, rng, lot);
+    this.boss = this.spawn(bk, bx, by, -2, 0, true, rng, lot);
+    if (placed) {
+      this.boss.fx = placed.fx;
+      this.boss.fy = placed.fy;
+    }
   }
 
   /**
@@ -1436,6 +1449,9 @@ export class Game {
     if (pack) m.rarity = pack.rarity;
     if (half.length) m.half = half;
     this.monsters.push(m);
+    // (ACT 1: as one of the descent's own comes into the world: rising out of the water, out of a rock pile)
+    const r1 = ACT1.on ? act1Rules(kind) : null;
+    if (r1 && r1.spawned) r1.spawned(this.bosses, m);
     return m;
   }
 
@@ -3801,7 +3817,7 @@ export class Game {
     this.sfx('rune', 0.7);
   }
 
-  private addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number, half?: HalfWords): void {
+  addWarn(x: number, y: number, rad: number, dur: number, dmg: number, el: Element, words: WordId[], from: string, src?: number, half?: HalfWords): void {
     // (a warning is never left out: if the floor is full, the oldest of the hero's own patches gives way to it)
     this.roomForZone();
     const z: Zone = { x, y, r: rad, t: 0, dur, kind: 'warn', element: el, dmg, slow: 0, tick: 0, hostile: true, skill: -1, words, from, src };
@@ -4151,6 +4167,9 @@ export class Game {
       }
       return;
     }
+    // (ACT 1: nor is one up in the air, or under the water, as its kind's rules have it)
+    const r1 = ACT1.on ? act1Rules(m.kind) : null;
+    if (r1 && r1.reachable && !r1.reachable(m)) return;
     // (THE SKILL TREES: Overload, a shocked enemy takes more from everything)
     if (m.shockT > 0 && this.has('overload')) dmg = Math.max(1, Math.round(dmg * TALENT_TUNE.overload));
     // (WORDMELDING: Blight behind, a poisoned enemy it has touched takes more from everything)
@@ -4162,6 +4181,8 @@ export class Game {
       m.life -= dmg - soak;
     } else m.life -= dmg;
     if (!poison && !dot) m.flash = heavy ? 0.2 : 0.12;
+    // (ACT 1: struck, it reels, as its picture has it: render/figure.ts gaitFrame)
+    if (!poison && !dot && r1) m.struckT = 0;
     m.barT = 4;
     if (skill >= 0) m.lastSkill = skill;
     if (m.state === 'sleep') this.wakeUp(m);
@@ -4644,6 +4665,7 @@ export class Game {
       const dy = h.y - m.y;
       const dist = Math.hypot(dx, dy);
       m.animT += dt;
+      if (m.struckT !== undefined) m.struckT += dt;
       if (m.state === 'sleep') {
         // In a new player's first dungeon nothing wakes by itself until the lesson in walking is
         // done. (About seven such dungeons in four hundred put a pack in sight of where the hero

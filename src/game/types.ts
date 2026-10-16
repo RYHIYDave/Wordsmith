@@ -61,7 +61,11 @@ export type Element = 'phys' | 'fire' | 'frost' | 'lightning';
 export type MonsterKind =
   | 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'warden' | 'shade' | 'boneward' | 'golem' | 'champion' | 'marksman' | 'priest' | 'chieftain'
   // THE FIRST FIVE FLOORS (game/bosses.ts): the bosses of floors 2 to 5, the amalgamation's bone beast, and the cult's two fighters
-  | 'headsman' | 'chained' | 'amalgam' | 'beast' | 'fleshmancer' | 'dagger' | 'minifm';
+  | 'headsman' | 'chained' | 'amalgam' | 'beast' | 'fleshmancer' | 'dagger' | 'minifm'
+  // ACT 1, THE DESCENT (game/act1.ts): the cult's two new kinds; each floor's own creatures; the five bosses
+  | 'chanter' | 'firepot'
+  | 'qgolem' | 'rubbling' | 'vulture' | 'crawler' | 'scorpion' | 'devil' | 'deer' | 'wolf' | 'drowned' | 'leech' | 'spawn'
+  | 'unfinished' | 'queen' | 'cantor' | 'stag' | 'eye';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
@@ -72,6 +76,8 @@ export const NEW_KINDS: readonly MonsterKind[] = ['shade', 'boneward', 'golem', 
  * and the cult's two fighters of floors 4 and 5 (the dagger cultist and the mini fleshmancer).
  */
 export const FIRST5_KINDS: readonly MonsterKind[] = ['headsman', 'chained', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm'];
+/** ACT 1, THE DESCENT (game/act1.ts): the cult's two new kinds, the floors' own creatures and the five bosses, the art chat's. */
+export const ACT1_KINDS: readonly MonsterKind[] = ['chanter', 'firepot', 'qgolem', 'rubbling', 'vulture', 'crawler', 'scorpion', 'devil', 'deer', 'wolf', 'drowned', 'leech', 'spawn', 'unfinished', 'queen', 'cantor', 'stag', 'eye'];
 
 // ---------------------------------------------------------------------------------------------
 // Stats. Every number a character has is one of these keys. Percentages are whole numbers

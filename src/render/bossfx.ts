@@ -30,6 +30,8 @@ import type { GaitedKind } from '../game/bosses';
 import { backView, beside, flipped } from '../game/facing';
 import type { Game } from '../game/game';
 import type { Monster, Peril } from '../game/state';
+import { act1Fx } from './act1_fx/index';
+import type { Act1FxCtx } from './act1_fx/types';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth01 = (u: number): number => {
@@ -110,6 +112,7 @@ export class BossFx {
 
   /** ON THE FLOOR, under everything that stands: the warnings of what is coming, what a blow leaves, the shadows of what flies. `t`: the screen's clock. */
   ground(g: CanvasRenderingContext2D, at: FloorAt, game: Game, t: number, here: (x: number, y: number) => boolean): void {
+    this.act1Layer('ground', g, at, game, t, here, null);
     for (const m of game.monsters) {
       if (m.dead || !m.act || m.state !== 'act') continue;
       if (!here(m.x, m.y)) continue;
@@ -263,6 +266,7 @@ export class BossFx {
 
   /** WHAT STANDS among the figures: an axe, a hook or a ball in flight, arms of the dead and hands out of the floor, skulls on the wing. */
   standing(at: FloorAt, game: Game, stand: StandFn, here: (x: number, y: number) => boolean): void {
+    this.act1Layer('standing', null, at, game, game.time, here, stand);
     for (const m of game.monsters) {
       if (m.dead || !m.act || m.state !== 'act' || !m.seen) continue;
       const act = m.act;
@@ -344,6 +348,7 @@ export class BossFx {
 
   /** OVER WHAT STANDS: fire bursting up out of a split floor, chains out across the room, shards in flight, a stream of fire, his light on a heap. */
   air(g: CanvasRenderingContext2D, at: FloorAt, game: Game, here: (x: number, y: number) => boolean): void {
+    this.act1Layer('air', g, at, game, game.time, here, null);
     for (const m of game.monsters) {
       if (m.dead || !m.act || m.state !== 'act' || !m.seen) continue;
       const act = m.act;
@@ -427,6 +432,29 @@ export class BossFx {
       if (r.way || r.age >= 0 || r.age < -MINIFM.raise.glow || r.m.packId < 0 || !here(r.m.x, r.m.y)) continue;
       const [x, y] = at(r.m.x, r.m.y);
       drawRaiseGlow(g, x, y, r.age + MINIFM.raise.glow, 0.2);
+    }
+  }
+
+  /**
+   * ACT 1, THE DESCENT: what each of its own kinds draws in this layer (render/act1_fx/): for each of them on
+   * the floor, and for each of their perils.
+   */
+  private act1Layer(layer: 'ground' | 'standing' | 'air', g: CanvasRenderingContext2D | null, at: FloorAt, game: Game, t: number, here: (x: number, y: number) => boolean, stand: StandFn | null): void {
+    let c: Act1FxCtx | null = null;
+    const ctx = (): Act1FxCtx => (c ??= { g, at, game, t, bestiary: this.bestiary, stand: stand ?? (() => undefined), spot: (x, y, r, a) => void this.spots.push([x, y, r, a]) });
+    for (const m of game.monsters) {
+      if (m.dead) continue;
+      const fx = act1Fx(m.kind);
+      const f = fx ? fx[layer] : undefined;
+      if (!fx || !f || !here(m.x, m.y)) continue;
+      f.call(fx, ctx(), m, null);
+    }
+    for (const p of game.perils) {
+      if (p.kind !== 'act1' || !p.a1) continue;
+      const fx = act1Fx(p.a1.split(':')[0]);
+      const f = fx ? fx[layer] : undefined;
+      if (!fx || !f || !here(p.x, p.y)) continue;
+      f.call(fx, ctx(), null, p);
     }
   }
 

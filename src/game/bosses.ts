@@ -31,6 +31,8 @@ import { beside, fromFigure, handOf } from './facing';
 import type { Game } from './game';
 import type { ActId, Monster, Peril, PerilKind } from './state';
 import type { Element, MonsterKind } from './types';
+import { ACT1 } from './act1';
+import { act1Rules } from './act1_rules/index';
 
 /**
  * THE BOSSES OF FLOORS 2 TO 5 (and the bone beasts): in the game, behind this switch. Off, every
@@ -41,6 +43,11 @@ export const BOSSES5 = { on: true };
 /** Which boss a floor has. Past the fifth (no set of five there yet), the Warden, as before. */
 export function bossKind(depth: number): MonsterKind {
   if (!BOSSES5.on) return 'warden';
+  // (ACT 1, THE DESCENT: each floor's own, once built: game/act1_rules/; until then the Warden stands in)
+  if (ACT1.on && depth >= 6 && depth <= 10) {
+    const k: MonsterKind = depth === 6 ? 'unfinished' : depth === 7 ? 'queen' : depth === 8 ? 'cantor' : depth === 9 ? 'stag' : 'eye';
+    return act1Rules(k) ? k : 'warden';
+  }
   return depth === 2 ? 'headsman' : depth === 3 ? 'chained' : depth === 4 ? 'amalgam' : depth === 5 ? 'fleshmancer' : 'warden';
 }
 
@@ -75,6 +82,8 @@ export const GAITS: Record<GaitedKind, GaitDef> = {
 /** How long the Headsman holds his axe across him, doing nothing, before he sets it down again (seconds). */
 export const CARRY_FOR = 0.7;
 export function gaitOf(kind: MonsterKind): GaitDef | null {
+  const r = ACT1.on ? act1Rules(kind) : null;
+  if (r) return r.gait;
   return BOSSES5.on && kind in GAITS ? GAITS[kind as GaitedKind] : null;
 }
 
@@ -151,6 +160,8 @@ export const ACTS: Record<GaitedKind, readonly ActDef[]> = {
 };
 /** The acts one of them has, as free as he is (the Chained One: none that needs a chain he has broken). */
 export function actsOf(m: { kind: MonsterKind }): readonly ActDef[] | null {
+  const r = ACT1.on ? act1Rules(m.kind) : null;
+  if (r) return r.acts;
   return BOSSES5.on && m.kind in ACTS ? ACTS[m.kind as GaitedKind] : null;
 }
 export function actDef(m: { kind: MonsterKind; act?: { id: ActId } }): ActDef | null {
@@ -320,7 +331,7 @@ const wrap = (a: number): number => {
 export class BossRules {
   private serial = 1;
 
-  constructor(private readonly g: Game) {}
+  constructor(readonly g: Game) {}
 
   // ----- a step of one of them ------------------------------------------------------------------
 
@@ -329,10 +340,13 @@ export class BossRules {
    * stunned). `slow`: 1, or less while it is chilled. `rage`: 1, or more as Frenzied hurries it.
    */
   step(m: Monster, def: MonsterDef, dt: number, slow: number, rage: number, dx: number, dy: number, dist: number): void {
-    const G = GAITS[m.kind as GaitedKind];
-    const acts = ACTS[m.kind as GaitedKind];
+    const G = gaitOf(m.kind)!;
+    const acts = actsOf(m)!;
     const g = this.g;
     const h = g.hero;
+    // (ACT 1: what its kind does every step, whatever else: up in the air, latched on, under the water)
+    const r1 = ACT1.on ? act1Rules(m.kind) : null;
+    if (r1 && r1.tick && r1.tick(this, m, dt, dist)) return;
     if (!m.gait) m.gait = { mode: 'stand', t: 0 };
     if (!m.moveCd || m.moveCd.length !== acts.length) m.moveCd = acts.map((a) => a.first * g.rng.range(0.7, 1.2));
     // (the Fleshmancer, hurt, casts again sooner)
@@ -413,6 +427,8 @@ export class BossRules {
 
   /** An act the rules bring, whatever else it would do: the Chained One breaks a chain, a bone beast bursts out of the amalgamation. -1: none. */
   private forcedAct(m: Monster, acts: readonly ActDef[]): number {
+    const r1 = ACT1.on ? act1Rules(m.kind) : null;
+    if (r1) return r1.forced ? r1.forced(this, m, acts) : -1;
     const frac = m.life / m.maxLife;
     if (m.kind === 'chained') {
       const form = m.form ?? 0;
@@ -437,6 +453,9 @@ export class BossRules {
       const a = acts[i];
       if (a.forced || (m.moveCd && m.moveCd[i] > 0)) continue;
       if (dist < a.near || dist > a.far) continue;
+      // (ACT 1: whether its kind's rules let it now)
+      const r1 = ACT1.on ? act1Rules(m.kind) : null;
+      if (r1 && r1.can && !r1.can(this, m, a, dist, los)) continue;
       // (the Chained One, free of the ball, has none to throw)
       if (a.id === 'ball' && (m.form ?? 0) >= 2) continue;
       if (a.id === 'raise') {
@@ -483,7 +502,7 @@ export class BossRules {
     const g = this.g;
     const h = g.hero;
     const a = acts[i];
-    const G = GAITS[m.kind as GaitedKind];
+    const G = gaitOf(m.kind)!;
     const dx = h.x - m.x;
     const dy = h.y - m.y;
     const dist = Math.hypot(dx, dy);
@@ -510,6 +529,8 @@ export class BossRules {
       g.sfx('bossRoar', a.id === 'raise' ? 0.8 : 0.4);
       if (a.id === 'raise') g.msg(`${m.name} raises the dead`, MSG.foe);
     } else if (a.id === 'sentence' || a.id === 'devour' || a.id === 'fire') g.sfx('bossRoar', 0.5);
+    const r1 = ACT1.on ? act1Rules(m.kind) : null;
+    if (r1 && r1.start) r1.start(this, m, a);
   }
 
   /** A step of the act it is making: its clock runs (slowed by a chill until its blow), and what it does at each moment is done. */
@@ -533,7 +554,7 @@ export class BossRules {
   /** The act is over: it stands as its pictures leave it, and waits its moment. */
   private endAct(m: Monster, a: ActDef): void {
     const g = this.g;
-    const G = GAITS[m.kind as GaitedKind];
+    const G = gaitOf(m.kind)!;
     const swift = 1 - 0.3 * wordShare(m, 'swift');
     const i = m.move ?? -1;
     m.state = 'chase';
@@ -550,6 +571,8 @@ export class BossRules {
       m.form = was + 1;
       m.speed *= CHAINED.faster[was + 1] / CHAINED.faster[was];
     } else if (a.id === 'burst') m.phase++;
+    const r1 = ACT1.on ? act1Rules(m.kind) : null;
+    if (r1 && r1.end) r1.end(this, m, a);
   }
 
   /** An act is broken off (a stun, a stagger: never a boss's). */
@@ -565,18 +588,18 @@ export class BossRules {
   }
 
   /** What one of them does to the hero with a blow of its own, `mult` times its blow. */
-  private blow(m: Monster, mult: number): void {
+  blow(m: Monster, mult: number): void {
     const g = this.g;
     g.hurtHero(g.rollMonsterDmg(m) * mult, g.monsterElement(m), m.words, m);
   }
 
   /** Where the hero is from one of them as it acts: tiles before it, and to the left it is drawn with. */
-  private rel(m: Monster): { fwd: number; left: number } {
+  rel(m: Monster): { fwd: number; left: number } {
     const h = this.g.hero;
     return fromFigure(m.x, m.y, m.fx, m.fy, m.act ? m.act.hand : 1, h.x, h.y);
   }
 
-  private peril(m: Monster, kind: PerilKind, x: number, y: number, more: Partial<Peril> = {}): Peril {
+  peril(m: Monster, kind: PerilKind, x: number, y: number, more: Partial<Peril> = {}): Peril {
     const g = this.g;
     const p: Peril = {
       kind, x, y, fx: m.fx, fy: m.fy, t: 0, hit: 0, dur: 1, dmg: 0, el: g.monsterElement(m), words: m.words, from: m.name, done: 0, a: 0, b: 0, c: 0, d: 0,
@@ -971,11 +994,17 @@ export class BossRules {
         }
         break;
       }
+      default: {
+        // (ACT 1, THE DESCENT: each kind's own acts, by its rules: game/act1_rules/)
+        const r1 = ACT1.on ? act1Rules(m.kind) : null;
+        if (r1) r1.acting(this, m, a, t0, t1, dt);
+        break;
+      }
     }
   }
 
   /** Does something that turns from bearing `b0` to `b1` (radians, going up) pass bearing `at`? */
-  private passes(b0: number, b1: number, at: number): boolean {
+  passes(b0: number, b1: number, at: number): boolean {
     if (b1 <= b0) return false;
     // (the least turn from b0 that reaches `at`)
     let need = (at - b0) % (Math.PI * 2);
@@ -1041,7 +1070,11 @@ export class BossRules {
       const t0 = p.t;
       p.t += dt;
       const hurt = (mult = 1): void => g.hurtHero(p.dmg * mult, p.el, p.words, null, p.from, p.x, p.y, p.half);
-      if (p.kind === 'split') {
+      if (p.kind === 'act1') {
+        // (ACT 1: its kind's own: game/act1_rules/, by the peril's name, 'kind:what')
+        const r1 = p.a1 ? act1Rules(p.a1.split(':')[0] as MonsterKind) : null;
+        if (r1 && r1.peril) r1.peril(this, p, dt);
+      } else if (p.kind === 'split') {
         // (the split burns: whoever stands in it is burned, tick by tick)
         const S = HEADSMAN.sentence;
         const next = 0.12 + S.tick * p.done;
@@ -1112,6 +1145,8 @@ export class BossRules {
   /** One of the monsters has died (game.ts, kill): what that means here. */
   died(m: Monster): void {
     const g = this.g;
+    const r1 = ACT1.on ? act1Rules(m.kind) : null;
+    if (r1 && r1.died) r1.died(this, m);
     if (m.kind === 'chained' && g.hero.held) g.hero.held = 0;
     if (m.kind === 'amalgam') {
       // (its bone beasts fall apart with it)

@@ -11,6 +11,8 @@ import type { Level, PropInst } from './state';
 import { CUT_FAR, CUT_FAR_LOW, CUT_LEFT, CUT_NEAR, CUT_NEAR_LOW, CUT_RIGHT, SOLID_PROPS, T_FLOOR, T_PIT, T_VOID, T_WALL } from './types';
 import type { Floor, HazardSpot, PackSpot, PropSpot, Room } from './types';
 import { dress } from './first5';
+import { act1Floor } from './act1';
+import { makeAct1Level } from './act1_level';
 import { FIRST5, TOWN_WAY, WAYS, beforeGate, openGate, placeFirstGate, placeShaft, placeWay, shaftTiles, stairSpots, townGate } from './ways';
 
 /**
@@ -38,7 +40,7 @@ function portalAt(x: number, y: number, active: boolean): PropInst {
   return { kind: 'portal', tx: Math.floor(x), ty: Math.floor(y), x, y, solid: false, state: active ? 1 : 0, variant: 0 };
 }
 
-function finish(f: Floor, town: boolean, portal: PropInst | null): Level {
+export function finish(f: Floor, town: boolean, portal: PropInst | null): Level {
   const n = f.w * f.h;
   const level: Level = {
     town,
@@ -789,6 +791,8 @@ export function makeShapeRoom(kind: Shape, seed: number): Level {
 
 /** Dungeon number `depth`: one large generated level whose boss room holds the way home. */
 export function makeDungeon(depth: number, seed: number): Level {
+  // (ACT 1, THE DESCENT: floors 6 to 10 are open ground, laid by a map-maker of their own: game/act1_layout.ts)
+  if (act1Floor(depth)) return makeAct1Level(depth, seed);
   const floor = generateFloor(depth, seed);
   // The exit portal stands in the boss room and stays dark until the boss dies.
   if (!WAYS.on) return finish(floor, false, portalAt(floor.boss.x, floor.boss.y, false));

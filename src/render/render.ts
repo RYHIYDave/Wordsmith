@@ -60,6 +60,12 @@ import type { Kick } from './dress';
 import { FloorPieces } from './pieces';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
+import { OutdoorGround, PIECE as GROUND_PIECE } from './outdoor';
+import { Act1Pieces, SEE_TALL } from './act1_pieces';
+import { act1Fx } from './act1_fx/index';
+import { spikeAt as trapAt } from '../game/traps';
+import { act1Def } from '../game/act1';
+import { redoubtGround } from '../art/redoubt';
 import type { Painter } from './painter';
 import { gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
@@ -361,6 +367,13 @@ export class Renderer {
   readonly pieces: FloorPieces;
   /** Whether this frame's level is laid with them. */
   private dressed = false;
+  /** ACT 1, THE DESCENT: the outdoor ground of a floor of it, painted in pieces (render/outdoor.ts). */
+  readonly outdoor = new OutdoorGround();
+  /** (and each floor's own pieces, and what stands on its tops: render/act1_pieces.ts) */
+  readonly act1 = new Act1Pieces();
+  private act1Dressed = false;
+  /** (and whether this frame shows the open ground, or the hall inside a stronghold, which is drawn as a dungeon's room) */
+  private openGround = false;
 
   /** The kicks of the screen this frame's films ask for (main.ts kicks it, and sounds a blow for each). */
   kicks(): Kick[] {
@@ -1290,10 +1303,22 @@ export class Renderer {
     if (L.ways && pass <= 0) this.dress.flat(g, game, this.stage);
     if (this.dressed) this.pieces.shadows(g, game, this.stage, here);
     for (const p of L.props) {
-      if (!L.explored[p.ty * f.w + p.tx] || !here(p.x, p.y)) continue;
+      if ((!L.explored[p.ty * f.w + p.tx] && !this.openGround) || !here(p.x, p.y)) continue;
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
       if (sx < -60 || sx > W + 60 || sy < -30 || sy > H + 60) continue;
+      // (ACT 1, THE DESCENT: the floor's own pieces that lie on the floor, and what is left of its breakables; the soft shadows of what stands)
+      if (this.act1Dressed) {
+        const a = this.act1;
+        const r = a.shadowOf(p);
+        if (r > 0) this.shadow(g, Math.round(sx), Math.round(sy), r, SHADOW);
+        if (a.lies(p) || ((p.kind === 'barrel' || p.kind === 'urn') && p.state === 1)) {
+          const sp = a.sprite(p, t);
+          if (sp) g.drawImage(sp.img, Math.round(sx) - sp.ax, Math.round(sy) - sp.ay, sp.w, sp.h);
+          continue;
+        }
+        if (p.kind === 'piece' || p.kind === 'barrel' || p.kind === 'urn') continue;
+      }
       // (THE FIRST FIVE FLOORS: the floor's own bones, and what its breakables leave: render/pieces.ts)
       const own = this.dressed ? this.pieces.flat(p) : undefined;
       if (own !== undefined) {
@@ -1326,6 +1351,13 @@ export class Renderer {
     // (THE TRAPS) a spike floor's holes, glinting in the moment before its spikes come up; a dart wall's plate
     for (const z of L.hazards) {
       const s = z.spot;
+      // (ACT 1: the floor's own trap, its frames by its beat: render/act1_pieces.ts)
+      if (this.act1Dressed && s.kind === 'spikes') {
+        const at = trapAt(s, game.time);
+        const sp = this.act1.trapFrame(at.at === 'warn' ? 'warn' : at.at === 'down' ? 'down' : 'up', at.at === 'up' ? Math.min(1, at.k ?? 1) : 0);
+        if (sp) for (let ty = s.y; ty < s.y + s.h; ty++) for (let tx = s.x; tx < s.x + s.w; tx++) g.drawImage(sp.img, Math.round(wx(cam, tx, ty)) - sp.ax, Math.round(wy(cam, tx, ty)) - sp.ay, sp.w, sp.h);
+        continue;
+      }
       const sp = s.kind === 'spikes' ? art.hazards.holes(spikeAt(s, game.time).at === 'warn') : art.hazards.plate(z.pressed > 0);
       for (let ty = s.y; ty < s.y + s.h; ty++) {
         for (let tx = s.x; tx < s.x + s.w; tx++) {
@@ -1335,7 +1367,7 @@ export class Renderer {
       }
     }
     // (THE FIRST FIVE FLOORS: what the bosses of floors 2 to 5 warn of, leave and cast shadows of on the floor: render/bossfx.ts)
-    if (game.perils.length || game.boss || game.monsters.some((m) => m.state === 'act')) this.bossFx.ground(g, this.floorAt, game, t, here);
+    if (game.perils.length || game.boss || game.level.act1 || game.monsters.some((m) => m.state === 'act')) this.bossFx.ground(g, this.floorAt, game, t, here);
     for (const z of game.zones) {
       // (THE MONSTERS' ATTACKS: the line a red troll will charge along, in the red circle's own reds: art/charge_lane.ts)
       if (z.kind === 'lane') {
@@ -1743,6 +1775,12 @@ export class Renderer {
     const art = this.monsterArt(m);
     const more = (m.fx + m.fy < -0.2 ? art.back : art.front).clips?.moves;
     const flip = (s: Sprite): Sprite => (m.fx - m.fy < 0 ? flipSprite(s) : s);
+    // (ACT 1: one of the descent's own whose picture is its kind's to say now: up in the air, latched on, rising out of the water)
+    const a1 = act1Fx(m.kind);
+    if (a1 && a1.sprite) {
+      const own = a1.sprite(m, art, m.fx + m.fy < -0.2 ? art.back : art.front);
+      if (own) return flip(own);
+    }
     // (THE FIRST FIVE FLOORS: one with a gait and acts of its own is shown by them: figure.ts, gaitFrame)
     if (gaitOf(m.kind)) return flip(gaitFrame(m.fx + m.fy < -0.2 ? art.back : art.front, m));
     // (THE NEW MONSTERS: a Boneward whose spear is gone stands and plods with its hand empty, and
@@ -1800,10 +1838,12 @@ export class Renderer {
     if (this.dressed) this.pieces.step(game);
     const live = pace > 0;
     const amb = pace * fx.room();
-    const art = this.art;
     const L = game.level;
     const f = L.floor;
     const h = game.hero;
+    // (ACT 1: inside a stronghold's hall the floor and walls are the redoubt's stone: art/redoubt.ts)
+    const inHall = !!L.land && L.land.holds.some((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1);
+    const art = inHall ? { ...this.art, ground: redoubtGround() } : this.art;
     // (magic with no element word on it is violet, where a blade's blow is steel: a mage's, and
     // anyone's who carries a staff or a wand)
     const held = game.weapon();
@@ -1845,6 +1885,18 @@ export class Renderer {
     g.fillStyle = P.black;
     g.fillRect(0, 0, W, H);
 
+    // ---- ACT 1, THE DESCENT: the open ground, painted in pieces, under everything (render/outdoor.ts) ----
+    // (inside a stronghold's hall the screen is a dungeon's room in the dark: its tiles and walls as any dungeon's, in the redoubt's stone)
+    const land = L.land;
+    const hallNow = land ? land.holds.find((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1) ?? null : null;
+    this.openGround = !!land && !hallNow;
+    this.act1Dressed = this.act1.begin(L);
+    if (land && !hallNow) {
+      const fresh = this.outdoor.begin(land, f);
+      this.outdoor.draw(g, cam, W, H, fresh);
+      if (this.act1Dressed) this.act1.floorTiles(g, this.floorAt, W, H);
+    }
+
     // ---- floor, and collect walls -------------------------------------------------------------
     this.pitTiles.length = 0;
     this.raisedTiles.length = 0;
@@ -1858,12 +1910,14 @@ export class Renderer {
       this.drawSunken(g, relief, L, dmin, dmax, smin - 2, smax);
       this.flat(g, W, H, game, fx, t, amb, 2);
     }
-    for (let s = smin; s <= smax; s++) {
+    for (let s = smin; s <= smax && !this.openGround; s++) {
       for (let df = dmin; df <= dmax; df++) {
         if ((s + df) & 1) continue;
         const tx = (s + df) >> 1;
         const ty = (s - df) >> 1;
         if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
+        // (ACT 1: in a stronghold's hall, only the hall's own tiles and its walls)
+        if (hallNow && (tx < hallNow.inside.x - 1 || ty < hallNow.inside.y - 1 || tx > hallNow.inside.x + hallNow.inside.w || ty > hallNow.inside.y + hallNow.inside.h)) continue;
         const idx = ty * f.w + tx;
         if (!L.explored[idx]) continue;
         const kind = f.tiles[idx];
@@ -1967,6 +2021,10 @@ export class Renderer {
     // is the more solid for it.
     const heroX = wx(cam, h.x, h.y);
     const heroY = wy(cam, h.x, h.y);
+    // (ACT 1: who may be behind a tall thing this frame: the hero, and the monsters he sees)
+    this.heroD = h.x + h.y;
+    this.seenFoes.length = 0;
+    if (this.openGround) for (const m of game.monsters) if (m.seen && !m.dead) this.seenFoes.push({ x: wx(cam, m.x, m.y), y: wy(cam, m.x, m.y), d: m.x + m.y });
     // (on a level with ledges: the thing just stood up is hidden by raised ground in front of it)
     const hid = relief ? (x: number, y: number): void => this.hide(x, y, relief.lift(x, y)) : null;
     const veil = (sp: Sprite, sx: number, sy: number, depth: number): number => {
@@ -1976,12 +2034,24 @@ export class Renderer {
       // (the hero's middle, their head, and their feet)
       return spriteCovers(sp, lx, ly - 14) || spriteCovers(sp, lx, ly - 28) || spriteCovers(sp, lx, ly - 3) ? SEEN_THROUGH : 1;
     };
+    // (ACT 1, THE DESCENT: what stands on the tops of the cliffs, in the forest and in the water: render/act1_pieces.ts)
+    if (this.act1Dressed && this.openGround) this.standTops(W, H, heroX, heroY);
     for (const p of L.props) {
-      if (!L.explored[p.ty * f.w + p.tx]) continue;
+      if (!L.explored[p.ty * f.w + p.tx] && !this.openGround) continue;
       const sx = wx(cam, p.x, p.y);
       const sy = wy(cam, p.x, p.y);
-      if (sx < -40 || sx > W + 40 || sy < -30 || sy > H + 70) continue;
+      if (sx < -140 || sx > W + 140 || sy < -30 || sy > H + 200) continue;
       let sp: Sprite | null = null;
+      // (ACT 1, THE DESCENT: the floor's own pieces that stand, and its breakables whole; the tall seen through while someone is behind them)
+      if (this.act1Dressed && (p.kind === 'piece' || p.kind === 'barrel' || p.kind === 'urn')) {
+        if (this.act1.lies(p) || p.state === 1 && p.kind !== 'piece') continue;
+        const a = this.act1.sprite(p, t);
+        if (a) {
+          this.stand(p.x + p.y, a, sx, sy, null, 0, 1, a.h >= SEE_TALL ? this.seeThrough(a, sx, sy, p.x + p.y, heroX, heroY, h.x + h.y) : veil(a, sx, sy, p.x + p.y));
+          if (a.lights) this.propLit.push({ s: a, x: Math.round(sx), y: Math.round(sy) });
+        }
+        continue;
+      }
       // (THE FIRST FIVE FLOORS: the floor's own pieces, and its own of the game's things: render/pieces.ts)
       const own = this.dressed ? this.pieces.standing(game, p, t) : undefined;
       if (own !== undefined) sp = own;
@@ -2127,6 +2197,10 @@ export class Renderer {
         sy += oy;
       }
       const sp = this.monsterSprite(m);
+      // (ACT 1: up in the air, as its kind has it; and drawn over what it is latched on to)
+      const a1 = act1Fx(m.kind);
+      if (a1 && a1.lift) sy -= Math.round(a1.lift(m));
+      const depthBy = a1 && a1.over ? a1.over(m) : 0;
       // (ice gives off no light)
       if (sp.lights && m.frozenT <= 0) this.monsterLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
       let over: Sprite | null = null;
@@ -2159,7 +2233,7 @@ export class Renderer {
           overA = tn[1];
         }
       }
-      this.stand(m.x + m.y, sp, sx, sy, over, overA);
+      this.stand(m.x + m.y + depthBy, sp, sx, sy, over, overA);
       // (THE NEW WORDS, a mock-up behind a switch that is off: a slowed monster's echoes linger after it)
       if (WORDS3.on) for (const e of echoes3(m)) this.stand(e.x + e.y - 0.02, silhouette(sp, e.color), wx(cam, e.x, e.y), wy(cam, e.x, e.y), null, 0, 1, e.alpha);
       hid?.(m.x, m.y);
@@ -2878,6 +2952,49 @@ export class Renderer {
     }
   }
 
+  /** (ACT 1) Seen through while someone stands behind it: the hero (or a monster in sight) whose picture it covers, and whose feet are further up the screen. */
+  private seeThrough(sp: Sprite, sx: number, sy: number, depth: number, heroX: number, heroY: number, heroD: number): number {
+    const covers = (fx: number, fy: number): boolean => {
+      const lx = fx - (sx - sp.ax);
+      const ly = fy - (sy - sp.ay);
+      return spriteCovers(sp, lx, ly - 14) || spriteCovers(sp, lx, ly - 28) || spriteCovers(sp, lx, ly - 3);
+    };
+    if (heroD < depth && covers(heroX, heroY)) return SEEN_THROUGH;
+    for (const m of this.seenFoes) if (m.d < depth && covers(m.x, m.y)) return SEEN_THROUGH;
+    return 1;
+  }
+  /** (ACT 1) The monsters in sight this frame, where their feet are on the screen (for what is seen through). */
+  private seenFoes: { x: number; y: number; d: number }[] = [];
+
+  /** (ACT 1) What stands on the tops, for the ground's pieces on and round the screen. */
+  private standTops(W: number, H: number, heroX: number, heroY: number): void {
+    const T = this.outdoor.terrain();
+    if (!T) return;
+    const cam = this.cam;
+    const x0 = -cam.ox * 2;
+    const y0 = -cam.oy * 2;
+    const i0 = Math.floor(x0 / GROUND_PIECE) - 1;
+    const i1 = Math.floor((x0 + W * 2) / GROUND_PIECE) + 1;
+    const j0 = Math.floor(y0 / GROUND_PIECE) - 1;
+    // (a tall thing below the screen's foot reaches up into it)
+    const j1 = Math.floor((y0 + H * 2) / GROUND_PIECE) + 3;
+    const h = { d: 0 };
+    void h;
+    for (let j = j0; j <= j1; j++) {
+      for (let i = i0; i <= i1; i++) {
+        for (const top of this.act1.topsOf(T, i, j)) {
+          const sx = Math.round(wx(cam, top.x, top.y));
+          const sy = Math.round(wy(cam, top.x, top.y) - top.lift);
+          if (sx < -top.sp.w || sx > W + top.sp.w || sy < -10 || sy > H + top.sp.h) continue;
+          this.stand(top.x + top.y, top.sp, sx, sy, null, 0, 1, top.tall ? this.seeThrough(top.sp, sx, sy, top.x + top.y, heroX, heroY, this.heroD) : 1);
+        }
+      }
+    }
+    if (this.outdoorFrame++ % 30 === 0) this.act1.forgetTops((i, j) => i >= i0 - 6 && i <= i1 + 6 && j >= j0 - 6 && j <= j1 + 6);
+  }
+  private outdoorFrame = 0;
+  private heroD = 0;
+
   private light(W: number, H: number, game: Game, t: number, fx: Fx): void {
     if (this.dark.width !== W || this.dark.height !== H) {
       this.dark.width = W;
@@ -2893,7 +3010,9 @@ export class Renderer {
     // the dark is a little thinner than it was, so that a room's far walls are still seen)
     // (THE FLOOR GETS DARKER FURTHER FROM THE HERO: the dark far off is deeper than it was up to
     // Version 16, 0.8, and a wide gentle pool round the hero, below, takes it back to what it was near them)
-    dg.fillStyle = L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${FAR_DARK})`;
+    // (ACT 1, THE DESCENT: out on the open ground the day, thin or none, and the dusk deepening toward the Fen: game/act1.ts, `light`)
+    const day = this.openGround ? act1Def(f.depth)?.light ?? null : null;
+    dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
     dg.globalCompositeOperation = 'destination-out';
     // One soft pool of light, painted once; every light in the scene is that picture, stretched
@@ -2917,8 +3036,8 @@ export class Renderer {
     // (the owner, 6 Oct 2026: "Add a soft gradient so the floor gets darker further away from the
     // player": under the bright pool round the hero a wide and gentle one, which thins the dark
     // near them and is gone a screen's height away)
-    if (!L.town) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, NEAR_POOL, NEAR_LIFT);
-    spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, L.town ? 170 : 165, 1);
+    if (!L.town && !day) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, NEAR_POOL, NEAR_LIFT);
+    if (!day || day.pool > 0) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, L.town ? 170 : 165, day ? day.pool * 3 : 1);
     // (the town's gate lights the floor before it)
     if (L.town) spot(wx(cam, TOWN.gate.x, TOWN.gate.y), wy(cam, TOWN.gate.x, TOWN.gate.y) - 14, 84 + Math.sin(t * 3) * 3, 0.9);
     for (const p of L.props) {
@@ -2996,7 +3115,7 @@ export class Renderer {
     dg.globalCompositeOperation = 'source-over';
     // the vignette, laid on the dark after the lights have cut their holes in it: the corners of
     // the screen are shadowy whatever is lit there (what GLOWS is drawn after the dark, and still shines)
-    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, L.town ? VIGNETTE_TOWN : VIGNETTE), 0, 0);
+    if (!this.skip.has('vignette')) dg.drawImage(this.vignette(W, H, day ? day.vignette : L.town ? VIGNETTE_TOWN : VIGNETTE), 0, 0);
   }
 
   private drawBars(g: CanvasRenderingContext2D, game: Game, t: number): void {

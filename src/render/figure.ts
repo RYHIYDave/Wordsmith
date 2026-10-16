@@ -242,7 +242,7 @@ export function moveClip(set: AnimSet, mv: MonsterMove): Clip | undefined {
  * how far round it the rules have carried it: its feet grip the floor at whatever pace it goes). The
  * Headsman's `carry` is his axe held across him: where taking it up, stopping and every blow of his end.
  */
-export function gaitFrame(set: AnimSet, m: { state: string; animT: number; frozenT: number; gait?: { mode: string; t: number }; act?: { id: string; t: number }; kind: MonsterKind }): Sprite {
+export function gaitFrame(set: AnimSet, m: { state: string; animT: number; frozenT: number; gait?: { mode: string; t: number }; act?: { id: string; t: number }; kind: MonsterKind; struckT?: number }): Sprite {
   const more = set.clips?.moves ?? {};
   const stand = (t: number): Sprite => set.idle[Math.floor(Math.max(0, t) * (set.idleFps ?? 2) + 1e-6) % set.idle.length];
   if (m.frozenT > 0) return set.idle[0];
@@ -251,6 +251,9 @@ export function gaitFrame(set: AnimSet, m: { state: string; animT: number; froze
     const clip = a ? (a.clip === 'attack' ? set.clips?.attack : more[a.clip]) : undefined;
     if (clip) return clipFrame(clip, m.act.t);
   }
+  // (ACT 1: struck, standing or going, it reels as its picture has it: `reel`, from the blow)
+  const reel = set.clips?.reel;
+  if (reel && m.struckT !== undefined && m.struckT < reel.frames.length / reel.fps) return clipFrame(reel, m.struckT);
   const gt = m.gait;
   if (!gt) return stand(m.animT);
   const last = (c: Clip | undefined): Sprite | null => (c && c.frames.length ? c.frames[c.frames.length - 1] : null);

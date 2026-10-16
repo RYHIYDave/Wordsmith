@@ -149,6 +149,12 @@ export interface Ways {
   way: WayPoint | null;
   /** The gate of the way (in town: to the first floor; on the first floor: back to town): its index in Level.doors, or -1. */
   gate: number;
+  /**
+   * ACT 1, THE DESCENT (game/act1_layout.ts): THE WAY ON, in place of a stairwell. At the far end of the boss's
+   * ground a column of light (the waypoint's own picture) that wakes as the boss dies: walking into it takes
+   * him on, down the mountain to the next floor (from the tenth, the Fen, to town: the siege broken).
+   */
+  onward?: WayPoint | null;
 }
 
 /** Plain floor that a thing may be laid on: floor, not cut, no stair, at the floor's own height. */
