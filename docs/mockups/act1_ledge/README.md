@@ -632,7 +632,7 @@ His words, 13 Oct, 20:59: "Or we can just have the trail sort of work out one di
 
 ---
 
-## The Carrion Queen, redone (14 Oct; behind `CARRION_QUEEN_ON`, off; HER LOOK HAS HIS YES; her moves here were turned down and are SUPERSEDED by "The Carrion Queen's moves, rebuilt" at the end of this file)
+## The Carrion Queen, redone (14 Oct; behind `CARRION_QUEEN_ON`, off; HER LOOK HAD HIS YES; her moves here were turned down and are SUPERSEDED by "The Carrion Queen's moves, rebuilt" below; ALL OF HER SUPERSEDED, 16 Oct, by "The Carrion Queen, made new" at the end of this file)
 
 His words, 19:22: "Hey can you redo the carrion queen.  She kinda looks like shit and the animations are uninspired". Asked as a pop-up which way her look should go, his pick, 19:23: "Black-violet, raw bald head, burning crown (Recommended)", offered as: deep black plumage with a violet sheen, ragged fingered wings, a bald wrinkled red head and neck, her bone crown and the cult's mark burning pink and gold. And, 19:23: "Make sure she hits all the checks in the art book rules including the wild and big animations".
 
@@ -692,7 +692,7 @@ His words, 19:22: "Hey can you redo the carrion queen.  She kinda looks like shi
 
 ---
 
-## The Carrion Queen's moves, rebuilt (14 Oct; HIS YES TO ALL OF THEM, AS SHOWN; behind `CARRION_QUEEN_ON`, off)
+## The Carrion Queen's moves, rebuilt (14 Oct; HIS YES TO ALL OF THEM, AS SHOWN; behind `CARRION_QUEEN_ON`, off; SUPERSEDED, 16 Oct, by "The Carrion Queen, made new" at the end of this file)
 
 His words on the moves of the section above: "Absolutely not.  Scrap all the animations and do them differently.  Following the rules". A new plan for all eight moves went to him as a message, and the pop-up "Build the Carrion Queen's moves this way?" came back "Yes, build these (Recommended)". His standing word on her, 19:23: "Make sure she hits all the checks in the art book rules including the wild and big animations".
 
@@ -744,3 +744,21 @@ His words on the moves of the section above: "Absolutely not.  Scrap all the ani
 **His answers, 14 Oct, by 21:12:** all three "Yes, as shown (Recommended)". So her look and all eight of her moves have his yes, as shown. She stays behind `CARRION_QUEEN_ON` (off) and is not for a version until floor 7 comes in whole; the dive's warning in the game is the main chat's mark on her line.
 
 **Next:** floors 8 to 10.
+
+## The Carrion Queen, made new (16 Oct; src/art/carrion_queen2.ts, behind `QUEEN2_ON`, off; her look and stand, for his yes)
+
+**His words, 16 Oct, 08:58:** "I need the carrion queen completely redone.  Its whole look is awful.  It’s too fat, too slow, the wings are terrible.  It’s just bad".
+
+**Read as (told him so):** started over from nothing, her look and every move: lean and gaunt, a long snaking neck and long legs, not a round fat body; fast and vicious, not slow and heavy; real wings built as a bird's, huge and feathered, folding and opening as wings do, not flat slabs.
+
+**His picks (one pop-up, by 09:02):** her body, "Gaunt vulture, long bare neck (Recommended)", offered as: lean and bony, a narrow keel of a chest, a long snaking raw neck, long legs and big hooked talons, still huge; her wings, "Huge, real vulture wings (Recommended)", offered as: built like a real bird's, wider than the trail: rows of layered feathers, long fingered tips spread like hands, folding and opening properly; how she moves, "Fast and vicious (Recommended)", offered as: darting, snapping, quick hops and lunges, wings flaring, never still, never slow; her colours, "Keep them (Recommended)": black-violet feathers, raw red head, the bone crown burning pink and gold. Her brief stands where he has not changed it (13 Oct): huge, her wings wider than the trail; known by her bone crown and the cult's chains (the crown round the root of her neck, the shackle and broken chain on her left leg, the cult's mark burning on her breast); a shrieking screech and beating wings; never like a phoenix or an eagle; her death, his pick, off the edge.
+
+**What she is now.** Her own painter (no bones), built as a bird: her body lean, a narrow keel of a breast; her legs in shaggy feathered "trousers", bent back at the heel, bare grey scaled shanks and four toes each with a great hooked talon; the cult's iron shackle on her left shank and its broken chain lying back along the rock. Her wings as a bird's: an arm, a forearm and a hand (`wingBones`), each pose given as the ways the three bones run and the way the wing's top faces; ten primaries off her hand (the outer six fingered and parted, curling up at their ends), fourteen secondaries off her forearm (a ragged, bowed trailing edge), her tertials, three rows of coverts over them (their rounded tips catching the light, so each row reads as a row of scallops), her primary coverts and alula, and beneath, the black lining of her underwing over the grey of her flight feathers. Her neck long and bare, raw red, mottled and warty, thick at its root and thin under her head, arching up out of her ruff and down to her head as a snake's before it strikes; her head bald and warty, folds of raw skin (lappets) hanging off its sides, heavy brows drawn down in a scowl, her eyes the cult's fire, a deep beak with a great dark hook. Her crown of eleven curved bone spikes round the root of her neck, each tip burning; under it a ruff of black feathers. The cult's mark (the shrieking skull) burning gold on a bare patch of raw skin on her breast. Her whole figure built at 1.12 (`Q2_SCALE`) of her lengths.
+
+**Her stand** (`standPose`, 2.0 s, 30 frames at 15 a second): never still. Crouched in her mantle, her wings half open and raised about her, her wrists high over her shoulders and her hands hanging, their fingers down (`MANTLE`); her head snapping from one place to the next and holding, as a bird's does, a tremor through it always; a jab low with her beak open (0.62 to 0.86 s); her wings twitching; once a round (1.22 to 1.72 s) she throws her wings up and wide (`FLARE`), every feather spread, her beak open, her crown and mark flaring, and snaps them back.
+
+**The pictures:** `shots/q2_look.png` (`node tools/preview.mjs src/dev/preview_queen2.ts shots/q2_look.png 1014 1100 look`): her from in front and behind, close; and at the game's size with the knight and the Unfinished, standing and flaring; the old Queen small in the corner, as she was. `shots/q2_stand.gif` (`node tools/page_gif.mjs src/dev/preview_queen2.ts "standfilm" shots/q2_stand.gif 6`): her stand from in front and behind at the game's size.
+
+**Tested** (`tests/carrion_queen2.test.ts`, 7): the switch off and nothing of the game importing her; crisp, her pink edge round her, nothing cyan, every light the cult's fire, nothing cut off at her canvas's edge, in every other frame of her stand from both sides; about the Unfinished's height as she stands, her wings more than four tiles across hand to hand in every frame; her crown bone-pale and the cult's fire (her mark, her crown's tips, her eyes) in her stand and her flare; nothing of her under the rock in any frame; never still (no frame of her stand like the one before) and her head darting at least a quarter of a tile in a fifteenth of a second several times a round. `tests/new_mobs3.test.ts` knows her as a mock-up.
+
+**Next:** his yes to her look and stand; then all her moves made new, fast and vicious (her hop, talon rake, wing gust, dive, call, flinch and her death off the edge), through the whole boss review.
