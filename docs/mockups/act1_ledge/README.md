@@ -806,9 +806,11 @@ His words on the moves of the section above: "Absolutely not.  Scrap all the ani
 | Animations 3: wild in her own way | Grit and chips in the rock's colours, her torn feathers, the cult's fire (claw-streaks, embers, rings) | Pass by eye |
 | Animations 4: warnings in sight | The rake's hang and the gust's held wings in sight, nothing over them; the dive's warning the game's mark on her line | Pass |
 
+**Checks:** tests/carrion_queen2.test.ts 19 of 19; the full unit suite (`tsx --test tests/*.test.ts`) on her code at 9584726, 1580 of 1580; `tsc --noEmit` clean. NOT RUN: the full regression on a frozen copy; the published page's playtests; a real phone.
+
 **Shown him** the eight films (`q2_hop.gif`, `q2_rake.gif`, `q2_gust.gif`, `q2_dive.gif`, `q2_call.gif`, `q2_reel.gif`, `q2_death.gif`, `q2_stand.gif`) with a message on each move and on the one change to her stand (her great flare moved into her call and gust, for his rule that nothing jumps where one move hands over to the next; standing, she rouses).
 
 **Asked with the films** (one pop-up, three questions; our pick first and marked; offered: "Yes, as shown (Recommended)", or "Not yet"): "Her hop and her talon rake: are these right?"; "Her wing gust and her dive: are these right?"; "Her call, her flinch, her death off the edge, and her new standing: are these right?" (its pick offered as: keep them, and she's done; she goes to the main chat with floor 7).
 
-**His answers, 16 Oct, by 11:01:** all three "Yes, as shown (Recommended)". So the new Carrion Queen, her look and all her moves, has his yes, as shown. She replaces the old one (src/art/carrion_queen.ts, superseded); she stays behind `QUEEN2_ON` (off) and goes to the main chat with floor 7, on branch mockup/queen-redo.
+**His answers, 16 Oct, by 11:01:** all three "Yes, as shown (Recommended)". So the new Carrion Queen, her look and all her moves, has his yes, as shown. She replaces the old one (src/art/carrion_queen.ts, superseded); she stays behind `QUEEN2_ON` (off) and goes to the main chat with floor 7, on branch mockup/queen-redo (posted on the chat board, 16 Oct, 11:32, to the main, planning and sound chats).
 
