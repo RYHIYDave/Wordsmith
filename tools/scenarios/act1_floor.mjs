@@ -50,5 +50,26 @@ export default async function (page, snap) {
     await go(info.holds[k][2], info.holds[k][3], `c_hall${k}`);
   }
   await go(info.boss.x, info.boss.y + 2, 'd_boss');
+  // PERF=1: how long a frame takes standing, and walking across the open ground (the ground painted ahead as he goes)
+  if (process.env.PERF) {
+    const a = info.areas.filter((q) => q[2] === 'path');
+    const from = a[0] || info.areas[0];
+    const to = a[1] || info.areas[1];
+    await page.evaluate(([x, y]) => { const g = window.__dbg.game(); g.hero.x = x; g.hero.y = y; }, [from[0], from[1]]);
+    await page.waitForTimeout(1000);
+    const frames = (walk) => page.evaluate(([w, x0, y0, x1, y1]) => new Promise((done) => {
+      const g = window.__dbg.game();
+      const times = []; let last = performance.now(); let n = 0;
+      const tick = () => {
+        const now = performance.now(); times.push(now - last); last = now;
+        if (w) { const k = n / 120; g.hero.x = x0 + (x1 - x0) * k; g.hero.y = y0 + (y1 - y0) * k; }
+        if (++n < 120) requestAnimationFrame(tick);
+        else { times.sort((p, q) => p - q); done({ median: Math.round(times[60] * 10) / 10, p90: Math.round(times[108] * 10) / 10, worst: Math.round(times[119] * 10) / 10 }); }
+      };
+      requestAnimationFrame(tick);
+    }), [walk, from[0], from[1], to[0], to[1]]);
+    log('frames standing (ms)', JSON.stringify(await frames(false)));
+    log('frames walking (ms)', JSON.stringify(await frames(true)));
+  }
   log('took', `${Date.now() - t0} ms`);
 }

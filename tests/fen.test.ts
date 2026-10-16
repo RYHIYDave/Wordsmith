@@ -73,9 +73,10 @@ const rgbAt = (px: number, py: number): RGB => {
 };
 const key = (c: RGB): string => c.map(Math.round).join(',');
 
-test('nothing of the game imports it (a mock-up for his yes)', () => {
+test('in the game only through its own (ACT 1: render/outdoor.ts); nothing else of the game imports it', () => {
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('fen.ts')) continue;
+    if (new Set(['render/outdoor.ts']).has(f.replace(/\\/g, '/'))) continue;
     assert.ok(!/from ['"][^'"]*\/fen['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the fen's ground`);
   }
 });

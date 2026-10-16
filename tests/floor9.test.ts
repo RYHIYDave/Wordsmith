@@ -27,9 +27,10 @@ paintWithoutCanvas();
 const pieces = pinewoodPieces();
 const rgbOf = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
 
-test('nothing of the game imports them', () => {
+test('in the game only through its own (ACT 1: render/act1_pieces.ts); nothing else of the game imports it', () => {
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('floor9.ts')) continue;
+    if (new Set(['render/act1_pieces.ts']).has(f.replace(/\\/g, '/'))) continue;
     assert.ok(!/from ['"][^'"]*\/floor9['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports floor 9's pieces`);
   }
 });

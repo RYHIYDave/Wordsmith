@@ -32,9 +32,10 @@ const FIRE = new Set(CULT_FIRE.map((c) => c.toLowerCase()));
 const hexOf = (r: number, g: number, b: number): string => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 const rgbOf = (c: string): [number, number, number] => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
 
-test('nothing of the game imports them', () => {
+test('in the game only through its own (ACT 1: render/act1_pieces.ts); nothing else of the game imports it', () => {
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('floor10.ts')) continue;
+    if (new Set(['render/act1_pieces.ts']).has(f.replace(/\\/g, '/'))) continue;
     assert.ok(!/from ['"][^'"]*\/floor10['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports floor 10's pieces`);
   }
 });

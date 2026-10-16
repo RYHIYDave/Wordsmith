@@ -75,9 +75,10 @@ const rgbAt = (px: number, py: number): RGB => {
   return [WHOLE.rgba[i], WHOLE.rgba[i + 1], WHOLE.rgba[i + 2]];
 };
 
-test('nothing of the game imports it (a mock-up for his yes)', () => {
+test('in the game only through its own (ACT 1: render/outdoor.ts); nothing else of the game imports it', () => {
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('pinewood.ts')) continue;
+    if (new Set(['render/outdoor.ts']).has(f.replace(/\\/g, '/'))) continue;
     assert.ok(!/from ['"][^'"]*\/pinewood['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Pinewood's ground`);
   }
 });

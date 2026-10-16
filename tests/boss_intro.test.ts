@@ -80,8 +80,12 @@ test('both switches are on in the game (his yes of 21:49)', () => {
 test('every floor has its own name and its level, "Prison Level N"; coming into a floor says them, and not "Dungeon N"', () => {
   const names = [1, 2, 3, 4, 5].map((d) => floorTitle(d).name);
   assert.equal(new Set(names).size, 5, 'five names, each its own');
-  for (let d = 1; d <= 7; d++) assert.equal(floorTitle(d).level, `Prison Level ${d}`);
-  assert.equal(floorTitle(6).name, FLOOR_NAMES.beyond, 'past the fifth, the deep’s');
+  for (let d = 1; d <= 5; d++) assert.equal(floorTitle(d).level, `Prison Level ${d}`);
+  // (ACT 1, THE DESCENT: floors 6 to 10 are out of the Prison and down the mountain, each its place and its boss's name: game/act1.ts)
+  const places = ['The Quarry', 'The Ledge Road', 'Echo Canyon', 'The Pinewood', 'The Sunken Fen'];
+  for (let d = 6; d <= 10; d++) assert.equal(floorTitle(d).level, `${places[d - 6]}, Level ${d}`);
+  assert.equal(floorTitle(6).name, 'The Unfinished Cut');
+  assert.equal(floorTitle(11).name, FLOOR_NAMES.beyond, 'past the tenth, the deep’s');
   const g = new Game('warrior', 5);
   g.depth = 2;
   g.cleared = 1;
