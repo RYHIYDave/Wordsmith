@@ -94,9 +94,14 @@ export function wordPage(meta: Meta, w: WordId, pw: number, big: boolean, tight 
         line(k.front ? `In front (${wd.front.toUpperCase()} ...): ${wd.frontText}` : `In front: ${unknown}`, k.front),
         line(k.behind ? `Behind (... ${wd.behind.replace(/^of /, 'OF ').toUpperCase()}): ${wd.behindText}` : `Behind: ${unknown}`, k.behind),
       ]),
-      // (what it may become on gear, slot by slot: a line each, or run together where room is short)
-      lay(2, [head('ON GEAR'), ...(!k.gear ? [line(unknown, false)] : tight ? [line(gearLines(w, meta.limit).join(' '), true)] : gearLines(w, meta.limit).map((l) => line(l, true)))]),
-      lay(2, [head('ON A DUNGEON'), line(k.dungeon ? `Every monster in it: ${wd.monsterText.charAt(0).toLowerCase()}${wd.monsterText.slice(1)} Richer loot, and words are likelier.` : unknown, k.dungeon)]),
+      // (WORDMELDING: a melded word goes on attacks only, for now, his words)
+      ...(wd.kind === 'meld'
+        ? [lay(2, [head('ON GEAR, ON A DUNGEON'), line('A melded word goes on attacks only.', true)])]
+        : [
+            // (what it may become on gear, slot by slot: a line each, or run together where room is short)
+            lay(2, [head('ON GEAR'), ...(!k.gear ? [line(unknown, false)] : tight ? [line(gearLines(w, meta.limit).join(' '), true)] : gearLines(w, meta.limit).map((l) => line(l, true)))]),
+            lay(2, [head('ON A DUNGEON'), line(k.dungeon ? `Every monster in it: ${wd.monsterText.charAt(0).toLowerCase()}${wd.monsterText.slice(1)} Richer loot, and words are likelier.` : unknown, k.dungeon)]),
+          ]),
     ],
   };
 }

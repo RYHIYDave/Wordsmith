@@ -44,7 +44,7 @@ import { BTN, GAMEPAD, PAD_USE, Pad } from './engine/gamepad';
 import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
-import { ARRIVAL_LINES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { drawBossCard, drawFloorCard } from './ui/cards';
 import type { BossCard, FloorCard } from './ui/cards';
@@ -52,6 +52,7 @@ import { DOORS, doorMiddle, doorTiles } from './game/doors';
 import { WAYS, stairMiddle, topStep } from './game/ways';
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
+import { MELD, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
 import type { Hall } from './game/level';
@@ -77,6 +78,7 @@ import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, n
 import type { SmithPicture } from './ui/panels';
 import { gateSide, stashSide, vendorSide } from './ui/town';
 import { gambleSide, wordsmithSide } from './ui/trades';
+import { meldOpen, meldSide } from './ui/meld';
 import { THEME, Ui } from './ui/ui';
 import { WORDS3, demo3, events3 } from './render/words3';
 
@@ -419,7 +421,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // hero as they will wake in town, so that closing the page on the death screen changes nothing)
     if (game && mode === 'play' && !game.practice) saved = game.over ? game.wakeSave() : game.save();
     try {
-      const file: SaveFile = { v: 2, run: saved, meta };
+      const file: SaveFile = { v: 2, run: saved, meta: savedMeta(meta) };
       localStorage.setItem(SAVE_KEY, JSON.stringify(file));
       localStorage.removeItem(OLD_SAVE_KEY);
     } catch {
@@ -431,7 +433,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (!saving) return;
     saved = null;
     try {
-      const file: SaveFile = { v: 2, run: null, meta };
+      const file: SaveFile = { v: 2, run: null, meta: savedMeta(meta) };
       localStorage.setItem(SAVE_KEY, JSON.stringify(file));
       localStorage.removeItem(OLD_SAVE_KEY);
     } catch {
@@ -621,6 +623,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     panels.pick = null;
     panels.pick2 = null;
     panels.carry = null;
+    // (WORDMELDING: the wordsmith opens on his trade, nothing laid in to be melded)
+    panels.meldPage = false;
+    panels.meldIn = [null, null];
     panels.noteT = 0;
     // the inventory stands beside it: nothing in hand, on GEAR (as when it is opened alone)
     resetInvUi(invUi);
@@ -1262,6 +1267,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         c.my = 0;
         // (THE WAYS: on the waypoint, it is used)
         if (e.kind === 'portal' || e.kind === 'way') c.interact = true;
+        // (HAND_IN: beside the one a quest item is for, it is given, by the rules, in place of his panel opening)
+        else if (g.handInNear()) c.interact = true;
         // (the body is searched by being walked up to, and a way through is taken by being walked into: there is nothing more to press)
         else if (e.kind !== 'body' && e.kind !== 'through') openStation(e.kind);
       } else {
@@ -1855,7 +1862,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
                   ? // at the gate, the key that opened it (pressed again) or Enter steps through
                     gateSide(ui, g, art, invUi, half, input.pressed('Enter') || input.pressed('KeyE') || input.pressed('KeyF'), gate, clock)
                   : at === 'wordsmith'
-                    ? wordsmithSide(ui, g, art, meta, panels, invUi, half)
+                    ? // (WORDMELDING, behind MELD: his half's second page)
+                      meldOpen(g) && panels.meldPage
+                      ? meldSide(ui, g, art, meta, panels, invUi, half)
+                      : wordsmithSide(ui, g, art, meta, panels, invUi, half)
                     : at === 'stranger'
                       ? gambleSide(ui, g, art, panels, invUi, half)
                       : null;
@@ -2174,6 +2184,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
      */
     ways: (on: boolean) => {
       WAYS.on = on;
+    },
+    /** (WORDMELDING, game/melds.ts) melding switched on or off, for pictures and playtests */
+    meld: (on: boolean) => {
+      MELD.on = on;
+    },
+    /** (HAND_IN, game/defs.ts) quest items given by using the one they are for, for pictures and playtests */
+    handIn: (on: boolean) => {
+      HAND_IN.on = on;
     },
     /** (BOSS_INTRO, FLOOR_NAMES in game/defs.ts) the boss's entrance and the floors' names, for pictures */
     bossIntro: (on: boolean) => {

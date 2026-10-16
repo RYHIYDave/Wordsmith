@@ -3,7 +3,7 @@
 
 import type { VendorId } from './state';
 import type { AbilityId, Attr, ClassId, Element, Limit, MonsterKind, Slot, WeaponKind, WordId } from './types';
-import { FIRST5_KINDS, NEW_KINDS } from './types';
+import { FIRST5_KINDS, MELD_OF, NEW_KINDS } from './types';
 
 export type { Limit } from './types';
 
@@ -248,7 +248,7 @@ export const ATTR_GIVES = {
  * ONE DAMAGE WORD ON EACH SIDE (his answer, 8 Oct, 16:53: "Yes, one a side (Recommended)"): the doc
  * "Wordsmith: The New Words".
  */
-export type WordKind = 'damage' | 'shape';
+export type WordKind = 'damage' | 'shape' | 'meld';
 
 // THE NEW WORDS' NUMBERS (Version 19.3): the starting points of his doc "Wordsmith: The New Words"
 // (his yes, 8 Oct 2026, 16:53: "Yes, as it is (Recommended)"), to be tuned once he has played them.
@@ -305,6 +305,8 @@ export interface WordDef {
   behindText: string;
   /** What the word does to a monster that carries it. */
   monsterText: string;
+  /** WORDMELDING: a melded word's two words (game/melds.ts). */
+  of?: readonly [WordId, WordId];
 }
 
 export const WORDS: Record<WordId, WordDef> = {
@@ -323,6 +325,21 @@ export const WORDS: Record<WordId, WordDef> = {
   frenzied: { id: 'frenzied', kind: 'shape', name: 'Frenzied', front: 'Frenzied', behind: 'of Frenzy', attr: 'str', element: null, about: 'The word of rage. Faster, and faster.', frontText: 'Each use makes the next faster, up to five times.', behindText: 'Kills keep the frenzy going.', monsterText: 'Speeds up as it is hurt.' },
   guarding: { id: 'guarding', kind: 'shape', name: 'Guarding', front: 'Guarding', behind: 'of Warding', attr: 'str', element: null, about: 'The word of the shield. It keeps you.', frontText: 'Each use gives you a brief shield.', behindText: 'Leaves a ward circle: you take less damage inside it.', monsterText: 'Carries a shield that soaks damage.' },
   poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
+  // WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
+  // damage words; what each does in front and behind is his page's "Wordsmith: Word Combinations",
+  // his answers to it, and his picks of 13 Oct 2026, 12:36 (only damage words meld, so Volatile's
+  // five are left out). A melded word does what both its words do, and a twist of its own. It takes
+  // the one damage word's place on its side of an attack. Monsters never carry one.
+  eruption: { id: 'eruption', kind: 'meld', of: MELD_OF.eruption, name: 'Eruption', front: 'Eruption', behind: 'of Eruption', attr: 'int', element: 'fire', about: 'Power and Flame, melded.', frontText: 'A heavy fire hit. The blast leaves a pool of molten ground.', behindText: 'Hits build heat. At full heat the next hit erupts.', monsterText: '' },
+  avalanche: { id: 'avalanche', kind: 'meld', of: MELD_OF.avalanche, name: 'Avalanche', front: 'Avalanche', behind: 'of the Avalanche', attr: 'int', element: 'frost', about: 'Power and Frost, melded.', frontText: 'A heavy cold hit that shoves enemies back and freezes the ones it stops.', behindText: 'Every hit on a chilled enemy hits harder.', monsterText: '' },
+  thunder: { id: 'thunder', kind: 'meld', of: MELD_OF.thunder, name: 'Thunder', front: 'Thunder', behind: 'of Thunder', attr: 'int', element: 'lightning', about: 'Power and Lightning, melded.', frontText: 'One big bolt instead of arcs. It stuns.', behindText: 'Every few hits, a thunderclap bursts around you.', monsterText: '' },
+  blight: { id: 'blight', kind: 'meld', of: MELD_OF.blight, name: 'Blight', front: 'Blight', behind: 'of Blight', attr: 'dex', element: null, about: 'Power and Poison, melded.', frontText: "The hit is not weakened, and poison bites harder the lower the enemy's life.", behindText: 'Poisoned enemies take more damage from everything.', monsterText: '' },
+  scald: { id: 'scald', kind: 'meld', of: MELD_OF.scald, name: 'Scald', front: 'Scald', behind: 'of Scalding', attr: 'int', element: 'fire', about: 'Flame and Frost, melded.', frontText: 'A burning enemy that gets chilled, or a chilled one set burning, cracks for a burst of damage.', behindText: 'Fire meeting ice on the ground bursts into steam that hurts and hides.', monsterText: '' },
+  wildfire: { id: 'wildfire', kind: 'meld', of: MELD_OF.wildfire, name: 'Wildfire', front: 'Wildfire', behind: 'of Wildfire', attr: 'int', element: 'fire', about: 'Flame and Lightning, melded.', frontText: 'Burning jumps to nearby enemies the way lightning arcs.', behindText: 'The burning ground throws sparks at enemies near it.', monsterText: '' },
+  fumes: { id: 'fumes', kind: 'meld', of: MELD_OF.fumes, name: 'Fumes', front: 'Fuming', behind: 'of Fumes', attr: 'int', element: 'fire', about: 'Flame and Poison, melded.', frontText: 'Burning poisoned enemies give off a toxic cloud.', behindText: 'The poison cloud explodes when anything burning enters it.', monsterText: '' },
+  hailstorm: { id: 'hailstorm', kind: 'meld', of: MELD_OF.hailstorm, name: 'Hailstorm', front: 'Hailstorm', behind: 'of the Hailstorm', attr: 'int', element: 'frost', about: 'Frost and Lightning, melded.', frontText: 'Arcs chill everything they touch. Frozen enemies pass arcs on further.', behindText: 'A storm of ice that slows and strikes.', monsterText: '' },
+  frostbite: { id: 'frostbite', kind: 'meld', of: MELD_OF.frostbite, name: 'Frostbite', front: 'Frostbite', behind: 'of Frostbite', attr: 'int', element: 'frost', about: 'Frost and Poison, melded.', frontText: 'Chilled enemies lose life over time, and frozen ones twice as fast.', behindText: 'The ice on the ground poisons what crosses it.', monsterText: '' },
+  contagion: { id: 'contagion', kind: 'meld', of: MELD_OF.contagion, name: 'Contagion', front: 'Contagious', behind: 'of Contagion', attr: 'int', element: 'lightning', about: 'Lightning and Poison, melded.', frontText: 'Every enemy an arc touches is poisoned.', behindText: 'The poison cloud shocks whatever stands in it.', monsterText: '' },
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -1017,6 +1034,14 @@ export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly numb
 // the wordsmith gives the word (22:12, "The wordsmith should give you the word after the altar powers up"; art/quest3.ts POWER.done).
 export const QUEST_ITEM = { name: 'Master Rune-stone', the: 'the MASTER RUNE-STONE', promptSecs: 6, ringSecs: 4.7 };
 /**
+ * QUEST ITEMS ARE GIVEN BY USING THE ONE THEY ARE FOR, NOT BY WALKING PAST HIM. His word, 13 Oct
+ * 2026, 14:25 (to the planning chat): “I’d like the quest turn ins to be triggered by interacting
+ * with the npcs not just when you walk by.” With it on, the master rune-stone is given to the
+ * wordsmith when the hero uses him (the use button beside him, his prompt, or a tap on him), and
+ * his prompt says so (`prompt`); walked past, nothing happens. Off until his yes to pictures of it.
+ */
+export const HAND_IN = { on: false, prompt: 'Give the rune-stone' };
+/**
  * The first dungeon, gentler, with the first levels on: about half the monsters of a first
  * dungeon (its budget, against `monsterBudget(1)`'s 120), in packs of two to four, one room of
  * elites, and every blow struck in it soft (GUIDE.softDmg, everywhere in it, not only before the
@@ -1522,6 +1547,17 @@ export const QUIPS: {
     precise: ['Right there.', 'Dead centre.', 'Through the gap.'],
     frenzied: ['More!', "Can't stop now.", 'Faster.'],
     guarding: ['Not today.', 'You missed.', 'Hold the line.'],
+    // (WORDMELDING: the melded words)
+    eruption: ['Lava lamp.', 'Hot rocks.', 'Blew my top.'],
+    avalanche: ['Snowed under.', 'Buried.', 'Cold shoulder.'],
+    thunder: ['Did you hear that?', 'Thunderstruck.', 'Loud and clear.'],
+    blight: ['Rotten luck.', 'Withered.', 'Spoiled.'],
+    scald: ['Hot and cold.', 'Mind the steam.', 'Cracked.'],
+    wildfire: ['Spreading fast.', 'Catch!', 'Wild.'],
+    fumes: ['Hold your breath.', 'Smells bad.', 'Up in smoke.'],
+    hailstorm: ['Bad weather.', 'Hail.', 'Take cover.'],
+    frostbite: ['Numb yet?', 'Bitter cold.', 'Bitten.'],
+    contagion: ['Catching.', 'Pass it on.', 'Going around.'],
   },
   /** By the attack that made the kill. */
   skill: {

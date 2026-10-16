@@ -19,10 +19,34 @@ export const ATTRS: readonly Attr[] = ['str', 'dex', 'int'];
 export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
-export type WordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding';
+export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding';
+/**
+ * WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
+ * damage words. They never drop: WORD_IDS, which every random draw of a word uses, holds none of them.
+ */
+export type MeldId = 'eruption' | 'avalanche' | 'thunder' | 'blight' | 'scald' | 'wildfire' | 'fumes' | 'hailstorm' | 'frostbite' | 'contagion';
+/** A word as a hero holds it and sets it in a socket: a power word, or a melded one. */
+export type WordId = BaseWordId | MeldId;
 // (THE NEW WORDS, his choice of 8 Oct 2026, 12:26, as his doc "Wordsmith: The New Words" plays them (his yes, 16:53): the first four, Heavy,
 // Precise, Frenzied and Guarding, from Version 19.3; their looks are the art chat's, render/words3.ts)
 export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding'];
+/** The melded words, in the order of his page "Wordsmith: Word Combinations" (Volatile's five left out, his pick of 13 Oct 2026, 12:36). */
+export const MELD_IDS: readonly MeldId[] = ['eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion'];
+/** Each melded word's two words, in the order his page names them. */
+export const MELD_OF: Readonly<Record<MeldId, readonly [BaseWordId, BaseWordId]>> = {
+  eruption: ['power', 'fire'],
+  avalanche: ['power', 'frost'],
+  thunder: ['power', 'lightning'],
+  blight: ['power', 'poison'],
+  scald: ['fire', 'frost'],
+  wildfire: ['fire', 'lightning'],
+  fumes: ['fire', 'poison'],
+  hailstorm: ['frost', 'lightning'],
+  frostbite: ['frost', 'poison'],
+  contagion: ['lightning', 'poison'],
+};
+/** Every word a hero can hold: what a count of each is kept over (the pouch, the Lexicon, what is known). */
+export const ALL_WORD_IDS: readonly WordId[] = [...WORD_IDS, ...MELD_IDS];
 
 /** Damage types. An ability with no element word deals physical damage. */
 export type Element = 'phys' | 'fire' | 'frost' | 'lightning';

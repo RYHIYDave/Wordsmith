@@ -10,7 +10,7 @@
 // to socket the word."
 
 import { PAD_USE } from '../engine/gamepad';
-import { CLASSES, FIRST_LEVELS, FIRST_WORD, QUEST_ITEM, SKILLS, WORDS, firstWordSkill } from '../game/defs';
+import { CLASSES, FIRST_LEVELS, FIRST_WORD, HAND_IN, QUEST_ITEM, SKILLS, WORDS, firstWordSkill } from '../game/defs';
 import type { SkillId } from '../game/defs';
 import type { Game } from '../game/game';
 import type { GuideRow, GuideStep, SlotRef } from '../game/state';
@@ -145,6 +145,8 @@ export function guideBanner(game: Game, touch: boolean): Banner | null {
     case 'carry':
       return mk('WORDSMITHING', `You carry ${QUEST_ITEM.the}`, 'Take it to the wordsmith in town.');
     case 'ring':
+      // (HAND_IN: it is given by using him, not by walking past him)
+      if (HAND_IN.on) return mk('WORDSMITHING', `Bring ${QUEST_ITEM.the} to the wordsmith`, PAD_USE.live ? 'He stands in the ring of stones. Go up to him and press B.' : touch ? 'He stands in the ring of stones. Tap him.' : 'He stands in the ring of stones. Go up to him and press E.');
       return mk('WORDSMITHING', `Bring ${QUEST_ITEM.the} to the wordsmith`, 'He stands in the ring of stones. Walk up to him.');
     case 'smith': {
       const w = guideWord(game);

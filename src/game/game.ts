@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -25,8 +25,9 @@ import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
-import { ATTRS, CLASS_IDS, EQUIP_SLOTS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
-import type { Attr, ClassId, Element, EquipSlot, Item, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
+import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, isDamageWord, meldOf, meldProblem, savedWords, withParts, wordIds } from './melds';
+import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -86,6 +87,9 @@ export interface RunSave {
   quest?: 'heart' | null;
   /** THE SKILL TREES (game/talents.ts): the talents taken, in the order taken (absent when none). */
   talents?: string[];
+  /** WORDMELDING (game/melds.ts): the runedust carried, and melding at the wordsmith (absent while MELD is off). */
+  dust?: number;
+  meld?: 'stone' | 'open' | null;
   /** THE WAYS (game/ways.ts): the deepest floor whose waypoint the hero has reached (absent while WAYS is off). */
   way?: number;
 }
@@ -104,7 +108,7 @@ function noLore(): WordLore {
 export function newMeta(): Meta {
   const lexicon = {} as Record<WordId, number>;
   const known = {} as Record<WordId, WordLore>;
-  for (const w of WORD_IDS) {
+  for (const w of wordIds()) {
     lexicon[w] = 0;
     known[w] = noLore();
   }
@@ -122,7 +126,7 @@ export function newGuide(): Guide {
 export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   const out = newMeta();
   if (!m || typeof m !== 'object') return out;
-  for (const w of WORD_IDS) {
+  for (const w of wordIds()) {
     const n = m.lexicon ? m.lexicon[w] : 0;
     out.lexicon[w] = typeof n === 'number' && Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
     const k = m.known ? m.known[w] : undefined;
@@ -147,6 +151,8 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   // the owner saw in the pictures, and it stays lit for the heroes after. A hero saved before then
   // keeps his own ring, and his words, whatever the device's: see `restore`.)
   out.ring = m.ring === true;
+  // (WORDMELDING: nothing of it is kept while MELD is off)
+  if (MELD.on && m.meld === true) out.meld = true;
   out.limit = LIMITS.includes(m.limit as Limit) ? (m.limit as Limit) : 'cooldown';
   out.voice = VOICE_IDS.includes(m.voice as VoiceId) ? (m.voice as VoiceId) : 'male';
   out.mode = HERO_MODES.includes(m.mode as HeroMode) ? (m.mode as HeroMode) : 'normal';
@@ -307,6 +313,11 @@ export class Game {
   private footworkT = 0;
   /** THE SKILL TREES (Master Stroke): hits landed since the last certain critical. */
   private strokes = 0;
+  /** WORDMELDING: each ability's heat (Eruption behind) and hits counted to the next thunderclap (Thunder behind). */
+  private meldHeat: number[] = [0, 0, 0];
+  private meldHits: number[] = [0, 0, 0];
+  /** WORDMELDING: the last word the wordsmith melded, and whether it was the first of its kind (his half shows it). */
+  melded: { word: MeldId; first: boolean } | null = null;
   private windT = 0;
   private stormT = 0;
   private unbroken = false;
@@ -415,6 +426,8 @@ export class Game {
       }
     }
     for (const w of WORD_IDS) h.words[w] = PRACTICE.words;
+    // (WORDMELDING: the melded words too, to try)
+    if (MELD.on) for (const w of MELD_IDS) h.words[w] = PRACTICE.words;
     this.refresh();
     this.clearLevel();
     const shape = SHAPES.find((k) => hall === `shape:${k}`);
@@ -522,7 +535,7 @@ export class Game {
     if (worded && (worded.front.some((w) => w !== null) || worded.behind.some((w) => w !== null))) return 'use';
     const fight = this.inFight();
     if (fight && this.guideRows().some((r) => !r.done)) return 'fight';
-    if (WORD_IDS.some((w) => h.words[w] > 0)) return 'smith';
+    if (ALL_WORD_IDS.some((w) => h.words[w] > 0)) return 'smith';
     if (this.drops.some((d) => d.kind === 'word' && Math.hypot(d.x - h.x, d.y - h.y) < GUIDE.sight)) return 'take';
     if (fight) return null;
     // (THE FIRST LEVELS: the quest item, to be taken to town and to the wordsmith)
@@ -644,7 +657,7 @@ export class Game {
     for (const it of [...EQUIP_SLOTS.map((s) => h.gear[s]), ...h.bag, ...this.meta.stash, ...this.shops.armourer, ...this.shops.mystic]) if (it) maxUid = Math.max(maxUid, it.uid);
     return {
       v: 1, cls: h.cls, seed: this.seed, level: h.level, xp: h.xp, pending: h.pending, attrs: { ...h.attrs },
-      gear: { ...h.gear }, bag: [...h.bag], words: this.ringWord ? { ...h.words, [this.ringWord.word]: h.words[this.ringWord.word] + 1 } : { ...h.words },
+      gear: { ...h.gear }, bag: [...h.bag], words: savedWords(this.ringWord ? { ...h.words, [this.ringWord.word]: h.words[this.ringWord.word] + 1 } : { ...h.words }),
       sockets: h.skills.map((s) => ({ front: [...s.front], behind: [...s.behind] })),
       gold: h.gold, potionKills: h.potionKills, depth: this.depth, cleared: this.cleared, kills: this.kills, runTime: this.runTime, maxUid,
       plan: [...this.plan],
@@ -660,6 +673,8 @@ export class Game {
       ...(h.talents.length ? { talents: [...h.talents] } : {}),
       // (THE WAYS: nor the waypoint reached while theirs is off)
       ...(WAYS.on ? { way: this.wayDepth } : {}),
+      // (WORDMELDING: nor its runedust and its Meldstone while MELD is off)
+      ...(MELD.on ? { dust: h.dust, meld: h.meld } : {}),
     };
   }
 
@@ -677,10 +692,10 @@ export class Game {
     for (const slot of EQUIP_SLOTS) h.gear[slot] = s.gear?.[slot] ? migrateItem(s.gear[slot] as Item) : null;
     h.bag = Array.isArray(s.bag) ? s.bag.slice(0, TUNE.bagSize).map((it) => (it ? migrateItem(it) : null)) : [];
     while (h.bag.length < TUNE.bagSize) h.bag.push(null);
-    for (const w of WORD_IDS) h.words[w] = Math.max(0, Math.floor(num(s.words?.[w], 0)));
+    for (const w of wordIds()) h.words[w] = Math.max(0, Math.floor(num(s.words?.[w], 0)));
     h.skills.forEach((sk, i) => {
       const so = s.sockets?.[i];
-      const clean = (a: unknown): (WordId | null)[] => (Array.isArray(a) ? a.map((w) => (WORD_IDS.includes(w as WordId) ? (w as WordId) : null)) : []);
+      const clean = (a: unknown): (WordId | null)[] => (Array.isArray(a) ? a.map((w) => (wordIds().includes(w as WordId) ? (w as WordId) : null)) : []);
       sk.front = SKILLS[sk.id].sockets ? clean(so?.front) : [];
       sk.behind = SKILLS[sk.id].sockets ? clean(so?.behind) : [];
     });
@@ -703,6 +718,9 @@ export class Game {
     // (THE FIRST LEVELS: a save from before them, or made with them off, has the ring lit)
     h.ring = !FIRST_LEVELS.on || s.ring !== false;
     h.quest = s.quest === 'heart' ? 'heart' : null;
+    // (WORDMELDING: nothing of it in a save made with MELD off)
+    h.dust = Math.max(0, Math.floor(num(s.dust, 0)));
+    h.meld = s.meld === 'stone' || s.meld === 'open' ? s.meld : null;
     // (THE SKILL TREES: only this class's talents, each once, in an order that could have been taken)
     h.talents = cleanTalents(h.cls, h.level, s.talents);
     if (s.guide && typeof s.guide === 'object') {
@@ -752,7 +770,7 @@ export class Game {
     gear.mainhand = starterWeapon(cls);
     const words = {} as Record<WordId, number>;
     // (no word to begin with: the first lies in a satchel, half way through the first dungeon)
-    for (const w of WORD_IDS) words[w] = 0;
+    for (const w of wordIds()) words[w] = 0;
     const attrs: Record<Attr, number> = { ...c.attrs };
     const d = derive(cls, 1, attrs, gear, this.meta.limit);
     // both attacks are the weapon's; the evasive move is the character's own
@@ -772,6 +790,9 @@ export class Game {
       // (THE FIRST LEVELS: the ring is lit for him if it ever was on this device; with the switch off, always)
       ring: !FIRST_LEVELS.on || this.meta.ring,
       quest: null,
+      dust: 0,
+      // (WORDMELDING: melding is open for him if the Meldstone was ever brought on this device, as the ring is)
+      meld: MELD.on && this.meta.meld ? 'open' : null,
       talents: [],
       d,
     };
@@ -904,7 +925,7 @@ export class Game {
         let damage = false;
         for (let k = 0; k < side.length; k++) {
           const w = side[k];
-          if (!w || WORDS[w].kind !== 'damage') continue;
+          if (!w || !isDamageWord(w)) continue;
           if (damage) {
             side[k] = null;
             h.words[w]++;
@@ -3334,13 +3355,13 @@ export class Game {
   /** The words in front of ability `i`: what the effects show. */
   private fronts(i: number): WordId[] {
     const s = this.hero.skills[i];
-    return s ? s.front.filter((w): w is WordId => w !== null) : [];
+    return s ? withParts(s.front) : [];
   }
 
   /** The words behind ability `i`. */
   private behinds(i: number): WordId[] {
     const s = this.hero.skills[i];
-    return s ? s.behind.filter((w): w is WordId => w !== null) : [];
+    return s ? withParts(s.behind) : [];
   }
 
   /**
@@ -3750,7 +3771,9 @@ export class Game {
       }
     }
     if (!this.roomForZone() || !this.onFloor(x, y)) return;
-    this.zones.push({ x, y, r: rad, t: 0, dur: z.dur, kind: z.kind, element: z.element, dmg: this.avgHit(i, frac) * z.dps, slow: z.slow, tick: 0.2, hostile: false, skill: i, words: [], from: '' });
+    const nz: Zone = { x, y, r: rad, t: 0, dur: z.dur, kind: z.kind, element: z.element, dmg: this.avgHit(i, frac) * z.dps, slow: z.slow, tick: 0.2, hostile: false, skill: i, words: [], from: '' };
+    if (r.meldBehind) nz.meld = r.meldBehind;
+    this.zones.push(nz);
     this.emit({ t: 'zone', kind: z.kind, x, y, r: rad, el: z.element });
   }
 
@@ -3764,7 +3787,9 @@ export class Game {
       }
     }
     if (!this.roomForZone() || !this.onFloor(x, y)) return;
-    this.zones.push({ x, y, r: rad, t: 0, dur: 5, kind: 'venom', element: 'phys', dmg: this.avgHit(i, frac) * r.cloud, slow: 0, tick: 0.2, hostile: false, skill: i, words: [], from: '' });
+    const nz: Zone = { x, y, r: rad, t: 0, dur: 5, kind: 'venom', element: 'phys', dmg: this.avgHit(i, frac) * r.cloud, slow: 0, tick: 0.2, hostile: false, skill: i, words: [], from: '' };
+    if (r.meldBehind) nz.meld = r.meldBehind;
+    this.zones.push(nz);
     this.emit({ t: 'zone', kind: 'venom', x, y, r: rad, el: 'phys' });
   }
 
@@ -3810,9 +3835,14 @@ export class Game {
     }
     // (Hunter's Mark: the mark's critical is a triple one)
     if (crit) dmg *= 1 + (d.critMult / 100) * (spent && this.has('huntersmark') ? TALENT_TUNE.huntersMark : 1);
+    // (WORDMELDING: Avalanche behind, a hit on a chilled enemy hits harder)
+    if (r.meldBehind === 'avalanche' && m.chillT > 0) dmg *= 1 + MELD_TUNE.avalanche.chilled;
     dmg = Math.max(1, Math.round(dmg));
     const x = m.x;
     const y = m.y;
+    // (WORDMELDING: what it was before this hit, for Scald's crack)
+    const wasBurning = m.burnT > 0;
+    const wasChilled = m.chillT > 0;
     if (r.ignite > 0) {
       // (Searing: it burns longer, and harder)
       const sear = this.has('searing');
@@ -3821,19 +3851,11 @@ export class Game {
       if (m.burnT <= 0 || dps > m.burnDps) m.burnDps = dps;
       m.burnT = 3 + (sear ? TALENT_TUNE.searing.secs : 0);
     }
-    if (r.chill > 0) {
-      if (m.chillT > 0 && m.freezeImmune <= 0 && !m.boss) {
-        // (Deep Freeze: frozen half as long again, and frozen again sooner)
-        const deep = this.has('deepfreeze');
-        m.frozenT = (m.elite ? 0.6 : 1.1) * (deep ? TALENT_TUNE.deepFreeze.frozen : 1);
-        m.freezeImmune = deep ? TALENT_TUNE.deepFreeze.again : 4;
-        // (THE MONSTERS' ATTACKS: a red troll frozen as he runs his charge is stopped in it)
-        if (m.state === 'charge') this.endCharge(m);
-        this.emit({ t: 'freeze', x, y });
-        this.sfx('frost', 0.7);
-      }
-      m.chill = Math.max(m.chillT > 0 ? m.chill : 0, r.chill);
-      m.chillT = 2.5;
+    if (r.chill > 0) this.chillMonster(m, r.chill);
+    // (WORDMELDING: Thunder in front, one big bolt out of the sky in place of the arcs)
+    if (r.meld === 'thunder' && !quiet) {
+      this.emit({ t: 'arc', x0: x, y0: y, x1: x, y1: y, sky: true });
+      this.sfx('thunder', 0.6);
     }
     const front = quiet ? undefined : this.fronts(i);
     if (r.orbChance > 0 && !quiet) this.emit({ t: 'mark', x, y });
@@ -3842,8 +3864,11 @@ export class Game {
     // (THE SKILL TREES: a lightning hit leaves it shocked, which Overload works on)
     if (TALENTS.on && (r.element === 'lightning' || r.arcs > 0)) m.shockT = TALENT_TUNE.shockSecs;
     if (spent) this.emit({ t: 'markSpent', id: m.id, x, y, dx: x - h.x, dy: y - h.y });
-    this.damageMonster(m, dmg, r.element, crit, i, !quiet && h.skills[i].front.includes('power'), front);
-    if (r.poison > 0) this.poisonMonster(m, dmg * r.poison, i);
+    this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
+    // (WORDMELDING: Blight in front, its poison biting harder the lower the enemy's life)
+    const blight = r.meld === 'blight' && !m.dead ? 1 + (MELD_TUNE.blight.most - 1) * (1 - Math.max(0, m.life) / m.maxLife) : 1;
+    if (r.poison > 0) this.poisonMonster(m, dmg * r.poison * blight, i);
+    if (r.meld || r.meldBehind) this.meldHit(m, i, dmg, x, y, quiet, wasBurning, wasChilled);
     if (!m.dead) {
       // HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too
       if (r.stun > 0) this.stunMonster(m, r.stun);
@@ -3884,7 +3909,10 @@ export class Game {
       for (const o of near) {
         this.emit({ t: 'arc', x0: x, y0: y, x1: o.x, y1: o.y });
         if (TALENTS.on) o.shockT = TALENT_TUNE.shockSecs;
-        this.damageMonster(o, Math.max(1, Math.round(dmg * r.arcDmg)), 'lightning', false, i);
+        const arc = Math.max(1, Math.round(dmg * r.arcDmg));
+        this.damageMonster(o, arc, 'lightning', false, i);
+        // (WORDMELDING: what an arc carries with it)
+        if (r.meld) this.meldArc(o, m, i, arc, near);
       }
       if (near.length) this.sfx('zap', 0.6);
     }
@@ -3921,6 +3949,134 @@ export class Game {
     } else m.poisonDps = Math.max(m.poisonDps, dps * most);
     m.poisonT = TUNE.poisonTime;
     if (skill >= 0) m.lastSkill = skill;
+  }
+
+  /** A chilling hit on `m`, slowing it by `slow`: a second one on a chilled enemy freezes it (not a boss). */
+  private chillMonster(m: Monster, slow: number): void {
+    if (m.chillT > 0 && m.freezeImmune <= 0 && !m.boss) {
+      // (Deep Freeze: frozen half as long again, and frozen again sooner)
+      const deep = this.has('deepfreeze');
+      m.frozenT = (m.elite ? 0.6 : 1.1) * (deep ? TALENT_TUNE.deepFreeze.frozen : 1);
+      m.freezeImmune = deep ? TALENT_TUNE.deepFreeze.again : 4;
+      // (THE MONSTERS' ATTACKS: a red troll frozen as he runs his charge is stopped in it)
+      if (m.state === 'charge') this.endCharge(m);
+      this.emit({ t: 'freeze', x: m.x, y: m.y });
+      this.sfx('frost', 0.7);
+    }
+    m.chill = Math.max(m.chillT > 0 ? m.chill : 0, slow);
+    m.chillT = 2.5;
+  }
+
+  /**
+   * WORDMELDING (game/melds.ts): the twist of a melded word on one hit of ability `i`, which did
+   * `dmg` to `m` at (x, y): in front, what the hit does; behind, its heat and its thunderclaps.
+   * `wasBurning` and `wasChilled`: how it was before the hit.
+   */
+  private meldHit(m: Monster, i: number, dmg: number, x: number, y: number, quiet: boolean, wasBurning: boolean, wasChilled: boolean): void {
+    const h = this.hero;
+    const r = h.skills[i].r;
+    const T = MELD_TUNE;
+    const mf = r.meld;
+    if (mf === 'eruption' && !quiet) {
+      // the blast leaves a pool of molten ground
+      this.meldPatch(i, 'burn', x, y, T.eruption.pool, T.eruption.poolDur, dmg * T.eruption.poolDps, 'fire');
+    } else if (mf === 'avalanche' && !m.dead && !m.boss) {
+      // shoved back from the hero; one stopped short by a wall or another is frozen where it stands
+      let dx = m.x - h.x;
+      let dy = m.y - h.y;
+      const len = Math.hypot(dx, dy) || 1;
+      dx /= len;
+      dy /= len;
+      const grid = m.kind === 'bat' ? this.level.open : this.level.walk;
+      const x0 = m.x;
+      const y0 = m.y;
+      const steps = 6;
+      for (let k = 0; k < steps; k++) this.slide(m, Math.min(m.r, 0.42), (dx * T.avalanche.shove) / steps, (dy * T.avalanche.shove) / steps, grid);
+      const went = Math.hypot(m.x - x0, m.y - y0);
+      const crowded = this.monsters.some((o) => o !== m && !o.dead && Math.hypot(o.x - m.x, o.y - m.y) < o.r + m.r);
+      if (went < T.avalanche.shove * 0.8 || crowded) {
+        m.chillT = Math.max(m.chillT, 0.01);
+        this.chillMonster(m, Math.max(m.chill, 0.3));
+      }
+    } else if (mf === 'scald' && !m.dead && !m.scaldCd && ((wasBurning && r.chill > 0) || (wasChilled && r.ignite > 0))) {
+      // fire meets ice in it: it cracks
+      m.scaldCd = T.scald.again;
+      this.emit({ t: 'burst', x, y, r: 0.9, el: 'frost', style: 'blast' });
+      this.sfx('shatter', 0.7);
+      this.damageMonster(m, Math.max(1, Math.round(dmg * T.scald.crack)), r.element, false, i);
+    } else if (mf === 'fumes' && !m.dead && !m.fumesCd && m.burnT > 0 && m.poisonT > 0) {
+      // burning and poisoned, it gives off a toxic cloud
+      m.fumesCd = T.fumes.again;
+      this.meldPatch(i, 'venom', x, y, T.fumes.cloud, T.fumes.dur, m.poisonDps, 'phys');
+    } else if (mf === 'frostbite' && !m.dead && (m.chillT > 0 || m.frozenT > 0)) {
+      m.biteDps = Math.max(m.biteDps ?? 0, dmg * T.frostbite.bite);
+    }
+    if (quiet) return;
+    const mb = r.meldBehind;
+    if (mb === 'eruption') {
+      // heat builds a hit at a time; at full heat, the next hit erupts round what it strikes
+      if (this.meldHeat[i] >= T.eruption.heat) {
+        this.meldHeat[i] = 0;
+        const blast = Math.max(1, Math.round(dmg * T.eruption.blast));
+        this.emit({ t: 'burst', x, y, r: T.eruption.blastR, el: 'fire', style: 'blast' });
+        this.emit({ t: 'shake', amount: 3 });
+        this.sfx('explode', 0.8);
+        for (const o of this.monsters) if (!o.dead && Math.hypot(o.x - x, o.y - y) <= T.eruption.blastR + o.r) this.damageMonster(o, blast, 'fire', false, i);
+      } else if (++this.meldHeat[i] >= T.eruption.heat) this.emit({ t: 'text', x: h.x, y: h.y, text: 'HEAT', color: '#ff9a5a' }); // (Eruption's colour, art/icons.ts)
+    } else if (mb === 'thunder') {
+      // every few hits, a thunderclap round the hero
+      if (++this.meldHits[i] >= T.thunder.every) {
+        this.meldHits[i] = 0;
+        const clap = Math.max(1, Math.round(dmg * T.thunder.clap));
+        this.emit({ t: 'burst', x: h.x, y: h.y, r: T.thunder.clapR, el: 'lightning', style: 'blast' });
+        this.emit({ t: 'shake', amount: 3 });
+        this.sfx('thunder', 0.8);
+        for (const o of this.monsters) if (!o.dead && Math.hypot(o.x - h.x, o.y - h.y) <= T.thunder.clapR + o.r) this.damageMonster(o, clap, 'lightning', false, i);
+      }
+    } else if (mb === 'blight' && !m.dead) m.blightT = T.blight.secs;
+  }
+
+  /** WORDMELDING: what an arc of ability `i` carries to `o` (struck for `arc`) from `from`, by the melded word in front. */
+  private meldArc(o: Monster, from: Monster, i: number, arc: number, struck: readonly Monster[]): void {
+    const r = this.hero.skills[i].r;
+    if (o.dead) return;
+    if (r.meld === 'wildfire') {
+      // burning jumps along the arc
+      const dps = (arc * Math.max(r.ignite, 0.3)) / 3;
+      if (o.burnT <= 0) this.emit({ t: 'ignite', x: o.x, y: o.y });
+      if (o.burnT <= 0 || dps > o.burnDps) o.burnDps = dps;
+      o.burnT = 3;
+    } else if (r.meld === 'contagion') {
+      this.poisonMonster(o, arc * Math.max(r.poison, 0.2), i);
+    } else if (r.meld === 'hailstorm') {
+      // the arc chills; a frozen one passes it on
+      this.chillMonster(o, Math.max(r.chill, 0.3));
+      if (o.frozenT > 0) {
+        const next = this.monsters
+          .filter((n) => !n.dead && n !== o && n !== from && !struck.includes(n) && Math.hypot(n.x - o.x, n.y - o.y) <= 3.5)
+          .sort((a, b) => Math.hypot(a.x - o.x, a.y - o.y) - Math.hypot(b.x - o.x, b.y - o.y))
+          .slice(0, MELD_TUNE.hailstorm.passOn);
+        for (const n of next) {
+          this.emit({ t: 'arc', x0: o.x, y0: o.y, x1: n.x, y1: n.y });
+          this.damageMonster(n, arc, 'lightning', false, i);
+          this.chillMonster(n, Math.max(r.chill, 0.3));
+        }
+      }
+    }
+  }
+
+  /** WORDMELDING: a patch a melded word's twist leaves (Eruption's molten pool, Fumes' cloud), for `dur` seconds, harming for `dps` a second. */
+  private meldPatch(i: number, kind: 'burn' | 'venom', x: number, y: number, rad: number, dur: number, dps: number, el: Element): void {
+    for (const o of this.zones) {
+      if (o.kind === kind && !o.hostile && Math.hypot(o.x - x, o.y - y) < 0.6 && o.r >= rad - 0.1) {
+        o.t = 0;
+        o.dmg = Math.max(o.dmg, dps);
+        return;
+      }
+    }
+    if (!this.roomForZone() || !this.onFloor(x, y)) return;
+    this.zones.push({ x, y, r: rad, t: 0, dur, kind, element: el, dmg: dps, slow: 0, tick: 0.2, hostile: false, skill: i, words: [], from: '' });
+    this.emit({ t: 'zone', kind, x, y, r: rad, el });
   }
 
   /**
@@ -3997,6 +4153,8 @@ export class Game {
     }
     // (THE SKILL TREES: Overload, a shocked enemy takes more from everything)
     if (m.shockT > 0 && this.has('overload')) dmg = Math.max(1, Math.round(dmg * TALENT_TUNE.overload));
+    // (WORDMELDING: Blight behind, a poisoned enemy it has touched takes more from everything)
+    if (m.blightT && m.poisonT > 0) dmg = Math.max(1, Math.round(dmg * (1 + MELD_TUNE.blight.more)));
     // (GUARDING, on a monster: its shield takes the harm first)
     if (m.shield > 0) {
       const soak = Math.min(m.shield, dmg);
@@ -4371,7 +4529,7 @@ export class Game {
       (words[w] ?? 0) + sockets.reduce((n, so) => n + [...so.front, ...so.behind].filter((x) => x === w).length, 0);
     const nowSockets = h.skills.map((sk) => ({ front: sk.front, behind: sk.behind }));
     let words = 0;
-    for (const w of WORD_IDS) words += Math.max(0, count(h.words, nowSockets, w) - count(e.words, e.sockets, w));
+    for (const w of ALL_WORD_IDS) words += Math.max(0, count(h.words, nowSockets, w) - count(e.words, e.sockets, w));
     return { items, words, gold: Math.max(0, h.gold - e.gold), share: this.goldShare() };
   }
 
@@ -4475,6 +4633,8 @@ export class Game {
     const L = this.level;
     const f = L.floor;
     const act: Monster[] = [];
+    // (WORDMELDING: standing in the steam Scald behind leaves, the hero is hidden)
+    const hidden = this.zones.some((z) => z.kind === 'steam' && !z.hostile && Math.hypot(h.x - z.x, h.y - z.y) <= z.r);
     for (const m of this.monsters) {
       if (m.dead) continue;
       m.flash = Math.max(0, m.flash - dt);
@@ -4509,6 +4669,11 @@ export class Game {
       if (m.markT > 0) m.markT -= dt;
       if (m.shockT > 0) m.shockT -= dt;
       if (m.staggerCd > 0) m.staggerCd -= dt;
+      // (WORDMELDING)
+      if (m.scaldCd) m.scaldCd = Math.max(0, m.scaldCd - dt);
+      if (m.fumesCd) m.fumesCd = Math.max(0, m.fumesCd - dt);
+      if (m.blightT) m.blightT = Math.max(0, m.blightT - dt);
+      if (m.biteDps && m.chillT <= 0 && m.frozenT <= 0) m.biteDps = 0;
       // (THE NEW MONSTERS: a minion's leader's words, whole since the skeleton champion's cry, for so long: RALLY)
       if (m.rallyT !== undefined && m.rallyT > 0) m.rallyT = Math.max(0, m.rallyT - dt);
       if (m.poisonT > 0) {
@@ -4573,7 +4738,8 @@ export class Game {
         continue;
       }
 
-      const los = dist < 15 && this.sees(m.x, m.y, h.x, h.y);
+      // (WORDMELDING: Scald behind's steam hides the hero standing in it: nothing sees him to attack)
+      const los = dist < 15 && !hidden && this.sees(m.x, m.y, h.x, h.y);
       if (moves) {
         // THE MONSTERS' ATTACKS: the biggest of its moves that is ready and in reach, else its basic blow
         if (m.cd <= 0) {
@@ -5610,6 +5776,8 @@ export class Game {
         if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
+      // (WORDMELDING: the twists of what a melded word behind leaves, game/melds.ts)
+      if (z.meld && this.meldZone(z, i, dt)) continue;
       z.tick -= dt;
       if (z.tick <= 0) {
         z.tick += 0.5;
@@ -5620,6 +5788,13 @@ export class Game {
             this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y, sky: true });
             this.damageMonster(m, Math.max(1, Math.round(z.dmg)), 'lightning', false, z.skill);
             this.sfx('thunder', 0.5);
+          }
+          // (WORDMELDING: Hailstorm's storm of ice slows what is in it)
+          if (z.slow > 0) {
+            for (const m of inside) {
+              m.chill = Math.max(m.chillT > 0 ? m.chill : 0, z.slow);
+              m.chillT = Math.max(m.chillT, 0.7);
+            }
           }
         } else if (z.kind === 'venom') {
           // the cloud poisons whatever stands in it, and they carry it out with them
@@ -5635,7 +5810,8 @@ export class Game {
           }
         } else {
           for (const m of inside) {
-            if (z.kind === 'ice') {
+            // (WORDMELDING: Scald behind's steam slows as ice does)
+            if (z.kind === 'ice' || z.kind === 'steam') {
               m.chill = Math.max(m.chillT > 0 ? m.chill : 0, z.slow);
               m.chillT = 0.7;
             }
@@ -5647,6 +5823,52 @@ export class Game {
     }
   }
 
+  /**
+   * WORDMELDING: zone `z` (at `k` among the zones) does its melded word's twist. True if it is gone
+   * by it (Fumes' cloud, exploding): then nothing else is done with it.
+   */
+  private meldZone(z: Zone, k: number, dt: number): boolean {
+    const T = MELD_TUNE;
+    if (z.meld === 'wildfire' && z.kind === 'burn') {
+      // the burning ground throws a spark at an enemy near it, every so often
+      z.meldT = (z.meldT ?? 0) - dt;
+      if (z.meldT <= 0) {
+        z.meldT = T.wildfire.every;
+        const near = this.monsters.filter((m) => !m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + T.wildfire.reach);
+        if (near.length) {
+          const m = this.rng.pick(near);
+          this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y });
+          this.damageMonster(m, Math.max(1, Math.round(z.dmg * (T.wildfire.spark / 0.25))), 'fire', false, z.skill);
+          this.sfx('zap', 0.4);
+        }
+      }
+    } else if (z.meld === 'fumes' && z.kind === 'venom') {
+      // anything burning that comes into the cloud sets it off
+      if (this.monsters.some((m) => !m.dead && m.burnT > 0 && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5)) {
+        this.zones.splice(k, 1);
+        const boom = Math.max(1, Math.round(z.dmg * T.fumes.blast));
+        this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r + 0.5, el: 'fire', style: 'blast' });
+        this.emit({ t: 'shake', amount: 3 });
+        this.sfx('explode', 0.7);
+        for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + 0.5 + m.r) this.damageMonster(m, boom, 'fire', false, z.skill);
+        return true;
+      }
+    } else if (z.meld === 'frostbite' && z.kind === 'ice' && z.tick - dt <= 0) {
+      // the ice poisons what crosses it
+      for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5) this.poisonMonster(m, z.dmg, z.skill);
+    } else if (z.meld === 'contagion' && z.kind === 'venom' && z.tick - dt <= 0) {
+      // the cloud shocks one that stands in it
+      const inside = this.monsters.filter((m) => !m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5);
+      if (inside.length) {
+        const m = this.rng.pick(inside);
+        this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y });
+        this.damageMonster(m, Math.max(1, Math.round(z.dmg * T.contagion.shock)), 'lightning', false, z.skill);
+        this.sfx('zap', 0.4);
+      }
+    }
+    return false;
+  }
+
   /** Burning, twice a second. */
   private updateDots(dt: number): void {
     this.dotT -= dt;
@@ -5655,6 +5877,8 @@ export class Game {
     for (const m of this.monsters) {
       if (!m.dead && m.burnT > 0) this.damageMonster(m, Math.max(1, Math.round(m.burnDps * 0.5)), 'fire', false, m.lastSkill, false, undefined, false, true);
       if (!m.dead && m.poisonT > 0 && m.poisonDps > 0) this.damageMonster(m, Math.max(1, Math.round(m.poisonDps * 0.5)), 'phys', false, m.lastSkill, false, undefined, true);
+      // (WORDMELDING: Frostbite in front, a chilled enemy loses life, a frozen one twice as fast)
+      if (!m.dead && m.biteDps && (m.chillT > 0 || m.frozenT > 0)) this.damageMonster(m, Math.max(1, Math.round(m.biteDps * 0.5 * (m.frozenT > 0 ? 2 : 1))), 'frost', false, m.lastSkill, false, undefined, false, true);
     }
     const h = this.hero;
     if (h.burnT > 0 && !this.over) {
@@ -5752,6 +5976,12 @@ export class Game {
     const bonus = 1 + 0.3 * this.dungeonWords.length;
     const goldBase = Math.max(1, this.depth);
     if (m.boss) {
+      // (WORDMELDING: the Fleshmancer drops runedust, the only one who does for now, his pick; and the
+      // Meldstone, which opens melding at the wordsmith, until it has been brought to him)
+      if (MELD.on && m.kind === 'fleshmancer') {
+        this.addDrop('dust', m.x, m.y, MELD_TUNE.fleshmancerDust, null, null);
+        if (this.hero.meld === null && !this.drops.some((d) => d.kind === 'stone')) this.addDrop('stone', m.x, m.y, 0, null, null);
+      }
       this.addDrop('gold', m.x, m.y, rng.int(25, 45) * goldBase, null, null);
       const n = TUNE.bossItems + (this.depth % 5 === 0 ? TUNE.bossItemsFifth : 0);
       for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(i === 0 ? 3 : 1), null);
@@ -5855,6 +6085,16 @@ export class Game {
         if (!this.wordAtWork() && this.placeable(dr.word)) this.offer = dr.word;
       } else if (dr.kind === 'item' && dr.item) {
         if (!this.takeItem(dr.item)) continue;
+      } else if (dr.kind === 'dust') {
+        // (WORDMELDING) runedust
+        h.dust += dr.gold;
+        this.sfx('word', 0.7);
+        this.emit({ t: 'text', x: h.x, y: h.y, text: `+${dr.gold} RUNEDUST`, color: MELD_DUST_COLOR });
+      } else if (dr.kind === 'stone') {
+        // (WORDMELDING) the Meldstone, to be brought to the wordsmith
+        if (h.meld === null) h.meld = 'stone';
+        this.sfx('rare');
+        this.msg('You take the MELDSTONE. Bring it to the wordsmith.', MSG.word);
       }
       this.drops.splice(i, 1);
     }
@@ -5934,9 +6174,16 @@ export class Game {
     const b = this.level.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < 1.3) this.searchBody(b);
     // THE FIRST LEVELS: the quest item brought to the wordsmith in town: walk up to him, and his ring is lit
-    if (h.quest && this.level.town) {
+    // (HAND_IN: no longer by walking up; by using him, below)
+    if (h.quest && this.level.town && !HAND_IN.on) {
       const st = this.level.stations.find((s) => s.kind === 'wordsmith');
       if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) this.lightRing(st.x, st.y);
+    }
+    // WORDMELDING: the Meldstone brought to the wordsmith: walk up to him, and he can meld
+    // (HAND_IN: no longer by walking up; by using him)
+    if (h.meld === 'stone' && this.level.town && !HAND_IN.on) {
+      const st = this.level.stations.find((s) => s.kind === 'wordsmith');
+      if (st && Math.hypot(st.x - h.x, st.y - h.y) < TUNE.useRange) this.takeMeldstone(st.x, st.y);
     }
     if (c.interact) {
       // (THE WAYS: standing on an awake waypoint, the use button warps him: to town, or from town back down)
@@ -5951,8 +6198,9 @@ export class Game {
       }
       if (this.level.town) {
         // In town the rules only say which service was asked for; the interface opens its panel.
+        // (HAND_IN: beside the one a quest item is for, using him gives it, in place of his panel)
         const st = this.stationNear();
-        if (st) this.emit({ t: 'station', kind: st });
+        if (st && !this.handIn()) this.emit({ t: 'station', kind: st });
       } else if (!this.wayHere() && this.interactHint() !== null) this.leaveDungeon();
     }
   }
@@ -5982,6 +6230,36 @@ export class Game {
     this.msg('A fallen wordsmith. In the satchel: full flasks, and a WORD.', MSG.word);
   }
 
+  /**
+   * HAND_IN (game/defs.ts): what the hero would give the one he stands beside in town, if anything:
+   * the master rune-stone, to the wordsmith. Null with HAND_IN off (then it is given by walking up).
+   */
+  handInNear(): 'stone' | 'meldstone' | null {
+    if (!HAND_IN.on || !this.level.town || this.stationNear() !== 'wordsmith') return null;
+    // (WORDMELDING: the Meldstone, to the wordsmith too)
+    return this.hero.quest ? 'stone' : this.hero.meld === 'stone' ? 'meldstone' : null;
+  }
+
+  /** HAND_IN: give what `handInNear` says, if anything. True if something was given. */
+  private handIn(): boolean {
+    const what = this.handInNear();
+    const st = this.level.stations.find((s) => s.kind === 'wordsmith');
+    if (!what || !st) return false;
+    if (what === 'meldstone') this.takeMeldstone(st.x, st.y);
+    else this.lightRing(st.x, st.y);
+    return true;
+  }
+
+  /** WORDMELDING: the wordsmith, at (x, y), takes the Meldstone: he can meld from now on (and for every hero after, on this device). */
+  private takeMeldstone(x: number, y: number): void {
+    const h = this.hero;
+    h.meld = 'open';
+    if (!this.practice) this.meta.meld = true;
+    this.emit({ t: 'text', x, y, text: 'MELDING', color: MELD_DUST_COLOR });
+    this.sfx('rare');
+    this.msg('The wordsmith takes the MELDSTONE. He can meld words now.', MSG.word);
+  }
+
   /** The town service within reach of the hero, if any (the nearest when several are). */
   stationNear(): Station | null {
     const h = this.hero;
@@ -6009,6 +6287,9 @@ export class Game {
     if (this.level.town) {
       const st = this.stationNear();
       if (!st) return null;
+      // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
+      const giving = this.handInNear();
+      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : HAND_IN.prompt;
       return st === 'gate' ? `Gate: dungeon ${this.depth}` : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     const p = this.level.portal;
@@ -6034,7 +6315,9 @@ export class Game {
 
   /** Why a word cannot be laid on the gate, or null if it can. */
   planProblem(word: WordId): string | null {
-    if (this.hero.words[word] <= 0) return 'No spare word';
+    if (!(this.hero.words[word] > 0)) return 'No spare word';
+    // (WORDMELDING: a melded word is for attacks only, for now, his words)
+    if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks only';
     // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
     // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
     if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;
@@ -6098,7 +6381,7 @@ export class Game {
     if (!h.ring && !this.practice) return DARK_RING;
     const it = this.itemAt(ref);
     if (!it) return 'Nothing there';
-    if (h.words[word] <= 0) return 'No spare word';
+    if (!(h.words[word] > 0)) return 'No spare word';
     const why = imbueProblem(it, word);
     if (why) return why;
     const made = imbueItem(it, word, this.rng);
@@ -6115,6 +6398,8 @@ export class Game {
   private learn(word: WordId, use: 'front' | 'behind' | 'gear' | 'dungeon'): void {
     if (this.practice) return;
     const k = this.meta.known[word];
+    // (WORDMELDING: a Lexicon made with MELD off has no page for a melded word: nothing to learn there)
+    if (!k) return;
     k.found = true;
     k[use] = true;
   }
@@ -6195,6 +6480,56 @@ export class Game {
     this.wordStock[i] = null;
     if (!this.practice) this.meta.known[w].found = true;
     this.sfx('word');
+    return null;
+  }
+
+  /**
+   * WORDMELDING (game/melds.ts): why the wordsmith cannot meld these two spare words just now, or
+   * null if he can: melding not open (the Meldstone not yet brought to him), not two damage words
+   * of the hero's, or not the runedust it takes. (The practice room melds for nothing.)
+   */
+  meldProblem(a: WordId | null, b: WordId | null): string | null {
+    const h = this.hero;
+    if (!MELD.on) return 'Not yet';
+    if (!h.ring) return DARK_RING;
+    if (h.meld !== 'open' && !this.practice) return h.meld === 'stone' ? 'Give him the MELDSTONE first' : 'He needs the MELDSTONE to meld';
+    const why = meldProblem(a, b);
+    if (why || !a || !b) return why ?? 'Two words go in';
+    if (h.words[a] <= 0 || h.words[b] <= 0) return 'No spare word';
+    if (!this.practice && h.dust < MELD_TUNE.cost) return `Needs ${MELD_TUNE.cost} runedust`;
+    return null;
+  }
+
+  /**
+   * WORDMELDING: the wordsmith melds two spare words into one, for runedust. Both words are used
+   * up; the melded word joins the hero's spare words, and the Lexicon knows it from now on. What
+   * came of it is `melded` (for the wordsmith's half to show); `first` if it had not been made before.
+   */
+  meldWords(a: WordId | null, b: WordId | null): string | null {
+    const why = this.meldProblem(a, b);
+    if (why || !a || !b) return why ?? 'Two words go in';
+    const m = meldOf(a, b);
+    if (!m) return 'These do not meld';
+    const h = this.hero;
+    h.words[a]--;
+    h.words[b]--;
+    h.words[m] = (h.words[m] ?? 0) + 1;
+    if (!this.practice) h.dust -= MELD_TUNE.cost;
+    // (a Lexicon made before MELD was switched on has no page for it yet: one is made)
+    if (!this.meta.known[m]) {
+      this.meta.known[m] = { found: false, front: false, behind: false, gear: false, dungeon: false };
+      this.meta.lexicon[m] = 0;
+    }
+    const first = !this.meta.known[m].found;
+    // (found by making it: what it does in front and behind is known from now on)
+    if (!this.practice) {
+      const k = this.meta.known[m];
+      k.found = true;
+      k.front = true;
+      k.behind = true;
+    }
+    this.melded = { word: m, first };
+    this.sfx('rare');
     return null;
   }
 
@@ -6310,7 +6645,9 @@ export class Game {
   /** Lexicon: put a spare word away, for gold. It will still be there after this character dies. */
   depositWord(word: WordId): string | null {
     const h = this.hero;
-    if (h.words[word] <= 0) return 'No spare word';
+    if (!(h.words[word] > 0)) return 'No spare word';
+    // (WORDMELDING: the Lexicon keeps the words as they are found; a melded word is not kept there, for now)
+    if (WORDS[word].kind === 'meld') return 'The Lexicon keeps no melded word';
     const cost = this.keepCost();
     if (h.gold < cost) return `Needs ${cost} gold`;
     h.gold -= cost;
@@ -6579,7 +6916,7 @@ export class Game {
   placeProblem(to: SlotRef, word: WordId): string | null {
     const g = this.group(to);
     if (!g) return 'No socket there';
-    if (this.hero.words[word] <= 0) return 'No spare word';
+    if (!(this.hero.words[word] > 0)) return 'No spare word';
     if (g[to.idx] === word) return 'Already there';
     // what the side would hold with the word in that place (whatever was there has gone back to the pouch)
     const after = g.slice();
@@ -6587,7 +6924,8 @@ export class Game {
     const ws = after.filter((w): w is WordId => w !== null);
     if (new Set(ws).size !== ws.length) return 'Already there';
     // (ONE DAMAGE WORD A SIDE: his answer, 8 Oct 2026, 16:53; before Version 19.3, one element a side)
-    if (ws.filter((w) => WORDS[w].kind === 'damage').length > 1) return 'One damage word per side';
+    // (WORDMELDING: a melded word takes that place)
+    if (ws.filter((w) => isDamageWord(w)).length > 1) return 'One damage word per side';
     return null;
   }
 
@@ -6633,7 +6971,7 @@ export class Game {
   socket(skill: number, side: 'front' | 'behind', word: WordId): string | null {
     const h = this.hero;
     const s = h.skills[skill];
-    if (!s || h.words[word] <= 0) return 'No spare word';
+    if (!s || !(h.words[word] > 0)) return 'No spare word';
     const group = side === 'front' ? s.front : s.behind;
     const why = socketProblem(group, word);
     if (why) return why;

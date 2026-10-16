@@ -34,6 +34,7 @@ import { SIDE_M, putDown, sideBody, sideFrame, sideHead } from './town';
 import { THEME, inside } from './ui';
 import type { Rect, Ui } from './ui';
 import { drawWordTile } from './words';
+import { meldOpen, meldTab } from './meld';
 
 /** The one place on the wordsmith's half a word of the hero's goes to: sold. */
 const SELL = 'sell';
@@ -94,9 +95,16 @@ export function wordsmithSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Pane
   const pageY = soldEnd + 6;
   /** Where the next word he is sold will lie. */
   const nextSold = sold[Math.min(game.wordsSold.length, sold.length - 1)].r;
+  // (WORDMELDING, behind MELD: once the Meldstone has been brought to him, a tab turns his half to melding)
+  const tab = meldOpen(game) ? meldTab(ui, r, 'MELD') : null;
 
   return {
     press(say): void {
+      if (tab && ui.pressIn(tab.x, tab.y, tab.w, tab.h)) {
+        st.meldPage = true;
+        st.pick = null;
+        return;
+      }
       // (the inventory has taken something in hand since: what was picked here is put down)
       if (inv.sel || inv.word || inv.pending || inv.look) st.pick = null;
       if (st.pick && !picked()) st.pick = null;
@@ -142,6 +150,7 @@ export function wordsmithSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Pane
 
     draw(over: SideOver): void {
       sideFrame(ui, r, 'WORDSMITH');
+      if (tab) ui.drawButton(tab.x, tab.y, tab.w, tab.h, 'MELD', { small: true, lit: true });
       drawText(g, `HIS WORDS: ${price} GOLD EACH`, x0, bodyY, THEME.dim, { font: 'small' });
       // (the owner, 5 Oct 2026, 22:44, of the armourer's "YOU SOLD: BUY BACK FOR THE SAME": 'Change
       // that whole buy back line to just "Buy Back"'. The same here; what a word costs to buy back is on its button.)

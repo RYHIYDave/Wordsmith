@@ -350,7 +350,9 @@ const ARROW: readonly string[] = [P.white, P.sl5, P.wd5, P.wd4];
 const ARROW_FALL = 560;
 const BUBBLE: readonly string[] = [P.vn5, P.vn4, P.vn4, P.vn3];
 /** The colour each word's name is shown in when it joins an ability. */
-export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, twin: P.tl4, fire: P.fr4, frost: P.bu4, lightning: P.lt3, leech: P.bl5, volatile: P.pu4, poison: P.vn4, heavy: '#ac8753', precise: '#eef4fa', frenzied: '#ff5c33', guarding: '#30a868' };
+export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, twin: P.tl4, fire: P.fr4, frost: P.bu4, lightning: P.lt3, leech: P.bl5, volatile: P.pu4, poison: P.vn4, heavy: '#ac8753', precise: '#eef4fa', frenzied: '#ff5c33', guarding: '#30a868',
+  // (WORDMELDING: the melded words take their colours from art/icons.ts)
+  eruption: '#ff9a5a', avalanche: '#b8dcff', thunder: '#c8a8ff', blight: '#8aa040', scald: '#e0b0c0', wildfire: '#d86040', fumes: '#c89838', hailstorm: '#e8f0c0', frostbite: '#6898b0', contagion: '#90e0a0' };
 
 /** No more particles than this are ever alive: past it, new ones are simply not made. */
 const MAX_PARTICLES = 900;
@@ -1444,6 +1446,10 @@ export class Fx {
             // the cloud billows out from where the attack hit
             this.rings.push({ x: e.x, y: e.y, r: e.r, t: 0, dur: 0.4, colors: VENOM.slice(1), fill: true });
             this.bubbles(e.x, e.y, e.r * 0.8, Math.min(16, Math.round(6 + e.r * 4)));
+          } else if (e.kind === 'steam') {
+            // (WORDMELDING, behind MELD) Scald behind: steam bursts up off the floor, hissing
+            this.rings.push({ x: e.x, y: e.y, r: e.r, t: 0, dur: 0.35, colors: [P.white, P.st7, P.st6], fill: true });
+            this.streaks(e.x, e.y, small ? few(3) : 7, [P.white, P.st7, P.st6], 2.5, 2, { up: 60, grav: -40, life: 0.6, r: e.r * 0.6 });
           } else if (e.kind === 'rune') {
             // a rune is written (cracked ground and a ward are the new words' looks: words3.ts)
             this.rings.push({ x: e.x, y: e.y, r: 1.0, t: 0, dur: 0.22, colors: VIOLET, fill: false, closing: true });

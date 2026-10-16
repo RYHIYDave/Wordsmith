@@ -70,7 +70,8 @@ import { modLines, statView } from '../game/items';
 import type { ImbueOption } from '../game/items';
 import type { SlotRef } from '../game/state';
 import { armorReduction } from '../game/stats';
-import { ATTRS, EQUIP_SLOTS, WORD_IDS } from '../game/types';
+import { ALL_WORD_IDS, ATTRS, EQUIP_SLOTS } from '../game/types';
+import { MELD, MELD_DUST_COLOR } from '../game/melds';
 import type { ClassId, EquipSlot, IconKey, Item, Limit, WordId } from '../game/types';
 import { Figure } from '../render/figure';
 import type { Art } from '../render/render';
@@ -481,7 +482,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // (nothing may move while a word is being carried across the screen: a word lifted out of an
   // attack takes no place among the spare words until it is let go)
   const lifted = st.drag && st.drag.lifted && st.drag.moving ? st.drag.word : null;
-  const pouchWords = WORD_IDS.filter((w) => h.words[w] > (w === lifted ? 1 : 0));
+  const pouchWords = ALL_WORD_IDS.filter((w) => h.words[w] > (w === lifted ? 1 : 0));
   // The spare words lie in lines over the bag: one line, and more where the panel is tall enough
   // to leave the page the room it likes (PAGE_ROOM).
   const fixedH = 2 + headH + 2 + 3 + CAP + 3 + CAP + bagH + 2;
@@ -1173,7 +1174,16 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     if (iw >= 30) {
       const coin = art.icons.gold[0];
       g.drawImage(coin.img, ix, bagY);
-      drawText(g, `${h.gold}`, ix + coin.w + 2, bagY + 2, THEME.gold, { font: 'small' });
+      const gw = drawText(g, `${h.gold}`, ix + coin.w + 2, bagY + 2, THEME.gold, { font: 'small' });
+      // (WORDMELDING, behind MELD: the runedust carried, beside the gold, once there is any or the Meldstone has been found)
+      if (MELD.on && (h.dust > 0 || h.meld)) {
+        const dust = art.icons.runedust;
+        const dx = ix + coin.w + 2 + gw + 6;
+        if (dx + dust.w + 2 + textWidth(`${h.dust}`, 'small') <= ix + iw) {
+          g.drawImage(dust.img, dx, bagY + 1);
+          drawText(g, `${h.dust}`, dx + dust.w + 2, bagY + 2, MELD_DUST_COLOR, { font: 'small' });
+        }
+      }
       drawText(g, `LEVEL ${h.level}`, ix, bagY + 14, THEME.dim, { font: 'small' });
       const who = CLASSES[h.cls].name.toUpperCase();
       if (textWidth(who, 'small') <= iw) drawText(g, who, ix, bagY + 22, THEME.faint, { font: 'small' });

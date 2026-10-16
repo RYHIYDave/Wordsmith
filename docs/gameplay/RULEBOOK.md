@@ -7,7 +7,7 @@ levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
 fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
 new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
-change only with his yes. The two pictures in the doc are written out here in words. How it was
+change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. The two pictures in the doc are written out here in words. How it was
 found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -320,6 +320,11 @@ take quests.
   armourer’s, to slay the Warden.
 - **The story is light, told through quests from people in town.** A quest sends the hero into a
   dungeon, often one already beaten, for something new there.
+- **A quest item is handed in by using the one it is for**, not by walking past him. Beside him
+  with it, his prompt says so (“Give the rune-stone”), and the use button, or a tap on him, hands it
+  over. This holds for every quest, now and later. Your words, 13 Oct 2026, 14:25: “I’d like the
+  quest turn ins to be triggered by interacting with the npcs not just when you walk by.” Asked
+  whether it is the rule for every quest, by 14:35: “Yes, add it (Recommended)”.
 - **What quests give** is still open. Talent points come with levels, not from quests.
 
 ## The shop, and what money never buys

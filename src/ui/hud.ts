@@ -19,7 +19,7 @@ import { FLOOR_NAMES, SKILLS, WORDS, floorTitle, xpToNext } from '../game/defs';
 import { doorMiddle, doorTiles } from '../game/doors';
 import type { Game } from '../game/game';
 import type { Hero, Level } from '../game/state';
-import { T_FLOOR, T_WALL, WORD_IDS } from '../game/types';
+import { ALL_WORD_IDS, T_FLOOR, T_WALL } from '../game/types';
 import type { WordId } from '../game/types';
 import { socketProblem } from '../game/words';
 import type { Fx } from '../render/fx';
@@ -338,7 +338,7 @@ interface Piece {
 function phrase(h: Hero, s: number, tight: number): Piece[] {
   const sk = h.skills[s];
   const out: Piece[] = [];
-  const spare = WORD_IDS.filter((w) => h.words[w] > 0);
+  const spare = ALL_WORD_IDS.filter((w) => h.words[w] > 0);
   const fits = (group: readonly (WordId | null)[]): boolean => spare.some((w) => socketProblem(group, w) === null);
   const glowF = fits(sk.front);
   const glowB = fits(sk.behind);
@@ -1043,7 +1043,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // ---- top left: where we are, gold, and the inventory -----------------------------------------
   // With fingers the life globe is here too: under the name of the place, with the gold and the
   // level to its right and the inventory below.
-  const spare = WORD_IDS.reduce((n, w) => n + h.words[w], 0);
+  const spare = ALL_WORD_IDS.reduce((n, w) => n + (h.words[w] ?? 0), 0);
   let lx = 4;
   const btnY = touch ? TOP_GLOBE_Y + 19 : 24;
   const btnH = touch ? 18 : 13;
@@ -1067,7 +1067,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   }
   if (spare > 0) {
     // spare words waiting for a place
-    const first = WORD_IDS.find((w) => h.words[w] > 0);
+    const first = ALL_WORD_IDS.find((w) => h.words[w] > 0);
     if (first) {
       const iy = btnY + Math.floor((btnH - 12) / 2);
       g.drawImage(art.icons.word[first].img, lx, iy);

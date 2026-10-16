@@ -36,6 +36,7 @@ import { hash2 } from '../engine/rng';
 import { AIM, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, TUNE, WORDS, movesOf } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
+import { MELD_DUST_COLOR, withParts } from '../game/melds';
 import { TOWN } from '../game/level';
 import type { Monster, Station } from '../game/state';
 import { doorFace, doorTiles, isLeaf } from '../game/doors';
@@ -1474,6 +1475,18 @@ export class Renderer {
           }
           g.globalAlpha = 1;
           if (Math.random() < 0.25 * z.r * amb) fx.mote(z.x + (Math.random() - 0.5) * z.r * 1.4, z.y + (Math.random() - 0.5) * z.r * 1.4, [P.white, P.bu5]);
+        } else if (z.kind === 'steam') {
+          // (WORDMELDING, behind MELD) Scald behind: the floor wet and hot, steam pouring up off it
+          // (the steam itself is drawn in the air)
+          const sp = this.patch(`steam:${rk}`, hw, hh, 0, (c) => {
+            ellipse(c, 0, 0, r, P.st5, 0.34);
+            ellipse(c, 0, 0, r * 0.66, P.st7, 0.26);
+            ringDots(c, 0, 0, r, P.st7, 2);
+          });
+          g.globalAlpha = fade * Math.min(1, 0.3 + z.t / 0.15);
+          g.drawImage(sp, px - hw, py - hh);
+          g.globalAlpha = 1;
+          if (Math.random() < 0.3 * z.r * amb) fx.mote(z.x + (Math.random() - 0.5) * z.r * 1.4, z.y + (Math.random() - 0.5) * z.r * 1.4, [P.white, P.st7]);
         } else {
           // Lightning behind: the ground under a thundercloud (the cloud itself is drawn in the
           // air): its shadow, a rim that flickers, and arcs that jump about inside it.
@@ -1704,7 +1717,7 @@ export class Renderer {
    */
   private wordTint(game: Game, i: number, n: number, t: number): [string | null, number] {
     const s = game.hero.skills[i];
-    const words = s ? s.front : [];
+    const words = s ? withParts(s.front) : [];
     if (n > 0) return [P.tl5, 0.6];
     if (words.includes('leech')) return [P.bl4, 0.55];
     if (words.includes('volatile')) return [Math.floor(t * 20) % 2 === 0 ? P.white : P.pu5, 0.5];
@@ -2027,6 +2040,9 @@ export class Renderer {
       if (dr.kind === 'gold') sp = art.icons.gold[dr.gold >= 30 ? 2 : dr.gold >= 8 ? 1 : 0];
       else if (dr.kind === 'orb') sp = art.icons.lifeOrb;
       else if (dr.kind === 'word' && dr.word) sp = art.icons.word[dr.word];
+      // (WORDMELDING, behind MELD: runedust and the Meldstone)
+      else if (dr.kind === 'dust') sp = art.icons.runedust;
+      else if (dr.kind === 'stone') sp = art.icons.meldstone;
       else if (dr.item) sp = art.icons.item[dr.item.icon];
       else continue;
       if (dr.kind === 'orb') {
@@ -2042,6 +2058,12 @@ export class Renderer {
       if (dr.kind === 'item' && dr.item) this.labels.push({ x: sx, y: sy - 20, text: kindName(dr.item), color: RARITY_COLOR[dr.item.rarity] });
       // (a word gets more than a label: see drawWordDrops)
       if (dr.kind === 'word' && dr.word && Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [WORD_COLOR[dr.word], P.white]);
+      // (WORDMELDING: runedust glitters; the Meldstone is named, and glitters too)
+      if (dr.kind === 'dust' && Math.random() < 0.25 * amb) fx.mote(dr.x, dr.y, [MELD_DUST_COLOR, P.white]);
+      if (dr.kind === 'stone') {
+        this.labels.push({ x: sx, y: sy - 20, text: 'Meldstone', color: MELD_DUST_COLOR });
+        if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [MELD_DUST_COLOR, P.white]);
+      }
     }
 
     // a monster that is falling: it stands among the others until it lies (then it is drawn with the floor, above)
@@ -2648,7 +2670,7 @@ export class Renderer {
     if (ch && beaming && SKILLS[beaming.id].kind === 'beam') {
       const def = SKILLS[beaming.id];
       const half = def.radius * beaming.r.size;
-      const words = beaming.front.filter((w) => w !== null) as WordId[];
+      const words = withParts(beaming.front);
       for (let n = 0; n < beaming.r.count; n++) {
         const off = beaming.r.count === 1 ? 0 : (n - (beaming.r.count - 1) / 2) * (half * 2 + 0.3);
         let ox = h.x - h.fy * off;
@@ -2743,6 +2765,28 @@ export class Renderer {
         g.fillStyle = i % 3 === 0 ? P.vn4 : P.vn3;
         g.beginPath();
         g.ellipse(px, py, rr * 1.5, rr * 0.8, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.globalAlpha = 1;
+    }
+    for (const z of game.zones) {
+      if (z.kind !== 'steam' || this.skip.has('cloud')) continue;
+      // (WORDMELDING, behind MELD) Scald behind: steam billows up off the wet floor, thick enough
+      // that what stands in it can't see out
+      const fade = Math.min(1, z.t / 0.25, (z.dur - z.t) * 2);
+      const seed = Math.floor(z.x * 7 + z.y * 13);
+      const n = Math.round(8 + z.r * 5);
+      for (let i = 0; i < n; i++) {
+        const life = (t * (0.35 + hash2(i, seed, 1) * 0.25) + hash2(i, seed, 6)) % 1;
+        const a = hash2(i, seed, 7) * Math.PI * 2;
+        const d = z.r * (0.1 + hash2(i, seed, 2) * 0.8);
+        const px = Math.round(wx(cam, z.x + Math.cos(a) * d, z.y + Math.sin(a) * d) + Math.sin(t * 1.1 + i) * 3);
+        const py = Math.round(wy(cam, z.x + Math.cos(a) * d, z.y + Math.sin(a) * d)) - 3 - Math.round(life * 30);
+        const rr = 5 + hash2(i, seed, 4) * 5 + life * 8;
+        g.globalAlpha = (0.3 + hash2(i, seed, 5) * 0.16) * fade * Math.min(1, (1 - life) * 2.5, life * 6);
+        g.fillStyle = i % 3 === 0 ? P.white : P.st7;
+        g.beginPath();
+        g.ellipse(px, py, rr * 1.3, rr, 0, 0, Math.PI * 2);
         g.fill();
       }
       g.globalAlpha = 1;
@@ -2934,7 +2978,7 @@ export class Renderer {
     for (const d of game.drops) {
       // a word on the floor lights the room round it
       if (d.kind === 'word') spot(wx(cam, d.x, d.y), wy(cam, d.x, d.y) - 10, 40, 0.85);
-      else if (d.kind === 'orb' || (d.kind === 'item' && d.item && d.item.rarity >= 2)) spot(wx(cam, d.x, d.y), wy(cam, d.x, d.y) - 4, 18, 0.7);
+      else if (d.kind === 'orb' || d.kind === 'dust' || d.kind === 'stone' || (d.kind === 'item' && d.item && d.item.rarity >= 2)) spot(wx(cam, d.x, d.y), wy(cam, d.x, d.y) - 4, 18, 0.7);
     }
 
     // (THE NEW WORDS, a mock-up behind a switch that is off)

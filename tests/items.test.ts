@@ -43,7 +43,7 @@ import {
 import { derive } from '../src/game/stats';
 import type { ItemBase, RollOpts } from '../src/game/items';
 import { CLASS_IDS, EQUIP_SLOTS, ICON_KEYS, SLOTS, STAT_KEYS, WORD_IDS } from '../src/game/types';
-import type { Affix, ClassId, EquipSlot, Item, OffhandKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from '../src/game/types';
+import type { Affix, BaseWordId, ClassId, EquipSlot, Item, OffhandKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from '../src/game/types';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -137,7 +137,7 @@ const BELT_AFFIXES = ['maxLife', 'maxMana', 'armor', 'str', 'dex', 'int', 'fireR
 const ONE_DECIMAL: StatKey[] = ['lifeRegen', 'manaRegen', 'lifeOnHit'];
 
 type ImbuePick = ['prefix' | 'suffix', StatKey];
-function expectedImbue(word: WordId, slot: Slot): ImbuePick[] {
+function expectedImbue(word: BaseWordId, slot: Slot): ImbuePick[] {
   // main hand, gloves, ring and amulet get the offensive version of a word;
   // off-hand, helm, chest, belt and boots the protective one (boots differ for 'swift' only)
   const offence = OFFENCE.includes(slot);
@@ -1082,7 +1082,7 @@ test('imbueOptions matches the word x slot table and is never empty', () => {
         const options = imbueOptions(word, slot, ilvl);
         const where = `${word} on ${slot} at ilvl ${ilvl}`;
         assert.ok(options.length >= 1 && options.length <= 2, `${where}: ${options.length} options`);
-        assert.deepEqual(options.map((o): ImbuePick => [o.kind, o.stat]), expectedImbue(word, slot), where);
+        assert.deepEqual(options.map((o): ImbuePick => [o.kind, o.stat]), expectedImbue(word as BaseWordId, slot), where);
         for (const o of options) {
           assert.ok(o.min > 0 && o.min <= o.max, `${where}: ${o.stat} ${o.min}-${o.max}`);
           assert.ok(decimalsOk(o.stat, o.min) && decimalsOk(o.stat, o.max), `${where}: ${o.stat} ${o.min}-${o.max}`);

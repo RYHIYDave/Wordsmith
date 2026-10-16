@@ -40,10 +40,13 @@ export interface Panels {
   /** A short feedback line ("Needs level 5") and how long it stays. */
   note: string;
   noteT: number;
+  /** (WORDMELDING, behind MELD) The wordsmith's half shows melding, not his trade; and the two words laid in to be melded. */
+  meldPage: boolean;
+  meldIn: (WordId | null)[];
 }
 
 export function newPanels(): Panels {
-  return { open: 'none', sel: null, pick: null, pick2: null, carry: null, note: '', noteT: 0 };
+  return { open: 'none', sel: null, pick: null, pick2: null, carry: null, note: '', noteT: 0, meldPage: false, meldIn: [null, null] };
 }
 
 export interface Line {
