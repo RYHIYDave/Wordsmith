@@ -13,6 +13,7 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { FIG as FIG_SCORPION } from '../src/art/act1_figs/scorpion';
 import { SCORPION_ON, SC_DIE, SC_FEET, SC_PACE, SC_REEL, SC_SNAP, SC_STAND, SC_STING, SC_WALK, makeScorpionArt, scorpionChipCount, scorpionFeet, scorpionPainted, scorpionSolids } from '../src/art/canyon_scorpions';
 import { TILE3 } from '../src/art/new_mobs3';
 import { RIM_ALPHA } from '../src/art/kit';
@@ -92,10 +93,14 @@ function hue(r: number, g: number, b: number): [number, number] {
   return [(h + 360) % 360, (max - min) / max];
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(SCORPION_ON.on, false);
+// (ACT 1 IN THE GAME: no longer a mock-up nothing imports. The game holds its pictures through art/act1_figs/scorpion.ts
+// alone, and its switch goes on with the descent, as the bestiary throws the switches of every kind of it.)
+test('in the game through art/act1_figs/scorpion.ts alone, its switch thrown with the descent', () => {
+  assert.ok(FIG_SCORPION !== null && (FIG_SCORPION.switches ?? []).includes(SCORPION_ON), 'its switch is one the bestiary throws with the descent');
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('canyon_scorpions.ts')) continue;
+    const at = f.split('\\').join('/');
+    if (at === 'art/act1_figs/scorpion.ts') continue;
     assert.ok(!/from ['"][^'"]*\/canyon_scorpions['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the scorpions`);
   }
 });

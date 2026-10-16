@@ -11,6 +11,7 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { FIG as FIG_DEVIL } from '../src/art/act1_figs/devil';
 import { DD_DIE, DD_LASH, DD_REEL, DD_STAND, DD_WALK, DEVIL_ON, devilPainted, devilSolids, makeDevilArt } from '../src/art/dust_devils';
 import { RIM_ALPHA } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
@@ -70,10 +71,14 @@ function hue(r: number, g: number, b: number): [number, number] {
   return [(h + 360) % 360, (max - min) / max];
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(DEVIL_ON.on, false);
+// (ACT 1 IN THE GAME: no longer a mock-up nothing imports. The game holds its pictures through art/act1_figs/devil.ts
+// alone, and its switch goes on with the descent, as the bestiary throws the switches of every kind of it.)
+test('in the game through art/act1_figs/devil.ts alone, its switch thrown with the descent', () => {
+  assert.ok(FIG_DEVIL !== null && (FIG_DEVIL.switches ?? []).includes(DEVIL_ON), 'its switch is one the bestiary throws with the descent');
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('dust_devils.ts')) continue;
+    const at = f.split('\\').join('/');
+    if (at === 'art/act1_figs/devil.ts') continue;
     assert.ok(!/from ['"][^'"]*\/dust_devils['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the dust devils`);
   }
 });

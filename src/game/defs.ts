@@ -448,12 +448,19 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // rubbling: a bat's size of blow, a little frailer, for there are six to ten of them)
   qgolem: { kind: 'qgolem', name: 'Quarry Golem', life: 46, dmgMin: 12, dmgMax: 18, speed: 1.0, radius: 0.6, range: 2.0, windup: 0.95, cooldown: 2.3, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0.8, minDepth: 99, weight: 0, size: 'medium' },
   rubbling: { kind: 'rubbling', name: 'Rubbling', life: 7, dmgMin: 3, dmgMax: 5, speed: 2.0, radius: 0.22, range: 0.85, windup: 0.42, cooldown: 1.3, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
-  // FLOOR 7, THE LEDGE ROAD: the vultures, small (they circle, then dive); the cliff crawlers, medium (a swipe; a leap).
-  vulture: { kind: 'vulture', name: 'Vulture', life: 13, dmgMin: 5, dmgMax: 8, speed: 1.2, radius: 0.3, range: 1.4, windup: 0.7, cooldown: 2.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  crawler: { kind: 'crawler', name: 'Cliff Crawler', life: 38, dmgMin: 10, dmgMax: 15, speed: 1.4, radius: 0.45, range: 1.3, windup: 0.4, cooldown: 1.8, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
-  // FLOOR 8, ECHO CANYON: the canyon scorpions, medium (a pincer snap; a poison tail strike from range); the dust devils, small (a lash).
-  scorpion: { kind: 'scorpion', name: 'Canyon Scorpion', life: 40, dmgMin: 10, dmgMax: 15, speed: 2.0, radius: 0.45, range: 1.2, windup: 0.3, cooldown: 1.5, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
-  devil: { kind: 'devil', name: 'Dust Devil', life: 14, dmgMin: 5, dmgMax: 8, speed: 2.4, radius: 0.3, range: 1.3, windup: 0.5, cooldown: 1.6, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // FLOOR 7, THE LEDGE ROAD: the vultures, small (they circle overhead, then dive: game/act1_rules/vulture.ts); the cliff
+  // crawlers, medium (a swipe; a leap onto you that drags you toward the drop: game/act1_rules/crawler.ts).
+  // (THE VULTURE: a skeleton's blow, a little less life, for it is struck only at the bottom of its dive; it is a
+  // flier, its feet never on the floor, so it flies at a speed of its own, its wing beat as it is painted, a second)
+  vulture: { kind: 'vulture', name: 'Vulture', life: 12, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.3, range: 0.77, windup: 0.7, cooldown: 2.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // (THE CRAWLER: about the Boneward's and the quarry golem's; at its walk's pace, CR_PACE)
+  crawler: { kind: 'crawler', name: 'Cliff Crawler', life: 38, dmgMin: 10, dmgMax: 15, speed: 1.4, radius: 0.45, range: 1.75, windup: 0.38, cooldown: 1.8, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // FLOOR 8, ECHO CANYON: the canyon scorpions, medium (a pincer snap; a poison tail strike from range:
+  // game/act1_rules/scorpion.ts); the dust devils, small (a lash that knocks you about, then they scatter: game/act1_rules/devil.ts).
+  // (THE SCORPION: knee-high, fun to smash, a little less life than the crawler; at its scuttle's pace, SC_PACE)
+  scorpion: { kind: 'scorpion', name: 'Canyon Scorpion', life: 34, dmgMin: 9, dmgMax: 14, speed: 2.0, radius: 0.42, range: 1.7, windup: 0.3, cooldown: 1.5, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // (THE DUST DEVIL: a shade's; thin; at the pace its dust trail is painted for, DD_PACE)
+  devil: { kind: 'devil', name: 'Dust Devil', life: 14, dmgMin: 4, dmgMax: 7, speed: 2.4, radius: 0.28, range: 1.28, windup: 0.5, cooldown: 1.6, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   // FLOOR 9, THE PINEWOOD: the twisted deer, medium (an antler gore; a rearing stomp); the fog wolves, small (a bite).
   deer: { kind: 'deer', name: 'Twisted Deer', life: 44, dmgMin: 11, dmgMax: 16, speed: 1.8, radius: 0.5, range: 1.1, windup: 0.55, cooldown: 1.8, xp: 15, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   wolf: { kind: 'wolf', name: 'Fog Wolf', life: 15, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.3, range: 1.2, windup: 0.5, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },

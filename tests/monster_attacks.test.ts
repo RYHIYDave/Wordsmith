@@ -46,6 +46,8 @@ import { RNG } from '../src/engine/rng';
 import { CHARGE, MONSTERS, MONSTER_ATTACKS, MONSTER_MOVES, SUMMON, TUNE, movesOf, sizeOf } from '../src/game/defs';
 import type { MonsterMove, MoveId } from '../src/game/defs';
 import { ACTS } from '../src/game/bosses';
+import { act1Rules } from '../src/game/act1_rules/index';
+import { ACT1_KINDS } from '../src/game/types';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -172,10 +174,19 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       const moves = all ? all.filter((mv) => mv.id !== 'bash') : null;
       // (THE FIRST FIVE FLOORS: a boss of floors 2 to 5, the bone beast and the mini fleshmancer make their
       // moves by game/bosses.ts, ACTS: those they choose, not those forced on them, a chain breaking)
-      // (ACT 1, THE DESCENT: its own kinds make theirs by their rules, game/act1_rules/; one not built yet is not in
-      // the game, the cult standing in for it, game/act1_mobs.ts)
-      if (ACT1_KINDS.includes(kind) && !act1Rules(kind)) continue;
-      const acts = ACTS[kind as keyof typeof ACTS] ?? act1Rules(kind)?.acts;
+      // (ACT 1, THE DESCENT: its own kinds make their moves by their own rules, game/act1_rules/, as the bosses do; one
+      // not built yet is not in the game: the cult stands in for it)
+      const own = ACT1_KINDS.includes(kind) ? act1Rules(kind) : null;
+      if (ACT1_KINDS.includes(kind) && !own) continue;
+      const acts = own ? own.acts : ACTS[kind as keyof typeof ACTS];
+      if (own) {
+        const chosen = own.acts.filter((a) => !a.forced);
+        assert.equal(chosen[0].cooldown, 0, `${kind}: its basic blow first, with no cooldown of its own`);
+        for (let i = 1; i < chosen.length; i++) {
+          assert.ok(chosen[i].cooldown > chosen[i - 1].cooldown, `${kind}: ${chosen[i].id} cools down longer than ${chosen[i - 1].id}`);
+          assert.ok(chosen[i].dmg > chosen[0].dmg, `${kind}: ${chosen[i].id} hits harder than its basic blow`);
+        }
+      }
       // (one that has no moves has its one attack, as before)
       const n = acts ? acts.filter((a) => !a.forced).length : moves ? moves.length : 1;
       const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
