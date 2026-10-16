@@ -603,4 +603,55 @@ Shown `shots/eyespawn_look.png` and `shots/eyespawn_stand.gif`, asked "Is this t
 eyespawn_stand.gif)?" (offered: "Yes, animate it (Recommended)"; "Bigger and more monstrous"; "More of the eye"; "Not
 yet"), his answer, 16 Oct, by 08:07 (the clock read 08:07:55 just after): "Yes, animate it (Recommended)".
 
-NEXT: its moves: hatching out of his egg, its haul, its lash, its gaze beam, struck, its death.
+### Its moves
+
+Posed as a few numbers eased one to the next (`Spec`, `mix`, `build`); the stand he said yes to is unchanged, pixel
+for pixel. In seconds from each move's start (src/art/eyespawn.ts):
+
+- HATCHING (`hatchSpec`, `ES_HATCH` 1.3 s; the game starts it where his egg bursts, `EYE_SPAWN.hatch`): a wet curled
+  ball in the burst shell, half its size, its arms and legs wrapped round its shut eye, shivering, to 0.15 s; it
+  unfurls 0.15 to 0.75 s, its legs flung out one after another and slapping down, rising and growing to its height,
+  slime and muck flung off it; its eye snaps open 0.75 to 0.95 s, its iris lighting; settled into its stand by 1.3 s.
+- ITS HAUL (`haulSpec`, `ES_WALK` 12 frames at 15 a second, a 0.8 s round, painted for `ES_PACE`, 1.1 tiles a
+  second): its legs in two sets by turns, each gripping the floor where it came down until it lifts (its front two and
+  its back one land at 0 s, its side two at 0.4 s); twice a round it heaves itself on, surging forward and dropping;
+  its flesh rocks while its eye stays on you; its arms trail, writhing.
+- ITS LASH, its basic attack (`lashSpec`, `ES_LASH` 1.1 s): it rears back and twists, its eye narrowing, its left arm
+  coiled back and up behind it, 0 to 0.25 s; HELD, TREMBLING (the warning), 0.25 to 0.42 s; it lunges and whips the
+  arm out and across before it, low, from its left round to its right, its tip trailing then cracking past, a smear of
+  its path; THE BLOW at 0.533 s (frame 16 of 30), out to `ES_LASH.reach`, 1.15 tiles; back by 1.1 s.
+- ITS GOLD GAZE BEAM, its big attack (`gazeSpec`, `ES_GAZE` 2.2 s): it rears up, braced, its arms spread up and wide,
+  its face on the line, 0 to 0.15 s; THE WARNING 0.15 to 0.95 s: its eye narrowed to a slit, sparks drawn into its
+  iris, trembling harder and harder, a line of light flickering on the floor from 0.4 to 2.6 tiles before it, pink to
+  gold; ITS BEAM bursts on at 1.0 s, a white-gold core in a burning sheath from its iris to the floor, striking 0.4
+  tiles before it and running out along the line to 2.6 tiles by 1.65 s (`beamAt`), sparks and stones flung where it
+  strikes, its light there; the line burning behind it, flames licking up; its eye squeezed shut 1.65 to 1.9 s; the
+  burnt line cooled and gone, back as it stood, by 2.2 s.
+- STRUCK (`reelSpec`, 0.4 s): its eye squeezed shut, knocked back, its arms flung out, a spurt off it; back as it stood.
+- ITS DEATH (`dyingSpec`, `ES_DIE` 1.8 s): it swells and shudders, its eye bulging, its arms thrashing, its fire
+  flaring, to 0.45 s; ITS EYE BURSTS at 0.45 s: torn open across its face and emptied, its pale jelly and dark ichor
+  gushing out, flung forward and splashing down, a puddle of it spreading; its fire out by 0.7 s; it slumps into a
+  slack heap 0.45 to 1.3 s, its legs splayed, its arms flopped down. No light and no edge after.
+
+    node tools/page_gif.mjs src/dev/preview_eyespawn.ts "seq:hatch" shots/eyespawn_hatch.gif 6
+    node tools/page_gif.mjs src/dev/preview_eyespawn.ts "seq:attack" shots/eyespawn_attack.gif 6
+
+`tests/eyespawn.test.ts` 14 (8 more): every move crisp, its edge while it lives and none once dying, nothing cyan,
+every light the enemy's fire, nothing cut off; THE HAUL (each leg gripping until it lifts, the game carrying it on;
+always on two legs or more; its round closing; its eye on you); THE LASH (from its stand and back; coiled up and back
+through its warning; out before it, low, at its reach at the blow); THE GAZE BEAM (from its stand and back; the line
+of light in its warning; the beam only while it burns, out to its reach, its core and its light; the burnt line gone
+by its end); STRUCK; ITS DEATH (swollen, burst, dark, slumped, its arms flopped down, no light); HATCHING (small,
+curled and shut, no light; grown as it unfurls; its eye open and lit; into its stand); as the game holds a monster
+(`makeEyespawnArt()`: its lash the attack clip, its gaze and hatching moves of their own).
+
+Shown `shots/eyespawn_hatch.gif` and `shots/eyespawn_attack.gif`, asked in one pop-up "Its hatching and its haul
+(eyespawn_hatch.gif)?", "Its lash and its gold gaze beam (eyespawn_attack.gif)?", "Struck, and its eye bursting (end
+of eyespawn_attack.gif)?" (offered: "Yes, as shown (Recommended)"; then "Bigger and wilder" or "Bigger burst"; "Not
+yet"), his answers, 16 Oct, by 08:46 (the clock read 08:46:46 just after): each "Yes, as shown (Recommended)". ALL OF
+THE EYESPAWN NOW HAS HIS YES.
+
+## ALL OF FLOOR 10 NOW HAS HIS YES
+
+The Sunken Fen's ground and its 25 pieces; the Drowned Eye, the act's boss, every look and move; the Drowned; the Bog
+Leeches; the Eyespawn. Each behind its own switch, off; nothing of the game imports them.
