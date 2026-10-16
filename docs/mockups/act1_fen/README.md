@@ -383,5 +383,52 @@ stand on the old ring above, on the new below), asked "The wider ring (bottom of
 "Yes, this wide (Recommended)"; "Wider still"; "A little less"), his answer, 15 Oct, by 20:25 (the clock read 20:25:12
 just after): "Yes, this wide (Recommended)". The boss review, 25 of 25, on the wider ring.
 
-NEXT: his phase changes (surfacing from under the water; pulling the siege's magic in, the obelisks' lines bending into
-him), struck, and his death.
+### His phases, struck and death (`eyePainted('surface' | 'empower' | 'struck' | 'struckUnder' | 'death', t, view, aim, clock, phase3)`)
+
+His picks: "Three, as your plan has, each harder (Recommended)"; when he surfaces, "The eye splits open into a maw"; in
+phase 3, "The obelisks' pink lines bend into it; its veins blaze (Recommended)"; his death, "It sinks, its eye going
+dark, as the dome shatters (Recommended)". As made (src/art/drowned_eye.ts at 2d87693):
+
+- HE SURFACES (EYE_SURFACE, 4.2 s; phase 1 to 2, from his lurk to his stand): the pool boils, rings and bubbles all
+  over it, spurts of water thrown up, his eye blazing brighter up through it, his arms drawn down under (THE WARNING),
+  0 to 1.3 s; HE RISES out of it, 1.3 to 2.05 s, a crown of water bursting up, water pouring off him, his seven arms
+  growing up out of the deep round him; his eye tears open into his maw and he roars, his arms flung high, 2.15 to
+  3.45 s; it heals shut and he stands risen.
+- THE SIEGE PULLED IN (EYE_EMPOWER, 4.0 s; phase 2 to 3, from his stand to his blazing stand): he rears and lifts his
+  arms, his eye rolled up; from the top of each of the cult's three obelisks (EYE_OBELISKS: behind him, and to either
+  side before him, just beyond the ring's edge; `obeliskTop(i)`) a line of the siege's pink fire reaches out over the
+  ring and bends down into him, 0.6 to 1.5 s, crackling, pulses of gold running along it into him; his veins catch and
+  blaze, 1.2 to 2.9 s; a burst of its fire off him at 2.95 s; he stands blazing. PHASE 3 is every move of his with
+  `phase3` = 1: his veins blazing, the obelisks' lines bent into him, hidden where he is nearer.
+- STRUCK (EYE_STRUCK, 0.6 s): risen, his eye flinching shut, his bulk recoiling from the blow (from `aim`), his arms
+  jerked out and back, spray flung; under the water (`struckUnder`), his glow guttering, rings bursting. From his stand
+  (or lurk) and back to it.
+- HIS DEATH (EYE_DEATH, 5.4 s): struck, held; he convulses, his eye tearing open into his maw in a last roar, his arms
+  thrashing, 0.25 to 1.5 s; cracks of the siege's fire run across the dome high above, 0.9 to 1.5 s; IT SHATTERS at
+  1.5 s, a flash, its shards of pink fire falling over the ring and going out; the obelisks' lines snap; his arms go
+  limp and slap down, 1.6 to 2.5 s; his eye's fire goes out, its heart last, 1.8 to 3.4 s; he sinks, rolling his eye
+  up, his arms drawn down with him, 2.2 to 4.4 s; bubbles and rings until the pool is still; nothing of him left by 5.4 s.
+
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "surfacefilm" shots/eye_surface.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "empowerfilm" shots/eye_empower.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "struckfilm" shots/eye_struck.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "deathfilm" shots/eye_death.gif 6
+
+(The films with the obelisks draw floor 10's obelisk piece where EYE_OBELISKS has them.)
+
+`tests/drowned_eye.test.ts` now 29: THE REVIEW takes in all of these (every third frame, aimed four ways, in front and
+behind) and his stand and death in phase 3; NOTHING THROUGH HIS EYE takes them in (it found his arms going into his eye
+as they came up out of the deep, as he called the siege, when struck and as he sank; fixed before he saw them); HE
+SURFACES (from his lurk to his stand, pixel for pixel; boiling first; his maw open as he roars); HE PULLS THE SIEGE IN
+(from his stand to his blazing stand; the lines reaching him; his veins catching; phase 3 burning more fire than phase
+2); STRUCK (from his stand and lurk and back; his eye shut); HIS DEATH (from his blazing stand; the dome cracking, its
+shards falling and gone; the lines snapped; his eye dark; nothing of him and no light left).
+
+Shown `shots/eye_surface.gif`, `shots/eye_empower.gif`, `shots/eye_struck.gif` and `shots/eye_death.gif`, asked in one
+pop-up "His surfacing (eye_surface.gif): good?", "The siege pulled into him, phase 3 (eye_empower.gif): good?",
+"Struck, and his death (eye_struck.gif, eye_death.gif): good?" (each offered: "Yes, as shown (Recommended)"; "Bigger and
+wilder"; "Not yet"), his answers, 15 Oct, by 21:41 (the clock read 21:41:12 just after): each "Yes, as shown
+(Recommended)". ALL OF THE DROWNED EYE NOW HAS HIS YES.
+
+NEXT: floor 10's mobs, each by its brief, then its look, then its moves: the Drowned (small), the Bog Leeches (tiny),
+the Eyespawn (medium; they hatch from his eggs).
