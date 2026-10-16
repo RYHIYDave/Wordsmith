@@ -51,9 +51,7 @@ import { ACT1_KINDS } from '../src/game/types';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
-import { ACT1_KINDS } from '../src/game/types';
 import type { MonsterKind } from '../src/game/types';
-import { act1Rules } from '../src/game/act1_rules/index';
 import { moveClip, moveFrame } from '../src/render/figure';
 import { paintWithoutCanvas } from './helpers';
 

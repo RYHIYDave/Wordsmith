@@ -22,6 +22,8 @@ export const HOVER = 8;
 export const BOB = 1.5;
 /** How high it hangs over the wordsmith's slab (the slab's top is 11 up). */
 export const KEPT_Z = 40;
+/** In the wordsmith's ring, bright with its own light and letters, it is drawn this much bigger, to be seen. */
+export const KEPT_SCALE = 1.35;
 /** Kept by the wordsmith, it goes round the column of light over his slab: how far out (tiles), and once round in so many seconds. */
 export const ORBIT = { r: 0.75, secs: 7 } as const;
 

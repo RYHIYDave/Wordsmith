@@ -3,8 +3,10 @@
 // the main chat, 16 Oct 2026, 17:40: "Runedust and the meldstone need to be done".
 //   run: tsx --test tests/meld_drops.test.ts
 
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+// @ts-ignore
+import nodeTest from 'node:test';
+// @ts-ignore
+import nodeAssert from 'node:assert/strict';
 import { FLAME } from '../src/art/mkit';
 import { CYAN } from '../src/art/kit';
 import { HEAPS, MELD_DROPS, SPILL_FRAMES, STONE_FRAMES, STONE_SPIN, WHIRL_FRAMES, heapOf, makeMeldDropsArt, meldstoneSprite, spinStep, standingLook } from '../src/art/meld_drops';
@@ -17,6 +19,14 @@ import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
 import { BOB, GIVEN, HOVER, KEPT_Z, MeldDrops, ORBIT, RISE, TAKEN, givenOf, orbitAt, riseOf, takenOf } from '../src/render/meld_drops';
 import { paintWithoutCanvas, paintingOf, seasoned } from './helpers';
+
+interface Assert {
+  ok(value: unknown, message?: string): void;
+  equal(actual: unknown, expected: unknown, message?: string): void;
+  deepEqual(actual: unknown, expected: unknown, message?: string): void;
+}
+const test: (name: string, fn: () => void) => void = nodeTest;
+const assert: Assert = nodeAssert;
 
 paintWithoutCanvas();
 const DT = 1 / 30;
@@ -164,10 +174,10 @@ test('given: over the slab, its halves whirl round each other and slam together;
   assert.ok(after?.slammed && after.burst, 'slammed together, in a burst');
   // it comes to its round without a jump
   const t = 12.3;
-  const g = givenOf(GIVEN.settled - 1e-6, t, hero, slab);
+  const st = givenOf(GIVEN.settled - 1e-6, t, hero, slab)?.stone;
   const o = orbitAt(t, slab);
-  assert.ok(g?.stone, 'whole');
-  assert.ok(Math.hypot((g.stone?.x ?? 0) - o.x, (g.stone?.y ?? 0) - o.y) < 0.01 && Math.abs((g.stone?.z ?? 0) - o.z) < 0.5, 'on its round as it settles');
+  assert.ok(st, 'whole');
+  assert.ok(Math.hypot((st?.x ?? 0) - o.x, (st?.y ?? 0) - o.y) < 0.01 && Math.abs((st?.z ?? 0) - o.z) < 0.5, 'on its round as it settles');
   assert.ok(Math.abs(Math.hypot(o.x - slab[0], o.y - slab[1]) - ORBIT.r) < 1e-9 && Math.abs(o.z - KEPT_Z) <= BOB + 1e-9);
   // its moments: what the rules say happened, seen; and forgotten once played out
   const M = new MeldDrops();

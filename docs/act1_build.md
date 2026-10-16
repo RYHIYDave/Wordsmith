@@ -70,3 +70,23 @@ levels 6-10 into the game"). Nothing here is live until he has seen it from the 
    src/dev/preview_eyrie.ts to art/ledge_town.ts) is painted once into the land of the Ledge Road's sky, out over
    the drop past the edge of the Queen's eyrie nearest its middle; it slides with the sky (half the ground's
    slide), and the low clouds pass in front of it.
+
+## Runedust and the Meldstone drawn (16 Oct, from 17:40)
+
+His words, 16 Oct 2026, 17:40: "Runedust and the meldstone need to be done". Read as (told him so): both still had
+the planning chat's stand-ins; drawn properly now, lying, dropping, taken, the Meldstone carried and given, big
+and wild, behind a switch that is off (MELD_DROPS, art/meld_drops.ts), pictures and films to him first.
+
+- RUNEDUST: rune stone ground to glittering grit in the friend's cyan, chips of its stone in it; three heaps by how
+  much (1 or 2, 3 or 4, 5 and more). It bursts up out of the floor in a fountain as it drops; taken, it whirls up
+  round the hero and pours into him. The small picture beside the gold and on the melding page is the new heap.
+- THE MELDSTONE: two halves of two rune stones (ash and slate), each with half a rune, fused along a crackling
+  seam of the friend's light; it hangs over the floor, turning, its halves straining apart and snapping back.
+  It bursts up out of the Fleshmancer's pit as it shuts (the rules hold it, and his runedust, under the floor
+  while he is dragged down: game/melds.ts STONE_RISE, on only with the switch); taken, it leaps over the hero,
+  wrenches apart, slams together (the screen kicks, a beat held) and dives into him; carried, it shows by
+  INVENTORY; given, it splits over the wordsmith's slab, its halves whirl and slam together, and from then on
+  it circles the column of light over his slab (my call: the sign that he can meld).
+- Where and when: render/meld_drops.ts (riseOf, takenOf, givenOf, orbitAt); events 'dustGot', 'stoneGot',
+  'stoneGiven' (state.ts). Tests: tests/meld_drops.test.ts. Films: tools/scenarios/meld_drops_film.mjs,
+  tools/meld_drops_films.py.

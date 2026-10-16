@@ -24,7 +24,7 @@ import { POWER, QUEST3, STONE_LAYING_STEPS, STONE_LYING_FRAMES, STONE_STANDING_F
 import type { StoneArt } from '../art/quest3';
 import { DUST_FPS, MELD_DROPS, SPILL_FRAMES, SPILL_SECS, STONE_FPS, STONE_FRAMES, WHIRL_FRAMES, heapOf, spinStep } from '../art/meld_drops';
 import type { MeldDropsArt } from '../art/meld_drops';
-import { GIVEN, KEPT_Z, MeldDrops, givenOf, orbitAt, riseOf, takenOf } from './meld_drops';
+import { GIVEN, KEPT_SCALE, KEPT_Z, MeldDrops, givenOf, orbitAt, riseOf, takenOf } from './meld_drops';
 import type { StoneAt } from './meld_drops';
 import { SMITH3 } from '../art/smith3';
 import { CRYPT, cryptFloor, cryptWays } from '../art/crypt';
@@ -360,6 +360,8 @@ export class Renderer {
   private monsterLit: { s: Sprite; x: number; y: number }[] = [];
   /** A brazier's fire, an open portal: what glows on a thing that stands in the dungeon. */
   private propLit: { s: Sprite; x: number; y: number }[] = [];
+  /** (RUNEDUST AND THE MELDSTONE) What is drawn again over the lights, so that a place's bright light does not wash it out: unless the hero stands in front of it. */
+  private overLit: { d: number; s: Sprite; x: number; y: number; scale: number }[] = [];
   /** The figures in this dungeon, for painting their frames ahead of need (see Bestiary.warm). */
   private figures: MonsterFigure[] = [];
   /** Those of them that are heavy (art/bestiary.ts HEAVY_FIGURES) and the game's own to paint, there being no painter. */
@@ -727,12 +729,15 @@ export class Renderer {
         const sx = wx(cam, st.x, st.y);
         const sy = wy(cam, st.x, st.y) - st.z;
         // (in the wordsmith's ring, lit enough by its own light, the stone gives none: it would wash it out)
-        this.standLit(st.x + st.y + 0.08, this.meldStoneSprite(a, st, t), sx, sy, st.scale, 1, false);
+        const sp = this.meldStoneSprite(a, st, t);
+        this.standLit(st.x + st.y + 0.08, sp, sx, sy, st.scale * KEPT_SCALE, 1, false);
+        this.overLit.push({ d: st.x + st.y + 0.08, s: sp, x: sx, y: sy, scale: st.scale * KEPT_SCALE });
       }
       if (gv.halves) {
         gv.halves.forEach((hf, n) => {
           const sp = a.halves[n][spinStep(hf.yaw)];
-          this.standLit(hf.x + hf.y + 0.08, sp, wx(cam, hf.x, hf.y), wy(cam, hf.x, hf.y) - hf.z, 1, 1, false);
+          this.standLit(hf.x + hf.y + 0.08, sp, wx(cam, hf.x, hf.y), wy(cam, hf.x, hf.y) - hf.z, KEPT_SCALE, 1, false);
+          this.overLit.push({ d: hf.x + hf.y + 0.08, s: sp, x: wx(cam, hf.x, hf.y), y: wy(cam, hf.x, hf.y) - hf.z, scale: KEPT_SCALE });
         });
       }
       if (gv.burst) this.standLit(sd + 0.01, a.burst, wx(cam, slab.x, slab.y), wy(cam, slab.x, slab.y) - KEPT_Z - 2, gv.burst.scale, gv.burst.alpha);
@@ -746,7 +751,9 @@ export class Renderer {
     // KEPT: once the wordsmith has it, it goes round the column of light over his slab, turning
     if (game.hero.meld === 'open' || game.meta.meld) {
       const o = orbitAt(t, [slab.x, slab.y]);
-      this.standLit(o.x + o.y + 0.08, a.stone[Math.floor(t * STONE_FPS) % STONE_FRAMES], wx(cam, o.x, o.y), wy(cam, o.x, o.y) - o.z, 1, 1, false);
+      const sp = a.stone[Math.floor(t * STONE_FPS) % STONE_FRAMES];
+      this.standLit(o.x + o.y + 0.08, sp, wx(cam, o.x, o.y), wy(cam, o.x, o.y) - o.z, KEPT_SCALE, 1, false);
+      this.overLit.push({ d: o.x + o.y + 0.08, s: sp, x: wx(cam, o.x, o.y), y: wy(cam, o.x, o.y) - o.z, scale: KEPT_SCALE });
     }
   }
 
@@ -2018,6 +2025,7 @@ export class Renderer {
     this.marks.length = 0;
     this.monsterLit.length = 0;
     this.propLit.length = 0;
+    this.overLit.length = 0;
     const lowGrid = this.lowWalls(L);
     this.lowNow = lowGrid;
     // (THE WALLS' LOOK: where the hero is on the screen, for the walls that are seen through while they stand over them)
@@ -2900,6 +2908,19 @@ export class Renderer {
     for (const q of this.monsterLit) drawLights(g, q.s, q.x, q.y);
     // and on what stands in the dungeon: a brazier's fire, an open portal
     for (const q of this.propLit) drawLights(g, q.s, q.x, q.y);
+    // (the Meldstone in the wordsmith's ring, drawn again over the light, so that it is seen in it; not where the hero stands before it)
+    // (part way: the light still falls on it, but no longer washes it out)
+    for (const q of this.overLit) {
+      const s = q.s;
+      const hx = wx(cam, h.x, h.y);
+      const hy = wy(cam, h.x, h.y);
+      // (the stone itself is about 14 game pixels across and 18 high, round its middle; its picture is wider, for its bolts)
+      const near = Math.abs(hx - q.x) < 7 * q.scale + 10 && hy > q.y - 9 * q.scale && hy - 34 < q.y + 9 * q.scale;
+      if (h.x + h.y > q.d && near) continue;
+      g.globalAlpha = 0.6;
+      g.drawImage(s.img, Math.round(q.x - s.ax * q.scale), Math.round(q.y - s.ay * q.scale), Math.round(s.w * q.scale), Math.round(s.h * q.scale));
+      g.globalAlpha = 1;
+    }
     // A beam that is being held (the owner: "Fires towards your finger ... You can move the beam
     // around in different directions as long as you hold down"). The rules bite along it five
     // times a second; the picture of it is told where it runs every frame, so it turns with the

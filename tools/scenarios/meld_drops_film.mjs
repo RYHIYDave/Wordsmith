@@ -82,28 +82,55 @@ export default async function (page, snap) {
     const drops = await page.evaluate(() => window.__dbg.game().drops.filter((q) => q.kind === 'dust' || q.kind === 'stone').map((q) => ({ kind: q.kind, age: +q.age.toFixed(2) })));
     check('he drops runedust and the Meldstone, held under the floor while he goes down', drops.length === 2 && drops.every((q) => q.age < -2), JSON.stringify(drops));
     // his death (3.0 s), the Meldstone and the runedust bursting up, and hanging: 6 s
-    for (let i = 0; i < 180; i++) await frame('fall');
+    if (process.env.TAKE_ONLY === '1') {
+      await page.evaluate(() => { window.__dbg.slowmo = 1; });
+      await page.waitForFunction(() => window.__dbg.game().drops.some((q) => q.kind === 'stone' && q.age > 2), null, { timeout: 60000 });
+      await page.evaluate(() => { window.__dbg.slowmo = 1e-6; });
+    } else for (let i = 0; i < 180; i++) await frame('fall');
     const lying = await page.evaluate(() => window.__dbg.game().drops.filter((q) => q.kind === 'dust' || q.kind === 'stone').map((q) => ({ kind: q.kind, age: +q.age.toFixed(2), x: q.x, y: q.y })));
     check('both lie there, not taken', lying.length === 2, JSON.stringify(lying));
     // TAKEN: the hero steps up to them (a cut), and they come to him
     const st = lying.find((q) => q.kind === 'stone');
-    // (first just out of their reach, till the camera has come to him; then a step nearer, and they come to him)
-    await page.evaluate((st) => {
+    // (first just out of their reach, till the camera has come to him; then a step nearer, and they come to him.
+    // Which way: open floor, and away from the mine shaft's cage, which would take him up to town)
+    const way = await page.evaluate((st) => {
       const g = window.__dbg.game();
-      const h = g.hero;
-      h.x = st.x - 2.8; h.y = st.y + 2.0;
-      window.__dbg.slowmo = 1;
+      const L = g.level;
+      const f = L.floor;
+      const cage = L.ways && L.ways.shaft ? L.ways.shaft : null;
+      let best = null;
+      for (let a = 0; a < 32; a++) {
+        const ux = Math.cos((a / 32) * Math.PI * 2);
+        const uy = Math.sin((a / 32) * Math.PI * 2);
+        let ok = true;
+        for (let r = 0.5; r <= 3.6; r += 0.25) {
+          const x = st.x + ux * r;
+          const y = st.y + uy * r;
+          if (L.walk[Math.floor(y) * f.w + Math.floor(x)] !== 1) { ok = false; break; }
+        }
+        if (!ok) continue;
+        const far = cage ? Math.hypot(st.x + ux * 2.7 - cage.x, st.y + uy * 2.7 - cage.y) : 9;
+        // (and toward the camera's side, so that the stone is seen over his head)
+        const score = Math.min(far, 4) + 0.6 * (ux + uy);
+        if (!best || score > best.score) best = { ux, uy, score, far };
+      }
+      return best;
     }, st);
+    check('open floor beside them, away from the cage', !!way, JSON.stringify(way));
+    await page.evaluate(([st, way]) => {
+      const h = window.__dbg.game().hero;
+      h.x = st.x + way.ux * 4.2; h.y = st.y + way.uy * 4.2;
+      window.__dbg.slowmo = 1;
+    }, [st, way]);
     await page.waitForTimeout(1500);
     await page.evaluate(() => { window.__dbg.slowmo = 1e-6; });
     const still = await page.evaluate(() => window.__dbg.game().drops.filter((q) => q.kind === 'dust' || q.kind === 'stone').length);
     check('out of their reach, both still lie there', still === 2, still);
-    await page.evaluate((st) => {
-      const g = window.__dbg.game();
-      const h = g.hero;
-      h.x = st.x - 2.2; h.y = st.y + 1.6;
-    }, st);
-    await where('take', st.x - 2.2, st.y + 1.6);
+    await page.evaluate(([st, way]) => {
+      const h = window.__dbg.game().hero;
+      h.x = st.x + way.ux * 2.7; h.y = st.y + way.uy * 2.7;
+    }, [st, way]);
+    await where('take', st.x + way.ux * 2.7, st.y + way.uy * 2.7);
     n = 0;
     c0 = await page.evaluate(() => window.__dbg.clock());
     for (let i = 0; i < 75; i++) await frame('take');
