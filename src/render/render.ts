@@ -237,6 +237,12 @@ function named(m: Monster): boolean {
   return m.elite || (PACK_LOOK.on && m.rarity === 'blue');
 }
 
+/** (ACT 1, THE DESCENT: one of its own kinds out of sight where it lies, as its kind has it: the Drowned under the water until it rises. Nothing of it is drawn, its shadow, ring, bar and name too: render/act1_fx, `hidden`.) */
+function unseen(m: Monster): boolean {
+  const f = act1Fx(m.kind);
+  return !!(f && f.hidden && f.hidden(m));
+}
+
 /** The colour of a named monster's name: its word's; with PACK_LOOK, a blue pack's blue and a yellow pack's leader's yellow (the colours of magic and rare things). */
 function nameColor(m: Monster): string {
   if (PACK_LOOK.on && m.rarity === 'blue') return RARITY_COLOR[1];
@@ -1616,7 +1622,7 @@ export class Renderer {
     for (const sp of game.spears) if (L.explored[Math.floor(sp.y) * f.w + Math.floor(sp.x)] && here(sp.x, sp.y)) drawSpearLying(g, this.floorAt, sp.x, sp.y, sp.fx, sp.fy);
     // shadows, and the rings that mark elites
     for (const m of game.monsters) {
-      if (m.dead || !m.seen || !here(m.x, m.y)) continue;
+      if (m.dead || !m.seen || !here(m.x, m.y) || unseen(m)) continue;
       const cx = wx(cam, m.x, m.y);
       const cy = wy(cam, m.x, m.y);
       // (THE NEW MONSTERS' RINGS, with them: a blue pack's blue, with its word inside; a yellow pack's
@@ -2170,7 +2176,7 @@ export class Renderer {
       this.stand(d, sp, x, y);
     }, (x, y) => game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
     for (const m of game.monsters) {
-      if (m.dead || !m.seen) continue;
+      if (m.dead || !m.seen || unseen(m)) continue;
       let sx = wx(cam, m.x, m.y);
       let sy = wy(cam, m.x, m.y);
       // (the Warden is twice the height of anything else: he is in the picture from further off)
@@ -3124,11 +3130,11 @@ export class Renderer {
     // standing in sight; every one of it has its ring and its bar. A name over each was a pile of
     // letters: six bats, six names, one on another.)
     const speaks = new Map<number, number>();
-    if (PACK_LOOK.on) for (const m of game.monsters) if (!m.dead && m.seen && m.rarity === 'blue' && !speaks.has(m.packId)) speaks.set(m.packId, m.id);
+    if (PACK_LOOK.on) for (const m of game.monsters) if (!m.dead && m.seen && !unseen(m) && m.rarity === 'blue' && !speaks.has(m.packId)) speaks.set(m.packId, m.id);
     // (the names over all the bars, so that no bar of a pack's lies across its name)
     const names: { m: Monster; x: number; y: number }[] = [];
     for (const m of game.monsters) {
-      if (m.dead || !m.seen || m.boss) continue;
+      if (m.dead || !m.seen || m.boss || unseen(m)) continue;
       // (the enemy locked onto always shows its life: it is the one being fought)
       if (m.barT <= 0 && !named(m) && m.id !== this.lockId) continue;
       // (over its head as it stands: a club or a sword raised above it passes in front of the bar)
@@ -3186,7 +3192,7 @@ export class Renderer {
     // The word a monster carries hangs over its head as its rune stone: what you see is what its
     // death will leave on the floor.
     for (const m of game.monsters) {
-      if (m.dead || !m.seen || !(m.elite || m.boss)) continue;
+      if (m.dead || !m.seen || !(m.elite || m.boss) || unseen(m)) continue;
       const carried = game.wordsCarried(m);
       if (!carried.length) continue;
       const sx = Math.round(wx(cam, m.x, m.y));

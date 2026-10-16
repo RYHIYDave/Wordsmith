@@ -40,4 +40,6 @@ export interface Act1Fx {
   lift?(m: Monster): number;
   /** Drawn later than its depth would have it (over the hero it has latched on to): how much is added to its depth. */
   over?(m: Monster): number;
+  /** Out of sight where it lies (under the water, not yet risen): nothing of it is drawn, its shadow, its ring, its bar and its name too (render.ts). */
+  hidden?(m: Monster): boolean;
 }

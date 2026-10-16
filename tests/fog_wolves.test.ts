@@ -1,4 +1,4 @@
-// FLOOR 9'S FOG WOLVES (src/art/fog_wolves.ts; a mock-up behind WOLF_ON, off; nothing of the game imports it), held to
+// FLOOR 9'S FOG WOLVES (src/art/fog_wolves.ts; in the game through art/act1_figs/wolf.ts, WOLF_ON on with the descent), held to
 // his art rulebook before he sees them, in every frame of every move, from in front and from behind:
 //   - crisp pixels; its pink edge round what of it is solid while it lives (where its fog thins away, its edge goes
 //     with it: his word, more fog than wolf), none dead; nothing cyan; every light the enemy's fire; its eyes burning
@@ -22,6 +22,9 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { ACT1 } from '../src/game/act1';
+// (the bestiary throws the art chat's switches for the descent's kinds with the descent's own: useAct1Figs)
+import '../src/art/bestiary';
 import { WOLF_BITE, WOLF_DIE, WOLF_HABITS, WOLF_ON, WOLF_REEL, WOLF_STAND, WOLF_WALK, makeWolfArt, wolfGrains, wolfLong, wolfPainted, wolfSolids } from '../src/art/fog_wolves';
 import { RIM_ALPHA } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
@@ -124,12 +127,21 @@ const opaque = (p: Painted): number => {
   return n;
 };
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(WOLF_ON.on, false);
+// (IN THE GAME since the descent came in, 16 Oct 2026: through art/act1_figs/wolf.ts alone, its switch on with the
+// descent's; until then a mock-up nothing of the game imported, its switch off)
+test('in the game through art/act1_figs/wolf.ts alone, its switch on with the descent', () => {
+  assert.equal(WOLF_ON.on, ACT1.on);
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('fog_wolves.ts')) continue;
-    assert.ok(!/from ['"][^'"]*\/fog_wolves['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the wolves`);
+    if (!f.endsWith('.ts') || f.startsWith('dev')) continue;
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (parts.join('/') === 'art/fog_wolves') users.push(f);
+    }
   }
+  assert.equal(users.join(', '), 'art/act1_figs/wolf.ts', 'only its pictures for the game import the wolves');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge); its pink edge round what of it is solid while it lives (where its fog thins away, its edge goes with it: his word, more fog than wolf; struck, it is torn open), none dead', () => {
