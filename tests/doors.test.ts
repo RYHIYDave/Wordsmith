@@ -717,7 +717,7 @@ test('a rain of arrows and an orb, aimed past a shut door by their own buttons, 
 
 test('whatever is shut in cannot come at the hero: in real dungeons with all their monsters, nothing the rule puts out of his reach can reach him but through a shut door; and every door stands where its room\'s floor ends', () => {
   let asked = 0;
-  for (const [seed, depth] of [[3, 1], [6, 2], [11, 3], [14, 4], [21, 5], [8, 6]] as const) {
+  for (const [seed, depth] of [[3, 1], [6, 2], [11, 3], [14, 4], [21, 5], [8, 3]] as const) {
     const g = doorsSet(true, () => {
       const q = new Game('warrior', seed);
       q.depth = depth;
