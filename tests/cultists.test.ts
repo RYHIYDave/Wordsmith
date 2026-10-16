@@ -135,7 +135,8 @@ test('1. their switch goes with the rules\' (game/defs.ts CULT), and only the be
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/cultists.ts') continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
-    if (/from ['"][^'"]*cultists['"]/.test(text)) users.push(f);
+    // (art/cultists.ts itself: not the cult's two kinds of the descent, art/act1_cultists.ts)
+    if (/from ['"][^'"]*\/cultists['"]/.test(text)) users.push(f);
   }
   assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw them');
 });
