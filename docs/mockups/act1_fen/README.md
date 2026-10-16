@@ -322,5 +322,54 @@ Shown `shots/eye_gaze.gif`, `shots/eye_bolts.gif` and `shots/eye_spit.gif`, aske
 "Yes, as shown (Recommended)"; "Bigger and wilder"; "Not yet"), his answers, 15 Oct, by 19:43 (the clock read 19:43:31
 just after): each "Yes, as shown (Recommended)".
 
-NEXT: his maw (breathing in, pulling you close, then biting; spewing eyespawn; heaving his bulk up and splashing down),
-then his phase changes, struck, and his death.
+### His maw moves (`eyePainted('bite' | 'spew' | 'splash', t, view, aim, clock)`; `spawnPainted`)
+
+His picks: "Breathes in, pulling you close, then bites (Recommended)", "Spews eyespawn out of the muck (Recommended)", and
+in his own words, "I like the water idea for the roar, but instead it picks its bulk up and splashes down". As made
+(src/art/drowned_eye.ts at 15b6845). New for these: HIS FACE TURNS ON HIS PREY (EyePose.turn, degrees round toward his
+left), his face, eye, rim, hood and horns turning with it; his arms stay where they rise from the pool.
+
+- HIS BREATH AND BITE (EYE_BITE, 3.3 s): his face turns on you as his eye tears open into his maw, wide, by 0.45 s; HE
+  BREATHES IN, rearing back and swelling, 0.45 to 1.95 s: water, stones and weed and the air itself streaming across
+  the ring and into his maw in streaks, faster as they near it, water torn up off the pool's face (THE WARNING, and the
+  pull: the game draws you in); he lunges at you along the aim, 58 of his lengths, 1.95 to 2.1 s; THE BITE at 2.1 s, his
+  maw slammed shut, spray and spittle flung, held to 2.22 s; he draws back and turns back by 3.1 s.
+- HIS EYESPAWN (EYE_SPEW, 3.0 s): his face turns on you; he heaves and retches, his maw tearing half open, the fen's
+  muck welling up and bubbling at its lips, drooling off them (THE WARNING), 0 to 0.85 s; he spews a torrent of it out
+  across the ring before him, 0.9 to 1.5 s, reaching further as he heaves, splashing where it comes down; three eggs
+  tumble out in it at 0.98, 1.16 and 1.34 s, each flung 0.6 s in a high arc to land at `spawnLanding(aim, i)` on the
+  ring; his maw shuts 1.65 to 2.3 s, his face turning back by about 2.85 s.
+- HIS EYESPAWN'S EGGS, LANDED (EYE_SPAWN, 3.0 s each, on their own SPAWN_CANVAS 180 by 150, the middle on the floor at
+  (90, 110)): it thuds into a splat of muck, squashing and bouncing; it sits rocking, the eye in it darting about; from
+  2.0 s it shakes hard and bulges (THE WARNING: about to hatch); IT HATCHES at 2.5 s (the game brings out the eyespawn
+  there), its shell flung, its slime splashing; the torn shell sinks and the muck goes by 3.0 s. Dull: no light.
+- HIS SPLASH (EYE_SPLASH, 3.6 s): he sinks, gathering, to 0.25 s; HE HEAVES HIS WHOLE BULK UP out of the pool, 125 of
+  his lengths, by 1.0 s, water pouring off him in sheets, his arms flung out and hanging, writhing; hangs there
+  trembling (THE WARNING), 1.0 to 1.4 s; crashes down, 1.4 to 1.62 s; THE CRASH at 1.62 s, a crown of water bursting up
+  round him, rings on the pool; THE WAVE rolls from the pool's rim across the ring to its edge, 1.62 to 2.55 s, a foaming
+  wall of water about 34 of his lengths high, lower as it spreads, the water washing over the stones behind it (to
+  jump or dash through: `waveAt(t)` says how far across it is); he bobs and settles by 3.6 s.
+
+EYE_CANVAS is now 860 by 790, the pool's middle at the water at (430, 500): his arms, flung out as he heaves himself up,
+reached past the old 760.
+
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "bitefilm" shots/eye_bite.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "spewfilm" shots/eye_spew.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned_eye.ts "splashfilm" shots/eye_splash.gif 6
+
+`tests/drowned_eye.test.ts` now 25: THE REVIEW takes in the bite, the spew and the splash (every third frame, aimed four
+ways, in front and behind) and every other frame of a landed egg; NOTHING THROUGH HIS EYE takes them in, his face
+turned; HIS BREATH AND BITE (from his stand and back; never leaping but for the lunge itself; his face on you; lunging
+along the aim; the draught streaming in while he breathes, none once he has bitten); HIS EYESPAWN (from his stand and
+back, never leaping; his face on you; the torrent; each egg in the air and landing on the ring); HIS EYESPAWN'S EGGS (no
+light; shaking harder before they hatch; clean by the end); HIS SPLASH (from his stand and back; still before he heaves,
+held at the top, settling after; the heave and the crash his blow, as fast as they go; the wave from the rim to the edge,
+painted where it says it is).
+
+Shown `shots/eye_bite.gif`, `shots/eye_spew.gif` and `shots/eye_splash.gif`, asked in one pop-up "His breath and bite
+(eye_bite.gif): good?", "His eyespawn (eye_spew.gif): good?", "His splash (eye_splash.gif): good?" (each offered: "Yes,
+as shown (Recommended)"; "Bigger and wilder"; "Not yet"), his answers, 15 Oct, by 20:22 (the clock read 20:22:13 just
+after): each "Yes, as shown (Recommended)".
+
+NEXT: his phase changes (surfacing from under the water; pulling the siege's magic in, the obelisks' lines bending into
+him), struck, and his death.
