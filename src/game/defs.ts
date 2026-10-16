@@ -462,7 +462,13 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   queen: { kind: 'queen', name: 'The Carrion Queen', life: 420, dmgMin: 18, dmgMax: 26, speed: 1.5, radius: 0.9, range: 2.2, windup: 0.72, cooldown: 1.8, xp: 340, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   cantor: { kind: 'cantor', name: 'The Cantor', life: 440, dmgMin: 19, dmgMax: 27, speed: 0.8, radius: 0.55, range: 2.8, windup: 1.0, cooldown: 2.2, xp: 350, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   stag: { kind: 'stag', name: 'The Hollow Stag', life: 460, dmgMin: 20, dmgMax: 28, speed: 3.0, radius: 0.8, range: 1.9, windup: 0.8, cooldown: 1.9, xp: 360, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
-  eye: { kind: 'eye', name: 'The Drowned Eye', life: 1300, dmgMin: 22, dmgMax: 32, speed: 0, radius: 2.4, range: 9, windup: 1.3, cooldown: 2.2, xp: 900, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (THE DROWNED EYE, game/act1_rules/eye.ts: he never moves, `speed` 0, in the middle of his pool. `radius`: his body
+  // reaches out over his pool's rim, so that a blade swung from the ring strikes him, and an arrow shot at him from it
+  // too (the rim's stones, cut corner to corner, stop a shot up to 3.5 tiles from his middle: tests/act1_eye.test.ts).
+  // His life, on floor 10 (a fifth floor's boss's, doubled: Game.spawn, `greater`), 600 x 4.6 x 2 = 5520: nearly three
+  // times the Hollow Stag's on floor 9 (1932), for three phases of a long fight. His blows the Stag's, each move its own
+  // share of them.)
+  eye: { kind: 'eye', name: 'The Drowned Eye', life: 600, dmgMin: 20, dmgMax: 28, speed: 0, radius: 3.3, range: 9, windup: 0.8, cooldown: 2.0, xp: 900, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
 /**

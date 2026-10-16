@@ -1,5 +1,5 @@
-// FLOOR 10'S BOSS, THE DROWNED EYE (src/art/drowned_eye.ts; a mock-up behind EYE_ON, off; nothing of the game imports
-// it), held to his art rulebook before he sees it. THIS FIRST STEP, its look (risen, under the water, torn open into its
+// FLOOR 10'S BOSS, THE DROWNED EYE (src/art/drowned_eye.ts, behind EYE_ON; in the game through art/act1_figs/eye.ts, which
+// turns EYE_ON on with the descent), held to his art rulebook before he sees it. THIS FIRST STEP, its look (risen, under the water, torn open into its
 // maw, blazing), from in front and from behind:
 //   - crisp pixels; its pink edge while it lives; nothing cyan; every light the enemy's fire; nothing cut off;
 //   - its size, his brief's (“Huge: its eye as wide as the pool”);
@@ -19,6 +19,7 @@ import nodeAssert from 'node:assert/strict';
 import * as nodeFs from 'node:fs';
 
 import { EYE_CANVAS, EYE_ON, EYE_POOL, EYE_R, eyeLookPainted, eyeLookUnder } from '../src/art/drowned_eye';
+import { act1Fig } from '../src/art/act1_figs/index';
 import type { EyeLook } from '../src/art/drowned_eye';
 import { RIM_ALPHA } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
@@ -67,10 +68,11 @@ const fireCount = (p: Painted): number => {
   return n;
 };
 
-test('nothing of the game imports it, and its switch is off', () => {
-  assert.equal(EYE_ON.on, false);
+test('in the game only through its own (ACT 1: art/act1_figs/eye.ts, which turns its switch on with the descent); nothing else of the game imports it', () => {
+  assert.ok(act1Fig('eye')?.switches?.includes(EYE_ON), 'its switch is the one his pictures in the game turn on');
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('drowned_eye.ts')) continue;
+    if (new Set(['art/act1_figs/eye.ts']).has(f.replace(/\\/g, '/'))) continue;
     assert.ok(!/from ['"][^'"]*\/drowned_eye['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Drowned Eye`);
   }
 });

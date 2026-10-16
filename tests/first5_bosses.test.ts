@@ -36,6 +36,7 @@ import { hookHigh } from '../src/render/bossfx';
 import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
+import { act1Rules } from '../src/game/act1_rules/index';
 import { beside, handOf } from '../src/game/facing';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -145,7 +146,9 @@ const firstHurt = (s: Seen): number => (s.hurts.length ? s.hurts[0].t - s.began 
 
 test('1. each floor has its own boss; past the fifth, and with the switch off, the Warden', () => {
   assert.equal(BOSSES5.on, true, 'on, on this branch (not live until he has seen it)');
-  assert.deepEqual([1, 2, 3, 4, 5, 6, 9, 10].map(bossKind), ['warden', 'headsman', 'chained', 'amalgam', 'fleshmancer', 'warden', 'warden', 'warden']);
+  // (ACT 1, THE DESCENT: floors 6 to 10 have bosses of their own once each is built, game/act1_rules/; till then the Warden)
+  const own = (k: MonsterKind): MonsterKind => (act1Rules(k) ? k : 'warden');
+  assert.deepEqual([1, 2, 3, 4, 5, 6, 9, 10, 11].map(bossKind), ['warden', 'headsman', 'chained', 'amalgam', 'fleshmancer', own('unfinished'), own('stag'), own('eye'), 'warden']);
   const names: Record<number, string> = { 2: 'Headsman', 3: 'Chained One', 4: 'Ossuary Amalgamation', 5: 'Fleshmancer' };
   for (const depth of [2, 3, 4, 5]) {
     for (const seed of [3, 17]) {
@@ -162,7 +165,7 @@ test('1. each floor has its own boss; past the fifth, and with the switch off, t
   // (the lair boss has twice the life of his kind at that depth, as a fifth floor's boss always has)
   const five = dungeon(3, 5).boss!;
   assert.equal(five.maxLife, Math.round(MONSTERS.fleshmancer.life * (1 + 0.4 * 4) * 2 * (five.words.includes('power') ? 1.3 : 1)), 'the Fleshmancer: his life');
-  assert.equal(dungeon(3, 10).boss!.name.startsWith('Greater'), true, 'a Warden of a fifth floor is still a Greater one');
+  assert.equal(dungeon(3, 15).boss!.name.startsWith('Greater'), true, 'a Warden of a fifth floor is still a Greater one (past the descent: its tenth is the Drowned Eye\'s)');
   BOSSES5.on = false;
   try {
     for (const depth of [2, 3, 4, 5]) assert.equal(dungeon(3, depth).boss!.kind, 'warden', `off: floor ${depth}'s boss is the Warden, as up to Version 20.2`);
