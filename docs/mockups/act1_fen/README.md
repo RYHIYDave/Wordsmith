@@ -371,5 +371,17 @@ Shown `shots/eye_bite.gif`, `shots/eye_spew.gif` and `shots/eye_splash.gif`, ask
 as shown (Recommended)"; "Bigger and wilder"; "Not yet"), his answers, 15 Oct, by 20:22 (the clock read 20:22:13 just
 after): each "Yes, as shown (Recommended)".
 
+### The ring wider again, on his word
+
+His words, 15 Oct, 20:23: "Can the ring be wider?  I think the inner circle is a good size but it just needs to be wider
+for more movement". Read as (told him so): his pool stays as it is; the paved ring round it gets wider. EYE_RING now
+8.0 by 7.0 tiles from the pool's middle to its edge (was 6.0 by 5.2): about five tiles of paving round the pool (was
+three). What reaches the ring's edge reaches the new one: his gaze, the landing of his bile and his eggs, the draught of
+his breath, the wave (EYE_SPLASH.wave now 1.62 to 2.85 s, to roll the further way at about the same speed). His slam
+and sweep keep their reach (about 6.4 and 6.2 tiles), so the outer stones are beyond them. Shown `ring_compare` (his
+stand on the old ring above, on the new below), asked "The wider ring (bottom of ring_compare.png): right?" (offered:
+"Yes, this wide (Recommended)"; "Wider still"; "A little less"), his answer, 15 Oct, by 20:25 (the clock read 20:25:12
+just after): "Yes, this wide (Recommended)". The boss review, 25 of 25, on the wider ring.
+
 NEXT: his phase changes (surfacing from under the water; pulling the siege's magic in, the obelisks' lines bending into
 him), struck, and his death.

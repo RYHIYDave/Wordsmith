@@ -103,12 +103,14 @@ export const EYE_DEEP = -82;
  * The pool it lives in: the planning chat's fen had its rim at 1.95 tiles across x and 1.62 across y, the ruin's ring of
  * paving out to 3.5 and 3.0; his word, 15 Oct, 16:35, “The ring should be bigger, outer ring and inner ring.  He looks
  * squished in the middle and the warrior needs room to maneuver”: the pool half again as wide, 2.9 by 2.5, the paving
- * out to 6.0 by 5.2, about three tiles of it to fight on (the level's own pool and ring are the main chat's). What of it
- * is under the water is seen only within the pool.
+ * out to 6.0 by 5.2, about three tiles of it to fight on (the level's own pool and ring are the main chat's). Wider again
+ * on his word, 15 Oct, 20:23: “Can the ring be wider?  I think the inner circle is a good size but it just needs to be
+ * wider for more movement”: the pool as it was, the paving out to 8.0 by 7.0, about five tiles of it. What of it is
+ * under the water is seen only within the pool.
  */
 export const EYE_POOL = { rx: 2.9 * TILE3, ry: 2.5 * TILE3 };
 /** The ruin's ring of paving round the pool, out to its edge (as above). */
-export const EYE_RING = { rx: 6.0 * TILE3, ry: 5.2 * TILE3 };
+export const EYE_RING = { rx: 8.0 * TILE3, ry: 7.0 * TILE3 };
 /** How deep under the water anything of it is still seen. */
 const SEEN_DEEP = 40;
 /** Its canvas, and where on it the middle of the pool is, at the water. */
@@ -935,7 +937,7 @@ function spewPose(t: number, aim: number, clock = 0): EyePose {
  * water bursting up round him; a wave rolls out from the pool's rim across the ring to its edge, knee-high, foaming (to
  * jump or dash through); he bobs and settles. Where it hurts: the wave's front, `waveAt(t)` of the way across the ring.
  */
-export const EYE_SPLASH = { long: 3.6, sink: 0.25, rise: [0.25, 1.0], hang: [1.0, 1.4], crash: 1.62, wave: [1.62, 2.55], high: 125, waveHigh: 34, fps: 30 } as const;
+export const EYE_SPLASH = { long: 3.6, sink: 0.25, rise: [0.25, 1.0], hang: [1.0, 1.4], crash: 1.62, wave: [1.62, 2.85], high: 125, waveHigh: 34, fps: 30 } as const;
 
 /** How far across the ring his splash's wave has rolled at time `t` (0 at the pool's rim, 1 at the ring's edge), or null when there is none. */
 export function waveAt(t: number): number | null {
