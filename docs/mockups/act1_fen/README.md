@@ -528,5 +528,42 @@ Shown `shots/leech_look.png` and `shots/leech_stand.gif`, asked "Is this the Bog
 leech_stand.gif)?" (offered: "Yes, animate it (Recommended)"; "Bigger"; "More horrible"; "Not yet"), his answer, 15
 Oct, by 23:46 (the clock read 23:46:44 just after): "Yes, animate it (Recommended)".
 
-NEXT: its moves (its slither, the leap and latch, struck, its burst), then the Eyespawn (medium; they hatch from his
-eggs), by its brief, look and moves.
+### Its moves
+
+In seconds from each move's start (src/art/bog_leech.ts):
+
+- ITS SLITHER (`slitherPose`, `BL_WALK` 8 frames at 30 a second, a 0.27 s round, painted for `BL_PACE`, 2.4 tiles a
+  second): like a snake, its body on one S-shaped track on the floor, every point of it following its head along it,
+  its head held up off the floor.
+- ITS LEAP AND LATCH (`attackPose`, `BL_ATTACK` 1.9 s): from its stand it rears like a cobra, its mouth up to the
+  knight's knee (16), its neck drawn back, its mouth flared wide and its gullet giving light, 0 to 0.3 s; HELD,
+  QUIVERING (the warning) 0.3 to 0.5 s; it leaps, its body following its head through the air, 0.5 to 0.633 s; IT
+  CLAMPS ON at 0.633 s (`BL_HIT`, frame 19 of 30) at `BL_LATCH`, 36 of its lengths before its floor point and 21 up
+  (the knight's thigh); it hangs off him by its mouth, down his leg, the rest of it curling on the floor, drinking, a
+  swallow running down it three times a second, swelling dark with blood, to 1.25 s (`BL_LETGO`); it drops off, landing
+  fat at 1.4 s (`BL_LAND`) with a splash; it wriggles back to where it stood, its swelling going down, by 1.9 s.
+- STRUCK (`reelPose`, 0.35 s): its front flung back, its body whipped into a C, its mouth gaping; back as it stood.
+- ITS DEATH (`BL_DIE` 1.0 s): it swells and thrashes, its mouth gaping, to 0.18 s; IT BURSTS at 0.18 s (`BL_POP`):
+  nothing of its body left, a dark splash of blood and bog water flung out and landing by about 0.7 s, a dark stain
+  spreading on the floor, three scraps of its skin flung out and lying flat. No light and no edge once it has burst.
+
+    node tools/page_gif.mjs src/dev/preview_leech.ts "seq:slither" shots/leech_slither.gif 6
+    node tools/page_gif.mjs src/dev/preview_leech.ts "seq:attack" shots/leech_attack.gif 6
+
+In the attack film the knight stands where it clamps on, facing it; from in front he stands before it and would hide
+it, so there he is drawn faint. For the game: draw it over him while it hangs on him.
+
+`tests/bog_leech.test.ts` 12 (6 more): all its moves crisp, its edge while it lives and none once dying, nothing cyan,
+every light the enemy's fire, nothing cut off; THE SLITHER (every point of it on the track its body lay along a moment
+before; its round closing; its length kept); THE LEAP AND LATCH (from its stand; reared and flared, its gullet's
+light, through its warning; its mouth on the latch at the blow; swelling as it drinks; down once it lets go; back as
+it stood); STRUCK (from its stand and back); ITS DEATH (swollen, then its stain and scraps, no light, lying on the
+floor); as the game holds a monster (`makeLeechArt()`).
+
+Shown `shots/leech_slither.gif` and `shots/leech_attack.gif`, asked in one pop-up "Its slither (leech_slither.gif)?",
+"Its leap, latch and suck (leech_attack.gif)?", "Struck, and its burst (end of leech_attack.gif)?" (offered: "Yes, as
+shown (Recommended)"; then "Faster and wilder", "Bigger and wilder" or "Bigger splash"; "Not yet"), his answers, 16 Oct,
+by 00:54 (the clock read 00:54:36 just after): each "Yes, as shown (Recommended)". ALL OF THE BOG LEECHES NOW HAVE HIS
+YES.
+
+NEXT: the Eyespawn (medium; they hatch from his eggs), by its brief, look and moves.
