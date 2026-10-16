@@ -767,7 +767,7 @@ His words on the moves of the section above: "Absolutely not.  Scrap all the ani
 
 **Next:** all her moves made new, fast and vicious (her hop, talon rake, wing gust, dive, call, flinch and her death off the edge), through the whole boss review (the section below).
 
-## The Carrion Queen made new: her moves (16 Oct; src/art/carrion_queen2_moves.ts, behind `QUEEN2_ON`, off; for his yes)
+## The Carrion Queen made new: her moves (16 Oct; src/art/carrion_queen2_moves.ts, behind `QUEEN2_ON`, off; HIS YES TO ALL OF THEM, AS SHOWN)
 
 **On his yes to her look** ("Yes, animate her (Recommended)", offered as: her look and stand kept, all her moves made new, fast and vicious) and his pick for how she moves ("Fast and vicious (Recommended)": darting, snapping, quick hops and lunges, wings flaring, never still, never slow). Her brief's moves (13 Oct): her hop, her talon rake (her blow), her wing gust that shoves you toward the edge, her dive along a marked line, her call that brings her flock, her flinch, her death off the edge (his pick).
 
@@ -805,4 +805,10 @@ His words on the moves of the section above: "Absolutely not.  Scrap all the ani
 | Animations 1: as far as it will go | The rake bursts up 70 of her lengths; the dive climbs over 300 and strikes 2.9 tiles along her line; the gust's wings drawn far back and clapped forward; the call's wings flung to their widest | Pass by the numbers; his eye decides the notch |
 | Animations 3: wild in her own way | Grit and chips in the rock's colours, her torn feathers, the cult's fire (claw-streaks, embers, rings) | Pass by eye |
 | Animations 4: warnings in sight | The rake's hang and the gust's held wings in sight, nothing over them; the dive's warning the game's mark on her line | Pass |
+
+**Shown him** the eight films (`q2_hop.gif`, `q2_rake.gif`, `q2_gust.gif`, `q2_dive.gif`, `q2_call.gif`, `q2_reel.gif`, `q2_death.gif`, `q2_stand.gif`) with a message on each move and on the one change to her stand (her great flare moved into her call and gust, for his rule that nothing jumps where one move hands over to the next; standing, she rouses).
+
+**Asked with the films** (one pop-up, three questions; our pick first and marked; offered: "Yes, as shown (Recommended)", or "Not yet"): "Her hop and her talon rake: are these right?"; "Her wing gust and her dive: are these right?"; "Her call, her flinch, her death off the edge, and her new standing: are these right?" (its pick offered as: keep them, and she's done; she goes to the main chat with floor 7).
+
+**His answers, 16 Oct, by 11:01:** all three "Yes, as shown (Recommended)". So the new Carrion Queen, her look and all her moves, has his yes, as shown. She replaces the old one (src/art/carrion_queen.ts, superseded); she stays behind `QUEEN2_ON` (off) and goes to the main chat with floor 7, on branch mockup/queen-redo.
 
