@@ -23,26 +23,35 @@
 // the cowl's dark a slack drowned face, and two eyes burning the Eye's gold. Water runs off them always. What glows on
 // them is the enemy's (their eyes). Nothing cyan. Each wears the enemy's pink edge while it lives.
 //
-// THIS FIRST STEP: its look, standing (his rulebook: a sheet of it standing, front and back, beside a hero, before
-// anything moves). Its other moves are its stand for now, placeholders, not for use.
+// Its look and stand had his yes by 22:46 (“Yes, animate it (Recommended)”). ITS MOVES: it rises out of the water
+// (`more.rise`); it shambles, lurching onto its dragging foot; its drowning grab (arms flung up and wide, hands
+// spread, held trembling: the warning; a lunge, both hands clutching; wrenched down, as to drag you under); struck;
+// its death, collapsing into water and weed, its robes slumping empty in a puddle. Rising and dying, what of it is
+// under the water (below the floor) is not seen (Mob.under).
 
 import type { ActorArt } from './actor_types';
 import { INK, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
-import { mobSet, sphere } from './new_mobs3';
+import { TILE3, mobSet, sphere } from './new_mobs3';
 import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
 import { wornOn } from './skin';
 import type { Ring, Skin, Stage } from './skin';
 import { add, buildOf, cross, dot, len, lerp3, mul, norm, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Skeleton, V3 } from './skeleton';
 
+const RISE_NAME = 'The drowned rises out of the water';
 /** THE SWITCH, OFF. Nothing of the game reads this file. */
 export const DROWNED_ON = { on: false };
 
 const D = Math.PI / 180;
 const fr = (t: number): number => t - Math.floor(t);
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
+/** 0 before `t0`, 1 after `t1`, smoothly between. */
+const rampAt = (t: number, t0: number, t1: number): number => {
+  const v = clamp01((t - t0) / (t1 - t0));
+  return v * v * (3 - 2 * v);
+};
 
 // =============================================================================================
 // THEIR COLOURS
@@ -218,7 +227,7 @@ function cowl(st: Stage, s: Skeleton, put: Put, glare: number, lag: V3, ph: numb
       w = next;
     }
   }
-  if (glare > 0.05 && dot(od, st.eye) > 0.05) put('glow', 'glow', { k: 'glow', p: add(hc, mul(od, hr[0] * 0.9)), c: FLAME[3], r: 4 + 3 * clamp01(glare - 1), a: Math.min(0.6, 0.3 * glare) });
+  if (glare > 0.15 && dot(od, st.eye) > 0.05) put('glow', 'glow', { k: 'glow', p: add(hc, mul(od, hr[0] * 0.9)), c: FLAME[3], r: 4 + 3 * clamp01(glare - 1), a: Math.min(0.6, 0.3 * glare) });
 }
 
 /** A SLEEVE to the elbow and on, wide and ragged at its mouth, sodden, hanging under the forearm, weed in it; the swollen forearm and hand out of it. Returns the forearm's frame. */
@@ -267,12 +276,21 @@ function hand(put: Put, side: 'L' | 'R', at: V3, fore: V3, e1: V3, e2: V3, open:
   }
 }
 
+/** The water running off it at each moment, laid after its edge (Mob.grains): kept from painting its solids. */
+const WET = new WeakMap<Moment, [V3, string, number][]>();
 /** THE DROWNED AS SOLIDS: its swollen bare feet, its sodden robe to the floor torn to rags and slimed at its hem, its dull stole, weed hanging off it, its sleeves and its hooked hands, the cowl with its drowned face and burning eyes, water running off it. */
 function drownedBits(st: Stage, m: Moment): Bit[] {
   const { s, q } = m;
   const B = DB;
   const bits: Bit[] = [];
+  const wet: [V3, string, number][] = [];
+  WET.set(m, wet);
   const put: Put = (part, piece, shape) => {
+    // (water is laid after its edge, keeping its own colour)
+    if (shape.k === 'mote' && (part === 'drip' || part === 'wake')) {
+      wet.push([shape.p, shape.c, shape.size]);
+      return;
+    }
     bits.push({ part, piece, shape });
   };
   const [cf, cl, cu] = s.chest;
@@ -296,7 +314,8 @@ function drownedBits(st: Stage, m: Moment): Bit[] {
   const footMid = lerp3(lerp3(s.heelL, s.toeL, 0.5), lerp3(s.heelR, s.toeR, 0.5), 0.5);
   const spanF = Math.abs(dot(sub(s.ankleL, s.ankleR), f));
   const spanL = Math.abs(dot(sub(s.ankleL, s.ankleR), l));
-  const hemC: V3 = [footMid[0] + lag[0] * 1.3, footMid[1] + lag[1] * 1.3, 1.2];
+  // (on the floor; under the water with its feet while it rises out of it or sinks into it)
+  const hemC: V3 = [footMid[0] + lag[0] * 1.3, footMid[1] + lag[1] * 1.3, Math.min(1.2, Math.min(s.ankleL[2], s.ankleR[2]) + 0.2)];
   const hemDeep = Math.max(B.pelvisDeep + 3.0, spanF / 2 + 2.6);
   const hemWide = Math.max(B.pelvisHalf + 3.4, spanL / 2 + 2.4);
   const hemPts: V3[] = [];
@@ -370,9 +389,189 @@ function drownedBits(st: Stage, m: Moment): Bit[] {
     const r = hemWide * (0.8 + 0.4 * hash(i, 2, 409)) + 2 * k;
     if (k < 0.5) put('drip', 'splash', { k: 'mote', p: [hemC[0] + Math.cos(a) * r, hemC[1] + Math.sin(a) * r, 0.3 + 1.5 * k * (1 - k)], c: WATER[1], size: 1 });
   }
+  // --- RISING OUT OF THE WATER: the water's face broken round it, rings, water pouring off it ---
+  if (m.move === RISE_NAME) {
+    const tr = m.t;
+    const c: V3 = [s.pelvis[0], s.pelvis[1], 0.3];
+    for (let kk = 0; kk < 3; kk++) {
+      const k = fr(tr * 1.2 + kk / 3);
+      const r = hemWide * 0.9 + 14 * k;
+      const n = Math.round(16 + 16 * k);
+      if (tr > DR_RISE.breaks && tr < DR_RISE.long - 0.25) for (let i = 0; i < n; i++) {
+        if (hash(i, kk, 411) < k * 0.6) continue;
+        const a = (i / n) * Math.PI * 2;
+        put('wake', 'wake', { k: 'mote', p: [c[0] + Math.cos(a) * r, c[1] + Math.sin(a) * r * 0.9, 0.3], c: k < 0.4 ? WATER[1] : WATER[2], size: 1 });
+      }
+    }
+    // (water sheeting off its head and shoulders as it comes up)
+    if (tr < DR_RISE.up + 0.3) for (let i = 0; i < 14; i++) {
+      const k = fr(tr * 2.2 + i / 14);
+      const from = add(i % 2 ? s.shoulderL : s.shoulderR, add(mul(cl, (i % 2 ? 1 : -1) * 2), mul(cf, (hash(i, 1, 413) - 0.5) * 6)));
+      const z = from[2] - (from[2] + 1) * k * k;
+      if (z > 0.3) put('drip', 'pour', { k: 'mote', p: [from[0], from[1], z], c: WATER[i % 3], size: i % 3 ? 1 : 2 });
+    }
+  }
+  // --- DYING: its robes slumping empty in a spreading puddle, weed left lying in it ---
+  const slump = m.dying ? clamp01(q.gale) : 0;
+  if (slump > 0.02) {
+    const c: V3 = [s.pelvis[0] * 0.3, s.pelvis[1] * 0.3, 0];
+    const pr = 6 + 10 * slump;
+    put('puddle', 'puddle', { k: 'ball', c: add(c, [0, 0, 0.2]), ax: [[pr, 0, 0], [0, pr * 0.9, 0], [0, 0, 0.15]], skin: (u, tone) => (hash(Math.floor(u[0] * 5), Math.floor(u[1] * 5), 415) > 0.85 ? WATER[2] : tone >= 3 ? '#3a4a42' : '#1c2620') });
+    const heap = clamp01(slump * 1.3);
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + 0.4;
+      const r = (2 + 4.5 * hash(i, 1, 417)) * heap;
+      const big = (4.2 + 2 * hash(i, 2, 417)) * (0.4 + 0.6 * heap);
+      put('heap', 'heap', { k: 'ball', c: add(c, [Math.cos(a) * r, Math.sin(a) * r, 0.35 + 1.3 * heap]), ax: [[big, 0, 0], [0, big * 0.85, 0], [0, 0, 0.9 + 0.9 * heap]], skin: i % 3 === 0 ? SLIME : ROBE });
+    }
+    // (its cowl, emptied, fallen to one side of the heap; its stole trailing out of it)
+    put('heap', 'cowl', { k: 'ball', c: add(c, [2.5 * heap, 4 * heap, 0.9 + 1.2 * heap]), ax: [[3.4, 0, 0], [0, 3.0, 0], [0, 0, 1.0 + 0.8 * heap]], skin: COWL });
+    put('heap', 'stole', { k: 'rod', a: add(c, [0, 0, 1.6 * heap + 0.5]), b: add(c, [-6 * heap, -2 * heap, 0.6]), ra: 0.9, rb: 0.8, ramp: STOLE });
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + 1.1;
+      put('heap', 'weed', { k: 'rod', a: add(c, [Math.cos(a) * 2, Math.sin(a) * 2, 0.8 * heap + 0.4]), b: add(c, [Math.cos(a + 0.4) * (4 + 6 * heap), Math.sin(a + 0.4) * (4 + 6 * heap), 0.4]), ra: 0.6, rb: 0.45, ramp: WEED });
+    }
+    // (the water gushing out of it as it goes)
+    if (slump < 0.95) for (let i = 0; i < 12; i++) {
+      const k = fr(m.t * 2.4 + i / 12);
+      const a = hash(i, 3, 419) * Math.PI * 2;
+      put('drip', 'gush', { k: 'mote', p: [c[0] + Math.cos(a) * pr * k, c[1] + Math.sin(a) * pr * k, 0.3 + 3 * k * (1 - k)], c: WATER[i % 3], size: 1 });
+    }
+  }
   // --- its cowl, its drowned face and burning eyes ---
   cowl(st, s, put, glare, lag, ph);
   return bits;
+}
+
+// =============================================================================================
+// ITS MOVES
+
+/** RISING OUT OF THE WATER (his pick): how long; when its head breaks the surface, when it is up, when its eyes light. */
+export const DR_RISE = { long: 1.9, breaks: 0.12, up: 1.05, lit: [0.35, 0.75] } as const;
+/** How deep it starts: wholly under (its height, and a little). */
+const DEEP = 64;
+function drownedRise(): Motion {
+  const R = DROWNED_REST;
+  const under = (k: number): Partial<Bones> => ({ pz: R.pz - DEEP * k, lfz: -DEEP * k, rfz: -DEEP * k });
+  return {
+    keys: [
+      { at: 0, pose: { ...under(1), pitch: 30, bend: 30, faceUp: 10, lhz: -12, rhz: -12, lhx: 10, rhx: 9, out: 1 } },
+      { at: 0.3, pose: { ...under(0.72), pitch: 28, bend: 30, faceUp: 14, lhz: -12, rhz: -12, lhx: 10, rhx: 9, out: 0.9 }, ease: 'io' },
+      { at: 0.65, pose: { ...under(0.32), pitch: 24, bend: 26, faceUp: 24, faceTilt: -14, lhz: -16, rhz: -15, lhx: 9, rhx: 8, out: 0.2 }, ease: 'io' },
+      { at: DR_RISE.up, pose: { ...under(0), pitch: 20, bend: 24, faceUp: 30, faceTilt: -16, lhz: -20, rhz: -21, out: 0 }, ease: 'out' },
+      // (it shudders the water off, its head jerked up and round)
+      { at: 1.2, pose: { pz: R.pz - 1.0, roll: R.roll - 4, faceUp: 34, faceTurn: 16, faceTilt: 4 }, ease: 'io' },
+      { at: 1.38, pose: { pz: R.pz - 0.4, roll: R.roll + 4, faceUp: 26, faceTurn: -6, faceTilt: -14 }, ease: 'io' },
+      { at: DR_RISE.long, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/** ITS SHAMBLE: a loop of ten frames at eight a second, painted for 0.7 tiles a second; its left foot stepping, its right dragging low and short, its body dropping hard onto it. */
+export const DR_PACE = 0.7;
+const DR_WALK = { frames: 10, fps: 8 } as const;
+/** A foot of a walk of `n` frames, `k` frames into its round (0 to n): down from the first frame to the middle one, carried back under the figure as it goes on; then lifted and swung through. Forward, lift, how its sole is tipped. */
+function stepFoot(k: number, n: number, step: number, lift: number): [number, number, number] {
+  const half = n / 2;
+  if (k <= half) return [step * (half / 2 - k), 0, 0];
+  const u = (k - half) / half;
+  const g = u * u * (3 - 2 * u);
+  return [-step * (half / 2) + step * half * g, lift * Math.sin(Math.PI * u), 14 * Math.sin(Math.PI * u) * (1 - u) - 6 * Math.sin(Math.PI * u) * u];
+}
+function drownedWalk(): Motion {
+  const R = DROWNED_REST;
+  const n = DR_WALK.frames;
+  const d = (DR_PACE * TILE3) / DR_WALK.fps;
+  const keys: Key3[] = [];
+  for (let i = 0; i <= n; i++) {
+    const j = i % n;
+    const a = (j / n) * Math.PI * 2;
+    // (its left foot steps; its right drags, barely lifted)
+    const [lx, lz, lp] = stepFoot(j, n, d, 3.0);
+    const [rx, rz, rp] = stepFoot((j + n / 2) % n, n, d, 1.6);
+    // (it drops onto its dragging foot as it comes down, and heaves up off it)
+    const drop = Math.max(0, Math.sin(a + 0.3));
+    keys.push({
+      at: i / DR_WALK.fps,
+      ease: 'lin',
+      pose: {
+        pz: R.pz - 1.6 * drop + 0.4 * Math.sin(2 * a), py: 1.6 * Math.sin(a), roll: R.roll + 5 * Math.sin(a), yaw: 4 * Math.cos(a),
+        bend: R.bend + 3 * drop, pitch: R.pitch + 2, faceUp: R.faceUp - 4 * drop, faceTilt: R.faceTilt + 8 * Math.sin(a), faceTurn: R.faceTurn,
+        lfx: lx + R.lfx * 0, lfz: lz, lfp: lp, lfy: R.lfy, lft: R.lft,
+        rfx: rx, rfz: rz, rfp: rp * 0.4, rfy: R.rfy, rft: R.rft,
+        lhx: R.lhx + 2.4 * Math.sin(a + Math.PI), rhx: R.rhx + 2.4 * Math.sin(a),
+        lhz: R.lhz + 0.8 * drop, rhz: R.rhz + 0.8 * drop,
+        draw: 0.5 + 0.5 * Math.sin(2 * a),
+      },
+    });
+  }
+  return { keys, loop: 0 };
+}
+
+/** ITS DROWNING GRAB (his pick): how long; when its hands close on you (a frame of the game's thirty a second); when it warns; when it has dragged you down. */
+export const DR_GRAB = { long: 1.6, hit: 20 / 30, warn: 0.32, drag: 1.05 } as const;
+/**
+ * Its arms flung up and wide, its hands spread, its head thrown back, its eyes flaring, held trembling (THE
+ * WARNING); it lunges, both arms driving forward, and its hands clutch shut on you (at `DR_GRAB.hit`); it wrenches
+ * down and back, bent double, as to drag you under; it lets go, and hunches again.
+ */
+function drownedGrab(): Motion {
+  const R = DROWNED_REST;
+  const H = DR_GRAB.hit;
+  return {
+    hit: H,
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.26, pose: { px: -2.5, pz: R.pz + 1.4, pitch: -6, bend: -4, faceUp: 34, lhx: 1.5, lhy: 13.5, lhz: 12.5, rhx: 1.5, rhy: -13.5, rhz: 12.5, le: -62, re: 62, pt: 1 }, ease: 'io' },
+      { at: 0.34, pose: { px: -2.8, pz: R.pz + 1.6, pitch: -7, bend: -5, faceUp: 36, lhx: 1.1, lhy: 14.1, lhz: 13.1, rhx: 1.1, rhy: -14.1, rhz: 13.1, le: -64, re: 64, pt: 1 }, ease: 'io' },
+      { at: 0.42, pose: { px: -2.6, pz: R.pz + 1.5, pitch: -6.5, bend: -4.6, faceUp: 35, lhx: 1.3, lhy: 13.8, lhz: 12.8, rhx: 1.3, rhy: -13.8, rhz: 12.8, le: -63, re: 63, pt: 1 }, ease: 'io' },
+      { at: H, pose: { px: 9, pz: R.pz - 1.2, pitch: 26, bend: 22, faceUp: 18, lhx: 21, lhy: 2.4, lhz: 1, rhx: 21, rhy: -2.4, rhz: 1, le: -20, re: 20, pt: 0, lk: 18, rk: -6, rfx: -3 }, ease: 'in' },
+      { at: H + 0.08, pose: { px: 9.6, pz: R.pz - 1.6, pitch: 28, bend: 24, faceUp: 16, lhx: 21, lhy: 2.2, lhz: -1, rhx: 21, rhy: -2.2, rhz: -1, le: -20, re: 20, pt: 0, lk: 18, rk: -6, rfx: -3 }, ease: 'out' },
+      { at: DR_GRAB.drag, pose: { px: 4, pz: R.pz - 5, pitch: 40, bend: 34, faceUp: 30, lhx: 10, lhy: 2.4, lhz: -20, rhx: 10, rhy: -2.4, rhz: -20, le: -14, re: 14, pt: 0, lk: 22, rk: -16, rfx: -3 }, ease: 'io' },
+      { at: 1.25, pose: { px: 3, pz: R.pz - 4, pitch: 36, bend: 32, faceUp: 28, lhx: 9, lhz: -21, rhx: 9, rhz: -22, pt: 0.3, lk: 20, rk: -14, rfx: -2 }, ease: 'io' },
+      { at: DR_GRAB.long, pose: {}, ease: 'io' },
+    ],
+  };
+}
+/** Its eyes flaring as it rears to grab (the warning): up as it rears, brightest as it lunges, dying back after. */
+function grabGlint(t: number): number {
+  const H = DR_GRAB.hit;
+  if (t < 0.1 || t > H + 0.3) return 0;
+  return t < 0.3 ? (t - 0.1) / 0.2 : t <= H ? 1 : 1 - (t - H) / 0.3;
+}
+
+/** STRUCK: jolted back, its head snapped back, water thrown off it, its arms flung. */
+function drownedReel(): Motion {
+  const R = DROWNED_REST;
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.06, pose: { px: -3.2, pz: R.pz + 0.6, pitch: 2, bend: 4, faceUp: R.faceUp + 26, faceTilt: R.faceTilt + 12, lhx: 3, rhx: 2, lhy: 6, rhy: -7, lhz: -14, rhz: -15, out: 0.15 }, ease: 'out' },
+      { at: 0.18, pose: { px: -1.6, pitch: 10, bend: 12, faceUp: R.faceUp + 10 }, ease: 'io' },
+      { at: 0.45, pose: {}, ease: 'io' },
+    ],
+  };
+}
+
+/** ITS DEATH (his pick, “Collapses into water and weed”): when it buckles, when it starts to go, when it is gone, its eyes going out. */
+export const DR_DIES = { long: 2.0, knees: 0.42, sink: [0.5, 1.45], out: [0.35, 0.95] } as const;
+function drownedDying(): Motion {
+  const R = DROWNED_REST;
+  const kneel: Partial<Bones> = { px: 2, pz: R.pz - 9, pitch: 30, bend: 30, faceUp: 6, faceTilt: -20, lk: 30, rk: -28, lhx: 6, rhx: 5, lhz: -14, rhz: -15, out: 0.55 };
+  // (going down into its own water, its robes slumping: its whole body sinking under, the floor swallowing it)
+  const gone = (k: number): Partial<Bones> => ({ ...kneel, pz: (kneel.pz as number) - 52 * k, lfz: -52 * k, rfz: -52 * k, pitch: 30 + 10 * k, out: 0.55 + 0.45 * Math.min(1, k * 1.6), gale: k });
+  return {
+    keys: [
+      { at: 0, pose: {} },
+      { at: 0.06, pose: { px: -2.6, pitch: 4, bend: 8, faceUp: R.faceUp + 24, out: 0.15 }, ease: 'out' },
+      { at: 0.2, pose: { px: -1.4, pitch: 14, bend: 16, faceUp: R.faceUp + 8, out: 0.3 }, ease: 'io' },
+      { at: DR_DIES.knees, pose: kneel, ease: 'in' },
+      { at: DR_DIES.sink[0], pose: gone(0.05), ease: 'io' },
+      { at: (DR_DIES.sink[0] + DR_DIES.sink[1]) / 2, pose: gone(0.55), ease: 'io' },
+      { at: DR_DIES.sink[1], pose: gone(1), ease: 'out' },
+      { at: DR_DIES.long, pose: gone(1), ease: 'io' },
+    ],
+  };
 }
 
 // =============================================================================================
@@ -384,19 +583,22 @@ export const DROWNED: Mob = {
   size: 'small: the knight\'s height, hunched',
   build: DB,
   stand: { name: 'The drowned stands heaving, dripping', motion: drownedStand(), rest: DROWNED_REST },
-  attack: { name: '(not yet: its stand)', motion: drownedStand(), rest: DROWNED_REST },
+  attack: { name: 'The drowned grabs and drags you down', motion: drownedGrab(), rest: DROWNED_REST, glint: grabGlint, trail: (s) => [s.handL, s.handR], trailSpan: 2.2 },
   idleFrames: 26,
   idleFps: 10,
-  walk: { name: '(not yet: its stand)', motion: drownedStand(), rest: DROWNED_REST, period: DROWNED_STAND_LONG, ground: 0 },
-  walkFrames: 26,
-  walkFps: 10,
-  pace: 0.9,
-  reel: { name: '(not yet: its stand)', motion: drownedStand(), rest: DROWNED_REST },
-  reelTime: 0.4,
-  hit: 0.5,
-  warn: 0.2,
-  dieTime: 1.6,
-  dying: { name: '(not yet: its stand)', motion: drownedStand(), rest: DROWNED_REST },
+  walk: { name: 'The drowned shambles', motion: drownedWalk(), rest: DROWNED_REST, period: DR_WALK.frames / DR_WALK.fps, ground: DR_PACE * TILE3 },
+  walkFrames: DR_WALK.frames,
+  walkFps: DR_WALK.fps,
+  pace: DR_PACE,
+  reel: { name: 'The drowned is struck', motion: drownedReel(), rest: DROWNED_REST },
+  reelTime: 0.45,
+  hit: DR_GRAB.hit,
+  warn: DR_GRAB.warn,
+  dieTime: DR_DIES.long,
+  dying: { name: 'The drowned collapses into water and weed', motion: drownedDying(), rest: DROWNED_REST },
+  under: (m) => m.dying === true || m.move === RISE_NAME,
+  grains: (_st, m) => WET.get(m) ?? [],
+  more: { rise: { name: 'The drowned rises out of the water', motion: drownedRise(), rest: DROWNED_REST } },
   aura: { x: DROWNED_CANVAS.ax, y: DROWNED_CANVAS.ay - 28, r: 40, color: '#ffb070', a: 0.1 },
   shadow: 12,
   canvas: DROWNED_CANVAS,

@@ -53,7 +53,7 @@
 //   pAz, pEl  the Boneward's shield: the way its face is turned (degrees to the left of the way
 //         the figure faces) and how far its top is tipped back.
 
-import type { Light, Sprite } from '../engine/px';
+import type { Light, Px, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { BONE, INDIGO, INK, PINK, PLUM, dim, dir, hash, lazyFrames, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
@@ -559,6 +559,18 @@ export interface Mob {
    */
   trueBack?: boolean;
   bits(st: Stage, m: Moment): Bit[];
+  /**
+   * WHETHER THE FLOOR SWALLOWS WHAT OF IT IS BELOW THE FLOOR at a moment (one rising up out of water or mud, or
+   * sinking back into it: the Drowned, art/drowned.ts): every pixel of a part whose skin there is below the floor is
+   * taken away. Not at all, if not said.
+   */
+  under?(m: Moment): boolean;
+  /**
+   * GRAINS LAID AFTER ITS EDGE (water running off it, splashing round it: the Drowned's): each where it is, its
+   * colour and its size, laid on the finished frame on whole pixels, so that each keeps its own colour and gets no
+   * pink edge of its own. What of them is below the floor is not laid while the floor swallows (Mob.under).
+   */
+  grains?(st: Stage, m: Moment): ReadonlyArray<readonly [V3, string, number]>;
   /** How a piece of it falls when it comes apart (null: it does not fall by itself). */
   fall?(piece: string): Fall | null;
   /**
@@ -649,8 +661,45 @@ export function paintMob(mob: Mob, which: MobAct | string, t: number, view: Game
   const mv = moveOf(mob, which);
   const m = momentOf(mob, mv, t, which === 'attack' ? mob.hit : mv.blurAt);
   const bits = mob.bits(st, m);
-  const lights = paintBits(st, bits, m.s.pelvis);
-  return { px: st.whole(rim), lights };
+  const under = mob.under?.(m) ?? false;
+  const lights = paintSwallowed(st, bits, m.s.pelvis, can, under);
+  const px = st.whole(rim);
+  layGrains(px, st, mob.grains?.(st, m) ?? [], under);
+  return { px, lights };
+}
+/** Grains laid on a finished frame (Mob.grains), on whole pixels. */
+function layGrains(px: Px, st: Stage, grains: ReadonlyArray<readonly [V3, string, number]>, under: boolean): void {
+  for (const [p, c, size] of grains) {
+    if (under && p[2] < 0) continue;
+    const [x, y] = st.at(p);
+    const xi = Math.round(x - size / 2);
+    const yi = Math.round(y - size / 2);
+    for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) if (xi + dx >= 0 && yi + dy >= 0 && xi + dx < px.w && yi + dy < px.h) px.set(xi + dx, yi + dy, c);
+  }
+}
+/** Paints its bits; if `under`, the floor swallows what of it is below the floor (Mob.under). */
+function paintSwallowed(st: Stage, bits: Bit[], ref: V3, can: MobCanvas, under: boolean): Light[] {
+  if (!under) return paintBits(st, bits, ref);
+  const sheets: Sheet[] = [];
+  const st2: Stage = { ...st, part: (where) => { const sh = st.part(where); sheets.push(sh); return sh; } };
+  const lights = paintBits(st2, bits, ref);
+  const b = st.back;
+  for (const sh of sheets) {
+    for (let y = 0; y < sh.h; y++) {
+      for (let x = 0; x < sh.w; x++) {
+        if (!sh.has(x, y)) continue;
+        const k = y * sh.w + x;
+        const n = sh.z[k] !== sh.z[k] ? sh.near : sh.z[k];
+        const sx = x + 0.5 - can.ax;
+        const sy = y + 0.5 - can.ay;
+        if (b[2][0] * sx + b[2][1] * sy + b[2][2] * n < 0) {
+          sh.erase(x, y);
+          sh.z[k] = NaN;
+        }
+      }
+    }
+  }
+  return lights;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -859,8 +908,11 @@ function fallApart(mob: Mob, k: number, view: GameView): Painted {
     for (const b of was) bits.push({ part: `p_${b.part}_${piece}`, piece, shape: moved(b.shape, tr, c0, c1, squashed * kk) });
     if (piece === 'pelvis' || piece === 'hips') ref = c1;
   }
-  const lights = paintBits(st, bits, ref);
-  return { px: st.whole(null), lights };
+  const under = mob.under?.(now) ?? false;
+  const lights = paintSwallowed(st, bits, ref, can, under);
+  const px = st.whole(null);
+  layGrains(px, st, mob.grains?.(st, now) ?? [], under);
+  return { px, lights };
 }
 
 /** A piece's fall when the plan does not name it: it lets go between `t0` and `t1`, and lies about where it was, spread out by `spread`. */

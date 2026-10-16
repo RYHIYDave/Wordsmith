@@ -116,5 +116,74 @@ function standFilm(): void {
   };
 }
 
+/** The fen's water, as a floor to rise out of: dark, a few pale streaks on it. */
+function water(g: CanvasRenderingContext2D, w: number, h: number): void {
+  g.fillStyle = '#16211b';
+  g.fillRect(0, 0, w, h);
+  g.fillStyle = '#22322a';
+  for (let i = 0; i < 90; i++) {
+    const x = (i * 137) % w;
+    const y = (i * 71) % h;
+    g.fillRect(x, y, 10 + (i % 4) * 6, 2);
+  }
+}
+/**
+ * ITS MOVES AS THE GAME WOULD PLAY THEM, one after another (hash `seq:<name>`), three times the game's size: `rise`,
+ * rising out of the water, then shambling 2.5 s (carried across at its pace), and standing; `grab`, its grab twice,
+ * struck, and its death, lying a while after.
+ */
+function seqFilm(): void {
+  const which = HASH.split(':')[1];
+  const parts: [string, number][] = which === 'rise' ? [['rise', 1.9], ['stand', 0.4], ['walk', 2.5], ['stand', 0.6]] : [['stand', 0.4], ['attack', DROWNED.attack.motion.keys[DROWNED.attack.motion.keys.length - 1].at], ['stand', 0.3], ['reel', DROWNED.reelTime], ['stand', 0.4], ['dying', DROWNED.dieTime], ['dead', 0.6]];
+  const fps = 15;
+  const list: [string, number, number][] = [];
+  let T = 0;
+  for (const [mv, long] of parts) {
+    const n = Math.round(long * fps);
+    for (let i = 0; i < n; i++) list.push([mv, i / fps, T + i / fps]);
+    T += long;
+  }
+  const W = PW;
+  const H = 460;
+  const k = 3;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const walkStart = parts.slice(0, parts.findIndex((p) => p[0] === 'walk')).reduce((a, p) => a + p[1], 0);
+  const draw = (i: number): void => {
+    const [mv, t, at] = list[Math.min(i, list.length - 1)];
+    if (which === 'rise') water(g, W, H);
+    else bed(g, 0, 0, W, H);
+    // (walking, it is carried across at its pace: 32 picture pixels a tile, at three times)
+    const walked = which === 'rise' ? Math.max(0, Math.min(at, walkStart + 2.5) - walkStart) * DROWNED.pace * 32 * k * 0.5 : 0;
+    const x = 300 + (which === 'rise' && at >= walkStart ? walked : 0);
+    const y = 400 + (which === 'rise' && at >= walkStart ? walked * 0.5 : 0) - (which === 'rise' ? 60 : 0);
+    if (mv !== 'rise' || t > 0.6) shadow(g, x, y, 50);
+    const sp = mv === 'dead' ? frameOf(DROWNED, 'dying', DROWNED.dieTime, 'front') : frameOf(DROWNED, mv, t, 'front');
+    drawBig(g, sp, x, y, k);
+    // (beside it, from behind, the same moment, where the walk is not)
+    if (which !== 'rise') {
+      shadow(g, 760, 400, 50);
+      drawBig(g, mv === 'dead' ? frameOf(DROWNED, 'dying', DROWNED.dieTime, 'back') : frameOf(DROWNED, mv, t, 'back'), 760, 400, k);
+    }
+    const say: Record<string, string> = { rise: 'it rises out of the water', walk: 'it shambles', attack: t < 0.45 ? 'the grab: arms up, eyes flaring (the warning)' : t < 0.8 ? 'IT GRABS' : 'and drags you down', reel: 'struck', dying: 'it collapses into water and weed', dead: '', stand: '' };
+    label(g, 'The Drowned (three times the game\'s size)', 8, 6);
+    if (say[mv]) label(g, say[mv], W - say[mv].length * 12 - 16, 6);
+    label(g, `${at.toFixed(2)} s`, 8, H - 28);
+  };
+  draw(0);
+  done(cvs);
+  const win = window as unknown as { __frames: number; __tickMs: number; __frame: (i: number) => string };
+  win.__frames = list.length;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+}
+
 if (HASH.startsWith('look')) look();
+else if (HASH.startsWith('seq:')) seqFilm();
 else if (HASH === 'standfilm') standFilm();
