@@ -49,7 +49,9 @@ import { ACTS } from '../src/game/bosses';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
+import { ACT1_KINDS } from '../src/game/types';
 import type { MonsterKind } from '../src/game/types';
+import { act1Rules } from '../src/game/act1_rules/index';
 import { moveClip, moveFrame } from '../src/render/figure';
 import { paintWithoutCanvas } from './helpers';
 
@@ -170,7 +172,10 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       const moves = all ? all.filter((mv) => mv.id !== 'bash') : null;
       // (THE FIRST FIVE FLOORS: a boss of floors 2 to 5, the bone beast and the mini fleshmancer make their
       // moves by game/bosses.ts, ACTS: those they choose, not those forced on them, a chain breaking)
-      const acts = ACTS[kind as keyof typeof ACTS];
+      // (ACT 1, THE DESCENT: its own kinds make theirs by their rules, game/act1_rules/; one not built yet is not in
+      // the game, the cult standing in for it, game/act1_mobs.ts)
+      if (ACT1_KINDS.includes(kind) && !act1Rules(kind)) continue;
+      const acts = ACTS[kind as keyof typeof ACTS] ?? act1Rules(kind)?.acts;
       // (one that has no moves has its one attack, as before)
       const n = acts ? acts.filter((a) => !a.forced).length : moves ? moves.length : 1;
       const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
