@@ -1,6 +1,8 @@
 // Entry point: builds the art, then runs the frame loop that ties input, rules, drawing and
 // interface together.
 
+import { actsOf } from './game/bosses';
+import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
@@ -1914,6 +1916,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   }
   const dbg = {
     game: () => game,
+    /** ACT 1 (and the bosses of floors 2 to 5): the acts one of them has (game/bosses.ts), for the playtests that have it make one over and over. */
+    actsOf: (m: { kind: MonsterKind }) => actsOf(m),
     /** The hero who has been picked and is making ready on their card (see `entering`), or null: a playtest that picks a class waits for them to have gone. */
     entering: () => (entering ? { cls: entering.cls, t: entering.t, long: entering.long } : null),
     /** A new character, straight into the town: no prompts. */
