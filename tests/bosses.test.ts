@@ -142,6 +142,9 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (the fleshmancer and the cult's two are built on them: art/fleshmancer.ts, art/cultists.ts)
     if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists/.test(f)) continue;
+    // (ACT 1, THE DESCENT: its own bosses' effects, render/act1_fx/, draw their warnings with the same shapes as the
+    // first five's, art/boss_shots.ts, in the enemy's pink and gold)
+    if (f.startsWith('render/act1_fx/')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*(bosses3|boss_shots)['"]/.test(text)) users.push(f);
   }

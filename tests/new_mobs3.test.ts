@@ -96,6 +96,8 @@ test('their switch goes with the rules\' (Version 19.9), and only the bestiary, 
   const users: string[] = [];
   for (const f of files) {
     if ([...mine, ...alsoMockUps].some((m) => f.endsWith(`${m}.ts`))) continue;
+    // (ACT 1, THE DESCENT: its own kinds' pictures and effects, art/act1_figs/ and render/act1_fx/, draw on them as the art chat hands them over)
+    if (/^(art[\\/]act1_figs|render[\\/]act1_fx)[\\/]/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (mine.some((m) => new RegExp(`from '[./a-z_]*/${m}'`).test(text))) users.push(f.split('\\').join('/'));
   }

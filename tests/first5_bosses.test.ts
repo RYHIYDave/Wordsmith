@@ -33,6 +33,7 @@ import { TILE3, handAt, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
 import type { Mob } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
 import { hookHigh } from '../src/render/bossfx';
+import { act1Rules } from '../src/game/act1_rules/index';
 import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
@@ -145,7 +146,10 @@ const firstHurt = (s: Seen): number => (s.hurts.length ? s.hurts[0].t - s.began 
 
 test('1. each floor has its own boss; past the fifth, and with the switch off, the Warden', () => {
   assert.equal(BOSSES5.on, true, 'on, on this branch (not live until he has seen it)');
-  assert.deepEqual([1, 2, 3, 4, 5, 6, 9, 10].map(bossKind), ['warden', 'headsman', 'chained', 'amalgam', 'fleshmancer', 'warden', 'warden', 'warden']);
+  assert.deepEqual([1, 2, 3, 4, 5].map(bossKind), ['warden', 'headsman', 'chained', 'amalgam', 'fleshmancer']);
+  // (past the fifth, the descent's own boss of each floor once its rules are built, game/act1_rules/; until then the Warden)
+  const own: Record<number, MonsterKind> = { 6: 'unfinished', 7: 'queen', 8: 'cantor', 9: 'stag', 10: 'eye' };
+  for (const d of [6, 7, 8, 9, 10]) assert.equal(bossKind(d), act1Rules(own[d]) ? own[d] : 'warden', `floor ${d}'s boss`);
   const names: Record<number, string> = { 2: 'Headsman', 3: 'Chained One', 4: 'Ossuary Amalgamation', 5: 'Fleshmancer' };
   for (const depth of [2, 3, 4, 5]) {
     for (const seed of [3, 17]) {
