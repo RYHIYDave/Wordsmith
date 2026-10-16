@@ -170,6 +170,7 @@ test('blazing (his pick, its veins blaze): more of the enemy\'s fire on it than 
 // HIS STANDS AND HIS TENTACLE MOVES: the boss review (his rulebook, How art is made 7), every frame of his stands and
 // every third of his moves at thirty a second, from in front and from behind; and the bursts, every third.
 
+import { EYE_BITE, EYE_SPAWN, EYE_SPEW, EYE_SPLASH, SPAWN_CANVAS, spawnLanding, spawnPainted, waveAt } from '../src/art/drowned_eye';
 import { BILE_CANVAS, BOLT_CANVAS, EYE_BILE, EYE_BOLT, EYE_CALL, EYE_SPIT, bileLanding, bilePainted, boltPainted } from '../src/art/drowned_eye';
 import { BURST_CANVAS, EYE_BURST, EYE_GAZE, EYE_LURK, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, burstPainted, eyeMarks, eyePainted, gazeAngle } from '../src/art/drowned_eye';
 
@@ -184,7 +185,7 @@ const AIMS = [-54, 20, 120, -160];
 for (const view of ['front', 'back'] as const) {
   for (let i = 0; i < EYE_STAND.frames; i++) reviewed.push({ name: `stand ${view} ${i}`, painted: once(() => eyePainted('stand', i / EYE_STAND.fps, view)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
   for (let i = 0; i < EYE_LURK.frames; i++) reviewed.push({ name: `lurk ${view} ${i}`, painted: once(() => eyePainted('lurk', i / EYE_LURK.fps, view)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
-  for (const [move, long] of [['slam', EYE_SLAM.long], ['sweep', EYE_SWEEP.long], ['slamUnder', EYE_SLAM.long], ['sweepUnder', EYE_SWEEP.long], ['gaze', EYE_GAZE.long], ['gazeBack', EYE_GAZE.long], ['call', EYE_CALL.long], ['spit', EYE_SPIT.long]] as [string, number][]) {
+  for (const [move, long] of [['slam', EYE_SLAM.long], ['sweep', EYE_SWEEP.long], ['slamUnder', EYE_SLAM.long], ['sweepUnder', EYE_SWEEP.long], ['gaze', EYE_GAZE.long], ['gazeBack', EYE_GAZE.long], ['call', EYE_CALL.long], ['spit', EYE_SPIT.long], ['bite', EYE_BITE.long], ['spew', EYE_SPEW.long], ['splash', EYE_SPLASH.long]] as [string, number][]) {
     const n = Math.round(long * 30);
     for (let i = 0; i <= n; i += 3) {
       const aim = AIMS[(i / 3) % AIMS.length];
@@ -192,6 +193,7 @@ for (const view of ['front', 'back'] as const) {
     }
   }
   for (let i = 0; i <= Math.round(EYE_BURST.long * 30); i += 3) reviewed.push({ name: `burst ${view} ${i}/30`, painted: once(() => burstPainted(i / 30, view, i)), w: BURST_CANVAS.w, h: BURST_CANVAS.h });
+  for (let i = 0; i <= Math.round(EYE_SPAWN.long * EYE_SPAWN.fps); i += 2) reviewed.push({ name: `egg ${view} ${i}/${EYE_SPAWN.fps}`, painted: once(() => spawnPainted(i / EYE_SPAWN.fps, view, i)), w: SPAWN_CANVAS.w, h: SPAWN_CANVAS.h });
   for (let i = 0; i <= Math.round(EYE_BILE.long * EYE_BILE.fps); i += 2) reviewed.push({ name: `bile ${view} ${i}/${EYE_BILE.fps}`, painted: once(() => bilePainted(i / EYE_BILE.fps, view, i)), w: BILE_CANVAS.w, h: BILE_CANVAS.h });
   for (let i = 0; i <= Math.round(EYE_BOLT.long * 30); i += 2) reviewed.push({ name: `bolt ${view} ${i}/30`, painted: once(() => boltPainted(i / 30, view, i)), w: BOLT_CANVAS.w, h: BOLT_CANVAS.h });
 }
@@ -521,12 +523,15 @@ import { EYE_R as RADIUS, armSpine, eyeLong, poseOf } from '../src/art/drowned_e
 
 test('NOTHING THROUGH HIS EYE (his rulebook, How art 7): no arm of his goes into the face of his eye, in any move', () => {
   const D = Math.PI / 180;
-  for (const m of ['stand', 'lurk', 'slam', 'sweep', 'slamUnder', 'sweepUnder', 'gaze', 'gazeBack', 'call', 'spit']) {
+  for (const m of ['stand', 'lurk', 'slam', 'sweep', 'slamUnder', 'sweepUnder', 'gaze', 'gazeBack', 'call', 'spit', 'bite', 'spew', 'splash']) {
     const long = eyeLong(m);
     for (const aim of AIMS) {
       for (let i = 0; i <= Math.round(long * 30); i += 2) {
         const P = poseOf(m, i / 30, aim, 0);
-        const F = [Math.SQRT1_2 * Math.cos(P.tilt * D), -Math.SQRT1_2 * Math.cos(P.tilt * D), Math.sin(P.tilt * D)];
+        // (his face, turned round by his turn and up by his tilt)
+        const T = (P.turn ?? 0) * D;
+        const fw = [Math.SQRT1_2 * (Math.cos(T) + Math.sin(T)), Math.SQRT1_2 * (Math.sin(T) - Math.cos(T))];
+        const F = [fw[0] * Math.cos(P.tilt * D), fw[1] * Math.cos(P.tilt * D), Math.sin(P.tilt * D)];
         const E = [P.heave[0], P.heave[1], P.zE + P.heave[2]];
         P.arms.forEach((A, k) => {
           armSpine(P, A).forEach((s, j) => {
@@ -541,4 +546,130 @@ test('NOTHING THROUGH HIS EYE (his rulebook, How art 7): no arm of his goes into
       }
     }
   }
+});
+
+test('HIS BREATH AND BITE: from his stand and back; never leaping but for the lunge itself; he turns his face on you; the draught streaming in before he bites', () => {
+  for (const aim of AIMS) {
+    const before = travel('bite', EYE_BITE.long, aim, 0, EYE_BITE.inhale[1]);
+    const lunge = travel('bite', EYE_BITE.long, aim, EYE_BITE.inhale[1], EYE_BITE.snap + 0.05);
+    const after = travel('bite', EYE_BITE.long, aim, EYE_BITE.snap + 0.05, EYE_BITE.long);
+    assert.ok(before.tip < 60 && after.tip < 60 && lunge.tip < 200, `the bite aim ${aim}: tips ${before.tip.toFixed(0)}, ${lunge.tip.toFixed(0)}, ${after.tip.toFixed(0)}`);
+    // (his bulk under 6 a frame but in the lunge, as fast as it will go)
+    assert.ok(before.eye < 6 && after.eye < 6 && lunge.eye < 30, `the bite aim ${aim}: his eye ${before.eye.toFixed(1)}, ${lunge.eye.toFixed(1)}, ${after.eye.toFixed(1)}`);
+    // his face on you through the breath and the bite
+    const held = poseOf('bite', (EYE_BITE.inhale[0] + EYE_BITE.inhale[1]) / 2, aim);
+    const d = Math.abs((((held.turn ?? 0) - aim) % 360 + 540) % 360 - 180);
+    assert.ok(d < 1, `the bite aim ${aim}: his face turned ${held.turn} against ${aim}`);
+    // the lunge goes at you: his bulk out along the aim at the bite
+    const at = poseOf('bite', EYE_BITE.snap, aim).heave;
+    const dir = floorAt(aim, 1);
+    assert.ok(at[0] * dir[0] + at[1] * dir[1] > EYE_BITE.lunge * 0.8, `the bite aim ${aim}: lunging along it`);
+  }
+  for (const clock of [0, 0.7, 1.9]) {
+    for (const [t, base] of [[0, clock], [EYE_BITE.long, clock + EYE_BITE.long]]) {
+      const a = eyePainted('bite', t, 'front', -54, clock).px.d;
+      const b = eyePainted('stand', base, 'front').px.d;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff += a[i] !== b[i] ? 1 : 0;
+      assert.equal(diff, 0, `the bite at ${t} from ${clock}: as his stand`);
+    }
+  }
+  // the draught: streaks through the air into his maw while he breathes in, none once he has bitten
+  const breathing = poseOf('bite', (EYE_BITE.inhale[0] + EYE_BITE.inhale[1]) / 2, -54);
+  const bitten = poseOf('bite', EYE_BITE.snap + 0.2, -54);
+  assert.ok((breathing.streaks ?? []).length > 30, `the draught: ${(breathing.streaks ?? []).length} streaks`);
+  assert.equal((bitten.streaks ?? []).length, 0, 'no draught once he bites');
+});
+
+/** A move begun at three moments of his stand starts from it and hands back to it, pixel for pixel. */
+function handsBack(move: string, long: number, aim: number): void {
+  for (const clock of [0, 0.7, 1.9]) {
+    for (const [t, base] of [[0, clock], [long, clock + long]]) {
+      const a = eyePainted(move, t, 'front', aim, clock).px.d;
+      const b = eyePainted('stand', base, 'front').px.d;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff += a[i] !== b[i] ? 1 : 0;
+      assert.equal(diff, 0, `the ${move} at ${t} from ${clock}: as his stand`);
+    }
+  }
+}
+
+test('HIS EYESPAWN: from his stand and back, never leaping; he turns his face on you; the eggs fly and land on the ring', () => {
+  for (const aim of AIMS) {
+    const m = travel('spew', EYE_SPEW.long, aim, 0, EYE_SPEW.long);
+    assert.ok(m.tip < 60 && m.eye < 6, `the spew aim ${aim}: tips ${m.tip.toFixed(1)}, eye ${m.eye.toFixed(1)} a frame`);
+    const held = poseOf('spew', (EYE_SPEW.spew[0] + EYE_SPEW.spew[1]) / 2, aim);
+    assert.ok(Math.abs((((held.turn ?? 0) - aim) % 360 + 540) % 360 - 180) < 1, `the spew aim ${aim}: his face on you`);
+    assert.ok((held.globs ?? []).length > 20, `the spew aim ${aim}: the torrent (${(held.globs ?? []).length})`);
+    EYE_SPEW.eggs.forEach((te, i) => {
+      const flying = poseOf('spew', te + EYE_SPEW.fly / 2, aim);
+      assert.ok((flying.eggs ?? []).length >= 1, `the spew aim ${aim}: egg ${i} in the air`);
+      const at = spawnLanding(aim, i);
+      const ring = Math.hypot(at[0] / EYE_RING.rx, at[1] / EYE_RING.ry);
+      const pool = Math.hypot(at[0] / EYE_POOL.rx, at[1] / EYE_POOL.ry);
+      assert.ok(ring < 1 && pool > 1, `the spew aim ${aim}: egg ${i} lands on the ring`);
+    });
+    assert.equal((poseOf('spew', EYE_SPEW.long, aim).eggs ?? []).length, 0, 'no eggs in the air by its end');
+  }
+  handsBack('spew', EYE_SPEW.long, -54);
+});
+
+test('HIS EYESPAWN\'S EGGS: no light; rocking, then shaking hard before they hatch; burst at the hatch; the stones clean by the end', () => {
+  for (const seed of [0, 2, 5]) {
+    const moved = (a: number, b: number): number => {
+      const p = spawnPainted(a, 'front', seed).px.d;
+      const q = spawnPainted(b, 'front', seed).px.d;
+      let n = 0;
+      for (let k = 3; k < p.length; k += 4) n += p[k] !== q[k] ? 1 : 0;
+      return n;
+    };
+    assert.equal(spawnPainted(1, 'front', seed).lights.length, 0, 'no light');
+    // (rocking a little; shaking hard as it nears its hatch)
+    assert.ok(moved(2.3, 2.3 + 1 / 15) > moved(1.0, 1.0 + 1 / 15), `seed ${seed}: shaking harder before it hatches (${moved(2.3, 2.3 + 1 / 15)} against ${moved(1.0, 1.0 + 1 / 15)})`);
+    let left = 0;
+    each(spawnPainted(EYE_SPAWN.long, 'front', seed), (r, g, b, a) => (left += a > 0 ? 1 : 0));
+    assert.equal(left, 0, `seed ${seed}: clean by its end`);
+  }
+});
+
+test('HIS SPLASH: from his stand and back; his bulk heaved up and held before it crashes; the wave rolls across the ring from its rim to its edge', () => {
+  const S = EYE_SPLASH;
+  for (const aim of AIMS) {
+    // (the heave and the crash are the blow: as fast as they go; held at the top, trembling)
+    const before = travel('splash', S.long, aim, 0, S.rise[0]);
+    const held = travel('splash', S.long, aim, S.hang[0] + 0.05, S.hang[1]);
+    const after = travel('splash', S.long, aim, S.crash + 0.1, S.long);
+    const blow = travel('splash', S.long, aim, S.rise[0], S.crash + 0.1);
+    assert.ok(before.eye < 6 && held.eye < 6 && after.eye < 6 && blow.eye < 60, `the splash: his bulk ${before.eye.toFixed(1)}, ${held.eye.toFixed(1)}, ${after.eye.toFixed(1)}, ${blow.eye.toFixed(1)}`);
+    assert.ok(before.tip < 60 && held.tip < 60 && after.tip < 60 && blow.tip < 200, `the splash: tips ${before.tip.toFixed(0)}, ${held.tip.toFixed(0)}, ${after.tip.toFixed(0)}, ${blow.tip.toFixed(0)}`);
+  }
+  // up high while he hangs
+  assert.ok(poseOf('splash', (S.hang[0] + S.hang[1]) / 2).heave[2] > S.high * 0.9, 'heaved up high');
+  // the wave: none before the crash; from the rim out to the edge; gone after
+  assert.equal(waveAt(S.crash - 0.05), null);
+  let last = -1;
+  for (let t = S.wave[0]; t <= S.wave[1]; t += 1 / 30) {
+    const w = waveAt(t) as number;
+    assert.ok(w >= last && w >= 0 && w <= 1, `the wave at ${t.toFixed(2)}: ${w}`);
+    last = w;
+  }
+  assert.ok(last > 0.97, 'the wave reaches the ring\'s edge');
+  assert.equal(waveAt(S.wave[1] + 0.05), null);
+  // painted where it is: its foam at its front, before him
+  const t = S.wave[0] + (S.wave[1] - S.wave[0]) * 0.4;
+  const w = waveAt(t) as number;
+  const p = eyePainted('splash', t, 'front');
+  let foam = 0;
+  for (const a of [-60, -30, 0, 30, 60]) {
+    const d = floorAt(a, 1);
+    const rim = 1 / Math.hypot(d[0] / EYE_POOL.rx, d[1] / EYE_POOL.ry);
+    const ring = 1 / Math.hypot(d[0] / EYE_RING.rx, d[1] / EYE_RING.ry);
+    const [x, y] = STAGE.at(floorAt(a, rim + (ring - rim) * w));
+    for (let dy = -30; dy <= 2; dy++) {
+      const k = (Math.round(y + dy) * p.px.w + Math.round(x)) * 4;
+      if (key(p.px.d[k], p.px.d[k + 1], p.px.d[k + 2]) === '223,230,224') { foam++; break; }
+    }
+  }
+  assert.ok(foam >= 4, `the wave's foam where it is (${foam} of 5)`);
+  handsBack('splash', S.long, 0);
 });

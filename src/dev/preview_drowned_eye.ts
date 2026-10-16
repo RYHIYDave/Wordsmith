@@ -10,7 +10,7 @@ import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { fenLook } from '../art/fen';
-import { BILE_CANVAS, BOLT_CANVAS, BURST_CANVAS, EYE_BILE, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_GAZE, EYE_SPIT, bileLanding, bilePainted, boltPainted, burstPainted, EYE_CANVAS, EYE_HABITS, EYE_LURK, EYE_POOL, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, eyeLong, eyeLookFrame, eyePainted } from '../art/drowned_eye';
+import { EYE_SPLASH, SPAWN_CANVAS, EYE_SPAWN, EYE_SPEW, spawnLanding, spawnPainted, BILE_CANVAS, BOLT_CANVAS, BURST_CANVAS, EYE_BILE, EYE_BITE, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_GAZE, EYE_SPIT, bileLanding, bilePainted, boltPainted, burstPainted, EYE_CANVAS, EYE_HABITS, EYE_LURK, EYE_POOL, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, eyeLong, eyeLookFrame, eyePainted } from '../art/drowned_eye';
 import { toSprite } from '../art/kit';
 import { stage } from '../art/skin';
 import { TILE3 } from '../art/new_mobs3';
@@ -330,6 +330,67 @@ function spitFilm(): void {
   win.__ready = true;
 }
 
+/** HIS EYESPAWN: a torrent of the fen's muck spewed across the ring, eggs tumbling out in it; they land, rock, hatch. */
+function spewFilm(): void {
+  const fps = EYE_SPEW.fps;
+  const long = EYE_SPEW.eggs[2] + EYE_SPEW.fly + EYE_SPAWN.long + 0.1;
+  const n = Math.round(long * fps) + 1;
+  const W = PW;
+  const H = 640;
+  const cx = 507;
+  const cy = 450;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const floor = document.createElement('canvas');
+  floor.width = W;
+  floor.height = H;
+  ground(floor.getContext('2d') as CanvasRenderingContext2D, 0, 0, W, H, cx, cy);
+  const ST = stage('front', EYE_CANVAS.ax, EYE_CANVAS.ay, EYE_CANVAS);
+  const [p0x, p0y] = pictureOf(PCX, PCY);
+  const [kx0, ky0] = pictureOf(KNIGHT_AT[0], KNIGHT_AT[1]);
+  const kAt: [number, number] = [cx + kx0 - p0x, cy + ky0 - p0y];
+  const draw = (i: number): void => {
+    const t = i / fps;
+    g.drawImage(floor, 0, 0);
+    const boss = toSprite(t <= EYE_SPEW.long ? eyePainted('spew', t, 'front', AIM_KNIGHT) : eyePainted('stand', t, 'front'), null, EYE_CANVAS.ax, EYE_CANVAS.ay);
+    drawAt(g, boss, cx, cy);
+    litAt(g, boss, cx, cy);
+    // the eggs, landed (in front of him, on the ring)
+    EYE_SPEW.eggs.forEach((te, k) => {
+      const tl = t - (te + EYE_SPEW.fly);
+      if (tl < 0 || tl > EYE_SPAWN.long) return;
+      const [sx, sy] = ST.at(spawnLanding(AIM_KNIGHT, k));
+      const sp = toSprite(spawnPainted(tl, 'front', k * 3 + 1), null, SPAWN_CANVAS.ax, SPAWN_CANVAS.ay);
+      drawAt(g, sp, cx + sx - EYE_CANVAS.ax, cy + sy - EYE_CANVAS.ay);
+    });
+    g.fillStyle = 'rgba(25, 18, 40, 0.35)';
+    g.beginPath();
+    g.ellipse(kAt[0], kAt[1], 26, 11, 0, 0, Math.PI * 2);
+    g.fill();
+    drawAt(g, knight, kAt[0], kAt[1]);
+    label(g, 'The Drowned Eye: he spews eyespawn', 8, 6);
+    const S = EYE_SPEW;
+    const hatch = S.eggs[0] + S.fly + EYE_SPAWN.hatch;
+    const say = t < S.spew[0] ? 'he retches (the warning)' : t < S.spew[1] + 0.3 ? 'THE MUCK, AND EGGS IN IT' : t < hatch - 0.5 ? 'the eggs rock' : t < hatch ? 'they shake (about to hatch)' : t < hatch + 0.6 ? 'THEY HATCH' : '';
+    if (say) label(g, say, W - say.length * 12 - 16, 6);
+    label(g, `${t.toFixed(2)} s`, 8, H - 28);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = n;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
 function burstFilm(): void {
   const fps = EYE_BURST.fps;
   const lag = 0.12;
@@ -403,6 +464,7 @@ if (HASH === 'look') look();
 else if (HASH === 'burstfilm') burstFilm();
 else if (HASH === 'callfilm') callFilm();
 else if (HASH === 'spitfilm') spitFilm();
+else if (HASH === 'spewfilm') spewFilm();
 else if (HASH === 'standfilm') film('stand', 'The Drowned Eye, risen (the game\'s size)', EYE_STAND.fps, EYE_STAND.frames, (t) => (t >= EYE_HABITS.blink[0] && t < EYE_HABITS.blink[1] ? 'blinks' : t >= EYE_HABITS.dart[0] && t < EYE_HABITS.dart[1] ? 'his eye darts' : ''));
 else if (HASH === 'lurkfilm') film('lurk', 'The Drowned Eye under the water, phase 1 (the game\'s size)', EYE_LURK.fps, EYE_LURK.frames, () => '');
 else if (HASH === 'slamfilm' || HASH === 'slamunderfilm') {
@@ -413,6 +475,14 @@ else if (HASH === 'slamfilm' || HASH === 'slamunderfilm') {
   const S = EYE_SWEEP;
   film(HASH === 'sweepfilm' ? 'sweep' : 'sweepUnder', `The Drowned Eye: the sweep${HASH === 'sweepfilm' ? '' : ', from under the water'}`, S.fps, Math.round(S.long * S.fps) + 1, (t) =>
     t < S.cock ? 'rises to one side' : t < S.sweep[0] ? 'cocked back (the warning)' : t < S.sweep[1] ? 'SWEEP' : t < S.over ? 'overshoots' : t < S.back[1] ? 'sinks back' : '');
+} else if (HASH === 'bitefilm') {
+  const B = EYE_BITE;
+  film('bite', 'The Drowned Eye: his breath and bite', B.fps, Math.round(B.long * B.fps) + 1, (t) =>
+    t < B.inhale[0] ? 'his maw tears open' : t < B.inhale[1] ? 'HE BREATHES IN (the warning, the pull)' : t < B.snap + B.hold + 0.1 ? 'THE BITE' : 'he draws back');
+} else if (HASH === 'splashfilm') {
+  const S = EYE_SPLASH;
+  film('splash', 'The Drowned Eye: his splash', S.fps, Math.round(S.long * S.fps) + 1, (t) =>
+    t < S.rise[0] ? 'he sinks, gathering' : t < S.hang[0] ? 'HE HEAVES HIMSELF UP' : t < S.hang[1] ? 'hangs there (the warning)' : t < S.crash ? 'down' : t < S.wave[1] ? 'THE WAVE: jump or dash through it' : 'he settles');
 } else if (HASH === 'gazefilm') {
   const G = EYE_GAZE;
   film('gazeBack', 'The Drowned Eye: his gaze', G.fps, Math.round(G.long * G.fps) + 1, (t) =>

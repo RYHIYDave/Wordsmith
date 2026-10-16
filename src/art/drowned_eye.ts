@@ -112,7 +112,7 @@ export const EYE_RING = { rx: 6.0 * TILE3, ry: 5.2 * TILE3 };
 /** How deep under the water anything of it is still seen. */
 const SEEN_DEEP = 40;
 /** Its canvas, and where on it the middle of the pool is, at the water. */
-export const EYE_CANVAS = { w: 760, h: 790, ax: 380, ay: 500 };
+export const EYE_CANVAS = { w: 860, h: 790, ax: 430, ay: 500 };
 const EYE_AURA = { x: EYE_CANVAS.ax, y: EYE_CANVAS.ay - 80, r: 190, color: '#ff3a78', a: 0.07 };
 
 /** Its own way: forward (toward whoever stands before the pool), its left, up; in the figure's own space, facing the eye when seen from in front. */
@@ -189,8 +189,16 @@ export interface EyePose {
   beams?: { from: V3; a: V3; b: V3; k: number; t: number }[];
   /** The stones his gaze has swept, from `from` degrees round to `to`: how long since it passed each (`age`), all of it fading as `fade` falls. */
   burnt?: { from: number; to: number; age: (deg: number) => number; fade: number };
+  /** Streaks through the air (the draught of his breath): each a line through its points, its head first, laid over all. */
+  streaks?: { pts: V3[]; c: string }[];
+  /** How far his face is turned round from his forward, toward his left, in degrees (none if not given). */
+  turn?: number;
   /** Globs of his bile in flight: where each is, which way it flies, how big. */
-  globs?: { at: V3; dir: V3; r: number }[];
+  globs?: { at: V3; dir: V3; r: number; ramp?: Ramp }[];
+  /** His splash's wave: `r` of the way from the pool's rim across the ring, `h` high (his lengths), `t` the time (for its foam). */
+  wave?: { r: number; h: number; t: number };
+  /** Eyespawn's eggs flung through the air: where each is, how far it has tumbled (radians), how big. */
+  eggs?: { at: V3; spin: number; r: number }[];
 }
 /** A mark on the floor: a shadow along a line, `w` wide, `k` how dark (0 to 1); or the cracks it leaves, `k` how fresh. */
 export interface FloorMark {
@@ -399,6 +407,11 @@ const RUBBLE = ['#4e4a56', '#64606c', '#7c7884', '#3a3741', '#2e3a22'];
 /** His bile: a sickly yellow-green, dull (it gives no light). */
 const BILE: Ramp = ['#262a0e', '#424a16', '#646e20', '#8c982e', '#b6bf52'];
 const BILE_DROPS = [BILE[2], BILE[3], BILE[1], BILE[4]];
+/** The muck of the fen's bottom he spews up: near black, green in its sheen. */
+const MUCK: Ramp = ['#0c100a', '#1e2616', '#303c20', '#4a582e', '#6e7c46'];
+const MUCK_DROPS = [MUCK[1], MUCK[2], MUCK[3], MUCK[0]];
+/** An eyespawn's egg: a pale sac, as the fen's eggs (floor10.ts). */
+const EGG: Ramp = ['#3e3a32', '#555043', '#6d6654', '#857c66', '#9a9078'];
 
 /** The arm that strikes, from where it leaves the pool on `aim`. */
 function striker(aim: number, long: number, thick: number, rise: number, bend: number, curl: number, wave: number, phase: number, z0 = -24, r0 = 42): ArmPose {
@@ -750,6 +763,252 @@ function spitPose(t: number, aim: number, clock = 0): EyePose {
   return P;
 }
 
+/**
+ * HIS BREATH AND BITE (his pick, “Breathes in, pulling you close, then bites”): he turns his face on you and his eye
+ * tears open into his maw, wide; he rears back and breathes in, a great draught, water, stones, weed and the air
+ * itself streaming across the ring into his maw, his gullet burning brighter (the warning, and the pull); he lunges at
+ * you out of the pool, and his maw slams shut (THE BITE), held; he draws back and his eye heals shut, his face turning
+ * back. Where it hurts: in front of his maw at the snap, out to `reach` tiles past the pool's rim along the aim.
+ */
+export const EYE_BITE = { long: 3.3, open: 0.45, inhale: [0.45, 1.95], snap: 2.1, hold: 0.12, back: [2.3, 3.1], lunge: 58, reach: 1.6, fps: 30 } as const;
+
+function bitePose(t: number, aim: number, clock = 0): EyePose {
+  const B = EYE_BITE;
+  const base = standPose(clock + t);
+  const P: EyePose = { ...base };
+  const toward = near180(aim, 0);
+  const face = t < B.back[0] ? sm(t / 0.5) : 1 - sm((t - B.back[0]) / (B.back[1] - B.back[0]));
+  P.turn = toward * face;
+  // his maw: torn open wide, slammed shut at the bite
+  P.split = t < B.snap - 0.08 ? sm(t / B.open) : t < B.snap ? 1 - (t - (B.snap - 0.08)) / 0.08 : 0;
+  P.lid = base.lid * (1 - face);
+  // the breath: rearing back and swelling as he draws it in
+  const breath = t < B.inhale[1] ? sm((t - B.inhale[0]) / 0.3) : Math.max(0, 1 - (t - B.inhale[1]) / 0.1);
+  // the lunge: out at you, held through the bite, drawn back
+  const lunge = t < B.inhale[1] ? 0 : t < B.snap ? easeIn((t - B.inhale[1]) / (B.snap - B.inhale[1])) : t < B.snap + B.hold ? 1 : 1 - sm((t - B.snap - B.hold) / (B.back[1] - B.snap - B.hold));
+  const dir = onLine(aim, 1);
+  P.heave = add(add(base.heave, mul(dir, -14 * breath + B.lunge * lunge)), [0, 0, 12 * breath - 10 * lunge]);
+  P.tilt = base.tilt + 10 * breath - 8 * lunge;
+  P.glow = base.glow + 0.6 * breath;
+  // his arms braced out wide as he breathes in, whipped forward with the bite
+  P.arms = base.arms.map((A, i) => (A.rise <= 10 ? A : { ...A, rise: A.rise - 16 * breath - 8 * lunge, wave: A.wave + 6 * breath, phase: A.phase + 0.6 * breath * Math.sin(t * 7 + i) }));
+  const E: V3 = add([0, 0, base.zE], P.heave);
+  const T = P.turn * D;
+  const F = norm(add(mul(add(mul(FW, Math.cos(T)), mul(LF, Math.sin(T))), Math.cos(P.tilt * D)), mul(UP, Math.sin(P.tilt * D))));
+  const M = add(E, mul(F, EYE_R * 0.5));
+  const drops = [...(base.drops ?? [])];
+  // THE DRAUGHT: across the ring and into his maw, faster as it nears it, each a streak
+  if (t > B.inhale[0] && t < B.inhale[1] + 0.12) {
+    const kinds = [SPRAY[1], SPRAY[0], RUBBLE[2], WEED[3], SPRAY[3], RUBBLE[1]];
+    P.streaks = [];
+    for (let i = 0; i < 64; i++) {
+      const f = fr((t - B.inhale[0]) * 1.4 + hash(i, 1, 211));
+      const born = t - f / 1.4;
+      if (born < B.inhale[0] || born > B.inhale[1] - 0.15) continue;
+      const a = toward + (hash(i, 2, 211) - 0.5) * 150;
+      const r = rimOn(a) + (ringOn(a) - rimOn(a)) * (0.15 + 0.85 * hash(i, 3, 211));
+      const from = add(onLine(a, r), [0, 0, 2 + 26 * hash(i, 4, 211)]);
+      const side = hash(i, 5, 211) > 0.5 ? 1 : -1;
+      const at = (q: number): V3 => {
+        const e = Math.pow(q, 1.7);
+        const p = add(from, mul(sub(M, from), e));
+        const across = norm(cross(sub(M, from), UP), LF);
+        return add(p, mul(across, side * 26 * Math.sin(q * Math.PI)));
+      };
+      const c = kinds[i % kinds.length];
+      const size = c === RUBBLE[2] || c === RUBBLE[1] ? 4 : 3;
+      drops.push([at(f), c, size]);
+      // (its streak behind it, the longer the faster it goes)
+      const pts: V3[] = [];
+      for (let k = 0; k <= 5; k++) {
+        const q = f - k * 0.06 * (0.5 + f);
+        if (q > 0) pts.push(at(q));
+      }
+      if (pts.length > 1) P.streaks.push({ pts, c: i % 3 === 0 ? SPRAY[3] : SPRAY[1] });
+    }
+    // water torn up off the pool's face into it
+    for (let i = 0; i < 16; i++) {
+      const f = fr(t * 1.8 + i / 16);
+      const a = toward + (hash(i, 6, 211) - 0.5) * 80;
+      const from = onLine(a, rimOn(a) * (0.75 + 0.2 * hash(i, 7, 211)));
+      drops.push([add(from, mul(sub(M, from), f * f)), f > 0.6 ? SPRAY[3] : SPRAY[1], 2]);
+    }
+  }
+  // THE BITE: spray and spittle flung from his jaws as they slam
+  drops.push(...flung(t, B.snap, 30, () => add(M, mul(F, 20)), 120, 140, 0.5, SPRAY, 213, 2));
+  drops.push(...flung(t, B.snap, 12, () => add(M, mul(F, 20)), 90, 90, 0.4, [MAW[4], SCLERA[3]], 215, 2));
+  P.drops = drops;
+  return P;
+}
+
+/**
+ * HIS EYESPAWN (his pick, “Spews eyespawn out of the muck”): he turns his face on you, heaving and retching, his maw
+ * tearing open, the fen's muck welling up and bubbling at its lips (the warning); he spews a torrent of the muck out
+ * across the ring before him, reaching further as he heaves, eggs tumbling out in it, flung in arcs (each landing
+ * painted on its own, `spawnPainted`, laid by the game where it lands, `spawnLanding`); his maw shuts and he turns back.
+ */
+export const EYE_SPEW = { long: 3.0, retch: 0.85, spew: [0.9, 1.5], eggs: [0.98, 1.16, 1.34], fly: 0.6, close: [1.65, 2.3], fps: 30 } as const;
+/** Where each egg lands: degrees off its aim, and how far out across the ring (0 its inner edge, 1 its outer). */
+const SPAWN_AT: [number, number][] = [[-14, 0.3], [10, 0.55], [-4, 0.82]];
+
+/** Where egg `i` of a spew aimed `aim` lands, on the floor (the figure's own measures). */
+export function spawnLanding(aim: number, i: number): V3 {
+  const [off, far] = SPAWN_AT[i % SPAWN_AT.length];
+  const a = aim + off;
+  const rim = rimOn(a) + 8;
+  return onLine(a, rim + (ringOn(a) - 8 - rim) * far);
+}
+
+function spewPose(t: number, aim: number, clock = 0): EyePose {
+  const S = EYE_SPEW;
+  const base = standPose(clock + t);
+  const P: EyePose = { ...base };
+  const toward = near180(aim, 0);
+  const face = t < S.close[1] ? sm(t / 0.5) : 1 - sm((t - S.close[1]) / (S.long - 0.15 - S.close[1]));
+  P.turn = toward * face;
+  // retching: his bulk heaving in jerks, harder as it comes up
+  const retch = t < S.spew[0] ? sm(t / S.retch) : t < S.spew[1] ? 1 : Math.max(0, 1 - (t - S.spew[1]) / 0.5);
+  const heaving = retch * (0.6 + 0.4 * Math.sin(t * 9)) * Math.sin(t * 15);
+  const spewing = t < S.spew[0] ? 0 : t < S.spew[1] ? sm((t - S.spew[0]) / 0.2) : Math.max(0, 1 - (t - S.spew[1]) / 0.2);
+  const dir = onLine(aim, 1);
+  P.heave = add(add(base.heave, mul(dir, 10 * spewing - 6 * retch * (1 - spewing))), [0, 0, 5 * heaving + 8 * retch]);
+  P.tilt = base.tilt + 4 * heaving - 6 * spewing;
+  P.split = t < S.spew[0] ? 0.55 * sm(t / S.retch) : t < S.close[0] ? Math.min(1, 0.55 + 0.45 * sm((t - S.spew[0]) / 0.12)) : 1 - sm((t - S.close[0]) / (S.close[1] - S.close[0]));
+  P.lid = base.lid * (1 - face);
+  P.arms = base.arms.map((A, i) => (A.rise <= 10 ? A : { ...A, rise: A.rise - 6 * retch + 4 * heaving * Math.sin(i), phase: A.phase + 0.5 * heaving }));
+  const E: V3 = add([0, 0, base.zE], P.heave);
+  const T = P.turn * D;
+  const F = norm(add(mul(add(mul(FW, Math.cos(T)), mul(LF, Math.sin(T))), Math.cos(P.tilt * D)), mul(UP, Math.sin(P.tilt * D))));
+  const M = add(add(E, mul(F, EYE_R * 0.55)), [0, 0, -EYE_R * 0.2]);
+  const drops = [...(base.drops ?? [])];
+  // the muck welling up, bubbling at his lips and drooling off them
+  if (retch > 0.1 && P.split > 0.2) for (let i = 0; i < 12; i++) {
+    const f = fr(t * 1.6 + hash(i, 1, 221));
+    const x = (hash(i, 2, 221) - 0.5) * EYE_R * 1.1;
+    const side = norm(cross(UP, F), LF);
+    drops.push([add(add(M, mul(side, x)), [0, 0, -6 - 60 * f * f]), MUCK_DROPS[i % 4], f < 0.3 ? 4 : 3]);
+  }
+  // THE TORRENT: from his maw out across the ring, reaching further as he heaves it up
+  const reachAt = (when: number): V3 => {
+    const k = cl01((when - S.spew[0]) / (S.spew[1] - S.spew[0]));
+    const rim = rimOn(aim) + 10;
+    return onLine(aim + 6 * Math.sin(when * 7), rim + (ringOn(aim) - 30 - rim) * (0.15 + 0.75 * k));
+  };
+  P.globs = [];
+  const N = 44;
+  for (let i = 0; i < N; i++) {
+    const q = fr(t * 2.6 + i / N);
+    const sent = t - q / 2.6;
+    if (sent < S.spew[0] || sent > S.spew[1]) continue;
+    const to = reachAt(sent);
+    const wob = mul(norm(cross(sub(to, M), UP), LF), 5 * Math.sin(i * 2.3));
+    const p = add(add(add(M, mul(sub(to, M), q)), [0, 0, 4 * 52 * q * (1 - q)]), mul(wob, q));
+    const ahead = add(add(M, mul(sub(to, M), q + 0.03)), [0, 0, 4 * 52 * (q + 0.03) * (1 - q - 0.03)]);
+    P.globs.push({ at: p, dir: norm(sub(ahead, p)), r: 15 - 6 * q + 2 * hash(i, 3, 223), ramp: MUCK });
+    // (dripping off it as it goes)
+    if (i % 3 === 0 && q > 0.2) drops.push([add(p, [0, 0, -10 - 30 * fr(q * 3 + i)]), MUCK_DROPS[i % 4], 3]);
+  }
+  // where it comes down: the muck splashing up
+  if (spewing > 0 && t > S.spew[0] + 0.38) for (let i = 0; i < 24; i++) {
+    const f = fr(t * 3 + i / 24);
+    const a = hash(i, 4, 223) * TAU;
+    const at = reachAt(t - 0.38);
+    drops.push([add(at, [Math.cos(a) * 34 * f, Math.sin(a) * 34 * f, 4 + 60 * f * (1 - f)]), MUCK_DROPS[i % 4], i % 3 ? 3 : 4]);
+  }
+  // THE EGGS, tumbling out in it, flung high
+  P.eggs = [];
+  S.eggs.forEach((te, i) => {
+    const s2 = (t - te) / S.fly;
+    if (s2 < 0 || s2 >= 1) return;
+    const to = spawnLanding(aim, i);
+    const at = add(add(M, mul(sub(to, M), s2)), [0, 0, 4 * (70 + 20 * i) * s2 * (1 - s2) + 10 * (1 - s2)]);
+    P.eggs!.push({ at, spin: (t - te) * (7 + 2 * i) + i, r: 13 });
+  });
+  P.drops = drops;
+  return P;
+}
+
+/**
+ * HIS SPLASH (his words, “I like the water idea for the roar, but instead it picks its bulk up and splashes down”):
+ * he sinks down, gathering; he heaves his whole bulk up out of the pool, water pouring off him in sheets, his arms
+ * hanging and writhing; he hangs there at the top, trembling (the warning); he crashes down into the pool, a crown of
+ * water bursting up round him; a wave rolls out from the pool's rim across the ring to its edge, knee-high, foaming (to
+ * jump or dash through); he bobs and settles. Where it hurts: the wave's front, `waveAt(t)` of the way across the ring.
+ */
+export const EYE_SPLASH = { long: 3.6, sink: 0.25, rise: [0.25, 1.0], hang: [1.0, 1.4], crash: 1.62, wave: [1.62, 2.55], high: 125, waveHigh: 34, fps: 30 } as const;
+
+/** How far across the ring his splash's wave has rolled at time `t` (0 at the pool's rim, 1 at the ring's edge), or null when there is none. */
+export function waveAt(t: number): number | null {
+  const S = EYE_SPLASH;
+  if (t < S.wave[0] || t > S.wave[1]) return null;
+  const k = (t - S.wave[0]) / (S.wave[1] - S.wave[0]);
+  // (fast off the rim, slowing as it spreads)
+  return 1 - Math.pow(1 - k, 1.6);
+}
+
+function splashPose(t: number, clock = 0): EyePose {
+  const S = EYE_SPLASH;
+  const base = standPose(clock + t);
+  const P: EyePose = { ...base };
+  // how high he is: sunk, heaved up, hung, crashed down, bobbing back
+  let z: number;
+  if (t < S.rise[0]) z = -14 * sm(t / S.sink);
+  else if (t < S.rise[1]) z = -14 + (S.high + 14) * (1 - Math.pow(1 - (t - S.rise[0]) / (S.rise[1] - S.rise[0]), 2.2));
+  else if (t < S.hang[1]) z = S.high + 6 * Math.sin((t - S.hang[0]) * 7) * sm((t - S.hang[0]) / 0.1);
+  else if (t < S.crash) z = S.high + 6 * Math.sin((S.hang[1] - S.hang[0]) * 7) - (S.high + 30) * easeIn((t - S.hang[1]) / (S.crash - S.hang[1]));
+  else {
+    const k = t - S.crash;
+    const z0 = S.high + 6 * Math.sin((S.hang[1] - S.hang[0]) * 7) - (S.high + 30);
+    z = z0 * Math.exp(-k * 2.6) * Math.cos(k * 6) * (1 - sm((t - (S.long - 0.6)) / 0.6));
+  }
+  const up = cl01(z / S.high);
+  // (trembling at the top, held)
+  const tremble = t > S.hang[0] && t < S.hang[1] ? Math.sin(t * 47) * 1.6 : 0;
+  P.heave = add(base.heave, [tremble, -tremble * 0.6, z]);
+  P.tilt = base.tilt - 8 * up + (t > S.crash ? 6 * Math.exp(-(t - S.crash) * 3) * (1 - sm((t - (S.long - 0.6)) / 0.6)) : 0);
+  P.lid = base.lid * (1 - up) + 0.02 * up;
+  P.glow = base.glow + 0.5 * up;
+  // his arms hanging down off him as he rises, writhing, flung up as he crashes; those under the water stay down there
+  P.arms = base.arms.map((A, i) => {
+    if (A.rise <= 10) return { ...A, z0: A.z0 - Math.max(0, z) };
+    return { ...A, rise: Math.max(11, A.rise - 40 * up), bend: A.bend - 100 * up, curl: A.curl * (1 - 0.7 * up), wave: A.wave + 8 * up, phase: A.phase + up * Math.sin(t * 6 + i) * 1.2 };
+  });
+  const drops = [...(base.drops ?? [])];
+  // water pouring off him in sheets as he rises and hangs
+  if (z > 10) for (let i = 0; i < 46; i++) {
+    const f = fr(t * 1.7 + hash(i, 1, 241));
+    const a = hash(i, 2, 241) * TAU;
+    const r = EYE_R * (0.5 + 0.7 * hash(i, 3, 241));
+    const top = z + EYE_HIGH - EYE_R * 0.6;
+    const at: V3 = [Math.cos(a) * r, Math.sin(a) * r, top - (top + 4) * f * f];
+    if (at[2] > 0) drops.push([at, i % 3 ? SPRAY[2] : SPRAY[1], i % 4 ? 2 : 3]);
+  }
+  // THE CRASH: a crown of water bursting up round him
+  drops.push(...flung(t, S.crash, 120, (i) => onLine((i / 120) * 360, rimOn((i / 120) * 360) * 0.9), 90, 360, 1.0, SPRAY, 243, 3));
+  drops.push(...flung(t, S.crash, 80, (i) => onLine((i / 80) * 360 + 4, rimOn((i / 80) * 360) * 0.6), 50, 460, 1.15, SPRAY, 245, 3));
+  drops.push(...flung(t, S.crash, 60, (i) => onLine((i / 60) * 360 + 2, rimOn((i / 60) * 360) * 0.3), 30, 520, 1.2, ['#dfe6e0', SPRAY[1]], 247, 4));
+  P.drops = drops;
+  // rings on the pool as he hangs over it, dripping, and as he crashes
+  P.ripples = [...(base.ripples ?? [])];
+  if (t > S.crash) for (let k = 0; k < 3; k++) {
+    const r = (t - S.crash - k * 0.12) * 160;
+    if (r > 2 && r < 140) P.ripples.push([[0, 0, 0], r]);
+  }
+  // THE WAVE
+  const w = waveAt(t);
+  if (w !== null) {
+    P.wave = { r: w, h: S.waveHigh * (1 - 0.5 * w) * Math.min(1, (t - S.wave[0]) / 0.08), t };
+    // spray off its crest
+    for (let i = 0; i < 40; i++) {
+      const a = hash(i, Math.floor(t * 15), 253) * 360;
+      const r = rimOn(a) + (ringOn(a) - rimOn(a)) * w;
+      const f = fr(t * 4 + i / 40);
+      drops.push([add(onLine(a, r + 6 * f), [0, 0, P.wave.h + 16 * f * (1 - f) * 2]), f < 0.5 ? '#dfe6e0' : SPRAY[1], 2]);
+    }
+  }
+  return P;
+}
+
 /** How long each of its moves lasts (a stand: its round). */
 export function eyeLong(which: string): number {
   if (which === 'stand') return EYE_STAND.period;
@@ -759,6 +1018,9 @@ export function eyeLong(which: string): number {
   if (which.startsWith('gaze')) return EYE_GAZE.long;
   if (which === 'call') return EYE_CALL.long;
   if (which === 'spit') return EYE_SPIT.long;
+  if (which === 'bite') return EYE_BITE.long;
+  if (which === 'spew') return EYE_SPEW.long;
+  if (which === 'splash') return EYE_SPLASH.long;
   return 1;
 }
 /**
@@ -773,6 +1035,9 @@ export function poseOf(which: string, t: number, aim = 0, clock = 0): EyePose {
   if (which === 'gaze' || which === 'gazeBack') return gazePose(t, aim, clock, 0, which === 'gazeBack');
   if (which === 'call') return callPose(t, clock);
   if (which === 'spit') return spitPose(t, aim, clock);
+  if (which === 'bite') return bitePose(t, aim, clock);
+  if (which === 'spew') return spewPose(t, aim, clock);
+  if (which === 'splash') return splashPose(t, clock);
   return standPose(clock + t);
 }
 /** Where the tips of its arms are, and its eye's middle, at one moment (for the tests). */
@@ -807,13 +1072,13 @@ function patch(p: V3, k: number, seed: number): number {
 const SHEEN: V3 = norm([0.8, -0.45, 0.95]);
 
 /** ITS EYE'S SKIN, given where on the eye (its own measures, on the ball, the eye's face toward `face`): its white veined, its iris burning, its slit. */
-function eyeSkin(P: EyePose, look: V3, face: V3): (u: V3, tone: number) => string | null {
+function eyeSkin(P: EyePose, look: V3, face: V3, up?: V3): (u: V3, tone: number) => string | null {
   const L = norm(look);
   const back = bulkSkin(5, 6, P.blaze) as (u: V3, tone: number, x: number, y: number) => string | null;
   const h = norm(cross(UP, L), LF);
   const v = cross(L, h);
   const IR = 0.46;
-  const faceUp = norm(cross(face, [0, 1, 0]));
+  const faceUp = up ?? norm(cross(face, [0, 1, 0]));
   const upper = 1 - 2 * cl01(P.lid);
   const lower = -1 + 0.55 * cl01(P.lid);
   return (u, tone) => {
@@ -946,13 +1211,30 @@ const BLAZING: Ramp = [FLAME[0], FLAME[1], FLAME[2], FLAME[3], FLAME[4]];
 // ITS SOLIDS
 
 /** THE DROWNED EYE AS SOLIDS: its bulk, the knotted rim of flesh round its eye, its eye (whole, or torn in two, its maw behind), the weed and feelers hanging from it, and its arms. */
+/** An eyespawn's egg: a pale sac `r` across, turned `spin` about its long way, squashed by `squash` (0 none), the eye curled in it showing through as a shadow (looking about by `look`), veins of the sickness up it. */
+function eggBits(put: Put, part: string, c: V3, r: number, spin: number, squash: number, seed: number, look = 0): void {
+  const a1: V3 = [Math.cos(spin), 0, Math.sin(spin)];
+  const a3: V3 = [-Math.sin(spin), 0, Math.cos(spin)];
+  const EYE: V3 = norm([0.7 * Math.cos(look), 0.7 * Math.sin(look) + 0.2, 0.45]);
+  put(part, 'egg', { k: 'ball', c, ax: [mul(a1, r * (1 + 0.25 * squash)), [0, r * (1 + 0.25 * squash), 0], mul(a3, r * 1.15 * (1 - 0.3 * squash))], skin: (u, tone) => {
+    const n = norm(u as V3);
+    const d = Math.hypot(n[0] - EYE[0], n[1] - EYE[1], n[2] - EYE[2]);
+    if (d < 0.55) return d < 0.22 ? '#231b18' : d < 0.38 ? '#5c4d33' : EGG[Math.max(0, tone - 1)];
+    if (Math.abs(Math.sin(Math.atan2(n[1], n[0]) * 2.5 + n[2] * 3 + seed * 1.7)) < 0.22) return VEIN[n[2] > 0.3 ? 3 : 2];
+    return EGG[tone];
+  } });
+}
 function eyeBits(P: EyePose, put: Put): void {
   const R = EYE_R;
   const E: V3 = add([0, 0, P.zE], P.heave);
-  // the way its face is turned (up from forward by its tilt), and its own across and up for that face
-  const F = norm(add(mul(FW, Math.cos(P.tilt * D)), mul(UP, Math.sin(P.tilt * D))));
-  const U = norm(cross(F, LF));
-  const Lx = LF;
+  // the way its face is turned (round toward its left by its turn, up from forward by its tilt), and its own across
+  // and up for that face
+  const T = (P.turn ?? 0) * D;
+  const FWt: V3 = P.turn ? add(mul(FW, Math.cos(T)), mul(LF, Math.sin(T))) : FW;
+  const LFt: V3 = P.turn ? add(mul(LF, Math.cos(T)), mul(FW, -Math.sin(T))) : LF;
+  const F = norm(add(mul(FWt, Math.cos(P.tilt * D)), mul(UP, Math.sin(P.tilt * D))));
+  const U = norm(cross(F, LFt));
+  const Lx = LFt;
   // its look, in the eye's own measures, turned with its face
   const look = norm(add(add(mul(F, P.look[0]), mul(Lx, P.look[1])), mul(U, P.look[2])));
   const lookLocal: V3 = [dot(look, FW), dot(look, LF), dot(look, UP)];
@@ -999,7 +1281,7 @@ function eyeBits(P: EyePose, put: Put): void {
     }
   }
   // ITS EYE: whole, or torn open down its slit, each half swung out on a hinge at its outer edge like a door
-  const sk = eyeSkin(P, lookLocal, [dot(F, FW), dot(F, LF), dot(F, UP)]);
+  const sk = eyeSkin(P, lookLocal, [dot(F, FW), dot(F, LF), dot(F, UP)], P.turn ? [dot(U, FW), dot(U, LF), dot(U, UP)] : undefined);
   const inLocal = (u: V3, ax: readonly [V3, V3, V3]): V3 => {
     const wv = add(add(mul(norm(ax[0]), u[0]), mul(norm(ax[1]), u[1])), mul(norm(ax[2]), u[2]));
     return [dot(wv, FW), dot(wv, LF), dot(wv, UP)];
@@ -1066,12 +1348,15 @@ function eyeBits(P: EyePose, put: Put): void {
   (P.globs ?? []).forEach((g, i) => {
     const side = norm(Math.abs(g.dir[2]) > 0.95 ? cross(g.dir, LF) : cross(g.dir, UP));
     const up2 = norm(cross(side, g.dir));
+    const ramp = g.ramp ?? BILE;
     put(`glob${i}`, 'glob', { k: 'ball', c: g.at, ax: [mul(g.dir, g.r * 1.35), mul(side, g.r), mul(up2, g.r * 0.9)], skin: (u, tone) => {
-      if (u[2] > 0.55 && u[1] > -0.2 && u[1] < 0.45) return BILE[4];
+      if (u[2] > 0.55 && u[1] > -0.2 && u[1] < 0.45) return ramp[4];
       const blot = Math.sin(u[0] * 7 + i) * Math.sin(u[1] * 6 - i) > 0.45;
-      return BILE[Math.max(0, Math.min(4, tone - (blot ? 1 : 0)))];
+      return ramp[Math.max(0, Math.min(4, tone - (blot ? 1 : 0)))];
     } });
   });
+  // EYESPAWN'S EGGS tumbling through the air: pale sacs, the sickness's veins up them, the eye curled in each a shadow
+  (P.eggs ?? []).forEach((g, i) => eggBits(put, `egg${i}`, g.at, g.r, g.spin, 0, i));
   // ITS IRIS'S LIGHT, the enemy's fire (under the water, less)
   const iris = add(E, mul(look, R));
   if (P.alive && P.split < 0.5) put('eye', 'glow', { k: 'glow', p: iris, c: FLAME[3], r: 48 * P.glow, a: (P.zE < 0 ? 0.45 : 0.5) * Math.min(1.2, P.glow) });
@@ -1122,6 +1407,21 @@ function paintPose(P: EyePose, view: GameView): Painted {
   }
   lastUnder = drown(px, zAt, st0, view);
   if (P.ripples && P.ripples.length) ripple(px, st0, view, P.ripples, zAt);
+  if (P.wave) waveOf(px, st0, P.wave);
+  for (const S of P.streaks ?? []) {
+    for (let i = 0; i + 1 < S.pts.length; i++) {
+      const [x0, y0] = st0.at(S.pts[i]);
+      const [x1, y1] = st0.at(S.pts[i + 1]);
+      const steps = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)));
+      for (let k = 0; k <= steps; k++) {
+        const x = Math.round(x0 + ((x1 - x0) * k) / Math.max(1, steps));
+        const y = Math.round(y0 + ((y1 - y0) * k) / Math.max(1, steps));
+        // (solid at its head, broken toward its tail)
+        if (x < 0 || y < 0 || x >= px.w || y >= px.h || (i >= 2 && (x + y) % 2 === 1)) continue;
+        px.set(x, y, i === 0 ? S.c : SPRAY[0]);
+      }
+    }
+  }
   for (const B of P.beams ?? []) {
     beam(px, st0, B);
     // its light: at his eye, and all along where it falls
@@ -1472,6 +1772,43 @@ function beam(px: Px, st: Stage, B: { from: V3; a: V3; b: V3; k: number; t: numb
   };
   flare(bx, by, Math.round((5 + 3 * hash(tick, 1, 132)) * B.k));
   flare(ix, iy, Math.round((10 + 6 * hash(tick, 2, 132)) * B.k));
+}
+/**
+ * HIS SPLASH'S WAVE, rolling out over the ring: a wall of water `h` high, its crest foaming and spitting spray, its
+ * face dark, the water washing over the stones behind it; behind him only where nothing of him is, before him over all.
+ */
+function waveOf(px: Px, st: Stage, W0: { r: number; h: number; t: number }): void {
+  const { ay } = EYE_CANVAS;
+  const free = (x: number, y: number): boolean => px.d[(y * px.w + x) * 4 + 3] === 0;
+  const set = (x: number, y: number, c: string, front: boolean): void => {
+    if (x < 0 || y < 0 || x >= px.w || y >= px.h) return;
+    if (!front && !free(x, y)) return;
+    px.set(x, y, c);
+  };
+  const tick = Math.floor(W0.t * 20);
+  for (let i = 0; i < 1440; i++) {
+    const a = i / 4;
+    const rim = rimOn(a);
+    const r = rim + (ringOn(a) - rim) * W0.r;
+    const base = onLine(a, r);
+    const [xb, yb] = st.at(base);
+    const front = yb > ay;
+    const hh = W0.h * (0.8 + 0.2 * Math.sin(a * 0.31 + W0.t * 9) + 0.15 * (hash(Math.floor(a / 3), tick, 251) - 0.5));
+    const [, yt] = st.at(add(base, [0, 0, hh]));
+    const x = Math.round(xb);
+    // the wash behind it, over the stones: dithered water
+    const [xw, yw] = st.at(onLine(a, Math.max(rim, r - 46)));
+    for (let k = 0; k <= 10; k++) {
+      const wx = Math.round(xw + ((xb - xw) * k) / 10);
+      const wy = Math.round(yw + ((yb - yw) * k) / 10);
+      if ((wx + wy) % 2 === 0 || k > 7) set(wx, wy, k > 7 ? '#3e544a' : k > 4 ? '#2e3e36' : '#1e2a24', front);
+    }
+    // its face, its crest foaming, a streak of light along it
+    for (let y = Math.round(yt); y <= Math.round(yb); y++) {
+      const f = (y - yt) / Math.max(1, yb - yt);
+      set(x, y, f < 0.18 ? '#dfe6e0' : f < 0.32 ? SPRAY[1] : f < 0.42 ? '#8a9e92' : f < 0.7 ? '#4e6a60' : f < 0.88 ? '#3a5048' : '#24322c', front);
+    }
+  }
 }
 /** The stones his gaze has swept, under him: glowing just behind it, then smouldering (a scatter of embers), then scorched (a dark scatter), all of it fading as `fade` falls. */
 function burntFloor(st: Stage, px: Px, B: NonNullable<EyePose['burnt']>): void {
@@ -1873,6 +2210,79 @@ export function bilePainted(t: number, view: GameView = 'front', seed = 0): Pain
 /** The same, as the game holds it. */
 export function bileFrame(t: number, view: GameView = 'front', seed = 0): Sprite {
   return toSprite(bilePainted(t, view, seed), null, BILE_CANVAS.ax, BILE_CANVAS.ay);
+}
+
+// ---------------------------------------------------------------------------------------------
+// HIS EYESPAWN'S EGGS, LANDED (his pick, “Spews eyespawn out of the muck”), each painted on its own so that the game
+// lays it where an egg lands (`spawnLanding`): it thuds down into a splat of the muck, squashing and bouncing; it sits
+// rocking, the eye in it looking about; it shakes harder and bulges (the warning: it is about to hatch); it bursts
+// (the game brings out the eyespawn there at `hatch`), its shell flung, its slime splashing; the torn shell sinks.
+
+/** Its own canvas, and where on it the middle of where it lands is, on the floor. */
+export const SPAWN_CANVAS = { w: 180, h: 150, ax: 90, ay: 110 };
+export const EYE_SPAWN = { long: 3.0, hatch: 2.5, fps: 15 } as const;
+
+/** One frame of a landed egg: `t` seconds after it lands, `seed` to make each one its own. */
+export function spawnPainted(t: number, view: GameView = 'front', seed = 0): Painted {
+  const H = EYE_SPAWN;
+  const st0 = stage(view, SPAWN_CANVAS.ax, SPAWN_CANVAS.ay, SPAWN_CANVAS);
+  const bits: Bit[] = [];
+  const put: Put = (part, piece, shape) => bits.push({ part, piece, shape });
+  const r = 13;
+  const drops: [V3, string, number][] = [];
+  // its muck, splashed up as it lands
+  drops.push(...flung(t, 0, 14, () => [0, 0, 2], 60, 90, 0.4, MUCK_DROPS, 231 + seed, 2));
+  if (t < H.hatch) {
+    const squash = bump(t, 0, 0.22) - 0.4 * bump(t, 0.22, 0.42);
+    const hop = 7 * bump(t, 0.12, 0.36);
+    const shake = t < 2.0 ? 0.14 * Math.sin(t * 6 + seed) * cl01(t / 0.4) : 0.32 * Math.sin(t * 31 + seed) * sm((t - 2.0) / 0.2);
+    const bulge = t > 2.0 ? 0.35 * Math.max(0, Math.sin(t * 17 + seed)) * sm((t - 2.0) / 0.3) : 0;
+    // (the eye in it darting about, stopping, darting again)
+    const look = seed + Math.floor(t * 2.2) * 1.3 + 0.6 * sm(fr(t * 2.2) * 4);
+    eggBits(put, 'egg', [Math.sin(shake) * r * 0.5, 0, r * 1.1 * (1 - 0.25 * squash + 0.12 * bulge) + hop], r, shake, squash - bulge, seed, look);
+  } else {
+    // THE HATCH: its shell burst, flung; its slime splashing; the torn lower half left, sinking into the muck
+    drops.push(...flung(t, H.hatch, 16, () => [0, 0, r], 80, 160, 0.45, [EGG[3], EGG[2], EGG[4], '#5c4d33'], 233 + seed, 3));
+    drops.push(...flung(t, H.hatch, 14, () => [0, 0, r * 0.8], 60, 120, 0.4, [MUCK[3], MUCK[2], BILE[2]], 235 + seed, 2));
+    const sink = sm((t - H.hatch - 0.15) / (H.long - H.hatch - 0.2));
+    // (sinking: flattening down into the muck)
+    const k = 1 - 0.85 * sink;
+    if (sink < 0.97) put('shell', 'shell', { k: 'ball', c: [0, 0, r * 0.35 * k], ax: [[r * 1.05 * (0.6 + 0.4 * k), 0, 0], [0, r * 1.05 * (0.6 + 0.4 * k), 0], [0, 0, r * 0.6 * k]], skin: (u, tone) => {
+      const n = norm(u as V3);
+      if (n[2] > 0.25 + 0.3 * fr(Math.atan2(n[1], n[0]) * 1.3 + seed)) return null;
+      return n[2] > 0.1 ? MUCK[2] : EGG[Math.max(0, tone - 1)];
+    } });
+  }
+  for (const [p, c, size] of drops) put('drops', 'drop', { k: 'mote', p, c, size });
+  paintBits(st0, bits, [0, 0, 12]);
+  // (the floor swallows what of it is below the floor: its shell sinking into the muck)
+  const px = st0.whole(ENEMY_RIM);
+  const b = st0.back;
+  const { w, h, ax, ay } = SPAWN_CANVAS;
+  // ITS MUCK, under it: a ragged splat, wet, a sheen on it; gone as the shell sinks
+  const R0 = 0.6 * TILE3 * sm(t / 0.2) * (t > H.hatch ? 1 - 0.6 * sm((t - H.hatch) / (H.long - H.hatch)) : 1);
+  const gone = t > H.hatch ? sm((t - H.hatch - 0.1) / (H.long - H.hatch - 0.1)) : 0;
+  const s1 = hash(seed, 1, 237) * TAU;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (px.d[(y * w + x) * 4 + 3] > 0) continue;
+      const sx = x + 0.5 - ax;
+      const sy = y + 0.5 - ay;
+      const n0 = -(b[2][0] * sx + b[2][1] * sy) / b[2][2];
+      const fx = b[0][0] * sx + b[0][1] * sy + b[0][2] * n0;
+      const fy = b[1][0] * sx + b[1][1] * sy + b[1][2] * n0;
+      const a = Math.atan2(fy, fx);
+      const edge = R0 * (0.85 + 0.15 * Math.sin(3 * a + s1) + 0.1 * Math.sin(7 * a - s1));
+      const d = Math.hypot(fx, fy) / Math.max(1, edge);
+      const hh = hash(x, y, 239 + seed);
+      if (d < 1 && hh >= gone) px.set(x, y, d > 0.85 ? MUCK[0] : Math.sin(fx * 0.3 + fy * 0.2 + seed) > 0.75 ? MUCK[3] : hh < 0.12 ? MUCK[2] : MUCK[1]);
+    }
+  }
+  return { px, lights: [] };
+}
+/** The same, as the game holds it. */
+export function spawnFrame(t: number, view: GameView = 'front', seed = 0): Sprite {
+  return toSprite(spawnPainted(t, view, seed), null, SPAWN_CANVAS.ax, SPAWN_CANVAS.ay);
 }
 
 // ---------------------------------------------------------------------------------------------
