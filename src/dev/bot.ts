@@ -262,6 +262,9 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
   const stair = L.ways?.stair;
   let step: { x: number; y: number } | null = null;
   if (!goal && stair && stair.open) goal = step = topStep(stair);
+  // (ACT 1: the boss dead, into the way on at the far end of his ground: game/ways.ts Ways.onward)
+  const onward = L.ways?.onward;
+  if (!goal && onward && onward.awake) goal = step = { x: onward.x, y: onward.y };
   if (!goal && portal) {
     goal = { x: portal.x, y: portal.y + 0.8 };
     c.interact = g.interactHint() !== null;
