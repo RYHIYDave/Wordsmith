@@ -655,3 +655,8 @@ THE EYESPAWN NOW HAS HIS YES.
 
 The Sunken Fen's ground and its 25 pieces; the Drowned Eye, the act's boss, every look and move; the Drowned; the Bog
 Leeches; the Eyespawn. Each behind its own switch, off; nothing of the game imports them.
+
+Asked "Floor 10 is done. What next for me?" (offered: "Hand floor 10 to main (Recommended)", offered as: I post all of
+it to the main chat to put in the game behind its switches, then wait for your next art job; "First, a film of the
+whole fight"), his answer, 16 Oct, by 08:50 (the clock read 08:50:16 just after): "Hand floor 10 to main
+(Recommended)". Handed back to the main chat on the Chat Board as this branch.
