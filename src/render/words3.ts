@@ -16,6 +16,7 @@ import type { Game } from '../game/game';
 import type { GameEvent, Monster } from '../game/state';
 import type { Cam, Fx } from './fx';
 import { pline, wx, wy } from './fx';
+import { MELD3 } from './melds3';
 
 /**
  * The switch. Off: nothing here is drawn or called, and the game is as it was. ON SINCE VERSION
@@ -1555,6 +1556,8 @@ export function events3(events: readonly GameEvent[], game: Game, fx: Fx): void 
   for (const e of events) {
     if (e.t === 'heavy') heavyHit(fx, e.x, e.y, e.r, e.big);
     else if (e.t === 'stun') {
+      // (a melded word's stun has its own look, while WORDMELDING's looks are on: render/melds3.ts)
+      if (e.meld && MELD3.on) continue;
       const m = byId(e.id);
       if (m) stun(m, e.secs);
     } else if (e.t === 'stagger') {

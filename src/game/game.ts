@@ -324,8 +324,9 @@ export class Game {
   /** THE SKILL TREES (Master Stroke): hits landed since the last certain critical. */
   private strokes = 0;
   /** WORDMELDING: each ability's heat (Eruption behind) and hits counted to the next thunderclap (Thunder behind). */
-  private meldHeat: number[] = [0, 0, 0];
-  private meldHits: number[] = [0, 0, 0];
+  /** WORDMELDING: each ability's heat (Eruption behind) and hits toward its thunderclap (Thunder behind); the looks read them (render/melds3.ts). */
+  meldHeat: number[] = [0, 0, 0];
+  meldHits: number[] = [0, 0, 0];
   /** WORDMELDING: the last word the wordsmith melded, and whether it was the first of its kind (his half shows it). */
   melded: { word: MeldId; first: boolean } | null = null;
   private windT = 0;
@@ -4026,6 +4027,8 @@ export class Game {
     for (const o of this.zones) {
       if (o.kind === z.kind && !o.hostile && Math.hypot(o.x - x, o.y - y) < 0.45 && o.r >= rad - 0.1) {
         o.t = 0;
+        // (WORDMELDING: laid again by a melded word behind, it is that word's patch from now, its twist and all)
+        if (r.meldBehind) o.meld = r.meldBehind;
         return;
       }
     }
@@ -4033,7 +4036,7 @@ export class Game {
     const nz: Zone = { x, y, r: rad, t: 0, dur: z.dur, kind: z.kind, element: z.element, dmg: this.avgHit(i, frac) * z.dps, slow: z.slow, tick: 0.2, hostile: false, skill: i, words: [], from: '' };
     if (r.meldBehind) nz.meld = r.meldBehind;
     this.zones.push(nz);
-    this.emit({ t: 'zone', kind: z.kind, x, y, r: rad, el: z.element });
+    this.emit({ t: 'zone', kind: z.kind, x, y, r: rad, el: z.element, ...(r.meldBehind ? { meld: r.meldBehind } : {}) });
   }
 
   /** "of Venom": a cloud of poison hangs where the ability hit. */
@@ -4042,6 +4045,8 @@ export class Game {
     for (const o of this.zones) {
       if (o.kind === 'venom' && Math.hypot(o.x - x, o.y - y) < 0.6 && o.r >= rad - 0.1) {
         o.t = 0;
+        // (WORDMELDING: as for the ground: a cloud laid again by Fumes behind is Fumes' cloud, and goes up in fire)
+        if (r.meldBehind) o.meld = r.meldBehind;
         return;
       }
     }
@@ -4049,7 +4054,7 @@ export class Game {
     const nz: Zone = { x, y, r: rad, t: 0, dur: 5, kind: 'venom', element: 'phys', dmg: this.avgHit(i, frac) * r.cloud, slow: 0, tick: 0.2, hostile: false, skill: i, words: [], from: '' };
     if (r.meldBehind) nz.meld = r.meldBehind;
     this.zones.push(nz);
-    this.emit({ t: 'zone', kind: 'venom', x, y, r: rad, el: 'phys' });
+    this.emit({ t: 'zone', kind: 'venom', x, y, r: rad, el: 'phys', ...(r.meldBehind ? { meld: r.meldBehind } : {}) });
   }
 
   private addRune(i: number, x: number, y: number, frac: number): void {
@@ -4095,7 +4100,10 @@ export class Game {
     // (Hunter's Mark: the mark's critical is a triple one)
     if (crit) dmg *= 1 + (d.critMult / 100) * (spent && this.has('huntersmark') ? TALENT_TUNE.huntersMark : 1);
     // (WORDMELDING: Avalanche behind, a hit on a chilled enemy hits harder)
-    if (r.meldBehind === 'avalanche' && m.chillT > 0) dmg *= 1 + MELD_TUNE.avalanche.chilled;
+    if (r.meldBehind === 'avalanche' && m.chillT > 0) {
+      dmg *= 1 + MELD_TUNE.avalanche.chilled;
+      if (!quiet) this.emit({ t: 'meldFx', what: 'crush', id: m.id, x: m.x, y: m.y, x1: m.x, y1: m.y });
+    }
     dmg = Math.max(1, Math.round(dmg));
     const x = m.x;
     const y = m.y;
@@ -4113,13 +4121,13 @@ export class Game {
     if (r.chill > 0) this.chillMonster(m, r.chill);
     // (WORDMELDING: Thunder in front, one big bolt out of the sky in place of the arcs)
     if (r.meld === 'thunder' && !quiet) {
-      this.emit({ t: 'arc', x0: x, y0: y, x1: x, y1: y, sky: true });
+      this.emit({ t: 'arc', x0: x, y0: y, x1: x, y1: y, sky: true, meld: 'thunder' });
       this.sfx('thunder', 0.6);
     }
     const front = quiet ? undefined : this.fronts(i);
     if (r.orbChance > 0 && !quiet) this.emit({ t: 'mark', x, y });
     // lightning comes down on the one it hits before it jumps to the others
-    if (r.arcs > 0 && !quiet) this.emit({ t: 'arc', x0: x, y0: y, x1: x, y1: y, sky: true });
+    if (r.arcs > 0 && !quiet) this.emit({ t: 'arc', x0: x, y0: y, x1: x, y1: y, sky: true, ...(r.meld ? { meld: r.meld } : {}) });
     // (THE SKILL TREES: a lightning hit leaves it shocked, which Overload works on)
     if (TALENTS.on && (r.element === 'lightning' || r.arcs > 0)) m.shockT = TALENT_TUNE.shockSecs;
     if (spent) this.emit({ t: 'markSpent', id: m.id, x, y, dx: x - h.x, dy: y - h.y });
@@ -4130,7 +4138,7 @@ export class Game {
     if (r.meld || r.meldBehind) this.meldHit(m, i, dmg, x, y, quiet, wasBurning, wasChilled);
     if (!m.dead) {
       // HEAVY in front stuns what it hits; gear with Heavy burned into it may stun too
-      if (r.stun > 0) this.stunMonster(m, r.stun);
+      if (r.stun > 0) this.stunMonster(m, r.stun, r.meld === 'thunder' ? 'thunder' : undefined);
       else {
         const chance = Math.min(HEAVY.stunCap, st.stunChance);
         if (chance > 0 && this.rng.chance(chance / 100)) this.stunMonster(m, HEAVY.stun);
@@ -4166,7 +4174,7 @@ export class Game {
         .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))
         .slice(0, r.arcs + (this.has('forking') ? TALENT_TUNE.forking : 0));
       for (const o of near) {
-        this.emit({ t: 'arc', x0: x, y0: y, x1: o.x, y1: o.y });
+        this.emit({ t: 'arc', x0: x, y0: y, x1: o.x, y1: o.y, ...(r.meld ? { meld: r.meld } : {}) });
         if (TALENTS.on) o.shockT = TALENT_TUNE.shockSecs;
         const arc = Math.max(1, Math.round(dmg * r.arcDmg));
         this.damageMonster(o, arc, 'lightning', false, i);
@@ -4257,10 +4265,11 @@ export class Game {
         m.chillT = Math.max(m.chillT, 0.01);
         this.chillMonster(m, Math.max(m.chill, 0.3));
       }
+      if (!quiet) this.emit({ t: 'meldFx', what: 'shove', id: m.id, x: x0, y: y0, x1: m.x, y1: m.y, ...(m.frozenT > 0 ? { frozen: true } : {}) });
     } else if (mf === 'scald' && !m.dead && !m.scaldCd && ((wasBurning && r.chill > 0) || (wasChilled && r.ignite > 0))) {
       // fire meets ice in it: it cracks
       m.scaldCd = T.scald.again;
-      this.emit({ t: 'burst', x, y, r: 0.9, el: 'frost', style: 'blast' });
+      this.emit({ t: 'burst', x, y, r: 0.9, el: 'frost', style: 'blast', meld: 'scald' });
       this.sfx('shatter', 0.7);
       this.damageMonster(m, Math.max(1, Math.round(dmg * T.scald.crack)), r.element, false, i);
     } else if (mf === 'fumes' && !m.dead && !m.fumesCd && m.burnT > 0 && m.poisonT > 0) {
@@ -4277,7 +4286,7 @@ export class Game {
       if (this.meldHeat[i] >= T.eruption.heat) {
         this.meldHeat[i] = 0;
         const blast = Math.max(1, Math.round(dmg * T.eruption.blast));
-        this.emit({ t: 'burst', x, y, r: T.eruption.blastR, el: 'fire', style: 'blast' });
+        this.emit({ t: 'burst', x, y, r: T.eruption.blastR, el: 'fire', style: 'blast', meld: 'eruption' });
         this.emit({ t: 'shake', amount: 3 });
         this.sfx('explode', 0.8);
         for (const o of this.monsters) if (!o.dead && Math.hypot(o.x - x, o.y - y) <= T.eruption.blastR + o.r) this.damageMonster(o, blast, 'fire', false, i);
@@ -4287,7 +4296,7 @@ export class Game {
       if (++this.meldHits[i] >= T.thunder.every) {
         this.meldHits[i] = 0;
         const clap = Math.max(1, Math.round(dmg * T.thunder.clap));
-        this.emit({ t: 'burst', x: h.x, y: h.y, r: T.thunder.clapR, el: 'lightning', style: 'blast' });
+        this.emit({ t: 'burst', x: h.x, y: h.y, r: T.thunder.clapR, el: 'lightning', style: 'blast', meld: 'thunder' });
         this.emit({ t: 'shake', amount: 3 });
         this.sfx('thunder', 0.8);
         for (const o of this.monsters) if (!o.dead && Math.hypot(o.x - h.x, o.y - h.y) <= T.thunder.clapR + o.r) this.damageMonster(o, clap, 'lightning', false, i);
@@ -4316,7 +4325,7 @@ export class Game {
           .sort((a, b) => Math.hypot(a.x - o.x, a.y - o.y) - Math.hypot(b.x - o.x, b.y - o.y))
           .slice(0, MELD_TUNE.hailstorm.passOn);
         for (const n of next) {
-          this.emit({ t: 'arc', x0: o.x, y0: o.y, x1: n.x, y1: n.y });
+          this.emit({ t: 'arc', x0: o.x, y0: o.y, x1: n.x, y1: n.y, meld: 'hailstorm' });
           this.damageMonster(n, arc, 'lightning', false, i);
           this.chillMonster(n, Math.max(r.chill, 0.3));
         }
@@ -4330,25 +4339,29 @@ export class Game {
       if (o.kind === kind && !o.hostile && Math.hypot(o.x - x, o.y - y) < 0.6 && o.r >= rad - 0.1) {
         o.t = 0;
         o.dmg = Math.max(o.dmg, dps);
+        // (and it looks like the pool or cloud it now is: the look only)
+        const look = this.hero.skills[i].r.meld;
+        if (look && !o.meld) o.look = look;
         return;
       }
     }
     if (!this.roomForZone() || !this.onFloor(x, y)) return;
-    this.zones.push({ x, y, r: rad, t: 0, dur, kind, element: el, dmg: dps, slow: 0, tick: 0.2, hostile: false, skill: i, words: [], from: '' });
-    this.emit({ t: 'zone', kind, x, y, r: rad, el });
+    const look = this.hero.skills[i].r.meld;
+    this.zones.push({ x, y, r: rad, t: 0, dur, kind, element: el, dmg: dps, slow: 0, tick: 0.2, hostile: false, skill: i, words: [], from: '', ...(look ? { look } : {}) });
+    this.emit({ t: 'zone', kind, x, y, r: rad, el, ...(look ? { meld: look } : {}) });
   }
 
   /**
    * HEAVY: monster `m` is stunned for `secs`: it cannot move or attack, and what it was winding up
    * is broken off. An elite (a guardian too) for half as long; a boss never.
    */
-  private stunMonster(m: Monster, secs: number): void {
+  private stunMonster(m: Monster, secs: number, meld?: MeldId): void {
     if (m.dead || m.boss) return;
     const t = m.elite ? secs / 2 : secs;
     if (t <= m.stunT) return;
     m.stunT = t;
     this.breakOff(m);
-    this.emit({ t: 'stun', id: m.id, x: m.x, y: m.y, secs: t });
+    this.emit({ t: 'stun', id: m.id, x: m.x, y: m.y, secs: t, ...(meld ? { meld } : {}) });
   }
 
   /**
@@ -6056,7 +6069,7 @@ export class Game {
         if (z.kind === 'storm') {
           if (inside.length) {
             const m = this.rng.pick(inside);
-            this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y, sky: true });
+            this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y, sky: true, ...(z.meld ? { meld: z.meld } : {}) });
             this.damageMonster(m, Math.max(1, Math.round(z.dmg)), 'lightning', false, z.skill);
             this.sfx('thunder', 0.5);
           }
@@ -6108,7 +6121,7 @@ export class Game {
         const near = this.monsters.filter((m) => !m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + T.wildfire.reach);
         if (near.length) {
           const m = this.rng.pick(near);
-          this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y });
+          this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y, meld: 'wildfire' });
           this.damageMonster(m, Math.max(1, Math.round(z.dmg * (T.wildfire.spark / 0.25))), 'fire', false, z.skill);
           this.sfx('zap', 0.4);
         }
@@ -6118,7 +6131,7 @@ export class Game {
       if (this.monsters.some((m) => !m.dead && m.burnT > 0 && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5)) {
         this.zones.splice(k, 1);
         const boom = Math.max(1, Math.round(z.dmg * T.fumes.blast));
-        this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r + 0.5, el: 'fire', style: 'blast' });
+        this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r + 0.5, el: 'fire', style: 'blast', meld: 'fumes' });
         this.emit({ t: 'shake', amount: 3 });
         this.sfx('explode', 0.7);
         for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + 0.5 + m.r) this.damageMonster(m, boom, 'fire', false, z.skill);
@@ -6132,7 +6145,7 @@ export class Game {
       const inside = this.monsters.filter((m) => !m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5);
       if (inside.length) {
         const m = this.rng.pick(inside);
-        this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y });
+        this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: m.x, y1: m.y, meld: 'contagion' });
         this.damageMonster(m, Math.max(1, Math.round(z.dmg * T.contagion.shock)), 'lightning', false, z.skill);
         this.sfx('zap', 0.4);
       }

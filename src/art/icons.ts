@@ -10,8 +10,8 @@
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { P } from './palette';
-import { ALL_WORD_IDS, MELD_OF } from '../game/types';
-import type { AbilityId, Element, IconKey, WordId } from '../game/types';
+import { ALL_WORD_IDS, MELD_IDS, MELD_OF } from '../game/types';
+import type { AbilityId, Element, IconKey, MeldId, WordId } from '../game/types';
 import { makeAbilityIcons } from './ability_icons';
 
 export interface IconArt {
@@ -1026,6 +1026,20 @@ function runeSprite(word: WordId): Sprite {
     for (const x of [7, 8, 9]) p.set(x, 10, WORD_COLOR[of[1]]);
   }
   return p.outline(P.ink).sprite(6, 10);
+}
+
+/**
+ * WORDMELDING's looks (render/melds3.ts, behind MELD3, off): give the ten melded words the colours
+ * and runes drawn there, in place of the placeholders above, and paint their stones again into
+ * `art`. Called only by a page that switches the looks on (main.ts, __dbg.melds3.paint).
+ */
+export function useMeldArt(art: IconArt, ramp: Record<MeldId, readonly string[]>, glyph: Record<MeldId, readonly string[]>): void {
+  for (const w of MELD_IDS) {
+    WORD_COLOR[w] = ramp[w][3];
+    WORD_GLOW[w] = ramp[w][4];
+    GLYPH[w] = glyph[w];
+    art.word[w] = runeSprite(w);
+  }
 }
 
 function makeWordRunes(): Record<WordId, Sprite> {

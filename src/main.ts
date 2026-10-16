@@ -7,7 +7,7 @@ import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAtta
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
-import { makeIconArt } from './art/icons';
+import { makeIconArt, useMeldArt } from './art/icons';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
 import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
@@ -64,9 +64,9 @@ import { flowDir, flowField, lineOfSight } from './game/nav';
 import type { AimMode, Controls, GameEvent, Level, Meta, Monster, PropInst, Station, TownVoice } from './game/state';
 import { rollItem } from './game/items';
 import { RNG } from './engine/rng';
-import { CLASS_IDS, WORD_IDS } from './game/types';
+import { CLASS_IDS, MELD_IDS, WORD_IDS } from './game/types';
 import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
-import { Fx, wx, wy } from './render/fx';
+import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import type { Art } from './render/render';
@@ -83,6 +83,7 @@ import { gambleSide, wordsmithSide } from './ui/trades';
 import { meldOpen, meldSide } from './ui/meld';
 import { THEME, Ui } from './ui/ui';
 import { WORDS3, demo3, events3 } from './render/words3';
+import { MELD3, MELD_GLYPH, MELD_RAMP, demoM3, eventsM3 } from './render/melds3';
 
 declare const __BUILD__: string;
 /** THE TRY-OUT PAGE (tools/build_tryout.mjs): its options offer a seasoned hero, straight to a floor. Absent in every other build. */
@@ -1382,6 +1383,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
     }
     const levelled = g.events.some((e) => e.t === 'levelup');
+    // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts, called up by what the rules say happened)
+    if (MELD3.on) eventsM3(g.events, g, fx);
     fx.handle(more.length ? [...g.events, ...more] : g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
     // (the new words' looks, called up by what the rules say happened: render/words3.ts)
     if (WORDS3.on) events3(g.events, g, fx);
@@ -2098,6 +2101,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     traps: TRAPS,
     /** THE NEW WORDS (render/words3.ts): how the eight words he chose on 8 Oct look at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
     words3: demo3(fx, () => game),
+    /** WORDMELDING's looks (render/melds3.ts): the ten melded words at work, behind a switch that is off; its playtest switches it on for its own page. */
+    melds3: demoM3(fx, () => game, () => {
+      // (the melded words' colours and runes, as drawn there, in place of the placeholders: for this page only)
+      useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH);
+      for (const w of MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
+    }),
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
