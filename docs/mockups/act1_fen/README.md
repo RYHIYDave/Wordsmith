@@ -456,5 +456,44 @@ Shown `shots/drowned_look.png` and `shots/drowned_stand.gif`, asked "Is this the
 (Recommended)"; "More drowned, more gruesome"; "Not yet"), his answer, 15 Oct, by 22:46 (the clock read 22:46:58 just
 after): "Yes, animate it (Recommended)".
 
-NEXT: its moves (rising out of the water, its shamble, the drowning grab, struck, collapsing into water and weed), then
-the Bog Leeches (tiny) and the Eyespawn (medium; they hatch from his eggs).
+### Its moves
+
+In seconds from each move's start (src/art/drowned.ts):
+
+- RISING OUT OF THE WATER (`more.rise`, `DR_RISE`, 1.9 s): bubbles where it will come up; its cowl breaks the surface
+  about 0.12 s, its face by 0.3 s; it heaves up out of the water to 1.0 s, water pouring off it; its eyes kindle from
+  0.35 s, pink to gold, their light from then, burning by about 1.0 s; it shudders the water off 1.05 to 1.4 s, its
+  head jerked up and round; standing by 1.9 s. What of it is under the water is not painted (`Mob.under`).
+- ITS SHAMBLE (`DR_WALK`, 10 frames at 8 a second, a 1.25 s round, painted for `DR_PACE`, 0.7 tiles a second): its left
+  foot steps and lands at 0 s; its right drags forward low 0 to 0.625 s and lands at 0.625 s, its body dropping onto
+  it.
+- ITS DROWNING GRAB (`DR_GRAB`, 1.6 s): its arms flung up and wide, its hands spread, its head thrown back, its eyes
+  flaring, 0 to 0.26 s; HELD TREMBLING (the warning) 0.26 to 0.42 s; the lunge, both arms driving forward; ITS HANDS
+  CLUTCH SHUT ON YOU at 0.667 s (frame 20 of 30); it wrenches you down, bent double, to 1.05 s; lets go 1.1 to 1.25 s;
+  hunched again by 1.6 s.
+- STRUCK (0.45 s): jolted back, its head snapped back, water thrown off it, its arms flung.
+- ITS DEATH (`DR_DIES`, 2.0 s): its eyes dimming from the blow, out (no light) by about 0.85 s; down on its knees by
+  0.42 s; its body sinking into the water 0.5 to 1.35 s (its head under by about 1.05 s) while its robes slump empty
+  into a spreading puddle, water gushing out of it, 0.45 to 1.4 s; left lying: the heap of its robes, its emptied cowl,
+  its stole and weed, in the puddle.
+
+`new_mobs3.ts` gained two hooks for it: `Mob.under` (while true, nothing of it under the floor is painted) and
+`Mob.grains` (single drops of water laid on it after its edge, so they carry none).
+
+    node tools/page_gif.mjs src/dev/preview_drowned.ts "seq:rise" shots/drowned_rise.gif 6
+    node tools/page_gif.mjs src/dev/preview_drowned.ts "seq:grab" shots/drowned_grab.gif 6
+
+`tests/drowned.test.ts` 11 (5 more): every other frame of its moves (and every third of its rise and death) crisp,
+nothing cyan, every light the enemy's fire, nothing cut off, no edge once it is dying; THE BOSS REVIEW of its stand,
+shamble, grab and flinch, and where its moves hand over, out of its rise and into its death (`tests/drowned_shape.ts`;
+it found its dragging foot sliding, lifted a little before he saw it); the rise (wholly under at first, coming up, its
+eyes lighting as it comes); the grab (hands up as it warns, out before it at the blow, dragged down after); the death
+(no light, its body under, its robes and the puddle left).
+
+Shown `shots/drowned_rise.gif` and `shots/drowned_grab.gif`, asked in one pop-up "The Drowned rising out of the water and
+shambling (drowned_rise.gif): how is it?", "Its grab: arms flung up and wide, the lunge, the clutch, dragged down
+(drowned_grab.gif)?", "Struck, and its death, collapsing into water and weed (end of drowned_grab.gif)?" (each
+offered: "Yes, as shown (Recommended)"; "Bigger and wilder"; "Not yet"), his answers, 15 Oct, by 23:32 (the clock read
+23:32:12 just after): each "Yes, as shown (Recommended)". ALL OF THE DROWNED NOW HAS HIS YES.
+
+NEXT: the Bog Leeches (tiny), then the Eyespawn (medium; they hatch from his eggs), each by its brief, look and moves.
