@@ -145,7 +145,8 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (/from ['"][^'"]*(bosses3|boss_shots)['"]/.test(text)) users.push(f);
   }
-  assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw them');
+  // (and ACT 1's, render/act1_fx/: the descent's bosses' own effects, drawn in the same warnings as theirs)
+  assert.equal(users.filter((f) => !f.startsWith('render/act1_fx/')).sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw them');
 });
 
 test('2. the Headsman paints in every frame both ways round: nothing cyan, his edge while he lives, none as he dies', () => {
