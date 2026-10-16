@@ -17,7 +17,8 @@
 
 import { CANYON_LOOK } from '../art/canyon';
 import { fenLook } from '../art/fen';
-import { SKY_WRAP, ledgeLook, paintSky } from '../art/ledge';
+import { SKY_WRAP, cloudBelow, ledgeLook, paintSky } from '../art/ledge';
+import { paintTown } from '../art/ledge_town';
 import { pinewoodLook } from '../art/pinewood';
 import { QUARRY_LOOK } from '../art/quarry';
 import { GRAIN, paintTerrain, terrainOf } from '../art/terrain';
@@ -165,6 +166,8 @@ export class OutdoorGround {
   private frame = 0;
   private sky: HTMLCanvasElement | null = null;
   private skyDone = 0;
+  /** THE LEDGE ROAD: the town far below under the cult's dome (art/ledge_town.ts), in the sky's land once, not round and round as the sky is: its picture, where its left edge is in the sky (picture pixels, not wrapped), and its top. */
+  private town: { cvs: HTMLCanvasElement; x: number; y: number } | null = null;
   /** Where the camera was last frame. */
   private camWas: { ox: number; oy: number } | null = null;
   /** For the tests and measuring: pieces painted, and the time it took. */
@@ -185,6 +188,7 @@ export class OutdoorGround {
     this.pieces.clear();
     this.sky = null;
     this.skyDone = 0;
+    this.town = null;
     this.deep = land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
     return true;
   }
@@ -196,6 +200,7 @@ export class OutdoorGround {
     this.land = null;
     this.T = null;
     this.sky = null;
+    this.town = null;
   }
 
   private key(i: number, j: number): number {
@@ -281,6 +286,67 @@ export class OutdoorGround {
     }
   }
 
+  /**
+   * THE TOWN FAR BELOW (art/ledge_town.ts, the eyrie mock-up's, with his yes): painted once for the floor into the
+   * land of the sky, where it shows past the Queen's eyrie: with the camera on the eyrie, it lies out over the
+   * drop on the eyrie's open side, as far below the horizon as the mock-up has it. Only what of it differs from the
+   * sky behind is kept (the haze it is mixed with is the sky's own), so it lies over the sky's picture.
+   */
+  private paintTownLayer(W: number): { cvs: HTMLCanvasElement; x: number; y: number } | null {
+    const land = this.land;
+    if (!land || !land.drop) return null;
+    const area = land.areas.find((a) => a.role === 'boss');
+    if (!area) return null;
+    const bx = area.blob.x;
+    const by = area.blob.y;
+    // (the eyrie's edge nearest its middle, and which way the drop lies past it on the screen: the camera on that
+    // edge, as the hero stands looking out from it, the town lies a little way out over the drop)
+    const fw = this.T?.floor.w ?? 0;
+    const fh = this.T?.floor.h ?? 0;
+    let ex = bx;
+    let ey = by;
+    let best = Infinity;
+    for (let ty = Math.floor(by - 14); ty <= by + 14; ty++) {
+      for (let tx = Math.floor(bx - 14); tx <= bx + 14; tx++) {
+        if (tx < 0 || ty < 0 || tx >= fw || ty >= fh || land.drop[ty * fw + tx] !== 1) continue;
+        const d = Math.hypot(tx + 0.5 - bx, ty + 0.5 - by);
+        if (d < best) {
+          best = d;
+          ex = tx + 0.5;
+          ey = ty + 0.5;
+        }
+      }
+    }
+    const side = Math.sign(ex - ey - (bx - by)) || 1;
+    const off = side * Math.min(W * GRAIN * 0.22, 420);
+    const camOx = W / 2 - (ex - ey) * 16;
+    const unwrapped = (-camOx * GRAIN) / 2;
+    // (the picture: 600 by 280 of the sky's land; the town's middle at game pixel (190, 100) of it, the swamp off to its left as the mock-up has it)
+    const PW = 600;
+    const PH = 280;
+    const TOWN: [number, number] = [190, 100];
+    const SWAMP: [number, number] = [68, 92];
+    const x0 = Math.round(unwrapped + W * GRAIN * 0.5 + off - TOWN[0] * 2);
+    // (as far below the horizon as in the mock-up: its middle 100 picture pixels down)
+    const y0 = 100 - TOWN[1] * 2;
+    const sky = paintSky(x0, y0, PW, PH);
+    const buf = sky.slice();
+    paintTown(buf, PW, PH, (px, py) => cloudBelow(x0 + px, y0 + py), TOWN, SWAMP);
+    const out = new Uint8ClampedArray(PW * PH * 4);
+    for (let i = 0; i < PW * PH * 4; i += 4) {
+      if (buf[i] === sky[i] && buf[i + 1] === sky[i + 1] && buf[i + 2] === sky[i + 2]) continue;
+      out[i] = buf[i];
+      out[i + 1] = buf[i + 1];
+      out[i + 2] = buf[i + 2];
+      out[i + 3] = 255;
+    }
+    const cvs = document.createElement('canvas');
+    cvs.width = PW;
+    cvs.height = PH;
+    (cvs.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(out, PW, PH), 0, 0);
+    return { cvs, x: x0, y: y0 };
+  }
+
   /** The sky: painted once for the floor, a strip at a time; laid across the screen at half the ground's slide. */
   private drawSky(g: CanvasRenderingContext2D, cam: Cam, W: number, H: number, first: boolean): void {
     if (!this.sky) {
@@ -303,6 +369,14 @@ export class OutdoorGround {
     const slide = (((-cam.ox * GRAIN) / 2) % SKY_WRAP + SKY_WRAP) % SKY_WRAP;
     const top = Math.round(H / 2 - (HORIZON / GRAIN) * 1);
     for (let x = -slide; x < W * GRAIN; x += SKY_WRAP) g.drawImage(this.sky, 0, 0, SKY_WRAP, SKY_H, x / GRAIN, top, SKY_WRAP / GRAIN, SKY_H / GRAIN);
+    // THE LEDGE ROAD: the town far below under the cult's dome, where it shows past the eyrie's edge
+    if (this.land?.kind === 'ledge') {
+      if (!this.town) this.town = this.paintTownLayer(W);
+      if (this.town) {
+        const unwrapped = (-cam.ox * GRAIN) / 2;
+        g.drawImage(this.town.cvs, (this.town.x - unwrapped) / GRAIN, top + (this.town.y + HORIZON) / GRAIN, this.town.cvs.width / GRAIN, this.town.cvs.height / GRAIN);
+      }
+    }
     // (below the sky's picture, its haze goes on)
     if (top + SKY_H / GRAIN < H) {
       g.fillStyle = '#8a98b4';

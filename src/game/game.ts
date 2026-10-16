@@ -2126,7 +2126,9 @@ export class Game {
       q.guards.forEach((at, k) => {
         const kind = HOLD_GUARDS[k % HOLD_GUARDS.length];
         const words = this.bareDungeon() ? [] : this.drawWords(rng, this.depth >= 6 ? 2 : 1);
-        const m = this.spawn(kind, at.x, at.y, HOLD_GUARD_ID(q.n, k), 1, false, rng, null, { rarity: 'leader', words });
+        // (where the mock-up stood it, or the nearest place a body may stand: the altar, the braziers and banners are about it)
+        const spot = this.free(L.walk, at.x, at.y, 0.42) ? at : scatter(L.walk, L.floor.w, L.floor.h, at.x, at.y, 1, rng)[0] ?? at;
+        const m = this.spawn(kind, spot.x, spot.y, HOLD_GUARD_ID(q.n, k), 1, false, rng, null, { rarity: 'leader', words });
         if (k === carrier && words.length && this.wordsFall()) m.carries = [lot.pick(words)];
         // (they stand facing the way up to the door)
         m.fx = Math.SQRT1_2;

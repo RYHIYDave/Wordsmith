@@ -66,7 +66,7 @@ levels 6-10 into the game"). Nothing here is live until he has seen it from the 
   shattering, the bells and the rout of the camps are not built).
 - The day's light on the outdoor floors is lighter than first built, to match the mock-ups.
 
-## Not done yet
-
-- The town under the cult's dome far below the Queen's eyrie (the eyrie mock-up's, painted into the land of the
-  sky): not in the game's sky yet.
+8. THE REVEAL: the town far below under the cult's dome (the eyrie mock-up's painter, moved unchanged from
+   src/dev/preview_eyrie.ts to art/ledge_town.ts) is painted once into the land of the Ledge Road's sky, out over
+   the drop past the edge of the Queen's eyrie nearest its middle; it slides with the sky (half the ground's
+   slide), and the low clouds pass in front of it.

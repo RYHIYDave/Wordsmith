@@ -591,7 +591,9 @@ test('every whole tile of floor can still be walked to, and in a played dungeon 
       const n = f.w * f.h;
       const seen = new Uint8Array(n);
       const queue = [Math.floor(f.start.y) * f.w + Math.floor(f.start.x)];
-      seen[queue[0]] = 1;
+      // (ACT 1: a stronghold's hall is come into through its door, at its entry: game/act1_holds.ts)
+      for (const q of L.land?.holds ?? []) queue.push(Math.floor(q.entry.y) * f.w + Math.floor(q.entry.x));
+      for (const i of queue) seen[i] = 1;
       for (let head = 0; head < queue.length; head++) {
         const i = queue[head];
         for (const j of [i + 1, i - 1, i + f.w, i - f.w]) {
