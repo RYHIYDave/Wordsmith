@@ -40,4 +40,6 @@ export interface Act1Rules {
   bossAt?(L: Level): { x: number; y: number; fx: number; fy: number } | null;
   /** Whether the hero's blows reach it now (false: up in the air, under the water). */
   reachable?(m: Monster): boolean;
+  /** How much less harm (0 to 1) monster `m` takes for this one of its kind, `by`, standing by it (a chanter's ward over the cult near it): game.ts damageMonster, by `act1Ward`. */
+  ward?(R: BossRules, by: Monster, m: Monster): number;
 }

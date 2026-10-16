@@ -2,6 +2,8 @@
 // own here). A kind whose rules are null is not built yet: the cult stands in for it (game/act1_mobs.ts), and
 // a floor's boss not built yet is stood in for by the Warden (game/bosses.ts, bossKind).
 
+import type { BossRules } from '../bosses';
+import type { Monster } from '../state';
 import type { MonsterKind } from '../types';
 import type { Act1Rules } from './types';
 import { RULES as chanter } from './chanter';
@@ -47,4 +49,18 @@ export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>
 /** The rules of a kind of the descent's own (null: not one, or not built yet). */
 export function act1Rules(kind: MonsterKind): Act1Rules | null {
   return ACT1_RULES[kind] ?? null;
+}
+
+/** The kinds whose rules ward others (Act1Rules.ward). */
+const WARDERS = new Set<MonsterKind>((Object.keys(ACT1_RULES) as MonsterKind[]).filter((k) => ACT1_RULES[k]?.ward));
+
+/** How much less harm monster `m` takes now for the wards of those round it (a chanter's over the cult near it): the strongest of them, 0 to 1. */
+export function act1Ward(R: BossRules, m: Monster): number {
+  if (WARDERS.size === 0) return 0;
+  let best = 0;
+  for (const o of R.g.monsters) {
+    if (o.dead || o === m || !WARDERS.has(o.kind)) continue;
+    best = Math.max(best, ACT1_RULES[o.kind]!.ward!(R, o, m));
+  }
+  return best;
 }

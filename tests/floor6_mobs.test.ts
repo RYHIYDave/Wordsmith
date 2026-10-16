@@ -1,5 +1,5 @@
-// FLOOR 6'S MOBS, THE QUARRY GOLEM AND THE RUBBLING (src/art/floor6_mobs.ts; a mock-up nothing of the game
-// imports), held to his rulebook before he sees them: crisp in every frame, the enemy's pink edge round them
+// FLOOR 6'S MOBS, THE QUARRY GOLEM AND THE RUBBLING (src/art/floor6_mobs.ts; a mock-up until Act 1 put them in the
+// game, through art/act1_figs/qgolem.ts and rubbling.ts, their switch going with the descent), held to his rulebook: crisp in every frame, the enemy's pink edge round them
 // while they live and none as they die, nothing cyan and every light the cult's fire, their sizes beside
 // the knight, the golem's mark burning on its chest and the rubbling's spark in it, the whole boss review of
 // every move of the golem (as his rulebook asks of every figure on the bones), the rubbling's feet gripping
@@ -21,13 +21,15 @@ import { spriteOf3 } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
 import { CHUNK_FRAMES, FLOOR6_MOBS_ON, QG_DIE_TIME, QUARRY_GOLEM, RB_ATTACK, RB_DIE, RB_EMERGE, RB_PACE, RB_REEL, RB_WALK, chunkShatter, golemChunk, golemFrame, makeRubblingArt, rubblingPainted, rubblingWalkFeet } from '../src/art/floor6_mobs';
 import { WORD_COLOR } from '../src/art/icons';
+import { useAct1Figs } from '../src/art/bestiary';
+import { ACT1 } from '../src/game/act1';
 import { TILE3, deathOfMob, paintMob } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
 import type { Px, Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
-const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void };
+const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void; deepEqual(a: unknown, b: unknown, msg?: string): void };
 const fs = nodeFs as { readdirSync(p: string, o: { recursive: boolean }): string[]; readFileSync(p: string, e: string): string };
 paintWithoutCanvas();
 
@@ -82,12 +84,19 @@ function tallOf(sp: Sprite): number {
   return bottom - top + 1;
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
+test('in the game through art/act1_figs/ (its switch goes with the descent), and nothing else of the game imports it', () => {
+  // (art/bestiary.ts useAct1Figs: the art chat's switch is on while the descent is)
+  useAct1Figs(true);
+  assert.equal(FLOOR6_MOBS_ON.on, true);
+  useAct1Figs(false);
   assert.equal(FLOOR6_MOBS_ON.on, false);
+  useAct1Figs(ACT1.on);
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('floor6_mobs.ts')) continue;
-    assert.ok(!/from ['"][^'"]*floor6_mobs['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports floor 6's mobs`);
+    if (/from ['"][^'"]*floor6_mobs['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f.split('\\').join('/'));
   }
+  assert.deepEqual(users.sort(), ['art/act1_figs/qgolem.ts', 'art/act1_figs/rubbling.ts', 'render/act1_fx/qgolem.ts'], 'the game files that hold them');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge), the pink edge round them while they live, none as they die', () => {

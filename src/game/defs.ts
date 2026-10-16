@@ -436,13 +436,18 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // art chat's pictures, each with his yes). Never in a pack of the Crypt's (no weight): each floor of the
   // descent draws its own. Their blows land when their pictures' do (`windup`: the art's own times), and
   // they go at the paces their walks were painted for. Small ones one attack, medium two, by his rule.
-  // THE CHANTER, small: a bolt of cursed words; nearby cultists take less harm while it lives.
-  chanter: { kind: 'chanter', name: 'Chanter', life: 15, dmgMin: 5, dmgMax: 8, speed: 1.0, radius: 0.3, range: 7, windup: 19 / 30, cooldown: 2.6, xp: 8, ranged: true, projSpeed: 7, keepMax: 6, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  // THE FIREPOT THROWER, small: lobs pots that leave burning ground.
-  firepot: { kind: 'firepot', name: 'Firepot Thrower', life: 16, dmgMin: 7, dmgMax: 10, speed: 1.1, radius: 0.3, range: 7.5, windup: 27 / 30, cooldown: 3.2, xp: 8, ranged: true, projSpeed: 0, keepMax: 6.5, element: 'fire', aoe: 1.2, minDepth: 99, weight: 0, size: 'small' },
+  // THE CHANTER, small: a bolt of cursed words; nearby cultists take less harm while it lives. A caster as the
+  // cultist is, a little frailer (the one to kill first) and worth a little more; what it does is game/act1_rules/chanter.ts.
+  chanter: { kind: 'chanter', name: 'Chanter', life: 15, dmgMin: 5, dmgMax: 8, speed: 1.0, radius: 0.3, range: 7, windup: 19 / 30, cooldown: 2.6, xp: 9, ranged: true, projSpeed: 7, keepMax: 5, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // THE FIREPOT THROWER, small: lobs pots that leave burning ground (game/act1_rules/firepot.ts). A cultist's
+  // life and blow; its fire is the enemy's, and burns.
+  firepot: { kind: 'firepot', name: 'Firepot Thrower', life: 16, dmgMin: 7, dmgMax: 10, speed: 1.1, radius: 0.3, range: 7.5, windup: 27 / 30, cooldown: 3.2, xp: 8, ranged: true, projSpeed: 0, keepMax: 4.5, element: 'fire', aoe: 0.65, minDepth: 99, weight: 0, size: 'small' },
   // FLOOR 6, THE QUARRY: the quarry golem, medium (its hammer and its thrown chunk); the rubblings, tiny (a bite).
-  qgolem: { kind: 'qgolem', name: 'Quarry Golem', life: 46, dmgMin: 12, dmgMax: 18, speed: 1.0, radius: 0.5, range: 1.7, windup: 0.95, cooldown: 2.2, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
-  rubbling: { kind: 'rubbling', name: 'Rubbling', life: 7, dmgMin: 3, dmgMax: 5, speed: 2.0, radius: 0.22, range: 0.8, windup: 0.42, cooldown: 1.1, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
+  // (the golem: of a brute's weight, slower, and a little broader, as broad as its blocks are drawn (between the
+  // brute's and the Ossuary Golem's); what each does is game/act1_rules/qgolem.ts and rubbling.ts. A
+  // rubbling: a bat's size of blow, a little frailer, for there are six to ten of them)
+  qgolem: { kind: 'qgolem', name: 'Quarry Golem', life: 46, dmgMin: 12, dmgMax: 18, speed: 1.0, radius: 0.6, range: 2.0, windup: 0.95, cooldown: 2.3, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0.8, minDepth: 99, weight: 0, size: 'medium' },
+  rubbling: { kind: 'rubbling', name: 'Rubbling', life: 7, dmgMin: 3, dmgMax: 5, speed: 2.0, radius: 0.22, range: 0.85, windup: 0.42, cooldown: 1.3, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
   // FLOOR 7, THE LEDGE ROAD: the vultures, small (they circle, then dive); the cliff crawlers, medium (a swipe; a leap).
   vulture: { kind: 'vulture', name: 'Vulture', life: 13, dmgMin: 5, dmgMax: 8, speed: 1.2, radius: 0.3, range: 1.4, windup: 0.7, cooldown: 2.2, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   crawler: { kind: 'crawler', name: 'Cliff Crawler', life: 38, dmgMin: 10, dmgMax: 15, speed: 1.4, radius: 0.45, range: 1.3, windup: 0.4, cooldown: 1.8, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
