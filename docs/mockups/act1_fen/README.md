@@ -430,5 +430,31 @@ pop-up "His surfacing (eye_surface.gif): good?", "The siege pulled into him, pha
 wilder"; "Not yet"), his answers, 15 Oct, by 21:41 (the clock read 21:41:12 just after): each "Yes, as shown
 (Recommended)". ALL OF THE DROWNED EYE NOW HAS HIS YES.
 
-NEXT: floor 10's mobs, each by its brief, then its look, then its moves: the Drowned (small), the Bog Leeches (tiny),
-the Eyespawn (medium; they hatch from his eggs).
+## The Drowned, floor 10's small mob (src/art/drowned.ts, behind DROWNED_ON, off)
+
+His brief, two pop-ups, 15 Oct, by 22:15 (the clock read 22:15:44 just after): "Drowned cultists in rotting robes"
+(not the recommended pick); "The knight's height, hunched (Recommended)"; "Rising out of the water, then shambling
+(Recommended)"; "Eyes glowing the Eye's gold (Recommended)"; its one attack, "A drowning grab: clutch, then drag down
+(Recommended)"; how it dies, "Collapses into water and weed (Recommended)"; "Not a cartoon zombie (Recommended)"; its
+sound, "Gurgling moans, wet footsteps (Recommended)".
+
+### Its look
+
+Of the cult's flock (art/act1_cultists.ts), drowned: the cult's violet robe gone sodden and dark, torn to rags and
+slimed with the fen's mud at its hem; the stole's pink gone dull; weed draped over its shoulders and caught on its cowl,
+hanging from its sleeves; swollen grey-green hands, the fingers hooked; in the cowl's dark a slack drowned face and two
+eyes burning the Eye's gold (their light gold). Water runs off it, drips splashing round its feet. Its stand (2.6 s):
+heaving wet breaths, swaying, its arms swinging, its head lolling and once jerking up and round as at a sound.
+
+    node tools/preview.mjs src/dev/preview_drowned.ts shots/drowned_look.png 1014 640 look
+    node tools/page_gif.mjs src/dev/preview_drowned.ts "standfilm" shots/drowned_stand.gif 6
+
+`tests/drowned.test.ts` 6: the switch off and nothing of the game importing it; crisp, its pink edge; nothing cyan, every
+light the enemy's fire; nothing cut off; the knight's height (0.85 to 1.15 of him); its eyes gold, their light gold.
+
+Shown `shots/drowned_look.png` and `shots/drowned_stand.gif`, asked "Is this the Drowned?" (offered: "Yes, animate it
+(Recommended)"; "More drowned, more gruesome"; "Not yet"), his answer, 15 Oct, by 22:46 (the clock read 22:46:58 just
+after): "Yes, animate it (Recommended)".
+
+NEXT: its moves (rising out of the water, its shamble, the drowning grab, struck, collapsing into water and weed), then
+the Bog Leeches (tiny) and the Eyespawn (medium; they hatch from his eggs).
