@@ -170,6 +170,7 @@ test('blazing (his pick, its veins blaze): more of the enemy\'s fire on it than 
 // HIS STANDS AND HIS TENTACLE MOVES: the boss review (his rulebook, How art is made 7), every frame of his stands and
 // every third of his moves at thirty a second, from in front and from behind; and the bursts, every third.
 
+import { EYE_DEATH, EYE_EMPOWER, EYE_STRUCK, EYE_SURFACE } from '../src/art/drowned_eye';
 import { EYE_BITE, EYE_SPAWN, EYE_SPEW, EYE_SPLASH, SPAWN_CANVAS, spawnLanding, spawnPainted, waveAt } from '../src/art/drowned_eye';
 import { BILE_CANVAS, BOLT_CANVAS, EYE_BILE, EYE_BOLT, EYE_CALL, EYE_SPIT, bileLanding, bilePainted, boltPainted } from '../src/art/drowned_eye';
 import { BURST_CANVAS, EYE_BURST, EYE_GAZE, EYE_LURK, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, burstPainted, eyeMarks, eyePainted, gazeAngle } from '../src/art/drowned_eye';
@@ -185,7 +186,7 @@ const AIMS = [-54, 20, 120, -160];
 for (const view of ['front', 'back'] as const) {
   for (let i = 0; i < EYE_STAND.frames; i++) reviewed.push({ name: `stand ${view} ${i}`, painted: once(() => eyePainted('stand', i / EYE_STAND.fps, view)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
   for (let i = 0; i < EYE_LURK.frames; i++) reviewed.push({ name: `lurk ${view} ${i}`, painted: once(() => eyePainted('lurk', i / EYE_LURK.fps, view)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
-  for (const [move, long] of [['slam', EYE_SLAM.long], ['sweep', EYE_SWEEP.long], ['slamUnder', EYE_SLAM.long], ['sweepUnder', EYE_SWEEP.long], ['gaze', EYE_GAZE.long], ['gazeBack', EYE_GAZE.long], ['call', EYE_CALL.long], ['spit', EYE_SPIT.long], ['bite', EYE_BITE.long], ['spew', EYE_SPEW.long], ['splash', EYE_SPLASH.long]] as [string, number][]) {
+  for (const [move, long] of [['slam', EYE_SLAM.long], ['sweep', EYE_SWEEP.long], ['slamUnder', EYE_SLAM.long], ['sweepUnder', EYE_SWEEP.long], ['gaze', EYE_GAZE.long], ['gazeBack', EYE_GAZE.long], ['call', EYE_CALL.long], ['spit', EYE_SPIT.long], ['bite', EYE_BITE.long], ['spew', EYE_SPEW.long], ['splash', EYE_SPLASH.long], ['surface', EYE_SURFACE.long], ['empower', EYE_EMPOWER.long], ['struck', EYE_STRUCK.long], ['struckUnder', EYE_STRUCK.long], ['death', EYE_DEATH.long]] as [string, number][]) {
     const n = Math.round(long * 30);
     for (let i = 0; i <= n; i += 3) {
       const aim = AIMS[(i / 3) % AIMS.length];
@@ -193,6 +194,9 @@ for (const view of ['front', 'back'] as const) {
     }
   }
   for (let i = 0; i <= Math.round(EYE_BURST.long * 30); i += 3) reviewed.push({ name: `burst ${view} ${i}/30`, painted: once(() => burstPainted(i / 30, view, i)), w: BURST_CANVAS.w, h: BURST_CANVAS.h });
+  // phase 3: his stand and his death blazing, the obelisks' lines bent into him
+  for (let i = 0; i < EYE_STAND.frames; i += 3) reviewed.push({ name: `stand, phase 3, ${view} ${i}`, painted: once(() => eyePainted('stand', i / EYE_STAND.fps, view, 0, 0, 1)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
+  for (let i = 0; i <= Math.round(EYE_DEATH.long * 30); i += 3) reviewed.push({ name: `death, phase 3, ${view} ${i}/30`, painted: once(() => eyePainted('death', i / 30, view, 0, 0, 1)), w: EYE_CANVAS.w, h: EYE_CANVAS.h });
   for (let i = 0; i <= Math.round(EYE_SPAWN.long * EYE_SPAWN.fps); i += 2) reviewed.push({ name: `egg ${view} ${i}/${EYE_SPAWN.fps}`, painted: once(() => spawnPainted(i / EYE_SPAWN.fps, view, i)), w: SPAWN_CANVAS.w, h: SPAWN_CANVAS.h });
   for (let i = 0; i <= Math.round(EYE_BILE.long * EYE_BILE.fps); i += 2) reviewed.push({ name: `bile ${view} ${i}/${EYE_BILE.fps}`, painted: once(() => bilePainted(i / EYE_BILE.fps, view, i)), w: BILE_CANVAS.w, h: BILE_CANVAS.h });
   for (let i = 0; i <= Math.round(EYE_BOLT.long * 30); i += 2) reviewed.push({ name: `bolt ${view} ${i}/30`, painted: once(() => boltPainted(i / 30, view, i)), w: BOLT_CANVAS.w, h: BOLT_CANVAS.h });
@@ -523,7 +527,7 @@ import { EYE_R as RADIUS, armSpine, eyeLong, poseOf } from '../src/art/drowned_e
 
 test('NOTHING THROUGH HIS EYE (his rulebook, How art 7): no arm of his goes into the face of his eye, in any move', () => {
   const D = Math.PI / 180;
-  for (const m of ['stand', 'lurk', 'slam', 'sweep', 'slamUnder', 'sweepUnder', 'gaze', 'gazeBack', 'call', 'spit', 'bite', 'spew', 'splash']) {
+  for (const m of ['stand', 'lurk', 'slam', 'sweep', 'slamUnder', 'sweepUnder', 'gaze', 'gazeBack', 'call', 'spit', 'bite', 'spew', 'splash', 'surface', 'empower', 'struck', 'death']) {
     const long = eyeLong(m);
     for (const aim of AIMS) {
       for (let i = 0; i <= Math.round(long * 30); i += 2) {
@@ -672,4 +676,76 @@ test('HIS SPLASH: from his stand and back; his bulk heaved up and held before it
   }
   assert.ok(foam >= 4, `the wave's foam where it is (${foam} of 5)`);
   handsBack('splash', S.long, 0);
+});
+
+/** A move from one stand to another: pixel for pixel, its first frame its first stand's, its last its second's. */
+function fromTo(move: string, long: number, from: [string, number], to: [string, number], aim = 0, phase3 = 0): void {
+  for (const clock of [0, 0.7, 1.9]) {
+    for (const [t, [base, p3]] of [[0, from], [long, to]] as [number, [string, number]][]) {
+      const a = eyePainted(move, t, 'front', aim, clock, phase3).px.d;
+      const b = eyePainted(base, clock + t, 'front', 0, 0, p3).px.d;
+      let diff = 0;
+      for (let i = 0; i < a.length; i++) diff += a[i] !== b[i] ? 1 : 0;
+      assert.equal(diff, 0, `the ${move} at ${t} from ${clock}: as his ${base}${p3 ? ', phase 3' : ''}`);
+    }
+  }
+}
+
+test('HE SURFACES (phase 1 to 2): from his lurk to his stand; the pool boiling before he rises; his eye torn open into his maw as he roars; never leaping but as he bursts up', () => {
+  const S = EYE_SURFACE;
+  fromTo('surface', S.long, ['lurk', 0], ['stand', 0]);
+  const boil = travel('surface', S.long, 0, 0, S.boil - 1 / 30);
+  const risen = travel('surface', S.long, 0, S.rise[0] + 1 / 30, S.long);
+  assert.ok(boil.eye < 6 && boil.tip < 60, `boiling: his eye ${boil.eye.toFixed(1)}, tips ${boil.tip.toFixed(0)}`);
+  assert.ok(risen.eye < 40 && risen.tip < 200, `rising: his eye ${risen.eye.toFixed(1)}, tips ${risen.tip.toFixed(0)}`);
+  const settled = travel('surface', S.long, 0, S.roar[1], S.long);
+  assert.ok(settled.eye < 6 && settled.tip < 60, `settling: his eye ${settled.eye.toFixed(1)}, tips ${settled.tip.toFixed(0)}`);
+  // the boil: rings on the pool as it warns
+  assert.ok((poseOf('surface', S.boil * 0.8).ripples ?? []).length > 10, 'the pool boils');
+  // the roar: his maw torn open
+  assert.equal(poseOf('surface', (S.roar[0] + S.roar[1]) / 2).split, 1);
+});
+
+test('HE PULLS THE SIEGE IN (phase 2 to 3): from his stand to his blazing stand; the obelisks\' lines reaching him; his veins catching', () => {
+  const S = EYE_EMPOWER;
+  fromTo('empower', S.long, ['stand', 0], ['stand', 1]);
+  const m = travel('empower', S.long, 0, 0, S.long);
+  assert.ok(m.eye < 6 && m.tip < 60, `never leaping: his eye ${m.eye.toFixed(1)}, tips ${m.tip.toFixed(0)}`);
+  assert.equal(poseOf('empower', S.reach[0] - 0.05).siegeReach, 0, 'the lines not out yet');
+  assert.equal(poseOf('empower', S.reach[1] + 0.05).siegeReach, 1, 'the lines reach him');
+  assert.ok(poseOf('empower', S.blaze[0]).blaze < 0.05 && poseOf('empower', S.blaze[1]).blaze > 0.8, 'his veins catching');
+  // phase 3 burns more of the siege's fire on him than phase 2
+  const two = fireCount(eyePainted('stand', 1, 'front'));
+  const three = fireCount(eyePainted('stand', 1, 'front', 0, 0, 1));
+  assert.ok(three > two + 1500, `phase 3 blazing: ${three} against ${two}`);
+});
+
+test('STRUCK: risen and under the water, from his stand and back; his eye flinching shut', () => {
+  for (const aim of AIMS) {
+    fromTo('struck', EYE_STRUCK.long, ['stand', 0], ['stand', 0], aim);
+    fromTo('struckUnder', EYE_STRUCK.long, ['lurk', 0], ['lurk', 0], aim);
+    const m = travel('struck', EYE_STRUCK.long, aim, 0.1, EYE_STRUCK.long);
+    assert.ok(m.eye < 6 && m.tip < 60, `struck aim ${aim}: back smoothly (${m.eye.toFixed(1)}, ${m.tip.toFixed(0)})`);
+  }
+  assert.ok(poseOf('struck', 0.2, -54).lid > 0.7, 'his eye flinching shut');
+});
+
+test('HIS DEATH: from his stand (blazing, in phase 3); the dome cracking, then its shards falling; his eye going dark; he sinks; nothing of him left', () => {
+  const S = EYE_DEATH;
+  for (const clock of [0, 0.7, 1.9]) {
+    const a = eyePainted('death', 0, 'front', 0, clock, 1).px.d;
+    const b = eyePainted('stand', clock, 'front', 0, 0, 1).px.d;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff += a[i] !== b[i] ? 1 : 0;
+    assert.equal(diff, 0, `his death from ${clock}: as his stand`);
+  }
+  assert.ok((poseOf('death', (S.cracks[0] + S.shatter) / 2, 0, 0, 1).cracks ?? 0) > 0.3, 'the dome cracking');
+  assert.ok((poseOf('death', S.shatter + 0.4, 0, 0, 1).shards ?? []).length > 30, 'its shards falling');
+  assert.equal((poseOf('death', S.long, 0, 0, 1).shards ?? []).length, 0, 'its shards gone');
+  assert.equal(poseOf('death', S.shatter + 0.3, 0, 0, 1).siege, 0, 'the obelisks\' lines snapped');
+  assert.ok((poseOf('death', S.dark[1]).dark ?? 0) > 0.99, 'his eye gone dark');
+  let left = 0;
+  each(eyePainted('death', S.long, 'front', 0, 0, 1), (r, g, b, a) => (left += a > 0 ? 1 : 0));
+  assert.equal(left, 0, 'nothing of him left');
+  assert.equal(eyePainted('death', S.long, 'front', 0, 0, 1).lights.length, 0, 'no light left');
 });

@@ -81,6 +81,8 @@ const TOOTH: Ramp = ['#4a4436', '#7a705a', '#aea286', '#d4caae', '#efe7cf'];
 const WEED: Ramp = ['#152014', '#21301c', '#304426', '#435a32', '#586e3e'];
 /** Its spines and hooks: old horn and bone. */
 const HORN: Ramp = ['#1c1418', '#33262a', '#54443e', '#7a6a5a', '#a6947c'];
+/** His iris gone out. */
+const DEAD: Ramp = ['#141014', '#2a2228', '#3e343a', '#544850', '#6a5e64'];
 const BARNACLE: Ramp = ['#38383a', '#58585a', '#7e7c7a', '#a4a09a', '#c6c2ba'];
 /** Its pupil: a black slit. */
 const PUPIL = '#100810';
@@ -191,6 +193,18 @@ export interface EyePose {
   beams?: { from: V3; a: V3; b: V3; k: number; t: number }[];
   /** The stones his gaze has swept, from `from` degrees round to `to`: how long since it passed each (`age`), all of it fading as `fade` falls. */
   burnt?: { from: number; to: number; age: (deg: number) => number; fade: number };
+  /** The siege's magic drawn into him from the cult's obelisks (phase 3): its lines, how strongly (0 none); how far they have reached him (1 all the way). */
+  siege?: number;
+  siegeReach?: number;
+  /** The clock the siege's lines and the dome's shards flicker by. */
+  siegeT?: number;
+  /** His eye gone dark (dying): 0 not at all, 1 out. */
+  dark?: number;
+  /** The siege's dome shattering (his death): its shards falling, each where it is, its size, how it is turned; and the cracks across the sky, how far they have run (0 none). */
+  shards?: { at: V3; size: number; spin: number }[];
+  cracks?: number;
+  /** A flash of the siege's fire over all (the dome shattering): 0 none. */
+  flash?: number;
   /** Streaks through the air (the draught of his breath): each a line through its points, its head first, laid over all. */
   streaks?: { pts: V3[]; c: string }[];
   /** How far his face is turned round from his forward, toward his left, in degrees (none if not given). */
@@ -1011,6 +1025,228 @@ function splashPose(t: number, clock = 0): EyePose {
   return P;
 }
 
+// ---------------------------------------------------------------------------------------------
+// HIS PHASES (his pick, “Three, as your plan has, each harder (Recommended)”): under the water (phase 1); surfaced
+// (phase 2); the siege's magic pulled into him (phase 3: every move of his then, his veins blazing and the obelisks'
+// lines bent into him, `phase3` of eyePainted).
+
+/**
+ * HE SURFACES (phase 1 to 2; his pick, “The eye splits open into a maw”): under the water the pool boils, his eye
+ * blazing up through it, his arms drawn down under (the warning); he rises up out of it, water pouring off him, his
+ * seven arms rearing up out of the water round him; his eye tears open into his maw and he roars, his arms flung high;
+ * it heals shut and he stands risen. From his lurk (`clock` its clock) to his stand.
+ */
+export const EYE_SURFACE = { long: 4.2, boil: 1.3, rise: [1.3, 2.05], roar: [2.15, 3.45], fps: 30 } as const;
+
+function surfacePose(t: number, clock = 0): EyePose {
+  const S = EYE_SURFACE;
+  if (t < S.boil) {
+    // THE POOL BOILS: rings and bubbles all over it, his eye blazing brighter up through it, his arms drawn down
+    const P = lurkPose(clock + t);
+    const k = sm(t / S.boil);
+    P.glow = P.glow + 1.4 * k;
+    P.heave = add(P.heave, [1.5 * Math.sin(t * 31) * k, 1.5 * Math.cos(t * 27) * k, 0]);
+    // (drawn down under, shrinking back into the deep, clear of his eye)
+    const down = sm((t - 0.55) / (S.boil - 0.55));
+    P.arms = P.arms.map((A) => ({ ...A, long: A.long * (1 - 0.9 * down), r0: A.r0 + 30 * down, z0: A.z0 - 60 * down }));
+    P.ripples = [...(P.ripples ?? [])];
+    for (let i = 0; i < 18; i++) {
+      const f = fr(t * 2.2 + i / 18);
+      const a = hash(i, Math.floor(t * 2.2 + i / 18), 261) * 360;
+      const at = onLine(a, rimOn(a) * 0.8 * Math.sqrt(hash(i, 2, 261)));
+      if (k > i / 22) P.ripples.push([at, 3 + 34 * f]);
+    }
+    const drops: [V3, string, number][] = [...(P.drops ?? [])];
+    for (let i = 0; i < 70 * k; i++) {
+      const f = fr(t * 3 + hash(i, 3, 263));
+      const a = hash(i, 4, 263) * 360;
+      const at = onLine(a, rimOn(a) * 0.85 * Math.sqrt(hash(i, 5, 263)));
+      drops.push([add(at, [0, 0, 2 + 16 * f * (1 - f)]), f < 0.5 ? SPRAY[3] : SPRAY[1], i % 3 ? 2 : 3]);
+    }
+    // spurts of it thrown up, more as it boils harder
+    for (let j = 0; j < 4; j++) {
+      const t0 = 0.25 + j * 0.25;
+      const a = hash(j, 6, 263) * 360;
+      drops.push(...flung(t, t0, 14, () => onLine(a, rimOn(a) * 0.6 * hash(j, 7, 263)), 30, 180 + 60 * j, 0.5, SPRAY, 265 + j, 2));
+    }
+    P.drops = drops;
+    return P;
+  }
+  // HE RISES, out of the water, from where his lurk left him to his stand
+  const from = lurkPose(clock + S.boil);
+  const P = standPose(clock + t);
+  const k = sm((t - S.rise[0]) / (S.rise[1] - S.rise[0]));
+  const towards = (a: number, b: number): number => b + (a - b) * (1 - k);
+  const roar = bump(t, S.roar[0] - 0.1, S.roar[1]);
+  const over = 22 * bump(t, S.rise[0] + 0.3, S.roar[1] + 0.3);
+  P.zE = towards(from.zE, P.zE) + over;
+  P.heave = [towards(from.heave[0], P.heave[0]), towards(from.heave[1], P.heave[1]), towards(from.heave[2], P.heave[2]) + 8 * roar];
+  P.tilt = towards(from.tilt, P.tilt) + 14 * roar;
+  P.look = norm(add(mul(from.look, 1 - k), mul(P.look, k)));
+  P.glow = P.glow + (from.glow + 1.4 - P.glow) * (1 - k) + 0.6 * roar;
+  // his eye tearing open into his maw, roaring
+  P.split = t < S.roar[0] ? 0 : t < S.roar[1] - 0.35 ? sm((t - S.roar[0]) / 0.25) : 1 - sm((t - (S.roar[1] - 0.35)) / 0.45);
+  if (P.split > 0) P.lid = P.lid * (1 - P.split);
+  // his arms rearing up out of the water round him, flung high as he roars
+  const up = sm((t - S.rise[0]) / (S.rise[1] - S.rise[0] + 0.35));
+  // (growing up out of the deep from where they rise round him, clear of his eye)
+  P.arms = P.arms.map((A, i) => (A.rise <= 10 ? { ...A, long: A.long * (0.1 + 0.9 * up), z0: A.z0 - 40 * (1 - up) } : { ...A, long: A.long * (0.1 + 0.9 * up), r0: A.r0 + 25 * (1 - up), z0: A.z0 - 40 * (1 - up), rise: Math.min(A.rise + 14 * roar, Math.max(A.rise, 84)), wave: A.wave + 6 * roar, phase: A.phase + roar * Math.sin(t * 6 + i) }));
+  const drops: [V3, string, number][] = [...(P.drops ?? [])];
+  // water pouring off him as he comes up, a crown of it bursting up as he breaks the surface
+  if (t < S.roar[1]) for (let i = 0; i < 40; i++) {
+    const f = fr(t * 1.8 + hash(i, 1, 265));
+    const a = hash(i, 2, 265) * TAU;
+    const r = EYE_R * (0.4 + 0.8 * hash(i, 3, 265));
+    const top = P.zE + P.heave[2] + EYE_R * 0.4;
+    const at: V3 = [Math.cos(a) * r, Math.sin(a) * r, top - (top + 4) * f * f];
+    if (at[2] > 0 && hash(i, 4, 265) < 1.2 - 0.9 * sm((t - S.rise[1]) / 1.2)) drops.push([at, i % 3 ? SPRAY[2] : SPRAY[1], i % 4 ? 2 : 3]);
+  }
+  drops.push(...flung(t, S.rise[0], 90, (i) => onLine((i / 90) * 360, rimOn((i / 90) * 360) * 0.7), 70, 340, 1.0, SPRAY, 267, 3));
+  P.drops = drops;
+  P.ripples = [...(P.ripples ?? [])];
+  for (let kk = 0; kk < 3; kk++) {
+    const r = (t - S.rise[0] - kk * 0.15) * 150;
+    if (r > 2 && r < 150) P.ripples.push([[0, 0, 0], r]);
+  }
+  return P;
+}
+
+/** Where the cult's obelisks stand round the ring, degrees round from his forward, just beyond its edge: the siege's lines come from their tops. */
+export const EYE_OBELISKS = [180, 62, -62] as const;
+/** Where the top of obelisk `i` is (the figure's own measures). */
+export function obeliskTop(i: number): V3 {
+  const a = EYE_OBELISKS[i % EYE_OBELISKS.length];
+  return add(onLine(a, ringOn(a) + 0.6 * TILE3), [0, 0, 118]);
+}
+
+/**
+ * HE PULLS THE SIEGE'S MAGIC IN (phase 2 to 3; his pick, “The obelisks' pink lines bend into it; its veins blaze”): he
+ * rears and lifts his arms, his eye rolled up; from the top of each of the cult's obelisks a line of the siege's pink
+ * fire reaches out over the ring and bends down into him, pulses running along it; his veins catch and blaze, cracks of
+ * it through his flesh; a burst of its fire off him; he stands blazing, the lines bent into him (phase 3).
+ */
+export const EYE_EMPOWER = { long: 4.0, reach: [0.6, 1.5], blaze: [1.2, 2.9], burst: 2.95, fps: 30 } as const;
+
+function empowerPose(t: number, clock = 0): EyePose {
+  const E2 = EYE_EMPOWER;
+  const P = standPose(clock + t);
+  const up = t < E2.burst ? sm(t / 0.6) : 1 - sm((t - E2.burst) / (E2.long - E2.burst - 0.1));
+  const throb = 0.5 + 0.5 * Math.sin(t * 11);
+  P.heave = add(P.heave, [0, 0, 10 * up]);
+  P.tilt = P.tilt - 8 * up;
+  P.look = norm(add(mul(P.look, 1 - up), mul(norm([0.4, 0, 1]) as V3, up)));
+  P.lid = P.lid * (1 - up) + 0.03 * up;
+  P.arms = P.arms.map((A, i) => (A.rise <= 10 ? A : { ...A, rise: A.rise + (Math.max(A.rise, 80) - A.rise) * up, curl: A.curl * (1 - 0.5 * up), wave: A.wave + 3 * up, phase: A.phase + up * Math.sin(t * 6 + i) * 0.8 }));
+  // the lines reaching him; his veins catching
+  P.siegeReach = sm((t - E2.reach[0]) / (E2.reach[1] - E2.reach[0]));
+  if (P.siegeReach > 0) P.siege = 1;
+  P.blaze = sm((t - E2.blaze[0]) / (E2.blaze[1] - E2.blaze[0])) * (0.85 + 0.15 * throb) + (t > E2.blaze[1] ? 0.15 * (1 - throb) * (1 - sm((t - E2.burst) / 0.5)) : 0);
+  if (t >= E2.long - 0.4) P.blaze = 1 + (P.blaze - 1) * (1 - sm((t - (E2.long - 0.4)) / 0.4));
+  P.glow = P.glow + 0.8 * up + 1.2 * bump(t, E2.burst - 0.05, E2.burst + 0.4);
+  // the burst of its fire off him
+  const drops: [V3, string, number][] = [...(P.drops ?? [])];
+  drops.push(...flung(t, E2.burst, 70, () => [0, 0, P.zE + 20], 220, 160, 0.7, [FLAME[2], FLAME[3], FLAME[4], FLAME[1]], 271, 3));
+  // sparks drawn in along the lines to him
+  P.drops = drops;
+  return P;
+}
+
+/** STRUCK: his eye flinching shut, his bulk recoiling from the blow (from `aim`), his arms jerking; back by its end. Under the water (`struckUnder`): his glow guttering, rings bursting. */
+export const EYE_STRUCK = { long: 0.6, fps: 30 } as const;
+
+function struckPose(t: number, under: boolean, aim: number, clock = 0, phase3 = 0): EyePose {
+  const S = EYE_STRUCK;
+  const P = under ? lurkPose(clock + t) : standPose(clock + t);
+  const hit = t < 0.05 ? sm(t / 0.05) : 1 - sm((t - 0.05) / (S.long - 0.05));
+  const away = onLine(aim, -1);
+  void phase3;
+  if (under) {
+    P.glow = P.glow * (1 - 0.7 * hit) + 1.2 * bump(t, 0.25, S.long);
+    P.zE = P.zE - 10 * hit;
+    if (hit > 0.02) P.ripples = [...(P.ripples ?? []), [[0, 0, 0], 20 + 120 * cl01(t / S.long)], [[0, 0, 0], 10 + 80 * cl01(t / S.long)]];
+    return P;
+  }
+  P.heave = add(P.heave, add(mul(away, 14 * hit), [0, 0, -5 * hit]));
+  P.tilt = P.tilt + 7 * hit;
+  P.lid = P.lid + (1 - P.lid) * bump(t, 0.02, 0.4);
+  P.glow = P.glow + 0.8 * hit;
+  // (his arms jerked out and back from the blow)
+  P.arms = P.arms.map((A, i) => (A.rise <= 10 ? A : { ...A, rise: A.rise - 10 * hit, wave: A.wave + 6 * hit, phase: A.phase + 0.8 * hit * (i % 2 ? 1 : -1) }));
+  const drops: [V3, string, number][] = [...(P.drops ?? [])];
+  drops.push(...flung(t, 0.02, 22, () => add(onLine(aim, EYE_R * 0.9), [0, 0, P.zE]), 90, 120, 0.45, SPRAY, 273, 2));
+  P.drops = drops;
+  return P;
+}
+
+/**
+ * HIS DEATH (his pick, “It sinks, its eye going dark, as the dome shatters”): struck, held; he convulses, his maw
+ * tearing open in a last roar, his arms thrashing; cracks run across the siege's dome high above and it shatters, its
+ * shards of pink fire falling over the ring and going out; the obelisks' lines snap; his arms go limp and fall slapping
+ * onto the water; his eye's fire goes out, last at its heart; he sinks, rolling his eye up, under the water, bubbles and
+ * rings, until the pool is still. Nothing of him is left.
+ */
+export const EYE_DEATH = { long: 5.4, hold: 0.15, roar: [0.25, 1.5], cracks: [0.9, 1.5], shatter: 1.5, limp: [1.6, 2.5], sink: [2.2, 4.4], dark: [1.8, 3.4], fps: 30 } as const;
+
+function deathPose(t: number, clock = 0, phase3 = 0): EyePose {
+  const S = EYE_DEATH;
+  const held = Math.min(t, S.hold);
+  const P = standPose(clock + held + Math.max(0, t - S.hold) * 0.35);
+  const thrash = bump(t, S.hold, S.limp[1]) * (0.6 + 0.4 * Math.sin(t * 13));
+  const roar = bump(t, S.roar[0], S.roar[1]);
+  const limp = sm((t - S.limp[0]) / (S.limp[1] - S.limp[0]));
+  const sink = sm((t - S.sink[0]) / (S.sink[1] - S.sink[0]));
+  P.blaze = phase3 * (1 - sm((t - S.shatter) / 0.6));
+  P.siege = phase3 > 0 && t < S.shatter + 0.15 ? phase3 * (1 - cl01((t - S.shatter) / 0.15)) : 0;
+  P.heave = add(P.heave, [3 * Math.sin(t * 29) * thrash, 3 * Math.cos(t * 23) * thrash, 8 * roar - 4 * thrash * Math.sin(t * 17)]);
+  P.zE = P.zE + (-260 - P.zE) * sink;
+  P.tilt = P.tilt + 12 * roar + 50 * sink;
+  P.split = roar > 0 ? Math.min(1, roar * 1.6) : 0;
+  P.lid = P.split > 0 ? P.lid * (1 - P.split) : P.lid + (0.45 - P.lid) * limp;
+  P.look = norm(add(mul(P.look, 1 - sink), mul(norm([0.5, 0, 1]) as V3, sink)));
+  P.dark = sm((t - S.dark[0]) / (S.dark[1] - S.dark[0]));
+  P.glow = (P.glow + 1.2 * roar) * (1 - (P.dark ?? 0));
+  P.slit = P.slit + 0.12 * (P.dark ?? 0);
+  // his arms: thrashing, then limp, flopping down onto the water and sinking with him
+  P.arms = P.arms.map((A, i) => {
+    if (A.rise <= 10) return { ...A, long: A.long * (1 - 0.8 * sink), z0: A.z0 - 160 * sink };
+    // (limp, not stiff: still curled and swaying as they droop)
+    return { ...A, rise: Math.max(11, A.rise * (1 - 0.5 * limp)), bend: A.bend - 45 * limp, curl: A.curl * (1 - 0.2 * limp), wave: A.wave + 8 * limp * (1 - sink) + 14 * thrash, phase: A.phase + thrash * Math.sin(t * 9 + i * 1.3) * 2 + limp * Math.sin(t * 2 + i), z0: A.z0 - 290 * sink, long: A.long * (1 - 0.95 * Math.min(1, sink * 1.3)) };
+  });
+  const drops: [V3, string, number][] = [...(P.drops ?? [])].filter(() => sink < 0.6);
+  // water flung as his arms slap down
+  drops.push(...flung(t, S.limp[1] - 0.15, 60, (i) => onLine((i / 60) * 360, rimOn((i / 60) * 360) * (0.6 + 0.35 * hash(i, 1, 281))), 60, 220, 0.8, SPRAY, 283, 3));
+  // bubbles as he goes under
+  if (t > S.sink[0]) for (let i = 0; i < 18; i++) {
+    const f = fr(t * 1.5 + hash(i, 1, 285));
+    const end = 1 - sm((t - (S.long - 0.9)) / 0.7);
+    if (hash(i, 2, 285) > end) continue;
+    const a = hash(i, Math.floor(t * 1.5 + hash(i, 1, 285)), 287) * 360;
+    drops.push([add(onLine(a, rimOn(a) * 0.5 * hash(i, 3, 285)), [0, 0, 2 + 8 * f]), f < 0.6 ? SPRAY[1] : SPRAY[3], 2]);
+  }
+  P.drops = drops;
+  P.ripples = t < S.limp[1] ? [...(P.ripples ?? [])] : [];
+  if (t > S.limp[1] - 0.15) for (let k = 0; k < 4; k++) {
+    const r = fr((t - S.limp[1]) * 0.6 + k / 4) * 150;
+    if (t < S.long - 0.3 - k * 0.1) P.ripples.push([[0, 0, 0], r]);
+  }
+  // THE DOME: cracks across the sky, then its shards falling and going out
+  P.cracks = t < S.cracks[0] ? 0 : t < S.shatter ? sm((t - S.cracks[0]) / (S.cracks[1] - S.cracks[0])) : 0;
+  P.shards = [];
+  P.flash = bump(t, S.shatter - 0.03, S.shatter + 0.35);
+  if (t >= S.shatter) for (let i = 0; i < 64; i++) {
+    const delay = 0.5 * hash(i, 1, 291);
+    const f = (t - S.shatter - delay) / (1.4 + 0.6 * hash(i, 2, 291));
+    if (f < 0 || f >= 1) continue;
+    const a = hash(i, 3, 291) * 360;
+    const r = (ringOn(a) - 10) * Math.sqrt(hash(i, 4, 291));
+    const at = add(onLine(a, r), [0, 0, 470 * (1 - f) * (1 - f * 0.3)]);
+    P.shards.push({ at, size: (5 + 7 * hash(i, 5, 291)) * (1 - 0.55 * f), spin: t * (4 + 6 * hash(i, 6, 291)) + i });
+  }
+  // gone: nothing of him left once he is under
+  P.alive = t < S.sink[1];
+  return P;
+}
+
 /** How long each of its moves lasts (a stand: its round). */
 export function eyeLong(which: string): number {
   if (which === 'stand') return EYE_STAND.period;
@@ -1023,6 +1259,10 @@ export function eyeLong(which: string): number {
   if (which === 'bite') return EYE_BITE.long;
   if (which === 'spew') return EYE_SPEW.long;
   if (which === 'splash') return EYE_SPLASH.long;
+  if (which === 'surface') return EYE_SURFACE.long;
+  if (which === 'empower') return EYE_EMPOWER.long;
+  if (which.startsWith('struck')) return EYE_STRUCK.long;
+  if (which === 'death') return EYE_DEATH.long;
   return 1;
 }
 /**
@@ -1030,7 +1270,17 @@ export function eyeLong(which: string): number {
  * in, `aim` the way its blow goes; `clock` where its stand (or lurk) was when the move began (its own clock, so that
  * the move starts from the stand as it was, and hands back to it as it will be: the stand runs on under the move).
  */
-export function poseOf(which: string, t: number, aim = 0, clock = 0): EyePose {
+export function poseOf(which: string, t: number, aim = 0, clock = 0, phase3 = 0): EyePose {
+  const P = movePose(which, t, aim, clock, phase3);
+  // (phase 3: every move of his blazing, the obelisks' lines bent into him)
+  if (phase3 > 0 && which !== 'death' && which !== 'empower') return { ...P, blaze: Math.max(P.blaze, phase3), siege: Math.max(P.siege ?? 0, phase3), siegeT: clock + t };
+  return P.siege || P.shards || P.cracks ? { ...P, siegeT: clock + t } : P;
+}
+function movePose(which: string, t: number, aim: number, clock: number, phase3: number): EyePose {
+  if (which === 'surface') return surfacePose(t, clock);
+  if (which === 'empower') return empowerPose(t, clock);
+  if (which === 'struck' || which === 'struckUnder') return struckPose(t, which === 'struckUnder', aim, clock, phase3);
+  if (which === 'death') return deathPose(t, clock, phase3);
   if (which === 'lurk') return lurkPose(clock + t);
   if (which === 'slam' || which === 'slamUnder') return slamPose(t, which === 'slamUnder', aim, clock);
   if (which === 'sweep' || which === 'sweepUnder') return sweepPose(t, which === 'sweepUnder', aim, clock);
@@ -1107,11 +1357,14 @@ function eyeSkin(P: EyePose, look: V3, face: V3, up?: V3): (u: V3, tone: number)
       if (Math.abs(a) < half + 0.025) return FLAME[1];
       // its iris: dark at its rim, a ring of pink, then gold burning to its heart, in rays
       const ray = Math.abs(Math.sin(Math.atan2(b, a) * 13 + k * 6)) < 0.32;
-      if (k > 0.93) return FLAME[0];
-      if (k > 0.8) return ray ? FLAME[1] : FLAME[2];
-      if (k > 0.55) return ray ? FLAME[2] : FLAME[3];
-      if (k > 0.22) return ray ? FLAME[3] : FLAME[4];
-      return FLAME[4];
+      // (dying, its fire going out, its brightest last)
+      const dark = P.dark ?? 0;
+      const fire = (i: number): string => (dark > 0.12 + 0.17 * i ? DEAD[i] : FLAME[i]);
+      if (k > 0.93) return fire(0);
+      if (k > 0.8) return ray ? fire(1) : fire(2);
+      if (k > 0.55) return ray ? fire(2) : fire(3);
+      if (k > 0.22) return ray ? fire(3) : fire(4);
+      return fire(4);
     }
     // its white: veined, the veins running in toward its iris, branching
     const ang = Math.atan2(b, a);
@@ -1361,7 +1614,7 @@ function eyeBits(P: EyePose, put: Put): void {
   (P.eggs ?? []).forEach((g, i) => eggBits(put, `egg${i}`, g.at, g.r, g.spin, 0, i));
   // ITS IRIS'S LIGHT, the enemy's fire (under the water, less)
   const iris = add(E, mul(look, R));
-  if (P.alive && P.split < 0.5) put('eye', 'glow', { k: 'glow', p: iris, c: FLAME[3], r: 48 * P.glow, a: (P.zE < 0 ? 0.45 : 0.5) * Math.min(1.2, P.glow) });
+  if (P.alive && P.split < 0.5 && (P.dark ?? 0) < 0.95) put('eye', 'glow', { k: 'glow', p: iris, c: FLAME[3], r: 48 * P.glow * (1 - (P.dark ?? 0)), a: (P.zE < 0 ? 0.45 : 0.5) * Math.min(1.2, P.glow) * (1 - (P.dark ?? 0)) });
   if (P.blaze > 0) for (let k = 0; k < 5; k++) put('bulk', `blaze${k}`, { k: 'glow', p: add(E, W(-10, (k - 2) * 34, 20 + (k % 2) * 30)), c: FLAME[2], r: 60, a: 0.28 * P.blaze });
 }
 
@@ -1410,6 +1663,13 @@ function paintPose(P: EyePose, view: GameView): Painted {
   lastUnder = drown(px, zAt, st0, view);
   if (P.ripples && P.ripples.length) ripple(px, st0, view, P.ripples, zAt);
   if (P.wave) waveOf(px, st0, P.wave);
+  if (P.siege && P.siege > 0.01) siegeLines(px, st0, P, near, lights);
+  if (P.cracks && P.cracks > 0) domeCracks(px, P.cracks, P.siegeT ?? 0, lights);
+  for (const sh of P.shards ?? []) shard(px, st0, sh);
+  if (P.flash && P.flash > 0.02) {
+    lights.push({ x: EYE_CANVAS.ax, y: 150, r: 260 * P.flash, color: FLAME[2], a: 0.55 * P.flash });
+    lights.push({ x: EYE_CANVAS.ax, y: EYE_CANVAS.ay - 60, r: 200 * P.flash, color: FLAME[3], a: 0.4 * P.flash });
+  }
   for (const S of P.streaks ?? []) {
     for (let i = 0; i + 1 < S.pts.length; i++) {
       const [x0, y0] = st0.at(S.pts[i]);
@@ -1774,6 +2034,135 @@ function beam(px: Px, st: Stage, B: { from: V3; a: V3; b: V3; k: number; t: numb
   };
   flare(bx, by, Math.round((5 + 3 * hash(tick, 1, 132)) * B.k));
   flare(ix, iy, Math.round((10 + 6 * hash(tick, 2, 132)) * B.k));
+}
+/**
+ * THE SIEGE'S LINES (phase 3): from the top of each of the cult's obelisks a line of the siege's pink fire over the
+ * ring, bending down into him, crackling, pulses of gold running along it into him; hidden where he is nearer.
+ */
+function siegeLines(px: Px, st: Stage, P: EyePose, near: Float32Array, lights: { x: number; y: number; r: number; color: string; a?: number }[]): void {
+  const k = P.siege ?? 0;
+  const reach = P.siegeReach ?? 1;
+  const T = P.siegeT ?? 0;
+  const E: V3 = add([0, 0, P.zE], P.heave);
+  const { w } = EYE_CANVAS;
+  for (let i = 0; i < EYE_OBELISKS.length; i++) {
+    const O = obeliskTop(i);
+    const toO = norm(sub([O[0], O[1], E[2]], E), LF);
+    const B = add(E, mul(toO, EYE_R * 0.8));
+    const C = add(mul(add(O, B), 0.5), [0, 0, 150 + 18 * Math.sin(T * 2 + i)]);
+    const at = (q: number): V3 => add(add(mul(O, (1 - q) * (1 - q)), mul(C, 2 * q * (1 - q))), mul(B, q * q));
+    const N = 160;
+    for (let j = 0; j <= N * reach; j++) {
+      const q = j / N;
+      const p0 = at(q);
+      const p1 = at(Math.min(1, q + 1 / N));
+      const [x0, y0] = st.at(p0);
+      const [x1, y1] = st.at(p1);
+      // (crackling: jittered across its way)
+      const jit = (1.5 + 2.5 * k) * Math.sin(q * 47 + T * 31 + i * 3) * Math.sin(q * 13 - T * 7) + 1.2 * Math.sin(q * 140 + T * 53);
+      const dx = x1 - x0;
+      const dy = y1 - y0;
+      const L = Math.hypot(dx, dy) || 1;
+      const nx = -dy / L;
+      const ny = dx / L;
+      const pulse = Math.max(0, 1 - Math.abs(fr(q * 3 - T * 1.6 + i * 0.3) - 0.5) * 12);
+      const steps = Math.ceil(L);
+      for (let s2 = 0; s2 <= steps; s2++) {
+        const cx = x0 + (dx * s2) / Math.max(1, steps) + nx * jit;
+        const cy = y0 + (dy * s2) / Math.max(1, steps) + ny * jit;
+        const wide = k > 0.6 ? 1 + (pulse > 0.3 ? 1 : 0) : 0;
+        for (let o = -1 - wide; o <= 1 + wide; o++) {
+          const x = Math.round(cx + nx * o);
+          const y = Math.round(cy + ny * o);
+          if (x < 0 || y < 0 || x >= px.w || y >= px.h) continue;
+          // (hidden behind what of him is nearer)
+          if (near[y * w + x] > st.near(p0) + 3) continue;
+          const core = Math.abs(o) === 0;
+          px.set(x, y, core ? (pulse > 0.3 ? FLAME[4] : FLAME[3]) : Math.abs(o) === 1 ? (pulse > 0.3 ? FLAME[3] : FLAME[2]) : Math.abs(o) === 2 ? FLAME[2] : FLAME[1]);
+        }
+      }
+    }
+    for (let j = 0; j <= 4; j++) {
+      if (j / 4 > reach) break;
+      const [x, y] = st.at(at(j / 4));
+      lights.push({ x, y, r: 34, color: FLAME[2], a: 0.3 * k });
+    }
+    // where it comes out of the obelisk's top: a knot of its fire
+    const [ox, oy] = st.at(O);
+    for (let d = -3; d <= 3; d++) {
+      for (const [x, y] of [[ox + d, oy], [ox, oy + d]] as [number, number][]) {
+        const xi = Math.round(x);
+        const yi = Math.round(y);
+        if (xi >= 0 && yi >= 0 && xi < px.w && yi < px.h) px.set(xi, yi, Math.abs(d) < 2 ? FLAME[4] : FLAME[2]);
+      }
+    }
+  }
+}
+/** THE DOME CRACKING, high over the ring: jagged cracks of the siege's fire running out across the sky from over him. */
+function domeCracks(px: Px, k: number, T: number, lights: { x: number; y: number; r: number; color: string; a?: number }[]): void {
+  const cx = EYE_CANVAS.ax;
+  const cy = 120;
+  for (let i = 0; i < 9; i++) {
+    let a = (i / 9) * Math.PI + 0.15 + 0.2 * hash(i, 1, 301);
+    let x = cx + (hash(i, 2, 301) - 0.5) * 60;
+    let y = cy + 6 * hash(i, 3, 301);
+    const long = (180 + 200 * hash(i, 4, 301)) * k;
+    for (let s2 = 0; s2 < long; s2 += 2) {
+      a += (hash(i, s2, 303) - 0.5) * 0.5;
+      x += Math.cos(a) * 2;
+      y += Math.sin(a) * 0.9 + 0.25;
+      const xi = Math.round(x);
+      const yi = Math.round(y);
+      if (xi < 1 || yi < 1 || xi >= px.w - 1 || yi >= px.h - 1) break;
+      // (high in the sky: behind him)
+      const free = (xx: number, yy: number): boolean => px.d[(yy * px.w + xx) * 4 + 3] === 0;
+      if (free(xi, yi)) px.set(xi, yi, s2 < long * 0.5 ? FLAME[4] : FLAME[3]);
+      if (free(xi, yi + 1)) px.set(xi, yi + 1, FLAME[2]);
+      // (forking)
+      if (s2 % 40 === 20 && hash(i, s2, 305) > 0.5) {
+        let fx = x;
+        let fy = y;
+        const fa = a + (hash(i, s2, 307) > 0.5 ? 0.9 : -0.9);
+        for (let f = 0; f < 24 * k; f++) {
+          fx += Math.cos(fa) * 2;
+          fy += Math.sin(fa) * 0.9 + 0.3;
+          const fxi = Math.round(fx);
+          const fyi = Math.round(fy);
+          if (fxi < 1 || fyi < 1 || fxi >= px.w - 1 || fyi >= px.h - 1) break;
+          if (px.d[(fyi * px.w + fxi) * 4 + 3] === 0) px.set(fxi, fyi, FLAME[2]);
+        }
+      }
+    }
+  }
+  lights.push({ x: cx, y: cy + 30, r: 120 * k, color: FLAME[2], a: 0.35 * k * (0.8 + 0.2 * Math.sin(T * 20)) });
+}
+/** A shard of the shattered dome, falling and turning: a sliver of the siege's fire, a bright edge along it. */
+function shard(px: Px, st: Stage, S: { at: V3; size: number; spin: number }): void {
+  const [cx, cy] = st.at(S.at);
+  const pts: [number, number][] = [0, 1, 2].map((i) => {
+    const a = S.spin + (i * TAU) / 3 + (i === 0 ? 0.4 : 0);
+    const r = S.size * (i === 0 ? 1.7 : 0.8);
+    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.8];
+  });
+  const minX = Math.floor(Math.min(...pts.map((p) => p[0])));
+  const maxX = Math.ceil(Math.max(...pts.map((p) => p[0])));
+  const minY = Math.floor(Math.min(...pts.map((p) => p[1])));
+  const maxY = Math.ceil(Math.max(...pts.map((p) => p[1])));
+  // (falling in from above the canvas: seen once it is wholly in it)
+  if (minX < 2 || minY < 2 || maxX > px.w - 3 || maxY > px.h - 3) return;
+  const side = (a: [number, number], b: [number, number], x: number, y: number): number => (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]);
+  const sgn = Math.sign(side(pts[0], pts[1], pts[2][0], pts[2][1])) || 1;
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      if (x < 0 || y < 0 || x >= px.w || y >= px.h) continue;
+      const e0 = side(pts[0], pts[1], x + 0.5, y + 0.5) * sgn;
+      const e1 = side(pts[1], pts[2], x + 0.5, y + 0.5) * sgn;
+      const e2 = side(pts[2], pts[0], x + 0.5, y + 0.5) * sgn;
+      if (e0 < 0 || e1 < 0 || e2 < 0) continue;
+      const edge = Math.min(e0, e1, e2) / (S.size * 2);
+      px.set(x, y, edge < 0.6 ? FLAME[4] : edge < 1.6 ? FLAME[3] : FLAME[2]);
+    }
+  }
 }
 /**
  * HIS SPLASH'S WAVE, rolling out over the ring: a wall of water `h` high, its crest foaming and spitting spray, its
@@ -2292,12 +2681,12 @@ export function spawnFrame(t: number, view: GameView = 'front', seed = 0): Sprit
 
 let lastUnder: Uint8Array = new Uint8Array(0);
 /** One frame of it: `which` (stand, lurk, slam, slamUnder, sweep, sweepUnder), `t` seconds in, from in front or behind; `aim` the way its blow goes (degrees round from its forward, toward its left). */
-export function eyePainted(which: string, t: number, view: GameView = 'front', aim = 0, clock = 0): Painted {
-  return paintPose(poseOf(which, t, aim, clock), view);
+export function eyePainted(which: string, t: number, view: GameView = 'front', aim = 0, clock = 0, phase3 = 0): Painted {
+  return paintPose(poseOf(which, t, aim, clock, phase3), view);
 }
 /** The same, as the game holds a figure. */
-export function eyeFrame(which: string, t: number, view: GameView = 'front', aim = 0, clock = 0): Sprite {
-  return toSprite(eyePainted(which, t, view, aim, clock), EYE_AURA, EYE_CANVAS.ax, EYE_CANVAS.ay);
+export function eyeFrame(which: string, t: number, view: GameView = 'front', aim = 0, clock = 0, phase3 = 0): Sprite {
+  return toSprite(eyePainted(which, t, view, aim, clock, phase3), EYE_AURA, EYE_CANVAS.ax, EYE_CANVAS.ay);
 }
 /** Every solid of one moment of it, as the tests read them. */
 export function eyeSolids(which: string, t: number, aim = 0): Bit[] {

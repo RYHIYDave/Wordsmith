@@ -10,7 +10,8 @@ import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
 import { fenLook } from '../art/fen';
-import { EYE_SPLASH, SPAWN_CANVAS, EYE_SPAWN, EYE_SPEW, spawnLanding, spawnPainted, BILE_CANVAS, BOLT_CANVAS, BURST_CANVAS, EYE_BILE, EYE_BITE, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_GAZE, EYE_SPIT, bileLanding, bilePainted, boltPainted, burstPainted, EYE_CANVAS, EYE_HABITS, EYE_LURK, EYE_POOL, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, eyeLong, eyeLookFrame, eyePainted } from '../art/drowned_eye';
+import { fenPieces } from '../art/floor10';
+import { EYE_DEATH, EYE_EMPOWER, EYE_OBELISKS, EYE_STRUCK, EYE_SURFACE, obeliskTop, EYE_SPLASH, SPAWN_CANVAS, EYE_SPAWN, EYE_SPEW, spawnLanding, spawnPainted, BILE_CANVAS, BOLT_CANVAS, BURST_CANVAS, EYE_BILE, EYE_BITE, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_GAZE, EYE_SPIT, bileLanding, bilePainted, boltPainted, burstPainted, EYE_CANVAS, EYE_HABITS, EYE_LURK, EYE_POOL, EYE_RING, EYE_SLAM, EYE_STAND, EYE_SWEEP, eyeLong, eyeLookFrame, eyePainted } from '../art/drowned_eye';
 import { toSprite } from '../art/kit';
 import { stage } from '../art/skin';
 import { TILE3 } from '../art/new_mobs3';
@@ -391,6 +392,76 @@ function spewFilm(): void {
   win.__ready = true;
 }
 
+/**
+ * A film of him on the ring with the cult's obelisks standing round it (where EYE_OBELISKS has them): `pose(t)` paints
+ * him at `t`; `note(t)` says what is happening.
+ */
+function ringFilm(title: string, fps: number, long: number, pose: (t: number) => ReturnType<typeof eyePainted>, note: (t: number) => string, obelisks = true): void {
+  const n = Math.round(long * fps) + 1;
+  const W = PW;
+  const H = 640;
+  const cx = 507;
+  const cy = 450;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const floor = document.createElement('canvas');
+  floor.width = W;
+  floor.height = H;
+  ground(floor.getContext('2d') as CanvasRenderingContext2D, 0, 0, W, H, cx, cy);
+  const ST = stage('front', EYE_CANVAS.ax, EYE_CANVAS.ay, EYE_CANVAS);
+  const obelisk = fenPieces().find((p) => p.name === "the cult's obelisk");
+  const [p0x, p0y] = pictureOf(PCX, PCY);
+  const [kx0, ky0] = pictureOf(KNIGHT_AT[0], KNIGHT_AT[1]);
+  const kAt: [number, number] = [cx + kx0 - p0x, cy + ky0 - p0y];
+  const draw = (i: number): void => {
+    const t = i / fps;
+    g.drawImage(floor, 0, 0);
+    const things: [number, () => void][] = [];
+    const boss = toSprite(pose(t), null, EYE_CANVAS.ax, EYE_CANVAS.ay);
+    things.push([cy, () => {
+      drawAt(g, boss, cx, cy);
+      litAt(g, boss, cx, cy);
+    }]);
+    if (obelisks && obelisk) EYE_OBELISKS.forEach((_a, k) => {
+      const top = obeliskTop(k);
+      const [sx, sy] = ST.at([top[0], top[1], 0]);
+      const at: [number, number] = [cx + sx - EYE_CANVAS.ax, cy + sy - EYE_CANVAS.ay];
+      // (the one behind him stands behind him; those before him, before him)
+      things.push([at[1] > cy ? at[1] + 1000 : at[1] - 1000, () => {
+        const frames = obelisk.frames ?? [];
+        if (frames.length) drawAt(g, frames[Math.floor(t * 6) % frames.length], at[0], at[1]);
+      }]);
+    });
+    things.push([kAt[1] + 1000, () => {
+      g.fillStyle = 'rgba(25, 18, 40, 0.35)';
+      g.beginPath();
+      g.ellipse(kAt[0], kAt[1], 26, 11, 0, 0, Math.PI * 2);
+      g.fill();
+      drawAt(g, knight, kAt[0], kAt[1]);
+    }]);
+    things.sort((a, b) => a[0] - b[0]);
+    for (const [, f] of things) f();
+    label(g, title, 8, 6);
+    const say = note(t);
+    if (say) label(g, say, W - say.length * 12 - 16, 6);
+    label(g, `${t.toFixed(2)} s`, 8, H - 28);
+  };
+  draw(0);
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  win.__frames = n;
+  win.__tickMs = 1000 / fps;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+  win.__ready = true;
+}
+
 function burstFilm(): void {
   const fps = EYE_BURST.fps;
   const lag = 0.12;
@@ -465,6 +536,30 @@ else if (HASH === 'burstfilm') burstFilm();
 else if (HASH === 'callfilm') callFilm();
 else if (HASH === 'spitfilm') spitFilm();
 else if (HASH === 'spewfilm') spewFilm();
+else if (HASH === 'surfacefilm') {
+  const S = EYE_SURFACE;
+  ringFilm('The Drowned Eye: he surfaces (phase 1 to 2)', S.fps, S.long + 0.5, (t) => (t <= S.long ? eyePainted('surface', t, 'front') : eyePainted('stand', t, 'front')), (t) =>
+    t < S.boil ? 'the pool boils (the warning)' : t < S.roar[0] ? 'HE RISES' : t < S.roar[1] ? 'HIS EYE TEARS OPEN: HE ROARS' : '', false);
+} else if (HASH === 'empowerfilm') {
+  const S = EYE_EMPOWER;
+  ringFilm('The Drowned Eye: the siege pulled in (phase 2 to 3)', S.fps, S.long + 0.6, (t) => (t <= S.long ? eyePainted('empower', t, 'front') : eyePainted('stand', t, 'front', 0, 0, 1)), (t) =>
+    t < S.reach[0] ? 'he calls on the siege' : t < S.blaze[1] ? 'THE OBELISKS\' LINES BEND INTO HIM' : t < S.burst + 0.5 ? 'HIS VEINS BLAZE' : 'phase 3');
+} else if (HASH === 'struckfilm') {
+  const S = EYE_STRUCK;
+  // struck twice risen, then twice under the water
+  ringFilm('The Drowned Eye: struck', S.fps, 3.2, (t) => {
+    const under = t >= 1.6;
+    const t0 = under ? t - 1.6 : t;
+    const k = t0 < 0.8 ? 0 : 1;
+    const tt = t0 - k * 0.8;
+    const which = under ? (tt < S.long ? 'struckUnder' : 'lurk') : tt < S.long ? 'struck' : 'stand';
+    return eyePainted(which, which === 'struck' || which === 'struckUnder' ? tt : t, 'front', k ? 30 : AIM_KNIGHT, which === 'struck' || which === 'struckUnder' ? t - tt : 0);
+  }, (t) => (t < 1.6 ? 'struck, risen' : 'struck, under the water'), false);
+} else if (HASH === 'deathfilm') {
+  const S = EYE_DEATH;
+  ringFilm('The Drowned Eye: his death', S.fps, S.long + 0.3, (t) => eyePainted('death', Math.min(t, S.long), 'front', 0, 0, 1), (t) =>
+    t < S.cracks[0] ? 'struck down: his last roar' : t < S.shatter ? 'the dome cracks' : t < S.sink[0] ? 'IT SHATTERS' : t < S.sink[1] ? 'he sinks, his eye going dark' : 'gone');
+}
 else if (HASH === 'standfilm') film('stand', 'The Drowned Eye, risen (the game\'s size)', EYE_STAND.fps, EYE_STAND.frames, (t) => (t >= EYE_HABITS.blink[0] && t < EYE_HABITS.blink[1] ? 'blinks' : t >= EYE_HABITS.dart[0] && t < EYE_HABITS.dart[1] ? 'his eye darts' : ''));
 else if (HASH === 'lurkfilm') film('lurk', 'The Drowned Eye under the water, phase 1 (the game\'s size)', EYE_LURK.fps, EYE_LURK.frames, () => '');
 else if (HASH === 'slamfilm' || HASH === 'slamunderfilm') {
