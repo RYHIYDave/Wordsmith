@@ -32,7 +32,7 @@ import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPEN
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
-import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, isDamageWord, meldOf, meldProblem, savedWords, withParts, wordIds } from './melds';
+import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, STONE_RISE, isDamageWord, meldOf, meldProblem, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
 
@@ -6264,7 +6264,20 @@ export class Game {
       // Meldstone, which opens melding at the wordsmith, until it has been brought to him)
       if (MELD.on && m.kind === 'fleshmancer') {
         this.addDrop('dust', m.x, m.y, MELD_TUNE.fleshmancerDust, null, null);
-        if (this.hero.meld === null && !this.drops.some((d) => d.kind === 'stone')) this.addDrop('stone', m.x, m.y, 0, null, null);
+        // (STONE_RISE: the runedust waits under the floor while his pit closes)
+        if (STONE_RISE.on) this.drops[this.drops.length - 1].age = -STONE_RISE.dustWait;
+        if (this.hero.meld === null && !this.drops.some((d) => d.kind === 'stone')) {
+          this.addDrop('stone', m.x, m.y, 0, null, null);
+          // (STONE_RISE: and the Meldstone bursts up out of it, just where he went down)
+          if (STONE_RISE.on) {
+            const st = this.drops[this.drops.length - 1];
+            st.age = -STONE_RISE.wait;
+            if (this.isOpen(m.x, m.y)) {
+              st.x = m.x;
+              st.y = m.y;
+            }
+          }
+        }
       }
       this.addDrop('gold', m.x, m.y, rng.int(25, 45) * goldBase, null, null);
       const n = TUNE.bossItems + (this.depth % 5 === 0 ? TUNE.bossItemsFifth : 0);
@@ -6335,7 +6348,8 @@ export class Game {
       const dr = this.drops[i];
       dr.age += dt;
       // (a word stands in its light for a moment before it can be taken: it is an event, not a coin)
-      if (dr.age < (dr.kind === 'word' ? TUNE.wordStands : 0.4)) continue;
+      // (STONE_RISE: the Meldstone, while it bursts up and comes down to hang)
+      if (dr.age < (dr.kind === 'word' ? TUNE.wordStands : dr.kind === 'stone' && STONE_RISE.on ? STONE_RISE.stands : 0.4)) continue;
       const dx = h.x - dr.x;
       const dy = h.y - dr.y;
       const dist = Math.hypot(dx, dy);
@@ -6372,11 +6386,13 @@ export class Game {
       } else if (dr.kind === 'dust') {
         // (WORDMELDING) runedust
         h.dust += dr.gold;
+        this.emit({ t: 'dustGot', x: dr.x, y: dr.y, n: dr.gold });
         this.sfx('word', 0.7);
         this.emit({ t: 'text', x: h.x, y: h.y, text: `+${dr.gold} RUNEDUST`, color: MELD_DUST_COLOR });
       } else if (dr.kind === 'stone') {
         // (WORDMELDING) the Meldstone, to be brought to the wordsmith
         if (h.meld === null) h.meld = 'stone';
+        this.emit({ t: 'stoneGot', x: dr.x, y: dr.y });
         this.sfx('rare');
         this.msg('You take the MELDSTONE. Bring it to the wordsmith.', MSG.word);
       }
@@ -6545,6 +6561,7 @@ export class Game {
     const h = this.hero;
     h.meld = 'open';
     if (!this.practice) this.meta.meld = true;
+    this.emit({ t: 'stoneGiven', x, y });
     this.emit({ t: 'text', x, y, text: 'MELDING', color: MELD_DUST_COLOR });
     this.sfx('rare');
     this.msg('The wordsmith takes the MELDSTONE. He can meld words now.', MSG.word);

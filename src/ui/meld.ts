@@ -142,7 +142,7 @@ export function meldSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Panels, i
       intro.forEach((l, k) => drawText(g, l, x0, bodyY + 1 + k * 6, THEME.text, { font: 'small' }));
       // the runedust carried
       const dust = art.icons.runedust;
-      g.drawImage(dust.img, x0, dustY);
+      g.drawImage(dust.img, x0, dustY, dust.w, dust.h);
       const dw = drawText(g, `${h.dust} RUNEDUST`, x0 + dust.w + 3, dustY + 1, MELD_DUST_COLOR, { font: 'small' });
       drawText(g, `A MELD TAKES ${MELD_TUNE.cost}`, x0 + dust.w + 3 + dw + 8, dustY + 1, THEME.dim, { font: 'small' });
       // the two hollows, and what comes out

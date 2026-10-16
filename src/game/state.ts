@@ -1069,6 +1069,11 @@ export type GameEvent =
   | { t: 'station'; kind: Station }
   /** ACT 1: the hero uses a stronghold's altar (game/act1_holds.ts): the interface opens it beside the inventory. */
   | { t: 'altar'; n: number }
+  // (WORDMELDING: runedust taken up, `n` of it; the Meldstone taken up; the Meldstone given to the wordsmith, at (x, y):
+  // for their pictures, art/meld_drops.ts, render/meld_drops.ts)
+  | { t: 'dustGot'; x: number; y: number; n: number }
+  | { t: 'stoneGot'; x: number; y: number }
+  | { t: 'stoneGiven'; x: number; y: number }
   | { t: 'levelup' };
 
 /** What the player is asking for this frame, already converted to world space. */

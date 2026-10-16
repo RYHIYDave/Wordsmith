@@ -39,6 +39,28 @@ function melding<T>(fn: () => T): T {
   }
 }
 
+/** Run `fn` with MELD off (it is on in the game since his word of 16 Oct 2026, "Yes I want word melding on"), and put it back after. */
+function notMelding<T>(fn: () => T): T {
+  const was = MELD.on;
+  MELD.on = false;
+  try {
+    return fn();
+  } finally {
+    MELD.on = was;
+  }
+}
+
+/** Run `fn` with HAND_IN as given (on in the game with the descent), and put it back after. */
+function handingIn<T>(on: boolean, fn: () => T): T {
+  const was = HAND_IN.on;
+  HAND_IN.on = on;
+  try {
+    return fn();
+  } finally {
+    HAND_IN.on = was;
+  }
+}
+
 interface Inner {
   waveT: number;
   rng: RNG;
@@ -561,8 +583,7 @@ test('a melded word goes on attacks only: not burned into gear, not laid on the 
 
 // ----- with the switch off -----
 
-test('with MELD off, no melded word can be had, and nothing of them is written to a save', () => {
-  assert.equal(MELD.on, false, 'off');
+test('with MELD off, no melded word can be had, and nothing of them is written to a save', () => notMelding(() => {
   const g = Game.forPractice('mage', 5);
   for (const m of MELD_IDS) assert.ok(!(m in g.hero.words), `${m}: none, and no count kept of it`);
   assert.deepEqual(Object.keys(g.hero.words).sort(), [...WORD_IDS].sort(), 'the hero counts the thirteen words, as before');
@@ -576,7 +597,7 @@ test('with MELD off, no melded word can be had, and nothing of them is written t
   // and a save from before them comes back as it went
   const back = Game.restore(play.save(), play.meta);
   for (const w of ALL_WORD_IDS) assert.equal(back.hero.words[w], play.hero.words[w], w);
-});
+}));
 
 test('with MELD on, a melded word on an attack and in the pouch is saved and comes back', () => {
   melding(() => {
@@ -612,7 +633,7 @@ function felled(seed = 9): { g: Game; boss: Monster } {
 }
 
 test('the Fleshmancer drops runedust and the Meldstone (with MELD off, neither); walked over, they are taken up', () => {
-  const off = felled();
+  const off = notMelding(() => felled());
   assert.ok(!off.g.drops.some((d) => d.kind === 'dust' || d.kind === 'stone'), 'with MELD off, nothing of it');
   melding(() => {
     const { g } = felled();
@@ -643,8 +664,8 @@ test('the Fleshmancer drops runedust and the Meldstone (with MELD off, neither);
   });
 });
 
-test('the Meldstone brought to the wordsmith: walk up to him, and melding is open', () => {
-  melding(() => {
+test('the Meldstone brought to the wordsmith: walk up to him, and melding is open (with HAND_IN off)', () => {
+  melding(() => handingIn(false, () => {
     const g = seasoned(new Game('warrior', 12), 10);
     assert.ok(g.level.town, 'in town');
     const h = g.hero;
@@ -668,7 +689,7 @@ test('the Meldstone brought to the wordsmith: walk up to him, and melding is ope
     assert.equal(g.meta.meld, true, 'kept on this device');
     const next = new Game('mage', 14, g.meta);
     assert.equal(next.hero.meld, 'open', 'the next hero can meld from the start');
-  });
+  }));
 });
 
 test('the wordsmith melds two spare damage words into one, for runedust; both are used up, and the Lexicon knows what came of it', () => {
@@ -709,12 +730,14 @@ test('the wordsmith melds two spare damage words into one, for runedust; both ar
     assert.equal(back.hero.words.eruption, 2);
   });
   // with MELD off: nothing to meld with, and nothing of it in a save
-  const g = seasoned(new Game('warrior', 13), 10);
-  g.hero.words.power = 1;
-  g.hero.words.fire = 1;
-  assert.equal(g.meldProblem('power', 'fire'), 'Not yet');
-  const saved = JSON.parse(JSON.stringify(g.save())) as Record<string, unknown>;
-  assert.ok(!('dust' in saved) && !('meld' in saved), 'no runedust and no Meldstone in a save');
+  notMelding(() => {
+    const g = seasoned(new Game('warrior', 13), 10);
+    g.hero.words.power = 1;
+    g.hero.words.fire = 1;
+    assert.equal(g.meldProblem('power', 'fire'), 'Not yet');
+    const saved = JSON.parse(JSON.stringify(g.save())) as Record<string, unknown>;
+    assert.ok(!('dust' in saved) && !('meld' in saved), 'no runedust and no Meldstone in a save');
+  });
 });
 
 test('with HAND_IN on, the Meldstone is given by using the wordsmith, not by walking up to him', () => {

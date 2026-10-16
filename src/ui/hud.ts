@@ -25,6 +25,7 @@ import { socketProblem } from '../game/words';
 import type { Fx } from '../render/fx';
 import type { Art } from '../render/render';
 import { QUEST3 } from '../art/quest3';
+import { MELD_DROPS } from '../art/meld_drops';
 import { pressName } from './guide';
 import type { Banner } from './guide';
 import { THEME } from './ui';
@@ -1081,6 +1082,17 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     const since = QUEST3.takenAt >= 0 ? t - QUEST3.takenAt - 1 : 9;
     const pop = since < 0.3 ? 1.5 - since / 0.6 : 1;
     const cx = lx + (spare > 0 ? 26 : 0) + 7;
+    const cy = btnY + btnH / 2;
+    g.drawImage(ic.img, Math.round(cx - ic.ax * pop), Math.round(cy - ic.ay * pop), Math.round(ic.w * pop), Math.round(ic.h * pop));
+  }
+  // (THE MELDSTONE, art/meld_drops.ts, behind MELD_DROPS: while it is carried it shows here too, from the
+  // moment it has dived into the hero, popping in a little bigger)
+  if (MELD_DROPS.on && game.hero.meld === 'stone' && art.meldDrops && (MELD_DROPS.takenAt < 0 || t - MELD_DROPS.takenAt >= 0.8)) {
+    const ic = art.meldDrops.carried;
+    const since = MELD_DROPS.takenAt >= 0 ? t - MELD_DROPS.takenAt - 0.8 : 9;
+    const pop = since < 0.3 ? 1.5 - since / 0.6 : 1;
+    const both = QUEST3.on && QUEST3.carried ? 16 : 0;
+    const cx = lx + (spare > 0 ? 26 : 0) + both + 7;
     const cy = btnY + btnH / 2;
     g.drawImage(ic.img, Math.round(cx - ic.ax * pop), Math.round(cy - ic.ay * pop), Math.round(ic.w * pop), Math.round(ic.h * pop));
   }

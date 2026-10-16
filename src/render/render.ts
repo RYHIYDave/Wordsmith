@@ -22,6 +22,10 @@ import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
 import { POWER, QUEST3, STONE_LAYING_STEPS, STONE_LYING_FRAMES, STONE_STANDING_FRAMES, floatingOf } from '../art/quest3';
 import type { StoneArt } from '../art/quest3';
+import { DUST_FPS, MELD_DROPS, SPILL_FRAMES, SPILL_SECS, STONE_FPS, STONE_FRAMES, WHIRL_FRAMES, heapOf, spinStep } from '../art/meld_drops';
+import type { MeldDropsArt } from '../art/meld_drops';
+import { GIVEN, KEPT_Z, MeldDrops, givenOf, orbitAt, riseOf, takenOf } from './meld_drops';
+import type { StoneAt } from './meld_drops';
 import { SMITH3 } from '../art/smith3';
 import { CRYPT, cryptFloor, cryptWays } from '../art/crypt';
 import { WARP_FRAMES, WAY_FRAMES } from '../art/crypt_ways';
@@ -106,6 +110,8 @@ export interface Art {
   spells: SpellArt;
   /** THE MASTER RUNE-STONE (art/quest3.ts): a mock-up behind QUEST3, off. */
   quest?: StoneArt;
+  /** RUNEDUST AND THE MELDSTONE (art/meld_drops.ts): a mock-up behind MELD_DROPS, off. */
+  meldDrops?: MeldDropsArt;
   /** The fallen wordsmith of a character's first dungeon. */
 }
 
@@ -629,6 +635,121 @@ export class Renderer {
     }
   }
 
+  /** The Meldstone's picture for how it is now (render/meld_drops.ts): torn apart and spinning, fused and spinning, or hanging. */
+  private meldStoneSprite(a: MeldDropsArt, at: StoneAt, t: number): Sprite {
+    if (at.shown === 'apart') return a.spinApart[spinStep(at.yaw)];
+    if (at.shown === 'whole') return a.spinWhole[spinStep(at.yaw)];
+    return a.stone[Math.floor(t * STONE_FPS) % STONE_FRAMES];
+  }
+
+  /** Stand a picture with its lights (`lit` false: without them, where the place is lit enough already). */
+  private standLit(d: number, sp: Sprite, x: number, y: number, scale = 1, alpha = 1, lit = true): void {
+    this.stand(d, sp, x, y, null, 0, scale, alpha);
+    if (lit && sp.lights && alpha > 0.05) this.propLit.push({ s: sp, x: Math.round(x), y: Math.round(y) });
+  }
+
+  /**
+   * RUNEDUST AND THE MELDSTONE LYING, and as they drop (art/meld_drops.ts, behind MELD_DROPS): a heap of
+   * runedust, bursting up out of the floor first; the Meldstone hanging over the floor, bursting up first
+   * out of the Fleshmancer's pit (riseOf: the rules hold it under the floor while he is dragged down).
+   */
+  private standMeldDrop(dr: { x: number; y: number; kind: string; gold: number; age: number }, sx: number, sy: number, t: number, fx: Fx): void {
+    const a = this.art.meldDrops as MeldDropsArt;
+    const d = dr.x + dr.y;
+    if (dr.kind === 'dust') {
+      if (dr.age < 0) return;
+      const heap = heapOf(dr.gold);
+      const sp = dr.age < SPILL_SECS ? a.spill[heap][Math.min(SPILL_FRAMES - 1, Math.floor(dr.age * 30))] : a.heap[heap][Math.floor(t * DUST_FPS) % 16];
+      this.standLit(d - 0.2, sp, sx, sy);
+      return;
+    }
+    const at = riseOf(dr.age, t);
+    if (at.crack) this.standLit(d - 0.45, a.crack[Math.min(a.crack.length - 1, Math.floor(at.crack.k * a.crack.length))], sx, sy, 1, at.crack.alpha);
+    if (at.z === null) return;
+    const sp = this.meldStoneSprite(a, at, t);
+    this.standLit(d + 0.05, sp, sx, sy - at.z, at.scale);
+    // (its light on the floor under it)
+    this.propLit.push({ s: a.pool, x: Math.round(sx), y: Math.round(sy) });
+    if (at.burst) this.standLit(d + 0.06, a.burst, sx, sy - at.z, at.burst.scale, at.burst.alpha);
+    if (at.slammed && !this.meldDrops.slammedDrops.has(dr)) {
+      this.meldDrops.slammedDrops.add(dr);
+      fx.shake = Math.max(fx.shake, 3);
+    }
+    if (at.shown === 'hang') this.labels.push({ x: sx, y: sy - at.z - 16, text: 'Meldstone', color: MELD_DUST_COLOR });
+  }
+
+  /**
+   * THEIR MOMENTS (render/meld_drops.ts): runedust taken, whirling up round the hero into him; the
+   * Meldstone taken, over his head, slammed together and into him; given, over the wordsmith's slab, its
+   * halves whirling round each other and slammed together; and kept there after, hanging over his slab.
+   */
+  private standMeldMoments(game: Game, cam: Cam, t: number, fx: Fx): void {
+    const a = this.art.meldDrops as MeldDropsArt;
+    const M = this.meldDrops;
+    M.tidy(t);
+    const h = game.hero;
+    const hd = h.x + h.y;
+    const hx = wx(cam, h.x, h.y);
+    const hy = wy(cam, h.x, h.y);
+    for (const w of M.whirls) {
+      const k = Math.floor((t - w.at) * 30);
+      if (k < 0 || k >= WHIRL_FRAMES) continue;
+      const scale = w.n <= 2 ? 0.85 : w.n <= 4 ? 1 : 1.15;
+      this.standLit(hd - 0.02, a.whirl[k].back, hx, hy, scale);
+      this.standLit(hd + 0.02, a.whirl[k].front, hx, hy, scale);
+    }
+    if (M.taken) {
+      const tk = M.taken;
+      const at = takenOf(t - tk.at, [tk.x, tk.y], [h.x, h.y]);
+      if (at && at.z !== null) {
+        const sx = wx(cam, at.x, at.y);
+        const sy = wy(cam, at.x, at.y) - at.z;
+        this.standLit(hd + 0.05, this.meldStoneSprite(a, at, t), sx, sy, at.scale);
+        if (at.burst) this.standLit(hd + 0.06, a.burst, sx, sy, at.burst.scale, at.burst.alpha);
+        if (at.slammed && !tk.slammed) {
+          tk.slammed = true;
+          fx.shake = Math.max(fx.shake, 3.5);
+          fx.freeze = Math.max(fx.freeze, 0.1);
+        }
+      }
+    }
+    const L = game.level;
+    if (!L.town) return;
+    const slab = L.props.find((p) => p.kind === 'runeSlab');
+    if (!slab) return;
+    const sd = slab.x + slab.y + 0.08;
+    const g = M.given ? t - M.given.at : -1;
+    if (M.given && g >= 0 && g < GIVEN.settled) {
+      const gv = givenOf(g, t, [M.given.hx, M.given.hy], [slab.x, slab.y]);
+      if (!gv) return;
+      const st = gv.stone;
+      if (st && st.z !== null) {
+        const sx = wx(cam, st.x, st.y);
+        const sy = wy(cam, st.x, st.y) - st.z;
+        // (in the wordsmith's ring, lit enough by its own light, the stone gives none: it would wash it out)
+        this.standLit(st.x + st.y + 0.08, this.meldStoneSprite(a, st, t), sx, sy, st.scale, 1, false);
+      }
+      if (gv.halves) {
+        gv.halves.forEach((hf, n) => {
+          const sp = a.halves[n][spinStep(hf.yaw)];
+          this.standLit(hf.x + hf.y + 0.08, sp, wx(cam, hf.x, hf.y), wy(cam, hf.x, hf.y) - hf.z, 1, 1, false);
+        });
+      }
+      if (gv.burst) this.standLit(sd + 0.01, a.burst, wx(cam, slab.x, slab.y), wy(cam, slab.x, slab.y) - KEPT_Z - 2, gv.burst.scale, gv.burst.alpha);
+      if (gv.slammed && !M.given.slammed) {
+        M.given.slammed = true;
+        fx.shake = Math.max(fx.shake, 4);
+        fx.freeze = Math.max(fx.freeze, 0.1);
+      }
+      return;
+    }
+    // KEPT: once the wordsmith has it, it goes round the column of light over his slab, turning
+    if (game.hero.meld === 'open' || game.meta.meld) {
+      const o = orbitAt(t, [slab.x, slab.y]);
+      this.standLit(o.x + o.y + 0.08, a.stone[Math.floor(t * STONE_FPS) % STONE_FRAMES], wx(cam, o.x, o.y), wy(cam, o.x, o.y) - o.z, 1, 1, false);
+    }
+  }
+
   /**
    * THE MASTER RUNE-STONE IN THE FIRST DUNGEON (art/quest3.ts, behind QUEST3): taken up, it rises
    * from beside the fallen wordsmith, stands up, bursts with light and flies into the hero.
@@ -755,6 +876,8 @@ export class Renderer {
 
   /** THE FIRST FIVE FLOORS: what the bosses of floors 2 to 5 do to the floor and send across it (render/bossfx.ts). */
   private readonly bossFx: BossFx;
+  /** RUNEDUST AND THE MELDSTONE's moments playing (render/meld_drops.ts, behind MELD_DROPS, off): main.ts tells it what the rules say happened. */
+  readonly meldDrops = new MeldDrops();
 
   constructor(private art: Art) {
     this.dark = document.createElement('canvas');
@@ -1646,6 +1769,15 @@ export class Renderer {
       this.shadow(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.36 * (1 - 0.3 * up), SHADOW * (1 - 0.35 * up));
     }
     for (const o of game.orbs) if (here(o.x, o.y)) this.shadow(g, wx(cam, o.x, o.y), wy(cam, o.x, o.y), 0.42, SHADOW * 0.85);
+    // (the Meldstone hanging over the floor has a shadow too, smaller and fainter the higher it is: art/meld_drops.ts)
+    if (MELD_DROPS.on) {
+      for (const dr of game.drops) {
+        if (dr.kind !== 'stone' || dr.age < 0 || !here(dr.x, dr.y)) continue;
+        const z = riseOf(dr.age, t).z ?? 0;
+        const up = Math.min(1, z / 40);
+        this.shadow(g, wx(cam, dr.x, dr.y), wy(cam, dr.x, dr.y), 0.22 * (1 - 0.4 * up), SHADOW * 0.55 * (1 - 0.5 * up));
+      }
+    }
     for (const q of game.familiars) if (here(q.x, q.y)) this.shadow(g, wx(cam, q.x, q.y), wy(cam, q.x, q.y), 0.14, SHADOW * 0.7);
 
   }
@@ -2115,6 +2247,12 @@ export class Renderer {
       if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
       const pop = dr.age >= 0 && dr.age < 0.4 ? Math.sin((dr.age / 0.4) * Math.PI) * 9 : 0;
       const bob = dr.kind === 'word' || dr.kind === 'orb' ? Math.sin(t * 4 + dr.x) * 1.5 + 3 : 0;
+      // (RUNEDUST AND THE MELDSTONE DRAWN, art/meld_drops.ts, behind MELD_DROPS: lying, and as they drop)
+      if (MELD_DROPS.on && art.meldDrops && (dr.kind === 'dust' || dr.kind === 'stone')) {
+        this.standMeldDrop(dr, sx, sy, t, fx);
+        hid?.(dr.x, dr.y);
+        continue;
+      }
       let sp: Sprite;
       if (dr.kind === 'gold') sp = art.icons.gold[dr.gold >= 30 ? 2 : dr.gold >= 8 ? 1 : 0];
       else if (dr.kind === 'orb') sp = art.icons.lifeOrb;
@@ -2144,6 +2282,9 @@ export class Renderer {
         if (Math.random() < 0.3 * amb) fx.mote(dr.x, dr.y, [MELD_DUST_COLOR, P.white]);
       }
     }
+
+    // (and their moments: runedust taken, the Meldstone taken and given, and kept over the wordsmith's slab)
+    if (MELD_DROPS.on && art.meldDrops) this.standMeldMoments(game, cam, t, fx);
 
     // a monster that is falling: it stands among the others until it lies (then it is drawn with the floor, above)
     for (const f of fx.fallen) {

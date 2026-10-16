@@ -1180,7 +1180,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         const dust = art.icons.runedust;
         const dx = ix + coin.w + 2 + gw + 6;
         if (dx + dust.w + 2 + textWidth(`${h.dust}`, 'small') <= ix + iw) {
-          g.drawImage(dust.img, dx, bagY + 1);
+          g.drawImage(dust.img, dx, bagY + 1, dust.w, dust.h);
           drawText(g, `${h.dust}`, dx + dust.w + 2, bagY + 2, MELD_DUST_COLOR, { font: 'small' });
         }
       }

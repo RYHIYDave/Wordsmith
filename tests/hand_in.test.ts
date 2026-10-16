@@ -67,12 +67,18 @@ function step(g: Game, secs: number, use = false): GameEvent[] {
 }
 
 test('with HAND_IN off, walking up to the wordsmith with the master rune-stone gives it, as before', () => {
-  assert.equal(HAND_IN.on, false, 'off');
-  const g = carrying(12, 1);
-  step(g, 0.3);
-  assert.equal(g.hero.quest, null, 'given');
-  assert.equal(g.hero.ring, true, 'the ring is lit');
-  assert.equal(g.handInNear(), null, 'nothing to hand in by using him');
+  // (HAND_IN is on in the game with the descent, his "quest hand-in on": off here, and put back after)
+  const was = HAND_IN.on;
+  HAND_IN.on = false;
+  try {
+    const g = carrying(12, 1);
+    step(g, 0.3);
+    assert.equal(g.hero.quest, null, 'given');
+    assert.equal(g.hero.ring, true, 'the ring is lit');
+    assert.equal(g.handInNear(), null, 'nothing to hand in by using him');
+  } finally {
+    HAND_IN.on = was;
+  }
 });
 
 test('with HAND_IN on, walking up gives nothing; using him gives it, in place of his panel', () => {

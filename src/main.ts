@@ -8,6 +8,7 @@ import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3 } from './art/heroes3';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt, useMeldArt } from './art/icons';
+import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
 import { PAINTING } from './art/kit';
 import { makeSpellArt } from './art/spells';
 import { WALLS_BLOCKS, WALLS_FADING, WALL_LOOK, makeGroundArt, setWallLook } from './art/ground';
@@ -54,7 +55,7 @@ import { DOORS, doorMiddle, doorTiles } from './game/doors';
 import { WAYS, stairMiddle, topStep } from './game/ways';
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
-import { MELD, savedMeta } from './game/melds';
+import { MELD, STONE_RISE, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
 import type { Hall } from './game/level';
@@ -217,7 +218,19 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     spells: makeSpellArt(),
     // (THE MASTER RUNE-STONE, art/quest3.ts: a mock-up behind QUEST3, off; its pictures are painted the first time they are shown)
     quest: makeStoneArt(),
+    // (RUNEDUST AND THE MELDSTONE, art/meld_drops.ts: a mock-up behind MELD_DROPS, off; painted the first time they are shown)
+    meldDrops: makeMeldDropsArt(),
   };
+  // RUNEDUST AND THE MELDSTONE DRAWN (art/meld_drops.ts, behind MELD_DROPS): switched on, the rules hold the
+  // Fleshmancer's runedust and Meldstone under the floor while he is dragged down (game/melds.ts STONE_RISE),
+  // and the screens show the new runedust; off, the stand-ins, as before.
+  const dustStandIn = art.icons.runedust;
+  const useMeldDrops = (on: boolean): void => {
+    MELD_DROPS.on = on;
+    STONE_RISE.on = on;
+    art.icons.runedust = on && art.meldDrops ? art.meldDrops.icon : dustStandIn;
+  };
+  useMeldDrops(MELD_DROPS.on);
   // THE CRYPT (art/crypt.ts, behind CRYPT, off): each of its floors has a ground and props of its
   // own, swapped in as the hero goes down; the vault's are the town's, and every dungeon's with it off.
   const vault = { ground: art.ground, props: art.props, gates: art.gates, hazards: art.hazards };
@@ -468,6 +481,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (THE MASTER RUNE-STONE: its moments are this hero's: see questFromRules)
     QUEST3.givenAt = -1;
     QUEST3.takenAt = -1;
+    // (and the Meldstone's: art/meld_drops.ts)
+    MELD_DROPS.takenAt = -1;
+    renderer.meldDrops.clear();
     fx.clear();
     fx.messages = [];
     panels.open = 'none';
@@ -1353,6 +1369,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // (THE MASTER RUNE-STONE: taken up beside the fallen wordsmith; given to the wordsmith, whose ring powers up)
       else if (e.t === 'quest' && questByRules) QUEST3.takenAt = clock;
       else if (e.t === 'ring' && questByRules) QUEST3.givenAt = clock;
+      // (THE MELDSTONE taken up: its picture on the screen waits until it has dived into him, art/meld_drops.ts)
+      else if (e.t === 'stoneGot') MELD_DROPS.takenAt = clock;
       else if (e.t === 'wordGot') {
         // a new player's first word is the big moment: it is announced large, and the game holds its breath
         const big = !!g.guide && !g.guide.set;
@@ -1385,6 +1403,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const levelled = g.events.some((e) => e.t === 'levelup');
     // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts, called up by what the rules say happened)
     if (MELD3.on) eventsM3(g.events, g, fx);
+    // (RUNEDUST AND THE MELDSTONE's moments, behind a switch that is off: render/meld_drops.ts)
+    if (MELD_DROPS.on) renderer.meldDrops.see(g.events, clock, g.hero);
     fx.handle(more.length ? [...g.events, ...more] : g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
     // (the new words' looks, called up by what the rules say happened: render/words3.ts)
     if (WORDS3.on) events3(g.events, g, fx);
@@ -2219,6 +2239,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     meld: (on: boolean) => {
       MELD.on = on;
     },
+    /** (RUNEDUST AND THE MELDSTONE DRAWN, art/meld_drops.ts) their new pictures switched on or off, for pictures and films */
+    meldDrops: (on: boolean) => useMeldDrops(on),
     /** (HAND_IN, game/defs.ts) quest items given by using the one they are for, for pictures and playtests */
     handIn: (on: boolean) => {
       HAND_IN.on = on;
