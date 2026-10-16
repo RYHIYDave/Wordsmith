@@ -22,7 +22,7 @@ import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, bossKind, gaitOf } from './bosses';
 import { ACT1 } from './act1';
-import { act1Rules } from './act1_rules/index';
+import { act1Rules, act1Ward } from './act1_rules/index';
 import { blobDist } from './act1_layout';
 import { HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE } from './act1_holds';
 import { act1Ready } from './act1_mobs';
@@ -4426,6 +4426,11 @@ export class Game {
     // (ACT 1: nor is one up in the air, or under the water, as its kind's rules have it)
     const r1 = ACT1.on ? act1Rules(m.kind) : null;
     if (r1 && r1.reachable && !r1.reachable(m)) return;
+    // (ACT 1: one shielded by another standing by it takes less: the chanter's ward over the cult near it, game/act1_rules/)
+    if (ACT1.on) {
+      const ward = act1Ward(this.bosses, m);
+      if (ward > 0) dmg = Math.max(1, Math.round(dmg * (1 - ward)));
+    }
     // (THE SKILL TREES: Overload, a shocked enemy takes more from everything)
     if (m.shockT > 0 && this.has('overload')) dmg = Math.max(1, Math.round(dmg * TALENT_TUNE.overload));
     // (WORDMELDING: Blight behind, a poisoned enemy it has touched takes more from everything)

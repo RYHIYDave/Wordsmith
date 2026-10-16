@@ -1,5 +1,6 @@
 // THE CULT'S TWO NEW KINDS FOR FLOORS 6 TO 10, THE CHANTER AND THE FIREPOT THROWER (src/art/act1_cultists.ts;
-// a mock-up nothing of the game imports), held to his rulebook before he sees them: crisp in every frame, the
+// a mock-up until Act 1 put them in the game, through art/act1_figs/chanter.ts and firepot.ts, their switch going
+// with the descent), held to his rulebook: crisp in every frame, the
 // enemy's pink edge round them while they live and none as they die, nothing cyan and every light the cult's
 // fire, their size beside the knight, nothing of them cut off at their canvas's edge, the whole review of every
 // move (as the bosses have it), and what they send (the bolt, the firepot, its fire, the ward) crisp.
@@ -20,13 +21,15 @@ import { spriteOf3 } from '../src/art/heroes3';
 import { MOVES3 } from '../src/art/moves3';
 import { ACT1_CULT_ON, BOLT_FRAMES, CHANTER, FIREPOT_FRAMES, FIREPOT_THROWER, chantWard, curseBolt, firepotFire, firepotFlying, makeChanterArt3, makeFirepotThrowerArt3 } from '../src/art/act1_cultists';
 import { deathOfMob, paintMob } from '../src/art/new_mobs3';
+import { useAct1Figs } from '../src/art/bestiary';
+import { ACT1 } from '../src/game/act1';
 import type { Mob } from '../src/art/new_mobs3';
 import { rgba } from '../src/engine/px';
 import type { Px, Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
 const test = nodeTest as (name: string, fn: () => void) => void;
-const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void };
+const assert = nodeAssert as { ok(v: unknown, msg?: string): void; equal(a: unknown, b: unknown, msg?: string): void; deepEqual(a: unknown, b: unknown, msg?: string): void };
 const fs = nodeFs as { readdirSync(p: string, o: { recursive: boolean }): string[]; readFileSync(p: string, e: string): string };
 paintWithoutCanvas();
 
@@ -71,12 +74,19 @@ function tallOf(sp: Sprite): number {
   return bottom - top + 1;
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
+test('in the game through art/act1_figs/ (its switch goes with the descent), and nothing else of the game imports it', () => {
+  // (art/bestiary.ts useAct1Figs: the art chat's switch is on while the descent is)
+  useAct1Figs(true);
+  assert.equal(ACT1_CULT_ON.on, true);
+  useAct1Figs(false);
   assert.equal(ACT1_CULT_ON.on, false);
+  useAct1Figs(ACT1.on);
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true })) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('act1_cultists.ts')) continue;
-    assert.ok(!/from ['"][^'"]*act1_cultists['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the cult's two new kinds`);
+    if (/from ['"][^'"]*act1_cultists['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f.split('\\').join('/'));
   }
+  assert.deepEqual(users.sort(), ['art/act1_figs/chanter.ts', 'art/act1_figs/firepot.ts', 'render/act1_fx/chanter.ts', 'render/act1_fx/firepot.ts'], 'the game files that hold them');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge), the pink edge round them while they live, none as they die', () => {

@@ -96,6 +96,9 @@ test('their switch goes with the rules\' (Version 19.9), and only the bestiary, 
   const users: string[] = [];
   for (const f of files) {
     if ([...mine, ...alsoMockUps].some((m) => f.endsWith(`${m}.ts`))) continue;
+    // (ACT 1, THE DESCENT: its kinds' pictures, art/act1_figs/, hand over the art chat's Mobs as the game holds a monster's, by
+    // mobSet; and what they draw, render/act1_fx/, is drawn on the floor as the bosses' effects are, by its FloorAt)
+    if (/^(art\/act1_figs|render\/act1_fx)\//.test(f.split('\\').join('/'))) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     if (mine.some((m) => new RegExp(`from '[./a-z_]*/${m}'`).test(text))) users.push(f.split('\\').join('/'));
   }
