@@ -29,6 +29,9 @@ export default async function (page, snap) {
   const slow = (r) => cdp.send('Emulation.setCPUThrottlingRate', { rate: r });
   await page.evaluate(() => { const d = window.__dbg; d.saving(false); d.run('warrior', 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true; });
   await page.waitForTimeout(1500);
+  // (a hero who has cleared the Prison, as one coming to the descent would have: the town come into again)
+  await page.evaluate(() => { const g = window.__dbg.game(); g.cleared = 5; g.enterTown(); });
+  await page.waitForTimeout(1500);
   const frames = (ms) => page.evaluate((dur) => new Promise((done) => {
     let n = 0; let worst = 0; let s34 = 0; let s50 = 0; let last = performance.now(); const t0 = last;
     const tick = (now) => {
@@ -116,6 +119,7 @@ export default async function (page, snap) {
         await snap(`${place}_risen`);
       }
     }
+    r.ground = await page.evaluate(() => { const st = window.__dbg.renderer.outdoor.stats; return { pieces: st.pieces, byWorker: st.worker }; });
     r.canvasMB = (await page.evaluate(() => (window.__canvasRoom ? window.__canvasRoom().mb : -1)));
     r.pageMB = room();
     out[place] = r;

@@ -1717,6 +1717,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         painter.restart();
         // (and every other figure but this place's own monsters': ACT 1's floors each bring their own kinds)
         art.bestiary.forgetOthers(new Set(g.monsters.map((m) => figureOf(m))));
+        // (ACT 1: a hero who has come as far as the descent has the ground's worker started ahead of need: render/painter.ts)
+        if (g.cleared >= 5 || g.depth >= 6) painter.warmGround();
         // (the films this place will want: the fifth floor's cage coming down and going up; on the four
         // above it, its stairwell breaking open where it most likely will, and where next, room allowing)
         const W = g.level.ways;

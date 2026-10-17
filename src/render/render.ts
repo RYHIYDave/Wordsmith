@@ -897,6 +897,8 @@ export class Renderer {
     this.dg = this.dark.getContext('2d') as CanvasRenderingContext2D;
     this.bossFx = new BossFx(art.bestiary);
     this.dress = new FloorDress(() => this.painter);
+    // (ACT 1: the outdoor ground's pieces painted by the painter's ground worker, where there is one)
+    this.outdoor.painterOf = () => this.painter;
     this.pieces = new FloorPieces(() => this.painter);
     this.stage = {
       cam: this.cam,
