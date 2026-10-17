@@ -412,3 +412,7 @@ between them he is nowhere (draw nothing of him, no shadow and no pool of light)
   pit opens and closes, he rears before he is pulled, his hood under before the skull, nothing of him at the end of
   going or the start of coming back, the skull up before his hood, he ends floating as he stands, no lone pixel in
   any frame of either, both as the game holds them.
+- With main as at Version 22.1 merged in (99a128c): tsc clean; the whole unit suite 1749 of 1749. Its room
+  (tools/scenarios/act1_room.mjs, NATURAL=1, floor 5, a phone's size): his frames as the painter holds them 1104,
+  25.0 MB, where the game as at 22.1 holds 968, 22.4 MB (both moves painted ahead with the rest of him); the page
+  504 MB (22.1: 500 MB); canvases 42.3 MB (22.1: 42.4).
