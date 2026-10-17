@@ -445,4 +445,7 @@ fall across the heap; a little dust runs out low along the floor. Nothing is flu
   about a second. Is that right?", his answer by 16:06 (Eastern; 13:06 where he is): "Yes, send it to main
   (Recommended)", offered as: it goes to the main chat to put in the game.
 - Checks: tests/floor6_mobs.test.ts 18 of 18 (its boss review, every move: its bones keep above the floor as it
-  sinks), tests/act1_qgolem.test.ts, tests/floor6.test.ts, tests/new_mobs3.test.ts.
+  sinks), tests/act1_qgolem.test.ts, tests/floor6.test.ts, tests/new_mobs3.test.ts. With main as at Version 22.1
+  merged in (99a128c): tsc clean; the whole unit suite 1748 of 1748. Its room (tools/scenarios/act1_room.mjs,
+  NATURAL=1, floor 6, a phone's size): the quarry golem's frames 438, 14.4 MB, where the game as at 22.1 holds 450,
+  20.3 MB.
