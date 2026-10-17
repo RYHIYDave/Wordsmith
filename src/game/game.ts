@@ -24,7 +24,7 @@ import { BOSSES5, BossRules, blinkedAway, bossKind, gaitOf } from './bosses';
 import { ACT1 } from './act1';
 import { act1Rules, act1Ward } from './act1_rules/index';
 import { blobDist } from './act1_layout';
-import { HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
+import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
@@ -2198,6 +2198,16 @@ export class Game {
     if (!st || !q || st.open || st.words.length === 0) return false;
     st.open = true;
     for (const p of L.props) if (p.kind === 'piece' && p.name === HOLD.gate(L.act1?.floor ?? 6) && p.tx === q.gx && p.ty === q.gy) p.state = 1;
+    // (ALTAR_GOES: the altar is gone, its tile floor again)
+    if (ALTAR_GOES.on) {
+      const k = L.props.findIndex((p) => p.kind === 'piece' && p.name === HOLD.altar && p.tx === q.gx && p.ty === q.gy + 1);
+      if (k >= 0) {
+        const p = L.props[k];
+        L.props.splice(k, 1);
+        if (!L.props.some((o) => o.solid && o.tx === p.tx && o.ty === p.ty)) L.walk[p.ty * L.floor.w + p.tx] = 1;
+        this.emit({ t: 'burst', x: q.altar.x, y: q.altar.y, r: 1.2, el: 'fire', style: 'shock' });
+      }
+    }
     this.emit({ t: 'burst', x: q.gx, y: q.gy + 0.2, r: 1.6, el: 'fire', style: 'shock' });
     this.emit({ t: 'shake', amount: 4 });
     this.sfx('power', 0.9);
