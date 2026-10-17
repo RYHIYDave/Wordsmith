@@ -70,6 +70,7 @@ import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
+import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
@@ -2106,6 +2107,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     painting: PAINTING,
     /** THE PAINTER (render/painter.ts): whether there is one, and what it has done. */
     painter,
+    /** THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its switch (renderer.topsCache has what it did). */
+    topsCache: TOPS_CACHE,
     /** The level-up choice opens by itself in a quiet moment. Tests that need an uninterrupted fight switch this off. */
     autoLevel: true,
     /** The inventory opens by itself for a new word that has somewhere to go. Likewise. */

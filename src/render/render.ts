@@ -67,6 +67,10 @@ import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
 import { OutdoorGround, PIECE as GROUND_PIECE } from './outdoor';
 import { Act1Pieces, SEE_TALL } from './act1_pieces';
+import { TOPS_CACHE, TopsCache } from './tops_cache';
+import type { CachedTree, Chunk } from './tops_cache';
+import { RES } from '../engine/screen';
+import type { Terrain } from '../art/terrain';
 import { act1Fx } from './act1_fx/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
@@ -148,6 +152,8 @@ const FAMILIAR_HOVER = 19;
 /** One upright thing to draw, with its depth for back-to-front sorting. */
 interface Stand {
   d: number;
+  /** The order it was come to in (what is as deep as another is drawn in that order). */
+  q: number;
   s: Sprite;
   /** Screen position of the sprite's anchor. */
   x: number;
@@ -172,7 +178,16 @@ interface Stand {
    */
   hide?: number[];
   hideBase?: number;
+  /** (ACT 1, THE FOREST AS A FEW PICTURES: render/tops_cache.ts) a tree on the tops; a chunk's picture; drawn only between these screen columns; not drawn after all (its chunk is drawn as its trees). */
+  top?: boolean;
+  chunk?: Chunk;
+  clip0?: number;
+  clip1?: number;
+  skip?: boolean;
 }
+
+/** (render/tops_cache.ts) How long a frame may spend making the forest's pictures (ms); one is made a frame at least. */
+const TOPS_BUILD_MS = 3;
 
 /** How much darker sunken floor is drawn than the room's own (0 to 1). */
 const SUNK_DARK = 0.16;
@@ -986,7 +1001,7 @@ export class Renderer {
   }
 
   private stand(d: number, s: Sprite, x: number, y: number, over: Sprite | null = null, overA = 0, scale = 1, alpha = 1, figure: Figure | null = null, phase = 0): void {
-    this.stands.push({ d, s, x: Math.round(x), y: Math.round(y), over, overA, scale, alpha, figure, phase });
+    this.stands.push({ d, q: this.stands.length, s, x: Math.round(x), y: Math.round(y), over, overA, scale, alpha, figure, phase });
   }
 
   // =============================================================================================
@@ -2201,7 +2216,8 @@ export class Renderer {
       return spriteCovers(sp, lx, ly - 14) || spriteCovers(sp, lx, ly - 28) || spriteCovers(sp, lx, ly - 3) ? SEEN_THROUGH : 1;
     };
     // (ACT 1, THE DESCENT: what stands on the tops of the cliffs, in the forest and in the water: render/act1_pieces.ts)
-    if (this.act1Dressed && this.openGround) this.standTops(W, H, heroX, heroY);
+    if (this.act1Dressed && this.openGround) this.standTops(W, H, heroX, heroY, L);
+    else this.frameChunks.length = 0;
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] && !this.openGround) continue;
       const sx = wx(cam, p.x, p.y);
@@ -2676,10 +2692,13 @@ export class Renderer {
       }
     }
 
-    stands.sort((a, b) => a.d - b.d);
+    // (THE FOREST AS A FEW PICTURES: a chunk that something comes between, or that is seen through, drawn as its trees after all)
+    this.resolveTops();
+    stands.sort((a, b) => a.d - b.d || a.q - b.q);
     fx.heroShape = null;
     let cut = false;
     for (const st of stands) {
+      if (st.skip) continue;
       const s = st.s;
       // (a thing that stands behind raised ground: the screen is shut to it where that ground is)
       if (cut) {
@@ -2697,6 +2716,16 @@ export class Renderer {
         cut = true;
       }
       if (st.alpha !== 1) g.globalAlpha = Math.max(0, st.alpha);
+      // (a tree of a chunk drawn as its trees: only what of it is in the chunk's column, the rest being in its neighbours' pictures)
+      if (st.clip0 !== undefined && st.clip1 !== undefined) {
+        const left = st.x - s.ax;
+        const a = Math.max(left, st.clip0);
+        const b = Math.min(left + s.w, st.clip1);
+        const dn = s.density ?? 1;
+        if (b > a) g.drawImage(s.img, (a - left) * dn, 0, (b - a) * dn, s.h * dn, a, st.y - s.ay, b - a, s.h);
+        g.globalAlpha = 1;
+        continue;
+      }
       if (st.scale !== 1) {
         const x = Math.round(st.x - s.ax * st.scale);
         const y = Math.round(st.y - s.ay * st.scale);
@@ -3172,10 +3201,18 @@ export class Renderer {
   private seenFoes: { x: number; y: number; d: number }[] = [];
 
   /** (ACT 1) What stands on the tops, for the ground's pieces on and round the screen. */
-  private standTops(W: number, H: number, heroX: number, heroY: number): void {
+  private standTops(W: number, H: number, heroX: number, heroY: number, L: Game['level']): void {
+    this.frameChunks.length = 0;
+    this.seenChunks.length = 0;
     const T = this.outdoor.terrain();
     if (!T) return;
     const cam = this.cam;
+    // (THE FOREST AS A FEW PICTURES: render/tops_cache.ts)
+    if (TOPS_CACHE.on && !cam.lift && T.look.rise === 0 && L.act1 && TOPS_CACHE.floors.has(L.act1.floor)) {
+      this.standTopsCached(T, L, W, H, heroX, heroY);
+      return;
+    }
+    this.topsCache.leave(L);
     const x0 = -cam.ox * 2;
     const y0 = -cam.oy * 2;
     const i0 = Math.floor(x0 / GROUND_PIECE) - 1;
@@ -3199,6 +3236,217 @@ export class Renderer {
   }
   private outdoorFrame = 0;
   private heroD = 0;
+
+  /** (ACT 1) THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its chunks; those drawn as pictures this frame; where the hero stood. */
+  readonly topsCache = new TopsCache();
+  private frameChunks: Chunk[] = [];
+  /** Every chunk on the screen this frame, with a picture or without. */
+  private seenChunks: Chunk[] = [];
+  private topsFrame = 0;
+  private topsHeroX = 0;
+  private topsHeroY = 0;
+
+  /** (ACT 1) What stands on the tops, as chunks: each a picture, or its trees (where it has no picture yet, or one of its trees is seen through). */
+  private standTopsCached(T: Terrain, L: Game['level'], W: number, H: number, heroX: number, heroY: number): void {
+    const cam = this.cam;
+    const tc = this.topsCache;
+    tc.begin(L);
+    const SLAB = TOPS_CACHE.slab;
+    const COLUMN = TOPS_CACHE.column;
+    const frame = ++this.topsFrame;
+    this.topsHeroX = heroX;
+    this.topsHeroY = heroY;
+    // (the trees are come to here, before everything else that stands this frame: those drawn one by one later still take their place)
+    this.topsQ = this.stands.length;
+    tc.stats.pictures = 0;
+    tc.stats.fell = 0;
+    tc.stats.trees = 0;
+    const relX = -cam.ox;
+    const relY = -cam.oy;
+    const slabPx = SLAB * 8;
+    const c0 = Math.floor(relX / COLUMN);
+    const c1 = Math.floor((relX + W - 1) / COLUMN);
+    // (a tree whose foot is below the screen's foot reaches up into it)
+    const s0 = Math.floor((relY - 16) / slabPx);
+    const s1 = Math.floor((relY + H + 160) / slabPx);
+    const gather = (s: number, c: number): CachedTree[] => this.gatherTops(T, s, c);
+    const began = performance.now();
+    let made = 0;
+    const seen = this.seenChunks;
+    for (let s = s0; s <= s1; s++) {
+      for (let c = c0; c <= c1; c++) {
+        const ch = tc.chunk(s, c, frame, gather);
+        if (ch.trees.length === 0 || ch.y0 + ch.h <= relY || ch.y0 >= relY + H) continue;
+        seen.push(ch);
+        if (!ch.sp && (made === 0 || performance.now() - began < TOPS_BUILD_MS)) {
+          tc.paint(ch, RES);
+          made++;
+        }
+      }
+    }
+    // SEEN THROUGH: a tall tree the hero, or a monster in sight, is behind (as seeThrough has it: three points of them, so
+    // the tree is in the chunk of the column one of the points is in): every chunk with a part of it is drawn as its trees
+    // (looked for in the chunks of each one's column, on the screen or not; one further off the screen than any tree is
+    // wide or tall can be behind none that is seen)
+    const thin = this.thinTops;
+    thin.clear();
+    const who: { x: number; y: number }[] = [{ x: heroX, y: heroY }, ...this.seenFoes];
+    const looked = new Set<Chunk>();
+    for (const f of who) {
+      if (f.x < -140 || f.x > W + 140 || f.y < -20 || f.y > H + 160) continue;
+      const c = Math.floor((f.x - cam.ox) / COLUMN);
+      const fs0 = Math.floor((f.y - 28 - cam.oy - 10) / slabPx);
+      const fs1 = Math.floor((f.y - 3 - cam.oy + 160) / slabPx);
+      for (let s = fs0; s <= fs1; s++) {
+        const ch = tc.chunk(s, c, frame, gather);
+        if (looked.has(ch)) continue;
+        looked.add(ch);
+        for (const t of ch.trees) {
+          if (!t.top.tall || thin.has(t.top)) continue;
+          const a = this.seeThrough(t.top.sp, cam.ox + t.sx, cam.oy + t.sy, t.d, heroX, heroY, this.heroD);
+          if (a < 1) thin.set(t.top, a);
+        }
+      }
+    }
+    this.thinDrawn.clear();
+    for (const ch of seen) {
+      if (ch.sp && (thin.size === 0 || !ch.trees.some((t) => thin.has(t.top)))) {
+        this.stands.push({ d: ch.s * SLAB, q: this.stands.length, s: ch.sp, x: cam.ox + ch.x0, y: cam.oy + ch.y0, over: null, overA: 0, scale: 1, alpha: 1, figure: null, phase: 0, chunk: ch });
+        this.frameChunks.push(ch);
+        tc.stats.pictures++;
+      } else this.standChunkTrees(ch);
+    }
+    // (while there is time, the chunks round the screen, for where the camera goes next)
+    for (let s = s0 - 2; s <= s1 + 2 && performance.now() - began < TOPS_BUILD_MS; s++) {
+      for (let c = c0 - 1; c <= c1 + 1 && performance.now() - began < TOPS_BUILD_MS; c++) {
+        const ch = tc.chunk(s, c, frame, gather);
+        if (!ch.sp && ch.trees.length > 0) tc.paint(ch, RES);
+      }
+    }
+    if (frame % 60 === 0) tc.forget(frame);
+    // (the tops of pieces far away let go of, as the ground's pieces are)
+    const pi0 = Math.floor((relX * 2) / GROUND_PIECE) - 1;
+    const pi1 = Math.floor(((relX + W) * 2) / GROUND_PIECE) + 1;
+    const pj0 = Math.floor((relY * 2) / GROUND_PIECE) - 1;
+    const pj1 = Math.floor(((relY + H) * 2) / GROUND_PIECE) + 3;
+    if (this.outdoorFrame++ % 30 === 0) this.act1.forgetTops((i, j) => i >= pi0 - 6 && i <= pi1 + 6 && j >= pj0 - 6 && j <= pj1 + 6);
+  }
+  /** The trees seen through this frame, and how much; those of them drawn so far this frame (each is drawn whole, once). */
+  private thinTops = new Map<unknown, number>();
+  private thinDrawn = new Set<unknown>();
+  /** How many things stood before the trees this frame. */
+  private topsQ = 0;
+
+  /** (ACT 1) The trees of slab `s` that are in column `c` (render/tops_cache.ts): where the game would draw each, relative to the camera. */
+  private gatherTops(T: Terrain, s: number, c: number): CachedTree[] {
+    const out: CachedTree[] = [];
+    const SLAB = TOPS_CACHE.slab;
+    const COLUMN = TOPS_CACHE.column;
+    const xa = c * COLUMN - 72;
+    const xb = (c + 1) * COLUMN + 72;
+    const ya = s * SLAB * 8 - 16;
+    const yb = (s + 1) * SLAB * 8 + 16;
+    const i0 = Math.floor((xa * 2) / GROUND_PIECE);
+    const i1 = Math.floor((xb * 2) / GROUND_PIECE);
+    const j0 = Math.floor((ya * 2) / GROUND_PIECE);
+    const j1 = Math.floor((yb * 2) / GROUND_PIECE);
+    for (let j = j0; j <= j1; j++) {
+      for (let i = i0; i <= i1; i++) {
+        const list = this.act1.topsOf(T, i, j);
+        for (let k = 0; k < list.length; k++) {
+          const top = list[k];
+          const d = top.x + top.y;
+          if (Math.floor(d / SLAB) !== s) continue;
+          const sp = top.sp;
+          // (as the game places it: wx and wy, rounded, less the camera's own whole pixels)
+          const sx = Math.round((top.x - top.y) * 16);
+          const sy = Math.round((top.x + top.y) * 8 - top.lift);
+          const x0 = sx - sp.ax;
+          const x1 = x0 + sp.w;
+          if (x1 <= c * COLUMN || x0 >= (c + 1) * COLUMN) continue;
+          out.push({ top, d, sx, sy, x0, y0: sy - sp.ay, x1, y1: sy - sp.ay + sp.h, order: ((j + 4096) * 8192 + (i + 4096)) * 64 + k });
+        }
+      }
+    }
+    return out;
+  }
+
+  /**
+   * (ACT 1) A chunk drawn as its trees, one by one, exactly as the game draws them otherwise: each cut to the chunk's
+   * column (its neighbours' pictures have the rest), but one seen through drawn whole, once (all its chunks are drawn as
+   * their trees then). In the order the game came to them, before everything else that stands.
+   */
+  private standChunkTrees(ch: Chunk): void {
+    const cam = this.cam;
+    const clip0 = cam.ox + ch.x0;
+    const clip1 = clip0 + ch.w;
+    for (const t of ch.trees) {
+      const sx = cam.ox + t.sx;
+      const sy = cam.oy + t.sy;
+      const q = this.topsQ - 1 + t.order * 1e-11;
+      const a = this.thinTops.get(t.top);
+      if (a !== undefined) {
+        if (this.thinDrawn.has(t.top)) continue;
+        this.thinDrawn.add(t.top);
+        this.stands.push({ d: t.d, q, s: t.top.sp, x: sx, y: sy, over: null, overA: 0, scale: 1, alpha: a, figure: null, phase: 0, top: true });
+      } else this.stands.push({ d: t.d, q, s: t.top.sp, x: sx, y: sy, over: null, overA: 0, scale: 1, alpha: 1, figure: null, phase: 0, top: true, clip0, clip1 });
+    }
+    this.topsCache.stats.trees += ch.trees.length;
+  }
+
+  /**
+   * (ACT 1) Before the depth order is drawn: a chunk drawn as a picture where something else that stands comes between
+   * its trees (in its slab, overlapping a tree deeper than itself) is drawn as its trees after all.
+   */
+  private resolveTops(): void {
+    const chunks = this.frameChunks;
+    if (chunks.length === 0) return;
+    const cam = this.cam;
+    const SLAB = TOPS_CACHE.slab;
+    const bad = new Set<Chunk>();
+    const bySlab = new Map<number, Chunk[]>();
+    for (const ch of chunks) {
+      const list = bySlab.get(ch.s);
+      if (list) list.push(ch);
+      else bySlab.set(ch.s, [ch]);
+    }
+    for (const st of this.stands) {
+      if (st.top || st.chunk) continue;
+      const list = bySlab.get(Math.floor(st.d / SLAB));
+      if (!list) continue;
+      const s = st.s;
+      const sc = st.scale;
+      // (its picture's box, with what is drawn with it: a figure out of phase pulled apart sideways, a glow round it, a
+      // figure's scarf and feather: engine/tails.ts paints them on a patch 48 game pixels each side of its feet, 56 up, 20 down)
+      const m = (st.phase > 0 ? PHASE_APART + 2 : 0) + (s.aura ? s.aura.r + 2 : 0) + 2;
+      let x0 = st.x - s.ax * sc - m;
+      let x1 = st.x - s.ax * sc + s.w * sc + m;
+      let y0 = st.y - s.ay * sc - m;
+      let y1 = st.y - s.ay * sc + s.h * sc + m;
+      if (st.figure) {
+        x0 = Math.min(x0, st.x - 50);
+        x1 = Math.max(x1, st.x + 50);
+        y0 = Math.min(y0, st.y - 58);
+        y1 = Math.max(y1, st.y + 22);
+      }
+      for (const ch of list) {
+        if (bad.has(ch)) continue;
+        const bx0 = cam.ox + ch.x0;
+        const by0 = cam.oy + ch.y0;
+        if (x1 <= bx0 || x0 >= bx0 + ch.w || y1 <= by0 || y0 >= by0 + ch.h) continue;
+        for (const t of ch.trees) {
+          if (t.d <= st.d) continue;
+          if (x1 <= cam.ox + t.x0 || x0 >= cam.ox + t.x1 || y1 <= cam.oy + t.y0 || y0 >= cam.oy + t.y1) continue;
+          bad.add(ch);
+          break;
+        }
+      }
+    }
+    if (bad.size === 0) return;
+    for (const st of this.stands) if (st.chunk && bad.has(st.chunk)) st.skip = true;
+    for (const ch of bad) this.standChunkTrees(ch);
+    this.topsCache.stats.fell = bad.size;
+  }
 
   private light(W: number, H: number, game: Game, t: number, fx: Fx): void {
     if (this.dark.width !== W || this.dark.height !== H) {
