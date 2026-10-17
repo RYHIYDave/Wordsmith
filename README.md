@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (12 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 21.1).**
+**Status (17 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 22.0).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -217,6 +217,12 @@ floor dressed with its own art and three moments that play as you come near; the
 into the stairwell as a boss dies; on floor 5 the cage crashes down the mine shaft and rides you up
 to town. A new start screen.
 Version 21.1: on coming into a floor its name shows on its own; the first dungeon's prompt waits until it has gone.
+Version 22.0: Act 1, The Descent. Five floors out of doors below the Prison: the Quarry, the Ledge
+Road, Echo Canyon, the Pinewood and the Sunken Fen, each with its own monsters, the cult's strongholds
+(lay spare words on the altar to open the door), and a boss met out in the open: the Unfinished, the
+Carrion Queen, the Cantor, the Hollow Stag and, on floor 10, the Drowned Eye; break the siege and go
+home. Wordmelding is on; the rune-stone is given by using the wordsmith; runedust and the Meldstone
+burst up out of the Fleshmancer's pit.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
