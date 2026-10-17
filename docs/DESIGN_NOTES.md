@@ -5608,6 +5608,49 @@ push (11 Oct, 19:47); the branch `first5` went to his PC as a git bundle, and he
 
 **How it was tested.** `tools/scenarios/floorcard_first.mjs` (the first pack woken a few tiles off so the fight prompt is due at once, or walking): no prompt over the name, and one once it has gone; it fails on the game as it was. In the regression on a phone and on PC. On the published page (`tools/wrap211.sh`, eight playtests: the two above, the guide three ways, the titles, fingers, mouse and keys): all 8 clean. Not run for this one, at his word: the unit suite and the full regression. Published 12 Oct, 08:03 ("Version 58", version id `1791806586-42d6`).
 
+### Version 22.0: Act 1, The Descent (floors 6 to 10), wordmelding, runedust and the Meldstone
+
+**What he said.** 16 Oct 2026, 11:21: "Read all relevant chats and put levels 6-10 into the game". Asked whether
+wordmelding goes on with it: "Yes I want word melding on". Mid-build: "New Queen should be done soon" (the art
+chat's new Carrion Queen, handed back at 11:32; the old one is not in the game). 17:40: "Runedust and the meldstone
+need to be done". To the page of pictures from the game (levels 6 to 10 as built, `https://claude.ai/artifact/NHzyq5nu2EuyLLfQiH3CT8`)
+at 22:16: "Yes they look good"; asked whether that covered the runedust and Meldstone films too, 22:17: "Yes".
+The art in it has his yes, each piece given to the art chat or the planning chat (the board and its archive have
+his words).
+
+**What is in it.** (`docs/act1_build.md` has it whole: how it is built, every call made for him, the memory measured.)
+
+- **Five floors out of doors**, past the Prison's shaft and the town's waypoint: 6 The Quarry (The Unfinished Cut),
+  7 The Ledge Road (The Queen's Eyrie, the town far below under the cult's dome), 8 Echo Canyon (The Cantor's Gorge),
+  9 The Pinewood (The Hollow Wood), 10 The Sunken Fen (The Drowned Eye). Each made by its own map-maker, painted in
+  pieces as the camera goes, dressed with its own 25 pieces and the cult's camps.
+- **Thirteen new kinds and five bosses**, each in a file of its own (`game/act1_rules/`), run as the bosses of floors
+  2 to 5 are: the quarry golem, rubblings, chanter, firepot thrower; vulture, cliff crawler; canyon scorpion, dust
+  devil; twisted deer, fog wolf; the Drowned, bog leech, eyespawn; the Unfinished, the Carrion Queen, the Cantor,
+  the Hollow Stag, the Drowned Eye (three stages). Bosses are met out in the open, with their lines and names; small
+  monsters no longer shove them about.
+- **The cult's strongholds**, one or two a floor: two rare guards, an altar that takes up to three spare words,
+  the hall's yellow pack, runedust (2, 4 or 6), gear and gold.
+- **The ways**: the way on wakes as each boss dies; from the tenth, home: "The siege is broken."
+- **Wordmelding on** (`MELD`), **quest items given by using the one they are for** (`HAND_IN`), **runedust and the
+  Meldstone drawn** (`MELD_DROPS`, `STONE_RISE`: they burst up out of the Fleshmancer's pit). Still off, until he
+  says: `MELD3` (the melded words' own looks).
+- **A new place lets go of every other place's monster pictures** (`Bestiary.forgetOthers`): found by measuring the
+  page's memory, which crept up floor by floor.
+
+**How it was tested.**
+
+- The unit suite: 1748 of 1748 in the frozen copy (`5fc39be`, 23:04:30 to 23:34:04 on 16 Oct); `tsc` clean.
+- **THE REGRESSION** on the frozen copy (`dist/copy.html`), 223 playtests with the descent's 39 added to
+  `tools/regress.sh`, two at a time, 23:34:17 to 01:08:44: 203 finished clean; the 20 others and what became of
+  them: `docs/act1_build.md`, "The release's tests".
+- The page's memory, floor by floor (`tools/scenarios/act1_room.mjs`): `docs/act1_build.md`.
+
+**Not checked.** A real phone. The Unfinished, the Carrion Queen and the Drowned Eye each hold about 300 MB of
+frames, about 300 MB more than the live game's biggest moment; the canvases are as the live game's. Some of the
+Drowned Eye's approved moves are left out to keep him that size. Whether the fights are too hard or too easy. A
+small monster can be held up behind a prop it walks straight into (every monster's walking, as in the live game).
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -5905,6 +5948,20 @@ tools/        build, preview, playtest + scenarios/, regress.sh (every browser p
               cells.py (single frames of a preview_hero picture, enlarged);
               STALE since Version 9, rewrite or remove: measure_lesson, count_words,
               measure_words, balance, faults.py (they speak of the tutorial hall)
+ACT 1, THE DESCENT (Version 22.0; docs/act1_build.md has it whole):
+src/game/     act1 (the floors' names, light, kinds), act1_layout + act1_level (each floor made out of
+              doors by its own map-maker), act1_dress (its pieces, camp and strongholds), act1_holds
+              (the cult's strongholds: altar, door, hall, reward), act1_rules/ (one file a kind: its gait
+              and acts, run by bosses.ts BossRules; index.ts act1Rules), ways.ts (the way on, home),
+              melds (wordmelding, MELD; STONE_RISE)
+src/art/      act1_figs/ (each kind's pictures as the game holds a monster; heavy ones painted by the
+              painter), the art chat's floors and kinds (quarry, terrain, floor6_mobs, unfinished,
+              carrion_queen2, cantor, hollow_stag, drowned_eye, fen, ...), ledge_town (the town far
+              below the eyrie), meld_drops (runedust and the Meldstone)
+src/render/   outdoor (the open floors painted in pieces as the camera goes, the sky), act1_pieces,
+              act1_fx/ (what each kind sends out), meld_drops (runedust and the Meldstone's moments)
+tools/        canvas_room.js + scenarios/act1_room.mjs (the page's memory floor by floor),
+              scenarios/act1_* (a floor, a kind, a stronghold, the ways, the eyrie), wrap220.sh
 ```
 
 Contracts worth knowing:

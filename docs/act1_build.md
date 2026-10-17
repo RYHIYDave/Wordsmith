@@ -127,3 +127,26 @@ the boss's frames from the painter; "page" what Linux says the browser's page pr
   three stages), page 850; back in town canvas 64, page 441. The painter took 206 to 331 s a floor here. So the
   canvases are now as the live game's; what is more is the three big bosses' frames, about 300 MB more than the
   live game's biggest moment.
+
+## The release's tests (16 to 17 Oct)
+
+- The unit suite on the working tree (22:18 to 22:55): 1746 of 1748; the two that failed assumed the drops land at
+  once (runedust and the Meldstone now wait under the floor, STONE_RISE): mended, 38 of 38 in their files.
+- FROZEN COPY at 5fc39be (scratchpad v220/arpg_frozen, 23:04): tsc clean; the unit suite 1748 of 1748 (23:04:30 to
+  23:34:04).
+- THE REGRESSION on the copy (dist/copy.html), now 223 playtests with the descent's 39, two at a time, 23:34:17 to
+  01:08:44: 203 finished clean. The 20 that did not:
+  - the playtest wrong, the game as meant: save and look (4) gave the rune-stone by walking past the wordsmith
+    (HAND_IN on: now by using him, tools/scenarios/lib.mjs giveStone); plates (5) pressed for the first word while the
+    floor's name was up (the prompt waits for it since 21.1, which had no full regression); act1_meld_phone took the
+    Meldstone before it had risen; act1_mob crawler and wolf watched one of three once a second (now every act of
+    every one, every twentieth of a second).
+  - the clock: dungeon_upright, heights_pc, heights_upright, depths_phone, slants_upright, a frame's median 25 to
+    27 ms against 25 with two browsers on two processors. Alone, the live 21.1 and this, the same: dungeon 19.9 and
+    20.3 ms, heights 21.7 and 20.1; the frame-rate run 42.4 to 44.3 a second (21.1) and 42.5 to 42.8 (this). The
+    machine is slower tonight than on 12 Oct (21.0's 54); the game is not.
+  - guide_early_word: the warrior's quick attack never used near the first pack (run again below).
+  - act1_mob_rubbling: one rubbling of three never bit. Alone (N=1) it walks to 1.18 tiles of the hero and stays: a
+    drum of the cult's camp stands between, and a monster that sees the hero within 2.5 tiles walks straight at
+    him (Game.wayTo), as every monster does in the live game. In a pack the others bite. KNOWN, NOT MENDED for this
+    version (the walking is every monster's): a small monster can be held up behind a prop it walks straight into.
