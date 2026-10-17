@@ -194,7 +194,7 @@ const WARRIOR: TalentTree = {
     { id: 'cadence', name: 'Cadence', big: true, path: 'technique', at: [1, 3.33], from: ['honededge'], text: 'Power and Frenzied stack to eight, not five.', word: 'power' },
     { id: 'sweepingcut', name: 'Sweeping Cut', big: false, path: 'technique', at: [1.55, 4.15], from: ['cadence'], text: 'A melee hit splashes 30% of itself on the enemies beside.' },
     { id: 'footwork', name: 'Footwork', big: false, path: 'technique', at: [0.45, 2.5], from: ['cadence'], text: 'Each kill: run 25% faster for a second.' },
-    { id: 'drilledleap', name: 'Drilled Leap', big: false, path: 'technique', at: [2, 2.67], from: ['cadence'], text: 'Leap is ready again 30% sooner.' },
+    { id: 'drilledleap', name: 'Drilled Lunge', big: false, path: 'technique', at: [2, 2.67], from: ['cadence'], text: 'Lunge is ready again 30% sooner.' },
     { id: 'giantslayer', name: 'Giant Slayer', big: false, path: 'technique', at: [4.5, 1], from: ['earthshaker'], text: 'Elites and bosses take 25% increased damage from you.' },
     { id: 'masterstroke', name: 'Master Stroke', big: true, path: 'technique', at: [6, 0], from: ['giantslayer'], text: 'Every fourth hit you land is a certain critical.' },
     // IRON: from its pommel high on the left down to its tip low on the right
@@ -206,7 +206,7 @@ const WARRIOR: TalentTree = {
     { id: 'thorns', name: 'Thorns', big: false, path: 'iron', at: [4.5, 3], from: ['earthshaker'], text: 'Enemies that strike you up close take 30% of the blow back.' },
     { id: 'unbreakable', name: 'Unbreakable', big: true, path: 'iron', at: [6, 4], from: ['thorns'], text: 'Once a dungeon, a killing blow leaves you at 1 life, shielded for three seconds.' },
     // the crossing: both swords'
-    { id: 'earthshaker', name: 'Earthshaker', big: true, path: 'cross', at: [3, 2], from: ['drilledleap', 'bulwark'], text: 'Leap lands with a quake that stuns everything near for a second.' },
+    { id: 'earthshaker', name: 'Earthshaker', big: true, path: 'cross', at: [3, 2], from: ['drilledleap', 'bulwark'], text: 'Lunge lands with a quake that stuns everything near for a second.' },
   ],
   figures: [
     { kind: 'sword', path: 'technique', pommel: 'honededge', guard: 'cadence', tip: 'masterstroke', quillons: ['sweepingcut', 'footwork'] },

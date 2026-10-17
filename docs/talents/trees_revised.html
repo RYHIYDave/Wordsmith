@@ -86,7 +86,7 @@ svg text { font-family: var(--display); }
 
   <footer>
     <p><strong>New</strong> marks a talent that does something different from before; the old card is under each one. <strong>Kept</strong> ones already changed how you play, so they stay as they were. <strong>Big</strong> ones are drawn larger, as now.</p>
-    <p>On the warrior's tree, Leap means his swipe move: Charge when he holds a shield, and the new Lunge once it is in.</p>
+    <p>On the warrior's tree, Lunge is his swipe move, the diving thrust (it was Leap; Charge when he holds a shield).</p>
     <p>Nothing here is in the game yet. Tell me yes, or which ones to change, in our chat.</p>
   </footer>
 </div>
@@ -108,8 +108,8 @@ const TREES = [
       { id: 'honededge', name: 'Honed Edge', path: 'technique', at: [0, 4], from: [], now: 'Your critical hits make the enemy bleed: it loses half the hit again over three seconds.', was: 'All damage +15%.' },
       { id: 'cadence', name: 'Cadence', big: 1, word: 'Power', path: 'technique', at: [1, 3.33], from: ['honededge'], now: 'Power and Frenzied stack to eight, not five.', kept: 1 },
       { id: 'sweepingcut', name: 'Sweeping Cut', path: 'technique', at: [1.55, 4.15], from: ['cadence'], now: 'Your melee swings cleave: every enemy in the arc of the swing is struck, not only the first.', was: 'A melee hit splashes 30% of itself on the enemies beside.' },
-      { id: 'footwork', name: 'Footwork', path: 'technique', at: [0.45, 2.5], from: ['cadence'], now: 'Every kill makes Leap ready again at once.', was: 'Each kill: run 25% faster for a second.' },
-      { id: 'drilledleap', name: 'Drilled Leap', path: 'technique', at: [2, 2.67], from: ['cadence'], now: 'Leap strikes every enemy you pass over on the way, not only where you land.', was: 'Leap is ready again 30% sooner.' },
+      { id: 'footwork', name: 'Footwork', path: 'technique', at: [0.45, 2.5], from: ['cadence'], now: 'Every kill makes Lunge ready again at once.', was: 'Each kill: run 25% faster for a second.' },
+      { id: 'drilledleap', name: 'Drilled Lunge', before: 'Drilled Leap', path: 'technique', at: [2, 2.67], from: ['cadence'], now: 'Lunge strikes every enemy you pass on the way, not only where you land.', was: 'Leap is ready again 30% sooner.' },
       { id: 'giantslayer', name: 'Giant Slayer', path: 'technique', at: [4.5, 1], from: ['earthshaker'], now: 'Each hit on an elite or a boss cracks its guard: it takes 3% more from everything, up to ten cracks.', was: 'Elites and bosses take 25% increased damage from you.' },
       { id: 'masterstroke', name: 'Master Stroke', big: 1, path: 'technique', at: [6, 0], from: ['giantslayer'], now: 'Every fourth hit you land is a certain critical.', kept: 1 },
       { id: 'thickskin', name: 'Thick Skin', path: 'iron', at: [0, 0], from: [], now: 'Below half your life, you take 30% less damage.', was: 'Life +15%.' },
@@ -119,7 +119,7 @@ const TREES = [
       { id: 'bulwark', name: 'Bulwark', path: 'iron', at: [2, 1.33], from: ['shieldwall'], now: 'The more enemies close round you, the less each blow hurts: 6% less for each one, up to 30%.', was: 'You take 10% less damage.' },
       { id: 'thorns', name: 'Thorns', path: 'iron', at: [4.5, 3], from: ['earthshaker'], now: 'An enemy that strikes you up close is thrown back, and takes half the blow itself.', was: 'Enemies that strike you up close take 30% of the blow back.' },
       { id: 'unbreakable', name: 'Unbreakable', big: 1, path: 'iron', at: [6, 4], from: ['thorns'], now: 'Once a dungeon, a killing blow leaves you at 1 life, shielded for three seconds.', kept: 1 },
-      { id: 'earthshaker', name: 'Earthshaker', big: 1, path: 'cross', at: [3, 2], from: ['drilledleap', 'bulwark'], now: 'Leap lands with a quake that stuns everything near for a second.', kept: 1 },
+      { id: 'earthshaker', name: 'Earthshaker', big: 1, path: 'cross', at: [3, 2], from: ['drilledleap', 'bulwark'], now: 'Lunge lands with a quake that stuns everything near for a second.', kept: 1 },
     ],
   },
   {

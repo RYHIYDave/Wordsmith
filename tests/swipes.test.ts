@@ -456,7 +456,7 @@ test('Twin Trap: a second trap where the roll ends. Trap of Echoes: another wher
   assert.ok(g2.traps[1].frac < g2.traps[0].frac, 'and weaker');
 });
 
-test('a word in front of Leap changes the landing; a word behind is left where the warrior lands', () => {
+test('a word in front of Lunge (once Leap) changes the landing; a word behind is left where the warrior lands', () => {
   const g = room('warrior');
   set(g, 2, 'front', 'fire');
   set(g, 2, 'behind', 'frost');
@@ -465,7 +465,7 @@ test('a word in front of Leap changes the landing; a word behind is left where t
   assert.ok(hurt(m) > 0, 'the landing hits');
   assert.ok(m.burnT > 0, 'Flame Leap: what it lands on burns');
   const ice = of(ev, 'zone').find((e) => e.kind === 'ice');
-  assert.ok(ice, 'Leap of Frost leaves ice');
+  assert.ok(ice, 'Lunge of Frost leaves ice');
   // (LUNGE, his diving thrust: where his sword's point came down, before him)
   const fwd = LUNGE.on ? LUNGE.ahead : 0;
   assert.ok(Math.hypot(ice!.x - (g.hero.x + g.hero.fx * fwd), ice!.y - (g.hero.y + g.hero.fy * fwd)) < 0.5, 'where the warrior came down (his sword\'s point)');
@@ -473,7 +473,7 @@ test('a word in front of Leap changes the landing; a word behind is left where t
   const g2 = room('warrior');
   set(g2, 2, 'front', 'twin');
   const ev2 = swipe(g2, 5, 0, 1.2);
-  assert.equal(of(ev2, 'burst').filter((e) => e.style === 'land').length, 2, 'Twin Leap lands with two shocks');
+  assert.equal(of(ev2, 'burst').filter((e) => e.style === 'land').length, 2, 'Twin Lunge lands with two shocks');
   // of Echoes: one more, later and weaker
   const g3 = room('warrior');
   set(g3, 2, 'behind', 'twin');
@@ -525,7 +525,7 @@ test('Warp arrives in a burst: a word in front changes it, a word behind is left
 });
 
 test('the level-up screen names the swipe among what grows with the class\'s own attribute', () => {
-  assert.deepEqual(attacksGrownBy('str', 'warrior', 'greatsword'), ['Strike', 'Whirlwind', 'Leap']);
+  assert.deepEqual(attacksGrownBy('str', 'warrior', 'greatsword'), ['Strike', 'Whirlwind', 'Lunge']);
   assert.deepEqual(attacksGrownBy('dex', 'ranger', 'bow'), ['Shot', 'Volley', 'Trap']);
   assert.deepEqual(attacksGrownBy('int', 'mage', 'staff'), ['Wave', 'Orb', 'Warp']);
   // the swipe grows with the class's attribute, whatever is in hand

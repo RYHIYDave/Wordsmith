@@ -288,7 +288,7 @@ test('both attacks grow with the weapon\'s attribute, the swipe with the class\'
       }
     }
   }
-  assert.deepEqual(attacksGrownBy('str', 'warrior', 'greatsword'), ['Strike', 'Whirlwind', 'Leap']);
+  assert.deepEqual(attacksGrownBy('str', 'warrior', 'greatsword'), ['Strike', 'Whirlwind', 'Lunge']);
   assert.equal(listed(['Strike', 'Slam', 'Leap']), 'Strike, Slam and Leap');
   assert.equal(listed(['Wave', 'Orb']), 'Wave and Orb');
   assert.equal(listed(['Leap']), 'Leap');

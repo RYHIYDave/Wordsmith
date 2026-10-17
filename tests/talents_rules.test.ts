@@ -148,7 +148,7 @@ test('Thick Skin: life +15%; Honed Edge: all damage +15%', () => {
   });
 });
 
-test('Drilled Leap: Leap ready again 30% sooner; Cadence: Power and Frenzied stack to eight', () => {
+test('Drilled Lunge (once Leap): ready again 30% sooner; Cadence: Power and Frenzied stack to eight', () => {
   on(() => {
     const bare = room('warrior', []).g.hero.skills[2].r.cooldown;
     const { g } = room('warrior', ['drilledleap', 'cadence'], [[0, 'front', 'frenzied']]);

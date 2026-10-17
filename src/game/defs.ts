@@ -102,7 +102,9 @@ export const SKILLS: Record<SkillId, SkillDef> = {
   whirlwind: { id: 'whirlwind', name: 'Whirlwind', kind: 'whirl', icon: 'whirl', dmg: 0.55, cooldown: 3.5, mana: 16, range: 0, radius: 2.0, speed: 0, sockets: true, desc: 'Hold to spin: you cut everything around you again and again, and pass through enemies.', verb: 'WHIRL', windup: 0.12, follow: 0.25, channel: 2.4, tick: 0.3 },
   // The three evasive moves take words since Version 12.2 (the owner, 18:34: "We also need to give
   // the swipe abilities the option for words"). In front: the hit. Behind: what the move leaves.
-  leap: { id: 'leap', name: 'Leap', kind: 'leap', icon: 'leap', dmg: 0.5, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Jump to a spot. Nothing can hit you in the air, and you land with a shock.', verb: 'LEAP', windup: 0, follow: 0 },
+  // (LUNGE, his word of 17 Oct, 15:45 his time: "Yes rename to lunge": the warrior's diving thrust, art/heroes3.ts THRUST; its
+  // id is still 'leap', as saved heroes and the rules know it)
+  leap: { id: 'leap', name: 'Lunge', kind: 'leap', icon: 'leap', dmg: 0.5, cooldown: 4.0, mana: 0, range: 6, radius: 1.6, speed: 0, sockets: true, desc: 'Dive at a spot, your sword out before you. Nothing can hit you as you go, and the point strikes where you land.', verb: 'LUNGE', windup: 0, follow: 0 },
   shot: { id: 'shot', name: 'Shot', kind: 'projectile', icon: 'shot', dmg: 1.0, cooldown: 0, mana: 0, range: 11, radius: 0.25, speed: 16, sockets: true, desc: 'Loose an arrow at one enemy.', verb: 'SHOOT', windup: 0.16, follow: 0.32 },
   // VOLLEY, the bow's slow attack (the owner, 20:02): "Target an area and the ranger fires a bunch
   // of arrows straight up, then they rain down into the targeted area for a duration". `dmg` is
@@ -1722,7 +1724,7 @@ export const QUIPS: {
     strike: ['Point made.', 'Cut short.'],
     slam: ['Stay down.', 'Floored.'],
     whirlwind: ['What goes around.', 'A turn for the worse.', 'Spin doctor.'],
-    leap: ['Look out below.', 'Dropped in.'],
+    leap: ['Point first.', 'Straight through.'],
     shot: ['Bullseye.', 'Right on the mark.'],
     volley: ['Heads up.', 'Rain check?', 'Forecast: arrows.'],
     trap: ['Watch your step.', 'Walked right into it.'],
