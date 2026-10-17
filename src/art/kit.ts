@@ -861,7 +861,7 @@ export function toSprite(f: Painted, aura: Light | null = AURA, ax = KAX, ay = K
  * painting of them took in all, in thousandths of a second. (A playtest that looks for a long
  * frame can ask whether it was painting that made it long: window.__dbg.painting.)
  */
-export const PAINTING = { frames: 0, ms: 0 };
+export const PAINTING: { frames: number; ms: number; trace: Map<string, { n: number; ms: number }> | null } = { frames: 0, ms: 0, trace: null };
 
 /**
  * A list of frames, each painted the first time it is asked for. (Painting a frame takes a few
@@ -879,6 +879,14 @@ export function lazyFrames(n: number, make: (i: number) => Sprite): Sprite[] {
         const s = make(i);
         PAINTING.frames++;
         PAINTING.ms += performance.now() - t0;
+        // (for measuring, with `trace` set: what asked for it, by the calls that led here)
+        if (PAINTING.trace) {
+          const at = (new Error().stack ?? '').split('\n').slice(2, 7).map((l) => l.trim().replace(/^at /, '').replace(/\(.*[/:](\d+):\d+\)$/, '$1')).join(' < ');
+          const e = PAINTING.trace.get(at) ?? { n: 0, ms: 0 };
+          e.n++;
+          e.ms += performance.now() - t0;
+          PAINTING.trace.set(at, e);
+        }
         Object.defineProperty(out, i, { value: s, writable: true, configurable: true, enumerable: true });
         return s;
       },

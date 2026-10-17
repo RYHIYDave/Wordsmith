@@ -30,7 +30,15 @@
 
 import { FIRST5_FIGURES, HEAVY_FIGURES, framesOf, giveFrame, makeBestiary, paintOrder } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
+import type { ActorArt } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
+import { heroLists, makeHeroArt3 } from '../art/heroes3';
+import { paintTerrain, terrainOf } from '../art/terrain';
+import type { ClassId } from '../game/types';
+import type { Terrain } from '../art/terrain';
+import type { Land } from '../game/act1_layout';
+import type { Floor } from '../game/types';
+import { PIECE, landLook } from './outdoor';
 import { releaseSprite } from '../engine/px';
 import type { Light, Sprite } from '../engine/px';
 
@@ -67,12 +75,22 @@ interface Given {
   same?: [number, number, number];
 }
 /** What the page asks of a worker. */
-type Ask = { t: 'mob'; figure: MonsterFigure; pri: number } | { t: 'film'; key: string; pri: number } | { t: 'drop'; figure: MonsterFigure };
+type Ask =
+  | { t: 'mob'; figure: MonsterFigure; pri: number; side?: boolean }
+  | { t: 'film'; key: string; pri: number }
+  | { t: 'drop'; figure: MonsterFigure }
+  // ACT 1: a floor's outdoor ground (render/outdoor.ts): the floor to paint it from, then its pieces as they are wanted
+  | { t: 'ground'; id: number; floor: Floor; land: Land }
+  | { t: 'piece'; id: number; i: number; j: number; pri: number }
+  // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
+  | { t: 'hero'; cls: ClassId; place: 'town' | 'dungeon'; pri: number };
 /** What a worker tells the page. */
 type Tell =
   | { t: 'ready' }
   | { t: 'frames'; figure: MonsterFigure; list: Given[]; left: number }
   | { t: 'film'; key: string; film: unknown; ms: number }
+  | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number }
+  | { t: 'heroFrames'; cls: ClassId; place: 'town' | 'dungeon'; list: Given[]; left: number }
   | { t: 'fail'; what: string; why: string };
 
 const isSprite = (v: unknown): v is Sprite => !!v && typeof v === 'object' && 'img' in v && 'ax' in v && 'ay' in v;
@@ -118,6 +136,32 @@ export class Painter {
   private asked = new Set<string>();
   private films = new Map<string, unknown>();
   private watchdog: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * ACT 1: THE GROUND'S OWN WORKER (render/outdoor.ts): a floor of the descent's ground is painted beside the game, a
+   * piece at a time, by a worker of its own (it holds the floor's terrain, and is not kept waiting behind a boss's
+   * frames). `ground` is the floor it paints (its number; 0: none); `toGround` is told of each piece as it comes.
+   */
+  private groundLane: Lane | null = null;
+  private ground = 0;
+  private grounds = 0;
+  toGround: ((id: number, i: number, j: number, bmp: ImageBitmap, ms: number) => void) | null = null;
+  /**
+   * THE HERO'S PICTURES, painted ahead by the same worker (the ground's: it is kept for the whole game). `toHero` takes in
+   * each frame as it comes (render/render.ts): true if it was wanted. `heroAsked`: what has been asked of it.
+   */
+  toHero: ((cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite) => boolean) | null = null;
+  private heroAsked = new Set<string>();
+  /** The hero's frames taken in from the worker, for measuring. */
+  heroFrames = 0;
+  /**
+   * THE FLOOR'S OTHER MONSTERS (all but the heavy ones, which have a worker of their own): their pictures painted ahead by
+   * the side worker too, once it is up, in place of the game painting them ahead a little each frame (a monster's frame
+   * on the bones is a frame's whole time and more to paint on a phone). What has been asked of it this place, and how
+   * many of each figure's frames are still to come (-1: not begun).
+   */
+  private sideFigures = new Map<MonsterFigure, { left: number }>();
+  /** The monsters' frames taken in from the side worker, for measuring. */
+  sideFrames = 0;
 
   /**
    * `source`: the game's own script (null: there is none to be had, and no painter). `bestiary`: the
@@ -143,7 +187,17 @@ export class Painter {
    * let go of. Call it when a new place is come into, before anything of the place is asked for.
    */
   restart(): void {
-    this.end();
+    // (the ground's worker is kept: it takes seconds to start, and is sent each floor anew; the last floor's pieces not yet painted are not wanted)
+    this.end(true);
+    this.ground = 0;
+    // (the last place's monsters still being painted by the side worker are not wanted)
+    const lane = this.groundLane;
+    for (const [figure, f] of this.sideFigures) {
+      if (!lane || f.left === 0) continue;
+      lane.worker.postMessage({ t: 'drop', figure } satisfies Ask);
+      lane.open = Math.max(0, lane.open - 1);
+    }
+    this.sideFigures.clear();
     for (const film of this.films.values()) eachSprite(film, releaseSprite);
     this.films.clear();
     this.asked.clear();
@@ -206,6 +260,146 @@ export class Painter {
   /** A film that has been made, or null: not yet (or never). */
   filmOf<T>(key: string): T | null {
     return (this.films.get(key) as T | undefined) ?? null;
+  }
+
+  /**
+   * ACT 1: the ground of this floor is to be painted by the ground's worker: it is sent the floor (and keeps it until
+   * the place is left). The floor's number, for its pieces; 0: there is no painter (the game paints the ground itself).
+   */
+  groundBegin(floor: Floor, land: Land): number {
+    if (!this.warmGround()) return 0;
+    this.ground = ++this.grounds;
+    try {
+      this.groundLane!.worker.postMessage({ t: 'ground', id: this.ground, floor, land } satisfies Ask);
+    } catch (err) {
+      this.fail('ground', err);
+      return 0;
+    }
+    return this.ground;
+  }
+
+  /** ACT 1: the ground's worker started ahead of need (it takes seconds), for a hero who has come as far as the descent. True: it is there. */
+  warmGround(): boolean {
+    if (this.state !== 'on' || !this.url) return false;
+    if (!this.groundLane) {
+      let worker: Worker;
+      try {
+        worker = new Worker(this.url);
+      } catch (err) {
+        this.fail('ground', err);
+        return false;
+      }
+      const lane: Lane = { n: -1, worker, ready: false, open: 0 };
+      worker.onmessage = (e: MessageEvent<Tell>) => this.toldGround(lane, e.data);
+      worker.onerror = (e: ErrorEvent) => {
+        e.preventDefault?.();
+        if (this.groundLane === lane) this.fail('ground', e.message || 'error');
+      };
+      this.groundLane = lane;
+      this.stats.workers++;
+    }
+    return true;
+  }
+
+  /**
+   * The hero's pictures in that place to be painted ahead by the worker. True: the worker is up and has them in hand (the
+   * game need not paint them ahead itself); false: the game goes on painting them ahead as before.
+   */
+  hero(cls: ClassId, place: 'town' | 'dungeon'): boolean {
+    if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
+    const key = `${cls}:${place}`;
+    if (!this.heroAsked.has(key)) {
+      this.heroAsked.add(key);
+      this.groundLane.open++;
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'town' ? 30 : 31 } satisfies Ask);
+    }
+    return true;
+  }
+
+  /**
+   * A monster's pictures (one not heavy) to be painted ahead by the side worker. True: the worker is up and has them in
+   * hand, or they are all here already (the game need not paint them ahead itself); false: the game goes on painting them
+   * ahead as before. (Asking again is nothing.)
+   */
+  side(figure: MonsterFigure): boolean {
+    const lane = this.groundLane;
+    if (this.state !== 'on' || !lane || !lane.ready) return false;
+    if (this.sideFigures.has(figure)) return true;
+    // (a figure the game holds whole already, from the place before, is not painted again)
+    if (allPainted(this.bestiary().of(figure))) {
+      this.sideFigures.set(figure, { left: 0 });
+      return true;
+    }
+    this.sideFigures.set(figure, { left: -1 });
+    lane.open++;
+    lane.worker.postMessage({ t: 'mob', figure, pri: 2, side: true } satisfies Ask);
+    return true;
+  }
+
+  /** How many of a monster's frames the side worker has still to hand over (0: all are here, or it was never asked; -1: not begun). For the tests. */
+  sideLeft(figure: MonsterFigure): number {
+    return this.sideFigures.get(figure)?.left ?? 0;
+  }
+
+  /** ACT 1: the ground's worker is up and painting (until it is, a floor's ground is painted by the game, a little each frame, as before). */
+  groundReady(): boolean {
+    return this.state === 'on' && !!this.groundLane && this.groundLane.ready;
+  }
+
+  /** ACT 1: a piece of this floor's ground, wanted (`pri`: the lower the sooner). False: there is no ground's worker. */
+  groundPiece(id: number, i: number, j: number, pri: number): boolean {
+    const lane = this.groundLane;
+    if (this.state !== 'on' || !lane || id !== this.ground) return false;
+    lane.open++;
+    lane.worker.postMessage({ t: 'piece', id, i, j, pri } satisfies Ask);
+    return true;
+  }
+
+  private toldGround(lane: Lane, m: Tell): void {
+    if (m.t === 'ready') {
+      lane.ready = true;
+      return;
+    }
+    if (m.t === 'piece') {
+      lane.open = Math.max(0, lane.open - 1);
+      if (this.groundLane === lane && m.id === this.ground && this.toGround) this.toGround(m.id, m.i, m.j, m.bmp, m.ms);
+      else m.bmp.close();
+      return;
+    }
+    if (m.t === 'frames') {
+      const want = this.groundLane === lane ? this.sideFigures.get(m.figure) : undefined;
+      const art = want ? this.bestiary().of(m.figure) : null;
+      for (const g of m.list) {
+        if (g.s) {
+          if (art && giveFrame(art, g.v, g.l, g.i, g.s)) this.sideFrames++;
+          else (g.s.img as unknown as ImageBitmap).close();
+        } else if (g.same && art) {
+          const from = framesOf(g.same[0] === 0 ? art.front : art.back)[g.same[1]];
+          const d = from ? Object.getOwnPropertyDescriptor(from, g.same[2]) : undefined;
+          if (d && 'value' in d && d.value) giveFrame(art, g.v, g.l, g.i, d.value as Sprite);
+        }
+      }
+      if (want) {
+        if (want.left !== 0 && m.left === 0) lane.open = Math.max(0, lane.open - 1);
+        want.left = m.left;
+      }
+      return;
+    }
+    if (m.t === 'heroFrames') {
+      const mine = this.groundLane === lane;
+      for (const g of m.list) {
+        if (g.s) {
+          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s)) this.heroFrames++;
+          else (g.s.img as unknown as ImageBitmap).close();
+        }
+      }
+      if (m.left === 0) lane.open = Math.max(0, lane.open - 1);
+      return;
+    }
+    if (m.t === 'fail') {
+      this.stats.failed.push(`${m.what}: ${m.why}`);
+      if (this.groundLane === lane) this.fail(m.what, m.why);
+    }
   }
 
   /** Is anything asked for still to come? (For the tests.) */
@@ -295,6 +489,15 @@ export class Painter {
       this.finished(lane);
       return;
     }
+    // (a piece of ground, or a hero's frames, are the ground worker's: none comes to these lanes)
+    if (m.t === 'piece') {
+      m.bmp.close();
+      return;
+    }
+    if (m.t === 'heroFrames') {
+      for (const g of m.list) if (g.s) (g.s.img as unknown as ImageBitmap).close();
+      return;
+    }
     // (a film that could not be made is done without; a worker that cannot paint at all is no painter)
     this.stats.failed.push(`${m.what}: ${m.why}`);
     if (!mine) return;
@@ -302,7 +505,7 @@ export class Painter {
     else this.fail(m.what, m.why);
   }
 
-  private end(): void {
+  private end(keepGround = false): void {
     for (const lane of this.lanes) {
       if (!lane) continue;
       lane.worker.onmessage = null;
@@ -310,6 +513,14 @@ export class Painter {
       lane.worker.terminate();
     }
     this.lanes = [];
+    if (this.groundLane && !keepGround) {
+      this.groundLane.worker.onmessage = null;
+      this.groundLane.worker.onerror = null;
+      this.groundLane.worker.terminate();
+      this.groundLane = null;
+      this.ground = 0;
+      this.heroAsked.clear();
+    }
     if (this.watchdog !== null) clearTimeout(this.watchdog);
     this.watchdog = null;
   }
@@ -319,8 +530,9 @@ export class Painter {
     this.stats.failed.push(`${what}: ${err instanceof Error ? err.message : String(err)}`);
     this.state = 'off';
     this.end();
-    // (the figures are the game's to paint now; it is told so by `mob` saying false)
+    // (the figures are the game's to paint now; it is told so by `mob` and `side` saying false)
     this.figures.clear();
+    this.sideFigures.clear();
   }
 }
 
@@ -344,6 +556,22 @@ export function eachSprite(v: unknown, f: (s: Sprite) => void, seen = new Set<un
 // THE WORKER'S SIDE
 
 type Canvas2 = { width: number; height: number; getContext(kind: '2d'): CanvasRenderingContext2D | null; transferToImageBitmap(): ImageBitmap };
+
+/** A sprite whose picture has been handed over already (its canvas left empty). */
+function emptied(s: Sprite): boolean {
+  const cv = s.img as unknown as Canvas2;
+  return cv.width === 0 || cv.height === 0;
+}
+
+/** Is every frame of a figure painted (none still waiting to be painted the first time it is shown)? */
+function allPainted(art: ActorArt): boolean {
+  const lists = [framesOf(art.front), framesOf(art.back)];
+  for (const [v, l, i] of paintOrder(art)) {
+    const d = Object.getOwnPropertyDescriptor(lists[v][l], i);
+    if (d && typeof d.get === 'function') return false;
+  }
+  return true;
+}
 
 /** The sprite with its picture as one that can be handed over (the canvas it was painted on is left empty). */
 function shipped(s: Sprite, transfer: Transferable[]): Sprite {
@@ -461,16 +689,51 @@ export function paintWorkerMain(): void {
   const scope = self as unknown as { postMessage(m: Tell, transfer?: Transferable[]): void; onmessage: ((e: MessageEvent<Ask>) => void) | null };
   const bestiary = makeBestiary();
   interface Job {
-    ask: Exclude<Ask, { t: 'drop' }>;
+    ask: Exclude<Ask, { t: 'drop' } | { t: 'ground' }>;
     seq: number;
     run?: Generator<void, void, void>;
   }
   const jobs: Job[] = [];
   let seq = 0;
   let going = false;
+  /** ACT 1: the floor whose ground this worker paints, and its terrain. */
+  let ground: { id: number; T: Terrain } | null = null;
+  /** The heroes' pictures, made here as the page makes them (art/heroes3.ts), the first time they are asked for. */
+  let heroArt: ReturnType<typeof makeHeroArt3> | null = null;
+
+  /** A hero's frames in a place, painted and handed over a few at a time, in the order the page paints them ahead. */
+  function* hero(cls: ClassId, place: 'town' | 'dungeon'): Generator<void, void, void> {
+    heroArt ??= makeHeroArt3();
+    const art = heroArt.of(cls, { twoHanded: true, town: place === 'town' });
+    const lists = [heroLists(art.front), heroLists(art.back)];
+    const order: [number, number, number][] = [];
+    for (let l = 0; l < lists[0].length; l++) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
+    const sent = new Set<Sprite>();
+    let list: Given[] = [];
+    let transfer: Transferable[] = [];
+    let t0 = performance.now();
+    if (order.length === 0) scope.postMessage({ t: 'heroFrames', cls, place, list, left: 0 });
+    for (let n = 0; n < order.length; n++) {
+      const [v, l, i] = order[n];
+      const s = lists[v][l][i];
+      // (a frame that is in two lists is sent once: the page takes in the first)
+      if (!sent.has(s) && !emptied(s)) {
+        sent.add(s);
+        list.push({ v, l, i, s: shipped(s, transfer) });
+      }
+      const last = n === order.length - 1;
+      if (last || performance.now() - t0 >= CHUNK_MS) {
+        scope.postMessage({ t: 'heroFrames', cls, place, list, left: order.length - 1 - n }, transfer);
+        list = [];
+        transfer = [];
+        if (!last) yield;
+        t0 = performance.now();
+      }
+    }
+  }
 
   /** A figure's frames, painted and handed over a few at a time. */
-  function* mob(figure: MonsterFigure): Generator<void, void, void> {
+  function* mob(figure: MonsterFigure, side = false): Generator<void, void, void> {
     const art = bestiary.of(figure);
     const lists = [framesOf(art.front), framesOf(art.back)];
     const order = paintOrder(art);
@@ -485,7 +748,8 @@ export function paintWorkerMain(): void {
       const s = lists[v][l][i];
       const was = sent.get(s);
       if (was) list.push({ v, l, i, same: was });
-      else {
+      // (a picture handed over already, with another figure's frames, is not sent: the game paints its own, if it is ever shown)
+      else if (!emptied(s)) {
         sent.set(s, [v, l, i]);
         list.push({ v, l, i, s: shipped(s, transfer) });
       }
@@ -498,6 +762,8 @@ export function paintWorkerMain(): void {
         t0 = performance.now();
       }
     }
+    // (the side worker is kept for the whole game: what it made of the figure is spent, and let go of)
+    if (side) bestiary.forget(figure);
   }
 
   // (between one piece of work and the next the worker goes back to its queue, so that what has been asked of it meanwhile is heard;
@@ -519,25 +785,51 @@ export function paintWorkerMain(): void {
       jobs.splice(jobs.indexOf(job), 1);
     };
     try {
-      if (job.ask.t === 'film') {
+      if (job.ask.t === 'piece') {
+        done();
+        const a = job.ask;
+        if (ground && ground.id === a.id) {
+          const t0 = performance.now();
+          const p = paintTerrain(ground.T, a.i * PIECE, a.j * PIECE, PIECE, PIECE);
+          const cv = new OffscreenCanvas(PIECE, PIECE);
+          (cv.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(p.rgba, PIECE, PIECE), 0, 0);
+          const bmp = cv.transferToImageBitmap();
+          scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0 }, [bmp]);
+        }
+      } else if (job.ask.t === 'hero') {
+        job.run ??= hero(job.ask.cls, job.ask.place);
+        if (job.run.next().done) done();
+      } else if (job.ask.t === 'film') {
         done();
         const t0 = performance.now();
         const transfer: Transferable[] = [];
         const film = packed(makeFilm(job.ask.key), transfer);
         scope.postMessage({ t: 'film', key: job.ask.key, film, ms: performance.now() - t0 }, transfer);
       } else {
-        job.run ??= mob(job.ask.figure);
+        job.run ??= mob(job.ask.figure, !!job.ask.side);
         if (job.run.next().done) done();
+        // (the side worker's monsters take turns, a piece of work each, so that every one of them can stand and walk before any has all of its moves)
+        else if (job.ask.side) job.seq = seq++;
       }
     } catch (err) {
       if (jobs.includes(job)) done();
-      scope.postMessage({ t: 'fail', what: job.ask.t === 'film' ? `film ${job.ask.key}` : `mob ${job.ask.figure}`, why: err instanceof Error ? `${err.message}` : String(err) });
+      scope.postMessage({ t: 'fail', what: job.ask.t === 'film' ? `film ${job.ask.key}` : job.ask.t === 'piece' ? 'ground' : job.ask.t === 'hero' ? `hero ${job.ask.cls}` : `mob ${job.ask.figure}`, why: err instanceof Error ? `${err.message}` : String(err) });
     }
     again();
   };
   channel.port1.onmessage = pump;
   scope.onmessage = (e) => {
     const ask = e.data;
+    if (ask.t === 'ground') {
+      // (a new floor: its terrain made once here, as the page makes its own; the last floor's pieces still asked for are not wanted)
+      try {
+        ground = { id: ask.id, T: terrainOf(ask.floor, landLook(ask.land, ask.floor)) };
+      } catch (err) {
+        scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
+      }
+      for (let i = jobs.length - 1; i >= 0; i--) if (jobs[i].ask.t === 'piece') jobs.splice(i, 1);
+      return;
+    }
     if (ask.t === 'drop') {
       for (let i = jobs.length - 1; i >= 0; i--) {
         const j = jobs[i];
@@ -546,7 +838,7 @@ export function paintWorkerMain(): void {
       bestiary.forget(ask.figure);
       return;
     }
-    if (ask.t === 'mob' && !FIRST5_FIGURES.includes(ask.figure)) {
+    if (ask.t === 'mob' && !ask.side && !FIRST5_FIGURES.includes(ask.figure)) {
       scope.postMessage({ t: 'fail', what: `mob ${ask.figure}`, why: 'not a figure the painter paints' });
       return;
     }

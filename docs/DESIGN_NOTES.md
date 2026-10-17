@@ -5665,6 +5665,51 @@ frames, about 300 MB more than the live game's biggest moment; the canvases are 
 Drowned Eye's approved moves are left out to keep him that size. Whether the fights are too hard or too easy. A
 small monster can be held up behind a prop it walks straight into (every monster's walking, as in the live game).
 
+### Version 22.1: the speed work (nothing looks different)
+
+**What he said.** 17 Oct 2026, 05:43: "Are there checks or tests to find ways to optimize the game so it runs better?  I
+figured this would primarily be a mobile game so I’d like it to run really well"; 05:46, of his phone: "iPhone 16". Told
+him (soon after 09:35, plain): arrivals 23 to 43 stutters to 0 to 2; the Queen 43 to 59; the Cantor 49 with stalls to 60; the
+Pinewood 39 to 52, the Stag 40 to 59; town and floors 6, 7 and 10 about 60; nothing looks different. Asked (plain, just
+after 14:48) whether it may go live on the claude.ai page and on his web address; his answer, 15:44 (Eastern; 12:44 his
+time, Pacific): "Yes.  Then let’s see the revised skill trees". Read as yes to both (told him so).
+
+**What is in it.** (`docs/perf_phone.md` has every measurement.) None of it changes a pixel of what is drawn.
+1. THE OUTDOOR GROUND painted by a side worker (render/painter.ts, its ground lane, kept for the whole game), a piece at a
+   time, nearest first (render/outdoor.ts); the game paints a piece itself only until the worker is up.
+2. THE MINIMAP's tiles kept as a picture, made again twice a second (ui/hud.ts).
+3. THE HERO'S PICTURES painted ahead by the side worker (art/heroes3.ts `give`).
+4. THE FLOOR'S OTHER MONSTERS' PICTURES painted ahead by the side worker too (Painter.side; only the heavy bosses were).
+5. THE PINEWOOD'S FOREST AS CHUNK PICTURES (render/tops_cache.ts): its trees laid back to front into a picture for each
+   slab of depth (4 tiles) and column of the screen (64 game pixels), a column's undisturbed chunks drawn as one (a run);
+   a chunk with a tree seen through, or something between its trees, drawn as its four layers, and a layer as its trees.
+   THE SAME PICTURE TO THE PIXEL: `tools/scenarios/tops_same.mjs` (in the regression for the warrior and the mage).
+6. A MONSTER'S FLINCH (its reel) painted ahead with its other moves (art/bestiary.ts): a boss's was painted only as it
+   was first shown, 70 to 90 ms a frame of it (the Cantor's fight's stalls).
+
+**How it was tested.**
+- The unit suite: 1748 of 1748 on a copy of `c4d4cb7` (09:35:39 to 10:33:45); the frozen copy's `src` and `tests` are
+  the same; `tsc` clean.
+- THE REGRESSION on the frozen copy (`v221/arpg_frozen`, `f4cd7f2`), two at a time from 10:34:54: stopped by the
+  workspace's two-hour limit after 212 playtests; the 12 not reached run after the same way (12:35:44 to 12:46:59), all
+  clean. Of the 224, 34 flagged. Run alone, twice each: every gameplay one clean (doors.mjs mended: it read the boss's gate
+  at a fixed moment, and on a slow frame the game's clock runs behind; clean twice more on all four screens); the frame-time
+  ones (dungeon, heights, depths, slants, across) the machine: alone, today, the dungeon test gives 22.0's own frozen copy
+  32.8 and 32.2 ms where 22.1 gives 29.7 and 23.9 (`tools/scenarios/dungeon_frames.mjs` over a minute: 22.0 26 to 35 ms
+  a frame, painting on the page all the while; 22.1 22 to 30 while its worker paints, 22 after).
+- `find src -newer dist/copy.html` named nothing. THE RELEASE BUILD in the copy: `Play.html` 2,794,305 bytes,
+  `dist/artifact.html` 2,793,983, "V22.1 2026-10-17 17:29"; kept in the scratchpad's `v221/release/`.
+- **The published page itself** (`tools/wrap221.sh`, 13:29:47 to 14:34:25): 104 playtests, 92 clean; the 12 others alone,
+  twice each (to 14:47:58): every gameplay one clean both times; dungeon_pc, dungeon_phone (26.6 to 30 ms) and depths_pc
+  (26.4, its second run) the machine, as above. The frame rate alone on the page: 41.4.
+
+**Not checked.** A real phone (the point of the version: he was asked to say how it feels).
+
+**Published** 17 Oct 2026, at about 15:50 (Eastern) on the claude.ai page ("Version 60", version id `1792266623-08a5`),
+from the scratchpad's `v221/release/artifact.html`; and at his web address, `gh-pages` at `c45bf6b` (made by
+`tools/make_site.mjs` from `v221/release/Play.html`; a phone that already has it shows the new version the second time it is
+opened). `main` fast-forwarded to `perf` (`5f2c469`).
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
@@ -6324,7 +6369,9 @@ tsx tools/balance.ts 12 2400                                                    
      `<head>` and reset, then `dist/artifact.html`), with a dozen or so playtests played on it two
      at a time (the scripts are `wrap<version>.sh` in the workspace's scratchpad; any of them
      shows the wrapping).
-  8. Publish `dist/artifact.html` to the page's own link, with a label. Then the owner's pictures
+  8. Publish `dist/artifact.html` to the page's own link, with a label. **Also put the release on
+     the game's own web address** (below): `node tools/make_site.mjs <release Play.html> <dir>`,
+     the files over the branch `gh-pages`, commit, push. Then the owner's pictures
      and a short message: what changed; the calls made for him that he may overrule; what was
      tested, with numbers that were checked; what nobody has checked.
   9. The notes: this file (a "Published" and a "Results" paragraph under the version), the
@@ -6339,6 +6386,23 @@ tsx tools/balance.ts 12 2400                                                    
   the session: in a new or continued session, publishing the path alone creates a second page,
   and the owner's saved character lives on the first (browser storage is per page). That happened
   once on 3 Oct; the stray copy is `https://claude.ai/artifact/WNobJAAh7WhtLDUJrhpHns`.
+- **The game's own web address, with an offline copy for the phone:
+  `https://ryhiydave.github.io/Wordsmith/`** (GitHub Pages, from the branch `gh-pages`; first put up
+  17 Oct 2026 at about 06:53 with Version 22.0). His words: 06:30, "Can I play offline?"; 06:43,
+  "Sure", to making a home-screen offline version on a simple web host after the speed work; 06:46,
+  "Can you get the web host set up now?  I’m about to fly"; told the GitHub repository is public,
+  so anyone with the link could open the page, 06:50: "K go". The branch holds four files made by
+  `tools/make_site.mjs` from a release's `Play.html`: `index.html` (the game, with the home-screen
+  settings and the offline helper's start), `sw.js` (the offline helper: the phone keeps the page;
+  opened with no connection the kept copy plays; opened online the kept copy plays at once and a
+  fresh one is fetched behind it, so a NEW VERSION SHOWS THE SECOND TIME it is opened after
+  release), `manifest.webmanifest`, `.nojekyll`. On the iPhone: open the link in Safari, Share, Add
+  to Home Screen, open it once from the icon while online (the home-screen app keeps its own copy and
+  its own save, apart from Safari's). Its save is the browser's, on that address: the claude.ai
+  page's save does not carry over (a save transfer would have to be made). Tested before it went
+  up: on a local server with the connection then cut, the page reloaded and a new tab both came up
+  on the title screen. Pushing to `gh-pages` turned GitHub Pages on by itself; the shell here
+  cannot reach `github.io`, so look at it with WebFetch.
 - Touch has only been tested with simulated fingers. Treat the owner's first phone session as the
   real test.
 - The owner sends ideas quickly and often. Stay reachable: work in small steps rather than long

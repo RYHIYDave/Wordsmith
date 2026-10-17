@@ -70,6 +70,7 @@ import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
+import { TOPS_CACHE } from './render/tops_cache';
 import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
@@ -259,6 +260,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   const painterAsk = new URLSearchParams(location.hash.slice(1)).get('painter');
   const painter = new Painter(painterAsk === 'off' ? null : SOURCE, () => art.bestiary, { small: scr.touch, ...(painterAsk === '1' || painterAsk === '2' ? { many: Number(painterAsk) } : {}) });
   renderer.painter = painter;
+  // (the hero's pictures painted ahead by the painter's worker, taken in as they come: render/painter.ts)
+  painter.toHero = (cls, place, v, l, i, s) => !!art.heroes.give?.(cls, place, v, l, i, s);
+  // (the worker is started at once: the hero's pictures are wanted from the first moment)
+  painter.warmGround();
   /** The place whose pictures the painter has been asked for (a level, or null: none, the starting screen). */
   let paintedFor: Level | null = null;
   const input = new Input(scr.canvas, scr.toGame, (x, y) => ui.blocks(x, y), () => scr.w);
@@ -2102,6 +2107,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     painting: PAINTING,
     /** THE PAINTER (render/painter.ts): whether there is one, and what it has done. */
     painter,
+    /** THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its switch (renderer.topsCache has what it did). */
+    topsCache: TOPS_CACHE,
     /** The level-up choice opens by itself in a quiet moment. Tests that need an uninterrupted fight switch this off. */
     autoLevel: true,
     /** The inventory opens by itself for a new word that has somewhere to go. Likewise. */

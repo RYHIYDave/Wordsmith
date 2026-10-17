@@ -42,6 +42,8 @@ export interface HeroArt {
    * art/bestiary.ts).
    */
   warm(cls: ClassId, look: HeroLook): boolean;
+  /** (The heroes painted over the bones: a frame painted by the painter's worker, taken in: art/heroes3.ts.) */
+  give?(cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite): boolean;
 }
 
 export const PLAIN: HeroLook = { twoHanded: false };
