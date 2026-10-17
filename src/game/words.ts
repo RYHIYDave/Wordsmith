@@ -3,7 +3,7 @@
 // Every pairing is assembled from the same few parts (bigger, faster, doubled, element, ground
 // patch, echo, rune, buff), so no pairing needs its own code or its own art.
 
-import { ATTR_GIVES, ATTR_NAME, CLASSES, FRENZY, GUARD, HEAVY, MANA_MODE, PRECISE, SKILLS, TUNE, WORDS, holdSkill, tapSkill, weaponAttr } from './defs';
+import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, CLASSES, FRENZY, GUARD, HEAVY, MANA_MODE, PRECISE, SKILLS, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
@@ -64,6 +64,15 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
 
   const attr: Attr = grows === 'str' || grows === 'dex' || grows === 'int' ? grows : CLASSES[grows].primary;
   const prim = attr === 'str' ? d.str : attr === 'dex' ? d.dex : d.int;
+  // HOW MUCH A WORD HERE GROWS (ATTR_SPLIT, defs.ts; his "Yeah that’s a good split", 17 Oct 2026): by the attribute of the
+  // melded word it is a part of, on that side; fire, frost and lightning set alone, by this ability's own (its weapon's,
+  // or the class's on the evasive move); any other word, by its own. (Off: every word by its own, as before.)
+  const growsBy = (side: readonly (WordId | null)[], w: WordId): number => {
+    if (!ATTR_SPLIT.on) return attrOf(w, d);
+    const m = meldIn(side);
+    const a = (m && partsOf(m).includes(w) ? wordAttr(m) : wordAttr(w)) ?? attr;
+    return a === 'str' ? d.str : a === 'dex' ? d.dex : d.int;
+  };
   let dmgMult = def.dmg * (1 + (prim * ATTR_GIVES.primaryDmg) / 100);
   let size = d.area;
   let rate = d.aps;
@@ -86,7 +95,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
 
   // ----- in front: the hit -----
   if (has(front, 'power')) {
-    const a = attrOf('power', d);
+    const a = growsBy(front, 'power');
     const dmg = 25 + 0.6 * a;
     const big = 20 + 0.3 * a;
     dmgMult *= 1 + dmg / 100;
@@ -98,7 +107,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`Power: +${pct(dmg)} damage, +${pct(big)} size${single ? ', splashes nearby enemies' : ''}.`);
   }
   if (has(front, 'swift')) {
-    const a = attrOf('swift', d);
+    const a = growsBy(front, 'swift');
     if (def.cooldown > 0) {
       const cut = Math.min(60, 20 + 0.3 * a);
       if (byMana) {
@@ -118,7 +127,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   if (has(front, 'twin')) {
     // The owner's rule for words that add: they take something too. Two of everything, each the
     // weaker for it, and (for shots) no enemy takes both: a bow at arm's length does not double.
-    const each = Math.min(80, 55 + 0.25 * attrOf('twin', d));
+    const each = Math.min(80, 55 + 0.25 * growsBy(front, 'twin'));
     r.count = 2;
     r.countDmg = each / 100;
     lines.push(
@@ -136,7 +145,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     );
   }
   if (has(front, 'fire')) {
-    const burn = 30 + 0.8 * attrOf('fire', d);
+    const burn = 30 + 0.8 * growsBy(front, 'fire');
     r.ignite = burn / 100;
     if (single) {
       r.splash = Math.max(r.splash, 1.5);
@@ -145,7 +154,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`Flame: fire damage${single ? ', explodes on contact' : ''}, burns for ${pct(burn)} more over 3 s.`);
   }
   if (has(front, 'frost')) {
-    const slow = Math.min(70, 30 + 0.3 * attrOf('frost', d));
+    const slow = Math.min(70, 30 + 0.3 * growsBy(front, 'frost'));
     r.chill = slow / 100;
     if (single) {
       r.splash = Math.max(r.splash, 1.5);
@@ -154,28 +163,28 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`Frost: frost damage${single ? ', bursts on contact' : ''}, slows by ${pct(slow)}; a second hit freezes.`);
   }
   if (has(front, 'lightning')) {
-    const a = attrOf('lightning', d);
+    const a = growsBy(front, 'lightning');
     const arc = 40 + 0.5 * a;
-    r.arcs = 2 + Math.floor(d.int / 40);
+    r.arcs = 2 + Math.floor((ATTR_SPLIT.on ? a : d.int) / 40);
     r.arcDmg = arc / 100;
     // (THUNDER: one big bolt instead of arcs: its twist, below)
     if (meld === 'thunder') lines.push('Lightning: lightning damage.');
     else lines.push(`Lightning: lightning damage, arcs to ${r.arcs} more enemies for ${pct(arc)}.`);
   }
   if (has(front, 'leech')) {
-    r.leech = 1 + 0.08 * attrOf('leech', d);
+    r.leech = 1 + 0.08 * growsBy(front, 'leech');
     lines.push(`Leeching: heals ${r.leech.toFixed(1)} life per enemy hit.`);
   }
   if (has(front, 'poison')) {
     // a weaker hit, and the poison does the work: every hit adds a dose
-    const dose = 20 + 0.4 * attrOf('poison', d);
+    const dose = 20 + 0.4 * growsBy(front, 'poison');
     r.poison = dose / 100;
     // (BLIGHT: the hit is not weakened)
     if (meld !== 'blight') dmgMult *= 0.8;
     lines.push(`Poison: ${meld === 'blight' ? 'poisons' : 'hits 20% softer; poisons'} for ${pct(dose)} of the hit a second for ${TUNE.poisonTime} s. Up to ${TUNE.poisonStacks} doses add up.`);
   }
   if (has(front, 'volatile')) {
-    const boom = 12 + 0.2 * attrOf('volatile', d);
+    const boom = 12 + 0.2 * growsBy(front, 'volatile');
     r.volatile = boom / 100;
     lines.push(`Volatile: enemies it kills explode for ${pct(boom)} of their life.`);
   }
@@ -184,7 +193,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   // 16:53; the numbers are its starting points)
   if (has(front, 'heavy')) {
     // slower, much harder, and it stuns
-    const a = attrOf('heavy', d);
+    const a = growsBy(front, 'heavy');
     const more = 50 + 0.5 * a;
     dmgMult *= 1 + more / 100;
     if (def.cooldown > 0) {
@@ -196,7 +205,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   }
   if (has(front, 'precise')) {
     // his change (5 Oct): more damage, not a critical chance; and a smaller area
-    const a = attrOf('precise', d);
+    const a = growsBy(front, 'precise');
     const more = 30 + 0.5 * a;
     dmgMult *= 1 + more / 100;
     size *= PRECISE.area;
@@ -208,7 +217,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`Frenzied: each use makes the next ${pct(FRENZY.each * 100)} faster, up to ${FRENZY.max} times; it fades ${FRENZY.hold} s after the last.`);
   }
   if (has(front, 'guarding')) {
-    const a = attrOf('guarding', d);
+    const a = growsBy(front, 'guarding');
     r.shield = Math.min(0.2, GUARD.shield + 0.001 * a);
     lines.push(`Guarding: each use gives you a shield of ${pct(r.shield * 100)} of your life for ${GUARD.shieldTime} s.`);
   }
@@ -216,21 +225,21 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   // ----- behind: the wake -----
   let softer = false;
   if (has(behind, 'power')) {
-    r.might = 6 + 0.1 * attrOf('power', d);
+    r.might = 6 + 0.1 * growsBy(behind, 'power');
     lines.push(`of Power: each hit that lands adds +${pct(r.might)} damage for 5 s (up to 5 times).`);
   }
   if (has(behind, 'swift')) {
-    r.haste = 15 + 0.2 * attrOf('swift', d);
+    r.haste = 15 + 0.2 * growsBy(behind, 'swift');
     lines.push(`of Swiftness: +${pct(r.haste)} movement speed for 3 s after each use.`);
   }
   if (has(behind, 'twin')) {
-    const again = Math.min(100, 40 + 0.5 * attrOf('twin', d));
+    const again = Math.min(100, 40 + 0.5 * growsBy(behind, 'twin'));
     r.echo = again / 100;
     lines.push(`of Echoes: repeats a moment later for ${pct(again)}.`);
   }
   for (const w of behind.flatMap((x) => (x === null ? [] : partsOf(x)))) {
     if (w !== 'fire' && w !== 'frost' && w !== 'lightning') continue;
-    const a = attrOf(w, d);
+    const a = growsBy(behind, w);
     softer = true;
     r.pierce = true;
     if (w === 'fire') {
@@ -250,17 +259,17 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     break; // one element behind
   }
   if (has(behind, 'leech')) {
-    const chance = Math.min(90, 35 + 0.4 * attrOf('leech', d));
+    const chance = Math.min(90, 35 + 0.4 * growsBy(behind, 'leech'));
     r.orbChance = chance / 100;
     lines.push(`of Leeching: enemies it kills drop a life orb ${pct(chance)} of the time.`);
   }
   if (has(behind, 'poison')) {
-    const dose = 25 + 0.5 * attrOf('poison', d);
+    const dose = 25 + 0.5 * growsBy(behind, 'poison');
     r.cloud = dose / 100;
     lines.push(`of Venom: leaves a cloud that poisons for ${pct(dose)} of the hit a second.`);
   }
   if (has(behind, 'volatile')) {
-    const boom = 70 + attrOf('volatile', d);
+    const boom = 70 + growsBy(behind, 'volatile');
     r.rune = boom / 100;
     lines.push(`of Ruin: leaves a rune that detonates for ${pct(boom)}.`);
   }
@@ -278,7 +287,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`of Frenzy: each kill adds a stack and holds the frenzy ${FRENZY.hold} s more.`);
   }
   if (has(behind, 'guarding')) {
-    const a = attrOf('guarding', d);
+    const a = growsBy(behind, 'guarding');
     r.ward = Math.min(0.5, GUARD.ward + 0.002 * a);
     lines.push(`of Warding: leaves a ward circle for ${GUARD.wardTime} s; inside it you take ${pct(r.ward * 100)} less damage.`);
   }
@@ -324,7 +333,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     else if (meldBehind === 'scald') {
       // fire meeting ice on the ground: steam, in place of either
       drop('of Flame:');
-      const a = attrOf('fire', d);
+      const a = growsBy(behind, 'fire');
       r.zone = { kind: 'steam', element: 'fire', dps: T.scald.steamDps + 0.004 * a, slow: T.scald.slow, dur: T.scald.dur };
       twist(`fire meets ice: it leaves steam that hurts and slows by ${pct(T.scald.slow * 100)}, and hides you while you stand in it.`);
     } else if (meldBehind === 'wildfire') twist(`the burning ground throws sparks at enemies within ${T.wildfire.reach} tiles.`);
@@ -332,7 +341,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     else if (meldBehind === 'hailstorm') {
       // a storm of ice: the storm, slowing (in place of the ice)
       drop('of Frost:');
-      const a = attrOf('lightning', d);
+      const a = growsBy(behind, 'lightning');
       r.zone = { kind: 'storm', element: 'lightning', dps: (30 + 0.6 * a) / 100, slow: T.hailstorm.slow, dur: 4 };
       twist(`a storm of ice that strikes and slows by ${pct(T.hailstorm.slow * 100)}.`);
     } else if (meldBehind === 'frostbite') twist('the ice on the ground poisons what crosses it.');

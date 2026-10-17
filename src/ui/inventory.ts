@@ -64,7 +64,7 @@ import { WORD_COLOR } from '../art/icons';
 import { ELEMENT_RAMP, P, RARITY_COLOR } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
-import { ATTR_NAME, CLASSES, ELEMENT_NAME, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
+import { ATTR_NAME, CLASSES, ELEMENT_NAME, growsWith, FIRST_LEVELS, QUEST_ITEM, SKILLS, SLOT_OPENS, WORDS, socketCount, xpToNext } from '../game/defs';
 import type { Game } from '../game/game';
 import { modLines, statView } from '../game/items';
 import type { ImbueOption } from '../game/items';
@@ -1440,7 +1440,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         const wd = WORDS[hand];
         const k = game.meta.known[hand];
         const nx = rx + put(wd.name.toUpperCase(), rx, iy, WORD_COLOR[hand], { shadow: P.ink }) + 6;
-        put(`grows with ${ATTR_NAME[wd.attr]}`, nx, iy + 3, THEME.dim, { font: 'small' });
+        put(growsWith(hand), nx, iy + 3, THEME.dim, { font: 'small' });
         iy += 11;
         line(wd.about, P.white, false);
         const hint = side && side.wordHint ? side.wordHint(hand) : null;

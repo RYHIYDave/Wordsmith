@@ -3,7 +3,7 @@
 
 import { act1Def } from './act1';
 import type { VendorId } from './state';
-import type { AbilityId, Attr, ClassId, Element, Limit, MonsterKind, Slot, WeaponKind, WordId } from './types';
+import type { AbilityId, Attr, ClassId, Element, Limit, MeldId, MonsterKind, Slot, WeaponKind, WordId } from './types';
 import { FIRST5_KINDS, MELD_OF, NEW_KINDS } from './types';
 
 export type { Limit } from './types';
@@ -342,6 +342,35 @@ export const WORDS: Record<WordId, WordDef> = {
   frostbite: { id: 'frostbite', kind: 'meld', of: MELD_OF.frostbite, name: 'Frostbite', front: 'Frostbite', behind: 'of Frostbite', attr: 'int', element: 'frost', about: 'Frost and Poison, melded.', frontText: 'Chilled enemies lose life over time, and frozen ones twice as fast.', behindText: 'The ice on the ground poisons what crosses it.', monsterText: '' },
   contagion: { id: 'contagion', kind: 'meld', of: MELD_OF.contagion, name: 'Contagion', front: 'Contagious', behind: 'of Contagion', attr: 'int', element: 'lightning', about: 'Lightning and Poison, melded.', frontText: 'Every enemy an arc touches is poisoned.', behindText: 'The poison cloud shocks whatever stands in it.', monsterText: '' },
 };
+
+/**
+ * THE WORDS' ATTRIBUTES, EVENED. The owner, 17 Oct 2026: asked whether the four Power melds should grow with Strength and
+ * fire, frost and lightning on the warrior's sword attacks too, 13:05: "Yes for the words.  How many does that leave for
+ * the other classes?  Is it an evenish split between the attributes?"; shown that it left the ranger short and offered the
+ * split below, 13:22: "Yeah that’s a good split". So, `on`: each melded word grows with `melds`' attribute, both its words
+ * in it (Power's melds Strength, Poison's other three Dexterity, the rest Intelligence: 4, 3 and 3); fire, frost and
+ * lightning set alone grow with the ability's own (the weapon's: a sword Strength, a bow Dexterity, a staff or a wand
+ * Intelligence; on the evasive move, the class's); every other word as WORDS has it. All 23: Strength 9, Dexterity 7,
+ * Intelligence 7. Off: every word grows with its own, as before.
+ */
+export const ATTR_SPLIT: { on: boolean; melds: Readonly<Record<MeldId, Attr>>; byWeapon: readonly WordId[] } = {
+  on: true,
+  melds: { eruption: 'str', avalanche: 'str', thunder: 'str', blight: 'str', fumes: 'dex', frostbite: 'dex', contagion: 'dex', scald: 'int', wildfire: 'int', hailstorm: 'int' },
+  byWeapon: ['fire', 'frost', 'lightning'],
+};
+
+/** The attribute a word grows with; null: the ability's own (ATTR_SPLIT's fire, frost and lightning). */
+export function wordAttr(w: WordId): Attr | null {
+  if (!ATTR_SPLIT.on) return WORDS[w].attr;
+  if (ATTR_SPLIT.byWeapon.includes(w)) return null;
+  return (ATTR_SPLIT.melds as Readonly<Record<string, Attr>>)[w] ?? WORDS[w].attr;
+}
+
+/** What a word's card says it grows with. */
+export function growsWith(w: WordId): string {
+  const a = wordAttr(w);
+  return a ? `grows with ${ATTR_NAME[a]}` : "grows with your weapon's attribute";
+}
 
 // ---------------------------------------------------------------------------------------------
 // Monsters. Numbers are for dungeon 1; scaleLife / scaleDmg grow them with depth.

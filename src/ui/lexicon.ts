@@ -18,7 +18,7 @@
 import { WORD_COLOR } from '../art/icons';
 import { P } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { ATTR_NAME, WORDS } from '../game/defs';
+import { ATTR_NAME, WORDS, growsWith } from '../game/defs';
 import type { Game } from '../game/game';
 import { imbueRules, statView } from '../game/items';
 import type { Meta } from '../game/state';
@@ -113,7 +113,7 @@ export function drawWordPage(g: CanvasRenderingContext2D, meta: Meta, w: WordId,
   const end = y0 + ph;
   let y = y0;
   const nw = drawText(g, wd.name.toUpperCase(), x, y, WORD_COLOR[w], { shadow: P.ink, scale: big ? 2 : 1 });
-  drawText(g, `grows with ${ATTR_NAME[wd.attr]}`, x + nw + 8, y + (big ? 9 : 2), THEME.dim, { font: 'small' });
+  drawText(g, growsWith(w), x + nw + 8, y + (big ? 9 : 2), THEME.dim, { font: 'small' });
   y += page.nameH;
   for (const part of page.parts) {
     if (y + part.gap + part.h - 1 > end) return false;

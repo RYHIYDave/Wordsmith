@@ -7,7 +7,7 @@ import { P, RARITY_COLOR } from '../art/palette';
 import { drawText, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Sprite } from '../engine/px';
-import { ATTR_GIVES, ATTR_NAME, CLASSES, SKILLS, TUNE, WORDS, holdSkill, skillsFor, tapSkill } from '../game/defs';
+import { ATTR_GIVES, ATTR_NAME, CLASSES, SKILLS, TUNE, WORDS, growsWith, holdSkill, skillsFor, tapSkill, weaponAttr, wordAttr } from '../game/defs';
 import type { Limit } from '../game/defs';
 import type { Game } from '../game/game';
 import { MODE_LINE } from '../game/modes';
@@ -141,7 +141,7 @@ export function wordCard(w: WordId): Line[] {
   const d = WORDS[w];
   return [
     { text: d.name, color: WORD_COLOR[w] },
-    { text: `Power word - grows with ${ATTR_NAME[d.attr]}`, color: THEME.dim, small: true },
+    { text: `Power word - ${growsWith(w)}`, color: THEME.dim, small: true },
     { text: `In front: ${d.frontText}`, color: THEME.text },
     { text: `Behind: ${d.behindText}`, color: THEME.text },
   ];
@@ -222,7 +222,8 @@ export function drawLevelUp(ui: Ui, game: Game, pressedKey: (code: string) => bo
     // (the two attacks grow with their weapon's attribute, the evasive move with the class's)
     const grown = attacksGrownBy(a, h.cls, game.weapon());
     if (grown.length) lines.push(`+${n * ATTR_GIVES.primaryDmg}% ${listed(grown)} damage`);
-    const words = WORD_IDS.filter((w) => WORDS[w].attr === a).map((w) => WORDS[w].name);
+    // (ATTR_SPLIT: fire, frost and lightning by the weapon in hand)
+    const words = WORD_IDS.filter((w) => (wordAttr(w) ?? weaponAttr(game.weapon())) === a).map((w) => WORDS[w].name);
     lines.push(`Strengthens ${words.join(', ')}`);
     let y = y0 + 28;
     for (const l of lines) {

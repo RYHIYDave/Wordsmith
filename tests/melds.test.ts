@@ -205,7 +205,9 @@ function numbers(r: Resolved): Record<string, unknown> {
 
 test('a melded word does what both its words do, in front and behind; only its twist is its own', () => {
   const g = Game.forPractice('mage', 5);
-  const d = g.hero.d;
+  // (the three attributes alike: since ATTR_SPLIT a melded word's two words grow with its own attribute, and fire, frost
+  // and lightning alone with the weapon's; with all three alike, what grows is the same whichever: tests/attr_split.test.ts)
+  const d = { ...g.hero.d, str: 40, dex: 40, int: 40 };
   for (const id of ['strike', 'shot', 'orb', 'beam'] as const) {
     const def = SKILLS[id];
     for (const m of MELD_IDS) {
