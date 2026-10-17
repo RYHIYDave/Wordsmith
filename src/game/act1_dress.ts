@@ -138,6 +138,14 @@ export const HOLD = {
 const THING_EVERY = 26;
 const THINGS_MOST = 7;
 const LYING_EVERY = 30;
+/**
+ * FEWER THINGS, TOWARD THE EDGES; THE CAMP IN A RING. The owner, 17 Oct 2026, 11:37: "I’d like the doodads placed in the
+ * level to be a little thinner in density and spread towards the edges.  Except for camps, maybe a few tents or whatever in a
+ * circle." So, `on`: an open area's things that stand and lie about, `fewer` times as many tiles to each, in its outer band
+ * (`from` to `to` of the way to its edge) and not its middle; the cult's camp its watchfire in the middle of its area and
+ * `ring` of its things in a circle round it, `r` tiles out. A look: off until he has seen it.
+ */
+export const DRESS_EDGES = { on: false, fewer: 1.6, from: 0.5, to: 0.86, ring: 5, r: 3.2 };
 
 export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | null {
   const n = act1Floor(depth);
@@ -322,7 +330,39 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   // ---- THE CULT'S CAMP: in one of the main way's areas (not the first two), its tents, fire and crates
   const campArea = land.areas.filter((a) => a.role === 'path' && Math.hypot(a.blob.x - f.start.x, a.blob.y - f.start.y) > 18);
   const camp = campArea.length ? rng.pick(campArea) : null;
-  if (camp) {
+  if (camp && DRESS_EDGES.on) {
+    // (DRESS_EDGES: its watchfire in the middle; its things in a ring round it; its crates and bedrolls just inside the ring)
+    const cx = Math.floor(camp.blob.x);
+    const cy = Math.floor(camp.blob.y);
+    if (free(cx, cy, true)) put("the cult's watchfire", cx, cy, true, rng.int(0, 3));
+    const n = DRESS_EDGES.ring;
+    const turn = rng.range(0, Math.PI * 2);
+    const kinds = rng.shuffle(CAMP.things.filter((k) => k !== "the cult's watchfire"));
+    for (let i = 0; i < n; i++) {
+      const a = turn + (i / n) * Math.PI * 2;
+      const tx = Math.floor(camp.blob.x + Math.cos(a) * DRESS_EDGES.r);
+      const ty = Math.floor(camp.blob.y + Math.sin(a) * DRESS_EDGES.r);
+      if (!free(tx, ty, true)) continue;
+      // (the tents the most of them, as he asked)
+      put(i % 2 === 0 ? "the cult's tent" : kinds[i % kinds.length], tx, ty, true, rng.int(0, 3));
+    }
+    let crates = 0;
+    let beds = 0;
+    for (let i = 0; i < 8 && (crates < 2 || beds < 2); i++) {
+      const a = turn + ((i + 0.5) / 8) * Math.PI * 2;
+      const tx = Math.floor(camp.blob.x + Math.cos(a) * (DRESS_EDGES.r - 1.4));
+      const ty = Math.floor(camp.blob.y + Math.sin(a) * (DRESS_EDGES.r - 1.4));
+      if (crates < 2 && free(tx, ty, true)) {
+        L.props.push({ kind: rng.chance(0.5) ? 'barrel' : 'urn', tx, ty, x: tx + 0.5, y: ty + 0.5, solid: true, state: 0, variant: 100 + rng.int(0, 2) });
+        taken[ty * W + tx] = 1;
+        L.walk[ty * W + tx] = 0;
+        crates++;
+      } else if (beds < 2 && free(tx, ty, false)) {
+        put(rng.pick(CAMP.lying), tx, ty, false);
+        beds++;
+      }
+    }
+  } else if (camp) {
     const list = tilesOf(camp.blob, (x, y) => blobDist(camp.blob, x, y) < 0.7);
     let fire = false;
     let things = 0;
@@ -354,8 +394,10 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   for (const a of rng.shuffle([...land.areas])) {
     if (a.role === 'yard' || a.role === 'start') continue;
     const boss = a.role === 'boss';
-    const inner = tilesOf(a.blob, (x, y) => blobDist(a.blob, x, y) < (boss ? 0.86 : 0.78) && blobDist(a.blob, x, y) > (boss ? 0.62 : 0.15));
-    const area = inner.length;
+    const edgy = DRESS_EDGES.on && !boss;
+    const inner = tilesOf(a.blob, (x, y) => blobDist(a.blob, x, y) < (boss ? 0.86 : edgy ? DRESS_EDGES.to : 0.78) && blobDist(a.blob, x, y) > (boss ? 0.62 : edgy ? DRESS_EDGES.from : 0.15));
+    // (DRESS_EDGES: as many things as before for the area as a whole, fewer, in its outer band)
+    const area = edgy ? Math.round(tilesOf(a.blob, (x, y) => blobDist(a.blob, x, y) < 0.78 && blobDist(a.blob, x, y) > 0.15).length / DRESS_EDGES.fewer) : inner.length;
     if (!boss && bigs < 2 && set.big.length && area > 40) {
       for (const [tx, ty] of inner) {
         if (!free(tx, ty, true) || !free(tx + 1, ty, true) || !free(tx, ty + 1, true)) continue;
