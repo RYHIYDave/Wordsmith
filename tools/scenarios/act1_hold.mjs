@@ -3,7 +3,7 @@
 //   node tools/build_to.mjs dist/act1.html
 //   DEPTH=6 node tools/playtest.mjs --file dist/act1.html --size 1014x468 --scenario tools/scenarios/act1_hold.mjs --out shots/act1/hold6
 // DEPTH: the floor (6 to 10). WORDS: how many words to lay (1 to 3). SEED: the run's (9).
-import { log } from './lib.mjs';
+import { log, makeHands } from './lib.mjs';
 
 export default async function (page, snap) {
   const depth = Number(process.env.DEPTH || 6);
@@ -31,8 +31,12 @@ export default async function (page, snap) {
   log('hold', JSON.stringify(info));
   await page.waitForTimeout(900);
   await snap('a_yard');
-  log('hint', JSON.stringify(await page.evaluate(() => window.__dbg.game().interactHint())));
-  await page.keyboard.press('KeyE');
+  const hint = await page.evaluate(() => window.__dbg.game().interactHint());
+  log('hint', JSON.stringify(hint));
+  // (with fingers, as a phone has it: the prompt tapped; with keys, E)
+  const hands = await makeHands(page);
+  if (await hands.mark(`button:${hint}`)) await hands.press(`button:${hint}`);
+  else await page.keyboard.press('KeyE');
   await page.waitForTimeout(500);
   await snap('b_altar');
   const laid = await page.evaluate((k) => {
@@ -44,7 +48,8 @@ export default async function (page, snap) {
   log('laid', JSON.stringify(laid));
   await page.waitForTimeout(300);
   await snap('c_altar_laid');
-  await page.keyboard.press('Enter');
+  if (await hands.mark('button:OPEN THE DOOR')) await hands.press('button:OPEN THE DOOR');
+  else await page.keyboard.press('Enter');
   await page.waitForTimeout(900);
   log('open', JSON.stringify(await page.evaluate(() => window.__dbg.game().level.holds[0])));
   await snap('d_door_open');

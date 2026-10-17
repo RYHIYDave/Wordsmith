@@ -12,7 +12,7 @@ export default async function (page, snap) {
   const areas = Number(process.env.AREAS || 5);
   const foes = process.env.FOES === '1';
   await page.evaluate((s) => {
-    const d = window.__dbg; d.saving(false); d.run('warrior', s); d.autoLevel = false; d.autoWords = false; d.god = true;
+    const d = window.__dbg; d.saving(false); d.run('warrior', s); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
   }, seed);
   await page.waitForTimeout(600);
   const t0 = Date.now();

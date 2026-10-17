@@ -4,7 +4,7 @@
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {
-  await page.evaluate(() => { const d = window.__dbg; d.saving(false); d.run('warrior', 9); d.god = true; });
+  await page.evaluate(() => { const d = window.__dbg; d.saving(false); d.run('warrior', 9); d.seasoned(20); d.god = true; });
   await page.waitForTimeout(600);
   const at = await page.evaluate(() => {
     const g = window.__dbg.game();

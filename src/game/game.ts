@@ -1449,7 +1449,12 @@ export class Game {
       dm *= 1 + 0.4 * power;
     }
     let name = def.name;
-    if (elite || boss || (pack && pack.rarity === 'blue')) name = [...words.slice(0, want).map((w) => WORDS[w].front), champion ? 'Guardian' : def.name].join(' ');
+    if (elite || boss || (pack && pack.rarity === 'blue')) {
+      // (ACT 1: a boss whose name begins "The" keeps it first: "The Flame Unfinished", not "Flame The Unfinished")
+      const base = champion ? 'Guardian' : def.name;
+      const the = base.startsWith('The ') ? 'The ' : '';
+      name = the + [...words.slice(0, want).map((w) => WORDS[w].front), base.slice(the.length)].join(' ');
+    }
     // (THE FIRST FIVE FLOORS: the Fleshmancer, the Crypt's lair boss, is himself: only a Warden of a fifth floor is a "Greater" one)
     if (greater && kind === 'warden') name = 'Greater ' + name;
     const m: Monster = {

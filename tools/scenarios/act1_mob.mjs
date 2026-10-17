@@ -22,7 +22,7 @@ export default async function (page, snap) {
   const hurt = process.env.HURT ? Number(process.env.HURT) : 0;
   const cls = process.env.CLS || 'warrior';
   await page.evaluate(([c]) => {
-    const d = window.__dbg; d.saving(false); d.run(c, 9); d.autoLevel = false; d.autoWords = false; d.god = true;
+    const d = window.__dbg; d.saving(false); d.run(c, 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
   }, [cls]);
   await page.waitForTimeout(600);
   const where = await page.evaluate(([k, dep, count, dist, lf, isBoss]) => {

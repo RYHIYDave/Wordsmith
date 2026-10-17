@@ -10,7 +10,7 @@ import { log } from './lib.mjs';
 export default async function (page, snap) {
   const depth = Number(process.env.DEPTH || 6);
   await page.evaluate(() => {
-    const d = window.__dbg; d.saving(false); d.run('warrior', 9); d.autoLevel = false; d.autoWords = false; d.god = true;
+    const d = window.__dbg; d.saving(false); d.run('warrior', 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
   });
   await page.waitForTimeout(600);
   if (depth === 5) {
