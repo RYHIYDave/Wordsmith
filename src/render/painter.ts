@@ -30,6 +30,7 @@
 
 import { FIRST5_FIGURES, HEAVY_FIGURES, framesOf, giveFrame, makeBestiary, paintOrder } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
+import type { ActorArt } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { paintTerrain, terrainOf } from '../art/terrain';
@@ -75,7 +76,7 @@ interface Given {
 }
 /** What the page asks of a worker. */
 type Ask =
-  | { t: 'mob'; figure: MonsterFigure; pri: number }
+  | { t: 'mob'; figure: MonsterFigure; pri: number; side?: boolean }
   | { t: 'film'; key: string; pri: number }
   | { t: 'drop'; figure: MonsterFigure }
   // ACT 1: a floor's outdoor ground (render/outdoor.ts): the floor to paint it from, then its pieces as they are wanted
@@ -152,6 +153,15 @@ export class Painter {
   private heroAsked = new Set<string>();
   /** The hero's frames taken in from the worker, for measuring. */
   heroFrames = 0;
+  /**
+   * THE FLOOR'S OTHER MONSTERS (all but the heavy ones, which have a worker of their own): their pictures painted ahead by
+   * the side worker too, once it is up, in place of the game painting them ahead a little each frame (a monster's frame
+   * on the bones is a frame's whole time and more to paint on a phone). What has been asked of it this place, and how
+   * many of each figure's frames are still to come (-1: not begun).
+   */
+  private sideFigures = new Map<MonsterFigure, { left: number }>();
+  /** The monsters' frames taken in from the side worker, for measuring. */
+  sideFrames = 0;
 
   /**
    * `source`: the game's own script (null: there is none to be had, and no painter). `bestiary`: the
@@ -180,6 +190,14 @@ export class Painter {
     // (the ground's worker is kept: it takes seconds to start, and is sent each floor anew; the last floor's pieces not yet painted are not wanted)
     this.end(true);
     this.ground = 0;
+    // (the last place's monsters still being painted by the side worker are not wanted)
+    const lane = this.groundLane;
+    for (const [figure, f] of this.sideFigures) {
+      if (!lane || f.left === 0) continue;
+      lane.worker.postMessage({ t: 'drop', figure } satisfies Ask);
+      lane.open = Math.max(0, lane.open - 1);
+    }
+    this.sideFigures.clear();
     for (const film of this.films.values()) eachSprite(film, releaseSprite);
     this.films.clear();
     this.asked.clear();
@@ -298,6 +316,31 @@ export class Painter {
     return true;
   }
 
+  /**
+   * A monster's pictures (one not heavy) to be painted ahead by the side worker. True: the worker is up and has them in
+   * hand, or they are all here already (the game need not paint them ahead itself); false: the game goes on painting them
+   * ahead as before. (Asking again is nothing.)
+   */
+  side(figure: MonsterFigure): boolean {
+    const lane = this.groundLane;
+    if (this.state !== 'on' || !lane || !lane.ready) return false;
+    if (this.sideFigures.has(figure)) return true;
+    // (a figure the game holds whole already, from the place before, is not painted again)
+    if (allPainted(this.bestiary().of(figure))) {
+      this.sideFigures.set(figure, { left: 0 });
+      return true;
+    }
+    this.sideFigures.set(figure, { left: -1 });
+    lane.open++;
+    lane.worker.postMessage({ t: 'mob', figure, pri: 2, side: true } satisfies Ask);
+    return true;
+  }
+
+  /** How many of a monster's frames the side worker has still to hand over (0: all are here, or it was never asked; -1: not begun). For the tests. */
+  sideLeft(figure: MonsterFigure): number {
+    return this.sideFigures.get(figure)?.left ?? 0;
+  }
+
   /** ACT 1: the ground's worker is up and painting (until it is, a floor's ground is painted by the game, a little each frame, as before). */
   groundReady(): boolean {
     return this.state === 'on' && !!this.groundLane && this.groundLane.ready;
@@ -321,6 +364,25 @@ export class Painter {
       lane.open = Math.max(0, lane.open - 1);
       if (this.groundLane === lane && m.id === this.ground && this.toGround) this.toGround(m.id, m.i, m.j, m.bmp, m.ms);
       else m.bmp.close();
+      return;
+    }
+    if (m.t === 'frames') {
+      const want = this.groundLane === lane ? this.sideFigures.get(m.figure) : undefined;
+      const art = want ? this.bestiary().of(m.figure) : null;
+      for (const g of m.list) {
+        if (g.s) {
+          if (art && giveFrame(art, g.v, g.l, g.i, g.s)) this.sideFrames++;
+          else (g.s.img as unknown as ImageBitmap).close();
+        } else if (g.same && art) {
+          const from = framesOf(g.same[0] === 0 ? art.front : art.back)[g.same[1]];
+          const d = from ? Object.getOwnPropertyDescriptor(from, g.same[2]) : undefined;
+          if (d && 'value' in d && d.value) giveFrame(art, g.v, g.l, g.i, d.value as Sprite);
+        }
+      }
+      if (want) {
+        if (want.left !== 0 && m.left === 0) lane.open = Math.max(0, lane.open - 1);
+        want.left = m.left;
+      }
       return;
     }
     if (m.t === 'heroFrames') {
@@ -468,8 +530,9 @@ export class Painter {
     this.stats.failed.push(`${what}: ${err instanceof Error ? err.message : String(err)}`);
     this.state = 'off';
     this.end();
-    // (the figures are the game's to paint now; it is told so by `mob` saying false)
+    // (the figures are the game's to paint now; it is told so by `mob` and `side` saying false)
     this.figures.clear();
+    this.sideFigures.clear();
   }
 }
 
@@ -493,6 +556,22 @@ export function eachSprite(v: unknown, f: (s: Sprite) => void, seen = new Set<un
 // THE WORKER'S SIDE
 
 type Canvas2 = { width: number; height: number; getContext(kind: '2d'): CanvasRenderingContext2D | null; transferToImageBitmap(): ImageBitmap };
+
+/** A sprite whose picture has been handed over already (its canvas left empty). */
+function emptied(s: Sprite): boolean {
+  const cv = s.img as unknown as Canvas2;
+  return cv.width === 0 || cv.height === 0;
+}
+
+/** Is every frame of a figure painted (none still waiting to be painted the first time it is shown)? */
+function allPainted(art: ActorArt): boolean {
+  const lists = [framesOf(art.front), framesOf(art.back)];
+  for (const [v, l, i] of paintOrder(art)) {
+    const d = Object.getOwnPropertyDescriptor(lists[v][l], i);
+    if (d && typeof d.get === 'function') return false;
+  }
+  return true;
+}
 
 /** The sprite with its picture as one that can be handed over (the canvas it was painted on is left empty). */
 function shipped(s: Sprite, transfer: Transferable[]): Sprite {
@@ -638,7 +717,7 @@ export function paintWorkerMain(): void {
       const [v, l, i] = order[n];
       const s = lists[v][l][i];
       // (a frame that is in two lists is sent once: the page takes in the first)
-      if (!sent.has(s)) {
+      if (!sent.has(s) && !emptied(s)) {
         sent.add(s);
         list.push({ v, l, i, s: shipped(s, transfer) });
       }
@@ -654,7 +733,7 @@ export function paintWorkerMain(): void {
   }
 
   /** A figure's frames, painted and handed over a few at a time. */
-  function* mob(figure: MonsterFigure): Generator<void, void, void> {
+  function* mob(figure: MonsterFigure, side = false): Generator<void, void, void> {
     const art = bestiary.of(figure);
     const lists = [framesOf(art.front), framesOf(art.back)];
     const order = paintOrder(art);
@@ -669,7 +748,8 @@ export function paintWorkerMain(): void {
       const s = lists[v][l][i];
       const was = sent.get(s);
       if (was) list.push({ v, l, i, same: was });
-      else {
+      // (a picture handed over already, with another figure's frames, is not sent: the game paints its own, if it is ever shown)
+      else if (!emptied(s)) {
         sent.set(s, [v, l, i]);
         list.push({ v, l, i, s: shipped(s, transfer) });
       }
@@ -682,6 +762,8 @@ export function paintWorkerMain(): void {
         t0 = performance.now();
       }
     }
+    // (the side worker is kept for the whole game: what it made of the figure is spent, and let go of)
+    if (side) bestiary.forget(figure);
   }
 
   // (between one piece of work and the next the worker goes back to its queue, so that what has been asked of it meanwhile is heard;
@@ -724,8 +806,10 @@ export function paintWorkerMain(): void {
         const film = packed(makeFilm(job.ask.key), transfer);
         scope.postMessage({ t: 'film', key: job.ask.key, film, ms: performance.now() - t0 }, transfer);
       } else {
-        job.run ??= mob(job.ask.figure);
+        job.run ??= mob(job.ask.figure, !!job.ask.side);
         if (job.run.next().done) done();
+        // (the side worker's monsters take turns, a piece of work each, so that every one of them can stand and walk before any has all of its moves)
+        else if (job.ask.side) job.seq = seq++;
       }
     } catch (err) {
       if (jobs.includes(job)) done();
@@ -754,7 +838,7 @@ export function paintWorkerMain(): void {
       bestiary.forget(ask.figure);
       return;
     }
-    if (ask.t === 'mob' && !FIRST5_FIGURES.includes(ask.figure)) {
+    if (ask.t === 'mob' && !ask.side && !FIRST5_FIGURES.includes(ask.figure)) {
       scope.postMessage({ t: 'fail', what: `mob ${ask.figure}`, why: 'not a figure the painter paints' });
       return;
     }

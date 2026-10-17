@@ -1877,6 +1877,10 @@ export class Renderer {
         this.art.bestiary.forget(w);
       }
     }
+    // (THE OTHER MONSTERS' PICTURES BY THE PAINTER too: where its side worker is up, it paints them ahead, beside the game,
+    // as it does the hero's; until it is, or where there is none, the game paints them ahead as before)
+    const side = this.painter;
+    if (side) for (let i = figs.length - 1; i >= 0; i--) if (side.side(figs[i])) figs.splice(i, 1);
     const budget = this.warmedFor === game.level ? WARM_MS : WARM_ENTER_MS;
     this.warmedFor = game.level;
     if (heavy.length > 0 && this.warmFrame % HEAVY_EVERY === 0) this.art.bestiary.warm(heavy);

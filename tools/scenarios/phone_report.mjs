@@ -120,6 +120,7 @@ export default async function (page, snap) {
       }
     }
     r.ground = await page.evaluate(() => { const st = window.__dbg.renderer.outdoor.stats; return { pieces: st.pieces, byWorker: st.worker }; });
+    r.heroFrames = await page.evaluate(() => window.__dbg.painter.heroFrames);
     r.canvasMB = (await page.evaluate(() => (window.__canvasRoom ? window.__canvasRoom().mb : -1)));
     r.pageMB = room();
     out[place] = r;
