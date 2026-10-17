@@ -254,7 +254,8 @@ test('a played dungeon with terraces: every monster has a way on foot to where t
   const classes: ClassId[] = ['warrior', 'ranger', 'mage'];
   for (let k = 0; k < 24; k++) {
     const g = new Game(classes[k % 3], 500 + k * 37);
-    g.depth = 1 + (k % 8);
+    // (dungeons only: floors 6 to 10 are the descent, out on the open ground, game/act1.ts; past it, dungeons again)
+    g.depth = [1, 2, 3, 4, 5, 11, 12, 13][k % 8];
     g.enterDungeon();
     const L = g.level;
     const f = L.floor;

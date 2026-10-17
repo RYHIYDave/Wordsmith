@@ -7,7 +7,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, GUIDE, MONSTERS, MOVE_OPENS, QUEST_ITEM, SLOT_OPENS, TUNE, useFirstLevels } from '../src/game/defs';
+import { FIRST_DUNGEON, FIRST_LEVELS, FIRST_WORD, GUIDE, HAND_IN, MONSTERS, MOVE_OPENS, QUEST_ITEM, SLOT_OPENS, TUNE, useFirstLevels } from '../src/game/defs';
 import { eliteRoomCount, monsterBudget, packSizeRange } from '../src/game/dungeon';
 import { FIRST_GATE, Game, cleanMeta, newMeta } from '../src/game/game';
 import { flowField } from '../src/game/nav';
@@ -74,6 +74,12 @@ function toWordsmith(g: Game): void {
   g.hero.x = st!.x + 0.5;
   g.hero.y = st!.y + 0.5;
   g.update(DT, emptyControls());
+  // (HAND_IN, on with the descent, his "quest hand-in on": given by using him, not by walking up to him)
+  if (HAND_IN.on && g.handInNear()) {
+    const c = emptyControls();
+    c.interact = true;
+    g.update(DT, c);
+  }
 }
 
 test('the switch is on, since Version 19.5', () => {

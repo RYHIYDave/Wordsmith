@@ -212,7 +212,7 @@ export const EYE_ACTS: readonly ActDef[] = [
   { id: 'eye:empower', clip: 'empower', long: EYE_EMPOWER.long, hit: EYE_EMPOWER.burst, dmg: 0.6, cooldown: 0, first: 0, after: 0.8, near: 0, far: 0, forced: true },
 ];
 /** In which of his phases (0 under the water, 1 risen, 2 blazing) each of his acts is his. */
-const PHASE_OF: Record<string, readonly number[]> = {
+export const PHASE_OF: Record<string, readonly number[]> = {
   'eye:burst': [0, 1, 2],
   'eye:bursts': [0, 1, 2],
   'eye:sweep': [0],

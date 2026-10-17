@@ -14,7 +14,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import type { RNG } from '../src/engine/rng';
-import { FIRST_LEVELS, FIRST_WORD, QUEST_ITEM } from '../src/game/defs';
+import { FIRST_LEVELS, FIRST_WORD, HAND_IN, QUEST_ITEM } from '../src/game/defs';
 import { Game, newMeta } from '../src/game/game';
 import type { RunSave } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -120,6 +120,12 @@ function atTheRing(): Game {
   g.hero.x = st.x + 0.5;
   g.hero.y = st.y + 0.5;
   g.update(DT, emptyControls());
+  // (HAND_IN, on with the descent, his "quest hand-in on": given by using him, not by walking up to him)
+  if (HAND_IN.on && g.handInNear()) {
+    const c = emptyControls();
+    c.interact = true;
+    g.update(DT, c);
+  }
   assert.equal(g.hero.ring, true, 'the ring is lit');
   return g;
 }

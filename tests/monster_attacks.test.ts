@@ -46,6 +46,7 @@ import { RNG } from '../src/engine/rng';
 import { CHARGE, MONSTERS, MONSTER_ATTACKS, MONSTER_MOVES, SUMMON, TUNE, movesOf, sizeOf } from '../src/game/defs';
 import type { MonsterMove, MoveId } from '../src/game/defs';
 import { actsOf } from '../src/game/bosses';
+import { PHASE_OF as EYE_PHASE_OF } from '../src/game/act1_rules/eye';
 import { act1Rules } from '../src/game/act1_rules/index';
 import { ACT1_KINDS } from '../src/game/types';
 import { Game } from '../src/game/game';
@@ -186,8 +187,11 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
           assert.ok(chosen[i].dmg > chosen[0].dmg, `${kind}: ${chosen[i].id} hits harder than its basic blow`);
         }
       }
-      // (one that has no moves has its one attack, as before)
-      const n = acts ? acts.filter((a) => !a.forced).length : moves ? moves.length : 1;
+      // (one that has no moves has its one attack, as before. ACT 1: a move the Unfinished makes both fused in the wall
+      // and torn free, two acts with two pictures, is one move: counted once)
+      // And the Drowned Eye fights in three phases, each with its own moves: counted by the most he has in any one of them)
+      const chosenIds = acts ? [...new Set(acts.filter((a) => !a.forced).map((a) => a.id.replace(/Wall$/, '')))] : [];
+      const n = kind === 'eye' ? Math.max(...[0, 1, 2].map((p) => chosenIds.filter((id) => EYE_PHASE_OF[id]?.includes(p)).length)) : acts ? chosenIds.length : moves ? moves.length : 1;
       const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
       const what = `${kind}${champion ? ' (a guardian: the red troll)' : ''}, ${size}`;
       assert.ok(n >= want[size][0] && n <= want[size][1] + leads, `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);

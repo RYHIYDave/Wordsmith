@@ -5122,11 +5122,19 @@ export class Game {
     }
 
     // keep bodies from stacking, and out of the hero
+    // (ACT 1: not one up in the air, under the water or below the lip, as its kind's rules have it: a vulture
+    // overhead does not jostle what is on the ground under it, nor is it jostled)
+    const away = (m: Monster): boolean => {
+      const r1 = ACT1.on ? act1Rules(m.kind) : null;
+      return !!(r1 && r1.reachable && !r1.reachable(m));
+    };
     for (let i = 0; i < act.length; i++) {
       const a = act[i];
+      if (away(a)) continue;
       const ga = a.kind === 'bat' ? L.open : L.walk;
       for (let j = i + 1; j < act.length; j++) {
         const b = act[j];
+        if (away(b)) continue;
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const min = (a.r + b.r) * 0.85;
@@ -5135,9 +5143,11 @@ export class Game {
         const d = Math.sqrt(d2);
         const nx = d > 1e-4 ? dx / d : 1;
         const ny = d > 1e-4 ? dy / d : 0;
-        const push = (min - d) * 0.5;
-        this.slide(a, Math.min(a.r, 0.42), -nx * push, -ny * push, ga, true);
-        this.slide(b, Math.min(b.r, 0.42), nx * push, ny * push, b.kind === 'bat' ? L.open : L.walk, true);
+        // (a boss is not jostled by the small fry about him: the other gives way, the whole way)
+        const sa = a.boss && !b.boss ? 0 : b.boss && !a.boss ? 1 : 0.5;
+        const push = min - d;
+        if (sa > 0) this.slide(a, Math.min(a.r, 0.42), -nx * push * sa, -ny * push * sa, ga, true);
+        if (sa < 1) this.slide(b, Math.min(b.r, 0.42), nx * push * (1 - sa), ny * push * (1 - sa), b.kind === 'bat' ? L.open : L.walk, true);
       }
       // (not while the hero leaps or rolls over them, nor while a whirlwind carries the hero through)
       if (a.kind !== 'bat' && !h.move && !this.whirling()) {

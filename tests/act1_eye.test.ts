@@ -317,7 +317,15 @@ test('5. he never moves and never turns; a move of his figure begins as his roun
   let prev = eyeClock(m);
   let lastN = -1;
   const acts: string[] = [];
-  watch(g, m, 30, (t) => ({ mx: Math.cos(t * 0.7), my: Math.sin(t * 0.7) }), () => {
+  // (the hero goes round him on the ring, about 4 tiles out: he runs round, kept to that circle)
+  const round = (): { mx: number; my: number } => {
+    const dx = g.hero.x - m.x;
+    const dy = g.hero.y - m.y;
+    const r = Math.hypot(dx, dy) || 1;
+    const k = (4 - r) * 0.8;
+    return { mx: -dy / r + (dx / r) * k, my: dx / r + (dy / r) * k };
+  };
+  watch(g, m, 30, round, () => {
     assert.ok(m.x === x0 && m.y === y0, 'he stays in the middle of his pool');
     assert.ok(Math.abs(m.fx - Math.SQRT1_2) < 1e-9 && Math.abs(m.fy - Math.SQRT1_2) < 1e-9, 'facing the camera');
     if (m.act && m.act.n !== lastN) {
@@ -431,8 +439,11 @@ test('8. his splash: the wave strikes him as it rolls over where he stands; his 
     const at = stand(g, m, 100, 4.2);
     keep(m, 'eye:spew');
     let laid: { x: number; y: number }[] = [];
+    // (each eyespawn hatches by its own rules, game/act1_rules/spawn.ts: its hatching its first act)
+    const hatching = new Set<number>();
     const s = watch(g, m, 7.5, null as never, () => {
       for (const p of g.perils) if (p.a1 === 'eye:egg' && p.t <= 1 / 60 + 1e-9) laid.push({ x: p.x, y: p.y });
+      for (const o of g.monsters) if (o.kind === 'spawn' && o.act && o.act.id === 'spawn:hatch') hatching.add(o.id);
     });
     void s;
     assert.equal(laid.length, 3, 'three eggs land');
@@ -445,7 +456,7 @@ test('8. his splash: the wave strikes him as it rolls over where he stands; his 
     assert.equal(brood.length, 3, 'each hatches an eyespawn');
     for (const o of brood) {
       assert.equal(o.packId, m.packId, 'his');
-      assert.equal(o.a1?.hatch, 1, 'hatching (the Eyespawn\'s own rules take it from there)');
+      assert.ok(hatching.has(o.id), 'it hatched (the Eyespawn\'s own rules took it from there: its hatching its first act)');
     }
     laid = [];
     // (never more than SPAWN.most of them: no spew while they live)

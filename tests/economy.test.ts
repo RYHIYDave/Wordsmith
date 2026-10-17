@@ -111,7 +111,7 @@ test('words are scarce: a fully explored dungeon holds a handful, where it used 
         const lairs = new Map<number, boolean>();
         for (const m of g.monsters) {
           if (m.champion) lairs.set(m.packId, (lairs.get(m.packId) ?? false) || m.carries.length > 0);
-          else if (m.elite && !m.boss && (!m.rarity || f.packs[m.packId].tier === 'elite')) {
+          else if (m.elite && !m.boss && (!m.rarity || f.packs[m.packId]?.tier === 'elite')) {
             elites++;
             if (m.carries.length) eliteCarry++;
           }
