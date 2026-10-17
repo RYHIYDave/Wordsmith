@@ -90,3 +90,14 @@ and wild, behind a switch that is off (MELD_DROPS, art/meld_drops.ts), pictures 
 - Where and when: render/meld_drops.ts (riseOf, takenOf, givenOf, orbitAt); events 'dustGot', 'stoneGot',
   'stoneGiven' (state.ts). Tests: tests/meld_drops.test.ts. Films: tools/scenarios/meld_drops_film.mjs,
   tools/meld_drops_films.py.
+
+## To him for his OK (16 Oct, evening)
+
+- All 1748 unit tests passed on the merged build before the last two small fixes: boss names ("The X The Y"
+  became "The <words> X", game.ts) and the boss name card no longer carrying into town (main.ts).
+- Pictures re-taken at phone size with a level 20 hero (the Stag killed a level 1 hero even in god mode):
+  shots/rev; the review page https://claude.ai/artifact/NHzyq5nu2EuyLLfQiH3CT8 (made by
+  scratchpad make_page.py: floors, bosses, monsters, the Quarry stronghold, the way on and the way home).
+- Told him plainly on the page: the Drowned Eye's pictures take about 320 MB, so some approved moves of his are
+  left out for now; a phone memory check comes before release. Waiting: his OK on this page, and his answer on
+  the runedust and Meldstone films.
