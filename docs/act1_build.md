@@ -150,3 +150,12 @@ the boss's frames from the painter; "page" what Linux says the browser's page pr
     drum of the cult's camp stands between, and a monster that sees the hero within 2.5 tiles walks straight at
     him (Game.wayTo), as every monster does in the live game. In a pack the others bite. KNOWN, NOT MENDED for this
     version (the walking is every monster's): a small monster can be held up behind a prop it walks straight into.
+- RUN AGAIN, each twice on the same page (dist/copy.html; the mended playtests copied into the copy, nothing of src
+  changed: `find src -newer dist/copy.html` names nothing), 01:13:26 to 01:26:33: ALL 40 FINISHED CLEAN; the clock's
+  five alone; each did what had failed (the plates' first-word press opened the inventory; the Meldstone carried; the
+  crawlers climbed, swiped and leapt; the rubblings bit; the wolves bit).
+- guide_early_word, what it met: a new player's first floor, the hero set by the script among the urns at its start
+  (the first floor's pieces, 21.0's), the slow skeletons striking over them, and the clicks on them not bringing him
+  round; 28 blows in 40 s. Twice clean after; the floor is random each run. Not the descent's.
+- THE RELEASE BUILD in the copy (01:27): Play.html 2,778,149 bytes, dist/artifact.html 2,777,827, "V22.0 2026-10-17
+  05:27" (UTC); kept in the scratchpad's v220/release/.
