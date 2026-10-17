@@ -51,7 +51,9 @@ export default async function (page, snap) {
     });
     if (r.pics) {
       const fs = await import('node:fs');
-      for (const [k, url] of Object.entries(r.pics)) fs.writeFileSync(`${process.env.OUTDIR || 'shots/tops'}/diff_${k}.png`, Buffer.from(url.split(',')[1], 'base64'));
+      const dir = process.env.OUTDIR || 'shots/tops';
+      fs.mkdirSync(dir, { recursive: true });
+      for (const [k, url] of Object.entries(r.pics)) fs.writeFileSync(`${dir}/diff_${k}.png`, Buffer.from(url.split(',')[1], 'base64'));
       delete r.pics;
     }
     const ok = r.steadyOff.n === 0 && r.steadyOn.n === 0 && r.same.n === 0;
