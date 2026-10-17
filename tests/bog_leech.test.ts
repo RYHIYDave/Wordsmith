@@ -1,4 +1,4 @@
-// THE BOG LEECHES, FLOOR 10'S TINY MOB (src/art/bog_leech.ts; a mock-up nothing of the game imports), held to his
+// THE BOG LEECHES, FLOOR 10'S TINY MOB (src/art/bog_leech.ts; in the game through art/act1_figs/leech.ts), held to his
 // rulebook before he sees it: crisp in every frame, the enemy's pink edge round it while it lives, nothing cyan and
 // every light the enemy's fire, nothing of it cut off at its canvas's edge; its size (his pick: tiny, knee-high to
 // the knight when it rears); its round mouth of teeth (his pick), flaring open on its pink gullet.
@@ -11,6 +11,9 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { ACT1 } from '../src/game/act1';
+// (the bestiary throws the art chat's switches for the descent's kinds with the descent's own: useAct1Figs)
+import '../src/art/bestiary';
 import { BL_ATTACK, BL_DIE, BL_HIT, BL_LAND, BL_LATCH, BL_LETGO, BL_LONG, BL_PACE, BL_POP, BL_REEL, BL_STAND, BL_WALK, BL_WARN, GULLET, LEECH_ON, attackPose, leechPainted, makeLeechArt, reelPose, slitherPose, standPose } from '../src/art/bog_leech';
 import { TILE3 } from '../src/art/new_mobs3';
 import type { V3 } from '../src/art/skeleton';
@@ -74,12 +77,21 @@ const pinkOf = (px: Px): number => {
   return n;
 };
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(LEECH_ON.on, false);
+// (IN THE GAME since the descent came in, 16 Oct 2026: through art/act1_figs/leech.ts alone, its switch on with the
+// descent's; until then a mock-up nothing of the game imported, its switch off)
+test('in the game through art/act1_figs/leech.ts alone, its switch on with the descent', () => {
+  assert.equal(LEECH_ON.on, ACT1.on);
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('bog_leech.ts')) continue;
-    assert.ok(!/from ['"][^'"]*\/bog_leech['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Bog Leech`);
+    if (!f.endsWith('.ts') || f.startsWith('dev')) continue;
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (parts.join('/') === 'art/bog_leech') users.push(f);
+    }
   }
+  assert.equal(users.join(', '), 'art/act1_figs/leech.ts', 'only its pictures for the game import the Bog Leech');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge), and the pink edge round it while it lives', () => {

@@ -461,13 +461,18 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   scorpion: { kind: 'scorpion', name: 'Canyon Scorpion', life: 34, dmgMin: 9, dmgMax: 14, speed: 2.0, radius: 0.42, range: 1.7, windup: 0.3, cooldown: 1.5, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   // (THE DUST DEVIL: a shade's; thin; at the pace its dust trail is painted for, DD_PACE)
   devil: { kind: 'devil', name: 'Dust Devil', life: 14, dmgMin: 4, dmgMax: 7, speed: 2.4, radius: 0.28, range: 1.28, windup: 0.5, cooldown: 1.6, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  // FLOOR 9, THE PINEWOOD: the twisted deer, medium (an antler gore; a rearing stomp); the fog wolves, small (a bite).
-  deer: { kind: 'deer', name: 'Twisted Deer', life: 44, dmgMin: 11, dmgMax: 16, speed: 1.8, radius: 0.5, range: 1.1, windup: 0.55, cooldown: 1.8, xp: 15, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
-  wolf: { kind: 'wolf', name: 'Fog Wolf', life: 15, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.3, range: 1.2, windup: 0.5, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // FLOOR 9, THE PINEWOOD: the twisted deer, medium (an antler gore; a rearing stomp); the fog wolves, small (a bite;
+  // they circle to come at you from behind). Each at the pace its walk was painted for (game/act1_rules/deer.ts, wolf.ts):
+  // the deer between the Boneward and the green troll, in life and in blow; the wolf a little more than a Shade.
+  deer: { kind: 'deer', name: 'Twisted Deer', life: 44, dmgMin: 11, dmgMax: 16, speed: 1.8, radius: 0.45, range: 1.12, windup: 0.55, cooldown: 1.8, xp: 15, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  wolf: { kind: 'wolf', name: 'Fog Wolf', life: 15, dmgMin: 5, dmgMax: 8, speed: 3.0, radius: 0.3, range: 1.22, windup: 0.5, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   // FLOOR 10, THE SUNKEN FEN: the Drowned, small (they rise and grab); the bog leeches, tiny (they latch on and drink); the eyespawn, medium (a lash; a gaze beam).
-  drowned: { kind: 'drowned', name: 'Drowned', life: 18, dmgMin: 6, dmgMax: 9, speed: 0.7, radius: 0.32, range: 1.0, windup: 0.667, cooldown: 2.0, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  leech: { kind: 'leech', name: 'Bog Leech', life: 7, dmgMin: 2, dmgMax: 4, speed: 2.4, radius: 0.22, range: 0.95, windup: 0.633, cooldown: 2.2, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
-  spawn: { kind: 'spawn', name: 'Eyespawn', life: 40, dmgMin: 10, dmgMax: 14, speed: 1.1, radius: 0.48, range: 1.15, windup: 0.533, cooldown: 1.8, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // (game/act1_rules/drowned.ts, leech.ts, spawn.ts.) The Drowned slow, at their shamble's pace, so a little more life than
+  // a cultist; the leeches less life than a bat and a lighter bite, for they go on drinking; the eyespawn a Boneward's
+  // life, its blow a little harder.
+  drowned: { kind: 'drowned', name: 'Drowned', life: 20, dmgMin: 6, dmgMax: 9, speed: 0.7, radius: 0.32, range: 1.06, windup: 20 / 30, cooldown: 2.0, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  leech: { kind: 'leech', name: 'Bog Leech', life: 7, dmgMin: 2, dmgMax: 4, speed: 2.4, radius: 0.22, range: 0.92, windup: 19 / 30, cooldown: 2.2, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
+  spawn: { kind: 'spawn', name: 'Eyespawn', life: 40, dmgMin: 10, dmgMax: 14, speed: 1.1, radius: 0.48, range: 1.15, windup: 16 / 30, cooldown: 1.8, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   // THE FIVE BOSSES OF THE DESCENT (game/act1_bosses.ts: what each does): the Unfinished, the Carrion Queen,
   // the Cantor, the Hollow Stag, and the Drowned Eye, the act's, a bigger event than the cult's lair boss.
   unfinished: { kind: 'unfinished', name: 'The Unfinished', life: 480, dmgMin: 22, dmgMax: 30, speed: 0.9, radius: 1.0, range: 2.6, windup: 1.2, cooldown: 2.4, xp: 330, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },

@@ -1,4 +1,4 @@
-// THE EYESPAWN, FLOOR 10'S MEDIUM MOB (src/art/eyespawn.ts; a mock-up nothing of the game imports), held to his
+// THE EYESPAWN, FLOOR 10'S MEDIUM MOB (src/art/eyespawn.ts; in the game through art/act1_figs/spawn.ts), held to his
 // rulebook before he sees it: crisp in every frame, the enemy's pink edge round it while it lives, nothing cyan and
 // every light the enemy's fire, nothing of it cut off at its canvas's edge; its size (his pick: the knight's height);
 // its one staring eye (his pick), his eye small: its iris the enemy's fire, looking at you from in front, its light
@@ -12,6 +12,9 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { ACT1 } from '../src/game/act1';
+// (the bestiary throws the art chat's switches for the descent's kinds with the descent's own: useAct1Figs)
+import '../src/art/bestiary';
 import { ES_DIE, ES_GAZE, ES_HABITS, ES_HATCH, ES_LASH, ES_PACE, ES_R, ES_REEL, ES_STAND, ES_WALK, IRIS, SPAWN_ON, beamAt, dyingSpec, eyespawnPainted, eyespawnPose, gazeSpec, hatchSpec, haulSpec, lashSpec, makeEyespawnArt, reelSpec, standPose, standSpec } from '../src/art/eyespawn';
 import type { Spec } from '../src/art/eyespawn';
 import { TILE3 } from '../src/art/new_mobs3';
@@ -70,12 +73,21 @@ const irisOf = (px: Px): number => {
 };
 const blinking = (t: number): boolean => t > ES_HABITS.blink[0] - 0.02 && t < ES_HABITS.blink[1] + 0.02;
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(SPAWN_ON.on, false);
+// (IN THE GAME since the descent came in, 16 Oct 2026: through art/act1_figs/spawn.ts alone, its switch on with the
+// descent's; until then a mock-up nothing of the game imported, its switch off)
+test('in the game through art/act1_figs/spawn.ts alone, its switch on with the descent', () => {
+  assert.equal(SPAWN_ON.on, ACT1.on);
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('eyespawn.ts')) continue;
-    assert.ok(!/from ['"][^'"]*\/eyespawn['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Eyespawn`);
+    if (!f.endsWith('.ts') || f.startsWith('dev')) continue;
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (parts.join('/') === 'art/eyespawn') users.push(f);
+    }
   }
+  assert.equal(users.join(', '), 'art/act1_figs/spawn.ts', 'only its pictures for the game import the Eyespawn');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge), and the pink edge round it while it lives', () => {

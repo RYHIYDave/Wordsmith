@@ -1,4 +1,4 @@
-// THE DROWNED, FLOOR 10'S SMALL MOB (src/art/drowned.ts; a mock-up nothing of the game imports), held to his
+// THE DROWNED, FLOOR 10'S SMALL MOB (src/art/drowned.ts; in the game through art/act1_figs/drowned.ts), held to his
 // rulebook before he sees it: crisp in every frame, the enemy's pink edge round it while it lives, nothing cyan and
 // every light the enemy's fire, its size beside the knight (his pick: the knight's height, hunched), nothing of it
 // cut off at its canvas's edge, its eyes burning the Eye's gold.
@@ -11,6 +11,9 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { ACT1 } from '../src/game/act1';
+// (the bestiary throws the art chat's switches for the descent's kinds with the descent's own: useAct1Figs)
+import '../src/art/bestiary';
 import { checkBoss, findingsSaid, framesOf } from '../src/art/boss_checks';
 import { DROWNED_MOVES, drownedShape } from './drowned_shape';
 import { RIM_ALPHA } from '../src/art/kit';
@@ -73,12 +76,21 @@ function tallOf(sp: Sprite): number {
   return bottom - top + 1;
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(DROWNED_ON.on, false);
+// (IN THE GAME since the descent came in, 16 Oct 2026: through art/act1_figs/drowned.ts alone, its switch on with the
+// descent's; until then a mock-up nothing of the game imported, its switch off)
+test('in the game through art/act1_figs/drowned.ts alone, its switch on with the descent', () => {
+  assert.equal(DROWNED_ON.on, ACT1.on);
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('drowned.ts')) continue;
-    assert.ok(!/from ['"][^'"]*\/drowned['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Drowned`);
+    if (!f.endsWith('.ts') || f.startsWith('dev')) continue;
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (parts.join('/') === 'art/drowned') users.push(f);
+    }
   }
+  assert.equal(users.join(', '), 'art/act1_figs/drowned.ts', 'only its pictures for the game import the Drowned');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge), and the pink edge round it while it lives', () => {

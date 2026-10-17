@@ -1,5 +1,5 @@
-// FLOOR 9'S TWISTED DEER (src/art/twisted_deer.ts; a mock-up behind TWISTED_DEER_ON, off; nothing of the game imports
-// it), held to his art rulebook before he sees it, in every frame of every move, from in front and from behind:
+// FLOOR 9'S TWISTED DEER (src/art/twisted_deer.ts; in the game through art/act1_figs/deer.ts, TWISTED_DEER_ON on with
+// the descent), held to his art rulebook before he sees it, in every frame of every move, from in front and from behind:
 //   - crisp pixels; its pink edge while it lives; nothing cyan; every light the enemy's fire; its eyes burning;
 //     nothing cut off at its canvas's edge;
 //   - its size, his brief's (pony-sized: its back about the knight's chest, its antlers to about his head);
@@ -22,6 +22,9 @@ import nodeAssert from 'node:assert/strict';
 // @ts-ignore
 import * as nodeFs from 'node:fs';
 
+import { ACT1 } from '../src/game/act1';
+// (the bestiary throws the art chat's switches for the descent's kinds with the descent's own: useAct1Figs)
+import '../src/art/bestiary';
 import { DEER_DIE, DEER_FEET, DEER_GORE, DEER_HABITS, DEER_PACE, DEER_REEL, DEER_STAND, DEER_STOMP, DEER_WALK, TWISTED_DEER_ON, deerChipCount, deerFeet, deerLong, deerPainted, deerSolids, makeDeerArt } from '../src/art/twisted_deer';
 import { TILE3 } from '../src/art/new_mobs3';
 import { RIM_ALPHA } from '../src/art/kit';
@@ -122,12 +125,21 @@ function segGap(p1: number[], q1: number[], p2: number[], q2: number[]): number 
   return best;
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(TWISTED_DEER_ON.on, false);
+// (IN THE GAME since the descent came in, 16 Oct 2026: through art/act1_figs/deer.ts alone, its switch on with the
+// descent's; until then a mock-up nothing of the game imported, its switch off)
+test('in the game through art/act1_figs/deer.ts alone, its switch on with the descent', () => {
+  assert.equal(TWISTED_DEER_ON.on, ACT1.on);
+  const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('twisted_deer.ts')) continue;
-    assert.ok(!/from ['"][^'"]*\/twisted_deer['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the deer`);
+    if (!f.endsWith('.ts') || f.startsWith('dev')) continue;
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (parts.join('/') === 'art/twisted_deer') users.push(f);
+    }
   }
+  assert.equal(users.join(', '), 'art/act1_figs/deer.ts', 'only its pictures for the game import the deer');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge); its pink edge round it while it lives', () => {
