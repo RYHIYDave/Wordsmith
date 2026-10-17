@@ -1,5 +1,5 @@
 // ACT 1, THE DESCENT: A STRONGHOLD OF THE CULT, IN THE GAME (game/act1_holds.ts): its guards, its altar opened
-// beside the inventory and words laid in it, its door opened, the hall and its last fight, its reward, and out.
+// beside the inventory and words laid in it, its door opened, the hall and its last fight (with HOLD_WAVES, its five waves, each killed in turn), its reward, and out.
 //   node tools/build_to.mjs dist/act1.html
 //   DEPTH=6 node tools/playtest.mjs --file dist/act1.html --size 1014x468 --scenario tools/scenarios/act1_hold.mjs --out shots/act1/hold6
 // DEPTH: the floor (6 to 10). WORDS: how many words to lay (1 to 3). SEED: the run's (9).
@@ -58,24 +58,42 @@ export default async function (page, snap) {
   // (into the door)
   await page.evaluate(([gx, gy]) => { const g = window.__dbg.game(); g.hero.x = gx - 0.5; g.hero.y = gy + 0.4; }, info.gate);
   await page.waitForTimeout(1500);
-  const inside = await page.evaluate(() => {
+  // (who is in the hall: its old one pack, or, with HOLD_WAVES, the packs of its wave)
+  const hall = () => page.evaluate(() => {
     const g = window.__dbg.game();
     const st = g.level.holds[0];
-    const pack = g.monsters.filter((m) => !m.dead && m.packId === st.pack);
-    return { hero: [g.hero.x, g.hero.y], entered: st.entered, pack: pack.map((m) => [m.kind, m.name, m.rarity, m.words, m.life]) };
+    const ids = [st.pack, ...(st.packs ?? [])];
+    const pack = g.monsters.filter((m) => !m.dead && ids.includes(m.packId));
+    return { hero: [g.hero.x, g.hero.y], entered: st.entered, wave: st.wave ?? 0, won: !!st.won, pack: pack.map((m) => [m.kind, m.name, m.rarity, m.words, m.life]) };
   });
+  const inside = await hall();
   log('inside', JSON.stringify(inside));
   if (!inside.entered) log('!! not in the hall');
-  if (inside.pack.length !== 4) log(`!! the hall's pack is ${inside.pack.length}, not 4`);
+  if (!inside.pack.length) log('!! no one in the hall');
+  if (!inside.wave && inside.pack.length !== 4) log(`!! the hall's pack is ${inside.pack.length}, not 4`);
   await snap('e_hall');
   await page.waitForTimeout(1500);
   await snap('f_hall_fight');
-  await page.evaluate(() => {
-    const g = window.__dbg.game();
-    const st = g.level.holds[0];
-    for (const m of g.monsters) if (!m.dead && m.packId === st.pack) g.kill(m);
-  });
-  await page.waitForTimeout(1800);
+  // (every one in the hall killed, wave after wave, until it falls)
+  let seen = [];
+  for (let i = 0; i < 8; i++) {
+    const now = await hall();
+    if (now.won) break;
+    if (now.wave) seen.push(now.wave);
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const st = g.level.holds[0];
+      const ids = [st.pack, ...(st.packs ?? [])];
+      for (const m of g.monsters) if (!m.dead && ids.includes(m.packId)) g.kill(m);
+    });
+    // (the next wave comes 2 s after the last is dead)
+    await page.waitForTimeout(2800);
+    if (i === 1) await snap('f2_wave');
+  }
+  seen = [...new Set(seen)];
+  log('waves', JSON.stringify(seen));
+  if (inside.wave && seen.length !== 5) log(`!! waves seen ${seen.join(',')}, not 1 to 5`);
+  await page.waitForTimeout(600);
   const won = await page.evaluate(() => { const g = window.__dbg.game(); return { st: g.level.holds[0], drops: g.drops.map((d) => [d.kind, d.gold]) }; });
   log('won', JSON.stringify(won));
   if (!won.st.won) log('!! the stronghold did not fall');
