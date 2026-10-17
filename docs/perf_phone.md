@@ -43,3 +43,16 @@ all of it the floor's monsters' pictures painted ahead (Bestiary.warm), a frame'
    where anything comes between them or one is seen through. Drawn a frame: about 290 pictures covering 8 screens
    (was 1,300 covering 90). The SAME PICTURE TO THE PIXEL: tools/scenarios/tops_same.mjs draws the frame with and
    without, at 20 moments each for the warrior, the mage and the ranger (with the same random numbers): all the same.
+
+# Third report (17 Oct, 08:27 to 08:47): all five changes (dist/perf7.html), this machine at its own speed
+place: arrive worst/over50 | play fps/over34/over50 | boss fps/over34/over50 worst
+town (really town now): 50/0 | 59.9 / 0 / 0
+6:     33/0   | 60 / 0 / 0    | unfinished 59.8/0/0 worst 33  (first report 55.6, second 49.4)
+7:     33/0   | 59.9 / 0 / 0  | queen 59/1/0 worst 50         (43.3, 56.7)
+8:     50/0   | 59.8 / 0 / 0  | cantor 51.7/21/14 worst 467   (48.9, 53)
+9:     100/1  | 38 / 16 / 6   | stag 54.8/14/8 worst 183      (39.5, 43)
+10:    50/0   | 59.9 / 0 / 0  | eye 58.9/1/0; risen 59.7/0/0
+Arrivals: frames over 50 ms on coming into a place, first report 23 to 43 on the outdoor floors, now 0 or 1.
+(canvasMB is lower than before because pictures handed over by the workers are ImageBitmaps, not canvases, and are not
+counted by tools/canvas_room.js: it is not less memory. pageMB, the page process's, is the measure of that.)
+Left: the Pinewood in play (38) and one long stall in the Cantor's fight (467 ms).

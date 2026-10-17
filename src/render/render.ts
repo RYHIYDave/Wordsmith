@@ -3208,6 +3208,8 @@ export class Renderer {
   private standTops(W: number, H: number, heroX: number, heroY: number, L: Game['level']): void {
     this.frameChunks.length = 0;
     this.seenChunks.length = 0;
+    // (for measuring: the tops left out)
+    if (this.skip.has('tops')) return;
     const T = this.outdoor.terrain();
     if (!T) return;
     const cam = this.cam;
@@ -3275,6 +3277,7 @@ export class Renderer {
     const s1 = Math.floor((relY + H + 160) / slabPx);
     const gather = (s: number, c: number): CachedTree[] => this.gatherTops(T, s, c);
     const began = performance.now();
+    this.topsBegan = began;
     let made = 0;
     const seen = this.seenChunks;
     for (let s = s0; s <= s1; s++) {
@@ -3313,11 +3316,14 @@ export class Renderer {
       }
     }
     this.thinDrawn.clear();
+    tc.stats.thin = 0;
     for (const ch of seen) {
-      if (ch.sp && (thin.size === 0 || !ch.trees.some((t) => thin.has(t.top)))) {
-        this.stands.push({ d: ch.s * SLAB, q: this.stands.length, s: ch.sp, x: cam.ox + ch.x0, y: cam.oy + ch.y0, over: null, overA: 0, scale: 1, alpha: 1, figure: null, phase: 0, chunk: ch });
-        this.frameChunks.push(ch);
-        tc.stats.pictures++;
+      const seenThrough = thin.size > 0 && ch.trees.some((t) => thin.has(t.top));
+      if (ch.sp && !seenThrough) this.standChunk(ch, false);
+      else if (ch.sp) {
+        // (one of its trees seen through: drawn as its four layers, the one that holds that tree tree by tree)
+        tc.stats.thin++;
+        this.standLayers(ch, false);
       } else this.standChunkTrees(ch);
     }
     // (while there is time, the chunks round the screen, for where the camera goes next)
@@ -3335,6 +3341,36 @@ export class Renderer {
     const pj1 = Math.floor(((relY + H) * 2) / GROUND_PIECE) + 3;
     if (this.outdoorFrame++ % 30 === 0) this.act1.forgetTops((i, j) => i >= pi0 - 6 && i <= pi1 + 6 && j >= pj0 - 6 && j <= pj1 + 6);
   }
+  /** When this frame's making of the forest's pictures began (it may go on for TOPS_BUILD_MS). */
+  private topsBegan = 0;
+
+  /** (ACT 1) A chunk's picture, to be drawn in its place (`late`: after everything else that stands was come to: in the trees' place in the order still). */
+  private standChunk(ch: Chunk, late: boolean): void {
+    const cam = this.cam;
+    this.stands.push({ d: ch.s * ch.depth, q: late ? this.topsQ - 0.5 : this.stands.length, s: ch.sp as Sprite, x: cam.ox + ch.x0, y: cam.oy + ch.y0, over: null, overA: 0, scale: 1, alpha: 1, figure: null, phase: 0, chunk: ch });
+    this.frameChunks.push(ch);
+    this.topsCache.stats.pictures++;
+  }
+
+  /** (ACT 1) A chunk drawn as its four layers (render/tops_cache.ts `layers`): each its picture, or its trees where one is seen through or it has no picture yet. The layers drawn as pictures, returned. */
+  private standLayers(ch: Chunk, late: boolean): Chunk[] {
+    const tc = this.topsCache;
+    const thin = this.thinTops;
+    const out: Chunk[] = [];
+    for (const sub of tc.layers(ch, this.topsFrame)) {
+      if (thin.size > 0 && sub.trees.some((t) => thin.has(t.top))) {
+        this.standChunkTrees(sub);
+        continue;
+      }
+      if (!sub.sp && performance.now() - this.topsBegan < TOPS_BUILD_MS) tc.paint(sub, RES);
+      if (sub.sp) {
+        this.standChunk(sub, late);
+        out.push(sub);
+      } else this.standChunkTrees(sub);
+    }
+    return out;
+  }
+
   /** The trees seen through this frame, and how much; those of them drawn so far this frame (each is drawn whole, once). */
   private thinTops = new Map<unknown, number>();
   private thinDrawn = new Set<unknown>();
@@ -3403,21 +3439,40 @@ export class Renderer {
    * its trees (in its slab, overlapping a tree deeper than itself) is drawn as its trees after all.
    */
   private resolveTops(): void {
-    const chunks = this.frameChunks;
-    if (chunks.length === 0) return;
+    if (this.frameChunks.length === 0) return;
+    // (a chunk that falls is drawn as its four layers, and they are looked at in turn; a layer that falls, as its trees)
+    let pending = this.frameChunks.slice();
+    let fell = 0;
+    for (let pass = 0; pass < 2 && pending.length > 0; pass++) {
+      const bad = this.topsBetween(pending);
+      if (bad.size === 0) break;
+      fell += bad.size;
+      for (const st of this.stands) if (st.chunk && bad.has(st.chunk)) st.skip = true;
+      const next: Chunk[] = [];
+      for (const ch of bad) {
+        if (ch.depth === TOPS_CACHE.slab) next.push(...this.standLayers(ch, true));
+        else this.standChunkTrees(ch);
+      }
+      pending = next;
+    }
+    this.topsCache.stats.fell = fell;
+  }
+
+  /** (ACT 1) Of these chunks, those that something else that stands this frame comes between: in the chunk's slab, overlapping one of its trees that is deeper than itself. */
+  private topsBetween(chunks: Chunk[]): Set<Chunk> {
     const cam = this.cam;
-    const SLAB = TOPS_CACHE.slab;
     const bad = new Set<Chunk>();
-    const bySlab = new Map<number, Chunk[]>();
+    // (by how deep their slab is, then by which slab)
+    const byDepth = new Map<number, Map<number, Chunk[]>>();
     for (const ch of chunks) {
-      const list = bySlab.get(ch.s);
+      let m = byDepth.get(ch.depth);
+      if (!m) byDepth.set(ch.depth, (m = new Map()));
+      const list = m.get(ch.s);
       if (list) list.push(ch);
-      else bySlab.set(ch.s, [ch]);
+      else m.set(ch.s, [ch]);
     }
     for (const st of this.stands) {
-      if (st.top || st.chunk) continue;
-      const list = bySlab.get(Math.floor(st.d / SLAB));
-      if (!list) continue;
+      if (st.top || st.chunk || st.skip) continue;
       const s = st.s;
       const sc = st.scale;
       // (its picture's box, with what is drawn with it: a figure out of phase pulled apart sideways, a glow round it, a
@@ -3433,23 +3488,24 @@ export class Renderer {
         y0 = Math.min(y0, st.y - 58);
         y1 = Math.max(y1, st.y + 22);
       }
-      for (const ch of list) {
-        if (bad.has(ch)) continue;
-        const bx0 = cam.ox + ch.x0;
-        const by0 = cam.oy + ch.y0;
-        if (x1 <= bx0 || x0 >= bx0 + ch.w || y1 <= by0 || y0 >= by0 + ch.h) continue;
-        for (const t of ch.trees) {
-          if (t.d <= st.d) continue;
-          if (x1 <= cam.ox + t.x0 || x0 >= cam.ox + t.x1 || y1 <= cam.oy + t.y0 || y0 >= cam.oy + t.y1) continue;
-          bad.add(ch);
-          break;
+      for (const [depth, m2] of byDepth) {
+        const list = m2.get(Math.floor(st.d / depth));
+        if (!list) continue;
+        for (const ch of list) {
+          if (bad.has(ch)) continue;
+          const bx0 = cam.ox + ch.x0;
+          const by0 = cam.oy + ch.y0;
+          if (x1 <= bx0 || x0 >= bx0 + ch.w || y1 <= by0 || y0 >= by0 + ch.h) continue;
+          for (const t of ch.trees) {
+            if (t.d <= st.d) continue;
+            if (x1 <= cam.ox + t.x0 || x0 >= cam.ox + t.x1 || y1 <= cam.oy + t.y0 || y0 >= cam.oy + t.y1) continue;
+            bad.add(ch);
+            break;
+          }
         }
       }
     }
-    if (bad.size === 0) return;
-    for (const st of this.stands) if (st.chunk && bad.has(st.chunk)) st.skip = true;
-    for (const ch of bad) this.standChunkTrees(ch);
-    this.topsCache.stats.fell = bad.size;
+    return bad;
   }
 
   private light(W: number, H: number, game: Game, t: number, fx: Fx): void {

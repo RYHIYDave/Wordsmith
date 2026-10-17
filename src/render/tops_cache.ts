@@ -64,6 +64,10 @@ export interface Chunk {
   h: number;
   /** The frame it was last near the screen. */
   used: number;
+  /** How deep its slab is (tiles): TOPS_CACHE.slab, or a quarter of it for a chunk's four layers. */
+  depth: number;
+  /** Its four layers, each a quarter of its slab deep (made when it is first drawn as them: see `layers`). */
+  subs: Chunk[] | null;
 }
 
 export const chunkKey = (s: number, c: number): number => (s + 32768) * 65536 + (c + 32768);
@@ -74,7 +78,7 @@ export class TopsCache {
   /** The slab and column the chunks held were cut to. */
   private cut = '';
   /** For measuring: chunks made, drawn as pictures and drawn as their trees this frame; trees drawn one by one this frame. */
-  readonly stats = { made: 0, pictures: 0, fell: 0, trees: 0, held: 0 };
+  readonly stats = { made: 0, pictures: 0, fell: 0, thin: 0, trees: 0, held: 0 };
 
   /** This frame's floor: a new one lets go of every picture of the last. */
   begin(owner: unknown): void {
@@ -91,7 +95,10 @@ export class TopsCache {
   }
 
   clear(): void {
-    for (const ch of this.chunks.values()) drop(ch);
+    for (const ch of this.chunks.values()) {
+      for (const sub of ch.subs ?? []) drop(sub);
+      drop(ch);
+    }
     this.chunks.clear();
     this.owner = null;
     this.stats.held = 0;
@@ -103,18 +110,32 @@ export class TopsCache {
     let ch = this.chunks.get(key);
     if (!ch) {
       const trees = gather(s, c).sort((a, b) => a.d - b.d || a.order - b.order);
-      let y0 = Infinity;
-      let y1 = -Infinity;
-      for (const t of trees) {
-        if (t.y0 < y0) y0 = t.y0;
-        if (t.y1 > y1) y1 = t.y1;
-      }
-      const top = trees.length ? Math.floor(y0) : 0;
-      ch = { key, s, c, trees, sp: null, x0: c * TOPS_CACHE.column, y0: top, w: TOPS_CACHE.column, h: trees.length ? Math.ceil(y1) - top : 0, used: frame };
+      ch = made(key, s, c, trees, TOPS_CACHE.slab, frame);
       this.chunks.set(key, ch);
     }
     ch.used = frame;
     return ch;
+  }
+
+  /**
+   * A chunk's four layers, each a quarter of its slab deep, with a picture each: drawn in its place where one of its trees
+   * is seen through, or something comes between them, so that only the layer that holds that tree, or that the thing is
+   * in, is drawn tree by tree. (Made the first time they are wanted, and kept with it.)
+   */
+  layers(ch: Chunk, frame: number): Chunk[] {
+    if (!ch.subs) {
+      const depth = ch.depth / 4;
+      const by = new Map<number, CachedTree[]>();
+      for (const t of ch.trees) {
+        const k = Math.floor(t.d / depth);
+        const list = by.get(k);
+        if (list) list.push(t);
+        else by.set(k, [t]);
+      }
+      ch.subs = [...by.entries()].sort((a, b) => a[0] - b[0]).map(([k, trees]) => made(-1, k, ch.c, trees, depth, frame));
+    }
+    for (const sub of ch.subs) sub.used = frame;
+    return ch.subs;
   }
 
   /** Lay a chunk's trees into its picture (`res`: picture pixels a game pixel, the screen's). */
@@ -139,12 +160,37 @@ export class TopsCache {
   /** Let go of the chunks that have not been near the screen for a while. */
   forget(frame: number): void {
     for (const [key, ch] of this.chunks) {
+      // (a chunk's layers not drawn for a while let go of, the chunk kept)
+      if (ch.subs && ch.subs.every((sub) => frame - sub.used > KEEP_FRAMES)) {
+        for (const sub of ch.subs) {
+          if (sub.sp) this.stats.held--;
+          drop(sub);
+        }
+        ch.subs = null;
+      }
       if (frame - ch.used <= KEEP_FRAMES) continue;
+      for (const sub of ch.subs ?? []) {
+        if (sub.sp) this.stats.held--;
+        drop(sub);
+      }
       if (ch.sp) this.stats.held--;
       drop(ch);
       this.chunks.delete(key);
     }
   }
+}
+
+/** A chunk of these trees (sorted as the game draws them), its box round them. */
+function made(key: number, s: number, c: number, trees: CachedTree[], depth: number, frame: number): Chunk {
+  let y0 = Infinity;
+  let y1 = -Infinity;
+  for (const t of trees) {
+    if (t.y0 < y0) y0 = t.y0;
+    if (t.y1 > y1) y1 = t.y1;
+  }
+  const top = trees.length ? Math.floor(y0) : 0;
+  const w = TOPS_CACHE.column;
+  return { key, s, c, trees, sp: null, x0: c * w, y0: top, w, h: trees.length ? Math.ceil(y1) - top : 0, used: frame, depth, subs: null };
 }
 
 function drop(ch: Chunk): void {
