@@ -646,7 +646,8 @@ test('the Fleshmancer drops runedust and the Meldstone (with MELD off, neither);
     for (const d of [...g.drops.filter((q) => q.kind === 'dust' || q.kind === 'stone')]) {
       h.x = d.x;
       h.y = d.y;
-      for (let k = 0; k < 30; k++) g.update(DT, c);
+      // (five seconds: with STONE_RISE on, both wait under the floor while he is dragged down, then burst up)
+      for (let k = 0; k < 300; k++) g.update(DT, c);
     }
     assert.equal(h.dust, MELD_TUNE.fleshmancerDust, 'runedust counted');
     assert.equal(h.meld, 'stone', 'the Meldstone carried');

@@ -251,7 +251,8 @@ test('the rules say when runedust is taken, and when the Meldstone is given to t
     h.x = dust.x;
     h.y = dust.y;
     g.events.length = 0;
-    for (let k = 0; k < 30; k++) g.update(DT, emptyControls());
+    // (five seconds: the runedust waits under the floor while he is dragged down, STONE_RISE, then bursts up)
+    for (let k = 0; k < 300; k++) g.update(DT, emptyControls());
     const got = g.events.find((e) => e.t === 'dustGot');
     assert.ok(got && got.t === 'dustGot' && got.n === MELD_TUNE.fleshmancerDust, 'runedust taken, and how much');
     const t = seasoned(new Game('warrior', 15), 10);
