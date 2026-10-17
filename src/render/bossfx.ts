@@ -25,7 +25,7 @@ import { TILE3, handAt } from '../art/new_mobs3';
 import type { GameView } from '../art/skin';
 import { flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { AMALGAM, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
+import { AMALGAM, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, actClock, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
 import type { GaitedKind } from '../game/bosses';
 import { backView, beside, flipped } from '../game/facing';
 import type { Game } from '../game/game';
@@ -119,7 +119,8 @@ export class BossFx {
       const a = actDef(m);
       if (!a) continue;
       const act = m.act;
-      const T = act.t;
+      // (where in its pictures the act is: actClock, for one with a stretch played round and round)
+      const T = actClock(actDef(m), act.t);
       const mat = this.mirrored(at, m, act.hand);
       const B = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
       switch (act.id) {
@@ -270,7 +271,8 @@ export class BossFx {
     for (const m of game.monsters) {
       if (m.dead || !m.act || m.state !== 'act' || !m.seen) continue;
       const act = m.act;
-      const T = act.t;
+      // (where in its pictures the act is: actClock, for one with a stretch played round and round)
+      const T = actClock(actDef(m), act.t);
       const { view, flip } = viewOf(m.fx, m.fy);
       const turned = (s: Sprite): Sprite => (flip ? flipSprite(s) : s);
       const B = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
@@ -352,7 +354,8 @@ export class BossFx {
     for (const m of game.monsters) {
       if (m.dead || !m.act || m.state !== 'act' || !m.seen) continue;
       const act = m.act;
-      const T = act.t;
+      // (where in its pictures the act is: actClock, for one with a stretch played round and round)
+      const T = actClock(actDef(m), act.t);
       const B = (fwd: number, left: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, act.hand, fwd, left);
       if (act.id === 'hook') {
         const p = hookAt(T, act.a);

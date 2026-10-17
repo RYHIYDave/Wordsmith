@@ -108,6 +108,20 @@ export interface ActDef {
   far: number;
   /** It is not chosen: it comes when the rules bring it (a chain breaks, a beast bursts out, a beast is made or dragged). */
   forced?: boolean;
+  /**
+   * A stretch of its pictures played round and round (the Chained One's chain whirl, made longer: CHAINED_SPIN): from `at`
+   * for `span` seconds, again and again for `extra` seconds more; `long` counts them in. `actClock` says where in its
+   * pictures (and in its own timings) the act is.
+   */
+  loop?: { at: number; span: number; extra: number };
+}
+
+/** Where in its pictures, and in its own timings, an act `t` seconds in is (its `loop` played round and round). */
+export function actClock(a: ActDef | null | undefined, t: number): number {
+  const L = a?.loop;
+  if (!L || t < L.at + L.span) return t;
+  if (t < L.at + L.span + L.extra) return L.at + ((t - L.at) % L.span);
+  return t - L.extra;
 }
 export const ACTS: Record<GaitedKind, readonly ActDef[]> = {
   // THE HEADSMAN: his chop; the wide sweep when the hero is at his feet; the whirling throw at one who
@@ -122,7 +136,8 @@ export const ACTS: Record<GaitedKind, readonly ActDef[]> = {
   // who stands off in to him; the ball, his biggest, while he has it. His chains break as he is hurt.
   chained: [
     { id: 'lash', clip: 'attack', long: 1.74, hit: 0.86, dmg: 0.9, cooldown: 0, first: 0, after: 0.4, near: 0, far: 3.0 },
-    { id: 'whirl', clip: 'whirl', long: 2.6, hit: 0.8, dmg: 0.55, cooldown: 10, first: 5, after: 0.6, near: 0, far: 2.5 },
+    // (CHAINED_SPIN: longer, and he walks after the hero as he whirls: two whole turns of his chains played round and round)
+    { id: 'whirl', clip: 'whirl', long: 2.6 + 3 * ((4 * Math.PI * (1.87 - 0.85)) / 18.5), hit: 0.8, dmg: 0.55, cooldown: 10, first: 5, after: 0.6, near: 0, far: 2.5, loop: { at: 0.85, span: (4 * Math.PI * (1.87 - 0.85)) / 18.5, extra: 3 * ((4 * Math.PI * (1.87 - 0.85)) / 18.5) } },
     { id: 'hook', clip: 'hook', long: 3.15, hit: 1.2, dmg: 0.5, cooldown: 8, first: 2.5, after: 0.15, near: 3.0, far: 7.5 },
     { id: 'ball', clip: 'ball', long: 4.11, hit: 1.78, dmg: 1.5, cooldown: 12, first: 7, after: 0.6, near: 3.2, far: 4.9 },
     { id: 'breakL', clip: 'breakL', long: 2.3, hit: 0.8, dmg: 0.5, cooldown: 0, first: 0, after: 0.3, near: 0, far: 0, forced: true },
@@ -204,6 +219,14 @@ export const CHAINED = {
   /** The ball: thrown at `let`, it comes down `reach` tiles before him at `land`, and harms within `r`. */
   ball: { let: 1.78, land: 2.22, back: 3.26, reach: 4.0, r: 1.5, warnFrom: 0.9 },
 };
+
+/**
+ * THE CHAINED ONE'S WHIRL, LONGER, AND AFTER YOU. The owner, 17 Oct 2026, 11:37: "I’d like the unchained spin to be longer
+ * and move like whirlwind so he chases you." So his chain whirl goes round three times as long again (its pictures' two
+ * whole turns of his chains played round: ActDef.loop), and as he whirls he walks after the hero at `chase` tiles a
+ * second, as the hero's own Whirlwind carries him.
+ */
+export const CHAINED_SPIN = { on: true, chase: 1.7 };
 
 /** THE OSSUARY AMALGAMATION. */
 export const AMALGAM = {
@@ -729,12 +752,22 @@ export class BossRules {
       }
       case 'whirl': {
         const W = CHAINED.whirl;
+        // (CHAINED_SPIN: his whirl the longer by its loop; its chains go on round at their pace all through it)
+        const more = a.loop ? a.loop.extra : 0;
+        const to = W.to + more;
         if (at(W.from)) g.sfx('swing', 1);
-        if (t1 <= W.from || t0 >= W.to) break;
+        if (t1 <= W.from || t0 >= to) break;
+        // (and he comes on after the hero as he whirls)
+        if (CHAINED_SPIN.on && dist > 0.9) {
+          const step = Math.min(dist - 0.9, CHAINED_SPIN.chase * dt);
+          const vx = (h.x - m.x) / dist;
+          const vy = (h.y - m.y) / dist;
+          g.slide(m, Math.min(m.r, 0.42), vx * step, vy * step, g.level.walk, true);
+        }
         if (dist > W.reach + TUNE.heroRadius * 0.5 || t1 - act.a < W.gap) break;
         const r = this.rel(m);
         const bearing = Math.atan2(r.left, r.fwd);
-        const ang = (t: number): number => W.a0 + (W.turn * (Math.max(W.from, Math.min(W.to, t)) - W.from)) / (W.to - W.from);
+        const ang = (t: number): number => W.a0 + (W.turn * (Math.max(W.from, Math.min(to, t)) - W.from)) / (W.to - W.from);
         // (his right chain, and his left opposite it)
         if (this.passes(ang(t0), ang(t1), bearing) || this.passes(ang(t0) + Math.PI, ang(t1) + Math.PI, bearing)) {
           act.a = t1;

@@ -14,7 +14,7 @@ import type { Sprite } from '../engine/px';
 import { Tails } from '../engine/tails';
 import { TUNE } from '../game/defs';
 import type { MonsterMove, SkillKind } from '../game/defs';
-import { actDef } from '../game/bosses';
+import { actClock, actDef } from '../game/bosses';
 import type { ActId } from '../game/state';
 import type { ClassId, MonsterKind } from '../game/types';
 
@@ -249,7 +249,8 @@ export function gaitFrame(set: AnimSet, m: { state: string; animT: number; froze
   if (m.state === 'act' && m.act) {
     const a = actDef(m as { kind: MonsterKind; act: { id: ActId } });
     const clip = a ? (a.clip === 'attack' ? set.clips?.attack : more[a.clip]) : undefined;
-    if (clip) return clipFrame(clip, m.act.t);
+    // (an act with a stretch of its pictures played round and round is shown where in them it is: actClock)
+    if (clip) return clipFrame(clip, actClock(a, m.act.t));
   }
   // (ACT 1: struck, standing or going, it reels as its picture has it: `reel`, from the blow)
   const reel = set.clips?.reel;
