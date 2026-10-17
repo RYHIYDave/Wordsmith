@@ -5,7 +5,7 @@ import { actsOf } from './game/bosses';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
-import { makeHeroArt3 } from './art/heroes3';
+import { makeHeroArt3, THRUST } from './art/heroes3';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
 import { makeIconArt, useMeldArt } from './art/icons';
 import { MELD_DROPS, makeMeldDropsArt } from './art/meld_drops';
@@ -2210,6 +2210,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** BIG AND WILD (art/moves3.ts, WILD; render/wild.ts; the game's own since Version 19.7): playtests take it out and put it back, and the heroes are painted again (false: as they were). */
     wild: (on: boolean) => {
       useWild(on);
+      art.heroes = makeHeroArt3();
+    },
+    /** THE WARRIOR'S DIVING THRUST (art/heroes3.ts THRUST) in place of his leap, on or off. For films. */
+    thrust: (on: boolean) => {
+      THRUST.on = on;
       art.heroes = makeHeroArt3();
     },
     /** For films of a hero's habits: the hero does one of the two things they do when left standing (1 or 2) now, whatever the wait. */

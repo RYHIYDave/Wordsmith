@@ -3,7 +3,7 @@
 // the game's time (the game is slowed so that the camera keeps up). The hero stands before monsters
 // that cannot die and (but for the trap's) cannot move, and uses the skill on them.
 //   node tools/build_to.mjs dist/wild.html
-//   SKILL=whirlwind|leap|volley|trap|orb|warp node tools/playtest.mjs --file dist/wild.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/wild_skill.mjs --out shots/wild/<skill>_on
+//   SKILL=whirlwind|leap|thrust|leapgs|volley|trap|orb|warp node tools/playtest.mjs --file dist/wild.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/wild_skill.mjs --out shots/wild/<skill>_on
 //   env: OFF=1: the same with WILD off (as the game has it; the mage in her stances, as he last saw her)
 //        WAIT = milliseconds to let the room settle and the frames be painted first
 // A note beside the pictures (<out>_where.json) says where on the screen the hero stands.
@@ -18,6 +18,18 @@ const PLANS = {
   leap: {
     cls: 'warrior', weapon: 'sword', frames: 84,
     layout: [['skeleton', 4.2, -0.5, 'target'], ['skeleton', 4.9, 0.6], ['skeleton', 3.6, 0.7], ['cultist', 5.2, -0.6]],
+    at: { 8: ['evade', 3.9, 0.1], 50: ['evade', -3.9, -0.1] },
+  },
+  // (the warrior's diving thrust, art/heroes3.ts THRUST, in place of his leap: with the great sword)
+  thrust: {
+    cls: 'warrior', weapon: 'greatsword', frames: 84, thrust: true,
+    layout: [['skeleton', 4.6, -0.3, 'target'], ['skeleton', 5.3, 0.6], ['cultist', 5.4, -0.9]],
+    at: { 8: ['evade', 3.9, 0.1], 50: ['evade', -3.9, -0.1] },
+  },
+  // (his leap as the game has it, with the great sword and the thrust's monsters: to set beside the thrust)
+  leapgs: {
+    cls: 'warrior', weapon: 'greatsword', frames: 84,
+    layout: [['skeleton', 4.6, -0.3, 'target'], ['skeleton', 5.3, 0.6], ['cultist', 5.4, -0.9]],
     at: { 8: ['evade', 3.9, 0.1], 50: ['evade', -3.9, -0.1] },
   },
   volley: {
@@ -47,15 +59,16 @@ export default async function (page, snap) {
   const what = process.env.SKILL || 'whirlwind';
   const plan = PLANS[what];
   if (!plan) throw new Error('no such skill to film: ' + what);
-  const weapon = await page.evaluate(([cls, weapon, off, stances]) => {
+  const weapon = await page.evaluate(([cls, weapon, off, stances, thrust]) => {
     const d = window.__dbg; d.saving(false); d.practice(cls, 7); d.autoLevel = false; d.autoWords = false; d.god = true;
     if (stances) d.mageStances(true);
     d.wild(!off);
+    if (thrust) d.thrust(true);
     const g = d.game(); g.waveT = 1e9; g.monsters.length = 0; g.projectiles.length = 0;
     const h = g.hero;
     if (g.weapon() !== weapon) { const i = h.bag.findIndex((it) => it && it.weapon === weapon); if (i >= 0) g.equipFromBag(i); }
     return g.weapon();
-  }, [plan.cls, plan.weapon, off, !!plan.stances]);
+  }, [plan.cls, plan.weapon, off, !!plan.stances, !!plan.thrust]);
   await page.waitForTimeout(400);
   const ids = await page.evaluate(([layout, moving]) => {
     const d = window.__dbg; const g = d.game(); const h = g.hero;
