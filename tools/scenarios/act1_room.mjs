@@ -61,7 +61,7 @@ export default async function (page, snap) {
         }
         if (n) heavy[f] = { n, lazy, bitmapMB: +bm.toFixed(1), canvasMB: +cv.toFixed(1) };
       }
-      return { where: g.level.town ? 'town' : 'depth ' + g.depth, canvas: window.__canvasRoom(), figures: heavy, painter: { state: window.__dbg.painter.state, ...window.__dbg.painter.stats } };
+      return { where: g.level.town ? 'town' : 'depth ' + g.depth, canvas: window.__canvasRoom(), who: window.__canvasWho ? window.__canvasWho(12) : null, figures: heavy, painter: { state: window.__dbg.painter.state, ...window.__dbg.painter.stats } };
     });
     log('room ' + label, JSON.stringify({ ...inPage, os: room() }));
   };
