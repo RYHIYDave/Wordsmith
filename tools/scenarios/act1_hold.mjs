@@ -51,7 +51,9 @@ export default async function (page, snap) {
   if (await hands.mark('button:OPEN THE DOOR')) await hands.press('button:OPEN THE DOOR');
   else await page.keyboard.press('Enter');
   await page.waitForTimeout(900);
-  log('open', JSON.stringify(await page.evaluate(() => window.__dbg.game().level.holds[0])));
+  const opened = await page.evaluate(() => window.__dbg.game().level.holds[0]);
+  log('open', JSON.stringify(opened));
+  if (!opened.open) log('!! the door did not open');
   await snap('d_door_open');
   // (into the door)
   await page.evaluate(([gx, gy]) => { const g = window.__dbg.game(); g.hero.x = gx - 0.5; g.hero.y = gy + 0.4; }, info.gate);
@@ -63,6 +65,8 @@ export default async function (page, snap) {
     return { hero: [g.hero.x, g.hero.y], entered: st.entered, pack: pack.map((m) => [m.kind, m.name, m.rarity, m.words, m.life]) };
   });
   log('inside', JSON.stringify(inside));
+  if (!inside.entered) log('!! not in the hall');
+  if (inside.pack.length !== 4) log(`!! the hall's pack is ${inside.pack.length}, not 4`);
   await snap('e_hall');
   await page.waitForTimeout(1500);
   await snap('f_hall_fight');
@@ -72,7 +76,10 @@ export default async function (page, snap) {
     for (const m of g.monsters) if (!m.dead && m.packId === st.pack) g.kill(m);
   });
   await page.waitForTimeout(1800);
-  log('won', JSON.stringify(await page.evaluate(() => { const g = window.__dbg.game(); return { st: g.level.holds[0], drops: g.drops.map((d) => [d.kind, d.gold]) }; })));
+  const won = await page.evaluate(() => { const g = window.__dbg.game(); return { st: g.level.holds[0], drops: g.drops.map((d) => [d.kind, d.gold]) }; });
+  log('won', JSON.stringify(won));
+  if (!won.st.won) log('!! the stronghold did not fall');
+  if (!won.drops.some((d) => d[0] === 'dust')) log('!! no runedust in its reward');
   await snap('g_reward');
   // (out by the threshold)
   await page.evaluate(() => {

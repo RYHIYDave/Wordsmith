@@ -66,7 +66,7 @@ export default async function (page, snap) {
     return { hero: [+h.x.toFixed(2), +h.y.toFixed(2)], it: [+b.x.toFixed(2), +b.y.toFixed(2)], name: b.name, kind: b.kind, life: b.life, n: them.length };
   }, [kind, depth, n, far, hurt, BOSSES.includes(kind)]);
   log('it', JSON.stringify(where));
-  if (where.kind !== kind) log('NOTE', `the game made a ${where.kind}: ${kind} is not built yet (its rules are null), or is stood in for`);
+  if (where.kind !== kind) log('!!', `the game made a ${where.kind}: ${kind} is not built yet (its rules are null), or is stood in for`);
   if (act) {
     // (only that act: every other of its kind's is kept cooling; that one never)
     await page.evaluate((a) => {
@@ -105,9 +105,15 @@ export default async function (page, snap) {
     log('end', JSON.stringify(await state()));
     return;
   }
+  const acts = new Set();
   for (let i = 0; i < secs; i++) {
     await page.waitForTimeout(1000);
-    log(`t${i + 1}`, JSON.stringify(await state()));
+    const st = await state();
+    if (st.act) acts.add(st.act.split('@')[0]);
+    log(`t${i + 1}`, JSON.stringify(st));
     await snap(`s${String(i).padStart(2, '0')}`);
   }
+  log('acts', JSON.stringify([...acts]));
+  // (in the time watched, it must have done something of its own: a monster that only stands is broken)
+  if (secs >= 8 && !acts.size) log('!! it never acted');
 }

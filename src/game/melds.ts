@@ -29,12 +29,12 @@ export const MELD_HAND_IN = 'Give the Meldstone';
 
 /**
  * THE MELDSTONE BURSTS UP OUT OF THE FLESHMANCER'S PIT (its pictures: art/meld_drops.ts, behind MELD_DROPS,
- * off; main.ts sets `on` from it). With it on: his runedust and the Meldstone wait under the floor while he
+ * on; main.ts sets `on` from it). With it on: his runedust and the Meldstone wait under the floor while he
  * is dragged down (his death, 3.0 s; the pit grinds shut from 2.75), the Meldstone `wait` seconds and the
  * runedust `dustWait`, then burst up where he fell; and the Meldstone cannot be taken for `stands` seconds
  * while it rises and comes down to hang. Off, they drop at once, as before.
  */
-export const STONE_RISE = { on: false, wait: 2.6, dustWait: 2.75, stands: 1.2 };
+export const STONE_RISE = { on: true, wait: 2.6, dustWait: 2.75, stands: 1.2 };
 
 /** The colour runedust is told in (what glows on a friend is cyan, his rule). */
 export const MELD_DUST_COLOR = '#5ce8f8';

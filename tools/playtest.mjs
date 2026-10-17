@@ -24,6 +24,8 @@ const evalJs = opt('eval', '');
 const { chromium } = load('playwright');
 const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
 const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: Number(opt('dpr', '1')), hasTouch: flag('touch'), isMobile: flag('touch') });
+// --init FILE: a script run in the page before the game's own (for measuring: tools/canvas_room.js counts the canvases)
+if (opt('init', '')) await ctx.addInitScript({ path: path.resolve(ROOT, opt('init', '')) });
 const page = await ctx.newPage();
 let errors = 0;
 page.on('console', (m) => { if (m.type() === 'error') { errors++; console.log('[console error]', m.text()); } });

@@ -59,9 +59,9 @@ const all = everyPicture(art);
 
 const hex = (r: number, g: number, b: number): string => '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
 
-test('the switch is off: the stand-ins are drawn, and the rules drop as they did', () => {
-  assert.equal(MELD_DROPS.on, false);
-  assert.equal(STONE_RISE.on, false);
+test('the switch is on (his yes, 16 Oct, 22:17): the new runedust and Meldstone are drawn, and the rules hold them under the floor', () => {
+  assert.equal(MELD_DROPS.on, true);
+  assert.equal(STONE_RISE.on, true);
 });
 
 test('every picture is crisp, nothing of it cut off at its edge, and the light it gives is the friend\'s cyan', () => {

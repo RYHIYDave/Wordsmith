@@ -36,10 +36,11 @@ import { SLATE } from './quest3';
 import { GRID } from './skeleton';
 
 /**
- * The switch (off: the stand-ins of art/icons.ts are drawn, as before), and the moment on the clock the
- * hero took up the Meldstone (-1: not this run), which the screen's carried picture waits on.
+ * The switch (on since his yes of 16 Oct, 22:17, to the films: "Yes"; off, the stand-ins of art/icons.ts are
+ * drawn, as before), and the moment on the clock the hero took up the Meldstone (-1: not this run), which the
+ * screen's carried picture waits on.
  */
-export const MELD_DROPS = { on: false, takenAt: -1 };
+export const MELD_DROPS = { on: true, takenAt: -1 };
 
 /** Their light: the friend's cyan (CYAN), its deepest and its white. */
 const DEEP = '#0a3a4a';

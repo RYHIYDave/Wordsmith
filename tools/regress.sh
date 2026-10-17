@@ -388,6 +388,47 @@ run title_smith3_phone $P --scenario $S/title_smith3.mjs &
 run floorcard_phone $P --scenario $S/floorcard_first.mjs &
 FIGHT=0 run floorcard_pc --scenario $S/floorcard_first.mjs &
 wait
+# ACT 1, THE DESCENT (Version 22.0): each floor of it laid and seen with its monsters, each boss's fight (the
+# Drowned Eye in each of his three stages), each of its own kinds, a stronghold opened and won, the ways on and home,
+# the eyrie's view; wordmelding, the quest hand-in, and runedust and the Meldstone, all on
+DEPTH=6 FOES=1 run act1_floor6_phone $P --scenario $S/act1_floor.mjs &
+DEPTH=7 FOES=1 run act1_floor7 --scenario $S/act1_floor.mjs &
+DEPTH=8 FOES=1 run act1_floor8_upright $U --scenario $S/act1_floor.mjs &
+DEPTH=9 FOES=1 run act1_floor9 --scenario $S/act1_floor.mjs &
+DEPTH=10 FOES=1 run act1_floor10_phone $P --scenario $S/act1_floor.mjs &
+wait
+KIND=unfinished SECS=12 run act1_boss6_phone $P --scenario $S/act1_mob.mjs &
+KIND=queen SECS=12 run act1_boss7 --scenario $S/act1_mob.mjs &
+KIND=cantor SECS=12 CLS=ranger run act1_boss8 --scenario $S/act1_mob.mjs &
+KIND=stag SECS=12 CLS=mage run act1_boss9_phone $P --scenario $S/act1_mob.mjs &
+wait
+KIND=eye SECS=12 run act1_eye_phone $P --scenario $S/act1_mob.mjs &
+KIND=eye SECS=12 HURT=0.5 run act1_eye_risen --scenario $S/act1_mob.mjs &
+KIND=eye SECS=12 HURT=0.2 run act1_eye_blazing $P --scenario $S/act1_mob.mjs &
+wait
+for k in qgolem rubbling chanter firepot vulture crawler scorpion devil deer wolf drowned leech spawn; do
+  KIND=$k N=3 SECS=8 run act1_mob_$k $P --scenario $S/act1_mob.mjs &
+  [ "$k" = firepot ] || [ "$k" = devil ] || [ "$k" = drowned ] && wait
+done
+wait
+DEPTH=6 run act1_hold6_phone $P --scenario $S/act1_hold.mjs &
+DEPTH=8 WORDS=3 run act1_hold8 --scenario $S/act1_hold.mjs &
+DEPTH=10 WORDS=1 run act1_hold10_upright $U --scenario $S/act1_hold.mjs &
+DEPTH=7 run act1_eyrie --scenario $S/act1_eyrie.mjs &
+wait
+DEPTH=5 run act1_ways5 --scenario $S/act1_ways.mjs &
+DEPTH=6 run act1_ways6 $P --scenario $S/act1_ways.mjs &
+DEPTH=7 run act1_ways7 --scenario $S/act1_ways.mjs &
+DEPTH=8 run act1_ways8 --scenario $S/act1_ways.mjs &
+wait
+DEPTH=9 run act1_ways9 $P --scenario $S/act1_ways.mjs &
+DEPTH=10 run act1_ways10 --scenario $S/act1_ways.mjs &
+run act1_hand_in_phone $P --scenario $S/hand_in.mjs &
+run act1_meld_phone $P --scenario $S/meld_look.mjs &
+wait
+SCENE=fall run act1_meld_drops_fall $P --scenario $S/meld_drops_film.mjs &
+SCENE=give run act1_meld_drops_give $P --scenario $S/meld_drops_film.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

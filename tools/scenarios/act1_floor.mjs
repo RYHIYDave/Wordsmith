@@ -37,6 +37,11 @@ export default async function (page, snap) {
     };
   }, [depth, foes]);
   log('floor', JSON.stringify({ depth, ms: info.ms, size: [info.w, info.h], packs: info.packs, monsters: info.monsters, kinds: info.kinds, holds: info.holds.length }));
+  // (what every floor of the descent must have: open areas, a stronghold, its boss, and with FOES its monsters)
+  if (info.areas.length < 3) log(`!! only ${info.areas.length} areas`);
+  if (info.holds.length < 1) log('!! no stronghold');
+  if (info.monsters < 1) log('!! no boss');
+  if (foes && info.kinds.length < 3) log(`!! only these kinds on the floor: ${info.kinds.join(', ')}`);
   const go = async (x, y, name) => {
     await page.evaluate(([a, b]) => { const g = window.__dbg.game(); g.hero.x = a; g.hero.y = b; }, [x, y]);
     await page.waitForTimeout(900);
