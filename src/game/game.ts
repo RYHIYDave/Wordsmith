@@ -6354,10 +6354,10 @@ export class Game {
     if (quality === 1) opts.luck = TUNE.betterLuck;
     if (quality >= 2) opts.luck = TUNE.hoardLuck;
     if (quality === 3) opts.atLeast = 1;
-    // (LOOT2: 4, a rare at the least)
-    if (quality === 4) opts.atLeast = 2;
+    // (LOOT2: 4, the first of a boss's or a guardian's: never plain; from floor LOOT2.from, a rare at the least)
+    if (quality === 4) opts.atLeast = this.depth >= LOOT2.from ? 2 : 1;
     // (LOOT2: in the descent every roll the luckier)
-    if (LOOT2.on && this.depth >= 6) opts.luck = [(opts.luck?.[0] ?? 1) * LOOT2.deep, (opts.luck?.[1] ?? 1) * LOOT2.deep];
+    if (LOOT2.on && this.depth >= LOOT2.from) opts.luck = [(opts.luck?.[0] ?? 1) * LOOT2.deep, (opts.luck?.[1] ?? 1) * LOOT2.deep];
     return rollItem(Math.max(1, this.depth), this.rng, opts);
   }
 
@@ -6401,7 +6401,7 @@ export class Game {
       }
       this.addDrop('gold', m.x, m.y, rng.int(25, 45) * goldBase, null, null);
       const n = (LOOT2.on ? LOOT2.boss : TUNE.bossItems) + (this.depth % 5 === 0 ? TUNE.bossItemsFifth : 0);
-      for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? (i < LOOT2.bossRare ? 4 : 2) : i === 0 ? 3 : 1), null);
+      for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? (i === 0 ? 4 : 2) : i === 0 ? 3 : 1), null);
       this.addDrop('orb', m.x, m.y, 0, null, null);
       return;
     }
@@ -6418,8 +6418,7 @@ export class Game {
     }
     if (m.elite) {
       this.addDrop('gold', m.x, m.y, rng.int(8, 16) * goldBase, null, null);
-      if (rng.chance(LOOT2.on ? LOOT2.elite : TUNE.eliteItem)) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? 2 : 1), null);
-      if (LOOT2.on && rng.chance(LOOT2.elite2)) this.addDrop('item', m.x, m.y, 0, this.rollGear(2), null);
+      if (rng.chance(LOOT2.on ? LOOT2.elite : TUNE.eliteItem)) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on && this.depth >= LOOT2.from ? 2 : 1), null);
       return;
     }
     if (rng.chance(TUNE.dropGold)) this.addDrop('gold', m.x, m.y, rng.int(TUNE.goldMin, TUNE.goldMax) * goldBase, null, null);

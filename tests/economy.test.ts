@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { TUNE, WORDS, useFirstLevels } from '../src/game/defs';
+import { LOOT2, TUNE, WORDS, useFirstLevels } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -147,16 +147,17 @@ test('where a word turns up is luck: the same dungeon number gives different fin
       g.drops.length = 0;
       a.kill(m);
       assert.deepEqual(wordsOnFloor(g), [], `${m.name} had no rune over its head, and leaves no word`);
-      // (loot was scaled back on 4 Oct 2026: gold every time, a piece of gear about half the time)
+      // (loot was scaled back on 4 Oct 2026: gold every time, a piece of gear about half the time; LOOT2, 17 Oct, three times in four)
       assert.ok(g.drops.some((d) => d.kind === 'gold'), 'though it still pays in gold');
-      assert.ok(g.drops.filter((d) => d.kind === 'item').length <= 1, 'and never more than one piece of gear');
+      assert.ok(g.drops.filter((d) => d.kind === 'item').length <= (m.champion && LOOT2.on ? LOOT2.champion : 1), 'and never more than one piece of gear (a guardian, LOOT2: two)');
       // (a guardian always leaves a piece: it is the plain named monsters that leave one about half the time)
       if (m.champion) continue;
       paid++;
       if (g.drops.some((d) => d.kind === 'item')) geared++;
     }
   }
-  assert.ok(paid >= 40 && geared / paid > 0.3 && geared / paid < 0.7, `about half of the named monsters left gear (${geared} of ${paid})`);
+  const share = LOOT2.on ? LOOT2.elite : TUNE.eliteItem;
+  assert.ok(paid >= 40 && Math.abs(geared / paid - share) < 0.2, `about ${Math.round(share * 100)} in 100 of the named monsters left gear (${geared} of ${paid})`);
   assert.ok(shapes.size >= 18, `24 dungeons gave ${shapes.size} different sets of finds`);
   assert.ok(dry >= 1, 'and in some of them only the boss had a word to give');
   // every word can be the one that turns up
@@ -307,7 +308,9 @@ test('how scarce words are never changes the dungeon itself', () => {
 // sword not the actual name of the item. It will lower screen clutter ... And let's scale back
 // the drops").
 
-test('loot is scaled back: one piece from a guardian, two from a boss, one from a chest, and gold in fewer, bigger piles', () => {
+// LOOT2 (17 Oct 2026, his "The loot needs to be so much better"): a guardian two pieces, a boss three (four on floors 5 and
+// 10), an elite three times in four, an ordinary monster 4 in 100: still a few good pieces, as his rulebook has it.
+test('loot is scaled back: one piece from a guardian, two from a boss, one from a chest, and gold in fewer, bigger piles (LOOT2: two, three, and 4 in 100)', () => {
   let ordinary = 0;
   let ordinaryItems = 0;
   let piles = 0;
@@ -321,10 +324,12 @@ test('loot is scaled back: one piece from a guardian, two from a boss, one from 
         a.kill(m);
         const items = g.drops.filter((d) => d.kind === 'item');
         if (m.boss) {
-          assert.equal(items.length, TUNE.bossItems + (depth % 5 === 0 ? TUNE.bossItemsFifth : 0), `the boss of dungeon ${depth} leaves its hoard`);
+          assert.equal(items.length, (LOOT2.on ? LOOT2.boss : TUNE.bossItems) + (depth % 5 === 0 ? TUNE.bossItemsFifth : 0), `the boss of dungeon ${depth} leaves its hoard`);
+          if (LOOT2.on && depth >= LOOT2.from) assert.equal(items[0].item!.rarity, 2, 'in the descent, its first piece rare');
           assert.ok(items[0].item!.rarity >= 1, 'whose first piece is never plain (it is no longer rare for certain: gear is made good with words)');
         } else if (m.champion) {
-          assert.equal(items.length, 1, 'a guardian leaves one piece');
+          assert.equal(items.length, LOOT2.on ? LOOT2.champion : 1, 'a guardian leaves one piece (LOOT2: two)');
+          if (LOOT2.on) assert.ok(items[0].item!.rarity >= (depth >= LOOT2.from ? 2 : 1), 'its first never plain; in the descent, rare');
           // (it was always rare until 4 Oct 2026; now it is only likelier than usual to be good)
         } else if (m.elite) {
           assert.ok(items.length <= 1);
@@ -342,7 +347,8 @@ test('loot is scaled back: one piece from a guardian, two from a boss, one from 
     }
   }
   assert.ok(ordinary > 1000, `enough ordinary monsters to count (${ordinary})`);
-  assert.ok(ordinaryItems / ordinary < 0.05, `an ordinary monster leaves gear about 3 times in 100 (${ordinaryItems} of ${ordinary})`);
+  const plain = LOOT2.on ? LOOT2.item : TUNE.dropItem;
+  assert.ok(ordinaryItems / ordinary < plain * 1.67, `an ordinary monster leaves gear about ${Math.round(plain * 100)} times in 100 (${ordinaryItems} of ${ordinary})`);
   assert.ok(piles / ordinary > 0.2 && piles / ordinary < 0.3, `and gold about one time in four (${piles} of ${ordinary})`);
   assert.ok(coins > 0);
 });

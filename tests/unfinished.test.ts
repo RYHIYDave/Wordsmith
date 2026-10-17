@@ -65,10 +65,11 @@ function hue(r: number, g: number, b: number): [number, number] {
 
 // (IN THE GAME SINCE ACT 1 CAME IN, 16 Oct: through art/act1_figs/unfinished.ts, its pictures as the game holds a
 // monster, and render/act1_fx/unfinished.ts, what it throws and leaves; its switch goes on with the descent there,
-// art/bestiary.ts useAct1Figs. Nothing else of the game imports it.)
-test('its switch is off by itself, and of the game only its figure and its effects import it', () => {
+// art/bestiary.ts useAct1Figs; and, since 17 Oct, art/films.ts, which has the painter paint what it throws and leaves
+// ahead, as its effects ask for them. Nothing else of the game imports it.)
+test('its switch is off by itself, and of the game only its figure, its effects and the films of what it throws import it', () => {
   assert.equal(UNFINISHED_ON.on, false);
-  const through = ['art/act1_figs/unfinished.ts', 'render/act1_fx/unfinished.ts'];
+  const through = ['art/act1_figs/unfinished.ts', 'render/act1_fx/unfinished.ts', 'art/films.ts'];
   for (const f of fs.readdirSync('src', { recursive: true })) {
     const name = f.replace(/\\/g, '/');
     if (!name.endsWith('.ts') || name.startsWith('dev') || name === 'art/unfinished.ts' || through.includes(name)) continue;
