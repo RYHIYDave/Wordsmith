@@ -88,8 +88,22 @@ export default async function (page, snap) {
     const arrive = await frames(4000);
     const painted = town ? 0 : await painterDone(900);
     const r = { arrive: { worst: arrive.worst, over50: arrive.over50 }, painted };
-    // the bot playing the place (after a few seconds of it, so that what the place shows has been painted once)
-    await page.evaluate(() => { window.__dbg.bot(true); });
+    // the bot playing the place (after a few seconds of it, so that what the place shows has been painted once); in town
+    // the hero walks a loop round where he came in instead (the bot would walk him out of town and into the dungeon)
+    if (town) {
+      await page.evaluate(() => {
+        const g = window.__dbg.game(); const h = g.hero; const cx = h.x; const cy = h.y; let a = 0; let last = performance.now();
+        window.__townWalk = true;
+        const step = (now) => {
+          if (!window.__townWalk) return;
+          a += ((now - last) / 1000) * 0.6; last = now;
+          const nx = cx + Math.cos(a) * 3; const ny = cy + Math.sin(a) * 3;
+          if (g.level.town) { h.x = nx; h.y = ny; }
+          requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      });
+    } else await page.evaluate(() => { window.__dbg.bot(true); });
     await page.waitForTimeout(5000);
     await slow(throttle);
     r.play = await measure(`${place} play`, secs * 1000);
@@ -119,6 +133,7 @@ export default async function (page, snap) {
         await snap(`${place}_risen`);
       }
     }
+    if (town) r.stillTown = await page.evaluate(() => { window.__townWalk = false; return !!window.__dbg.game().level.town; });
     r.ground = await page.evaluate(() => { const st = window.__dbg.renderer.outdoor.stats; return { pieces: st.pieces, byWorker: st.worker }; });
     r.heroFrames = await page.evaluate(() => window.__dbg.painter.heroFrames);
     r.canvasMB = (await page.evaluate(() => (window.__canvasRoom ? window.__canvasRoom().mb : -1)));

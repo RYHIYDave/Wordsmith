@@ -2217,7 +2217,11 @@ export class Renderer {
     };
     // (ACT 1, THE DESCENT: what stands on the tops of the cliffs, in the forest and in the water: render/act1_pieces.ts)
     if (this.act1Dressed && this.openGround) this.standTops(W, H, heroX, heroY, L);
-    else this.frameChunks.length = 0;
+    else {
+      // (the forest's pictures let go of once it is left)
+      this.frameChunks.length = 0;
+      this.topsCache.leave(L);
+    }
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx] && !this.openGround) continue;
       const sx = wx(cam, p.x, p.y);

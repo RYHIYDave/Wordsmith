@@ -20,11 +20,16 @@ export default async function (page, snap) {
     const r = await page.evaluate(async () => {
       const d = window.__dbg; const R = d.renderer; const main = document.querySelector('canvas');
       const W = Math.round(main.width / 2); const H = Math.round(main.height / 2);
+      // (each drawing given the same random numbers: some effects scatter sparks by chance as they are drawn)
+      const real = Math.random;
       const draw = (on, t) => {
         d.topsCache.on = on;
+        let seed = 12345;
+        Math.random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
         const c = document.createElement('canvas'); c.width = main.width; c.height = main.height;
         const g = c.getContext('2d'); g.setTransform(2, 0, 0, 2, 0, 0); g.imageSmoothingEnabled = false;
         R.draw(g, W, H, d.game(), d.fx, t, 0);
+        Math.random = real;
         return { data: g.getImageData(0, 0, c.width, c.height).data, stats: { ...R.topsCache.stats } };
       };
       // (the chunks wanted made first, so that "with" draws with pictures)
