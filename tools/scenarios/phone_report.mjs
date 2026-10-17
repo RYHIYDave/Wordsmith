@@ -51,6 +51,26 @@ export default async function (page, snap) {
     }
     return Math.round((Date.now() - t0) / 1000);
   };
+  // PROFILE=1: each measured stretch under the browser's profiler too, and the functions that took the most time named
+  const profiling = process.env.PROFILE === '1';
+  if (profiling) { await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 250 }); }
+  const measure = async (name, ms) => {
+    if (profiling) await cdp.send('Profiler.start');
+    const f = await frames(ms);
+    if (profiling) {
+      const { profile } = await cdp.send('Profiler.stop');
+      const byId = new Map(profile.nodes.map((n) => [n.id, n]));
+      const self = new Map(); let total = 0;
+      for (let i = 0; i < profile.samples.length; i++) {
+        const n = byId.get(profile.samples[i]); const d = profile.timeDeltas[i] || 0; total += d;
+        const k = `${n.callFrame.functionName || '(anonymous)'}:${n.callFrame.lineNumber}`;
+        self.set(k, (self.get(k) || 0) + d);
+      }
+      const rows = [...self.entries()].sort((x, y) => y[1] - x[1]).slice(0, 14);
+      log(`profile ${name}`, rows.map(([k, us]) => `${k} ${((us / total) * 100).toFixed(1)}%`).join(' | '));
+    }
+    return f;
+  };
   const out = {};
   for (const place of places) {
     const town = place === 'town';
@@ -69,7 +89,7 @@ export default async function (page, snap) {
     await page.evaluate(() => { window.__dbg.bot(true); });
     await page.waitForTimeout(5000);
     await slow(throttle);
-    r.play = await frames(secs * 1000);
+    r.play = await measure(`${place} play`, secs * 1000);
     await slow(1);
     await snap(`${place}_play`);
     // before its boss, fighting him
@@ -84,7 +104,7 @@ export default async function (page, snap) {
     if (boss) {
       await page.waitForTimeout(2500);
       await slow(throttle);
-      r.boss = { kind: boss, ...(await frames(secs * 1000)) };
+      r.boss = { kind: boss, ...(await measure(`${place} boss`, secs * 1000)) };
       await slow(1);
       await snap(`${place}_boss`);
       if (boss === 'eye') {
