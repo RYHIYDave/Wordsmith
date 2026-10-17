@@ -57,7 +57,7 @@ Arrivals: frames over 50 ms on coming into a place, first report 23 to 43 on the
 counted by tools/canvas_room.js: it is not less memory. pageMB, the page process's, is the measure of that.)
 Left: the Pinewood in play (38) and one long stall in the Cantor's fight (467 ms).
 
-# Fourth report, floors 8 and 9 (17 Oct, 09:55 to 10:08; dist/perf10.html: with the forest in layers and runs, and the flinch painted ahead)
+# Fourth report, floors 8 and 9 (17 Oct, finished 09:35; dist/perf10.html: with the forest in layers and runs, and the flinch painted ahead)
 8:     50/0   | 60.1 / 0 / 0  | cantor 59.6/2/0 worst 50      (first report 48.9 worst 250; third 51.7 worst 467)
 9:     83/2   | 51.8 / 2 / 0  | stag 58.9/0/0 worst 33        (first report play 39.1, stag 39.5)
 6. THE FOREST'S CHUNKS IN LAYERS AND RUNS: a chunk with a tree seen through, or something between its trees, drawn as
@@ -68,3 +68,4 @@ Left: the Pinewood in play (38) and one long stall in the Cantor's fight (467 ms
 7. A MONSTER'S FLINCH PAINTED AHEAD (art/bestiary.ts, both orders): it never was, so a boss's flinch was painted as it
    was first shown, 70 to 90 ms a frame of it (the Cantor's fight's stalls). Now nothing is painted on the page in his
    fight (town_paint, 20 s of it after 200 s on the floor: 0 pictures).
+THE WHOLE UNIT SUITE on a copy of c4d4cb7 (all of the above), alone on the machine: 1748 of 1748, 09:35:39 to 10:33:45.
