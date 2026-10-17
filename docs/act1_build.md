@@ -101,3 +101,23 @@ and wild, behind a switch that is off (MELD_DROPS, art/meld_drops.ts), pictures 
 - Told him plainly on the page: the Drowned Eye's pictures take about 320 MB, so some approved moves of his are
   left out for now; a phone memory check comes before release. Waiting: his OK on this page, and his answer on
   the runedust and Meldstone films.
+
+## The page's memory, floor by floor (16 Oct, from 22:20)
+
+Measured with tools/scenarios/act1_room.mjs (tools/canvas_room.js counts every canvas the page makes; ImageBitmaps
+from the painter are counted from the bestiary), at a phone's size, after the garbage is taken out. "Canvas" is what
+an iPhone's Safari limits on its own (a few hundred megabytes; past it a new canvas cannot be drawn on); "bitmaps" is
+the boss's frames from the painter; "page" what Linux says the browser's page process holds.
+
+- First run, the hero set before each boss at once (so the game painted many boss frames itself, as canvases):
+  town at the start 21 MB of canvas, page 211 MB; floor 4 (live, the amalgamation) canvas 103, bitmaps 69, page 859;
+  floor 6 canvas 235, the Unfinished 294 bitmaps + 71 canvas, page 1025; floor 7 canvas 246, the Queen 314 + 60,
+  page 1205; floor 8 canvas 245, the Cantor 63 + 53; floor 9 canvas 263, the Stag 25 + 53; floor 10 canvas 238,
+  the Eye 306 + 14, page 1583; back in town, canvas still 218.
+- FOUND AND MENDED: every floor's monsters' pictures were kept for good once made (ten to thirty megabytes a floor of
+  the descent's own kinds), so the canvas room crept up floor by floor. Now a new place lets go of every figure but its
+  own monsters' (Bestiary.forgetOthers, from main.ts where the painter is restarted). Again, floors 6, 7, 9 then town
+  (40 s each): canvas 144, 161, 128, and back in town 58 (was 218).
+- THE BIG THREE: the Unfinished, the Carrion Queen and the Drowned Eye each hold about 300 MB of frames (bitmaps),
+  four to five times the amalgamation's 69 and about twice the Chained One's three states together (167). Nothing
+  slims them without changing how they look (fewer frames, or coarser ones): his to see first.
