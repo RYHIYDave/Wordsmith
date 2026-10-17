@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BOSS_LIFE, CHARGE, CLASSES, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, BOSS_LIFE, CHARGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -2255,9 +2255,10 @@ export class Game {
         st.won = true;
         const n = st.words.length;
         const at = q.fight;
-        if (MELD.on && HOLD_TUNE.dust[n] > 0) this.addDrop('dust', at.x, at.y, HOLD_TUNE.dust[n], null, null);
-        for (let i = 0; i < HOLD_TUNE.items[n]; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i === 0 ? 2 : 1), null);
-        this.addDrop('gold', at.x, at.y, this.rng.int(15, 30) * Math.max(1, this.depth) * n, null, null);
+        if (MELD.on && HOLD_TUNE.dust[n] > 0) this.addDrop('dust', at.x, at.y, Math.round(HOLD_TUNE.dust[n] * (LOOT2.on ? LOOT2.dust : 1)), null, null);
+        const items = LOOT2.on ? LOOT2.hold[n] : HOLD_TUNE.items[n];
+        for (let i = 0; i < items; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(LOOT2.on ? (i < 2 ? 4 : 2) : i === 0 ? 2 : 1), null);
+        this.addDrop('gold', at.x, at.y, this.rng.int(15, 30) * Math.max(1, this.depth) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
         this.sfx('rare');
         this.msg('The stronghold falls.', MSG.good);
       }
@@ -6347,12 +6348,16 @@ export class Game {
    * piece of a boss's hoard: as 2, and never plain. Nothing is rare for certain any more: gear is
    * meant to be made good with words.
    */
-  private rollGear(quality: 0 | 1 | 2 | 3 = 0): Item {
+  private rollGear(quality: 0 | 1 | 2 | 3 | 4 = 0): Item {
     const mf = this.hero.d.stats.magicFind + 25 * this.dungeonWords.length;
     const opts: RollOpts = { forWeapon: this.weapon(), magicFind: mf };
     if (quality === 1) opts.luck = TUNE.betterLuck;
     if (quality >= 2) opts.luck = TUNE.hoardLuck;
     if (quality === 3) opts.atLeast = 1;
+    // (LOOT2: 4, a rare at the least)
+    if (quality === 4) opts.atLeast = 2;
+    // (LOOT2: in the descent every roll the luckier)
+    if (LOOT2.on && this.depth >= 6) opts.luck = [(opts.luck?.[0] ?? 1) * LOOT2.deep, (opts.luck?.[1] ?? 1) * LOOT2.deep];
     return rollItem(Math.max(1, this.depth), this.rng, opts);
   }
 
@@ -6395,8 +6400,8 @@ export class Game {
         }
       }
       this.addDrop('gold', m.x, m.y, rng.int(25, 45) * goldBase, null, null);
-      const n = TUNE.bossItems + (this.depth % 5 === 0 ? TUNE.bossItemsFifth : 0);
-      for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(i === 0 ? 3 : 1), null);
+      const n = (LOOT2.on ? LOOT2.boss : TUNE.bossItems) + (this.depth % 5 === 0 ? TUNE.bossItemsFifth : 0);
+      for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? (i < LOOT2.bossRare ? 4 : 2) : i === 0 ? 3 : 1), null);
       this.addDrop('orb', m.x, m.y, 0, null, null);
       return;
     }
@@ -6407,17 +6412,18 @@ export class Game {
         this.msg('Flasks refilled', MSG.life);
       }
       this.addDrop('gold', m.x, m.y, rng.int(15, 25) * goldBase, null, null);
-      this.addDrop('item', m.x, m.y, 0, this.rollGear(2), null);
+      for (let i = 0; i < (LOOT2.on ? LOOT2.champion : 1); i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on && i === 0 ? 4 : 2), null);
       this.addDrop('orb', m.x, m.y, 0, null, null);
       return;
     }
     if (m.elite) {
       this.addDrop('gold', m.x, m.y, rng.int(8, 16) * goldBase, null, null);
-      if (rng.chance(TUNE.eliteItem)) this.addDrop('item', m.x, m.y, 0, this.rollGear(1), null);
+      if (rng.chance(LOOT2.on ? LOOT2.elite : TUNE.eliteItem)) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? 2 : 1), null);
+      if (LOOT2.on && rng.chance(LOOT2.elite2)) this.addDrop('item', m.x, m.y, 0, this.rollGear(2), null);
       return;
     }
     if (rng.chance(TUNE.dropGold)) this.addDrop('gold', m.x, m.y, rng.int(TUNE.goldMin, TUNE.goldMax) * goldBase, null, null);
-    if (rng.chance(TUNE.dropItem * bonus)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
+    if (rng.chance((LOOT2.on ? LOOT2.item : TUNE.dropItem) * bonus)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
     if (rng.chance(TUNE.dropOrb)) this.addDrop('orb', m.x, m.y, 0, null, null);
     // (THE FIRST LEVELS: no word falls before the ring is lit, nor in the first dungeon)
     if (rng.chance(TUNE.dropWord * bonus) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));

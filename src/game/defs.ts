@@ -1093,6 +1093,28 @@ export const BODIES = { on: false, life: 30, fade: 1.5 };
  * short." Each boss's life (as game.ts spawn works it out: his kind's, by the depth, twice on floors 5 and 10) times this.
  * The Warden's stays as it is. (Set by measuring how long each fight takes: docs/NEXT_VERSION.md.)
  */
+/**
+ * BETTER LOOT. The owner, 17 Oct 2026, 11:37: "And the rewards are abysmal.  The loot needs to be so much better." A first
+ * pass, every number here his to change after playing it (`on`; off, the game drops as it did): a plain monster drops gear
+ * `item` of the time (was TUNE.dropItem, 0.03); an elite always (`elite`, was half the time), with a second piece `elite2`
+ * of the time, each with a hoard's luck; a guardian `champion` pieces; a boss `boss` pieces (one more on floors 5 and 10),
+ * the first `bossRare` of them rare; the strongholds by the words burned (1, 2, 3) `hold` pieces, the first two rare,
+ * runedust `dust` times as much and gold `gold` times. And in the descent (floor 6 on) every roll's luck `deep` times.
+ */
+export const LOOT2 = {
+  on: true,
+  item: 0.06,
+  elite: 1,
+  elite2: 0.35,
+  champion: 2,
+  boss: 4,
+  bossRare: 1,
+  hold: [0, 3, 4, 6] as readonly number[],
+  dust: 1.5,
+  gold: 2,
+  deep: 1.5,
+};
+
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
   times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 3, cantor: 3, stag: 3, eye: 1.5 },
