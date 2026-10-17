@@ -5669,9 +5669,9 @@ small monster can be held up behind a prop it walks straight into (every monster
 
 **What he said.** 17 Oct 2026, 05:43: "Are there checks or tests to find ways to optimize the game so it runs better?  I
 figured this would primarily be a mobile game so I’d like it to run really well"; 05:46, of his phone: "iPhone 16". Told
-him (about 09:37, plain): arrivals 23 to 43 stutters to 0 to 2; the Queen 43 to 59; the Cantor 49 with stalls to 60; the
-Pinewood 39 to 52, the Stag 40 to 59; town and floors 6, 7 and 10 about 60; nothing looks different. Asked (plain, about
-14:50) whether it may go live on the claude.ai page and on his web address.
+him (soon after 09:35, plain): arrivals 23 to 43 stutters to 0 to 2; the Queen 43 to 59; the Cantor 49 with stalls to 60; the
+Pinewood 39 to 52, the Stag 40 to 59; town and floors 6, 7 and 10 about 60; nothing looks different. Asked (plain, just
+after 14:48) whether it may go live on the claude.ai page and on his web address.
 
 **What is in it.** (`docs/perf_phone.md` has every measurement.) None of it changes a pixel of what is drawn.
 1. THE OUTDOOR GROUND painted by a side worker (render/painter.ts, its ground lane, kept for the whole game), a piece at a
