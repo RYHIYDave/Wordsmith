@@ -92,7 +92,11 @@ export default async function (page, snap) {
     return { drops: g.drops.map((q) => q.kind), meld: g.hero.meld };
   });
   check('the Fleshmancer drops runedust and the Meldstone', fell && fell2.drops.includes('dust') && fell2.drops.includes('stone'), JSON.stringify(fell2));
-  await page.waitForTimeout(1500);
+  // (since Version 22.0 they wait under the floor while he is dragged down, then burst up out of it, STONE_RISE:
+  // the Meldstone cannot be taken until it has come down to hang)
+  const risen = () => page.evaluate(() => window.__dbg.game().drops.filter((q) => q.kind === 'dust' || q.kind === 'stone').every((q) => q.age >= (q.kind === 'stone' ? 1.3 : 0.5)));
+  for (let k = 0; k < 50 && !(await risen()); k++) await page.waitForTimeout(200);
+  await page.waitForTimeout(300);
   await snap('06_fleshmancer_drops_runedust_and_meldstone');
   // (and the two alone, for a closer look)
   await page.evaluate(() => { const g = window.__dbg.game(); g.drops = g.drops.filter((q) => q.kind === 'dust' || q.kind === 'stone'); });
