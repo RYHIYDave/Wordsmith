@@ -910,7 +910,7 @@ export class Renderer {
   constructor(private art: Art) {
     this.dark = document.createElement('canvas');
     this.dg = this.dark.getContext('2d') as CanvasRenderingContext2D;
-    this.bossFx = new BossFx(art.bestiary);
+    this.bossFx = new BossFx(art.bestiary, <T>(key: string): T | null => this.painter?.filmOf<T>(key) ?? null);
     this.dress = new FloorDress(() => this.painter);
     // (ACT 1: the outdoor ground's pieces painted by the painter's ground worker, where there is one)
     this.outdoor.painterOf = () => this.painter;

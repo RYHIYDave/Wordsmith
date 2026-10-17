@@ -10,6 +10,9 @@
 //   stair:<floor>:<way>:<x>:<y>  the stairwell's opening on that floor, its steps going down toward +x
 //                              or +y, its anchor on tile (x, y)
 //   shaft:down, shaft:up       the cage coming down as the Fleshmancer dies; the ride up to town
+//   things:unfinished          ACT 1: what floor 6's boss throws and leaves (its hurled block tumbling and lying, its
+//                              rockslide's boulders rolling, the terrace cracked under its stomp), painted ahead so
+//                              that none of it is painted in its fight (17 Oct: his "serious slowdown" in the rock throw)
 // and comes as plain things and pictures (no functions), so that it can be handed from the worker to
 // the page.
 
@@ -24,6 +27,7 @@ import type { Moment } from './floorkit';
 import { LAIR } from './lair';
 import { cageDown, cageUp } from './shaft';
 import { stairwellKicks, stairwellOpens } from './stairwell_open';
+import { boulderRolling, hurledBlock, stompCracks } from './unfinished';
 
 /** One of a floor's moments, as the game plays it. */
 export interface MomentFilm {
@@ -44,6 +48,10 @@ export interface StairFilm {
   jolts: number[];
   kicks: number[];
   frames: Sprite[];
+}
+/** What an Act 1 boss throws and leaves, painted ahead (`things:<kind>`): each of its things' frames, by name. */
+export interface ThingsFilm {
+  [thing: string]: Sprite[];
 }
 /** A film of the mine shaft's cage, in two layers frame by frame (a hero is drawn between them); the ride's `lift`: how far up the cage's floor is, frame by frame, in picture pixels. */
 export interface ShaftFilm {
@@ -81,6 +89,7 @@ export function filmRoom(key: string): number {
   if (kind === 'moments') return a === '1' ? 57 : a === '2' ? 71 : 16;
   if (kind === 'moment') return a === '4' ? [147, 154, 63][Number(b)] ?? 150 : [88, 48, 52][Number(b)] ?? 90;
   if (kind === 'stair') return 26;
+  if (kind === 'things') return 12;
   return 57;
 }
 
@@ -90,7 +99,7 @@ export function stairKey(floor: number, s: { x: number; y: number; way: 'x' | 'y
 }
 
 /** Make the film of that name. Throws for a name that is none. (Seconds of work: not where the game is being played.) */
-export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm {
+export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm {
   const [kind, a, b, c, d] = key.split(':');
   if (kind === 'moments') {
     const list = momentsOf(Number(a));
@@ -109,6 +118,10 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     const theme = floor === 5 ? LAIR : CRYPT_FLOORS[Math.max(1, Math.min(4, floor)) - 1];
     const m = stairwellOpens(theme, b === 'y' ? 'y' : 'x', [Number(c) || 0, Number(d) || 0]);
     return { fps: m.fps, jolts: [...m.jolts], kicks: [...stairwellKicks(m)], frames: m.frames };
+  }
+  if (kind === 'things' && a === 'unfinished') {
+    // (its block's four tumbling frames and the one lying; its boulder's eight; its stomp's four cracks: as render/act1_fx/unfinished.ts asks for them)
+    return { blocks: [0, 1, 2, 3, 4].map(hurledBlock), boulders: [0, 1, 2, 3, 4, 5, 6, 7].map(boulderRolling), cracks: [0, 1, 2, 3].map(stompCracks) };
   }
   if (kind === 'shaft') {
     if (a === 'down') {

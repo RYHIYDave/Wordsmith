@@ -538,8 +538,8 @@ test('11. a long fight through all his phases to his death, nothing thrown; noth
       g.hero.x = m.x + p.x;
       g.hero.y = m.y + p.y;
     }
-    // (the hero wears him down: all of his life in two minutes)
-    if (k % 30 === 0 && !m.dead) m.life = Math.max(1, m.life - 6000 / 240);
+    // (the hero wears him down: all of his life in two minutes; EYE_BARS, a bar of it each phase, each in forty seconds)
+    if (k % 30 === 0 && !m.dead) m.life = Math.max(1, m.life - 6000 / (EYE_BARS.on ? 80 : 240));
     if (m.act) seen.add(m.act.id);
     phases.add(eyePhase(m));
   });

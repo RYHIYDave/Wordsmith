@@ -28,9 +28,13 @@ export interface Act1FxCtx {
   stand: (depth: number, s: Sprite, sx: number, sy: number) => void;
   /** A light in the dark, on the screen: where, how wide, how strong. */
   spot: (x: number, y: number, r: number, a: number) => void;
+  /** A film the painter has made for this floor (art/films.ts: its key; one of the kind's `films`), or null: not yet, or never (then the kind paints its own). */
+  film?<T>(key: string): T | null;
 }
 
 export interface Act1Fx {
+  /** The films its floor has the painter make ahead (art/films.ts keys), where it is on the floor: what it throws and leaves, so that none of it is painted in its fight. */
+  films?: readonly string[];
   ground?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   standing?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;
   air?(c: Act1FxCtx, m: Monster | null, p: Peril | null): void;

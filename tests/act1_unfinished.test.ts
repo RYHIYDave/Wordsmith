@@ -36,7 +36,9 @@ import type { GameEvent, Monster } from '../src/game/state';
 import { T_WALL } from '../src/game/types';
 import { FX } from '../src/render/act1_fx/unfinished';
 import type { Act1FxCtx } from '../src/render/act1_fx/types';
-import { paintWithoutCanvas, paintingOf, seasoned } from './helpers';
+import { paintWithoutCanvas, paintingOf, seasoned, unlike } from './helpers';
+import { makeFilm } from '../src/art/films';
+import type { ThingsFilm } from '../src/art/films';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -199,7 +201,9 @@ test('3. on its floor it stands with its back in the quarry\'s far wall, one wit
       const y = m.y - p!.fy * s;
       if (g.level.walk[Math.floor(y) * f.w + Math.floor(x)] !== 1) {
         D = s;
-        assert.equal(f.tiles[Math.floor(y) * f.w + Math.floor(x)], T_WALL, `seed ${seed}: the quarry's wall, not a piece`);
+        // (the wall: its rock, or a tile its rounded edge cuts across, as its rules have it; not a piece on the floor)
+        const i = Math.floor(y) * f.w + Math.floor(x);
+        assert.ok(f.tiles[i] === T_WALL || (!!f.cut && f.cut[i] !== 0), `seed ${seed}: the quarry's wall, not a piece (${f.tiles[i]}, cut ${f.cut ? f.cut[i] : '-'})`);
         break;
       }
     }
@@ -418,10 +422,48 @@ test('9. nothing it draws is cyan; its things\' pictures crisp', () => {
   assert.equal(FIGURE_SIZE.unfinished.top, FIG!.size.top, 'the game goes by its own');
 });
 
+test('9b. its things painted ahead (art/films.ts things:unfinished, by the painter as its floor is come to): the same pictures, and drawn from there once made', () => {
+  assert.deepEqual(FX!.films, ['things:unfinished'], 'its floor asks for them');
+  const film = makeFilm('things:unfinished') as ThingsFilm;
+  const own: Record<string, Sprite[]> = { blocks: [0, 1, 2, 3, 4].map(hurledBlock), boulders: [0, 1, 2, 3, 4, 5, 6, 7].map(boulderRolling), cracks: [0, 1, 2, 3].map(stompCracks) };
+  for (const [name, list] of Object.entries(own)) {
+    assert.equal(film[name]?.length, list.length, `${name}: all of them`);
+    list.forEach((s, i) => {
+      const t = film[name][i];
+      assert.deepEqual([t.w, t.h, t.ax, t.ay], [s.w, s.h, s.ax, s.ay], `${name} ${i}: its size and anchor`);
+      assert.equal(unlike(t, s), 0, `${name} ${i}: the same picture`);
+    });
+  }
+  // (drawn from the film once it is made; painted here where it is not)
+  const all = new Set(Object.values(film).flat());
+  for (const given of [true, false]) {
+    const { g, m } = room(6, true, 'rockslideWall');
+    const stood: Sprite[] = [];
+    const ctx: Act1FxCtx = { g: noting().g, at: (x, y) => [(x - y) * 16, (x + y) * 8], game: g, t: 0, bestiary: makeBestiary(), stand: (_d, s) => void stood.push(s), spot: () => undefined, ...(given ? { film: <T>(key: string): T | null => (key === 'things:unfinished' ? (film as unknown as T) : null) } : {}) };
+    for (let k = 0; k < 60 * 6; k++) {
+      g.update(1 / 60, emptyControls());
+      g.hero.life = g.hero.d.maxLife;
+      if (k === 60 * 3) keep(m, 'hurlWall');
+      if (k % 6) continue;
+      ctx.t = k / 60;
+      for (const p of g.perils) if (p.a1) {
+        FX!.ground!(ctx, null, p);
+        FX!.standing!({ ...ctx, g: null }, null, p);
+      }
+    }
+    assert.ok(stood.length > 10, `it stood its things (${stood.length})`);
+    const from = stood.filter((s) => all.has(s)).length;
+    if (given) assert.equal(from, stood.length, 'all of them the film\'s');
+    else assert.equal(from, 0, 'none of them the film\'s: painted here');
+  }
+});
+
 test('10. a long fight on its floor, and killed in the middle of anything: nothing thrown, nothing left harming him', () => {
   const g = floor6(3);
   const m = g.boss!;
   const h = g.hero;
+  // (it alone: the floor's packs, near its quarry on the longer floors, would follow him in and fell him at once)
+  g.monsters = g.monsters.filter((o) => o === m);
   // (the hero brought before it, and kept alive; struck by him now and then, it tears free at half its life)
   h.x = m.x + m.fx * 3.5;
   h.y = m.y + m.fy * 3.5;

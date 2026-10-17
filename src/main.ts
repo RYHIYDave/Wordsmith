@@ -86,6 +86,7 @@ import { meldOpen, meldSide } from './ui/meld';
 import { THEME, Ui } from './ui/ui';
 import { WORDS3, demo3, events3 } from './render/words3';
 import { MELD3, MELD_GLYPH, MELD_RAMP, demoM3, eventsM3 } from './render/melds3';
+import { act1Fx } from './render/act1_fx';
 
 declare const __BUILD__: string;
 /** THE TRY-OUT PAGE (tools/build_tryout.mjs): its options offer a seasoned hero, straight to a floor. Absent in every other build. */
@@ -1736,6 +1737,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
         // (and its three moments, where it is laid with them: render/pieces.ts)
         if (g.level.dress) for (const key of momentKeys(g.level.dress.floor)) painter.film(key);
+        // (ACT 1: what its kinds throw and leave, painted ahead: render/act1_fx/, `films`)
+        for (const kind of new Set(g.monsters.map((m) => m.kind))) for (const key of act1Fx(kind)?.films ?? []) painter.film(key, true);
       }
       renderer.draw(cg, scr.w, scr.h, g, fx, clock, paused ? 0 : gdt * 60);
       // (THE FIRST FIVE FLOORS: a film's jolts kick the screen, and are heard: render/dress.ts)

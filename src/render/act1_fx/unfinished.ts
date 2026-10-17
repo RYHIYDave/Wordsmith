@@ -20,17 +20,22 @@ import { UF, inWall } from '../../game/act1_rules/unfinished';
 import { actDef } from '../../game/bosses';
 import { beside } from '../../game/facing';
 import { clipFrame } from '../figure';
-import type { Act1Fx } from './types';
+import type { Act1Fx, Act1FxCtx } from './types';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-// (its things' pictures, painted the first time they are wanted)
+// (its things' pictures: the painter's, made ahead as its floor is come to (art/films.ts things:unfinished: tens of
+// thousandths of a second each to paint, a stall in its fight on a phone); where it has not made them yet, or there is
+// none, painted here the first time they are wanted)
+const THINGS = 'things:unfinished';
+type Things = { blocks: Sprite[]; boulders: Sprite[]; cracks: Sprite[] };
 const blocks: Sprite[] = [];
 const boulders: Sprite[] = [];
 const cracks: Sprite[] = [];
-const blockOf = (i: number): Sprite => blocks[i] ?? (blocks[i] = hurledBlock(i));
-const boulderOf = (i: number): Sprite => boulders[i] ?? (boulders[i] = boulderRolling(i));
-const cracksOf = (i: number): Sprite => cracks[i] ?? (cracks[i] = stompCracks(i));
+const made = (c: Act1FxCtx): Things | null => (c.film ? c.film<Things>(THINGS) : null);
+const blockOf = (c: Act1FxCtx, i: number): Sprite => made(c)?.blocks[i] ?? blocks[i] ?? (blocks[i] = hurledBlock(i));
+const boulderOf = (c: Act1FxCtx, i: number): Sprite => made(c)?.boulders[i] ?? boulders[i] ?? (boulders[i] = boulderRolling(i));
+const cracksOf = (c: Act1FxCtx, i: number): Sprite => made(c)?.cracks[i] ?? cracks[i] ?? (cracks[i] = stompCracks(i));
 
 /** How far round a boulder is, rolled `d` tiles (its eighth of a turn: art boulderRolling, its radius 24 of its lengths). */
 const ROUND = (2 * Math.PI * 24) / TILE3;
@@ -40,6 +45,8 @@ const DROP_HIGH = 40;
 const SHADOW_WIDE = Math.round(UF.hurl.r * 16 * Math.SQRT2);
 
 export const FX: Act1Fx | null = {
+  films: [THINGS],
+
   ground(c, m, p) {
     const g = c.g;
     if (!g) return;
@@ -55,7 +62,7 @@ export const FX: Act1Fx | null = {
     if (!p) return;
     if (p.a1 === 'unfinished:cracks') {
       // the terrace cracked out from under its foot, growing, then lying; fading at the last
-      const s = cracksOf(Math.min(3, Math.floor(p.t / 0.06)));
+      const s = cracksOf(c, Math.min(3, Math.floor(p.t / 0.06)));
       const [sx, sy] = c.at(p.x, p.y);
       const was = g.globalAlpha;
       g.globalAlpha = was * clamp01((p.dur - p.t) / 1.5);
@@ -87,17 +94,17 @@ export const FX: Act1Fx | null = {
         const x = q[0] / TILE3;
         const y = q[1] / TILE3;
         const [sx, sy] = c.at(x, y);
-        c.stand(x + y, blockOf(Math.floor((p.t - p.c) * 12) % 4), sx, sy - (q[2] - BLOCK_FLY_Z) / 2);
+        c.stand(x + y, blockOf(c, Math.floor((p.t - p.c) * 12) % 4), sx, sy - (q[2] - BLOCK_FLY_Z) / 2);
       } else if (p.dur - p.t > UF.hurl.crumble * 0.5) {
         // lying where it fell: cover
         const [sx, sy] = c.at(p.x, p.y);
-        c.stand(p.x + p.y, blockOf(4), sx, sy);
+        c.stand(p.x + p.y, blockOf(c, 4), sx, sy);
       }
     } else if (p.a1 === 'unfinished:lane') {
       if (p.t < p.hit || p.done === 2) return;
       // the boulder dropping off the cliff's foot, then rolling down its lane (painted rolling along the floor's y: along its x, turned over)
       const u = clamp01((p.t - p.hit) / UF.slide.drop);
-      const s = boulderOf(Math.floor((p.d / ROUND) * 8) % 8);
+      const s = boulderOf(c, Math.floor((p.d / ROUND) * 8) % 8);
       const [sx, sy] = c.at(p.x, p.y);
       c.stand(p.x + p.y, p.fx > 0.5 ? flipSprite(s) : s, sx, sy - DROP_HIGH * (1 - u) * (1 - u));
     }

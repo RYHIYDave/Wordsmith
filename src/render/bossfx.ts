@@ -76,7 +76,8 @@ export class BossFx {
   /** What lights the dark this frame (gathered as things are drawn; given out by `lights`). */
   private spots: [number, number, number, number][] = [];
 
-  constructor(private readonly bestiary: Bestiary) {}
+  /** `films`: a film the painter has made (render/painter.ts filmOf), or null. */
+  constructor(private readonly bestiary: Bestiary, private readonly films: <T>(key: string) => T | null = () => null) {}
 
   /** Begin a frame. */
   begin(): void {
@@ -444,7 +445,7 @@ export class BossFx {
    */
   private act1Layer(layer: 'ground' | 'standing' | 'air', g: CanvasRenderingContext2D | null, at: FloorAt, game: Game, t: number, here: (x: number, y: number) => boolean, stand: StandFn | null): void {
     let c: Act1FxCtx | null = null;
-    const ctx = (): Act1FxCtx => (c ??= { g, at, game, t, bestiary: this.bestiary, stand: stand ?? (() => undefined), spot: (x, y, r, a) => void this.spots.push([x, y, r, a]) });
+    const ctx = (): Act1FxCtx => (c ??= { g, at, game, t, bestiary: this.bestiary, stand: stand ?? (() => undefined), spot: (x, y, r, a) => void this.spots.push([x, y, r, a]), film: this.films });
     for (const m of game.monsters) {
       if (m.dead) continue;
       const fx = act1Fx(m.kind);

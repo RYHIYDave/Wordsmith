@@ -8,7 +8,8 @@
 //      front (as its films), and at the last nothing lying there;
 //   4. on her eyrie she stands on its edge with the drop behind her, as her death's films have it; dying, she goes
 //      over it whichever way she faced;
-//   5. she holds her spot: through a long fight she does not leave it; put off it, she hops back;
+//   5. she holds her spot (QUEEN_ROAM off): through a long fight she does not leave it; put off it, she hops back;
+//      5b. QUEEN_ROAM (his word): she roams her eyrie, a lot, and at the last of her life flies home to her perch;
 //   6. her rake, her gust (it drives him back), her dive (out of reach while she is up; where its line is marked),
 //      and her call (her flock, never more than a few of it alive);
 //   7. nothing she draws is cyan; killed in the middle of anything, nothing of hers is left harming him.
@@ -29,7 +30,7 @@ import { GRAIN, toSprite } from '../src/art/kit';
 import { TILE3 } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
 import { ACT1 } from '../src/game/act1';
-import { QN, QN_ACTS, QN_GAIT, QN_VIEWS, RULES, flockKind, perchOf, viewIndex } from '../src/game/act1_rules/queen';
+import { QN, QN_ACTS, QN_GAIT, QN_VIEWS, QUEEN_ROAM, RULES, flockKind, perchOf, viewIndex } from '../src/game/act1_rules/queen';
 import { bossKind } from '../src/game/bosses';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -127,9 +128,12 @@ test('1. she is built: the Ledge Road\'s boss, the new Queen (never the old), he
     if (!name.endsWith('.ts') || name.startsWith('dev') || name === 'art/carrion_queen.ts') continue;
     assert.ok(!/from ['"][^'"]*carrion_queen['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} brings in the old Queen`);
   }
-  // (four moves, by his rulebook: her rake, her basic blow; her gust, her dive and her call)
-  assert.equal(QN_ACTS.length, 4, 'four');
-  assert.equal(QN_ACTS.filter((a) => a.cooldown === 0).length, 1, 'one basic blow');
+  // (four moves, by his rulebook: her rake, her basic blow; her gust, her dive and her call; and, QUEEN_ROAM, her
+  // flight home to her perch at the last of her life, made only then)
+  const moves = QN_ACTS.filter((a) => !a.forced);
+  assert.equal(moves.length, 4, 'four');
+  assert.equal(moves.filter((a) => a.cooldown === 0).length, 1, 'one basic blow');
+  assert.deepEqual(QN_ACTS.filter((a) => a.forced).map((a) => a.id), ['queen:home'], 'and her flight home, made only when it must be');
   for (const set of [ART.front, ART.back]) {
     for (const a of QN_ACTS) {
       const clip = a.clip === 'attack' ? set.clips?.attack : set.clips?.moves?.[a.clip];
@@ -255,7 +259,88 @@ test('4. on her eyrie she stands on its edge with the drop behind her; dying, sh
   }
 });
 
-test('5. she holds her spot: through a long fight she does not leave it; put off it, she hops back', () => {
+test('5. she holds her spot (QUEEN_ROAM off): through a long fight she does not leave it; put off it, she hops back', () => {
+  const was = QUEEN_ROAM.on;
+  QUEEN_ROAM.on = false;
+  try {
+    holdsHerSpot();
+  } finally {
+    QUEEN_ROAM.on = was;
+  }
+});
+
+test('5b. she roams her eyrie (QUEEN_ROAM, his word): through a long fight she hops from spot to spot, a lot, always on its floor; at the last of her life she flies home to her perch and stays, and the next blow kills her', () => {
+  assert.equal(QUEEN_ROAM.on, true, 'on, his word');
+  const g = floor7(17);
+  const m = g.boss!;
+  const h = g.hero;
+  const L = g.level;
+  const area = L.land!.areas.find((a) => a.role === 'boss')!;
+  const RR = Math.max(area.blob.rx, area.blob.ry) * 1.2 + 2.5;
+  const perch = perchOf(L)!;
+  const x0 = m.x;
+  const y0 = m.y;
+  h.x = m.x + m.fx * 3;
+  h.y = m.y + m.fy * 3;
+  (g as unknown as Hooks).wakeUp(m);
+  m.life = m.maxLife = 1e9;
+  const c = emptyControls();
+  let acts = 0;
+  let was = '';
+  let spots = 0;
+  let last = { x: m.x, y: m.y };
+  let off = 0;
+  for (let k = 0; k < 60 * 60; k++) {
+    const t = k / 60;
+    // (the hero goes round where she began, nearer and further, where the eyrie lets him)
+    const r = 2.6 + 1.6 * Math.sin(t * 0.37);
+    const x = x0 + Math.cos(t * 0.45) * r;
+    const y = y0 + Math.sin(t * 0.45) * r;
+    if (L.walk[Math.floor(y) * L.floor.w + Math.floor(x)] === 1) {
+      h.x = x;
+      h.y = y;
+    }
+    g.update(1 / 60, c);
+    h.life = h.d.maxLife;
+    g.events.length = 0;
+    const now = m.act ? m.act.id : '';
+    if (now && now !== was) acts++;
+    was = now;
+    // (a spot she has come to and stands on, apart from the last)
+    if (!m.act && m.gait?.mode === 'stand' && Math.hypot(m.x - last.x, m.y - last.y) >= QUEEN_ROAM.apart * 0.8) {
+      spots++;
+      last = { x: m.x, y: m.y };
+    }
+    if (L.walk[Math.floor(m.y) * L.floor.w + Math.floor(m.x)] !== 1 && !(m.act && m.act.id === 'queen:dive')) off++;
+    assert.ok(Math.hypot(m.x - area.blob.x, m.y - area.blob.y) <= RR, `in her eyrie (${m.x.toFixed(2)}, ${m.y.toFixed(2)})`);
+    if (g.over) break;
+  }
+  assert.ok(acts >= 6, `she fought (${acts} moves)`);
+  assert.ok(spots >= 12, `she moved about a lot: ${spots} spots in a minute`);
+  assert.equal(off, 0, 'never off the floor');
+  // (struck down to the last of her life: no further, until she is home)
+  m.life = m.maxLife = 4000;
+  (g as unknown as { damageMonster(m: Monster, n: number, el: string, c: boolean, k: number): void }).damageMonster(m, 3999.5, 'phys', false, -1);
+  assert.equal(m.dead, false, 'not killed while she is off her perch');
+  assert.equal(m.life, Math.ceil(4000 * QUEEN_ROAM.last), 'her life held at a hundredth of it');
+  let home = false;
+  for (let k = 0; k < 60 * 6; k++) {
+    g.update(1 / 60, emptyControls());
+    h.life = h.d.maxLife;
+    if (m.act?.id === 'queen:home') home = true;
+  }
+  assert.ok(home, 'she flies home');
+  near(Math.hypot(m.x - perch.x, m.y - perch.y), 0, 0.2, 'onto her perch');
+  for (let k = 0; k < 60 * 6; k++) {
+    g.update(1 / 60, emptyControls());
+    h.life = h.d.maxLife;
+  }
+  near(Math.hypot(m.x - perch.x, m.y - perch.y), 0, 0.2, 'and stays there');
+  (g as unknown as { damageMonster(m: Monster, n: number, el: string, c: boolean, k: number): void }).damageMonster(m, 100, 'phys', false, -1);
+  assert.equal(m.dead, true, 'the next blow kills her');
+});
+
+function holdsHerSpot(): void {
   const g = floor7(17);
   const m = g.boss!;
   const h = g.hero;
@@ -305,7 +390,7 @@ test('5. she holds her spot: through a long fight she does not leave it; put off
   assert.ok(hopped, 'she hops');
   near(Math.hypot(m.x - x0, m.y - y0), 0, 0.06, 'back onto her spot');
   assert.equal(m.gait?.mode === 'walk', false, 'and stands there');
-});
+}
 
 test('6. her rake, her gust, her dive, her call: where and when their pictures say', () => {
   // THE RAKE

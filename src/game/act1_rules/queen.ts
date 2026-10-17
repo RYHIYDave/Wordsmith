@@ -61,12 +61,12 @@ export const QN = {
  * the fight.  The queen should move around a lot"; and 11:45: "If the queen needs to be at a certain point for her death
  * animation, then when she’s at 1% HP have her fly up and land where she’s supposed to, then one hit kills and it works as
  * designed"). So, `on`: after each of her moves, and when she has stood `every` seconds, she hops to another spot of her
- * eyrie, `near` to `far` tiles from the hero and at least `apart` from where she was; her life cannot be brought below
+ * eyrie, `near` to `far` tiles from the hero, `apart` to `hop` from where she was (short hops, quick); her life cannot be brought below
  * `last` of it until she is back on her perch over the drop; brought there, she flies up as in her dive and comes down on
  * her perch (`queen:home`: out of sight, out of reach), and stays; the next blow kills her, and she goes over the edge as
  * her death was drawn.
  */
-export const QUEEN_ROAM = { on: true, every: [1.0, 2.2] as const, near: 2.2, far: 4.6, apart: 1.6, last: 0.01 };
+export const QUEEN_ROAM = { on: true, every: [1.0, 2.2] as const, near: 2.2, far: 4.6, apart: 1.6, hop: 3.4, last: 0.01 };
 
 /** Her flock: the Ledge Road's vultures (or, until they are in the game, what stands in for them: game/act1_mobs.ts). */
 export function flockKind(): MonsterKind {
@@ -224,7 +224,7 @@ function homeForGood(m: Monster): boolean {
   return keptOf(m).home === 1;
 }
 
-/** (QUEEN_ROAM) Another spot of her eyrie to hop to: `near` to `far` from the hero, `apart` from where she is, clear round her, in sight of him; null: none. */
+/** (QUEEN_ROAM) Another spot of her eyrie to hop to: `near` to `far` from the hero, `apart` to `hop` from where she is, clear round her, in sight of him; null: none. */
 function roamSpot(R: BossRules, m: Monster): { x: number; y: number } | null {
   const g = R.g;
   const L = g.level;
@@ -244,7 +244,8 @@ function roamSpot(R: BossRules, m: Monster): { x: number; y: number } | null {
   for (let y = area.blob.y - RR; y <= area.blob.y + RR; y += 0.5) {
     for (let x = area.blob.x - RR; x <= area.blob.x + RR; x += 0.5) {
       const dh = Math.hypot(x - h.x, y - h.y);
-      if (dh < Q.near || dh > Q.far || Math.hypot(x - m.x, y - m.y) < Q.apart) continue;
+      const dm = Math.hypot(x - m.x, y - m.y);
+      if (dh < Q.near || dh > Q.far || dm < Q.apart || dm > Q.hop) continue;
       if (!clear(x, y, 0.8) || !g.sees(x, y, h.x, h.y)) continue;
       options.push({ x, y });
     }
@@ -274,7 +275,8 @@ function anyReady(R: BossRules, m: Monster, dist: number): boolean {
   if (m.cd > 0 || !m.moveCd) return false;
   const g = R.g;
   const los = dist < 16 && g.sees(m.x, m.y, g.hero.x, g.hero.y);
-  return los && QN_ACTS.some((a, i) => m.moveCd![i] <= 0 && dist >= a.near && dist <= a.far && canAct(R, m, a));
+  // (not her flight home, QUEEN_ROAM's: that is made only when it must be, BossRules.forcedAct)
+  return los && QN_ACTS.some((a, i) => !a.forced && m.moveCd![i] <= 0 && dist >= a.near && dist <= a.far && canAct(R, m, a));
 }
 function canAct(R: BossRules, m: Monster, a: ActDef): boolean {
   if (a.id === 'queen:call') return flockAlive(R, m) <= QN.call.most - 2;
