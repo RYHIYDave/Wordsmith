@@ -199,6 +199,12 @@ export interface Bestiary {
    * megabytes each). They are made again, frame by frame as they are wanted, if it is ever asked for again.
    */
   forget(figure: MonsterFigure): void;
+  /**
+   * ACT 1, THE DESCENT: let go of every figure's pictures but these (a new place is come into: the last one's
+   * monsters, ten to thirty megabytes a floor, were kept until now, and five floors of them are more than a phone
+   * gives a page for its canvases). Any of them met again is painted again, a frame at a time, as it is wanted.
+   */
+  forgetOthers(keep: ReadonlySet<MonsterFigure>): void;
   /** How many frames of these figures are still to be painted ahead (for the painting ahead, and its tests). */
   left(figures: ReadonlyArray<MonsterFigure>): number;
 }
@@ -326,6 +332,9 @@ export function makeBestiary(): Bestiary {
       made.delete(figure);
       todo.delete(figure);
       if (art) for (const set of [art.front, art.back]) for (const frames of framesOf(set)) freeFrames(frames);
+    },
+    forgetOthers(keep: ReadonlySet<MonsterFigure>): void {
+      for (const figure of [...made.keys()]) if (!keep.has(figure)) this.forget(figure);
     },
     left(figures: ReadonlyArray<MonsterFigure>): number {
       let n = 0;

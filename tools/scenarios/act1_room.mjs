@@ -70,20 +70,24 @@ export default async function (page, snap) {
   });
   await page.waitForTimeout(3000);
   await measure('start');
+  // NATURAL=1: as a player comes to him: the hero waits where the floor begins while the painter paints, and only
+  // then goes before the boss and fights him a while (else he is set before the boss at once, and the game paints
+  // what it shows before the painter has it).
+  const natural = process.env.NATURAL === '1';
   for (const depth of floors) {
-    await page.evaluate((n) => {
+    await page.evaluate(([n, nat]) => {
       const g = window.__dbg.game();
       g.depth = n; g.cleared = n - 1; g.enterDungeon();
       g.level.explored.fill(1);
       const boss = g.monsters.find((m) => m.boss);
-      if (boss) {
+      if (boss && !nat) {
         const L = g.level;
         const st = L.floor ? L.floor.start : { x: g.hero.x, y: g.hero.y };
         const sx = st.x - boss.x, sy = st.y - boss.y;
         const k = Math.hypot(sx, sy) || 1;
         g.hero.x = boss.x + (sx / k) * 4.5; g.hero.y = boss.y + (sy / k) * 4.5;
       }
-    }, depth);
+    }, [depth, natural]);
     const t0 = Date.now();
     let quiet = 0; let last = -1;
     while (Date.now() - t0 < secs * 1000) {
@@ -98,6 +102,22 @@ export default async function (page, snap) {
       if (quiet >= 2) break;
     }
     log('painted', JSON.stringify({ depth, secs: Math.round((Date.now() - t0) / 1000) }));
+    if (natural) {
+      await page.evaluate(() => {
+        const g = window.__dbg.game();
+        const boss = g.monsters.find((m) => m.boss);
+        if (!boss) return;
+        const st = g.level.floor.start;
+        const sx = st.x - boss.x, sy = st.y - boss.y;
+        const k = Math.hypot(sx, sy) || 1;
+        g.hero.x = boss.x + (sx / k) * 4.5; g.hero.y = boss.y + (sy / k) * 4.5;
+      });
+      // (the fight a while; the Drowned Eye through his three stages)
+      for (const lf of depth === 10 ? [1, 0.5, 0.2] : [1]) {
+        await page.evaluate((f) => { const b = window.__dbg.game().monsters.find((m) => m.boss); if (b && f < 1) b.life = Math.round(b.maxLife * f); }, lf);
+        await page.waitForTimeout(15000);
+      }
+    }
     await snap(`floor${depth}`);
     await measure('floor ' + depth);
   }

@@ -1715,6 +1715,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (g.level !== paintedFor) {
         paintedFor = g.level;
         painter.restart();
+        // (and every other figure but this place's own monsters': ACT 1's floors each bring their own kinds)
+        art.bestiary.forgetOthers(new Set(g.monsters.map((m) => figureOf(m))));
         // (the films this place will want: the fifth floor's cage coming down and going up; on the four
         // above it, its stairwell breaking open where it most likely will, and where next, room allowing)
         const W = g.level.ways;
