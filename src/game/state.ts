@@ -387,6 +387,8 @@ export interface Monster {
   /** (game/bosses.ts FLESH_BLINK) How long the hero has been close to him; how long until he goes anyway. */
   blinkCrowd?: number;
   blinkT?: number;
+  /** (FLESH_BLINK) Gone, and to come back up (rise) at once. */
+  blinkRise?: number;
 }
 
 /**
@@ -536,7 +538,7 @@ export type ActId =
   | 'lash' | 'hook' | 'whirl' | 'ball' | 'breakL' | 'breakBall'
   | 'swipe' | 'floorArms' | 'swarm' | 'devour' | 'burst'
   | 'bite' | 'emerge' | 'dragged'
-  | 'shards' | 'rings' | 'raise' | 'fire' | 'blink'
+  | 'shards' | 'rings' | 'raise' | 'fire' | 'blink' | 'rise'
   | 'miniFire' | 'miniRaise'
   // ACT 1, THE DESCENT (game/act1/): each kind's own, by its name: 'qgolem:smash', 'queen:dive'
   | `${string}:${string}`;

@@ -32,7 +32,7 @@ const DUNGEON: HeroLook = { twoHanded: true };
 const VIEWS = ['front', 'back'] as const;
 
 test('the switch is off, and the thrust is a move of its own beside the leap', () => {
-  assert.equal(THRUST.on, false, 'the switch is the main chat\'s to turn on');
+  assert.equal(THRUST.on, true, 'on, his yes (the main chat\'s switch)');
   assert.ok(MOVES3.kthrust === THRUST3, 'the thrust is among the moves');
   assert.ok(MOVES3.leap === LEAP3, 'the leap is still the leap');
   assert.equal(THRUST3.held, 'greatsword');

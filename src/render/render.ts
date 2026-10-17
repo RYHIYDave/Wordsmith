@@ -76,7 +76,7 @@ import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
 import { redoubtGround } from '../art/redoubt';
 import type { Painter } from './painter';
-import { gaitOf } from '../game/bosses';
+import { blinkNowhere, gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
 import { THRUST } from '../art/heroes3';
@@ -262,6 +262,8 @@ function named(m: Monster): boolean {
 
 /** (ACT 1, THE DESCENT: one of its own kinds out of sight where it lies, as its kind has it: the Drowned under the water until it rises. Nothing of it is drawn, its shadow, ring, bar and name too: render/act1_fx, `hidden`.) */
 function unseen(m: Monster): boolean {
+  // (the Fleshmancer between his two pits, FLESH_BLINK: nowhere)
+  if (m.kind === 'fleshmancer' && blinkNowhere(m)) return true;
   const f = act1Fx(m.kind);
   return !!(f && f.hidden && f.hidden(m));
 }

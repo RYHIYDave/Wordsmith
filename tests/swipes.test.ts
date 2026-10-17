@@ -14,7 +14,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import type { RNG } from '../src/engine/rng';
-import { CLASSES, FIRST_WORD, PRACTICE, SKILLS, TUNE, WEAPON_SKILLS, skillsFor, socketCount } from '../src/game/defs';
+import { CLASSES, FIRST_WORD, LUNGE, PRACTICE, SKILLS, TUNE, WEAPON_SKILLS, skillsFor, socketCount } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster, PropInst } from '../src/game/state';
@@ -466,7 +466,9 @@ test('a word in front of Leap changes the landing; a word behind is left where t
   assert.ok(m.burnT > 0, 'Flame Leap: what it lands on burns');
   const ice = of(ev, 'zone').find((e) => e.kind === 'ice');
   assert.ok(ice, 'Leap of Frost leaves ice');
-  assert.ok(Math.hypot(ice!.x - g.hero.x, ice!.y - g.hero.y) < 0.5, 'where the warrior came down');
+  // (LUNGE, his diving thrust: where his sword's point came down, before him)
+  const fwd = LUNGE.on ? LUNGE.ahead : 0;
+  assert.ok(Math.hypot(ice!.x - (g.hero.x + g.hero.fx * fwd), ice!.y - (g.hero.y + g.hero.fy * fwd)) < 0.5, 'where the warrior came down (his sword\'s point)');
   // Twin: two shocks
   const g2 = room('warrior');
   set(g2, 2, 'front', 'twin');

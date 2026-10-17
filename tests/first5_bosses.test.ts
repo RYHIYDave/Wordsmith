@@ -26,7 +26,7 @@ import {
   HS_RAISE, HS_SENTENCE_HIT, HS_SWEEP_FROM, HS_SWEEP_TO, HS_THROW_HIT, amSwarmSkulls, axeOf, coHookPath, coWhirlReach, hsBite, hsSweepReach,
 } from '../src/art/bosses3';
 import { MINI_FIRE, MINI_FIRE_SIZE, MINI_FM, MINI_RAISE, miniFireTurn } from '../src/art/cultists';
-import { FLESHMANCER as FM_MOB, FM_FIRE, FM_RAISE, FM_RINGS, FM_SHARDS, fmFireTurn, fmSkullAt } from '../src/art/fleshmancer';
+import { FLESHMANCER as FM_MOB, FM_FIRE, FM_RAISE, FM_RINGS, FM_RISE, FM_SHARDS, FM_SINK, fmFireTurn, fmSkullAt } from '../src/art/fleshmancer';
 import { FM_FIRE_BURN, FM_FIRE_LAND, FM_FIRE_REACH, FM_HAND_LEFT, FM_HAND_WARN, FM_RAISE_STIR, FM_RINGS_LAID, FM_SHARD, FM_WAVE_SPEED, FM_WAVE_TIME } from '../src/art/fm_spells';
 import { GRAIN } from '../src/art/kit';
 import { TILE3, handAt, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
@@ -34,7 +34,7 @@ import type { Mob } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
 import { hookHigh } from '../src/render/bossfx';
 import { act1Rules } from '../src/game/act1_rules/index';
-import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
+import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, FLESH_BLINK, blinkNowhere, blinkedAway, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LIFE, BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
 import { ACT1_FLOORS } from '../src/game/act1';
@@ -192,7 +192,7 @@ test("2. the rules' numbers are the pictures' own", () => {
     for (const a of ACTS[kind]) {
       // (a beast is dragged for as long as it is dragged; the ball's chain breaks in his second state: below)
       if (a.id === 'dragged' || a.id === 'breakBall') continue;
-      // (the Fleshmancer's blink, FLESH_BLINK, off: its look is the art chat's, still to come, and its length will be its picture's)
+      // (the Fleshmancer's going, FLESH_BLINK: his `sink` and a moment of being nowhere after it: test 5c)
       if (a.id === 'blink') continue;
       // (CHAINED_SPIN: a whirl's loop played over and over is that much longer than its picture)
       near(a.long - (a.loop?.extra ?? 0), lastKey(mob, a.clip), 0.02, `${kind} ${a.id}: its length`);
@@ -508,6 +508,43 @@ test("5. the Chained One's attacks, and his chains breaking as he is hurt", () =
     const s = watch(g, m, 5);
     assert.ok(!s.events.some((e) => e.t === 'shake' && e.amount === 6) && g.perils.every((p) => p.kind !== 'crash'), 'no ball throw once it is gone');
   }
+});
+
+test("5c. the Fleshmancer's teleport (FLESH_BLINK, his word): crowded, he is dragged down and out of reach, nowhere a moment, and pushed up far from the hero; its numbers his pictures' own", () => {
+  assert.equal(FLESH_BLINK.on, true, 'on, his yes to its look');
+  near(FLESH_BLINK.sink, lastKey(FM_MOB, 'sink'), 0.02, 'his going: its picture\'s length');
+  near(FLESH_BLINK.rise, lastKey(FM_MOB, 'rise'), 0.02, 'his coming back: its picture\'s length');
+  near(FLESH_BLINK.gone, FM_SINK.gone, 1e-9, 'out of sight as his picture has him under');
+  near(FLESH_BLINK.sink, FM_SINK.long, 1e-9, 'the art\'s own');
+  near(FLESH_BLINK.rise, FM_RISE.long, 1e-9, 'the art\'s own');
+  const acts = ACTS.fleshmancer;
+  assert.equal(acts.find((a) => a.id === 'blink')?.clip, 'sink');
+  assert.equal(acts.find((a) => a.id === 'rise')?.clip, 'rise');
+  // (crowded: the hero at his side, and every other act of his kept cooling)
+  const { g, m } = room('fleshmancer', 1.4, 'raise');
+  m.moveCd = acts.map(() => 1e9);
+  const h = g.hero;
+  const x0 = m.x;
+  const y0 = m.y;
+  const seen: string[] = [];
+  let struckGone = false;
+  let nowhere = false;
+  const hit = (n: number): void => (g as unknown as { damageMonster(m: Monster, n: number, el: string, c: boolean, k: number): void }).damageMonster(m, n, 'phys', false, -1);
+  watch(g, m, 5, null as never, () => {
+    if (m.act && seen[seen.length - 1] !== m.act.id) seen.push(m.act.id);
+    if (blinkedAway(m)) {
+      const before = m.life;
+      hit(100);
+      if (m.life < before) struckGone = true;
+    }
+    if (blinkNowhere(m)) nowhere = true;
+    return false;
+  });
+  assert.ok(seen.includes('blink') && seen.includes('rise') && seen.indexOf('rise') > seen.indexOf('blink'), `he went and came back (${seen.join(', ')})`);
+  assert.equal(struckGone, false, 'nothing reaches him while he is gone');
+  assert.ok(nowhere, 'and he was nowhere a moment');
+  assert.ok(Math.hypot(m.x - x0, m.y - y0) > 2, `he came up elsewhere (${Math.hypot(m.x - x0, m.y - y0).toFixed(1)} tiles away)`);
+  assert.ok(Math.hypot(m.x - h.x, m.y - h.y) >= Math.min(FLESH_BLINK.far, 4) - 0.01, `far from the hero (${Math.hypot(m.x - h.x, m.y - h.y).toFixed(1)})`);
 });
 
 test("6. the amalgamation's attacks, its bone beasts, and its eating them back", () => {

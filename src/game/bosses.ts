@@ -116,9 +116,13 @@ export interface ActDef {
   loop?: { at: number; span: number; extra: number };
 }
 
-/** (FLESH_BLINK) Is he gone now, between going and coming back (out of sight, out of reach)? */
+/** (FLESH_BLINK) Is he gone now, between going and coming back (out of reach)? */
 export function blinkedAway(m: { act?: { id: string; t: number } }): boolean {
-  return !!m.act && m.act.id === 'blink' && m.act.t >= FLESH_BLINK.gone && m.act.t < FLESH_BLINK.back;
+  return !!m.act && ((m.act.id === 'blink' && m.act.t >= FLESH_BLINK.gone) || (m.act.id === 'rise' && m.act.t < FLESH_BLINK.up));
+}
+/** (FLESH_BLINK) Is he nowhere, between his two pits (nothing of him to be drawn: his shadow, bar and name too)? */
+export function blinkNowhere(m: { act?: { id: string; t: number } }): boolean {
+  return !!m.act && m.act.id === 'blink' && m.act.t >= FLESH_BLINK.sink;
 }
 
 /** Where in its pictures, and in its own timings, an act `t` seconds in is (its `loop` played round and round). */
@@ -128,6 +132,17 @@ export function actClock(a: ActDef | null | undefined, t: number): number {
   if (t < L.at + L.span + L.extra) return L.at + ((t - L.at) % L.span);
   return t - L.extra;
 }
+/**
+ * THE FLESHMANCER'S TELEPORT. The owner, 17 Oct 2026, 11:37: "The fleshmancer needs a teleport to move around the arena."
+ * So, `on`: when the hero has been close to him (`near` tiles) for `crowd` seconds, or every `every` seconds of his fight
+ * anyway, he goes: his dead drag him down into a pit of his fire (the art chat's `sink`, `sink` seconds long; out of
+ * sight and out of reach from `gone`), he is nowhere for `pause` seconds, and they push him up out of another at a spot of
+ * his hall `far` tiles or more from the hero, in sight of him (its `rise`, `rise` seconds; out of reach until `up` into
+ * it). His look going and coming back with his yes, handed back by the art chat (mockup/flesh-teleport, 17 Oct; his pick
+ * by 15:55: "Dragged down, pushed up (Recommended)"; to its film by 16:23: "Yes, send it to main (Recommended)").
+ */
+export const FLESH_BLINK = { on: true, near: 2.6, crowd: 1.5, every: 12, sink: 1.0, gone: 0.72, pause: 0.4, rise: 1.2, up: 0.3, far: 5 };
+
 export const ACTS: Record<GaitedKind, readonly ActDef[]> = {
   // THE HEADSMAN: his chop; the wide sweep when the hero is at his feet; the whirling throw at one who
   // stands off; the sentence, the long line, his biggest.
@@ -170,8 +185,10 @@ export const ACTS: Record<GaitedKind, readonly ActDef[]> = {
     { id: 'rings', clip: 'rings', long: 2.2, hit: 0.86, dmg: 0.9, cooldown: 9, first: 4, after: 0.8, near: 0, far: 5.2 },
     { id: 'fire', clip: 'fire', long: 4.6, hit: 0.56, dmg: 0.5, cooldown: 15, first: 9, after: 1.0, near: 0, far: 5.4 },
     { id: 'raise', clip: 'raise', long: 2.6, hit: 0.72, dmg: 0, cooldown: 17, first: 6, after: 0.8, near: 0, far: 14 },
-    // (FLESH_BLINK: he goes, and comes back elsewhere in his hall; brought by the rules, not chosen)
-    { id: 'blink', clip: 'blink', long: 1.2, hit: 0.4, dmg: 0, cooldown: 0, first: 0, after: 0.3, near: 0, far: 99, forced: true },
+    // (FLESH_BLINK: dragged down, and nowhere a moment (his `sink` played, its last picture with nothing of him); then pushed
+    // up elsewhere in his hall (`rise`); both brought by the rules, not chosen)
+    { id: 'blink', clip: 'sink', long: FLESH_BLINK.sink + FLESH_BLINK.pause, hit: FLESH_BLINK.gone, dmg: 0, cooldown: 0, first: 0, after: 0, near: 0, far: 99, forced: true },
+    { id: 'rise', clip: 'rise', long: FLESH_BLINK.rise, hit: FLESH_BLINK.up, dmg: 0, cooldown: 0, first: 0, after: 0.4, near: 0, far: 99, forced: true },
   ],
   // THE MINI FLESHMANCER: his smaller fire, swept across before him; his call, which raises the dead
   // out of the cult's bodies that lie near.
@@ -272,15 +289,6 @@ export const FLESHMANCER = {
   fire: { burst: 0.56, pour: 0.62, stop: 3.9, land: 1.0, reach: 4.8, half: 0.45, burn: 0.6, tick: 0.22, burnDmg: 0.5 },
   fireAt: [[0.56, -0.35], [0.62, -0.35], [1, 0.309], [1.5, 1.256], [2, 2.26], [2.5, 3.283], [3, 4.288], [3.5, 5.238], [3.9, 5.933]] as ReadonlyArray<readonly [number, number]>,
 };
-
-/**
- * THE FLESHMANCER'S TELEPORT. The owner, 17 Oct 2026, 11:37: "The fleshmancer needs a teleport to move around the arena."
- * So, `on`: when the hero has been close to him (`near` tiles) for `crowd` seconds, or every `every` seconds of his fight
- * anyway, he goes (from `gone` seconds into it, out of sight and out of reach) and comes back (`back`) at a spot of his
- * hall `far` tiles or more from the hero, in sight of him. HIS LOOK going and coming back is the art chat's (sent 17 Oct,
- * 11:43): until it is drawn and he has seen it, this stays off.
- */
-export const FLESH_BLINK = { on: false, near: 2.6, crowd: 1.5, every: 12, gone: 0.4, back: 0.8, far: 5 };
 
 /** THE MINI FLESHMANCER. */
 export const MINIFM = {
@@ -473,6 +481,11 @@ export class BossRules {
       const form = m.form ?? 0;
       if (form < 2 && frac < CHAINED.breakAt[form]) return acts.findIndex((a) => a.id === (form === 0 ? 'breakL' : 'breakBall'));
     } else if (m.kind === 'fleshmancer' && FLESH_BLINK.on) {
+      // (gone: he comes back)
+      if (m.blinkRise) {
+        m.blinkRise = 0;
+        return acts.findIndex((a) => a.id === 'rise');
+      }
       // (crowded a while, or his while come round: he goes)
       const h = this.g.hero;
       const close = Math.hypot(h.x - m.x, h.y - m.y) < FLESH_BLINK.near;
@@ -621,6 +634,11 @@ export class BossRules {
       m.form = was + 1;
       m.speed *= CHAINED.faster[was + 1] / CHAINED.faster[was];
     } else if (a.id === 'burst') m.phase++;
+    // (FLESH_BLINK: gone, he comes back at once, rise)
+    else if (a.id === 'blink') {
+      m.blinkRise = 1;
+      m.cd = 0;
+    }
     const r1 = ACT1.on ? act1Rules(m.kind) : null;
     if (r1 && r1.end) r1.end(this, m, a);
   }
@@ -993,9 +1011,9 @@ export class BossRules {
         break;
       }
       case 'blink': {
-        // (FLESH_BLINK: gone; then back, elsewhere in his hall, far from the hero and in sight of him)
-        if (at(FLESH_BLINK.gone)) g.sfx('swing', 0.6);
-        if (!at(FLESH_BLINK.back)) break;
+        // (FLESH_BLINK: dragged down; nowhere; then, where he will come up: elsewhere in his hall, far from the hero and in sight of him)
+        if (at(0.24)) g.sfx('slam', 0.5);
+        if (!at(FLESH_BLINK.sink + FLESH_BLINK.pause * 0.5)) break;
         const spots = g.spotsRound(m.x, m.y, 120).filter((s) => Math.hypot(s.x - h.x, s.y - h.y) >= FLESH_BLINK.far && g.sees(s.x, s.y, h.x, h.y));
         if (spots.length) {
           const s = spots[Math.floor(g.rng.next() * spots.length)];

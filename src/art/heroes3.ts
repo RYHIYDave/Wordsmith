@@ -178,9 +178,11 @@ const KNIGHT: Plan = { idle: 'rear', walk: 'krun', attack: 'strike', attack2: 'k
  * THE WARRIOR'S DIVING THRUST (art/moves3.ts THRUST3; the owner, 17 Oct: "A diving thrust in the direction with the
  * sword extended.  Same distance as the leap.  Same mobility."): with this on, the knight's swipe is shown as the
  * thrust (his `leap` pictures are the dive, his `land` the lunge), carried over the floor as the leap is; and big and
- * wild (render/wild.ts) shows a dive's dust, wind and blade, not a leap's. THE SWITCH, OFF: the main chat's.
+ * wild (render/wild.ts) shows a dive's dust, wind and blade, not a leap's. THE SWITCH: the main chat's; ON in the next version
+ * after 22.1, his yes to its film by 16:37, 17 Oct: "Yes, send it to main (Recommended)" (offered as: it goes to the main
+ * chat to put in the game in place of his leap). Its blow at the sword's point: game/defs.ts LUNGE.
  */
-export const THRUST = { on: false };
+export const THRUST = { on: true };
 const RANGER: Plan = { idle: 'rstand', walk: 'rrun', attack: 'shot', heavy: 'volley', roll: 'roll', fall: 'rfall', reel: 'rreel', lurch: 'rlurch', idleA: 'squirrel', idleB: 'sighting' };
 const MAGE: Plan = { idle: 'mstand', walk: 'mrun', attack: 'wave', heavy: 'orb', hold: 'beam', release: 'beamend', fall: 'mfall', reel: 'mreel', lurch: 'mlurch', idleA: 'mlight', idleB: 'reading' };
 /**
