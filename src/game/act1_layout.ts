@@ -414,6 +414,8 @@ function sizer(kind: LandKind): (rng: RNG, role: AreaRole) => { rx: number; ry: 
  * 17 Oct 2026, the owner after playing them, 11:37: "The levels are very short in 6-7 so far"; "8-10 need to be
  * significantly longer as well". (They were: the Quarry 6, the Ledge Road 9 legs, Echo Canyon 8, the Pinewood 6, the Fen 9.)
  */
+/** The Pinewood's paths, wider (his word of 17 Oct; a look: off until he has seen it). */
+export const PINE_PATH = { on: false, w: 4.6 };
 export const CHAIN: Record<LandKind, number> = { quarry: 10, ledge: 15, canyon: 14, pine: 11, fen: 16 };
 
 function planFor(kind: LandKind, rng: RNG): Plan | null {
@@ -429,7 +431,9 @@ function planFor(kind: LandKind, rng: RNG): Plan | null {
     case 'ledge':
       return planLedge(rng, size, across);
     case 'pine':
-      return planChain(rng, { count: CHAIN.pine, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.6, size, broad: 0.55, laneW: 3.2, laneLong: [3, 7], gap: 4 });
+      // (its paths between the open areas wider than they were, 3.2: "The thin paths through the forest are hard to see past
+      // the trees maybe make them a little wider", 17 Oct 2026, 11:37)
+      return planChain(rng, { count: CHAIN.pine, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.6, size, broad: 0.55, laneW: PINE_PATH.on ? PINE_PATH.w : 3.2, laneLong: [3, 7], gap: 4 });
     case 'fen':
       return planChain(rng, { count: CHAIN.fen, heading: across + rng.range(-0.3, 0.3), spread: 0.9, turn: 0.8, size, broad: 0, laneW: 2, laneLong: [2, 5], gap: 3 });
   }
