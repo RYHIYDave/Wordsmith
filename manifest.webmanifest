@@ -1,0 +1,9 @@
+{
+  "name": "Wordsmith",
+  "short_name": "Wordsmith",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#07050a",
+  "theme_color": "#07050a"
+}
