@@ -121,3 +121,9 @@ the boss's frames from the painter; "page" what Linux says the browser's page pr
 - THE BIG THREE: the Unfinished, the Carrion Queen and the Drowned Eye each hold about 300 MB of frames (bitmaps),
   four to five times the amalgamation's 69 and about twice the Chained One's three states together (167). Nothing
   slims them without changing how they look (fewer frames, or coarser ones): his to see first.
+- PLAY-LIKE, WITH THE MEND (NATURAL=1: the hero waits where the floor begins while the painter paints, then fights
+  the boss; 16 Oct, 22:58 to 23:20): floor 4 (live) canvas 103, boss frames 69, page 561 MB; floor 6 canvas 106, the
+  Unfinished 366, page 873; floor 7 canvas 104, the Queen 373, page 899; floor 10 canvas 112, the Eye 320 (through his
+  three stages), page 850; back in town canvas 64, page 441. The painter took 206 to 331 s a floor here. So the
+  canvases are now as the live game's; what is more is the three big bosses' frames, about 300 MB more than the
+  live game's biggest moment.
