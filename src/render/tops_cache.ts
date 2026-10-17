@@ -68,17 +68,22 @@ export interface Chunk {
   depth: number;
   /** Its four layers, each a quarter of its slab deep (made when it is first drawn as them: see `layers`). */
   subs: Chunk[] | null;
+  /** A RUN: the chunks of slabs one after another in a column, drawn as one picture (see `run`); its slabs go from `s` to `last`. */
+  members?: Chunk[];
+  last?: number;
 }
 
 export const chunkKey = (s: number, c: number): number => (s + 32768) * 65536 + (c + 32768);
 
 export class TopsCache {
   private chunks = new Map<number, Chunk>();
+  /** The runs made, by column and first and last slab. */
+  private runs = new Map<string, Chunk>();
   private owner: unknown = null;
   /** The slab and column the chunks held were cut to. */
   private cut = '';
   /** For measuring: chunks made, drawn as pictures and drawn as their trees this frame; trees drawn one by one this frame. */
-  readonly stats = { made: 0, pictures: 0, fell: 0, thin: 0, trees: 0, held: 0 };
+  readonly stats = { made: 0, pictures: 0, fell: 0, thin: 0, trees: 0, held: 0, runs: 0, ms: 0 };
 
   /** This frame's floor: a new one lets go of every picture of the last. */
   begin(owner: unknown): void {
@@ -95,6 +100,8 @@ export class TopsCache {
   }
 
   clear(): void {
+    for (const r of this.runs.values()) drop(r);
+    this.runs.clear();
     for (const ch of this.chunks.values()) {
       for (const sub of ch.subs ?? []) drop(sub);
       drop(ch);
@@ -138,9 +145,47 @@ export class TopsCache {
     return ch.subs;
   }
 
+  /**
+   * THE CHUNKS OF ONE COLUMN, slab after slab, AS ONE PICTURE: where nothing comes between them this frame they are laid
+   * one over the next, in their order, and drawn once. (Each chunk's picture is its trees laid in order, and the slabs
+   * are in order of depth, so the run is all of them in order.) Null: not made yet, and no time to make it this frame.
+   */
+  run(members: Chunk[], frame: number, res: number, canMake: boolean): Chunk | null {
+    const a = members[0];
+    const b = members[members.length - 1];
+    const key = `${a.c}:${a.s}:${b.s}`;
+    let r = this.runs.get(key);
+    if (!r) {
+      if (!canMake || typeof document === 'undefined') return null;
+      const t0 = performance.now();
+      let y0 = Infinity;
+      let y1 = -Infinity;
+      for (const m of members) {
+        if (m.y0 < y0) y0 = m.y0;
+        if (m.y0 + m.h > y1) y1 = m.y0 + m.h;
+      }
+      const cv = document.createElement('canvas');
+      cv.width = a.w * res;
+      cv.height = (y1 - y0) * res;
+      const g = cv.getContext('2d');
+      if (!g) return null;
+      g.imageSmoothingEnabled = false;
+      for (const m of members) if (m.sp) g.drawImage(m.sp.img, 0, (m.y0 - y0) * res);
+      const trees: CachedTree[] = [];
+      for (const m of members) trees.push(...m.trees);
+      r = { key: -2, s: a.s, c: a.c, trees, sp: { img: cv, w: a.w, h: y1 - y0, ax: 0, ay: 0, density: res }, x0: a.x0, y0, w: a.w, h: y1 - y0, used: frame, depth: a.depth, subs: null, members, last: b.s };
+      this.runs.set(key, r);
+      this.stats.runs++;
+      this.stats.ms += performance.now() - t0;
+    }
+    r.used = frame;
+    return r;
+  }
+
   /** Lay a chunk's trees into its picture (`res`: picture pixels a game pixel, the screen's). */
   paint(ch: Chunk, res: number): void {
     if (ch.sp || ch.trees.length === 0 || typeof document === 'undefined') return;
+    const t0 = performance.now();
     const cv = document.createElement('canvas');
     cv.width = ch.w * res;
     cv.height = ch.h * res;
@@ -154,11 +199,17 @@ export class TopsCache {
     }
     ch.sp = { img: cv, w: ch.w, h: ch.h, ax: 0, ay: 0, density: res };
     this.stats.made++;
+    this.stats.ms += performance.now() - t0;
     this.stats.held++;
   }
 
   /** Let go of the chunks that have not been near the screen for a while. */
   forget(frame: number): void {
+    for (const [key, r] of this.runs) {
+      if (frame - r.used <= KEEP_FRAMES / 2) continue;
+      drop(r);
+      this.runs.delete(key);
+    }
     for (const [key, ch] of this.chunks) {
       // (a chunk's layers not drawn for a while let go of, the chunk kept)
       if (ch.subs && ch.subs.every((sub) => frame - sub.used > KEEP_FRAMES)) {

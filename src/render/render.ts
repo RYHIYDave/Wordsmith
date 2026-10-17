@@ -3297,7 +3297,7 @@ export class Renderer {
     // wide or tall can be behind none that is seen)
     const thin = this.thinTops;
     thin.clear();
-    const who: { x: number; y: number }[] = [{ x: heroX, y: heroY }, ...this.seenFoes];
+    const who: { x: number; y: number; d: number }[] = [{ x: heroX, y: heroY, d: this.heroD }, ...this.seenFoes];
     const looked = new Set<Chunk>();
     for (const f of who) {
       if (f.x < -140 || f.x > W + 140 || f.y < -20 || f.y > H + 160) continue;
@@ -3317,14 +3317,45 @@ export class Renderer {
     }
     this.thinDrawn.clear();
     tc.stats.thin = 0;
+    // COLUMN BY COLUMN: the chunks of slabs one after another that have pictures, none seen through and none with the hero
+    // or a monster in sight in its slab and column, as one picture (a run); the rest each as itself
+    const byCol = new Map<number, Chunk[]>();
     for (const ch of seen) {
-      const seenThrough = thin.size > 0 && ch.trees.some((t) => thin.has(t.top));
-      if (ch.sp && !seenThrough) this.standChunk(ch, false);
-      else if (ch.sp) {
-        // (one of its trees seen through: drawn as its four layers, the one that holds that tree tree by tree)
-        tc.stats.thin++;
-        this.standLayers(ch, false);
-      } else this.standChunkTrees(ch);
+      const list = byCol.get(ch.c);
+      if (list) list.push(ch);
+      else byCol.set(ch.c, [ch]);
+    }
+    for (const [c, list] of byCol) {
+      list.sort((a, b) => a.s - b.s);
+      // (the slabs the hero or a monster in sight stands in, in this column or near enough to it to reach into it)
+      const busy = new Set<number>();
+      const x0 = cam.ox + c * COLUMN;
+      for (const f of who) if (f.x > x0 - 64 && f.x < x0 + COLUMN + 64) busy.add(Math.floor(f.d / SLAB));
+      let run: Chunk[] = [];
+      const close = (): void => {
+        if (run.length >= 2) {
+          const r = tc.run(run, frame, RES, performance.now() - began < TOPS_BUILD_MS);
+          if (r) this.standChunk(r, false);
+          else for (const ch of run) this.standChunk(ch, false);
+        } else for (const ch of run) this.standChunk(ch, false);
+        run = [];
+      };
+      for (const ch of list) {
+        const seenThrough = thin.size > 0 && ch.trees.some((t) => thin.has(t.top));
+        if (ch.sp && !seenThrough && !busy.has(ch.s)) {
+          if (run.length > 0 && run[run.length - 1].s !== ch.s - 1) close();
+          run.push(ch);
+          continue;
+        }
+        close();
+        if (ch.sp && !seenThrough) this.standChunk(ch, false);
+        else if (ch.sp) {
+          // (one of its trees seen through: drawn as its four layers, the one that holds that tree tree by tree)
+          tc.stats.thin++;
+          this.standLayers(ch, false);
+        } else this.standChunkTrees(ch);
+      }
+      close();
     }
     // (while there is time, the chunks round the screen, for where the camera goes next)
     for (let s = s0 - 2; s <= s1 + 2 && performance.now() - began < TOPS_BUILD_MS; s++) {
@@ -3443,14 +3474,20 @@ export class Renderer {
     // (a chunk that falls is drawn as its four layers, and they are looked at in turn; a layer that falls, as its trees)
     let pending = this.frameChunks.slice();
     let fell = 0;
-    for (let pass = 0; pass < 2 && pending.length > 0; pass++) {
+    for (let pass = 0; pass < 3 && pending.length > 0; pass++) {
       const bad = this.topsBetween(pending);
       if (bad.size === 0) break;
       fell += bad.size;
       for (const st of this.stands) if (st.chunk && bad.has(st.chunk)) st.skip = true;
       const next: Chunk[] = [];
       for (const ch of bad) {
-        if (ch.depth === TOPS_CACHE.slab) next.push(...this.standLayers(ch, true));
+        // (a run as its chunks; a chunk as its four layers; a layer as its trees)
+        if (ch.members) {
+          for (const m of ch.members) {
+            this.standChunk(m, true);
+            next.push(m);
+          }
+        } else if (ch.depth === TOPS_CACHE.slab) next.push(...this.standLayers(ch, true));
         else this.standChunkTrees(ch);
       }
       pending = next;
@@ -3467,9 +3504,12 @@ export class Renderer {
     for (const ch of chunks) {
       let m = byDepth.get(ch.depth);
       if (!m) byDepth.set(ch.depth, (m = new Map()));
-      const list = m.get(ch.s);
-      if (list) list.push(ch);
-      else m.set(ch.s, [ch]);
+      // (a run, under each of its slabs)
+      for (let s = ch.s; s <= (ch.last ?? ch.s); s++) {
+        const list = m.get(s);
+        if (list) list.push(ch);
+        else m.set(s, [ch]);
+      }
     }
     for (const st of this.stands) {
       if (st.top || st.chunk || st.skip) continue;
