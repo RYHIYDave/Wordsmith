@@ -6324,7 +6324,9 @@ tsx tools/balance.ts 12 2400                                                    
      `<head>` and reset, then `dist/artifact.html`), with a dozen or so playtests played on it two
      at a time (the scripts are `wrap<version>.sh` in the workspace's scratchpad; any of them
      shows the wrapping).
-  8. Publish `dist/artifact.html` to the page's own link, with a label. Then the owner's pictures
+  8. Publish `dist/artifact.html` to the page's own link, with a label. **Also put the release on
+     the game's own web address** (below): `node tools/make_site.mjs <release Play.html> <dir>`,
+     the files over the branch `gh-pages`, commit, push. Then the owner's pictures
      and a short message: what changed; the calls made for him that he may overrule; what was
      tested, with numbers that were checked; what nobody has checked.
   9. The notes: this file (a "Published" and a "Results" paragraph under the version), the
@@ -6339,6 +6341,23 @@ tsx tools/balance.ts 12 2400                                                    
   the session: in a new or continued session, publishing the path alone creates a second page,
   and the owner's saved character lives on the first (browser storage is per page). That happened
   once on 3 Oct; the stray copy is `https://claude.ai/artifact/WNobJAAh7WhtLDUJrhpHns`.
+- **The game's own web address, with an offline copy for the phone:
+  `https://ryhiydave.github.io/Wordsmith/`** (GitHub Pages, from the branch `gh-pages`; first put up
+  17 Oct 2026 at about 06:53 with Version 22.0). His words: 06:30, "Can I play offline?"; 06:43,
+  "Sure", to making a home-screen offline version on a simple web host after the speed work; 06:46,
+  "Can you get the web host set up now?  I’m about to fly"; told the GitHub repository is public,
+  so anyone with the link could open the page, 06:50: "K go". The branch holds four files made by
+  `tools/make_site.mjs` from a release's `Play.html`: `index.html` (the game, with the home-screen
+  settings and the offline helper's start), `sw.js` (the offline helper: the phone keeps the page;
+  opened with no connection the kept copy plays; opened online the kept copy plays at once and a
+  fresh one is fetched behind it, so a NEW VERSION SHOWS THE SECOND TIME it is opened after
+  release), `manifest.webmanifest`, `.nojekyll`. On the iPhone: open the link in Safari, Share, Add
+  to Home Screen, open it once from the icon while online (the home-screen app keeps its own copy and
+  its own save, apart from Safari's). Its save is the browser's, on that address: the claude.ai
+  page's save does not carry over (a save transfer would have to be made). Tested before it went
+  up: on a local server with the connection then cut, the page reloaded and a new tab both came up
+  on the title screen. Pushing to `gh-pages` turned GitHub Pages on by itself; the shell here
+  cannot reach `github.io`, so look at it with WebFetch.
 - Touch has only been tested with simulated fingers. Treat the owner's first phone session as the
   real test.
 - The owner sends ideas quickly and often. Stay reachable: work in small steps rather than long
