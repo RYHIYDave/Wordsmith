@@ -58,7 +58,7 @@ import nodeFs from 'node:fs';
 // @ts-ignore
 import nodePath from 'node:path';
 
-import { FLESHMANCER, FLESHMANCER_SWITCH, FM_ATTACKS, FM_DEATH, FM_SHAPE_UNDER, fmPitAt, FM_BODY, FM_FIRE, FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, FM_HAND_UNDER, FM_RAISE, FM_RINGS, FM_SHARDS, fmFireTurn, fmJawOf, fmMouthAt, makeRingHandArt, paintRingHand, FM_GOUT_LAND, FM_GOUT_LET, FM_GOUT_SPOT, FM_HOOD_R, FM_HOOD_UP, FM_MADE, FM_REST, FM_SHAPE, FM_SKULL_WIDE, fmGoutAt, fmHemOf, fmHoodTop, fmMantle, fmSolids, fmTails, makeFleshmancerArt3, staffOf } from '../src/art/fleshmancer';
+import { FLESHMANCER, FLESHMANCER_SWITCH, FM_ATTACKS, FM_DEATH, FM_RISE, FM_SINK, fmTeleportPitAt, FM_SHAPE_UNDER, fmPitAt, FM_BODY, FM_FIRE, FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, FM_HAND_UNDER, FM_RAISE, FM_RINGS, FM_SHARDS, fmFireTurn, fmJawOf, fmMouthAt, makeRingHandArt, paintRingHand, FM_GOUT_LAND, FM_GOUT_LET, FM_GOUT_SPOT, FM_HOOD_R, FM_HOOD_UP, FM_MADE, FM_REST, FM_SHAPE, FM_SKULL_WIDE, fmGoutAt, fmHemOf, fmHoodTop, fmMantle, fmSolids, fmTails, makeFleshmancerArt3, staffOf } from '../src/art/fleshmancer';
 import { checkBoss, findingsSaid, framesOf, inLump } from '../src/art/boss_checks';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import { ENEMY_RIM } from '../src/art/mkit';
@@ -66,7 +66,7 @@ import { KNIGHT_BODY } from '../src/art/moves3';
 import { deathOfMob, paintMob, paintViewOf, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
 import { project, solve } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
-import type { Sprite } from '../src/engine/px';
+import type { Px, Sprite } from '../src/engine/px';
 import { paintWithoutCanvas, paintingOf } from './helpers';
 
 interface Assert {
@@ -131,13 +131,15 @@ test('1. his switch goes with the rules\' (game/bosses.ts BOSSES5), and only the
   assert.equal(users.sort().join(' '), 'art/bestiary.ts render/bossfx.ts', 'the game files that draw him');
 });
 
-test('2. EVERY MOVE OF HIS THROUGH EVERY CHECK: every frame, from in front and from behind, and from every frame of his stand into each and back, into his glide and out of it; his death as he is dragged down through the floor', () => {
-  assert.equal(FM_MADE.join(','), 'stand,walk,setOff,halt,attack,rings,raise,fire,reel,dying');
+test('2. EVERY MOVE OF HIS THROUGH EVERY CHECK: every frame, from in front and from behind, and from every frame of his stand into each and back, into his glide and out of it; his death and his teleport as he is dragged down through the floor and pushed up out of it', () => {
+  assert.equal(FM_MADE.join(','), 'stand,walk,setOff,halt,attack,rings,raise,fire,sink,rise,reel,dying');
   assert.equal(framesOf(FLESHMANCER, 'stand').length, FLESHMANCER.idleFrames + 1);
-  const found = checkBoss(FLESHMANCER, FM_SHAPE, FM_MADE.filter((m) => m !== 'dying'));
+  const through = ['dying', 'sink', 'rise'];
+  const found = checkBoss(FLESHMANCER, FM_SHAPE, FM_MADE.filter((m) => !through.includes(m)));
   assert.equal(found.length, 0, `the fleshmancer: ${findingsSaid(found).slice(0, 12).join('; ')}`);
-  const under = checkBoss(FLESHMANCER, FM_SHAPE_UNDER, ['dying']);
-  assert.equal(under.length, 0, `his death: ${findingsSaid(under).slice(0, 12).join('; ')}`);
+  // (his death, and his teleport, going and coming back: dragged down through the floor, and pushed up out of it)
+  const under = checkBoss(FLESHMANCER, FM_SHAPE_UNDER, through);
+  assert.equal(under.length, 0, `his death and his teleport: ${findingsSaid(under).slice(0, 12).join('; ')}`);
 });
 
 test('3. his stand paints in every frame both ways round: nothing cyan, his edge round him, every pixel whole or empty but the edge', () => {
@@ -404,5 +406,56 @@ test('17. his death: the pit opens under him, he goes under, his hood first and 
       was = solid;
     }
     assert.ok(was < Infinity);
+  }
+});
+
+test('18. his teleport (17 Oct, "Dragged down, pushed up"): going, the pit opens, he is hauled under, the skull last, nothing of him left; coming back, the pit first, the skull up out of it before his hood, and he ends floating as he stands', () => {
+  // the pit, going and coming back: it opens, and is shut again by the end
+  assert.ok(fmTeleportPitAt(true, 0) === 0 && fmTeleportPitAt(true, FM_SINK.grab) > 15 && fmTeleportPitAt(true, FM_SINK.long) < 0.5, 'going: the pit opens and closes');
+  assert.ok(fmTeleportPitAt(false, 0) === 0 && fmTeleportPitAt(false, FM_RISE.up) > 15 && fmTeleportPitAt(false, FM_RISE.long) < 0.5, 'coming back: the pit opens and closes');
+  const sink = (t: number) => skeletonAt(FLESHMANCER, 'sink', t);
+  const rise = (t: number) => skeletonAt(FLESHMANCER, 'rise', t);
+  // going: the warning first (his claw and the skull up, nothing under yet), then under: his hood before the skull, all of him by FM_SINK.gone
+  assert.ok(fmHoodTop(sink(FM_SINK.grab)) > 40, 'he rears before he is pulled down');
+  assert.ok(fmHoodTop(sink(FM_SINK.under + 0.02)) < 0 && staffOf(sink(FM_SINK.under + 0.02)).skull[2] > 0, 'his hood under before the skull');
+  assert.ok(staffOf(sink(FM_SINK.gone)).skull[2] < -2, 'the skull under by FM_SINK.gone');
+  // coming back: nothing of him up until FM_RISE.up; the skull out before his hood; up by FM_RISE.out; ending where his stand begins
+  assert.ok(staffOf(rise(FM_RISE.up - 0.02)).skull[2] < 0, 'nothing of him up while the pit opens');
+  const mid = rise(0.32);
+  assert.ok(staffOf(mid).skull[2] > 0 && fmHoodTop(mid) < 0, 'the skull up out of the pit before his hood');
+  assert.ok(fmHoodTop(rise(FM_RISE.out)) > 60, 'up out of it by FM_RISE.out');
+  const end = rise(FM_RISE.long);
+  const rest = solve(FM_BODY, FM_REST);
+  assert.ok(Math.abs(end.pelvis[2] - rest.pelvis[2]) < 0.3, 'he ends floating where he stands');
+  // the pictures: going ends with nothing of him; coming back begins with nothing of him but the pit; both as the game holds them
+  for (const view of ['front', 'back'] as const) {
+    const solidOf = (p: Px): number => {
+      let n = 0;
+      for (let i = 3; i < p.d.length; i += 4) if (p.d[i] === 255) n++;
+      return n;
+    };
+    const gone = solidOf(paintMob(FLESHMANCER, 'sink', FM_SINK.long, view).px);
+    // (no pixel left alone where the floor cuts him, in any frame of either)
+    for (const [move, long] of [['sink', FM_SINK.long], ['rise', FM_RISE.long]] as const) {
+      for (let i = 0; i <= Math.round(long * 30); i++) {
+        const p = paintMob(FLESHMANCER, move, i / 30, view).px;
+        let lone = 0;
+        for (let y = 0; y < p.h; y++) {
+          for (let x = 0; x < p.w; x++) {
+            if (p.d[(y * p.w + x) * 4 + 3] !== 255) continue;
+            let m = 0;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && x + dx >= 0 && y + dy >= 0 && x + dx < p.w && y + dy < p.h && p.d[((y + dy) * p.w + x + dx) * 4 + 3] === 255) m++;
+            if (m === 0) lone++;
+          }
+        }
+        assert.equal(lone, 0, `${view}, ${move} frame ${i}: ${lone} lone pixels`);
+      }
+    }
+    assert.ok(gone < 60, `${view}: ${gone} pixels of him left as he has gone`);
+    const art = makeFleshmancerArt3()[view];
+    const moves = art.clips?.moves ?? {};
+    assert.ok(moves.sink && moves.rise, `${view}: his teleport as the game holds his moves`);
+    assert.equal(moves.sink.frames.length, Math.round(FM_SINK.long * 30) + 1);
+    assert.equal(moves.rise.frames.length, Math.round(FM_RISE.long * 30) + 1);
   }
 });
