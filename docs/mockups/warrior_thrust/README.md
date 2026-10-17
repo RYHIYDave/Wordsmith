@@ -56,9 +56,16 @@ switch that is off: `THRUST` in `src/art/heroes3.ts`. With it off the game is as
   film with `tools/wild_films.py ... thrust`. A film of the move alone:
   `src/dev/preview_moves.ts`, `4:wild!rear~0.4+kthrust+rear~0.4=Thrust`.
 
+- With main as at Version 22.1 merged in (99a128c): tsc clean; the whole unit suite 1752 of 1752. And the switch
+  turned on in the source (so that the painter's side worker, which paints the hero's pictures ahead from the
+  source since 22.1, paints the thrust too) and filmed in the game again (`SKILL=thrust`, `dist/thrust_src_on.html`):
+  the dive and the lunge as in the film he saw. Its room: the warrior's leap pictures are as many as before; his
+  coming up out of the lunge is 3 frames more a side than the leap's landing.
+
 ## To make it the game's own (the main chat)
 
-- `THRUST.on = true` in `src/art/heroes3.ts`. Nothing else in the art changes.
+- `THRUST.on = true` in `src/art/heroes3.ts`, in the source (not only at run time: the painter's worker reads it
+  from the source). Nothing else in the art changes. (`__dbg.thrust(on)` turns it on in the page alone, for films.)
 - The rules are untouched: it is still the game's `leap` (the move, its range, its time, its
   landing blast round him). Whether the blow should strike at the point, along the line of the
   dive, or round him as the leap's does, and the skill's name and words ("Jump to a spot..."), are
