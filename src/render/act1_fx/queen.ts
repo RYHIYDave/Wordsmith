@@ -23,7 +23,7 @@ import { drawSweepRing } from '../../art/boss_shots';
 import { drawAimLine } from '../../art/mob_shots';
 import { Px, flipSprite } from '../../engine/px';
 import type { Sprite } from '../../engine/px';
-import { QN, viewIndex } from '../../game/act1_rules/queen';
+import { HOME_AT, QN, viewIndex } from '../../game/act1_rules/queen';
 import { actDef } from '../../game/bosses';
 import { flipped } from '../../game/facing';
 import type { Peril } from '../../game/state';
@@ -121,7 +121,8 @@ export const FX: Act1Fx | null = {
     const a = actDef(m);
     if (!a) return;
     const T = m.act.t;
-    if (a.id === 'queen:dive') {
+    // (her dive home, QUEEN_ROAM: its line marked once she is set down over her perch, up out of sight)
+    if (a.id === 'queen:dive' || (a.id === 'queen:home' && T >= HOME_AT)) {
       const D = QN.dive;
       if (T < D.launch || T >= a.hit) return;
       const k = clamp01((T - D.launch) / (D.stoop - D.launch));

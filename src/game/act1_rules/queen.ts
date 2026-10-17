@@ -56,6 +56,18 @@ export const QN = {
   call: { screech: 0.36, at: 0.8, n: 3, most: 4 },
 };
 
+/**
+ * SHE ROAMS HER EYRIE (the owner, 17 Oct 2026, 11:37: "Neither the unfinished nor the carrion queen moved at all during
+ * the fight.  The queen should move around a lot"; and 11:45: "If the queen needs to be at a certain point for her death
+ * animation, then when she’s at 1% HP have her fly up and land where she’s supposed to, then one hit kills and it works as
+ * designed"). So, `on`: after each of her moves, and when she has stood `every` seconds, she hops to another spot of her
+ * eyrie, `near` to `far` tiles from the hero and at least `apart` from where she was; her life cannot be brought below
+ * `last` of it until she is back on her perch over the drop; brought there, she flies up as in her dive and comes down on
+ * her perch (`queen:home`: out of sight, out of reach), and stays; the next blow kills her, and she goes over the edge as
+ * her death was drawn.
+ */
+export const QUEEN_ROAM = { on: true, every: [1.0, 2.2] as const, near: 2.2, far: 4.6, apart: 1.6, last: 0.01 };
+
 /** Her flock: the Ledge Road's vultures (or, until they are in the game, what stands in for them: game/act1_mobs.ts). */
 export function flockKind(): MonsterKind {
   return act1Ready('vulture') ? 'vulture' : 'dagger';
@@ -72,6 +84,8 @@ export const QN_ACTS: readonly ActDef[] = [
   { id: 'queen:gust', clip: 'gust', long: 1.45, hit: 0.68, dmg: 0.5, cooldown: 8, first: 3, after: 0.4, near: 0, far: 5.0 },
   { id: 'queen:dive', clip: 'dive', long: 2.2, hit: 1.08, dmg: 1.6, cooldown: 7, first: 4, after: 0.5, near: 2.0, far: 4.0 },
   { id: 'queen:call', clip: 'call', long: 1.7, hit: 0.8, dmg: 0, cooldown: 18, first: 5, after: 0.5, near: 0, far: 16 },
+  // (QUEEN_ROAM: home to her perch, at the last of her life: her dive, come down on it)
+  { id: 'queen:home', clip: 'dive', long: 2.2, hit: 1.08, dmg: 1.6, cooldown: 0, first: 0, after: 0.5, near: 0, far: 99, forced: true },
 ];
 
 // ---------------------------------------------------------------------------------------------
@@ -203,6 +217,42 @@ function keptOf(m: Monster): Record<string, number> {
   return m.a1;
 }
 
+/** (QUEEN_ROAM) Where her dive home sets her down: on her perch, as it faces, from the moment she is up out of sight. */
+export const HOME_AT = (QN.dive.up[0] + QN.dive.up[1]) / 2;
+/** (QUEEN_ROAM) Is she on her perch over the drop (where she began), for good? */
+function homeForGood(m: Monster): boolean {
+  return keptOf(m).home === 1;
+}
+
+/** (QUEEN_ROAM) Another spot of her eyrie to hop to: `near` to `far` from the hero, `apart` from where she is, clear round her, in sight of him; null: none. */
+function roamSpot(R: BossRules, m: Monster): { x: number; y: number } | null {
+  const g = R.g;
+  const L = g.level;
+  const area = L.land?.areas.find((a) => a.role === 'boss');
+  if (!area) return null;
+  const W = L.floor.w;
+  const H = L.floor.h;
+  const walk = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < W && y < H && L.walk[Math.floor(y) * W + Math.floor(x)] === 1;
+  const clear = (x: number, y: number, r: number): boolean => {
+    for (const [ox, oy] of [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r], [r * 0.7, r * 0.7], [-r * 0.7, r * 0.7], [r * 0.7, -r * 0.7], [-r * 0.7, -r * 0.7]]) if (!walk(x + ox, y + oy)) return false;
+    return true;
+  };
+  const h = g.hero;
+  const RR = Math.max(area.blob.rx, area.blob.ry) * 1.2 + 2;
+  const Q = QUEEN_ROAM;
+  const options: { x: number; y: number }[] = [];
+  for (let y = area.blob.y - RR; y <= area.blob.y + RR; y += 0.5) {
+    for (let x = area.blob.x - RR; x <= area.blob.x + RR; x += 0.5) {
+      const dh = Math.hypot(x - h.x, y - h.y);
+      if (dh < Q.near || dh > Q.far || Math.hypot(x - m.x, y - m.y) < Q.apart) continue;
+      if (!clear(x, y, 0.8) || !g.sees(x, y, h.x, h.y)) continue;
+      options.push({ x, y });
+    }
+  }
+  if (!options.length) return null;
+  return options[Math.floor(g.rng.next() * options.length)];
+}
+
 /** Turned to face (x, y). */
 function faceToward(m: Monster, x: number, y: number): void {
   const dx = x - m.x;
@@ -229,6 +279,11 @@ function anyReady(R: BossRules, m: Monster, dist: number): boolean {
 function canAct(R: BossRules, m: Monster, a: ActDef): boolean {
   if (a.id === 'queen:call') return flockAlive(R, m) <= QN.call.most - 2;
   return true;
+}
+
+/** (QUEEN_ROAM) The least her life can be brought to before she is home for good: a hundredth of it. */
+function lastOf(m: Monster): number {
+  return Math.max(1, Math.ceil(m.maxLife * QUEEN_ROAM.last));
 }
 
 /** Where she is from her spot. */
@@ -301,6 +356,20 @@ export const RULES: Act1Rules | null = {
       }
       return true;
     }
+    // (QUEEN_ROAM: home to her perch at the last of her life; and, stood her while, off to another spot)
+    if (QUEEN_ROAM.on && !homeForGood(m)) {
+      if (m.life <= lastOf(m)) return false;
+      k.roamT = (k.roamT ?? QUEEN_ROAM.every[0]) - dt;
+      if (k.roamT <= 0) {
+        k.roamT = g.rng.range(QUEEN_ROAM.every[0], QUEEN_ROAM.every[1]);
+        const to = roamSpot(R, m);
+        if (to) {
+          k.hx = to.x;
+          k.hy = to.y;
+          return true;
+        }
+      }
+    }
     // ON IT: an act, when one is to be made (BossRules makes it, turning her to the hero); else she stands, turned to him
     if (anyReady(R, m, dist)) {
       // (BossRules counts her moves down itself)
@@ -319,7 +388,29 @@ export const RULES: Act1Rules | null = {
   },
 
   start(R, m, a) {
-    if (a.id === 'queen:dive' || a.id === 'queen:gust') R.g.sfx('bossRoar', 0.4);
+    if (a.id === 'queen:dive' || a.id === 'queen:gust' || a.id === 'queen:home') R.g.sfx('bossRoar', 0.4);
+  },
+
+  end(R, m, a) {
+    // (QUEEN_ROAM: a move made, she is soon off to another spot; home, she stays)
+    const k = keptOf(m);
+    if (a.id === 'queen:home') k.home = 1;
+    else if (QUEEN_ROAM.on && !homeForGood(m)) k.roamT = Math.min(k.roamT ?? 0.3, 0.3);
+  },
+
+  forced(R, m, acts) {
+    if (!QUEEN_ROAM.on || homeForGood(m) || m.life > lastOf(m)) return -1;
+    // (at the last of her life: home, unless she is on her perch already)
+    const p = perchOf(R.g.level);
+    if (!p || Math.hypot(m.x - p.x, m.y - p.y) < 0.2) {
+      keptOf(m).home = 1;
+      return -1;
+    }
+    return acts.findIndex((a) => a.id === 'queen:home');
+  },
+
+  lifeFloor(R, m) {
+    return QUEEN_ROAM.on && !homeForGood(m) ? lastOf(m) : 0;
   },
 
   acting(R, m, a, t0, t1, dt) {
@@ -369,8 +460,24 @@ export const RULES: Act1Rules | null = {
         }
         break;
       }
+      case 'queen:home':
       case 'queen:dive': {
         const D = QN.dive;
+        // (QUEEN_ROAM: home: up out of sight, she is set down over her perch, turned as it faces, and stoops onto it from there)
+        if (a.id === 'queen:home' && at(HOME_AT)) {
+          const p = perchOf(g.level);
+          const k = keptOf(m);
+          if (p) {
+            m.x = p.x;
+            m.y = p.y;
+            m.fx = p.fx;
+            m.fy = p.fy;
+            k.hx = p.x;
+            k.hy = p.y;
+            k.views = p.views;
+          }
+          k.homing = 1;
+        }
         if (!at(a.hit)) break;
         const r = rel();
         const inStrike = Math.hypot(r.fwd - D.at, r.left) <= D.r + TUNE.heroRadius * 0.5;
@@ -468,8 +575,8 @@ export const RULES: Act1Rules | null = {
   },
 
   reachable(m) {
-    // (up out of sight in her dive, nothing reaches her)
+    // (up out of sight in her dive, nothing reaches her; nor in her dive home)
     const D = QN.dive;
-    return !(m.act && m.act.id === 'queen:dive' && m.act.t >= D.up[0] && m.act.t < D.up[1]);
+    return !(m.act && (m.act.id === 'queen:dive' || m.act.id === 'queen:home') && m.act.t >= D.up[0] && m.act.t < D.up[1]);
   },
 };
