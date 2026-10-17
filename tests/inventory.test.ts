@@ -317,8 +317,8 @@ test('an attack\'s numbers: one hit, lowest to highest, as the rules will roll i
 test('word slots open by the list: one in front from the start (once the ring is lit), the second in front at 4, behind at 15 and 20; a third a side is not switched on', () => {
   // (THE FIRST LEVELS: his order of 8 Oct, 20:39; the levels his of 9 Oct, 22:28 to 22:52: "Okay let’s try it." of 10, 15
   // and 20, then "Move slot 2 back to level 4." and "Two is enough for a long time I think")
-  assert.deepEqual(SLOT_OPENS, { front: [1, 4], behind: [15, 20] }, 'the game as it is: two a side');
-  assert.deepEqual([SLOT_LEVELS.front, SLOT_LEVELS.behind], [4, 20]);
+  assert.deepEqual(SLOT_OPENS, { front: [1, 15], behind: [4, 20] }, "the game as it is: two a side (since 17 Oct: the first behind opens second, the second in front third)");
+  assert.deepEqual([SLOT_LEVELS.front, SLOT_LEVELS.behind], [15, 20]);
   const at = (lv: number): string => socketCount(lv).join();
   assert.deepEqual([1, 3, 4, 5, 14, 15, 19, 20, 99].map(at), ['1,0', '1,0', '2,0', '2,0', '2,0', '2,1', '2,1', '2,2', '2,2']);
   // and with a third a side added (through the test hook), everything that counts slots follows
