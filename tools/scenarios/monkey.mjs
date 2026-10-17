@@ -3,7 +3,7 @@
 // counts, no duplicated items.
 //   STEPS=600 SEED=1 node tools/playtest.mjs --scenario tools/scenarios/monkey.mjs --out shots/monkey [--touch ...]
 //   GUIDE=1 ...   the same, thrown at a new player's first dungeon (its prompts, the body, the first word)
-import { makeHands } from './lib.mjs';
+import { makeHands, giveStone } from './lib.mjs';
 
 export default async function (page, snap) {
   const steps = Number(process.env.STEPS || 500);
@@ -164,7 +164,7 @@ export default async function (page, snap) {
     for (const k of Object.keys(tours)) if (!did && !toured[k] && i >= due[k]) { did = await tours[k](); if (did) toured[k] = true; }
     // (a first dungeon is not left before its body has been visited once)
     if (!did && guided && !bodyDone && i >= 10) { did = await toBody(); if (did) bodyDone = true; }
-    if (!did && guided && bodyDone && !ringDone && i >= 12) { did = await toSmith(); if (did) ringDone = true; }
+    if (!did && guided && bodyDone && !ringDone && i >= 12) { did = await toSmith(); if (did) { ringDone = true; await giveStone(page, hands); } }
     if (did) {
       // (that was this step)
     } else if (r < 0.03) {

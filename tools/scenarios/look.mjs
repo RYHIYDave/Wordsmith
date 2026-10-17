@@ -5,7 +5,7 @@
 // walk to him by script: guide.mjs makes them with real input), and the word is carried to the
 // slow attack and back at level 2, when that attack has opened and has a slot.
 //   node tools/playtest.mjs --scenario tools/scenarios/look.mjs --out shots/look
-import { makeHands, log } from './lib.mjs';
+import { makeHands, log, giveStone } from './lib.mjs';
 
 export default async function (page, snap) {
   const cls = process.env.CLS || 'ranger';
@@ -75,6 +75,7 @@ export default async function (page, snap) {
     await page.waitForTimeout(900);
     await snap('12_town_bring_it');
     await page.evaluate(() => { const g = window.__dbg.game(); const q = g.level.stations.find((k) => k.kind === 'wordsmith'); g.hero.x = q.x + 0.8; g.hero.y = q.y + 0.8; });
+    await giveStone(page, hands);
     if (!(await hands.until(() => window.__dbg.game().hero.ring === true))) console.log('  !! the ring was never lit');
     await page.waitForTimeout(700);
     await snap('12b_ring_lit');

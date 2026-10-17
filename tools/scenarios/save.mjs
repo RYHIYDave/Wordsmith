@@ -1,7 +1,7 @@
 // Saving: the run survives closing the page; the Lexicon and stash survive the character's death;
 // a character in the first dungeon is saved like any other (its prompts with it), and a saved
 // character is only replaced by a new one on a second press.
-import { makeHands, log } from './lib.mjs';
+import { makeHands, log, giveStone } from './lib.mjs';
 
 export default async function (page, snap) {
   const reload = async () => { await page.reload(); await page.waitForFunction('window.__ready === true'); await page.waitForTimeout(250); };
@@ -61,6 +61,7 @@ export default async function (page, snap) {
   // once the MASTER RUNE-STONE has lit his ring: the satchel's item, home, and up to him, by script)
   if (await page.evaluate(() => window.__dbg.firstLevelsOn())) {
     await page.evaluate(() => { const g = window.__dbg.game(); g.hero.quest = 'heart'; g.enterTown(); const q = g.level.stations.find((k) => k.kind === 'wordsmith'); g.hero.x = q.x + 0.6; g.hero.y = q.y + 0.6; });
+    await giveStone(page, hands);
     if (!(await hands.until(() => window.__dbg.game().hero.ring === true, 5000))) await fail('the MASTER RUNE-STONE brought to the wordsmith did not light his ring');
     // (since Version 20.0 the word comes once the ring has powered up, and the slot with it: his "The
     // wordsmith should give you the word after the altar powers up", 9 Oct 2026, 22:12)

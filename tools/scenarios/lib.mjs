@@ -163,3 +163,16 @@ export async function entered(page, ms = 10000) {
 }
 
 export const log = (label, v) => console.log(label.padEnd(44), typeof v === 'string' ? v : JSON.stringify(v));
+
+/**
+ * THE QUEST HAND-IN (game/defs.ts HAND_IN, on since Version 22.0): a quest item is given by using the one it is for,
+ * not by walking past him. With the hero beside the wordsmith carrying the stone: his prompt pressed (a finger), or E.
+ */
+export async function giveStone(page, hands) {
+  await page.waitForTimeout(400);
+  for (const n of ['button:Give the rune-stone', 'button:Give the rune-stone (E)']) {
+    if (await hands.mark(n)) { await hands.press(n); return n; }
+  }
+  await page.keyboard.press('KeyE');
+  return 'KeyE';
+}
