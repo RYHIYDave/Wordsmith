@@ -84,8 +84,9 @@ function toWordsmith(g: Game): void {
 
 test('the switch is on, since Version 19.5', () => {
   assert.equal(FIRST_LEVELS.on, true);
-  // (9 Oct 2026, 22:28 to 22:52: "Okay let’s try it." of 10, 15 and 20, then "Move slot 2 back to level 4.")
-  assert.deepEqual(SLOT_OPENS, { front: [1, 4], behind: [15, 20] });
+  // (9 Oct 2026, 22:28 to 22:52: "Okay let’s try it." of 10, 15 and 20, then "Move slot 2 back to level 4."; the order his of
+  // 17 Oct, 11:37: "Let’s switch the second word slot unlock to the after slot.   Third is the second before slot")
+  assert.deepEqual(SLOT_OPENS, { front: [1, 15], behind: [4, 20] });
   assert.equal(monsterBudget(1), FIRST_DUNGEON.budget);
   const g = fresh('warrior');
   assert.equal(g.hero.ring, false, 'a new player: the ring is dark');
@@ -200,7 +201,7 @@ test('on: no wordsmithing until the ring is lit; the satchel holds the quest ite
   });
 });
 
-test('on: the slots open in his order: one in front, the second in front, then behind', () => {
+test('on: the slots open in his order: one in front, then behind, the second in front, the second behind (since 17 Oct)', () => {
   on(() => {
     const g = new Game('ranger', 4, { ...newMeta(), ring: true, taught: true });
     assert.equal(g.hero.ring, true, 'a hero on a device whose ring is lit');
@@ -210,8 +211,8 @@ test('on: the slots open in his order: one in front, the second in front, then b
     };
     assert.equal(g.slots().join(), '1,0');
     assert.equal(at(3), '1,0');
-    assert.equal(at(4), '2,0');
-    assert.equal(at(14), '2,0');
+    assert.equal(at(4), '1,1');
+    assert.equal(at(14), '1,1');
     assert.equal(at(15), '2,1');
     assert.equal(at(19), '2,1');
     assert.equal(at(20), '2,2');
@@ -273,7 +274,7 @@ test('on: a hero saved before the first levels keeps his ring, and a device that
     assert.equal(again.hero.quest, 'heart');
   });
   // (and on again, as the game has it)
-  assert.deepEqual(SLOT_OPENS, { front: [1, 4], behind: [15, 20] });
+  assert.deepEqual(SLOT_OPENS, { front: [1, 15], behind: [4, 20] });
   assert.equal(FIRST_LEVELS.on, true);
 });
 

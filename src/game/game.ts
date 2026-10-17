@@ -6401,7 +6401,8 @@ export class Game {
       }
       this.addDrop('gold', m.x, m.y, rng.int(25, 45) * goldBase, null, null);
       const n = (LOOT2.on ? LOOT2.boss : TUNE.bossItems) + (this.depth % 5 === 0 ? TUNE.bossItemsFifth : 0);
-      for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? (i === 0 ? 4 : 2) : i === 0 ? 3 : 1), null);
+      // (LOOT2: the first never plain, and rare from floor LOOT2.from; the others with a hoard's luck there, as before above it)
+      for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? (i === 0 ? 4 : this.depth >= LOOT2.from ? 2 : 1) : i === 0 ? 3 : 1), null);
       this.addDrop('orb', m.x, m.y, 0, null, null);
       return;
     }
@@ -6412,13 +6413,14 @@ export class Game {
         this.msg('Flasks refilled', MSG.life);
       }
       this.addDrop('gold', m.x, m.y, rng.int(15, 25) * goldBase, null, null);
-      for (let i = 0; i < (LOOT2.on ? LOOT2.champion : 1); i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on && i === 0 ? 4 : 2), null);
+      // (LOOT2: more pieces; above floor LOOT2.from only the first with a hoard's luck, his "yellow items should be pretty rare" early on)
+      for (let i = 0; i < (LOOT2.on ? LOOT2.champion : 1); i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(i === 0 || this.depth >= LOOT2.from ? 2 : 0), null);
       this.addDrop('orb', m.x, m.y, 0, null, null);
       return;
     }
     if (m.elite) {
       this.addDrop('gold', m.x, m.y, rng.int(8, 16) * goldBase, null, null);
-      if (rng.chance(LOOT2.on ? LOOT2.elite : TUNE.eliteItem)) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on && this.depth >= LOOT2.from ? 2 : 1), null);
+      if (rng.chance(LOOT2.on ? LOOT2.elite : TUNE.eliteItem)) this.addDrop('item', m.x, m.y, 0, this.rollGear(1), null);
       return;
     }
     if (rng.chance(TUNE.dropGold)) this.addDrop('gold', m.x, m.y, rng.int(TUNE.goldMin, TUNE.goldMax) * goldBase, null, null);

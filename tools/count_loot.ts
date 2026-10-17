@@ -5,10 +5,10 @@ import { Game } from '../src/game/game';
 import type { Monster } from '../src/game/state';
 import { CLASS_IDS } from '../src/game/types';
 const N = Number((globalThis as unknown as { process: { argv: string[] } }).process.argv[2]) || 120;
-for (const on of [false, true]) {
+for (const on of (process.env.ONLY === 'on' ? [true] : [false, true])) {
   LOOT2.on = on;
   const rows: string[] = [];
-  for (const depth of [1, 3, 5, 6, 7, 8, 9, 10, 12]) {
+  for (const depth of (process.env.DEPTHS ? process.env.DEPTHS.split(',').map(Number) : [1, 3, 5, 6, 7, 8, 9, 10, 12])) {
     const c = [0, 0, 0];
     for (let k = 0; k < N; k++) {
       const g = new Game(CLASS_IDS[k % 3], 21 + k);

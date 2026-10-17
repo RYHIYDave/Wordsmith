@@ -36,7 +36,7 @@ import { hookHigh } from '../src/render/bossfx';
 import { act1Rules } from '../src/game/act1_rules/index';
 import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
 import type { ActDef, GaitedKind } from '../src/game/bosses';
-import { BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
+import { BOSS_LIFE, BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
 import { ACT1_FLOORS } from '../src/game/act1';
 import { beside, handOf } from '../src/game/facing';
 import { Game } from '../src/game/game';
@@ -165,7 +165,9 @@ test('1. each floor has its own boss; past the fifth, and with the switch off, t
   }
   // (the lair boss has twice the life of his kind at that depth, as a fifth floor's boss always has)
   const five = dungeon(3, 5).boss!;
-  assert.equal(five.maxLife, Math.round(MONSTERS.fleshmancer.life * (1 + 0.4 * 4) * 2 * (five.words.includes('power') ? 1.3 : 1)), 'the Fleshmancer: his life');
+  // (BOSS_LIFE, his word of 17 Oct: "Bosses need more HP past the warden": each times his own)
+  const more = BOSS_LIFE.on ? BOSS_LIFE.times.fleshmancer ?? 1 : 1;
+  assert.equal(five.maxLife, Math.round(MONSTERS.fleshmancer.life * (1 + 0.4 * 4) * 2 * more * (five.words.includes('power') ? 1.3 : 1)), 'the Fleshmancer: his life');
   assert.equal(dungeon(3, 15).boss!.name.startsWith('Greater'), true, 'a Warden of a fifth floor is still a Greater one (past the descent: its tenth is the Drowned Eye\'s)');
   BOSSES5.on = false;
   try {
@@ -190,7 +192,10 @@ test("2. the rules' numbers are the pictures' own", () => {
     for (const a of ACTS[kind]) {
       // (a beast is dragged for as long as it is dragged; the ball's chain breaks in his second state: below)
       if (a.id === 'dragged' || a.id === 'breakBall') continue;
-      near(a.long, lastKey(mob, a.clip), 0.02, `${kind} ${a.id}: its length`);
+      // (the Fleshmancer's blink, FLESH_BLINK, off: its look is the art chat's, still to come, and its length will be its picture's)
+      if (a.id === 'blink') continue;
+      // (CHAINED_SPIN: a whirl's loop played over and over is that much longer than its picture)
+      near(a.long - (a.loop?.extra ?? 0), lastKey(mob, a.clip), 0.02, `${kind} ${a.id}: its length`);
     }
   }
   near(GAITS.headsman.raise, HS_RAISE, 1e-9, 'the Headsman takes his axe up');
@@ -463,7 +468,9 @@ test("5. the Chained One's attacks, and his chains breaking as he is hurt", () =
   {
     const { g, m } = room('chained', 2.0, 'whirl');
     const s = watch(g, m, 3);
-    assert.ok(s.hurts.length >= 2 && s.hurts.length <= 4, `his chains strike more than once as they go round (${s.hurts.length})`);
+    // (CHAINED_SPIN, his word of 17 Oct: longer, and he chases you: his chains go on striking whoever stays in them)
+    const most = Math.ceil(3 / CHAINED.whirl.gap) + 1;
+    assert.ok(s.hurts.length >= 2 && s.hurts.length <= most, `his chains strike more than once as they go round (${s.hurts.length})`);
     for (let i = 1; i < s.hurts.length; i++) assert.ok(s.hurts[i].t - s.hurts[i - 1].t >= CHAINED.whirl.gap - 0.02, 'no two of its blows at once');
   }
   // THE BALL: it comes down four tiles before him

@@ -1126,8 +1126,9 @@ export const BODIES = { on: false, life: 30, fade: 1.5 };
  *   the strongholds, by the words burned at the door (1, 2, 3): `hold` pieces (were 1, 2, 3), the first two rare;
  *     runedust `dust` times as much, gold `gold` times;
  *   a boss `boss` pieces (were 2; one more on floors 5 and 10 as before), the first never plain, and rare from floor `from`;
- *   a guardian `champion` pieces (was 1), the first as a boss's first;
- *   an elite a piece `elite` of the time (was half), and from floor `from` with a hoard's luck;
+ *   a guardian `champion` pieces (was 1), with a hoard's luck (above floor `from` only the first; a floor of the descent
+ *     has three or four guardians: a rare from each would be a flood of them);
+ *   an elite a piece `elite` of the time (was half);
  *   a plain monster `item` of the time (was 0.03);
  *   and from floor `from` (the descent) every roll's luck `deep` times.
  */

@@ -329,7 +329,6 @@ test('loot is scaled back: one piece from a guardian, two from a boss, one from 
           assert.ok(items[0].item!.rarity >= 1, 'whose first piece is never plain (it is no longer rare for certain: gear is made good with words)');
         } else if (m.champion) {
           assert.equal(items.length, LOOT2.on ? LOOT2.champion : 1, 'a guardian leaves one piece (LOOT2: two)');
-          if (LOOT2.on) assert.ok(items[0].item!.rarity >= (depth >= LOOT2.from ? 2 : 1), 'its first never plain; in the descent, rare');
           // (it was always rare until 4 Oct 2026; now it is only likelier than usual to be good)
         } else if (m.elite) {
           assert.ok(items.length <= 1);
@@ -420,8 +419,10 @@ test('early dungeons give mostly plain gear and almost nothing rare; deep ones g
   assert.ok(early.share[2] < 0.03, `and a rare piece is an event (${early.share[2].toFixed(3)})`);
   assert.ok(deep.share[2] > early.share[2] * 2, 'deep dungeons give more rare gear');
   assert.ok(deep.share[1] > early.share[1], 'and more magic gear');
-  assert.ok(deep.share[2] < 0.12, `but never a flood of it (${deep.share[2].toFixed(3)})`);
-  assert.ok(deep.share[0] > 0.4, `and plain gear, the kind that is made good with words, stays common (${deep.share[0].toFixed(2)})`);
+  // (LOOT2, his "The loot needs to be so much better", 17 Oct 2026: in the descent the boss's first piece rare, every roll the
+  // luckier: a rare piece about one in eight there, two or three a floor where there was one in two floors)
+  assert.ok(deep.share[2] < (LOOT2.on ? 0.16 : 0.12), `but never a flood of it (${deep.share[2].toFixed(3)})`);
+  assert.ok(deep.share[0] > (LOOT2.on ? 0.35 : 0.4), `and plain gear, the kind that is made good with words, stays common (${deep.share[0].toFixed(2)})`);
 });
 
 test('the vendor sells what the dungeons give: plain and magic early, something rare now and then', () => {
