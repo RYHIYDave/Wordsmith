@@ -215,6 +215,8 @@ export default async function (page, snap) {
     const fm = s.mons.find((m) => m.id === far.id);
     if (!fm || !fm.seen || s.step !== 'smith') continue;
     tried = true;
+    // (since Version 21.1 the prompt waits while the floor's name is up, FLOOR_CARD_FIRST: the press is asked for once it shows)
+    for (let k = 0; k < 25 && !(await page.evaluate(() => window.__dbg.ui.marks.has('banner'))); k++) await page.waitForTimeout(200);
     log('  dungeon ' + seed + ': something awake in sight', `${fm.far.toFixed(1)} tiles off; the prompt is "${s.step}"`);
     await snap('04_prompt_asks_for_the_press');
     const q0 = await hands.mark('skill:0');
