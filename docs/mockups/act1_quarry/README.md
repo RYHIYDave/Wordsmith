@@ -424,3 +424,25 @@ crunch.
   the light of day in place of a dungeon's dark (the game's `FAR_DARK`, the hero's pool of light and the
   vignette are a dungeon's; the Quarry is in daylight).
 - How the Quarry is laid (its pits and its cuts) is the main chat's.
+
+## The quarry golem's death, made small (17 Oct)
+
+His words to the main chat, 17 Oct, 11:37 (Eastern), after playing Version 22.0, sent to the art chat at his word:
+"The death animation for the regular golems is massive and needs to be toned down.  Just have them crumple into a
+pile of pebbles or whatever." Read as the quarry golems of floor 6 (the Ossuary Golem of floors 4 and 5 already falls
+into a small heap of bones, and is not changed); told him so.
+
+`QUARRY_GOLEM.dying`, "The quarry golem crumples into a heap of rubble" (`src/art/floor6_mobs.ts`), in place of
+"Bursts apart": struck, it is rocked back and its mark goes out (by 0.24 s); its legs give and it sinks, folding
+forward; block by block, its feet first (`QG_BURST`, 0.2 s) up to its head (0.5 s), each block breaks into four to
+fifteen chunks of the cut stone that tumble straight down, hop once and lie in a round heap where it stood (`HEAP_R`
+23 of its lengths across the middle, about 1.2 tiles wide; `HEAP_H` 17 high), the later ones higher up it; its chains
+fall across the heap; a little dust runs out low along the floor. Nothing is flung. `QG_DIE_TIME` 1.3 s (it was 1.6),
+27 frames at the game's 20 a second; the last is the heap, no edge and no light. Its canvas is unchanged.
+
+- Film: `node tools/page_gif.mjs src/dev/preview_floor6_mobs.ts "deathfilm" shots/golem_death.gif 6`.
+- Asked as a pop-up, "The golem's new death (golem_death.gif): it crumbles into a heap of rubble where it stood, in
+  about a second. Is that right?", his answer by 16:06 (Eastern; 13:06 where he is): "Yes, send it to main
+  (Recommended)", offered as: it goes to the main chat to put in the game.
+- Checks: tests/floor6_mobs.test.ts 18 of 18 (its boss review, every move: its bones keep above the floor as it
+  sinks), tests/act1_qgolem.test.ts, tests/floor6.test.ts, tests/new_mobs3.test.ts.
