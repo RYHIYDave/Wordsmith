@@ -10,8 +10,11 @@
 //
 // Kept from the first Headsman (art/bosses3.ts), as his brief had it: the executioner's tall pointed
 // hood, and nobody in it (its opening dark all the way in, the pink burning there); the blood-red. New:
-// a lean, wiry body, the Warden's height still, in tight leathers; a long crescent axe, its haft as long
-// as he is tall, held at its middle and spun like a staff.
+// a lean, wiry body, the Warden's height still, in tight leathers; a long axe, its haft as long as he is
+// tall, held at its middle and spun like a staff. Of the first look of him, his words by 17:51: "The
+// crescent head of the axe is weird, and I like the full coat look with the wiry frame underneath": so the
+// blade is a broad solid one (as the first Headsman's), not a crescent, and he wears a long coat, cut close,
+// over the wiry frame; and to that, by 17:57, "Yes, animate him (Recommended)".
 //
 // He is a monster of art/new_mobs3.ts's kind (a `Mob`: posed on the heroes' bones, dressed in the
 // heroes' solids, lit from the upper left, the enemy's pink edge round him), on a canvas of his own.
@@ -29,9 +32,9 @@ import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton
 /** THE SWITCH, OFF. Nothing of the game reads this file; the main chat puts him in by it, on the owner's yes. */
 export const HEADSMAN2 = { on: false };
 
-const D = Math.PI / 180;
-type P = Partial<Bones>;
-const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
+export const D = Math.PI / 180;
+export type P = Partial<Bones>;
+export const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
 /** His body: the Warden's height still, but lean and wiry: narrow in the shoulder and the waist, long in the leg and the arm, every limb thin (the first Headsman was 112 tall, as broad as a door). */
 export const H2_BODY: Build = buildOf(110, 0.96, { shoulders: 1.04, chest: 0.94, depth: 0.9, waist: 0.82, hips: 0.92, legs: 1.1, arms: 1.12, trunk: 0.96, limbs: 1.06, pad: 1.7 });
@@ -51,8 +54,22 @@ const BLACK: Ramp = ['#0b0812', '#0b0812', '#1a1426', '#2e2640', '#2e2640'];
 const HAFT: Ramp = dim(['#2a2466', '#2a2466', '#4640a0', '#6e68cc', '#6e68cc']);
 const BLACK_STEEL: Ramp = ['#1a1640', '#1a1640', '#36306e', '#5c56a0', '#5c56a0'];
 
-/** His canvas: room for his long axe held high over his hood, spun round him, and flung out at full reach. */
-export const H2_CANVAS: MobCanvas = { w: 460, h: 400, ax: 230, ay: 300 };
+/** As he dies: when the axe falls from his hands, and when his hood slips off, empty (seconds into his death). */
+export const H2_AXE_GOES = 0.3;
+/** The blade wheel's name (art/headsman2_moves.ts): as it spins (its `gale`), the painter draws the wheel of fire. */
+export const WHEEL_NAME = 'The blade wheel';
+/** The flurry's name, and its three cuts (seconds into it): the third comes down before him and bites the floor. */
+export const FLURRY_NAME = 'The flurry';
+export const H2_FLURRY_HITS = [0.62, 1.08, 1.54] as const;
+export const H2_HOOD_GOES = 1.32;
+
+/**
+ * His canvas: room for his long axe held high over his hood, spun round him, and flung out at full reach, and
+ * for the ground his flurry and his vault carry him over before the game moves him (in every frame of every
+ * move both ways round he reaches at most 156 to the left of where he stands, 275 up, 230 to the right and
+ * 110 down: tests/headsman2.test.ts keeps a margin round him).
+ */
+export const H2_CANVAS: MobCanvas = { w: 460, h: 430, ax: 200, ay: 296 };
 
 // ---------------------------------------------------------------------------------------------
 // HIS LONG AXE. A haft as long as he is tall, of dark wood bound in iron, an iron spike at its foot; at
@@ -63,65 +80,63 @@ export const H2_CANVAS: MobCanvas = { w: 460, h: 400, ax: 230, ay: 300 };
 
 /** From the butt (the haft's foot) to the eye (where the head is set on it), and the blade: how far its edge reaches out from the haft, how tall it is along it. */
 export const AXE2_LEN = 100;
-const BLADE_OUT = 31;
-const BLADE_TALL = 48;
+export const BLADE_OUT = 31;
+export const BLADE_TALL = 48;
 /** How far past the eye the haft runs (its iron cap). */
-const HAFT_TOP = 8.5;
+export const HAFT_TOP = 8.5;
 /** How far the butt's spike runs out below the haft's foot. */
-const SPIKE = 9;
-/** Where his right hand holds it, from the butt: `draw` 0 low on it (to swing it long), 1 at its middle (to spin it, to carry it). */
-const AXE2_HOLD = (draw: number): number => 32 + 18 * clamp01(draw);
+export const SPIKE = 9;
+/** Where his right hand holds it, from the butt: `draw` 0 at its very foot (to swing it at full reach, his left hand at the end below it), 1 at its middle (to spin it, to carry it). */
+export const AXE2_HOLD = (draw: number): number => 6 + 44 * clamp01(draw);
 
 /** The way the haft runs, and the way its edge faces (as `bosses3.ts` has it: `pAz`, `pEl`, made into the bones' roll by `resolveAxe2`). */
-function axeWay(pt: V3, edge: V3, over = false): P {
+export function axeWay(pt: V3, edge: V3, over = false): P {
   const p = norm(pt);
   const e = norm(sub(edge, mul(p, dot(edge, p))), [0, 0, -1]);
   const az = Math.atan2(p[1], p[0]) / D;
   const el = Math.asin(Math.max(-1, Math.min(1, p[2]))) / D;
   return { wAz: over ? az + 180 : az, wEl: over ? 180 - el : el, wRoll: 0, pAz: Math.atan2(e[1], e[0]) / D, pEl: Math.asin(Math.max(-1, Math.min(1, e[2]))) / D };
 }
-function rollFrom(s: Skeleton): V3 {
+/**
+ * THE WAY HIS BLADE FACES: as the pose says it (`pAz`, `pEl`, a way on the floor's own axes, said for each
+ * key and going smoothly from key to key), square to the haft. (Not as a roll about the haft measured from
+ * some way of his body: any such way is one the haft must sometimes run along, spun as this axe is, and
+ * there the roll cannot be measured and the blade would spin round between two keys.)
+ */
+export function axe2EdgeOf(s: Skeleton, q: { pAz: number; pEl: number }): V3 {
   const p = s.point;
-  const l = s.chest[1];
-  const r = sub(l, mul(p, dot(l, p)));
-  return len(r) > 1e-3 ? norm(r) : norm(cross(p, [0, 0, 1]), [0, 1, 0]);
+  const e = heading(q.pAz, q.pEl);
+  const r = sub(e, mul(p, dot(e, p)));
+  return len(r) > 1e-4 ? norm(r) : norm(cross(p, [0, 0, 1]), [0, 1, 0]);
 }
-/** THE WAY HIS BLADE FACES, on his bones. */
-export function axe2EdgeOf(s: Skeleton): V3 {
-  const p = s.point;
-  let flat = sub([0, 0, 1], mul(p, p[2]));
-  if (len(flat) < 1e-3) flat = [-1, 0, 0];
-  flat = norm(flat);
-  const ac = norm(sub(s.across, mul(p, dot(s.across, p))), flat);
-  const roll = Math.atan2(dot(cross(flat, ac), p), dot(flat, ac)) / D;
-  return about(rollFrom(s), p, roll);
-}
-/** Each key's roll of the blade made from the way it is to face; each within half a turn of the last. */
-function resolveAxe2(keys: ReadonlyArray<Key3>, rest: Bones): Key3[] {
+/** Each key's way the blade faces, said within half a turn of the last key's (so that it goes the short way round from one to the next). */
+export function resolveAxe2(keys: ReadonlyArray<Key3>, rest: Bones): Key3[] {
   let last: number | undefined;
+  let lastW: number | undefined;
   return keys.map((k) => {
     const w = { ...rest, ...k.pose };
-    const s = solve(B2, w as Posed);
-    const p = s.point;
-    const want = heading(w.pAz, w.pEl);
-    const R = rollFrom(s);
-    const e = norm(sub(want, mul(p, dot(want, p))), R);
-    let roll = Math.atan2(dot(cross(R, e), p), dot(R, e)) / D;
-    if (last !== undefined) roll -= 360 * Math.round((roll - last) / 360);
-    last = roll;
-    return { ...k, pose: { ...k.pose, wRoll: roll } };
+    let az = w.pAz;
+    if (last !== undefined) az -= 360 * Math.round((az - last) / 360);
+    last = az;
+    // (and the way the haft runs, from the last key's as it was said for the way on from it: so that it too goes the short way round)
+    let wAz = w.wAz;
+    if (lastW !== undefined) wAz -= 360 * Math.round((wAz - lastW) / 360);
+    lastW = k.as?.wAz !== undefined ? k.as.wAz - 360 * Math.round((k.as.wAz - wAz - 180) / 360) : wAz;
+    const as = k.as?.wAz !== undefined ? { ...k.as, wAz: lastW } : k.as;
+    return { ...k, pose: { ...k.pose, pAz: az, pEl: w.pEl, wAz }, ...(as ? { as } : {}) };
   });
 }
-function resolvedRest(b: Bones): Bones {
-  return { ...b, wRoll: resolveAxe2([{ at: 0, pose: {} }], b)[0].pose.wRoll as number };
+export function resolvedRest(b: Bones): Bones {
+  return { ...b };
 }
-/** A move of his with each key's blade roll made. */
-const axed = (m: Motion, rest: Bones): Motion => ({ ...m, keys: resolveAxe2(m.keys, rest) });
+/** A move of his with each key's blade made to go the short way round. */
+export const axed = (m: Motion, rest: Bones): Motion => ({ ...m, keys: resolveAxe2(m.keys, rest) });
 
 /** WHERE HIS AXE IS: its butt (the haft's foot), the eye of its head, the middle of its edge and the edge's two horns, the way the edge faces, and the spike's point. */
-export function axe2Of(s: Skeleton, draw: number): { butt: V3; eye: V3; edge: V3; horns: readonly [V3, V3]; out: V3; spike: V3 } {
+export function axe2Of(s: Skeleton, q: { draw: number; pAz: number; pEl: number }): { butt: V3; eye: V3; edge: V3; horns: readonly [V3, V3]; out: V3; spike: V3 } {
   const pt = s.point;
-  const out = axe2EdgeOf(s);
+  const out = axe2EdgeOf(s, q);
+  const draw = q.draw;
   const butt = add(s.handR, mul(pt, -AXE2_HOLD(draw)));
   const eye = add(butt, mul(pt, AXE2_LEN));
   const at = (k: number): V3 => add(add(eye, mul(out, BLADE_OUT - 3.5)), mul(pt, 1.5 + k * (BLADE_TALL / 2 - 1)));
@@ -153,7 +168,7 @@ const bladeSkin: PanelSkin = (a0, b, front, tone) => {
 };
 
 /** HIS AXE AS SOLIDS, from its butt along `pt`, its blade out along `out`: the haft bound in iron, the spike at its foot, the iron collar of the head, the blade, the poll; a blood-red tassel under the head. */
-function axe2Solids(put: Put, butt: V3, pt: V3, out: V3, tassel?: { lag: V3; wave: number }): void {
+function axe2Solids(put: Put, butt: V3, pt: V3, out: V3, tassel?: { lag: V3; wave: number }, seen?: V3): void {
   const eye = add(butt, mul(pt, AXE2_LEN));
   const top = add(eye, mul(pt, HAFT_TOP));
   put('haft', 'axe', { k: 'rod', a: butt, b: top, ra: 1.55, rb: 1.45, ramp: HAFT });
@@ -163,10 +178,15 @@ function axe2Solids(put: Put, butt: V3, pt: V3, out: V3, tassel?: { lag: V3; wav
   put('head', 'axe', { k: 'rod', a: add(eye, mul(pt, -5)), b: add(eye, mul(pt, 6)), ra: 2.8, rb: 2.8, ramp: IRON });
   put('blade', 'axe', { k: 'panel', c: add(eye, add(mul(out, BLADE_OUT / 2 + 1.5), mul(pt, 1.5))), u: mul(out, BLADE_OUT / 2), v: mul(pt, BLADE_TALL / 2), skin: bladeSkin });
   put('head', 'axe', { k: 'ball', c: add(eye, mul(out, -3.4)), ax: [mul(out, 2.3), mul(norm(cross(pt, out), [0, 0, 1]), 2.4), mul(pt, 4.0)], skin: IRON });
+  // (its edge, honed bright, as a thin line of steel of its own: so that seen edge on, when the flat of the blade is a line and paints nothing, the blade is still there, a bright sliver)
+  const edgeAt = (yy: number): V3 => add(eye, add(mul(out, 1.5 + BLADE_OUT - 5 * yy * yy - 1.2), mul(pt, 1.5 + yy * (BLADE_TALL / 2))));
+  for (let i = 0; i < 6; i++) put('blade', 'axe', { k: 'rod', a: edgeAt(-0.82 + (1.64 * i) / 6), b: edgeAt(-0.82 + (1.64 * (i + 1)) / 6), ra: 1.0, rb: 1.0, ramp: STEEL });
+  // (and, seen nearly edge on, the thickness of the blade from the head out to the edge, as the flat then shows it)
+  if (!seen || Math.abs(dot(norm(cross(pt, out)), seen)) < 0.3) put('blade', 'axe', { k: 'rod', a: add(eye, add(mul(out, 3), mul(pt, 1.5))), b: edgeAt(0), ra: 0.9, rb: 0.6, ramp: BLACK_STEEL });
   if (tassel) {
     const knot = add(eye, add(mul(pt, -6), mul(out, -2.6)));
     const hang = norm(add([0, 0, -1], add(mul(tassel.lag, 0.35), [Math.sin(tassel.wave) * 0.12, Math.cos(tassel.wave * 1.3) * 0.12, 0])));
-    put('tassel', 'tassel', { k: 'rod', a: knot, b: add(knot, mul(hang, 9)), ra: 1.3, rb: 2.2, ramp: BLOOD });
+    put('tassel', 'axe', { k: 'rod', a: knot, b: add(knot, mul(hang, 9)), ra: 1.3, rb: 2.2, ramp: BLOOD });
   }
 }
 
@@ -194,14 +214,43 @@ function hugged(rings: Ring[], top: V3, deep: number, wide: number, off: number)
   });
 }
 
+/** A skirt's rings kept on the floor, not in it: a ring that would dip below it (tilted as he kneels or lunges) lifted until it does not. */
+function offFloor(rings: Ring[]): Ring[] {
+  const FLOOR = 0.6;
+  return rings.map((r) => {
+    const under = r.c[2] - Math.hypot(r.u[2], r.v[2]);
+    const lowPt = r.pts ? Math.min(...r.pts.map((p) => p[2])) : Infinity;
+    const up = Math.max(0, FLOOR - under, FLOOR - lowPt);
+    if (up <= 0) return r;
+    return { ...r, c: [r.c[0], r.c[1], r.c[2] + up], pts: r.pts?.map((p): V3 => [p[0], p[1], p[2] + up]) };
+  });
+}
+
 /** A limb no further than `most` from where it was a moment before (the lag of what hangs off him). */
 function capped(v: V3, most: number): V3 {
   const l = len(v);
   return l > most ? mul(v, most / l) : v;
 }
 
+/**
+ * HIS COAT'S TWO SKIRTS at a moment, from his waist to below his knees, one round each leg (split before
+ * and behind), kept close to the leg it goes round; hanging back by `lag` (how far he has come since a
+ * moment before), in the wind. For his painter and for the checks (art/boss_checks.ts: nothing goes
+ * through his coat).
+ */
+export function coatSkirts(s: Skeleton, lag: V3 = [0, 0, 0], wind = 0, gale = 0): ['L' | 'R', Ring[]][] {
+  const B = B2;
+  const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.55));
+  return (['L', 'R'] as const).map((side) => {
+    const sgn = side === 'L' ? 1 : -1;
+    const one: Skeleton = side === 'L' ? { ...s, hipR: s.hipL, kneeR: s.kneeL, ankleR: s.ankleL, heelR: s.heelL, toeR: s.toeL } : { ...s, hipL: s.hipR, kneeL: s.kneeR, ankleL: s.ankleR, heelL: s.heelR, toeL: s.toeR };
+    const top: Ring = { c: add(waistC, mul(s.hips[1], sgn * B.waistHalf * 0.42)), u: mul(s.hips[0], B.waistDeep + 2.4), v: mul(s.hips[1], B.waistHalf * 0.66 + 2.4) };
+    return [side, offFloor(hugged(skirtOf(one, B, { top, drop: B.thigh * 1.62, wide: B.pelvisHalf * 0.6 + 4, deep: B.pelvisDeep + 5, lag, wind, gale, pad: 1.3 }), top.c, B.pelvisDeep + 6, B.pelvisHalf * 0.6 + 5.5, 7))];
+  });
+}
+
 /** THE HEADSMAN, MADE NEW, AS SOLIDS: boots, tight leathers, straps and belt, the sash, bracers and gloves, the hood and its short cape (empty), the long axe. */
-function headsman2Bits(st: Stage, m: Moment): Bit[] {
+export function headsman2Bits(st: Stage, m: Moment): Bit[] {
   const { s, q } = m;
   const B = B2;
   const bits: Bit[] = [];
@@ -239,15 +288,7 @@ function headsman2Bits(st: Stage, m: Moment): Bit[] {
   // after him as he darts ---
   const waistC = add(s.pelvis, mul(s.hips[2], B.waist * 0.55));
   const be = s.belly;
-  const skirts = (['L', 'R'] as const).map((side) => {
-    const sgn = side === 'L' ? 1 : -1;
-    const one: Skeleton = side === 'L' ? { ...s, hipR: s.hipL, kneeR: s.kneeL, ankleR: s.ankleL, heelR: s.heelL, toeR: s.toeL } : { ...s, hipL: s.hipR, kneeL: s.kneeR, ankleL: s.ankleR, heelL: s.heelR, toeL: s.toeR };
-    const top: Ring = { c: add(waistC, mul(s.hips[1], sgn * B.waistHalf * 0.42)), u: mul(s.hips[0], B.waistDeep + 2.4), v: mul(s.hips[1], B.waistHalf * 0.66 + 2.4) };
-    const rings = hugged(skirtOf(one, B, { top, drop: B.thigh * 1.62, wide: B.pelvisHalf * 0.6 + 4, deep: B.pelvisDeep + 5, lag: mul(lag, 1.4), wind: m.wind, gale: q.gale, pad: 1.3 }), top.c, B.pelvisDeep + 6, B.pelvisHalf * 0.6 + 5.5, 7);
-    put(`coat${side}`, 'coat', { k: 'cloth', rings, ramp: COAT, look: { folds: [30, -30, 90, -90, 150, -150], lift: 0.1 } });
-    return rings;
-  });
-  void skirts;
+  for (const [side, rings] of coatSkirts(s, mul(lag, 1.4), m.wind, q.gale)) put(`coat${side}`, 'coat', { k: 'cloth', rings, ramp: COAT, look: { folds: [30, -30, 90, -90, 150, -150], lift: 0.1 } });
   const torso: Ring[] = [
     { c: waistC, u: mul(be[0], B.waistDeep + 2.3), v: mul(be[1], B.waistHalf + 2.3) },
     { c: s.ribs, u: mul(cf, B.ribDeep + 2.6), v: mul(cl, B.ribHalf + 2.8) },
@@ -277,7 +318,9 @@ function headsman2Bits(st: Stage, m: Moment): Bit[] {
       for (let i = 0; i <= n; i++) {
         const j = i / n;
         const sway = Math.sin(wave + j * 2.2 + k * 1.7) * 1.4 * j;
-        const p = add(add(knot, add(mul(be[0], off * (1 - j)), mul(be[1], 1.2 * j))), add([0, 0, -drop * j], add(mul(lag, 2.4 * j * j), mul(l, sway))));
+        const p0 = add(add(knot, add(mul(be[0], off * (1 - j)), mul(be[1], 1.2 * j))), add([0, 0, -drop * j], add(mul(lag, 2.4 * j * j), mul(l, sway))));
+        // (lying on the floor where it reaches it, not into it)
+        const p: V3 = [p0[0], p0[1], Math.max(p0[2], 1.4)];
         const w = 2.8 - 0.8 * j;
         rings.push({ c: p, u: mul(f, 0.7), v: mul(l, w) });
       }
@@ -330,6 +373,18 @@ function headsman2Bits(st: Stage, m: Moment): Bit[] {
     put('cape', 'cape', { k: 'cloth', rings: cape, ramp: BLOOD, look: { folds: [20, -20, 70, -70, 130, -130, 180], lift: 0.25 } });
     const collar = add(s.neck, mul(cu, 3.0));
     put('cape', 'cape', { k: 'ball', c: collar, ax: [mul(cf, 5.0), mul(cl, 5.6), mul(cu, 1.2)], skin: (u) => (u[2] < -0.2 ? null : INK) });
+    if (m.dying && m.t > H2_HOOD_GOES) {
+      // the last of the pink, rising out of his empty collar and fading: there was nobody in it
+      const k = (m.t - H2_HOOD_GOES) / 0.9;
+      for (let i = 0; i < 12; i++) {
+        const life = (k * 1.4 + hash(i, 1, 71)) % 1;
+        if (k + hash(i, 2, 71) * 0.5 > 1.3) continue;
+        const a = hash(i, 3, 71) * Math.PI * 2;
+        const p = add(collar, [Math.cos(a) * 3 * (1 - life), Math.sin(a) * 3 * (1 - life), 1 + life * 16]);
+        put('wisp', 'wisp', { k: 'mote', p, c: life < 0.4 ? FLAME[2] : FLAME[1], size: 2 });
+      }
+      if (k < 1) put('wisp', 'wisp', { k: 'glow', p: add(collar, [0, 0, 4]), c: SOCKET, r: 10, a: 0.4 * (1 - k) });
+    }
   }
   const hr: V3 = [8.6, 8.0, 9.6];
   const cam = Math.atan2(dot(st.eye, fl), dot(st.eye, ff)) / D;
@@ -369,8 +424,8 @@ function headsman2Bits(st: Stage, m: Moment): Bit[] {
 
   // --- HIS LONG AXE ---
   if (!m.bare) {
-    const a = axe2Of(s, q.draw);
-    axe2Solids(put, a.butt, s.point, a.out, { lag, wave });
+    const a = axe2Of(s, q);
+    axe2Solids(put, a.butt, s.point, a.out, { lag, wave }, st.eye);
     if (m.glint > 0.05 && lit > 0.1) {
       const g = m.glint;
       for (let i = 0; i <= 10; i++) {
@@ -381,8 +436,111 @@ function headsman2Bits(st: Stage, m: Moment): Bit[] {
       put('glint', 'glint', { k: 'glow', p: a.edge, c: FLAME[3], r: 5 + 9 * g, a: Math.min(0.8, 0.6 * g) });
     }
   }
+
+  // --- THE WEIGHT OF HIS BLOWS: the way his blade went through the air, a band of the enemy's fire along its edge's path, widest and hottest just behind the blade ---
+  if (m.trails && m.trails.length >= 4 && lit > 0.1) {
+    const edgeT = smoothed(m.trails[1]);
+    const eyeT = smoothed(m.trails[3]);
+    const n = edgeT.length - 1;
+    for (let i = 1; i <= n; i++) {
+      const age0 = (i - 1) / n;
+      const age1 = i / n;
+      const a0 = edgeT[i - 1];
+      const a1 = edgeT[i];
+      const b0 = eyeT[i - 1];
+      const b1 = eyeT[i];
+      const long = Math.max(1, Math.ceil(Math.hypot(...(st.at(a1).map((v, k) => v - st.at(a0)[k]) as [number, number])) / 1.2));
+      for (let j = 0; j < long; j++) {
+        const f2 = j / long;
+        const age = age0 + (age1 - age0) * f2;
+        const e = lerp3(a0, a1, f2);
+        const y = lerp3(b0, b1, f2);
+        // (from the edge in toward the haft: the band is the blade's outer half when new, a thread when old)
+        const w = 0.95 * (1 - age) + 0.08;
+        const across = Math.max(1, Math.ceil(Math.hypot(...(st.at(lerp3(e, y, w)).map((v, k) => v - st.at(e)[k]) as [number, number])) / 1.2));
+        for (let k = 0; k <= across; k++) {
+          const u = (k / across) * w;
+          if (age > 0.45 && hash(i * 97 + j, k, 79) < (age - 0.45) * 1.6) continue;
+          const c = u < 0.05 ? (age < 0.3 ? FLAME[4] : FLAME[3]) : age < 0.22 ? FLAME[3] : age < 0.5 ? FLAME[2] : FLAME[1];
+          // (where it breaks up as it fades, flecks a game pixel big: never a picture pixel alone, which his pink edge would make a cross)
+          put('streak', 'streak', { k: 'mote', p: lerp3(e, y, u), c, size: age > 0.4 ? 2 : 1 });
+        }
+      }
+    }
+    put('streak', 'streak', { k: 'glow', p: edgeT[Math.min(2, n)], c: FLAME[3], r: 18, a: 0.32 });
+  }
+
+  // --- THE BLADE WHEEL AT FULL SPIN (art/headsman2_moves.ts): a wheel of the enemy's fire where its edge goes round, before him, faint but for where the blade is ---
+  if (m.move === WHEEL_NAME && q.gale > 0.3 && !m.bare && lit > 0.1) {
+    const a = axe2Of(s, q);
+    const hub = s.handR;
+    const rr = len(sub(a.edge, hub));
+    const rs = len(sub(a.spike, hub));
+    const k = clamp01((q.gale - 0.3) / 0.5);
+    const fwd = norm([s.hips[0][0], s.hips[0][1], 0], [1, 0, 0]);
+    const lft: V3 = [-fwd[1], fwd[0], 0];
+    const n = 64;
+    for (let i = 0; i < n; i++) {
+      const ang = (i / n) * Math.PI * 2;
+      const dir = add(mul(lft, Math.cos(ang)), mul([0, 0, 1], Math.sin(ang)));
+      if (hash(i, Math.floor(m.t * 30 + 1e-6), 61) > 0.55 * k) continue;
+      put('wheel', 'wheel', { k: 'mote', p: add(hub, mul(dir, rr)), c: i % 3 === 0 ? FLAME[2] : FLAME[1], size: 2 });
+      if (i % 2 === 0) put('wheel', 'wheel', { k: 'mote', p: add(hub, mul(dir, rs)), c: FLAME[1], size: 2 });
+    }
+    put('wheel', 'wheel', { k: 'glow', p: hub, c: FLAME[2], r: rr * 0.8, a: 0.18 * k });
+  }
+
+  // --- WHERE HIS BLADE BITES THE FLOOR: stone chips thrown up and out, and dust ---
+  // (the flurry's third cut, not its first, is the one that comes down on the floor)
+  const since = m.move === FLURRY_NAME ? m.t - H2_FLURRY_HITS[2] : m.since;
+  if (since !== undefined && since >= 0 && since < 0.4 && !m.bare && !m.dying) {
+    const ax = axe2Of(s, q);
+    const low = [ax.edge, ax.horns[0], ax.horns[1]].reduce((a, b) => (b[2] < a[2] ? b : a));
+    if (low[2] < 4) {
+      const k = since / 0.4;
+      for (let i = 0; i < 18; i++) {
+        const a = hash(i, 1, 83) * Math.PI * 2;
+        const sp = 10 + 22 * hash(i, 2, 83);
+        const vz = 30 + 40 * hash(i, 3, 83);
+        const tt = since;
+        const z = Math.max(0, vz * tt - 0.5 * 260 * tt * tt);
+        put('chips', 'chips', { k: 'mote', p: [low[0] + Math.cos(a) * sp * tt * 1.4, low[1] + Math.sin(a) * sp * tt * 1.4, z + 0.5], c: i % 3 === 0 ? STEEL[2] : i % 3 === 1 ? '#6a6488' : '#3b3052', size: i % 4 === 0 ? 3 : 2 });
+      }
+      for (let i = 0; i < 12; i++) {
+        if (hash(i, 7, 83) < k * 0.9) continue;
+        const a = (i / 12) * Math.PI * 2 + hash(i, 4, 83);
+        const r = 3 + (8 + 8 * hash(i, 5, 83)) * Math.sqrt(k);
+        const z = 0.6 + (2 + 4 * hash(i, 6, 83)) * Math.sin(Math.PI * Math.min(1, k * 1.2));
+        put('dust', 'dust', { k: 'mote', p: [low[0] + Math.cos(a) * r * 1.3, low[1] + Math.sin(a) * r, z], c: i % 2 ? '#4a4266' : '#6a6488', size: 2 });
+      }
+      if (since < 0.08) put('chips', 'chips', { k: 'glow', p: [low[0], low[1], 2], c: FLAME[3], r: 16, a: 0.6 });
+    }
+  }
   void mid;
   return bits;
+}
+/** A way through the air smoothed: three points on the curve (Catmull-Rom) between each two it was at. */
+function smoothed(pts: V3[]): V3[] {
+  if (pts.length < 3) return pts;
+  const out: V3[] = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+    for (let k = 0; k < 3; k++) {
+      const t = k / 3;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const w0 = -0.5 * t3 + t2 - 0.5 * t;
+      const w1 = 1.5 * t3 - 2.5 * t2 + 1;
+      const w2 = -1.5 * t3 + 2 * t2 + 0.5 * t;
+      const w3 = 0.5 * t3 - 0.5 * t2;
+      out.push([0, 1, 2].map((j) => p0[j] * w0 + p1[j] * w1 + p2[j] * w2 + p3[j] * w3) as unknown as V3);
+    }
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -391,7 +549,7 @@ function headsman2Bits(st: Stage, m: Moment): Bit[] {
 // shoulder, the crescent high over his hood and its foot's spike low before him; his left hand open
 // before him, low, its fingers spread. His hood low, looking at you.
 
-const H2_HANG = -(B2.upperArm + B2.foreArm) * 0.9;
+export const H2_HANG = -(B2.upperArm + B2.foreArm) * 0.9;
 export const H2_BASE: Bones = {
   ...standing(B2),
   pz: -4.5, px: 0, yaw: -34, pitch: 9, roll: 0, twist: 10, bend: 10, side: 0,
@@ -402,73 +560,11 @@ export const H2_BASE: Bones = {
   wAz: 0, wEl: -80, wRoll: 0, draw: 1, pt: 0, out: 0, prop: 0, gale: 0,
 };
 /** The guard: the axe up behind his right shoulder, his left hand out before him. */
-const H2_GUARD: P = {
+export const H2_GUARD: P = {
   rhIn: 2, rhx: 2, rhy: -15, rhz: 66, re: 30,
   ...axeWay([-0.42, -0.2, 0.88], [-0.1, -1, 0]),
   lhIn: 0, lhx: 21, lhy: -1, lhz: -21, le: -52,
   draw: 1,
 };
-export const H2_REST: Bones = resolvedRest({ ...H2_BASE, ...H2_GUARD });
-
-/** STANDING, ALIVE: light on his feet, bouncing a little on his knees; his hood turning to keep you in it. Two seconds round. (The twirl comes with his moves.) */
-function h2Stand(): Motion {
-  const R = H2_REST;
-  return {
-    loop: 0,
-    keys: [
-      { at: 0, pose: {} },
-      { at: 0.5, pose: { pz: R.pz - 1.6, bend: R.bend + 1.5, faceTurn: R.faceTurn - 8, rhz: (R.rhz as number) - 1.5 }, ease: 'io' },
-      { at: 1.0, pose: { pz: R.pz + 0.2, faceTurn: R.faceTurn + 6 }, ease: 'io' },
-      { at: 1.5, pose: { pz: R.pz - 1.6, bend: R.bend + 1.5, faceTurn: R.faceTurn + 2, rhz: (R.rhz as number) - 1.5 }, ease: 'io' },
-      { at: 2.0, pose: {}, ease: 'io' },
-    ],
-  };
-}
-
-/**
- * HOW HE MIGHT MOVE (pictures, for his look: not yet moves): `looks` at 0, 1, 2 and 3 seconds:
- * 0 his guard, as he stands; 1 the axe spun before him, a blur of steel at its middle; 2 darting aside,
- * low and long, the axe trailing; 3 a lunge, the crescent's edge flung out at full reach.
- */
-const H2_LOOKS: P[] = [
-  {},
-  // (spinning it before him: held at its middle, square across him, the crescent up and to his left)
-  { pz: -6, yaw: -12, pitch: 8, twist: 0, bend: 8, faceTurn: 6, lfx: 12, lfy: 8, lk: 24, rfx: -12, rfy: -8, rk: -22, rhIn: 1, rhx: 16, rhy: -4, rhz: 6, re: 40, ...axeWay([0.15, 0.55, 0.82], [0.6, 0.3, -0.4]), lhIn: 3, lhx: -16, lhy: 0, lhz: 0, le: -30 },
-  // (darting to his left: low, his left foot reaching far out, his right pushing off, the axe trailing low behind him)
-  { px: -2, py: 8, pz: -14, yaw: -40, pitch: 16, roll: -12, twist: 16, bend: 14, side: -6, faceTurn: 20, faceUp: -6, lfx: 4, lfy: 30, lft: 30, lk: 40, rfx: -10, rfy: -18, rft: -30, rk: -6, rfp: 30, rhIn: 1, rhx: -6, rhy: -12, rhz: -22, re: 20, ...axeWay([-0.9, -0.3, 0.3], [0, 0, -1]), lhIn: 1, lhx: 8, lhy: 18, lhz: -6, le: -40 },
-  // (the lunge: his left foot far forward, his body long and low, the axe at full reach before him, both hands at its foot)
-  { px: 16, pz: -20, yaw: -18, pitch: 30, twist: 2, bend: 12, faceTurn: 8, faceUp: -18, lfx: 34, lfy: 6, lk: 48, rfx: -22, rfy: -8, rk: -4, rfp: 26, rhIn: 1, rhx: 24, rhy: -4, rhz: -4, re: 4, ...axeWay([0.86, 0.1, 0.5], [0.4, 0, -0.92]), draw: 0, lhIn: 3, lhx: -9, lhy: 0, lhz: 0, le: -10 },
-];
-function h2Looks(): Motion {
-  return { keys: H2_LOOKS.map((pose, i) => ({ at: i, pose, ease: 'lin' as const })) };
-}
-
-export const HEADSMAN_2: Mob = {
-  id: 'headsman',
-  name: 'The Headsman',
-  size: 'a boss: the Warden’s height, lean',
-  build: B2,
-  stand: { name: 'The Headsman, on his toes, his axe up behind him', motion: axed(h2Stand(), H2_REST), rest: H2_REST },
-  attack: { name: 'The Headsman (his attacks come with his moves)', motion: axed(h2Stand(), H2_REST), rest: H2_REST },
-  idleFrames: 20,
-  idleFps: 10,
-  walk: { name: 'The Headsman (his walk comes with his moves)', motion: axed(h2Stand(), H2_REST), rest: H2_REST, period: 2, ground: 0 },
-  walkFrames: 20,
-  walkFps: 10,
-  pace: 0,
-  more: {
-    looks: { name: 'How he might move (pictures)', motion: axed(h2Looks(), H2_REST), rest: H2_REST },
-  },
-  reel: { name: 'The Headsman is struck (comes with his moves)', motion: axed(h2Stand(), H2_REST), rest: H2_REST },
-  reelTime: 0.3,
-  hit: 0.5,
-  warn: 0.3,
-  dieTime: 2,
-  dying: { name: 'The Headsman falls (comes with his moves)', motion: axed(h2Stand(), H2_REST), rest: H2_REST },
-  aura: { x: H2_CANVAS.ax - 2, y: H2_CANVAS.ay - 56, r: 84, color: '#ff3a78', a: 0.15 },
-  shadow: 24,
-  canvas: H2_CANVAS,
-  trueBack: true,
-  bits: (st, m) => headsman2Bits(st, m),
-};
-void TILE3;
+/** His guard as first drawn (his look, his yes by 17:57): his right hand where the guard puts it on the floor's own axes. */
+export const H2_LOOK: Bones = resolvedRest({ ...H2_BASE, ...H2_GUARD });
