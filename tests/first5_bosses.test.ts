@@ -38,7 +38,6 @@ import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, GAITS, HEADSMA
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
 import { ACT1_FLOORS } from '../src/game/act1';
-import { act1Rules } from '../src/game/act1_rules/index';
 import { beside, handOf } from '../src/game/facing';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
