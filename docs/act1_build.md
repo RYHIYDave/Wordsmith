@@ -159,3 +159,5 @@ the boss's frames from the painter; "page" what Linux says the browser's page pr
   round; 28 blows in 40 s. Twice clean after; the floor is random each run. Not the descent's.
 - THE RELEASE BUILD in the copy (01:27): Play.html 2,778,149 bytes, dist/artifact.html 2,777,827, "V22.0 2026-10-17
   05:27" (UTC); kept in the scratchpad's v220/release/.
+- HIS OK: asked at about 02:15 on 17 Oct; 05:13, "Okay". PUBLISHED at 05:14 ("Version 59", version id 1792228436-e9d6,
+  label "Version 22.0"); read back, the page holds v220/release/artifact.html, stamped V22.0. main fast-forwarded to act1.

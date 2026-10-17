@@ -5614,7 +5614,8 @@ push (11 Oct, 19:47); the branch `first5` went to his PC as a git bundle, and he
 wordmelding goes on with it: "Yes I want word melding on". Mid-build: "New Queen should be done soon" (the art
 chat's new Carrion Queen, handed back at 11:32; the old one is not in the game). 17:40: "Runedust and the meldstone
 need to be done". To the page of pictures from the game (levels 6 to 10 as built, `https://claude.ai/artifact/NHzyq5nu2EuyLLfQiH3CT8`)
-at 22:16: "Yes they look good"; asked whether that covered the runedust and Meldstone films too, 22:17: "Yes".
+at 22:16: "Yes they look good"; asked whether that covered the runedust and Meldstone films too, 22:17: "Yes". Asked for his direct OK in a plain message at about 02:15 on 17 Oct ("Is it OK to put Version 22.0 live?"),
+with what is in it, the tests and what was not checked; at 05:13: "Okay".
 The art in it has his yes, each piece given to the art chat or the planning chat (the board and its archive have
 his words).
 
@@ -5654,6 +5655,10 @@ his words).
 - **The published page itself** (`tools/wrap220.sh`, 01:27:24 to 02:11:29): **ALL 102 FINISHED CLEAN** (101 of the
   regression's playtests, the descent's 26 among them, and the frame rate alone, 44.3).
 - The page's memory, floor by floor (`tools/scenarios/act1_room.mjs`): `docs/act1_build.md`.
+
+- **Published** at 05:14 on 17 Oct ("Version 59", version id `1792228436-e9d6`, label "Version 22.0"); the file
+  published is the kept copy, `v220/release/artifact.html`; read back from the page, it is that file inside the site's
+  page, stamped "V22.0 2026-10-17 05:27". main fast-forwarded to `act1` and pushed.
 
 **Not checked.** A real phone. The Unfinished, the Carrion Queen and the Drowned Eye each hold about 300 MB of
 frames, about 300 MB more than the live game's biggest moment; the canvases are as the live game's. Some of the
