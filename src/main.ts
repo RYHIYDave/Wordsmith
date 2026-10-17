@@ -1754,7 +1754,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       }
       if (bossCard) {
         if (!paused) bossCard.t += dt;
-        if (bossCard.t > bossCard.secs) bossCard = null;
+        // (and gone with the level he was met on: not carried home to town by a way taken while it still showed)
+        if (bossCard.t > bossCard.secs || game.level.town) bossCard = null;
         else drawBossCard(cg, bossCard, scr.w, scr.h);
       }
       // (a hero who has just warped in says their line when they have come together: `arrived`)
