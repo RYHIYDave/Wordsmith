@@ -105,14 +105,20 @@ export default async function (page, snap) {
     log('end', JSON.stringify(await state()));
     return;
   }
-  const acts = new Set();
+  // (every act any of them begins, watched every twentieth of a second: an act is often over between two pictures)
+  await page.evaluate(() => {
+    window.__acts = new Set();
+    window.__actsWatch = setInterval(() => {
+      const g = window.__dbg.game(); if (!g) return;
+      for (const m of g.monsters) if (!m.dead && m.act) window.__acts.add(m.act.id);
+    }, 50);
+  });
   for (let i = 0; i < secs; i++) {
     await page.waitForTimeout(1000);
-    const st = await state();
-    if (st.act) acts.add(st.act.split('@')[0]);
-    log(`t${i + 1}`, JSON.stringify(st));
+    log(`t${i + 1}`, JSON.stringify(await state()));
     await snap(`s${String(i).padStart(2, '0')}`);
   }
+  const acts = new Set(await page.evaluate(() => { clearInterval(window.__actsWatch); return [...window.__acts]; }));
   log('acts', JSON.stringify([...acts]));
   // (in the time watched, it must have done something of its own: a monster that only stands is broken)
   if (secs >= 8 && !acts.size) log('!! it never acted');
