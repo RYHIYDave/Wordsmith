@@ -24,8 +24,8 @@ import { BOSSES5, BossRules, blinkedAway, bossKind, gaitOf } from './bosses';
 import { ACT1 } from './act1';
 import { act1Rules, act1Ward } from './act1_rules/index';
 import { blobDist } from './act1_layout';
-import { HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE } from './act1_holds';
-import { act1Ready } from './act1_mobs';
+import { HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
+import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
@@ -2229,8 +2229,19 @@ export class Game {
         this.sfx('door', 0.5);
         return;
       }
+      // (HOLD_WAVES: a wave dead, the next comes; the last dead, it is won)
+      if (HOLD_WAVES.on && st.entered && !st.won && st.wave) {
+        const packs = st.packs ?? [];
+        if (st.coming || this.monsters.some((m) => !m.dead && packs.includes(m.packId))) continue;
+        if (st.wave < HOLD_WAVES.n) {
+          st.coming = true;
+          const n = q.n;
+          this.after(HOLD_WAVES.gap, () => this.holdWave(n, (st.wave ?? 0) + 1));
+          continue;
+        }
+      }
       // (its last fight won: the reward)
-      if (st.entered && !st.won && !this.monsters.some((m) => !m.dead && m.packId === st.pack)) {
+      if (st.entered && !st.won && !(HOLD_WAVES.on && st.wave && st.wave < HOLD_WAVES.n) && !this.monsters.some((m) => !m.dead && (m.packId === st.pack || (st.packs ?? []).includes(m.packId)))) {
         st.won = true;
         const n = st.words.length;
         const at = q.fight;
@@ -2271,8 +2282,12 @@ export class Game {
     this.visionT = 0;
   }
 
-  /** A stronghold's last room: a yellow pack of the floor's own medium kind round its obelisk, every one with the words burned at its door, harder for each past the first. */
+  /** A stronghold's last room: a yellow pack of the floor's own medium kind round its obelisk, every one with the words burned at its door, harder for each past the first. (HOLD_WAVES: its first wave.) */
   private holdFight(n: number): void {
+    if (HOLD_WAVES.on) {
+      this.holdWave(n, 1);
+      return;
+    }
     const L = this.level;
     const q = L.land?.holds.find((o) => o.n === n);
     const st = L.holds?.[n];
@@ -2291,6 +2306,59 @@ export class Game {
       if (m.half) m.half = m.half.filter((w) => !st.words.includes(w));
       m.life = m.maxLife = Math.round(m.maxLife * more);
       m.state = 'chase';
+    });
+  }
+
+  /**
+   * (HOLD_WAVES) A wave of a stronghold's hall comes: its packs (WAVE_MAKE), of the floor's own creatures and the cult, each
+   * spread round the hall's far side, every monster with the words burned at the door, harder for each word past the first
+   * and for each wave on.
+   */
+  private holdWave(n: number, k: number): void {
+    const L = this.level;
+    const q = L.land?.holds.find((o) => o.n === n);
+    const st = L.holds?.[n];
+    if (!q || !st || st.won) return;
+    st.wave = k;
+    st.coming = false;
+    st.packs = [];
+    const rng = new RNG((Math.imul(this.seed, 31) + n * 7919 + k * 104729 + this.depth) >>> 0);
+    const f = L.floor;
+    const more = (1 + HOLD_TUNE.life * Math.max(0, st.words.length - 1)) * (1 + HOLD_WAVES.life * (k - 1));
+    const make = WAVE_MAKE[Math.min(k, WAVE_MAKE.length) - 1];
+    if (k > 1) {
+      this.msg(`Wave ${k} of ${HOLD_WAVES.n}`, MSG.foe);
+      this.sfx('bossRoar', 0.5);
+    }
+    make.forEach((pk, j) => {
+      const pid = st.pack * 100 + k * 10 + j;
+      st.packs!.push(pid);
+      let kind: MonsterKind;
+      let size: number;
+      if (pk.own) {
+        const own = HOLD_PACK[L.act1?.floor ?? 6] ?? 'brute';
+        kind = act1Ready(own) ? own : 'brute';
+        size = HOLD_TUNE.pack;
+      } else {
+        const p = act1Pack(this.depth, rng, 'normal');
+        kind = p.kind;
+        size = p.size;
+      }
+      // (each pack its own side of the hall's fight, spread round it)
+      const a = (j / make.length) * Math.PI * 2 + rng.range(-0.4, 0.4);
+      const spots = scatter(L.walk, f.w, f.h, q.fight.x + Math.cos(a) * 1.6, q.fight.y + 1.2 + Math.sin(a) * 1.2, size, rng);
+      const rarity = pk.rarity;
+      const words = this.bareDungeon() ? [] : rarity === 'yellow' ? this.drawWords(rng, 2).filter((w) => !st.words.includes(w)) : rarity === 'blue' ? this.drawWords(rng, 1).filter((w) => !st.words.includes(w)) : [];
+      spots.forEach((s, i) => {
+        const lead = rarity === 'yellow' && i === 0;
+        const m = this.spawn(lead ? this.leaderOf(kind) : kind, s.x, s.y, pid, lead ? 1 : 0, false, rng, null, rarity === 'plain' ? null : { rarity: rarity === 'blue' ? 'blue' : lead ? 'leader' : 'minion', words });
+        // (the words burned at the door are every one's, whole, as a word burned into a dungeon at the gate is)
+        for (const w of st.words) if (!m.words.includes(w)) m.words.push(w);
+        if (m.half) m.half = m.half.filter((w) => !st.words.includes(w));
+        m.life = m.maxLife = Math.round(m.maxLife * more);
+        m.state = 'chase';
+        m.cd = 0.5 + 0.15 * i;
+      });
     });
   }
 

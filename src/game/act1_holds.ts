@@ -44,6 +44,24 @@ export const HOLD_TUNE = {
   out: 0.55,
 };
 
+/**
+ * THE HALL IN WAVES. The owner, 17 Oct 2026, 11:37: "I’d like the strongholds to be longer.  Let’s to waves of enemies.
+ * Start with 5 waves of increasing difficulty.  And the words you put on the door are added to the mobs." So, `on`: the
+ * hall's fight is `n` waves, each come when the last is dead (`gap` seconds after, "Wave 2 of 5" said as it comes), every
+ * monster of every wave with the words burned at the door, as the last room's pack had them. The waves, of the floor's own
+ * creatures and the cult (game/act1_mobs.ts), harder each: `life` more life each wave on; what each is, by `WAVE_MAKE`; the
+ * last the old last room's yellow pack of the floor's medium kind round the obelisk, and a blue pack with it.
+ */
+export const HOLD_WAVES = { on: true, n: 5, gap: 2.0, life: 0.15 };
+/** Each wave (1 to 5): its packs, each `rarity` (none: a plain pack) and `own` (true: the floor's medium kind, as the last room's). */
+export const WAVE_MAKE: readonly (readonly { rarity: 'plain' | 'blue' | 'yellow'; own?: boolean }[])[] = [
+  [{ rarity: 'plain' }],
+  [{ rarity: 'plain' }, { rarity: 'plain' }],
+  [{ rarity: 'blue' }, { rarity: 'plain' }],
+  [{ rarity: 'blue' }, { rarity: 'blue' }],
+  [{ rarity: 'yellow', own: true }, { rarity: 'blue' }],
+];
+
 /** The floor's own medium kind (the last room's pack): the quarry golems, the cliff crawlers, the canyon scorpions, the twisted deer, the Eyespawn. */
 export const HOLD_PACK: Readonly<Record<number, MonsterKind>> = { 6: 'qgolem', 7: 'crawler', 8: 'scorpion', 9: 'deer', 10: 'spawn' };
 /** The two guards, as the mock-up stood them. */
@@ -61,6 +79,10 @@ export interface HoldState {
   won: boolean;
   /** The pack of its last room (Monster.packId). */
   pack: number;
+  /** (HOLD_WAVES) The wave its hall is on (0: none yet), the packs of it (Monster.packId), and whether the next is on its way. */
+  wave?: number;
+  packs?: number[];
+  coming?: boolean;
 }
 
 /** The packId of a stronghold's last room's pack, and of its guards (each alone). */
