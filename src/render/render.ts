@@ -37,7 +37,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { AIM, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, TUNE, WORDS, movesOf } from '../game/defs';
+import { AIM, BODIES, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, TUNE, WORDS, movesOf } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { MELD_DUST_COLOR, withParts } from '../game/melds';
@@ -1765,7 +1765,9 @@ export class Renderer {
       if (!shown || !shown.lying) continue;
       // (a body settles into the floor's dark over a second and a half: with forty of them lying
       // about, what still stands, and what was dropped, must be the brighter things on the screen)
-      g.globalAlpha = 1 - (1 - BODY_DIM) * Math.min(1, Math.max(0, shown.since) / BODY_SETTLES);
+      // (BODIES: and fades out over the last of its while)
+      const going = BODIES.on ? Math.min(1, Math.max(0, (BODIES.life - f.t) / BODIES.fade)) : 1;
+      g.globalAlpha = (1 - (1 - BODY_DIM) * Math.min(1, Math.max(0, shown.since) / BODY_SETTLES)) * going;
       g.drawImage(shown.sp.img, Math.round(sx) - shown.sp.ax, Math.round(sy) - shown.sp.ay, shown.sp.w, shown.sp.h);
     }
     g.globalAlpha = 1;

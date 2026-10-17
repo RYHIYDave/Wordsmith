@@ -1079,6 +1079,14 @@ export const FIRST_WORD: Record<ClassId, FirstWord> = {
  * tapping mechanic" (FIRST_DUNGEON.softball).
  */
 export const FIRST_LEVELS = { on: true };
+
+/**
+ * BODIES GONE AFTER A WHILE. The owner, 17 Oct 2026, 11:37: "And let’s have corpses despawn after a set amount of time."
+ * Read as (told him so): a body lies `life` seconds from its death, then fades out over the last `fade` of them, and is
+ * gone; the cult's bodies the Fleshmancer raises out of (bosses.ts CORPSES) go with them. A look: behind its switch, off,
+ * until he has seen it.
+ */
+export const BODIES = { on: false, life: 30, fade: 1.5 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];
 /**

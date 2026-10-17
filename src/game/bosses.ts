@@ -25,7 +25,7 @@
 // and a test holds it to the art. Which side of him a thing is on is the side his picture shows it
 // (game/facing.ts, `handOf`).
 
-import { MONSTERS, MSG, SUMMON, TUNE, wordShare } from './defs';
+import { BODIES, MONSTERS, MSG, SUMMON, TUNE, wordShare } from './defs';
 import type { MonsterDef } from './defs';
 import { beside, fromFigure, handOf } from './facing';
 import type { Game } from './game';
@@ -1132,11 +1132,12 @@ export class BossRules {
       }
       if (p.t >= p.dur) list.splice(k, 1);
     }
-    // (the cult's bodies lie a while, and are gone)
+    // (the cult's bodies lie a while, and are gone: no longer than a body is seen, BODIES)
     const cs = g.corpses;
+    const lies = BODIES.on ? Math.min(CORPSES.secs, BODIES.life) : CORPSES.secs;
     for (let k = cs.length - 1; k >= 0; k--) {
       cs[k].t += dt;
-      if (cs[k].t > CORPSES.secs) cs.splice(k, 1);
+      if (cs[k].t > lies) cs.splice(k, 1);
     }
   }
 

@@ -32,7 +32,7 @@ import { CAPE, MK_CLOAK, MK_WOOD, OSSUARY, PALLOR, PLANK, SHROUD } from '../art/
 import { ELEMENT_RAMP, P } from '../art/palette';
 import type { Sfx } from '../engine/audio';
 import { drawText, textWidth, wrapText } from '../engine/font';
-import { BOSS_INTRO, RANGER_ARROW, WORDS } from '../game/defs';
+import { BODIES, BOSS_INTRO, RANGER_ARROW, WORDS } from '../game/defs';
 import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
 import { meldLookWords, meldOwnsEvent } from './melds3';
@@ -1852,6 +1852,8 @@ export class Fx {
     trim(this.glows, 60);
     trim(this.later, 160);
     for (const f of this.fallen) f.t += dt;
+    // (BODIES: a body lain its while is gone)
+    if (BODIES.on) for (let k = this.fallen.length - 1; k >= 0; k--) if (this.fallen[k].t >= BODIES.life) this.fallen.splice(k, 1);
     if (this.quip) {
       this.quip.t += real;
       if (this.quip.t > (this.quip.long ?? QUIP_TIME)) this.quip = null;
