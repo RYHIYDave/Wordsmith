@@ -429,6 +429,11 @@ wait
 SCENE=fall run act1_meld_drops_fall $P --scenario $S/meld_drops_film.mjs &
 SCENE=give run act1_meld_drops_give $P --scenario $S/meld_drops_film.mjs &
 wait
+# THE SPEED WORK (Version 22.1): the Pinewood's forest drawn as chunk pictures draws the same picture, to the pixel, as
+# its trees one by one (render/tops_cache.ts), with the warrior and the mage (who throws the most about)
+CLS=warrior SPOTS=8 run speed_tops_same_warrior $P --scenario $S/tops_same.mjs &
+CLS=mage SPOTS=8 run speed_tops_same_mage $P --scenario $S/tops_same.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &
