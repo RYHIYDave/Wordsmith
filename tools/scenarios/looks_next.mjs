@@ -17,9 +17,17 @@ export default async function (page, snap) {
   const looks = () => page.evaluate(() => Object.fromEntries(Object.entries(window.__dbg.looks).map(([k, v]) => [k, v.on])));
   const set = (name, on) => page.evaluate(([k, v]) => { window.__dbg.looks[k].on = v; }, [name, on]);
   /** The floor made afresh (the same floor every time: its seed is the run's, its depth's and how far he has been). */
-  const enter = (n, foes = false) => page.evaluate(([n, foes]) => {
+  const enter = async (n, foes = false) => {
+    const r = await enterNow(n, foes);
+    // (the floor's name across the screen gone, and the painter's work done)
+    await page.waitForTimeout(5500);
+    return r;
+  };
+  const enterNow = (n, foes = false) => page.evaluate(([n, foes]) => {
     const g = window.__dbg.game();
     g.depth = n; g.cleared = n - 1; g.enterDungeon();
+    // (no floor's name across the pictures)
+    g.events = g.events.filter((e) => e.t !== 'floorName');
     g.level.explored.fill(1);
     if (!foes) g.monsters = g.monsters.filter((m) => m.boss);
     for (const m of g.monsters) m.state = 'sleep';
@@ -58,18 +66,21 @@ export default async function (page, snap) {
       if (at.area) { await stand(at.area[0], at.area[1]); await snap(`props_${n}_area_before`); }
     }
   } else if (which === 'path') {
+    if (process.env.PATH_W) await page.evaluate((w) => { window.__dbg.looks.PINE_PATH.w = w; }, Number(process.env.PATH_W));
     for (const on of [false, true]) {
       await set('PINE_PATH', on);
       await enter(9);
       const at = await page.evaluate(() => {
         const g = window.__dbg.game(); const L = g.level; const W = L.floor.w;
-        const way = L.land.way;
-        // (a spot on the path between the second and third areas of the way: the middle of it, or near it)
-        for (const k of [0.5, 0.45, 0.55, 0.4, 0.6]) {
-          const x = way[1][0] + (way[2][0] - way[1][0]) * k; const y = way[1][1] + (way[2][1] - way[1][1]) * k;
-          if (L.walk[Math.floor(y) * W + Math.floor(x)] === 1) return [x, y];
+        // (the middle of the longest path between two areas)
+        const lanes = [...L.land.lanes].sort((a, b) => b.pts.length - a.pts.length);
+        for (const l of lanes) {
+          for (const k of [0.5, 0.4, 0.6]) {
+            const [x, y] = l.pts[Math.floor(l.pts.length * k)];
+            if (L.walk[Math.floor(y) * W + Math.floor(x)] === 1) return [x, y, l.w];
+          }
         }
-        return [way[1][0], way[1][1]];
+        return [L.floor.start.x, L.floor.start.y, 0];
       });
       log(`path ${on ? 'on' : 'off'}`, JSON.stringify(at));
       await stand(at[0], at[1], 3500);

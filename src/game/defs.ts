@@ -1148,11 +1148,14 @@ export const LOOT2 = {
 /**
  * THE BOSSES' LIFE PAST THE WARDEN. The owner, 17 Oct 2026, 11:37: "Bosses need more HP past the warden.  TTK is much too
  * short." Each boss's life (as game.ts spawn works it out: his kind's, by the depth, twice on floors 5 and 10) times this.
- * The Warden's stays as it is. (Set by measuring how long each fight takes: docs/NEXT_VERSION.md.)
+ * The Warden's stays as it is. Measured (tools/ttk_boss.ts: the test bot, never falling, at the level the bot has there,
+ * from the boss's first wound to its death): each fight about three times as long (the Unfinished 96 to 292 s, the Cantor
+ * 113 to 341, the Stag 154 to 471); the Queen, who now roams, 1.5 times (her fight was already twice the Unfinished's); the
+ * Eye's three bars (EYE_BARS, each a whole life) his own triple.
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1.5 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];

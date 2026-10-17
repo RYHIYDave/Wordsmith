@@ -29,7 +29,7 @@ import { ACT1_SETS, CAMP } from '../game/act1_dress';
 import type { Act1Dress, Act1Tile } from '../game/act1_dress';
 import type { Land } from '../game/act1_layout';
 import type { Level, PropInst } from '../game/state';
-import { laneDist } from '../game/act1_layout';
+import { PINE_PATH, laneDist } from '../game/act1_layout';
 import { PIECE } from './outdoor';
 
 const MAPS = new Map<number, Map<string, Piece>>();
@@ -237,6 +237,12 @@ export class Act1Pieces {
             else if (roll < 0.8) pick = { name: 'young pine', frame: k < 0.5 ? 0 : 1, tall: true };
             else if (roll < 0.86) pick = { name: 'ferns', frame: k < 0.5 ? 0 : 1 };
             else if (roll < 0.9) pick = { name: 'pine snag', frame: 0, tall: true };
+            // (PINE_PATH, his "The thin paths through the forest are hard to see past the trees": no tall tree whose picture
+            // would stand over one of the paths between the areas; ferns in its place, now and then)
+            if (PINE_PATH.on && pick?.tall && land.lanes.some((l) => laneDist(l, wx, wy) < PINE_PATH.clear)) {
+              const sp = P(pick.name, pick.frame);
+              if (sp && !clearOfFloor(T, px, py, 14, sp.h * GRAIN * 0.85)) pick = roll < 0.75 ? { name: 'ferns', frame: k < 0.5 ? 0 : 1 } : null;
+            }
           } else {
             // THE FEN'S OPEN WATER, as its mock-up has it (src/dev/preview_fen.ts, with his yes): on a sparser grid of
             // its own; reeds in the shallows by the ground, nothing a little further out, then its dead trees standing
