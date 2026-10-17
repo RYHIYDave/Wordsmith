@@ -4461,8 +4461,11 @@ export class Game {
     if (skill >= 0) m.lastSkill = skill;
     if (m.state === 'sleep') this.wakeUp(m);
     this.emit({ t: 'hit', x: m.x, y: m.y, amount: dmg, crit, el, onHero: false, heavy, words: words && words.length ? words : undefined, poison: poison || undefined });
-    // (ACT 1: one whose rules hold its death off is kept at 1: a boss with another life bar to come)
-    if (m.life <= 0 && r1 && r1.held && r1.held(this.bosses, m)) m.life = 1;
+    // (ACT 1: one whose rules hold its life up is kept there: a boss with another life bar to come, or one who must first be where his death was drawn)
+    if (r1 && r1.lifeFloor) {
+      const least = r1.lifeFloor(this.bosses, m);
+      if (least > 0 && m.life < least) m.life = least;
+    }
     if (m.life <= 0) this.kill(m);
   }
 

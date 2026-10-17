@@ -182,7 +182,7 @@ export const PHASES = { at: [0.7, 0.35] as const };
 /**
  * EACH PHASE A LIFE BAR OF ITS OWN. The owner, 17 Oct 2026, 11:37: "The final boss needs each new phase to have an
  * invulnerability phase as he transforms to the next phase and his HP bar refilled." So, `on`: his life is a full bar in
- * each of his three phases; at the end of the first two he does not die but is kept at 1 (`held`) and changes into the
+ * each of his three phases; at the end of the first two he does not die but is kept at 1 (`lifeFloor`) and changes into the
  * next (his surfacing, his pulling the siege in), invulnerable from then until the change is done (`invulnerable`:
  * "Invulnerable" is said where he is struck); and his bar is full again as he comes out of it.
  */
@@ -358,8 +358,8 @@ export const RULES: Act1Rules = {
   },
 
   // (EYE_BARS: a bar of his emptied before his last, he does not die; and from then until he has changed, nothing hurts him)
-  held(R, m) {
-    return EYE_BARS.on && st(m).ph < 2;
+  lifeFloor(R, m) {
+    return EYE_BARS.on && st(m).ph < 2 ? 1 : 0;
   },
   invulnerable(m) {
     if (!EYE_BARS.on) return false;
