@@ -377,3 +377,38 @@ keep out of; his staff passes outside it (tested on its own).
 ## Next
 
 Nothing more of him unless the owner asks: he goes to the main chat whole. Next in the art chat: floor 5.
+
+## His teleport (17 Oct)
+
+His words to the main chat, 17 Oct, 11:37 (Eastern), after playing Version 22.0, sent to the art chat at his word:
+"The fleshmancer needs a teleport to move around the arena." Asked in the art chat how he should go and come back,
+his pick by 15:55 (Eastern): "Dragged down, pushed up (Recommended)", offered as: his own dead pull him down into a
+pit of his fire and push him up out of another across the arena, as in his death but quick.
+
+Two moves on `FLESHMANCER.more` (`src/art/fleshmancer.ts`), as the game holds his moves (`clips.moves.sink`,
+`clips.moves.rise`, 30 frames a second): he GOES where he stands, and COMES BACK where the game has moved him;
+between them he is nowhere (draw nothing of him, no shadow and no pool of light).
+
+- `sink`, his going, `FM_SINK.long` 1.0 s: he rears, flinging his claw up blazing and his staff over his head, the
+  skull roaring (the warning, to `FM_SINK.grab` 0.24); the floor bursts open under him into a pit of his fire (from
+  0.08) and the hands of his dead burst up out of it, seize his robe and YANK him down (0.24); hauled under fast,
+  glaring at you, his hood under by 0.52, the skull last (0.62 to 0.7) with its fire bursting up in sparks; nothing
+  of him above the floor from `FM_SINK.gone` 0.72; the pit closes (0.78 to 0.96). Its last frame has nothing of him.
+- `rise`, his coming back, `FM_RISE.long` 1.2 s: the pit bursts open where he comes up, the skull's fire spurting up
+  first (0 to `FM_RISE.up` 0.2: nothing of him yet, the warning); the hands thrust up out of it holding him and PUSH
+  him up, skull first, then his hood, his claw blazing (up by `FM_RISE.out` 0.58, a little higher than he floats);
+  they let go and sink back (from 0.62); he settles, his staff swung down before him, and ends as his stand begins
+  (1.2); the pit closes (0.8 to 0.95).
+- `fmTeleportPitAt(sink, t)`: how wide the pit is (his own lengths); `FM_SINKING`, `FM_RISING`: their `prop`s.
+- His painter: the pit and hands of his death are now `pitBits`, shared by his death and his teleport (his death
+  paints exactly as before: every frame of it and of his other moves checked the same to the pixel against main);
+  for the teleport only, motes of a part going under are cleared just over the floor, so that none is left alone.
+- Film: `node tools/page_gif.mjs src/dev/preview_fleshmancer.ts "film:teleport:3" shots/fm_teleport.gif`.
+- Asked as a pop-up, "The Fleshmancer's teleport (fm_teleport.gif): dragged down by his dead, pushed back up across
+  the arena. Is it right?", his answer by 16:23 (Eastern; 13:23 where he is): "Yes, send it to main
+  (Recommended)", offered as: it goes to the main chat, which decides when and where he teleports in his fight.
+- Checks: tests/fleshmancer.test.ts 18 of 18: both through every boss check (as his death, dragged through the
+  floor: `FM_SHAPE_UNDER`), his stand into `sink` and `rise` into his stand (`FM_SHAPE.handovers`); test 18: the
+  pit opens and closes, he rears before he is pulled, his hood under before the skull, nothing of him at the end of
+  going or the start of coming back, the skull up before his hood, he ends floating as he stands, no lone pixel in
+  any frame of either, both as the game holds them.
