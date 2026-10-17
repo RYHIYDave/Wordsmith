@@ -1881,13 +1881,18 @@ export class Renderer {
     this.warmedFor = game.level;
     if (heavy.length > 0 && this.warmFrame % HEAVY_EVERY === 0) this.art.bestiary.warm(heavy);
     const began = performance.now();
-    const hero = (): boolean => this.art.heroes.warm(h.cls, look);
+    // (THE HERO'S PICTURES BY THE PAINTER: where its worker is up, it paints them ahead, beside the game: a frame of a hero
+    // is a frame's whole time and more to paint here, so the game painting one a frame ran late every frame until all
+    // were done. Until the worker is up, or where there is none, the game paints them ahead as before.)
+    const pw = this.painter && this.art.heroes.give ? this.painter : null;
+    const byWorker = !!pw && pw.hero(h.cls, look.town ? 'town' : 'dungeon') && (!look.town || pw.hero(h.cls, 'dungeon'));
+    const hero = (): boolean => !byWorker && this.art.heroes.warm(h.cls, look);
     const beast = (): boolean => figs.length > 0 && this.art.bestiary.warm(figs);
     // (Version 19.4: in town, once all of the town's are painted, the hero's pictures for the
     // dungeon are painted ahead too, so that fewer are left for the dungeon's first seconds; and
     // the hero and the monsters take turns by the frame as well as within one, so that when a
     // picture costs more than the budget, one a frame, the monsters' do not all wait behind his)
-    const ahead = (): boolean => !!game.level.town && this.art.heroes.warm(h.cls, { ...look, town: false });
+    const ahead = (): boolean => !byWorker && !!game.level.town && this.art.heroes.warm(h.cls, { ...look, town: false });
     const heroFirst = (this.warmFrame++ & 1) === 0;
     for (let n = 0; n < 600; n++) {
       const did = (n % 2 === 0) === heroFirst ? hero() || beast() || ahead() : beast() || hero() || ahead();

@@ -331,6 +331,19 @@ function animSet3(plan: Plan, view: GameView, fights = true): AnimSet {
   return set;
 }
 
+/**
+ * THE ORDER A HERO'S PICTURES ARE PAINTED AHEAD (standing and running first, then the attacks from start to finish,
+ * then the rest; what a hero does when left standing is painted as it is shown, which is slowly enough): each of these
+ * a list of frames of one side of the hero.
+ */
+const HERO_PICKS: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
+          (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.holdStart?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? [])];
+
+/** A hero's lists of frames, in the order they are painted ahead (the painter's worker and the page agree on them by this). */
+export function heroLists(set: AnimSet): Sprite[][] {
+  return HERO_PICKS.map((pick) => pick(set));
+}
+
 /** The last frame painted ahead of need. Kept only so that the reading of it cannot be optimised away. */
 export let painted3: Sprite | undefined;
 
@@ -352,6 +365,19 @@ export function makeHeroArt3(): HeroArt {
   };
   return {
     of,
+    /**
+     * THE PAINTER (render/painter.ts): a frame of a hero painted beside the game, taken in where the game has not painted
+     * it yet (`v` the side, `l` its list as heroLists has them, `i` the frame). False: not wanted (the game had painted it).
+     */
+    give(cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite): boolean {
+      const art = of(cls, { twoHanded: true, town: place === 'town' });
+      const frames = heroLists(v === 0 ? art.front : art.back)[l];
+      if (!frames || i < 0 || i >= frames.length) return false;
+      const d = Object.getOwnPropertyDescriptor(frames, i);
+      if (!d || typeof d.get !== 'function') return false;
+      Object.defineProperty(frames, i, { value: s, writable: true, configurable: true, enumerable: true });
+      return true;
+    },
     warm(cls: ClassId, look: HeroLook): boolean {
       const art = of(cls, look);
       let list = todo.get(art);
@@ -359,8 +385,7 @@ export function makeHeroArt3(): HeroArt {
         list = [];
         // (standing and running first, then the attacks from start to finish, then the rest; what
         // a hero does when left standing is painted as it is shown, which is slowly enough)
-        const picks: ((a: AnimSet) => Sprite[])[] = [(a) => a.idle, (a) => a.start?.frames ?? [], (a) => a.walk, ...[0, 1, 2].map((k) => (a: AnimSet) => a.walkWays?.[k] ?? []), ...Array.from({ length: SETTLES }, (_, k) => (a: AnimSet) => a.stops?.[k]?.frames ?? []), (a) => a.clips?.attack?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.attackWalk?.[k]?.frames ?? []), (a) => a.clips?.attack2?.frames ?? [], (a) => a.clips?.heavy?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.heavyWalk?.[k]?.frames ?? []), (a) => a.clips?.leap?.frames ?? [], (a) => a.clips?.roll?.frames ?? [],
-          (a) => a.clips?.hold?.frames ?? [], (a) => a.clips?.holdStart?.frames ?? [], (a) => a.clips?.release?.frames ?? [], (a) => a.clips?.whirl?.frames ?? [], (a) => a.clips?.land?.frames ?? [], (a) => a.clips?.reel?.frames ?? [], (a) => a.clips?.lurch?.frames ?? [], ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.reelWalk?.[k]?.frames ?? []), ...WALKS.map((_, k) => (a: AnimSet) => a.clips?.lurchWalk?.[k]?.frames ?? [])];
+        const picks = HERO_PICKS;
         for (const pick of picks) {
           for (const set of [art.front, art.back]) {
             const frames = pick(set);

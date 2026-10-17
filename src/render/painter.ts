@@ -31,7 +31,9 @@
 import { FIRST5_FIGURES, HEAVY_FIGURES, framesOf, giveFrame, makeBestiary, paintOrder } from '../art/bestiary';
 import type { Bestiary, MonsterFigure } from '../art/bestiary';
 import { filmRoom, makeFilm } from '../art/films';
+import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { paintTerrain, terrainOf } from '../art/terrain';
+import type { ClassId } from '../game/types';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
@@ -78,13 +80,16 @@ type Ask =
   | { t: 'drop'; figure: MonsterFigure }
   // ACT 1: a floor's outdoor ground (render/outdoor.ts): the floor to paint it from, then its pieces as they are wanted
   | { t: 'ground'; id: number; floor: Floor; land: Land }
-  | { t: 'piece'; id: number; i: number; j: number; pri: number };
+  | { t: 'piece'; id: number; i: number; j: number; pri: number }
+  // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
+  | { t: 'hero'; cls: ClassId; place: 'town' | 'dungeon'; pri: number };
 /** What a worker tells the page. */
 type Tell =
   | { t: 'ready' }
   | { t: 'frames'; figure: MonsterFigure; list: Given[]; left: number }
   | { t: 'film'; key: string; film: unknown; ms: number }
   | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number }
+  | { t: 'heroFrames'; cls: ClassId; place: 'town' | 'dungeon'; list: Given[]; left: number }
   | { t: 'fail'; what: string; why: string };
 
 const isSprite = (v: unknown): v is Sprite => !!v && typeof v === 'object' && 'img' in v && 'ax' in v && 'ay' in v;
@@ -139,6 +144,14 @@ export class Painter {
   private ground = 0;
   private grounds = 0;
   toGround: ((id: number, i: number, j: number, bmp: ImageBitmap, ms: number) => void) | null = null;
+  /**
+   * THE HERO'S PICTURES, painted ahead by the same worker (the ground's: it is kept for the whole game). `toHero` takes in
+   * each frame as it comes (render/render.ts): true if it was wanted. `heroAsked`: what has been asked of it.
+   */
+  toHero: ((cls: ClassId, place: 'town' | 'dungeon', v: number, l: number, i: number, s: Sprite) => boolean) | null = null;
+  private heroAsked = new Set<string>();
+  /** The hero's frames taken in from the worker, for measuring. */
+  heroFrames = 0;
 
   /**
    * `source`: the game's own script (null: there is none to be had, and no painter). `bestiary`: the
@@ -270,6 +283,21 @@ export class Painter {
     return true;
   }
 
+  /**
+   * The hero's pictures in that place to be painted ahead by the worker. True: the worker is up and has them in hand (the
+   * game need not paint them ahead itself); false: the game goes on painting them ahead as before.
+   */
+  hero(cls: ClassId, place: 'town' | 'dungeon'): boolean {
+    if (!this.warmGround() || !this.groundLane || !this.groundLane.ready) return false;
+    const key = `${cls}:${place}`;
+    if (!this.heroAsked.has(key)) {
+      this.heroAsked.add(key);
+      this.groundLane.open++;
+      this.groundLane.worker.postMessage({ t: 'hero', cls, place, pri: place === 'town' ? 30 : 31 } satisfies Ask);
+    }
+    return true;
+  }
+
   /** ACT 1: the ground's worker is up and painting (until it is, a floor's ground is painted by the game, a little each frame, as before). */
   groundReady(): boolean {
     return this.state === 'on' && !!this.groundLane && this.groundLane.ready;
@@ -293,6 +321,17 @@ export class Painter {
       lane.open = Math.max(0, lane.open - 1);
       if (this.groundLane === lane && m.id === this.ground && this.toGround) this.toGround(m.id, m.i, m.j, m.bmp, m.ms);
       else m.bmp.close();
+      return;
+    }
+    if (m.t === 'heroFrames') {
+      const mine = this.groundLane === lane;
+      for (const g of m.list) {
+        if (g.s) {
+          if (mine && this.toHero && this.toHero(m.cls, m.place, g.v, g.l, g.i, g.s)) this.heroFrames++;
+          else (g.s.img as unknown as ImageBitmap).close();
+        }
+      }
+      if (m.left === 0) lane.open = Math.max(0, lane.open - 1);
       return;
     }
     if (m.t === 'fail') {
@@ -388,9 +427,13 @@ export class Painter {
       this.finished(lane);
       return;
     }
-    // (a piece of ground is the ground worker's: none comes to these lanes)
+    // (a piece of ground, or a hero's frames, are the ground worker's: none comes to these lanes)
     if (m.t === 'piece') {
       m.bmp.close();
+      return;
+    }
+    if (m.t === 'heroFrames') {
+      for (const g of m.list) if (g.s) (g.s.img as unknown as ImageBitmap).close();
       return;
     }
     // (a film that could not be made is done without; a worker that cannot paint at all is no painter)
@@ -414,6 +457,7 @@ export class Painter {
       this.groundLane.worker.terminate();
       this.groundLane = null;
       this.ground = 0;
+      this.heroAsked.clear();
     }
     if (this.watchdog !== null) clearTimeout(this.watchdog);
     this.watchdog = null;
@@ -575,6 +619,39 @@ export function paintWorkerMain(): void {
   let going = false;
   /** ACT 1: the floor whose ground this worker paints, and its terrain. */
   let ground: { id: number; T: Terrain } | null = null;
+  /** The heroes' pictures, made here as the page makes them (art/heroes3.ts), the first time they are asked for. */
+  let heroArt: ReturnType<typeof makeHeroArt3> | null = null;
+
+  /** A hero's frames in a place, painted and handed over a few at a time, in the order the page paints them ahead. */
+  function* hero(cls: ClassId, place: 'town' | 'dungeon'): Generator<void, void, void> {
+    heroArt ??= makeHeroArt3();
+    const art = heroArt.of(cls, { twoHanded: true, town: place === 'town' });
+    const lists = [heroLists(art.front), heroLists(art.back)];
+    const order: [number, number, number][] = [];
+    for (let l = 0; l < lists[0].length; l++) for (let v = 0; v < 2; v++) for (let i = 0; i < lists[v][l].length; i++) order.push([v, l, i]);
+    const sent = new Set<Sprite>();
+    let list: Given[] = [];
+    let transfer: Transferable[] = [];
+    let t0 = performance.now();
+    if (order.length === 0) scope.postMessage({ t: 'heroFrames', cls, place, list, left: 0 });
+    for (let n = 0; n < order.length; n++) {
+      const [v, l, i] = order[n];
+      const s = lists[v][l][i];
+      // (a frame that is in two lists is sent once: the page takes in the first)
+      if (!sent.has(s)) {
+        sent.add(s);
+        list.push({ v, l, i, s: shipped(s, transfer) });
+      }
+      const last = n === order.length - 1;
+      if (last || performance.now() - t0 >= CHUNK_MS) {
+        scope.postMessage({ t: 'heroFrames', cls, place, list, left: order.length - 1 - n }, transfer);
+        list = [];
+        transfer = [];
+        if (!last) yield;
+        t0 = performance.now();
+      }
+    }
+  }
 
   /** A figure's frames, painted and handed over a few at a time. */
   function* mob(figure: MonsterFigure): Generator<void, void, void> {
@@ -637,6 +714,9 @@ export function paintWorkerMain(): void {
           const bmp = cv.transferToImageBitmap();
           scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0 }, [bmp]);
         }
+      } else if (job.ask.t === 'hero') {
+        job.run ??= hero(job.ask.cls, job.ask.place);
+        if (job.run.next().done) done();
       } else if (job.ask.t === 'film') {
         done();
         const t0 = performance.now();
@@ -649,7 +729,7 @@ export function paintWorkerMain(): void {
       }
     } catch (err) {
       if (jobs.includes(job)) done();
-      scope.postMessage({ t: 'fail', what: job.ask.t === 'film' ? `film ${job.ask.key}` : job.ask.t === 'piece' ? 'ground' : `mob ${job.ask.figure}`, why: err instanceof Error ? `${err.message}` : String(err) });
+      scope.postMessage({ t: 'fail', what: job.ask.t === 'film' ? `film ${job.ask.key}` : job.ask.t === 'piece' ? 'ground' : job.ask.t === 'hero' ? `hero ${job.ask.cls}` : `mob ${job.ask.figure}`, why: err instanceof Error ? `${err.message}` : String(err) });
     }
     again();
   };
