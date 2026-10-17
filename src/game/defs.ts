@@ -1087,6 +1087,16 @@ export const FIRST_LEVELS = { on: true };
  * until he has seen it.
  */
 export const BODIES = { on: false, life: 30, fade: 1.5 };
+
+/**
+ * THE BOSSES' LIFE PAST THE WARDEN. The owner, 17 Oct 2026, 11:37: "Bosses need more HP past the warden.  TTK is much too
+ * short." Each boss's life (as game.ts spawn works it out: his kind's, by the depth, twice on floors 5 and 10) times this.
+ * The Warden's stays as it is. (Set by measuring how long each fight takes: docs/NEXT_VERSION.md.)
+ */
+export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
+  on: true,
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 3, cantor: 3, stag: 3, eye: 1.5 },
+};
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];
 /**
