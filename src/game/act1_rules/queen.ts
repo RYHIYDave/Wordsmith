@@ -60,13 +60,15 @@ export const QN = {
  * SHE ROAMS HER EYRIE (the owner, 17 Oct 2026, 11:37: "Neither the unfinished nor the carrion queen moved at all during
  * the fight.  The queen should move around a lot"; and 11:45: "If the queen needs to be at a certain point for her death
  * animation, then when she’s at 1% HP have her fly up and land where she’s supposed to, then one hit kills and it works as
- * designed"). So, `on`: after each of her moves, and when she has stood `every` seconds, she hops to another spot of her
- * eyrie, `near` to `far` tiles from the hero, `apart` to `hop` from where she was (short hops, quick); her life cannot be brought below
+ * designed"). So, `on`: after one of her moves in two (`after`), and when she has stood `every` seconds, she hops to another
+ * spot of her eyrie, `near` to `far` tiles from the hero (round him, within a step or two of his reach: measured, a hero
+ * left chasing her across her eyrie took five minutes and more to kill her), `apart` to `hop` from where she was (short
+ * hops, quick); her life cannot be brought below
  * `last` of it until she is back on her perch over the drop; brought there, she flies up as in her dive and comes down on
  * her perch (`queen:home`: out of sight, out of reach), and stays; the next blow kills her, and she goes over the edge as
  * her death was drawn.
  */
-export const QUEEN_ROAM = { on: true, every: [1.0, 2.2] as const, near: 2.2, far: 4.6, apart: 1.6, hop: 3.4, last: 0.01 };
+export const QUEEN_ROAM = { on: true, every: [2.0, 3.5] as const, near: 1.4, far: 3.2, apart: 1.6, hop: 3.0, after: 0.5, last: 0.01 };
 
 /** Her flock: the Ledge Road's vultures (or, until they are in the game, what stands in for them: game/act1_mobs.ts). */
 export function flockKind(): MonsterKind {
@@ -397,7 +399,7 @@ export const RULES: Act1Rules | null = {
     // (QUEEN_ROAM: a move made, she is soon off to another spot; home, she stays)
     const k = keptOf(m);
     if (a.id === 'queen:home') k.home = 1;
-    else if (QUEEN_ROAM.on && !homeForGood(m)) k.roamT = Math.min(k.roamT ?? 0.3, 0.3);
+    else if (QUEEN_ROAM.on && !homeForGood(m) && R.g.rng.chance(QUEEN_ROAM.after)) k.roamT = Math.min(k.roamT ?? 0.3, 0.3);
   },
 
   forced(R, m, acts) {

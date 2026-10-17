@@ -27,13 +27,23 @@ for (const cls of CLASS_IDS) {
   let from = -1;
   let depths = '';
   let lastDepth = -1;
+  let downAt = -1;
   for (let t = 0; t < SECONDS && !g.over; t += dt) {
     g.hero.life = g.hero.d.maxLife;
+    // (the bot does not find its way down into the descent: 20 s after the fifth floor's boss is dead, or any of the descent's, it is sent down to the next)
+    if (downAt >= 0 && t - downAt > 20 && g.depth >= 5 && g.depth < 10) {
+      const next = g.depth + 1;
+      g.cleared = Math.max(g.cleared, g.depth);
+      g.depth = next;
+      g.enterDungeon();
+      downAt = -1;
+    }
     botStep(g, c, bot, dt);
     g.update(dt, c);
     g.events.length = 0;
     if (g.depth !== lastDepth) {
       lastDepth = g.depth;
+      downAt = -1;
       depths += ` ${g.inDungeon ? g.depth : 'town'}@${Math.round(t)}`;
     }
     const b = g.boss && !g.boss.dead ? g.boss : null;
@@ -43,6 +53,8 @@ for (const cls of CLASS_IDS) {
     }
     if (boss && from < 0 && boss.life < boss.maxLife) from = t;
     if (boss && boss.dead) {
+      downAt = g.depth >= 5 ? t : -1;
+      if (from < 0) fights.push(`  floor ${g.depth} ${boss.kind}: dead at ${Math.round(t)} s untouched (life ${Math.round(boss.life)} of ${Math.round(boss.maxLife)})`);
       if (from >= 0) fights.push(`  floor ${g.depth} ${boss.kind}: ${Math.round(t - from)} s (life ${Math.round(boss.maxLife)}, hero level ${g.hero.level})`);
       boss = null;
     }
