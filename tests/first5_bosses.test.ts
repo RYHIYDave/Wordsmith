@@ -167,7 +167,7 @@ test('1. each floor has its own boss; past the fifth, and with the switch off, t
   // (the lair boss has twice the life of his kind at that depth, as a fifth floor's boss always has)
   const five = dungeon(3, 5).boss!;
   assert.equal(five.maxLife, Math.round(MONSTERS.fleshmancer.life * (1 + 0.4 * 4) * 2 * (five.words.includes('power') ? 1.3 : 1)), 'the Fleshmancer: his life');
-  assert.equal(dungeon(3, 10).boss!.name.startsWith('Greater'), true, 'a Warden of a fifth floor is still a Greater one');
+  assert.equal(dungeon(3, 15).boss!.name.startsWith('Greater'), true, 'a Warden of a fifth floor is still a Greater one (past the descent: its tenth is the Drowned Eye\'s)');
   BOSSES5.on = false;
   try {
     for (const depth of [2, 3, 4, 5]) assert.equal(dungeon(3, depth).boss!.kind, 'warden', `off: floor ${depth}'s boss is the Warden, as up to Version 20.2`);
