@@ -297,6 +297,9 @@ export function makeBestiary(): Bestiary {
         (a) => [a.walk],
         (a) => [a.clips?.attack?.frames ?? a.attack],
         (a) => [a.clips?.heavy?.frames ?? a.heavy ?? []],
+        // (its flinch as it is struck, which is most of the time once it is fought: Version 22.1, it was painted only as it
+        // was first shown, and a boss's frame takes a frame's whole time and more to paint)
+        (a) => [a.clips?.reel?.frames ?? []],
         // (but a move that is pictures only and never played: the Headsman's `holds`, art/bosses3.ts)
         (a) => Object.entries(a.clips?.moves ?? {}).filter(([name]) => name !== 'holds').map(([, c]) => c.frames),
         (a) => [a.clips?.die?.frames ?? []],
@@ -358,7 +361,7 @@ export function framesOf(set: AnimSet): Sprite[][] {
 /**
  * A figure's frames in the order they are painted ahead of need, each as [which way round (0 the front, 1
  * the back), which list (its place in `framesOf`), which frame]: standing (the first thing seen of a
- * monster), walking, its attacks from start to finish, its other moves (THE MONSTERS' ATTACKS:
+ * monster), walking, its attacks from start to finish, its flinch as it is struck, its other moves (THE MONSTERS' ATTACKS:
  * art/actor_types.ts, AnimSet.clips.moves; but not one that is pictures only and never played: the
  * Headsman's `holds`, art/bosses3.ts), and last its death: by the time one of them is killed, how it falls
  * is painted: the order of the game's own painting ahead (Bestiary.warm). The painter (render/painter.ts)
@@ -372,6 +375,7 @@ export function paintOrder(art: ActorArt): [number, number, number][] {
     (a) => [a.walk],
     (a) => [a.clips?.attack?.frames ?? []],
     (a) => [a.clips?.heavy?.frames ?? a.heavy ?? []],
+    (a) => [a.clips?.reel?.frames ?? []],
     (a) => Object.entries(a.clips?.moves ?? {}).filter(([name]) => name !== 'holds').map(([, c]) => c.frames),
     (a) => [a.clips?.die?.frames ?? []],
   ];

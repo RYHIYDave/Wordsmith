@@ -27,6 +27,7 @@ import { blobDist, laneDist, segDist } from '../game/act1_layout';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
 import type { Cam } from './fx';
+import type { Painter } from './painter';
 
 /** A piece's side, in picture pixels. */
 export const PIECE = 128;
@@ -154,7 +155,8 @@ void segDist;
 // THE GROUND, IN PIECES
 
 interface Piece {
-  cvs: HTMLCanvasElement;
+  /** Its picture: painted here, or by the ground's worker (render/painter.ts). */
+  cvs: HTMLCanvasElement | ImageBitmap;
   /** The frame it was last near the screen. */
   seen: number;
 }
@@ -178,9 +180,31 @@ export class OutdoorGround {
   /** Where the camera was last frame. */
   private camWas: { ox: number; oy: number } | null = null;
   /** For the tests and measuring: pieces painted, and the time it took. */
-  readonly stats = { pieces: 0, ms: 0 };
+  readonly stats = { pieces: 0, ms: 0, worker: 0 };
   /** The floor's deep colour, for what is not painted yet. */
   private deep = '#16101f';
+  /**
+   * THE GROUND'S WORKER (render/painter.ts): where there is a painter, a piece not painted yet is asked of it and
+   * painted beside the game, and the game goes on without waiting (a piece is ten to thirty thousandths of a second
+   * here, a frame's whole time and more). Only the floor's first frame (or a jump of the camera) paints the screen
+   * here, at once. `painterOf` is the renderer's; `gid` the floor's number with the worker (0: no worker: the game
+   * paints the ground itself, a little each frame, as before); `asked` the pieces asked of it and not yet come.
+   */
+  painterOf: (() => Painter | null) | null = null;
+  private gid = 0;
+  private asked = new Set<number>();
+  /** The floor being drawn (for the ground's worker). */
+  private floor: Floor | null = null;
+  /** Let go of a piece's picture, whoever painted it. */
+  private drop(p: Piece): void {
+    if ('close' in p.cvs) p.cvs.close();
+    else p.cvs.width = 0;
+  }
+  /** The painter, if it is there and on. */
+  private worker(): Painter | null {
+    const p = this.painterOf ? this.painterOf() : null;
+    return p && p.state === 'on' ? p : null;
+  }
   /** The ground's terrain (for what is laid on it: render/act1_tops.ts). */
   terrain(): Terrain | null {
     return this.T;
@@ -192,8 +216,11 @@ export class OutdoorGround {
     this.land = land;
     this.T = terrainOf(floor, landLook(land, floor));
     SHOWN.terrain = this.T;
-    for (const p of this.pieces.values()) p.cvs.width = 0;
+    for (const p of this.pieces.values()) this.drop(p);
     this.pieces.clear();
+    this.asked.clear();
+    this.floor = floor;
+    this.startWorker();
     this.sky = null;
     this.skyDone = 0;
     this.town = null;
@@ -201,10 +228,36 @@ export class OutdoorGround {
     return true;
   }
 
+  /** (the ground's worker is sent the floor, and from here on paints its pieces; asked again if the painter was started anew meanwhile) */
+  private startWorker(): void {
+    this.asked.clear();
+    const w = this.worker();
+    const floor = this.floor;
+    const land = this.land;
+    this.gid = w && floor && land ? w.groundBegin(floor, land) : 0;
+    if (w && this.gid) {
+      w.toGround = (id, i, j, bmp, ms) => {
+        const key = this.key(i, j);
+        this.asked.delete(key);
+        if (id !== this.gid || this.pieces.has(key)) {
+          bmp.close();
+          return;
+        }
+        this.stats.pieces++;
+        this.stats.ms += ms;
+        this.stats.worker++;
+        this.pieces.set(key, { cvs: bmp, seen: this.frame });
+      };
+    }
+  }
+
   /** Let go of everything (the floor has been left). */
   clear(): void {
-    for (const p of this.pieces.values()) p.cvs.width = 0;
+    for (const p of this.pieces.values()) this.drop(p);
     this.pieces.clear();
+    this.asked.clear();
+    this.gid = 0;
+    this.floor = null;
     this.land = null;
     this.T = null;
     this.sky = null;
@@ -232,6 +285,20 @@ export class OutdoorGround {
     return piece;
   }
 
+  /** A piece asked of the ground's worker (once, until it comes). */
+  private ask(w: Painter, i: number, j: number, pri: number): void {
+    const key = this.key(i, j);
+    if (this.asked.has(key)) return;
+    if (w.groundPiece(this.gid, i, j, pri)) {
+      this.asked.add(key);
+      return;
+    }
+    // (the painter was started anew since (a new place: render/painter.ts restart): the floor is sent again; failing
+    // that, the game paints the ground itself from here on)
+    this.startWorker();
+    if (this.gid && w.groundPiece(this.gid, i, j, pri)) this.asked.add(key);
+  }
+
   /** The pieces the screen shows (game pixels W by H, by the camera), and those `ring` pieces round it. */
   private span(cam: Cam, W: number, H: number, ring: number): [number, number, number, number] {
     const x0 = -cam.ox * GRAIN;
@@ -255,10 +322,16 @@ export class OutdoorGround {
     // THE SKY, behind (the Ledge Road)
     if (this.land.sky) this.drawSky(g, cam, W, H, first);
     const [i0, j0, i1, j1] = this.span(cam, W, H, 0);
+    // (with the ground's worker: what the screen wants and has not got is asked of it, and drawn in the deep colour meanwhile)
+    const up = this.gid ? this.worker() : null;
+    if (this.gid && !up) this.gid = 0;
+    // (until the worker is up, the game paints as before)
+    const w = up && up.groundReady() ? up : null;
     for (let j = j0; j <= j1; j++) {
       for (let i = i0; i <= i1; i++) {
         let p = this.pieces.get(this.key(i, j));
-        if (!p && (first || performance.now() - t0 < BUDGET * 3)) p = this.paint(i, j);
+        if (!p && (first || (!w && performance.now() - t0 < BUDGET * 3))) p = this.paint(i, j);
+        else if (!p && w) this.ask(w, i, j, 0);
         const sx = cam.ox + (i * PIECE) / GRAIN;
         const sy = cam.oy + (j * PIECE) / GRAIN;
         if (p) {
@@ -277,9 +350,12 @@ export class OutdoorGround {
     const want: [number, number, number][] = [];
     for (let j = b0; j <= b1; j++) for (let i = a0; i <= a1; i++) if (!this.pieces.has(this.key(i, j))) want.push([i, j, Math.hypot(i - ci, j - cj)]);
     want.sort((a, b) => a[2] - b[2]);
-    for (const [i, j] of want) {
-      if (performance.now() - t0 > BUDGET) break;
-      this.paint(i, j);
+    if (w) for (const [i, j, d] of want) this.ask(w, i, j, 1 + Math.round(d));
+    else {
+      for (const [i, j] of want) {
+        if (performance.now() - t0 > BUDGET) break;
+        this.paint(i, j);
+      }
     }
     // KEEP only what is near: the rest is let go of
     if (this.frame % 30 === 0) {
@@ -288,7 +364,7 @@ export class OutdoorGround {
         const i = Math.floor(key / 8192) - 4096;
         const j = (key % 8192) - 4096;
         if (i < k0 || i > k1 || j < l0 || j > l1) {
-          p.cvs.width = 0;
+          this.drop(p);
           this.pieces.delete(key);
         }
       }

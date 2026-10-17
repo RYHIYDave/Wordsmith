@@ -414,8 +414,14 @@ export default async function (page, snap) {
     check('   with real input he walks at it for two seconds and more, and is held inside', q.inside >= 0.25 && q.want === 0, `${q.inside.toFixed(2)} tiles inside its line`);
     // the boss dies: it rises
     await page.evaluate(() => { const g = window.__dbg.game(); if (g.boss) { g.bossReady(); g.damageMonster(g.boss, 1e9, 'phys', false, -1); } });
+    // (it rises over a second and a half of the game's own time, which runs behind the clock's when frames are slow
+    // (a frame counts at most a twentieth of a second): so watched until it is up, for as long as five seconds)
     await page.waitForTimeout(1700);
     ds = await doorState(site.i);
+    for (let k = 0; k < 33 && !(ds.open === 1 && ds.want === 1); k++) {
+      await page.waitForTimeout(100);
+      ds = await doorState(site.i);
+    }
     check('   the boss dies: it rises', ds.open === 1 && ds.want === 1, `open ${ds.open}`);
     q = await walkTo(beyond.x, beyond.y, site.i, (z) => z.inside <= -2, 9000);
     check('   and he walks out under it', q.inside <= -1.8, `${(-q.inside).toFixed(2)} tiles out`);

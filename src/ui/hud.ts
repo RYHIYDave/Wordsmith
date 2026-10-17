@@ -123,6 +123,9 @@ function wayMarks(L: Level): { tx: number; ty: number; color: string; down: bool
   return out;
 }
 
+/** The small map's tiles as last drawn (see minimap): kept while the hero stands on the same tile. */
+let MAP_CACHE: { cvs: HTMLCanvasElement; key: string; level: Level } | null = null;
+
 function minimap(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, game: Game): void {
   const L = game.level;
   const f = L.floor;
@@ -143,14 +146,43 @@ function minimap(g: CanvasRenderingContext2D, x: number, y: number, w: number, h
     g.fillRect(px, py, size, size);
   };
   const R = 36;
-  for (let ty = Math.max(0, hy - R); ty <= Math.min(f.h - 1, hy + R); ty++) {
-    for (let tx = Math.max(0, hx - R); tx <= Math.min(f.w - 1, hx + R); tx++) {
-      const idx = ty * f.w + tx;
-      if (!L.explored[idx]) continue;
-      const k = f.tiles[idx];
-      if (k === T_FLOOR) put(tx, ty, L.visible[idx] ? THEME.edgeHi : THEME.hot, 1);
-      else if (k === T_WALL) put(tx, ty, THEME.bg2, 1);
+  const tiles = (to: CanvasRenderingContext2D, ox: number, oy: number): void => {
+    for (let ty = Math.max(0, hy - R); ty <= Math.min(f.h - 1, hy + R); ty++) {
+      for (let tx = Math.max(0, hx - R); tx <= Math.min(f.w - 1, hx + R); tx++) {
+        const idx = ty * f.w + tx;
+        if (!L.explored[idx]) continue;
+        const k = f.tiles[idx];
+        const color = k === T_FLOOR ? (L.visible[idx] ? THEME.edgeHi : THEME.hot) : k === T_WALL ? THEME.bg2 : null;
+        if (!color) continue;
+        const px = cx + (tx - ty) - (hx - hy);
+        const py = cy + Math.floor(((tx + ty) - (hx + hy)) / 2);
+        if (px < x + 1 || py < y + 1 || px >= x + w - 1 || py >= y + h - 1) continue;
+        to.fillStyle = color;
+        to.fillRect(px - ox, py - oy, 1, 1);
+      }
     }
+  };
+  // THE TILES, the same picture as drawn straight (a few thousand little squares), kept and laid down again while the hero
+  // stands on the same tile (at most half a second: what is seen changes with where he stands, and now and then by other ways)
+  const m = typeof document !== 'undefined' && typeof g.getTransform === 'function' ? g.getTransform() : null;
+  if (!m || m.b !== 0 || m.c !== 0) tiles(g, 0, 0);
+  else {
+    const sc = m.a;
+    const key = `${hx},${hy},${w},${h},${sc},${Math.floor(performance.now() / 500)}`;
+    let c = MAP_CACHE;
+    if (!c || c.level !== L || c.key !== key) {
+      const cvs = c && c.cvs.width === Math.ceil(w * sc) && c.cvs.height === Math.ceil(h * sc) ? c.cvs : document.createElement('canvas');
+      cvs.width = Math.ceil(w * sc);
+      cvs.height = Math.ceil(h * sc);
+      const to = cvs.getContext('2d') as CanvasRenderingContext2D;
+      to.setTransform(sc, 0, 0, sc, 0, 0);
+      tiles(to, x, y);
+      c = MAP_CACHE = { cvs, key, level: L };
+    }
+    const smooth = g.imageSmoothingEnabled;
+    g.imageSmoothingEnabled = false;
+    g.drawImage(c.cvs, x, y, c.cvs.width / sc, c.cvs.height / sc);
+    g.imageSmoothingEnabled = smooth;
   }
   const p = L.portal;
   if (p && L.explored[p.ty * f.w + p.tx]) put(p.tx, p.ty, p.state === 1 ? P.tl4 : P.tl2, 2);
