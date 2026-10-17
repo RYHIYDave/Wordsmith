@@ -5665,6 +5665,45 @@ frames, about 300 MB more than the live game's biggest moment; the canvases are 
 Drowned Eye's approved moves are left out to keep him that size. Whether the fights are too hard or too easy. A
 small monster can be held up behind a prop it walks straight into (every monster's walking, as in the live game).
 
+### Version 22.1: the speed work (nothing looks different)
+
+**What he said.** 17 Oct 2026, 05:43: "Are there checks or tests to find ways to optimize the game so it runs better?  I
+figured this would primarily be a mobile game so I’d like it to run really well"; 05:46, of his phone: "iPhone 16". Told
+him (about 09:37, plain): arrivals 23 to 43 stutters to 0 to 2; the Queen 43 to 59; the Cantor 49 with stalls to 60; the
+Pinewood 39 to 52, the Stag 40 to 59; town and floors 6, 7 and 10 about 60; nothing looks different. Asked (plain, about
+14:50) whether it may go live on the claude.ai page and on his web address.
+
+**What is in it.** (`docs/perf_phone.md` has every measurement.) None of it changes a pixel of what is drawn.
+1. THE OUTDOOR GROUND painted by a side worker (render/painter.ts, its ground lane, kept for the whole game), a piece at a
+   time, nearest first (render/outdoor.ts); the game paints a piece itself only until the worker is up.
+2. THE MINIMAP's tiles kept as a picture, made again twice a second (ui/hud.ts).
+3. THE HERO'S PICTURES painted ahead by the side worker (art/heroes3.ts `give`).
+4. THE FLOOR'S OTHER MONSTERS' PICTURES painted ahead by the side worker too (Painter.side; only the heavy bosses were).
+5. THE PINEWOOD'S FOREST AS CHUNK PICTURES (render/tops_cache.ts): its trees laid back to front into a picture for each
+   slab of depth (4 tiles) and column of the screen (64 game pixels), a column's undisturbed chunks drawn as one (a run);
+   a chunk with a tree seen through, or something between its trees, drawn as its four layers, and a layer as its trees.
+   THE SAME PICTURE TO THE PIXEL: `tools/scenarios/tops_same.mjs` (in the regression for the warrior and the mage).
+6. A MONSTER'S FLINCH (its reel) painted ahead with its other moves (art/bestiary.ts): a boss's was painted only as it
+   was first shown, 70 to 90 ms a frame of it (the Cantor's fight's stalls).
+
+**How it was tested.**
+- The unit suite: 1748 of 1748 on a copy of `c4d4cb7` (09:35:39 to 10:33:45); the frozen copy's `src` and `tests` are
+  the same; `tsc` clean.
+- THE REGRESSION on the frozen copy (`v221/arpg_frozen`, `f4cd7f2`), two at a time from 10:34:54: stopped by the
+  workspace's two-hour limit after 212 playtests; the 12 not reached run after the same way (12:35:44 to 12:46:59), all
+  clean. Of the 224, 34 flagged. Run alone, twice each: every gameplay one clean (doors.mjs mended: it read the boss's gate
+  at a fixed moment, and on a slow frame the game's clock runs behind; clean twice more on all four screens); the frame-time
+  ones (dungeon, heights, depths, slants, across) the machine: alone, today, the dungeon test gives 22.0's own frozen copy
+  32.8 and 32.2 ms where 22.1 gives 29.7 and 23.9 (`tools/scenarios/dungeon_frames.mjs` over a minute: 22.0 26 to 35 ms
+  a frame, painting on the page all the while; 22.1 22 to 30 while its worker paints, 22 after).
+- `find src -newer dist/copy.html` named nothing. THE RELEASE BUILD in the copy: `Play.html` 2,794,305 bytes,
+  `dist/artifact.html` 2,793,983, "V22.1 2026-10-17 17:29"; kept in the scratchpad's `v221/release/`.
+- **The published page itself** (`tools/wrap221.sh`, 13:29:47 to 14:34:25): 104 playtests, 92 clean; the 12 others alone,
+  twice each (to 14:47:58): every gameplay one clean both times; dungeon_pc, dungeon_phone (26.6 to 30 ms) and depths_pc
+  (26.4, its second run) the machine, as above. The frame rate alone on the page: 41.4.
+
+**Not checked.** A real phone (the point of the version: he was asked to say how it feels).
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
