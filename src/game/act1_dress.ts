@@ -143,9 +143,9 @@ const LYING_EVERY = 30;
  * level to be a little thinner in density and spread towards the edges.  Except for camps, maybe a few tents or whatever in a
  * circle." So, `on`: an open area's things that stand and lie about, `fewer` times as many tiles to each, in its outer band
  * (`from` to `to` of the way to its edge) and not its middle; the cult's camp its watchfire in the middle of its area and
- * `ring` of its things in a circle round it, `r` tiles out. A look: off until he has seen it.
+ * `ring` of its things in a circle round it, `r` tiles out. On: his yes to the game's pictures of it, 17 Oct, 19:42 (16:42 his time): “Everything looks good”.
  */
-export const DRESS_EDGES = { on: false, fewer: 1.6, from: 0.5, to: 0.86, ring: 5, r: 3.2 };
+export const DRESS_EDGES = { on: true, fewer: 1.6, from: 0.5, to: 0.86, ring: 5, r: 3.2 };
 
 export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | null {
   const n = act1Floor(depth);

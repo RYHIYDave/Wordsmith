@@ -411,11 +411,11 @@ function sizer(kind: LandKind): (rng: RNG, role: AreaRole) => { rx: number; ry: 
 
 /**
  * The Pinewood's paths, easier to see (his words of 17 Oct, 11:37: "The thin paths through the forest are hard to see past the
- * trees maybe make them a little wider"; a look: off until he has seen it): `w` tiles wide (were 3.2), and no tall tree
+ * trees maybe make them a little wider"; his yes to the game's pictures of it, 17 Oct, 19:42 (16:42 his time): “Everything looks good”): `w` tiles wide (were 3.2), and no tall tree
  * within `clear` tiles of one whose picture would stand over it (render/act1_pieces.ts; the trees on the near side, whose
  * crowns rise up the screen over the path, hid most of it however wide).
  */
-export const PINE_PATH = { on: false, w: 4.6, clear: 7 };
+export const PINE_PATH = { on: true, w: 4.6, clear: 7 };
 /**
  * How many open areas on the main way, start and boss's among them (the Ledge Road: how many legs its trail has). LONGER,
  * 17 Oct 2026, the owner after playing them, 11:37: "The levels are very short in 6-7 so far"; "8-10 need to be

@@ -1114,10 +1114,10 @@ export const FIRST_LEVELS = { on: true };
 /**
  * BODIES GONE AFTER A WHILE. The owner, 17 Oct 2026, 11:37: "And let’s have corpses despawn after a set amount of time."
  * Read as (told him so): a body lies `life` seconds from its death, then fades out over the last `fade` of them, and is
- * gone; the cult's bodies the Fleshmancer raises out of (bosses.ts CORPSES) go with them. A look: behind its switch, off,
- * until he has seen it.
+ * gone; the cult's bodies the Fleshmancer raises out of (bosses.ts CORPSES) go with them. On:
+ * his yes to the game's pictures of it, 17 Oct, 19:42 (16:42 his time): “Everything looks good”.
  */
-export const BODIES = { on: false, life: 30, fade: 1.5 };
+export const BODIES = { on: true, life: 30, fade: 1.5 };
 
 /**
  * BETTER LOOT. The owner, 17 Oct 2026, 11:37, of the strongholds he had played on floors 6 and 7: "And the rewards are

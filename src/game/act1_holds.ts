@@ -55,10 +55,10 @@ export const HOLD_TUNE = {
 export const HOLD_WAVES = { on: true, n: 5, gap: 2.0, life: 0.15 };
 /**
  * THE ALTAR GONE ONCE THE DOOR IS OPEN. The owner, 17 Oct 2026, 11:37: "The altar needs to disappear after opening the door
- * to a stronghold." So, `on`: as the door's seal breaks, the altar is gone (and its tile is floor). A look: off until he
- * has seen it.
+ * to a stronghold." So, `on`: as the door's seal breaks, the altar is gone (and its tile is floor). On:
+ * his yes to the game's pictures of it, 17 Oct, 19:42 (16:42 his time): “Everything looks good”.
  */
-export const ALTAR_GOES = { on: false };
+export const ALTAR_GOES = { on: true };
 /** Each wave (1 to 5): its packs, each `rarity` (none: a plain pack) and `own` (true: the floor's medium kind, as the last room's). */
 export const WAVE_MAKE: readonly (readonly { rarity: 'plain' | 'blue' | 'yellow'; own?: boolean }[])[] = [
   [{ rarity: 'plain' }],
