@@ -5,7 +5,7 @@ phone's screen, 844 x 390 at three picture pixels to a point, the game at five s
 pixel), as it was above and big and wild below, cut round the mage and what she strikes, with what it
 is over the top. First at the game's own speed (a frame is a thirtieth of a second of the game's
 time), then a piece of it again, slower.
-   python3 tools/wild_films.py <before prefix> <after prefix> <out.gif> [slow from-to[xN],...] [slow times] [wave|strike|shot|whirlwind|leap|volley|trap|orb|warp]
+   python3 tools/wild_films.py <before prefix> <after prefix> <out.gif> [slow from-to[xN],...] [slow times] [wave|strike|shot|whirlwind|leap|thrust|volley|trap|orb|warp]
 e.g. python3 tools/wild_films.py shots/wild/off shots/wild/on previews/wild/wild_wave.gif 8-36 3
      python3 tools/wild_films.py shots/wild/strike_off shots/wild/strike_on previews/wild/wild_strike3.gif 9-34,94-123x2 3 strike
      python3 tools/wild_films.py shots/wild/shot_off shots/wild/shot_on previews/wild/wild_shot3.gif 8-30 3 shot
@@ -79,6 +79,13 @@ FILMS = {
         'He lands blade first: the floor cracks open, stone and a',
         'wall of dust fly, a ring of wind, and everything holds.',
     ]},
+    'thrust': {'box': (134, 44, 374, 169), 'title': 'Diving thrust', 'before': 'THE LEAP, AS IT IS IN THE GAME', 'after': 'THE DIVING THRUST', 'lines': [
+        'Top: his leap, as it is in the game. Bottom: the thrust.',
+        'He coils, then dives flat out low over the floor, the great',
+        'sword out in front, wind tearing off him, dust kicked up.',
+        'As far as the leap goes. The point punches in: a flash, a',
+        'spear of light, the floor cracks, a ring of wind, all holds.',
+    ]},
     'volley': {'box': (179, 29, 419, 164), 'title': 'Volley, big and wild', 'before': 'AS IT IS IN THE GAME', 'lines': [
         'Top: as it is in the game. Bottom: big and wild, his way.',
         'Wind, not energy: a gust off the bow, a column of wind',
@@ -148,7 +155,7 @@ def card(i, note):
     for k, line in enumerate(LINES):
         d.text((14, HEAD + k * LINE), line, font=mid, fill=PALE)
     y = top
-    for label, colour, prefix in ((FILMS[what]['before'], GREY, before), ('BIG AND WILD', CYAN, after)):
+    for label, colour, prefix in ((FILMS[what]['before'], GREY, before), (FILMS[what].get('after', 'BIG AND WILD'), CYAN, after)):
         d.text((14, y + 3), label, font=tag, fill=colour)
         c.paste(panel(f'{prefix}_f{i:03d}.png'), (0, y + 24))
         y += H + 24

@@ -79,7 +79,8 @@ import type { Painter } from './painter';
 import { gaitOf } from '../game/bosses';
 import type { Cam, Fallen, Fx } from './fx';
 import { WILD } from '../art/moves3';
-import { LEAP_LIFT, drawWildArrow, drawWildWave } from './wild';
+import { THRUST } from '../art/heroes3';
+import { LEAP_LIFT, THRUST_LIFT, drawWildArrow, drawWildWave } from './wild';
 
 /** How solid a big thing is drawn while the hero is behind it (see `veil` in the frame). */
 export const SEEN_THROUGH = 0.38;
@@ -1797,7 +1798,7 @@ export class Renderer {
     }
     if (here(h.x, h.y)) {
       // (a hero in the air is further from their shadow: it is smaller and fainter at the top of a leap)
-      const up = h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) : 0;
+      const up = h.move && h.move.kind === 'leap' ? Math.sin(Math.PI * Math.min(1, h.move.t / h.move.dur)) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT / LEAP_LIFT : 1) : 0;
       this.shadow(g, wx(cam, h.x, h.y), wy(cam, h.x, h.y), 0.36 * (1 - 0.3 * up), SHADOW * (1 - 0.35 * up));
     }
     for (const o of game.orbs) if (here(o.x, o.y)) this.shadow(g, wx(cam, o.x, o.y), wy(cam, o.x, o.y), 0.42, SHADOW * 0.85);
@@ -2461,7 +2462,8 @@ export class Renderer {
       // they land on, not by the ground they pass over: a leap up a ledge rises to it)
       let sy = relief ? wyFlat(cam, h.x, h.y) - heroLift : wy(cam, h.x, h.y);
       // (big and wild, art/moves3.ts WILD: higher: render/wild.ts, LEAP_LIFT)
-      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * (WILD.on ? LEAP_LIFT : 24);
+      // (the warrior's diving thrust, in place of his leap: low over the floor, art/heroes3.ts THRUST)
+      if (h.move && h.move.kind === 'leap') sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * (THRUST.on && h.cls === 'warrior' ? THRUST_LIFT : WILD.on ? LEAP_LIFT : 24);
       // (a roll that goes over a ledge or a pit is a dive: it leaves the floor, a little)
       else if (h.move && h.move.over) sy -= Math.sin(Math.min(1, h.move.t / h.move.dur) * Math.PI) * 10;
       const heroArt = this.heroArt(game);

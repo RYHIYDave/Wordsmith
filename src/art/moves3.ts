@@ -962,6 +962,56 @@ function leapAndLand(): Motion {
 export const LEAP3: Move3 = { name: 'Leap, great sword', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: leapAndLand(), at: 'he lands', arc: { until: 0.5, high: 48 } };
 
 /**
+ * THE DIVING THRUST with the great sword (the owner to the main chat, 17 Oct, 11:37 Eastern, sent to the
+ * art chat at his word: "And I think I want to create a new swipe for the warrior.  Lunge or thrust.  A
+ * diving thrust in the direction with the sword extended.  Same distance as the leap.  Same mobility.").
+ * The game carries him over the floor as it carries the leap (as far, as quick); this is what his body does.
+ * He COILS: drops low on his front foot, the sword drawn back along his right hip with its point on where he
+ * is going, his eyes on it. He DRIVES off his back foot and DIVES, flat out and low over the floor, long from
+ * his trailing toes to the point of the sword, both arms locked straight out before him, the blade level, his
+ * head up. Coming down his front leg swings through and reaches for the floor, and he LANDS in a deep lunge,
+ * the point PUNCHED OUT to its full length (the blow); held a beat; and the blade is drawn back and round into
+ * his stance. `long`: how many seconds the game gives the dive (its keys are set by their share of it).
+ */
+function dive(long: number): Key3[] {
+  const k = (share: number): number => share * long;
+  const grip: Partial<Bones> = { lhIn: 3, lhx: -3.4, lhy: 0, lhz: 0 };
+  return [
+    // the coil: low on his front foot, the blade back along his right hip, its point on his mark
+    { at: 0, pose: { px: -3, pz: -11, yaw: -16, pitch: 22, twist: -24, bend: 14, faceTurn: 0, faceUp: 2, lfx: 13, lfz: 0, lfp: 0, lk: 18, rfx: -12, rfz: onToes(30), rfp: 30, rft: -20, rk: -16, rhIn: 1, rhx: 1, rhy: -3.5, rhz: -13, re: 34, le: 16, ...grip, wAz: 0, wEl: 8 } },
+    // he drives off his back foot: the body launched forward, the back leg straight, the blade coming forward
+    { at: k(0.14), pose: { px: 5, pz: -3, yaw: -8, pitch: 46, twist: -10, bend: 8, faceUp: 6, lfx: 10, lfz: 4, lfp: 30, lk: 30, rfx: -19, rfz: onToes(60), rfp: 60, rft: -10, rk: -4, rhIn: 1, rhx: 10, rhy: -2.5, rhz: -7, re: 16, le: 8, ...grip, wAz: 0, wEl: 2 }, ease: 'out' },
+    // flat out over the floor: from his trailing toes to the point, his arms locked out before him, his head up
+    { at: k(0.4), pose: { px: 9, pz: 3, yaw: -2, pitch: 70, twist: 0, bend: 4, faceUp: 14, lfx: -9, lfz: 13, lfp: 62, lk: -4, rfx: -18, rfz: 16, rfp: 70, rft: -4, rk: -8, rhIn: 1, rhx: 18, rhy: -1.5, rhz: 1, re: 0, le: 0, ...grip, wAz: 0, wEl: -3 }, ease: 'out' },
+    { at: k(0.66), pose: { px: 10, pz: 3.5, yaw: -2, pitch: 66, twist: 0, bend: 6, faceUp: 12, lfx: -4, lfz: 12, lfp: 50, lk: 8, rfx: -18, rfz: 15, rfp: 66, rft: -4, rk: -8, rhIn: 1, rhx: 18.5, rhy: -1.5, rhz: 0, re: 0, le: 0, ...grip, wAz: 0, wEl: -4 }, ease: 'io' },
+    // coming down: the front leg swung through, reaching for the floor
+    { at: k(0.86), pose: { px: 9, pz: -2, yaw: -4, pitch: 46, twist: -2, bend: 10, faceUp: 6, lfx: 14, lfz: 5, lfp: 10, lk: 24, rfx: -17, rfz: 9, rfp: 50, rft: -8, rk: -10, rhIn: 1, rhx: 18, rhy: -1.5, rhz: -2, re: 0, le: 0, ...grip, wAz: 0, wEl: -5 }, ease: 'in' },
+    // down: the front foot planted in a deep lunge, the point punched out to its full length
+    { at: k(1), pose: { px: 8, pz: -10, yaw: -6, pitch: 34, twist: -4, bend: 16, faceUp: 2, lfx: 17, lfz: 0, lfp: 0, lk: 26, rfx: -16, rfz: onToes(40), rfp: 40, rft: -12, rk: -12, rhIn: 1, rhx: 19.5, rhy: -1.5, rhz: -4, re: 0, le: 0, ...grip, wAz: 0, wEl: -6 }, ease: 'lin' },
+  ];
+}
+function lunge(from: Partial<Bones>): Key3[] {
+  const low: Partial<Bones> = { ...from, px: 9, pz: -12, pitch: 38, bend: 19, rhx: 20.5, rhz: -5, wEl: -7 };
+  return [
+    { at: 0, pose: from },
+    // (the skid into it: the knees take him, the point driven home)
+    { at: 2 * FR, pose: low, ease: 'out' },
+    { at: 5 * FR, pose: { ...low, pz: -11.6, bend: 18 }, ease: 'io' },
+    // (and the blade is drawn back along his hip and round into the stance)
+    { at: 9 * FR, pose: { ...from, px: 4, pz: -8, pitch: 20, bend: 12, twist: -20, yaw: -24, rhIn: 1, rhx: 2, rhy: -4, rhz: -12, re: 30, le: 14, wAz: 0, wEl: 6, lfx: 14, rfx: -11 }, ease: 'io' },
+    { at: 15 * FR, pose: {}, ease: 'io' },
+  ];
+}
+/** (for a picture: the dive and its lunge as one, the dive taking half a second) */
+function diveAndLunge(): Motion {
+  const out = dive(0.5);
+  const down = lunge(out[out.length - 1].pose);
+  return { keys: [...out, ...down.slice(1).map((key) => ({ ...key, at: key.at + 0.5 }))], hit: 0.5 };
+}
+
+export const THRUST3: Move3 = { name: 'Diving thrust, great sword', held: 'greatsword', build: KNIGHT_BODY, rest: REAR, motion: diveAndLunge(), at: 'the point punched out', arc: { until: 0.5, high: 10 } };
+
+/**
  * HOW THE KNIGHT RUNS with the great sword: driving forward under the weight of his mail, a
  * little side-on with both hands on the hilt at his right hip and the blade trailing behind him
  * (the rear stance, carried). His hips swing with his legs and his chest hardly turns against
@@ -2518,7 +2568,7 @@ export const MOVES3: Record<string, Move3> = {
   rstand: RANGER_STAND3, volley: VOLLEY3, shot: SHOT3, rrun: RANGER_RUN3, roll: ROLL3, rreel: RANGER_REEL3, rlurch: RANGER_LURCH3, rfall: RANGER_FALL3, squirrel: SQUIRREL3, sighting: SIGHTING3,
   mstand: MAGE_STAND3, wave: WAVE3, orb: ORB3, beam: BEAM3, beamend: BEAM_END3, mrun: MAGE_RUN3, mreel: MAGE_REEL3, mlurch: MAGE_LURCH3, mfall: MAGE_FALL3, mlight: MAGE_LIGHT3, reading: READING3,
   mtown: MAGE_TOWN3, mtownrun: MAGE_TOWN_RUN3, beamstart: BEAM_START3, tmlight: MAGE_TOWN_LIGHT3, treading: TOWN_READING3,
-  rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
+  rear: REAR3, strike: STRIKE3, kslash: SLASH3, slam: SLAM3, whirl: WHIRL3, leap: LEAP3, kthrust: THRUST3, krun: KNIGHT_RUN3, kreel: KNIGHT_REEL3, klurch: KNIGHT_LURCH3, kfall: KNIGHT_FALL3,
 };
 
 // (the game's own ranger: his new stances and moves, since Version 19.4, on his yes: RANGER_STANCES, above)

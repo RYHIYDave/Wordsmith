@@ -34,6 +34,7 @@ import { figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE } from '../art/kit';
 import { BLOOD as M_BLOOD, FLESH, FUR, GLOOM, IRON } from '../art/mkit';
+import { THRUST } from '../art/heroes3';
 import { WILD } from '../art/moves3';
 import { OSSUARY, PALLOR, PLANK, SHROUD } from '../art/new_mobs3';
 import { P } from '../art/palette';
@@ -52,6 +53,11 @@ const STRUCK_STEEL: readonly string[] = ['#ffffff', P.gd5, P.gd4];
 const BLADE: readonly string[] = [P.white, CRACKLE[1], CRACKLE[2], CRACKLE[3]];
 /** How high a leap carries him, big and wild, in game pixels (the game's own: 24): render.ts lifts him so. */
 export const LEAP_LIFT = 40;
+/** How high the warrior's diving thrust carries him off the floor at its middle (art/heroes3.ts THRUST): low, a dive, not a leap. */
+export const THRUST_LIFT = 9;
+/** How far before him the point of his sword is as he lands from the thrust (tiles), and how high (pixels). */
+const THRUST_POINT = 1.05;
+const THRUST_POINT_Z = 9;
 /** How high an orb hangs, in game pixels: where its middle is (render.ts draws it 13 up, bobbing). */
 const ORB_Z = 16;
 
@@ -168,7 +174,7 @@ function beside(x: number, y: number, z: number, right: number, up: number): [nu
  * coming down, and the traps lying in wait.
  */
 export interface WildWorld {
-  hero: { x: number; y: number; fx: number; fy: number; move: { kind: string; t: number; dur: number; x0: number; y0: number; x1: number; y1: number } | null };
+  hero: { x: number; y: number; fx: number; fy: number; cls?: string; move: { kind: string; t: number; dur: number; x0: number; y0: number; x1: number; y1: number } | null };
   orbs: ReadonlyArray<{ id: number; x: number; y: number; t: number; life: number }>;
   volleys: ReadonlyArray<{ id: number; x: number; y: number; r: number; t: number }>;
   traps: ReadonlyArray<{ x: number; y: number }>;
@@ -495,9 +501,11 @@ export class Wild {
     const fx = this.fx;
     const rate = (perSec: number): number => Math.floor(dt * perSec + Math.random());
     const mv = h.move;
+    const thrusting = THRUST.on && h.cls === 'warrior';
     if (mv && mv !== this.moveSeen) {
       this.moveSeen = mv;
-      if (mv.kind === 'leap') this.leapOff(mv.x0, mv.y0, mv.x1, mv.y1);
+      if (mv.kind === 'leap' && thrusting) this.thrustOff(mv.x0, mv.y0, mv.x1, mv.y1);
+      else if (mv.kind === 'leap') this.leapOff(mv.x0, mv.y0, mv.x1, mv.y1);
       else if (mv.kind === 'roll') this.rollOff(mv.x0, mv.y0, mv.x1, mv.y1);
     }
     if (mv) {
@@ -505,7 +513,24 @@ export class Wild {
       const len = Math.hypot(mv.x1 - mv.x0, mv.y1 - mv.y0) || 1;
       const ux = (mv.x1 - mv.x0) / len;
       const uy = (mv.y1 - mv.y0) / len;
-      if (mv.kind === 'leap') {
+      if (mv.kind === 'leap' && thrusting) {
+        // (THE DIVE: low over the floor, the point leading: wind streaming back along him from the point, the
+        // blade's light left behind it in a line, and dust and grit torn up off the floor under him)
+        const up = Math.sin(k * Math.PI) * THRUST_LIFT;
+        const px = h.x + ux * THRUST_POINT * Math.min(1, k * 3);
+        const py = h.y + uy * THRUST_POINT * Math.min(1, k * 3);
+        for (let i = rate(140); i > 0; i--) {
+          const v = rnd(5, 10);
+          const back = rnd(0, 1);
+          this.spark(px - ux * back + rnd(-0.12, 0.12), py - uy * back + rnd(-0.12, 0.12), up + rnd(4, 20), -ux * v + rnd(-0.5, 0.5), -uy * v + rnd(-0.5, 0.5), rnd(-10, 10), rnd(0.07, 0.12), [AIR[0], AIR[1]], 0, rnd(6, 11));
+        }
+        for (let i = rate(90); i > 0; i--) this.spark(px + rnd(-0.06, 0.06), py + rnd(-0.06, 0.06), up + THRUST_POINT_Z + rnd(-1, 1), -ux * rnd(0.3, 1), -uy * rnd(0.3, 1), 0, rnd(0.12, 0.22), BLADE, 0, 0, 2);
+        for (let i = rate(60); i > 0; i--) {
+          const q = Math.atan2(-uy, -ux) + rnd(-0.9, 0.9);
+          const v = rnd(1.2, 3);
+          this.spark(h.x + rnd(-0.2, 0.2), h.y + rnd(-0.2, 0.2), 1, Math.cos(q) * v, Math.sin(q) * v, rnd(10, 40), rnd(0.25, 0.45), [P.st6, P.st5, P.st4], 200, 0, Math.random() < 0.3 ? 2 : 1);
+        }
+      } else if (mv.kind === 'leap') {
         // (in the air: wind tearing off him back the way he came, and the blade's light trailing over his head)
         const up = Math.sin(k * Math.PI) * LEAP_LIFT;
         for (let i = rate(110); i > 0; i--) {
@@ -590,6 +615,71 @@ export class Wild {
     }
   }
 
+  /** THE THRUST BEGINS: he drives off his back foot into the dive; the floor cracks under it, dust and grit are kicked out behind him, a gust tears back off him, and the screen jolts. */
+  private thrustOff(x0: number, y0: number, x1: number, y1: number): void {
+    const fx = this.fx;
+    const len = Math.hypot(x1 - x0, y1 - y0) || 1;
+    const ux = (x1 - x0) / len;
+    const uy = (y1 - y0) / len;
+    // (where his back foot drives off: a little behind him)
+    const bx = x0 - ux * 0.35;
+    const by = y0 - uy * 0.35;
+    this.cracksAt(bx, by, 0.55, 3, 1.2);
+    for (let i = 0; i < 26; i++) {
+      const q = Math.atan2(-uy, -ux) + rnd(-0.8, 0.8);
+      const v = rnd(1.2, 3.6);
+      this.spark(bx + Math.cos(q) * 0.1, by + Math.sin(q) * 0.1, 1, Math.cos(q) * v, Math.sin(q) * v, rnd(20, 80), rnd(0.3, 0.6), [P.st6, P.st5, P.st4], 230, 0, Math.random() < 0.3 ? 2 : 1);
+    }
+    for (let i = 0; i < 14; i++) {
+      const v = rnd(5, 10);
+      this.spark(x0 + rnd(-0.2, 0.2), y0 + rnd(-0.2, 0.2), rnd(3, 16), -ux * v + rnd(-1, 1), -uy * v + rnd(-1, 1), 0, rnd(0.08, 0.14), [P.white, AIR[1]], 0, rnd(7, 11));
+    }
+    fx.flashes.push({ x: bx, y: by, z: 2, r: 0.45, t: 0, dur: 0.08, colors: [P.white, AIR[1], P.st6] });
+    fx.shake = Math.max(fx.shake, 1.6);
+  }
+
+  /**
+   * THE THRUST LANDS (the leap's 'burst' land, as the warrior's thrust: art/heroes3.ts THRUST): his front foot
+   * slams down into the lunge and the point is PUNCHED OUT: a spear of the blade's light and a blast of air
+   * straight on from the point, a ring of wind round it, the floor cracked under his front foot and dust skidding
+   * on ahead of him; the game holding still a tenth of a second and the screen kicking hard.
+   */
+  private thrustLanding(x: number, y: number, r: number): void {
+    const fx = this.fx;
+    const h = this.world?.hero;
+    const a = h ? Math.atan2(h.fy, h.fx) : 0;
+    const ux = Math.cos(a);
+    const uy = Math.sin(a);
+    const px = x + ux * THRUST_POINT;
+    const py = y + uy * THRUST_POINT;
+    fx.flashes.push({ x: px, y: py, z: THRUST_POINT_Z, r: 0.9, t: 0, dur: 0.12, colors: [P.white, AIR[1], CRACKLE[1], CRACKLE[2]] });
+    // (the spear of light: straight on from the point, a long streak and a dozen shorter ones about it)
+    for (let i = 0; i < 18; i++) {
+      const v = rnd(9, 16);
+      const off = i === 0 ? 0 : rnd(-0.12, 0.12);
+      this.spark(px - uy * off, py + ux * off, THRUST_POINT_Z + rnd(-2, 2), ux * v, uy * v, 0, rnd(0.08, 0.16), i < 6 ? BLADE : [P.white, AIR[0], AIR[1]], 0, i === 0 ? 16 : rnd(7, 12), i < 4 ? 2 : 1);
+    }
+    // (the blast of air, a cone on from the point)
+    for (let i = 0; i < 22; i++) {
+      const q = a + rnd(-0.55, 0.55);
+      const v = rnd(5, 9);
+      this.spark(px, py, THRUST_POINT_Z + rnd(-4, 4), Math.cos(q) * v, Math.sin(q) * v, rnd(-10, 10), rnd(0.08, 0.13), [AIR[0], AIR[1], AIR[2]], 0, rnd(6, 10));
+    }
+    fx.rings.push({ x: px, y: py, r: Math.max(0.7, r * 0.6), t: 0, dur: 0.22, colors: [AIR[0], AIR[1], AIR[2]], fill: false, swirl: true, heavy: true });
+    // (his front foot: the floor cracked, and dust skidding on ahead of him)
+    const fx0 = x + ux * 0.4;
+    const fy0 = y + uy * 0.4;
+    this.cracksAt(fx0, fy0, 0.6, 4, 1.6);
+    for (let i = 0; i < 22; i++) {
+      const q = a + rnd(-1.1, 1.1);
+      const v = rnd(1.2, 3.6);
+      this.spark(fx0 + rnd(-0.1, 0.1), fy0 + rnd(-0.1, 0.1), 1, Math.cos(q) * v, Math.sin(q) * v, rnd(10, 60), rnd(0.35, 0.7), [P.st7, P.st6, P.st5, P.st4], 300, 0, Math.random() < 0.4 ? 2 : 1);
+    }
+    if (fx.glows.length < 40) fx.glows.push({ x: px, y: py, r: 60, t: 0, dur: 0.14 });
+    fx.shake = Math.max(fx.shake, 3.6);
+    fx.freeze = Math.max(fx.freeze, 0.1);
+  }
+
   /** THE LEAP BEGINS: he drives up off the floor; it cracks under him, dust bursts out round his feet, and wind tears off him back the way he came; the screen jolts. */
   private leapOff(x0: number, y0: number, x1: number, y1: number): void {
     const fx = this.fx;
@@ -638,6 +728,10 @@ export class Wild {
    */
   landing(x: number, y: number, r: number): void {
     if (!WILD.on) return;
+    if (THRUST.on && this.world?.hero.cls === 'warrior') {
+      this.thrustLanding(x, y, r);
+      return;
+    }
     const fx = this.fx;
     const h = this.world?.hero;
     const a = h ? Math.atan2(h.fy, h.fx) : 0;
