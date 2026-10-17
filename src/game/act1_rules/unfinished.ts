@@ -32,8 +32,12 @@ import type { Act1Rules } from './types';
 // ITS NUMBERS (the pictures' own where they are the pictures'; tiles before it and to its left)
 
 export const UF = {
-  /** It tears itself free of the wall when its life falls below this share of it. */
-  freeAt: 0.5,
+  /**
+   * It tears itself free of the wall when its life falls below this share of it. (Half, as his doc had it, until 17 Oct
+   * 2026: "Neither the unfinished nor the carrion queen moved at all during the fight", 11:37; read as: it tears free
+   * soon after the fight begins, and walks after the hero for the rest of it.)
+   */
+  freeAt: 0.85,
   /** In the wall it turns to the hero no further than this from the way it was carved facing (radians): its picture there stays the one, its back to the wall. */
   turn: 0.7,
   /** The fist slam: its right fist comes down `fist` and skids on to `skid` (art: SLAM_AT, the skid 0.22 s on); what is within `r` of that is struck. */
