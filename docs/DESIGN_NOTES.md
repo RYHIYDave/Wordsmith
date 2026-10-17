@@ -5642,8 +5642,17 @@ his words).
 
 - The unit suite: 1748 of 1748 in the frozen copy (`5fc39be`, 23:04:30 to 23:34:04 on 16 Oct); `tsc` clean.
 - **THE REGRESSION** on the frozen copy (`dist/copy.html`), 223 playtests with the descent's 39 added to
-  `tools/regress.sh`, two at a time, 23:34:17 to 01:08:44: 203 finished clean; the 20 others and what became of
-  them: `docs/act1_build.md`, "The release's tests".
+  `tools/regress.sh`, two at a time, 23:34:17 to 01:08:44: 203 finished clean. Of the 20 others, 14 were playtests
+  that did not know the new rules (the rune-stone given by using the wordsmith; the Meldstone rising; the first
+  word's prompt waiting for the floor's name, since 21.1) or watched too coarsely, mended; 5 were the clock (a frame's
+  median 25 to 27 ms against 25, two browsers on two processors: alone, the live 21.1 and this draw a dungeon's frame
+  in the same 20 ms, and the frame-rate run gives both 42 to 44 a second tonight); 1 a new player hemmed in by the
+  first floor's urns. **Run again, each twice on the same page: ALL 40 FINISHED CLEAN** (01:13:26 to 01:26:33).
+  `docs/act1_build.md`, "The release's tests", has each.
+- `find src -newer dist/copy.html` named nothing. THE RELEASE BUILD in the copy at 01:27: `Play.html` 2,778,149
+  bytes, `dist/artifact.html` 2,777,827, "V22.0 2026-10-17 05:27"; kept in the scratchpad's `v220/release/`.
+- **The published page itself** (`tools/wrap220.sh`, 01:27:24 to 02:11:29): **ALL 102 FINISHED CLEAN** (101 of the
+  regression's playtests, the descent's 26 among them, and the frame rate alone, 44.3).
 - The page's memory, floor by floor (`tools/scenarios/act1_room.mjs`): `docs/act1_build.md`.
 
 **Not checked.** A real phone. The Unfinished, the Carrion Queen and the Drowned Eye each hold about 300 MB of
