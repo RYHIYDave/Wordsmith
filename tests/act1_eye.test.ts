@@ -25,7 +25,7 @@ import { TILE3 } from '../src/art/new_mobs3';
 import { act1Rules } from '../src/game/act1_rules/index';
 import {
   BURSTS, CALL, EYE_ACTS, EYE_ARENA, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_EGG, EYE_EMPOWER, EYE_MOVES, EYE_OBELISKS, EYE_SPEW, EYE_SPLASH, EYE_STAND,
-  EYE_SURFACE, EYE_SWEEP, EYE_TILE, PHASES, RULES, SPAWN, aimOf, eggLanding, eyeClip, eyeClock, eyePhase, figureAct, moveOf, obeliskAt, onAim, rimOn, ringOn, sweepAngle, waveAt,
+  EYE_BARS, EYE_SURFACE, EYE_SWEEP, EYE_TILE, PHASES, RULES, SPAWN, aimOf, eggLanding, eyeClip, eyeClock, eyePhase, figureAct, moveOf, obeliskAt, onAim, rimOn, ringOn, sweepAngle, waveAt,
 } from '../src/game/act1_rules/eye';
 import { bossKind } from '../src/game/bosses';
 import { MONSTERS, PACK_BY_SIZE, TUNE, sizeOf } from '../src/game/defs';
@@ -479,7 +479,8 @@ test("9. his call: the siege's bolts rain on the ring, one where he stands; his 
   }
   {
     const { g, m } = arena(21);
-    m.life = m.maxLife * (PHASES.at[0] - 0.02);
+    // (EYE_BARS: his first bar emptied; until then, PHASES' shares)
+    m.life = EYE_BARS.on ? 1 : m.maxLife * (PHASES.at[0] - 0.02);
     stand(g, m, 0, 5);
     const seen: string[] = [];
     watch(g, m, 12, null as never, () => {
@@ -487,12 +488,14 @@ test("9. his call: the siege's bolts rain on the ring, one where he stands; his 
     });
     assert.ok(seen.includes('eye:surface'), `hurt enough, he surfaces (${seen.join(', ')})`);
     assert.equal(eyePhase(m), 1, 'risen');
-    m.life = m.maxLife * (PHASES.at[1] - 0.02);
+    if (EYE_BARS.on) assert.equal(m.life, m.maxLife, 'his bar full again');
+    m.life = EYE_BARS.on ? 1 : m.maxLife * (PHASES.at[1] - 0.02);
     watch(g, m, 12, null as never, () => {
       if (m.act && !seen.includes(m.act.id)) seen.push(m.act.id);
     });
     assert.ok(seen.includes('eye:empower'), `hurt more, he pulls the siege in (${seen.join(', ')})`);
     assert.equal(eyePhase(m), 2, 'blazing');
+    if (EYE_BARS.on) assert.equal(m.life, m.maxLife, 'his bar full again');
   }
 });
 

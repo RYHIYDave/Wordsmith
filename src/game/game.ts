@@ -4431,6 +4431,14 @@ export class Game {
     // (ACT 1: nor is one up in the air, or under the water, as its kind's rules have it)
     const r1 = ACT1.on ? act1Rules(m.kind) : null;
     if (r1 && r1.reachable && !r1.reachable(m)) return;
+    // (nor one that cannot be hurt now, and says so: a boss as he changes into his next phase)
+    if (r1 && r1.invulnerable && r1.invulnerable(m)) {
+      if (this.time - this.waitTold > 0.7) {
+        this.waitTold = this.time;
+        this.emit({ t: 'text', x: m.x, y: m.y, text: 'Invulnerable', color: '#ffd27a' });
+      }
+      return;
+    }
     // (ACT 1: one shielded by another standing by it takes less: the chanter's ward over the cult near it, game/act1_rules/)
     if (ACT1.on) {
       const ward = act1Ward(this.bosses, m);
@@ -4453,6 +4461,8 @@ export class Game {
     if (skill >= 0) m.lastSkill = skill;
     if (m.state === 'sleep') this.wakeUp(m);
     this.emit({ t: 'hit', x: m.x, y: m.y, amount: dmg, crit, el, onHero: false, heavy, words: words && words.length ? words : undefined, poison: poison || undefined });
+    // (ACT 1: one whose rules hold its death off is kept at 1: a boss with another life bar to come)
+    if (m.life <= 0 && r1 && r1.held && r1.held(this.bosses, m)) m.life = 1;
     if (m.life <= 0) this.kill(m);
   }
 

@@ -177,8 +177,16 @@ export function obeliskAt(i: number): { x: number; y: number } {
 // ---------------------------------------------------------------------------------------------
 // THE FIGHT: the rules' numbers
 
-/** His phases: below these shares of his life he surfaces, then pulls the siege in. */
+/** His phases: below these shares of his life he surfaces, then pulls the siege in (as he was until `bars`). */
 export const PHASES = { at: [0.7, 0.35] as const };
+/**
+ * EACH PHASE A LIFE BAR OF ITS OWN. The owner, 17 Oct 2026, 11:37: "The final boss needs each new phase to have an
+ * invulnerability phase as he transforms to the next phase and his HP bar refilled." So, `on`: his life is a full bar in
+ * each of his three phases; at the end of the first two he does not die but is kept at 1 (`held`) and changes into the
+ * next (his surfacing, his pulling the siege in), invulnerable from then until the change is done (`invulnerable`:
+ * "Invulnerable" is said where he is struck); and his bar is full again as he comes out of it.
+ */
+export const EYE_BARS = { on: true };
 /** His bursts: how many at once in each phase, the first under the hero, the rest `near` to `far` tiles round him, `apart` seconds after each other; each harms within `reach` of its middle. */
 export const BURSTS = { n: [4, 4, 5] as const, near: 1.3, far: 2.6, apart: 0.12, reach: 0.95 };
 /** His call: `n` of the siege's bolts, the first `from` seconds in and `apart` after each other; the first on the hero, `nearHim` more round him (1.6 to 3 tiles), the rest anywhere on the ring. */
@@ -338,10 +346,26 @@ export const RULES: Act1Rules = {
 
   forced(R, m, acts) {
     const s = st(m);
+    if (EYE_BARS.on) {
+      // (a phase's bar emptied: he changes into the next)
+      if (s.ph < 2 && m.life <= 1) return acts.findIndex((a) => a.id === (s.ph === 0 ? 'eye:surface' : 'eye:empower'));
+      return -1;
+    }
     const frac = m.life / m.maxLife;
     if (s.ph === 0 && frac < PHASES.at[0]) return acts.findIndex((a) => a.id === 'eye:surface');
     if (s.ph === 1 && frac < PHASES.at[1]) return acts.findIndex((a) => a.id === 'eye:empower');
     return -1;
+  },
+
+  // (EYE_BARS: a bar of his emptied before his last, he does not die; and from then until he has changed, nothing hurts him)
+  held(R, m) {
+    return EYE_BARS.on && st(m).ph < 2;
+  },
+  invulnerable(m) {
+    if (!EYE_BARS.on) return false;
+    const s = st(m);
+    const changing = m.state === 'act' && !!m.act && (m.act.id === 'eye:surface' || m.act.id === 'eye:empower');
+    return changing || (s.ph < 2 && m.life <= 1);
   },
 
   can(R, m, a) {
@@ -573,6 +597,8 @@ export const RULES: Act1Rules = {
     if (a.id === 'eye:surface') s.ph = 1;
     else if (a.id === 'eye:empower') s.ph = 2;
     m.phase = s.ph;
+    // (EYE_BARS: out of his change with his bar full again)
+    if (EYE_BARS.on && (a.id === 'eye:surface' || a.id === 'eye:empower')) m.life = m.maxLife;
     if (s.ph >= 2) m.cd *= BLAZING.hurry;
   },
 

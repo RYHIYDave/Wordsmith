@@ -40,6 +40,10 @@ export interface Act1Rules {
   bossAt?(L: Level): { x: number; y: number; fx: number; fy: number } | null;
   /** Whether the hero's blows reach it now (false: up in the air, under the water). */
   reachable?(m: Monster): boolean;
+  /** Whether it cannot be hurt now, and says so ("Invulnerable": a boss as he changes into his next phase): game.ts damageMonster. */
+  invulnerable?(m: Monster): boolean;
+  /** Its life gone, whether it does not die yet (a boss with another life bar to come, or one who must be where his death was drawn): game.ts damageMonster keeps it at 1. */
+  held?(R: BossRules, m: Monster): boolean;
   /** How much less harm (0 to 1) monster `m` takes for this one of its kind, `by`, standing by it (a chanter's ward over the cult near it): game.ts damageMonster, by `act1Ward`. */
   ward?(R: BossRules, by: Monster, m: Monster): number;
 }
