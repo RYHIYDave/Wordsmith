@@ -116,6 +116,11 @@ export interface ActDef {
   loop?: { at: number; span: number; extra: number };
 }
 
+/** (FLESH_BLINK) Is he gone now, between going and coming back (out of sight, out of reach)? */
+export function blinkedAway(m: { act?: { id: string; t: number } }): boolean {
+  return !!m.act && m.act.id === 'blink' && m.act.t >= FLESH_BLINK.gone && m.act.t < FLESH_BLINK.back;
+}
+
 /** Where in its pictures, and in its own timings, an act `t` seconds in is (its `loop` played round and round). */
 export function actClock(a: ActDef | null | undefined, t: number): number {
   const L = a?.loop;
@@ -165,6 +170,8 @@ export const ACTS: Record<GaitedKind, readonly ActDef[]> = {
     { id: 'rings', clip: 'rings', long: 2.2, hit: 0.86, dmg: 0.9, cooldown: 9, first: 4, after: 0.8, near: 0, far: 5.2 },
     { id: 'fire', clip: 'fire', long: 4.6, hit: 0.56, dmg: 0.5, cooldown: 15, first: 9, after: 1.0, near: 0, far: 5.4 },
     { id: 'raise', clip: 'raise', long: 2.6, hit: 0.72, dmg: 0, cooldown: 17, first: 6, after: 0.8, near: 0, far: 14 },
+    // (FLESH_BLINK: he goes, and comes back elsewhere in his hall; brought by the rules, not chosen)
+    { id: 'blink', clip: 'blink', long: 1.2, hit: 0.4, dmg: 0, cooldown: 0, first: 0, after: 0.3, near: 0, far: 99, forced: true },
   ],
   // THE MINI FLESHMANCER: his smaller fire, swept across before him; his call, which raises the dead
   // out of the cult's bodies that lie near.
@@ -265,6 +272,15 @@ export const FLESHMANCER = {
   fire: { burst: 0.56, pour: 0.62, stop: 3.9, land: 1.0, reach: 4.8, half: 0.45, burn: 0.6, tick: 0.22, burnDmg: 0.5 },
   fireAt: [[0.56, -0.35], [0.62, -0.35], [1, 0.309], [1.5, 1.256], [2, 2.26], [2.5, 3.283], [3, 4.288], [3.5, 5.238], [3.9, 5.933]] as ReadonlyArray<readonly [number, number]>,
 };
+
+/**
+ * THE FLESHMANCER'S TELEPORT. The owner, 17 Oct 2026, 11:37: "The fleshmancer needs a teleport to move around the arena."
+ * So, `on`: when the hero has been close to him (`near` tiles) for `crowd` seconds, or every `every` seconds of his fight
+ * anyway, he goes (from `gone` seconds into it, out of sight and out of reach) and comes back (`back`) at a spot of his
+ * hall `far` tiles or more from the hero, in sight of him. HIS LOOK going and coming back is the art chat's (sent 17 Oct,
+ * 11:43): until it is drawn and he has seen it, this stays off.
+ */
+export const FLESH_BLINK = { on: false, near: 2.6, crowd: 1.5, every: 12, gone: 0.4, back: 0.8, far: 5 };
 
 /** THE MINI FLESHMANCER. */
 export const MINIFM = {
@@ -383,7 +399,7 @@ export class BossRules {
     m.state = 'chase';
     const gait = m.gait;
     const los = dist < 16 && g.sees(m.x, m.y, h.x, h.y);
-    const forced = this.forcedAct(m, acts);
+    const forced = this.forcedAct(m, acts, dt);
     const want = forced >= 0 ? forced : m.cd <= 0 ? this.pickAct(m, acts, dist, los) : -1;
     const moving = gait.mode === 'setOff' || gait.mode === 'walk' || gait.mode === 'halt';
     // (it sets off after a hero who is further off than it likes, or out of its sight)
@@ -449,13 +465,24 @@ export class BossRules {
   }
 
   /** An act the rules bring, whatever else it would do: the Chained One breaks a chain, a bone beast bursts out of the amalgamation. -1: none. */
-  private forcedAct(m: Monster, acts: readonly ActDef[]): number {
+  private forcedAct(m: Monster, acts: readonly ActDef[], dt = 0): number {
     const r1 = ACT1.on ? act1Rules(m.kind) : null;
     if (r1) return r1.forced ? r1.forced(this, m, acts) : -1;
     const frac = m.life / m.maxLife;
     if (m.kind === 'chained') {
       const form = m.form ?? 0;
       if (form < 2 && frac < CHAINED.breakAt[form]) return acts.findIndex((a) => a.id === (form === 0 ? 'breakL' : 'breakBall'));
+    } else if (m.kind === 'fleshmancer' && FLESH_BLINK.on) {
+      // (crowded a while, or his while come round: he goes)
+      const h = this.g.hero;
+      const close = Math.hypot(h.x - m.x, h.y - m.y) < FLESH_BLINK.near;
+      m.blinkCrowd = close ? (m.blinkCrowd ?? 0) + dt : 0;
+      m.blinkT = (m.blinkT ?? FLESH_BLINK.every) - dt;
+      if (m.blinkCrowd >= FLESH_BLINK.crowd || m.blinkT <= 0) {
+        m.blinkCrowd = 0;
+        m.blinkT = FLESH_BLINK.every;
+        return acts.findIndex((a) => a.id === 'blink');
+      }
     } else if (m.kind === 'amalgam') {
       if (m.phase < AMALGAM.burstAt.length && frac < AMALGAM.burstAt[m.phase]) {
         // (as many as may live are out: that one is not made)
@@ -963,6 +990,21 @@ export class BossRules {
         });
         g.emit({ t: 'shake', amount: 5 });
         g.sfx('slam', 0.9);
+        break;
+      }
+      case 'blink': {
+        // (FLESH_BLINK: gone; then back, elsewhere in his hall, far from the hero and in sight of him)
+        if (at(FLESH_BLINK.gone)) g.sfx('swing', 0.6);
+        if (!at(FLESH_BLINK.back)) break;
+        const spots = g.spotsRound(m.x, m.y, 120).filter((s) => Math.hypot(s.x - h.x, s.y - h.y) >= FLESH_BLINK.far && g.sees(s.x, s.y, h.x, h.y));
+        if (spots.length) {
+          const s = spots[Math.floor(g.rng.next() * spots.length)];
+          m.x = s.x;
+          m.y = s.y;
+          const d = Math.hypot(h.x - m.x, h.y - m.y) || 1;
+          m.fx = (h.x - m.x) / d;
+          m.fy = (h.y - m.y) / d;
+        }
         break;
       }
       case 'raise': {

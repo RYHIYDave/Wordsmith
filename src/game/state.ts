@@ -384,6 +384,9 @@ export interface Monster {
   xp: number;
   /** A per-monster random number for small variations (bat weaving, idle timing). */
   seed: number;
+  /** (game/bosses.ts FLESH_BLINK) How long the hero has been close to him; how long until he goes anyway. */
+  blinkCrowd?: number;
+  blinkT?: number;
 }
 
 /**
@@ -533,7 +536,7 @@ export type ActId =
   | 'lash' | 'hook' | 'whirl' | 'ball' | 'breakL' | 'breakBall'
   | 'swipe' | 'floorArms' | 'swarm' | 'devour' | 'burst'
   | 'bite' | 'emerge' | 'dragged'
-  | 'shards' | 'rings' | 'raise' | 'fire'
+  | 'shards' | 'rings' | 'raise' | 'fire' | 'blink'
   | 'miniFire' | 'miniRaise'
   // ACT 1, THE DESCENT (game/act1/): each kind's own, by its name: 'qgolem:smash', 'queen:dive'
   | `${string}:${string}`;

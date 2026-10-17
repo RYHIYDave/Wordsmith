@@ -20,7 +20,7 @@ import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
-import { BOSSES5, BossRules, bossKind, gaitOf } from './bosses';
+import { BOSSES5, BossRules, blinkedAway, bossKind, gaitOf } from './bosses';
 import { ACT1 } from './act1';
 import { act1Rules, act1Ward } from './act1_rules/index';
 import { blobDist } from './act1_layout';
@@ -4433,6 +4433,8 @@ export class Game {
     // (ACT 1: nor is one up in the air, or under the water, as its kind's rules have it)
     const r1 = ACT1.on ? act1Rules(m.kind) : null;
     if (r1 && r1.reachable && !r1.reachable(m)) return;
+    // (FLESH_BLINK: nor the Fleshmancer while he is gone)
+    if (m.kind === 'fleshmancer' && blinkedAway(m)) return;
     // (nor one that cannot be hurt now, and says so: a boss as he changes into his next phase)
     if (r1 && r1.invulnerable && r1.invulnerable(m)) {
       if (this.time - this.waitTold > 0.7) {
