@@ -409,13 +409,13 @@ function sizer(kind: LandKind): (rng: RNG, role: AreaRole) => { rx: number; ry: 
   };
 }
 
+/** The Pinewood's paths, wider (his word of 17 Oct; a look: off until he has seen it). */
+export const PINE_PATH = { on: false, w: 4.6 };
 /**
  * How many open areas on the main way, start and boss's among them (the Ledge Road: how many legs its trail has). LONGER,
  * 17 Oct 2026, the owner after playing them, 11:37: "The levels are very short in 6-7 so far"; "8-10 need to be
  * significantly longer as well". (They were: the Quarry 6, the Ledge Road 9 legs, Echo Canyon 8, the Pinewood 6, the Fen 9.)
  */
-/** The Pinewood's paths, wider (his word of 17 Oct; a look: off until he has seen it). */
-export const PINE_PATH = { on: false, w: 4.6 };
 export const CHAIN: Record<LandKind, number> = { quarry: 10, ledge: 15, canyon: 14, pine: 11, fen: 16 };
 
 function planFor(kind: LandKind, rng: RNG): Plan | null {
