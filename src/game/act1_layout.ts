@@ -409,8 +409,12 @@ function sizer(kind: LandKind): (rng: RNG, role: AreaRole) => { rx: number; ry: 
   };
 }
 
-/** How many open areas on the main way, start and boss's among them. */
-const CHAIN: Record<LandKind, number> = { quarry: 6, ledge: 8, canyon: 8, pine: 6, fen: 9 };
+/**
+ * How many open areas on the main way, start and boss's among them (the Ledge Road: how many legs its trail has). LONGER,
+ * 17 Oct 2026, the owner after playing them, 11:37: "The levels are very short in 6-7 so far"; "8-10 need to be
+ * significantly longer as well". (They were: the Quarry 6, the Ledge Road 9 legs, Echo Canyon 8, the Pinewood 6, the Fen 9.)
+ */
+export const CHAIN: Record<LandKind, number> = { quarry: 10, ledge: 15, canyon: 14, pine: 11, fen: 16 };
 
 function planFor(kind: LandKind, rng: RNG): Plan | null {
   const size = sizer(kind);
@@ -479,7 +483,7 @@ function planLedge(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; r
   const legs: number[] = [];
   const up = across === LEFT ? 180 * DEG : 270 * DEG;
   let sinceTurn = 0;
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < CHAIN.ledge; i++) {
     if (sinceTurn >= 2 && rng.chance(0.55)) {
       legs.push(up + rng.range(-0.15, 0.15));
       sinceTurn = 0;
