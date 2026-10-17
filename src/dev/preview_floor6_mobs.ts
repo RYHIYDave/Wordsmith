@@ -10,6 +10,9 @@
 //   node tools/preview.mjs src/dev/preview_floor6_mobs.ts shots/strip.png <w> <h> walk:<who>:<fps>:<view>
 //     its walk as the game plays it: the golem setting off, plodding and stopping; the rubbling scuttling;
 //     carried over the floor at its pace
+//   node tools/page_gif.mjs src/dev/preview_floor6_mobs.ts "deathfilm" shots/golem_death.gif 6
+//     the golem struck down, from in front and from behind, twice the game's size, at the game's 20 frames a
+//     second for its death; held on what is left
 
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
@@ -276,7 +279,43 @@ function throwFilm(): void {
   done(cvs);
 }
 
-if (HASH.startsWith('throwfilm')) throwFilm();
+/** ITS DEATH AS THE GAME PLAYS IT (hash `deathfilm`): a moment standing, struck, and its death at the game's 20 a second, held on what is left; from in front and from behind, twice the game's size. */
+function deathFilm(): void {
+  const FPS = 20;
+  const STAND = 0.5;
+  const HOLD = 1.0;
+  const n = Math.round((STAND + QG_DIE_TIME + HOLD) * FPS) + 1;
+  const W = 1000;
+  const H = 520;
+  const cvs = document.createElement('canvas');
+  cvs.width = W;
+  cvs.height = H;
+  const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+  g.imageSmoothingEnabled = false;
+  const draw = (i: number): void => {
+    const t = i / FPS;
+    bed(g, 0, 0, W, H, 32);
+    for (const [x, view] of [[270, 'front'], [730, 'back']] as [number, 'front' | 'back'][]) {
+      const dying = t >= STAND;
+      if (!dying || t - STAND < 0.3) shadow(g, x, 380, 80);
+      drawBig(g, dying ? golemFrame('dying', Math.min(t - STAND, QG_DIE_TIME), view) : golemFrame('stand', t, view), x, 380, 1);
+    }
+    label(g, 'The quarry golem, struck down', 12, 8);
+    label(g, `${Math.max(0, t - STAND).toFixed(2)} s`, 12, H - 30);
+  };
+  draw(0);
+  done(cvs);
+  const win = window as unknown as { __frames: number; __tickMs: number; __frame: (i: number) => string };
+  win.__frames = n;
+  win.__tickMs = 1000 / FPS;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cvs.toDataURL('image/png');
+  };
+}
+
+if (HASH.startsWith('deathfilm')) deathFilm();
+else if (HASH.startsWith('throwfilm')) throwFilm();
 else if (HASH.startsWith('seq')) seq();
 else if (HASH.startsWith('film')) film();
 else if (HASH.startsWith('walk')) walk();

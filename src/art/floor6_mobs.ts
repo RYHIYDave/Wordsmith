@@ -4,7 +4,9 @@
 // the rubblings proposed and kept): the QUARRY GOLEM (medium) and the RUBBLING (tiny). His brief, asked as
 // his art rulebook's questions for a new character (13 Oct, by 15:05): the golem, "Cut blocks bound in
 // chains (Recommended)" (quarry blocks stacked into a body, lashed with the cult's iron chains, its skull
-// mark burning on its chest block), dying "Bursts apart" (the blocks are flung outward); the rubbling, "A
+// mark burning on its chest block), dying "Bursts apart" (the blocks are flung outward; MADE SMALL, his word of
+// 17 Oct to the main chat: "The death animation for the regular golems is massive and needs to be toned down.
+// Just have them crumple into a pile of pebbles or whatever": now it crumples into a heap of rubble); the rubbling, "A
 // scuttling heap of chips (Recommended)" (a little mound of stone chips on stubby stone legs, a pink spark
 // glowing inside), dying "Pops into grit (Recommended)" (its spark goes out and it bursts into a puff of
 // grit and chips).
@@ -18,12 +20,13 @@ import type { Px, Sprite } from '../engine/px';
 import type { ActorArt, AnimSet, Clip } from './actor_types';
 import { between, feetFor, plantBy, smooth01 } from './act1_feet';
 import { HOLE, block, limbFrame } from './act1_stone';
+const stoneBlock = block;
 import type { FaceSkin } from './act1_stone';
 import { shriekAt } from './floor5';
 import { hash, lazyFrames, toSprite } from './kit';
 import type { Painted, Ramp } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
-import { TILE3, canvasOf, deathOfMob, paintBits, paintMob, sphere } from './new_mobs3';
+import { TILE3, canvasOf, deathOfMob, dyingMoment, paintBits, paintMob, sphere } from './new_mobs3';
 import type { Bit, Fall, Mob, MobCanvas, MobMove, Moment, Put } from './new_mobs3';
 import { stage } from './skin';
 import type { GameView, Stage } from './skin';
@@ -69,7 +72,7 @@ function cutFace(seed: number, mark?: (face: number, a: number, b: number) => st
 }
 
 /** A CHAIN of iron links from `a` to `b`, sagging `sag`, each link a small flat ring turned across the last. */
-function chain(put: Put, part: string, piece: string, a: V3, b: V3, sag: number, r = 1.5): void {
+function ironChain(put: Put, part: string, piece: string, a: V3, b: V3, sag: number, r = 1.5): void {
   const d = sub(b, a);
   const L = Math.hypot(d[0], d[1], d[2]);
   const n = Math.max(2, Math.round(L / (r * 2.2)));
@@ -82,7 +85,7 @@ function chain(put: Put, part: string, piece: string, a: V3, b: V3, sag: number,
   }
 }
 /** A chain round a solid (its middle `c`, two of its half-axes `u` and `v`, out from its faces by `pad`): the links of the half toward the eye. */
-function chainRound(put: Put, part: string, piece: string, c: V3, u: V3, v: V3, n: number, r = 1.5): void {
+function ironRound(put: Put, part: string, piece: string, c: V3, u: V3, v: V3, n: number, r = 1.5): void {
   for (let i = 0; i < n; i++) {
     const th = (i / n) * Math.PI * 2;
     const p = add(c, add(mul(u, Math.cos(th)), mul(v, Math.sin(th))));
@@ -115,6 +118,17 @@ function golemBits(st: Stage, m: Moment): Bit[] {
   const lit = 1 - clamp01(q.out);
   const flare = m.glint;
   const frame = Math.floor(m.t * 10);
+  // (dying, each block crumbles in its turn: from then on its chunks are drawn tumbling into the heap, and not it, nor the chains on it)
+  const gone = (piece: string): boolean => m.dying === true && !QG_WHOLE.on && m.t >= qgCrumbleAt(piece);
+  const block = (_put: Put, part: string, piece: string, c: V3, A: readonly [V3, V3, V3], h: V3, skin: FaceSkin): void => {
+    if (!gone(piece)) stoneBlock(put, part, piece, c, A, h, skin);
+  };
+  const chain = (_put: Put, part: string, piece: string, a: V3, b: V3, sag: number, r = 1.5): void => {
+    if (!gone(piece)) ironChain(put, part, piece, a, b, sag, r);
+  };
+  const chainRound = (_put: Put, part: string, piece: string, c: V3, u: V3, v: V3, n: number, r = 1.5): void => {
+    if (!gone(piece)) ironRound(put, part, piece, c, u, v, n, r);
+  };
   // the legs: a block for the thigh, one for the shin, a slab for the foot
   for (const side of ['L', 'R'] as const) {
     const hip = side === 'L' ? s.hipL : s.hipR;
@@ -250,8 +264,8 @@ function golemBits(st: Stage, m: Moment): Bit[] {
       put('chips', 'chips', { k: 'mote', p, c: i % 2 ? CUT[3] : CUT[2], size: i % 3 ? 2 : 3 });
     }
   }
-  // its death: the mark white-hot as it swells, and the burst's flash
-  if (m.dying && m.t < QG_BURST + 0.15) put('flash', 'flash', { k: 'glow', p: add(cc, mul(cf, CH[0])), c: FLAME[3], r: 20 + 60 * clamp01((m.t - QG_BURST + 0.25) / 0.3), a: 0.5 * clamp01(m.t / QG_BURST) });
+  // ITS DEATH: what has crumbled tumbles down into a heap of rubble where it stood, its chains on top, a little dust along the floor
+  if (m.dying && !QG_WHOLE.on) crumbled(put, m.t);
   return bits;
 }
 
@@ -409,33 +423,169 @@ function qgStruck(): Motion {
   };
 }
 
-/** ITS DEATH, "Bursts apart": it swells, its arms flung out, the mark burning white-hot, trembling; and bursts: its chains snap and its blocks are flung outward, tumbling, and land all round where it stood. */
-export const QG_DIE_TIME = 1.6;
-export const QG_BURST = 0.42;
+/**
+ * ITS DEATH, MADE SMALL (his word of 17 Oct: "Just have them crumple into a pile of pebbles or whatever"; it was
+ * "Bursts apart", its blocks flung out round it, and he found it "massive"). Struck, it is rocked back and the
+ * mark goes out; its legs crumble under it and it sinks, folding forward; block by block, from its feet up to its
+ * head, it breaks into chunks that tumble straight down into a heap of rubble where it stood, its chains falling
+ * on top, a little dust running out along the floor. Nothing is flung; the heap lies within a tile.
+ */
+export const QG_DIE_TIME = 1.3;
+/** When it begins to come apart (its feet), and when the last of it (its head) does. */
+export const QG_BURST = 0.2;
+const QG_LAST = 0.5;
+/** FOR CHECKS ONLY: draw it whole as it dies (the bones of the death, without the crumbling). */
+export const QG_WHOLE = { on: false };
+/** When a block of it crumbles: its feet first, up through its legs, hips, arms and body, its head last. */
+function qgCrumbleAt(piece: string): number {
+  const side = /L$/.test(piece) ? 0 : /R$/.test(piece) ? 0.02 : 0.01;
+  const at: Record<string, number> = { foot: 0.2, shin: 0.22, thigh: 0.26, hips: 0.32, fore: 0.33, fist: 0.36, belly: 0.37, upper: 0.4, chest: 0.42, shoulder: 0.44, head: QG_LAST };
+  const k = piece.replace(/[LR]$/, '');
+  return k in at ? at[k] + side : Infinity;
+}
 function qgDying(): Motion {
   const R = QG_REST;
-  const out: P = { lhIn: 1, lhx: 10, lhy: 40, lhz: -22, le: -50, rhIn: 1, rhx: 10, rhy: -40, rhz: -22, re: 50 };
   return {
     keys: [
       { at: 0, pose: {} },
-      { at: 0.12, pose: { px: -1.5, pz: R.pz + 1, pitch: R.pitch - 8, bend: R.bend - 8, faceUp: R.faceUp + 14, ...out }, ease: 'out' },
-      { at: 0.26, pose: { px: -1.5, pz: R.pz + 2.4, pitch: R.pitch - 12, bend: R.bend - 12, faceUp: R.faceUp + 20, roll: 1.4, ...out, lhz: -18, rhz: -18 }, ease: 'io' },
-      { at: QG_BURST, pose: { px: -1.5, pz: R.pz + 3, pitch: R.pitch - 13, bend: R.bend - 13, faceUp: R.faceUp + 22, roll: -1.2, ...out, lhz: -16, rhz: -16, out: 1 }, ease: 'io' },
-      { at: QG_DIE_TIME, pose: { px: -1.5, pz: R.pz + 3, pitch: R.pitch - 13, bend: R.bend - 13, faceUp: R.faceUp + 22, ...out, lhz: -16, rhz: -16, out: 1 }, ease: 'lin' },
+      // struck: rocked back, the mark going out
+      { at: 0.08, pose: { px: -1.5, pitch: R.pitch - 6, bend: R.bend - 5, faceUp: R.faceUp + 8, lhx: R.lhx - 2, rhx: R.rhx - 2, out: 0.4 }, ease: 'out' },
+      // its legs giving under it
+      { at: 0.24, pose: { px: -1, pz: R.pz - 5, pitch: R.pitch + 3, bend: R.bend + 5, faceUp: R.faceUp - 2, lk: 34, rk: -34, out: 0.9 }, ease: 'io' },
+      // it sinks, folding forward, its arms dropping, as it comes apart under itself
+      { at: QG_LAST, pose: { px: 1, pz: R.pz - 12, pitch: R.pitch + 14, bend: R.bend + 14, faceUp: R.faceUp - 10, lk: 44, rk: -44, lhz: R.lhz + 14, rhz: R.rhz + 14, out: 1 }, ease: 'in' },
+      { at: QG_DIE_TIME, pose: { px: 1, pz: R.pz - 12, pitch: R.pitch + 14, bend: R.bend + 14, faceUp: R.faceUp - 10, lk: 44, rk: -44, lhz: R.lhz + 14, rhz: R.rhz + 14, out: 1 }, ease: 'lin' },
     ],
   };
 }
-/** How each piece of it is flung as it bursts: out from its middle the way it is from it, up, tumbling, and down where it lands. */
-function qgFall(piece: string): Fall | null {
-  if (/^(grit|chips|glow|eyes|flash)/.test(piece)) return null;
-  let h = 0;
-  for (let i = 0; i < piece.length; i++) h = (h * 31 + piece.charCodeAt(i)) | 0;
-  const a = hash(h, 1, 13);
-  const b = hash(h, 2, 13);
-  // (which way it is from its middle: the left side flung left, the right right, the front forward)
-  const side = /L$/.test(piece) ? 1 : /R$/.test(piece) ? -1 : b - 0.5;
-  const ahead = /^(chest|head|fist)/.test(piece) ? 1 : /^(hips|belly)/.test(piece) ? -0.4 : a - 0.5;
-  return { from: QG_BURST + a * 0.03, to: [ahead * (30 + 30 * a), side * (30 + 34 * b)], spin: (a - 0.5) * 220, lay: 'keep', hop: 3 + 4 * b, rise: 24 + 30 * a };
+
+/** Where its heap lies (under where it stood, a little forward, as it folded forward), how wide and how high. */
+const HEAP_AT: V3 = [3, 0, 0];
+const HEAP_R = 23;
+const HEAP_H = 17;
+const heapHigh = (x: number, y: number): number => HEAP_H * Math.max(0, 1 - Math.hypot(x - HEAP_AT[0], y - HEAP_AT[1]) / HEAP_R) ** 1.1;
+const G_FALL = 400;
+
+/** A block of it as it was when it crumbled: its middle, its three axes and how far it goes along each. */
+interface Was {
+  c: V3;
+  A: [V3, V3, V3];
+  h: V3;
+}
+const WAS = new Map<string, Was | null>();
+/** Each block as it was the moment it crumbled (worked out once, from its bones then, drawn whole). */
+function wasAt(piece: string): Was | null {
+  const done = WAS.get(piece);
+  if (done !== undefined) return done;
+  QG_WHOLE.on = true;
+  let found: Was | null = null;
+  try {
+    const t = qgCrumbleAt(piece);
+    const faces = golemBits(null as unknown as Stage, dyingMoment(QUARRY_GOLEM, t)).filter((b) => b.piece === piece && b.shape.k === 'panel');
+    if (faces.length >= 6) {
+      const fc = faces.slice(0, 6).map((b) => (b.shape as { c: V3 }).c);
+      const c = mul(add(fc[0], fc[1]), 0.5);
+      const ax = [0, 1, 2].map((k) => sub(fc[k * 2], c));
+      const h = ax.map((v) => Math.hypot(v[0], v[1], v[2])) as unknown as V3;
+      found = { c, A: ax.map((v, k) => norm(v, [k === 0 ? 1 : 0, k === 1 ? 1 : 0, k === 2 ? 1 : 0])) as [V3, V3, V3], h };
+    }
+  } finally {
+    QG_WHOLE.on = false;
+  }
+  WAS.set(piece, found);
+  return found;
+}
+
+/** The pieces that crumble, each with the chunks it breaks into. */
+const CRUMBLING = ['footL', 'footR', 'shinL', 'shinR', 'thighL', 'thighR', 'hips', 'foreL', 'foreR', 'fistL', 'fistR', 'belly', 'upperL', 'upperR', 'chest', 'shoulderL', 'shoulderR', 'head'];
+interface Chunk {
+  piece: string;
+  from: number;
+  p0: V3;
+  v: V3;
+  h: V3;
+  yaw: number;
+  tilt: number;
+  spin: number;
+  rest: V3;
+  land: number;
+  hop: number;
+  seed: number;
+}
+let CHUNKS: Chunk[] | null = null;
+/** Every chunk of it: where in its block it was, how it falls, where in the heap it comes to lie. */
+function chunksOf(): Chunk[] {
+  if (CHUNKS) return CHUNKS;
+  const out: Chunk[] = [];
+  CRUMBLING.forEach((piece, pi) => {
+    const w = wasAt(piece);
+    if (!w) return;
+    const from = qgCrumbleAt(piece);
+    const small = Math.min(w.h[0], w.h[1], w.h[2]);
+    const vol = w.h[0] * w.h[1] * w.h[2];
+    const n = Math.max(5, Math.min(15, Math.round(vol / 200)));
+    // (the later a block comes down, the higher up the heap its chunks lie)
+    const rank = (from - QG_BURST) / (QG_LAST - QG_BURST);
+    for (let i = 0; i < n; i++) {
+      const r = (k: number): number => hash(pi * 31 + i, k, 141);
+      const at = add(w.c, add(add(mul(w.A[0], w.h[0] * (r(1) - 0.5) * 1.3), mul(w.A[1], w.h[1] * (r(2) - 0.5) * 1.3)), mul(w.A[2], w.h[2] * (r(3) - 0.5) * 1.3)));
+      const size = Math.max(1.6, Math.min(4.6, small * (0.3 + 0.25 * r(4))));
+      const h: V3 = [size * (0.9 + 0.4 * r(5)), size * (0.8 + 0.4 * r(6)), size * (0.6 + 0.3 * r(7))];
+      // where in the heap it comes to lie: on the side of the heap it was on, a round heap, the later ones higher up it
+      const th = Math.atan2(at[1] - HEAP_AT[1], at[0] - HEAP_AT[0]) + (r(8) - 0.5) * 1.6;
+      const far = HEAP_R * 0.86 * Math.sqrt(r(9)) * (1 - 0.35 * rank);
+      const rx = HEAP_AT[0] + Math.cos(th) * far;
+      const ry = HEAP_AT[1] + Math.sin(th) * far;
+      const rest: V3 = [rx, ry, h[2] + heapHigh(rx, ry) * (0.35 + 0.65 * rank)];
+      // how it falls there: it drops (or, low down already, hops), a little up first, never in less than a sixth of a second
+      const TMIN = 0.17;
+      let vz = 4 + 8 * r(12);
+      vz = Math.max(vz, (0.5 * G_FALL * TMIN * TMIN + rest[2] - at[2]) / TMIN);
+      const land = (vz + Math.sqrt(Math.max(0, vz * vz + 2 * G_FALL * (at[2] - rest[2])))) / G_FALL;
+      const v: V3 = [(rest[0] - at[0]) / land, (rest[1] - at[1]) / land, vz];
+      out.push({ piece, from: from + r(13) * 0.04, p0: at, v, h, yaw: r(14) * 6.28, tilt: (r(15) - 0.5) * 1.2, spin: (r(16) - 0.5) * 7, rest, land, hop: 0.6 + 1.6 * r(17), seed: pi * 31 + i });
+    }
+  });
+  CHUNKS = out;
+  return out;
+}
+
+/** Its death as solids: the chunks of what has crumbled, falling and lying in the heap; its chains on the heap; dust. */
+function crumbled(put: Put, t: number): void {
+  for (const ch of chunksOf()) {
+    const tau = t - ch.from;
+    if (tau < 0) continue;
+    let p: V3;
+    let turn = 1;
+    if (tau < ch.land) {
+      p = [ch.p0[0] + ch.v[0] * tau, ch.p0[1] + ch.v[1] * tau, ch.p0[2] + ch.v[2] * tau - 0.5 * G_FALL * tau * tau];
+      turn = tau / ch.land;
+    } else {
+      // (it lands, hops once, and lies still)
+      const bounce = Math.sqrt((2 * ch.hop) / G_FALL) * 2;
+      const b = tau - ch.land;
+      p = b < bounce ? [ch.rest[0], ch.rest[1], ch.rest[2] + ch.hop * Math.sin((Math.PI * b) / bounce)] : ch.rest;
+    }
+    stoneBlock(put, 'heap', `chunk${ch.seed}`, p, chipFrame(ch.yaw + ch.spin * turn * 0.4, ch.tilt + ch.spin * turn), ch.h, cutFace(90 + (ch.seed % 40)));
+  }
+  // its chains, fallen across the heap as the blocks they were round crumbled
+  const lay: ReadonlyArray<readonly [string, number, number, number, number]> = [['belly', -16, -10, 12, 6], ['chest', -10, 12, 18, -4], ['thighL', -20, 4, -6, 18], ['foreR', 6, -20, 22, -10]];
+  lay.forEach(([piece, x0, y0, x1, y1], i) => {
+    const t0 = qgCrumbleAt(piece) + 0.3;
+    if (t < t0) return;
+    const k = Math.min(1, (t - t0) / 0.15);
+    const a: V3 = [HEAP_AT[0] + x0, HEAP_AT[1] + y0, heapHigh(HEAP_AT[0] + x0, HEAP_AT[1] + y0) + 2.2 + 8 * (1 - k)];
+    const b: V3 = [HEAP_AT[0] + x1, HEAP_AT[1] + y1, heapHigh(HEAP_AT[0] + x1, HEAP_AT[1] + y1) + 2.2 + 8 * (1 - k)];
+    ironChain(put, `heapChain${i}`, 'heapChains', a, b, -2.5, 1.5);
+  });
+  // a little dust, running out low along the floor as it comes down, and settling
+  for (let i = 0; i < 16; i++) {
+    const u = (t - QG_BURST - 0.1 - hash(i, 1, 143) * 0.3) / 0.55;
+    if (u < 0 || u > 1) continue;
+    const a = hash(i, 2, 143) * Math.PI * 2;
+    const r = HEAP_R * (0.7 + 0.5 * u);
+    put('dust', 'dust', { k: 'mote', p: [HEAP_AT[0] + Math.cos(a) * r, HEAP_AT[1] + Math.sin(a) * r * 0.9, 1.5 + 3 * Math.sin(Math.PI * u)], c: i % 2 ? CUT[2] : CUT[1], size: 2 });
+  }
 }
 
 function qgMob(): Mob {
@@ -462,12 +612,11 @@ function qgMob(): Mob {
     hit: QG_HIT,
     warn: 0.5,
     dieTime: QG_DIE_TIME,
-    dying: { name: 'The quarry golem bursts apart', motion: qgDying(), rest: QG_REST, glint: (t) => clamp01(t / QG_BURST) },
+    dying: { name: 'The quarry golem crumples into a heap of rubble', motion: qgDying(), rest: QG_REST },
     aura: { x: QG_CANVAS.ax, y: QG_CANVAS.ay - 50, r: 70, color: '#ff3a78', a: 0.12 },
     shadow: 30,
     canvas: QG_CANVAS,
     bits: (st, m) => golemBits(st, m),
-    fall: qgFall,
   };
 }
 /** THE QUARRY GOLEM. */
