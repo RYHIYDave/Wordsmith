@@ -33,6 +33,7 @@ import { TILE3, handAt, posedOfMob, skeletonAt } from '../src/art/new_mobs3';
 import type { Mob } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
 import { hookHigh } from '../src/render/bossfx';
+import { act1Rules } from '../src/game/act1_rules/index';
 import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';

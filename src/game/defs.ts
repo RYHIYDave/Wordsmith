@@ -475,8 +475,10 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   spawn: { kind: 'spawn', name: 'Eyespawn', life: 40, dmgMin: 10, dmgMax: 14, speed: 1.1, radius: 0.48, range: 1.15, windup: 16 / 30, cooldown: 1.8, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   // THE FIVE BOSSES OF THE DESCENT (game/act1_bosses.ts: what each does): the Unfinished, the Carrion Queen,
   // the Cantor, the Hollow Stag, and the Drowned Eye, the act's, a bigger event than the cult's lair boss.
-  unfinished: { kind: 'unfinished', name: 'The Unfinished', life: 480, dmgMin: 22, dmgMax: 30, speed: 0.9, radius: 1.0, range: 2.6, windup: 1.2, cooldown: 2.4, xp: 330, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
-  queen: { kind: 'queen', name: 'The Carrion Queen', life: 420, dmgMin: 18, dmgMax: 26, speed: 1.5, radius: 0.9, range: 2.2, windup: 0.72, cooldown: 1.8, xp: 340, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (the Unfinished: a little more life than the amalgamation, floor 4's, and harder blows, slow and heavy; its pace its walk's, 0.9; its reach its fist slam's, its wind-up the slam's: game/act1_rules/unfinished.ts)
+  unfinished: { kind: 'unfinished', name: 'The Unfinished', life: 480, dmgMin: 22, dmgMax: 30, speed: 0.9, radius: 1.0, range: 2.9, windup: 1.2, cooldown: 2.4, xp: 330, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (the Carrion Queen: about the Headsman's life and blows, and quick; her pace her hop's, 1.5; her reach her rake's, her wind-up its: game/act1_rules/queen.ts)
+  queen: { kind: 'queen', name: 'The Carrion Queen', life: 420, dmgMin: 18, dmgMax: 26, speed: 1.5, radius: 0.9, range: 2.5, windup: 0.72, cooldown: 1.8, xp: 340, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   // (THE CANTOR: as the Headsman, slow and far-reaching; his pace his procession's, CANTOR_PACE; his blow his staff strike's, game/act1_rules/cantor.ts)
   cantor: { kind: 'cantor', name: 'The Cantor', life: 440, dmgMin: 19, dmgMax: 27, speed: 0.8, radius: 0.55, range: 3.1, windup: 1.0, cooldown: 2.2, xp: 350, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   // (THE HOLLOW STAG: elk-sized; its pace its stotting's, STAG_PACE; its blow its antler gore's, game/act1_rules/stag.ts)

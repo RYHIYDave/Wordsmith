@@ -1,5 +1,5 @@
 // FLOOR 7'S BOSS, THE CARRION QUEEN MADE NEW (src/art/carrion_queen2.ts, her look and stand; src/art/carrion_queen2_moves.ts,
-// her moves; mock-ups behind QUEEN2_ON, off; nothing of the game imports them), held to his art rulebook before he sees
+// her moves; behind QUEEN2_ON; in the game through art/act1_figs/queen.ts), held to his art rulebook before he sees
 // her, as a boss (How art is made 7: the whole review, in every frame, from in front and from behind). She is not on
 // the heroes' bones (her own skeleton of a bird), so the review (art/boss_checks.ts, made for figures on them) is
 // written out here for her, rule by rule:
@@ -121,10 +121,14 @@ function inBall(p: number[], sh: any): boolean {
   return s < 1;
 }
 
-test('the switch is off, and nothing of the game imports her', () => {
+// (IN THE GAME SINCE ACT 1 CAME IN, 16 Oct: through art/act1_figs/queen.ts, her pictures as the game holds a monster;
+// her switch goes on with the descent there, art/bestiary.ts useAct1Figs. Nothing else of the game imports her; and
+// nothing of the game imports the old one, art/carrion_queen.ts: tests/act1_queen.test.ts.)
+test('her switch is off by itself, and of the game only her figure imports her', () => {
   assert.equal(QUEEN2_ON.on, false);
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /carrion_queen2(_moves)?\.ts$/.test(f)) continue;
+    const name = f.replace(/\\/g, '/');
+    if (!name.endsWith('.ts') || name.startsWith('dev') || /carrion_queen2(_moves)?\.ts$/.test(name) || name === 'art/act1_figs/queen.ts') continue;
     assert.ok(!/from ['"][^'"]*carrion_queen2(_moves)?['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the new Carrion Queen`);
   }
 });

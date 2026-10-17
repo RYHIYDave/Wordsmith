@@ -1,4 +1,4 @@
-// FLOOR 6'S BOSS, THE UNFINISHED (src/art/unfinished.ts; a mock-up nothing of the game imports), held to
+// FLOOR 6'S BOSS, THE UNFINISHED (src/art/unfinished.ts; in the game through art/act1_figs/unfinished.ts), held to
 // his rulebook before he sees it: crisp in every move, the enemy's pink edge round it while it lives and
 // none as it dies, nothing cyan and every light the cult's fire, its size his ("Twice the Warden
 // (Recommended)"), the cult's mark burning on its chest, what its big moves leave crisp and duller than
@@ -63,11 +63,26 @@ function hue(r: number, g: number, b: number): [number, number] {
   return [(h + 360) % 360, (max - min) / max];
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
+// (IN THE GAME SINCE ACT 1 CAME IN, 16 Oct: through art/act1_figs/unfinished.ts, its pictures as the game holds a
+// monster, and render/act1_fx/unfinished.ts, what it throws and leaves; its switch goes on with the descent there,
+// art/bestiary.ts useAct1Figs. Nothing else of the game imports it.)
+test('its switch is off by itself, and of the game only its figure and its effects import it', () => {
   assert.equal(UNFINISHED_ON.on, false);
+  const through = ['art/act1_figs/unfinished.ts', 'render/act1_fx/unfinished.ts'];
   for (const f of fs.readdirSync('src', { recursive: true })) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f.endsWith('unfinished.ts')) continue;
-    assert.ok(!/from ['"][^'"]*unfinished['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Unfinished`);
+    const name = f.replace(/\\/g, '/');
+    if (!name.endsWith('.ts') || name.startsWith('dev') || name === 'art/unfinished.ts' || through.includes(name)) continue;
+    const src = fs.readFileSync(`src/${f}`, 'utf8');
+    // (an import of the art file itself: art/unfinished, from wherever it is asked for)
+    const dir = name.split('/').slice(0, -1);
+    for (const m of src.matchAll(/from ['"]([^'"]*unfinished)['"]/g)) {
+      const parts = [...dir];
+      for (const seg of m[1].split('/')) {
+        if (seg === '..') parts.pop();
+        else if (seg !== '.') parts.push(seg);
+      }
+      assert.ok(parts.join('/') !== 'art/unfinished', `src/${f} imports the Unfinished`);
+    }
   }
 });
 

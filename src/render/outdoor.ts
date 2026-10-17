@@ -159,6 +159,13 @@ interface Piece {
   seen: number;
 }
 
+/**
+ * (ACT 1: what the ground being drawn is, for what of the descent's own kinds must be drawn as the ground has it: the
+ * Carrion Queen going over her eyrie's edge, the rock laid over what of her has gone below it, render/act1_fx/queen.ts.
+ * The terrain of the floor drawn last; null when none.)
+ */
+export const SHOWN: { terrain: Terrain | null } = { terrain: null };
+
 export class OutdoorGround {
   private land: Land | null = null;
   private T: Terrain | null = null;
@@ -184,6 +191,7 @@ export class OutdoorGround {
     if (land === this.land) return false;
     this.land = land;
     this.T = terrainOf(floor, landLook(land, floor));
+    SHOWN.terrain = this.T;
     for (const p of this.pieces.values()) p.cvs.width = 0;
     this.pieces.clear();
     this.sky = null;
@@ -201,6 +209,7 @@ export class OutdoorGround {
     this.T = null;
     this.sky = null;
     this.town = null;
+    SHOWN.terrain = null;
   }
 
   private key(i: number, j: number): number {
