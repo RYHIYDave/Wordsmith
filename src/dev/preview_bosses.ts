@@ -16,6 +16,7 @@ import { makeSkeletonArt3 } from '../art/monster_bones3';
 import { makeWardenArt } from '../art/monster_warden';
 import { MOVES3 } from '../art/moves3';
 import { AMALGAM, AM_BURST_AT, AM_BURST_SPOT, AM_BURST_WAY, AM_DEVOUR_HIT, AM_SLAM_HIT, AM_SLAM_SPOTS, AM_SWARM_HIT, AM_SWARM_SPEED, AM_SWIPE_HIT, BB_BITE_HIT, BB_EMERGE_TIME, BONE_BEAST, FLOOR_ARM_FPS, FLOOR_ARM_FRAMES, FLOOR_ARM_SINK, FLOOR_ARM_TIME, SWARM_SKULL_FPS, SWARM_SKULL_FRAMES, amRakeAt, amSwarmSkulls, makeFloorArmArt, makeSwarmSkullArt, AXE_SHOT_FRAMES, BALL_SHOT_FRAMES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_SNAP_BALL, CO_SNAP_L, makeLeftBehindArt, CO_BALL_LAND, CO_BALL_LET, CO_BALL_REACH, CO_HOOK_BACK, CO_HOOK_BITE, CO_HOOK_LET, CO_HOOK_REACH, CO_LASH_HIT, CO_WHIRL_FROM, CO_WHIRL_TO, HEADSMAN, HOOK_SHOT_FRAMES, coBallPath, coCollarAt, coCuffAt, coHookPath, coWhirlReach, makeBallShotArt, makeHookShotArt, HS_CATCH, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SWEEP_FROM, HS_SWEEP_TO, HS_THROW_HIT, axeOf, hsBite, hsSweepReach, makeAxeShotArt } from '../art/bosses3';
+import { HEADSMAN_2 } from '../art/headsman2';
 import { SENTENCE_FROM, drawArmCrack, drawAxeShadow, drawBallCrash, drawClawRake, drawBallShadow, drawChainOut, drawChopCrack, drawScrape, drawSentenceLine, drawSentenceSplit, drawSweepRing, drawThrowPath, throwPathAt } from '../art/boss_shots';
 import { drawSkullBurst, drawSkullShadow } from '../art/mob_shots';
 import type { FloorAt } from '../art/mob_shots';
@@ -139,6 +140,7 @@ function pane(x: number, y: number, w: number, h: number, S: number, who: Readon
 }
 
 const BOSSES: Record<string, { mob: Mob; title: string; short: string; walkSaid?: string; struckSaid?: string; deathSaid?: string }> = {
+  headsman2: { mob: HEADSMAN_2, title: 'The Headsman, made new', short: 'The new Headsman' },
   headsman: { mob: HEADSMAN, title: 'The Headsman', short: 'The Headsman', walkSaid: 'His walk: slow and heavy, his axe across him', struckSaid: 'Struck: he barely gives', deathSaid: 'His hood falls empty' },
   chained: { mob: CHAINED, title: 'The Chained One', short: 'The Chained One', walkSaid: 'His walk: a starved giant’s lurching shamble, his chains dragging, the ball scraping behind him', struckSaid: 'Struck: he jerks back from it, his chains rattling', deathSaid: 'His chains drag him down' },
   chained1: { mob: CHAINED_FREED[1], title: 'The Chained One, his left chain off', short: 'His left chain off', walkSaid: 'His walk, his left chain off', struckSaid: 'Struck', deathSaid: 'His chains drag him down' },
@@ -255,6 +257,39 @@ if (mode === 'sheet') {
   text(who.title, PAD, 12, 26, '#ffd866', 700);
   text('a boss of dungeons 2 to 4. A mock-up: not in the game', PAD, 44, 16, '#cfc8ff', 600);
   row(row1, 70, S, PAD, W);
+  win.__ready = true;
+}
+
+if (mode === 'redo') {
+  // THE HEADSMAN MADE NEW, FOR HIS LOOK: redo[:<scale>]: the first Headsman beside the new one, facing you and away, and
+  // under them the new one in three pictures of how he might move (his guard spun, darting aside, a lunge)
+  const S = Number(parts[1]) || 2;
+  const PAD = 14;
+  const NEW = HEADSMAN_2;
+  const row1 = [
+    { sp: KNIGHT(), name: 'The knight', line: 'a hero, for size', shadow: 12, gold: false },
+    { sp: spOf(HEADSMAN, 'stand', 0, 'front'), name: 'The Headsman', line: 'as he is in the game', shadow: HEADSMAN.shadow, gold: false },
+    { sp: spOf(NEW, 'stand', 0, 'front'), name: 'Made new', line: 'facing you', shadow: NEW.shadow, gold: true },
+    { sp: spOf(NEW, 'stand', 0, 'back'), name: 'Made new', line: 'facing away', shadow: NEW.shadow, gold: true },
+  ];
+  const row2 = [
+    { sp: spOf(NEW, 'looks', 1, 'front'), name: 'Spinning it', line: 'held at its middle', shadow: NEW.shadow, gold: true },
+    { sp: spOf(NEW, 'looks', 2, 'front'), name: 'Darting aside', line: 'low and quick', shadow: NEW.shadow, gold: true },
+    { sp: spOf(NEW, 'looks', 3, 'front'), name: 'A lunge', line: 'at full reach', shadow: NEW.shadow, gold: true },
+  ];
+  const W = Math.max(900, widthOf(row1, S, PAD), widthOf(row2, S, PAD));
+  const hOf = (list: { sp: Sprite }[]): number => {
+    const [, , up, down] = reachAll(list.map((f) => f.sp));
+    return (up + down + 14) * S + 50;
+  };
+  cv.width = W;
+  cv.height = 70 + hOf(row1) + 16 + hOf(row2) + PAD;
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  text('The Headsman, made new', PAD, 12, 26, '#ffd866', 700);
+  text('lean and quick in a long coat, a long axe spun like a staff. A mock-up: not in the game', PAD, 44, 16, '#cfc8ff', 600);
+  const h1 = row(row1, 70, S, PAD, W);
+  row(row2, 70 + h1 + 16, S, PAD, W);
   win.__ready = true;
 }
 
