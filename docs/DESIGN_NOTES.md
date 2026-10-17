@@ -5671,7 +5671,8 @@ small monster can be held up behind a prop it walks straight into (every monster
 figured this would primarily be a mobile game so I’d like it to run really well"; 05:46, of his phone: "iPhone 16". Told
 him (soon after 09:35, plain): arrivals 23 to 43 stutters to 0 to 2; the Queen 43 to 59; the Cantor 49 with stalls to 60; the
 Pinewood 39 to 52, the Stag 40 to 59; town and floors 6, 7 and 10 about 60; nothing looks different. Asked (plain, just
-after 14:48) whether it may go live on the claude.ai page and on his web address.
+after 14:48) whether it may go live on the claude.ai page and on his web address; his answer, 15:44 (Eastern; 12:44 his
+time, Pacific): "Yes.  Then let’s see the revised skill trees". Read as yes to both (told him so).
 
 **What is in it.** (`docs/perf_phone.md` has every measurement.) None of it changes a pixel of what is drawn.
 1. THE OUTDOOR GROUND painted by a side worker (render/painter.ts, its ground lane, kept for the whole game), a piece at a
@@ -5703,6 +5704,11 @@ after 14:48) whether it may go live on the claude.ai page and on his web address
   (26.4, its second run) the machine, as above. The frame rate alone on the page: 41.4.
 
 **Not checked.** A real phone (the point of the version: he was asked to say how it feels).
+
+**Published** 17 Oct 2026, at about 15:50 (Eastern) on the claude.ai page ("Version 60", version id `1792266623-08a5`),
+from the scratchpad's `v221/release/artifact.html`; and at his web address, `gh-pages` at `c45bf6b` (made by
+`tools/make_site.mjs` from `v221/release/Play.html`; a phone that already has it shows the new version the second time it is
+opened). `main` fast-forwarded to `perf` (`5f2c469`).
 
 ## 6. Build plan
 
