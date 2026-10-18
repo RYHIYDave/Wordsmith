@@ -316,7 +316,8 @@ test('5b. she roams her eyrie (QUEEN_ROAM, his word): through a long fight she h
     if (g.over) break;
   }
   assert.ok(acts >= 6, `she fought (${acts} moves)`);
-  assert.ok(spots >= 12, `she moved about a lot: ${spots} spots in a minute`);
+  // (since her hops were made fewer and nearer, her fight measured at ten minutes: about one every six seconds)
+  assert.ok(spots >= 8, `she moved about a lot: ${spots} spots in a minute`);
   assert.equal(off, 0, 'never off the floor');
   // (struck down to the last of her life: no further, until she is home)
   m.life = m.maxLife = 4000;
