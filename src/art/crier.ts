@@ -54,7 +54,9 @@ export const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
  * His body: a head taller than the knight (who is 58), stout: broad in the shoulder, a barrel of a chest, a
  * great belly, thick in the limb, his head a little bigger than life (as the heroes' are, and his hat on it).
  */
-export const CR_BODY: Build = buildOf(70, 1.5, { shoulders: 1.16, chest: 1.3, depth: 1.22, waist: 1.62, hips: 1.18, legs: 0.94, arms: 1.0, trunk: 1.0, limbs: 1.24, pad: 1.9 });
+/** How much bigger than first drawn (70 tall): his word, 18 Oct, shown him at the game's size: “Bigger at game size” (offered as: keep the look, a little larger on screen). */
+export const CR_K = 94 / 70;
+export const CR_BODY: Build = buildOf(70 * CR_K, 1.5, { shoulders: 1.16, chest: 1.3, depth: 1.22, waist: 1.62, hips: 1.18, legs: 0.94, arms: 1.0, trunk: 1.0, limbs: 1.24, pad: 1.9 });
 const B = CR_BODY;
 
 // ---------------------------------------------------------------------------------------------
@@ -84,15 +86,15 @@ const WHISKER: Ramp = ['#221c24', '#221c24', '#5a4e56', '#948890', '#948890'];
 // rim of its bell; three bands round it; the bell flaring wide, its throat burning the enemy's pink to gold.
 
 /** From the mouthpiece to the bell's rim; the bell's radius at its rim. */
-export const TRUMPET_LEN = 56;
-export const BELL_R = 9.5;
+export const TRUMPET_LEN = 56 * CR_K;
+export const BELL_R = 9.5 * CR_K;
 /** Where his right hand holds it, from the mouthpiece: `draw` 0 at the mouthpiece (to his lips, or to swing it at full reach), 1 at its middle (to carry it). */
-export const TRUMPET_HOLD = (draw: number): number => 4 + 22 * clamp01(draw);
+export const TRUMPET_HOLD = (draw: number): number => (4 + 22 * clamp01(draw)) * CR_K;
 
 /** The trumpet's radius `k` of the way from its mouthpiece to its rim: a long slow cone, then the flare. */
 export function trumpetR(k: number): number {
-  const cone = 1.3 + 3.2 * k;
-  const flare = k > 0.7 ? Math.pow((k - 0.7) / 0.3, 2.4) * (BELL_R - 4.5) : 0;
+  const cone = (1.3 + 3.2 * k) * CR_K;
+  const flare = k > 0.7 ? Math.pow((k - 0.7) / 0.3, 2.4) * (BELL_R - 4.5 * CR_K) : 0;
   return cone + flare;
 }
 
@@ -291,7 +293,7 @@ export function crierBits(st: Stage, m: Moment): Bit[] {
   // HIS SATCHEL OF SCROLLS at his left hip on a strap from his right shoulder, its flap down, the ends of rolled proclamations standing out of it
   {
     const bag = add(add(waistC, mul(be[1], B.waistHalf + 4.2)), add(mul(be[0], -1.0), mul(s.hips[2], -5.5)));
-    const bagAx: [V3, V3, V3] = [mul(be[0], 6.4), mul(be[1], 2.6), mul(s.hips[2], 5.2)];
+    const bagAx: [V3, V3, V3] = [mul(be[0], 6.4 * CR_K), mul(be[1], 2.6 * CR_K), mul(s.hips[2], 5.2 * CR_K)];
     put('satchel', 'satchel', { k: 'ball', c: bag, ax: bagAx, skin: (u, tone) => (u[2] > 0.2 && u[1] > 0 ? SATCHEL[Math.min(4, tone + 1)] : SATCHEL[tone]) });
     for (const [x, h] of [[-2.6, 7], [0.4, 9], [3.0, 6]] as const) {
       const a = add(bag, add(mul(be[0], x), mul(s.hips[2], 3.6)));
@@ -410,7 +412,7 @@ export function crierBits(st: Stage, m: Moment): Bit[] {
     let prev = root;
     for (let i = 1; i <= 6; i++) {
       const t = i / 6;
-      const p = add(root, add(mul(hf, -t * 11), add(mul(hu, 1 + Math.sin(t * Math.PI) * 3), add(mul(hl, -t * 4), mul(lag, t * 1.2)))));
+      const p = add(root, add(mul(hf, -t * 11 * CR_K), add(mul(hu, (1 + Math.sin(t * Math.PI) * 3) * CR_K), add(mul(hl, -t * 4 * CR_K), mul(lag, t * 1.2)))));
       const sway = Math.sin(wave * 2 + t * 2) * 0.6 * t;
       const pp = add(p, mul(hl, sway));
       put('plume', 'plume', { k: 'rod', a: prev, b: pp, ra: 1.5 - t * 0.6, rb: 1.3 - t * 0.8, ramp: CREAM });
@@ -434,18 +436,18 @@ export function crierBits(st: Stage, m: Moment): Bit[] {
 export const CR_HANG = -(B.upperArm + B.foreArm) * 0.9;
 export const CR_BASE: Bones = {
   ...standing(B),
-  pz: -1.5, px: 0, yaw: -16, pitch: -4, roll: 0, twist: 4, bend: -7, side: 0,
+  pz: -1.5 * CR_K, px: 0, yaw: -16, pitch: -4, roll: 0, twist: 4, bend: -7, side: 0,
   faceTurn: 6, faceUp: 10, faceTilt: 0,
-  lfx: 4, lfy: 6, lft: 22, lk: 14, rfx: -3, rfy: -6, rft: -20, rk: -12,
-  lhIn: 0, lhx: -2, lhy: 9, lhz: -22, le: -70,
-  rhIn: 0, rhx: 7, rhy: -17, rhz: -21, re: 34,
+  lfx: 4 * CR_K, lfy: 6 * CR_K, lft: 22, lk: 14, rfx: -3 * CR_K, rfy: -6 * CR_K, rft: -20, rk: -12,
+  lhIn: 0, lhx: -2 * CR_K, lhy: 9 * CR_K, lhz: -22 * CR_K, le: -70,
+  rhIn: 0, rhx: 7 * CR_K, rhy: -17 * CR_K, rhz: -21 * CR_K, re: 34,
   wAz: -60, wEl: 80, wRoll: 0, draw: 0.95, pt: 0, out: 0, prop: 0, gale: 0,
 };
 /** His look as first drawn. */
 export const CR_LOOK: Bones = { ...CR_BASE };
 
 /** His canvas: room for the trumpet swung round him at full reach and his feet in a lunge (kept by the tests). */
-export const CR_CANVAS: MobCanvas = { w: 360, h: 340, ax: 170, ay: 250 };
+export const CR_CANVAS: MobCanvas = { w: 470, h: 450, ax: 224, ay: 330 };
 
 void heading;
 void dim;
