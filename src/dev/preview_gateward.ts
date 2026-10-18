@@ -26,12 +26,16 @@
 //     close-ups at three times
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_cost.png 600 200 cost
 //     what painting it costs, a piece of 256 x 256 picture pixels at a time
+//   node tools/page_gif.mjs src/dev/preview_gateward.ts pigeons previews/gw_pigeons.gif
+//     a film of floor 11's moment (art/floor11_moments.ts): the hero walks along the square's back edge, and the
+//     pigeons on the roof above burst off it and wheel away over the rooftops
 
 import { makeDaggerCultistArt3 } from '../art/cultists';
 import { hushSetPieces } from '../art/act2_set';
 import { gateWardPieces } from '../art/floor11';
 import type { Piece } from '../art/floorkit';
-import { GW_RISE, GW_ZONE, gateWardLook, gateWardPaintFloor, houseShell } from '../art/gateward';
+import { GW_RISE, GW_ZONE, gateWardLook, gateWardPaintFloor, gateWardRidge, houseShell } from '../art/gateward';
+import { gateWardMoments } from '../art/floor11_moments';
 import type { GWHouse, HouseShell } from '../art/gateward';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
@@ -470,8 +474,8 @@ function laidLights(g: CanvasRenderingContext2D, laid: readonly Laid[]): void {
   g.restore();
 }
 
-/** The street dressed: the ground, the house fronts' and roofs' pieces, whoever and whatever stands inside a house, the shells, the rest by depth, the dusk, the lights. */
-function drawDressed(g: CanvasRenderingContext2D, sc: Scene): void {
+/** The street dressed: the ground, the house fronts' and roofs' pieces, whoever and whatever stands inside a house, the shells, the rest by depth, (`extra`, then) the dusk, the lights. */
+function drawDressed(g: CanvasRenderingContext2D, sc: Scene, extra?: () => void): void {
   camOn(sc.cam[0], sc.cam[1]);
   paintPanel(g, VX, VY, PW, PH);
   for (const l of DRESS) if (l.on) drawLaid(g, l);
@@ -492,6 +496,7 @@ function drawDressed(g: CanvasRenderingContext2D, sc: Scene): void {
     g.globalAlpha = 1;
   });
   for (const t of things) if (!t.inside) t.draw();
+  extra?.();
   dusk(g);
   laidLights(g, DRESS);
   nameAndMap(g, sc.hero);
@@ -545,6 +550,66 @@ if (HASH === 'dressed') {
     return cvs.toDataURL('image/png');
   };
   drawScene(g, filmScene(0));
+  show(cvs);
+} else if (HASH === 'pigeons') {
+  // THE PIGEONS: on the ridge of a roof over the square's back edge (a plot whose ridge runs along x); he walks
+  // along the edge below them, and as he comes under them they burst off it. 30 frames a second.
+  const M = gateWardMoments()[0];
+  let spot: [number, number] = [34, 8.55];
+  for (let x = 28; x < 46; x += 0.25) {
+    const r = gateWardRidge(x, 8.6);
+    if (r.along === 'x' && r.to - r.from >= 3 && r.from > 27 && r.to < 46) {
+      spot = [(r.from + r.to) / 2, r.at];
+      break;
+    }
+  }
+  const LEAD = 14;
+  const FPS = 30;
+  const N = LEAD + M.frames.length + 20;
+  const WALK_FROM: [number, number] = [spot[0] - 5.0, 11.4];
+  const PACE = 2.4;
+  const scene = (k: number): Scene => {
+    const t = k / FPS;
+    const hero: [number, number] = [WALK_FROM[0] + Math.min(t, 3.2) * PACE, WALK_FROM[1]];
+    const walking = t < 3.2;
+    const sp = walking ? spriteOf3(MOVES3.krun, t, 'front') : spriteOf3(MOVES3.rear, t - 3.2, 'front');
+    // (the camera where the game's would be on him as they burst up, held still for the film: a film with the
+    // camera on the move is too big to send)
+    return { hero, heroSprite: sp, cam: [WALK_FROM[0] + (LEAD / FPS) * PACE, WALK_FROM[1]], shown: HOUSES.map(() => 1) };
+  };
+  const drawMoment = (k: number): void => {
+    const sp = k < LEAD ? (M.before as Sprite[])[Math.floor(k / 4) % 4] : M.frames[Math.min(M.frames.length - 1, k - LEAD)];
+    const [sx0, sy0] = pictureOf(spot[0], spot[1]);
+    const d = sp.density ?? 1;
+    g.drawImage(sp.img, Math.round(sx0 - VX - sp.ax * d), Math.round(sy0 - VY - sp.ay * d), sp.w * d, sp.h * d);
+  };
+  const w = window as unknown as { __frames: number; __tickMs: number; __frame: (k: number) => string };
+  w.__frames = N;
+  w.__tickMs = 1000 / FPS;
+  w.__frame = (k) => {
+    drawDressed(g, scene(k), () => drawMoment(k));
+    return cvs.toDataURL('image/png');
+  };
+  drawDressed(g, scene(0), () => drawMoment(0));
+  show(cvs);
+} else if (HASH.startsWith('pigeon@')) {
+  // one frame of it (pigeon@<frame>), still
+  const k = Number(HASH.split('@')[1]) || 0;
+  const M = gateWardMoments()[0];
+  let spot: [number, number] = [34, 8.55];
+  for (let x = 28; x < 46; x += 0.25) {
+    const r = gateWardRidge(x, 8.6);
+    if (r.along === 'x' && r.to - r.from >= 3 && r.from > 27 && r.to < 46) {
+      spot = [(r.from + r.to) / 2, r.at];
+      break;
+    }
+  }
+  const sp = M.frames[Math.min(M.frames.length - 1, k)];
+  drawDressed(g, { hero: [spot[0], 12.2], heroSprite: knight, cam: [spot[0], spot[1] + 3.2], shown: HOUSES.map(() => 1) }, () => {
+    const [sx0, sy0] = pictureOf(spot[0], spot[1]);
+    const d = sp.density ?? 1;
+    g.drawImage(sp.img, Math.round(sx0 - VX - sp.ax * d), Math.round(sy0 - VY - sp.ay * d), sp.w * d, sp.h * d);
+  });
   show(cvs);
 } else if (HASH === 'close') {
   const spots: [string, number, number][] = [

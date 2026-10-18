@@ -756,6 +756,23 @@ function cutStub(d: number, px: number, py: number, lit: boolean): RGB {
 // ---------------------------------------------------------------------------------------------------
 // THE ROOFS
 
+/**
+ * WHERE A ROOF'S RIDGE RUNS over (x, y) (tiles), as the roofs are painted (`roof`, below): along x, at y = `at`,
+ * from x = `from` to `to` (the plot's ends); or along y, at x = `at`, from y = `from` to `to`. For what is laid on
+ * a ridge (art/floor11_moments.ts: the pigeons).
+ */
+export function gateWardRidge(x: number, y: number): { along: 'x' | 'y'; at: number; from: number; to: number } {
+  const RY = 2.5;
+  const RG = 0.42;
+  const j = Math.floor(y / RY);
+  const len = 2 + Math.floor(hash(j, 0, 1901) * 3);
+  const off = hash(j, 1, 1901) * len;
+  const i = Math.floor((x + off) / len);
+  const h0 = hash(i, j, 1902);
+  const ridgeY = h0 > 0.78 || (h0 > 0.4 && h0 < 0.48);
+  return ridgeY ? { along: 'y', at: (i + RG) * len - off, from: j * RY, to: (j + 1) * RY } : { along: 'x', at: (j + RG) * RY, from: i * len - off, to: (i + 1) * len - off };
+}
+
 /** A roof's plot: rows 2.5 tiles deep along y, plots 2 to 4 tiles long along x; a ridge along x or along y; clay pantiles or slate. */
 function roof(x: number, y: number, px: number, py: number, back: number): RGB {
   const RY = 2.5;
