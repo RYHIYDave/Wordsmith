@@ -70,6 +70,25 @@ export function scene(w: number, h: number, ox: number, oy: number): Scene {
   return new Scene(new Px(w, h), ox, oy);
 }
 
+/**
+ * A SCENE TURNED a quarter at a time about the upright through its (0, 0): what is built in it with its
+ * front looking along +y is built looking along +y (`k` 0), +x (1), -y (2, its back to the eye) or -x (3);
+ * its light is still the world's (the upper left), so a thing turned is lit as it now stands.
+ */
+export function turned(S: Scene, k: number): Scene {
+  const q = ((k % 4) + 4) % 4;
+  if (q === 0) return S;
+  const R = (p: readonly number[]): V3 => (q === 1 ? [p[1], -p[0], p[2]] : q === 2 ? [-p[0], -p[1], p[2]] : [-p[1], p[0], p[2]]);
+  const Ri = (p: readonly number[]): V3 => (q === 1 ? [-p[1], p[0], p[2]] : q === 2 ? [-p[0], -p[1], p[2]] : [p[1], -p[0], p[2]]);
+  const T = Object.create(S) as Scene;
+  T.egg = (c, A, r, shade, id, keep) => S.egg(R(c), [R(A[0]), R(A[1]), R(A[2])], r, shade, id, keep ? (w) => keep(Ri(w)) : undefined);
+  T.ball = (c, r, ramp, id, keep, bias) => S.ball(R(c), r, ramp, id, keep ? (w) => keep(Ri(w)) : undefined, bias);
+  T.quad = (qd, shade, id) => S.quad([R(qd[0]), R(qd[1]), R(qd[2]), R(qd[3])], shade, id);
+  T.box = (c, A, r, shade, id) => S.box(R(c), [R(A[0]), R(A[1]), R(A[2])], r, shade, id);
+  T.rod = (a, b, r0, r1, ramp, id, keep) => S.rod(R(a), R(b), r0, r1, ramp, id, keep ? (w) => keep(Ri(w)) : undefined);
+  return T;
+}
+
 /** Finish a standing piece: its seams, anchored at (ox, oy); its lights, each a world point, a radius and a colour. */
 export function done(S: Scene, ox: number, oy: number, lights: readonly { at: V3; r: number; color: string; a?: number }[] = []): Sprite {
   S.seams();

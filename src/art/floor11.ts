@@ -26,7 +26,7 @@ import type { Piece } from './floorkit';
 import { hash, mix } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
-import { BLACK, BOTTLE, BRASS, BRONZE, CHAR, CREAM, DEAL, GREENS, IRON, MASK, MUSTARD, OAK, OXBLOOD, PAPER, ROPE, SLATEBLUE, STONE, APPLE, CRUST, HOLE, WATER, cylinder, done, frontPiece, planks, scene, slab } from './act2_kit';
+import { BLACK, BOTTLE, BRASS, BRONZE, CHAR, CREAM, DEAL, GREENS, IRON, MASK, MUSTARD, OAK, OXBLOOD, PAPER, ROPE, SLATEBLUE, STONE, APPLE, CRUST, HOLE, WATER, cylinder, done, frontPiece, planks, scene, slab, turned } from './act2_kit';
 
 const fr = (t: number): number => t - Math.floor(t);
 
@@ -78,8 +78,9 @@ function bolts(S: Scene, x: number, y: number, z: number, id: number): void {
  * through it: a front post snapped and fallen across, the awning torn and hanging in strips from the back
  * beam, the counter split, its goods spilled. Its front looks along +y. 120 x 140 at (60, 112).
  */
-function stall(variant: number, smashed: boolean): Sprite {
-  const S = scene(120, 140, 60, 112);
+function stall(variant: number, smashed: boolean, facing = 0): Sprite {
+  const S0 = scene(120, 140, 60, 112);
+  const S = turned(S0, facing);
   const [STRIPE, PLAIN] = AWNINGS[variant % AWNINGS.length];
   const goods: Goods = (['apples', 'greens', 'bread', 'cloth'] as const)[variant % 4];
   // the counter
@@ -159,7 +160,7 @@ function stall(variant: number, smashed: boolean): Sprite {
       S.quad([top, [top[0] + 4, top[1], top[2]], [top[0] + 5, top[1] + 4, top[2] - len], [top[0] + 1, top[1] + 4, top[2] - len * 0.8]], (_u, v) => (v > 0.9 ? R[1] : R[2]), 72 + k);
     }
   }
-  return done(S, 60, 112);
+  return done(S0, 60, 112);
 }
 
 /**
@@ -211,6 +212,74 @@ function cartBarricade(): Sprite {
   // a sack slumped at its foot
   S.egg([20, 14, 6], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [8, 6, 6], (n, w) => (w[2] > 10 ? toneAt(n, CREAM, -0.2) : toneAt(n, CREAM, -0.05)), 11);
   return done(S, 75, 92);
+}
+
+/** BASKETS OF PRODUCE set out on the ground before a stall: apples, greens, loaves. `spilled`: knocked over, the goods rolled out. 90 x 70 at (45, 52). */
+function produce(spilled: boolean): Sprite {
+  const S = scene(90, 70, 45, 52);
+  if (!spilled) {
+    basket(S, -10, 2, 0, 'apples', 1, 0.4);
+    basket(S, 6, -6, 0, 'greens', 20, 1.1);
+    basket(S, 8, 10, 0, 'bread', 40, 2.3);
+  } else {
+    // one tipped on its side, its apples rolled out; the others trodden flat
+    S.egg([-8, 2, 4], [[0.8, 0.6, 0], [-0.6, 0.8, 0], [0, 0, 1]], [7, 4, 4], (n, w) => (fr((w[0] + w[1]) / 3) < 0.2 ? toneAt(n, ROPE, -0.3) : toneAt(n, ROPE, 0)), 1);
+    for (let k = 0; k < 12; k++) {
+      const a = hash(k, 7, 101) * 1.6 - 0.2;
+      const d = 6 + hash(k, 8, 101) * 20;
+      S.ball([-2 + Math.cos(a) * d, 6 + Math.sin(a) * d * 0.7, 2.1], 2.1, k % 3 ? APPLE : GREENS, 2 + k);
+    }
+    S.egg([10, -6, 1.2], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [8, 6, 1.4], (n) => toneAt(n, ROPE, -0.1), 20);
+  }
+  return done(S, 45, 52);
+}
+
+/** SACKS OF GRAIN slumped against each other. `slit`: one slashed open, its grain run out in a heap. 80 x 70 at (40, 54). */
+function sacks(slit: boolean): Sprite {
+  const S = scene(80, 70, 40, 54);
+  const sack = (x: number, y: number, z: number, tilt: number, id: number, empty = false): void => {
+    S.egg([x, y, z + (empty ? 4 : 9)], [[1, 0, 0], [0, Math.cos(tilt), Math.sin(tilt)], [0, -Math.sin(tilt), Math.cos(tilt)]], [8, 7, empty ? 4 : 10], (n, w) => {
+      if (Math.abs(w[2] - z - 15) < 1 && !empty) return toneAt(n, ROPE, -0.4); // its tie
+      return toneAt(n, CREAM, (hash(Math.floor(w[0]), Math.floor(w[2] / 2), id) - 0.5) * 0.2 - 0.05);
+    }, id);
+  };
+  sack(-8, -2, 0, 0.1, 1);
+  sack(6, -4, 0, -0.15, 2);
+  sack(-1, 8, 0, 0.3, 3, slit);
+  if (slit) {
+    // the grain run out of it in a low heap, its slash dark
+    S.egg([2, 16, 0], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [10, 7, 3], (n) => toneAt(n, ['#3e3220', '#5a4a2a', '#7a6636', '#9a8444', '#b8a058'], 0.1), 4);
+  }
+  return done(S, 40, 54);
+}
+
+/** A HANDCART of the market: a barrow on two wheels, its handles down on the setts, a crate and a sack in it. 100 x 80 at (50, 62). */
+function handcart(): Sprite {
+  const S = scene(100, 80, 50, 62);
+  // its bed, tipped forward onto its handles
+  S.box([0, 0, 12], [[0.97, 0, 0.24], [0, 1, 0], [-0.24, 0, 0.97]], [16, 10, 4], (f, u, v, n) => toneAt(n, DEAL, planks(3)(f, u, v)), 1);
+  for (const y of [-11, 11]) S.box([0, y, 16], [[0.97, 0, 0.24], [0, 1, 0], [-0.24, 0, 0.97]], [16, 1, 4], (_f, _u, _v, n) => toneAt(n, DEAL, 0.05), 2);
+  // its handles to the setts
+  for (const y of [-8, 8]) timber(S, [14, y, 15], [32, y, 2], 1.2, 3);
+  // its wheels, at its back
+  for (const y of [-13, 13]) {
+    const c: V3 = [-6, y, 9];
+    const N = 24;
+    for (let k = 0; k < N; k++) {
+      const a0 = (k / N) * Math.PI * 2;
+      const a1 = ((k + 1) / N) * Math.PI * 2;
+      const P = (a: number, r: number): V3 => [c[0] + Math.cos(a) * r, c[1], c[2] + Math.sin(a) * r];
+      S.quad([P(a0, 7), P(a1, 7), P(a1, 9), P(a0, 9)], () => toneAt([0, Math.sign(y), Math.sin((a0 + a1) / 2)], IRON, 0.1), 4);
+    }
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2;
+      S.rod(c, [c[0] + Math.cos(a) * 7, c[1], c[2] + Math.sin(a) * 7], 0.8, 0.7, OAK, 5);
+    }
+  }
+  // what is in it
+  slab(S, -10, -6, 2, 6, 14, 24, DEAL, 6, 0.1, planks(2));
+  S.egg([6, 0, 22], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [6, 6, 7], (n) => toneAt(n, CREAM, -0.05), 7);
+  return done(S, 50, 62);
 }
 
 // =================================================================================================
@@ -600,9 +669,13 @@ let made: Piece[] | null = null;
 export function gateWardPieces(): Piece[] {
   if (made) return made;
   made = [
-    { name: 'market stall', kind: 'obstacle', frames: [0, 1, 2, 3].map((v) => stall(v, false)), shadow: 0.7 },
-    { name: 'market stall, smashed', kind: 'obstacle', frames: [stall(0, true), stall(2, true)], shadow: 0.6 },
+    // (frames: facing +y, +x, -y and -x, four stalls to each: frame = facing * 4 + stall)
+    { name: 'market stall', kind: 'obstacle', frames: [0, 1, 2, 3].flatMap((k) => [0, 1, 2, 3].map((v) => stall(v, false, k))), shadow: 0.7 },
+    { name: 'market stall, smashed', kind: 'obstacle', frames: [0, 1, 2, 3].flatMap((k) => [stall(0, true, k), stall(2, true, k)]), shadow: 0.6 },
     { name: 'the cart barricade', kind: 'obstacle', frames: [cartBarricade()], shadow: 0.9 },
+    { name: 'baskets of produce', kind: 'breakable', frames: [produce(false), produce(true)], shadow: 0.35 },
+    { name: 'sacks of grain', kind: 'breakable', frames: [sacks(false), sacks(true)], shadow: 0.3 },
+    { name: 'handcart', kind: 'obstacle', frames: [handcart()], shadow: 0.45 },
     { name: "the crier's rostrum", kind: 'obstacle', frames: [rostrum()], shadow: 0.9 },
     { name: 'the notice board', kind: 'obstacle', frames: [noticeBoard()], shadow: 0.4 },
     { name: 'the town well', kind: 'obstacle', frames: [well()], shadow: 0.6 },
