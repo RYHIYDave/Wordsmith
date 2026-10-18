@@ -642,13 +642,41 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
 
   // THE SHAPE OF THE OPEN GROUND
   const fenPool = kind === 'fen' ? poolOf(plan) : null;
+  // (each area's circle and each lane's box, beyond which nothing of it can be: asked first, so that the shape of a long
+  // floor is quick to lay; the shape is the same to the tile)
+  const reachOf = plan.areas.map((a) => radiusOf(a.blob));
+  const boxOf = plan.lanes.map((l) => {
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (const [px, py] of l.pts) {
+      x0 = Math.min(x0, px);
+      y0 = Math.min(y0, py);
+      x1 = Math.max(x1, px);
+      y1 = Math.max(y1, py);
+    }
+    const r = l.w / 2;
+    return [x0 - r, y0 - r, x1 + r, y1 + r] as const;
+  });
   const inside = (x: number, y: number): boolean => {
     if (x >= openW - 2) return false;
     if (behindGate(x, y)) return false;
     if (fenPool && fenPool.pool(x, y)) return false;
-    for (const a of plan.areas) if (blobDist(a.blob, x, y) < 1) return true;
+    for (let i = 0; i < plan.areas.length; i++) {
+      const b = plan.areas[i].blob;
+      const dx = x - b.x;
+      const dy = y - b.y;
+      if (dx * dx + dy * dy >= reachOf[i] * reachOf[i]) continue;
+      if (blobDist(b, x, y) < 1) return true;
+    }
     if (fenPool && fenPool.ring(x, y)) return true;
-    for (const l of plan.lanes) if (laneDist(l, x, y) < l.w / 2) return true;
+    for (let i = 0; i < plan.lanes.length; i++) {
+      const bx = boxOf[i];
+      if (x < bx[0] || y < bx[1] || x > bx[2] || y > bx[3]) continue;
+      const l = plan.lanes[i];
+      if (laneDist(l, x, y) < l.w / 2) return true;
+    }
     return false;
   };
   // THE PINEWOOD'S RIVER, and its bridges where the way crosses it
