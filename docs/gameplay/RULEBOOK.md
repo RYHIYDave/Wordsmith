@@ -7,7 +7,7 @@ levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
 fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
 new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
-change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. The two pictures in the doc are written out here in words. How it was
+change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. The two pictures in the doc are written out here in words. How it was
 found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -186,7 +186,11 @@ Two heroes of the same class differ by the talents they pick and the words in th
   (since Version 20.1): the mage three paths from her rune, for fire, lightning and frost; the
   ranger an arrow with forks; the warrior two swords crossed, Technique and Iron (your answers of
   8 Oct, 15:16, and 9 Oct, 08:06; the trees as the doc “Wordsmith: The Skill Trees” has them, your
-  word of 10 Oct, 01:55: “Go ahead and ship it”).
+  word of 10 Oct, 01:55: “Go ahead and ship it”). Remade in the version after 22.1 so that every
+  talent does something new, not a number: your words of 17 Oct, 11:37 (Eastern): “If you only get
+  one point every five levels, we want them to be more significant than “25% increased _______””;
+  the trees as the page “The Skill Trees, Revised” has them, your words to it of 17 Oct, 19:42 (16:42
+  your time): “Everything looks good”.
 - **Talent points come with levels:** ten, one at every fifth level (your answer of 8 Oct, 15:16:
   “10, one every 5 levels (Recommended)”).
 - **Picks can be undone in town, for gold,** so a new build costs something to try: 10 gold for
