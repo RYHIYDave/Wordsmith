@@ -6,9 +6,9 @@
 import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, CLASSES, FRENZY, GUARD, HEAVY, MANA_MODE, PRECISE, SKILLS, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
-import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
+import type { Attr, BaseWordId, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
 import { RANK_OF } from './types';
-import { MELD_TUNE, RANK_TUNE, isDamageWord, isMeld, isRank, partsOf, rankOf } from './melds';
+import { MELD_TUNE, RANK_TUNE, isDamageWord, isMeld, isRank, partsOf, rankBase, rankOf } from './melds';
 
 const pct = (n: number): string => `${Math.round(n)}%`;
 
@@ -27,9 +27,40 @@ export function socketProblem(group: readonly (WordId | null)[], word: WordId): 
   return null;
 }
 
+/**
+ * NAMES BY ORDER (behind NAME_ORDER, off). The owner, 18 Oct 2026, 09:45: "And if we can, I’d like the
+ * words to change to make the name of the ability to sound cool.  Like if you wanted precise and flame on
+ * the before side, Flaming Precise Strike and Precision Flame Strike are the same, but the wording changes
+ * based on where words are put in the chain." With it on, the first of two words in front takes its
+ * leading form (LEAD_FORM); the word next to the ability's name keeps its own front form, and words
+ * behind read as before. What the attack does is the same in either order.
+ */
+export const NAME_ORDER = { on: false };
+
+/** Each word as it reads first of two in front (a ranked word as its word does). Flaming and Precision are his. */
+export const LEAD_FORM: Readonly<Record<BaseWordId | MeldId, string>> = {
+  // the damage words: "Flaming Precise Strike"
+  power: 'Mighty', fire: 'Flaming', frost: 'Freezing', lightning: 'Crackling', poison: 'Venomous',
+  // the others: "Precision Flame Strike"
+  precise: 'Precision', swift: 'Blitz', twin: 'Echo', leech: 'Vampiric', volatile: 'Ruinous', heavy: 'Crushing', frenzied: 'Berserk', guarding: 'Guardian',
+  // the melded words
+  eruption: 'Erupting', avalanche: 'Glacial', thunder: 'Thundering', blight: 'Blighted', scald: 'Scalding', wildfire: 'Blazing', fumes: 'Noxious', hailstorm: 'Storming', frostbite: 'Frostbitten', contagion: 'Pestilent',
+};
+
+/** A word's leading form: first of two in front. */
+export function leadForm(w: WordId): string {
+  return LEAD_FORM[rankBase(w) as BaseWordId | MeldId];
+}
+
+/** The words in front as the ability's name reads them, in their order: each word and how it reads there. */
+export function frontNames(front: readonly (WordId | null)[]): { w: WordId; text: string }[] {
+  const ws = front.filter((w): w is WordId => w !== null);
+  return ws.map((w, i) => ({ w, text: NAME_ORDER.on && i < ws.length - 1 ? leadForm(w) : WORDS[w].front }));
+}
+
 /** The ability's display name with its words: "Twin Flame Orb of Echoes". */
 export function skillName(def: SkillDef, front: readonly (WordId | null)[], behind: readonly (WordId | null)[]): string {
-  const f = front.filter((w): w is WordId => w !== null).map((w) => WORDS[w].front);
+  const f = frontNames(front).map((p) => p.text);
   const b = behind.filter((w): w is WordId => w !== null).map((w) => WORDS[w].behind.replace(/^of /, ''));
   let name = [...f, def.name].join(' ');
   if (b.length) name += ' of ' + b.join(' and ');

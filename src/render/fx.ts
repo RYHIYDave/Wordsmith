@@ -82,6 +82,48 @@ interface Floater {
   t: number;
   big: boolean;
   drift: number;
+  /** (NAME_RAINBOW) An attack's new name in its pieces, each in its colour, as the inventory writes it. */
+  parts?: readonly NamePart[];
+}
+
+/** A piece of an attack's name and its colour: a word, the attack's own name, or a small "of" or "and" (ui/words.ts, nameParts). */
+export interface NamePart {
+  text: string;
+  color: string;
+  small: boolean;
+}
+
+/**
+ * THE RISING NAME IN ITS COLOURS (off). The owner, 18 Oct 2026, 09:41: "When the name of the ability comes up,
+ * it seems like the color of the whole name changes.  I like it when all the words are their respective rune
+ * color and the word is all rainbowed out". On: the new name that rises from the hero when a word joins an
+ * attack is written as the inventory writes it, each word in its rune's colour, the attack's own name in white
+ * and a small "of" or "and" between; off, the whole name in the colour of the word that joined, as before.
+ */
+export const NAME_RAINBOW = { on: false };
+
+function partsWidth(parts: readonly NamePart[]): number {
+  let w = 0;
+  parts.forEach((p, i) => {
+    w += textWidth(p.text, p.small ? 'small' : 'normal') + (i < parts.length - 1 ? 4 : 0);
+  });
+  return w;
+}
+
+/** A name's pieces in lines no wider than `maxW`; a small "of" or "and" goes down with the word it leads (as ui/words.ts nameLines). */
+function partsLines(parts: readonly NamePart[], maxW: number): NamePart[][] {
+  const lines: NamePart[][] = [];
+  let cur: NamePart[] = [];
+  for (const p of parts) {
+    if (cur.length && partsWidth([...cur, p]) > maxW) {
+      const lead = cur.length > 1 && cur[cur.length - 1].small ? cur.pop() : undefined;
+      lines.push(cur);
+      cur = lead ? [lead] : [];
+    }
+    cur.push(p);
+  }
+  if (cur.length) lines.push(cur);
+  return lines;
 }
 
 interface Ring {
@@ -526,7 +568,7 @@ export class Fx {
   /** How far above the hero's feet things over their head begin, in game pixels (the renderer says, every frame: heroes are not all one height). */
   headroom = 32;
   /** Words slotted and not yet celebrated, and the time until the next one may be. */
-  private joins: { x: number; y: number; word: WordId; name: string }[] = [];
+  private joins: { x: number; y: number; word: WordId; name: string; parts?: readonly NamePart[] }[] = [];
   private joinWait = 0;
   /** Life leeched and not yet shown as a number, and the seconds until it is. */
   private healSum = 0;
@@ -986,11 +1028,11 @@ export class Fx {
    * A word has just been put into an ability: its colour bursts from the hero and the new name rises.
    * Several words slotted in one visit to the panel take their turns, so the names can be read.
    */
-  wordJoined(x: number, y: number, word: WordId, name: string): void {
-    this.joins.push({ x, y, word, name });
+  wordJoined(x: number, y: number, word: WordId, name: string, parts?: readonly NamePart[]): void {
+    this.joins.push({ x, y, word, name, parts });
   }
 
-  private playJoin(x: number, y: number, word: WordId, name: string): void {
+  private playJoin(x: number, y: number, word: WordId, name: string, parts?: readonly NamePart[]): void {
     const hue = WORD_HUE[word];
     const colors = [P.white, hue, hue];
     this.rings.push({ x, y, r: 1.6, t: 0, dur: 0.45, colors, fill: true, heavy: true });
@@ -1000,6 +1042,8 @@ export class Fx {
       this.add({ x: x + Math.cos(a) * 0.5, y: y + Math.sin(a) * 0.5, z: 2, vx: Math.cos(a) * 1.2, vy: Math.sin(a) * 1.2, vz: rnd(50, 110), life: rnd(0.6, 1.1), color: colors[i % 3], size: i % 4 === 0 ? 2 : 1, grav: 50 });
     }
     this.float(x, y, name.toUpperCase(), hue, true, 44);
+    // (NAME_RAINBOW: written in its pieces' colours)
+    if (NAME_RAINBOW.on && parts && parts.length) this.floaters[this.floaters.length - 1].parts = parts;
   }
 
   /** "of Swiftness": wind streams off a hasted hero as they run. */
@@ -1870,8 +1914,8 @@ export class Fx {
     }
     this.joinWait -= real;
     if (this.joins.length && this.joinWait <= 0) {
-      const j = this.joins.shift() as { x: number; y: number; word: WordId; name: string };
-      this.playJoin(j.x, j.y, j.word, j.name);
+      const j = this.joins.shift() as { x: number; y: number; word: WordId; name: string; parts?: readonly NamePart[] };
+      this.playJoin(j.x, j.y, j.word, j.name, j.parts);
       this.joinWait = 0.55;
     }
     // life leeched is shown as one number every so often, not one per hit
@@ -2569,7 +2613,19 @@ export class Fx {
       const x = Math.round(wx(c, f.x, f.y) + f.drift * Math.min(1, f.t * 3));
       const y = Math.round(wy(c, f.x, f.y) - f.z);
       const w = f.big ? textWidth(f.text) : 0;
-      if (w > viewW - 8) {
+      if (f.parts) {
+        // (NAME_RAINBOW: each piece in its colour; as many lines as it needs on a narrow screen, the last
+        // where one line would have been, and kept on the screen whichever side of it the hero stands)
+        const rows = partsLines(f.parts, viewW - 8);
+        rows.forEach((row, i) => {
+          const rw = partsWidth(row);
+          const half = rw / 2 + 4;
+          const cx = rows.length > 1 ? Math.round(viewW / 2) : viewW > 2 * half ? Math.max(half, Math.min(viewW - half, x)) : Math.round(viewW / 2);
+          let px = Math.round(cx - rw / 2);
+          const py = y - (rows.length - 1 - i) * 10;
+          for (const p of row) px += drawText(g, p.text, px, p.small ? py + 3 : py, p.color, { font: p.small ? 'small' : 'normal', shadow: P.ink }) + 4;
+        });
+      } else if (w > viewW - 8) {
         // (an attack's new name with four words on it is wider than a phone held upright: it is
         // written on as many lines as it needs, the last where one line would have been)
         const rows = wrapText(f.text, viewW - 8);

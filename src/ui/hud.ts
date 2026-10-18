@@ -22,7 +22,7 @@ import type { Hero, Level } from '../game/state';
 import { T_FLOOR, T_WALL } from '../game/types';
 import { wordIds } from '../game/melds';
 import type { WordId } from '../game/types';
-import { socketProblem } from '../game/words';
+import { frontNames, socketProblem } from '../game/words';
 import type { Fx } from '../render/fx';
 import type { Art } from '../render/render';
 import { QUEST3 } from '../art/quest3';
@@ -376,12 +376,15 @@ function phrase(h: Hero, s: number, tight: number): Piece[] {
   const fits = (group: readonly (WordId | null)[]): boolean => spare.some((w) => socketProblem(group, w) === null);
   const glowF = fits(sk.front);
   const glowB = fits(sk.behind);
-  const word = (w: WordId, form: 'front' | 'behind', rune: boolean): Piece => {
-    const text = wordForm(w, form);
+  const word = (w: WordId, form: 'front' | 'behind', rune: boolean, as?: string): Piece => {
+    const text = as ?? wordForm(w, form);
     return rune ? { kind: 'rune', text, color: WORD_COLOR[w], w: 12, word: w, glow: false } : { kind: 'word', text, color: WORD_COLOR[w], w: textWidth(text), word: w, glow: false };
   };
   const empty = (glow: boolean): Piece => ({ kind: 'empty', text: '', color: '', w: SLOT_W, word: null, glow });
-  for (const w of sk.front) out.push(w ? word(w, 'front', tight >= 2) : empty(glowF));
+  // (NAMES BY ORDER, game/words.ts: the first of two in front in its leading form, when that is on)
+  const fronts = frontNames(sk.front);
+  let fi = 0;
+  for (const w of sk.front) out.push(w ? word(w, 'front', tight >= 2, fronts[fi++].text.toUpperCase()) : empty(glowF));
   const name = SKILLS[sk.id].name.toUpperCase();
   out.push({ kind: 'name', text: name, color: P.white, w: textWidth(name), word: null, glow: false });
   let first = true;

@@ -70,7 +70,9 @@ import { rollItem } from './game/items';
 import { RNG } from './engine/rng';
 import { CLASS_IDS, MELD_IDS, WORD_IDS } from './game/types';
 import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
-import { Fx, WORD_HUE, wx, wy } from './render/fx';
+import { Fx, NAME_RAINBOW, WORD_HUE, wx, wy } from './render/fx';
+import { NAME_ORDER } from './game/words';
+import { nameParts } from './ui/words';
 import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
 import { PAINTER_MARK, Painter, paintWorkerMain } from './render/painter';
 import { TOPS_CACHE } from './render/tops_cache';
@@ -1373,7 +1375,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (!renderer.dress.stairOpened(g)) more.push({ t: 'burst', x: e.x, y: e.y, r: 2, el: 'phys', style: 'slam' }, { t: 'shake', amount: 6 }, { t: 'sfx', name: 'slam', vol: 0.9 });
       }
       // (words set in the inventory may be moved about before it closes: what came of it is shown then)
-      else if (e.t === 'worded' && panels.open !== 'inv') fx.wordJoined(g.hero.x, g.hero.y, e.word, e.name);
+      else if (e.t === 'worded' && panels.open !== 'inv') {
+        const s = g.hero.skills[e.skill];
+        fx.wordJoined(g.hero.x, g.hero.y, e.word, e.name, s ? nameParts(SKILLS[s.id], s.front, s.behind) : undefined);
+      }
       else if (e.t === 'moveOpen') moveToast = { skill: e.skill, t: 0 };
       // (THE MASTER RUNE-STONE: taken up beside the fallen wordsmith; given to the wordsmith, whose ring powers up)
       else if (e.t === 'quest' && questByRules) QUEST3.takenAt = clock;
@@ -1866,7 +1871,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           const was = invWas[i];
           const now = [...s.front, ...s.behind].filter((w): w is WordId => w !== null);
           if (!was || s.r.name === was.name || !now.length) return;
-          fx.wordJoined(g.hero.x, g.hero.y, now.find((w) => !was.words.includes(w)) ?? now[0], s.r.name);
+          fx.wordJoined(g.hero.x, g.hero.y, now.find((w) => !was.words.includes(w)) ?? now[0], s.r.name, nameParts(SKILLS[s.id], s.front, s.behind));
         });
         invWas = [];
       }
@@ -1973,6 +1978,18 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (RANK II, a mock-up behind RANK2, game/melds.ts) Its switch, for the playtests and pictures. */
     rank2: (on: boolean) => {
       RANK2.on = on;
+    },
+    /** (NAMES BY ORDER, game/words.ts NAME_ORDER; THE RISING NAME IN ITS COLOURS, render/fx.ts NAME_RAINBOW: mock-ups, both off) Their switches, for the pictures. */
+    names: (order: boolean, rainbow: boolean) => {
+      NAME_ORDER.on = order;
+      NAME_RAINBOW.on = rainbow;
+      game?.refresh();
+    },
+    /** A word joining an attack, shown as the game shows it when one is set outside the inventory: the burst and the new name rising. */
+    joined: (skill: number, word: WordId) => {
+      if (!game) return;
+      const s = game.hero.skills[skill];
+      fx.wordJoined(game.hero.x, game.hero.y, word, s.r.name, nameParts(SKILLS[s.id], s.front, s.behind));
     },
     /** ACT 1 (and the bosses of floors 2 to 5): the acts one of them has (game/bosses.ts), for the playtests that have it make one over and over. */
     actsOf: (m: { kind: MonsterKind }) => actsOf(m),

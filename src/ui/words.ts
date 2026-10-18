@@ -6,6 +6,7 @@ import { P } from '../art/palette';
 import { drawText, textWidth } from '../engine/font';
 import { WORDS } from '../game/defs';
 import { rankOf } from '../game/melds';
+import { frontNames } from '../game/words';
 import type { SkillDef } from '../game/defs';
 import type { WordId } from '../game/types';
 import type { Art } from '../render/render';
@@ -74,7 +75,8 @@ const RANK_MARK: readonly string[] = ['', '', 'II', 'III', 'IV', 'V'];
 /** The pieces of an attack's full name, each in its colour: FLAME STRIKE of POWER and RUIN. */
 export function nameParts(def: SkillDef, front: readonly (WordId | null)[], behind: readonly (WordId | null)[]): { text: string; color: string; small: boolean }[] {
   const parts: { text: string; color: string; small: boolean }[] = [];
-  for (const w of front) if (w) parts.push({ text: wordForm(w, 'front'), color: WORD_COLOR[w], small: false });
+  // (NAMES BY ORDER, game/words.ts: the first of two in front in its leading form, when that is on)
+  for (const p of frontNames(front)) parts.push({ text: p.text.toUpperCase(), color: WORD_COLOR[p.w], small: false });
   parts.push({ text: def.name.toUpperCase(), color: P.white, small: false });
   let first = true;
   for (const w of behind) {
