@@ -140,8 +140,8 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
   assert.equal(BOSSES.on, BOSSES5.on, 'the pictures are on just while the rules are (art/bestiary.ts, useFirstFive)');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (the fleshmancer and the cult's two are built on them: art/fleshmancer.ts, art/cultists.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists/.test(f)) continue;
+    // (the fleshmancer and the cult's two are built on them: art/fleshmancer.ts, art/cultists.ts; and the Headsman made new, art/headsman2_moves.ts, a mock-up behind HEADSMAN2, off)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|headsman2/.test(f)) continue;
     // (ACT 1: what the descent's kinds draw on the floor, in the bosses' own way, is the bosses' effects' own: render/act1_fx/, called by render/bossfx.ts)
     if (f.startsWith('render/act1_fx/')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
@@ -330,8 +330,8 @@ test('11. his chains hang from his cuffs and his collar; a broken one is gone fr
 
 test('12. nothing of the game imports the chains or the checks either', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (the fleshmancer, art/fleshmancer.ts, is a mock-up of the same kind, and is reviewed by the checks too: tests/fleshmancer.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells/.test(f)) continue;
+    // (the fleshmancer, art/fleshmancer.ts, is a mock-up of the same kind, and is reviewed by the checks too: tests/fleshmancer.test.ts; and the Headsman made new, art/headsman2_moves.ts: tests/headsman2.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|headsman2/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }

@@ -11,11 +11,14 @@
 //          move:<boss>:<move>[:<scale>], walk:<boss>[:<scale>], death:<boss>[:<scale>]: films (see FILMS, below)
 import { makeGroundArt } from '../art/ground';
 import { spriteOf3 } from '../art/heroes3';
-import { toSprite } from '../art/kit';
+import { hash, toSprite } from '../art/kit';
 import { makeSkeletonArt3 } from '../art/monster_bones3';
 import { makeWardenArt } from '../art/monster_warden';
 import { MOVES3 } from '../art/moves3';
 import { AMALGAM, AM_BURST_AT, AM_BURST_SPOT, AM_BURST_WAY, AM_DEVOUR_HIT, AM_SLAM_HIT, AM_SLAM_SPOTS, AM_SWARM_HIT, AM_SWARM_SPEED, AM_SWIPE_HIT, BB_BITE_HIT, BB_EMERGE_TIME, BONE_BEAST, FLOOR_ARM_FPS, FLOOR_ARM_FRAMES, FLOOR_ARM_SINK, FLOOR_ARM_TIME, SWARM_SKULL_FPS, SWARM_SKULL_FRAMES, amRakeAt, amSwarmSkulls, makeFloorArmArt, makeSwarmSkullArt, AXE_SHOT_FRAMES, BALL_SHOT_FRAMES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_SNAP_BALL, CO_SNAP_L, makeLeftBehindArt, CO_BALL_LAND, CO_BALL_LET, CO_BALL_REACH, CO_HOOK_BACK, CO_HOOK_BITE, CO_HOOK_LET, CO_HOOK_REACH, CO_LASH_HIT, CO_WHIRL_FROM, CO_WHIRL_TO, HEADSMAN, HOOK_SHOT_FRAMES, coBallPath, coCollarAt, coCuffAt, coHookPath, coWhirlReach, makeBallShotArt, makeHookShotArt, HS_CATCH, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SWEEP_FROM, HS_SWEEP_TO, HS_THROW_HIT, axeOf, hsBite, hsSweepReach, makeAxeShotArt } from '../art/bosses3';
+import { H2_FLURRY_HITS, H2_LUNGE_HIT, H2_SHIFT, H2_VAULT, H2_WHEEL, HEADSMAN_2 } from '../art/headsman2_moves';
+import { H2_SLAM, drawVaultMark, drawVaultSlam, drawVaultSlamOver } from '../art/headsman2_shots';
+import { axe2Of } from '../art/headsman2';
 import { SENTENCE_FROM, drawArmCrack, drawAxeShadow, drawBallCrash, drawClawRake, drawBallShadow, drawChainOut, drawChopCrack, drawScrape, drawSentenceLine, drawSentenceSplit, drawSweepRing, drawThrowPath, throwPathAt } from '../art/boss_shots';
 import { drawSkullBurst, drawSkullShadow } from '../art/mob_shots';
 import type { FloorAt } from '../art/mob_shots';
@@ -139,6 +142,7 @@ function pane(x: number, y: number, w: number, h: number, S: number, who: Readon
 }
 
 const BOSSES: Record<string, { mob: Mob; title: string; short: string; walkSaid?: string; struckSaid?: string; deathSaid?: string }> = {
+  headsman2: { mob: HEADSMAN_2, title: 'The Headsman, made new', short: 'The new Headsman' },
   headsman: { mob: HEADSMAN, title: 'The Headsman', short: 'The Headsman', walkSaid: 'His walk: slow and heavy, his axe across him', struckSaid: 'Struck: he barely gives', deathSaid: 'His hood falls empty' },
   chained: { mob: CHAINED, title: 'The Chained One', short: 'The Chained One', walkSaid: 'His walk: a starved giant’s lurching shamble, his chains dragging, the ball scraping behind him', struckSaid: 'Struck: he jerks back from it, his chains rattling', deathSaid: 'His chains drag him down' },
   chained1: { mob: CHAINED_FREED[1], title: 'The Chained One, his left chain off', short: 'His left chain off', walkSaid: 'His walk, his left chain off', struckSaid: 'Struck', deathSaid: 'His chains drag him down' },
@@ -255,6 +259,39 @@ if (mode === 'sheet') {
   text(who.title, PAD, 12, 26, '#ffd866', 700);
   text('a boss of dungeons 2 to 4. A mock-up: not in the game', PAD, 44, 16, '#cfc8ff', 600);
   row(row1, 70, S, PAD, W);
+  win.__ready = true;
+}
+
+if (mode === 'redo') {
+  // THE HEADSMAN MADE NEW, FOR HIS LOOK: redo[:<scale>]: the first Headsman beside the new one, facing you and away, and
+  // under them the new one in three pictures of how he might move (his guard spun, darting aside, a lunge)
+  const S = Number(parts[1]) || 2;
+  const PAD = 14;
+  const NEW = HEADSMAN_2;
+  const row1 = [
+    { sp: KNIGHT(), name: 'The knight', line: 'a hero, for size', shadow: 12, gold: false },
+    { sp: spOf(HEADSMAN, 'stand', 0, 'front'), name: 'The Headsman', line: 'as he is in the game', shadow: HEADSMAN.shadow, gold: false },
+    { sp: spOf(NEW, 'stand', 0, 'front'), name: 'Made new', line: 'facing you', shadow: NEW.shadow, gold: true },
+    { sp: spOf(NEW, 'stand', 0, 'back'), name: 'Made new', line: 'facing away', shadow: NEW.shadow, gold: true },
+  ];
+  const row2 = [
+    { sp: spOf(NEW, 'attack', 0.3, 'front'), name: 'The lunge', line: 'coiled', shadow: NEW.shadow, gold: true },
+    { sp: spOf(NEW, 'attack', 0.6, 'front'), name: 'The lunge', line: 'the blow', shadow: NEW.shadow, gold: true },
+    { sp: spOf(NEW, 'walk', 0.2, 'front'), name: 'His prowl', line: 'low and quick', shadow: NEW.shadow, gold: true },
+  ];
+  const W = Math.max(900, widthOf(row1, S, PAD), widthOf(row2, S, PAD));
+  const hOf = (list: { sp: Sprite }[]): number => {
+    const [, , up, down] = reachAll(list.map((f) => f.sp));
+    return (up + down + 14) * S + 50;
+  };
+  cv.width = W;
+  cv.height = 70 + hOf(row1) + 16 + hOf(row2) + PAD;
+  g.fillStyle = BG;
+  g.fillRect(0, 0, cv.width, cv.height);
+  text('The Headsman, made new', PAD, 12, 26, '#ffd866', 700);
+  text('lean and quick in a long coat, a long axe spun like a staff. A mock-up: not in the game', PAD, 44, 16, '#cfc8ff', 600);
+  const h1 = row(row1, 70, S, PAD, W);
+  row(row2, 70 + h1 + 16, S, PAD, W);
   win.__ready = true;
 }
 
@@ -382,6 +419,8 @@ function drawPlaced(S: number, fx0: number, fy0: number, list: ReadonlyArray<Pla
     for (const l of p.sp.lights ?? []) light(l);
   }
 }
+/** Where a figure's picture, and his light and shadow, are drawn from the pane's floor point (screen pixels): see `filmPane`. */
+const PANE_SHIFT: { sprite: [number, number]; shadow: [number, number] } = { sprite: [0, 0], shadow: [0, 0] };
 function filmPane(x: number, y: number, w: number, h: number, S: number, fx0: number, fy0: number, sp: Sprite, shadow: number, under?: (c: CanvasRenderingContext2D) => void, over?: (c: CanvasRenderingContext2D) => void, by = 0, away = false, props: ReadonlyArray<Sprite> = [], placed: { behind: ReadonlyArray<Placed>; before: ReadonlyArray<Placed> } = { behind: [], before: [] }): void {
   g.save();
   g.beginPath();
@@ -405,34 +444,37 @@ function filmPane(x: number, y: number, w: number, h: number, S: number, fx0: nu
   g.fillStyle = 'rgba(6,4,14,0.55)';
   g.fillRect(x, y, w, h);
   g.globalCompositeOperation = 'destination-out';
-  const lit = g.createRadialGradient(fx0, fy0 - 24 * S, 0, fx0, fy0 - 24 * S, Math.max(60, (shadow + 70) * S));
+  // (a figure that the move itself carries across the floor, or that the game has moved on: his light, his shadow and his picture drawn where he is, the floor where it was: PANE_SHIFT)
+  const [lx0, ly0] = [fx0 + PANE_SHIFT.shadow[0], fy0 + PANE_SHIFT.shadow[1]];
+  const lit = g.createRadialGradient(lx0, ly0 - 24 * S, 0, lx0, ly0 - 24 * S, Math.max(60, (shadow + 70) * S));
   lit.addColorStop(0, 'rgba(0,0,0,0.6)');
   lit.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = lit;
   g.fillRect(x, y, w, h);
   g.globalCompositeOperation = 'source-over';
   if (under) inGamePixels(x, y, w, h, fx0, fy0, S, under);
-  const sh = g.createRadialGradient(fx0, fy0, 0, fx0, fy0, shadow * S);
+  const sh = g.createRadialGradient(lx0, ly0, 0, lx0, ly0, shadow * S);
   sh.addColorStop(0, 'rgba(0,0,0,0.62)');
   sh.addColorStop(0.65, 'rgba(0,0,0,0.42)');
   sh.addColorStop(1, 'rgba(0,0,0,0)');
   g.save();
-  g.translate(fx0, fy0);
+  g.translate(lx0, ly0);
   g.scale(1, 0.5);
-  g.translate(-fx0, -fy0);
+  g.translate(-lx0, -ly0);
   g.fillStyle = sh;
   g.beginPath();
-  g.arc(fx0, fy0, shadow * S, 0, Math.PI * 2);
+  g.arc(lx0, ly0, shadow * S, 0, Math.PI * 2);
   g.fill();
   g.restore();
   // (what lies on the floor where he stands, painted as he is: a broken chain left behind)
   g.imageSmoothingEnabled = false;
   for (const p of props) g.drawImage(p.img, Math.round(fx0 - p.ax * 2 * S), Math.round(fy0 - p.ay * 2 * S), p.img.width * S, p.img.height * S);
   drawPlaced(S, fx0, fy0, placed.behind);
-  drawAura(g, sp, fx0, fy0, 2 * S);
+  const [sx0, sy0] = [fx0 + PANE_SHIFT.sprite[0], fy0 + PANE_SHIFT.sprite[1]];
+  drawAura(g, sp, sx0, sy0, 2 * S);
   g.imageSmoothingEnabled = false;
-  g.drawImage(sp.img, Math.round(fx0 - sp.ax * 2 * S), Math.round(fy0 - sp.ay * 2 * S), sp.img.width * S, sp.img.height * S);
-  drawLights(g, sp, fx0, fy0, 2 * S);
+  g.drawImage(sp.img, Math.round(sx0 - sp.ax * 2 * S), Math.round(sy0 - sp.ay * 2 * S), sp.img.width * S, sp.img.height * S);
+  drawLights(g, sp, sx0, sy0, 2 * S);
   drawPlaced(S, fx0, fy0, placed.before);
   if (over) inGamePixels(x, y, w, h, fx0, fy0, S, over);
   g.restore();
@@ -835,6 +877,129 @@ function beastFilms(): Record<string, FilmOf> {
   };
 }
 const FILMS: Record<string, () => Record<string, FilmOf>> = { headsman: headsmanFilms, chained: chainedFilms, chained1: chainedFilms, chained2: chainedFilms, amalgam: amalgamFilms, beast: beastFilms };
+
+if (mode === 'h2') {
+  // THE HEADSMAN MADE NEW, A MOVE AS THE GAME WOULD PLAY IT: h2:<move>[:<scale>]: he stands; makes the move
+  // (held a tenth of a second at each blow: the game's freeze); and stands again, where the move has taken him
+  // (the game moves him there as it ends: H2_SHIFT). Facing you, and facing away.
+  const mob = HEADSMAN_2;
+  const which = parts[1] || 'attack';
+  const S = Number(parts[2]) || 2;
+  const FPS = 30;
+  // (the game held still a tenth of a second at each blow; the vault's slam longer, and the screen kicked: art/headsman2_shots.ts H2_SLAM)
+  const HOLD = which === 'vault' ? H2_SLAM.freeze : 0.1;
+  const long = lastKey(mob, which);
+  const heavy: number[] = which === 'attack' ? [H2_LUNGE_HIT] : which === 'flurry' ? [...H2_FLURRY_HITS] : which === 'vault' ? [H2_VAULT.hit] : [];
+  const said = (m: number): string => {
+    if (which === 'attack') return m < 0.26 ? 'The lunge: coiling, the axe swung back low behind him' : m < H2_LUNGE_HIT - 0.1 ? 'The lunge: held, the edge glinting' : m < H2_LUNGE_HIT + 0.3 ? 'The lunge: a long stride, the blade hooking across at full reach' : 'The lunge: springing back into his guard';
+    if (which === 'flurry') return m < 0.22 ? 'The flurry: the axe cocked high behind him' : m < 0.48 ? 'The flurry: held, the edge glinting' : m < H2_FLURRY_HITS[1] - 0.2 ? 'The flurry: a dart forward and left, the first cut' : m < H2_FLURRY_HITS[2] - 0.2 ? 'The flurry: round and over, a dart right, the second' : m < H2_FLURRY_HITS[2] + 0.3 ? 'The flurry: round and over, a dart on, the third, down' : 'The flurry: up out of it, into his guard';
+    if (which === 'wheel') return m < 0.24 ? 'The blade wheel: the axe raised upright before him' : m < H2_WHEEL.spin ? 'The blade wheel: held, the edge glinting' : m < H2_WHEEL.slow ? 'The blade wheel: spun before him, driving forward' : 'The blade wheel: slowing, and back into his guard';
+    if (which === 'vault') return m < 0.24 ? 'The vault: the spike driven into the floor' : m < H2_VAULT.off ? 'The vault: crouched behind it, the edge glinting (the spot is marked, as wide as the slam)' : m < H2_VAULT.top - 0.04 ? 'The vault: up the haft' : m < H2_VAULT.free - 0.02 ? 'The vault: up on his hand on top of it' : m < H2_VAULT.land ? 'The vault: over, the axe torn out, flipping' : m < H2_VAULT.hit ? 'The vault: landing, and down with it' : m < H2_VAULT.hit + 0.5 ? 'The vault: THE SLAM' : 'The vault: wrenched out, into his guard';
+    if (which === 'dashL' || which === 'dashR') return `A dash to his ${which === 'dashL' ? 'left' : 'right'}`;
+    if (which === 'dying') return 'His hood falls empty';
+    if (which === 'reel') return 'Struck';
+    return which;
+  };
+  const moveT = (t: number): number => {
+    let m = t - 0.5;
+    for (const h of heavy) if (m > h) m = m < h + HOLD ? h : m - HOLD;
+    return m;
+  };
+  const after = 0.5 + long + heavy.length * HOLD;
+  const ROUND = after + 0.9;
+  const TICKS = Math.round(ROUND * FPS);
+  const sh = H2_SHIFT[which] ?? [0, 0];
+  const standAt = (t: number, from: number): number => Math.floor(Math.max(0, t - from) * mob.idleFps + 1e-6) / mob.idleFps;
+  /** The picture at a moment, and where the figure stands (tiles before him and to his left: his hips' place on the floor, during the move; where the game has moved him, after). */
+  const frameOf = (view: GameView, t: number): { sp: Sprite; at: [number, number]; moved: [number, number] } => {
+    const m = moveT(t);
+    if (m < 0) return { sp: spOf(mob, 'stand', standAt(t, 0), view), at: [0, 0], moved: [0, 0] };
+    if (m > long) return which === 'dying' ? { sp: spOf(mob, 'die', long, view), at: [0, 0], moved: [0, 0] } : { sp: spOf(mob, 'stand', standAt(t, after), view), at: [sh[0], sh[1]], moved: [sh[0], sh[1]] };
+    const pel = skeletonAt(mob, which, m).pelvis;
+    return { sp: which === 'dying' ? spOf(mob, 'die', m, view) : spOf(mob, which, m, view), at: [pel[0] / TILE3, pel[1] / TILE3], moved: [0, 0] };
+  };
+  const toScreen = (view: GameView, fwd: number, left: number): [number, number] => {
+    const [x, y] = floorOf(paintViewOf(mob, view), fwd, left);
+    return [(x - y) * 32 * S, (x + y) * 16 * S];
+  };
+  const all: Sprite[] = [];
+  for (let i = 0; i < TICKS; i += 3) for (const v of ['front', 'back'] as const) all.push(frameOf(v, i / FPS).sp);
+  const [l, r, u, d] = reachAll(all);
+  const PAD = 10;
+  const M = 30;
+  // (where the vault's blade bites: the spot the game marks)
+  const spot = (() => {
+    const q = posedOfMob(mob, 'vault', H2_VAULT.hit);
+    const e = axe2Of(skeletonAt(mob, 'vault', H2_VAULT.hit), q).edge;
+    return [e[0] / TILE3, e[1] / TILE3] as const;
+  })();
+  // (each pane holds him where he starts and where he ends, and, for the vault, the whole of the slam round the spot: its corners, on the screen, from his floor point)
+  const boxOf = (view: GameView): [number, number, number, number] => {
+    const [gx, gy] = toScreen(view, sh[0], sh[1]);
+    let [x0, x1, y0, y1] = [-l * S + Math.min(0, gx), r * S + Math.max(0, gx), -u * S + Math.min(0, gy), d * S + Math.max(0, gy)];
+    if (which === 'vault') {
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const [px, py] = toScreen(view, spot[0] + Math.cos(a) * (H2_SLAM.reach + 0.3), spot[1] + Math.sin(a) * (H2_SLAM.reach + 0.3));
+        x0 = Math.min(x0, px);
+        x1 = Math.max(x1, px);
+        y0 = Math.min(y0, py - 60 * S);
+        y1 = Math.max(y1, py);
+      }
+    }
+    return [x0, x1, y0, y1];
+  };
+  const boxes = { front: boxOf('front'), back: boxOf('back') };
+  const cw = Math.max(...Object.values(boxes).map((b) => b[1] - b[0])) + 2 * M * S;
+  const ch = Math.max(...Object.values(boxes).map((b) => b[3] - b[2])) + 2 * M * S;
+  const HEAD = 58;
+  cv.width = PAD + 2 * (cw + PAD);
+  cv.height = HEAD + ch + 34;
+  /** The screen's kick at the slam (the film's moment `t`): its pixels across and down. */
+  const kick = (t: number): [number, number] => {
+    if (which !== 'vault') return [0, 0];
+    const k = t - (0.5 + H2_VAULT.hit);
+    if (k < 0 || k > H2_SLAM.freeze + H2_SLAM.shakeFor) return [0, 0];
+    const after = Math.max(0, k - H2_SLAM.freeze);
+    const left = Math.max(0, 1 - after / H2_SLAM.shakeFor);
+    const n = Math.floor(k * 30);
+    return [(hash(n, 1, 107) - 0.5) * 2 * H2_SLAM.shake * left * S, (hash(n, 2, 107) - 0.5) * 2 * H2_SLAM.shake * left * S];
+  };
+  filmPage(TICKS, FPS, (tick) => {
+    const t = tick / FPS;
+    const m = moveT(t);
+    g.fillStyle = BG;
+    g.fillRect(0, 0, cv.width, cv.height);
+    text(m >= 0 && m <= long ? `The Headsman: ${said(m)}` : 'The Headsman, made new', PAD, 8, 17, '#ffd866', 700);
+    text('a mock-up: not in the game. What each blow hurts, and how far, are the main chat’s rules', PAD, 32, 14, '#cfc8ff', 600);
+    for (const [j, view] of (['front', 'back'] as const).entries()) {
+      const x = PAD + j * (cw + PAD);
+      // (his floor point placed so that where he goes stays in the pane: facing you he comes down the picture, facing away up it)
+      const [kx, ky] = kick(t);
+      const fx0 = x + M * S - boxes[view][0] + kx;
+      const fy0 = HEAD + M * S - boxes[view][2] + ky;
+      const f = frameOf(view, t);
+      const [ax, ay] = toScreen(view, f.at[0], f.at[1]);
+      const [mx, my] = toScreen(view, f.moved[0], f.moved[1]);
+      PANE_SHIFT.shadow = [ax, ay];
+      PANE_SHIFT.sprite = [mx, my];
+      // (the slam's time: from the blow, the freeze counted in, as the game would show it)
+      const slamT = t - 0.5 - H2_VAULT.hit;
+      const [sx, sy] = floorOf(paintViewOf(mob, view), spot[0], spot[1]);
+      const [fx, fy] = floorOf(paintViewOf(mob, view), spot[0] + 1, spot[1]);
+      const mark = which === 'vault' && m >= H2_VAULT.warnFrom && slamT < 0 ? (c: CanvasRenderingContext2D) => {
+        drawVaultMark(c, ISO, sx, sy, Math.max(0, Math.min(1, (m - H2_VAULT.warnFrom) / (H2_VAULT.hit - H2_VAULT.warnFrom))), m);
+      } : which === 'vault' && slamT >= 0 ? (c: CanvasRenderingContext2D) => {
+        drawVaultSlam(c, ISO, sx, sy, fx - sx, fy - sy, slamT);
+      } : undefined;
+      const flung = which === 'vault' && slamT >= 0 ? (c: CanvasRenderingContext2D) => drawVaultSlamOver(c, ISO, sx, sy, slamT) : undefined;
+      filmPane(x, HEAD, cw, ch, S, fx0, fy0, f.sp, mob.shadow, mark, flung);
+      PANE_SHIFT.shadow = [0, 0];
+      PANE_SHIFT.sprite = [0, 0];
+      text(view === 'front' ? 'facing you' : 'facing away', x + cw / 2, HEAD + ch + 6, 15, '#e8e2ff', 600, 'center');
+    }
+  });
+}
 
 if (mode === 'move') {
   const who = BOSSES[parts[1] || 'headsman'] ?? BOSSES.headsman;

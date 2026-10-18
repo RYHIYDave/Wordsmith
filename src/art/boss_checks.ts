@@ -60,13 +60,19 @@ export interface CheckThing {
   r: number;
   may?: ReadonlyArray<string>;
 }
-/** One move handing over to another: from this move at this moment (`'end'`: its last), to that one at that moment, he being then `mob` (if he has changed: a chain broken). */
+/**
+ * One move handing over to another: from this move at this moment (`'end'`: its last), to that one at that
+ * moment, he being then `mob` (if he has changed: a chain broken); `shift`, where the game has moved him to
+ * as the one hands over to the next (his own lengths, forward and to his left: a dash, a move that ends
+ * where he has driven to), the next drawn there.
+ */
 export interface Handover {
   from: string;
   at: number | 'end';
   to: string;
   toAt: number;
   mob?: Mob;
+  shift?: readonly [number, number];
 }
 /** One of his arms at a moment: where it comes out of him, its elbow and its hand. */
 export interface CheckArm {
@@ -458,8 +464,11 @@ export function checkBoss(mob: Mob, shape: BossShape, moves: ReadonlyArray<strin
     if (!moves.includes(h.from) && !moves.includes(h.to)) continue;
     const froms = h.from === 'stand' ? stands : [h.at === 'end' ? longOf(mob, h.from) : h.at];
     const b = skeletonAt(h.mob ?? mob, h.to, h.toAt);
-    const pb = pointsAt(h.mob ?? mob, h.to, h.toAt, b);
-    const thB = (h.mob ? (shape.thingsOf?.(h.mob) ?? shape.things) : shape.things)?.(h.to, h.toAt, b, posedOfMob(h.mob ?? mob, h.to, h.toAt)) ?? [];
+    // (where the game has moved him to, if it has, as the one hands over to the next)
+    const by: V3 = h.shift ? [h.shift[0], h.shift[1], 0] : [0, 0, 0];
+    const moved = (p: V3): V3 => add(p, by);
+    const pb = Object.fromEntries(Object.entries(pointsAt(h.mob ?? mob, h.to, h.toAt, b)).map(([k, p]) => [k, moved(p)]));
+    const thB = ((h.mob ? (shape.thingsOf?.(h.mob) ?? shape.things) : shape.things)?.(h.to, h.toAt, b, posedOfMob(h.mob ?? mob, h.to, h.toAt)) ?? []).map((x) => ({ ...x, pts: x.pts.map(moved) }));
     let worst = 0;
     let worstAt = froms[0];
     const carried = new Map<string, { by: number; t: number }>();

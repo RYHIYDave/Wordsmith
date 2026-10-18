@@ -67,7 +67,7 @@ const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
  * hips turned `yaw` degrees that lean `fwd` forward and `aside` to their right, and a chest turned
  * `twist` further that leans `more` forward again: the bones' pitch, roll, bend and side.
  */
-function leaning(yaw: number, fwd: number, more: number, twist = 0, aside = 0): P {
+export function leaning(yaw: number, fwd: number, more: number, twist = 0, aside = 0): P {
   const tip = (F: number, A: number, th: number): [number, number] => {
     // (the way up it is tipped to: `F` toward its facing `th`, `A` to its right; as pitch and roll on the figure's axes)
     const f = F * D;
@@ -108,7 +108,7 @@ export interface Plant {
   on?: 'toe' | 'heel';
 }
 /** The bones' fields for a foot put down so (`lift`: that far above the floor). */
-function footOn(B: Build, side: 'L' | 'R', p: Plant, lift = 0): P {
+export function footOn(B: Build, side: 'L' | 'R', p: Plant, lift = 0): P {
   const pitch = p.pitch ?? 0;
   const o = footOff(B, p.on ?? 'toe', p.turn, pitch);
   const fx = p.at[0] - o[0];
@@ -117,7 +117,7 @@ function footOn(B: Build, side: 'L' | 'R', p: Plant, lift = 0): P {
   return side === 'L' ? { lfx: fx, lfy: fy, lfz: fz, lfp: pitch, lft: p.turn } : { rfx: fx, rfy: fy, rfz: fz, rfp: pitch, rft: p.turn };
 }
 /** Where a foot stands in a pose (what the pose does not say, as `rest` has it): its toe's spot (or its heel's), turned and tipped as it is. */
-function plantOf(B: Build, side: 'L' | 'R', pose: P, rest: Bones, on: 'toe' | 'heel' = 'toe'): Plant {
+export function plantOf(B: Build, side: 'L' | 'R', pose: P, rest: Bones, on: 'toe' | 'heel' = 'toe'): Plant {
   const q = { ...rest, ...pose } as Bones;
   const L = side === 'L';
   const turn = L ? q.lft : q.rft;
@@ -126,13 +126,13 @@ function plantOf(B: Build, side: 'L' | 'R', pose: P, rest: Bones, on: 'toe' | 'h
   return { at: [(L ? q.lfx : q.rfx) + o[0], (L ? q.lfy : q.rfy) + (L ? 1 : -1) * B.stance + o[1]], turn, pitch, on };
 }
 /** The same foot, the same spot under it, held on its other end (its heel's spot for its toe's, as it lies). */
-function heldBy(B: Build, side: 'L' | 'R', p: Plant, on: 'toe' | 'heel'): Plant {
+export function heldBy(B: Build, side: 'L' | 'R', p: Plant, on: 'toe' | 'heel'): Plant {
   if ((p.on ?? 'toe') === on) return p;
   const pose = footOn(B, side, p);
   return plantOf(B, side, pose, {} as Bones, on);
 }
 /** A plant moved along the floor (`dx` forward, `dy` to the left) and turned further (`dt` degrees): where a foot steps to. */
-function plantBy(p: Plant, dx: number, dy: number, dt = 0, more: Partial<Plant> = {}): Plant {
+export function plantBy(p: Plant, dx: number, dy: number, dt = 0, more: Partial<Plant> = {}): Plant {
   return { ...p, at: [p.at[0] + dx, p.at[1] + dy], turn: p.turn + dt, ...more };
 }
 /** One thing a foot does: from `t0` to `t1` it steps (lifted `lift` high at the top: a step) or turns where it stands (`lift` 0: on its ball or heel, the spot under it staying), and is then down `to`. */
@@ -160,7 +160,7 @@ export interface FootTrack {
  * before them, a little in toward its middle; its hips over them, leaning `lean` degrees forward of
  * upright (0, kneeling up; near 90, lying on its face). The bones' fields for its hips and its legs.
  */
-function kneelHips(B: Build, rest: Bones, feet: Record<'L' | 'R', Plant>, tuck: number, kneeZ: number, lean: number): P {
+export function kneelHips(B: Build, rest: Bones, feet: Record<'L' | 'R', Plant>, tuck: number, kneeZ: number, lean: number): P {
   const f: V3 = [Math.cos(rest.yaw * D), Math.sin(rest.yaw * D), 0];
   const l: V3 = [-f[1], f[0], 0];
   const side = (sd: 'L' | 'R'): { k: V3; a: V3; h: V3 } => {
@@ -186,7 +186,7 @@ function kneelHips(B: Build, rest: Bones, feet: Record<'L' | 'R', Plant>, tuck: 
   return { px: hip[0], py: hip[1], pz: hip[2] - (B.ankle + B.shank + B.thigh), lk, lkUp, rk, rkUp };
 }
 /** A pose on its knees let down (or held up) until its lower knee rests on the floor, its feet up on their toes where they stand. */
-function kneelSettle(B: Build, rest: Bones, pose: P, feet: Record<'L' | 'R', Plant>, tuck: number, kneeZ: number): P {
+export function kneelSettle(B: Build, rest: Bones, pose: P, feet: Record<'L' | 'R', Plant>, tuck: number, kneeZ: number): P {
   const ft: P = { ...footOn(B, 'L', { ...feet.L, pitch: tuck }), ...footOn(B, 'R', { ...feet.R, pitch: tuck }) };
   const lowKnee = (pz: number): number => {
     const s = solve(B, { ...rest, ...pose, ...ft, pz } as Posed);
@@ -201,7 +201,7 @@ function kneelSettle(B: Build, rest: Bones, pose: P, feet: Record<'L' | 'R', Pla
   }
   return { ...pose, pz: (lo + hi) / 2 };
 }
-const smooth01 = (u: number): number => {
+export const smooth01 = (u: number): number => {
   const k = clamp01(u);
   return k * k * (3 - 2 * k);
 };
@@ -211,7 +211,7 @@ const smooth01 = (u: number): number => {
  * down onto the next (it goes forward on a slow start and a slow end while it is up: so a foot never
  * moves along the floor while it touches it); a turn where it stands keeps the spot under it.
  */
-function footwork(B: Build, tracks: Partial<Record<'L' | 'R', FootTrack>>, carry = 0): (t: number) => P {
+export function footwork(B: Build, tracks: Partial<Record<'L' | 'R', FootTrack>>, carry = 0): (t: number) => P {
   // (`carry`: the game carrying him on along his forward at this pace while the move plays: a foot's spots are on the floor, which goes back under him)
   const back = (p: Plant, t: number): Plant => (carry ? { ...p, at: [p.at[0] - carry * t, p.at[1]] } : p);
   const footOnAt = (side: 'L' | 'R', p: Plant, t: number, lift = 0): P => footOn(B, side, back(p, t), lift);
@@ -2937,7 +2937,7 @@ function coHaltFeet(): (t: number) => P {
   }, CO_GROUND);
 }
 /** A pose part way from one to another (every number mixed; which hand holds what, the nearer's). */
-function between(a: P, b: P, k: number, rest: Bones = CO_REST): P {
+export function between(a: P, b: P, k: number, rest: Bones = CO_REST): P {
   const out: Record<string, unknown> = {};
   for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
     const va = (a as Record<string, unknown>)[key] ?? (rest as unknown as Record<string, unknown>)[key];
