@@ -1,0 +1,356 @@
+// Dev page: FLOOR 11, THE GATE WARD, its ground painted by the game-ready painter (art/terrain.ts, the look
+// art/gateward.ts) from a level's own tiles, for the owner to look at. Nothing of the game imports it.
+//
+// The tiles are laid here by hand, as the game's map-maker might lay a stretch of the Gate Ward (how the real
+// floor is laid is the main chat's): a lane coming in from the left, opening into a market square; a lane down
+// out of it toward the eye, an alley up out of it, a street off to the right; two houses that can be walked
+// into (a shop off the lane, a tavern off the square), whole from the street, their shells fading away once
+// the hero is inside (his word, 18 Oct).
+//
+//   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_shot.png 1014 468 shot
+//     one phone screen (the game's 507 x 234 game pixels at 2 picture pixels each), the knight and the cult's
+//     stragglers standing in it, with the dusk's light as the game would lay it
+//   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_inside.png 1014 468 inside
+//     the same, the hero inside the tavern, its shell faded away
+//   node tools/page_gif.mjs src/dev/preview_gateward.ts film previews/gw_walk_in.gif
+//     a film: the hero runs from the square into the tavern, its front and roof fading away as he goes in
+//   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_tiles.png 1014 468 tiles
+//     the same with the tiles the game walks by drawn over it
+//   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_close.png 1014 664 close
+//     close-ups at three times
+//   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_cost.png 600 200 cost
+//     what painting it costs, a piece of 256 x 256 picture pixels at a time
+
+import { makeDaggerCultistArt3 } from '../art/cultists';
+import { GW_ZONE, gateWardLook, gateWardPaintFloor, houseShell } from '../art/gateward';
+import type { GWHouse, HouseShell } from '../art/gateward';
+import { spriteOf3 } from '../art/heroes3';
+import { MOVES3 } from '../art/moves3';
+import { P } from '../art/palette';
+import { HHP, HWP, paintTerrain, pictureOf, terrainOf } from '../art/terrain';
+import type { Terrain } from '../art/terrain';
+import { drawText } from '../engine/font';
+import type { Sprite } from '../engine/px';
+import { T_FLOOR, T_WALL } from '../game/types';
+import type { Floor } from '../game/types';
+import { THEME } from '../ui/ui';
+
+const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
+const PW = HASH === 'cost' ? 600 : 1014;
+const PH = HASH === 'close' ? 664 : HASH === 'cost' ? 200 : 468;
+
+// ---------------------------------------------------------------------------------------------------
+// THE STRETCH OF THE GATE WARD, in tiles
+
+const W = 44;
+const H = 44;
+type Rect = [number, number, number, number]; // x0, y0, x1, y1 (x1, y1 not in it)
+const STREETS: Rect[] = [
+  [3, 19, 20, 22], // the lane in from the left (along x)
+  [22, 23, 25, 40], // the lane down out of the square, toward the eye (along y)
+  [26, 3, 28, 13], // the alley up out of it
+  [30, 15, 43, 18], // the street off to the right
+];
+const SQUARE: Rect = [20, 13, 30, 23];
+const SQUARES = [{ x: 25, y: 18, r: 3.1 }];
+/** Houses that can be walked into: a shop off the lane, a tavern off the square. */
+const HOUSES: GWHouse[] = [
+  { room: [9, 14, 15, 18], front: { along: 'x', at: 18, door: [11, 13] } },
+  { room: [21, 8, 26, 12], front: { along: 'x', at: 12, door: [23, 25] } },
+];
+
+const inR = (r: Rect, x: number, y: number): boolean => x >= r[0] && x < r[2] && y >= r[1] && y < r[3];
+
+// the tiles as the game walks them: streets, the square, each house's room and doorway
+const tiles = new Uint8Array(W * H).fill(T_WALL);
+const zone = new Uint8Array(W * H);
+for (let y = 0; y < H; y++) {
+  for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    if (STREETS.some((r) => inR(r, x, y))) tiles[i] = T_FLOOR;
+    if (inR(SQUARE, x, y)) {
+      tiles[i] = T_FLOOR;
+      zone[i] = GW_ZONE.Square;
+    }
+    for (const h of HOUSES) {
+      if (inR(h.room as Rect, x, y) || (y === h.front.at && x >= h.front.door[0] && x < h.front.door[1])) {
+        tiles[i] = T_FLOOR;
+        zone[i] = GW_ZONE.Room;
+      }
+    }
+  }
+}
+const FLOOR = { depth: 11, seed: 11, w: W, h: H, tiles, cut: new Uint8Array(W * H), variant: new Uint8Array(W * H), rooms: [], start: { x: 0, y: 0 } } as unknown as Floor;
+const LAND = { floor: FLOOR, zone: (tx: number, ty: number) => zone[ty * W + tx], squares: SQUARES, houses: HOUSES };
+const LOOK = gateWardLook(LAND, 'open');
+const T: Terrain = terrainOf(gateWardPaintFloor(LAND, 'open'), LOOK);
+const TC: Terrain = terrainOf(gateWardPaintFloor(LAND, 'closed'), gateWardLook(LAND, 'closed'));
+const SHELLS: HouseShell[] = HOUSES.map((h) => houseShell(T, TC, h, paintTerrain));
+/** Is the hero in this house (its room or its doorway)? */
+const insideOf = (h: GWHouse, x: number, y: number): boolean =>
+  (x >= h.room[0] && x < h.room[2] && y >= h.room[1] && y < h.room[3]) || (Math.floor(y) === h.front.at && x >= h.front.door[0] && x < h.front.door[1]);
+
+// the camera: whoever it follows in the middle of the screen
+const HERO: [number, number] = [21.6, 19.6];
+let VX = 0;
+let VY = 0;
+function camOn(x: number, y: number): void {
+  const [cx, cy] = pictureOf(x, y);
+  VX = Math.round(cx - 507);
+  VY = Math.round(cy - 250);
+}
+camOn(HERO[0], HERO[1]);
+
+/** Paint the world's picture under the panel, in pieces of `piece` pixels (so that the seams are checked too). */
+function paintPanel(g: CanvasRenderingContext2D, x0: number, y0: number, w: number, h: number, piece = 256): void {
+  for (let py = 0; py < h; py += piece) {
+    for (let px = 0; px < w; px += piece) {
+      const pw = Math.min(piece, w - px);
+      const ph = Math.min(piece, h - py);
+      const p = paintTerrain(T, x0 + px, y0 + py, pw, ph);
+      g.putImageData(new ImageData(p.rgba, pw, ph), px, py);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------
+// The figures, as the game draws them, each with its soft shadow
+
+const knight = spriteOf3(MOVES3.rear, 0, 'front');
+const cultist = makeDaggerCultistArt3();
+function drawAt(g: CanvasRenderingContext2D, sp: Sprite, sx: number, sy: number): void {
+  g.drawImage(sp.img, Math.round(sx - sp.ax * 2), Math.round(sy - sp.ay * 2), sp.w * 2, sp.h * 2);
+}
+function standAt(g: CanvasRenderingContext2D, sp: Sprite, x: number, y: number, r: number): void {
+  const [sx0, sy0] = pictureOf(x, y);
+  const sx = sx0 - VX;
+  const sy = sy0 - VY;
+  g.fillStyle = 'rgba(14, 10, 24, 0.4)';
+  g.beginPath();
+  g.ellipse(sx, sy, r * 2, r * 0.9, 0, 0, Math.PI * 2);
+  g.fill();
+  drawAt(g, sp, sx, sy);
+}
+
+/** The dusk as the game would lay it over an outdoor floor (render.ts `light`, game/act1.ts's numbers): a thin tint, the hero's pool, the vignette. */
+function dusk(g: CanvasRenderingContext2D): void {
+  const DARK = 0.14;
+  const TINT = [26, 16, 40];
+  const VIG = 0.3;
+  const c = document.createElement('canvas');
+  c.width = PW;
+  c.height = PH;
+  const d = c.getContext('2d') as CanvasRenderingContext2D;
+  d.fillStyle = `rgba(${TINT[0]},${TINT[1]},${TINT[2]},${DARK})`;
+  d.fillRect(0, 0, PW, PH);
+  g.drawImage(c, 0, 0);
+  // the vignette: as render.ts draws it, from half way out to the corners
+  const grd = g.createRadialGradient(PW / 2, PH / 2, 0.5 * Math.hypot(PW, PH) / 2 / Math.SQRT2, PW / 2, PH / 2, Math.hypot(PW, PH) / 2);
+  grd.addColorStop(0, 'rgba(6,4,14,0)');
+  grd.addColorStop(1, `rgba(6,4,14,${VIG})`);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, PW, PH);
+}
+
+function nameAndMap(g: CanvasRenderingContext2D, hero: [number, number] = HERO): void {
+  g.save();
+  g.scale(2, 2);
+  drawText(g, 'The Gate Ward', 4, 3, THEME.text, { shadow: P.ink });
+  g.restore();
+  const [mx, my, mw, mh] = [437 * 2 + 3, 4 * 2 + 3, 66 * 2 - 6, 46 * 2 - 6];
+  g.fillStyle = '#100e22';
+  g.fillRect(mx, my, mw, mh);
+  const k = 0.11;
+  for (let yy = 0; yy < mh; yy += 2) {
+    for (let xx = 0; xx < mw; xx += 2) {
+      const a = (xx - mw / 2) / (HWP * k);
+      const b = (yy - mh / 2) / (HHP * k);
+      const x = hero[0] + (a + b) / 2;
+      const y = hero[1] + (b - a) / 2;
+      const tx = Math.floor(x);
+      const ty = Math.floor(y);
+      if (tx >= 0 && ty >= 0 && tx < W && ty < H && tiles[ty * W + tx] === T_FLOOR) {
+        g.fillStyle = '#5b55c7';
+        g.fillRect(mx + xx, my + yy, 2, 2);
+      }
+    }
+  }
+  g.fillStyle = '#28dcf0';
+  g.fillRect(mx + mw / 2 - 2, my + mh / 2 - 2, 4, 4);
+}
+
+function show(cvs: HTMLCanvasElement): void {
+  document.body.style.margin = '0';
+  document.body.style.background = '#0d1030';
+  document.body.appendChild(cvs);
+  (window as unknown as { __ready: boolean }).__ready = true;
+}
+
+const cvs = document.createElement('canvas');
+cvs.width = PW;
+cvs.height = PH;
+cvs.style.display = 'block';
+const g = cvs.getContext('2d') as CanvasRenderingContext2D;
+g.imageSmoothingEnabled = false;
+
+const FOES: [number, number][] = [
+  [26.5, 16.2],
+  [27.6, 19.3],
+  [24.2, 14.6],
+];
+
+
+// ---------------------------------------------------------------------------------------------------
+// A SCENE AS THE GAME WOULD DRAW IT: the ground; whoever stands inside a house; each house's shell over them,
+// faded as far as it has faded; whoever stands outside; the dusk.
+
+/** Each shell as a picture, once. */
+const SHELL_PICS = SHELLS.map((sh) => {
+  const c = document.createElement('canvas');
+  c.width = sh.w;
+  c.height = sh.h;
+  (c.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(sh.rgba, sh.w, sh.h), 0, 0);
+  return c;
+});
+
+interface Scene {
+  hero: [number, number];
+  heroSprite: Sprite;
+  cam: [number, number];
+  /** How far each house's shell shows (1 whole, 0 gone). */
+  shown: number[];
+  tiles?: boolean;
+}
+
+function drawScene(g: CanvasRenderingContext2D, sc: Scene): void {
+  camOn(sc.cam[0], sc.cam[1]);
+  paintPanel(g, VX, VY, PW, PH);
+  if (sc.tiles) drawTiles(g);
+  const figs: [Sprite, number, number, number][] = [...FOES.map(([x, y]) => [cultist.front.idle[0], x, y, 8] as [Sprite, number, number, number]), [sc.heroSprite, sc.hero[0], sc.hero[1], 9]];
+  figs.sort((a, b) => a[1] + a[2] - (b[1] + b[2]));
+  const inAny = (x: number, y: number): boolean => HOUSES.some((h) => insideOf(h, x, y));
+  for (const [sp, x, y, r] of figs) if (inAny(x, y)) standAt(g, sp, x, y, r);
+  SHELLS.forEach((sh, i) => {
+    const a = sc.shown[i];
+    if (a <= 0.01) return;
+    g.globalAlpha = a;
+    g.drawImage(SHELL_PICS[i], sh.x0 - VX, sh.y0 - VY);
+    g.globalAlpha = 1;
+  });
+  for (const [sp, x, y, r] of figs) if (!inAny(x, y)) standAt(g, sp, x, y, r);
+  if (!sc.tiles) dusk(g);
+  nameAndMap(g, sc.hero);
+}
+
+function drawTiles(g: CanvasRenderingContext2D): void {
+  g.lineWidth = 1;
+  for (let ty = 0; ty < H; ty++) {
+    for (let tx = 0; tx < W; tx++) {
+      const i = ty * W + tx;
+      const front = HOUSES.some((h) => ty === h.front.at && tx >= h.room[0] && tx < h.room[2]);
+      if (tiles[i] !== T_FLOOR && !front) continue;
+      const pts: [number, number][] = [[tx, ty], [tx + 1, ty], [tx + 1, ty + 1], [tx, ty + 1]];
+      g.strokeStyle = tiles[i] !== T_FLOOR ? 'rgba(255, 120, 90, 0.8)' : zone[i] === GW_ZONE.Room ? 'rgba(255, 220, 90, 0.7)' : 'rgba(255, 255, 255, 0.4)';
+      g.beginPath();
+      pts.forEach(([x, y], n) => {
+        const [sx, sy] = pictureOf(x, y);
+        if (n) g.lineTo(sx - VX + 0.5, sy - VY + 0.5);
+        else g.moveTo(sx - VX + 0.5, sy - VY + 0.5);
+      });
+      g.closePath();
+      g.stroke();
+    }
+  }
+}
+
+/** THE FILM: he runs from the square up into the tavern; its shell fades as he goes in (a third of a second), and he stands inside. */
+const FILM_N = 40;
+const FILM_MS = 80;
+const RUN_FROM: [number, number] = [23.9, 16.6];
+const RUN_TO: [number, number] = [23.7, 9.9];
+const RUN_FRAMES = 26;
+const FADE_S = 0.3;
+function filmScene(k: number): Scene {
+  const t = Math.min(1, k / RUN_FRAMES);
+  const hero: [number, number] = [RUN_FROM[0] + (RUN_TO[0] - RUN_FROM[0]) * t, RUN_FROM[1] + (RUN_TO[1] - RUN_FROM[1]) * t];
+  // how far each shell shows: fading while he is inside, coming back while he is not
+  const shown = HOUSES.map(() => 1);
+  for (let j = 0; j <= k; j++) {
+    const tj = Math.min(1, j / RUN_FRAMES);
+    const hy = RUN_FROM[1] + (RUN_TO[1] - RUN_FROM[1]) * tj;
+    const hx = RUN_FROM[0] + (RUN_TO[0] - RUN_FROM[0]) * tj;
+    HOUSES.forEach((h, i) => {
+      if (j === 0) return;
+      const step = FILM_MS / 1000 / FADE_S;
+      shown[i] = insideOf(h, hx, hy) ? Math.max(0, shown[i] - step) : Math.min(1, shown[i] + step);
+    });
+  }
+  const moving = k < RUN_FRAMES;
+  const sp = moving ? spriteOf3(MOVES3.krun, (k * FILM_MS) / 1000, 'back') : spriteOf3(MOVES3.rear, ((k - RUN_FRAMES) * FILM_MS) / 1000, 'back');
+  // the camera follows him, as the game's does
+  return { hero, heroSprite: sp, cam: hero, shown };
+}
+
+if (HASH === 'shot' || HASH === 'tiles') {
+  drawScene(g, { hero: HERO, heroSprite: knight, cam: HERO, shown: HOUSES.map(() => 1), tiles: HASH === 'tiles' });
+  show(cvs);
+} else if (HASH === 'inside') {
+  const hero: [number, number] = [23.6, 9.8];
+  drawScene(g, { hero, heroSprite: knight, cam: hero, shown: HOUSES.map((h) => (insideOf(h, hero[0], hero[1]) ? 0 : 1)) });
+  show(cvs);
+} else if (HASH === 'film') {
+  const w = window as unknown as { __frames: number; __tickMs: number; __frame: (k: number) => string };
+  w.__frames = FILM_N;
+  w.__tickMs = FILM_MS;
+  w.__frame = (k) => {
+    drawScene(g, filmScene(k));
+    return cvs.toDataURL('image/png');
+  };
+  drawScene(g, filmScene(0));
+  show(cvs);
+} else if (HASH === 'close') {
+  const spots: [string, number, number][] = [
+    ['A stone house', 440, 40],
+    ['The square', 560, 230],
+    ['A lane', 200, 330],
+    ['The tavern, walked into', 700, 60],
+    ['A row of timber houses', 90, 250],
+    ['The roofs', 430, 380],
+  ];
+  const SC = 3;
+  const cw = 330;
+  const ch = 300;
+  spots.forEach(([name, sx, sy], n) => {
+    const cx = (n % 3) * (cw + 8);
+    const cy = Math.floor(n / 3) * (ch + 30) + 24;
+    const w = Math.floor(cw / SC);
+    const h = Math.floor(ch / SC);
+    const p = paintTerrain(T, VX + sx, VY + sy, w, h);
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    (c.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(p.rgba, w, h), 0, 0);
+    g.drawImage(c, cx, cy, w * SC, h * SC);
+    g.save();
+    g.scale(2, 2);
+    drawText(g, name, cx / 2, (cy - 20) / 2, THEME.text, { shadow: P.ink });
+    g.restore();
+  });
+  show(cvs);
+} else if (HASH === 'cost') {
+  const N = 6;
+  const t0 = performance.now();
+  for (let k = 0; k < N; k++) paintTerrain(T, VX + k * 256, VY, 256, 256);
+  const ms = (performance.now() - t0) / N;
+  const t1 = performance.now();
+  terrainOf(gateWardPaintFloor(LAND, 'open'), LOOK);
+  const fieldMs = performance.now() - t1;
+  g.fillStyle = '#0d1030';
+  g.fillRect(0, 0, PW, PH);
+  g.save();
+  g.scale(2, 2);
+  drawText(g, `a piece 256 x 256: ${ms.toFixed(1)} ms`, 6, 6, THEME.text, { shadow: P.ink });
+  drawText(g, `the field, a floor ${W} x ${H}: ${fieldMs.toFixed(1)} ms`, 6, 20, THEME.text, { shadow: P.ink });
+  g.restore();
+  show(cvs);
+}
