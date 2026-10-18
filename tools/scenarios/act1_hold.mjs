@@ -54,6 +54,13 @@ export default async function (page, snap) {
   const opened = await page.evaluate(() => window.__dbg.game().level.holds[0]);
   log('open', JSON.stringify(opened));
   if (!opened.open) log('!! the door did not open');
+  // (ALTAR_GOES, on since his yes of 17 Oct: the altar is gone once the door is open)
+  const altar = await page.evaluate(() => {
+    const g = window.__dbg.game(); const q = g.level.land.holds[0];
+    return { on: window.__dbg.looks.ALTAR_GOES.on, there: g.level.props.some((p) => p.kind === 'piece' && p.name === 'the altar of the words' && p.tx === q.gx && p.ty === q.gy + 1) };
+  });
+  log('altar', JSON.stringify(altar));
+  if (altar.on && altar.there) log('!! the altar still stands with the door open');
   await snap('d_door_open');
   // (into the door)
   await page.evaluate(([gx, gy]) => { const g = window.__dbg.game(); g.hero.x = gx - 0.5; g.hero.y = gy + 0.4; }, info.gate);
