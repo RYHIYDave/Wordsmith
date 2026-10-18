@@ -423,7 +423,8 @@ function crCrowd(): Motion {
 
 const DIE_FEET = ((): Record<'L' | 'R', Plant> => ({ L: plantBy(L0, R0.at[0] - L0.at[0] + 6 * K, 0), R: R0 }))();
 const TUCK = 58;
-const KNEE_DOWN = B.legR[1] * 1.05;
+// (his knee down on the floor: the turned-down top of his boot resting on it)
+const KNEE_DOWN = B.legR[1] * 1.48;
 const kneeling = (lean: number, body: P): P => kneelSettle(B, R, { ...kneelHips(B, R, DIE_FEET, TUCK, KNEE_DOWN, lean), ...body }, DIE_FEET, TUCK, KNEE_DOWN);
 const HANG = -(B.upperArm + B.foreArm) * 0.9;
 /** His arms hanging at his sides, clear of his coat and his belly. */
