@@ -564,7 +564,8 @@ export type ActId =
  * arms of the dead bursting up, skulls and shards in flight, a ring of hands, a scorch. (What is his
  * while he makes an act, the line a blow will fall on, an axe in flight, is drawn from the act itself.)
  */
-export type PerilKind = 'crack' | 'split' | 'crash' | 'left' | 'arm' | 'skull' | 'shard' | 'wave' | 'ring' | 'scorch' | 'act1';
+/** ('slam': THE HEADSMAN MADE NEW, his vault's slam on the floor, game/bosses.ts HEADSMAN2_FIGHT.) */
+export type PerilKind = 'crack' | 'split' | 'crash' | 'left' | 'arm' | 'skull' | 'shard' | 'wave' | 'ring' | 'scorch' | 'act1' | 'slam';
 export interface Peril {
   kind: PerilKind;
   /** Where (tiles), and the way it lies or flies. */

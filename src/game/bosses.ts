@@ -84,6 +84,8 @@ export const CARRY_FOR = 0.7;
 export function gaitOf(kind: MonsterKind): GaitDef | null {
   const r = ACT1.on ? act1Rules(kind) : null;
   if (r) return r.gait;
+  // (THE HEADSMAN MADE NEW: his prowl, low and quick)
+  if (kind === 'headsman' && HEADSMAN2_FIGHT.on && BOSSES5.on) return H2_GAIT;
   return BOSSES5.on && kind in GAITS ? GAITS[kind as GaitedKind] : null;
 }
 
@@ -201,6 +203,8 @@ export const ACTS: Record<GaitedKind, readonly ActDef[]> = {
 export function actsOf(m: { kind: MonsterKind }): readonly ActDef[] | null {
   const r = ACT1.on ? act1Rules(m.kind) : null;
   if (r) return r.acts;
+  // (THE HEADSMAN MADE NEW: his four attacks and his dashes)
+  if (m.kind === 'headsman' && HEADSMAN2_FIGHT.on && BOSSES5.on) return H2_ACTS;
   return BOSSES5.on && m.kind in ACTS ? ACTS[m.kind as GaitedKind] : null;
 }
 export function actDef(m: { kind: MonsterKind; act?: { id: ActId } }): ActDef | null {
@@ -223,6 +227,46 @@ export const HEADSMAN = {
   /** The whirling throw: it leaves his hand at `let` and is caught at `back`; from and to where (tiles before him, to his left); how far out its loop goes at the least, and at the most for a hero who stands far off; how near it must pass to harm. */
   axe: { let: 0.8, back: 2.3, from: [0.499, -0.902] as const, to: [0.752, -1.061] as const, far: 4.2, most: 9, wide: 1.35, r: 0.75, warnFrom: 0.4 },
 };
+
+/**
+ * THE HEADSMAN MADE NEW (floor 2's boss). The owner, 17 Oct 2026, 11:37: "I’d like the headsman completely redesigned to be
+ * sleeker and more agile." Drawn new by the art chat with his yes (mockup/headsman-redo; his picks by 15:55: "Lean, with a
+ * long axe (Recommended)", "Darting dashes", "All new attacks"; to his four attacks by 17:51, "Yes, these four
+ * (Recommended)"); and of its vault, by 19:45: "Bigger for sure, much bigger aoe on the hit with more force". His fight is
+ * the rules': `on` with the art's switch (art/headsman2.ts HEADSMAN2), the two held together (tests/headsman2_rules.test.ts,
+ * which holds these numbers to the art's own). Where his blade is at each blow, measured off his pictures: tiles before him
+ * and to the left he is drawn with.
+ *   THE LUNGE, his basic blow: the blade comes round low from his right (`from`, radians to his left of his way) to his left
+ *     (`to`), at full reach; what is within `reach` of him there at `hit` is struck.
+ *   THE FLURRY: three darts, a cut at each (`cuts`: when, where the edge is, how hard); what is within `r` of the edge is
+ *     struck; the third bites the floor.
+ *   THE BLADE WHEEL: he drives on behind the axe spun before him, the wheel's middle `ahead` tiles before him as he goes; from
+ *     `hit` to `stop`, what is within `r` of it is struck every `every` seconds at most.
+ *   THE VAULT: the spot, `spot` before him, is marked from `warnFrom`; at `hit` the slam strikes all within `reach` of it
+ *     (the art's H2_SLAM.reach, his "much bigger aoe"), `dmg` times his blow, and throws them `knock` steps ("more force").
+ *   THE DASHES: a quick bound `far` tiles to his left or his right. The moves that carry him end where he has gone (`shift`:
+ *     tiles forward and to his left, as the art's H2_SHIFT), and he is moved there as each ends.
+ */
+export const HEADSMAN2_FIGHT = {
+  on: false,
+  lunge: { long: 1.5, hit: 0.6, reach: 3.7, from: -1.5, to: 1.3 },
+  flurry: { long: 2.38, r: 1.3, cuts: [[0.62, 3.419, 2.17, 0.7], [1.08, 4.029, -2.111, 0.7], [1.54, 5.513, -0.019, 1.0]] as ReadonlyArray<readonly [number, number, number, number]> },
+  wheel: { long: 2.36, hit: 0.8, stop: 1.86, every: 11 / 30, from: 0.6, to: 1.7, drive: 2.5, ahead: 0.97, r: 1.5, warnFrom: 0.24 },
+  vault: { long: 2.5, hit: 1.44, warnFrom: 0.26, spot: [6.121, -0.102] as const, reach: 2.5, dmg: 1.8, knock: 2.2, shake: 7, slam: 1.8 },
+  dash: { long: 0.5, far: 1.5 },
+  shift: { 'h2:dashL': [0, 1.5], 'h2:dashR': [0, -1.5], 'h2:flurry': [2.2963966338592297, 0], 'h2:wheel': [2.5, 0], 'h2:vault': [3.061862178478973, 0] } as Readonly<Record<string, readonly [number, number]>>,
+};
+/** (HEADSMAN2_FIGHT) His prowl: the art's pace and pictures (art/headsman2_moves.ts H2_PACE, its walk, H2_SET_OFF, H2_HALT); no axe to take up. */
+export const H2_GAIT: GaitDef = { pace: 1.6, cycle: 10 / 15, setOff: 0.34064691833451377, halt: 0.4073135850011804, raise: 0, lower: 0, stopAt: 2.6, slack: 0.6, trueBack: true };
+/** (HEADSMAN2_FIGHT) His acts: the biggest ready one he is in reach of is made (the vault, then the wheel, the flurry, a dash, the lunge). */
+export const H2_ACTS: readonly ActDef[] = [
+  { id: 'h2:lunge', clip: 'attack', long: 1.5, hit: 0.6, dmg: 1, cooldown: 0, first: 0, after: 0.4, near: 0, far: 3.4 },
+  { id: 'h2:dashL', clip: 'dashL', long: 0.5, hit: 0.5, dmg: 0, cooldown: 4.5, first: 2, after: 0.15, near: 0, far: 7 },
+  { id: 'h2:dashR', clip: 'dashR', long: 0.5, hit: 0.5, dmg: 0, cooldown: 4.5, first: 3.5, after: 0.15, near: 0, far: 7 },
+  { id: 'h2:flurry', clip: 'flurry', long: 2.38, hit: 0.62, dmg: 0.7, cooldown: 8, first: 3, after: 0.5, near: 2.2, far: 6.2 },
+  { id: 'h2:wheel', clip: 'wheel', long: 2.36, hit: 0.8, dmg: 0.5, cooldown: 9, first: 5, after: 0.5, near: 0, far: 3.8 },
+  { id: 'h2:vault', clip: 'vault', long: 2.5, hit: 1.44, dmg: 1.8, cooldown: 11, first: 6, after: 0.6, near: 3.7, far: 8.4 },
+];
 
 /** THE CHAINED ONE. */
 export const CHAINED = {
@@ -521,6 +565,8 @@ export class BossRules {
       if (r1 && r1.can && !r1.can(this, m, a, dist, los)) continue;
       // (the Chained One, free of the ball, has none to throw)
       if (a.id === 'ball' && (m.form ?? 0) >= 2) continue;
+      // (THE HEADSMAN MADE NEW: a move that carries him only where the floor lets him go)
+      if (a.id in HEADSMAN2_FIGHT.shift && !this.h2Clear(m, a)) continue;
       if (a.id === 'raise') {
         if (this.called(m) > FLESHMANCER.raise.most - 1) continue;
       } else if (a.id === 'miniRaise') {
@@ -580,6 +626,13 @@ export class BossRules {
     m.act = { id: a.id, t: 0, n: this.serial++, hand: handOf(G.trueBack, m.fx, m.fy), a: 0, b: 0, x: h.x, y: h.y };
     const act = m.act;
     if (a.id === 'axe') act.a = Math.max(HEADSMAN.axe.far, Math.min(HEADSMAN.axe.most, dist + 0.7));
+    else if (a.id === 'h2:vault') {
+      // (THE HEADSMAN MADE NEW: where his blade will come down, marked from his warning on)
+      const p = beside(m.x, m.y, m.fx, m.fy, act.hand, HEADSMAN2_FIGHT.vault.spot[0], HEADSMAN2_FIGHT.vault.spot[1]);
+      act.x = p.x;
+      act.y = p.y;
+      g.sfx('bossRoar', 0.5);
+    }
     else if (a.id === 'hook') act.a = Math.max(3.5, Math.min(CHAINED.hook.most, dist + 0.6));
     else if (a.id === 'ball') {
       const p = beside(m.x, m.y, m.fx, m.fy, act.hand, CHAINED.ball.reach, 0);
@@ -620,6 +673,19 @@ export class BossRules {
     const G = gaitOf(m.kind)!;
     const swift = 1 - 0.3 * wordShare(m, 'swift');
     const i = m.move ?? -1;
+    // (THE HEADSMAN MADE NEW: a move that carries him ends where he has gone: he is moved there; and his dashes share a wait)
+    const shift = HEADSMAN2_FIGHT.shift[a.id];
+    if (shift && m.act) {
+      const p = beside(m.x, m.y, m.fx, m.fy, m.act.hand, shift[0], shift[1]);
+      if (this.walkable(p.x, p.y)) {
+        m.x = p.x;
+        m.y = p.y;
+      }
+    }
+    if ((a.id === 'h2:dashL' || a.id === 'h2:dashR') && m.moveCd) {
+      const other = (actsOf(m) ?? []).findIndex((b) => b.id === (a.id === 'h2:dashL' ? 'h2:dashR' : 'h2:dashL'));
+      if (other >= 0) m.moveCd[other] = Math.max(m.moveCd[other], 2);
+    }
     m.state = 'chase';
     m.anim = 'idle';
     m.animT = 0;
@@ -653,6 +719,35 @@ export class BossRules {
     m.move = -1;
     m.gait = { mode: G && G.raise > 0 ? 'carry' : 'stand', t: 0 };
     if (this.g.hero.held && m.kind === 'chained') this.g.hero.held = 0;
+  }
+
+  /** Whether a monster may stand at (x, y): its tile is one to walk on. */
+  private walkable(x: number, y: number): boolean {
+    const L = this.g.level;
+    const tx = Math.floor(x);
+    const ty = Math.floor(y);
+    return tx >= 0 && ty >= 0 && tx < L.floor.w && ty < L.floor.h && L.walk[ty * L.floor.w + tx] === 1;
+  }
+
+  /** (HEADSMAN2_FIGHT) Whether the move `a` that carries the Headsman has a clear way, made now toward the hero: every step of it on floor he may walk. */
+  private h2Clear(m: Monster, a: ActDef): boolean {
+    const sh = HEADSMAN2_FIGHT.shift[a.id];
+    if (!sh) return true;
+    const h = this.g.hero;
+    const d = Math.hypot(h.x - m.x, h.y - m.y);
+    const fx = d > 0.01 ? (h.x - m.x) / d : m.fx;
+    const fy = d > 0.01 ? (h.y - m.y) / d : m.fy;
+    const hand = handOf(gaitOf(m.kind)?.trueBack ?? true, fx, fy);
+    const to = beside(m.x, m.y, fx, fy, hand, sh[0], sh[1]);
+    const n = Math.max(2, Math.ceil(Math.hypot(to.x - m.x, to.y - m.y) / 0.25));
+    for (let k = 1; k <= n; k++) {
+      const x = m.x + ((to.x - m.x) * k) / n;
+      const y = m.y + ((to.y - m.y) * k) / n;
+      if (!this.walkable(x, y)) return false;
+    }
+    // (room to stand where he lands)
+    for (const [ox, oy] of [[0.35, 0], [-0.35, 0], [0, 0.35], [0, -0.35]]) if (!this.walkable(to.x + ox, to.y + oy)) return false;
+    return true;
   }
 
   /** What one of them does to the hero with a blow of its own, `mult` times its blow. */
@@ -748,6 +843,62 @@ export class BossRules {
             this.blow(m, a.dmg);
           }
         }
+        break;
+      }
+      // ----- THE HEADSMAN MADE NEW (HEADSMAN2_FIGHT)
+      case 'h2:lunge': {
+        if (!at(a.hit)) break;
+        const L = HEADSMAN2_FIGHT.lunge;
+        const r = this.rel(m);
+        // (the blade comes round low before him, from his right to his left, at full reach)
+        const bearing = Math.atan2(r.left, r.fwd);
+        if (Math.hypot(r.fwd, r.left) <= L.reach && bearing >= L.from && bearing <= L.to) this.blow(m, a.dmg);
+        g.sfx('swing', 0.9);
+        break;
+      }
+      case 'h2:flurry': {
+        const F = HEADSMAN2_FIGHT.flurry;
+        F.cuts.forEach(([T, fwd, left, k], j) => {
+          if (!at(T)) return;
+          const e = here(fwd, left);
+          if (Math.hypot(h.x - e.x, h.y - e.y) <= F.r) this.blow(m, k);
+          g.sfx('swing', 0.8);
+          // (the third, the heaviest, bites the floor: its chips are in his picture)
+          if (j === F.cuts.length - 1) {
+            g.emit({ t: 'shake', amount: 3 });
+            g.sfx('slam', 0.7);
+          }
+        });
+        break;
+      }
+      case 'h2:wheel': {
+        const W = HEADSMAN2_FIGHT.wheel;
+        if (at(W.from)) g.sfx('swing', 0.9);
+        if (t1 < W.hit || t0 >= W.stop) break;
+        // (the wheel goes on before him as he drives on behind it)
+        const k = Math.max(0, Math.min(1, (t1 - W.from) / (W.to - W.from)));
+        const c = here(W.ahead + W.drive * k, 0);
+        if (Math.hypot(h.x - c.x, h.y - c.y) > W.r) break;
+        // (each time the blade comes round: no more than one blow in `every`)
+        if (act.b > 0 && t1 - act.a < W.every) break;
+        act.b++;
+        act.a = t1;
+        this.blow(m, a.dmg);
+        g.sfx('hit', 0.6);
+        break;
+      }
+      case 'h2:vault': {
+        const V = HEADSMAN2_FIGHT.vault;
+        if (!at(a.hit)) break;
+        // (THE SLAM: everything within its reach of the spot struck, hard, and thrown)
+        if (Math.hypot(h.x - act.x, h.y - act.y) <= V.reach + TUNE.heroRadius * 0.5) {
+          this.blow(m, V.dmg);
+          g.knockHero(act.x, act.y, V.knock);
+        }
+        this.peril(m, 'slam', act.x, act.y, { dur: V.slam });
+        g.emit({ t: 'shake', amount: V.shake });
+        g.sfx('slam', 1);
+        g.sfx('explode', 0.6);
         break;
       }
       // ----- THE CHAINED ONE

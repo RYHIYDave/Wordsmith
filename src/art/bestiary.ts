@@ -27,6 +27,8 @@ import type { ActorArt, AnimSet } from './actor_types';
 import { BOSSES, makeAmalgamArt3, makeBoneBeastArt3, makeChainedArt3, makeHeadsmanArt3 } from './bosses3';
 import { CULTISTS_SWITCH, makeDaggerCultistArt3, makeMiniFleshmancerArt3 } from './cultists';
 import { FLESHMANCER_SWITCH, makeFleshmancerArt3 } from './fleshmancer';
+import { HEADSMAN2 } from './headsman2';
+import { makeHeadsman2Art } from './headsman2_moves';
 import { CRAWL_OUT } from './mkit';
 import { makeBatArt } from './monster_bat';
 import { makeArcherArt, makeSkeletonArt } from './monster_bones';
@@ -260,7 +262,8 @@ export function makeBestiary(): Bestiary {
         // THE FIRST FIVE FLOORS: the bosses, the beast and the mini fleshmancer at their pictures' own
         // paces (the rules carry them by a clock of their own: game/bosses.ts, Monster.gait); the dagger
         // cultist's run at the pace the rules give him
-        : figure === 'headsman' ? makeHeadsmanArt3()
+        // (THE HEADSMAN MADE NEW: his new look and moves, with HEADSMAN2 on: art/headsman2.ts)
+        : figure === 'headsman' ? (HEADSMAN2.on ? makeHeadsman2Art() : makeHeadsmanArt3())
         : figure === 'chained' ? makeChainedArt3(undefined, 0)
         : figure === 'chained1' ? makeChainedArt3(undefined, 1)
         : figure === 'chained2' ? makeChainedArt3(undefined, 2)

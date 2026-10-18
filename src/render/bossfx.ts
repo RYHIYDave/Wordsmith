@@ -19,13 +19,14 @@ import { MINI_FIRE_SIZE, miniFireAt } from '../art/cultists';
 import { FM_HAND_FPS, FM_HAND_FRAMES, FM_HAND_KINDS, FM_HAND_TIME, fmMouthAt, makeRingHandArt } from '../art/fleshmancer';
 import { FM_FIRE_SIZE, drawBoneShard, drawFireStream, drawHandCrack, drawRaiseGlow, drawScorch, drawShardBreak, drawShardShadow, drawSlamWave } from '../art/fm_spells';
 import type { FireSize } from '../art/fm_spells';
+import { H2_SLAM, drawVaultMark, drawVaultSlam, drawVaultSlamOver } from '../art/headsman2_shots';
 import { drawAimLine, drawSkullBurst, drawSkullShadow } from '../art/mob_shots';
 import type { FloorAt } from '../art/mob_shots';
 import { TILE3, handAt } from '../art/new_mobs3';
 import type { GameView } from '../art/skin';
 import { flipSprite } from '../engine/px';
 import type { Sprite } from '../engine/px';
-import { AMALGAM, CHAINED, FLESHMANCER, GAITS, HEADSMAN, MINIFM, actClock, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
+import { AMALGAM, CHAINED, FLESHMANCER, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, actClock, actDef, axeAt, fireTurn, hookAt, inGap, ringHand } from '../game/bosses';
 import type { GaitedKind } from '../game/bosses';
 import { backView, beside, flipped } from '../game/facing';
 import type { Game } from '../game/game';
@@ -132,6 +133,12 @@ export class BossFx {
           drawSentenceLine(g, at, o.x, o.y, m.fx, m.fy, clamp01((T - S.warnFrom) / (a.hit - S.warnFrom - 0.1)), t);
           break;
         }
+        case 'h2:vault': {
+          // (THE HEADSMAN MADE NEW: the spot his vault will come down on, marked as wide as the slam, from his warning on)
+          const V = HEADSMAN2_FIGHT.vault;
+          if (T < a.hit) drawVaultMark(g, at, act.x, act.y, clamp01((T - V.warnFrom) / (a.hit - V.warnFrom)), t);
+          break;
+        }
         case 'sweep':
           if (T < HEADSMAN.sweep.from) drawSweepRing(g, mat, m.x, m.y, HEADSMAN.sweep.reach, clamp01((T - HEADSMAN.sweep.warnFrom) / (HEADSMAN.sweep.from - HEADSMAN.sweep.warnFrom - 0.05)), t);
           break;
@@ -212,6 +219,10 @@ export class BossFx {
           break;
         case 'crash':
           drawBallCrash(g, at, p.x, p.y, p.t);
+          break;
+        case 'slam':
+          // (THE HEADSMAN MADE NEW: his vault's slam, on the floor)
+          drawVaultSlam(g, at, p.x, p.y, p.fx, p.fy, p.t);
           break;
         case 'arm':
           drawArmCrack(g, at, p.x, p.y, p.t - p.hit, FLOOR_ARM_TIME);
@@ -423,6 +434,11 @@ export class BossFx {
       } else if (p.kind === 'wave') {
         const [x, y] = at(p.x, p.y);
         if (p.t < 1.4) this.spots.push([x, y, 40 + 70 * Math.min(1, p.t), 0.8 * (1 - p.t / 1.4)]);
+      } else if (p.kind === 'slam') {
+        // (what flies from his slam and burns up out of the floor; its fire lights the dark)
+        drawVaultSlamOver(g, at, p.x, p.y, p.t);
+        const [x, y] = at(p.x, p.y);
+        if (p.t < 0.9) this.spots.push([x, y - 6, 30 + 16 * 2 * H2_SLAM.reach * Math.min(1, p.t / 0.3), 0.9 * (1 - p.t / 0.9)]);
       }
     }
     // (his light boiling up out of a heap as one of the dead comes back up out of it; and the mini's fire catching a cultist's body)
