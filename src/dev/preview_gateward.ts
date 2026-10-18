@@ -14,6 +14,8 @@
 //     the same, the hero inside the tavern, its shell faded away
 //   node tools/page_gif.mjs src/dev/preview_gateward.ts film previews/gw_walk_in.gif
 //     a film: the hero runs from the square into the tavern, its front and roof fading away as he goes in
+//   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_dressed.png 1014 468 dressed
+//     the street view dressed with floor 11's pieces and the set's (art/floor11.ts, art/act2_set.ts), their lights
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_tiles.png 1014 468 tiles
 //     the same with the tiles the game walks by drawn over it
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_close.png 1014 664 close
@@ -22,7 +24,10 @@
 //     what painting it costs, a piece of 256 x 256 picture pixels at a time
 
 import { makeDaggerCultistArt3 } from '../art/cultists';
-import { GW_ZONE, gateWardLook, gateWardPaintFloor, houseShell } from '../art/gateward';
+import { hushSetPieces } from '../art/act2_set';
+import { gateWardPieces } from '../art/floor11';
+import type { Piece } from '../art/floorkit';
+import { GW_RISE, GW_ZONE, gateWardLook, gateWardPaintFloor, houseShell } from '../art/gateward';
 import type { GWHouse, HouseShell } from '../art/gateward';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
@@ -291,7 +296,123 @@ function filmScene(k: number): Scene {
   return { hero, heroSprite: sp, cam: hero, shown };
 }
 
-if (HASH === 'shot' || HASH === 'tiles') {
+// ---------------------------------------------------------------------------------------------------
+// THE PIECES, laid as the game might lay them (where is the main chat's): standing on the floor, hung on a
+// house front (its foot on the face's foot), or standing on the roofs (drawn the ground's rise up)
+
+const PIECES = new Map<string, Piece>([...gateWardPieces(), ...hushSetPieces()].map((p) => [p.name, p]));
+interface Laid { name: string; frame: number; x: number; y: number; on?: 'left' | 'right' | 'top' }
+const DRESS: Laid[] = [
+  // the square: the herald on its heart, stalls round it, the rostrum, the notice board, the market bell
+  { name: 'the herald, gagged', frame: 0, x: 25, y: 18 },
+  { name: 'market stall', frame: 0, x: 29.0, y: 15.0 },
+  { name: 'market stall', frame: 2, x: 21.2, y: 15.2 },
+  { name: 'market stall, smashed', frame: 0, x: 21.4, y: 21.8 },
+  { name: "the crier's rostrum", frame: 0, x: 28.4, y: 20.6 },
+  { name: 'the notice board', frame: 0, x: 26.0, y: 13.6 },
+  { name: 'the market bell (the Muffled Bell)', frame: 0, x: 29.2, y: 13.5 },
+  // the lane in: a firepot still burning, the dome's shards in the gutter, rubble, a lamp
+  { name: "a firepot's crater, burning", frame: 1, x: 15.5, y: 20.6 },
+  { name: 'a shard of the dome', frame: 2, x: 11.6, y: 21.4 },
+  { name: 'a shard of the dome', frame: 0, x: 26.6, y: 22.5 },
+  { name: 'rubble of the siege', frame: 0, x: 7.0, y: 19.8 },
+  { name: 'street lamp', frame: 0, x: 19.6, y: 21.6 },
+  { name: 'street lamp', frame: 1, x: 30.4, y: 17.6 },
+  // the lane down: the barricade across it
+  { name: 'the cart barricade', frame: 0, x: 23.6, y: 27.0 },
+  { name: 'barrel', frame: 0, x: 22.5, y: 24.6 },
+  { name: 'crates', frame: 0, x: 24.5, y: 24.2 },
+  { name: 'barrel', frame: 1, x: 19.4, y: 19.5 },
+  { name: 'a crate of stolen voices', frame: 0, x: 29.4, y: 22.4 },
+  // on the house fronts
+  { name: 'festival bunting', frame: 0, x: 32.5, y: 15, on: 'left' },
+  { name: 'festival bunting', frame: 0, x: 17.5, y: 19, on: 'left' },
+  { name: "the Silent Order's banner", frame: 0, x: 36.0, y: 15, on: 'left' },
+  { name: 'guild sign, blotted', frame: 1, x: 5.5, y: 19, on: 'left' },
+  { name: 'guild sign, blotted', frame: 0, x: 20, y: 16.5, on: 'right' },
+  // on the roofs
+  { name: 'chimney', frame: 1, x: 17.6, y: 15.4, on: 'top' },
+  { name: 'chimney', frame: 0, x: 30.6, y: 10.4, on: 'top' },
+  { name: 'chimney', frame: 0, x: 12.4, y: 10.5, on: 'top' },
+];
+
+function spriteOfLaid(l: Laid): Sprite | null {
+  const p = PIECES.get(l.name);
+  if (!p) return null;
+  if (l.on === 'left') return p.left ? p.left[l.frame] : null;
+  if (l.on === 'right') return p.right ? p.right[l.frame] : null;
+  return p.frames ? p.frames[l.frame] : null;
+}
+function drawLaid(g: CanvasRenderingContext2D, l: Laid): void {
+  const sp = spriteOfLaid(l);
+  if (!sp) return;
+  const [sx0, sy0] = pictureOf(l.x, l.y);
+  const sx = sx0 - VX;
+  const sy = sy0 - VY - (l.on === 'top' ? GW_RISE : 0);
+  const p = PIECES.get(l.name)!;
+  if (!l.on && p.shadow) {
+    g.fillStyle = 'rgba(14, 10, 24, 0.4)';
+    g.beginPath();
+    g.ellipse(sx, sy, 30 * p.shadow, 13 * p.shadow, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  const d = sp.density ?? 1;
+  g.drawImage(sp.img, Math.round(sx - sp.ax * d), Math.round(sy - sp.ay * d), sp.w * d, sp.h * d);
+}
+/** The lights of what is laid, over the dusk: each a soft pool of its colour, as the game lays a light over the dark. */
+function laidLights(g: CanvasRenderingContext2D, laid: readonly Laid[]): void {
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  for (const l of laid) {
+    const sp = spriteOfLaid(l);
+    if (!sp || !sp.lights) continue;
+    const [sx0, sy0] = pictureOf(l.x, l.y);
+    const d = sp.density ?? 1;
+    for (const L of sp.lights) {
+      const x = sx0 - VX - sp.ax * d + L.x * d;
+      const y = sy0 - VY - (l.on === 'top' ? GW_RISE : 0) - sp.ay * d + L.y * d;
+      const r = L.r * d;
+      const grd = g.createRadialGradient(x, y, 0, x, y, r);
+      grd.addColorStop(0, L.color);
+      grd.addColorStop(1, 'rgba(0,0,0,0)');
+      g.globalAlpha = (L.a ?? 0.5) * 0.55;
+      g.fillStyle = grd;
+      g.fillRect(x - r, y - r, 2 * r, 2 * r);
+    }
+  }
+  g.restore();
+}
+
+/** The street dressed: the ground, the house fronts' and roofs' pieces, whoever and whatever stands inside a house, the shells, the rest by depth, the dusk, the lights. */
+function drawDressed(g: CanvasRenderingContext2D, sc: Scene): void {
+  camOn(sc.cam[0], sc.cam[1]);
+  paintPanel(g, VX, VY, PW, PH);
+  for (const l of DRESS) if (l.on) drawLaid(g, l);
+  type Thing = { d: number; draw: () => void; inside: boolean };
+  const things: Thing[] = [];
+  const inAny = (x: number, y: number): boolean => HOUSES.some((h) => insideOf(h, x, y));
+  for (const l of DRESS) if (!l.on) things.push({ d: l.x + l.y, draw: () => drawLaid(g, l), inside: inAny(l.x, l.y) });
+  for (const [x, y] of FOES) things.push({ d: x + y, draw: () => standAt(g, cultist.front.idle[0], x, y, 8), inside: inAny(x, y) });
+  things.push({ d: sc.hero[0] + sc.hero[1], draw: () => standAt(g, sc.heroSprite, sc.hero[0], sc.hero[1], 9), inside: inAny(sc.hero[0], sc.hero[1]) });
+  things.sort((a, b) => a.d - b.d);
+  for (const t of things) if (t.inside) t.draw();
+  SHELLS.forEach((sh, i) => {
+    const a = sc.shown[i];
+    if (a <= 0.01) return;
+    g.globalAlpha = a;
+    g.drawImage(SHELL_PICS[i], sh.x0 - VX, sh.y0 - VY);
+    g.globalAlpha = 1;
+  });
+  for (const t of things) if (!t.inside) t.draw();
+  dusk(g);
+  laidLights(g, DRESS);
+  nameAndMap(g, sc.hero);
+}
+
+if (HASH === 'dressed') {
+  drawDressed(g, { hero: HERO, heroSprite: knight, cam: HERO, shown: HOUSES.map(() => 1) });
+  show(cvs);
+} else if (HASH === 'shot' || HASH === 'tiles') {
   drawScene(g, { hero: HERO, heroSprite: knight, cam: HERO, shown: HOUSES.map(() => 1), tiles: HASH === 'tiles' });
   show(cvs);
 } else if (HASH === 'inside') {
