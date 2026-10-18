@@ -95,24 +95,28 @@ export function drawBellSlam(g: CanvasRenderingContext2D, at: FloorAt, x: number
 // ---------------------------------------------------------------------------------------------
 // THE SILENT SHOUT
 
-/** The cone the Shout fills: from this far before him (tiles) to this far, and half as wide as this (degrees). */
+/** The cone the Shout fills: from this far before him (tiles) to this far, and half as wide as this (degrees). His
+ * word, 18 Oct, of the first films: "the call is going to need a bigger hit box", the call being "The Silent Shout's
+ * cone" (was 5.4 tiles and 52 degrees: now 7.4 and 80). */
 export const SHOUT_FROM = 0.7;
-export const SHOUT_TO = 5.4;
-export const SHOUT_HALF = 26;
+export const SHOUT_TO = 7.4;
+export const SHOUT_HALF = 40;
 /** How long the dead air rolls across it from the blow (seconds), and how long the floor under it stays dark after. */
 export const SHOUT_FOR = CR_SHOUT.end - CR_SHOUT.hit + 0.6;
 
-/** Every pixel of the cone's floor, with how far out it is (0 to 1) and how far across (-1 to 1). */
+/** A point of the floor `r` tiles out from (x0, y0) along (fx, fy) turned `a` (radians, to the right of the way as the floor runs). */
+function polar(x0: number, y0: number, fx: number, fy: number, r: number, a: number): [number, number] {
+  return [x0 + (fx * Math.cos(a) - fy * Math.sin(a)) * r, y0 + (fy * Math.cos(a) + fx * Math.sin(a)) * r];
+}
+/** Every pixel of the cone's floor (a fan, its far edge an arc), with how far out it is (0 to 1) and how far across (-1 to 1). */
 function coneEach(at: FloorAt, x0: number, y0: number, fx: number, fy: number, step: number, each: (sx: number, sy: number, d: number, s: number) => void): void {
   const half = (SHOUT_HALF * Math.PI) / 180;
   for (let d = SHOUT_FROM; d <= SHOUT_TO; d += step) {
-    const w = Math.tan(half) * d;
-    const n = Math.max(1, Math.round((2 * w) / step));
+    const n = Math.max(1, Math.round((2 * half * d) / step));
     for (let i = 0; i <= n; i++) {
-      const s = -w + (2 * w * i) / n;
-      const [x, y] = out(x0, y0, fx, fy, d, s);
-      const [sx, sy] = at(x, y);
-      each(sx, sy, (d - SHOUT_FROM) / (SHOUT_TO - SHOUT_FROM), w > 0 ? s / w : 0);
+      const s = -1 + (2 * i) / n;
+      const [sx, sy] = at(...polar(x0, y0, fx, fy, d, s * half));
+      each(sx, sy, (d - SHOUT_FROM) / (SHOUT_TO - SHOUT_FROM), s);
     }
   }
 }
@@ -142,7 +146,7 @@ export function drawShoutWarn(g: CanvasRenderingContext2D, at: FloorAt, x0: numb
   };
   for (const side of [-1, 1]) {
     const pts: [number, number][] = [];
-    for (let d = SHOUT_TO; d >= SHOUT_FROM; d -= 0.04) pts.push(out(x0, y0, fx, fy, d, side * Math.tan(half) * d));
+    for (let d = SHOUT_TO; d >= SHOUT_FROM; d -= 0.04) pts.push(polar(x0, y0, fx, fy, d, side * half));
     edge(pts);
   }
   const arc: [number, number][] = [];
@@ -162,7 +166,7 @@ export function drawShoutWarn(g: CanvasRenderingContext2D, at: FloorAt, x0: numb
     const speed = 0.6 + 2.6 * k;
     const life = (t * speed * 0.4 + hash(i, 3, 141)) % 1;
     const d = d0 - (d0 - SHOUT_FROM * 0.6) * life * life;
-    const [x, y] = out(x0, y0, fx, fy, d, s * Math.tan(half) * d);
+    const [x, y] = polar(x0, y0, fx, fy, d, s * half);
     const [sx, sy] = at(x, y);
     g.globalAlpha = was * Math.min(1, k * 2) * (1 - life * 0.6);
     const paper = i % 4 === 0;
@@ -196,7 +200,7 @@ export function drawShoutBlast(g: CanvasRenderingContext2D, at: FloorAt, x0: num
   // ITS EDGE: the two sides and the far arc, a line of the Hush's pale with the pink in it
   for (const side of [-1, 1]) {
     for (let d = SHOUT_FROM; d <= SHOUT_FROM + (SHOUT_TO - SHOUT_FROM) * reach; d += 0.05) {
-      const [sx, sy] = at(...out(x0, y0, fx, fy, d, side * Math.tan(half) * d));
+      const [sx, sy] = at(...polar(x0, y0, fx, fy, d, side * half));
       g.globalAlpha = was * fade * 0.8;
       dotAt(g, sx, sy, hash(Math.round(sx), Math.round(sy), 145) < 0.25 ? FLAME[2] : HUSH[3]);
     }
@@ -209,7 +213,7 @@ export function drawShoutBlast(g: CanvasRenderingContext2D, at: FloorAt, x0: num
     const d = SHOUT_FROM + age * SPEED;
     if (d > SHOUT_TO) continue;
     const f = (d - SHOUT_FROM) / (SHOUT_TO - SHOUT_FROM);
-    const n = Math.max(12, Math.round(d * 30));
+    const n = Math.max(12, Math.round((d * 30 * SHOUT_HALF) / 26));
     for (let i = 0; i <= n; i++) {
       const a = -half + (2 * half * i) / n;
       if (hash(i, j, 147) < f * 0.45) continue;
@@ -230,9 +234,9 @@ export function drawShoutBlast(g: CanvasRenderingContext2D, at: FloorAt, x0: num
     const age = t - t0;
     if (age < 0 || age > 0.9) continue;
     const d = SHOUT_FROM + 0.3 + age * (6 + 3 * hash(i, 3, 151));
-    if (d > SHOUT_TO + 0.8) continue;
+    if (d > SHOUT_TO + 0.4) continue;
     const z = 4 + 10 * Math.sin(Math.min(1, age / 0.9) * Math.PI) * hash(i, 4, 151);
-    const [sx, sy] = at(...out(x0, y0, fx, fy, d, s * Math.tan(half) * d));
+    const [sx, sy] = at(...polar(x0, y0, fx, fy, d, s * half));
     g.globalAlpha = was * (1 - age / 0.9);
     const paper = i % 3 === 0;
     dotAt(g, sx, sy - z, paper ? PAPER[Math.floor(age * 10) % 2 ? 3 : 2] : HUSH[3], paper ? 2 : 1, paper && Math.floor(age * 12) % 2 ? 2 : 1);
@@ -243,15 +247,18 @@ export function drawShoutBlast(g: CanvasRenderingContext2D, at: FloorAt, x0: num
 // ---------------------------------------------------------------------------------------------
 // THE PROCLAMATION
 
-/** The lane the scroll runs down: from this far before him (tiles) to this far, and this wide each side of its middle. */
+/** The lane the scroll runs down: from this far before him (tiles) to this far, and this wide each side of its middle.
+ * His word, 18 Oct, of the first films: "the proclaim needs to be wider" (was 1.24 tiles across: now 2.5). */
 export const PROCLAIM_FROM = 1.3;
 export const PROCLAIM_TO = 8.6;
-export const PROCLAIM_HALF = 0.62;
+export const PROCLAIM_HALF = 1.25;
 /** From the moment he flings it (seconds): it lands; it has unrolled; it begins to crumble; it is gone. */
 export const PROCLAIM_LANDS = 0.14;
 export const PROCLAIM_UNROLLED = PROCLAIM_LANDS + 0.42;
 export const PROCLAIM_CRUMBLES = 1.9;
 export const PROCLAIM_FOR = 2.7;
+/** Half the length of the scroll in his hand (tiles: art/crier.ts), from which it swells as it flies. */
+const IN_HAND = 0.45;
 
 /**
  * THE PROCLAMATION'S WARNING, while he holds the scroll high (`k`: how far through the hold): the lane
@@ -305,7 +312,8 @@ export function drawProclamation(g: CanvasRenderingContext2D, at: FloorAt, x0: n
     const d = from[0] + (PROCLAIM_FROM - from[0]) * u;
     const z = from[1] * (1 - u) + 16 * u * (1 - u);
     const [sx, sy] = at(...out(x0, y0, fx, fy, d, 0));
-    rollAt(g, at, x0, y0, fx, fy, d, 5, z, t * 30);
+    // (swelling as it flies, from the scroll in his hand to the width of the lane)
+    rollAt(g, at, x0, y0, fx, fy, d, 5 + 1.5 * u, z, t * 30, IN_HAND + (PROCLAIM_HALF + 0.04 - IN_HAND) * u);
     g.globalAlpha = was * 0.5;
     dotAt(g, sx - 4, sy, P.ink, 9, 2);
     g.globalAlpha = was;
@@ -344,9 +352,9 @@ export function drawProclamation(g: CanvasRenderingContext2D, at: FloorAt, x0: n
   }
   // THE ROLL, racing out ahead (thinner as it gives out its paper), dust thrown up before it
   if (u < 1) {
-    rollAt(g, at, x0, y0, fx, fy, PROCLAIM_FROM + front, 5 - 2.6 * u, 0, u * 40);
-    for (let i = 0; i < 20; i++) {
-      const s = (hash(i, 1, 155) * 2 - 1) * PROCLAIM_HALF * 1.3;
+    rollAt(g, at, x0, y0, fx, fy, PROCLAIM_FROM + front, 6.5 - 3.4 * u, 0, u * 40);
+    for (let i = 0; i < 34; i++) {
+      const s = (hash(i, 1, 155) * 2 - 1) * PROCLAIM_HALF * 1.2;
       const lead = 0.15 + 0.5 * hash(i, 2, 155);
       const [sx, sy] = at(...out(x0, y0, fx, fy, PROCLAIM_FROM + front + lead, s));
       g.globalAlpha = was * (1 - u) * 0.9;
@@ -354,19 +362,14 @@ export function drawProclamation(g: CanvasRenderingContext2D, at: FloorAt, x0: n
     }
   } else if (crumble === 0) {
     // (unrolled to the end: the last of it curled up there)
-    rollAt(g, at, x0, y0, fx, fy, PROCLAIM_TO, 2.4, 0, 0);
+    rollAt(g, at, x0, y0, fx, fy, PROCLAIM_TO, 3, 0, 0);
   }
   // THE SEAL at the near end: the city's oxblood wax, cracked open, burning the cult's pink and gold
   if (crumble < 0.98) {
     const [cx, cy] = at(...out(x0, y0, fx, fy, PROCLAIM_FROM + 0.26, 0));
     g.globalAlpha = was;
-    // (a round of wax, bigger than a hand, with a ribbon's two tails)
-    dotAt(g, cx - 6, cy + 1, WAX[1], 3, 5);
-    dotAt(g, cx + 4, cy + 1, WAX[1], 3, 4);
-    dotAt(g, cx - 5, cy - 3, WAX[1], 11, 6);
-    dotAt(g, cx - 4, cy - 4, WAX[2], 9, 1);
-    dotAt(g, cx - 6, cy - 2, WAX[1], 13, 4);
-    dotAt(g, cx - 5, cy + 3, WAX[0], 11, 1);
+    // (a round of wax lying flat on the paper, bigger than a hand: lit on its far rim, shadowed on its near)
+    for (const [dy, half, c] of [[-3, 3, WAX[2]], [-2, 5, WAX[1]], [-1, 7, WAX[1]], [0, 7, WAX[1]], [1, 6, WAX[1]], [2, 4, WAX[0]]] as const) dotAt(g, cx - half, cy + dy, c, half * 2 + 1, 1);
     const burn = 0.6 + 0.4 * Math.sin(t * 13);
     g.globalAlpha = was * burn * (1 - crumble);
     // (cracked across, the cult's fire showing through the crack)
@@ -383,7 +386,7 @@ export function drawProclamation(g: CanvasRenderingContext2D, at: FloorAt, x0: n
   }
   // CRUMBLING INTO THE HUSH: grey specks rising off its ragged end
   if (crumble > 0) {
-    for (let i = 0; i < 36; i++) {
+    for (let i = 0; i < 60; i++) {
       const life = (t * 1.4 + hash(i, 1, 157)) % 1;
       const d = left + 0.6 * hash(i, 2, 157) - 0.2;
       if (d < 0) continue;
@@ -395,10 +398,9 @@ export function drawProclamation(g: CanvasRenderingContext2D, at: FloorAt, x0: n
   }
   g.globalAlpha = was;
 }
-/** The rolled scroll lying across the lane at `d` tiles out (its radius `r`, the game's pixels; lifted `z`; rolled round `spin`). */
-function rollAt(g: CanvasRenderingContext2D, at: FloorAt, x0: number, y0: number, fx: number, fy: number, d: number, r: number, z: number, spin: number): void {
+/** The rolled scroll lying across the lane at `d` tiles out (its radius `r`, the game's pixels; lifted `z`; rolled round `spin`; as long as twice `half`, tiles). */
+function rollAt(g: CanvasRenderingContext2D, at: FloorAt, x0: number, y0: number, fx: number, fy: number, d: number, r: number, z: number, spin: number, half = PROCLAIM_HALF + 0.04): void {
   const was = g.globalAlpha;
-  const half = PROCLAIM_HALF + 0.04;
   for (let s = -half; s <= half; s += 0.025) {
     const [sx, sy] = at(...out(x0, y0, fx, fy, d, s));
     const top = sy - z - r * 2;

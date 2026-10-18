@@ -12,7 +12,7 @@
 import { GW_ZONE, gateWardLook, gateWardPaintFloor } from '../art/gateward';
 import { CRIER_MOB } from '../art/crier_moves';
 import { CR_CROWD, CR_OFF, CR_PROCLAIM, CR_SHOUT, CR_SWING_HIT, CR_TRUMPET_GOES, trumpetOf } from '../art/crier';
-import { CROWD_FOR, PROCLAIM_FOR, RISING_FOR, SHOUT_FOR, SHOUT_TO, SLAM_FOR, PROCLAIM_TO, PROCLAIM_HALF, drawBellSlam, drawCrowdBreath, drawCrowdCall, drawHushedRising, drawProclaimWarn, drawProclamation, drawShoutBlast, drawShoutWarn } from '../art/crier_shots';
+import { CROWD_FOR, PROCLAIM_FOR, RISING_FOR, SHOUT_FOR, SHOUT_HALF, SHOUT_TO, SLAM_FOR, PROCLAIM_TO, PROCLAIM_HALF, drawBellSlam, drawCrowdBreath, drawCrowdCall, drawHushedRising, drawProclaimWarn, drawProclamation, drawShoutBlast, drawShoutWarn } from '../art/crier_shots';
 import type { FloorAt } from '../art/mob_shots';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
@@ -322,7 +322,8 @@ function crierFilms(): Record<string, FilmOf> {
         else drawShoutBlast(c, ISO, 0, 0, fx, fy, t - CR_SHOUT.hit);
       },
       tail: CR_SHOUT.hit + SHOUT_FOR - lastKey('shout'),
-      reach: [turnTo(shWay, SHOUT_TO + 0.4, 0), turnTo(shWay, SHOUT_TO, 2.8), turnTo(shWay, SHOUT_TO, -2.8)],
+      // (round its far arc, every few degrees)
+      reach: Array.from({ length: 17 }, (_, i) => ((-1 + i / 8) * SHOUT_HALF * Math.PI) / 180).map((a) => turnTo(shWay, (SHOUT_TO + 0.3) * Math.cos(a), (SHOUT_TO + 0.3) * Math.sin(a))),
     },
     proclaim: {
       long: lastKey('proclaim'),

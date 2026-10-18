@@ -496,13 +496,13 @@ export function crierBits(st: Stage, m: Moment): Bit[] {
 
   // --- THE SILENT SHOUT AT THE BELL: the dead air boiling out of it, grey and violet, shot through with the pink ---
   if (m.move === SHOUT_NAME && m.since !== undefined && m.since >= 0 && m.since < CR_SHOUT.end - CR_SHOUT.hit + 0.1 && lit > 0.1) {
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 28; i++) {
       const life = (m.since * 2.6 + hash(i, 1, 91)) % 1;
       const a = hash(i, 2, 91) * Math.PI * 2;
       const e1 = norm(cross(tr.way, [0, 0, 1]), [0, 1, 0]);
       const e2 = cross(tr.way, e1);
-      const spread = BELL_R * (0.5 + life * 1.4);
-      const p = add(add(tr.rim, mul(tr.way, life * 26 * CR_K)), add(mul(e1, Math.cos(a) * spread), mul(e2, Math.sin(a) * spread)));
+      const spread = BELL_R * (0.5 + life * 2.6);
+      const p = add(add(tr.rim, mul(tr.way, life * 34 * CR_K)), add(mul(e1, Math.cos(a) * spread), mul(e2, Math.sin(a) * spread * 0.6)));
       put('hush', 'hush', { k: 'mote', p, c: life < 0.25 ? FLAME[2] : life < 0.6 ? HUSH[4] : HUSH[3], size: life < 0.5 ? 3 : 2 });
     }
   }
