@@ -114,7 +114,7 @@ function trumpetSolids(put: Put, mouth: V3, way: V3, burn: number, eye: V3, lit:
   for (const k of [0, 0.25, 0.5, 0.66, 0.74]) rings.push({ c: at(k), u: mul(e1, trumpetR(k)), v: mul(e2, trumpetR(k)) });
   put('trumpet', 'trumpet', { k: 'cloth', rings, ramp: BRASS, look: { folds: [], lift: 0 }, rigid: true });
   // the bell, flaring: ring on ring of brass (the half of each toward the eye), so that the eye sees into it
-  for (let k = 0.74; k <= 0.995; k += 0.018) put('trumpet', 'bell', { k: 'band', ring: { c: at(k), u: mul(e1, trumpetR(k)), v: mul(e2, trumpetR(k)) }, ramp: BRASS, rows: 2 });
+  for (let k = 0.74; k <= 0.995; k += 0.018) put('trumpet', 'trumpet', { k: 'band', ring: { c: at(k), u: mul(e1, trumpetR(k)), v: mul(e2, trumpetR(k)) }, ramp: BRASS, rows: 2 });
   // its mouthpiece, a little cup; its bands; the rolled rim of its bell
   put('trumpet', 'trumpet', { k: 'rod', a: add(mouth, mul(way, -2.4)), b: add(mouth, mul(way, 1)), ra: 1.9, rb: 1.3, ramp: BRASS });
   for (const k of [0.22, 0.48, 0.7]) put('trumpet', 'trumpet', { k: 'band', ring: { c: at(k), u: mul(e1, trumpetR(k) + 0.8), v: mul(e2, trumpetR(k) + 0.8) }, ramp: BRASS, rows: 2 });
@@ -122,7 +122,7 @@ function trumpetSolids(put: Put, mouth: V3, way: V3, burn: number, eye: V3, lit:
   // ITS THROAT, BURNING: seen into the bell, the cult's fire, gold at its heart, pink to its rim
   const inside = add(at(1), mul(way, -1.6));
   const heat = lit * (0.9 + 0.3 * burn);
-  put('throat', 'throat', {
+  put('throat', 'trumpet', {
     k: 'ball', c: inside, ax: [mul(way, 0.4), mul(e1, BELL_R - 0.6), mul(e2, BELL_R - 0.6)],
     skin: (u) => {
       // (only where it is seen into: its face toward the way out of the bell)
@@ -131,7 +131,7 @@ function trumpetSolids(put: Put, mouth: V3, way: V3, burn: number, eye: V3, lit:
       return r < 0.3 + 0.2 * burn ? FLAME[4] : r < 0.6 + 0.1 * burn ? FLAME[3] : r < 0.84 ? FLAME[2] : FLAME[1];
     },
   });
-  if (heat > 0.05 && dot(way, eye) > -0.2) put('throat', 'throat', { k: 'glow', p: add(at(1), mul(way, 3)), c: SOCKET, r: 12 + 10 * burn, a: Math.min(0.85, 0.4 + 0.4 * burn) });
+  if (heat > 0.05 && dot(way, eye) > -0.2) put('throat', 'trumpet', { k: 'glow', p: add(at(1), mul(way, 3)), c: SOCKET, r: 12 + 10 * burn, a: Math.min(0.85, 0.4 + 0.4 * burn) });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -404,9 +404,9 @@ export function crierBits(st: Stage, m: Moment): Bit[] {
       const c = pts.reduce((a2, p) => add(a2, mul(p, 1 / pts.length)), [0, 0, 0] as V3);
       return { c, u: mul(hf, hr[0]), v: mul(hl, hr[1]), pts };
     };
-    put('hat', 'brim', { k: 'cloth', rings: [ring(inner), ring(outer)], ramp: BLACK, look: { folds: [], lift: 0 }, rigid: true });
+    put('hat', 'hat', { k: 'cloth', rings: [ring(inner), ring(outer)], ramp: BLACK, look: { folds: [], lift: 0 }, rigid: true });
     // the cream braid along the brim's edge
-    for (let i = 0; i < N; i++) put('hat', 'braid', { k: 'rod', a: outer[i], b: outer[(i + 1) % N], ra: 0.7, rb: 0.7, ramp: CREAM });
+    for (let i = 0; i < N; i++) put('hat', 'hat', { k: 'rod', a: outer[i], b: outer[(i + 1) % N], ra: 0.7, rb: 0.7, ramp: CREAM });
     // the plume: from the left corner, curling back over the crown, swaying
     const root = add(brimBase, add(mul(hl, hr[1] * 1.0), add(mul(hf, -hr[0] * 0.5), mul(hu, 4))));
     let prev = root;
@@ -415,17 +415,171 @@ export function crierBits(st: Stage, m: Moment): Bit[] {
       const p = add(root, add(mul(hf, -t * 11 * CR_K), add(mul(hu, (1 + Math.sin(t * Math.PI) * 3) * CR_K), add(mul(hl, -t * 4 * CR_K), mul(lag, t * 1.2)))));
       const sway = Math.sin(wave * 2 + t * 2) * 0.6 * t;
       const pp = add(p, mul(hl, sway));
-      put('plume', 'plume', { k: 'rod', a: prev, b: pp, ra: 1.5 - t * 0.6, rb: 1.3 - t * 0.8, ramp: CREAM });
+      put('plume', 'hat', { k: 'rod', a: prev, b: pp, ra: 1.5 - t * 0.6, rb: 1.3 - t * 0.8, ramp: CREAM });
       prev = pp;
     }
   }
 
   // --- HIS GREAT SPEAKING-TRUMPET ---
-  if (!m.bare) {
-    const tr = trumpetOf(s, q);
-    trumpetSolids(put, tr.mouth, tr.way, burnOf(m), st.eye, lit);
+  const tr = trumpetOf(s, q);
+  if (!m.bare) trumpetSolids(put, tr.mouth, tr.way, burnOf(m), st.eye, lit);
+
+  // --- THE PROCLAMATION'S SCROLL in his left hand: a great roll of paper, its seal of oxblood burning as he holds it up ---
+  if (q.prop === 1) {
+    const [lf, ll] = [norm(sub(s.handL, s.elbowL), [0, 0, -1]), cl];
+    const across = norm(cross(lf, cu), ll);
+    const c = add(s.handL, mul(lf, 2.4));
+    const half = 13 * CR_K;
+    put('scroll', 'scroll', { k: 'rod', a: add(c, mul(across, -half)), b: add(c, mul(across, half)), ra: 3.6 * CR_K, rb: 3.6 * CR_K, ramp: CREAM });
+    for (const k of [-1, 1]) put('scroll', 'scroll', { k: 'ball', c: add(c, mul(across, k * half)), ax: [mul(across, 0.8), mul(cu, 3.7 * CR_K), mul(cf, 3.7 * CR_K)], skin: (u, tone) => (Math.hypot(u[1], u[2]) < 0.35 ? CREAM[0] : CREAM[Math.max(0, tone - 1)]) });
+    const seal = add(c, mul(norm(add(cu, cf)), 3.9 * CR_K));
+    put('scroll', 'scroll', { k: 'ball', c: seal, ax: sphere(2.2 * CR_K), skin: (u, tone) => (m.glint > 0.5 ? (Math.hypot(u[0], u[1]) < 0.5 ? FLAME[4] : FLAME[3]) : COAT[Math.min(4, tone + 1)]) });
+    if (m.glint > 0.3) {
+      put('scroll', 'scroll', { k: 'glow', p: seal, c: SOCKET, r: 8 + 10 * m.glint, a: 0.5 * m.glint });
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + m.t * 9;
+        put('sparks', 'sparks', { k: 'mote', p: add(seal, [Math.cos(a) * 4 * CR_K, Math.sin(a) * 4 * CR_K, 2 + ((m.t * 40 + i * 3) % 7)]), c: i % 2 ? FLAME[3] : FLAME[2], size: 2 });
+      }
+    }
+  }
+
+  // --- THE WEIGHT OF HIS SWING: the way the bell went through the air, a band of the cult's fire along it, widest and hottest just behind the bell ---
+  if (m.trails && m.trails.length >= 4 && lit > 0.1) {
+    const rimT = smoothed(m.trails[1]);
+    const midT = smoothed(m.trails[3]);
+    const n = rimT.length - 1;
+    for (let i = 1; i <= n; i++) {
+      const age0 = (i - 1) / n;
+      const age1 = i / n;
+      const long = Math.max(1, Math.ceil(Math.hypot(...(st.at(rimT[i]).map((v, k) => v - st.at(rimT[i - 1])[k]) as [number, number])) / 1.2));
+      for (let j = 0; j < long; j++) {
+        const f2 = j / long;
+        const age = age0 + (age1 - age0) * f2;
+        const e = lerp3(rimT[i - 1], rimT[i], f2);
+        const y = lerp3(midT[i - 1], midT[i], f2);
+        const w = 0.7 * (1 - age) + 0.08;
+        const across = Math.max(1, Math.ceil(Math.hypot(...(st.at(lerp3(e, y, w)).map((v, k) => v - st.at(e)[k]) as [number, number])) / 1.2));
+        for (let k = 0; k <= across; k++) {
+          const u = (k / across) * w;
+          if (age > 0.45 && hash(i * 97 + j, k, 79) < (age - 0.45) * 1.6) continue;
+          const c = u < 0.06 ? (age < 0.3 ? FLAME[4] : FLAME[3]) : age < 0.22 ? FLAME[3] : age < 0.5 ? FLAME[2] : FLAME[1];
+          put('streak', 'streak', { k: 'mote', p: lerp3(e, y, u), c, size: age > 0.4 ? 2 : 1 });
+        }
+      }
+    }
+    put('streak', 'streak', { k: 'glow', p: rimT[Math.min(2, n)], c: FLAME[3], r: 20, a: 0.34 });
+  }
+
+  // --- WHERE HIS SWING SLAMS DOWN: a burst of the Hush off the bell: a flash of the cult's fire, rings of dead grey air thrown out low over the floor, chips of stone ---
+  if (m.move === SWING_NAME && m.since !== undefined && m.since >= 0 && m.since < 0.5 && !m.dying) {
+    const k = m.since / 0.5;
+    const at: V3 = [tr.rim[0], tr.rim[1], Math.max(1, tr.rim[2] - BELL_R * 0.6)];
+    for (const [r0, ramp] of [[0, HUSH[4]], [6, HUSH[3]], [12, HUSH[2]]] as const) {
+      const r = (r0 + 34 * Math.sqrt(k)) * CR_K;
+      const n = Math.round(10 + r * 1.2);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        if (hash(i, Math.floor(r0), 61) < k * 0.8) continue;
+        put('hush', 'hush', { k: 'mote', p: [at[0] + Math.cos(a) * r * 1.2, at[1] + Math.sin(a) * r, 1 + (1 - k) * 4], c: ramp, size: 2 });
+      }
+    }
+    for (let i = 0; i < 14; i++) {
+      const a = hash(i, 1, 83) * Math.PI * 2;
+      const sp = (12 + 20 * hash(i, 2, 83)) * CR_K;
+      const vz = (34 + 40 * hash(i, 3, 83)) * CR_K;
+      const tt = m.since;
+      const z = Math.max(0, vz * tt - 0.5 * 300 * tt * tt);
+      put('chips', 'chips', { k: 'mote', p: [at[0] + Math.cos(a) * sp * tt * 1.4, at[1] + Math.sin(a) * sp * tt * 1.4, z + 0.5], c: i % 3 === 0 ? '#9a8e88' : i % 3 === 1 ? '#6a5e60' : '#463e48', size: i % 4 === 0 ? 3 : 2 });
+    }
+    if (m.since < 0.1) put('hush', 'hush', { k: 'glow', p: [at[0], at[1], 4], c: FLAME[3], r: 26, a: 0.7 });
+  }
+
+  // --- THE SILENT SHOUT AT THE BELL: the dead air boiling out of it, grey and violet, shot through with the pink ---
+  if (m.move === SHOUT_NAME && m.since !== undefined && m.since >= 0 && m.since < CR_SHOUT.end - CR_SHOUT.hit + 0.1 && lit > 0.1) {
+    for (let i = 0; i < 18; i++) {
+      const life = (m.since * 2.6 + hash(i, 1, 91)) % 1;
+      const a = hash(i, 2, 91) * Math.PI * 2;
+      const e1 = norm(cross(tr.way, [0, 0, 1]), [0, 1, 0]);
+      const e2 = cross(tr.way, e1);
+      const spread = BELL_R * (0.5 + life * 1.4);
+      const p = add(add(tr.rim, mul(tr.way, life * 26 * CR_K)), add(mul(e1, Math.cos(a) * spread), mul(e2, Math.sin(a) * spread)));
+      put('hush', 'hush', { k: 'mote', p, c: life < 0.25 ? FLAME[2] : life < 0.6 ? HUSH[4] : HUSH[3], size: life < 0.5 ? 3 : 2 });
+    }
+  }
+
+  // --- THE CROWD'S CALL: rings of the Hush rolling up out of the bell and away overhead, soundless ---
+  if (m.move === CROWD_NAME && m.since !== undefined && m.since >= 0 && m.since < CR_CROWD.end - CR_CROWD.hit + 0.5 && lit > 0.1) {
+    const e1 = norm(cross(tr.way, [1, 0, 0]), [0, 1, 0]);
+    const e2 = cross(tr.way, e1);
+    for (let j = 0; j < 4; j++) {
+      const age = m.since * 1.3 - j * 0.24;
+      if (age < 0 || age > 1 || m.since > CR_CROWD.end - CR_CROWD.hit + 0.5 - (1 - age) * 0.3 + 0.3) continue;
+      const r = BELL_R * (1 + age * 2.6);
+      const c = add(tr.rim, mul(tr.way, (4 + age * 46) * CR_K));
+      const n = Math.round(14 + r * 1.4);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2;
+        if (age > 0.55 && hash(i, j, 93) < (age - 0.55) * 1.8) continue;
+        put('hush', 'hush', { k: 'mote', p: add(c, add(mul(e1, Math.cos(a) * r), mul(e2, Math.sin(a) * r))), c: age < 0.3 ? HUSH[4] : age < 0.65 ? HUSH[3] : HUSH[2], size: 2 });
+      }
+    }
+  }
+
+  // --- HIS DEATH: THE HUSH POURING OUT OF HIM, grey smoke rolling up out of the trumpet's bell while he holds it and out of his open mouth, thinning to nothing ---
+  if (m.dying && m.t > 0.06 && m.t < CR_DIE_TIME) {
+    // (thick at first, pouring; then thinning away as the last of it rises off him)
+    const fade = m.t < 1.9 ? 1 : Math.max(0, 1 - (m.t - 1.9) / 0.9);
+    const mouth = add(hc, add(mul(ff, hr[0] * 0.95), mul(fu, -hr[2] * 0.4)));
+    const back = add(s.neck, mul(s.chest[2], -4 * CR_K));
+    // where it pours from: his open mouth, the trumpet's bell while he holds it, and (once he is down) out of his back
+    const from: V3[] = m.t < CR_TRUMPET_GOES ? [mouth, tr.rim, mouth] : m.t < 1.0 ? [mouth, mouth, back] : [mouth, back, back];
+    const N = 46;
+    for (let i = 0; i < N; i++) {
+      if (hash(i, 9, 95) > fade) continue;
+      const src = from[i % from.length];
+      const life = (m.t * 0.75 + hash(i, 1, 95)) % 1;
+      // (each puff curls as it rises, and spreads)
+      const a = hash(i, 2, 95) * Math.PI * 2 + life * 3.2;
+      const r = (1 + life * 13) * CR_K;
+      const rise = (3 + life * 46) * CR_K;
+      const drift: V3 = [-life * 8 * CR_K, life * 5 * CR_K, 0];
+      const c: V3 = add(src, add(drift, [Math.cos(a) * r, Math.sin(a) * r, rise]));
+      const col = life < 0.25 ? HUSH[4] : life < 0.55 ? HUSH[3] : life < 0.8 ? HUSH[2] : HUSH[1];
+      const big = life < 0.7 ? 4 : 3;
+      put('hush', 'hush', { k: 'mote', p: c, c: col, size: big });
+      // (a puff is a little cloud of specks, wider as it goes)
+      if (life > 0.15) {
+        const w = (1.5 + life * 4) * CR_K;
+        put('hush', 'hush', { k: 'mote', p: add(c, [w, -w * 0.4, -w * 0.5]), c: HUSH[Math.max(1, HUSH.indexOf(col) - 1)], size: big - 1 });
+        put('hush', 'hush', { k: 'mote', p: add(c, [-w * 0.6, w, w * 0.3]), c: col, size: big - 1 });
+      }
+    }
   }
   return bits;
+}
+
+/** A way through the air smoothed: three points on the curve (Catmull-Rom) between each two it was at. */
+function smoothed(pts: V3[]): V3[] {
+  if (pts.length < 3) return pts;
+  const out: V3[] = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+    for (let k = 0; k < 3; k++) {
+      const t = k / 3;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const w0 = -0.5 * t3 + t2 - 0.5 * t;
+      const w1 = 1.5 * t3 - 2.5 * t2 + 1;
+      const w2 = -1.5 * t3 + 2 * t2 + 0.5 * t;
+      const w3 = 0.5 * t3 - 0.5 * t2;
+      out.push([0, 1, 2].map((j) => p0[j] * w0 + p1[j] * w1 + p2[j] * w2 + p3[j] * w3) as unknown as V3);
+    }
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -445,6 +599,27 @@ export const CR_BASE: Bones = {
 };
 /** His look as first drawn. */
 export const CR_LOOK: Bones = { ...CR_BASE };
+
+// ---------------------------------------------------------------------------------------------
+// HIS MOVES' NAMES AND MOMENTS (art/crier_moves.ts makes the moves; his painter draws what each does to him)
+
+export const SWING_NAME = 'The swing';
+export const CR_SWING_HIT = 0.72;
+export const SHOUT_NAME = 'The Silent Shout';
+/** The Silent Shout: when the silence pours out of the bell, when it stops, how long the move is (seconds). */
+export const CR_SHOUT = { hit: 0.82, end: 1.62, long: 2.2 };
+export const PROCLAIM_NAME = 'The Proclamation';
+/** The Proclamation: when the scroll leaves his hand; how long the move is. */
+export const CR_PROCLAIM = { hit: 0.92, long: 2.2 };
+export const CROWD_NAME = 'The Crowd';
+/** The Crowd: when the call goes up, when it stops, how long the move is. */
+export const CR_CROWD = { hit: 0.74, end: 1.56, long: 2.2 };
+/** His death: how long; when the trumpet slips from his hand; when his hat tumbles off. */
+export const CR_DIE_TIME = 2.8;
+export const CR_TRUMPET_GOES = 0.46;
+export const CR_HAT_GOES = 2.0;
+/** The Hush's colours: the dead grey-violet of a silence (as the watch's horn, art/floor11.ts). */
+export const HUSH: Ramp = ['#14121e', '#262234', '#3e3852', '#625a7a', '#9890b4'];
 
 /** His canvas: room for the trumpet swung round him at full reach and his feet in a lunge (kept by the tests). */
 export const CR_CANVAS: MobCanvas = { w: 470, h: 450, ax: 224, ay: 330 };

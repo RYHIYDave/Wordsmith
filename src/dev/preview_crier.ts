@@ -12,7 +12,7 @@ import { CR_OFF } from '../art/crier';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
-import { canvasOf, paintMob } from '../art/new_mobs3';
+import { canvasOf, deathOfMob, paintMob } from '../art/new_mobs3';
 import type { Mob } from '../art/new_mobs3';
 import { P } from '../art/palette';
 import { paintTerrain, pictureOf, terrainOf } from '../art/terrain';
@@ -64,7 +64,8 @@ function groundPane(x: number, y: number, w: number, h: number, S: number): void
   g.fillRect(x, y, w, h);
 }
 
-const spOf = (mob: Mob, which: string, t: number, view: GameView): Sprite => toSprite(paintMob(mob, which, t, view), mob.aura, canvasOf(mob).ax, canvasOf(mob).ay);
+const spOf = (mob: Mob, which: string, t: number, view: GameView): Sprite =>
+  which === 'die' ? toSprite(deathOfMob(mob, t / mob.dieTime, view), null, canvasOf(mob).ax, canvasOf(mob).ay) : toSprite(paintMob(mob, which, t, view), mob.aura, canvasOf(mob).ax, canvasOf(mob).ay);
 const KNIGHT = (): Sprite => spriteOf3(MOVES3.rear, 0, 'front');
 
 /** A figure at (fx, fy), its floor point, `S` times: its shadow, its aura, itself, its lights. */
@@ -88,7 +89,27 @@ function label(s: string, x: number, y: number): void {
   g.restore();
 }
 
-if (mode === 'game') {
+if (mode === 'strip') {
+  // strip:<move>:<t,t,...>:<scale>: a row of moments of a move, facing you above and facing away below
+  const which = parts[1] || 'attack';
+  const ts = (parts[2] || '0').split(',').map(Number);
+  const S = Number(parts[3]) || 2;
+  const sps = ts.map((t) => [spOf(CRIER_MOB, which === 'dying' ? 'die' : which, t, 'front'), spOf(CRIER_MOB, which === 'dying' ? 'die' : which, t, 'back')] as const);
+  const cellW = Math.ceil(Math.max(...sps.flat().map((sp) => sp.w * 2)) * S * 0.62);
+  const up = Math.max(...sps.flat().map((sp) => sp.ay * 2)) * S;
+  const down = Math.max(...sps.flat().map((sp) => (sp.h - sp.ay) * 2)) * S;
+  const rowH = Math.ceil(up + down * 0.6) + 24;
+  cv.width = Math.min(4000, cellW * ts.length + 20);
+  cv.height = rowH * 2 + 30;
+  groundPane(0, 0, cv.width, cv.height, S);
+  ts.forEach((t, i) => {
+    const x = 10 + cellW * (i + 0.5);
+    figure(sps[i][0], x, 30 + up, S, CRIER_MOB.shadow);
+    figure(sps[i][1], x, 30 + rowH + up, S, CRIER_MOB.shadow);
+    label(`${t.toFixed(2)}`, x - 20, 6);
+  });
+  show();
+} else if (mode === 'game') {
   // game: as a phone shows it (the game's size), on the square at dusk, the knight before him
   cv.width = 1014;
   cv.height = 468;
