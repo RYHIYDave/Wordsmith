@@ -309,7 +309,7 @@ function filmScene(k: number): Scene {
 // house front (its foot on the face's foot), or standing on the roofs (drawn the ground's rise up)
 
 const PIECES = new Map<string, Piece>([...gateWardPieces(), ...hushSetPieces()].map((p) => [p.name, p]));
-interface Laid { name: string; frame: number; x: number; y: number; on?: 'left' | 'right' | 'top' }
+interface Laid { name: string; frame: number; x: number; y: number; on?: 'left' | 'right' | 'top'; flat?: boolean }
 /**
  * THE MARKET, as his words of 18 Oct ask (“those open squares we want a natural market layout look.”; then, of the
  * first, “That’s wayyyyu too congested.  The open squares should be like at least 2x that size”; to the second,
@@ -375,11 +375,37 @@ const DRESS: Laid[] = [
   { name: "the watch's alarm bell", frame: 0, x: 46.3, y: 22.4 },
   { name: 'the horse trough', frame: 0, x: 39.6, y: 32.8 },
   { name: 'hay bales', frame: 0, x: 43.2, y: 33.6 },
-  { name: "the crier's last proclamation", frame: 0, x: 36.2, y: 25.6 },
   { name: "the watch's alarm horn, the Hush's", frame: 3, x: 33.5, y: 38.2 },
   // the city gate, at the far end of the lane in
   { name: 'the city gate, broken', frame: 1, x: 3.4, y: 23.5 },
+  // the set's: the Order's lanterns where they hold the street, their cart, the Hush's jar left in the square; the
+  // Order's ink across the setts, a drain, a cellar's hatch thrown open
+  { name: "the Order's hooded lantern", frame: 0, x: 16.2, y: 22.5 },
+  { name: "the Order's hooded lantern", frame: 1, x: 47.4, y: 26.4 },
+  { name: "the carters' cart, the Order's", frame: 2, x: 52.5, y: 20.4 },
+  { name: 'a jar of the Hush', frame: 0, x: 22.2, y: 22.4 },
+  { name: "the Order's ink bars", frame: 0, x: 34.2, y: 33.6, flat: true },
+  { name: "the Order's ink bars", frame: 2, x: 24.0, y: 13.2, flat: true },
+  { name: 'an ink spill', frame: 0, x: 21.8, y: 29.0, flat: true },
+  { name: 'a drain grate', frame: 1, x: 25.4, y: 36.3, flat: true },
+  { name: "a cellar's hatch", frame: 1, x: 44.4, y: 29.2, flat: true },
+  { name: "the crier's last proclamation", frame: 0, x: 36.2, y: 25.6, flat: true },
+  // IN THE TAVERN: its hearth burning against its far side wall, a dresser against its back wall, its table and
+  // benches (against the far walls: the house beside a room on the near side is cut down as the ground cuts
+  // any near wall, so nothing tall stands in a room's near half)
+  { name: 'the hearth', frame: 2, x: 21.35, y: 6.9 },
+  { name: 'a dresser', frame: 0, x: 22.6, y: 5.35 },
+  { name: 'a tavern table and benches', frame: 0, x: 23.6, y: 7.0 },
+  // IN THE SHOP: the Order's now, its store of jars; reams of blank paper; a bed in its back room
+  { name: "the Order's rack of jars", frame: 1, x: 11.6, y: 17.5 },
+  { name: 'bundles of blank paper', frame: 0, x: 13.9, y: 19.8 },
+  { name: 'a bed', frame: 1, x: 9.9, y: 19.2 },
   // on the house fronts
+  { name: 'wall lantern', frame: 0, x: 27.4, y: 10, on: 'left' },
+  { name: 'wall lantern', frame: 1, x: 17.0, y: 10, on: 'left' },
+  { name: 'blank proclamations, pasted', frame: 0, x: 37.4, y: 10, on: 'left' },
+  { name: "a house's door", frame: 2, x: 45.4, y: 10, on: 'left' },
+  { name: 'washing on a line', frame: 0, x: 57.5, y: 19, on: 'left' },
   { name: "a shop's doorbell", frame: 1, x: 40.5, y: 10, on: 'left' },
   { name: 'paper lanterns', frame: 0, x: 31.6, y: 10, on: 'left' },
   { name: 'paper lanterns', frame: 0, x: 7.6, y: 22, on: 'left' },
@@ -452,7 +478,8 @@ function drawDressed(g: CanvasRenderingContext2D, sc: Scene): void {
   type Thing = { d: number; draw: () => void; inside: boolean };
   const things: Thing[] = [];
   const inAny = (x: number, y: number): boolean => HOUSES.some((h) => insideOf(h, x, y));
-  for (const l of DRESS) if (!l.on) things.push({ d: l.x + l.y, draw: () => drawLaid(g, l), inside: inAny(l.x, l.y) });
+  // what lies flat on the floor goes under whatever stands
+  for (const l of DRESS) if (!l.on) things.push({ d: l.flat ? -1e6 + l.x + l.y : l.x + l.y, draw: () => drawLaid(g, l), inside: inAny(l.x, l.y) });
   for (const [x, y] of FOES) things.push({ d: x + y, draw: () => standAt(g, cultist.front.idle[0], x, y, 8), inside: inAny(x, y) });
   things.push({ d: sc.hero[0] + sc.hero[1], draw: () => standAt(g, sc.heroSprite, sc.hero[0], sc.hero[1], 9), inside: inAny(sc.hero[0], sc.hero[1]) });
   things.sort((a, b) => a.d - b.d);
@@ -473,6 +500,28 @@ function drawDressed(g: CanvasRenderingContext2D, sc: Scene): void {
 if (HASH === 'dressed') {
   drawDressed(g, { hero: HERO, heroSprite: knight, cam: HERO, shown: HOUSES.map(() => 1) });
   show(cvs);
+} else if (HASH === 'inside-tiles') {
+  const hero: [number, number] = [24.9, 7.6];
+  drawDressed(g, { hero, heroSprite: knight, cam: [24.0, 8.6], shown: HOUSES.map((h) => (insideOf(h, hero[0], hero[1]) ? 0 : 1)) });
+  drawTiles(g);
+  show(cvs);
+} else if (HASH === 'shells') {
+  // where each shell is: drawn over the scene in red
+  drawDressed(g, { hero: HERO, heroSprite: knight, cam: [24.0, 8.6], shown: HOUSES.map(() => 1) });
+  SHELLS.forEach((sh, i) => {
+    const c = document.createElement('canvas');
+    c.width = sh.w;
+    c.height = sh.h;
+    const d = c.getContext('2d') as CanvasRenderingContext2D;
+    d.drawImage(SHELL_PICS[i], 0, 0);
+    d.globalCompositeOperation = 'source-in';
+    d.fillStyle = 'rgba(255,0,60,0.6)';
+    d.fillRect(0, 0, sh.w, sh.h);
+    g.drawImage(c, sh.x0 - VX, sh.y0 - VY);
+    g.strokeStyle = '#ff0';
+    g.strokeRect(sh.x0 - VX, sh.y0 - VY, sh.w, sh.h);
+  });
+  show(cvs);
 } else if (HASH === 'gate') {
   const hero: [number, number] = [8.6, 23.6];
   drawDressed(g, { hero, heroSprite: knight, cam: [6.0, 20.4], shown: HOUSES.map(() => 1) });
@@ -484,8 +533,8 @@ if (HASH === 'dressed') {
   drawScene(g, { hero: HERO, heroSprite: knight, cam: HERO, shown: HOUSES.map(() => 1), tiles: HASH === 'tiles' });
   show(cvs);
 } else if (HASH === 'inside') {
-  const hero: [number, number] = [23.6, 6.8];
-  drawScene(g, { hero, heroSprite: knight, cam: hero, shown: HOUSES.map((h) => (insideOf(h, hero[0], hero[1]) ? 0 : 1)) });
+  const hero: [number, number] = [24.9, 7.6];
+  drawDressed(g, { hero, heroSprite: knight, cam: [24.0, 8.6], shown: HOUSES.map((h) => (insideOf(h, hero[0], hero[1]) ? 0 : 1)) });
   show(cvs);
 } else if (HASH === 'film') {
   const w = window as unknown as { __frames: number; __tickMs: number; __frame: (k: number) => string };

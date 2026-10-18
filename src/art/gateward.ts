@@ -971,9 +971,22 @@ export function houseShell(open: import('./terrain').Terrain, closed: import('./
   const a = paint(open, px0, py0, w, hh);
   const b = paint(closed, px0, py0, w, hh);
   const rgba = new Uint8ClampedArray(w * hh * 4);
+  // the house as it stands whole: every picture pixel over its tiles (room and front), up to its roof. What is
+  // there shuts in whatever stands in the room, even where the house whole and the room open happen to paint
+  // alike (a roof beside it, the same slate).
+  const inHouse = (x: number, y: number): boolean => x >= rx0 && x < x1 && y >= ry0 && y < y1;
+  const over = (px: number, py: number): boolean => {
+    for (let t = 0; t <= R; t += 2) {
+      const a2 = px / 32;
+      const b2 = (py + t) / 16;
+      if (inHouse((a2 + b2) / 2, (b2 - a2) / 2)) return true;
+    }
+    return false;
+  };
   for (let i = 0; i < w * hh; i++) {
     const o = i * 4;
-    if (a.rgba[o] === b.rgba[o] && a.rgba[o + 1] === b.rgba[o + 1] && a.rgba[o + 2] === b.rgba[o + 2]) continue;
+    const same = a.rgba[o] === b.rgba[o] && a.rgba[o + 1] === b.rgba[o + 1] && a.rgba[o + 2] === b.rgba[o + 2];
+    if (same && !(b.rgba[o + 3] > 0 && over(px0 + (i % w) + 0.5, py0 + Math.floor(i / w) + 0.5))) continue;
     rgba[o] = b.rgba[o];
     rgba[o + 1] = b.rgba[o + 1];
     rgba[o + 2] = b.rgba[o + 2];
