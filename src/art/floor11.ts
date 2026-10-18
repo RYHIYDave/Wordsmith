@@ -23,10 +23,10 @@ import { toneAt } from './floor4';
 import type { Scene, V3 } from './floor4';
 import { timber, rope } from './floor6';
 import type { Piece } from './floorkit';
-import { hash, mix } from './kit';
+import { CYAN, hash, mix } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
-import { BLACK, BOTTLE, BRASS, BRONZE, CHAR, CREAM, DEAL, GREENS, IRON, MASK, MUSTARD, OAK, OXBLOOD, PAPER, ROPE, SLATEBLUE, STONE, APPLE, CRUST, HOLE, WATER, cylinder, done, frontPiece, planks, scene, slab, turned } from './act2_kit';
+import { BLACK, BOTTLE, BRASS, BRONZE, CHAR, CREAM, DEAL, GREENS, IRON, MASK, MUSTARD, OAK, OXBLOOD, PAPER, ROPE, SLATEBLUE, STONE, STRAW, APPLE, CRUST, HOLE, SOFT_ID, WATER, checker, cylinder, done, facing, frontPiece, local, planks, scene, slab, turned } from './act2_kit';
 
 const fr = (t: number): number => t - Math.floor(t);
 
@@ -519,7 +519,7 @@ function firepotCrater(f: number): Sprite {
 // THE EVENT'S BELLS ON THIS FLOOR
 
 /** A BELL of bronze hung at `c` (its crown), `R` wide at its lip and `H` tall; swung `swing` radians about x. `gag`: bound in black cloth and chains. */
-export function bell(S: Scene, c: V3, R: number, H: number, swing: number, id: number, gag = false): void {
+export function bell(S: Scene, c: V3, R: number, H: number, swing: number, id: number, gag = false, METAL: Ramp = BRONZE): void {
   const prof = (t: number): number => R * (0.45 + 0.55 * t ** 1.7) + (t > 0.9 ? (t - 0.9) * R * 0.8 : 0); // its flare to the lip
   // built upright then swung: each point (x, y, z below the crown) turned about the x axis through the crown
   const sw = (w: V3): V3 => {
@@ -551,18 +551,18 @@ export function bell(S: Scene, c: V3, R: number, H: number, swing: number, id: n
           if (mx * mx + my * my < 1) return Math.abs(Math.abs(mx) - 0.38) < 0.2 && Math.abs(my + 0.2) < 0.18 ? BLACK[0] : toneAt(N3, MASK, 0.1);
           return fr(t * 5 + am) < 0.12 ? BLACK[1] : toneAt(N3, BLACK, 0.2);
         }
-        if (t > 0.88 && t < 0.93) return toneAt(N3, BRONZE, 0.5); // the lip's ridge
-        if (Math.abs(t - 0.3) < 0.03) return toneAt(N3, BRONZE, -0.4); // a band
+        if (t > 0.88 && t < 0.93) return toneAt(N3, METAL, 0.5); // the lip's ridge
+        if (Math.abs(t - 0.3) < 0.03) return toneAt(N3, METAL, -0.4); // a band
         void tm;
-        return toneAt(N3, BRONZE, 0.05);
+        return toneAt(N3, METAL, 0.05);
       }, id);
     }
   }
   // its mouth, dark under the lip
   S.egg(sw([c[0], c[1], c[2] - H * 0.98]), [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [prof(1) * 0.92, prof(1) * 0.92, 0.6], () => HOLE, id + 1);
   // its crown's loop
-  S.rod(sw([c[0] - 2, c[1], c[2]]), sw([c[0] - 2, c[1], c[2] + 4]), 1, 1, BRONZE, id + 2);
-  S.rod(sw([c[0] + 2, c[1], c[2]]), sw([c[0] + 2, c[1], c[2] + 4]), 1, 1, BRONZE, id + 2);
+  S.rod(sw([c[0] - 2, c[1], c[2]]), sw([c[0] - 2, c[1], c[2] + 4]), 1, 1, METAL, id + 2);
+  S.rod(sw([c[0] + 2, c[1], c[2]]), sw([c[0] + 2, c[1], c[2] + 4]), 1, 1, METAL, id + 2);
   if (gag) {
     // chains crossed over the cloth, and their padlock
     for (const s of [-1, 1]) {
@@ -663,6 +663,735 @@ function guildSign(e: Emblem): { left: Sprite; right: Sprite } {
 }
 
 // =================================================================================================
+// THE WARD'S GATES
+
+/** Ashlar of the city's stone on a face, `a` along it and `z` up: its tone's shift (the joints dark). */
+function ashlar(a: number, z: number, seed: number, bw = 14, ch = 8): number {
+  const row = Math.floor(z / ch);
+  const off = (row & 1) * bw * 0.5;
+  if (fr(z / ch) < 0.13 || fr((a + off) / bw) < 0.06) return -0.6;
+  return (hash(Math.floor((a + off) / bw), row, seed) - 0.5) * 0.32;
+}
+
+/** Courses on a box's sides (slab's grain): a dark joint every `ch` of its height `H`. */
+const coursed = (H: number, ch = 9) => (f: number, u: number, v: number): number => {
+  if (f >= 4) return 0;
+  const z = f === 0 || f === 1 ? v : u;
+  return fr((z * H) / ch) < 0.1 ? -0.55 : 0;
+};
+
+/** The dome's shards: glass of the cult's pink, faceted (as the set's). */
+const SHARD: Ramp = ['#2a0c22', '#4a1236', '#7a1a4e', '#b4306a', '#e86a98'];
+
+/**
+ * A SHARD OF THE DOME, a blade of its pink glass: two faces meeting in a ridge down its middle, its end broken
+ * in a jag; its foot at `base`, running `L` along `D`, `W` either way along `A`.
+ */
+function shardBlade(S: Scene, base: V3, D0: V3, A0: V3, L: number, W: number, id: number): void {
+  const nz = (v: V3): V3 => {
+    const l = Math.hypot(v[0], v[1], v[2]);
+    return [v[0] / l, v[1] / l, v[2] / l];
+  };
+  const D = nz(D0);
+  const A = nz(A0);
+  let O: V3 = [D[1] * A[2] - D[2] * A[1], D[2] * A[0] - D[0] * A[2], D[0] * A[1] - D[1] * A[0]];
+  if (O[0] + O[1] + O[2] * 0.8 < 0) O = [-O[0], -O[1], -O[2]];
+  const P = (u: number, z: number, o: number): V3 => [base[0] + A[0] * u + D[0] * z + O[0] * o, base[1] + A[1] * u + D[1] * z + O[1] * o, base[2] + A[2] * u + D[2] * z + O[2] * o];
+  const top = (u: number): number => L * (0.72 + 0.28 * Math.abs(Math.sin(u * 0.5 + 1.3))) - Math.abs(u) * 0.6;
+  const N = 10;
+  for (let i = 0; i < N; i++) {
+    const u0 = -W + (2 * W * i) / N;
+    const u1 = -W + (2 * W * (i + 1)) / N;
+    for (const side of [1, -1]) {
+      const o0 = side * 2 * (1 - Math.abs(u0) / W);
+      const o1 = side * 2 * (1 - Math.abs(u1) / W);
+      S.quad([P(u0, 0, o0), P(u1, 0, o1), P(u1, top(u1), o1 * 0.2), P(u0, top(u0), o0 * 0.2)], (u, v) => {
+        const uu = u0 + (u1 - u0) * u;
+        if (side < 0) return SHARD[1];
+        if (Math.abs(Math.sin(uu * 1.6 + v * 6.1)) < 0.08) return SHARD[4];
+        if (W - Math.abs(uu) < 1 || v > 0.94) return SHARD[4];
+        return uu < 0 ? SHARD[3] : SHARD[2];
+      }, id);
+    }
+  }
+}
+
+/**
+ * THE CITY GATE, BROKEN: the Gate Ward's own gate in the city wall, where the siege broke in. Two round towers
+ * of the city's stone, crenellated, arrow slits dark; the gate wall between them, its arch scorched black by
+ * the cult's fire; the portcullis jammed half up, its bars bent and snapped; one oak leaf torn off and flung
+ * flat before it, the other hanging askew from its last hinge; the city's arms over the arch smeared out with
+ * the Silent Order's ink, their black banner on the left tower; a shard of the dome driven into the right one.
+ * Its front looks along +y (`k` 0) or +x (`k` 1); built 1.4 times as big as it is measured here, so that it
+ * stands over the houses. 290 x 350 at (145, 296).
+ */
+function cityGate(k: number): Sprite {
+  const S = turned(scene(290, 350, 145, 296), k, 1.4);
+  const WALL = 112;
+  const FRONT = facing(S, [0, 1, 0]);
+  const inArch = (x: number, z: number): boolean => Math.abs(x) < 18 && (z < 58 || Math.hypot(x, z - 58) < 18);
+  // how far the cult's fire blackened the stone: round the arch and licking up the wall over it
+  const scorch = (x: number, z: number): number => Math.max(0, 1 - Math.hypot(x * 0.8, Math.max(0, z - 30) * 0.42) / 40) * (0.75 + 0.25 * Math.sin(x * 0.9 + z * 0.17));
+  const burnt = (c: string, x: number, z: number): string => {
+    const s = scorch(x, z);
+    return s > 0.08 ? mix(c, CHAR[1], Math.min(0.9, s * 1.3)) : c;
+  };
+  // THE GATE WALL's front: the arch through it, the ring of the arch's stones, the city's arms over it
+  S.quad([[-50, 0, 0], [50, 0, 0], [50, 0, WALL], [-50, 0, WALL]], (_u, _v, w0) => {
+    const [x, , z] = local(S, w0);
+    if (inArch(x, z)) return null;
+    const r = Math.hypot(x, z - 58);
+    if ((z >= 58 && r < 27) || (z < 58 && Math.abs(x) < 25)) {
+      const ang = (Math.atan2(z - 58, x) / Math.PI) * 11;
+      const wedge = z >= 58 ? Math.floor(ang) : Math.floor(z / 10) + 40 + (x > 0 ? 20 : 0);
+      const joint = z >= 58 ? fr(ang) < 0.08 || Math.abs(r - 26.4) < 0.7 : fr(z / 10) < 0.1 || Math.abs(Math.abs(x) - 24.4) < 0.7;
+      return burnt(joint ? toneAt(FRONT, STONE, -0.6) : toneAt(FRONT, STONE, 0.2 + (hash(wedge, 1, 711) - 0.5) * 0.2), x, z);
+    }
+    // the city's arms, a shield of paler stone; the ink slapped across it
+    const sx = x / 9;
+    const sz = (z - 96) / 11;
+    if (Math.abs(sx) < 1 && sz < 1 && (sz > -0.2 || Math.hypot(sx, (sz + 0.2) * 1.25) < 1)) {
+      if (Math.abs(sz - sx * 0.35 + 0.1) < 0.3 || (fr(x * 0.45) < 0.3 && sz < -0.1 && sz > -0.95 && Math.abs(sz - sx * 0.35) < 0.95)) return BLACK[fr(x * 0.4) < 0.5 ? 1 : 2];
+      if (Math.abs(sx) > 0.84 || sz > 0.86) return toneAt(FRONT, STONE, 0.45);
+      if (Math.abs(sx - sz * 0.8) < 0.13 || (Math.abs(sx + sz * 0.8) < 0.11 && sz > -0.55)) return toneAt(FRONT, STONE, -0.35);
+      return toneAt(FRONT, STONE, 0.3);
+    }
+    return burnt(toneAt(FRONT, STONE, ashlar(x, z, 712)), x, z);
+  }, 1);
+  // its top, and its merlons
+  S.quad([[-50, -22, WALL], [50, -22, WALL], [50, 0, WALL], [-50, 0, WALL]], (u, v) => toneAt([0, 0, 1], STONE, fr(u * 7) < 0.05 || fr(v * 2) < 0.08 ? -0.4 : 0.05), 2);
+  for (let x = -46; x < 44; x += 12) slab(S, x, -6, x + 7, 0, WALL, WALL + 10, STONE, 3, 0.05);
+  // THE PASSAGE through it, its sides in shade
+  for (const sx of [-1, 1]) {
+    S.quad([[sx * 18, -22, 0], [sx * 18, 0, 0], [sx * 18, 0, 58], [sx * 18, -22, 58]], (_u, _v, w0) => {
+      const [, y, z] = local(S, w0);
+      return burnt(toneAt(facing(S, [-sx, 0, 0]), STONE, ashlar(y, z, 713) - 0.3), 0, z * 0.6);
+    }, 4);
+  }
+  // THE PORTCULLIS, jammed half up: its bars bent and two snapped short, its spikes, one bar torn down and out
+  const archTop = (x: number): number => 58 + Math.sqrt(Math.max(0, 324 - x * x));
+  for (let x = -15; x <= 15; x += 5) {
+    const snapped = x === -5 || x === 5;
+    const bot = snapped ? 50 : 38;
+    S.rod([x, -8, bot], [x, -8, archTop(x) - 1], 1.1, 1.1, IRON, 20);
+    if (!snapped) S.rod([x, -8, bot], [x, -8, bot - 5], 1.1, 0.25, IRON, 20);
+  }
+  for (const z of [44, 56, 68]) {
+    const half = z < 58 ? 17 : Math.sqrt(324 - (z - 58) ** 2) - 1;
+    S.rod([-half, -8, z], [half, -8, z], 0.9, 0.9, IRON, 21);
+  }
+  S.rod([10, -8, 40], [13, -3, 30], 1, 1, IRON, 22);
+  S.rod([13, -3, 30], [11, 3, 21], 1, 0.3, IRON, 22);
+  // THE LEFT LEAF, torn off and flung flat before the gate: oak boards, two iron bands, its end split
+  {
+    const t = 0.35;
+    const A0: V3 = [Math.cos(t), Math.sin(t), 0];
+    const A1: V3 = [-Math.sin(t), Math.cos(t), 0];
+    S.box([-24, 28, 2.2], [A0, A1, [0, 0, 1]], [10, 30, 2.2], (f, u, v, n) => {
+      if (f === 4) {
+        if (v > 0.9 && fr(u * 4) > 0.45 - (v - 0.9) * 4) return null;
+        if (Math.abs(v - 0.18) < 0.035 || Math.abs(v - 0.7) < 0.035) return fr(u * 6) < 0.15 ? IRON[4] : toneAt(n, IRON, 0.1);
+        return fr(u * 4) < 0.08 ? OAK[0] : toneAt(n, OAK, (hash(Math.floor(u * 4), 3, 714) - 0.5) * 0.3);
+      }
+      return toneAt(n, OAK, -0.25);
+    }, 23);
+    // splinters off its broken end
+    for (let i = 0; i < 4; i++) S.rod([-24 + A1[0] * 30 + A0[0] * (i * 5 - 7), 28 + A1[1] * 30 + A0[1] * (i * 5 - 7), 2], [-24 + A1[0] * (33 + (i % 2) * 3) + A0[0] * (i * 5 - 6), 28 + A1[1] * (33 + (i % 2) * 3) + A0[1] * (i * 5 - 6), 1], 0.8, 0.2, OAK, 24);
+  }
+  // THE RIGHT LEAF, hanging askew from its last hinge, swung half open and sagging
+  {
+    const th = 0.95;
+    const tilt = 0.17;
+    const d: V3 = [-Math.cos(th), Math.sin(th), 0];
+    const A0: V3 = [d[0] * Math.cos(tilt), d[1] * Math.cos(tilt), -Math.sin(tilt)];
+    const A2: V3 = [d[0] * Math.sin(tilt), d[1] * Math.sin(tilt), Math.cos(tilt)];
+    const A1: V3 = [A2[1] * A0[2] - A2[2] * A0[1], A2[2] * A0[0] - A2[0] * A0[2], A2[0] * A0[1] - A2[1] * A0[0]];
+    const h: V3 = [17, -2, 2];
+    const c: V3 = [h[0] + A0[0] * 9 + A2[0] * 28, h[1] + A0[1] * 9 + A2[1] * 28, h[2] + A0[2] * 9 + A2[2] * 28];
+    S.box(c, [A0, A1, A2], [9, 1.7, 28], (f, u, v, n) => {
+      if (f === 2 || f === 3) {
+        // u up it, v across it
+        if (u > 0.93 && v > 0.55) return null; // its top corner broken away
+        if (Math.abs(u - 0.2) < 0.03 || Math.abs(u - 0.78) < 0.03) return fr(v * 5) < 0.18 ? IRON[4] : toneAt(n, IRON, 0.05);
+        return fr(v * 3) < 0.07 ? OAK[0] : toneAt(n, OAK, (hash(Math.floor(v * 3), 5, 715) - 0.5) * 0.3 - 0.05);
+      }
+      return toneAt(n, OAK, -0.2);
+    }, 25);
+    S.rod([17, -2, 4], [17, -2, 12], 1.2, 1.2, IRON, 26);
+  }
+  // THE TOWERS: round, of coursed stone, arrow slits toward the street; their tops crenellated
+  for (const sx of [-1, 1]) {
+    const cx = sx * 57;
+    const cy = -9;
+    cylinder(S, cx, cy, 21, 0, 138, (n, a, z) => {
+      const slit = (z > 56 && z < 76) || (z > 98 && z < 114);
+      if (slit && Math.abs(a - Math.PI / 2 + sx * 0.4) < 0.05) return HOLE;
+      return toneAt(n, STONE, ashlar(a * 21, z, 716 + sx));
+    }, 30 + sx, (_a, rr) => (fr(rr * 3) < 0.08 ? STONE[1] : STONE[3]));
+    cylinder(S, cx, cy, 22.5, 136, 150, (n, a, z) => {
+      if (z > 143 && fr((a * 12) / (2 * Math.PI)) < 0.42) return null;
+      return toneAt(n, STONE, ashlar(a * 22, z, 718) + 0.05);
+    }, 33 + sx, (a, rr) => (rr > 0.9 && fr((a * 12) / (2 * Math.PI)) >= 0.42 ? STONE[4] : null));
+  }
+  // THE ORDER'S BANNER down the left tower: black, the blank mask, its foot cut in tongues
+  S.rod([-66, 13, 137], [-48, 13, 137], 0.8, 0.8, OAK, 40);
+  S.quad([[-64, 13.2, 136], [-50, 13.2, 136], [-50, 13.2, 64], [-64, 13.2, 64]], (u, v) => {
+    if (v > 0.88 && v > 0.88 + Math.abs(fr(u * 3) - 0.5) * 0.24) return null;
+    const mx = (u - 0.5) / 0.32;
+    const my = (v - 0.3) / 0.15;
+    if (mx * mx + my * my < 1) return Math.abs(Math.abs(mx) - 0.42) < 0.2 && Math.abs(my + 0.15) < 0.22 ? BLACK[0] : MASK[my < -0.35 ? 4 : 3];
+    return fr(u * 4) < 0.16 ? BLACK[1] : BLACK[u < 0.5 ? 3 : 2];
+  }, 41);
+  // A SHARD OF THE DOME driven into the right tower
+  {
+    // out of the tower's face toward the street, tipped up, stuck in deep
+    const base: V3 = [57 + 21 * Math.cos(1.0), -9 + 21 * Math.sin(1.0), 88];
+    shardBlade(S, base, [0.3, 0.5, 0.8], [0.86, -0.5, 0], 34, 8, 50);
+  }
+  // stones knocked from the battlements, at the foot of the right tower
+  for (const [x, y, s, t] of [[36, 16, 4, 0.3], [45, 25, 3.2, 1.1], [29, 27, 2.6, 0.7]] as const) {
+    S.box([x, y, s], [[Math.cos(t), Math.sin(t), 0], [-Math.sin(t), Math.cos(t), 0], [0, 0, 1]], [s * 1.5, s, s], (_f, _u, _v, n) => toneAt(n, STONE, 0.05), 51);
+  }
+  return done(S, 145, 296, [{ at: [76, 20, 100], r: 26, color: SHARD[3], a: 0.4 }]);
+}
+
+/**
+ * THE CRIER'S GATE, the way into the Crier's Square (the boss's gate): an arch between two piers of the city's
+ * stone; across its head his emblem, a great speaking-trumpet of brass; down each pier his banner, oxblood, his
+ * trumpet worked on it in brass thread. Shut: its oak doors bound across with the Silent Order's black cloth,
+ * the blank mask on it, chained and padlocked, and the trumpet over it gagged. Open: the doors stand back, the
+ * cloth hangs torn. Front along +y (`k` 0) or +x (1). 140 x 180 at (70, 154).
+ */
+function criersGate(open: boolean, k: number): Sprite {
+  const S = turned(scene(140, 180, 70, 154), k);
+  const FRONT = facing(S, [0, 1, 0]);
+  const H = 104;
+  // its step, the piers and the cornice over them
+  slab(S, -36, -12, 36, 12, 0, 3, STONE, 1, 0.05);
+  for (const sx of [-1, 1]) {
+    // each pier: a moulded foot, its shaft of dressed stone, a capital
+    slab(S, sx * 27 - 9, -11, sx * 27 + 9, 11, 3, 12, STONE, 30 + sx, 0.05);
+    slab(S, sx * 27 - 7, -9, sx * 27 + 7, 9, 12, H - 8, STONE, 2 + (sx > 0 ? 1 : 0), 0, (f, u, v) => {
+      if (f >= 4) return 0;
+      const z = f === 0 || f === 1 ? v : u;
+      const a = f === 0 || f === 1 ? u : v;
+      const row = Math.floor(z * 8);
+      if (fr(z * 8) < 0.1 || fr(a * 2 + (row & 1) * 0.5) < 0.06) return -0.6;
+      return (hash(row, Math.floor(a * 2 + (row & 1) * 0.5), 724 + sx) - 0.5) * 0.3 - 0.05;
+    });
+    slab(S, sx * 27 - 9, -11, sx * 27 + 9, 11, H - 8, H, STONE, 32 + sx, 0.15);
+  }
+  // the head over the arch, its front cut by the arch, its wedge stones
+  const inArch = (x: number, z: number): boolean => Math.abs(x) < 20 && (z < 58 || Math.hypot(x, z - 58) < 20);
+  S.quad([[-20, 9, 3], [20, 9, 3], [20, 9, H], [-20, 9, H]], (_u, _v, w0) => {
+    const [x, , z] = local(S, w0);
+    if (inArch(x, z)) return null;
+    const r = Math.hypot(x, z - 58);
+    if (z >= 58 && r < 27) {
+      const ang = (Math.atan2(z - 58, x) / Math.PI) * 9;
+      return fr(ang) < 0.09 || Math.abs(r - 26.4) < 0.7 ? toneAt(FRONT, STONE, -0.6) : toneAt(FRONT, STONE, 0.22 + (hash(Math.floor(ang), 2, 721) - 0.5) * 0.2);
+    }
+    return toneAt(FRONT, STONE, ashlar(x, z, 722));
+  }, 5);
+  S.quad([[-20, -9, H], [20, -9, H], [20, 9, H], [-20, 9, H]], () => toneAt([0, 0, 1], STONE, 0.05), 6);
+  slab(S, -37, -11, 37, 11, H, H + 6, STONE, 7, 0.15);
+  slab(S, -33, -8, 33, 8, H + 6, H + 9, STONE, 8, 0.05);
+  // the arch's inner sides, in shade
+  for (const sx of [-1, 1]) S.quad([[sx * 20, -9, 3], [sx * 20, 9, 3], [sx * 20, 9, 58], [sx * 20, -9, 58]], () => toneAt(facing(S, [-sx, 0, 0]), STONE, -0.35), 9);
+  // HIS EMBLEM across the head: the great speaking-trumpet in brass, its bell to the right; gagged while the gate is shut
+  speakingTrumpet(S, [-24, 11, 90], [20, 12, 94], 8, 10, !open);
+  for (const x of [-14, 10]) S.rod([x, 9, 92], [x, 11, 92], 0.9, 0.9, IRON, 14);
+  // HIS BANNERS down the piers: oxblood, a cream border, his trumpet worked in brass thread
+  for (const sx of [-1, 1]) {
+    const x0 = sx * 27 - 6;
+    const x1 = sx * 27 + 6;
+    S.rod([x0 - 1, 9.8, 96], [x1 + 1, 9.8, 96], 0.7, 0.7, BRASS, 15);
+    S.quad([[x0, 10, 95], [x1, 10, 95], [x1, 10, 30], [x0, 10, 30]], (u, v) => {
+      if (v > 0.9 && v > 0.9 + Math.abs(fr(u * 2) - 0.5) * 0.2) return null;
+      if (u < 0.1 || u > 0.9 || v < 0.05) return CREAM[3];
+      // the trumpet: a line from its mouthpiece (lower left) to its flared bell (upper right)
+      const ax = 0.25;
+      const ay = 0.62;
+      const bx = 0.72;
+      const by = 0.3;
+      const t = Math.max(0, Math.min(1, ((u - ax) * (bx - ax) + (v - ay) * (by - ay)) / ((bx - ax) ** 2 + (by - ay) ** 2)));
+      const d = Math.hypot(u - (ax + (bx - ax) * t), v - (ay + (by - ay) * t));
+      if (d < 0.035 + Math.max(0, t - 0.72) * 0.45 && t > 0.02) return BRASS[t > 0.9 ? 4 : 3];
+      return OXBLOOD[fr(u * 2.5 + 0.3) < 0.2 ? 2 : 3];
+    }, 16 + (sx > 0 ? 1 : 0));
+  }
+  // THE DOORS
+  const archTop = (x: number): number => (Math.abs(x) < 20 ? 58 + Math.sqrt(Math.max(0, 400 - x * x)) : 58);
+  const leafAt = (hx: number, ang: number, id: number): void => {
+    // a leaf hung at (hx, 0), 20 wide, its head cut to the arch, turned `ang` back from shut (toward -y)
+    const s = hx < 0 ? 1 : -1;
+    const d: V3 = [s * Math.cos(ang), -Math.sin(ang), 0];
+    const n = facing(S, [-d[1] * s, d[0] * s, 0]);
+    S.quad([[hx, 0, 3], [hx + d[0] * 20, d[1] * 20, 3], [hx + d[0] * 20, d[1] * 20, 79], [hx, 0, 79]], (u, _v, w0) => {
+      const z = local(S, w0)[2];
+      if (z > archTop(hx + s * 20 * u) - 0.4) return null;
+      if (Math.abs(z - 16) < 1.5 || Math.abs(z - 48) < 1.5) return fr(u * 4) < 0.15 ? IRON[4] : toneAt(n, IRON, 0.05);
+      if (fr(u * 4) < 0.07) return OAK[0];
+      return toneAt(n, OAK, (hash(Math.floor(u * 4), id, 723) - 0.5) * 0.3 - 0.05);
+    }, id);
+  };
+  if (!open) {
+    leafAt(-20, 0, 20);
+    leafAt(20, 0, 21);
+    // the Order's cloth bound across them, the blank mask in its middle; chains crossed over; a padlock
+    S.quad([[-21, 1.2, 28], [21, 1.2, 28], [21, 1.2, 46], [-21, 1.2, 46]], (u, v) => {
+      const mx = (u - 0.5) / 0.11;
+      const my = (v - 0.5) / 0.42;
+      if (mx * mx + my * my < 1) return Math.abs(Math.abs(mx) - 0.42) < 0.2 && Math.abs(my - 0.15) < 0.22 ? BLACK[0] : MASK[my > 0.4 ? 4 : 3];
+      return fr(u * 9 + v * 0.6) < 0.14 ? BLACK[1] : BLACK[3];
+    }, 22);
+    for (const s of [-1, 1]) {
+      for (let i = 0; i <= 12; i++) {
+        const t = i / 12;
+        S.egg([s * (-18 + 36 * t), 2.2, 14 + 46 * t], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [1.7, 1.2, 1.4], (n) => toneAt(n, IRON, i % 2 ? 0.55 : 0.25), 23);
+      }
+    }
+    S.box([0, 2.8, 33], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [3, 1.2, 3.6], (_f, _u, _v, n) => toneAt(n, IRON, 0.25), 24);
+  } else {
+    leafAt(-20, 1.35, 20);
+    leafAt(20, 1.35, 21);
+    // the cloth torn, hanging in two shreds from the piers' inner edges
+    for (const s of [-1, 1]) {
+      S.quad([[s * 20.5, 1.5, 46], [s * 13, 1.5, 46], [s * 15, 2, 22], [s * 20.5, 2, 18]], (u, v) => (v > 0.85 && fr(u * 3) > 0.5 ? null : fr(u * 5) < 0.2 ? BLACK[1] : BLACK[3]), 25 + (s > 0 ? 1 : 0));
+    }
+  }
+  return done(S, 70, 154);
+}
+
+// =================================================================================================
+// THE HUSH'S TRAP ON THIS FLOOR
+
+/** The Hush's colours: the dead grey-violet of a silence. */
+const HUSH: Ramp = ['#14121e', '#262234', '#3e3852', '#625a7a', '#9890b4'];
+
+/**
+ * THE WATCH'S ALARM HORN, the Hush's now (the floor's trap): a great brass horn of the town watch on a swivel
+ * atop an oak post, the Silent Order's black gag pulled down off its mouth. Quiet; its throat kindles pink to
+ * gold and it shudders (the warning); it blasts a cone of silence along its mouth, three and a half tiles:
+ * waves of dead grey-violet air rolling out, the setts under them darkened (inside, the hero's words go dark).
+ * `f`: 0 quiet, 1 the warning, 2 to 4 the blast. Turned to look along +y (`k` 0) or +x (1). 300 x 230 at (180, 130).
+ */
+function alarmHorn(f: number, k: number): Sprite {
+  const S = turned(scene(300, 230, 180, 130), k);
+  const shake = f === 1 ? 1 : 0;
+  const kick = f >= 2 ? -2.5 + (f - 2) : 0;
+  // its stone footing, the post, its iron collar and the swivel's yoke
+  slab(S, -6, -6, 6, 6, 0, 5, STONE, 1, 0);
+  timber(S, [0, 0, 5], [0, 0, 56], 2.6, 2, [0.1, 0.9]);
+  S.rod([0, 0, 56], [-5, 0, 61], 0.9, 0.9, IRON, 3);
+  S.rod([0, 0, 56], [5, 0, 61], 0.9, 0.9, IRON, 3);
+  // the horn: long, its bell along +y
+  const mouth: V3 = [shake, 26 + kick, 61];
+  speakingTrumpet(S, [-shake, -20 + kick, 63], mouth, 9.5, 4);
+  // the gag, pulled down off its mouth, hanging from its throat
+  S.quad([[-7, 18, 56], [7, 18, 56], [6, 21, 42], [-5, 20, 40]], (u, v) => (v > 0.8 && fr(u * 3) < 0.4 ? null : fr(u * 4) < 0.2 ? BLACK[1] : BLACK[3]), 8);
+  const lights: { at: V3; r: number; color: string; a?: number }[] = [];
+  if (f >= 1) {
+    // its throat kindled: pink burning to gold in its mouth
+    S.egg([mouth[0], mouth[1] + 1.9, mouth[2]], [[0, 1, 0], [1, 0, 0], [0, 0, 1]], [0.3, 7.2, 7.2], (_n, w) => {
+      const [x, , z] = local(S, w);
+      const r = Math.hypot(x - mouth[0], z - mouth[2]) / 7.2;
+      return r < 0.35 ? FLAME[4] : r < 0.65 ? FLAME[3] : FLAME[2];
+    }, SOFT_ID + 1);
+    lights.push({ at: [mouth[0], mouth[1] + 4, mouth[2]], r: f === 1 ? 22 : 30, color: FLAME[2], a: 0.5 });
+  }
+  // ITS CONE on the setts, three and a half tiles along its mouth: drawn round in the warning (where it will
+  // blast), tinted inside while it blasts
+  const HALF = 0.46;
+  const LEN = 140;
+  if (f >= 1) {
+    const p = f - 2;
+    const SPREAD = Math.atan(HALF);
+    S.quad([[-80, 16, 0.4], [80, 16, 0.4], [80, 18 + LEN + 4, 0.4], [-80, 18 + LEN + 4, 0.4]], (_u, _v, w0) => {
+      const [x, y] = local(S, w0);
+      const d = Math.hypot(x, y - 18);
+      const ang = Math.abs(Math.atan2(x, y - 18));
+      if (y < 18 || d > LEN + 1.4 || ang > SPREAD + 1.4 / Math.max(1, d)) return null;
+      const rim = Math.abs(d - LEN) < 1.4 || Math.abs(ang - SPREAD) * d < 1.4;
+      if (f === 1) return rim && fr((d + ang * 30) / 9) < 0.55 ? HUSH[3] : null;
+      if (rim) return HUSH[3];
+      // inside: a dead tint where the waves have reached
+      const reach = 34 + p * 52;
+      return d < reach && checker(S, w0, 4) ? HUSH[2] : null;
+    }, SOFT_ID + 2);
+  }
+  if (f >= 2) {
+    const p = f - 2;
+    // the waves of silence rolling out of it: arcs of dead grey-violet air, crisp near it, fading as they go
+    for (let j = 0; j < 4; j++) {
+      const y = 32 + j * 30 + p * 10;
+      if (y > 18 + LEN) continue;
+      const r = 6 + (y - 26) * 0.4;
+      const zc = 61 - (y - 26) * 0.25;
+      const tone = j === 0 ? HUSH[4] : j === 1 ? HUSH[4] : HUSH[3];
+      const solid = j < 2;
+      S.quad([[-r - 3, y, zc - r - 3], [r + 3, y, zc - r - 3], [r + 3, y, zc + r + 3], [-r - 3, y, zc + r + 3]], (_u, _v, w0) => {
+        const [x, , z] = local(S, w0);
+        const d = Math.hypot(x, z - zc);
+        if (Math.abs(d - r) > 1.1 || z < 2) return null;
+        // the arc over the top and down its sides, open below
+        if (z - zc < -r * 0.55) return null;
+        return solid || checker(S, w0) ? tone : null;
+      }, SOFT_ID + 3 + j);
+    }
+    // sparks of the cult's fire spat from its mouth
+    for (let i = 0; i < 6; i++) {
+      const t = (i * 0.37 + p * 0.21) % 1;
+      S.ball([Math.sin(i * 2.3) * (4 + t * 14), 28 + t * 36, 61 + Math.cos(i * 1.7) * (3 + t * 8) - t * 6], 0.8, FLAME, SOFT_ID + 10);
+    }
+  }
+  return done(S, 180, 130, lights);
+}
+
+// =================================================================================================
+// THE FLOOR'S QUEST
+
+/**
+ * THE CRIER'S LAST PROCLAMATION (the floor's quest): the one proclamation the Hush did not blank, dropped when
+ * they took his voice: a scroll of heavy paper half unrolled on the setts, his words still on it in ink, the
+ * city's seal in oxblood wax on its ribbon. A faint white light on its words. 80 x 60 at (40, 40).
+ */
+function proclamation(): Sprite {
+  const S = scene(80, 60, 40, 40);
+  // the sheet, unrolled, lying a little curled
+  S.quad([[-13, -6, 0.6], [11, -6, 0.6], [11, 13, 0.9], [-13, 13, 1.4]], (u, v) => {
+    if (u < 0.04 || u > 0.96) return PAPER[2];
+    // the title, bigger, then his lines; each word a dash of ink
+    const row = v * 8;
+    const line = Math.floor(row);
+    const inLine = fr(row);
+    if (line === 0) return PAPER[3];
+    const title = line === 1;
+    if (inLine > (title ? 0.2 : 0.35) && inLine < (title ? 0.75 : 0.62) && u > 0.12 && u < (line === 7 ? 0.55 : 0.88)) {
+      const word = Math.floor(u * (title ? 5 : 9) + hash(line, 1, 731) * 3);
+      if (fr(u * (title ? 5 : 9) + hash(line, 1, 731) * 3) > 0.18 && hash(word, line, 732) > 0.12) return title ? '#3a1c22' : '#2a2030';
+    }
+    return PAPER[v > 0.9 ? 3 : 4];
+  }, 1);
+  // the roll at its far end
+  S.egg([-1, -7, 2.7], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [12.6, 2.6, 2.6], (n, w) => {
+    const [x] = local(S, w);
+    if (Math.abs(x) > 11.8) return PAPER[1]; // its ends: the turns of the roll
+    return toneAt(n, PAPER, -0.15);
+  }, 2);
+  // the seal, oxblood, on its ribbon, at the near end
+  S.quad([[-3, 12.6, 1.6], [-1, 12.6, 1.6], [-4, 19, 0.3], [-6, 18, 0.3]], (_u, v) => (v > 0.7 ? MUSTARD[2] : MUSTARD[3]), 3);
+  S.quad([[1, 12.6, 1.6], [3, 12.6, 1.6], [4, 19.5, 0.3], [2, 20, 0.3]], (_u, v) => (v > 0.7 ? MUSTARD[2] : MUSTARD[3]), 4);
+  S.egg([0, 13, 2], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [3.6, 3.6, 1.2], (n, w) => {
+    const [x, y] = local(S, w);
+    return Math.hypot(x, y - 13) < 1.6 ? OXBLOOD[2] : toneAt(n, OXBLOOD, 0.2);
+  }, 5);
+  return done(S, 40, 40, [{ at: [-1, 3, 4], r: 18, color: '#e8e2d2', a: 0.3 }]);
+}
+
+// =================================================================================================
+// THE BELLS ON THIS FLOOR (the set's event: struck in time, they break the Hush)
+
+/** A bell's swing in each of its states: quiet, awake (ready to ring), rung one way, rung back. */
+const SWING = [0, 0, 0.42, -0.42];
+/** The friend's cyan (his rulebook, Colour 3: friendly magic, as a waypoint's). */
+const CY: Ramp = CYAN;
+/** The Bells' metal: a lighter bronze for the small ones to read; awake or rung, the cyan in it. */
+const BELL_METAL: Ramp = ['#3a2c22', '#5c4630', '#86683e', '#ad8c52', '#d0b070'];
+const AWAKE_METAL: Ramp = BELL_METAL.map((c, i) => mix(c, i >= 3 ? '#b8fff8' : '#22d0e0', i >= 3 ? 0.45 : 0.22)) as unknown as Ramp;
+const metalOf = (state: number): Ramp => (state === 0 ? BELL_METAL : AWAKE_METAL);
+
+/**
+ * A BELL'S STATE about it: awake, a cyan shimmer round its lip and motes rising off it (friendly magic: the
+ * Bells are the hero's to ring); rung, the shimmer flung out along the ground in rings round `foot`. Its lights.
+ */
+function bellGlow(S: Scene, c: V3, R: number, H: number, state: number, foot: V3): { at: V3; r: number; color: string; a?: number }[] {
+  if (state === 0) return [];
+  const sw = SWING[state];
+  const lip: V3 = [c[0], c[1] + H * Math.sin(sw), c[2] - H * Math.cos(sw)];
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2 + state * 0.4;
+    const r = R * 1.28 + (i % 2) * 1.1;
+    S.ball([lip[0] + Math.cos(a) * r, lip[1] + Math.sin(a) * r, lip[2] + (i % 3) * 0.9], i % 3 === 0 ? 1.1 : 0.75, CY, SOFT_ID + 20);
+  }
+  if (state === 1) {
+    for (let i = 0; i < 10; i++) {
+      const a = i * 2.1;
+      const rr = R * (0.7 + (i % 3) * 0.35);
+      S.ball([c[0] + Math.cos(a) * rr, c[1] + Math.sin(a) * rr, lip[2] + 4 + ((i * 7) % 13) * 2.2], i % 2 ? 0.7 : 1, CY, SOFT_ID + 21);
+    }
+    return [{ at: [lip[0], lip[1], lip[2] + H * 0.4], r: 26, color: '#28dcf0', a: 0.45 }];
+  }
+  // rung: rings of it on the ground round the bell's foot
+  const rings = state === 2 ? [24, 44] : [34, 56];
+  const M = rings[1] + 4;
+  S.quad([[foot[0] - M, foot[1] - M, 0.5], [foot[0] + M, foot[1] - M, 0.5], [foot[0] + M, foot[1] + M, 0.5], [foot[0] - M, foot[1] + M, 0.5]], (_u, _v, w0) => {
+    const [x, y] = local(S, w0);
+    const d = Math.hypot(x - foot[0], y - foot[1]);
+    if (Math.abs(d - rings[0]) < 1.5) return CY[3];
+    if (Math.abs(d - rings[1]) < 1.3) return checker(S, w0) ? CY[2] : null;
+    return null;
+  }, SOFT_ID + 22);
+  return [{ at: [lip[0], lip[1], lip[2] + H * 0.4], r: 40, color: '#28dcf0', a: 0.6 }];
+}
+
+/** An honest flame's colours: a candle's, a lantern's. */
+const CANDLE: Ramp = ['#5a2a10', '#8a4418', '#c8702a', '#f0a040', '#ffd890'];
+
+/**
+ * A WAYSIDE SHRINE'S BELL (one of the Bells on this floor): a little shrine of the city's stone at a lane's
+ * corner, a niche in its front with a candle stub burning and an offering bowl, a gabled cap of clay tiles; its
+ * small bronze bell hung from an iron arm out over the lane. Quiet; awake; rung. 150 x 170 at (80, 132).
+ */
+function shrineBell(state: number): Sprite {
+  const S = scene(150, 170, 80, 132);
+  slab(S, -9, -9, 9, 9, 0, 6, STONE, 1, -0.05);
+  slab(S, -7, -7, 7, 7, 6, 62, STONE, 2, 0, coursed(56, 8));
+  // the niche: an arched dark hollow, the candle stub, the bowl
+  S.quad([[-4.5, 7.05, 30], [4.5, 7.05, 30], [4.5, 7.05, 49], [-4.5, 7.05, 49]], (u, v) => {
+    const x = (u - 0.5) * 9;
+    const z = v * 19;
+    return z < 14.5 || Math.hypot(x, z - 14.5) < 4.5 ? HOLE : null;
+  }, 3);
+  S.rod([-1.5, 7.4, 30.5], [-1.5, 7.4, 34], 1, 1, CREAM, 4);
+  S.ball([-1.5, 7.6, 35.4], 0.8, CANDLE, 5);
+  cylinder(S, 2, 7.6, 2.2, 30, 31.6, (n) => toneAt(n, CLAY_POT, 0), 6, () => CLAY_POT[1]);
+  // its cap
+  S.quad([[-10, -10, 62], [10, -10, 62], [10, 0, 71], [-10, 0, 71]], (u, v) => (fr(v * 3) < 0.2 ? CLAY_TILE[1] : fr(u * 7 + Math.floor(v * 3) * 0.5) < 0.12 ? CLAY_TILE[1] : CLAY_TILE[2]), 7);
+  S.quad([[-10, 0, 71], [10, 0, 71], [10, 10, 62], [-10, 10, 62]], (u, v) => (fr(v * 3) < 0.2 ? CLAY_TILE[2] : fr(u * 7 + Math.floor(v * 3) * 0.5) < 0.12 ? CLAY_TILE[2] : CLAY_TILE[3]), 8);
+  S.quad([[10, -10, 62], [10, 10, 62], [10, 0.5, 71], [10, -0.5, 71]], () => toneAt([1, 0, 0], STONE, 0), 9);
+  // the iron arm out over the lane, a scroll of iron under it; the bell
+  S.rod([0, 7, 58], [0, 24, 58], 0.9, 0.9, IRON, 10);
+  for (let i = 0; i < 7; i++) {
+    const t = i / 6;
+    S.ball([0, 8 + 10 * t + Math.sin(t * 6.3) * 2, 51 + 6 * t + Math.cos(t * 6.3) * 2], 0.6, IRON, 10);
+  }
+  const c: V3 = [0, 22, 56.5];
+  bell(S, c, 7.5, 15, SWING[state], 11, false, metalOf(state));
+  rope(S, [0, 22 + 15 * Math.sin(SWING[state]), 56.5 - 15 * Math.cos(SWING[state])], [0, 20, 28], 0.5, 12, 0.45);
+  const glow = bellGlow(S, c, 7.5, 15, state, [0, 22, 0]);
+  return done(S, 80, 132, [{ at: [-1.5, 8, 36], r: 10, color: CANDLE[3], a: 0.4 }, ...glow]);
+}
+
+/** Clay: a pot's, and the roofs' tiles. */
+const CLAY_POT: Ramp = ['#2e1a18', '#4a2a22', '#6a3c2c', '#8a5238', '#a46a48'];
+const CLAY_TILE: Ramp = ['#371f26', '#53292b', '#6d3833', '#874a3c', '#9f5c47'];
+
+/**
+ * A SHOP'S DOORBELL (one of the Bells on this floor), hung on a house front over its door: a curly iron
+ * bracket, the little bell under its end, its pull-chain down beside the door. Quiet; awake; rung.
+ */
+function doorbell(state: number): { left: Sprite; right: Sprite } {
+  let glow: { at: V3; r: number; color: string; a?: number }[] = [];
+  return frontPiece((S, w) => {
+    const Z = 74;
+    S.rod(w(0, 0, Z), w(0, 21, Z), 1, 1, IRON, 1);
+    for (let i = 0; i < 8; i++) {
+      const t = i / 7;
+      S.ball(w(0, 3 + 13 * t + Math.sin(t * 6.3) * 2.6, Z - 9 + 8 * t + Math.cos(t * 6.3) * 2.6), 0.75, IRON, 1);
+    }
+    const c = w(0, 18, Z - 1);
+    bell(S, c, 6.5, 12, SWING[state], 2, false, metalOf(state));
+    for (let i = 0; i < 9; i++) S.ball(w(0, 14 - i * 0.12, Z - 13 - i * 3), 0.6, IRON, 3);
+    S.ball(w(0, 13, Z - 42), 1.5, BRASS, 3);
+    glow = bellGlow(S, c, 6.5, 12, state, w(0, 18, 0));
+  }, 150, 210, () => glow);
+}
+
+/**
+ * THE WATCH'S ALARM BELL (one of the Bells on this floor): a tall frame of oak, two legs splayed at each end
+ * and braced, a little shingled hood over the beam the bell hangs from, a ladder up its side, the bell-rope
+ * hanging to a man's hand. Quiet; awake; rung. 170 x 240 at (85, 196).
+ */
+function watchBell(state: number): Sprite {
+  const S = scene(170, 240, 85, 196);
+  for (const x of [-10, 10]) {
+    timber(S, [x, -24, 0], [x, -4, 120], 2, 1);
+    timber(S, [x, 24, 0], [x, 4, 120], 2, 1);
+    timber(S, [x, -18, 40], [x, 18, 40], 1.5, 2);
+  }
+  timber(S, [-14, 0, 120], [14, 0, 120], 2.2, 3);
+  // the hood
+  S.quad([[-15, -8, 122], [15, -8, 122], [15, 0, 131], [-15, 0, 131]], (u, v) => (fr(v * 3) < 0.2 ? OAK[1] : fr(u * 9 + Math.floor(v * 3) * 0.5) < 0.12 ? OAK[1] : OAK[2]), 4);
+  S.quad([[-15, 0, 131], [15, 0, 131], [15, 8, 122], [-15, 8, 122]], (u, v) => (fr(v * 3) < 0.2 ? OAK[2] : fr(u * 9 + Math.floor(v * 3) * 0.5) < 0.12 ? OAK[2] : OAK[3]), 5);
+  // the ladder against its side
+  for (const y of [-5, 5]) timber(S, [27, y, 0], [13, y, 104], 1, 6);
+  for (let z = 10; z < 100; z += 11) {
+    const x = 27 - (14 * z) / 104;
+    S.rod([x, -5, z], [x, 5, z], 0.8, 0.8, OAK, 7);
+  }
+  // its yoke down from the beam, and the bell
+  for (const x of [-4, 4]) S.rod([x, 0, 119], [x, 0, 109], 1, 1, IRON, 9);
+  const c: V3 = [0, 0, 109];
+  bell(S, c, 13, 26, SWING[state], 10, false, metalOf(state));
+  const sw = SWING[state];
+  rope(S, [0, 26 * Math.sin(sw), 109 - 26 * Math.cos(sw)], [0, 3, 30], 1, 11, 0.6);
+  S.ball([0, 3, 29], 1.4, ROPE, 11);
+  const glow = bellGlow(S, c, 13, 26, state, [0, 0, 0]);
+  return done(S, 85, 196, glow);
+}
+
+// =================================================================================================
+// THE FESTIVAL NOBODY IS HAVING
+
+/** PAPER LANTERNS strung along a house front for the festival: round, ribbed, in faded dyes, one torn; lit with candles inside, or dark. */
+function paperLanterns(lit: boolean): { left: Sprite; right: Sprite } {
+  const at: V3[] = [];
+  return frontPiece((S, w) => {
+    const z0 = 118;
+    const sag = (a: number): number => z0 - 9 * (1 - (a / 30) ** 2);
+    for (let a = -30; a < 30; a += 2) S.rod(w(a, 4, sag(a)), w(a + 2, 4, sag(a + 2)), 0.45, 0.45, ROPE, 1);
+    for (const a of [-30, 30]) S.ball(w(a, 1, z0), 0.9, IRON, 2);
+    const dyes = [CREAM, OXBLOOD, MUSTARD, CREAM];
+    at.length = 0;
+    for (let i = 0; i < 4; i++) {
+      const a = -21 + i * 14;
+      const zc = sag(a) - 9;
+      const c = w(a, 4.5, zc);
+      S.rod(w(a, 4, sag(a)), w(a, 4.5, zc + 5), 0.4, 0.4, ROPE, 3);
+      const torn = i === 2;
+      const R = dyes[i];
+      S.egg(c, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [4.6, 4.6, 5.4], (n, wp) => {
+        const dz = wp[2] - zc;
+        if (Math.abs(dz) > 4.6) return toneAt(n, BLACK, 0.3); // its rims
+        if (torn && n[2] < 0.2 && dz < 1 && dz > -3.5 && Math.abs(n[0] - n[1]) < 0.5) return HOLE;
+        const rib = fr(dz / 1.8) < 0.22;
+        if (lit && !torn) {
+          const glowT = Math.max(0, 1 - Math.abs(dz) / 5);
+          const base = mix(R[3], CANDLE[3], 0.35 + glowT * 0.35);
+          return rib ? mix(base, R[1], 0.5) : base;
+        }
+        return rib ? toneAt(n, R, -0.45) : toneAt(n, R, 0);
+      }, 4 + i);
+      if (lit && !torn) at.push([c[0], c[1], c[2]]);
+    }
+  }, 80, 200, () => at.map((p) => ({ at: p, r: 16, color: CANDLE[3], a: 0.4 })));
+}
+
+/**
+ * THE FESTIVAL MAYPOLE in the square: a tall pole painted in a spiral of cream and oxblood, set in a socket of
+ * the city's stone, a hoop of dried garland at its top under a brass knob; ribbons in the market's dyes hang
+ * limp from the hoop, two torn loose and trailing over the setts; a strip of the Order's black cloth knotted
+ * round the pole. 130 x 230 at (65, 212).
+ */
+function maypole(): Sprite {
+  const S = scene(130, 230, 65, 212);
+  cylinder(S, 0, 0, 7, 0, 7, (n) => toneAt(n, STONE, 0), 1, (_a, rr) => (rr < 0.4 ? STONE[1] : STONE[3]));
+  cylinder(S, 0, 0, (z) => 2.6 - (z - 7) * 0.004, 7, 160, (n, a, z) => (fr(a / (2 * Math.PI) + z / 20) < 0.32 ? toneAt(n, OXBLOOD, 0.1) : toneAt(n, CREAM, 0.05)), 2);
+  S.ball([0, 0, 162.5], 3, BRASS, 3);
+  // the hoop of dried garland
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2;
+    S.ball([Math.cos(a) * 13, Math.sin(a) * 13, 150 + Math.sin(a * 3) * 0.6], 1.9, GREENS, 4, undefined, -0.15);
+    if (i % 4 === 1) S.ball([Math.cos(a) * 13.5, Math.sin(a) * 13.5, 151.5], 0.9, i % 8 === 1 ? MUSTARD : OXBLOOD, 5);
+  }
+  for (const a of [0.4, 2.0, 3.6, 5.2]) S.rod([0, 0, 156], [Math.cos(a) * 13, Math.sin(a) * 13, 150], 0.35, 0.35, ROPE, 6);
+  // the ribbons, limp
+  const dyes = [OXBLOOD, BOTTLE, MUSTARD, SLATEBLUE, CREAM, OXBLOOD, MUSTARD, BOTTLE];
+  dyes.forEach((R, i) => {
+    const a = (i / dyes.length) * Math.PI * 2 + 0.2;
+    const loose = i === 1 || i === 6;
+    const L = loose ? 0 : 70 + hash(i, 1, 741) * 50;
+    const top: V3 = [Math.cos(a) * 13, Math.sin(a) * 13, 149];
+    const t: V3 = [-Math.sin(a) * 1.3, Math.cos(a) * 1.3, 0];
+    if (!loose) {
+      const N = 10;
+      for (let j = 0; j < N; j++) {
+        const p0 = j / N;
+        const p1 = (j + 1) / N;
+        const P = (p: number, s: number): V3 => [top[0] + t[0] * s + Math.sin(p * 5 + i) * 1.2, top[1] + t[1] * s, top[2] - L * p];
+        S.quad([P(p0, -1), P(p0, 1), P(p1, 1), P(p1, -1)], (u) => (u < 0.5 ? R[3] : R[2]), 10 + i);
+      }
+    } else {
+      // torn loose, lying along the setts from the pole's foot
+      const N = 12;
+      for (let j = 0; j < N; j++) {
+        const p0 = j / N;
+        const p1 = (j + 1) / N;
+        const P = (p: number, s: number): V3 => [Math.cos(a) * (8 + p * 50) + Math.sin(p * 7) * 3 + t[0] * s, Math.sin(a) * (8 + p * 50) + t[1] * s, 0.4];
+        S.quad([P(p0, -1), P(p0, 1), P(p1, 1), P(p1, -1)], (u) => (u < 0.5 ? R[2] : R[1]), 10 + i);
+      }
+    }
+  });
+  // the Order's black cloth, knotted round the pole, its ends hanging
+  cylinder(S, 0, 0, 3.4, 62, 67, (n, a) => (fr(a * 2) < 0.2 ? toneAt(n, BLACK, -0.2) : toneAt(n, BLACK, 0.3)), 30);
+  S.quad([[1, 3, 64], [3, 3, 64], [5, 4, 46], [3, 4, 47]], (_u, v) => (v > 0.8 ? BLACK[1] : BLACK[3]), 31);
+  S.quad([[3, 2, 64], [4, 2, 64], [9, 3, 50], [7, 3, 50]], (_u, v) => (v > 0.8 ? BLACK[1] : BLACK[2]), 32);
+  return done(S, 65, 212);
+}
+
+/**
+ * THE HORSE TROUGH: a long trough cut from the city's stone, its water dark and still, a blank leaflet
+ * floating on it; a cast-iron pump at its end, its handle up, its spout over the water; a bucket by it.
+ * 140 x 110 at (70, 78).
+ */
+function horseTrough(): Sprite {
+  const S = scene(140, 110, 70, 78);
+  const g = coursed(18, 9);
+  // the stone old and greyed, darker at its foot where the wet has got into it
+  const grime = (f: number, u: number, v: number): number => g(f, u, v) - 0.2 + (f < 4 && (f === 2 || f === 3 ? u : v) < 0.25 && hash(Math.floor((f === 2 || f === 3 ? v : u) * 30), 1, 751) < 0.6 ? -0.3 : 0);
+  slab(S, -32, -11, 32, -8, 0, 18, STONE, 1, 0, grime);
+  slab(S, -32, 8, 32, 11, 0, 18, STONE, 2, 0, grime);
+  slab(S, -32, -8, -29, 8, 0, 18, STONE, 3, -0.2, grime);
+  slab(S, 29, -8, 32, 8, 0, 18, STONE, 4, -0.2, grime);
+  // the water, and the leaflet on it
+  S.quad([[-29, -8, 14.5], [29, -8, 14.5], [29, 8, 14.5], [-29, 8, 14.5]], (u, v, w) => {
+    if (u > 0.55 && u < 0.72 && v > 0.3 && v < 0.75) return PAPER[3];
+    if (fr(u * 9 + v * 2) < 0.05 && v < 0.5) return WATER[4];
+    void w;
+    return WATER[v < 0.3 ? 2 : 1];
+  }, 5);
+  // the pump: an iron column, its cap, its spout, its handle up
+  cylinder(S, -38, 0, 3.4, 0, 34, (n, _a, z) => (fr(z / 8) < 0.12 ? toneAt(n, IRON, -0.4) : toneAt(n, IRON, 0.05)), 6, () => IRON[3]);
+  S.ball([-38, 0, 36], 3.4, IRON, 7);
+  S.rod([-38, 0, 28], [-31, 0, 27], 1.4, 1.1, IRON, 8);
+  S.rod([-31, 0, 27], [-30, 0, 23], 1.1, 0.9, IRON, 8);
+  S.rod([-38, 0, 36], [-44, 2, 48], 1, 0.8, IRON, 9);
+  // a bucket by it
+  cylinder(S, 40, 14, (z) => 4.6 + z * 0.05, 0, 9, (n, a) => (fr(a * 2.5) < 0.1 ? toneAt(n, OAK, -0.4) : toneAt(n, OAK, 0)), 10, () => WATER[2]);
+  return done(S, 70, 78);
+}
+
+/** A BALE OF HAY at (x, y, z), turned `t` about the upright: its straw along it, two bands of twine round it. */
+function bale(S: Scene, x: number, y: number, z: number, t: number, id: number): void {
+  const A0: V3 = [Math.cos(t), Math.sin(t), 0];
+  const A1: V3 = [-Math.sin(t), Math.cos(t), 0];
+  S.box([x, y, z + 6.5], [A0, A1, [0, 0, 1]], [12, 7.5, 6.5], (f, u, v, n) => {
+    // along it: u on its top, v on its long sides; across: v on its top, u on its long sides
+    const along = f === 4 || f === 5 ? u : f === 2 || f === 3 ? v : -1;
+    const across = f === 4 || f === 5 ? v : f === 2 || f === 3 ? u : u;
+    if (along >= 0 && (Math.abs(along - 0.28) < 0.03 || Math.abs(along - 0.72) < 0.03)) return toneAt(n, ROPE, -0.35);
+    if (f < 2) return toneAt(n, STRAW, (hash(Math.floor(u * 12), Math.floor(v * 10), id) - 0.5) * 0.6 - 0.15); // its cut ends
+    const streak = hash(Math.floor(across * 22), Math.floor(along * 3), id + 1);
+    return toneAt(n, STRAW, (streak - 0.5) * 0.5 + (fr(across * 22) < 0.2 ? -0.25 : 0));
+  }, id);
+}
+
+/** HAY BALES, stacked by the stables' lane: three, one on top; broken, burst open, straw strewn wide. 120 x 90 at (60, 66). */
+function hayBales(broken: boolean): Sprite {
+  const S = scene(120, 90, 60, 66);
+  if (!broken) {
+    bale(S, -9, 4, 0, 0.05, 1);
+    bale(S, 13, -6, 0, -0.1, 2);
+    bale(S, 2, -1, 13, 0.25, 3);
+  } else {
+    bale(S, -9, 4, 0, 0.05, 1);
+    // the rest, burst: straw strewn in a heap and wisps
+    for (let i = 0; i < 70; i++) {
+      const a = i * 2.39996;
+      const d = Math.sqrt(i / 70) * 26;
+      const x = 12 + Math.cos(a) * d;
+      const y = -4 + Math.sin(a) * d * 0.8;
+      const h = Math.max(0, 5 - d * 0.18);
+      const b = a * 1.7;
+      S.rod([x, y, h + 0.5], [x + Math.cos(b) * 5, y + Math.sin(b) * 5, h * 0.7 + 0.3], 0.5, 0.4, STRAW, 4 + (i % 3));
+    }
+    for (const s of [-1, 1]) S.rod([4, s * 4, 0.5], [16, s * 7, 0.5], 0.4, 0.4, ROPE, 8);
+  }
+  return done(S, 60, 66);
+}
+
+// =================================================================================================
 
 let made: Piece[] | null = null;
 /** FLOOR 11'S PIECES, the Crier's (the first of them). */
@@ -684,6 +1413,21 @@ export function gateWardPieces(): Piece[] {
     { name: 'the market bell (the Muffled Bell)', kind: 'obstacle', frames: [marketBell(true), marketBell(false, 0), marketBell(false, 0.35), marketBell(false, -0.35)], shadow: 0.5 },
     { name: 'festival bunting', kind: 'on the wall', ...withFrames(bunting(0)) },
     { name: 'guild sign, blotted', kind: 'on the wall', ...withFramesN((['boot', 'key', 'loaf', 'tankard'] as const).map(guildSign)) },
+    // (frames: its front along +y, along +x)
+    { name: 'the city gate, broken', kind: 'gate', frames: [cityGate(0), cityGate(1)], shadow: 1.6 },
+    // (frames: shut and open along +y, shut and open along +x)
+    { name: "the crier's gate", kind: 'gate', frames: [criersGate(false, 0), criersGate(true, 0), criersGate(false, 1), criersGate(true, 1)], shadow: 0.9 },
+    // (frames: quiet, the warning, the blast three, looking along +y; the same looking along +x)
+    { name: "the watch's alarm horn, the Hush's", kind: 'trap', frames: [0, 1].flatMap((k) => [0, 1, 2, 3, 4].map((f) => alarmHorn(f, k))), shadow: 0.3 },
+    { name: "the crier's last proclamation", kind: 'quest', frames: [proclamation()], shadow: 0.25 },
+    // (the Bells: quiet, awake, rung one way, rung back)
+    { name: "a wayside shrine's bell", kind: 'obstacle', frames: [0, 1, 2, 3].map(shrineBell), shadow: 0.3 },
+    { name: "a shop's doorbell", kind: 'on the wall', ...withFramesN([0, 1, 2, 3].map(doorbell)) },
+    { name: "the watch's alarm bell", kind: 'obstacle', frames: [0, 1, 2, 3].map(watchBell), shadow: 0.7 },
+    { name: 'paper lanterns', kind: 'on the wall', ...withFramesN([paperLanterns(true), paperLanterns(false)]) },
+    { name: 'the festival maypole', kind: 'obstacle', frames: [maypole()], shadow: 0.35 },
+    { name: 'the horse trough', kind: 'obstacle', frames: [horseTrough()], shadow: 0.7 },
+    { name: 'hay bales', kind: 'breakable', frames: [hayBales(false), hayBales(true)], shadow: 0.45 },
   ];
   return made;
 }

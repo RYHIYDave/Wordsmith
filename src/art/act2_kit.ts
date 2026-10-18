@@ -73,20 +73,59 @@ export function scene(w: number, h: number, ox: number, oy: number): Scene {
 /**
  * A SCENE TURNED a quarter at a time about the upright through its (0, 0): what is built in it with its
  * front looking along +y is built looking along +y (`k` 0), +x (1), -y (2, its back to the eye) or -x (3);
- * its light is still the world's (the upper left), so a thing turned is lit as it now stands.
+ * its light is still the world's (the upper left), so a thing turned is lit as it now stands. `K`: built that
+ * many times as big as it is measured (its stones and planks with it), about the same point.
  */
-export function turned(S: Scene, k: number): Scene {
+export function turned(S: Scene, k: number, K = 1): Scene {
   const q = ((k % 4) + 4) % 4;
-  if (q === 0) return S;
-  const R = (p: readonly number[]): V3 => (q === 1 ? [p[1], -p[0], p[2]] : q === 2 ? [-p[0], -p[1], p[2]] : [-p[1], p[0], p[2]]);
-  const Ri = (p: readonly number[]): V3 => (q === 1 ? [-p[1], p[0], p[2]] : q === 2 ? [-p[0], -p[1], p[2]] : [p[1], -p[0], p[2]]);
+  if (q === 0 && K === 1) return S;
+  const Rd = (p: readonly number[]): V3 => (q === 0 ? [p[0], p[1], p[2]] : q === 1 ? [p[1], -p[0], p[2]] : q === 2 ? [-p[0], -p[1], p[2]] : [-p[1], p[0], p[2]]);
+  const Rdi = (p: readonly number[]): V3 => (q === 0 ? [p[0], p[1], p[2]] : q === 1 ? [-p[1], p[0], p[2]] : q === 2 ? [-p[0], -p[1], p[2]] : [p[1], -p[0], p[2]]);
+  const R = (p: readonly number[]): V3 => {
+    const r = Rd(p);
+    return [r[0] * K, r[1] * K, r[2] * K];
+  };
+  const Ri = (w: readonly number[]): V3 => Rdi([w[0] / K, w[1] / K, w[2] / K]);
   const T = Object.create(S) as Scene;
-  T.egg = (c, A, r, shade, id, keep) => S.egg(R(c), [R(A[0]), R(A[1]), R(A[2])], r, shade, id, keep ? (w) => keep(Ri(w)) : undefined);
-  T.ball = (c, r, ramp, id, keep, bias) => S.ball(R(c), r, ramp, id, keep ? (w) => keep(Ri(w)) : undefined, bias);
+  T.egg = (c, A, r, shade, id, keep) => S.egg(R(c), [Rd(A[0]), Rd(A[1]), Rd(A[2])], [r[0] * K, r[1] * K, r[2] * K], shade, id, keep ? (w) => keep(Ri(w)) : undefined);
+  T.ball = (c, r, ramp, id, keep, bias) => S.ball(R(c), r * K, ramp, id, keep ? (w) => keep(Ri(w)) : undefined, bias);
   T.quad = (qd, shade, id) => S.quad([R(qd[0]), R(qd[1]), R(qd[2]), R(qd[3])], shade, id);
-  T.box = (c, A, r, shade, id) => S.box(R(c), [R(A[0]), R(A[1]), R(A[2])], r, shade, id);
-  T.rod = (a, b, r0, r1, ramp, id, keep) => S.rod(R(a), R(b), r0, r1, ramp, id, keep ? (w) => keep(Ri(w)) : undefined);
+  T.box = (c, A, r, shade, id) => S.box(R(c), [Rd(A[0]), Rd(A[1]), Rd(A[2])], [r[0] * K, r[1] * K, r[2] * K], shade, id);
+  T.rod = (a, b, r0, r1, ramp, id, keep) => S.rod(R(a), R(b), r0 * K, r1 * K, ramp, id, keep ? (w) => keep(Ri(w)) : undefined);
+  const t = T as unknown as Turned;
+  t.turnN = Rd;
+  t.turnBack = Ri;
+  t.turnPt = R;
   return T;
+}
+
+interface Turned {
+  /** A direction of the piece's own, as the world has it. */
+  turnN?: (n: readonly number[]) => V3;
+  /** A point of the world, in the piece's own frame. */
+  turnBack?: (w: readonly number[]) => V3;
+  /** A point of the piece's own frame, in the world. */
+  turnPt?: (p: readonly number[]) => V3;
+}
+/** A direction of the piece's own frame (a face's), as the world has it (the same unless turned): for lighting a face built by hand. */
+export function facing(S: Scene, n: readonly number[]): V3 {
+  const t = (S as unknown as Turned).turnN;
+  return t ? t(n) : [n[0], n[1], n[2]];
+}
+/** Ids from here up are soft (a haze, a glow on the air): no seam is drawn round them (floor 4's Scene). */
+export const SOFT_ID = 1 << 20;
+/** Whether the picture's pixel under the world's point `w` is on, in a fine checker (for what is half there). */
+export function checker(S: Scene, w: readonly number[], every = 2): boolean {
+  const [x, y] = S.at(w);
+  const X = Math.floor(x);
+  const Y = Math.floor(y);
+  return every === 2 ? ((X + Y) & 1) === 0 : X % every === 0 && Y % every === 0;
+}
+
+/** A point of the world (as a shade is handed it), in the frame the piece is built in (the same unless turned). */
+export function local(S: Scene, w: readonly number[]): V3 {
+  const t = (S as unknown as Turned).turnBack;
+  return t ? t(w) : [w[0], w[1], w[2]];
 }
 
 /** Finish a standing piece: its seams, anchored at (ox, oy); its lights, each a world point, a radius and a colour. */
@@ -94,8 +133,9 @@ export function done(S: Scene, ox: number, oy: number, lights: readonly { at: V3
   S.seams();
   const sp = compose(null, [S.p], null).sprite(ox, oy, GRAIN);
   if (lights.length) {
+    const tp = (S as unknown as Turned).turnPt;
     sp.lights = lights.map((l) => {
-      const [x, y] = S.at(l.at);
+      const [x, y] = S.at(tp ? tp(l.at) : l.at);
       return { x: x / GRAIN, y: y / GRAIN, r: l.r, color: l.color, a: l.a ?? 0.4 };
     });
   }
@@ -125,6 +165,8 @@ export const planks = (k: number) => (f: number, u: number, v: number): number =
  */
 export function cylinder(S: Scene, cx: number, cy: number, r: number | ((z: number) => number), z0: number, z1: number, shade: (n: V3, a: number, z: number) => string | null, id: number, top?: (a: number, rr: number) => string | null): void {
   const R = typeof r === 'number' ? () => r : r;
+  // turned: its sides lit as they face in the world
+  const turnN = (S as unknown as Turned).turnN;
   const N = 40;
   const STEPS = Math.max(2, Math.ceil((z1 - z0) / 3));
   for (let i = 0; i < N; i++) {
@@ -141,7 +183,8 @@ export function cylinder(S: Scene, cx: number, cy: number, r: number | ((z: numb
       const n0: V3 = [Math.cos(am), Math.sin(am), slope];
       const nl = Math.hypot(n0[0], n0[1], n0[2]);
       const n: V3 = [n0[0] / nl, n0[1] / nl, n0[2] / nl];
-      S.quad([P(a0, ra, za), P(a1, ra, za), P(a1, rb, zb), P(a0, rb, zb)], (u, v) => shade(n, a0 + (a1 - a0) * u, za + (zb - za) * v), id);
+      const nw = turnN ? turnN(n) : n;
+      S.quad([P(a0, ra, za), P(a1, ra, za), P(a1, rb, zb), P(a0, rb, zb)], (u, v) => shade(nw, a0 + (a1 - a0) * u, za + (zb - za) * v), id);
     }
   }
   if (top) {

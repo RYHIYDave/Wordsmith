@@ -18,6 +18,8 @@
 //     the street view dressed with floor 11's pieces and the set's (art/floor11.ts, art/act2_set.ts), their lights
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_whole.png 2000 1150 whole
 //     the same, the whole square at once
+//   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_gate.png 1014 468 gate
+//     the lane in from the city gate, broken
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_tiles.png 1014 468 tiles
 //     the same with the tiles the game walks by drawn over it
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_close.png 1014 664 close
@@ -365,7 +367,22 @@ const DRESS: Laid[] = [
   { name: 'street lamp', frame: 1, x: 47.5, y: 18.5 },
   { name: 'street lamp', frame: 0, x: 31.5, y: 36.5 },
   { name: 'street lamp', frame: 1, x: 37.5, y: 10.6 },
+  // the rest of the floor's own: the maypole in the open, a shrine's bell at the lane's mouth (awake), the watch's
+  // bell by the street off to the right, the horse trough and hay by the near edge, the proclamation dropped by
+  // the herald, the watch's horn blasting down the lane out (the Hush's trap)
+  { name: 'the festival maypole', frame: 0, x: 27.4, y: 28.2 },
+  { name: "a wayside shrine's bell", frame: 1, x: 18.7, y: 25.8 },
+  { name: "the watch's alarm bell", frame: 0, x: 46.3, y: 22.4 },
+  { name: 'the horse trough', frame: 0, x: 39.6, y: 32.8 },
+  { name: 'hay bales', frame: 0, x: 43.2, y: 33.6 },
+  { name: "the crier's last proclamation", frame: 0, x: 36.2, y: 25.6 },
+  { name: "the watch's alarm horn, the Hush's", frame: 3, x: 33.5, y: 38.2 },
+  // the city gate, at the far end of the lane in
+  { name: 'the city gate, broken', frame: 1, x: 3.4, y: 23.5 },
   // on the house fronts
+  { name: "a shop's doorbell", frame: 1, x: 40.5, y: 10, on: 'left' },
+  { name: 'paper lanterns', frame: 0, x: 31.6, y: 10, on: 'left' },
+  { name: 'paper lanterns', frame: 0, x: 7.6, y: 22, on: 'left' },
   { name: 'festival bunting', frame: 0, x: 51.5, y: 19, on: 'left' },
   { name: 'festival bunting', frame: 0, x: 44.0, y: 10, on: 'left' },
   { name: 'festival bunting', frame: 0, x: 16.5, y: 22, on: 'left' },
@@ -455,6 +472,10 @@ function drawDressed(g: CanvasRenderingContext2D, sc: Scene): void {
 
 if (HASH === 'dressed') {
   drawDressed(g, { hero: HERO, heroSprite: knight, cam: HERO, shown: HOUSES.map(() => 1) });
+  show(cvs);
+} else if (HASH === 'gate') {
+  const hero: [number, number] = [8.6, 23.6];
+  drawDressed(g, { hero, heroSprite: knight, cam: [6.0, 20.4], shown: HOUSES.map(() => 1) });
   show(cvs);
 } else if (HASH === 'whole') {
   drawDressed(g, { hero: HERO, heroSprite: knight, cam: [33.2, 22.6], shown: HOUSES.map(() => 1) });

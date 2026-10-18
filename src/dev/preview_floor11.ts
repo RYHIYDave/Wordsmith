@@ -4,6 +4,8 @@
 //
 //   node tools/preview.mjs src/dev/preview_floor11.ts shots/f11_pieces.png 1014 1100 pieces
 //     every piece and every frame of it, a wall piece on a house front of the ground's
+//   node tools/preview.mjs src/dev/preview_floor11.ts shots/f11_some.png 1014 1100 range=14-25
+//     only those pieces (floor 11's, then the set's, counted from 0)
 //   node tools/preview.mjs src/dev/preview_floor11.ts shots/f11_one.png 600 400 one=<name>
 //     one piece, three times as big
 
@@ -66,61 +68,116 @@ function show(): void {
 }
 
 const ALL: [string, Piece][] = [...gateWardPieces().map((p) => ['floor 11', p] as [string, Piece]), ...hushSetPieces().map((p) => ['the set', p] as [string, Piece])];
+// `range=a-b`: only the pieces a to b (the list's order: floor 11's, then the set's)
+const RANGE = HASH.startsWith('range=') ? HASH.slice(6).split('-').map(Number) : null;
+const LIST = RANGE ? ALL.slice(RANGE[0], RANGE[1]) : ALL;
 
-if (HASH === 'pieces') {
+if (HASH === 'pieces' || RANGE) {
+  // each piece: its name, then every frame in a cell of the frame's own whole size, on the ground (a wall piece
+  // on a house front), at the game's size; the rows wrap
   cvs.width = 1014;
-  // lay them out in rows: each piece a cell as wide as its frames need
-  const cells: { piece: Piece; who: string; w: number; h: number }[] = ALL.map(([who, piece]) => {
-    const frames = piece.frames ?? piece.left ?? [];
-    const wall = !!piece.left;
-    const fw = Math.max(...frames.map((f) => f.w * (f.density ?? 1)));
-    const fh = Math.max(...frames.map((f) => f.h * (f.density ?? 1)));
-    const n = wall ? frames.length * 2 : frames.length;
-    return { piece, who, w: Math.max(150, Math.min(1000, n * (fw + 6) + 10)), h: fh + 34 };
-  });
-  const rows: { y: number; h: number; items: (typeof cells)[number][] }[] = [];
+  type Cell = { f: Sprite; wall: boolean; shadow?: number; x: number; y: number; w: number; h: number };
+  const cells: Cell[] = [];
+  const labels: { text: string; x: number; y: number }[] = [];
   let x = 0;
-  let row: (typeof cells)[number][] = [];
-  for (const c of cells) {
-    if (x + c.w > 1014 && row.length) {
-      rows.push({ y: 0, h: Math.max(...row.map((r) => r.h)), items: row });
-      row = [];
-      x = 0;
-    }
-    row.push(c);
-    x += c.w + 6;
-  }
-  if (row.length) rows.push({ y: 0, h: Math.max(...row.map((r) => r.h)), items: row });
   let y = 4;
-  for (const r of rows) {
-    r.y = y;
-    y += r.h + 8;
+  let rowH = 0;
+  const newRow = (): void => {
+    x = 0;
+    y += rowH + 6;
+    rowH = 0;
+  };
+  for (const [who, piece] of LIST) {
+    const wall = !!piece.left;
+    const frames = wall ? [...piece.left!, ...piece.right!] : piece.frames!;
+    const ws = frames.map((f) => f.w * (f.density ?? 1));
+    const need = Math.min(1014, ws.reduce((a, b) => a + b + 4, 0));
+    const text = `${piece.name} (${who}: ${piece.kind})`;
+    const tw = text.length * 10 + 8;
+    if (x > 0 && x + Math.max(need, tw) > 1014) newRow();
+    labels.push({ text, x, y });
+    const top = y + 18;
+    let fx = x;
+    let fy = top;
+    let rh = 0;
+    let right = x;
+    for (const f of frames) {
+      const w = f.w * (f.density ?? 1);
+      const h = f.h * (f.density ?? 1);
+      if (fx + w > 1014 && fx > x) {
+        fx = x;
+        fy += rh + 4;
+        rh = 0;
+      }
+      cells.push({ f, wall, shadow: piece.shadow, x: fx, y: fy, w, h });
+      fx += w + 4;
+      right = Math.max(right, fx);
+      rh = Math.max(rh, h);
+    }
+    const wrapped = fy > top;
+    x = Math.max(right, x + tw) + 8;
+    rowH = Math.max(rowH, fy + rh - y);
+    if (wrapped || x > 1014 - 150) newRow();
   }
+  if (x > 0) newRow();
   cvs.height = y;
   g.imageSmoothingEnabled = false;
   g.fillStyle = '#0d1030';
   g.fillRect(0, 0, cvs.width, cvs.height);
-  let seed = 0;
-  for (const r of rows) {
-    let cx = 0;
-    for (const c of r.items) {
-      const wall = !!c.piece.left;
-      const frames = wall ? [...c.piece.left!, ...c.piece.right!] : c.piece.frames!;
-      const bg = ground(c.w, r.h - 20, wall, seed++);
-      g.drawImage(bg, cx, r.y + 20);
-      const step = (c.w - 10) / frames.length;
-      frames.forEach((f, k) => {
-        const fx = cx + 5 + step * (k + 0.5);
-        const fy = wall ? r.y + r.h - 14 : r.y + r.h - 12;
-        if (!wall && c.piece.shadow) shadowAt(g, fx, fy, c.piece.shadow);
-        drawSprite(g, f, fx, fy);
-      });
-      g.save();
-      g.scale(2, 2);
-      drawText(g, `${c.piece.name} (${c.who}: ${c.piece.kind})`, (cx + 3) / 2, (r.y + 4) / 2, THEME.text, { shadow: P.ink });
-      g.restore();
-      cx += c.w + 6;
+  cells.forEach((c, k) => {
+    g.drawImage(ground(c.w, c.h, c.wall, k), c.x, c.y);
+    const d = c.f.density ?? 1;
+    if (!c.wall && c.shadow) shadowAt(g, c.x + c.f.ax * d, c.y + c.f.ay * d, c.shadow);
+    g.drawImage(c.f.img, c.x, c.y, c.w, c.h);
+  });
+  g.save();
+  g.scale(2, 2);
+  for (const l of labels) drawText(g, l.text, (l.x + 2) / 2, (l.y + 2) / 2, THEME.text, { shadow: P.ink });
+  g.restore();
+  show();
+} else if (HASH.startsWith('look=')) {
+  // `look=<name>[@k]`: every frame of one piece, each in a cell of its own whole size, `k` times (2 if not said), on the ground
+  const [name, ks] = HASH.slice(5).split('@');
+  const K = Number(ks || 2);
+  const found = ALL.find(([, p]) => p.name === name);
+  cvs.width = 1014;
+  g.imageSmoothingEnabled = false;
+  if (found) {
+    const piece = found[1];
+    const wall = !!piece.left;
+    const frames = wall ? [...piece.left!, ...piece.right!] : piece.frames!;
+    const cells = frames.map((f) => ({ f, w: f.w * (f.density ?? 1) * K, h: f.h * (f.density ?? 1) * K }));
+    let x = 0;
+    let y = 24;
+    let rowH = 0;
+    const at: [number, number][] = [];
+    for (const c of cells) {
+      if (x + c.w > 1014 && x > 0) {
+        x = 0;
+        y += rowH + 6;
+        rowH = 0;
+      }
+      at.push([x, y]);
+      x += c.w + 6;
+      rowH = Math.max(rowH, c.h);
     }
+    cvs.height = y + rowH + 4;
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, cvs.width, cvs.height);
+    cells.forEach((c, k) => {
+      const [cx, cy] = at[k];
+      const d = c.f.density ?? 1;
+      const bg = ground(Math.ceil(c.w / K), Math.ceil(c.h / K), wall, 5 + k);
+      g.drawImage(bg, cx, cy, Math.ceil(c.w / K) * K, Math.ceil(c.h / K) * K);
+      const ax = cx + c.f.ax * d * K;
+      const ay = cy + c.f.ay * d * K;
+      if (!wall && piece.shadow) shadowAt(g, ax, ay, piece.shadow, K / 1);
+      g.drawImage(c.f.img, cx, cy, c.w, c.h);
+    });
+    g.save();
+    g.scale(2, 2);
+    drawText(g, `${piece.name} (${found[0]}: ${piece.kind}), ${K} times`, 2, 2, THEME.text, { shadow: P.ink });
+    g.restore();
   }
   show();
 } else if (HASH.startsWith('one=')) {
