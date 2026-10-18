@@ -5,7 +5,9 @@
 // "All new attacks"; by 17:51, of the first look of him, "The crescent head of the axe is weird, and I like
 // the full coat look with the wiry frame underneath", and his four attacks, "Yes, these four
 // (Recommended)"; by 17:57, "Yes, animate him (Recommended)"; and at 17:57, "Make sure he passes the
-// clipping checks". So:
+// clipping checks". Of the vault in the films of his moves, by 16:45 Pacific (19:45 Eastern), "Bigger for sure,
+// much bigger aoe on the hit with more force": so the vault goes up the haft into a handstand on it, over, and
+// down in a slam (art/headsman2_shots.ts), all of it through the same checks. So:
 //   1. the switch is off, and nothing of the game imports him;
 //   2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), every frame, from in front and
 //      from behind: nothing through him or his coat, feet that grip, nothing in the floor, nothing jerky,
@@ -17,7 +19,7 @@
 //      to spare;
 //   5. NOTHING OF HIM IN THE FLOOR, beyond what the checks see (all he wears and carries: his coat, his
 //      sash, his hood, his axe): but his blade's edge where it bites the floor, a little way in, in the
-//      vault and the flurry's third cut, and the spike of his axe where he drives it in to vault;
+//      vault and the flurry's third cut, and the spike of his axe while it is driven in for the vault;
 //   6. where his blade bites the floor it stops dead, and stays where it bit while he is bent over it;
 //   7. what falls from him as he dies, his axe and his hood, lies clear of him once he is down, from in
 //      front and from behind.
@@ -196,7 +198,7 @@ test('5. NOTHING OF HIM IN THE FLOOR, all he wears and carries, but his blade wh
       const bits: Bit[] = MOB.bits(st, m).filter((b) => b.part !== 'blade' && !(move === 'dying' && ((b.piece === 'axe' && t >= H2_AXE_GOES) || (b.piece === 'hood' && t >= H2_HOOD_GOES))));
       for (const b of bits) {
         const by = under(b.shape);
-        const spike = move === 'vault' && b.part === 'haft' && t < H2_VAULT.off + 0.04;
+        const spike = move === 'vault' && b.part === 'haft' && t < H2_VAULT.free;
         if (by > (spike ? SPIKE_MOST : 0.5)) faults.push(`${move} @${t.toFixed(2)}: ${b.part} ${by.toFixed(1)} into the floor`);
       }
       if (move === 'dying' && t >= H2_AXE_GOES) continue;

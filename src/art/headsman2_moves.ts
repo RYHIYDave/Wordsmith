@@ -31,7 +31,7 @@ import type { P } from './headsman2';
 import type { ActorArt } from './actor_types';
 import { TILE3, mobSet, posedOfMob } from './new_mobs3';
 import type { Mob, MobMove } from './new_mobs3';
-import { add, dot, elbowFor, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
+import { add, bonesAt, dot, elbowFor, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 const B = H2_BODY;
@@ -553,91 +553,189 @@ function h2WheelFeet(): (t: number) => P {
 }
 
 // ---------------------------------------------------------------------------------------------
-// THE VAULT ("up on the haft and down blade-first on a marked spot"). He drives the spike at the axe's
-// foot into the floor before him and to his right, crouches behind it gripping the haft high (held, the
-// edge glinting high over him: the warning; the game marks the spot), springs up off it, pushing himself
-// up and over on the haft, tears it out of the floor at the top of his leap and swings it up over his head,
-// and comes down with it, blade first, onto the spot; lands crouched, the blade bitten into the floor; wrenches
-// it out and is in his guard where he landed (H2_SHIFT.vault).
+// THE VAULT ("up on the haft and down blade-first on a marked spot"; and, of the first film of it, his words
+// by 16:45 Pacific on 17 Oct: "Bigger for sure, much bigger aoe on the hit with more force"). He drives the spike
+// at the axe's foot into the floor before him, a little to his right, and crouches behind it, gripping the haft
+// high in his right hand (held, the edge glinting high over him: the warning; the game marks the spot); springs,
+// and swings up the haft into a one-armed handstand on top of it, his left arm flung out, his feet twice his
+// height up; tips on over, tearing it out of the floor, and flips over forward in the air, the haft running up
+// through his hand to its foot until the blade is high over his head; lands crouched and brings it down, blade
+// first, onto the spot with all his weight (the slam: art/headsman2_shots.ts); its edge bitten into the stone;
+// wrenches it out and is in his guard where he landed (H2_SHIFT.vault).
 
 export const H2_VAULT = {
-  /** How long it is (seconds); the warning; when he leaves the floor, is at the top, the blade bites, he lands. */
-  long: 2.0,
+  /** How long it is (seconds); the warning; when he leaves the floor, is up on his hand at the top, lets the floor go of the axe, lands; the blow. */
+  long: 2.5,
   warnFrom: 0.26,
   off: 0.56,
-  top: 0.84,
-  hit: 1.12,
-  land: 1.1,
-  /** How far he goes (his own lengths forward), and how high his hips go. */
-  far: 60,
-  high: 42,
+  top: 0.86,
+  free: 1.0,
+  land: 1.18,
+  hit: 1.44,
+  /** How far he goes (his own lengths forward). (Up on his hand at the top his hips are about 128 of his lengths off the floor, his feet about 196: his own height is 110.) */
+  far: 120,
 };
-/** Where the spike is driven in (his own lengths: forward, to his left, up), and the way the haft leans from it. */
-const VT_SPIKE: V3 = [36, -40, 6];
-const VT_PT: V3 = norm([-0.14, -0.12, 0.98]);
-/** His hands on the planted haft: his right at its middle, his left above it. */
-const VT_HAND: V3 = add(VT_SPIKE, mul(VT_PT, AXE2_HOLD(1)));
-const VT_PLANT = (body: P): P => elbowsTo({ ...body, ...grip(VT_HAND, VT_PT, [0, -1, 0], 1, null), lhIn: 0, lhx: 16, lhy: 10, lhz: -18, le: -40 }, null, [0.2, -0.9, -0.3]);
+/** Where the haft's foot is driven in (his own lengths: forward, to his left, up), and the way it leans from there, `lean` degrees forward of upright. */
+const VT_FOOT: V3 = [42, -18, 6];
+const vtWay = (lean: number): V3 => norm([Math.sin(lean * D), 0, Math.cos(lean * D)]);
+/** Where up the haft his right hand holds it while he vaults on it (the axe's `draw`: at its middle, the axe's head up beside him). */
+const VT_HOLD = 1;
+/** His right hand on the planted haft, leaning so. */
+const vtHand = (lean: number): V3 => add(VT_FOOT, mul(vtWay(lean), AXE2_HOLD(VT_HOLD)));
 /** Where his right hand is as the blade bites (his own lengths from where he set out), and the way the haft runs then: its edge a little way into the floor, no more (tests/headsman2.test.ts). */
-const VT_BITE_HAND: V3 = [H2_VAULT.far + 36, -4, 62];
+const VT_BITE_HAND: V3 = [H2_VAULT.far + 40, -4, 62];
 const VT_BITE_WAY: V3 = heading(0, -19);
-/** How far the blade drives on into the stone after it strikes it (the blow's follow-through: game pixels, near enough). */
+/** How far the blade drives on into the stone after it strikes it (the blow's follow-through: his own lengths). */
 const VT_BITE = 5;
-const VT_CROUCH: P = { px: 4, pz: R.pz - 16, yaw: -16, pitch: 22, twist: -6, bend: 16, faceTurn: 10, faceUp: 4, lk: 46, rk: -30 };
+/** His left arm flung out to his side, for his balance, up on his hand. */
+const VT_FLUNG: P = { lhIn: 0, lhx: 4, lhy: 32, lhz: -26 };
+/** A pose with his left hand said as where it is on the floor's own axes (so that one smooth sweep can carry it from the haft, out to his side, and back to the haft). */
+function leftOnFloor(pose: P): P {
+  const s = solve(B, { ...R, ...pose } as Posed);
+  return { ...pose, lhIn: 2, lhx: s.handL[0], lhy: s.handL[1], lhz: s.handL[2], lh2: undefined } as P;
+}
 function h2Vault(): Motion {
   const V = H2_VAULT;
   const F = V.far;
-  const crouch = VT_PLANT(VT_CROUCH);
+  const edgeR: V3 = [0, -1, 0];
+  const LEFT: V3 = [0, 1, -0.2];
+  /** His head with his body (the way his chest faces), tipped back `look` degrees: so that it goes over with him, not round on his neck. */
+  const face = (p: P, look = 0): P => ({ faceTurn: p.yaw as number, faceUp: -((p.pitch as number) + (p.bend as number)) + look, faceTilt: p.roll as number });
+  const air = (p: P, look: number, more: P): P => ({ ...p, side: 0, twist: 0, ...face(p, look), ...more });
   // (on the way: the axe swung forward and down, its foot going to the floor)
-  const swing = elbowsTo({ ...between(R, VT_CROUCH, 0.5, R), ...grip([26, -24, 62], norm([-0.28, -0.16, 0.95]), [0, -1, 0], 1, null) }, null, [0.2, -0.9, -0.3]);
-  // (pushing up off the haft, his hands still on it where it stands)
-  const push = VT_PLANT({ px: 18, pz: R.pz + 6, yaw: -12, pitch: 26, twist: -4, bend: 10, faceTurn: 6, faceUp: -4, lk: 30, rk: -20 });
-  // (going up: torn out of the floor, the axe lifted up and out to his right, both hands coming to its foot)
-  const lift = elbowsTo({ px: F * 0.4, pz: R.pz + V.high * 0.8, yaw: -12, pitch: 10, twist: -6, bend: 4, faceTurn: 6, faceUp: 0, lk: 46, rk: -36, ...grip([F * 0.4 + 28, -30, 112], norm([-0.25, -0.35, 0.9]), [0, -1, 0], 0.3, -6) }, [0.3, 0.9, -0.2], [0.2, -0.9, -0.3]);
-  // (at the top: torn out of the floor and swung up over his head, its head back over his right shoulder, both hands at its foot)
-  const top = elbowsTo({ px: F * 0.6, pz: R.pz + V.high, yaw: -10, pitch: -4, twist: -4, bend: -6, faceTurn: 4, faceUp: 6, lk: 50, rk: -40, ...grip([F * 0.6 + 26, -6, 128], heading(-170, 42), [0, 0, 1], 0, -4) }, [0.3, 0.9, 0], [0.3, -0.9, 0]);
+  const swing = elbowsTo({ ...between(R, VT_CROUCH, 0.5, R), ...grip([32, -18, 58], vtWay(-22), edgeR, VT_HOLD, 14) }, [-0.2, 0.7, -0.6], [0.2, -0.9, -0.3]);
+  // (crouched behind it, his right hand at the middle of it, his left above)
+  const crouch = elbowsTo({ ...VT_CROUCH, ...grip(vtHand(-16), vtWay(-16), edgeR, VT_HOLD, 14) }, [-0.2, 0.7, -0.6], [0.2, -0.9, -0.3]);
+  const held0: P = { ...trembling(crouch, -0.8), pz: (crouch.pz as number) - 1.2, bend: (crouch.bend as number) + 1 };
+  /**
+   * His body hung from his right hand at `hand`: his right shoulder `reach` from it along his body's own up (his arm
+   * out over his head, as his body is turned), and `aside` to his left of it: so that his arm is a straight line
+   * up from the haft, and his body beside the haft, not on it.
+   */
+  const hungFrom = (hand: V3, body: P, reach: number, aside: number): P => {
+    const s0 = solve(B, { ...R, ...body, px: 0, py: 0, pz: 0 } as Posed);
+    const want = add(hand, add(mul(s0.chest[2], -reach), [0, aside, 0]));
+    return { ...body, px: want[0] - s0.shoulderR[0], py: want[1] - s0.shoulderR[1], pz: want[2] - s0.shoulderR[2] };
+  };
+  /** And his right hand where a body so turned has it, over his head (`reach` from his shoulder, `aside` to his right). */
+  const overHead = (body: P, reach: number, aside: number, fwd = 0): V3 => {
+    const s0 = solve(B, { ...R, ...body } as Posed);
+    return add(s0.shoulderR, add(add(mul(s0.chest[2], reach), mul(s0.chest[1], -aside)), mul(s0.chest[0], fwd)));
+  };
+  // (springing up off his feet, pulling on the haft, his body swinging up beside it, his left hand let go)
+  const spring = elbowsTo(air(hungFrom(vtHand(-8), { yaw: -4, pitch: 46, roll: -10, bend: 8 }, 30, 12), 44, { ...grip(vtHand(-8), vtWay(-8), edgeR, VT_HOLD, null), ...VT_FLUNG }), LEFT, [1, -0.2, 0.3]);
+  // (swinging up: his body over level beside the haft, his feet going up behind him)
+  const swingUp = elbowsTo(air(hungFrom(vtHand(-2), { yaw: -2, pitch: 112, roll: -14, bend: 4 }, 38, 14), 40, { ...grip(vtHand(-2), vtWay(-2), edgeR, VT_HOLD, null), ...VT_FLUNG }), LEFT, [1, -0.2, 0.3]);
+  // (AT THE TOP: up on his right hand on the haft, his body straight up beside it, upside down, his feet high in the air; the axe's head up by his hips, its blade out to his right)
+  const top = elbowsTo(air(hungFrom(vtHand(6), { yaw: 0, pitch: 180, roll: 0, bend: -6 }, 41, 16), 30, { ...grip(vtHand(6), vtWay(6), edgeR, VT_HOLD, null), ...VT_FLUNG }), LEFT, [1, -0.3, 0]);
+  // (tipping on over: the haft leaning on forward under him, its foot about to tear out of the floor)
+  const tip = elbowsTo(air(hungFrom(vtHand(18), { yaw: 0, pitch: 222, roll: 0, bend: -10 }, 41, 16), 20, { ...grip(vtHand(18), vtWay(18), edgeR, VT_HOLD, null), ...VT_FLUNG }), LEFT, [1, -0.3, 0]);
+  // (flipping over in the air, the axe torn out of the floor and upright beside him, his hand over his head and sliding down it toward its foot)
+  const flipBody: P = air({ px: 114, py: 6, pz: R.pz + 40, yaw: 0, pitch: 300, roll: 0, bend: -8 }, 10, {});
+  const flip = elbowsTo({ ...flipBody, ...grip(overHead(flipBody, 40, 10), heading(180, 80), edgeR, 0.45, null), ...VT_FLUNG }, LEFT, [0.3, -0.5, -0.8]);
+  // (from here on he has gone over once: his pitch and his head's tip said a full turn on)
+  // (landing crouched, the blade high over his head behind him, both hands at its foot)
+  const landed = elbowsTo({ px: F, py: 0, pz: R.pz - 18, yaw: -4, pitch: 360 + 4, roll: 0, twist: 0, bend: 4, side: 0, faceTurn: 2, faceUp: 4 - 360, faceTilt: 0, lk: 40, rk: -24, ...grip([F + 18, -2, 118], heading(176, 74), [0, 0, 1], 0, -4) }, [0.3, 0.9, -0.2], [0.3, -0.9, -0.2]);
   // (over the top, coming down)
-  const over = elbowsTo({ px: F * 0.85, pz: R.pz + V.high * 0.5, yaw: -6, pitch: 4, twist: 0, bend: 2, faceTurn: 2, faceUp: 0, lk: 40, rk: -36, ...grip([F * 0.85 + 36, -6, 110], heading(-10, 64), [1, 0, 0], 0, -4) }, [0.4, 0.9, -0.1], [0.4, -0.9, -0.1]);
-  // (THE BLOW: down, blade first, onto the spot, its edge bitten a little way into the stone and stopped
-  // dead there; he lands crouched behind it, his arms out straight; and it stays bitten while he sinks onto his
-  // heels, his hands still on the haft where it stopped)
-  const bite = elbowsTo({ px: F, pz: R.pz - 16, yaw: -4, pitch: 16, twist: 0, bend: 10, faceTurn: 2, faceUp: -20, lk: 40, rk: -24, ...grip(add(VT_BITE_HAND, [0, 0, VT_BITE]), VT_BITE_WAY, [-0.53, 0, -0.85], 0, -4) }, [-0.1, 0.6, -0.8], [-0.1, -0.6, -0.8]);
-  const held = elbowsTo({ ...bite, pz: R.pz - 18, pitch: 18, faceUp: -22, ...grip(VT_BITE_HAND, VT_BITE_WAY, [-0.53, 0, -0.85], 0, -4) }, [-0.1, 0.6, -0.8], [-0.1, -0.6, -0.8]);
+  const over = elbowsTo({ px: F, py: 0, pz: R.pz - 14, yaw: -4, pitch: 360 + 6, roll: 0, twist: 0, bend: 2, side: 0, faceTurn: 2, faceUp: 0 - 360, faceTilt: 0, lk: 40, rk: -24, ...grip([F + 34, -4, 112], heading(-4, 62), [1, 0, 0], 0, -4) }, [0.4, 0.9, -0.1], [0.4, -0.9, -0.1]);
+  // (THE BLOW: down, blade first, onto the spot with all his weight behind it, its edge bitten a little way
+  // into the stone and stopped dead there; crouched behind it, his arms out straight; and it stays bitten while
+  // he sinks onto his heels, his hands still on the haft where it stopped)
+  const bite = elbowsTo({ px: F, py: 0, pz: R.pz - 20, yaw: -4, pitch: 360 + 12, roll: 0, twist: 0, bend: 9, side: 0, faceTurn: 2, faceUp: -20 - 360, faceTilt: 0, lk: 40, rk: -24, ...grip(add(VT_BITE_HAND, [0, 0, VT_BITE]), VT_BITE_WAY, [-0.53, 0, -0.85], 0, -4) }, [-0.1, 0.6, -0.8], [-0.1, -0.6, -0.8]);
+  const held = elbowsTo({ ...bite, pz: R.pz - 22, pitch: 360 + 14, faceUp: -22 - 360, ...grip(VT_BITE_HAND, VT_BITE_WAY, [-0.53, 0, -0.85], 0, -4) }, [-0.1, 0.6, -0.8], [-0.1, -0.6, -0.8]);
   // (wrenched out, raised before him; and into his guard)
-  const up = elbowsTo({ px: F + 2, pz: R.pz - 8, yaw: -26, pitch: 10, twist: 2, bend: 9, faceTurn: 20, faceUp: -8, lk: 26, rk: -22, ...grip([F + 30, -6, 76], [0.42, -0.36, 0.83], [-0.6, -0.6, 0], 0.08, -6) }, [-0.3, 0.6, -0.7], [-0.3, -0.7, -0.6]);
-  const home = elbowsTo({ px: F, ...grip([F + 2, -15, 66], [-0.42, -0.2, 0.88], [-0.1, -1, 0], 1, -22) }, [-0.3, 0.6, -0.7], null);
+  const up = elbowsTo({ px: F + 2, pz: R.pz - 8, yaw: -26, pitch: 360 + 10, twist: 2, bend: 9, faceTurn: 20, faceUp: -8 - 360, lk: 26, rk: -22, ...grip([F + 30, -6, 76], [0.42, -0.36, 0.83], [-0.6, -0.6, 0], 0.08, -6) }, [-0.3, 0.6, -0.7], [-0.3, -0.7, -0.6]);
+  const TURNED: P = { pitch: R.pitch + 360, faceUp: R.faceUp - 360 };
+  const home = elbowsTo({ px: F, ...TURNED, ...grip([F + 2, -15, 66], [-0.42, -0.2, 0.88], [-0.1, -1, 0], 1, -22) }, [-0.3, 0.6, -0.7], null);
   return {
     hit: V.hit,
     keys: [
       { at: 0, pose: {} },
       { at: 0.12, pose: swing, ease: 'in' },
       { at: 0.24, pose: crouch, ease: 'out' },
-      { at: 0.32, pose: { ...crouch, pz: (crouch.pz as number) - 0.6 }, ease: 'hold' },
-      { at: 0.4, pose: { ...crouch, pz: (crouch.pz as number) + 0.4 }, ease: 'hold' },
-      { at: 0.48, pose: { ...crouch, pz: (crouch.pz as number) - 1.2, bend: 17 }, ease: 'hold' },
+      { at: 0.32, pose: trembling(crouch, -0.6), ease: 'hold' },
+      { at: 0.4, pose: trembling(crouch, 0.4), ease: 'hold' },
+      { at: 0.48, pose: held0, ease: 'hold' },
+      // (up, over and down, and the blow: his left hand said on the floor's axes all the way, from the haft out to his side and back to it)
       ...sweep([
-        { at: 0.48, pose: { ...crouch, pz: (crouch.pz as number) - 1.2, bend: 17 } },
-        { at: V.off, pose: push },
-        { at: (V.off + V.top) / 2 + 0.02, pose: lift },
-        { at: V.top, pose: top },
-        { at: V.top + 0.14, pose: over },
-        { at: V.hit, pose: bite },
+        { at: 0.48, pose: leftOnFloor(held0) },
+        { at: V.off, pose: leftOnFloor(spring) },
+        { at: (V.off + V.top) / 2 + 0.02, pose: leftOnFloor(swingUp) },
+        { at: V.top, pose: leftOnFloor(top) },
+        { at: V.free - 0.02, pose: leftOnFloor(tip) },
+        { at: (V.free + V.land) / 2, pose: leftOnFloor(flip) },
+        { at: V.land, pose: leftOnFloor(landed) },
+        { at: V.hit - 0.1, pose: leftOnFloor(over) },
+        { at: V.hit, pose: leftOnFloor(bite) },
       ]).slice(1),
       { at: V.hit + 0.12, pose: held, ease: 'out' },
-      { at: V.hit + 0.3, pose: { ...held, pz: R.pz - 19 }, ease: 'io' },
-      { at: V.hit + 0.5, pose: up, ease: 'in' },
-      { at: V.hit + 0.64, pose: { px: F, ...grip([F + 4, -16, 74], [-0.42, -0.2, 0.88], [-0.1, -1, 0], 0.5, null), lhIn: 0, lhx: 21, lhy: -1, lhz: -21, le: -52, re: 30 }, ease: 'out' },
+      { at: V.hit + 0.3, pose: { ...held, pz: R.pz - 22 }, ease: 'io' },
+      { at: V.hit + 0.5, pose: up, ease: 'io' },
+      { at: V.hit + 0.66, pose: { px: F, ...TURNED, ...grip([F + 4, -16, 74], [-0.42, -0.2, 0.88], [-0.1, -1, 0], 0.5, null), lhIn: 0, lhx: 21, lhy: -1, lhz: -21, le: -52, re: 30 }, ease: 'io' },
       { at: V.hit + 0.78, pose: home, ease: 'io' },
-      { at: V.long, pose: { px: F }, ease: 'io' },
+      { at: V.long, pose: { px: F, ...TURNED }, ease: 'io' },
     ],
   };
 }
+/** Crouched behind the planted haft (before his hands are put on it). */
+const VT_CROUCH: P = { px: -6, py: 6, pz: R.pz - 18, yaw: -8, pitch: 18, roll: 0, twist: -4, bend: 14, faceTurn: 6, faceUp: 16, lk: 40, rk: -28 };
+const VT_MOTION = h2Vault();
+const VT_AXED = axed(VT_MOTION, R);
+/**
+ * HIS FEET IN THE VAULT: down where he stands until he springs, and where he lands from when he lands; and in
+ * the air, his legs straight out from his hips along his body (up over him on top of the haft), his toes
+ * pointed, his knees the way his body faces.
+ */
 function h2VaultFeet(): (t: number) => P {
   const V = H2_VAULT;
-  return footwork(B, {
-    L: { start: L0, moves: [{ t0: V.off - 0.02, t1: V.land, to: plantBy(L0, V.far, 0), lift: 34 }] },
-    R: { start: R0, moves: [{ t0: V.off - 0.06, t1: V.land + 0.03, to: plantBy(R0, V.far, 0), lift: 30 }] },
+  const ground = footwork(B, {
+    L: { start: L0, moves: [{ t0: V.off - 0.04, t1: V.land, to: plantBy(L0, V.far, 0), lift: 20 }] },
+    R: { start: R0, moves: [{ t0: V.off - 0.08, t1: V.land + 0.03, to: plantBy(R0, V.far, 0), lift: 20 }] },
   });
+  const LEG = B.thigh + B.shank;
+  const air = (t: number): P => {
+    const q = bonesAt(VT_AXED.keys, R, t);
+    const s = solve(B, q);
+    const [f, , u] = s.hips;
+    const out: P = {};
+    for (const side of ['L', 'R'] as const) {
+      const hip = side === 'L' ? s.hipL : s.hipR;
+      const spread = side === 'L' ? 3 : -3;
+      const a = add(hip, add(mul(u, -LEG * 0.97), mul(s.hips[1], spread)));
+      const toes = mul(u, -1);
+      const turn = Math.atan2(toes[1], toes[0]) / D;
+      const pitch = -Math.asin(Math.max(-1, Math.min(1, toes[2]))) / D;
+      const knee = Math.atan2(f[1], f[0]) / D;
+      const kneeUp = Math.asin(Math.max(-1, Math.min(1, f[2]))) / D;
+      if (side === 'L') Object.assign(out, { lfx: a[0], lfy: a[1] - B.stance, lfz: a[2] - B.ankle, lfp: pitch, lft: turn, lk: knee, lkUp: kneeUp });
+      else Object.assign(out, { rfx: a[0], rfy: a[1] + B.stance, rfz: a[2] - B.ankle, rfp: pitch, rft: turn, rk: knee, rkUp: kneeUp });
+    }
+    return out;
+  };
+  const smooth = (k: number): number => k * k * (3 - 2 * k);
+  // (while the haft's foot is in the floor, his right hand on it where the haft runs from there: so that it turns on its foot, and does not slide in the stone)
+  const pinned = (t: number): P => {
+    if (t < 0.24 || t > V.free - 0.02) return {};
+    const q = bonesAt(VT_AXED.keys, R, t);
+    const h = add(VT_FOOT, mul(heading(q.wAz, q.wEl), AXE2_HOLD(q.draw)));
+    return { rhIn: 2, rhx: h[0], rhy: h[1], rhz: h[2] };
+  };
+  return (t) => ({ ...feetAt(t), ...pinned(t) });
+  function feetAt(t: number): P {
+    const g = ground(t);
+    const up = smooth(clamp01((t - V.off) / 0.14)) * (1 - smooth(clamp01((t - (V.land - 0.14)) / 0.14)));
+    if (up <= 0) return g;
+    const a = air(t);
+    if (up >= 1) return a;
+    const out: P = {};
+    const q = bonesAt(VT_AXED.keys, R, t) as unknown as Record<string, number>;
+    for (const k of new Set([...Object.keys(g), ...Object.keys(a)])) {
+      const x = (g as Record<string, number>)[k] ?? q[k];
+      const y = (a as Record<string, number>)[k] ?? q[k];
+      (out as Record<string, number>)[k] = x + (y - x) * up;
+    }
+    return out;
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -778,7 +876,7 @@ export const HEADSMAN_2: Mob = {
     halt: mv('The Headsman stops', h2Halt(), { ground: H2_GROUND, feet: h2HaltFeet() }),
     flurry: mv(FLURRY_NAME, h2Flurry(), { feet: h2FlurryFeet(), glint: heldGlint(0.22, 0.36, H2_FLURRY_HITS[0]), trail: trailOf, trailSpan: 4, trailOver: (t) => H2_FLURRY_HITS.some((h) => t > h - 0.07 && t < h + 0.1) }),
     wheel: mv(WHEEL_NAME, h2Wheel(), { feet: h2WheelFeet(), glint: heldGlint(H2_WHEEL.warnFrom, 0.42, H2_WHEEL.hit), trail: trailOf, trailSpan: 6, trailOver: (t) => t > H2_WHEEL.full - 0.05 && t < H2_WHEEL.slow + 0.1 }),
-    vault: mv('The vault', h2Vault(), { feet: h2VaultFeet(), glint: heldGlint(H2_VAULT.warnFrom, 0.4, H2_VAULT.hit), trail: trailOf, trailSpan: 4, trailOver: (t) => t > H2_VAULT.hit - 0.12 && t < H2_VAULT.hit + 0.06 }),
+    vault: mv('The vault', VT_MOTION, { feet: h2VaultFeet(), glint: heldGlint(H2_VAULT.warnFrom, 0.4, H2_VAULT.hit), trail: trailOf, trailSpan: 4, trailOver: (t) => t > H2_VAULT.hit - 0.12 && t < H2_VAULT.hit + 0.06 }),
     dashL: mv('The Headsman dashes to his left', h2Dash(true), { feet: h2DashFeet(true) }),
     dashR: mv('The Headsman dashes to his right', h2Dash(false), { feet: h2DashFeet(false) }),
   },

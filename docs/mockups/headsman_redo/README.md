@@ -23,6 +23,11 @@ Branch: `mockup/headsman-redo`, from main at Version 22.1 (99a128c).
 - At 17:57: "Make sure he passes the clipping checks". Read as: every boss check, every move, from in front
   and from behind; nothing through him or his coat; nothing cut off; and nothing of him goes to him until it
   all passes.
+- Shown the films of all his moves and asked "Send him to main?", he answered "Change something", then picked
+  "The vault", and asked what was off about it, by 16:45 Pacific (19:45 Eastern): "Bigger for sure, much bigger
+  aoe on the hit with more force". Read as: a real vault, up the haft into a handstand on top of it and over in
+  a flip, and a slam that strikes the floor all round, much wider, with far more weight (and its damage area
+  much bigger in the rules: the main chat's).
 
 ## What he is
 
@@ -63,13 +68,25 @@ shoulder). Where a move carries him, it ends where he has gone to, and the game 
   before him at `H2_WHEEL.hit` 0.8 (and at each turn after: about 2.7 turns a second; how often it strikes is
   the rules'); he drives forward behind it from 0.6 to 1.7, 2.5 tiles, running; it slows from 1.62 and stops
   by 1.86; in his guard by 2.36, 2.5 tiles on (`H2_SHIFT.wheel`).
-- **The vault**: 2.0 s (`H2_VAULT`). He drives the spike of the axe into the floor before him and to his
-  right and crouches behind it, gripping the haft high, the edge glinting over him (the warning, 0.26 on; the
-  game marks the spot); springs up off it at 0.56, up and over on the haft, tears it out and swings it over
-  his head (the top of his leap at 0.84, his hips 42 of his lengths up); lands at 1.1 and the blade comes
-  down blade first: THE BLOW at `H2_VAULT.hit` 1.12, its edge on the floor about 4.5 tiles before where he
-  began (THE SPOT), driving on into the stone a little and stopped dead there, held while he sinks onto his
-  heels; wrenched out from 1.42; in his guard by 2.0, 1.5 tiles on (`H2_SHIFT.vault`).
+- **The vault**: 2.5 s (`H2_VAULT`), MADE BIGGER at his word (below). He drives the spike of the axe into the
+  floor before him and a little to his right and crouches behind it, his right hand at the middle of the haft,
+  his left above it (the warning, 0.26 on; the game marks the spot: a ring burning as wide as the slam, a second
+  running in toward the spot, the cracks to come glowing in the stone: `drawVaultMark`); springs at 0.56 and
+  swings up the haft, his left hand let go and flung out; at 0.86 he is UP ON HIS RIGHT HAND ON TOP OF THE HAFT,
+  upside down beside it, his feet about 196 of his lengths off the floor (his height is 110); tips on over, and
+  at 1.0 tears the axe out of the floor and flips over forward in the air, the haft running through his hand to
+  its foot; lands at 1.18, 3.1 tiles on, the axe over his head and coming on round with him, and brings it down:
+  THE BLOW, THE SLAM, at `H2_VAULT.hit` 1.44, its edge on the floor about 6.1 tiles before where he began (THE
+  SPOT), driving on into the stone a little and stopped dead there, held while he sinks onto his heels; wrenched
+  out from 1.74; in his guard by 2.5, 3.1 tiles on (`H2_SHIFT.vault`).
+  THE SLAM (`src/art/headsman2_shots.ts`, `H2_SLAM`): `reach` 2.5 tiles every way from the spot. `drawVaultSlam`
+  (under him): a flash and rays of fire across the stone; a shock ring of fire racing out to the edge (by about
+  0.34 s), a wave of dust thrown up behind it; the floor split in wide cracks out to the edge, burning and then
+  dark; a crater, its rim heaped up. `drawVaultSlamOver` (over him): a column of fire bursting up out of the
+  crater and flames out of the cracks (0 to 0.5 s); chunks of the floor flung up and out, falling back between
+  0.5 and 0.8 s and bouncing; sparks (to 0.7 s); dust rolling out (to about 1.3 s). All of it gone by `H2_SLAM.for` 1.8 s. In the films the
+  game is held still 0.14 s at the blow (`freeze`) and the screen kicked 7 pixels, dying away over 0.45 s
+  (`shake`, `shakeFor`): those, and what it hurts and how far it throws, are the main chat's.
 - **The dashes** (dashL, dashR): 0.5 s each, a quick low bound 1.5 tiles to his left or his right
   (`H2_DASH`): he dips, pushes off; his near foot up 0.1 to 0.33, his far foot up 0.16 to 0.42, both off the
   floor between; his coat streaming; in his guard where he landed (`H2_SHIFT.dashL`, `dashR`).
@@ -93,10 +110,10 @@ shoulder). Where a move carries him, it ends where he has gone to, and the game 
 3. Every frame of every move both ways round: nothing cyan; his pink edge while he lives and none as he
    dies; every pixel whole or empty but the edge; no pixel alone.
 4. Nothing cut off: in every frame he is inside his picture with room to spare (at least 8 pixels; his
-   canvas, `H2_CANVAS`, 460 by 430).
+   canvas, `H2_CANVAS`, 480 by 450).
 5. Nothing of him in the floor, all he wears and carries (his coat, his sash, his cape, his hood, his
    axe), but his blade's edge where it bites (the vault, the flurry's third cut: no more than 4 of his own
-   lengths) and the spike he vaults on.
+   lengths) and the spike of his axe while it is driven in for the vault.
 6. Where his blade bites the floor it stops dead and stays where it bit while he is bent over it.
 7. His axe and his hood, fallen, lie clear of him once he is down, from in front and from behind.
 
@@ -107,7 +124,7 @@ The checks' one addition (`src/art/boss_checks.ts`): a handover may say how far 
 ## His room
 
 Every frame both ways round, as the game would hold them (trimmed pictures, 4 bytes a pixel, counted by
-`makeHeadsman2Art()`): 806 frames, 53.1 MB. The first Headsman's: 1122 frames, 69.5 MB.
+`makeHeadsman2Art()`): 836 frames, 54.9 MB. The first Headsman's: 1122 frames, 69.5 MB.
 
 ## To make him the game's (the main chat)
 

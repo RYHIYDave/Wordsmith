@@ -65,11 +65,11 @@ export const H2_HOOD_GOES = 1.32;
 
 /**
  * His canvas: room for his long axe held high over his hood, spun round him, and flung out at full reach, and
- * for the ground his flurry and his vault carry him over before the game moves him (in every frame of every
- * move both ways round he reaches at most 156 to the left of where he stands, 275 up, 230 to the right and
- * 110 down: tests/headsman2.test.ts keeps a margin round him).
+ * for the ground his flurry and his vault carry him over before the game moves him, and his feet up on top of the
+ * haft in the vault (in every frame of every move both ways round he reaches at most 156 to the left of where he
+ * stands, 299 up, 262 to the right and 118 down: tests/headsman2.test.ts keeps a margin round him).
  */
-export const H2_CANVAS: MobCanvas = { w: 460, h: 430, ax: 200, ay: 296 };
+export const H2_CANVAS: MobCanvas = { w: 480, h: 450, ax: 200, ay: 316 };
 
 // ---------------------------------------------------------------------------------------------
 // HIS LONG AXE. A haft as long as he is tall, of dark wood bound in iron, an iron spike at its foot; at
@@ -277,8 +277,12 @@ export function headsman2Bits(st: Stage, m: Moment): Bit[] {
     const top = lerp3(knee, ankle, 0.08);
     put(`boot${side}`, `boot${side}`, { k: 'rod', a: top, b: ankle, ra: rK * 1.16, rb: rA * 1.12, ramp: BLACK, far: true });
     const fwd = norm(sub(toe, heel), [1, 0, 0]);
-    const side3 = norm([-fwd[1], fwd[0], 0], [0, 1, 0]);
-    put(`boot${side}`, `foot${side}`, { k: 'ball', c: add(lerp3(heel, toe, 0.52), [0, 0, 2.0]), ax: [mul(fwd, 8.6), mul(side3, 3.4), [0, 0, 2.3]], skin: BLACK, far: true });
+    // (the foot's own frame: level, as when he stands, its sole down; and a foot pointed up or down, as in the
+    // air over his head, its sole turned with it, not squashed flat against the floor's up)
+    const side3 = norm(Math.abs(fwd[2]) < 0.95 ? [-fwd[1], fwd[0], 0] : cross(s.hips[2], fwd), [0, 1, 0]);
+    const steep = clamp01((Math.abs(fwd[2]) - 0.35) / 0.4);
+    const up3 = norm(add(mul([0, 0, 1], 1 - steep), mul(cross(fwd, side3), steep)), [0, 0, 1]);
+    put(`boot${side}`, `foot${side}`, { k: 'ball', c: add(lerp3(heel, toe, 0.52), mul(up3, 2.0)), ax: [mul(fwd, 8.6), mul(side3, 3.4), mul(up3, 2.3)], skin: BLACK, far: true });
     bandOn(put, `boot${side}`, `boot${side}`, knee, ankle, 0.16, rK * 1.24, 2);
   }
 

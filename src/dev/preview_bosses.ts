@@ -11,12 +11,13 @@
 //          move:<boss>:<move>[:<scale>], walk:<boss>[:<scale>], death:<boss>[:<scale>]: films (see FILMS, below)
 import { makeGroundArt } from '../art/ground';
 import { spriteOf3 } from '../art/heroes3';
-import { toSprite } from '../art/kit';
+import { hash, toSprite } from '../art/kit';
 import { makeSkeletonArt3 } from '../art/monster_bones3';
 import { makeWardenArt } from '../art/monster_warden';
 import { MOVES3 } from '../art/moves3';
 import { AMALGAM, AM_BURST_AT, AM_BURST_SPOT, AM_BURST_WAY, AM_DEVOUR_HIT, AM_SLAM_HIT, AM_SLAM_SPOTS, AM_SWARM_HIT, AM_SWARM_SPEED, AM_SWIPE_HIT, BB_BITE_HIT, BB_EMERGE_TIME, BONE_BEAST, FLOOR_ARM_FPS, FLOOR_ARM_FRAMES, FLOOR_ARM_SINK, FLOOR_ARM_TIME, SWARM_SKULL_FPS, SWARM_SKULL_FRAMES, amRakeAt, amSwarmSkulls, makeFloorArmArt, makeSwarmSkullArt, AXE_SHOT_FRAMES, BALL_SHOT_FRAMES, CHAINED, CHAINED_FREED, CO_BALL_BACK, CO_SNAP_BALL, CO_SNAP_L, makeLeftBehindArt, CO_BALL_LAND, CO_BALL_LET, CO_BALL_REACH, CO_HOOK_BACK, CO_HOOK_BITE, CO_HOOK_LET, CO_HOOK_REACH, CO_LASH_HIT, CO_WHIRL_FROM, CO_WHIRL_TO, HEADSMAN, HOOK_SHOT_FRAMES, coBallPath, coCollarAt, coCuffAt, coHookPath, coWhirlReach, makeBallShotArt, makeHookShotArt, HS_CATCH, HS_CHOP_HIT, HS_SENTENCE_HIT, HS_SWEEP_FROM, HS_SWEEP_TO, HS_THROW_HIT, axeOf, hsBite, hsSweepReach, makeAxeShotArt } from '../art/bosses3';
 import { H2_FLURRY_HITS, H2_LUNGE_HIT, H2_SHIFT, H2_VAULT, H2_WHEEL, HEADSMAN_2 } from '../art/headsman2_moves';
+import { H2_SLAM, drawVaultMark, drawVaultSlam, drawVaultSlamOver } from '../art/headsman2_shots';
 import { axe2Of } from '../art/headsman2';
 import { SENTENCE_FROM, drawArmCrack, drawAxeShadow, drawBallCrash, drawClawRake, drawBallShadow, drawChainOut, drawChopCrack, drawScrape, drawSentenceLine, drawSentenceSplit, drawSweepRing, drawThrowPath, throwPathAt } from '../art/boss_shots';
 import { drawSkullBurst, drawSkullShadow } from '../art/mob_shots';
@@ -885,14 +886,15 @@ if (mode === 'h2') {
   const which = parts[1] || 'attack';
   const S = Number(parts[2]) || 2;
   const FPS = 30;
-  const HOLD = 0.1;
+  // (the game held still a tenth of a second at each blow; the vault's slam longer, and the screen kicked: art/headsman2_shots.ts H2_SLAM)
+  const HOLD = which === 'vault' ? H2_SLAM.freeze : 0.1;
   const long = lastKey(mob, which);
   const heavy: number[] = which === 'attack' ? [H2_LUNGE_HIT] : which === 'flurry' ? [...H2_FLURRY_HITS] : which === 'vault' ? [H2_VAULT.hit] : [];
   const said = (m: number): string => {
     if (which === 'attack') return m < 0.26 ? 'The lunge: coiling, the axe swung back low behind him' : m < H2_LUNGE_HIT - 0.1 ? 'The lunge: held, the edge glinting' : m < H2_LUNGE_HIT + 0.3 ? 'The lunge: a long stride, the blade hooking across at full reach' : 'The lunge: springing back into his guard';
     if (which === 'flurry') return m < 0.22 ? 'The flurry: the axe cocked high behind him' : m < 0.48 ? 'The flurry: held, the edge glinting' : m < H2_FLURRY_HITS[1] - 0.2 ? 'The flurry: a dart forward and left, the first cut' : m < H2_FLURRY_HITS[2] - 0.2 ? 'The flurry: round and over, a dart right, the second' : m < H2_FLURRY_HITS[2] + 0.3 ? 'The flurry: round and over, a dart on, the third, down' : 'The flurry: up out of it, into his guard';
     if (which === 'wheel') return m < 0.24 ? 'The blade wheel: the axe raised upright before him' : m < H2_WHEEL.spin ? 'The blade wheel: held, the edge glinting' : m < H2_WHEEL.slow ? 'The blade wheel: spun before him, driving forward' : 'The blade wheel: slowing, and back into his guard';
-    if (which === 'vault') return m < 0.24 ? 'The vault: the spike driven into the floor' : m < H2_VAULT.off ? 'The vault: crouched behind it, the edge glinting high (the spot is marked)' : m < H2_VAULT.top ? 'The vault: up off the haft' : m < H2_VAULT.hit ? 'The vault: torn out, swung over his head, and down' : m < H2_VAULT.hit + 0.4 ? 'The vault: blade first into the spot' : 'The vault: wrenched out, into his guard';
+    if (which === 'vault') return m < 0.24 ? 'The vault: the spike driven into the floor' : m < H2_VAULT.off ? 'The vault: crouched behind it, the edge glinting (the spot is marked, as wide as the slam)' : m < H2_VAULT.top - 0.04 ? 'The vault: up the haft' : m < H2_VAULT.free - 0.02 ? 'The vault: up on his hand on top of it' : m < H2_VAULT.land ? 'The vault: over, the axe torn out, flipping' : m < H2_VAULT.hit ? 'The vault: landing, and down with it' : m < H2_VAULT.hit + 0.5 ? 'The vault: THE SLAM' : 'The vault: wrenched out, into his guard';
     if (which === 'dashL' || which === 'dashR') return `A dash to his ${which === 'dashL' ? 'left' : 'right'}`;
     if (which === 'dying') return 'His hood falls empty';
     if (which === 'reel') return 'Struck';
@@ -925,18 +927,44 @@ if (mode === 'h2') {
   const [l, r, u, d] = reachAll(all);
   const PAD = 10;
   const M = 30;
-  const go = Math.max(Math.abs(sh[0]), Math.abs(sh[1]), which === 'vault' ? 4 : 0) * 32;
-  const cw = (l + r + 2 * M + go) * S;
-  const ch = (u + d + 2 * M + go * 0.5) * S;
-  const HEAD = 58;
-  cv.width = PAD + 2 * (cw + PAD);
-  cv.height = HEAD + ch + 34;
   // (where the vault's blade bites: the spot the game marks)
   const spot = (() => {
     const q = posedOfMob(mob, 'vault', H2_VAULT.hit);
     const e = axe2Of(skeletonAt(mob, 'vault', H2_VAULT.hit), q).edge;
     return [e[0] / TILE3, e[1] / TILE3] as const;
   })();
+  // (each pane holds him where he starts and where he ends, and, for the vault, the whole of the slam round the spot: its corners, on the screen, from his floor point)
+  const boxOf = (view: GameView): [number, number, number, number] => {
+    const [gx, gy] = toScreen(view, sh[0], sh[1]);
+    let [x0, x1, y0, y1] = [-l * S + Math.min(0, gx), r * S + Math.max(0, gx), -u * S + Math.min(0, gy), d * S + Math.max(0, gy)];
+    if (which === 'vault') {
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        const [px, py] = toScreen(view, spot[0] + Math.cos(a) * (H2_SLAM.reach + 0.3), spot[1] + Math.sin(a) * (H2_SLAM.reach + 0.3));
+        x0 = Math.min(x0, px);
+        x1 = Math.max(x1, px);
+        y0 = Math.min(y0, py - 60 * S);
+        y1 = Math.max(y1, py);
+      }
+    }
+    return [x0, x1, y0, y1];
+  };
+  const boxes = { front: boxOf('front'), back: boxOf('back') };
+  const cw = Math.max(...Object.values(boxes).map((b) => b[1] - b[0])) + 2 * M * S;
+  const ch = Math.max(...Object.values(boxes).map((b) => b[3] - b[2])) + 2 * M * S;
+  const HEAD = 58;
+  cv.width = PAD + 2 * (cw + PAD);
+  cv.height = HEAD + ch + 34;
+  /** The screen's kick at the slam (the film's moment `t`): its pixels across and down. */
+  const kick = (t: number): [number, number] => {
+    if (which !== 'vault') return [0, 0];
+    const k = t - (0.5 + H2_VAULT.hit);
+    if (k < 0 || k > H2_SLAM.freeze + H2_SLAM.shakeFor) return [0, 0];
+    const after = Math.max(0, k - H2_SLAM.freeze);
+    const left = Math.max(0, 1 - after / H2_SLAM.shakeFor);
+    const n = Math.floor(k * 30);
+    return [(hash(n, 1, 107) - 0.5) * 2 * H2_SLAM.shake * left * S, (hash(n, 2, 107) - 0.5) * 2 * H2_SLAM.shake * left * S];
+  };
   filmPage(TICKS, FPS, (tick) => {
     const t = tick / FPS;
     const m = moveT(t);
@@ -947,23 +975,25 @@ if (mode === 'h2') {
     for (const [j, view] of (['front', 'back'] as const).entries()) {
       const x = PAD + j * (cw + PAD);
       // (his floor point placed so that where he goes stays in the pane: facing you he comes down the picture, facing away up it)
-      const [gx, gy] = toScreen(view, sh[0], sh[1]);
-      const fx0 = x + (M + l) * S + Math.max(0, -gx);
-      const fy0 = HEAD + (M + u) * S + Math.max(0, -gy);
+      const [kx, ky] = kick(t);
+      const fx0 = x + M * S - boxes[view][0] + kx;
+      const fy0 = HEAD + M * S - boxes[view][2] + ky;
       const f = frameOf(view, t);
       const [ax, ay] = toScreen(view, f.at[0], f.at[1]);
       const [mx, my] = toScreen(view, f.moved[0], f.moved[1]);
       PANE_SHIFT.shadow = [ax, ay];
       PANE_SHIFT.sprite = [mx, my];
-      const mark = which === 'vault' && m >= H2_VAULT.warnFrom && m < H2_VAULT.hit ? (c: CanvasRenderingContext2D) => {
-        const [sx, sy] = floorOf(paintViewOf(mob, view), spot[0], spot[1]);
-        drawSweepRing(c, ISO, sx, sy, 0.7, Math.max(0, Math.min(1, (m - H2_VAULT.warnFrom) / 0.3)), m);
-      } : which === 'vault' && m >= H2_VAULT.hit ? (c: CanvasRenderingContext2D) => {
-        const [sx, sy] = floorOf(paintViewOf(mob, view), spot[0], spot[1]);
-        const [fx, fy] = floorOf(paintViewOf(mob, view), spot[0] + 1, spot[1]);
-        drawChopCrack(c, ISO, sx, sy, fx, fy, m - H2_VAULT.hit);
+      // (the slam's time: from the blow, the freeze counted in, as the game would show it)
+      const slamT = t - 0.5 - H2_VAULT.hit;
+      const [sx, sy] = floorOf(paintViewOf(mob, view), spot[0], spot[1]);
+      const [fx, fy] = floorOf(paintViewOf(mob, view), spot[0] + 1, spot[1]);
+      const mark = which === 'vault' && m >= H2_VAULT.warnFrom && slamT < 0 ? (c: CanvasRenderingContext2D) => {
+        drawVaultMark(c, ISO, sx, sy, Math.max(0, Math.min(1, (m - H2_VAULT.warnFrom) / (H2_VAULT.hit - H2_VAULT.warnFrom))), m);
+      } : which === 'vault' && slamT >= 0 ? (c: CanvasRenderingContext2D) => {
+        drawVaultSlam(c, ISO, sx, sy, fx - sx, fy - sy, slamT);
       } : undefined;
-      filmPane(x, HEAD, cw, ch, S, fx0, fy0, f.sp, mob.shadow, mark);
+      const flung = which === 'vault' && slamT >= 0 ? (c: CanvasRenderingContext2D) => drawVaultSlamOver(c, ISO, sx, sy, slamT) : undefined;
+      filmPane(x, HEAD, cw, ch, S, fx0, fy0, f.sp, mob.shadow, mark, flung);
       PANE_SHIFT.shadow = [0, 0];
       PANE_SHIFT.sprite = [0, 0];
       text(view === 'front' ? 'facing you' : 'facing away', x + cw / 2, HEAD + ch + 6, 15, '#e8e2ff', 600, 'center');
