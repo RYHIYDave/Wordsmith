@@ -328,6 +328,10 @@ wait
 # way is not open read, and the one taken undone in town, for gold.
 run talents_pc     --scenario $S/talents_look.mjs &
 run talents_phone  $P --scenario $S/talents_look.mjs &
+# THE SKILL TREES REMADE (TALENTS2): the bot on floor 6 with all fifteen of its class's talents at once
+FLOORS=1 run talents2_warrior --hash "bot=warrior&seed=4" --scenario $S/talents2_soak.mjs &
+FLOORS=1 run talents2_ranger  --hash "bot=ranger&seed=3" --scenario $S/talents2_soak.mjs &
+FLOORS=1 run talents2_mage    --hash "bot=mage&seed=4" --scenario $S/talents2_soak.mjs &
 wait
 # A GAME CONTROLLER (behind GAMEPAD; the playtest sets the switch for itself, hands the page a pad of
 # its own, and puts both back): walking, aiming with the right stick and attacking, the slow attack,
