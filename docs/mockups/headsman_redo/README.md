@@ -28,6 +28,10 @@ Branch: `mockup/headsman-redo`, from main at Version 22.1 (99a128c).
   aoe on the hit with more force". Read as: a real vault, up the haft into a handstand on top of it and over in
   a flip, and a slam that strikes the floor all round, much wider, with far more weight (and its damage area
   much bigger in the rules: the main chat's).
+- Shown `headsman_vault_bigger.mp4` (the bigger vault, front and back) and asked "Send the Headsman to main?"
+  (offered: "Yes, send it to main (Recommended)", main puts him in the game in place of the old Headsman, with
+  the bigger slam's damage area), no choice was made; then, at 18:04 Pacific (21:04 Eastern): "Yes". Read as
+  his yes to send him, as shown, to the main chat.
 
 ## What he is
 
