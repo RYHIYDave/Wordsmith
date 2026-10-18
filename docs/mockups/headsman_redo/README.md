@@ -28,6 +28,10 @@ Branch: `mockup/headsman-redo`, from main at Version 22.1 (99a128c).
   aoe on the hit with more force". Read as: a real vault, up the haft into a handstand on top of it and over in
   a flip, and a slam that strikes the floor all round, much wider, with far more weight (and its damage area
   much bigger in the rules: the main chat's).
+- Shown `headsman_vault_bigger.mp4` (the bigger vault, front and back) and asked "Send the Headsman to main?"
+  (offered: "Yes, send it to main (Recommended)", main puts him in the game in place of the old Headsman, with
+  the bigger slam's damage area), no choice was made; then, at 18:04 Pacific (21:04 Eastern): "Yes". Read as
+  his yes to send him, as shown, to the main chat.
 
 ## What he is
 
@@ -117,7 +121,9 @@ shoulder). Where a move carries him, it ends where he has gone to, and the game 
 6. Where his blade bites the floor it stops dead and stays where it bit while he is bent over it.
 7. His axe and his hood, fallen, lie clear of him once he is down, from in front and from behind.
 
-And: `tests/bosses.test.ts` (the first Headsman and the other bosses, unchanged); tsc; the whole unit suite.
+And: `tests/bosses.test.ts` (the first Headsman and the other bosses, unchanged); `tests/new_mobs3.test.ts` (it
+knows his files are a mock-up). At 7d46f3b (the bigger vault): tsc clean; THE WHOLE UNIT SUITE 1755 of 1755.
+Not run: the full regression; a real phone (he is not in the game).
 The checks' one addition (`src/art/boss_checks.ts`): a handover may say how far the move has carried him
 (`Handover.shift`), so that a move that ends where he has gone to is checked against his stand there.
 
