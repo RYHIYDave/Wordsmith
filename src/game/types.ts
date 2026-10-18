@@ -25,8 +25,14 @@ export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightn
  * damage words. They never drop: WORD_IDS, which every random draw of a word uses, holds none of them.
  */
 export type MeldId = 'eruption' | 'avalanche' | 'thunder' | 'blight' | 'scald' | 'wildfire' | 'fumes' | 'hailstorm' | 'frostbite' | 'contagion';
-/** A word as a hero holds it and sets it in a socket: a power word, or a melded one. */
-export type WordId = BaseWordId | MeldId;
+/**
+ * RANK II (behind RANK2, game/melds.ts): a damage word at its second rank, made at the wordsmith by
+ * melding two of the word. The owner, 18 Oct 2026, 08:49: "Please add the second level (poison+poison)
+ * melding into the game". They never drop either: WORD_IDS holds none of them.
+ */
+export type RankId = 'power2' | 'fire2' | 'frost2' | 'lightning2' | 'poison2';
+/** A word as a hero holds it and sets it in a socket: a power word, a melded one, or a ranked one. */
+export type WordId = BaseWordId | MeldId | RankId;
 // (THE NEW WORDS, his choice of 8 Oct 2026, 12:26, as his doc "Wordsmith: The New Words" plays them (his yes, 16:53): the first four, Heavy,
 // Precise, Frenzied and Guarding, from Version 19.3; their looks are the art chat's, render/words3.ts)
 export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding'];
@@ -45,7 +51,17 @@ export const MELD_OF: Readonly<Record<MeldId, readonly [BaseWordId, BaseWordId]>
   frostbite: ['frost', 'poison'],
   contagion: ['lightning', 'poison'],
 };
-/** Every word a hero can hold: what a count of each is kept over (the pouch, the Lexicon, what is known). */
+/** RANK II: the five damage words' second ranks. */
+export const RANK_IDS: readonly RankId[] = ['power2', 'fire2', 'frost2', 'lightning2', 'poison2'];
+/** Each ranked word's word and rank. */
+export const RANK_OF: Readonly<Record<RankId, { word: BaseWordId; rank: number }>> = {
+  power2: { word: 'power', rank: 2 },
+  fire2: { word: 'fire', rank: 2 },
+  frost2: { word: 'frost', rank: 2 },
+  lightning2: { word: 'lightning', rank: 2 },
+  poison2: { word: 'poison', rank: 2 },
+};
+/** The words and the melded ones (RANK II's ranked words are apart: RANK_IDS; game/melds.ts, `wordIds`, is what a hero's words are kept over, switches and all). */
 export const ALL_WORD_IDS: readonly WordId[] = [...WORD_IDS, ...MELD_IDS];
 
 /** Damage types. An ability with no element word deals physical damage. */

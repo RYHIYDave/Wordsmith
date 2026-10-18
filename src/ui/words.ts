@@ -5,6 +5,7 @@ import { WORD_COLOR } from '../art/icons';
 import { P } from '../art/palette';
 import { drawText, textWidth } from '../engine/font';
 import { WORDS } from '../game/defs';
+import { rankOf } from '../game/melds';
 import type { SkillDef } from '../game/defs';
 import type { WordId } from '../game/types';
 import type { Art } from '../render/render';
@@ -43,6 +44,8 @@ export function drawWordTile(ui: Ui, art: Art, x: number, y: number, w: number, 
     const stone = art.icons.word[word];
     g.drawImage(stone.img, x + Math.floor((w - stone.w) / 2), y + Math.floor((h - stone.h) / 2));
     if (count > 1) drawText(g, `${count}`, x + w - 2, y + h - 7, P.white, { font: 'small', align: 'right', shadow: P.ink });
+    // (RANK II: a ranked word's rank on the stone's corner)
+    if (rankOf(word) > 1) drawText(g, RANK_MARK[rankOf(word)] ?? '', x + w - 2, y + 2, P.white, { font: 'small', align: 'right', shadow: P.ink });
     g.globalAlpha = 1;
     return;
   }
@@ -59,9 +62,14 @@ export function drawWordTile(ui: Ui, art: Art, x: number, y: number, w: number, 
   const ty = y + Math.floor((h - 8) / 2) + 1;
   if (form === 'behind') tx += drawText(g, 'of', tx, ty + 2, THEME.dim, { font: 'small' }) + 3;
   tx += drawText(g, wordForm(word, form), tx, small ? ty + 2 : ty, WORD_COLOR[word], { font: small ? 'small' : 'normal' });
+  // (RANK II: its rank after the word where the word's own name does not carry it)
+  if (rankOf(word) > 1 && form !== 'name') tx += drawText(g, ` ${RANK_MARK[rankOf(word)] ?? ''}`, tx, ty + 2, P.white, { font: 'small' });
   if (count > 1) drawText(g, `x${count}`, tx + 3, ty + 2, THEME.text, { font: 'small' });
   g.globalAlpha = 1;
 }
+
+/** (RANK II) A rank as it is marked on a word: II, III, IV, V. */
+const RANK_MARK: readonly string[] = ['', '', 'II', 'III', 'IV', 'V'];
 
 /** The pieces of an attack's full name, each in its colour: FLAME STRIKE of POWER and RUIN. */
 export function nameParts(def: SkillDef, front: readonly (WordId | null)[], behind: readonly (WordId | null)[]): { text: string; color: string; small: boolean }[] {

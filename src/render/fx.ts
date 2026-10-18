@@ -372,7 +372,9 @@ const BUBBLE: readonly string[] = [P.vn5, P.vn4, P.vn4, P.vn3];
 /** The colour each word's name is shown in when it joins an ability. */
 export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, twin: P.tl4, fire: P.fr4, frost: P.bu4, lightning: P.lt3, leech: P.bl5, volatile: P.pu4, poison: P.vn4, heavy: '#ac8753', precise: '#eef4fa', frenzied: '#ff5c33', guarding: '#30a868',
   // (WORDMELDING: the melded words take their colours from art/icons.ts)
-  eruption: '#ff9a5a', avalanche: '#b8dcff', thunder: '#c8a8ff', blight: '#8aa040', scald: '#e0b0c0', wildfire: '#d86040', fumes: '#c89838', hailstorm: '#e8f0c0', frostbite: '#6898b0', contagion: '#90e0a0' };
+  eruption: '#ff9a5a', avalanche: '#b8dcff', thunder: '#c8a8ff', blight: '#8aa040', scald: '#e0b0c0', wildfire: '#d86040', fumes: '#c89838', hailstorm: '#e8f0c0', frostbite: '#6898b0', contagion: '#90e0a0',
+  // (RANK II: a ranked word in its word's colour)
+  power2: P.bl4, fire2: P.fr4, frost2: P.bu4, lightning2: P.lt3, poison2: P.vn4 };
 
 /** No more particles than this are ever alive: past it, new ones are simply not made. */
 const MAX_PARTICLES = 900;

@@ -31,9 +31,9 @@ import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
-import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
-import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, STONE_RISE, isDamageWord, meldOf, meldProblem, savedWords, withParts, wordIds } from './melds';
-import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
+import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
+import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -328,7 +328,7 @@ export class Game {
   meldHeat: number[] = [0, 0, 0];
   meldHits: number[] = [0, 0, 0];
   /** WORDMELDING: the last word the wordsmith melded, and whether it was the first of its kind (his half shows it). */
-  melded: { word: MeldId; first: boolean } | null = null;
+  melded: { word: MeldId | RankId; first: boolean } | null = null;
   private windT = 0;
   private stormT = 0;
   private unbroken = false;
@@ -443,6 +443,8 @@ export class Game {
     for (const w of WORD_IDS) h.words[w] = PRACTICE.words;
     // (WORDMELDING: the melded words too, to try)
     if (MELD.on) for (const w of MELD_IDS) h.words[w] = PRACTICE.words;
+    // (RANK II: and the ranked words)
+    if (MELD.on && RANK2.on) for (const w of RANK_IDS) h.words[w] = PRACTICE.words;
     this.refresh();
     this.clearLevel();
     const shape = SHAPES.find((k) => hall === `shape:${k}`);
@@ -550,7 +552,7 @@ export class Game {
     if (worded && (worded.front.some((w) => w !== null) || worded.behind.some((w) => w !== null))) return 'use';
     const fight = this.inFight();
     if (fight && this.guideRows().some((r) => !r.done)) return 'fight';
-    if (ALL_WORD_IDS.some((w) => h.words[w] > 0)) return 'smith';
+    if (wordIds().some((w) => h.words[w] > 0)) return 'smith';
     if (this.drops.some((d) => d.kind === 'word' && Math.hypot(d.x - h.x, d.y - h.y) < GUIDE.sight)) return 'take';
     if (fight) return null;
     // (THE FIRST LEVELS: the quest item, to be taken to town and to the wordsmith)
@@ -2169,6 +2171,7 @@ export class Game {
     if (!st || st.open) return 'The door is open';
     if (!(this.hero.words[word] > 0)) return 'No spare word';
     if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks only';
+    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks only';
     if (st.words.length >= HOLD_TUNE.most) return `At most ${HOLD_TUNE.most} words`;
     if (st.words.includes(word)) return 'Already on the altar';
     if (WORDS[word].element && st.words.some((w) => WORDS[w].element)) return 'One element per stronghold';
@@ -4778,7 +4781,8 @@ export class Game {
     const s = m.lastSkill >= 0 ? h.skills[m.lastSkill] : null;
     if (s) {
       const words = [...s.front, ...s.behind].filter((w): w is WordId => w !== null);
-      if (words.length) lists.push({ w: W.word, lines: QUIPS.word[q.pick(words)] });
+      // (RANK II: a ranked word speaks its word's lines)
+      if (words.length) lists.push({ w: W.word, lines: QUIPS.word[rankBase(q.pick(words))] });
       lists.push({ w: W.skill, lines: QUIPS.skill[s.id] });
     }
     const weapon = h.gear.mainhand ? h.gear.mainhand.weapon : null;
@@ -5017,7 +5021,7 @@ export class Game {
       (words[w] ?? 0) + sockets.reduce((n, so) => n + [...so.front, ...so.behind].filter((x) => x === w).length, 0);
     const nowSockets = h.skills.map((sk) => ({ front: sk.front, behind: sk.behind }));
     let words = 0;
-    for (const w of ALL_WORD_IDS) words += Math.max(0, count(h.words, nowSockets, w) - count(e.words, e.sockets, w));
+    for (const w of wordIds()) words += Math.max(0, count(h.words, nowSockets, w) - count(e.words, e.sockets, w));
     return { items, words, gold: Math.max(0, h.gold - e.gold), share: this.goldShare() };
   }
 
@@ -6904,8 +6908,9 @@ export class Game {
   /** Why a word cannot be laid on the gate, or null if it can. */
   planProblem(word: WordId): string | null {
     if (!(this.hero.words[word] > 0)) return 'No spare word';
-    // (WORDMELDING: a melded word is for attacks only, for now, his words)
+    // (WORDMELDING: a melded word is for attacks only, for now, his words; RANK II likewise, as read)
     if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks only';
+    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks only';
     // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
     // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
     if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;
@@ -7084,6 +7089,8 @@ export class Game {
     const why = meldProblem(a, b);
     if (why || !a || !b) return why ?? 'Two words go in';
     if (h.words[a] <= 0 || h.words[b] <= 0) return 'No spare word';
+    // (RANK II: two of the same word take two of it)
+    if (a === b && h.words[a] < 2) return 'Two of the word go in';
     if (!this.practice && h.dust < MELD_TUNE.cost) return `Needs ${MELD_TUNE.cost} runedust`;
     return null;
   }
@@ -7236,6 +7243,7 @@ export class Game {
     if (!(h.words[word] > 0)) return 'No spare word';
     // (WORDMELDING: the Lexicon keeps the words as they are found; a melded word is not kept there, for now)
     if (WORDS[word].kind === 'meld') return 'The Lexicon keeps no melded word';
+    if (WORDS[word].kind === 'rank') return 'The Lexicon keeps no ranked word';
     const cost = this.keepCost();
     if (h.gold < cost) return `Needs ${cost} gold`;
     h.gold -= cost;
