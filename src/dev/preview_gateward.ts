@@ -16,6 +16,8 @@
 //     a film: the hero runs from the square into the tavern, its front and roof fading away as he goes in
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_dressed.png 1014 468 dressed
 //     the street view dressed with floor 11's pieces and the set's (art/floor11.ts, art/act2_set.ts), their lights
+//   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_whole.png 1400 900 whole
+//     the same, the whole square at once
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_tiles.png 1014 468 tiles
 //     the same with the tiles the game walks by drawn over it
 //   node tools/preview.mjs src/dev/preview_gateward.ts shots/gw_close.png 1014 664 close
@@ -41,27 +43,28 @@ import type { Floor } from '../game/types';
 import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'shot';
-const PW = HASH === 'cost' ? 600 : 1014;
-const PH = HASH === 'close' ? 664 : HASH === 'cost' ? 200 : 468;
+const PW = HASH === 'cost' ? 600 : HASH === 'whole' ? 1400 : 1014;
+const PH = HASH === 'close' ? 664 : HASH === 'cost' ? 200 : HASH === 'whole' ? 900 : 468;
 
 // ---------------------------------------------------------------------------------------------------
 // THE STRETCH OF THE GATE WARD, in tiles
 
-const W = 44;
-const H = 44;
+const W = 58;
+const H = 58;
 type Rect = [number, number, number, number]; // x0, y0, x1, y1 (x1, y1 not in it)
 const STREETS: Rect[] = [
-  [3, 19, 20, 22], // the lane in from the left (along x)
-  [22, 23, 25, 40], // the lane down out of the square, toward the eye (along y)
-  [26, 3, 28, 13], // the alley up out of it
-  [30, 15, 43, 18], // the street off to the right
+  [3, 19, 18, 22], // the lane in from the left (along x)
+  [26, 28, 29, 50], // the lane down out of the square, toward the eye (along y)
+  [31, 2, 33, 10], // the alley up out of it
+  [38, 15, 55, 18], // the street off to the right
 ];
-const SQUARE: Rect = [20, 13, 30, 23];
-const SQUARES = [{ x: 24.8, y: 20.6, r: 1.8 }];
+/** The square: 20 tiles by 18, his word of 18 Oct (“The open squares should be like at least 2x that size”; it was 10 by 10). */
+const SQUARE: Rect = [18, 10, 38, 28];
+const SQUARES = [{ x: 28.5, y: 19.5, r: 2.4 }];
 /** Houses that can be walked into: a shop off the lane, a tavern off the square. */
 const HOUSES: GWHouse[] = [
   { room: [9, 14, 15, 18], front: { along: 'x', at: 18, door: [11, 13] } },
-  { room: [21, 8, 26, 12], front: { along: 'x', at: 12, door: [23, 25] } },
+  { room: [21, 5, 26, 9], front: { along: 'x', at: 9, door: [23, 25] } },
 ];
 
 const inR = (r: Rect, x: number, y: number): boolean => x >= r[0] && x < r[2] && y >= r[1] && y < r[3];
@@ -96,13 +99,13 @@ const insideOf = (h: GWHouse, x: number, y: number): boolean =>
   (x >= h.room[0] && x < h.room[2] && y >= h.room[1] && y < h.room[3]) || (Math.floor(y) === h.front.at && x >= h.front.door[0] && x < h.front.door[1]);
 
 // the camera: whoever it follows in the middle of the screen
-const HERO: [number, number] = [22.4, 19.5];
+const HERO: [number, number] = [26.0, 21.2];
 let VX = 0;
 let VY = 0;
 function camOn(x: number, y: number): void {
   const [cx, cy] = pictureOf(x, y);
-  VX = Math.round(cx - 507);
-  VY = Math.round(cy - 250);
+  VX = Math.round(cx - PW / 2);
+  VY = Math.round(cy - (PH * 250) / 468);
 }
 camOn(HERO[0], HERO[1]);
 
@@ -162,7 +165,7 @@ function nameAndMap(g: CanvasRenderingContext2D, hero: [number, number] = HERO):
   g.scale(2, 2);
   drawText(g, 'The Gate Ward', 4, 3, THEME.text, { shadow: P.ink });
   g.restore();
-  const [mx, my, mw, mh] = [437 * 2 + 3, 4 * 2 + 3, 66 * 2 - 6, 46 * 2 - 6];
+  const [mx, my, mw, mh] = [PW - 137, 4 * 2 + 3, 66 * 2 - 6, 46 * 2 - 6];
   g.fillStyle = '#100e22';
   g.fillRect(mx, my, mw, mh);
   const k = 0.11;
@@ -199,9 +202,9 @@ const g = cvs.getContext('2d') as CanvasRenderingContext2D;
 g.imageSmoothingEnabled = false;
 
 const FOES: [number, number][] = [
-  [24.9, 15.2],
-  [28.0, 19.0],
-  [21.9, 21.0],
+  [23.6, 20.4],
+  [30.9, 17.0],
+  [27.6, 23.9],
 ];
 
 
@@ -271,8 +274,8 @@ function drawTiles(g: CanvasRenderingContext2D): void {
 /** THE FILM: he runs from the square up into the tavern; its shell fades as he goes in (a third of a second), and he stands inside. */
 const FILM_N = 40;
 const FILM_MS = 80;
-const RUN_FROM: [number, number] = [23.9, 16.6];
-const RUN_TO: [number, number] = [23.7, 9.9];
+const RUN_FROM: [number, number] = [23.9, 13.6];
+const RUN_TO: [number, number] = [23.7, 6.9];
 const RUN_FRAMES = 26;
 const FADE_S = 0.3;
 function filmScene(k: number): Scene {
@@ -303,61 +306,74 @@ function filmScene(k: number): Scene {
 const PIECES = new Map<string, Piece>([...gateWardPieces(), ...hushSetPieces()].map((p) => [p.name, p]));
 interface Laid { name: string; frame: number; x: number; y: number; on?: 'left' | 'right' | 'top' }
 /**
- * THE MARKET, as his word of 18 Oct asks (“those open squares we want a natural market layout look.”): stalls
- * in rows facing into aisles; along the square's edges facing in, the near row with its backs to the eye; a
- * double row back to back down the middle; goods, crates and barrels set out between them; the siege's
+ * THE MARKET, as his words of 18 Oct ask (“those open squares we want a natural market layout look.”; then, of the
+ * first, “That’s wayyyyu too congested.  The open squares should be like at least 2x that size”): the square 20 by
+ * 18 tiles, stalls along its edges facing in, the near ones with their backs to the eye, two small islands of
+ * stalls back to back, open ground round the herald in the middle for the fighting; goods, crates and the siege's
  * damage through it. Frames of a stall: facing (0 +y, 1 +x, 2 -y, 3 -x) * 4 + which stall.
  */
 const st = (facing: number, v: number): number => facing * 4 + v;
 const DRESS: Laid[] = [
-  // the back edge, facing in; the notice board beside the tavern's door; the market bell in its corner
-  { name: 'market stall', frame: st(0, 0), x: 21.1, y: 13.55 },
-  { name: 'the notice board', frame: 0, x: 22.45, y: 13.35 },
-  { name: 'the market bell (the Muffled Bell)', frame: 0, x: 29.3, y: 13.55 },
-  { name: 'handcart', frame: 0, x: 28.4, y: 15.1 },
-  // the left edge, facing in
-  { name: 'market stall', frame: st(1, 1), x: 20.55, y: 15.4 },
-  { name: 'market stall', frame: st(1, 3), x: 20.55, y: 17.25 },
-  { name: 'sacks of grain', frame: 0, x: 20.6, y: 16.3 },
-  // the double row down the middle, back to back
-  { name: 'market stall', frame: st(2, 2), x: 23.05, y: 16.6 },
-  { name: 'market stall', frame: st(2, 1), x: 26.55, y: 16.6 },
-  { name: 'market stall', frame: st(0, 3), x: 23.05, y: 17.95 },
-  { name: 'market stall, smashed', frame: 0, x: 26.55, y: 17.95 },
-  { name: 'crates', frame: 0, x: 24.8, y: 17.25 },
-  { name: 'barrel', frame: 0, x: 21.95, y: 17.3 },
-  { name: 'baskets of produce', frame: 1, x: 26.4, y: 19.0 },
-  { name: 'baskets of produce', frame: 0, x: 22.9, y: 15.5 },
-  // the near edge, facing in: their backs to the eye
-  { name: 'market stall', frame: st(2, 0), x: 20.95, y: 22.45 },
-  { name: 'market stall', frame: st(2, 3), x: 26.75, y: 22.45 },
-  // the right edge: the crier's rostrum, a stall facing in
-  { name: "the crier's rostrum", frame: 0, x: 28.95, y: 21.85 },
-  { name: 'market stall', frame: st(3, 2), x: 29.45, y: 19.0 },
-  // the herald on his ring of setts, between the rows and the near edge
-  { name: 'the herald, gagged', frame: 0, x: 24.8, y: 20.6 },
-  // the siege's: a firepot still burning in an aisle, a shard in the gutter, the cart barricade across the lane down
-  { name: "a firepot's crater, burning", frame: 1, x: 26.3, y: 20.0 },
-  { name: 'a shard of the dome', frame: 2, x: 22.3, y: 22.55 },
-  { name: 'the cart barricade', frame: 0, x: 23.6, y: 27.0 },
+  // the back edge, a row facing in, gaps between; the tavern's door kept clear, the notice board beside it;
+  // the market bell in its corner
+  { name: 'market stall', frame: st(0, 0), x: 19.9, y: 11.1 },
+  { name: 'the notice board', frame: 0, x: 21.9, y: 10.4 },
+  { name: 'market stall', frame: st(0, 2), x: 27.4, y: 11.1 },
+  { name: 'handcart', frame: 0, x: 29.4, y: 11.6 },
+  { name: 'market stall', frame: st(0, 1), x: 34.6, y: 11.1 },
+  { name: 'the market bell (the Muffled Bell)', frame: 0, x: 36.9, y: 11.0 },
+  // the left edge, facing in, the lane's mouth kept clear
+  { name: 'market stall', frame: st(1, 1), x: 19.1, y: 14.2 },
+  { name: 'baskets of produce', frame: 0, x: 19.3, y: 15.8 },
+  { name: 'market stall', frame: st(1, 3), x: 19.1, y: 24.6 },
+  // an island left of the middle: two pairs back to back, their goods round them
+  { name: 'market stall', frame: st(2, 2), x: 23.0, y: 15.2 },
+  { name: 'market stall', frame: st(2, 1), x: 24.85, y: 15.2 },
+  { name: 'market stall', frame: st(0, 3), x: 23.0, y: 16.55 },
+  { name: 'market stall, smashed', frame: 0, x: 24.85, y: 16.55 },
+  { name: 'crates', frame: 0, x: 26.4, y: 15.9 },
+  { name: 'barrel', frame: 0, x: 21.6, y: 15.9 },
+  // an island right of the middle: back to back, facing out to either side
+  { name: 'market stall', frame: st(3, 0), x: 32.6, y: 19.8 },
+  { name: 'market stall', frame: st(1, 2), x: 33.95, y: 19.8 },
+  { name: 'sacks of grain', frame: 0, x: 33.3, y: 21.3 },
+  // the near edges, facing in: their backs to the eye; the crier's rostrum by the street off to the right
+  { name: 'market stall', frame: st(2, 0), x: 21.6, y: 26.7 },
+  { name: 'market stall', frame: st(2, 3), x: 32.4, y: 26.7 },
+  { name: 'market stall', frame: st(3, 1), x: 36.8, y: 23.0 },
+  { name: "the crier's rostrum", frame: 0, x: 36.4, y: 19.6 },
+  // the herald in the middle, on his ring of setts, open ground all round him
+  { name: 'the herald, gagged', frame: 0, x: 28.5, y: 19.5 },
+  // the siege's: a firepot still burning in the open, the dome's shards, rubble, fruit spilled, the cart barricade
+  // across the lane down
+  { name: "a firepot's crater, burning", frame: 1, x: 30.4, y: 23.8 },
+  { name: 'a shard of the dome', frame: 2, x: 24.9, y: 24.6 },
+  { name: 'a shard of the dome', frame: 1, x: 31.4, y: 14.0 },
+  { name: 'rubble of the siege', frame: 0, x: 35.6, y: 14.4 },
+  { name: 'baskets of produce', frame: 1, x: 22.4, y: 21.9 },
+  { name: 'the cart barricade', frame: 0, x: 27.4, y: 31.0 },
   // the lane in: the dome's shards in the gutter, rubble, a crate of stolen voices
   { name: 'a shard of the dome', frame: 0, x: 11.6, y: 21.4 },
   { name: 'rubble of the siege', frame: 0, x: 7.0, y: 19.8 },
-  { name: 'a crate of stolen voices', frame: 0, x: 18.6, y: 21.5 },
-  { name: 'barrel', frame: 1, x: 17.2, y: 19.6 },
-  // the lamps
-  { name: 'street lamp', frame: 0, x: 19.5, y: 19.3 },
-  { name: 'street lamp', frame: 1, x: 30.4, y: 18.3 },
+  { name: 'a crate of stolen voices', frame: 0, x: 16.6, y: 21.5 },
+  { name: 'barrel', frame: 1, x: 15.2, y: 19.6 },
+  // the lamps, at the mouths of the ways in
+  { name: 'street lamp', frame: 0, x: 18.7, y: 18.4 },
+  { name: 'street lamp', frame: 1, x: 37.5, y: 14.5 },
+  { name: 'street lamp', frame: 0, x: 25.5, y: 27.5 },
   // on the house fronts
-  { name: 'festival bunting', frame: 0, x: 32.5, y: 15, on: 'left' },
-  { name: 'festival bunting', frame: 0, x: 17.5, y: 19, on: 'left' },
-  { name: "the Silent Order's banner", frame: 0, x: 36.0, y: 15, on: 'left' },
+  { name: 'festival bunting', frame: 0, x: 41.5, y: 15, on: 'left' },
+  { name: 'festival bunting', frame: 0, x: 35.0, y: 10, on: 'left' },
+  { name: 'festival bunting', frame: 0, x: 16.5, y: 19, on: 'left' },
+  { name: "the Silent Order's banner", frame: 0, x: 46.0, y: 15, on: 'left' },
+  { name: "the Silent Order's banner", frame: 0, x: 28.6, y: 10, on: 'left' },
   { name: 'guild sign, blotted', frame: 1, x: 5.5, y: 19, on: 'left' },
-  { name: 'guild sign, blotted', frame: 2, x: 16.4, y: 19, on: 'left' },
+  { name: 'guild sign, blotted', frame: 2, x: 19.6, y: 10, on: 'left' },
   // on the roofs
-  { name: 'chimney', frame: 1, x: 17.6, y: 15.4, on: 'top' },
-  { name: 'chimney', frame: 0, x: 30.6, y: 10.4, on: 'top' },
+  { name: 'chimney', frame: 1, x: 16.6, y: 15.4, on: 'top' },
+  { name: 'chimney', frame: 0, x: 29.6, y: 7.4, on: 'top' },
   { name: 'chimney', frame: 0, x: 12.4, y: 10.5, on: 'top' },
+  { name: 'chimney', frame: 1, x: 35.5, y: 6.5, on: 'top' },
 ];
 
 function spriteOfLaid(l: Laid): Sprite | null {
@@ -436,11 +452,14 @@ function drawDressed(g: CanvasRenderingContext2D, sc: Scene): void {
 if (HASH === 'dressed') {
   drawDressed(g, { hero: HERO, heroSprite: knight, cam: HERO, shown: HOUSES.map(() => 1) });
   show(cvs);
+} else if (HASH === 'whole') {
+  drawDressed(g, { hero: HERO, heroSprite: knight, cam: [28.2, 18.6], shown: HOUSES.map(() => 1) });
+  show(cvs);
 } else if (HASH === 'shot' || HASH === 'tiles') {
   drawScene(g, { hero: HERO, heroSprite: knight, cam: HERO, shown: HOUSES.map(() => 1), tiles: HASH === 'tiles' });
   show(cvs);
 } else if (HASH === 'inside') {
-  const hero: [number, number] = [23.6, 9.8];
+  const hero: [number, number] = [23.6, 6.8];
   drawScene(g, { hero, heroSprite: knight, cam: hero, shown: HOUSES.map((h) => (insideOf(h, hero[0], hero[1]) ? 0 : 1)) });
   show(cvs);
 } else if (HASH === 'film') {
