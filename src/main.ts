@@ -16,7 +16,7 @@ import { makeGateArt } from './art/gates';
 import { makeHazardArt } from './art/hazards';
 import { TRAPS } from './game/traps';
 import { MODES } from './game/modes';
-import { TALENTS } from './game/talents';
+import { TALENTS, TALENTS2 } from './game/talents';
 import type { WallLook } from './art/ground';
 import { makeDungeonProps } from './art/props';
 import { CRYPT, forgetCrypt } from './art/crypt';
@@ -2012,6 +2012,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     modes: MODES,
     /** THE SKILL TREES' switch (game/talents.ts), on since Version 20.1: for their pictures and playtests (`talents.on`). */
     talents: TALENTS,
+    /** THE TREES REMADE (game/talents.ts TALENTS2), on with his yes of 17 Oct: `talents2.on`. */
+    talents2: TALENTS2,
     /** A GAME CONTROLLER's switch (engine/gamepad.ts), on since Version 20.1; and the pad as read (its pointer). */
     gamepad: GAMEPAD,
     pad: () => ({ connected: pad.connected, live: pad.live(), pointer: padPointer, px: pad.px, py: pad.py }),

@@ -1,4 +1,4 @@
-// THE SKILL TREES (game/talents.ts, TALENTS: OFF until the owner has seen pictures and said yes).
+// THE SKILL TREES (game/talents.ts, TALENTS: on since Version 20.1; TALENTS2, the trees remade, on since his yes of 17 Oct 2026).
 // His answers of 8 Oct 2026, 15:16: ten points, one every five levels; big changes and small steps;
 // the mage three paths (fire, lightning, frost), the ranger a path with forks like an arrow, the
 // warrior's shape ours to find; a few talents that work with words.
@@ -9,7 +9,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../src/game/game';
 import type { RunSave } from '../src/game/game';
-import { TALENTS, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, TREES, cleanTalents, nextTalentLevel, takeProblem, talentMods, talentOpen, talentPoints, unlearnProblem } from '../src/game/talents';
+import { TALENTS, TALENTS2, TALENT_EVERY, TALENT_MAX, TALENT_TUNE, TREES, cleanTalents, nextTalentLevel, takeProblem, talentMods, talentName, talentOpen, talentPoints, talentText, talentWord, unlearnProblem } from '../src/game/talents';
+import type { TalentDef } from '../src/game/talents';
 import { CLASS_IDS, WORD_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { wrapText } from '../src/engine/font';
@@ -125,8 +126,11 @@ test('a talent is taken with a point, once, after one that leads to it', () => {
   assert.equal(takeProblem('warrior', 50, [], 'mage-talent'), 'No such talent');
 });
 
-test('with the switch on: the game takes a talent, and a step that is a number adds to the hero', () => {
-  on(() => {
+test('with the switch on: the game takes a talent, and a step that is a number adds to the hero (the first trees, TALENTS2 off)', () => {
+  const was2 = TALENTS2.on;
+  TALENTS2.on = false;
+  try {
+    on(() => {
     const g = seasoned(new Game('mage', 3), 10);
     assert.equal(g.talentsLeft(), 2);
     const before = g.hero.d.stats.firePct;
@@ -144,7 +148,36 @@ test('with the switch on: the game takes a talent, and a step that is a number a
     const dmg = w.hero.d.stats.dmgPct;
     assert.equal(w.takeTalent('honededge'), null);
     assert.equal(w.hero.d.stats.dmgPct, dmg + 15);
+    });
+  } finally {
+    TALENTS2.on = was2;
+  }
+});
+
+test('THE TREES REMADE (TALENTS2, on with his yes of 17 Oct): a remade talent is no longer a number, and its card says what it does now', () => {
+  assert.equal(TALENTS2.on, true);
+  on(() => {
+    const g = seasoned(new Game('mage', 3), 10);
+    const before = g.hero.d.stats.firePct;
+    assert.equal(g.takeTalent('kindling'), null);
+    assert.equal(g.hero.d.stats.firePct, before, 'Kindling adds no fire damage now');
+    const w = seasoned(new Game('warrior', 4), 5);
+    const dmg = w.hero.d.stats.dmgPct;
+    const life = w.hero.d.maxLife;
+    assert.equal(w.takeTalent('thickskin'), null);
+    assert.equal(w.hero.d.maxLife, life, 'Thick Skin adds no life now');
+    assert.equal(w.hero.d.stats.dmgPct, dmg);
   });
+  // (the cards: 32 remade, as the page he saw has them; two renamed; Hearth works with no word)
+  const all = (CLASS_IDS as readonly ClassId[]).flatMap((c) => TREES[c].talents);
+  assert.equal(all.filter((t) => t.now).length, 32);
+  const by = (id: string): TalentDef => all.find((t) => t.id === id) as TalentDef;
+  assert.equal(talentName(by('fuel')), 'Hearth');
+  assert.equal(talentName(by('piercing')), 'Ricochet');
+  assert.equal(talentWord(by('fuel')), undefined);
+  assert.equal(talentWord(by('venom')), 'poison');
+  assert.equal(talentText(by('footwork')), 'Every kill makes Lunge ready again at once.');
+  assert.equal(talentText(by('masterstroke')), 'Every fourth hit you land is a certain critical.', 'a kept one as it was');
 });
 
 test('saved and restored with the hero; an old or damaged list is made safe', () => {
@@ -169,9 +202,14 @@ test('saved and restored with the hero; an old or damaged list is made safe', ()
 test("every talent's words fit its card in a few lines, in plain words", () => {
   for (const cls of CLASS_IDS as readonly ClassId[]) {
     for (const t of TREES[cls].talents) {
+      // (the first cards in four lines; the remade ones, his words as he saw them, TALENTS2, in six at most)
       const lines = wrapText(t.text, 136 - 10);
       assert.ok(lines.length <= 4, `${cls}: ${t.id} takes ${lines.length} lines`);
       assert.ok(t.name.length <= 14, `${cls}: ${t.name} is short`);
+      if (t.now) {
+        assert.ok(wrapText(t.now.text, 136 - 10).length <= 6, `${cls}: ${t.id}'s new card takes ${wrapText(t.now.text, 136 - 10).length} lines`);
+        assert.ok((t.now.name ?? t.name).length <= 14, `${cls}: ${t.now.name} is short`);
+      }
     }
   }
 });

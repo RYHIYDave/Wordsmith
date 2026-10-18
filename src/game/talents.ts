@@ -1,5 +1,5 @@
-// THE SKILL TREES (not in the game: a mock-up behind TALENTS, off, until he has seen pictures and
-// said yes).
+// THE SKILL TREES (in the game since Version 20.1, behind TALENTS; REMADE in the next version, behind
+// TALENTS2: below).
 //
 // The owner, 4 Oct 2026, when both attacks came to be the weapon's: "Later we can have skill trees
 // that will give a character its uniqueness". 8 Oct, 15:16, his answers to four questions: "10, one
@@ -38,6 +38,17 @@ import type { ClassId, StatKey, WordId } from './types';
  */
 export const TALENTS = { on: true };
 
+/**
+ * THE TREES REMADE. The owner, 17 Oct 2026, 11:37 (Eastern), of the trees: "And we need to work on the skill trees.  If you
+ * only get one point every five levels, we want them to be more significant than “25% increased _______”". So every talent
+ * that was a plain step (a number up, "33% increased") now changes how you play: its card's words, and its name or its word
+ * where those change, are its `now`; the shapes are as they were. Shown to him as a page, "The Skill Trees, Revised"
+ * (https://claude.ai/artifact/5AJ1pMMU4qqpkTemjSKSjc, its source docs/talents/trees_revised.html), and his words to it and
+ * to the page of four looks beside it, 17 Oct, 19:42 (16:42 his time): "Everything looks good". ON. Off, every talent does
+ * what it did before (its `text`); the kept ones are the same either way.
+ */
+export const TALENTS2 = { on: true };
+
 /** A point at every fifth level: ten by level 50 (his answer, 8 Oct 15:16). */
 export const TALENT_EVERY = 5;
 export const TALENT_MAX = 10;
@@ -70,6 +81,12 @@ export interface TalentDef {
   word?: WordId;
   /** What it adds to the hero's numbers, where that is all it does. */
   mods?: readonly { stat: StatKey; value: number }[];
+  /**
+   * (TALENTS2) The talent remade: what its card says now, and its new name and word where they change (`word: null`: it
+   * no longer works with a word). What it does is in game/game.ts, under TALENTS2; its old `text` and `mods` are for the
+   * switch off.
+   */
+  now?: { text: string; name?: string; word?: WordId | null };
 }
 
 export interface TalentPath {
@@ -112,20 +129,20 @@ const MAGE: TalentTree = {
     { id: 'frost', name: 'FROST', color: FROST, label: { node: 'bittercold', side: 'above' } },
   ],
   talents: [
-    { id: 'kindling', name: 'Kindling', big: false, path: 'fire', at: [1, 0], from: [], text: 'Fire damage +25%.', mods: [{ stat: 'firePct', value: 25 }] },
-    { id: 'searing', name: 'Searing', big: false, path: 'fire', at: [2, 0], from: ['kindling'], text: 'Burning lasts a second longer, and its damage is 50% increased.' },
+    { id: 'kindling', name: 'Kindling', big: false, path: 'fire', at: [1, 0], from: [], text: 'Fire damage +25%.', mods: [{ stat: 'firePct', value: 25 }], now: { text: 'Your fire leaves the ground burning for two seconds where it hits: whatever stands in it burns.' } },
+    { id: 'searing', name: 'Searing', big: false, path: 'fire', at: [2, 0], from: ['kindling'], text: 'Burning lasts a second longer, and its damage is 50% increased.', now: { text: 'Fire spreads: a burning enemy sets alight any enemy it touches.' } },
     { id: 'flamewarp', name: 'Flame Warp', big: true, path: 'fire', at: [3, 0], from: ['searing'], text: 'Warp leaves a trail of fire behind you.' },
-    { id: 'fuel', name: 'Fuel', big: false, path: 'fire', at: [4, 0], from: ['flamewarp'], text: 'Flame in front explodes with 33% increased size.', word: 'fire' },
+    { id: 'fuel', name: 'Fuel', big: false, path: 'fire', at: [4, 0], from: ['flamewarp'], text: 'Flame in front explodes with 33% increased size.', word: 'fire', now: { text: 'Standing in fire you made, nothing burns you, and your mana comes back three times as fast.', name: 'Hearth', word: null } },
     { id: 'inferno', name: 'Inferno', big: true, path: 'fire', at: [5, 0], from: ['fuel'], text: 'Enemies that die burning explode in flame.' },
-    { id: 'charged', name: 'Charged', big: false, path: 'lightning', at: [1, 2], from: [], text: 'Lightning damage +25%.', mods: [{ stat: 'lightPct', value: 25 }] },
+    { id: 'charged', name: 'Charged', big: false, path: 'lightning', at: [1, 2], from: [], text: 'Lightning damage +25%.', mods: [{ stat: 'lightPct', value: 25 }], now: { text: 'As you move you gather a charge, sparks round you; your next hit lets it go, a bolt that leaps between up to five enemies.' } },
     { id: 'forking', name: 'Forking', big: false, path: 'lightning', at: [2, 2], from: ['charged'], text: 'Lightning arcs to two more enemies.', word: 'lightning' },
     { id: 'stormwarp', name: 'Storm Warp', big: true, path: 'lightning', at: [3, 2], from: ['forking'], text: 'Where you warp to, lightning strikes up to four enemies.' },
-    { id: 'overload', name: 'Overload', big: false, path: 'lightning', at: [4, 2], from: ['stormwarp'], text: 'Shocked enemies take 15% more damage from everything.' },
+    { id: 'overload', name: 'Overload', big: false, path: 'lightning', at: [4, 2], from: ['stormwarp'], text: 'Shocked enemies take 15% more damage from everything.', now: { text: 'A shocked enemy that dies passes its shock on to the three nearest.' } },
     { id: 'stormcaller', name: 'Stormcaller', big: true, path: 'lightning', at: [5, 2], from: ['overload'], text: 'Every two seconds, lightning strikes an enemy near you.' },
-    { id: 'bittercold', name: 'Bitter Cold', big: false, path: 'frost', at: [1, 4], from: [], text: 'Frost damage +25%.', mods: [{ stat: 'frostPct', value: 25 }] },
-    { id: 'deepfreeze', name: 'Deep Freeze', big: false, path: 'frost', at: [2, 4], from: ['bittercold'], text: 'Enemies freeze sooner, with 50% increased freeze time.' },
+    { id: 'bittercold', name: 'Bitter Cold', big: false, path: 'frost', at: [1, 4], from: [], text: 'Frost damage +25%.', mods: [{ stat: 'frostPct', value: 25 }], now: { text: 'Any enemy that strikes you is chilled to half its speed for two seconds.' } },
+    { id: 'deepfreeze', name: 'Deep Freeze', big: false, path: 'frost', at: [2, 4], from: ['bittercold'], text: 'Enemies freeze sooner, with 50% increased freeze time.', now: { text: 'Your hits send a frozen enemy sliding across the floor, and it freezes whatever it slides into.' } },
     { id: 'frostwarp', name: 'Frost Warp', big: true, path: 'frost', at: [3, 4], from: ['deepfreeze'], text: 'Where you warp from, a burst of cold freezes the enemies near.' },
-    { id: 'rime', name: 'Rime', big: false, path: 'frost', at: [4, 4], from: ['frostwarp'], text: 'The ice that Frost leaves behind has 100% increased size.', word: 'frost' },
+    { id: 'rime', name: 'Rime', big: false, path: 'frost', at: [4, 4], from: ['frostwarp'], text: 'The ice that Frost leaves behind has 100% increased size.', word: 'frost', now: { text: 'When an enemy dies on the ice Frost leaves behind, the whole patch shatters and freezes every enemy on it.' } },
     { id: 'shatter', name: 'Shatter', big: true, path: 'frost', at: [5, 4], from: ['rime'], text: 'Frozen enemies take 100% increased damage; one that dies bursts, chilling those near.' },
   ],
 };
@@ -149,24 +166,24 @@ const RANGER: TalentTree = {
   ],
   talents: [
     // the two feathers: either is a place to start
-    { id: 'fleet', name: 'Fleet', big: false, path: 'wind', at: [0, 0.5], from: [], text: 'Move 10% faster.', mods: [{ stat: 'moveSpeed', value: 10 }] },
-    { id: 'windrunner', name: 'Windrunner', big: false, path: 'wind', at: [0.9, 1.25], from: ['fleet'], text: 'After a roll, run 30% faster for two seconds.' },
-    { id: 'keeneye', name: 'Keen Eye', big: false, path: 'eye', at: [0, 3.5], from: [], text: 'Critical chance +8%.', mods: [{ stat: 'critChance', value: 8 }] },
-    { id: 'venom', name: 'Venom', big: false, path: 'eye', at: [0.9, 2.75], from: ['keeneye'], text: 'Poison has a 100% increased stack limit.', word: 'poison' },
+    { id: 'fleet', name: 'Fleet', big: false, path: 'wind', at: [0, 0.5], from: [], text: 'Move 10% faster.', mods: [{ stat: 'moveSpeed', value: 10 }], now: { text: 'You shoot on the run: loosing an arrow no longer slows you.' } },
+    { id: 'windrunner', name: 'Windrunner', big: false, path: 'wind', at: [0.9, 1.25], from: ['fleet'], text: 'After a roll, run 30% faster for two seconds.', now: { text: 'Every kill gives you back a roll.' } },
+    { id: 'keeneye', name: 'Keen Eye', big: false, path: 'eye', at: [0, 3.5], from: [], text: 'Critical chance +8%.', mods: [{ stat: 'critChance', value: 8 }], now: { text: 'Your first arrow at an enemy that has not noticed you yet is a certain critical.' } },
+    { id: 'venom', name: 'Venom', big: false, path: 'eye', at: [0.9, 2.75], from: ['keeneye'], text: 'Poison has a 100% increased stack limit.', word: 'poison', now: { text: 'A poisoned enemy that dies bursts in a cloud that poisons those near it.' } },
     // the shaft
-    { id: 'quickdraw', name: 'Quick Draw', big: false, path: 'shaft', at: [1.9, 2], from: ['windrunner', 'venom', 'steadyaim'], text: 'Attacks 10% faster.', mods: [{ stat: 'atkSpeed', value: 10 }] },
-    { id: 'longshot', name: 'Long Shot', big: false, path: 'shaft', at: [3, 2], from: ['quickdraw'], text: 'Arrows have 33% increased range and speed.' },
-    { id: 'lightstep', name: 'Light Step', big: true, path: 'shaft', at: [4.1, 2], from: ['longshot'], text: 'Trap holds three charges, and your roll has 33% increased reach.' },
+    { id: 'quickdraw', name: 'Quick Draw', big: false, path: 'shaft', at: [1.9, 2], from: ['windrunner', 'venom', 'steadyaim'], text: 'Attacks 10% faster.', mods: [{ stat: 'atkSpeed', value: 10 }], now: { text: 'Every fifth arrow fires twice.' } },
+    { id: 'longshot', name: 'Long Shot', big: false, path: 'shaft', at: [3, 2], from: ['quickdraw'], text: 'Arrows have 33% increased range and speed.', now: { text: 'Your arrows knock back what they hit.' } },
+    { id: 'lightstep', name: 'Light Step', big: true, path: 'shaft', at: [4.1, 2], from: ['longshot'], text: 'Trap holds three charges, and your roll has 33% increased reach.', now: { text: 'Trap holds three charges: roll three times running, a trap at each.' } },
     { id: 'huntersmark', name: "Hunter's Mark", big: false, path: 'shaft', at: [5.2, 2], from: ['lightstep'], text: "Precise's mark makes a triple critical.", word: 'precise' },
     // the head: two barbs and the middle, meeting at the point
-    { id: 'widetraps', name: 'Wide Traps', big: false, path: 'traps', at: [6, 0.5], from: ['huntersmark'], text: 'Traps burst with 33% increased size.' },
+    { id: 'widetraps', name: 'Wide Traps', big: false, path: 'traps', at: [6, 0.5], from: ['huntersmark'], text: 'Traps burst with 33% increased size.', now: { text: 'A trap pulls the enemies near it in before it bursts.' } },
     { id: 'minefield', name: 'Minefield', big: true, path: 'traps', at: [6.9, 1.25], from: ['widetraps'], text: 'Each roll lays three traps in a fan.' },
-    { id: 'splitshot', name: 'Split Shot', big: false, path: 'arrows', at: [6, 3.5], from: ['huntersmark'], text: 'Every third arrow splits into three.' },
-    { id: 'hail', name: 'Hail', big: true, path: 'arrows', at: [6.9, 2.75], from: ['splitshot'], text: 'Volley rains with 100% increased duration and 50% increased area.' },
-    { id: 'piercing', name: 'Piercing', big: false, path: 'shaft', at: [6.45, 2], from: ['huntersmark'], text: 'Arrows pass through one more enemy.' },
-    { id: 'farsight', name: 'Far Sight', big: true, path: 'shaft', at: [7.8, 2], from: ['minefield', 'hail', 'piercing'], text: 'The further the enemy, the harder you hit: up to +50% at eight tiles.' },
+    { id: 'splitshot', name: 'Split Shot', big: false, path: 'arrows', at: [6, 3.5], from: ['huntersmark'], text: 'Every third arrow splits into three.', now: { text: 'An arrow that kills splits into three, and they fly on.' } },
+    { id: 'hail', name: 'Hail', big: true, path: 'arrows', at: [6.9, 2.75], from: ['splitshot'], text: 'Volley rains with 100% increased duration and 50% increased area.', now: { text: 'Volley follows the enemy you aimed it at.' } },
+    { id: 'piercing', name: 'Piercing', big: false, path: 'shaft', at: [6.45, 2], from: ['huntersmark'], text: 'Arrows pass through one more enemy.', now: { text: 'An arrow that hits a wall bounces off it and flies on.', name: 'Ricochet' } },
+    { id: 'farsight', name: 'Far Sight', big: true, path: 'shaft', at: [7.8, 2], from: ['minefield', 'hail', 'piercing'], text: 'The further the enemy, the harder you hit: up to +50% at eight tiles.', now: { text: 'An arrow that has flown past eight tiles is a certain critical.' } },
     // the nock, between the feathers: a third way onto the shaft
-    { id: 'steadyaim', name: 'Steady Aim', big: false, path: 'shaft', at: [0.15, 2], from: ['fleet', 'keeneye'], text: 'Standing still, your attacks hit 15% harder.' },
+    { id: 'steadyaim', name: 'Steady Aim', big: false, path: 'shaft', at: [0.15, 2], from: ['fleet', 'keeneye'], text: 'Standing still, your attacks hit 15% harder.', now: { text: 'Stand still for a second, and your next arrow goes through every enemy in its line.' } },
   ],
   figures: [
     { kind: 'fill', path: 'wind', ids: ['fleet', 'windrunner', 'quickdraw', 'steadyaim'] },
@@ -190,20 +207,20 @@ const WARRIOR: TalentTree = {
   ],
   talents: [
     // TECHNIQUE: from its pommel low on the left up to its tip high on the right
-    { id: 'honededge', name: 'Honed Edge', big: false, path: 'technique', at: [0, 4], from: [], text: 'All damage +15%.', mods: [{ stat: 'dmgPct', value: 15 }] },
+    { id: 'honededge', name: 'Honed Edge', big: false, path: 'technique', at: [0, 4], from: [], text: 'All damage +15%.', mods: [{ stat: 'dmgPct', value: 15 }], now: { text: 'Your critical hits make the enemy bleed: it loses half the hit again over three seconds.' } },
     { id: 'cadence', name: 'Cadence', big: true, path: 'technique', at: [1, 3.33], from: ['honededge'], text: 'Power and Frenzied stack to eight, not five.', word: 'power' },
-    { id: 'sweepingcut', name: 'Sweeping Cut', big: false, path: 'technique', at: [1.55, 4.15], from: ['cadence'], text: 'A melee hit splashes 30% of itself on the enemies beside.' },
-    { id: 'footwork', name: 'Footwork', big: false, path: 'technique', at: [0.45, 2.5], from: ['cadence'], text: 'Each kill: run 25% faster for a second.' },
-    { id: 'drilledleap', name: 'Drilled Lunge', big: false, path: 'technique', at: [2, 2.67], from: ['cadence'], text: 'Lunge is ready again 30% sooner.' },
-    { id: 'giantslayer', name: 'Giant Slayer', big: false, path: 'technique', at: [4.5, 1], from: ['earthshaker'], text: 'Elites and bosses take 25% increased damage from you.' },
+    { id: 'sweepingcut', name: 'Sweeping Cut', big: false, path: 'technique', at: [1.55, 4.15], from: ['cadence'], text: 'A melee hit splashes 30% of itself on the enemies beside.', now: { text: 'Your melee swings cleave: every enemy in the arc of the swing is struck, not only the first.' } },
+    { id: 'footwork', name: 'Footwork', big: false, path: 'technique', at: [0.45, 2.5], from: ['cadence'], text: 'Each kill: run 25% faster for a second.', now: { text: 'Every kill makes Lunge ready again at once.' } },
+    { id: 'drilledleap', name: 'Drilled Lunge', big: false, path: 'technique', at: [2, 2.67], from: ['cadence'], text: 'Lunge is ready again 30% sooner.', now: { text: 'Lunge strikes every enemy you pass on the way, not only where you land.' } },
+    { id: 'giantslayer', name: 'Giant Slayer', big: false, path: 'technique', at: [4.5, 1], from: ['earthshaker'], text: 'Elites and bosses take 25% increased damage from you.', now: { text: 'Each hit on an elite or a boss cracks its guard: it takes 3% more from everything, up to ten cracks.' } },
     { id: 'masterstroke', name: 'Master Stroke', big: true, path: 'technique', at: [6, 0], from: ['giantslayer'], text: 'Every fourth hit you land is a certain critical.' },
     // IRON: from its pommel high on the left down to its tip low on the right
-    { id: 'thickskin', name: 'Thick Skin', big: false, path: 'iron', at: [0, 0], from: [], text: 'Life +15%.' },
-    { id: 'shieldwall', name: 'Shieldwall', big: true, path: 'iron', at: [1, 0.67], from: ['thickskin'], text: "Guarding's shield has 100% increased strength.", word: 'guarding' },
-    { id: 'resolute', name: 'Resolute', big: false, path: 'iron', at: [1.55, -0.15], from: ['shieldwall'], text: 'Fire, frost and lightning resistance +15%.', mods: [{ stat: 'fireRes', value: 15 }, { stat: 'frostRes', value: 15 }, { stat: 'lightRes', value: 15 }] },
-    { id: 'secondwind', name: 'Second Wind', big: false, path: 'iron', at: [0.45, 1.5], from: ['shieldwall'], text: 'Flasks heal 30% more.' },
-    { id: 'bulwark', name: 'Bulwark', big: false, path: 'iron', at: [2, 1.33], from: ['shieldwall'], text: 'You take 10% less damage.' },
-    { id: 'thorns', name: 'Thorns', big: false, path: 'iron', at: [4.5, 3], from: ['earthshaker'], text: 'Enemies that strike you up close take 30% of the blow back.' },
+    { id: 'thickskin', name: 'Thick Skin', big: false, path: 'iron', at: [0, 0], from: [], text: 'Life +15%.', now: { text: 'Below half your life, you take 30% less damage.' } },
+    { id: 'shieldwall', name: 'Shieldwall', big: true, path: 'iron', at: [1, 0.67], from: ['thickskin'], text: "Guarding's shield has 100% increased strength.", word: 'guarding', now: { text: 'When Guarding\'s shield breaks, it bursts outward: everything near is thrown back and stunned for a second.' } },
+    { id: 'resolute', name: 'Resolute', big: false, path: 'iron', at: [1.55, -0.15], from: ['shieldwall'], text: 'Fire, frost and lightning resistance +15%.', mods: [{ stat: 'fireRes', value: 15 }, { stat: 'frostRes', value: 15 }, { stat: 'lightRes', value: 15 }], now: { text: 'Nothing can slow you, freeze you or knock you back.' } },
+    { id: 'secondwind', name: 'Second Wind', big: false, path: 'iron', at: [0.45, 1.5], from: ['shieldwall'], text: 'Flasks heal 30% more.', now: { text: 'Drinking a flask throws back everything near you, and nothing can hurt you for a second.' } },
+    { id: 'bulwark', name: 'Bulwark', big: false, path: 'iron', at: [2, 1.33], from: ['shieldwall'], text: 'You take 10% less damage.', now: { text: 'The more enemies close round you, the less each blow hurts: 6% less for each one, up to 30%.' } },
+    { id: 'thorns', name: 'Thorns', big: false, path: 'iron', at: [4.5, 3], from: ['earthshaker'], text: 'Enemies that strike you up close take 30% of the blow back.', now: { text: 'An enemy that strikes you up close is thrown back, and takes half the blow itself.' } },
     { id: 'unbreakable', name: 'Unbreakable', big: true, path: 'iron', at: [6, 4], from: ['thorns'], text: 'Once a dungeon, a killing blow leaves you at 1 life, shielded for three seconds.' },
     // the crossing: both swords'
     { id: 'earthshaker', name: 'Earthshaker', big: true, path: 'cross', at: [3, 2], from: ['drilledleap', 'bulwark'], text: 'Lunge lands with a quake that stuns everything near for a second.' },
@@ -265,9 +282,82 @@ export const TALENT_TUNE = {
   thorns: { share: 0.3, reach: 1.6 },
   unbreakable: { secs: 3 },
   earthshaker: { r: 2.4, secs: 1 },
+  // THE TREES REMADE (TALENTS2): their numbers, as their cards say them
+  /** Honed Edge: a critical hit's bleeding, `share` of the hit over `secs`. */
+  honedEdge2: { share: 0.5, secs: 3 },
+  /** Drilled Lunge: what he passes within `reach` of (tiles beyond its edge and his), struck with `share` of the landing's blow. */
+  drilledLunge: { reach: 0.5, share: 1 },
+  /** Giant Slayer: each crack, this much more harm to it from everything; at most `most`. */
+  giantSlayer2: { each: 0.03, most: 10 },
+  /** Thick Skin: below `below` of his life, `less` less harm. */
+  thickSkin2: { below: 0.5, less: 0.3 },
+  /** Shieldwall's burst as the shield breaks: its reach, the stun, how far it throws. */
+  shieldwall2: { r: 2.4, secs: 1, far: 1.6 },
+  /** Second Wind: a flask throws back what is within `r`, `far` tiles; nothing hurts him for `secs`. */
+  secondWind2: { r: 2.4, far: 1.8, secs: 1 },
+  /** Bulwark: `each` less for each enemy within `near` tiles of him (beyond its edge and his), at most `most`. */
+  bulwark2: { each: 0.06, most: 0.3, near: 1.2 },
+  /** Thorns: half the blow back, and thrown `far` tiles. */
+  thorns2: { share: 0.5, far: 1.4 },
+  /** Venom: a poisoned enemy dying leaves a cloud `r` across for `dur` seconds, poisoning as it was. */
+  venom2: { r: 1.6, dur: 3 },
+  /** Steady Aim: standing still this long, his next arrow goes through everything in its line. */
+  steadyAim2: { still: 1 },
+  /** Quick Draw: every `every`th arrow fires twice, the second `gap` seconds after. */
+  quickDraw2: { every: 5, gap: 0.09 },
+  /** Long Shot: an arrow throws what it hits `far` tiles. */
+  longShot2: { far: 0.9 },
+  /** Wide Traps: what is within `reach` tiles of the trap's burst's edge is pulled in, to `to` tiles of it, over `secs`; then it bursts. */
+  wideTraps2: { reach: 2.0, to: 0.6, secs: 0.18 },
+  /** Split Shot: an arrow that kills splits into `n`, `fan` apart, each flying `far` tiles more. */
+  splitShot2: { n: 3, fan: 0.4, far: 6 },
+  /** Hail: Volley's rain goes after the enemy nearest where it was aimed (within `pick` tiles), `speed` tiles a second. */
+  hail2: { pick: 2.5, speed: 3.5 },
+  /** Ricochet: an arrow bounces off a wall this many times. */
+  ricochet: 1,
+  /** Far Sight: flown past `at` tiles, a certain critical. */
+  farSight2: { at: 8 },
+  /** Kindling: his fire leaves a patch of burning ground `r` across for `secs`, burning `share` of his weapon hit a second; none closer than `apart` to another. */
+  kindling2: { r: 0.8, secs: 2, share: 0.3, apart: 0.7 },
+  /** Searing: a burning enemy sets alight what is within `touch` tiles of its edge. */
+  searing2: { touch: 0.25 },
+  /** Hearth: in his own fire, mana `mana` times as fast. */
+  hearth: { mana: 3 },
+  /** Charged: full after `full` tiles walked; the bolt leaps between up to `n`, `reach` tiles apart, each `share` of his weapon hit; sparks every `spark` seconds while full. */
+  charged2: { full: 6, n: 5, reach: 3.5, share: 1.2, spark: 0.35 },
+  /** Overload: a shocked enemy dying passes its shock to the `n` nearest within `reach`, a jolt of `share` of his weapon hit. */
+  overload2: { n: 3, reach: 4, share: 0.5 },
+  /** Bitter Cold: what strikes him is chilled `slow` for `secs`. */
+  bitterCold2: { slow: 0.5, secs: 2 },
+  /** Deep Freeze: a frozen enemy struck slides `far` tiles over `secs`, freezing what it slides into. */
+  deepFreeze2: { far: 3, secs: 0.45 },
   /** Undoing a talent, in town (his rulebook: "Picks can be undone in town, for gold"): gold for each level of the hero's. His price, 9 Oct 2026, 07:28: "10 gold a level (Recommended)". */
   unlearnPerLevel: 10,
 };
+
+/** (TALENTS2) The talents remade, by id. */
+const REMADE = new Set<string>(Object.values({ WARRIOR, RANGER, MAGE }).flatMap((t) => t.talents.filter((d) => d.now).map((d) => d.id)));
+
+/** (TALENTS2) Whether talent `id` is one that has been remade (and the switch is on): its old rule is gone, its new one in place. */
+export function remadeNow(id: string): boolean {
+  return TALENTS2.on && REMADE.has(id);
+}
+
+/** What a talent's card says now (TALENTS2: the remade one's new words). */
+export function talentText(t: TalentDef): string {
+  return TALENTS2.on && t.now ? t.now.text : t.text;
+}
+
+/** A talent's name now. */
+export function talentName(t: TalentDef): string {
+  return TALENTS2.on && t.now?.name ? t.now.name : t.name;
+}
+
+/** The word a talent works with now, if any. */
+export function talentWord(t: TalentDef): WordId | undefined {
+  if (TALENTS2.on && t.now && t.now.word !== undefined) return t.now.word ?? undefined;
+  return t.word;
+}
 
 /** A talent of a class's tree, by its id. */
 export function talentOf(cls: ClassId, id: string): TalentDef | undefined {
@@ -313,7 +403,8 @@ export function talentMods(cls: ClassId, taken: readonly string[]): { stat: Stat
   if (!TALENTS.on) return out;
   for (const id of taken) {
     const t = talentOf(cls, id);
-    if (t?.mods) out.push(...t.mods);
+    // (TALENTS2: a remade talent is no longer a number)
+    if (t?.mods && !remadeNow(t.id)) out.push(...t.mods);
   }
   return out;
 }

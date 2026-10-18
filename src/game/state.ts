@@ -234,7 +234,8 @@ export interface Hero {
   poisonDps: number;
   /** A leap or a roll in progress. */
   /** `over`: a roll that goes over a ledge or a pit (a dive: it leaves the floor). */
-  move: null | { kind: 'leap' | 'roll'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean };
+  /** (`hit`: THE SKILL TREES REMADE, Drilled Lunge: the enemies struck on the way, each once.) */
+  move: null | { kind: 'leap' | 'roll'; t: number; dur: number; x0: number; y0: number; x1: number; y1: number; over?: boolean; hit?: number[] };
   /**
    * THE FIRST LEVELS (defs.ts, FIRST_LEVELS): whether the wordsmith's ring is lit for this hero,
    * so that he can wordsmith (always, with the switch off and for a hero saved before it); and the
@@ -389,6 +390,16 @@ export interface Monster {
   blinkT?: number;
   /** (FLESH_BLINK) Gone, and to come back up (rise) at once. */
   blinkRise?: number;
+  /**
+   * THE SKILL TREES REMADE (game/talents.ts TALENTS2): Honed Edge's bleeding (seconds left, and harm a second); Giant
+   * Slayer's cracks in its guard (each, harm to it TALENT_TUNE.giantSlayer2.each more); thrown across the floor (by a
+   * talent: Thorns, Long Shot, Second Wind, Shieldwall's burst, Wide Traps' pull; `ice`: Deep Freeze's slide, frozen,
+   * freezing what it slides into), its speed along x and y and the seconds left of it.
+   */
+  bleedT?: number;
+  bleedDps?: number;
+  cracks?: number;
+  thrown?: { vx: number; vy: number; t: number; ice?: boolean };
 }
 
 /**
@@ -456,6 +467,10 @@ export interface Projectile {
   z0?: number;
   /** (THE NEW MONSTERS) A hostile shot that pierces (the marksman's great arrow): it has hurt the hero once, and flies on. */
   struck?: boolean;
+  /** THE SKILL TREES REMADE (TALENTS2): a hero's arrow: tiles flown (Far Sight); bounced off a wall (Ricochet); one of three split off a kill (Split Shot), which split no more; a certain critical (Keen Eye's has none: that is the enemy's). */
+  flown?: number;
+  bounced?: boolean;
+  split?: boolean;
 }
 
 /**
@@ -634,6 +649,9 @@ export interface Volley {
   echo: boolean;
   /** True until what the words behind it leave has been left (once, as the first arrow lands). */
   wake: boolean;
+  /** THE SKILL TREES REMADE (Hail): the enemy it follows, by id; and where each arrow told of comes down (`n * count + c`), as it was told while the rain moved. */
+  follow?: number;
+  at?: { x: number; y: number }[];
 }
 
 /**

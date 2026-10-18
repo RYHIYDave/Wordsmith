@@ -1,5 +1,6 @@
-// THE SKILL TREES AT WORK (game/talents.ts, TALENTS: OFF until the owner has said yes): what each
-// talent does, by the rules in game/game.ts, with the switch held on for each test (and as it was after).
+// THE SKILL TREES AT WORK (game/talents.ts, TALENTS): what each talent does, by the rules in game/game.ts, with the
+// switch held on for each test (and as it was after). THE FIRST TREES: TALENTS2 is held OFF here, so a talent that has been
+// remade does what it did before (tests/talents2.test.ts has the trees remade); the kept ones do the same either way.
 // Their numbers are TALENT_TUNE's, as the cards say them.
 //   run: tsx --test tests/talents_rules.test.ts
 // @ts-ignore - node typings are not part of this project
@@ -11,7 +12,7 @@ import { FRENZY, SKILLS, TUNE } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Monster, Projectile, Trap, Volley, Zone } from '../src/game/state';
-import { TALENTS, TALENT_TUNE } from '../src/game/talents';
+import { TALENTS, TALENTS2, TALENT_TUNE } from '../src/game/talents';
 import type { ClassId, Element, MonsterKind, WordId } from '../src/game/types';
 import { land } from './helpers';
 
@@ -42,11 +43,14 @@ interface Inside {
 /** With the talents' switch on for the test, and off again after. */
 function held(to: boolean, fn: () => void): void {
   const was = TALENTS.on;
+  const was2 = TALENTS2.on;
   TALENTS.on = to;
+  TALENTS2.on = false;
   try {
     fn();
   } finally {
     TALENTS.on = was;
+    TALENTS2.on = was2;
   }
 }
 const on = (fn: () => void): void => held(true, fn);

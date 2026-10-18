@@ -15,7 +15,7 @@ import type { DoorInst } from './doors';
 import { DART, SPIKE, onHazard, slotMouth, spikeAt } from './traps';
 import { HERO_MODES, MODES, MODE_BEFORE, NORMAL } from './modes';
 import type { HeroMode } from './modes';
-import { TALENTS, TALENT_TUNE, cleanTalents, takeProblem, talentMods, talentPoints, unlearnProblem } from './talents';
+import { TALENTS, TALENTS2, TALENT_TUNE, cleanTalents, remadeNow, takeProblem, talentMods, talentPoints, unlearnProblem } from './talents';
 import type { HazardInst } from './traps';
 import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
@@ -333,6 +333,10 @@ export class Game {
   private stormT = 0;
   private unbroken = false;
   private shots = 0;
+  /** THE SKILL TREES REMADE (TALENTS2): Charged's charge (1: full), and its sparks' clock; arrows loosed toward Quick Draw's double. */
+  private charge = 0;
+  private sparkT = 0;
+  private draws = 0;
   private visList: number[] = [];
   private tmp = { x: 0, y: 0 };
 
@@ -884,7 +888,7 @@ export class Game {
     const h = this.hero;
     h.d = derive(h.cls, h.level, h.attrs, h.gear, this.meta.limit, talentMods(h.cls, h.talents));
     // (THE SKILL TREES: Thick Skin)
-    if (this.has('thickskin')) h.d.maxLife = Math.round(h.d.maxLife * TALENT_TUNE.thickSkin);
+    if (this.was('thickskin')) h.d.maxLife = Math.round(h.d.maxLife * TALENT_TUNE.thickSkin);
     // The weapon in hand decides both attacks. Their words stay where they are: they belong to the
     // place, not to the attack ("Power Strike becomes Power Shot when a bow is equipped"). What
     // the old attack had set going is gone with it. An attack that was waiting to be ready hands
@@ -945,7 +949,7 @@ export class Game {
       }
       s.r = resolveSkill(def, s.front, s.behind, i < 2 ? weaponAttr(weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
       // (THE SKILL TREES: Battle Rush, the leap ready sooner)
-      if (def.kind === 'leap' && this.has('drilledleap')) s.r.cooldown *= TALENT_TUNE.drilledLeap;
+      if (def.kind === 'leap' && this.was('drilledleap')) s.r.cooldown *= TALENT_TUNE.drilledLeap;
       // (the roll's two charges are a thing of cooldowns: when mana is the limit, mana is; Light Step, three)
       s.maxCharges = def.kind === 'roll' && this.meta.limit === 'cooldown' ? (this.has('lightstep') ? TALENT_TUNE.lightStep.charges : 2) : 1;
       if (i < 2 && changed[i]) {
@@ -2889,8 +2893,12 @@ export class Game {
     const h = this.hero;
     const d = h.d;
     h.life = Math.min(d.maxLife, h.life + d.lifeRegen * dt);
+    // (THE SKILL TREES REMADE: Resolute, nothing slows him; Hearth, in his own fire nothing burns him and his mana comes back faster)
+    if (this.now('resolute')) h.chillT = 0;
+    const hearth = this.now('fuel') && this.inOwnFire();
+    if (hearth) h.burnT = 0;
     // (mana only matters when it is what limits the slow abilities: then it also comes back faster)
-    h.mana = Math.min(d.maxMana, h.mana + d.manaRegen * (this.meta.limit === 'mana' ? MANA_MODE.regen : 1) * dt);
+    h.mana = Math.min(d.maxMana, h.mana + d.manaRegen * (this.meta.limit === 'mana' ? MANA_MODE.regen : 1) * (hearth ? TALENT_TUNE.hearth.mana : 1) * dt);
     h.flash = Math.max(0, h.flash - dt);
     h.invuln = Math.max(0, h.invuln - dt);
     h.swingT = Math.max(0, h.swingT - dt);
@@ -2955,6 +2963,8 @@ export class Game {
       const k = Math.min(1, mv.t / mv.dur);
       h.x = mv.x0 + (mv.x1 - mv.x0) * k;
       h.y = mv.y0 + (mv.y1 - mv.y0) * k;
+      // (THE SKILL TREES REMADE: Drilled Lunge, every enemy he passes on the way struck)
+      if (mv.kind === 'leap' && this.now('drilledleap')) this.lungeThrough(mv);
       h.invuln = Math.max(h.invuln, 0.06);
       h.anim = 'walk';
       h.animT += dt * 2;
@@ -3028,7 +3038,8 @@ export class Game {
       // (an attack slows the hero for a moment from when it is begun, as it always has; one that is
       // being held slows them for as long as it is: a beam to a walk, a whirlwind hardly at all)
       if (h.channel) sp *= SKILLS[h.skills[h.channel.skill].id].kind === 'whirl' ? TUNE.whirlWalk : TUNE.beamWalk;
-      else if (h.attackT > 0 && h.attackAge < TUNE.attackSlowTime) sp *= TUNE.attackSlow;
+      // (THE SKILL TREES REMADE: Fleet, an arrow loosed slows him no longer)
+      else if (h.attackT > 0 && h.attackAge < TUNE.attackSlowTime && !(this.now('fleet') && this.arrowSkill(h.attackSkill))) sp *= TUNE.attackSlow;
       const k = Math.min(1, len);
       const wasX = h.x;
       const wasY = h.y;
@@ -3082,9 +3093,17 @@ export class Game {
     if (h.potions <= 0 || h.life >= h.d.maxLife) return;
     h.potions--;
     if (this.guide) this.guide.flask = true;
-    this.healHero(h.d.maxLife * TUNE.potionHeal * (this.has('secondwind') ? TALENT_TUNE.secondWind : 1));
+    this.healHero(h.d.maxLife * TUNE.potionHeal * (this.was('secondwind') ? TALENT_TUNE.secondWind : 1));
     this.sfx('potion');
     this.emit({ t: 'spark', x: h.x, y: h.y, el: 'fire', n: 10 });
+    // (THE SKILL TREES REMADE: Second Wind, a flask throws back what is near, and nothing hurts him for a second)
+    if (this.now('secondwind')) {
+      const W = TALENT_TUNE.secondWind2;
+      h.invuln = Math.max(h.invuln, W.secs);
+      this.emit({ t: 'shield', x: h.x, y: h.y, secs: W.secs });
+      this.emit({ t: 'burst', x: h.x, y: h.y, r: W.r, el: 'phys', style: 'shock' });
+      for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - h.x, m.y - h.y) <= W.r + m.r) this.throwMonster(m, h.x, h.y, W.far);
+    }
   }
 
   private useBasic(tx: number, ty: number): void {
@@ -3452,7 +3471,7 @@ export class Game {
     }
     // GUARDING in front: each use gives a shield (a new one is never weaker than what is left of the last)
     if (r.shield > 0) {
-      h.shield = Math.max(h.shield, Math.round(h.d.maxLife * r.shield * (this.has('shieldwall') ? TALENT_TUNE.shieldwall : 1)));
+      h.shield = Math.max(h.shield, Math.round(h.d.maxLife * r.shield * (this.was('shieldwall') ? TALENT_TUNE.shieldwall : 1)));
       h.shieldT = GUARD.shieldTime;
       this.emit({ t: 'shield', x: h.x, y: h.y, secs: GUARD.shieldTime });
     }
@@ -3568,7 +3587,7 @@ export class Game {
       return;
     }
     // roll: travel along the floor, stopping at the first obstacle (THE SKILL TREES: Light Step, further)
-    const rollRange = def.range * (this.has('lightstep') ? TALENT_TUNE.lightStep.roll : 1);
+    const rollRange = def.range * (this.was('lightstep') ? TALENT_TUNE.lightStep.roll : 1);
     const end = { x: h.x, y: h.y };
     for (let dgo = 0; dgo < rollRange; dgo += 0.15) this.slide(end, TUNE.heroRadius, dx * 0.15, dy * 0.15, this.level.walk);
     // LEDGES AND PITS (the owner, 5 and 7 Oct 2026: "the swipe moves need to be able to traverse
@@ -3586,7 +3605,7 @@ export class Game {
     }
     h.move = { kind: 'roll', t: 0, dur: over ? 0.3 : 0.24, x0: h.x, y0: h.y, x1: end.x, y1: end.y, over };
     // (THE SKILL TREES: Windrunner, faster after a roll)
-    if (this.has('windrunner')) this.windT = TALENT_TUNE.windrunner.secs;
+    if (this.was('windrunner')) this.windT = TALENT_TUNE.windrunner.secs;
     // The ranger's: a trap is left where the roll began, so that what chases them runs onto it
     // (the owner: "When you tumble you lay a trap"). Twin: a second, where the roll ends. "of
     // Echoes": a weaker one where the first was, a moment later.
@@ -3814,18 +3833,32 @@ export class Game {
       // in front of the bow takes one of a Twin pair, not both (the other flies on past).
       const hit: number[] = [];
       // (THE SKILL TREES: Long Shot, further and faster; Piercing, through one more; Split Shot, every third in three)
-      const long = this.has('longshot') ? TALENT_TUNE.longShot : 1;
-      const split = primary && this.has('splitshot') && ++this.shots % TALENT_TUNE.splitShot.every === 0;
+      const long = this.was('longshot') ? TALENT_TUNE.longShot : 1;
+      const split = primary && this.was('splitshot') && ++this.shots % TALENT_TUNE.splitShot.every === 0;
       const fan = split ? [-TALENT_TUNE.splitShot.fan, 0, TALENT_TUNE.splitShot.fan] : [0];
-      for (let k = 0; k < r.count; k++) {
-        for (const f of fan) {
-          const a = base + (r.count === 1 ? 0 : (k - (r.count - 1) / 2) * 0.16) + f;
-          this.projectiles.push({
-            x: ox + Math.cos(a) * 0.4, y: oy + Math.sin(a) * 0.4, vx: Math.cos(a) * r.projSpeed * long, vy: Math.sin(a) * r.projSpeed * long,
-            r: Math.min(0.6, def.radius * r.size * (r.splash >= 1.5 ? 1.5 : 1)), dist: def.range * long, hostile: false, dmg: each, element: r.element,
-            look: 'arrow', pierce: r.pierce, pierceN: this.has('piercing') ? TALENT_TUNE.piercing : 0, hit, volley: r.count > 1 || split, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: k,
-          });
+      // (THE SKILL TREES REMADE: Steady Aim, a second stood still and the next arrow goes through every enemy in its line)
+      const steady = primary && this.now('steadyaim') && this.stillT >= TALENT_TUNE.steadyAim2.still;
+      if (steady) this.stillT = 0;
+      const loose = (sx: number, sy: number, own: number[]): void => {
+        for (let k = 0; k < r.count; k++) {
+          for (const f of fan) {
+            const a = base + (r.count === 1 ? 0 : (k - (r.count - 1) / 2) * 0.16) + f;
+            this.projectiles.push({
+              x: sx + Math.cos(a) * 0.4, y: sy + Math.sin(a) * 0.4, vx: Math.cos(a) * r.projSpeed * long, vy: Math.sin(a) * r.projSpeed * long,
+              r: Math.min(0.6, def.radius * r.size * (r.splash >= 1.5 ? 1.5 : 1)), dist: def.range * long, hostile: false, dmg: each, element: r.element,
+              look: 'arrow', pierce: r.pierce || steady, pierceN: this.was('piercing') ? TALENT_TUNE.piercing : 0, hit: own, volley: r.count > 1 || split, skill: i, trail: 0, words, runed: false, clouded: false, age: 0, from: '', n: k, flown: 0,
+            });
+          }
         }
+      };
+      loose(ox, oy, hit);
+      // (THE SKILL TREES REMADE: Quick Draw, every fifth arrow fires twice: the second a moment after, from where he is then)
+      if (primary && this.now('quickdraw') && ++this.draws % TALENT_TUNE.quickDraw2.every === 0) {
+        const id = s.id;
+        this.after(TALENT_TUNE.quickDraw2.gap, () => {
+          const hh = this.hero;
+          if (hh.skills[i]?.id === id && !this.over) loose(hh.x, hh.y, []);
+        });
       }
     } else if (def.kind === 'volley') {
       // The arrows go up from the bow, and a moment later begin to come down round the spot that
@@ -3833,14 +3866,26 @@ export class Game {
       // second, weaker rain on the same spot.)
       const p = this.reachPoint(tx, ty, def.range);
       // (THE SKILL TREES: Hail, longer and wider)
-      const hail = this.has('hail');
+      const hail = this.was('hail');
       const rad = def.radius * r.size * (hail ? TALENT_TUNE.hail.area : 1);
       this.sfx('volley', echo ? 0.5 : 0.9);
       this.emit({ t: 'volleyUp', x: ox, y: oy, tx: p.x, ty: p.y, r: rad, el: r.element, words, echo });
-      this.volleys.push({
+      const v: Volley = {
         id: this.nextThing++, x: p.x, y: p.y, r: rad, t: -TUNE.volleyDelay, n: 0, total: Math.max(1, Math.round((TUNE.volleyLife * (hail ? TALENT_TUNE.hail.life : 1)) / TUNE.volleyEvery)), told: 0, next: 0,
         skill: i, frac: each, count: r.count, element: r.element, echo, wake: primary,
-      });
+      };
+      // (THE SKILL TREES REMADE: Hail, the rain follows the enemy it was aimed at)
+      if (this.now('hail')) {
+        let bd = TALENT_TUNE.hail2.pick;
+        for (const m of this.monsters) {
+          const dd = Math.hypot(m.x - p.x, m.y - p.y);
+          if (!m.dead && !this.shutIn(m) && dd < bd) {
+            bd = dd;
+            v.follow = m.id;
+          }
+        }
+      }
+      this.volleys.push(v);
     }
 
     if (primary) {
@@ -3862,6 +3907,8 @@ export class Game {
     this.emit({ t: 'swing', x: ox, y: oy, dx, dy, reach, el: r.element, words, n, echo });
     let best: Monster | null = null;
     let bd = Infinity;
+    const cleave = this.now('sweepingcut');
+    const arc: Monster[] = [];
     for (const m of this.monsters) {
       if (m.dead) continue;
       const mx = m.x - ox;
@@ -3871,6 +3918,7 @@ export class Game {
       // in front of the hero, or close enough that facing does not matter
       const dot = dist > 0.01 ? (mx * dx + my * dy) / dist : 1;
       if (dot < 0.35 && dist > 0.9 + m.r) continue;
+      if (cleave) arc.push(m);
       const score = dist - dot * 0.5;
       if (score < bd) {
         bd = score;
@@ -3888,12 +3936,14 @@ export class Game {
     const tx = best.x;
     const ty = best.y;
     this.hitMonster(best, i, frac, false);
+    // (THE SKILL TREES REMADE: Sweeping Cut, the swing cleaves: every enemy in its arc is struck as hard)
+    for (const o of arc) if (o !== best && !o.dead) this.hitMonster(o, i, frac, true);
     this.landed(i);
     this.sfx(power ? 'power' : 'hit', 0.7);
     if (words.includes('heavy')) this.emit({ t: 'heavy', x: tx, y: ty, r: 1.1, big: false });
     if (r.splash > 0) {
       // (THE SKILL TREES: Fuel, Flame's blast wider)
-      const rad = r.splash * r.size * (r.element === 'fire' && this.has('fuel') ? TALENT_TUNE.fuel : 1);
+      const rad = r.splash * r.size * (r.element === 'fire' && this.was('fuel') ? TALENT_TUNE.fuel : 1);
       // a full-strength splash is an explosion; Power's is a shock through the ground
       this.emit({ t: 'burst', x: tx, y: ty, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words, n, echo });
       for (const o of this.monsters) {
@@ -3902,7 +3952,7 @@ export class Game {
       }
     }
     // (THE SKILL TREES: Sweeping Cut, a melee hit splashes on the enemies beside)
-    if (this.has('sweepingcut')) {
+    if (this.was('sweepingcut')) {
       const C = TALENT_TUNE.sweepingCut;
       for (const o of this.monsters) {
         if (o.dead || o === best || this.shutIn(o)) continue;
@@ -4110,7 +4160,7 @@ export class Game {
     const z = r.zone;
     if (!z) return;
     // (THE SKILL TREES: Rime, Frost's ice twice as big)
-    if (z.kind === 'ice' && this.has('rime')) rad *= TALENT_TUNE.rime;
+    if (z.kind === 'ice' && this.was('rime')) rad *= TALENT_TUNE.rime;
     // refresh a patch that is already there rather than stacking another
     for (const o of this.zones) {
       if (o.kind === z.kind && !o.hostile && Math.hypot(o.x - x, o.y - y) < 0.45 && o.r >= rad - 0.1) {
@@ -4161,19 +4211,24 @@ export class Game {
     this.zones.push(z);
   }
 
-  /** One hit of ability `i` on a monster, with everything a word in front adds to it. */
-  private hitMonster(m: Monster, i: number, frac: number, quiet: boolean): void {
+  /** One hit of ability `i` on a monster, with everything a word in front adds to it. `sure`: a certain critical (THE SKILL TREES REMADE: Far Sight). */
+  private hitMonster(m: Monster, i: number, frac: number, quiet: boolean, sure = false): void {
     // (what is shut in a room is out of reach: `shutIn`)
     if (m.dead || this.shutIn(m)) return;
     const h = this.hero;
     const d = h.d;
     const r = h.skills[i].r;
+    // (THE SKILL TREES REMADE: how it was before the hit: Keen Eye's unnoticed, Deep Freeze's frozen)
+    const unaware = m.state === 'sleep';
+    const wasFrozen = m.frozenT > 0;
     const st = d.stats;
     const el = r.element === 'fire' ? st.firePct : r.element === 'frost' ? st.frostPct : r.element === 'lightning' ? st.lightPct : st.physPct;
     let dmg = this.rng.range(d.dmgMin, d.dmgMax) * r.dmgMult * frac * (1 + (st.dmgPct + el + h.might) / 100);
     // (THE SKILL TREES: what the talents make of a hit)
     if (TALENTS.on) dmg *= this.talentHitMult(m);
-    let crit = this.rng.chance(d.critChance / 100);
+    let crit = this.rng.chance(d.critChance / 100) || sure;
+    // (THE SKILL TREES REMADE: Keen Eye, the first arrow at an enemy that has not noticed him a certain critical)
+    if (unaware && this.now('keeneye') && this.arrowSkill(i)) crit = true;
     // (THE SKILL TREES: Master Stroke, every fourth hit landed on its own target a certain critical)
     if (!quiet && this.has('masterstroke') && ++this.strokes >= TALENT_TUNE.masterStroke.every) {
       this.strokes = 0;
@@ -4200,7 +4255,7 @@ export class Game {
     const wasChilled = m.chillT > 0;
     if (r.ignite > 0) {
       // (Searing: it burns longer, and harder)
-      const sear = this.has('searing');
+      const sear = this.was('searing');
       const dps = ((dmg * r.ignite) / 3) * (sear ? TALENT_TUNE.searing.mult : 1);
       if (m.burnT <= 0) this.emit({ t: 'ignite', x, y });
       if (m.burnT <= 0 || dps > m.burnDps) m.burnDps = dps;
@@ -4219,7 +4274,18 @@ export class Game {
     // (THE SKILL TREES: a lightning hit leaves it shocked, which Overload works on)
     if (TALENTS.on && (r.element === 'lightning' || r.arcs > 0)) m.shockT = TALENT_TUNE.shockSecs;
     if (spent) this.emit({ t: 'markSpent', id: m.id, x, y, dx: x - h.x, dy: y - h.y });
+    // (THE SKILL TREES REMADE: Honed Edge, a critical hit makes it bleed half the hit again over three seconds)
+    if (crit && this.now('honededge')) {
+      const B = TALENT_TUNE.honedEdge2;
+      m.bleedDps = Math.max(m.bleedT ? m.bleedDps ?? 0 : 0, (dmg * B.share) / B.secs);
+      m.bleedT = B.secs;
+    }
     this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
+    // (THE SKILL TREES REMADE: Giant Slayer, each hit on an elite or a boss cracks its guard)
+    if (!m.dead && (m.elite || m.boss) && this.now('giantslayer')) m.cracks = Math.min(TALENT_TUNE.giantSlayer2.most, (m.cracks ?? 0) + 1);
+    // (Kindling, his fire leaves the ground burning where it hits; Deep Freeze, a frozen one struck slides away, freezing what it meets)
+    if (r.element === 'fire' && this.now('kindling')) this.kindle(x, y);
+    if (wasFrozen && !m.dead && !m.boss && this.now('deepfreeze')) this.throwMonster(m, h.x, h.y, TALENT_TUNE.deepFreeze2.far, TALENT_TUNE.deepFreeze2.secs, true);
     // (WORDMELDING: Blight in front, its poison biting harder the lower the enemy's life)
     const blight = r.meld === 'blight' && !m.dead ? 1 + (MELD_TUNE.blight.most - 1) * (1 - Math.max(0, m.life) / m.maxLife) : 1;
     if (r.poison > 0) this.poisonMonster(m, dmg * r.poison * blight, i);
@@ -4271,6 +4337,8 @@ export class Game {
       }
       if (near.length) this.sfx('zap', 0.6);
     }
+    // (THE SKILL TREES REMADE: Charged, the charge gathered as he moved goes off with this hit)
+    if (!quiet && this.charge >= 1 && this.now('charged')) this.releaseCharge(m, x, y);
   }
 
   /** THE SKILL TREES: what the talents make of the hero's hit on `m` (1: nothing). */
@@ -4278,9 +4346,9 @@ export class Game {
     const h = this.hero;
     const T = TALENT_TUNE;
     let k = 1;
-    if (this.has('giantslayer') && (m.elite || m.boss)) k *= T.giantSlayer;
-    if (this.has('steadyaim') && this.stillT >= T.steadyAim.still) k *= T.steadyAim.mult;
-    if (this.has('farsight')) k *= 1 + T.farSight.most * Math.min(1, Math.hypot(m.x - h.x, m.y - h.y) / T.farSight.at);
+    if (this.was('giantslayer') && (m.elite || m.boss)) k *= T.giantSlayer;
+    if (this.was('steadyaim') && this.stillT >= T.steadyAim.still) k *= T.steadyAim.mult;
+    if (this.was('farsight')) k *= 1 + T.farSight.most * Math.min(1, Math.hypot(m.x - h.x, m.y - h.y) / T.farSight.at);
     if (this.has('shatter') && m.frozenT > 0) k *= T.shatter;
     return k;
   }
@@ -4297,7 +4365,7 @@ export class Game {
       this.emit({ t: 'poisoned', x: m.x, y: m.y });
     }
     // (THE SKILL TREES: Venom, twice as many doses)
-    const most = TUNE.poisonStacks * (this.has('venom') ? TALENT_TUNE.venom : 1);
+    const most = TUNE.poisonStacks * (this.was('venom') ? TALENT_TUNE.venom : 1);
     if (m.poisonN < most) {
       m.poisonDps += dps;
       m.poisonN++;
@@ -4310,7 +4378,7 @@ export class Game {
   private chillMonster(m: Monster, slow: number): void {
     if (m.chillT > 0 && m.freezeImmune <= 0 && !m.boss) {
       // (Deep Freeze: frozen half as long again, and frozen again sooner)
-      const deep = this.has('deepfreeze');
+      const deep = this.was('deepfreeze');
       m.frozenT = (m.elite ? 0.6 : 1.1) * (deep ? TALENT_TUNE.deepFreeze.frozen : 1);
       m.freezeImmune = deep ? TALENT_TUNE.deepFreeze.again : 4;
       // (THE MONSTERS' ATTACKS: a red troll frozen as he runs his charge is stopped in it)
@@ -4485,6 +4553,8 @@ export class Game {
   /** Heavy on a monster: its blow, from (fromX, fromY), knocks the hero back a step (walls stop it); `share`, a minion's half a step (MONSTER PACKS). */
   knockHero(fromX: number, fromY: number, share = 1): void {
     const h = this.hero;
+    // (THE SKILL TREES REMADE: Resolute, nothing knocks him back)
+    if (this.now('resolute')) return;
     let dx = h.x - fromX;
     let dy = h.y - fromY;
     const len = Math.hypot(dx, dy);
@@ -4530,7 +4600,9 @@ export class Game {
       if (ward > 0) dmg = Math.max(1, Math.round(dmg * (1 - ward)));
     }
     // (THE SKILL TREES: Overload, a shocked enemy takes more from everything)
-    if (m.shockT > 0 && this.has('overload')) dmg = Math.max(1, Math.round(dmg * TALENT_TUNE.overload));
+    if (m.shockT > 0 && this.was('overload')) dmg = Math.max(1, Math.round(dmg * TALENT_TUNE.overload));
+    // (THE SKILL TREES REMADE: Giant Slayer's cracks in its guard: more from everything)
+    if (m.cracks && TALENTS2.on) dmg = Math.max(1, Math.round(dmg * (1 + TALENT_TUNE.giantSlayer2.each * m.cracks)));
     // (WORDMELDING: Blight behind, a poisoned enemy it has touched takes more from everything)
     if (m.blightT && m.poisonT > 0) dmg = Math.max(1, Math.round(dmg * (1 + MELD_TUNE.blight.more)));
     // (GUARDING, on a monster: its shield takes the harm first)
@@ -4644,9 +4716,15 @@ export class Game {
   /** THE SKILL TREES: what a kill does with the talents: Momentum's speed; Inferno's blast for one that dies burning; Shatter's burst of cold for one that dies frozen. */
   private talentKill(m: Monster): void {
     const T = TALENT_TUNE;
-    if (this.has('footwork')) this.footworkT = T.footwork.secs;
+    if (this.was('footwork')) this.footworkT = T.footwork.secs;
     const x = m.x;
     const y = m.y;
+    // (THE SKILL TREES REMADE: Footwork, Lunge ready again; Windrunner, a roll back; Venom's cloud; Overload's shock passed on; Rime's ice shattering)
+    if (this.now('footwork')) this.readyAgain('leap');
+    if (this.now('windrunner')) this.readyAgain('roll');
+    if (this.now('venom') && m.poisonT > 0 && m.poisonDps > 0) this.venomCloud(m);
+    if (this.now('overload') && m.shockT > 0) this.passShock(m);
+    if (this.now('rime')) this.rimeShatter(m);
     if (this.has('inferno') && m.burnT > 0) {
       const boom = Math.max(1, Math.round(m.maxLife * T.inferno));
       this.after(0.1, () => {
@@ -4773,11 +4851,27 @@ export class Game {
     for (const z of this.zones) if (z.kind === 'ward' && Math.hypot(h.x - z.x, h.y - z.y) <= z.r) ward = Math.max(ward, z.dmg);
     if (ward > 0) dmg *= 1 - ward;
     // (THE SKILL TREES: Bulwark)
-    if (this.has('bulwark')) dmg *= TALENT_TUNE.bulwark;
+    if (this.was('bulwark')) dmg *= TALENT_TUNE.bulwark;
+    // (THE SKILL TREES REMADE: Bulwark, the more close round him the less each blow; Thick Skin, below half his life, less)
+    if (this.now('bulwark')) {
+      const B = TALENT_TUNE.bulwark2;
+      let n = 0;
+      for (const m of this.monsters) if (!m.dead && m.state !== 'sleep' && Math.hypot(m.x - h.x, m.y - h.y) <= m.r + TUNE.heroRadius + B.near) n++;
+      dmg *= 1 - Math.min(B.most, B.each * n);
+    }
+    if (this.now('thickskin') && h.life < h.d.maxLife * TALENT_TUNE.thickSkin2.below) dmg *= 1 - TALENT_TUNE.thickSkin2.less;
     dmg = Math.max(1, Math.round(dmg));
+    // (Bitter Cold: what strikes him is chilled)
+    if (src && !src.dead && this.now('bittercold')) {
+      src.chill = Math.max(src.chillT > 0 ? src.chill : 0, TALENT_TUNE.bitterCold2.slow);
+      src.chillT = Math.max(src.chillT, TALENT_TUNE.bitterCold2.secs);
+    }
     // (THE SKILL TREES: Thorns, what strikes him up close takes some of the blow back)
     if (src && !src.dead && this.has('thorns') && Math.hypot(src.x - h.x, src.y - h.y) <= src.r + TALENT_TUNE.thorns.reach) {
-      this.damageMonster(src, Math.max(1, Math.round(raw * TALENT_TUNE.thorns.share)), 'phys', false, -1);
+      // (TALENTS2: half the blow back, and thrown back)
+      const remade = this.now('thorns');
+      this.damageMonster(src, Math.max(1, Math.round(raw * (remade ? TALENT_TUNE.thorns2.share : TALENT_TUNE.thorns.share))), 'phys', false, -1);
+      if (remade && !src.dead) this.throwMonster(src, h.x, h.y, TALENT_TUNE.thorns2.far);
     }
     // HEAVY, on a monster: its blows knock the hero back a step
     if (k('heavy') > 0) this.knockHero(fromX, fromY, k('heavy'));
@@ -4790,6 +4884,8 @@ export class Game {
       if (h.shield <= 0) {
         h.shield = 0;
         h.shieldT = 0;
+        // (THE SKILL TREES REMADE: Shieldwall, the shield breaking bursts outward)
+        if (this.now('shieldwall')) this.shieldBurst();
       }
     }
     if (soaked > 0 || ward > 0) this.emit({ t: 'guarded', x: h.x, y: h.y, fromX, fromY });
@@ -5061,6 +5157,9 @@ export class Game {
       if (m.markT > 0) m.markT -= dt;
       if (m.shockT > 0) m.shockT -= dt;
       if (m.staggerCd > 0) m.staggerCd -= dt;
+      // (THE SKILL TREES REMADE: Honed Edge's bleeding runs out; thrown across the floor by a talent, frozen or not)
+      if (m.bleedT) m.bleedT = Math.max(0, m.bleedT - dt);
+      if (m.thrown) this.flyThrown(m, dt);
       // (WORDMELDING)
       if (m.scaldCd) m.scaldCd = Math.max(0, m.scaldCd - dt);
       if (m.fumesCd) m.fumesCd = Math.max(0, m.fumesCd - dt);
@@ -5867,6 +5966,17 @@ export class Game {
         if (!this.isOpen(nx, ny)) {
           // (THE TRAPS: what the hero shoots may meet a sealed door, and open it)
           if (!p.hostile) this.unseal(p.skill, nx, ny, 0.1);
+          // (THE SKILL TREES REMADE: Ricochet, a hero's arrow bounces off the wall, and flies on)
+          if (!p.hostile && p.look === 'arrow' && !p.bounced && this.now('piercing')) {
+            p.bounced = true;
+            const bx = !this.isOpen(nx, p.y);
+            const by = !this.isOpen(p.x, ny);
+            const corner = !bx && !by;
+            if (bx || corner) p.vx = -p.vx;
+            if (by || corner) p.vy = -p.vy;
+            this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 4 });
+            continue;
+          }
           this.endProjectile(p);
           dead = true;
           break;
@@ -5874,6 +5984,7 @@ export class Game {
         p.x = nx;
         p.y = ny;
         p.dist -= step;
+        if (p.flown !== undefined) p.flown += step;
         if (p.hostile) {
           if (!p.struck && !h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
             // (THE TRAPS: a dart's harm is a share of the life of what it meets)
@@ -5939,7 +6050,13 @@ export class Game {
     const r = this.hero.skills[p.skill].r;
     const x = m.x;
     const y = m.y;
-    this.hitMonster(m, p.skill, p.dmg, false);
+    // (THE SKILL TREES REMADE: Far Sight, an arrow flown past eight tiles a certain critical)
+    const arrow = p.look === 'arrow';
+    const far = arrow && (p.flown ?? 0) > TALENT_TUNE.farSight2.at && this.now('farsight');
+    this.hitMonster(m, p.skill, p.dmg, false, far);
+    // (Long Shot, the arrow knocks back what it hits; Split Shot, one that kills splits into three, flying on)
+    if (arrow && !m.dead && this.now('longshot')) this.throwMonster(m, m.x - p.vx, m.y - p.vy, TALENT_TUNE.longShot2.far);
+    if (arrow && m.dead && !p.split && this.now('splitshot')) this.splitArrow(p, m);
     // (an arrow or a wave that goes through several is still one blow)
     if (!p.mighted) {
       p.mighted = true;
@@ -5949,7 +6066,7 @@ export class Game {
     const power = p.words.includes('power');
     this.sfx(power ? 'power' : 'hit', 0.6);
     if (r.splash > 0) {
-      const rad = r.splash * r.size * (r.element === 'fire' && this.has('fuel') ? TALENT_TUNE.fuel : 1);
+      const rad = r.splash * r.size * (r.element === 'fire' && this.was('fuel') ? TALENT_TUNE.fuel : 1);
       this.emit({ t: 'burst', x, y, r: rad, el: r.element, style: r.splashDmg >= 1 ? 'blast' : 'shock', words: p.words });
       if (r.splashDmg >= 1) this.sfx(r.element === 'frost' ? 'frost' : 'explode', 0.6);
       for (const o of this.monsters) {
@@ -6016,7 +6133,18 @@ export class Game {
         this.traps.splice(i, 1);
         this.sfx('trapBoom');
         this.emit({ t: 'shake', amount: 2 });
-        this.blast(t.skill, t.x, t.y, SKILLS[s.id].radius * s.r.size * (this.has('widetraps') ? TALENT_TUNE.wideTraps : 1), t.frac, 'blast');
+        const rad = SKILLS[s.id].radius * s.r.size * (this.was('widetraps') ? TALENT_TUNE.wideTraps : 1);
+        // (THE SKILL TREES REMADE: Wide Traps, what is near is pulled in, and then it bursts)
+        if (this.now('widetraps')) {
+          const W = TALENT_TUNE.wideTraps2;
+          for (const m of this.monsters) {
+            const dd = Math.hypot(m.x - t.x, m.y - t.y);
+            if (m.dead || dd > rad + W.reach + m.r || dd <= W.to) continue;
+            this.throwMonster(m, t.x, t.y, -(dd - W.to), W.secs);
+          }
+          const { skill, x, y, frac } = t;
+          this.after(W.secs, () => this.blast(skill, x, y, rad, frac, 'blast'));
+        } else this.blast(t.skill, t.x, t.y, rad, t.frac, 'blast');
       } else if (t.life <= 0) this.traps.splice(i, 1);
     }
   }
@@ -6064,10 +6192,25 @@ export class Game {
       const r = s.r;
       const words = this.fronts(v.skill);
       const reach = TUNE.volleyHit * r.size;
+      // (THE SKILL TREES REMADE: Hail, the rain goes after the enemy it was aimed at)
+      if (v.follow !== undefined) {
+        const m = this.monsters.find((q) => q.id === v.follow && !q.dead);
+        if (!m) v.follow = undefined;
+        else {
+          const dd = Math.hypot(m.x - v.x, m.y - v.y);
+          const go = Math.min(dd, TALENT_TUNE.hail2.speed * dt);
+          if (dd > 0.01) {
+            v.x += ((m.x - v.x) / dd) * go;
+            v.y += ((m.y - v.y) / dd) * go;
+          }
+        }
+      }
       // (the effects are told a moment ahead, so that each arrow is seen coming down before it lands)
       while (v.told < v.total && v.t >= v.told * TUNE.volleyEvery - VOLLEY_SEEN) {
         for (let c = 0; c < v.count; c++) {
           const at = this.volleySpot(v, v.told, c);
+          // (Hail: where it was told it comes down is where it comes down, the rain moving meanwhile)
+          if (v.follow !== undefined || v.at) (v.at ??= [])[v.told * v.count + c] = at;
           this.emit({ t: 'volleyDrop', x: at.x, y: at.y, el: v.element, words, n: c, echo: v.echo, in: Math.max(0, v.told * TUNE.volleyEvery - v.t) });
         }
         v.told++;
@@ -6079,7 +6222,7 @@ export class Game {
           this.wake(v.skill, v.x, v.y, v.r, v.frac);
         }
         for (let c = 0; c < v.count; c++) {
-          const at = this.volleySpot(v, v.n, c);
+          const at = v.at?.[v.n * v.count + c] ?? this.volleySpot(v, v.n, c);
           const ax = at.x;
           const ay = at.y;
           let hits = 0;
@@ -6210,6 +6353,13 @@ export class Game {
             m.poisonT = Math.max(m.poisonT, 2);
             if (z.skill >= 0) m.lastSkill = z.skill;
           }
+        } else if (z.from === 'kindling') {
+          // (THE SKILL TREES REMADE: Kindling's burning ground sets alight whatever stands in it)
+          for (const m of inside) {
+            if (m.burnT <= 0) this.emit({ t: 'ignite', x: m.x, y: m.y });
+            m.burnDps = Math.max(m.burnT > 0 ? m.burnDps : 0, z.dmg);
+            m.burnT = Math.max(m.burnT, 1);
+          }
         } else {
           for (const m of inside) {
             // (WORDMELDING: Scald behind's steam slows as ice does)
@@ -6281,7 +6431,11 @@ export class Game {
       if (!m.dead && m.poisonT > 0 && m.poisonDps > 0) this.damageMonster(m, Math.max(1, Math.round(m.poisonDps * 0.5)), 'phys', false, m.lastSkill, false, undefined, true);
       // (WORDMELDING: Frostbite in front, a chilled enemy loses life, a frozen one twice as fast)
       if (!m.dead && m.biteDps && (m.chillT > 0 || m.frozenT > 0)) this.damageMonster(m, Math.max(1, Math.round(m.biteDps * 0.5 * (m.frozenT > 0 ? 2 : 1))), 'frost', false, m.lastSkill, false, undefined, false, true);
+      // (THE SKILL TREES REMADE: Honed Edge's bleeding)
+      if (!m.dead && m.bleedT && m.bleedDps) this.damageMonster(m, Math.max(1, Math.round(m.bleedDps * 0.5)), 'phys', false, m.lastSkill, false, undefined, false, true);
     }
+    // (Searing: fire spreads from a burning enemy to any it touches)
+    if (this.now('searing')) this.spreadFire();
     const h = this.hero;
     if (h.burnT > 0 && !this.over) {
       const dmg = Math.max(1, Math.round(h.burnDps * 0.5));
@@ -7182,6 +7336,227 @@ export class Game {
     return TALENTS.on && this.hero.talents.includes(id);
   }
 
+  /** (TALENTS2) Talent `id` taken, and doing what it did before it was remade: the switch off, or a talent that was kept. */
+  private was(id: string): boolean {
+    return this.has(id) && !remadeNow(id);
+  }
+
+  /** (TALENTS2) Talent `id` taken, remade, doing what its new card says. */
+  private now(id: string): boolean {
+    return this.has(id) && remadeNow(id);
+  }
+
+  // ---- THE SKILL TREES REMADE (game/talents.ts TALENTS2): what the new cards do ---------------------------------
+
+  /** Whether ability `i` looses arrows (the bow's: a shot, a volley). */
+  private arrowSkill(i: number): boolean {
+    const s = this.hero.skills[i];
+    const kind = s ? SKILLS[s.id].kind : null;
+    return kind === 'projectile' || kind === 'volley';
+  }
+
+  /**
+   * `m` thrown across the floor, away from (fromX, fromY) (toward it, `far` below 0), `far` tiles over `secs`; walls stop
+   * it. A boss stands his ground, and so does one in the middle of an act of its own. `ice`: Deep Freeze's slide, frozen,
+   * freezing what it slides into.
+   */
+  private throwMonster(m: Monster, fromX: number, fromY: number, far: number, secs = 0.2, ice = false): void {
+    if (m.dead || m.boss || m.state === 'act' || this.shutIn(m)) return;
+    let dx = m.x - fromX;
+    let dy = m.y - fromY;
+    const len = Math.hypot(dx, dy);
+    if (len < 0.01) {
+      dx = -m.fx || 1;
+      dy = -m.fy;
+    } else {
+      dx /= len;
+      dy /= len;
+    }
+    m.thrown = { vx: (dx * far) / secs, vy: (dy * far) / secs, t: secs, ...(ice ? { ice: true } : {}) };
+  }
+
+  /** A thrown monster goes on its way this frame; stopped by a wall, it stops. Deep Freeze's frozen one freezes what it touches. */
+  private flyThrown(m: Monster, dt: number): void {
+    const T = m.thrown;
+    if (!T) return;
+    const k = Math.min(dt, Math.max(0, T.t));
+    const x0 = m.x;
+    const y0 = m.y;
+    this.slide(m, Math.min(m.r, 0.42), T.vx * k, T.vy * k, m.kind === 'bat' ? this.level.open : this.level.walk);
+    T.t -= dt;
+    if (T.ice) {
+      for (const o of this.monsters) {
+        if (o === m || o.dead || o.boss || o.frozenT > 0 || this.shutIn(o)) continue;
+        if (Math.hypot(o.x - m.x, o.y - m.y) <= o.r + m.r) this.freezeMonster(o);
+      }
+    }
+    const meant = Math.hypot(T.vx, T.vy) * k;
+    if (T.t <= 0 || (meant > 0.01 && Math.hypot(m.x - x0, m.y - y0) < meant * 0.3)) m.thrown = undefined;
+  }
+
+  /** Frozen where it stands (never a boss), as a second chilling hit freezes it. */
+  private freezeMonster(m: Monster): void {
+    if (m.dead || m.boss) return;
+    m.frozenT = Math.max(m.frozenT, m.elite ? 0.6 : 1.1);
+    m.freezeImmune = 4;
+    m.chill = Math.max(m.chillT > 0 ? m.chill : 0, 0.3);
+    m.chillT = 2.5;
+    if (m.state === 'charge') this.endCharge(m);
+    this.emit({ t: 'freeze', x: m.x, y: m.y });
+  }
+
+  /** (Hearth) He stands in fire of his own making: a patch of burning ground of his. */
+  private inOwnFire(): boolean {
+    const h = this.hero;
+    return this.zones.some((z) => z.kind === 'burn' && !z.hostile && Math.hypot(h.x - z.x, h.y - z.y) <= z.r);
+  }
+
+  /** (Drilled Lunge) What the lunge passes now is struck, each once: as hard as the landing's blow. */
+  private lungeThrough(mv: { hit?: number[] }): void {
+    const h = this.hero;
+    const D = TALENT_TUNE.drilledLunge;
+    const hit = mv.hit ?? (mv.hit = []);
+    const r = h.skills[2].r;
+    for (const m of this.monsters) {
+      if (m.dead || hit.includes(m.id) || this.shutIn(m)) continue;
+      if (Math.hypot(m.x - h.x, m.y - h.y) > m.r + TUNE.heroRadius + D.reach) continue;
+      hit.push(m.id);
+      this.hitMonster(m, 2, r.countDmg * D.share, hit.length > 1);
+    }
+  }
+
+  /** (Kindling) The ground at (x, y) set burning a while, unless a patch of it burns close by already. */
+  private kindle(x: number, y: number): void {
+    const K = TALENT_TUNE.kindling2;
+    if (this.zones.some((z) => z.from === 'kindling' && Math.hypot(z.x - x, z.y - y) < K.apart)) return;
+    if (!this.roomForZone() || !this.onFloor(x, y)) return;
+    this.zones.push({ x, y, r: K.r, t: 0, dur: K.secs, kind: 'burn', element: 'fire', dmg: this.talentHit('fire', K.share), slow: 0, tick: 0.2, hostile: false, skill: -1, words: [], from: 'kindling' });
+    this.emit({ t: 'zone', kind: 'burn', x, y, r: K.r, el: 'fire' });
+  }
+
+  /** (Charged) The charge goes off: a bolt from the enemy struck at (x, y), leaping between up to five. */
+  private releaseCharge(m: Monster, x: number, y: number): void {
+    const C = TALENT_TUNE.charged2;
+    this.charge = 0;
+    const hit = this.talentHit('lightning', C.share);
+    const done = new Set<number>([m.id]);
+    let px = x;
+    let py = y;
+    this.emit({ t: 'arc', x0: x, y0: y, x1: x, y1: y, sky: true });
+    if (!m.dead) {
+      m.shockT = TALENT_TUNE.shockSecs;
+      this.damageMonster(m, hit, 'lightning', false, -1);
+    }
+    for (let n = 1; n < C.n; n++) {
+      let best: Monster | null = null;
+      let bd = C.reach;
+      for (const o of this.monsters) {
+        if (o.dead || done.has(o.id) || this.shutIn(o)) continue;
+        const dd = Math.hypot(o.x - px, o.y - py);
+        if (dd < bd) {
+          bd = dd;
+          best = o;
+        }
+      }
+      if (!best) break;
+      done.add(best.id);
+      this.emit({ t: 'arc', x0: px, y0: py, x1: best.x, y1: best.y });
+      px = best.x;
+      py = best.y;
+      best.shockT = TALENT_TUNE.shockSecs;
+      this.damageMonster(best, hit, 'lightning', false, -1);
+    }
+    this.sfx('thunder', 0.6);
+  }
+
+  /** (Footwork, Windrunner) His move, a lunge or a roll, ready again: a charge of it back. */
+  private readyAgain(kind: 'leap' | 'roll'): void {
+    const s = this.hero.skills[2];
+    if (!s || SKILLS[s.id].kind !== kind || s.charges >= s.maxCharges) return;
+    s.charges++;
+    s.cd = s.charges < s.maxCharges ? s.r.cooldown : 0;
+  }
+
+  /** (Venom) A poisoned enemy dies in a cloud of its poison, that poisons those near as it was poisoned. */
+  private venomCloud(m: Monster): void {
+    const V = TALENT_TUNE.venom2;
+    if (!this.roomForZone() || !this.onFloor(m.x, m.y)) return;
+    this.zones.push({ x: m.x, y: m.y, r: V.r, t: 0, dur: V.dur, kind: 'venom', element: 'phys', dmg: m.poisonDps, slow: 0, tick: 0.2, hostile: false, skill: m.lastSkill, words: [], from: '' });
+    this.emit({ t: 'zone', kind: 'venom', x: m.x, y: m.y, r: V.r, el: 'phys' });
+  }
+
+  /** (Overload) A shocked enemy's shock passes on as it dies: a jolt to the three nearest. */
+  private passShock(m: Monster): void {
+    const O = TALENT_TUNE.overload2;
+    const near = this.monsters
+      .filter((o) => !o.dead && o !== m && !this.shutIn(o) && Math.hypot(o.x - m.x, o.y - m.y) <= O.reach)
+      .sort((a, b) => Math.hypot(a.x - m.x, a.y - m.y) - Math.hypot(b.x - m.x, b.y - m.y))
+      .slice(0, O.n);
+    const jolt = this.talentHit('lightning', O.share);
+    for (const o of near) {
+      this.emit({ t: 'arc', x0: m.x, y0: m.y, x1: o.x, y1: o.y });
+      o.shockT = TALENT_TUNE.shockSecs;
+    }
+    for (const o of near) this.damageMonster(o, jolt, 'lightning', false, -1);
+    if (near.length) this.sfx('zap', 0.6);
+  }
+
+  /** (Rime) An enemy dying on Frost's ice: the whole patch shatters, freezing every enemy on it. */
+  private rimeShatter(m: Monster): void {
+    const k = this.zones.findIndex((z) => z.kind === 'ice' && !z.hostile && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5);
+    if (k < 0) return;
+    const z = this.zones[k];
+    this.zones.splice(k, 1);
+    this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: 'frost', style: 'nova' });
+    this.sfx('shatter', 0.8);
+    for (const o of this.monsters) if (!o.dead && o !== m && !this.shutIn(o) && Math.hypot(o.x - z.x, o.y - z.y) <= z.r + o.r * 0.5) this.freezeMonster(o);
+  }
+
+  /** (Shieldwall) Guarding's shield breaks outward: everything near thrown back, and stunned. */
+  private shieldBurst(): void {
+    const h = this.hero;
+    const S = TALENT_TUNE.shieldwall2;
+    this.emit({ t: 'burst', x: h.x, y: h.y, r: S.r, el: 'phys', style: 'shock' });
+    this.emit({ t: 'shake', amount: 3 });
+    this.sfx('slam', 0.7);
+    for (const m of this.monsters) {
+      if (m.dead || this.shutIn(m) || Math.hypot(m.x - h.x, m.y - h.y) > S.r + m.r) continue;
+      this.stunMonster(m, S.secs);
+      this.throwMonster(m, h.x, h.y, S.far);
+    }
+  }
+
+  /** (Split Shot) An arrow that killed `m` splits into three where it fell, flying on in a fan; they split no more. */
+  private splitArrow(p: Projectile, m: Monster): void {
+    const S = TALENT_TUNE.splitShot2;
+    const base = Math.atan2(p.vy, p.vx);
+    const sp = Math.hypot(p.vx, p.vy);
+    for (let k = 0; k < S.n; k++) {
+      const a = base + (k - (S.n - 1) / 2) * S.fan;
+      this.projectiles.push({
+        x: m.x + Math.cos(a) * (m.r + 0.15), y: m.y + Math.sin(a) * (m.r + 0.15), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        r: p.r, dist: S.far, hostile: false, dmg: p.dmg, element: p.element, look: 'arrow', pierce: false, hit: [m.id], volley: true,
+        skill: p.skill, trail: 0, words: p.words, runed: true, clouded: true, mighted: true, left: true, age: 0, from: '', n: 0, split: true, flown: p.flown ?? 0,
+      });
+    }
+  }
+
+  /** (Searing) Fire spreads: every enemy touching a burning one is set alight, as hard. */
+  private spreadFire(): void {
+    const S = TALENT_TUNE.searing2;
+    const burning = this.monsters.filter((m) => !m.dead && m.burnT > 0);
+    for (const b of burning) {
+      for (const o of this.monsters) {
+        if (o === b || o.dead || o.burnT > 0 || this.shutIn(o)) continue;
+        if (Math.hypot(o.x - b.x, o.y - b.y) > b.r + o.r + S.touch) continue;
+        this.emit({ t: 'ignite', x: o.x, y: o.y });
+        o.burnDps = b.burnDps;
+        o.burnT = 3;
+        o.lastSkill = b.lastSkill;
+      }
+    }
+  }
+
   /** A hit a talent makes by itself (Storm Warp, Stormcaller): `share` of the hero's weapon hit, of element `el`. */
   private talentHit(el: Element, share: number): number {
     const h = this.hero;
@@ -7206,6 +7581,20 @@ export class Game {
     this.stillT = walked > 0.001 || h.move ? 0 : this.stillT + dt;
     if (this.footworkT > 0) this.footworkT -= dt;
     if (this.windT > 0) this.windT -= dt;
+    // (THE SKILL TREES REMADE: Charged, a charge gathered as he moves; full, it sparks round him)
+    if (this.now('charged') && !this.level.town && !this.over) {
+      const C = TALENT_TUNE.charged2;
+      if (this.charge < 1) {
+        this.charge = Math.min(1, this.charge + walked / C.full);
+        this.sparkT = 0;
+      } else {
+        this.sparkT -= dt;
+        if (this.sparkT <= 0) {
+          this.sparkT = C.spark;
+          this.emit({ t: 'spark', x: h.x, y: h.y, el: 'lightning', n: 3 });
+        }
+      }
+    }
     if (this.has('stormcaller') && !this.level.town && !this.over) {
       this.stormT -= dt;
       if (this.stormT <= 0) {

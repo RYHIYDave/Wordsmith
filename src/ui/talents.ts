@@ -15,7 +15,7 @@ import { P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import { WORDS } from '../game/defs';
 import type { Game } from '../game/game';
-import { TREES, nextTalentLevel, talentOpen } from '../game/talents';
+import { TREES, nextTalentLevel, talentName, talentOpen, talentText, talentWord } from '../game/talents';
 import type { TalentDef, TalentTree } from '../game/talents';
 import type { WordId } from '../game/types';
 import { THEME, inside } from './ui';
@@ -74,7 +74,8 @@ const PATH_RUNE: Record<string, (color: string) => Rune> = {
 };
 /** The rune a talent's stone carries: its word's, if it works with one; else its path's. */
 function runeOf(tree: TalentTree, t: TalentDef): Rune {
-  if (t.word) return wordRune(t.word);
+  const word = talentWord(t);
+  if (word) return wordRune(word);
   const path = tree.paths.find((p) => p.id === t.path);
   const color = path ? path.color : THEME.text;
   return (PATH_RUNE[t.path] ?? ((c: string) => ({ rows: ARROW, color: c, glow: P.white })))(color);
@@ -200,10 +201,12 @@ function cardRect(panel: Rect, at: TalentAt, h: number, W: number, H: number): R
 function cardLines(game: Game, t: TalentDef, tree: TalentTree): { text: string; color: string; small: boolean }[] {
   const path = tree.paths.find((p) => p.id === t.path);
   const out: { text: string; color: string; small: boolean }[] = [];
-  out.push({ text: t.name.toUpperCase(), color: P.white, small: false });
+  out.push({ text: talentName(t).toUpperCase(), color: P.white, small: false });
   out.push({ text: `${t.big ? 'BIG ' : ''}${path && path.name ? `${path.name} ` : ''}TALENT`, color: path ? path.color : THEME.dim, small: true });
-  for (const l of wrapText(t.text, CARD - 10)) out.push({ text: l, color: THEME.text, small: false });
-  if (t.word) out.push({ text: `WORKS WITH ${WORDS[t.word].name.toUpperCase()}`, color: WORD_COLOR[t.word], small: true });
+  // (TALENTS2: a remade talent's new words, name and word)
+  for (const l of wrapText(talentText(t), CARD - 10)) out.push({ text: l, color: THEME.text, small: false });
+  const word = talentWord(t);
+  if (word) out.push({ text: `WORKS WITH ${WORDS[word].name.toUpperCase()}`, color: WORD_COLOR[word], small: true });
   return out;
 }
 
