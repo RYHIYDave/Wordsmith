@@ -36,6 +36,7 @@ import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
 import { HEADSMAN2, H2_AXE_GOES, H2_CANVAS, H2_HOOD_GOES, axe2Of } from '../src/art/headsman2';
+import { HEADSMAN2_FIGHT } from '../src/game/bosses';
 import { HEADSMAN_2, H2_FLURRY_HITS, H2_SHAPE, H2_VAULT } from '../src/art/headsman2_moves';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
@@ -85,14 +86,15 @@ for (const view of VIEWS) {
   }
 }
 
-test('1. the switch is off, and nothing of the game imports him', () => {
-  assert.equal(HEADSMAN2.on, false, 'HEADSMAN2 is off');
+test('1. his switch goes with his fight\'s (game/bosses.ts HEADSMAN2_FIGHT); the game makes him only through the bestiary, behind it', () => {
+  // (the main chat brought him in, 17 Oct: art/bestiary.ts makes him in place of the first Headsman while HEADSMAN2 is on)
+  assert.equal(HEADSMAN2.on, HEADSMAN2_FIGHT.on, 'his look and his fight switched together');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/headsman2.ts' || f === 'art/headsman2_moves.ts') continue;
     if (/from ['"][^'"]*headsman2(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
-  assert.equal(users.join(' '), '', 'game files that import him');
+  assert.equal(users.join(' '), 'art/bestiary.ts', 'game files that import him');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind', () => {

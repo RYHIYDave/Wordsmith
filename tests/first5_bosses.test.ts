@@ -34,7 +34,11 @@ import type { Mob } from '../src/art/new_mobs3';
 import { RNG } from '../src/engine/rng';
 import { hookHigh } from '../src/render/bossfx';
 import { act1Rules } from '../src/game/act1_rules/index';
-import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, FLESH_BLINK, blinkNowhere, blinkedAway, GAITS, HEADSMAN, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
+import { ACTS, AMALGAM, BOSSES5, CARRY_FOR, CHAINED, FLESHMANCER, FLESH_BLINK, blinkNowhere, blinkedAway, GAITS, HEADSMAN, HEADSMAN2_FIGHT, MINIFM, along, axeAt, bossKind, fireTurn, hookAt, inGap, ringHand } from '../src/game/bosses';
+import { HEADSMAN2 } from '../src/art/headsman2';
+
+// (THE HEADSMAN MADE NEW has a fight of his own, held in tests/headsman2_rules.test.ts: this file holds the first Headsman's)
+HEADSMAN2_FIGHT.on = false;
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LIFE, BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
 import { ACT1_FLOORS } from '../src/game/act1';
@@ -856,7 +860,8 @@ test('10. their sizes, as the game goes by them, held against their pictures', (
   }
   // (and the bestiary lets go of one, and makes it again)
   const hs = art.of('headsman');
-  assert.ok(art.left(['headsman']) > 900, 'every frame of him to paint');
+  // (the new Headsman, with HEADSMAN2 on, has fewer: 836 frames)
+  assert.ok(art.left(['headsman']) > (HEADSMAN2.on ? 800 : 900), 'every frame of him to paint');
   art.forget('headsman');
   assert.ok(art.of('headsman') !== hs, 'forgotten, he is made again when asked for');
 });
