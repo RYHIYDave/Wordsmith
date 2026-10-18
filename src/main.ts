@@ -2,6 +2,7 @@
 // interface together.
 
 import { actsOf } from './game/bosses';
+import { DOOR_WALLS } from './render/walls';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
@@ -1970,6 +1971,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   }
   const dbg = {
     game: () => game,
+    /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
+    doorWalls: (on: boolean, near = false) => {
+      DOOR_WALLS.on = on;
+      DOOR_WALLS.near = near;
+    },
     /** ACT 1 (and the bosses of floors 2 to 5): the acts one of them has (game/bosses.ts), for the playtests that have it make one over and over. */
     actsOf: (m: { kind: MonsterKind }) => actsOf(m),
     /** The hero who has been picked and is making ready on their card (see `entering`), or null: a playtest that picks a class waits for them to have gone. */
