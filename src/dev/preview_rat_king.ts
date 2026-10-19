@@ -166,8 +166,8 @@ if (mode === 'sheet') {
     const long = which === 'die' ? ratKingLong('dying') : ratKingLong(which);
     return m < 0 || (which !== 'die' && m > long) ? HF('stand', 0, view) : HF(which, Math.min(long, m), view);
   };
-  const paneW = 260 * S;
-  const paneH = 160 * S;
+  const paneW = 330 * S;
+  const paneH = 200 * S;
   cv.width = paneW * 2 + 30;
   cv.height = paneH + 56;
   const draw = (tick: number): void => {

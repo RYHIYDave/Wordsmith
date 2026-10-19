@@ -13,7 +13,7 @@
 //   with the Silent Order's black cord (the Order's leash on it); the King the biggest, on top of the heap, a jar's
 //   broken neck of green glass jammed on its head for a crown; all of them bloated on the voices they drank, eyes
 //   burning the cult's pink. Not gory: fat, sleek, wet rats.
-// - how big: a heap more than two tiles across, its King's head at the knight's chest; heavy and squirming.
+// - how big: a heap near three tiles across, the King on top as high as the knight's head; heavy and squirming.
 // - how it moves: never still, every rat pulling its own way; it scuttles as one, the front ones hauling, the back ones
 //   scrabbling backward after.
 // - its moves: THE BITE (the front rats rear up, mouths wide, trembling, then the heap surges and they snap down
@@ -109,15 +109,15 @@ const FREED = ['#7a7468', '#a49c8c', '#cec6b2', '#e8e2d2', '#f6f2e6'];
 // ITS TIMES AND ITS SIZE
 
 /** Its canvas, and its floor point on it (picture pixels). */
-export const RK_CANVAS = { w: 480, h: 340, ax: 240, ay: 236 };
-const RK_AURA = { x: RK_CANVAS.ax, y: RK_CANVAS.ay - 40, r: 80, color: '#ff3a78', a: 0.1 };
+export const RK_CANVAS = { w: 600, h: 430, ax: 300, ay: 296 };
+const RK_AURA = { x: RK_CANVAS.ax, y: RK_CANVAS.ay - 50, r: 100, color: '#ff3a78', a: 0.1 };
 /** Its stand: a loop of 3.0 s, fifteen frames a second. */
 export const RK_STAND = { frames: 45, fps: 15, period: 3.0 } as const;
 /** How fast it scuttles (tiles a second), and its scurry: a round of 0.25 s, six frames, painted for that pace. */
 export const RK_PACE = 1.2;
 export const RK_WALK = { frames: 6, fps: 24, period: 0.25 } as const;
 /** THE BITE: bunched back and the front ones rearing (the warning, `warn`), the heap surging, the snap at `hit`, held a tenth. */
-export const RK_BITE = { long: 1.36, warn: [0.16, 0.38], hit: 0.66, freeze: 0.1, surge: 14, fps: 30 } as const;
+export const RK_BITE = { long: 1.36, warn: [0.16, 0.38], hit: 0.66, freeze: 0.1, surge: 17, fps: 30 } as const;
 /** Struck. */
 export const RK_REEL = { long: 0.4, fps: 30 } as const;
 /**
@@ -147,7 +147,7 @@ interface RatRest {
   seed: number;
 }
 /** How big its rats are against a common sewer rat's measure: swollen. */
-const SC = 1.6;
+const SC = 2.0;
 /** THE HEAP AT REST: seven on the floor in a ring, three climbing over the knot, and the King on top, facing forward. */
 const RATS: RatRest[] = (() => {
   const out: RatRest[] = [];
@@ -466,7 +466,7 @@ function mixRat(a: RatPose, b: RatPose, k: number): RatPose {
 // --- THE ROLL ---
 /** The ball of rats: its rats' backs out, tails in to its middle; its radius to their backs; how high its middle rides (a little over that, their heads and ears tucked under them). */
 const BALL_R = 14.5 * SC;
-const BALL_Z = BALL_R + 2;
+const BALL_Z = BALL_R + 1.6 * SC;
 /** Each rat's place on the ball: a spread of directions (a golden spiral), and the way it lies along the ball. */
 const BALL_AT: V3[] = RATS.map((_, i) => {
   const n = RATS.length;
@@ -605,7 +605,7 @@ function wordsPose(t: number): KingPose {
 // --- ITS DEATH ---
 /** Where the King's crown comes to lie, on its side, its rim's half-height up. */
 const CROWN_REST: V3 = [26, -20, 0];
-const CROWN_LIE = 2.6 * 1.32 * SC + 0.8;
+const CROWN_LIE = (2.6 + 0.55) * 1.32 * SC + 0.4;
 function dyingPose(t0: number): KingPose {
   const Dd = RK_DIE;
   const t = Math.min(t0, Dd.still);
@@ -634,7 +634,7 @@ function dyingPose(t0: number): KingPose {
     if (d <= 0) return lain;
     const r = running(R, d, { gone: Math.max(sm((d - 30) / 30), sm((t - Dd.gone[0] - hash(R.seed, 2, 6131) * 0.2) / 0.3)), belly: thin, gape: 0.4, eyes: 0, tailFree: 1 });
     // (turning from where it lay into its run over a few frames)
-    return mixRat(lain, r, sm((t - startOf(R)) / 0.2));
+    return { ...mixRat(lain, r, sm((t - startOf(R)) / 0.2)), feet: r.feet };
   });
   // THE CROWN knocked off the King's head: flung, bouncing, lying
   let crownAt: V3 | null = null;
@@ -861,7 +861,7 @@ function knotBits(put: Put, K: KingPose): void {
   if (K.cordAt === 'snapped') {
     const q = cl01((K.cordT ?? 0) / 0.3);
     for (const sd of [1, -1]) {
-      const end: V3 = [sd * 18 * SC * 0.6, -sd * 6, 0.6];
+      const end: V3 = [sd * 18 * SC * 0.6, -sd * 6, 0.6 * SC + 0.1];
       const at = add(lerpV(c, end, q), [0, 0, 8 * 4 * q * (1 - q)]);
       for (let j = 0; j < 7; j++) {
         const a = j * 0.9 + sd;

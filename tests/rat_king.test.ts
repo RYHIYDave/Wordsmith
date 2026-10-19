@@ -6,7 +6,7 @@
 //   - the switch off, nothing of the game importing it;
 //   - crisp pixels; the pink edge while it lives; nothing cyan; every light the enemy's; its eyes burning while it
 //     lives; nothing cut off at its canvas's edge;
-//   - its size: its King's head about the knight's chest (he is 58 tall);
+//   - its size: its King's head about the knight's head (he is 58 tall);
 //   - FLOOR: nothing of it below the floor;
 //   - SLIDE: a foot that is down stays where it came down (scuttling, the floor going by under it at its pace); its
 //     ball rolls without sliding at the pace it is painted for;
@@ -177,7 +177,7 @@ test('nothing cyan, every light the enemy\'s, its eyes burning while it lives, a
   }
 });
 
-test('its size: a heap more than two tiles across, its King\'s head about the knight\'s chest (he is 58 tall)', () => {
+test('its size: a heap near three tiles across, the King on top as high as the knight\'s head (he is 58 tall)', () => {
   let top = 0;
   let wide = 0;
   for (const b of solids('stand', 0)) {
@@ -185,8 +185,8 @@ test('its size: a heap more than two tiles across, its King\'s head about the kn
     const c = centreOf(b.shape);
     wide = Math.max(wide, Math.hypot(c[0], c[1]));
   }
-  assert.ok(top > 34 && top < 52, `its top ${top.toFixed(1)} up`);
-  assert.ok(wide > 1.0 * TILE3 && wide < 1.5 * TILE3, `out to ${(wide / TILE3).toFixed(2)} tiles from its middle`);
+  assert.ok(top > 46 && top < 66, `its top ${top.toFixed(1)} up`);
+  assert.ok(wide > 1.25 * TILE3 && wide < 1.9 * TILE3, `out to ${(wide / TILE3).toFixed(2)} tiles from its middle`);
 });
 
 test('FLOOR: nothing of it below the floor, in any frame of any move, its death too, from in front or behind', () => {
@@ -238,7 +238,8 @@ test('SLIDE: a foot that is down stays where it came down, in every move; scuttl
 test('JERK: nothing leaps from one frame to the next in any move; its stand, scuttle and roll close their loops', () => {
   // (how far a solid's middle may move in a thirtieth of a second, by move: its feet and legs; the rest of it. Its
   // scuttle patters fast; its bite snaps; rolling, its rats are carried round the ball; unknotting and knotting, they run)
-  const limit: Record<string, [number, number]> = { stand: [1.5, 2.2], walk: [10, 4], attack: [10, 11], reel: [4, 5], curl: [10, 9], roll: [9, 9], uncurl: [10, 9], unknot: [13, 14], knot: [13, 14], words: [4, 6], dying: [13, 10] };
+  // (all of it half as big again as a sewer rat is, and twice: a step a quarter longer than for one its size)
+  const limit: Record<string, [number, number]> = { stand: [1.9, 2.8], walk: [12.5, 5], attack: [12.5, 14], reel: [5, 6.3], curl: [12.5, 11.3], roll: [11.3, 11.3], uncurl: [12.5, 11.3], unknot: [16, 17.5], knot: [16, 17.5], words: [5, 7.5], dying: [16, 12.5] };
   const leg = (x: Solid): boolean => /^(foreleg|hindleg|paw)$/.test(x.piece);
   for (const [move, long] of LONG) {
     const [lg, rs] = limit[move];
