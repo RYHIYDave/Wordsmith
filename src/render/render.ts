@@ -65,7 +65,9 @@ import type { Kick } from './dress';
 import { FloorPieces } from './pieces';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
-import { OutdoorGround, PIECE as GROUND_PIECE } from './outdoor';
+import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
+// (ACT 2, THE GATE WARD: its houses walked into, whole until he is in one, and its traps by their beat)
+import { HouseShells, trapSprite } from './act2_houses';
 import { Act1Pieces, SEE_TALL } from './act1_pieces';
 import { TOPS_CACHE, TopsCache } from './tops_cache';
 import type { CachedTree, Chunk } from './tops_cache';
@@ -405,6 +407,8 @@ export class Renderer {
   /** (and each floor's own pieces, and what stands on its tops: render/act1_pieces.ts) */
   readonly act1 = new Act1Pieces();
   private act1Dressed = false;
+  /** (ACT 2, THE GATE WARD: the shells of its houses walked into, faded while the hero is in one: render/act2_houses.ts) */
+  readonly houses = new HouseShells(() => this.painter);
   /** (and whether this frame shows the open ground, or the hall inside a stronghold, which is drawn as a dungeon's room) */
   private openGround = false;
 
@@ -2082,6 +2086,8 @@ export class Renderer {
       this.outdoor.draw(g, cam, W, H, fresh);
       if (this.act1Dressed) this.act1.floorTiles(g, this.floorAt, W, H);
     }
+    // (ACT 2, THE GATE WARD: its houses' shells asked for once a floor, or painted here where there is no worker)
+    this.houses.begin(land && !hallNow ? land : null, f, land ? () => gateWardLand(land, f) : null, this.outdoor.terrain(), t);
 
     // ---- floor, and collect walls -------------------------------------------------------------
     this.pitTiles.length = 0;
@@ -2236,10 +2242,11 @@ export class Renderer {
       // (ACT 1, THE DESCENT: the floor's own pieces that stand, and its breakables whole; the tall seen through while someone is behind them)
       if (this.act1Dressed && (p.kind === 'piece' || p.kind === 'barrel' || p.kind === 'urn')) {
         if (this.act1.lies(p) || p.state === 1 && p.kind !== 'piece') continue;
-        const a = this.act1.sprite(p, t);
+        // (ACT 2, THE GATE WARD: a trap of its own by its beat; nothing in a house standing whole gives light out of it)
+        const a = trapSprite(L, p, game.time, (n) => this.act1.piece(n)) ?? this.act1.sprite(p, t);
         if (a) {
           this.stand(p.x + p.y, a, sx, sy, null, 0, 1, a.h >= SEE_TALL ? this.seeThrough(a, sx, sy, p.x + p.y, heroX, heroY, h.x + h.y) : veil(a, sx, sy, p.x + p.y));
-          if (a.lights) this.propLit.push({ s: a, x: Math.round(sx), y: Math.round(sy) });
+          if (a.lights && !this.houses.hides(p.x, p.y)) this.propLit.push({ s: a, x: Math.round(sx), y: Math.round(sy) });
         }
         continue;
       }
@@ -2704,6 +2711,8 @@ export class Renderer {
 
     // (THE FOREST AS A FEW PICTURES: a chunk that something comes between, or that is seen through, drawn as its trees after all)
     this.resolveTops();
+    // (ACT 2, THE GATE WARD: each house walked into whole over what stands in it, under what stands outside, faded while he is in it)
+    this.houses.lay(stands, cam.ox, cam.oy, h.x, h.y, t, (d, s, x, y, a) => this.stand(d, s, x, y, null, 0, 1, a));
     stands.sort((a, b) => a.d - b.d || a.q - b.q);
     fx.heroShape = null;
     let cut = false;

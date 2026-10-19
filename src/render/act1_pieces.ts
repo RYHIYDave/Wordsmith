@@ -258,6 +258,10 @@ export class Act1Pieces {
             else if (roll < 0.105) pick = { name: 'red boulder', frame: Math.floor(k * 3), hw: 20 };
             else if (roll < 0.112) pick = { name: 'dead juniper', frame: 0, hw: 20 };
             else if (roll < 0.118) pick = { name: 'hoodoo', frame: Math.floor(k * 3), hw: 16, tall: true };
+          } else if (n === 11) {
+            // (ACT 2, THE GATE WARD: chimneys on the roofs, as the art chat's dev page stands them, src/dev/preview_gateward.ts; clear
+            // of the floor, so never on the roof of a house walked into, which the ground has open)
+            if (roll < 0.022) pick = { name: 'chimney', frame: k < 0.5 ? 0 : 1, hw: 12 };
           }
           if (!pick) continue;
           const sp = P(pick.name, pick.frame);

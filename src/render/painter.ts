@@ -38,7 +38,9 @@ import type { ClassId } from '../game/types';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
-import { PIECE, landTerrain } from './outdoor';
+import { PIECE, gateWardLand, landTerrain } from './outdoor';
+// (ACT 2, THE GATE WARD: the shells of its houses walked into, painted here: render/act2_houses.ts)
+import { shellMaker } from './act2_houses';
 import { releaseSprite } from '../engine/px';
 import type { Light, Sprite } from '../engine/px';
 
@@ -82,6 +84,8 @@ type Ask =
   // ACT 1: a floor's outdoor ground (render/outdoor.ts): the floor to paint it from, then its pieces as they are wanted
   | { t: 'ground'; id: number; floor: Floor; land: Land }
   | { t: 'piece'; id: number; i: number; j: number; pri: number }
+  // (ACT 2, THE GATE WARD: the shells of a floor's houses walked into, a house at a time: render/act2_houses.ts)
+  | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number }
   // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
   | { t: 'hero'; cls: ClassId; place: 'town' | 'dungeon'; pri: number };
 /** What a worker tells the page. */
@@ -90,6 +94,8 @@ type Tell =
   | { t: 'frames'; figure: MonsterFigure; list: Given[]; left: number }
   | { t: 'film'; key: string; film: unknown; ms: number }
   | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number }
+  // (ACT 2, THE GATE WARD: one house's shell, or `n` -1: they could not be painted)
+  | { t: 'shell'; id: number; n: number; x0: number; y0: number; w: number; h: number; bmp: ImageBitmap | null; ms: number; last: boolean }
   | { t: 'heroFrames'; cls: ClassId; place: 'town' | 'dungeon'; list: Given[]; left: number }
   | { t: 'fail'; what: string; why: string };
 
@@ -145,6 +151,8 @@ export class Painter {
   private ground = 0;
   private grounds = 0;
   toGround: ((id: number, i: number, j: number, bmp: ImageBitmap, ms: number) => void) | null = null;
+  /** (ACT 2, THE GATE WARD) Who is told of each house's shell as it comes (render/act2_houses.ts), for the floor of that number. */
+  private toShells: { id: number; took: (n: number, sh: { x0: number; y0: number; w: number; h: number }, bmp: ImageBitmap | null) => void } | null = null;
   /**
    * THE HERO'S PICTURES, painted ahead by the same worker (the ground's: it is kept for the whole game). `toHero` takes in
    * each frame as it comes (render/render.ts): true if it was wanted. `heroAsked`: what has been asked of it.
@@ -341,6 +349,24 @@ export class Painter {
     return this.sideFigures.get(figure)?.left ?? 0;
   }
 
+  /**
+   * ACT 2, THE GATE WARD: the shells of a floor's houses walked into (render/act2_houses.ts) painted by the ground's worker, a
+   * house at a time between the ground's pieces, each handed to `took` as it comes (`n` -1: they cannot be). False: there is no
+   * ground's worker (the page paints them itself).
+   */
+  shells(id: number, land: Land, floor: Floor, took: (n: number, sh: { x0: number; y0: number; w: number; h: number }, bmp: ImageBitmap | null) => void): boolean {
+    if (!this.warmGround() || !this.groundLane) return false;
+    try {
+      this.groundLane.worker.postMessage({ t: 'shells', id, floor, land, pri: 2 } satisfies Ask);
+    } catch (err) {
+      this.fail('ground', err);
+      return false;
+    }
+    this.groundLane.open++;
+    this.toShells = { id, took };
+    return true;
+  }
+
   /** ACT 1: the ground's worker is up and painting (until it is, a floor's ground is painted by the game, a little each frame, as before). */
   groundReady(): boolean {
     return this.state === 'on' && !!this.groundLane && this.groundLane.ready;
@@ -364,6 +390,13 @@ export class Painter {
       lane.open = Math.max(0, lane.open - 1);
       if (this.groundLane === lane && m.id === this.ground && this.toGround) this.toGround(m.id, m.i, m.j, m.bmp, m.ms);
       else m.bmp.close();
+      return;
+    }
+    if (m.t === 'shell') {
+      if (m.last || m.n < 0) lane.open = Math.max(0, lane.open - 1);
+      const to = this.groundLane === lane && this.toShells && this.toShells.id === m.id ? this.toShells : null;
+      if (to) to.took(m.n, m, m.bmp);
+      else m.bmp?.close();
       return;
     }
     if (m.t === 'frames') {
@@ -496,6 +529,10 @@ export class Painter {
     }
     if (m.t === 'heroFrames') {
       for (const g of m.list) if (g.s) (g.s.img as unknown as ImageBitmap).close();
+      return;
+    }
+    if (m.t === 'shell') {
+      m.bmp?.close();
       return;
     }
     // (a film that could not be made is done without; a worker that cannot paint at all is no painter)
@@ -696,8 +733,25 @@ export function paintWorkerMain(): void {
   const jobs: Job[] = [];
   let seq = 0;
   let going = false;
-  /** ACT 1: the floor whose ground this worker paints, and its terrain. */
-  let ground: { id: number; T: Terrain } | null = null;
+  /** ACT 1: the floor whose ground this worker paints, and its terrain (and which floor it is: ACT 2, for the Gate Ward's shells). */
+  let ground: { id: number; T: Terrain; key: string } | null = null;
+  const keyOf = (land: Land, floor: Floor): string => `${land.kind}:${land.depth}:${land.seed}:${floor.w}x${floor.h}`;
+
+  /** (ACT 2, THE GATE WARD) A floor's houses' shells, a house a step, each handed over as it is painted (render/act2_houses.ts). */
+  function* shells(ask: { id: number; floor: Floor; land: Land }): Generator<void, void, void> {
+    const open = ground && ground.key === keyOf(ask.land, ask.floor) ? ground.T : landTerrain(ask.land, ask.floor);
+    const mk = shellMaker(gateWardLand(ask.land, ask.floor), open);
+    if (mk.count === 0) scope.postMessage({ t: 'shell', id: ask.id, n: -1, x0: 0, y0: 0, w: 0, h: 0, bmp: null, ms: 0, last: true });
+    for (let n = 0; n < mk.count; n++) {
+      yield;
+      const t0 = performance.now();
+      const sh = mk.make(n);
+      const cv = new OffscreenCanvas(sh.w, sh.h);
+      (cv.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(sh.rgba, sh.w, sh.h), 0, 0);
+      const bmp = cv.transferToImageBitmap();
+      scope.postMessage({ t: 'shell', id: ask.id, n, x0: sh.x0, y0: sh.y0, w: sh.w, h: sh.h, bmp, ms: performance.now() - t0, last: n === mk.count - 1 }, [bmp]);
+    }
+  }
   /** The heroes' pictures, made here as the page makes them (art/heroes3.ts), the first time they are asked for. */
   let heroArt: ReturnType<typeof makeHeroArt3> | null = null;
 
@@ -799,6 +853,9 @@ export function paintWorkerMain(): void {
       } else if (job.ask.t === 'hero') {
         job.run ??= hero(job.ask.cls, job.ask.place);
         if (job.run.next().done) done();
+      } else if (job.ask.t === 'shells') {
+        job.run ??= shells(job.ask);
+        if (job.run.next().done) done();
       } else if (job.ask.t === 'film') {
         done();
         const t0 = performance.now();
@@ -813,7 +870,9 @@ export function paintWorkerMain(): void {
       }
     } catch (err) {
       if (jobs.includes(job)) done();
-      scope.postMessage({ t: 'fail', what: job.ask.t === 'film' ? `film ${job.ask.key}` : job.ask.t === 'piece' ? 'ground' : job.ask.t === 'hero' ? `hero ${job.ask.cls}` : `mob ${job.ask.figure}`, why: err instanceof Error ? `${err.message}` : String(err) });
+      // (ACT 2: the Gate Ward's shells that cannot be painted here are the page's to paint)
+      if (job.ask.t === 'shells') scope.postMessage({ t: 'shell', id: job.ask.id, n: -1, x0: 0, y0: 0, w: 0, h: 0, bmp: null, ms: 0, last: true });
+      else scope.postMessage({ t: 'fail', what: job.ask.t === 'film' ? `film ${job.ask.key}` : job.ask.t === 'piece' ? 'ground' : job.ask.t === 'hero' ? `hero ${job.ask.cls}` : `mob ${job.ask.figure}`, why: err instanceof Error ? `${err.message}` : String(err) });
     }
     again();
   };
@@ -823,7 +882,7 @@ export function paintWorkerMain(): void {
     if (ask.t === 'ground') {
       // (a new floor: its terrain made once here, as the page makes its own; the last floor's pieces still asked for are not wanted)
       try {
-        ground = { id: ask.id, T: landTerrain(ask.land, ask.floor) };
+        ground = { id: ask.id, T: landTerrain(ask.land, ask.floor), key: keyOf(ask.land, ask.floor) };
       } catch (err) {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }
