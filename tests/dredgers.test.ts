@@ -2,7 +2,7 @@
 // moves). A MOCK-UP: NOT IN THE GAME, behind DREDGERS_ON, off. Their brief is this chat's, on his word of 18 Oct
 // (“Hey go without my say so.  If something is shit I’ll get it to it but you’re doing a great jobs. At least for
 // 11-15”), sent him with their films. Held as the Hushed watch are (tests/hushed_watch.test.ts):
-//   1. the switch is off, and nothing of the game imports them;
+//   1. in the game through art/act1_figs/dredger.ts alone (behind ACT2), their switch thrown with the acts' figures;
 //   2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), every frame, from in front and from
 //      behind, and every handover: nothing through them, the boathook too; feet that grip; nothing in the floor;
 //      nothing jerky; the blow drawn back, held and carried through, hips first; alive when still;
@@ -28,6 +28,7 @@ import nodePath from 'node:path';
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
 import { DREDGER_CANVAS, DREDGERS_ON } from '../src/art/dredgers';
 import { DREDGER, DR_DIES, DR_HAUL, DR_SHAPE } from '../src/art/dredgers_moves';
+import { FIG as FIG_DR } from '../src/art/act1_figs/dredger';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { FLAME, ENEMY_RIM } from '../src/art/mkit';
@@ -91,14 +92,17 @@ for (const mob of ALL) {
 }
 const said = (_mob: Mob, move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(2)}`;
 
-test('1. the switch is off, and nothing of the game imports them', () => {
-  assert.equal(DREDGERS_ON.on, false, 'DREDGERS_ON is off');
+// (ACT 2, THE HUSH, IN THE GAME behind ACT2 (game/act1.ts, off): no longer a mock-up nothing imports. The game holds their
+// pictures through art/act1_figs/dredger.ts alone, and their switch is one the bestiary throws with the acts' figures, as the
+// descent's are, art/bestiary.ts useAct1Figs.)
+test('1. in the game through art/act1_figs/dredger.ts alone, their switch thrown with the acts\' figures', () => {
+  assert.ok(FIG_DR !== null && (FIG_DR.switches ?? []).includes(DREDGERS_ON), 'their switch is one the bestiary throws');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/dredgers(_moves)?\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/dredgers(_moves)?\.ts$/.test(f) || f === 'art/act1_figs/dredger.ts') continue;
     if (/from ['"][^'"]*dredgers(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
-  assert.equal(users.join(' '), '', 'game files that import them');
+  assert.equal(users.join(' '), '', 'other game files that import them');
 });
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover, both of them', () => {

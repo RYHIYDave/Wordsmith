@@ -536,8 +536,8 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   scribe: { kind: 'scribe', name: 'Silent Scribe', life: 15, dmgMin: 5, dmgMax: 8, speed: 1.0, radius: 0.3, range: 6.5, windup: 19 / 30, cooldown: 2.6, xp: 9, ranged: true, projSpeed: 0, keepMax: 4.5, element: 'phys', aoe: 0.62, minDepth: 99, weight: 0, size: 'small' },
   hound: { kind: 'hound', name: 'Mute Hound', life: 15, dmgMin: 5, dmgMax: 8, speed: 2.4, radius: 0.3, range: 1.15, windup: 0.6, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   // FLOOR 12, THE UNDERCITY: the King's rats, tiny (a bite: as the rubbling); the Order's dredgers, medium (the hook: as the cliff crawler).
-  rat: { kind: 'rat', name: "King's Rat", life: 7, dmgMin: 3, dmgMax: 5, speed: 1.8, radius: 0.22, range: 0.8, windup: 0.4, cooldown: 1.3, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
-  dredger: { kind: 'dredger', name: 'Dredger', life: 40, dmgMin: 10, dmgMax: 15, speed: 0.9, radius: 0.42, range: 1.9, windup: 0.7, cooldown: 2.0, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  rat: { kind: 'rat', name: "King's Rat", life: 7, dmgMin: 3, dmgMax: 5, speed: 2.8, radius: 0.22, range: 1.45, windup: 0.5, cooldown: 1.3, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' }, // (ACT 2, THE HUSH: its scurry's pace, RAT_PACE, so its feet do not slide; its leap and bite's reach and moment: game/act1_rules/rat.ts)
+  dredger: { kind: 'dredger', name: 'Dredger', life: 40, dmgMin: 10, dmgMax: 15, speed: 0.85, radius: 0.42, range: 2.5, windup: 22 / 30, cooldown: 2.0, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' }, // (ACT 2, THE HUSH: their wade's pace, DR_PACE; their hook's reach and its thrust's moment: game/act1_rules/dredger.ts)
   // FLOOR 13, THE MILLRACE: the Hushed working the fields, small (the sickle: as the townsfolk); the Order's carters, medium (the lash: as the crawler, a longer reach).
   // (as built, game/act1_rules/fieldhand.ts and carter.ts: each wind-up the moment its picture's blow lands, FH_SLASH.hit and
   // CT_WHIP.hit; each reach its picture's, the sickle about 1.1 tiles, the lash 2.65; the carters at their trudge's pace, CT_PACE.
@@ -554,7 +554,7 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // march's pace, CR_PACE 1.7), the Rat King, the Palimpsest, the Physician, and the Censor, the lair boss (a fifth floor's, doubled as
   // the Eye is: Game.spawn, `greater`). As the descent's bosses, a little more.
   crier: { kind: 'crier', name: 'The Crier', life: 460, dmgMin: 20, dmgMax: 28, speed: 1.7, radius: 0.6, range: 2.2, windup: 0.72, cooldown: 1.9, xp: 380, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
-  ratking: { kind: 'ratking', name: 'The Rat King', life: 460, dmgMin: 19, dmgMax: 27, speed: 1.2, radius: 1.2, range: 2.0, windup: 0.66, cooldown: 1.8, xp: 390, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  ratking: { kind: 'ratking', name: 'The Rat King', life: 460, dmgMin: 19, dmgMax: 27, speed: 1.2, radius: 1.2, range: 2.5, windup: 0.66, cooldown: 1.8, xp: 390, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' }, // (ACT 2, THE HUSH: his bite's reach, the front rats' jaws: game/act1_rules/ratking.ts)
   palimpsest: { kind: 'palimpsest', name: 'The Palimpsest', life: 520, dmgMin: 22, dmgMax: 30, speed: 0.8, radius: 0.9, range: 2.6, windup: 0.9, cooldown: 2.3, xp: 400, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   physician: { kind: 'physician', name: 'The Physician', life: 460, dmgMin: 20, dmgMax: 28, speed: 1.0, radius: 0.5, range: 2.2, windup: 0.6, cooldown: 1.9, xp: 410, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
@@ -970,6 +970,9 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   // (ACT 2, THE HUSH: the Palimpsest has a page for a face and no mouth, the Order's bar of ink across where one would be:
   // its line is the rustle of its wet pages as it heaves up, a hush; words of no one's)
   palimpsest: ['Shhhhhhhhh...', 'Rrrrsssshhhh...', 'Sssshhhh.'],
+  // (ACT 2, THE HUSH: the Rat King, "squeaking in a hundred stolen voices" (his doc): the voices it drank, the Crier's the first
+  // the Order took, squeaking through it; the planning chat's helper's lines, for his yes with the pictures)
+  ratking: ['Hear ye! Hear ye! ...Squeak!', "Who's there? Who's there? Who's there?", 'A hundred voices. Yours makes a hundred and one.'],
 };
 
 /**

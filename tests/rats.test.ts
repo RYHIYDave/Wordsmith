@@ -2,7 +2,7 @@
 // brief is this chat's, on his word of 18 Oct (“Hey go without my say so.  If something is shit I’ll get it to it but
 // you’re doing a great jobs. At least for 11-15”), sent him with their films. Held to his art rulebook before he sees
 // them, in every frame of every move, from in front and from behind, as the hounds are (tests/hounds.test.ts):
-//   - the switch off, nothing of the game importing it;
+//   - in the game through art/act1_figs/rat.ts alone (behind ACT2), its switch thrown with the acts' figures;
 //   - crisp pixels; the pink edge while it lives; nothing cyan; every light the enemy's; its eyes burning while it
 //     lives; nothing cut off at its canvas's edge;
 //   - its size: small (the knight is 58 tall), about a tile long without its tail;
@@ -26,6 +26,7 @@ import * as nodeFs from 'node:fs';
 
 import { RATS_ON, RAT_BITE, RAT_DIE, RAT_LOOK, RAT_PACE, RAT_STAND, RAT_WALK, makeRatArt, ratGrains, ratLong, ratPainted, ratPose, ratSolids } from '../src/art/rats';
 import { TILE3 } from '../src/art/new_mobs3';
+import { FIG as FIG_RAT } from '../src/art/act1_figs/rat';
 import { RIM_ALPHA } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
@@ -118,14 +119,17 @@ function hue(r: number, g: number, b: number): [number, number] {
   return [(h + 360) % 360, (max - min) / max];
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(RATS_ON.on, false, 'RATS_ON is off');
+// (ACT 2, THE HUSH, IN THE GAME behind ACT2 (game/act1.ts, off): no longer a mock-up nothing imports. The game holds their
+// pictures through art/act1_figs/rat.ts alone, and their switch is one the bestiary throws with the acts' figures, as the
+// descent's are, art/bestiary.ts useAct1Figs.)
+test('in the game through art/act1_figs/rat.ts alone, its switch thrown with the acts\' figures', () => {
+  assert.ok(FIG_RAT !== null && (FIG_RAT.switches ?? []).includes(RATS_ON), 'its switch is one the bestiary throws');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/rats.ts') continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/rats.ts' || f === 'art/act1_figs/rat.ts') continue;
     if (/from ['"][^'"]*\/rats['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
-  assert.equal(users.join(' '), '', 'game files that import it');
+  assert.equal(users.join(' '), '', 'other game files that import it');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge); its pink edge round it while it lives', () => {
