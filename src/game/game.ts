@@ -22,6 +22,8 @@ import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, gaitOf } from './bosses';
 import { ACT1, act2Floor, lastFloor } from './act1';
+import { ACT2_GUARD, act2Pack } from './act2_mobs';
+import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import { act1Rules, act1Ward } from './act1_rules/index';
 import { blobDist } from './act1_layout';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
@@ -1177,6 +1179,8 @@ export class Game {
     this.spawnMonsters(seed);
     // (ACT 1: the strongholds, and their guards before their doors)
     this.holdsMade(seed);
+    // (ACT 2, THE HUSH: its Bells, asleep, where its map-maker laid them)
+    this.bellsMade();
     if (this.depth === 1 && this.cleared === 0) {
       // (THE WAYS: the first floor may be come back to before it is cleared, through its gate from
       // town; the fallen wordsmith, once searched, is laid there searched: nothing more comes of him)
@@ -1552,6 +1556,7 @@ export class Game {
     this.updateDoors(dt);
     this.meetOutdoorBoss();
     if (this.level.holds) this.updateHolds();
+    if (this.level.bells) this.updateBells(dt);
     // (THE WAYS: and where a way out of it has been taken, the rest is the next level's, from its next step)
     if (this.level.ways && this.updateWays(dt)) return;
     this.updateHazards(dt);
@@ -2160,6 +2165,174 @@ export class Game {
     this.bossMet = true;
     if (b.state === 'sleep') this.wakeUp(b);
     if (BOSS_INTRO.on) this.bossIntro(b);
+  }
+
+  // ===========================================================================================
+  // ACT 2, THE HUSH: THE BELLS (game/bells.ts: his design, the planning chat's picks, and their numbers)
+
+  /** The level's Bells as they stand at first, asleep, where its map-maker and dresser laid them (none: no Bells here). */
+  private bellsMade(): void {
+    const L = this.level;
+    const B = act2Floor(this.depth) ? makeBells(L) : null;
+    if (B) L.bells = B;
+    else delete L.bells;
+  }
+
+  /** A hit of the hero's at (x, y), `rad` its reach: struck, the Muffled Bell starts the Hush; a bell awake rings. */
+  private bellsStruck(x: number, y: number, rad: number): void {
+    const B = this.level.bells;
+    if (!B || B.phase === 'won' || B.phase === 'lost') return;
+    const near = (p: { x: number; y: number }): boolean => Math.hypot(p.x - x, p.y - y) <= rad + BELLS_TUNE.strike;
+    if (B.phase === 'asleep') {
+      if (near(B.plan.muffled)) this.bellsStart();
+      return;
+    }
+    for (let i = 0; i < B.plan.bells.length; i++) if (!B.rung[i] && near(B.plan.bells[i])) this.bellRung(i);
+  }
+
+  /** The Muffled Bell struck: its gag torn off, the Hush pours out of it over its ground, and every bell wakes. The clock begins. */
+  private bellsStart(): void {
+    const L = this.level;
+    const B = L.bells;
+    if (!B || B.phase !== 'asleep') return;
+    B.phase = 'on';
+    B.t = 0;
+    B.next = 1.5;
+    if (B.muffled >= 0) L.props[B.muffled].state = 1;
+    for (const k of B.props) if (k >= 0) L.props[k].state = 1;
+    const n = B.plan.bells.length;
+    this.emit({ t: 'bells', what: 'start', x: B.plan.muffled.x, y: B.plan.muffled.y, n });
+    this.sfx('bossRoar', 0.5);
+    this.msg(`The Hush pours out of the Muffled Bell. Ring the ${n} bells before it is too late!`, MSG.omen);
+  }
+
+  /** Bell `i` rung: it knocks back what is near it, chips the Hush back round it, and a tough one comes at it (or, the last, the Hush shatters). */
+  private bellRung(i: number): void {
+    const L = this.level;
+    const B = L.bells;
+    if (!B || B.phase !== 'on' || B.rung[i]) return;
+    B.rung[i] = true;
+    const b = B.plan.bells[i];
+    if (B.props[i] >= 0) L.props[B.props[i]].state = 2;
+    const k = B.rung.filter(Boolean).length;
+    const n = B.rung.length;
+    // (the ring knocks back what is near it: shoved out from the bell, a moment staggered)
+    for (const m of this.monsters) {
+      if (m.dead || m.boss) continue;
+      const dx = m.x - b.x;
+      const dy = m.y - b.y;
+      const d = Math.hypot(dx, dy);
+      if (d > BELLS_TUNE.knockR) continue;
+      const ux = d > 0.01 ? dx / d : 1;
+      const uy = d > 0.01 ? dy / d : 0;
+      const grid = m.kind === 'bat' ? L.open : L.walk;
+      for (let s = 0; s < 6; s++) this.slide(m, Math.min(m.r, 0.42), (ux * BELLS_TUNE.knock) / 6, (uy * BELLS_TUNE.knock) / 6, grid);
+      m.staggerT = Math.max(m.staggerT, 0.45);
+    }
+    chipAt(B, L, b.x, b.y);
+    this.emit({ t: 'bells', what: 'ring', x: b.x, y: b.y, k, n });
+    this.sfx('portal', 0.7);
+    if (k >= n) {
+      this.bellsWon();
+      return;
+    }
+    this.msg(`A bell rings: ${k} of ${n}.`, MSG.word);
+    this.bellTough(b.x, b.y, k);
+  }
+
+  /** The tough one a bell's ringing calls (his 05:28): a yellow pack's leader of the floor's medium kind, tougher for each bell rung before. */
+  private bellTough(x: number, y: number, k: number): void {
+    const L = this.level;
+    const B = L.bells;
+    if (!B) return;
+    const rng = new RNG((Math.imul(this.seed, 31) + k * 7919 + this.depth * 104729 + B.risen) >>> 0);
+    const own = ACT2_GUARD[act2Floor(this.depth)] ?? 'watch';
+    const kind: MonsterKind = act1Ready(own) ? own : act1Ready('hushed') ? 'hushed' : 'dagger';
+    const at = scatter(L.walk, L.floor.w, L.floor.h, x, y + 1, 1, rng)[0] ?? { x, y: y + 1 };
+    const words = this.bareDungeon() ? [] : this.drawWords(rng, k >= 3 ? 2 : 1);
+    const m = this.spawn(this.leaderOf(kind), at.x, at.y, BELLS_TOUGH_ID(k), 1, false, rng, null, { rarity: 'leader', words });
+    m.life = m.maxLife = Math.round(m.maxLife * (1 + BELLS_TUNE.tough * (k - 1)));
+    m.state = 'chase';
+    B.ids.push(m.id);
+    this.emit({ t: 'bells', what: 'rise', x: m.x, y: m.y });
+  }
+
+  /** All rung in time: every bell peals at once, the Hush shatters (what it raised falls), and the Muffled Bell bursts in a big loot explosion. */
+  private bellsWon(): void {
+    const L = this.level;
+    const B = L.bells;
+    if (!B) return;
+    B.phase = 'won';
+    B.since = 0;
+    for (const k of B.props) if (k >= 0) L.props[k].state = 2;
+    // (what the Hush raised goes down with it: the Hush leaves them, and what each would drop it drops)
+    for (const id of B.ids) {
+      const m = this.monsters.find((o) => o.id === id && !o.dead);
+      if (m) this.damageMonster(m, m.life + m.shield + 1, 'phys', false, -1);
+    }
+    const at = { x: B.plan.muffled.x, y: B.plan.muffled.y + 1 };
+    const n = B.plan.bells.length;
+    if (MELD.on) this.addDrop('dust', at.x, at.y, Math.round((BELLS_TUNE.dust + Math.floor(n / 2)) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
+    for (let i = 0; i < n; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i < 2 ? 4 : 2), null);
+    this.addDrop('gold', at.x, at.y, this.rng.int(BELLS_TUNE.gold, BELLS_TUNE.gold * 2) * Math.max(1, this.depth) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
+    if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word)) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(WORD_IDS));
+    this.emit({ t: 'bells', what: 'won', x: B.plan.muffled.x, y: B.plan.muffled.y, n });
+    this.sfx('rare');
+    this.msg('Every bell peals at once. The Hush shatters!', MSG.good);
+  }
+
+  /** The clock run out: the Hush lifts with no explosion; what the enemies dropped is kept, and those still up fight on. */
+  private bellsLost(): void {
+    const L = this.level;
+    const B = L.bells;
+    if (!B) return;
+    B.phase = 'lost';
+    B.since = 0;
+    B.plan.bells.forEach((_, i) => {
+      if (!B.rung[i] && B.props[i] >= 0) L.props[B.props[i]].state = 0;
+    });
+    this.emit({ t: 'bells', what: 'lost', x: B.plan.muffled.x, y: B.plan.muffled.y });
+    this.msg('The Hush lifts. The bells fall silent.', MSG.foe);
+  }
+
+  /** The Bells, a step: the clock, and the Hush raising more and more of the floor's own the longer it lasts (his 05:27 and 05:31). */
+  private updateBells(dt: number): void {
+    const L = this.level;
+    const B = L.bells;
+    if (!B) return;
+    if (B.phase === 'won' || B.phase === 'lost') {
+      B.since += dt;
+      return;
+    }
+    if (B.phase !== 'on' || this.over) return;
+    B.t += dt;
+    if (B.t >= B.limit) {
+      this.bellsLost();
+      return;
+    }
+    if (B.t < B.next) return;
+    B.next = B.t + gapAt(B.t);
+    B.ids = B.ids.filter((id) => this.monsters.some((m) => m.id === id && !m.dead));
+    const room = BELLS_TUNE.most - B.ids.length;
+    if (room <= 0) return;
+    const rng = new RNG((Math.imul(this.seed, 131) + Math.floor(B.t * 10) * 7919 + B.risen * 104729) >>> 0);
+    const h = this.hero;
+    const at = riseSpot(B, L, h.x, h.y, rng);
+    if (!at) return;
+    const want = Math.min(room, sizeAt(B.t));
+    const kind = act2Pack(this.depth, rng, 'normal').kind;
+    const spots = scatter(L.walk, L.floor.w, L.floor.h, at.x, at.y, want, rng);
+    const more = 1 + BELLS_TUNE.lifeRamp * B.t;
+    const pack = BELLS_PACK_ID(B.risen);
+    for (const s of spots) {
+      if (!inHush(B, L.floor.w, s.x, s.y)) continue;
+      const m = this.spawn(kind, s.x, s.y, pack, 0, false, rng);
+      m.life = m.maxLife = Math.round(m.maxLife * more);
+      m.state = 'chase';
+      B.ids.push(m.id);
+      B.risen++;
+      this.emit({ t: 'bells', what: 'rise', x: m.x, y: m.y });
+    }
   }
 
   // ===========================================================================================
@@ -6752,6 +6925,8 @@ export class Game {
   /** `skill`: the ability whose hit it is (THE TRAPS: a sealed door in reach opens to one that carries its word: `unseal`). */
   private breakProps(x: number, y: number, rad: number, skill = -1): void {
     this.unseal(skill, x, y, rad);
+    // (ACT 2, THE BELLS: a hit at a bell rings it; at the Muffled Bell, it starts the Hush)
+    if (this.level.bells) this.bellsStruck(x, y, rad);
     const f = this.level.floor;
     for (const p of this.level.props) {
       if (p.state !== 0 || (p.kind !== 'barrel' && p.kind !== 'urn')) continue;

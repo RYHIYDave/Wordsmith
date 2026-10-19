@@ -11,6 +11,7 @@ import type { Ways } from './ways';
 import type { Dress } from './first5';
 import type { Land } from './act1_layout';
 import type { HoldState } from './act1_holds';
+import type { BellsState } from './bells';
 import type { Act1Dress } from './act1_dress';
 
 /** Everything worked out from class, level, attributes and gear. Rebuilt whenever one of those changes. */
@@ -944,6 +945,8 @@ export interface Level {
   act1?: Act1Dress;
   /** ACT 1: the cult's strongholds on it, as they stand now (game/act1_holds.ts), each as Land.holds has it. */
   holds?: HoldState[];
+  /** ACT 2, THE HUSH: its Bells as they stand now (game/bells.ts), where Land.bells laid them. */
+  bells?: BellsState;
 }
 
 /** Things that happened this frame, for the renderer and the sound system. */
@@ -969,6 +972,12 @@ export type GameEvent =
   | { t: 'worded'; word: WordId; name: string; skill: number; side: 'front' | 'behind' }
   /** ACT 2, THE HUSH: the hero's words go dark (`on`), or come back (Game.hush). */
   | { t: 'hushed'; on: boolean }
+  /**
+   * ACT 2, THE BELLS (game/bells.ts): the Muffled Bell struck, the Hush pouring out of it ('start'); a bell rung, the `k`th of
+   * `n` ('ring'); one of the Hush risen out of it ('rise'); all rung in time, the Hush shattering and the Muffled Bell bursting
+   * ('won'); the clock run out, the Hush lifting ('lost').
+   */
+  | { t: 'bells'; what: 'start' | 'ring' | 'rise' | 'won' | 'lost'; x: number; y: number; k?: number; n?: number }
   /** A word was burned into a piece of gear, and this is what it became. */
   | { t: 'burned'; word: WordId; item: string; text: string }
   /** A word has dropped on the floor / has been picked up. */
