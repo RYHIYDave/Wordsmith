@@ -840,8 +840,9 @@ export class Renderer {
     for (const z of L.hazards) {
       const s = z.spot;
       if (s.kind === 'spikes') {
-        // (ACT 2, THE HUSH: its traps' own sprung pictures are the whole of them, no iron spikes: render/act1_pieces.ts ownSprung)
-        if (this.act1Dressed && this.act1.ownSprung()) continue;
+        // (ACT 2, THE HUSH: its traps' own sprung pictures are the whole of them, no iron spikes: render/act1_pieces.ts ownSprung;
+        // and a trap with a picture of its own, the flood or the slick: trapOf)
+        if (this.act1Dressed && (this.act1.ownSprung() || this.act1.trapOf(s, 'down', 0) !== undefined)) continue;
         const k = Math.round(spikeHeight(s, game.time) * SPIKE_STEPS);
         if (k <= 0) continue;
         const sp = A.spike(k);
@@ -1524,6 +1525,12 @@ export class Renderer {
       // (ACT 1: the floor's own trap, its frames by its beat: render/act1_pieces.ts)
       if (this.act1Dressed && s.kind === 'spikes') {
         const at = trapAt(s, game.time);
+        // (ACT 2, THE HUSH: a trap its floor's dresser laid with a picture of its own, drawn once where it stands: render/act1_pieces.ts trapOf)
+        const own = this.act1.trapOf(s, at.at, at.k ?? 0);
+        if (own !== undefined) {
+          if (own) g.drawImage(own.sp.img, Math.round(wx(cam, own.x, own.y)) - own.sp.ax, Math.round(wy(cam, own.x, own.y)) - own.sp.ay, own.sp.w, own.sp.h);
+          continue;
+        }
         const sp = this.act1.trapFrame(at.at === 'warn' ? 'warn' : at.at === 'down' ? 'down' : 'up', at.at === 'up' ? Math.min(1, at.k ?? 1) : 0);
         if (sp) for (let ty = s.y; ty < s.y + s.h; ty++) for (let tx = s.x; tx < s.x + s.w; tx++) g.drawImage(sp.img, Math.round(wx(cam, tx, ty)) - sp.ax, Math.round(wy(cam, tx, ty)) - sp.ay, sp.w, sp.h);
         continue;
