@@ -35,6 +35,8 @@ import { ACT1_SETS, CAMP } from '../game/act1_dress';
 import type { Act1Dress, Act1Tile } from '../game/act1_dress';
 import type { Land } from '../game/act1_layout';
 import type { Level, PropInst } from '../game/state';
+import { SPIKE, SPIKE_BEAT, spikeAt } from '../game/traps';
+import type { HazardSpot } from '../game/types';
 import { PINE_PATH, laneDist } from '../game/act1_layout';
 import { PIECE } from './outdoor';
 
@@ -67,6 +69,19 @@ const MOVING = new Set(["the cult's watchfire", "the cult's cauldron", "the cult
 const LOOP_FPS = 8;
 /** What is seen through while someone is behind it: anything this tall (game pixels), as the planning chat's rule has it. */
 export const SEE_TALL = 44;
+/**
+ * (ACT 2, THE HUSH: THE MILLRACE'S TRAPS THAT STAND, game/act2/millrace.ts: their pictures stand in depth where they are, not
+ * laid on the floor as the descent's are, and go by the beat of their trap, the spike floor's, game/traps.ts. The stamping
+ * mill, the art's four frames: at rest while it is down, its hammers lifted high through the warning, falling as it strikes
+ * and then struck (art/floor13.ts). The water wheel turns with its race, a quarter of a paddle a frame at WHEEL_FPS (a
+ * paddle a half second, a turn eight seconds), and through its trap's warning and blow it thrashes round WHEEL_RUSH times
+ * as fast, the paddles striking the strip beside it.)
+ */
+const STANDING_TRAPS = new Set(['the water wheel', 'the stamping mill']);
+const WHEEL_FPS = 8;
+const WHEEL_RUSH = 3;
+/** (ACT 2, THE HUSH) The pieces the art drew a picture of their own for being seen through, and which of their frames it is: the Millrace's drying lines, the sheets half there (art/floor13.ts). */
+const SEEN_FRAME: Readonly<Record<string, number>> = { 'drying lines': 1 };
 
 /** A thing on the tops: where (world, at the floor's level under it), its picture, how far up it is drawn (game pixels), its shadow. */
 export interface Top {
@@ -85,6 +100,8 @@ export class Act1Pieces {
   private tiles = new Map<number, Act1Tile>();
   private tops = new Map<number, Top[]>();
   private land: Land | null = null;
+  /** (ACT 2) A standing trap's own trap (its hazard), found the first time it is drawn. */
+  private beatOf = new Map<PropInst, HazardSpot | null>();
 
   /** This frame's level: its pieces looked up anew when it is another than last time's. */
   begin(L: Level): boolean {
@@ -94,6 +111,8 @@ export class Act1Pieces {
     this.land = L.land ?? null;
     this.tiles.clear();
     this.tops.clear();
+    this.beatOf.clear();
+    this.stands.clear();
     if (!this.dress) {
       this.map = null;
       return false;
@@ -123,8 +142,8 @@ export class Act1Pieces {
     }
   }
 
-  /** The picture of one of the floor's props at time `t` (a piece by its name; a barrel or urn as the floor's breakables); undefined: not one of the floor's. */
-  sprite(p: PropInst, t: number): Sprite | null | undefined {
+  /** The picture of one of the floor's props at time `t` (a piece by its name; a barrel or urn as the floor's breakables); undefined: not one of the floor's. (ACT 2: `now`, the game's clock, for a trap that stands.) */
+  sprite(p: PropInst, t: number, now = t): Sprite | null | undefined {
     if (!this.dress) return undefined;
     if (p.kind === 'barrel' || p.kind === 'urn') {
       const set = ACT1_SETS[this.dress.floor];
@@ -140,7 +159,53 @@ export class Act1Pieces {
     if (p.name === "the redoubt's gatehouse") return p.state === 1 ? fr[4] ?? fr[0] : fr[Math.floor(t * 6) % 4];
     if (p.name === "the waystation's gate") return fr[(p.state === 1 ? 1 : 0) + (p.variant & 1 ? 2 : 0)] ?? fr[0];
     if (MOVING.has(p.name)) return fr[(Math.floor(t * LOOP_FPS) + p.variant) % fr.length];
+    if (STANDING_TRAPS.has(p.name)) return this.standingTrap(p, fr, now);
     return fr[p.variant % fr.length];
+  }
+
+  /** (ACT 2, THE HUSH) Whether a spike floor's patch is the trap of a piece that stands (STANDING_TRAPS): it strikes in that picture, and the game's own spikes do not come up out of it (render.ts standHazards). */
+  standsFor(h: HazardSpot): boolean {
+    let v = this.stands.get(h);
+    if (v === undefined) {
+      v = !!this.level?.props.some((p) => p.kind === 'piece' && !!p.name && STANDING_TRAPS.has(p.name) && trapOf(p, h));
+      this.stands.set(h, v);
+    }
+    return v;
+  }
+  private stands = new Map<HazardSpot, boolean>();
+
+  /** (ACT 2, THE HUSH) A piece's own picture for being seen through (SEEN_FRAME), or null: drawn whole in place of it while someone is behind it. */
+  seenOf(p: PropInst): Sprite | null {
+    if (p.kind !== 'piece' || !p.name) return null;
+    const k = SEEN_FRAME[p.name];
+    return k === undefined ? null : this.piece(p.name)?.frames?.[k] ?? null;
+  }
+
+  /**
+   * (ACT 2, THE HUSH) A trap that stands, its frame by its trap's beat (STANDING_TRAPS): its trap the hazard under it or beside
+   * it. The wheel: its variant 4 looking along +x (0 along +y), and 8 more turning back (its race running toward -y).
+   */
+  private standingTrap(p: PropInst, fr: readonly Sprite[], now: number): Sprite {
+    let s = this.beatOf.get(p);
+    if (s === undefined) {
+      s = this.level?.floor.hazards?.find((h) => trapOf(p, h)) ?? null;
+      this.beatOf.set(p, s);
+    }
+    if (p.name === 'the stamping mill') {
+      if (!s) return fr[0];
+      const at = spikeAt(s, now);
+      return at.at === 'down' ? fr[0] : at.at === 'warn' ? fr[1] ?? fr[0] : fr[at.k < 0.12 ? 2 : 3] ?? fr[0];
+    }
+    // (the wheel: how far round it has come, its rushes through each beat's warning and blow added on)
+    let turned = now * WHEEL_FPS;
+    if (s) {
+      const u = now + (s.phase ?? 0);
+      const beats = Math.floor(u / SPIKE_BEAT);
+      const into = Math.max(0, u - beats * SPIKE_BEAT - SPIKE.down);
+      turned += (WHEEL_RUSH - 1) * WHEEL_FPS * (beats * (SPIKE.warn + SPIKE.up) + into);
+    }
+    const k = ((Math.floor(turned) % 4) + 4) % 4;
+    return fr[(p.variant & 4) + (p.variant & 8 ? 3 - k : k)] ?? fr[0];
   }
 
   /** Whether a prop of the floor's lies flat (drawn with what lies on the floor, before everything that stands). */
@@ -345,6 +410,11 @@ export class Act1Pieces {
 /** The fen's open water is dressed on its mock-up's grid, 30 by 26 picture pixels, sparser than the 24 by 18 the tops are laid on: one spot in this many kept. */
 function fenSpot(gx: number, gy: number): boolean {
   return hashOf(gx, gy, 7) < (24 * 18) / (30 * 26);
+}
+
+/** (ACT 2) Is a spike floor's patch the trap of a piece that stands: under it, or beside it (the wheel's, on the strip by it)? */
+function trapOf(p: PropInst, h: HazardSpot): boolean {
+  return p.tx >= h.x - 1 && p.tx <= h.x + h.w && p.ty >= h.y - 1 && p.ty <= h.y + h.h;
 }
 
 function hashOf(x: number, y: number, k: number): number {
