@@ -6,7 +6,9 @@
 // (art/stairwell_open.ts), the cage coming down the mine shaft and the ride up (art/shaft.ts). The art
 // chat's makers make each the first time it is asked for and keep it. Here each has a key:
 //   moments:<floor>            floors 1 to 3: all three of the floor's moments (they are made together)
-//   moment:<floor>:<n>         floors 4 and 5: one of the floor's moments
+//   moment:<floor>:<n>         floors 4 and 5: one of the floor's moments; ACT 2, THE HUSH: floors 11 to 15, their one
+//                              moment each (art/floor11_moments.ts to floor15_moments.ts), n 0: where game/act2_moments.ts
+//                              lays it, played by render/act1_pieces.ts
 //   stair:<floor>:<way>:<x>:<y>  the stairwell's opening on that floor, its steps going down toward +x
 //                              or +y, its anchor on tile (x, y)
 //   shaft:down, shaft:up       the cage coming down as the Fleshmancer dies; the ride up to town
@@ -23,6 +25,11 @@ import { headsmanMoments } from './floor2';
 import { chainedMoments } from './floor3';
 import { ossuaryMoment } from './floor4';
 import { lairMoment } from './floor5_moments';
+import { gateWardMoments } from './floor11_moments';
+import { undercityMoments } from './floor12_moments';
+import { millraceMoments } from './floor13_moments';
+import { houseOfQuietMoments } from './floor14_moments';
+import { greatLibraryMoments } from './floor15_moments';
 import type { Moment } from './floorkit';
 import { LAIR } from './lair';
 import { cageDown, cageUp } from './shaft';
@@ -72,11 +79,18 @@ function momentsOf(floor: number): Moment[] | null {
   return floor === 1 ? wardenMoments() : floor === 2 ? headsmanMoments() : floor === 3 ? chainedMoments() : null;
 }
 
-/** The keys of a floor's moments' films: one for all three (floors 1 to 3), or one each (4 and 5). */
+/** The keys of a floor's moments' films: one for all three (floors 1 to 3), or one each (4 and 5); (ACT 2, THE HUSH) floors 11 to 15 their one. */
 export function momentKeys(floor: number): string[] {
   if (floor >= 1 && floor <= 3) return [`moments:${floor}`];
   if (floor === 4 || floor === 5) return [0, 1, 2].map((n) => `moment:${floor}:${n}`);
+  if (floor >= 11 && floor <= 15) return [`moment:${floor}:0`];
   return [];
+}
+
+/** (ACT 2, THE HUSH) Floor 11 to 15's moment: the one the art chat made for it (its maker keeps it once made). */
+function hushMoment(floor: number): Moment | null {
+  const list = floor === 11 ? gateWardMoments() : floor === 12 ? undercityMoments() : floor === 13 ? millraceMoments() : floor === 14 ? houseOfQuietMoments() : floor === 15 ? greatLibraryMoments() : null;
+  return list?.[0] ?? null;
 }
 
 /**
@@ -87,6 +101,11 @@ export function momentKeys(floor: number): string[] {
 export function filmRoom(key: string): number {
   const [kind, a, b] = key.split(':');
   if (kind === 'moments') return a === '1' ? 57 : a === '2' ? 71 : 16;
+  // (ACT 2, THE HUSH: floors 11 to 15's, measured 19 Oct 2026, every picture of the film as it is kept, its width by its height
+  // by four, as src/dev/measure_first5.ts measures (here in node, tests/helpers.ts paintWithoutCanvas): the pigeons 46.1 MB, the
+  // surge 25.1, the whirl of pages 47.2, the screen 3.7, the chandelier 13.6 (each frame is cut down as it is made, so near what it
+  // takes while it is made); each a little over; all under a phone's 100, render/painter.ts SMALL_ROOM)
+  if (kind === 'moment' && Number(a) >= 11) return [47, 26, 48, 4, 14][Number(a) - 11] ?? 50;
   if (kind === 'moment') return a === '4' ? [147, 154, 63][Number(b)] ?? 150 : [88, 48, 52][Number(b)] ?? 90;
   if (kind === 'stair') return 26;
   if (kind === 'things') return 12;
@@ -111,6 +130,9 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     const n = Number(b);
     if (floor === 4) return plain(ossuaryMoment(n));
     if (floor === 5) return plain(lairMoment(n));
+    // (ACT 2, THE HUSH: floors 11 to 15, their one moment each)
+    const hush = n === 0 ? hushMoment(floor) : null;
+    if (hush) return plain(hush);
     throw new Error(`no film ${key}`);
   }
   if (kind === 'stair') {

@@ -418,7 +418,8 @@ export class Renderer {
 
   /** The kicks of the screen this frame's films ask for (main.ts kicks it, and sounds a blow for each). */
   kicks(): Kick[] {
-    return [...this.dress.kicks(), ...this.pieces.kicks()];
+    // (ACT 2, THE HUSH: and its floor's moment's: render/act1_pieces.ts)
+    return [...this.dress.kicks(), ...this.pieces.kicks(), ...this.act1.kicks()];
   }
   /** The place whose first drawing has been used to paint frames ahead (see heroArt). */
   private warmedFor: unknown = null;
@@ -2102,6 +2103,8 @@ export class Renderer {
     const hallNow = land ? land.holds.find((q) => h.x >= q.inside.x - 1 && h.y >= q.inside.y - 1 && h.x <= q.inside.x + q.inside.w + 1 && h.y <= q.inside.y + q.inside.h + 1) ?? null : null;
     this.openGround = !!land && !hallNow;
     this.act1Dressed = this.act1.begin(L);
+    // (ACT 2, THE HUSH: a step of its floor's moment around the hero: render/act1_pieces.ts)
+    if (this.act1Dressed) this.act1.stepMoments(game, this.painter);
     if (land && !hallNow) {
       const fresh = this.outdoor.begin(land, f);
       this.outdoor.draw(g, cam, W, H, fresh);
@@ -2313,6 +2316,19 @@ export class Renderer {
     if (L.ways) this.standWays(L, t, game.time);
     if (L.ways) this.dress.standing(game, this.stage);
     if (this.dressed) this.pieces.standMoments(game, this.stage);
+    // (ACT 2, THE HUSH: its floor's moment around the hero, in depth at its anchor or over every figure, the surge shown over its
+    // channel's run alone; its candles' light, and the chandelier drawn again over that light while it hangs and falls, as the
+    // Meldstone is, so that its own eighteen flames do not wash it out (the wreck's two left burning do not): render/act1_pieces.ts)
+    if (this.act1Dressed) {
+      this.act1.standMoments(game, this.painter, cam, W, H, (d, s, x, y, columns) => {
+        if (columns) this.stands.push({ d, q: this.stands.length, s, x, y, over: null, overA: 0, scale: 1, alpha: 1, figure: null, phase: 0, clip0: columns[0], clip1: columns[1] });
+        else this.stand(d, s, x, y);
+        if (s.lights) {
+          this.propLit.push({ s, x, y });
+          if (s.lights.length > 4) this.overLit.push({ d, s, x, y, scale: 1 });
+        }
+      });
+    }
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
       const lift = NAME_LIFT[st.kind];
