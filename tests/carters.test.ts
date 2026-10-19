@@ -2,7 +2,7 @@
 // moves). A MOCK-UP: NOT IN THE GAME, behind CARTERS_ON, off. Their brief is this chat's, on his word of 18 Oct (“Hey go
 // without my say so.  If something is shit I’ll get it to it but you’re doing a great jobs. At least for 11-15”), sent
 // him with their films. Held as floor 12's dredgers are (tests/dredgers.test.ts):
-//   1. the switch is off, and nothing of the game imports them;
+//   1. the switch is off by itself, and of the game only their figure imports them (in the game with the Hush, ACT2);
 //   2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), every frame, from in front and from
 //      behind, and every handover: nothing through them, the whip too; feet that grip; nothing in the floor; nothing
 //      jerky; the crack drawn back, held and carried through, hips first; alive when still;
@@ -90,14 +90,23 @@ for (const mob of ALL) {
 }
 const said = (_mob: Mob, move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(2)}`;
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+// (IN THE GAME WITH THE HUSH, ACT 2 (game/act1.ts ACT2, off until his yes), since the planning chat's helper built floor 13's
+// kinds, 19 Oct 2026: through art/act1_figs/carter.ts alone, their pictures as the game holds a monster; its switch goes on
+// with the descent's figures there, art/bestiary.ts useAct1Figs; until then a mock-up nothing of the game imported, its
+// switch off. Off by itself here, where nothing of the game is loaded.)
+test('1. the switch is off by itself, and of the game only their figure imports them', () => {
   assert.equal(CARTERS_ON.on, false, 'CARTERS_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/carters(_moves)?\.ts$/.test(f)) continue;
-    if (/from ['"][^'"]*carters(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (/^art\/carters(_moves)?$/.test(parts.join('/'))) users.push(f);
+    }
   }
-  assert.equal(users.join(' '), '', 'game files that import them');
+  assert.equal([...new Set(users)].join(' '), 'art/act1_figs/carter.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover, both of them', () => {

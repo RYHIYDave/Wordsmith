@@ -30,7 +30,7 @@
 //     skeleton, yellow sparks off armour.
 // Nothing here changes the game.
 
-import { figureOf } from '../art/bestiary';
+import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE } from '../art/kit';
 import { BLOOD as M_BLOOD, FLESH, FUR, GLOOM, IRON } from '../art/mkit';
@@ -325,7 +325,8 @@ export class Wild {
   /** What flies off what was hit at (x, y), struck the way `a` (radians, in the world) with `force` (1 a blow of Strike, less an arrow). */
   private debris(x: number, y: number, a: number, force: number): void {
     const figure = this.figureAt(x, y);
-    const matter = figure ? MATTER[figure] : { bits: [P.st6, P.st5], sparks: false, blood: false, dust: true };
+    // (ACT 2, THE HUSH: one of a kind's other looks, '<kind>:<form>', of its kind's matter)
+    const matter = figure ? MATTER[baseFigure(figure)] : { bits: [P.st6, P.st5], sparks: false, blood: false, dust: true };
     const n = Math.round(11 * force);
     for (let i = 0; i < n; i++) {
       // (most of it flung on the way the blow went, the rest anywhere; chips big enough to see)

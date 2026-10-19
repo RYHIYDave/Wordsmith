@@ -24,7 +24,7 @@
 //   Poison     venom      a sour green spatter; what it touches bubbles and sickens, and its
 //                         numbers keep coming.   Behind: a cloud of it hangs over the floor.
 
-import { figureOf } from '../art/bestiary';
+import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE, INDIGO, PINK, PLUM, TEAL } from '../art/kit';
 import { BLOOD as M_BLOOD, FLAME as M_FLAME, FLESH, FUR, GLOOM, GORE, IRON, WING } from '../art/mkit';
@@ -1551,7 +1551,8 @@ export class Fx {
           break;
         }
         case 'die': {
-          const colors = DEATH_COLORS[figureOf(e)];
+          // (ACT 2, THE HUSH: one of a kind's other looks, '<kind>:<form>', in its kind's colours)
+          const colors = DEATH_COLORS[baseFigure(figureOf(e))];
           // (it falls as its figure falls, facing the way it was; the renderer leaves it out if its figure has no death)
           this.fallen.push({ figure: figureOf(e), x: e.x, y: e.y, back: e.fx + e.fy < -0.2, flip: e.fx - e.fy < 0, t: 0 });
           if (this.fallen.length > MAX_FALLEN) this.fallen.shift();

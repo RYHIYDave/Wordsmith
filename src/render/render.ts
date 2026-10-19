@@ -72,6 +72,7 @@ import type { CachedTree, Chunk } from './tops_cache';
 import { RES } from '../engine/screen';
 import type { Terrain } from '../art/terrain';
 import { act1Fx } from './act1_fx/index';
+import { act1Stages } from '../art/act1_figs/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
 import { redoubtGround } from '../art/redoubt';
@@ -1892,6 +1893,13 @@ export class Renderer {
       if (f === 'chained' && this.painter && !this.painter.small) wanted.push('chained2');
       for (const w of wanted) if (!this.painter || !this.painter.mob(w)) heavy.push(w);
       const past: MonsterFigure[] = f === 'chained1' ? ['chained'] : f === 'chained2' ? ['chained', 'chained1'] : [];
+      // (ACT 2, THE HUSH: one whose looks are stages it goes through, the Palimpsest more torn as its life runs down,
+      // art/act1_figs/types.ts `staged`: its next painted ahead too; those it has gone past, never shown again, let go of)
+      const stages = act1Stages(f);
+      if (stages) {
+        for (const w of stages.next as MonsterFigure[]) if (!this.painter || !this.painter.mob(w)) heavy.push(w);
+        past.push(...(stages.past as MonsterFigure[]));
+      }
       for (const w of past) {
         this.painter?.done(w);
         this.art.bestiary.forget(w);
