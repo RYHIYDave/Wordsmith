@@ -35,7 +35,9 @@
 import { RNG } from '../engine/rng';
 import { act1Def } from './act1';
 import { act1Pack } from './act1_mobs';
-import type { LandKind } from './act1';
+import { isAct2Land } from './act1';
+import type { Act1LandKind, LandKind } from './act1';
+import type { Act2Land } from './act2_types';
 import { CUT_FAR, CUT_LEFT, CUT_NEAR, CUT_RIGHT, T_FLOOR, T_PIT, T_WALL } from './types';
 import type { Floor, MonsterKind, PackSpot, PropSpot, Room, RoomKind } from './types';
 
@@ -145,7 +147,8 @@ export interface Bridge {
   alongX: boolean;
 }
 
-export interface Land {
+/** (ACT 2, THE HUSH: what only its floors have, game/act2_types.ts) */
+export interface Land extends Act2Land {
   kind: LandKind;
   depth: number;
   seed: number;
@@ -192,7 +195,7 @@ const OPTIONS: [number, (u: number, v: number) => boolean][] = [
 ];
 
 /** Lay tiles from a shape; `whole` says where a tile must be whole floor (a bridge, a yard), `never` where it must be rock. */
-function layTiles(w: number, h: number, inside: (x: number, y: number) => boolean, whole: (tx: number, ty: number) => boolean, never: (tx: number, ty: number) => boolean, maybe: Uint8Array): { tiles: Uint8Array; cut: Uint8Array } {
+export function layTiles(w: number, h: number, inside: (x: number, y: number) => boolean, whole: (tx: number, ty: number) => boolean, never: (tx: number, ty: number) => boolean, maybe: Uint8Array): { tiles: Uint8Array; cut: Uint8Array } {
   const tiles = new Uint8Array(w * h).fill(T_WALL);
   const cut = new Uint8Array(w * h);
   const sub = new Uint8Array(SUB * SUB);
@@ -233,7 +236,7 @@ function layTiles(w: number, h: number, inside: (x: number, y: number) => boolea
 }
 
 /** Whole floor tiles reached from tile `from` by side steps (cut tiles count as floor if `cuts`). */
-function reach(w: number, h: number, tiles: Uint8Array, cut: Uint8Array, from: number, cuts: boolean): Uint8Array {
+export function reach(w: number, h: number, tiles: Uint8Array, cut: Uint8Array, from: number, cuts: boolean): Uint8Array {
   const seen = new Uint8Array(w * h);
   const q = [from];
   seen[from] = 1;
@@ -391,7 +394,7 @@ function growSide(rng: RNG, plan: Plan, role: AreaRole, size: { rx: number; ry: 
 // THE FIVE FLOORS' PLANS
 
 /** The sizes of each floor's areas (tiles, half-widths), by role. */
-function sizer(kind: LandKind): (rng: RNG, role: AreaRole) => { rx: number; ry: number; wob: number } {
+function sizer(kind: Act1LandKind): (rng: RNG, role: AreaRole) => { rx: number; ry: number; wob: number } {
   return (rng, role) => {
     const r = (a: number, b: number): number => rng.range(a, b);
     switch (kind) {
@@ -421,9 +424,9 @@ export const PINE_PATH = { on: true, w: 4.6, clear: 7 };
  * 17 Oct 2026, the owner after playing them, 11:37: "The levels are very short in 6-7 so far"; "8-10 need to be
  * significantly longer as well". (They were: the Quarry 6, the Ledge Road 9 legs, Echo Canyon 8, the Pinewood 6, the Fen 9.)
  */
-export const CHAIN: Record<LandKind, number> = { quarry: 10, ledge: 15, canyon: 14, pine: 11, fen: 16 };
+export const CHAIN: Record<Act1LandKind, number> = { quarry: 10, ledge: 15, canyon: 14, pine: 11, fen: 16 };
 
-function planFor(kind: LandKind, rng: RNG): Plan | null {
+function planFor(kind: Act1LandKind, rng: RNG): Plan | null {
   const size = sizer(kind);
   // which way the floor goes on the screen (the game's own sense of it: across, or up)
   const across = rng.chance(0.5) ? LEFT : RIGHT;
@@ -556,7 +559,7 @@ export interface Laid {
   land: Land;
 }
 
-/** Make floor `depth` (6 to 10) of the descent. */
+/** Make floor `depth` (6 to 10) of the descent (and, ACT 2, a floor of the Hush whose own map-maker is not built yet: game/act2_layout.ts). */
 export function generateAct1(depth: number, seed: number): Laid {
   const def = act1Def(depth);
   if (!def) throw new Error(`no floor of the descent at ${depth}`);
@@ -569,11 +572,13 @@ export function generateAct1(depth: number, seed: number): Laid {
 
 function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   const rng = new RNG(seed ^ 0x51ed270b);
-  const plan = planFor(kind, rng);
+  // (ACT 2: a floor of the Hush laid by this map-maker is laid as the Quarry's open areas, its own ground painted over them, and has no stronghold: its event is the Bells)
+  const pk: Act1LandKind = isAct2Land(kind) ? 'quarry' : kind;
+  const plan = planFor(pk, rng);
   if (!plan) return null;
-  const size = sizer(kind);
+  const size = sizer(pk);
   // SIDE AREAS: the strongholds (always one, never more than two: one in three floors two), a reward, a lair
-  const holds = rng.chance(0.34) ? 2 : 1;
+  const holds = isAct2Land(kind) ? 0 : rng.chance(0.34) ? 2 : 1;
   const yards: number[] = [];
   for (let n = 0; n < holds; n++) {
     // (a yard whose gate's wall looks down the screen to the left: the yard lies off its host toward lesser y, so the gate is at its far side)
@@ -856,10 +861,10 @@ function tryAct1(kind: LandKind, depth: number, seed: number): Laid | null {
   return { floor, land };
 }
 
-const tileMid = (W: number, i: number): { x: number; y: number } => ({ x: (i % W) + 0.5, y: Math.floor(i / W) + 0.5 });
+export const tileMid = (W: number, i: number): { x: number; y: number } => ({ x: (i % W) + 0.5, y: Math.floor(i / W) + 0.5 });
 
 /** The whole floor tile nearest a world point (within 8 tiles), or -1. */
-function nearestFloor(W: number, H: number, tiles: Uint8Array, cut: Uint8Array, x: number, y: number): number {
+export function nearestFloor(W: number, H: number, tiles: Uint8Array, cut: Uint8Array, x: number, y: number): number {
   let best = -1;
   let bd = Infinity;
   const cx = Math.floor(x);
@@ -881,7 +886,7 @@ function nearestFloor(W: number, H: number, tiles: Uint8Array, cut: Uint8Array, 
 }
 
 /** Is there floor within `r` tiles of tile (tx, ty)? */
-function nearFloor(W: number, H: number, tiles: Uint8Array, tx: number, ty: number, r: number): boolean {
+export function nearFloor(W: number, H: number, tiles: Uint8Array, tx: number, ty: number, r: number): boolean {
   for (let y = ty - r; y <= ty + r; y++) for (let x = tx - r; x <= tx + r; x++) if (x >= 0 && y >= 0 && x < W && y < H && tiles[y * W + x] === T_FLOOR) return true;
   return false;
 }

@@ -21,7 +21,8 @@
 // it on the cliffs: his rule) is for the eye alone: render/act1_pieces.ts lays it from the painted ground.
 
 import { RNG } from '../engine/rng';
-import { act1Floor } from './act1';
+import { act1Floor, act2Floor } from './act1';
+import { dressAct2 } from './act2_dress';
 import { blobDist, laneDist } from './act1_layout';
 import type { Land } from './act1_layout';
 import type { Level, PropInst } from './state';
@@ -112,6 +113,58 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     tile: null,
     edge: ['cattails'],
   },
+  // ACT 2, THE HUSH (game/act1.ts ACT2): the art chat's pieces (art/floor11.ts to floor15.ts, art/act2_set.ts), for the
+  // descent's own dressing while a floor of the Hush has no dresser of its own yet (game/act2/<its ground>.ts, `dress`)
+  11: {
+    things: ['market stall', 'market stall, smashed', 'handcart', 'the notice board', 'the horse trough', 'street lamp', 'rubble of the siege'],
+    big: ['the cart barricade', 'the town well', 'the festival maypole'],
+    lying: ['a shard of the dome', 'an ink spill'],
+    wallFoot: [],
+    breakables: ['barrel', 'crates'],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
+  12: {
+    things: ['a chain hoist', 'rubble of the siege'],
+    big: [],
+    lying: ['gnawed bones and rags', 'pale toadstools'],
+    wallFoot: [],
+    breakables: ['smashed voice jars', 'a crate of jars, gnawed open'],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
+  13: {
+    things: ['a scarecrow, gagged', 'a pollard willow', 'a cracked millstone', 'drying lines'],
+    big: ['a hay wain, abandoned'],
+    lying: ['sheets blown into the corn', 'spilled pulp'],
+    wallFoot: [],
+    breakables: ['stooks of corn', 'bales of rags'],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
+  14: {
+    things: ['an iron ward bed', 'a ward screen', 'a coal stove', 'a bath chair', 'a stretcher, left'],
+    big: ['the operating table'],
+    lying: [],
+    wallFoot: [],
+    breakables: ['a bedside locker', 'a hamper of soiled linen'],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
+  15: {
+    things: ['a reading desk', 'a lectern', 'library steps', 'chained books', 'a candelabrum'],
+    big: ['a book press'],
+    lying: [],
+    wallFoot: [],
+    breakables: ['a stack of books', 'a book cart'],
+    trap: null,
+    tile: null,
+    edge: [],
+  },
 };
 
 /** The set's cult camp, for every floor of the descent (art/act1_camp.ts). */
@@ -151,6 +204,11 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   const n = act1Floor(depth);
   const land = L.land;
   if (!n || !land) return null;
+  // (ACT 2, THE HUSH: a floor with a dresser of its own is dressed by it: game/act2_dress.ts)
+  if (act2Floor(depth)) {
+    const own = dressAct2(L, depth, seed);
+    if (own) return own;
+  }
   const set = ACT1_SETS[n];
   const f = L.floor;
   const W = f.w;
@@ -328,7 +386,8 @@ export function dressAct1(L: Level, depth: number, seed: number): Act1Dress | nu
   }
 
   // ---- THE CULT'S CAMP: in one of the main way's areas (not the first two), its tents, fire and crates
-  const campArea = land.areas.filter((a) => a.role === 'path' && Math.hypot(a.blob.x - f.start.x, a.blob.y - f.start.y) > 18);
+  // (ACT 2: no camp of the cult in the Hush: the descent's cult is not there)
+  const campArea = act2Floor(depth) ? [] : land.areas.filter((a) => a.role === 'path' && Math.hypot(a.blob.x - f.start.x, a.blob.y - f.start.y) > 18);
   const camp = campArea.length ? rng.pick(campArea) : null;
   // (DRESS_EDGES: a camp round its watchfire: the fire near the middle of one of those areas that has the room for it, its
   // tents and things in a ring round it, its crates and bedrolls just inside the ring; where none has, as before)

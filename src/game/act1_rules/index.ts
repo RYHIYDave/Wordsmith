@@ -24,6 +24,24 @@ import { RULES as queen } from './queen';
 import { RULES as cantor } from './cantor';
 import { RULES as stag } from './stag';
 import { RULES as eye } from './eye';
+// ACT 2, THE HUSH (game/act1.ts ACT2): the city's own, each floor's own, the five bosses
+import { RULES as hushed } from './hushed';
+import { RULES as watch } from './watch';
+import { RULES as scribe } from './scribe';
+import { RULES as hound } from './hound';
+import { RULES as rat } from './rat';
+import { RULES as dredger } from './dredger';
+import { RULES as fieldhand } from './fieldhand';
+import { RULES as carter } from './carter';
+import { RULES as patient } from './patient';
+import { RULES as orderly } from './orderly';
+import { RULES as inkling } from './inkling';
+import { RULES as bookwarden } from './bookwarden';
+import { RULES as crier } from './crier';
+import { RULES as ratking } from './ratking';
+import { RULES as palimpsest } from './palimpsest';
+import { RULES as physician } from './physician';
+import { RULES as censor } from './censor';
 
 export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>> = {
   chanter,
@@ -44,6 +62,23 @@ export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>
   cantor,
   stag,
   eye,
+  hushed,
+  watch,
+  scribe,
+  hound,
+  rat,
+  dredger,
+  fieldhand,
+  carter,
+  patient,
+  orderly,
+  inkling,
+  bookwarden,
+  crier,
+  ratking,
+  palimpsest,
+  physician,
+  censor,
 };
 
 /** The rules of a kind of the descent's own (null: not one, or not built yet). */

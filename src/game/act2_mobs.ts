@@ -1,0 +1,75 @@
+// ACT 2, THE HUSH: WHO IS ON EACH FLOOR OF IT, AND IN WHAT PACKS (game/act1_mobs.ts asks, for floors 11 to 15).
+//
+// His words to the art chat, 18 Oct 2026: 15:47 Pacific, "I’d like no not reuse any enemies from the previous act"; the same
+// minute, "So some of the new enemies can be used throughout the next 10 levels."; 15:48, "But let’s keep the acts separate".
+// So nothing of Act 1 fights here; each floor has the art chat's own for it, and the city's own (floor 11's) come again where
+// they fit: the Hushed townsfolk on every floor (his doc: "the act's common mob"), the Silent Order's scribes in the sewers
+// (his doc's floor 12: "the Hushed, the Silent Order, and things that live in the sewers") and in force in the library.
+//
+// HOW OFTEN EACH COMES (the planning chat's, as the main chat's for the descent): the floor's own most, the city's a little.
+// A lair's guardian pack is the floor's medium kind (the descent's was the brute: an Act 1 kind).
+
+import type { RNG } from '../engine/rng';
+import { act2Floor } from './act1';
+import { act1Rules } from './act1_rules/index';
+import { PACK_BY_SIZE, sizeOf } from './defs';
+import type { MonsterKind } from './types';
+
+export interface Act2Mob {
+  kind: MonsterKind;
+  weight: number;
+}
+
+export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
+  11: [
+    { kind: 'hushed', weight: 6 },
+    { kind: 'watch', weight: 4 },
+    { kind: 'scribe', weight: 3 },
+    { kind: 'hound', weight: 4 },
+  ],
+  12: [
+    { kind: 'rat', weight: 5 },
+    { kind: 'dredger', weight: 5 },
+    { kind: 'hushed', weight: 2 },
+    { kind: 'scribe', weight: 1.5 },
+  ],
+  13: [
+    { kind: 'fieldhand', weight: 6 },
+    { kind: 'carter', weight: 5 },
+    { kind: 'hushed', weight: 1 },
+  ],
+  14: [
+    { kind: 'patient', weight: 6 },
+    { kind: 'orderly', weight: 5 },
+    { kind: 'hushed', weight: 1 },
+  ],
+  15: [
+    { kind: 'inkling', weight: 6 },
+    { kind: 'bookwarden', weight: 5 },
+    { kind: 'scribe', weight: 2 },
+  ],
+};
+/** Each floor's guardian (its lair's big one and its own): its medium kind. */
+export const ACT2_GUARD: Readonly<Record<number, MonsterKind>> = { 11: 'watch', 12: 'dredger', 13: 'carter', 14: 'orderly', 15: 'bookwarden' };
+/** The tiny ones, never a yellow pack (they are not led). */
+const TINY = new Set<MonsterKind>(['rat']);
+
+/** Whether a kind of the Hush is in the game yet (its rules built: game/act1_rules/, its pictures with them). */
+export function act2Ready(k: MonsterKind): boolean {
+  return act1Rules(k) !== null;
+}
+/** What stands in for one not yet: the Hushed, once they are; until then the cult's dagger cultist (while the act is built only). */
+function standIn(k: MonsterKind): MonsterKind {
+  return act2Ready(k) ? k : act2Ready('hushed') ? 'hushed' : 'dagger';
+}
+
+/** A pack for a floor of the Hush: its kind, and how many. A lair's is its guardian's: one big one and its own. */
+export function act2Pack(depth: number, rng: RNG, tier: 'normal' | 'elite' | 'champion'): { kind: MonsterKind; size: number } {
+  const n = act2Floor(depth) || 11;
+  if (tier === 'champion') return { kind: standIn(ACT2_GUARD[n]), size: rng.int(3, 4) };
+  const list = ACT2_OWN[n].filter((m) => !(tier === 'elite' && TINY.has(m.kind)));
+  const pick = rng.weighted(list, (m) => m.weight);
+  const kind = standIn(pick.kind);
+  const [lo, hi] = PACK_BY_SIZE[sizeOf(kind)];
+  return { kind, size: rng.int(lo, hi) };
+}

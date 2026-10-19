@@ -31,7 +31,7 @@ import { beside, fromFigure, handOf } from './facing';
 import type { Game } from './game';
 import type { ActId, Monster, Peril, PerilKind } from './state';
 import type { Element, MonsterKind } from './types';
-import { ACT1 } from './act1';
+import { ACT1, ACT1_FLOORS, act2Floor } from './act1';
 import { act1Rules } from './act1_rules/index';
 
 /**
@@ -46,6 +46,11 @@ export function bossKind(depth: number): MonsterKind {
   // (ACT 1, THE DESCENT: each floor's own, once built: game/act1_rules/; until then the Warden stands in)
   if (ACT1.on && depth >= 6 && depth <= 10) {
     const k: MonsterKind = depth === 6 ? 'unfinished' : depth === 7 ? 'queen' : depth === 8 ? 'cantor' : depth === 9 ? 'stag' : 'eye';
+    return act1Rules(k) ? k : 'warden';
+  }
+  // (ACT 2, THE HUSH: each floor's own, once built, as the descent's: game/act1.ts, ACT1_FLOORS)
+  if (act2Floor(depth)) {
+    const k = ACT1_FLOORS[Math.floor(depth)].boss;
     return act1Rules(k) ? k : 'warden';
   }
   return depth === 2 ? 'headsman' : depth === 3 ? 'chained' : depth === 4 ? 'amalgam' : depth === 5 ? 'fleshmancer' : 'warden';

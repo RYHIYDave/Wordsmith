@@ -58,6 +58,7 @@ import { DOORS, doorMiddle, doorTiles } from './game/doors';
 import { WAYS, stairMiddle, topStep } from './game/ways';
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
+import { ACT2 } from './game/act1';
 import { MELD, STONE_RISE, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
@@ -1970,6 +1971,16 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   }
   const dbg = {
     game: () => game,
+    /** (ACT 2, THE HUSH, behind ACT2, game/act1.ts: off until his yes) Its switch, for the playtests and pictures; with `depth`, the hero taken there at once (floors 11 to 15). */
+    act2: (on: boolean, depth = 0) => {
+      ACT2.on = on;
+      if (game && depth) {
+        game.depth = depth;
+        game.cleared = Math.max(game.cleared, depth - 1);
+        game.wayDepth = Math.max(game.wayDepth, depth);
+        game.enterDungeon();
+      }
+    },
     /** ACT 1 (and the bosses of floors 2 to 5): the acts one of them has (game/bosses.ts), for the playtests that have it make one over and over. */
     actsOf: (m: { kind: MonsterKind }) => actsOf(m),
     /** The hero who has been picked and is making ready on their card (see `entering`), or null: a playtest that picks a class waits for them to have gone. */

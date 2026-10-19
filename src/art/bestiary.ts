@@ -39,7 +39,7 @@ import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
 import { ACT1 } from '../game/act1';
-import { ACT1_KINDS } from '../game/types';
+import { ACT1_KINDS, ACT2_KINDS } from '../game/types';
 import { ACT1_FIGS, act1Fig } from './act1_figs/index';
 
 /**
@@ -181,8 +181,26 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   cantor: { top: 70, half: 16 },
   stag: { top: 80, half: 30 },
   eye: { top: 120, half: 60 },
+  // ACT 2, THE HUSH: from the art chat's notes (the knight 58 picture pixels, 28 of the game's), until each comes in
+  hushed: { top: 28, half: 9 },
+  watch: { top: 34, half: 12 },
+  scribe: { top: 28, half: 9 },
+  hound: { top: 16, half: 12 },
+  rat: { top: 8, half: 7 },
+  dredger: { top: 28, half: 11 },
+  fieldhand: { top: 28, half: 9 },
+  carter: { top: 30, half: 11 },
+  patient: { top: 28, half: 9 },
+  orderly: { top: 32, half: 12 },
+  inkling: { top: 15, half: 9 },
+  bookwarden: { top: 32, half: 12 },
+  crier: { top: 40, half: 16 },
+  ratking: { top: 28, half: 40 },
+  palimpsest: { top: 55, half: 24 },
+  physician: { top: 35, half: 12 },
+  censor: { top: 41, half: 16 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
-  ...Object.fromEntries(ACT1_KINDS.flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
+  ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
 };
 
 export interface Bestiary {

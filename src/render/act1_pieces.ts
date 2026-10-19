@@ -22,6 +22,12 @@ import { canyonPieces } from '../art/floor8';
 import { pinewoodPieces } from '../art/floor9';
 import { fenPieces } from '../art/floor10';
 import { redoubtPieces } from '../art/redoubt';
+import { hushSetPieces } from '../art/act2_set';
+import { gateWardPieces } from '../art/floor11';
+import { undercityPieces } from '../art/floor12';
+import { millracePieces } from '../art/floor13';
+import { houseOfQuietPieces } from '../art/floor14';
+import { greatLibraryPieces } from '../art/floor15';
 import { GRAIN, clearOfFloor, fbm, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
 import type { Sprite } from '../engine/px';
@@ -37,6 +43,13 @@ const MAPS = new Map<number, Map<string, Piece>>();
 export function act1Pieces(n: number): Map<string, Piece> {
   let m = MAPS.get(n);
   if (m) return m;
+  // (ACT 2, THE HUSH: each floor's own 25 and the set's 25 of the Hush, the art chat's; nothing of the descent's camp or strongholds)
+  if (n >= 11) {
+    const own2 = n === 11 ? gateWardPieces() : n === 12 ? undercityPieces() : n === 13 ? millracePieces() : n === 14 ? houseOfQuietPieces() : greatLibraryPieces();
+    m = new Map([...hushSetPieces(), ...own2].map((p) => [p.name, p]));
+    MAPS.set(n, m);
+    return m;
+  }
   const own = n === 6 ? quarryPieces() : n === 7 ? ledgePieces() : n === 8 ? canyonPieces() : n === 9 ? pinewoodPieces() : fenPieces();
   // (the strongholds' gatehouse, court, altar, braziers and banners are the Quarry's: art/floor6.ts; the hall's, the redoubt's)
   const shared = n === 6 ? [] : quarryPieces().filter((p) => p.name.startsWith("the redoubt's") || p.name.startsWith("the court's") || p.name === 'the altar of the words' || p.name === "the cult's brazier" || p.name === "the cult's banner" || p.name === 'pine' || p.name === 'boulder');

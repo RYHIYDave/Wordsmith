@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BOSS_LIFE, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -21,7 +21,7 @@ import { LANE_HELP, STAIR_HELP, mayOverlap } from './height';
 import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, gaitOf } from './bosses';
-import { ACT1 } from './act1';
+import { ACT1, act2Floor, lastFloor } from './act1';
 import { act1Rules, act1Ward } from './act1_rules/index';
 import { blobDist } from './act1_layout';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
@@ -273,6 +273,13 @@ export class Game {
   bodySearched = false;
   /** THE WAYS (ways.ts, behind WAYS): the deepest floor whose waypoint the hero has reached, the town's waypoint warping him back to its start (0: none yet). */
   wayDepth = 0;
+  /**
+   * ACT 2, THE HUSH: THE HUSH ON THE HERO (his doc, "New for the act": "a status that darkens your words for a few seconds. Your
+   * attacks still land, without what the words add"; brought by the Crier's Silent Shout, the Physician's Tonic and the Censor):
+   * how many seconds more his words are dark (0: not hushed). While it lasts every attack is as it would be with no word in it
+   * (refresh); the words stay where they are. Laid on by `hush`.
+   */
+  hushT = 0;
   /** (BOSS_INTRO) how much longer the boss stands saying his line */
   introT = 0;
   /** (ACT 1) the stronghold whose door he is going through (game/act1_holds.ts), or -1. */
@@ -884,6 +891,21 @@ export class Game {
   }
 
   /** Rebuild everything derived from level, attributes, gear and socketed words. */
+  /**
+   * ACT 2, THE HUSH: hush the hero's words for `secs` seconds (the longer of this and what is left of one already on him). His doc:
+   * the Crier's Silent Shout, the Physician's Tonic, the Censor's; got out of by moving out of what brought it. HUSH_FOR is the
+   * planning chat's pick, told him: about 4 seconds, every word dark.
+   */
+  hush(secs: number = HUSH_FOR): void {
+    if (this.over || secs <= 0) return;
+    const was = this.hushT;
+    this.hushT = Math.max(this.hushT, secs);
+    if (was <= 0) {
+      this.refresh();
+      this.emit({ t: 'hushed', on: true });
+    }
+  }
+
   refresh(): void {
     const h = this.hero;
     h.d = derive(h.cls, h.level, h.attrs, h.gear, this.meta.limit, talentMods(h.cls, h.talents));
@@ -947,7 +969,9 @@ export class Game {
           } else damage = true;
         }
       }
-      s.r = resolveSkill(def, s.front, s.behind, i < 2 ? weaponAttr(weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
+      // (ACT 2, THE HUSH: hushed, as if no word were in it)
+      const dark = this.hushT > 0;
+      s.r = resolveSkill(def, dark ? s.front.map(() => null) : s.front, dark ? s.behind.map(() => null) : s.behind, i < 2 ? weaponAttr(weapon) : CLASSES[h.cls].primary, h.d, this.meta.limit);
       // (THE SKILL TREES: Battle Rush, the leap ready sooner)
       if (def.kind === 'leap' && this.was('drilledleap')) s.r.cooldown *= TALENT_TUNE.drilledLeap;
       // (the roll's two charges are a thing of cooldowns: when mana is the limit, mana is; Light Step, three)
@@ -970,6 +994,11 @@ export class Game {
 
   private clearLevel(): void {
     this.bossMet = false;
+    // (ACT 2, THE HUSH: no Hush carries off the level; his words are his again)
+    if (this.hushT > 0) {
+      this.hushT = 0;
+      this.refresh();
+    }
     // (ACT 1: words laid on a stronghold's altar and not burned go back to the hero)
     for (const q of this.level?.holds ?? []) if (!q.open) for (const w of q.words.splice(0)) this.hero.words[w] = (this.hero.words[w] ?? 0) + 1;
     this.holdGoing = -1;
@@ -1497,6 +1526,14 @@ export class Game {
     dt = Math.min(dt, 0.05);
     this.time += dt;
     if (this.introT > 0) this.introT = Math.max(0, this.introT - dt);
+    // (ACT 2, THE HUSH: his words come back as it runs out)
+    if (this.hushT > 0) {
+      this.hushT = Math.max(0, this.hushT - dt);
+      if (this.hushT === 0) {
+        this.refresh();
+        this.emit({ t: 'hushed', on: false });
+      }
+    }
     if (this.inDungeon) this.runTime += dt;
     this.bagFullT -= dt;
     this.denyT -= dt;
@@ -1691,12 +1728,15 @@ export class Game {
       // (ACT 1, THE DESCENT: on down the mountain to the next floor; from the tenth, the Fen, home to town: the siege broken)
       this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
       this.cleared++;
-      if (this.depth >= 10) {
+      if (this.depth === 10 || this.depth >= lastFloor()) {
         const from = this.depth;
+        // (ACT 2, THE HUSH: the siege broken, the town's waypoint takes him on into the city, floor 11; from the fifteenth, the
+        // library, home: his doc's payoff, the words flying home and the High City's gates shut)
+        if (act2Floor(from + 1)) this.wayDepth = Math.max(this.wayDepth, from + 1);
         this.enterTown();
         this.cameT = 0;
         this.sfx('portal');
-        this.msg(`${floorTitle(from).level} cleared. The siege is broken.`, MSG.good);
+        this.msg(from === 10 ? `${floorTitle(from).level} cleared. The siege is broken.` : `${floorTitle(from).level} cleared. The stolen words fly home. High above, the gates of the High City swing shut.`, MSG.good);
         return;
       }
       this.depth++;

@@ -21,6 +21,24 @@ import { FIG as queen } from './queen';
 import { FIG as cantor } from './cantor';
 import { FIG as stag } from './stag';
 import { FIG as eye } from './eye';
+// ACT 2, THE HUSH (game/act1.ts ACT2): the city's own, each floor's own, the five bosses
+import { FIG as hushed } from './hushed';
+import { FIG as watch } from './watch';
+import { FIG as scribe } from './scribe';
+import { FIG as hound } from './hound';
+import { FIG as rat } from './rat';
+import { FIG as dredger } from './dredger';
+import { FIG as fieldhand } from './fieldhand';
+import { FIG as carter } from './carter';
+import { FIG as patient } from './patient';
+import { FIG as orderly } from './orderly';
+import { FIG as inkling } from './inkling';
+import { FIG as bookwarden } from './bookwarden';
+import { FIG as crier } from './crier';
+import { FIG as ratking } from './ratking';
+import { FIG as palimpsest } from './palimpsest';
+import { FIG as physician } from './physician';
+import { FIG as censor } from './censor';
 
 export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> = {
   chanter,
@@ -41,6 +59,23 @@ export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> =
   cantor,
   stag,
   eye,
+  hushed,
+  watch,
+  scribe,
+  hound,
+  rat,
+  dredger,
+  fieldhand,
+  carter,
+  patient,
+  orderly,
+  inkling,
+  bookwarden,
+  crier,
+  ratking,
+  palimpsest,
+  physician,
+  censor,
 };
 
 export function act1Fig(kind: string): Act1Fig | null {

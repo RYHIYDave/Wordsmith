@@ -38,7 +38,7 @@ import type { ClassId } from '../game/types';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
-import { PIECE, landLook } from './outdoor';
+import { PIECE, landTerrain } from './outdoor';
 import { releaseSprite } from '../engine/px';
 import type { Light, Sprite } from '../engine/px';
 
@@ -823,7 +823,7 @@ export function paintWorkerMain(): void {
     if (ask.t === 'ground') {
       // (a new floor: its terrain made once here, as the page makes its own; the last floor's pieces still asked for are not wanted)
       try {
-        ground = { id: ask.id, T: terrainOf(ask.floor, landLook(ask.land, ask.floor)) };
+        ground = { id: ask.id, T: landTerrain(ask.land, ask.floor) };
       } catch (err) {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }

@@ -116,6 +116,24 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   cantor: { bits: [GLOOM[4], GLOOM[2], '#ff4f9a'], sparks: false, blood: false, dust: false },
   stag: { bits: ['#5a4a3c', '#7a6450', '#3e2c4a'], sparks: false, blood: true, dust: false },
   eye: { bits: ['#d8c8b8', '#b0988a', '#8a5a6a'], sparks: false, blood: true, dust: false },
+  // ACT 2, THE HUSH (his doc: "Not undead and not gory"): no blood; the Hush's dust
+  hushed: { bits: ['#8a8790', '#6c6874', '#4e4a58'], sparks: false, blood: false, dust: true },
+  watch: { bits: ['#7a7f88', '#5a5f6a', '#3e4250'], sparks: false, blood: false, dust: true },
+  scribe: { bits: ['#d8d4cc', '#9a948c', '#1e1a22'], sparks: false, blood: false, dust: true },
+  hound: { bits: ['#5a5048', '#3e3630', '#2a2420'], sparks: false, blood: false, dust: true },
+  rat: { bits: ['#5a4e48', '#3e3430', '#8a7a70'], sparks: false, blood: false, dust: true },
+  dredger: { bits: ['#3e3a34', '#2a2622', '#6a5e50'], sparks: false, blood: false, dust: true },
+  fieldhand: { bits: ['#8a8790', '#6c6874', '#8e7646'], sparks: false, blood: false, dust: true },
+  carter: { bits: ['#2a2622', '#1a1618', '#6a5440'], sparks: false, blood: false, dust: true },
+  patient: { bits: ['#8a8790', '#6c6874', '#c3c1b2'], sparks: false, blood: false, dust: true },
+  orderly: { bits: ['#c8c4b8', '#9a968a', '#5a5650'], sparks: false, blood: false, dust: true },
+  inkling: { bits: ['#1a1620', '#0e0c12', '#2e2838'], sparks: false, blood: false, dust: true },
+  bookwarden: { bits: ['#2a2a32', '#1a1a20', '#6a5a34'], sparks: false, blood: false, dust: true },
+  crier: { bits: ['#6a2a2a', '#c8a050', '#3a2a2a'], sparks: false, blood: false, dust: true },
+  ratking: { bits: ['#5a4e48', '#3e3430', '#2f4a35'], sparks: false, blood: false, dust: true },
+  palimpsest: { bits: ['#cbc1a6', '#a59b82', '#6d6556'], sparks: false, blood: false, dust: true },
+  physician: { bits: ['#1e1a22', '#3a3440', '#929f84'], sparks: false, blood: false, dust: true },
+  censor: { bits: ['#141218', '#24202b', '#3a3440'], sparks: false, blood: false, dust: true },
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);

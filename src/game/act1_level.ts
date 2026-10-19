@@ -4,14 +4,17 @@
 // of the boss's ground, asleep until the boss dies (game/ways.ts, `Ways.onward`); no stairwell, no gate. Then the
 // floor laid with its own pieces, last, by dice of its own (game/act1_dress.ts).
 
+import { act2Floor } from './act1';
 import { generateAct1 } from './act1_layout';
+import { generateAct2 } from './act2_layout';
 import { dressAct1 } from './act1_dress';
 import { finish } from './level';
 import type { Level } from './state';
 import { placeWay } from './ways';
 
 export function makeAct1Level(depth: number, seed: number): Level {
-  const { floor, land } = generateAct1(depth, seed);
+  // (ACT 2, THE HUSH: floors 11 to 15 by map-makers of their own, game/act2/)
+  const { floor, land } = act2Floor(depth) ? generateAct2(depth, seed) : generateAct1(depth, seed);
   const level = finish(floor, false, null);
   level.land = land;
   const solidAt = new Uint8Array(floor.w * floor.h);

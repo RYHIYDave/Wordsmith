@@ -967,6 +967,8 @@ export type GameEvent =
   | { t: 'cast'; x: number; y: number; dx: number; dy: number; kind: SkillKind; el: Element; words: readonly WordId[]; behind: readonly WordId[]; echo: boolean }
   /** A word was set into an ability: `name` is the ability's new name. */
   | { t: 'worded'; word: WordId; name: string; skill: number; side: 'front' | 'behind' }
+  /** ACT 2, THE HUSH: the hero's words go dark (`on`), or come back (Game.hush). */
+  | { t: 'hushed'; on: boolean }
   /** A word was burned into a piece of gear, and this is what it became. */
   | { t: 'burned'; word: WordId; item: string; text: string }
   /** A word has dropped on the floor / has been picked up. */

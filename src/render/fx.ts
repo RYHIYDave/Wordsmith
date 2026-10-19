@@ -340,6 +340,24 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   cantor: [GLOOM[4], GLOOM[2], PINK[2], M_FLAME[3]],
   stag: ['#5a4a3c', '#7a6450', '#3e2c4a', '#c8b89a'],
   eye: ['#d8c8b8', '#b0988a', '#8a5a6a', '#ffb347'],
+  // ACT 2, THE HUSH: the art chat's kinds (nothing gory: the Hush's grey, their cloth, paper and ink)
+  hushed: ['#8a8790', '#6c6874', '#4e4a58', '#b8a8b0'],
+  watch: ['#7a7f88', '#5a5f6a', '#3e4250', '#8a6e44'],
+  scribe: ['#d8d4cc', '#9a948c', '#1e1a22', '#c04a7a'],
+  hound: ['#5a5048', '#3e3630', '#2a2420', '#8a7a6a'],
+  rat: ['#5a4e48', '#3e3430', '#8a7a70', '#6a8a5a'],
+  dredger: ['#3e3a34', '#2a2622', '#6a5e50', '#4a5a4a'],
+  fieldhand: ['#8a8790', '#6c6874', '#8e7646', '#b8a8b0'],
+  carter: ['#2a2622', '#1a1618', '#6a5440', '#d8d4cc'],
+  patient: ['#8a8790', '#6c6874', '#c3c1b2', '#b8a8b0'],
+  orderly: ['#c8c4b8', '#9a968a', '#5a5650', '#3a3632'],
+  inkling: ['#1a1620', '#0e0c12', '#2e2838', '#c04a7a'],
+  bookwarden: ['#2a2a32', '#1a1a20', '#6a5a34', '#cbc1a6'],
+  crier: ['#6a2a2a', '#c8a050', '#3a2a2a', '#e8dcc0'],
+  ratking: ['#5a4e48', '#3e3430', '#2f4a35', '#c04a7a'],
+  palimpsest: ['#cbc1a6', '#a59b82', '#6d6556', '#1e1a22'],
+  physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
+  censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };
 
 const rnd = (a: number, b: number): number => a + Math.random() * (b - a);

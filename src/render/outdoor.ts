@@ -23,6 +23,13 @@ import { pinewoodLook } from '../art/pinewood';
 import { QUARRY_LOOK } from '../art/quarry';
 import { GRAIN, paintTerrain, terrainOf } from '../art/terrain';
 import type { Terrain, TerrainLook } from '../art/terrain';
+// ACT 2, THE HUSH: the art chat's five grounds (each its own look, painted by the same painter)
+import { GW_DEEP, gateWardLook, gateWardPaintFloor } from '../art/gateward';
+import type { GateWardLand } from '../art/gateward';
+import { UC_DEEP, undercityLook } from '../art/undercity';
+import { millraceLook } from '../art/millrace';
+import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
+import { LB_DEEP, greatLibraryLook } from '../art/library';
 import { blobDist, laneDist, segDist } from '../game/act1_layout';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
@@ -89,10 +96,88 @@ function progressOf(way: readonly [number, number][]): (x: number, y: number) =>
   };
 }
 
+/** ACT 2: a tile's zone (Land.zones), 0 where not said or off the floor. */
+function zoneOf(land: Land, W: number, H: number): (tx: number, ty: number) => number {
+  const z = land.zones;
+  return (tx, ty) => {
+    if (!z) return 0;
+    const x = Math.floor(tx);
+    const y = Math.floor(ty);
+    return x >= 0 && y >= 0 && x < W && y < H ? z[y * W + x] : 0;
+  };
+}
+/** ACT 2, THE GATE WARD: the land as its look asks it. */
+function gateWardLand(land: Land, floor: Floor): GateWardLand {
+  return { floor, zone: zoneOf(land, floor.w, floor.h), squares: land.squares, houses: land.houses };
+}
+/** ACT 2, THE MILLRACE: which way a line runs at the point of it nearest (x, y), from its first point toward its last (a unit vector, world). */
+function flowOf(pts: readonly [number, number][]): (x: number, y: number) => [number, number] {
+  return (x, y) => {
+    let best = Infinity;
+    let dir: [number, number] = [1, 0];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const d = segDist(x, y, pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1]);
+      if (d < best) {
+        best = d;
+        const dx = pts[i + 1][0] - pts[i][0];
+        const dy = pts[i + 1][1] - pts[i][1];
+        const l = Math.hypot(dx, dy) || 1;
+        dir = [dx / l, dy / l];
+      }
+    }
+    return dir;
+  };
+}
+
+/**
+ * The ground's terrain for a floor: its look over its tiles. (ACT 2, THE GATE WARD: the painter is given the floor with its
+ * houses as they are seen inside, their fronts cut down: art/gateward.ts gateWardPaintFloor, 'open'; the shells laid over
+ * them, faded as he goes in, are render's.)
+ */
+export function landTerrain(land: Land, floor: Floor): Terrain {
+  if (land.kind === 'gateward') {
+    const gl = gateWardLand(land, floor);
+    return terrainOf(gateWardPaintFloor(gl, 'open'), gateWardLook(gl, 'open'));
+  }
+  return terrainOf(floor, landLook(land, floor));
+}
+
 export function landLook(land: Land, floor: Floor): TerrainLook {
   const W = floor.w;
   const H = floor.h;
   switch (land.kind) {
+    // ACT 2, THE HUSH (game/act1.ts ACT2): the art chat's looks, each given what its floor's map-maker laid (game/act2_types.ts)
+    case 'gateward':
+      return gateWardLook(gateWardLand(land, floor), 'open');
+    case 'undercity': {
+      const water = land.water;
+      return undercityLook({
+        floor,
+        zone: zoneOf(land, W, H),
+        water: (tx, ty) => {
+          const x = Math.floor(tx);
+          const y = Math.floor(ty);
+          return !!water && x >= 0 && y >= 0 && x < W && y < H && water[y * W + x] === 1;
+        },
+      });
+    }
+    case 'millrace': {
+      const river = land.river;
+      const race = land.race;
+      const tracks = land.tracks ?? [];
+      const yards = land.yards ?? [];
+      return millraceLook({
+        river: river ? gridField(W, H, 4, (x, y) => laneDist({ pts: river, w: 0 }, x, y)) : undefined,
+        race: race ? gridField(W, H, 4, (x, y) => laneDist({ pts: race, w: 0 }, x, y)) : undefined,
+        raceFlow: race ? flowOf(race) : undefined,
+        track: tracks.length ? gridField(W, H, 4, (x, y) => tracks.reduce((d, t) => Math.min(d, laneDist({ pts: t, w: 0 }, x, y)), Infinity)) : undefined,
+        yard: yards.length ? (x, y) => yards.some(([x0, y0, x1, y1]) => x >= x0 && y >= y0 && x < x1 && y < y1) : undefined,
+      });
+    }
+    case 'housequiet':
+      return houseOfQuietLook({ floor, zone: zoneOf(land, W, H) });
+    case 'library':
+      return greatLibraryLook({ floor, zone: zoneOf(land, W, H) });
     case 'quarry':
       return QUARRY_LOOK;
     case 'canyon':
@@ -214,7 +299,7 @@ export class OutdoorGround {
   begin(land: Land, floor: Floor): boolean {
     if (land === this.land) return false;
     this.land = land;
-    this.T = terrainOf(floor, landLook(land, floor));
+    this.T = landTerrain(land, floor);
     SHOWN.terrain = this.T;
     for (const p of this.pieces.values()) this.drop(p);
     this.pieces.clear();
@@ -224,7 +309,9 @@ export class OutdoorGround {
     this.sky = null;
     this.skyDone = 0;
     this.town = null;
-    this.deep = land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
+    const hex = (c: readonly number[]): string => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+    // (ACT 2: each ground's own deep colour, the art chat's)
+    this.deep = land.kind === 'gateward' ? hex(GW_DEEP) : land.kind === 'undercity' ? hex(UC_DEEP) : land.kind === 'housequiet' ? hex(HQ_DEEP) : land.kind === 'library' ? hex(LB_DEEP) : land.kind === 'millrace' ? '#2c2a1c' : land.kind === 'pine' ? '#1d2716' : land.kind === 'fen' ? '#141c17' : land.kind === 'canyon' ? '#5e3a2c' : land.kind === 'ledge' ? '#5a6a90' : '#5f7c48';
     return true;
   }
 
