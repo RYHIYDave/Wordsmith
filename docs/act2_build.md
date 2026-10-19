@@ -149,10 +149,25 @@ The planning chat's helpers' picks where the art left a number to the game, each
 - The Bells: as told him (15 seconds a bell; the explosion gear, gold, runedust and a chance at a word).
 - The Hushed townsfolk on every floor of the Hush (floor 15 too), as told him.
 
+## For the main chat: putting it live, on his yes
+
+- Turn it on: `ACT2.on = true` in game/act1.ts (the art's switches are thrown with the descent's, art/bestiary.ts useAct1Figs: nothing reads them). With it
+  on, floor 10's way takes him home and the town's waypoint on to floor 11; 15's home again.
+- HIS RULE OF ATTACKS HOLDS THE ACT ONCE IT IS ON: tests/monster_attacks.test.ts fails for the five medium kinds with one
+  attack (the watch, the dredgers, the carters, the orderlies, the Bookwardens) until the art chat draws each a second move
+  (asked on the board, 19 Oct, 17:29 Eastern; the carters added after) and its rules use it; going live before that is his call.
+- A fresh-eyes check of the shared files (19 Oct) found one change to floors 1 to 10 with the act off (a narrow screen's
+  notices under a boss's bar), mended; and in the act, the Bells' tough sergeant's hounds not counted as the Hush's, floor
+  14's risen patients lying down in beds, the bells swinging on for ever, and a gold glow on the win: all mended.
+- Worth measuring before it goes live: the page now carries all of floors 11 to 15 (about 50,000 lines more of src, the art chat's 36,067 and the game's 13,920, loaded
+  at the start in the page and the painter's worker): the load on a phone.
+- Films for him: tools/scenarios/act2_film.mjs (PART floor, boss or bells; with `--hash painter=off` on a busy machine, or
+  the ground shows unpainted black where the worker cannot keep up).
+
 ## Not done yet, or not sure
 
-- Medium kinds with one attack, as the art drew them (his rule of 9 Oct gives them two): the watch, the dredgers, the
-  orderlies, the Bookwardens. A second each needs a picture from the art chat.
+- Medium kinds with one attack, as the art drew them (his rule of 9 Oct gives them two): all five, the watch, the dredgers,
+  the carters, the orderlies, the Bookwardens. A second each needs a picture from the art chat.
 - The woman patient (the art drew two) is not in: the game holds one figure a patient.
 - The Knell (his 05:41, the Hush's own boss at the last bell): not drawn yet.
 - No picture of the Censor's emptied book (it still shows its words after his death).

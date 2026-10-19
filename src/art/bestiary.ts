@@ -38,7 +38,7 @@ import { makeCultistArt, makeHighPriestArt } from './monster_cultist';
 import { WARDEN_MOVES, makeWardenArt } from './monster_warden';
 import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksmanArt3, makeShadeArt3, makeSkullShotArt } from './new_mobs3';
 import { PACK_MARKS } from '../render/pack_marks';
-import { ACT1, ACT2 } from '../game/act1';
+import { ACT1 } from '../game/act1';
 import { ACT1_KINDS, ACT2_KINDS } from '../game/types';
 import { ACT1_FIGS, act1Fig, act1Look, act1Looks } from './act1_figs/index';
 
@@ -104,18 +104,10 @@ useFirstFive(BOSSES5.on, CULT.on);
  * mock-up nothing of the game used) go on and off with the descent (art/act1_figs/).
  */
 export function useAct1Figs(on: boolean): void {
-  // (ACT 2, THE HUSH: its kinds' go with ACT2, below)
-  for (const [k, f] of Object.entries(ACT1_FIGS)) if (!ACT2_KINDS.includes(k as MonsterKind)) for (const sw of f?.switches ?? []) sw.on = on;
+  // (ACT 2, THE HUSH: its kinds' too, with the others', as their tests hold: nothing of the game reads them, ACT2 is what keeps them out)
+  for (const f of Object.values(ACT1_FIGS)) for (const sw of f?.switches ?? []) sw.on = on;
 }
 useAct1Figs(ACT1.on);
-/** (ACT 2, THE HUSH) The art chat's switches of the Hush's kinds and their other looks, thrown with ACT2 as the descent's are with ACT1 (they say what is in the game; nothing of it reads them). */
-export function useAct2Figs(on: boolean): void {
-  for (const k of ACT2_KINDS) {
-    const f = ACT1_FIGS[k];
-    for (const sw of [...(f?.switches ?? []), ...(f?.looks ?? []).flatMap((l) => l.switches ?? [])]) sw.on = on;
-  }
-}
-useAct2Figs(ACT2.on);
 
 /**
  * The figures there are: one for each kind of monster, and the guardian; and the Chained One as he is with his left chain broken, and free of the ball too.
