@@ -68,7 +68,7 @@ test('1. it is built: its rules, its pictures with a clip by each name its act u
         assert.ok(clip && clip.frames.length > 0, `${f}: its ${a.id}: its clip ${a.clip}`);
         // (the held sweep is the sweep's picture with its warning played round: its length the picture's and that: held.ts)
         near((clip!.frames.length - 1) / clip!.fps, a.long - (a.loop?.extra ?? 0), 1 / clip!.fps, `${f}: its ${a.id}'s length`);
-        near(clip!.hit ?? -1, a.hit, 1e-9, `${f}: its clip's blow is the act's`);
+        near(clip!.hit ?? -1, a.hit - (a.loop?.extra ?? 0), 1e-9, `${f}: its clip's blow is the act's`);
       }
       assert.ok(set.clips?.reel && set.clips?.die, `${f}: struck and its death`);
       near((set.clips!.die!.frames.length - 1) / set.clips!.die!.fps, WA_DIES.long, 0.06, `${f}: the gag falling and the kneeling, as long as its picture`);
