@@ -841,8 +841,9 @@ export class Renderer {
       const s = z.spot;
       if (s.kind === 'spikes') {
         // (ACT 2, THE HUSH: its traps' own sprung pictures are the whole of them, no iron spikes: render/act1_pieces.ts ownSprung;
-        // and a trap with a picture of its own, the flood or the slick: trapOf)
-        if (this.act1Dressed && (this.act1.ownSprung() || this.act1.trapOf(s, 'down', 0) !== undefined)) continue;
+        // a trap with a picture of its own, the flood or the slick: trapOf; a trap whose own picture stands, the Millrace's wheel
+        // and stamping mill, strikes in that picture: standsFor)
+        if (this.act1Dressed && (this.act1.ownSprung() || this.act1.trapOf(s, 'down', 0) !== undefined || this.act1.standsFor(s))) continue;
         const k = Math.round(spikeHeight(s, game.time) * SPIKE_STEPS);
         if (k <= 0) continue;
         const sp = A.spike(k);
@@ -2263,9 +2264,13 @@ export class Renderer {
       if (this.act1Dressed && (p.kind === 'piece' || p.kind === 'barrel' || p.kind === 'urn')) {
         if (this.act1.lies(p) || p.state === 1 && p.kind !== 'piece') continue;
         // (ACT 2, THE GATE WARD: a trap of its own by its beat; nothing in a house standing whole gives light out of it)
-        const a = trapSprite(L, p, game.time, (n) => this.act1.piece(n)) ?? this.act1.sprite(p, t);
+        // (ACT 2, THE HUSH: a trap that stands goes by the game's clock, its trap's; a piece the art drew its own picture for
+        // being seen through, the Millrace's drying lines, shows that picture whole while someone is behind it: render/act1_pieces.ts)
+        const a = trapSprite(L, p, game.time, (n) => this.act1.piece(n)) ?? this.act1.sprite(p, t, game.time);
         if (a) {
-          this.stand(p.x + p.y, a, sx, sy, null, 0, 1, a.h >= SEE_TALL ? this.seeThrough(a, sx, sy, p.x + p.y, heroX, heroY, h.x + h.y) : veil(a, sx, sy, p.x + p.y));
+          const thin = a.h >= SEE_TALL ? this.seeThrough(a, sx, sy, p.x + p.y, heroX, heroY, h.x + h.y) : veil(a, sx, sy, p.x + p.y);
+          const seen = thin < 1 ? this.act1.seenOf(p) : null;
+          this.stand(p.x + p.y, seen ?? a, sx, sy, null, 0, 1, seen ? 1 : thin);
           if (a.lights && !this.houses.hides(p.x, p.y)) this.propLit.push({ s: a, x: Math.round(sx), y: Math.round(sy) });
         }
         continue;

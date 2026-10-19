@@ -115,7 +115,7 @@ export const DOWN = 45 * DEG;
 export const LEFT = 135 * DEG;
 export const RIGHT = 315 * DEG;
 /** A world point a heading and distance from another. */
-const along = (x: number, y: number, a: number, d: number): [number, number] => [x + Math.cos(a) * d, y + Math.sin(a) * d];
+export const along = (x: number, y: number, a: number, d: number): [number, number] => [x + Math.cos(a) * d, y + Math.sin(a) * d];
 /** How far down the screen a world point is (the depth the game sorts by). */
 const downOf = (x: number, y: number): number => x + y;
 
@@ -263,7 +263,9 @@ export function reach(w: number, h: number, tiles: Uint8Array, cut: Uint8Array, 
 // ---------------------------------------------------------------------------------------------------
 // THE PLAN: open areas and the ways between them
 
-interface Area {
+// (ACT 2, THE HUSH: what a plan is made of, and the makings of one below (Area, Plan, radiusOf, clear, wander, ChainOpts,
+// planChain; along, MARGIN, cross, farEnd), exported for floor 13's map-maker, game/act2/millrace.ts, laid as the Pinewood is)
+export interface Area {
   blob: Blob;
   role: AreaRole;
   path: number;
@@ -271,7 +273,7 @@ interface Area {
   /** A circle round it, for keeping areas apart. */
   r: number;
 }
-interface Plan {
+export interface Plan {
   areas: Area[];
   lanes: Lane[];
   /** The main way's middle line. */
@@ -282,10 +284,10 @@ interface Plan {
   /** Extra shapes taken out of the floor (the Fen's pool), and put in (the Fen's boardwalks, the Pinewood's bridges). */
 }
 
-const radiusOf = (b: Blob): number => Math.max(b.rx, b.ry) * (1 + b.wob);
+export const radiusOf = (b: Blob): number => Math.max(b.rx, b.ry) * (1 + b.wob);
 
 /** Is a new area at `b` clear of every area but `except` by `gap`, and is the lane to it clear of them? */
-function clear(areas: readonly Area[], b: Blob, gap: number, except: readonly number[], lane: Lane | null): boolean {
+export function clear(areas: readonly Area[], b: Blob, gap: number, except: readonly number[], lane: Lane | null): boolean {
   const r = radiusOf(b);
   for (let i = 0; i < areas.length; i++) {
     if (except.includes(i)) continue;
@@ -297,7 +299,7 @@ function clear(areas: readonly Area[], b: Blob, gap: number, except: readonly nu
 }
 
 /** A wandering lane from one point to another, `w` wide: a few bends off the straight line. */
-function wander(rng: RNG, ax: number, ay: number, bx: number, by: number, w: number, bend: number): Lane {
+export function wander(rng: RNG, ax: number, ay: number, bx: number, by: number, w: number, bend: number): Lane {
   const n = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay) / 5));
   const pts: [number, number][] = [[ax, ay]];
   const nx = -(by - ay);
@@ -312,7 +314,7 @@ function wander(rng: RNG, ax: number, ay: number, bx: number, by: number, w: num
   return { pts, w };
 }
 
-interface ChainOpts {
+export interface ChainOpts {
   count: number;
   /** The way the chain goes, and how far each step may turn from it (radians). */
   heading: number;
@@ -327,7 +329,7 @@ interface ChainOpts {
 }
 
 /** A chain of open areas from the start to the boss's, each joined to the last. */
-function planChain(rng: RNG, o: ChainOpts): Plan | null {
+export function planChain(rng: RNG, o: ChainOpts): Plan | null {
   const areas: Area[] = [];
   const lanes: Lane[] = [];
   const way: [number, number][] = [];
@@ -548,7 +550,7 @@ function planLedge(rng: RNG, size: (rng: RNG, role: AreaRole) => { rx: number; r
 // LAY A FLOOR OF THE DESCENT
 
 /** Tiles of rock (or drop, or forest, or water) left round the open ground. */
-const MARGIN = 14;
+export const MARGIN = 14;
 /** The stronghold's yard: its court before the gate, as the art chat's mock-up laid it (src/dev/preview_hold.ts): 6 tiles along the gate's wall, 3 out from it. */
 const COURT = { half: 3, deep: 3 };
 /** A stronghold's hall inside. */
@@ -1004,7 +1006,7 @@ function bridgesOf(plan: Plan, river: [number, number][], W: number): Bridge[] {
   }
   return out;
 }
-function cross(a: [number, number], b: [number, number], c: [number, number], d: [number, number]): [number, number] | null {
+export function cross(a: [number, number], b: [number, number], c: [number, number], d: [number, number]): [number, number] | null {
   const r1 = b[0] - a[0];
   const r2 = b[1] - a[1];
   const s1 = d[0] - c[0];
@@ -1017,7 +1019,7 @@ function cross(a: [number, number], b: [number, number], c: [number, number], d:
 }
 
 /** The far end of the boss's area: the floor of it furthest from where the way came in (the way on opens there). */
-function farEnd(plan: Plan, tiles: Uint8Array, cut: Uint8Array, W: number, H: number, boss: Blob): { x: number; y: number } {
+export function farEnd(plan: Plan, tiles: Uint8Array, cut: Uint8Array, W: number, H: number, boss: Blob): { x: number; y: number } {
   const from = plan.way.length >= 2 ? plan.way[plan.way.length - 2] : plan.way[0];
   const h = Math.atan2(boss.y - from[1], boss.x - from[0]);
   for (let d = Math.max(boss.rx, boss.ry); d > 0; d -= 0.5) {
