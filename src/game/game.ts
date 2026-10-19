@@ -23,7 +23,8 @@ import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, gaitOf } from './bosses';
 import { ACT1, act2Floor, lastFloor } from './act1';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
-import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
+import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
+import type { BellsState } from './bells';
 import { act1Rules, act1Ward } from './act1_rules/index';
 // (ACT 2, THE HUSH: a word the Physician has drawn out of the hero is never lost: given back as a level is left or the hero falls, and written into the save)
 import { giveBackAll, inTheSave } from './act1_rules/physician';
@@ -2180,6 +2181,18 @@ export class Game {
   // ===========================================================================================
   // ACT 2, THE HUSH: THE BELLS (game/bells.ts: his design, the planning chat's picks, and their numbers)
 
+  /** (ACT 2, THE BELLS) While the Hush raises its own: what rises comes up awake and at him (none of floor 14's patients lies down in a bed). */
+  risingInHush = false;
+
+  /** (ACT 2, THE BELLS) Everything that came into the world since `from` (Game.monsters' length then) is the Hush's: awake, at him, and counted as its own (a sergeant's brace of hounds with him). */
+  private hushOwns(B: BellsState, from: number): void {
+    for (let i = from; i < this.monsters.length; i++) {
+      const m = this.monsters[i];
+      m.state = 'chase';
+      if (!B.ids.includes(m.id)) B.ids.push(m.id);
+    }
+  }
+
   /** The level's Bells as they stand at first, asleep, where its map-maker and dresser laid them (none: no Bells here). */
   private bellsMade(): void {
     const L = this.level;
@@ -2260,10 +2273,12 @@ export class Game {
     const kind: MonsterKind = act1Ready(own) ? own : act1Ready('hushed') ? 'hushed' : 'dagger';
     const at = scatter(L.walk, L.floor.w, L.floor.h, x, y + 1, 1, rng)[0] ?? { x, y: y + 1 };
     const words = this.bareDungeon() ? [] : this.drawWords(rng, k >= 3 ? 2 : 1);
+    const from = this.monsters.length;
+    this.risingInHush = true;
     const m = this.spawn(this.leaderOf(kind), at.x, at.y, BELLS_TOUGH_ID(k), 1, false, rng, null, { rarity: 'leader', words });
+    this.risingInHush = false;
     m.life = m.maxLife = Math.round(m.maxLife * (1 + BELLS_TUNE.tough * (k - 1)));
-    m.state = 'chase';
-    B.ids.push(m.id);
+    this.hushOwns(B, from);
     this.emit({ t: 'bells', what: 'rise', x: m.x, y: m.y });
   }
 
@@ -2311,7 +2326,13 @@ export class Game {
     const B = L.bells;
     if (!B) return;
     if (B.phase === 'won' || B.phase === 'lost') {
+      const was = B.since;
       B.since += dt;
+      // (and a while after, the bells ring out and hang still: render/act1_pieces.ts bellFrame, BELL_STILL)
+      if (was < BELLS_TUNE.ringOut && B.since >= BELLS_TUNE.ringOut) {
+        for (const k of B.props) if (k >= 0 && L.props[k].state === 2) L.props[k].state = BELL_STILL;
+        if (B.muffled >= 0 && L.props[B.muffled].state === 1) L.props[B.muffled].state = BELL_STILL;
+      }
       return;
     }
     if (B.phase !== 'on' || this.over) return;
@@ -2336,10 +2357,12 @@ export class Game {
     const pack = BELLS_PACK_ID(B.risen);
     for (const s of spots) {
       if (!inHush(B, L.floor.w, s.x, s.y)) continue;
+      const from = this.monsters.length;
+      this.risingInHush = true;
       const m = this.spawn(kind, s.x, s.y, pack, 0, false, rng);
+      this.risingInHush = false;
       m.life = m.maxLife = Math.round(m.maxLife * more);
-      m.state = 'chase';
-      B.ids.push(m.id);
+      this.hushOwns(B, from);
       B.risen++;
       this.emit({ t: 'bells', what: 'rise', x: m.x, y: m.y });
     }

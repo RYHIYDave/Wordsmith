@@ -135,7 +135,7 @@ function drawBellsClock(g: CanvasRenderingContext2D, game: Game, W: number, y: n
   if (B.phase === 'won' || B.phase === 'lost') {
     if (B.since > 3) return false;
     g.globalAlpha = Math.min(1, 3 - B.since);
-    drawText(g, B.phase === 'won' ? 'EVERY BELL PEALS' : 'THE HUSH LIFTS', cx, y, B.phase === 'won' ? '#ffd860' : '#b8b4c6', { align: 'center', shadow: P.ink });
+    drawText(g, B.phase === 'won' ? 'EVERY BELL PEALS' : 'THE HUSH LIFTS', cx, y, B.phase === 'won' ? '#b8fff8' : '#b8b4c6', { align: 'center', shadow: P.ink });
     g.globalAlpha = 1;
     return true;
   }
@@ -1257,9 +1257,11 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // (where the prompt or the news of a word ends, so that on a narrow screen the messages can go under it)
   let noticeEnd = 0;
   // (under the boss's bar and the Bells' clock, where they are up)
+  // (a narrow screen's notices stand below its top row already, NARROW_TOP, under the boss's bar: only the Bells' clock moves them)
   const topBusy = (bossUp ? 20 : 0) + (bellsUp ? 22 : 0);
-  if (inp.toast) noticeEnd = drawToast(ui, art, inp.toast.word, inp.toast.t, topBusy && W >= 380 ? 4 + topBusy : W >= 380 ? 4 : NARROW_TOP + topBusy, !!inp.toast.big);
-  else if (inp.moveToast) noticeEnd = drawMoveToast(ui, art, h, inp.moveToast.skill, inp.moveToast.t, topBusy && W >= 380 ? 4 + topBusy : W >= 380 ? 4 : NARROW_TOP + topBusy);
+  const noticeY = W >= 380 ? 4 + topBusy : NARROW_TOP + (bellsUp ? 22 : 0);
+  if (inp.toast) noticeEnd = drawToast(ui, art, inp.toast.word, inp.toast.t, noticeY, !!inp.toast.big);
+  else if (inp.moveToast) noticeEnd = drawMoveToast(ui, art, h, inp.moveToast.skill, inp.moveToast.t, noticeY);
   else if (banner && !bossUp && !bellsUp) {
     noticeEnd = drawBanner(ui, banner, t);
     // (for the playtests: where the prompt is)

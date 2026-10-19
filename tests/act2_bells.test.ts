@@ -10,7 +10,9 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { ACT2 } from '../src/game/act1';
-import { BELLS_TUNE, gapAt, makeBells, sizeAt } from '../src/game/bells';
+import { BELLS_TUNE, BELL_STILL, gapAt, makeBells, sizeAt } from '../src/game/bells';
+import { RNG } from '../src/engine/rng';
+import { freeBeds } from '../src/game/act1_rules/patient';
 import type { BellsState } from '../src/game/bells';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -128,6 +130,11 @@ test('each bell rung chips the Hush back, calls a tough one (a leader, tougher e
       const tough = g.monsters.slice(before).find((m) => m.elite);
       assert.ok(tough, `a tough one at bell ${i + 1}`);
       lifeOf.push(tough!.maxLife);
+      // (and what comes with it, a sergeant's brace of hounds, is the Hush's too: counted, awake, and falling with it)
+      for (const m of g.monsters.slice(before)) {
+        assert.ok(B.ids.includes(m.id), `bell ${i + 1}: the ${m.kind} that came with the tough one is the Hush's`);
+        assert.equal(m.state, 'chase');
+      }
     }
   }
   for (let k = 1; k < lifeOf.length; k++) assert.ok(lifeOf[k] > lifeOf[k - 1] * 1.1, 'each tougher than the last');
@@ -137,6 +144,33 @@ test('each bell rung chips the Hush back, calls a tough one (a leader, tougher e
   assert.ok(drops.filter((k) => k === 'item').length >= B.plan.bells.length, 'gear');
   assert.ok(drops.includes('gold'), 'gold');
   for (const id of B.ids) assert.ok(!g.monsters.some((m) => m.id === id && !m.dead), 'what the Hush raised falls with it');
+  // (the bells ring on a while, then hang still)
+  step(g, BELLS_TUNE.ringOut - 1);
+  assert.ok(B.props.every((k) => k < 0 || L.props[k].state === 2), 'still ringing');
+  step(g, 1.5);
+  assert.ok(B.props.every((k) => k < 0 || L.props[k].state === BELL_STILL), 'rung out: hanging still');
+  assert.equal(L.props[B.muffled].state, BELL_STILL, 'the Muffled Bell too');
+}));
+
+test('what the Hush raises comes up awake: on floor 14 no patient of it lies down in a ward bed', () => act2(() => {
+  const g = seasoned(new Game('warrior', 14), 30);
+  (g as unknown as { god: boolean }).god = true;
+  g.depth = 14;
+  g.cleared = 13;
+  g.enterDungeon();
+  g.monsters.length = 0;
+  const R = { g } as never;
+  const bed = freeBeds(R, g.hero.x, g.hero.y, 9999)[0];
+  assert.ok(bed, 'a free ward bed on floor 14');
+  const near = { x: bed.x + 0.6, y: bed.y + 0.6 };
+  const rng = new RNG(5);
+  g.risingInHush = true;
+  const risen = g.spawn('patient', near.x, near.y, 8001, 0, false, rng);
+  g.risingInHush = false;
+  assert.equal(risen.a1?.bed ?? 0, 0, 'risen in the Hush: on its feet');
+  g.monsters = g.monsters.filter((m) => m !== risen);
+  const laid = g.spawn('patient', near.x, near.y, 7, 0, false, rng);
+  assert.equal(laid.a1?.bed, 1, 'laid as the floor is: it lies in the bed');
 }));
 
 test('time out: the Hush lifts, no explosion; the bells still to ring fall quiet', () => act2(() => {

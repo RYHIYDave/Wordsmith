@@ -30,5 +30,6 @@ export function generateAct2(depth: number, seed: number): Laid {
     const out = M.make(depth, (seed + attempt * 7919) >>> 0);
     if (out) return out;
   }
-  throw new Error(`the Hush's floor ${depth} could not be laid (seed ${seed})`);
+  // (never seen in the tests' seeds: the descent's ground stands in rather than the game stopping)
+  return generateAct1(depth, seed);
 }

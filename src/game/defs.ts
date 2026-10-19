@@ -1207,6 +1207,9 @@ export const LOOT2 = {
  */
 export const LUNGE = { on: true, ahead: 1.0 };
 
+/** ACT 2, THE HUSH: how long the Hush darkens the hero's words, once laid on (Game.hush): the planning chat's pick, told him (19 Oct): about 4 seconds, every word dark. */
+export const HUSH_FOR = 4;
+
 /**
  * THE BOSSES' LIFE PAST THE WARDEN. The owner, 17 Oct 2026, 11:37: "Bosses need more HP past the warden.  TTK is much too
  * short." Each boss's life (as game.ts spawn works it out: his kind's, by the depth, twice on floors 5 and 10) times this.
@@ -1215,8 +1218,6 @@ export const LUNGE = { on: true, ahead: 1.0 };
  * 113 to 341, the Stag 154 to 471); the Queen, who now roams, 1.5 times (her fight was already twice the Unfinished's); the
  * Eye's three bars (EYE_BARS, each a whole life) his own triple.
  */
-/** ACT 2, THE HUSH: how long the Hush darkens the hero's words, once laid on (Game.hush): the planning chat's pick, told him (19 Oct): about 4 seconds, every word dark. */
-export const HUSH_FOR = 4;
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
   times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5 },

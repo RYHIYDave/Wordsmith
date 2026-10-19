@@ -387,10 +387,10 @@ const ARROW: readonly string[] = [P.white, P.sl5, P.wd5, P.wd4];
 /** How fast a volley's arrows fall and rise, in pixels a second. */
 const ARROW_FALL = 560;
 const BUBBLE: readonly string[] = [P.vn5, P.vn4, P.vn4, P.vn3];
-/** ACT 2, THE BELLS: the Hush's grey; a bell's ring, the friend's cyan (art/kit.ts CYAN); the explosion's gold. */
+/** ACT 2, THE BELLS: the Hush's grey; a bell's ring, the friend's cyan (art/kit.ts CYAN); the explosion's burst, white into his cyan (what glows on a friend is cyan: gold is the enemy's). */
 const HUSH: readonly string[] = ['#e2dfe8', '#b8b4c6', '#8e8aa0', '#6a6680'];
 const BELL_CYAN: readonly string[] = ['#22d0e0', '#b8fff8', '#0c6a80'];
-const BELL_GOLD: readonly string[] = ['#fff2b0', '#ffd860', '#e0a020'];
+const BELL_BURST: readonly string[] = ['#ffffff', '#b8fff8', '#22d0e0'];
 /** The colour each word's name is shown in when it joins an ability. */
 export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, twin: P.tl4, fire: P.fr4, frost: P.bu4, lightning: P.lt3, leech: P.bl5, volatile: P.pu4, poison: P.vn4, heavy: '#ac8753', precise: '#eef4fa', frenzied: '#ff5c33', guarding: '#30a868',
   // (WORDMELDING: the melded words take their colours from art/icons.ts)
@@ -1278,9 +1278,9 @@ export class Fx {
           } else if (e.what === 'rise') {
             this.spray(e.x, e.y, 8, HUSH, 1.2, 60, 6);
           } else if (e.what === 'won') {
-            this.rings.push({ x: e.x, y: e.y, r: 3, t: 0, dur: 0.4, colors: BELL_GOLD, fill: true, heavy: true });
+            this.rings.push({ x: e.x, y: e.y, r: 3, t: 0, dur: 0.4, colors: BELL_BURST, fill: true, heavy: true });
             this.rings.push({ x: e.x, y: e.y, r: 7, t: 0, dur: 0.9, colors: BELL_CYAN, fill: false, delay: 0.1 });
-            for (let i = 0; i < 5; i++) this.spray(e.x, e.y, 14, i % 2 ? BELL_CYAN : BELL_GOLD, 3 + i, 120 + i * 30, 26);
+            for (let i = 0; i < 5; i++) this.spray(e.x, e.y, 14, i % 2 ? BELL_CYAN : BELL_BURST, 3 + i, 120 + i * 30, 26);
             this.shake = Math.max(this.shake, 6);
             this.hold(0.08);
           } else if (e.what === 'lost') {

@@ -3,7 +3,7 @@
 
 import { actsOf } from './game/bosses';
 import type { MonsterKind } from './game/types';
-import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
+import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useAct2Figs, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
 import { makeHeroArt3, THRUST } from './art/heroes3';
 import { useComboMends, useMageStances, useRangerStances, useWild } from './art/moves3';
@@ -1976,6 +1976,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (ACT 2, THE HUSH, behind ACT2, game/act1.ts: off until his yes) Its switch, for the playtests and pictures; with `depth`, the hero taken there at once (floors 11 to 15). */
     act2: (on: boolean, depth = 0) => {
       ACT2.on = on;
+      useAct2Figs(on);
       if (game && depth) {
         game.depth = depth;
         game.cleared = Math.max(game.cleared, depth - 1);

@@ -81,8 +81,9 @@ const MOVING = new Set(["the cult's watchfire", "the cult's cauldron", "the cult
 const LOOP_FPS = 8;
 /**
  * ACT 2, THE BELLS (game/bells.ts): THE BELLS' PICTURES BY THEIR STATE. A small bell's frames are the art's: quiet, awake (ready
- * to ring), rung one way, rung back; its prop's `state` 0 quiet, 1 awake, 2 rung (swinging one way and back as long as it rings).
- * The Muffled Bell's: gagged, then swinging (straight, one way, the other); `state` 0 gagged, 1 torn loose and swinging.
+ * to ring), rung one way, rung back; its prop's `state` 0 quiet, 1 awake, 2 rung (swinging one way and back as long as it rings),
+ * 3 rung out (BELL_STILL: hanging quiet again once the event is over). The Muffled Bell's: gagged, then swinging (straight, one
+ * way, the other); `state` 0 gagged, 1 torn loose and swinging, 3 torn loose and hanging still.
  */
 export const SMALL_BELLS: ReadonlySet<string> = new Set(["a wayside shrine's bell", "a shop's doorbell", "the watch's alarm bell", 'an alarm bell at a sluice', 'a farm bell on its post', "a patient's call bell", 'a hand bell']);
 export function isMuffledBell(name: string): boolean {
@@ -90,8 +91,8 @@ export function isMuffledBell(name: string): boolean {
 }
 /** The frame a bell shows in its state at time `t`, or null: not a bell. */
 export function bellFrame(name: string, state: number, t: number): number | null {
-  if (SMALL_BELLS.has(name)) return state <= 0 ? 0 : state === 1 ? 1 : 2 + (Math.floor(t * 3) % 2);
-  if (isMuffledBell(name)) return state <= 0 ? 0 : [1, 2, 1, 3][Math.floor(t * 4) % 4];
+  if (SMALL_BELLS.has(name)) return state <= 0 || state === 3 ? 0 : state === 1 ? 1 : 2 + (Math.floor(t * 3) % 2);
+  if (isMuffledBell(name)) return state <= 0 ? 0 : state === 3 ? 1 : [1, 2, 1, 3][Math.floor(t * 4) % 4];
   return null;
 }
 
