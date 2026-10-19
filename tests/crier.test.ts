@@ -89,7 +89,11 @@ for (const view of VIEWS) {
   }
 }
 
-test('1. the switch is off, and nothing of the game imports him', () => {
+// (ACT 2, THE HUSH: he is in the game behind ACT2 (off) through his figure and what he draws alone: art/act1_figs/crier.ts,
+// render/act1_fx/crier.ts. His rules know nothing of his pictures: game/act1_rules/crier.ts, held to them by
+// tests/act2_crier.test.ts. His switch gates nothing of the game, and is off until the act is in)
+const HIS_OWN = ['art/act1_figs/crier.ts', 'render/act1_fx/crier.ts'];
+test('1. the switch is off, and nothing of the game imports him but his figure and what he draws (behind ACT2)', () => {
   assert.equal(CRIER.on, false, 'CRIER is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -97,8 +101,17 @@ test('1. the switch is off, and nothing of the game imports him', () => {
     // floor 13's Hushed in the fields, art/fieldhands.ts: tests/fieldhands.test.ts; floor 14's pieces, art/floor14.ts,
     // whose spilled tonic lets the Hush out: tests/floor14.test.ts; and its Hushed patients, art/patients.ts, the Hush
     // leaking out of them: tests/patients.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(crier(_moves|_shots)?|hushed(_moves)?|hushed_watch(_moves)?|hounds|fieldhands|floor14|patients)\.ts$/.test(f)) continue;
-    if (/from ['"][^'"]*crier(_moves|_shots)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    if (!f.endsWith('.ts') || f.startsWith('dev') || HIS_OWN.includes(f) || /^art\/(crier(_moves|_shots)?|hushed(_moves)?|hushed_watch(_moves)?|hounds|fieldhands|floor14|patients)\.ts$/.test(f)) continue;
+    // (by where each import leads, not by its name: game/act1_rules/crier.ts, his rules, is a "crier" too)
+    const dir = f.split('/').slice(0, -1);
+    for (const [, spec] of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const bit of spec.split('/')) {
+        if (bit === '..') parts.pop();
+        else if (bit !== '.') parts.push(bit);
+      }
+      if (/^art\/crier(_moves|_shots)?$/.test(parts.join('/'))) users.push(f);
+    }
   }
   assert.equal(users.join(' '), '', 'game files that import him');
 });
