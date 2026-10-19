@@ -179,8 +179,8 @@ function wardBed(empty: boolean, k: number): Sprite {
  */
 function wardScreen(see: boolean): Sprite {
   const S = scene(150, 150, 75, 118);
-  const P: [number, number][] = [[-30, -6], [-10, 6], [10, -6], [30, 6]];
-  const H = 46;
+  const P: [number, number][] = [[-36, -6], [-12, 6], [12, -6], [36, 6]];
+  const H = 58;
   for (let i = 0; i < 3; i++) {
     const [x0, y0] = P[i];
     const [x1, y1] = P[i + 1];
