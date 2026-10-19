@@ -124,6 +124,10 @@ dressers, act2/k11a, k11b, k12 to k15 the kinds, the Bells the planning chat's o
   inklings (they melt to a pool and rise at you), the Bookwardens (the tome slam), the Censor (the slash, Strike-Through, the
   Redaction bars, the Hush, and at half life the floor blacked out at his room's walls).
 - THE BELLS (game/bells.ts; Game "ACT 2: THE BELLS"; render/bells.ts; the HUD's clock and the minimap's veil): above.
+- THE MOMENTS (his Places 8, one a floor, the art's films: the pigeons bursting off a roof, the surge down a sewer channel,
+  the whirl of pages over a field, the screen that falls in a ward, the chandelier that falls in the library): laid by
+  game/act2_moments.ts on the main way past the start, played once as he comes near and sees it, as floors 1 to 5's are
+  (render/act1_pieces.ts; their films art/films.ts, made by the painter).
 - One naming for a kind's other looks, '<kind>:<form>' (art/act1_figs/types.ts `looks`): 'hushed:1', 'hushed:2', 'watch:1',
   'fieldhand:1', 'palimpsest:1' and ':2'. A lair's guardian on the Hush's floors is shown as its own kind, never the old
   Guardian's figure (art/bestiary.ts figureOf).
@@ -147,7 +151,6 @@ The planning chat's helpers' picks where the art left a number to the game, each
 
 ## Not done yet, or not sure
 
-- THE MOMENTS (his Places 8: one a floor, the art's films): being wired by a helper (act2/moments).
 - Medium kinds with one attack, as the art drew them (his rule of 9 Oct gives them two): the watch, the dredgers, the
   orderlies, the Bookwardens. A second each needs a picture from the art chat.
 - The woman patient (the art drew two) is not in: the game holds one figure a patient.
