@@ -18,7 +18,7 @@ import { test as nodeTest } from 'node:test';
 // @ts-ignore
 import nodeAssert from 'node:assert/strict';
 
-import { FIGURE_SIZE, FIRST5_FIGURES, figureOf, makeBestiary } from '../src/art/bestiary';
+import { FIGURE_SIZE, FIRST5_FIGURES, baseFigure, figureOf, makeBestiary } from '../src/art/bestiary';
 import { SENTENCE_FROM, SENTENCE_TO, SPLIT_FOR, throwPathAt } from '../src/art/boss_shots';
 import {
   AMALGAM as AM_MOB, AM_BURST_AT, AM_BURST_SPOT, AM_BURST_WAY, AM_DEVOUR_HIT, AM_SLAM_HIT, AM_SLAM_SPOTS, AM_SWARM_HIT, AM_SWARM_SPEED, AM_SWIPE_HIT, BB_BITE_HIT, BB_EMERGE_TIME, BONE_BEAST, CHAINED as CO_MOB, CHAINED_FREED,
@@ -47,6 +47,7 @@ import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { ActId, GameEvent, Monster } from '../src/game/state';
 import type { MonsterKind, WordId } from '../src/game/types';
+import { ACT2_KINDS } from '../src/game/types';
 import { paintWithoutCanvas, paintingOf, seasoned } from './helpers';
 
 interface Assert {
@@ -846,7 +847,9 @@ test('9. a boss can be killed in the middle of anything, and nothing of his is l
 
 test('10. their sizes, as the game goes by them, held against their pictures', () => {
   const art = makeBestiary();
-  for (const f of FIRST5_FIGURES) {
+  // (ACT 2, THE HUSH: its kinds, and their other looks, are held to their pictures by their own tests, each measuring its head
+  // beside what it holds up, the watch's halberd and the dredger's boathook standing over their heads: tests/act2_<kind>.test.ts)
+  for (const f of FIRST5_FIGURES.filter((g) => !ACT2_KINDS.includes(baseFigure(g) as MonsterKind))) {
     const size = FIGURE_SIZE[f];
     const s = art.of(f).front.idle[0];
     const p = paintingOf(s);
