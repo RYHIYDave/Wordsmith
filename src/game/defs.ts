@@ -528,11 +528,13 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // FLOOR 11, THE GATE WARD, and the city's own (his word, 18 Oct: "So some of the new enemies can be used throughout the next 10 levels"):
   // the Hushed townsfolk, small (the lunge and grab: as the Drowned); the Hushed watch, medium (the halberd sweep, about two tiles
   // before them: as the quarry golem); the Silent Order's scribes, small and from afar (the ink flick: as the chanter); the mute
-  // watch hounds, small and quick (the pounce: as the fog wolf).
-  hushed: { kind: 'hushed', name: 'Hushed', life: 20, dmgMin: 6, dmgMax: 9, speed: 0.9, radius: 0.3, range: 1.1, windup: 0.6, cooldown: 1.9, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  watch: { kind: 'watch', name: 'Hushed Watchman', life: 46, dmgMin: 12, dmgMax: 18, speed: 0.8, radius: 0.45, range: 2.0, windup: 0.8, cooldown: 2.3, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
-  scribe: { kind: 'scribe', name: 'Silent Scribe', life: 15, dmgMin: 5, dmgMax: 8, speed: 1.0, radius: 0.3, range: 7, windup: 0.63, cooldown: 2.6, xp: 9, ranged: true, projSpeed: 0, keepMax: 5, element: 'phys', aoe: 0.31, minDepth: 99, weight: 0, size: 'small' },
-  hound: { kind: 'hound', name: 'Mute Hound', life: 15, dmgMin: 5, dmgMax: 8, speed: 2.4, radius: 0.3, range: 1.0, windup: 0.6, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  // watch hounds, small and quick (the pounce: as the fog wolf). (ACT 2, THE HUSH, 19 Oct, as the four were built: their reaches,
+  // the scribes' wind-up, how far off they stand and how wide their ink lands, as their rules have them: game/act1_rules/hushed.ts,
+  // watch.ts, scribe.ts, hound.ts.)
+  hushed: { kind: 'hushed', name: 'Hushed', life: 20, dmgMin: 6, dmgMax: 9, speed: 0.9, radius: 0.3, range: 1.05, windup: 0.6, cooldown: 1.9, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  watch: { kind: 'watch', name: 'Hushed Watchman', life: 46, dmgMin: 12, dmgMax: 18, speed: 0.8, radius: 0.45, range: 2.3, windup: 0.8, cooldown: 2.3, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  scribe: { kind: 'scribe', name: 'Silent Scribe', life: 15, dmgMin: 5, dmgMax: 8, speed: 1.0, radius: 0.3, range: 6.5, windup: 19 / 30, cooldown: 2.6, xp: 9, ranged: true, projSpeed: 0, keepMax: 4.5, element: 'phys', aoe: 0.62, minDepth: 99, weight: 0, size: 'small' },
+  hound: { kind: 'hound', name: 'Mute Hound', life: 15, dmgMin: 5, dmgMax: 8, speed: 2.4, radius: 0.3, range: 1.15, windup: 0.6, cooldown: 1.4, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   // FLOOR 12, THE UNDERCITY: the King's rats, tiny (a bite: as the rubbling); the Order's dredgers, medium (the hook: as the cliff crawler).
   rat: { kind: 'rat', name: "King's Rat", life: 7, dmgMin: 3, dmgMax: 5, speed: 1.8, radius: 0.22, range: 0.8, windup: 0.4, cooldown: 1.3, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
   dredger: { kind: 'dredger', name: 'Dredger', life: 40, dmgMin: 10, dmgMax: 15, speed: 0.9, radius: 0.42, range: 1.9, windup: 0.7, cooldown: 2.0, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },

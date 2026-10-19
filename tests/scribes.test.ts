@@ -98,7 +98,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
   assert.equal(SCRIBES_ON.on, false, 'SCRIBES_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(scribes(_moves)?|scribe_shots)\.ts$/.test(f)) continue;
+    // (and, behind ACT2, off: their pictures as the game holds them, art/act1_figs/scribe.ts, and their ink on the floor,
+    // render/act1_fx/scribe.ts, since 19 Oct; only them)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(scribes(_moves)?|scribe_shots)\.ts$/.test(f) || f === 'art/act1_figs/scribe.ts' || f === 'render/act1_fx/scribe.ts') continue;
     if (/from ['"][^'"]*(scribes(_moves)?|scribe_shots)['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'game files that import them');
