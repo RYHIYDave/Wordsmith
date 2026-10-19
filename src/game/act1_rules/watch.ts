@@ -23,8 +23,10 @@
 // on (`knock`: half a Heavy blow's step, as the quarry golem's hammer). The rest is the main chat's way with the
 // Headsman's wide sweep (game/bosses.ts, HEADSMAN.sweep), which this is.
 //
-// MEDIUM, and the art has one move for them, the sweep: one attack where his rule of 9 Oct asks two of a medium monster
-// (the art chat's to draw a second, if he wants one).
+// MEDIUM: two attacks, his rule of 9 Oct. The art has one move for them, the sweep, their basic blow; their second is THE HELD
+// SWEEP (the main chat's, 19 Oct: game/act1_rules/held.ts): the same picture, the halberd held high and shaking two rounds
+// longer, a red circle before them where the blade will come round (`held.at` tiles before them, `held.r` round: the sweep's
+// reach), and over all of it a blow and a half and a full Heavy step's throw; every 7 seconds at most.
 //
 // THE WATCHMAN AND THE SERGEANT (the art's two, makeWatchArt3(mob)): a yellow pack's leader (an elite) is the sergeant
 // (Monster.form 1: the figure 'watch:1', art/act1_figs/watch.ts `looks`, art/bestiary.ts figureOf), and is called so (a
@@ -41,6 +43,7 @@ import { MONSTERS, TUNE } from '../defs';
 import { along } from '../bosses';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { beside, handOf } from '../facing';
+import { dropCircle, fillCircle, heldAct, heldTime, landCircle, layCircle, tidyCircle } from './held';
 import type { Monster } from '../state';
 import { HOUND } from './hound';
 import type { Act1Rules } from './types';
@@ -79,8 +82,12 @@ export function sweepAt(t: number): { bearing: number; reach: number } {
  */
 const GAIT: GaitDef = { pace: 0.8, cycle: 6 / 8, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.9, slack: 0.4, trueBack: true };
 
+const SWEEP: ActDef = { id: 'watch:sweep', clip: 'attack', long: 1.8, hit: 24 / 30, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 2.3 };
+/** THE HELD SWEEP: the warning (WA_SWEEP.warn, 0.32 to 0.62: the halberd up, shaking) played round twice more; its circle `at` tiles before them, `r` round. */
+export const WATCH_HELD = { warn: [0.32, 0.62] as const, rounds: 2, at: 1.2, r: 1.4, dmg: 1.6, knock: 1.0, cooldown: 7, first: 2.5 };
 const ACTS: readonly ActDef[] = [
-  { id: 'watch:sweep', clip: 'attack', long: 1.8, hit: 24 / 30, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 2.3 },
+  SWEEP,
+  heldAct(SWEEP, 'watch:held', WATCH_HELD.warn, WATCH_HELD.rounds, WATCH_HELD.dmg, WATCH_HELD.cooldown, WATCH_HELD.first),
 ];
 
 /** Is this one of the watch a pack's leader, or an elite: the sergeant? */
@@ -123,14 +130,39 @@ export const RULES: Act1Rules | null = {
     if (m.form === WATCH.sergeant) m.name = m.name.replace(MONSTERS.watch.name.replace('Hushed ', ''), 'Sergeant');
     brace(R, m);
   },
+  start(R, m, a) {
+    // (THE HELD SWEEP: its red circle before them, where the blade will come round, from the start)
+    if (a.id !== 'watch:held') return;
+    const p = beside(m.x, m.y, m.fx, m.fy, m.act!.hand, WATCH_HELD.at, 0);
+    layCircle(R, m, p.x, p.y, WATCH_HELD.r);
+  },
+  tick(R, m) {
+    tidyCircle(R, m, 'watch:held');
+    return false;
+  },
+  died(R, m) {
+    dropCircle(R, m);
+  },
   acting(R, m, a, t0, t1) {
-    if (a.id !== 'watch:sweep') return;
+    if (a.id !== 'watch:sweep' && a.id !== 'watch:held') return;
+    const held = a.id === 'watch:held';
+    if (held && t1 < a.hit) fillCircle(R, m, a, t1);
+    // (the held sweep is the sweep's picture with its warning played round: its moments are the sweep's, after it)
+    if (held) {
+      t0 = heldTime(a, t0);
+      t1 = heldTime(a, t1);
+    }
     const g = R.g;
     const h = g.hero;
     const S = WATCH.sweep;
     const act = m.act!;
     // (the halberd's rush through the air, as it comes round)
     if (t0 < S.from && t1 >= S.from) g.sfx('swing', 0.9);
+    // (held: the blade comes round over all its circle as it crosses before them)
+    if (held) {
+      if (t0 < SWEEP.hit && t1 >= SWEEP.hit) landCircle(R, m, a, WATCH_HELD.knock);
+      return;
+    }
     if (t1 <= S.from || t0 >= S.to || act.b) return;
     // (the blade comes round low before them: it strikes him as it passes where he stands, if it reaches him there)
     const r = R.rel(m);

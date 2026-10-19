@@ -41,6 +41,10 @@ interface Assert {
 }
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
+// (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
+// needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
+nodeAssert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
+ACT2.on = false;
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} against ${b} (within ${tol})`);
 function hush<T>(fn: () => T): T {
   const was = ACT2.on;
@@ -66,7 +70,8 @@ test('1. they are built: their rules, their pictures with a clip by each name th
     for (const a of r!.acts) {
       const clip = a.clip === 'attack' ? set.clips?.attack : set.clips?.moves?.[a.clip];
       assert.ok(clip && clip.frames.length > 0, `its ${a.id}: its clip ${a.clip}`);
-      near((clip!.frames.length - 1) / clip!.fps, a.long, 1 / clip!.fps, `its ${a.id}'s length`);
+      // (the held slam is the slam's picture with its whirl played round once more: its length the picture's and that: held.ts)
+      near((clip!.frames.length - 1) / clip!.fps, a.long - (a.loop?.extra ?? 0), 1 / clip!.fps, `its ${a.id}'s length`);
     }
     assert.ok(set.clips?.reel && set.clips?.die, 'struck and its death');
   }

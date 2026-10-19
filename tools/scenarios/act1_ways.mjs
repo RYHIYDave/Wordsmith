@@ -4,11 +4,14 @@
 // cleared up its shaft: the town's waypoint takes him on to the first floor of the descent.
 //   node tools/build_to.mjs dist/act1.html
 //   DEPTH=6 node tools/playtest.mjs --file dist/act1.html --size 1014x468 --scenario tools/scenarios/act1_ways.mjs --out shots/act1/ways6
-// DEPTH: the floor (6 to 10; 5: the shaft up, and the town's waypoint on).
+// DEPTH: the floor (6 to 15; 5: the shaft up, and the town's waypoint on; 10 and 15, home, and from 10 the waypoint on to 11).
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {
   const depth = Number(process.env.DEPTH || 6);
+  // (from the last floor there is, home: the tenth with Act 2 off, the fifteenth with it on)
+  const ACT2 = await page.evaluate(() => window.__dbg.lastFloor ? window.__dbg.lastFloor() === 15 : true);
+  const home = depth === 15 || (depth === 10);
   await page.evaluate(() => {
     const d = window.__dbg; d.saving(false); d.run('warrior', 9); d.seasoned(20); d.autoLevel = false; d.autoWords = false; d.god = true;
   });
@@ -80,10 +83,28 @@ export default async function (page, snap) {
   let after = null;
   for (let i = 0; i < 12; i++) {
     after = await page.evaluate(() => { const g = window.__dbg.game(); return { depth: g.depth, town: g.level.town, cleared: g.cleared, wayDepth: g.wayDepth }; });
-    if (depth === 10 ? after.town : after.depth === depth + 1) break;
+    if (home ? after.town : after.depth === depth + 1) break;
     await page.waitForTimeout(500);
   }
   log('after', JSON.stringify(after));
-  if (depth === 10 ? !after.town : after.depth !== depth + 1 || after.town) log('!! the way on did not take him on');
+  if (home ? !after.town : after.depth !== depth + 1 || after.town) log('!! the way on did not take him on');
   await snap('c_next');
+  // (ACT 2, THE HUSH, on since Version 23.0: home from the tenth, the siege broken, the town's waypoint takes him on to the
+  // Gate Ward, floor 11)
+  if (depth === 10 && ACT2) {
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => { const g = window.__dbg.game(); const w = g.level.ways.way; g.hero.x = w.x; g.hero.y = w.y; });
+    await page.waitForTimeout(400);
+    log('town way', JSON.stringify({ wayDepth: await page.evaluate(() => window.__dbg.game().wayDepth), hint: await page.evaluate(() => window.__dbg.game().interactHint()) }));
+    await page.keyboard.press('KeyE');
+    let on11 = null;
+    for (let i = 0; i < 30; i++) {
+      await page.waitForTimeout(500);
+      on11 = await page.evaluate(() => { const g = window.__dbg.game(); return { depth: g.depth, town: g.level.town, land: !!g.level.land }; });
+      if (on11.depth === 11 && !on11.town) break;
+    }
+    log('warped', JSON.stringify(on11));
+    if (!on11 || on11.depth !== 11 || on11.town || !on11.land) log("!! the town's waypoint did not take him on to floor 11");
+    await snap('d_floor11');
+  }
 }

@@ -17,14 +17,16 @@
 //   `blow.r` of where its head strikes the floor (`blow.at`, measured off the art at 27/30), or in its way there, before
 //   them; with all their weight: a full blow and a little knock back (`blow.knock` of a Heavy blow's step). The floor
 //   shakes as it goes in (27/30), and its mark lies there (`orderly:slam`, drawn by render/act1_fx/orderly.ts).
-// - ONE ATTACK. His rule (his rulebook, "Their attacks") gives a medium monster two; the art drew the orderlies one, the
-//   mallet blow. A second wants a picture of its own (the art chat's: "who carry the Hushed in and hold them down for
-//   him"): NOT MADE HERE, the planning chat's to ask for.
+// - TWO ATTACKS, his rule (his rulebook, "Their attacks"): the art drew the orderlies one, the mallet blow, their basic
+//   blow; their second is THE HELD BLOW (the main chat's, 19 Oct, game/act1_rules/held.ts): the same picture, the mallet
+//   held up shaking two rounds longer, a red circle where it will come down (the art's ring of dust, SLAM_REACH 1.1 tiles,
+//   and a little), and over all of it a blow and a half and a full Heavy step's throw; every 7 seconds at most.
 //
 // The rules know nothing of the pictures: each number here that is a picture's is written down, and
 // tests/act2_orderly.test.ts holds it to the art.
 
 import type { ActDef, BossRules, GaitDef } from '../bosses';
+import { dropCircle, fillCircle, heldAct, heldTime, landCircle, layCircle, tidyCircle } from './held';
 import { TUNE } from '../defs';
 import { beside, fromFigure } from '../facing';
 import type { Monster } from '../state';
@@ -44,9 +46,12 @@ export const ORDERLY = {
 /** Their trudge, painted for 0.8 tiles a second (OD_PACE: twelve frames at eight a second); they stop at any frame of it, as their pictures hand over from any. */
 export const ORDERLY_GAIT: GaitDef = { pace: 0.8, cycle: 1 / 8, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.3, slack: 0.3, trueBack: true };
 
-/** Their one blow. */
+/** Their basic blow, and THE HELD BLOW (held.ts): the warning (OD_BLOW.warn, 0.38 to 0.66: the mallet up, shaking) played round twice more. */
+const BLOW: ActDef = { id: 'orderly:blow', clip: 'attack', long: 2.1, hit: ORDERLY.blow.hit, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 1.9 };
+export const ORDERLY_HELD = { warn: [0.38, 0.66] as const, rounds: 2, r: 1.2, dmg: 1.6, knock: 1.0, cooldown: 7, first: 2.5 };
 export const ORDERLY_ACTS: readonly ActDef[] = [
-  { id: 'orderly:blow', clip: 'attack', long: 2.1, hit: ORDERLY.blow.hit, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 1.9 },
+  BLOW,
+  heldAct(BLOW, 'orderly:held', ORDERLY_HELD.warn, ORDERLY_HELD.rounds, ORDERLY_HELD.dmg, ORDERLY_HELD.cooldown, ORDERLY_HELD.first),
 ];
 
 /** Where the mallet's head strikes the floor, from one that strikes facing (fx, fy), drawn with `hand`. */
@@ -58,14 +63,38 @@ export const RULES: Act1Rules | null = {
   gait: ORDERLY_GAIT,
   acts: ORDERLY_ACTS,
 
+  start(R, m, a) {
+    // (THE HELD BLOW: its red circle where the mallet will come down, from the start)
+    if (a.id !== 'orderly:held') return;
+    const s = slamSpot(m, m.act!.hand);
+    layCircle(R, m, s.x, s.y, ORDERLY_HELD.r);
+  },
+  tick(R, m) {
+    tidyCircle(R, m, 'orderly:held');
+    return false;
+  },
+  died(R, m) {
+    dropCircle(R, m);
+  },
+
   acting(R: BossRules, m: Monster, a, t0, t1) {
-    if (a.id !== 'orderly:blow') return;
+    if (a.id !== 'orderly:blow' && a.id !== 'orderly:held') return;
+    const held = a.id === 'orderly:held';
+    if (held && t1 < a.hit) fillCircle(R, m, a, t1);
+    // (the held blow is the basic blow's picture with its warning played round: its moments are the basic blow's, after it)
+    if (held) {
+      t0 = heldTime(a, t0);
+      t1 = heldTime(a, t1);
+    }
     const g = R.g;
     const h = g.hero;
     const act = m.act!;
     const at = (T: number): boolean => t0 < T && t1 >= T;
     const B = ORDERLY.blow;
-    if (at(B.hit)) {
+    if (held && at(B.hit)) {
+      landCircle(R, m, a, ORDERLY_HELD.knock);
+      g.sfx('swing', 0.7);
+    } else if (at(B.hit)) {
       // (brought down over the top: whoever is under it, where it goes into the floor or in its way there)
       const s = slamSpot(m, act.hand);
       const r = fromFigure(m.x, m.y, m.fx, m.fy, act.hand, h.x, h.y);

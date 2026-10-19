@@ -30,17 +30,23 @@ export function cityFight(kind: MonsterKind, depth: number, secs: number, seed =
 
 /** With the Hush off: is `kind` in none of the packs of floors 1 to 15 (and are floors 11 to 15 not the Hush's)? Returns what was found against it. */
 export function offTheFloors(kind: MonsterKind): string[] {
-  const found: string[] = [];
-  if (ACT2.on) found.push('the switch is on');
-  for (let d = 11; d <= 15; d++) if (act1Floor(d)) found.push(`floor ${d} is laid as open ground`);
-  const rng = new RNG(11);
-  for (let d = 6; d <= 15; d++) {
-    for (let i = 0; i < 200; i++) {
-      for (const tier of ['normal', 'elite', 'champion'] as const) {
-        const p = act1Pack(d, rng, tier);
-        if (p.kind === kind) found.push(`a pack of it on floor ${d}`);
+  // (ACT 2 IS ON IN THE GAME since Version 23.0: the switch is turned off here for the asking, and back as it was after)
+  const was = ACT2.on;
+  ACT2.on = false;
+  try {
+    const found: string[] = [];
+    for (let d = 11; d <= 15; d++) if (act1Floor(d)) found.push(`floor ${d} is laid as open ground`);
+    const rng = new RNG(11);
+    for (let d = 6; d <= 15; d++) {
+      for (let i = 0; i < 200; i++) {
+        for (const tier of ['normal', 'elite', 'champion'] as const) {
+          const p = act1Pack(d, rng, tier);
+          if (p.kind === kind) found.push(`a pack of it on floor ${d}`);
+        }
       }
     }
+    return found;
+  } finally {
+    ACT2.on = was;
   }
-  return found;
 }

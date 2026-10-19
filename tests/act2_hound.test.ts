@@ -39,6 +39,10 @@ interface Assert {
 }
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
+// (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
+// needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
+nodeAssert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
+ACT2.on = false;
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} against ${b} (within ${tol})`);
 interface Hooks {
   wakeUp(m: Monster): void;

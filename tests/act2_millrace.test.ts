@@ -26,6 +26,10 @@ import { spikeAt } from '../src/game/traps';
 import { T_FLOOR } from '../src/game/types';
 import { Act1Pieces, SEE_TALL, act1Pieces } from '../src/render/act1_pieces';
 import { paintWithoutCanvas } from './helpers';
+// (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
+// needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
+assert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
+ACT2.on = false;
 
 paintWithoutCanvas();
 

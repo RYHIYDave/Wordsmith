@@ -253,7 +253,7 @@ export const HEADSMAN = {
  *     tiles forward and to his left, as the art's H2_SHIFT), and he is moved there as each ends.
  */
 export const HEADSMAN2_FIGHT = {
-  on: false,
+  on: true,
   lunge: { long: 1.5, hit: 0.6, reach: 3.7, from: -1.5, to: 1.3 },
   flurry: { long: 2.38, r: 1.3, cuts: [[0.62, 3.419, 2.17, 0.7], [1.08, 4.029, -2.111, 0.7], [1.54, 5.513, -0.019, 1.0]] as ReadonlyArray<readonly [number, number, number, number]> },
   wheel: { long: 2.36, hit: 0.8, stop: 1.86, every: 11 / 30, from: 0.6, to: 1.7, drive: 2.5, ahead: 0.97, r: 1.5, warnFrom: 0.24 },
@@ -724,6 +724,9 @@ export class BossRules {
     m.move = -1;
     m.gait = { mode: G && G.raise > 0 ? 'carry' : 'stand', t: 0 };
     if (this.g.hero.held && m.kind === 'chained') this.g.hero.held = 0;
+    // (ACT 2, THE HUSH: a held blow's red circle goes with it, as a troll's slam's does when it is staggered: act1_rules/held.ts)
+    const zs = this.g.zones;
+    for (let k = zs.length - 1; k >= 0; k--) if (zs[k].kind === 'warn' && zs[k].src === m.id) zs.splice(k, 1);
   }
 
   /** Whether a monster may stand at (x, y): its tile is one to walk on. */

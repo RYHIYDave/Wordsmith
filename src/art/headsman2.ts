@@ -30,7 +30,7 @@ import { about, add, buildOf, cross, dot, heading, len, lerp3, mul, norm, solve,
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
 /** THE SWITCH, OFF. Nothing of the game reads this file; the main chat puts him in by it, on the owner's yes. */
-export const HEADSMAN2 = { on: false };
+export const HEADSMAN2 = { on: true };
 
 export const D = Math.PI / 180;
 export type P = Partial<Bones>;

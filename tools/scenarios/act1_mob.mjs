@@ -1,15 +1,20 @@
 // ACT 1, THE DESCENT: ONE OF ITS OWN KINDS IN THE GAME, ON ITS FLOOR (game/act1_rules/). For looking at, and films.
 //   node tools/build_to.mjs dist/act1.html
 //   KIND=qgolem node tools/playtest.mjs --file dist/act1.html --size 1014x468 --scenario tools/scenarios/act1_mob.mjs --out shots/act1/qgolem
-// KIND: the kind (game/types.ts ACT1_KINDS). DEPTH: its floor (the kind's own: 6 to 10). N: how many (1; a boss is
+// KIND: the kind (game/types.ts ACT1_KINDS, and Act 2's). DEPTH: its floor (the kind's own: 6 to 15). N: how many (1; a boss is
 // always the floor's one). FAR: how far off the hero stands (3.5 tiles). SECS: how long to watch (10).
 // ACT: an act to have it make over and over (its id, 'qgolem:smash'): every other is kept cooling.
 // FILM=1: a frame every 15th of a second of the game's time (the game slowed), named f_0000... (else a picture a second).
 // HURT: its life as a share of its whole (for what comes as it is hurt). CLS: the hero (warrior). STILL=1: the hero is struck by nothing (god) and stands.
 import { log } from './lib.mjs';
 
-const FLOOR = { chanter: 6, firepot: 6, qgolem: 6, rubbling: 6, unfinished: 6, vulture: 7, crawler: 7, queen: 7, scorpion: 8, devil: 8, cantor: 8, deer: 9, wolf: 9, stag: 9, drowned: 10, leech: 10, spawn: 10, eye: 10 };
-const BOSSES = ['unfinished', 'queen', 'cantor', 'stag', 'eye'];
+const FLOOR = {
+  chanter: 6, firepot: 6, qgolem: 6, rubbling: 6, unfinished: 6, vulture: 7, crawler: 7, queen: 7, scorpion: 8, devil: 8, cantor: 8, deer: 9, wolf: 9, stag: 9, drowned: 10, leech: 10, spawn: 10, eye: 10,
+  // (ACT 2, THE HUSH, Version 23.0: floors 11 to 15's own)
+  hushed: 11, watch: 11, scribe: 11, hound: 11, crier: 11, rat: 12, dredger: 12, ratking: 12, fieldhand: 13, carter: 13, palimpsest: 13,
+  patient: 14, orderly: 14, physician: 14, inkling: 15, bookwarden: 15, censor: 15,
+};
+const BOSSES = ['unfinished', 'queen', 'cantor', 'stag', 'eye', 'crier', 'ratking', 'palimpsest', 'physician', 'censor'];
 
 export default async function (page, snap) {
   const kind = process.env.KIND || 'qgolem';

@@ -18,6 +18,10 @@ import { T_FLOOR } from '../src/game/types';
 import { HQ_ZONE } from '../src/art/housequiet';
 // @ts-ignore
 import * as fs from 'node:fs';
+// (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
+// needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
+assert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
+ACT2.on = false;
 
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);
 

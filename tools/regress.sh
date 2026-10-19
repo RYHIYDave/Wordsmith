@@ -433,6 +433,40 @@ wait
 SCENE=fall run act1_meld_drops_fall $P --scenario $S/meld_drops_film.mjs &
 SCENE=give run act1_meld_drops_give $P --scenario $S/meld_drops_film.mjs &
 wait
+# ACT 2, THE HUSH (Version 23.0): each of floors 11 to 15 laid and seen with its monsters, each boss's fight (the Censor at
+# half his life too: his blackout), each of its own kinds, the Bells, the moments, each floor where the hero comes in, the
+# ways on and home (from 10, home and the town's waypoint on to 11: act1_ways10 above; from 15, home)
+DEPTH=11 FOES=1 run act2_floor11_phone $P --scenario $S/act1_floor.mjs &
+DEPTH=12 FOES=1 run act2_floor12 --scenario $S/act1_floor.mjs &
+DEPTH=13 FOES=1 run act2_floor13_upright $U --scenario $S/act1_floor.mjs &
+DEPTH=14 FOES=1 run act2_floor14 --scenario $S/act1_floor.mjs &
+wait
+DEPTH=15 FOES=1 run act2_floor15_phone $P --scenario $S/act1_floor.mjs &
+KIND=crier SECS=12 run act2_boss11_phone $P --scenario $S/act1_mob.mjs &
+KIND=ratking SECS=12 run act2_boss12 --scenario $S/act1_mob.mjs &
+KIND=palimpsest SECS=12 CLS=ranger run act2_boss13 --scenario $S/act1_mob.mjs &
+wait
+KIND=physician SECS=12 CLS=mage run act2_boss14_phone $P --scenario $S/act1_mob.mjs &
+KIND=censor SECS=12 run act2_boss15 --scenario $S/act1_mob.mjs &
+KIND=censor SECS=12 HURT=0.4 run act2_boss15_half $P --scenario $S/act1_mob.mjs &
+wait
+for k in hushed watch scribe hound rat dredger fieldhand carter patient orderly inkling bookwarden; do
+  KIND=$k N=3 SECS=8 run act2_mob_$k $P --scenario $S/act1_mob.mjs &
+  [ "$k" = scribe ] || [ "$k" = dredger ] || [ "$k" = patient ] && wait
+done
+wait
+DEPTH=11 run act2_bells11_phone $P --scenario $S/act2_bells.mjs &
+DEPTH=14 run act2_bells14 --scenario $S/act2_bells.mjs &
+DEPTHS=11,12,13,14,15 run act2_moments --scenario $S/act2_moments.mjs &
+DEPTHS=11,12,13,14,15 run act2_look_phone $P --scenario $S/act2_look.mjs &
+wait
+DEPTH=11 run act2_ways11 $P --scenario $S/act1_ways.mjs &
+DEPTH=12 run act2_ways12 --scenario $S/act1_ways.mjs &
+DEPTH=13 run act2_ways13 --scenario $S/act1_ways.mjs &
+DEPTH=14 run act2_ways14 $P --scenario $S/act1_ways.mjs &
+wait
+DEPTH=15 run act2_ways15 --scenario $S/act1_ways.mjs &
+wait
 # THE SPEED WORK (Version 22.1): the Pinewood's forest drawn as chunk pictures draws the same picture, to the pixel, as
 # its trees one by one (render/tops_cache.ts), with the warrior and the mage (who throws the most about)
 CLS=warrior SPOTS=8 run speed_tops_same_warrior $P --scenario $S/tops_same.mjs &

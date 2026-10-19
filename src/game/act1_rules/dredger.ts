@@ -20,8 +20,10 @@
 //   haul, HAULED IN TOWARD THEM WITH IT, as far as the picture draws the hook in (from 2.44 tiles to 1.54: near a tile),
 //   never nearer them than `least`; what he is dragged over scrapes the floor (render/act1_fx/dredger.ts, as the cliff
 //   crawler's drag is drawn). So the pull is the crawler's kind, as the brief asked; the picture's own length of it.
-// - ONE BLOW ONLY: his rule of 9 Oct (game/defs.ts MONSTER_ATTACKS) gives a medium kind two attacks; the art chat drew the
-//   dredgers one (the hook and haul), so they have that one until it draws another (said in the report).
+// - TWO ATTACKS, his rule of 9 Oct (game/defs.ts MONSTER_ATTACKS): the art chat drew the dredgers one move, the hook and
+//   haul, and it is two (the main chat's, 19 Oct, told him that day): THE THRUST, their basic blow (the pole jabbed out, the
+//   hook brought back empty: never a catch), and THE HOOK AND HAUL, their big one, made only when he stands where the hook
+//   can catch him (`catchFrom` tiles out or more), a blow and a quarter, every 6 seconds at most. The same picture for both.
 // - THEY WADE at their picture's pace, slow, and stop where their hook reaches you.
 //
 // The rules know nothing of the pictures: each number here that is a picture's is written down, and tests/act2_dredger.test.ts
@@ -67,8 +69,9 @@ export function hookAt(t: number): number {
 export const DREDGER_GAIT: GaitDef = { pace: 0.85, cycle: 1.5, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.9, slack: 0.5, trueBack: true };
 
 export const DREDGER_ACTS: readonly ActDef[] = [
-  // THE HOOK AND HAUL (DR_HAUL: 2.0 s, the thrust at 22/30)
+  // THE THRUST, the basic blow, and THE HOOK AND HAUL (DR_HAUL: 2.0 s, the thrust at 22/30), from where the hook catches
   { id: 'dredger:hook', clip: 'attack', long: 2.0, hit: 22 / 30, dmg: 1, cooldown: 0, first: 0, after: 1.0, near: 0, far: 2.5 },
+  { id: 'dredger:haul', clip: 'attack', long: 2.0, hit: 22 / 30, dmg: 1.25, cooldown: 6, first: 1.5, after: 1.0, near: DREDGER.strike.catchFrom, far: 2.5 },
 ];
 
 /** What it keeps (Monster.a1): `hooked` 1 while it has the hero on its hook; where he was caught (`ox`, `oy`), for the scrape he leaves. */
@@ -105,7 +108,7 @@ export const RULES: Act1Rules | null = {
   },
 
   acting(R, m, a, t0, t1) {
-    if (a.id !== 'dredger:hook') return;
+    if (a.id !== 'dredger:hook' && a.id !== 'dredger:haul') return;
     const g = R.g;
     const h = g.hero;
     const k = keep(m);
@@ -119,7 +122,7 @@ export const RULES: Act1Rules | null = {
       if (r.fwd >= S.from && r.fwd <= S.reach && Math.abs(r.left) <= S.half && h.invuln <= 0 && !h.move && !g.over) {
         const was = h.life;
         R.blow(m, a.dmg);
-        if (r.fwd >= S.catchFrom && h.life < was) {
+        if (a.id === 'dredger:haul' && r.fwd >= S.catchFrom && h.life < was) {
           k.hooked = 1;
           k.ox = h.x;
           k.oy = h.y;

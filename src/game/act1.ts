@@ -30,7 +30,7 @@ export const ACT1 = { on: true };
  * WHERE THE GAME ASKS "A FLOOR LAID AS OPEN GROUND?", floors 11 to 15 answer as the descent's do (act1Floor below); where it
  * asks "THE DESCENT'S OWN?" (its cult, its strongholds, its camp), they do not (act2Floor).
  */
-export const ACT2 = { on: false };
+export const ACT2 = { on: true };
 
 /** The kinds of ground of the descent, in its order; then the Hush's five (ACT2). */
 export type Act1LandKind = 'quarry' | 'ledge' | 'canyon' | 'pine' | 'fen';

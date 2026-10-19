@@ -49,6 +49,10 @@ interface Assert {
 }
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
+// (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
+// needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
+nodeAssert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
+ACT2.on = false;
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} against ${b} (within ${tol})`);
 
 paintWithoutCanvas();
@@ -161,9 +165,10 @@ test('3. the thrust lands at its moment on whoever is before them along the pole
 
 test('4. THE HOOK: caught on it, held and hauled in as far as the hook comes in; let go after; not caught in under it, nor rolling through', () => {
   {
-    const { g, m } = room('dredger', 2.2, 'dredger:hook');
+    // (THE HOOK AND HAUL, their big move: game/act1_rules/dredger.ts, his rule of a medium monster's two attacks)
+    const { g, m } = room('dredger', 2.2, 'dredger:haul');
     const h = g.hero;
-    g.bosses.startAct(m, RULES!.acts, 0);
+    g.bosses.startAct(m, RULES!.acts, 1);
     const x0 = h.x;
     let held = 0;
     let hooked = false;
@@ -193,8 +198,17 @@ test('4. THE HOOK: caught on it, held and hauled in as far as the hook comes in;
     assert.ok(Math.abs(g.hero.x - x0) < 0.05, 'not moved');
   }
   {
-    // (killed as they haul: he is let go there and then)
+    // (THE THRUST, their basic blow: struck out where the hook would catch, but never caught: the hook comes back empty)
     const { g, m } = room('dredger', 2.2, 'dredger:hook');
+    const x0 = g.hero.x;
+    const s = watch(g, m, 2.0);
+    assert.equal(s.hurts.length, 1, 'the thrust: struck');
+    assert.ok(!s.events.some((e) => e.t === 'text' && (e as { text: string }).text === 'Hooked'), 'the thrust: not hooked');
+    assert.ok(Math.abs(g.hero.x - x0) < 0.05, 'the thrust: not hauled');
+  }
+  {
+    // (killed as they haul: he is let go there and then)
+    const { g, m } = room('dredger', 2.2, 'dredger:haul');
     watch(g, m, 2.0, undefined, () => !!m.act && m.act.t > DREDGER.haul.bite + 0.1);
     assert.ok(g.hero.held && g.hero.held > 0, 'held as they haul');
     g.kill(m);
@@ -205,7 +219,7 @@ test('4. THE HOOK: caught on it, held and hauled in as far as the hook comes in;
   }
   {
     // (rolling through as it is thrust: not caught)
-    const { g, m } = room('dredger', 2.2, 'dredger:hook');
+    const { g, m } = room('dredger', 2.2, 'dredger:haul');
     const h = g.hero;
     watch(g, m, 2.0, undefined, () => !!m.act && m.act.t > DREDGER.haul.hit - 0.05);
     h.move = { kind: 'roll', t: 0, dur: 0.4, x0: h.x, y0: h.y, x1: h.x, y1: h.y + 0.01 } as typeof h.move;
@@ -226,7 +240,7 @@ test('5. what they draw: the scrape of the haul, in the floor\'s colours, nothin
       return true;
     },
   }) as unknown as CanvasRenderingContext2D;
-  const { g, m } = room('dredger', 2.2, 'dredger:hook');
+  const { g, m } = room('dredger', 2.2, 'dredger:haul');
   const c: Act1FxCtx = { g: ctx, at: (x, y) => [(x - y) * 16, (x + y) * 8], game: g, t: 0, bestiary: makeBestiary(), stand: () => undefined, spot: () => undefined };
   let drawnWhileHauled = 0;
   watch(g, m, 2.0, undefined, () => {

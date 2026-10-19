@@ -26,6 +26,7 @@
 import { TUNE } from '../defs';
 import { beside } from '../facing';
 import type { ActDef, GaitDef } from '../bosses';
+import { dropCircle, fillCircle, heldAct, heldTime, landCircle, layCircle, tidyCircle } from './held';
 import type { Act1Rules } from './types';
 
 /** THE BOOKWARDENS' NUMBERS (tiles, seconds of their pictures). */
@@ -42,8 +43,17 @@ export const BOOKWARDEN = {
 /** Their trudge, painted for 0.85 tiles a second (WB_PACE; twelve frames at eight a second); stopped at any frame of it. */
 const GAIT: GaitDef = { pace: 0.85, cycle: 1 / 8, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.7, slack: 0.3, trueBack: true };
 
+/**
+ * Their basic blow, the tome slam; and THE HELD SLAM (the main chat's, 19 Oct: game/act1_rules/held.ts, his rule of a medium
+ * monster's two attacks): the same picture, the tome whirled round over their head once more (WB_SLAM.warn, 0.32 to 0.8: about
+ * one turn), a red circle where it will come down (the dust's reach out of its sides, and a little), and over all of it a blow
+ * and a half and a full Heavy step's throw; every 7 seconds at most.
+ */
+const SLAM: ActDef = { id: 'bookwarden:slam', clip: 'attack', long: BOOKWARDEN.slam.long, hit: BOOKWARDEN.slam.hit, dmg: 1, cooldown: 0, first: 0, after: 0.6, near: 0, far: 2.4 };
+export const BOOKWARDEN_HELD = { warn: [0.32, 0.8] as const, rounds: 1, r: 1.4, dmg: 1.6, knock: 1.0, cooldown: 7, first: 2.5 };
 const ACTS: readonly ActDef[] = [
-  { id: 'bookwarden:slam', clip: 'attack', long: BOOKWARDEN.slam.long, hit: BOOKWARDEN.slam.hit, dmg: 1, cooldown: 0, first: 0, after: 0.6, near: 0, far: 2.4 },
+  SLAM,
+  heldAct(SLAM, 'bookwarden:held', BOOKWARDEN_HELD.warn, BOOKWARDEN_HELD.rounds, BOOKWARDEN_HELD.dmg, BOOKWARDEN_HELD.cooldown, BOOKWARDEN_HELD.first),
 ];
 
 /** Where the tome comes down, from one who faces (fx, fy) at (x, y) drawn with `hand`: the book's middle on the floor. */
@@ -67,8 +77,28 @@ export function inDust(bx: number, by: number, fx: number, fy: number, x: number
 export const RULES: Act1Rules | null = {
   gait: GAIT,
   acts: ACTS,
+  start(R, m, a) {
+    // (THE HELD SLAM: its red circle where the tome will come down, from the start)
+    if (a.id !== 'bookwarden:held') return;
+    const b = tomeSpot(m, m.act!.hand);
+    layCircle(R, m, b.x, b.y, BOOKWARDEN_HELD.r);
+  },
+  tick(R, m) {
+    tidyCircle(R, m, 'bookwarden:held');
+    return false;
+  },
+  died(R, m) {
+    dropCircle(R, m);
+  },
   acting(R, m, a, t0, t1) {
-    if (a.id !== 'bookwarden:slam') return;
+    if (a.id !== 'bookwarden:slam' && a.id !== 'bookwarden:held') return;
+    const held = a.id === 'bookwarden:held';
+    if (held && t1 < a.hit) fillCircle(R, m, a, t1);
+    // (the held slam is the slam's picture with its whirl played round once more: its moments are the slam's, after it)
+    if (held) {
+      t0 = heldTime(a, t0);
+      t1 = heldTime(a, t1);
+    }
     const g = R.g;
     const h = g.hero;
     const act = m.act!;
@@ -76,9 +106,10 @@ export const RULES: Act1Rules | null = {
     const S = BOOKWARDEN.slam;
     if (at(0.32)) g.sfx('swing', 0.5);
     if (!at(S.floor)) return;
-    // FLAT ON THE FLOOR: whoever is in its dust is struck, and shoved back off the book
+    // FLAT ON THE FLOOR: whoever is in its dust is struck, and shoved back off the book (held: in its circle)
     const b = tomeSpot(m, act.hand);
-    if (inDust(b.x, b.y, m.fx, m.fy, h.x, h.y, TUNE.heroRadius * 0.5)) {
+    if (held) landCircle(R, m, a, BOOKWARDEN_HELD.knock);
+    else if (inDust(b.x, b.y, m.fx, m.fy, h.x, h.y, TUNE.heroRadius * 0.5)) {
       const was = h.life;
       R.blow(m, a.dmg);
       if (h.life < was) g.knockHero(b.x, b.y, S.knock);

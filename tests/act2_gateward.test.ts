@@ -30,6 +30,10 @@ import { worldOf } from '../src/art/terrain';
 import { gateWardLand, landTerrain } from '../src/render/outdoor';
 import { HouseShells, SHELL_FADE, houseDepth, inHouse, shellMaker, trapSprite } from '../src/render/act2_houses';
 import { SPIKE } from '../src/game/traps';
+// (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
+// needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
+assert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
+ACT2.on = false;
 
 function hush<T>(fn: () => T): T {
   const was = ACT2.on;

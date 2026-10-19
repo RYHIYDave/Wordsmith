@@ -23,6 +23,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { BOSS_INTRO, BOSS_LINES, FLOOR_NAMES, floorTitle } from '../src/game/defs';
+import { lastFloor } from '../src/game/act1';
 import { GATE_INSIDE, insideBy } from '../src/game/doors';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -85,7 +86,9 @@ test('every floor has its own name and its level, "Prison Level N"; coming into 
   const places = ['The Quarry', 'The Ledge Road', 'Echo Canyon', 'The Pinewood', 'The Sunken Fen'];
   for (let d = 6; d <= 10; d++) assert.equal(floorTitle(d).level, `${places[d - 6]}, Level ${d}`);
   assert.equal(floorTitle(6).name, 'The Unfinished Cut');
-  assert.equal(floorTitle(11).name, FLOOR_NAMES.beyond, 'past the tenth, the deep’s');
+  // (ACT 2, THE HUSH, on since Version 23.0: floors 11 to 15 the city's, each with a name of its own; past them, the deep's)
+  for (let d = 11; d <= 15; d++) assert.ok(floorTitle(d).name && floorTitle(d).name !== FLOOR_NAMES.beyond, `floor ${d}: a name of its own (${floorTitle(d).name})`);
+  assert.equal(floorTitle(lastFloor() + 1).name, FLOOR_NAMES.beyond, 'past the last floor, the deep’s');
   const g = new Game('warrior', 5);
   g.depth = 2;
   g.cleared = 1;

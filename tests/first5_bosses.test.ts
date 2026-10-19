@@ -41,7 +41,7 @@ import { HEADSMAN2 } from '../src/art/headsman2';
 HEADSMAN2_FIGHT.on = false;
 import type { ActDef, GaitedKind } from '../src/game/bosses';
 import { BOSS_LIFE, BOSS_LINES, MONSTERS, SUMMON } from '../src/game/defs';
-import { ACT1_FLOORS } from '../src/game/act1';
+import { ACT1_FLOORS, lastFloor } from '../src/game/act1';
 import { beside, handOf } from '../src/game/facing';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -173,7 +173,8 @@ test('1. each floor has its own boss; past the fifth, and with the switch off, t
   // (BOSS_LIFE, his word of 17 Oct: "Bosses need more HP past the warden": each times his own)
   const more = BOSS_LIFE.on ? BOSS_LIFE.times.fleshmancer ?? 1 : 1;
   assert.equal(five.maxLife, Math.round(MONSTERS.fleshmancer.life * (1 + 0.4 * 4) * 2 * more * (five.words.includes('power') ? 1.3 : 1)), 'the Fleshmancer: his life');
-  assert.equal(dungeon(3, 15).boss!.name.startsWith('Greater'), true, 'a Warden of a fifth floor is still a Greater one (past the descent: its tenth is the Drowned Eye\'s)');
+  // (ACT 2 on since Version 23.0: floor 15 is the Censor's; past the Hush, a fifth floor's Warden is still a Greater one)
+  assert.equal(dungeon(3, lastFloor() + 5).boss!.name.startsWith('Greater'), true, 'a Warden of a fifth floor is still a Greater one (past the descent: its tenth is the Drowned Eye\'s)');
   BOSSES5.on = false;
   try {
     for (const depth of [2, 3, 4, 5]) assert.equal(dungeon(3, depth).boss!.kind, 'warden', `off: floor ${depth}'s boss is the Warden, as up to Version 20.2`);
