@@ -143,8 +143,9 @@ test('on, every floor has places for its stairwell in the boss\'s hall on plain 
       const was = CRYPT_LAYOUT.on;
       CRYPT_LAYOUT.on = layout;
       try {
-        // (floors 6 to 10 are the descent, out on the open ground, game/act1.ts: no stairwell, the way on in its place)
-        for (const d of [1, 2, 3, 4, 5, 11, 12]) {
+        // (floors 6 to 10 are the descent, out on the open ground, game/act1.ts: no stairwell, the way on in its place; and
+        // since Version 23.0 floors 11 to 15 the Hush's: past them, dungeons again)
+        for (const d of [1, 2, 3, 4, 5, 16, 17]) {
           for (const seed of SEEDS.slice(0, layout ? 8 : 16)) {
             const L = makeDungeon(d, seed);
             const f = L.floor;
