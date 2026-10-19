@@ -3,7 +3,7 @@
 A pixel-art isometric action RPG with roguelike runs, for PC and phones (iPhone and Android).
 You direct and playtest; Claude writes and tests all the code.
 
-**Status (17 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 22.1).**
+**Status (19 Oct 2026): Builds 1 and 2 are playable, and Build 3 is under way (Version 23.0: floors 1 to 15).**
 Version 10 was the first of the new art: the three heroes you chose (the Scarf Knight, the
 Feather-cap Scout, and the mage of the wide brim and long scarf), drawn twice as fine as before.
 Version 11 makes them move: every attack has a short wind-up and a full swing, the bow is drawn
@@ -225,6 +225,11 @@ home. Wordmelding is on; the rune-stone is given by using the wordsmith; runedus
 burst up out of the Fleshmancer's pit.
 Version 22.1: smoother on a phone, nothing looks different: the ground, the hero and the monsters painted ahead out of the
 way, the Pinewood's forest drawn in big pieces; and the game has its own web address with an offline copy.
+Version 23.0: Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
+Ward (the Crier), the Undercity (the Rat King), the Millrace (the Palimpsest), the House of Quiet (the Physician) and the
+Great Library (the Censor), twelve new kinds of enemy, and on each floor the Bells: strike the Muffled Bell and ring the
+others before the Hush runs out. The skill trees remade (every pick changes how you play), the new Headsman on floor 2,
+the strongholds of floors 6 to 10 as five waves, better loot, and the rest of the list from the playtest of 22.0.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
