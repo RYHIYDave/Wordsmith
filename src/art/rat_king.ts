@@ -209,14 +209,14 @@ export interface KingPose {
 }
 
 /** A body's frame from its heading and pitch (degrees). */
-function frameOf(h: number, p: number): [V3, V3, V3] {
+export function frameOf(h: number, p: number): [V3, V3, V3] {
   const f: V3 = [Math.cos(h * D) * Math.cos(p * D), Math.sin(h * D) * Math.cos(p * D), Math.sin(p * D)];
   const l: V3 = [-Math.sin(h * D), Math.cos(h * D), 0];
   return [f, l, cross(f, l)];
 }
 
 /** Its feet where they rest, in the rat's own frame (forward, left), for a rat of size `s`. */
-const FOOT_REST: [number, number][] = [
+export const FOOT_REST: [number, number][] = [
   [4.2, 2.6],
   [4.2, -2.6],
   [-3.2, 3.0],
@@ -295,7 +295,7 @@ function seepOf(rats: RatPose[], t: number, much = 0.3): [V3, string, number][] 
 }
 
 /** A foot of a scurry of `n` frames over `period`: down (on the floor, carried back under the heap at its pace) for the first half of its round, lifted and swung through for the rest. Offset along the way it goes, and lift. */
-function scurryFoot(u: number, stroke: number): [number, number] {
+export function scurryFoot(u: number, stroke: number): [number, number] {
   const duty = 0.5;
   if (u < duty) return [stroke / 2 - stroke * (u / duty), 0];
   const v = (u - duty) / (1 - duty);
@@ -727,7 +727,7 @@ interface Head {
   p: (v: V3) => V3;
 }
 /** A rat's head: on its neck before its body, turned and pitched. */
-function headOf(P: RatPose): Head {
+export function headOf(P: RatPose): Head {
   const s = P.s;
   const neck = add(add(P.c, mul(P.f, 4.6 * s)), mul(P.u, 0.6 * s));
   const f = norm(about(about(P.f, P.u, P.hy), P.l, -P.hp));
@@ -754,7 +754,7 @@ function fur(seed: number, belly: number): Skin {
 const tailSkin: Ramp = SKIN;
 
 /** ONE RAT AS SOLIDS. */
-function ratBits(P: RatPose, put: Put, id: string, view: GameView): void {
+export function ratBits(P: RatPose, put: Put, id: string, view: GameView): void {
   const k = 1 - P.gone;
   if (k <= 0.02) return;
   const s = P.s * k;

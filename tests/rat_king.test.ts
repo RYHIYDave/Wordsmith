@@ -130,7 +130,8 @@ test('the switch is off, and nothing of the game imports it', () => {
   assert.equal(RAT_KING_ON.on, false, 'RAT_KING_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/rat_king(_shots)?\.ts$/.test(f)) continue;
+    // (the King's rats, art/rats.ts, a mock-up of its own, are painted with the King's own rat painter)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(rat_king(_shots)?|rats)\.ts$/.test(f)) continue;
     if (/from ['"][^'"]*\/rat_king(_shots)?['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'game files that import it');
