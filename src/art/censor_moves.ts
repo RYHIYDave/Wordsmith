@@ -7,7 +7,7 @@
 // telegraphed pattern; Strike-Through, a line drawn straight through you, which you have to dodge; the Hush, silence
 // across the whole room”):
 //   STANDING (art/censor.ts): still as a pillar, the brush stood upright like a staff, his masked head turning slowly.
-//   THE WALK: slow and upright, the robe sweeping the floor, the brush's butt set down with every other step.
+//   THE WALK: slow and upright, the robe sweeping the floor, the brush carried upright, swaying forward with his left foot.
 //   THE BRUSH SLASH (his blow): the brush heaved up over his right shoulder in both hands, its bristles high behind him,
 //     held trembling, their point glinting pink (THE WARNING); then hips first, a step in, and a great stroke down and
 //     across before him from his right to his left, the bristles sweeping the floor at its end; held; drawn back up.
@@ -16,7 +16,7 @@
 //     dragged across it (the game slams the black bars down across the floor: art/censor_shots.ts); drawn back up.
 //   STRIKE-THROUGH: he turns side-on, sinks low and draws the brush back along his side, its point levelled at you,
 //     glinting pink (THE WARNING: the game draws the line it will take through you); then a lunge, the brush thrust out
-//     its whole reach, its point to the floor, and the line drawn out from it straight across the room (the game's,
+//     its whole reach, its point low over the floor, and the line drawn out from it straight across the room (the game's,
 //     art/censor_shots.ts); held; sprung back.
 //   THE HUSH: the brush stood upright; he raises his left hand to his mask, one finger to the inked bar where his mouth
 //     would be, and it burns pink (THE WARNING); then he sweeps the hand out wide, and silence rolls out from him across
@@ -250,7 +250,7 @@ const SPEAR: P = { lhIn: 3, lhx: 15, lhy: 0, lhz: 0 };
 /** Side-on and low, the brush drawn back along his right side in both hands, its point levelled at you. */
 const LEVELLED: P = elbowsTo({ ...SPEAR, px: -2.4, pz: R.pz - 3.6, yaw: -32, twist: -18, pitch: 6, bend: 6, side: 1, faceUp: 4, faceTurn: 32, rhIn: 1, rhx: -4, rhy: -12, rhz: -20, wAz: 26, wEl: 4, wRoll: 0, lk: 16, rk: -12 }, [0.5, 0.6, -0.6], [-0.6, -0.6, -0.4]);
 const levelled = (k: number): P => ({ ...LEVELLED, rhx: (LEVELLED.rhx as number) + (k % 2 ? -0.6 : 0.3), rhz: (LEVELLED.rhz as number) + (k % 2 ? 0.4 : -0.2) });
-/** THE THRUST, frame by frame: the hips going first, then the brush driven out its whole reach, its point to the floor far before him. */
+/** THE THRUST, frame by frame: the hips going first, then the brush driven out its whole reach, its point low over the floor far before him. */
 const THRUSTS: P[] = [
   { ...LEVELLED, px: 0.5, pz: R.pz - 3.9, pitch: 8, rhx: -3, wAz: 22 },
   { ...LEVELLED, px: 3.0, pz: R.pz - 4.6, yaw: -28, pitch: 11, bend: 7, rhx: 1, rhz: -19, wAz: 16, wEl: 0 },

@@ -7,7 +7,7 @@
 // Pacific: “Hey go without my say so.  If something is shit I’ll get it to it but you’re doing a great jobs. At least
 // for 11-15”. So their brief is this chat's, the picks it would have marked recommended, sent him as they are made:
 // - WHAT THEY ARE: the Order's ink, spilled across the library's floors, that has got up and walks: small, hunched,
-//   about the knight's chest, all of them glossy black ink, a cold sheen on it; long thin arms hanging to the floor,
+//   crouched to about the knight's hips, reared up to his chest, all of them glossy black ink, a cold sheen on it; long thin arms hanging to the floor,
 //   each ending in three long claws that drip; short legs that run down at the feet into a puddle on the floor; a
 //   lump of a head with no face but two pink eyes; ink forever running down them and dripping off.
 // - HOW THEY GO: scuttling low and fast; or, sunk into a puddle of ink, sliding along the floor and rising up out of it
@@ -55,7 +55,7 @@ export const DROP = '#08070c';
 // =============================================================================================
 // THE BODY
 
-/** Small and hunched: 42 tall were they to stand straight (the knight 58), crouched to about his chest; their arms long. */
+/** Small and hunched: 42 tall were they to stand straight (the knight 58), crouched to about his hips, reared up to his chest; their arms long. */
 export const IK_BODY: Build = buildOf(42, 1.25, { shoulders: 0.92, chest: 0.94, depth: 0.96, waist: 0.78, hips: 0.84, legs: 0.86, arms: 1.34, trunk: 0.92, limbs: 1.12 });
 const B = IK_BODY;
 /** Their picture: room for them reared up tall with their arms flung wide, and for their pool spread out. */

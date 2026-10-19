@@ -19,8 +19,8 @@
 //   two eye slits burning pink and, where a mouth would be, a bar of black ink painted across it (the Order's own mark);
 //   down his front the robe is a page of writing in grey, line after line, struck through with black bars; an iron chain
 //   of office over his shoulders, a lock hanging from it, its keyhole burning pink; long grey fingers black with ink.
-// - THE GREAT INK BRUSH, taller than he is, held like a staff: a shaft of black lacquer banded with brass, a brass
-//   ferrule, a great head of black bristles heavy and dripping with the Order's ink, glinting pink as he readies it.
+// - THE GREAT INK BRUSH, near as long as he is tall, held like a staff: a shaft of pale bamboo banded in black lacquer, a
+//   brass ferrule, a great head of black bristles heavy and dripping with the Order's ink, glinting pink as he readies it.
 // - Nothing gory: he strikes words out, not men.
 // And the owner's words of 18 Oct on the act's enemies: Act 2's own, nothing of Act 1's (no cult robe, no bone, no violet).
 //
@@ -364,7 +364,7 @@ export function censorStand(): Motion {
     const t = (i / N) * T;
     const a = (t / T) * Math.PI * 2;
     const breath = Math.sin(a * 2 - 0.5);
-    // (the brush lifted a little off the floor and set down, once a round)
+    // (the brush lifting a little in his hand and settling, once a round)
     const lift = Math.max(0, Math.sin(a - 0.9)) ** 3;
     keys.push({
       at: t,

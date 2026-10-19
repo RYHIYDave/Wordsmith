@@ -49,7 +49,8 @@ const CYANS = new Set([...CYAN, '#28dcf0', '#22d0e0'].map((c) => c.toLowerCase()
 
 test('in no game file: nothing of the game imports floor 15\'s pieces', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor15)\.ts$/.test(f)) continue;
+    // (and floor 15's moment, a mock-up of its own, which takes the pieces' wax: tests/floor15_moments.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor15|floor15_moments)\.ts$/.test(f)) continue;
     assert.ok(!/from ['"][^'"]*\/floor15['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports floor 15's pieces`);
   }
 });

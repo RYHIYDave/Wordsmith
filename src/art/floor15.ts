@@ -181,7 +181,7 @@ function readingDesk(k: number): Sprite {
 
 /**
  * A READING CHAIR (breakable): a high-backed chair of walnut, its seat and back of buttoned oxblood leather, arms
- * ending in scrolls; knocked over on its back, a leg snapped. 100 x 120 at (50, 94).
+ * ending in scrolls; knocked over on its back, a leg snapped. 130 x 120 at (74, 94).
  */
 function readingChair(fallen: boolean): Sprite {
   const S = scene(130, 120, 74, 94);
@@ -321,8 +321,8 @@ function libraryLadder(): Sprite {
 
 /**
  * A CANDLE CHANDELIER, hung over the floor on its chain (his doc's "candle chandeliers"): a great iron hoop and a
- * smaller one above it, scrolled arms to its stem, sixteen candles, wax run down them and dripping; lit (an honest
- * flame), or out. It hangs: nothing of it stands on the floor. 180 x 270 at (90, 250).
+ * smaller one above it, scrolled arms to its stem, eighteen candles, wax run down them and dripping; lit (an honest
+ * flame), or out. It hangs: nothing of it stands on the floor. 200 x 270 at (100, 250).
  */
 function chandelier(lit: boolean): Sprite {
   const S = scene(200, 270, 100, 250);
@@ -389,7 +389,7 @@ function candelabrum(): Sprite {
   return done(S, 60, 166, [{ at: [0, 0, 66], r: 56, color: CANDLE[3], a: 0.42 }]);
 }
 
-/** A STACK OF BOOKS (breakable): books heaped where they were pulled down, crooked, a few open; kicked over, they lie scattered and splayed, pages loose. 120 x 110 at (60, 80). */
+/** A STACK OF BOOKS (breakable): books heaped where they were pulled down, crooked, one leaning against them; kicked over, they lie scattered and splayed, pages loose. 140 x 120 at (70, 86). */
 function bookHeap(scattered: boolean): Sprite {
   const S = turned(scene(140, 120, 70, 86), 0, 1.35);
   if (!scattered) {
@@ -401,7 +401,7 @@ function bookHeap(scattered: boolean): Sprite {
       book(S, [(hash(i, 3, 8151) - 0.5) * 3, (hash(i, 4, 8151) - 0.5) * 3, z + T / 2], (hash(i, 5, 8151) - 0.5) * 0.9, L, T, W, false, BOOKS[Math.floor(hash(i, 6, 8151) * BOOKS.length)], 1 + i);
       z += T;
     }
-    // one open, face down on the top; one leaning against the heap
+    // one leaning against the heap
     book(S, [9, 6, 6], 0.3, 11, 2.2, 7, true, OXBLOOD, 20);
   } else {
     for (let i = 0; i < 9; i++) {
@@ -419,7 +419,7 @@ function bookHeap(scattered: boolean): Sprite {
   return done(S, 70, 86);
 }
 
-/** A BOOK CART (breakable): a librarian's trolley of walnut, two shelves of books, a handle, four castors; tipped over, its books spilled across the floor. 140 x 120 at (70, 92). */
+/** A BOOK CART (breakable): a librarian's trolley of walnut, two shelves of books, a handle, four castors; tipped over, its books spilled across the floor. 160 x 120 at (80, 92). */
 function bookCart(tipped: boolean): Sprite {
   const S = scene(160, 120, 80, 92);
   if (!tipped) {
@@ -846,7 +846,7 @@ function blackedFloor(): Sprite {
 
 /**
  * A BOOK PRESS: a heavy standing press of oak and iron, two posts and a crossbeam, a great iron screw down through it
- * and its turning bar, pressing a stack of pages bound into a book; the Order's work. 130 x 170 at (65, 144).
+ * and its turning bar, pressing a stack of pages bound into a book; the Order's work. 140 x 150 at (70, 120).
  */
 function bookPress(): Sprite {
   const S = scene(140, 150, 70, 120);

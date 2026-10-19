@@ -18,7 +18,8 @@
 //
 // Laid on open floor (a hall's marble or the Reading Room's carpet, art/library.ts), away from walls: its anchor is the
 // floor under the chandelier's middle; it hangs about 42 game pixels up, its chain running up out of the picture into
-// the dark; the candles roll out up to about 1.6 tiles from the anchor, so leave that clear. Built as floor 14's screen
+// the dark; the thrown candles come to rest 1 to 2 tiles from the anchor (2.2 at most on the way), the wax splashes out to
+// about 1.8 and the dust rolls out to about 2.4, so leave about 2.2 tiles clear. Built as floor 14's screen
 // is (art/floor2.ts onPic, picture pixels, KT to a tile).
 
 import { Px } from '../engine/px';
@@ -88,8 +89,6 @@ const CANDLES: Candle[] = ((): Candle[] => {
   });
   return out;
 })();
-/** The two flames still burning in their cups after it lands. */
-const CUP_BURNS = new Set([5, 14]);
 
 /** How it swings on its chain (degrees, toward +x), and how far it has dropped as the link gives (picture pixels), at a frame before the snap. */
 function swingAt(f: number): number {
@@ -339,7 +338,7 @@ function theChandelier(): Moment {
         }
         const tip: V3 = [base[0] + up[0] * cd.h, base[1] + up[1] * cd.h, base[2] + up[2] * cd.h];
         rod(base, tip, 1.15, WAX);
-        const lit = f < T.crash || CUP_BURNS.has(k);
+        const lit = f < T.crash;
         if (lit) flame(tip, up, k);
         else {
           rod(tip, [tip[0] + up[0], tip[1] + up[1], tip[2] + up[2]], 0.3, [WICK]);

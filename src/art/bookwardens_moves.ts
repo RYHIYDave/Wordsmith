@@ -107,8 +107,8 @@ function walkChain(t: number): V3 {
 
 /**
  * Their blow: the haft overhead by `up`; the warning (the tome whirling over their head, glinting); the tome over the
- * top, the blow at `hit` (a frame of the game's thirty a second); flat on the floor at `floor`, about 1.6 tiles before
- * them; held there to `held`; dragged back up and hanging again by `long`.
+ * top, the blow at `hit` (a frame of the game's thirty a second); flat on the floor at `floor`, its middle about 1.9 tiles
+ * before them; held there to `held`; dragged back up and hanging again by `long`.
  */
 export const WB_SLAM = { long: 2.2, up: 0.3, warn: [0.32, 0.8], hit: 27 / 30, floor: 29 / 30, held: 1.3 } as const;
 const H = WB_SLAM.hit;

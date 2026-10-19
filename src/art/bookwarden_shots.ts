@@ -24,7 +24,7 @@ const DUST = ['#8a8472', '#aaa48e', '#c6bfa8', '#ddd6c0'];
 const PAGE = ['#cfc5ab', '#e6dcc4', '#9c927a'];
 const SEAM = '#120e0c';
 
-/** How far the dust is shoved out (tiles, from the book's middle), how long it lasts; how long the cracks and the fallen pages stay (seconds). */
+/** How far the dust is shoved out (tiles, from the book's middle: its ring stretched, 1.15 of this out of the book's sides and 0.8 of it along the way they face), how long it lasts; how long the cracks and the fallen pages stay (seconds). */
 export const TOME_REACH = 1.2;
 export const TOME_DUST_FOR = 0.6;
 export const TOME_MARK_FOR = 1.8;

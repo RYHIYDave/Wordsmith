@@ -14,7 +14,7 @@
 // WHAT IT IS: the city's great library at night, the Order's now, the dream's version of it: its shelves too tall,
 // going up into the dark past where any ladder reaches:
 // - THE FLOOR, room by room (`LB_ZONE`): the stacks' narrow aisles of dark oak boards, dust thick along the shelves'
-//   feet; the great halls' marble, black and pale in a checker, cracked; the Reading Room's parquet laid in a basket
+//   feet; the great halls' pale marble slabs, a small black square set where four meet, cracked; the Reading Room's parquet laid in a basket
 //   weave of walnut and oak, a great worn carpet of indigo and dull gold over its middle; the scriptorium's grey flags,
 //   black with the Order's ink. What lies about: books pulled down and dropped, open or shut; loose pages with lines
 //   of writing; the Order's ink dripped and pooled; candle wax dripped where the chandeliers hang; dust.
@@ -127,7 +127,7 @@ const alongY = (px: number, py: number): number => 2 * py - px + 0.5;
 export const LB_ZONE = {
   /** The stacks: narrow aisles of dark oak boards between the shelves; bookcases to the dark, no gallery. */
   Stacks: 0,
-  /** A great hall or a way between rooms: black and pale marble in a checker; bookcases with a gallery, and tall windows. */
+  /** A great hall or a way between rooms: pale marble slabs, a small black square where four meet; bookcases with a gallery, and tall windows. */
   Hall: 1,
   /** The Reading Room (the Censor's): parquet in a basket weave, the great carpet over its middle; bookcases with a gallery. */
   Reading: 2,

@@ -238,7 +238,7 @@ function inklingMob(): Mob {
   return {
     id: 'inkling',
     name: 'An inkling',
-    size: "small: crouched about the knight's chest",
+    size: "small: crouched about the knight's hips",
     build: B,
     stand: mv(NAMES.stand, inklingStand()),
     attack: mv(NAMES.attack, inklingLash(), { feet: inklingLashFeet(), glint: lashGlint }),

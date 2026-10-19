@@ -228,7 +228,7 @@ test('6. HIS STROKES: the slash far out, Redaction\'s bristles down on the floor
   assert.equal(fingers('hush', mid), fingers('stand', 0), 'his left hand\'s fingers all there as he hushes');
 });
 
-test('7. the pink in his lenses while he lives, gone out once he is down; and down he lies, low on the floor', () => {
+test('7. the pink in his eye slits while he lives, gone out once he is down; and down he lies, low on the floor', () => {
   const pinkEyes = (bits: Bit[]): boolean => bits.some((b) => b.piece === 'eyes' && b.shape.k === 'dot' && b.shape.c === FLAME[1]);
   const height = (p: Painted): number => {
     const { w, h, d } = p.px;
