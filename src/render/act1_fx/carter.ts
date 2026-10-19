@@ -8,7 +8,7 @@ import type { Act1Fx } from './types';
 
 export const FX: Act1Fx | null = {
   ground(c, m) {
-    if (!m || !c.g || !m.act || m.act.id !== 'carter:lash' || !m.a1 || !m.a1.grab) return;
+    if (!m || !c.g || !m.act || (m.act.id !== 'carter:lash' && m.act.id !== 'carter:coil') || !m.a1 || !m.a1.grab) return;
     const h = c.game.hero;
     drawScrape(c.g, c.at, h.x, h.y, m.a1.ox, m.a1.oy, 1);
   },

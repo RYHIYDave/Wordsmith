@@ -101,7 +101,7 @@ test("2. the rules' numbers are their pictures' own", () => {
   assert.equal(makeBestiary().of('carter').front.walkFps, CARTER_MOB.walkFps, 'their trudge shown at its own rate');
   assert.equal(G.trueBack, CARTER_MOB.trueBack === true);
   const acts = actsOf({ kind: 'carter' })!;
-  assert.equal(acts.length, 1, 'one blow: the whip crack');
+  assert.equal(acts.length, 2, 'two: the whip crack, and the coil made from it (his rule of a medium monster\'s two attacks)');
   const lash = acts[0];
   assert.equal(lash.hit, CT_WHIP.hit, 'it cracks at its moment');
   assert.equal(lash.long, CT_WHIP.long);
@@ -149,8 +149,9 @@ test('3. the crack: at its moment near, as the lash rolls out further, as far as
 
 test('4. caught by its end, dragged in as it is drawn back, held, no nearer than its near end, let go after; not one close in', () => {
   {
-    const { g, m } = room('carter', 2.2, 'carter:lash');
-    assert.ok(untilAct(g, m, 'carter:lash'));
+    // (THE COIL, their big move: game/act1_rules/carter.ts, his rule of a medium monster's two attacks)
+    const { g, m } = room('carter', 2.2, 'carter:coil');
+    assert.ok(untilAct(g, m, 'carter:coil'));
     place(g, m, 2.3, -0.3);
     const h = g.hero;
     const d0 = Math.hypot(h.x - m.x, h.y - m.y);
@@ -176,6 +177,18 @@ test('4. caught by its end, dragged in as it is drawn back, held, no nearer than
     assert.ok(d1 >= CARTER.wrap.near - 0.05, `no nearer than ${CARTER.wrap.near} (${d1.toFixed(2)})`);
     assert.ok(!h.held, 'let go after');
     assert.ok(scraped > 10, 'the scrape behind him as he is dragged');
+  }
+  {
+    // (THE LASH, their basic blow, out where the coil would catch: struck, never coiled)
+    const { g, m } = room('carter', 2.2, 'carter:lash');
+    assert.ok(untilAct(g, m, 'carter:lash'));
+    place(g, m, 2.3, -0.3);
+    const h = g.hero;
+    const x0 = h.x;
+    const y0 = h.y;
+    const s = watch(g, m, 2.2, undefined, () => m.state !== 'act');
+    assert.equal(s.hurts.length, 1, 'the lash: struck');
+    assert.ok(Math.hypot(h.x - x0, h.y - y0) < 0.05 && !h.held, 'the lash: not coiled, not dragged');
   }
   {
     const { g, m } = room('carter', 1.2, 'carter:lash');

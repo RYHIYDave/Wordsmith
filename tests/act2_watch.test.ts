@@ -27,6 +27,7 @@ import { RNG } from '../src/engine/rng';
 import { ACT2_GUARD, act2Pack } from '../src/game/act2_mobs';
 import { HOUND } from '../src/game/act1_rules/hound';
 import { WATCH, sweepAt } from '../src/game/act1_rules/watch';
+import { ACT2 } from '../src/game/act1';
 import { act1Rules } from '../src/game/act1_rules/index';
 import { actsOf, gaitOf } from '../src/game/bosses';
 import { MONSTERS, PACK_BY_SIZE, TUNE, sizeOf } from '../src/game/defs';

@@ -29,7 +29,7 @@ import type { Ring, Skin, Stage } from './skin';
 import { about, add, buildOf, cross, dot, heading, len, lerp3, mul, norm, solve, standing, sub } from './skeleton';
 import type { Bones, Build, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
 
-/** THE SWITCH, OFF. Nothing of the game reads this file; the main chat puts him in by it, on the owner's yes. */
+/** THE SWITCH, ON SINCE VERSION 23.0: his yes, 17 Oct 2026, 21:04 Eastern, asked "Send the Headsman to main?": "Yes" (the art chat's post of 21:06). With HEADSMAN2_FIGHT (game/bosses.ts). */
 export const HEADSMAN2 = { on: true };
 
 export const D = Math.PI / 180;

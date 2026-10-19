@@ -17,6 +17,10 @@
 //   as the carter draws it back (the picture's `draw`), he is dragged in toward the carter, `wrap.drag` tiles at most and no
 //   nearer than `wrap.near`; held while he is dragged, as the crawler's grab holds him. So one who stands off from a carter
 //   is pulled in among the sickles of the fields; one close in takes the lash's weight, and stays where he is.
+// - TWO ATTACKS, his rule of 9 Oct (a medium monster's two; the main chat's, 19 Oct, as the dredger's are): THE LASH, their
+//   basic blow (it cracks and is drawn back empty: never a coil), and THE COIL, their big one, made only when he stands where
+//   its end can catch him (`wrap.from` tiles out or more): coiled round and dragged in, a blow and a quarter, every 6 seconds
+//   at most. The same picture for both.
 //
 // Every number here that is a picture's is written down here; tests/act2_carter.test.ts holds it to the art.
 
@@ -49,6 +53,7 @@ const GAIT: GaitDef = { pace: 0.85, cycle: 1 / 8, setOff: 0, halt: 0, raise: 0, 
 
 const ACTS: readonly ActDef[] = [
   { id: 'carter:lash', clip: 'attack', long: 1.9, hit: CARTER.lash.hit, dmg: 1, cooldown: 0, first: 0, after: 0.9, near: 0, far: CARTER.lash.out[0] },
+  { id: 'carter:coil', clip: 'attack', long: 1.9, hit: CARTER.lash.hit, dmg: 1.25, cooldown: 6, first: 1.5, after: 0.9, near: CARTER.wrap.from, far: CARTER.lash.out[0] },
 ];
 
 /** What it keeps (Monster.a1): `grab` 1 while its lash holds the hero; where it caught him (`ox`, `oy`), for the scrape he leaves as he is dragged. */
@@ -78,7 +83,7 @@ export const RULES: Act1Rules | null = {
     const act = m.act!;
     const k = keep(m);
     const at = (T: number): boolean => t0 < T && t1 >= T;
-    if (a.id !== 'carter:lash') return;
+    if (a.id !== 'carter:lash' && a.id !== 'carter:coil') return;
     const L = CARTER.lash;
     const W = CARTER.wrap;
     if (at(0.6)) g.sfx('swing', 0.55);
@@ -92,7 +97,7 @@ export const RULES: Act1Rules | null = {
         act.b = 1;
         R.blow(m, a.dmg);
         // (caught by its end: coiled round)
-        if (r.fwd >= W.from && h.invuln <= 0 && !h.move && !g.over) {
+        if (a.id === 'carter:coil' && r.fwd >= W.from && h.invuln <= 0 && !h.move && !g.over) {
           k.grab = 1;
           k.ox = h.x;
           k.oy = h.y;

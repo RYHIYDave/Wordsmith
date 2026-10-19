@@ -21,7 +21,9 @@ import type { MonsterKind } from './types';
 export const ACT1 = { on: true };
 
 /**
- * ACT 2, PART ONE, THE HUSH (floors 11 to 15), behind this switch, OFF until he has seen it from the game and said yes. His
+ * ACT 2, PART ONE, THE HUSH (floors 11 to 15), behind this switch: ON SINCE VERSION 23.0 (his words to the main chat, 19 Oct
+ * 2026, 14:39 Pacific: "Please read the main chat and get the game updated up to level 15"; the game's films of it sent him
+ * that day). His
  * plan, his doc "Wordsmith Act 2: The Hush (Levels 11–15)" (the project's claude/act2_hush.md has his words), and on 19 Oct
  * 2026, 11:01 Pacific, to the planning chat: "Get levels 11-15 into the game". The art is the art chat's (its branches
  * mockup/act2-gateward to mockup/act2-library, docs/mockups/act2_*); the floors are laid as the descent's are, each by a
