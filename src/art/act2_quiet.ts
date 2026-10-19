@@ -7,7 +7,7 @@
 // to at most QUIET_MOST of full colour, its hue and its brightness kept; what glows (an honest fire, a candle, the
 // enemy's pink burning to gold, the Bells' cyan, the hero's) is left as it is, as Colour 3 asks it to be.
 
-import type { RGB } from './terrain';
+import type { RGB, TerrainLook } from './terrain';
 import { CYAN } from './kit';
 import { FLAME } from './mkit';
 import { EMBER, COAL } from './props';
@@ -45,4 +45,22 @@ export function quietHex(c: string): string {
     QUIET.set(k, (q = '#' + rgb.map(hex2).join('')));
   }
   return q;
+}
+
+/**
+ * A GROUND'S LOOK (art/terrain.ts) a step quieter than any word: every colour it puts down quietened as `quietRGB`
+ * does, but those `keep` says to leave (an honest light). The Gate Ward's (art/gateward.ts) does the same itself.
+ */
+export function quietTerrain(L: TerrainLook, keep: (c: RGB) => boolean = () => false): TerrainLook {
+  const q = (c: RGB): RGB => (keep(c) ? c : quietRGB(c));
+  return {
+    ...L,
+    floor: (x, y, px, py, inside) => q(L.floor(x, y, px, py, inside)),
+    face: (shade, v, px, py, x, y) => q(L.face(shade, v, px, py, x, y)),
+    top: (x, y, px, py, back, climb) => q(L.top(x, y, px, py, back, climb)),
+    nearFace: (v, px, py, x, y) => q(L.nearFace(v, px, py, x, y)),
+    brow: (c, px, py) => q(L.brow(c, px, py)),
+    ...(L.lip ? { lip: (c: RGB) => q(L.lip!(c)) } : {}),
+    ...(L.hang ? { hang: { ...L.hang, at: (v: number, px: number, py: number, shade: number) => q(L.hang!.at(v, px, py, shade)) } } : {}),
+  };
 }

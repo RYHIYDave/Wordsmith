@@ -1094,19 +1094,19 @@ function proclamation(): Sprite {
 // THE BELLS ON THIS FLOOR (the set's event: struck in time, they break the Hush)
 
 /** A bell's swing in each of its states: quiet, awake (ready to ring), rung one way, rung back. */
-const SWING = [0, 0, 0.42, -0.42];
+export const SWING = [0, 0, 0.42, -0.42];
 /** The friend's cyan (his rulebook, Colour 3: friendly magic, as a waypoint's). */
 const CY: Ramp = CYAN;
 /** The Bells' metal: a lighter bronze for the small ones to read; awake or rung, the cyan in it. */
 const BELL_METAL: Ramp = ['#3a2c22', '#5c4630', '#86683e', '#ad8c52', '#d0b070'];
 const AWAKE_METAL: Ramp = BELL_METAL.map((c, i) => mix(c, i >= 3 ? '#b8fff8' : '#22d0e0', i >= 3 ? 0.45 : 0.22)) as unknown as Ramp;
-const metalOf = (state: number): Ramp => (state === 0 ? BELL_METAL : AWAKE_METAL);
+export const metalOf = (state: number): Ramp => (state === 0 ? BELL_METAL : AWAKE_METAL);
 
 /**
  * A BELL'S STATE about it: awake, a cyan shimmer round its lip and motes rising off it (friendly magic: the
  * Bells are the hero's to ring); rung, the shimmer flung out along the ground in rings round `foot`. Its lights.
  */
-function bellGlow(S: Scene, c: V3, R: number, H: number, state: number, foot: V3): { at: V3; r: number; color: string; a?: number }[] {
+export function bellGlow(S: Scene, c: V3, R: number, H: number, state: number, foot: V3): { at: V3; r: number; color: string; a?: number }[] {
   if (state === 0) return [];
   const sw = SWING[state];
   const lip: V3 = [c[0], c[1] + H * Math.sin(sw), c[2] - H * Math.cos(sw)];
@@ -1137,7 +1137,7 @@ function bellGlow(S: Scene, c: V3, R: number, H: number, state: number, foot: V3
 }
 
 /** An honest flame's colours: a candle's, a lantern's. */
-const CANDLE: Ramp = ['#5a2a10', '#8a4418', '#c8702a', '#f0a040', '#ffd890'];
+export const CANDLE: Ramp = ['#5a2a10', '#8a4418', '#c8702a', '#f0a040', '#ffd890'];
 // (a candle's flame, the dome's shards' pink, a bell awake with the hero's cyan: what glows, left bright)
 bright(CANDLE, SHARD, AWAKE_METAL, CY);
 

@@ -52,7 +52,7 @@ const CYANS = new Set([...CYAN, '#28dcf0', '#22d0e0'].map((c) => c.toLowerCase()
 
 test('in no game file: nothing of the game imports floor 11\'s pieces, the Hush\'s set or their kit', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor11|floor11_moments|act2_set|act2_kit|act2_quiet|gateward|crier|crier_moves|crier_shots|hushed|hushed_moves|hushed_watch|hushed_watch_moves|scribes|scribes_moves|scribe_shots|hounds)\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor11|floor11_moments|act2_set|act2_kit|act2_quiet|gateward|crier|crier_moves|crier_shots|hushed|hushed_moves|hushed_watch|hushed_watch_moves|scribes|scribes_moves|scribe_shots|hounds|undercity)\.ts$/.test(f)) continue;
     assert.ok(!/from ['"][^'"]*\/(floor11|act2_set|act2_kit|act2_quiet)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports floor 11's pieces`);
   }
 });
