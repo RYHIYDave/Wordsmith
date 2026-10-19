@@ -381,7 +381,7 @@ test('7. at half his life he blacks out parts of the floor for good, on floor 15
     assert.ok(share >= 0.15 && share <= CENSOR.blackout.most + 1e-9, `seed ${seed}: ${(share * 100).toFixed(0)} in 100 of his ground blacked out`);
     for (const i of tiles) {
       assert.equal(L.walk[i], 0, 'walked on no more');
-      assert.ok(L.act1!.tiles.some((t) => t.i === i && t.name === BLACKED_TILE), 'laid as the art\'s floor tile');
+      assert.ok(L.act1!.tiles.some((t) => t.i === i && t.name === BLACKED_TILE && t.mid === 1), 'laid as the art\'s floor tile, by its middle');
       assert.ok(blackedOut(L).has(i));
     }
     // (the room joined: every tile walked to before is walked to still, but those)

@@ -128,12 +128,11 @@ export class Act1Pieces {
     const L = this.level;
     if (!L || !this.dress) return;
     const f = L.floor;
-    // (ACT 2, THE HUSH: the art chat's floor tiles for floors 11 to 15 are anchored at their tile's middle, not its top
-    // corner: art/act2_kit.ts `lying`, held so by tests/floor11.test.ts to floor15.test.ts, "inside its diamond")
-    const mid = this.dress.floor >= 11 ? 0.5 : 0;
     for (const t of this.dress.tiles) {
       const tx = t.i % f.w;
       const ty = (t.i - tx) / f.w;
+      // (ACT 2, THE HUSH: one laid by its middle, on its tile's middle: Act1Tile.mid)
+      const mid = t.mid ? 0.5 : 0;
       const [sx, sy] = wxy(tx + mid, ty + mid);
       if (sx < -40 || sx > W + 40 || sy < -30 || sy > H + 30) continue;
       const p = this.piece(t.name);

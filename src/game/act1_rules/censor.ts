@@ -31,7 +31,8 @@
 //     is not a blow: it is not rolled out of. Not made while the hero is hushed still.
 //   AT HALF HIS LIFE HE BLACKS OUT PARTS OF THE FLOOR FOR GOOD (a move the rules bring: his Redaction played, its bars laid
 //     for good): runs of three to five tiles along the walls of his ground, about a quarter of it (never more than a third),
-//     the ways in and the way on kept clear, the room kept joined (every tile that could be walked to before still can).
+//     those nearest the hero first (he sees the room close in round him), the ways in and the way on kept clear, the room
+//     kept joined (every tile that could be walked to before still can).
 //     Each becomes the art's "the floor blacked out" (a floor tile of the dressing: render/act1_pieces.ts), and is walked
 //     on no more (Level.walk 0): whoever is under one as it slams is struck, and anyone left on one is put off it. So the
 //     room shrinks. Where the floor has no dressing (the practice room) his own pictures lay the tile (render/act1_fx).
@@ -92,13 +93,14 @@ export const CENSOR = {
    */
   redact: { long: 2.6, hit: 30 / 30, warn: 0.6, lay: 0.12, lie: 2.0, n: 5, apart: 2, bar: 7, wide: 1, half: 0.55, slow: 0.35 },
   /** The Hush (CE_HUSH, 2.6 s): let go at `hit` (1.06); its ring out in `ring` (ROOM_HUSH_RING), its veil gone by `veil` (ROOM_HUSH_FOR); how far it reaches (the room: `least` to `most` tiles); his words dark HUSH_FOR. */
-  hush: { long: 2.6, hit: 1.06, ring: 1.0, veil: 3.0, least: 6, most: 12 },
+  hush: { long: 2.6, hit: 1.06, ring: 1.0, veil: 3.0, least: 6, most: 20 },
   /**
    * The floor blacked out at half his life (`at`): about `want` of his ground's open floor, never more than `most`; runs of
    * `run` tiles along its walls (no deeper in than `deep` tiles); none within `clearWay` of the way on, `clearDoor` of a way
-   * into his ground, `clearHim` of him; none where something stands or is laid.
+   * into his ground, `clearHim` of him; none where something stands or is laid. Those nearest the hero first (give or take
+   * `jitter` tiles, by the floor's dice): he sees the room close in round him.
    */
-  blackout: { at: 0.5, want: 0.25, most: 0.32, deep: 3, run: [3, 5] as const, clearWay: 2.5, clearDoor: 2.2, clearHim: 1.6 },
+  blackout: { at: 0.5, want: 0.25, most: 0.32, deep: 3, run: [3, 5] as const, clearWay: 2.5, clearDoor: 2.2, clearHim: 1.6, jitter: 8 },
   /** His ground where the floor does not say (tiles: an open area's blob; on a floor with none, the practice room, its floor as far as this round him: all of it). */
   ground: { blob: 1.08, far: 24 },
   /** The book of stolen words bursting as he dies: how long its words fly. */
@@ -288,15 +290,18 @@ export function blackedOut(L: Level): ReadonlySet<number> {
   return BLACKED.get(L) ?? new Set<number>();
 }
 
-/** Every tile walked to from the floor's start, as the floor's walk now has it but for `less`. */
-function reached(L: Level, less: ReadonlySet<number>): Uint8Array {
+/**
+ * Every tile of his ground and of its ways in (`room`: 1 for each) walked to from `from` without leaving them, as the floor's walk
+ * now has it but for `less`. (Only his ground is blacked out: so long as all of it that is left, and every way into it, is
+ * joined as before, every tile of the floor walked to before is walked to still.)
+ */
+function reached(L: Level, room: Uint8Array, from: number, less: ReadonlySet<number>): Uint8Array {
   const f = L.floor;
   const W = f.w;
   const out = new Uint8Array(W * f.h);
-  const s = Math.floor(f.start.y) * W + Math.floor(f.start.x);
-  if (L.walk[s] !== 1 || less.has(s)) return out;
-  const q = [s];
-  out[s] = 1;
+  if (from < 0 || L.walk[from] !== 1 || less.has(from)) return out;
+  const q = [from];
+  out[from] = 1;
   while (q.length) {
     const i = q.pop()!;
     const x = i % W;
@@ -306,7 +311,7 @@ function reached(L: Level, less: ReadonlySet<number>): Uint8Array {
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= W || ny >= f.h) continue;
       const j = ny * W + nx;
-      if (out[j] || L.walk[j] !== 1 || less.has(j)) continue;
+      if (out[j] || !room[j] || L.walk[j] !== 1 || less.has(j)) continue;
       out[j] = 1;
       q.push(j);
     }
@@ -341,6 +346,7 @@ export function blackoutPlan(R: BossRules, m: Monster): { tiles: number[]; bars:
   const deep = new Uint16Array(W * H);
   const q: number[] = [];
   const doors: { x: number; y: number }[] = [];
+  const door = new Uint8Array(W * H);
   for (const i of ground) {
     const x = i % W;
     const y = (i - x) / W;
@@ -352,7 +358,10 @@ export function blackoutPlan(R: BossRules, m: Monster): { tiles: number[]; bars:
       const outside = nx < 0 || ny < 0 || nx >= W || ny >= H || !inG[j];
       if (!outside) continue;
       edge = true;
-      if (nx >= 0 && ny >= 0 && nx < W && ny < H && L.walk[j] === 1) doors.push({ x: nx + 0.5, y: ny + 0.5 });
+      if (nx >= 0 && ny >= 0 && nx < W && ny < H && L.walk[j] === 1) {
+        doors.push({ x: nx + 0.5, y: ny + 0.5 });
+        door[j] = 1;
+      }
     }
     if (edge) {
       deep[i] = 1;
@@ -398,15 +407,26 @@ export function blackoutPlan(R: BossRules, m: Monster): { tiles: number[]; bars:
       if (run.length >= B.run[0]) runs.push({ tiles: run, along });
     }
   }
+  // (the nearest the hero first, by the floor's own dice a little: so that he sees the room close in round him)
   const dice = new RNG((f.seed ^ 0xb1ac4ed0) >>> 0);
-  for (let i = runs.length - 1; i > 0; i--) {
-    const j = dice.int(0, i);
-    [runs[i], runs[j]] = [runs[j], runs[i]];
-  }
+  const h = g.hero;
+  const near = (r: { tiles: number[] }): number => {
+    const i = r.tiles[Math.floor(r.tiles.length / 2)];
+    return Math.hypot((i % W) + 0.5 - h.x, Math.floor(i / W) + 0.5 - h.y);
+  };
+  const order = runs.map((r) => ({ r, k: near(r) + dice.range(0, B.jitter) }));
+  order.sort((a, b) => a.k - b.k);
+  runs.length = 0;
+  for (const o of order) runs.push(o.r);
   const want = Math.round(opens.length * B.want);
   const most = Math.floor(opens.length * B.most);
   const chosen = new Set<number>(BLACKED.get(L) ?? []);
-  const before = reached(L, chosen);
+  // (his ground and its ways in, walked from where he stands, or from a way in)
+  const room = new Uint8Array(W * H);
+  for (let i = 0; i < room.length; i++) room[i] = inG[i] || door[i];
+  const here = Math.floor(m.y) * W + Math.floor(m.x);
+  const from = L.walk[here] === 1 ? here : (opens[0] ?? -1);
+  const before = reached(L, room, from, chosen);
   const picked: { tiles: number[]; along: 0 | 1 }[] = [];
   let n = 0;
   for (const r of runs) {
@@ -415,7 +435,7 @@ export function blackoutPlan(R: BossRules, m: Monster): { tiles: number[]; bars:
     if (r.tiles.some((i) => chosen.has(i))) continue;
     for (const i of r.tiles) chosen.add(i);
     // (the room kept joined: every tile walked to before is walked to still, but these)
-    const now = reached(L, chosen);
+    const now = reached(L, room, from, chosen);
     let joined = true;
     for (let i = 0; i < before.length && joined; i++) if (before[i] && !now[i] && !chosen.has(i)) joined = false;
     if (!joined) {
@@ -463,6 +483,16 @@ function putOff(R: BossRules, b: { x: number; y: number }, r: number): void {
   }
 }
 
+/** The blacking out as worked out where he stood (worked out again only if he has moved since). */
+const PLANS = new WeakMap<Monster, { x: number; y: number; plan: { tiles: number[]; bars: Bar[] } }>();
+function planFor(R: BossRules, m: Monster): { tiles: number[]; bars: Bar[] } {
+  const c = PLANS.get(m);
+  if (c && Math.hypot(c.x - m.x, c.y - m.y) < 0.05) return c.plan;
+  const plan = blackoutPlan(R, m);
+  PLANS.set(m, { x: m.x, y: m.y, plan });
+  return plan;
+}
+
 /** The peril of his act now (his Redaction's bars, or the blacking out's), kept while the act is made. */
 const LAYING = new WeakMap<Monster, Peril>();
 
@@ -499,7 +529,7 @@ export const RULES: Act1Rules | null = {
     if (!s || s.blk === 2) return -1;
     if (!s.blk) {
       if (m.life > m.maxLife * CENSOR.blackout.at) return -1;
-      s.blk = blackoutPlan(R, m).tiles.length ? 1 : 2;
+      s.blk = planFor(R, m).tiles.length ? 1 : 2;
       if (s.blk === 2) return -1;
     }
     return acts.findIndex((x) => x.id === 'censor:blackout');
@@ -517,7 +547,7 @@ export const RULES: Act1Rules | null = {
     } else if (a.id === 'censor:blackout') {
       // (worked out where he stands now: he may have walked a step or two to a stand since it was brought)
       m.a1 = { ...(m.a1 ?? {}), blk: 2 };
-      const plan = blackoutPlan(R, m);
+      const plan = planFor(R, m);
       const home = homeOf(m);
       const p = R.peril(m, 'act1', home.x, home.y, { a1: 'censor:black', t: -a.hit, hit: 0, dur: Infinity, dmg: 0 });
       BARS.set(p, plan.bars);
@@ -644,7 +674,7 @@ export const RULES: Act1Rules | null = {
         if (!p.done || p.done & 2 || p.t < CENSOR.redact.lay) return;
         p.done |= 2;
         const L = g.level;
-        if (L.act1) for (const i of tilesOf(p)) L.act1.tiles.push({ i, name: BLACKED_TILE, frame: 0 });
+        if (L.act1) for (const i of tilesOf(p)) L.act1.tiles.push({ i, name: BLACKED_TILE, frame: 0, mid: 1 });
         return;
       }
       case 'censor:hush': {

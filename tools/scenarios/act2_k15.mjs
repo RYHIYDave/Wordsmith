@@ -35,9 +35,9 @@ export default async function (page, snap) {
       h.x = boss.x + ((st.x - boss.x) / k) * 3.2;
       h.y = boss.y + ((st.y - boss.y) / k) * 3.2;
       boss.state = 'chase';
-      // (the book of stolen words on its lectern, two tiles beside him: the stand-in floor has none)
+      // (the book of stolen words on its lectern, two tiles beside him, where the floor has none: the stand-in)
       const W = L.floor.w;
-      for (const [dx, dy] of [[2, -2], [-2, 2], [2, 2], [-2, -2]]) {
+      for (const [dx, dy] of L.props.some((p) => p.name === 'the book of stolen words') ? [] : [[2, -2], [-2, 2], [2, 2], [-2, -2]]) {
         const tx = Math.floor(boss.x) + dx;
         const ty = Math.floor(boss.y) + dy;
         if (L.walk[ty * W + tx] !== 1) continue;
@@ -53,7 +53,7 @@ export default async function (page, snap) {
     h.x = a.blob.x - 3;
     h.y = a.blob.y - 3;
     const them = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < (w === 'inkling' ? 3 : 1); i++) {
       const m = g.spawn(w, a.blob.x + (i - 1) * 1.2, a.blob.y + 1.5, 71, 0, false, g.rng);
       m.state = 'chase';
       m.words = [];
@@ -80,9 +80,21 @@ export default async function (page, snap) {
     if (quiet >= 2) break;
   }
   log('painted', JSON.stringify({ secs: Math.round((Date.now() - t0) / 1000) }));
-  await page.evaluate(() => {
+  await page.evaluate((w) => {
     window.__dbg.slowmo = 0.3;
-  });
+    // (the hero set where each is to be watched from: six tiles off the inklings, for their melt; two before a Bookwarden)
+    const g = window.__dbg.game();
+    const them = g.monsters.filter((m) => !m.dead && m.kind === w);
+    if (!them.length || w === 'censor') return;
+    const m = them[0];
+    const far = w === 'inkling' ? 6 : 2.2;
+    const spot = g.spotsRound(m.x, m.y, 80).find((q) => Math.abs(Math.hypot(q.x - m.x, q.y - m.y) - far) < 0.6 && g.sees(q.x, q.y, m.x, m.y));
+    if (spot) {
+      g.hero.x = spot.x;
+      g.hero.y = spot.y;
+    }
+    for (const o of them) if (o.a1) o.a1.mcd = 0;
+  }, who);
   // (only act `id` of theirs ready: every other kept cooling)
   const only = (id) =>
     page.evaluate((a) => {
@@ -133,6 +145,22 @@ export default async function (page, snap) {
       const g = window.__dbg.game();
       return { tiles: g.level.act1.tiles.filter((t) => t.name === 'the floor blacked out').length };
     })));
+    // (and from beside the nearest of it: the room closed in along its walls)
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const L = g.level;
+      const W = L.floor.w;
+      const h = g.hero;
+      const tiles = L.act1.tiles.filter((t) => t.name === 'the floor blacked out').map((t) => ({ x: (t.i % W) + 0.5, y: Math.floor(t.i / W) + 0.5 }));
+      if (!tiles.length) return;
+      tiles.sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y));
+      const t = tiles[0];
+      const k = Math.hypot(h.x - t.x, h.y - t.y) || 1;
+      h.x = t.x + ((h.x - t.x) / k) * 2.5;
+      h.y = t.y + ((h.y - t.y) / k) * 2.5;
+    });
+    await page.waitForTimeout(1500);
+    await snap('blackout_near');
     // HIS DEATH, and the book bursting
     await page.evaluate(() => {
       const g = window.__dbg.game();

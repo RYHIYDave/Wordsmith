@@ -35,6 +35,12 @@ export interface Act1Tile {
   i: number;
   name: string;
   frame: number;
+  /**
+   * (ACT 2, THE HUSH) 1: its picture is anchored at its middle (the art chat's Hush floor tiles, art/act2_kit.ts `lying`), and
+   * it is laid on its tile's middle; else at its tile's top corner, as every floor tile of the descent's is
+   * (render/act1_pieces.ts floorTiles). The Censor's floor blacked out is laid so (game/act1_rules/censor.ts).
+   */
+  mid?: 1;
 }
 /** What a floor of the descent is laid with, beyond its props (those are in Level.props, kind 'piece'). */
 export interface Act1Dress {
