@@ -10,7 +10,7 @@
 //     a film of the three side by side (stand, walk, attack, reel, death), facing you above, away below
 
 import { GW_ZONE, gateWardLook, gateWardPaintFloor } from '../art/gateward';
-import { HUSHED_ALL, HUSHED_BAKER, HUSHED_GOODWIFE, HUSHED_PORTER } from '../art/hushed';
+import { HUSHED_ALL, HUSHED_BAKER, HUSHED_GOODWIFE, HUSHED_PORTER } from '../art/hushed_moves';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
 import { MOVES3 } from '../art/moves3';

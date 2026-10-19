@@ -24,13 +24,12 @@
 // out of them: grey breath curling up out of their mouths. The enemy's pink edge round them while they live (the
 // painter's). Nothing cyan.
 
-import type { ActorArt } from './actor_types';
 import { HUSH } from './crier';
 import { INK, hash } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
-import { TILE3, mobSet, sphere } from './new_mobs3';
-import type { Bit, Mob, MobCanvas, Moment, Put } from './new_mobs3';
+import { sphere } from './new_mobs3';
+import type { Bit, MobCanvas, Moment, Put } from './new_mobs3';
 import { wornOn } from './skin';
 import type { Ring, Skin, Stage } from './skin';
 import { add, buildOf, cross, dot, len, lerp3, mul, norm, standing, sub } from './skeleton';
@@ -363,6 +362,24 @@ function hushedBits(who: HushedWho, st: Stage, m: Moment): Bit[] {
   const [ff, fl] = wornOn(st, s, 8);
   const puff = m.dying ? Math.max(0, 2.2 * (1 - clamp01((m.t - 0.15) / 1.1))) : 0.7 + 0.8 * clamp01(m.glint);
   hushBreath(put, mouth, ff, fl, m.t, puff, seed);
+  // THE HUSH LEAVING THEM (their death): one great grey breath out of the open mouth, billowing up and out over
+  // them as it goes, and thinning away
+  if (m.dying && m.t > 0.12 && m.t < 1.7) {
+    const k = (m.t - 0.12) / 1.58;
+    for (let i = 0; i < 64; i++) {
+      // (each puff of it loosed a little after the last, flying up and out, slowing, swelling, thinning)
+      const born = 0.45 * hash(i, seed, 2207);
+      const age = (k - born) / 0.55;
+      if (age <= 0 || age >= 1) continue;
+      const a = hash(i, seed + 3, 2207) * Math.PI * 2;
+      const spread = (2 + 14 * Math.sqrt(age)) * (0.5 + 0.5 * hash(i, seed + 4, 2207));
+      const up = 4 + 34 * Math.sqrt(age) * (0.6 + 0.4 * hash(i, seed + 5, 2207));
+      const p = add(mouth, add(mul(ff, 2 + spread * 0.5 * Math.cos(a)), add(mul(fl, spread * Math.sin(a)), [0, 0, up])));
+      const c = age < 0.25 ? BREATH_PALE : age < 0.5 ? HUSH[4] : age < 0.75 ? HUSH[3] : HUSH[2];
+      if (age > 0.8 && hash(i, Math.floor(m.t * 30), 2209) < (age - 0.8) * 4) continue;
+      put('hush', 'hush', { k: 'mote', p, c, size: age < 0.6 ? 3 : 2 });
+    }
+  }
   return bits;
 }
 
@@ -407,44 +424,8 @@ function standJaw(t: number): number {
   return 0.3 + 0.5 * Math.max(0, Math.sin(u * Math.PI * 6)) * (u < 0.7 ? 1 : 0.3);
 }
 
-// =============================================================================================
-// THE MOB (its look and stand, for his yes; its other moves come after)
-
-function hushedMob(who: HushedWho): Mob {
-  const stand = { name: 'The Hushed stand, mouthing', motion: hushedStand(), rest: HUSHED_REST, jaw: standJaw };
-  return {
-    id: `hushed-${who}`,
-    name: who === 'porter' ? 'A Hushed porter' : who === 'goodwife' ? 'A Hushed goodwife' : 'A Hushed baker',
-    size: "small: the knight's height",
-    build: HB,
-    stand,
-    attack: stand,
-    idleFrames: 28,
-    idleFps: 10,
-    walk: { ...stand, period: HUSHED_STAND_LONG, ground: 0 },
-    walkFrames: 10,
-    walkFps: 8,
-    pace: 0.9,
-    reel: stand,
-    reelTime: 0.4,
-    hit: 0.6,
-    warn: 0.3,
-    dieTime: 2.2,
-    dying: stand,
-    aura: { x: HUSHED_CANVAS.ax, y: HUSHED_CANVAS.ay - 40, r: 34, color: '#9890b4', a: 0.06 },
-    shadow: 11,
-    canvas: HUSHED_CANVAS,
-    trueBack: true,
-    bits: (st, m) => hushedBits(who, st, m),
-    grains: (_st, m) => BREATH.get(m) ?? [],
-  };
+/** THE HUSHED AS THE PAINTER TAKES THEM: who it is, painted at a moment; the Hush leaking out of them at that moment, laid after their edge. */
+export function hushedPainter(who: HushedWho): { bits: (st: Stage, m: Moment) => Bit[]; grains: (st: Stage, m: Moment) => ReadonlyArray<readonly [V3, string, number]> } {
+  return { bits: (st, m) => hushedBits(who, st, m), grains: (_st, m) => BREATH.get(m) ?? [] };
 }
-export const HUSHED_PORTER = hushedMob('porter');
-export const HUSHED_GOODWIFE = hushedMob('goodwife');
-export const HUSHED_BAKER = hushedMob('baker');
-export const HUSHED_ALL: readonly Mob[] = [HUSHED_PORTER, HUSHED_GOODWIFE, HUSHED_BAKER];
-
-export function makeHushedArt3(mob: Mob = HUSHED_PORTER, pace = mob.pace): ActorArt {
-  return { front: mobSet(mob, 'front', pace), back: mobSet(mob, 'back', pace) };
-}
-void TILE3;
+export { hushedStand, standJaw };
