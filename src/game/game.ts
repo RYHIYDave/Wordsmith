@@ -25,6 +25,8 @@ import { ACT1, act2Floor, lastFloor } from './act1';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import { act1Rules, act1Ward } from './act1_rules/index';
+// (ACT 2, THE HUSH: a word the Physician has drawn out of the hero is never lost: given back as a level is left or the hero falls, and written into the save)
+import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { blobDist } from './act1_layout';
 import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_TUNE, HOLD_WAVES, WAVE_MAKE } from './act1_holds';
 import { act1Pack, act1Ready } from './act1_mobs';
@@ -679,7 +681,7 @@ export class Game {
     const h = this.hero;
     let maxUid = 0;
     for (const it of [...EQUIP_SLOTS.map((s) => h.gear[s]), ...h.bag, ...this.meta.stash, ...this.shops.armourer, ...this.shops.mystic]) if (it) maxUid = Math.max(maxUid, it.uid);
-    return {
+    const run: RunSave = {
       v: 1, cls: h.cls, seed: this.seed, level: h.level, xp: h.xp, pending: h.pending, attrs: { ...h.attrs },
       gear: { ...h.gear }, bag: [...h.bag], words: savedWords(this.ringWord ? { ...h.words, [this.ringWord.word]: h.words[this.ringWord.word] + 1 } : { ...h.words }),
       sockets: h.skills.map((s) => ({ front: [...s.front], behind: [...s.behind] })),
@@ -700,6 +702,9 @@ export class Game {
       // (WORDMELDING: nor its runedust and its Meldstone while MELD is off)
       ...(MELD.on ? { dust: h.dust, meld: h.meld } : {}),
     };
+    // (ACT 2, THE HUSH: a word the Physician holds is the hero's in the save, where it would go back to: game/act1_rules/physician.ts)
+    inTheSave(run, this.monsters);
+    return run;
   }
 
   /** Rebuild a run from a save. Throws if the save is not one this version understands. */
@@ -1006,6 +1011,8 @@ export class Game {
     this.holdGoing = -1;
     // (a word the wordsmith was about to give is given now, not lost with the level)
     if (this.ringWord) this.giveRingWord();
+    // (ACT 2, THE HUSH: nor a word the Physician has drawn out of the hero: it is his again)
+    giveBackAll(this);
     this.monsters = [];
     this.projectiles = [];
     this.zones = [];
@@ -5165,6 +5172,8 @@ export class Game {
       return;
     }
     this.hero.life = 0;
+    // (ACT 2, THE HUSH: a word the Physician holds is the fallen hero's again)
+    giveBackAll(this);
     this.over = true;
     // (a fallen hero holds nothing: a beam or a whirlwind that was being held ends with them. The
     // rules stop here, so nothing else would end it, and the picture of it would stand over

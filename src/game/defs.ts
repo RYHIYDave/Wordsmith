@@ -545,8 +545,11 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   fieldhand: { kind: 'fieldhand', name: 'Hushed Reaper', life: 20, dmgMin: 6, dmgMax: 9, speed: 0.9, radius: 0.3, range: 1.3, windup: 17 / 30, cooldown: 1.9, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   carter: { kind: 'carter', name: 'Night Carter', life: 40, dmgMin: 10, dmgMax: 15, speed: 0.85, radius: 0.42, range: 2.65, windup: 25 / 30, cooldown: 2.1, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   // FLOOR 14, THE HOUSE OF QUIET: the Hushed patients, small (as the townsfolk); the orderlies, medium (as the watch, a shorter reach).
-  patient: { kind: 'patient', name: 'Hushed Patient', life: 18, dmgMin: 6, dmgMax: 9, speed: 0.9, radius: 0.3, range: 1.1, windup: 0.6, cooldown: 1.9, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  orderly: { kind: 'orderly', name: 'Orderly', life: 46, dmgMin: 12, dmgMax: 18, speed: 0.9, radius: 0.45, range: 1.6, windup: 0.8, cooldown: 2.2, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // (ACT 2, THE HUSH, floor 14's helper: each at the pace its walk is painted for, PT_PACE and OD_PACE 0.8, its feet not sliding; its
+  // wind-up its blow's moment, the scream's 21/30 and the mallet's 25/30; its reach the scream's front's, SCREAM_REACH, and the mallet's
+  // head in the floor, about 1.4 tiles: game/act1_rules/patient.ts, orderly.ts)
+  patient: { kind: 'patient', name: 'Hushed Patient', life: 18, dmgMin: 6, dmgMax: 9, speed: 0.8, radius: 0.3, range: 1.8, windup: 0.7, cooldown: 1.9, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  orderly: { kind: 'orderly', name: 'Orderly', life: 46, dmgMin: 12, dmgMax: 18, speed: 0.8, radius: 0.45, range: 1.6, windup: 25 / 30, cooldown: 2.2, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   // FLOOR 15, THE GREAT LIBRARY: the inklings, small (the ink lash; they melt and rise: as the fog wolf, slower); the Bookwardens, medium (the tome slam, about two tiles before them).
   inkling: { kind: 'inkling', name: 'Inkling', life: 14, dmgMin: 5, dmgMax: 8, speed: 1.3, radius: 0.28, range: 0.95, windup: 0.6, cooldown: 1.6, xp: 6, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   bookwarden: { kind: 'bookwarden', name: 'Bookwarden', life: 48, dmgMin: 12, dmgMax: 18, speed: 0.85, radius: 0.45, range: 2.2, windup: 0.9, cooldown: 2.4, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0.8, minDepth: 99, weight: 0, size: 'medium' },
@@ -973,6 +976,8 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   // (ACT 2, THE HUSH: the Rat King, "squeaking in a hundred stolen voices" (his doc): the voices it drank, the Crier's the first
   // the Order took, squeaking through it; the planning chat's helper's lines, for his yes with the pictures)
   ratking: ['Hear ye! Hear ye! ...Squeak!', "Who's there? Who's there? Who's there?", 'A hundred voices. Yours makes a hundred and one.'],
+  // (ACT 2, THE HUSH: the Physician, floor 14's helper's pick: a doctor's lines, shown over his beak with no sound of a mouth: game/act1_rules/physician.ts)
+  physician: ['Say ah.', "Hold still. This won't hurt.", 'Your last words, please.'],
 };
 
 /**
