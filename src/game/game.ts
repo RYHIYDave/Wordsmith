@@ -1279,7 +1279,10 @@ export class Game {
     const spots = scatter(this.level.walk, f.w, f.h, x, y, n, rng);
     if (tier === 'champion') {
       // (a lair gives up a word as one guardian did: only the first of them may carry one; words are scarce)
-      spots.forEach((s, i) => this.spawn('brute', s.x, s.y, pi, 2, false, rng, i === 0 ? lot : null));
+      // (ACT 2, THE HUSH: nothing of the old floors fights there, his "let’s keep the acts separate": a lair's guardians are the
+      // floor's own medium kind, game/act2_mobs.ts ACT2_GUARD, as the pack's kind says)
+      const guard: MonsterKind = act2Floor(this.depth) ? kind : 'brute';
+      spots.forEach((s, i) => this.spawn(guard, s.x, s.y, pi, 2, false, rng, i === 0 ? lot : null));
       return;
     }
     const rarity = packRarity(tier === 'elite', this.depth, tiers.next(), kind);
