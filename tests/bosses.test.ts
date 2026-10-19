@@ -146,8 +146,9 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
     // tests/hushed.test.ts, tests/hushed_watch.test.ts and tests/scribes.test.ts; and floor 12's dredgers,
     // art/dredgers*.ts: tests/dredgers.test.ts; and floor 13's boss, the Palimpsest, art/palimpsest*.ts:
     // tests/palimpsest.test.ts; and its mobs, art/fieldhands*.ts and art/carters*.ts: tests/fieldhands.test.ts and
-    // tests/carters.test.ts; and floor 14's boss, the Physician, art/physician*.ts: tests/physician.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician/.test(f)) continue;
+    // tests/carters.test.ts; and floor 14's boss, the Physician, art/physician*.ts: tests/physician.test.ts; and its Hushed
+    // patients, art/patients*.ts and art/patient_shots.ts: tests/patients.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient/.test(f)) continue;
     // (ACT 1: what the descent's kinds draw on the floor, in the bosses' own way, is the bosses' effects' own: render/act1_fx/, called by render/bossfx.ts)
     if (f.startsWith('render/act1_fx/')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
@@ -340,8 +341,8 @@ test('12. nothing of the game imports the chains or the checks either', () => {
     // (and floor 11's boss, the Crier, reviewed by them: tests/crier.test.ts; and its mobs: tests/hushed.test.ts,
     // tests/hushed_watch.test.ts and tests/scribes.test.ts; and floor 12's dredgers: tests/dredgers.test.ts; and floor
     // 13's boss, the Palimpsest: tests/palimpsest.test.ts; and its mobs: tests/fieldhands.test.ts and tests/carters.test.ts;
-    // and floor 14's boss, the Physician: tests/physician.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician/.test(f)) continue;
+    // and floor 14's boss, the Physician: tests/physician.test.ts; and its Hushed patients: tests/patients.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|crier|hushed|scribe|dredger|palimpsest|fieldhands|carters|physician|patient/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }

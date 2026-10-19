@@ -98,8 +98,8 @@ test('1. the switch is off, and nothing of the game imports them', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (and the Hushed watch and the mute watch hounds, mock-ups of their own that take their breath from them:
     // tests/hushed_watch.test.ts, tests/hounds.test.ts; and floor 13's Hushed in the fields, their body and breath:
-    // tests/fieldhands.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands)\.ts$/.test(f)) continue;
+    // tests/fieldhands.test.ts; and floor 14's Hushed patients, the same: tests/patients.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands|patients)\.ts$/.test(f)) continue;
     if (/from ['"][^'"]*hushed(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'game files that import them');
