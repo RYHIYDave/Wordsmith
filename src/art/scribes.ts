@@ -17,7 +17,7 @@
 // write down every word it takes. Stooped, slight, the knight's height: a long hooded habit of the Order's black to
 // the floor, its sleeves wide and ink-stained, a grey cord at the waist with an inkhorn hanging from it; a BLANK
 // WHITE MASK, smooth, no mouth, two thin slits for the eyes and the cult's dull pink in them; ink-stained hands; a
-// great black quill in the right hand, a ledger bound in black open on the left arm, chained to the belt, its pages
+// long pale quill in the right hand (its nib black), a ledger bound in black open on the left arm, chained to the belt, its pages
 // written close in black. The enemy's pink edge round them while they live (the painter's). Nothing cyan.
 
 import { INK, hash } from './kit';
