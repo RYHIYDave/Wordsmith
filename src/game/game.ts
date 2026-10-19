@@ -6930,6 +6930,9 @@ export class Game {
     this.unseal(skill, x, y, rad);
     // (ACT 2, THE BELLS: a hit at a bell rings it; at the Muffled Bell, it starts the Hush)
     if (this.level.bells) this.bellsStruck(x, y, rad);
+    // (ACT 2, THE HUSH: what a kind of its own has lying on the floor there takes his blow too: the Palimpsest's pages
+    // burn under his fire, game/act1_rules/palimpsest.ts; his doc, "Fire words shine here")
+    if (this.perils.length) this.bosses.floorBlow(x, y, rad, skill >= 0 ? this.hero.skills[skill]?.r.element ?? 'phys' : 'phys');
     const f = this.level.floor;
     for (const p of this.level.props) {
       if (p.state !== 0 || (p.kind !== 'barrel' && p.kind !== 'urn')) continue;

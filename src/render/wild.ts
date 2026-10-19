@@ -30,7 +30,7 @@
 //     skeleton, yellow sparks off armour.
 // Nothing here changes the game.
 
-import { figureOf } from '../art/bestiary';
+import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE } from '../art/kit';
 import { BLOOD as M_BLOOD, FLESH, FUR, GLOOM, IRON } from '../art/mkit';
@@ -119,10 +119,6 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   // ACT 2, THE HUSH (his doc: "Not undead and not gory"): no blood; the Hush's dust
   hushed: { bits: ['#8a8790', '#6c6874', '#4e4a58'], sparks: false, blood: false, dust: true },
   watch: { bits: ['#7a7f88', '#5a5f6a', '#3e4250'], sparks: false, blood: false, dust: true },
-  // (ACT 2, THE HUSH: the kinds' other looks, as their kinds': art/act1_figs Act1Fig.looks)
-  hushed1: { bits: ['#8a8790', '#6c6874', '#4e4a58'], sparks: false, blood: false, dust: true },
-  hushed2: { bits: ['#8a8790', '#6c6874', '#4e4a58'], sparks: false, blood: false, dust: true },
-  watch1: { bits: ['#7a7f88', '#5a5f6a', '#3e4250'], sparks: false, blood: false, dust: true },
   scribe: { bits: ['#d8d4cc', '#9a948c', '#1e1a22'], sparks: false, blood: false, dust: true },
   hound: { bits: ['#5a5048', '#3e3630', '#2a2420'], sparks: false, blood: false, dust: true },
   rat: { bits: ['#5a4e48', '#3e3430', '#8a7a70'], sparks: false, blood: false, dust: true },
@@ -329,7 +325,8 @@ export class Wild {
   /** What flies off what was hit at (x, y), struck the way `a` (radians, in the world) with `force` (1 a blow of Strike, less an arrow). */
   private debris(x: number, y: number, a: number, force: number): void {
     const figure = this.figureAt(x, y);
-    const matter = figure ? MATTER[figure] : { bits: [P.st6, P.st5], sparks: false, blood: false, dust: true };
+    // (ACT 2, THE HUSH: one of a kind's other looks, '<kind>:<form>', of its kind's matter)
+    const matter = figure ? MATTER[baseFigure(figure)] : { bits: [P.st6, P.st5], sparks: false, blood: false, dust: true };
     const n = Math.round(11 * force);
     for (let i = 0; i < n; i++) {
       // (most of it flung on the way the blow went, the rest anywhere; chips big enough to see)

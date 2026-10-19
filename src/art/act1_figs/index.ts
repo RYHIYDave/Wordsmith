@@ -2,7 +2,7 @@
 // each in a file of its own here (art/act1_figs/types.ts). Null: not built yet.
 
 import type { MonsterKind } from '../../game/types';
-import type { Act1Fig, Act1Look } from './types';
+import type { Act1Fig } from './types';
 import { FIG as chanter } from './chanter';
 import { FIG as firepot } from './firepot';
 import { FIG as qgolem } from './qgolem';
@@ -78,28 +78,42 @@ export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> =
   censor,
 };
 
-/**
- * (ACT 2, THE HUSH) THE KINDS' OTHER LOOKS, each a figure of its own (Act1Fig.looks): whose look it is, and which
- * (Monster.form). As the Chained One's forms are figures of their own ('chained1', 'chained2').
- */
-export const ACT1_LOOKS: Readonly<Record<Act1Look, { kind: MonsterKind; form: number }>> = {
-  hushed1: { kind: 'hushed', form: 1 },
-  hushed2: { kind: 'hushed', form: 2 },
-  watch1: { kind: 'watch', form: 1 },
-};
-
 export function act1Fig(kind: string): Act1Fig | null {
-  // (ACT 2: one of a kind's other looks)
-  const look = (ACT1_LOOKS as Record<string, { kind: MonsterKind; form: number } | undefined>)[kind];
-  if (look) return ACT1_FIGS[look.kind]?.looks?.[look.form - 1] ?? null;
-  return (ACT1_FIGS as Record<string, Act1Fig | null | undefined>)[kind] ?? null;
+  const own = (ACT1_FIGS as Record<string, Act1Fig | null | undefined>)[kind];
+  if (own !== undefined) return own;
+  // (ACT 2, THE HUSH: one of a kind's other looks, '<kind>:<form>': Act1Fig.looks)
+  const at = kind.indexOf(':');
+  if (at < 0) return null;
+  const base = (ACT1_FIGS as Record<string, Act1Fig | null | undefined>)[kind.slice(0, at)];
+  return base?.looks?.[Number(kind.slice(at + 1)) - 1] ?? null;
 }
 
-/** (ACT 2) Which figure each look of a kind is, by Monster.form (built: its pictures there): figureOf asks it of every monster it shows. */
-const LOOK_OF = new Map<string, Act1Look>(
-  (Object.keys(ACT1_LOOKS) as Act1Look[]).filter((k) => act1Fig(k) !== null).map((k) => [`${ACT1_LOOKS[k].kind}:${ACT1_LOOKS[k].form}`, k]),
-);
-/** (ACT 2) The figure of look `form` of a kind (Act1Fig.looks), or null: it has none (it is shown as its kind). */
-export function act1Look(kind: MonsterKind, form: number): Act1Look | null {
-  return LOOK_OF.size === 0 ? null : (LOOK_OF.get(`${kind}:${form}`) ?? null);
+/** (ACT 2, THE HUSH) The figure a monster of a kind with other looks is shown as, by its form ('<kind>:<form>'); null: its kind's own. */
+export function act1Look(kind: string, form: number | undefined): string | null {
+  if (!form) return null;
+  const f = (ACT1_FIGS as Record<string, Act1Fig | null | undefined>)[kind];
+  return f?.looks?.[form - 1] ? `${kind}:${form}` : null;
+}
+
+/** (ACT 2, THE HUSH) Every other look of every kind built, as the game names its figure ('<kind>:<form>'). */
+export function act1Looks(): string[] {
+  const out: string[] = [];
+  for (const [kind, f] of Object.entries(ACT1_FIGS)) f?.looks?.forEach((_l, i) => out.push(`${kind}:${i + 1}`));
+  return out;
+}
+
+/**
+ * (ACT 2, THE HUSH) For a figure of a kind whose looks are stages (Act1Fig.staged): the next to paint ahead, and those
+ * gone past, to let go of. Null: not one of those.
+ */
+export function act1Stages(figure: string): { next: string[]; past: string[] } | null {
+  const at = figure.indexOf(':');
+  const kind = at < 0 ? figure : figure.slice(0, at);
+  const f = (ACT1_FIGS as Record<string, Act1Fig | null | undefined>)[kind];
+  if (!f || !f.staged || !f.looks?.length) return null;
+  const now = at < 0 ? 0 : Number(figure.slice(at + 1));
+  const name = (k: number): string => (k === 0 ? kind : `${kind}:${k}`);
+  const past: string[] = [];
+  for (let k = 0; k < now; k++) past.push(name(k));
+  return { next: now < f.looks.length ? [name(now + 1)] : [], past };
 }

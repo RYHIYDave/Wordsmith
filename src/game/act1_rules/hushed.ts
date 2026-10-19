@@ -20,7 +20,7 @@
 // A CROWD OF THREE LOOKS (the art's three, makeHushedArt3(mob): a porter, a goodwife, a baker): each one is given its
 // look as it comes into the world, in turn by its number in the game (Monster.form 0 the porter, 1 the goodwife, 2 the
 // baker), so that a pack laid together is a mixed crowd, and those the Crier calls come one of each in turn. The
-// goodwife and the baker are figures of their own, 'hushed1' and 'hushed2', as the Chained One's forms are
+// goodwife and the baker are figures of their own, 'hushed:1' and 'hushed:2', as the Chained One's forms are
 // (art/act1_figs/hushed.ts `looks`, art/bestiary.ts figureOf); their death is theirs too (the 'die' event carries the
 // form). The three are one kind in the rules: the same body, the same shuffle and grab.
 //

@@ -52,7 +52,7 @@ test('1. it is built: its rules, its pictures with a clip by each name its act u
   assert.equal(fig!.looks?.length, 2, 'and two looks more: the goodwife and the baker');
   assert.equal(act1Fx('hushed'), null, 'nothing drawn beyond its figure');
   const B = makeBestiary();
-  for (const f of ['hushed', 'hushed1', 'hushed2'] as const) {
+  for (const f of ['hushed', 'hushed:1', 'hushed:2'] as const) {
     const art = B.of(f);
     for (const set of [art.front, art.back]) {
       for (const a of r!.acts) {
@@ -105,15 +105,15 @@ test('3. A CROWD OF THREE: the porter, the goodwife and the baker in turn, each 
   assert.deepEqual([...new Set(forms)].sort(), [0, 1, 2], `all three in a crowd of six (${forms.join(',')})`);
   for (let i = 1; i < all.length; i++) assert.ok(forms[i] !== forms[i - 1], 'one after another, each unlike the last');
   const figs = all.map((m) => figureOf(m));
-  for (const m of all) assert.equal(figureOf(m), ['hushed', 'hushed1', 'hushed2'][m.form ?? 0], 'its look is its figure');
-  assert.equal(act1Look('hushed', 1), 'hushed1');
+  for (const m of all) assert.equal(figureOf(m), ['hushed', 'hushed:1', 'hushed:2'][m.form ?? 0], 'its look is its figure');
+  assert.equal(act1Look('hushed', 1), 'hushed:1');
   assert.equal(act1Look('hushed', 3), null, 'no fourth');
   assert.equal(act1Look('wolf', 1), null, 'a kind of one look has none');
   // (each figure's pictures are its own: the porter, the goodwife and the baker do not look alike)
   const B = makeBestiary();
-  const first = (f: 'hushed' | 'hushed1' | 'hushed2'): Uint8ClampedArray => paintingOf(B.of(f).front.idle[0]).d;
+  const first = (f: 'hushed' | 'hushed:1' | 'hushed:2'): Uint8ClampedArray => paintingOf(B.of(f).front.idle[0]).d;
   const same = (a: Uint8ClampedArray, b: Uint8ClampedArray): boolean => a.length === b.length && a.every((v, i) => v === b[i]);
-  assert.ok(!same(first('hushed'), first('hushed1')) && !same(first('hushed1'), first('hushed2')) && !same(first('hushed'), first('hushed2')), 'three looks');
+  assert.ok(!same(first('hushed'), first('hushed:1')) && !same(first('hushed:1'), first('hushed:2')) && !same(first('hushed'), first('hushed:2')), 'three looks');
   void figs;
   // (killed, each falls as its own look: the death carries it)
   const deaths: GameEvent[] = [];

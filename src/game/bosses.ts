@@ -1390,6 +1390,18 @@ export class BossRules {
     }
   }
 
+  /**
+   * (ACT 2, THE HUSH) The hero's blow reaches the floor within `rad` of (x, y), of element `el` (game.ts breakProps):
+   * each peril of a kind of its own there that takes it is told (Act1Rules.floorBlow: the Palimpsest's pages burn).
+   */
+  floorBlow(x: number, y: number, rad: number, el: Element): void {
+    for (const p of this.g.perils) {
+      if (p.kind !== 'act1' || !p.a1) continue;
+      const r1 = act1Rules(p.a1.split(':')[0] as MonsterKind);
+      if (r1 && r1.floorBlow) r1.floorBlow(this, p, x, y, rad, el);
+    }
+  }
+
   // ----- as one of them dies -----------------------------------------------------------------------
 
   /** One of the monsters has died (game.ts, kill): what that means here. */

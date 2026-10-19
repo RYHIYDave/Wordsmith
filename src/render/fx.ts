@@ -24,7 +24,7 @@
 //   Poison     venom      a sour green spatter; what it touches bubbles and sickens, and its
 //                         numbers keep coming.   Behind: a cloud of it hangs over the floor.
 
-import { figureOf } from '../art/bestiary';
+import { baseFigure, figureOf } from '../art/bestiary';
 import type { MonsterFigure } from '../art/bestiary';
 import { BONE, INDIGO, PINK, PLUM, TEAL } from '../art/kit';
 import { BLOOD as M_BLOOD, FLAME as M_FLAME, FLESH, FUR, GLOOM, GORE, IRON, WING } from '../art/mkit';
@@ -343,10 +343,6 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   // ACT 2, THE HUSH: the art chat's kinds (nothing gory: the Hush's grey, their cloth, paper and ink)
   hushed: ['#8a8790', '#6c6874', '#4e4a58', '#b8a8b0'],
   watch: ['#7a7f88', '#5a5f6a', '#3e4250', '#8a6e44'],
-  // (ACT 2, THE HUSH: the kinds' other looks, as their kinds': art/act1_figs Act1Fig.looks)
-  hushed1: ['#8a8790', '#6c6874', '#4e4a58', '#b8a8b0'],
-  hushed2: ['#8a8790', '#6c6874', '#4e4a58', '#b8a8b0'],
-  watch1: ['#7a7f88', '#5a5f6a', '#3e4250', '#8a6e44'],
   scribe: ['#d8d4cc', '#9a948c', '#1e1a22', '#c04a7a'],
   hound: ['#5a5048', '#3e3630', '#2a2420', '#8a7a6a'],
   rat: ['#5a4e48', '#3e3430', '#8a7a70', '#6a8a5a'],
@@ -1588,7 +1584,8 @@ export class Fx {
           break;
         }
         case 'die': {
-          const colors = DEATH_COLORS[figureOf(e)];
+          // (ACT 2, THE HUSH: one of a kind's other looks, '<kind>:<form>', in its kind's colours)
+          const colors = DEATH_COLORS[baseFigure(figureOf(e))];
           // (it falls as its figure falls, facing the way it was; the renderer leaves it out if its figure has no death)
           this.fallen.push({ figure: figureOf(e), x: e.x, y: e.y, back: e.fx + e.fy < -0.2, flip: e.fx - e.fy < 0, t: 0 });
           if (this.fallen.length > MAX_FALLEN) this.fallen.shift();

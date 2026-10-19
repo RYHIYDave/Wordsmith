@@ -539,8 +539,11 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   rat: { kind: 'rat', name: "King's Rat", life: 7, dmgMin: 3, dmgMax: 5, speed: 1.8, radius: 0.22, range: 0.8, windup: 0.4, cooldown: 1.3, xp: 3, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'tiny' },
   dredger: { kind: 'dredger', name: 'Dredger', life: 40, dmgMin: 10, dmgMax: 15, speed: 0.9, radius: 0.42, range: 1.9, windup: 0.7, cooldown: 2.0, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   // FLOOR 13, THE MILLRACE: the Hushed working the fields, small (the sickle: as the townsfolk); the Order's carters, medium (the lash: as the crawler, a longer reach).
-  fieldhand: { kind: 'fieldhand', name: 'Hushed Reaper', life: 20, dmgMin: 6, dmgMax: 9, speed: 0.9, radius: 0.3, range: 1.2, windup: 0.6, cooldown: 1.9, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
-  carter: { kind: 'carter', name: 'Night Carter', life: 40, dmgMin: 10, dmgMax: 15, speed: 1.0, radius: 0.42, range: 2.4, windup: 0.7, cooldown: 2.1, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
+  // (as built, game/act1_rules/fieldhand.ts and carter.ts: each wind-up the moment its picture's blow lands, FH_SLASH.hit and
+  // CT_WHIP.hit; each reach its picture's, the sickle about 1.1 tiles, the lash 2.65; the carters at their trudge's pace, CT_PACE.
+  // A fieldhand is a reaper or a gleaner, its name with it: "Hushed Gleaner")
+  fieldhand: { kind: 'fieldhand', name: 'Hushed Reaper', life: 20, dmgMin: 6, dmgMax: 9, speed: 0.9, radius: 0.3, range: 1.3, windup: 17 / 30, cooldown: 1.9, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
+  carter: { kind: 'carter', name: 'Night Carter', life: 40, dmgMin: 10, dmgMax: 15, speed: 0.85, radius: 0.42, range: 2.65, windup: 25 / 30, cooldown: 2.1, xp: 14, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
   // FLOOR 14, THE HOUSE OF QUIET: the Hushed patients, small (as the townsfolk); the orderlies, medium (as the watch, a shorter reach).
   patient: { kind: 'patient', name: 'Hushed Patient', life: 18, dmgMin: 6, dmgMax: 9, speed: 0.9, radius: 0.3, range: 1.1, windup: 0.6, cooldown: 1.9, xp: 7, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'small' },
   orderly: { kind: 'orderly', name: 'Orderly', life: 46, dmgMin: 12, dmgMax: 18, speed: 0.9, radius: 0.45, range: 1.6, windup: 0.8, cooldown: 2.2, xp: 16, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'medium' },
@@ -964,6 +967,9 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   eye: ['You are seen.', 'Drown.', 'The siege is my dream. Sleep in it.'],
   // (ACT 2, THE HUSH: the Crier has no voice, the Hush took it first: his mouth open on a shout that makes no sound)
   crier: ['...'],
+  // (ACT 2, THE HUSH: the Palimpsest has a page for a face and no mouth, the Order's bar of ink across where one would be:
+  // its line is the rustle of its wet pages as it heaves up, a hush; words of no one's)
+  palimpsest: ['Shhhhhhhhh...', 'Rrrrsssshhhh...', 'Sssshhhh.'],
 };
 
 /**

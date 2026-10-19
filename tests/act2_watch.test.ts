@@ -7,7 +7,7 @@
 //   3. the sweep strikes as the blade passes where the hero stands, from their right to their left, as far as it reaches
 //      there: once, at the picture's moment for one straight before them, sooner for one at their right, later for one at
 //      their left; not one behind them or beyond its reach; and knocks him on a little;
-//   4. THE SERGEANT leads a yellow pack (his look, 'watch1'), and brings a brace of the mute watch hounds at his heels, of
+//   4. THE SERGEANT leads a yellow pack (his look, 'watch:1'), and brings a brace of the mute watch hounds at his heels, of
 //      his pack; a plain one is a watchman, alone;
 //   5. medium: its packs of three to five on floor 11, the guardian of its lair; with the switch off, on none;
 //   6. a long fight on floor 11 with a pack of them: no exceptions, its sweep made.
@@ -55,7 +55,7 @@ test('1. it is built: its rules, its pictures with a clip by each name its act u
   assert.equal(fig!.looks?.length, 1, 'and one look more: the sergeant');
   assert.equal(act1Fx('watch'), null, 'nothing drawn beyond its figure');
   const B = makeBestiary();
-  for (const f of ['watch', 'watch1'] as const) {
+  for (const f of ['watch', 'watch:1'] as const) {
     const art = B.of(f);
     for (const set of [art.front, art.back]) {
       for (const a of r!.acts) {
@@ -166,7 +166,7 @@ test('4. the sergeant leads a yellow pack, and brings a brace of hounds at his h
   const lead = g.spawn('watch', h.x + 7, h.y, 41, 1, false, new RNG(3), null, { rarity: 'leader', words: ['fire'] });
   const minion = g.spawn('watch', h.x + 7, h.y + 1.5, 41, 0, false, new RNG(4), null, { rarity: 'minion', words: ['fire'] });
   const plain = g.spawn('watch', h.x + 2, h.y - 4, 42, 0, false, new RNG(5));
-  assert.equal(figureOf(lead), 'watch1', 'the leader is the sergeant');
+  assert.equal(figureOf(lead), 'watch:1', 'the leader is the sergeant');
   assert.ok(/Sergeant$/.test(lead.name) && /Watchman$/.test(minion.name), `and called so (${lead.name}; ${minion.name})`);
   assert.equal(figureOf(minion), 'watch', 'those he leads are watchmen');
   assert.equal(figureOf(plain), 'watch', 'and a plain one');

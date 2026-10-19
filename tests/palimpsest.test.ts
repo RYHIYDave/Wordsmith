@@ -3,7 +3,7 @@
 // brief is this chat's, on his word of 18 Oct (“Hey go without my say so.  If something is shit I’ll get it to it but
 // you’re doing a great jobs. At least for 11-15”), sent him with its films. Held as floor 12's dredgers are
 // (tests/dredgers.test.ts), and as every boss is:
-//   1. the switch is off, and nothing of the game imports it;
+//   1. the switch is off by itself, and of the game only its figure and its effects import it (in the game with the Hush, ACT2);
 //   2. EVERY MOVE OF ITS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), every frame, from in front and from behind,
 //      and every handover: nothing through it; feet that grip; nothing in the floor; nothing jerky; the slam drawn back,
 //      held and carried through, hips first; alive when still;
@@ -92,14 +92,24 @@ for (const view of VIEWS) {
 }
 const said = (move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(2)}`;
 
-test('1. the switch is off, and nothing of the game imports it', () => {
+// (IN THE GAME WITH THE HUSH, ACT 2 (game/act1.ts ACT2, off until his yes), since the planning chat's helper built floor 13's
+// boss, 19 Oct 2026: through art/act1_figs/palimpsest.ts, its pictures as the game holds a monster (its switch goes on with
+// the descent's figures there, art/bestiary.ts useAct1Figs), and render/act1_fx/palimpsest.ts, what it throws and leaves on
+// the floor; until then a mock-up nothing of the game imported, its switch off. Off by itself here, where nothing of the game
+// is loaded. The game's own files of its name, its rules and the kinds' indexes, are not the art's.)
+test('1. the switch is off by itself, and of the game only its figure and its effects import it', () => {
   assert.equal(PALIMPSEST_ON.on, false, 'PALIMPSEST_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/palimpsest(_moves|_shots)?\.ts$/.test(f)) continue;
-    if (/from ['"][^'"]*palimpsest(_moves|_shots)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (/^art\/palimpsest(_moves|_shots)?$/.test(parts.join('/'))) users.push(f);
+    }
   }
-  assert.equal(users.join(' '), '', 'game files that import it');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/palimpsest.ts render/act1_fx/palimpsest.ts', 'game files that import it');
 });
 
 test('2. EVERY MOVE OF ITS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

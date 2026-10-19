@@ -12,6 +12,7 @@
 
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import type { Level, Monster, Peril } from '../state';
+import type { Element } from '../types';
 
 export interface Act1Rules {
   /** How it goes over the floor (its pictures' own numbers: setting off and stopping 0 for a walk that loops from its stand). */
@@ -36,6 +37,12 @@ export interface Act1Rules {
   died?(R: BossRules, m: Monster): void;
   /** A step of one of its perils (Peril.a1 names it); the peril is gone at its `dur`. */
   peril?(R: BossRules, p: Peril, dt: number): void;
+  /**
+   * (ACT 2, THE HUSH) The hero's blow reaches the floor within `rad` of (x, y), its element `el` (game.ts breakProps: a
+   * swing, a blast, a shot on its way, a beam, a volley's fall), and one of its perils lies there: what it does to it.
+   * The Palimpsest's pages burn under his fire (his doc: "Fire words shine here").
+   */
+  floorBlow?(R: BossRules, p: Peril, x: number, y: number, rad: number, el: Element): void;
   /** A boss: where he stands as the floor is made (tiles), and the way he faces; null: where the floor has him. */
   bossAt?(L: Level): { x: number; y: number; fx: number; fy: number } | null;
   /** Whether the hero's blows reach it now (false: up in the air, under the water). */

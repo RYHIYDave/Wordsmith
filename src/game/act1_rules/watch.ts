@@ -27,7 +27,7 @@
 // (the art chat's to draw a second, if he wants one).
 //
 // THE WATCHMAN AND THE SERGEANT (the art's two, makeWatchArt3(mob)): a yellow pack's leader (an elite) is the sergeant
-// (Monster.form 1: the figure 'watch1', art/act1_figs/watch.ts `looks`, art/bestiary.ts figureOf), and is called so (a
+// (Monster.form 1: the figure 'watch:1', art/act1_figs/watch.ts `looks`, art/bestiary.ts figureOf), and is called so (a
 // "Hushed Sergeant", where the others are "Hushed Watchman"); every other is a watchman.
 //
 // THE SERGEANT'S HOUNDS: a yellow pack of the watch comes with a brace of the mute watch hounds at its sergeant's heels
