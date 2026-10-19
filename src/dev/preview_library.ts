@@ -22,12 +22,17 @@
 //     the shot with the tiles the game walks by drawn over it
 //   node tools/preview.mjs src/dev/preview_library.ts shots/lb_close.png 1014 664 close
 //     close-ups at three times
+//   node tools/preview.mjs src/dev/preview_library.ts shots/lb_reading_dressed.png 1014 468 reading-dressed
+//     the Reading Room dressed with floor 15's pieces (art/floor15.ts) and their lights, the dark as the game lays it;
+//     and stacks-dressed, scriptorium-dressed the same
 //   node tools/preview.mjs src/dev/preview_library.ts shots/lb_cost.png 600 200 cost
 //     what painting it costs, a piece of 256 x 256 picture pixels at a time
 
 import { HUSHED_PORTER, makeHushedArt3 } from '../art/hushed_moves';
 import { makeScribeArt3 } from '../art/scribes_moves';
 import { LB_ZONE, greatLibraryLook } from '../art/library';
+import { greatLibraryPieces } from '../art/floor15';
+import type { Piece } from '../art/floorkit';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { P } from '../art/palette';
@@ -147,7 +152,7 @@ function standAt(g: CanvasRenderingContext2D, sp: Sprite, x: number, y: number, 
  * THE DUNGEON'S DARK as the game lays it (render.ts: FAR_DARK 0.88 over all, the hero's wide gentle pool and his
  * bright one taken out of it, the vignette), at two picture pixels to a game pixel.
  */
-function dark(g: CanvasRenderingContext2D, hero: [number, number]): void {
+function dark(g: CanvasRenderingContext2D, hero: [number, number], lights: { x: number; y: number; r: number; a: number }[] = []): void {
   const c = document.createElement('canvas');
   c.width = PW;
   c.height = PH;
@@ -172,6 +177,19 @@ function dark(g: CanvasRenderingContext2D, hero: [number, number]): void {
   };
   spot(380 * 2, 0.36);
   spot(165 * 2, 1);
+  // (and round each light of what is laid, as the game takes the dark away round a brazier)
+  for (const L of lights) {
+    d.save();
+    d.translate(L.x, L.y);
+    d.scale(1, 0.62);
+    const grd = d.createRadialGradient(0, 0, 0, 0, 0, L.r);
+    grd.addColorStop(0, `rgba(0,0,0,${L.a})`);
+    grd.addColorStop(0.5, `rgba(0,0,0,${0.6 * L.a})`);
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    d.fillStyle = grd;
+    d.fillRect(-L.r, -L.r, 2 * L.r, 2 * L.r);
+    d.restore();
+  }
   g.drawImage(c, 0, 0);
   const grd = g.createRadialGradient(PW / 2, PH / 2, 0.5 * Math.hypot(PW, PH) / 2 / Math.SQRT2, PW / 2, PH / 2, Math.hypot(PW, PH) / 2);
   grd.addColorStop(0, 'rgba(6,4,14,0)');
@@ -260,7 +278,157 @@ function drawScene(g: CanvasRenderingContext2D, hero: [number, number], cam: [nu
   nameAndMap(g, hero);
 }
 
-if (HASH === 'shot' || HASH === 'bare' || HASH === 'tiles') {
+// ---------------------------------------------------------------------------------------------------
+// THE PIECES, laid as the game might lay them (where is the main chat's): standing on the floor, hung on a wall (its
+// foot on the face's foot: 'left' on a wall along x, 'right' on a wall along y), or laid flat
+
+const PIECES = new Map<string, Piece>(greatLibraryPieces().map((p) => [p.name, p]));
+interface Laid { name: string; frame: number; x: number; y: number; on?: 'left' | 'right'; flat?: boolean }
+const DESK = 'a reading desk';
+const CHAIR = 'a reading chair';
+const SCONCE = 'a wall sconce';
+const DRESS: Record<string, { laid: Laid[]; hero: [number, number]; cam: [number, number]; foes: [Sprite, number, number, number][] }> = {
+  // the Reading Room: the book of stolen words on its great lectern at the room's heart, under a chandelier; reading
+  // desks in rows either side, their chairs, a hand bell on one; candelabra; the closing bell by the far wall; a globe,
+  // the catalogue; the floor blacked out where the Censor struck it
+  reading: {
+    hero: [40.0, 16.5],
+    cam: [41.5, 10.5],
+    foes: [[scribe, 46.0, 9.6, 8]],
+    laid: [
+      { name: SCONCE, frame: 0, x: 36.5, y: 4, on: 'left' },
+      { name: SCONCE, frame: 0, x: 48.5, y: 4, on: 'left' },
+      { name: 'a portrait, blacked out', frame: 0, x: 42.5, y: 4, on: 'left' },
+      { name: SCONCE, frame: 0, x: 30, y: 9.5, on: 'right' },
+      { name: "the library's closing bell (the Muffled Bell)", frame: 0, x: 33.6, y: 5.6 },
+      { name: 'a card catalogue', frame: 1, x: 39.0, y: 5.0 },
+      { name: 'a globe', frame: 0, x: 46.0, y: 5.4 },
+      { name: 'the book of stolen words', frame: 0, x: 43.0, y: 11.0 },
+      { name: 'a candle chandelier', frame: 0, x: 43.0, y: 11.0 },
+      { name: DESK, frame: 1, x: 36.0, y: 10.0 },
+      { name: DESK, frame: 1, x: 36.0, y: 15.0 },
+      { name: DESK, frame: 1, x: 50.0, y: 10.0 },
+      { name: DESK, frame: 1, x: 50.0, y: 15.0 },
+      { name: CHAIR, frame: 0, x: 34.4, y: 10.0 },
+      { name: CHAIR, frame: 1, x: 34.8, y: 16.4 },
+      { name: CHAIR, frame: 0, x: 51.6, y: 15.0 },
+      { name: 'a hand bell', frame: 1, x: 38.4, y: 13.0 },
+      { name: 'a candelabrum', frame: 0, x: 40.6, y: 12.4 },
+      { name: 'a candelabrum', frame: 0, x: 45.4, y: 12.4 },
+      { name: 'a stack of books', frame: 1, x: 47.0, y: 16.0 },
+      { name: 'the floor blacked out', frame: 0, x: 38.5, y: 18.5, flat: true },
+      { name: 'the floor blacked out', frame: 0, x: 39.5, y: 18.5, flat: true },
+      { name: 'the floor blacked out', frame: 0, x: 39.5, y: 19.5, flat: true },
+    ],
+  },
+  // the stacks: library steps and a cart in an aisle, books heaped, chained books, the Order's gate across an aisle's
+  // end, sconces on the shelves' ends
+  stacks: {
+    hero: [13.5, 19.0],
+    cam: [14.5, 17.0],
+    foes: [[porter, 9.0, 16.0, 8]],
+    laid: [
+      { name: SCONCE, frame: 0, x: 8.5, y: 15, on: 'left' },
+      { name: SCONCE, frame: 1, x: 19.5, y: 18, on: 'left' },
+      { name: 'library steps', frame: 0, x: 17.0, y: 15.7 },
+      { name: 'a book cart', frame: 0, x: 9.5, y: 18.8 },
+      { name: 'a stack of books', frame: 0, x: 21.0, y: 13.0 },
+      { name: 'a stack of books', frame: 1, x: 12.0, y: 16.4 },
+      { name: 'chained books', frame: 0, x: 20.0, y: 22.6 },
+      { name: "a gate of the Order", frame: 0, x: 12.0, y: 12.6 },
+    ],
+  },
+  // the scriptorium: copying desks in rows, the book press, a vat of ink and the ink spilled from it, baskets of struck-out pages
+  scriptorium: {
+    hero: [14.0, 43.0],
+    cam: [13.5, 39.5],
+    foes: [[scribe, 11.0, 37.2, 8], [scribe, 16.0, 37.2, 8]],
+    laid: [
+      { name: SCONCE, frame: 0, x: 10, y: 33, on: 'left' },
+      { name: SCONCE, frame: 0, x: 18, y: 33, on: 'left' },
+      { name: 'a book press', frame: 0, x: 8.5, y: 35.5 },
+      { name: "a vat of the Order's ink", frame: 0, x: 19.5, y: 35.0 },
+      { name: 'spilled ink', frame: 0, x: 19.0, y: 38.0, flat: true },
+      { name: 'a copying desk', frame: 0, x: 11.0, y: 38.0 },
+      { name: 'a copying desk', frame: 0, x: 16.0, y: 38.0 },
+      { name: 'a copying desk', frame: 0, x: 11.0, y: 41.5 },
+      { name: 'a basket of struck-out pages', frame: 0, x: 13.5, y: 40.0 },
+      { name: 'a basket of struck-out pages', frame: 1, x: 17.6, y: 42.0 },
+      { name: 'a candelabrum', frame: 0, x: 7.5, y: 40.0 },
+    ],
+  },
+};
+
+function spriteOfLaid(l: Laid): Sprite | null {
+  const p = PIECES.get(l.name);
+  if (!p) return null;
+  if (l.on === 'left') return p.left ? p.left[l.frame] : null;
+  if (l.on === 'right') return p.right ? p.right[l.frame] : null;
+  return p.frames ? p.frames[l.frame] : null;
+}
+function drawLaid(g: CanvasRenderingContext2D, l: Laid): void {
+  const sp = spriteOfLaid(l);
+  if (!sp) return;
+  const [sx0, sy0] = pictureOf(l.x, l.y);
+  const sx = sx0 - VX;
+  const sy = sy0 - VY;
+  const p = PIECES.get(l.name)!;
+  if (!l.on && p.shadow) {
+    g.fillStyle = 'rgba(8, 6, 16, 0.42)';
+    g.beginPath();
+    g.ellipse(sx, sy, 30 * p.shadow, 13 * p.shadow, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  const d = sp.density ?? 1;
+  g.drawImage(sp.img, Math.round(sx - sp.ax * d), Math.round(sy - sp.ay * d), sp.w * d, sp.h * d);
+}
+/** Where each light of what is laid is on the screen, its reach and strength. */
+function lightsOf(laid: readonly Laid[]): { x: number; y: number; r: number; a: number; color: string }[] {
+  const out: { x: number; y: number; r: number; a: number; color: string }[] = [];
+  for (const l of laid) {
+    const sp = spriteOfLaid(l);
+    if (!sp || !sp.lights) continue;
+    const [sx0, sy0] = pictureOf(l.x, l.y);
+    const d = sp.density ?? 1;
+    for (const L of sp.lights) out.push({ x: sx0 - VX - sp.ax * d + L.x * d, y: sy0 - VY - sp.ay * d + L.y * d, r: L.r * d, a: L.a ?? 0.5, color: L.color });
+  }
+  return out;
+}
+function glow(g: CanvasRenderingContext2D, ls: ReturnType<typeof lightsOf>): void {
+  g.save();
+  g.globalCompositeOperation = 'lighter';
+  for (const L of ls) {
+    const grd = g.createRadialGradient(L.x, L.y, 0, L.x, L.y, L.r);
+    grd.addColorStop(0, L.color);
+    grd.addColorStop(1, 'rgba(0,0,0,0)');
+    g.globalAlpha = L.a * 0.5;
+    g.fillStyle = grd;
+    g.fillRect(L.x - L.r, L.y - L.r, 2 * L.r, 2 * L.r);
+  }
+  g.restore();
+}
+function drawDressed(g: CanvasRenderingContext2D, which: string): void {
+  const D = DRESS[which];
+  camOn(D.cam[0], D.cam[1]);
+  paintPanel(g, VX, VY, PW, PH);
+  for (const l of D.laid) if (l.on) drawLaid(g, l);
+  type Thing = { d: number; draw: () => void };
+  const things: Thing[] = [];
+  for (const l of D.laid) if (!l.on) things.push({ d: l.flat ? -1e6 + l.x + l.y : l.x + l.y + (l.name === 'a candle chandelier' ? 0.01 : 0), draw: () => drawLaid(g, l) });
+  for (const [sp, x, y, r] of D.foes) things.push({ d: x + y, draw: () => standAt(g, sp, x, y, r) });
+  things.push({ d: D.hero[0] + D.hero[1], draw: () => standAt(g, knight, D.hero[0], D.hero[1], 9) });
+  things.sort((a, b) => a.d - b.d);
+  for (const t of things) t.draw();
+  const ls = lightsOf(D.laid);
+  dark(g, D.hero, ls.map((L) => ({ x: L.x, y: L.y, r: L.r * 1.3, a: Math.min(0.9, L.a * 1.4) })));
+  glow(g, ls);
+  nameAndMap(g, D.hero);
+}
+
+if (HASH.endsWith('-dressed')) {
+  drawDressed(g, HASH.slice(0, -8));
+  show(cvs);
+} else if (HASH === 'shot' || HASH === 'bare' || HASH === 'tiles') {
   drawScene(g, HERO, HERO, { dark: HASH === 'shot', tiles: HASH === 'tiles' });
   show(cvs);
 } else if (HASH === 'stacks') {
