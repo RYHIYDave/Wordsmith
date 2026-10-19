@@ -639,8 +639,9 @@ test('with the mix on, whatever is shut in cannot come at the hero: in real dung
   let asked = 0;
   let behindGate = 0;
   let pulled = 0;
-  // (floor 6 is the descent's now, out in the open, game/act1.ts: a dungeon past it in its place)
-  for (const [seed, depth] of [[6, 2], [11, 3], [14, 4], [21, 5], [8, 11], [9, 3]] as const) {
+  // (floor 6 is the descent's now, out in the open, game/act1.ts: a dungeon past it in its place; and since Version 23.0
+  // floors 11 to 15 are the Hush's, out of doors too: the first dungeon past them, 16)
+  for (const [seed, depth] of [[6, 2], [11, 3], [14, 4], [21, 5], [8, 16], [9, 3]] as const) {
     const g = mixed(true, () => {
       const q = new Game('warrior', seed);
       q.depth = depth;
