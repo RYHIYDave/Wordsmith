@@ -57,6 +57,9 @@ export default async function (page, snap) {
       }
     }
     L.explored.fill(1);
+    // (for the film: the town's line from the start of the run cleared, and no talent waiting to be picked on the screen)
+    window.__dbg.fx.messages = [];
+    g.talentsLeft = () => 0;
     return out;
   }, part);
   log('film', JSON.stringify({ part, depth, cls, ...info }));

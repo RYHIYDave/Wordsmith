@@ -102,6 +102,60 @@ swinging. Which frame shows is the event's (it sets the prop's `state`); a dress
 - WHEN DONE: commit, push, and end with a short report: what is built, the numbers you chose, what is NOT done or not sure,
   every file outside your own you changed and why, the tests you ran and their counts.
 
+## What is built (19 Oct 2026), all behind ACT2 (off)
+
+Branch `act2/build`: the frame, then each part from a helper's branch merged in (act2/f11 to f15 the floors' map-makers and
+dressers, act2/k11a, k11b, k12 to k15 the kinds, the Bells the planning chat's own).
+
+- THE FLOORS, each its own map-maker and dresser (game/act2/<ground>.ts, BUILT), every one laid by the Bells' contract above:
+  11 the Gate Ward (houses everywhere, the floor cut out of them: the broken gate's street, eight squares joined by lanes, the
+  Crier's Square at the far end; up to nine houses walked into that fade as he goes in, render/act2_houses.ts); 12 the
+  Undercity (chambers and tunnels on a lattice, the channels pits to the rules so shots go over them, grates and planks
+  across; the flood and the slick its traps); 13 the Millrace (open fields as the Pinewood, the cart track, the mill off the
+  middle of the way with its wheel and race, the river, the Pulping Floor; the wheel and the stamping mill its traps, the
+  drying lines seen through); 14 the House of Quiet (wards of beds, the chapel, the Physician's Theatre); 15 the Great Library
+  (halls of shelves, the reading desks, the Reading Room). Only the floor's own pieces and the Hush's set are laid.
+- THE KINDS (game/act1_rules, art/act1_figs, render/act1_fx: <kind>.ts each): 11 the Hushed townsfolk (the porter, goodwife
+  and baker), the Hushed watch (the sergeant leads a yellow pack, hounds at his heels), the Silent Order's scribes, the mute
+  watch hounds, and the Crier; 12 the King's rats, the dredgers (the hook and haul), the Rat King (the bite, Stolen Words, the
+  Roll, Unknot); 13 the Hushed reapers and gleaners, the night carters (the lash), the Palimpsest (more torn as it weakens, its
+  pages burn under fire); 14 the Hushed patients (they lie in the ward's beds and rise, the silent scream), the orderlies (the
+  mallet), the Physician (the rap, the Draw that takes one of your words until you hit it back out, Tonic, Rounds); 15 the
+  inklings (they melt to a pool and rise at you), the Bookwardens (the tome slam), the Censor (the slash, Strike-Through, the
+  Redaction bars, the Hush, and at half life the floor blacked out at his room's walls).
+- THE BELLS (game/bells.ts; Game "ACT 2: THE BELLS"; render/bells.ts; the HUD's clock and the minimap's veil): above.
+- One naming for a kind's other looks, '<kind>:<form>' (art/act1_figs/types.ts `looks`): 'hushed:1', 'hushed:2', 'watch:1',
+  'fieldhand:1', 'palimpsest:1' and ':2'. A lair's guardian on the Hush's floors is shown as its own kind, never the old
+  Guardian's figure (art/bestiary.ts figureOf).
+- Tests: tests/act2*.test.ts (every part's, 194 at the join, all passing), and the art's own tests of floors 11 to 15 (their
+  "nothing of the game imports it" checks now "in the game only through its own", as the descent's are).
+
 ## Calls made (to tell him)
 
-(kept as the build goes)
+The planning chat's helpers' picks where the art left a number to the game, each his to change:
+- Speeds and reaches as the pictures are painted (each kind's walk at its painted pace so its feet do not slide; each blow
+  landing at the moment its picture strikes, its reach measured off the picture). In game/defs.ts MONSTERS, marked.
+- The Rat King: words 0.9 of his blow, the Roll 1.4, the swarm's bite 0.35; cooldowns words 6 s, Roll 9 s, Unknot 13 s; his
+  radius 1.45 (his heap's). The dredger's hook hauls in anyone 1.4 tiles or further out.
+- The Physician: the Draw 9 s, Tonic 11 s, Rounds 18 s; the word he draws comes back after 5 hits or a twentieth of his life,
+  or at his death, and is never lost (saved, left on the level or dying: given back). A patient lies in its bed until the
+  hero is within 3.5 tiles, it is struck, or Rounds calls it.
+- The Censor: Strike-Through 7 s, Redaction 10 s, the Hush 18 s; the blackout at half life about a quarter of his room, at
+  its walls, once.
+- The Bells: as told him (15 seconds a bell; the explosion gear, gold, runedust and a chance at a word).
+- The Hushed townsfolk on every floor of the Hush (floor 15 too), as told him.
+
+## Not done yet, or not sure
+
+- THE MOMENTS (his Places 8: one a floor, the art's films): being wired by a helper (act2/moments).
+- Medium kinds with one attack, as the art drew them (his rule of 9 Oct gives them two): the watch, the dredgers, the
+  orderlies, the Bookwardens. A second each needs a picture from the art chat.
+- The woman patient (the art drew two) is not in: the game holds one figure a patient.
+- The Knell (his 05:41, the Hush's own boss at the last bell): not drawn yet.
+- No picture of the Censor's emptied book (it still shows its words after his death).
+- The Undercity's sewerman's handbell is not laid (the contract names only the alarm bells); the slick hurts on the spike
+  beat and does not make him slide.
+- The Millrace's breakables (reams, barrels of ink, jars) stand whole: the game breaks only barrels and urns.
+- The Crier's gate at his square's mouth stands open and never shuts behind the hero; floor 11's moving pieces stand still;
+  the Palimpsest's Rewrite always shows 14 pages.
+- Sounds: the Hush's kinds make no mouth sounds; their other sounds are the sound chat's.
