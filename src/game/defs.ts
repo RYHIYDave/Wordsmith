@@ -978,6 +978,8 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   ratking: ['Hear ye! Hear ye! ...Squeak!', "Who's there? Who's there? Who's there?", 'A hundred voices. Yours makes a hundred and one.'],
   // (ACT 2, THE HUSH: the Physician, floor 14's helper's pick: a doctor's lines, shown over his beak with no sound of a mouth: game/act1_rules/physician.ts)
   physician: ['Say ah.', "Hold still. This won't hurt.", 'Your last words, please.'],
+  // (ACT 2, THE HUSH: the Censor, his mouth a bar of ink, says nothing: a silence over him as his name comes up, game/act1_rules/censor.ts)
+  censor: ['...'],
 };
 
 /**

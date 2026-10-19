@@ -132,7 +132,9 @@ export class Act1Pieces {
     for (const t of this.dress.tiles) {
       const tx = t.i % f.w;
       const ty = (t.i - tx) / f.w;
-      const [sx, sy] = wxy(tx, ty);
+      // (ACT 2, THE HUSH: one laid by its middle, on its tile's middle: Act1Tile.mid)
+      const mid = t.mid ? 0.5 : 0;
+      const [sx, sy] = wxy(tx + mid, ty + mid);
       if (sx < -40 || sx > W + 40 || sy < -30 || sy > H + 30) continue;
       const p = this.piece(t.name);
       const sp = p?.frames?.[t.frame % (p.frames.length || 1)];
