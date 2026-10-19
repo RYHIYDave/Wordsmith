@@ -13,8 +13,8 @@
 // you’re doing a great jobs. At least for 11-15”.
 //
 // THE RULES THEY KEEP: as art/act2_kit.ts says. Pink burning to gold only on what is the enemy's (the voices in the
-// pulp, the Order's hooded lantern on its cart); a lamp in the mill's window an honest orange; the Bells awake or rung
-// the hero's cyan (his to ring); the quest's own pale light; nothing else gives light.
+// vat of pulp); a lamp in the mill's window an honest orange; the Bells awake or rung the hero's cyan (his to ring);
+// the quest's own pale light; nothing else gives light.
 
 import type { Sprite } from '../engine/px';
 import type { Piece } from './floorkit';
@@ -164,8 +164,8 @@ function paperMill(): Sprite {
 /**
  * THE WATER WHEEL, turning (a trap: its paddles strike what is in the race beside it): an undershot wheel in the race,
  * two rims of timber segments, eight spokes to each, sixteen paddles between them, its iron-bound axle on two trestles;
- * water thrown off its paddles, white at its foot. Looking along +y (`k` 0) or +x (1); its frames one sixteenth of a
- * turn apart, so that four go round to the next paddle. 200 x 220 at (100, 160).
+ * water thrown off its paddles, white at its foot. Looking along +y (`k` 0) or +x (1); its frames a quarter of a
+ * paddle apart (one sixty-fourth of a turn), so that four go round to the next paddle. 200 x 220 at (100, 160).
  */
 function waterWheel(frame: number, k: number): Sprite {
   const S = turned(scene(200, 220, 100, 160), k);
