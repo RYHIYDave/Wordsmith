@@ -35,6 +35,7 @@ import { ACT1_SETS, CAMP } from '../game/act1_dress';
 import type { Act1Dress, Act1Tile } from '../game/act1_dress';
 import type { Land } from '../game/act1_layout';
 import type { Level, PropInst } from '../game/state';
+import type { HazardSpot } from '../game/types';
 import { PINE_PATH, laneDist } from '../game/act1_layout';
 import { PIECE } from './outdoor';
 
@@ -193,6 +194,23 @@ export class Act1Pieces {
     if (at === 'warn') return fr[1] ?? fr[0];
     // (the drill holes' spikes come up out of each of its holes: drawn as the game draws its spikes, by `drillSpike`; the others' sprung frames)
     return fr[Math.min(fr.length - 1, 2 + Math.floor(k * (fr.length - 2)))] ?? fr[fr.length - 1];
+  }
+
+  /**
+   * (ACT 2, THE HUSH: A TRAP WITH A PICTURE OF ITS OWN, game/act1_dress.ts Act1Trap: floor 12's flood and slick.) Its
+   * picture at a moment of its beat and the world point it stands at, drawn once there; null: nothing to draw; undefined:
+   * not one of those (drawn as the floor's one trap, a tile at a time, `trapFrame`).
+   */
+  trapOf(s: HazardSpot, at: 'down' | 'warn' | 'up', k: number): { sp: Sprite; x: number; y: number } | null | undefined {
+    const list = this.dress?.traps;
+    if (!list) return undefined;
+    const t = list.find((q) => q.x === s.x && q.y === s.y && q.w === s.w && q.h === s.h);
+    if (!t) return undefined;
+    const fr = this.piece(t.name)?.frames;
+    const pick = at === 'down' ? t.down : at === 'warn' ? t.warn : t.up;
+    const n = pick.length ? pick[Math.max(0, Math.min(pick.length - 1, Math.floor(k * pick.length)))] : -1;
+    const sp = fr && n >= 0 ? fr[n] ?? null : null;
+    return sp ? { sp, x: t.at.x, y: t.at.y } : null;
   }
 
   // ---------------------------------------------------------------------------------------------------

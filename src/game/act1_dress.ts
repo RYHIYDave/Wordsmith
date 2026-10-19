@@ -36,10 +36,30 @@ export interface Act1Tile {
   name: string;
   frame: number;
 }
+/**
+ * (ACT 2, THE HUSH: A TRAP LAID WITH A PICTURE OF ITS OWN, drawn once where it stands rather than a tile at a time as the
+ * floor's one trap is: render/act1_pieces.ts `trapOf`. Floor 12 has two, the flood and the slick: game/act2/undercity.ts.)
+ * Its patch (the hazard's, game/traps.ts: the spike floor's beat), its piece's name, which of the piece's frames shows in
+ * each part of the beat (down, the warning, up: run through as it is up), and the world point its picture stands at.
+ */
+export interface Act1Trap {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  name: string;
+  down: number[];
+  warn: number[];
+  up: number[];
+  at: { x: number; y: number };
+}
+
 /** What a floor of the descent is laid with, beyond its props (those are in Level.props, kind 'piece'). */
 export interface Act1Dress {
   floor: number;
   tiles: Act1Tile[];
+  /** (ACT 2, THE HUSH: its traps with pictures of their own, where its dresser lays them) */
+  traps?: Act1Trap[];
 }
 
 /** A FLOOR'S PIECES BY WHAT THE GAME DOES WITH THEM (their names the art's; tests/act1_floors.test.ts holds each to the art's own list). */
