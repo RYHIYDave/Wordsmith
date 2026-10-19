@@ -106,8 +106,8 @@ function zoneOf(land: Land, W: number, H: number): (tx: number, ty: number) => n
     return x >= 0 && y >= 0 && x < W && y < H ? z[y * W + x] : 0;
   };
 }
-/** ACT 2, THE GATE WARD: the land as its look asks it. */
-function gateWardLand(land: Land, floor: Floor): GateWardLand {
+/** ACT 2, THE GATE WARD: the land as its look asks it (and its houses' shells: render/act2_houses.ts, made from the very same). */
+export function gateWardLand(land: Land, floor: Floor): GateWardLand {
   return { floor, zone: zoneOf(land, floor.w, floor.h), squares: land.squares, houses: land.houses };
 }
 /** ACT 2, THE MILLRACE: which way a line runs at the point of it nearest (x, y), from its first point toward its last (a unit vector, world). */
