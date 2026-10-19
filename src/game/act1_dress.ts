@@ -161,7 +161,9 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     lying: [],
     wallFoot: [],
     breakables: ['a stack of books', 'a book cart'],
-    trap: null,
+    // (ACT 2, THE HUSH: floor 15's trap, the Order's spilled ink, laid by its own dresser, game/act2/library.ts; named here for
+    // its pictures by its beat, render/act1_pieces.ts trapFrame)
+    trap: { name: 'spilled ink', tiles: 1 },
     tile: null,
     edge: [],
   },
