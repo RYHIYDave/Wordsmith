@@ -3,7 +3,7 @@
 // THE GAME, behind PATIENTS_ON, off. Their brief is this chat's, on his word of 18 Oct (“Hey go without my say so.  If
 // something is shit I’ll get it to it but you’re doing a great jobs. At least for 11-15”), sent him with their films.
 // Held as floor 13's field hands are (tests/fieldhands.test.ts):
-//   1. the switch is off, and nothing of the game imports them;
+//   1. in the game since 19 Oct (behind ACT2, off) through art/act1_figs/patient.ts and render/act1_fx/patient.ts alone, the switch on with the others';
 //   2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), every frame, from in front and from
 //      behind, and every handover (in bed only into their rising, their rising into their stand): feet that grip;
 //      nothing in the floor; nothing jerky; the scream drawn back, held and carried through, hips first; alive when still;
@@ -47,6 +47,9 @@ import { dot, sub } from '../src/art/skeleton';
 import type { V3 } from '../src/art/skeleton';
 import { rgba } from '../src/engine/px';
 import { paintWithoutCanvas } from './helpers';
+import { FIG } from '../src/art/act1_figs/patient';
+import '../src/art/bestiary';
+import { ACT1 } from '../src/game/act1';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -97,14 +100,28 @@ for (const mob of ALL) {
 }
 const said = (mob: Mob, move: string, view: string, t: number): string => `${mob.id} ${move} ${view} @${t.toFixed(2)}`;
 
-test('1. the switch is off, and nothing of the game imports them', () => {
-  assert.equal(PATIENTS_ON.on, false, 'PATIENTS_ON is off');
+/** The game's files (not the dev pages) that import any of these (paths from src/, without .ts), by their imports' own paths. */
+function importersOf(mods: readonly string[]): string[] {
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(patients(_moves)?|patient_shots)\.ts$/.test(f)) continue;
-    if (/from ['"][^'"]*(patients(_moves)?|patient_shots)['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    if (!f.endsWith('.ts') || f.startsWith('dev') || mods.includes(f.slice(0, -3))) continue;
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (mods.includes(parts.join('/')) && !users.includes(f)) users.push(f);
+    }
   }
-  assert.equal(users.join(' '), '', 'game files that import them');
+  return users.sort();
+}
+
+// (IN THE GAME since floor 14's kinds came in, 19 Oct 2026, behind the Hush's switch, ACT2, off: through their pictures for the
+// game, art/act1_figs/patient.ts, and what they draw on the floor, render/act1_fx/patient.ts, alone; their switch on with the
+// others' (art/bestiary.ts useAct1Figs). Until then a mock-up nothing of the game imported, its switch off)
+test('1. in the game through art/act1_figs/patient.ts and render/act1_fx/patient.ts alone, their switch on with the others\'', () => {
+  assert.ok(FIG && FIG.switches?.includes(PATIENTS_ON), 'their pictures for the game hold their switch');
+  assert.equal(PATIENTS_ON.on, ACT1.on, 'on with the figures of the acts (art/bestiary.ts useAct1Figs)');
+  assert.equal(importersOf(['art/patients', 'art/patients_moves', 'art/patient_shots']).join(', '), 'art/act1_figs/patient.ts, render/act1_fx/patient.ts', 'only their pictures for the game, and what they draw, import them');
 });
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover, both of them', () => {
