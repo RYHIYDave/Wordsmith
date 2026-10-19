@@ -123,6 +123,70 @@ function wayMarks(L: Level): { tx: number; ty: number; color: string; down: bool
   return out;
 }
 
+/**
+ * ACT 2, THE BELLS' CLOCK, across the top of the screen while the Hush is on: the bells rung of all of them, in the friend's
+ * cyan, and a bar running down with the clock (flashing in its last five seconds); a moment as it ends, what came of it.
+ * Returns whether it is drawn.
+ */
+function drawBellsClock(g: CanvasRenderingContext2D, game: Game, W: number, y: number, t: number): boolean {
+  const B = game.level.bells;
+  if (!B) return false;
+  const cx = Math.floor(W / 2);
+  if (B.phase === 'won' || B.phase === 'lost') {
+    if (B.since > 3) return false;
+    g.globalAlpha = Math.min(1, 3 - B.since);
+    drawText(g, B.phase === 'won' ? 'EVERY BELL PEALS' : 'THE HUSH LIFTS', cx, y, B.phase === 'won' ? '#ffd860' : '#b8b4c6', { align: 'center', shadow: P.ink });
+    g.globalAlpha = 1;
+    return true;
+  }
+  if (B.phase !== 'on') return false;
+  const n = B.rung.length;
+  const k = B.rung.filter(Boolean).length;
+  const left = Math.max(0, B.limit - B.t);
+  const secs = Math.ceil(left);
+  drawText(g, `RING THE BELLS  ${k} / ${n}   ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, cx, y, '#b8fff8', { align: 'center', shadow: P.ink });
+  const bw = Math.min(150, W - 160);
+  const x = Math.floor(cx - bw / 2);
+  g.fillStyle = THEME.ink;
+  g.fillRect(x - 1, y + 10, bw + 2, 6);
+  g.fillStyle = '#0c3a48';
+  g.fillRect(x, y + 11, bw, 4);
+  g.fillStyle = left < 5 && Math.floor(t * 4) % 2 === 0 ? '#b8fff8' : '#22d0e0';
+  g.fillRect(x, y + 11, Math.round((bw * left) / B.limit), 4);
+  return true;
+}
+
+/**
+ * ACT 2, THE BELLS ON A MAP (his word of 18 Oct, 05:31; his doc: "the ground the Hush covers shows as a grey veil, its edge
+ * pulsing, so you can see at a glance where it reaches ... Each bell still to ring has a mark, which goes out when rung, and each
+ * bell rung chips the veil back"). Within `R` tiles of the hero: the veil on every tile of the Hush (seen or not: it is fog over
+ * the city, seen from afar), its edge pulsing; a mark for each bell still to ring, in the friend's cyan, blinking; before it is
+ * begun, the Muffled Bell once it has been seen.
+ */
+function bellsOnMap(L: Level, hx: number, hy: number, R: number, mark: (tx: number, ty: number, color: string, size: number) => void, veil: (tx: number, ty: number, color: string, a: number) => void, t: number): void {
+  const B = L.bells;
+  if (!B) return;
+  const f = L.floor;
+  if (B.phase === 'on') {
+    const pulse = 0.55 + 0.35 * Math.sin(t * 4);
+    for (let ty = Math.max(1, hy - R); ty <= Math.min(f.h - 2, hy + R); ty++) {
+      for (let tx = Math.max(1, hx - R); tx <= Math.min(f.w - 2, hx + R); tx++) {
+        const i = ty * f.w + tx;
+        if (!B.mask[i]) continue;
+        const edge = !B.mask[i - 1] || !B.mask[i + 1] || !B.mask[i - f.w] || !B.mask[i + f.w];
+        veil(tx, ty, edge ? '#e2dfe8' : '#9a96aa', edge ? pulse : 0.4);
+      }
+    }
+    const on = Math.floor(t * 3) % 2 === 0;
+    B.plan.bells.forEach((b, i) => {
+      if (!B.rung[i]) mark(Math.floor(b.x), Math.floor(b.y), on ? '#22d0e0' : '#b8fff8', 2);
+    });
+  } else if (B.phase === 'asleep') {
+    const m = B.plan.muffled;
+    if (L.explored[Math.floor(m.y) * f.w + Math.floor(m.x)]) mark(Math.floor(m.x), Math.floor(m.y), '#b8b4c6', 2);
+  }
+}
+
 /** The small map's tiles as last drawn (see minimap): kept while the hero stands on the same tile. */
 let MAP_CACHE: { cvs: HTMLCanvasElement; key: string; level: Level } | null = null;
 
@@ -184,6 +248,16 @@ function minimap(g: CanvasRenderingContext2D, x: number, y: number, w: number, h
     g.drawImage(c.cvs, x, y, c.cvs.width / sc, c.cvs.height / sc);
     g.imageSmoothingEnabled = smooth;
   }
+  // (ACT 2, THE BELLS: his word, 18 Oct 2026, 05:31: "I’d like the affected area of the hush to be visible on the minimap somehow")
+  if (L.bells) bellsOnMap(L, hx, hy, R, (tx, ty, color, size) => put(tx, ty, color, size), (tx, ty, color, a) => {
+    const px = cx + (tx - ty) - (hx - hy);
+    const py = cy + Math.floor(((tx + ty) - (hx + hy)) / 2);
+    if (px < x + 1 || py < y + 1 || px >= x + w - 1 || py >= y + h - 1) return;
+    g.globalAlpha = a;
+    g.fillStyle = color;
+    g.fillRect(px, py, 1, 1);
+    g.globalAlpha = 1;
+  }, performance.now() / 1000);
   const p = L.portal;
   if (p && L.explored[p.ty * f.w + p.tx]) put(p.tx, p.ty, p.state === 1 ? P.tl4 : P.tl2, 2);
   // (in town the way out is the gate in the back wall)
@@ -299,6 +373,13 @@ export function drawMap(ui: Ui, game: Game, t: number): boolean {
     const s = size + k - 1;
     g.fillRect(ox + (tx - ty + f.h - 1) * k - (s >> 1), oy + ((tx + ty) >> 1) * k - (s >> 1), s, s);
   };
+  // (ACT 2, THE BELLS: the Hush's ground and the bells still to ring, as on the small map)
+  if (L.bells) bellsOnMap(L, hx, hy, Math.max(f.w, f.h), (tx, ty, color, size) => put(tx, ty, color, size + 2), (tx, ty, color, a) => {
+    g.globalAlpha = a;
+    g.fillStyle = color;
+    g.fillRect(ox + (tx - ty + f.h - 1) * k, oy + ((tx + ty) >> 1) * k, k, k);
+    g.globalAlpha = 1;
+  }, t);
   const p = L.portal;
   if (p && L.explored[p.ty * f.w + p.tx]) put(p.tx, p.ty, p.state === 1 ? P.tl4 : P.tl2, 4);
   const gate = L.town ? L.stations.find((q) => q.kind === 'gate') : undefined;
@@ -375,9 +456,11 @@ function phrase(h: Hero, s: number, tight: number): Piece[] {
   const fits = (group: readonly (WordId | null)[]): boolean => spare.some((w) => socketProblem(group, w) === null);
   const glowF = fits(sk.front);
   const glowB = fits(sk.behind);
+  // (ACT 2, THE HUSH on the hero, Game.hush: his doc, "a status that darkens your words for a few seconds": his words written dark)
   const word = (w: WordId, form: 'front' | 'behind', rune: boolean): Piece => {
     const text = wordForm(w, form);
-    return rune ? { kind: 'rune', text, color: WORD_COLOR[w], w: 12, word: w, glow: false } : { kind: 'word', text, color: WORD_COLOR[w], w: textWidth(text), word: w, glow: false };
+    const color = HUSHED.on ? HUSHED.color : WORD_COLOR[w];
+    return rune ? { kind: 'rune', text, color, w: 12, word: w, glow: false } : { kind: 'word', text, color, w: textWidth(text), word: w, glow: false };
   };
   const empty = (glow: boolean): Piece => ({ kind: 'empty', text: '', color: '', w: SLOT_W, word: null, glow });
   for (const w of sk.front) out.push(w ? word(w, 'front', tight >= 2) : empty(glowF));
@@ -773,7 +856,11 @@ function drawGesture(g: CanvasRenderingContext2D, kind: 'stick' | 'tap' | 'hold'
   }
 }
 
+/** ACT 2, THE HUSH: whether the hero's words are dark this frame (set by drawHud from Game.hushT), and the dark they are written in. */
+const HUSHED = { on: false, color: '#4a4658' };
+
 export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: Input, inp: HudIn): HudOut {
+  HUSHED.on = game.hushT > 0;
   const g = ui.g;
   const W = ui.w;
   const H = ui.h;
@@ -1162,13 +1249,18 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
     g.fillRect(x, 15, Math.round((bw * Math.max(0, boss.life)) / boss.maxLife), 4);
   }
 
+  // ---- ACT 2, THE BELLS: the clock (his doc: "a timer runs across the top of the screen") ---------
+  const bellsUp = drawBellsClock(g, game, W, bossUp ? 24 : 4, t);
+
   // ---- the first dungeon's prompt, and the word just found ------------------------------------
   // (a word found is the bigger news: for its moment it takes the prompt's place)
   // (where the prompt or the news of a word ends, so that on a narrow screen the messages can go under it)
   let noticeEnd = 0;
-  if (inp.toast) noticeEnd = drawToast(ui, art, inp.toast.word, inp.toast.t, bossUp && W >= 380 ? 24 : W >= 380 ? 4 : NARROW_TOP, !!inp.toast.big);
-  else if (inp.moveToast) noticeEnd = drawMoveToast(ui, art, h, inp.moveToast.skill, inp.moveToast.t, bossUp && W >= 380 ? 24 : W >= 380 ? 4 : NARROW_TOP);
-  else if (banner && !bossUp) {
+  // (under the boss's bar and the Bells' clock, where they are up)
+  const topBusy = (bossUp ? 20 : 0) + (bellsUp ? 22 : 0);
+  if (inp.toast) noticeEnd = drawToast(ui, art, inp.toast.word, inp.toast.t, topBusy && W >= 380 ? 4 + topBusy : W >= 380 ? 4 : NARROW_TOP + topBusy, !!inp.toast.big);
+  else if (inp.moveToast) noticeEnd = drawMoveToast(ui, art, h, inp.moveToast.skill, inp.moveToast.t, topBusy && W >= 380 ? 4 + topBusy : W >= 380 ? 4 : NARROW_TOP + topBusy);
+  else if (banner && !bossUp && !bellsUp) {
     noticeEnd = drawBanner(ui, banner, t);
     // (for the playtests: where the prompt is)
     ui.mark('banner', 0, 0, W, noticeEnd);
