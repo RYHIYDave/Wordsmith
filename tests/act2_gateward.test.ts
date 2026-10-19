@@ -295,10 +295,10 @@ test('nothing of the descent\'s pieces is laid: only the art\'s fifty for the fl
 test('the traps are laid as the descent\'s are, a spike floor\'s beat, and their pictures follow it', () => {
   for (const seed of SEEDS.slice(0, 6)) {
     const L = floorOf(seed);
-    const d = L.act1 as GateWardDress;
-    assert.ok(d.traps.length >= 4, `seed ${seed}: ${d.traps.length} traps`);
+    const d = L.act1 as unknown as GateWardDress;
+    assert.ok(d.wardTraps.length >= 4, `seed ${seed}: ${d.wardTraps.length} traps`);
     const hz = L.floor.hazards!;
-    for (const t of d.traps) {
+    for (const t of d.wardTraps) {
       const p = L.props.find((q) => q.kind === 'piece' && q.ty * L.floor.w + q.tx === t.i)!;
       assert.equal(p.name, t.name);
       assert.equal(hz[t.hz].kind, 'spikes');

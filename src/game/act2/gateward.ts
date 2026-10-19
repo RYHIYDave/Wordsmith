@@ -772,7 +772,8 @@ export interface GWTrap {
 }
 /** THE GATE WARD DRESSED: as the descent's are (game/act1_dress.ts, Act1Dress), and its traps. */
 export interface GateWardDress extends Act1Dress {
-  traps: GWTrap[];
+  /** (its own, the art's three by their beat: render/act2_houses.ts; not Act1Dress.traps, floor 12's flood and slick) */
+  wardTraps: GWTrap[];
 }
 
 /** The plan again from the Land alone (a floor laid in another run: a save come back to). */
@@ -835,7 +836,7 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
   const W = f.w;
   const H = f.h;
   const rng = new RNG((seed ^ 0x3c6ef372 ^ depth) >>> 0);
-  const out: GateWardDress = { floor: 11, tiles: [], traps: [] };
+  const out: GateWardDress = { floor: 11, tiles: [], wardTraps: [] };
   const zones = land.zones ?? new Uint8Array(W * H);
   const houses = land.houses ?? [];
   const bells = land.bells;
@@ -1169,7 +1170,7 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
         if (!strip.every(([a, b]) => floorAt(a, b) && !taken[b * W + a])) continue;
         const p = put(t.name, x, y, true, 0);
         hazards.push({ kind: 'spikes', x: alongX ? x + 1 : x, y: alongX ? y : y + 1, w: alongX ? 3 : 1, h: alongX ? 1 : 3, phase: rng.range(0, 2.5) });
-        out.traps.push({ i: p.ty * W + p.tx, name: t.name, frame0: alongX ? 5 : 0, hz: hazards.length - 1 });
+        out.wardTraps.push({ i: p.ty * W + p.tx, name: t.name, frame0: alongX ? 5 : 0, hz: hazards.length - 1 });
         k++;
         continue;
       }
@@ -1181,7 +1182,7 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
       // (walked over: it is in the floor, or a jar on it; the beat bites whoever stands on its tile)
       const p = put(t.name, x, y, false, 0);
       hazards.push({ kind: 'spikes', x, y, w: 1, h: 1, phase: rng.range(0, 2.5) });
-      out.traps.push({ i: p.ty * W + p.tx, name: t.name, frame0: 0, hz: hazards.length - 1 });
+      out.wardTraps.push({ i: p.ty * W + p.tx, name: t.name, frame0: 0, hz: hazards.length - 1 });
       k++;
     }
   }
@@ -1252,12 +1253,12 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
     if (p.name === GW_NAMES.gate || p.name === GW_NAMES.muffled || p.name === GW_NAMES.shrine || p.name === GW_NAMES.watch) continue;
     L.props.splice(L.props.indexOf(p), 1);
     L.walk[p.ty * W + p.tx] = 1;
-    const t = out.traps.findIndex((q) => q.i === p.ty * W + p.tx);
-    if (t >= 0) out.traps.splice(t, 1);
+    const t = out.wardTraps.findIndex((q) => q.i === p.ty * W + p.tx);
+    if (t >= 0) out.wardTraps.splice(t, 1);
   }
   // (a trap whose piece was taken away bites no more)
-  const live = hazards.filter((_, n) => out.traps.some((t) => t.hz === n));
-  out.traps = out.traps.map((t) => ({ ...t, hz: live.indexOf(hazards[t.hz]) + (f.hazards?.length ?? 0) }));
+  const live = hazards.filter((_, n) => out.wardTraps.some((t) => t.hz === n));
+  out.wardTraps = out.wardTraps.map((t) => ({ ...t, hz: live.indexOf(hazards[t.hz]) + (f.hazards?.length ?? 0) }));
   if (live.length) {
     f.hazards = [...(f.hazards ?? []), ...live];
     L.hazards = makeHazards(f);

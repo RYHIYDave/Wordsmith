@@ -272,7 +272,7 @@ export function trapSprite(L: Level, p: PropInst, time: number, piece: (name: st
   if (!dress || !('traps' in dress)) return undefined;
   let m = trapsOf.get(L);
   if (!m) {
-    m = new Map(dress.traps.map((t) => [t.i, t]));
+    m = new Map(dress.wardTraps.map((t) => [t.i, t]));
     trapsOf.set(L, m);
   }
   const tr = m.get(p.ty * L.floor.w + p.tx);
