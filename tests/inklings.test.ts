@@ -3,7 +3,7 @@
 // INKLINGS_ON, off. Their brief is this chat's, on his word of 18 Oct (“Hey go without my say so.  If something is shit
 // I’ll get it to it but you’re doing a great jobs. At least for 11-15”), sent him with their films. Held as floor 15's
 // Censor is (tests/censor.test.ts):
-//   1. the switch is off, and nothing of the game imports them;
+//   1. the switch is off, and only their pictures and drawings for the game (behind ACT2) import them;
 //   2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), every frame, from in front and from
 //      behind, and every handover (sunk into the pool, they rise from it): nothing through them; feet that grip; nothing
 //      in the floor; nothing jerky; the lash drawn back, held and carried through, hips first; alive when still;
@@ -94,14 +94,26 @@ for (const mob of ALL) {
 }
 const said = (_mob: Mob, move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(2)}`;
 
-test('1. the switch is off, and nothing of the game imports them', () => {
+// (IN THE GAME BEHIND ACT2 since the Hush is built, 19 Oct 2026: through its pictures for the game, art/act1_figs/, and what it
+// lays on the floor, render/act1_fx/, alone; its switch still off, as nothing of the game draws them while ACT2 is off)
+test('1. the switch is off, and only their pictures and drawings for the game (behind ACT2) import them', () => {
   assert.equal(INKLINGS_ON.on, false, 'INKLINGS_ON is off');
+  const resolve = (from: string, spec: string): string => {
+    const parts = from.split('/').slice(0, -1);
+    for (const s of spec.split('/')) {
+      if (s === '..') parts.pop();
+      else if (s !== '.') parts.push(s);
+    }
+    return parts.join('/');
+  };
+  const art = new Set(['art/inklings', 'art/inklings_moves', 'art/inkling_shots']);
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(inklings(_moves)?|inkling_shots)\.ts$/.test(f)) continue;
-    if (/from ['"][^'"]*(inklings(_moves)?|inkling_shots)['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    if (!f.endsWith('.ts') || f.startsWith('dev') || art.has(f.replace(/\.ts$/, ''))) continue;
+    const text = fs.readFileSync(path.join('src', f), 'utf8');
+    for (const m of text.matchAll(/from ['"]([^'"]+)['"]/g)) if (art.has(resolve(f, m[1]))) users.push(f);
   }
-  assert.equal(users.join(' '), '', 'game files that import them');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/inkling.ts render/act1_fx/inkling.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

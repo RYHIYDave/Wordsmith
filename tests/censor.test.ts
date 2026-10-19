@@ -2,7 +2,7 @@
 // what he lays on the floor). A MOCK-UP: NOT IN THE GAME, behind CENSOR_ON, off. His brief is this chat's, on his word
 // of 18 Oct (“Hey go without my say so.  If something is shit I’ll get it to it but you’re doing a great jobs. At least
 // for 11-15”), sent him with his films. Held as floor 14's Physician is (tests/physician.test.ts):
-//   1. the switch is off, and nothing of the game imports him;
+//   1. the switch is off, and only his pictures and drawings for the game (behind ACT2) import him;
 //   2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK (src/art/boss_checks.ts), every frame, from in front and from behind,
 //      and every handover: nothing through him, the brush too; feet that grip; nothing in the floor; nothing jerky; the
 //      slash drawn back, held and carried through, hips first; alive when still;
@@ -97,14 +97,26 @@ for (const mob of ALL) {
 }
 const said = (_mob: Mob, move: string, view: string, t: number): string => `${move} ${view} @${t.toFixed(2)}`;
 
-test('1. the switch is off, and nothing of the game imports him', () => {
+// (IN THE GAME BEHIND ACT2 since the Hush is built, 19 Oct 2026: through its pictures for the game, art/act1_figs/, and what it
+// lays on the floor, render/act1_fx/, alone; its switch still off, as nothing of the game draws him while ACT2 is off)
+test('1. the switch is off, and only his pictures and drawings for the game (behind ACT2) import him', () => {
   assert.equal(CENSOR_ON.on, false, 'CENSOR_ON is off');
+  const resolve = (from: string, spec: string): string => {
+    const parts = from.split('/').slice(0, -1);
+    for (const s of spec.split('/')) {
+      if (s === '..') parts.pop();
+      else if (s !== '.') parts.push(s);
+    }
+    return parts.join('/');
+  };
+  const art = new Set(['art/censor', 'art/censor_moves', 'art/censor_shots']);
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/censor(_moves|_shots)?\.ts$/.test(f)) continue;
-    if (/from ['"][^'"]*censor(_moves|_shots)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    if (!f.endsWith('.ts') || f.startsWith('dev') || art.has(f.replace(/\.ts$/, ''))) continue;
+    const text = fs.readFileSync(path.join('src', f), 'utf8');
+    for (const m of text.matchAll(/from ['"]([^'"]+)['"]/g)) if (art.has(resolve(f, m[1]))) users.push(f);
   }
-  assert.equal(users.join(' '), '', 'game files that import them');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/censor.ts render/act1_fx/censor.ts', 'game files that import them');
 });
 
 test('2. EVERY MOVE OF HIS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {

@@ -960,6 +960,8 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   cantor: ['Hear the hymn.', 'Your echo is mine now.', 'Sing with me. Scream with me.'],
   stag: ['HRRAAAWWNN!', 'BRRRAAAWN!', 'HAAARRRNN!'],
   eye: ['You are seen.', 'Drown.', 'The siege is my dream. Sleep in it.'],
+  // (ACT 2, THE HUSH: the Censor, his mouth a bar of ink, says nothing: a silence over him as his name comes up, game/act1_rules/censor.ts)
+  censor: ['...'],
 };
 
 /**

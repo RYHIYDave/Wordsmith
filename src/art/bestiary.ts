@@ -117,9 +117,10 @@ export const MONSTER_FIGURES: readonly ClassicFigure[] = ['skeleton', 'archer', 
 export const NEW_FIGURES: readonly MonsterFigure[] = ['shade', 'boneward', 'golem', 'champion', 'marksman', 'priest', 'chieftain'];
 
 /** THE FIRST FIVE FLOORS' figures: the bosses of floors 2 to 5 (the Chained One in each of his three states), the bone beast, and the cult's two. */
-export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...ACT1_KINDS.filter((k) => act1Fig(k) !== null)];
+// (ACT 2, THE HUSH: its kinds as the descent's, once their pictures are in: art/act1_figs/; a heavy one, a boss, painted by the painter as the descent's are)
+export const FIRST5_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'beast', 'fleshmancer', 'dagger', 'minifm', ...ACT1_KINDS.filter((k) => act1Fig(k) !== null), ...ACT2_KINDS.filter((k) => act1Fig(k) !== null)];
 /** Those of them that are heavy to paint and to hold (art/bosses3.ts: seconds of painting, tens of megabytes): made for the floor they are on, and let go of after it (Bestiary.forget). */
-export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...ACT1_KINDS.filter((k) => act1Fig(k)?.heavy)];
+export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', 'chained1', 'chained2', 'amalgam', 'fleshmancer', ...ACT1_KINDS.filter((k) => act1Fig(k)?.heavy), ...ACT2_KINDS.filter((k) => act1Fig(k)?.heavy)];
 
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more; the Chained One is one monster, as free as he is: `form`.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: number }): MonsterFigure {
