@@ -77,7 +77,8 @@ const WHOLE = paintTerrain(T, X0, Y0, WW, HH);
 
 test('in no game file: nothing of the game imports the Undercity\'s ground', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(undercity)\.ts$/.test(f)) continue;
+    // (floor 12's moment, art/floor12_moments.ts, a mock-up of its own laid on its channels, takes its water's depth from it: tests/floor12_moments.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(undercity|floor12_moments)\.ts$/.test(f)) continue;
     assert.ok(!/from ['"][^'"]*\/undercity['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Undercity's ground`);
   }
 });
