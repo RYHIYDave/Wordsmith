@@ -142,7 +142,7 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (the fleshmancer and the cult's two are built on them: art/fleshmancer.ts, art/cultists.ts)
     // (and floor 11's boss, the Crier, art/crier.ts, art/crier_moves.ts and art/crier_shots.ts: tests/crier.test.ts;
-    // and the Hushed townsfolk, art/hushed.ts and art/hushed_moves.ts: tests/hushed.test.ts)
+    // and the Hushed townsfolk and the Hushed watch, art/hushed*.ts: tests/hushed.test.ts and tests/hushed_watch.test.ts)
     if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|crier|hushed/.test(f)) continue;
     // (ACT 1: what the descent's kinds draw on the floor, in the bosses' own way, is the bosses' effects' own: render/act1_fx/, called by render/bossfx.ts)
     if (f.startsWith('render/act1_fx/')) continue;

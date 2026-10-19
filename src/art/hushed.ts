@@ -45,9 +45,9 @@ const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 // THEIR COLOURS: a city's working clothes, dulled by the dusk; their skin drained
 
 /** Their skin, the colour gone out of it: greyed, not dead. */
-const SKIN: Ramp = ['#3a302e', '#3a302e', '#7e6e66', '#aa968a', '#aa968a'];
-const HAIR: Ramp = ['#1c1818', '#1c1818', '#3e3430', '#5a4c42', '#5a4c42'];
-const GREY_HAIR: Ramp = ['#2c2a2c', '#2c2a2c', '#5e5a5c', '#827e7e', '#827e7e'];
+export const SKIN: Ramp = ['#3a302e', '#3a302e', '#7e6e66', '#aa968a', '#aa968a'];
+export const HAIR: Ramp = ['#1c1818', '#1c1818', '#3e3430', '#5a4c42', '#5a4c42'];
+export const GREY_HAIR: Ramp = ['#2c2a2c', '#2c2a2c', '#5e5a5c', '#827e7e', '#827e7e'];
 const LINEN: Ramp = ['#3e3a34', '#3e3a34', '#8a8476', '#b4ac9a', '#b4ac9a'];
 const SMOCK: Ramp = ['#1a2030', '#1a2030', '#3a4660', '#566484', '#566484'];
 const CAP: Ramp = ['#1c1816', '#1c1816', '#3e3630', '#57493e', '#57493e'];
@@ -62,9 +62,9 @@ const SHIRT: Ramp = ['#34322e', '#34322e', '#6e6a60', '#928c7e', '#928c7e'];
 /** The baker's apron, floured: paler than linen. */
 const APRON: Ramp = ['#4a4640', '#4a4640', '#9a9484', '#c2baa6', '#c2baa6'];
 /** The Hush as it first leaves a mouth, palest. */
-const BREATH_PALE = '#b6b0cc';
+export const BREATH_PALE = '#b6b0cc';
 /** The Order's mark on what they wear: blots of its black ink. */
-const INKBLOT = '#16131c';
+export const INKBLOT = '#16131c';
 
 // =============================================================================================
 // THE BODY
@@ -90,7 +90,7 @@ export type HushedWho = 'porter' | 'goodwife' | 'baker';
 // THE HUSHED AS SOLIDS
 
 /** How the figure's going drags what hangs off it. */
-function lagOf(m: Moment, k: number, most: number): V3 {
+export function lagOf(m: Moment, k: number, most: number): V3 {
   const raw = mul(m.come, -k);
   const l = len(raw);
   return l > most ? mul(raw, most / l) : raw;
@@ -250,7 +250,7 @@ function head(put: Put, st: Stage, s: Skeleton, who: HushedWho, jaw: number, lit
  * THE HUSH LEAKING OUT OF THEM: grey breath curling up out of the open mouth and thinning away (`puff`: how hard,
  * 1 as they breathe, more as they lunge; out to nothing as it has left them).
  */
-function hushBreath(put: Put, mouth: V3, ff: V3, fl: V3, t: number, puff: number, seed: number): void {
+export function hushBreath(put: Put, mouth: V3, ff: V3, fl: V3, t: number, puff: number, seed: number): void {
   if (puff <= 0.02) return;
   // (a thread of it out of the mouth, curling up and over the head, swaying, widening and thinning as it goes:
   // more of it, and further, as it comes harder)
@@ -266,6 +266,28 @@ function hushBreath(put: Put, mouth: V3, ff: V3, fl: V3, t: number, puff: number
     put('hush', 'hush', { k: 'mote', p, c, size: life < 0.5 ? 3 : 2 });
     // (a wisp is wide where it is thick, its edge darker)
     if (life < 0.6) put('hush', 'hush', { k: 'mote', p: add(p, add(mul(fl, 1.4), [0, 0, 0.8])), c: life < 0.3 ? HUSH[4] : HUSH[3], size: 2 });
+  }
+}
+
+/**
+ * THE HUSH LEAVING ONE OF THE HUSHED (their death): one great grey breath out of the open mouth, from `from` to `to`
+ * seconds into it, billowing up and out over them as it goes, and thinning away. Sixty-four puffs, each loosed a
+ * little after the last, flying up and out, slowing, swelling, thinning.
+ */
+export function hushLeaves(put: Put, mouth: V3, ff: V3, fl: V3, t: number, seed: number, from: number, to: number): void {
+  if (t <= from || t >= to) return;
+  const k = (t - from) / (to - from);
+  for (let i = 0; i < 64; i++) {
+    const born = 0.45 * hash(i, seed, 2207);
+    const age = (k - born) / 0.55;
+    if (age <= 0 || age >= 1) continue;
+    const a = hash(i, seed + 3, 2207) * Math.PI * 2;
+    const spread = (2 + 14 * Math.sqrt(age)) * (0.5 + 0.5 * hash(i, seed + 4, 2207));
+    const up = 4 + 34 * Math.sqrt(age) * (0.6 + 0.4 * hash(i, seed + 5, 2207));
+    const p = add(mouth, add(mul(ff, 2 + spread * 0.5 * Math.cos(a)), add(mul(fl, spread * Math.sin(a)), [0, 0, up])));
+    const c = age < 0.25 ? BREATH_PALE : age < 0.5 ? HUSH[4] : age < 0.75 ? HUSH[3] : HUSH[2];
+    if (age > 0.8 && hash(i, Math.floor(t * 30), 2209) < (age - 0.8) * 4) continue;
+    put('hush', 'hush', { k: 'mote', p, c, size: age < 0.6 ? 3 : 2 });
   }
 }
 
@@ -364,22 +386,7 @@ function hushedBits(who: HushedWho, st: Stage, m: Moment): Bit[] {
   hushBreath(put, mouth, ff, fl, m.t, puff, seed);
   // THE HUSH LEAVING THEM (their death): one great grey breath out of the open mouth, billowing up and out over
   // them as it goes, and thinning away
-  if (m.dying && m.t > 0.12 && m.t < 1.7) {
-    const k = (m.t - 0.12) / 1.58;
-    for (let i = 0; i < 64; i++) {
-      // (each puff of it loosed a little after the last, flying up and out, slowing, swelling, thinning)
-      const born = 0.45 * hash(i, seed, 2207);
-      const age = (k - born) / 0.55;
-      if (age <= 0 || age >= 1) continue;
-      const a = hash(i, seed + 3, 2207) * Math.PI * 2;
-      const spread = (2 + 14 * Math.sqrt(age)) * (0.5 + 0.5 * hash(i, seed + 4, 2207));
-      const up = 4 + 34 * Math.sqrt(age) * (0.6 + 0.4 * hash(i, seed + 5, 2207));
-      const p = add(mouth, add(mul(ff, 2 + spread * 0.5 * Math.cos(a)), add(mul(fl, spread * Math.sin(a)), [0, 0, up])));
-      const c = age < 0.25 ? BREATH_PALE : age < 0.5 ? HUSH[4] : age < 0.75 ? HUSH[3] : HUSH[2];
-      if (age > 0.8 && hash(i, Math.floor(m.t * 30), 2209) < (age - 0.8) * 4) continue;
-      put('hush', 'hush', { k: 'mote', p, c, size: age < 0.6 ? 3 : 2 });
-    }
-  }
+  if (m.dying) hushLeaves(put, mouth, ff, fl, m.t, seed, 0.12, 1.7);
   return bits;
 }
 
