@@ -65,6 +65,22 @@ export function forgetAct1(keep: number): void {
 /** The pieces that move (their frames a loop), at LOOP_FPS; every other's frames are its looks, one a place. */
 const MOVING = new Set(["the cult's watchfire", "the cult's cauldron", "the cult's brazier", "the cult's banner", "the cult's ring of magic", 'the half-cut obelisk', "the cult's obelisk", "the redoubt's gatehouse"]);
 const LOOP_FPS = 8;
+/**
+ * ACT 2, THE BELLS (game/bells.ts): THE BELLS' PICTURES BY THEIR STATE. A small bell's frames are the art's: quiet, awake (ready
+ * to ring), rung one way, rung back; its prop's `state` 0 quiet, 1 awake, 2 rung (swinging one way and back as long as it rings).
+ * The Muffled Bell's: gagged, then swinging (straight, one way, the other); `state` 0 gagged, 1 torn loose and swinging.
+ */
+export const SMALL_BELLS: ReadonlySet<string> = new Set(["a wayside shrine's bell", "a shop's doorbell", "the watch's alarm bell", 'an alarm bell at a sluice', 'a farm bell on its post', "a patient's call bell", 'a hand bell']);
+export function isMuffledBell(name: string): boolean {
+  return name.endsWith('(the Muffled Bell)');
+}
+/** The frame a bell shows in its state at time `t`, or null: not a bell. */
+export function bellFrame(name: string, state: number, t: number): number | null {
+  if (SMALL_BELLS.has(name)) return state <= 0 ? 0 : state === 1 ? 1 : 2 + (Math.floor(t * 3) % 2);
+  if (isMuffledBell(name)) return state <= 0 ? 0 : [1, 2, 1, 3][Math.floor(t * 4) % 4];
+  return null;
+}
+
 /** What is seen through while someone is behind it: anything this tall (game pixels), as the planning chat's rule has it. */
 export const SEE_TALL = 44;
 
@@ -136,7 +152,18 @@ export class Act1Pieces {
     if (p.kind !== 'piece' || !p.name) return undefined;
     const pc = this.piece(p.name);
     const fr = pc?.frames;
-    if (!fr || fr.length === 0) return null;
+    // (ACT 2, THE BELLS: a bell's picture is its state's: game/bells.ts sets it)
+    const bell = bellFrame(p.name, p.state, t);
+    if (!fr || fr.length === 0) {
+      // (ACT 2, THE HUSH: A WALL PIECE, the art's 'on the wall' with its frames on each face (art/floor1.ts Piece: left, right),
+      // laid by its floor's dresser at a point of the wall's foot line: `variant` & 1 the face (0 the face turned to the
+      // screen's left, a wall running along x with the floor on its greater-y side; 1 the face turned to the screen's right,
+      // a wall along y, the floor on its greater-x side), `variant` >> 1 its frame; a bell on the wall its state's frame)
+      const side = p.variant & 1 ? pc?.right : pc?.left;
+      if (!side || side.length === 0) return null;
+      return side[(bell ?? p.variant >> 1) % side.length] ?? null;
+    }
+    if (bell !== null) return fr[bell % fr.length] ?? fr[0];
     if (p.name === "the redoubt's gatehouse") return p.state === 1 ? fr[4] ?? fr[0] : fr[Math.floor(t * 6) % 4];
     if (p.name === "the waystation's gate") return fr[(p.state === 1 ? 1 : 0) + (p.variant & 1 ? 2 : 0)] ?? fr[0];
     if (MOVING.has(p.name)) return fr[(Math.floor(t * LOOP_FPS) + p.variant) % fr.length];
