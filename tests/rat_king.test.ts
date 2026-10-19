@@ -3,7 +3,7 @@
 // something is shit I’ll get it to it but you’re doing a great jobs. At least for 11-15”), sent him with its films.
 // Held to his art rulebook before he sees it, in every frame of every move, from in front and from behind, as the hounds
 // are (tests/hounds.test.ts) and as every boss is (Approval 7: “I need all bosses ran through all checks from now on”):
-//   - the switch off, nothing of the game importing it;
+//   - in the game through art/act1_figs/ratking.ts and render/act1_fx/ratking.ts alone (behind ACT2), its switch thrown with the acts' figures;
 //   - crisp pixels; the pink edge while it lives; nothing cyan; every light the enemy's; its eyes burning while it
 //     lives; nothing cut off at its canvas's edge;
 //   - its size: its King's head about the knight's head (he is 58 tall);
@@ -31,6 +31,7 @@ import { RAT_KING_ON, RK_BITE, RK_DIE, RK_ROLL, RK_STAND, RK_UNKNOT, RK_WALK, RK
 import { WORD_BURST_FOR, SWARM_FOR, WORD_SPEED, drawStolenWord, drawSwarm, drawWordAim, drawWordBurst } from '../src/art/rat_king_shots';
 import type { FloorAt } from '../src/art/mob_shots';
 import { TILE3 } from '../src/art/new_mobs3';
+import { FIG as FIG_RK } from '../src/art/act1_figs/ratking';
 import { RIM_ALPHA } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { ENEMY_RIM, FLAME } from '../src/art/mkit';
@@ -126,15 +127,18 @@ function hue(r: number, g: number, b: number): [number, number] {
   return [(h + 360) % 360, (max - min) / max];
 }
 
-test('the switch is off, and nothing of the game imports it', () => {
-  assert.equal(RAT_KING_ON.on, false, 'RAT_KING_ON is off');
+// (ACT 2, THE HUSH, IN THE GAME behind ACT2 (game/act1.ts, off): no longer a mock-up nothing imports. The game holds his
+// pictures through art/act1_figs/ratking.ts alone, and draws what he throws through render/act1_fx/ratking.ts alone; his
+// switch is one the bestiary throws with the acts' figures, as the descent's are, art/bestiary.ts useAct1Figs.)
+test('in the game through art/act1_figs/ratking.ts and render/act1_fx/ratking.ts alone, its switch thrown with the acts\' figures', () => {
+  assert.ok(FIG_RK !== null && (FIG_RK.switches ?? []).includes(RAT_KING_ON), 'its switch is one the bestiary throws');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (the King's rats, art/rats.ts, a mock-up of its own, are painted with the King's own rat painter)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(rat_king(_shots)?|rats)\.ts$/.test(f)) continue;
+    // (the King's rats, art/rats.ts, are painted with the King's own rat painter)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(rat_king(_shots)?|rats)\.ts$/.test(f) || f === 'art/act1_figs/ratking.ts' || f === 'render/act1_fx/ratking.ts') continue;
     if (/from ['"][^'"]*\/rat_king(_shots)?['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
-  assert.equal(users.join(' '), '', 'game files that import it');
+  assert.equal(users.join(' '), '', 'other game files that import it');
 });
 
 test('crisp: every pixel all there or not at all (but the pink edge); its pink edge round it while it lives', () => {
