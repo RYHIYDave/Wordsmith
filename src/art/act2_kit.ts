@@ -6,13 +6,15 @@
 //
 // THE RULES THEY KEEP (his art rulebook): crisp pixels, two to a game pixel; light from the upper left; the
 // indigo seam where one thing ends before another; a step quieter than the figures and duller than any word;
-// pink burning to gold glows only on the enemy (the Silent Order's lanterns, the cult's firepots, the dome's
+// (every colour quietened to under the dullest word's, what glows aside: art/act2_quiet.ts); pink burning to gold glows only on the enemy (the Silent Order's lanterns, the cult's firepots, the dome's
 // shards, the stolen voices in their jars); an honest fire burns orange; nothing cyan.
 
 import { Px } from '../engine/px';
 import type { Light, Sprite } from '../engine/px';
 import { Scene, faceWorld, inFaceLight, toneAt } from './floor4';
 import type { V3 } from './floor4';
+import { quietHex } from './act2_quiet';
+import { recolor } from './floorkit';
 import { GRAIN, compose, mix } from './kit';
 import type { Ramp } from './kit';
 
@@ -42,7 +44,7 @@ export const MASK: Ramp = ['#7a766e', '#9c968a', '#bab4a6', '#d4cebe', '#e8e2d2'
 /** The market's awnings and the festival's bunting: canvas in dull dyes. */
 export const OXBLOOD: Ramp = ['#2e161c', '#4a2226', '#6a302e', '#86423a', '#a05a48'];
 export const CREAM: Ramp = ['#4e463c', '#6c6252', '#8e826a', '#ab9c80', '#c4b494'];
-export const BOTTLE: Ramp = ['#18221e', '#24342c', '#34483a', '#46604a', '#5c7a5e'];
+export const BOTTLE: Ramp = ['#1a2218', '#263422', '#364830', '#4a6040', '#607a50'];
 export const MUSTARD: Ramp = ['#3a2e1a', '#584424', '#7a5e30', '#9a783c', '#b48e4a'];
 export const SLATEBLUE: Ramp = ['#1c1e2c', '#2a2e42', '#3c425a', '#525a74', '#6a728c'];
 /** Brick, a dull red-brown (chimneys). */
@@ -131,7 +133,8 @@ export function local(S: Scene, w: readonly number[]): V3 {
 /** Finish a standing piece: its seams, anchored at (ox, oy); its lights, each a world point, a radius and a colour. */
 export function done(S: Scene, ox: number, oy: number, lights: readonly { at: V3; r: number; color: string; a?: number }[] = []): Sprite {
   S.seams();
-  const sp = compose(null, [S.p], null).sprite(ox, oy, GRAIN);
+  // (a step quieter than any word: art/act2_quiet.ts)
+  const sp = compose(null, [recolor(S.p, quietHex)], null).sprite(ox, oy, GRAIN);
   if (lights.length) {
     const tp = (S as unknown as Turned).turnPt;
     sp.lights = lights.map((l) => {
@@ -215,9 +218,10 @@ export const onFront = faceWorld;
  * up; the face in shade a shade darker, lit as that face is seen (floor 4's inFaceLight). `W` by `H`
  * picture pixels, anchored at the face's foot under its middle (AX, AY).
  */
-export function frontPiece(make: (S: Scene, w: (a: number, b: number, z: number) => V3, alongX: boolean) => void, W = 72, H = 190, lights?: (S: Scene, w: (a: number, b: number, z: number) => V3) => { at: V3; r: number; color: string; a?: number }[]): { left: Sprite; right: Sprite } {
+export function frontPiece(make: (S: Scene, w: (a: number, b: number, z: number) => V3, alongX: boolean) => void, W = 72, H = 190, lights?: (S: Scene, w: (a: number, b: number, z: number) => V3) => { at: V3; r: number; color: string; a?: number }[], below = 12): { left: Sprite; right: Sprite } {
+  // (`below`: how much of the picture is under the foot of the wall, for what is thrown out along the street before it)
   const AX = Math.floor(W / 2);
-  const AY = H - 12;
+  const AY = H - below;
   const one = (alongX: boolean): Sprite => {
     const S = scene(W, H, AX, AY);
     const F = faceWorld(alongX);
@@ -241,7 +245,7 @@ export function lying(w: number, h: number, ax: number, ay: number, paint: (u: n
       if (c) p.set(px, py, c);
     }
   }
-  const sp = p.sprite(ax, ay, GRAIN);
+  const sp = recolor(p, quietHex).sprite(ax, ay, GRAIN);
   if (lights.length) sp.lights = lights;
   return sp;
 }

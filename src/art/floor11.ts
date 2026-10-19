@@ -26,6 +26,7 @@ import type { Piece } from './floorkit';
 import { CYAN, hash, mix } from './kit';
 import type { Ramp } from './kit';
 import { FLAME } from './mkit';
+import { bright } from './act2_quiet';
 import { BLACK, BOTTLE, BRASS, BRONZE, CHAR, CREAM, DEAL, GREENS, IRON, MASK, MUSTARD, OAK, OXBLOOD, PAPER, ROPE, SLATEBLUE, STONE, STRAW, APPLE, CRUST, HOLE, SOFT_ID, WATER, checker, cylinder, done, facing, frontPiece, local, planks, scene, slab, turned } from './act2_kit';
 
 const fr = (t: number): number => t - Math.floor(t);
@@ -723,10 +724,10 @@ function shardBlade(S: Scene, base: V3, D0: V3, A0: V3, L: number, W: number, id
  * flat before it, the other hanging askew from its last hinge; the city's arms over the arch smeared out with
  * the Silent Order's ink, their black banner on the left tower; a shard of the dome driven into the right one.
  * Its front looks along +y (`k` 0) or +x (`k` 1); built 1.4 times as big as it is measured here, so that it
- * stands over the houses. 290 x 350 at (145, 296).
+ * stands over the houses. 290 x 380 at (145, 296).
  */
 function cityGate(k: number): Sprite {
-  const S = turned(scene(290, 350, 145, 296), k, 1.4);
+  const S = turned(scene(290, 380, 145, 296), k, 1.4);
   const WALL = 112;
   const FRONT = facing(S, [0, 1, 0]);
   const inArch = (x: number, z: number): boolean => Math.abs(x) < 18 && (z < 58 || Math.hypot(x, z - 58) < 18);
@@ -974,10 +975,10 @@ const HUSH: Ramp = ['#14121e', '#262234', '#3e3852', '#625a7a', '#9890b4'];
  * atop an oak post, the Silent Order's black gag pulled down off its mouth. Quiet; its throat kindles pink to
  * gold and it shudders (the warning); it blasts a cone of silence along its mouth, three and a half tiles:
  * waves of dead grey-violet air rolling out, the setts under them darkened (inside, the hero's words go dark).
- * `f`: 0 quiet, 1 the warning, 2 to 4 the blast. Turned to look along +y (`k` 0) or +x (1). 300 x 230 at (180, 130).
+ * `f`: 0 quiet, 1 the warning, 2 to 4 the blast. Turned to look along +y (`k` 0) or +x (1). 380 x 230 at (180, 130).
  */
 function alarmHorn(f: number, k: number): Sprite {
-  const S = turned(scene(300, 230, 180, 130), k);
+  const S = turned(scene(380, 230, 180, 130), k);
   const shake = f === 1 ? 1 : 0;
   const kick = f >= 2 ? -2.5 + (f - 2) : 0;
   // its stone footing, the post, its iron collar and the swivel's yoke
@@ -1137,14 +1138,16 @@ function bellGlow(S: Scene, c: V3, R: number, H: number, state: number, foot: V3
 
 /** An honest flame's colours: a candle's, a lantern's. */
 const CANDLE: Ramp = ['#5a2a10', '#8a4418', '#c8702a', '#f0a040', '#ffd890'];
+// (a candle's flame, the dome's shards' pink, a bell awake with the hero's cyan: what glows, left bright)
+bright(CANDLE, SHARD, AWAKE_METAL, CY);
 
 /**
  * A WAYSIDE SHRINE'S BELL (one of the Bells on this floor): a little shrine of the city's stone at a lane's
  * corner, a niche in its front with a candle stub burning and an offering bowl, a gabled cap of clay tiles; its
- * small bronze bell hung from an iron arm out over the lane. Quiet; awake; rung. 150 x 170 at (80, 132).
+ * small bronze bell hung from an iron arm out over the lane. Quiet; awake; rung. 210 x 196 at (105, 134).
  */
 function shrineBell(state: number): Sprite {
-  const S = scene(150, 170, 80, 132);
+  const S = scene(210, 196, 105, 134);
   slab(S, -9, -9, 9, 9, 0, 6, STONE, 1, -0.05);
   slab(S, -7, -7, 7, 7, 6, 62, STONE, 2, 0, coursed(56, 8));
   // the niche: an arched dark hollow, the candle stub, the bowl
@@ -1170,7 +1173,7 @@ function shrineBell(state: number): Sprite {
   bell(S, c, 7.5, 15, SWING[state], 11, false, metalOf(state));
   rope(S, [0, 22 + 15 * Math.sin(SWING[state]), 56.5 - 15 * Math.cos(SWING[state])], [0, 20, 28], 0.5, 12, 0.45);
   const glow = bellGlow(S, c, 7.5, 15, state, [0, 22, 0]);
-  return done(S, 80, 132, [{ at: [-1.5, 8, 36], r: 10, color: CANDLE[3], a: 0.4 }, ...glow]);
+  return done(S, 105, 134, [{ at: [-1.5, 8, 36], r: 10, color: CANDLE[3], a: 0.4 }, ...glow]);
 }
 
 /** Clay: a pot's, and the roofs' tiles. */
@@ -1195,7 +1198,7 @@ function doorbell(state: number): { left: Sprite; right: Sprite } {
     for (let i = 0; i < 9; i++) S.ball(w(0, 14 - i * 0.12, Z - 13 - i * 3), 0.6, IRON, 3);
     S.ball(w(0, 13, Z - 42), 1.5, BRASS, 3);
     glow = bellGlow(S, c, 6.5, 12, state, w(0, 18, 0));
-  }, 150, 210, () => glow);
+  }, 220, 280, () => glow, 72);
 }
 
 /**
@@ -1272,10 +1275,10 @@ function paperLanterns(lit: boolean): { left: Sprite; right: Sprite } {
  * THE FESTIVAL MAYPOLE in the square: a tall pole painted in a spiral of cream and oxblood, set in a socket of
  * the city's stone, a hoop of dried garland at its top under a brass knob; ribbons in the market's dyes hang
  * limp from the hoop, two torn loose and trailing over the setts; a strip of the Order's black cloth knotted
- * round the pole. 130 x 230 at (65, 212).
+ * round the pole. 150 x 262 at (75, 212).
  */
 function maypole(): Sprite {
-  const S = scene(130, 230, 65, 212);
+  const S = scene(150, 262, 75, 212);
   cylinder(S, 0, 0, 7, 0, 7, (n) => toneAt(n, STONE, 0), 1, (_a, rr) => (rr < 0.4 ? STONE[1] : STONE[3]));
   cylinder(S, 0, 0, (z) => 2.6 - (z - 7) * 0.004, 7, 160, (n, a, z) => (fr(a / (2 * Math.PI) + z / 20) < 0.32 ? toneAt(n, OXBLOOD, 0.1) : toneAt(n, CREAM, 0.05)), 2);
   S.ball([0, 0, 162.5], 3, BRASS, 3);
@@ -1317,7 +1320,7 @@ function maypole(): Sprite {
   cylinder(S, 0, 0, 3.4, 62, 67, (n, a) => (fr(a * 2) < 0.2 ? toneAt(n, BLACK, -0.2) : toneAt(n, BLACK, 0.3)), 30);
   S.quad([[1, 3, 64], [3, 3, 64], [5, 4, 46], [3, 4, 47]], (_u, v) => (v > 0.8 ? BLACK[1] : BLACK[3]), 31);
   S.quad([[3, 2, 64], [4, 2, 64], [9, 3, 50], [7, 3, 50]], (_u, v) => (v > 0.8 ? BLACK[1] : BLACK[2]), 32);
-  return done(S, 65, 212);
+  return done(S, 75, 212);
 }
 
 /**

@@ -269,7 +269,7 @@ const GLASS: Ramp = ['#1c2420', '#2a3630', '#3c4c44', '#566a5e', '#8aa092'];
 const CORK: Ramp = ['#3a2a1c', '#5a4028', '#7a5a36', '#9a7a4a', '#b4945e'];
 /** The dull dyes of the city's cloth (as the market's). */
 const OXB: Ramp = ['#2e161c', '#4a2226', '#6a302e', '#86423a', '#a05a48'];
-const BOT: Ramp = ['#18221e', '#24342c', '#34483a', '#46604a', '#5c7a5e'];
+const BOT: Ramp = ['#1a2218', '#263422', '#364830', '#4a6040', '#607a50'];
 const CRM: Ramp = ['#4e463c', '#6c6252', '#8e826a', '#ab9c80', '#c4b494'];
 const SLB: Ramp = ['#1c1e2c', '#2a2e42', '#3c425a', '#525a74', '#6a728c'];
 /** Paper, blank. */
@@ -431,18 +431,18 @@ function drainGrate(eyes: boolean): Sprite {
 /** THE ORDER'S INK BARS: their redaction, thick black strokes of ink brushed across the setts, ragged at their ends, dripped; a wet shine on them (three kinds). 140 x 76 at (70, 38). */
 function inkBars(kind: number): Sprite {
   const bars: [number, number, number, number, boolean][] = kind === 0 ? [[-0.15, -0.7, 0.6, 0.15, true], [0.25, -0.5, 0.75, 0.13, true]] : kind === 1 ? [[-0.4, -0.55, 0.5, 0.12, false], [0, -0.7, 0.4, 0.14, false], [0.4, -0.45, 0.65, 0.12, false]] : [[0.05, -0.85, 0.85, 0.17, true]];
-  return lying(140, 76, 70, 38, (u, v) => {
+  return lying(160, 84, 80, 42, (u, v) => {
     for (const [c, a, b, half, alongU] of bars) {
       const along = alongU ? u : v;
       const across = alongU ? v : u;
       const rag = 0.05 * Math.sin(across * 60 + c * 9) + 0.03 * Math.sin(across * 23);
       if (along > a + rag && along < b + rag && Math.abs(across - c) < half * (0.9 + 0.1 * Math.sin(along * 30))) {
         // a dry stroke at its tail, the brush's hairs: streaks
-        if (along > b - 0.12 + rag && fr(across * 40) < 0.4) return null;
+        if (along > b - 0.12 + rag && fr(across * 20) < 0.4) return null;
         return across - c < -half * 0.55 && fr(along * 6) < 0.6 ? BLACK[4] : BLACK[1];
       }
       // drips and spatter beside it
-      if (Math.abs(across - c) < half + 0.08 && Math.abs(across - c) > half && hash(Math.floor(along * 26), Math.floor(across * 26), 112) < 0.12) return BLACK[2];
+      if (along > a - 0.08 && along < b + 0.1 && Math.abs(across - c) < half + 0.1 && Math.abs(across - c) > half && hash(Math.floor(along * 14), Math.floor(across * 14), 112) < 0.16) return BLACK[2];
     }
     return null;
   });
@@ -795,10 +795,10 @@ function dresser(broken: boolean, k: number): Sprite {
  * A JAR OF THE HUSH, left by the Order in the street: a clay jar sealed with black wax stamped with the blank
  * mask, grey wisps leaking from under its seal. As the hero comes near it cracks, the cult's fire in the cracks
  * (the warning); then it bursts: its shards flung, a dome of the Hush swelling out over two tiles, inside which
- * the hero's words go dark. Frames: sealed, cracking, the burst (two). 150 x 130 at (75, 86).
+ * the hero's words go dark. Frames: sealed, cracking, the burst (two). 230 x 150 at (115, 96).
  */
 function hushJar(f: number): Sprite {
-  const S = scene(150, 130, 75, 86);
+  const S = scene(230, 150, 115, 96);
   const lights: { at: V3; r: number; color: string; a?: number }[] = [];
   if (f < 2) {
     cylinder(S, 0, 0, (z) => 6 + Math.sin((z / 22) * Math.PI) * 3.4 - (z > 18 ? (z - 18) * 0.9 : 0), 0, 22, (n, a, z) => {
@@ -844,7 +844,7 @@ function hushJar(f: number): Sprite {
       S.ball([Math.cos(a) * d, Math.sin(a) * d, 4 + hash(i, 3, 182) * 20], 1 + hash(i, 4, 182), HUSH, SOFT_ID + 6);
     }
   }
-  return done(S, 75, 86, lights);
+  return done(S, 115, 96, lights);
 }
 
 // =================================================================================================
@@ -869,7 +869,8 @@ export function hushSetPieces(): Piece[] {
     { name: "the Order's rack of jars", kind: 'obstacle', frames: [jarRack(0), jarRack(1)], shadow: 0.6 },
     { name: "the carters' cart, the Order's", kind: 'obstacle', frames: [cartersCart(0, 0), cartersCart(1, 0), cartersCart(0, 1), cartersCart(1, 1)], shadow: 0.9 },
     { name: 'bundles of blank paper', kind: 'breakable', frames: [paperBundles(false), paperBundles(true)], shadow: 0.35 },
-    { name: "the Order's ink bars", kind: 'floor tile', frames: [inkBars(0), inkBars(1), inkBars(2)] },
+    // (laid over the floor's tiles, longer than one: on the floor, not a tile of it)
+    { name: "the Order's ink bars", kind: 'on the floor', frames: [inkBars(0), inkBars(1), inkBars(2)] },
     { name: 'an ink spill', kind: 'on the floor', frames: [inkSpill()] },
     { name: 'blank proclamations, pasted', kind: 'on the wall', ...framesOf([pastedSheets()]) },
     { name: 'washing on a line', kind: 'on the wall', ...framesOf([washing()]) },

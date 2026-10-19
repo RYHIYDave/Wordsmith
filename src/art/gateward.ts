@@ -43,6 +43,7 @@ import type { Floor } from '../game/types';
 import type { RGB, TerrainLook } from './terrain';
 import { fbm, vnoise } from './terrain';
 import { hash } from './kit';
+import { quietRGB } from './act2_quiet';
 
 const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mixc = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -886,7 +887,7 @@ export function gateWardLook(land: GateWardLand, mode: 'open' | 'closed' = 'open
     }
     return best;
   };
-  return {
+  return quietLook({
     rise: GW_RISE,
     near: 40,
     // the edges straight, as houses are: a corner rounded by a few pixels, never ragged
@@ -950,6 +951,25 @@ export function gateWardLook(land: GateWardLand, mode: 'open' | 'closed' = 'open
     foot: [0.4, 0.22],
     turnOver: 0.2,
     nearShadow: { reach: 1.1, dark: [0.3, 0.18] },
+  });
+}
+
+/**
+ * COLOUR 4, A STEP QUIETER THAN ANY WORD: every colour the ground puts down quietened to under the dullest word's
+ * (art/act2_quiet.ts), its hue and brightness kept; a lit window's candlelight, an honest light, left as it is.
+ */
+function quietLook(L: TerrainLook): TerrainLook {
+  const lit = new Set(GW_GLASS.slice(2).map((c) => c.join(',')));
+  const q = (c: RGB): RGB => (lit.has(c.map(Math.round).join(',')) ? c : quietRGB(c));
+  return {
+    ...L,
+    floor: (x, y, px, py, inside) => q(L.floor(x, y, px, py, inside)),
+    face: (shade, v, px, py, x, y) => q(L.face(shade, v, px, py, x, y)),
+    top: (x, y, px, py, back, climb) => q(L.top(x, y, px, py, back, climb)),
+    nearFace: (v, px, py, x, y) => q(L.nearFace(v, px, py, x, y)),
+    brow: (c, px, py) => q(L.brow(c, px, py)),
+    ...(L.lip ? { lip: (c: RGB) => q(L.lip!(c)) } : {}),
+    ...(L.hang ? { hang: { ...L.hang, at: (v: number, px: number, py: number, shade: number) => q(L.hang!.at(v, px, py, shade)) } } : {}),
   };
 }
 
