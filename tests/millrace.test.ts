@@ -55,10 +55,24 @@ const WW = Math.ceil(bx - ax) + 80;
 const HH = Math.ceil(pictureOf(W, H)[1]) + 120;
 const WHOLE = paintTerrain(T, X0, Y0, WW, HH);
 
-test('in no game file: nothing of the game imports the Millrace\'s ground', () => {
+test('in the game only through its own (ACT 2, THE HUSH: render/outdoor.ts); nothing else of the game imports the Millrace\'s ground', () => {
+  // (an import of the art's own file, wherever from: the game's own map-maker of the same name, game/act2/<ground>.ts, is not it)
+  const own = new Set(['render/outdoor.ts']);
+  const art = new Set(['art/millrace']);
+  const at = (dir: string, spec: string): string => {
+    const out = dir ? dir.split('/') : [];
+    for (const q of spec.split('/')) {
+      if (q === '..') out.pop();
+      else if (q !== '.') out.push(q);
+    }
+    return out.join('/');
+  };
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(millrace)\.ts$/.test(f)) continue;
-    assert.ok(!/from ['"][^'"]*\/millrace['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports the Millrace's ground`);
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(millrace)\.ts$/.test(f) || own.has(f)) continue;
+    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
+    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      assert.ok(!art.has(at(dir, spec)), `src/${f} imports the Millrace's ground`);
+    }
   }
 });
 

@@ -47,11 +47,25 @@ const PINKS = new Set([...FLAME, '#b4306a', '#e86a98', '#7a1a4e', '#4a1236'].map
 const FIRES = new Set([...EMBER, '#f0a040', '#ffd890', '#c8702a', '#ff8a2a', '#d89a50'].map((c) => c.toLowerCase()));
 const CYANS = new Set([...CYAN, '#28dcf0', '#22d0e0'].map((c) => c.toLowerCase()));
 
-test('in no game file: nothing of the game imports floor 15\'s pieces', () => {
+test('in the game only through its own (ACT 2, THE HUSH: render/act1_pieces.ts); nothing else of the game imports floor 15\'s pieces', () => {
+  // (an import of the art's own file, wherever from: the game's own map-maker of the same name, game/act2/<ground>.ts, is not it)
+  const own = new Set(['render/act1_pieces.ts']);
+  const art = new Set(['art/floor15']);
+  const at = (dir: string, spec: string): string => {
+    const out = dir ? dir.split('/') : [];
+    for (const q of spec.split('/')) {
+      if (q === '..') out.pop();
+      else if (q !== '.') out.push(q);
+    }
+    return out.join('/');
+  };
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (and floor 15's moment, a mock-up of its own, which takes the pieces' wax: tests/floor15_moments.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor15|floor15_moments)\.ts$/.test(f)) continue;
-    assert.ok(!/from ['"][^'"]*\/floor15['"]/.test(fs.readFileSync(`src/${f}`, 'utf8')), `src/${f} imports floor 15's pieces`);
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(floor15|floor15_moments)\.ts$/.test(f) || own.has(f)) continue;
+    const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
+    for (const [, spec] of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      assert.ok(!art.has(at(dir, spec)), `src/${f} imports floor 15's pieces`);
+    }
   }
 });
 
