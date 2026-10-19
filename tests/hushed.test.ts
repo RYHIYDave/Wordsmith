@@ -96,8 +96,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
   assert.equal(HUSHED_ON.on, false, 'HUSHED_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    // (and the Hushed watch, a mock-up of its own that takes their breath from them: tests/hushed_watch.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/hushed(_moves|_watch|_watch_moves)?\.ts$/.test(f)) continue;
+    // (and the Hushed watch and the mute watch hounds, mock-ups of their own that take their breath from them:
+    // tests/hushed_watch.test.ts, tests/hounds.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds)\.ts$/.test(f)) continue;
     if (/from ['"][^'"]*hushed(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'game files that import them');

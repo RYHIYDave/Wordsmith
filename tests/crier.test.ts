@@ -94,7 +94,7 @@ test('1. the switch is off, and nothing of the game imports him', () => {
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (and the city's mobs, mock-ups of their own that take the Hush's colours from him: art/hushed.ts and the rest)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(crier(_moves|_shots)?|hushed(_moves)?|hushed_watch(_moves)?)\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(crier(_moves|_shots)?|hushed(_moves)?|hushed_watch(_moves)?|hounds)\.ts$/.test(f)) continue;
     if (/from ['"][^'"]*crier(_moves|_shots)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'game files that import him');
