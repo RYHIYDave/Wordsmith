@@ -333,7 +333,7 @@ function physicianDyingFeet(): (t: number) => P {
     R: { start: F.R, moves: [{ t0: 0.66, t1: 0.98, to: { ...F.R, pitch: TUCK } }] },
   });
 }
-/** THE WORDS GOING FREE as he dies: grains of the enemy's pink rising out of his syringe and his phials, going pale as they rise. */
+/** THE WORDS GOING FREE as he dies: grains of the enemy's pink rising out of his breast and his belt of phials, going pale as they rise. */
 const FREED = ['#7a7468', '#a49c8c', '#cec6b2', '#e8e2d2', '#f6f2e6'];
 function wordsFree(out: [V3, string, number][], s: Skeleton, t: number): void {
   const [a, b] = PH_DIES.words;
