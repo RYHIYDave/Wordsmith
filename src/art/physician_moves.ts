@@ -109,8 +109,8 @@ const DRIVE: P = elbowsTo({ ...LIFTED, px: 1.2, pz: R.pz + 0.2, yaw: 4, twist: -
 const OVER: P = elbowsTo({ px: 2.9, pz: R.pz - 1.4, yaw: 5, twist: 1, pitch: 14, bend: 8, side: 0, faceUp: 0, faceTurn: 0, rhIn: 1, rhx: 8, rhy: -5, rhz: 10, wAz: 0, wEl: 74, wRoll: 0, lk: 15, rk: -8 }, null, [0, -0.8, 0.4]);
 /** THE RAP: the cane brought down hard before him, his body bent over it. */
 const RAP: P = elbowsTo({ px: 4.6, pz: R.pz - 3.0, yaw: 6, twist: 8, pitch: 20, bend: 14, side: -1, faceUp: 2, faceTurn: -4, rhIn: 1, rhx: 17, rhy: -3, rhz: -6, wAz: 0, wEl: -20, wRoll: 0, lk: 18, rk: -8 }, null, [0.3, -0.8, -0.4]);
-const RAPPED: P = elbowsTo({ ...RAP, px: 5.4, pz: R.pz - 3.8, pitch: 24, bend: 17, rhx: 17.5, rhz: -13, wEl: -56 }, null, [0.3, -0.8, -0.4]);
-const RAPPED2: P = elbowsTo({ ...RAPPED, pz: R.pz - 3.9, rhz: -13.5, wEl: -62 }, null, [0.3, -0.8, -0.4]);
+const RAPPED: P = elbowsTo({ ...RAP, px: 5.6, pz: R.pz - 5.6, pitch: 30, bend: 20, rhx: 17.5, rhz: -17, wEl: -70 }, null, [0.3, -0.8, -0.4]);
+const RAPPED2: P = elbowsTo({ ...RAPPED, pz: R.pz - 5.7, rhz: -17.5, wEl: -73 }, null, [0.3, -0.8, -0.4]);
 function physicianRap(): Motion {
   return {
     hit: RH,
