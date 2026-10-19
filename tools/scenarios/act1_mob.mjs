@@ -45,8 +45,30 @@ export default async function (page, snap) {
       // (in the floor's widest open area: its first that is not the start)
       const land = L.land;
       const a = land.areas.find((q) => q.role === 'path') || land.areas[0];
-      const cx = a.blob.x, cy = a.blob.y;
+      let cx = a.blob.x, cy = a.blob.y;
       g.hero.x = cx - dist * 0.7; g.hero.y = cy - dist * 0.7;
+      // (ACT 2, THE HUSH, Version 23.0: an area's middle may be a sewer's channel or a house's wall: then the nearest floor
+      // there with room round it, and the hero `dist` off on floor in plain sight of it, the way between all floor)
+      const f = L.floor;
+      const walk = (x, y) => { const tx = Math.floor(x), ty = Math.floor(y); return tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && L.walk[ty * f.w + tx] === 1; };
+      const roomy = (x, y) => walk(x, y) && walk(x + 0.9, y) && walk(x - 0.9, y) && walk(x, y + 0.9) && walk(x, y - 0.9);
+      const clear = (x0, y0, x1, y1) => { for (let k = 0; k <= 20; k++) if (!walk(x0 + ((x1 - x0) * k) / 20, y0 + ((y1 - y0) * k) / 20)) return false; return true; };
+      if (!roomy(cx, cy) || !clear(cx, cy, g.hero.x, g.hero.y)) {
+        let best = null;
+        for (let r = 0; r <= 12 && !best; r++) {
+          for (let dy = -r; dy <= r && !best; dy++) for (let dx = -r; dx <= r && !best; dx++) {
+            if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+            const x = Math.floor(cx) + dx + 0.5, y = Math.floor(cy) + dy + 0.5;
+            if (!roomy(x, y)) continue;
+            for (let k = 0; k < 16; k++) {
+              const ang = (k / 16) * Math.PI * 2 + Math.PI * 1.25;
+              const hx = x + Math.cos(ang) * dist, hy = y + Math.sin(ang) * dist;
+              if (roomy(hx, hy) && clear(x, y, hx, hy)) { best = [x, y, hx, hy]; break; }
+            }
+          }
+        }
+        if (best) { cx = best[0]; cy = best[1]; g.hero.x = best[2]; g.hero.y = best[3]; }
+      }
       them = [];
       for (let i = 0; i < count; i++) {
         const ang = (i / Math.max(1, count)) * Math.PI * 2;
