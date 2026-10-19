@@ -7,7 +7,12 @@
 //     that stand in front (pillars, trees, spires)";
 //   what burns or stirs (a watchfire, the cult's braziers and banners, its ring, its obelisks) at 8 frames a second;
 //   the game's barrels and urns as the floor's own two breakables (or the camp's);
-//   its trap as the spike floor's beat: still, glinting as it warns, then sprung.
+//   its trap as the spike floor's beat: still, glinting as it warns, then sprung;
+//   (ACT 2, THE HUSH) ITS MOMENT AROUND THE HERO, the art chat's film for the floor (art/floor11_moments.ts to
+//     floor15_moments.ts), where game/act2_moments.ts laid it: played as the first five floors' are (render/pieces.ts), once,
+//     as he comes near it and sees it, by the game's clock, at 30 frames a second, the screen kicked at each of its jolts;
+//     what was there before (`before`) until then, what is left (`after`) once it is over; in depth at its anchor among the
+//     figures, or over every one of them (the pigeons, as the art's own page draws them: they swoop out over his head).
 // THE TOPS: the cliffs' (the Quarry, the Ledge Road, Echo Canyon), dressed by the planning chat's rule, with his yes
 // ("If we really decorate the tops of the cliffs it will look really good"): on a grid, each spot one of the
 // floor's own picks, kept only where it stands clear of the floor (art/terrain.ts, clearOfFloor), drawn `rise`
@@ -31,14 +36,21 @@ import { greatLibraryPieces } from '../art/floor15';
 import { GRAIN, clearOfFloor, fbm, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
 import type { Sprite } from '../engine/px';
+import type { MomentFilm } from '../art/films';
 import { ACT1_SETS, CAMP } from '../game/act1_dress';
 import type { Act1Dress, Act1Tile } from '../game/act1_dress';
 import type { Land } from '../game/act1_layout';
+import type { HushMoment } from '../game/act2_moments';
+import type { Game } from '../game/game';
 import type { Level, PropInst } from '../game/state';
 import { SPIKE, SPIKE_BEAT, spikeAt } from '../game/traps';
 import type { HazardSpot } from '../game/types';
 import { PINE_PATH, laneDist } from '../game/act1_layout';
+import type { Kick } from './dress';
+import { wx, wy } from './fx';
+import type { Cam } from './fx';
 import { PIECE } from './outdoor';
+import type { Painter } from './painter';
 
 const MAPS = new Map<number, Map<string, Piece>>();
 /** The pieces of floor `n` of the descent (6 to 10) by name, with the set's camp and the strongholds' (made the first time they are asked for, and kept until `forgetAct1`). */
@@ -99,6 +111,38 @@ const WHEEL_RUSH = 3;
 /** (ACT 2, THE HUSH) The pieces the art drew a picture of their own for being seen through, and which of their frames it is: the Millrace's drying lines, the sheets half there (art/floor13.ts). */
 const SEEN_FRAME: Readonly<Record<string, number>> = { 'drying lines': 1 };
 
+/**
+ * (ACT 2, THE HUSH: ITS MOMENT AROUND THE HERO.) It plays when he comes this near its anchor (tiles) and sees where it is, at the
+ * films' own speed; the screen's kick at its first jolt and at each after (game pixels), and the blow heard with it: the first
+ * five floors' own numbers (render/pieces.ts). The House of Quiet's makes no sound (the art: "In the House of Quiet it makes no
+ * sound at all"): its kick is not heard. Drawn OVER every figure: this deep in the sort.
+ */
+const MOMENT_NEAR = 5.5;
+const MOMENT_FPS = 30;
+const MOMENT_KICK = 3;
+const MOMENT_VOL = 0.45;
+const SILENT_MOMENTS: ReadonlySet<number> = new Set([14]);
+const OVER_ALL = 1e9;
+/**
+ * (ACT 2) HE SEES IT when, near enough, the thing it plays at is on his screen, MOMENT_IN game pixels in from its edges at least:
+ * the point MOMENT_UP game pixels over its anchor, floor by floor (the art's numbers: the pigeons on their ridge, GW_RISE + 2
+ * picture pixels up, and their bodies over that; the culvert at the walkways' height; the middle of the whirl to come, standing
+ * up a tile and more behind the anchor and taller than a man; the screen's middle; the chandelier's candles over its hoop, 42 game
+ * pixels up). (The first floors' moments ask only that the tile be in his sight, render/pieces.ts; on a phone's screen the Gate
+ * Ward's roofs are at its very top, and pigeons that burst off a roof he is not shown would be gone before he saw them.) And the
+ * tile it is seen from in his sight (HushMoment.seen), as the first floors'.
+ */
+const MOMENT_UP: Readonly<Record<number, number>> = { 11: 84, 12: 0, 13: 64, 14: 20, 15: 60 };
+const MOMENT_IN = 18;
+/** (ACT 2) A moment's state on the level: waiting, playing (since `t0`, by the game's clock), over; and whether it was on his screen when last drawn. */
+interface HushPlayed {
+  host: HushMoment;
+  state: 'wait' | 'play' | 'done';
+  t0: number;
+  last: number;
+  shown: boolean;
+}
+
 /** A thing on the tops: where (world, at the floor's level under it), its picture, how far up it is drawn (game pixels), its shadow. */
 export interface Top {
   x: number;
@@ -118,6 +162,9 @@ export class Act1Pieces {
   private land: Land | null = null;
   /** (ACT 2) A standing trap's own trap (its hazard), found the first time it is drawn. */
   private beatOf = new Map<PropInst, HazardSpot | null>();
+  /** (ACT 2, THE HUSH) The floor's moment, and the screen's kicks its jolts have asked for since they were last taken. */
+  private played: HushPlayed[] = [];
+  private kicked: Kick[] = [];
 
   /** This frame's level: its pieces looked up anew when it is another than last time's. */
   begin(L: Level): boolean {
@@ -129,6 +176,7 @@ export class Act1Pieces {
     this.tops.clear();
     this.beatOf.clear();
     this.stands.clear();
+    this.played = (this.dress?.moments ?? []).map((host) => ({ host, state: 'wait', t0: 0, last: -1, shown: false }));
     if (!this.dress) {
       this.map = null;
       return false;
@@ -292,6 +340,83 @@ export class Act1Pieces {
     const n = pick.length ? pick[Math.max(0, Math.min(pick.length - 1, Math.floor(k * pick.length)))] : -1;
     const sp = fr && n >= 0 ? fr[n] ?? null : null;
     return sp ? { sp, x: t.at.x, y: t.at.y } : null;
+  }
+
+  // ---------------------------------------------------------------------------------------------------
+  // (ACT 2, THE HUSH) ITS MOMENT AROUND THE HERO
+
+  /**
+   * A step of the floor's moment: one waiting whose film the painter has made plays as he comes within MOMENT_NEAR of its anchor
+   * and sees it (its `seen` tile in his sight, and it on his screen when last drawn: MOMENT_UP); one playing has its jolts kick
+   * the screen; one over stays over. Without a painter (or on a device without the room for its film) it never plays, and
+   * nothing of it is drawn.
+   */
+  stepMoments(game: Game, painter: Painter | null): void {
+    if (!this.played.length) return;
+    const L = game.level;
+    const h = game.hero;
+    const now = game.time;
+    for (const pm of this.played) {
+      if (pm.state === 'done') continue;
+      const film = painter?.filmOf<MomentFilm>(pm.host.key) ?? null;
+      if (pm.state === 'wait') {
+        if (!film || !pm.shown || Math.hypot(h.x - pm.host.x, h.y - pm.host.y) > MOMENT_NEAR || L.visible[pm.host.seen] !== 1) continue;
+        pm.state = 'play';
+        pm.t0 = now;
+        pm.last = -1;
+      }
+      if (!film) {
+        pm.state = 'done';
+        continue;
+      }
+      const k = Math.floor((now - pm.t0) * MOMENT_FPS);
+      for (let f = pm.last + 1; f <= Math.min(k, film.frames.length - 1); f++) {
+        const j = film.jolts.indexOf(f);
+        if (j >= 0) this.kicked.push({ amount: j === 0 ? MOMENT_KICK : MOMENT_KICK - 1, vol: this.dress && SILENT_MOMENTS.has(this.dress.floor) ? 0 : MOMENT_VOL });
+      }
+      pm.last = k;
+      if (k >= film.frames.length) pm.state = 'done';
+    }
+  }
+
+  /** The kicks of the moment's jolts since this was last asked (render.ts hands them to main.ts, which kicks the screen and sounds a blow for each that is heard). */
+  kicks(): Kick[] {
+    const out = this.kicked;
+    this.kicked = [];
+    return out;
+  }
+
+  /** (for the tests and the playtests) The floor's moment and its state: waiting, playing or over. */
+  momentStates(): { host: HushMoment; state: 'wait' | 'play' | 'done' }[] {
+    return this.played.map((pm) => ({ host: pm.host, state: pm.state }));
+  }
+
+  /**
+   * The floor's moment, stood among what stands: `stand(depth, picture, x, y, columns)`, its depth its anchor's (world x + y) or
+   * OVER_ALL; `columns`, where given, the screen's columns it is shown between (the surge: its channel's straight run).
+   */
+  standMoments(game: Game, painter: Painter | null, cam: Cam, W: number, H: number, stand: (d: number, sp: Sprite, x: number, y: number, columns: [number, number] | null) => void): void {
+    for (const pm of this.played) {
+      const film = painter?.filmOf<MomentFilm>(pm.host.key) ?? null;
+      if (!film) continue;
+      const now = game.time;
+      let sp: Sprite | null = null;
+      if (pm.state === 'wait') sp = film.before && film.before.length ? film.before[Math.floor(now * LOOP_FPS) % film.before.length] : null;
+      else {
+        const k = Math.floor((now - pm.t0) * MOMENT_FPS);
+        if (pm.state === 'play' && k < film.frames.length) sp = film.frames[Math.max(0, k)];
+        else sp = film.after && film.after.length ? film.after[Math.floor(now * LOOP_FPS) % film.after.length] : film.frames[film.frames.length - 1] ?? null;
+      }
+      if (!sp) continue;
+      const host = pm.host;
+      const x = Math.round(wx(cam, host.x, host.y));
+      const y = Math.round(wy(cam, host.x, host.y));
+      const up = y - (MOMENT_UP[this.dress?.floor ?? 0] ?? 0);
+      pm.shown = x >= MOMENT_IN && x <= W - MOMENT_IN && up >= MOMENT_IN && up <= H - MOMENT_IN;
+      if (x - sp.ax > W || x - sp.ax + sp.w < 0 || y - sp.ay > H || y - sp.ay + sp.h < 0) continue;
+      const columns: [number, number] | null = host.span ? [Math.round(wx(cam, host.span[0], host.y)), Math.round(wx(cam, host.span[1], host.y))] : null;
+      stand(host.over ? OVER_ALL : host.x + host.y, sp, x, y, columns);
+    }
   }
 
   // ---------------------------------------------------------------------------------------------------

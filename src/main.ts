@@ -1741,6 +1741,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         }
         // (and its three moments, where it is laid with them: render/pieces.ts)
         if (g.level.dress) for (const key of momentKeys(g.level.dress.floor)) painter.film(key);
+        // (ACT 2, THE HUSH: its floor's moment around the hero, where it is laid with one: render/act1_pieces.ts)
+        for (const m of g.level.act1?.moments ?? []) painter.film(m.key);
         // (ACT 1: what its kinds throw and leave, painted ahead: render/act1_fx/, `films`)
         for (const kind of new Set(g.monsters.map((m) => m.kind))) for (const key of act1Fx(kind)?.films ?? []) painter.film(key, true);
       }

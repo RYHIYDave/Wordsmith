@@ -17,7 +17,9 @@ const fs = nodeFs as { readdirSync(p: string, o: { recursive: boolean }): string
 
 const [m] = undercityMoments();
 
-test('floor 12, its moment: the surge, and nothing of the game imports it', () => {
+// (ACT 2, THE HUSH: in the game now, behind ACT2, off: the films' maker alone imports it, art/films.ts, for the painter to make
+// its film, laid by game/act2_moments.ts and played by render/act1_pieces.ts; nothing else of the game)
+test('floor 12, its moment: the surge, and nothing of the game imports it but the films\' maker (art/films.ts)', () => {
   assert.ok(undercityMoments().length === 1, 'one moment');
   assert.ok(m.name === 'the surge', m.name);
   const users: string[] = [];
@@ -25,7 +27,7 @@ test('floor 12, its moment: the surge, and nothing of the game imports it', () =
     if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/floor12_moments.ts') continue;
     if (/from ['"][^'"]*floor12_moments['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
-  assert.ok(users.length === 0, `game files that import it: ${users.join(' ')}`);
+  assert.ok(users.join(' ') === 'art/films.ts', `game files that import it: ${users.join(' ')}`);
 });
 
 test('floor 12, its moment: crisp, long enough to read, smooth (30 frames a second), every frame painted, nothing popping as it starts or ends', () => {

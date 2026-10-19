@@ -18,7 +18,9 @@ const fs = nodeFs as { readdirSync(p: string, o: { recursive: boolean }): string
 
 const [m] = millraceMoments();
 
-test('floor 13, its moment: the whirl of pages, and nothing of the game imports it', () => {
+// (ACT 2, THE HUSH: in the game now, behind ACT2, off: the films' maker alone imports it, art/films.ts, for the painter to make
+// its film, laid by game/act2_moments.ts and played by render/act1_pieces.ts; nothing else of the game)
+test('floor 13, its moment: the whirl of pages, and nothing of the game imports it but the films\' maker (art/films.ts)', () => {
   assert.ok(millraceMoments().length === 1, 'one moment');
   assert.ok(m.name === 'the whirl of pages', m.name);
   const users: string[] = [];
@@ -26,7 +28,7 @@ test('floor 13, its moment: the whirl of pages, and nothing of the game imports 
     if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/floor13_moments.ts') continue;
     if (/from ['"][^'"]*floor13_moments['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
-  assert.ok(users.length === 0, `game files that import it: ${users.join(' ')}`);
+  assert.ok(users.join(' ') === 'art/films.ts', `game files that import it: ${users.join(' ')}`);
 });
 
 test('floor 13, its moment: crisp, long enough to read, smooth (30 frames a second), every frame painted, nothing popping as it starts or ends', () => {

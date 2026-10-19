@@ -25,6 +25,7 @@ import { act1Floor, act2Floor } from './act1';
 import { dressAct2 } from './act2_dress';
 import { blobDist, laneDist } from './act1_layout';
 import type { Land } from './act1_layout';
+import type { HushMoment } from './act2_moments';
 import type { Level, PropInst } from './state';
 import { T_FLOOR, T_WALL } from './types';
 import type { HazardSpot } from './types';
@@ -66,6 +67,11 @@ export interface Act1Dress {
   tiles: Act1Tile[];
   /** (ACT 2, THE HUSH: its traps with pictures of their own, where its dresser lays them) */
   traps?: Act1Trap[];
+  /**
+   * (ACT 2, THE HUSH: ITS MOMENT AROUND THE HERO, the art chat's film for the floor, where game/act2_moments.ts laid it once the
+   * floor's own dresser had laid the rest (game/act2_dress.ts); played by render/act1_pieces.ts as he comes near and sees it.)
+   */
+  moments?: HushMoment[];
 }
 
 /** A FLOOR'S PIECES BY WHAT THE GAME DOES WITH THEM (their names the art's; tests/act1_floors.test.ts holds each to the art's own list). */
