@@ -40,7 +40,8 @@ import { NEW_MOBS, makeBonewardArt3, makeChampionArt3, makeGolemArt3, makeMarksm
 import { PACK_MARKS } from '../render/pack_marks';
 import { ACT1 } from '../game/act1';
 import { ACT1_KINDS, ACT2_KINDS } from '../game/types';
-import { ACT1_FIGS, act1Fig } from './act1_figs/index';
+import { ACT1_FIGS, ACT1_LOOKS, act1Fig, act1Look } from './act1_figs/index';
+import type { Act1Look } from './act1_figs/types';
 
 /**
  * THE MONSTERS' ATTACKS (Version 19.8; game/defs.ts MONSTER_ATTACKS): the rules of the monsters' moves
@@ -108,8 +109,8 @@ export function useAct1Figs(on: boolean): void {
 }
 useAct1Figs(ACT1.on);
 
-/** The figures there are: one for each kind of monster, and the guardian; and the Chained One as he is with his left chain broken, and free of the ball too. */
-export type MonsterFigure = MonsterKind | 'guardian' | 'chained1' | 'chained2';
+/** The figures there are: one for each kind of monster, and the guardian; and the Chained One as he is with his left chain broken, and free of the ball too; (ACT 2, THE HUSH) and the other looks of a kind drawn in more than one (Act1Look: the Hushed goodwife and baker, the watch's sergeant). */
+export type MonsterFigure = MonsterKind | 'guardian' | 'chained1' | 'chained2' | Act1Look;
 /** The figures of Version 14 (painted with the painter's kit: the tests of their pictures go through these). */
 export type ClassicFigure = 'skeleton' | 'archer' | 'cultist' | 'bat' | 'brute' | 'guardian' | 'warden';
 export const MONSTER_FIGURES: readonly ClassicFigure[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'guardian', 'warden'];
@@ -124,6 +125,11 @@ export const HEAVY_FIGURES: readonly MonsterFigure[] = ['headsman', 'chained', '
 /** The figure a monster is shown as. (In the rules a guardian is a brute, and more; the Chained One is one monster, as free as he is: `form`.) */
 export function figureOf(m: { kind: MonsterKind; champion: boolean; form?: number }): MonsterFigure {
   if (m.kind === 'chained') return m.form === 1 ? 'chained1' : m.form && m.form >= 2 ? 'chained2' : 'chained';
+  // (ACT 2, THE HUSH: one of a kind of more than one look, its look by its form, as the Chained One's: art/act1_figs Act1Fig.looks)
+  if (m.form && !m.champion) {
+    const look = act1Look(m.kind, m.form);
+    if (look) return look;
+  }
   return m.kind === 'warden' ? 'warden' : m.champion ? 'guardian' : m.kind;
 }
 
@@ -183,7 +189,11 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   eye: { top: 120, half: 60 },
   // ACT 2, THE HUSH: from the art chat's notes (the knight 58 picture pixels, 28 of the game's), until each comes in
   hushed: { top: 28, half: 9 },
-  watch: { top: 34, half: 12 },
+  watch: { top: 34, half: 10 },
+  // (ACT 2, THE HUSH: the kinds' other looks, the goodwife and the baker of the Hushed, the watch's sergeant: as their kinds')
+  hushed1: { top: 28, half: 9 },
+  hushed2: { top: 28, half: 9 },
+  watch1: { top: 34, half: 10 },
   scribe: { top: 28, half: 9 },
   hound: { top: 16, half: 12 },
   rat: { top: 8, half: 7 },
@@ -201,6 +211,7 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   censor: { top: 41, half: 16 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
+  ...Object.fromEntries((Object.keys(ACT1_LOOKS) as Act1Look[]).flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
 };
 
 export interface Bestiary {

@@ -99,8 +99,15 @@ test('1. the switch is off, and nothing of the game imports them', () => {
     // (and the Hushed watch and the mute watch hounds, mock-ups of their own that take their breath from them:
     // tests/hushed_watch.test.ts, tests/hounds.test.ts; and floor 13's Hushed in the fields, their body and breath:
     // tests/fieldhands.test.ts; and floor 14's Hushed patients, the same: tests/patients.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands|patients)\.ts$/.test(f)) continue;
-    if (/from ['"][^'"]*hushed(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
+    // (and, behind ACT2, off: their pictures as the game holds them, art/act1_figs/hushed.ts, since 19 Oct; only them)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands|patients)\.ts$/.test(f) || f === 'art/act1_figs/hushed.ts') continue;
+    // (each import followed to the file it names: the game's own files named for the kind, game/act1_rules/hushed.ts and
+    // render/act1_fx/hushed.ts, and the registers that import them, are not these)
+    for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = f.split('/').slice(0, -1);
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (/^art\/hushed(_moves)?$/.test(parts.join('/'))) users.push(f);
+    }
   }
   assert.equal(users.join(' '), '', 'game files that import them');
 });

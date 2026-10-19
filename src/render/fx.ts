@@ -343,6 +343,10 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   // ACT 2, THE HUSH: the art chat's kinds (nothing gory: the Hush's grey, their cloth, paper and ink)
   hushed: ['#8a8790', '#6c6874', '#4e4a58', '#b8a8b0'],
   watch: ['#7a7f88', '#5a5f6a', '#3e4250', '#8a6e44'],
+  // (ACT 2, THE HUSH: the kinds' other looks, as their kinds': art/act1_figs Act1Fig.looks)
+  hushed1: ['#8a8790', '#6c6874', '#4e4a58', '#b8a8b0'],
+  hushed2: ['#8a8790', '#6c6874', '#4e4a58', '#b8a8b0'],
+  watch1: ['#7a7f88', '#5a5f6a', '#3e4250', '#8a6e44'],
   scribe: ['#d8d4cc', '#9a948c', '#1e1a22', '#c04a7a'],
   hound: ['#5a5048', '#3e3630', '#2a2420', '#8a7a6a'],
   rat: ['#5a4e48', '#3e3430', '#8a7a70', '#6a8a5a'],

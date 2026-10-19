@@ -141,7 +141,8 @@ test('the switch is off, and nothing of the game imports them', () => {
   assert.equal(HOUNDS_ON.on, false, 'HOUNDS_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/hounds.ts') continue;
+    // (and, behind ACT2, off: their pictures as the game holds them, art/act1_figs/hound.ts, since 19 Oct; only them)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || f === 'art/hounds.ts' || f === 'art/act1_figs/hound.ts') continue;
     if (/from ['"][^'"]*\/hounds['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'game files that import them');

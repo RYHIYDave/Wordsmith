@@ -119,6 +119,10 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   // ACT 2, THE HUSH (his doc: "Not undead and not gory"): no blood; the Hush's dust
   hushed: { bits: ['#8a8790', '#6c6874', '#4e4a58'], sparks: false, blood: false, dust: true },
   watch: { bits: ['#7a7f88', '#5a5f6a', '#3e4250'], sparks: false, blood: false, dust: true },
+  // (ACT 2, THE HUSH: the kinds' other looks, as their kinds': art/act1_figs Act1Fig.looks)
+  hushed1: { bits: ['#8a8790', '#6c6874', '#4e4a58'], sparks: false, blood: false, dust: true },
+  hushed2: { bits: ['#8a8790', '#6c6874', '#4e4a58'], sparks: false, blood: false, dust: true },
+  watch1: { bits: ['#7a7f88', '#5a5f6a', '#3e4250'], sparks: false, blood: false, dust: true },
   scribe: { bits: ['#d8d4cc', '#9a948c', '#1e1a22'], sparks: false, blood: false, dust: true },
   hound: { bits: ['#5a5048', '#3e3630', '#2a2420'], sparks: false, blood: false, dust: true },
   rat: { bits: ['#5a4e48', '#3e3430', '#8a7a70'], sparks: false, blood: false, dust: true },
