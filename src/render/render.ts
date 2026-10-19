@@ -835,6 +835,8 @@ export class Renderer {
     for (const z of L.hazards) {
       const s = z.spot;
       if (s.kind === 'spikes') {
+        // (ACT 2, THE HUSH: its traps' own sprung pictures are the whole of them, no iron spikes: render/act1_pieces.ts ownSprung)
+        if (this.act1Dressed && this.act1.ownSprung()) continue;
         const k = Math.round(spikeHeight(s, game.time) * SPIKE_STEPS);
         if (k <= 0) continue;
         const sp = A.spike(k);

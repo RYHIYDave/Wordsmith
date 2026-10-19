@@ -151,7 +151,9 @@ export const ACT1_SETS: Readonly<Record<number, Act1Set>> = {
     lying: [],
     wallFoot: [],
     breakables: ['a bedside locker', 'a hamper of soiled linen'],
-    trap: null,
+    // (ACT 2, THE HUSH: floor 14's trap, his doc's "spilled tonics that leave clouds of the Hush on the floor": laid by its own
+    // dresser, game/act2/housequiet.ts; named here so that render/act1_pieces.ts trapFrame draws its frames by the beat)
+    trap: { name: 'spilled tonic', tiles: 1 },
     tile: null,
     edge: [],
   },

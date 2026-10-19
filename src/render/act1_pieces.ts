@@ -189,10 +189,25 @@ export class Act1Pieces {
     const set = this.dress ? ACT1_SETS[this.dress.floor] : null;
     const fr = set?.trap ? this.piece(set.trap.name)?.frames : null;
     if (!fr || !fr.length) return null;
-    if (at === 'down') return fr[0];
-    if (at === 'warn') return fr[1] ?? fr[0];
+    const sp = at === 'down' ? fr[0] : at === 'warn' ? fr[1] ?? fr[0] : fr[Math.min(fr.length - 1, 2 + Math.floor(k * (fr.length - 2)))] ?? fr[fr.length - 1];
     // (the drill holes' spikes come up out of each of its holes: drawn as the game draws its spikes, by `drillSpike`; the others' sprung frames)
-    return fr[Math.min(fr.length - 1, 2 + Math.floor(k * (fr.length - 2)))] ?? fr[fr.length - 1];
+    // (ACT 2, THE HUSH: its traps' pictures are the art's pieces (art/act2_kit.ts), anchored at their middle, not a floor tile's
+    // top corner: drawn at the tile's top corner (render.ts), each is moved down half a tile, its middle on the tile's middle)
+    return this.dress && this.dress.floor >= 11 ? this.atMiddle(sp) : sp;
+  }
+  /** (ACT 2, THE HUSH) Whether the floor's trap is its own pictures alone when sprung (the spilled tonic's cloud): no iron spikes come up out of it (render.ts standHazards). */
+  ownSprung(): boolean {
+    return !!this.dress && this.dress.floor >= 11;
+  }
+  private middles = new Map<Sprite, Sprite>();
+  /** (ACT 2) A picture anchored at its middle, as drawn at a tile's top corner: its anchor half a tile (8 game pixels) up. */
+  private atMiddle(sp: Sprite): Sprite {
+    let m = this.middles.get(sp);
+    if (!m) {
+      m = { ...sp, ay: sp.ay - 8 };
+      this.middles.set(sp, m);
+    }
+    return m;
   }
 
   // ---------------------------------------------------------------------------------------------------
