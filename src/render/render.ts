@@ -74,6 +74,7 @@ import type { Terrain } from '../art/terrain';
 import { act1Fx } from './act1_fx/index';
 import { spikeAt as trapAt } from '../game/traps';
 import { act1Def } from '../game/act1';
+import { BellsLook } from './bells';
 import { redoubtGround } from '../art/redoubt';
 import type { Painter } from './painter';
 import { blinkNowhere, gaitOf } from '../game/bosses';
@@ -343,6 +344,8 @@ const REEL_AT = 0.1;
 const REEL_TIME = 0.4;
 
 export class Renderer {
+  /** ACT 2, THE BELLS: the Hush's fog and the bells' arrows (render/bells.ts). */
+  private bellsLook = new BellsLook();
   private dark: HTMLCanvasElement;
   private dg: CanvasRenderingContext2D;
   private stands: Stand[] = [];
@@ -832,6 +835,8 @@ export class Renderer {
     for (const z of L.hazards) {
       const s = z.spot;
       if (s.kind === 'spikes') {
+        // (ACT 2, THE HUSH: its traps' own sprung pictures are the whole of them, no iron spikes: render/act1_pieces.ts ownSprung)
+        if (this.act1Dressed && this.act1.ownSprung()) continue;
         const k = Math.round(spikeHeight(s, game.time) * SPIKE_STEPS);
         if (k <= 0) continue;
         const sp = A.spike(k);
@@ -2953,9 +2958,14 @@ export class Renderer {
     // (THE FIRST FIVE FLOORS: what the bosses send over what stands: chains, shards, fire)
     this.bossFx.air(g, this.floorAt, game, (x, y) => onScreen(x, y) && game.level.visible[Math.floor(y) * game.level.floor.w + Math.floor(x)] === 1);
 
+    // (ACT 2, THE BELLS: the Hush over its ground, under the dark: render/bells.ts)
+    if (game.level.bells) this.bellsLook.fog(g, this.cam, game.level, t);
+
     // ---- darkness, with holes cut by every light ----------------------------------------------
     this.light(W, H, game, t, fx);
     g.drawImage(this.dark, 0, 0);
+    // (ACT 2, THE BELLS: the bells still to ring, off the screen, marked at its edge)
+    if (game.level.bells) this.bellsLook.arrows(g, this.cam, game.level, W, H, t);
 
     // ---- things that glow, then text ----------------------------------------------------------
     // what shines on the hero (a lit blade, a crystal, a feather)
