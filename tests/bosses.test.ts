@@ -143,8 +143,9 @@ test('1. their switch goes with the rules\' (game/bosses.ts BOSSES5), and only t
     // (the fleshmancer and the cult's two are built on them: art/fleshmancer.ts, art/cultists.ts)
     // (and floor 11's boss, the Crier, art/crier.ts, art/crier_moves.ts and art/crier_shots.ts: tests/crier.test.ts;
     // and the Hushed townsfolk and the Hushed watch, art/hushed*.ts, and the Silent Order's scribes, art/scribe*.ts:
-    // tests/hushed.test.ts, tests/hushed_watch.test.ts and tests/scribes.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|crier|hushed|scribe/.test(f)) continue;
+    // tests/hushed.test.ts, tests/hushed_watch.test.ts and tests/scribes.test.ts; and floor 12's dredgers,
+    // art/dredgers*.ts: tests/dredgers.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|cultists|crier|hushed|scribe|dredger/.test(f)) continue;
     // (ACT 1: what the descent's kinds draw on the floor, in the bosses' own way, is the bosses' effects' own: render/act1_fx/, called by render/bossfx.ts)
     if (f.startsWith('render/act1_fx/')) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
@@ -335,8 +336,8 @@ test('12. nothing of the game imports the chains or the checks either', () => {
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (the fleshmancer, art/fleshmancer.ts, is a mock-up of the same kind, and is reviewed by the checks too: tests/fleshmancer.test.ts)
     // (and floor 11's boss, the Crier, reviewed by them: tests/crier.test.ts; and its mobs: tests/hushed.test.ts,
-    // tests/hushed_watch.test.ts and tests/scribes.test.ts)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|crier|hushed|scribe/.test(f)) continue;
+    // tests/hushed_watch.test.ts and tests/scribes.test.ts; and floor 12's dredgers: tests/dredgers.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /bosses3|boss_shots|boss_chains|boss_checks|fleshmancer|fm_spells|crier|hushed|scribe|dredger/.test(f)) continue;
     const text = fs.readFileSync(path.join('src', f), 'utf8');
     assert.ok(!/from ['"][^'"]*(boss_chains|boss_checks)['"]/.test(text), `src/${f} imports the chains or the checks`);
   }
