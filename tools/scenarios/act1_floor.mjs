@@ -3,7 +3,7 @@
 // boss's ground.
 //   node tools/build_to.mjs dist/act1.html
 //   DEPTH=6 node tools/playtest.mjs --file dist/act1.html --size 1014x468 --scenario tools/scenarios/act1_floor.mjs --out shots/act1/floor6
-// DEPTH: which floor (6 to 10). SEED: the run's (9). FOES=1: its monsters kept (else taken away). AREAS: how many areas (5).
+// DEPTH: which floor (6 to 15). SEED: the run's (9). FOES=1: its monsters kept (else taken away). AREAS: how many areas (5).
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {
@@ -34,12 +34,17 @@ export default async function (page, snap) {
       packs: L.floor.packs.length,
       monsters: g.monsters.length,
       kinds: [...new Set(g.monsters.map((m) => m.kind))],
+      // (ACT 2, THE HUSH: its event, the Bells, in place of the strongholds: game/bells.ts)
+      bells: land && land.bells ? land.bells.bells.length : 0,
+      muffled: !!(land && land.bells && land.bells.muffled),
     };
   }, [depth, foes]);
-  log('floor', JSON.stringify({ depth, ms: info.ms, size: [info.w, info.h], packs: info.packs, monsters: info.monsters, kinds: info.kinds, holds: info.holds.length }));
-  // (what every floor of the descent must have: open areas, a stronghold, its boss, and with FOES its monsters)
+  log('floor', JSON.stringify({ depth, ms: info.ms, size: [info.w, info.h], packs: info.packs, monsters: info.monsters, kinds: info.kinds, holds: info.holds.length, bells: info.bells, muffled: info.muffled }));
+  // (what every floor of the descent must have: open areas, a stronghold, its boss, and with FOES its monsters; floors 11 to
+  // 15, the Hush (Version 23.0), the Bells in place of a stronghold: the Muffled Bell and four bells or more)
   if (info.areas.length < 3) log(`!! only ${info.areas.length} areas`);
-  if (info.holds.length < 1) log('!! no stronghold');
+  if (depth <= 10 && info.holds.length < 1) log('!! no stronghold');
+  if (depth >= 11 && (!info.muffled || info.bells < 4)) log(`!! the Bells not laid: the Muffled Bell ${info.muffled}, ${info.bells} bells`);
   if (info.monsters < 1) log('!! no boss');
   if (foes && info.kinds.length < 3) log(`!! only these kinds on the floor: ${info.kinds.join(', ')}`);
   const go = async (x, y, name) => {
