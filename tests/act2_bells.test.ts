@@ -23,7 +23,10 @@ interface Inside {
   bellsMade(): void;
 }
 
-/** A hero on floor 11 (its stand-in floor if its map-maker is not in yet), and a plan of five bells laid by hand round its start's far side. */
+/**
+ * A hero on floor 11 and its Bells: its map-maker's own plan (game/act2/gateward.ts), or, where a floor's map-maker is not in,
+ * a plan of five bells laid by hand round its start's far side, each on a tile of its own.
+ */
 function withBells(): { g: Game; L: Level; B: BellsState } {
   const g = seasoned(new Game('warrior', 11), 30);
   (g as unknown as { god: boolean }).god = true;
@@ -32,6 +35,10 @@ function withBells(): { g: Game; L: Level; B: BellsState } {
   g.enterDungeon();
   const L = g.level;
   const f = L.floor;
+  if (L.bells) {
+    g.monsters.length = 0;
+    return { g, L, B: L.bells };
+  }
   // (five whole floor tiles in a ring round a middle 16 tiles from the start, the Muffled Bell at the middle)
   const floorNear = (x: number, y: number): { x: number; y: number } => {
     let best = { x: f.start.x, y: f.start.y };
@@ -48,6 +55,7 @@ function withBells(): { g: Game; L: Level; B: BellsState } {
   };
   const mid = floorNear(f.start.x + 14, f.start.y + 6);
   const bells = [0, 1, 2, 3, 4].map((k) => floorNear(mid.x + Math.cos(k * 1.256) * 9, mid.y + Math.sin(k * 1.256) * 9));
+  assert.equal(new Set(bells.map((b) => `${b.x},${b.y}`)).size, bells.length, 'each bell on a tile of its own');
   L.land!.bells = { muffled: mid, bells, hush: { x: mid.x, y: mid.y, r: 14 } };
   const put = (name: string, at: { x: number; y: number }): void => {
     L.props.push({ kind: 'piece', name, tx: Math.floor(at.x), ty: Math.floor(at.y), x: at.x, y: at.y, solid: true, state: 0, variant: 0 });
@@ -80,7 +88,7 @@ const step = (g: Game, secs: number): void => {
 test('asleep until the Muffled Bell is struck: then the Hush is on, the clock 15 seconds a bell, every bell awake', () => act2(() => {
   const { g, L, B } = withBells();
   assert.equal(B.phase, 'asleep');
-  assert.equal(B.limit, 5 * BELLS_TUNE.perBell);
+  assert.equal(B.limit, B.plan.bells.length * BELLS_TUNE.perBell);
   assert.ok(B.first > 100, `the Hush lies on ${B.first} tiles`);
   // (a hit nowhere near does nothing)
   (g as unknown as Inside).bellsStruck(B.plan.muffled.x + 6, B.plan.muffled.y, 0.5);

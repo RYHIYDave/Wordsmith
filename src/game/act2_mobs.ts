@@ -47,6 +47,8 @@ export const ACT2_OWN: Readonly<Record<number, readonly Act2Mob[]>> = {
     { kind: 'inkling', weight: 6 },
     { kind: 'bookwarden', weight: 5 },
     { kind: 'scribe', weight: 2 },
+    // (the city's own on every floor of the Hush, as told him on 19 Oct: "floor 11's Hushed townsfolk on later floors too")
+    { kind: 'hushed', weight: 1 },
   ],
 };
 /** Each floor's guardian (its lair's big one and its own): its medium kind. */

@@ -269,7 +269,7 @@ const trapsOf = new WeakMap<Level, Map<number, GWTrap>>();
 export function trapSprite(L: Level, p: PropInst, time: number, piece: (name: string) => Piece | undefined): Sprite | null | undefined {
   if (p.kind !== 'piece' || !p.name) return undefined;
   const dress = L.act1 as GateWardDress | undefined;
-  if (!dress || !('traps' in dress)) return undefined;
+  if (!dress || !('wardTraps' in dress)) return undefined;
   let m = trapsOf.get(L);
   if (!m) {
     m = new Map(dress.wardTraps.map((t) => [t.i, t]));
