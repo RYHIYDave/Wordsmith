@@ -175,32 +175,61 @@ if (mode === 'sheet') {
   label('The Hushed patients, at the game\'s size', 10, 8);
   show();
 } else if (mode === 'shots') {
-  // the scream's burst across the floor, from a patient's feet toward you, twice the game's size
+  // the scream's burst across the floor, from a patient toward you, twice the game's size
   const S = 2;
+  const FPS = 30;
   cv.width = 1014;
   cv.height = 640;
-  const FPS = 30;
-  const LONG = 0.5 + PT_RISE.long * 0 + 1.6 + 0.6;
-  const TICKS = Math.round(LONG * FPS);
-  const ox = 330;
-  const oy = 230;
-  const at = (x: number, y: number): [number, number] => [ox / S + (x - y) * 16, oy / S + (x + y) * 8];
+  const gw = Math.ceil(cv.width / S);
+  const gh = Math.ceil((cv.height - 40) / S);
+  const [cx, cy] = pictureOf(15, 15);
+  const ox = Math.round(cx - gw / 2);
+  const oy = Math.round(cy - gh / 2);
+  const ground = paintTerrain(T, ox, oy, gw, gh);
+  // (the ground and the figure in picture pixels; what they leave on the floor in the game's own pixels, two picture
+  // pixels each, as the game draws it)
+  const off = document.createElement('canvas');
+  off.width = gw;
+  off.height = gh;
+  const P2 = off.getContext('2d') as CanvasRenderingContext2D;
+  P2.imageSmoothingEnabled = false;
+  const gameC = document.createElement('canvas');
+  gameC.width = Math.ceil(gw / 2);
+  gameC.height = Math.ceil(gh / 2);
+  const o = gameC.getContext('2d') as CanvasRenderingContext2D;
+  const atP = (x: number, y: number): readonly [number, number] => {
+    const [px, py] = pictureOf(x, y);
+    return [px - ox, py - oy];
+  };
+  const at = (x: number, y: number): [number, number] => {
+    const [px, py] = atP(x, y);
+    return [px / 2, py / 2];
+  };
+  const put = (sp: Sprite, x: number, y: number): void => {
+    const [sx, sy] = atP(x, y);
+    P2.fillStyle = 'rgba(14,10,24,0.45)';
+    P2.beginPath();
+    P2.ellipse(sx, sy, 22, 10, 0, 0, Math.PI * 2);
+    P2.fill();
+    P2.drawImage(sp.img, Math.round(sx - sp.ax * 2), Math.round(sy - sp.ay * 2), sp.img.width, sp.img.height);
+  };
+  const X0 = 14.2;
+  const Y0 = 14.6;
+  const mob = PATIENT_MAN;
+  const long = mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at;
+  const TICKS = Math.round((0.5 + long + 0.5) * FPS);
   const draw = (tick: number): void => {
     const t = tick / FPS;
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    const m = t - 0.5;
+    P2.putImageData(new ImageData(ground.rgba, gw, gh), 0, 0);
+    o.clearRect(0, 0, gameC.width, gameC.height);
+    put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, 'attack', m, 'front'), X0, Y0);
+    drawScreamBurst(o, at, X0 + 0.3, Y0, 1, 0, m - mob.hit);
+    P2.drawImage(gameC, 0, 0, gameC.width * 2, gameC.height * 2);
     g.fillStyle = '#0d1030';
     g.fillRect(0, 0, cv.width, cv.height);
-    groundPane(0, 40, cv.width, cv.height - 40, S);
-    const mob = PATIENT_MAN;
-    const m = t - 0.5;
-    const sp = m < 0 ? spOf(mob, 'stand', 0, 'front') : m < mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at ? spOf(mob, 'attack', m, 'front') : spOf(mob, 'stand', 0, 'front');
-    const [fx, fy] = at(0, 0);
-    figure(sp, fx * S, fy * S, S, mob.shadow);
-    g.save();
-    g.scale(S, S);
     g.imageSmoothingEnabled = false;
-    drawScreamBurst(g, at, 0.3, 0.05, 1, 0.1, m - mob.hit);
-    g.restore();
+    g.drawImage(off, 0, 40, gw * S, gh * S);
     label(`The silent scream's burst (twice the game's size): ${Math.max(0, m - mob.hit).toFixed(2)} s of ${SCREAM_FOR} s`, 10, 8);
   };
   draw(0);
