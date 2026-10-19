@@ -18,7 +18,19 @@ rm -f shots/regress/*.log shots/regress/summary.txt
 #   6 Oct 2026, two full runs flagged three and two such, different ones each time, every one
 #   clean when run again by itself. Two at a time takes about twice as long.
 JOBS=${JOBS:-4}
+# SHARDS=4 SHARD=2 JOBS=2 bash tools/regress.sh   one part of four (Version 23.0): the groups of playtests between one
+#   `wait` and the next are dealt round the parts in turn, so that the regression can run on several machines at once.
+#   With SHARDS above 1 the last group, the ones that measure the frame rate and run alone, is left out; PERF_ONLY=1 runs
+#   that group and nothing else (on one machine, by itself).
+SHARDS=${SHARDS:-1}
+SHARD=${SHARD:-1}
+G=0
+PERFG=
+wait() { builtin wait "$@"; G=$((G + 1)); }
 run() { # name, then the arguments for playtest.mjs (environment is passed through)
+  if [ -n "$PERFG" ]; then [ "$SHARDS" -gt 1 ] && [ -z "${PERF_ONLY:-}" ] && return 0
+  else { [ -n "${PERF_ONLY:-}" ] || [ $((G % SHARDS)) -ne $((SHARD - 1)) ]; } && return 0
+  fi
   local name=$1; shift
   # (Wait for a free place, one at a time: whoever holds the gate counts the playtests that are
   # running, starts its own when there is room, and lets go of the gate once that one can be
@@ -485,6 +497,7 @@ STEPS=${STEPS:-400} SEED=5 GUIDE=1 run monkey_guide_narrow $U --eval "$N" --scen
 CLS=ranger SETS="poison|;|fire;power+twin|leech" TIMES="0.07,0.3,0.84" run wordfx --scenario $S/wordfx.mjs &
 wait
 # the ones that measure the frame rate (or where the time goes) run alone
+PERFG=1
 run perf         --scenario $S/perf.mjs
 CLS=warrior COUNT=${COUNT:-8} run combos_warrior --scenario $S/combos.mjs
 CLS=ranger  COUNT=${COUNT:-8} run combos_ranger  --scenario $S/combos.mjs
