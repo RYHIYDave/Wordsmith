@@ -312,6 +312,9 @@ test('9. THE DRIVER\'S LASH: whirled round over their head through its warning; 
     assert.ok(Math.abs(p[1]) < 0.25 * TILE, `crack ${i + 1}: ${(p[1] / TILE).toFixed(2)} tiles to the side`);
     assert.ok(p[0] > last, `crack ${i + 1} no further out than the last`);
     last = p[0];
+    // (and its ring on the floor where it falls: the floor's x their forward, its -y their left, as the dev page has them)
+    const [sx, sy] = lashSpots(0, 0, 1, 0)[i];
+    assert.ok(Math.hypot(sx - p[0] / TILE, sy + p[1] / TILE) < 0.1, `crack ${i + 1}: its ring (${sx.toFixed(2)}, ${sy.toFixed(2)}) off where it falls (${(p[0] / TILE).toFixed(2)}, ${(-p[1] / TILE).toFixed(2)})`);
   });
   const sparks = (t: number): number => grainsAt(mob, st, at(mob, 'lashes', t)).filter(([, c]) => FLAME.includes(c)).length;
   for (const c of CT_LASHES.cracks) assert.ok(sparks(c) > 8, `sparks at the crack at ${c.toFixed(2)}: ${sparks(c)}`);
@@ -333,7 +336,7 @@ test('9. THE DRIVER\'S LASH: whirled round over their head through its warning; 
   }
   for (let t = 0; t < LASH_CRACK_FOR; t += 1 / 30) {
     dots.length = 0;
-    drawLashCrack(g, atF, CT_LASHES.reach[0], 0, t);
+    drawLashCrack(g, atF, lashSpots(0, 0, 1, 0)[0][0], lashSpots(0, 0, 1, 0)[0][1], t);
     assert.ok(dots.length > 0, `@${t.toFixed(2)}: nothing drawn`);
     for (const d of dots) {
       assert.ok(!isCyan(d.c), `the crack in cyan, ${d.c}`);

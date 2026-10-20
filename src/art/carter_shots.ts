@@ -30,15 +30,15 @@ export const LASH_SPARKS_FOR = 0.3;
 export const LASH_CRACK_FOR = 0.8;
 /** Where the three cracks fall: tiles before where they stood along the way they face, and a little to their right (under the whip hand). */
 export const LASH_REACH = CT_LASHES.reach;
-export const LASH_RIGHT = 3 / (32 / Math.sqrt(2 / 3));
+export const LASH_RIGHT = 4 / (32 / Math.sqrt(2 / 3));
 
 /** The three cracks' places on the floor, from them at (x, y) facing (fx, fy). */
 export function lashSpots(x: number, y: number, fx: number, fy: number): [number, number][] {
   const l = Math.hypot(fx, fy) || 1;
   const ux = fx / l;
   const uy = fy / l;
-  // (their right, seen from above, is the way they face turned a quarter clockwise)
-  return LASH_REACH.map((r) => [x + ux * r + uy * LASH_RIGHT, y + uy * r - ux * LASH_RIGHT]);
+  // (their left on the floor is the way they face turned a quarter round, (uy, -ux): facing +x, their left is -y; their right the other way)
+  return LASH_REACH.map((r) => [x + ux * r - uy * LASH_RIGHT, y + uy * r + ux * LASH_RIGHT]);
 }
 /** THE WARNING, `k` of the way through it (0 to 1): the three rings marked out one after another, nearest first, their dashes marching round, brightening. */
 export function drawLashesWarn(g: CanvasRenderingContext2D, at: FloorAt, x: number, y: number, fx: number, fy: number, k: number): void {
