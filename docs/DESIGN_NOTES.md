@@ -5750,6 +5750,14 @@ second attacks above (their numbers in each kind's file).
 
 **Results.** The whole unit suite on the copy of the release source (c4b6d87's src, the tests as mended), 2251 of 2251 (17:23 to 17:44; the first full run, 14:50 to 15:27, 2219 of 2251, the 32 every one a test written for the act off: mended, 232 re-run clean); THE REGRESSION, 260 playtests on the frozen copy (scratchpad v230/arpg_frozen, JOBS=2, 15:29:54 to 17:16:33), 250 clean; the 10 others: seven the playtests' own (act1_floor wanted a stronghold on floors 11 to 15, which have the Bells; act1_mob stood the rats and dredgers in a sewer's channel on floor 12: both mended), three the machine's or a random seed's (towntap_phone, autoaim_warrior, guide_auto_phone, its dungeon seed 1581559518 found no pack in reach: not chased); all ten clean alone twice; `find src -newer` nothing; the release build (v230/release: Play.html 3,710,070 bytes, artifact.html 3,709,748, "V23.0 2026-10-20 00:22"); THE PUBLISHED PAGE ITSELF (tools/wrap230.sh, 17:44 to 18:30), 123 playtests, 121 clean, touch_wide and enter_pc clean alone twice; its frame rate 56.6.
 
+### Version 23.1: the Hush's later fixes
+
+**What is in it.** 23.0 with the planning chat's fresh-eyes fixes (act2/build 5d30a7e and a0dadf2): floors 1 to 10's notices on a narrow screen where they stood under a boss's bar; the Bells' tough sergeant's hounds counted as the Hush's; floor 14's risen patients awake, none lying down in a bed; the bells ring on a moment once the event is over, then hang still; the explosion's burst and "EVERY BELL PEALS" white into cyan (his rule: what glows on a friend is cyan); a floor of the Hush that cannot be laid in 60 tries stands in with the descent's ground; the Gate Ward's doorbell with no wall a shrine's bell.
+
+**Published.** 19 Oct 2026, about 19:25 Pacific: "Version 62", version id `1792462964-0f20`, label "Version 23.1"; `gh-pages` at `85d1b3a`.
+
+**Results.** The whole unit suite on the copy (fd849b8), 2252 of 2252 (18:36 to 18:57); 34 chosen playtests of the regression on its dev page, all clean; the published page, 30 playtests, 29 clean, hud_narrow clean alone three times; its frame rate 53.9.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
