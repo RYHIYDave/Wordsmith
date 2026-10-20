@@ -7,11 +7,14 @@
 //     a squad of them with a crowd of the townsfolk as a phone shows it (the game's size), the knight before them
 //   node tools/preview.mjs src/dev/preview_watch.ts shots/watch_pose.png 1014 640 pose:<who>:<move>:<seconds>[:<scale>]
 //   node tools/page_gif.mjs src/dev/preview_watch.ts "film:<move>[:<scale>]" previews/watch/<move>.gif
-//     a film of the two side by side (stand, walk, attack, reel, death), facing you above, away below
+//     a film of the two side by side (stand, walk, attack, round, reel, death), facing you above, away below
+//   node tools/page_gif.mjs src/dev/preview_watch.ts "shots" previews/watch/round_shots.gif
+//     the round sweep (their second blow) on the floor (art/watch_shots.ts), twice the game's size
 
 import { GW_ZONE, gateWardLook, gateWardPaintFloor } from '../art/gateward';
 import { HUSHED_BAKER, HUSHED_GOODWIFE, HUSHED_PORTER } from '../art/hushed_moves';
-import { WATCHMAN, WATCH_ALL, WATCH_SERGEANT } from '../art/hushed_watch_moves';
+import { WATCHMAN, WATCH_ALL, WATCH_SERGEANT, WA_ROUND } from '../art/hushed_watch_moves';
+import { ROUND_DUST_FOR, ROUND_WAKE, drawRoundWake, drawRoundWarn } from '../art/watch_shots';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
@@ -156,13 +159,84 @@ if (mode === 'sheet' || mode === 'pose') {
   for (const [sp, x, y, sh] of all) figure(sp, x, y, 1, sh);
   label('The Hushed watch with the townsfolk, at the game\'s size', 10, 8);
   show();
+} else if (mode === 'shots') {
+  const mob = WATCHMAN;
+  // the round sweep and its marks on the floor, twice the game's size
+  const S = 2;
+  const FPS = 30;
+  cv.width = 1014;
+  cv.height = 640;
+  const gw = Math.ceil(cv.width / S);
+  const gh = Math.ceil((cv.height - 40) / S);
+  const [cx, cy] = pictureOf(15, 15);
+  const ox = Math.round(cx - gw / 2);
+  const oy = Math.round(cy - gh / 2);
+  const ground = paintTerrain(T, ox, oy, gw, gh);
+  const off = document.createElement('canvas');
+  off.width = gw;
+  off.height = gh;
+  const P2 = off.getContext('2d') as CanvasRenderingContext2D;
+  P2.imageSmoothingEnabled = false;
+  const gameC = document.createElement('canvas');
+  gameC.width = Math.ceil(gw / 2);
+  gameC.height = Math.ceil(gh / 2);
+  const o = gameC.getContext('2d') as CanvasRenderingContext2D;
+  const atP = (x: number, y: number): readonly [number, number] => {
+    const [px, py] = pictureOf(x, y);
+    return [px - ox, py - oy];
+  };
+  const at = (x: number, y: number): [number, number] => {
+    const [px, py] = atP(x, y);
+    return [px / 2, py / 2];
+  };
+  const put = (sp: Sprite, x: number, y: number): void => {
+    const [sx, sy] = atP(x, y);
+    P2.fillStyle = 'rgba(14,10,24,0.45)';
+    P2.beginPath();
+    P2.ellipse(sx, sy, 26, 12, 0, 0, Math.PI * 2);
+    P2.fill();
+    P2.drawImage(sp.img, Math.round(sx - sp.ax * 2), Math.round(sy - sp.ay * 2), sp.img.width, sp.img.height);
+  };
+  const X0 = 14.6;
+  const Y0 = 14.6;
+  const long = WA_ROUND.long;
+  const TICKS = Math.round((0.5 + long + 0.6) * FPS);
+  const draw = (tick: number): void => {
+    const t = tick / FPS;
+    const m = t - 0.5;
+    P2.putImageData(new ImageData(ground.rgba, gw, gh), 0, 0);
+    o.clearRect(0, 0, gameC.width, gameC.height);
+    const w0 = WA_ROUND.warn[0] - 0.1;
+    const w1 = WA_ROUND.hit;
+    if (m >= w0 && m < w1) drawRoundWarn(o, at, X0, Y0, Math.min(1, (m - w0) / (w1 - w0)), m);
+    if (m >= ROUND_WAKE[0] && m <= ROUND_WAKE[1] + ROUND_DUST_FOR) drawRoundWake(o, at, X0, Y0, 1, 0, m);
+    P2.drawImage(gameC, 0, 0, gameC.width * 2, gameC.height * 2);
+    put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, 'round', m, 'front'), X0, Y0);
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, cv.width, cv.height);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(off, 0, 40, gw * S, gh * S);
+    label(`The round sweep on the floor (twice the game's size): ${Math.max(0, m).toFixed(2)} s`, 10, 8);
+  };
+  draw(0);
+  win.__frames = TICKS;
+  win.__tickMs = 1000 / FPS;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cv.toDataURL('image/png');
+  };
+  show();
 } else if (mode === 'film') {
   // the three side by side, facing you above and away below; their stand twice round, or a move between stands
   const which = parts[1] || 'stand';
   const S = Number(parts[2]) || 2;
   const FPS = 30;
   const mob0 = WATCHMAN;
-  const LONG = which === 'stand' ? (2 * mob0.idleFrames) / mob0.idleFps : 0.5 + (which === 'die' ? mob0.dieTime + 1 : which === 'attack' ? mob0.attack.motion.keys[mob0.attack.motion.keys.length - 1].at + 0.6 : 2.2);
+  const moveLong = (w: string): number => {
+    const mv = w === 'attack' ? mob0.attack : (mob0.more ?? {})[w];
+    return mv ? mv.motion.keys[mv.motion.keys.length - 1].at + 0.6 : 2.2;
+  };
+  const LONG = which === 'stand' ? (2 * mob0.idleFrames) / mob0.idleFps : 0.5 + (which === 'die' ? mob0.dieTime + 1 : moveLong(which));
   const TICKS = Math.round(LONG * FPS);
   const at = (mob: Mob, t: number, view: GameView): Sprite => {
     if (which === 'stand') return spOf(mob, 'stand', (Math.floor(t * mob.idleFps) % mob.idleFrames) / mob.idleFps, view);

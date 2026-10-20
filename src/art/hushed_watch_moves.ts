@@ -17,6 +17,12 @@
 //     Hush seeping harder round the gag (THE WARNING); then, hips first, a step in and the whole halberd swept round
 //     in front of them, low, from their right to their left, its blade leading; carried on round to the left; and
 //     heaved back up and stood again at the right side.
+//   THE ROUND SWEEP (their second blow, on his "Yes" of 19 Oct, 16:47 Pacific, to the art chat drawing the act's five
+//     medium kinds their second attacks): the halberd taken in both hands at its butt, for all its reach, and hauled
+//     back low to their right, the body wound round away with it, crouched on the back foot, its blade glinting pink
+//     (THE WARNING: a ring on the floor as far as it reaches, art/watch_shots.ts); then, hips first, they spin round to
+//     their left, all the way round, the halberd out at the end of their arms at a man's hips, their feet stepping
+//     round under them; carried on past where they began, slowing; and heaved back up and stood again.
 //   STRUCK: jolted back, the head snapped back, the halberd rocking in the hand, the Hush coughed out round the gag.
 //   THE GAG FALLS, AND THEY KNEEL (their death, his pick): rocked back; the gag slips down off the mouth to the
 //     throat; they gasp, the head thrown back, and the Hush pours up out of them in one great grey breath; the dull
@@ -28,13 +34,13 @@
 // drawn back, held and carried through, hips first; alive when still.
 //   test: tsx --test tests/hushed_watch.test.ts
 
-import { footwork, kneelHips, kneelSettle, plantBy, plantOf } from './bosses3';
-import type { Plant } from './bosses3';
+import { footwork, kneelHips, kneelSettle, leaning, plantBy, plantOf } from './bosses3';
+import type { FootMove, Plant } from './bosses3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing } from './boss_checks';
 import type { ActorArt } from './actor_types';
 import { HALBERD, HALBERD_HOLD, WATCH_BODY, WATCH_CANVAS, WATCH_REST, halberdGrip, halberdOf, watchPainter, watchStand, watchStandJaw } from './hushed_watch';
 import type { WatchWho } from './hushed_watch';
-import { TILE3, mobSet } from './new_mobs3';
+import { TILE3, mobSet, posedOfMob, skeletonAt } from './new_mobs3';
 import type { Mob, MobMove } from './new_mobs3';
 import { add, dot, elbowFor, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
@@ -171,6 +177,164 @@ function sweepGlint(t: number): number {
 const sweepJaw = (t: number): number => (t < 0.3 ? 0.4 + 2 * t : t < WA_SWEEP.hit + 0.2 ? 1 : 1 - 0.5 * Math.min(1, (t - WA_SWEEP.hit - 0.2) / 0.5));
 
 // ---------------------------------------------------------------------------------------------
+// THE ROUND SWEEP (their second blow)
+
+/**
+ * Their second blow: how long; the warning (wound back and held); the spin, from still to slowing past where they
+ * began (seconds); the blow, the blade straight before them (a frame of the game's thirty a second); and how far round
+ * they go (degrees, from wound back: once round and back to where they began is `home`). His rule of 9 Oct: a medium
+ * monster's second blow the bigger, cooling down the longer.
+ */
+export const WA_ROUND = { long: 2.6, warn: [0.4, 0.88], spin: [0.9, 1.68], hit: 33 / 30, wound: -46, home: 406, past: 436 } as const;
+const ROUND_NAME = 'The round sweep';
+const RD = (deg: number): number => (deg * Math.PI) / 180;
+const rotV = (v: V3, deg: number): V3 => [v[0] * Math.cos(RD(deg)) - v[1] * Math.sin(RD(deg)), v[0] * Math.sin(RD(deg)) + v[1] * Math.cos(RD(deg)), v[2]];
+/** How far round they have gone `t` seconds in (0 wound back; WA_ROUND.past at the end of the spin): gathering speed (the hips first), on round at speed, slowing as they are carried past. */
+const UP = 0.2;
+const DOWN = 0.28;
+function roundTurn(t: number): number {
+  const [a, b] = WA_ROUND.spin;
+  const cruise = b - a - UP - DOWN;
+  const w = WA_ROUND.past / (UP / 2 + cruise + DOWN / 2);
+  const u = Math.max(0, Math.min(b - a, t - a));
+  if (u <= UP) return (w * u * u) / (2 * UP);
+  if (u <= UP + cruise) return w * (UP / 2 + (u - UP));
+  const v = u - UP - cruise;
+  return w * (UP / 2 + cruise + v - (v * v) / (2 * DOWN));
+}
+/**
+ * THE ROUND SWEEP as it goes round, `turn` degrees of it: the hips lead, the chest comes round after them, and the
+ * halberd after the chest; held at its butt in both hands out before the belly, low, its blade at a man's hips and
+ * leading round to their left. (Their feet are `watchRoundFeet`'s.)
+ */
+function roundAt(turn: number, low = 0): P {
+  const W = WA_ROUND.wound;
+  const sm = (u: number): number => {
+    const c = Math.max(0, Math.min(1, u));
+    return c * c * (3 - 2 * c);
+  };
+  const yaw = W + turn;
+  const twist = -44 + 58 * sm((turn - 20) / 160);
+  const chest = yaw + twist;
+  // the halberd trailing back behind the chest as they wind, then out before it and round to its left
+  const az = chest - 50 + 78 * sm((turn - 40) / 120);
+  const el = -9 - low;
+  const hand = rotV([20, 0, 0], az - 14);
+  const pose: P = {
+    px: 0, py: 0, pz: R.pz - 3.2, yaw, twist, ...leaning(yaw, 10, 8, twist),
+    faceTurn: chest + 6, faceUp: -2, faceTilt: 0, lk: R.lk + 10, rk: R.rk - 10,
+    ...halberdGrip([hand[0], hand[1], 40 - low * 0.3], heading(az, el), heading(az + 90, 0), SWING_DRAW, SWING_LEFT),
+    // (its bearing unwound, going on past a whole turn, as the body's)
+    wAz: az,
+  };
+  return elbowsTo(pose, rotV([0.1, 0.8, -0.6], chest), rotV([0.1, -0.8, -0.6], chest));
+}
+/** Once round: the same pose, its angles a whole turn on (so that it is where they began). */
+const once = (p: P): P => ({ ...p, yaw: ((p.yaw as number) ?? R.yaw) + 360, faceTurn: ((p.faceTurn as number) ?? R.faceTurn) + 360, wAz: ((p.wAz as number) ?? R.wAz) + 360 });
+const roundShaking = (k: number): P => {
+  const p = roundAt(0);
+  return { ...p, rhz: (p.rhz as number) + (k % 2 ? 0.8 : -0.5), rhx: (p.rhx as number) + (k % 2 ? -0.3 : 0.2), pz: (p.pz as number) + (k % 2 ? -0.25 : 0) };
+};
+/** Two poses mixed, `k` of the way from the one to the other (their numbers; where the hands are measured from, the second's). */
+function mixed(a: P, b: P, k: number): P {
+  const out: Record<string, number> = {};
+  for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const x = ((a as Record<string, number>)[key] ?? (R as unknown as Record<string, number>)[key]) as number;
+    const y = ((b as Record<string, number>)[key] ?? (R as unknown as Record<string, number>)[key]) as number;
+    out[key] = key === 'lhIn' || key === 'rhIn' ? y : x + (y - x) * k;
+  }
+  // (the right hand, on the halberd, carried round before them at its distance, not straight across in toward them)
+  const ax = (a.rhx ?? R.rhx) as number;
+  const ay = (a.rhy ?? R.rhy) as number;
+  const bx = (b.rhx ?? R.rhx) as number;
+  const by = (b.rhy ?? R.rhy) as number;
+  let da = Math.atan2(by, bx) - Math.atan2(ay, ax);
+  while (da > Math.PI) da -= 2 * Math.PI;
+  while (da < -Math.PI) da += 2 * Math.PI;
+  const ang = Math.atan2(ay, ax) + da * k;
+  const rr = Math.hypot(ax, ay) + (Math.hypot(bx, by) - Math.hypot(ax, ay)) * k;
+  out.rhx = rr * Math.cos(ang);
+  out.rhy = rr * Math.sin(ang);
+  return out as P;
+}
+/** As they come out of it: slowing, the halberd brought back round before them to their right and rising, once round (from as the spin slows, over this long). */
+const OUT_FROM = WA_ROUND.spin[1] - 0.14;
+const OUT_LONG = 0.46;
+function watchRound(): Motion {
+  const [a] = WA_ROUND.spin;
+  const keys: Key3[] = [
+    { at: 0, pose: {} },
+    // (lifted off the floor, upright, and slid down through the right hand to its butt, the left hand taking it; tipped back and hauled down low to their right, the body wound away with it)
+    { at: 0.12, pose: elbowsTo(both({ px: -0.2, pz: R.pz - 0.4, yaw: -6, twist: -4, pitch: 3, bend: 3, side: 0, roll: 0, faceUp: 0, faceTilt: -4, faceTurn: -2, lk: 9, rk: -9 }, [5, -14, 38], -20, 84, [0, -1, 0]), [-0.2, 0.7, -0.8], [-0.4, -0.8, -0.5]), ease: 'io' },
+    { at: 0.26, pose: elbowsTo(both({ px: -0.6, pz: R.pz - 1.2, yaw: -24, twist: -22, pitch: 6, bend: 4, side: 0, roll: 0, faceUp: 0, faceTilt: -2, faceTurn: -8, lk: 12, rk: -12 }, [5, -16, 46], -150, 42, [0, 0, 1]), [0, 0.8, -0.6], [-0.4, -0.8, -0.4]), ease: 'in' },
+    { at: WA_ROUND.warn[0], pose: roundAt(0), ease: 'out' },
+    { at: 0.5, pose: roundShaking(1), ease: 'io' },
+    { at: 0.6, pose: roundShaking(2), ease: 'io' },
+    { at: 0.7, pose: roundShaking(3), ease: 'io' },
+    { at: 0.8, pose: roundShaking(4), ease: 'io' },
+    { at: WA_ROUND.warn[1], pose: roundAt(0), ease: 'io' },
+  ];
+  // round they go, every frame of it; and as they slow, brought back round before them and up (once round)
+  const back = once(BACK);
+  for (let t = a + 1 / 30; t <= OUT_FROM + OUT_LONG + 1e-6; t += 1 / 30) {
+    const k = (t - (WA_ROUND.spin[1] - DOWN)) / DOWN;
+    // (the blade dropping lower as they slow, to skim the floor)
+    const spun = roundAt(roundTurn(t), k > 0 ? 6 * Math.sin(Math.PI * Math.min(1, k)) : 0);
+    const u = Math.max(0, Math.min(1, (t - OUT_FROM) / OUT_LONG));
+    keys.push({ at: t, pose: u > 0 ? mixed(spun, back, u * u * (3 - 2 * u)) : spun, ease: 'lin' });
+  }
+  keys.push({ at: OUT_FROM + OUT_LONG + 0.22, pose: once(UPRIGHT), ease: 'io' });
+  keys.push({ at: WA_ROUND.long, pose: once({}), ease: 'io' });
+  return { hit: WA_ROUND.hit, keys };
+}
+/** THEIR FEET THROUGH IT: down where they stand while they wind back; then, spinning, they step round on them, one foot down while the other goes round, a third of a turn at a time (the right first, half as far); and their feet where they began, once round. */
+function watchRoundFeet(): (t: number) => P {
+  const [a, b] = WA_ROUND.spin;
+  const W = WA_ROUND.wound;
+  const when = (deg: number): number => {
+    let lo: number = a;
+    let hi: number = b;
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (roundTurn(mid) + W < deg) lo = mid;
+      else hi = mid;
+    }
+    return (lo + hi) / 2;
+  };
+  const round = (p: Plant, deg: number): Plant => {
+    const at = rotV([p.at[0], p.at[1], 0], deg);
+    return { ...p, at: [at[0], at[1]], turn: p.turn + deg };
+  };
+  // (the right foot steps back and out as they wind back; their feet go round after their hips, from the hips' -46)
+  const Rw = round(R0, -40);
+  const Lw = round(L0, -20);
+  const lMoves: FootMove[] = [{ t0: 0.24, t1: 0.4, to: Lw, lift: 2.6 }];
+  for (let k = 0; k < 3; k++) lMoves.push({ t0: when(-20 + 120 * k + 30), t1: when(-20 + 120 * (k + 1) - 30), to: round(L0, -20 + 120 * (k + 1)), lift: 5 });
+  lMoves.push({ t0: b + 0.05, t1: b + 0.3, to: round(L0, 360), lift: 4 });
+  const rMoves: FootMove[] = [{ t0: 0.14, t1: 0.32, to: Rw, lift: 2.6 }];
+  for (let k = 0; k < 3; k++) rMoves.push({ t0: when(-40 + 120 * k + 60 + 30), t1: when(-40 + 120 * (k + 1) + 60 - 30), to: round(R0, -40 + 120 * (k + 1) + 60), lift: 5 });
+  rMoves.push({ t0: b + 0.2, t1: b + 0.45, to: round(R0, 360), lift: 4 });
+  return footwork(B, { L: { start: L0, moves: lMoves, knee: R.lk - R.lft }, R: { start: R0, moves: rMoves, knee: R.rk - R.rft } });
+}
+/** The warning: the blade glinting pink and the Hush seeping harder, from as they haul it back until just after it has gone round. */
+function roundGlint(t: number): number {
+  if (t < 0.12 || t > WA_ROUND.spin[1] + 0.2) return 0;
+  return t < WA_ROUND.warn[0] ? (t - 0.12) / (WA_ROUND.warn[0] - 0.12) : t <= WA_ROUND.spin[1] ? 1 : 1 - (t - WA_ROUND.spin[1]) / 0.2;
+}
+const roundJaw = (t: number): number => (t < 0.3 ? 0.4 + 2 * t : t < WA_ROUND.spin[1] ? 1 : 1 - 0.5 * Math.min(1, (t - WA_ROUND.spin[1]) / 0.5));
+/** (for the game, and art/watch_shots.ts: how far round the blade has gone `t` seconds in, as the angle of its edge to their left of the way they faced as they began (radians, going on past a whole turn); and how far out it is then (tiles)) */
+export function roundBladeAt(t: number): { bearing: number; reach: number } {
+  const s = skeletonAt(WATCHMAN, 'round', t);
+  const e = WA_SHAPE.tip?.('round', t, s, posedOfMob(WATCHMAN, 'round', t)) as V3;
+  let b = Math.atan2(e[1], e[0]);
+  // (unwound: a whole turn on once they are past where they began)
+  const turned = roundTurn(t) + WA_ROUND.wound + 14;
+  while (b < RD(turned) - Math.PI) b += 2 * Math.PI;
+  while (b > RD(turned) + Math.PI) b -= 2 * Math.PI;
+  return { bearing: b, reach: Math.hypot(e[0], e[1]) / TILE3 };
+}
+
+// ---------------------------------------------------------------------------------------------
 // STRUCK
 
 function watchReel(): Motion {
@@ -262,6 +426,9 @@ function watchMob(who: WatchWho): Mob {
     build: B,
     stand: mv('The Hushed watch keep their post', watchStand(), { jaw: watchStandJaw }),
     attack: mv('The halberd sweep', watchSweep(), { feet: watchSweepFeet(), glint: sweepGlint, jaw: sweepJaw, trail: (s, q) => [halberdOf(s, q).edge, halberdOf(s, q).tip], trailSpan: 3.0 }),
+    more: {
+      round: mv(ROUND_NAME, watchRound(), { feet: watchRoundFeet(), glint: roundGlint, jaw: roundJaw, trail: (s, q) => [halberdOf(s, q).edge, halberdOf(s, q).tip], trailSpan: 3.0, trailOver: (t) => t > WA_ROUND.spin[0] + 0.1 && t < WA_ROUND.spin[1] - 0.06 }),
+    },
     idleFrames: 32,
     idleFps: 10,
     walk: mv('The Hushed watch trudge', watchWalk(), { period: WA_WALK.frames / WA_WALK.fps, ground: WA_PACE * TILE3, jaw: walkJaw }),

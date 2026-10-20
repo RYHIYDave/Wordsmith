@@ -31,7 +31,10 @@ import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
 import { WATCH_CANVAS, WATCH_ON } from '../src/art/hushed_watch';
-import { WATCH_ALL, WA_DIES, WA_SHAPE, WA_SWEEP } from '../src/art/hushed_watch_moves';
+import { WATCH_ALL, WA_DIES, WA_ROUND, WA_SHAPE, WA_SWEEP, roundBladeAt } from '../src/art/hushed_watch_moves';
+import { halberdOf } from '../src/art/hushed_watch';
+import { ROUND_DUST_FOR, ROUND_REACH, ROUND_WAKE, drawRoundWake, drawRoundWarn } from '../src/art/watch_shots';
+import { TILE3 } from '../src/art/new_mobs3';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { FLAME, ENEMY_RIM } from '../src/art/mkit';
@@ -99,7 +102,8 @@ test('1. the switch is off, and nothing of the game imports them', () => {
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     // (and, behind ACT2, off: their pictures as the game holds them, art/act1_figs/watch.ts, since 19 Oct; only them)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/hushed_watch(_moves)?\.ts$/.test(f) || f === 'art/act1_figs/watch.ts') continue;
+    // (and art/watch_shots.ts, the mock-up of what their round sweep leaves on the floor, nothing of the game's)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/hushed_watch(_moves)?\.ts$/.test(f) || f === 'art/act1_figs/watch.ts' || f === 'art/watch_shots.ts') continue;
     if (/from ['"][^'"]*hushed_watch(_moves)?['"]/.test(fs.readFileSync(path.join('src', f), 'utf8'))) users.push(f);
   }
   assert.equal(users.join(' '), '', 'game files that import them');
@@ -107,7 +111,7 @@ test('1. the switch is off, and nothing of the game imports them', () => {
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover, both of them', () => {
   for (const mob of WATCH_ALL) {
-    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying');
+    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying,round');
     const found = checkBoss(mob, WA_SHAPE);
     assert.equal(found.length, 0, `${mob.name}: ${findingsSaid(found).slice(0, 12).join('; ')}`);
   }
@@ -295,6 +299,78 @@ test('8. what falls from them as they die, the halberd and the helmet, lies clea
         assert.ok(mine > 800 && theirs > 200, `${mob.name} ${view} @${k.toFixed(2)}: ${mine} pixels of him, ${theirs} of what fell`);
         assert.equal(both, 0, `${mob.name} ${view} @${k.toFixed(2)}: what fell from him lies over him or under him by ${both} pixels`);
       }
+    }
+  }
+});
+
+test('9. THE ROUND SWEEP (their second blow): the blade all the way round them and on past where it began, straight before them at the blow, the halberd out as far as its ring all the way round; they end where they began; its marks on the floor only in their time, inside its ring, nothing cyan', () => {
+  // (the blade's bearing, to their left of the way they began facing, unwound: from wound back to their right, round past where it began)
+  const [a, b] = WA_ROUND.spin;
+  let lo = Infinity;
+  let hi = -Infinity;
+  let was = roundBladeAt(a).bearing;
+  for (let t = a; t <= b + 1e-9; t += 1 / 30) {
+    const { bearing } = roundBladeAt(t);
+    assert.ok(bearing >= was - 0.3, `@${t.toFixed(2)}: the blade going back the other way round (${((bearing * 180) / Math.PI).toFixed(0)} from ${((was * 180) / Math.PI).toFixed(0)} degrees)`);
+    was = Math.max(was, bearing);
+    lo = Math.min(lo, bearing);
+    hi = Math.max(hi, bearing);
+  }
+  assert.ok(hi - lo > 2 * Math.PI + 0.5, `the blade round ${(((hi - lo) * 180) / Math.PI).toFixed(0)} degrees`);
+  const atHit = roundBladeAt(WA_ROUND.hit).bearing;
+  assert.ok(Math.abs(atHit) < 0.3, `at the blow the blade ${((atHit * 180) / Math.PI).toFixed(0)} degrees off straight before them`);
+  for (const mob of WATCH_ALL) {
+    // (out as far as its ring as it goes round, and no further than it)
+    for (let t = a + 0.2; t <= b - 0.1; t += 1 / 30) {
+      const { s, q } = at(mob, 'round', t);
+      const tip = halberdOf(s, q).tip;
+      const r = Math.hypot(tip[0], tip[1]) / TILE3;
+      assert.ok(r > ROUND_REACH - 0.15 && r < ROUND_REACH + 0.1, `${mob.name} @${t.toFixed(2)}: its spike ${r.toFixed(2)} tiles out, its ring ${ROUND_REACH}`);
+    }
+    // (and where they began, once round, at its end: as they stand)
+    const end = at(mob, 'round', WA_ROUND.long).s;
+    const begin = at(mob, 'stand', 0).s;
+    for (const k of ['head', 'handL', 'handR', 'pelvis', 'toeL', 'toeR'] as const) {
+      const d = Math.hypot(end[k][0] - begin[k][0], end[k][1] - begin[k][1], end[k][2] - begin[k][2]);
+      assert.ok(d < 1.5, `${mob.name}: at its end the ${k} ${d.toFixed(1)} from where it stands`);
+    }
+  }
+  // its marks on the floor (watch_shots.ts)
+  const dots: { x: number; y: number; c: string }[] = [];
+  const pen = { globalAlpha: 1, fillStyle: '' };
+  const g = { ...pen, fillRect(x: number, y: number) { dots.push({ x, y, c: (g as unknown as typeof pen).fillStyle }); } } as unknown as CanvasRenderingContext2D;
+  const atF = (x: number, y: number): [number, number] => [200 + (x - y) * 16, 120 + (x + y) * 8];
+  const inRing = (d: { x: number; y: number }, up = 0): boolean => {
+    // (back from the screen to the floor: inside the ring, a little over it for what rises)
+    const u = (d.x - 200) / 16;
+    for (let lift = 0; lift <= up; lift++) {
+      const v = (d.y + lift - 120) / 8;
+      if (Math.hypot((u + v) / 2, (v - u) / 2) <= ROUND_REACH + 0.12) return true;
+    }
+    return false;
+  };
+  for (let i = 1; i <= 20; i++) {
+    dots.length = 0;
+    drawRoundWarn(g, atF, 0, 0, i / 20, i / 20);
+    if (i >= 4) assert.ok(dots.length > 0, `warning @${(i / 20).toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the warning in cyan, ${d.c}`);
+      assert.ok(inRing(d), `warning @${(i / 20).toFixed(2)}: drawn at (${d.x - 200}, ${d.y - 120}), outside its ring`);
+    }
+  }
+  dots.length = 0;
+  drawRoundWarn(g, atF, 0, 0, 0, 0);
+  drawRoundWarn(g, atF, 0, 0, 1.01, 0);
+  drawRoundWake(g, atF, 0, 0, 1, 0, ROUND_WAKE[0] - 0.01);
+  drawRoundWake(g, atF, 0, 0, 1, 0, ROUND_WAKE[1] + ROUND_DUST_FOR + 0.01);
+  assert.equal(dots.length, 0, 'drawn outside its time');
+  for (let t = ROUND_WAKE[0] + 1 / 30; t <= ROUND_WAKE[1] + ROUND_DUST_FOR; t += 1 / 30) {
+    dots.length = 0;
+    drawRoundWake(g, atF, 0, 0, 1, 0, t);
+    if (t < ROUND_WAKE[1] + ROUND_DUST_FOR * 0.7) assert.ok(dots.length > 0, `the wake @${t.toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the wake in cyan, ${d.c}`);
+      assert.ok(inRing(d, 8), `the wake @${t.toFixed(2)}: drawn at (${d.x - 200}, ${d.y - 120}), outside its ring`);
     }
   }
 });
