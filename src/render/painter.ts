@@ -372,7 +372,7 @@ export class Painter {
     return this.state === 'on' && !!this.groundLane && this.groundLane.ready;
   }
 
-  /** ACT 1: a piece of this floor's ground, wanted (`pri`: the lower the sooner). False: there is no ground's worker. */
+  /** ACT 1: a piece of this floor's ground, wanted (`pri`: the lower the sooner; asked again, sooner than it was: the worker paints it once). False: there is no ground's worker. */
   groundPiece(id: number, i: number, j: number, pri: number): boolean {
     const lane = this.groundLane;
     if (this.state !== 'on' || !lane || id !== this.ground) return false;
@@ -896,6 +896,14 @@ export function paintWorkerMain(): void {
       }
       bestiary.forget(ask.figure);
       return;
+    }
+    // (a piece of the ground asked for again, wanted sooner: the piece already waiting is wanted that soon, and not painted twice)
+    if (ask.t === 'piece') {
+      const was = jobs.find((j) => j.ask.t === 'piece' && j.ask.id === ask.id && j.ask.i === ask.i && j.ask.j === ask.j);
+      if (was) {
+        was.ask.pri = Math.min(was.ask.pri, ask.pri);
+        return;
+      }
     }
     if (ask.t === 'mob' && !ask.side && !FIRST5_FIGURES.includes(ask.figure)) {
       scope.postMessage({ t: 'fail', what: `mob ${ask.figure}`, why: 'not a figure the painter paints' });

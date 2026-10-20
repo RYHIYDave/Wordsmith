@@ -40,6 +40,8 @@ import type { Painter } from './painter';
 export const PIECE = 128;
 /** Thousandths of a second a frame may spend painting the ground ahead. */
 const BUDGET = 5;
+/** A piece on the screen not come from the ground's worker this long after it was wanted there (thousandths of a second) is painted by the game itself. */
+const LATE = 150;
 /** How many pieces past the screen's edge are painted ahead, and kept. */
 const AHEAD = 2;
 const KEEP = 5;
@@ -265,7 +267,7 @@ export class OutdoorGround {
   /** Where the camera was last frame. */
   private camWas: { ox: number; oy: number } | null = null;
   /** For the tests and measuring: pieces painted, and the time it took. */
-  readonly stats = { pieces: 0, ms: 0, worker: 0 };
+  readonly stats = { pieces: 0, ms: 0, worker: 0, late: 0 };
   /** The floor's deep colour, for what is not painted yet. */
   private deep = '#16101f';
   /**
@@ -273,11 +275,22 @@ export class OutdoorGround {
    * painted beside the game, and the game goes on without waiting (a piece is ten to thirty thousandths of a second
    * here, a frame's whole time and more). Only the floor's first frame (or a jump of the camera) paints the screen
    * here, at once. `painterOf` is the renderer's; `gid` the floor's number with the worker (0: no worker: the game
-   * paints the ground itself, a little each frame, as before); `asked` the pieces asked of it and not yet come.
+   * paints the ground itself, a little each frame, as before); `asked` the pieces asked of it and not yet come, each with
+   * how soon it was wanted (the lower the sooner: render/painter.ts).
+   *
+   * THE GROUND BEFORE ANYTHING ELSE THE WORKER PAINTS (the owner, 20 Oct 2026, 07:41 Pacific: "Floor textures weren’t loaded
+   * at the beginning of levels"). The worker paints the floor's monsters' pictures and the Gate Ward's houses' shells too
+   * (each wanted at 2), the most wanted first. The pieces round the screen were wanted at 1 and more by how far out (4 to 9),
+   * so after every monster's pictures, tens of seconds at a floor's start; and a piece asked for ahead was never asked for
+   * again as it came on the screen, so it stayed behind them there, and the screen showed the floor's deep colour where it
+   * was. Now a piece round the screen is wanted at 1 and a little, nearest first, before the monsters and shells; and one
+   * on the screen not yet come is wanted again at 0, which the worker takes as the same piece wanted sooner.
    */
   painterOf: (() => Painter | null) | null = null;
   private gid = 0;
-  private asked = new Set<number>();
+  private asked = new Map<number, number>();
+  /** The pieces on the screen not yet come from the worker: since when (performance.now()), and the frame they were last wanted on it. Painted here once LATE. */
+  private waiting = new Map<number, { since: number; frame: number }>();
   /** The floor being drawn (for the ground's worker). */
   private floor: Floor | null = null;
   /** Let go of a piece's picture, whoever painted it. */
@@ -304,6 +317,7 @@ export class OutdoorGround {
     for (const p of this.pieces.values()) this.drop(p);
     this.pieces.clear();
     this.asked.clear();
+    this.waiting.clear();
     this.floor = floor;
     this.startWorker();
     this.sky = null;
@@ -318,6 +332,7 @@ export class OutdoorGround {
   /** (the ground's worker is sent the floor, and from here on paints its pieces; asked again if the painter was started anew meanwhile) */
   private startWorker(): void {
     this.asked.clear();
+    this.waiting.clear();
     const w = this.worker();
     const floor = this.floor;
     const land = this.land;
@@ -326,6 +341,7 @@ export class OutdoorGround {
       w.toGround = (id, i, j, bmp, ms) => {
         const key = this.key(i, j);
         this.asked.delete(key);
+        this.waiting.delete(key);
         if (id !== this.gid || this.pieces.has(key)) {
           bmp.close();
           return;
@@ -343,6 +359,7 @@ export class OutdoorGround {
     for (const p of this.pieces.values()) this.drop(p);
     this.pieces.clear();
     this.asked.clear();
+    this.waiting.clear();
     this.gid = 0;
     this.floor = null;
     this.land = null;
@@ -369,21 +386,23 @@ export class OutdoorGround {
     c.putImageData(new ImageData(p.rgba, PIECE, PIECE), 0, 0);
     const piece = { cvs, seen: this.frame };
     this.pieces.set(this.key(i, j), piece);
+    this.waiting.delete(this.key(i, j));
     return piece;
   }
 
-  /** A piece asked of the ground's worker (once, until it comes). */
+  /** A piece asked of the ground's worker (once, until it comes; again only to want it sooner than it was). */
   private ask(w: Painter, i: number, j: number, pri: number): void {
     const key = this.key(i, j);
-    if (this.asked.has(key)) return;
+    const was = this.asked.get(key);
+    if (was !== undefined && was <= pri) return;
     if (w.groundPiece(this.gid, i, j, pri)) {
-      this.asked.add(key);
+      this.asked.set(key, pri);
       return;
     }
     // (the painter was started anew since (a new place: render/painter.ts restart): the floor is sent again; failing
     // that, the game paints the ground itself from here on)
     this.startWorker();
-    if (this.gid && w.groundPiece(this.gid, i, j, pri)) this.asked.add(key);
+    if (this.gid && w.groundPiece(this.gid, i, j, pri)) this.asked.set(key, pri);
   }
 
   /** The pieces the screen shows (game pixels W by H, by the camera), and those `ring` pieces round it. */
@@ -414,11 +433,27 @@ export class OutdoorGround {
     if (this.gid && !up) this.gid = 0;
     // (until the worker is up, the game paints as before)
     const w = up && up.groundReady() ? up : null;
+    // (a piece on the screen that the worker has not sent within LATE thousandths of a second of being wanted there is
+    // painted here, one a frame or more while there is time: so that the floor's deep colour is never seen for long,
+    // whatever the worker is at)
+    let lateDone = false;
     for (let j = j0; j <= j1; j++) {
       for (let i = i0; i <= i1; i++) {
-        let p = this.pieces.get(this.key(i, j));
+        const key = this.key(i, j);
+        let p = this.pieces.get(key);
         if (!p && (first || (!w && performance.now() - t0 < BUDGET * 3))) p = this.paint(i, j);
-        else if (!p && w) this.ask(w, i, j, 0);
+        else if (!p && w) {
+          this.ask(w, i, j, 0);
+          // (wanted since it came on the screen this time: one that went off it and came back is wanted anew)
+          const was = this.waiting.get(key);
+          const since = was && was.frame >= this.frame - 1 ? was.since : t0;
+          this.waiting.set(key, { since, frame: this.frame });
+          if (t0 - since > LATE && (!lateDone || performance.now() - t0 < BUDGET * 3)) {
+            lateDone = true;
+            p = this.paint(i, j);
+            this.stats.late++;
+          }
+        }
         const sx = cam.ox + (i * PIECE) / GRAIN;
         const sy = cam.oy + (j * PIECE) / GRAIN;
         if (p) {
@@ -437,7 +472,8 @@ export class OutdoorGround {
     const want: [number, number, number][] = [];
     for (let j = b0; j <= b1; j++) for (let i = a0; i <= a1; i++) if (!this.pieces.has(this.key(i, j))) want.push([i, j, Math.hypot(i - ci, j - cj)]);
     want.sort((a, b) => a[2] - b[2]);
-    if (w) for (const [i, j, d] of want) this.ask(w, i, j, 1 + Math.round(d));
+    // (wanted at 1 and a little, nearest first: before the monsters' pictures and the houses' shells, wanted at 2)
+    if (w) for (const [i, j, d] of want) this.ask(w, i, j, 1 + Math.min(0.99, d / 64));
     else {
       for (const [i, j] of want) {
         if (performance.now() - t0 > BUDGET) break;
