@@ -32,9 +32,9 @@ import nodeFs from 'node:fs';
 import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
-import { BOOKWARDENS_ON, WB_CANVAS, bookCorners, tomeAt } from '../src/art/bookwardens';
-import { BOOKWARDEN, WB_DIES, WB_SHAPE, WB_SLAM, tomeWayOf } from '../src/art/bookwardens_moves';
-import { TOME_DUST_FOR, TOME_MARK_FOR, drawTomeSlam } from '../src/art/bookwarden_shots';
+import { BOOKWARDENS_ON, TOME, WB_CANVAS, bookCorners, tomeAt } from '../src/art/bookwardens';
+import { BOOKWARDEN, WB_DIES, WB_SHAPE, WB_SLAM, WB_STORM, tomeWayOf } from '../src/art/bookwardens_moves';
+import { STORM_HALF, STORM_POUR, STORM_REACH, STORM_TAIL, TOME_DUST_FOR, TOME_MARK_FOR, drawPageStorm, drawStormWarn, drawTomeSlam } from '../src/art/bookwarden_shots';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { FLAME, ENEMY_RIM } from '../src/art/mkit';
@@ -122,7 +122,7 @@ test('1. the switch is off, and only their pictures and drawings for the game (b
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {
   for (const mob of ALL) {
-    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying');
+    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying,storm');
     const found = checkBoss(mob, WB_SHAPE);
     assert.equal(found.length, 0, `${mob.name}: ${findingsSaid(found).slice(0, 12).join('; ')}`);
   }
@@ -246,8 +246,8 @@ test('6. THE BLOW: the tome whirled round over their head, then crashed down fla
     assert.ok(Math.abs(k.frame[2][2]) > 0.97, `@${t.toFixed(2)}: the tome not lying flat (${k.frame[2][2].toFixed(2)})`);
     assert.ok(k.mid[0] > 1.5 * TILE, `@${t.toFixed(2)}: the tome ${(k.mid[0] / TILE).toFixed(2)} tiles before them`);
   }
-  // (no grains of theirs while they live: the dust is the floor's mark)
-  for (const move of LIVING(mob)) for (const t of framesOf(mob, move)) assert.equal(grainsAt(mob, st, at(mob, move, t)).length, 0, `${move} @${t.toFixed(2)}: grains`);
+  // (no grains of theirs while they live: the dust is the floor's mark; but the pages of their page storm: test 10)
+  for (const move of LIVING(mob)) for (const t of framesOf(mob, move)) if (move !== 'storm') assert.equal(grainsAt(mob, st, at(mob, move, t)).length, 0, `${move} @${t.toFixed(2)}: grains`);
   // its mark on the floor (bookwarden_shots.ts): drawn only in its time, nothing cyan, within a tile and a half of where it struck
   const dots: { x: number; y: number; c: string }[] = [];
   const pen = { globalAlpha: 1, fillStyle: '' };
@@ -362,4 +362,81 @@ test('9. THE TOME BURSTS: whole until the chain snaps, gone after; its pages fly
   assert.ok(pinkEarly > 5 && paleLate > 20, `pink early ${pinkEarly}, pale late ${paleLate}`);
   // (gone before they are down and still: so nothing of them lies over what fell)
   assert.ok(WB_DIES.pages[1] < WB_DIES.down + 0.2, 'the pages still flying once they are down');
+});
+
+test('10. THE PAGE STORM (their second blow): the tome caught in the left hand, its chain slack; drawn back through the warning, glinting; thrust out and thrown open at the blow, its pages pouring out of it, pink, only while it is open; shut and let drop; its marks on the floor only in their time, inside its fan, nothing cyan', () => {
+  const mob = BOOKWARDEN;
+  const st = stageOf(mob);
+  const TILE = 32 / Math.sqrt(2 / 3);
+  const tomeOf = (t: number) => tomeAt(at(mob, 'storm', t).s, tomeWayOf('storm', t));
+  for (const t of framesOf(mob, 'storm')) {
+    const k = tomeOf(t);
+    const s = at(mob, 'storm', t).s;
+    const held = tomeWayOf('storm', t).held?.k ?? 0;
+    // (the chain never stretched past its length)
+    const span = Math.hypot(k.tie[0] - k.end[0], k.tie[1] - k.end[1], k.tie[2] - k.end[2]);
+    assert.ok(span <= TOME.chain + 0.05, `@${t.toFixed(2)}: the chain stretched to ${span.toFixed(1)} (its length ${TOME.chain})`);
+    // (in the hand, the foot of its spine in the left hand)
+    if (t >= WB_STORM.caught[1] && t <= WB_STORM.drop[0]) {
+      assert.equal(held, 1, `@${t.toFixed(2)}: not in the hand`);
+      const foot = [k.mid[0] + k.frame[1][0] * TOME.wide + k.frame[0][0] * TOME.long, k.mid[1] + k.frame[1][1] * TOME.wide + k.frame[0][1] * TOME.long, k.mid[2] + k.frame[1][2] * TOME.wide + k.frame[0][2] * TOME.long];
+      const d = Math.hypot(foot[0] - s.handL[0], foot[1] - s.handL[1], foot[2] - s.handL[2]);
+      assert.ok(d < 2.5, `@${t.toFixed(2)}: the foot of its spine ${d.toFixed(1)} from the left hand`);
+    }
+    // (open only from the blow until it is shut)
+    const open = t >= WB_STORM.open[1] && t <= WB_STORM.shut[0];
+    const shut = t <= WB_STORM.open[0] || t >= WB_STORM.shut[1];
+    if (open) assert.ok(k.open > 0.7, `@${t.toFixed(2)}: not thrown open (${k.open.toFixed(2)})`);
+    if (shut) assert.ok(k.open < 0.02, `@${t.toFixed(2)}: open (${k.open.toFixed(2)})`);
+    // (its pages pouring out of it while it is open, and only then: pink among them, nothing cyan)
+    const grains = grainsAt(mob, st, at(mob, 'storm', t));
+    const pouring = t >= WB_STORM.pour[0] + 0.07 && t <= WB_STORM.pour[1] - 0.1;
+    if (pouring) assert.ok(grains.length > 30 && grains.some(([, c]) => FLAME.includes(c)), `@${t.toFixed(2)}: ${grains.length} pages pouring out`);
+    if (t < WB_STORM.pour[0] || t > WB_STORM.pour[1]) assert.equal(grains.length, 0, `@${t.toFixed(2)}: pages outside the storm`);
+    for (const [, c] of grains) assert.ok(!isCyan(c), `@${t.toFixed(2)}: a page in cyan, ${c}`);
+  }
+  // (drawn back before the chest through the warning; thrust out more than a tile before them at the blow)
+  const back = tomeOf(WB_STORM.warn[0] + 0.2).mid[0];
+  const out = tomeOf(WB_STORM.hit).mid[0];
+  assert.ok(out - back > 15 && out > 1.0 * TILE, `the book drawn back to ${(back / TILE).toFixed(2)} tiles and thrust out to ${(out / TILE).toFixed(2)}`);
+  // its marks on the floor (bookwarden_shots.ts)
+  const dots: { x: number; y: number; c: string }[] = [];
+  const pen = { globalAlpha: 1, fillStyle: '' };
+  const g = { ...pen, fillRect(x: number, y: number) { dots.push({ x, y, c: (g as unknown as typeof pen).fillStyle }); } } as unknown as CanvasRenderingContext2D;
+  const atF = (x: number, y: number): [number, number] => [200 + (x - y) * 16, 120 + (x + y) * 8];
+  const inFan = (d: { x: number; y: number }, up: number): boolean => {
+    const u = (d.x - 200) / 16;
+    for (let lift = 0; lift <= up; lift++) {
+      const v = (d.y + lift - 120) / 8;
+      const x = (u + v) / 2;
+      const y = (v - u) / 2;
+      // (facing +x: their left is the floor's -y)
+      if (Math.hypot(x, y) <= STORM_REACH + 0.2 && Math.abs(Math.atan2(-y, x)) <= STORM_HALF + 0.15) return true;
+    }
+    return false;
+  };
+  for (let i = 1; i <= 20; i++) {
+    dots.length = 0;
+    drawStormWarn(g, atF, 0, 0, 1, 0, i / 20, i / 20);
+    if (i >= 4) assert.ok(dots.length > 0, `warning @${(i / 20).toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the warning in cyan, ${d.c}`);
+      assert.ok(inFan(d, 0), `warning @${(i / 20).toFixed(2)}: drawn at (${d.x - 200}, ${d.y - 120}), outside its fan`);
+    }
+  }
+  for (let t = 0; t < STORM_POUR + STORM_TAIL; t += 1 / 30) {
+    dots.length = 0;
+    drawPageStorm(g, atF, 0, 0, 1, 0, t);
+    if (t < STORM_POUR) assert.ok(dots.length > 0, `the storm @${t.toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the storm in cyan, ${d.c}`);
+      assert.ok(inFan(d, 22), `the storm @${t.toFixed(2)}: drawn at (${d.x - 200}, ${d.y - 120}), outside its fan`);
+    }
+  }
+  dots.length = 0;
+  drawStormWarn(g, atF, 0, 0, 1, 0, 0, 0);
+  drawStormWarn(g, atF, 0, 0, 1, 0, 1.01, 0);
+  drawPageStorm(g, atF, 0, 0, 1, 0, -0.01);
+  drawPageStorm(g, atF, 0, 0, 1, 0, STORM_POUR + STORM_TAIL);
+  assert.equal(dots.length, 0, 'drawn outside its time');
 });

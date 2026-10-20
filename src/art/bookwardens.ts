@@ -15,6 +15,10 @@
 //   chained books, made a weapon); the brass on it glinting pink as they ready it.
 // - THEIR BLOW, THE TOME SLAM: the haft heaved up over the head and the tome whirled round above it on its chain (the
 //   warning); then brought over the top and down to crash flat on the floor before them.
+// - THEIR SECOND BLOW, THE PAGE STORM (19 Oct, on his "Yes" of 16:47 Pacific to the art chat drawing the act's five
+//   medium kinds their second attacks): the tome hauled up on its chain and caught in the left hand, its fore-edge
+//   toward you, its clasps glinting pink; thrust out and thrown open, and the stolen words tear out of it in a storm
+//   of pages (art/bookwardens_moves.ts, its floor marks art/bookwarden_shots.ts).
 // - THEIR DEATH: the chain snaps, the tome bursts open in the air and its pages fly up (the words in it going free,
 //   pink going pale); they drop the haft, go down on their knees and fall forward onto their face.
 // And his words of 18 Oct on the act's enemies: Act 2's own, nothing of Act 1's.
@@ -80,6 +84,12 @@ export interface TomeWay {
   cd: V3;
   bs: V3;
   whole: boolean;
+  /**
+   * (THE PAGE STORM) The book in the left hand: how far it is there (0 on its chain, as `cd` and `bs` have it; 1 in the
+   * hand, held up by the foot of its spine, its fore-edge before them, its chain slack from the haft); and how far it is
+   * thrown open (0 shut; 1 its halves spread flat, its pages before them).
+   */
+  held?: { k: number; open: number };
 }
 /** The chained tome where it is: the haft's ends; the chain's links; the book's near end (the tie), its middle and its frame (along it, its spine's way, its cover's way). */
 export interface TomeAt {
@@ -89,6 +99,8 @@ export interface TomeAt {
   tie: V3;
   mid: V3;
   frame: [V3, V3, V3];
+  /** (in the hand) How far it is open (0 shut). */
+  open: number;
 }
 /** How high the chain's tie may come down (the book lying on its cover on the floor), and the book's lowest corner. */
 const TIE_LOW = TOME.thick + 0.5;
@@ -140,7 +152,49 @@ export function tomeAt(s: Skeleton, w: TomeWay): TomeAt {
     bs = side;
   }
   const mid = add(tie, mul(bd, TOME.long));
-  return { butt, end, links, tie, mid, frame: [bd, bs, bu] };
+  const k = w.held ? clamp01(w.held.k) : 0;
+  if (k <= 0) return { butt, end, links, tie, mid, frame: [bd, bs, bu], open: 0 };
+  // IN THE LEFT HAND: held up by the foot of its spine, the spine toward them, its fore-edge before them, its covers to
+  // either side; from on its chain to there as `k` says; its chain hanging slack from the haft's end to its top
+  const [cf, cl, cu] = s.chest;
+  const hSpine = add(s.handL, add(mul(cu, TOME.long + 0.6), mul(cf, 0.9)));
+  const hd: V3 = mul(cu, -1);
+  const hs: V3 = mul(cf, -1);
+  const hMid = add(hSpine, mul(cf, TOME.wide));
+  const m2 = lerp3(mid, hMid, k);
+  const d2 = norm(lerp3(bd, hd, k), hd);
+  const s2 = norm(sub(lerp3(bs, hs, k), mul(d2, dot(lerp3(bs, hs, k), d2))), hs);
+  const u2 = cross(d2, s2);
+  const tie2 = add(m2, mul(d2, -TOME.long));
+  const span = sub(tie2, end);
+  const dist = Math.hypot(span[0], span[1], span[2]);
+  // (slack: it sags between, a little shorter than its length laid straight)
+  const sag = dist < TOME.chain ? Math.sqrt((3 * dist * (TOME.chain - dist)) / 8) : 0;
+  const ctrl = add(lerp3(end, tie2, 0.5), [0, 0, -2 * sag]);
+  const links2: V3[] = [];
+  for (let i = 1; i <= TOME.links; i++) {
+    const u = i / TOME.links;
+    links2.push(add(add(mul(end, (1 - u) * (1 - u)), mul(ctrl, 2 * (1 - u) * u)), mul(tie2, u * u)));
+  }
+  return { butt, end, links: links2, tie: tie2, mid: m2, frame: [d2, s2, u2], open: clamp01(w.held?.open ?? 0) };
+}
+/**
+ * The book thrown open (`t.open`): its two halves turned out from the spine about it, each its own cover and half of
+ * its pages; their middles, their frames (right-handed: along the spine, out to the fore-edge, out through its cover)
+ * and half-sizes.
+ */
+export function bookHalves(t: TomeAt): { c: V3; A: [V3, V3, V3]; h: V3 }[] {
+  const [d, sd, u] = t.frame;
+  const spine = add(t.mid, mul(sd, TOME.wide));
+  const f: V3 = mul(sd, -1);
+  const a = (t.open * Math.PI) / 2;
+  const out: { c: V3; A: [V3, V3, V3]; h: V3 }[] = [];
+  for (const side of [1, -1]) {
+    const w = norm(add(mul(f, Math.cos(a)), mul(u, side * Math.sin(a))));
+    const n = norm(add(mul(f, -Math.sin(a)), mul(u, side * Math.cos(a))));
+    out.push({ c: add(spine, add(mul(w, TOME.wide), mul(n, TOME.thick / 2))), A: [side > 0 ? mul(d, -1) : d, w, n], h: [TOME.long, TOME.wide, TOME.thick / 2] });
+  }
+  return out;
 }
 /** The book's eight corners. */
 export function bookCorners(t: TomeAt): V3[] {
@@ -321,6 +375,25 @@ function tome(put: Put, s: Skeleton, w: TomeWay, glint: number): void {
   t.links.forEach((p, i) => put('chain', 'flail', { k: 'ball', c: p, ax: sphere(i % 2 ? 0.7 : 0.85), skin: IRON }));
   if (!w.whole) return;
   const pink = glint > 0.3;
+  if (t.open > 0.02) {
+    // THROWN OPEN: its two halves, the covers out, the pages before them burning pink with the words in them
+    for (const half of bookHalves(t)) {
+      box(put, 'book', 'tome', half.c, half.A, half.h, (k, n, tone) => {
+        const [x, y, z] = n;
+        if (k === 2 && z > 0) return Math.abs(x) > 0.76 && Math.abs(y) > 0.7 ? BRASS[Math.min(4, tone)] : LEATHER[tone];
+        if (k === 2) {
+          // (the open pages: ruled lines of the stolen words, burning)
+          const line = Math.abs(((x + 1) * 7) % 1 - 0.5) < 0.18 && Math.abs(y) < 0.8 && y > -0.85;
+          return line ? (pink ? FLAME[Math.min(3, 1 + (tone >> 1))] : LEATHER[1]) : PAGES[Math.min(4, tone + 1)];
+        }
+        if (k === 1 && y < 0) return LEATHER[tone];
+        return PAGES[tone];
+      });
+    }
+    put('book', 'tome', { k: 'ball', c: t.tie, ax: sphere(1.1), skin: IRON });
+    if (glint > 0.05) put('book', 'glint', { k: 'glow', p: add(t.mid, mul(t.frame[1], TOME.wide * 0.6)), c: FLAME[1], r: 10 + 10 * glint * t.open, a: 0.5 * glint });
+    return;
+  }
   box(put, 'book', 'tome', t.mid, t.frame, [TOME.long, TOME.wide, TOME.thick], (k, n, tone) => {
     const [x, y, z] = n;
     // (its covers: black leather, a tooled border, brass at its corners, a brass boss in the middle, two clasps over the fore-edge)
@@ -352,8 +425,10 @@ export interface WardenSay {
   tome: (m: Moment) => TomeWay;
   /** The flash as the tome bursts: where, and how bright (1 to 0). */
   flash?: (m: Moment) => { p: V3; a: number } | null;
-  /** Grains: the pages flying free as they die. */
+  /** Grains: the pages flying free as they die; the pages torn out of it in the page storm. */
   grains?: (m: Moment, out: [V3, string, number][]) => void;
+  /** (THE PAGE STORM) How hard the pages are tearing out of the open book now (0 none). */
+  storm?: (m: Moment) => number;
 }
 const GRAINS = new WeakMap<Moment, [V3, string, number][]>();
 function wardenBits(st: Stage, m: Moment, say: WardenSay): Bit[] {
@@ -381,6 +456,8 @@ function wardenBits(st: Stage, m: Moment, say: WardenSay): Bit[] {
   const fl = say.flash?.(m);
   if (fl) put('burst', 'burst', { k: 'glow', p: fl.p, c: FLAME[1], r: 10 + 10 * (1 - fl.a), a: 0.6 * fl.a });
   say.grains?.(m, grains);
+  const storm = say.storm?.(m) ?? 0;
+  if (storm > 0) pagesStorm(grains, tomeAt(s, say.tome(m)), s.chest[0], m.t, storm);
   return bits;
 }
 
@@ -434,6 +511,29 @@ export function wardenStand(): Motion {
 /** THEM AS THE PAINTER TAKES THEM. */
 export function wardenPainter(say: WardenSay): { bits: (st: Stage, m: Moment) => Bit[]; grains: (st: Stage, m: Moment) => ReadonlyArray<readonly [V3, string, number]> } {
   return { bits: (st, m) => wardenBits(st, m, say), grains: (_st, m) => GRAINS.get(m) ?? [] };
+}
+
+/**
+ * THE PAGE STORM: the stolen words torn out of the open book in a gale of pages, flung out before them (`f`) and
+ * spreading, turning over and over as they go, burning pink, `k` how hard (0 to 1). Near the book only: out over the
+ * floor they are art/bookwarden_shots.ts's.
+ */
+export function pagesStorm(out: [V3, string, number][], t: TomeAt, f: V3, time: number, k: number): void {
+  const [d, sd] = t.frame;
+  const from = add(t.mid, mul(sd, -TOME.wide * 0.4));
+  const fl = norm([f[0], f[1], 0], [1, 0, 0]);
+  const side: V3 = [-fl[1], fl[0], 0];
+  const n = Math.round(56 * k);
+  for (let i = 0; i < n; i++) {
+    // (each its own: born at its moment, flying out for a quarter of a second)
+    const life = (time * 4 + hash(i, 1, 8851)) % 1;
+    const a = (hash(i, 2, 8851) - 0.5) * 0.9;
+    const up = (hash(i, 3, 8851) - 0.4) * 0.5;
+    const r = 2 + 36 * life;
+    const p = add(from, add(add(mul(fl, r * Math.cos(a)), mul(side, r * Math.sin(a))), add([0, 0, r * up - 6 * life * life], mul(d, (hash(i, 4, 8851) - 0.5) * 10))));
+    const flap = Math.sin(life * 22 + i * 1.3) > 0;
+    out.push([p, i % 3 === 0 ? PAGES[4] : life < 0.3 ? FLAME[1] : FLAME[2], flap || life < 0.3 ? 2 : 1]);
+  }
 }
 
 /** THE PAGES FLYING FREE out of the tome as it bursts: pink going pale, fluttering up and away from `from`, from `t0` to `t1`. */

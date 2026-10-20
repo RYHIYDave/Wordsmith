@@ -11,6 +11,12 @@
 //     brass glinting pink, the body braced under it (THE WARNING); then hips first, a step in, and the tome brought over
 //     the top and down to crash flat on the floor before them, the body bent over it; held there; dragged back up,
 //     swinging and turning on its chain.
+//   THE PAGE STORM (their second blow, on his "Yes" of 19 Oct, 16:47 Pacific, to the art chat drawing the act's five
+//     medium kinds their second attacks): the haft yanked up and the tome swung up on its chain into the left hand,
+//     caught by the foot of its spine; drawn back before the chest, its fore-edge toward you, the clasps and the light
+//     leaking out between its boards glinting pink, the body wound back (THE WARNING); then hips first, a step in, the
+//     book thrust out at arm's length and thrown open, and the stolen words tear out of it in a storm of pages across
+//     the floor before them (art/bookwarden_shots.ts), held into it, leaning; snapped shut, and let drop on its chain.
 //   STRUCK: jolted back, the masked head snapped back, the tome swinging.
 //   THEIR DEATH: rocked back, the tome swinging up; THE CHAIN SNAPS and the tome bursts open in the air, its pages
 //     flying up and away, pink going pale (the words in it going free); the haft drops from their hand; down on their
@@ -23,7 +29,7 @@ import { footwork, kneelHips, kneelSettle, plantBy, plantOf } from './bosses3';
 import type { Plant } from './bosses3';
 import type { BossShape, CheckLimb, CheckLump, CheckThing } from './boss_checks';
 import type { ActorArt } from './actor_types';
-import { TOME, WB_BODY, WB_CANVAS, WB_REST, WB_STAND_LONG, bookCorners, pagesFree, sm, tomeAt, wardenPainter, wardenStand } from './bookwardens';
+import { TOME, WB_BODY, WB_CANVAS, WB_REST, WB_STAND_LONG, bookCorners, bookHalves, pagesFree, sm, tomeAt, wardenPainter, wardenStand } from './bookwardens';
 import type { TomeWay } from './bookwardens';
 import { FLAME } from './mkit';
 import { TILE3, mobSet, skeletonAt } from './new_mobs3';
@@ -239,6 +245,95 @@ export function slamAt(t: number): number {
 }
 
 // =============================================================================================
+// THE PAGE STORM (their second blow)
+
+/**
+ * Their second blow: how long; the tome caught in the left hand (from, to); the warning (held drawn back, glinting);
+ * the blow, the book thrust out (a frame of the game's thirty a second) and thrown open (from, to); the pages pouring
+ * out of it (from, to); snapped shut; let drop on its chain. His rule of 9 Oct: a medium monster's second blow the
+ * bigger, cooling down the longer.
+ */
+export const WB_STORM = { long: 2.8, caught: [0.16, 0.38], warn: [0.5, 1.0], hit: 33 / 30, open: [1.05, 1.17], pour: [1.1, 1.95], shut: [1.95, 2.08], drop: [2.12, 2.4] } as const;
+const SH = WB_STORM.hit;
+const WIDE = 0.8;
+/** The tome through the page storm: on its chain, swung up into the hand; in the hand, thrown open and shut; let drop and swinging on its chain again. */
+function stormChain(t: number): TomeWay {
+  const [c0, c1] = WB_STORM.caught;
+  const [d0, d1] = WB_STORM.drop;
+  const k = t < d0 ? sm((t - c0) / (c1 - c0)) : 1 - sm((t - d0) / (d1 - d0));
+  // (thrown open to its halves at a wide V, not quite flat, its pages before them)
+  const open = WIDE * (t < WB_STORM.shut[0] ? sm((t - WB_STORM.open[0]) / (WB_STORM.open[1] - WB_STORM.open[0])) : 1 - sm((t - WB_STORM.shut[0]) / (WB_STORM.shut[1] - WB_STORM.shut[0])));
+  // (swung up and forward toward the left hand as the haft is yanked; let drop, it swings forward under the haft and back, and hangs)
+  const UPWARD = norm([0.55, 0.45, 0.7]);
+  const DROPPED = norm([0.75, 0.25, -0.62]);
+  let cd: V3;
+  if (t < d0) cd = norm(lerp3(HANG0, UPWARD, sm(t / c1)));
+  else {
+    const u = (t - d0) / (WB_STORM.long - d0);
+    const swing = 0.55 * Math.sin(Math.PI * clamp01(u / 0.45)) * (1 - sm((u - 0.45) / 0.55));
+    cd = norm(add(lerp3(DROPPED, HANG0, sm(u)), [-swing, 0, 0]));
+  }
+  return { cd, bs: Y, whole: true, held: { k, open } };
+}
+/** How hard the pages are tearing out of it now. */
+function stormPour(t: number): number {
+  const [a, b] = WB_STORM.pour;
+  return sm((t - a) / 0.06) * (1 - sm((t - (b - 0.08)) / 0.08));
+}
+/** A pose of the page storm: the body as `body` says; the left hand (from its shoulder, along the figure's forward, left and up) holding the book; the right the haft. */
+const storming = (body: P, left: V3, right: V3, haft: [number, number]): P =>
+  elbowsTo({ ...body, lhIn: 1, lhx: left[0], lhy: left[1], lhz: left[2], rhIn: 1, rhx: right[0], rhy: right[1], rhz: right[2], wAz: haft[0], wEl: haft[1], wRoll: 0 }, [-0.1, 0.7, -0.7], [-0.3, -0.8, -0.5]);
+/** DRAWN BACK (the warning): the book held up before the left of the chest, its fore-edge toward you, the body wound back away from it, leaning back. */
+const S_DRAWN: P = storming({ px: -1.6, pz: R.pz + 0.2, yaw: 12, twist: 6, pitch: -2, bend: -2, roll: 0, side: 0, faceUp: 2, faceTilt: 0, faceTurn: -6, lk: 10, rk: -10 }, [9, -1, -11], [8, 1, -10], [66, 46]);
+const stormShaking = (k: number): P => ({ ...S_DRAWN, lhz: (S_DRAWN.lhz as number) + (k % 2 ? 0.6 : -0.4), lhx: (S_DRAWN.lhx as number) + (k % 2 ? -0.3 : 0.2), pz: (S_DRAWN.pz as number) + (k % 2 ? -0.2 : 0) });
+/** The thrust: the book out at arm's length before them, the body lunged in behind it, turned into it. */
+const S_THRUST: P = storming({ px: 5.0, pz: R.pz - 2.4, yaw: -8, twist: -2, pitch: 12, bend: 6, roll: 0, side: 0, faceUp: 4, faceTilt: 0, faceTurn: 2, lk: 18, rk: -14 }, [22, -2, -7], [19, 0, -4], [40, 18]);
+/** Held into the storm, leaning, the book out before them. */
+const leaning2 = (dx: number, dz: number): P => storming({ px: 5.6 + dx, pz: R.pz - 2.8, yaw: -10, twist: -4, pitch: 14, bend: 8, roll: 0, side: 0, faceUp: 2, faceTilt: 0, faceTurn: 2, lk: 20, rk: -14 }, [23.5 + dx, -2, -6.5 + dz], [20 + dx, 0, -3.5 + dz], [40, 16]);
+function wardenStorm(): Motion {
+  const F2 = 1 / 30;
+  return {
+    hit: SH,
+    keys: [
+      { at: 0, pose: {} },
+      // (the haft yanked up, the tome swinging up on its chain; caught in the left hand)
+      { at: WB_STORM.caught[0], pose: storming({ px: -0.4, pz: R.pz + 0.3, yaw: 4, twist: 2, pitch: 2, bend: 2, roll: 0, side: 0, faceUp: 8, faceTilt: 0, faceTurn: 0, lk: 9, rk: -9 }, [12, 2, -15], [9, -4, -6], [10, 58]), ease: 'io' },
+      { at: WB_STORM.caught[1], pose: storming({ px: -0.8, pz: R.pz + 0.2, yaw: 8, twist: 4, pitch: 0, bend: 0, roll: 0, side: 0, faceUp: 4, faceTilt: 0, faceTurn: -3, lk: 10, rk: -10 }, [13, 0, -12], [9, -1, -9], [60, 42]), ease: 'io' },
+      { at: WB_STORM.warn[0], pose: S_DRAWN, ease: 'io' },
+      { at: 0.6, pose: stormShaking(1), ease: 'io' },
+      { at: 0.7, pose: stormShaking(2), ease: 'io' },
+      { at: 0.8, pose: stormShaking(3), ease: 'io' },
+      { at: 0.9, pose: stormShaking(4), ease: 'io' },
+      { at: WB_STORM.warn[1], pose: S_DRAWN, ease: 'io' },
+      // (hips first: the hips round and in while the book is still back)
+      { at: SH - 2 * F2, pose: storming({ px: 1.8, pz: R.pz - 0.9, yaw: 1, twist: 9, pitch: 5, bend: 1, roll: 0, side: 0, faceUp: 3, faceTilt: 0, faceTurn: -2, lk: 14, rk: -12 }, [11, -1, -10], [10, 0, -9], [62, 44]), ease: 'in' },
+      { at: SH, pose: S_THRUST, ease: 'lin' },
+      { at: SH + 0.1, pose: leaning2(0.6, 0.4), ease: 'out' },
+      // (held into it, pushed back by it and leaning in again)
+      { at: 1.4, pose: leaning2(-0.6, 0), ease: 'io' },
+      { at: 1.6, pose: leaning2(0.3, 0.5), ease: 'io' },
+      { at: 1.8, pose: leaning2(-0.4, 0), ease: 'io' },
+      // (snapped shut, drawn back; and let drop)
+      { at: WB_STORM.shut[1], pose: storming({ px: 2.6, pz: R.pz - 1.2, yaw: -2, twist: 0, pitch: 6, bend: 4, roll: 0, side: 0, faceUp: 0, faceTilt: 0, faceTurn: 0, lk: 12, rk: -10 }, [15, -1, -11], [12, -1, -9], [58, 40]), ease: 'io' },
+      { at: WB_STORM.drop[1], pose: storming({ px: 1.4, pz: R.pz - 0.6, yaw: 0, twist: 0, pitch: 5, bend: 5, roll: 0, side: 0, faceUp: -2, faceTilt: 0, faceTurn: 0, lk: 10, rk: -9 }, [5, 4, -24], [9, -5, -19], [6, 24]), ease: 'io' },
+      { at: WB_STORM.long, pose: {}, ease: 'io' },
+    ],
+  };
+}
+function wardenStormFeet(): (t: number) => P {
+  return footwork(B, {
+    L: { start: L0, moves: [{ t0: SH - 0.12, t1: SH - 0.01, to: plantBy(L0, 9, 0.5, 6), lift: 3.0 }, { t0: 2.18, t1: 2.5, to: L0, lift: 2.6 }] },
+    R: { start: R0, moves: [{ t0: SH - 0.06, t1: SH + 0.04, to: { ...R0, pitch: 14 } }, { t0: 2.2, t1: 2.42, to: R0 }] },
+  });
+}
+/** The warning: the brass and the light between its boards glinting pink, from as it is caught until it is shut again. */
+function stormGlint(t: number): number {
+  const [c0] = WB_STORM.caught;
+  if (t < c0 || t > WB_STORM.shut[1] + 0.15) return 0;
+  return t < WB_STORM.warn[0] ? (t - c0) / (WB_STORM.warn[0] - c0) : t <= WB_STORM.shut[1] ? 1 : 1 - (t - WB_STORM.shut[1]) / 0.15;
+}
+
+// =============================================================================================
 // STRUCK
 
 export const WB_REEL = 0.4;
@@ -325,7 +420,7 @@ function dyingChain(t: number): TomeWay {
 // =============================================================================================
 // THEM, AS THE GAME HOLDS A MONSTER
 
-export const NAMES = { stand: 'The Bookwardens stand, watching', walk: 'The Bookwardens trudge', attack: 'The tome slam', reel: 'The Bookwardens are struck', dying: 'The Bookwardens fall, their tomes bursting' } as const;
+export const NAMES = { stand: 'The Bookwardens stand, watching', walk: 'The Bookwardens trudge', attack: 'The tome slam', storm: 'The page storm', reel: 'The Bookwardens are struck', dying: 'The Bookwardens fall, their tomes bursting' } as const;
 const KEY_OF = new Map<string, string>(Object.entries(NAMES).map(([k, v]) => [v, k]));
 /** How the chain and the book lie at a moment of a move (its key: stand, walk, attack, reel, dying). */
 export function tomeWayOf(move: string, t: number): TomeWay {
@@ -334,6 +429,8 @@ export function tomeWayOf(move: string, t: number): TomeWay {
       return { cd: walkChain(t), bs: Y, whole: true };
     case 'attack':
       return slamChain(t);
+    case 'storm':
+      return stormChain(t);
     case 'reel':
       return { cd: reelChain(t), bs: Y, whole: true };
     case 'dying':
@@ -366,6 +463,7 @@ function wardenMob(): Mob {
     grains: (m, out) => {
       if (m.dying && self) pagesFree(out, burstAt(self), m.t, WB_DIES.pages[0], WB_DIES.pages[1]);
     },
+    storm: (m) => (keyOf(m) === 'storm' ? stormPour(m.t) : 0),
   });
   const mv = (name: string, motion: Motion, more: Partial<MobMove> = {}): MobMove => ({ name, motion, rest: R, ...more });
   const mob: Mob = {
@@ -375,6 +473,9 @@ function wardenMob(): Mob {
     build: B,
     stand: mv(NAMES.stand, wardenStand()),
     attack: mv(NAMES.attack, wardenSlam(), { feet: wardenSlamFeet(), glint: slamGlint, trail: (s: Skeleton) => { const k = tomeAt(s, slamChain(H)); return [k.tie, k.mid, add(k.mid, mul(k.frame[0], TOME.long))]; }, trailSpan: 2.4 }),
+    more: {
+      storm: mv(NAMES.storm, wardenStorm(), { feet: wardenStormFeet(), glint: stormGlint, blurAt: SH, trail: (s: Skeleton) => { const k = tomeAt(s, stormChain(SH)); return [k.tie, k.mid, add(k.mid, mul(k.frame[0], TOME.long))]; }, trailSpan: 2.0 }),
+    },
     idleFrames: 32,
     idleFps: 10,
     walk: mv(NAMES.walk, wardenWalk(), { period: WB_WALK.frames / WB_WALK.fps, ground: WB_PACE * TILE3 }),
@@ -434,7 +535,7 @@ export function wardenSolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLum
   ];
   return { limbs, lumps };
 }
-const MOVE_KEYS = ['stand', 'walk', 'attack', 'reel', 'dying'] as const;
+const MOVE_KEYS = ['stand', 'walk', 'attack', 'storm', 'reel', 'dying'] as const;
 function tomeThings(move: string, t: number, s: Skeleton): CheckThing[] {
   if (move === 'dying' && t >= WB_DIES.drop) return [];
   const w = tomeWayOf(move, t);
@@ -444,9 +545,16 @@ function tomeThings(move: string, t: number, s: Skeleton): CheckThing[] {
     { name: 'haft', pts: [k.butt, lerp3(k.butt, k.end, 0.33), lerp3(k.butt, k.end, 0.66), k.end], r: 1.1, may: ['foreR'] },
     { name: 'chain', pts: k.links, r: 0.9, may: [] },
   ];
-  if (w.whole) {
+  // (in the left hand, the book may touch the hand that holds it)
+  const may = (w.held?.k ?? 0) > 0.3 ? ['foreL'] : [];
+  if (w.whole && k.open > 0.02) {
+    for (const half of bookHalves(k)) {
+      const [d, wd] = half.A;
+      out.push({ name: 'tome', pts: [half.c, add(half.c, mul(d, TOME.long * 0.8)), add(half.c, mul(d, -TOME.long * 0.8)), add(half.c, mul(wd, TOME.wide * 0.8))], r: TOME.thick / 2, may });
+    }
+  } else if (w.whole) {
     const [d, sd] = k.frame;
-    out.push({ name: 'tome', pts: [k.tie, k.mid, add(k.mid, mul(d, TOME.long * 0.9)), add(k.mid, mul(sd, TOME.wide * 0.7)), add(k.mid, mul(sd, -TOME.wide * 0.7))], r: TOME.thick, may: [] });
+    out.push({ name: 'tome', pts: [k.tie, k.mid, add(k.mid, mul(d, TOME.long * 0.9)), add(k.mid, mul(sd, TOME.wide * 0.7)), add(k.mid, mul(sd, -TOME.wide * 0.7))], r: TOME.thick, may });
   }
   return out;
 }
