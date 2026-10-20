@@ -5758,6 +5758,24 @@ second attacks above (their numbers in each kind's file).
 
 **Results.** The whole unit suite on the copy (fd849b8), 2252 of 2252 (18:36 to 18:57); 34 chosen playtests of the regression on its dev page, all clean; the published page, 30 playtests, 29 clean, hud_narrow clean alone three times; its frame rate 53.9.
 
+### Version 23.2: the Hush's second attacks
+
+**What he said.** To this chat, 19 Oct 2026, 20:54 Pacific: "Second attacks are done". To the art chat at 19:33 Pacific, after its five videos (its board post of 22:35 Eastern): “Looks good”. Read as (told him so, 20:54): the art chat's five second attacks into the game in place of this chat's stand-ins, tested, and live as 23.2.
+
+**What is in it.** 23.1 with the art chat's `mockup/act2-seconds` (827ca09) merged into `v23`, and the game's side of each move written here (game/act1_rules/<kind>.ts, render/act1_fx/<kind>.ts); the stand-ins (game/act1_rules/held.ts, the dredgers' haul and the carters' coil as moves of their own) gone. Each kind keeps its basic blow first (cooldown 0) and its second cools 7 seconds, harder (his rule of 9 Oct):
+- THE ORDERLIES' QUAKE (2.7 s; 1.5 blows): the pink ring on the floor (QUAKE_REACH 2.2 round where the mallet comes down, 1.48 tiles before them) through the warning; the leap; mallet and feet down at 37/30: whoever is in the ring struck and thrown out of it a whole Heavy blow's step; the floor shaken; its cracks lie 2 s.
+- THE CARTERS' DRIVER'S LASH (3.05 s; 1.2 blows each): three pink rings marked out, then three cracks at 33/30, 45/30 and 57/30, 1.29, 1.93 and 2.5 tiles out: whoever is on one as it strikes is struck (each crack once).
+- THE DREDGERS' CAST NET (2.5 s; 1.2 blows): the pink ring where it will fall (3 tiles before them); let go at 38/30, in the air 0.5 s; whoever is under it as it falls is struck and held 1 second ("Netted"); it lies 1.6 s.
+- THE WATCH'S ROUND SWEEP (2.6 s; 1.5 blows): a pink ring all round them; the spin, the blade's bearing frame by frame as the art's (roundBladeAt), its spike 2.36 to 2.58 tiles out: whoever it passes is struck once and knocked on, behind them as well as before; its wake of dust and pink.
+- THE BOOKWARDENS' PAGE STORM (2.8 s; 1.4 blows): a pink fan before them (3.4 tiles, 0.45 radians either side); the pages pour out from 1.1 s, their front at 6 tiles a second: whoever is in the fan as it reaches him is struck once and pushed back a little.
+Found while building it: a figure drawn the other way round (its weapon in the other hand) has its cracks and its spin the other way; the lash's warning rings and the round sweep's wake now follow it (render/act1_fx/carter.ts lashesWarnFrom, watch.ts mirrorFor).
+
+**Tests.** tests/act2_seconds.test.ts (new: every number held to the art; each move strikes where and when its picture does, and not beyond); the five kinds' own tests brought to two attacks. Filmed in the game, each kind making its second move before the hero (warning, blow, mark, damage), all five as drawn.
+
+**Published.** 19 Oct 2026, about 22:06 Pacific: "Version 63", version id `1792472805-4587`, label "Version 23.2"; `gh-pages` at `d75f83e` (his words at 22:06, as it was going out: "Can you update the offline game as well"; it was). The release: scratchpad v232rel (Play.html 3,746,608 bytes, artifact.html 3,746,286, "V23.2 2026-10-20 04:55").
+
+**Results.** The whole unit suite on the copy (scratchpad v232, d6e5701), 2263 of 2263 (21:19 to 21:41); 34 chosen playtests of the regression on its dev page (the Act 2 floors, bosses, Bells and ways, the five kinds' mobs, and the core ones), all clean (21:41 to 21:55); `find src tests -newer` nothing; the published page, 30 playtests, all clean (21:55 to 22:06), its frame rate 56.3. NOT CHECKED: a real phone; the second attacks' balance.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
