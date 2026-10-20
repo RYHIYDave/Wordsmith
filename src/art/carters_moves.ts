@@ -190,6 +190,145 @@ function whipGlint(t: number): number {
 const whipCrack = (t: number): number => (t < H - 0.02 || t > H + 0.2 ? 0 : 1 - (t - (H - 0.02)) / 0.22);
 
 // =============================================================================================
+// THE DRIVER'S LASH (their second blow, the bigger: his rule of 9 Oct, a medium monster two attacks, the bigger hit cooling down longer)
+
+/**
+ * The driver's lash: the whip raised over the head by `up` and the lash whirled round above it, its cracker glinting pink
+ * (the warning, `warn`); then three cracks, a step in with each, the lash's end striking the floor `reach` tiles before
+ * where they stood at `cracks` (frames of the game's thirty a second; the blow, `hit`, the first); the lash lying, drawn
+ * back over `draw`, and the feet stepped back to where they stood by `long`.
+ */
+export const CT_LASHES = { long: 3.05, up: 0.3, warn: [0.36, 0.94], cracks: [33 / 30, 45 / 30, 57 / 30], reach: [1.3, 1.95, 2.55], hit: 33 / 30, draw: [2.2, 2.65] } as const;
+const LH = CT_LASHES.hit;
+const [C1, C2, C3] = CT_LASHES.cracks;
+/** How fast the lash goes round over their head (turns a second), and how wide. */
+const WHIRL_TURNS = 1.2;
+const WHIRL_R = 26;
+/** Where each crack strikes the floor (the figure's own lengths from where they stood), a little to their right, under the whip hand. */
+const TARGET: V3[] = CT_LASHES.reach.map((r) => [r * TILE3, -3, 0.5] as V3);
+/** The lash whirled round over their head: a circle above the stock's end, the lash trailing round behind its cracker. */
+function whirl(end: V3, t: number): V3[] {
+  const phi = -2 * Math.PI * WHIRL_TURNS * (t - CT_LASHES.up) - Math.PI;
+  const pts: V3[] = [end];
+  for (let i = 1; i <= N; i++) {
+    const f = i / N;
+    const a = phi + 1.1 * f;
+    const r = WHIRL_R * Math.sqrt(f);
+    pts.push([end[0] + Math.cos(a) * r, end[1] + Math.sin(a) * r, end[2] + 6 * f - 4 * f * f]);
+  }
+  return pts;
+}
+/** The lash from the stock's end to a point of the floor, its slack thrown up in a loop over the way (as a whip's is as it cracks). */
+function toward(end: V3, target: V3): V3[] {
+  const L = WHIP.lash;
+  const shape = (h: number): V3[] => {
+    const out: V3[] = [];
+    for (let i = 0; i <= N; i++) {
+      const f = i / N;
+      const p = lerp3(end, target, f);
+      out.push([p[0], p[1], p[2] + h * Math.sin(Math.PI * f) * (1 - 0.3 * f)]);
+    }
+    return out;
+  };
+  const length = (pts: V3[]): number => pts.slice(1).reduce((a, p, i) => a + len3(sub(p, pts[i])), 0);
+  let lo = 0;
+  let hi = 60;
+  for (let i = 0; i < 24; i++) {
+    const m = (lo + hi) / 2;
+    if (length(shape(m)) < L) lo = m;
+    else hi = m;
+  }
+  return shape(lo);
+}
+/** Lying where it struck: its loop fallen to the floor. */
+function lying(end: V3, target: V3, k: number): V3[] {
+  const a = toward(end, target);
+  return a.map((p, i) => {
+    const f = i / N;
+    const e = smooth((k - (1 - f) * 0.3) / 0.7);
+    return [p[0], p[1], p[2] + (Math.max(0.5, lerp3(end, target, f)[2] * (1 - f * 2)) - p[2]) * e];
+  });
+}
+/** The lash through the driver's lash. */
+function lashesLash(t: number, end: V3): V3[] {
+  const up = CT_LASHES.up;
+  const cast = (from: V3[], t0: number, t1: number, target: V3): V3[] => {
+    const k = (t - t0) / (t1 - t0);
+    return mix(from, toward(end, target), (f) => smooth((k - 0.5 * f) / 0.5), (f, e) => 24 * Math.sin(Math.PI * e) * (0.4 + f));
+  };
+  const back = (from: V3[], t0: number, t1: number): V3[] => {
+    const k = (t - t0) / (t1 - t0);
+    return mix(from, behind(end, t, 0), (f) => smooth((k - 0.3 * (1 - f)) / 0.7), (f, e) => 18 * Math.sin(Math.PI * e) * f);
+  };
+  if (t < up) return mix(trailing(end, t), whirl(end, t), (f) => smooth((t / up - f * 0.3) / 0.7), (f, e) => 10 * Math.sin(Math.PI * e) * f);
+  if (t < C1 - 0.16) return whirl(end, t);
+  if (t < C1) return cast(whirl(end, C1 - 0.16), C1 - 0.16, C1, TARGET[0]);
+  if (t < C1 + 0.08) return lying(end, TARGET[0], (t - C1) / 0.08);
+  if (t < C2 - 0.13) return back(lying(end, TARGET[0], 1), C1 + 0.08, C2 - 0.13);
+  if (t < C2 - 0.1) return behind(end, t, 0);
+  if (t < C2) return cast(behind(end, t, 0), C2 - 0.1, C2, TARGET[1]);
+  if (t < C2 + 0.08) return lying(end, TARGET[1], (t - C2) / 0.08);
+  if (t < C3 - 0.17) return back(lying(end, TARGET[1], 1), C2 + 0.08, C3 - 0.17);
+  if (t < C3 - 0.11) return behind(end, t, 0);
+  if (t < C3) return cast(behind(end, t, 0), C3 - 0.11, C3, TARGET[2]);
+  if (t < CT_LASHES.draw[0]) return lying(end, TARGET[2], (t - C3) / 0.1);
+  const k = (t - CT_LASHES.draw[0]) / (CT_LASHES.draw[1] - CT_LASHES.draw[0]);
+  return mix(lying(end, TARGET[2], 1), trailing(end, t), (f) => smooth((k - 0.3 * (1 - f)) / 0.7));
+}
+/** The whip raised, the hand going round a little ahead of the lash, driving it round. */
+const RAISED_WHIP = (t: number): P => {
+  const phi = -2 * Math.PI * WHIRL_TURNS * (t - CT_LASHES.up) - Math.PI - Math.PI / 2;
+  return elbowsTo({ px: -1.2, pz: R.pz + 0.3, yaw: -4, twist: -6, pitch: -2, bend: -4, side: 0, roll: 0, faceUp: 10, faceTurn: 4, lhIn: 1, lhx: 8, lhy: 8, lhz: -12, rhIn: 1, rhx: 2 + 1.6 * Math.cos(phi), rhy: -4 + 1.6 * Math.sin(phi), rhz: 20, wAz: 0, wEl: 76, wRoll: 0, lk: 10, rk: -10 }, [0.2, 0.8, -0.6], [0.1, -1, 0.1]);
+};
+/** Cocked between the cracks: the arm back over the shoulder, the hips square. */
+const cocked = (px: number): P => elbowsTo({ px, pz: R.pz + 0.2, yaw: -6, twist: -12, pitch: 2, bend: -2, side: 1, roll: 0, faceUp: 6, faceTurn: 6, lhIn: 1, lhx: 9, lhy: 7, lhz: -11, rhIn: 1, rhx: -5, rhy: -7, rhz: 13, wAz: 172, wEl: 44, wRoll: 0, lk: 12, rk: -12 }, [0.2, 0.8, -0.6], [-0.4, -0.7, 0.6]);
+/** A crack: the arm brought over and down before them, the body driving in after it. */
+const struck = (px: number, deep: number): P => elbowsTo({ px, pz: R.pz - 1.2 - deep, yaw: 8, twist: 12, pitch: 12 + 4 * deep, bend: 8 + 3 * deep, side: -2, faceUp: 4, faceTurn: -4, lhIn: 1, lhx: 4, lhy: 9, lhz: -16, rhIn: 1, rhx: 16, rhy: -4, rhz: -2 - deep, wAz: 0, wEl: 0, wRoll: 0, lk: 18, rk: -10 }, [0.2, 0.8, -0.6], [0.4, -0.8, -0.2]);
+const driving = (px: number): P => elbowsTo({ px, pz: R.pz - 0.4, yaw: 4, twist: -4, pitch: 7, bend: 2, side: 0, faceUp: 6, faceTurn: 2, lhIn: 1, lhx: 7, lhy: 8, lhz: -13, rhIn: 1, rhx: 3, rhy: -6, rhz: 16, wAz: 40, wEl: 70, wRoll: 0, lk: 14, rk: -10 }, [0.2, 0.8, -0.6], [0.2, -0.8, 0.4]);
+function carterLashes(): Motion {
+  const keys: Key3[] = [{ at: 0, pose: {} }];
+  keys.push({ at: 0.15, pose: elbowsTo({ px: -0.8, yaw: -2, twist: -4, rhIn: 1, rhx: 4, rhy: -8, rhz: 6, wAz: -40, wEl: 50, wRoll: 0, lhIn: 1, lhx: 7, lhy: 6, lhz: -13 }, [0.2, 0.8, -0.6], [-0.1, -1, 0.1]), ease: 'in' });
+  // (the lash whirled round over the head, the hand driving it: frame by frame)
+  for (let i = 9; i <= Math.round((C1 - 0.16) * 30); i++) keys.push({ at: i / 30, pose: RAISED_WHIP(i / 30), ease: i === 9 ? 'out' : 'lin' });
+  // THE FIRST CRACK: hips first, a step in, the arm over and down
+  keys.push({ at: C1 - 2 / 30, pose: driving(0.8), ease: 'in' });
+  keys.push({ at: C1 - 1 / 30, pose: elbowsTo({ ...driving(2.5), pitch: 10, bend: 6, twist: 6, yaw: 6, rhx: 9, rhz: 8, wAz: 10, wEl: 40 }, [0.2, 0.8, -0.6], [0.3, -0.8, 0.1]), ease: 'lin' });
+  keys.push({ at: C1, pose: struck(4.5, 0), ease: 'lin' });
+  keys.push({ at: C1 + 0.06, pose: struck(5.2, 0.5), ease: 'out' });
+  // (cocked again, and the second, another step in)
+  keys.push({ at: C2 - 0.12, pose: cocked(5.0), ease: 'io' });
+  keys.push({ at: C2 - 2 / 30, pose: driving(6.5), ease: 'in' });
+  keys.push({ at: C2 - 1 / 30, pose: elbowsTo({ ...driving(8.4), pitch: 12, bend: 5, rhx: 9, rhz: 8, wAz: 10, wEl: 40 }, [0.2, 0.8, -0.6], [0.3, -0.8, 0.1]), ease: 'lin' });
+  keys.push({ at: C2, pose: struck(9.8, 0.3), ease: 'lin' });
+  keys.push({ at: C2 + 0.06, pose: struck(10.6, 1), ease: 'out' });
+  // (and the third, the hardest, lunging in after it)
+  keys.push({ at: C3 - 0.17, pose: cocked(10.2), ease: 'io' });
+  keys.push({ at: C3 - 0.12, pose: cocked(10.5), ease: 'io' });
+  keys.push({ at: C3 - 2 / 30, pose: driving(12.4), ease: 'in' });
+  keys.push({ at: C3 - 1 / 30, pose: elbowsTo({ ...driving(14.2), pitch: 14, bend: 7, pz: R.pz - 1.2, rhx: 9, rhz: 8, wAz: 10, wEl: 40 }, [0.2, 0.8, -0.6], [0.3, -0.8, 0.1]), ease: 'lin' });
+  keys.push({ at: C3, pose: struck(15.6, 1.1), ease: 'lin' });
+  keys.push({ at: C3 + 0.08, pose: { ...struck(16.2, 2.2), wEl: -8 }, ease: 'out' });
+  keys.push({ at: CT_LASHES.draw[0], pose: { ...struck(15.5, 1.5), pitch: 10, rhx: 12, rhz: -10, wEl: -20 }, ease: 'io' });
+  // (drawing the lash back, stepping back to where they stood)
+  keys.push({ at: 2.6, pose: { px: 6, rhIn: 1, rhx: 7, rhy: -4, rhz: -18, wAz: -10, wEl: -30, lhIn: 1, lhx: 5, lhy: 5, lhz: -16 }, ease: 'io' });
+  keys.push({ at: CT_LASHES.long, pose: {}, ease: 'io' });
+  return { hit: LH, keys };
+}
+function carterLashesFeet(): (t: number) => P {
+  return footwork(B, {
+    L: { start: L0, moves: [{ t0: C1 - 0.14, t1: C1 - 0.02, to: plantBy(L0, 7, 0.4, 6), lift: 3 }, { t0: C3 - 0.14, t1: C3 - 0.02, to: plantBy(L0, 17, 0.4, 8), lift: 3.2 }, { t0: 2.6, t1: 2.9, to: L0, lift: 3 }] },
+    R: { start: R0, moves: [{ t0: C2 - 0.14, t1: C2 - 0.02, to: plantBy(R0, 12, 0.2, -2), lift: 3 }, { t0: 2.35, t1: 2.65, to: R0, lift: 3 }] },
+  });
+}
+/** The cracker glinting pink from the raising of the whip to the last crack. */
+function lashesGlint(t: number): number {
+  if (t < 0.1 || t > C3 + 0.05) return 0;
+  return t < CT_LASHES.warn[0] ? (t - 0.1) / (CT_LASHES.warn[0] - 0.1) : 1;
+}
+/** Each crack's burst of pink sparks. */
+const lashesCrack = (t: number): number => Math.max(...CT_LASHES.cracks.map((c) => (t < c - 0.02 || t > c + 0.2 ? 0 : 1 - (t - (c - 0.02)) / 0.22)));
+
+// =============================================================================================
 // STRUCK
 
 function carterReel(): Motion {
@@ -271,20 +410,21 @@ function carterDyingFeet(): (t: number) => P {
 // =============================================================================================
 // THEM, AS THE GAME HOLDS A MONSTER
 
-const NAMES = { stand: 'The carters stand, watching', walk: 'The carters trudge', attack: 'The whip crack', reel: 'The carters are struck', dying: 'The carters go over' } as const;
+const NAMES = { stand: 'The carters stand, watching', walk: 'The carters trudge', attack: 'The whip crack', lashes: "The driver's lash", reel: 'The carters are struck', dying: 'The carters go over' } as const;
 function carterMob(): Mob {
   const paint = carterPainter({
     lash: (m: Moment, end: V3) => {
       const lag = lagOf(m, 1.5, 3.0);
       if (m.dying) return trailing(end, 0.3, lag);
       if (m.move === NAMES.attack) return whipLash(m.t, end);
+      if (m.move === NAMES.lashes) return lashesLash(m.t, end);
       if (m.move === NAMES.reel) return trailing(end, m.t * 6, lag);
       return trailing(end, m.t, lag);
     },
     hat: (m) => !(m.dying && m.t >= CT_DIES.hat),
     whip: (m) => !(m.dying && m.t >= CT_DIES.drop),
     lantern: () => true,
-    crack: (m) => (m.move === NAMES.attack ? whipCrack(m.t) : 0),
+    crack: (m) => (m.move === NAMES.attack ? whipCrack(m.t) : m.move === NAMES.lashes ? lashesCrack(m.t) : 0),
   });
   const mv = (name: string, motion: Motion, more: Partial<MobMove> = {}): MobMove => ({ name, motion, rest: R, ...more });
   return {
@@ -300,6 +440,10 @@ function carterMob(): Mob {
     walkFrames: CT_WALK.frames,
     walkFps: CT_WALK.fps,
     pace: CT_PACE,
+    // (their second blow, the bigger: the game names it 'lashes')
+    more: {
+      lashes: mv(NAMES.lashes, carterLashes(), { feet: carterLashesFeet(), glint: lashesGlint, blurAt: LH }),
+    },
     reel: mv(NAMES.reel, carterReel(), { glint: (t) => (t < 0.3 ? 1 - t / 0.3 : 0) }),
     reelTime: 0.4,
     hit: H,
@@ -356,7 +500,7 @@ export function carterSolids(s: Skeleton): { limbs: CheckLimb[]; lumps: CheckLum
 function whipThings(move: string, t: number, s: Skeleton): CheckThing[] {
   const k = stockOf(s);
   const m = { dying: move === 'dying', move: (NAMES as Record<string, string>)[move], t, come: [0, 0, 0] as V3 } as unknown as Moment;
-  const lash = lashFrom(k.end, move === 'attack' ? whipLash(t, k.end) : trailing(k.end, move === 'reel' ? t * 6 : t, lagOf(m, 1.5, 3.0)));
+  const lash = lashFrom(k.end, move === 'attack' ? whipLash(t, k.end) : move === 'lashes' ? lashesLash(t, k.end) : trailing(k.end, move === 'reel' ? t * 6 : t, lagOf(m, 1.5, 3.0)));
   return [
     { name: 'whip stock', pts: [k.butt, lerp3(k.butt, k.end, 0.5), k.end], r: 0.8, may: ['foreR'] },
     { name: 'whip lash', pts: lash.slice(2), r: 0.5, may: [] },
@@ -368,8 +512,8 @@ export const CT_SHAPE: BossShape = {
   tip: (move, t, s) => {
     if (move === 'dying' && t >= CT_DIES.drop) return null;
     const k = stockOf(s);
-    if (move !== 'attack') return null;
-    const lash = lashFrom(k.end, whipLash(t, k.end));
+    if (move !== 'attack' && move !== 'lashes') return null;
+    const lash = lashFrom(k.end, move === 'lashes' ? lashesLash(t, k.end) : whipLash(t, k.end));
     return lash[lash.length - 1];
   },
   things: (move, t, s) => (move === 'dying' && t >= CT_DIES.drop ? [] : whipThings(move, t, s)),

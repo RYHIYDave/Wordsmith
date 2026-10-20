@@ -12,7 +12,11 @@
 //   5. NOTHING OF THEM IN THE FLOOR, beyond what the checks see: all they wear and carry, the lash on the ground too;
 //   6. THE CRACK: pink sparks at the lash's end as it cracks, the lash then at full reach before them; none else;
 //   7. the dull pink in their eyes while they live, gone out once they are down; and down they lie, low on the floor;
-//   8. what falls from them as they die, the hat and the whip, lies clear of them once they are down.
+//   8. what falls from them as they die, the hat and the whip, lies clear of them once they are down;
+//   9. THE DRIVER'S LASH, their second blow (his rule of 9 Oct, a medium monster two attacks): the lash whirled round
+//      over their head through its warning; three cracks, each on the floor further out before them in a line, pink
+//      sparks at each and nowhere else; its warning rings and its cracks' marks (carter_shots.ts) drawn only in their
+//      time, where the cracks fall, nothing cyan.
 //   run: tsx --test tests/carters.test.ts
 
 // @ts-ignore
@@ -26,7 +30,8 @@ import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
 import { CARTER_CANVAS, CARTERS_ON, WHIP } from '../src/art/carters';
-import { CARTER, CT_DIES, CT_SHAPE, CT_WHIP } from '../src/art/carters_moves';
+import { CARTER, CT_DIES, CT_LASHES, CT_SHAPE, CT_WHIP } from '../src/art/carters_moves';
+import { LASH_CRACK_FOR, LASH_MARK_R, drawLashCrack, drawLashesWarn, lashSpots } from '../src/art/carter_shots';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { FLAME, ENEMY_RIM } from '../src/art/mkit';
@@ -98,7 +103,7 @@ test('1. the switch is off by itself, and of the game only their figure imports 
   assert.equal(CARTERS_ON.on, false, 'CARTERS_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/carters(_moves)?\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(carters(_moves)?|carter_shots)\.ts$/.test(f)) continue;
     const dir = f.split('/').slice(0, -1);
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       const parts = [...dir];
@@ -111,7 +116,7 @@ test('1. the switch is off by itself, and of the game only their figure imports 
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover, both of them', () => {
   for (const mob of ALL) {
-    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying');
+    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying,lashes');
     const found = checkBoss(mob, CT_SHAPE);
     assert.equal(found.length, 0, `${mob.name}: ${findingsSaid(found).slice(0, 12).join('; ')}`);
   }
@@ -210,7 +215,8 @@ test('6. THE CRACK: pink sparks at the lash\'s end as it cracks, the lash then a
   const st = stageOf(mob);
   const sparks = (move: string, t: number): number => grainsAt(mob, st, at(mob, move, t)).filter(([, c]) => FLAME.includes(c)).length;
   assert.ok(sparks('attack', CT_WHIP.hit) > 8, `sparks at the crack: ${sparks('attack', CT_WHIP.hit)}`);
-  for (const move of LIVING(mob)) for (const t of framesOf(mob, move)) if (move !== 'attack' || t < CT_WHIP.hit - 0.05 || t > CT_WHIP.hit + 0.25) assert.equal(sparks(move, t), 0, `${move} @${t.toFixed(2)}: sparks`);
+  const cracking = (move: string, t: number): boolean => (move === 'attack' ? [CT_WHIP.hit] : move === 'lashes' ? [...CT_LASHES.cracks] : []).some((c) => t >= c - 0.05 && t <= c + 0.25);
+  for (const move of LIVING(mob)) for (const t of framesOf(mob, move)) if (!cracking(move, t)) assert.equal(sparks(move, t), 0, `${move} @${t.toFixed(2)}: sparks`);
   // (at the crack, its lash before them at near its whole reach: the cracker this far out from where they stand)
   const tip = CT_SHAPE.tip?.('attack', CT_WHIP.hit, (st && at(mob, 'attack', CT_WHIP.hit)).s, at(mob, 'attack', CT_WHIP.hit).q) as V3;
   assert.ok(tip[0] > 0.8 * WHIP.lash, `the cracker ${tip[0].toFixed(1)} before them at the crack`);
@@ -278,4 +284,65 @@ test('8. what falls from them as they die, the hat and the whip, lies clear of t
       }
     }
   }
+});
+
+test('9. THE DRIVER\'S LASH: whirled round over their head through its warning; three cracks on the floor, each further out before them in a line, pink sparks at each; its warning rings and its cracks\' marks drawn only in their time, where the cracks fall, nothing cyan', () => {
+  const mob = CARTER;
+  const st = stageOf(mob);
+  const TILE = 32 / Math.sqrt(2 / 3);
+  const tipAt = (t: number): V3 => CT_SHAPE.tip?.('lashes', t, at(mob, 'lashes', t).s, at(mob, 'lashes', t).q) as V3;
+  // (through the warning, the cracker high over their heads and going round)
+  let turned = 0;
+  let was: number | null = null;
+  for (let t = CT_LASHES.warn[0]; t <= CT_LASHES.warn[1] + 1e-9; t += 1 / 30) {
+    const p = tipAt(t);
+    const s = at(mob, 'lashes', t).s;
+    assert.ok(p[2] > s.head[2], `@${t.toFixed(2)}: the cracker below their head as it whirls`);
+    const a = Math.atan2(p[1] - s.handR[1], p[0] - s.handR[0]);
+    if (was !== null) turned += Math.abs(((a - was + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+    was = a;
+  }
+  assert.ok(turned > 1.3 * Math.PI, `whirled ${((turned * 180) / Math.PI).toFixed(0)} degrees round through the warning`);
+  // (each crack on the floor, further out than the last, about where its reach says, in a line before them)
+  let last = 0;
+  CT_LASHES.cracks.forEach((c, i) => {
+    const p = tipAt(c + 1 / 30);
+    assert.ok(p[2] < 4, `crack ${i + 1}: the cracker ${p[2].toFixed(1)} off the floor`);
+    assert.ok(Math.abs(p[0] / TILE - CT_LASHES.reach[i]) < 0.15, `crack ${i + 1}: ${(p[0] / TILE).toFixed(2)} tiles out, its reach ${CT_LASHES.reach[i]}`);
+    assert.ok(Math.abs(p[1]) < 0.25 * TILE, `crack ${i + 1}: ${(p[1] / TILE).toFixed(2)} tiles to the side`);
+    assert.ok(p[0] > last, `crack ${i + 1} no further out than the last`);
+    last = p[0];
+  });
+  const sparks = (t: number): number => grainsAt(mob, st, at(mob, 'lashes', t)).filter(([, c]) => FLAME.includes(c)).length;
+  for (const c of CT_LASHES.cracks) assert.ok(sparks(c) > 8, `sparks at the crack at ${c.toFixed(2)}: ${sparks(c)}`);
+  // its marks on the floor (carter_shots.ts)
+  const dots: { x: number; y: number; c: string }[] = [];
+  const pen = { globalAlpha: 1, fillStyle: '' };
+  const g = { ...pen, fillRect(x: number, y: number) { dots.push({ x, y, c: (g as unknown as typeof pen).fillStyle }); } } as unknown as CanvasRenderingContext2D;
+  const atF = (x: number, y: number): [number, number] => [200 + (x - y) * 16, 120 + (x + y) * 8];
+  const spots = lashSpots(0, 0, 1, 0).map(([x, y]) => atF(x, y));
+  const near = (d: { x: number; y: number }, r: number): boolean => spots.some(([x, y]) => Math.abs(d.x - x) <= r * 32 + 2 && Math.abs(d.y - y) <= r * 16 + 2);
+  for (let i = 1; i <= 20; i++) {
+    dots.length = 0;
+    drawLashesWarn(g, atF, 0, 0, 1, 0, i / 20);
+    if (i >= 4) assert.ok(dots.length > 0, `warning @${(i / 20).toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the warning in cyan, ${d.c}`);
+      assert.ok(near(d, LASH_MARK_R + 0.05), `warning @${(i / 20).toFixed(2)}: drawn at (${d.x - 200}, ${d.y - 120}), off its rings`);
+    }
+  }
+  for (let t = 0; t < LASH_CRACK_FOR; t += 1 / 30) {
+    dots.length = 0;
+    drawLashCrack(g, atF, CT_LASHES.reach[0], 0, t);
+    assert.ok(dots.length > 0, `@${t.toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the crack in cyan, ${d.c}`);
+      assert.ok(Math.abs(d.x - spots[0][0]) <= LASH_MARK_R * 32 + 2 && d.y <= spots[0][1] + LASH_MARK_R * 16 + 2 && d.y >= spots[0][1] - LASH_MARK_R * 16 - 28, `@${t.toFixed(2)}: drawn at (${d.x - spots[0][0]}, ${d.y - spots[0][1]}) from where it cracked`);
+    }
+  }
+  dots.length = 0;
+  drawLashCrack(g, atF, 0, 0, LASH_CRACK_FOR + 0.01);
+  drawLashCrack(g, atF, 0, 0, -0.01);
+  drawLashesWarn(g, atF, 0, 0, 1, 0, 0);
+  assert.equal(dots.length, 0, 'drawn outside its time');
 });
