@@ -92,6 +92,12 @@ export const GW_GLASS = ['#191520', '#2a2430', '#f0c070', '#c8803e', '#7a4a32'].
 /** THE ROOFS: clay tiles and slate, each from its darkest to its lightest. */
 export const GW_CLAY = ['#371f26', '#53292b', '#6d3833', '#874a3c', '#9f5c47'].map(hex);
 export const GW_SLATE = ['#25222f', '#353243', '#464257', '#585469', '#6c6779'].map(hex);
+/**
+ * THE SLATE OF 20 OCT (behind `fresh`, render/act2_walls.ts ACT2_WALLS): the owner, 20 Oct 2026, 07:41 Pacific, "the roof and
+ * ground textures are hard to distinguish between": the slate was the setts' own purple grey. This is a cold blue-black, darker
+ * than any street, so that a roof of it never reads as the street beside it.
+ */
+export const GW_SLATE_FRESH = ['#141923', '#1e2634', '#293346', '#354158', '#47536b'].map(hex);
 
 // ---------------------------------------------------------------------------------------------------
 // THE PICTURE'S OWN GRID: along the world's x and y, 64 to a tile, so that every line laid along the
@@ -141,6 +147,13 @@ export interface GateWardLand {
   squares?: readonly { x: number; y: number; r: number }[];
   /** The houses that can be walked into. */
   houses?: readonly GWHouse[];
+  /**
+   * THE LOOK OF 20 OCT (behind render/act2_walls.ts ACT2_WALLS, off until his yes): the slate set apart from the street
+   * (GW_SLATE_FRESH), and the doorways of the houses walked into lit from inside, a lantern over each, their lamplight on the
+   * street before them (his words, 20 Oct 2026, 07:41 Pacific: "The doorways are very hard to see, the roof and ground
+   * textures are hard to distinguish between").
+   */
+  fresh?: boolean;
 }
 
 /** Is (tx, ty) in this house's room? */
@@ -509,7 +522,7 @@ function windowPx(u: number, v: number, w: number, h: number, H: House, row: num
 }
 
 /** A house front: `v` picture pixels over its foot, turned to the light by `shade`. */
-function front(shade: number, v: number, px: number, py: number, given?: House): RGB {
+function front(shade: number, v: number, px: number, py: number, given?: House, slate: readonly RGB[] = GW_SLATE): RGB {
   const H = given ?? houseAt(px);
   const u = H.u;
   const row = rowOf(shade, (hash(H.key, 9, 1603) - 0.5) * 0.1);
@@ -522,7 +535,7 @@ function front(shade: number, v: number, px: number, py: number, given?: House):
   if (v >= 132) {
     // tiles seen edge-on, in courses, the lowest course catching the light
     const clay = hash(H.key, 11, 1604) < 0.62;
-    const R = clay ? GW_CLAY : GW_SLATE;
+    const R = clay ? GW_CLAY : slate;
     const course = mod(v - 132, 5);
     const lift = row === 0 ? 1 : row === 2 ? -1 : 0;
     let c = R[Math.max(0, Math.min(4, 2 + lift))];
@@ -648,13 +661,28 @@ function front(shade: number, v: number, px: number, py: number, given?: House):
  * A WALKED-INTO HOUSE'S DOORWAY, in its front: an arch of stone the doorway wide, its two oak leaves swung back
  * inside it, the room's lamplight warm on the threshold and dark above. `du` 0..1 across it, `wp` its width.
  */
-function doorway(du: number, v: number, px: number, shade: number, wp: number): RGB | null {
+function doorway(du: number, v: number, px: number, shade: number, wp: number, fresh = false): RGB | null {
   const row = rowOf(shade, 0);
   const S = GW_STONE[row];
   const O = GW_OAK[row];
   const u = du * wp;
   const mid = Math.abs(du - 0.5) * 2; // 0 at its middle, 1 at its edges
   const top = 44 + Math.round(8 * Math.sqrt(Math.max(0, 1 - mid * mid))); // a segmental arch
+  // (THE LOOK OF 20 OCT: a lantern hung over the arch's keystone from an iron bracket, lit: an honest flame)
+  if (fresh && v > top + 5) {
+    const lu = Math.round(u - wp / 2);
+    const IRON: RGB = [34, 30, 36];
+    if (v === 76 && lu >= -6 && lu <= 2) return IRON; // the bracket, out of the wall
+    if (v >= 72 && v < 76 && lu === -6) return IRON; // its foot against the wall
+    if (v >= 72 && v < 76 && lu === 0) return IRON; // the hook
+    if (v === 71 && Math.abs(lu) <= 2) return IRON; // the lantern's cap
+    if (v >= 61 && v <= 70 && Math.abs(lu) <= 3) {
+      if (Math.abs(lu) === 3 || v === 61 || v === 70) return IRON; // its frame
+      return Math.abs(lu) <= 1 && v >= 63 && v <= 67 ? GW_GLASS[2] : GW_GLASS[3]; // the flame, its glass
+    }
+    if (v === 60 && Math.abs(lu) <= 1) return IRON; // its foot
+    return null;
+  }
   if (v > top + 5) return null;
   // the jambs and the arch's ring of stones
   if (u < 4 || u >= wp - 4 || v > top) {
@@ -675,6 +703,11 @@ function doorway(du: number, v: number, px: number, shade: number, wp: number): 
   }
   // the threshold, lit; the room's lamplight warm low down, dark above
   if (v < 2) return S[0];
+  if (fresh) {
+    // (THE LOOK OF 20 OCT: the room behind lit by its lamp, the whole doorway glowing warm, brightest low and in the middle)
+    const k = Math.max(0, Math.min(1, v / (top - 2))) * 0.75 + mid * 0.35;
+    return k < 0.3 ? GW_GLASS[2] : k < 0.62 ? GW_GLASS[3] : k < 0.9 ? GW_GLASS[4] : mixc(GW_GLASS[4], GW_DEEP, 0.4);
+  }
   if (v < 8) return mixc(GW_GLASS[4], GW_BOARD[3], 0.5);
   if (v < 20) return mixc(GW_GLASS[4], GW_DEEP, (v - 8) / 16);
   return mixc(GW_BOARD[0], GW_DEEP, 0.6);
@@ -775,7 +808,7 @@ export function gateWardRidge(x: number, y: number): { along: 'x' | 'y'; at: num
 }
 
 /** A roof's plot: rows 2.5 tiles deep along y, plots 2 to 4 tiles long along x; a ridge along x or along y; clay pantiles or slate. */
-function roof(x: number, y: number, px: number, py: number, back: number): RGB {
+function roof(x: number, y: number, px: number, py: number, back: number, slate: readonly RGB[] = GW_SLATE): RGB {
   const RY = 2.5;
   const j = Math.floor(y / RY);
   const len = 2 + Math.floor(hash(j, 0, 1901) * 3);
@@ -785,7 +818,7 @@ function roof(x: number, y: number, px: number, py: number, back: number): RGB {
   const ly = y / RY - j; // 0..1 across it along y
   const h0 = hash(i, j, 1902);
   const clay = h0 < 0.64;
-  const R = clay ? GW_CLAY : GW_SLATE;
+  const R = clay ? GW_CLAY : slate;
   const ridgeY = h0 > 0.78 || (h0 > 0.4 && h0 < 0.48);
   // the slope: which way it faces (to the light, the upper left, lightest; to the lower right darkest), and
   // which way is down it on the picture's own grid
@@ -887,6 +920,26 @@ export function gateWardLook(land: GateWardLand, mode: 'open' | 'closed' = 'open
     }
     return best;
   };
+  // (THE LOOK OF 20 OCT, behind `fresh`: the slate set apart from the street; each doorway's lamplight on the street before it)
+  const fresh = !!land.fresh;
+  const slate = fresh ? GW_SLATE_FRESH : GW_SLATE;
+  const pools = fresh
+    ? houses.map((h) => {
+        const F = h.front;
+        const mid = (F.door[0] + F.door[1]) / 2;
+        // (the street is past the front, at its `at` + 1: the pool's middle half a tile out on it)
+        return F.along === 'x' ? { x: mid, y: F.at + 1.5, ax: 1.3, ay: 1.4 } : { x: F.at + 1.5, y: mid, ax: 1.4, ay: 1.3 };
+      })
+    : [];
+  const lamplit = (c: RGB, x: number, y: number): RGB => {
+    for (const P of pools) {
+      const dx = (x - P.x) / P.ax;
+      const dy = (y - P.y) / P.ay;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < 1) return mixc(c, GW_GLASS[3], 0.42 * (1 - d2) * (1 - d2));
+    }
+    return c;
+  };
   return quietLook({
     rise: GW_RISE,
     near: 40,
@@ -909,9 +962,8 @@ export function gateWardLook(land: GateWardLand, mode: 'open' | 'closed' = 'open
       const wall = dist(x, y);
       if (z === GW_ZONE.Room) return boards(x, y, px, py, wall);
       const left = leavings(x, y, px, py, wall);
-      if (left) return left;
-      if (z === GW_ZONE.Square) return wall < 0.5 ? kerb(x, y, px, py, wall) : square(x, y, px, py, wall, squareAt(x, y));
-      return wall < 0.42 ? kerb(x, y, px, py, wall) : setts(x, y, px, py, wall);
+      const c = left ?? (z === GW_ZONE.Square ? (wall < 0.5 ? kerb(x, y, px, py, wall) : square(x, y, px, py, wall, squareAt(x, y))) : wall < 0.42 ? kerb(x, y, px, py, wall) : setts(x, y, px, py, wall));
+      return fresh ? lamplit(c, x, y) : c;
     },
     face: (shade, v, px, py, x, y) => {
       // a house walked into, whole (its shell): one house along its front, its doorway open
@@ -933,19 +985,19 @@ export function gateWardLook(land: GateWardLand, mode: 'open' | 'closed' = 'open
           const along = h.front.along === 'x' ? x : y;
           const dw = (d1 - d0) * 32;
           const du = h.front.along === 'x' ? (along - d0) / (d1 - d0) : (d1 - along) / (d1 - d0);
-          const c = doorway(du, v, px, shade, dw);
+          const c = doorway(du, v, px, shade, dw, fresh);
           if (c) return c;
         }
-        return front(shade, v, px, py, H);
+        return front(shade, v, px, py, H, slate);
       }
       // whose front: the tile the face looks onto (a lit face looks along +y, a shaded one along +x)
       const fx = shade < 0 ? x + 0.3 : x;
       const fy = shade < 0 ? y : y + 0.3;
       const z = zoneOf(fx, fy);
       if (z === GW_ZONE.Room) return inner(shade, v, px);
-      return front(shade, v, px, py);
+      return front(shade, v, px, py, undefined, slate);
     },
-    top: (x, y, px, py, back) => roof(x, y, px, py, back),
+    top: (x, y, px, py, back) => roof(x, y, px, py, back, slate),
     nearFace: (v, px) => nearHouse(v, px),
     brow: (c) => mixc(c, [255, 226, 190], 0.28),
     foot: [0.4, 0.22],
@@ -1028,6 +1080,47 @@ export function houseShell(open: import('./terrain').Terrain, closed: import('./
     rgba[o + 1] = b.rgba[o + 1];
     rgba[o + 2] = b.rgba[o + 2];
     rgba[o + 3] = 255;
+  }
+  return { x0: px0, y0: py0, w, h: hh, rgba };
+}
+
+/**
+ * A HOUSE'S SHELL WHEN THE WALLS STAND WHOLE (render/act2_walls.ts ACT2_WALLS, off until his yes): every picture pixel over its
+ * tiles up to its roof, as the house whole paints it, and nothing else: so its roof stands over the street behind it too, as
+ * every house's does, and it is seen through round whoever is behind it. Only the house whole is painted (the ground need not
+ * be: what differs from it is all over the house's tiles), about half the time `houseShell` takes.
+ */
+export function houseShellWhole(closed: import('./terrain').Terrain, h: GWHouse, paint: typeof import('./terrain').paintTerrain): HouseShell {
+  const [rx0, ry0, rx1, ry1] = h.room;
+  const x1 = h.front.along === 'y' ? Math.max(rx1, h.front.at + 1) : rx1;
+  const y1 = h.front.along === 'x' ? Math.max(ry1, h.front.at + 1) : ry1;
+  const R = GW_RISE;
+  const px0 = Math.floor((rx0 - y1) * 32) - 2;
+  const px1 = Math.ceil((x1 - ry0) * 32) + 2;
+  const py0 = Math.floor((rx0 + ry0) * 16) - R - 4;
+  const py1 = Math.ceil((x1 + y1) * 16) + 10;
+  const w = px1 - px0;
+  const hh = py1 - py0;
+  const b = paint(closed, px0, py0, w, hh);
+  const rgba = new Uint8ClampedArray(w * hh * 4);
+  for (let c = 0; c < w; c++) {
+    // (down this column, where the house's tiles lie: its footprint is x in [rx0, x1), y in [ry0, y1); a pixel is over it if
+    // the house, standing R up, comes between it and the eye)
+    const a = (px0 + c + 0.5) / 32;
+    const bLo = Math.max(2 * rx0 - a, 2 * ry0 + a);
+    const bHi = Math.min(2 * x1 - a, 2 * y1 + a);
+    if (bLo >= bHi) continue;
+    const top = 16 * bLo - R;
+    const foot = 16 * bHi;
+    for (let r = 0; r < hh; r++) {
+      const py = py0 + r + 0.5;
+      if (py < top || py >= foot) continue;
+      const o = (r * w + c) * 4;
+      rgba[o] = b.rgba[o];
+      rgba[o + 1] = b.rgba[o + 1];
+      rgba[o + 2] = b.rgba[o + 2];
+      rgba[o + 3] = 255;
+    }
   }
   return { x0: px0, y0: py0, w, h: hh, rgba };
 }

@@ -34,6 +34,7 @@ import type { ActorArt } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { paintTerrain, terrainOf } from '../art/terrain';
+import { paintStanding, standingBits, standingOf } from '../art/standing';
 import type { ClassId } from '../game/types';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
@@ -82,18 +83,27 @@ type Ask =
   | { t: 'film'; key: string; pri: number }
   | { t: 'drop'; figure: MonsterFigure }
   // ACT 1: a floor's outdoor ground (render/outdoor.ts): the floor to paint it from, then its pieces as they are wanted
-  | { t: 'ground'; id: number; floor: Floor; land: Land }
+  | { t: 'ground'; id: number; floor: Floor; land: Land; walls: number }
   | { t: 'piece'; id: number; i: number; j: number; pri: number }
   // (ACT 2, THE GATE WARD: the shells of a floor's houses walked into, a house at a time: render/act2_houses.ts)
-  | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number }
+  | { t: 'shells'; id: number; floor: Floor; land: Land; pri: number; walls?: boolean; near?: readonly [number, number] }
   // and the hero's pictures (art/heroes3.ts), in town and in a dungeon, painted ahead of need
   | { t: 'hero'; cls: ClassId; place: 'town' | 'dungeon'; pri: number };
+/** (ACT 2, behind ACT2_WALLS) A bit of the walls standing whole over a piece of the ground, as handed over (render/act2_walls.ts WallBit). */
+interface WallBitMsg {
+  d: number;
+  x0: number;
+  y0: number;
+  w: number;
+  h: number;
+  img: ImageBitmap;
+}
 /** What a worker tells the page. */
 type Tell =
   | { t: 'ready' }
   | { t: 'frames'; figure: MonsterFigure; list: Given[]; left: number }
   | { t: 'film'; key: string; film: unknown; ms: number }
-  | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number }
+  | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number; walls?: WallBitMsg[] }
   // (ACT 2, THE GATE WARD: one house's shell, or `n` -1: they could not be painted)
   | { t: 'shell'; id: number; n: number; x0: number; y0: number; w: number; h: number; bmp: ImageBitmap | null; ms: number; last: boolean }
   | { t: 'heroFrames'; cls: ClassId; place: 'town' | 'dungeon'; list: Given[]; left: number }
@@ -150,7 +160,7 @@ export class Painter {
   private groundLane: Lane | null = null;
   private ground = 0;
   private grounds = 0;
-  toGround: ((id: number, i: number, j: number, bmp: ImageBitmap, ms: number) => void) | null = null;
+  toGround: ((id: number, i: number, j: number, bmp: ImageBitmap, ms: number, walls?: WallBitMsg[]) => void) | null = null;
   /** (ACT 2, THE GATE WARD) Who is told of each house's shell as it comes (render/act2_houses.ts), for the floor of that number. */
   private toShells: { id: number; took: (n: number, sh: { x0: number; y0: number; w: number; h: number }, bmp: ImageBitmap | null) => void } | null = null;
   /**
@@ -274,11 +284,11 @@ export class Painter {
    * ACT 1: the ground of this floor is to be painted by the ground's worker: it is sent the floor (and keeps it until
    * the place is left). The floor's number, for its pieces; 0: there is no painter (the game paints the ground itself).
    */
-  groundBegin(floor: Floor, land: Land): number {
+  groundBegin(floor: Floor, land: Land, walls = 0): number {
     if (!this.warmGround()) return 0;
     this.ground = ++this.grounds;
     try {
-      this.groundLane!.worker.postMessage({ t: 'ground', id: this.ground, floor, land } satisfies Ask);
+      this.groundLane!.worker.postMessage({ t: 'ground', id: this.ground, floor, land, walls } satisfies Ask);
     } catch (err) {
       this.fail('ground', err);
       return 0;
@@ -354,10 +364,11 @@ export class Painter {
    * house at a time between the ground's pieces, each handed to `took` as it comes (`n` -1: they cannot be). False: there is no
    * ground's worker (the page paints them itself).
    */
-  shells(id: number, land: Land, floor: Floor, took: (n: number, sh: { x0: number; y0: number; w: number; h: number }, bmp: ImageBitmap | null) => void): boolean {
+  shells(id: number, land: Land, floor: Floor, took: (n: number, sh: { x0: number; y0: number; w: number; h: number }, bmp: ImageBitmap | null) => void, walls = false, near?: readonly [number, number]): boolean {
     if (!this.warmGround() || !this.groundLane) return false;
     try {
-      this.groundLane.worker.postMessage({ t: 'shells', id, floor, land, pri: 2 } satisfies Ask);
+      // (wanted at 1.5: after the ground round the screen, before the monsters' pictures; the houses nearest `near` first)
+      this.groundLane.worker.postMessage({ t: 'shells', id, floor, land, pri: 1.5, walls, near } satisfies Ask);
     } catch (err) {
       this.fail('ground', err);
       return false;
@@ -388,8 +399,11 @@ export class Painter {
     }
     if (m.t === 'piece') {
       lane.open = Math.max(0, lane.open - 1);
-      if (this.groundLane === lane && m.id === this.ground && this.toGround) this.toGround(m.id, m.i, m.j, m.bmp, m.ms);
-      else m.bmp.close();
+      if (this.groundLane === lane && m.id === this.ground && this.toGround) this.toGround(m.id, m.i, m.j, m.bmp, m.ms, m.walls);
+      else {
+        m.bmp.close();
+        for (const b of m.walls ?? []) b.img.close();
+      }
       return;
     }
     if (m.t === 'shell') {
@@ -734,22 +748,31 @@ export function paintWorkerMain(): void {
   let seq = 0;
   let going = false;
   /** ACT 1: the floor whose ground this worker paints, and its terrain (and which floor it is: ACT 2, for the Gate Ward's shells). */
-  let ground: { id: number; T: Terrain; key: string } | null = null;
+  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null } | null = null;
   const keyOf = (land: Land, floor: Floor): string => `${land.kind}:${land.depth}:${land.seed}:${floor.w}x${floor.h}`;
 
   /** (ACT 2, THE GATE WARD) A floor's houses' shells, a house a step, each handed over as it is painted (render/act2_houses.ts). */
-  function* shells(ask: { id: number; floor: Floor; land: Land }): Generator<void, void, void> {
-    const open = ground && ground.key === keyOf(ask.land, ask.floor) ? ground.T : landTerrain(ask.land, ask.floor);
-    const mk = shellMaker(gateWardLand(ask.land, ask.floor), open);
+  function* shells(ask: { id: number; floor: Floor; land: Land; walls?: boolean; near?: readonly [number, number] }): Generator<void, void, void> {
+    const open = ground && ground.key === keyOf(ask.land, ask.floor) ? ground.T : landTerrain(ask.land, ask.floor, !!ask.walls);
+    const mk = shellMaker(gateWardLand(ask.land, ask.floor, !!ask.walls), open, !!ask.walls);
     if (mk.count === 0) scope.postMessage({ t: 'shell', id: ask.id, n: -1, x0: 0, y0: 0, w: 0, h: 0, bmp: null, ms: 0, last: true });
-    for (let n = 0; n < mk.count; n++) {
+    // (the houses nearest where the hero came in first)
+    const houses = ask.land.houses ?? [];
+    const order = houses.map((_, n) => n);
+    const near = ask.near;
+    if (near) {
+      const far = (n: number): number => Math.hypot((houses[n].room[0] + houses[n].room[2]) / 2 - near[0], (houses[n].room[1] + houses[n].room[3]) / 2 - near[1]);
+      order.sort((a, b) => far(a) - far(b));
+    }
+    for (let k = 0; k < mk.count; k++) {
+      const n = order[k] ?? k;
       yield;
       const t0 = performance.now();
       const sh = mk.make(n);
       const cv = new OffscreenCanvas(sh.w, sh.h);
       (cv.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(sh.rgba, sh.w, sh.h), 0, 0);
       const bmp = cv.transferToImageBitmap();
-      scope.postMessage({ t: 'shell', id: ask.id, n, x0: sh.x0, y0: sh.y0, w: sh.w, h: sh.h, bmp, ms: performance.now() - t0, last: n === mk.count - 1 }, [bmp]);
+      scope.postMessage({ t: 'shell', id: ask.id, n, x0: sh.x0, y0: sh.y0, w: sh.w, h: sh.h, bmp, ms: performance.now() - t0, last: k === mk.count - 1 }, [bmp]);
     }
   }
   /** The heroes' pictures, made here as the page makes them (art/heroes3.ts), the first time they are asked for. */
@@ -848,7 +871,16 @@ export function paintWorkerMain(): void {
           const cv = new OffscreenCanvas(PIECE, PIECE);
           (cv.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(p.rgba, PIECE, PIECE), 0, 0);
           const bmp = cv.transferToImageBitmap();
-          scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0 }, [bmp]);
+          // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, in bits: art/standing.ts)
+          const walls: WallBitMsg[] = [];
+          if (ground.stands) {
+            for (const b of standingBits(paintStanding(ground.T, ground.stands, a.i * PIECE, a.j * PIECE, PIECE, PIECE))) {
+              const bc = new OffscreenCanvas(b.w, b.h);
+              (bc.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(b.rgba, b.w, b.h), 0, 0);
+              walls.push({ d: b.d, x0: b.x0, y0: b.y0, w: b.w, h: b.h, img: bc.transferToImageBitmap() });
+            }
+          }
+          scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0, walls }, [bmp, ...walls.map((b) => b.img)]);
         }
       } else if (job.ask.t === 'hero') {
         job.run ??= hero(job.ask.cls, job.ask.place);
@@ -882,7 +914,8 @@ export function paintWorkerMain(): void {
     if (ask.t === 'ground') {
       // (a new floor: its terrain made once here, as the page makes its own; the last floor's pieces still asked for are not wanted)
       try {
-        ground = { id: ask.id, T: landTerrain(ask.land, ask.floor), key: keyOf(ask.land, ask.floor) };
+        const T = landTerrain(ask.land, ask.floor, ask.walls > 0);
+        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands: ask.walls > 0 ? standingOf(T, ask.walls) : null };
       } catch (err) {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }

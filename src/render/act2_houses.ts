@@ -23,7 +23,7 @@
 // house a frame at most, the nearest first, after the floor's first two seconds. Until a house's shell has come it stands
 // open, as the ground has it. Never painted again on the floor, never in a fight.
 
-import { gateWardLook, gateWardPaintFloor, houseShell } from '../art/gateward';
+import { GW_RISE, gateWardLook, gateWardPaintFloor, houseShell, houseShellWhole } from '../art/gateward';
 import type { GWHouse, GateWardLand, HouseShell } from '../art/gateward';
 import { GRAIN, paintTerrain, terrainOf, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
@@ -35,11 +35,15 @@ import type { Level, PropInst } from '../game/state';
 import { spikeAt } from '../game/traps';
 import type { Floor } from '../game/types';
 import type { Painter } from './painter';
+import { wallsThick } from './act2_walls';
+import type { Hole } from './act2_walls';
 
 /** How long a house's front and roof take to fade away, and to come back, in seconds (his "about a third of a second": the art chat's film, 0.3). */
 export const SHELL_FADE = 0.33;
 /** Where there is no worker: the floor's first this many seconds are left to the ground, before a shell is painted here. */
 const SHELL_WAIT = 2;
+/** (ACT2_WALLS on) A house on the screen whose shell has not come from the worker this long after it came on the screen (seconds) is painted here. */
+const SHELL_LATE = 0.3;
 
 /** Is world (x, y) in a house walked into: its room, or its doorway (his word: in the house)? */
 export function inHouse(h: GWHouse, x: number, y: number): boolean {
@@ -58,7 +62,7 @@ export function houseDepth(h: GWHouse): number {
  * `gl`: the land as the Gate Ward's look asks it (render/outdoor.ts gateWardLand: the very same, so that the two grounds
  * differ only at the houses).
  */
-export function shellMaker(gl: GateWardLand, open: Terrain): { count: number; make(n: number): HouseShell } {
+export function shellMaker(gl: GateWardLand, open: Terrain, whole = false): { count: number; make(n: number): HouseShell } {
   const houses = gl.houses ?? [];
   let closed: Terrain | null = null;
   return {
@@ -66,6 +70,9 @@ export function shellMaker(gl: GateWardLand, open: Terrain): { count: number; ma
     make(n: number): HouseShell {
       closed ??= terrainOf(gateWardPaintFloor(gl, 'closed'), gateWardLook(gl, 'closed'));
       const h = houses[n];
+      // (ACT2_WALLS on, the walls standing whole: the house stands whole over the street behind it too, as every house does,
+      // seen through round whoever is behind it: render/act2_walls.ts)
+      if (whole) return houseShellWhole(closed, h, paintTerrain);
       const sh = houseShell(open, closed, h, paintTerrain);
       // (clear where it shows the street behind the house: there the ground cuts the house down, and the shell must not
       // cover what stands on that street; the house's own tiles, its room, doorway and front, are kept)
@@ -105,6 +112,11 @@ export class HouseShells {
   private id = 0;
   private here = false;
   private maker: { count: number; make(n: number): HouseShell } | null = null;
+  /** (ACT2_WALLS on) The houses stand whole over the street behind them, seen through round whoever is behind them. */
+  private whole = false;
+  /** (ACT2_WALLS on) When each house without its shell came on the screen; and whether this is the floor's first frame. */
+  private seenAt = new Map<number, number>();
+  private firstFrame = false;
   private since = 0;
   private lastT = -1;
   /** For the tests and measuring: shells come, from the worker and painted here, and the time it took here. */
@@ -118,12 +130,15 @@ export class HouseShells {
    * shells asked of the ground's worker, or (none) painted here. `gl` and `open`: its land as its look asks it, and its ground's
    * terrain (render/outdoor.ts), for painting here.
    */
-  begin(land: Land | null, floor: Floor, gl: (() => GateWardLand) | null, open: Terrain | null, t: number): void {
+  begin(land: Land | null, floor: Floor, gl: (() => GateWardLand) | null, open: Terrain | null, t: number, near?: readonly [number, number]): void {
     if (land !== this.land) {
       // (the last floor's let go of)
       for (const s of this.shells) if (s && 'close' in s.img) (s.img as unknown as ImageBitmap).close();
       this.land = land;
       this.houses = land && land.kind === 'gateward' ? land.houses ?? [] : [];
+      this.whole = !!land && wallsThick(land) > 0;
+      this.seenAt.clear();
+      this.firstFrame = true;
       this.shells = this.houses.map(() => null);
       this.shown = this.houses.map(() => 1);
       this.maker = null;
@@ -134,7 +149,7 @@ export class HouseShells {
       if (!this.houses.length || !land) return;
       const p = this.painterOf();
       const id = ++HouseShells.ids;
-      if (p && p.state === 'on' && p.shells(id, land, floor, (n, sh, bmp) => this.took(id, n, sh, bmp))) this.id = id;
+      if (p && p.state === 'on' && p.shells(id, land, floor, (n, sh, bmp) => this.took(id, n, sh, bmp), this.whole, near)) this.id = id;
       else this.here = true;
     }
     if (!this.houses.length) return;
@@ -175,9 +190,47 @@ export class HouseShells {
         best = n;
       }
     });
+    if (best >= 0) this.paintN(gl, open, best);
+  }
+
+  /**
+   * (ACT2_WALLS on) THE HOUSES ON THE SCREEN, WHOLE AT ONCE: a house walked into stands open (its front cut down, its room seen)
+   * until its shell comes, and the worker paints them after the ground round the screen. So one on the screen without its
+   * shell is painted here: every one on the floor's first frame, and after that one a frame, once it has been on the screen
+   * SHELL_LATE without it. (cam: the screen's origin in game pixels; W, H its size.)
+   */
+  ensure(gl: (() => GateWardLand) | null, open: Terrain | null, camOx: number, camOy: number, W: number, H: number, t: number): void {
+    const first = this.firstFrame;
+    this.firstFrame = false;
+    if (!this.whole || !gl || !open || !this.houses.length) return;
+    let done = false;
+    this.houses.forEach((h, n) => {
+      if (this.shells[n]) return;
+      const [rx0, ry0, rx1, ry1] = h.room;
+      const x1 = h.front.along === 'y' ? Math.max(rx1, h.front.at + 1) : rx1;
+      const y1 = h.front.along === 'x' ? Math.max(ry1, h.front.at + 1) : ry1;
+      const sx0 = camOx + (rx0 - y1) * 16;
+      const sx1 = camOx + (x1 - ry0) * 16;
+      const sy0 = camOy + (rx0 + ry0) * 8 - GW_RISE / 2;
+      const sy1 = camOy + (x1 + y1) * 8;
+      if (sx1 < 0 || sx0 > W || sy1 < 0 || sy0 > H) {
+        this.seenAt.delete(n);
+        return;
+      }
+      const since = this.seenAt.get(n) ?? t;
+      this.seenAt.set(n, since);
+      if (first || (!done && t - since > SHELL_LATE)) {
+        done = true;
+        this.paintN(gl, open, n);
+      }
+    });
+  }
+
+  /** One house's shell, painted here. */
+  private paintN(gl: () => GateWardLand, open: Terrain, best: number): void {
     if (best < 0 || typeof document === 'undefined') return;
     const t0 = performance.now();
-    this.maker ??= shellMaker(gl(), open);
+    this.maker ??= shellMaker(gl(), open, this.whole);
     const sh = this.maker.make(best);
     const cvs = document.createElement('canvas');
     cvs.width = sh.w;
@@ -208,7 +261,16 @@ export class HouseShells {
    * and back while he is not; whatever stands in a house put just before the house's depth, keeping its order there; each shell
    * that shows stood at that depth (`stand`: the renderer's own, with the shell's strength).
    */
-  lay(stands: StandLike[], camOx: number, camOy: number, hx: number, hy: number, t: number, stand: (d: number, s: Sprite, x: number, y: number, alpha: number) => void): void {
+  lay(
+    stands: StandLike[],
+    camOx: number,
+    camOy: number,
+    hx: number,
+    hy: number,
+    t: number,
+    stand: (d: number, s: Sprite, x: number, y: number, alpha: number, holes: Hole[] | null) => void,
+    holesOf: ((key: string, d: number, x: number, y: number, w: number, h: number) => Hole[] | null) | null = null,
+  ): void {
     this.hero = { x: hx, y: hy };
     if (!this.houses.length) return;
     const dt = Math.max(0, Math.min(1, t - this.lastT));
@@ -237,7 +299,10 @@ export class HouseShells {
     this.houses.forEach((h, n) => {
       const s = this.shells[n];
       if (!s || this.shown[n] <= 0.01) return;
-      stand(houseDepth(h), s, camOx, camOy, this.shown[n]);
+      // (ACT2_WALLS on: standing whole over the street behind it, it is seen through round whoever is behind it)
+      const D = houseDepth(h);
+      const holes = this.whole && holesOf ? holesOf(`house ${n}`, D, camOx - s.ax, camOy - s.ay, s.w, s.h) : null;
+      stand(D, s, camOx, camOy, this.shown[n], holes);
     });
   }
 

@@ -66,6 +66,9 @@ import { FloorPieces } from './pieces';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
 import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
+// (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them; behind ACT2_WALLS, off)
+import { HERO_WINDOW, WINDOW_FAINT, WallWindows, drawHoled, wallsThick } from './act2_walls';
+import type { Hole, Window as WallWindow } from './act2_walls';
 // (ACT 2, THE GATE WARD: its houses walked into, whole until he is in one, and its traps by their beat)
 import { HouseShells, trapSprite } from './act2_houses';
 import { Act1Pieces, SEE_TALL } from './act1_pieces';
@@ -189,6 +192,8 @@ interface Stand {
   clip0?: number;
   clip1?: number;
   skip?: boolean;
+  /** (ACT 2, behind ACT2_WALLS: render/act2_walls.ts) a bit of a wall standing whole, seen through round whoever is behind it: where, and how far. */
+  holes?: Hole[];
 }
 
 /** (render/tops_cache.ts) How long a frame may spend making the forest's pictures (ms); one is made a frame at least. */
@@ -2111,7 +2116,9 @@ export class Renderer {
       if (this.act1Dressed) this.act1.floorTiles(g, this.floorAt, W, H);
     }
     // (ACT 2, THE GATE WARD: its houses' shells asked for once a floor, or painted here where there is no worker)
-    this.houses.begin(land && !hallNow ? land : null, f, land ? () => gateWardLand(land, f) : null, this.outdoor.terrain(), t);
+    this.houses.begin(land && !hallNow ? land : null, f, land ? () => gateWardLand(land, f, wallsThick(land) > 0) : null, this.outdoor.terrain(), t, [h.x, h.y]);
+    // (ACT2_WALLS on: the houses on the screen whole at once, their shells painted here when the worker has not sent them)
+    if (land && !hallNow) this.houses.ensure(() => gateWardLand(land, f, true), this.outdoor.terrain(), cam.ox, cam.oy, W, H, t);
 
     // ---- floor, and collect walls -------------------------------------------------------------
     this.pitTiles.length = 0;
@@ -2752,8 +2759,25 @@ export class Renderer {
 
     // (THE FOREST AS A FEW PICTURES: a chunk that something comes between, or that is seen through, drawn as its trees after all)
     this.resolveTops();
+    // (ACT 2, behind ACT2_WALLS: who is seen through the walls standing whole, where: the hero, and the monsters in sight)
+    const wins = this.openGround ? this.wallWins(game) : [];
+    this.wallWindows.begin();
     // (ACT 2, THE GATE WARD: each house walked into whole over what stands in it, under what stands outside, faded while he is in it)
-    this.houses.lay(stands, cam.ox, cam.oy, h.x, h.y, t, (d, s, x, y, a) => this.stand(d, s, x, y, null, 0, 1, a));
+    this.houses.lay(
+      stands,
+      cam.ox,
+      cam.oy,
+      h.x,
+      h.y,
+      t,
+      (d, s, x, y, a, holes) => {
+        this.stand(d, s, x, y, null, 0, 1, a);
+        if (holes) this.stands[this.stands.length - 1].holes = holes;
+      },
+      (key, d, x, y, w, hh) => this.wallWindows.holesOf(key, d, x, y, w, hh, wins, t),
+    );
+    // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole among what stands, seen through round whoever is behind them)
+    if (this.openGround) this.layWalls(wins, W, H, t);
     stands.sort((a, b) => a.d - b.d || a.q - b.q);
     fx.heroShape = null;
     let cut = false;
@@ -2776,6 +2800,12 @@ export class Renderer {
         cut = true;
       }
       if (st.alpha !== 1) g.globalAlpha = Math.max(0, st.alpha);
+      // (ACT 2: a bit of a wall standing whole, seen through round whoever is behind it)
+      if (st.holes) {
+        drawHoled(g, s.img as HTMLCanvasElement, st.x - s.ax, st.y - s.ay, s.w, s.h, st.holes, WINDOW_FAINT);
+        g.globalAlpha = 1;
+        continue;
+      }
       // (a tree of a chunk drawn as its trees: only what of it is in the chunk's column, the rest being in its neighbours' pictures)
       if (st.clip0 !== undefined && st.clip1 !== undefined) {
         const left = st.x - s.ax;
@@ -3264,6 +3294,38 @@ export class Renderer {
   }
   /** (ACT 1) The monsters in sight this frame, where their feet are on the screen (for what is seen through). */
   private seenFoes: { x: number; y: number; d: number }[] = [];
+
+  /** (ACT 2, behind ACT2_WALLS) Which bits of the walls standing whole are seen through, and how far. */
+  private readonly wallWindows = new WallWindows();
+  /**
+   * (ACT 2, behind ACT2_WALLS) THE WALLS TOWARD THE EYE STANDING WHOLE (render/act2_walls.ts): each bit over the screen stood at
+   * its tiles' depth, as a wall tile is; where the hero or a monster in sight is behind one, a window cut in it round them.
+   */
+  private wallWins(game: Game): WallWindow[] {
+    const cam = this.cam;
+    const wins: WallWindow[] = [];
+    const h = game.hero;
+    wins.push({ x: wx(cam, h.x, h.y), y: wy(cam, h.x, h.y) - HERO_WINDOW.up, rx: HERO_WINDOW.rx, ry: HERO_WINDOW.ry, d: h.x + h.y });
+    for (const m of game.monsters) {
+      if (m.dead || !m.seen) continue;
+      // (a window as big as the monster: a man's for most, more for the great ones)
+      const rx = Math.min(70, 22 + 26 * m.r);
+      const ry = rx * 1.3;
+      wins.push({ x: wx(cam, m.x, m.y), y: wy(cam, m.x, m.y) - ry * 0.45, rx, ry, d: m.x + m.y });
+    }
+    return wins;
+  }
+  private layWalls(wins: readonly WallWindow[], W: number, H: number, t: number): void {
+    const cam = this.cam;
+    this.outdoor.wallBits(cam, W, H, (b, x, y, key) => {
+      const w = b.w / 2;
+      const hh = b.h / 2;
+      if (x > W || y > H || x + w < 0 || y + hh < 0) return;
+      const holes = this.wallWindows.holesOf(key, b.d, x, y, w, hh, wins, t);
+      this.stand(b.d, { img: b.img as HTMLCanvasElement, w, h: hh, ax: 0, ay: 0 }, x, y);
+      if (holes) this.stands[this.stands.length - 1].holes = holes;
+    });
+  }
 
   /** (ACT 1) What stands on the tops, for the ground's pieces on and round the screen. */
   private standTops(W: number, H: number, heroX: number, heroY: number, L: Game['level']): void {
