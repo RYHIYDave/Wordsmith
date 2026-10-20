@@ -5,10 +5,13 @@
 //   node tools/preview.mjs src/dev/preview_dredgers.ts shots/dr_game.png 1014 468 game
 //   node tools/preview.mjs src/dev/preview_dredgers.ts shots/dr_close.png 1400 900 close:<move>:<seconds>:<scale>
 //   node tools/page_gif.mjs src/dev/preview_dredgers.ts "film:<move>[:<scale>]" previews/dredgers/<move>.gif
-//     a film facing you (left) and away (right): stand, walk, attack, reel, die
+//     a film facing you (left) and away (right): stand, walk, attack, net, reel, die
+//   node tools/page_gif.mjs src/dev/preview_dredgers.ts "shots" previews/dredgers/net_shots.gif
+//     the cast net (their second blow) flying and falling on the floor (art/dredger_shots.ts), twice the game's size
 
 import { UC_ZONE, undercityLook } from '../art/undercity';
-import { DREDGER } from '../art/dredgers_moves';
+import { DREDGER, DR_NET, netLetGo } from '../art/dredgers_moves';
+import { NET_FLIES, NET_LIES, drawNetFlying, drawNetLying, drawNetWarn, netFrom, netSpot } from '../art/dredger_shots';
 import { WATCHMAN } from '../art/hushed_watch_moves';
 import { ratFrame } from '../art/rats';
 import { spriteOf3 } from '../art/heroes3';
@@ -145,6 +148,79 @@ if (mode === 'sheet') {
   for (const [sp, x, y, sh] of all) figure(sp, x, y, 1, sh);
   label('The Order\'s dredgers with the King\'s rats, at the game\'s size', 10, 8);
   show();
+} else if (mode === 'shots') {
+  const mob = DREDGER;
+  // the cast net thrown, flying and falling on the floor, twice the game's size
+  const S = 2;
+  const FPS = 30;
+  cv.width = 1014;
+  cv.height = 640;
+  const gw = Math.ceil(cv.width / S);
+  const gh = Math.ceil((cv.height - 40) / S);
+  const [cx, cy] = pictureOf(15, 15);
+  const ox = Math.round(cx - gw / 2);
+  const oy = Math.round(cy - gh / 2);
+  const ground = paintTerrain(T, ox, oy, gw, gh);
+  const off = document.createElement('canvas');
+  off.width = gw;
+  off.height = gh;
+  const P2 = off.getContext('2d') as CanvasRenderingContext2D;
+  P2.imageSmoothingEnabled = false;
+  const gameC = document.createElement('canvas');
+  gameC.width = Math.ceil(gw / 2);
+  gameC.height = Math.ceil(gh / 2);
+  const o = gameC.getContext('2d') as CanvasRenderingContext2D;
+  const atP = (x: number, y: number): readonly [number, number] => {
+    const [px, py] = pictureOf(x, y);
+    return [px - ox, py - oy];
+  };
+  const at = (x: number, y: number): [number, number] => {
+    const [px, py] = atP(x, y);
+    return [px / 2, py / 2];
+  };
+  const put = (sp: Sprite, x: number, y: number): void => {
+    const [sx, sy] = atP(x, y);
+    P2.fillStyle = 'rgba(14,10,24,0.45)';
+    P2.beginPath();
+    P2.ellipse(sx, sy, 24, 11, 0, 0, Math.PI * 2);
+    P2.fill();
+    P2.drawImage(sp.img, Math.round(sx - sp.ax * 2), Math.round(sy - sp.ay * 2), sp.img.width, sp.img.height);
+  };
+  const X0 = 12.8;
+  const Y0 = 14.4;
+  const long = DR_NET.long;
+  const TICKS = Math.round((0.5 + long + 0.6) * FPS);
+  const [nx, ny] = netSpot(X0, Y0, 1, 0);
+  const from = netFrom(X0, Y0, 1, 0, netLetGo());
+  const fell = DR_NET.hit + NET_FLIES;
+  const draw = (tick: number): void => {
+    const t = tick / FPS;
+    const m = t - 0.5;
+    P2.putImageData(new ImageData(ground.rgba, gw, gh), 0, 0);
+    o.clearRect(0, 0, gameC.width, gameC.height);
+    const w0 = DR_NET.warn[0];
+    if (m >= w0 && m < fell) drawNetWarn(o, at, nx, ny, Math.min(1, (m - w0) / (fell - w0)), m);
+    if (m >= fell) drawNetLying(o, at, nx, ny, m - fell);
+    P2.drawImage(gameC, 0, 0, gameC.width * 2, gameC.height * 2);
+    put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, 'net', m, 'front'), X0, Y0);
+    // (the net in the air over the floor and them: drawn after)
+    o.clearRect(0, 0, gameC.width, gameC.height);
+    if (m >= DR_NET.hit && m < fell) drawNetFlying(o, at, from, nx, ny, m - DR_NET.hit);
+    P2.drawImage(gameC, 0, 0, gameC.width * 2, gameC.height * 2);
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, cv.width, cv.height);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(off, 0, 40, gw * S, gh * S);
+    label(`The cast net on the floor (twice the game's size): ${Math.max(0, m).toFixed(2)} s; it lies ${NET_LIES} s here`, 10, 8);
+  };
+  draw(0);
+  win.__frames = TICKS;
+  win.__tickMs = 1000 / FPS;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cv.toDataURL('image/png');
+  };
+  show();
 } else if (mode === 'film') {
   // facing you (left) and away (right): its stand twice round, its wade, or a move between stands
   const which = parts[1] || 'stand';
@@ -152,7 +228,11 @@ if (mode === 'sheet') {
   const FPS = 30;
   const mob = DREDGER;
   const walkLong = mob.walkFrames / mob.walkFps;
-  const LONG = which === 'stand' ? (2 * mob.idleFrames) / mob.idleFps : which === 'walk' ? 3 * walkLong : 0.5 + (which === 'die' ? mob.dieTime + 1 : which === 'attack' ? mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at + 0.6 : 1.2);
+  const moveLong = (w: string): number => {
+    const mv = w === 'attack' ? mob.attack : (mob.more ?? {})[w];
+    return mv ? mv.motion.keys[mv.motion.keys.length - 1].at + 0.6 : 1.2;
+  };
+  const LONG = which === 'stand' ? (2 * mob.idleFrames) / mob.idleFps : which === 'walk' ? 3 * walkLong : 0.5 + (which === 'die' ? mob.dieTime + 1 : moveLong(which));
   const TICKS = Math.round(LONG * FPS);
   const at = (t: number, view: GameView): Sprite => {
     if (which === 'stand') return spOf(mob, 'stand', (Math.floor(t * mob.idleFps) % mob.idleFrames) / mob.idleFps, view);

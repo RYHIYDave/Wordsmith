@@ -27,7 +27,9 @@ import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
 import { DREDGER_CANVAS, DREDGERS_ON } from '../src/art/dredgers';
-import { DREDGER, DR_DIES, DR_HAUL, DR_SHAPE } from '../src/art/dredgers_moves';
+import { DREDGER, DR_DIES, DR_HAUL, DR_NET, DR_SHAPE, NET_WHIRL, netLetGo } from '../src/art/dredgers_moves';
+import { NET_FLIES, NET_LIES, NET_R, NET_REACH, drawNetFlying, drawNetLying, drawNetWarn, netFrom, netSpot } from '../src/art/dredger_shots';
+import { poleOf } from '../src/art/dredgers';
 import { FIG as FIG_DR } from '../src/art/act1_figs/dredger';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
@@ -107,7 +109,7 @@ test('1. in the game through art/act1_figs/dredger.ts alone, their switch thrown
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover, both of them', () => {
   for (const mob of ALL) {
-    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying');
+    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying,net');
     const found = checkBoss(mob, DR_SHAPE);
     assert.equal(found.length, 0, `${mob.name}: ${findingsSaid(found).slice(0, 12).join('; ')}`);
   }
@@ -294,6 +296,91 @@ test('8. what falls from them as they die, the boathook and the creel\'s lid, li
         assert.ok(mine > 800 && theirs > 150, `${mob.name} ${view} @${k.toFixed(2)}: ${mine} pixels of him, ${theirs} of what fell`);
         assert.equal(both, 0, `${mob.name} ${view} @${k.toFixed(2)}: what fell from him lies over him or under him by ${both} pixels`);
       }
+    }
+  }
+});
+
+test('9. THE CAST NET (their second blow): the net in the left hand from the creel until it is let go, its weights glinting pink; whirled round at their side through the warning; heaved out forward and up; the boathook leaned on, its butt on the floor where it stood; the net\'s marks on the floor only in their time, where it falls, nothing cyan', () => {
+  const mob = DREDGER;
+  const st = stageOf(mob);
+  const nets = (t: number): Bit[] => mob.bits(st, at(mob, 'net', t)).filter((b) => b.part === 'net');
+  // (in the hand from the creel until it is let go, and only then; its weights pink through the warning)
+  for (const t of framesOf(mob, 'net')) {
+    const n = nets(t);
+    const held = t >= DR_NET.grip && t < DR_NET.hit;
+    assert.equal(n.length > 0, held, `@${t.toFixed(2)}: ${n.length} bits of the net`);
+    if (t >= DR_NET.warn[0] && held) assert.ok(n.some((b) => b.shape.k === 'ball' && typeof b.shape.skin === 'function' && FLAME.includes(b.shape.skin([0, 0, 1], 2, 0, 0) ?? '')), `@${t.toFixed(2)}: its weights not pink in the warning`);
+  }
+  // (whirled round at their side, the hand going forward at the bottom of it: more than a turn and a half)
+  let turned = 0;
+  let was: number | null = null;
+  for (let t = DR_NET.whirl[0]; t <= DR_NET.whirl[1] + 1e-9; t += 1 / 30) {
+    const s = at(mob, 'net', t).s;
+    // (round the middle of its circle, at their side: from the shoulder, along the figure's own forward and up)
+    const a = Math.atan2(s.handL[2] - s.shoulderL[2] - NET_WHIRL.c[2], s.handL[0] - s.shoulderL[0] - NET_WHIRL.c[0]);
+    if (was !== null) turned += ((a - was + 3 * Math.PI) % (2 * Math.PI)) - Math.PI;
+    was = a;
+    assert.ok(s.handL[1] > s.shoulderL[1] + 2, `@${t.toFixed(2)}: the hand not out at their side as it whirls`);
+  }
+  assert.ok(turned > 1.5 * Math.PI, `whirled ${((turned * 180) / Math.PI).toFixed(0)} degrees round (forward at the bottom) through the warning`);
+  // (let go of going forward and up, fast)
+  const h0 = at(mob, 'net', DR_NET.hit - 1 / 30).s.handL;
+  const h1 = at(mob, 'net', DR_NET.hit + 1 / 30).s.handL;
+  assert.ok(h1[0] - h0[0] > 12 && h1[2] - h0[2] > 4, `let go of going (${(h1[0] - h0[0]).toFixed(1)}, ${(h1[2] - h0[2]).toFixed(1)}) forward and up over two frames`);
+  const from = netLetGo();
+  assert.ok(from[0] > 10 && from[2] > 12, `let go of at (${from.map((v) => v.toFixed(1)).join(', ')})`);
+  // (the boathook leaned on all through it: its butt on the floor where it stood)
+  const b0 = poleOf(at(mob, 'stand', 0).s, at(mob, 'stand', 0).q).butt;
+  for (const t of framesOf(mob, 'net')) {
+    const { s, q } = at(mob, 'net', t);
+    const b = poleOf(s, q).butt;
+    assert.ok(Math.hypot(b[0] - b0[0], b[1] - b0[1]) < 0.6 && b[2] > -0.2 && b[2] < 1.2, `@${t.toFixed(2)}: the boathook's butt at (${b.map((v) => v.toFixed(1)).join(', ')}), from (${b0.map((v) => v.toFixed(1)).join(', ')})`);
+  }
+  // its marks on the floor (dredger_shots.ts): where it falls, in their time, nothing cyan
+  const dots: { x: number; y: number; c: string }[] = [];
+  const pen = { globalAlpha: 1, fillStyle: '' };
+  const g = { ...pen, fillRect(x: number, y: number) { dots.push({ x, y, c: (g as unknown as typeof pen).fillStyle }); } } as unknown as CanvasRenderingContext2D;
+  const atF = (x: number, y: number): [number, number] => [200 + (x - y) * 16, 120 + (x + y) * 8];
+  const [nx, ny] = netSpot(0, 0, 1, 0);
+  assert.equal(`${nx},${ny}`, `${NET_REACH},0`);
+  const [sx, sy] = atF(nx, ny);
+  const onIt = (d: { x: number; y: number }, r: number, up = 0): boolean => Math.abs(d.x - sx) <= r * 32 + 2 && d.y <= sy + r * 16 + 2 && d.y >= sy - r * 16 - 2 - up;
+  for (let i = 1; i <= 20; i++) {
+    dots.length = 0;
+    drawNetWarn(g, atF, nx, ny, i / 20, i / 20);
+    if (i >= 4) assert.ok(dots.length > 0, `warning @${(i / 20).toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the warning in cyan, ${d.c}`);
+      assert.ok(onIt(d, NET_R + 0.05), `warning @${(i / 20).toFixed(2)}: drawn at (${d.x - sx}, ${d.y - sy}), off where it falls`);
+    }
+  }
+  dots.length = 0;
+  drawNetWarn(g, atF, nx, ny, 0, 0);
+  drawNetWarn(g, atF, nx, ny, 1.01, 0);
+  drawNetFlying(g, atF, netFrom(0, 0, 1, 0, from), nx, ny, -0.01);
+  drawNetFlying(g, atF, netFrom(0, 0, 1, 0, from), nx, ny, NET_FLIES);
+  drawNetLying(g, atF, nx, ny, -0.01);
+  drawNetLying(g, atF, nx, ny, NET_LIES + 0.3);
+  assert.equal(dots.length, 0, 'drawn outside its time');
+  const f = netFrom(0, 0, 1, 0, from);
+  const [fx, fy] = atF(f[0], f[1]);
+  for (let t = 0; t < NET_FLIES; t += 1 / 30) {
+    dots.length = 0;
+    drawNetFlying(g, atF, f, nx, ny, t);
+    assert.ok(dots.length > 0, `flying @${t.toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the net in flight in cyan, ${d.c}`);
+      // (between where it is let go of and where it falls, and over them, no higher than its arc)
+      assert.ok(d.x >= Math.min(fx, sx - NET_R * 32) - 7 && d.x <= Math.max(fx, sx + NET_R * 32) + 7 && d.y >= Math.min(fy, sy - NET_R * 16) - f[2] - 30 && d.y <= Math.max(fy, sy + NET_R * 16) + 6, `flying @${t.toFixed(2)}: drawn at (${d.x - sx}, ${d.y - sy})`);
+    }
+  }
+  for (let t = 0; t < NET_LIES + 0.3; t += 1 / 30) {
+    dots.length = 0;
+    drawNetLying(g, atF, nx, ny, t);
+    assert.ok(dots.length > 0, `lying @${t.toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the net lying in cyan, ${d.c}`);
+      assert.ok(onIt(d, NET_R * 1.4, 10), `lying @${t.toFixed(2)}: drawn at (${d.x - sx}, ${d.y - sy}), off where it fell`);
     }
   }
 });

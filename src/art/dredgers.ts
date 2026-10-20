@@ -272,8 +272,58 @@ function boathook(put: Put, s: Skeleton, q: { draw: number }, glint: number): vo
   if (glint > 0.05) put('glint', 'boathook', { k: 'glow', p: h.hook, c: FLAME[1], r: 6 + 6 * glint, a: 0.5 * glint });
 }
 
+/** THE CAST NET in their left hand (their second blow): which way it hangs from the fist (their forward, left and up) and how far it is flung open (0 hanging slack, 1 flung wide as it whirls). */
+export interface NetHeld {
+  hang: V3;
+  flare: number;
+}
+/** How long the net hangs from the fist to its hem (the figure's lengths). */
+export const NET_LONG = 15;
+/** The net as it hangs from the fist: its top (gathered in the fist), its middle, the middle of its hem, the hem's points (where the weights are). */
+export function netHung(s: Skeleton, h: NetHeld): { top: V3; mid: V3; hem: V3; rim: V3[]; r: number } {
+  const fore = norm(sub(s.handL, s.elbowL), [0, 0, -1]);
+  const top = add(s.handL, mul(fore, 1.2));
+  const a = norm(h.hang, [0, 0, -1]);
+  const hem = add(top, mul(a, NET_LONG * (1 - 0.22 * h.flare)));
+  let u = cross(a, [0, 0, 1]);
+  if (len(u) < 0.2) u = cross(a, [1, 0, 0]);
+  u = norm(u);
+  const v = cross(a, u);
+  const r = 2.6 + 5.0 * h.flare;
+  const rim: V3[] = [];
+  for (let i = 0; i < NET_WEIGHTS; i++) {
+    const t = (i / NET_WEIGHTS) * Math.PI * 2;
+    rim.push(add(hem, add(mul(u, r * Math.cos(t)), mul(v, r * Math.sin(t)))));
+  }
+  return { top, mid: lerp3(top, hem, 0.5), hem, rim, r };
+}
+const NET_WEIGHTS = 8;
+/** The net's cord, tarred; its knots paler; its lead weights. */
+const CORD: Ramp = ['#140f0a', '#2a2016', '#4a3a26', '#6a5538', '#8a7350'];
+const LEAD: Ramp = ['#1c1c22', '#1c1c22', '#3c3e48', '#5a5e6a', '#8a8e9a'];
+/** THE CAST NET hanging from the left fist: gathered at the top in the fist, its cords running down to a hem of lead weights, rings of mesh across them; flung open in a bell as it whirls; its weights glinting pink as they ready it. */
+function netCast(put: Put, s: Skeleton, h: NetHeld, glint: number): void {
+  const { top, hem, rim } = netHung(s, h);
+  put('net', 'net', { k: 'ball', c: top, ax: sphere(1.7), skin: CORD });
+  const at = (i: number, k: number): V3 => {
+    // (each cord bellies out a little between the fist and the hem)
+    const p = lerp3(top, rim[i % NET_WEIGHTS], k);
+    const out = sub(rim[i % NET_WEIGHTS], hem);
+    return add(p, mul(out, 0.18 * Math.sin(Math.PI * k) * (1 - k)));
+  };
+  for (let i = 0; i < NET_WEIGHTS; i++) {
+    put('net', 'net', { k: 'rod', a: top, b: at(i, 0.5), ra: 0.45, rb: 0.4, ramp: CORD });
+    put('net', 'net', { k: 'rod', a: at(i, 0.5), b: at(i, 1), ra: 0.4, rb: 0.4, ramp: CORD });
+    // (the mesh: rings of cord across them, and the hem)
+    for (const k of [0.38, 0.7, 1]) put('net', 'net', { k: 'rod', a: at(i, k), b: at(i + 1, k), ra: 0.32, rb: 0.32, ramp: CORD });
+    put('net', 'net', { k: 'rod', a: at(i, 0.54), b: at(i + 1, 0.86), ra: 0.26, rb: 0.26, ramp: CORD });
+    put('net', 'net', { k: 'ball', c: rim[i], ax: sphere(0.95), skin: glint > 0.3 ? (_u, tone) => FLAME[Math.min(4, tone + (i % 2))] : LEAD });
+  }
+  if (glint > 0.05) put('net', 'glint', { k: 'glow', p: hem, c: FLAME[1], r: 7 + 7 * glint, a: 0.4 * glint });
+}
+
 /** Where the creel sits on their back: its middle, and its forward, left and up (the chest's). */
-function creelOf(s: Skeleton): { c: V3; f: V3; l: V3; u: V3; mouth: V3 } {
+export function creelOf(s: Skeleton): { c: V3; f: V3; l: V3; u: V3; mouth: V3 } {
   const [cf, cl, cu] = s.chest;
   const c = add(add(s.ribs, mul(cf, -(DB.ribDeep + 2.2 + 3.6))), mul(cu, 0.8));
   return { c, f: cf, l: cl, u: cu, mouth: add(c, mul(cu, 7.2)) };
@@ -377,6 +427,8 @@ export interface DredgerSay {
   burstAt: number;
   pour: (t: number) => number;
   freed: (t: number) => number;
+  /** (their second blow, the cast net) How the net hangs in their left hand at this moment, if it is there (its weights glinting then, not the hook). */
+  net?: (m: Moment) => NetHeld | null;
 }
 
 /** THE DREDGERS AS SOLIDS: waders, oilskin coat and belt, gauntlets; the hood and the blank mask; the creel and its jars; the boathook while it is theirs. */
@@ -409,7 +461,9 @@ function dredgerBits(st: Stage, m: Moment, say: DredgerSay): Bit[] {
   put('neck', 'neck', { k: 'rod', a: add(s.neck, mul(cu, -1.5)), b: lerp3(s.neck, s.head, 0.5), ra: 2.9, rb: 2.6, ramp: ROBE });
   head(put, st, s, lit, lag);
   creel(put, s, burst, m.t);
-  if (!m.bare) boathook(put, s, q, clamp01(m.glint));
+  const net = say.net?.(m) ?? null;
+  if (!m.bare) boathook(put, s, q, net ? 0 : clamp01(m.glint));
+  if (net) netCast(put, s, net, clamp01(m.glint));
   // (alive, and dying until the jars burst: a thread off the jars now and then; once burst, the rush, until it is spent)
   if (burst <= 0) leaking(grains, s, m.t);
   else pouring(grains, s, m.t, clamp01(say.pour(m.t)), clamp01(say.freed(m.t)), m.t - say.burstAt);
