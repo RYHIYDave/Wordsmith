@@ -150,6 +150,8 @@ export const RULES: Act1Rules | null = {
 
   spawned(R, m) {
     m.a1 = { bed: 0 };
+    // (ACT 2, THE BELLS: one the Hush raises comes up awake and at him: none lies down, Game.risingInHush)
+    if (R.g.risingInHush) return;
     // (a bed near where it was laid, if there is one free: it lies in it)
     const bed = freeBeds(R, m.x, m.y, PATIENT.bed.near, m)[0];
     if (bed) lieIn(R, m, bed);

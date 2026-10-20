@@ -160,7 +160,7 @@ test('the switch is on in the game, the pictures with it; switched off, no monst
 });
 
 /** (ACT 2, THE HUSH) Its medium kinds the art drew with one attack, a second waiting on its picture (docs/act2_build.md, "Not done yet"). */
-const ACT2_ONE_MOVE: ReadonlySet<MonsterKind> = new Set<MonsterKind>(['watch', 'dredger', 'orderly', 'bookwarden']);
+const ACT2_ONE_MOVE: ReadonlySet<MonsterKind> = new Set<MonsterKind>(['watch', 'dredger', 'carter', 'orderly', 'bookwarden']);
 
 test('his rules: tiny and small one attack, medium two, large two or three, the boss four; a basic blow first; the bigger the hit, the longer the cooldown', () => {
   useMonsterAttacks(true);
@@ -199,8 +199,8 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       const n = kind === 'eye' ? Math.max(...[0, 1, 2].map((p) => chosenIds.filter((id) => EYE_PHASE_OF[id]?.includes(p)).length)) : acts ? chosenIds.length : moves ? moves.length : 1;
       const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
       const what = `${kind}${champion ? ' (a guardian: the red troll)' : ''}, ${size}`;
-      // (ACT 2, THE HUSH: four of its medium kinds have one attack, as the art chat drew them: the Hushed watch, the dredgers,
-      // the orderlies and the Bookwardens; a second each waits on its picture. Behind ACT2, off, none of them is in the game:
+      // (ACT 2, THE HUSH: its five medium kinds have one attack each, as the art chat drew them: the Hushed watch, the dredgers,
+      // the night carters, the orderlies and the Bookwardens; a second each waits on its picture. Behind ACT2, off, none of them is in the game:
       // with it on, his rule holds them as it holds every other)
       const waiting = !ACT2.on && size === 'medium' && n === 1 && ACT2_ONE_MOVE.has(kind);
       assert.ok(waiting || (n >= want[size][0] && n <= want[size][1] + leads), `${what}: ${n} attacks (his rule: ${want[size].join(' to ')}${leads ? ', and one more for a leader' : ''})`);

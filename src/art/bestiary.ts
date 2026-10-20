@@ -104,6 +104,7 @@ useFirstFive(BOSSES5.on, CULT.on);
  * mock-up nothing of the game used) go on and off with the descent (art/act1_figs/).
  */
 export function useAct1Figs(on: boolean): void {
+  // (ACT 2, THE HUSH: its kinds' too, with the others', as their tests hold: nothing of the game reads them, ACT2 is what keeps them out)
   for (const f of Object.values(ACT1_FIGS)) for (const sw of f?.switches ?? []) sw.on = on;
 }
 useAct1Figs(ACT1.on);

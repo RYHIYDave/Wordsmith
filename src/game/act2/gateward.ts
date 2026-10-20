@@ -933,7 +933,8 @@ export function dress(L: Level, depth: number, seed: number): Act1Dress | null {
       const tx = Math.floor(b.x);
       const ty = Math.floor(b.y);
       if (k === 'door') {
-        if (!onWall(GW_NAMES.door, tx, ty, 0)) put(GW_NAMES.door, tx, ty, false, 0);
+        // (no wall there to hang it on: a wayside shrine's bell stands in its place, a bell as the contract has it)
+        if (!onWall(GW_NAMES.door, tx, ty, 0)) put(GW_NAMES.shrine, tx, ty, true, 0);
       } else put(k === 'shrine' ? GW_NAMES.shrine : GW_NAMES.watch, tx, ty, true, 0);
     });
   }

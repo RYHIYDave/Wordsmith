@@ -56,11 +56,16 @@ export const BELLS_TUNE = {
   /** THE RING KNOCKS BACK what is near the bell: within `knockR` tiles, shoved `knock` tiles out. */
   knockR: 3.5,
   knock: 2.2,
+  /** How long the bells ring on once it is over, won or lost, before they hang still (seconds). */
+  ringOut: 4,
   /** THE EXPLOSION: runedust (`dust` + one for every two bells), gear (one a bell, the first two of the best), gold (`gold` a bell, by depth), and a word at this chance. */
   dust: 2,
   gold: 14,
   word: 0.5,
 };
+
+/** A bell's prop `state` once it has rung out and hangs still (0 quiet, 1 awake, 2 ringing: render/act1_pieces.ts bellFrame). */
+export const BELL_STILL = 3;
 
 /** The pack numbers of what the Hush raises (each rising a pack of its own), and of the tough ones the bells call. */
 export const BELLS_PACK_ID = (k: number): number => 8000 + (k % 800);
