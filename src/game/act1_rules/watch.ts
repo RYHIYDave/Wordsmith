@@ -23,10 +23,13 @@
 // on (`knock`: half a Heavy blow's step, as the quarry golem's hammer). The rest is the main chat's way with the
 // Headsman's wide sweep (game/bosses.ts, HEADSMAN.sweep), which this is.
 //
-// MEDIUM: two attacks, his rule of 9 Oct. The art has one move for them, the sweep, their basic blow; their second is THE HELD
-// SWEEP (the main chat's, 19 Oct: game/act1_rules/held.ts): the same picture, the halberd held high and shaking two rounds
-// longer, a red circle before them where the blade will come round (`held.at` tiles before them, `held.r` round: the sweep's
-// reach), and over all of it a blow and a half and a full Heavy step's throw; every 7 seconds at most.
+// MEDIUM: two attacks, his rule of 9 Oct: the sweep, their basic blow; and THE ROUND SWEEP, the art chat's second move for
+// them (mockup/act2-seconds, docs/mockups/act2_seconds/README.md: WA_ROUND, art/watch_shots.ts), put in the game by the
+// main chat on his word of 19 Oct 2026, 20:54 Pacific: "Second attacks are done". The halberd hauled back low, held shaking
+// (the warning; a ring of pink all round them as far as it reaches), then they spin all the way round with it at full
+// reach, so that behind them is no safer than before. The main chat's: the blade strikes him as it passes where he stands,
+// if it reaches him there (`round.at`, its bearing and reach frame by frame, the art's roundBladeAt written down), once;
+// a blow and a half, and thrown a little further than the sweep throws; every 7 seconds at most.
 //
 // THE WATCHMAN AND THE SERGEANT (the art's two, makeWatchArt3(mob)): a yellow pack's leader (an elite) is the sergeant
 // (Monster.form 1: the figure 'watch:1', art/act1_figs/watch.ts `looks`, art/bestiary.ts figureOf), and is called so (a
@@ -43,7 +46,6 @@ import { MONSTERS, TUNE } from '../defs';
 import { along } from '../bosses';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { beside, handOf } from '../facing';
-import { dropCircle, fillCircle, heldAct, heldTime, landCircle, layCircle, tidyCircle } from './held';
 import type { Monster } from '../state';
 import { HOUND } from './hound';
 import type { Act1Rules } from './types';
@@ -69,6 +71,34 @@ export const WATCH = {
   looks: 2,
 };
 const BEARING = WATCH.sweep.at.map(([t, b]) => [t, b] as const);
+/**
+ * THE ROUND SWEEP (WA_ROUND, 2.6 s): the warning `warn` (0.4 to 0.88); the blade comes round from `from` to `to` (frames 27
+ * to 50 of 30 a second), straight before them at `hit` (33/30); `at` each frame: the moment, the blade's bearing to their
+ * left of the way they began facing (radians, unwound: about 550 degrees in all) and how far the halberd reaches then
+ * (art/hushed_watch_moves.ts roundBladeAt, measured). Thrown `knock` of a Heavy blow's step.
+ */
+export const ROUND = {
+  long: 2.6,
+  warn: [0.4, 0.88] as const,
+  hit: 33 / 30,
+  from: 27 / 30,
+  to: 50 / 30,
+  knock: 0.8,
+  at: [
+    [27 / 30, -2.22, 2.355], [28 / 30, -2.196, 2.355], [29 / 30, -2.079, 2.356], [30 / 30, -1.884, 2.357], [31 / 30, -1.582, 2.359],
+    [32 / 30, -1.069, 2.376], [33 / 30, -0.189, 2.434], [34 / 30, 0.9, 2.507], [35 / 30, 1.965, 2.565], [36 / 30, 2.753, 2.565],
+    [37 / 30, 3.261, 2.565], [38 / 30, 3.73, 2.565], [39 / 30, 4.2, 2.565], [40 / 30, 4.67, 2.565], [41 / 30, 5.14, 2.565],
+    [42 / 30, 5.609, 2.565], [43 / 30, 6.051, 2.551], [44 / 30, 6.437, 2.536], [45 / 30, 6.768, 2.525], [46 / 30, 7.042, 2.519],
+    [47 / 30, 7.254, 2.525], [48 / 30, 7.386, 2.543], [49 / 30, 7.431, 2.565], [50 / 30, 7.395, 2.579],
+  ] as ReadonlyArray<readonly [number, number, number]>,
+};
+const ROUND_BEARING = ROUND.at.map(([t, b]) => [t, b] as const);
+const ROUND_REACH = ROUND.at.map(([t, , r]) => [t, r] as const);
+
+/** The round sweep's blade `t` seconds in: its bearing (radians to their left of the way they began facing, unwound), and how far the halberd reaches then. */
+export function roundAt(t: number): { bearing: number; reach: number } {
+  return { bearing: along(ROUND_BEARING, t), reach: along(ROUND_REACH, t) };
+}
 const REACH = WATCH.sweep.at.map(([t, , r]) => [t, r] as const);
 
 /** The blade's bearing `t` seconds into the sweep (radians to their left of the way they face), and how far the halberd reaches then. */
@@ -82,12 +112,9 @@ export function sweepAt(t: number): { bearing: number; reach: number } {
  */
 const GAIT: GaitDef = { pace: 0.8, cycle: 6 / 8, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.9, slack: 0.4, trueBack: true };
 
-const SWEEP: ActDef = { id: 'watch:sweep', clip: 'attack', long: 1.8, hit: 24 / 30, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 2.3 };
-/** THE HELD SWEEP: the warning (WA_SWEEP.warn, 0.32 to 0.62: the halberd up, shaking) played round twice more; its circle `at` tiles before them, `r` round. */
-export const WATCH_HELD = { warn: [0.32, 0.62] as const, rounds: 2, at: 1.2, r: 1.4, dmg: 1.6, knock: 1.0, cooldown: 7, first: 2.5 };
 const ACTS: readonly ActDef[] = [
-  SWEEP,
-  heldAct(SWEEP, 'watch:held', WATCH_HELD.warn, WATCH_HELD.rounds, WATCH_HELD.dmg, WATCH_HELD.cooldown, WATCH_HELD.first),
+  { id: 'watch:sweep', clip: 'attack', long: 1.8, hit: 24 / 30, dmg: 1, cooldown: 0, first: 0, after: 0.7, near: 0, far: 2.3 },
+  { id: 'watch:round', clip: 'round', long: ROUND.long, hit: ROUND.hit, dmg: 1.5, cooldown: 7, first: 2.5, after: 0.8, near: 0, far: 2.4 },
 ];
 
 /** Is this one of the watch a pack's leader, or an elite: the sergeant? */
@@ -130,39 +157,33 @@ export const RULES: Act1Rules | null = {
     if (m.form === WATCH.sergeant) m.name = m.name.replace(MONSTERS.watch.name.replace('Hushed ', ''), 'Sergeant');
     brace(R, m);
   },
-  start(R, m, a) {
-    // (THE HELD SWEEP: its red circle before them, where the blade will come round, from the start)
-    if (a.id !== 'watch:held') return;
-    const p = beside(m.x, m.y, m.fx, m.fy, m.act!.hand, WATCH_HELD.at, 0);
-    layCircle(R, m, p.x, p.y, WATCH_HELD.r);
-  },
-  tick(R, m) {
-    tidyCircle(R, m, 'watch:held');
-    return false;
-  },
-  died(R, m) {
-    dropCircle(R, m);
-  },
   acting(R, m, a, t0, t1) {
-    if (a.id !== 'watch:sweep' && a.id !== 'watch:held') return;
-    const held = a.id === 'watch:held';
-    if (held && t1 < a.hit) fillCircle(R, m, a, t1);
-    // (the held sweep is the sweep's picture with its warning played round: its moments are the sweep's, after it)
-    if (held) {
-      t0 = heldTime(a, t0);
-      t1 = heldTime(a, t1);
+    if (a.id === 'watch:round') {
+      // THE ROUND SWEEP: the blade comes all the way round; it strikes him as it passes where he stands, if it reaches him there
+      const g = R.g;
+      const h = g.hero;
+      const act = m.act!;
+      if (t0 < ROUND.warn[0] && t1 >= ROUND.warn[0]) g.sfx('swing', 0.4);
+      if (t0 < ROUND.from + 0.04 && t1 >= ROUND.from + 0.04) g.sfx('swing', 1);
+      if (t1 <= ROUND.from || t0 >= ROUND.to || act.b) return;
+      const r = R.rel(m);
+      const bearing = Math.atan2(r.left, r.fwd);
+      const b0 = roundAt(Math.max(ROUND.from, t0));
+      const b1 = roundAt(Math.min(ROUND.to, t1));
+      if (!R.passes(b0.bearing, b1.bearing, bearing)) return;
+      if (Math.hypot(r.fwd, r.left) > Math.max(b0.reach, b1.reach) + TUNE.heroRadius * 0.5) return;
+      act.b = 1;
+      R.blow(m, a.dmg);
+      if (!h.move && h.invuln <= 0 && !g.over) g.knockHero(m.x, m.y, ROUND.knock);
+      return;
     }
+    if (a.id !== 'watch:sweep') return;
     const g = R.g;
     const h = g.hero;
     const S = WATCH.sweep;
     const act = m.act!;
     // (the halberd's rush through the air, as it comes round)
     if (t0 < S.from && t1 >= S.from) g.sfx('swing', 0.9);
-    // (held: the blade comes round over all its circle as it crosses before them)
-    if (held) {
-      if (t0 < SWEEP.hit && t1 >= SWEEP.hit) landCircle(R, m, a, WATCH_HELD.knock);
-      return;
-    }
     if (t1 <= S.from || t0 >= S.to || act.b) return;
     // (the blade comes round low before them: it strikes him as it passes where he stands, if it reaches him there)
     const r = R.rel(m);

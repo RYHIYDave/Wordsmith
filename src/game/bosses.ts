@@ -724,9 +724,6 @@ export class BossRules {
     m.move = -1;
     m.gait = { mode: G && G.raise > 0 ? 'carry' : 'stand', t: 0 };
     if (this.g.hero.held && m.kind === 'chained') this.g.hero.held = 0;
-    // (ACT 2, THE HUSH: a held blow's red circle goes with it, as a troll's slam's does when it is staggered: act1_rules/held.ts)
-    const zs = this.g.zones;
-    for (let k = zs.length - 1; k >= 0; k--) if (zs[k].kind === 'warn' && zs[k].src === m.id) zs.splice(k, 1);
   }
 
   /** Whether a monster may stand at (x, y): its tile is one to walk on. */

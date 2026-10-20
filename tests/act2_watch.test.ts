@@ -27,7 +27,6 @@ import { RNG } from '../src/engine/rng';
 import { ACT2_GUARD, act2Pack } from '../src/game/act2_mobs';
 import { HOUND } from '../src/game/act1_rules/hound';
 import { WATCH, sweepAt } from '../src/game/act1_rules/watch';
-import { ACT2 } from '../src/game/act1';
 import { act1Rules } from '../src/game/act1_rules/index';
 import { actsOf, gaitOf } from '../src/game/bosses';
 import { MONSTERS, PACK_BY_SIZE, TUNE, sizeOf } from '../src/game/defs';
@@ -44,10 +43,6 @@ interface Assert {
 }
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
-// (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
-// needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
-nodeAssert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
-ACT2.on = false;
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} against ${b} (within ${tol})`);
 
 paintWithoutCanvas();
@@ -58,7 +53,7 @@ test('1. it is built: its rules, its pictures with a clip by each name its act u
   assert.ok(r && fig, 'its rules and its pictures');
   assert.ok(fig!.switches?.includes(WATCH_ON), "the art chat's switch is its figure's");
   assert.equal(fig!.looks?.length, 1, 'and one look more: the sergeant');
-  assert.equal(act1Fx('watch'), null, 'nothing drawn beyond its figure');
+  assert.ok(act1Fx('watch')?.ground, 'what it draws: the round sweep\'s warning and wake (Version 23.2)');
   const B = makeBestiary();
   for (const f of ['watch', 'watch:1'] as const) {
     const art = B.of(f);
@@ -66,9 +61,8 @@ test('1. it is built: its rules, its pictures with a clip by each name its act u
       for (const a of r!.acts) {
         const clip = a.clip === 'attack' ? set.clips?.attack : set.clips?.moves?.[a.clip];
         assert.ok(clip && clip.frames.length > 0, `${f}: its ${a.id}: its clip ${a.clip}`);
-        // (the held sweep is the sweep's picture with its warning played round: its length the picture's and that: held.ts)
-        near((clip!.frames.length - 1) / clip!.fps, a.long - (a.loop?.extra ?? 0), 1 / clip!.fps, `${f}: its ${a.id}'s length`);
-        near(clip!.hit ?? -1, a.hit - (a.loop?.extra ?? 0), 1e-9, `${f}: its clip's blow is the act's`);
+        near((clip!.frames.length - 1) / clip!.fps, a.long, 1 / clip!.fps, `${f}: its ${a.id}'s length`);
+        near(clip!.hit ?? -1, a.hit, 1e-9, `${f}: its clip's blow is the act's`);
       }
       assert.ok(set.clips?.reel && set.clips?.die, `${f}: struck and its death`);
       near((set.clips!.die!.frames.length - 1) / set.clips!.die!.fps, WA_DIES.long, 0.06, `${f}: the gag falling and the kneeling, as long as its picture`);
@@ -99,7 +93,7 @@ test("2. the rules' numbers are its pictures' own: its trudge, its sweep, and th
   near(G.cycle, WA_WALK.frames / 2 / WA_WALK.fps, 1e-9, 'it stops where both boots are down: each half of its trudge');
   assert.equal(G.trueBack, WATCHMAN.trueBack === true, 'its back as its pictures have it');
   const acts = actsOf({ kind: 'watch' })!;
-  assert.equal(acts.length, 2, 'two: the sweep the art drew, and the held sweep made from it (his rule asks two of a medium: held.ts)');
+  assert.equal(acts.length, 2, 'two: the sweep, and the round sweep (the art chat\'s second move, Version 23.2)');
   const sweep = acts[0];
   assert.equal(sweep.hit, WA_SWEEP.hit, 'the blade crosses before them at its moment');
   assert.equal(sweep.long, WA_SWEEP.long);

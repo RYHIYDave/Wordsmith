@@ -45,10 +45,6 @@ interface Assert {
 }
 const test: (name: string, fn: () => void) => void = nodeTest;
 const assert: Assert = nodeAssert;
-// (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
-// needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
-nodeAssert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
-ACT2.on = false;
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} against ${b} (within ${tol})`);
 
 paintWithoutCanvas();
@@ -72,8 +68,8 @@ test('1. they are built: their rules, their pictures with the clips their acts n
   }
   const { m } = room('orderly', 3);
   assert.ok(gaitOf(m.kind) === ORDERLY_GAIT && actsOf(m) === ORDERLY_ACTS, 'run by their rules');
-  // (his rule gives a medium monster two attacks; the art drew them one: the second, the held blow, is made from it, held.ts)
-  assert.equal(ORDERLY_ACTS.length, 2, 'two attacks: the one the art drew, and the held blow made from it (his rule of a medium\'s two: held.ts)');
+  // (his rule gives a medium monster two attacks; the art drew them one: the second is not made here, the planning chat's to ask for)
+  assert.equal(ORDERLY_ACTS.length, 2, 'two attacks: the mallet blow, and the quake (the art chat\'s second move, Version 23.2)');
 });
 
 test("2. their numbers are their pictures' own, and their size as the game goes by it", () => {

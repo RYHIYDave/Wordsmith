@@ -17,10 +17,12 @@
 //   as the carter draws it back (the picture's `draw`), he is dragged in toward the carter, `wrap.drag` tiles at most and no
 //   nearer than `wrap.near`; held while he is dragged, as the crawler's grab holds him. So one who stands off from a carter
 //   is pulled in among the sickles of the fields; one close in takes the lash's weight, and stays where he is.
-// - TWO ATTACKS, his rule of 9 Oct (a medium monster's two; the main chat's, 19 Oct, as the dredger's are): THE LASH, their
-//   basic blow (it cracks and is drawn back empty: never a coil), and THE COIL, their big one, made only when he stands where
-//   its end can catch him (`wrap.from` tiles out or more): coiled round and dragged in, a blow and a quarter, every 6 seconds
-//   at most. The same picture for both.
+// - TWO ATTACKS, his rule (his rulebook, "Their attacks"): the whip crack, their basic blow; and THE DRIVER'S LASH, the art
+//   chat's second move for them (mockup/act2-seconds, docs/mockups/act2_seconds/README.md: CT_LASHES, art/carter_shots.ts),
+//   put in the game by the main chat on his word of 19 Oct 2026, 20:54 Pacific: "Second attacks are done". The lash whirled
+//   overhead, its cracker glinting pink (the warning; three small rings on the floor where it will crack); then three cracks,
+//   a step in with each, further out each time. The main chat's: whoever is within `lashes.r` of a crack as it strikes the
+//   floor is struck, a blow and a fifth (each crack once); every 7 seconds at most.
 //
 // Every number here that is a picture's is written down here; tests/act2_carter.test.ts holds it to the art.
 
@@ -39,7 +41,20 @@ export const CARTER = {
   lash: { hit: 25 / 30, full: 0.9, crack: [1.787, -0.358] as const, out: [2.641, -0.269] as const, from: -0.2, half: 0.5 },
   /** One struck `from` tiles out or further is coiled round by its end and dragged in as it is drawn back (`draw`, CT_WHIP.draw), `drag` tiles at most, no nearer than `near`. */
   wrap: { from: 1.5, draw: [1.15, 1.75] as const, drag: 1.3, near: 1.1 },
+  /**
+   * THE DRIVER'S LASH (CT_LASHES): the warning `warn` (0.36 to 0.94); the three cracks at `cracks` (33/30, 45/30, 57/30,
+   * the first its blow), the cracker on the floor a frame after each (`floor`), `reach` tiles before them and `right` to
+   * their right (the art's measure, under the whip hand); whoever is within `r` of one as it strikes is struck. Each crack's
+   * mark lies `mark` seconds (LASH_CRACK_FOR).
+   */
+  lashes: { long: 3.05, warn: [0.36, 0.94] as const, cracks: [33 / 30, 45 / 30, 57 / 30] as const, floor: 1 / 30, reach: [1.29, 1.93, 2.5] as const, right: 0.09, r: 0.35, mark: 0.8 },
 };
+
+/** Where the driver's lash's `i`th crack strikes the floor, from one facing (fx, fy) drawn with `hand`. */
+export function crackSpot(m: { x: number; y: number; fx: number; fy: number }, hand: number, i: number): { x: number; y: number } {
+  const L = CARTER.lashes;
+  return { x: m.x + m.fx * L.reach[i] + m.fy * hand * -L.right, y: m.y + m.fy * L.reach[i] - m.fx * hand * -L.right };
+}
 
 /** How far out the lash's end is `t` seconds into the crack (from its crack to its whole length; nearer before). */
 export function lashReach(t: number): { fwd: number; left: number } {
@@ -53,7 +68,7 @@ const GAIT: GaitDef = { pace: 0.85, cycle: 1 / 8, setOff: 0, halt: 0, raise: 0, 
 
 const ACTS: readonly ActDef[] = [
   { id: 'carter:lash', clip: 'attack', long: 1.9, hit: CARTER.lash.hit, dmg: 1, cooldown: 0, first: 0, after: 0.9, near: 0, far: CARTER.lash.out[0] },
-  { id: 'carter:coil', clip: 'attack', long: 1.9, hit: CARTER.lash.hit, dmg: 1.25, cooldown: 6, first: 1.5, after: 0.9, near: CARTER.wrap.from, far: CARTER.lash.out[0] },
+  { id: 'carter:lashes', clip: 'lashes', long: CARTER.lashes.long, hit: CARTER.lashes.cracks[0], dmg: 1.2, cooldown: 7, first: 2, after: 0.8, near: 0.8, far: 2.8 },
 ];
 
 /** What it keeps (Monster.a1): `grab` 1 while its lash holds the hero; where it caught him (`ox`, `oy`), for the scrape he leaves as he is dragged. */
@@ -83,7 +98,24 @@ export const RULES: Act1Rules | null = {
     const act = m.act!;
     const k = keep(m);
     const at = (T: number): boolean => t0 < T && t1 >= T;
-    if (a.id !== 'carter:lash' && a.id !== 'carter:coil') return;
+    if (a.id === 'carter:lashes') {
+      // THE DRIVER'S LASH: each crack, as the cracker strikes the floor, strikes whoever is on it (each crack once)
+      const D = CARTER.lashes;
+      if (at(D.warn[0])) g.sfx('swing', 0.5);
+      D.cracks.forEach((T, i) => {
+        if (!at(T + D.floor)) return;
+        const s = crackSpot(m, act.hand, i);
+        if (!(act.b & (1 << i)) && Math.hypot(h.x - s.x, h.y - s.y) <= D.r + TUNE.heroRadius * 0.5 && !h.move && h.invuln <= 0 && !g.over) {
+          act.b |= 1 << i;
+          R.blow(m, a.dmg);
+        }
+        R.peril(m, 'act1', s.x, s.y, { a1: 'carter:crack', dur: D.mark });
+        g.emit({ t: 'shake', amount: 1 });
+        g.sfx('hit', 0.5);
+      });
+      return;
+    }
+    if (a.id !== 'carter:lash') return;
     const L = CARTER.lash;
     const W = CARTER.wrap;
     if (at(0.6)) g.sfx('swing', 0.55);
@@ -97,7 +129,7 @@ export const RULES: Act1Rules | null = {
         act.b = 1;
         R.blow(m, a.dmg);
         // (caught by its end: coiled round)
-        if (a.id === 'carter:coil' && r.fwd >= W.from && h.invuln <= 0 && !h.move && !g.over) {
+        if (r.fwd >= W.from && h.invuln <= 0 && !h.move && !g.over) {
           k.grab = 1;
           k.ox = h.x;
           k.oy = h.y;

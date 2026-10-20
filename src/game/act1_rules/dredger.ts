@@ -20,10 +20,13 @@
 //   haul, HAULED IN TOWARD THEM WITH IT, as far as the picture draws the hook in (from 2.44 tiles to 1.54: near a tile),
 //   never nearer them than `least`; what he is dragged over scrapes the floor (render/act1_fx/dredger.ts, as the cliff
 //   crawler's drag is drawn). So the pull is the crawler's kind, as the brief asked; the picture's own length of it.
-// - TWO ATTACKS, his rule of 9 Oct (game/defs.ts MONSTER_ATTACKS): the art chat drew the dredgers one move, the hook and
-//   haul, and it is two (the main chat's, 19 Oct, told him that day): THE THRUST, their basic blow (the pole jabbed out, the
-//   hook brought back empty: never a catch), and THE HOOK AND HAUL, their big one, made only when he stands where the hook
-//   can catch him (`catchFrom` tiles out or more), a blow and a quarter, every 6 seconds at most. The same picture for both.
+// - TWO ATTACKS, his rule of 9 Oct (game/defs.ts MONSTER_ATTACKS): the hook and haul, their basic blow; and THE CAST NET,
+//   the art chat's second move for them (mockup/act2-seconds, docs/mockups/act2_seconds/README.md: DR_NET,
+//   art/dredger_shots.ts), put in the game by the main chat on his word of 19 Oct 2026, 20:54 Pacific: "Second attacks are
+//   done". A net dragged out of the creel, whirled at their side, its weights glinting pink (the warning; a ring of pink on
+//   the floor where it will fall, NET_REACH before them, as wide as the net), heaved underhand and let go of (38/30); it flies
+//   NET_FLIES and falls spread. The main chat's: whoever is under it as it falls is struck, a blow and a fifth, and caught in
+//   it, held where he is `net.hold` seconds ("Netted"); every 7 seconds at most, and only at range (he out past the hook).
 // - THEY WADE at their picture's pace, slow, and stop where their hook reaches you.
 //
 // The rules know nothing of the pictures: each number here that is a picture's is written down, and tests/act2_dredger.test.ts
@@ -31,7 +34,7 @@
 
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { TUNE } from '../defs';
-import type { Monster } from '../state';
+import type { Monster, Peril } from '../state';
 import type { Act1Rules } from './types';
 
 /** THE DREDGER'S NUMBERS: its pictures' own (art/dredgers_moves.ts DR_HAUL, the hook as the motion carries it: tiles before them, seconds) and the rules'. */
@@ -49,7 +52,19 @@ export const DREDGER = {
    * or more is where the hook is: caught on it. Hauled in, no nearer them than `least`.
    */
   strike: { from: 0.6, reach: 2.75, half: 0.55, catchFrom: 1.4, least: 1.1 },
+  /**
+   * THE CAST NET (DR_NET): the warning `warn` (0.6 to 1.12); let go of at `hit` (38/30) from `from` (tiles before them and to
+   * the left they are drawn with, and the game's pixels up: the art's netLetGo, measured); it flies `flies` (NET_FLIES) and
+   * falls spread, its middle `reach` (NET_REACH) before them, `r` (NET_R) round; whoever is under it is struck and held
+   * `hold` seconds. It lies `lies` (NET_LIES) in the picture.
+   */
+  net: { long: 2.5, warn: [0.6, 1.12] as const, hit: 38 / 30, from: [0.76, 0.41, 12.4] as const, flies: 0.5, reach: 3.0, r: 0.85, hold: 1.0, lies: 1.6 },
 };
+
+/** Where the cast net falls, from one facing (fx, fy): its middle, NET_REACH before them. */
+export function netFalls(m: { x: number; y: number; fx: number; fy: number }): { x: number; y: number } {
+  return { x: m.x + m.fx * DREDGER.net.reach, y: m.y + m.fy * DREDGER.net.reach };
+}
 
 /** Where the hook is (tiles before them) `t` seconds into the hook and haul, from the thrust on: straight between the moments of `DREDGER.hook` (as game/bosses.ts `along`, kept here so that this file asks nothing of that one but its types). */
 export function hookAt(t: number): number {
@@ -69,9 +84,10 @@ export function hookAt(t: number): number {
 export const DREDGER_GAIT: GaitDef = { pace: 0.85, cycle: 1.5, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 1.9, slack: 0.5, trueBack: true };
 
 export const DREDGER_ACTS: readonly ActDef[] = [
-  // THE THRUST, the basic blow, and THE HOOK AND HAUL (DR_HAUL: 2.0 s, the thrust at 22/30), from where the hook catches
+  // THE HOOK AND HAUL (DR_HAUL: 2.0 s, the thrust at 22/30)
   { id: 'dredger:hook', clip: 'attack', long: 2.0, hit: 22 / 30, dmg: 1, cooldown: 0, first: 0, after: 1.0, near: 0, far: 2.5 },
-  { id: 'dredger:haul', clip: 'attack', long: 2.0, hit: 22 / 30, dmg: 1.25, cooldown: 6, first: 1.5, after: 1.0, near: DREDGER.strike.catchFrom, far: 2.5 },
+  // THE CAST NET (DR_NET: 2.5 s, let go of at 38/30), at him out past the hook
+  { id: 'dredger:net', clip: 'net', long: DREDGER.net.long, hit: DREDGER.net.hit, dmg: 1.2, cooldown: 7, first: 2, after: 0.8, near: 2.0, far: 3.8 },
 ];
 
 /** What it keeps (Monster.a1): `hooked` 1 while it has the hero on its hook; where he was caught (`ox`, `oy`), for the scrape he leaves. */
@@ -107,8 +123,39 @@ export const RULES: Act1Rules | null = {
     letGo(R, m);
   },
 
+  peril(R: BossRules, p: Peril): void {
+    // THE CAST NET falls: whoever is under it is struck and caught in it, held where he is
+    if (p.a1 !== 'dredger:net' || p.done || p.t < p.hit) return;
+    const g = R.g;
+    const h = g.hero;
+    const N = DREDGER.net;
+    p.done = 1;
+    g.emit({ t: 'shake', amount: 1 });
+    g.sfx('hit', 0.4);
+    if (Math.hypot(h.x - p.x, h.y - p.y) > N.r + TUNE.heroRadius * 0.5 || h.move || h.invuln > 0 || g.over) return;
+    const was = h.life;
+    g.hurtHero(p.dmg, p.el, p.words, null, p.from, p.x, p.y, p.half);
+    if (h.life < was && !g.over) {
+      h.held = Math.max(h.held ?? 0, N.hold);
+      g.emit({ t: 'text', x: h.x, y: h.y, text: 'Netted', color: '#ff8a80' });
+    }
+  },
+
   acting(R, m, a, t0, t1) {
-    if (a.id !== 'dredger:hook' && a.id !== 'dredger:haul') return;
+    if (a.id === 'dredger:net') {
+      // THE CAST NET: let go of at its blow, it flies to where it falls (a peril of its own: game/act1_rules/dredger.ts `peril`)
+      const N = DREDGER.net;
+      const g = R.g;
+      if (t0 < N.warn[0] && t1 >= N.warn[0]) g.sfx('swing', 0.35);
+      if (!(t0 < N.hit && t1 >= N.hit)) return;
+      const hand = m.act!.hand;
+      const o = { x: m.x + m.fx * N.from[0] + m.fy * hand * N.from[1], y: m.y + m.fy * N.from[0] - m.fx * hand * N.from[1] };
+      const at = netFalls(m);
+      R.peril(m, 'act1', at.x, at.y, { a1: 'dredger:net', hit: N.flies, dur: N.flies + N.lies, dmg: g.rollMonsterDmg(m) * a.dmg, a: o.x, b: o.y, c: N.from[2] });
+      g.sfx('swing', 0.6);
+      return;
+    }
+    if (a.id !== 'dredger:hook') return;
     const g = R.g;
     const h = g.hero;
     const k = keep(m);
@@ -122,7 +169,7 @@ export const RULES: Act1Rules | null = {
       if (r.fwd >= S.from && r.fwd <= S.reach && Math.abs(r.left) <= S.half && h.invuln <= 0 && !h.move && !g.over) {
         const was = h.life;
         R.blow(m, a.dmg);
-        if (a.id === 'dredger:haul' && r.fwd >= S.catchFrom && h.life < was) {
+        if (r.fwd >= S.catchFrom && h.life < was) {
           k.hooked = 1;
           k.ox = h.x;
           k.oy = h.y;
