@@ -1984,7 +1984,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         game.enterDungeon();
       }
     },
-    /** (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them: render/act2_walls.ts; off until his yes) Its switch, for the pictures: set it before coming onto a floor. */
+    /** (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them: render/act2_walls.ts; on at his word) Its switch, for the pictures and playtests: set it before coming onto a floor. */
     act2Walls: ACT2_WALLS,
     /** ACT 1 (and the bosses of floors 2 to 5): the acts one of them has (game/bosses.ts), for the playtests that have it make one over and over. */
     actsOf: (m: { kind: MonsterKind }) => actsOf(m),

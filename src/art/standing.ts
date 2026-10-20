@@ -1,4 +1,5 @@
-// THE WALLS STANDING WHOLE ON FLOORS 11 TO 15 (the art chat, 20 Oct 2026; the game's side behind ACT2_WALLS, off until his yes).
+// THE WALLS STANDING WHOLE ON FLOORS 11 TO 15 (the art chat, 20 Oct 2026; the game's side behind render/act2_walls.ts ACT2_WALLS,
+// on at his word: his answer to its pictures, 20 Oct 2026: "Put everything in but the doorways.  With the new walls I think it’ll look fine").
 //
 // The owner, 20 Oct 2026, 07:41 Pacific: "All the 11-15 levels have weird slanting walls that I hate.  I know it’s so they don’t
 // hide the character when he goes behind them but I just want that wall piece to go transparent when you walk behind it."

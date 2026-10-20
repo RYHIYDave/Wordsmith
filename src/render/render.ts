@@ -66,7 +66,7 @@ import { FloorPieces } from './pieces';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
 import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
-// (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them; behind ACT2_WALLS, off)
+// (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them; behind ACT2_WALLS, on at his word)
 import { HERO_WINDOW, WINDOW_FAINT, WallWindows, drawHoled, wallsThick } from './act2_walls';
 import type { Hole, Window as WallWindow } from './act2_walls';
 // (ACT 2, THE GATE WARD: its houses walked into, whole until he is in one, and its traps by their beat)

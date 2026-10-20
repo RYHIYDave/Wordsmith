@@ -1,5 +1,5 @@
-// ACT 2, THE HUSH, DRAWN: THE WALLS STANDING WHOLE, SEEN THROUGH ROUND WHOEVER IS BEHIND THEM (the art chat, 20 Oct 2026; behind
-// ACT2_WALLS, off until his yes).
+// ACT 2, THE HUSH, DRAWN: THE WALLS STANDING WHOLE, SEEN THROUGH ROUND WHOEVER IS BEHIND THEM (the art chat, 20 Oct 2026; ON at
+// his word: his answer to its pictures, 20 Oct 2026: "Put everything in but the doorways.  With the new walls I think it’ll look fine").
 //
 // The owner, 20 Oct 2026, 07:41 Pacific: "All the 11-15 levels have weird slanting walls that I hate.  I know it’s so they don’t
 // hide the character when he goes behind them but I just want that wall piece to go transparent when you walk behind it."
@@ -13,8 +13,8 @@
 
 import type { Land } from '../game/act1_layout';
 
-/** THE SWITCH: off, the walls toward the eye are cut down as before (the ground's rule). */
-export const ACT2_WALLS = { on: false };
+/** THE SWITCH: on at his word (above); off, the walls toward the eye are cut down as before (the ground's rule), floor 11's slate as it was. */
+export const ACT2_WALLS = { on: true };
 
 /** How far from the floor the rock of a floor stands whole, in tiles (0: none of it; Infinity: all of it). */
 export function wallsThick(land: Land): number {
