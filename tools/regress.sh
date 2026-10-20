@@ -479,6 +479,11 @@ DEPTH=14 run act2_ways14 $P --scenario $S/act1_ways.mjs &
 wait
 DEPTH=15 run act2_ways15 --scenario $S/act1_ways.mjs &
 wait
+# ENDLESS MODE (Version 23.3): the last floor beaten opens it; the town's waypoint onto Endless 1, its card (Endless 1,
+# Hardcore); Endless 3 and 7 on floors 12 and 2, their strength; a Normal hero fallen there is lost (YOU DIED, New run).
+run endless_phone $P --scenario $S/endless_look.mjs &
+run endless_pc --scenario $S/endless_look.mjs &
+wait
 # THE SPEED WORK (Version 22.1): the Pinewood's forest drawn as chunk pictures draws the same picture, to the pixel, as
 # its trees one by one (render/tops_cache.ts), with the warrior and the mage (who throws the most about)
 CLS=warrior SPOTS=8 run speed_tops_same_warrior $P --scenario $S/tops_same.mjs &

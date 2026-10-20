@@ -1,9 +1,9 @@
-// ENDLESS MODE (game/endless.ts, behind ENDLESS: off until his yes to pictures of it from the game). His words to the main chat,
+// ENDLESS MODE (game/endless.ts, behind ENDLESS: on since Version 23.3, his yes to pictures of it from the game). His words to the main chat,
 // 20 Oct 2026, 14:18 Pacific: “I’d like once you beat whatever the last level we have built, it picks a random leveled scaled
 // up so you can go in an endless mode of harder and harder levels until you want to stop.  Or until you die?  We’ll call it
 // endless mode and if you die it’s over.” His picks: “Pick up where you left off (Recommended)”, “The hero too”, “10% more
 // each level (Recommended)”, “All 15 floors”.
-//   1. the switch is off, and off the game is as it was: the last floor beaten, home, and nothing more;
+//   1. the switch is on, and off the game is as it was: the last floor beaten, home, and nothing more;
 //   2. on, the last floor beaten opens the endless levels: home as before, told so, and the town's waypoint takes him onto the
 //      first, a floor of those built, never the last one beaten; its card says which level it is, with the warning;
 //   3. every way on from an endless level (the stairwell, the mine shaft, the way on) takes him to the next, another floor;
@@ -51,8 +51,8 @@ function atTheLast(seed: number): Game {
   return g;
 }
 
-test('the switch is off until his yes; off, the last floor beaten is home and nothing more, as it was', () => {
-  assert.equal(ENDLESS.on, false, 'off: pictures first, his rule');
+test('the switch is on (his yes to its pictures); off, the last floor beaten is home and nothing more, as it was', () => {
+  assert.equal(ENDLESS.on, true, 'on since Version 23.3');
   endless(() => {
     const g = atTheLast(3);
     take(g, 'on');

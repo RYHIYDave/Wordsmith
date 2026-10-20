@@ -7,7 +7,7 @@ levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
 fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
 new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
-change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. The two pictures in the doc are written out here in words. How it was
+change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built. The two pictures in the doc are written out here in words. How it was
 found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -40,7 +40,7 @@ director’s suggestion).
    waiting.
 
 **Never:** a shower of loot to sort; a long story in the way of play; strength for money; a death
-in Normal mode that loses the hero.
+in Normal mode that loses the hero (but on an endless level: there every death does, your pick of 20 Oct, below).
 
 **Reference games:** Path of Exile and Diablo, named from the start, for the dungeons, the loot and
 the climb in power. The roguelike part: heroes can be lost, and what they leave behind helps the
@@ -209,6 +209,10 @@ the class cards, in the game since Version 19.1. A hero saved before there were 
 | What is lost | What was found in that dungeon, and a quarter of the gold carried in | The hero and all they carry |
 | What stays | The hero’s level, the gear worn in, the words, the talents | The Lexicon, the stash and the unlocks, for the next hero |
 
+- **Endless mode is Hardcore for every hero** (since Version 23.3): a death on an endless level loses the hero, Normal or
+  Hardcore, the Lexicon and the stash kept (your pick of 20 Oct 2026, asked whether a death there ends the run or the hero
+  too: “The hero too”; and your word at 16:00: “Just have it say “hardcore” instead of “if your hero falls he is lost” or
+  whatever”: each endless level's card says HARDCORE).
 - **Every new hero starts at floor 1.** What earlier heroes left makes the early floors quick: the
   Lexicon’s words, the stash’s gear, and unlocks.
 - **Unlocks are new words and places,** opened by what earlier heroes did. Which ones, and for what
@@ -353,6 +357,16 @@ is how far (your words of 10 Oct, 07:21: “The point is to get as far down as p
 
 - **The deep floors reward rare words** found nowhere else, and **a board** that ranks best depths
   against other players.
+- **Endless mode, past the last floor built** (since Version 23.3). Your words of 20 Oct 2026, 14:18: “I’d like once you
+  beat whatever the last level we have built, it picks a random leveled scaled up so you can go in an endless mode of
+  harder and harder levels until you want to stop.  Or until you die?  We’ll call it endless mode and if you die it’s
+  over.” With your picks: the last floor built beaten, home as before, and from then the town's waypoint leads into it;
+  each endless level is one of the floors built, at random, never the one before it (“All 15 floors”: the first too, with
+  its boss but without the lesson); the first as strong as one floor past the last built, and each after it 10% more
+  life and damage than the one before (“10% more each level (Recommended)”), what drops growing on as the depth would;
+  the waypoint to town and back to the endless level reached (“Pick up where you left off (Recommended)”); a death there
+  the hero's end (“The hero too”). Each endless level's card says which it is, and HARDCORE. As new floors are built,
+  endless mode begins after the last of them.
 - **Friends:** the game is built for one player first. Co-op comes after release.
 
 ## How gameplay is made and approved
@@ -392,6 +406,7 @@ changes one only with your yes.
 | Leech on a monster | heals what its blow takes (a minion half) | `game.ts` `hurtHero` |
 | The moves open | tap at level 1, tap and hold at 2, the swipe at 5 | `MOVE_OPENS` |
 | The first dungeon | a budget of 60 monsters (120 before), packs half the size, 1 room of elites, every blow at half | `FIRST_DUNGEON`, `GUIDE.softDmg` |
+| Endless mode | an endless level as strong as one floor past the last built and one more for each after it, and 10% more life and damage on each level after the first (level 10 about 2.4 times level 1) | `game/endless.ts` `ENDLESS.grow`, `endlessPower`, `endlessTough` |
 | Pack sizes | tiny 6 to 10, small 4 to 7, medium 3 to 5, large 1 to 2, the boss alone; in the first dungeon tiny 3 to 5, small 2 to 4, medium 2 to 3, large 1 | `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE` |
 | Twin at the gate | 50% increased pack size | `GATE_TWIN_PACKS` |
 | Blue packs | 1 in 4 of the packs not an elite room’s or a lair, from dungeon 2; 20% increased life | `PACKS` |
@@ -417,6 +432,7 @@ it goes in.
 | The rule | The game now | What it takes |
 | --- | --- | --- |
 | Normal and Hardcore | Both, since Version 19.1 | Done |
+| Endless mode, past the last floor built | Since Version 23.3 | Done |
 | The first levels | Since Version 19.5 | Done: the ring dark until the master rune-stone goes in, then powering up, since Version 19.6; the first word once it has powered up, and the slots at 4, 15 and 20, since Version 20.0 |
 | The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
 | Sets of five floors, each themed to its bosses, on down without end | One dungeon after another, with no end | Each set its own bosses, monsters and look, with the art chat: the Crypt first |

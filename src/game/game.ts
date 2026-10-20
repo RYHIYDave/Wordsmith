@@ -1230,7 +1230,7 @@ export class Game {
     // (FLOOR_NAMES: the floor's own name comes up across the screen, its level under it, in place of the line)
     // (ENDLESS MODE: on an endless level, the floor's own name, the level under it, and the warning: his pick, a death here is the hero's end)
     if (FLOOR_NAMES.on && !this.practice) this.emit({ t: 'floorName', ...floorTitle(this.depth), ...(ENDLESS.on && this.inEndless ? { level: endlessName(this.endless), warn: ENDLESS_WARN } : {}) });
-    else this.msg(ENDLESS.on && this.inEndless ? `${endlessName(this.endless)}: ${ENDLESS_WARN.toLowerCase()}` : `Dungeon ${this.depth}`, MSG.head);
+    else this.msg(ENDLESS.on && this.inEndless ? `${endlessName(this.endless)}: ${ENDLESS_WARN}` : `Dungeon ${this.depth}`, MSG.head);
     if (this.dungeonWords.length) this.msg(`Burned in: ${this.dungeonWords.map((w) => WORDS[w].name).join(', ')}`, MSG.word);
     this.sfx('portal');
     // NORMAL MODE (game/modes.ts): the hero as they came in, for a death to go back to. (A copy

@@ -1,6 +1,8 @@
 // ENDLESS MODE: past the last floor built, the floors already built again, chosen at random, each harder than the last, for as
-// long as the hero lives. Behind ENDLESS (off until he has seen pictures of it from the game and said yes: his rule, pictures
-// first).
+// long as the hero lives. Behind ENDLESS, ON SINCE VERSION 23.3: shown pictures of it from the game (the town after floor 15,
+// Endless 1 and 3 coming in, a death there) and asked “Does endless mode look right in these pictures? If yes, I'll run the
+// full tests and put it live on the Claude page and the offline game.”, his answer, by 16:00 Pacific on 20 Oct 2026: “Yes, put
+// it live (Recommended)”.
 //
 // His words to the main chat, 20 Oct 2026, 14:18 Pacific: “I’d like once you beat whatever the last level we have built, it
 // picks a random leveled scaled up so you can go in an endless mode of harder and harder levels until you want to stop.  Or
@@ -15,7 +17,9 @@
 // mode; each level a floor from 1 to the last built, at random, never the same twice running; the first a floor tougher than
 // the last built (its depth's strength, game/defs.ts scaleLife and scaleDmg), each after it 10% more life and damage than the
 // one before; what drops grows on as the floors' depth would; the waypoint to town and back to the level reached; a death
-// there the hero's end, as a Hardcore death is (the Lexicon and the stash kept). A warning as each endless level begins.
+// there the hero's end, as a Hardcore death is (the Lexicon and the stash kept). A warning as each endless level begins: shown
+// as “Fall here and your hero is lost”, his word at 16:00 Pacific: “Just have it say “hardcore” instead of “if your hero falls
+// he is lost” or whatever” (read as: the card's warning, and the line in town, say Hardcore).
 //
 // HOW THE GAME HOLDS IT (game/game.ts): `Game.endless`, the endless level the hero has reached (0: not yet open to him);
 // `Game.endlessFloor`, the floor it is (1 to the last built); `Game.inEndless`, whether the floor he is on is it. On it,
@@ -26,8 +30,8 @@
 import { RNG } from '../engine/rng';
 import { lastFloor } from './act1';
 
-/** THE SWITCH (off: the last floor beaten is the end of the way, as up to Version 23.2). `grow`: each endless level's monsters this much more life and damage than the last's (his pick, 10%). */
-export const ENDLESS = { on: false, grow: 0.1 };
+/** THE SWITCH, on since Version 23.3 (off: the last floor beaten is the end of the way, as up to Version 23.2). `grow`: each endless level's monsters this much more life and damage than the last's (his pick, 10%). */
+export const ENDLESS = { on: true, grow: 0.1 };
 
 /** The depth an endless level's strength and finds are of: the first one floor past the last built, each after it one more. */
 export function endlessPower(level: number): number {
@@ -53,11 +57,11 @@ export function endlessName(level: number): string {
   return `Endless ${Math.max(1, Math.floor(level))}`;
 }
 
-/** The warning as each endless level begins (his pick: a death here is the hero's end). */
-export const ENDLESS_WARN = 'Fall here and your hero is lost';
+/** The warning as each endless level begins (his pick: a death here is the hero's end; in his word, “hardcore”). */
+export const ENDLESS_WARN = 'Hardcore';
 
 /** How much longer an endless level's card is up than a floor's (FLOOR_NAMES.secs), its warning to be read, in seconds. */
 export const ENDLESS_CARD_MORE = 1.5;
 
 /** Said in town as the endless levels open to him, the last floor built beaten. */
-export const ENDLESS_OPENS = 'Endless mode is open: the waypoint leads on, each level harder. Fall there and your hero is lost.';
+export const ENDLESS_OPENS = 'Endless mode is open: the waypoint leads on, each level harder. Hardcore.';
