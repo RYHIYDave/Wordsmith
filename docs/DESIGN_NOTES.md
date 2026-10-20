@@ -5710,6 +5710,46 @@ from the scratchpad's `v221/release/artifact.html`; and at his web address, `gh-
 `tools/make_site.mjs` from `v221/release/Play.html`; a phone that already has it shows the new version the second time it is
 opened). `main` fast-forwarded to `perf` (`5f2c469`).
 
+### Version 23.0: Act 2, part one, The Hush (floors 11 to 15); the skill trees remade; the Headsman made new
+
+**What he said.** To the planning chat, 19 Oct 2026, 11:01 Pacific: "Get levels 11-15 into the game". To the art chat
+for floors 11 to 15, 18 Oct, 21:24 Pacific: "Hey go without my say so.  If something is shit I’ll get it to it but you’re
+doing a great jobs. At least for 11-15". To the main chat (a new chat taking it up; the old main chat silent since 17 Oct),
+19 Oct, 14:39 Pacific: "Please read the main chat and get the game updated up to level 15". Read as (told him, plain, that
+minute): this chat is the main chat now; floors 11 to 15 switched on with what waits with his yes; the full tests; then live
+on both the claude.ai page and his web address as Version 23.0, his message the go-ahead once it passes ("Say stop if you'd
+rather see it first"). Version 22.2 (on `next`, built and tested by the old main chat, never released) goes out inside it.
+
+**What is in it.**
+
+- **Floors 11 to 15, the Hush** (`ACT2` on; the planning chat's build, `docs/act2_build.md`, on the art chat's floors,
+  `docs/mockups/act2_*`): 11 the Gate Ward (the Crier), 12 the Undercity (the Rat King), 13 the Millrace (the Palimpsest),
+  14 the House of Quiet (the Physician), 15 the Great Library (the Censor); twelve new kinds; the Bells, the act's event in
+  place of the strongholds; a moment around the hero on each floor. From floor 10, home (the siege broken) and the town's
+  waypoint on to floor 11; from floor 15, home. Nothing of floors 1 to 10 fights on 11 to 15 (his rule of 18 Oct).
+- **A medium monster's second attack** (his rule of 9 Oct: medium two), made by the main chat from each one's own
+  pictures, nothing new painted (told him 19 Oct): the Hushed watch, the orderlies and the Bookwardens a HELD BLOW
+  (`game/act1_rules/held.ts`: the warning played round longer, a red circle where it lands from the start, a blow and a half
+  over all the circle and a full Heavy step's throw, every 7 s at most); the dredgers and the night carters their pull split
+  off as a move of its own (THE HOOK AND HAUL, THE COIL: only from where it can catch him, a blow and a quarter, every 6 s;
+  their basic blow never catches).
+- **The Headsman made new** (`HEADSMAN2`, `HEADSMAN2_FIGHT` on): his yes to send him to main, 17 Oct, 21:04 Eastern ("Yes").
+- **Version 22.2's** (his list of 17 Oct, 11:37, each with his yes; `docs/NEXT_VERSION.md`): the floors longer; the
+  strongholds as five waves, the altar gone once open; better loot; bosses' life; the Queen roaming; the Eye's three bars;
+  the Chained One's spin; the slots' order; the words' attributes; the golems' death, the Fleshmancer's teleport, the
+  warrior's Lunge; the four looks; THE SKILL TREES REMADE (`TALENTS2`, 32 talents).
+
+**Not in it** (still waiting, each with his yes, for the next): the wall beside a door on floors 1 to 5 (`mockup/door-walls`)
+and Rank II melding (`meld/rank2`): merging them was refused in this chat's workspace. Not built: the Knell, the
+strongholds' Hierophant (not his yes yet).
+
+**Calls made for him** (his to change): the planning chat's, in `docs/act2_build.md` "Calls made"; and the main chat's
+second attacks above (their numbers in each kind's file).
+
+**Published.** 19 Oct 2026, about 18:35 Pacific: the claude.ai page ("Version 61", version id `1792459949-f823`, label "Version 23.0") and his web address (`gh-pages` at `26f41d2`).
+
+**Results.** The whole unit suite on the copy of the release source (c4b6d87's src, the tests as mended), 2251 of 2251 (17:23 to 17:44; the first full run, 14:50 to 15:27, 2219 of 2251, the 32 every one a test written for the act off: mended, 232 re-run clean); THE REGRESSION, 260 playtests on the frozen copy (scratchpad v230/arpg_frozen, JOBS=2, 15:29:54 to 17:16:33), 250 clean; the 10 others: seven the playtests' own (act1_floor wanted a stronghold on floors 11 to 15, which have the Bells; act1_mob stood the rats and dredgers in a sewer's channel on floor 12: both mended), three the machine's or a random seed's (towntap_phone, autoaim_warrior, guide_auto_phone, its dungeon seed 1581559518 found no pack in reach: not chased); all ten clean alone twice; `find src -newer` nothing; the release build (v230/release: Play.html 3,710,070 bytes, artifact.html 3,709,748, "V23.0 2026-10-20 00:22"); THE PUBLISHED PAGE ITSELF (tools/wrap230.sh, 17:44 to 18:30), 123 playtests, 121 clean, touch_wide and enter_pc clean alone twice; its frame rate 56.6.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
