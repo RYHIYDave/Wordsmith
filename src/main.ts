@@ -58,6 +58,7 @@ import { DOORS, doorMiddle, doorTiles } from './game/doors';
 import { WAYS, stairMiddle, topStep } from './game/ways';
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
+import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
 import { ACT2 } from './game/act1';
 import { MELD, STONE_RISE, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
@@ -603,7 +604,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     try {
       const g = Game.restore(saved, meta);
       begin(g);
-      g.msg(`Welcome back. The gate leads to dungeon ${g.depth}.`, THEME.text);
+      // (ENDLESS MODE: once its levels are open to him, the waypoint leads back to the one he reached)
+      g.msg(ENDLESS.on && g.endless > 0 ? `Welcome back. The waypoint leads to ${endlessName(g.endless)}.` : `Welcome back. The gate leads to dungeon ${g.depth}.`, THEME.text);
     } catch {
       clearSave();
     }
@@ -1395,7 +1397,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         bossCard = { name: e.name, t: 0, secs: e.secs };
         floorCard = null;
       } else if (e.t === 'floorName') {
-        floorCard = { name: e.name, level: e.level, t: 0, secs: FLOOR_NAMES.secs };
+        // (ENDLESS MODE: an endless level's warning under its level, and up a little longer, to be read)
+        floorCard = { name: e.name, level: e.level, warn: e.warn, t: 0, secs: FLOOR_NAMES.secs + (e.warn ? ENDLESS_CARD_MORE : 0) };
         bossCard = null;
       } else if (e.t === 'tag') {
         // one of the town's people has a word for the hero as they come up (drawn by the effects, over whoever said it)
@@ -1525,7 +1528,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       if (titleLex) ui.press = null;
       const res = drawTitle(ui, art, titleArt, clock, TITLE, titleUi, {
         turn: turnLabel(),
-        resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, dungeon ${saved.depth}${MODES.on && saved.mode === 'hardcore' ? ', Hardcore' : ''}` : null,
+        resume: saved ? `${CLASSES[saved.cls].name}, level ${saved.level}, ${ENDLESS.on && (saved.endless ?? 0) > 0 ? endlessName(saved.endless ?? 1) : `dungeon ${saved.depth}`}${MODES.on && saved.mode === 'hardcore' ? ', Hardcore' : ''}` : null,
         note: saved && confirm && !titleUi.practice ? `${input.touchMode ? 'Tap' : 'Choose'} ${CLASSES[confirm.cls].name} again to start over. Your saved ${CLASSES[saved.cls].name} will be lost.` : null,
         guide: guideOn,
         limit: meta.limit,
@@ -1982,6 +1985,26 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         game.wayDepth = Math.max(game.wayDepth, depth);
         game.enterDungeon();
       }
+    },
+    /**
+     * ENDLESS MODE (game/endless.ts): the switch, and (with a level) the hero straight onto that endless level (on `floor`, or the
+     * floor it would be), as if he had beaten the last floor built and come so far; level 0, the endless levels opened to him in
+     * town, as when the last floor is beaten.
+     */
+    endless: (on: boolean, level = -1, floor = 0) => {
+      ENDLESS.on = on;
+      if (!game || level < 0) return;
+      game.cleared = Math.max(game.cleared, 15);
+      game.wayDepth = Math.max(game.wayDepth, 15);
+      game.endless = Math.max(1, level);
+      game.endlessFloor = floor || endlessFloorFor(game.seed, game.endless, 0);
+      if (level === 0) {
+        game.enterTown();
+        return;
+      }
+      game.depth = game.endlessFloor;
+      game.inEndless = true;
+      game.enterDungeon();
     },
     /** ACT 1 (and the bosses of floors 2 to 5): the acts one of them has (game/bosses.ts), for the playtests that have it make one over and over. */
     actsOf: (m: { kind: MonsterKind }) => actsOf(m),

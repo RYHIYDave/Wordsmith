@@ -1167,7 +1167,8 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   let lx = 4;
   const btnY = touch ? TOP_GLOBE_Y + 19 : 24;
   const btnH = touch ? 18 : 13;
-  const place = game.practice ? 'Practice room' : game.level.town ? 'Town' : FLOOR_NAMES.on ? floorTitle(game.depth).level : `Dungeon ${game.depth}`;
+  // (ENDLESS MODE: on an endless level, that level: Game.floorLevel)
+  const place = game.practice ? 'Practice room' : game.level.town ? 'Town' : game.floorLevel;
   drawText(g, place, 4, 3, game.practice ? THEME.accent : THEME.text, { shadow: P.ink });
   const coin = art.icons.gold[0];
   const statX = touch ? lifeX + 19 : 4;

@@ -1694,7 +1694,7 @@ function drawStats(ui: Ui, game: Game, r: Rect): void {
   g.fillStyle = THEME.accent;
   g.fillRect(r.x, r.y + 19, Math.round(r.w * frac), 1.5);
 
-  const stop = Math.round(armorReduction(d.armor, Math.max(1, game.depth)) * 100);
+  const stop = Math.round(armorReduction(d.armor, Math.max(1, game.power)) * 100);
   const defence: [string, string][] = [
     ['LIFE', `${Math.ceil(h.life)} / ${d.maxLife}`],
     ['LIFE A SECOND', d.lifeRegen.toFixed(1)],

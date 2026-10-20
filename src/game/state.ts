@@ -839,6 +839,8 @@ export interface Meta {
   deaths: number;
   /** Deepest dungeon any character has cleared. */
   bestDepth: number;
+  /** ENDLESS MODE (game/endless.ts): the deepest endless level any character has cleared (absent: none). */
+  bestEndless?: number;
   /** The first dungeon's prompts have been seen through on this device: new characters begin in town. */
   taught: boolean;
   /** How the slow abilities are limited: by a cooldown, or by mana. */
@@ -1091,7 +1093,7 @@ export type GameEvent =
   /** (FLOOR_NAMES) the hero has come into a floor: its name, and its level under it */
   /** THE FIRST FIVE FLOORS: the stairwell has begun to break open, its middle here (its film is the renderer's to play: render/dress.ts). */
   | { t: 'stairOpens'; x: number; y: number }
-  | { t: 'floorName'; name: string; level: string }
+  | { t: 'floorName'; name: string; level: string; warn?: string }
   /** One of the town's people has something to say as the hero walks up (see TAGS): who, what, and where they stand. */
   | { t: 'tag'; who: TownVoice; text: string; x: number; y: number }
   | { t: 'text'; x: number; y: number; text: string; color: string }

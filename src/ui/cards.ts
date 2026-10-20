@@ -13,7 +13,8 @@ import { LINE_H, drawText, textWidth } from '../engine/font';
 import { BOSS_INTRO } from '../game/defs';
 
 export interface BossCard { name: string; t: number; secs: number }
-export interface FloorCard { name: string; level: string; t: number; secs: number }
+/** `warn` (ENDLESS MODE, game/endless.ts): a line under the level, in the enemy's colours: an endless level's warning. */
+export interface FloorCard { name: string; level: string; warn?: string; t: number; secs: number }
 
 const ENEMY = { edge: '#ff4f8a', deep: '#7a1058', gold: '#ffd27a', light: '#fff0a0', ink: '#0d0716' };
 const STONE = { edge: '#2a2466', face: '#ece8ff', under: '#b0a4e0', small: '#a3abd8', ink: '#07050a' };
@@ -122,5 +123,12 @@ export function drawFloorCard(g: CanvasRenderingContext2D, card: FloorCard, view
   const ry = ly + 2;
   rule(g, cx - lw / 2 - 5, cx - lw / 2 - 5 - 18, ry, STONE.under, STONE.face);
   rule(g, cx + lw / 2 + 5, cx + lw / 2 + 5 + 18, ry, STONE.under, STONE.face);
+  // (ENDLESS MODE: the warning under it, in the enemy's pink, in the letters of the screen's lines, to be read at a glance)
+  if (card.warn) {
+    const warn = card.warn.toUpperCase();
+    const wy = ly + 12;
+    drawText(g, warn, cx + 1, wy + 1, ENEMY.ink, { align: 'center' });
+    drawText(g, warn, cx, wy, ENEMY.edge, { align: 'center' });
+  }
   g.globalAlpha = 1;
 }

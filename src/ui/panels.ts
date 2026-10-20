@@ -11,6 +11,7 @@ import { ATTR_GIVES, ATTR_NAME, CLASSES, SKILLS, TUNE, WORDS, growsWith, holdSki
 import type { Limit } from '../game/defs';
 import type { Game } from '../game/game';
 import { MODE_LINE } from '../game/modes';
+import { ENDLESS, endlessName } from '../game/endless';
 import type { HeroMode } from '../game/modes';
 import type { AimMode, Station, VendorId } from '../game/state';
 import { ITEM_ROOM, itemRoom, modLines } from '../game/items';
@@ -929,7 +930,8 @@ export function drawDeath(ui: Ui, game: Game): boolean {
     ? [`${CLASSES[h.cls].name}, level ${h.level}`, `Fell in dungeon ${game.depth}`]
     : [
         `${CLASSES[h.cls].name}, level ${h.level}`,
-        `Fell in dungeon ${game.depth}`,
+        // (ENDLESS MODE: fallen on an endless level, that level)
+        ENDLESS.on && game.inEndless ? `Fell in ${endlessName(game.endless)}` : `Fell in dungeon ${game.depth}`,
         `${game.cleared} dungeon${game.cleared === 1 ? '' : 's'} cleared, ${game.kills} monsters slain`,
         `${mins}m ${secs < 10 ? '0' : ''}${secs}s in the dark`,
       ];

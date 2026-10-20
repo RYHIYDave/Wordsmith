@@ -22,6 +22,7 @@ import { UNREACHABLE, flowDir, flowField, lineOfSight, scatter } from './nav';
 import { armorReduction, derive } from './stats';
 import { BOSSES5, BossRules, H2_GAIT, HEADSMAN2_FIGHT, blinkedAway, bossKind, gaitOf } from './bosses';
 import { ACT1, act2Floor, lastFloor } from './act1';
+import { ENDLESS, ENDLESS_OPENS, ENDLESS_WARN, endlessFloorFor, endlessName, endlessPower, endlessTough } from './endless';
 import { ACT2_GUARD, act2Pack } from './act2_mobs';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import type { BellsState } from './bells';
@@ -103,6 +104,9 @@ export interface RunSave {
   meld?: 'stone' | 'open' | null;
   /** THE WAYS (game/ways.ts): the deepest floor whose waypoint the hero has reached (absent while WAYS is off). */
   way?: number;
+  /** ENDLESS MODE (game/endless.ts): the endless level the hero has reached, and the floor it is (absent until it is open to him, and while ENDLESS is off). */
+  endless?: number;
+  endlessFloor?: number;
 }
 
 /** THE FIRST LEVELS: what the wordsmith says while his ring is dark. */
@@ -156,6 +160,7 @@ export function cleanMeta(m: Partial<Meta> | null | undefined): Meta {
   if (Array.isArray(m.stash)) for (let i = 0; i < TUNE.stashSize; i++) out.stash[i] = m.stash[i] ? migrateItem(m.stash[i] as Item) : null;
   out.deaths = typeof m.deaths === 'number' && Number.isFinite(m.deaths) ? Math.max(0, Math.floor(m.deaths)) : 0;
   out.bestDepth = typeof m.bestDepth === 'number' && Number.isFinite(m.bestDepth) ? Math.max(0, Math.floor(m.bestDepth)) : 0;
+  if (typeof m.bestEndless === 'number' && Number.isFinite(m.bestEndless) && m.bestEndless > 0) out.bestEndless = Math.floor(m.bestEndless);
   out.taught = m.taught === true;
   // (THE FIRST LEVELS: the ring is lit on a device the first time a hero brings the MASTER RUNE-STONE. A
   // device that saved before Version 19.5 has never had it lit: its next new hero goes for it, as
@@ -278,6 +283,14 @@ export class Game {
   bodySearched = false;
   /** THE WAYS (ways.ts, behind WAYS): the deepest floor whose waypoint the hero has reached, the town's waypoint warping him back to its start (0: none yet). */
   wayDepth = 0;
+  /**
+   * ENDLESS MODE (game/endless.ts, behind ENDLESS): the endless level the hero has reached (0: not open to him yet; it opens
+   * as he beats the last floor built), and the floor it is; and whether the floor he is on is it. On it `depth` is that floor
+   * (all that is the floor's own is as it is there), its strength and finds `power` and `tough`.
+   */
+  endless = 0;
+  endlessFloor = 0;
+  inEndless = false;
   /**
    * ACT 2, THE HUSH: THE HUSH ON THE HERO (his doc, "New for the act": "a status that darkens your words for a few seconds. Your
    * attacks still land, without what the words add"; brought by the Crier's Silent Shout, the Physician's Tonic and the Censor):
@@ -700,6 +713,8 @@ export class Game {
       ...(h.talents.length ? { talents: [...h.talents] } : {}),
       // (THE WAYS: nor the waypoint reached while theirs is off)
       ...(WAYS.on ? { way: this.wayDepth } : {}),
+      // (ENDLESS MODE: nor the endless level reached, until it is open to him)
+      ...(ENDLESS.on && this.endless > 0 ? { endless: this.endless, endlessFloor: this.endlessFloor } : {}),
       // (WORDMELDING: nor its runedust and its Meldstone while MELD is off)
       ...(MELD.on ? { dust: h.dust, meld: h.meld } : {}),
     };
@@ -734,6 +749,12 @@ export class Game {
     g.depth = Math.max(1, Math.floor(num(s.depth, 1)));
     g.cleared = Math.max(0, Math.floor(num(s.cleared, 0)));
     g.wayDepth = Math.max(0, Math.floor(num(s.way, 0)));
+    // (ENDLESS MODE: the endless level reached and the floor it is; a floor past the last built is not one)
+    if (ENDLESS.on) {
+      g.endless = Math.max(0, Math.floor(num(s.endless, 0)));
+      const ef = Math.floor(num(s.endlessFloor, 0));
+      g.endlessFloor = g.endless > 0 ? (ef >= 1 && ef <= lastFloor() ? ef : endlessFloorFor(g.seed, g.endless, 0)) : 0;
+    }
     // (THE WAYS: the town's waypoint, awake once there is a floor to warp back to)
     const tw = g.level.ways?.way;
     if (tw) tw.awake = g.wayDepth >= 2;
@@ -1065,6 +1086,8 @@ export class Game {
     this.clearLevel();
     this.level = makeTown(this.seed);
     this.inDungeon = false;
+    // (ENDLESS MODE: in town he is on no endless level; the waypoint takes him back to the one he reached)
+    this.inEndless = false;
     this.dungeonWords = [];
     const h = this.hero;
     const f = this.level.floor;
@@ -1118,7 +1141,8 @@ export class Game {
   rollShop(): void {
     const rng = new RNG((Math.imul(this.seed, 40503) ^ (this.depth * 9973 + this.cleared * 613)) >>> 0);
     const held = this.weapon();
-    const level = Math.max(1, this.depth);
+    // (ENDLESS MODE: once its levels are open to him, what the vendors have grows on with the one he has reached)
+    const level = Math.max(1, this.power);
     this.sold = [];
     for (const id of VENDOR_IDS) {
       const v = VENDORS[id];
@@ -1149,7 +1173,8 @@ export class Game {
     this.dungeonWords = this.plan;
     this.plan = [];
     for (const w of this.dungeonWords) this.learn(w, 'dungeon');
-    const seed = (Math.imul(this.seed, 7919) + this.depth * 104729 + this.cleared * 31) >>> 0;
+    // (ENDLESS MODE: an endless level laid fresh for its level, though its floor came before)
+    const seed = (Math.imul(this.seed, 7919) + this.depth * 104729 + this.cleared * 31 + (this.inEndless ? this.endless * 15485863 : 0)) >>> 0;
     this.level = makeDungeon(this.depth, seed);
     this.inDungeon = true;
     const h = this.hero;
@@ -1203,8 +1228,9 @@ export class Game {
     }
     this.updateVision(1);
     // (FLOOR_NAMES: the floor's own name comes up across the screen, its level under it, in place of the line)
-    if (FLOOR_NAMES.on && !this.practice) this.emit({ t: 'floorName', ...floorTitle(this.depth) });
-    else this.msg(`Dungeon ${this.depth}`, MSG.head);
+    // (ENDLESS MODE: on an endless level, the floor's own name, the level under it, and the warning: his pick, a death here is the hero's end)
+    if (FLOOR_NAMES.on && !this.practice) this.emit({ t: 'floorName', ...floorTitle(this.depth), ...(ENDLESS.on && this.inEndless ? { level: endlessName(this.endless), warn: ENDLESS_WARN } : {}) });
+    else this.msg(ENDLESS.on && this.inEndless ? `${endlessName(this.endless)}: ${ENDLESS_WARN.toLowerCase()}` : `Dungeon ${this.depth}`, MSG.head);
     if (this.dungeonWords.length) this.msg(`Burned in: ${this.dungeonWords.map((w) => WORDS[w].name).join(', ')}`, MSG.word);
     this.sfx('portal');
     // NORMAL MODE (game/modes.ts): the hero as they came in, for a death to go back to. (A copy
@@ -1299,7 +1325,7 @@ export class Game {
       return;
     }
     // (THE FIRST LEVELS: nothing has a word in the first dungeon; a yellow pack's leader is only the tougher)
-    const words = this.bareDungeon() ? [] : this.drawWords(tiers, rarity === 'blue' ? 1 : this.depth >= 6 ? 2 : 1);
+    const words = this.bareDungeon() ? [] : this.drawWords(tiers, rarity === 'blue' ? 1 : this.power >= 6 ? 2 : 1);
     if (rarity === 'blue') for (const s of spots) this.spawn(kind, s.x, s.y, pi, 0, false, rng, null, { rarity: 'blue', words });
     // (words are scarce: as before, an elite room's leader may carry one of its words to give up; the
     // leader of any other yellow pack carries none, and neither does a minion nor one of a blue pack)
@@ -1314,7 +1340,8 @@ export class Game {
 
   /** THE FIRST LEVELS (21:05): "That also means no words on monsters for dungeon 1". */
   private bareDungeon(): boolean {
-    return FIRST_LEVELS.on && !this.practice && this.depth <= 1;
+    // (ENDLESS MODE: floor 1 as an endless level is without the lesson, his pick: its monsters carry words as any floor's)
+    return FIRST_LEVELS.on && !this.practice && this.depth <= 1 && !(ENDLESS.on && this.inEndless);
   }
 
   /** `n` different words for a monster, never two of Flame, Frost and Lightning. */
@@ -1439,7 +1466,9 @@ export class Game {
     const champion = rank === 2;
     // (THE FIRST LEVELS, 21:05: "That also means no words on monsters for dungeon 1")
     const bare = this.bareDungeon();
-    const want = pack ? pack.words.length : bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (this.depth >= 10 ? 3 : this.depth >= 3 ? 2 : 1) : elite ? (this.depth >= 6 ? 2 : 1) : 0;
+    // (ENDLESS MODE: how many words a monster carries goes by its strength's depth, `power`; a lair boss's three by its floor)
+    const P = this.power;
+    const want = pack ? pack.words.length : bare ? 0 : boss ? (this.depth % 5 === 0 ? 3 : 2) : champion ? (P >= 10 ? 3 : P >= 3 ? 2 : 1) : elite ? (P >= 6 ? 2 : 1) : 0;
     const words: WordId[] = pack ? [...pack.words] : this.drawWords(rng, want);
     // (MONSTER PACKS: a minion has its leader's words at half strength)
     let half: WordId[] = pack && pack.rarity === 'minion' ? [...pack.words] : [];
@@ -1455,7 +1484,7 @@ export class Game {
     if (boss && words.length) {
       carries = [lot ? lot.pick(words) : words[0]];
       if (lot) {
-        let p = TUNE.bossExtraPerDepth * (this.depth - 1) + TUNE.bossExtraPerWord * this.dungeonWords.length + (greater ? TUNE.bossExtraGreater : 0);
+        let p = TUNE.bossExtraPerDepth * (P - 1) + TUNE.bossExtraPerWord * this.dungeonWords.length + (greater ? TUNE.bossExtraGreater : 0);
         while (carries.length < 3 && p > 0 && lot.chance(Math.min(0.95, p))) {
           const spare = WORD_IDS.filter((w) => !carries.includes(w));
           carries.push(lot.pick(spare));
@@ -1475,9 +1504,10 @@ export class Game {
       half = half.filter((w) => !this.dungeonWords.includes(w));
     }
     const has = { words, half };
-    let life = def.life * (boss ? 1 + 0.4 * (this.depth - 1) : scaleLife(this.depth));
-    let dm = scaleDmg(this.depth);
-    let xp = def.xp * (1 + 0.25 * (this.depth - 1));
+    // (ENDLESS MODE: on an endless level as strong as its depth, `power`, and 10% more for each endless level before it, `tough`)
+    let life = def.life * (boss ? 1 + 0.4 * (P - 1) : scaleLife(P)) * this.tough;
+    let dm = scaleDmg(P) * this.tough;
+    let xp = def.xp * (1 + 0.25 * (P - 1));
     if (champion) {
       life *= TUNE.guardianLife;
       dm *= TUNE.guardianDmg;
@@ -1728,6 +1758,11 @@ export class Game {
       this.throughHoldDoor(to === 'holdIn');
       return;
     }
+    // (ENDLESS MODE: from an endless level, every way on, the stairwell, the mine shaft and the way on alike, to the next)
+    if (ENDLESS.on && this.inEndless && (to === 'up' || to === 'on' || to === 'down')) {
+      this.nextEndless();
+      return;
+    }
     if (to === 'up') {
       // (THE FIRST FIVE FLOORS: up the mine shaft from the fifth floor, out to town: the Crypt cleared)
       this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
@@ -1749,10 +1784,17 @@ export class Game {
         // (ACT 2, THE HUSH: the siege broken, the town's waypoint takes him on into the city, floor 11; from the fifteenth, the
         // library, home: his doc's payoff, the words flying home and the High City's gates shut)
         if (act2Floor(from + 1)) this.wayDepth = Math.max(this.wayDepth, from + 1);
+        // (ENDLESS MODE: the last floor built beaten, the endless levels are open to him: the town's waypoint takes him on into the first)
+        const opens = ENDLESS.on && from >= lastFloor() && this.endless === 0;
+        if (opens) {
+          this.endless = 1;
+          this.endlessFloor = endlessFloorFor(this.seed, 1, from);
+        }
         this.enterTown();
         this.cameT = 0;
         this.sfx('portal');
         this.msg(from === 10 ? `${floorTitle(from).level} cleared. The siege is broken.` : `${floorTitle(from).level} cleared. The stolen words fly home. High above, the gates of the High City swing shut.`, MSG.good);
+        if (opens) this.msg(ENDLESS_OPENS, MSG.word);
         return;
       }
       this.depth++;
@@ -1770,6 +1812,7 @@ export class Game {
       this.cameT = 0;
     } else if (to === 'gateIn') {
       this.depth = 1;
+      this.inEndless = false;
       this.enterDungeon('gate');
       this.cameT = 0;
     } else if (to === 'gateOut') {
@@ -1779,10 +1822,29 @@ export class Game {
     } else if (to === 'warpTown') {
       this.enterTown('way');
       this.sfx('portal');
+    } else if (ENDLESS.on && this.endless > 0) {
+      // (ENDLESS MODE: the town's waypoint takes him back to the endless level he reached: his pick, “Pick up where you left off”)
+      this.depth = this.endlessFloor;
+      this.inEndless = true;
+      this.enterDungeon('way');
     } else {
       this.depth = Math.max(2, this.wayDepth);
       this.enterDungeon('way');
     }
+  }
+
+  /** ENDLESS MODE: an endless level's boss beaten, on down to the next: another floor, at random, never the one just beaten; 10% harder. */
+  private nextEndless(): void {
+    const was = this.endless;
+    this.meta.bestEndless = Math.max(this.meta.bestEndless ?? 0, was);
+    this.cleared++;
+    this.endless = was + 1;
+    this.endlessFloor = endlessFloorFor(this.seed, this.endless, this.depth);
+    this.depth = this.endlessFloor;
+    this.inEndless = true;
+    this.enterDungeon();
+    this.cameT = 0;
+    this.msg(`${endlessName(was)} cleared`, MSG.good);
   }
 
   /** THE WAYS: the boss is dead, and the stairwell opens in the floor of his hall. Nobody and nothing is left on its opening. */
@@ -2299,7 +2361,7 @@ export class Game {
     const n = B.plan.bells.length;
     if (MELD.on) this.addDrop('dust', at.x, at.y, Math.round((BELLS_TUNE.dust + Math.floor(n / 2)) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
     for (let i = 0; i < n; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i < 2 ? 4 : 2), null);
-    this.addDrop('gold', at.x, at.y, this.rng.int(BELLS_TUNE.gold, BELLS_TUNE.gold * 2) * Math.max(1, this.depth) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
+    this.addDrop('gold', at.x, at.y, this.rng.int(BELLS_TUNE.gold, BELLS_TUNE.gold * 2) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
     if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word)) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(WORD_IDS));
     this.emit({ t: 'bells', what: 'won', x: B.plan.muffled.x, y: B.plan.muffled.y, n });
     this.sfx('rare');
@@ -2384,7 +2446,7 @@ export class Game {
       const carrier = rng.int(0, 1);
       q.guards.forEach((at, k) => {
         const kind = HOLD_GUARDS[k % HOLD_GUARDS.length];
-        const words = this.bareDungeon() ? [] : this.drawWords(rng, this.depth >= 6 ? 2 : 1);
+        const words = this.bareDungeon() ? [] : this.drawWords(rng, this.power >= 6 ? 2 : 1);
         // (where the mock-up stood it, or the nearest place a body may stand: the altar, the braziers and banners are about it)
         const spot = this.free(L.walk, at.x, at.y, 0.42) ? at : scatter(L.walk, L.floor.w, L.floor.h, at.x, at.y, 1, rng)[0] ?? at;
         const m = this.spawn(kind, spot.x, spot.y, HOLD_GUARD_ID(q.n, k), 1, false, rng, null, { rarity: 'leader', words });
@@ -2509,7 +2571,7 @@ export class Game {
         if (MELD.on && HOLD_TUNE.dust[n] > 0) this.addDrop('dust', at.x, at.y, Math.round(HOLD_TUNE.dust[n] * (LOOT2.on ? LOOT2.dust : 1)), null, null);
         const items = LOOT2.on ? LOOT2.hold[n] : HOLD_TUNE.items[n];
         for (let i = 0; i < items; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(LOOT2.on ? (i < 2 ? 4 : 2) : i === 0 ? 2 : 1), null);
-        this.addDrop('gold', at.x, at.y, this.rng.int(15, 30) * Math.max(1, this.depth) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
+        this.addDrop('gold', at.x, at.y, this.rng.int(15, 30) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
         this.sfx('rare');
         this.msg('The stronghold falls.', MSG.good);
       }
@@ -4942,7 +5004,7 @@ export class Game {
         W.onward.awake = true;
         W.onward.warpAt = this.time;
         this.sfx('power', 0.8);
-        this.msg(this.depth >= 10 ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
+        this.msg(this.depth >= 10 && !(ENDLESS.on && this.inEndless) ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
       } else if (W && W.shaft) {
         // (THE FIRST FIVE FLOORS: on the fifth floor the cage comes crashing down the mine shaft at the back of his hall)
         W.shaft.state = 'coming';
@@ -5089,7 +5151,7 @@ export class Game {
     let dmg = 0;
     for (const [e, share] of parts) {
       // (PRECISE, on a monster: its blows find the gaps in the hero's armour)
-      if (e === 'phys') dmg += raw * share * (1 - armorReduction(k('precise') > 0 ? d.armor * (1 - PRECISE.armourIgnored * k('precise')) : d.armor, Math.max(1, this.depth)));
+      if (e === 'phys') dmg += raw * share * (1 - armorReduction(k('precise') > 0 ? d.armor * (1 - PRECISE.armourIgnored * k('precise')) : d.armor, Math.max(1, this.power)));
       else dmg += raw * share * (1 - (e === 'fire' ? d.resFire : e === 'frost' ? d.resFrost : d.resLight) / 100);
     }
     if (h.shockT > 0) dmg *= 1.2;
@@ -5212,7 +5274,29 @@ export class Game {
    * Only with the switch on, for a Normal hero, in a dungeon gone into (not the practice room).
    */
   get wakes(): boolean {
-    return MODES.on && this.mode === 'normal' && this.inDungeon && !this.practice && this.entry !== null;
+    // (ENDLESS MODE: a death on an endless level is the hero's end, Normal or Hardcore: his pick, “The hero too”)
+    return MODES.on && this.mode === 'normal' && this.inDungeon && !this.practice && this.entry !== null && !(ENDLESS.on && this.inEndless);
+  }
+
+  /**
+   * ENDLESS MODE (game/endless.ts): the depth the strength of this floor's monsters and what it gives up are of. The floor's own
+   * depth, but on an endless level that level's (one past the last floor built, and one more for each after it), and in town,
+   * once the endless levels are open to him, the one he has reached (what the vendors have grows on with it).
+   */
+  get power(): number {
+    if (ENDLESS.on && this.endless > 0 && (this.inEndless || (this.level && this.level.town))) return endlessPower(this.endless);
+    return this.depth;
+  }
+
+  /** ENDLESS MODE: how much more life and damage this floor's monsters have than its depth gives: on an endless level 10% more for each before it (his pick), else none. */
+  get tough(): number {
+    return ENDLESS.on && this.inEndless ? endlessTough(this.endless) : 1;
+  }
+
+  /** What the floor he is on is called (the line under its name): on an endless level, that level. */
+  get floorLevel(): string {
+    if (ENDLESS.on && this.inEndless) return endlessName(this.endless);
+    return FLOOR_NAMES.on ? floorTitle(this.depth).level : `Dungeon ${this.depth}`;
   }
 
   /**
@@ -6760,10 +6844,11 @@ export class Game {
     if (quality >= 2) opts.luck = TUNE.hoardLuck;
     if (quality === 3) opts.atLeast = 1;
     // (LOOT2: 4, the first of a boss's or a guardian's: never plain; from floor LOOT2.from, a rare at the least)
-    if (quality === 4) opts.atLeast = this.depth >= LOOT2.from ? 2 : 1;
+    if (quality === 4) opts.atLeast = this.power >= LOOT2.from ? 2 : 1;
     // (LOOT2: in the descent every roll the luckier)
-    if (LOOT2.on && this.depth >= LOOT2.from) opts.luck = [(opts.luck?.[0] ?? 1) * LOOT2.deep, (opts.luck?.[1] ?? 1) * LOOT2.deep];
-    return rollItem(Math.max(1, this.depth), this.rng, opts);
+    if (LOOT2.on && this.power >= LOOT2.from) opts.luck = [(opts.luck?.[0] ?? 1) * LOOT2.deep, (opts.luck?.[1] ?? 1) * LOOT2.deep];
+    // (ENDLESS MODE: what drops grows on as the floors' depth would, `power`)
+    return rollItem(Math.max(1, this.power), this.rng, opts);
   }
 
   /** The words a monster will drop when it dies: what hangs over its head. For most monsters, none. */
@@ -6783,7 +6868,7 @@ export class Game {
     // (the dead that rise for a new player's first word leave nothing: they are there to be felled)
     if (m.packId === RISEN_PACK) return;
     const bonus = 1 + 0.3 * this.dungeonWords.length;
-    const goldBase = Math.max(1, this.depth);
+    const goldBase = Math.max(1, this.power);
     if (m.boss) {
       // (WORDMELDING: the Fleshmancer drops runedust, the only one who does for now, his pick; and the
       // Meldstone, which opens melding at the wordsmith, until it has been brought to him)
@@ -6807,7 +6892,7 @@ export class Game {
       this.addDrop('gold', m.x, m.y, rng.int(25, 45) * goldBase, null, null);
       const n = (LOOT2.on ? LOOT2.boss : TUNE.bossItems) + (this.depth % 5 === 0 ? TUNE.bossItemsFifth : 0);
       // (LOOT2: the first never plain, and rare from floor LOOT2.from; the others with a hoard's luck there, as before above it)
-      for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? (i === 0 ? 4 : this.depth >= LOOT2.from ? 2 : 1) : i === 0 ? 3 : 1), null);
+      for (let i = 0; i < n; i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? (i === 0 ? 4 : this.power >= LOOT2.from ? 2 : 1) : i === 0 ? 3 : 1), null);
       this.addDrop('orb', m.x, m.y, 0, null, null);
       return;
     }
@@ -6819,7 +6904,7 @@ export class Game {
       }
       this.addDrop('gold', m.x, m.y, rng.int(15, 25) * goldBase, null, null);
       // (LOOT2: more pieces; above floor LOOT2.from only the first with a hoard's luck, his "yellow items should be pretty rare" early on)
-      for (let i = 0; i < (LOOT2.on ? LOOT2.champion : 1); i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(i === 0 || this.depth >= LOOT2.from ? 2 : 0), null);
+      for (let i = 0; i < (LOOT2.on ? LOOT2.champion : 1); i++) this.addDrop('item', m.x, m.y, 0, this.rollGear(i === 0 || this.power >= LOOT2.from ? 2 : 0), null);
       this.addDrop('orb', m.x, m.y, 0, null, null);
       return;
     }
@@ -6975,7 +7060,7 @@ export class Game {
       this.emit({ t: 'spark', x: p.x, y: p.y, el: 'phys', n: 8 });
       this.sfx('hit', 0.5);
       const rng = this.rng;
-      if (rng.chance(0.4)) this.addDrop('gold', p.x, p.y, rng.int(1, 5) * Math.max(1, this.depth), null, null);
+      if (rng.chance(0.4)) this.addDrop('gold', p.x, p.y, rng.int(1, 5) * Math.max(1, this.power), null, null);
       if (rng.chance(0.08)) this.addDrop('orb', p.x, p.y, 0, null, null);
       if (rng.chance(0.04)) this.addDrop('item', p.x, p.y, 0, this.rollGear(), null);
     }
@@ -6994,7 +7079,7 @@ export class Game {
         // (one piece; a vault's chest may hold a second, and the first piece out of a vault's chest is a hoard's)
         const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0);
         for (let i = 0; i < n; i++) this.addDrop('item', p.x, p.y + 0.6, 0, this.rollGear(room && i === 0 ? 2 : 1), null);
-        this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.depth) * (room ? 2 : 1), null, null);
+        this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.power) * (room ? 2 : 1), null, null);
         if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
       }
     }
@@ -7123,6 +7208,7 @@ export class Game {
     // (THE WAYS: on an awake waypoint)
     if (this.wayHere()) {
       if (!this.level.town) return 'Waypoint: to town';
+      if (ENDLESS.on && this.endless > 0) return `Waypoint: to ${endlessName(this.endless)}`;
       if (this.wayDepth >= 2) return this.wayDepth >= 6 && FLOOR_NAMES.on ? `Waypoint: to ${floorTitle(this.wayDepth).level}` : `Waypoint: to dungeon ${this.wayDepth}`;
     }
     if (this.level.town) {
@@ -7141,6 +7227,11 @@ export class Game {
 
   /** Step through the portal the boss leaves behind. */
   private leaveDungeon(): void {
+    // (ENDLESS MODE: from an endless level, on to the next)
+    if (ENDLESS.on && this.inEndless) {
+      this.nextEndless();
+      return;
+    }
     this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
     this.cleared++;
     this.depth++;
@@ -7408,7 +7499,7 @@ export class Game {
   /** Stranger: what a throw for kind `k` (GAMBLE_KINDS) costs: so many times a plain piece of that kind at the vendors'. */
   gamblePrice(k: number): number {
     const kind = GAMBLE_KINDS[k];
-    return kind ? Math.max(1, Math.round(plainValue(kind.slot, Math.max(1, this.depth)) * TUNE.gambleMult)) : 0;
+    return kind ? Math.max(1, Math.round(plainValue(kind.slot, Math.max(1, this.power)) * TUNE.gambleMult)) : 0;
   }
 
   /**
@@ -7427,7 +7518,7 @@ export class Game {
     const roll = this.rng.next();
     const odds = TUNE.gambleOdds;
     const rarity: Rarity = roll < odds.rare ? 2 : roll < odds.rare + odds.magic ? 1 : 0;
-    const it = rollItem(Math.max(1, this.depth), this.rng, { slot: kind.slot, rarity, weapons: kind.weapon ? [kind.weapon] : undefined });
+    const it = rollItem(Math.max(1, this.power), this.rng, { slot: kind.slot, rarity, weapons: kind.weapon ? [kind.weapon] : undefined });
     h.gold -= price;
     h.bag[free] = it;
     this.won = free;
