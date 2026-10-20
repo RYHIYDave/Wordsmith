@@ -34,7 +34,7 @@ import type { ActorArt } from '../art/actor_types';
 import { filmRoom, makeFilm } from '../art/films';
 import { heroLists, makeHeroArt3 } from '../art/heroes3';
 import { paintTerrain, terrainOf } from '../art/terrain';
-import { paintStanding, standingBits, standingOf } from '../art/standing';
+import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 import type { ClassId } from '../game/types';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
@@ -748,7 +748,7 @@ export function paintWorkerMain(): void {
   let seq = 0;
   let going = false;
   /** ACT 1: the floor whose ground this worker paints, and its terrain (and which floor it is: ACT 2, for the Gate Ward's shells). */
-  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null } | null = null;
+  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null } | null = null;
   const keyOf = (land: Land, floor: Floor): string => `${land.kind}:${land.depth}:${land.seed}:${floor.w}x${floor.h}`;
 
   /** (ACT 2, THE GATE WARD) A floor's houses' shells, a house a step, each handed over as it is painted (render/act2_houses.ts). */
@@ -867,14 +867,15 @@ export function paintWorkerMain(): void {
         const a = job.ask;
         if (ground && ground.id === a.id) {
           const t0 = performance.now();
-          const p = paintTerrain(ground.T, a.i * PIECE, a.j * PIECE, PIECE, PIECE);
+          // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, painted with it: art/standing.ts)
+          const both = ground.stands && ground.near ? paintWithStanding(ground.T, ground.stands, ground.near, a.i * PIECE, a.j * PIECE, PIECE, PIECE) : null;
+          const p = both ? both.ground : paintTerrain(ground.T, a.i * PIECE, a.j * PIECE, PIECE, PIECE);
           const cv = new OffscreenCanvas(PIECE, PIECE);
           (cv.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(p.rgba, PIECE, PIECE), 0, 0);
           const bmp = cv.transferToImageBitmap();
-          // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, in bits: art/standing.ts)
           const walls: WallBitMsg[] = [];
-          if (ground.stands) {
-            for (const b of standingBits(paintStanding(ground.T, ground.stands, a.i * PIECE, a.j * PIECE, PIECE, PIECE))) {
+          if (both) {
+            for (const b of standingBits(both.standing)) {
               const bc = new OffscreenCanvas(b.w, b.h);
               (bc.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(b.rgba, b.w, b.h), 0, 0);
               walls.push({ d: b.d, x0: b.x0, y0: b.y0, w: b.w, h: b.h, img: bc.transferToImageBitmap() });
@@ -915,7 +916,9 @@ export function paintWorkerMain(): void {
       // (a new floor: its terrain made once here, as the page makes its own; the last floor's pieces still asked for are not wanted)
       try {
         const T = landTerrain(ask.land, ask.floor, ask.walls > 0);
-        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands: ask.walls > 0 ? standingOf(T, ask.walls) : null };
+        const near = ask.walls > 0 ? nearOf(T, ask.walls) : null;
+        const stands = near ? (x: number, y: number): boolean => !T.ground(x, y) && !T.drop(x, y) && near(x, y) : null;
+        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near };
       } catch (err) {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }

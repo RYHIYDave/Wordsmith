@@ -20,13 +20,19 @@
 // past that is the dark beyond the walls, as it is now. Floor 13, the Millrace, has no walls (its rise is 0).
 
 import { T_FLOOR } from '../game/types';
-import type { RGB, Terrain } from './terrain';
-import { worldOf } from './terrain';
+import type { RGB, Terrain, TerrainPiece } from './terrain';
+import { HHP, HWP, paintTerrain, worldOf } from './terrain';
 
 /** Rock that stands whole: within this many tiles of the walkable floor (Infinity: all of it). */
 export function standingOf(T: Terrain, thick: number): (x: number, y: number) => boolean {
   const rock = (x: number, y: number): boolean => !T.ground(x, y) && !T.drop(x, y);
-  if (!Number.isFinite(thick)) return rock;
+  const near = nearOf(T, thick);
+  return (x, y) => rock(x, y) && near(x, y);
+}
+
+/** Within `thick` tiles of the walkable floor (always, for Infinity): which of the rock stands, asked only of what is rock. */
+export function nearOf(T: Terrain, thick: number): (x: number, y: number) => boolean {
+  if (!Number.isFinite(thick)) return () => true;
   // (how far each place is from the nearest floor tile: a grid of K cells a tile, a margin round the floor)
   const f = T.floor;
   const K = 4;
@@ -75,7 +81,7 @@ export function standingOf(T: Terrain, thick: number): (x: number, y: number) =>
     if (i < 0 || j < 0 || i >= W || j >= H) return Infinity;
     return Math.max(0, d[j * W + i] - 0.5) / K;
   };
-  return (x, y) => rock(x, y) && far(x, y) < thick;
+  return (x, y) => far(x, y) < thick;
 }
 
 export interface StandingPiece {
@@ -103,7 +109,9 @@ function faceTurn(stands: (x: number, y: number) => boolean, x: number, y: numbe
  * pieces are cut (render/outdoor.ts). Where the rock that stands (`stands`) rises in front of what the ground shows (the floor
  * behind a wall, or, past a wall a tile thick, the dark beyond), its top or its face as the look paints them; clear elsewhere.
  */
-export function paintStanding(T: Terrain, stands: (x: number, y: number) => boolean, x0: number, y0: number, w: number, h: number): StandingPiece {
+export function paintStanding(T: Terrain, stands: (x: number, y: number) => boolean, x0: number, y0: number, w: number, h: number, near?: (x: number, y: number) => boolean): StandingPiece {
+  // (which rock stands, asked only of what is rock already: `near` if given, else `stands` itself)
+  const standsRock = near ?? stands;
   const L = T.look;
   const H = L.rise;
   const rgba = new Uint8ClampedArray(w * h * 4);
@@ -135,7 +143,7 @@ export function paintStanding(T: Terrain, stands: (x: number, y: number) => bool
       Dr[j] = d ? 1 : 0;
       if (!g && !d) {
         lr = j;
-        if (stands(x, y)) ls = j;
+        if (standsRock(x, y)) ls = j;
       }
       lastRock[j] = lr;
       lastStand[j] = ls;
@@ -252,4 +260,48 @@ export function standingBits(p: StandingPiece): StandingBit[] {
   }
   bits.sort((a, b) => a.d - b.d);
   return bits;
+}
+
+/**
+ * THE GROUND AND WHAT STANDS OVER IT, PAINTED TOGETHER (one ground piece): the two ask the ground the same questions down the same
+ * columns (is it floor, is it the drop), so the answers are kept for the piece and asked once. The ground is painted exactly as
+ * art/terrain.ts paintTerrain paints it.
+ */
+export function paintWithStanding(T: Terrain, stands: (x: number, y: number) => boolean, near: (x: number, y: number) => boolean, x0: number, y0: number, w: number, h: number): { ground: TerrainPiece; standing: StandingPiece } {
+  const L = T.look;
+  const H = Math.max(L.rise, L.hang ? L.hang.tall : 0);
+  // (the rows either painter asks of: from H over 8 above the piece to H under N under it)
+  const r0 = y0 - 8 - 2 * H - 2;
+  const r1 = y0 + h + L.near + H + 4;
+  const rows = r1 - r0 + 1;
+  const g = new Uint8Array(w * rows);
+  const d = new Uint8Array(w * rows);
+  const cell = (x: number, y: number): number => {
+    const a = (x - y) * HWP - 0.5;
+    const b = (x + y) * HHP - 0.5;
+    const px = Math.round(a);
+    const py = Math.round(b);
+    if (Math.abs(a - px) > 1e-6 || Math.abs(b - py) > 1e-6) return -1;
+    const c = px - x0;
+    const r = py - r0;
+    return c < 0 || c >= w || r < 0 || r >= rows ? -1 : r * w + c;
+  };
+  const M: Terrain = {
+    ...T,
+    ground: (x, y) => {
+      const i = cell(x, y);
+      if (i < 0) return T.ground(x, y);
+      if (!g[i]) g[i] = T.ground(x, y) ? 2 : 1;
+      return g[i] === 2;
+    },
+    drop: (x, y) => {
+      const i = cell(x, y);
+      if (i < 0) return T.drop(x, y);
+      if (!d[i]) d[i] = T.drop(x, y) ? 2 : 1;
+      return d[i] === 2;
+    },
+  };
+  const ground = paintTerrain(M, x0, y0, w, h);
+  const standing = paintStanding(M, stands, x0, y0, w, h, near);
+  return { ground, standing };
 }

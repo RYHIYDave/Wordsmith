@@ -16,7 +16,7 @@ import { makeDungeon } from '../src/game/level';
 import type { Level } from '../src/game/state';
 import { GW_SETT, GW_SLATE, GW_SLATE_FRESH, gateWardLook } from '../src/art/gateward';
 import { paintTerrain, worldOf } from '../src/art/terrain';
-import { paintStanding, standingBits, standingOf } from '../src/art/standing';
+import { nearOf, paintStanding, paintWithStanding, standingBits, standingOf } from '../src/art/standing';
 import { ACT2_WALLS, OPEN_FOR, WallWindows, wallsThick } from '../src/render/act2_walls';
 import type { Window } from '../src/render/act2_walls';
 import { OutdoorGround, gateWardLand, landTerrain } from '../src/render/outdoor';
@@ -255,5 +255,27 @@ test('the ground at a floor\'s start: the pieces round the screen wanted before 
   for (const a of asked.slice(n)) {
     const was = asked.slice(0, n).filter((b) => b[0] === a[0] && b[1] === a[1]);
     for (const b of was) assert.ok(a[2] < b[2], `asked again only sooner: ${a} after ${b}`);
+  }
+});
+
+test('the ground and what stands over it painted together are as each painted alone (the ground exactly as before)', () => {
+  for (const d of [12, 11]) {
+    const L = floorOf(d);
+    const T = landTerrain(L.land!, L.floor, true);
+    const thick = wallsThick(L.land!);
+    const stands = standingOf(T, thick);
+    const near = nearOf(T, thick);
+    const [sx, sy] = nearWallSpot(L);
+    const x0 = Math.floor(((sx - sy) * 32) / 128) * 128;
+    const y0 = Math.floor(((sx + sy) * 16) / 128) * 128;
+    for (const [i, j] of [[0, 0], [-1, 0], [0, -1], [1, 1]]) {
+      const a = paintTerrain(T, x0 + i * 128, y0 + j * 128, 128, 128);
+      const b = paintStanding(T, stands, x0 + i * 128, y0 + j * 128, 128, 128);
+      const w = paintWithStanding(T, stands, near, x0 + i * 128, y0 + j * 128, 128, 128);
+      assert.deepEqual(w.ground.rgba, a.rgba, `floor ${d}: the ground the same`);
+      assert.deepEqual(w.ground.kind, a.kind);
+      assert.deepEqual(w.standing.rgba, b.rgba, `floor ${d}: what stands the same`);
+      assert.deepEqual(w.standing.depth, b.depth);
+    }
   }
 });

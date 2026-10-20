@@ -31,7 +31,7 @@ import { millraceLook } from '../art/millrace';
 import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
 import { LB_DEEP, greatLibraryLook } from '../art/library';
 // (ACT 2: the walls toward the eye standing whole, behind ACT2_WALLS: art/standing.ts, render/act2_walls.ts)
-import { paintStanding, standingBits, standingOf } from '../art/standing';
+import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 import { wallsThick } from './act2_walls';
 import type { WallBit } from './act2_walls';
 import { blobDist, laneDist, segDist } from '../game/act1_layout';
@@ -268,6 +268,7 @@ export class OutdoorGround {
   /** (ACT 2, behind ACT2_WALLS) How far from the floor the rock stands whole (0: none), and which rock does. */
   private thick = 0;
   private stands: ((x: number, y: number) => boolean) | null = null;
+  private near: ((x: number, y: number) => boolean) | null = null;
   private pieces = new Map<number, Piece>();
   private frame = 0;
   private sky: HTMLCanvasElement | null = null;
@@ -328,7 +329,10 @@ export class OutdoorGround {
     this.land = land;
     this.thick = wallsThick(land);
     this.T = landTerrain(land, floor, this.thick > 0);
-    this.stands = this.thick > 0 ? standingOf(this.T, this.thick) : null;
+    this.near = this.thick > 0 ? nearOf(this.T, this.thick) : null;
+    const near = this.near;
+    const T = this.T;
+    this.stands = near ? (x, y) => !T.ground(x, y) && !T.drop(x, y) && near(x, y) : null;
     SHOWN.terrain = this.T;
     for (const p of this.pieces.values()) this.drop(p);
     this.pieces.clear();
@@ -395,7 +399,9 @@ export class OutdoorGround {
   private paint(i: number, j: number): Piece {
     const T = this.T!;
     const t0 = performance.now();
-    const p = paintTerrain(T, i * PIECE, j * PIECE, PIECE, PIECE);
+    // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, painted with it)
+    const both = this.stands && this.near ? paintWithStanding(T, this.stands, this.near, i * PIECE, j * PIECE, PIECE, PIECE) : null;
+    const p = both ? both.ground : paintTerrain(T, i * PIECE, j * PIECE, PIECE, PIECE);
     this.stats.pieces++;
     this.stats.ms += performance.now() - t0;
     const cvs = document.createElement('canvas');
@@ -405,8 +411,8 @@ export class OutdoorGround {
     c.putImageData(new ImageData(p.rgba, PIECE, PIECE), 0, 0);
     const piece: Piece = { cvs, seen: this.frame };
     // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, in bits)
-    if (this.stands) {
-      const bits = standingBits(paintStanding(T, this.stands, i * PIECE, j * PIECE, PIECE, PIECE));
+    if (both) {
+      const bits = standingBits(both.standing);
       if (bits.length) {
         piece.walls = bits.map((b) => {
           const bc = document.createElement('canvas');
