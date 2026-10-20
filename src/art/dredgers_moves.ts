@@ -12,6 +12,11 @@
 //     body wound round to the right, its hook glinting pink (THE WARNING), held shaking; then, hips first, a lunge,
 //     the pole thrust out its whole length; a twist as the hook bites; and a hard haul back, leaning into it, a step
 //     back; and the pole stood again at the right side.
+//   THE CAST NET (their second blow, on his "Yes" of 19 Oct, 16:47 Pacific, to the art chat drawing the act's five
+//     medium kinds their second attacks): leaning on the boathook in the right hand, the left reaches back over the
+//     shoulder into the creel and drags out a net, balled and weighted, its lead weights glinting pink; it is whirled
+//     round at their left side (THE WARNING), swung far back, and heaved underhand, a step in, out over the floor
+//     before them (where it falls, art/dredger_shots.ts).
 //   STRUCK: jolted back, the masked head snapped back, the jars clinking.
 //   THE JARS BURST (their death): rocked back; the jars in the creel crack and the lid is flung off; the voices pour
 //     up out of it, pink going pale as they go free; the head thrown back; the boathook drops; emptied, they sink to
@@ -24,10 +29,11 @@
 
 import { footwork, kneelHips, kneelSettle, plantBy, plantOf } from './bosses3';
 import type { Plant } from './bosses3';
+import type { NetHeld } from './dredgers';
 import type { BossShape, CheckLimb, CheckLump, CheckThing } from './boss_checks';
 import type { ActorArt } from './actor_types';
-import { DREDGER_BODY, DREDGER_CANVAS, DREDGER_REST, POLE, POLE_HOLD, creelLump, dredgerPainter, dredgerStand, poleGrip, poleOf } from './dredgers';
-import { TILE3, mobSet } from './new_mobs3';
+import { DREDGER_BODY, DREDGER_CANVAS, DREDGER_REST, POLE, POLE_HOLD, creelLump, dredgerPainter, dredgerStand, netHung, poleGrip, poleOf, polePlanted } from './dredgers';
+import { TILE3, mobSet, skeletonAt } from './new_mobs3';
 import type { Mob, MobMove } from './new_mobs3';
 import { add, dot, elbowFor, heading, len, lerp3, mul, norm, solve, sub } from './skeleton';
 import type { Bones, Key3, Motion, Posed, Skeleton, V3 } from './skeleton';
@@ -163,6 +169,183 @@ function haulGlint(t: number): number {
 }
 
 // ---------------------------------------------------------------------------------------------
+// THE CAST NET (their second blow)
+
+/**
+ * Their second blow: how long; the net drawn out of the creel (from, to); THE WARNING (the net whirled round at their
+ * side and swung back, held there a moment); the throw, the net let go (a frame of the game's thirty a second); and
+ * the right foot's step in. (His rule of 9 Oct: a medium monster's second blow the bigger, cooling down the longer.)
+ */
+export const DR_NET = { long: 2.5, grip: 0.35, out: [0.35, 0.52], warn: [0.6, 1.12], whirl: [0.6, 0.98], hit: 38 / 30, step: [1.04, 1.18] } as const;
+const NH = DR_NET.hit;
+const NET_NAME = 'The cast net';
+type Way = readonly [number, V3, boolean?];
+/** A smooth way through these places at these times (a Catmull-Rom spline; a place marked `true` is come to rest at). */
+function through(ways: readonly Way[]): (t: number) => V3 {
+  const n = ways.length;
+  const tan = (j: number): V3 => (j <= 0 || j >= n - 1 || ways[j][2] ? [0, 0, 0] : mul(sub(ways[j + 1][1], ways[j - 1][1]), 1 / (ways[j + 1][0] - ways[j - 1][0])));
+  return (t) => {
+    if (t <= ways[0][0]) return ways[0][1];
+    if (t >= ways[n - 1][0]) return ways[n - 1][1];
+    let i = 0;
+    while (t > ways[i + 1][0]) i++;
+    const [t0, p0] = ways[i];
+    const [t1, p1] = ways[i + 1];
+    const h = t1 - t0;
+    const u = (t - t0) / h;
+    const u2 = u * u;
+    const u3 = u2 * u;
+    const m0 = mul(tan(i), h);
+    const m1 = mul(tan(i + 1), h);
+    return add(add(mul(p0, 2 * u3 - 3 * u2 + 1), mul(m0, u3 - 2 * u2 + u)), add(mul(p1, -2 * u3 + 3 * u2), mul(m1, u3 - u2)));
+  };
+}
+/** The body's fields the same way through their keys (those a key leaves out, as they are at rest). */
+function bodyThrough(keys: readonly (readonly [number, P, boolean?])[]): (t: number) => P {
+  const names = [...new Set(keys.flatMap(([, p]) => Object.keys(p)))];
+  const paths = names.map((k) => through(keys.map(([at, p, still]): Way => [at, [((p as Record<string, number>)[k] ?? (R as unknown as Record<string, number>)[k]) as number, 0, 0], still])));
+  return (t) => Object.fromEntries(names.map((k, i) => [k, paths[i](t)[0]])) as P;
+}
+/** THE NET'S WAY in the left hand, from its own shoulder along the figure's forward, left and up. */
+export const NET_WHIRL = { c: [0, 8, -12] as V3, r: 5.5 };
+/** The great swing: the arm straight from the shoulder, round in the figure's own up and forward, the hand this far out to the side; at these angles (degrees above forward) at these frames. */
+const SWING_R = 19;
+const SWING_OUT = 8;
+const swung = (deg: number): V3 => [SWING_R * Math.cos((deg * Math.PI) / 180), SWING_OUT, SWING_R * Math.sin((deg * Math.PI) / 180)];
+const F = 1 / 30;
+const NET_HAND = ((): ((t: number) => V3) => {
+  const ways: Way[] = [
+    [0, [R.lhx, R.lhy, R.lhz], true],
+    [0.1, [6, 7, -12]],
+    [0.2, [1, 10, 3]],
+    // (reached back over the shoulder into the mouth of the creel, and gripping)
+    [0.29, [-7.5, 3, 7.5]],
+    [DR_NET.grip, [-8, 2.5, 6.5], true],
+    // (the net dragged up out of it, and brought round and down at their side)
+    [0.44, [-6.5, 5, 12.5]],
+    [0.52, [-6.5, 9, 0]],
+  ];
+  // WHIRLED ROUND at their side, the hand going forward at the bottom: from behind, a turn and three quarters, to the top
+  const [w0, w1] = DR_NET.whirl;
+  const turn = (3.5 * Math.PI) / (w1 - w0);
+  for (let t = w0; t <= w1 + 1e-6; t += F / 2) {
+    const a = 1.5 * Math.PI + turn * (t - w0);
+    ways.push([t, add(NET_WHIRL.c, [NET_WHIRL.r * Math.sin(a), 0, -NET_WHIRL.r * Math.cos(a)])]);
+  }
+  ways.push(
+    // SWUNG FAR BACK, and held there a moment
+    [1.04, [-9, 9, -6.5]],
+    [1.1, swung(-150), true],
+    // THE THROW: heaved underhand, down past the hip and out and up before them, let go of at the blow
+    [NH - 4 * F, swung(-147)],
+    [NH - 3 * F, swung(-138)],
+    [NH - 2 * F, swung(-120)],
+    [NH - F, swung(-90)],
+    [NH, swung(-50)],
+    [NH + F, swung(-14)],
+    [NH + 2 * F, swung(8)],
+    [NH + 3 * F, swung(18)],
+    [NH + 4 * F, swung(22)],
+    [1.45, swung(24), true],
+    // held up before them as it falls; and let down again
+    [1.62, swung(23), true],
+    [1.86, [12, 5, -12]],
+    [2.15, [6, 3.5, -19]],
+    [DR_NET.long, [R.lhx, R.lhy, R.lhz], true],
+  );
+  return through(ways);
+})();
+/** Where their left elbow points as it goes. */
+const NET_ELBOW = through([
+  [0, [-0.5, 0.5, -0.7], true],
+  [0.2, [0, 1, -0.5]],
+  [0.3, [0.4, 0.8, 0.4]],
+  [0.44, [0.4, 0.8, 0.4]],
+  [0.56, [-0.2, 0.9, -0.3]],
+  [0.64, [-0.3, 0.7, -0.6]],
+  [0.98, [-0.3, 0.7, -0.6]],
+  [1.1, [0, 0.6, -0.8]],
+  [1.62, [0, 0.4, -0.9]],
+  [DR_NET.long, [-0.5, 0.5, -0.7], true],
+]);
+/** And their right elbow, out to their right as they lean on the boathook (at rest, behind them). */
+const NET_ELBOW_R = through([
+  [0, [-0.7, -0.05, -1], true],
+  [0.3, [-0.3, -0.9, -0.5]],
+  [2.2, [-0.3, -0.9, -0.5]],
+  [DR_NET.long, [-0.7, -0.05, -1], true],
+]);
+/** THE BODY: turned to look back at the creel as they reach into it; held, crouched a little, as the net whirls; wound round to the left as it swings back; and then, hips first, lunged forward as it goes, leaning on the boathook. */
+const NET_BODY = bodyThrough([
+  [0, {}, true],
+  [0.3, { px: -0.8, pz: R.pz - 0.4, yaw: 12, twist: 6, pitch: 3, bend: 4, roll: -2, side: -2, faceTurn: 34, faceUp: 6, faceTilt: 8 }],
+  [0.38, { px: -0.8, pz: R.pz - 0.8, yaw: 11, twist: 6, pitch: 3, bend: 4, roll: -2, side: -2, faceTurn: 30, faceUp: 4, faceTilt: 8 }],
+  [0.48, { px: -0.6, pz: R.pz + 0.1, yaw: 8, twist: 4, pitch: 2, bend: 2, roll: -3, side: -1, faceTurn: 18, faceUp: 14, faceTilt: 6 }],
+  [DR_NET.whirl[0], { px: -0.6, pz: R.pz - 1.2, yaw: 4, twist: 4, pitch: 8, bend: 8, roll: -1, side: 0, faceTurn: -4, faceUp: 6, faceTilt: -2, lk: 13, rk: -13 }],
+  [DR_NET.whirl[1], { px: -1.0, pz: R.pz - 1.4, yaw: 6, twist: 5, pitch: 8, bend: 8, roll: -1, side: 0, faceTurn: -6, faceUp: 6, faceTilt: -2, lk: 13, rk: -13 }],
+  [1.1, { px: -2.6, pz: R.pz - 1.8, yaw: 16, twist: 8, pitch: 4, bend: 5, roll: -2, side: -1, faceTurn: -20, faceUp: 8, faceTilt: -2, lk: 15, rk: -11 }],
+  [NH - 2 * F, { px: 1.6, pz: R.pz - 2.6, yaw: 3, twist: 12, pitch: 10, bend: 7, roll: -1, side: 0, faceTurn: -10, faceUp: 8, faceTilt: 0, lk: 18, rk: -16 }],
+  [NH, { px: 5.0, pz: R.pz - 3.2, yaw: -10, twist: 0, pitch: 16, bend: 10, roll: 1, side: 1, faceTurn: 4, faceUp: 12, faceTilt: 0, lk: 20, rk: -22 }],
+  [NH + 0.12, { px: 6.4, pz: R.pz - 3.6, yaw: -14, twist: -8, pitch: 20, bend: 14, roll: 2, side: 1, faceTurn: 8, faceUp: 16, faceTilt: 0, lk: 22, rk: -24 }],
+  [1.62, { px: 6.0, pz: R.pz - 3.0, yaw: -11, twist: -6, pitch: 16, bend: 12, roll: 1, side: 1, faceTurn: 6, faceUp: 10, faceTilt: 0, lk: 20, rk: -22 }],
+  [2.05, { px: 2.0, pz: R.pz - 1.2, yaw: -3, twist: -1, pitch: 8, bend: 9, roll: 1, side: 0, faceTurn: 2, faceUp: 4, faceTilt: -3, lk: 12, rk: -12 }],
+  [DR_NET.long, {}, true],
+]);
+/** The boathook leaned on in the right hand, its butt where it stood on the floor at rest, leaned `lean` degrees forward (pivoting on its butt as they lunge on it). */
+const LEAN0 = 4;
+const HOLD0 = (R.rhz - 1.05) / Math.cos((LEAN0 * Math.PI) / 180);
+const BUTT_X = R.rhx - HOLD0 * Math.sin((LEAN0 * Math.PI) / 180);
+const leaned = (lean: number): P => polePlanted([BUTT_X + HOLD0 * Math.sin((lean * Math.PI) / 180), R.rhy], 1.05 + HOLD0 * Math.cos((lean * Math.PI) / 180), lean, HOOK_OUT);
+const NET_LEAN = through([
+  [0, [LEAN0, 0, 0], true],
+  [DR_NET.whirl[0], [5, 0, 0]],
+  [1.1, [7, 0, 0]],
+  [NH, [13, 0, 0]],
+  [NH + 0.12, [17, 0, 0]],
+  [1.62, [16, 0, 0]],
+  [2.05, [9, 0, 0]],
+  [DR_NET.long, [LEAN0, 0, 0], true],
+]);
+function dredgerNet(): Motion {
+  const keys: Key3[] = [];
+  const n = Math.round(DR_NET.long * 30);
+  for (let i = 0; i <= n; i++) {
+    const t = i / 30;
+    const [x, y, z] = NET_HAND(t);
+    keys.push({ at: t, ease: 'lin', pose: elbowsTo({ ...NET_BODY(t), ...leaned(NET_LEAN(t)[0]), lhIn: 1, lhx: x, lhy: y, lhz: z }, NET_ELBOW(t), NET_ELBOW_R(t)) });
+  }
+  return { hit: NH, keys };
+}
+function dredgerNetFeet(): (t: number) => P {
+  return footwork(B, {
+    L: { start: L0, moves: [] },
+    R: { start: R0, moves: [{ t0: DR_NET.step[0], t1: DR_NET.step[1], to: plantBy(R0, 9, 1.5, -8), lift: 3.2 }, { t0: 1.95, t1: 2.22, to: R0, lift: 2.4 }] },
+  });
+}
+/** Whether the net is in their left hand (from the creel until it is let go). */
+const netHeld = (t: number): boolean => t >= DR_NET.grip && t < NH;
+/** The warning: its weights glinting pink, from as it comes out of the creel until it is let go. */
+function netGlint(t: number): number {
+  if (!netHeld(t)) return 0;
+  return t < DR_NET.warn[0] ? (t - DR_NET.grip) / (DR_NET.warn[0] - DR_NET.grip) : 1;
+}
+/**
+ * How the net hangs from the fist: down, and away from where the hand is being pulled (its swing, flung out as it
+ * whirls: the hand's pull measured over a frame or so either side); flung open as hard as it is whirled.
+ */
+const NET_FALL = 1200;
+function netHangs(t: number): NetHeld | null {
+  if (!netHeld(t)) return null;
+  const e = 0.04;
+  const pull = mul(sub(add(NET_HAND(t + e), NET_HAND(t - e)), mul(NET_HAND(t), 2)), 1 / (e * e));
+  return { hang: norm(sub([0, 0, -NET_FALL], pull), [0, 0, -1]), flare: Math.min(1, Math.max(0, (len(pull) - 600) / 3600)) };
+}
+/** (for the game, and art/dredger_shots.ts: where the net's middle is as it is let go, from where they stood, in their own forward, left and up) */
+export function netLetGo(): V3 {
+  return netHung(skeletonAt(DREDGER, 'net', NH), netHangs(NH - 1e-6) as NetHeld).mid;
+}
+
+// ---------------------------------------------------------------------------------------------
 // STRUCK
 
 function dredgerReel(): Motion {
@@ -242,7 +425,7 @@ const dieFreed = (t: number): number => sm((t - 0.5) / 0.8);
 // THEM, AS THE GAME HOLDS A MONSTER
 
 function dredgerMob(): Mob {
-  const paint = dredgerPainter({ burst: dieBurst, burstAt: DR_DIES.burst[0], pour: diePour, freed: dieFreed });
+  const paint = dredgerPainter({ burst: dieBurst, burstAt: DR_DIES.burst[0], pour: diePour, freed: dieFreed, net: (m) => (m.move === NET_NAME ? netHangs(m.t) : null) });
   const mv = (name: string, motion: Motion, more: Partial<MobMove> = {}): MobMove => ({ name, motion, rest: R, ...more });
   return {
     id: 'dredger',
@@ -251,6 +434,9 @@ function dredgerMob(): Mob {
     build: B,
     stand: mv('The dredgers lean on their boathooks, listening', dredgerStand()),
     attack: mv('The hook and haul', dredgerHaul(), { feet: dredgerHaulFeet(), glint: haulGlint, trail: (s, q) => [poleOf(s, q).hook, poleOf(s, q).tip], trailSpan: 2.4 }),
+    more: {
+      net: mv(NET_NAME, dredgerNet(), { feet: dredgerNetFeet(), glint: netGlint, blurAt: NH, trail: (s) => [s.handL], trailSpan: 2.4 }),
+    },
     idleFrames: 30,
     idleFps: 10,
     walk: mv('The dredgers wade', dredgerWalk(), { period: DR_WALK.frames / DR_WALK.fps, ground: DR_PACE * TILE3 }),
@@ -330,11 +516,21 @@ function poleThings(s: Skeleton, q: Posed): CheckThing[] {
     { name: 'boathook hook', pts: hook, r: 0.9, may },
   ];
 }
+/** The net in the left hand as the checks see it: the ball of it (it may touch the hand that holds it, and the creel it is dragged out of). */
+function netThings(s: Skeleton, t: number): CheckThing[] {
+  const n = netHung(s, netHangs(t) as NetHeld);
+  const may = ['foreL', ...(t < DR_NET.out[1] ? ['creel', 'upperL'] : [])];
+  return [
+    { name: 'net', pts: [lerp3(n.top, n.hem, 0.3), n.mid, lerp3(n.top, n.hem, 0.75)], r: 1.2 + n.r * 0.4, may },
+    { name: 'net weights', pts: n.rim, r: 1.0, may },
+  ];
+}
 export const DR_SHAPE: BossShape = {
   body: dredgerSolids,
   // (what they strike with: the boathook's hook, while it is theirs)
-  tip: (move, t, s, q) => (move === 'dying' && t >= DR_DIES.drop ? null : poleOf(s, q).hook),
-  things: (move, t, s, q) => (move === 'dying' && t >= DR_DIES.drop ? [] : poleThings(s, q)),
+  // (and the left hand, that throws the net)
+  tip: (move, t, s, q) => (move === 'net' ? s.handL : move === 'dying' && t >= DR_DIES.drop ? null : poleOf(s, q).hook),
+  things: (move, t, s, q) => (move === 'dying' && t >= DR_DIES.drop ? [] : [...poleThings(s, q), ...(move === 'net' && netHeld(t) ? netThings(s, t) : [])]),
 };
 /** (for the checks: how far up its pole their right hand holds it as they carry it) */
 export const DR_HOLD = POLE_HOLD(CARRY_DRAW);

@@ -149,6 +149,81 @@ export function slamAt(t: number): number {
 }
 
 // =============================================================================================
+// THE QUAKE (their second blow, the bigger: his rule of 9 Oct, a medium monster two attacks, the bigger hit cooling down longer)
+
+/**
+ * The quake: the mallet raised high in both hands by `raised`, crouched and coiled under it, its hoops glinting pink (the
+ * warning, `warn`); a dip, and they LEAP (both feet off the floor from `jump[0]`, highest at `apex`), the mallet swung
+ * over the top as they come down; THE BLOW at `hit` (a frame of the game's thirty a second); the mallet's head and their
+ * feet on the floor together at `floor`, the head about a tile before them, the floor shaking out round it; held there,
+ * bent over it, to `held`; heaved back up onto the shoulder by `long`.
+ */
+export const OD_QUAKE = { long: 2.7, raised: 0.5, warn: [0.5, 0.86], jump: [0.93, 1.23], apex: 1.06, hit: 36 / 30, floor: 37 / 30, held: 1.62 } as const;
+const QH = OD_QUAKE.hit;
+const QF = OD_QUAKE.floor;
+/** How far forward they land (their own lengths), and how high their feet leave the floor at the top of the leap. */
+const LEAP = 7;
+const LEAP_UP = 9;
+/** Coiled under the raised mallet: crouched, the mallet high over the head and laid back, the head up. */
+const COILED: P = elbowsTo({ ...RAISED, px: -2.0, pz: R.pz - 3.4, pitch: -2, bend: -10, faceUp: 18, rhx: 1.0, rhy: 3.0, rhz: 21.5, wEl: 132, lk: 18, rk: -18 }, [0.4, 1, 0.4], [0.4, -1, 0.4]);
+const coiled = (k: number): P => ({ ...COILED, rhz: (COILED.rhz as number) + (k % 2 ? 0.6 : -0.2), px: (COILED.px as number) - 0.25 * (k % 2), roll: k % 2 ? 1.2 : -1.2 });
+/** The dip before the leap: lower still, the mallet laid further back. */
+const DIP: P = elbowsTo({ ...COILED, px: -1.2, pz: R.pz - 6.0, pitch: 4, bend: -6, faceUp: 14, wEl: 138, lk: 24, rk: -24 }, [0.4, 1, 0.4], [0.4, -1, 0.4]);
+/** In the air, rising: stretched up, hips driving forward, the mallet still back over the head. */
+const RISING: P = elbowsTo({ ...COILED, px: 2.0, pz: R.pz + 5.0, pitch: 4, bend: -16, faceUp: 14, rhz: 22, wEl: 134, lk: 6, rk: -6 }, [0.4, 1, 0.4], [0.4, -1, 0.4]);
+/** At the top of the leap: the hips forward, the chest still back, the mallet at the top of its swing. */
+const APEX: P = elbowsTo({ ...RISING, px: 3.6, pz: R.pz + 7.0, pitch: 16, bend: -20, faceUp: 10, rhx: 3.0, rhz: 21, wEl: 120, lk: 14, rk: -14 }, [0.4, 1, 0.4], [0.4, -1, 0.3]);
+/** Coming down: the mallet over the top, gathering speed, a frame of the game's at a time. */
+const FALL1: P = elbowsTo({ ...APEX, px: 5.0, pz: R.pz + 5.0, pitch: 24, bend: -10, faceUp: 8, rhx: 7.5, rhy: 1.5, rhz: 17, wEl: 92, lk: 16, rk: -16 }, [0.6, 1, -0.2], [0.6, -1, -0.2]);
+const FALL2: P = elbowsTo({ ...FALL1, px: 6.4, pz: R.pz + 2.0, pitch: 30, bend: 0, faceUp: 2, rhx: 12.5, rhy: 2.0, rhz: 8, wEl: 50, lk: 18, rk: -18 }, [0.4, 1, -0.4], [0.4, -1, -0.4]);
+/** THE BLOW: brought down before them as they land. */
+const QDOWN: P = elbowsTo({ ...DOWN, px: 7.4, pz: R.pz - 3.0, pitch: 34, bend: 10, rhx: 15.5, rhz: -6, wEl: -6, lk: 20, rk: -20 }, [0.2, 1, -0.6], [0.2, -1, -0.6]);
+/** IN THE FLOOR: the mallet's head slammed down, the body bent over it, the knees given, landed. */
+const QFLOOR: P = elbowsTo({ ...FLOOR, px: 8.2, pz: R.pz - 8.6, pitch: 38, bend: 21, faceUp: -10, rhx: 14.5, rhz: -25, wEl: -18, lk: 26, rk: -26 }, [0.2, 1, -0.6], [0.2, -1, -0.6]);
+function orderlyQuake(): Motion {
+  return {
+    hit: QH,
+    keys: [
+      { at: 0, pose: {} },
+      // (lifted off the shoulder, the left hand coming to the handle)
+      { at: 0.18, pose: elbowsTo({ px: -1.0, pitch: 0, bend: -2, faceUp: 8, rhIn: 1, rhx: 6, rhy: 1.5, rhz: 6, wAz: 182, wEl: 50, ...BOTH }, [0.4, 1, -0.2], [0.4, -1, -0.2]), ease: 'io', as: { wAz: 2, wEl: 130 } },
+      { at: OD_QUAKE.raised, pose: COILED, ease: 'io' },
+      { at: 0.59, pose: coiled(1), ease: 'io' },
+      { at: 0.68, pose: coiled(2), ease: 'io' },
+      { at: 0.77, pose: coiled(3), ease: 'io' },
+      { at: OD_QUAKE.warn[1], pose: coiled(4), ease: 'io' },
+      { at: OD_QUAKE.jump[0] - 0.01, pose: DIP, ease: 'io' },
+      { at: 0.99, pose: RISING, ease: 'in' },
+      { at: OD_QUAKE.apex, pose: APEX, ease: 'lin' },
+      { at: QH - 2 / 30, pose: FALL1, ease: 'lin' },
+      { at: QH - 1 / 30, pose: FALL2, ease: 'lin' },
+      { at: QH, pose: QDOWN, ease: 'lin' },
+      { at: QF, pose: QFLOOR, ease: 'lin' },
+      { at: OD_QUAKE.held, pose: { ...QFLOOR, pz: (QFLOOR.pz as number) + 0.4, pitch: 37, bend: 20, faceUp: -6 }, ease: 'io' },
+      { at: 2.0, pose: { ...HEAVE, px: (HEAVE.px as number) + 3.0 }, ease: 'io', as: HEAVE_AS },
+      { at: OD_QUAKE.long, pose: {}, ease: 'io' },
+    ],
+  };
+}
+function orderlyQuakeFeet(): (t: number) => P {
+  const [j0, j1] = OD_QUAKE.jump;
+  return footwork(B, {
+    L: { start: L0, moves: [{ t0: j0, t1: j1, to: plantBy(L0, LEAP, 0.5, 4), lift: LEAP_UP }, { t0: 1.9, t1: 2.3, to: L0, lift: 2.8 }] },
+    R: { start: R0, moves: [{ t0: j0, t1: j1, to: plantBy(R0, LEAP, -0.5, -4), lift: LEAP_UP }, { t0: 2.15, t1: 2.5, to: R0, lift: 2.8 }] },
+  });
+}
+/** The warning: the hoops glinting pink, from as they raise it to the blow. */
+function quakeGlint(t: number): number {
+  if (t < 0.2 || t > QH + 0.05) return 0;
+  return t < OD_QUAKE.warn[0] ? (t - 0.2) / (OD_QUAKE.warn[0] - 0.2) : 1;
+}
+/** How hard the quake has just struck the floor: 1 as it lands, falling away as the dust settles. */
+export function quakeAt(t: number): number {
+  const u = (t - QF) / 0.7;
+  return u >= 0 && u < 1 ? 1 - u : 0;
+}
+
+// =============================================================================================
 // STRUCK
 
 function orderlyReel(): Motion {
@@ -254,11 +329,11 @@ function orderlyDying(): Motion {
 // =============================================================================================
 // THEM, AS THE GAME HOLDS A MONSTER
 
-const NAMES = { stand: 'The orderlies stand, watching', walk: 'The orderlies trudge', attack: 'The mallet blow', reel: 'The orderlies are struck', dying: 'The orderlies go down like felled trees' } as const;
+const NAMES = { stand: 'The orderlies stand, watching', walk: 'The orderlies trudge', attack: 'The mallet blow', quake: 'The quake', reel: 'The orderlies are struck', dying: 'The orderlies go down like felled trees' } as const;
 function orderlyMob(): Mob {
   const paint = orderlyPainter({
     mallet: (m: Moment) => !(m.dying && m.t >= OD_DIES.drop),
-    slam: (m: Moment) => (m.move === NAMES.attack ? slamAt(m.t) : 0),
+    slam: (m: Moment) => (m.move === NAMES.attack ? slamAt(m.t) : m.move === NAMES.quake ? quakeAt(m.t) : 0),
   });
   const mv = (name: string, motion: Motion, more: Partial<MobMove> = {}): MobMove => ({ name, motion, rest: R, ...more });
   return {
@@ -274,6 +349,10 @@ function orderlyMob(): Mob {
     walkFrames: OD_WALK.frames,
     walkFps: OD_WALK.fps,
     pace: OD_PACE,
+    // (their second blow, the bigger: the game names it 'quake')
+    more: {
+      quake: mv(NAMES.quake, orderlyQuake(), { feet: orderlyQuakeFeet(), glint: quakeGlint, blurAt: QH, trail: (s: Skeleton) => { const k = malletOf(s); return [k.faceA, k.head, k.faceB]; }, trailSpan: 2.4 }),
+    },
     reel: mv(NAMES.reel, orderlyReel()),
     reelTime: 0.4,
     hit: H,

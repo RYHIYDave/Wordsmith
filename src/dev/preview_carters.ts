@@ -5,11 +5,15 @@
 //   node tools/preview.mjs src/dev/preview_carters.ts shots/ct_game.png 1014 468 game
 //   node tools/preview.mjs src/dev/preview_carters.ts shots/ct_close.png 1400 900 close:<move>:<seconds>:<scale>
 //   node tools/page_gif.mjs src/dev/preview_carters.ts "film:<move>:<scale>" previews/carters/<move>.gif
-//     a film facing you (left) and away (right): stand, walk, attack, reel, die
+//     a film facing you (left) and away (right): stand, walk, attack, lashes, reel, die
+//   node tools/page_gif.mjs src/dev/preview_carters.ts "shots" previews/carters/lashes_shots.gif
+//     the driver's lash (their second blow) on the floor (art/carter_shots.ts), twice the game's size
 
 import { millraceLook } from '../art/millrace';
 import { FIELD_REAPER } from '../art/fieldhands_moves';
-import { CARTER } from '../art/carters_moves';
+import { CARTER, CT_LASHES, CT_SHAPE } from '../art/carters_moves';
+import { LASH_CRACK_FOR, drawLashCrack, drawLashesWarn } from '../art/carter_shots';
+import { posedOfMob, skeletonAt } from '../art/new_mobs3';
 import { spriteOf3 } from '../art/heroes3';
 import { toSprite } from '../art/kit';
 import { MOVES3 } from '../art/moves3';
@@ -141,6 +145,81 @@ if (mode === 'sheet') {
   for (const [sp, x, y, sh] of all) figure(sp, x, y, 1, sh);
   label('The Silent Order\'s carters with a Hushed reaper, at the game\'s size', 10, 8);
   show();
+} else if (mode === 'shots') {
+  const mob = CARTER;
+  // the driver's lash and where its three cracks fall on the floor, twice the game's size
+  const S = 2;
+  const FPS = 30;
+  cv.width = 1014;
+  cv.height = 640;
+  const gw = Math.ceil(cv.width / S);
+  const gh = Math.ceil((cv.height - 40) / S);
+  const [cx, cy] = pictureOf(15, 15);
+  const ox = Math.round(cx - gw / 2);
+  const oy = Math.round(cy - gh / 2);
+  const ground = paintTerrain(T, ox, oy, gw, gh);
+  const off = document.createElement('canvas');
+  off.width = gw;
+  off.height = gh;
+  const P2 = off.getContext('2d') as CanvasRenderingContext2D;
+  P2.imageSmoothingEnabled = false;
+  const gameC = document.createElement('canvas');
+  gameC.width = Math.ceil(gw / 2);
+  gameC.height = Math.ceil(gh / 2);
+  const o = gameC.getContext('2d') as CanvasRenderingContext2D;
+  const atP = (x: number, y: number): readonly [number, number] => {
+    const [px, py] = pictureOf(x, y);
+    return [px - ox, py - oy];
+  };
+  const at = (x: number, y: number): [number, number] => {
+    const [px, py] = atP(x, y);
+    return [px / 2, py / 2];
+  };
+  const put = (sp: Sprite, x: number, y: number): void => {
+    const [sx, sy] = atP(x, y);
+    P2.fillStyle = 'rgba(14,10,24,0.45)';
+    P2.beginPath();
+    P2.ellipse(sx, sy, 22, 10, 0, 0, Math.PI * 2);
+    P2.fill();
+    P2.drawImage(sp.img, Math.round(sx - sp.ax * 2), Math.round(sy - sp.ay * 2), sp.img.width, sp.img.height);
+  };
+  const X0 = 13.6;
+  const Y0 = 14.6;
+  const mv = (mob.more ?? {}).lashes;
+  const long = mv.motion.keys[mv.motion.keys.length - 1].at;
+  const TICKS = Math.round((0.5 + long + 0.6) * FPS);
+  // (where each crack falls, in tiles from their feet: their left is the floor's -y, seen from in front)
+  const TILE = 32 / Math.sqrt(2 / 3);
+  const spots = CT_LASHES.cracks.map((c) => {
+    const p = CT_SHAPE.tip!('lashes', c, skeletonAt(mob, 'lashes', c), posedOfMob(mob, 'lashes', c))!;
+    return [X0 + p[0] / TILE, Y0 - p[1] / TILE] as const;
+  });
+  const draw = (tick: number): void => {
+    const t = tick / FPS;
+    const m = t - 0.5;
+    P2.putImageData(new ImageData(ground.rgba, gw, gh), 0, 0);
+    o.clearRect(0, 0, gameC.width, gameC.height);
+    const w0 = CT_LASHES.warn[0] - 0.1;
+    if (m >= w0 && m < CT_LASHES.cracks[2]) drawLashesWarn(o, at, X0, Y0, 1, 0, Math.min(1, (m - w0) / (CT_LASHES.cracks[0] - w0)));
+    CT_LASHES.cracks.forEach((c, i) => {
+      if (m >= c) drawLashCrack(o, at, spots[i][0], spots[i][1], m - c);
+    });
+    put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, 'lashes', m, 'front'), X0, Y0);
+    P2.drawImage(gameC, 0, 0, gameC.width * 2, gameC.height * 2);
+    g.fillStyle = '#0d1030';
+    g.fillRect(0, 0, cv.width, cv.height);
+    g.imageSmoothingEnabled = false;
+    g.drawImage(off, 0, 40, gw * S, gh * S);
+    label(`The driver's lash on the floor (twice the game's size): ${Math.max(0, m).toFixed(2)} s; each crack's mark ${LASH_CRACK_FOR} s`, 10, 8);
+  };
+  draw(0);
+  win.__frames = TICKS;
+  win.__tickMs = 1000 / FPS;
+  win.__frame = (i: number): string => {
+    draw(i);
+    return cv.toDataURL('image/png');
+  };
+  show();
 } else if (mode === 'film') {
   // facing you (left) and away (right): its stand twice round, its wade, or a move between stands
   const which = parts[1] || 'stand';
@@ -148,7 +227,11 @@ if (mode === 'sheet') {
   const FPS = 30;
   const mob = CARTER;
   const walkLong = mob.walkFrames / mob.walkFps;
-  const LONG = which === 'stand' ? (2 * mob.idleFrames) / mob.idleFps : which === 'walk' ? 3 * walkLong : 0.5 + (which === 'die' ? mob.dieTime + 1 : which === 'attack' ? mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at + 0.6 : 1.2);
+  const moveLong = (w: string): number => {
+    const mv = w === 'attack' ? mob.attack : (mob.more ?? {})[w];
+    return mv ? mv.motion.keys[mv.motion.keys.length - 1].at + 0.6 : 1.2;
+  };
+  const LONG = which === 'stand' ? (2 * mob.idleFrames) / mob.idleFps : which === 'walk' ? 3 * walkLong : 0.5 + (which === 'die' ? mob.dieTime + 1 : moveLong(which));
   const TICKS = Math.round(LONG * FPS);
   const at = (t: number, view: GameView): Sprite => {
     if (which === 'stand') return spOf(mob, 'stand', (Math.floor(t * mob.idleFps) % mob.idleFrames) / mob.idleFps, view);

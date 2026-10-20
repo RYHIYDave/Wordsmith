@@ -5,15 +5,15 @@
 //   node tools/preview.mjs src/dev/preview_bookwardens.ts shots/bw_game.png 1014 468 game
 //   node tools/preview.mjs src/dev/preview_bookwardens.ts shots/bw_close.png 1400 900 close:<move>:<seconds>:<scale>
 //   node tools/page_gif.mjs src/dev/preview_bookwardens.ts "film:<move>:<scale>" previews/bookwardens/<move>.gif
-//     a film facing you (left) and away (right): stand, walk, attack, reel, die
-//   node tools/page_gif.mjs src/dev/preview_bookwardens.ts "shots" previews/bookwardens/shots.gif
-//     the tome slam on the floor (art/bookwarden_shots.ts), twice the game's size
+//     a film facing you (left) and away (right): stand, walk, attack, storm, reel, die
+//   node tools/page_gif.mjs src/dev/preview_bookwardens.ts "shots[:storm]" previews/bookwardens/shots.gif
+//     the tome slam (or the page storm, their second blow) on the floor (art/bookwarden_shots.ts), twice the game's size
 
 import { LB_ZONE, greatLibraryLook } from '../art/library';
 import { SCRIBE } from '../art/scribes_moves';
 import { INKLING } from '../art/inklings_moves';
-import { BOOKWARDEN, WB_SLAM, tomeWayOf } from '../art/bookwardens_moves';
-import { TOME_MARK_FOR, drawTomeSlam } from '../art/bookwarden_shots';
+import { BOOKWARDEN, WB_SLAM, WB_STORM, tomeWayOf } from '../art/bookwardens_moves';
+import { TOME_MARK_FOR, drawPageStorm, drawStormWarn, drawTomeSlam } from '../art/bookwarden_shots';
 import { tomeAt } from '../art/bookwardens';
 import { skeletonAt } from '../art/new_mobs3';
 import { spriteOf3 } from '../art/heroes3';
@@ -198,7 +198,10 @@ if (mode === 'sheet') {
   };
   const X0 = 14.2;
   const Y0 = 14.6;
-  const long = mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at;
+  // ("shots:storm": the page storm, their second blow, and its fan on the floor)
+  const storm = parts[1] === 'storm';
+  const mvOf = storm ? (mob.more ?? {}).storm : mob.attack;
+  const long = mvOf.motion.keys[mvOf.motion.keys.length - 1].at;
   const TICKS = Math.round((0.5 + long + 0.5) * FPS);
   // (where the book comes down, in tiles from their feet: their left is the floor's -y, seen from in front)
   const head = tomeAt(skeletonAt(mob, 'attack', WB_SLAM.floor), tomeWayOf('attack', WB_SLAM.floor)).mid;
@@ -210,14 +213,21 @@ if (mode === 'sheet') {
     const m = t - 0.5;
     P2.putImageData(new ImageData(ground.rgba, gw, gh), 0, 0);
     o.clearRect(0, 0, gameC.width, gameC.height);
-    put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, 'attack', m, 'front'), X0, Y0);
-    if (m >= WB_SLAM.floor) drawTomeSlam(o, at, X0 + hx, Y0 + hy, 1, 0, m - WB_SLAM.floor);
+    if (storm) {
+      const w0 = WB_STORM.warn[0];
+      if (m >= w0 && m < WB_STORM.open[1]) drawStormWarn(o, at, X0, Y0, 1, 0, Math.min(1, (m - w0) / (WB_STORM.open[1] - w0)), m);
+      P2.drawImage(gameC, 0, 0, gameC.width * 2, gameC.height * 2);
+      o.clearRect(0, 0, gameC.width, gameC.height);
+      put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, 'storm', m, 'front'), X0, Y0);
+      if (m >= WB_STORM.pour[0]) drawPageStorm(o, at, X0, Y0, 1, 0, m - WB_STORM.pour[0]);
+    } else put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, 'attack', m, 'front'), X0, Y0);
+    if (!storm && m >= WB_SLAM.floor) drawTomeSlam(o, at, X0 + hx, Y0 + hy, 1, 0, m - WB_SLAM.floor);
     P2.drawImage(gameC, 0, 0, gameC.width * 2, gameC.height * 2);
     g.fillStyle = '#0d1030';
     g.fillRect(0, 0, cv.width, cv.height);
     g.imageSmoothingEnabled = false;
     g.drawImage(off, 0, 40, gw * S, gh * S);
-    label(`The tome slam on the floor (twice the game's size): ${Math.max(0, m - WB_SLAM.floor).toFixed(2)} s of ${TOME_MARK_FOR} s`, 10, 8);
+    label(storm ? `The page storm on the floor (twice the game's size): ${Math.max(0, m).toFixed(2)} s` : `The tome slam on the floor (twice the game's size): ${Math.max(0, m - WB_SLAM.floor).toFixed(2)} s of ${TOME_MARK_FOR} s`, 10, 8);
   };
   draw(0);
   win.__frames = TICKS;
@@ -232,7 +242,11 @@ if (mode === 'sheet') {
   const S = Number(parts[2]) || 2;
   const FPS = 30;
   const walkLong = mob.walkFrames / mob.walkFps;
-  const LONG = which === 'stand' ? (2 * mob.idleFrames) / mob.idleFps : which === 'walk' ? 3 * walkLong : 0.5 + (which === 'die' ? mob.dieTime + 1 : which === 'attack' ? mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at + 0.6 : 1.2);
+  const moveLong = (w: string): number => {
+    const mv = w === 'attack' ? mob.attack : (mob.more ?? {})[w];
+    return mv ? mv.motion.keys[mv.motion.keys.length - 1].at + 0.6 : 1.2;
+  };
+  const LONG = which === 'stand' ? (2 * mob.idleFrames) / mob.idleFps : which === 'walk' ? 3 * walkLong : 0.5 + (which === 'die' ? mob.dieTime + 1 : moveLong(which));
   const TICKS = Math.round(LONG * FPS);
   const at = (t: number, view: GameView): Sprite => {
     if (which === 'stand') return spOf(mob, 'stand', (Math.floor(t * mob.idleFps) % mob.idleFrames) / mob.idleFps, view);
