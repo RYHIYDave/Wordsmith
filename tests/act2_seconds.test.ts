@@ -24,9 +24,9 @@ import { WA_ROUND, roundBladeAt } from '../src/art/hushed_watch_moves';
 import { OD_QUAKE } from '../src/art/orderlies_moves';
 import { QUAKE_CRACKS_FOR, QUAKE_REACH } from '../src/art/orderly_shots';
 import { ROUND_REACH } from '../src/art/watch_shots';
-import { LASH_CRACK_FOR } from '../src/art/carter_shots';
+import { LASH_CRACK_FOR, lashSpots } from '../src/art/carter_shots';
 import { BOOKWARDEN } from '../src/game/act1_rules/bookwarden';
-import { CARTER } from '../src/game/act1_rules/carter';
+import { CARTER, crackSpot } from '../src/game/act1_rules/carter';
 import { DREDGER } from '../src/game/act1_rules/dredger';
 import { act1Rules } from '../src/game/act1_rules/index';
 import { ORDERLY } from '../src/game/act1_rules/orderly';
@@ -35,6 +35,9 @@ import type { MonsterKind } from '../src/game/types';
 import { firstHurt, room, watch } from './act1_kinds_room';
 import { fakeDocument } from './act1_kinds_room';
 import { paintWithoutCanvas } from './helpers';
+// (the effects last: they reach the rules through the game's own way in)
+import { lashesWarnFrom } from '../src/render/act1_fx/carter';
+import { mirrorFor } from '../src/render/act1_fx/watch';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -89,6 +92,31 @@ test('1. each is built: its act after the basic blow, cooling down longer and hi
   CT_LASHES.cracks.forEach((T, k) => near(CARTER.lashes.cracks[k], T, 1e-9, `the driver's lash: crack ${k + 1}`));
   CT_LASHES.reach.forEach((r, k) => near(CARTER.lashes.reach[k], r, 0.06, `the driver's lash: crack ${k + 1}'s reach`));
   near(CARTER.lashes.mark, LASH_CRACK_FOR, 1e-9, 'the driver\'s lash: its marks lie');
+  // (the round sweep's wake drawn the other way round for one drawn the other way round: a point at the figure's left, bearing
+  // b, turned over to its right, the way it faces kept)
+  {
+    const id = (x: number, y: number) => [x, y] as const;
+    const m = { x: 5, y: 7, fx: 0.6, fy: 0.8 };
+    const f = mirrorFor(id, m, -1);
+    const ahead = f(m.x + m.fx * 2, m.y + m.fy * 2);
+    near(ahead[0], m.x + m.fx * 2, 1e-9, 'the wake turned over: ahead stays ahead (x)');
+    near(ahead[1], m.y + m.fy * 2, 1e-9, 'the wake turned over: ahead stays ahead (y)');
+    const left = f(m.x + m.fy, m.y - m.fx);
+    near(left[0], m.x - m.fy, 1e-9, 'the wake turned over: left goes right (x)');
+    near(left[1], m.y + m.fx, 1e-9, 'the wake turned over: left goes right (y)');
+    assert.equal(mirrorFor(id, m, 1), id, 'the wake drawn as made for one drawn as made');
+  }
+  // (its warning's rings where its cracks fall, drawn either way round)
+  for (const hand of [1, -1]) {
+    for (const [fx, fy] of [[1, 0], [0, 1], [-0.6, 0.8]] as const) {
+      const m = { x: 10, y: 10, fx, fy };
+      const o = lashesWarnFrom(m, hand);
+      lashSpots(o.x, o.y, fx, fy).forEach(([x, y], k) => {
+        const s = crackSpot(m, hand, k);
+        assert.ok(Math.hypot(x - s.x, y - s.y) <= 0.08, `the driver's lash drawn with hand ${hand}, facing ${fx}, ${fy}: its warning's ring ${k + 1} where it cracks`);
+      });
+    }
+  }
   near(DREDGER.net.long, DR_NET.long, 1e-9, 'the net: its length');
   near(DREDGER.net.hit, DR_NET.hit, 1e-9, 'the net: let go of');
   near(DREDGER.net.flies, NET_FLIES, 1e-9, 'the net: its flight');
