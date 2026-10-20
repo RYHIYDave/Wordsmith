@@ -8,11 +8,13 @@
 //     a film facing you (left) and away (right): stand, walk, attack, reel, die
 //   node tools/page_gif.mjs src/dev/preview_orderlies.ts "shots" previews/orderlies/shots.gif
 //     the mallet's blow on the floor (art/orderly_shots.ts), twice the game's size
+//   node tools/page_gif.mjs src/dev/preview_orderlies.ts "shots:quake" previews/orderlies/quake_shots.gif
+//     the quake (their second blow): its warning ring and the floor shaken out, twice the game's size
 
 import { HQ_ZONE, houseOfQuietLook } from '../art/housequiet';
 import { PATIENT_MAN } from '../art/patients_moves';
-import { ORDERLY, OD_BLOW } from '../art/orderlies_moves';
-import { SLAM_CRACKS_FOR, drawMalletSlam } from '../art/orderly_shots';
+import { ORDERLY, OD_BLOW, OD_QUAKE } from '../art/orderlies_moves';
+import { QUAKE_CRACKS_FOR, SLAM_CRACKS_FOR, drawMalletSlam, drawQuake, drawQuakeWarn } from '../art/orderly_shots';
 import { malletOf } from '../art/orderlies';
 import { skeletonAt } from '../art/new_mobs3';
 import { spriteOf3 } from '../art/heroes3';
@@ -157,7 +159,8 @@ if (mode === 'sheet') {
   label("The Physician's orderlies, at the game's size", 10, 8);
   show();
 } else if (mode === 'shots') {
-  // the blow and where it lands on the floor, twice the game's size
+  // the blow (or the quake: 'shots:quake') and where it lands on the floor, twice the game's size
+  const QUAKE = parts[1] === 'quake';
   const S = 2;
   const FPS = 30;
   cv.width = 1014;
@@ -197,10 +200,11 @@ if (mode === 'sheet') {
   };
   const X0 = 14.2;
   const Y0 = 14.6;
-  const long = mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at;
+  const mvOf = QUAKE ? (mob.more ?? {}).quake : mob.attack;
+  const long = mvOf.motion.keys[mvOf.motion.keys.length - 1].at;
   const TICKS = Math.round((0.5 + long + 0.5) * FPS);
   // (where the mallet's head comes down, in tiles from their feet: their left is the floor's -y, seen from in front)
-  const head = malletOf(skeletonAt(mob, 'attack', OD_BLOW.floor)).head;
+  const head = malletOf(skeletonAt(mob, QUAKE ? 'quake' : 'attack', QUAKE ? OD_QUAKE.floor : OD_BLOW.floor)).head;
   const TILE = 32 / Math.sqrt(2 / 3);
   const hx = head[0] / TILE;
   const hy = -head[1] / TILE;
@@ -209,14 +213,16 @@ if (mode === 'sheet') {
     const m = t - 0.5;
     P2.putImageData(new ImageData(ground.rgba, gw, gh), 0, 0);
     o.clearRect(0, 0, gameC.width, gameC.height);
-    put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, 'attack', m, 'front'), X0, Y0);
-    if (m >= OD_BLOW.floor) drawMalletSlam(o, at, X0 + hx, Y0 + hy, m - OD_BLOW.floor);
+    if (QUAKE && m >= OD_QUAKE.warn[0] - 0.1 && m < OD_QUAKE.floor) drawQuakeWarn(o, at, X0 + hx, Y0 + hy, Math.min(1, (m - OD_QUAKE.warn[0] + 0.1) / (OD_QUAKE.floor - OD_QUAKE.warn[0] + 0.1)));
+    put(m < 0 || m >= long ? spOf(mob, 'stand', 0, 'front') : spOf(mob, QUAKE ? 'quake' : 'attack', m, 'front'), X0, Y0);
+    if (!QUAKE && m >= OD_BLOW.floor) drawMalletSlam(o, at, X0 + hx, Y0 + hy, m - OD_BLOW.floor);
+    if (QUAKE && m >= OD_QUAKE.floor) drawQuake(o, at, X0 + hx, Y0 + hy, m - OD_QUAKE.floor);
     P2.drawImage(gameC, 0, 0, gameC.width * 2, gameC.height * 2);
     g.fillStyle = '#0d1030';
     g.fillRect(0, 0, cv.width, cv.height);
     g.imageSmoothingEnabled = false;
     g.drawImage(off, 0, 40, gw * S, gh * S);
-    label(`The mallet's blow on the floor (twice the game's size): ${Math.max(0, m - OD_BLOW.floor).toFixed(2)} s of ${SLAM_CRACKS_FOR} s`, 10, 8);
+    label(QUAKE ? `The quake on the floor (twice the game's size): ${Math.max(0, m - OD_QUAKE.floor).toFixed(2)} s of ${QUAKE_CRACKS_FOR} s` : `The mallet's blow on the floor (twice the game's size): ${Math.max(0, m - OD_BLOW.floor).toFixed(2)} s of ${SLAM_CRACKS_FOR} s`, 10, 8);
   };
   draw(0);
   win.__frames = TICKS;
@@ -231,7 +237,11 @@ if (mode === 'sheet') {
   const S = Number(parts[2]) || 2;
   const FPS = 30;
   const walkLong = mob.walkFrames / mob.walkFps;
-  const LONG = which === 'stand' ? (2 * mob.idleFrames) / mob.idleFps : which === 'walk' ? 3 * walkLong : 0.5 + (which === 'die' ? mob.dieTime + 1 : which === 'attack' ? mob.attack.motion.keys[mob.attack.motion.keys.length - 1].at + 0.6 : 1.2);
+  const moveLong = (w: string): number => {
+    const mv = w === 'attack' ? mob.attack : (mob.more ?? {})[w];
+    return mv ? mv.motion.keys[mv.motion.keys.length - 1].at + 0.6 : 1.2;
+  };
+  const LONG = which === 'stand' ? (2 * mob.idleFrames) / mob.idleFps : which === 'walk' ? 3 * walkLong : 0.5 + (which === 'die' ? mob.dieTime + 1 : moveLong(which));
   const TICKS = Math.round(LONG * FPS);
   const at = (t: number, view: GameView): Sprite => {
     if (which === 'stand') return spOf(mob, 'stand', (Math.floor(t * mob.idleFps) % mob.idleFrames) / mob.idleFps, view);

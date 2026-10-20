@@ -16,7 +16,11 @@
 //      else; and its mark on the floor (orderly_shots.ts) is drawn only in its time, near where it struck, nothing cyan;
 //   7. the dull pink in their eyes while they live, gone out once they are down; and down they lie, low on the floor,
 //      full length before where they stood;
-//   8. the mallet that falls from them as they die lies clear of them once they are down.
+//   8. the mallet that falls from them as they die lies clear of them once they are down;
+//   9. THE QUAKE, their second blow (his rule of 9 Oct, a medium monster two attacks): the mallet raised high over them
+//      through its warning, both feet off the floor at the top of the leap, and the mallet down on the floor well out
+//      before them as they land; the dust only there; its warning ring and its shaking of the floor (orderly_shots.ts)
+//      drawn only in their time, round where it struck, nothing cyan.
 //   run: tsx --test tests/orderlies.test.ts
 
 // @ts-ignore
@@ -30,8 +34,8 @@ import nodePath from 'node:path';
 
 import { checkBoss, findingsSaid, framesOf, movesOf } from '../src/art/boss_checks';
 import { MALLET, ORDERLIES_ON, ORDERLY_CANVAS, malletOf } from '../src/art/orderlies';
-import { ORDERLY, OD_BLOW, OD_DIES, OD_SHAPE } from '../src/art/orderlies_moves';
-import { SLAM_CRACKS_FOR, SLAM_FOR, drawMalletSlam } from '../src/art/orderly_shots';
+import { ORDERLY, OD_BLOW, OD_DIES, OD_QUAKE, OD_SHAPE } from '../src/art/orderlies_moves';
+import { QUAKE_CRACKS_FOR, QUAKE_FOR, QUAKE_REACH, SLAM_CRACKS_FOR, SLAM_FOR, drawMalletSlam, drawQuake, drawQuakeWarn } from '../src/art/orderly_shots';
 import { BLADE, CYAN, GLINT, RIM_ALPHA, SPARK } from '../src/art/kit';
 import type { Painted } from '../src/art/kit';
 import { FLAME, ENEMY_RIM } from '../src/art/mkit';
@@ -124,7 +128,7 @@ test('1. in the game through art/act1_figs/orderly.ts and render/act1_fx/orderly
 
 test('2. EVERY MOVE OF THEIRS THROUGH EVERY BOSS CHECK: every frame, from in front and from behind, and every handover', () => {
   for (const mob of ALL) {
-    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying');
+    assert.equal(movesOf(mob).join(','), 'stand,walk,attack,reel,dying,quake');
     const found = checkBoss(mob, OD_SHAPE);
     assert.equal(found.length, 0, `${mob.name}: ${findingsSaid(found).slice(0, 12).join('; ')}`);
   }
@@ -246,7 +250,7 @@ test('6. THE BLOW: the mallet comes down on the floor well out before them and t
     assert.ok(Math.hypot(p[0] - k.head[0], p[1] - k.head[1]) < 40, `dust ${Math.hypot(p[0] - k.head[0], p[1] - k.head[1]).toFixed(1)} from where it struck`);
     assert.ok(!isCyan(c), `dust in cyan, ${c}`);
   }
-  for (const move of LIVING(mob)) for (const t of framesOf(mob, move)) if (move !== 'attack' || t < OD_BLOW.floor - 0.01 || t > OD_BLOW.floor + 0.62) assert.equal(dust(move, t).length, 0, `${move} @${t.toFixed(2)}: dust`);
+  for (const move of LIVING(mob)) for (const t of framesOf(mob, move)) if (move === 'quake' ? t < OD_QUAKE.floor - 0.01 || t > OD_QUAKE.floor + 0.72 : move !== 'attack' || t < OD_BLOW.floor - 0.01 || t > OD_BLOW.floor + 0.62) assert.equal(dust(move, t).length, 0, `${move} @${t.toFixed(2)}: dust`);
   // its mark on the floor (orderly_shots.ts): drawn only in its time, nothing cyan, within a tile and a half of where it struck
   const dots: { x: number; y: number; c: string }[] = [];
   const pen = { globalAlpha: 1, fillStyle: '' };
@@ -333,4 +337,58 @@ test('8. the mallet that falls from them as they die lies clear of them once the
       }
     }
   }
+});
+
+test('9. THE QUAKE: the mallet raised high through its warning; both feet off the floor at the top of the leap; the mallet down on the floor well out before them as they land, the dust there; its warning ring and its shaking of the floor drawn only in their time, round where it struck, nothing cyan', () => {
+  const mob = ORDERLY;
+  const st = stageOf(mob);
+  const TILE = 32 / Math.sqrt(2 / 3);
+  for (let t = OD_QUAKE.warn[0]; t <= OD_QUAKE.warn[1] + 1e-9; t += 1 / 30) {
+    const k = malletOf(at(mob, 'quake', t).s);
+    assert.ok(k.head[2] > mob.build.tall + MALLET.r, `@${t.toFixed(2)}: raised, the mallet's head only ${k.head[2].toFixed(1)} high`);
+  }
+  const top = at(mob, 'quake', OD_QUAKE.apex).s;
+  for (const p of [top.heelL, top.toeL, top.heelR, top.toeR]) assert.ok(p[2] > 6, `at the top of the leap a foot only ${p[2].toFixed(1)} off the floor`);
+  for (const t of [OD_QUAKE.floor, (OD_QUAKE.floor + OD_QUAKE.held) / 2]) {
+    const k = malletOf(at(mob, 'quake', t).s);
+    const low = Math.min(k.faceA[2], k.faceB[2]);
+    assert.ok(low > -0.6 && low < 1.6, `@${t.toFixed(2)}: the mallet's lower face ${low.toFixed(2)} off the floor`);
+    assert.ok(k.head[0] > 1.3 * TILE, `@${t.toFixed(2)}: the mallet's head ${(k.head[0] / TILE).toFixed(2)} tiles before them`);
+  }
+  const k = malletOf(at(mob, 'quake', OD_QUAKE.floor).s);
+  const dust = grainsAt(mob, st, at(mob, 'quake', OD_QUAKE.floor + 0.1));
+  assert.ok(dust.length > 20, `dust at the quake: ${dust.length}`);
+  for (const [p, c] of dust) {
+    assert.ok(Math.hypot(p[0] - k.head[0], p[1] - k.head[1]) < 40, `dust ${Math.hypot(p[0] - k.head[0], p[1] - k.head[1]).toFixed(1)} from where it struck`);
+    assert.ok(!isCyan(c), `dust in cyan, ${c}`);
+  }
+  const dots: { x: number; y: number; c: string }[] = [];
+  const pen = { globalAlpha: 1, fillStyle: '' };
+  const g = { ...pen, fillRect(x: number, y: number) { dots.push({ x, y, c: (g as unknown as typeof pen).fillStyle }); } } as unknown as CanvasRenderingContext2D;
+  const atF = (x: number, y: number): [number, number] => [200 + (x - y) * 16, 120 + (x + y) * 8];
+  const R = QUAKE_REACH + 0.1;
+  for (let i = 1; i <= 20; i++) {
+    const k2 = i / 20;
+    dots.length = 0;
+    drawQuakeWarn(g, atF, 0, 0, k2);
+    assert.ok(dots.length > 0, `warning @${k2.toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the warning in cyan, ${d.c}`);
+      assert.ok(Math.abs(d.x - 200) <= R * 32 + 2 && Math.abs(d.y - 120) <= R * 16 + 2, `warning @${k2.toFixed(2)}: drawn at (${d.x - 200}, ${d.y - 120})`);
+    }
+  }
+  for (let t = 0; t < QUAKE_CRACKS_FOR; t += 1 / 30) {
+    dots.length = 0;
+    drawQuake(g, atF, 0, 0, t);
+    assert.ok(dots.length > 0, `@${t.toFixed(2)}: nothing drawn`);
+    for (const d of dots) {
+      assert.ok(!isCyan(d.c), `the quake in cyan, ${d.c}`);
+      assert.ok(Math.abs(d.x - 200) <= R * 32 + 2 && d.y <= 120 + R * 16 + 2 && d.y >= 120 - R * 16 - 16, `@${t.toFixed(2)}: drawn at (${d.x - 200}, ${d.y - 120}) from where it struck`);
+    }
+  }
+  dots.length = 0;
+  drawQuake(g, atF, 0, 0, Math.max(QUAKE_FOR, QUAKE_CRACKS_FOR) + 0.01);
+  drawQuake(g, atF, 0, 0, -0.01);
+  drawQuakeWarn(g, atF, 0, 0, 0);
+  assert.equal(dots.length, 0, 'drawn outside its time');
 });
