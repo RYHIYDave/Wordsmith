@@ -92,6 +92,12 @@ export const GW_GLASS = ['#191520', '#2a2430', '#f0c070', '#c8803e', '#7a4a32'].
 /** THE ROOFS: clay tiles and slate, each from its darkest to its lightest. */
 export const GW_CLAY = ['#371f26', '#53292b', '#6d3833', '#874a3c', '#9f5c47'].map(hex);
 export const GW_SLATE = ['#25222f', '#353243', '#464257', '#585469', '#6c6779'].map(hex);
+/**
+ * THE SLATE OF 20 OCT (behind `fresh`, render/act2_walls.ts ACT2_WALLS): the owner, 20 Oct 2026, 07:41 Pacific, "the roof and
+ * ground textures are hard to distinguish between": the slate was the setts' own purple grey. This is a cold blue-black, darker
+ * than any street, so that a roof of it never reads as the street beside it.
+ */
+export const GW_SLATE_FRESH = ['#141923', '#1e2634', '#293346', '#354158', '#47536b'].map(hex);
 
 // ---------------------------------------------------------------------------------------------------
 // THE PICTURE'S OWN GRID: along the world's x and y, 64 to a tile, so that every line laid along the
@@ -141,6 +147,12 @@ export interface GateWardLand {
   squares?: readonly { x: number; y: number; r: number }[];
   /** The houses that can be walked into. */
   houses?: readonly GWHouse[];
+  /**
+   * THE LOOK OF 20 OCT (with render/act2_walls.ts ACT2_WALLS): the slate set apart from the street (GW_SLATE_FRESH). His words,
+   * 20 Oct 2026, 07:41 Pacific: "the roof and ground textures are hard to distinguish between"; asked, with its pictures, whether
+   * to put it in: "Put everything in but the doorways.  With the new walls I think it’ll look fine" (so the doorways are as they were).
+   */
+  fresh?: boolean;
 }
 
 /** Is (tx, ty) in this house's room? */
@@ -509,7 +521,7 @@ function windowPx(u: number, v: number, w: number, h: number, H: House, row: num
 }
 
 /** A house front: `v` picture pixels over its foot, turned to the light by `shade`. */
-function front(shade: number, v: number, px: number, py: number, given?: House): RGB {
+function front(shade: number, v: number, px: number, py: number, given?: House, slate: readonly RGB[] = GW_SLATE): RGB {
   const H = given ?? houseAt(px);
   const u = H.u;
   const row = rowOf(shade, (hash(H.key, 9, 1603) - 0.5) * 0.1);
@@ -522,7 +534,7 @@ function front(shade: number, v: number, px: number, py: number, given?: House):
   if (v >= 132) {
     // tiles seen edge-on, in courses, the lowest course catching the light
     const clay = hash(H.key, 11, 1604) < 0.62;
-    const R = clay ? GW_CLAY : GW_SLATE;
+    const R = clay ? GW_CLAY : slate;
     const course = mod(v - 132, 5);
     const lift = row === 0 ? 1 : row === 2 ? -1 : 0;
     let c = R[Math.max(0, Math.min(4, 2 + lift))];
@@ -775,7 +787,7 @@ export function gateWardRidge(x: number, y: number): { along: 'x' | 'y'; at: num
 }
 
 /** A roof's plot: rows 2.5 tiles deep along y, plots 2 to 4 tiles long along x; a ridge along x or along y; clay pantiles or slate. */
-function roof(x: number, y: number, px: number, py: number, back: number): RGB {
+function roof(x: number, y: number, px: number, py: number, back: number, slate: readonly RGB[] = GW_SLATE): RGB {
   const RY = 2.5;
   const j = Math.floor(y / RY);
   const len = 2 + Math.floor(hash(j, 0, 1901) * 3);
@@ -785,7 +797,7 @@ function roof(x: number, y: number, px: number, py: number, back: number): RGB {
   const ly = y / RY - j; // 0..1 across it along y
   const h0 = hash(i, j, 1902);
   const clay = h0 < 0.64;
-  const R = clay ? GW_CLAY : GW_SLATE;
+  const R = clay ? GW_CLAY : slate;
   const ridgeY = h0 > 0.78 || (h0 > 0.4 && h0 < 0.48);
   // the slope: which way it faces (to the light, the upper left, lightest; to the lower right darkest), and
   // which way is down it on the picture's own grid
@@ -887,6 +899,8 @@ export function gateWardLook(land: GateWardLand, mode: 'open' | 'closed' = 'open
     }
     return best;
   };
+  // (THE LOOK OF 20 OCT, behind `fresh`: the slate set apart from the street)
+  const slate = land.fresh ? GW_SLATE_FRESH : GW_SLATE;
   return quietLook({
     rise: GW_RISE,
     near: 40,
@@ -936,16 +950,16 @@ export function gateWardLook(land: GateWardLand, mode: 'open' | 'closed' = 'open
           const c = doorway(du, v, px, shade, dw);
           if (c) return c;
         }
-        return front(shade, v, px, py, H);
+        return front(shade, v, px, py, H, slate);
       }
       // whose front: the tile the face looks onto (a lit face looks along +y, a shaded one along +x)
       const fx = shade < 0 ? x + 0.3 : x;
       const fy = shade < 0 ? y : y + 0.3;
       const z = zoneOf(fx, fy);
       if (z === GW_ZONE.Room) return inner(shade, v, px);
-      return front(shade, v, px, py);
+      return front(shade, v, px, py, undefined, slate);
     },
-    top: (x, y, px, py, back) => roof(x, y, px, py, back),
+    top: (x, y, px, py, back) => roof(x, y, px, py, back, slate),
     nearFace: (v, px) => nearHouse(v, px),
     brow: (c) => mixc(c, [255, 226, 190], 0.28),
     foot: [0.4, 0.22],
@@ -1028,6 +1042,47 @@ export function houseShell(open: import('./terrain').Terrain, closed: import('./
     rgba[o + 1] = b.rgba[o + 1];
     rgba[o + 2] = b.rgba[o + 2];
     rgba[o + 3] = 255;
+  }
+  return { x0: px0, y0: py0, w, h: hh, rgba };
+}
+
+/**
+ * A HOUSE'S SHELL WHEN THE WALLS STAND WHOLE (render/act2_walls.ts ACT2_WALLS, on at his word): every picture pixel over its
+ * tiles up to its roof, as the house whole paints it, and nothing else: so its roof stands over the street behind it too, as
+ * every house's does, and it is seen through round whoever is behind it. Only the house whole is painted (the ground need not
+ * be: what differs from it is all over the house's tiles), about half the time `houseShell` takes.
+ */
+export function houseShellWhole(closed: import('./terrain').Terrain, h: GWHouse, paint: typeof import('./terrain').paintTerrain): HouseShell {
+  const [rx0, ry0, rx1, ry1] = h.room;
+  const x1 = h.front.along === 'y' ? Math.max(rx1, h.front.at + 1) : rx1;
+  const y1 = h.front.along === 'x' ? Math.max(ry1, h.front.at + 1) : ry1;
+  const R = GW_RISE;
+  const px0 = Math.floor((rx0 - y1) * 32) - 2;
+  const px1 = Math.ceil((x1 - ry0) * 32) + 2;
+  const py0 = Math.floor((rx0 + ry0) * 16) - R - 4;
+  const py1 = Math.ceil((x1 + y1) * 16) + 10;
+  const w = px1 - px0;
+  const hh = py1 - py0;
+  const b = paint(closed, px0, py0, w, hh);
+  const rgba = new Uint8ClampedArray(w * hh * 4);
+  for (let c = 0; c < w; c++) {
+    // (down this column, where the house's tiles lie: its footprint is x in [rx0, x1), y in [ry0, y1); a pixel is over it if
+    // the house, standing R up, comes between it and the eye)
+    const a = (px0 + c + 0.5) / 32;
+    const bLo = Math.max(2 * rx0 - a, 2 * ry0 + a);
+    const bHi = Math.min(2 * x1 - a, 2 * y1 + a);
+    if (bLo >= bHi) continue;
+    const top = 16 * bLo - R;
+    const foot = 16 * bHi;
+    for (let r = 0; r < hh; r++) {
+      const py = py0 + r + 0.5;
+      if (py < top || py >= foot) continue;
+      const o = (r * w + c) * 4;
+      rgba[o] = b.rgba[o];
+      rgba[o + 1] = b.rgba[o + 1];
+      rgba[o + 2] = b.rgba[o + 2];
+      rgba[o + 3] = 255;
+    }
   }
   return { x0: px0, y0: py0, w, h: hh, rgba };
 }
