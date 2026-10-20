@@ -484,6 +484,10 @@ wait
 run endless_phone $P --scenario $S/endless_look.mjs &
 run endless_pc --scenario $S/endless_look.mjs &
 wait
+# ACT 2'S WALLS STANDING WHOLE (Version 23.4, the art chat's): on floors 11, 12, 14 and 15 the walls toward the eye
+# stand whole, seen through round the hero behind them; floor 11's slate (pictures).
+WHOLE=1 run act2_walls_phone $P --scenario $S/act2_walls.mjs &
+wait
 # THE SPEED WORK (Version 22.1): the Pinewood's forest drawn as chunk pictures draws the same picture, to the pixel, as
 # its trees one by one (render/tops_cache.ts), with the warrior and the mage (who throws the most about)
 CLS=warrior SPOTS=8 run speed_tops_same_warrior $P --scenario $S/tops_same.mjs &
