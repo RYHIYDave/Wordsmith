@@ -3,7 +3,8 @@
 The art chat's branch `mockup/act2-seconds`, from the planning chat's `act2/build` at a0dadf2 (floors 11 to 15 in the
 game behind `ACT2`, off). Nothing here is in the game until the main chat puts it there: every kind's switch is still
 off, and nothing of the game imports the new pieces. No file of the game's is touched; only the five kinds' art files,
-their floor marks, their dev pages and their tests.
+their floor marks, their dev pages and their tests, and tests/new_mobs3.test.ts's list of the art chat's mock-ups (the
+three new floor-mark files, carter_shots.ts, dredger_shots.ts and watch_shots.ts, added to it).
 
 ## What he asked, in his words
 
