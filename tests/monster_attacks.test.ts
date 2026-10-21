@@ -195,7 +195,11 @@ test('his rules: tiny and small one attack, medium two, large two or three, the 
       // and torn free, two acts with two pictures, is one move: counted once)
       // And the Drowned Eye fights in three phases, each with its own moves: counted by the most he has in any one of them)
       // (THE HEADSMAN MADE NEW: his dashes aside are steps, not attacks: his four are the lunge, the flurry, the wheel and the vault)
-      const chosenIds = acts ? [...new Set(acts.filter((a) => !a.forced && a.id !== 'h2:dashL' && a.id !== 'h2:dashR').map((a) => a.id.replace(/Wall$/, '')))] : [];
+      // (FLOOR 13'S DOUBLE BOSS, Version 23.6: each of the pair's four as he said yes to them, three of its own and their
+      // combo: the Scraper's snap, rush and scour and its strip; the Quill's stab and ink lines, its Overwrite and its swoop.
+      // The combo and the Overwrite are made by the pair (forced); the Quill's taking off, flying and landing are its way there)
+      const PAIR_MOVES = new Set(['scraper:strip', 'quill:swoop', 'quill:write']);
+      const chosenIds = acts ? [...new Set(acts.filter((a) => (!a.forced || PAIR_MOVES.has(a.id)) && a.id !== 'h2:dashL' && a.id !== 'h2:dashR').map((a) => a.id.replace(/Wall$/, '')))] : [];
       const n = kind === 'eye' ? Math.max(...[0, 1, 2].map((p) => chosenIds.filter((id) => EYE_PHASE_OF[id]?.includes(p)).length)) : acts ? chosenIds.length : moves ? moves.length : 1;
       const leads = kind === 'champion' || kind === 'marksman' || kind === 'priest' || kind === 'chieftain' || kind === 'minifm' ? 1 : 0;
       const what = `${kind}${champion ? ' (a guardian: the red troll)' : ''}, ${size}`;
