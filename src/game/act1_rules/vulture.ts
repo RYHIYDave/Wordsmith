@@ -10,11 +10,14 @@
 // - It sits on its perch (its stand) until it wakes; then it takes off and goes up over the hero.
 // - IT CIRCLES OVERHEAD: `VULTURE.high` game pixels up, round the hero `VULTURE.ring` tiles out, out over the drop as
 //   much as over the road (it flies by the open grid: floor or pit), its walk's wing beat at the beat it is painted
-//   for. Up there nothing of the hero's reaches it (`reachable`); its shadow goes over the floor under it.
+//   for. Its shadow goes over the floor under it. UP THERE IT IS STRUCK AS ANYWHERE (since Version 23.5; his words to
+//   the main chat, 20 Oct 2026, 21:31 Pacific: “Oh the vultures being unhittable in the air has to go.  It’s infuriating
+//   to fight them”): up in the air it is only `aloft`, over what is on the ground, neither jostling nor jostled by it.
+//   Killed up there, it falls from its `height` as its death plays (render.ts fallenLift); over the drop, it falls away
+//   into it, and what it leaves lands on the nearest floor (game.ts kill).
 // - THEN IT DIVES: its dive is the art's, played from start to end; the line it will stoop along is laid on the floor
 //   from its warning (render/act1_fx/vulture.ts); it comes down out of the air onto where the hero stood as it began,
 //   its talons striking at the art's moment, `reach` before it; it pulls out low past where it struck and climbs back.
-//   While it is low, from the bottom of its stoop until it has climbed back past `low`, it can be struck.
 // - One called into a fight (the Carrion Queen's flock: spawned awake beside the hero) comes down out of the sky to
 //   its height and dives at once.
 
@@ -48,7 +51,7 @@ export const VULTURE = {
   called: [0.3, 0.8] as const,
   /** Called in: put into the world awake within this many tiles of the hero. */
   callNear: 6,
-  /** It can be struck while it is no higher than this (game pixels): at the bottom of its dive and as it climbs out. */
+  /** Higher than this (game pixels) it is `aloft`: over what is on the ground, not among it (until Version 23.5, it could be struck only so low). */
   low: 9,
   /** The dive (the art's VULTURE_DIVE: 1.2 s, its warning from 0.25 s, the strike at 0.7 s held a tenth). */
   dive: {
@@ -88,9 +91,9 @@ export function liftOf(m: Monster): number {
   return m.a1 ? m.a1.lift : 0;
 }
 
-/** Is it in reach of the hero's blows now? Not while it is up in the air. */
-function reachable(m: Monster): boolean {
-  return liftOf(m) <= VULTURE.low;
+/** Is it up in the air, over what is on the ground (not jostling it, nor jostled)? It is struck all the same (Version 23.5). */
+function aloft(m: Monster): boolean {
+  return liftOf(m) > VULTURE.low;
 }
 
 /** It begins to climb to its height from where it is. */
@@ -111,7 +114,8 @@ export const RULES: Act1Rules | null = {
   // rules fly it at its own speed, MONSTERS.vulture, and run its wing beat by the clock)
   gait: { pace: 1.2, cycle: 1.0, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: VULTURE.ring, slack: 0.6, trueBack: true },
   acts: ACTS,
-  reachable,
+  aloft,
+  height: liftOf,
 
   spawned(R, m) {
     const a = keep(m);

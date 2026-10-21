@@ -45,8 +45,12 @@ export interface Act1Rules {
   floorBlow?(R: BossRules, p: Peril, x: number, y: number, rad: number, el: Element): void;
   /** A boss: where he stands as the floor is made (tiles), and the way he faces; null: where the floor has him. */
   bossAt?(L: Level): { x: number; y: number; fx: number; fy: number } | null;
-  /** Whether the hero's blows reach it now (false: up in the air, under the water). */
+  /** Whether the hero's blows reach it now (false: under the water, below the lip). */
   reachable?(m: Monster): boolean;
+  /** Up in the air now, over what is on the ground: it neither jostles nor is jostled by what stands under it (game.ts). Struck all the same: a vulture overhead. */
+  aloft?(m: Monster): boolean;
+  /** How high its body is off the floor now (game pixels): killed, it falls from there as its death plays (the 'die' event's `lift`). */
+  height?(m: Monster): number;
   /** Whether it cannot be hurt now, and says so ("Invulnerable": a boss as he changes into his next phase): game.ts damageMonster. */
   invulnerable?(m: Monster): boolean;
   /** The least its life can be brought to now (0: none, it dies as its life runs out): a boss with another life bar to come is kept at 1; the Carrion Queen at a hundredth of hers until she is back over the drop her death was drawn at. game.ts damageMonster. */

@@ -725,10 +725,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       const sy = wy(cam, m.x, m.y);
       // (the figure as it stands, a little generously: art/bestiary.ts)
       const size = FIGURE_SIZE[figureOf(m)];
-      const tall = size.top + 3;
+      // (ACT 1: one up in the air is touched where it is drawn, lifted, as well as by its shadow: a vulture overhead,
+      // struck there since Version 23.5)
+      const a1 = act1Fx(m.kind);
+      const up = a1 && a1.lift ? Math.max(0, Math.round(a1.lift(m))) : 0;
+      const tall = size.top + 3 + up;
       const wide = size.half + 1;
       if (Math.abs(px - sx) > wide || py > sy + 5 || py < sy - tall) continue;
-      const d = Math.abs(px - sx) + Math.abs(py - (sy - tall / 2)) * 0.5;
+      const d = Math.abs(px - sx) + Math.abs(py - (sy - up - (tall - up) / 2)) * 0.5;
       if (d < bd) {
         bd = d;
         best = m;

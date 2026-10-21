@@ -459,6 +459,9 @@ export interface Fallen {
   back: boolean;
   flip: boolean;
   t: number;
+  /** Killed up in the air (a vulture overhead: game.ts kill): how high it was (game pixels), falling from there as its death plays; `away`, over the drop, it falls on into it and is gone (render.ts fallenLift). */
+  lift?: number;
+  away?: boolean;
 }
 /** How long a townsperson's line stays over them, and how far over their feet it is written (clear of their name, which hangs over them while the hero is near). */
 const TAG_TIME = 3;
@@ -1587,7 +1590,7 @@ export class Fx {
           // (ACT 2, THE HUSH: one of a kind's other looks, '<kind>:<form>', in its kind's colours)
           const colors = DEATH_COLORS[baseFigure(figureOf(e))];
           // (it falls as its figure falls, facing the way it was; the renderer leaves it out if its figure has no death)
-          this.fallen.push({ figure: figureOf(e), x: e.x, y: e.y, back: e.fx + e.fy < -0.2, flip: e.fx - e.fy < 0, t: 0 });
+          this.fallen.push({ figure: figureOf(e), x: e.x, y: e.y, back: e.fx + e.fy < -0.2, flip: e.fx - e.fy < 0, t: 0, ...(e.lift ? { lift: e.lift } : {}), ...(e.away ? { away: true } : {}) });
           if (this.fallen.length > MAX_FALLEN) this.fallen.shift();
           this.spray(e.x, e.y, e.boss ? 70 : e.champion ? 44 : e.elite ? 26 : 12, colors, e.boss ? 5 : e.champion ? 4 : 3, e.boss ? 120 : e.champion ? 100 : 80, 10);
           if (e.boss || e.elite) this.rings.push({ x: e.x, y: e.y, r: e.boss ? 3 : e.champion ? 2.3 : 1.6, t: 0, dur: 0.4, colors: [P.fr6, P.fr5, P.fr4, P.fr3], fill: true });

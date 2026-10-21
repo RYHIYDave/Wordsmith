@@ -1083,7 +1083,7 @@ export type GameEvent =
   | { t: 'freeze'; x: number; y: number }
   | { t: 'shatter'; x: number; y: number }
   /** A monster has been killed. (`fx`, `fy`: the way it was facing: its fall is played, and its body lies, that way round.) */
-  | { t: 'die'; x: number; y: number; kind: MonsterKind; elite: boolean; champion: boolean; boss: boolean; fx: number; fy: number; form?: number; carry?: boolean; quiet?: boolean }
+  | { t: 'die'; x: number; y: number; kind: MonsterKind; elite: boolean; champion: boolean; boss: boolean; fx: number; fy: number; form?: number; carry?: boolean; quiet?: boolean; lift?: number; away?: boolean }
   /** (THE FIRST FIVE FLOORS) a cultist's body is burned away as the dead are raised out of it; a bone beast is eaten back by its maker (no body is left of either) */
   | { t: 'gone'; x: number; y: number; what: 'corpse' | 'beast' }
   /** The hero has something to say about a big kill (see QUIPS). */

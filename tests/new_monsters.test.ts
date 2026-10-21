@@ -43,7 +43,7 @@ import type { Mob } from '../src/art/new_mobs3';
 import { GRAIN } from '../src/art/kit';
 import { botStep, newBot } from '../src/dev/bot';
 import { RNG } from '../src/engine/rng';
-import { AIM, LEADERS, MONSTERS, MONSTER_MOVES, NEW_MONSTERS, PACKS, RALLY, SKULL, SMOKE, SPEAR, leaderKind, movesOf, packKinds, packRange, packRarity, scaleLife, sizeOf, wordShare } from '../src/game/defs';
+import { AIM, LEADERS, MONSTERS, MONSTER_MOVES, NEW_MONSTERS, PACKS, RALLY, SKULL, SMOKE, SPEAR, leaderKind, movesOf, packGrowth, packKinds, packRange, packRarity, scaleLife, sizeOf, wordShare } from '../src/game/defs';
 import type { MonsterMove, MoveId } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -196,7 +196,9 @@ test('on, they come by depth, in packs of their sizes; a yellow pack is led by i
           if (NEW_KINDS.includes(kind)) {
             seen.add(kind);
             const [lo, hi] = packRange(sizeOf(kind), depth);
-            assert.ok(ms.length >= Math.min(lo, p.size) && ms.length <= hi, `${tag}: ${ms.length}, of his sizes (${lo} to ${hi})`);
+            // (PACKS GROW WITH THE LEVELS, Version 23.5: the most of them as many times as big as the level has them)
+            const most = Math.ceil(hi * packGrowth(depth));
+            assert.ok(ms.length >= Math.min(lo, p.size) && ms.length <= most, `${tag}: ${ms.length}, of his sizes (${lo} to ${hi}, grown to ${most})`);
           }
           const leader = ms.find((m) => m.rarity === 'leader');
           const lead = p.kind ? LEADERS[p.kind] : undefined;

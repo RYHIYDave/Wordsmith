@@ -10,7 +10,7 @@ import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
 import { RNG } from '../src/engine/rng';
-import { FIRST_LEVELS, GATE_TWIN_PACKS, GUARD, HEAVY, MONSTERS, MONSTER_PACKS, PACKS, PACK_LOOK, TUNE, WORDS, leaderKind, packRarity, scaleDmg, scaleLife, wordShare } from '../src/game/defs';
+import { FIRST_LEVELS, GATE_TWIN_PACKS, packGrowth, GUARD, HEAVY, MONSTERS, MONSTER_PACKS, PACKS, PACK_LOOK, TUNE, WORDS, leaderKind, packRarity, scaleDmg, scaleLife, wordShare } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -72,7 +72,8 @@ test('every pack is of one kind (but a yellow pack\'s leader, who may be a leade
         assert.ok(others.every((m) => m.kind === others[0].kind), `${tag}: of one kind`);
         assert.ok(others.every((m) => m.kind === p.kind), `${tag}: the kind the map-maker gave it`);
         if (leader && p.kind) assert.equal(leader.kind, leaderKind(p.kind), `${tag}: led by one of its own, or by a leader of its own (LEADERS)`);
-        assert.ok(ms.length <= p.size, `${tag}: no more than its size`);
+        // (PACKS GROW WITH THE LEVELS, Version 23.5: its size as many times as big as its level has them, rounded up or down)
+        assert.ok(ms.length <= Math.ceil(p.size * packGrowth(depth)), `${tag}: no more than its size, grown with the level`);
         assert.ok(ms.length >= Math.min(p.size, 1), `${tag}: someone stands in it`);
         if (p.tier === 'champion') assert.ok(ms.every((m) => m.champion && m.kind === 'brute' && !m.rarity), `${tag}: guardians alone`);
         else assert.ok(ms.every((m) => !m.champion), `${tag}: no guardian outside a lair`);
@@ -201,9 +202,11 @@ test('a word burned in at the gate is every monster\'s, a minion\'s too, at full
   let grew = 0;
   let packs = 0;
   for (const [id, ms] of b) {
-    const want = Math.round(twin.level.floor.packs[id].size * GATE_TWIN_PACKS);
+    // (and then grown with the level, Version 23.5: as many times as big as dungeon 4 has them, rounded up or down)
+    const grown = Math.round(twin.level.floor.packs[id].size * GATE_TWIN_PACKS) * packGrowth(4);
+    const want = Math.ceil(grown);
     packs++;
-    if (ms.length === want) grew++;
+    if (ms.length >= Math.floor(grown)) grew++;
     assert.ok(ms.length <= want, `pack ${id}: ${ms.length}, more than ${want}`);
     assert.ok(ms.length > (a.get(id)?.length ?? 0) || twin.level.floor.packs[id].size === 1, `pack ${id}: bigger`);
     for (const m of ms) {

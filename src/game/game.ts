@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -37,7 +37,7 @@ import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
-import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RARITY_NAMES, T_FLOOR, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RARITY_NAMES, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, STONE_RISE, isDamageWord, meldOf, meldProblem, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
@@ -1248,9 +1248,11 @@ export class Game {
     const kinds = packKinds(this.depth);
     // (MONSTER PACKS: which packs are blue and which yellow, and their words, from a lot of its own)
     const tiers = new RNG((seed ^ 0x7f4a7c15) >>> 0);
+    // (PACKS GROW WITH THE LEVELS: which way a pack's growth rounds, from a lot of its own, so that the rest of the floor is drawn as it was)
+    const grow = new RNG((seed ^ 0x1b873593) >>> 0);
     f.packs.forEach((p, pi) => {
       if (MONSTER_PACKS.on && p.kind) {
-        this.fillPack(p.kind, p.x, p.y, p.size, p.tier, pi, rng, lot, tiers);
+        this.fillPack(p.kind, p.x, p.y, p.size, p.tier, pi, rng, lot, tiers, grow);
         return;
       }
       const main = rng.weighted(kinds, (k) => k.weight);
@@ -1305,11 +1307,15 @@ export class Game {
    * the gate), around (x, y). A guardian's pack is guardians alone. Any other is plain, blue or
    * yellow (PACKS): an elite room's always yellow. A blue pack's one word is on every one of it; a
    * yellow pack's leader has an elite's words, and the others, its minions, have those words at half
-   * strength.
+   * strength. PACKS GROW WITH THE LEVELS (defs.ts PACK_GROWTH, since Version 23.5): then as many times as big as its
+   * level has them (`power`: the floor's depth, an endless level's), the part of one over rounded up as often as it is
+   * (`grow`: a pack 4.6 big is 5 three times in five, 4 twice).
    */
-  private fillPack(kind: MonsterKind, x: number, y: number, size: number, tier: 'normal' | 'elite' | 'champion', pi: number, rng: RNG, lot: RNG, tiers: RNG): void {
+  private fillPack(kind: MonsterKind, x: number, y: number, size: number, tier: 'normal' | 'elite' | 'champion', pi: number, rng: RNG, lot: RNG, tiers: RNG, grow: RNG | null = null): void {
     const f = this.level.floor;
-    const n = this.dungeonWords.includes('twin') ? Math.round(size * GATE_TWIN_PACKS) : size;
+    const twin = this.dungeonWords.includes('twin') ? Math.round(size * GATE_TWIN_PACKS) : size;
+    const big = twin * packGrowth(this.power);
+    const n = big > twin && grow ? Math.floor(big) + (grow.next() < big - Math.floor(big) ? 1 : 0) : twin;
     const spots = scatter(this.level.walk, f.w, f.h, x, y, n, rng);
     if (tier === 'champion') {
       // (a lair gives up a word as one guardian did: only the first of them may carry one; words are scarce)
@@ -2800,6 +2806,14 @@ export class Game {
       }
     }
     return true;
+  }
+
+  /** Is this place a pit (a hole, the Ledge Road's drop, the Fen's water: what flies goes over it, nobody stands in it)? */
+  private pitAt(x: number, y: number): boolean {
+    const f = this.level.floor;
+    const tx = Math.floor(x);
+    const ty = Math.floor(y);
+    return tx >= 0 && ty >= 0 && tx < f.w && ty < f.h && f.tiles[ty * f.w + tx] === T_PIT;
   }
 
   /** Is this place floor that can be stood on (not a pit, not a wall)? */
@@ -4942,9 +4956,19 @@ export class Game {
     // (THE MONSTERS' ATTACKS: the line of a charge it was making goes with it)
     if (m.charge || m.state === 'windup') this.dropLane(m);
     const h = this.hero;
-    this.emit({ t: 'die', x: m.x, y: m.y, kind: m.kind, elite: m.elite, champion: m.champion, boss: m.boss, fx: m.fx, fy: m.fy, ...(m.form ? { form: m.form } : {}) });
+    // (ACT 1: one killed up in the air falls from where it was, a vulture overhead (Version 23.5): over the drop, it falls
+    // away into it, `away`, and what it leaves lands on the nearest floor)
+    const r1 = ACT1.on ? act1Rules(m.kind) : null;
+    const lift = r1 && r1.height ? Math.max(0, r1.height(m)) : 0;
+    const away = lift > 0 && this.pitAt(m.x, m.y);
+    this.emit({ t: 'die', x: m.x, y: m.y, kind: m.kind, elite: m.elite, champion: m.champion, boss: m.boss, fx: m.fx, fy: m.fy, ...(m.form ? { form: m.form } : {}), ...(lift > 0 ? { lift } : {}), ...(away ? { away } : {}) });
     // (THE FIRST FIVE FLOORS: a cultist's body lies where it fell; an amalgamation's beasts fall apart with it)
     if (BOSSES5.on || this.corpses.length) this.bosses.died(m);
+    if (away) {
+      const at = this.floorNear(m.x, m.y);
+      m.x = at.x;
+      m.y = at.y;
+    }
     if (m.frozenT > 0) {
       this.emit({ t: 'shatter', x: m.x, y: m.y });
       this.sfx('shatter', 0.8);
@@ -5661,7 +5685,7 @@ export class Game {
     // overhead does not jostle what is on the ground under it, nor is it jostled)
     const away = (m: Monster): boolean => {
       const r1 = ACT1.on ? act1Rules(m.kind) : null;
-      return !!(r1 && r1.reachable && !r1.reachable(m));
+      return !!(r1 && ((r1.reachable && !r1.reachable(m)) || (r1.aloft && r1.aloft(m))));
     };
     for (let i = 0; i < act.length; i++) {
       const a = act[i];

@@ -605,6 +605,20 @@ export const PACK_BY_SIZE: Record<MonsterSize, readonly [number, number]> = { ti
 export const FIRST_PACK_BY_SIZE: Record<MonsterSize, readonly [number, number]> = { tiny: [3, 5], small: [2, 4], medium: [2, 3], large: [1, 1], boss: [1, 1] };
 /** Twin burned in at the gate: every pack this many times as big (50% increased size), rounded. */
 export const GATE_TWIN_PACKS = 1.5;
+/**
+ * PACKS GROW WITH THE LEVELS (since Version 23.5). His words to the main chat, 20 Oct 2026, 21:31 Pacific: “And we need
+ * pack size to scale up with levels as well”; asked as a pop-up, by 21:38, where: “Every floor, on into endless
+ * (Recommended)”, and how fast: “5% each level (Recommended)” (offered as: floor 15 packs about 70% bigger, double by
+ * Endless 6, then held at double so phones keep up). So every pack of a floor (its kind's size, PACK_BY_SIZE) is `each`
+ * bigger for every level past the first: the floor's depth, or on an endless level its power (game/endless.ts); held at
+ * `most` times. Game.fillPack, after Twin's.
+ */
+export const PACK_GROWTH = { on: true, each: 0.05, most: 2 };
+/** How many times as big a pack is at this level (its depth, or an endless level's power): 1 on the first. */
+export function packGrowth(power: number): number {
+  if (!PACK_GROWTH.on) return 1;
+  return Math.min(PACK_GROWTH.most, 1 + PACK_GROWTH.each * (Math.max(1, power) - 1));
+}
 /** A monster's size: the guardian, a brute of the guardian's rank, is large. */
 export function sizeOf(kind: MonsterKind, champion = false): MonsterSize {
   return champion ? 'large' : MONSTERS[kind].size;

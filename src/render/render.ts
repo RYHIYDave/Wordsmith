@@ -351,6 +351,21 @@ const FLINCH_TIME = 0.12;
 const REEL_AT = 0.1;
 const REEL_TIME = 0.4;
 
+/**
+ * ONE KILLED UP IN THE AIR (a vulture overhead, since Version 23.5: his words, 20 Oct 2026, 21:31 Pacific, “Oh the vultures
+ * being unhittable in the air has to go.  It’s infuriating to fight them”): how far up its falling picture is drawn
+ * (game pixels), and how much of it shows. Its death is painted from its flight to lying on its back (art/ledge_vultures.ts
+ * VULTURE_DEATH: the blow held a tenth, the fall to the floor by 0.62 s); the height it was flying at comes down with that
+ * fall, faster and faster. Over the drop (`away`) it falls on past the floor into it, fading out by FALL.gone.
+ */
+export const FALL = { from: 0.1, to: 0.62, fade: 0.35, gone: 0.8 } as const;
+export function fallenLift(f: { lift?: number; away?: boolean; t: number }): { up: number; alpha: number } {
+  const L = f.lift ?? 0;
+  const k = Math.max(0, (f.t - FALL.from) / (FALL.to - FALL.from));
+  if (!f.away) return { up: L * (1 - Math.min(1, k) * Math.min(1, k)), alpha: 1 };
+  return { up: L * (1 - k * k), alpha: Math.max(0, Math.min(1, 1 - (f.t - FALL.fade) / (FALL.gone - FALL.fade))) };
+}
+
 export class Renderer {
   /** ACT 2, THE BELLS: the Hush's fog and the bells' arrows (render/bells.ts). */
   private bellsLook = new BellsLook();
@@ -1789,7 +1804,7 @@ export class Renderer {
       const sy = wy(cam, f.x, f.y);
       if (sx < -90 || sx > W + 90 || sy < -60 || sy > H + 90) continue;
       const shown = this.fallenSprite(f);
-      if (!shown || !shown.lying) continue;
+      if (!shown || !shown.lying || f.away) continue;
       // (a body settles into the floor's dark over a second and a half: with forty of them lying
       // about, what still stands, and what was dropped, must be the brighter things on the screen)
       // (BODIES: and fades out over the last of its while)
@@ -2398,8 +2413,12 @@ export class Renderer {
       if (sx < -90 || sx > W + 90 || sy < -60 || sy > H + 130) continue;
       const shown = this.fallenSprite(f);
       if (!shown || shown.lying) continue;
-      if (shown.sp.lights) this.monsterLit.push({ s: shown.sp, x: Math.round(sx), y: Math.round(sy) });
-      this.stand(f.x + f.y, shown.sp, sx, sy, null, 0);
+      // (killed up in the air: it falls from there; over the drop, on into it, fading as it goes: fallenLift)
+      const fall = f.lift ? fallenLift(f) : null;
+      if (fall && fall.alpha <= 0) continue;
+      const fy = fall ? sy - fall.up : sy;
+      if (shown.sp.lights && (!fall || fall.alpha >= 1)) this.monsterLit.push({ s: shown.sp, x: Math.round(sx), y: Math.round(fy) });
+      this.stand(f.x + f.y, shown.sp, sx, fy, null, 0, 1, fall ? fall.alpha : 1);
       hid?.(f.x, f.y);
     }
     // (THE MONSTERS' ATTACKS: the dead the Warden has called, crawling out of the ground: the skeleton's own picture of it, art/mkit.ts crawlOut)

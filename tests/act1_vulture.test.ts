@@ -2,11 +2,14 @@
 // render/act1_fx/vulture.ts), the art chat's pictures (art/ledge_vultures.ts) each with his yes as shown.
 //   1. it is built: its rules, its pictures (the clips its acts name, its death at thirty a second), its size against them;
 //   2. its numbers are its pictures' own (its dive's moments, its talons' reach, its pull-out);
-//   3. it perches while it sleeps, takes off as it wakes, and circles overhead out of reach, its shadow on the floor;
+//   3. it perches while it sleeps, takes off as it wakes, and circles overhead, struck up there all the same (Version
+//      23.5: his “Oh the vultures being unhittable in the air has to go.  It’s infuriating to fight them”);
 //   4. its dive strikes at its picture's moment where its talons are, and misses one who has stepped off its line; at
 //      the bottom of its dive it can be struck, and flinches;
 //   5. one called into a fight (the Carrion Queen's flock) comes down out of the sky and dives;
-//   6. its packs are a small monster's; nothing it draws is cyan; a long fight throws nothing.
+//   6. its packs are a small monster's; nothing it draws is cyan; a long fight throws nothing;
+//   7. killed up in the air it falls from there (the 'die' event's lift, render.ts fallenLift); over the drop it falls
+//      away into it, and what it leaves lands on the floor; overhead, it neither jostles nor is jostled.
 //   run: tsx --test tests/act1_vulture.test.ts
 
 // @ts-ignore
@@ -23,6 +26,9 @@ import { RULES, VULTURE, liftOf } from '../src/game/act1_rules/vulture';
 import { act1Pack, act1Ready } from '../src/game/act1_mobs';
 import { MONSTERS, PACK_BY_SIZE } from '../src/game/defs';
 import { FX } from '../src/render/act1_fx/vulture';
+import { FALL, fallenLift } from '../src/render/render';
+import type { Monster } from '../src/game/state';
+import { T_PIT } from '../src/game/types';
 import { cyan, floorOf, hooks, measure, noteColours, room, watch } from './act1_ledge_canyon_harness';
 import { paintWithoutCanvas } from './helpers';
 
@@ -76,7 +82,7 @@ test('2. its numbers are its pictures\' own', () => {
   assert.ok(D.stoop > D.warn && D.stoop < D.hit, 'the stoop after the warning, before the strike');
 });
 
-test('3. it perches asleep, takes off as it wakes, and circles overhead out of reach', () => {
+test('3. it perches asleep, takes off as it wakes, and circles overhead, struck up there all the same', () => {
   const g = floorOf(7, 7);
   const h = g.hero;
   g.monsters.length = 0;
@@ -100,10 +106,11 @@ test('3. it perches asleep, takes off as it wakes, and circles overhead out of r
     lifts.push(liftOf(m));
     if (m.state !== 'act' && liftOf(m) >= VULTURE.high) {
       round.push(Math.hypot(m.x - h.x, m.y - h.y));
-      // (up there, nothing reaches it)
+      // (up there it is struck all the same, and flinches: Version 23.5; its life put back, to watch it on)
       const life = m.life;
       hooks(g).damageMonster(m, 3, 'phys', false, -1);
-      if (m.life < life) struck++;
+      if (m.life < life && m.struckT !== undefined && m.struckT < 0.05) struck++;
+      m.life = life;
     }
     // (wherever it flies, it is over floor or the drop: what flies goes by the open grid)
     assert.ok(g.isOpen(m.x, m.y), 'over open ground');
@@ -112,13 +119,13 @@ test('3. it perches asleep, takes off as it wakes, and circles overhead out of r
   assert.ok(lifts[0] < 3, 'it takes off from its perch');
   assert.ok(lifts.some((v) => v >= VULTURE.high), 'and climbs to its height');
   assert.ok(round.length > 60, 'it comes to him and circles');
-  assert.equal(struck, 0, 'up in the air nothing of the hero\'s reaches it');
+  assert.equal(struck, round.length, 'up in the air every blow reaches it');
   const mean = round.reduce((s, v) => s + v, 0) / round.length;
   near(mean, VULTURE.ring, 0.9, 'round the hero, about its ring out');
   near(FX!.lift!(m), liftOf(m), 1e-9, 'drawn as high as it is');
 });
 
-test('4. its dive strikes at its picture\'s moment where its talons are; it misses one who steps off its line; low, it can be struck', () => {
+test('4. its dive strikes at its picture\'s moment where its talons are; it misses one who steps off its line; low or high, it can be struck', () => {
   // (struck: a hero who stands)
   let { g, m } = room('vulture', 3);
   const seen = watch(g, m, 7);
@@ -158,11 +165,11 @@ test('4. its dive strikes at its picture\'s moment where its talons are; it miss
     if (m.state !== 'act' && liftOf(m) >= VULTURE.high && !high) {
       const life = m.life;
       hooks(g).damageMonster(m, 3, 'phys', false, -1);
-      high = m.life === life;
+      high = m.life < life && m.struckT !== undefined && m.struckT < 0.05;
     }
   });
   assert.ok(low, 'low, at the bottom of its dive, it is struck and flinches');
-  assert.ok(high, 'high, it is not');
+  assert.ok(high, 'high, it is struck and flinches too (Version 23.5)');
 });
 
 test('5. one called into a fight comes down out of the sky and dives', () => {
@@ -207,4 +214,66 @@ test('6. its packs are a small monster\'s; nothing it draws is cyan; a long figh
     kills = flock.filter((v) => v.dead).length;
   });
   assert.ok(kills >= 1, `the hero kills those he can reach as they dive (${kills})`);
+});
+
+test('7. killed up in the air it falls from there; over the drop it falls away into it, what it leaves on the floor; overhead it is aloft', () => {
+  // (his words to the main chat, 20 Oct 2026, 21:31 Pacific: “Oh the vultures being unhittable in the air has to go.  It’s infuriating to fight them”)
+  assert.equal(RULES!.reachable, undefined, 'nothing keeps it out of reach');
+  const g = floorOf(7, 7);
+  const L = g.level;
+  const f = L.floor;
+  const h = g.hero;
+  g.monsters.length = 0;
+  // (a tile of the drop, and a tile of the road, near the hero)
+  let pit: { x: number; y: number } | null = null;
+  let road: { x: number; y: number } | null = null;
+  for (let r = 1; r < 30 && !(pit && road); r++) {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      const tx = Math.floor(h.x) + dx;
+      const ty = Math.floor(h.y) + dy;
+      if (tx < 0 || ty < 0 || tx >= f.w || ty >= f.h) continue;
+      const i = ty * f.w + tx;
+      if (!pit && f.tiles[i] === T_PIT && L.open[i] === 1) pit = { x: tx + 0.5, y: ty + 0.5 };
+      if (!road && r > 2 && L.walk[i] === 1 && g.free(L.walk, tx + 0.5, ty + 0.5, 0.3)) road = { x: tx + 0.5, y: ty + 0.5 };
+    }
+  }
+  assert.ok(pit && road, 'the Ledge Road has its drop and its road');
+  const fell = (at: { x: number; y: number }): { lift?: number; away?: boolean; m: Monster } => {
+    const m = g.spawn('vulture', at.x, at.y, 7, 0, false, new RNG(4));
+    hooks(g).wakeUp(m);
+    m.a1!.lift = VULTURE.high;
+    m.carries = ['fire'];
+    g.events.length = 0;
+    const was = g.drops.length;
+    hooks(g).damageMonster(m, 1e6, 'phys', false, -1);
+    assert.ok(m.dead, 'struck down up there');
+    const e = g.events.find((x) => x.t === 'die');
+    assert.ok(e && e.t === 'die', 'it dies');
+    const got = g.drops.slice(was);
+    assert.ok(got.length >= 1, 'it leaves what it carried');
+    for (const d of got) assert.equal(L.walk[Math.floor(d.y) * f.w + Math.floor(d.x)], 1, `what it leaves lies on floor that can be walked to (${d.x.toFixed(2)}, ${d.y.toFixed(2)})`);
+    return e && e.t === 'die' ? { lift: e.lift, away: e.away, m } : { m };
+  };
+  const overRoad = fell(road!);
+  near(overRoad.lift ?? -1, VULTURE.high, 1e-9, 'over the road: it falls from as high as it flew');
+  assert.ok(!overRoad.away, 'and lies on the road');
+  const overDrop = fell(pit!);
+  near(overDrop.lift ?? -1, VULTURE.high, 1e-9, 'over the drop: from as high as it flew');
+  assert.equal(overDrop.away, true, 'and away into the drop');
+  // (as it is drawn: down to the floor as its death's fall lands; over the drop, on past it and gone)
+  const L0 = VULTURE.high;
+  near(fallenLift({ lift: L0, t: 0 }).up, L0, 1e-9, 'at the blow, where it was');
+  near(fallenLift({ lift: L0, t: FALL.from }).up, L0, 1e-9, 'held through the blow\'s freeze');
+  assert.ok(fallenLift({ lift: L0, t: 0.4 }).up < L0 && fallenLift({ lift: L0, t: 0.4 }).up > 0, 'falling');
+  near(fallenLift({ lift: L0, t: FALL.to }).up, 0, 1e-9, 'on the floor as its death lands it on its back');
+  near(fallenLift({ lift: L0, t: 0.9 }).up, 0, 1e-9, 'and lies there');
+  assert.equal(fallenLift({ lift: L0, t: 0.9 }).alpha, 1);
+  assert.ok(fallenLift({ lift: L0, away: true, t: 0.7 }).up < 0, 'over the drop, on down past the floor');
+  assert.equal(fallenLift({ lift: L0, away: true, t: FALL.gone }).alpha, 0, 'and gone');
+  assert.ok(FALL.to - FALL.from > 0 && Math.abs(FALL.from - VULTURE_DEATH.freeze) < 1e-9, 'its fall after its death\'s freeze');
+  // (overhead it is aloft: over what is on the ground, not among it; on its perch it is not)
+  const m = g.spawn('vulture', road!.x, road!.y, 7, 0, false, new RNG(4));
+  assert.equal(RULES!.aloft!(m), false, 'on its perch');
+  m.a1!.lift = VULTURE.high;
+  assert.equal(RULES!.aloft!(m), true, 'up in the air');
 });
