@@ -13,8 +13,8 @@
 // - THE BACKWARD RUSH, at one behind it or who has got round it: it turns its tail on him (the lane behind it marked: its
 //   warning), its tail snaps under it and it shoots back 5 tiles down the lane: whoever is in the lane (7.4 tiles back,
 //   1.3 either side) as it goes is struck and thrown aside. Made only where the lane is floor all the way.
-// - ITS HALF OF THE PALIMPSEST (game/act1_rules/pair.ts): it slams both claws down and scrapes the strip bare before it;
-//   the strip bursts after the Quill has written it.
+// - ITS HALF OF THE PALIMPSEST, their ultimate, five times in a row and twice as fast (game/act1_rules/pair.ts, his words):
+//   it slams both claws down and scrapes the strip bare before it; the strip bursts after the Quill has written it.
 // ITS LINE as the hero comes into its ground: no mouth, the clack of its claws (game/defs.ts BOSS_LINES).
 //
 // Every number here that is a picture's is written down in game/act1_rules/pair.ts; tests/pair_rules.test.ts holds them to the art.
@@ -22,7 +22,7 @@
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { MSG, TUNE } from '../defs';
 import type { Monster, Peril } from '../state';
-import { PAIR_TUNE, QL_SWOOP, RUSH_HALF, RUSH_LANE, RUSH_TILES, RUSH_WAKE_FOR, SCOUR_FOR, SCOUR_HALF, SCOUR_REACH, SNAP_AT, SNAP_FOR, SNAP_R, SR_PACE, SR_RUSH, SR_SCOUR, SR_SNAP, SR_STRIP, STRIP_BURST_AFTER, STRIP_BURST_FOR, STRIP_FROM, STRIP_HALF, STRIP_TILES, STRIP_TIMES, WRITE_AT, ahead, burstReaches, free, partnerOf, relOf, writtenAt } from './pair';
+import { PAIR_TUNE, QMODE, RUSH_HALF, RUSH_LANE, RUSH_TILES, RUSH_WAKE_FOR, SCOUR_FOR, SCOUR_HALF, SCOUR_REACH, SNAP_AT, SNAP_FOR, SNAP_R, SR_PACE, SR_RUSH, SR_SCOUR, SR_SNAP, SR_STRIP, STRIP_BURST_AFTER, STRIP_BURST_FOR, STRIP_BURST_RUN, STRIP_FROM, STRIP_HALF, STRIP_STAIN_FOR, STRIP_TILES, SWOOP_TILES, WRITE_AT, ahead, burstReaches, free, partnerOf, relOf, writtenAt } from './pair';
 import type { Act1Rules } from './types';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -47,12 +47,12 @@ const SCOUR = 2;
 const STRIP = 3;
 
 /**
- * What it keeps (Monster.a1): `combo` its next combo's clock (seconds till it may be made), `heal` the Overwrite's; `plan` 1
- * while the combo is under way (the Quill on its way to the strip's far end), with its line `ux`, `uy` and how long it has
- * waited `waited`; `written` 1 while the Quill lands beside it and writes over it (it holds its ground); `struck` its reel's clock as last seen.
+ * What it keeps (Monster.a1): `combo` its next ultimate's clock (seconds till it may be made), `heal` the Overwrite's; `ult`
+ * 1 while their ultimate is under way, `round` how many of its strips have been begun; `plan` 1 while the Quill is on its
+ * way to a strip's far end, 2 between two strips, with its line `ux`, `uy` and how long it has waited `waited`; `written` 1 while the Quill lands beside it and writes over it (it holds its ground); `struck` its reel's clock as last seen.
  */
 export function keptOf(m: Monster): Record<string, number> {
-  return (m.a1 ??= { combo: PAIR_TUNE.combo.first, heal: PAIR_TUNE.overwrite.first, plan: 0, ux: 1, uy: 0, waited: 0, written: 0 });
+  return (m.a1 ??= { combo: PAIR_TUNE.combo.first, heal: PAIR_TUNE.overwrite.first, ult: 0, round: 0, plan: 0, ux: 1, uy: 0, waited: 0, written: 0 });
 }
 
 /** Is the floor walkable at (x, y)? */
@@ -90,25 +90,42 @@ function rushClear(R: BossRules, m: Monster): boolean {
 
 /**
  * THE PALIMPSEST'S LINE, if the floor lets them make it now: the way from the Scraper along which the strip lies (toward the
- * hero, or near it), where the Quill can stand at its far end and swoop all the way down. Null: nowhere.
+ * hero, or near it), where the Quill can stand at its far end and swoop all the way down. Null: nowhere. The first of the
+ * ultimate's strips only with the hero `near` to `far` from it; the rest (`any`) wherever he is.
  */
-export function comboLine(R: BossRules, m: Monster): { ux: number; uy: number } | null {
+export function comboLine(R: BossRules, m: Monster, any = false): { ux: number; uy: number; stand: number } | null {
   const h = R.g.hero;
   const C = PAIR_TUNE.combo;
   const d = Math.hypot(h.x - m.x, h.y - m.y);
-  if (d < C.near || d > C.far) return null;
+  if (!any && (d < C.near || d > C.far)) return null;
   const a0 = Math.atan2(h.y - m.y, h.x - m.x);
-  // (the nearest the way to him first, then either side of it, as far as `turn`)
-  for (let n = 0; n <= Math.round(C.turn / 0.15); n++) {
-    for (const sgn of n === 0 ? [1] : [1, -1]) {
-      const da = sgn * n * 0.15;
-      const ux = Math.cos(a0 + da);
-      const uy = Math.sin(a0 + da);
-      // (the strip, the Quill's way down it with room for its body, and room for it to stand at its far end)
-      if (!clearAlong(R, m.x, m.y, ux, uy, STRIP_FROM, STRIP_FROM + STRIP_TILES)) continue;
-      if (!clearAlong(R, m.x, m.y, ux, uy, STRIP_FROM + 0.4, C.stand, ROOM)) continue;
-      return { ux, uy };
+  // (his pick, "Each one at you": a line whose strip has him on it, if the floor lets the Quill stand at its far end, as far
+  // as `stand` or up to `short` nearer (its swoop then carrying it so much less), and come down short of the Scraper, and
+  // the strip lies on floor, the Quill skimming over whatever stands on it; else, as near the way to him as the floor lets
+  // it be laid with room all the way, as far as `turn` round)
+  const steps = Math.round(C.turn / 0.15);
+  const angles: number[] = [];
+  for (let n = 0; n <= steps; n++) for (const sgn of n === 0 ? [1] : [1, -1]) angles.push(sgn * n * 0.15);
+  const onHim = (da: number): boolean => Math.abs(Math.sin(da)) * d <= STRIP_HALF * 0.8;
+  for (const da of angles) {
+    if (!onHim(da)) continue;
+    const ux = Math.cos(a0 + da);
+    const uy = Math.sin(a0 + da);
+    if (!clearAlong(R, m.x, m.y, ux, uy, STRIP_FROM, STRIP_FROM + STRIP_TILES)) continue;
+    const near = ahead(m.x, m.y, ux, uy, C.stand - SWOOP_TILES);
+    if (!R.g.free(R.g.level.walk, near.x, near.y, ROOM)) continue;
+    for (let stand = C.stand; stand >= C.stand - C.short - 1e-6; stand -= 0.25) {
+      const far = ahead(m.x, m.y, ux, uy, stand);
+      if (R.g.free(R.g.level.walk, far.x, far.y, ROOM)) return { ux, uy, stand };
     }
+  }
+  for (const da of angles) {
+    const ux = Math.cos(a0 + da);
+    const uy = Math.sin(a0 + da);
+    // (the strip, the Quill's way down it with room for its body, and room for it to stand at its far end)
+    if (!clearAlong(R, m.x, m.y, ux, uy, STRIP_FROM, STRIP_FROM + STRIP_TILES)) continue;
+    if (!clearAlong(R, m.x, m.y, ux, uy, STRIP_FROM + 0.4, C.stand, ROOM)) continue;
+    return { ux, uy, stand: C.stand };
   }
   return null;
 }
@@ -123,10 +140,10 @@ export function stripOf(R: BossRules, m: Monster): Peril | null {
   return R.g.perils.find((p) => p.kind === 'act1' && p.a1 === 'scraper:strip' && p.from === m.name && p.done < 2) ?? null;
 }
 
-/** It holds its ground now (the combo under way, or written over by the Quill): it strikes from where it stands, and goes nowhere. */
+/** It holds its ground now (the ultimate under way, or written over by the Quill): it goes nowhere. */
 function holds(m: Monster): boolean {
   const k = keptOf(m);
-  return k.plan === 1 || k.written === 1;
+  return k.ult === 1 || k.plan !== 0 || k.written === 1;
 }
 
 /** What it strikes from where it stands, holding its ground: the biggest ready that he is in reach of, but the rush, which would carry it off. */
@@ -171,37 +188,59 @@ export const RULES: Act1Rules | null = {
     const q = partnerOf(g, m);
     k.combo -= dt;
     k.heal -= dt;
+    const C = PAIR_TUNE.combo;
     // (alone, there is nothing to plan, and nobody to write over it)
     if (!q) {
       k.plan = 0;
       k.written = 0;
+      k.ult = 0;
     }
-    // THE COMBO UNDER WAY: it waits for the Quill to land at the strip's far end, then makes its strip along the line
+    const qk = q ? q.a1 : undefined;
+    // THE ULTIMATE BETWEEN TWO STRIPS: a strip made (or broken off), the next once the Quill is down from its swoop; the last
+    // made, it is over
+    if (k.ult === 1 && k.plan === 0 && !(m.act && m.act.id === 'scraper:strip')) {
+      if (k.round < C.times) {
+        k.plan = 2;
+        k.waited = 0;
+      } else k.ult = 0;
+    }
+    if (k.plan === 2) {
+      const ready = !!q && !!qk && (qk.mode === QMODE.between || (qk.mode === QMODE.free && free(q)));
+      const line = ready ? comboLine(R, m, true) : null;
+      if (q && line) planStrip(m, q, line);
+      else if (!q || !(q.act && q.act.id === 'quill:swoop')) {
+        k.waited += dt;
+        if (k.waited > C.wait) {
+          k.plan = 0;
+          k.ult = 0;
+          if (qk) qk.mode = QMODE.free;
+        }
+      }
+    }
+    // A STRIP UNDER WAY: it waits for the Quill to come down at the strip's far end, then makes its strip along the line
+    // (the ultimate's, as the Quill lands; else once it stands there)
     if (k.plan === 1 && m.state !== 'act') {
       k.waited += dt;
-      const qk = q ? q.a1 : undefined;
-      if (!q || !qk || k.waited > PAIR_TUNE.combo.wait) {
+      if (!q || !qk || k.waited > C.wait) {
         k.plan = 0;
-        if (qk) qk.mode = 0;
-      } else if (qk.mode === 4) {
-        // (the Quill is there, facing back down the line: the strip, along it)
+        k.ult = 0;
+        if (qk) qk.mode = QMODE.free;
+      } else if (qk.mode === QMODE.waiting || (k.ult === 1 && qk.what === 3 && q.act && q.act.id === 'quill:land')) {
         R.startAct(m, SR_ACTS, STRIP);
         return true;
       }
     }
-    // THE PAIR'S MOMENTS, made by the Scraper (it is the one the floor holds as its boss): the combo, or the Quill sent to write over it
-    if (q && free(m) && k.plan === 0 && k.written === 0 && q.a1 && q.a1.mode === 0 && free(q)) {
+    // THE PAIR'S MOMENTS, made by the Scraper (it is the one the floor holds as its boss): their ultimate, or the Quill sent to write over it
+    if (q && qk && free(m) && k.plan === 0 && k.ult === 0 && k.written === 0 && qk.mode === QMODE.free && free(q)) {
       if (k.combo <= 0) {
         const line = comboLine(R, m);
         if (line) {
-          k.plan = 1;
-          k.waited = 0;
-          k.ux = line.ux;
-          k.uy = line.uy;
-          k.combo = PAIR_TUNE.combo.every;
-          // (the Quill flies to the strip's far end, to stand facing back down it)
-          const at = ahead(m.x, m.y, line.ux, line.uy, PAIR_TUNE.combo.stand);
-          sendQuill(q, at.x, at.y, -line.ux, -line.uy, 3);
+          k.ult = 1;
+          k.round = 0;
+          k.combo = C.every;
+          planStrip(m, q, line);
+          g.msg(`${m.name} and ${q.name.replace(/^The /, 'the ')} make their Palimpsest`, MSG.foe);
+          g.sfx('bossRoar', 0.6);
         } else k.combo = 2;
       } else if (k.heal <= 0 && m.life < m.maxLife * PAIR_TUNE.overwrite.below) {
         // (the Quill flies to stand beside it, facing it, and writes over its wounds)
@@ -224,7 +263,8 @@ export const RULES: Act1Rules | null = {
         m.fx = (h.x - m.x) / dist;
         m.fy = (h.y - m.y) / dist;
       }
-      strikeInPlace(R, m, dist);
+      // (written over, it strikes from where it stands; making their ultimate, nothing else)
+      if (!k.ult) strikeInPlace(R, m, dist);
       return true;
     }
     return false;
@@ -256,12 +296,13 @@ export const RULES: Act1Rules | null = {
       act.y = m.y;
       g.sfx('gust', 0.4);
     } else if (a.id === 'scraper:strip') {
-      // (along the line the Quill waits at the end of)
+      // (along the line the Quill comes down at the end of, as fast as the ultimate goes)
       m.fx = k.ux;
       m.fy = k.uy;
       act.x = m.x;
       act.y = m.y;
-      g.msg(`${m.name} scrapes a strip bare`, MSG.foe);
+      act.rate = PAIR_TUNE.combo.rate;
+      k.round++;
     }
   },
 
@@ -332,9 +373,9 @@ export const RULES: Act1Rules | null = {
       }
       case 'scraper:strip': {
         if (!at(SR_STRIP.slam)) break;
-        // THE STRIP, scraped bare before it: it lies for the Quill to write (pair.ts STRIP_TIMES), and bursts after it
+        // THE STRIP, scraped bare before it: it lies for the Quill to write, and bursts after it (its peril, below)
         keptOf(m).plan = 0;
-        R.peril(m, 'act1', act.x, act.y, { a1: 'scraper:strip', dur: STRIP_TIMES.gone, fx: m.fx, fy: m.fy, dmg: g.rollMonsterDmg(m) * a.dmg, a: 0, b: 0, c: 0, d: 0, hit: 0, done: 0 });
+        R.peril(m, 'act1', act.x, act.y, { a1: 'scraper:strip', dur: 30, fx: m.fx, fy: m.fy, dmg: g.rollMonsterDmg(m) * a.dmg, a: 0, b: 0, c: 0, d: 0, hit: 0, done: 0 });
         g.emit({ t: 'shake', amount: 5 });
         g.sfx('slam', 1);
         break;
@@ -352,25 +393,30 @@ export const RULES: Act1Rules | null = {
     void dt;
     if (p.a1 !== 'scraper:strip') return;
     const g = R.g;
-    // THE STRIP: `d` 1 once the Quill has set off down it, `a` the moment it did (the strip's clock), `b` how much of it is
-    // written (0 to 1); `done` 0 lying, 1 bursting (from `c`), 2 fading without bursting (the Quill felled before it had
-    // written it, or never coming); `hit` 1 once the burst has struck
+    // THE STRIP, at the ultimate's speed (`rate`: its clock `p.t` in the game's seconds, the art's in `rate` times as many):
+    // `d` 0 lying bare, 1 the Quill swooping down it, 2 written to its near end (at `a`); `b` how much of it is written (0
+    // to 1, by the Quill's own swoop); `done` 0 lying, 1 bursting (from `c`), 2 fading without bursting (the Quill felled
+    // before it had written it, or never coming); `hit` 1 once the burst has struck
+    const rate = PAIR_TUNE.combo.rate;
     const m = g.monsters.find((o) => !o.dead && o.kind === 'scraper' && o.name === p.from) ?? null;
     const q = m ? partnerOf(g, m) : null;
     if (p.done === 0) {
-      const swooping = !!q && !!q.act && q.act.id === 'quill:swoop';
-      if (!p.d && swooping) {
-        p.d = 1;
-        p.a = p.t - q!.act!.t;
+      const swoop = q && q.act && q.act.id === 'quill:swoop' ? q.act : null;
+      if (p.d === 0 && swoop) p.d = 1;
+      if (p.d === 1 && swoop) p.b = writtenAt(swoop.t);
+      if (p.d === 1 && p.b >= 1) {
+        p.d = 2;
+        p.a = p.t;
       }
-      if (p.d && swooping) p.b = writtenAt(p.t - p.a);
-      // (written to its near end: it bursts after; the Quill felled before that, or never coming, it lies and fades)
-      if (p.d && p.b >= 1 && p.t - p.a >= QL_SWOOP.stop + STRIP_BURST_AFTER) {
+      if (p.d === 2 && p.t - p.a >= STRIP_BURST_AFTER / rate) {
+        // (written to its near end: it bursts after)
         p.done = 1;
         p.c = p.t;
+        p.dur = p.t + (STRIP_BURST_RUN + STRIP_STAIN_FOR) / rate;
         g.sfx('slam', 0.9);
         g.emit({ t: 'shake', amount: 5 });
-      } else if (p.b < 1 && (!q || (p.d && !swooping) || (!p.d && p.t > STRIP_TIMES.swoopFrom + 1.5))) {
+      } else if (p.d !== 2 && (!q || (p.d === 1 && !swoop) || (p.d === 0 && p.t > 3))) {
+        // (the Quill felled before it had written it, or never coming: it lies and fades)
         p.done = 2;
         p.c = p.t;
         p.dur = Math.min(p.dur, p.t + 1.2);
@@ -383,7 +429,7 @@ export const RULES: Act1Rules | null = {
     const r = relOf(p.x, p.y, p.fx, p.fy, h.x, h.y);
     const e = TUNE.heroRadius * 0.5;
     if (r.f < STRIP_FROM - e || r.f > STRIP_FROM + STRIP_TILES + e || Math.abs(r.s) > STRIP_HALF + e) return;
-    const since = p.t - p.c;
+    const since = (p.t - p.c) * rate;
     const when = burstReaches(Math.max(STRIP_FROM, Math.min(STRIP_FROM + STRIP_TILES, r.f)));
     if (since >= when && since <= when + STRIP_BURST_FOR && open(R)) {
       p.hit = 1;
@@ -401,6 +447,19 @@ export const RULES: Act1Rules | null = {
     }
   },
 };
+
+/** One of the ultimate's strips planned along `line`: the Quill sent to its far end, to stand there facing back down it. */
+function planStrip(m: Monster, q: Monster, line: { ux: number; uy: number; stand: number }): void {
+  const k = keptOf(m);
+  k.plan = 1;
+  k.waited = 0;
+  k.ux = line.ux;
+  k.uy = line.uy;
+  const at = ahead(m.x, m.y, line.ux, line.uy, line.stand);
+  sendQuill(q, at.x, at.y, -line.ux, -line.uy, 3);
+  // (its swoop carries it down to short of the Scraper's claws: so much less, standing nearer)
+  q.a1!.carry = SWOOP_TILES - (PAIR_TUNE.combo.stand - line.stand);
+}
 
 /** Where the Quill stands to write over the Scraper: WRITE_AT.ahead from its middle, on the side nearer the Quill if it can, facing it. */
 function writeSpot(R: BossRules, m: Monster, q: Monster): { x: number; y: number; fx: number; fy: number } | null {

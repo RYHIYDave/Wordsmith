@@ -16,13 +16,21 @@
 //   it, a boss too; both wait for the hero to come into their ground, and wake together. Each has a bar of its life over
 //   the screen while both stand (ui/hud.ts). One falling, the other fights on alone; the way on opens when both have
 //   fallen. The first to fall leaves part of a boss's hoard, the last the whole of it.
-// - THE PALIMPSEST, THEIR COMBO: now and then (`combo`), both free and the room letting them, the Scraper holds its ground
-//   and the Quill flies off to the far end of the line it will write, the line on the hero's side of the Scraper; landed
-//   there, facing back down it, it waits, and the Scraper slams its claws down and scrapes the strip bare before it (its
-//   `strip`); the Quill swoops down the strip writing it from its far end (its `swoop`, started so that it sets off as the
-//   strip has run out), and lands short of the Scraper's claws; the strip bursts after it, a wall of ink along it as it was
-//   written, from its far end to its near end: whoever is on it as the burst passes is struck hard. The Quill felled before
-//   it has written it, the strip lies bare and does not burst.
+// - THE PALIMPSEST, THEIR COMBO, MADE THEIR ULTIMATE. His words to the main chat, 21 Oct 2026, 10:58 Pacific, to the video
+//   of them from the game: “The combo attack needs to be huge.  It’s their ultimate ability.  And I’d like the quill to
+//   move much faster.  I like the scraper being slow but a heron should be quick” and, the same minute, “Have them do the
+//   combo move, but do it 5 times in a row and about twice as fast”; his picks: “Each one at you (Recommended)”, “Twice as
+//   fast (Recommended)” (the Quill), “About every 30 s (Recommended)”. So: now and then (`combo`), both free and the room
+//   letting them, they make it `times` times in a row, each `rate` times as fast as its pictures were painted. Each time
+//   the Scraper holds its ground and the Quill flies off to the far end of the line it will write, the line toward where
+//   the hero is then; as it lands there the Scraper slams its claws down and scrapes the strip bare before it (its
+//   `strip`); the Quill, facing back down it, swoops down the strip writing it from its far end (its `swoop`, started so
+//   that it sets off as the strip has run out), and lands short of the Scraper's claws; the strip bursts after it, a wall
+//   of ink along it as it was written, from its far end to its near end: whoever is on it as the burst passes is struck
+//   hard. Then the next, until all are made. The Quill felled before it has written one, that strip lies bare and does
+//   not burst, and the ultimate is over. While it lasts the Scraper does nothing else.
+// - THE QUILL IS QUICK (his word above): it walks `quick` times as fast as its wade was painted for (its steps played as
+//   much faster, game/defs.ts MONSTERS.quill.speed), and flies `quick` times as fast, its taking off and landing too.
 // - OVERWRITE: now and then (`overwrite`), the Scraper hurt and the Quill free, the Quill flies to stand beside the Scraper
 //   (following it as it goes), facing it, and writes over its wounds, healing it while it writes, for as long as `most` at
 //   the longest; a blow on the Quill stops it (it reels), and so does the Scraper burning (the hero's fire: “Fire words
@@ -93,18 +101,27 @@ export const PAIR_TUNE = {
    * where the floor lets the Quill stand at its far end (`stand` tiles before the Scraper: the strip's far end and its swoop
    * past it) and swoop all the way down. The Quill sets off down it `start` seconds after the Scraper begins its strip (its
    * `go` then comes as the strip has run out); the strip bursts STRIP_BURST_AFTER after the Quill is home. `dmg` times the
-   * Scraper's blow. Given up if the Quill has not landed at its end within `wait` seconds.
+   * Scraper's blow. Given up if the Quill has not landed at its end within `wait` seconds. THE ULTIMATE (his words above):
+   * `times` in a row, the first `near` to `far` from the hero and the rest wherever he is, each at `rate` times the speed
+   * of its pictures (the Scraper's strip and the Quill's swoop, and with them `start`, the strip's burst and its staying);
+   * where the floor has no room for the Quill at `stand`, it may stand up to `short` nearer, its swoop carrying it less;
+   * `every` from the start of one to the next.
    */
-  combo: { every: 22, first: 12, near: 2.5, far: 8.5, turn: 0.9, stand: STRIP_FROM + 0.4 + SWOOP_TILES, start: 0.9, dmg: 2.2, wait: 6 },
+  combo: { every: 30, first: 12, near: 2.5, far: 8.5, turn: 0.9, stand: STRIP_FROM + 0.4 + SWOOP_TILES, short: 1.5, start: 0.9, dmg: 2.2, wait: 6, times: 5, rate: 2 },
   /**
    * OVERWRITE: made once in `every` seconds at most (the first `first` after they wake), with the Scraper below `below` of
    * its life; the Quill stands WRITE_AT.ahead tiles from the Scraper's middle, beside it, facing it; while it writes the
    * Scraper is healed `heal` of its life a second, for `most` seconds at the longest.
    */
   overwrite: { every: 20, first: 16, below: 0.8, heal: 0.02, most: 6 },
-  /** The Quill's flight: QL_FLY_PACE tiles a second, straight to where it is going. */
-  fly: QL_FLY_PACE,
+  /** THE QUILL IS QUICK: twice as fast as its pictures were painted for, walking (game/defs.ts MONSTERS.quill.speed) and flying (its taking off and landing too). */
+  quick: 2,
+  /** The Quill's flight: QL_FLY_PACE tiles a second as painted, times `quick`, straight to where it is going. */
+  fly: QL_FLY_PACE * 2,
 };
+
+/** The Quill's moments with the Scraper (Monster.a1.mode): free to fight, on its way (taking off, flying, landing), writing over the Scraper, waiting at the strip's far end, swooping down it, between two of the ultimate's strips. */
+export const QMODE = { free: 0, going: 1, writing: 2, waiting: 4, swooping: 5, between: 6 } as const;
 
 /** Where the Quill's nib is on the strip as it swoops down it: how much of it is written, from its far end (0 to 1), `t` seconds into its swoop. */
 export function writtenAt(t: number): number {
@@ -128,14 +145,6 @@ export function burstReaches(f: number): number {
   }
   return ((lo + hi) / 2) * STRIP_BURST_RUN;
 }
-
-/** The strip's times, from the Scraper's slam: when the Quill sets off down it, when it is written to its near end, when it bursts. */
-export const STRIP_TIMES = {
-  /** (the Quill's swoop begins `combo.start` after the Scraper's strip, which slams at SR_STRIP.slam) */
-  swoopFrom: PAIR_TUNE.combo.start - SR_STRIP.slam,
-  burst: PAIR_TUNE.combo.start - SR_STRIP.slam + QL_SWOOP.stop + STRIP_BURST_AFTER,
-  gone: PAIR_TUNE.combo.start - SR_STRIP.slam + QL_SWOOP.stop + STRIP_BURST_AFTER + STRIP_BURST_RUN + STRIP_STAIN_FOR,
-};
 
 /** The other of the pair, alive: the Quill for the Scraper, the Scraper for the Quill; null if it has fallen. */
 export function partnerOf(g: Game, m: Monster): Monster | null {

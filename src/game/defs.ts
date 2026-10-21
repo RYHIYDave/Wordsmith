@@ -564,7 +564,8 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   // Quill beside it (game/act1_rules/pair.ts). Their lives between them a little more than the Palimpsest's, the Quill's the less:
   // it heals the Scraper. Each's radius its body's: the Scraper's four tiles from its claws to its tail fan, the Quill's slender.
   scraper: { kind: 'scraper', name: 'The Scraper', life: 340, dmgMin: 22, dmgMax: 30, speed: 1.0, radius: 1.1, range: 3.6, windup: 0.5, cooldown: 2.0, xp: 260, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
-  quill: { kind: 'quill', name: 'The Quill', life: 250, dmgMin: 18, dmgMax: 26, speed: 1.1, radius: 0.55, range: 2.6, windup: 0.6, cooldown: 2.0, xp: 200, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // (the Quill quick, his word of 21 Oct 2026: “a heron should be quick”: twice the pace its wade was painted for, game/act1_rules/pair.ts)
+  quill: { kind: 'quill', name: 'The Quill', life: 250, dmgMin: 18, dmgMax: 26, speed: 2.2, radius: 0.55, range: 2.6, windup: 0.6, cooldown: 2.0, xp: 200, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 

@@ -665,7 +665,7 @@ export class BossRules {
       return;
     }
     const t0 = act.t;
-    act.t = Math.min(a.long, t0 + dt * (t0 < a.hit ? 0.6 + 0.4 * slow : 1));
+    act.t = Math.min(a.long, t0 + dt * (act.rate ?? 1) * (t0 < a.hit ? 0.6 + 0.4 * slow : 1));
     const t1 = act.t;
     m.t = a.long - t1;
     this.acting(m, a, t0, t1, dt);

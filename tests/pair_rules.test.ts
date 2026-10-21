@@ -8,6 +8,11 @@
 //      stab, the ink lines (and between them, nothing);
 //   4. the Palimpsest, their combo: the Quill flies to the strip's far end, the Scraper scrapes it, the Quill swoops down it
 //      writing; it bursts, striking who is on it and not who is beside it; the Quill felled first, it never bursts;
+//   4b. THEIR ULTIMATE (his words, 21 Oct 2026, 10:58 Pacific: “The combo attack needs to be huge.  It’s their ultimate
+//      ability.” and “Have them do the combo move, but do it 5 times in a row and about twice as fast”; his picks “Each one
+//      at you (Recommended)”, “About every 30 s (Recommended)”): five strips in a row, each at him as it is planned, each at
+//      twice the speed of its pictures; then over, the next 30 s from its start;
+//   4c. THE QUILL QUICK (“a heron should be quick”; “Twice as fast (Recommended)”): its walk and its flight twice as fast;
 //   5. Overwrite: the Quill writes over the Scraper's wounds, healing it, until struck, or the Scraper burns, or in time;
 //   6. one falling, the other fights on as the floor's boss, the way shut, part of a hoard; both, the way open, the hoard;
 //   7. the Quill in the air is struck, but held at the last of its life till it lands; nothing they draw is cyan.
@@ -249,7 +254,10 @@ test('4. the Palimpsest: the Quill to the strip\'s far end, the strip scraped, w
     let burst = false;
     let hurts = 0;
     let quillAt = { x: 0, y: 0 };
+    let first: { c: number; done: number } | null = null;
     const seen = run(g, 9, () => {
+      // (the first strip only: done once it has burst and its burst has run, or has faded)
+      if (first && (first.done === 2 || (first.done === 1 && g.perils.indexOf(first as never) < 0))) return true;
       // (none of their own blows meanwhile: only the combo's)
       s.cd = 99;
       q.cd = 99;
@@ -260,9 +268,11 @@ test('4. the Palimpsest: the Quill to the strip\'s far end, the strip scraped, w
         h.y = p.y;
       }
       const p = g.perils.find((x) => x.a1 === 'scraper:strip');
-      if (p) {
+      if (p && !first) first = p;
+      if (first) {
         strip = true;
-        if (p.done === 1) burst = true;
+        if (first.done === 1) burst = true;
+        if (first.done === 1 && g.perils.indexOf(first as never) >= 0 && (first as unknown as { t: number }).t - first.c > 1.2) return true;
       }
       if (q.act?.id === 'quill:swoop' && !quillAt.x) quillAt = { x: q.x, y: q.y };
       if (fell && q.act?.id === 'quill:swoop' && q.act.t > 1.0 && !q.dead) {
@@ -286,6 +296,17 @@ test('4. the Palimpsest: the Quill to the strip\'s far end, the strip scraped, w
   assert.equal(off.hurts, 0, 'who stands beside it is not');
   const felled = play(true, true);
   assert.ok(felled.strip && !felled.burst, 'the Quill felled before it has written it: it never bursts');
+  // (where its far end has no room for the Quill, it stands nearer, as far as `short`, and has him on the strip still)
+  {
+    const { g, s } = room();
+    s.x = 12.5;
+    s.y = 14.5;
+    g.hero.x = 17.5;
+    g.hero.y = 14.5;
+    const R = (g as unknown as { bosses: Parameters<typeof comboLine>[0] }).bosses;
+    const L = comboLine(R, s, true);
+    assert.ok(L && L.ux > 0.99 && L.stand < PR.PAIR_TUNE.combo.stand && L.stand >= PR.PAIR_TUNE.combo.stand - PR.PAIR_TUNE.combo.short, `nearer, at him: ${JSON.stringify(L)}`);
+  }
   // (where the floor has no room for the line, no combo)
   const { g, s } = room();
   s.x = 8.5;
@@ -294,6 +315,88 @@ test('4. the Palimpsest: the Quill to the strip\'s far end, the strip scraped, w
   g.hero.y = 8.5;
   const R = (g as unknown as { bosses: Parameters<typeof comboLine>[0] }).bosses;
   assert.equal(comboLine(R, s), null, 'its back to the wall: no line');
+});
+
+test('4b. their ultimate: five strips in a row, each at him as it is planned, each at twice the speed of its pictures; then over', () => {
+  const { g, s, q } = room();
+  // (the practice room's row 14 is floor from wall to wall: the Scraper at its west end, he five tiles east of it)
+  s.x = 7.5;
+  s.y = 14.5;
+  q.x = 9;
+  q.y = 12.5;
+  const h = g.hero;
+  h.x = 12.5;
+  h.y = 14.5;
+  const k = scraperKept(s);
+  k.combo = 0;
+  // (he moves round it between the strips, so that each is made at where he is then)
+  const spots = [[12.5, 14.5], [11.3, 17.6], [12.0, 12.2], [12.5, 15.5], [11.6, 11.8]];
+  let planned = 0;
+  let wasPlan = 0;
+  const aims: number[] = [];
+  const rates = new Set<string>();
+  const strips: unknown[] = [];
+  let started = -1;
+  let over = -1;
+  let combo = 0;
+  run(g, 30, (t) => {
+    s.cd = 99;
+    q.cd = 99;
+    if (k.ult === 1 && started < 0) {
+      started = t;
+      combo = k.combo;
+    }
+    if (k.plan === 1 && wasPlan !== 1) {
+      // (a strip planned: its line against the way to him)
+      aims.push(Math.abs(Math.atan2(h.y - s.y, h.x - s.x) - Math.atan2(k.uy, k.ux)));
+      planned++;
+    }
+    wasPlan = k.plan;
+    if (s.act?.id === 'scraper:strip') rates.add(`strip ${s.act.rate}`);
+    if (q.act?.id === 'quill:swoop') rates.add(`swoop ${q.act.rate}`);
+    for (const p of g.perils) if (p.a1 === 'scraper:strip' && !strips.includes(p)) strips.push(p);
+    // (once a strip has burst, he steps to the next spot)
+    const burst = g.perils.filter((p) => p.a1 === 'scraper:strip' && p.done === 1).length;
+    const at = spots[Math.min(spots.length - 1, burst)];
+    h.x = at[0];
+    h.y = at[1];
+    if (started >= 0 && k.ult === 0 && over < 0) over = t;
+    return over > 0 && t > over + 1.5;
+  });
+  assert.equal(planned, PR.PAIR_TUNE.combo.times, 'five planned');
+  assert.equal(strips.length, PR.PAIR_TUNE.combo.times, 'five strips scraped');
+  assert.ok(strips.every((p) => (p as { done: number }).done === 1), 'each burst');
+  for (const a of aims) assert.ok(a < 0.2, `each at him: ${a}`);
+  assert.deepEqual([...rates].sort(), [`strip ${PR.PAIR_TUNE.combo.rate}`, `swoop ${PR.PAIR_TUNE.combo.rate}`], 'twice the speed of their pictures');
+  assert.ok(over > 0 && over - started < PR.PAIR_TUNE.combo.times * 3.6, `over, and quick: ${(over - started).toFixed(2)} s`);
+  near(combo, PR.PAIR_TUNE.combo.every, 0.1, 'the next 30 s from its start');
+  assert.equal(quillKept(q).mode, QMODE.free, 'the Quill free again');
+});
+
+test('4c. the Quill quick: its walk and its flight twice as fast as painted, its taking off and landing too', () => {
+  assert.equal(PR.PAIR_TUNE.quick, 2);
+  near(MONSTERS.quill.speed, PR.QL_PACE * PR.PAIR_TUNE.quick, 1e-9, 'its walk');
+  near(PR.PAIR_TUNE.fly, PR.QL_FLY_PACE * PR.PAIR_TUNE.quick, 1e-9, 'its flight');
+  near(MONSTERS.scraper.speed, PR.SR_PACE, 1e-9, 'the Scraper as slow as it was');
+  const { g, q } = room();
+  make(g, q, 'quill:takeoff', 14, 14);
+  assert.equal(q.act?.rate, PR.PAIR_TUNE.quick, 'taking off');
+  // (a 6-tile flight: there in its taking off, its flight at twice the pace, and its landing)
+  const k = quillKept(q);
+  k.mode = QMODE.going;
+  k.what = 0;
+  k.tx = q.x + 6;
+  k.ty = q.y;
+  q.act!.t = 0;
+  let landed = -1;
+  run(g, 4, (t) => {
+    if (landed < 0 && q.act?.id === 'quill:land') {
+      landed = t;
+      assert.equal(q.act.rate, PR.PAIR_TUNE.quick, 'landing');
+    }
+    return landed > 0;
+  });
+  near(landed, PR.QL_TAKEOFF.long / 2 + 6 / PR.PAIR_TUNE.fly, 0.1, 'there so soon');
 });
 
 test('5. Overwrite: the Quill writes over the Scraper\'s wounds, healing it, until struck, or the Scraper burns, or in time', () => {

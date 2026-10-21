@@ -5,7 +5,7 @@
 //   node tools/playtest.mjs --file dist/pair.html --size 844x390 --dpr 2 --touch --scenario tools/scenarios/pair_film.mjs --out shots/film/pair
 // On the Pulping Floor (floor 13), the hero by them, struck by nothing (god): (1) the two met, their names and their two
 // bars; (2) the Scraper's three, the claw snap, the scour and the backward rush; (3) the Quill's two, the nib stab and the
-// ink lines; (4) their combo, the Palimpsest, the hero on the strip; (5) Overwrite, the Quill writing over the Scraper's
+// ink lines; (4) their ultimate, the Palimpsest five times in a row, twice as fast, each strip at the hero; (5) Overwrite, the Quill writing over the Scraper's
 // wounds, stopped by his blow; (6) the Quill felled, the Scraper fighting on alone; the Scraper felled, the way on. A frame
 // every 20th of a second of the game's time (the game slowed to a quarter), named f_0000...
 // Checks, logged '!!': every move made; the strip bursts and strikes him on it; the Scraper healed while written over and
@@ -166,7 +166,8 @@ export default async function (page, snap) {
   await make('quill', 'quill:stab', 2.5, 0.2, 0.6);
   await make('quill', 'quill:lines', 3.3, 0.6, 1.4);
   await page.evaluate(() => { window.__dbg.game().monsters.find((m) => m.kind === 'scraper' && !m.dead).a1.written = 0; });
-  // (4) THE PALIMPSEST: the hero 5 tiles off the Scraper; once its line is planned, on the strip
+  // (4) THEIR ULTIMATE, THE PALIMPSEST FIVE TIMES IN A ROW, TWICE AS FAST (his words, 21 Oct 2026, 10:58 Pacific): the hero
+  // standing 5 tiles off the Scraper, each strip made at him
   await page.evaluate(() => {
     const g = window.__dbg.game();
     const P = window.__pf;
@@ -179,28 +180,31 @@ export default async function (page, snap) {
     s.a1.combo = 0;
     s.cd = 99;
     g.monsters.find((m) => m.kind === 'quill' && !m.dead).cd = 99;
-    P.line = null;
+    P.strips = [];
+    P.ult = { began: -1, over: -1 };
+    P.at = { x: h.x, y: h.y };
   });
-  for (let k = 0; k < 16 * FPS; k++) {
+  for (let k = 0; k < 30 * FPS; k++) {
     await frame();
     const st = await page.evaluate(() => {
       const g = window.__dbg.game();
       const P = window.__pf;
       const s = g.monsters.find((m) => m.kind === 'scraper' && !m.dead);
       const q = g.monsters.find((m) => m.kind === 'quill' && !m.dead);
-      // (their own blows kept back while they make it)
+      // (their own blows kept back while they make it; the hero kept where he stands, as their bursts knock him)
       s.cd = Math.max(s.cd, 1);
       q.cd = Math.max(q.cd, 1);
-      if (!P.line && s.a1.plan === 1) P.line = { ux: s.a1.ux, uy: s.a1.uy, x: s.x, y: s.y };
-      if (P.line && !P.burst) {
-        // (the hero on the strip, five tiles out, as it is scraped and written)
-        g.hero.x = P.line.x + P.line.ux * 5;
-        g.hero.y = P.line.y + P.line.uy * 5;
-      }
-      const p = g.perils.find((x) => x.a1 === 'scraper:strip');
-      return { burst: P.burst, gone: P.burst && !p, line: !!P.line };
+      g.hero.x = P.at.x;
+      g.hero.y = P.at.y;
+      for (const p of g.perils) if (p.a1 === 'scraper:strip' && !P.strips.includes(p)) P.strips.push(p);
+      if (s.a1.ult === 1 && P.ult.began < 0) P.ult.began = g.time ?? 0;
+      const over = P.ult.began >= 0 && s.a1.ult === 0;
+      const lying = g.perils.some((x) => x.a1 === 'scraper:strip');
+      P.ultStrips = P.strips.length;
+      P.ultBursts = P.strips.filter((p) => p.done === 1).length;
+      return { over: over && !lying };
     });
-    if (st.gone) break;
+    if (st.over) break;
   }
   await hold(0.6);
   // (5) OVERWRITE: the Scraper hurt; the Quill flies to it and writes over its wounds; a blow on the Quill stops it
@@ -286,12 +290,13 @@ export default async function (page, snap) {
     const P = window.__pf;
     const s = g.monsters.find((m) => m.kind === 'scraper');
     const w = g.level.ways && g.level.ways.onward;
-    return { acts: P.acts, burst: P.burst, stripHit: P.stripHit, healed: Math.round(P.healed), stopped: P.stopped, killed: P.killed, sent: P.sent, scraperDead: P.killed.includes('scraper'), onward: !!(w && w.awake) };
+    return { acts: P.acts, burst: P.burst, stripHit: P.stripHit, ultStrips: P.ultStrips, ultBursts: P.ultBursts, healed: Math.round(P.healed), stopped: P.stopped, killed: P.killed, sent: P.sent, scraperDead: P.killed.includes('scraper'), onward: !!(w && w.awake) };
   });
   log('film', JSON.stringify({ frames: i, after, mid, end }));
   for (const id of ['scraper:snap', 'scraper:scour', 'scraper:rush', 'scraper:strip', 'quill:stab', 'quill:lines', 'quill:takeoff', 'quill:fly', 'quill:land', 'quill:swoop', 'quill:write']) {
     if (!end.acts.includes(id)) log('!!', `${id} never made`);
   }
+  if (end.ultStrips !== 5 || end.ultBursts !== 5) log('!!', `their ultimate: ${end.ultStrips} strips, ${end.ultBursts} burst (five wanted)`);
   if (!end.burst) log('!!', 'the strip never burst');
   if (!end.stripHit) log('!!', 'the strip\'s burst never struck him on it');
   if (end.healed <= 0) log('!!', 'the Scraper was never healed as the Quill wrote over it');

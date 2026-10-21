@@ -10,7 +10,7 @@
 
 import { drawOverwriting, drawRushWake, drawRushWarn, drawScour, drawScourWarn, drawSnap, drawSnapWarn, drawStrip, drawStripBurst, drawStripWarn, STRIP_BURST_RUN } from '../../art/pair_shots';
 import { RUSH_TILES, SR_RUSH, SR_SCOUR, SR_SNAP, SR_STRIP } from '../../art/scraper';
-import { partnerOf } from '../../game/act1_rules/pair';
+import { PAIR_TUNE, partnerOf } from '../../game/act1_rules/pair';
 import { keptOf } from '../../game/act1_rules/scraper';
 import type { Act1Fx } from './types';
 
@@ -46,17 +46,19 @@ export const FX: Act1Fx | null = {
       const run = SR_RUSH.stop - SR_RUSH.go;
       drawRushWake(g, c.at, p.x, p.y, p.fx, p.fy, p.t, RUSH_TILES * sm(Math.min(p.t, run) / run));
     } else if (p.a1 === 'scraper:strip') {
-      // (bare, then written as the Quill swoops down it; bursting; or, never written, fading)
+      // (bare, then written as the Quill swoops down it; bursting; or, never written, fading: all at their ultimate's speed,
+      // the art's clock `rate` times the game's)
+      const rate = PAIR_TUNE.combo.rate;
       if (p.done === 1) {
-        const since = p.t - p.c;
-        if (since < STRIP_BURST_RUN) drawStrip(g, c.at, p.x, p.y, p.fx, p.fy, p.t, 1);
+        const since = (p.t - p.c) * rate;
+        if (since < STRIP_BURST_RUN) drawStrip(g, c.at, p.x, p.y, p.fx, p.fy, p.t * rate, 1);
         drawStripBurst(g, c.at, p.x, p.y, p.fx, p.fy, since);
       } else if (p.done === 2) {
         const was = g.globalAlpha;
         g.globalAlpha = was * clamp01(1 - (p.t - p.c) / 1.2);
-        drawStrip(g, c.at, p.x, p.y, p.fx, p.fy, p.t, p.b);
+        drawStrip(g, c.at, p.x, p.y, p.fx, p.fy, p.t * rate, p.b);
         g.globalAlpha = was;
-      } else drawStrip(g, c.at, p.x, p.y, p.fx, p.fy, p.t, p.b);
+      } else drawStrip(g, c.at, p.x, p.y, p.fx, p.fy, p.t * rate, p.b);
     }
   },
 

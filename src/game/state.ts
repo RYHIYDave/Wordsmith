@@ -371,7 +371,8 @@ export interface Monster {
    * where its picture is turned over, so that what goes to its left in the picture goes to its left on
    * the floor), and what the act itself needs to keep (`a`, `b`, `x`, `y`: BossRules).
    */
-  act?: { id: ActId; t: number; n: number; hand: 1 | -1; a: number; b: number; x: number; y: number };
+  /** (`rate`: how fast its clock runs, its pictures with it: 1 if not said; floor 13's pair's ultimate and the Quill's flight, 2) */
+  act?: { id: ActId; t: number; n: number; hand: 1 | -1; a: number; b: number; x: number; y: number; rate?: number };
   /** The Chained One: how many of his chains he has broken (0, 1 his left, 2 the ball's too). */
   form?: number;
   /**

@@ -12,8 +12,10 @@
 //   pink (its warning) and bursts LINE_BURST_AFTER its stroke: whoever is on a line as it bursts is struck.
 // - OVERWRITE (pair.ts): it takes off, flies to the Scraper, lands beside it facing it and writes over its wounds, healing
 //   it while it writes; a blow on it stops it, and so does the Scraper burning.
-// - ITS HALF OF THE PALIMPSEST (pair.ts): it flies to the far end of the strip and waits there, facing back down it; as
-//   the Scraper's strip runs out it swoops down it, carried SWOOP_TILES, its nib writing it, and lands short of the Scraper.
+// - ITS HALF OF THE PALIMPSEST, their ultimate, five times in a row and twice as fast (pair.ts): it flies to the far end of
+//   the strip and comes down there, facing back down it; as the Scraper's strip runs out it swoops down it, carried
+//   SWOOP_TILES, its nib writing it, and lands short of the Scraper; then off to the next.
+// - IT IS QUICK (his words, pair.ts): twice as fast as its pictures were painted for, walking and flying.
 // IT IS STRUCK WHEREVER IT IS, in the air too (his word on the vultures, 20 Oct, 21:31 Pacific: “Oh the vultures being
 // unhittable in the air has to go.  It’s infuriating to fight them”); in the air, or skimming down the strip, it is not
 // brought below the last of its life (its death is painted from the floor): the next blow after it lands fells it.
@@ -21,7 +23,7 @@
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { MSG, TUNE } from '../defs';
 import type { Monster } from '../state';
-import { LINE_BURST_AFTER, LINE_BURST_FOR, LINE_HALF, LINE_LONG, LINE_STAIN_FOR, LINE_STROKE, LINES_AT, PAIR_TUNE, QL_LAND, QL_LINES, QL_PACE, QL_STAB, QL_SWOOP, QL_TAKEOFF, STAB_AT, STAB_FOR, STAB_R, SWOOP_TILES, WRITE_AT, ahead, partnerOf, relOf } from './pair';
+import { LINE_BURST_AFTER, LINE_BURST_FOR, LINE_HALF, LINE_LONG, LINE_STAIN_FOR, LINE_STROKE, LINES_AT, PAIR_TUNE, QL_LAND, QL_LINES, QL_PACE, QL_STAB, QL_SWOOP, QL_TAKEOFF, STAB_AT, STAB_FOR, STAB_R, SWOOP_TILES, WRITE_AT, QMODE, ahead, partnerOf, relOf } from './pair';
 import { keptOf as scraperKept, swoopDue } from './scraper';
 import type { Act1Rules } from './types';
 
@@ -44,17 +46,17 @@ const LAND = 4;
 const WRITE = 5;
 const SWOOP = 6;
 
-/** Its moments with the Scraper (Monster.a1.mode): free to fight, on its way (taking off, flying, landing), writing over the Scraper, waiting at the strip's far end, swooping down it. */
-export const QMODE = { free: 0, going: 1, writing: 2, waiting: 4, swooping: 5 } as const;
+/** Its moments with the Scraper (Monster.a1.mode): game/act1_rules/pair.ts QMODE. */
+export { QMODE };
 
 /**
  * What it keeps (Monster.a1): `mode` (QMODE); where it is sent, `tx`, `ty`, the way it is to face there, `tfx`, `tfy`, and
  * what for, `what` (2 to write over the Scraper, 3 to wait at the strip's far end), and sent to the Scraper, where that is
- * from it, `ox`, `oy` (followed as it flies); `wrote` how long it has written; `told`
+ * from it, `ox`, `oy` (followed as it flies); `carry` how far its swoop carries it (SWOOP_TILES, or less where it stands nearer); `wrote` how long it has written; `told`
  * the last whole second it said it heals.
  */
 export function keptOf(m: Monster): Record<string, number> {
-  return (m.a1 ??= { mode: 0, what: 0, tx: 0, ty: 0, tfx: 1, tfy: 0, ox: 0, oy: 0, wrote: 0, told: -1 });
+  return (m.a1 ??= { mode: 0, what: 0, tx: 0, ty: 0, tfx: 1, tfy: 0, ox: 0, oy: 0, carry: 0, wrote: 0, told: -1 });
 }
 
 /** Is it in the air, or skimming down the strip (its death is painted from the floor: it is held at the last of its life)? */
@@ -107,6 +109,24 @@ export const RULES: Act1Rules | null = {
       R.startAct(m, QL_ACTS, TAKEOFF);
       return true;
     }
+    // BETWEEN TWO OF THE ULTIMATE'S STRIPS: it stands, facing him, until the Scraper sends it to the next
+    if (k.mode === QMODE.between) {
+      if (!s || !scraperKept(s).ult) {
+        k.mode = QMODE.free;
+        return false;
+      }
+      m.state = 'chase';
+      m.anim = 'idle';
+      const h = R.g.hero;
+      const d = Math.hypot(h.x - m.x, h.y - m.y);
+      if (d > 0.01) {
+        m.fx = (h.x - m.x) / d;
+        m.fy = (h.y - m.y) / d;
+      }
+      if (!m.gait || m.gait.mode !== 'stand') m.gait = { mode: 'stand', t: 0 };
+      m.gait.t += dt;
+      return true;
+    }
     // WAITING AT THE STRIP'S FAR END, facing back down it: it swoops as the Scraper's strip runs out
     if (k.mode === QMODE.waiting) {
       if (!s || (scraperKept(s).plan !== 1 && !(s.act && s.act.id === 'scraper:strip'))) {
@@ -155,6 +175,9 @@ export const RULES: Act1Rules | null = {
       const s = k.what === 2 ? partnerOf(R.g, m) : null;
       if (s) scraperKept(s).written = 1;
     } else if (a.id === 'quill:write' || a.id === 'quill:swoop') face(k.tfx, k.tfy);
+    // (QUICK: its flight twice as fast as painted, taking off and landing too; its swoop as fast as their ultimate goes)
+    if (a.id === 'quill:takeoff' || a.id === 'quill:fly' || a.id === 'quill:land') act.rate = PAIR_TUNE.quick;
+    else if (a.id === 'quill:swoop') act.rate = PAIR_TUNE.combo.rate;
     if (a.id === 'quill:takeoff') R.g.sfx('gust', 0.5);
     if (a.id === 'quill:write') {
       k.wrote = 0;
@@ -214,7 +237,8 @@ export const RULES: Act1Rules | null = {
         const dx = k.tx - m.x;
         const dy = k.ty - m.y;
         const d = Math.hypot(dx, dy);
-        const step = PAIR_TUNE.fly * (t1 - t0);
+        // (its act's clock runs `rate` times the game's: the flight's pace is in the game's seconds)
+        const step = (PAIR_TUNE.fly * (t1 - t0)) / (act.rate ?? 1);
         if (d <= step + 1e-6) {
           R.startAct(m, QL_ACTS, LAND);
           break;
@@ -257,7 +281,8 @@ export const RULES: Act1Rules | null = {
         // CARRIED DOWN THE STRIP, its nib writing it, SWOOP_TILES along the way it faces
         if (at(QL_SWOOP.spring)) g.sfx('gust', 0.6);
         if (t1 <= QL_SWOOP.go || t0 >= QL_SWOOP.stop) break;
-        const b = (t: number): number => (SWOOP_TILES * (Math.min(t, QL_SWOOP.stop) - QL_SWOOP.go)) / (QL_SWOOP.stop - QL_SWOOP.go);
+        const carry = k.carry || SWOOP_TILES;
+        const b = (t: number): number => (carry * (Math.min(t, QL_SWOOP.stop) - QL_SWOOP.go)) / (QL_SWOOP.stop - QL_SWOOP.go);
         const step = b(t1) - b(Math.max(t0, QL_SWOOP.go));
         m.x += m.fx * step;
         m.y += m.fy * step;
@@ -287,7 +312,12 @@ export const RULES: Act1Rules | null = {
         k.mode = QMODE.free;
         if (s && k.what === 2) scraperKept(s).written = 0;
       }
-    } else if (a.id === 'quill:swoop') k.mode = QMODE.free;
+    } else if (a.id === 'quill:swoop') {
+      // (down from it: the next of the ultimate's strips to come, it waits to be sent; else free)
+      const s = partnerOf(R.g, m);
+      const sk = s ? scraperKept(s) : null;
+      k.mode = sk && sk.ult === 1 && sk.round < PAIR_TUNE.combo.times ? QMODE.between : QMODE.free;
+    }
   },
 
   lifeFloor(_R, m) {
