@@ -494,7 +494,7 @@ SNAP=0 run vulture_air_phone $P --scenario $S/vulture_air_film.mjs &
 # (Version 23.6: floor 13's double boss, the Scraper and the Quill, every move, their combo and Overwrite; checks only)
 SNAP=0 run pair_phone $P --scenario $S/pair_film.mjs &
 # (and on a phone held upright, the narrow layout: their two bars one under the other, as the names will not fit side by side)
-run pair_narrow $U --eval "$N" --scenario $S/pair_film.mjs &
+SNAP=0 run pair_narrow $U --eval "$N" --scenario $S/pair_film.mjs &
 wait
 # THE SPEED WORK (Version 22.1): the Pinewood's forest drawn as chunk pictures draws the same picture, to the pixel, as
 # its trees one by one (render/tops_cache.ts), with the warrior and the mage (who throws the most about)
