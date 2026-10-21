@@ -35,6 +35,7 @@ import { RNG } from '../src/engine/rng';
 import { ACT1, ACT2 } from '../src/game/act1';
 import { PA, PAGE, PA_ACTS, PA_GAIT, RULES, whirlReach } from '../src/game/act1_rules/palimpsest';
 import { bossKind } from '../src/game/bosses';
+import { PAIR } from '../src/game/act1_rules/pair';
 import { BOSS_LINES, MONSTERS, TUNE } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
@@ -54,6 +55,11 @@ const assert: Assert = nodeAssert;
 // needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
 nodeAssert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
 ACT2.on = false;
+// (VERSION 23.6: FLOOR 13'S BOSS IS THE SCRAPER AND THE QUILL, on his “Looks good (Recommended)”, 20 Oct 2026; the
+// Palimpsest is floor 13's with game/act1_rules/pair.ts PAIR off, and this file is the Palimpsest's: so PAIR is turned off
+// here for the file, once the game's own is seen to be on. tests/pair_rules.test.ts is the pair's.)
+nodeAssert.equal(PAIR.on, true, 'the pair is on in the game (Version 23.6)');
+PAIR.on = false;
 const near = (a: number, b: number, tol: number, what: string): void => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} against ${b} (within ${tol})`);
 
 paintWithoutCanvas();

@@ -18,20 +18,15 @@
 // unhittable in the air has to go.  It’s infuriating to fight them”); in the air, or skimming down the strip, it is not
 // brought below the last of its life (its death is painted from the floor): the next blow after it lands fells it.
 
-import { LINE_BURST_AFTER, LINE_BURST_FOR, LINE_HALF, LINE_LONG, LINE_STAIN_FOR, LINES_AT, STAB_FOR, STAB_R } from '../../art/pair_shots';
-import { QL_LAND, QL_LINES, QL_PACE, QL_STAB, QL_SWOOP, QL_TAKEOFF, STAB_AT, SWOOP_TILES } from '../../art/quill';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { MSG, TUNE } from '../defs';
 import type { Monster } from '../state';
-import { PAIR_TUNE, ahead, partnerOf, relOf } from './pair';
+import { LINE_BURST_AFTER, LINE_BURST_FOR, LINE_HALF, LINE_LONG, LINE_STAIN_FOR, LINE_STROKE, LINES_AT, PAIR_TUNE, QL_LAND, QL_LINES, QL_PACE, QL_STAB, QL_SWOOP, QL_TAKEOFF, STAB_AT, STAB_FOR, STAB_R, SWOOP_TILES, WRITE_AT, ahead, partnerOf, relOf } from './pair';
 import { keptOf as scraperKept, swoopDue } from './scraper';
 import type { Act1Rules } from './types';
 
 /** Its wade: 12 frames at 8 a second, painted for QL_PACE tiles a second; it stops at any frame of it, a little short of where its nib reaches. */
 export const QL_GAIT: GaitDef = { pace: QL_PACE, cycle: 1 / 8, setOff: 0, halt: 0, raise: 0, lower: 0, stopAt: 2.5, slack: 0.6, trueBack: true };
-
-/** How long one stroke of its ink lines takes to lay its line (art/pair_shots.ts LINE_STROKE). */
-const LINE_STROKE = 0.22;
 
 /** Its acts: its basic blow first, then its ink lines; the rest come only as the pair has them (forced). */
 export const QL_ACTS: readonly ActDef[] = [
@@ -54,11 +49,12 @@ export const QMODE = { free: 0, going: 1, writing: 2, waiting: 4, swooping: 5 } 
 
 /**
  * What it keeps (Monster.a1): `mode` (QMODE); where it is sent, `tx`, `ty`, the way it is to face there, `tfx`, `tfy`, and
- * what for, `what` (2 to write over the Scraper, 3 to wait at the strip's far end); `wrote` how long it has written; `told`
+ * what for, `what` (2 to write over the Scraper, 3 to wait at the strip's far end), and sent to the Scraper, where that is
+ * from it, `ox`, `oy` (followed as it flies); `wrote` how long it has written; `told`
  * the last whole second it said it heals.
  */
 export function keptOf(m: Monster): Record<string, number> {
-  return (m.a1 ??= { mode: 0, what: 0, tx: 0, ty: 0, tfx: 1, tfy: 0, wrote: 0, told: -1 });
+  return (m.a1 ??= { mode: 0, what: 0, tx: 0, ty: 0, tfx: 1, tfy: 0, ox: 0, oy: 0, wrote: 0, told: -1 });
 }
 
 /** Is it in the air, or skimming down the strip (its death is painted from the floor: it is held at the last of its life)? */
@@ -132,7 +128,7 @@ export const RULES: Act1Rules | null = {
     }
     // (out of whatever it was making: free again)
     if (k.mode !== QMODE.free) {
-      if (k.mode === QMODE.writing && s) scraperKept(s).written = 0;
+      if ((k.mode === QMODE.writing || k.what === 2) && s) scraperKept(s).written = 0;
       k.mode = QMODE.free;
     }
     return false;
@@ -152,9 +148,12 @@ export const RULES: Act1Rules | null = {
     };
     if (a.id === 'quill:takeoff' || a.id === 'quill:fly') face(k.tx - m.x, k.ty - m.y);
     else if (a.id === 'quill:land') {
-      // (it lands where it was sent: there, facing as it is to stand)
+      // (it lands where it was sent: there, facing as it is to stand; landing beside the Scraper to write over it, the
+      // Scraper holds its ground from now)
       m.x = k.tx;
       m.y = k.ty;
+      const s = k.what === 2 ? partnerOf(R.g, m) : null;
+      if (s) scraperKept(s).written = 1;
     } else if (a.id === 'quill:write' || a.id === 'quill:swoop') face(k.tfx, k.tfy);
     if (a.id === 'quill:takeoff') R.g.sfx('gust', 0.5);
     if (a.id === 'quill:write') {
@@ -192,7 +191,26 @@ export const RULES: Act1Rules | null = {
         break;
       }
       case 'quill:fly': {
-        // FLYING, straight to where it is sent, at its pace; there, it lands
+        // FLYING, straight to where it is sent, at its pace; there, it lands. Sent to write over the Scraper, where it is
+        // going follows the Scraper as it moves (where the floor lets it stand)
+        // (or, where that side of it has no room for it now, the nearest side round it that has, facing it)
+        const s = k.what === 2 ? partnerOf(g, m) : null;
+        if (s) {
+          const r = Math.hypot(k.ox, k.oy) || WRITE_AT.ahead;
+          const a0 = Math.atan2(k.oy, k.ox);
+          for (const da of [0, 0.5, -0.5, 1.0, -1.0, 1.6, -1.6, Math.PI]) {
+            const x = s.x + Math.cos(a0 + da) * r;
+            const y = s.y + Math.sin(a0 + da) * r;
+            if (!g.free(g.level.walk, x, y, 0.35)) continue;
+            k.tx = x;
+            k.ty = y;
+            k.ox = x - s.x;
+            k.oy = y - s.y;
+            k.tfx = (s.x - x) / r;
+            k.tfy = (s.y - y) / r;
+            break;
+          }
+        }
         const dx = k.tx - m.x;
         const dy = k.ty - m.y;
         const d = Math.hypot(dx, dy);
@@ -219,7 +237,7 @@ export const RULES: Act1Rules | null = {
           break;
         }
         if (s.burnT > 0) {
-          stopWriting(R, m, `The fresh writing burns on ${s.name}`);
+          stopWriting(R, m, `The fresh writing burns on ${s.name.replace(/^The /, 'the ')}`);
           break;
         }
         k.wrote += t1 - t0;
@@ -265,7 +283,10 @@ export const RULES: Act1Rules | null = {
         k.mode = QMODE.waiting;
         m.fx = k.tfx;
         m.fy = k.tfy;
-      } else k.mode = QMODE.free;
+      } else {
+        k.mode = QMODE.free;
+        if (s && k.what === 2) scraperKept(s).written = 0;
+      }
     } else if (a.id === 'quill:swoop') k.mode = QMODE.free;
   },
 

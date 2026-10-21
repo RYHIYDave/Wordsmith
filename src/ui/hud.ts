@@ -1239,15 +1239,16 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // ---- boss bar -----------------------------------------------------------------------------
   const boss = game.boss;
   const bossUp = !!boss && !boss.dead && boss.state !== 'sleep';
-  // (FLOOR 13'S DOUBLE BOSS: while both stand, a bar each, the Scraper's first: side by side where the screen is wide enough,
-  // else one under the other; `bossRows` how many rows of them)
+  // (FLOOR 13'S DOUBLE BOSS: while both stand, a bar each, the Scraper's first: side by side where the screen is wide enough
+  // for both bars and both names, else one under the other; `bossRows` how many rows of them)
   const pair = boss && bossUp ? partnerOf(game, boss) : null;
   const shown = boss && bossUp ? (pair && pair.state !== 'sleep' ? (boss.kind === 'scraper' ? [boss, pair] : [pair, boss]) : [boss]) : [];
   const gap = 10;
-  const side = shown.length > 1 && W - 160 - gap >= 2 * 70;
+  const named = shown.reduce((w, b) => Math.max(w, textWidth(b.name)), 0);
+  const side = shown.length > 1 && W - 160 - gap >= 2 * Math.max(70, named);
   const bossRows = shown.length === 0 ? 0 : side ? 1 : shown.length;
   shown.forEach((b, i) => {
-    const bw = side ? Math.min(110, Math.floor((W - 160 - gap) / 2)) : Math.min(150, W - 160);
+    const bw = side ? Math.min(Math.max(110, named), Math.floor((W - 160 - gap) / 2)) : Math.min(150, W - 160);
     const row = side ? 0 : i;
     const x = side ? Math.floor(W / 2 - (2 * bw + gap) / 2) + i * (bw + gap) : Math.floor(W / 2 - bw / 2);
     const y = 4 + row * 20;

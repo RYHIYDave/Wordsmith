@@ -16,6 +16,7 @@ import { makeDungeon } from '../src/game/level';
 import { RNG } from '../src/engine/rng';
 import { ACT1_KINDS, FIRST5_KINDS, MONSTER_KINDS, NEW_KINDS, T_FLOOR } from '../src/game/types';
 import { seasoned } from './helpers';
+import { PAIR } from '../src/game/act1_rules/pair';
 // (VERSION 23.0: THE HUSH IS ON IN THE GAME. This file was written while it was off, and turns it on itself wherever it
 // needs it: so it is turned off here for the file, as it was then, once the game's own is seen to be on)
 assert.equal(ACT2.on, true, 'the Hush is on in the game (Version 23.0)');
@@ -53,8 +54,10 @@ test('with it on, floors 11 to 15 are the Hush: each its ground, its place and i
     assert.equal(ACT1_FLOORS[d].place, places[d - 11]);
     assert.equal(ACT1_FLOORS[d].boss, bosses[d - 11]);
     assert.equal(floorTitle(d).level, `${places[d - 11]}, Level ${d}`);
-    // (the Warden stands in for a boss not built yet)
-    assert.ok(bossKind(d) === bosses[d - 11] || bossKind(d) === 'warden');
+    // (the Warden stands in for a boss not built yet; floor 13's is the Scraper, the Quill beside it, since his “Looks good
+    // (Recommended)”, 20 Oct 2026: the Palimpsest with game/act1_rules/pair.ts PAIR off)
+    const want = d === 13 && PAIR.on ? 'scraper' : bosses[d - 11];
+    assert.ok(bossKind(d) === want || bossKind(d) === 'warden', `floor ${d}: ${bossKind(d)}`);
   }
   assert.equal(act2Floor(10), 0, 'the descent is not the Hush');
   assert.equal(act2Floor(16), 0);

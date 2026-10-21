@@ -17,15 +17,12 @@
 //   the strip bursts after the Quill has written it.
 // ITS LINE as the hero comes into its ground: no mouth, the clack of its claws (game/defs.ts BOSS_LINES).
 //
-// Every number here that is a picture's is the art's own, imported from it; tests/pair_rules.test.ts holds the rest.
+// Every number here that is a picture's is written down in game/act1_rules/pair.ts; tests/pair_rules.test.ts holds them to the art.
 
-import { RUSH_HALF, RUSH_LANE, RUSH_WAKE_FOR, SCOUR_FOR, SCOUR_HALF, SCOUR_REACH, SNAP_AT, SNAP_FOR, SNAP_R, STRIP_BURST_AFTER, STRIP_BURST_FOR, STRIP_FROM, STRIP_HALF, STRIP_TILES } from '../../art/pair_shots';
-import { QL_SWOOP } from '../../art/quill';
-import { RUSH_TILES, SR_PACE, SR_RUSH, SR_SCOUR, SR_SNAP, SR_STRIP } from '../../art/scraper';
 import type { ActDef, BossRules, GaitDef } from '../bosses';
 import { MSG, TUNE } from '../defs';
 import type { Monster, Peril } from '../state';
-import { PAIR_TUNE, STRIP_TIMES, ahead, burstReaches, free, partnerOf, relOf, writtenAt } from './pair';
+import { PAIR_TUNE, QL_SWOOP, RUSH_HALF, RUSH_LANE, RUSH_TILES, RUSH_WAKE_FOR, SCOUR_FOR, SCOUR_HALF, SCOUR_REACH, SNAP_AT, SNAP_FOR, SNAP_R, SR_PACE, SR_RUSH, SR_SCOUR, SR_SNAP, SR_STRIP, STRIP_BURST_AFTER, STRIP_BURST_FOR, STRIP_FROM, STRIP_HALF, STRIP_TILES, STRIP_TIMES, WRITE_AT, ahead, burstReaches, free, partnerOf, relOf, writtenAt } from './pair';
 import type { Act1Rules } from './types';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -52,7 +49,7 @@ const STRIP = 3;
 /**
  * What it keeps (Monster.a1): `combo` its next combo's clock (seconds till it may be made), `heal` the Overwrite's; `plan` 1
  * while the combo is under way (the Quill on its way to the strip's far end), with its line `ux`, `uy` and how long it has
- * waited `waited`; `written` 1 while the Quill writes over it (it holds its ground); `struck` its reel's clock as last seen.
+ * waited `waited`; `written` 1 while the Quill lands beside it and writes over it (it holds its ground); `struck` its reel's clock as last seen.
  */
 export function keptOf(m: Monster): Record<string, number> {
   return (m.a1 ??= { combo: PAIR_TUNE.combo.first, heal: PAIR_TUNE.overwrite.first, plan: 0, ux: 1, uy: 0, waited: 0, written: 0 });
@@ -211,8 +208,8 @@ export const RULES: Act1Rules | null = {
         const side = writeSpot(R, m, q);
         if (side) {
           k.heal = PAIR_TUNE.overwrite.every;
-          sendQuill(q, side.x, side.y, side.fx, side.fy, 2);
-          g.msg(`${q.name} comes to write over ${m.name}'s wounds`, MSG.foe);
+          sendQuill(q, side.x, side.y, side.fx, side.fy, 2, m);
+          g.msg(`${q.name} comes to write over ${m.name.replace(/^The /, 'the ')}'s wounds`, MSG.foe);
         } else k.heal = 2;
       }
     }
@@ -245,9 +242,16 @@ export const RULES: Act1Rules | null = {
     act.a = 0;
     act.b = 0;
     if (a.id === 'scraper:rush') {
-      // (its tail on him: it faces away from him, and goes back toward him)
-      m.fx = -m.fx;
-      m.fy = -m.fy;
+      // (its tail on him: it faces away from him, and goes back toward him, as rushClear found the way)
+      const h = g.hero;
+      const d = Math.hypot(h.x - m.x, h.y - m.y);
+      if (d > 0.01) {
+        m.fx = -(h.x - m.x) / d;
+        m.fy = -(h.y - m.y) / d;
+      } else {
+        m.fx = -m.fx;
+        m.fy = -m.fy;
+      }
       act.x = m.x;
       act.y = m.y;
       g.sfx('gust', 0.4);
@@ -401,7 +405,7 @@ export const RULES: Act1Rules | null = {
 /** Where the Quill stands to write over the Scraper: WRITE_AT.ahead from its middle, on the side nearer the Quill if it can, facing it. */
 function writeSpot(R: BossRules, m: Monster, q: Monster): { x: number; y: number; fx: number; fy: number } | null {
   const a0 = Math.atan2(q.y - m.y, q.x - m.x);
-  const D = 1.85;
+  const D = WRITE_AT.ahead;
   for (const da of [0, 0.6, -0.6, 1.2, -1.2, Math.PI]) {
     const x = m.x + Math.cos(a0 + da) * D;
     const y = m.y + Math.sin(a0 + da) * D;
@@ -411,8 +415,12 @@ function writeSpot(R: BossRules, m: Monster, q: Monster): { x: number; y: number
   return null;
 }
 
-/** The Quill is sent: it flies to (x, y) and lands there facing (fx, fy), to do `what` (2 write over the Scraper, 3 wait at the strip's far end): game/act1_rules/quill.ts. */
-function sendQuill(q: Monster, x: number, y: number, fx: number, fy: number, what: number): void {
+/**
+ * The Quill is sent: it flies to (x, y) and lands there facing (fx, fy), to do `what` (2 write over the Scraper, 3 wait at
+ * the strip's far end): game/act1_rules/quill.ts. Sent to write over the Scraper `by`, where it is going is kept as where
+ * it stands from the Scraper (`ox`, `oy`), so that it follows the Scraper as it flies.
+ */
+function sendQuill(q: Monster, x: number, y: number, fx: number, fy: number, what: number, by: Monster | null = null): void {
   const k = q.a1!;
   k.mode = 1;
   k.what = what;
@@ -420,4 +428,6 @@ function sendQuill(q: Monster, x: number, y: number, fx: number, fy: number, wha
   k.ty = y;
   k.tfx = fx;
   k.tfy = fy;
+  k.ox = by ? x - by.x : 0;
+  k.oy = by ? y - by.y : 0;
 }

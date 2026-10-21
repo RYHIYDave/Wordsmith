@@ -456,7 +456,7 @@ wait
 DEPTH=15 FOES=1 run act2_floor15_phone $P --scenario $S/act1_floor.mjs &
 KIND=crier SECS=12 run act2_boss11_phone $P --scenario $S/act1_mob.mjs &
 KIND=ratking SECS=12 run act2_boss12 --scenario $S/act1_mob.mjs &
-KIND=palimpsest SECS=12 CLS=ranger run act2_boss13 --scenario $S/act1_mob.mjs &
+KIND=scraper SECS=12 CLS=ranger run act2_boss13 --scenario $S/act1_mob.mjs &
 wait
 KIND=physician SECS=12 CLS=mage run act2_boss14_phone $P --scenario $S/act1_mob.mjs &
 KIND=censor SECS=12 run act2_boss15 --scenario $S/act1_mob.mjs &
@@ -491,6 +491,8 @@ WHOLE=1 run act2_walls_phone $P --scenario $S/act2_walls.mjs &
 # infuriating to fight them”): on the Ledge Road a flock called down round the hero, the bot fighting them, blows landing
 # up there; one struck down over the road falls onto it, one over the drop falls away into it, its word on the floor.
 SNAP=0 run vulture_air_phone $P --scenario $S/vulture_air_film.mjs &
+# (Version 23.6: floor 13's double boss, the Scraper and the Quill, every move, their combo and Overwrite; checks only)
+SNAP=0 run pair_phone $P --scenario $S/pair_film.mjs &
 wait
 # THE SPEED WORK (Version 22.1): the Pinewood's forest drawn as chunk pictures draws the same picture, to the pixel, as
 # its trees one by one (render/tops_cache.ts), with the warrior and the mage (who throws the most about)

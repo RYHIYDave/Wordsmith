@@ -11,10 +11,11 @@ import { log } from './lib.mjs';
 const FLOOR = {
   chanter: 6, firepot: 6, qgolem: 6, rubbling: 6, unfinished: 6, vulture: 7, crawler: 7, queen: 7, scorpion: 8, devil: 8, cantor: 8, deer: 9, wolf: 9, stag: 9, drowned: 10, leech: 10, spawn: 10, eye: 10,
   // (ACT 2, THE HUSH, Version 23.0: floors 11 to 15's own)
-  hushed: 11, watch: 11, scribe: 11, hound: 11, crier: 11, rat: 12, dredger: 12, ratking: 12, fieldhand: 13, carter: 13, palimpsest: 13,
+  hushed: 11, watch: 11, scribe: 11, hound: 11, crier: 11, rat: 12, dredger: 12, ratking: 12, fieldhand: 13, carter: 13, palimpsest: 13, scraper: 13, quill: 13,
   patient: 14, orderly: 14, physician: 14, inkling: 15, bookwarden: 15, censor: 15,
 };
-const BOSSES = ['unfinished', 'queen', 'cantor', 'stag', 'eye', 'crier', 'ratking', 'palimpsest', 'physician', 'censor'];
+// (floor 13's: the Scraper with the Quill beside it, Version 23.6; the Palimpsest with the pair off)
+const BOSSES = ['unfinished', 'queen', 'cantor', 'stag', 'eye', 'crier', 'ratking', 'palimpsest', 'scraper', 'physician', 'censor'];
 
 export default async function (page, snap) {
   const kind = process.env.KIND || 'qgolem';

@@ -109,14 +109,22 @@ const isCyan = (c: string): boolean => {
   return s > 0.4 && Math.max(r, g, b) > 140 && h >= 165 && h <= 205;
 };
 
-test('1. a mock-up: their switch off, and nothing of the game imports them', () => {
+// (brought into the game by the main chat, 21 Oct 2026, on his “Looks good (Recommended)”: as the Palimpsest was, of the
+// game only their figures and their effects import the art, and its switch is turned on by their figures as they are
+// painted, off by itself)
+test('1. their switch off by itself, and of the game only their figures and their effects import them', () => {
   assert.equal(PAIR_ON.on, false, 'PAIR_ON is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(scraper|quill|pair_skins|pair_shots)\.ts$/.test(f)) continue;
-    if (/from ['"][^'"]*\/(scraper|quill|pair_skins|pair_shots)['"]/.test(fs.readFileSync(`src/${f}`, 'utf8'))) users.push(f);
+    const dir = f.split('/').slice(0, -1);
+    for (const m of fs.readFileSync(`src/${f}`, 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {
+      const parts = [...dir];
+      for (const q of m[1].split('/')) if (q === '..') parts.pop(); else if (q !== '.') parts.push(q);
+      if (/^art\/(scraper|quill|pair_skins|pair_shots)$/.test(parts.join('/'))) users.push(f);
+    }
   }
-  assert.equal(users.length, 0, `imported by ${users.join(', ')}`);
+  assert.equal([...new Set(users)].sort().join(' '), 'art/act1_figs/quill.ts art/act1_figs/scraper.ts render/act1_fx/quill.ts render/act1_fx/scraper.ts', 'game files that import them');
 });
 
 test('2. every other frame of every move, from in front and behind: crisp, their pink edge while they live and none dead, nothing cyan, every light the enemy\'s, their eyes burning, nothing cut off', () => {

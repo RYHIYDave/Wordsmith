@@ -23,16 +23,65 @@
 //   strip has run out), and lands short of the Scraper's claws; the strip bursts after it, a wall of ink along it as it was
 //   written, from its far end to its near end: whoever is on it as the burst passes is struck hard. The Quill felled before
 //   it has written it, the strip lies bare and does not burst.
-// - OVERWRITE: now and then (`overwrite`), the Scraper hurt and the Quill free, the Quill flies to stand beside the Scraper,
-//   facing it, and writes over its wounds, healing it while it writes, for as long as `most` at the longest; a blow on the
-//   Quill stops it (it reels), and so does the Scraper burning (the hero's fire: “Fire words shine here”, his doc's
-//   word for the Millrace). While it is written over, the Scraper holds its ground, striking from where it stands.
+// - OVERWRITE: now and then (`overwrite`), the Scraper hurt and the Quill free, the Quill flies to stand beside the Scraper
+//   (following it as it goes), facing it, and writes over its wounds, healing it while it writes, for as long as `most` at
+//   the longest; a blow on the Quill stops it (it reels), and so does the Scraper burning (the hero's fire: “Fire words
+//   shine here”, his doc's word for the Millrace). From the Quill's landing beside it until it is done, the Scraper holds
+//   its ground, striking from where it stands.
 
-import { QL_FLY_PACE, QL_SWOOP, SWOOP_TILES, WRITE_AT } from '../../art/quill';
-import { SR_STRIP } from '../../art/scraper';
-import { STRIP_BURST_AFTER, STRIP_BURST_FOR, STRIP_BURST_RUN, STRIP_FROM, STRIP_HALF, STRIP_STAIN_FOR, STRIP_TILES } from '../../art/pair_shots';
 import type { Game } from '../game';
 import type { Monster } from '../state';
+
+// ---------------------------------------------------------------------------------------------
+// THE ART'S NUMBERS, written down here under the art's own names (art/scraper.ts, art/quill.ts, art/pair_shots.ts), as the
+// game's rules hold every picture's numbers of their own; tests/pair_rules.test.ts holds each to the art. Seconds from a
+// move's start; tiles.
+
+/** THE SCRAPER: its scuttle's pace; its claw snap, the scour, the backward rush (carried back RUSH_TILES between `go` and `stop`), its half of the Palimpsest. */
+export const SR_PACE = 1.0;
+export const SR_SNAP = { long: 1.0, hit: 0.5 } as const;
+export const SR_SCOUR = { long: 2.6, slam: 1.0, sweep: [1.0, 1.5] } as const;
+export const SR_RUSH = { long: 1.9, flip: 0.66, go: 0.7, stop: 1.2 } as const;
+export const RUSH_TILES = 5;
+export const SR_STRIP = { long: 2.6, slam: 1.0 } as const;
+/** THE QUILL: its wade's pace; the nib stab (the nib in the floor STAB_AT before it); ink lines' three strokes; taking off, landing; its swoop (carried SWOOP_TILES between `go` and `stop`); its flight's pace; where it stands to write (WRITE_AT.ahead from the Scraper's middle). */
+export const QL_PACE = 1.1;
+export const QL_STAB = { long: 1.3, hit: 0.6 } as const;
+export const STAB_AT = 2.4;
+export const QL_LINES = { long: 2.6, strokes: [[0.7, 0.92], [1.02, 1.24], [1.34, 1.56]] } as const;
+export const QL_TAKEOFF = { long: 0.9, spring: 0.34 } as const;
+export const QL_LAND = { long: 0.8, down: 0.45 } as const;
+export const QL_SWOOP = { long: 2.6, spring: 0.55, go: 0.7, stop: 1.8 } as const;
+export const SWOOP_TILES = 8;
+export const QL_FLY_PACE = 4.5;
+export const WRITE_AT = { ahead: 1.85 } as const;
+/** THEIR MARKS ON THE FLOOR, WHICH ARE THEIR HIT AREAS (his word: big): where each lies, how big, how long it lies. */
+export const SNAP_AT = { ahead: 3.4, left: -0.3 } as const;
+export const SNAP_R = 1.15;
+export const SNAP_FOR = 0.9;
+export const SCOUR_REACH = 4.0;
+export const SCOUR_HALF = 82;
+export const SCOUR_FOR = 1.8;
+export const RUSH_LANE = 7.4;
+export const RUSH_HALF = 1.3;
+export const RUSH_WAKE_FOR = 1.4;
+export const STRIP_FROM = 3.0;
+export const STRIP_TILES = 6;
+export const STRIP_HALF = 0.85;
+export const STRIP_BURST_RUN = 0.35;
+export const STRIP_BURST_AFTER = 0.45;
+export const STRIP_BURST_FOR = 0.5;
+export const STRIP_STAIN_FOR = 1.6;
+export const STAB_R = 1.05;
+export const STAB_FOR = 1.0;
+export const LINES_AT = [1.8, 3.3, 4.8] as const;
+export const LINE_LONG = 5.2;
+export const LINE_HALF = 0.45;
+export const LINE_BURST_AFTER = 0.6;
+export const LINE_BURST_FOR = 0.5;
+export const LINE_STAIN_FOR = 1.4;
+/** How long one stroke of the ink lines takes to lay its line (art/pair_shots.ts LINE_STROKE). */
+export const LINE_STROKE = 0.22;
 
 /** THE PAIR ON: floor 13's boss the Scraper with the Quill beside it (game/act1.ts, Game.spawnMonsters); off, the Palimpsest as before. */
 export const PAIR = { on: true };
@@ -87,8 +136,6 @@ export const STRIP_TIMES = {
   burst: PAIR_TUNE.combo.start - SR_STRIP.slam + QL_SWOOP.stop + STRIP_BURST_AFTER,
   gone: PAIR_TUNE.combo.start - SR_STRIP.slam + QL_SWOOP.stop + STRIP_BURST_AFTER + STRIP_BURST_RUN + STRIP_STAIN_FOR,
 };
-
-export { STRIP_BURST_FOR, STRIP_FROM, STRIP_HALF, STRIP_TILES, WRITE_AT };
 
 /** The other of the pair, alive: the Quill for the Scraper, the Scraper for the Quill; null if it has fallen. */
 export function partnerOf(g: Game, m: Monster): Monster | null {
