@@ -39,6 +39,8 @@ import { FIG as ratking } from './ratking';
 import { FIG as palimpsest } from './palimpsest';
 import { FIG as physician } from './physician';
 import { FIG as censor } from './censor';
+import { FIG as scraper } from './scraper';
+import { FIG as quill } from './quill';
 
 export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> = {
   chanter,
@@ -76,6 +78,8 @@ export const ACT1_FIGS: Readonly<Partial<Record<MonsterKind, Act1Fig | null>>> =
   palimpsest,
   physician,
   censor,
+  scraper,
+  quill,
 };
 
 export function act1Fig(kind: string): Act1Fig | null {

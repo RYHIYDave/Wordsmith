@@ -39,6 +39,8 @@ import { FX as ratking } from './ratking';
 import { FX as palimpsest } from './palimpsest';
 import { FX as physician } from './physician';
 import { FX as censor } from './censor';
+import { FX as scraper } from './scraper';
+import { FX as quill } from './quill';
 
 export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   chanter,
@@ -76,6 +78,8 @@ export const ACT1_FX: Readonly<Partial<Record<MonsterKind, Act1Fx | null>>> = {
   palimpsest,
   physician,
   censor,
+  scraper,
+  quill,
 };
 
 export function act1Fx(kind: string): Act1Fx | null {

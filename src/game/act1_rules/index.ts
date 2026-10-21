@@ -42,6 +42,8 @@ import { RULES as ratking } from './ratking';
 import { RULES as palimpsest } from './palimpsest';
 import { RULES as physician } from './physician';
 import { RULES as censor } from './censor';
+import { RULES as scraper } from './scraper';
+import { RULES as quill } from './quill';
 
 export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>> = {
   chanter,
@@ -79,6 +81,8 @@ export const ACT1_RULES: Readonly<Partial<Record<MonsterKind, Act1Rules | null>>
   palimpsest,
   physician,
   censor,
+  scraper,
+  quill,
 };
 
 /** The rules of a kind of the descent's own (null: not one, or not built yet). */

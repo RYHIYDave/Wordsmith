@@ -27,6 +27,7 @@ import { ACT2_GUARD, act2Pack } from './act2_mobs';
 import { BELLS_PACK_ID, BELLS_TOUGH_ID, BELLS_TUNE, BELL_STILL, chipAt, gapAt, inHush, makeBells, riseSpot, sizeAt } from './bells';
 import type { BellsState } from './bells';
 import { act1Rules, act1Ward } from './act1_rules/index';
+import { PAIR, partnerOf } from './act1_rules/pair';
 // (ACT 2, THE HUSH: a word the Physician has drawn out of the hero is never lost: given back as a level is left or the hero falls, and written into the save)
 import { giveBackAll, inTheSave } from './act1_rules/physician';
 import { blobDist } from './act1_layout';
@@ -1300,6 +1301,25 @@ export class Game {
       this.boss.fx = placed.fx;
       this.boss.fy = placed.fy;
     }
+    // (FLOOR 13'S DOUBLE BOSS: the Quill beside the Scraper, a boss too, of the same pack: game/act1_rules/pair.ts)
+    if (bk === 'scraper' && PAIR.on) {
+      const b = this.boss;
+      const at = this.besideBoss(b, 2.6);
+      const q = this.spawn('quill', at.x, at.y, -2, 0, true, rng, lot);
+      q.fx = b.fx;
+      q.fy = b.fy;
+    }
+  }
+
+  /** Where one stands beside the boss `b`, `d` tiles to its side (or behind, or before it), on floor with room: where the Quill comes into the world. */
+  private besideBoss(b: Monster, d: number): { x: number; y: number } {
+    const L = this.level;
+    for (const [f, s] of [[0, 1], [0, -1], [-0.7, 0.7], [-0.7, -0.7], [-1, 0], [0.7, 0.7], [0.7, -0.7], [1, 0]]) {
+      const x = b.x + (b.fx * f + b.fy * s) * d;
+      const y = b.y + (b.fy * f - b.fx * s) * d;
+      if (this.free(L.walk, x, y, 0.5)) return { x, y };
+    }
+    return { x: b.x, y: b.y };
   }
 
   /**
@@ -2243,6 +2263,9 @@ export class Game {
     if (!inside && Math.hypot(b.x - h.x, b.y - h.y) > 6) return;
     this.bossMet = true;
     if (b.state === 'sleep') this.wakeUp(b);
+    // (FLOOR 13'S DOUBLE BOSS: the two wake together)
+    const other = partnerOf(this, b);
+    if (other && other.state === 'sleep') this.wakeUp(other);
     if (BOSS_INTRO.on) this.bossIntro(b);
   }
 
@@ -2704,7 +2727,10 @@ export class Game {
     this.introT = BOSS_INTRO.secs;
     const lines = BOSS_LINES[m.kind];
     const line = lines && lines.length ? lines[Math.floor(this.rng.next() * lines.length)] : null;
-    this.emit({ t: 'bossIntro', name: m.name, line, x: m.x, y: m.y, secs: BOSS_INTRO.secs });
+    // (FLOOR 13'S DOUBLE BOSS: both their names come up across the screen)
+    const other = partnerOf(this, m);
+    const name = other ? `${m.name} and ${other.name.replace(/^The /, 'the ')}` : m.name;
+    this.emit({ t: 'bossIntro', name, line, x: m.x, y: m.y, secs: BOSS_INTRO.secs });
   }
 
   /** A gate goes up, and its doorway is floor again (the boss is dead; THE MIX: a lever is pulled, a locking room's pack is dead). */
@@ -5018,6 +5044,14 @@ export class Game {
     this.gainXp(m.xp);
     this.quip(m);
     if (m.boss) {
+      // (FLOOR 13'S DOUBLE BOSS: one of the pair fallen, the other fights on, the floor's boss now; the way opens when both have fallen)
+      const other = partnerOf(this, m);
+      if (other) {
+        this.boss = other;
+        this.emit({ t: 'shake', amount: 5 });
+        this.msg(`${m.name} falls. ${other.name} fights on alone.`, MSG.foe);
+        return;
+      }
       this.boss = null;
       this.emit({ t: 'shake', amount: 6 });
       // (THE WAYS: the stairwell down opens in his hall, clear of where he fell; where the floor has none, the portal home as before)
@@ -6912,6 +6946,13 @@ export class Game {
             }
           }
         }
+      }
+      // (FLOOR 13'S DOUBLE BOSS: the first of the pair to fall leaves part of a boss's hoard, the last the whole of it)
+      if (partnerOf(this, m)) {
+        this.addDrop('gold', m.x, m.y, rng.int(12, 22) * goldBase, null, null);
+        this.addDrop('item', m.x, m.y, 0, this.rollGear(LOOT2.on ? 4 : 3), null);
+        this.addDrop('orb', m.x, m.y, 0, null, null);
+        return;
       }
       this.addDrop('gold', m.x, m.y, rng.int(25, 45) * goldBase, null, null);
       const n = (LOOT2.on ? LOOT2.boss : TUNE.bossItems) + (this.depth % 5 === 0 ? TUNE.bossItemsFifth : 0);

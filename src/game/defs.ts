@@ -560,6 +560,11 @@ export const MONSTERS: Record<MonsterKind, MonsterDef> = {
   ratking: { kind: 'ratking', name: 'The Rat King', life: 460, dmgMin: 19, dmgMax: 27, speed: 1.2, radius: 1.45, range: 2.5, windup: 0.66, cooldown: 1.8, xp: 390, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' }, // (ACT 2, THE HUSH: his bite's reach, the front rats' jaws: game/act1_rules/ratking.ts; his radius his heap's, about a tile and a half, so none stands among his outer rats)
   palimpsest: { kind: 'palimpsest', name: 'The Palimpsest', life: 520, dmgMin: 22, dmgMax: 30, speed: 0.8, radius: 0.9, range: 2.6, windup: 0.9, cooldown: 2.3, xp: 400, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   physician: { kind: 'physician', name: 'The Physician', life: 460, dmgMin: 20, dmgMax: 28, speed: 1.0, radius: 0.5, range: 2.2, windup: 0.6, cooldown: 1.9, xp: 410, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  // FLOOR 13'S DOUBLE BOSS in place of the Palimpsest (his “I’d like a double boss”, 20 Oct): the Scraper, the floor's boss, and the
+  // Quill beside it (game/act1_rules/pair.ts). Their lives between them a little more than the Palimpsest's, the Quill's the less:
+  // it heals the Scraper. Each's radius its body's: the Scraper's four tiles from its claws to its tail fan, the Quill's slender.
+  scraper: { kind: 'scraper', name: 'The Scraper', life: 340, dmgMin: 22, dmgMax: 30, speed: 1.0, radius: 1.1, range: 3.6, windup: 0.5, cooldown: 2.0, xp: 260, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
+  quill: { kind: 'quill', name: 'The Quill', life: 250, dmgMin: 18, dmgMax: 26, speed: 1.1, radius: 0.55, range: 2.6, windup: 0.6, cooldown: 2.0, xp: 200, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
   censor: { kind: 'censor', name: 'The Censor', life: 600, dmgMin: 21, dmgMax: 30, speed: 0.8, radius: 0.6, range: 2.4, windup: 0.8, cooldown: 2.1, xp: 950, ranged: false, projSpeed: 0, keepMax: 0, element: 'phys', aoe: 0, minDepth: 99, weight: 0, size: 'boss' },
 };
 
@@ -987,6 +992,9 @@ export const BOSS_LINES: Partial<Record<MonsterKind, readonly string[]>> = {
   // (ACT 2, THE HUSH: the Palimpsest has a page for a face and no mouth, the Order's bar of ink across where one would be:
   // its line is the rustle of its wet pages as it heaves up, a hush; words of no one's)
   palimpsest: ['Shhhhhhhhh...', 'Rrrrsssshhhh...', 'Sssshhhh.'],
+  // (ACT 2, THE HUSH: floor 13's pair, the Scraper the one that greets: no mouth, the clack of its ink-black claws, and the
+  // scrape of them on the floor; the Quill, a heron of pages, makes no sound at all)
+  scraper: ['Klak. Klak. Skrrrrrrtch...', 'Skrrrrrrrrtch.', 'Klak-klak-klak...'],
   // (ACT 2, THE HUSH: the Rat King, "squeaking in a hundred stolen voices" (his doc): the voices it drank, the Crier's the first
   // the Order took, squeaking through it; the planning chat's helper's lines, for his yes with the pictures)
   ratking: ['Hear ye! Hear ye! ...Squeak!', "Who's there? Who's there? Who's there?", 'A hundred voices. Yours makes a hundred and one.'],
@@ -1234,7 +1242,7 @@ export const HUSH_FOR = 4;
  */
 export const BOSS_LIFE: { on: boolean; times: Partial<Record<MonsterKind, number>> } = {
   on: true,
-  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5 },
+  times: { headsman: 2.5, chained: 2.5, amalgam: 2.5, fleshmancer: 2.5, unfinished: 3, queen: 1.5, cantor: 3, stag: 3, eye: 1, crier: 3, ratking: 3, palimpsest: 3, physician: 3, censor: 1.5, scraper: 3, quill: 3 },
 };
 /** The level at which each ability opens, with the first levels on: 0 the quick attack (tap), 1 the slow one (tap and hold), 2 the evasive move (swipe). */
 export const MOVE_OPENS: readonly number[] = [1, 2, 5];

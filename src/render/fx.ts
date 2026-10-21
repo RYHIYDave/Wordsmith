@@ -356,6 +356,9 @@ const DEATH_COLORS: Record<MonsterFigure, readonly string[]> = {
   crier: ['#6a2a2a', '#c8a050', '#3a2a2a', '#e8dcc0'],
   ratking: ['#5a4e48', '#3e3430', '#2f4a35', '#c04a7a'],
   palimpsest: ['#cbc1a6', '#a59b82', '#6d6556', '#1e1a22'],
+  // (floor 13's pair: the Scraper's sodden grey pages and ink-black claws; the Quill's white pages and its ink; art/pair_skins.ts)
+  scraper: ['#d2c9b0', '#a29a86', '#827c6c', '#14121a'],
+  quill: ['#f2ecdc', '#d4ccb8', '#9a9384', '#14121a'],
   physician: ['#1e1a22', '#3a3440', '#929f84', '#d0ccbc'],
   censor: ['#141218', '#24202b', '#3a3440', '#cbc1a6'],
 };

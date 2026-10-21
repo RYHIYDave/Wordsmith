@@ -33,6 +33,7 @@ import type { ActId, Monster, Peril, PerilKind } from './state';
 import type { Element, MonsterKind } from './types';
 import { ACT1, ACT1_FLOORS, act2Floor } from './act1';
 import { act1Rules } from './act1_rules/index';
+import { PAIR } from './act1_rules/pair';
 
 /**
  * THE BOSSES OF FLOORS 2 TO 5 (and the bone beasts): in the game, behind this switch. Off, every
@@ -50,7 +51,8 @@ export function bossKind(depth: number): MonsterKind {
   }
   // (ACT 2, THE HUSH: each floor's own, once built, as the descent's: game/act1.ts, ACT1_FLOORS)
   if (act2Floor(depth)) {
-    const k = ACT1_FLOORS[Math.floor(depth)].boss;
+    // (floor 13: its double boss in place of the Palimpsest, the Scraper the floor's boss and the Quill beside it: act1_rules/pair.ts)
+    const k = Math.floor(depth) === 13 && PAIR.on ? 'scraper' : ACT1_FLOORS[Math.floor(depth)].boss;
     return act1Rules(k) ? k : 'warden';
   }
   return depth === 2 ? 'headsman' : depth === 3 ? 'chained' : depth === 4 ? 'amalgam' : depth === 5 ? 'fleshmancer' : 'warden';

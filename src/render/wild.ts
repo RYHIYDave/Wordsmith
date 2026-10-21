@@ -132,6 +132,8 @@ const MATTER: Record<MonsterFigure, { bits: readonly string[]; sparks: boolean; 
   crier: { bits: ['#6a2a2a', '#c8a050', '#3a2a2a'], sparks: false, blood: false, dust: true },
   ratking: { bits: ['#5a4e48', '#3e3430', '#2f4a35'], sparks: false, blood: false, dust: true },
   palimpsest: { bits: ['#cbc1a6', '#a59b82', '#6d6556'], sparks: false, blood: false, dust: true },
+  scraper: { bits: ['#d2c9b0', '#a29a86', '#827c6c'], sparks: false, blood: false, dust: true },
+  quill: { bits: ['#f2ecdc', '#d4ccb8', '#9a9384'], sparks: false, blood: false, dust: true },
   physician: { bits: ['#1e1a22', '#3a3440', '#929f84'], sparks: false, blood: false, dust: true },
   censor: { bits: ['#141218', '#24202b', '#3a3440'], sparks: false, blood: false, dust: true },
 };

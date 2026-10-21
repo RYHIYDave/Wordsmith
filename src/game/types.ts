@@ -70,7 +70,9 @@ export type MonsterKind =
   // Silent Order's scribes, the mute watch hounds), each floor's own, and the five bosses; the art chat's
   | 'hushed' | 'watch' | 'scribe' | 'hound'
   | 'rat' | 'dredger' | 'fieldhand' | 'carter' | 'patient' | 'orderly' | 'inkling' | 'bookwarden'
-  | 'crier' | 'ratking' | 'palimpsest' | 'physician' | 'censor';
+  | 'crier' | 'ratking' | 'palimpsest' | 'physician' | 'censor'
+  // ACT 2, THE HUSH: floor 13's double boss in place of the Palimpsest, the Scraper and the Quill (game/act1_rules/pair.ts)
+  | 'scraper' | 'quill';
 /** The monsters of Version 14 (the figures the tests of their pictures go through). */
 export const MONSTER_KINDS: readonly MonsterKind[] = ['skeleton', 'archer', 'cultist', 'bat', 'brute', 'warden'];
 /** THE NEW MONSTERS (Version 19.9): the art chat's, painted on the heroes' bones. */
@@ -85,7 +87,7 @@ export const FIRST5_KINDS: readonly MonsterKind[] = ['headsman', 'chained', 'ama
 export const ACT1_KINDS: readonly MonsterKind[] = ['chanter', 'firepot', 'qgolem', 'rubbling', 'vulture', 'crawler', 'scorpion', 'devil', 'deer', 'wolf', 'drowned', 'leech', 'spawn', 'unfinished', 'queen', 'cantor', 'stag', 'eye'];
 /** ACT 2, THE HUSH (game/act1.ts ACT2): floors 11 to 15's own mobs and their five bosses, the art chat's (its branches mockup/act2-gateward to mockup/act2-library). */
 export const ACT2_MOBS: readonly MonsterKind[] = ['hushed', 'watch', 'scribe', 'hound', 'rat', 'dredger', 'fieldhand', 'carter', 'patient', 'orderly', 'inkling', 'bookwarden'];
-export const ACT2_BOSSES: readonly MonsterKind[] = ['crier', 'ratking', 'palimpsest', 'physician', 'censor'];
+export const ACT2_BOSSES: readonly MonsterKind[] = ['crier', 'ratking', 'palimpsest', 'physician', 'censor', 'scraper', 'quill'];
 export const ACT2_KINDS: readonly MonsterKind[] = [...ACT2_MOBS, ...ACT2_BOSSES];
 
 // ---------------------------------------------------------------------------------------------

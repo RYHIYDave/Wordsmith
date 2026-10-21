@@ -214,6 +214,8 @@ export const FIGURE_SIZE: Readonly<Record<MonsterFigure, { top: number; half: nu
   palimpsest: { top: 55, half: 24 },
   physician: { top: 35, half: 12 },
   censor: { top: 41, half: 16 },
+  scraper: { top: 22, half: 40 },
+  quill: { top: 52, half: 14 },
   // (each as its pictures stand, once they are in: art/act1_figs/)
   ...Object.fromEntries([...ACT1_KINDS, ...ACT2_KINDS].flatMap((k) => { const f = act1Fig(k); return f ? [[k, f.size]] : []; })),
   // (ACT 2, THE HUSH: a kind's other looks, each as its pictures stand)

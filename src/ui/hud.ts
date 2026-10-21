@@ -16,6 +16,7 @@ import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Input } from '../engine/input';
 import { FLOOR_NAMES, SKILLS, WORDS, floorTitle, xpToNext } from '../game/defs';
+import { partnerOf } from '../game/act1_rules/pair';
 import { doorMiddle, doorTiles } from '../game/doors';
 import type { Game } from '../game/game';
 import type { Hero, Level } from '../game/state';
@@ -1238,20 +1239,29 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // ---- boss bar -----------------------------------------------------------------------------
   const boss = game.boss;
   const bossUp = !!boss && !boss.dead && boss.state !== 'sleep';
-  if (boss && bossUp) {
-    const bw = Math.min(150, W - 160);
-    const x = Math.floor(W / 2 - bw / 2);
-    drawText(g, boss.name, Math.floor(W / 2), 4, boss.words.length ? WORD_COLOR[boss.words[0]] : P.fr4, { align: 'center', shadow: P.ink });
+  // (FLOOR 13'S DOUBLE BOSS: while both stand, a bar each, the Scraper's first: side by side where the screen is wide enough,
+  // else one under the other; `bossRows` how many rows of them)
+  const pair = boss && bossUp ? partnerOf(game, boss) : null;
+  const shown = boss && bossUp ? (pair && pair.state !== 'sleep' ? (boss.kind === 'scraper' ? [boss, pair] : [pair, boss]) : [boss]) : [];
+  const gap = 10;
+  const side = shown.length > 1 && W - 160 - gap >= 2 * 70;
+  const bossRows = shown.length === 0 ? 0 : side ? 1 : shown.length;
+  shown.forEach((b, i) => {
+    const bw = side ? Math.min(110, Math.floor((W - 160 - gap) / 2)) : Math.min(150, W - 160);
+    const row = side ? 0 : i;
+    const x = side ? Math.floor(W / 2 - (2 * bw + gap) / 2) + i * (bw + gap) : Math.floor(W / 2 - bw / 2);
+    const y = 4 + row * 20;
+    drawText(g, b.name, x + Math.floor(bw / 2), y, b.words.length ? WORD_COLOR[b.words[0]] : P.fr4, { align: 'center', shadow: P.ink });
     g.fillStyle = THEME.ink;
-    g.fillRect(x - 1, 14, bw + 2, 6);
+    g.fillRect(x - 1, y + 10, bw + 2, 6);
     g.fillStyle = THEME.lifeLo;
-    g.fillRect(x, 15, bw, 4);
+    g.fillRect(x, y + 11, bw, 4);
     g.fillStyle = THEME.life;
-    g.fillRect(x, 15, Math.round((bw * Math.max(0, boss.life)) / boss.maxLife), 4);
-  }
+    g.fillRect(x, y + 11, Math.round((bw * Math.max(0, b.life)) / b.maxLife), 4);
+  });
 
   // ---- ACT 2, THE BELLS: the clock (his doc: "a timer runs across the top of the screen") ---------
-  const bellsUp = drawBellsClock(g, game, W, bossUp ? 24 : 4, t);
+  const bellsUp = drawBellsClock(g, game, W, bossUp ? 4 + 20 * bossRows : 4, t);
 
   // ---- the first dungeon's prompt, and the word just found ------------------------------------
   // (a word found is the bigger news: for its moment it takes the prompt's place)
@@ -1259,7 +1269,7 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   let noticeEnd = 0;
   // (under the boss's bar and the Bells' clock, where they are up)
   // (a narrow screen's notices stand below its top row already, NARROW_TOP, under the boss's bar: only the Bells' clock moves them)
-  const topBusy = (bossUp ? 20 : 0) + (bellsUp ? 22 : 0);
+  const topBusy = (bossUp ? 20 * bossRows : 0) + (bellsUp ? 22 : 0);
   const noticeY = W >= 380 ? 4 + topBusy : NARROW_TOP + (bellsUp ? 22 : 0);
   if (inp.toast) noticeEnd = drawToast(ui, art, inp.toast.word, inp.toast.t, noticeY, !!inp.toast.big);
   else if (inp.moveToast) noticeEnd = drawMoveToast(ui, art, h, inp.moveToast.skill, inp.moveToast.t, noticeY);
