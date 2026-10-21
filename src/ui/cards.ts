@@ -63,9 +63,13 @@ function rule(g: CanvasRenderingContext2D, x0: number, x1: number, y: number, co
 /** The boss's name across the screen. `t` from 0 to `secs`. */
 export function drawBossCard(g: CanvasRenderingContext2D, card: BossCard, viewW: number, viewH: number): void {
   const name = /^the /i.test(card.name) ? card.name.toUpperCase() : `THE ${card.name.toUpperCase()}`;
-  const scale = fitScale(name, viewW - 40, 3);
-  const w = textWidth(name) * scale;
+  // (a name too long for the screen even in the smallest letters, as floor 13's two named together on a phone held
+  // upright, on two lines: broken before its AND, else at the space nearest its middle)
+  const lines = textWidth(name) <= viewW - 40 ? [name] : twoLines(name);
+  const scale = Math.min(...lines.map((l) => fitScale(l, viewW - 40, 3)));
+  const w = Math.max(...lines.map((l) => textWidth(l))) * scale;
   const h = LINE_H.normal * scale;
+  const tall = h * lines.length + (lines.length - 1) * 2 * scale;
   // (it comes once he has begun his line, and stays until he fights: low on the screen, clear of the
   // line over his head)
   const t = card.t - BOSS_INTRO.nameAt;
@@ -81,17 +85,27 @@ export function drawBossCard(g: CanvasRenderingContext2D, card: BossCard, viewW:
   // a band of dark behind it, so that it reads over anything
   g.globalAlpha = a * 0.55;
   g.fillStyle = ENEMY.ink;
-  g.fillRect(0, y - Math.round(h * 0.45), viewW, Math.round(h * 1.9));
+  g.fillRect(0, y - Math.round(h * 0.45), viewW, Math.round(tall + h * 0.9));
   g.globalAlpha = a;
   // the rules run out to either side from the name's ends
   const out = ease(clamp((t - 0.08) / 0.45)) * Math.min(70, (viewW - w) / 2 - 12);
-  const ry = y + Math.round(h / 2);
+  const ry = y + Math.round(tall / 2);
   rule(g, cx - w / 2 - 6, cx - w / 2 - 6 - out, ry, ENEMY.edge, ENEMY.gold);
   rule(g, cx + w / 2 + 6, cx + w / 2 + 6 + out, ry, ENEMY.edge, ENEMY.gold);
   // (a flash as it lands: the letters white for a moment)
   const flash = t < 0.2;
-  edged(g, name, cx, y, scale, flash ? '#ffffff' : ENEMY.light, ENEMY.edge, ENEMY.deep, flash ? undefined : ENEMY.gold);
+  lines.forEach((l, i) => edged(g, l, cx, y + i * (h + 2 * scale), scale, flash ? '#ffffff' : ENEMY.light, ENEMY.edge, ENEMY.deep, flash ? undefined : ENEMY.gold));
   g.globalAlpha = 1;
+}
+
+/** A name broken in two: before its AND if it has one, else at the space nearest its middle. */
+function twoLines(name: string): string[] {
+  const and = name.indexOf(' AND ');
+  if (and > 0) return [name.slice(0, and), name.slice(and + 1)];
+  const mid = name.length / 2;
+  let at = -1;
+  for (let i = 0; i < name.length; i++) if (name[i] === ' ' && (at < 0 || Math.abs(i - mid) < Math.abs(at - mid))) at = i;
+  return at < 0 ? [name] : [name.slice(0, at), name.slice(at + 1)];
 }
 
 /** The floor's name, its level under it. `t` from 0 to `secs`. */

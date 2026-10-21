@@ -15,7 +15,7 @@ import { ELEMENT_RAMP, P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Input } from '../engine/input';
-import { FLOOR_NAMES, SKILLS, WORDS, floorTitle, xpToNext } from '../game/defs';
+import { FLOOR_NAMES, MONSTERS, SKILLS, WORDS, floorTitle, xpToNext } from '../game/defs';
 import { partnerOf } from '../game/act1_rules/pair';
 import { doorMiddle, doorTiles } from '../game/doors';
 import type { Game } from '../game/game';
@@ -1239,20 +1239,28 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   // ---- boss bar -----------------------------------------------------------------------------
   const boss = game.boss;
   const bossUp = !!boss && !boss.dead && boss.state !== 'sleep';
-  // (FLOOR 13'S DOUBLE BOSS: while both stand, a bar each, the Scraper's first: side by side where the screen is wide enough
-  // for both bars and both names, else one under the other; `bossRows` how many rows of them)
+  // (FLOOR 13'S DOUBLE BOSS: while both stand, a bar each, the Scraper's first, between the place's name and the small map:
+  // side by side where both bars and both names fit there, else one under the other, each named in full where that fits,
+  // else by its own kind's name, "The Scraper", "The Quill" (its full name is on its card as they are met); `bossRows` how
+  // many rows of them)
   const pair = boss && bossUp ? partnerOf(game, boss) : null;
   const shown = boss && bossUp ? (pair && pair.state !== 'sleep' ? (boss.kind === 'scraper' ? [boss, pair] : [pair, boss]) : [boss]) : [];
   const gap = 10;
+  const two = shown.length > 1;
+  const colL = two ? textWidth(place) + 10 : 0;
+  const colR = two ? W - mw - 10 : W;
+  const room = colR - colL;
   const named = shown.reduce((w, b) => Math.max(w, textWidth(b.name)), 0);
-  const side = shown.length > 1 && W - 160 - gap >= 2 * Math.max(70, named);
+  const side = two && room >= 2 * Math.max(70, named) + gap;
+  const column = two && !side && room >= 70;
   const bossRows = shown.length === 0 ? 0 : side ? 1 : shown.length;
   shown.forEach((b, i) => {
-    const bw = side ? Math.min(Math.max(110, named), Math.floor((W - 160 - gap) / 2)) : Math.min(150, W - 160);
+    const bw = side ? Math.min(Math.max(110, named), Math.floor((room - gap) / 2)) : column ? Math.min(150, room) : Math.min(150, W - 160);
     const row = side ? 0 : i;
-    const x = side ? Math.floor(W / 2 - (2 * bw + gap) / 2) + i * (bw + gap) : Math.floor(W / 2 - bw / 2);
+    const x = side ? colL + Math.floor((room - (2 * bw + gap)) / 2) + i * (bw + gap) : column ? colL + Math.floor((room - bw) / 2) : Math.floor(W / 2 - bw / 2);
     const y = 4 + row * 20;
-    drawText(g, b.name, x + Math.floor(bw / 2), y, b.words.length ? WORD_COLOR[b.words[0]] : P.fr4, { align: 'center', shadow: P.ink });
+    const label = two && !side && textWidth(b.name) > (column ? room : W - 160) ? MONSTERS[b.kind].name : b.name;
+    drawText(g, label, x + Math.floor(bw / 2), y, b.words.length ? WORD_COLOR[b.words[0]] : P.fr4, { align: 'center', shadow: P.ink });
     g.fillStyle = THEME.ink;
     g.fillRect(x - 1, y + 10, bw + 2, 6);
     g.fillStyle = THEME.lifeLo;
