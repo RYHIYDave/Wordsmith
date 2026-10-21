@@ -96,6 +96,9 @@ test('3. the Fleshmancer dead, the cage comes down; no monster steps into it; wa
   const boss = g.monsters.find((m) => m.boss)!;
   g.hero.x = sh.x + 0.5;
   g.hero.y = sh.y + 3.5;
+  // (no word of his going off as he dies, Volatile's blast 0.7 s after: the screen's first kick is the cage's. Which
+  // words he carries goes as the floor's making draws them: since Version 23.5's bigger packs, Volatile on this seed)
+  boss.words = [];
   g.kill(boss);
   g.events.length = 0;
   assert.equal(sh.state, 'coming', 'it comes down as he dies');
