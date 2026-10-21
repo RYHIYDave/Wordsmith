@@ -14,7 +14,8 @@
 // moves), and its stand.
 
 import type { Px, Sprite } from '../engine/px';
-import { hash, toSprite } from './kit';
+import { hash, lazyFrames, toSprite } from './kit';
+import type { ActorArt, AnimSet, Clip } from './actor_types';
 import type { Painted } from './kit';
 import { ENEMY_RIM, FLAME } from './mkit';
 import { paintBits } from './new_mobs3';
@@ -64,7 +65,7 @@ const norm = (a: V3, or: V3 = [0, 0, 1]): V3 => {
 const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const dot = (a: V3, b: V3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const lerpV = (a: V3, b: V3, s: number): V3 => [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s];
-const sm = (v: number): number => {
+export const sm = (v: number): number => {
   const c = cl01(v);
   return c * c * (3 - 2 * c);
 };
@@ -156,7 +157,7 @@ export interface SrPose {
 /** Its stand: heavy and still; it breathes, its plates lifting a little; its antennae sweep slowly, each its own way; its claws open and shut by turns; ink drips off them. */
 function standPose(t: number): SrPose {
   const a = (Math.PI * 2 * t) / SR_STAND.period;
-  const ant = (side: number): [number, number][] => ANT_REST.map(([round, up], i) => [round + 10 * Math.sin(a * 0.5 + side * 2 + i * 0.5) * (i / 3), up + 6 * Math.sin(a + side * 1.3 + i * 0.6)]);
+  const ant = (side: number): [number, number][] => ANT_REST.map(([round, up], i) => [round + 10 * Math.sin(a + side * 2 + i * 0.5) * (i / 3), up + 6 * Math.sin(a + side * 1.3 + i * 0.6)]);
   const drip: [V3, string, number][] = [];
   for (const [k, side] of [[0, 1], [1, -1]] as const) {
     const ph = (t / SR_STAND.period + k * 0.5) % 1;
@@ -182,7 +183,7 @@ function standPose(t: number): SrPose {
     glint: 0,
     ants: [ant(1), ant(-1)],
     eyes: 1 + 0.15 * Math.sin(2 * a),
-    stalk: 4 * Math.sin(a * 0.5),
+    stalk: 4 * Math.sin(a),
     alive: true,
     peel: 0,
     chips: drip,
@@ -194,15 +195,15 @@ function standPose(t: number): SrPose {
 // ITS MOVES. Each a run of keys (seconds, and what it is then), eased between; a tremble laid over its warnings.
 
 type Num = number;
-/** Eased from key to key (smoothstep between each pair; `ease` per key: 'out' a hard stop with an overshoot that settles, 'in' slow then fast, 'lin'). */
-function keyed<T>(t: number, keys: ReadonlyArray<readonly [number, T, string?]>, mix: (a: T, b: T, k: number) => T): T {
+/** Eased from key to key (smoothstep between each pair; `ease` per key: 'out' an overshoot that settles, 'in' slow then fast, 'lin'). */
+export function keyed<T>(t: number, keys: ReadonlyArray<readonly [number, T, string?]>, mix: (a: T, b: T, k: number) => T): T {
   if (t <= keys[0][0]) return keys[0][1];
   for (let i = 1; i < keys.length; i++) {
     const [t1, v1, ease] = keys[i];
     const [t0, v0] = keys[i - 1];
     if (t <= t1) {
       const u = (t - t0) / Math.max(1e-6, t1 - t0);
-      const k = ease === 'in' ? u * u * u : ease === 'out' ? backOut(u) : ease === 'lin' ? u : sm(u);
+      const k = ease === 'in' ? u * u : ease === 'out' ? backOut(u) : ease === 'lin' ? u : sm(u);
       return mix(v0, v1, k);
     }
   }
@@ -210,21 +211,21 @@ function keyed<T>(t: number, keys: ReadonlyArray<readonly [number, T, string?]>,
 }
 const mixNum = (a: Num, b: Num, k: number): Num => a + (b - a) * k;
 const mixArr = (a: number[], b: number[], k: number): number[] => a.map((v, i) => v + (b[i] - v) * k);
-const KN = (t: number, keys: ReadonlyArray<readonly [number, Num, string?]>): number => keyed(t, keys, mixNum);
-const KV = (t: number, keys: ReadonlyArray<readonly [number, V3, string?]>): V3 => keyed(t, keys, lerpV);
-const KA = (t: number, keys: ReadonlyArray<readonly [number, number[], string?]>): number[] => keyed(t, keys, mixArr);
-/** Ease out with an overshoot that settles (a follow-through). */
-function backOut(v: number): number {
-  const c = cl01(v) - 1;
-  return 1 + 2.4 * c * c * c + 1.4 * c * c;
+export const KN = (t: number, keys: ReadonlyArray<readonly [number, Num, string?]>): number => keyed(t, keys, mixNum);
+export const KV = (t: number, keys: ReadonlyArray<readonly [number, V3, string?]>): V3 => keyed(t, keys, lerpV);
+export const KA = (t: number, keys: ReadonlyArray<readonly [number, number[], string?]>): number[] => keyed(t, keys, mixArr);
+/** Eased with an overshoot that settles (a follow-through): smooth from rest, past the mark by about a twentieth, and back. */
+export function backOut(v: number): number {
+  const u = cl01(v);
+  return sm(u) + 0.3 * u * Math.sin(Math.PI * u);
 }
 /** A tremble, `amp` units, while t is within [a, b]. */
-const shake = (t: number, a: number, b: number, amp: number, k: number): number => (t > a && t < b ? amp * Math.sin(t * 150 + k * 2.1) : 0);
+export const shake = (t: number, a: number, b: number, amp: number, k: number): number => (t > a && t < b ? amp * Math.sin(t * 150 + k * 2.1) : 0);
 const pairOf = (v: V3): [V3, V3] => [[v[0], v[1], v[2]], [v[0], -v[1], v[2]]];
 const STAND0 = standPose(0);
 
 /** Paper shreds and grit thrown off the floor from `c` at `t0`: flung out and up, falling, gone `life` after. */
-function shreds(c: V3, t0: number, t: number, n: number, seed: number, reach: number, up: number, life = 0.6, cols: readonly string[] = ['#a29a86', '#827c6c', '#d2c9b0', '#14121a']): [V3, string, number][] {
+export function shreds(c: V3, t0: number, t: number, n: number, seed: number, reach: number, up: number, life = 0.6, cols: readonly string[] = ['#a29a86', '#827c6c', '#d2c9b0', '#14121a']): [V3, string, number][] {
   const s = t - t0;
   if (s < 0 || s >= life) return [];
   const out: [V3, string, number][] = [];
@@ -245,27 +246,27 @@ export const SR_WALK = { frames: 12, fps: 12, period: 1.0 } as const;
 /** How fast it scuttles (tiles a second). */
 export const SR_PACE = 1.0;
 /** CLAW SNAP, its basic blow: its left claw drawn back high and wide open (the warning, from `warn[0]`, held trembling to `warn[1]`); it lunges and the claw snaps shut through you at `hit`, its fingers' tips `reach` tiles before its middle. */
-export const SR_SNAP = { long: 1.0, warn: [0.14, 0.42], hit: 0.5, reach: 3.5, fps: 30 } as const;
+export const SR_SNAP = { long: 1.0, warn: [0.16, 0.36], hit: 0.5, reach: 3.5, fps: 30 } as const;
 /**
  * THE SCOUR: it rears up, both claws raised high and wide (the warning, `warn`); slams them down on the floor out at its sides
  * (`slam`) and drags them in across the floor before it in a great arc, scraping it bare (`sweep`), until they clash together
  * before it. The floor it scrapes: a fan before it from SCOUR_HALF either side of straight ahead, out to SCOUR_REACH tiles
  * from its middle (art/pair_shots.ts drawScour).
  */
-export const SR_SCOUR = { long: 2.6, warn: [0.32, 0.88], slam: 1.0, sweep: [1.0, 1.5], fps: 30 } as const;
+export const SR_SCOUR = { long: 2.6, warn: [0.32, 0.82], slam: 1.0, sweep: [1.0, 1.5], fps: 30 } as const;
 /**
  * THE BACKWARD RUSH: it crouches, its tail cocked high and its fan spread wide and shaking (the warning, `warn`); its tail
  * snaps down and under it (`flip`) and it shoots backward: THE GAME CARRIES IT back RUSH_TILES along the way it faces,
  * between `go` and `stop`, whoever is in its lane struck by its fan and its bulk; then it settles, its claws up.
  */
-export const SR_RUSH = { long: 1.9, warn: [0.18, 0.62], flip: 0.66, go: 0.7, stop: 1.2, fps: 30 } as const;
+export const SR_RUSH = { long: 1.9, warn: [0.18, 0.54], flip: 0.66, go: 0.7, stop: 1.2, fps: 30 } as const;
 export const RUSH_TILES = 5;
 /**
  * THE PALIMPSEST, ITS HALF (the combo, with the Quill's: art/quill.ts QL_SWOOP): it rears, both claws raised together over its
  * head (the warning, `warn`); slams them down together on the floor before it (`slam`), and the scrape runs out from them
  * across the floor in a straight strip (`run`), STRIP_TILES long: the strip lies bare for the Quill to write over.
  */
-export const SR_STRIP = { long: 2.6, warn: [0.3, 0.9], slam: 1.0, run: [1.0, 1.5], fps: 30 } as const;
+export const SR_STRIP = { long: 2.6, warn: [0.3, 0.82], slam: 1.0, run: [1.0, 1.5], fps: 30 } as const;
 /** Struck: jolted, its claws flung up and out, a plate or two torn loose; back on its stand by `long`. */
 export const SR_REEL = { long: 0.55, freeze: 0.06, fps: 30 } as const;
 /** Its death: its claws drop (`drop`); it sags, its legs give (`sag`); its plates peel off and fly (`peel`), the stolen words going free out of the old writing under them; flat and still by `still`. */
@@ -286,7 +287,7 @@ function walkPose(t: number): SrPose {
   const ph = (t / SR_WALK.period) % 1;
   const a = Math.PI * 2 * ph;
   const feet = SR_FEET.map((_, i) => stepFoot(i, (ph + W_OFF[i]) % 1));
-  const base = standPose(t * 0.8);
+  const base = standPose((t / SR_WALK.period) * SR_STAND.period);
   return {
     ...base,
     z: SR_BODY_Z + 1.2 * Math.pow(Math.sin(a), 2),
@@ -315,14 +316,15 @@ function snapPose(t: number): SrPose {
   const tr = shake(t, S.warn[0], S.warn[1], 1.2, 1);
   const hand = KV(t, [
     [0, H0],
-    [S.warn[0], COCK, 'out'],
+    [S.warn[0], COCK],
     [S.warn[1], COCK],
     [S.hit, STRIKE, 'in'],
     [S.hit + 0.12, add(STRIKE, [4, -2, -2])],
     [S.long, H0, 'out'],
   ]);
-  P.hands = [[hand[0], hand[1] + tr, hand[2] + tr], [HAND[0] - 6, -HAND[1] + 4, HAND[2] - 4]];
-  P.open = [KN(t, [[0, 0.3], [S.warn[0], 1], [S.hit - 0.02, 1], [S.hit, 0], [S.hit + 0.2, 0], [S.long, 0.3]]), 0.2];
+  const other: V3 = [HAND[0] - 6, -HAND[1] + 4, HAND[2] - 4];
+  P.hands = [[hand[0], hand[1] + tr, hand[2] + tr], KV(t, [[0, STAND0.hands[1]], [S.warn[0], other], [S.long - 0.2, other], [S.long, STAND0.hands[1]]])];
+  P.open = [KN(t, [[0, STAND0.open[0]], [S.warn[0], 1], [S.hit - 0.02, 1], [S.hit, 0], [S.hit + 0.2, 0], [S.long, STAND0.open[0]]]), KN(t, [[0, STAND0.open[1]], [S.warn[0], 0.2], [S.long - 0.2, 0.2], [S.long, STAND0.open[1]]])];
   P.glint = KN(t, [[0, 0], [S.warn[0], 0.7], [S.warn[1], 1], [S.hit, 1], [S.hit + 0.15, 0]]);
   P.x = KN(t, [[0, 0], [S.warn[0], -4], [S.warn[1], -5], [S.hit, 9, 'in'], [S.hit + 0.12, 10], [S.long, 0, 'out']]);
   P.z = KN(t, [[0, SR_BODY_Z], [S.warn[0], SR_BODY_Z + 3], [S.warn[1], SR_BODY_Z + 3], [S.hit, SR_BODY_Z - 2], [S.long, SR_BODY_Z]]);
@@ -440,7 +442,7 @@ function stripPose(t: number): SrPose {
   P.open = [KN(t, [[0, 0.3], [S.warn[0], 0], [S.long, 0.3]]), 0];
   P.open[1] = P.open[0];
   P.glint = KN(t, [[0, 0], [S.warn[0], 0.8], [S.warn[1], 1], [S.run[1], 1], [S.run[1] + 0.4, 0]]);
-  P.z = KN(t, [[0, SR_BODY_Z], [S.warn[0], SR_BODY_Z + 10, 'out'], [S.warn[1], SR_BODY_Z + 10], [S.slam, SR_BODY_Z - 4, 'in'], [S.run[1], SR_BODY_Z - 3], [S.long, SR_BODY_Z, 'out']]);
+  P.z = KN(t, [[0, SR_BODY_Z], [S.warn[0], SR_BODY_Z + 10, 'out'], [S.warn[1], SR_BODY_Z + 10], [S.slam, SR_BODY_Z - 1.5, 'in'], [S.run[1], SR_BODY_Z - 1], [S.long, SR_BODY_Z, 'out']]);
   P.pitch = KN(t, [[0, 0], [S.warn[0], -24, 'out'], [S.warn[1], -24], [S.slam, 12, 'in'], [S.run[1], 10], [S.long, 0, 'out']]);
   P.x = KN(t, [[0, 0], [S.warn[0], -6], [S.warn[1], -7], [S.slam, 6, 'in'], [S.run[1], 10], [S.long, 0, 'out']]);
   P.abd = KA(t, [[0, ABD_REST], [S.warn[0], ABD_REST.map((d, i) => d + 12 + 3 * i)], [S.warn[1], ABD_REST.map((d, i) => d + 12 + 3 * i)], [S.slam, ABD_REST.map((d) => d - 8)], [S.long, ABD_REST, 'out']]);
@@ -487,7 +489,7 @@ function deathPose(t: number): SrPose {
   const drop = sm(t / Dd.drop);
   const P: SrPose = {
     ...STAND0,
-    z: SR_BODY_Z - (SR_BODY_Z - 11) * sag + 3 * Math.sin(Math.PI * cl01(t / 0.3)) * (1 - drop),
+    z: SR_BODY_Z - (SR_BODY_Z - 14) * sag + 3 * Math.sin(Math.PI * cl01(t / 0.3)) * (1 - drop),
     pitch: 6 * sag - 6 * Math.sin(Math.PI * cl01(t / 0.3)),
     roll: 7 * sag,
     hands: [lerpV(STAND0.hands[0], [58, 40, 3], drop), lerpV(STAND0.hands[1], [56, -38, 3], drop)],
@@ -495,7 +497,7 @@ function deathPose(t: number): SrPose {
     abd: ABD_REST.map((d, i) => d + (10 + 4 * i) * sag),
     fan: 0.85 - 0.5 * sag,
     feet: SR_FEET.map((f): V3 => [f[0] * (1 + 0.15 * sag), f[1] * (1 + 0.35 * sag), 0]),
-    knee: SR_FEET.map(() => 9 - 7 * sag),
+    knee: SR_FEET.map(() => 9 - 5 * sag),
     ants: [STAND0.ants[0].map(([r, u], i): [number, number] => [r + 10 * sag, u - (20 + 8 * i) * sag]), STAND0.ants[1].map(([r, u], i): [number, number] => [r + 10 * sag, u - (20 + 8 * i) * sag])],
     eyes: 1.4 * (1 - sm((t - 0.8) / 1.2)),
     alive: false,
@@ -505,7 +507,7 @@ function deathPose(t: number): SrPose {
   };
   // the stolen words going free: sparks of the enemy's pink rising out of the old writing as its plates fly, going pale as they go
   for (let i = 0; i < 26; i++) {
-    const t0 = Dd.peel[0] + hash(i, 1, 93) * (Dd.peel[1] - Dd.peel[0] - 0.4);
+    const t0 = Dd.peel[0] + hash(i, 1, 93) * (Dd.still - 1.2 - Dd.peel[0]);
     const s = t - t0;
     if (s < 0 || s > 1.2) continue;
     const a = hash(i, 2, 93) * Math.PI * 2;
@@ -745,13 +747,86 @@ function scraperBits(P: SrPose, put: Put): void {
 }
 
 /** One frame of the Scraper: `which` (stand, for now), `t` seconds in, from in front or behind. */
+/** The lowest any of `bits` (of the parts `re` matches, or all) comes to the floor (picture units over it): balls, rods and panels by their size. */
+export function lowestOf(bits: readonly Bit[], re?: RegExp): number {
+  let low = Infinity;
+  for (const b of bits) {
+    if (re && !re.test(b.part)) continue;
+    const sh = b.shape;
+    if (sh.k === 'ball') low = Math.min(low, sh.c[2] - Math.hypot(sh.ax[0][2], sh.ax[1][2], sh.ax[2][2]));
+    else if (sh.k === 'rod') low = Math.min(low, sh.a[2] - sh.ra, sh.b[2] - sh.rb);
+    else if (sh.k === 'panel') low = Math.min(low, sh.c[2] - Math.abs(sh.u[2]) - Math.abs(sh.v[2]));
+  }
+  return low;
+}
+/** The angle nearest `a` (radians) at which A cos x + B sin x is at least `c`; if none, the angle at which it is most. */
+function atLeast(a: number, A: number, B: number, c: number): number {
+  if (A * Math.cos(a) + B * Math.sin(a) >= c) return a;
+  const R = Math.hypot(A, B);
+  const ph = Math.atan2(B, A);
+  if (c >= R) return ph;
+  const w = Math.acos(c / R);
+  const near = (x: number): number => Math.abs(Math.atan2(Math.sin(x - a), Math.cos(x - a)));
+  return near(ph + w) < near(ph - w) ? ph + w : ph - w;
+}
+/**
+ * ITS TAIL AND ANTENNAE KEPT OFF THE FLOOR: each segment of its tail, from its root, bent no further down than keeps its
+ * hoop clear of the floor (its fan's tip too); each length of its antennae likewise. Changes `abd` and `ants`.
+ */
+function offTheFloor(P: SrPose): void {
+  const O = worldOf(P, [0, 0, 0]);
+  const ax = (v: V3): number => worldOf(P, v)[2] - O[2];
+  const [xz, yz, zz] = [ax([1, 0, 0]), ax([0, 1, 0]), ax([0, 0, 1])];
+  let p = worldOf(P, ABD_ROOT);
+  P.abd = P.abd.slice();
+  for (let i = 0; i < ABD_LEN.length; i++) {
+    const L = ABD_LEN[i];
+    let c = (ABD_RZ[i] + 0.3 - p[2]) / L;
+    if (i === ABD_LEN.length - 1) c = Math.max(c, (1 - p[2]) / (L + 32));
+    const a = atLeast(P.abd[i] * D, -xz, -zz, c);
+    P.abd[i] = a / D;
+    p = [p[0], p[1], p[2] + L * (-Math.cos(a) * xz - Math.sin(a) * zz)];
+  }
+  const lifted = (chain: readonly [number, number][], k: number): [number, number][] => {
+    const side = k ? -1 : 1;
+    let z = worldOf(P, [ANT_ROOT[0], side * ANT_ROOT[1], ANT_ROOT[2]])[2];
+    return chain.map(([round, up], i): [number, number] => {
+      const L = ANT_LEN[i];
+      const A = Math.cos(round * D) * xz + side * Math.sin(round * D) * yz;
+      const u = atLeast(up * D, A, zz, (2.2 - i * 0.38 + 0.3 - z) / L);
+      z += L * (A * Math.cos(u) + zz * Math.sin(u));
+      return [round, u / D];
+    });
+  };
+  P.ants = [lifted(P.ants[0], 0), lifted(P.ants[1], 1)];
+}
+/** One moment of it, never through the floor: its tail and antennae kept off it, and where a claw would go into it, its hand lifted till it lies on it. */
+function posed(which: string, t: number): { P: SrPose; bits: Bit[] } {
+  const P = poseOf(which, t);
+  P.hands = [P.hands[0], P.hands[1]];
+  offTheFloor(P);
+  let bits: Bit[] = [];
+  for (let pass = 0; pass < 3; pass++) {
+    bits = [];
+    scraperBits(P, (part, piece, shape) => {
+      bits.push({ part, piece, shape });
+    });
+    let moved = false;
+    for (const k of [0, 1]) {
+      const low = lowestOf(bits, k ? /^arm1$/ : /^arm0$/);
+      if (low < 0.5) {
+        const h = P.hands[k];
+        P.hands[k] = [h[0], h[1], h[2] + (0.6 - low) / Math.max(0.5, Math.cos(P.pitch * D))];
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  return { P, bits };
+}
 export function scraperPainted(which: string, t: number, view: GameView = 'front'): Painted {
   const st = stage(view, SR_CANVAS.ax, SR_CANVAS.ay, SR_CANVAS);
-  const P = poseOf(which, t);
-  const bits: Bit[] = [];
-  scraperBits(P, (part, piece, shape) => {
-    bits.push({ part, piece, shape });
-  });
+  const { P, bits } = posed(which, t);
   const lights = paintBits(st, bits, [P.x, P.y, P.z]);
   for (const [p, r, a] of P.flares) {
     const [x, y] = st.at(p);
@@ -780,9 +855,51 @@ export function srForward(view: GameView): [number, number] {
 }
 /** Every solid of one moment of it, as the tests read them. */
 export function scraperSolids(which: string, t: number): Bit[] {
-  const bits: Bit[] = [];
-  scraperBits(poseOf(which, t), (part, piece, shape) => {
-    bits.push({ part, piece, shape });
-  });
-  return bits;
+  return posed(which, t).bits;
+}
+
+/** How long each of its moves is (seconds; a loop, its round). */
+export function scraperLong(which: string): number {
+  return (
+    {
+      stand: SR_STAND.period,
+      walk: SR_WALK.period,
+      attack: SR_SNAP.long,
+      scour: SR_SCOUR.long,
+      rush: SR_RUSH.long,
+      strip: SR_STRIP.long,
+      reel: SR_REEL.long,
+      dying: SR_DIE.long,
+    } as Record<string, number>
+  )[which] ?? 1;
+}
+/** THE SCRAPER, as the game holds a monster's pictures: its stand and walk; its claw snap the attack; the scour, the rush and its half of the Palimpsest (`strip`) its moves; struck; its death. */
+export function makeScraperArt(): ActorArt {
+  const set = (view: GameView): AnimSet => {
+    const frame = (which: string, t: number): Sprite => scraperFrame(which, t, view);
+    const clip = (which: string, long: number, fps: number, hit?: number): Clip => {
+      const c: Clip = { frames: lazyFrames(Math.round(long * fps) + 1, (i) => frame(which, i / fps)), fps };
+      if (hit !== undefined) c.hit = hit;
+      return c;
+    };
+    const attack = clip('attack', SR_SNAP.long, SR_SNAP.fps, SR_SNAP.hit);
+    return {
+      idle: lazyFrames(SR_STAND.frames, (i) => frame('stand', i / SR_STAND.fps)),
+      walk: lazyFrames(SR_WALK.frames, (i) => frame('walk', i / SR_WALK.fps)),
+      attack: lazyFrames(3, (i) => attack.frames[[6, 14, 17][i]]),
+      idleFps: SR_STAND.fps,
+      walkFps: SR_WALK.fps,
+      clips: {
+        attack,
+        reel: clip('reel', SR_REEL.long, SR_REEL.fps),
+        die: clip('dying', SR_DIE.long, SR_DIE.fps),
+        moves: {
+          scour: clip('scour', SR_SCOUR.long, SR_SCOUR.fps, SR_SCOUR.slam),
+          rush: clip('rush', SR_RUSH.long, SR_RUSH.fps, SR_RUSH.go),
+          strip: clip('strip', SR_STRIP.long, SR_STRIP.fps, SR_STRIP.slam),
+        },
+      },
+    };
+  };
+  return { front: set('front'), back: set('back') };
 }
