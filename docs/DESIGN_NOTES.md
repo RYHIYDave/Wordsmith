@@ -5788,6 +5788,18 @@ Found while building it: a figure drawn the other way round (its weapon in the o
 
 **Results.** The whole unit suite on the copy (scratchpad v233, 48ef9fd), 2271 of 2271 (16:03 to 16:21); 38 chosen playtests of the regression on its dev page (endless_phone and endless_pc, the ways, the town, the saves, the modes, the HUD, the guide, the Act 2 floors), all clean (16:21 to 16:33); `find src tests -newer` nothing; the published page, 33 playtests (16:33 to 16:43), 32 clean, touch_wide (the stick steering into the town's gate) clean alone twice; its frame rate 58. NOT CHECKED: a real phone; endless mode's balance deep down.
 
+### Version 23.4: the Hush's walls standing whole
+
+**What he said.** To the art chat, 20 Oct 2026, 07:41 Pacific: “Level 11 needs some work.  The doorways are very hard to see, the roof and ground textures are hard to distinguish between.  All the 11-15 levels have weird slanting walls that I hate.  I know it’s so they don’t hide the character when he goes behind them but I just want that wall piece to go transparent when you walk behind it.” and “Floor textures weren’t loaded at the beginning of levels”. To its pictures and video: “Put everything in but the doorways.  With the new walls I think it’ll look fine” (the art chat's board post of 19:22 Eastern, “Please tell him when it is live: he asked for it.”). Told him (plain, about 16:50 Pacific) that it goes in next as 23.4.
+
+**What is in it.** 23.3 with the art chat's `mockup/act2-walls` (3c5e3c9) merged (f9963a4; one conflict in main.ts, both test hooks kept). On floors 11, 12, 14 and 15 the walls toward the eye stand whole (render/act2_walls.ts ACT2_WALLS on; art/standing.ts painted with the ground), a soft window cut round the hero or a monster in sight behind them; floor 11's houses roofs and all, its slate a cold blue-black (GW_SLATE_FRESH); floor 13 has none; floors 1 to 10 untouched. The ground at a floor's start painted first, nearest first, and by the game itself when the worker is late (render/outdoor.ts, painter.ts). Floor 11's doorways as they were. Endless levels on floors 11 to 15 have them too. docs/mockups/act2_walls/README.md has it all.
+
+**Tests.** tests/act2_walls.test.ts (8); tools/scenarios/act2_walls.mjs in the regression (act2_walls_phone, WHOLE=1). Measured here, the bot fighting, 8 s each (frames a second, walls on against off): floor 11 58.4 / 59.7, 12 56.0 / 60.1, 14 58.6 / 59.2, 15 57.3 / 60.0.
+
+**Published.** 20 Oct 2026, about 17:36 Pacific: "Version 65", version id `1792542964-a5ae`, label "Version 23.4"; `gh-pages` at `558850f`. The release: scratchpad v234rel (Play.html 3,759,293 bytes, artifact.html 3,758,971, "V23.4 2026-10-21 00:25").
+
+**Results.** The whole unit suite on the copy (scratchpad v234, dcd3c74), 2279 of 2279 (16:49 to 17:07); 45 chosen playtests on its page (every Act 2 floor, boss, mob, the Bells, the ways, the moments, the walls, endless, and the core ones), all clean (17:10 to 17:24); `find src tests -newer` nothing; the published page, 34 playtests, all clean (17:25 to 17:35); its frame rate 59.4. NOT CHECKED: a real phone.
+
 ## 6. Build plan
 
 **Build 3 (in progress):** driven by the owner's play-testing. Done and published: the tap/hold
