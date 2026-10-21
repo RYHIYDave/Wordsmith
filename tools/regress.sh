@@ -487,6 +487,10 @@ wait
 # ACT 2'S WALLS STANDING WHOLE (Version 23.4, the art chat's): on floors 11, 12, 14 and 15 the walls toward the eye
 # stand whole, seen through round the hero behind them; floor 11's slate (pictures).
 WHOLE=1 run act2_walls_phone $P --scenario $S/act2_walls.mjs &
+# the vultures struck up in the air (Version 23.5: his “Oh the vultures being unhittable in the air has to go.  It’s
+# infuriating to fight them”): on the Ledge Road a flock called down round the hero, the bot fighting them, blows landing
+# up there; one struck down over the road falls onto it, one over the drop falls away into it, its word on the floor.
+SNAP=0 run vulture_air_phone $P --scenario $S/vulture_air_film.mjs &
 wait
 # THE SPEED WORK (Version 22.1): the Pinewood's forest drawn as chunk pictures draws the same picture, to the pixel, as
 # its trees one by one (render/tops_cache.ts), with the warrior and the mage (who throws the most about)

@@ -7,13 +7,14 @@
 // circling over the drop struck down: it falls away into the drop, and what it carried lands on the road. A frame every
 // 20th of a second of the game's time (the game slowed to a quarter), named f_0000...; the hero struck by nothing (god).
 // Checks, logged '!!': a blow lands on a vulture up in the air; each struck down up there falls; what falls over the drop
-// leaves its word on walkable floor.
+// leaves its word on walkable floor. SNAP=0: the checks only, no frames kept (the regression's vulture_air_phone).
 import { log } from './lib.mjs';
 
 export default async function (page, snap) {
   const seed = Number(process.env.SEED || 9);
   const FPS = 20;
   const SLOW = 0.25;
+  const keep = process.env.SNAP !== '0';
   await page.evaluate((s) => {
     const D = window.__dbg;
     D.saving(false);
@@ -61,7 +62,7 @@ export default async function (page, snap) {
   const frame = async () => {
     const wait = t0 + i * step - Date.now();
     if (wait > 0) await page.waitForTimeout(wait);
-    await snap(`f_${String(i).padStart(4, '0')}`);
+    if (keep) await snap(`f_${String(i).padStart(4, '0')}`);
     i++;
   };
   const hold = async (s) => { const n = Math.round(s * FPS); for (let k = 0; k < n; k++) await frame(); };
