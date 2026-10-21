@@ -7,7 +7,7 @@ levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
 fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
 new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
-change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built. The two pictures in the doc are written out here in words. How it was
+change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. The two pictures in the doc are written out here in words. How it was
 found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -246,6 +246,17 @@ change with a pack size modifier on a word for the gate.”). The first dungeon�
 size. Twin burned in at the gate gives every pack 50% increased size, as well as giving every
 monster Twin, as each word burned in at the gate does.
 
+**Packs grow with the levels (since Version 23.5).** Your words of 20 Oct 2026, 21:31: “And we need
+pack size to scale up with levels as well”; your picks: “Every floor, on into endless (Recommended)”
+and “5% each level (Recommended)”. Every pack is 5% bigger for each level past the first, the floors
+and then the endless levels, held at double so phones keep up: floor 15’s packs about 70% bigger
+than the first floor’s, double by Endless 6.
+
+**Nothing is out of reach up in the air (since Version 23.5).** Your words of 20 Oct 2026, 21:31:
+“Oh the vultures being unhittable in the air has to go.  It’s infuriating to fight them”. The Ledge
+Road’s vultures are struck wherever they fly; one struck down in the air falls, and over the drop it
+falls away into it, what it carried landing on the road.
+
 - **Blue packs (magic):** one word, on every monster of the pack, and 20% increased life. One pack
   in four is blue, from the second dungeon on. The pack’s name is written once, in blue, and each of
   it has a bar and, at its feet, a blue ring with its word’s colour dotted inside: the art chat’s
@@ -409,6 +420,7 @@ changes one only with your yes.
 | Endless mode | an endless level as strong as one floor past the last built and one more for each after it, and 10% more life and damage on each level after the first (level 10 about 2.4 times level 1) | `game/endless.ts` `ENDLESS.grow`, `endlessPower`, `endlessTough` |
 | Pack sizes | tiny 6 to 10, small 4 to 7, medium 3 to 5, large 1 to 2, the boss alone; in the first dungeon tiny 3 to 5, small 2 to 4, medium 2 to 3, large 1 | `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE` |
 | Twin at the gate | 50% increased pack size | `GATE_TWIN_PACKS` |
+| Packs grow with the levels | 5% bigger for each level past the first, floors and endless levels, held at double (floor 15 about 70% bigger; double by Endless 6) | `PACK_GROWTH`, `packGrowth` |
 | Blue packs | 1 in 4 of the packs not an elite room’s or a lair, from dungeon 2; 20% increased life | `PACKS` |
 | Yellow packs | every elite room’s, and 1 in 10 of the others from dungeon 2; the leader 3 times the life; its minions 50% of its words | `PACKS` |
 | Leaders of their own | skeletons the champion, bone archers the marksman, cultists the priest, green trolls the chieftain; never a pack of bats | `LEADERS`, `packRarity` |

@@ -282,6 +282,9 @@ test('5b. she roams her eyrie (QUEEN_ROAM, his word): through a long fight she h
   const y0 = m.y;
   h.x = m.x + m.fx * 3;
   h.y = m.y + m.fy * 3;
+  // (he is not to fall: one blow of hers can be more than a new hero's whole life, and the fight goes as the floor's
+  // making has it, so its every chance: since Version 23.5's bigger packs, a dive of 122 at his 102 on this seed)
+  h.d.maxLife = 1e6;
   (g as unknown as Hooks).wakeUp(m);
   m.life = m.maxLife = 1e9;
   const c = emptyControls();
