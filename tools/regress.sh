@@ -501,6 +501,10 @@ wait
 CLS=warrior SPOTS=8 run speed_tops_same_warrior $P --scenario $S/tops_same.mjs &
 CLS=mage SPOTS=8 run speed_tops_same_mage $P --scenario $S/tops_same.mjs &
 wait
+# THE LEVEL SELECT (24.0): the options' button, the page of floors, a test hero there, the saved run left as it was
+FLOOR=6 run level_select_phone $P --scenario $S/level_select.mjs &
+UPRIGHT=1 FLOOR=15 CLS=mage run level_select_upright $U --scenario $S/level_select.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

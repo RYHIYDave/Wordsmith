@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, LEVEL_SELECT, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -279,6 +279,8 @@ export class Game {
   meta: Meta;
   /** The practice room: every word to hand, monsters that keep coming, no death, nothing saved. */
   practice = false;
+  /** THE LEVEL SELECT (defs.ts LEVEL_SELECT): a test hero, made ready for the floor he was sent to (Game.forTrial). Played as any hero is, but never saved: main.ts leaves the saved run as it was. */
+  trial = false;
   private waveT = 0;
   private waveN = 0;
   /** The first dungeon's prompts, while a new player is being shown the game (see Guide in state.ts). */
@@ -427,6 +429,82 @@ export class Game {
     this.events = this.events.filter((e) => e.t !== 'msg');
     this.enterDungeon();
     this.msg('Try-out. Every word is yours: open the INVENTORY.', MSG.word);
+  }
+
+  /**
+   * THE LEVEL SELECT (defs.ts LEVEL_SELECT): a test hero of class `cls` made ready for floor `floor` and sent straight to it,
+   * as if the floors before it were cleared. On floor 1, a new hero as any begins (nothing to make ready). From floor 2: the
+   * level a hero comes there at (LEVEL_SELECT.level), the points of those levels spent (two of every three on his class's own
+   * attribute), the wordsmith's ring lit, a full set of magic gear of the floor's item level, and in the pouch every word that
+   * can be found down to that floor, with the melds, as many of each as the practice room gives. Played as any hero is, a
+   * Normal one (he can fall, and wakes in town); never saved (main.ts). `meta`: the device's choices (limit, voice) are taken from it,
+   * nothing else: the run has a Lexicon and stash of its own.
+   */
+  static forTrial(cls: ClassId, seed: number, floor: number, meta?: Meta): Game {
+    const own = newMeta();
+    if (meta) {
+      own.limit = meta.limit;
+      own.voice = meta.voice;
+      own.aim = meta.aim;
+      own.aimChosen = meta.aimChosen;
+    }
+    const g = new Game(cls, seed, own);
+    g.trial = true;
+    // (Normal: he falls and wakes in town, as a hero does; so as he was told, 22 Oct 2026, with the pictures)
+    if (MODES.on) g.mode = 'normal';
+    g.readyFor(floor);
+    return g;
+  }
+
+  /** The floors the level select offers: the first to the last built. */
+  static trialFloors(): number {
+    return lastFloor();
+  }
+
+  private readyFor(floor: number): void {
+    const h = this.hero;
+    const d = Math.max(1, Math.min(lastFloor(), Math.floor(floor)));
+    if (d >= 2) {
+      const level = LEVEL_SELECT.level[d - 1] ?? LEVEL_SELECT.level[LEVEL_SELECT.level.length - 1];
+      h.level = level;
+      h.xp = 0;
+      h.pending = 0;
+      const primary = CLASSES[h.cls].primary;
+      const others = ATTRS.filter((a) => a !== primary);
+      let other = 0;
+      for (let k = 0; k < level - 1; k++) {
+        const a = k % 3 < LEVEL_SELECT.ownOfThree ? primary : others[other++ % others.length];
+        h.attrs[a] += TUNE.attrPerLevel;
+      }
+      h.ring = true;
+      this.refresh();
+      // a full set of magic gear of the floor's item level (as much as his level lets him wear): the weapon first (the kind his class starts with), so the off hand suits it
+      const ilvl = Math.min(d, level);
+      const rng = new RNG((this.seed ^ 0x6a09e667) >>> 0);
+      const kind = CLASSES[h.cls].starts;
+      for (const slot of EQUIP_SLOTS) {
+        for (let k = 0; k < 24; k++) {
+          const it = rollItem(ilvl, rng, { slot: slot === 'ring1' || slot === 'ring2' ? 'ring' : slot, rarity: 1, forWeapon: kind });
+          if (this.useProblem(it) !== null) continue;
+          if (slot === 'mainhand' && it.weapon !== kind) continue;
+          if (slot === 'offhand' && !canPair(h.gear.mainhand, it)) continue;
+          h.gear[slot] = it;
+          break;
+        }
+      }
+      for (const w of wordsAt(d)) h.words[w] = PRACTICE.words;
+      if (MELD.on) for (const w of MELD_IDS) h.words[w] = PRACTICE.words;
+      if (MELD.on && VOLT_MELDS.on) for (const w of VOLT_MELD_IDS) h.words[w] = PRACTICE.words;
+      if (MELD.on && RANK2.on) for (const w of RANK_IDS) h.words[w] = PRACTICE.words;
+      this.refresh();
+      h.life = h.d.maxLife;
+      h.mana = h.d.maxMana;
+    }
+    this.depth = d;
+    this.cleared = d - 1;
+    this.wayDepth = d;
+    this.enterDungeon();
+    this.msg(d >= 2 ? `Test hero, level ${h.level}. Not saved. Your words are in the INVENTORY.` : 'Test hero. Not saved.', MSG.word);
   }
 
   // ===========================================================================================

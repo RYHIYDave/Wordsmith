@@ -1458,6 +1458,27 @@ export const PRACTICE = {
 };
 
 /**
+ * THE LEVEL SELECT. The owner, 22 Oct 2026, 14:27 (Pacific): “Can you put in a level selector in the options?”; asked which
+ * kind, by 14:29: “Test hero, any floor (Recommended)”, offered as: pick floor 1 to 15 and a class; start there with a hero
+ * levelled and geared for that floor; not saved; your real hero untouched. A button in the start screen's Options opens a page
+ * of the floors (ui/panels.ts); the hero is made by Game.forTrial. ON SINCE VERSION 24.0: shown pictures of it from the game
+ * (the options, the page of floors, the class cards, a test hero on floor 6) and asked “Is the level select right as shown? Put it
+ * live?”, by 14:54: “Yes, put it live (Recommended)”.
+ */
+export const LEVEL_SELECT = {
+  on: true,
+  /**
+   * The level the hero comes into each floor at, 1 to 15: the level a hero has who killed every monster laid on the floors
+   * before it (the experience of all of them, three floors' dice each, the middle one taken; scratch tool flscratch/xp.ts,
+   * 22 Oct 2026). Seeds 11, 22 and 33 gave 1,2,5,6,8,9,11,11,12,15,16,17,18,19,20; 1,2,4,6,8,10,11,11,13,14,16,17,18,19,20;
+   * and 1,3,5,7,8,10,11,12,13,15,16,17,18,19,21.
+   */
+  level: [1, 2, 5, 6, 8, 10, 11, 11, 13, 15, 16, 17, 18, 19, 20] as readonly number[],
+  /** Of every three points his levels give, how many go to his class's own attribute (the rest to the other two in turn). */
+  ownOfThree: 2,
+};
+
+/**
  * STRIKE, A TWO-HIT COMBO, AND A STEP FORWARD WITH EVERY SWING. The owner, 7 Oct 2026, 23:18: "I’d
  * like STRIKE to have two animations.  The first is the strike we have now.  That one always plays
  * first.  If the player taps again quickly, then the second animation, [a] downward slash, plays.

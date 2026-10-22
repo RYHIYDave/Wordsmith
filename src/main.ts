@@ -52,7 +52,7 @@ import { spriteCovers } from './engine/px';
 import type { Sprite } from './engine/px';
 import { createScreen } from './engine/screen';
 import { ACT2_WALLS } from './render/act2_walls';
-import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
+import { ARRIVAL_LINES, BODIES, BOSS_INTRO, CLASSES, COMBO, FIRST_LEVELS, FLOOR_CARD_FIRST, FLOOR_NAMES, HAND_IN, LEVEL_SELECT, MONSTER_ATTACKS, NEW_MONSTERS, PACK_LOOK, SKILLS, SLOT_OPENS, TUNE, useFirstLevels } from './game/defs';
 import type { Limit } from './game/defs';
 import { ALTAR_GOES } from './game/act1_holds';
 import { DRESS_EDGES } from './game/act1_dress';
@@ -471,7 +471,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (the practice room is never saved)
     // (a fallen hero is gone, unless they are a Normal hero (game/modes.ts): then what is kept is the
     // hero as they will wake in town, so that closing the page on the death screen changes nothing)
-    if (game && mode === 'play' && !game.practice) saved = game.over ? game.wakeSave() : game.save();
+    // (THE LEVEL SELECT's test hero is never saved either: the saved run stays as it was)
+    if (game && mode === 'play' && !game.practice && !game.trial) saved = game.over ? game.wakeSave() : game.save();
     try {
       const file: SaveFile = { v: 2, run: saved, meta: savedMeta(meta) };
       localStorage.setItem(SAVE_KEY, JSON.stringify(file));
@@ -648,10 +649,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     if (!run) return;
     let w: Game;
     try {
-      w = Game.restore(run, meta);
+      // (THE LEVEL SELECT: a test hero wakes as one, with the run's own Lexicon and stash, and is still never saved)
+      w = Game.restore(run, g.trial ? g.meta : meta);
     } catch {
       return;
     }
+    w.trial = g.trial;
     begin(w);
     // (one line, so that it reads the same where the newest line is at the top, as on a phone)
     w.msg(`You wake in town. ${lost ? wakeLine(lost, depth) : ''}`.trim(), THEME.text);
@@ -698,6 +701,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
 
   /** Picking a class starts a run at once, unless that would throw away a saved one. */
   const pickClass = (cls: ClassId): void => {
+    if (titleUi.practice && titleUi.trial && LEVEL_SELECT.on) {
+      // (THE LEVEL SELECT: a test hero made ready for the floor picked, straight to it; never saved)
+      sfx('click');
+      const floor = titleUi.trial;
+      titleUi.trial = undefined;
+      titleUi.practice = false;
+      begin(Game.forTrial(cls, (Date.now() ^ (Math.random() * 0x7fffffff)) >>> 0, floor, meta));
+      return;
+    }
     if (titleUi.practice && titleUi.trying) {
       // (THE TRY-OUT PAGE ONLY: the practice room's seasoned hero, straight to a floor of the first five)
       sfx('click');
@@ -1628,8 +1640,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
           // (a hero is making ready: the keys that pick a class or leave the cards wait until they have gone)
         } else if (titleUi.page === 'class') {
           for (let i = 0; i < CLASS_IDS.length; i++) if (input.pressed(`Digit${i + 1}`)) pickClass(CLASS_IDS[i]);
-          if (input.pressed('Escape')) titleUi.page = titleUi.practice ? 'options' : 'menu';
+          if (input.pressed('Escape')) titleUi.page = titleUi.practice && titleUi.trial ? 'floors' : titleUi.practice ? 'options' : 'menu';
         } else if (titleUi.page === 'options' && input.pressed('Escape')) titleUi.page = 'menu';
+        else if (titleUi.page === 'floors' && input.pressed('Escape')) titleUi.page = 'options';
       }
     } else {
       const g = game;
@@ -1713,7 +1726,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       // NORMAL hero (game/modes.ts) is not lost: the save becomes the hero as they will wake in town.
       if (g.over && !deathSaved) {
         deathSaved = true;
-        if (g.wakes) writeSave();
+        // (THE LEVEL SELECT's test hero: the saved run is not his to keep or to end)
+        if (g.trial) {
+          /* nothing saved, nothing cleared */
+        } else if (g.wakes) writeSave();
         else clearSave();
       }
       // what was done inside a panel last frame (a word set, a thing bought) is heard at once
@@ -1993,14 +2009,14 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         if (g.level.town || (shut && clock - mapShownAt > 0.2)) panels.open = 'none';
       } else if (panels.open === 'level') drawLevelUp(ui, g, (code) => input.pressed(code), clock - levelShownAt > 0.45);
       else if (panels.open === 'pause') {
-        const p = drawPause(ui, isMuted(), turnLabel(), meta.limit, scr.touch ? meta.aim : null, g.practice ? 'Leave' : 'End run');
+        const p = drawPause(ui, isMuted(), turnLabel(), meta.limit, scr.touch ? meta.aim : null, g.practice || g.trial ? 'Leave' : 'End run');
         if (p.resume) panels.open = 'none';
         if (p.mute) setMuted(!isMuted());
         if (p.turn) flipTurn();
         if (p.limit) flipLimit();
         if (p.aim) flipAim();
         if (p.quit) {
-          if (!g.practice) clearSave();
+          if (!g.practice && !g.trial) clearSave();
           mode = 'title';
           game = null;
           titleUi.page = 'menu';
@@ -2023,6 +2039,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   }
   const dbg = {
     game: () => game,
+    /** THE LEVEL SELECT's switch (game/defs.ts LEVEL_SELECT: off until his yes), for the playtests and pictures. */
+    levelSelect: LEVEL_SELECT,
     /** (ACT 2, THE HUSH, behind ACT2, game/act1.ts: off until his yes) Its switch, for the playtests and pictures; with `depth`, the hero taken there at once (floors 11 to 15). */
     act2: (on: boolean, depth = 0) => {
       ACT2.on = on;
@@ -2195,7 +2213,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       smithTitle = look === 'smith' && take ? makeSmithTitle(take) : null;
     },
     /** The start screen's page: the menu, the options or the class cards. */
-    titlePage: (page: 'menu' | 'options' | 'class') => {
+    titlePage: (page: 'menu' | 'options' | 'class' | 'floors') => {
       titleUi.page = page;
     },
     /** Switch between cooldowns and mana, as the options do. */
@@ -2426,7 +2444,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // When the page is replaced by a newer version while someone is playing, hand the run across
   // and carry straight on (in town) instead of dropping them at the title screen.
   try {
-    if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => ({ run: saving && game && !game.over && mode === 'play' ? (game.practice ? saved : game.save()) : null, meta: saving ? meta : null }));
+    if (hot && typeof hot.snapshot === 'function') hot.snapshot(() => ({ run: saving && game && !game.over && mode === 'play' ? (game.practice || game.trial ? saved : game.save()) : null, meta: saving ? meta : null }));
   } catch {
     /* the hook is optional */
   }
