@@ -7,7 +7,8 @@ import { P, RARITY_COLOR } from '../art/palette';
 import { drawText, wrapText } from '../engine/font';
 import { PAD_USE } from '../engine/gamepad';
 import type { Sprite } from '../engine/px';
-import { ATTR_GIVES, ATTR_NAME, CLASSES, SKILLS, TUNE, WORDS, growsWith, holdSkill, skillsFor, tapSkill, weaponAttr, wordAttr } from '../game/defs';
+import { ATTR_GIVES, ATTR_NAME, CLASSES, LEVEL_SELECT, SKILLS, TUNE, WORDS, floorTitle, growsWith, holdSkill, skillsFor, tapSkill, weaponAttr, wordAttr } from '../game/defs';
+import { lastFloor } from '../game/act1';
 import type { Limit } from '../game/defs';
 import type { Game } from '../game/game';
 import { MODE_LINE } from '../game/modes';
@@ -248,13 +249,15 @@ export function drawLevelUp(ui: Ui, game: Game, pressedKey: (code: string) => bo
 // continue is available, new game, a lexicon ..., and options i guess."
 
 export interface TitleUi {
-  /** The menu, the class cards (after New Game, or for the practice room), or the options. */
-  page: 'menu' | 'class' | 'options';
+  /** The menu, the class cards (after New Game, or for the practice room), the options, or (THE LEVEL SELECT, behind LEVEL_SELECT) the floors. */
+  page: 'menu' | 'class' | 'options' | 'floors';
   /** The class cards were opened for the practice room. */
   practice: boolean;
   /** THE TRY-OUT PAGE ONLY (tools/build_tryout.mjs): the floor a seasoned hero is taken straight to; and whether the class cards were opened for it. */
   tryFloor?: number;
   trying?: boolean;
+  /** THE LEVEL SELECT (game/defs.ts LEVEL_SELECT): the floor picked on its page, the class cards opened for a test hero there (with `practice`); undefined otherwise. */
+  trial?: number;
 }
 
 /** THE TRY-OUT PAGE ONLY: its two options, the floor to try (pressed, the next one) and going there. */
@@ -273,6 +276,14 @@ function tryPressed(st: TitleUi, pressed: string): void {
     st.practice = true;
     st.trying = true;
   } else if (pressed === 'practice' || pressed === 'new') st.trying = false;
+  // (THE LEVEL SELECT: its button opens the page of floors; the practice room and a new game are no test hero's)
+  if (pressed === 'floors') st.page = 'floors';
+  if (pressed === 'practice' || pressed === 'new') st.trial = undefined;
+}
+
+/** THE LEVEL SELECT: its button in the options, while LEVEL_SELECT is on (the owner, 22 Oct 2026, 14:27: “Can you put in a level selector in the options?”). */
+function floorsItem(): { id: string; label: string; sub: string; lit: boolean }[] {
+  return LEVEL_SELECT.on ? [{ id: 'floors', label: 'LEVEL SELECT', sub: '', lit: false }] : [];
 }
 
 export function newTitleUi(): TitleUi {
@@ -410,6 +421,11 @@ const SMITH_LEAST = 26;
 export const SMITH_UNDER = 24;
 /** The most buttons there can be in a column: the options, on a phone held upright (sound, abilities, attacks, prompts, practice room, sideways, back). */
 export const SMITH_MOST = 7;
+/**
+ * (THE LEVEL SELECT, LEVEL_SELECT on: its button makes the options one more than that. Held upright they are then set a
+ * little lower and closer, so that the eight take the room the seven had: the picture does not move on any page.)
+ */
+const SMITH_SQUEEZE_GAP = 2;
 /** How near his head the name of the game is kept, on a screen with a great deal of room above him. */
 const SMITH_NAME_GAP = 24;
 
@@ -439,8 +455,8 @@ export function smithLayout(W: number, H: number, menuPage: boolean, count: numb
   // (a row wants a screen that is wide, or at least a good deal wider than it is tall: a small
   // phone held sideways is 379 x 214)
   const wide = W >= 400 || W >= H * 1.3;
-  const gap = 4;
-  const bh = wide ? 22 : 24;
+  let gap = 4;
+  let bh = wide ? 22 : 24;
   const rowsH = (n: number): number => n * bh + (n - 1) * gap;
   // What he needs above the table's edge: himself, and the name at its smaller size over his
   // head. A screen too short for that and the usual lift puts the table lower (the buttons then
@@ -454,6 +470,12 @@ export function smithLayout(W: number, H: number, menuPage: boolean, count: numb
   if (!wide) {
     // held upright: a column under the table, or two to a row where a column is too long
     lift = Math.max(least, Math.min(SMITH_UNDER + rowsH(SMITH_MOST) + 6, H - headRoom));
+    if (!menuPage && count > SMITH_MOST) {
+      // (more options than the column was made for: as many as there are, in the room the most it was made for take)
+      const room = rowsH(SMITH_MOST);
+      gap = SMITH_SQUEEZE_GAP;
+      bh = Math.floor((room - (count - 1) * gap) / count);
+    }
     per = rowsH(count) <= lift - SMITH_UNDER - 6 ? 1 : 2;
     bw = per === 1 ? Math.min(W - 24, 220) : Math.floor((W - 12 - gap) / 2);
   }
@@ -513,6 +535,7 @@ function drawSmithMenu(ui: Ui, smith: SmithPicture, t: number, title: string, st
         { id: 'guide', label: opt.guide ? 'PROMPTS: ON' : 'PROMPTS: OFF', sub: '', lit: false },
         ...tryItems(st, opt),
         { id: 'practice', label: 'PRACTICE ROOM', sub: '', lit: false },
+        ...floorsItem(),
         ...(opt.turn ? [{ id: 'turn', label: opt.turn, sub: '', lit: false }] : []),
         { id: 'back', label: 'BACK', sub: '', lit: false },
       ];
@@ -583,6 +606,65 @@ function drawSmithMenu(ui: Ui, smith: SmithPicture, t: number, title: string, st
 }
 
 /**
+ * THE LEVEL SELECT'S PAGE (behind LEVEL_SELECT, game/defs.ts): the floors, five to a row, each row a part of the way down with
+ * its name over it (the Prison's five, the mountain's, the city's), as many as are built (act1.ts lastFloor). A floor pressed
+ * opens the class cards for a test hero there (`trial`); BACK goes back to the options.
+ */
+export const FLOOR_ROWS: readonly { name: string; from: number; to: number }[] = [
+  { name: 'THE PRISON', from: 1, to: 5 },
+  { name: 'DOWN THE MOUNTAIN', from: 6, to: 10 },
+  { name: 'THE CITY OF VELLUM', from: 11, to: 15 },
+];
+function drawFloors(ui: Ui, title: string, big: number, st: TitleUi): void {
+  const g = ui.g;
+  const W = ui.w;
+  const H = ui.h;
+  drawText(g, title, Math.floor(W / 2), 6, THEME.text, { align: 'center', scale: big, shadow: THEME.call });
+  const pitch = 'Level select: choose a floor';
+  let y = 6 + 9 * big + 1;
+  drawText(g, pitch, Math.floor(W / 2), y, THEME.accent, { align: 'center', font: ui.width(pitch) <= W - 8 ? 'normal' : 'small' });
+  y += 11;
+  for (const line of wrapText('A test hero, levelled and geared for the floor. Not saved.', W - 16, 'small')) {
+    drawText(g, line, Math.floor(W / 2), y, THEME.dim, { align: 'center', font: 'small' });
+    y += 7;
+  }
+  y += 6;
+  const last = lastFloor();
+  const rows = FLOOR_ROWS.filter((r) => r.from <= last);
+  const per = 5;
+  const gap = 4;
+  const headH = 9;
+  const rowGap = 7;
+  // (what is left between the lines above and BACK at the foot, shared by the rows: their buttons as tall as fits, within reason)
+  const room = H - 28 - y;
+  const bh = Math.max(16, Math.min(32, Math.floor((room - rows.length * headH - (rows.length - 1) * rowGap) / rows.length)));
+  const bw = Math.max(18, Math.min(52, Math.floor((W - 16 - (per - 1) * gap) / per)));
+  const x0 = Math.floor((W - per * bw - (per - 1) * gap) / 2);
+  // (on a tall screen the rows stand in the middle of the room left, not crowded under the lines above)
+  y += Math.max(0, Math.floor((room - rows.length * (headH + bh) - (rows.length - 1) * rowGap) / 2));
+  let picked = 0;
+  for (const r of rows) {
+    drawText(g, `${r.name}  ${r.from}-${Math.min(r.to, last)}`, Math.floor(W / 2), y, THEME.text, { align: 'center', font: 'small' });
+    y += headH;
+    for (let d = r.from; d <= Math.min(r.to, last); d++) {
+      const x = x0 + (d - r.from) * (bw + gap);
+      if (ui.pressIn(x, y, bw, bh)) picked = d;
+      ui.drawButton(x, y, bw, bh, String(d), {});
+      ui.mark(`floor:${d}`, x, y, bw, bh);
+    }
+    y += bh + rowGap;
+  }
+  const backW = ui.width('BACK') + 20;
+  if (ui.button(4, H - 22, backW, 18, 'BACK')) st.page = 'options';
+  else if (picked) {
+    st.trial = picked;
+    st.practice = true;
+    st.trying = false;
+    st.page = 'class';
+  }
+}
+
+/**
  * `smith`: the wordsmith's picture, if the start screen is to be his (see drawSmithMenu); without
  * it, the library and the dream in their frame, with the buttons beside them.
  */
@@ -608,6 +690,12 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
     g.globalAlpha = 1;
   }
 
+  // (THE LEVEL SELECT: its page of floors, over the picture put back into the dark as the class cards are)
+  if (st.page === 'floors') {
+    drawFloors(ui, title, big, st);
+    return out;
+  }
+
   if (st.page === 'menu' || st.page === 'options') {
     // ---- the picture, and beside it (or under it) the buttons ---------------------------------
     let bh = T ? 26 : 22;
@@ -630,6 +718,7 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
           { id: 'guide', label: opt.guide ? 'PROMPTS: ON' : 'PROMPTS: OFF', sub: '', lit: false },
           ...tryItems(st, opt),
           { id: 'practice', label: 'PRACTICE ROOM', sub: '', lit: false },
+          ...floorsItem(),
           ...(opt.turn ? [{ id: 'turn', label: opt.turn, sub: '', lit: false }] : []),
           { id: 'back', label: 'BACK', sub: '', lit: false },
         ];
@@ -703,7 +792,7 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   });
   const backW = ui.width('BACK') + 20;
   const backR: Rect = { x: 4, y: H - 22, w: backW, h: 18 };
-  if (!entering && ui.pressIn(backR.x, backR.y, backR.w, backR.h)) st.page = st.practice ? 'options' : 'menu';
+  if (!entering && ui.pressIn(backR.x, backR.y, backR.w, backR.h)) st.page = st.practice && st.trial ? 'floors' : st.practice ? 'options' : 'menu';
   // the voice the character will speak with: pressing it changes it, and lets each of the three be heard
   const voiceLabel = `VOICE: ${opt.voice === 'female' ? 'FEMALE' : 'MALE'}`;
   const voiceW = Math.max(ui.width('VOICE: FEMALE'), ui.width('VOICE: MALE')) + 16;
@@ -718,7 +807,7 @@ export function drawTitle(ui: Ui, art: Art, pic: TitleArt, t: number, title: str
   const modeR: Rect = { x: Math.floor((W - modeW) / 2), y: modeBeside ? H - 22 : H - 44, w: modeW, h: 18 };
   if (heroMode && !entering && ui.pressIn(modeR.x, modeR.y, modeR.w, modeR.h)) out.mode = true;
   drawText(g, title, Math.floor(W / 2), 6, THEME.text, { align: 'center', scale: big, shadow: THEME.call });
-  const pitch = st.practice ? 'Practice room: choose a class' : 'Choose a class';
+  const pitch = st.practice && st.trial ? `${floorTitle(st.trial).level}: choose a class` : st.practice ? 'Practice room: choose a class' : 'Choose a class';
   drawText(g, pitch, Math.floor(W / 2), 6 + 9 * big + 1, st.practice ? THEME.accent : THEME.text, { align: 'center', font: ui.width(pitch) <= W - 8 ? 'normal' : 'small' });
   // (how long since these cards were last drawn: a moment, unless they have just come on screen)
   const dt = t - cardsSeen > 0.5 || t < cardsSeen ? 0 : t - cardsSeen;
