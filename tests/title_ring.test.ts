@@ -13,8 +13,11 @@
 //      under the ring does not;
 //   5. the gap in the front of the ring: his eyes and the column's foot are not hidden by the stones.
 
+// @ts-ignore - node typings are not part of this project
 import test from 'node:test';
+// @ts-ignore
 import assert from 'node:assert/strict';
+// @ts-ignore
 import fs from 'node:fs';
 import { RING_H, RING_LIP, RING_W, TITLE_RING, paintRing } from '../src/art/title_ring';
 
@@ -34,8 +37,8 @@ function hsv([r, g, b]: [number, number, number]): [number, number, number] {
 
 test('1. the switch is off, and nothing of the game uses the picture', () => {
   assert.equal(TITLE_RING.on, false);
-  const files = fs.readdirSync('src', { recursive: true }).map(String).filter((f) => f.endsWith('.ts') && !f.split('\\').join('/').startsWith('dev/'));
-  const users = files.filter((f) => !f.endsWith('title_ring.ts') && /from '[./a-z_]*\/title_ring'/.test(fs.readFileSync(`src/${f}`, 'utf8')));
+  const files = fs.readdirSync('src', { recursive: true }).map(String).filter((f: string) => f.endsWith('.ts') && !f.split('\\').join('/').startsWith('dev/'));
+  const users = files.filter((f: string) => !f.endsWith('title_ring.ts') && /from '[./a-z_]*\/title_ring'/.test(fs.readFileSync(`src/${f}`, 'utf8')));
   assert.deepEqual(users, []);
 });
 
