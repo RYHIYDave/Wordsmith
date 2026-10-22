@@ -4,7 +4,7 @@
 import { act1Def } from './act1';
 import type { VendorId } from './state';
 import type { AbilityId, Attr, ClassId, Element, Limit, MeldId, MonsterKind, Slot, WeaponKind, WordId } from './types';
-import { FIRST5_KINDS, MELD_OF, NEW_KINDS } from './types';
+import { FIRST5_KINDS, MELD_OF, NEW_KINDS, WORD_IDS } from './types';
 
 export type { Limit } from './types';
 
@@ -284,6 +284,46 @@ export const GUARD = {
   blockCap: 50,
 };
 
+// THE CITY'S WORDS (Version 23.8): Pulling, Splitting, Hexing and Stilling, the four of the eight he chose on 8 Oct 2026 that were
+// not yet in the game, put in at his word to the main chat, 21 Oct 2026, 18:25 Pacific, “And let’s add some words to levels 11-15”
+// (asked which, his picks after it: “Pulling (Recommended),Splitting (Recommended),Hexing (Recommended),Stilling (Recommended)”).
+// How each plays is his doc "Wordsmith: The New Words" (his yes, 8 Oct 2026, 16:53: "Yes, as it is (Recommended)"): its numbers are
+// the starting points, each growing a little with its attribute, to be tuned once he has played them. Their looks are the art
+// chat's of 8 Oct (render/words3.ts), his yes then. They are found only from floor 11 down (`wordsAt`).
+/** The words of the city, and the first level they are found on (a floor's depth, or an endless level's power). */
+export const DEEP_WORDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling'];
+export const DEEP_WORDS_FROM = 11;
+/** The words that may drop, or be carried, at this level (its depth, or an endless level's power). */
+export function wordsAt(power: number): readonly WordId[] {
+  return power >= DEEP_WORDS_FROM ? WORD_IDS : WORD_IDS.filter((w) => !DEEP_WORDS.includes(w));
+}
+/**
+ * PULLING (Intelligence). In front: what it hits is dragged up to `far` tiles toward where it struck (a blow on one enemy, those
+ * within `reach` of it), no nearer than `stop`, over `secs`; an elite half as far, a boss not at all. Behind: a vortex `vortex`
+ * seconds long that keeps drawing enemies in to its middle at `pace` tiles a second. On a monster: its blows drag the hero
+ * `monster` tiles toward it.
+ */
+export const PULL = { far: 1.5, most: 2.5, reach: 2.2, stop: 0.62, secs: 0.24, vortex: 3, pace: 0.9, middle: 0.45, monster: 0.6 };
+/**
+ * SPLITTING (Dexterity). In front: on its first hit each use it breaks into `copies` smaller copies, each `share` of the hit, that
+ * fly on at `speed` tiles a second to the nearest other enemies within `reach`. Behind: where it ends, `shards` shards fly out in
+ * every direction, each `shardShare` of the hit, out to `shardReach`. On a monster: dying, it splits into two of its kind at
+ * `life` of its life, drawn `look` the size (and they split no more).
+ */
+export const SPLIT = { copies: 3, share: 0.4, most: 0.6, reach: 3.2, speed: 9, shards: 6, shardShare: 0.25, shardMost: 0.4, shardReach: 3, shardWidth: 0.45, every: 0.3, life: 0.5, look: 0.75 };
+/**
+ * HEXING (Intelligence). In front: a curse for `secs` on what it hits: it takes `more` more damage from everything. Behind: a hex
+ * circle for `circle` seconds: enemies inside deal `weaker` less damage. On a monster: its blows curse the hero, who takes
+ * `monster` more damage for `monsterSecs`.
+ */
+export const HEX = { secs: 4, more: 0.2, most: 0.4, circle: 4, weaker: 0.25, weakest: 0.45, monster: 0.2, monsterSecs: 3 };
+/**
+ * STILLING (Intelligence). In front: what it hits is slowed in time for `secs`: it moves, attacks and shoots `slower` slower (a boss
+ * half as much). Behind: a bubble for `bubble` seconds where enemies and their shots crawl, `crawl` slower. On a monster: its blows
+ * make the hero's cooldowns run `cooldowns` slower for `monsterSecs`.
+ */
+export const STILL = { secs: 2, slower: 0.4, most: 0.6, bubble: 4, crawl: 0.6, crawlMost: 0.75, boss: 0.5, cooldowns: 0.4, monsterSecs: 4 };
+
 export interface WordDef {
   id: WordId;
   /** Damage or shaping (see WordKind). */
@@ -327,6 +367,11 @@ export const WORDS: Record<WordId, WordDef> = {
   precise: { id: 'precise', kind: 'shape', name: 'Precise', front: 'Precise', behind: 'of the Mark', attr: 'dex', element: null, about: 'The word of the exact. Narrow, and deadly.', frontText: 'More damage, a smaller area.', behindText: 'Marks an enemy: your next hit on it is a certain critical.', monsterText: 'Its hits find the gaps in your armour.' },
   frenzied: { id: 'frenzied', kind: 'shape', name: 'Frenzied', front: 'Frenzied', behind: 'of Frenzy', attr: 'str', element: null, about: 'The word of rage. Faster, and faster.', frontText: 'Each use makes the next faster, up to five times.', behindText: 'Kills keep the frenzy going.', monsterText: 'Speeds up as it is hurt.' },
   guarding: { id: 'guarding', kind: 'shape', name: 'Guarding', front: 'Guarding', behind: 'of Warding', attr: 'str', element: null, about: 'The word of the shield. It keeps you.', frontText: 'Each use gives you a brief shield.', behindText: 'Leaves a ward circle: you take less damage inside it.', monsterText: 'Carries a shield that soaks damage.' },
+  // THE CITY'S WORDS (Version 23.8; PULL, SPLIT, HEX and STILL above): shaping words, found from floor 11 down.
+  pulling: { id: 'pulling', kind: 'shape', name: 'Pulling', front: 'Pulling', behind: 'of the Vortex', attr: 'int', element: null, about: 'The word of the drawing in. Everything comes to it.', frontText: 'Drags the enemies it hits toward where it struck.', behindText: 'Leaves a vortex that keeps drawing enemies in.', monsterText: 'Its blows drag you toward it.' },
+  splitting: { id: 'splitting', kind: 'shape', name: 'Splitting', front: 'Splitting', behind: 'of Shards', attr: 'dex', element: null, about: 'The word of the breaking apart. One becomes many.', frontText: 'Breaks into three smaller copies that fly on to other enemies.', behindText: 'Where it ends, shards fly out in every direction.', monsterText: 'Splits in two when it dies.' },
+  hexing: { id: 'hexing', kind: 'shape', name: 'Hexing', front: 'Hexing', behind: 'of Hexes', attr: 'int', element: null, about: 'The word of the curse. What it marks is undone.', frontText: 'Curses what it hits: it takes more damage from everything.', behindText: 'Leaves a hex circle: enemies inside deal less damage.', monsterText: 'Its blows curse you: you take more damage.' },
+  stilling: { id: 'stilling', kind: 'shape', name: 'Stilling', front: 'Stilling', behind: 'of Stillness', attr: 'int', element: null, about: 'The word of the held breath. Time slows for it.', frontText: 'What it hits is slowed in time.', behindText: 'Leaves a bubble where enemies and their shots crawl.', monsterText: 'Its blows slow your cooldowns.' },
   poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
   // WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
   // damage words; what each does in front and behind is his page's "Wordsmith: Word Combinations",
@@ -343,6 +388,13 @@ export const WORDS: Record<WordId, WordDef> = {
   hailstorm: { id: 'hailstorm', kind: 'meld', of: MELD_OF.hailstorm, name: 'Hailstorm', front: 'Hailstorm', behind: 'of the Hailstorm', attr: 'int', element: 'frost', about: 'Frost and Lightning, melded.', frontText: 'Arcs chill everything they touch. Frozen enemies pass arcs on further.', behindText: 'A storm of ice that slows and strikes.', monsterText: '' },
   frostbite: { id: 'frostbite', kind: 'meld', of: MELD_OF.frostbite, name: 'Frostbite', front: 'Frostbite', behind: 'of Frostbite', attr: 'int', element: 'frost', about: 'Frost and Poison, melded.', frontText: 'Chilled enemies lose life over time, and frozen ones twice as fast.', behindText: 'The ice on the ground poisons what crosses it.', monsterText: '' },
   contagion: { id: 'contagion', kind: 'meld', of: MELD_OF.contagion, name: 'Contagion', front: 'Contagious', behind: 'of Contagion', attr: 'int', element: 'lightning', about: 'Lightning and Poison, melded.', frontText: 'Every enemy an arc touches is poisoned.', behindText: 'The poison cloud shocks whatever stands in it.', monsterText: '' },
+  // VOLATILE'S MELDS (behind VOLT_MELDS, off, game/melds.ts): a damage word and Volatile, his page's five left out on 13 Oct 2026;
+  // put in at his word of 21 Oct 2026, 19:29 Pacific, “Can you also add the volatile melds”. What each does is his page's.
+  demolition: { id: 'demolition', kind: 'meld', of: MELD_OF.demolition, name: 'Demolition', front: 'Demolition', behind: 'of Demolition', attr: 'str', element: null, about: 'Power and Volatile, melded.', frontText: 'Bigger explosions. Elites and bosses also explode once, at half life.', behindText: 'One huge rune, slow to go off.', monsterText: '' },
+  powderkeg: { id: 'powderkeg', kind: 'meld', of: MELD_OF.powderkeg, name: 'Powderkeg', front: 'Powderkeg', behind: 'of the Powderkeg', attr: 'int', element: 'fire', about: 'Flame and Volatile, melded.', frontText: 'Burning enemies explode when killed, and the blast sets others burning.', behindText: 'The rune leaves burning ground when it goes off.', monsterText: '' },
+  shatter: { id: 'shatter', kind: 'meld', of: MELD_OF.shatter, name: 'Shatter', front: 'Shatter', behind: 'of Shattering', attr: 'int', element: 'frost', about: 'Frost and Volatile, melded.', frontText: 'Frozen enemies burst into shards that hit those around them.', behindText: 'The rune freezes what is near, then bursts.', monsterText: '' },
+  chainreaction: { id: 'chainreaction', kind: 'meld', of: MELD_OF.chainreaction, name: 'Chain Reaction', front: 'Chain Reaction', behind: 'of Chain Reaction', attr: 'int', element: 'lightning', about: 'Lightning and Volatile, melded.', frontText: 'An exploding enemy sends arcs to the nearest enemies. Those it kills explode too.', behindText: 'Runes are linked. One going off sets off the rest.', monsterText: '' },
+  rupture: { id: 'rupture', kind: 'meld', of: MELD_OF.rupture, name: 'Rupture', front: 'Rupture', behind: 'of Rupture', attr: 'dex', element: null, about: 'Poison and Volatile, melded.', frontText: 'Poisoned enemies burst when killed, splashing their poison on those around.', behindText: 'The rune bursts into a poison cloud.', monsterText: '' },
   // (RANK II, behind RANK2: each a damage word at its second rank, two of it melded at the wordsmith; it reads as
   // its word in an attack's name, and its rune stone and its own name carry the rank)
   power2: { id: 'power2', kind: 'rank', name: 'Power II', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'Two Power, melded: Power at rank II.', frontText: 'As Power, half as strong again.', behindText: 'As of Power, half as strong again.', monsterText: '' },
@@ -364,7 +416,9 @@ export const WORDS: Record<WordId, WordDef> = {
  */
 export const ATTR_SPLIT: { on: boolean; melds: Readonly<Record<MeldId, Attr>>; byWeapon: readonly WordId[] } = {
   on: true,
-  melds: { eruption: 'str', avalanche: 'str', thunder: 'str', blight: 'str', fumes: 'dex', frostbite: 'dex', contagion: 'dex', scald: 'int', wildfire: 'int', hailstorm: 'int' },
+  melds: { eruption: 'str', avalanche: 'str', thunder: 'str', blight: 'str', fumes: 'dex', frostbite: 'dex', contagion: 'dex', scald: 'int', wildfire: 'int', hailstorm: 'int',
+    // (Volatile's five, by the same rule: Power's Strength, Poison's Dexterity, the rest Intelligence)
+    demolition: 'str', rupture: 'dex', powderkeg: 'int', shatter: 'int', chainreaction: 'int' },
   byWeapon: ['fire', 'frost', 'lightning'],
 };
 
@@ -1809,6 +1863,11 @@ export const QUIPS: {
     precise: ['Right there.', 'Dead centre.', 'Through the gap.'],
     frenzied: ['More!', "Can't stop now.", 'Faster.'],
     guarding: ['Not today.', 'You missed.', 'Hold the line.'],
+    // (Version 23.8: the city's words)
+    pulling: ['Come here.', 'Get over here.', 'Closer.'],
+    splitting: ['Pieces.', 'Split decision.', 'Share it out.'],
+    hexing: ['Cursed.', 'Bad luck.', 'Hexed.'],
+    stilling: ['Hold still.', 'Time out.', 'Slow down.'],
     // (WORDMELDING: the melded words)
     eruption: ['Lava lamp.', 'Hot rocks.', 'Blew my top.'],
     avalanche: ['Snowed under.', 'Buried.', 'Cold shoulder.'],
@@ -1820,6 +1879,12 @@ export const QUIPS: {
     hailstorm: ['Bad weather.', 'Hail.', 'Take cover.'],
     frostbite: ['Numb yet?', 'Bitter cold.', 'Bitten.'],
     contagion: ['Catching.', 'Pass it on.', 'Going around.'],
+    // (Volatile's melds, behind VOLT_MELDS)
+    demolition: ['Coming down.', 'Clear the area.', 'Big bang.'],
+    powderkeg: ['Light the fuse.', 'Up it goes.', 'Kaboom.'],
+    shatter: ['In pieces.', 'Cold snap.', 'Brittle.'],
+    chainreaction: ['And another.', 'Domino.', 'Pass it along.'],
+    rupture: ['Burst.', 'Messy.', 'Spread it round.'],
     // (RANK II: a ranked word speaks its word's lines: game.ts, `rankBase`)
     power2: [],
     fire2: [],

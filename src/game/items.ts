@@ -70,6 +70,7 @@ export const STAT_INFO: Record<StatKey, StatInfo> = {
   magicFind: { label: 'Magic Find', pct: true, dp: 0 },
   stunChance: { label: 'Chance to Stun', pct: true, dp: 0 },
   blockChance: { label: 'Chance to Block', pct: true, dp: 0 },
+  pickupPct: { label: 'Pickup Reach', pct: true, dp: 0 },
 };
 
 // =============================================================================================
@@ -330,6 +331,8 @@ const AFFIX_FAMILIES: readonly FamilyDef[] = [
   // (Version 19.3: two stats that come only from a word burned into gear, never rolled on a drop: weight 0. Their sizes are set here, for the imbue.)
   prefix('stun',      'stunChance', ALL_SLOTS,          [3, 5],     [8, 12],    LEVELS_OFF, ['Jarring', 'Stunning', 'Dazing', 'Shattering'], 0),
   prefix('block',     'blockChance', ALL_SLOTS,         [3, 5],     [8, 12],    LEVELS_OFF, ['Braced', 'Guarded', 'Bulwarked', 'Unbroken'], 0),
+  // (Version 23.8: Pulling's, the same: gold and orbs fly to the hero from further; burned in at about his doc's +50%)
+  prefix('pickup',    'pickupPct',  ALL_SLOTS,          [25, 35],   [35, 45],   LEVELS_OFF, ['Drawing', 'Gathering', 'Beckoning', 'Hauling'], 0),
 ];
 
 // Row builders for the table above. An optional last argument overrides DEFAULT_AFFIX_WEIGHT for that row.
@@ -405,6 +408,25 @@ const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
   guarding: [
     { slots: OFFENCE_SLOTS, options: [['prefix', 'blockChance'], ['suffix', 'str']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'blockChance'], ['suffix', 'str']] },
+  ],
+  // THE CITY'S WORDS (Version 23.8; his doc "Wordsmith: The New Words", his yes of 8 Oct 2026, 16:53): Pulling gold and orbs
+  // flying to you from further; Splitting more damage, or Dexterity; Hexing more damage, or Intelligence; Stilling faster
+  // cooldowns, or Intelligence
+  pulling: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'pickupPct']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'pickupPct']] },
+  ],
+  splitting: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'dex']] },
+    { slots: DEFENCE_SLOTS, options: [['suffix', 'dex']] },
+  ],
+  hexing: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'int']] },
+    { slots: DEFENCE_SLOTS, options: [['suffix', 'int']] },
+  ],
+  stilling: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'int']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'int']] },
   ],
   // (there is no poison damage or poison resistance on gear yet: poison grows with all damage, and is outlasted with life)
   poison: [
@@ -489,6 +511,7 @@ const SCORE_PER_POINT: Record<StatKey, number> = {
   magicFind: 0.6,
   stunChance: 5,
   blockChance: 5,
+  pickupPct: 0.3,
 };
 
 /** itemValue: gold for a Normal helm at item level 1, and the gold each further level adds. */

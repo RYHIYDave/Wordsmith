@@ -113,6 +113,20 @@ export interface Resolved {
   frenzyFeed: boolean;
   /** GUARDING behind: a ward circle left where it hits; inside it the hero takes this fraction less damage. 0 = none. */
   ward: number;
+  /**
+   * THE CITY'S WORDS (Version 23.8; game/defs.ts PULL, SPLIT, HEX, STILL), each 0 for none. In front: PULLING drags what it hits
+   * this many tiles toward where it struck; SPLITTING's copies, each this share of the hit; HEXING's curse, this much more damage
+   * taken; STILLING's slowing, this much slower. Behind: PULLING's vortex, for this many seconds; SPLITTING's shards, each this
+   * share of the hit; HEXING's circle, enemies inside dealing this much less; STILLING's bubble, enemies in it this much slower.
+   */
+  pull: number;
+  split: number;
+  hex: number;
+  still: number;
+  vortex: number;
+  shards: number;
+  hexCircle: number;
+  bubble: number;
   /** WORDMELDING: the melded word behind, whose twist what it leaves carries, or null. */
   meldBehind: MeldId | null;
   /** Plain-language lines for the character panel. */
@@ -224,6 +238,14 @@ export interface Hero {
   /** Guarding in front: what the shield will still take before the hero's life does, and its seconds left. */
   shield: number;
   shieldT: number;
+  /**
+   * THE CITY'S WORDS on monsters (Version 23.8), each absent until one first touches the hero: HEXING, seconds left of a monster's
+   * curse on him and the share more damage he takes meanwhile; STILLING, seconds left of his cooldowns running slower, and by how much.
+   */
+  hexT?: number;
+  hexMore?: number;
+  stillT?: number;
+  stillK?: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -335,6 +357,16 @@ export interface Monster {
   blightT?: number;
   /** Guarding: what is left of the shield it carries, which takes damage before its life does. */
   shield: number;
+  /**
+   * THE CITY'S WORDS (Version 23.8), each absent until one first touches it: HEXING, seconds left of the hero's curse on it and the
+   * share more damage it takes meanwhile; STILLING, seconds left slowed in time and how much slower; SPLITTING, true for one of
+   * the two a splitting monster split into (they split no more).
+   */
+  hexT?: number;
+  hexMore?: number;
+  stillT?: number;
+  stillK?: number;
+  split?: boolean;
   /** Which hero ability last hurt it (for effects that trigger on a kill), or -1. */
   lastSkill: number;
   /** True while the hero can see it. */
@@ -463,6 +495,8 @@ export interface Projectile {
    * monsters alike, and `dmg` is the share of the life of whatever it meets.
    */
   trap?: boolean;
+  /** (THE CITY'S WORDS, Version 23.8) A monster's shot: the monster that shot it (a hex circle it stood in weakens the shot). */
+  by?: number;
   /** (THE NEW MONSTERS) The Boneward's spear: the monster that threw it, its whole way (tiles), and how high over the floor it left the hand (the game's pixels). */
   src?: number;
   way?: number;
@@ -493,7 +527,7 @@ export interface Spear {
 /** ('lane': THE MONSTERS' ATTACKS, the line a red troll will charge along: from (x, y) to (x1, y1), `r` half its width.) */
 /** ('skull': THE NEW MONSTERS, a skull the Golem has hurled: thrown from (x1, y1), coming down on (x, y) at `dur`, bursting after: game/defs.ts SKULL.) */
 /** ('aim': the bone marksman's line of aim for his great shot, from (x, y) to (x1, y1), its `t` of `dur` how far he has drawn: game/defs.ts AIM. 'smoke': the high priest's burning smoke, that burns the hero in it: SMOKE.) */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke' | 'steam';
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke' | 'steam' | 'vortex' | 'hex' | 'bubble';
 
 export interface Zone {
   x: number;
@@ -1043,7 +1077,7 @@ export type GameEvent =
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
   | { t: 'echo'; x: number; y: number; dx: number; dy: number; kind: SkillKind; delay: number }
   /** A patch of ground or a rune has just been laid. (`dur`: cracks and wards, its seconds; laid again where one already is, it lasts that long from now.) */
-  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam'; x: number; y: number; r: number; el: Element; dur?: number; meld?: MeldId }
+  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam' | 'vortex' | 'hex' | 'bubble'; x: number; y: number; r: number; el: Element; dur?: number; meld?: MeldId }
   /**
    * THE NEW WORDS AT WORK (Version 19.3), for their looks (render/words3.ts): a Heavy hit lands
    * (`big`: an area ability's, out to `r`); monster `id` is stunned for `secs` / staggered by a blow
@@ -1061,6 +1095,21 @@ export type GameEvent =
   | { t: 'stagger'; id: number; x: number; y: number; fromX: number; fromY: number }
   | { t: 'markOn'; id: number; x: number; y: number; secs: number }
   | { t: 'markSpent'; id: number; x: number; y: number; dx: number; dy: number }
+  /**
+   * THE CITY'S WORDS (Version 23.8), for the looks (render/words3.ts): PULLING drags in what is round (x, y), out to `r`; SPLITTING
+   * breaks at (x, y), going (dx, dy), its copies flying to `to` (each landing in `secs`); its shards fly out of (x, y); HEXING's
+   * curse comes down on monster `id`, or flares on it as a cursed one is struck; STILLING slows monster `id` for `secs`. On the
+   * hero: a monster's Pulling drags him toward (fromX, fromY); its Hexing curses him, its Stilling slows his cooldowns, for `secs`.
+   */
+  | { t: 'pull'; x: number; y: number; r: number }
+  | { t: 'split'; x: number; y: number; dx: number; dy: number; to: { x: number; y: number; secs: number }[]; fly?: boolean }
+  | { t: 'shards'; x: number; y: number; r: number }
+  | { t: 'hexOn'; id: number; x: number; y: number; secs: number }
+  | { t: 'hexFlare'; id: number }
+  | { t: 'stillOn'; id: number; x: number; y: number; secs: number }
+  | { t: 'heroPulled'; x: number; y: number; fromX: number; fromY: number }
+  | { t: 'heroHexed'; x: number; y: number; secs: number }
+  | { t: 'heroStilled'; x: number; y: number; secs: number }
   /**
    * Frenzied: a use adds a stack (`n` now held), going the way (dx, dy) / a kill feeds the frenzy,
    * from (x, y). Guarding: a use gives the hero a shield for `secs` / a blow from (fromX, fromY) is

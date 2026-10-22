@@ -59,6 +59,13 @@ export const MELD_RAMP: Record<MeldId, readonly string[]> = {
   frostbite: ['#0a1428', '#142a50', '#22508a', '#3a78b8', '#8cc0ec', '#e4f4ff'],
   // a sick electric green
   contagion: ['#08240c', '#105a1a', '#22a02c', '#62ff5a', '#c4ffb0', '#f4fff0'],
+  // (VOLATILE'S MELDS, behind VOLT_MELDS in game/melds.ts, off: the main chat's placeholders until the art chat draws theirs, his pick of
+  // 21 Oct 2026; MELD_IDS is still the ten, so nothing here is drawn for them: they look like their two words until then)
+  demolition: ['#200a08', '#4a1a14', '#7a3428', '#b05a48', '#e8a090', '#fff0ea'],
+  powderkeg: ['#240c04', '#52200a', '#8c3c14', '#c8642a', '#f0b080', '#fff2e4'],
+  shatter: ['#10142c', '#262e5a', '#4c5aa0', '#8c9ce8', '#d0d8ff', '#ffffff'],
+  chainreaction: ['#141030', '#2c2462', '#5a4eb0', '#a8a0ff', '#dcd8ff', '#ffffff'],
+  rupture: ['#121a0a', '#283616', '#4c642c', '#8aa86a', '#c8dcb0', '#f2f8e8'],
 };
 export const MELD_COLOR = Object.fromEntries(MELD_IDS.map((w) => [w, MELD_RAMP[w][3]])) as Record<MeldId, string>;
 export const MELD_GLOW = Object.fromEntries(MELD_IDS.map((w) => [w, MELD_RAMP[w][4]])) as Record<MeldId, string>;
@@ -90,6 +97,13 @@ export const MELD_GLYPH: Record<MeldId, readonly string[]> = {
   frostbite: ['XXXXXXX', 'XXX.XXX', '.X...X.', '.X...X.', '.......', '...o...', '..ooo..'],
   // the sick, each passing it on to the next
   contagion: ['oo...oo', 'oo...oo', '..X.X..', '...o...', '..X.X..', 'oo...oo', 'oo...oo'],
+  // (VOLATILE'S MELDS, behind VOLT_MELDS in game/melds.ts, off: the main chat's placeholders until the art chat draws theirs, his pick of
+  // 21 Oct 2026; MELD_IDS is still the ten, so nothing here is drawn for them: they look like their two words until then)
+  demolition: ['X..X..X', '.XXXXX.', '.XXoXX.', 'XXoooXX', '.XXoXX.', '.XXXXX.', 'X..X..X'],
+  powderkeg: ['X..X..X', '.XXXXX.', '.XXoXX.', 'XXoooXX', '.XXoXX.', '.XXXXX.', 'X..X..X'],
+  shatter: ['X..X..X', '.XXXXX.', '.XXoXX.', 'XXoooXX', '.XXoXX.', '.XXXXX.', 'X..X..X'],
+  chainreaction: ['X..X..X', '.XXXXX.', '.XXoXX.', 'XXoooXX', '.XXoXX.', '.XXXXX.', 'X..X..X'],
+  rupture: ['X..X..X', '.XXXXX.', '.XXoXX.', 'XXoooXX', '.XXoXX.', '.XXXXX.', 'X..X..X'],
 };
 
 /** What each glyph is, for the pictures' labels. */
@@ -104,6 +118,11 @@ export const MELD_GLYPH_IS: Record<MeldId, string> = {
   hailstorm: 'a storm cloud and its hail',
   frostbite: 'jaws of ice and a drop of venom',
   contagion: 'the sick, each passing it on',
+  demolition: 'a placeholder: Volatile\'s burst',
+  powderkeg: 'a placeholder: Volatile\'s burst',
+  shatter: 'a placeholder: Volatile\'s burst',
+  chainreaction: 'a placeholder: Volatile\'s burst',
+  rupture: 'a placeholder: Volatile\'s burst',
 };
 
 const isMeldId = (w: WordId): w is MeldId => (MELD_IDS as readonly WordId[]).includes(w);

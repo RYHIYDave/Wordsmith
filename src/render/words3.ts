@@ -1534,8 +1534,10 @@ export function lights3(spot: (x: number, y: number, r: number, a: number) => vo
 // THE GAME'S OWN WORDS AT WORK (Version 19.3): Heavy, Precise, Frenzied and Guarding, called up by
 // what the rules say happened (game.ts: the events 'heavy', 'stun', 'stagger', 'markOn',
 // 'markSpent', 'frenzy', 'frenzyFed', 'shield', 'guarded', 'blocked', and the 'zone' of cracks and
-// wards). main.ts calls it every frame, with that frame's events, while WORDS3.on. The other four
-// words (Pulling, Splitting, Hexing, Stilling) are still the demo's, below, until their rules are in.
+// wards). main.ts calls it every frame, with that frame's events, while WORDS3.on. SINCE VERSION 23.8
+// the other four too, Pulling, Splitting, Hexing and Stilling (the events 'pull', 'split', 'shards',
+// 'hexOn', 'hexFlare', 'stillOn', and the 'zone' of vortices, hex circles and bubbles); the demo below
+// still does the rules' share by hand for the art's own pages.
 
 let joinedLevel: unknown = null;
 /** The patches the rules laid (not a Heavy blow's own short cracks): one laid again where it lies lasts longer. */
@@ -1578,7 +1580,34 @@ export function events3(events: readonly GameEvent[], game: Game, fx: Fx): void 
     else if (e.t === 'frenzyFed') frenzyFed(e.x, e.y);
     else if (e.t === 'shield') guardOn(fx, e.x, e.y, e.secs);
     else if (e.t === 'guarded' || e.t === 'blocked') guardStruck(fx, e.x, e.y, e.fromX, e.fromY);
-    else if (e.t === 'zone' && (e.kind === 'cracks' || e.kind === 'ward')) {
+    // THE CITY'S WORDS (Version 23.8): Pulling, Splitting, Hexing and Stilling, called up by their rules' own events
+    else if (e.t === 'pull') pullHit(fx, e.x, e.y, e.r);
+    else if (e.t === 'split') {
+      splitHit(fx, e.x, e.y, e.dx, e.dy, !!e.fly);
+      // (each copy flies to the enemy it will strike, landing as the rules strike it)
+      for (const c of e.to) W3.copies.push({ x: e.x, y: e.y, vx: (c.x - e.x) / c.secs, vy: (c.y - e.y) / c.secs, t: 0, dur: c.secs });
+    } else if (e.t === 'shards') shards(fx, e.x, e.y, e.r);
+    else if (e.t === 'hexOn') {
+      const m = byId(e.id);
+      if (m) hexHit(fx, m, e.secs);
+    } else if (e.t === 'hexFlare') {
+      const m = byId(e.id);
+      if (m) hexFlare(fx, m);
+    } else if (e.t === 'stillOn') {
+      const m = byId(e.id);
+      if (m) stillHit(fx, m, e.secs);
+    } else if (e.t === 'zone' && (e.kind === 'vortex' || e.kind === 'hex' || e.kind === 'bubble')) {
+      // (laid again where one already lies, that one lasts as long again, as the cracks and the wards below)
+      const dur = e.dur ?? 4;
+      const old = W3.patches.find((p) => laid.has(p) && p.kind === e.kind && Math.hypot(p.x - e.x, p.y - e.y) < 0.6 && p.r >= e.r - 0.1);
+      if (old) old.dur = old.t + dur;
+      else {
+        if (e.kind === 'vortex') vortex(e.x, e.y, e.r, dur);
+        else if (e.kind === 'hex') hexCircle(e.x, e.y, e.r, dur);
+        else bubble(e.x, e.y, e.r, dur);
+        laid.add(W3.patches[W3.patches.length - 1]);
+      }
+    } else if (e.t === 'zone' && (e.kind === 'cracks' || e.kind === 'ward')) {
       // (laid again where one already lies, that one lasts as long again: they do not pile up)
       const dur = e.dur ?? 4;
       const old = W3.patches.find((p) => laid.has(p) && p.kind === e.kind && Math.hypot(p.x - e.x, p.y - e.y) < 0.6 && p.r >= e.r - 0.1);

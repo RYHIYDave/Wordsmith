@@ -153,11 +153,15 @@ test('the spare words are laid out in lines, in their order, each inside the roo
 test('with more words than there is room for, the tiles lose their rune stones; and then say how many are left out', () => {
   const count = (): number => 6;
   // room that holds them with their rune stones
-  const roomy = layPouch(WORD_IDS, count, 309, 3, 3);
+  // (the thirteen of the first five acts' floors; THE CITY'S WORDS, Version 23.8, make seventeen: below)
+  const thirteen = WORD_IDS.slice(0, 13);
+  const roomy = layPouch(thirteen, count, 309, 3, 3);
   assert.equal(roomy.bare, false, 'thirteen words, six of each, fit a phone held sideways as they are');
   assert.equal(roomy.hidden, 0);
+  // all seventeen at once: every one is there, as a tile or a stone
+  assert.equal(layPouch(WORD_IDS, count, 309, 3, 3).hidden, 0, 'all seventeen, six of each, have a place');
   // one line fewer: bare
-  const full = layPouch(WORD_IDS, count, 309, roomy.lines - 1, 3);
+  const full = layPouch(thirteen, count, 309, roomy.lines - 1, 3);
   if (full.hidden === 0) assert.equal(full.bare, true);
   for (const c of full.cells) assert.ok(c.line < roomy.lines - 1);
   // no room to speak of: what does not fit is counted, never drawn over the edge
@@ -183,11 +187,14 @@ test('with more words than there is room for, the tiles lose their rune stones; 
   });
   // A full pouch of all thirteen (Version 19.3) is too many for those: the stones stand in
   // narrower tiles, a pixel apart, and still every word is there to be pressed.
-  const line = layPouch(WORD_IDS, count, 224, 1, 3);
+  const line = layPouch(thirteen, count, 224, 1, 3);
   assert.equal(line.stones, true);
   assert.equal(line.narrow, true);
   assert.equal(line.hidden, 0, 'all thirteen words fit one line as narrow stones');
-  assert.deepEqual(line.cells.map((c) => c.word), [...WORD_IDS]);
+  assert.deepEqual(line.cells.map((c) => c.word), [...thirteen]);
+  // (with the city's four as well, seventeen kinds at once, the line holds thirteen and counts the rest, as it does melded words)
+  const all = layPouch(WORD_IDS, count, 224, 1, 3);
+  assert.equal(all.cells.length + all.hidden, WORD_IDS.length);
   line.cells.forEach((c, i) => {
     assert.equal(c.w, NARROW_STONE);
     assert.equal(c.x, i * (NARROW_STONE + 1));

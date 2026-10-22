@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -38,8 +38,8 @@ import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
-import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
-import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
+import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
 
@@ -341,6 +341,17 @@ export class Game {
   /** Precise behind: for each ability, the use (its count of uses) that has already marked an enemy. */
   private marked: number[] = [-1, -1, -1];
   /**
+   * THE CITY'S WORDS (Version 23.8): the use of each ability whose first hit last broke into copies (Splitting in front); when
+   * each last threw its shards and showed its pull (Splitting and Pulling: a whirlwind's turns are many); true while a copy or a
+   * shard strikes (it breaks no further); the monster whose shot or warning is landing on the hero (a hex circle it stands in
+   * weakens it).
+   */
+  private splitUse: number[] = [-1, -1, -1];
+  private shardsAt: number[] = [-9, -9, -9];
+  private pullShown: number[] = [-9, -9, -9];
+  private copying = false;
+  private blowBy: number | undefined = undefined;
+  /**
    * THE SKILL TREES (game/talents.ts): seconds the hero has stood still (Steady Aim); seconds left
    * of Momentum's and Windrunner's speed; seconds to Stormcaller's next bolt; Unbreakable spent in
    * this dungeon; shots of the bow since the last split (Split Shot).
@@ -469,6 +480,8 @@ export class Game {
     for (const w of WORD_IDS) h.words[w] = PRACTICE.words;
     // (WORDMELDING: the melded words too, to try)
     if (MELD.on) for (const w of MELD_IDS) h.words[w] = PRACTICE.words;
+    // (VOLATILE'S MELDS, behind VOLT_MELDS)
+    if (MELD.on && VOLT_MELDS.on) for (const w of VOLT_MELD_IDS) h.words[w] = PRACTICE.words;
     // (RANK II: and the ranked words)
     if (MELD.on && RANK2.on) for (const w of RANK_IDS) h.words[w] = PRACTICE.words;
     this.refresh();
@@ -1160,7 +1173,8 @@ export class Game {
     // The wordsmith's words: a few, no two the same, drawn from a lot of their own (so that the
     // vendors' stock is what it always was). And nobody has anything of the hero's yet.
     const lot = new RNG((Math.imul(this.seed, 69069) ^ (this.depth * 7919 + this.cleared * 104729 + 0x57a1)) >>> 0);
-    const pool = [...WORD_IDS];
+    // (THE CITY'S WORDS, Version 23.8: what may be found at this depth, `wordsAt`)
+    const pool = [...wordsAt(this.power)];
     this.wordStock = [];
     while (this.wordStock.length < TUNE.wordStock && pool.length > 0) this.wordStock.push(pool.splice(lot.int(0, pool.length - 1), 1)[0]);
     this.wordsSold = [];
@@ -1376,7 +1390,8 @@ export class Game {
   private drawWords(rng: RNG, n: number): WordId[] {
     const words: WordId[] = [];
     while (words.length < n) {
-      const w = rng.pick(WORD_IDS);
+      // (THE CITY'S WORDS, Version 23.8: what may be found at this depth, `wordsAt`)
+      const w = rng.pick(wordsAt(this.power));
       if (words.includes(w)) continue;
       if (ELEMENT_WORDS.includes(w) && words.some((o) => ELEMENT_WORDS.includes(o))) continue;
       words.push(w);
@@ -1514,7 +1529,7 @@ export class Game {
       if (lot) {
         let p = TUNE.bossExtraPerDepth * (P - 1) + TUNE.bossExtraPerWord * this.dungeonWords.length + (greater ? TUNE.bossExtraGreater : 0);
         while (carries.length < 3 && p > 0 && lot.chance(Math.min(0.95, p))) {
-          const spare = WORD_IDS.filter((w) => !carries.includes(w));
+          const spare = wordsAt(P).filter((w) => !carries.includes(w));
           carries.push(lot.pick(spare));
           p -= TUNE.bossThird;
         }
@@ -2394,7 +2409,7 @@ export class Game {
     if (MELD.on) this.addDrop('dust', at.x, at.y, Math.round((BELLS_TUNE.dust + Math.floor(n / 2)) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
     for (let i = 0; i < n; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i < 2 ? 4 : 2), null);
     this.addDrop('gold', at.x, at.y, this.rng.int(BELLS_TUNE.gold, BELLS_TUNE.gold * 2) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
-    if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word * wordGrowth(this.power))) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(WORD_IDS));
+    if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word * wordGrowth(this.power))) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(wordsAt(this.power)));
     this.emit({ t: 'bells', what: 'won', x: B.plan.muffled.x, y: B.plan.muffled.y, n });
     this.sfx('rare');
     this.msg('Every bell peals at once. The Hush shatters!', MSG.good);
@@ -3292,8 +3307,11 @@ export class Game {
     if (h.shockT > 0) h.shockT -= dt;
     if (h.burnT > 0) h.burnT -= dt;
     if (h.poisonT > 0) h.poisonT -= dt;
-    // (Frenzied: the frenzy makes every cooldown come round faster)
-    const pace = this.frenzyPace();
+    // (THE CITY'S WORDS, on monsters: a curse on him and his cooldowns slowed run out)
+    if (h.hexT) h.hexT = Math.max(0, h.hexT - dt);
+    if (h.stillT) h.stillT = Math.max(0, h.stillT - dt);
+    // (Frenzied: the frenzy makes every cooldown come round faster; STILLING, on a monster, slower)
+    const pace = this.frenzyPace() * ((h.stillT ?? 0) > 0 ? 1 - (h.stillK ?? 0) : 1);
     for (const s of h.skills) {
       if (s.charges < s.maxCharges) {
         s.cd -= dt * pace;
@@ -4312,6 +4330,8 @@ export class Game {
         if (Math.hypot(o.x - tx, o.y - ty) <= C.reach + o.r) this.hitMonster(o, i, frac * C.share, true);
       }
     }
+    // (THE CITY'S WORDS: Pulling in front drags in what is round the one it struck)
+    if (r.pull > 0) this.pullIn(i, tx, ty, r.splash > 0 ? r.splash * r.size : 0, true);
     this.wake(i, tx, ty, 1.0, frac);
   }
 
@@ -4336,6 +4356,8 @@ export class Game {
     if (hits > 0) {
       this.landed(i);
       this.sfx(r.element === 'fire' ? 'fire' : r.element === 'frost' ? 'frost' : r.element === 'lightning' ? 'zap' : 'hit', 0.8);
+      // (THE CITY'S WORDS: Pulling in front drags what it hit in to its middle)
+      if (r.pull > 0) this.pullIn(i, cx, cy, rad, false);
     }
     this.breakProps(cx, cy, rad, i);
     if (leaves) this.wake(i, cx, cy, rad, frac);
@@ -4457,21 +4479,151 @@ export class Game {
     if (r.zone) this.addGround(i, x, y, Math.max(1.0, rad), frac);
     if (r.cloud > 0) this.addCloud(i, x, y, Math.max(1.5, rad), frac);
     if (r.rune > 0) this.addRune(i, x, y, frac);
-    this.leavePatches(i, x, y, rad);
+    this.leavePatches(i, x, y, rad, frac);
   }
 
-  /** What Heavy and Guarding behind leave where ability `i` lands: cracked ground, a ward circle. */
-  private leavePatches(i: number, x: number, y: number, rad: number): void {
+  /**
+   * What Heavy and Guarding behind leave where ability `i` lands: cracked ground, a ward circle. (THE CITY'S WORDS, Version 23.8:
+   * and Pulling's vortex, Hexing's circle, Stilling's bubble, and Splitting's shards, `frac` the hit's share.)
+   */
+  private leavePatches(i: number, x: number, y: number, rad: number, frac = 1): void {
     const r = this.hero.skills[i].r;
     if (r.cracks > 0) this.addPatch(i, 'cracks', x, y, Math.max(1.0, rad), r.cracks, 0);
     if (r.ward > 0) this.addPatch(i, 'ward', x, y, Math.max(1.5, rad), GUARD.wardTime, r.ward);
+    if (r.vortex > 0) this.addPatch(i, 'vortex', x, y, Math.max(1.5, rad), r.vortex, 0);
+    if (r.hexCircle > 0) this.addPatch(i, 'hex', x, y, Math.max(1.5, rad), HEX.circle, r.hexCircle);
+    if (r.bubble > 0) this.addPatch(i, 'bubble', x, y, Math.max(1.5, rad), STILL.bubble, r.bubble);
+    if (r.shards > 0) this.throwShards(i, x, y, frac);
+  }
+
+  /** Whether the ability leaves any of the patches `leavePatches` lays (or throws shards). */
+  private leaves(r: { cracks: number; ward: number; vortex: number; hexCircle: number; bubble: number; shards: number }): boolean {
+    return r.cracks > 0 || r.ward > 0 || r.vortex > 0 || r.hexCircle > 0 || r.bubble > 0 || r.shards > 0;
+  }
+
+  /**
+   * PULLING in front (Version 23.8): what ability `i` hit about (x, y) is dragged toward it, up to its pull's length and no nearer
+   * than PULL.stop (an elite half as far, a boss not at all; what sleeps wakes). An area's hit drags what is within `rad`; a blow
+   * on one enemy (`single`), what is within PULL.reach of it.
+   */
+  private pullIn(i: number, x: number, y: number, rad: number, single: boolean): void {
+    const r = this.hero.skills[i].r;
+    if (r.pull <= 0) return;
+    const reach = single ? Math.max(rad, PULL.reach) : rad;
+    for (const o of this.monsters) {
+      if (o.dead || o.boss || this.shutIn(o)) continue;
+      const d = Math.hypot(o.x - x, o.y - y);
+      if (d > reach + o.r || d <= PULL.stop) continue;
+      const far = Math.min(r.pull * (o.elite ? 0.5 : 1), d - PULL.stop);
+      if (far < 0.05) continue;
+      if (o.state === 'sleep') this.wakeUp(o);
+      this.throwMonster(o, x, y, -far, PULL.secs);
+    }
+    // (its look, a ring closing in, at most every quarter second for one ability: a whirlwind's turns are many)
+    if (this.time - this.pullShown[i] >= 0.25) {
+      this.pullShown[i] = this.time;
+      this.emit({ t: 'pull', x, y, r: reach });
+    }
+  }
+
+  /**
+   * SPLITTING in front (Version 23.8): ability `i`'s first hit, on `m` at (x, y), breaks into copies, each `f` of a hit, flying on
+   * to the nearest other enemies (as far as SPLIT.reach); each strikes as it lands. Where there is none, they fly off to nothing.
+   */
+  private splitOff(m: Monster, i: number, f: number, x: number, y: number): void {
+    const h = this.hero;
+    const near = this.monsters
+      .filter((o) => !o.dead && o !== m && !this.shutIn(o) && Math.hypot(o.x - x, o.y - y) <= SPLIT.reach + o.r)
+      .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))
+      .slice(0, SPLIT.copies);
+    const to = near.map((o) => ({ x: o.x, y: o.y, secs: Math.max(0.06, Math.hypot(o.x - x, o.y - y) / SPLIT.speed) }));
+    this.emit({ t: 'split', x, y, dx: x - h.x, dy: y - h.y, to, fly: to.length === 0 });
+    near.forEach((o, k) => this.after(to[k].secs, () => this.copyHit(o, i, f)));
+  }
+
+  /** A copy or a shard of ability `i` strikes `o` for `f` of a hit (it breaks no further). */
+  private copyHit(o: Monster, i: number, f: number): void {
+    if (o.dead) return;
+    this.copying = true;
+    this.hitMonster(o, i, f, true);
+    this.copying = false;
+  }
+
+  /**
+   * SPLITTING behind (Version 23.8): where ability `i` ends, at (x, y), shards fly out in every direction, each `frac` times the
+   * word's share of a hit: each strikes the first enemy on its line, as far as SPLIT.shardReach. At most once each SPLIT.every
+   * seconds for one ability (a whirlwind's turns are many).
+   */
+  private throwShards(i: number, x: number, y: number, frac: number): void {
+    const r = this.hero.skills[i].r;
+    if (this.copying || this.time - this.shardsAt[i] < SPLIT.every) return;
+    this.shardsAt[i] = this.time;
+    const share = frac * r.shards;
+    this.emit({ t: 'shards', x, y, r: SPLIT.shardReach * 0.5 });
+    const a0 = (this.time * 2.399) % (Math.PI * 2);
+    for (let k = 0; k < SPLIT.shards; k++) {
+      const a = a0 + (k / SPLIT.shards) * Math.PI * 2;
+      const ux = Math.cos(a);
+      const uy = Math.sin(a);
+      let best: Monster | null = null;
+      let along = Infinity;
+      for (const o of this.monsters) {
+        if (o.dead || this.shutIn(o)) continue;
+        const ox = o.x - x;
+        const oy = o.y - y;
+        const t = ox * ux + oy * uy;
+        // (it flies out from where the ability ended: what stands there, the one it struck, it leaves)
+        if (t < 0.35 || t > SPLIT.shardReach + o.r || t >= along) continue;
+        if (Math.abs(ox * uy - oy * ux) > SPLIT.shardWidth + o.r) continue;
+        best = o;
+        along = t;
+      }
+      if (best) {
+        const o = best;
+        this.after(Math.max(0.05, along / SPLIT.speed), () => this.copyHit(o, i, share));
+      }
+    }
+  }
+
+  /** STILLING (Version 23.8): how fast `m`'s time runs now: slowed by a Stilling hit, and in a bubble (a boss half as much). */
+  private timeOf(m: Monster): number {
+    let k = 1;
+    const b = m.boss ? STILL.boss : 1;
+    if ((m.stillT ?? 0) > 0) k *= 1 - (m.stillK ?? 0) * b;
+    const z = this.patchAt('bubble', m.x, m.y);
+    if (z) k *= 1 - z.dmg * b;
+    return k;
+  }
+
+  /** The strongest of the hero's patches of `kind` that (x, y) is inside, if any (its `dmg` is its share). */
+  private patchAt(kind: 'hex' | 'bubble' | 'vortex', x: number, y: number): Zone | null {
+    let best: Zone | null = null;
+    for (const z of this.zones) if (z.kind === kind && !z.hostile && Math.hypot(x - z.x, y - z.y) <= z.r && (!best || z.dmg > best.dmg)) best = z;
+    return best;
+  }
+
+  /** SPLITTING, on a monster (Version 23.8): dying, it splits into two of its kind at half its life, ordinary, with no word (they split no more). */
+  private splitMonster(m: Monster): void {
+    const L = this.level;
+    const rng = new RNG((Math.imul(this.seed, 131) + m.id * 7919 + this.kills * 31) >>> 0);
+    const spots = scatter(L.walk, L.floor.w, L.floor.h, m.x, m.y, 2, rng);
+    for (let k = 0; k < 2; k++) {
+      const at = spots[k] ?? { x: m.x, y: m.y };
+      const o = this.spawn(m.kind, at.x, at.y, m.packId, 0, false, rng);
+      o.maxLife = o.life = Math.max(1, Math.round(m.maxLife * SPLIT.life));
+      o.words = [];
+      o.split = true;
+      o.r *= SPLIT.look;
+      this.wakeUp(o);
+    }
+    this.emit({ t: 'split', x: m.x, y: m.y, dx: m.fx, dy: m.fy, to: [] });
   }
 
   /**
    * Cracked ground or a ward circle, for `dur` seconds (`share`: what a ward takes off the harm).
    * Laid again where one already is, that one lasts as long again from now: they do not pile up.
    */
-  private addPatch(i: number, kind: 'cracks' | 'ward', x: number, y: number, rad: number, dur: number, share: number): void {
+  private addPatch(i: number, kind: 'cracks' | 'ward' | 'vortex' | 'hex' | 'bubble', x: number, y: number, rad: number, dur: number, share: number): void {
     for (const o of this.zones) {
       if (o.kind === kind && Math.hypot(o.x - x, o.y - y) < 0.6 && o.r >= rad - 0.1) {
         o.t = 0;
@@ -4633,7 +4785,14 @@ export class Game {
       m.bleedDps = Math.max(m.bleedT ? m.bleedDps ?? 0 : 0, (dmg * B.share) / B.secs);
       m.bleedT = B.secs;
     }
+    // (THE CITY'S WORDS: a cursed one struck, its curse flares)
+    if (!quiet && (m.hexT ?? 0) > 0) this.emit({ t: 'hexFlare', id: m.id });
     this.damageMonster(m, dmg, r.element, crit, i, !quiet && this.fronts(i).includes('power'), front);
+    // (THE CITY'S WORDS: SPLITTING in front, its first hit each use breaks into copies that fly on)
+    if (r.split > 0 && !quiet && !this.copying && this.splitUse[i] !== h.skills[i].uses) {
+      this.splitUse[i] = h.skills[i].uses;
+      this.splitOff(m, i, frac * r.split, x, y);
+    }
     // (THE SKILL TREES REMADE: Giant Slayer, each hit on an elite or a boss cracks its guard)
     if (!m.dead && (m.elite || m.boss) && this.now('giantslayer')) m.cracks = Math.min(TALENT_TUNE.giantSlayer2.most, (m.cracks ?? 0) + 1);
     // (Kindling, his fire leaves the ground burning where it hits; Deep Freeze, a frozen one struck slides away, freezing what it meets)
@@ -4649,6 +4808,19 @@ export class Game {
       else {
         const chance = Math.min(HEAVY.stunCap, st.stunChance);
         if (chance > 0 && this.rng.chance(chance / 100)) this.stunMonster(m, HEAVY.stun);
+      }
+      // THE CITY'S WORDS (Version 23.8): HEXING in front curses what it hits; STILLING in front slows it in time
+      if (r.hex > 0) {
+        const fresh = (m.hexT ?? 0) < 0.5;
+        m.hexMore = Math.max((m.hexT ?? 0) > 0 ? m.hexMore ?? 0 : 0, r.hex);
+        m.hexT = HEX.secs;
+        if (fresh) this.emit({ t: 'hexOn', id: m.id, x, y, secs: HEX.secs });
+      }
+      if (r.still > 0) {
+        const fresh = (m.stillT ?? 0) < 0.5;
+        m.stillK = Math.max((m.stillT ?? 0) > 0 ? m.stillK ?? 0 : 0, r.still);
+        m.stillT = STILL.secs;
+        if (fresh) this.emit({ t: 'stillOn', id: m.id, x, y, secs: STILL.secs });
       }
       // PRECISE behind marks the first enemy each use hits (not one whose mark this very hit spent)
       if (r.mark && !spent && this.marked[i] !== h.skills[i].uses) {
@@ -4921,6 +5093,26 @@ export class Game {
     h.step = { dx: dx * HEAVY.knock * share, dy: dy * HEAVY.knock * share, t: 0.12 };
   }
 
+  /** A monster's warning or lane lands on the hero (THE CITY'S WORDS: by the monster that laid it, for Hexing's circle). */
+  private hurtFrom(z: Zone): void {
+    this.blowBy = z.src;
+    this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
+    this.blowBy = undefined;
+  }
+
+  /** PULLING, on a monster (Version 23.8): its blow from (fromX, fromY) drags the hero a step toward it (`share` of PULL.monster), never into it. */
+  pullHero(fromX: number, fromY: number, share = 1): void {
+    const h = this.hero;
+    if (this.now('resolute')) return;
+    const dx = fromX - h.x;
+    const dy = fromY - h.y;
+    const len = Math.hypot(dx, dy);
+    const far = Math.min(PULL.monster * share, len - 0.8);
+    if (len < 0.01 || far <= 0.05) return;
+    h.step = { dx: (dx / len) * far, dy: (dy / len) * far, t: 0.12 };
+    this.emit({ t: 'heroPulled', x: h.x, y: h.y, fromX, fromY });
+  }
+
   /** `poison`: the harm is poison working (its number is drawn in poison's colour, and it does not flash the monster). */
   /** `dot`: harm over time (burning, fire or ice on the ground): no flash (9 Oct 2026, 22:12, "mobs shouldn’t flash white when taking dot damage"). */
   private damageMonster(m: Monster, dmg: number, el: Element, crit: boolean, skill: number, heavy = false, words?: readonly WordId[], poison = false, dot = false): void {
@@ -4958,6 +5150,8 @@ export class Game {
     if (m.cracks && TALENTS2.on) dmg = Math.max(1, Math.round(dmg * (1 + TALENT_TUNE.giantSlayer2.each * m.cracks)));
     // (WORDMELDING: Blight behind, a poisoned enemy it has touched takes more from everything)
     if (m.blightT && m.poisonT > 0) dmg = Math.max(1, Math.round(dmg * (1 + MELD_TUNE.blight.more)));
+    // (THE CITY'S WORDS: Hexing in front's curse, more from everything)
+    if ((m.hexT ?? 0) > 0 && m.hexMore) dmg = Math.max(1, Math.round(dmg * (1 + m.hexMore)));
     // (GUARDING, on a monster: its shield takes the harm first)
     if (m.shield > 0) {
       const soak = Math.min(m.shield, dmg);
@@ -5044,6 +5238,8 @@ export class Game {
     if (blast > 0) {
       this.addWarn(m.x, m.y, 1.8, 0.7, ((m.dmgMin + m.dmgMax) / 2) * 1.5 * blast, this.monsterElement(m), [], `${m.name}'s dying blast`, undefined, this.halfOf(m));
     }
+    // THE CITY'S WORDS (Version 23.8): one carrying Splitting splits in two at half its life (a minion, of its leader's, too)
+    if (wordShare(m, 'splitting') > 0 && !m.split && !m.boss) this.splitMonster(m);
     this.dropLoot(m);
     this.gainXp(m.xp);
     this.quip(m);
@@ -5218,6 +5414,12 @@ export class Game {
       else dmg += raw * share * (1 - (e === 'fire' ? d.resFire : e === 'frost' ? d.resFrost : d.resLight) / 100);
     }
     if (h.shockT > 0) dmg *= 1.2;
+    // THE CITY'S WORDS (Version 23.8): HEXING behind, a blow from one standing in a hex circle is weaker (a shot or a warning, from
+    // the one that made it: `blowBy`); HEXING on a monster, a hero cursed by it takes more
+    const by = src ?? (this.blowBy !== undefined ? this.monsters.find((o) => o.id === this.blowBy && !o.dead) ?? null : null);
+    const hexed = by ? this.patchAt('hex', by.x, by.y) : null;
+    if (hexed) dmg *= 1 - hexed.dmg;
+    if ((h.hexT ?? 0) > 0 && h.hexMore) dmg *= 1 + h.hexMore;
     // GUARDING behind: inside a ward the hero takes less (the strongest ward they stand in)
     let ward = 0;
     for (const z of this.zones) if (z.kind === 'ward' && Math.hypot(h.x - z.x, h.y - z.y) <= z.r) ward = Math.max(ward, z.dmg);
@@ -5247,6 +5449,25 @@ export class Game {
     }
     // HEAVY, on a monster: its blows knock the hero back a step
     if (k('heavy') > 0) this.knockHero(fromX, fromY, k('heavy'));
+    // THE CITY'S WORDS, on a monster (Version 23.8): PULLING drags him a step toward it; HEXING curses him, he takes more for a
+    // while; STILLING makes his cooldowns run slower for a while (a minion, of its leader's words, at half)
+    if (k('pulling') > 0) this.pullHero(fromX, fromY, k('pulling'));
+    if (k('hexing') > 0) {
+      if ((h.hexT ?? 0) <= 0) {
+        this.emit({ t: 'heroHexed', x: h.x, y: h.y, secs: HEX.monsterSecs });
+        this.emit({ t: 'text', x: h.x, y: h.y, text: 'Hexed', color: '#ff8a80' });
+      }
+      h.hexMore = Math.max((h.hexT ?? 0) > 0 ? h.hexMore ?? 0 : 0, HEX.monster * k('hexing'));
+      h.hexT = HEX.monsterSecs;
+    }
+    if (k('stilling') > 0) {
+      if ((h.stillT ?? 0) <= 0) {
+        this.emit({ t: 'heroStilled', x: h.x, y: h.y, secs: STILL.monsterSecs });
+        this.emit({ t: 'text', x: h.x, y: h.y, text: 'Slowed', color: '#ff8a80' });
+      }
+      h.stillK = Math.max((h.stillT ?? 0) > 0 ? h.stillK ?? 0 : 0, STILL.cooldowns * k('stilling'));
+      h.stillT = STILL.monsterSecs;
+    }
     // GUARDING in front: the shield takes the blow first
     let soaked = 0;
     if (h.shield > 0) {
@@ -5526,7 +5747,10 @@ export class Game {
       const dx = h.x - m.x;
       const dy = h.y - m.y;
       const dist = Math.hypot(dx, dy);
-      m.animT += dt;
+      // (THE CITY'S WORDS, Version 23.8: STILLING, its time slowed by a hit or in a bubble: it moves, attacks and is drawn slower,
+      // `mdt`; what is done to it, burning, chill, stun and the rest, runs out as ever, by `dt`)
+      const mdt = dt * this.timeOf(m);
+      m.animT += mdt;
       if (m.struckT !== undefined) m.struckT += dt;
       if (m.state === 'sleep') {
         // In a new player's first dungeon nothing wakes by itself until the lesson in walking is
@@ -5563,6 +5787,9 @@ export class Game {
       if (m.biteDps && m.chillT <= 0 && m.frozenT <= 0) m.biteDps = 0;
       // (THE NEW MONSTERS: a minion's leader's words, whole since the skeleton champion's cry, for so long: RALLY)
       if (m.rallyT !== undefined && m.rallyT > 0) m.rallyT = Math.max(0, m.rallyT - dt);
+      // (THE CITY'S WORDS: Hexing's curse and Stilling's slowing run out)
+      if (m.hexT) m.hexT = Math.max(0, m.hexT - dt);
+      if (m.stillT) m.stillT = Math.max(0, m.stillT - dt);
       if (m.poisonT > 0) {
         m.poisonT -= dt;
         if (m.poisonT <= 0) {
@@ -5587,20 +5814,20 @@ export class Game {
       }
       // FRENZIED, on a monster: the more it is hurt, the faster it moves and the sooner it attacks again
       const rage = 1 + FRENZY.monster * wordShare(m, 'frenzied') * (1 - Math.max(0, m.life) / m.maxLife);
-      m.cd -= dt * rage;
+      m.cd -= mdt * rage;
       const def = MONSTERS[m.kind];
       const slow = m.chillT > 0 ? 1 - m.chill : 1;
       // (THE FIRST FIVE FLOORS: one with a gait and acts of its own, a boss of floors 2 to 5, a bone beast, a mini fleshmancer, is run by game/bosses.ts)
       if (gaitOf(m.kind)) {
-        this.bosses.step(m, def, dt, slow, rage, dx, dy, dist);
+        this.bosses.step(m, def, mdt, slow, rage, dx, dy, dist);
         continue;
       }
       // (THE MONSTERS' ATTACKS: its big moves cool down too)
       const moves = movesOf(m);
-      if (moves && m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= dt * rage;
+      if (moves && m.moveCd) for (let k = 0; k < m.moveCd.length; k++) m.moveCd[k] -= mdt * rage;
 
       if (m.state === 'windup') {
-        m.t -= dt * (0.6 + 0.4 * slow);
+        m.t -= mdt * (0.6 + 0.4 * slow);
         // (the line a charge will run along fills as his wind-up runs out)
         if (moves && m.move !== undefined && m.move >= 0 && moves[m.move].id === 'charge') this.laneOf(m, (z) => (z.t = Math.max(0, z.dur - m.t)));
         // (THE NEW MONSTERS: the marksman's line of aim runs out as he draws, and follows the hero till it holds still: AIM)
@@ -5609,15 +5836,15 @@ export class Game {
         continue;
       }
       if (m.state === 'charge') {
-        this.runCharge(m, def, dt, slow);
+        this.runCharge(m, def, mdt, slow);
         continue;
       }
       if (m.state === 'pickup') {
-        this.stoop(m, dt);
+        this.stoop(m, mdt);
         continue;
       }
       if (m.state === 'recover') {
-        m.t -= dt;
+        m.t -= mdt;
         if (m.t <= 0) {
           m.state = 'chase';
           m.anim = 'idle';
@@ -5702,7 +5929,7 @@ export class Game {
         }
       }
       if (moving && (mvx !== 0 || mvy !== 0)) {
-        const sp = m.speed * slow * rage * dt;
+        const sp = m.speed * slow * rage * mdt;
         const atX = m.x;
         const atY = m.y;
         this.slide(m, Math.min(m.r, 0.42), mvx * sp, mvy * sp, m.kind === 'bat' ? L.open : L.walk, true);
@@ -5830,7 +6057,7 @@ export class Game {
     this.projectiles.push({
       x: m.x + Math.cos(angle) * 0.4, y: m.y + Math.sin(angle) * 0.4, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
       r: look === 'bolt' ? 0.3 : 0.2, dist: range, hostile: true, dmg, element: el, look, pierce: false, hit: [], volley: false, skill: -1,
-      trail: 0, words: m.words, half: this.halfOf(m), runed: false, clouded: false, age: 0, from: m.name, n: 0,
+      trail: 0, words: m.words, half: this.halfOf(m), runed: false, clouded: false, age: 0, from: m.name, n: 0, by: m.id,
     });
   }
 
@@ -6352,7 +6579,9 @@ export class Game {
       const p = this.projectiles[i];
       p.age += dt;
       const sp = Math.hypot(p.vx, p.vy) || 1;
-      let travel = sp * dt;
+      // (THE CITY'S WORDS, Version 23.8: a monster's shot in Stilling's bubble crawls)
+      const crawl = p.hostile && !p.trap ? this.patchAt('bubble', p.x, p.y) : null;
+      let travel = sp * dt * (crawl ? 1 - crawl.dmg : 1);
       let dead = false;
       while (travel > 0 && !dead) {
         const step = Math.min(0.25, travel);
@@ -6384,7 +6613,9 @@ export class Game {
         if (p.hostile) {
           if (!p.struck && !h.move && h.invuln <= 0 && Math.hypot(h.x - p.x, h.y - p.y) <= p.r + TUNE.heroRadius) {
             // (THE TRAPS: a dart's harm is a share of the life of what it meets)
+            this.blowBy = p.by;
             this.hurtHero(p.trap ? h.d.maxLife * p.dmg : p.dmg, p.element, p.words, null, p.from, p.x - p.vx, p.y - p.vy, p.half);
+            this.blowBy = undefined;
             this.emit({ t: 'spark', x: p.x, y: p.y, el: p.element, n: 5 });
             // (THE NEW MONSTERS: the marksman's great arrow pierces: it flies on)
             if (p.pierce) p.struck = true;
@@ -6484,10 +6715,12 @@ export class Game {
       p.clouded = true;
       this.addCloud(p.skill, x, y, 1.5, p.dmg);
     }
-    if ((r.cracks > 0 || r.ward > 0) && !p.left) {
+    if (this.leaves(r) && !p.left) {
       p.left = true;
-      this.leavePatches(p.skill, x, y, 1.0);
+      this.leavePatches(p.skill, x, y, 1.0, p.dmg);
     }
+    // (THE CITY'S WORDS: Pulling in front drags in what is round where it struck)
+    if (r.pull > 0) this.pullIn(p.skill, x, y, r.splash > 0 ? r.splash * r.size : 0, true);
     this.emit({ t: 'spark', x, y, el: r.element, n: 6 });
   }
 
@@ -6503,9 +6736,9 @@ export class Game {
         p.clouded = true;
         this.addCloud(p.skill, p.x, p.y, 1.5, p.dmg);
       }
-      if ((r.cracks > 0 || r.ward > 0) && !p.left && this.isOpen(p.x, p.y)) {
+      if (this.leaves(r) && !p.left && this.isOpen(p.x, p.y)) {
         p.left = true;
-        this.leavePatches(p.skill, p.x, p.y, 1.0);
+        this.leavePatches(p.skill, p.x, p.y, 1.0, p.dmg);
       }
     }
   }
@@ -6654,7 +6887,7 @@ export class Game {
           this.zones.splice(i, 1);
           this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'blast' });
           this.emit({ t: 'shake', amount: 2 });
-          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtFrom(z);
         }
         continue;
       }
@@ -6664,7 +6897,7 @@ export class Game {
           z.gone = 1;
           this.emit({ t: 'shake', amount: 2 });
           this.sfx('slam', 0.6);
-          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + 0.1) this.hurtFrom(z);
         }
         if (z.t >= z.dur + SKULL.burst) this.zones.splice(i, 1);
         continue;
@@ -6680,7 +6913,7 @@ export class Game {
         z.tick -= dt;
         if (z.tick <= 0) {
           z.tick += SMOKE.tick;
-          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + TUNE.heroRadius * 0.5) this.hurtHero(z.dmg, z.element, z.words, null, z.from, z.x, z.y, z.half);
+          if (Math.hypot(h.x - z.x, h.y - z.y) <= z.r + TUNE.heroRadius * 0.5) this.hurtFrom(z);
         }
         if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
@@ -6712,8 +6945,21 @@ export class Game {
         if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
-      if (z.kind === 'ward') {
-        // Guarding behind: it does its work in hurtHero, for as long as it lasts
+      if (z.kind === 'ward' || z.kind === 'hex' || z.kind === 'bubble') {
+        // Guarding behind: it does its work in hurtHero, for as long as it lasts. (THE CITY'S WORDS, Version 23.8: so do Hexing's
+        // circle, in hurtHero, and Stilling's bubble, in the monsters' and their shots' time: `timeOf`, updateProjectiles)
+        if (z.t >= z.dur) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'vortex') {
+        // (THE CITY'S WORDS: Pulling behind, the vortex keeps drawing what is in it in to its middle; a boss stands firm)
+        for (const m of this.monsters) {
+          if (m.dead || m.boss || m.state === 'sleep' || m.state === 'act' || this.shutIn(m)) continue;
+          const d = Math.hypot(m.x - z.x, m.y - z.y);
+          if (d > z.r + m.r * 0.5 || d <= PULL.middle) continue;
+          const step = Math.min(d - PULL.middle, PULL.pace * (m.elite ? 0.5 : 1) * dt);
+          this.slide(m, Math.min(m.r, 0.42), ((z.x - m.x) / d) * step, ((z.y - m.y) / d) * step, m.kind === 'bat' ? this.level.open : this.level.walk);
+        }
         if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;
       }
@@ -6987,7 +7233,7 @@ export class Game {
     if (rng.chance((LOOT2.on ? LOOT2.item : TUNE.dropItem) * bonus)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
     if (rng.chance(TUNE.dropOrb)) this.addDrop('orb', m.x, m.y, 0, null, null);
     // (THE FIRST LEVELS: no word falls before the ring is lit, nor in the first dungeon)
-    if (rng.chance(TUNE.dropWord * bonus * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
+    if (rng.chance(TUNE.dropWord * bonus * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(wordsAt(this.power)));
   }
 
   private gainXp(n: number): void {
@@ -7035,7 +7281,8 @@ export class Game {
       const dx = h.x - dr.x;
       const dy = h.y - dr.y;
       const dist = Math.hypot(dx, dy);
-      if (dr.kind !== 'item' && dist < TUNE.dropPull && dist > 0.01) {
+      // (THE CITY'S WORDS: Pulling burned into gear, from further)
+      if (dr.kind !== 'item' && dist < TUNE.dropPull * (1 + h.d.stats.pickupPct / 100) && dist > 0.01) {
         const sp = Math.min(dist, 9 * dt);
         dr.x += (dx / dist) * sp;
         dr.y += (dy / dist) * sp;
@@ -7150,7 +7397,7 @@ export class Game {
         const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0);
         for (let i = 0; i < n; i++) this.addDrop('item', p.x, p.y + 0.6, 0, this.rollGear(room && i === 0 ? 2 : 1), null);
         this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.power) * (room ? 2 : 1), null, null);
-        if (this.rng.chance((firstInVault ? TUNE.vaultWord : TUNE.chestWord) * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
+        if (this.rng.chance((firstInVault ? TUNE.vaultWord : TUNE.chestWord) * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(wordsAt(this.power)));
       }
     }
     // (THE MIX) a lever: walk up, and it is pulled

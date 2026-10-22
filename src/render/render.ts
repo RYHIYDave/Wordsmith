@@ -37,7 +37,7 @@ import { LEDGE_H, WALL_H } from '../engine/iso';
 import { drawAura, drawLights, flipSprite, silhouette, spriteCovers } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { hash2 } from '../engine/rng';
-import { AIM, BODIES, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, TUNE, WORDS, movesOf } from '../game/defs';
+import { AIM, BODIES, MONSTERS, PACK_LOOK, RANGER_ARROW, SKILLS, SKULL, SPEAR, SPLIT, TUNE, WORDS, movesOf } from '../game/defs';
 import { kindName } from '../game/items';
 import type { Game } from '../game/game';
 import { MELD_DUST_COLOR, withParts } from '../game/melds';
@@ -1646,8 +1646,9 @@ export class Renderer {
       const cy = wy(cam, z.x, z.y);
       const k = z.t / z.dur;
       if (z.kind !== 'warn' && this.skip.has('ground')) continue;
-      // (Heavy's cracked ground and Guarding's ward are drawn with the new words' looks: words3.ts, floor3)
-      if (z.kind === 'cracks' || z.kind === 'ward') continue;
+      // (Heavy's cracked ground and Guarding's ward are drawn with the new words' looks: words3.ts, floor3; and since Version 23.8
+      // Pulling's vortex, Hexing's circle and Stilling's bubble)
+      if (z.kind === 'cracks' || z.kind === 'ward' || z.kind === 'vortex' || z.kind === 'hex' || z.kind === 'bubble') continue;
       // (a melded word's patch has a look of its own, behind MELD3, off: render/melds3.ts, floorM3)
       if (ownsZone(z)) continue;
       if (z.kind === 'warn') {
@@ -2568,7 +2569,8 @@ export class Renderer {
           overA = tn[1];
         }
       }
-      this.stand(m.x + m.y + depthBy, sp, sx, sy, over, overA);
+      // (THE CITY'S WORDS, Version 23.8: one of the two a Splitting monster split into is smaller)
+      this.stand(m.x + m.y + depthBy, sp, sx, sy, over, overA, m.split ? SPLIT.look : 1);
       // (THE NEW WORDS, a mock-up behind a switch that is off: a slowed monster's echoes linger after it)
       if (WORDS3.on) for (const e of echoes3(m)) this.stand(e.x + e.y - 0.02, silhouette(sp, e.color), wx(cam, e.x, e.y), wy(cam, e.x, e.y), null, 0, 1, e.alpha);
       hid?.(m.x, m.y);

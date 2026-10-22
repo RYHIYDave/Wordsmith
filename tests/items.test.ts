@@ -174,6 +174,15 @@ function expectedImbue(word: BaseWordId, slot: Slot): ImbuePick[] {
       return offence ? [['prefix', 'atkSpeed'], ['suffix', 'str']] : [['prefix', 'moveSpeed'], ['suffix', 'str']];
     case 'guarding':
       return [['prefix', 'blockChance'], ['suffix', 'str']];
+    // (the city's words, Version 23.8: the same doc)
+    case 'pulling':
+      return [['prefix', 'pickupPct']];
+    case 'splitting':
+      return offence ? [['prefix', 'dmgPct'], ['suffix', 'dex']] : [['suffix', 'dex']];
+    case 'hexing':
+      return offence ? [['prefix', 'dmgPct'], ['suffix', 'int']] : [['suffix', 'int']];
+    case 'stilling':
+      return [['prefix', 'cdr'], ['suffix', 'int']];
   }
 }
 
@@ -1100,6 +1109,8 @@ test('imbueOptions matches the word x slot table and is never empty', () => {
 const IMBUE_ONLY: Record<string, { at1: [number, number]; at15: [number, number] }> = {
   stunChance: { at1: [3, 5], at15: [8, 12] },
   blockChance: { at1: [3, 5], at15: [8, 12] },
+  // (THE CITY'S WORDS, Version 23.8: Pulling's reach for gold and orbs, about his doc's +50% once burned in)
+  pickupPct: { at1: [25, 35], at15: [35, 45] },
 };
 
 test('imbues are a little stronger than a same-level affix and scale with item level', () => {

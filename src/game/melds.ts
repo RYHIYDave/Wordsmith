@@ -18,7 +18,7 @@
 // The numbers below are starting points, to be tuned once he has played them.
 
 import { WORDS } from './defs';
-import { MELD_IDS, MELD_OF, RANK_IDS, RANK_OF, WORD_IDS } from './types';
+import { MELD_IDS, MELD_OF, RANK_IDS, RANK_OF, VOLT_MELD_IDS, WORD_IDS } from './types';
 import type { Meta } from './state';
 import type { BaseWordId, MeldId, RankId, WordId } from './types';
 
@@ -37,6 +37,15 @@ export const MELD = { on: true };
 // (ON, Version 23.7: his yes to the planning chat, 18 Oct 2026, 09:32 Pacific, “Yes”, to Poison II as shown; and to putting it in,
 // to the main chat, 21 Oct 2026, “Yes, put it in (Recommended)”)
 export const RANK2 = { on: true };
+
+/**
+ * VOLATILE'S MELDS, behind this switch (off): a damage word melded with Volatile, the five of his page "Wordsmith: Word
+ * Combinations" left out on 13 Oct 2026 by his pick “Only damage words meld”. His words to the main chat, 21 Oct 2026 (Pacific),
+ * 19:29: “Can you also add the volatile melds”; 19:30: “We have info on them but I’d like them to be in the game”. Their rules as
+ * his page has them (MELD_TUNE below, starting points); their looks the art chat's to draw (his pick by 19:31: “The art chat
+ * (Recommended)”), pictures to him first. Until then the switch stays off: none of them can be made, and the game is as it was.
+ */
+export const VOLT_MELDS = { on: false };
 
 /** RANK II's numbers: how much each rank past the first adds of the word's own figure (half: II is one and a half times the word). */
 export const RANK_TUNE = { step: 0.5 };
@@ -81,6 +90,17 @@ export const MELD_TUNE = {
   frostbite: { bite: 0.15 },
   /** CONTAGION behind: the cloud's shock, this many times its poison, every half second, to one in it. */
   contagion: { shock: 2 },
+  // VOLATILE'S MELDS (behind VOLT_MELDS): the kill's explosion is Volatile's (game.ts kill), its rune Volatile's (addRune)
+  /** DEMOLITION in front: the explosions this much bigger, across and in harm; an elite or a boss explodes once at half its life, for this share of the kill's. Behind: one rune at a time, this much wider, this much harder, this much slower to go off. */
+  demolition: { bigger: 1.5, half: 0.5, runeWide: 2, runeHard: 2, runeSlow: 2.5 },
+  /** POWDERKEG in front: a burning one killed explodes this much harder, and its blast sets what it strikes burning (its burn this share of the blast a second, for so long). Behind: the rune leaves burning ground, this share of its blast a second, for so long. */
+  powderkeg: { burning: 1.5, burn: 0.3, burnSecs: 3, ground: 0.25, groundSecs: 4 },
+  /** SHATTER in front: a frozen one killed bursts into shards, this share of its life to each one this near. Behind: the rune freezes what is in it, this long before it goes off. */
+  shatter: { share: 0.25, reach: 2.2, freezeBefore: 0.4 },
+  /** CHAIN REACTION in front: an explosion sends arcs to this many of the nearest within this reach, each this share of the explosion. Behind: a rune going off sets off the others of the hero's own, one after another, this far apart in time. */
+  chainreaction: { arcs: 3, reach: 3.5, share: 0.5, next: 0.12 },
+  /** RUPTURE in front: a poisoned one killed bursts, its poison splashed on each one this near at this share of its poison. Behind: the rune bursts into a poison cloud, this share of its blast a second. */
+  rupture: { reach: 2.0, share: 1, cloud: 0.25 },
 };
 
 /**
@@ -91,7 +111,9 @@ export const MELD_TUNE = {
  */
 export function wordIds(): readonly WordId[] {
   if (!MELD.on) return WORD_IDS;
-  return RANK2.on ? [...WORD_IDS, ...MELD_IDS, ...RANK_IDS] : [...WORD_IDS, ...MELD_IDS];
+  // (VOLATILE'S MELDS, with VOLT_MELDS on)
+  const melds = VOLT_MELDS.on ? [...MELD_IDS, ...VOLT_MELD_IDS] : MELD_IDS;
+  return RANK2.on ? [...WORD_IDS, ...melds, ...RANK_IDS] : [...WORD_IDS, ...melds];
 }
 
 /** Is this word a ranked one (rank II)? */
@@ -145,7 +167,7 @@ export function withParts(side: readonly (WordId | null)[]): WordId[] {
 /** What two words make when melded, or null if they don't meld (a shaping word, a melded word; the same word twice, unless RANK2 is on: then that word a rank up). */
 export function meldOf(a: WordId, b: WordId): MeldId | RankId | null {
   if (a === b) return RANK2.on && WORDS[a].kind === 'damage' ? rankUp(a) : null;
-  for (const m of MELD_IDS) {
+  for (const m of VOLT_MELDS.on ? [...MELD_IDS, ...VOLT_MELD_IDS] : MELD_IDS) {
     const [x, y] = MELD_OF[m];
     if ((x === a && y === b) || (x === b && y === a)) return m;
   }
@@ -158,14 +180,19 @@ export function meldProblem(a: WordId | null, b: WordId | null): string | null {
   if (RANK2.on && (isRank(a) || isRank(b))) return a === b ? 'Rank II is the top, for now' : 'A ranked word melds no further';
   if (a === b && !RANK2.on) return 'Two different words';
   if (isMeld(a) || isMeld(b)) return 'A melded word melds no further';
-  if (WORDS[a].kind !== 'damage' || WORDS[b].kind !== 'damage') return 'Only damage words meld';
+  // (VOLATILE'S MELDS: with VOLT_MELDS on, Volatile melds with a damage word too)
+  const volt = VOLT_MELDS.on && ((a === 'volatile' && WORDS[b].kind === 'damage') || (b === 'volatile' && WORDS[a].kind === 'damage'));
+  if (!volt && (WORDS[a].kind !== 'damage' || WORDS[b].kind !== 'damage')) return VOLT_MELDS.on ? 'Only damage words and Volatile meld' : 'Only damage words meld';
   return meldOf(a, b) ? null : 'These do not meld';
 }
 
 /** What of a record of words is written to a save: with MELD off, nothing of the melded words, so a save is as it was before them. */
 export function savedWords<T>(rec: Record<WordId, T>): Record<WordId, T> {
-  if (MELD.on && RANK2.on) return rec;
+  if (MELD.on && RANK2.on && VOLT_MELDS.on) return rec;
   const out: Partial<Record<WordId, T>> = { ...rec };
+  // (VOLATILE'S MELDS: with VOLT_MELDS off, nothing of them)
+  if (!MELD.on || !VOLT_MELDS.on) for (const m of VOLT_MELD_IDS) delete out[m];
+  if (MELD.on && RANK2.on) return out as Record<WordId, T>;
   if (!MELD.on) for (const m of MELD_IDS) delete out[m];
   // (RANK II: with RANK2 off, nothing of the ranked words either)
   for (const r of RANK_IDS) delete out[r];

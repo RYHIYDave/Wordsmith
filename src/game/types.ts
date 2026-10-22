@@ -19,12 +19,14 @@ export const ATTRS: readonly Attr[] = ['str', 'dex', 'int'];
 export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
-export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding';
+export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling';
 /**
  * WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
  * damage words. They never drop: WORD_IDS, which every random draw of a word uses, holds none of them.
  */
-export type MeldId = 'eruption' | 'avalanche' | 'thunder' | 'blight' | 'scald' | 'wildfire' | 'fumes' | 'hailstorm' | 'frostbite' | 'contagion';
+export type MeldId = 'eruption' | 'avalanche' | 'thunder' | 'blight' | 'scald' | 'wildfire' | 'fumes' | 'hailstorm' | 'frostbite' | 'contagion'
+  // (VOLATILE'S MELDS, behind VOLT_MELDS, game/melds.ts: the five of his page left out on 13 Oct, put in at his word of 21 Oct 2026)
+  | 'demolition' | 'powderkeg' | 'shatter' | 'chainreaction' | 'rupture';
 /**
  * RANK II (behind RANK2, game/melds.ts): a damage word at its second rank, made at the wordsmith by
  * melding two of the word. The owner, 18 Oct 2026, 08:49: "Please add the second level (poison+poison)
@@ -35,7 +37,10 @@ export type RankId = 'power2' | 'fire2' | 'frost2' | 'lightning2' | 'poison2';
 export type WordId = BaseWordId | MeldId | RankId;
 // (THE NEW WORDS, his choice of 8 Oct 2026, 12:26, as his doc "Wordsmith: The New Words" plays them (his yes, 16:53): the first four, Heavy,
 // Precise, Frenzied and Guarding, from Version 19.3; their looks are the art chat's, render/words3.ts)
-export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding'];
+// (THE CITY'S WORDS, Version 23.8: the other four, Pulling, Splitting, Hexing and Stilling, found only from floor 11 down: his words
+// to the main chat, 21 Oct 2026, 18:25 Pacific, “And let’s add some words to levels 11-15”, and his picks of the four after it.
+// Every list of words has them; what may drop on a floor is game/defs.ts `wordsAt`.)
+export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding', 'pulling', 'splitting', 'hexing', 'stilling'];
 /** The melded words, in the order of his page "Wordsmith: Word Combinations" (Volatile's five left out, his pick of 13 Oct 2026, 12:36). */
 export const MELD_IDS: readonly MeldId[] = ['eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion'];
 /** Each melded word's two words, in the order his page names them. */
@@ -50,7 +55,18 @@ export const MELD_OF: Readonly<Record<MeldId, readonly [BaseWordId, BaseWordId]>
   hailstorm: ['frost', 'lightning'],
   frostbite: ['frost', 'poison'],
   contagion: ['lightning', 'poison'],
+  // (Volatile's five, as his page names them: "Power + Volatile", "Flame + Volatile" ...)
+  demolition: ['power', 'volatile'],
+  powderkeg: ['fire', 'volatile'],
+  shatter: ['frost', 'volatile'],
+  chainreaction: ['lightning', 'volatile'],
+  rupture: ['poison', 'volatile'],
 };
+/**
+ * VOLATILE'S MELDS (behind VOLT_MELDS, game/melds.ts): a damage word and Volatile, melded. MELD_IDS stays the ten, whose looks
+ * are drawn (render/melds3.ts); these five are apart until theirs are.
+ */
+export const VOLT_MELD_IDS: readonly MeldId[] = ['demolition', 'powderkeg', 'shatter', 'chainreaction', 'rupture'];
 /** RANK II: the five damage words' second ranks. */
 export const RANK_IDS: readonly RankId[] = ['power2', 'fire2', 'frost2', 'lightning2', 'poison2'];
 /** Each ranked word's word and rank. */
@@ -140,12 +156,13 @@ export type StatKey =
   | 'goldFind' // % increased gold
   | 'magicFind' // % increased item rarity
   | 'stunChance' // % chance that a hit stuns (Heavy, burned into gear)
-  | 'blockChance'; // % chance to block a blow (Guarding, burned into gear)
+  | 'blockChance' // % chance to block a blow (Guarding, burned into gear)
+  | 'pickupPct'; // % further that gold and orbs fly to the hero from (Pulling, burned into gear: Version 23.8)
 
 export const STAT_KEYS: readonly StatKey[] = [
   'str', 'dex', 'int', 'dmgMin', 'dmgMax', 'dmgPct', 'physPct', 'firePct', 'frostPct', 'lightPct', 'atkSpeed',
   'critChance', 'critMult', 'maxLife', 'lifeRegen', 'lifeOnHit', 'lifeOnKill', 'maxMana', 'manaRegen',
-  'armor', 'fireRes', 'frostRes', 'lightRes', 'moveSpeed', 'cdr', 'areaPct', 'goldFind', 'magicFind', 'stunChance', 'blockChance',
+  'armor', 'fireRes', 'frostRes', 'lightRes', 'moveSpeed', 'cdr', 'areaPct', 'goldFind', 'magicFind', 'stunChance', 'blockChance', 'pickupPct',
 ];
 
 export type Stats = Record<StatKey, number>;

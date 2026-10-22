@@ -3,7 +3,7 @@
 // Every pairing is assembled from the same few parts (bigger, faster, doubled, element, ground
 // patch, echo, rune, buff), so no pairing needs its own code or its own art.
 
-import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, CLASSES, FRENZY, GUARD, HEAVY, MANA_MODE, PRECISE, SKILLS, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
+import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, CLASSES, FRENZY, GUARD, HEAVY, HEX, MANA_MODE, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
@@ -99,7 +99,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     id: def.id, name: skillName(def, front, behind), element, dmgMult: 0, size: 1, rate: 0, cooldown: 0, mana: 0,
     count: 1, countDmg: 1, splash: 0, splashDmg: 0, pierce: false, projSpeed: 0,
     ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0, meld,
-    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, meldBehind, lines,
+    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, pull: 0, split: 0, hex: 0, still: 0, vortex: 0, shards: 0, hexCircle: 0, bubble: 0, meldBehind, lines,
   };
 
   // ----- in front: the hit -----
@@ -231,6 +231,24 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     r.shield = Math.min(0.2, GUARD.shield + 0.001 * a);
     lines.push(`Guarding: each use gives you a shield of ${pct(r.shield * 100)} of your life for ${GUARD.shieldTime} s.`);
   }
+  // THE CITY'S WORDS IN FRONT (Version 23.8; his doc "Wordsmith: The New Words": the numbers its starting points, each growing a
+  // little with its attribute, a tenth of a percent a point, a two-hundredth of a tile for Pulling's drag)
+  if (has(front, 'pulling')) {
+    r.pull = Math.min(PULL.most, PULL.far + 0.005 * growsBy(front, 'pulling'));
+    lines.push(`Pulling: drags the enemies it hits up to ${r.pull.toFixed(1)} tiles toward where it struck.`);
+  }
+  if (has(front, 'splitting')) {
+    r.split = Math.min(SPLIT.most, SPLIT.share + 0.001 * growsBy(front, 'splitting'));
+    lines.push(`Splitting: its first hit breaks into ${SPLIT.copies} copies of ${pct(r.split * 100)} that fly on to other enemies.`);
+  }
+  if (has(front, 'hexing')) {
+    r.hex = Math.min(HEX.most, HEX.more + 0.001 * growsBy(front, 'hexing'));
+    lines.push(`Hexing: curses what it hits for ${HEX.secs} s: it takes ${pct(r.hex * 100)} more damage from everything.`);
+  }
+  if (has(front, 'stilling')) {
+    r.still = Math.min(STILL.most, STILL.slower + 0.001 * growsBy(front, 'stilling'));
+    lines.push(`Stilling: what it hits is slowed in time for ${STILL.secs} s: it moves, attacks and shoots ${pct(r.still * 100)} slower.`);
+  }
 
   // ----- behind: the wake -----
   let softer = false;
@@ -303,6 +321,23 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     r.ward = Math.min(0.5, GUARD.ward + 0.002 * a);
     lines.push(`of Warding: leaves a ward circle for ${GUARD.wardTime} s; inside it you take ${pct(r.ward * 100)} less damage.`);
   }
+  // THE CITY'S WORDS BEHIND (Version 23.8)
+  if (has(behind, 'pulling')) {
+    r.vortex = PULL.vortex;
+    lines.push(`of the Vortex: leaves a vortex for ${PULL.vortex} s that keeps drawing enemies in to its middle.`);
+  }
+  if (has(behind, 'splitting')) {
+    r.shards = Math.min(SPLIT.shardMost, SPLIT.shardShare + 0.001 * growsBy(behind, 'splitting'));
+    lines.push(`of Shards: where it ends, ${SPLIT.shards} shards of ${pct(r.shards * 100)} fly out in every direction.`);
+  }
+  if (has(behind, 'hexing')) {
+    r.hexCircle = Math.min(HEX.weakest, HEX.weaker + 0.001 * growsBy(behind, 'hexing'));
+    lines.push(`of Hexes: leaves a hex circle for ${HEX.circle} s; enemies inside deal ${pct(r.hexCircle * 100)} less damage.`);
+  }
+  if (has(behind, 'stilling')) {
+    r.bubble = Math.min(STILL.crawlMost, STILL.crawl + 0.001 * growsBy(behind, 'stilling'));
+    lines.push(`of Stillness: leaves a bubble for ${STILL.bubble} s where enemies and their shots are ${pct(r.bubble * 100)} slower.`);
+  }
   if (softer) dmgMult *= 0.7;
 
   // ----- WORDMELDING: each melded word's twist, in front and behind (game/melds.ts) -----
@@ -327,6 +362,12 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     else if (meld === 'hailstorm') twist('its arcs chill what they strike; a frozen enemy passes the arc on.');
     else if (meld === 'frostbite') twist(`a chilled enemy loses ${pct(T.frostbite.bite * 100)} of the hit a second, a frozen one twice that.`);
     else if (meld === 'contagion') twist('every enemy its arcs strike is poisoned.');
+    // (VOLATILE'S MELDS, behind VOLT_MELDS: what Volatile in front does, and more)
+    else if (meld === 'demolition') twist(`its explosions ${pct((T.demolition.bigger - 1) * 100)} bigger; an elite or a boss explodes once at half its life.`);
+    else if (meld === 'powderkeg') twist('a burning enemy killed explodes harder, and the blast sets others burning.');
+    else if (meld === 'shatter') twist(`a frozen enemy killed bursts into shards that hit those around it for ${pct(T.shatter.share * 100)} of its life.`);
+    else if (meld === 'chainreaction') twist(`an exploding enemy sends arcs to the ${T.chainreaction.arcs} nearest; those it kills explode too.`);
+    else if (meld === 'rupture') twist('a poisoned enemy killed bursts, splashing its poison on those around.');
   }
   if (meldBehind) {
     const T = MELD_TUNE;
@@ -358,6 +399,12 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
       twist(`a storm of ice that strikes and slows by ${pct(T.hailstorm.slow * 100)}.`);
     } else if (meldBehind === 'frostbite') twist('the ice on the ground poisons what crosses it.');
     else if (meldBehind === 'contagion') twist('the poison cloud shocks whatever stands in it.');
+    // (VOLATILE'S MELDS, behind VOLT_MELDS: what Volatile behind leaves, its rune, does more)
+    else if (meldBehind === 'demolition') twist(`one huge rune, ${pct((T.demolition.runeHard - 1) * 100)} harder and ${T.demolition.runeWide} times as wide, slow to go off.`);
+    else if (meldBehind === 'powderkeg') twist('the rune leaves burning ground when it goes off.');
+    else if (meldBehind === 'shatter') twist('the rune freezes what is near, then bursts.');
+    else if (meldBehind === 'chainreaction') twist('your runes are linked: one going off sets off the rest.');
+    else if (meldBehind === 'rupture') twist('the rune bursts into a poison cloud.');
   }
 
   r.dmgMult = dmgMult;

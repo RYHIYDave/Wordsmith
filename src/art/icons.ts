@@ -10,7 +10,7 @@
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { P } from './palette';
-import { ALL_WORD_IDS, MELD_IDS, MELD_OF, RANK_IDS, RANK_OF } from '../game/types';
+import { ALL_WORD_IDS, MELD_IDS, MELD_OF, RANK_IDS, RANK_OF, VOLT_MELD_IDS } from '../game/types';
 import type { AbilityId, Element, IconKey, MeldId, WordId } from '../game/types';
 import { makeAbilityIcons } from './ability_icons';
 
@@ -53,6 +53,11 @@ export const WORD_COLOR: Record<WordId, string> = {
   precise: '#eef4fa',
   frenzied: '#ff5c33',
   guarding: '#30a868',
+  // (the city's words, Version 23.8: the art chat's colours of 8 Oct 2026, his yes then: render/words3.ts, NEW_RAMP)
+  pulling: '#7a76e0',
+  splitting: '#dcaaf6',
+  hexing: '#b8b4c8',
+  stilling: '#86eaae',
   // (WORDMELDING: the melded words' colours, the planning chat's placeholders until the art chat's,
   // pictures to him first; each picked as far, as the eye sees colour, from every other word, the
   // friend's cyan and the enemy's pink and gold as it could be)
@@ -66,6 +71,12 @@ export const WORD_COLOR: Record<WordId, string> = {
   hailstorm: '#e8f0c0',
   frostbite: '#6898b0',
   contagion: '#90e0a0',
+  // (VOLATILE'S MELDS, behind VOLT_MELDS, off: the main chat's placeholders until the art chat's, pictures to him first)
+  demolition: '#b05a48',
+  powderkeg: '#c8642a',
+  shatter: '#8c9ce8',
+  chainreaction: '#a8a0ff',
+  rupture: '#8aa86a',
   // (RANK II: a ranked word is in its word's colour)
   power2: P.bl4,
   fire2: P.fr4,
@@ -942,6 +953,15 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   frenzied: ['X..X..', 'X..X..', '.X..X.', '.X..X.', '..X..X', '..o..o'],
   // a shield
   guarding: ['XXXXXX', 'X.oo.X', 'X.oo.X', 'X....X', '.X..X.', '..XX..'],
+  // (the city's words, Version 23.8: the art chat's runes of 8 Oct 2026: render/words3.ts, NEW_GLYPH)
+  // a whirl drawn in to its middle
+  pulling: ['.XXXX..', 'X....X.', 'X.XX..X', 'X.Xo..X', 'X..XXX.', '.X.....', '..XXXX.'],
+  // one stroke that forks into three
+  splitting: ['X..X..X', '.X.X.X.', '..XXX..', '...o...', '...X...', '...X...', '...X...'],
+  // an eye that weeps a hook
+  hexing: ['..XXX..', '.X...X.', 'X..o..X', '.X...X.', '..XXX..', '...X...', '..X....'],
+  // an hourglass
+  stilling: ['XXXXXX', '.X..X.', '..oo..', '..oo..', '.X..X.', 'XXXXXX'],
   // (WORDMELDING: the melded words' runes, the planning chat's placeholders until the art chat's)
   // a mountain blowing its top
   eruption: ['.o..o.', '..oo..', '..XX..', '.XXXX.', '.XXoX.', 'XXXXXX'],
@@ -963,6 +983,12 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   frostbite: ['XXXXXX', 'X.XX.X', '..XX..', '..oo..', '..XX..', '...X..'],
   // what one passes to the next
   contagion: ['XX..XX', 'XX..XX', '..oo..', '..oo..', 'XX..XX', 'XX..XX'],
+  // (VOLATILE'S MELDS, behind VOLT_MELDS, off: the main chat's placeholders until the art chat's, pictures to him first)
+  demolition: ['X.XX.X', '.XXXX.', 'XXooXX', 'XXooXX', '.XXXX.', 'X.XX.X'],
+  powderkeg: ['X.XX.X', '.XXXX.', 'XXooXX', 'XXooXX', '.XXXX.', 'X.XX.X'],
+  shatter: ['X.XX.X', '.XXXX.', 'XXooXX', 'XXooXX', '.XXXX.', 'X.XX.X'],
+  chainreaction: ['X.XX.X', '.XXXX.', 'XXooXX', 'XXooXX', '.XXXX.', 'X.XX.X'],
+  rupture: ['X.XX.X', '.XXXX.', 'XXooXX', 'XXooXX', '.XXXX.', 'X.XX.X'],
   // (RANK II: a ranked word carves its word's rune; filled in below)
   power2: [],
   fire2: [],
@@ -987,6 +1013,10 @@ export const WORD_GLOW: Record<WordId, string> = {
   precise: '#ffffff',
   frenzied: '#ff9670',
   guarding: '#8ae4ac',
+  pulling: '#c4c2ff',
+  splitting: '#f2dcff',
+  hexing: '#e6e2ee',
+  stilling: '#d0fce4',
   // (WORDMELDING: halfway to white from each one's colour)
   eruption: '#ffccac',
   avalanche: '#dcedff',
@@ -998,6 +1028,12 @@ export const WORD_GLOW: Record<WordId, string> = {
   hailstorm: '#f4f8e0',
   frostbite: '#b4ccd8',
   contagion: '#c8f0d0',
+  // (VOLATILE'S MELDS, behind VOLT_MELDS, off: the main chat's placeholders until the art chat's, pictures to him first)
+  demolition: '#e8a090',
+  powderkeg: '#f0b080',
+  shatter: '#d0d8ff',
+  chainreaction: '#dcd8ff',
+  rupture: '#c8dcb0',
   // (RANK II: filled in below, its word's glow)
   power2: '',
   fire2: '',
@@ -1070,7 +1106,7 @@ export function useMeldArt(art: IconArt, ramp: Record<MeldId, readonly string[]>
 
 function makeWordRunes(): Record<WordId, Sprite> {
   const out = {} as Record<WordId, Sprite>;
-  for (const w of [...ALL_WORD_IDS, ...RANK_IDS]) out[w] = runeSprite(w);
+  for (const w of [...ALL_WORD_IDS, ...VOLT_MELD_IDS, ...RANK_IDS]) out[w] = runeSprite(w);
   return out;
 }
 

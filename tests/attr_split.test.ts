@@ -29,8 +29,9 @@ test('the split as he said yes to it: Power\'s melds Strength, Poison\'s other t
   assert.equal(ATTR_SPLIT.on, true, 'on, his word');
   const of = (a: string | null): string[] => ALL_WORD_IDS.filter((w) => wordAttr(w) === a);
   assert.deepEqual(of('str'), ['power', 'leech', 'heavy', 'frenzied', 'guarding', 'eruption', 'avalanche', 'thunder', 'blight'], 'Strength, nine');
-  assert.deepEqual(of('dex'), ['swift', 'twin', 'poison', 'precise', 'fumes', 'frostbite', 'contagion'], 'Dexterity, seven');
-  assert.deepEqual(of('int'), ['volatile', 'scald', 'wildfire', 'hailstorm'], 'Intelligence, four of its own');
+  // (THE CITY'S WORDS, Version 23.8: Splitting by Dexterity, Pulling, Hexing and Stilling by Intelligence, as his doc has them)
+  assert.deepEqual(of('dex'), ['swift', 'twin', 'poison', 'precise', 'splitting', 'fumes', 'frostbite', 'contagion'], 'Dexterity, eight');
+  assert.deepEqual(of('int'), ['volatile', 'pulling', 'hexing', 'stilling', 'scald', 'wildfire', 'hailstorm'], 'Intelligence, seven of its own');
   assert.deepEqual(of(null), ['fire', 'frost', 'lightning'], 'and the three elements by the weapon (on the mage\'s staff and wand, Intelligence: seven)');
   for (const m of MELD_IDS) {
     const [a, b] = MELD_OF[m];
