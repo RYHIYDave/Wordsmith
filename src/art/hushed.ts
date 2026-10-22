@@ -46,6 +46,16 @@ const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
 /** Their skin, the colour gone out of it: greyed, not dead. */
 export const SKIN: Ramp = ['#3a302e', '#3a302e', '#7e6e66', '#aa968a', '#aa968a'];
+/**
+ * (FOR ACT 2'S TOWN HUB, art/hub2_folk.ts, a mock-up behind HUB2, off: the same three with their voices back, his pick of
+ * 22 Oct, “The Hushed, voices back (Recommended)”. While `on`, they are painted as they were before the Hush: the colour
+ * back in their faces and hands, their eyes their own, no Hush leaking out of them, no ink on them. Off, as it was.)
+ */
+export const HUSH_FREED = { on: false };
+/** Their skin with the colour back in it (HUSH_FREED). */
+const FREE_SKIN: Ramp = ['#4a2e28', '#4a2e28', '#9c6c58', '#c69478', '#c69478'];
+/** Their skin as it is painted now: drained, or with the colour back (HUSH_FREED). */
+const skinRamp = (): Ramp => (HUSH_FREED.on ? FREE_SKIN : SKIN);
 export const HAIR: Ramp = ['#1c1818', '#1c1818', '#3e3430', '#5a4c42', '#5a4c42'];
 export const GREY_HAIR: Ramp = ['#2c2a2c', '#2c2a2c', '#5e5a5c', '#827e7e', '#827e7e'];
 const LINEN: Ramp = ['#3e3a34', '#3e3a34', '#8a8476', '#b4ac9a', '#b4ac9a'];
@@ -112,15 +122,15 @@ function arm(put: Put, s: Skeleton, side: 'L' | 'R', upper: Ramp, lower: Ramp, c
   // the hand: its back, and four fingers, curled slack or spread to claw
   const e1 = norm(sub(cu, mul(fore, dot(cu, fore))), [0, 0, 1]);
   const e2 = norm(cross(fore, e1), [0, 1, 0]);
-  put(`hand${side}`, `hand${side}`, { k: 'ball', c: add(hand, mul(fore, 0.4)), ax: [mul(fore, 1.7), mul(e2, 1.5), mul(e1, 0.9)], skin: SKIN, far: true });
+  put(`hand${side}`, `hand${side}`, { k: 'ball', c: add(hand, mul(fore, 0.4)), ax: [mul(fore, 1.7), mul(e2, 1.5), mul(e1, 0.9)], skin: skinRamp(), far: true });
   for (let i = 0; i < 4; i++) {
     const spread = (i - 1.5) * (0.3 + 0.55 * open);
     const base = add(hand, add(mul(fore, 1.4), mul(e2, spread * 0.85)));
     const curl = 1 - open;
     const mid = add(base, add(mul(fore, 1.5), add(mul(e1, -0.8 * curl), mul(e2, spread * 0.5))));
     const tip = add(mid, add(mul(fore, 1.1 * (1 - 0.5 * curl)), mul(e1, -1.3 * curl)));
-    put(`hand${side}`, `finger${side}`, { k: 'rod', a: base, b: mid, ra: 0.5, rb: 0.42, ramp: SKIN, far: true });
-    put(`hand${side}`, `finger${side}`, { k: 'rod', a: mid, b: tip, ra: 0.42, rb: 0.3, ramp: SKIN, far: true });
+    put(`hand${side}`, `finger${side}`, { k: 'rod', a: base, b: mid, ra: 0.5, rb: 0.42, ramp: skinRamp(), far: true });
+    put(`hand${side}`, `finger${side}`, { k: 'rod', a: mid, b: tip, ra: 0.42, rb: 0.3, ramp: skinRamp(), far: true });
   }
 }
 
@@ -169,8 +179,13 @@ function skirt(put: Put, s: Skeleton, lag: V3, ph: number, ramp: Ramp): { hemC: 
   const footMid = lerp3(lerp3(s.heelL, s.toeL, 0.5), lerp3(s.heelR, s.toeR, 0.5), 0.5);
   const spanF = Math.abs(dot(sub(s.ankleL, s.ankleR), f));
   const spanL = Math.abs(dot(sub(s.ankleL, s.ankleR), l));
-  const hemC: V3 = [footMid[0] + lag[0] * 1.1, footMid[1] + lag[1] * 1.1, Math.min(1.6, Math.min(s.ankleL[2], s.ankleR[2]) + 0.9)];
-  const hemDeep = Math.max(HB.pelvisDeep + 3.4, spanF / 2 + 3.2);
+  // (HUSH_FREED, sat on a log by the camp's fire, art/hub2_folk.ts: the skirt laid over the lap and falling from the knees
+  // to the setts, its hem from the feet back under the seat. Not set, as it was.)
+  const sitting = HUSH_FREED.on && s.pelvis[2] < 20;
+  const hemC: V3 = sitting
+    ? [footMid[0] * 0.5 + s.pelvis[0] * 0.5, footMid[1] * 0.5 + s.pelvis[1] * 0.5, Math.min(1.6, Math.min(s.ankleL[2], s.ankleR[2]) + 0.9)]
+    : [footMid[0] + lag[0] * 1.1, footMid[1] + lag[1] * 1.1, Math.min(1.6, Math.min(s.ankleL[2], s.ankleR[2]) + 0.9)];
+  const hemDeep = sitting ? Math.hypot(footMid[0] - s.pelvis[0], footMid[1] - s.pelvis[1]) / 2 + 3.6 : Math.max(HB.pelvisDeep + 3.4, spanF / 2 + 3.2);
   const hemWide = Math.max(HB.pelvisHalf + 3.6, spanL / 2 + 3.0);
   const hemPts: V3[] = [];
   for (let i = 0; i < 18; i++) {
@@ -182,7 +197,9 @@ function skirt(put: Put, s: Skeleton, lag: V3, ph: number, ramp: Ramp): { hemC: 
   const rings: Ring[] = [
     { c: waistC, u: mul(s.belly[0], HB.waistDeep + 1.8), v: mul(s.belly[1], HB.waistHalf + 1.8) },
     { c: [s.pelvis[0], s.pelvis[1], s.pelvis[2] - 1.0], u: mul(f, HB.pelvisDeep + 2.6), v: mul(l, HB.pelvisHalf + 2.8) },
-    { c: [kneeMid[0] * 0.6 + hemC[0] * 0.4, kneeMid[1] * 0.6 + hemC[1] * 0.4, kneeMid[2]], u: mul(f, (HB.pelvisDeep + 2.6 + hemDeep) / 2), v: mul(l, (HB.pelvisHalf + 2.8 + hemWide) / 2) },
+    sitting
+      ? { c: [s.pelvis[0] * 0.45 + kneeMid[0] * 0.55, s.pelvis[1] * 0.45 + kneeMid[1] * 0.55, kneeMid[2] + 1.2], u: mul(f, Math.hypot(kneeMid[0] - s.pelvis[0], kneeMid[1] - s.pelvis[1]) / 2 + 3.2), v: mul(l, HB.pelvisHalf + 3.2) }
+      : { c: [kneeMid[0] * 0.6 + hemC[0] * 0.4, kneeMid[1] * 0.6 + hemC[1] * 0.4, kneeMid[2]], u: mul(f, (HB.pelvisDeep + 2.6 + hemDeep) / 2), v: mul(l, (HB.pelvisHalf + 2.8 + hemWide) / 2) },
     { c: hemC, u: mul(f, hemDeep), v: mul(l, hemWide), pts: hemPts },
   ];
   put('skirt', 'skirt', { k: 'cloth', rings, ramp, look: { folds: [25, -25, 70, -70, 120, -120, 165, -165], lift: 0.05 } });
@@ -205,13 +222,13 @@ function head(put: Put, st: Stage, s: Skeleton, who: HushedWho, jaw: number, lit
     const open = 0.08 + 0.2 * jaw;
     if (fwd > 0.7 && side < 0.24 && u[2] < -0.32 && u[2] > -0.32 - open * 1.5) return u[2] > -0.38 ? '#22161a' : INK;
     // hollow cheeks under the cheekbones
-    if (fwd > 0.45 && fwd < 0.75 && side > 0.42 && side < 0.7 && u[2] < -0.1 && u[2] > -0.5) return SKIN[Math.max(0, tone - 1)];
+    if (fwd > 0.45 && fwd < 0.75 && side > 0.42 && side < 0.7 && u[2] < -0.1 && u[2] > -0.5) return skinRamp()[Math.max(0, tone - 1)];
     // the nose
-    if (fwd > 0.88 && side < 0.14 && u[2] > -0.24 && u[2] < 0.1) return SKIN[Math.min(4, tone + 1)];
+    if (fwd > 0.88 && side < 0.14 && u[2] > -0.24 && u[2] < 0.1) return skinRamp()[Math.min(4, tone + 1)];
     // hair: the porter's cropped under his cap, the goodwife's under her kerchief, the baker's grey round his ears
     if (fwd < 0.1 && u[2] > -0.45 && (who !== 'baker' || u[2] < 0.25)) return hairOf[tone];
     if (who === 'porter' && fwd < 0.5 && u[2] > 0.2) return hairOf[tone];
-    return SKIN[tone];
+    return skinRamp()[tone];
   };
   put('head', 'head', { k: 'ball', c: hc, ax: [mul(ff, hr[0]), mul(fl, hr[1]), mul(fu, hr[2])], skin });
   // brows, drawn and heavy
@@ -223,7 +240,7 @@ function head(put: Put, st: Stage, s: Skeleton, who: HushedWho, jaw: number, lit
   // the eyes: glazed, the cult's dull pink in them (going out as the Hush leaves them)
   for (const k of [-1, 1]) {
     const e = add(hc, add(mul(ff, hr[0] * 0.92), add(mul(fl, k * hr[1] * 0.34), mul(fu, hr[2] * 0.1))));
-    put('head', 'eyes', { k: 'dot', p: e, c: lit > 0.4 ? FLAME[1] : '#3a2a30', facing: ff });
+    put('head', 'eyes', { k: 'dot', p: e, c: HUSH_FREED.on ? '#241a1e' : lit > 0.4 ? FLAME[1] : '#3a2a30', facing: ff });
   }
   // WHO IT IS, by what is on the head
   if (who === 'porter') {
@@ -300,6 +317,8 @@ function hushedBits(who: HushedWho, st: Stage, m: Moment): Bit[] {
   const breath: [V3, string, number][] = [];
   BREATH.set(m, breath);
   const put: Put = (part, piece, shape) => {
+    // (HUSH_FREED: no Hush leaking out of them, no ink on them)
+    if (HUSH_FREED.on && (part === 'hush' || piece === 'ink')) return;
     if (shape.k === 'mote' && part === 'hush') {
       breath.push([shape.p, shape.c, shape.size]);
       return;
@@ -353,7 +372,7 @@ function hushedBits(who: HushedWho, st: Stage, m: Moment): Bit[] {
         put('shawl', 'shawl', { k: 'rod', a, b, ra: 1.8, rb: 1.6, ramp: SHAWL });
       }
     }
-    for (const side of ['L', 'R'] as const) arm(put, s, side, LINEN, SKIN, LINEN, open, cu);
+    for (const side of ['L', 'R'] as const) arm(put, s, side, LINEN, skinRamp(), LINEN, open, cu);
   } else {
     // A BAKER: breeches and stockings, a grey shirt, his sleeves rolled to the elbow, a long floured apron from his
     // chest to his shins, tied about him; a linen coif
@@ -374,11 +393,11 @@ function hushedBits(who: HushedWho, st: Stage, m: Moment): Bit[] {
       // the Order's ink across the apron
       put('body', 'ink', { k: 'ball', c: add(lerp3(belly, shins, 0.35), mul(f, 1.6)), ax: [mul(f, 0.5), mul(l, 2.6), [0, 0, 1.4]], skin: () => INKBLOT });
     }
-    for (const side of ['L', 'R'] as const) arm(put, s, side, SHIRT, SKIN, SHIRT, open, cu);
+    for (const side of ['L', 'R'] as const) arm(put, s, side, SHIRT, skinRamp(), SHIRT, open, cu);
   }
 
   // the neck
-  put('neck', 'neck', { k: 'rod', a: add(s.neck, mul(cu, -1.5)), b: lerp3(s.neck, s.head, 0.5), ra: 2.2, rb: 2.0, ramp: SKIN });
+  put('neck', 'neck', { k: 'rod', a: add(s.neck, mul(cu, -1.5)), b: lerp3(s.neck, s.head, 0.5), ra: 2.2, rb: 2.0, ramp: skinRamp() });
   const mouth = head(put, st, s, who, jaw, lit, lag);
   // THE HUSH LEAKING OUT OF THEM: always a little; harder as they lunge; a great breath of it as it leaves them
   const [ff, fl] = wornOn(st, s, 8);
