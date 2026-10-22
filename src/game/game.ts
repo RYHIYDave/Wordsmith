@@ -3791,6 +3791,8 @@ export class Game {
         hits++;
       }
       if (line.length) this.landed(i);
+      // (THE CITY'S WORDS: Pulling in front, the beam drags what is round the first it strikes in to it)
+      if (line.length && r.pull > 0) this.pullIn(i, line[0].m.x, line[0].m.y, 0, true);
       for (let d = 0.5; d < end.len; d += 1) this.breakProps(sx + dx * d, sy + dy * d, half + 0.25, i);
       if (k === 0 && leaves) {
         // what it leaves: ground along the line; a rune and a cloud where it first struck, or
@@ -3801,7 +3803,7 @@ export class Game {
         if (r.rune > 0) this.addRune(i, wx, wy, each);
         if (r.cloud > 0) this.addCloud(i, wx, wy, 1.5, each);
         // (cracked ground and a ward, as a rune: where it first struck)
-        this.leavePatches(i, wx, wy, 1.0);
+        this.leavePatches(i, wx, wy, 1.0, each);
         if (r.zone) for (let n = 0, d = 1.3; n < TUNE.beamPatches && d < end.len; n++, d += TUNE.beamPatchGap) this.addGround(i, sx + dx * d, sy + dy * d, 1.0, each);
       }
     }
@@ -6971,6 +6973,8 @@ export class Game {
             hits++;
           }
           if (hits > 0) this.landed(v.skill);
+          // (THE CITY'S WORDS: Pulling in front, each arrow drags what it struck in to where it fell)
+          if (hits > 0 && this.hero.skills[v.skill].r.pull > 0) this.pullIn(v.skill, ax, ay, reach, false);
           this.breakProps(ax, ay, reach * 0.6, v.skill);
           this.emit({ t: 'volleyFall', x: ax, y: ay, el: v.element, words, n: c, echo: v.echo, hits });
           // (ten arrows a second: the ones that hit are heard, and every other one that does not)

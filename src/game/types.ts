@@ -41,6 +41,13 @@ export type WordId = BaseWordId | MeldId | RankId;
 // to the main chat, 21 Oct 2026, 18:25 Pacific, “And let’s add some words to levels 11-15”, and his picks of the four after it.
 // Every list of words has them; what may drop on a floor is game/defs.ts `wordsAt`.)
 export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding', 'pulling', 'splitting', 'hexing', 'stilling'];
+/** The city's four, and the first level they are found on (game/defs.ts `wordsAt`; here for the map-maker, which reads no defs). */
+export const DEEP_WORD_IDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling'];
+export const DEEP_WORDS_FROM = 11;
+/** The words that may be found at this level (its depth, or an endless level's power): before floor 11 the thirteen, in their order. */
+export function wordsAt(power: number): readonly WordId[] {
+  return power >= DEEP_WORDS_FROM ? WORD_IDS : WORD_IDS.filter((w) => !DEEP_WORD_IDS.includes(w));
+}
 /** The melded words, in the order of his page "Wordsmith: Word Combinations" (Volatile's five left out, his pick of 13 Oct 2026, 12:36). */
 export const MELD_IDS: readonly MeldId[] = ['eruption', 'avalanche', 'thunder', 'blight', 'scald', 'wildfire', 'fumes', 'hailstorm', 'frostbite', 'contagion'];
 /** Each melded word's two words, in the order his page names them. */
@@ -79,6 +86,10 @@ export const RANK_OF: Readonly<Record<RankId, { word: BaseWordId; rank: number }
 };
 /** The words and the melded ones (RANK II's ranked words are apart: RANK_IDS; game/melds.ts, `wordIds`, is what a hero's words are kept over, switches and all). */
 export const ALL_WORD_IDS: readonly WordId[] = [...WORD_IDS, ...MELD_IDS];
+/** Every word a socket may hold, switches aside: the words, all the melds, the ranked words. The Physician keeps the word he
+ *  draws by its place in this list (game/act1_rules/physician.ts); before Version 23.8 that list was ALL_WORD_IDS, and a
+ *  ranked word drawn out of a socket was lost. */
+export const HELD_WORD_IDS: readonly WordId[] = [...WORD_IDS, ...MELD_IDS, ...VOLT_MELD_IDS, ...RANK_IDS];
 
 /** Damage types. An ability with no element word deals physical damage. */
 export type Element = 'phys' | 'fire' | 'frost' | 'lightning';

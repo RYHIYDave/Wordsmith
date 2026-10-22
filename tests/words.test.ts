@@ -489,18 +489,35 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
   else assert.ok(!any((e) => e.t === 'shield') && seen.shield === 0, `${name}: no shield without Guarding`);
   if (behind.includes('guarding')) assert.ok(any((e) => e.t === 'zone' && e.kind === 'ward' && e.dur === 4), `${name}: of Warding leaves its circle`);
   else assert.ok(!any((e) => e.t === 'zone' && e.kind === 'ward'), `${name}: no ward without of Warding`);
+
+  // ---- the city's words (Version 23.8), in front and behind
+  // (what dies at a touch is not there to be cursed or slowed)
+  if (front.includes('pulling')) assert.ok(any((e) => e.t === 'pull'), `${name}: Pulling drags in`);
+  else assert.ok(!any((e) => e.t === 'pull'), `${name}: no pull without Pulling`);
+  if (front.includes('splitting')) assert.ok(any((e) => e.t === 'split'), `${name}: Splitting breaks into copies`);
+  else assert.ok(!any((e) => e.t === 'split'), `${name}: no copies without Splitting`);
+  if (front.includes('hexing') && !weak) assert.ok(any((e) => e.t === 'hexOn'), `${name}: Hexing curses what it hits`);
+  else if (!front.includes('hexing')) assert.ok(!any((e) => e.t === 'hexOn' || e.t === 'hexFlare'), `${name}: no curse without Hexing`);
+  if (front.includes('stilling') && !weak) assert.ok(any((e) => e.t === 'stillOn'), `${name}: Stilling slows what it hits`);
+  else if (!front.includes('stilling')) assert.ok(!any((e) => e.t === 'stillOn'), `${name}: no slowing without Stilling`);
+  for (const [w, kind] of [['pulling', 'vortex'], ['hexing', 'hex'], ['stilling', 'bubble']] as const) {
+    if (behind.includes(w)) assert.ok(any((e) => e.t === 'zone' && e.kind === kind), `${name}: of ${w} leaves its ${kind}`);
+    else assert.ok(!any((e) => e.t === 'zone' && e.kind === kind), `${name}: no ${kind} without of ${w}`);
+  }
+  if (behind.includes('splitting')) assert.ok(any((e) => e.t === 'shards'), `${name}: of Shards throws its shards`);
+  else assert.ok(!any((e) => e.t === 'shards'), `${name}: no shards without of Shards`);
   if (weak) assert.ok(seen.g.kills > 0, `${name}: weak monsters die to it`);
 }
 
 // ---------------------------------------------------------------------------------------------
 
-/** How many loadouts each ability is put through (`loadouts`). */
-const LOADOUTS = 2568;
+/** How many loadouts each ability is put through (`loadouts`): 2,568 for the thirteen; with the city's four (Version 23.8), 5,120. */
+const LOADOUTS = 5120;
 
 test('the rule of the sockets: any word or any two different words to a side, but never two damage words', () => {
   const all = sides();
-  // (the empty side, thirteen words alone, and every pair of them but the ten of two damage words)
-  assert.equal(all.length, 82);
+  // (the empty side, seventeen words alone, and every pair of them but the ten of two damage words: the city's four since Version 23.8)
+  assert.equal(all.length, 144);
   assert.equal(all.length, 1 + WORD_IDS.length + (WORD_IDS.length * (WORD_IDS.length - 1)) / 2 - 10);
   // (the first nine's 36 x 36 = 1,296; the 46 sides with a newer word, each against the empty side
   // and the thirteen single words, in front and behind: 46 x 14 x 2 = 1,288, less the 16 met twice,

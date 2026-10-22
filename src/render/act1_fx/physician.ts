@@ -15,7 +15,7 @@
 
 import { drawCaneRap, drawDrawAim, drawHeldWord, drawHushCloud, drawPhialFlight, drawRoundsRing, drawWordFreed } from '../../art/physician_shots';
 import { PHYSICIAN, heldWord, quillSpot } from '../../game/act1_rules/physician';
-import { ALL_WORD_IDS } from '../../game/types';
+import { HELD_WORD_IDS } from '../../game/types';
 import type { Act1Fx } from './types';
 
 const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -74,7 +74,7 @@ export const FX: Act1Fx | null = {
       drawHushCloud(g, c.at, p.x, p.y, u, p.c);
     } else if (p.a1 === 'physician:freed') {
       // (beaten out of him: from over his head home to the hero)
-      const w = ALL_WORD_IDS[p.a];
+      const w = HELD_WORD_IDS[p.a];
       if (!w) return;
       const [x0, y0] = c.at(p.x, p.y);
       const h = c.game.hero;

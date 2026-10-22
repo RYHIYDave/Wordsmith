@@ -36,7 +36,7 @@
 
 import type { RNG } from '../engine/rng';
 import { doorTiles } from './doors';
-import { T_FLOOR, T_WALL, WORD_IDS } from './types';
+import { T_FLOOR, T_WALL, wordsAt } from './types';
 import type { Floor, HazardSpot, Room } from './types';
 
 /**
@@ -132,7 +132,8 @@ export function sealVault(f: Floor, rng: RNG): void {
   const vaults = f.rooms.filter((r) => r.kind === 'treasure' && !r.gated && !r.locks && !r.nook && !r.nextDoor);
   if (vaults.length === 0) return;
   const r = rng.pick(vaults);
-  r.sealed = rng.pick(WORD_IDS);
+  // (THE CITY'S WORDS, Version 23.8: sealed with a word that may be found on this floor: before floor 11 the thirteen, as before)
+  r.sealed = rng.pick(wordsAt(f.depth));
 }
 
 /** After the doors: a vault that was to be sealed and has no doorway for a door to stand in (a room come into at a corner) is not sealed. */

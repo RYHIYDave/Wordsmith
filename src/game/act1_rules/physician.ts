@@ -48,7 +48,7 @@ import { MSG, TUNE, WORDS } from '../defs';
 import { beside, fromFigure } from '../facing';
 import type { Game, RunSave } from '../game';
 import type { Monster, Peril } from '../state';
-import { ALL_WORD_IDS } from '../types';
+import { HELD_WORD_IDS } from '../types';
 import type { WordId } from '../types';
 import { socketProblem } from '../words';
 import { bedPlace, callUp, freeBeds, inBed } from './patient';
@@ -116,13 +116,13 @@ export const quillSpot = (m: { x: number; y: number; fx: number; fy: number }, h
 export const roundsSpot = (m: { x: number; y: number; fx: number; fy: number }, hand: number): { x: number; y: number } => beside(m.x, m.y, m.fx, m.fy, hand, PHYSICIAN.rounds.at[0], PHYSICIAN.rounds.at[1]);
 
 // ---------------------------------------------------------------------------------------------------------------------
-// THE WORD HE HOLDS (Monster.a1: held 1; w its word, in ALL_WORD_IDS; sk the attack it was set in, sd its side (0 before,
+// THE WORD HE HOLDS (Monster.a1: held 1; w its word, in HELD_WORD_IDS; sk the attack it was set in, sd its side (0 before,
 // 1 behind), sl its socket; hits the blows landed on him since; life his life as he took it; upT when it came up over his
 // head, game time; -1 until then)
 
 /** The word he holds of the hero's, or null. */
 export function heldWord(m: Monster): WordId | null {
-  return m.a1 && m.a1.held ? ALL_WORD_IDS[m.a1.w] ?? null : null;
+  return m.a1 && m.a1.held ? HELD_WORD_IDS[m.a1.w] ?? null : null;
 }
 
 /** Where a word goes back to: its own socket if it is still empty and it may go in it there, else the pouch. */
@@ -183,7 +183,7 @@ function drawOut(R: BossRules, m: Monster): boolean {
   const list = sd ? h.skills[sk].behind : h.skills[sk].front;
   const w = list[sl]!;
   list[sl] = null;
-  m.a1 = { ...(m.a1 ?? {}), held: 1, w: ALL_WORD_IDS.indexOf(w), sk, sd, sl, hits: 0, life: m.life, upT: -1 };
+  m.a1 = { ...(m.a1 ?? {}), held: 1, w: HELD_WORD_IDS.indexOf(w), sk, sd, sl, hits: 0, life: m.life, upT: -1 };
   g.refresh();
   g.emit({ t: 'text', x: h.x, y: h.y, text: `${WORDS[w].name.toUpperCase()} drawn out`, color: '#ff8a80' });
   g.msg(`${m.name} draws out ${WORDS[w].name.toUpperCase()}`, MSG.foe);

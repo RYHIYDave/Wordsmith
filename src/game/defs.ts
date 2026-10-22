@@ -4,7 +4,7 @@
 import { act1Def } from './act1';
 import type { VendorId } from './state';
 import type { AbilityId, Attr, ClassId, Element, Limit, MeldId, MonsterKind, Slot, WeaponKind, WordId } from './types';
-import { FIRST5_KINDS, MELD_OF, NEW_KINDS, WORD_IDS } from './types';
+import { DEEP_WORD_IDS, DEEP_WORDS_FROM as DEEP_FROM, FIRST5_KINDS, MELD_OF, NEW_KINDS, wordsAt as wordsAtLevel } from './types';
 
 export type { Limit } from './types';
 
@@ -291,12 +291,10 @@ export const GUARD = {
 // the starting points, each growing a little with its attribute, to be tuned once he has played them. Their looks are the art
 // chat's of 8 Oct (render/words3.ts), his yes then. They are found only from floor 11 down (`wordsAt`).
 /** The words of the city, and the first level they are found on (a floor's depth, or an endless level's power). */
-export const DEEP_WORDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling'];
-export const DEEP_WORDS_FROM = 11;
+export const DEEP_WORDS: readonly WordId[] = DEEP_WORD_IDS;
+export const DEEP_WORDS_FROM = DEEP_FROM;
 /** The words that may drop, or be carried, at this level (its depth, or an endless level's power). */
-export function wordsAt(power: number): readonly WordId[] {
-  return power >= DEEP_WORDS_FROM ? WORD_IDS : WORD_IDS.filter((w) => !DEEP_WORDS.includes(w));
-}
+export const wordsAt: (power: number) => readonly WordId[] = wordsAtLevel;
 /**
  * PULLING (Intelligence). In front: what it hits is dragged up to `far` tiles toward where it struck (a blow on one enemy, those
  * within `reach` of it), no nearer than `stop`, over `secs`; an elite half as far, a boss not at all. Behind: a vortex `vortex`

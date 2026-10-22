@@ -43,6 +43,7 @@ import { act1Rules } from '../src/game/act1_rules/index';
 import { actsOf, bossKind, gaitOf } from '../src/game/bosses';
 import { BOSS_LIFE, BOSS_LINES, HUSH_FOR, MONSTERS, sizeOf } from '../src/game/defs';
 import { Game } from '../src/game/game';
+import { VOLT_MELDS } from '../src/game/melds';
 import { emptyControls } from '../src/game/state';
 import type { ActId, Monster, PropInst } from '../src/game/state';
 import type { WordId } from '../src/game/types';
@@ -431,6 +432,25 @@ test('5. A WORD IS NEVER LOST: saved while he holds it, the save has it; the flo
     hooks(g).die();
     assert.ok(g.over, 'he has fallen');
     assert.equal(g.hero.skills[0].front[0], 'fire', 'fallen, it is his again');
+  }
+});
+
+test('5b. NOR A RANKED WORD, A CITY WORD, OR (ITS SWITCH ON) A VOLATILE MELD: each he draws he holds, the save has it, the floor left it is his', () => {
+  const was = VOLT_MELDS.on;
+  VOLT_MELDS.on = true;
+  try {
+    for (const w of ['power2', 'pulling', 'eruption', 'demolition'] as WordId[]) {
+      const { g, m } = room(1.8, 'physician:draw');
+      g.hero.words[w] = (g.hero.words[w] ?? 0) + 1;
+      setWord(g, w);
+      watch(g, m, 1.2);
+      assert.equal(heldWord(m), w, `${w}: he holds it`);
+      assert.equal(g.save().sockets[0].front[0], w, `${w}: the save has it in its socket`);
+      g.enterTown();
+      assert.equal(g.hero.skills[0].front[0], w, `${w}: the floor left, it is his again`);
+    }
+  } finally {
+    VOLT_MELDS.on = was;
   }
 });
 

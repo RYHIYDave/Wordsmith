@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { LOOT2, TUNE, WORDS, WORD_GROWTH, useFirstLevels } from '../src/game/defs';
+import { DEEP_WORDS, LOOT2, TUNE, WORDS, WORD_GROWTH, useFirstLevels, wordsAt } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -174,10 +174,14 @@ test('where a word turns up is luck: the same dungeon number gives different fin
   assert.ok(paid >= 40 && Math.abs(geared / paid - share) < 0.2, `about ${Math.round(share * 100)} in 100 of the named monsters left gear (${geared} of ${paid})`);
   assert.ok(shapes.size >= 18, `24 dungeons gave ${shapes.size} different sets of finds`);
   assert.ok(dry >= 1, 'and in some of them only the boss had a word to give');
-  // every word can be the one that turns up
+  // every word found at that depth can be the one that turns up (the city's four only from floor 11 down: Version 23.8)
   const seen = new Set<WordId>();
   for (let seed = 1; seed <= 60; seed++) for (const m of dungeon('mage', seed, 2).monsters) for (const w of m.carries) seen.add(w);
-  assert.equal(seen.size, WORD_IDS.length, `every word turns up (${[...seen].join(', ')})`);
+  assert.equal(seen.size, wordsAt(2).length, `every word of floor 2 turns up (${[...seen].join(', ')})`);
+  assert.ok(DEEP_WORDS.every((w) => !seen.has(w)), 'and none of the four');
+  const deep = new Set<WordId>();
+  for (let seed = 1; seed <= 60; seed++) for (const m of dungeon('mage', seed, 12).monsters) for (const w of m.carries) deep.add(w);
+  assert.ok(DEEP_WORDS.every((w) => deep.has(w)), `on floor 12 the four turn up too (${[...deep].join(', ')})`);
 });
 
 test('a chest only sometimes holds a word; an ordinary monster hardly ever', () => {
