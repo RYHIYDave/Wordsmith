@@ -92,6 +92,7 @@ import { meldOpen, meldSide } from './ui/meld';
 import { THEME, Ui } from './ui/ui';
 import { WORDS3, demo3, events3 } from './render/words3';
 import { MELD3, MELD_GLYPH, MELD_RAMP, demoM3, eventsM3 } from './render/melds3';
+import { VOLATILE3, demoV3, eventsV3 } from './render/volatile3';
 import { act1Fx } from './render/act1_fx';
 
 declare const __BUILD__: string;
@@ -1421,6 +1422,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     const levelled = g.events.some((e) => e.t === 'levelup');
     // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts, called up by what the rules say happened)
     if (MELD3.on) eventsM3(g.events, g, fx);
+    // (THE FIVE VOLATILE MELDS' looks, behind a switch that is off: render/volatile3.ts, called up by what the rules say happened)
+    if (VOLATILE3.on) eventsV3(g.events, g, fx);
     // (RUNEDUST AND THE MELDSTONE's moments, behind a switch that is off: render/meld_drops.ts)
     if (MELD_DROPS.on) renderer.meldDrops.see(g.events, clock, g.hero);
     fx.handle(more.length ? [...g.events, ...more] : g.events, (n, v) => sfx(n, v === undefined ? undefined : { vol: v }));
@@ -2190,6 +2193,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH);
       for (const w of MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
     }),
+    /** THE FIVE VOLATILE MELDS' looks (render/volatile3.ts): Demolition, Powderkeg, Shatter, Chain Reaction and Rupture at work, a mock-up behind a switch that is off; its playtest switches it on for its own page. */
+    volatile3: demoV3(fx, () => game),
     /** STRIKE'S COMBO (game/defs.ts, COMBO): OFF in the game until the owner has said yes to it; the pictures of it and its playtests switch it on for themselves. */
     combo: COMBO,
     /** STRIKE'S COMBO MENDED (art/moves3.ts, COMBO_MENDS): ON since Version 19.2, on his yes; pictures of the swings as they were before switch it off and paint the heroes again (true: the mended, the game's own, back). */
