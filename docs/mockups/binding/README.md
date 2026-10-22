@@ -14,6 +14,10 @@ chat's, written once its look has his yes.
   monster it roots you. What should its hold look like?”, his pick: “Bands of written words
   (Recommended)”, offered as: ribbons of glowing script whip out and wrap round the enemy, pinning it in
   place; the snare a written sigil that lashes up at whoever crosses it.
+- Shown its stone and colours and a film of it in the practice room (in front, behind, on a monster), and
+  asked “Is Binding right as shown: its rune stone, colour and animations?”, by 22:00: “Yes, send to main
+  (Recommended)”, offered as: the main chat writes its rules, puts it in behind a switch, and tells him when
+  it is live.
 
 ## What it looks like
 

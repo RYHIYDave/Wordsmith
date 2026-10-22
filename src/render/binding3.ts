@@ -7,7 +7,8 @@
 // place; behind, leaves a snare for the next enemy to cross; on a monster, monsters root you. Asked how
 // its hold should look, his pick to the art chat (21 Oct, by 20:43 Pacific): “Bands of written words
 // (Recommended)”, offered as: ribbons of glowing script whip out and wrap round the enemy, pinning it;
-// the snare a written sigil that lashes up at whoever crosses it.
+// the snare a written sigil that lashes up at whoever crosses it. Shown its stone, colour and a film of
+// it at work, by 22:00: “Yes, send to main (Recommended)”.
 //
 // So: BANDS OF WRITTEN WORDS. In front, the bands leap up out of the floor round what it strikes, whip
 // over and wrap it, at its feet, its middle and its chest, and are pinned to the floor by pegs of
