@@ -84,11 +84,18 @@ function killBy(g: Game, m: Monster): void {
   g.kill(m);
 }
 
-test('1. off, as it is: none of the five can be made, and the words are as they were', () => {
-  assert.equal(VOLT_MELDS.on, false, 'off until his yes to their looks');
-  assert.equal(meldOf('power', 'volatile'), null);
-  assert.equal(meldProblem('power', 'volatile'), 'Only damage words meld');
-  for (const m of VOLT_MELD_IDS) assert.ok(!wordIds().includes(m), `${m} is no word of a hero's`);
+test('1. on, at his word (Version 23.9); off, none of the five can be made, and the words are as they were', () => {
+  // (his words to the main chat, to a video of the five from the game, by 07:46, 22 Oct: “Yes, put them live (Recommended)”)
+  assert.equal(VOLT_MELDS.on, true, 'on, his word');
+  const was = VOLT_MELDS.on;
+  VOLT_MELDS.on = false;
+  try {
+    assert.equal(meldOf('power', 'volatile'), null);
+    assert.equal(meldProblem('power', 'volatile'), 'Only damage words meld');
+    for (const m of VOLT_MELD_IDS) assert.ok(!wordIds().includes(m), `${m} is no word of a hero's`);
+  } finally {
+    VOLT_MELDS.on = was;
+  }
 });
 
 test('2. on: each damage word melds with Volatile into its own, and Volatile with nothing else', () => {

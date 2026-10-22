@@ -239,8 +239,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH);
     for (const w of MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
   }
-  // VOLATILE'S FIVE MELDS' LOOKS (render/volatile3.ts, behind VOLATILE3, off until his yes in the main chat): their own colours and
-  // runes, the art chat's, in place of the placeholders (melds3's tables carry them)
+  // VOLATILE'S FIVE MELDS' LOOKS (render/volatile3.ts, VOLATILE3: on since Version 23.9, his yes of 22 Oct, by 07:46): their own
+  // colours and runes, the art chat's, in place of the placeholders in art/icons.ts and render/fx.ts (melds3's tables carry them)
   if (VOLATILE3.on) {
     useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH, VOLT_MELD_IDS);
     for (const w of VOLT_MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];

@@ -34,8 +34,9 @@ import type { Game } from '../game/game';
 import type { Monster, Zone } from '../game/state';
 import type { Cam, Fx } from './fx';
 
-/** The switch. Off: nothing here is drawn or called, and the game is as it was. */
-export const BINDING3 = { on: false };
+/** The switch. Off: nothing here is drawn or called, and the game is as it was. ON since Version 23.9: his words to the main chat,
+ *  to a video of Binding from the game, by 23:17, 21 Oct 2026 (Pacific): “Yes, put it live (Recommended)”. */
+export const BINDING3 = { on: true };
 
 /**
  * Binding's colours, darkest to brightest (the last its white-hot); index 3 its own colour, index 4

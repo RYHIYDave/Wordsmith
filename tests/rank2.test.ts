@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { SKILLS, WORDS } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { imbueProblem } from '../src/game/items';
-import { MELD, MELD_TUNE, RANK2, isDamageWord, meldOf, meldProblem, partsOf, savedWords, withParts, wordIds } from '../src/game/melds';
+import { MELD, MELD_TUNE, RANK2, VOLT_MELDS, isDamageWord, meldOf, meldProblem, partsOf, savedWords, withParts, wordIds } from '../src/game/melds';
 import { RANK_IDS, RANK_OF, WORD_IDS } from '../src/game/types';
 import type { WordId } from '../src/game/types';
 import { resolveSkill, socketProblem } from '../src/game/words';
@@ -53,7 +53,7 @@ test('two of each damage word make its rank II, and nothing else does; a ranked 
   }
   for (const w of ['swift', 'twin', 'leech', 'volatile', 'heavy', 'precise', 'frenzied', 'guarding'] as const) {
     assert.equal(meldOf(w, w), null, `${w} + ${w}`);
-    assert.equal(meldProblem(w, w), 'Only damage words meld');
+    assert.equal(meldProblem(w, w), VOLT_MELDS.on ? 'Only damage words and Volatile meld' : 'Only damage words meld');
   }
   assert.equal(meldOf('eruption', 'eruption'), null, 'a melded word does not rank up');
   assert.equal(meldProblem('poison2', 'poison2'), 'Rank II is the top, for now');

@@ -62,6 +62,16 @@ const on = <T>(fn: () => T): T => {
     VOLATILE3.on = was;
   }
 };
+/** With the switch off, as it was until Version 23.9 (and as it can be put again). */
+const off = <T>(fn: () => T): T => {
+  const was = VOLATILE3.on;
+  VOLATILE3.on = false;
+  try {
+    return fn();
+  } finally {
+    VOLATILE3.on = was;
+  }
+};
 
 // ---- colour, as the eye sees it (CIEDE2000)
 function lab(hex: string): [number, number, number] {
@@ -117,8 +127,9 @@ function hsv(hex: string): [number, number, number] {
   return [(h * 60 + 360) % 360, mx ? d / mx : 0, mx / 255];
 }
 
-test('1. the switch is off, and everything the renderer, the effects and main.ts ask of the five is behind it', () => {
-  assert.equal(VOLATILE3.on, false);
+test('1. the switch is on, at his word, and everything the renderer, the effects and main.ts ask of the five is behind it', () => {
+  // (on since Version 23.9: his words to the main chat, to a video of the five from the game, by 07:46, 22 Oct: “Yes, put them live (Recommended)”)
+  assert.equal(VOLATILE3.on, true);
   const hooks: Record<string, string[]> = {
     'render.ts': ['tickV3(', 'floorV3(', 'shiftV3(', 'tintV3(', 'airV3(', 'overV3(', 'lightsV3('],
     '../main.ts': ['eventsV3('],
@@ -138,30 +149,34 @@ test('1. the switch is off, and everything the renderer, the effects and main.ts
     assert.ok(found >= calls.length, `every hook is found in ${file}`);
   }
   // (the two the renderer and the effects ask whether to leave a thing to the five: false while it is off)
-  assert.equal(ownsZoneV3(rune('demolition', 1, 1)), false);
-  assert.equal(ownsEventV3({ t: 'burst', x: 1, y: 1, r: 1.8, el: 'phys', style: 'ruin', meld: 'demolition' }), false);
+  off(() => {
+    assert.equal(ownsZoneV3(rune('demolition', 1, 1)), false);
+    assert.equal(ownsEventV3({ t: 'burst', x: 1, y: 1, r: 1.8, el: 'phys', style: 'ruin', meld: 'demolition' }), false);
+  });
 });
 
 test('2. with the switch off, nothing here draws, moves or lights anything, whatever it is told', () => {
-  clearV3();
-  const fx = new Fx();
-  const m = monster(1, 11, 10);
-  const z = rune('powderkeg', 11, 10);
-  const gm = game([m], [z]);
-  eventsV3([{ t: 'burst', x: 11, y: 10, r: 1.8, el: 'phys', style: 'blast', meld: 'demolition' }, { t: 'volFx', meld: 'shatter', what: 'shard', id: 1, x0: 10, y0: 10, x1: 11, y1: 10 } as VolFx], gm, fx);
-  run(0.5, gm, fx);
-  const c = canvas();
-  floorV3(c.g, cam, 1, gm, everywhere);
-  airV3(c.g, cam, 1, gm);
-  overV3(c.g, cam, 1);
-  let lit = 0;
-  lightsV3(() => lit++, cam, gm, 1);
-  assert.equal(c.drawn(), 0, 'nothing drawn');
-  assert.equal(lit, 0, 'nothing lit');
-  assert.equal(fx.particles.length + fx.rings.length + fx.flashes.length + fx.glows.length, 0, 'nothing flung');
-  assert.equal(V3.lobs.length + V3.domes.length + V3.arcs.length + V3.scars.length, 0);
-  assert.deepEqual(shiftV3(m), [0, 0]);
-  assert.equal(tintV3(m, 1), null);
+  off(() => {
+    clearV3();
+    const fx = new Fx();
+    const m = monster(1, 11, 10);
+    const z = rune('powderkeg', 11, 10);
+    const gm = game([m], [z]);
+    eventsV3([{ t: 'burst', x: 11, y: 10, r: 1.8, el: 'phys', style: 'blast', meld: 'demolition' }, { t: 'volFx', meld: 'shatter', what: 'shard', id: 1, x0: 10, y0: 10, x1: 11, y1: 10 } as VolFx], gm, fx);
+    run(0.5, gm, fx);
+    const c = canvas();
+    floorV3(c.g, cam, 1, gm, everywhere);
+    airV3(c.g, cam, 1, gm);
+    overV3(c.g, cam, 1);
+    let lit = 0;
+    lightsV3(() => lit++, cam, gm, 1);
+    assert.equal(c.drawn(), 0, 'nothing drawn');
+    assert.equal(lit, 0, 'nothing lit');
+    assert.equal(fx.particles.length + fx.rings.length + fx.flashes.length + fx.glows.length, 0, 'nothing flung');
+    assert.equal(V3.lobs.length + V3.domes.length + V3.arcs.length + V3.scars.length, 0);
+    assert.deepEqual(shiftV3(m), [0, 0]);
+    assert.equal(tintV3(m, 1), null);
+  });
 });
 
 test('3. six tones each, darkest to white-hot; each word told apart from every other word, the ten melds, the friend and the enemy', () => {

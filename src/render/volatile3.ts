@@ -44,8 +44,9 @@ import type { Game } from '../game/game';
 import type { Monster, Zone } from '../game/state';
 import type { Cam, Fx } from './fx';
 
-/** The switch. Off: nothing here is drawn or called, and the game is as it was. */
-export const VOLATILE3 = { on: false };
+/** The switch. Off: nothing here is drawn or called, and the game is as it was. ON since Version 23.9: his words to the main chat,
+ *  to a video of the five from the game, by 07:46, 22 Oct 2026 (Pacific): “Yes, put them live (Recommended)”. */
+export const VOLATILE3 = { on: true };
 
 /** The five, in the order of his page. (The main chat's ids for them are its own; these are the looks'.) */
 export const VMELD_IDS = ['demolition', 'powderkeg', 'shatter', 'chainreaction', 'rupture'] as const;

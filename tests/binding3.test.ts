@@ -56,6 +56,16 @@ const on = <T>(fn: () => T): T => {
     BINDING3.on = was;
   }
 };
+/** With the switch off, as it was until Version 23.9 (and as it can be put again). */
+const off = <T>(fn: () => T): T => {
+  const was = BINDING3.on;
+  BINDING3.on = false;
+  try {
+    return fn();
+  } finally {
+    BINDING3.on = was;
+  }
+};
 
 function lab(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -110,8 +120,9 @@ function hsv(hex: string): [number, number, number] {
   return [(h * 60 + 360) % 360, mx ? d / mx : 0, mx / 255];
 }
 
-test('1. the switch is off, and everything the renderer and main.ts ask of Binding is behind it', () => {
-  assert.equal(BINDING3.on, false);
+test('1. the switch is on, at his word, and everything the renderer and main.ts ask of Binding is behind it', () => {
+  // (on since Version 23.9: his words to the main chat, to a video of it from the game, by 23:17, 21 Oct: “Yes, put it live (Recommended)”)
+  assert.equal(BINDING3.on, true);
   const hooks: Record<string, string[]> = { 'render.ts': ['tickB3(', 'floorB3(', 'tintB3(', 'airB3(', 'lightsB3('], '../main.ts': ['eventsB3('] };
   for (const [file, calls] of Object.entries(hooks)) {
     const lines = (readFileSync(new URL(`../src/render/${file}`, import.meta.url), 'utf8') as string).split('\n');
@@ -127,26 +138,28 @@ test('1. the switch is off, and everything the renderer and main.ts ask of Bindi
     });
     assert.ok(found >= calls.length, `every hook is found in ${file}`);
   }
-  assert.equal(ownsZoneB3(snare(1, 1)), false, 'with the switch off the renderer keeps every patch');
+  off(() => assert.equal(ownsZoneB3(snare(1, 1)), false, 'with the switch off the renderer keeps every patch'));
 });
 
 test('2. with the switch off, nothing here draws, lights or tints anything, whatever it is told', () => {
-  clearB3();
-  const fx = new Fx();
-  const m = monster(1, 11, 10);
-  const gm = game([m], [snare(12, 10)]);
-  eventsB3([{ t: 'bind', id: 1, secs: 2 }, { t: 'rooted', x: 11, y: 10, secs: 2 }, { t: 'snareSprung', id: 1, x: 12, y: 10, secs: 2 }], gm, fx);
-  run(0.5, gm, fx);
-  const c = canvas();
-  floorB3(c.g, cam, 1, gm, everywhere);
-  airB3(c.g, cam, 1, gm);
-  let lit = 0;
-  lightsB3(() => lit++, cam, gm, 1);
-  assert.equal(c.drawn(), 0);
-  assert.equal(lit, 0);
-  assert.equal(B3.holds.length + B3.burns.length, 0);
-  assert.equal(fx.particles.length + fx.rings.length + fx.flashes.length, 0);
-  assert.equal(tintB3(m), null);
+  off(() => {
+    clearB3();
+    const fx = new Fx();
+    const m = monster(1, 11, 10);
+    const gm = game([m], [snare(12, 10)]);
+    eventsB3([{ t: 'bind', id: 1, secs: 2 }, { t: 'rooted', x: 11, y: 10, secs: 2 }, { t: 'snareSprung', id: 1, x: 12, y: 10, secs: 2 }], gm, fx);
+    run(0.5, gm, fx);
+    const c = canvas();
+    floorB3(c.g, cam, 1, gm, everywhere);
+    airB3(c.g, cam, 1, gm);
+    let lit = 0;
+    lightsB3(() => lit++, cam, gm, 1);
+    assert.equal(c.drawn(), 0);
+    assert.equal(lit, 0);
+    assert.equal(B3.holds.length + B3.burns.length, 0);
+    assert.equal(fx.particles.length + fx.rings.length + fx.flashes.length, 0);
+    assert.equal(tintB3(m), null);
+  });
 });
 
 test("3. its colours: told apart from every word, the melds, the friend and the enemy; nothing cyan or pink; a monster's in the enemy's own", () => {

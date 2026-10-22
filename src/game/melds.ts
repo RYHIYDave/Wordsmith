@@ -39,13 +39,15 @@ export const MELD = { on: true };
 export const RANK2 = { on: true };
 
 /**
- * VOLATILE'S MELDS, behind this switch (off): a damage word melded with Volatile, the five of his page "Wordsmith: Word
+ * VOLATILE'S MELDS, behind this switch (ON since Version 23.9): a damage word melded with Volatile, the five of his page "Wordsmith: Word
  * Combinations" left out on 13 Oct 2026 by his pick “Only damage words meld”. His words to the main chat, 21 Oct 2026 (Pacific),
  * 19:29: “Can you also add the volatile melds”; 19:30: “We have info on them but I’d like them to be in the game”. Their rules as
  * his page has them (MELD_TUNE below, starting points); their looks the art chat's to draw (his pick by 19:31: “The art chat
- * (Recommended)”), pictures to him first. Until then the switch stays off: none of them can be made, and the game is as it was.
+ * (Recommended)”), pictures to him first. To a video of the five from the game, with their looks, asked to put them live with
+ * Binding as Version 23.9, his words to the main chat by 07:46, 22 Oct: “Yes, put them live (Recommended)”. Off, none of them can
+ * be made, and the game is as it was before.
  */
-export const VOLT_MELDS = { on: false };
+export const VOLT_MELDS = { on: true };
 
 /** RANK II's numbers: how much each rank past the first adds of the word's own figure (half: II is one and a half times the word). */
 export const RANK_TUNE = { step: 0.5 };
