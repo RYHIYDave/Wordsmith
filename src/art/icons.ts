@@ -1100,8 +1100,9 @@ function runeSprite(word: WordId): Sprite {
  * and runes drawn there, in place of the placeholders above, and paint their stones again into
  * `art`. Called only by a page that switches the looks on (main.ts, __dbg.melds3.paint).
  */
-export function useMeldArt(art: IconArt, ramp: Record<MeldId, readonly string[]>, glyph: Record<MeldId, readonly string[]>): void {
-  for (const w of MELD_IDS) {
+export function useMeldArt(art: IconArt, ramp: Record<MeldId, readonly string[]>, glyph: Record<MeldId, readonly string[]>, ids: readonly MeldId[] = MELD_IDS): void {
+  // (`ids`: the ten, or Volatile's five, whose looks are render/volatile3.ts's)
+  for (const w of ids) {
     WORD_COLOR[w] = ramp[w][3];
     WORD_GLOW[w] = ramp[w][4];
     GLYPH[w] = glyph[w];

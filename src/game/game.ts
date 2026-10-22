@@ -4694,7 +4694,8 @@ export class Game {
       if (keg) {
         for (const o of struck) {
           if (o.dead) continue;
-          if (o.burnT <= 0) this.emit({ t: 'ignite', x: o.x, y: o.y });
+          // (a burning piece of the keg thrown onto it: its look, render/volatile3.ts)
+          this.emit({ t: 'volFx', meld: 'powderkeg', what: 'catch', id: o.id, x0: x, y0: y, x1: o.x, y1: o.y });
           o.burnDps = Math.max(o.burnT > 0 ? o.burnDps : 0, hurt * T.powderkeg.burn);
           o.burnT = Math.max(o.burnT, T.powderkeg.burnSecs);
           if (skill >= 0) o.lastSkill = skill;
@@ -4712,32 +4713,43 @@ export class Game {
       .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))
       .slice(0, T.arcs);
     for (const o of near) {
-      this.emit({ t: 'arc', x0: x, y0: y, x1: o.x, y1: o.y, meld: 'chainreaction' });
+      this.emit({ t: 'volFx', meld: 'chainreaction', what: 'arc', id: o.id, x0: x, y0: y, x1: o.x, y1: o.y });
       this.damageMonster(o, Math.max(1, Math.round(dmg)), 'lightning', false, skill);
     }
     if (near.length) this.sfx('zap', 0.6);
   }
 
-  /** SHATTER in front (behind VOLT_MELDS): a frozen one killed bursts into shards of ice, a share of its life to each one near it, chilling them. */
+  /** SHATTER in front (behind VOLT_MELDS): a frozen one killed bursts into shards of ice as it goes off, a share of its life to each one near it, chilling them. */
   private shatterKill(m: Monster, skill: number): void {
     const T = MELD_TUNE.shatter;
     const dmg = Math.max(1, Math.round(m.maxLife * T.share));
-    this.emit({ t: 'burst', x: m.x, y: m.y, r: T.reach, el: 'frost', style: 'shock', meld: 'shatter' });
-    for (const o of this.monsters) {
-      if (o.dead || o === m || this.shutIn(o) || Math.hypot(o.x - m.x, o.y - m.y) > T.reach + o.r) continue;
-      this.damageMonster(o, dmg, 'frost', false, skill);
-      if (!o.dead) this.chillMonster(o, 0.3);
-    }
+    const x = m.x;
+    const y = m.y;
+    // (with its explosion, Volatile's: explodeKill)
+    this.after(0.12, () => {
+      for (const o of this.monsters) {
+        if (o.dead || o === m || this.shutIn(o) || Math.hypot(o.x - x, o.y - y) > T.reach + o.r) continue;
+        this.emit({ t: 'volFx', meld: 'shatter', what: 'shard', id: o.id, x0: x, y0: y, x1: o.x, y1: o.y });
+        this.damageMonster(o, dmg, 'frost', false, skill);
+        if (!o.dead) this.chillMonster(o, 0.3);
+      }
+    });
   }
 
   /** RUPTURE in front (behind VOLT_MELDS): a poisoned one killed bursts, its poison splashed on each one near it. */
   private ruptureKill(m: Monster, skill: number): void {
     const T = MELD_TUNE.rupture;
-    this.emit({ t: 'zone', kind: 'venom', x: m.x, y: m.y, r: T.reach, el: 'phys', meld: 'rupture' });
-    for (const o of this.monsters) {
-      if (o.dead || o === m || this.shutIn(o) || Math.hypot(o.x - m.x, o.y - m.y) > T.reach + o.r) continue;
-      this.poisonMonster(o, m.poisonDps * T.share, skill);
-    }
+    const x = m.x;
+    const y = m.y;
+    const dps = m.poisonDps * T.share;
+    // (with its explosion, Volatile's: explodeKill)
+    this.after(0.12, () => {
+      for (const o of this.monsters) {
+        if (o.dead || o === m || this.shutIn(o) || Math.hypot(o.x - x, o.y - y) > T.reach + o.r) continue;
+        this.emit({ t: 'volFx', meld: 'rupture', what: 'splash', id: o.id, x0: x, y0: y, x1: o.x, y1: o.y });
+        this.poisonMonster(o, dps, skill);
+      }
+    });
   }
 
   /** SPLITTING, on a monster (Version 23.8): dying, it splits into two of its kind at half its life, ordinary, with no word (they split no more). */
@@ -4847,7 +4859,8 @@ export class Game {
     if (huge && this.zones.some((z) => z.kind === 'rune' && z.skill === i && z.meld === 'demolition')) return;
     if (!this.roomForZone() || !this.onFloor(x, y)) return;
     const rad = 2.0 * r.size * (huge ? D.runeWide : 1);
-    const nz: Zone = { x, y, r: rad, t: 0, dur: 1.2 * (huge ? D.runeSlow : 1), kind: 'rune', element: r.element, dmg: this.avgHit(i, frac) * r.rune * (huge ? D.runeHard : 1), slow: 0, tick: 0, hostile: false, skill: i, words: [], from: '' };
+    const wait = meld ? MELD_TUNE[meld as 'demolition'].wait : 1.2;
+    const nz: Zone = { x, y, r: rad, t: 0, dur: wait, kind: 'rune', element: r.element, dmg: this.avgHit(i, frac) * r.rune * (huge ? D.runeHard : 1), slow: 0, tick: 0, hostile: false, skill: i, words: [], from: '' };
     if (meld) nz.meld = meld;
     this.zones.push(nz);
     this.emit({ t: 'zone', kind: 'rune', x, y, r: rad, el: r.element, ...(meld ? { meld } : {}) });
@@ -5257,11 +5270,22 @@ export class Game {
       this.zones.push({ x: z.x, y: z.y, r: z.r * 0.75, t: 0, dur: 5, kind: 'venom', element: 'phys', dmg: z.dmg * T.rupture.cloud * 0.2, slow: 0, tick: 0.2, hostile: false, skill: z.skill, words: [], from: '', meld: 'rupture' });
       this.emit({ t: 'zone', kind: 'venom', x: z.x, y: z.y, r: z.r * 0.75, el: 'phys', meld: 'rupture' });
     } else if (z.meld === 'chainreaction') {
-      let k = 1;
+      // (the nearest of the hero's own in reach, not yet set off, goes off a moment after; it in its turn sets off the next)
+      const C = T.chainreaction;
+      let next: Zone | null = null;
+      let best = C.linkReach;
       for (const o of this.zones) {
-        if (o === z || o.kind !== 'rune' || o.hostile || o.meld !== 'chainreaction' || o.t >= o.dur) continue;
-        this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: o.x, y1: o.y, meld: 'chainreaction' });
-        o.dur = Math.min(o.dur, o.t + T.chainreaction.next * k++);
+        if (o === z || o.kind !== 'rune' || o.hostile || o.meld !== 'chainreaction' || o.linked || o.t >= o.dur) continue;
+        const d = Math.hypot(o.x - z.x, o.y - z.y);
+        if (d <= best) {
+          best = d;
+          next = o;
+        }
+      }
+      if (next) {
+        next.linked = true;
+        next.dur = Math.min(next.dur, next.t + C.next);
+        this.emit({ t: 'volFx', meld: 'chainreaction', what: 'link', x0: z.x, y0: z.y, x1: next.x, y1: next.y });
       }
     }
   }
@@ -5336,6 +5360,7 @@ export class Game {
       const rr = this.hero.skills[skill]?.r;
       if (rr && rr.meld === 'demolition' && rr.volatile > 0) {
         m.demolished = true;
+        this.emit({ t: 'volFx', meld: 'demolition', what: 'half', id: m.id, x: m.x, y: m.y, r: 1.8 * MELD_TUNE.demolition.bigger });
         this.explodeKill(m, rr, skill, MELD_TUNE.demolition.half);
       }
     }
@@ -7109,10 +7134,16 @@ export class Game {
         continue;
       }
       if (z.kind === 'rune') {
-        // (VOLATILE'S MELDS, behind VOLT_MELDS: Shatter's rune freezes what is in it a moment before it goes off)
-        if (z.meld === 'shatter' && !z.froze && z.t >= z.dur - MELD_TUNE.shatter.freezeBefore) {
+        // (VOLATILE'S MELDS, behind VOLT_MELDS: Shatter's rune freezes what is in it, part way through its wait)
+        if (z.meld === 'shatter' && !z.froze && z.t >= z.dur * MELD_TUNE.shatter.freezeAt) {
           z.froze = true;
-          for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r) this.freezeMonster(m);
+          const ids: number[] = [];
+          for (const m of this.monsters) {
+            if (m.dead || this.shutIn(m) || Math.hypot(m.x - z.x, m.y - z.y) > z.r + m.r) continue;
+            this.freezeMonster(m);
+            if (m.frozenT > 0) ids.push(m.id);
+          }
+          this.emit({ t: 'volFx', meld: 'shatter', what: 'freeze', x: z.x, y: z.y, r: z.r, ids });
         }
         if (z.t >= z.dur) {
           this.zones.splice(i, 1);

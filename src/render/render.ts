@@ -60,6 +60,7 @@ import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import { MELD3, airM3, floorM3, heroAlphaM3, lightsM3, overM3, ownsZone, rotting, shiftM3, tickM3, tintM3 } from './melds3';
 import { BINDING3, airB3, floorB3, lightsB3, ownsZoneB3, tickB3, tintB3 } from './binding3';
+import { VOLATILE3, airV3, floorV3, lightsV3, overV3, ownsZoneV3, shiftV3, tickV3, tintV3 } from './volatile3';
 import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
@@ -1654,6 +1655,8 @@ export class Renderer {
       if (ownsZone(z)) continue;
       // (Binding's snare has a look of its own, behind BINDING3, off: render/binding3.ts, floorB3)
       if (ownsZoneB3(z)) continue;
+      // (and the five Volatile melds' runes and patches, behind VOLATILE3, off: render/volatile3.ts, floorV3)
+      if (ownsZoneV3(z)) continue;
       if (z.kind === 'warn') {
         ellipse(g, cx, cy, z.r, P.bl3, 0.16 + 0.3 * k);
         ellipse(g, cx, cy, z.r * k, P.bl4, 0.3);
@@ -1793,6 +1796,7 @@ export class Renderer {
     if (WORDS3.on && !this.skip.has('ground')) floor3(g, cam, t, game, here);
     if (MELD3.on && !this.skip.has('ground')) floorM3(g, cam, t, game, here);
     if (BINDING3.on && !this.skip.has('ground')) floorB3(g, cam, t, game, here);
+    if (VOLATILE3.on && !this.skip.has('ground')) floorV3(g, cam, t, game, here);
     for (const tr of game.traps) {
       if (!here(tr.x, tr.y)) continue;
       const frames = art.icons.trap[tr.element];
@@ -2133,6 +2137,8 @@ export class Renderer {
     if (MELD3.on) tickM3(pace / 60, game, fx);
     // (BINDING's looks, behind a switch that is off: render/binding3.ts)
     if (BINDING3.on) tickB3(pace / 60, game, fx);
+    // (THE FIVE VOLATILE MELDS' looks, behind a switch that is off: render/volatile3.ts)
+    if (VOLATILE3.on) tickV3(pace / 60, game, fx);
     const cam = this.cam;
     // Where on the screen the hero stands: the middle, or the middle of the part left to the world.
     // The picture glides from the one to the other, by the wall clock (the world may be standing
@@ -2530,6 +2536,12 @@ export class Renderer {
         sx += ox;
         sy += oy;
       }
+      // (the five Volatile melds' looks, behind a switch that is off: a blast beside it jolts it)
+      if (VOLATILE3.on) {
+        const [ox, oy] = shiftV3(m);
+        sx += ox;
+        sy += oy;
+      }
       const sp = this.monsterSprite(m);
       // (ACT 1: up in the air, as its kind has it; and drawn over what it is latched on to)
       const a1 = act1Fx(m.kind);
@@ -2578,6 +2590,14 @@ export class Renderer {
       // (Binding's look, behind a switch that is off: lit as its bands snap tight)
       if (BINDING3.on) {
         const tn = tintB3(m);
+        if (tn && (!over || tn[1] > overA)) {
+          over = silhouette(sp, tn[0]);
+          overA = tn[1];
+        }
+      }
+      // (the five Volatile melds' looks, behind a switch that is off: lit white as a blast, shard or arc strikes it)
+      if (VOLATILE3.on) {
+        const tn = tintV3(m, t);
         if (tn && (!over || tn[1] > overA)) {
           over = silhouette(sp, tn[0]);
           overA = tn[1];
@@ -3233,7 +3253,7 @@ export class Renderer {
       g.globalAlpha = 1;
     }
     for (const z of game.zones) {
-      if (z.kind !== 'venom' || this.skip.has('cloud') || ownsZone(z)) continue;
+      if (z.kind !== 'venom' || this.skip.has('cloud') || ownsZone(z) || ownsZoneV3(z)) continue;
       // Poison behind: puffs of it turn slowly over the slick, low enough to stand in
       const fade = Math.min(1, z.t / 0.25, (z.dur - z.t) * 2);
       const seed = Math.floor(z.x * 7 + z.y * 13);
@@ -3278,8 +3298,10 @@ export class Renderer {
     if (WORDS3.on && !this.skip.has('fx')) air3(g, cam, t, game, fx);
     if (MELD3.on && !this.skip.has('fx')) airM3(g, cam, t, game);
     if (BINDING3.on && !this.skip.has('fx')) airB3(g, cam, t, game);
+    if (VOLATILE3.on && !this.skip.has('fx')) airV3(g, cam, t, game);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
+    if (VOLATILE3.on && !this.skip.has('fx')) overV3(g, cam, t);
     this.drawWordDrops(g, W, H, game, t);
     this.drawBeacon(g, game, t);
     this.drawBars(g, game, t);
@@ -3841,7 +3863,7 @@ export class Renderer {
     for (const z of game.zones) {
       if (this.skip.has('zlight')) break;
       if (z.kind !== 'burn' && z.kind !== 'storm' && z.kind !== 'rune' && z.kind !== 'ice' && z.kind !== 'venom') continue;
-      if (ownsZone(z) || ownsZoneB3(z)) continue;
+      if (ownsZone(z) || ownsZoneB3(z) || ownsZoneV3(z)) continue;
       const small = z.r < 1.2;
       if (small) {
         let near = false;
@@ -3864,6 +3886,7 @@ export class Renderer {
     if (WORDS3.on) lights3(spot, cam, game, t);
     if (MELD3.on) lightsM3(spot, cam, game, t);
     if (BINDING3.on) lightsB3(spot, cam, game, t);
+    if (VOLATILE3.on) lightsV3(spot, cam, game, t);
     // (THE FIRST FIVE FLOORS: what of the bosses' doings lights the dark)
     this.bossFx.lights(spot);
     // a burst of fire or a bolt of lightning lights up the room for a moment

@@ -36,6 +36,7 @@ import { BODIES, BOSS_INTRO, RANGER_ARROW, WORDS } from '../game/defs';
 import type { GameEvent, TownVoice } from '../game/state';
 import type { Element, WordId } from '../game/types';
 import { meldLookWords, meldOwnsEvent } from './melds3';
+import { ownsEventV3 } from './volatile3';
 import { Wild } from './wild';
 
 /** Where the world origin sits on screen this frame. */
@@ -1087,6 +1088,8 @@ export class Fx {
     for (const e of events) {
       // (WORDMELDING's looks, behind MELD3, off: a melded word's own bolts, blasts and patches are drawn by render/melds3.ts)
       if (meldOwnsEvent(e)) continue;
+      // (and the five Volatile melds' blasts, behind VOLATILE3, off: render/volatile3.ts)
+      if (ownsEventV3(e)) continue;
       switch (e.t) {
         case 'hit': {
           if (e.poison) {

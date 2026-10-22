@@ -90,17 +90,18 @@ export const MELD_TUNE = {
   frostbite: { bite: 0.15 },
   /** CONTAGION behind: the cloud's shock, this many times its poison, every half second, to one in it. */
   contagion: { shock: 2 },
-  // VOLATILE'S MELDS (behind VOLT_MELDS): the kill's explosion is Volatile's (game.ts kill), its rune Volatile's (addRune)
-  /** DEMOLITION in front: the explosions this much bigger, across and in harm; an elite or a boss explodes once at half its life, for this share of the kill's. Behind: one rune at a time, this much wider, this much harder, this much slower to go off. */
-  demolition: { bigger: 1.5, half: 0.5, runeWide: 2, runeHard: 2, runeSlow: 2.5 },
+  // VOLATILE'S MELDS (behind VOLT_MELDS): the kill's explosion is Volatile's (game.ts kill), its rune Volatile's (addRune). Each
+  // rune's `wait` (seconds before it goes off; Volatile's own 1.2) is what the art chat's pictures want of it (render/volatile3.ts VRUNE).
+  /** DEMOLITION in front: the explosions this much bigger, across and in harm; an elite or a boss explodes once at half its life, for this share of the kill's. Behind: one rune at a time, this much wider, this much harder, and slow to go off. */
+  demolition: { bigger: 1.5, half: 0.5, runeWide: 2, runeHard: 2, wait: 2.4 },
   /** POWDERKEG in front: a burning one killed explodes this much harder, and its blast sets what it strikes burning (its burn this share of the blast a second, for so long). Behind: the rune leaves burning ground, this share of its blast a second, for so long. */
-  powderkeg: { burning: 1.5, burn: 0.3, burnSecs: 3, ground: 0.25, groundSecs: 4 },
-  /** SHATTER in front: a frozen one killed bursts into shards, this share of its life to each one this near. Behind: the rune freezes what is in it, this long before it goes off. */
-  shatter: { share: 0.25, reach: 2.2, freezeBefore: 0.4 },
-  /** CHAIN REACTION in front: an explosion sends arcs to this many of the nearest within this reach, each this share of the explosion. Behind: a rune going off sets off the others of the hero's own, one after another, this far apart in time. */
-  chainreaction: { arcs: 3, reach: 3.5, share: 0.5, next: 0.12 },
+  powderkeg: { burning: 1.5, burn: 0.3, burnSecs: 3, ground: 0.25, groundSecs: 4, wait: 1.4 },
+  /** SHATTER in front: a frozen one killed bursts into shards, this share of its life to each one this near. Behind: the rune freezes what is in it this far through its wait. */
+  shatter: { share: 0.25, reach: 2.2, freezeAt: 0.4, wait: 1.4 },
+  /** CHAIN REACTION in front: an explosion sends arcs to this many of the nearest within this reach, each this share of the explosion. Behind: a rune going off sets off the nearest other of the hero's own within `linkReach`, this long after, and that one the next, and so on. */
+  chainreaction: { arcs: 3, reach: 3.5, share: 0.5, next: 0.12, linkReach: 6, wait: 1.2 },
   /** RUPTURE in front: a poisoned one killed bursts, its poison splashed on each one this near at this share of its poison. Behind: the rune bursts into a poison cloud, this share of its blast a second. */
-  rupture: { reach: 2.0, share: 1, cloud: 0.25 },
+  rupture: { reach: 2.0, share: 1, cloud: 0.25, wait: 1.3 },
 };
 
 /**

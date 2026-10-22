@@ -574,6 +574,8 @@ export interface Zone {
   froze?: boolean;
   /** BINDING's snare: the monsters standing on it as it was laid, which it leaves be until they have stepped off it. */
   onIt?: number[];
+  /** VOLATILE'S MELDS (behind VOLT_MELDS): a Chain Reaction rune already set off by another's link. */
+  linked?: boolean;
   /** WORDMELDING: the melded word whose look it has, for the pictures only (render/melds3.ts): a patch its twist in front left (Eruption's molten pool, Fumes' cloud), or what one behind left (as `meld`). */
   look?: MeldId;
 }
@@ -1131,6 +1133,13 @@ export type GameEvent =
   | { t: 'snareSprung'; id: number; x: number; y: number; secs: number }
   | { t: 'rooted'; x: number; y: number; secs: number }
   | { t: 'unbind'; id: number }
+  // VOLATILE'S MELDS' own moments (behind VOLT_MELDS), for their looks (render/volatile3.ts VolFx, the art chat's): Demolition's
+  // elite or boss going off at half its life; Powderkeg's blast setting one burning; Shatter's shard to one near and its rune's
+  // freeze; Chain Reaction's arc to one near and its rune's link to the next; Rupture's poison splashed on one near
+  | { t: 'volFx'; meld: MeldId; what: 'half'; id: number; x: number; y: number; r: number }
+  | { t: 'volFx'; meld: MeldId; what: 'catch' | 'shard' | 'arc' | 'splash'; id: number; x0: number; y0: number; x1: number; y1: number }
+  | { t: 'volFx'; meld: MeldId; what: 'freeze'; x: number; y: number; r: number; ids: readonly number[] }
+  | { t: 'volFx'; meld: MeldId; what: 'link'; x0: number; y0: number; x1: number; y1: number }
   /**
    * Frenzied: a use adds a stack (`n` now held), going the way (dx, dy) / a kill feeds the frenzy,
    * from (x, y). Guarding: a use gives the hero a shield for `secs` / a blow from (fromX, fromY) is

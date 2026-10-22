@@ -120,8 +120,10 @@ test("3a. Demolition in front: bigger explosions, and an elite bursts once at ha
     const by = put(g, a, -2, 1.2);
     a.damageMonster(elite, 400, 'phys', false, 0);
     assert.ok(!elite.demolished, 'not yet');
+    g.events.length = 0;
     a.damageMonster(elite, 200, 'phys', false, 0);
     assert.ok(elite.demolished, 'at half its life');
+    assert.ok(g.events.some((e) => e.t === 'volFx' && e.what === 'half' && e.id === elite.id), 'its look told');
     run(g, 0.3);
     assert.ok(by.life < by.maxLife, 'what stands by it is struck');
     const once = by.life;
@@ -139,17 +141,22 @@ test('3b. Powderkeg sets what its blast strikes burning; Shatter bursts a frozen
     m.burnDps = 5;
     const n = put(g, a, 3, 0);
     killBy(g, m);
-    run(g, 0.3);
+    const seen = run(g, 0.3);
     assert.ok(n.burnT > 0, 'set burning');
+    assert.ok(seen.some((e) => e.t === 'volFx' && e.what === 'catch' && e.id === n.id), 'a burning piece thrown onto it');
   });
   volt(() => {
     const { g, a } = room('warrior', [[0, 'front', 'shatter']]);
     const m = put(g, a, 2, 0);
     m.frozenT = 1;
-    const n = put(g, a, 3.2, 0);
+    // (out of the reach of its explosion, in its shards')
+    const n = put(g, a, 2 + 2.35, 0);
     killBy(g, m);
+    assert.equal(n.life, n.maxLife, 'as it goes off, not before');
+    const seen = run(g, 0.2);
     assert.equal(n.maxLife - n.life, Math.round(m.maxLife * MELD_TUNE.shatter.share), 'a share of its life');
     assert.ok(n.chillT > 0, 'and chilled');
+    assert.ok(seen.some((e) => e.t === 'volFx' && e.what === 'shard' && e.id === n.id), 'a shard thrown at it');
   });
   volt(() => {
     const { g, a } = room('warrior', [[0, 'front', 'rupture']]);
@@ -159,7 +166,9 @@ test('3b. Powderkeg sets what its blast strikes burning; Shatter bursts a frozen
     m.poisonN = 1;
     const n = put(g, a, 3.2, 0);
     killBy(g, m);
+    const seen = run(g, 0.2);
     assert.ok(n.poisonT > 0 && n.poisonDps >= 20 * MELD_TUNE.rupture.share - 1e-9, 'its poison splashed');
+    assert.ok(seen.some((e) => e.t === 'volFx' && e.what === 'splash' && e.id === n.id), 'a glob splashed on it');
   });
 });
 
@@ -171,7 +180,7 @@ test("3c. Chain Reaction: an explosion arcs to the nearest, and what they kill e
     for (const o of near) o.life = 1;
     killBy(g, m);
     const seen = run(g, 0.8);
-    assert.ok(seen.filter((e) => e.t === 'arc' && e.meld === 'chainreaction').length >= 3, 'three arcs');
+    assert.ok(seen.filter((e) => e.t === 'volFx' && e.what === 'arc').length >= 3, 'three arcs');
     assert.ok(near.every((o) => o.dead), 'the three struck down');
     assert.ok(seen.filter((e) => e.t === 'burst' && e.meld === 'chainreaction').length >= 2, 'and what they killed exploded too');
   });
@@ -184,20 +193,23 @@ test("4. behind: Demolition's one huge slow rune; Powderkeg's burning ground; Sh
     a.addRune(0, 20, 15.5, 1);
     const runes = a.zones.filter((z) => z.kind === 'rune');
     assert.equal(runes.length, 1, 'one at a time');
-    assert.ok(Math.abs(runes[0].dur - 1.2 * MELD_TUNE.demolition.runeSlow) < 1e-9 && runes[0].r >= 2.0 * MELD_TUNE.demolition.runeWide * 0.99 * g.hero.skills[0].r.size);
+    assert.ok(Math.abs(runes[0].dur - MELD_TUNE.demolition.wait) < 1e-9 && runes[0].r >= 2.0 * MELD_TUNE.demolition.runeWide * 0.99 * g.hero.skills[0].r.size);
+    assert.ok(MELD_TUNE.demolition.wait > 1.2, 'slow to go off');
   });
   volt(() => {
     const { g, a } = room('mage', [[0, 'behind', 'powderkeg']]);
     a.addRune(0, 18, 15.5, 1);
-    run(g, 1.4);
+    run(g, MELD_TUNE.powderkeg.wait + 0.1);
     assert.ok(a.zones.some((z) => z.kind === 'burn' && z.meld === 'powderkeg'), 'burning ground where it went off');
   });
   volt(() => {
     const { g, a } = room('mage', [[0, 'behind', 'shatter']]);
     const m = put(g, a, 3.5, 0);
     a.addRune(0, m.x, m.y, 1);
-    run(g, 1.2 - MELD_TUNE.shatter.freezeBefore + 0.05);
+    const seen = run(g, MELD_TUNE.shatter.wait * MELD_TUNE.shatter.freezeAt + 0.05);
     assert.ok(m.frozenT > 0, 'frozen before it goes off');
+    assert.ok(a.zones.some((z) => z.kind === 'rune'), 'and it has not gone off');
+    assert.ok(seen.some((e) => e.t === 'volFx' && e.what === 'freeze' && e.ids.includes(m.id)), 'its look told what it froze');
   });
   volt(() => {
     const { g, a } = room('mage', [[0, 'behind', 'chainreaction']]);
@@ -206,12 +218,37 @@ test("4. behind: Demolition's one huge slow rune; Powderkeg's burning ground; Sh
     a.addRune(0, 18, 18.5, 1);
     const seen = run(g, 0.8);
     assert.equal(a.zones.filter((z) => z.kind === 'rune').length, 0, 'the second set off by the first, early');
-    assert.ok(seen.some((e) => e.t === 'arc' && e.meld === 'chainreaction'), 'the link between them shown');
+    assert.ok(seen.some((e) => e.t === 'volFx' && e.what === 'link'), 'the link between them shown');
   });
   volt(() => {
     const { g, a } = room('mage', [[0, 'behind', 'rupture']]);
     a.addRune(0, 18, 15.5, 1);
-    run(g, 1.4);
+    run(g, MELD_TUNE.rupture.wait + 0.1);
     assert.ok(a.zones.some((z) => z.kind === 'venom' && z.meld === 'rupture'), 'a poison cloud where it went off');
+  });
+});
+
+test("5. Chain Reaction's runes go off one after another, each setting off the nearest within reach a moment after; one out of reach keeps its own time", () => {
+  volt(() => {
+    const { g, a } = room('mage', [[0, 'behind', 'chainreaction']]);
+    const C = MELD_TUNE.chainreaction;
+    a.addRune(0, 12, 15.5, 1);
+    run(g, 0.5);
+    a.addRune(0, 15, 15.5, 1);
+    a.addRune(0, 18, 15.5, 1);
+    a.addRune(0, 12, 15.5 + C.linkReach + 1, 1);
+    assert.equal(a.zones.filter((z) => z.kind === 'rune').length, 4, 'four laid');
+    const wentOff: number[] = [];
+    const links: [number, number][] = [];
+    for (let t = 0; t < 1.05; t += DT) {
+      for (const e of run(g, DT)) {
+        if (e.t === 'burst' && e.style === 'ruin') wentOff.push(e.x);
+        if (e.t === 'volFx' && e.what === 'link') links.push([e.x0, e.x1]);
+      }
+    }
+    assert.deepEqual(wentOff.slice(0, 3), [12, 15, 18], 'the first, then the nearest, then the next');
+    assert.deepEqual(links, [[12, 15], [15, 18]], 'each link from the one going off to the next');
+    assert.equal(wentOff.length, 3, 'the one out of reach not yet');
+    assert.equal(a.zones.filter((z) => z.kind === 'rune').length, 1, 'it waits its own time');
   });
 });
