@@ -22,7 +22,9 @@ import { MOVES3 } from '../art/moves3';
 import { GATE_UP, PILLAR, STRIP, makeGateArt } from '../art/gates';
 import type { Strip } from '../art/gates';
 import { VAULT } from '../art/ground';
-import { gateBars, gateLeft, unbarFilm } from '../art/town_ways';
+import { floorStairsUp, gateBars, gateLeft, unbarFilm } from '../art/town_ways';
+import { CRYPT_FLOORS } from '../art/crypt';
+import { wardenGates } from '../art/floor1';
 import type { Sprite } from '../engine/px';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'cave:L:a';
@@ -224,6 +226,36 @@ if (mode === 'cave') {
     frame(0);
     show();
   }
+} else if (mode === 'up1') {
+  // FLOOR 1'S START: its first room's back wall, the gate's arch and pillars with the stairs up in them, the knight come down them
+  const theme = CRYPT_FLOORS[0];
+  const A = wardenGates();
+  const gr = cryptGround(1);
+  g.setTransform(SC, 0, 0, SC, 0, 0);
+  g.fillStyle = '#05040a';
+  g.fillRect(0, 0, W, H);
+  const ox = W / 2 - 24;
+  const oy = 70;
+  const at = (x: number, y: number): [number, number] => [ox + (x - y) * 16, oy + (x + y) * 8];
+  for (let ty = 0; ty < 6; ty++) for (let tx = -2; tx < 6; tx++) draw(gr.floor(tx + 4, ty + 6), ...at(tx, ty));
+  for (let tx = -2; tx < 6; tx++) if (tx < 0 || tx > 2) draw(gr.faceLeft[(tx + 9) % gr.faceLeft.length], ...at(tx, -1));
+  const wide = PILLAR / 32;
+  draw(floorStairsUp(theme, true), ...at(-wide, 0));
+  const list: { d: number; f: () => void }[] = [];
+  const put = (d: number, sp: Sprite, x: number, y: number): void => {
+    const [sx, sy] = at(x, y);
+    list.push({ d, f: () => draw(sp, sx, sy) });
+  };
+  for (const x of [0, 3 + wide]) put(x - wide, A.pillar(false), x, 0);
+  for (const q of A.arch(true, false, false)) put(-wide + q.t + STRIP / 64, q.s, -wide + q.t, 0);
+  list.push({ d: 1.5 + 1.7, f: () => {
+    const [sx, sy] = at(1.5, 1.7);
+    shadow(sx, sy);
+    draw(spriteOf3(MOVES3.rear, 0, 'front'), sx, sy, true);
+  } });
+  list.sort((a, b) => a.d - b.d);
+  for (const q of list) q.f();
+  show();
 } else if (mode === 'layer') {
   // one layer alone on grey, close: layer:<cave|mouth5>:<L|R>:<under|over|before|after>
   const [, what, sd, which] = HASH.split(':');

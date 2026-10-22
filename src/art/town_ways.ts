@@ -43,6 +43,7 @@ import { BEYOND, DEEP, fastBlit, flame } from './floorkit';
 import { ARCH, ARCH_WIDE, PILLAR, STRIP, curveOf, inWay } from './gates';
 import type { Strip } from './gates';
 import { VAULT } from './ground';
+import type { Theme } from './ground';
 import { GRAIN, compose, hash, mix } from './kit';
 import type { Ramp } from './kit';
 import { IRON } from './mkit';
@@ -668,6 +669,105 @@ export function unbarFilm(alongX: boolean): UnbarFilm {
 /** What is left once the gate is unbarred: the two beams lying at its foot, the chains in heaps by the pillars, the broken lock (the film's last frame). */
 export function gateLeft(alongX: boolean): Strip[] {
   return unbarFilm(alongX).left;
+}
+
+// =================================================================================================
+// FLOOR 1'S STAIRS UP: the foot of the town's stairs, in the first room's back wall, in place of its gate
+
+/** How the stairs up go: from the floor at the wall's face, each step `run` deep (world units) and `rise` high; their way as wide as the gate's opening; the vault over them. */
+export const STAIRS_UP = { run: 9, rise: 6, half: 60, vault: 66 } as const;
+
+const stairsUp = new Map<boolean, Sprite>();
+/**
+ * FLOOR 1'S STAIRS UP, seen through its gate's arch where the portcullis was (the arch and its pillars stand as the
+ * gate's do; nothing in them): a flight of the floor's own dressed stone going up away from the room into the dark,
+ * between walls of it, under a vault; the higher the darker, and at the top a little of the town's warm light.
+ * `theme` the floor's (art/crypt.ts CRYPT_FLOORS[0]). Drawn with the floor, under whatever stands; anchored as the arch's
+ * strips are, where its first strip begins, at the wall's face (render.ts standDoors: at(-wide), back 0); in a plane
+ * along +x (`alongX`) or along +y.
+ */
+export function floorStairsUp(theme: Theme, alongX: boolean): Sprite {
+  const key = alongX;
+  const had = stairsUp.get(key);
+  if (had) return had;
+  const P = new Plane(alongX);
+  const W = P.p.w;
+  const H = P.p.h;
+  const S = new Scene(new Px(W, H), P.ax, P.ay);
+  const { run, rise, half, vault } = STAIRS_UP;
+  // (the face's frame: a along the plane from its middle, b out of the wall toward the room, z up; the world's is
+  // along x a's own, along y turned: as art/cave4.ts takes it)
+  const mid = ARCH_WIDE / 2 / 0.8;
+  const toFace = (p: V3): V3 => (alongX ? [p[0] - mid, p[1], p[2]] : [p[1] - mid, p[0], p[2]]);
+  const eye: V3 = [1, 1, 0.8];
+  const arch = curveOf(ARCH);
+  const inArch = (a: number, z: number): boolean => inWay(ARCH, arch, Math.floor((a + mid) * 0.8), Math.floor(z));
+  /** The passage's air: over its steps, between its walls, under its vault. */
+  const stepTop = (d: number): number => (d < 0 ? 0 : (Math.floor(d / run) + 1) * rise);
+  const air = (a: number, b: number, z: number): boolean => {
+    const d = -b;
+    if (d < 0) return true;
+    if (Math.abs(a) > half) return false;
+    if (z < stepTop(d)) return false;
+    // (the vault: a barrel over the way, rising with the steps)
+    const top = vault + d * (rise / run) + Math.sqrt(Math.max(0, 1 - (a / half) ** 2)) * 14 - 14;
+    return z < top;
+  };
+  const tread = theme.slab;
+  const wall = alongX ? theme.lit : theme.shade;
+  const warm = '#5a3a24';
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const r0 = toFace(S.ray(x, y));
+      // (where the line of sight crosses the wall's face: in the arch's opening?)
+      const t0 = -r0[1];
+      const a0 = r0[0] + eye[0] * t0;
+      const z0 = eye[2] * t0;
+      if (z0 < 0 || !inArch(a0, z0)) continue;
+      let t = t0;
+      let hit: V3 | null = null;
+      for (let k = 0; k < 900; k++) {
+        t -= 0.4;
+        const q: V3 = [r0[0] + eye[0] * t, r0[1] + t, eye[2] * t];
+        if (!air(q[0], q[1], q[2])) {
+          hit = q;
+          break;
+        }
+        if (-q[1] > 300) break;
+      }
+      let c: string = DEEP;
+      if (hit) {
+        const d = -hit[1];
+        const onTread = hit[2] - stepTop(d) > -0.6 && Math.abs(hit[0]) <= half;
+        const onRiser = !onTread && Math.abs(hit[0]) <= half - 0.5 && hit[2] < stepTop(d) + 0.1 && hit[2] >= stepTop(d) - rise - 0.1;
+        const inSide = Math.abs(hit[0]) > half - 0.5;
+        if (onTread) {
+          // a tread: its nosing lit along its front edge, its stone, a joint across it now and then
+          const into = d - Math.floor(d / run) * run;
+          c = into < 1.4 ? mix(tread[3], '#ffffff', 0.18) : into > run - 1.6 ? tread[0] : hash(Math.floor(d / run), Math.floor(hit[0] / 22), 951) < 0.35 ? tread[2] : tread[1];
+          if (Math.abs(((hit[0] + 60) % 22) - 11) > 10.4) c = theme.mortar;
+        } else if (onRiser) {
+          // a riser, turned to the room and the light: the lightest of the flight, a joint along its foot
+          c = hit[2] - (stepTop(d) - rise) < 1 ? wall[0] : hash(Math.floor(d / run), Math.floor(hit[0] / 26), 953) < 0.3 ? wall[4] : wall[3];
+        }
+        else if (inSide) {
+          // the walls of the way: dressed stone in courses
+          const course = Math.floor(hit[2] / 12);
+          const runAlong = d + (course % 2) * 14;
+          c = hit[2] % 12 < 1 || runAlong % 28 < 1 ? wall[0] : hash(Math.floor(runAlong / 28), course, 952) < 0.3 ? wall[3] : wall[2];
+          if (hit[0] > 0) c = mix(c, '#06051a', 0.3);
+        } else c = wall[0];
+        // (darker the further up the way; at its top a little of the town's warm light)
+        const k = d < 10 ? 0.02 : d < 22 ? 0.16 : d < 36 ? 0.34 : d < 52 ? 0.52 : d < 72 ? 0.66 : 0.76;
+        c = mix(c, DEEP, k);
+        if (d > 40) c = mix(c, warm, 0.42 * clamp01((d - 40) / 36));
+      }
+      P.p.set(x, y, c);
+    }
+  }
+  const sp = P.sprite();
+  stairsUp.set(key, sp);
+  return sp;
 }
 
 // (kept for the checks: what of the shaft the dark takes, and the gate's opening)
