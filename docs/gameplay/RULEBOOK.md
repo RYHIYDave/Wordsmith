@@ -155,8 +155,10 @@ gone (Recommended)”). The ring stays lit for the heroes after. A hero who leav
 without the master rune-stone finds the fallen wordsmith again in the next.
 
 - **Where words come from:** elites carry a word you can win; every boss gives one, and the chance
-  of a second grows with depth. Deep down, rare words found nowhere else (where they begin is still
-  open). None in the first dungeon, since Version 19.5: its monsters carry none, and its gate takes
+  of a second grows with depth. Deep down, rare words found nowhere else: since Version 23.8, from
+  floor 11 down (and on every endless level), the city's four, Pulling, Splitting, Hexing and
+  Stilling (your words of 21 Oct 2026, 18:25: “And let’s add some words to levels 11-15”; your picks
+  after it). None in the first dungeon, since Version 19.5: its monsters carry none, and its gate takes
   none. **Words grow with the levels (since Version 23.7).** Your words of 21 Oct 2026, 18:24: “I’d like
   the drops of words to increase with each level as well” and “I don’t think the player is getting
   enough words to experiment with the melding system”; your picks: “10% each level, up to triple” and
@@ -180,12 +182,17 @@ without the master rune-stone finds the fallen wordsmith again in the next.
 - **Words laid on the gate go for now,** to come back later as endgame (your words of 9 Oct, 22:50:
   “Let’s have the door words go for now.  I think that’ll be endgame stuff”); then they make the
   next floor harder and richer.
-- **Thirteen words today, of two kinds (since Version 19.3):** damage words add damage of a kind
-  (Power, Flame, Frost, Lightning, Poison); shaping words change what the attack does (Swift, Twin,
-  Leech, Volatile, Heavy, Precise, Frenzied, Guarding). An attack takes one damage word on each
-  side. Still to come, in the plan you said yes to on 8 Oct: Mystical, which does for spells what
-  Power does for attacks (its stack shows as ARCANA), with Power for attacks only and Volatile's
-  hidden bomb; then Pulling, Splitting, Hexing and Stilling. Mystified comes later.
+- **Seventeen words today, of two kinds (since Version 19.3; the city's four since Version 23.8):**
+  damage words add damage of a kind (Power, Flame, Frost, Lightning, Poison); shaping words change
+  what the attack does (Swift, Twin, Leech, Volatile, Heavy, Precise, Frenzied, Guarding, and from
+  floor 11 down Pulling, Splitting, Hexing and Stilling, as your doc "Wordsmith: The New Words" has
+  them: Pulling drags in what it hits, and leaves a vortex; Splitting breaks into three copies that
+  fly on, and leaves shards; Hexing curses what it hits, and leaves a hex circle that weakens what
+  stands in it; Stilling slows what it hits in time, and leaves a bubble where enemies crawl). An
+  attack takes one damage word on each side. Still to come, in the plan you said yes to on 8 Oct:
+  Mystical, which does for spells what Power does for attacks (its stack shows as ARCANA), with
+  Power for attacks only and Volatile's hidden bomb. Mystified comes later. Binding (your pick of 21
+  Oct) comes once it is drawn.
 
 ## Builds
 
@@ -433,6 +440,7 @@ changes one only with your yes.
 | Packs grow with the levels | 5% bigger for each level past the first, floors and endless levels, held at double (floor 15 about 70% bigger; double by Endless 6) | `PACK_GROWTH`, `packGrowth` |
 | Words grow with the levels | every chance of a word but the boss's 10% bigger for each level past the first, floors and endless levels, held at triple (floor 6 1.5 times, floor 15 2.4; triple by Endless 6) | `WORD_GROWTH`, `wordGrowth` |
 | Rank II | two of one damage word and a meld's runedust make it rank II, half as strong again | `RANK2`, `RANK_TUNE.step` |
+| The city's words | found from floor 11 down; Pulling drags 1.5 tiles, its vortex 3 s; Splitting's 3 copies 40% each, its 6 shards 25%; Hexing's curse 20% more for 4 s, its circle 25% less for 4 s; Stilling 40% slower for 2 s, its bubble 60% for 4 s (each growing a little with its attribute) | `DEEP_WORDS_FROM`, `PULL`, `SPLIT`, `HEX`, `STILL` |
 | Blue packs | 1 in 4 of the packs not an elite room’s or a lair, from dungeon 2; 20% increased life | `PACKS` |
 | Yellow packs | every elite room’s, and 1 in 10 of the others from dungeon 2; the leader 3 times the life; its minions 50% of its words | `PACKS` |
 | Leaders of their own | skeletons the champion, bone archers the marksman, cultists the priest, green trolls the chieftain; never a pack of bats | `LEADERS`, `packRarity` |
@@ -458,7 +466,7 @@ it goes in.
 | Normal and Hardcore | Both, since Version 19.1 | Done |
 | Endless mode, past the last floor built | Since Version 23.3 | Done |
 | The first levels | Since Version 19.5 | Done: the ring dark until the master rune-stone goes in, then powering up, since Version 19.6; the first word once it has powered up, and the slots at 4, 15 and 20, since Version 20.0 |
-| The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding | Mystical, Power for attacks only, Volatile's bomb; then Pulling, Splitting, Hexing, Stilling |
+| The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding; seventeen since Version 23.8: Pulling, Splitting, Hexing and Stilling, from floor 11 down | Mystical, Power for attacks only, Volatile's bomb; Binding, once drawn; Volatile's five melds (your words of 21 Oct), once drawn |
 | Sets of five floors, each themed to its bosses, on down without end | One dungeon after another, with no end | Each set its own bosses, monsters and look, with the art chat: the Crypt first |
 | A boss of its own on every floor; a lair boss on every fifth | The Warden ends every dungeon; a Greater Warden, with twice the life, every fifth | The Crypt’s: the Headsman, the Chained One and the amalgamation (the art chat’s, with your yes), and the fleshmancer, not yet drawn |
 | Monster sizes, blue and yellow packs | Since Version 19.7; the new leaders and the rings since Version 19.9 | Done |
