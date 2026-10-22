@@ -100,7 +100,9 @@ test('1. the switch is off, and nothing of the game imports them', () => {
     // tests/hushed_watch.test.ts, tests/hounds.test.ts; and floor 13's Hushed in the fields, their body and breath:
     // tests/fieldhands.test.ts; and floor 14's Hushed patients, the same: tests/patients.test.ts)
     // (and, behind ACT2, off: their pictures as the game holds them, art/act1_figs/hushed.ts, since 19 Oct; only them)
-    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands|patients)\.ts$/.test(f) || f === 'art/act1_figs/hushed.ts') continue;
+    // (and Act 2's town hub, the camp's people, the same three with their voices back, art/hub2_folk.ts, behind HUB2, off:
+    // tests/hub2.test.ts)
+    if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(hushed(_moves|_watch|_watch_moves)?|hounds|fieldhands|patients|hub2_folk)\.ts$/.test(f) || f === 'art/act1_figs/hushed.ts') continue;
     // (each import followed to the file it names: the game's own files named for the kind, game/act1_rules/hushed.ts and
     // render/act1_fx/hushed.ts, and the registers that import them, are not these)
     for (const m of fs.readFileSync(path.join('src', f), 'utf8').matchAll(/from ['"](\.[^'"]*)['"]/g)) {

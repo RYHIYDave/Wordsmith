@@ -322,12 +322,12 @@ function cookingFire(f: number): Sprite {
   return done(S, 55, 92, [{ at: [0, 0, 10], r: 62 + f * 2, color: EMBER[2], a: 0.55 }]);
 }
 
-/** A LOG TO SIT ON by the fire: a length of trunk, its bark, its sawn ends. Lying along x (`k` 1: along y). 100 x 60 at (50, 36). */
+/** A LOG TO SIT ON by the fire: a length of trunk, its bark, its sawn ends; its top 19 picture pixels up (art/hub2_folk.ts SEAT). Lying along x (`k` 1: along y). 100 x 70 at (50, 46). */
 function logSeat(k: number): Sprite {
-  const S0 = scene(100, 60, 50, 36);
+  const S0 = scene(100, 70, 50, 46);
   const S = turned(S0, k);
-  S.rod([-26, 0, 6], [26, 0, 6], 6, 5.6, OAK, 1);
-  return done(S, 50, 36);
+  S.rod([-26, 0, 9.5], [26, 0, 9.5], 9.5, 9.0, OAK, 1);
+  return done(S, 50, 46);
 }
 
 /** A BEDROLL laid out by a tent: a blanket rolled at its head, a straw pallet under it. Along y (`k` 1: along x). 90 x 60 at (45, 36). */

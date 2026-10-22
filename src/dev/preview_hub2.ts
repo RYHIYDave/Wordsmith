@@ -16,12 +16,20 @@
 //     THE CAMP with the rest camp-style too (camp-all-phone: as a phone shows it)
 //   node tools/preview.mjs src/dev/preview_hub2.ts shots/hub/pieces.png 1400 1750 pieces
 //     the hub's own pieces, each frame
+//   node tools/preview.mjs src/dev/preview_hub2.ts shots/hub/folk.png 2000 1150 folk
+//     the camp's three people (art/hub2_folk.ts), close, from in front and behind, three moments of their talk each
+//   node tools/page_gif.mjs src/dev/preview_hub2.ts camp-film shots/hub/camp_film.gif
+//     THE CAMP MOVING, as a phone shows it: the knight walks in from the gate, round the fire to the mystic, everything
+//     that moves moving (camp-film@k: frame k alone). His word to it, by 11:30 Pacific, 22 Oct 2026: “Yes, send to
+//     main (Recommended)”. (The frames, made into an MP4 with ffmpeg, are what he was sent.)
 
 import { hushSetPieces } from '../art/act2_set';
 import { gateWardPieces } from '../art/floor11';
 import type { Piece } from '../art/floorkit';
 import { GW_RISE, GW_ZONE, gateWardLook, gateWardPaintFloor } from '../art/gateward';
 import { CITY, hubPieces } from '../art/hub2';
+import { bazaar, campPlace, ring, smithy, st } from '../art/hub2_camp';
+import type { Laid, Place, Rect, TownKind, TownLaid } from '../art/hub2_camp';
 import type { HubPiece } from '../art/hub2';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
@@ -40,7 +48,7 @@ import type { Floor } from '../game/types';
 import { THEME } from '../ui/ui';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'square';
-const PHONE = HASH.endsWith('-phone');
+const PHONE = HASH.endsWith('-phone') || HASH.startsWith('camp-film');
 const PW = HASH === 'pieces' ? 1400 : PHONE ? 1014 : 2000;
 const PH = HASH === 'pieces' ? 1750 : PHONE ? 468 : 1150;
 
@@ -59,58 +67,6 @@ function show(): void {
 
 // ---------------------------------------------------------------------------------------------------
 // WHAT IS LAID
-
-type Rect = [number, number, number, number]; // x0, y0, x1, y1 (x1, y1 not in it)
-/** A piece of the Gate Ward's or the hub's, by name: on the floor, hung on a house front ('left': a front along x; 'right': along y), or on the roofs. */
-interface Laid { name: string; frame: number; x: number; y: number; on?: 'left' | 'right' | 'top'; flat?: boolean }
-/** The town's own things (art/town.ts) and its four people, each on its tile; `kind` as the game names them. */
-type TownKind = 'forge' | 'anvil' | 'rack' | 'trough' | 'tentBack' | 'tentTable' | 'rug' | 'runeRing' | 'runeSlab' | 'runeStone' | 'lexicon' | 'stash' | 'brazier' | 'waypoint' | 'armourer' | 'mystic' | 'wordsmith' | 'stranger';
-interface TownLaid { kind: TownKind; x: number; y: number; v?: number }
-interface Place {
-  name: string;
-  w: number;
-  h: number;
-  open: Rect;
-  streets: Rect[];
-  squares: { x: number; y: number; r: number }[];
-  dress: Laid[];
-  town: TownLaid[];
-  /** The services' names, where the game writes them (render.ts NAME_LIFT). */
-  labels: [string, number, number, number][];
-  hero: [number, number];
-  whole: [number, number];
-}
-
-const st = (facing: number, v: number): number => facing * 4 + v;
-/** The wordsmith's ring round the tile (x, y): him, his slab before him, six standing stones, the circle in the floor (level.ts TOWN). */
-function ring(x: number, y: number): TownLaid[] {
-  const stones: [number, number][] = [[-2, -1], [-1, -2], [1, -2], [-2, 1], [2, -1], [-1, 2]];
-  return [
-    { kind: 'runeRing', x, y },
-    { kind: 'wordsmith', x, y },
-    { kind: 'runeSlab', x, y: y + 1 },
-    ...stones.map(([dx, dy], i) => ({ kind: 'runeStone' as const, x: x + dx, y: y + dy, v: i % 5 })),
-  ];
-}
-/** The armourer's smithy against a house front along x at row y: the forge, his rack, his trough; him, his anvil. */
-function smithy(x: number, y: number): TownLaid[] {
-  return [
-    { kind: 'forge', x, y },
-    { kind: 'rack', x: x - 3, y },
-    { kind: 'trough', x: x + 1, y },
-    { kind: 'armourer', x: x - 1, y: y + 1 },
-    { kind: 'anvil', x: x - 1, y: y + 2 },
-  ];
-}
-/** The mystic's tent, its back toward -y: its rug, its back, him, his table of wares. */
-function bazaar(x: number, y: number): TownLaid[] {
-  return [
-    { kind: 'rug', x, y },
-    { kind: 'tentBack', x, y: y - 1 },
-    { kind: 'mystic', x, y },
-    { kind: 'tentTable', x, y: y + 1 },
-  ];
-}
 
 /**
  * THE LAMPLIT MARKET SQUARE: a square of Vellum 22 tiles by 20, its houses round it lit at their windows; the fountain
@@ -194,110 +150,6 @@ const SQUARE: Place = {
   whole: [27.0, 23.0],
 };
 
-/**
- * THE CAMP INSIDE THE GATE (his pick, 22 Oct: “The camp yes.  Also some different looks for the shops”): the yard just
- * inside the city's broken gate, 20 tiles by 18, where the survivors of the siege camp: the gatehouse at the end of the
- * short street in from the left (the gate, the way on), the waypoint at its mouth; tents of patched canvas along the
- * back, bedrolls before them; the cooking fire in the middle, logs round it to sit on; THE ARMOURER'S FIELD FORGE ON ITS
- * CART against the back row on the right, his anvil on its stump before it (his pick); THE MYSTIC'S PAINTED CARAVAN on
- * the right, its side let down, he before it and his trestle of wares before him (his pick); the wordsmith's ring at the
- * front on the left, the Lexicon by the gate's street, the stash by a handcart; the stranger in the gatehouse's shadow.
- * A cart barricade across the street off to the right, braziers, crates and sacks of what was saved. `all`: the rest
- * camp-style too, to look at (his words: “I’d like to see all of them in a new style but more than likely we’ll stick
- * to just the vendors for new looks”): the ring of stones prised up out of the street round a column's drum, chalked;
- * the Lexicon on crates; the stash on a handcart; the stranger's barrel of dice.
- */
-const STONES: [number, number][] = [[-2, -1], [-1, -2], [1, -2], [-2, 1], [2, -1], [-1, 2]];
-function campPlace(all: boolean): Place {
-  const R: [number, number] = [21, 28];
-  return {
-    name: 'Vellum',
-    w: 56,
-    h: 56,
-    open: [16, 14, 36, 32],
-    streets: [
-      [11, 21, 16, 24], // in from the broken gate
-      [36, 25, 50, 28], // a street off to the right, barricaded
-      [22, 32, 25, 46], // a street toward the eye
-    ],
-    squares: [],
-    dress: [
-      { name: 'the city gate, held', frame: 1, x: 11.4, y: 22.5 },
-      // the tents along the back, their bedrolls; one on the left, one at the front with its back to the eye
-      { name: 'a tent', frame: 0 * 4 + 0, x: 18.4, y: 15.4 },
-      { name: 'a tent', frame: 1 * 4 + 0, x: 22.4, y: 15.4 },
-      { name: 'a tent', frame: 2 * 4 + 1, x: 17.2, y: 25.0 },
-      { name: 'a tent', frame: 3 * 4 + 2, x: 26.0, y: 30.8 },
-      { name: 'a bedroll', frame: 0 * 2 + 0, x: 18.3, y: 17.9 },
-      { name: 'a bedroll', frame: 2 * 2 + 0, x: 22.6, y: 18.0 },
-      // the cooking fire, the logs round it
-      { name: 'the cooking fire', frame: 0, x: 25.6, y: 22.6 },
-      { name: 'a log to sit on', frame: 0, x: 25.6, y: 20.5 },
-      { name: 'a log to sit on', frame: 1, x: 23.4, y: 22.8 },
-      { name: 'a log to sit on', frame: 1, x: 27.8, y: 23.0 },
-      // THE ARMOURER'S FIELD FORGE, his anvil before it; THE MYSTIC'S CARAVAN, his trestle before him
-      { name: "the armourer's field forge", frame: 1, x: 31.6, y: 15.3 },
-      { name: "the armourer's anvil, on its stump", frame: 0, x: 32.05, y: 17.4 },
-      { name: "the mystic's caravan", frame: 0, x: 26.4, y: 15.7 },
-      { name: "the mystic's trestle", frame: 1, x: 26.4, y: 18.6 },
-      { name: 'a tent', frame: 1 * 4 + 3, x: 33.8, y: 21.0 },
-      // what was saved: crates, a barrel, sacks, hay; the handcart; the barricade across the street off to the right
-      { name: 'crates', frame: 0, x: 31.6, y: 30.9 },
-      { name: 'barrel', frame: 0, x: 30.4, y: 31.2 },
-      { name: 'sacks of grain', frame: 0, x: 23.6, y: 15.8 },
-      { name: 'hay bales', frame: 0, x: 34.9, y: 29.6 },
-      { name: 'handcart', frame: 0, x: 33.0, y: 30.6 },
-      { name: 'the cart barricade', frame: 0, x: 36.4, y: 26.4 },
-      { name: 'crates', frame: 0, x: 35.2, y: 24.4 },
-      { name: 'street lamp', frame: 0, x: 16.6, y: 20.6 },
-      { name: 'street lamp', frame: 1, x: 18.6, y: 31.4 },
-      // on the fronts: washing strung out, lanterns, bunting
-      { name: 'washing on a line', frame: 0, x: 20.4, y: 14, on: 'left' },
-      { name: 'paper lanterns', frame: 0, x: 22.0, y: 14, on: 'left' },
-      { name: 'wall lantern', frame: 0, x: 29.4, y: 14, on: 'left' },
-      { name: 'festival bunting', frame: 0, x: 34.8, y: 14, on: 'left' },
-      { name: 'wall lantern', frame: 1, x: 16, y: 19.2, on: 'right' },
-      { name: 'washing on a line', frame: 0, x: 16, y: 29.6, on: 'right' },
-      { name: 'paper lanterns', frame: 0, x: 14.4, y: 21, on: 'left' },
-      // the roofs
-      { name: 'chimney', frame: 0, x: 23.6, y: 11.2, on: 'top' },
-      { name: 'chimney', frame: 1, x: 12.6, y: 27.4, on: 'top' },
-      // THE REST CAMP-STYLE, to look at
-      ...(all
-        ? [
-            { name: "the wordsmith's chalk ring", frame: 0, x: R[0] + 0.5, y: R[1] + 0.5, flat: true },
-            { name: "the wordsmith's drum", frame: 0, x: R[0] + 0.5, y: R[1] + 1.5 },
-            ...STONES.map(([dx, dy], i) => ({ name: "the wordsmith's stone, propped", frame: i % 5, x: R[0] + dx + 0.5, y: R[1] + dy + 0.5 })),
-            { name: 'the Lexicon, on its crates', frame: 0, x: 19.5, y: 20.5 },
-            { name: 'the stash, on its cart', frame: 0, x: 29.5, y: 29.5 },
-            { name: "the stranger's barrel", frame: 0, x: 16.6, y: 20.5 },
-          ]
-        : []),
-    ],
-    town: [
-      { kind: 'waypoint', x: 17.0, y: 22.0 },
-      { kind: 'armourer', x: 31.6, y: 16.0 },
-      { kind: 'mystic', x: 25.9, y: 17.1 },
-      ...(all ? [{ kind: 'wordsmith' as const, x: R[0], y: R[1] }] : [...ring(R[0], R[1]), { kind: 'lexicon' as const, x: 19, y: 20 }, { kind: 'stash' as const, x: 29, y: 29 }]),
-      { kind: 'stranger', x: 16, y: 19 },
-      { kind: 'brazier', x: 22.6, y: 25.2 },
-      { kind: 'brazier', x: 29.4, y: 19.4 },
-      { kind: 'brazier', x: 34, y: 27 },
-    ],
-    labels: [
-      ['GATE', 11.9, 22.5, 150],
-      ['ARMOURER', 32.1, 16.5, 50],
-      ['MYSTIC', 26.4, 18.6, 96],
-      ['WORDSMITH', 21.5, 28.5, 44],
-      ['LEXICON', 19.5, 20.5, all ? 50 : 40],
-      ['STASH', 29.5, 29.5, all ? 34 : 26],
-      ['STRANGER', 16.5, 19.5, 40],
-    ],
-    hero: [25.4, 25.6],
-    whole: [23.8, 22.4],
-  };
-}
-
 // ---------------------------------------------------------------------------------------------------
 // THE GROUND: every tile that is not open is houses, painted by the Gate Ward's look
 
@@ -338,27 +190,34 @@ function spriteOfLaid(l: Laid): Sprite | null {
   if (l.on === 'right') return p.right ? p.right[l.frame] : null;
   return p.frames ? p.frames[l.frame] : null;
 }
+function spriteOfLaidAt(l: Laid, time: number): Sprite | null {
+  if (!l.anim || l.on) return spriteOfLaid(l);
+  const fs = (PIECES.get(l.name) as Piece | undefined)?.frames;
+  if (!fs) return null;
+  return fs[(l.frame + Math.floor(time * l.anim)) % fs.length];
+}
 const T0 = 0.6;
-function spriteOfTown(t: TownLaid): Sprite {
+function spriteOfTown(t: TownLaid, time = T0): Sprite {
+  const at = (fps: number, n: number, off = 0): number => (Math.floor(time * fps) + off) % n;
   switch (t.kind) {
-    case 'forge': return TP.forge[1];
+    case 'forge': return TP.forge[at(8, 4, 1)];
     case 'anvil': return TP.anvil;
     case 'rack': return TP.rack;
     case 'trough': return TP.trough;
     case 'tentBack': return TP.tentBack;
     case 'tentTable': return TP.tentTable;
     case 'rug': return TP.rug;
-    case 'runeRing': return TP.runeRing[2];
-    case 'runeSlab': return TP.runeSlab[2];
+    case 'runeRing': return TP.runeRing[at(6, 8, 2)];
+    case 'runeSlab': return TP.runeSlab[at(6, 8, 2)];
     case 'runeStone': return TP.runeStone[t.v ?? 0].alight;
-    case 'lexicon': return TP.lexicon[1];
+    case 'lexicon': return TP.lexicon[at(4, 4, 1)];
     case 'stash': return TP.stash;
-    case 'brazier': return DP.brazier[Math.floor(t.x + t.y) % 4];
-    case 'waypoint': return WAY.awake[3];
-    case 'armourer': return townFrame(folk().armourer, T0, 0.1, TOWN_WORK.armourer);
-    case 'mystic': return townFrame(folk().mystic, T0, 0.7, TOWN_WORK.mystic);
-    case 'wordsmith': return townFrame(folk().wordsmith, T0, 1.3, TOWN_WORK.wordsmith);
-    case 'stranger': return townFrame(folk().stranger, T0, 0.4, TOWN_WORK.stranger);
+    case 'brazier': return DP.brazier[at(8, 4, Math.floor(t.x + t.y))];
+    case 'waypoint': return WAY.awake[at(10, 12, 3)];
+    case 'armourer': return townFrame(folk().armourer, time, 0.1, TOWN_WORK.armourer);
+    case 'mystic': return townFrame(folk().mystic, time, 0.7, TOWN_WORK.mystic);
+    case 'wordsmith': return townFrame(folk().wordsmith, time, 1.3, TOWN_WORK.wordsmith);
+    case 'stranger': return townFrame(folk().stranger, time, 0.4, TOWN_WORK.stranger);
   }
 }
 const FLAT_TOWN = new Set<TownKind>(['rug', 'runeRing']);
@@ -475,11 +334,45 @@ function nameOf(pl: Place, tiles: Uint8Array, hero: [number, number]): void {
   g.fillRect(mx + mw / 2 - 2, my + mh / 2 - 2, 4, 4);
 }
 
-function drawPlace(pl: Place, phone: boolean): void {
-  const { T, tiles } = groundOf(pl);
-  const cam = phone ? pl.hero : pl.whole;
-  camOn(cam[0], cam[1]);
-  paintPanel(T);
+/** A sprite drawn mirrored about its anchor (one of the town's people facing the other way). */
+function drawSpriteFlip(sp: Sprite, x: number, y: number): void {
+  const [sx0, sy0] = pictureOf(x, y);
+  g.save();
+  g.translate(Math.round(sx0 - VX), Math.round(sy0 - VY));
+  g.scale(-1, 1);
+  g.drawImage(sp.img, -sp.ax * 2, -sp.ay * 2, sp.w * 2, sp.h * 2);
+  g.restore();
+}
+/** The camp's people's pictures, painted once each (art/hub2_folk.ts: TALK_FRAMES a round at TALK_FPS). */
+const FOLK_FRAMES = new Map<string, Sprite>();
+let folkMod: typeof import('../art/hub2_folk') | null = null;
+function folkFrame(who: 'porter' | 'goodwife' | 'baker', time: number, view: 'front' | 'back'): Sprite | null {
+  if (!folkMod) return null;
+  const k = Math.floor(time * folkMod.TALK_FPS) % folkMod.TALK_FRAMES;
+  const key = `${who}:${view}:${k}`;
+  let sp = FOLK_FRAMES.get(key);
+  if (!sp) FOLK_FRAMES.set(key, (sp = folkMod.campFolkFrame(who, k / folkMod.TALK_FPS, view)));
+  return sp;
+}
+interface SceneOpts {
+  t: number;
+  cam: [number, number];
+  hero: [number, number];
+  heroSprite: Sprite;
+  heroFlip?: boolean;
+  /** The ground painted once, at (x0, y0) of the world's picture, to take each frame's from. */
+  ground?: { c: HTMLCanvasElement; x0: number; y0: number };
+}
+const GROUNDS = new Map<Place, { T: Terrain; tiles: Uint8Array }>();
+function drawScene(pl: Place, o: SceneOpts): void {
+  let gr = GROUNDS.get(pl);
+  if (!gr) GROUNDS.set(pl, (gr = groundOf(pl)));
+  camOn(o.cam[0], o.cam[1]);
+  if (o.ground) {
+    g.drawImage(o.ground.c, VX - o.ground.x0, VY - o.ground.y0, PW, PH, 0, 0, PW, PH);
+  } else {
+    paintPanel(gr.T);
+  }
   const lits: Lit[] = [];
   // on the fronts and the roofs, first: they are part of the houses
   for (const l of pl.dress) {
@@ -495,28 +388,74 @@ function drawPlace(pl: Place, phone: boolean): void {
   const things: Thing[] = [];
   for (const l of pl.dress) {
     if (l.on) continue;
-    const sp = spriteOfLaid(l);
+    const sp = spriteOfLaidAt(l, o.t);
     if (!sp) continue;
     const p = PIECES.get(l.name) as { shadow?: number };
     things.push({ d: l.flat ? -1e6 + l.x + l.y : l.x + l.y, draw: () => { shadowAt(l.x, l.y, p.shadow ?? 0); drawSprite(sp, l.x, l.y); } });
     lits.push({ sp, x: l.x, y: l.y, up: 0 });
   }
   for (const t of pl.town) {
-    const sp = spriteOfTown(t);
+    const sp = spriteOfTown(t, o.t);
     const x = t.x + 0.5;
     const y = t.y + 0.5;
     const flat = FLAT_TOWN.has(t.kind);
     things.push({ d: flat ? -1e6 + x + y : x + y, draw: () => drawSprite(sp, x, y) });
     lits.push({ sp, x, y, up: 0 });
   }
-  const knight = spriteOf3(MOVES3.rear, 0.3, 'front');
-  things.push({ d: pl.hero[0] + pl.hero[1], draw: () => { shadowAt(pl.hero[0], pl.hero[1], 0.3); drawSprite(knight, pl.hero[0], pl.hero[1]); } });
+  for (const f of pl.folk ?? []) {
+    const sp = folkFrame(f.who, o.t + (f.who === 'goodwife' ? 0.4 : f.who === 'baker' ? 0.8 : 0), f.view);
+    if (!sp) continue;
+    things.push({ d: f.x + f.y + 0.02, draw: () => (f.flip ? drawSpriteFlip(sp, f.x, f.y) : drawSprite(sp, f.x, f.y)) });
+  }
+  const [hx, hy] = o.hero;
+  things.push({ d: hx + hy, draw: () => { shadowAt(hx, hy, 0.3); if (o.heroFlip) drawSpriteFlip(o.heroSprite, hx, hy); else drawSprite(o.heroSprite, hx, hy); } });
   things.sort((a, b) => a.d - b.d);
   for (const t of things) t.draw();
   dusk();
   lightsOver(lits);
   labelsOf(pl);
-  nameOf(pl, tiles, cam);
+  nameOf(pl, gr.tiles, o.hero);
+}
+function drawPlace(pl: Place, phone: boolean): void {
+  drawScene(pl, { t: T0, cam: phone ? pl.hero : pl.whole, hero: pl.hero, heroSprite: spriteOf3(MOVES3.rear, 0.3, 'front') });
+}
+
+/**
+ * THE CAMP AT DUSK, MOVING (a film for him): the knight comes in off the gate's street, past the wordsmith's ring and
+ * round the near side of the fire where the three sit talking, and up to the mystic's caravan, where he stops; the
+ * camera on him as the game's is. 20 pictures a second.
+ */
+const FILM_FPS = 20;
+const FILM_PATH: [number, number][] = [
+  [13.6, 22.5],
+  [19.4, 22.3],
+  [22.2, 25.0],
+  [25.6, 25.9],
+  [28.8, 23.4],
+  [28.4, 20.4],
+  [26.9, 19.8],
+];
+const FILM_PACE = 3.0;
+const FILM_STAND = 2.4;
+function filmHero(t: number): { at: [number, number]; dir: [number, number]; moving: boolean } {
+  let left = t * FILM_PACE;
+  for (let i = 0; i + 1 < FILM_PATH.length; i++) {
+    const [ax, ay] = FILM_PATH[i];
+    const [bx, by] = FILM_PATH[i + 1];
+    const d = Math.hypot(bx - ax, by - ay);
+    if (left <= d) return { at: [ax + ((bx - ax) * left) / d, ay + ((by - ay) * left) / d], dir: [(bx - ax) / d, (by - ay) / d], moving: true };
+    left -= d;
+  }
+  const n = FILM_PATH.length;
+  const [ax, ay] = FILM_PATH[n - 2];
+  const [bx, by] = FILM_PATH[n - 1];
+  const d = Math.hypot(bx - ax, by - ay);
+  return { at: [bx, by], dir: [(bx - ax) / d, (by - ay) / d], moving: false };
+}
+function filmLength(): number {
+  let L = 0;
+  for (let i = 0; i + 1 < FILM_PATH.length; i++) L += Math.hypot(FILM_PATH[i + 1][0] - FILM_PATH[i][0], FILM_PATH[i + 1][1] - FILM_PATH[i][1]);
+  return L / FILM_PACE + FILM_STAND;
 }
 
 if (HASH === 'square' || HASH === 'square-phone') {
@@ -525,6 +464,53 @@ if (HASH === 'square' || HASH === 'square-phone') {
 } else if (HASH === 'camp' || HASH === 'camp-phone' || HASH === 'camp-all' || HASH === 'camp-all-phone') {
   drawPlace(campPlace(HASH.startsWith('camp-all')), PHONE);
   show();
+} else if (HASH === 'camp-film' || HASH.startsWith('camp-film@')) {
+  void (async () => {
+    folkMod = await import('../art/hub2_folk');
+    const pl = campPlace(false);
+    const gr = groundOf(pl);
+    GROUNDS.set(pl, gr);
+    // the ground once, over all the camera will see
+    const lo = pictureOf(14, 30);
+    const hi = pictureOf(30, 14);
+    const x0 = Math.round(lo[0] - PW / 2 - 40);
+    const y0 = Math.round(pictureOf(14, 14)[1] - PH / 2 - 60);
+    const w = Math.round(hi[0] - lo[0] + PW + 80);
+    const h = Math.round(pictureOf(30, 30)[1] - pictureOf(14, 14)[1] + PH + 120);
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const cg = c.getContext('2d') as CanvasRenderingContext2D;
+    for (let py = 0; py < h; py += 256) {
+      for (let px = 0; px < w; px += 256) {
+        const pw = Math.min(256, w - px);
+        const ph = Math.min(256, h - py);
+        const p = paintTerrain(gr.T, x0 + px, y0 + py, pw, ph);
+        cg.putImageData(new ImageData(p.rgba, pw, ph), px, py);
+      }
+    }
+    const ground = { c, x0, y0 };
+    const N = Math.round(filmLength() * FILM_FPS);
+    const frame = (k: number): void => {
+      const t = k / FILM_FPS;
+      const hero = filmHero(t);
+      // (the screen's way of his going: across it, and down it)
+      const sx = hero.dir[0] - hero.dir[1];
+      const sy = hero.dir[0] + hero.dir[1];
+      const view = sy >= 0 ? 'front' : 'back';
+      const sp = hero.moving ? spriteOf3(MOVES3.krun, t, view) : spriteOf3(MOVES3.rear, t, view);
+      drawScene(pl, { t, cam: hero.at, hero: hero.at, heroSprite: sp, heroFlip: sx < 0, ground });
+    };
+    const w2 = window as unknown as { __frames: number; __tickMs: number; __frame: (k: number) => string };
+    w2.__frames = N;
+    w2.__tickMs = 1000 / FILM_FPS;
+    w2.__frame = (k) => {
+      frame(k);
+      return cvs.toDataURL('image/png');
+    };
+    frame(HASH.includes('@') ? Number(HASH.split('@')[1]) : 0);
+    show();
+  })();
 } else if (HASH === 'pieces') {
   g.fillStyle = '#3a3440';
   g.fillRect(0, 0, PW, PH);
@@ -551,4 +537,28 @@ if (HASH === 'square' || HASH === 'square-phone') {
     x += 20;
   }
   show();
+}
+
+// ---------------------------------------------------------------------------------------------------
+// THE CAMP'S PEOPLE (art/hub2_folk.ts): each of the three from in front and behind, a few moments of the talk
+if (HASH === 'folk') {
+  void (async () => {
+    const { campFolkFrame, TALK_LONG } = await import('../art/hub2_folk');
+    g.fillStyle = '#4a4248';
+    g.fillRect(0, 0, PW, PH);
+    const who = ['porter', 'goodwife', 'baker'] as const;
+    let x = 30;
+    who.forEach((w, i) => {
+      for (const view of ['front', 'back'] as const) {
+        for (const k of [0, 1, 2]) {
+          const sp = campFolkFrame(w, (k / 3) * TALK_LONG + i, view);
+          g.drawImage(sp.img, x, 40 + (view === 'back' ? 330 : 0), sp.w * 3, sp.h * 3);
+          x += 150;
+        }
+        x -= 450;
+      }
+      x += 460;
+    });
+    show();
+  })();
 }
