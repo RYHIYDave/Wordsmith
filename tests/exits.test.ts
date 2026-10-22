@@ -136,10 +136,10 @@ test('on, the town\'s stairs: on plain floor, their top step takes him down to f
   exitsSet(true, () => {
     const g = new Game('warrior', 31);
     g.hero.invuln = 1e9;
-    const W = g.level.ways!;
-    assert.ok(W.stair && W.stair.open, 'the stairs are open');
-    assert.deepEqual({ x: W.stair.x, y: W.stair.y, way: W.stair.way }, TOWN_STAIR);
-    const top = topStep(W.stair);
+    const st = g.level.ways!.stair!;
+    assert.ok(st && st.open, 'the stairs are open');
+    assert.deepEqual({ x: st.x, y: st.y, way: st.way }, TOWN_STAIR);
+    const top = topStep(st);
     g.hero.x = top.x - 1.2;
     g.hero.y = top.y;
     const k = until(g, 4, () => g.inDungeon, walking(1, 0));
