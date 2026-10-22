@@ -3,7 +3,7 @@
 // Every pairing is assembled from the same few parts (bigger, faster, doubled, element, ground
 // patch, echo, rune, buff), so no pairing needs its own code or its own art.
 
-import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, CLASSES, FRENZY, GUARD, HEAVY, HEX, MANA_MODE, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
+import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, BIND, CLASSES, FRENZY, GUARD, HEAVY, HEX, MANA_MODE, PRECISE, PULL, SKILLS, SPLIT, STILL, TUNE, WORDS, holdSkill, tapSkill, wordAttr, weaponAttr } from './defs';
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
@@ -11,6 +11,7 @@ import { RANK_OF } from './types';
 import { MELD_TUNE, RANK_TUNE, isDamageWord, isMeld, isRank, partsOf, rankOf } from './melds';
 
 const pct = (n: number): string => `${Math.round(n)}%`;
+const secs = (n: number): string => String(Math.round(n * 10) / 10);
 
 function attrOf(word: WordId, d: Derived): number {
   const a = WORDS[word].attr;
@@ -99,7 +100,7 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     id: def.id, name: skillName(def, front, behind), element, dmgMult: 0, size: 1, rate: 0, cooldown: 0, mana: 0,
     count: 1, countDmg: 1, splash: 0, splashDmg: 0, pierce: false, projSpeed: 0,
     ignite: 0, chill: 0, arcs: 0, arcDmg: 0, leech: 0, volatile: 0, poison: 0, stun: 0, precise: false, frenzy: false, shield: 0, meld,
-    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, pull: 0, split: 0, hex: 0, still: 0, vortex: 0, shards: 0, hexCircle: 0, bubble: 0, meldBehind, lines,
+    might: 0, haste: 0, echo: 0, zone: null, orbChance: 0, rune: 0, cloud: 0, cracks: 0, mark: false, frenzyFeed: false, ward: 0, pull: 0, split: 0, hex: 0, still: 0, vortex: 0, shards: 0, hexCircle: 0, bubble: 0, bind: 0, snare: 0, meldBehind, lines,
   };
 
   // ----- in front: the hit -----
@@ -249,6 +250,10 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     r.still = Math.min(STILL.most, STILL.slower + 0.001 * growsBy(front, 'stilling'));
     lines.push(`Stilling: what it hits is slowed in time for ${STILL.secs} s: it moves, attacks and shoots ${pct(r.still * 100)} slower.`);
   }
+  if (has(front, 'binding')) {
+    r.bind = Math.min(BIND.most, BIND.secs + 0.004 * growsBy(front, 'binding'));
+    lines.push(`Binding: holds what it hits in place for ${secs(r.bind)} s (an elite half as long, a boss not at all).`);
+  }
 
   // ----- behind: the wake -----
   let softer = false;
@@ -337,6 +342,10 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   if (has(behind, 'stilling')) {
     r.bubble = Math.min(STILL.crawlMost, STILL.crawl + 0.001 * growsBy(behind, 'stilling'));
     lines.push(`of Stillness: leaves a bubble for ${STILL.bubble} s where enemies and their shots are ${pct(r.bubble * 100)} slower.`);
+  }
+  if (has(behind, 'binding')) {
+    r.snare = Math.min(BIND.snareMost, BIND.snareSecs + 0.004 * growsBy(behind, 'binding'));
+    lines.push(`of the Snare: leaves a snare; the next enemy to cross it is held in place for ${secs(r.snare)} s.`);
   }
   if (softer) dmgMult *= 0.7;
 

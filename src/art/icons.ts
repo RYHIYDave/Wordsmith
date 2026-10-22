@@ -58,6 +58,8 @@ export const WORD_COLOR: Record<WordId, string> = {
   splitting: '#dcaaf6',
   hexing: '#b8b4c8',
   stilling: '#86eaae',
+  // (BINDING: parchment, the art chat's, render/binding3.ts BIND_RAMP, his yes by 22:00, 21 Oct)
+  binding: '#c8b48a',
   // (WORDMELDING: the melded words' colours, the planning chat's placeholders until the art chat's,
   // pictures to him first; each picked as far, as the eye sees colour, from every other word, the
   // friend's cyan and the enemy's pink and gold as it could be)
@@ -962,6 +964,8 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   hexing: ['..XXX..', '.X...X.', 'X..o..X', '.X...X.', '..XXX..', '...X...', '..X....'],
   // an hourglass
   stilling: ['XXXXXX', '.X..X.', '..oo..', '..oo..', '.X..X.', 'XXXXXX'],
+  // (BINDING: a band tied in a knot, the art chat's BIND_GLYPH)
+  binding: ['XX...XX', 'X.X.X.X', 'X..o..X', 'X.X.X.X', 'XX...XX', '...X...', '..X.X..'],
   // (WORDMELDING: the melded words' runes, the planning chat's placeholders until the art chat's)
   // a mountain blowing its top
   eruption: ['.o..o.', '..oo..', '..XX..', '.XXXX.', '.XXoX.', 'XXXXXX'],
@@ -1017,6 +1021,7 @@ export const WORD_GLOW: Record<WordId, string> = {
   splitting: '#f2dcff',
   hexing: '#e6e2ee',
   stilling: '#d0fce4',
+  binding: '#f2e8cc',
   // (WORDMELDING: halfway to white from each one's colour)
   eruption: '#ffccac',
   avalanche: '#dcedff',

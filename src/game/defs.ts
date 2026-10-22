@@ -321,6 +321,18 @@ export const HEX = { secs: 4, more: 0.2, most: 0.4, circle: 4, weaker: 0.25, wea
  * make the hero's cooldowns run `cooldowns` slower for `monsterSecs`.
  */
 export const STILL = { secs: 2, slower: 0.4, most: 0.6, bubble: 4, crawl: 0.6, crawlMost: 0.75, boss: 0.5, cooldowns: 0.4, monsterSecs: 4 };
+/**
+ * BINDING (Strength; his pick of 21 Oct 2026, after his 18:25, “Binding”; his page "Wordsmith: Words, Crafting, Ranks": Control;
+ * in front, holds enemies in place; behind, leaves a snare for the next enemy to cross; on a monster, monsters root you). The
+ * numbers the main chat's starting points. In front: what it hits is held where it stands for `secs` (a two-hundredth of a
+ * second more a point of Strength, to `most`), striking still but going nowhere; an elite `elite` as long, a boss not at all; once
+ * a hold is over it cannot be held again for `again` seconds. Behind: a snare where the ability ends, lying `snareLife` seconds
+ * (at most one each `every` seconds an ability); the first enemy to come within `reach` of it is held `snareSecs` (to
+ * `snareMost`). On a monster: its blows root the hero `rootSecs` (a share of it for a minion), then not again for `rootAgain`.
+ * Their looks the art chat's (render/binding3.ts, his yes by 22:00, 21 Oct, “Yes, send to main (Recommended)”): a hold of 0.65 s
+ * or more shows whole.
+ */
+export const BIND = { secs: 1.4, most: 2.2, elite: 0.5, again: 2, snareLife: 10, every: 0.5, reach: 0.9, snareSecs: 1.8, snareMost: 2.6, rootSecs: 0.8, rootAgain: 3 };
 
 export interface WordDef {
   id: WordId;
@@ -370,6 +382,8 @@ export const WORDS: Record<WordId, WordDef> = {
   splitting: { id: 'splitting', kind: 'shape', name: 'Splitting', front: 'Splitting', behind: 'of Shards', attr: 'dex', element: null, about: 'The word of the breaking apart. One becomes many.', frontText: 'Breaks into three smaller copies that fly on to other enemies.', behindText: 'Where it ends, shards fly out in every direction.', monsterText: 'Splits in two when it dies.' },
   hexing: { id: 'hexing', kind: 'shape', name: 'Hexing', front: 'Hexing', behind: 'of Hexes', attr: 'int', element: null, about: 'The word of the curse. What it marks is undone.', frontText: 'Curses what it hits: it takes more damage from everything.', behindText: 'Leaves a hex circle: enemies inside deal less damage.', monsterText: 'Its blows curse you: you take more damage.' },
   stilling: { id: 'stilling', kind: 'shape', name: 'Stilling', front: 'Stilling', behind: 'of Stillness', attr: 'int', element: null, about: 'The word of the held breath. Time slows for it.', frontText: 'What it hits is slowed in time.', behindText: 'Leaves a bubble where enemies and their shots crawl.', monsterText: 'Its blows slow your cooldowns.' },
+  // (BINDING, BIND above: the city's fifth, his pick of 21 Oct, its look the art chat's)
+  binding: { id: 'binding', kind: 'shape', name: 'Binding', front: 'Binding', behind: 'of the Snare', attr: 'str', element: null, about: 'The word of the knot. What it holds stays held.', frontText: 'Holds the enemies it hits in place.', behindText: 'Leaves a snare for the next enemy to cross.', monsterText: 'Its blows root you to the spot.' },
   poison: { id: 'poison', kind: 'damage', name: 'Poison', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'The word of venom. A slow death.', frontText: 'A weaker hit that poisons. Poison stacks.', behindText: 'Leaves a cloud of poison.', monsterText: 'Poisons you.' },
   // WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
   // damage words; what each does in front and behind is his page's "Wordsmith: Word Combinations",
@@ -1866,6 +1880,7 @@ export const QUIPS: {
     splitting: ['Pieces.', 'Split decision.', 'Share it out.'],
     hexing: ['Cursed.', 'Bad luck.', 'Hexed.'],
     stilling: ['Hold still.', 'Time out.', 'Slow down.'],
+    binding: ['Stay.', 'Tied up.', 'Knot now.'],
     // (WORDMELDING: the melded words)
     eruption: ['Lava lamp.', 'Hot rocks.', 'Blew my top.'],
     avalanche: ['Snowed under.', 'Buried.', 'Cold shoulder.'],

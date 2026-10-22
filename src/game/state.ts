@@ -127,6 +127,9 @@ export interface Resolved {
   shards: number;
   hexCircle: number;
   bubble: number;
+  /** BINDING (game/defs.ts BIND), 0 for none: in front, seconds what it hits is held; behind, seconds what crosses its snare is held. */
+  bind: number;
+  snare: number;
   /** WORDMELDING: the melded word behind, whose twist what it leaves carries, or null. */
   meldBehind: MeldId | null;
   /** Plain-language lines for the character panel. */
@@ -246,6 +249,9 @@ export interface Hero {
   hexMore?: number;
   stillT?: number;
   stillK?: number;
+  /** BINDING on monsters: seconds left rooted (he walks nowhere), and before a monster's Binding may root him again. */
+  rootT?: number;
+  rootAgain?: number;
   /** Harm from monsters that carry element words. */
   burnT: number;
   burnDps: number;
@@ -367,6 +373,9 @@ export interface Monster {
   stillT?: number;
   stillK?: number;
   split?: boolean;
+  /** BINDING: seconds left held where it stands, and before it may be held again. */
+  bindT?: number;
+  bindAgain?: number;
   /** VOLATILE'S MELDS (behind VOLT_MELDS): Demolition's burst at half its life has gone off on it (once). */
   demolished?: boolean;
   /** Which hero ability last hurt it (for effects that trigger on a kill), or -1. */
@@ -529,7 +538,7 @@ export interface Spear {
 /** ('lane': THE MONSTERS' ATTACKS, the line a red troll will charge along: from (x, y) to (x1, y1), `r` half its width.) */
 /** ('skull': THE NEW MONSTERS, a skull the Golem has hurled: thrown from (x1, y1), coming down on (x, y) at `dur`, bursting after: game/defs.ts SKULL.) */
 /** ('aim': the bone marksman's line of aim for his great shot, from (x, y) to (x1, y1), its `t` of `dur` how far he has drawn: game/defs.ts AIM. 'smoke': the high priest's burning smoke, that burns the hero in it: SMOKE.) */
-export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke' | 'steam' | 'vortex' | 'hex' | 'bubble';
+export type ZoneKind = 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'warn' | 'cracks' | 'ward' | 'lane' | 'skull' | 'aim' | 'smoke' | 'steam' | 'vortex' | 'hex' | 'bubble' | 'snare';
 
 export interface Zone {
   x: number;
@@ -563,6 +572,8 @@ export interface Zone {
   meldT?: number;
   /** VOLATILE'S MELDS (behind VOLT_MELDS): Shatter's rune has frozen what is in it. */
   froze?: boolean;
+  /** BINDING's snare: the monsters standing on it as it was laid, which it leaves be until they have stepped off it. */
+  onIt?: number[];
   /** WORDMELDING: the melded word whose look it has, for the pictures only (render/melds3.ts): a patch its twist in front left (Eruption's molten pool, Fumes' cloud), or what one behind left (as `meld`). */
   look?: MeldId;
 }
@@ -1081,7 +1092,7 @@ export type GameEvent =
   /** "of Echoes": the ability will repeat from here in `delay` seconds. */
   | { t: 'echo'; x: number; y: number; dx: number; dy: number; kind: SkillKind; delay: number }
   /** A patch of ground or a rune has just been laid. (`dur`: cracks and wards, its seconds; laid again where one already is, it lasts that long from now.) */
-  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam' | 'vortex' | 'hex' | 'bubble'; x: number; y: number; r: number; el: Element; dur?: number; meld?: MeldId }
+  | { t: 'zone'; kind: 'burn' | 'ice' | 'storm' | 'venom' | 'rune' | 'cracks' | 'ward' | 'steam' | 'vortex' | 'hex' | 'bubble' | 'snare'; x: number; y: number; r: number; el: Element; dur?: number; meld?: MeldId }
   /**
    * THE NEW WORDS AT WORK (Version 19.3), for their looks (render/words3.ts): a Heavy hit lands
    * (`big`: an area ability's, out to `r`); monster `id` is stunned for `secs` / staggered by a blow
@@ -1114,6 +1125,12 @@ export type GameEvent =
   | { t: 'heroPulled'; x: number; y: number; fromX: number; fromY: number }
   | { t: 'heroHexed'; x: number; y: number; secs: number }
   | { t: 'heroStilled'; x: number; y: number; secs: number }
+  // BINDING, for its looks (render/binding3.ts, the art chat's): one held in front; a snare springing on one; the hero rooted by a
+  // monster's, cast from where it stands; a hold broken early (id -1 the hero's)
+  | { t: 'bind'; id: number; secs: number }
+  | { t: 'snareSprung'; id: number; x: number; y: number; secs: number }
+  | { t: 'rooted'; x: number; y: number; secs: number }
+  | { t: 'unbind'; id: number }
   /**
    * Frenzied: a use adds a stack (`n` now held), going the way (dx, dy) / a kill feeds the frenzy,
    * from (x, y). Guarding: a use gives the hero a shield for `secs` / a blow from (fromX, fromY) is

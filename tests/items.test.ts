@@ -183,6 +183,9 @@ function expectedImbue(word: BaseWordId, slot: Slot): ImbuePick[] {
       return offence ? [['prefix', 'dmgPct'], ['suffix', 'int']] : [['suffix', 'int']];
     case 'stilling':
       return [['prefix', 'cdr'], ['suffix', 'int']];
+    // (Binding, his pick of 21 Oct)
+    case 'binding':
+      return offence ? [['prefix', 'dmgPct'], ['suffix', 'str']] : [['prefix', 'armor'], ['suffix', 'str']];
   }
 }
 

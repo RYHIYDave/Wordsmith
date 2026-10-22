@@ -397,7 +397,7 @@ const BELL_BURST: readonly string[] = ['#ffffff', '#b8fff8', '#22d0e0'];
 /** The colour each word's name is shown in when it joins an ability. */
 export const WORD_HUE: Record<WordId, string> = { power: P.bl4, swift: P.gn4, twin: P.tl4, fire: P.fr4, frost: P.bu4, lightning: P.lt3, leech: P.bl5, volatile: P.pu4, poison: P.vn4, heavy: '#ac8753', precise: '#eef4fa', frenzied: '#ff5c33', guarding: '#30a868',
   // (the city's words, Version 23.8)
-  pulling: '#7a76e0', splitting: '#dcaaf6', hexing: '#b8b4c8', stilling: '#86eaae',
+  pulling: '#7a76e0', splitting: '#dcaaf6', hexing: '#b8b4c8', stilling: '#86eaae', binding: '#c8b48a',
   // (WORDMELDING: the melded words take their colours from art/icons.ts)
   eruption: '#ff9a5a', avalanche: '#b8dcff', thunder: '#c8a8ff', blight: '#8aa040', scald: '#e0b0c0', wildfire: '#d86040', fumes: '#c89838', hailstorm: '#e8f0c0', frostbite: '#6898b0', contagion: '#90e0a0',
   // (Volatile's melds, behind VOLT_MELDS, off: placeholders until the art chat's)

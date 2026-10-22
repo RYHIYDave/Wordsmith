@@ -1649,7 +1649,7 @@ export class Renderer {
       if (z.kind !== 'warn' && this.skip.has('ground')) continue;
       // (Heavy's cracked ground and Guarding's ward are drawn with the new words' looks: words3.ts, floor3; and since Version 23.8
       // Pulling's vortex, Hexing's circle and Stilling's bubble)
-      if (z.kind === 'cracks' || z.kind === 'ward' || z.kind === 'vortex' || z.kind === 'hex' || z.kind === 'bubble') continue;
+      if (z.kind === 'cracks' || z.kind === 'ward' || z.kind === 'vortex' || z.kind === 'hex' || z.kind === 'bubble' || z.kind === 'snare') continue;
       // (a melded word's patch has a look of its own, behind MELD3, off: render/melds3.ts, floorM3)
       if (ownsZone(z)) continue;
       // (Binding's snare has a look of its own, behind BINDING3, off: render/binding3.ts, floorB3)

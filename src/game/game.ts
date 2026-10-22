@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
+import { AIM, BIND, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext, wordsAt, PULL, SPLIT, HEX, STILL } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -348,6 +348,8 @@ export class Game {
    */
   private splitUse: number[] = [-1, -1, -1];
   private shardsAt: number[] = [-9, -9, -9];
+  /** BINDING behind: when each ability last laid a snare (game/defs.ts BIND.every). */
+  private snareAt: number[] = [-9, -9, -9];
   private pullShown: number[] = [-9, -9, -9];
   private copying = false;
   private blowBy: number | undefined = undefined;
@@ -1067,6 +1069,10 @@ export class Game {
     // (THE CITY'S WORDS: the clock starts again with the level, and so do the times the shards and the pull were last shown)
     this.shardsAt = [-9, -9, -9];
     this.pullShown = [-9, -9, -9];
+    this.snareAt = [-9, -9, -9];
+    // (BINDING, on a monster: what roots the hero stays on its own level)
+    this.hero.rootT = 0;
+    this.hero.rootAgain = 0;
     this.boss = null;
     this.visList = [];
     this.time = 0;
@@ -1649,7 +1655,14 @@ export class Game {
     if (this.level.ways && this.updateWays(dt)) return;
     this.updateHazards(dt);
     this.updateFlow(dt);
+    // (BINDING: what is held stands where it stood, whatever its own steps, a charge or a leap would have done; it strikes still)
+    const pins = this.monsters.filter((m) => !m.dead && (m.bindT ?? 0) > 0).map((m) => [m, m.x, m.y] as const);
     this.updateMonsters(dt);
+    for (const [m, x, y] of pins) {
+      m.x = x;
+      m.y = y;
+      if (m.anim === 'walk') m.anim = 'idle';
+    }
     if (this.risers.length) this.updateRisers(dt);
     this.updateProjectiles(dt);
     this.updateTraps(dt);
@@ -3313,6 +3326,9 @@ export class Game {
     // (THE CITY'S WORDS, on monsters: a curse on him and his cooldowns slowed run out)
     if (h.hexT) h.hexT = Math.max(0, h.hexT - dt);
     if (h.stillT) h.stillT = Math.max(0, h.stillT - dt);
+    // (BINDING, on monsters: rooted, and the time before he may be rooted again)
+    if (h.rootT) h.rootT = Math.max(0, h.rootT - dt);
+    if (h.rootAgain) h.rootAgain = Math.max(0, h.rootAgain - dt);
     // (Frenzied: the frenzy makes every cooldown come round faster; STILLING, on a monster, slower)
     const pace = this.frenzyPace() * ((h.stillT ?? 0) > 0 ? 1 - (h.stillK ?? 0) : 1);
     for (const s of h.skills) {
@@ -3409,6 +3425,8 @@ export class Game {
     if (len > 0.01) {
       let sp = d.moveSpeed * (1 + h.haste / 100) * (1 + this.talentSpeed() / 100);
       if (h.chillT > 0) sp *= 1 - h.chill;
+      // (BINDING, on a monster: rooted, he walks nowhere; his evade still takes him away)
+      if ((h.rootT ?? 0) > 0) sp = 0;
       // (an attack slows the hero for a moment from when it is begun, as it always has; one that is
       // being held slows them for as long as it is: a beam to a walk, a whirlwind hardly at all)
       if (h.channel) sp *= SKILLS[h.skills[h.channel.skill].id].kind === 'whirl' ? TUNE.whirlWalk : TUNE.beamWalk;
@@ -4499,11 +4517,48 @@ export class Game {
     if (r.hexCircle > 0) this.addPatch(i, 'hex', x, y, Math.max(1.5, rad), HEX.circle, r.hexCircle);
     if (r.bubble > 0) this.addPatch(i, 'bubble', x, y, Math.max(1.5, rad), STILL.bubble, r.bubble);
     if (r.shards > 0) this.throwShards(i, x, y, frac);
+    // (BINDING behind: a snare where it ends)
+    if (r.snare > 0) this.addSnare(i, x, y, r.snare);
   }
 
   /** Whether the ability leaves any of the patches `leavePatches` lays (or throws shards). */
-  private leaves(r: { cracks: number; ward: number; vortex: number; hexCircle: number; bubble: number; shards: number }): boolean {
-    return r.cracks > 0 || r.ward > 0 || r.vortex > 0 || r.hexCircle > 0 || r.bubble > 0 || r.shards > 0;
+  private leaves(r: { cracks: number; ward: number; vortex: number; hexCircle: number; bubble: number; shards: number; snare: number }): boolean {
+    return r.cracks > 0 || r.ward > 0 || r.vortex > 0 || r.hexCircle > 0 || r.bubble > 0 || r.shards > 0 || r.snare > 0;
+  }
+
+  /**
+   * BINDING behind: a snare at (x, y), lying BIND.snareLife seconds, for the next enemy to cross (`secs` it holds it); at most one
+   * each BIND.every seconds for ability `i`. Laid again where one lies, that one lies as long again from now. It carries the word in
+   * its `words`, which is how Binding's looks know it (render/binding3.ts).
+   */
+  private addSnare(i: number, x: number, y: number, secs: number): void {
+    if (this.time - this.snareAt[i] < BIND.every) return;
+    this.snareAt[i] = this.time;
+    for (const o of this.zones) {
+      if (o.kind === 'snare' && Math.hypot(o.x - x, o.y - y) < 0.6) {
+        o.t = 0;
+        o.dmg = Math.max(o.dmg, secs);
+        return;
+      }
+    }
+    if (!this.roomForZone() || !this.onFloor(x, y)) return;
+    // (it waits for the next to cross it: what stands on it as it is laid, the one just struck, is let be until it steps off)
+    const onIt = this.monsters.filter((m) => !m.dead && Math.hypot(m.x - x, m.y - y) <= BIND.reach + m.r * 0.5).map((m) => m.id);
+    this.zones.push({ x, y, r: BIND.reach, t: 0, dur: BIND.snareLife, kind: 'snare', element: 'phys', dmg: secs, slow: 0, tick: 0, hostile: false, skill: i, words: ['binding'], from: '', onIt });
+    this.emit({ t: 'zone', kind: 'snare', x, y, r: BIND.reach, el: 'phys', dur: BIND.snareLife });
+  }
+
+  /**
+   * BINDING: holds `m` where it stands for `secs` (an elite half as long; a boss never; nor one held not long since), and says how
+   * long it is held (0: not). It strikes still, but goes nowhere (`updateMonsters`' pins).
+   */
+  private bindMonster(m: Monster, secs: number): number {
+    if (m.dead || m.boss || (m.bindAgain ?? 0) > 0 || this.shutIn(m)) return 0;
+    const t = secs * (m.elite || m.champion ? BIND.elite : 1);
+    m.bindT = t;
+    m.bindAgain = t + BIND.again;
+    if (m.state === 'charge') this.endCharge(m);
+    return t;
   }
 
   /**
@@ -4912,6 +4967,11 @@ export class Game {
         m.stillK = Math.max((m.stillT ?? 0) > 0 ? m.stillK ?? 0 : 0, r.still);
         m.stillT = STILL.secs;
         if (fresh) this.emit({ t: 'stillOn', id: m.id, x, y, secs: STILL.secs });
+      }
+      // BINDING in front holds what it hits in place
+      if (r.bind > 0) {
+        const held = this.bindMonster(m, r.bind);
+        if (held > 0) this.emit({ t: 'bind', id: m.id, secs: held });
       }
       // PRECISE behind marks the first enemy each use hits (not one whose mark this very hit spent)
       if (r.mark && !spent && this.marked[i] !== h.skills[i].uses) {
@@ -5580,6 +5640,14 @@ export class Game {
       h.stillK = Math.max((h.stillT ?? 0) > 0 ? h.stillK ?? 0 : 0, STILL.cooldowns * k('stilling'));
       h.stillT = STILL.monsterSecs;
     }
+    // BINDING, on a monster: its blow roots him where he stands (a minion's for less), then not again for a while
+    if (k('binding') > 0 && (h.rootAgain ?? 0) <= 0 && !this.now('resolute')) {
+      const secs = BIND.rootSecs * k('binding');
+      h.rootT = secs;
+      h.rootAgain = secs + BIND.rootAgain;
+      this.emit({ t: 'rooted', x: fromX, y: fromY, secs });
+      this.emit({ t: 'text', x: h.x, y: h.y, text: 'Rooted', color: '#ff8a80' });
+    }
     // GUARDING in front: the shield takes the blow first
     let soaked = 0;
     if (h.shield > 0) {
@@ -5902,6 +5970,9 @@ export class Game {
       // (THE CITY'S WORDS: Hexing's curse and Stilling's slowing run out)
       if (m.hexT) m.hexT = Math.max(0, m.hexT - dt);
       if (m.stillT) m.stillT = Math.max(0, m.stillT - dt);
+      // (BINDING: a hold runs out, and the time before it may be held again)
+      if (m.bindT) m.bindT = Math.max(0, m.bindT - dt);
+      if (m.bindAgain) m.bindAgain = Math.max(0, m.bindAgain - dt);
       if (m.poisonT > 0) {
         m.poisonT -= dt;
         if (m.poisonT <= 0) {
@@ -7061,6 +7132,21 @@ export class Game {
         for (const m of this.monsters) {
           if (m.dead || m.state === 'sleep' || m.kind === 'bat') continue;
           if (Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r * 0.5) this.staggerMonster(m, z.x, z.y);
+        }
+        if (z.t >= z.dur) this.zones.splice(i, 1);
+        continue;
+      }
+      if (z.kind === 'snare') {
+        // BINDING behind: the first enemy to come onto the snare is held, and the snare is spent (bats fly over it; a boss, or
+        // one held not long since, crosses it as if it were not there)
+        const on = (o: Monster): boolean => Math.hypot(o.x - z.x, o.y - z.y) <= z.r + o.r * 0.5;
+        if (z.onIt?.length) z.onIt = z.onIt.filter((id) => this.monsters.some((o) => o.id === id && !o.dead && on(o)));
+        const m = this.monsters.find((o) => !o.dead && o.state !== 'sleep' && o.kind !== 'bat' && !o.boss && (o.bindAgain ?? 0) <= 0 && on(o) && !z.onIt?.includes(o.id));
+        const held = m ? this.bindMonster(m, z.dmg) : 0;
+        if (m && held > 0) {
+          this.emit({ t: 'snareSprung', id: m.id, x: z.x, y: z.y, secs: held });
+          this.zones.splice(i, 1);
+          continue;
         }
         if (z.t >= z.dur) this.zones.splice(i, 1);
         continue;

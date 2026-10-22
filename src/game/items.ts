@@ -428,6 +428,11 @@ const IMBUE_TABLE: Record<BaseWordId, readonly ImbueRule[]> = {
     { slots: OFFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'int']] },
     { slots: DEFENCE_SLOTS, options: [['prefix', 'cdr'], ['suffix', 'int']] },
   ],
+  // (BINDING: more damage or Strength on what strikes; armour or Strength on what keeps)
+  binding: [
+    { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'str']] },
+    { slots: DEFENCE_SLOTS, options: [['prefix', 'armor'], ['suffix', 'str']] },
+  ],
   // (there is no poison damage or poison resistance on gear yet: poison grows with all damage, and is outlasted with life)
   poison: [
     { slots: OFFENCE_SLOTS, options: [['prefix', 'dmgPct'], ['suffix', 'dex']] },

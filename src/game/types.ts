@@ -19,7 +19,7 @@ export const ATTRS: readonly Attr[] = ['str', 'dex', 'int'];
 export type AbilityId = 'strike' | 'slam' | 'whirl' | 'leap' | 'shot' | 'volley' | 'trap' | 'wave' | 'orb' | 'beam' | 'familiar' | 'warp';
 
 /** Power words: dropped by enemies, slotted into an ability to change it. */
-export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling';
+export type BaseWordId = 'power' | 'swift' | 'twin' | 'fire' | 'frost' | 'lightning' | 'leech' | 'volatile' | 'poison' | 'heavy' | 'precise' | 'frenzied' | 'guarding' | 'pulling' | 'splitting' | 'hexing' | 'stilling' | 'binding';
 /**
  * WORDMELDING (behind MELD, game/melds.ts): the melded words, each made at the wordsmith from two
  * damage words. They never drop: WORD_IDS, which every random draw of a word uses, holds none of them.
@@ -40,9 +40,9 @@ export type WordId = BaseWordId | MeldId | RankId;
 // (THE CITY'S WORDS, Version 23.8: the other four, Pulling, Splitting, Hexing and Stilling, found only from floor 11 down: his words
 // to the main chat, 21 Oct 2026, 18:25 Pacific, “And let’s add some words to levels 11-15”, and his picks of the four after it.
 // Every list of words has them; what may drop on a floor is game/defs.ts `wordsAt`.)
-export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding', 'pulling', 'splitting', 'hexing', 'stilling'];
-/** The city's four, and the first level they are found on (game/defs.ts `wordsAt`; here for the map-maker, which reads no defs). */
-export const DEEP_WORD_IDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling'];
+export const WORD_IDS: readonly WordId[] = ['power', 'swift', 'twin', 'fire', 'frost', 'lightning', 'leech', 'volatile', 'poison', 'heavy', 'precise', 'frenzied', 'guarding', 'pulling', 'splitting', 'hexing', 'stilling', 'binding'];
+/** The city's words (the four of Version 23.8, and Binding), and the first level they are found on (game/defs.ts `wordsAt`; here for the map-maker, which reads no defs). */
+export const DEEP_WORD_IDS: readonly WordId[] = ['pulling', 'splitting', 'hexing', 'stilling', 'binding'];
 export const DEEP_WORDS_FROM = 11;
 /** The words that may be found at this level (its depth, or an endless level's power): before floor 11 the thirteen, in their order. */
 export function wordsAt(power: number): readonly WordId[] {
