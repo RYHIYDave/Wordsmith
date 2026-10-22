@@ -26,6 +26,7 @@ import type { Monster, Zone } from '../src/game/state';
 import { Fx } from '../src/render/fx';
 import type { Cam } from '../src/render/fx';
 import { MELD_GLYPH, MELD_RAMP } from '../src/render/melds3';
+import { NEW_RAMP } from '../src/render/words3';
 import {
   V3, VMELD_GLYPH, VMELD_IDS, VMELD_RAMP, VOLATILE3, VRUNE, airV3, clearV3, eventsV3, floorV3, lightsV3, overV3, ownsEventV3, ownsZoneV3, shiftV3, tickV3, tintV3, vmeldOf,
 } from '../src/render/volatile3';
@@ -164,7 +165,11 @@ test('2. with the switch off, nothing here draws, moves or lights anything, what
 });
 
 test('3. six tones each, darkest to white-hot; each word told apart from every other word, the ten melds, the friend and the enemy', () => {
-  const others: Record<string, string> = { ...(WORD_COLOR as Record<string, string>), cyan: '#28dcf0', runedust: '#5ce8f8', pink: '#ff4f8a', gold: '#ffd27a' };
+  // every word in the game (the five's own placeholders, once the game's table holds them, left out), the
+  // eight new words (the city's four among them), the ten melds, Binding, the friend's cyan, the enemy's pink and gold
+  const others: Record<string, string> = { ...(WORD_COLOR as Record<string, string>), cyan: '#28dcf0', runedust: '#5ce8f8', pink: '#ff4f8a', gold: '#ffd27a', binding: '#c8b48a' };
+  for (const w of VMELD_IDS) delete others[w];
+  for (const [w, ramp] of Object.entries(NEW_RAMP)) others[w] = ramp[3];
   for (const [w, ramp] of Object.entries(MELD_RAMP)) others[w] = ramp[3];
   // (the main chat's tables carry the five themselves, melds3's from here and icons' placeholders: not "others")
   for (const w of VMELD_IDS) delete others[w];
