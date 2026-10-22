@@ -7,7 +7,7 @@
 //   env: WORD = pulling | splitting | hexing | stilling | split
 export default async function (page, snap) {
   const word = process.env.WORD || 'pulling';
-  const cls = { pulling: 'warrior', splitting: 'ranger', hexing: 'warrior', stilling: 'warrior', split: 'warrior' }[word];
+  const cls = { pulling: 'warrior', splitting: 'ranger', hexing: 'warrior', stilling: 'warrior', split: 'ranger' }[word];
   const sockets = word === 'split' ? [] : [[0, 'front', word], [0, 'behind', word]];
   const set = await page.evaluate(([cls, sockets]) => {
     const d = window.__dbg; d.saving(false); d.practice(cls, 7); d.autoLevel = false; d.autoWords = false; d.god = true;
@@ -40,7 +40,7 @@ export default async function (page, snap) {
     // one slowed and let go, and one that walks through the bubble
     stilling: [['skeleton', 1.25, -0.25, 'target'], ['skeleton', 3.8, 0.6, 'late']],
     // one carrying Splitting, killed
-    split: [['skeleton', 1.25, -0.25, 'target']],
+    split: [['skeleton', 3.6, -0.3, 'target']],
   }[word];
   const ids = await page.evaluate(([layout, word]) => {
     const d = window.__dbg; const g = d.game(); const h = g.hero;
@@ -83,7 +83,7 @@ export default async function (page, snap) {
     splitting: { frames: 100, at: { 3: () => attack(ids.target), 50: () => attack(ids.target) } },
     hexing: { frames: 110, at: { 3: () => attack(ids.target), 30: () => loose(ids.late), 70: () => attack(ids.target) } },
     stilling: { frames: 120, at: { 3: () => attack(ids.target), 8: () => loose(ids.target), 24: () => loose(ids.late) } },
-    split: { frames: 90, at: { 3: () => attack(ids.target), 40: () => looseAll() } },
+    split: { frames: 100, at: { 3: () => attack(ids.target), 45: () => looseAll() } },
   }[word];
 
   const slow = 0.08;
