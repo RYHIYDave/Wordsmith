@@ -45,7 +45,11 @@ const PINKS = new Set([...FLAME, '#b4306a', '#e86a98', '#7a1a4e', '#4a1236', '#f
 const FIRES = new Set([...EMBER].map((c) => c.toLowerCase()));
 const CYANS = new Set([...CYAN].map((c) => c.toLowerCase()));
 
-test('1. the switch is off, and nothing of the game imports the hub\'s files', () => {
+// (TOLD, BY THE MAIN CHAT, 22 Oct 2026: the camp comes into the game behind EXITS, game/ways.ts, off: made only by game/camp.ts,
+// asked for only while EXITS is on (Game.campTown); drawn by render.ts and render/act1_pieces.ts, its art chosen in main.ts.
+// Those four are the only game files that import the hub's.)
+const HUB_USERS = ['game/camp.ts', 'main.ts', 'render/act1_pieces.ts', 'render/render.ts'];
+test('1. the switch is off, and nothing of the game imports the hub\'s files but the camp\'s own, behind EXITS', () => {
   assert.equal(HUB2.on, false, 'HUB2 is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
@@ -53,7 +57,7 @@ test('1. the switch is off, and nothing of the game imports the hub\'s files', (
     const text = fs.readFileSync(`src/${f}`, 'utf8');
     if (/from ['"][./a-z0-9_]*\/hub2(_folk|_camp)?['"]/.test(text)) users.push(f);
   }
-  assert.equal(users.join(' '), '', 'game files that import the hub');
+  assert.equal(users.sort().join(' '), HUB_USERS.join(' '), 'game files that import the hub');
 });
 
 test('2. the switches it added to the game\'s files: off, and nothing changes; on, each does what it says', () => {

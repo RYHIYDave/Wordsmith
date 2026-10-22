@@ -37,6 +37,7 @@ import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
 import { CAVE_OPENING, CURTAIN_SECS, EXITS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles, topStep } from './ways';
 import type { StairWay } from './ways';
+import { CAMP, makeCamp } from './camp';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
@@ -784,6 +785,8 @@ export class Game {
       const ef = Math.floor(num(s.endlessFloor, 0));
       g.endlessFloor = g.endless > 0 ? (ef >= 1 && ef <= lastFloor() ? ef : endlessFloorFor(g.seed, g.endless, 0)) : 0;
     }
+    // (EXITS: the town made again by the way he has come: the gate barred or not; the camp from floor 10 on)
+    if (EXITS.on) g.enterTown();
     // (THE WAYS: the town's waypoint, awake once there is a floor to warp back to)
     const tw = g.level.ways?.way;
     if (tw) tw.awake = g.wayDepth >= 2;
@@ -1121,7 +1124,9 @@ export class Game {
   /** `by` (THE WAYS): come back through the gate from the first floor (standing just inside it), or by the waypoint (standing on the town's). */
   enterTown(by: 'gate' | 'way' | 'stairs' | 'cage' | null = null): void {
     this.clearLevel();
-    this.level = makeTown(this.seed);
+    // (EXITS, game/camp.ts: from floor 10 on, his town is the camp inside Vellum's gate: his pick, “Yes, the camp from then on (Recommended)”)
+    const camp = this.campTown();
+    this.level = camp ? makeCamp(this.seed, TUNE.tradesOpen) : makeTown(this.seed);
     this.inDungeon = false;
     // (ENDLESS MODE: in town he is on no endless level; the waypoint takes him back to the one he reached)
     this.inEndless = false;
@@ -1137,7 +1142,13 @@ export class Game {
     // (EXITS: the gate in the back wall barred until the Fleshmancer is beaten: the Prison cleared, his way is on to floor 6)
     this.toldBarred = false;
     if (W && EXITS.on) W.barred = this.wayDepth < 6;
-    if (W && EXITS.on && by === 'stairs' && W.stair) {
+    if (camp && by === 'gate') {
+      // (in from floor 10, through the city gate: at its mouth, looking into the camp)
+      h.x = CAMP.arrive.x;
+      h.y = CAMP.arrive.y;
+      h.fx = 1;
+      h.fy = 0;
+    } else if (W && EXITS.on && by === 'stairs' && W.stair) {
       // (up the stairs from floor 1: he comes up out of them, standing before their top step, looking into the hall)
       const top = topStep(W.stair);
       h.x = W.stair.way === 'x' ? top.x - 1.1 : top.x;
@@ -1901,6 +1912,14 @@ export class Game {
       this.msg(FLOOR_NAMES.on ? `${floorTitle(from).level} cleared` : `Dungeon ${from} cleared`, MSG.good);
       return;
     }
+    if (to === 'on' && this.level.town) {
+      // (EXITS, game/camp.ts: out of the camp by its barricaded street, into the city: floor 11)
+      this.depth = 11;
+      this.inEndless = false;
+      this.enterDungeon();
+      this.cameT = 0;
+      return;
+    }
     if (to === 'on') {
       // (ACT 1, THE DESCENT: on down the mountain to the next floor; from the tenth, the Fen, home to town: the siege broken)
       this.meta.bestDepth = Math.max(this.meta.bestDepth, this.depth);
@@ -1916,7 +1935,8 @@ export class Game {
           this.endless = 1;
           this.endlessFloor = endlessFloorFor(this.seed, 1, from);
         }
-        this.enterTown();
+        // (EXITS: from the Fen, down into the city: in through the camp's gate)
+        this.enterTown(EXITS.on && from === 10 ? 'gate' : null);
         this.cameT = 0;
         this.sfx('portal');
         this.msg(from === 10 ? `${floorTitle(from).level} cleared. The siege is broken.` : `${floorTitle(from).level} cleared. The stolen words fly home. High above, the gates of the High City swing shut.`, MSG.good);
@@ -2026,6 +2046,11 @@ export class Game {
     // (up the shaft: the cage goes up into the dark, and over the ride's last moments the screen darkens)
     if (l && l.to === 'up') return Math.max(0, Math.min(1, (l.t - (SHAFT.up - CURTAIN_SECS)) / CURTAIN_SECS));
     return Math.max(0, 1 - this.cameT / CURTAIN_SECS);
+  }
+
+  /** EXITS (game/camp.ts): his town is the camp inside Vellum's gate: he has come down into the city from floor 10. */
+  campTown(): boolean {
+    return EXITS.on && WAYS.on && ACT1.on && !this.practice && this.wayDepth >= 11;
   }
 
   /** EXITS: he is coming up into town in the cage (he does nothing until it has opened). */

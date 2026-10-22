@@ -28,6 +28,8 @@ import { momentKeys, stairKey } from './art/films';
 import type { CryptMarks } from './art/crypt';
 import { CRYPT_LAYOUT, CRYPT_LITTER } from './game/dungeon';
 import { makeTownProps } from './art/town';
+import { CITY } from './art/hub2';
+import { isCamp } from './game/camp';
 import { townSprite } from './art/townscene';
 import { makeTownsfolk } from './art/townsfolk';
 import { SMITH3 } from './art/smith3';
@@ -259,6 +261,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // own, swapped in as the hero goes down; the vault's are the town's, and every dungeon's with it off.
   const vault = { ground: art.ground, props: art.props, gates: art.gates, hazards: art.hazards };
   let cryptShown = 0;
+  // (EXITS, game/camp.ts: THE CAMP INSIDE VELLUM'S GATE: the town's own things and its fires in the city's stone, art/hub2.ts CITY,
+  // made the first time it is reached; the prison town's kept for going back to it)
+  let campShown = false;
+  let hallTown = art.town;
+  let cityArt: { town: typeof art.town; props: typeof art.props } | null = null;
   /** The two pictures behind the starting screen. */
   const titleArt = makeTitleArt();
   // WHICH START SCREEN. 'library' is the one the game has had since Version 11 (the library that
@@ -1750,6 +1757,19 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         forgetPieces(crypt);
         cryptShown = crypt;
       }
+      const campNow = isCamp(g.level);
+      if (campNow !== campShown) {
+        if (campNow) {
+          hallTown = art.town;
+          cityArt ??= { town: makeTownProps(CITY), props: makeDungeonProps(CITY) };
+          art.town = cityArt.town;
+          art.props = cityArt.props;
+        } else {
+          art.town = hallTown;
+          art.props = crypt ? lookProps(crypt) : vault.props;
+        }
+        campShown = campNow;
+      }
       // (THE PAINTER: a new place: what the last one's heavy pictures took is given back, and its
       // workers ended; this one's are asked for as it is drawn)
       if (g.level !== paintedFor) {
@@ -2248,6 +2268,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       SMITH3.on = on;
       art.folk = makeTownsfolk();
       art.town = makeTownProps();
+      hallTown = art.town;
+      cityArt = null;
+      campShown = false;
     },
     /** The clock the town's things go by (seconds, slowed with `slowmo`): a playtest can wait for the moment someone acts. */
     clock: () => clock,

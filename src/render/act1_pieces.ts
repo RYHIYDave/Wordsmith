@@ -33,7 +33,9 @@ import { undercityPieces } from '../art/floor12';
 import { millracePieces } from '../art/floor13';
 import { houseOfQuietPieces } from '../art/floor14';
 import { greatLibraryPieces } from '../art/floor15';
-import { GRAIN, clearOfFloor, fbm, worldOf } from '../art/terrain';
+import { hubPieces } from '../art/hub2';
+import { CAMP_ANIM, CAMP_DRESS, CAMP_TOPS } from '../game/camp';
+import { GRAIN, clearOfFloor, fbm, pictureOf, worldOf } from '../art/terrain';
 import type { Terrain } from '../art/terrain';
 import type { Sprite } from '../engine/px';
 import type { MomentFilm } from '../art/films';
@@ -57,6 +59,12 @@ const MAPS = new Map<number, Map<string, Piece>>();
 export function act1Pieces(n: number): Map<string, Piece> {
   let m = MAPS.get(n);
   if (m) return m;
+  // (THE CAMP INSIDE VELLUM'S GATE, game/camp.ts: the Gate Ward's pieces, the Hush's set and the hub's own, art/hub2.ts)
+  if (n === CAMP_DRESS) {
+    m = new Map<string, Piece>([...hushSetPieces(), ...gateWardPieces(), ...(hubPieces() as unknown as Piece[])].map((p) => [p.name, p]));
+    MAPS.set(n, m);
+    return m;
+  }
   // (ACT 2, THE HUSH: each floor's own 25 and the set's 25 of the Hush, the art chat's; nothing of the descent's camp or strongholds)
   if (n >= 11) {
     const own2 = n === 11 ? gateWardPieces() : n === 12 ? undercityPieces() : n === 13 ? millracePieces() : n === 14 ? houseOfQuietPieces() : greatLibraryPieces();
@@ -237,6 +245,9 @@ export class Act1Pieces {
     if (p.name === "the redoubt's gatehouse") return p.state === 1 ? fr[4] ?? fr[0] : fr[Math.floor(t * 6) % 4];
     if (p.name === "the waystation's gate") return fr[(p.state === 1 ? 1 : 0) + (p.variant & 1 ? 2 : 0)] ?? fr[0];
     if (MOVING.has(p.name)) return fr[(Math.floor(t * LOOP_FPS) + p.variant) % fr.length];
+    // (THE CAMP, game/camp.ts: what moves there, at the art chat's own frames a second: the cooking fire, the field forge, the lamps)
+    const fps = this.dress.floor === CAMP_DRESS ? CAMP_ANIM.get(p.name) : undefined;
+    if (fps) return fr[(Math.floor(t * fps) + p.variant) % fr.length];
     if (STANDING_TRAPS.has(p.name)) return this.standingTrap(p, fr, now);
     return fr[p.variant % fr.length];
   }
@@ -456,6 +467,16 @@ export class Act1Pieces {
     const sh = (name: string): number => this.piece(name)?.shadow ?? 0;
     const x0 = pi * PIECE;
     const y0 = pj * PIECE;
+    // (THE CAMP, game/camp.ts: its chimneys where the art chat stood them, and nothing else on its roofs)
+    if (n === CAMP_DRESS) {
+      for (const l of CAMP_TOPS) {
+        const [px, py] = pictureOf(l.x, l.y);
+        if (Math.floor(px / PIECE) !== pi || Math.floor((py - rise) / PIECE) !== pj) continue;
+        const sp = P(l.name, l.frame);
+        if (sp) out.push({ x: l.x, y: l.y, sp, lift: rise / GRAIN, shadow: sh(l.name), tall: false });
+      }
+      return out;
+    }
     const river = land.river;
     for (let gy = y0 + 4; gy < y0 + PIECE; gy += 18) {
       for (let gx = x0 + 4; gx < x0 + PIECE; gx += 24) {

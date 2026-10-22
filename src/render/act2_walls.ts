@@ -19,6 +19,8 @@ export const ACT2_WALLS = { on: true };
 /** How far from the floor the rock of a floor stands whole, in tiles (0: none of it; Infinity: all of it). */
 export function wallsThick(land: Land): number {
   if (!ACT2_WALLS.on) return 0;
+  // (THE CAMP, game/camp.ts: its houses as the art chat painted them round the yard, those toward the eye cut down to the ground's own height)
+  if (land.swept) return 0;
   switch (land.kind) {
     // (floor 11: its houses are a block deep, roofs and all)
     case 'gateward':

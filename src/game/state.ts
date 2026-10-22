@@ -818,6 +818,8 @@ export interface StationSpot {
   /** World position the hero must stand near. */
   x: number;
   y: number;
+  /** (THE CAMP, game/camp.ts) How high over it its name is written, game pixels, where its own (render.ts NAME_LIFT has the town's). */
+  lift?: number;
 }
 
 /**

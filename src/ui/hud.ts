@@ -10,6 +10,7 @@
 // it was: it is a button, and a button wants to be under a thumb. (The life is also a bar over the
 // hero's head: render/lifebar.ts.)
 
+import { isCamp } from '../game/camp';
 import { WORD_COLOR } from '../art/icons';
 import { ELEMENT_RAMP, P } from '../art/palette';
 import { LINE_H, drawText, textWidth, wrapText } from '../engine/font';
@@ -1170,7 +1171,8 @@ export function drawHud(ui: Ui, game: Game, art: Art, fx: Fx, t: number, input: 
   const btnY = touch ? TOP_GLOBE_Y + 19 : 24;
   const btnH = touch ? 18 : 13;
   // (ENDLESS MODE: on an endless level, that level: Game.floorLevel)
-  const place = game.practice ? 'Practice room' : game.level.town ? 'Town' : game.floorLevel;
+  // (THE CAMP, game/camp.ts: the city's name, as the art chat's pictures of it have it)
+  const place = game.practice ? 'Practice room' : game.level.town ? (isCamp(game.level) ? 'Vellum' : 'Town') : game.floorLevel;
   drawText(g, place, 4, 3, game.practice ? THEME.accent : THEME.text, { shadow: P.ink });
   const coin = art.icons.gold[0];
   const statX = touch ? lifeX + 19 : 4;

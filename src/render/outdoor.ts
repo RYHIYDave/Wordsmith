@@ -114,7 +114,8 @@ function zoneOf(land: Land, W: number, H: number): (tx: number, ty: number) => n
 }
 /** ACT 2, THE GATE WARD: the land as its look asks it (and its houses' shells: render/act2_houses.ts, made from the very same). */
 export function gateWardLand(land: Land, floor: Floor, fresh = false): GateWardLand {
-  return { floor, zone: zoneOf(land, floor.w, floor.h), squares: land.squares, houses: land.houses, fresh };
+  // (THE CAMP, game/camp.ts: the ground swept, as the art chat painted it)
+  return { floor, zone: zoneOf(land, floor.w, floor.h), squares: land.squares, houses: land.houses, fresh, ...(land.swept ? { swept: true } : {}) };
 }
 /** ACT 2, THE MILLRACE: which way a line runs at the point of it nearest (x, y), from its first point toward its last (a unit vector, world). */
 function flowOf(pts: readonly [number, number][]): (x: number, y: number) => [number, number] {

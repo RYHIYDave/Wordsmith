@@ -28,7 +28,10 @@ import { GIVEN, KEPT_SCALE, KEPT_Z, MeldDrops, givenOf, orbitAt, riseOf, takenOf
 import type { StoneAt } from './meld_drops';
 import { SMITH3 } from '../art/smith3';
 import { CRYPT, cryptFloor, cryptWays } from '../art/crypt';
-import { WARP_FRAMES, WAY_FRAMES } from '../art/crypt_ways';
+import { WARP_FRAMES, WAY_FRAMES, makeWaypointArt } from '../art/crypt_ways';
+import { CITY } from '../art/hub2';
+import { TALK_FPS, TALK_FRAMES, campFolkFrame } from '../art/hub2_folk';
+import { CAMP_DUSK, campFolk, isCamp } from '../game/camp';
 import { columnSprite, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
 import type { Facing } from '../art/townsfolk';
 import type { Townsfolk } from '../art/townsfolk';
@@ -558,7 +561,7 @@ export class Renderer {
   private flatWays(g: CanvasRenderingContext2D, L: Game['level'], t: number, game: Game): void {
     const W = L.ways;
     if (!W) return;
-    const art = lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
+    const art = this.waysOf(L);
     const cam = this.cam;
     const st = W.stair;
     // (THE FIRST FIVE FLOORS: while its opening is played from its film, the film is the stairwell: render/dress.ts)
@@ -577,12 +580,21 @@ export class Renderer {
     }
   }
 
+  /** THE WAYS' PICTURES for this level: its floor's; the town's the first floor's (THE CAMP, game/camp.ts: its waypoint in the city's grey stone, art/hub2.ts CITY). */
+  private waysOf(L: Game['level']): ReturnType<typeof lookWays> {
+    if (isCamp(L)) return (this.cityWays ??= { stair: lookWays(1).stair, way: makeWaypointArt(CITY) });
+    return lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
+  }
+  private cityWays: ReturnType<typeof lookWays> | null = null;
+  /** (THE CAMP) Its three people's pictures, painted once each as they are first wanted. */
+  private folkFrames = new Map<string, Sprite>();
+
   /** THE WAYS: what stands over the level's waypoint: the motes of light while it is awake; the column of a warp, by the level's own time (`now`). */
   private standWays(L: Game['level'], t: number, now: number): void {
     // (ACT 1: the way on too, once awake: its column flares as it wakes, as a warp's)
     for (const w of [L.ways?.way, L.ways?.onward && L.ways.onward.awake ? L.ways.onward : null]) {
       if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) continue;
-      const art = lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
+      const art = this.waysOf(L);
       const f = w.warpAt === null ? -1 : Math.floor((now - w.warpAt) * 20);
       const warp = f >= 0 && f < WARP_FRAMES;
       if (!warp && !w.awake) continue;
@@ -2388,6 +2400,22 @@ export class Renderer {
         if (sp.lights) this.propLit.push({ s: sp, x: Math.round(sx), y: Math.round(sy) });
       }
     }
+    // (THE CAMP, game/camp.ts: its three people by the fire, talking in turn, as the art chat painted them: art/hub2_folk.ts)
+    if (isCamp(L)) {
+      for (const f of campFolk()) {
+        const k = Math.floor((t + (f.who === 'goodwife' ? 0.4 : f.who === 'baker' ? 0.8 : 0)) * TALK_FPS) % TALK_FRAMES;
+        const key = `${f.who}:${f.view}:${f.flip ? 1 : 0}:${k}`;
+        let sp = this.folkFrames.get(key);
+        if (!sp) {
+          const base = campFolkFrame(f.who, k / TALK_FPS, f.view);
+          sp = f.flip ? flipSprite(base) : base;
+          this.folkFrames.set(key, sp);
+        }
+        const sx = wx(cam, f.x, f.y);
+        const sy = wy(cam, f.x, f.y);
+        this.stand(f.x + f.y + 0.02, sp, sx, sy, null, 0, 1, veil(sp, sx, sy, f.x + f.y));
+      }
+    } else if (this.folkFrames.size) this.folkFrames.clear();
     // (THE WORDSMITH'S RING MADE NEW, art/ring3.ts, behind art/smith3.ts SMITH3: the letters of light
     // that swirl round, each stood among everything else, and the column of light over the slab)
     if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);
@@ -2413,7 +2441,7 @@ export class Renderer {
     }
     // the town's services carry their names, so a newcomer can see what is where
     for (const st of L.stations) {
-      const lift = NAME_LIFT[st.kind];
+      const lift = st.lift ?? NAME_LIFT[st.kind];
       const near = game.stationNear() === st.kind;
       const goal = this.goal === st.kind;
       const hop = goal ? Math.round(Math.abs(Math.sin(t * 9)) * 2) : 0;
@@ -3138,6 +3166,14 @@ export class Renderer {
     // (ACT 2, THE BELLS: the Hush over its ground, under the dark: render/bells.ts)
     if (game.level.bells) this.bellsLook.fog(g, this.cam, game.level, t);
 
+    // (THE CAMP, game/camp.ts: dusk's warm light over everything, as the art chat's pictures have it: src/dev/preview_hub2.ts dusk)
+    if (isCamp(game.level)) {
+      g.save();
+      g.globalCompositeOperation = 'soft-light';
+      g.fillStyle = 'rgba(255, 160, 90, 0.38)';
+      g.fillRect(0, 0, W, H);
+      g.restore();
+    }
     // ---- darkness, with holes cut by every light ----------------------------------------------
     this.light(W, H, game, t, fx);
     g.drawImage(this.dark, 0, 0);
@@ -3792,7 +3828,8 @@ export class Renderer {
     // (THE FLOOR GETS DARKER FURTHER FROM THE HERO: the dark far off is deeper than it was up to
     // Version 16, 0.8, and a wide gentle pool round the hero, below, takes it back to what it was near them)
     // (ACT 1, THE DESCENT: out on the open ground the day, thin or none, and the dusk deepening toward the Fen: game/act1.ts, `light`)
-    const day = this.openGround ? act1Def(f.depth)?.light ?? null : null;
+    // (THE CAMP, game/camp.ts: dusk, warm, the fires lit: his “Dusk, warm and alive (Recommended)” to the art chat)
+    const day = isCamp(L) ? CAMP_DUSK : this.openGround ? act1Def(f.depth)?.light ?? null : null;
     dg.fillStyle = day ? `rgba(${day.tint[0]},${day.tint[1]},${day.tint[2]},${day.dark})` : L.town ? 'rgba(8,5,14,0.45)' : `rgba(6,4,14,${FAR_DARK})`;
     dg.fillRect(0, 0, W, H);
     dg.globalCompositeOperation = 'destination-out';
@@ -3820,7 +3857,7 @@ export class Renderer {
     if (!L.town && !day) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, NEAR_POOL, NEAR_LIFT);
     if (!day || day.pool > 0) spot(wx(cam, h.x, h.y), wy(cam, h.x, h.y) - 8, L.town ? 170 : 165, day ? day.pool * 3 : 1);
     // (the town's gate lights the floor before it)
-    if (L.town) spot(wx(cam, TOWN.gate.x, TOWN.gate.y), wy(cam, TOWN.gate.x, TOWN.gate.y) - 14, 84 + Math.sin(t * 3) * 3, 0.9);
+    if (L.town && !isCamp(L)) spot(wx(cam, TOWN.gate.x, TOWN.gate.y), wy(cam, TOWN.gate.x, TOWN.gate.y) - 14, 84 + Math.sin(t * 3) * 3, 0.9);
     for (const p of L.props) {
       if (!L.explored[p.ty * f.w + p.tx]) continue;
       if (p.kind === 'brazier') spot(wx(cam, p.x, p.y), wy(cam, p.x, p.y) - 14, 62 + Math.sin(t * 9 + p.variant) * 3, 0.9);

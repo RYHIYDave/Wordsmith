@@ -44,4 +44,6 @@ export interface Act2Land {
   yards?: [number, number, number, number][];
   /** THE BELLS, where they are on this floor. */
   bells?: BellsPlan;
+  /** (THE CAMP, game/camp.ts: the Gate Ward's ground as the city's people keep it, art/gateward.ts GateWardLand.swept) */
+  swept?: boolean;
 }
