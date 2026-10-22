@@ -215,6 +215,7 @@ test("6. every blast is big; a rune's bigger than a kill's; Demolition's the big
         clearV3();
         const fx = new Fx();
         const gm = game([monster(1, 11.5, 10)]);
+        tickV3(1 / 60, gm, fx);
         eventsV3([{ t: 'burst', x: 11, y: 10, r: 1.8, el: 'phys', style, meld: w }], gm, fx);
         run(0.6, gm, fx);
         assert.ok(fx.particles.length > 0, `${w} ${style}: things flung`);
@@ -232,6 +233,7 @@ test("6. every blast is big; a rune's bigger than a kill's; Demolition's the big
         clearV3();
         const fx = new Fx();
         const gm = game([]);
+        tickV3(1 / 60, gm, fx);
         eventsV3([{ t: 'burst', x: 11, y: 10, r: 2, el: 'phys', style, meld: w }], gm, fx);
         run(style === 'ruin' && w === 'shatter' ? 0.42 : 0.01, gm, fx);
         first[`${w}:${style}`] = fx.shake;
@@ -299,8 +301,8 @@ test('8. the runes and patches of the five are drawn here and left out of the re
     eventsV3([{ t: 'burst', x: 11, y: 10, r: 1.8, el: 'phys', style: 'blast', meld: 'rupture' }], gm, fx);
     run(0.1, gm, fx);
     assert.ok(V3.domes.length + V3.lobs.length + V3.scars.length > 0);
-    const next = { ...gm, level: {} } as unknown as Game;
+    const next = { ...gm, level: {}, zones: [] } as unknown as Game;
     tickV3(1 / 60, next, fx);
-    assert.equal(V3.domes.length + V3.lobs.length + V3.scars.length + V3.arcs.length, 0);
+    assert.equal(V3.domes.length + V3.lobs.length + V3.scars.length + V3.arcs.length + V3.later.length, 0);
   });
 });

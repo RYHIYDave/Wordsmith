@@ -9,7 +9,8 @@
 // words meld”), each with a rune stone and a colour of its own and its look at work, in front and
 // behind, drawn as the other ten are (render/melds3.ts: a ramp and a glyph for each word, the looks
 // called up by what the rules say happened), big and wild by his art rulebook (Animations 1: “as big
-// and wild and kinetic and weighty as possible”). Their rules are the main chat's.
+// and wild and kinetic and weighty as possible”). Their rules are the main chat's. Shown their stones,
+// colours and a film of each, by 20:35: “Yes, send to main (Recommended)”.
 //
 // What each does, as his page has them:
 //   DEMOLITION (Power + Volatile): bigger explosions; elites and bosses also explode once, at half

@@ -14,6 +14,11 @@ out on 13 Oct by his pick “Only damage words meld”), each with a rune stone 
 its look at work, in front and behind, drawn as the other ten are (render/melds3.ts), big and wild by
 his art rulebook.
 
+Shown the sheet of their rune stones and colours and a film of each (in front, then behind), and asked
+“Are the five Volatile melds right as shown: their rune stones, colours and animations?”, by 20:35:
+“Yes, send to main (Recommended)”, offered as: the main chat puts them in with their rules, behind a
+switch, and tells him when they are live.
+
 ## What each looks like
 
 Every one is an explosion, and Volatile's violet crackle runs through all of them; it pops again a
