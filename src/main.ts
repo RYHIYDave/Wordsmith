@@ -2048,6 +2048,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         for (const w of VOLT_MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
       }
     },
+    /** (THE WAYS BETWEEN THE FLOORS, behind EXITS, game/ways.ts; off) Its switch, for the playtests and pictures: set it before a new game or a level is made. */
+    exits: EXITS,
     /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
     doorWalls: (on: boolean, near = false) => {
       DOOR_WALLS.on = on;
