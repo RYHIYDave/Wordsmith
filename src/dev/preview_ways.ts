@@ -16,7 +16,13 @@ import { cryptGround } from '../art/crypt';
 import type { GroundArt } from '../art/ground';
 import { spriteOf3 } from '../art/heroes3';
 import { lairGround } from '../art/lair';
+import { makeGroundArt } from '../art/ground';
+const lookGround = (): GroundArt => makeGroundArt(VAULT);
 import { MOVES3 } from '../art/moves3';
+import { GATE_UP, PILLAR, STRIP, makeGateArt } from '../art/gates';
+import type { Strip } from '../art/gates';
+import { VAULT } from '../art/ground';
+import { gateBars, gateLeft, unbarFilm } from '../art/town_ways';
 import type { Sprite } from '../engine/px';
 
 const HASH = decodeURIComponent(location.hash.slice(1)) || 'cave:L:a';
@@ -140,6 +146,84 @@ if (mode === 'cave') {
   const fig = side ? knight(4.5, 2.7, 0, false, 0, 1) : knight(2.7, 4.5, 0, false, 1, 0);
   room(lairGround(), side, { under: m.under, over: m.over }, [fig]);
   show();
+} else if (mode === 'gate' || mode === 'gate-film') {
+  // THE TOWN'S GATE: barred (gate:b), a frame of its unbarring (gate:<n>), what is left (gate:l), its portcullis down; the hall's floor before it, the knight by it.
+  //   gate-film: the barring, then the unbarring, then the portcullis rising (for page_gif)
+  const A = makeGateArt(VAULT);
+  const film = unbarFilm(true);
+  const scene = (bars: Strip[], raise: number, t: number): void => {
+    g.setTransform(SC, 0, 0, SC, 0, 0);
+    g.fillStyle = '#05040a';
+    g.fillRect(0, 0, W, H);
+    const ox = W / 2 - 24;
+    const oy = 70;
+    const at = (x: number, y: number): [number, number] => [ox + (x - y) * 16, oy + (x + y) * 8];
+    const gr = lookGround();
+    for (let ty = 0; ty < 6; ty++) for (let tx = -2; tx < 6; tx++) draw(gr.floor(tx + 4, ty + 6), ...at(tx, ty));
+    for (let tx = -2; tx < 6; tx++) if (tx < 0 || tx > 2) draw(gr.faceLeft[(tx + 9) % gr.faceLeft.length], ...at(tx, -1));
+    const wide = PILLAR / 32;
+    const list: { d: number; f: () => void }[] = [];
+    const put = (d: number, sp: Sprite, x: number, y: number): void => {
+      const [sx, sy] = at(x, y);
+      list.push({ d, f: () => draw(sp, sx, sy) });
+    };
+    const strips = (ss: Strip[], t0: number, back: number): void => {
+      for (const q of ss) put(t0 + q.t + 0 - back + STRIP / 64, q.s, t0 + q.t, -back);
+    };
+    for (const x of [0, 3 + wide]) put(x - wide, A.pillar(false), x, 0);
+    strips(A.portcullis(true, false, raise), -wide, wide);
+    strips(A.arch(true, false, false), -wide, 0);
+    strips(bars, -wide, wide - 0.03);
+    const kx = 3.2 + 0.4 * Math.sin(t);
+    list.push({ d: kx + 2.4, f: () => {
+      const [sx, sy] = at(kx, 2.4);
+      shadow(sx, sy);
+      draw(spriteOf3(MOVES3.rear, t, 'back'), sx, sy, true);
+    } });
+    list.sort((a, b) => a.d - b.d);
+    for (const q of list) q.f();
+    // (the seal's light, added over all, as the game adds a prop's)
+    for (const q of bars) {
+      if (!q.s.lights) continue;
+      const [sx, sy] = at(-wide + q.t, -(wide - 0.03));
+      for (const l of q.s.lights) {
+        const cx = sx - q.s.ax + l.x;
+        const cy = sy - q.s.ay + l.y;
+        const grd = g.createRadialGradient(cx, cy, 0, cx, cy, l.r);
+        grd.addColorStop(0, l.color + Math.round((l.a ?? 1) * 255).toString(16).padStart(2, '0'));
+        grd.addColorStop(1, l.color + '00');
+        g.globalCompositeOperation = 'lighter';
+        g.fillStyle = grd;
+        g.fillRect(cx - l.r, cy - l.r, l.r * 2, l.r * 2);
+        g.globalCompositeOperation = 'source-over';
+      }
+    }
+  };
+  if (mode === 'gate') {
+    const f = sideArg === 'b' ? -1 : sideArg === 'l' ? -2 : Number(sideArg) || 0;
+    scene(f === -1 ? gateBars(true) : f === -2 ? gateLeft(true) : film.frames[Math.min(f, film.frames.length - 1)], 0, 0);
+    show();
+  } else {
+    const HOLD = 30;
+    const RISE = 50;
+    const total = HOLD + film.frames.length + RISE;
+    const frame = (k: number): void => {
+      const t = k / 30;
+      if (k < HOLD) return scene(gateBars(true), 0, t);
+      if (k < HOLD + film.frames.length) return scene(film.frames[k - HOLD], 0, t);
+      const r = Math.min(1, (k - HOLD - film.frames.length - 12) / 26);
+      scene(gateLeft(true), Math.max(0, Math.round((GATE_UP * r) / 2) * 2), t);
+    };
+    const w2 = window as unknown as { __frames: number; __tickMs: number; __frame: (k: number) => string };
+    w2.__frames = total;
+    w2.__tickMs = 1000 / 30;
+    w2.__frame = (k) => {
+      frame(k);
+      return cv.toDataURL('image/png');
+    };
+    frame(0);
+    show();
+  }
 } else if (mode === 'layer') {
   // one layer alone on grey, close: layer:<cave|mouth5>:<L|R>:<under|over|before|after>
   const [, what, sd, which] = HASH.split(':');

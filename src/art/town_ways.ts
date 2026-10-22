@@ -40,7 +40,8 @@ import type { StairMeasures } from './crypt_ways';
 import { DUST, Scene, XYZ, cloud, paintClouds, toneAt } from './floor4';
 import type { Cloud, V3 } from './floor4';
 import { BEYOND, DEEP, fastBlit, flame } from './floorkit';
-import { ARCH, ARCH_WIDE, PILLAR, curveOf, inWay } from './gates';
+import { ARCH, ARCH_WIDE, PILLAR, STRIP, curveOf, inWay } from './gates';
+import type { Strip } from './gates';
 import { VAULT } from './ground';
 import { GRAIN, compose, hash, mix } from './kit';
 import type { Ramp } from './kit';
@@ -310,6 +311,42 @@ class Plane {
     if (lights.length) s.lights = lights;
     return s;
   }
+  /**
+   * CUT INTO STRIPS a quarter of a tile wide, as art/gates.ts cuts the arch and the portcullis (each `t` tiles along the
+   * plane from u = 0, stood at its own depth: render.ts standDoors), so that a figure is in front of the part he is in
+   * front of. Its lights go with the strip they fall in.
+   */
+  strips(lights: Light[] = []): Strip[] {
+    const out: Strip[] = [];
+    const H = this.p.h;
+    for (let s0 = 0; s0 < ARCH_WIDE; s0 += STRIP) {
+      const k = s0 / STRIP;
+      const q = new Px(STRIP, H);
+      let any = false;
+      for (let j = 0; j < STRIP; j++) {
+        const sx = this.alongX ? this.ax + s0 + j : this.ax - (s0 + j + 1);
+        const dx = this.alongX ? j : STRIP - 1 - j;
+        for (let y = 0; y < H; y++) {
+          const c = this.p.get(sx, y);
+          if (!c) continue;
+          const dy = y - 4 * k;
+          if (dy < 0 || dy >= H) continue;
+          q.set(dx, dy, c);
+          any = true;
+        }
+      }
+      if (!any) continue;
+      const sp = q.sprite(this.alongX ? 0 : STRIP, this.ay, GRAIN);
+      // (a light in this strip: placed in the strip's own picture)
+      const mine = lights.filter((l) => {
+        const u = this.alongX ? l.x * GRAIN - this.ax : this.ax - l.x * GRAIN - 1;
+        return u >= s0 && u < s0 + STRIP;
+      });
+      if (mine.length) sp.lights = mine.map((l) => ({ ...l, x: (this.alongX ? l.x * GRAIN - this.ax - s0 : l.x * GRAIN - this.ax + s0 + STRIP) / GRAIN, y: (l.y * GRAIN - 4 * k) / GRAIN }));
+      out.push({ s: sp, t: s0 / 32 });
+    }
+    return out;
+  }
 }
 /** The cult's seal, the enemy's pink (his Colour 3): its dark when out, kindling, burning, and flaring white-hot. */
 const SEAL: readonly string[] = ['#3a0c2a', '#7a1058', '#c0206a', '#ff4f8a', '#ffc4dc'];
@@ -352,109 +389,139 @@ function chainLine(u0: number, v0: number, u1: number, v1: number): Chain {
   return out;
 }
 
-/** Where the gate's chains run: from a ring high on each pillar, across the portcullis, through the lock where they cross, to a ring low on the other pillar. */
-const RINGS = { hiL: [7, 64], hiR: [ARCH_WIDE - 7, 64], loL: [7, 6], loR: [ARCH_WIDE - 7, 6] } as const;
-const LOCK = { u: ARCH_WIDE / 2, v: 33 };
+/** Where the gate's chains run: from a ring high and a ring low on each pillar, in to the lock where the beams cross. */
+const RINGS = { hiL: [7, 66], hiR: [ARCH_WIDE - 7, 66], loL: [7, 8], loR: [ARCH_WIDE - 7, 8] } as const;
+const LOCK = { u: ARCH_WIDE / 2, v: 34 };
+/** The beams' timber: squared baulks, newer than the hall, a little lighter than its old wood so they read against the portcullis's iron. */
+const BAULK: Ramp = ['#1e1620', '#3c2c36', '#5c4450', '#7a5e66', '#96787a'];
+/** A beam nailed across the portcullis: its middle, half its length, its angle up from along the plane; its width. */
+interface Beam { cu: number; cv: number; L: number; ang: number }
+const BEAM_W = 4.5;
+/** THE TWO BEAMS, crossed over the portcullis, the one from the lower right over the other. */
+const BEAMS: readonly Beam[] = [
+  { cu: LOCK.u, cv: LOCK.v, L: 45, ang: Math.atan2(48, 76) },
+  { cu: LOCK.u, cv: LOCK.v, L: 45, ang: Math.atan2(48, -76) },
+];
 
 /** An iron ring set in a pillar's face, a chain through it. */
 function ring(P: Plane, u: number, v: number): void {
-  for (let a = 0; a < Math.PI * 2; a += 0.3) P.set(u + Math.cos(a) * 2.6, v + Math.sin(a) * 2.6, Math.sin(a) > 0.3 ? CHAIN[3] : Math.sin(a) < -0.4 ? CHAIN[0] : CHAIN[2]);
-  P.set(u - 3.4, v, CHAIN[0]);
-}
-/** The great padlock at the chains' crossing, the cult's seal on its face (burning `burn`: 0 out, 1 burning, 2 flaring); `open` its shackle sprung, `drop` how far it has fallen, `turn` how far it has tipped. */
-function padlock(P: Plane, burn: number, open: number, du: number, dv: number, turn: number): void {
-  const cu = LOCK.u + du;
-  const cv = LOCK.v + dv;
-  const rot = (x: number, y: number): [number, number] => [cu + x * Math.cos(turn) - y * Math.sin(turn), cv + x * Math.sin(turn) + y * Math.cos(turn)];
-  // its shackle: a loop over its body, sprung up on one side
-  for (let a = 0; a <= Math.PI; a += 0.12) {
-    const [u, v] = rot(Math.cos(a) * 5, 9 + Math.sin(a) * 6 + (Math.cos(a) > 0 ? open * 5 : 0));
-    P.set(u, v, a < 1.6 ? CHAIN[3] : CHAIN[2]);
-    const [u2, v2] = rot(Math.cos(a) * 4, 9 + Math.sin(a) * 5 + (Math.cos(a) > 0 ? open * 5 : 0));
-    P.set(u2, v2, CHAIN[1]);
+  for (let a = 0; a < Math.PI * 2; a += 0.25) {
+    P.set(u + Math.cos(a) * 3, v + Math.sin(a) * 3, Math.sin(a) > 0.3 ? CHAIN[4] : Math.sin(a) < -0.4 ? CHAIN[0] : CHAIN[2]);
+    P.set(u + Math.cos(a) * 2.2, v + Math.sin(a) * 2.2, CHAIN[1]);
   }
-  // its body: a heavy iron block, rounded below, its rim lit
-  for (let y = -9; y <= 9; y++) {
-    for (let x = -8; x <= 8; x++) {
-      if (y < -4 && (x * x) / 64 + ((y + 4) * (y + 4)) / 25 > 1) continue;
-      const [u, v] = rot(x, y);
-      const rim = y > 7 || x < -6;
-      P.set(u, v, rim ? CHAIN[3] : x > 6 || y < -7 ? CHAIN[0] : (x + y) % 5 === 0 ? CHAIN[1] : CHAIN[2]);
+}
+/** A great timber nailed across: its lit upper edge, its grain, its dark lower edge, an iron strap near each end. */
+function paintBeam(P: Plane, b: Beam): void {
+  const c = Math.cos(b.ang);
+  const sn = Math.sin(b.ang);
+  // (which side of it is up, to be lit)
+  const up = c >= 0 ? 1 : -1;
+  const R = b.L + BEAM_W + 1;
+  for (let u = Math.floor(b.cu - R); u <= b.cu + R; u++) {
+    for (let v = Math.floor(b.cv - R); v <= b.cv + R; v++) {
+      const du = u - b.cu;
+      const dv = v - b.cv;
+      const along = du * c + dv * sn;
+      const across = (-du * sn + dv * c) * up;
+      if (Math.abs(along) > b.L || Math.abs(across) > BEAM_W) continue;
+      let col: string;
+      if (across > BEAM_W - 1.2) col = BAULK[4];
+      else if (across < -BEAM_W + 1.2) col = BAULK[0];
+      else if (Math.abs(along) > b.L - 1.2) col = BAULK[1];
+      else if (Math.abs(Math.abs(along) - (b.L - 6)) < 1.2) col = Math.abs(Math.abs(along) - (b.L - 6)) < 0.5 ? CHAIN[3] : CHAIN[1];
+      else {
+        const g = Math.floor(across + BEAM_W) % 3 === 0 && hash(Math.floor((along + 60) / 7), Math.floor(across + 9), 940) < 0.6;
+        col = g ? BAULK[1] : across > 0 ? BAULK[3] : BAULK[2];
+      }
+      P.set(u, v, col);
+    }
+  }
+  // its nails, in the straps
+  for (const e of [-1, 1]) {
+    const nu = b.cu + c * e * (b.L - 6);
+    const nv = b.cv + sn * e * (b.L - 6);
+    P.set(nu, nv, CHAIN[4]);
+  }
+}
+/** The great padlock where the beams cross, the cult's seal on its face (burning `burn`: 0 out, 1 burning, 2 flaring); `open` its shackle sprung. */
+function padlock(P: Plane, burn: number, open: number): void {
+  const cu = LOCK.u;
+  const cv = LOCK.v;
+  for (let a = 0; a <= Math.PI; a += 0.08) {
+    const lift = Math.cos(a) > 0 ? open * 7 : 0;
+    P.set(cu + Math.cos(a) * 7, cv + 12 + Math.sin(a) * 8 + lift, a < 1.6 ? CHAIN[4] : CHAIN[2]);
+    P.set(cu + Math.cos(a) * 6, cv + 12 + Math.sin(a) * 7 + lift, CHAIN[3]);
+    P.set(cu + Math.cos(a) * 5, cv + 12 + Math.sin(a) * 6 + lift, CHAIN[1]);
+  }
+  for (let y = -12; y <= 12; y++) {
+    for (let x = -11; x <= 11; x++) {
+      if (y < -5 && (x * x) / 121 + ((y + 5) * (y + 5)) / 49 > 1) continue;
+      const rim = y > 10 || x < -9;
+      P.set(cu + x, cv + y, rim ? CHAIN[3] : x > 9 || y < -10 ? CHAIN[0] : (x + y) % 6 === 0 ? CHAIN[1] : CHAIN[2]);
     }
   }
   // the cult's seal on its face: a ring with a point in it, burning
   const col = burn <= 0 ? SEAL[0] : burn < 1 ? SEAL[1] : burn < 1.6 ? SEAL[3] : SEAL[4];
   const rim = burn <= 0 ? SEAL[0] : burn < 1 ? SEAL[1] : SEAL[2];
-  for (let a = 0; a < Math.PI * 2; a += 0.25) {
-    const [u, v] = rot(Math.cos(a) * 4, Math.sin(a) * 4);
-    P.set(u, v, col);
-    const [u2, v2] = rot(Math.cos(a) * 5, Math.sin(a) * 5);
-    if (burn > 0) P.set(u2, v2, rim);
+  for (let a = 0; a < Math.PI * 2; a += 0.15) {
+    P.set(cu + Math.cos(a) * 5.5, cv + 1 + Math.sin(a) * 5.5, col);
+    if (burn > 0) P.set(cu + Math.cos(a) * 6.8, cv + 1 + Math.sin(a) * 6.8, rim);
   }
-  const [mu, mv] = rot(0, 0);
-  P.set(mu, mv, col);
-  P.set(mu + 1, mv, col);
-  // (its keyhole, below the seal)
-  const [ku, kv] = rot(0, -6);
-  P.set(ku, kv, CHAIN[0]);
-  P.set(ku, kv - 1, CHAIN[0]);
+  for (const [x, y] of [[0, 0], [1, 0], [0, 1], [1, 1]]) P.set(cu + x, cv + 1 + y, col);
+  P.set(cu, cv - 8, CHAIN[0]);
+  P.set(cu, cv - 9, CHAIN[0]);
+  P.set(cu + 1, cv - 8, CHAIN[0]);
 }
 /** The seal's light: the enemy's pink, as strong as it burns. */
 const sealLight = (P: Plane, burn: number): Light[] => {
   if (burn <= 0) return [];
   const [x, y] = P.xy(LOCK.u, LOCK.v);
-  return [{ x: x / GRAIN, y: y / GRAIN, r: 10 + 6 * Math.min(1, burn - 1), color: SEAL[3], a: burn < 1 ? 0.18 : burn < 1.6 ? 0.34 : 0.55 }];
+  return [{ x: x / GRAIN, y: y / GRAIN, r: 12 + 8 * Math.min(1, burn - 1), color: SEAL[3], a: burn < 1 ? 0.2 : burn < 1.6 ? 0.4 : 0.6 }];
 };
+/** The four chains, each from its ring in to the lock. */
+const chainsIn = (): Chain[] => [RINGS.hiL, RINGS.hiR, RINGS.loL, RINGS.loR].map(([u, v]) => chainLine(u, v, LOCK.u, LOCK.v));
 
-const bars = new Map<boolean, Sprite>();
-/** THE GATE BARRED: the chains across the portcullis through their rings and the lock where they cross, the seal burning; in a plane along +x (`alongX`) or +y. */
-export function gateBars(alongX: boolean): Sprite {
+const bars = new Map<boolean, Strip[]>();
+/**
+ * THE GATE BARRED: the two beams crossed over the portcullis, the chains in from the pillars' rings, the lock where they
+ * cross, the seal burning; in a plane along +x (`alongX`) or +y. As strips, as the portcullis comes (render.ts standDoors):
+ * stand them as its are, from the arch's start (-wide), a hair in front of it (back: wide - 0.03).
+ */
+export function gateBars(alongX: boolean): Strip[] {
   let s = bars.get(alongX);
   if (s) return s;
   const P = new Plane(alongX);
   for (const [u, v] of Object.values(RINGS)) ring(P, u, v);
-  paintChain(P, chainLine(RINGS.hiL[0], RINGS.hiL[1], LOCK.u, LOCK.v));
-  paintChain(P, chainLine(RINGS.hiR[0], RINGS.hiR[1], LOCK.u, LOCK.v));
-  paintChain(P, chainLine(LOCK.u, LOCK.v, RINGS.loR[0], RINGS.loR[1]));
-  paintChain(P, chainLine(LOCK.u, LOCK.v, RINGS.loL[0], RINGS.loL[1]));
-  padlock(P, 1, 0, 0, 0, 0);
-  bars.set(alongX, (s = P.sprite(sealLight(P, 1))));
+  for (const b of BEAMS) paintBeam(P, b);
+  for (const ch of chainsIn()) paintChain(P, ch);
+  padlock(P, 1, 0);
+  bars.set(alongX, (s = P.strips(sealLight(P, 1))));
   return s;
 }
 
-/** THE GATE UNBARRED: its frames (30 a second), its jolts (the lock bursting; the upper rings snapping; the lock striking the floor). */
-export const UNBAR = { frames: 66, burst: 10, snap: 26, lockDown: 21 } as const;
+/** THE GATE UNBARRED: its frames (30 a second), and its jolts: the lock bursting, the upper rings snapping, each beam striking the floor. */
+export const UNBAR = { frames: 78, burst: 14, snap: 30, beamA: 18, beamB: 23 } as const;
 /** The film of the gate unbarred, as the game stands one: whole pictures in the gate's plane, frame by frame; and what is left. */
 export interface UnbarFilm {
   fps: number;
   jolts: number[];
-  frames: Sprite[];
-  left: Sprite;
+  /** Each frame as strips, stood as the barred gate's are. */
+  frames: Strip[][];
+  left: Strip[];
 }
 
 function unbar(alongX: boolean): UnbarFilm {
   const N = UNBAR.frames;
   const GRAV = 0.42;
-  // the two chains, each from its upper ring through the lock to its lower ring on the other pillar
-  const chains: Chain[] = [
-    [...chainLine(RINGS.hiL[0], RINGS.hiL[1], LOCK.u, LOCK.v), ...chainLine(LOCK.u, LOCK.v, RINGS.loR[0], RINGS.loR[1]).slice(1)],
-    [...chainLine(RINGS.hiR[0], RINGS.hiR[1], LOCK.u, LOCK.v), ...chainLine(LOCK.u, LOCK.v, RINGS.loL[0], RINGS.loL[1]).slice(1)],
-  ];
+  const chains = chainsIn();
   const rest = chains.map((ch) => ch.map((_, i) => (i === 0 ? 0 : Math.hypot(ch[i].u - ch[i - 1].u, ch[i].v - ch[i - 1].v))));
-  const lockAt = chains.map((ch) => {
-    let best = 0;
-    ch.forEach((q, i) => {
-      if (Math.hypot(q.u - LOCK.u, q.v - LOCK.v) < Math.hypot(ch[best].u - LOCK.u, ch[best].v - LOCK.v)) best = i;
-    });
-    return best;
-  });
-  /** One step of a chain: each link falls and swings, held at its pinned ends, kept its length from the next, never through the floor; on the floor it drags. */
+  /** One step of a chain: each link falls and swings, held at its pinned links, kept its length from the next, never through the floor; on the floor it drags. */
   const step = (ch: Chain, len: number[], pins: Set<number>): void => {
     for (let i = 0; i < ch.length; i++) {
       if (pins.has(i)) continue;
       const q = ch[i];
       const onFloor = q.v <= 1.2;
-      const vu = (q.u - q.pu) * (onFloor ? 0.6 : 0.985);
+      const vu = (q.u - q.pu) * (onFloor ? 0.55 : 0.985);
       const vv = (q.v - q.pv) * 0.985;
       q.pu = q.u;
       q.pv = q.v;
@@ -478,55 +545,76 @@ function unbar(alongX: boolean): UnbarFilm {
       }
       for (const q of ch) {
         if (q.v < 1) q.v = 1;
-        // (kept between the pillars' outer edges: the chains fall at the pillars' feet)
         q.u = Math.max(1, Math.min(ARCH_WIDE - 1, q.u));
       }
     }
   };
-  // the lock: held by the chains; bursting, it falls and tips
-  let lockV = 0;
-  let lockVel = 0;
-  let lockTurn = 0;
-  let lockU = 0;
-  // the dust as the chains and the lock come down
-  const puffs: { f0: number; u: number; r: number }[] = [
-    { f0: UNBAR.lockDown, u: LOCK.u, r: 7 },
-    { f0: UNBAR.snap + 9, u: 14, r: 9 },
-    { f0: UNBAR.snap + 10, u: ARCH_WIDE - 14, r: 9 },
-    { f0: UNBAR.snap + 16, u: 22, r: 6 },
-    { f0: UNBAR.snap + 17, u: ARCH_WIDE - 22, r: 6 },
-  ];
-  const frames: Sprite[] = [];
-  let leftSprite: Sprite | null = null;
+  // THE BEAMS: trembling while the seal burns; let go, each drops until its lower end strikes the floor, then topples about it and lies flat
+  interface Fall { b: Beam; at: number; vel: number; pivot: [number, number] | null; from: number; t: number; down: number; landed: boolean }
+  const falls: Fall[] = BEAMS.map((b, k) => ({ b: { ...b }, at: k === 0 ? UNBAR.beamA : UNBAR.beamB, vel: 0, pivot: null, from: b.ang, t: 0, down: -1, landed: false }));
+  const lowEnd = (b: Beam): [number, number] => {
+    const e = Math.sin(b.ang) > 0 ? -1 : 1;
+    return [b.cu + Math.cos(b.ang) * b.L * e, b.cv + Math.sin(b.ang) * b.L * e];
+  };
+  // the lock's pieces flying as it bursts
+  const bits = Array.from({ length: 7 }, (_, j) => ({ u: LOCK.u + (hash(j, 1, 941) - 0.5) * 14, v: LOCK.v + (hash(j, 2, 941) - 0.5) * 14, vu: (hash(j, 3, 941) - 0.5) * 5, vv: 1.5 + hash(j, 4, 941) * 3, still: false }));
+  const puffs: { f0: number; u: number; r: number }[] = [{ f0: UNBAR.snap + 9, u: 14, r: 8 }, { f0: UNBAR.snap + 10, u: ARCH_WIDE - 14, r: 8 }];
+  const frames: Strip[][] = [];
+  const jolts: number[] = [UNBAR.burst, UNBAR.snap];
   for (let f = 0; f < N; f++) {
-    // (the chains: taut through the lock until it bursts; slack, hanging from both rings; their upper rings snapped, falling to the pillars' feet)
     if (f > UNBAR.burst) {
       chains.forEach((ch, c) => {
-        const pins = new Set<number>([ch.length - 1]);
-        if (f < UNBAR.snap) pins.add(0);
-        // (the first frames after it bursts, a kick out from the lock as the tension goes)
-        if (f === UNBAR.burst + 1) {
-          const i = lockAt[c];
-          for (let j = Math.max(1, i - 4); j < Math.min(ch.length - 1, i + 5); j++) ch[j].pv = ch[j].v - 1.2;
-        }
+        // (pinned at its ring; the upper rings snap)
+        const pins = new Set<number>(c >= 2 || f < UNBAR.snap ? [0] : []);
         step(ch, rest[c], pins);
       });
+      for (const p of bits) {
+        if (p.still) continue;
+        p.vv -= GRAV * 1.4;
+        p.u += p.vu;
+        p.v += p.vv;
+        if (p.v < 2) {
+          p.v = 2;
+          if (Math.abs(p.vv) > 2) {
+            p.vv = -p.vv * 0.3;
+            p.vu *= 0.6;
+          } else p.still = true;
+        }
+      }
     }
-    // (the lock: after it bursts it drops, tips over and comes to rest at the foot of the gate)
-    if (f > UNBAR.burst) {
-      lockVel -= GRAV * 1.6;
-      lockV += lockVel;
-      lockTurn = Math.min(1.3, lockTurn + 0.13);
-      lockU += 0.35;
-      const floor = -LOCK.v + 9;
-      if (lockV < floor) {
-        lockV = floor;
-        lockVel = Math.abs(lockVel) > 2 ? -lockVel * 0.3 : 0;
+    for (const F of falls) {
+      if (f < F.at) continue;
+      const b = F.b;
+      if (!F.pivot) {
+        F.vel += GRAV * 1.2;
+        b.cv -= F.vel;
+        const [lu, lv] = lowEnd(b);
+        if (lv - BEAM_W * Math.abs(Math.cos(b.ang)) <= 1) {
+          // (its lower end strikes the floor: it topples about it)
+          b.cv += 1 - (lv - BEAM_W * Math.abs(Math.cos(b.ang)));
+          F.pivot = [lu, 1 + BEAM_W * Math.abs(Math.cos(b.ang))];
+          F.from = b.ang;
+          F.t = 0;
+        }
+      } else if (!F.landed) {
+        F.t += 1;
+        const k = Math.min(1, (F.t / 9) ** 2);
+        const flat = Math.cos(F.from) >= 0 ? 0 : Math.PI;
+        b.ang = F.from + (flat - F.from) * k;
+        // (its middle swung about the end on the floor, the end staying where it struck)
+        const e = Math.sin(F.from) > 0 ? 1 : -1;
+        b.cu = F.pivot[0] + Math.cos(b.ang) * b.L * e;
+        b.cv = Math.max(BEAM_W + 1, F.pivot[1] + Math.sin(b.ang) * b.L * e);
+        if (k >= 1) {
+          F.landed = true;
+          b.cv = BEAM_W + 1;
+          jolts.push(f);
+          puffs.push({ f0: f, u: b.cu - 26, r: 9 }, { f0: f, u: b.cu + 26, r: 9 });
+        }
       }
     }
     const P = new Plane(alongX);
     for (const [u, v] of Object.values(RINGS)) {
-      // (an upper ring snapped from its pillar: gone, a broken stub left)
       if (f >= UNBAR.snap && v > 30) {
         P.set(u - 3, v, CHAIN[0]);
         P.set(u - 2, v + 1, CHAIN[2]);
@@ -534,18 +622,25 @@ function unbar(alongX: boolean): UnbarFilm {
       }
       ring(P, u, v);
     }
+    // (trembling as the seal flares)
+    const shake = f < UNBAR.burst ? Math.round((hash(f, 1, 942) - 0.5) * 2 * Math.min(1, f / 8)) : 0;
+    for (const F of falls) paintBeam(P, f < UNBAR.burst ? { ...F.b, cu: F.b.cu + shake } : F.b);
     for (const ch of chains) paintChain(P, ch);
-    const burn = f < UNBAR.burst - 4 ? 1 + 0.15 * Math.sin(f * 1.7) : f < UNBAR.burst ? 2 : f < UNBAR.burst + 3 ? 0.6 : 0;
-    padlock(P, burn, f > UNBAR.burst ? Math.min(1, (f - UNBAR.burst) / 3) : 0, lockU, lockV, lockTurn);
-    // (sparks off the lock as it bursts: the enemy's pink going out)
-    if (f >= UNBAR.burst && f < UNBAR.burst + 6) {
-      for (let j = 0; j < 10; j++) {
+    const burn = f < UNBAR.burst - 5 ? 1 + 0.15 * Math.sin(f * 1.7) : f < UNBAR.burst ? 2 : 0;
+    if (f <= UNBAR.burst) padlock(P, burn, 0);
+    else for (const p of bits) {
+      P.set(p.u, p.v, CHAIN[2]);
+      P.set(p.u + 1, p.v, CHAIN[3]);
+      P.set(p.u, p.v + 1, CHAIN[1]);
+    }
+    // (the burst: the seal's pink flung out and going out)
+    if (f >= UNBAR.burst && f < UNBAR.burst + 7) {
+      for (let j = 0; j < 14; j++) {
         const a = hash(j, 1, 930) * Math.PI * 2;
-        const r = (f - UNBAR.burst + 1) * (2 + hash(j, 2, 930) * 2.5);
-        P.set(LOCK.u + Math.cos(a) * r, LOCK.v + 9 + Math.sin(a) * r - (f - UNBAR.burst) * 0.6, f - UNBAR.burst < 2 ? SEAL[4] : SEAL[2]);
+        const r = (f - UNBAR.burst + 1) * (2.4 + hash(j, 2, 930) * 2.8);
+        P.set(LOCK.u + Math.cos(a) * r, LOCK.v + Math.sin(a) * r - (f - UNBAR.burst) * 0.6, f - UNBAR.burst < 3 ? SEAL[4] : SEAL[2]);
       }
     }
-    // the dust: rolling out low along the gate's foot, thinning
     for (const pf of puffs) {
       const k = f - pf.f0;
       if (k < 0 || k > 26) continue;
@@ -558,11 +653,10 @@ function unbar(alongX: boolean): UnbarFilm {
         }
       }
     }
-    const s = P.sprite(sealLight(P, burn));
-    frames.push(s);
-    if (f === N - 1) leftSprite = s;
+    frames.push(P.strips(sealLight(P, f < UNBAR.burst ? burn : 0)));
   }
-  return { fps: 30, jolts: [UNBAR.burst, UNBAR.lockDown, UNBAR.snap], frames, left: leftSprite! };
+  if (falls.some((F) => !F.landed)) throw new Error('the gate unbarred: a beam has not landed by the end');
+  return { fps: 30, jolts: jolts.sort((a, b) => a - b), frames, left: frames[N - 1] };
 }
 const unbars = new Map<boolean, UnbarFilm>();
 /** THE GATE UNBARRED, in a plane along +x (`alongX`) or +y: made the first time it is asked for and kept. */
@@ -571,8 +665,8 @@ export function unbarFilm(alongX: boolean): UnbarFilm {
   if (!f) unbars.set(alongX, (f = unbar(alongX)));
   return f;
 }
-/** What is left once the gate is unbarred: the chains in heaps at the pillars' feet, the lock among them (the film's last frame). */
-export function gateLeft(alongX: boolean): Sprite {
+/** What is left once the gate is unbarred: the two beams lying at its foot, the chains in heaps by the pillars, the broken lock (the film's last frame). */
+export function gateLeft(alongX: boolean): Strip[] {
   return unbarFilm(alongX).left;
 }
 
