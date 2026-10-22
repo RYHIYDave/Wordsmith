@@ -367,6 +367,8 @@ export interface Monster {
   stillT?: number;
   stillK?: number;
   split?: boolean;
+  /** VOLATILE'S MELDS (behind VOLT_MELDS): Demolition's burst at half its life has gone off on it (once). */
+  demolished?: boolean;
   /** Which hero ability last hurt it (for effects that trigger on a kill), or -1. */
   lastSkill: number;
   /** True while the hero can see it. */
@@ -559,6 +561,8 @@ export interface Zone {
   meld?: MeldId;
   /** WORDMELDING: seconds until it may do its twist again (Wildfire's spark). */
   meldT?: number;
+  /** VOLATILE'S MELDS (behind VOLT_MELDS): Shatter's rune has frozen what is in it. */
+  froze?: boolean;
   /** WORDMELDING: the melded word whose look it has, for the pictures only (render/melds3.ts): a patch its twist in front left (Eruption's molten pool, Fumes' cloud), or what one behind left (as `meld`). */
   look?: MeldId;
 }

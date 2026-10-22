@@ -37,7 +37,7 @@ import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
-import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
+import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
 import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, VOLT_MELDS, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
 import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
@@ -4602,6 +4602,84 @@ export class Game {
     return best;
   }
 
+  /**
+   * VOLATILE in front: what ability `skill` kills explodes a moment after, for its share of the dead one's life (`share` of
+   * it: Demolition's half-life burst), harming what is round it. (VOLATILE'S MELDS, behind VOLT_MELDS: Demolition's bigger;
+   * Powderkeg's harder for a burning one, and setting what it strikes burning; Chain Reaction's arcing on to the nearest.)
+   */
+  private explodeKill(m: Monster, r: Resolved, skill: number, share = 1): void {
+    const T = MELD_TUNE;
+    const x = m.x;
+    const y = m.y;
+    let rad = 1.8;
+    let boom = m.maxLife * r.volatile * share;
+    if (r.meld === 'demolition') {
+      rad *= T.demolition.bigger;
+      boom *= T.demolition.bigger;
+    }
+    const keg = r.meld === 'powderkeg';
+    if (keg && m.burnT > 0) boom *= T.powderkeg.burning;
+    const hurt = Math.max(1, Math.round(boom));
+    const meld = r.meld && VOLT_MELD_IDS.includes(r.meld) ? r.meld : undefined;
+    this.after(0.12, () => {
+      this.emit({ t: 'burst', x, y, r: rad, el: r.element, style: 'blast', words: VOLATILE_ONLY, ...(meld ? { meld } : {}) });
+      this.sfx('explode', 0.6);
+      const struck: Monster[] = [];
+      for (const o of this.monsters) {
+        if (!o.dead && o !== m && Math.hypot(o.x - x, o.y - y) <= rad + o.r) {
+          this.damageMonster(o, hurt, r.element, false, skill);
+          struck.push(o);
+        }
+      }
+      if (keg) {
+        for (const o of struck) {
+          if (o.dead) continue;
+          if (o.burnT <= 0) this.emit({ t: 'ignite', x: o.x, y: o.y });
+          o.burnDps = Math.max(o.burnT > 0 ? o.burnDps : 0, hurt * T.powderkeg.burn);
+          o.burnT = Math.max(o.burnT, T.powderkeg.burnSecs);
+          if (skill >= 0) o.lastSkill = skill;
+        }
+      }
+      if (r.meld === 'chainreaction') this.chainArcs(x, y, hurt * T.chainreaction.share, skill);
+    });
+  }
+
+  /** CHAIN REACTION in front (behind VOLT_MELDS): an explosion at (x, y) sends arcs to the nearest; what they kill explodes in its turn (it was killed by the ability). */
+  private chainArcs(x: number, y: number, dmg: number, skill: number): void {
+    const T = MELD_TUNE.chainreaction;
+    const near = this.monsters
+      .filter((o) => !o.dead && !this.shutIn(o) && Math.hypot(o.x - x, o.y - y) <= T.reach)
+      .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))
+      .slice(0, T.arcs);
+    for (const o of near) {
+      this.emit({ t: 'arc', x0: x, y0: y, x1: o.x, y1: o.y, meld: 'chainreaction' });
+      this.damageMonster(o, Math.max(1, Math.round(dmg)), 'lightning', false, skill);
+    }
+    if (near.length) this.sfx('zap', 0.6);
+  }
+
+  /** SHATTER in front (behind VOLT_MELDS): a frozen one killed bursts into shards of ice, a share of its life to each one near it, chilling them. */
+  private shatterKill(m: Monster, skill: number): void {
+    const T = MELD_TUNE.shatter;
+    const dmg = Math.max(1, Math.round(m.maxLife * T.share));
+    this.emit({ t: 'burst', x: m.x, y: m.y, r: T.reach, el: 'frost', style: 'shock', meld: 'shatter' });
+    for (const o of this.monsters) {
+      if (o.dead || o === m || this.shutIn(o) || Math.hypot(o.x - m.x, o.y - m.y) > T.reach + o.r) continue;
+      this.damageMonster(o, dmg, 'frost', false, skill);
+      if (!o.dead) this.chillMonster(o, 0.3);
+    }
+  }
+
+  /** RUPTURE in front (behind VOLT_MELDS): a poisoned one killed bursts, its poison splashed on each one near it. */
+  private ruptureKill(m: Monster, skill: number): void {
+    const T = MELD_TUNE.rupture;
+    this.emit({ t: 'zone', kind: 'venom', x: m.x, y: m.y, r: T.reach, el: 'phys', meld: 'rupture' });
+    for (const o of this.monsters) {
+      if (o.dead || o === m || this.shutIn(o) || Math.hypot(o.x - m.x, o.y - m.y) > T.reach + o.r) continue;
+      this.poisonMonster(o, m.poisonDps * T.share, skill);
+    }
+  }
+
   /** SPLITTING, on a monster (Version 23.8): dying, it splits into two of its kind at half its life, ordinary, with no word (they split no more). */
   private splitMonster(m: Monster): void {
     const L = this.level;
@@ -4702,9 +4780,17 @@ export class Game {
 
   private addRune(i: number, x: number, y: number, frac: number): void {
     const r = this.hero.skills[i].r;
+    // (VOLATILE'S MELDS, behind VOLT_MELDS: the melded word behind, whose twist the rune carries; Demolition's one huge, slow rune at a time)
+    const meld = r.meldBehind && VOLT_MELD_IDS.includes(r.meldBehind) ? r.meldBehind : undefined;
+    const D = MELD_TUNE.demolition;
+    const huge = meld === 'demolition';
+    if (huge && this.zones.some((z) => z.kind === 'rune' && z.skill === i && z.meld === 'demolition')) return;
     if (!this.roomForZone() || !this.onFloor(x, y)) return;
-    this.zones.push({ x, y, r: 2.0 * r.size, t: 0, dur: 1.2, kind: 'rune', element: r.element, dmg: this.avgHit(i, frac) * r.rune, slow: 0, tick: 0, hostile: false, skill: i, words: [], from: '' });
-    this.emit({ t: 'zone', kind: 'rune', x, y, r: 2.0 * r.size, el: r.element });
+    const rad = 2.0 * r.size * (huge ? D.runeWide : 1);
+    const nz: Zone = { x, y, r: rad, t: 0, dur: 1.2 * (huge ? D.runeSlow : 1), kind: 'rune', element: r.element, dmg: this.avgHit(i, frac) * r.rune * (huge ? D.runeHard : 1), slow: 0, tick: 0, hostile: false, skill: i, words: [], from: '' };
+    if (meld) nz.meld = meld;
+    this.zones.push(nz);
+    this.emit({ t: 'zone', kind: 'rune', x, y, r: rad, el: r.element, ...(meld ? { meld } : {}) });
     this.sfx('rune', 0.7);
   }
 
@@ -5093,6 +5179,28 @@ export class Game {
     h.step = { dx: dx * HEAVY.knock * share, dy: dy * HEAVY.knock * share, t: 0.12 };
   }
 
+  /**
+   * VOLATILE'S MELDS behind (behind VOLT_MELDS), as a rune `z` goes off: Powderkeg's leaves burning ground; Rupture's bursts
+   * into a poison cloud; Chain Reaction's sets off the hero's other linked runes, one after another.
+   */
+  private runeTwist(z: Zone): void {
+    const T = MELD_TUNE;
+    if (z.meld === 'powderkeg' && this.roomForZone() && this.onFloor(z.x, z.y)) {
+      this.zones.push({ x: z.x, y: z.y, r: z.r * 0.7, t: 0, dur: T.powderkeg.groundSecs, kind: 'burn', element: 'fire', dmg: z.dmg * T.powderkeg.ground * 0.2, slow: 0, tick: 0.2, hostile: false, skill: z.skill, words: [], from: '', meld: 'powderkeg' });
+      this.emit({ t: 'zone', kind: 'burn', x: z.x, y: z.y, r: z.r * 0.7, el: 'fire', meld: 'powderkeg' });
+    } else if (z.meld === 'rupture' && this.roomForZone() && this.onFloor(z.x, z.y)) {
+      this.zones.push({ x: z.x, y: z.y, r: z.r * 0.75, t: 0, dur: 5, kind: 'venom', element: 'phys', dmg: z.dmg * T.rupture.cloud * 0.2, slow: 0, tick: 0.2, hostile: false, skill: z.skill, words: [], from: '', meld: 'rupture' });
+      this.emit({ t: 'zone', kind: 'venom', x: z.x, y: z.y, r: z.r * 0.75, el: 'phys', meld: 'rupture' });
+    } else if (z.meld === 'chainreaction') {
+      let k = 1;
+      for (const o of this.zones) {
+        if (o === z || o.kind !== 'rune' || o.hostile || o.meld !== 'chainreaction' || o.t >= o.dur) continue;
+        this.emit({ t: 'arc', x0: z.x, y0: z.y, x1: o.x, y1: o.y, meld: 'chainreaction' });
+        o.dur = Math.min(o.dur, o.t + T.chainreaction.next * k++);
+      }
+    }
+  }
+
   /** A monster's warning or lane lands on the hero (THE CITY'S WORDS: by the monster that laid it, for Hexing's circle). */
   private hurtFrom(z: Zone): void {
     this.blowBy = z.src;
@@ -5158,6 +5266,14 @@ export class Game {
       m.shield -= soak;
       m.life -= dmg - soak;
     } else m.life -= dmg;
+    // (VOLATILE'S MELDS, behind VOLT_MELDS: Demolition in front, an elite or a boss bursts once at half its life)
+    if (skill >= 0 && (m.elite || m.boss) && !m.demolished && m.life > 0 && m.life <= m.maxLife * 0.5) {
+      const rr = this.hero.skills[skill]?.r;
+      if (rr && rr.meld === 'demolition' && rr.volatile > 0) {
+        m.demolished = true;
+        this.explodeKill(m, rr, skill, MELD_TUNE.demolition.half);
+      }
+    }
     if (!poison && !dot) m.flash = heavy ? 0.2 : 0.12;
     // (ACT 1: struck, it reels, as its picture has it: render/figure.ts gaitFrame)
     if (!poison && !dot && r1) m.struckT = 0;
@@ -5215,19 +5331,10 @@ export class Game {
       h.frenzyT = Math.min(FRENZY.hold * 3, h.frenzyT + FRENZY.hold);
       this.emit({ t: 'frenzyFed', x: m.x, y: m.y });
     }
-    if (r && r.volatile > 0) {
-      const x = m.x;
-      const y = m.y;
-      const boom = Math.max(1, Math.round(m.maxLife * r.volatile));
-      const skill = m.lastSkill;
-      this.after(0.12, () => {
-        this.emit({ t: 'burst', x, y, r: 1.8, el: r.element, style: 'blast', words: VOLATILE_ONLY });
-        this.sfx('explode', 0.6);
-        for (const o of this.monsters) {
-          if (!o.dead && Math.hypot(o.x - x, o.y - y) <= 1.8 + o.r) this.damageMonster(o, boom, r.element, false, skill);
-        }
-      });
-    }
+    if (r && r.volatile > 0) this.explodeKill(m, r, m.lastSkill);
+    // (VOLATILE'S MELDS, behind VOLT_MELDS: Shatter in front, a frozen one bursts into shards; Rupture, a poisoned one bursts its poison over those round it)
+    if (r && r.meld === 'shatter' && m.frozenT > 0) this.shatterKill(m, m.lastSkill);
+    if (r && r.meld === 'rupture' && m.poisonT > 0 && m.poisonDps > 0) this.ruptureKill(m, m.lastSkill);
     if (r && r.orbChance > 0 && this.rng.chance(r.orbChance)) {
       this.addDrop('orb', m.x, m.y, 0, null, null);
       this.emit({ t: 'orb', x: m.x, y: m.y });
@@ -6924,15 +7031,21 @@ export class Game {
         continue;
       }
       if (z.kind === 'rune') {
+        // (VOLATILE'S MELDS, behind VOLT_MELDS: Shatter's rune freezes what is in it a moment before it goes off)
+        if (z.meld === 'shatter' && !z.froze && z.t >= z.dur - MELD_TUNE.shatter.freezeBefore) {
+          z.froze = true;
+          for (const m of this.monsters) if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r) this.freezeMonster(m);
+        }
         if (z.t >= z.dur) {
           this.zones.splice(i, 1);
-          this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'ruin', words: VOLATILE_ONLY });
-          this.emit({ t: 'shake', amount: 3 });
+          this.emit({ t: 'burst', x: z.x, y: z.y, r: z.r, el: z.element, style: 'ruin', words: VOLATILE_ONLY, ...(z.meld ? { meld: z.meld } : {}) });
+          this.emit({ t: 'shake', amount: z.meld === 'demolition' ? 6 : 3 });
           this.sfx('explode', 0.8);
           for (const m of this.monsters) {
             if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r) this.damageMonster(m, Math.max(1, Math.round(z.dmg)), z.element, false, z.skill);
           }
           this.breakProps(z.x, z.y, z.r, z.skill);
+          if (z.meld) this.runeTwist(z);
         }
         continue;
       }
