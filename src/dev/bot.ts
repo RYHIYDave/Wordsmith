@@ -207,7 +207,18 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
     if (W.way && W.way.awake) {
       walkTo(W.way.x, W.way.y);
       c.interact = Math.hypot(W.way.x - h.x, W.way.y - h.y) < 0.6;
-    } else if (W.gate >= 0) {
+    } else if (W.stair && W.stair.open) {
+      // (EXITS, game/ways.ts: down the town's stairs to the first floor: onto the middle of its top step)
+      const top = topStep(W.stair);
+      walkTo(top.x, top.y);
+      if (Math.floor(h.x) === Math.floor(top.x) && Math.floor(h.y) === Math.floor(top.y)) {
+        const d = Math.hypot(top.x - h.x, top.y - h.y);
+        if (d > 0.01) {
+          c.mx = (top.x - h.x) / d;
+          c.my = (top.y - h.y) / d;
+        }
+      }
+    } else if (W.gate >= 0 && !W.barred) {
       const d = L.doors[W.gate];
       const m = doorMiddle(d.spot);
       if (d.want === 1) walkTo(m.x, m.y);
@@ -262,6 +273,12 @@ function think(g: Game, c: Controls, st: BotState, dt: number): void {
   const stair = L.ways?.stair;
   let step: { x: number; y: number } | null = null;
   if (!goal && stair && stair.open) goal = step = topStep(stair);
+  // (EXITS, game/ways.ts: the fourth floor's boss dead, his hall's wall crumbled: into the cave's mouth)
+  const cave = L.ways?.cave;
+  if (!goal && cave && cave.state === 'open') {
+    const m = doorMiddle(cave.spot);
+    goal = step = { x: m.x, y: m.y };
+  }
   // (ACT 1: the boss dead, into the way on at the far end of his ground: game/ways.ts Ways.onward)
   const onward = L.ways?.onward;
   if (!goal && onward && onward.awake) goal = step = { x: onward.x, y: onward.y };
