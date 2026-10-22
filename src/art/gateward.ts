@@ -153,6 +153,11 @@ export interface GateWardLand {
    * to put it in: "Put everything in but the doorways.  With the new walls I think it’ll look fine" (so the doorways are as they were).
    */
   fresh?: boolean;
+  /**
+   * (Act 2's town hub, art/hub2.ts, a mock-up behind HUB2, off: a place the city's people have swept: no scorch of the siege,
+   * no leaflets; a few puddles in the deepest hollows and a little straw left. Not set, the ground is the Gate Ward's, as it was.)
+   */
+  swept?: boolean;
 }
 
 /** Is (tx, ty) in this house's room? */
@@ -249,11 +254,12 @@ function wallDistance(f: Floor): (x: number, y: number) => number {
 // THE FLOOR
 
 /** The siege's leavings over a street or a square: blank leaflets, straw, puddles, scorch. Null where none. */
-function leavings(x: number, y: number, px: number, py: number, wall: number): RGB | null {
+function leavings(x: number, y: number, px: number, py: number, wall: number, swept = false): RGB | null {
   // a puddle in the hollows: dark water, the dusk's sky in its far half, a rim of wet stone
   const pf = fbm(x * 0.7 + 11, y * 0.7, 1131);
-  if (pf > 0.715) {
-    if (pf < 0.73) return GW_PUDDLE[1];
+  // (swept: only the deepest hollows hold water)
+  if (pf > (swept ? 0.775 : 0.715)) {
+    if (pf < (swept ? 0.79 : 0.73)) return GW_PUDDLE[1];
     const sky = fbm(x * 1.4 + 5, y * 1.4, 1132);
     const glint = mod(alongX(px, py) + Math.floor(vnoise(x * 3, y * 3, 1133) * 30), 23) < 1;
     if (glint) return GW_PUDDLE[3];
@@ -261,7 +267,7 @@ function leavings(x: number, y: number, px: number, py: number, wall: number): R
   }
   // scorch where a firepot burst: a dark heart, a brown-black ring, its soot in flecks round it
   const sf = fbm(x * 0.5 - 7, y * 0.5 + 3, 1141);
-  if (sf > 0.75) {
+  if (!swept && sf > 0.75) {
     if (sf > 0.8) return hash(px >> 1, py >> 1, 1143) < 0.3 ? GW_SOOT[1] : GW_SOOT[0];
     if (sf > 0.775) return GW_SOOT[1];
     if (hash(px, py, 1142) < 0.35) return GW_SOOT[1];
@@ -269,7 +275,7 @@ function leavings(x: number, y: number, px: number, py: number, wall: number): R
   // a blank leaflet: a little sheet lying along the grid, lit, its far edge in shade; more by the walls
   const lx = Math.floor(px / 13);
   const ly = Math.floor(py / 9);
-  if (hash(lx, ly, 1151) < 0.02 + (wall < 0.8 ? 0.035 : 0)) {
+  if (!swept && hash(lx, ly, 1151) < 0.02 + (wall < 0.8 ? 0.035 : 0)) {
     const ax = lx * 13 + 2 + Math.floor(hash(lx, ly, 1152) * 6);
     const ay = ly * 9 + 2 + Math.floor(hash(lx, ly, 1153) * 3);
     const flip = hash(lx, ly, 1154) < 0.5;
@@ -922,7 +928,7 @@ export function gateWardLook(land: GateWardLand, mode: 'open' | 'closed' = 'open
       }
       const wall = dist(x, y);
       if (z === GW_ZONE.Room) return boards(x, y, px, py, wall);
-      const left = leavings(x, y, px, py, wall);
+      const left = leavings(x, y, px, py, wall, land.swept);
       if (left) return left;
       if (z === GW_ZONE.Square) return wall < 0.5 ? kerb(x, y, px, py, wall) : square(x, y, px, py, wall, squareAt(x, y));
       return wall < 0.42 ? kerb(x, y, px, py, wall) : setts(x, y, px, py, wall);

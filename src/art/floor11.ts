@@ -726,7 +726,12 @@ function shardBlade(S: Scene, base: V3, D0: V3, A0: V3, L: number, W: number, id
  * Its front looks along +y (`k` 0) or +x (`k` 1); built 1.4 times as big as it is measured here, so that it
  * stands over the houses. 290 x 380 at (145, 296).
  */
-function cityGate(k: number): Sprite {
+/**
+ * (`held`, for Act 2's town hub, art/hub2.ts, a mock-up behind HUB2, off: the gate as the camp inside it keeps it: the
+ * Order's banner torn down and the city's own hung in its place, the ink scrubbed off the city's arms, the dome's shard
+ * pulled out of the tower. Not set, it is the Gate Ward's, as it was.)
+ */
+export function cityGate(k: number, held = false): Sprite {
   const S = turned(scene(290, 380, 145, 296), k, 1.4);
   const WALL = 112;
   const FRONT = facing(S, [0, 1, 0]);
@@ -752,7 +757,7 @@ function cityGate(k: number): Sprite {
     const sx = x / 9;
     const sz = (z - 96) / 11;
     if (Math.abs(sx) < 1 && sz < 1 && (sz > -0.2 || Math.hypot(sx, (sz + 0.2) * 1.25) < 1)) {
-      if (Math.abs(sz - sx * 0.35 + 0.1) < 0.3 || (fr(x * 0.45) < 0.3 && sz < -0.1 && sz > -0.95 && Math.abs(sz - sx * 0.35) < 0.95)) return BLACK[fr(x * 0.4) < 0.5 ? 1 : 2];
+      if (!held && (Math.abs(sz - sx * 0.35 + 0.1) < 0.3 || (fr(x * 0.45) < 0.3 && sz < -0.1 && sz > -0.95 && Math.abs(sz - sx * 0.35) < 0.95))) return BLACK[fr(x * 0.4) < 0.5 ? 1 : 2];
       if (Math.abs(sx) > 0.84 || sz > 0.86) return toneAt(FRONT, STONE, 0.45);
       if (Math.abs(sx - sz * 0.8) < 0.13 || (Math.abs(sx + sz * 0.8) < 0.11 && sz > -0.55)) return toneAt(FRONT, STONE, -0.35);
       return toneAt(FRONT, STONE, 0.3);
@@ -834,17 +839,26 @@ function cityGate(k: number): Sprite {
       return toneAt(n, STONE, ashlar(a * 22, z, 718) + 0.05);
     }, 33 + sx, (a, rr) => (rr > 0.9 && fr((a * 12) / (2 * Math.PI)) >= 0.42 ? STONE[4] : null));
   }
-  // THE ORDER'S BANNER down the left tower: black, the blank mask, its foot cut in tongues
+  // THE ORDER'S BANNER down the left tower: black, the blank mask, its foot cut in tongues (held: the city's own in its
+  // place, slate blue, an open book worked on it in cream, its foot cut square)
   S.rod([-66, 13, 137], [-48, 13, 137], 0.8, 0.8, OAK, 40);
   S.quad([[-64, 13.2, 136], [-50, 13.2, 136], [-50, 13.2, 64], [-64, 13.2, 64]], (u, v) => {
+    if (held) {
+      if (v > 0.9) return null;
+      const bx = (u - 0.5) / 0.34;
+      const by = (v - 0.36) / 0.12;
+      const book = Math.abs(by) < 1 && Math.abs(bx) < 1 && Math.abs(bx) > 0.08 && by > -1 + Math.abs(bx) * 0.3;
+      if (book) return Math.abs(by - 0.2) < 0.25 && fr(bx * 3) < 0.4 ? CREAM[2] : CREAM[4];
+      return fr(u * 4) < 0.16 ? SLATEBLUE[1] : SLATEBLUE[u < 0.5 ? 3 : 2];
+    }
     if (v > 0.88 && v > 0.88 + Math.abs(fr(u * 3) - 0.5) * 0.24) return null;
     const mx = (u - 0.5) / 0.32;
     const my = (v - 0.3) / 0.15;
     if (mx * mx + my * my < 1) return Math.abs(Math.abs(mx) - 0.42) < 0.2 && Math.abs(my + 0.15) < 0.22 ? BLACK[0] : MASK[my < -0.35 ? 4 : 3];
     return fr(u * 4) < 0.16 ? BLACK[1] : BLACK[u < 0.5 ? 3 : 2];
   }, 41);
-  // A SHARD OF THE DOME driven into the right tower
-  {
+  // A SHARD OF THE DOME driven into the right tower (held: pulled out)
+  if (!held) {
     // out of the tower's face toward the street, tipped up, stuck in deep
     const base: V3 = [57 + 21 * Math.cos(1.0), -9 + 21 * Math.sin(1.0), 88];
     shardBlade(S, base, [0.3, 0.5, 0.8], [0.86, -0.5, 0], 34, 8, 50);
@@ -853,7 +867,7 @@ function cityGate(k: number): Sprite {
   for (const [x, y, s, t] of [[36, 16, 4, 0.3], [45, 25, 3.2, 1.1], [29, 27, 2.6, 0.7]] as const) {
     S.box([x, y, s], [[Math.cos(t), Math.sin(t), 0], [-Math.sin(t), Math.cos(t), 0], [0, 0, 1]], [s * 1.5, s, s], (_f, _u, _v, n) => toneAt(n, STONE, 0.05), 51);
   }
-  return done(S, 145, 296, [{ at: [76, 20, 100], r: 26, color: SHARD[3], a: 0.4 }]);
+  return done(S, 145, 296, held ? [] : [{ at: [76, 20, 100], r: 26, color: SHARD[3], a: 0.4 }]);
 }
 
 /**
