@@ -210,6 +210,30 @@ test('4b. Splitting behind: where it ends, shards fly out every way, each striki
   assert.ok(hurt >= 3 && hurt <= SPLIT.shards, `${hurt} of the ring struck by six shards`);
 });
 
+test('4c. a new level starts its clock again, and the shards with it: they fly at once there', () => {
+  // (the last level's times, kept on a level whose clock starts again from nothing, would hold the shards back)
+  const { g, a, seen } = room('warrior', [[0, 'behind', 'splitting']]);
+  const inner = g as unknown as { time: number; shardsAt: number[]; pullShown: number[]; clearLevel(): void };
+  inner.shardsAt = [500, 500, 500];
+  const m = put(g, a, 'skeleton', 1.1, 0);
+  put(g, a, 'skeleton', 1.1, 2.0);
+  swing(g, seen, m);
+  run(g, seen, 0.5);
+  assert.equal(of(seen, 'shards').length, 0, 'held back by a time from before');
+  // (into a dungeon: its level made afresh)
+  const d = seasoned(new Game('warrior', 3), 1);
+  const di = d as unknown as { time: number; shardsAt: number[]; pullShown: number[] };
+  di.shardsAt = [500, 500, 500];
+  di.pullShown = [500, 500, 500];
+  d.depth = 12;
+  d.cleared = 12;
+  d.enterDungeon();
+  assert.deepEqual(di.shardsAt, [-9, -9, -9], 'so a new level starts them again');
+  assert.deepEqual(di.pullShown, [-9, -9, -9]);
+  assert.ok(di.time < 1);
+  void inner;
+});
+
 test('5a. Hexing in front curses what it hits: it takes 20% more from everything, for 4 s', () => {
   const { g, a, seen } = room('mage', [[0, 'front', 'hexing']]);
   const r = g.hero.skills[0].r;

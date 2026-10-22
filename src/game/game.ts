@@ -1064,6 +1064,9 @@ export class Game {
     this.familiars = [];
     this.drops = [];
     this.later = [];
+    // (THE CITY'S WORDS: the clock starts again with the level, and so do the times the shards and the pull were last shown)
+    this.shardsAt = [-9, -9, -9];
+    this.pullShown = [-9, -9, -9];
     this.boss = null;
     this.visList = [];
     this.time = 0;
