@@ -291,6 +291,12 @@ export const V3 = {
   flash: { t: 9, dur: 0.1, color: '#ffffff', a: 0 },
   /** The playtest's own runes (no rules lay them yet): each zone's own wait, in place of its `dur`. */
   waits: new Map<Zone, number>(),
+  /**
+   * The playtest's hands (no rules for the five yet): the word its hero's hits carry, for their look;
+   * the monsters that go off as that word's kills when they die; and whether its runes do as the
+   * rules will (go off when their time is up, and what then follows). Nothing sets these but demoV3.
+   */
+  demo: { carry: null as VMeldId | null, primed: new Map<number, VMeldId>(), runes: false, frozen: new Set<Zone>() },
 };
 
 const MAX_PARTICLES = 900;
@@ -323,6 +329,8 @@ export function clearV3(): void {
   V3.freezes.length = 0;
   V3.marks.clear();
   V3.waits.clear();
+  V3.demo.primed.clear();
+  V3.demo.frozen.clear();
   V3.flash.t = 9;
 }
 
@@ -368,11 +376,34 @@ function thick(g: CanvasRenderingContext2D, x0: number, y0: number, x1: number, 
 /** A flat ellipse on the floor, r in tiles (squash < 1: flatter). */
 function ellipse(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string, alpha: number, squash = 1): void {
   if (alpha <= 0 || r <= 0) return;
+  oval(g, cx, cy, Math.max(1, r * 22.6), Math.max(1, r * 11.3 * squash), color, alpha);
+}
+
+/**
+ * A filled oval, crisp (a row of whole pixels at a time, no smoothing), `rx` by `ry` screen pixels.
+ * `rag`: pixels its edge is torn by, row by row (a blast's ragged edge); `hole`: the part of it, 0 to
+ * 1, cut out of its middle (a shell of light, hollowing out as it goes).
+ */
+function oval(g: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, color: string, alpha = 1, rag = 0, seed = 0, hole = 0): void {
+  if (alpha <= 0 || rx < 0.5 || ry < 0.5) return;
   g.globalAlpha = Math.min(1, alpha);
   g.fillStyle = color;
-  g.beginPath();
-  g.ellipse(Math.round(cx), Math.round(cy), Math.max(1, r * 22.6), Math.max(1, r * 11.3 * squash), 0, 0, TAU);
-  g.fill();
+  const x0 = Math.round(cx);
+  const y0 = Math.round(cy);
+  const h = Math.ceil(ry);
+  for (let dy = -h; dy <= h; dy++) {
+    const q = dy / ry;
+    if (q * q > 1) continue;
+    const torn = rag ? (hash2(seed, dy + 999, 5) - 0.5) * 2 * rag : 0;
+    const half = Math.round(rx * Math.sqrt(1 - q * q) + torn);
+    if (half < 0) continue;
+    const ih = hole > 0 && (q / hole) * (q / hole) < 1 ? Math.round(rx * hole * Math.sqrt(1 - (q / hole) * (q / hole)) + (rag ? (hash2(seed, dy + 333, 6) - 0.5) * rag : 0)) : -1;
+    if (ih < 0) g.fillRect(x0 - half, y0 + dy, half * 2 + 1, 1);
+    else if (ih < half) {
+      g.fillRect(x0 - half, y0 + dy, half - ih, 1);
+      g.fillRect(x0 + ih + 1, y0 + dy, half - ih, 1);
+    }
+  }
   g.globalAlpha = 1;
 }
 
@@ -910,7 +941,6 @@ function ruptureRuneGo(fx: Fx, x: number, y: number, r: number): void {
   const C = VMELD_RAMP.rupture;
   ruptureBlast(fx, x, y, r * 0.75, 1.2);
   puffs(fx, x, y, r * 0.5, 22, [C[4], C[3], C[3], C[2], C[1]], { up: 30, z: 4, life: 1.4, out: 1.4, drift: 0.3 });
-  V3.pillars.push({ x, y, w: 7, t: 0, dur: 0.24, word: 'rupture' });
 }
 
 // =============================================================================================
@@ -934,12 +964,14 @@ function demolitionRuneGo(fx: Fx, game: Game, x: number, y: number, r: number): 
 
 function powderkegRuneGo(fx: Fx, x: number, y: number, r: number): void {
   powderkegBlast(fx, x, y, r * 0.8, 1.35);
-  V3.pillars.push({ x, y, w: 9, t: 0, dur: 0.3, word: 'powderkeg' });
+  // a column of smoke and fire standing up off it
+  puffs(fx, x, y, 0.3, 14, ['#ff9a50', '#a83c28', '#4a3a36', '#33282a', '#221c1e'], { up: 80, z: 10, life: 1.4, drift: 0.2 });
 }
 
 function chainRuneGo(fx: Fx, x: number, y: number, r: number): void {
   chainBlast(fx, x, y, r * 0.75, 1.25);
-  V3.pillars.push({ x, y, w: 6, t: 0, dur: 0.22, word: 'chainreaction' });
+  // a bolt out of the sky onto it
+  V3.pillars.push({ x, y, w: 3, t: 0, dur: 0.26, word: 'chainreaction' });
 }
 
 /** The look of one of the five going off: a kill's explosion (`rune` false) or a rune's. */
@@ -1202,25 +1234,16 @@ function drawRune(g: CanvasRenderingContext2D, cam: Cam, t: number, z: Zone, wor
       const a = -Math.PI / 2 + (i / 5) * TAU;
       strokeOn(g, cam, z.x, z.y, [Math.cos(a) * R * 0.9, Math.sin(a) * R * 0.9, Math.cos(a + 0.4) * R * 0.45, Math.sin(a + 0.4) * R * 0.45], C[3], Math.max(0, write * 1.4 - 0.4));
     }
-    const swell = 0.2 + 0.4 * smooth(k);
+    const swell = 0.12 + 0.24 * smooth(k);
     const shake = k > 0.6 ? Math.round(Math.sin(t * 60) * (k - 0.6) * 4) : 0;
     const bx = Math.round(cx) + shake;
     const by = Math.round(cy);
     const rw = Math.round(swell * R * 22.6);
     const rh = Math.round(swell * R * 11.3);
-    const up = Math.round(rh * 0.9);
-    g.fillStyle = C[1];
-    g.beginPath();
-    g.ellipse(bx, by - up + 1, rw + 1, rh + up * 0.6 + 1, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = C[3];
-    g.beginPath();
-    g.ellipse(bx, by - up, rw, rh + up * 0.6, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = hot && beat ? C[5] : C[4];
-    g.beginPath();
-    g.ellipse(bx, by - up + 1, Math.max(1, rw - 3), Math.max(1, rh + up * 0.6 - 3), 0, 0, TAU);
-    g.fill();
+    const up = Math.round(rh * 1.6 + 2);
+    oval(g, bx, by - up + 1, rw + 1, rh + up * 0.6 + 1, C[1]);
+    oval(g, bx, by - up, rw, rh + up * 0.6, C[3]);
+    oval(g, bx, by - up + 1, Math.max(1, rw - 3), Math.max(1, rh + up * 0.6 - 3), hot && beat ? C[5] : C[4]);
     // its veins, and the shine on it
     g.fillStyle = C[2];
     for (let i = 0; i < 4; i++) {
@@ -1412,38 +1435,38 @@ export function floorV3(g: CanvasRenderingContext2D, cam: Cam, t: number, game: 
 // =============================================================================================
 // IN THE AIR (after the darkness, so it glows): Rupture's cloud, the domes, the pillars.
 
-/** Rupture's cloud: plum and bile puffs, boiling, swirling slowly, thin round the hero. */
+/**
+ * Rupture's cloud: puffs of gas turning slowly over the slick, each with a dark belly, a body and a cap
+ * lit at its upper left (so that it has weight), plum and bile in turn; some rising off it as others
+ * sink back; thin round the hero, so that he and what strikes at him are always seen.
+ */
 function drawCloud(g: CanvasRenderingContext2D, cam: Cam, t: number, z: Zone, game: Game): void {
   const C = VMELD_RAMP.rupture;
-  const fade = Math.min(1, z.t / 0.35, (z.dur - z.t) * 1.2);
+  const fade = Math.min(1, z.t / 0.3, (z.dur - z.t) * 1.2);
+  const born = easeOut(Math.min(1, z.t / 0.5));
   const s = shapeOf(z);
-  const n = Math.round(10 + z.r * 8);
+  const n = Math.round(14 + z.r * 9);
   const hx = wx(cam, game.hero.x, game.hero.y);
-  const hy = wy(cam, game.hero.x, game.hero.y) - 14;
+  const hy = wy(cam, game.hero.x, game.hero.y) - 12;
+  const looks = [
+    [C[1], C[3], C[4]],
+    [C[0], C[2], C[3]],
+    ['#26300c', '#7c9416', C[4]],
+  ];
   for (let i = 0; i < n; i++) {
-    const a = hash2(s.seed, i, 1) * TAU + t * 0.25 * (i % 2 ? 1 : -1);
-    const d = Math.sqrt(hash2(s.seed, i, 2)) * z.r * 0.9 * Math.min(1, z.t / 0.4 + 0.3);
-    const [px, py0] = onFloor(wx(cam, z.x, z.y), wy(cam, z.x, z.y), a, d);
-    const bob = Math.sin(t * 1.6 + i) * 2;
-    const high = 6 + hash2(s.seed, i, 3) * 16;
-    const py = py0 - high + bob;
-    const size = 5 + hash2(s.seed, i, 4) * 6 + Math.sin(t * 2 + i * 0.7);
-    // (thin round the hero: he and what strikes at him are seen through it)
-    const near = Math.hypot(px - hx, (py - hy) * 1.6);
-    const thin = near < 26 ? 0.35 + 0.65 * (near / 26) : 1;
-    const col = i % 3 === 0 ? C[4] : i % 3 === 1 ? C[3] : C[2];
-    g.globalAlpha = 0.32 * fade * thin;
-    g.fillStyle = C[1];
-    g.beginPath();
-    g.ellipse(Math.round(px), Math.round(py) + 2, size + 1, size * 0.62 + 1, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = 0.42 * fade * thin;
-    g.fillStyle = col;
-    g.beginPath();
-    g.ellipse(Math.round(px), Math.round(py), size, size * 0.6, 0, 0, TAU);
-    g.fill();
+    const a = (i / n) * TAU + t * (0.2 + hash2(i, s.seed, 1) * 0.3) * (i % 2 === 0 ? 1 : -1);
+    const d = z.r * (0.15 + hash2(i, s.seed, 2) * 0.7) * (0.4 + 0.6 * born);
+    const rise = (t * 0.35 + hash2(i, s.seed, 6)) % 1;
+    const px = Math.round(wx(cam, z.x + Math.cos(a) * d, z.y + Math.sin(a) * d));
+    const py = Math.round(wy(cam, z.x + Math.cos(a) * d, z.y + Math.sin(a) * d)) - 6 - Math.round(hash2(i, s.seed, 3) * 10 + Math.sin(t * 1.4 + i) * 2 + rise * 18);
+    const rr = (4 + hash2(i, s.seed, 4) * 5 + rise * 4) * (0.5 + 0.5 * born);
+    let alpha = (0.55 + hash2(i, s.seed, 5) * 0.2) * fade * Math.min(1, (1 - rise) * 2.5, 0.35 + rise * 4);
+    if (Math.hypot(px - hx, (py - hy) * 1.6) < 30) alpha *= 0.3;
+    const [belly, body, cap] = looks[i % 3];
+    oval(g, px + 1, py + 2, rr * 1.5, rr * 0.75, belly, alpha, 0.8, s.seed + i);
+    oval(g, px, py, rr * 1.4, rr * 0.75, body, alpha, 0.8, s.seed + i + 40);
+    oval(g, px - rr * 0.35, py - rr * 0.3, rr * 0.8, rr * 0.4, cap, alpha, 0.5, s.seed + i + 80);
   }
-  g.globalAlpha = 1;
 }
 
 function drawDome(g: CanvasRenderingContext2D, cam: Cam, d: Dome): void {
@@ -1451,81 +1474,58 @@ function drawDome(g: CanvasRenderingContext2D, cam: Cam, d: Dome): void {
   const k = d.t / d.dur;
   const cx = Math.round(wx(cam, d.x, d.y));
   const cy = Math.round(wy(cam, d.x, d.y));
+  const seed = Math.round(d.x * 977 + d.y * 313) + Math.floor(d.t * 24);
   if (d.kind === 'blast') {
-    // a dome of white light swelling over the floor, its rim lavender, going to dust
-    const q = easeOut(Math.min(1, k / 0.45));
+    // A DOME OF LIGHT swelling over the floor: white at first, its edge torn; then hollowing out from
+    // the middle into a shell that thins to a ring of dust and is gone
+    const q = easeOut(Math.min(1, k / 0.4));
     const rw = d.r * 22.6 * q;
-    const rh = d.r * 11.3 * q;
-    const up = rh * 1.4;
-    const fade = k < 0.4 ? 1 : 1 - (k - 0.4) / 0.6;
-    g.globalAlpha = 0.85 * fade;
-    g.fillStyle = C[2];
-    g.beginPath();
-    g.ellipse(cx, cy - up * 0.35, rw + 2, rh + up * 0.5 + 2, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = k < 0.25 ? C[5] : C[4];
-    g.beginPath();
-    g.ellipse(cx, cy - up * 0.35, rw, rh + up * 0.5, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = fade;
-    g.fillStyle = k < 0.5 ? P.white : C[4];
-    g.beginPath();
-    g.ellipse(cx, cy - up * 0.45, rw * 0.55, (rh + up * 0.5) * 0.55, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = 1;
+    const rh = d.r * 11.3 * q + d.r * 14 * q;
+    const y = cy - Math.round(d.r * 7 * q);
+    const hole = k < 0.22 ? 0 : Math.min(0.96, smooth((k - 0.22) / 0.78) * 1.05);
+    const fade = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
+    oval(g, cx, y, rw + 2, rh + 2, C[1], 0.9 * fade, 2.5, seed, hole * 0.98);
+    oval(g, cx, y, rw, rh, C[2], fade, 2, seed + 1, hole);
+    oval(g, cx, y, rw - 2, rh - 2, k < 0.35 ? C[4] : C[3], fade, 1.5, seed + 2, Math.min(0.99, hole * 1.04));
+    if (k < 0.5) oval(g, cx, y, (rw - 3) * (1 - hole), (rh - 3) * (1 - hole), k < 0.18 ? P.white : C[5], 1 - k / 0.5, 1, seed + 3, hole > 0 ? 0.4 : 0);
+    // dust in it: dark specks torn off its edge
+    g.fillStyle = C[1];
+    for (let i = 0; i < 18 * fade; i++) {
+      const a = hash2(seed, i, 7) * TAU;
+      const rr = 0.85 + hash2(seed, i, 8) * 0.25;
+      g.fillRect(Math.round(cx + Math.cos(a) * rw * rr), Math.round(y + Math.sin(a) * rh * rr), 2, 1);
+    }
   } else if (d.kind === 'fireball') {
-    // a ball of fire rising as it swells, white at its heart, violet flickering at its edge, rolling over into smoke
-    const q = easeOut(Math.min(1, k / 0.35));
-    const r = d.r * 16 * q * (1 + k * 0.3);
-    const y = cy - 6 - d.rise * smooth(k);
-    const smoke = Math.max(0, (k - 0.45) / 0.55);
-    const fade = 1 - smoke;
-    g.globalAlpha = Math.min(1, 0.5 + smoke) * (1 - Math.max(0, (k - 0.8) / 0.2));
-    g.fillStyle = smoke > 0.3 ? '#2a1e1e' : C[1];
-    g.beginPath();
-    g.ellipse(cx, y, r + 2, r * 0.82 + 2, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = fade;
-    g.fillStyle = Math.floor(d.t * 30) % 2 ? P.pu4 : C[3];
-    g.beginPath();
-    g.ellipse(cx, y, r + 1, r * 0.82 + 1, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = '#ff8a2a';
-    g.beginPath();
-    g.ellipse(cx, y, r * 0.85, r * 0.7, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = C[4];
-    g.beginPath();
-    g.ellipse(cx, y + r * 0.05, r * 0.6, r * 0.5, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = k < 0.3 ? P.white : C[5];
-    g.beginPath();
-    g.ellipse(cx, y + r * 0.1, r * 0.32, r * 0.27, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = 1;
+    // A BALL OF FIRE rising as it swells: white at its heart, gold, orange, red, violet flickering
+    // at its edge, its edge torn by flame; it rolls over into black smoke from the outside in
+    const q = easeOut(Math.min(1, k / 0.3));
+    const r = d.r * 16 * q * (1 + k * 0.35);
+    const y = Math.round(cy - 6 - d.rise * smooth(k));
+    const smoke = smooth(Math.max(0, (k - 0.35) / 0.65));
+    const shrink = 1 - smoke;
+    oval(g, cx, y, r + 2, r * 0.85 + 2, smoke > 0.4 ? '#1e1616' : C[1], Math.min(1, 0.7 + smoke) * (1 - Math.max(0, (k - 0.82) / 0.18)), 2, seed);
+    if (smoke > 0.2) oval(g, cx, y - 2, r * 0.9, r * 0.7, '#3a2e2e', smoke * 0.8 * (1 - Math.max(0, (k - 0.82) / 0.18)), 2, seed + 9);
+    oval(g, cx, y, (r + 1) * shrink, (r * 0.85 + 1) * shrink, Math.floor(d.t * 30) % 2 ? P.pu4 : C[3], 1, 2, seed + 1);
+    oval(g, cx, y, r * 0.86 * shrink, r * 0.72 * shrink, '#ff8a2a', 1, 1.5, seed + 2);
+    oval(g, cx, y + 1, r * 0.62 * shrink, r * 0.52 * shrink, C[4], 1, 1, seed + 3);
+    oval(g, cx, y + 1, r * 0.34 * shrink, r * 0.28 * shrink, k < 0.25 ? P.white : C[5], 1, 0.5, seed + 4);
   } else if (d.kind === 'storm') {
-    // a ball of lightning: a white heart and bolts thrashing out of it
+    // A BALL OF LIGHTNING: a white heart, a lilac glow, bolts thrashing out of it
     const q = easeOut(Math.min(1, k / 0.3));
     const r = d.r * 18 * q;
     const y = cy - 8;
     const fade = 1 - Math.max(0, (k - 0.5) / 0.5);
-    g.globalAlpha = 0.45 * fade;
-    g.fillStyle = C[3];
-    g.beginPath();
-    g.ellipse(cx, y, r, r * 0.75, 0, 0, TAU);
-    g.fill();
+    oval(g, cx, y, r, r * 0.75, C[2], 0.4 * fade, 2, seed, 0.5);
+    oval(g, cx, y, r * 0.6, r * 0.45, C[3], 0.55 * fade, 1.5, seed + 1);
+    oval(g, cx, y, r * 0.32, r * 0.26, P.white, fade, 0.5, seed + 2);
     g.globalAlpha = fade;
-    g.fillStyle = P.white;
-    g.beginPath();
-    g.ellipse(cx, y, r * 0.35, r * 0.28, 0, 0, TAU);
-    g.fill();
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const a = Math.random() * TAU;
       let px = cx;
       let py = y;
       for (let j = 1; j <= 3; j++) {
-        const nx = cx + Math.cos(a) * r * (j / 3) + rnd(-3, 3);
-        const ny = y + Math.sin(a) * r * 0.75 * (j / 3) + rnd(-3, 3);
+        const nx = cx + Math.cos(a) * r * 1.1 * (j / 3) + rnd(-3, 3);
+        const ny = y + Math.sin(a) * r * 0.8 * (j / 3) + rnd(-3, 3);
         pline(g, px, py, nx, ny, j === 1 ? P.white : C[4]);
         px = nx;
         py = ny;
@@ -1533,25 +1533,16 @@ function drawDome(g: CanvasRenderingContext2D, cam: Cam, d: Dome): void {
     }
     g.globalAlpha = 1;
   } else {
-    // a wet pop: a skin swelling and bursting, its pieces thrown out
+    // A WET POP: a skin swelling and bursting, torn open from the middle, its pieces thrown out
     const q = easeOut(Math.min(1, k / 0.4));
     const r = d.r * 16 * q;
-    const y = cy - 8 - d.rise * k;
-    const fade = 1 - Math.max(0, (k - 0.35) / 0.65);
-    g.globalAlpha = 0.9 * fade;
-    g.fillStyle = C[3];
-    g.beginPath();
-    g.ellipse(cx, y, r, r * 0.8, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = C[4];
-    g.beginPath();
-    g.ellipse(cx, y, r * 0.7, r * 0.55, 0, 0, TAU);
-    g.fill();
-    g.fillStyle = P.white;
-    g.beginPath();
-    g.ellipse(cx, y, r * 0.3, r * 0.24, 0, 0, TAU);
-    g.fill();
-    g.globalAlpha = 1;
+    const y = Math.round(cy - 8 - d.rise * k);
+    const hole = k < 0.3 ? 0 : Math.min(0.95, (k - 0.3) / 0.6);
+    const fade = 1 - Math.max(0, (k - 0.55) / 0.45);
+    oval(g, cx, y, r + 1, r * 0.8 + 1, C[2], fade, 2, seed, hole);
+    oval(g, cx, y, r, r * 0.8, C[3], fade, 2, seed + 1, hole);
+    oval(g, cx, y, r * 0.7, r * 0.56, C[4], fade, 1.5, seed + 2, hole);
+    if (hole < 0.5) oval(g, cx, y, r * 0.3, r * 0.24, P.white, fade, 0.5, seed + 3);
   }
 }
 
@@ -1560,21 +1551,47 @@ export function airV3(g: CanvasRenderingContext2D, cam: Cam, t: number, game: Ga
   for (const z of game.zones) if (z.kind === 'venom' && vmeldOf(z) === 'rupture') drawCloud(g, cam, t, z, game);
   for (const d of V3.domes) if (d.t >= 0) drawDome(g, cam, d);
   for (const p of V3.pillars) {
-    // light thrown straight up off a rune going off
+    // light thrown straight up off a rune going off (or out of an elite going off): it shoots up,
+    // narrows and fades from its head down; its edges flicker
     const C = VMELD_RAMP[p.word];
     const k = p.t / p.dur;
     const cx = Math.round(wx(cam, p.x, p.y));
     const cy = Math.round(wy(cam, p.x, p.y));
-    const w = Math.max(1, Math.round(p.w * (1 - k * 0.7)));
-    const top = Math.round(260 * Math.min(1, k / 0.15));
-    g.globalAlpha = 0.6 * (1 - k);
-    g.fillStyle = C[3];
-    g.fillRect(cx - w - 2, cy - top, w * 2 + 5, top);
-    g.globalAlpha = 1 - k;
-    g.fillStyle = C[4];
-    g.fillRect(cx - w, cy - top, w * 2 + 1, top);
-    g.fillStyle = P.white;
-    g.fillRect(cx - Math.floor(w / 2), cy - top, Math.floor(w / 2) * 2 + 1, top);
+    if (p.word === 'chainreaction') {
+      // a bolt out of the sky: jagged, white at its heart, lilac round it, flickering
+      if (k > 0.35 && k < 0.45) continue;
+      const seed = Math.round(p.x * 31 + p.y * 17);
+      let px = cx;
+      let py = cy;
+      for (let j = 1; j <= 12; j++) {
+        const nx = cx + Math.round((hash2(seed, j, 3) - 0.5) * 22 * Math.min(1, j / 3));
+        const ny = cy - j * 18;
+        thick(g, px, py, nx, ny, C[2], 5);
+        thick(g, px, py, nx, ny, C[4], 3);
+        pline(g, px, py, nx, ny, P.white);
+        px = nx;
+        py = ny;
+      }
+      continue;
+    }
+    const w = Math.max(1, Math.round(p.w * (1 - k * 0.75)));
+    const top = Math.round(220 * Math.min(1, k / 0.12));
+    const band = 6;
+    for (let j = 0; j < top; j += band) {
+      const q = j / 220;
+      const a = (1 - k) * (1 - q * 0.85);
+      const wob = Math.floor(p.t * 40 + j * 0.3) % 2;
+      const ww = Math.max(1, Math.round(w * (1 - q * 0.5)));
+      g.globalAlpha = 0.55 * a;
+      g.fillStyle = C[2];
+      g.fillRect(cx - ww - 2 - wob, cy - j - band, ww * 2 + 5 + wob * 2, band);
+      g.globalAlpha = 0.9 * a;
+      g.fillStyle = C[4];
+      g.fillRect(cx - ww, cy - j - band, ww * 2 + 1, band);
+      g.globalAlpha = a;
+      g.fillStyle = P.white;
+      g.fillRect(cx - Math.floor(ww / 2), cy - j - band, Math.floor(ww / 2) * 2 + 1, band);
+    }
     g.globalAlpha = 1;
   }
 }
@@ -1818,6 +1835,7 @@ export function tickV3(dt: number, game: Game, fx: Fx): void {
       arc(m.x + rnd(-0.25, 0.25), m.y + rnd(-0.25, 0.25), m.x + rnd(-0.25, 0.25), m.y + rnd(-0.25, 0.25), C, { w: 1, dur: 0.08, wob: 0.1, z });
     }
   }
+  if (V3.demo.primed.size || V3.demo.runes) demoTick(game, fx);
   const room = fx.room();
   const rate = (n: number, r: number): boolean => Math.random() < n * dt * room * Math.min(1.6, 0.5 + r * 0.6);
   for (const z of game.zones) {
@@ -1873,7 +1891,7 @@ export function tickV3(dt: number, game: Game, fx: Fx): void {
         fling(fx, x, y, 4, [P.white, C[5], P.pu5], { speed: 2.6, up: 50, grav: 200, life: 0.2, z: 3, streak: 2, size: 1 });
       }
     } else if (w === 'rupture' && z.kind === 'venom') {
-      if (rate(2.4, z.r)) {
+      if (rate(1.2, z.r)) {
         const [x, y] = at();
         fx.bubbles(x, y, 0.1, 1);
       }
@@ -1912,6 +1930,7 @@ export function eventsV3(events: readonly unknown[], game: Game, fx: Fx): void {
       blastLook(e.meld, fx, game, e.x ?? 0, e.y ?? 0, e.r ?? 1.8, e.style === 'ruin');
     } else if (e.t === 'hit' && !e.onHero && !e.poison) {
       for (const w of e.words ?? []) if (isVMeld(w)) hitV3(w, fx, e.x ?? 0, e.y ?? 0, 0.8, false);
+      if (V3.demo.carry) hitV3(V3.demo.carry, fx, e.x ?? 0, e.y ?? 0, 0.8, false);
     } else if (e.t === 'burst' && !e.echo && (e.style === 'slam' || e.style === 'nova' || e.style === 'land')) {
       for (const w of e.words ?? []) if (isVMeld(w)) hitV3(w, fx, e.x ?? 0, e.y ?? 0, e.r ?? 1, true);
     }
@@ -1923,6 +1942,108 @@ export function ownsEventV3(e: unknown): boolean {
   if (!VOLATILE3.on) return false;
   const x = e as Seen;
   return x.t === 'burst' && isVMeld(x.meld);
+}
+
+// =============================================================================================
+// What the rules will do, done by hand for the playtest's films (only while it asks: V3.demo).
+
+/** One with `word` in front has killed a monster at (x, y): it goes off, and the word's twist follows, as his page has it. */
+function demoGoOff(word: VMeldId, x: number, y: number, game: Game, fx: Fx): void {
+  const r = word === 'demolition' ? 2.4 : 1.8;
+  blastLook(word, fx, game, x, y, r, false);
+  const near = game.monsters.filter((m) => !m.dead && Math.hypot(m.x - x, m.y - y) <= (word === 'chainreaction' ? 4.5 : r + 0.6)).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+  const fire = (what: 'catch' | 'shard' | 'arc' | 'splash', m: Monster): void => eventsV3([{ t: 'volFx', meld: word, what, id: m.id, x0: x, y0: y, x1: m.x, y1: m.y }], game, fx);
+  if (word === 'powderkeg') {
+    for (const m of near.slice(0, 4)) {
+      fire('catch', m);
+      later(0.12 + Math.hypot(m.x - x, m.y - y) * 0.06, () => {
+        m.burnT = 5;
+        m.burnDps = 0;
+      });
+    }
+  } else if (word === 'shatter') {
+    for (const m of near.slice(0, 5)) fire('shard', m);
+  } else if (word === 'chainreaction') {
+    for (const m of near.slice(0, 3)) {
+      fire('arc', m);
+      // (those it kills go off too)
+      if (V3.demo.primed.get(m.id) === 'chainreaction') later(0.05 + Math.hypot(m.x - x, m.y - y) * 0.012, () => game.kill(m));
+    }
+  } else if (word === 'rupture') {
+    for (const m of near.slice(0, 4)) {
+      fire('splash', m);
+      later(0.16 + Math.hypot(m.x - x, m.y - y) * 0.06, () => {
+        m.poisonT = 5;
+        m.poisonDps = 0;
+        m.poisonN = 1;
+      });
+    }
+  }
+}
+
+/** A rune of the playtest's has had its time: it goes off, and what follows follows. */
+function demoRuneGo(z: Zone, word: VMeldId, game: Game, fx: Fx, chain = true): void {
+  const i = game.zones.indexOf(z);
+  if (i < 0) return;
+  game.zones.splice(i, 1);
+  V3.waits.delete(z);
+  blastLook(word, fx, game, z.x, z.y, z.r, true);
+  const lay = (kind: 'burn' | 'venom', r: number, secs: number): void => {
+    game.zones.push({ x: z.x, y: z.y, r, t: 0, dur: secs, kind, element: 'phys', dmg: 0, slow: 0, tick: 0, hostile: false, skill: -1, words: [], from: '', look: word } as unknown as Zone);
+  };
+  if (word === 'powderkeg') later(0.1, () => lay('burn', z.r * 0.9, 4));
+  else if (word === 'rupture') later(0.05, () => lay('venom', z.r * 1.1, 4));
+  else if (word === 'shatter') {
+    for (const m of game.monsters) if (!m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r) later(0.42, () => (m.frozenT = Math.min(m.frozenT, 0.05)));
+  } else if (word === 'chainreaction' && chain) {
+    // every rune linked to it goes off in turn, along its link
+    let at = 0;
+    let from = z;
+    const left = game.zones.filter((o) => o.kind === 'rune' && vmeldOf(o) === 'chainreaction');
+    while (left.length) {
+      left.sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y));
+      const next = left.shift() as Zone;
+      if (Math.hypot(next.x - from.x, next.y - from.y) > VRUNE.linkReach) break;
+      const f = from;
+      later(at, () => eventsV3([{ t: 'volFx', meld: 'chainreaction', what: 'link', x0: f.x, y0: f.y, x1: next.x, y1: next.y }], game, fx));
+      at += VRUNE.linkGap;
+      later(at, () => demoRuneGo(next, 'chainreaction', game, fx, false));
+      from = next;
+    }
+  }
+}
+
+const lastAt = new Map<number, number[]>();
+
+function demoTick(game: Game, fx: Fx): void {
+  for (const [id, word] of V3.demo.primed) {
+    const m = game.monsters.find((q) => q.id === id);
+    if (m && !m.dead) {
+      lastAt.set(id, [m.x, m.y]);
+      continue;
+    }
+    // (a monster killed is taken out of the game's list at once: where it was last seen)
+    V3.demo.primed.delete(id);
+    const at = m ? [m.x, m.y] : lastAt.get(id);
+    if (!at) continue;
+    later(0.12, () => demoGoOff(word, at[0], at[1], game, fx));
+  }
+  if (!V3.demo.runes) return;
+  for (const z of [...game.zones]) {
+    const wait = V3.waits.get(z);
+    const word = vmeldOf(z);
+    if (wait === undefined || !word || z.kind !== 'rune') continue;
+    if (word === 'shatter' && z.t >= wait * VRUNE.freezeAt && !V3.demo.frozen.has(z)) {
+      V3.demo.frozen.add(z);
+      const ids = game.monsters.filter((m) => !m.dead && Math.hypot(m.x - z.x, m.y - z.y) <= z.r + m.r).map((m) => m.id);
+      for (const id of ids) {
+        const m = game.monsters.find((q) => q.id === id) as Monster;
+        m.frozenT = wait * (1 - VRUNE.freezeAt) + 0.6;
+      }
+      eventsV3([{ t: 'volFx', meld: 'shatter', what: 'freeze', x: z.x, y: z.y, r: z.r, ids }], game, fx);
+    }
+    if (z.t >= wait) demoRuneGo(z, word, game, fx);
+  }
 }
 
 // =============================================================================================
@@ -1939,7 +2060,11 @@ export function demoV3(fx: Fx, getGame: () => Game | null) {
   return {
     switch: VOLATILE3,
     state: V3,
-    clear: clearV3,
+    /** Forget everything, for the level the game is on now (so that what is laid next is kept). */
+    clear: () => {
+      clearV3();
+      joinedLevel = getGame()?.level ?? null;
+    },
     /** Their stones, for a page's pictures. */
     rune: vmeldRune,
     /** One of the five's hit at (x, y). */
@@ -1955,6 +2080,16 @@ export function demoV3(fx: Fx, getGame: () => Game | null) {
       g.zones.push(z);
       if (kind === 'rune') V3.waits.set(z, secs);
       return g.zones.length - 1;
+    },
+    /** The playtest's hands: the hero's hits carry `word` (their look); monster `id` goes off as `word`'s kill when it dies; the runes laid go off as the rules will have them. */
+    carry: (word: VMeldId | null) => {
+      V3.demo.carry = word;
+    },
+    prime: (id: number, word: VMeldId) => {
+      V3.demo.primed.set(id, word);
+    },
+    rules: (on: boolean) => {
+      V3.demo.runes = on;
     },
     /** Take the rune nearest (x, y) away (it has gone off). */
     unlay: (x: number, y: number) => {
