@@ -7,7 +7,7 @@ levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
 fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
 new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
-change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. The two pictures in the doc are written out here in words. How it was
+change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. Since 21 Oct (the same): words growing with the levels; Rank II. The two pictures in the doc are written out here in words. How it was
 found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -157,7 +157,13 @@ without the master rune-stone finds the fallen wordsmith again in the next.
 - **Where words come from:** elites carry a word you can win; every boss gives one, and the chance
   of a second grows with depth. Deep down, rare words found nowhere else (where they begin is still
   open). None in the first dungeon, since Version 19.5: its monsters carry none, and its gate takes
-  none.
+  none. **Words grow with the levels (since Version 23.7).** Your words of 21 Oct 2026, 18:24: “I’d like
+  the drops of words to increase with each level as well” and “I don’t think the player is getting
+  enough words to experiment with the melding system”; your picks: “10% each level, up to triple” and
+  “All of them (Recommended)”. Every chance of a word but the boss's is 10% bigger for each level past
+  the first, the floors and then the endless levels, held at triple: a named monster's or a guardian's
+  of carrying one, an ordinary monster's, a chest's and a vault's, the Bells'. Floor 6, where melding
+  opens, 1.5 times; floor 15, 2.4 times; triple from Endless 6.
 - **Slots:** none until the wordsmith’s ring is lit; then one in front, with the first word; the
   second in front at level 4, one behind at level 15 and the second behind at level 20 (since
   Version 20.0; your words of 9 Oct, 22:25: “I want you to have a little time experimenting with the
@@ -167,6 +173,10 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   level. Very late, a third in front at 15 and a third behind at 20 (an idea, switched off: its
   levels to be set again, now that the slots behind open at 15 and 20).
 - **Forging:** three of the same word forge into one stronger word at the wordsmith, up to rank V.
+  **Rank II (since Version 23.7):** two of the same damage word and a meld's runedust, at the
+  wordsmith's melding page, make that word at rank II (Power II, Flame II, Frost II, Lightning II,
+  Poison II), half as strong again, its attribute adding on top; on attacks only; rank II the top for
+  now. Your “Yes” of 18 Oct to Poison II as shown; and of 21 Oct, “Yes, put it in (Recommended)”.
 - **Words laid on the gate go for now,** to come back later as endgame (your words of 9 Oct, 22:50:
   “Let’s have the door words go for now.  I think that’ll be endgame stuff”); then they make the
   next floor harder and richer.
@@ -421,6 +431,8 @@ changes one only with your yes.
 | Pack sizes | tiny 6 to 10, small 4 to 7, medium 3 to 5, large 1 to 2, the boss alone; in the first dungeon tiny 3 to 5, small 2 to 4, medium 2 to 3, large 1 | `PACK_BY_SIZE`, `FIRST_PACK_BY_SIZE` |
 | Twin at the gate | 50% increased pack size | `GATE_TWIN_PACKS` |
 | Packs grow with the levels | 5% bigger for each level past the first, floors and endless levels, held at double (floor 15 about 70% bigger; double by Endless 6) | `PACK_GROWTH`, `packGrowth` |
+| Words grow with the levels | every chance of a word but the boss's 10% bigger for each level past the first, floors and endless levels, held at triple (floor 6 1.5 times, floor 15 2.4; triple by Endless 6) | `WORD_GROWTH`, `wordGrowth` |
+| Rank II | two of one damage word and a meld's runedust make it rank II, half as strong again | `RANK2`, `RANK_TUNE.step` |
 | Blue packs | 1 in 4 of the packs not an elite room’s or a lair, from dungeon 2; 20% increased life | `PACKS` |
 | Yellow packs | every elite room’s, and 1 in 10 of the others from dungeon 2; the leader 3 times the life; its minions 50% of its words | `PACKS` |
 | Leaders of their own | skeletons the champion, bone archers the marksman, cultists the priest, green trolls the chieftain; never a pack of bats | `LEADERS`, `packRarity` |
