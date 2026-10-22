@@ -91,6 +91,36 @@ The films and stills he saw were made in the art chat's workspace as `previews/w
   he comes within some tiles of it) after it is unbarred; until then draw the bars. The message "The gate is unbarred."
   can stay as he arrives.
 
+## Floors 6 to 10: `src/art/act1_ways.ts` (`A1_WAYS`, off), with the kit `src/art/ways_kit.ts`
+
+NOT YET SHOWN TO HIM AS MADE (his yes by 14:16 was to what each would be). Each way on is painted in its floor's own
+look, in the world, in a frame of its own: it leads one of four ways along the grid (`WayDir`, `wayDirOf(dx, dy)`: from
+where the boss stood toward `Ways.onward`, the nearest of the four), so that it always leads away from the floor behind
+him. `xxxWay(d)` gives `WayArt`: `shut` and `open`, each `under` (with the floor, under what stands) and `over` (stood at
+the way's point), and `film` (whole frames, 30 a second, its jolts and how hard each). `back` (tiles): where the picture
+is anchored, back from `Ways.onward` toward the boss's ground (0 but for floor 7): its mouth, where he goes in.
+`xxxStart(d)` gives `StartArt` (`under`, `over`), what he came out of at the floor's start, `d` the way from the boss
+toward the start (it lies that way of him).
+
+| Floor | Way on, shut | As the boss dies (film) | Next floor begins |
+|---|---|---|---|
+| 6 Quarry | `quarryWay`: a stair hewn down into the bedrock under a bench of the rock, a hoist over its head; the cult's cut blocks jammed in its head and heaped on it | the Unfinished's crash: the pit shakes, the heap is thrown up and out, blocks tumbling and crashing over the floor; 112 frames | `quarryStart` (floor 6): the quarry's gate, posts, beam, the cult's board, a leaf swung open, ruts, a cairn |
+| 7 Ledge | `ledgeWay`: a crack in the eyrie's rock with a stair of planks down it, driftwood posts at its head; the Queen's nest heaped over it | the flock bursts out of the nest and beats away, the nest blown apart, sticks and bones flung and falling down the crack, feathers drifting; 120 frames; `back` 2.35: the crack lies back from the eyrie's drop | `ledgeStart` (7): the stair from the quarry, cut down the face of a spur of rock |
+| 8 Canyon | `canyonWay`: two fins of the banded rock, a slot between, a chockstone; rockfall jammed in it | the Cantor's echo: the fins shudder from their far end to the mouth, dust and pebbles in a wave; the plug blasted out; 124 frames | `canyonStart` (8): a plank stair pinned zigzag down a pillar of the canyon's rock |
+| 9 Pinewood | `pinewoodWay`: two sick trees leaning together over a trail into the gloom; the swamp's roots across it, veins of pink | the roots thrash, their veins flaring, then wither grey and draw back down into the earth, leaving it torn; 126 frames | `pinewoodStart` (9): a cleft between mossy granite boulders, the stream out of it |
+| 10 Fen | `fenWay`: an old paved causeway out over the water, sunk under it, its posts' heads showing | rings and bubbles, then it rises up out of the fen streaming water, settles with a slap; 130 frames; to the camp | `fenStart` (10): out between two of the sick trees, their roots lying dead |
+
+THE PINK: only the sick roots' veins on floor 9 (the swamp's, the enemy's), gone as they wither. Nothing cyan.
+
+FOR THE RULES (yours): start each film as the boss dies (`onward.awake`, `warpAt`), its frames stood at the way's
+point; take him on once the film is over (the longest 130 frames, 4.3 s), and on floor 7 at the crack's head (`back`).
+Stand the start's `over` at the start; on floors where the start piece is on the side toward the eye (the way back
+`x+` or `y+`), see through it while he is behind it, as the tall things are. Paint the films ahead with the floor (each
+takes some seconds to paint): they are big (up to 760 by 560 picture pixels, 112 to 130 frames).
+
+Seen in the game on the scratch copy (render.ts `a1Ways`, the hooks in `scratch_hooks.diff.txt` when it is next written)
+and filmed with tools/scenarios/_a1_film.mjs there. Checks: `tests/ways_a1.test.ts`, 4.
+
 ## How they were seen in the game
 
 On a scratch copy only (never pushed): your exits branch with this one merged, and a few lines in render/dress.ts,

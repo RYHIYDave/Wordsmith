@@ -1342,20 +1342,6 @@ function cachedStart(key: string, make: () => StartArt): StartArt {
   return s;
 }
 
-/** A RAMP of the way's own: from (a0, z0) up to (a1, z1), `half` wide either side, its top by `top(u, v)`, its sides of rubble. */
-function ramp(R: Rig, a0: number, a1: number, z1: number, half: number, top: (u: number, v: number) => string | null, side: Ramp, id: number): void {
-  R.quad([[a0, -half, 0.3], [a1, -half, z1], [a1, half, z1], [a0, half, 0.3]], top, id);
-  for (const s of [-1, 1]) {
-    // its side, sloping out to the floor
-    R.quad([[a0, s * half, 0.3], [a1, s * half, z1], [a1, s * (half + z1 * 0.7), 0], [a0 + 4, s * (half + 2), 0]], (u, v) => {
-      const h = hash(Math.floor(u * 30), Math.floor(v * 10), id + s);
-      return h < 0.18 ? side[1] : h > 0.85 ? side[3] : side[2];
-    }, id + 1 + (s > 0 ? 1 : 0));
-  }
-  // its far end: the road going on up out of sight, in shadow
-  R.quad([[a1, -half, z1], [a1 + 20, -half, z1 + 12], [a1 + 20, half, z1 + 12], [a1, half, z1]], (u) => mix(side[3], HOLE_DARK, 0.3 + u * 0.4), id + 3);
-}
-
 /** FLOOR 6 BEGINS: THE QUARRY'S GATE, where the road down from the town's gate comes into the pit: two great posts and a beam across, the cult's board nailed to it, a leaf of planks swung back open, the road's ruts through it and on up out of sight, a cairn of cut stone by it. */
 export function quarryStart(d: WayDir): StartArt {
   return cachedStart('q' + d, () => {
