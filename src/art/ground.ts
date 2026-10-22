@@ -591,6 +591,19 @@ function dugFace(e: Earth, theme: Theme, left: boolean, seed: number, rock: read
 }
 
 function makeWall(theme: Theme, spec: WallSpec, height: number, which: 'both' | 'left' | 'right' = 'both'): Sprite {
+  return makeWallPx(theme, spec, height, which).sprite(HALF, height, GRAIN);
+}
+/**
+ * (THE ART CHAT'S WAYS, art/cave4.ts, a mock-up behind CAVE4, off: what a wall's face would be beside a cave's mouth cut in
+ * it.) One face of a wall of the theme as the ground paints it, its pixels, the tile's top corner at (HALF, TALL): the
+ * `k`th of the walls the ground keeps (faceLeft or faceRight).
+ */
+export function wallFacePixels(theme: Theme, k: number, which: 'left' | 'right'): { p: Px; ax: number; ay: number } {
+  // (as tall as the look in force makes them, as makeGroundArt does)
+  TALL = WALL_LOOK.tall * GRAIN;
+  return { p: makeWallPx(theme, WALLS[k % WALLS.length], TALL, which), ax: HALF, ay: TALL };
+}
+function makeWallPx(theme: Theme, spec: WallSpec, height: number, which: 'both' | 'left' | 'right' = 'both'): Px {
   // (`which`: both faces under the top, as a wall block is; or ONE FACE ALONE and no top: for the look in which a wall is its faces)
   const p = new Px(TW, TH + height);
   const whole = height === TALL;
@@ -608,7 +621,7 @@ function makeWall(theme: Theme, spec: WallSpec, height: number, which: 'both' | 
   }
   const cap = which === 'both' ? capOf(theme, whole) : null;
   if (cap) capTop(p, cap, spec.seed, 0);
-  return p.sprite(HALF, height, GRAIN);
+  return p;
 }
 
 /**

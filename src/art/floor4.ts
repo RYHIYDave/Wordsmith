@@ -68,7 +68,7 @@ const SLAB = THEME.slab;
 /** Rough rock, where the walls have fallen to it (the Crypt's own: a grey violet). */
 const RAW: Ramp = [ROCK[0], ROCK[0], ROCK[1], ROCK[3], ROCK[3]];
 /** Rough rock in lumps, each facet its own tone. */
-const ROCKY: Ramp = [ROCK[0], ROCK[0], ROCK[1], ROCK[2], ROCK[3]];
+export const ROCKY: Ramp = [ROCK[0], ROCK[0], ROCK[1], ROCK[2], ROCK[3]];
 /** The Crypt's timber, its lit tones no further toward pink than its own (the fresh look found it rose under a light). */
 const TIMBER_DIM: Ramp = [TIMBER[0], TIMBER[1], TIMBER[2], TIMBER[3], TIMBER[3]];
 /** Rock as what stands and lies: a step lighter, so that a boulder reads against the floor. */
@@ -77,22 +77,22 @@ const BOULDER: Ramp = ['#14122a', ROCK[0], ROCK[2], ROCK[3], '#5c5880'];
 const EARTH = DIRT;
 const EARTH_R: Ramp = [DIRT[0], DIRT[0], DIRT[1], DIRT[3], DIRT[3]];
 /** The packed earth of the heap of the dead: the earth, a step lighter where it is lit. */
-const HEAP_EARTH: Ramp = [DIRT[0], DIRT[1], DIRT[2], DIRT[3], '#3e3048'];
+export const HEAP_EARTH: Ramp = [DIRT[0], DIRT[1], DIRT[2], DIRT[3], '#3e3048'];
 /**
  * BONE, the amalgamation's own (art/bosses3.ts, OSS: packed grey bone, a lavender grey), a step
  * quieter as a place is: what lies and stands in the room; and in the walls' dark, a step under that
  * again (his Colour 4: the walls darker than any word), greyer than the indigo stone so it reads as bone.
  */
-const BONE: Ramp = ['#1e1a30', '#2c2642', '#5a5378', '#867ea6', '#a49cc0'];
+export const BONE: Ramp = ['#1e1a30', '#2c2642', '#5a5378', '#867ea6', '#a49cc0'];
 /** Bone in what stands big in the room (the column, the pyramid, the heap): a step quieter again, so that it stays under the figures (the first fresh look found them as bright as the hero's armour). */
 const BIG_BONE: Ramp = ['#191528', '#252036', '#48425f', '#68618a', '#7d76a0'];
-const WALL_BONE: Ramp = ['#110e20', '#252038', '#3e3856', '#544e6c', '#605a76'];
+export const WALL_BONE: Ramp = ['#110e20', '#252038', '#3e3856', '#544e6c', '#605a76'];
 /** The amalgamation's fire, pink only (his Colour 3: the enemy's), from a dull kindling to burning: never orange, never red. */
-const PINK: Ramp = ['#3a0c2a', '#7a1058', '#c0206a', '#ff4f8a', '#ff4f8a'];
+export const PINK: Ramp = ['#3a0c2a', '#7a1058', '#c0206a', '#ff4f8a', '#ff4f8a'];
 /** The pink as it first kindles: a deep magenta (never a blood red). */
 const KINDLING = ['#2a0a36', '#6a1280'] as const;
 /** Bone fallen out of a wall, on the floor before it (the wall's piece, and as quiet). */
-const HEAP_BONE: Ramp = ['#1a1630', '#28233e', '#47415f', '#5c5676', '#625c7a'];
+export const HEAP_BONE: Ramp = ['#1a1630', '#28233e', '#47415f', '#5c5676', '#625c7a'];
 /** Iron left in the damp and rusted (the Crypt's). Small iron things a little brighter, so they read. */
 const IRONS: Ramp = OLD_IRON;
 const SMALL_IRON: Ramp = ['#1c1a3a', '#1c1a3a', '#4c4884', '#8480bc', '#a8a4dc'];
@@ -140,7 +140,7 @@ export function rot(a: V3, k: V3, ang: number): V3 {
 /** The way toward the eye: onPic of it is nothing. */
 const EYE: V3 = [1, 1, 0.8];
 /** Ids from this one up are soft things (dust): no seam of ink round them, nor on what they hide. */
-const SOFT = 1 << 20;
+export const SOFT = 1 << 20;
 
 /**
  * THE LIGHT the round things are painted in: from the upper left of the picture (LIGHT_W); but on a
@@ -479,7 +479,7 @@ export function ribCage(S: Scene, c: V3, L: V3, F: V3, size: number, ramp: Ramp,
 /** A face's frame: (along it, out of it, up) to the world's (x, y, z). The face turned to screen-left lies along x; the one turned to screen-right along y, so that the piece is not turned round on it. */
 export const faceWorld = (alongX: boolean) => (a: number, b: number, z: number): V3 => (alongX ? [a, b, z] : [b, -a, z]);
 /** The fade of the wall's top, as the face's own (floorkit, onFacePx): `v` up the face. */
-function fadeAt(c: string, v: number): string {
+export function fadeAt(c: string, v: number): string {
   const FADE = TALL - SOLID;
   const fromTop = TALL - 1 - v;
   if (fromTop >= FADE || SHINE.has(c)) return c;
@@ -614,13 +614,13 @@ export function knuckleBone(S: Scene, tip: V3, d: V3, len: number, r: number, ra
   S.ball(add(far, mul(side, -r * 0.4)), r * 0.64, ramp, id, keep);
 }
 /** A knuckled end of a long bone, seen end on, in the wall: two knobs side by side, and the shaft behind. */
-function boneEnd(S: Scene, W: (a: number, b: number, z: number) => V3, s: WallBit, ramp: Ramp, id: number, keep?: (w: V3) => boolean): void {
+export function boneEnd(S: Scene, W: (a: number, b: number, z: number) => V3, s: WallBit, ramp: Ramp, id: number, keep?: (w: V3) => boolean): void {
   const { e, d, len } = wallBonePose(s);
   knuckleBone(S, W(e[0], e[1], e[2]), dirOf(W)(d), len, s.r, ramp, id, keep);
 }
 export const inFront = (alongX: boolean) => (w: V3): boolean => (alongX ? w[1] : w[0]) >= -0.2;
 /** The gaps between the dead in the skull wall: dark, a little earth showing. */
-function skullWallGaps(p: Px): void {
+export function skullWallGaps(p: Px): void {
   for (let v = 0; v <= 79; v++) for (let u = -16; u <= 15; u++) p.set(fx(u), fy(v), hash(u >> 1, v >> 1, 512) < 0.18 ? EARTH[1] : EARTH[0]);
 }
 /** Paint the skull wall's dead into `S` (only those `which` keeps), in the face's frame `W`. */
@@ -637,9 +637,9 @@ function skullWallDead(S: Scene, W: (a: number, b: number, z: number) => V3, alo
   });
 }
 /** The dead further in, in the dark behind. */
-const dimBone: Ramp = ['#0a0816', '#110e22', '#1c1830', '#28233e', '#302a48'];
+export const dimBone: Ramp = ['#0a0816', '#110e22', '#1c1830', '#28233e', '#302a48'];
 /** The dead deep in the cavity the skull wall leaves. */
-const CAVITY: Ramp = ['#07060f', '#0b0919', '#121024', '#1a1630', '#201c38'];
+export const CAVITY: Ramp = ['#07060f', '#0b0919', '#121024', '#1a1630', '#201c38'];
 const skullWall: WallMake = { flat: skullWallGaps, solid: (S, W, alongX) => skullWallDead(S, W, alongX) };
 
 /** A NICHE LINED WITH BONE: an arch sunk in the stone, bone ends set all round its rim, a skull for its keystone; in it, in the dark, a skull resting on a stack of long bones. */

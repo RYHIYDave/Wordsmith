@@ -38,14 +38,14 @@ import { GRAIN, compose, hash, mix } from './kit';
 import type { Ramp } from './kit';
 import { EMBER } from './props';
 
-const IRONS: Ramp = OLD_IRON;
-const SMALL_IRON: Ramp = ['#1c1a3a', '#1c1a3a', '#4c4884', '#8480bc', '#a8a4dc'];
-const DIM_IRON: Ramp = ['#16142c', '#16142c', '#34305e', '#4c4880', '#4c4880'];
+export const IRONS: Ramp = OLD_IRON;
+export const SMALL_IRON: Ramp = ['#1c1a3a', '#1c1a3a', '#4c4884', '#8480bc', '#a8a4dc'];
+export const DIM_IRON: Ramp = ['#16142c', '#16142c', '#34305e', '#4c4880', '#4c4880'];
 /** The cable: wire rope, dark, a dull glint along it. */
-const CABLE: Ramp = ['#100e1e', '#100e1e', '#2a2840', '#4a4664', '#5a5678'];
-const TIMBER_DIM: Ramp = [TIMBER[0], TIMBER[1], TIMBER[2], TIMBER[3], TIMBER[3]];
+export const CABLE: Ramp = ['#100e1e', '#100e1e', '#2a2840', '#4a4664', '#5a5678'];
+export const TIMBER_DIM: Ramp = [TIMBER[0], TIMBER[1], TIMBER[2], TIMBER[3], TIMBER[3]];
 /** Grit and small stones off the shaft's sides (the deep workings' rock). */
-const GRIT: Ramp = ['#16122a', '#221c34', '#35304e', '#4a4266', '#5e5478'];
+export const GRIT: Ramp = ['#16122a', '#221c34', '#35304e', '#4a4266', '#5e5478'];
 
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const mul = (a: V3, k: number): V3 => [a[0] * k, a[1] * k, a[2] * k];
@@ -59,8 +59,8 @@ const ease = (t: number): number => {
 /** The shaft's measures: half its hole; where its posts stand (their middles); how high its posts go before the dark has them; the cage's half size and height; where its shoes ride. */
 export const SHAFT = { hole: 23, post: 27, top: 104, cage: 19, cageH: 64, rider: 78 };
 /** Where the dark takes what is up the shaft, as it takes the walls (art/ground.ts): from SOLID (56) to TALL (80), and nothing past this. */
-const DARK_FROM = 56;
-const DARK_GONE = 98;
+export const DARK_FROM = 56;
+export const DARK_GONE = 98;
 
 /** How the cage is: its floor's height over the landing; its sway (a turn about its cable); its gate (0 open, 1 shut); the cable over it slack (0 taut, 1 thrown in loops) and its whip. */
 export interface CagePose { z: number; sway: number; tilt: number; gate: number; slack: number; whip: number }
@@ -73,7 +73,7 @@ type Layer = 'back' | 'front';
  * THE SHAFT: its hole, collar, posts, guides and beams; `shake` its jump as the cage strikes. Each part
  * into the layer it is in (all in `back` when there is no hero to stand between).
  */
-function paintShaft(S: { back: Scene; front: Scene }, shake: number): void {
+export function paintShaft(S: { back: Scene; front: Scene }, shake: number): void {
   const { hole, post, top } = SHAFT;
   const j: V3 = [shake * 0.3, -shake * 0.2, 0];
   const B = S.back;
@@ -179,7 +179,7 @@ function paintCage(S: { back: Scene; front: Scene }, k: CagePose, id0: number): 
 }
 
 /** The dark taking what is up the shaft: everything over DARK_FROM mixed toward the dark in steps as the walls are, and nothing past DARK_GONE. What gives off light is left as it is. */
-function intoTheDark(S: Scene): void {
+export function intoTheDark(S: Scene): void {
   const shine = new Set<string>(EMBER);
   for (let i = 0; i < S.id.length; i++) {
     if (S.id[i] < 0) continue;
