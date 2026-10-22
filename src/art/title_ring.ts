@@ -25,8 +25,8 @@
 
 import { hash2 } from '../engine/rng';
 
-/** THE SWITCH: the start screen shows this picture only while it is on. Off until he has seen it move and said yes. */
-export const TITLE_RING = { on: false };
+/** THE SWITCH: the start screen shows this picture only while it is on. On: his yes to the art chat, by 18:15 Pacific, 21 Oct 2026, “Yes, send it to main (Recommended)” (Version 23.7). */
+export const TITLE_RING = { on: true };
 
 /** The picture's size, in game pixels. */
 export const RING_W = 640;

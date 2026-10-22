@@ -37,11 +37,14 @@ function hsv([r, g, b]: [number, number, number]): [number, number, number] {
   return [(hue * 60 + 360) % 360, mx ? d / mx : 0, mx / 255];
 }
 
-test('1. the switch is off, and nothing of the game uses the picture', () => {
-  assert.equal(TITLE_RING.on, false);
+// (VERSION 23.7: brought into the game by the main chat on his “Yes, send it to main (Recommended)” of 21 Oct 2026: the
+// switch on, the start screen's picture while it is, and of the game only main.ts uses it)
+test('1. the switch is on, and of the game only the start screen (main.ts) uses the picture', () => {
+  assert.equal(TITLE_RING.on, true);
   const files = fs.readdirSync('src', { recursive: true }).map(String).filter((f: string) => f.endsWith('.ts') && !f.split('\\').join('/').startsWith('dev/'));
   const users = files.filter((f: string) => !f.endsWith('title_ring.ts') && /from '[./a-z_]*\/title_ring'/.test(fs.readFileSync(`src/${f}`, 'utf8')));
-  assert.deepEqual(users, []);
+  assert.deepEqual(users, ['main.ts']);
+  assert.ok(fs.readFileSync('src/main.ts', 'utf8').includes("TITLE_RING.on ? 'ring' :"), 'the start screen is the ring while the switch is on');
 });
 
 test('2. the picture is whole, and sinks into the dark at its foot and top', () => {
