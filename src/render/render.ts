@@ -59,6 +59,7 @@ import { THEME } from '../ui/ui';
 import { pline, wx, wy, wyFlat } from './fx';
 import { WORDS3, air3, echoes3, floor3, heroCopies3, lights3, shift3, tick3, tint3 } from './words3';
 import { MELD3, airM3, floorM3, heroAlphaM3, lightsM3, overM3, ownsZone, rotting, shiftM3, tickM3, tintM3 } from './melds3';
+import { BINDING3, airB3, floorB3, lightsB3, ownsZoneB3, tickB3, tintB3 } from './binding3';
 import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
@@ -1650,6 +1651,8 @@ export class Renderer {
       if (z.kind === 'cracks' || z.kind === 'ward') continue;
       // (a melded word's patch has a look of its own, behind MELD3, off: render/melds3.ts, floorM3)
       if (ownsZone(z)) continue;
+      // (Binding's snare has a look of its own, behind BINDING3, off: render/binding3.ts, floorB3)
+      if (ownsZoneB3(z)) continue;
       if (z.kind === 'warn') {
         ellipse(g, cx, cy, z.r, P.bl3, 0.16 + 0.3 * k);
         ellipse(g, cx, cy, z.r * k, P.bl4, 0.3);
@@ -1788,6 +1791,7 @@ export class Renderer {
     // (THE NEW WORDS, a mock-up behind a switch that is off: what they leave on the floor)
     if (WORDS3.on && !this.skip.has('ground')) floor3(g, cam, t, game, here);
     if (MELD3.on && !this.skip.has('ground')) floorM3(g, cam, t, game, here);
+    if (BINDING3.on && !this.skip.has('ground')) floorB3(g, cam, t, game, here);
     for (const tr of game.traps) {
       if (!here(tr.x, tr.y)) continue;
       const frames = art.icons.trap[tr.element];
@@ -2126,6 +2130,8 @@ export class Renderer {
     if (WORDS3.on) tick3(pace / 60, game, fx);
     // (WORDMELDING's looks, behind a switch that is off: render/melds3.ts)
     if (MELD3.on) tickM3(pace / 60, game, fx);
+    // (BINDING's looks, behind a switch that is off: render/binding3.ts)
+    if (BINDING3.on) tickB3(pace / 60, game, fx);
     const cam = this.cam;
     // Where on the screen the hero stands: the middle, or the middle of the part left to the world.
     // The picture glides from the one to the other, by the wall clock (the world may be standing
@@ -2563,6 +2569,14 @@ export class Renderer {
       // (WORDMELDING's looks, behind a switch that is off: Blight's rot, Frostbite's bite, Thunder's stun)
       if (MELD3.on && (!over || m.flash <= 0)) {
         const tn = tintM3(m, t);
+        if (tn && (!over || tn[1] > overA)) {
+          over = silhouette(sp, tn[0]);
+          overA = tn[1];
+        }
+      }
+      // (Binding's look, behind a switch that is off: lit as its bands snap tight)
+      if (BINDING3.on) {
+        const tn = tintB3(m);
         if (tn && (!over || tn[1] > overA)) {
           over = silhouette(sp, tn[0]);
           overA = tn[1];
@@ -3261,6 +3275,7 @@ export class Renderer {
     // (THE NEW WORDS, a mock-up behind a switch that is off: what glows over the dark)
     if (WORDS3.on && !this.skip.has('fx')) air3(g, cam, t, game, fx);
     if (MELD3.on && !this.skip.has('fx')) airM3(g, cam, t, game);
+    if (BINDING3.on && !this.skip.has('fx')) airB3(g, cam, t, game);
     if (!this.skip.has('fx')) fx.drawAir(g, cam);
     if (MELD3.on && !this.skip.has('fx')) overM3(g, cam, t);
     this.drawWordDrops(g, W, H, game, t);
@@ -3824,7 +3839,7 @@ export class Renderer {
     for (const z of game.zones) {
       if (this.skip.has('zlight')) break;
       if (z.kind !== 'burn' && z.kind !== 'storm' && z.kind !== 'rune' && z.kind !== 'ice' && z.kind !== 'venom') continue;
-      if (ownsZone(z)) continue;
+      if (ownsZone(z) || ownsZoneB3(z)) continue;
       const small = z.r < 1.2;
       if (small) {
         let near = false;
@@ -3846,6 +3861,7 @@ export class Renderer {
     // (THE NEW WORDS, a mock-up behind a switch that is off)
     if (WORDS3.on) lights3(spot, cam, game, t);
     if (MELD3.on) lightsM3(spot, cam, game, t);
+    if (BINDING3.on) lightsB3(spot, cam, game, t);
     // (THE FIRST FIVE FLOORS: what of the bosses' doings lights the dark)
     this.bossFx.lights(spot);
     // a burst of fire or a bolt of lightning lights up the room for a moment
