@@ -192,7 +192,7 @@ without the master rune-stone finds the fallen wordsmith again in the next.
   attack takes one damage word on each side. Still to come, in the plan you said yes to on 8 Oct:
   Mystical, which does for spells what Power does for attacks (its stack shows as ARCANA), with
   Power for attacks only and Volatile's hidden bomb. Mystified comes later. Binding (your pick of 21
-  Oct) comes once it is drawn.
+  Oct) comes once it is drawn; Volatile's five melds (your words of 21 Oct) once their looks are in.
 
 ## Builds
 
@@ -466,7 +466,7 @@ it goes in.
 | Normal and Hardcore | Both, since Version 19.1 | Done |
 | Endless mode, past the last floor built | Since Version 23.3 | Done |
 | The first levels | Since Version 19.5 | Done: the ring dark until the master rune-stone goes in, then powering up, since Version 19.6; the first word once it has powered up, and the slots at 4, 15 and 20, since Version 20.0 |
-| The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding; seventeen since Version 23.8: Pulling, Splitting, Hexing and Stilling, from floor 11 down | Mystical, Power for attacks only, Volatile's bomb; Binding, once drawn; Volatile's five melds (your words of 21 Oct), once drawn |
+| The new words | Thirteen since Version 19.3: Heavy, Precise, Frenzied and Guarding; seventeen since Version 23.8: Pulling, Splitting, Hexing and Stilling, from floor 11 down | Mystical, Power for attacks only, Volatile's bomb; Binding, once drawn; Volatile's five melds (your words of 21 Oct), once their looks are in |
 | Sets of five floors, each themed to its bosses, on down without end | One dungeon after another, with no end | Each set its own bosses, monsters and look, with the art chat: the Crypt first |
 | A boss of its own on every floor; a lair boss on every fifth | The Warden ends every dungeon; a Greater Warden, with twice the life, every fifth | The Crypt’s: the Headsman, the Chained One and the amalgamation (the art chat’s, with your yes), and the fleshmancer, not yet drawn |
 | Monster sizes, blue and yellow packs | Since Version 19.7; the new leaders and the rings since Version 19.9 | Done |
