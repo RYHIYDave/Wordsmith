@@ -45,7 +45,7 @@ export default async function (page, snap) {
       const m = g.spawn(kind, x, y, 1, rank ?? 0, false, g.rng);
       g.wakeUp(m);
       // (the chain's others die to its arcs, and go off in turn)
-      m.life = m.maxLife = role === 'elite' ? 2000 : word === 'chainreaction' && role !== 'target' ? 60 : 1e6;
+      m.life = m.maxLife = role === 'elite' ? 2000 : role === 'target' ? 150 : word === 'chainreaction' ? 60 : 1e6;
       m.state = 'recover'; m.t = 1e9; m.anim = 'idle'; m.cd = 1e9; m.heldSpeed = m.speed; m.speed = 0;
       const far = Math.hypot(h.x - x, h.y - y) || 1; m.fx = (h.x - x) / far; m.fy = (h.y - y) / far;
       if (role) out[role] = m.id;
