@@ -6,13 +6,14 @@
 // options to choose from?  Doesn’t have to have a wordsmith in the picture, but I could, go in any
 // direction with it.  They don’t need to be animated before I see them.” Shown the ten
 // (src/dev/title_options.ts), asked which to paint full size and bring to life, by 17:50: “9”, THE RING
-// ON THE HILL.
+// ON THE HILL. Shown it full size and then moving (with the wordsmith in it, and a surge of light every
+// 8 s), his words at 18:11: “I like the surge, take the wordsmith out”.
 //
 // THE PICTURE: night, a hill, and on its crown the wordsmith's ring of standing stones, a rune burning in
 // each; off his slab in the middle a column of light goes up into the sky and breaks there into an
-// aurora of the same light, letters drifting in it; the river of stars over it all. The wordsmith stands
-// in the ring before the column, his staff in his hand, the light behind him. Far hills and mountains,
-// mist in the valleys, a path of flags up the hill to the gap in the ring's front.
+// aurora of the same light, letters drifting in it; the river of stars over it all. No one is in it.
+// Far hills and mountains, mist in the valleys, a path of flags up the hill to the gap in the ring's
+// front.
 //
 // THE WHOLE SCREEN, ON EVERY SCREEN (as the picture behind TITLE_SMITH3): painted once at RING_W x RING_H, bigger than
 // any screen the game is laid out on; the screen shows the part that fits, its middle column the
@@ -240,12 +241,6 @@ const SKY = ['#04051a', '#060a24', '#09102e', '#0c1636', '#111e40', '#17264a'].m
 const STONE = ['#11122e', '#191a44', '#262a62', '#3a4088', '#5660ac', '#7e8ad0', '#a8b4e8'].map(h);
 /** The hill's grass at night, dark to light. */
 const GRASS = ['#070b16', '#0b111f', '#10182a', '#162236', '#1e2e44', '#2a3e56'].map(h);
-/** His cowl and mantle, his robe, his skin, his beard (as the picture behind TITLE_SMITH3 has them). */
-const MANTLE = ['#041824', '#08283a', '#0c3a4e', '#11566a', '#16707e', '#1d8a92', '#2aa4a6', '#46c2bc'].map(h);
-const ROBE = ['#0c0a26', '#120f32', '#1a1642', '#221d54', '#2c2870', '#38338a'].map(h);
-const SKIN = ['#2a2056', '#40336f', '#5a4a8a', '#7868a6', '#9a8cc6', '#b8ace4'].map(h);
-const BEARD = ['#3e3478', '#554a92', '#7468ae', '#9a8ecc', '#bcb2e6', '#dcd4f8', '#f0e8ff'].map(h);
-const WOOD = ['#1e120c', '#2d1b12', '#4a2c1a', '#6e4526'].map(h);
 
 // ---------------------------------------------------------------------------------------------
 // Where things are
@@ -272,9 +267,6 @@ const STONES = Array.from({ length: 10 }, (_, i) => {
     lean: (rnd(i, 3, 5) - 0.5) * 5,
   };
 });
-/** The wordsmith: where his feet are (in the ring, before the column and a little to its left). */
-const SMITH_X = 298;
-const SMITH_Y = 294;
 /** The column of light: its width at its foot, and the row where it breaks into the sky's light. */
 const COL_W = 7;
 const COL_TOP = 132;
@@ -578,95 +570,6 @@ function paintColumn(p: Paint): void {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The wordsmith, small, the light behind him
-
-/** His shadow, thrown toward us down the hill. */
-function paintSmithShadow(p: Paint): void {
-  const K = 1.3;
-  p.poly([[SMITH_X - 9 * K, SMITH_Y], [SMITH_X + 9 * K, SMITH_Y], [SMITH_X + 18 * K, SMITH_Y + 30 * K], [SMITH_X - 8 * K, SMITH_Y + 32 * K]], (x, y) => mix(p.get(x, y), GRASS[0], 0.55));
-}
-/** Where his staff's stone and his eyes are (their middles). */
-const STAFF_STONE: Pt = [Math.round(SMITH_X - 15 * 1.3 + 56 * 1.3 * 0.04) + 5, Math.floor(SMITH_Y - 56 * 1.3) - 1];
-const EYES: Pt = [SMITH_X, SMITH_Y - 39 * 1.3];
-
-/** He stands before the column, facing us, his staff in his right hand (on our left); the light comes from behind him, so he is dark, its edge running round him, his eyes burning. `stir` (-1 to 1) moves his mantle's ends and the hem of his robe; `eye` (0 to 1) how bright his eyes burn. */
-function paintSmith(p: Paint, stir: number, eye: number): void {
-  const fx = SMITH_X;
-  const fy = SMITH_Y;
-  const K = 1.3;
-  const q = (dx: number, dy: number): Pt => [fx + dx * K, fy + dy * K];
-  const Q = (pts: readonly (readonly [number, number])[]): Pt[] => pts.map(([dx, dy]) => q(dx, dy));
-  const mine = new Set<C>();
-  const own = (c: C): C => {
-    mine.add(c);
-    return c;
-  };
-  // the staff, planted, its crook and its stone
-  const [sx0, sy0] = q(-15, 1);
-  const [, syTop] = q(-15, -56);
-  for (let y = Math.floor(syTop); y <= sy0; y++) {
-    const x = Math.round(sx0 + (sy0 - y) * 0.04);
-    p.set(x, y, own(WOOD[2]));
-    p.set(x + 1, y, own(WOOD[1]));
-  }
-  const [tx, ty] = [Math.round(sx0 + (sy0 - syTop) * 0.04), Math.floor(syTop)];
-  p.line(tx + 1, ty, tx + 5, ty - 5, own(WOOD[3]));
-  p.line(tx + 5, ty - 5, tx + 9, ty - 2, own(WOOD[2]));
-  p.line(tx + 9, ty - 2, tx + 9, ty + 1, own(WOOD[2]));
-  p.rect(tx + 4, ty - 3, 3, 4, CY_HI);
-  p.glow(tx + 5, ty - 1, 12, 12, CY, 0.5, 3);
-  // the robe, to the ground, its hem stirring
-  const hem = stir * 1.5;
-  p.poly(Q([[-9, -30], [9, -30], [12 + hem, 0], [-12 + hem, 0]]), (x, y) => own(x > fx + 5 * K + (y - fy + 30 * K) * 0.1 ? ROBE[3] : y > fy - 3 ? ROBE[0] : ROBE[1]));
-  // its folds
-  for (const dx of [-5, 4]) p.line(...q(dx, -24), ...q(dx * 1.3 + hem, -1), own(ROBE[0]));
-  // runes burning down the front of it
-  for (let k = 0; k < 4; k++) {
-    const [rx, ry] = q(-1.2, -25 + k * 6.4);
-    p.rune(Math.round(rx), Math.round(ry), k + 4, k % 2 ? CY_MID : CY);
-  }
-  // the mantle over his shoulders, its ends hanging, stirring
-  p.poly(Q([[-12, -26], [-10, -34], [10, -34], [12, -26], [9, -13 + stir], [5, -23], [-5, -23], [-9, -13 - stir]]), (x, y) => own(x > fx + 5 * K ? MANTLE[4] : y < fy - 30 * K ? MANTLE[3] : MANTLE[2]));
-  // its edge, pricked with light
-  for (const [dx, dy] of [[-11, -25], [-10, -20], [-9, -15], [9, -15], [10, -20], [11, -25]] as const) p.set(...q(dx, dy), CY);
-  // his beard, long and white, its locks
-  p.poly(Q([[-5, -36], [5, -36], [4.5, -27], [1.5, -17], [0, -20], [-1.5, -18], [-4, -26]]), (x, y) => own(x > fx + 2 * K ? BEARD[5] : (Math.floor(x) + Math.floor(y)) % 3 === 0 ? BEARD[2] : BEARD[3]));
-  // his face in the cowl's shadow, his brows heavy and white, his eyes burning
-  p.poly(Q([[-4.5, -41.5], [4.5, -41.5], [4.5, -36], [-4.5, -36]]), (x) => own(x > fx + 2 * K ? SKIN[3] : SKIN[1]));
-  p.poly(Q([[-5, -41.5], [5, -41.5], [5, -40.2], [-5, -40.2]]), own(BEARD[4]));
-  p.poly(Q([[-5, -37.5], [5, -37.5], [5, -36], [-5, -36]]), own(BEARD[4]));
-  const [ex, ey] = q(0, -39);
-  const glint = eye > 0.5 ? CY_HI : CY;
-  p.rect(Math.round(ex - 4), Math.round(ey), 2, 1, glint);
-  p.rect(Math.round(ex + 2), Math.round(ey), 2, 1, glint);
-  p.glow(ex, ey, 9, 5, CY, 0.22 + eye * 0.25, 2);
-  // the cowl, up over his head, open over his face
-  p.poly(Q([[-8, -32], [-8, -42], [-4, -47.5], [1, -49.5], [6, -46], [8, -40], [8, -32], [5, -35], [5, -42.2], [-5, -42.2], [-5, -35]]), (x, y) => own(x > fx + 4 * K ? MANTLE[5] : y < fy - 44 * K ? MANTLE[3] : MANTLE[2]));
-  for (const [dx, dy] of [[-5.5, -43], [-1, -45.5], [3, -44.5], [5.5, -40], [5.5, -36]] as const) p.set(...q(dx, dy), CY);
-  // his hand on the staff
-  const [hx, hy] = q(-14.5, -25);
-  p.rect(Math.round(hx) - 2, Math.round(hy), 5, 5, own(SKIN[2]));
-  p.rect(Math.round(hx) + 2, Math.round(hy), 1, 5, own(SKIN[4]));
-  p.set(Math.round(hx), Math.round(hy) + 2, CY);
-  // the light behind him, running round his edge on the column's side (our right) and over his head
-  const [x0] = q(-16, 0);
-  const [x1] = q(14, 0);
-  for (let y = Math.floor(q(0, -50)[1]); y <= fy; y++) {
-    let last = -1;
-    for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) if (mine.has(p.get(x, y))) last = x;
-    if (last > 0) p.set(last + 1, y, y < fy - 30 * K ? CY_HI : CY);
-  }
-  for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) {
-    for (let y = Math.floor(q(0, -52)[1]); y <= fy; y++) {
-      if (mine.has(p.get(x, y))) {
-        p.set(x, y - 1, CY_MID);
-        break;
-      }
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------------------------
 // The whole of it
 
 /** Motes of his light drifting up off the hill round the ring. */
@@ -683,13 +586,9 @@ function paintMotes(p: Paint, t: number): void {
 }
 
 // THE PICTURE'S LIFE, as numbers of time: each stone's rune swells in turn, a wave going round the ring;
-// his eyes and his staff's stone brighten and dim; his mantle and hem stir (three ways); the stars
-// twinkle; the aurora drifts and ripples; letters climb the column and drift up in the aurora; motes
-// of his light rise off the hill.
+// the stars twinkle; the aurora drifts and ripples; letters climb the column and drift up in the aurora;
+// motes of his light rise off the hill; and the surge (below).
 const pulseOf = (i: number, t: number): number => clamp01(0.5 + 0.5 * Math.sin(t * 1.6 - i * 0.63));
-const eyeOf = (t: number): number => clamp01(0.5 + 0.5 * Math.sin(t * 0.9));
-const staffOf = (t: number): number => clamp01(0.5 + 0.5 * Math.sin(t * 1.1 + 1));
-const stirOf = (t: number): -1 | 0 | 1 => Math.round(Math.sin(t * 1.3)) as -1 | 0 | 1;
 const BACK = STONES.filter((s) => Math.sin(s.a) <= 0).sort((a, b) => a.y - b.y);
 const FRONT = STONES.filter((s) => Math.sin(s.a) > 0).sort((a, b) => a.y - b.y);
 
@@ -700,7 +599,6 @@ export function paintRing(t = 0): Paint {
   paintAurora(p, t);
   paintLand(p);
   for (const st of STONES) paintStoneShadow(p, st);
-  paintSmithShadow(p);
   const lit = (st: Stone): void => {
     const k = pulseOf(st.i, t);
     const [rx, ry] = stoneRune(st);
@@ -714,9 +612,6 @@ export function paintRing(t = 0): Paint {
   paintSlab(p);
   paintColumn(p);
   paintColumnLetters(p, t);
-  paintSmith(p, stirOf(t), 0);
-  p.glow(EYES[0], EYES[1], 9, 5, CY, eyeOf(t) * 0.25, 2);
-  p.glow(STAFF_STONE[0], STAFF_STONE[1], 12, 12, CY, staffOf(t) * 0.35, 3);
   for (const st of FRONT) {
     paintStone(p, st);
     lit(st);
@@ -742,7 +637,7 @@ export interface RingTitle {
 // THE SURGE, the picture's big moment: every SURGE_EVERY seconds (the first SURGE_FIRST in) a burst of
 // light runs up the column (SURGE_UP s) and breaks into the aurora, which flares outward from the middle
 // across the sky; at its foot a ring of light runs out across the hill (SURGE_RING_FOR s); every rune in
-// the ring and his eyes flare and die back; his mantle is blown back; a faint flash of his light.
+// the ring flares and dies back; a faint flash of his light. His words to it: “I like the surge”.
 export const SURGE_FIRST = 3;
 export const SURGE_EVERY = 8;
 const SURGE_UP = 0.55;
@@ -756,7 +651,7 @@ function surgeSky(sp: number, x: number): number {
   const d = sp - SURGE_UP;
   return 1.4 * Math.exp(-Math.pow((Math.abs(x - CX) - 480 * d) / 90, 2)) * Math.exp(-d * 0.9);
 }
-/** How strongly the runes and his eyes flare, sp into a surge (0 to 1). */
+/** How strongly the runes flare, sp into a surge (0 to 1). */
 const surgeFlare = (sp: number): number => (sp < 0 || sp > 2 ? 0 : sp < 0.05 ? sp / 0.05 : Math.exp(-(sp - 0.05) * 2.2));
 
 const css = (c: C, k = 1): string => `rgb(${Math.round(R(c) * k)},${Math.round(G(c) * k)},${Math.round(B(c) * k)})`;
@@ -792,18 +687,14 @@ export function makeRingTitle(): RingTitle {
   const frontA = new Paint(true, lightA);
   paintLand(frontA);
   for (const st of STONES) paintStoneShadow(frontA, st);
-  paintSmithShadow(frontA);
   for (const st of BACK) paintStone(frontA, st);
   paintSlab(frontA);
   const column = new Paint();
   paintColumn(column);
   const lightB = new Paint();
-  const frontB = ([-1, 0, 1] as const).map((stir, k) => {
-    const fb = new Paint(true, k === 1 ? lightB : new Paint());
-    paintSmith(fb, stir, 0);
-    for (const st of FRONT) paintStone(fb, st);
-    return fb.canvas();
-  });
+  const frontB = new Paint(true, lightB);
+  for (const st of FRONT) paintStone(frontB, st);
+  const frontBCv = frontB.canvas();
   const skyCv = sky.canvas();
   const lightACv = lightA.canvas();
   const frontACv = frontA.canvas();
@@ -835,8 +726,6 @@ export function makeRingTitle(): RingTitle {
   }
   const runeGlow = glowSprite(13, 13, CY, 0.32, 3);
   const surgeBlob = glowSprite(20, 22, CY_HI, 1, 4);
-  const eyeGlow = glowSprite(9, 5, CY, 0.25, 2);
-  const staffGlow = glowSprite(12, 12, CY, 0.35, 3);
   const sheet = document.createElement('canvas');
   sheet.width = W;
   sheet.height = H;
@@ -945,15 +834,10 @@ export function makeRingTitle(): RingTitle {
       }
     };
     for (const st of BACK) swell(st);
-    // him, and the stones before him
-    g.drawImage(frontB[(flare > 0.3 ? 1 : stirOf(t)) + 1], 0, 0);
+    // the stones before the column
+    g.drawImage(frontBCv, 0, 0);
     g.globalCompositeOperation = 'lighter';
     g.drawImage(lightBCv, 0, 0);
-    g.globalAlpha = Math.max(eyeOf(t), flare);
-    g.drawImage(eyeGlow, Math.round(EYES[0]) - 9, Math.round(EYES[1]) - 5);
-    g.globalAlpha = Math.max(staffOf(t), flare);
-    g.drawImage(staffGlow, STAFF_STONE[0] - 12, STAFF_STONE[1] - 12);
-    g.globalAlpha = 1;
     g.globalCompositeOperation = 'source-over';
     for (const st of FRONT) swell(st);
     // motes rising off the hill

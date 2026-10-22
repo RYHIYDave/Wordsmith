@@ -1,7 +1,8 @@
 // The start screen's new picture, THE RING ON THE HILL (src/art/title_ring.ts): a mock-up behind a switch
 // that is off. The owner to the art chat, 21 Oct 2026, 17:26 Pacific: “I’d like to scrap the title screen
 // and start again.  I like the moving picture style, but I don’t like the current art.” Shown ten
-// sketches (src/dev/title_options.ts), his pick by 17:50: “9”. The picture painted pixel by pixel
+// sketches (src/dev/title_options.ts), his pick by 17:50: “9”; to it moving, at 18:11, “I like the surge,
+// take the wordsmith out”. The picture painted pixel by pixel
 // (paintRing) is a plain array, so this runs here without a browser; the game lays it up out of layers
 // with a canvas (makeRingTitle), which its dev page films (src/dev/preview_title_ring.ts).
 //   run: tsx --test tests/title_ring.test.ts
@@ -9,9 +10,10 @@
 //   2. the picture is whole: every pixel of it painted;
 //   3. nothing warm or pink glows in it: what glows is his, cyan (the moon and the stars white; what
 //      his light falls on, the night's blue);
-//   4. it lives: the sky, the runes, his mantle and the motes change from moment to moment; the hill
-//      under the ring does not;
-//   5. the gap in the front of the ring: his eyes and the column's foot are not hidden by the stones.
+//   4. it lives: the sky, the runes and the motes change from moment to moment; the hill under the ring
+//      does not;
+//   5. no one stands in the ring: the column shows whole from the slab up, and through the gap in the
+//      ring's front the slab.
 
 // @ts-ignore - node typings are not part of this project
 import test from 'node:test';
@@ -75,7 +77,7 @@ test('3. nothing warm or pink glows in it: what glows is his, cyan', () => {
   }
 });
 
-test('4. it lives: the sky, the runes, his mantle and the motes change; the hill under the ring does not', () => {
+test('4. it lives: the sky, the runes and the motes change; the hill under the ring does not', () => {
   const a = paintRing(0.5);
   const b = paintRing(2.9);
   let sky = 0;
@@ -91,18 +93,15 @@ test('4. it lives: the sky, the runes, his mantle and the motes change; the hill
   assert.equal(hill, 0, 'the foot of the hill keeps still');
 });
 
-test('5. the gap in the front of the ring: his eyes and the column’s foot show', () => {
+test('5. no one stands in the ring: the column shows whole from the slab up', () => {
   const p = paintRing(0);
-  // his eyes: two cyan pixels at the height of his eyes, left and right of his middle
-  let eyes = 0;
-  for (let y = 236; y <= 248; y++) {
-    for (let x = 290; x <= 306; x++) {
-      const [hue, sat, val] = hsv(at(p, x, y));
-      if (hue > 165 && hue < 205 && sat > 0.3 && val > 0.7) eyes++;
-    }
+  // (a little right of its middle: the letters climbing it are dark on its heart)
+  for (let y = 140; y <= 255; y++) {
+    const [, , v] = hsv(at(p, 324, y));
+    assert.ok(v > 0.7, `the column is bright at row ${y} (${v.toFixed(2)})`);
   }
-  assert.ok(eyes >= 4, `his eyes burn (${eyes})`);
-  // the column's foot, white, just over the slab
-  const [, , v] = hsv(at(p, 320, 250));
-  assert.ok(v > 0.95, 'the column stands bright over the slab');
+  // where he stood, left of the column: the lit ground and the slab, nothing dark standing on them
+  let dark = 0;
+  for (let y = 240; y <= 290; y++) for (let x = 292; x <= 306; x++) if (hsv(at(p, x, y))[2] < 0.12) dark++;
+  assert.equal(dark, 0, 'nothing dark stands before the column');
 });
