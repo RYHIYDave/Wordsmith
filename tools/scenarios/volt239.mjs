@@ -61,10 +61,11 @@ export default async function (page, snap) {
   const kill = (id) => page.evaluate(([id, word]) => {
     const g = window.__dbg.game(); const h = g.hero; const m = g.monsters.find((q) => q.id === id);
     if (!m) return 'none';
-    if (word === 'powderkeg') { m.burnT = 3; m.burnDps = 1; }
+    if (word === 'powderkeg') { m.burnT = 3; m.burnDps = 1; m.lastSkill = 0; }
     if (word === 'shatter') m.frozenT = 2;
-    if (word === 'rupture') { m.poisonT = 4; m.poisonDps = 40; m.poisonN = 1; }
-    m.life = 1;
+    if (word === 'rupture') { m.poisonT = 4; m.poisonDps = 3; m.poisonN = 1; m.lastSkill = 0; }
+    // (low enough for the blow to kill it, and too high for its burning or poison to kill it first)
+    m.life = word === 'powderkeg' || word === 'rupture' ? 20 : 1;
     h.swingT = 0; h.skills[0].cd = 0;
     const far = Math.hypot(m.x - h.x, m.y - h.y) || 1; h.fx = (m.x - h.x) / far; h.fy = (m.y - h.y) / far;
     g.useBasic(m.x, m.y);
@@ -82,7 +83,7 @@ export default async function (page, snap) {
   }, [id, life]);
   const plan = {
     // the kill's blast and its rune (one at a time, slow); then the elite struck past half its life
-    demolition: { frames: 200, at: { 3: () => kill(ids.target), 110: () => strike(ids.elite, 1050) } },
+    demolition: { frames: 200, at: { 3: () => kill(ids.target), 110: () => strike(ids.elite, 1005) } },
     powderkeg: { frames: 150, at: { 3: () => kill(ids.target) } },
     shatter: { frames: 150, at: { 3: () => kill(ids.target) } },
     // the kill's arcs, and those they kill going off in turn; then a second rune laid by the first, linked
