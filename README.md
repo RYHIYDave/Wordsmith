@@ -225,7 +225,7 @@ home. Wordmelding is on; the rune-stone is given by using the wordsmith; runedus
 burst up out of the Fleshmancer's pit.
 Version 22.1: smoother on a phone, nothing looks different: the ground, the hero and the monsters painted ahead out of the
 way, the Pinewood's forest drawn in big pieces; and the game has its own web address with an offline copy.
-Version 23.0 (23.6 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
+Version 23.0 (23.7 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
 Ward (the Crier), the Undercity (the Rat King), the Millrace (the Scraper and the Quill), the House of Quiet (the Physician) and the
 Great Library (the Censor), twelve new kinds of enemy, and on each floor the Bells: strike the Muffled Bell and ring the
 others before the Hush runs out. The skill trees remade (every pick changes how you play), the new Headsman on floor 2,
@@ -241,6 +241,9 @@ Version 23.5: the Ledge Road's vultures are struck wherever they fly, and fall w
 Version 23.6: floor 13's boss is now two, the Scraper (a giant crayfish of sodden pages) and the Quill (a heron of white
 pages, quick on its feet and in the air): each with its own blows, the Quill healing the Scraper till struck, and their
 ultimate, the Palimpsest, five strips scraped and written at you in a row and bursting in ink.
+Version 23.7: more words the deeper you go (10% likelier each level, up to triple); Rank II, two of a damage word
+melded into its second rank; the ten melded words' own rune stones and looks; the walls beside doors on floors 1 to 5
+stand again, seen through; and a new title screen, the Ring on the Hill.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which

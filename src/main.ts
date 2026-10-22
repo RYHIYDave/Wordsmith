@@ -2,6 +2,7 @@
 // interface together.
 
 import { actsOf } from './game/bosses';
+import { DOOR_WALLS } from './render/walls';
 import type { MonsterKind } from './game/types';
 import { ARCHER3, FIGURE_SIZE, SKELETON3, figureOf, makeBestiary, useMonsterAttacks, useNewMonsters } from './art/bestiary';
 import { makeHeroArt } from './art/heroes';
@@ -36,6 +37,7 @@ import { makeSmithTitle } from './art/title_smith';
 import type { SmithTake } from './art/title_smith';
 import { SMITH2_CHOSEN, makeSmith2Title } from './art/title_smith2';
 import { TITLE_SMITH3, makeSmith3Title } from './art/title_smith3';
+import { TITLE_RING, makeRingTitle } from './art/title_ring';
 import { botStep, newBot } from './dev/bot';
 import type { BotState } from './dev/bot';
 import { initAudio, isMuted, setMuted, sfx, speak } from './engine/audio';
@@ -61,7 +63,7 @@ import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
 import { ACT2 } from './game/act1';
-import { MELD, STONE_RISE, savedMeta } from './game/melds';
+import { MELD, RANK2, STONE_RISE, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
 import type { Hall } from './game/level';
@@ -230,6 +232,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (RUNEDUST AND THE MELDSTONE, art/meld_drops.ts: a mock-up behind MELD_DROPS, off; painted the first time they are shown)
     meldDrops: makeMeldDropsArt(),
   };
+  // WORDMELDING'S LOOKS (render/melds3.ts, MELD3: on at his word, 21 Oct 2026, “Yes, turn them on (Recommended)”): the melded
+  // words' own colours and runes, as drawn there, in place of the placeholders
+  if (MELD3.on) {
+    useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH);
+    for (const w of MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
+  }
   // RUNEDUST AND THE MELDSTONE DRAWN (art/meld_drops.ts, behind MELD_DROPS): switched on, the rules hold the
   // Fleshmancer's runedust and Meldstone under the floor while he is dragged down (game/melds.ts STONE_RISE),
   // and the screens show the new runedust; off, the stand-ins, as before.
@@ -258,7 +266,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   // it is asked for.
   // 'smith3' is the same picture made new for the wordsmith as he is since Version 19.6 (art/title_smith3.ts,
   // the owner's ask of 11 Oct 2026, 19:46), shown only while its switch TITLE_SMITH3 is on: on, on his yes of 21:27.
-  let titleLook: 'library' | 'smith' | 'floor' | 'smith3' = TITLE_SMITH3.on ? 'smith3' : 'floor';
+  // (VERSION 23.7: the Ring on the Hill, the art chat's, his “Yes, send it to main (Recommended)” of 21 Oct: art/title_ring.ts, while TITLE_RING is on)
+  let titleLook: 'library' | 'smith' | 'floor' | 'smith3' | 'ring' = TITLE_RING.on ? 'ring' : TITLE_SMITH3.on ? 'smith3' : 'floor';
   let smithTitle: SmithPicture | null = null;
   const ui = new Ui();
   const fx = new Fx();
@@ -1547,7 +1556,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         speaking: voiceTry && voiceTry.i > 0 && titleUi.page === 'class' ? CLASS_IDS[voiceTry.i - 1] : null,
         entering: entering ? { cls: entering.cls, t: entering.t } : null,
         tryout: TRYOUT,
-      }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'smith3' ? makeSmith3Title() : titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
+      }, titleLook === 'library' ? null : (smithTitle ??= titleLook === 'ring' ? makeRingTitle() : titleLook === 'smith3' ? makeSmith3Title() : titleLook === 'floor' ? makeSmith2Title(SMITH2_CHOSEN) : makeSmithTitle()));
       // the voices being tried out: warrior, ranger, mage, a breath apart
       if (voiceTry && (titleUi.page !== 'class' || titleLex)) voiceTry = null;
       if (voiceTry && clock >= voiceTry.at) {
@@ -2016,6 +2025,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     },
     /** (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them: render/act2_walls.ts; on at his word) Its switch, for the pictures and playtests: set it before coming onto a floor. */
     act2Walls: ACT2_WALLS,
+    /** (RANK II, a mock-up behind RANK2, game/melds.ts) Its switch, for the playtests and pictures. */
+    rank2: (on: boolean) => {
+      RANK2.on = on;
+    },
+    /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
+    doorWalls: (on: boolean, near = false) => {
+      DOOR_WALLS.on = on;
+      DOOR_WALLS.near = near;
+    },
     /** ACT 1 (and the bosses of floors 2 to 5): the acts one of them has (game/bosses.ts), for the playtests that have it make one over and over. */
     actsOf: (m: { kind: MonsterKind }) => actsOf(m),
     /** The hero who has been picked and is making ready on their card (see `entering`), or null: a playtest that picks a class waits for them to have gone. */
@@ -2130,7 +2148,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
       titleLex = false;
     },
     /** Which start screen is shown: the library and the dream, or the wordsmith at his forge table (not yet approved by the owner). */
-    titleLook: (look: 'library' | 'smith' | 'floor' | 'smith3', take?: SmithTake) => {
+    titleLook: (look: 'library' | 'smith' | 'floor' | 'smith3' | 'ring', take?: SmithTake) => {
       titleLook = look;
       // (each picture is painted when it is first shown: a change of look, or of the first painting's moment, paints afresh)
       smithTitle = look === 'smith' && take ? makeSmithTitle(take) : null;

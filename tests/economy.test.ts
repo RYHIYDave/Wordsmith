@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { LOOT2, TUNE, WORDS, useFirstLevels } from '../src/game/defs';
+import { LOOT2, TUNE, WORDS, WORD_GROWTH, useFirstLevels } from '../src/game/defs';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
@@ -70,7 +70,21 @@ test('what hangs over a monster is what its death leaves, and for most monsters 
   }
 });
 
-test('words are scarce: a fully explored dungeon holds a handful, where it used to hold nine or more', () => {
+// WORDS GROW WITH THE LEVELS (game/defs.ts WORD_GROWTH, since Version 23.7). His words, 21 Oct 2026, 18:24
+// Pacific: “I’d like the drops of words to increase with each level as well”; his pick: “10% each level, up to
+// triple”. The count below is of the chances as they are tuned, before that growth, so it runs with the growth
+// off; the growth itself is tested in tests/word_growth.test.ts.
+function withoutGrowth(fn: () => void): void {
+  const was = WORD_GROWTH.on;
+  WORD_GROWTH.on = false;
+  try {
+    fn();
+  } finally {
+    WORD_GROWTH.on = was;
+  }
+}
+
+test('words are scarce: a fully explored dungeon holds a handful, where it used to hold nine or more', () => withoutGrowth(() => {
   // WHICH DUNGEONS ARE COUNTED (changed for Version 18.3). Until then it was 30 seeds for each of
   // the three classes, and the three classes' dungeons of one seed are the same dungeon with the
   // same words on the same heads: 30 dungeons, counted three times. It asked that NONE of them
@@ -130,7 +144,7 @@ test('words are scarce: a fully explored dungeon holds a handful, where it used 
     assert.ok(Math.abs(guardianCarry / guardians - TUNE.guardianCarry) < 0.15, `dungeon ${depth}: a guardian's lair gives up a word about ${TUNE.guardianCarry * 100}% of the time (${guardianCarry} of ${guardians})`);
   }
   console.log(rows.join('\n'));
-});
+}));
 
 test('where a word turns up is luck: the same dungeon number gives different finds, and a named monster without a rune gives no word', () => {
   const shapes = new Set<string>();

@@ -70,8 +70,8 @@ import { modLines, statView } from '../game/items';
 import type { ImbueOption } from '../game/items';
 import type { SlotRef } from '../game/state';
 import { armorReduction } from '../game/stats';
-import { ALL_WORD_IDS, ATTRS, EQUIP_SLOTS } from '../game/types';
-import { MELD, MELD_DUST_COLOR } from '../game/melds';
+import { ATTRS, EQUIP_SLOTS } from '../game/types';
+import { MELD, MELD_DUST_COLOR, rankOf, wordIds } from '../game/melds';
 import type { ClassId, EquipSlot, IconKey, Item, Limit, WordId } from '../game/types';
 import { Figure } from '../render/figure';
 import type { Art } from '../render/render';
@@ -482,7 +482,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // (nothing may move while a word is being carried across the screen: a word lifted out of an
   // attack takes no place among the spare words until it is let go)
   const lifted = st.drag && st.drag.lifted && st.drag.moving ? st.drag.word : null;
-  const pouchWords = ALL_WORD_IDS.filter((w) => h.words[w] > (w === lifted ? 1 : 0));
+  const pouchWords = wordIds().filter((w) => h.words[w] > (w === lifted ? 1 : 0));
   // The spare words lie in lines over the bag: one line, and more where the panel is tall enough
   // to leave the page the room it likes (PAGE_ROOM).
   const fixedH = 2 + headH + 2 + 3 + CAP + 3 + CAP + bagH + 2;
@@ -1460,7 +1460,9 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
         if (w) {
           name(nameParts(SKILLS[sk.id], sk.front, sk.behind));
           const label = st.look.side === 'front' ? WORDS[w].front : WORDS[w].behind;
-          for (const l of sk.r.lines.slice(1)) if (l.startsWith(`${label}:`)) line(l, P.white);
+          // (RANK II: a ranked word's line carries its rank, "Poison II:")
+          const tag = ['', '', ' II', ' III', ' IV', ' V'][rankOf(w)] ?? '';
+          for (const l of sk.r.lines.slice(1)) if (l.startsWith(`${label}${tag}:`)) line(l, P.white);
           line(T ? 'Drag it out, or tap it again, to take it back.' : 'Drag it out, or right-click it, to take it back.', THEME.dim);
         }
       } else if (reading === 'piece' && piece) {

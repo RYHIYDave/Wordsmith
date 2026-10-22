@@ -6,7 +6,7 @@
 // The geometry behind both (engine/iso.ts): a tile's diamond is 32 by 16 pixels on the screen, and
 // a tile straight behind another lies 16 pixels up the screen.
 import type { WallLook } from '../art/ground';
-import { doorPiers } from '../game/doors';
+import { doorPiers, doorTiles, isLeaf } from '../game/doors';
 import { CUT_FAR, CUT_LEFT, CUT_RIGHT, T_FLOOR, T_PIT, T_WALL } from '../game/types';
 import type { Floor } from '../game/types';
 
@@ -55,6 +55,55 @@ export function wallsAway(f: Floor, look: WallLook): Uint8Array {
   // door's frame. The other one, and both on a side toward the eye, go by the rule above: each has
   // floor right beside it or behind it, and is left out.
   for (const d of f.doors ?? []) if (d.kind === 'door' && !d.near) out[doorPiers(f, d)[0]] = 0;
+  return out;
+}
+
+/**
+ * THE WALL BESIDE A DOOR, A MOCK-UP BEHIND A SWITCH THAT IS OFF (the owner, 18 Oct 2026, 08:27: "I’d like
+ * you to look at levels 1-5 and add the wall sections that are missing on the sides of any door.  I feel
+ * like you leave out any wall sections that would hide the player but I don’t like how it looks.  Figure
+ * out how to fade them or whatever so it doesn’t hide the player, but I don’t like the gaps missing in the
+ * walls"). On: the walls left out beside a door stand, and are seen through while someone is behind them.
+ */
+// (ON, Version 23.7: his yes to the planning chat, 18 Oct 2026, 08:46 Pacific, “Yes”, to the pictures; and to putting it in, to the
+// main chat, 21 Oct 2026, “Yes, put it in (Recommended)”. `near` stays off: that side has no wall by his 18.4 look)
+export const DOOR_WALLS = { on: true, near: false };
+
+/**
+ * (THE WALL BESIDE A DOOR) Of the walls left out (`away`), those that stand again: beside every door
+ * or gate in a BACK wall, along the line of that wall, from the doorway outward on either side, as
+ * long as the wall runs on left out (four tiles at most a side). A door's own stone on either side
+ * (its pier) is the first of them. Doors on a side toward the eye are not touched: that whole side
+ * has no wall (the game's look since 18.4), and a stub of wall beside a door there would stand alone.
+ * Each one stands as a whole wall does (its faces turned to floor, `wallFaces`), and the renderer
+ * sees it through while the hero or a monster in sight is behind it.
+ */
+export function doorWallsBack(f: Floor, away: Uint8Array): Uint8Array {
+  const out = new Uint8Array(f.w * f.h);
+  for (const d of f.doors ?? []) {
+    const tiles = doorTiles(f, d);
+    // (`near`, for pictures: on a side toward the eye, a door's own two stones and no more)
+    if (d.near) {
+      if (DOOR_WALLS.near && isLeaf(d.kind)) for (const i of [tiles[0], tiles[2]]) if (f.tiles[i] === T_WALL && away[i]) out[i] = 1;
+      continue;
+    }
+    const step = d.alongX ? 1 : f.w;
+    const leaf = isLeaf(d.kind);
+    // (a door's piers are its first and last tile; a gate's three tiles are all walked: begin past them)
+    for (const [from, dir] of [
+      [leaf ? tiles[2] : tiles[2] + step, step],
+      [leaf ? tiles[0] : tiles[0] - step, -step],
+    ]) {
+      let i = from;
+      for (let n = 0; n < 4; n++, i += dir) {
+        const x = i % f.w;
+        const y = (i - x) / f.w;
+        if (i < 0 || i >= f.w * f.h || (d.alongX ? y !== (tiles[0] - (tiles[0] % f.w)) / f.w : x !== tiles[0] % f.w)) break;
+        if (f.tiles[i] !== T_WALL || !away[i]) break;
+        out[i] = 1;
+      }
+    }
+  }
   return out;
 }
 

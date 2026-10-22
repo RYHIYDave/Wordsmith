@@ -18,11 +18,28 @@
 // The numbers below are starting points, to be tuned once he has played them.
 
 import { WORDS } from './defs';
-import { ALL_WORD_IDS, MELD_IDS, MELD_OF, WORD_IDS } from './types';
+import { MELD_IDS, MELD_OF, RANK_IDS, RANK_OF, WORD_IDS } from './types';
 import type { Meta } from './state';
-import type { MeldId, WordId } from './types';
+import type { BaseWordId, MeldId, RankId, WordId } from './types';
 
 export const MELD = { on: true };
+
+/**
+ * RANK II, behind this switch (off): two of the same damage word melded at the wordsmith make that word at
+ * rank II (Poison and Poison, Poison II). The owner, 18 Oct 2026, 08:49: "Please add the second level
+ * (poison+poison) melding into the game"; to the planning chat's reading of it, 08:56: "Yep go". As read
+ * (his rank rules of 5 and 6 Oct 2026: two of a word to rank up, rank V the top, each rank half the word
+ * again): the five damage words; rank II only, for now; half as strong again as the word, the attribute
+ * adding on top as now; a meld's runedust (his gold fee rising with rank comes with ranks III to V); like
+ * a melded word, on attacks only (not gear, the gate or the Lexicon); a ranked word melds no further.
+ * With it off nothing of this can be had, and the game is as it was.
+ */
+// (ON, Version 23.7: his yes to the planning chat, 18 Oct 2026, 09:32 Pacific, “Yes”, to Poison II as shown; and to putting it in,
+// to the main chat, 21 Oct 2026, “Yes, put it in (Recommended)”)
+export const RANK2 = { on: true };
+
+/** RANK II's numbers: how much each rank past the first adds of the word's own figure (half: II is one and a half times the word). */
+export const RANK_TUNE = { step: 0.5 };
 
 /** HAND_IN (game/defs.ts): the wordsmith's prompt beside him with the Meldstone. */
 export const MELD_HAND_IN = 'Give the Meldstone';
@@ -73,7 +90,29 @@ export const MELD_TUNE = {
  * the pictures do, a melded word's count is made when it is first needed: `meldWords`.)
  */
 export function wordIds(): readonly WordId[] {
-  return MELD.on ? ALL_WORD_IDS : WORD_IDS;
+  if (!MELD.on) return WORD_IDS;
+  return RANK2.on ? [...WORD_IDS, ...MELD_IDS, ...RANK_IDS] : [...WORD_IDS, ...MELD_IDS];
+}
+
+/** Is this word a ranked one (rank II)? */
+export function isRank(w: WordId): w is RankId {
+  return WORDS[w].kind === 'rank';
+}
+
+/** The word a ranked word is a rank of, or the word itself. */
+export function rankBase(w: WordId): WordId {
+  return isRank(w) ? RANK_OF[w].word : w;
+}
+
+/** A word's rank: 2 for a rank II word, 1 for any other. */
+export function rankOf(w: WordId): number {
+  return isRank(w) ? RANK_OF[w].rank : 1;
+}
+
+/** The word one rank up from this one, or null (not a damage word, or already as high as ranks go for now). */
+export function rankUp(w: WordId): RankId | null {
+  for (const r of RANK_IDS) if (RANK_OF[r].word === (w as BaseWordId) && RANK_OF[r].rank === rankOf(w) + 1) return r;
+  return null;
 }
 
 /** Is this word a melded one? */
@@ -84,12 +123,12 @@ export function isMeld(w: WordId): w is MeldId {
 /** A damage word or a melded one: what takes a side's one damage-word place. */
 export function isDamageWord(w: WordId): boolean {
   const k = WORDS[w].kind;
-  return k === 'damage' || k === 'meld';
+  return k === 'damage' || k === 'meld' || k === 'rank';
 }
 
 /** The words a word does the work of: a melded word's two, or the word itself. */
 export function partsOf(w: WordId): readonly WordId[] {
-  return isMeld(w) ? MELD_OF[w] : [w];
+  return isMeld(w) ? MELD_OF[w] : isRank(w) ? [RANK_OF[w].word] : [w];
 }
 
 /**
@@ -98,13 +137,14 @@ export function partsOf(w: WordId): readonly WordId[] {
  */
 export function withParts(side: readonly (WordId | null)[]): WordId[] {
   const out: WordId[] = [];
-  for (const w of side) if (w !== null) out.push(...(isMeld(w) ? [w, ...MELD_OF[w]] : [w]));
+  // (RANK II: a ranked word looks and acts as its word; how much stronger is the rules' business, words.ts)
+  for (const w of side) if (w !== null) out.push(...(isMeld(w) ? [w, ...MELD_OF[w]] : isRank(w) ? [RANK_OF[w].word] : [w]));
   return out;
 }
 
-/** What two words make when melded, or null if they don't meld (the same word twice, a shaping word, a melded word). */
-export function meldOf(a: WordId, b: WordId): MeldId | null {
-  if (a === b) return null;
+/** What two words make when melded, or null if they don't meld (a shaping word, a melded word; the same word twice, unless RANK2 is on: then that word a rank up). */
+export function meldOf(a: WordId, b: WordId): MeldId | RankId | null {
+  if (a === b) return RANK2.on && WORDS[a].kind === 'damage' ? rankUp(a) : null;
   for (const m of MELD_IDS) {
     const [x, y] = MELD_OF[m];
     if ((x === a && y === b) || (x === b && y === a)) return m;
@@ -115,7 +155,8 @@ export function meldOf(a: WordId, b: WordId): MeldId | null {
 /** Why two words can't be melded, or null if they can. */
 export function meldProblem(a: WordId | null, b: WordId | null): string | null {
   if (!a || !b) return 'Two words go in';
-  if (a === b) return 'Two different words';
+  if (RANK2.on && (isRank(a) || isRank(b))) return a === b ? 'Rank II is the top, for now' : 'A ranked word melds no further';
+  if (a === b && !RANK2.on) return 'Two different words';
   if (isMeld(a) || isMeld(b)) return 'A melded word melds no further';
   if (WORDS[a].kind !== 'damage' || WORDS[b].kind !== 'damage') return 'Only damage words meld';
   return meldOf(a, b) ? null : 'These do not meld';
@@ -123,15 +164,18 @@ export function meldProblem(a: WordId | null, b: WordId | null): string | null {
 
 /** What of a record of words is written to a save: with MELD off, nothing of the melded words, so a save is as it was before them. */
 export function savedWords<T>(rec: Record<WordId, T>): Record<WordId, T> {
-  if (MELD.on) return rec;
+  if (MELD.on && RANK2.on) return rec;
   const out: Partial<Record<WordId, T>> = { ...rec };
-  for (const m of MELD_IDS) delete out[m];
+  if (!MELD.on) for (const m of MELD_IDS) delete out[m];
+  // (RANK II: with RANK2 off, nothing of the ranked words either)
+  for (const r of RANK_IDS) delete out[r];
   return out as Record<WordId, T>;
 }
 
 /** The Lexicon and stash as written to a save (savedWords on its words). */
 export function savedMeta(meta: Meta): Meta {
-  if (MELD.on) return meta;
+  if (MELD.on && RANK2.on) return meta;
+  if (MELD.on) return { ...meta, lexicon: savedWords(meta.lexicon), known: savedWords(meta.known) };
   const { meld: _m, ...rest } = meta;
   return { ...rest, lexicon: savedWords(meta.lexicon), known: savedWords(meta.known) };
 }

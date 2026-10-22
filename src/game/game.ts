@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -38,9 +38,9 @@ import { AIM_MODES, emptyControls } from './state';
 import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
-import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RARITY_NAMES, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
-import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, STONE_RISE, isDamageWord, meldOf, meldProblem, savedWords, withParts, wordIds } from './melds';
-import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, Rarity, VoiceId, WeaponKind, WordId } from './types';
+import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
+import { MELD, MELD_DUST_COLOR, MELD_HAND_IN, MELD_TUNE, RANK2, STONE_RISE, isDamageWord, meldOf, meldProblem, rankBase, savedWords, withParts, wordIds } from './melds';
+import type { Attr, ClassId, Element, EquipSlot, Item, MeldId, MonsterKind, RankId, Rarity, VoiceId, WeaponKind, WordId } from './types';
 import { resolveSkill, socketProblem } from './words';
 
 const ELEMENT_WORDS: readonly WordId[] = ['fire', 'frost', 'lightning'];
@@ -354,7 +354,7 @@ export class Game {
   meldHeat: number[] = [0, 0, 0];
   meldHits: number[] = [0, 0, 0];
   /** WORDMELDING: the last word the wordsmith melded, and whether it was the first of its kind (his half shows it). */
-  melded: { word: MeldId; first: boolean } | null = null;
+  melded: { word: MeldId | RankId; first: boolean } | null = null;
   private windT = 0;
   private stormT = 0;
   private unbroken = false;
@@ -469,6 +469,8 @@ export class Game {
     for (const w of WORD_IDS) h.words[w] = PRACTICE.words;
     // (WORDMELDING: the melded words too, to try)
     if (MELD.on) for (const w of MELD_IDS) h.words[w] = PRACTICE.words;
+    // (RANK II: and the ranked words)
+    if (MELD.on && RANK2.on) for (const w of RANK_IDS) h.words[w] = PRACTICE.words;
     this.refresh();
     this.clearLevel();
     const shape = SHAPES.find((k) => hall === `shape:${k}`);
@@ -576,7 +578,7 @@ export class Game {
     if (worded && (worded.front.some((w) => w !== null) || worded.behind.some((w) => w !== null))) return 'use';
     const fight = this.inFight();
     if (fight && this.guideRows().some((r) => !r.done)) return 'fight';
-    if (ALL_WORD_IDS.some((w) => h.words[w] > 0)) return 'smith';
+    if (wordIds().some((w) => h.words[w] > 0)) return 'smith';
     if (this.drops.some((d) => d.kind === 'word' && Math.hypot(d.x - h.x, d.y - h.y) < GUIDE.sight)) return 'take';
     if (fight) return null;
     // (THE FIRST LEVELS: the quest item, to be taken to town and to the wordsmith)
@@ -1518,7 +1520,8 @@ export class Game {
         }
       }
     } else if (lot && words.length && (!pack || pack.rarity === 'leader')) {
-      const p = champion ? TUNE.guardianCarry : TUNE.eliteCarry;
+      // (WORDS GROW WITH THE LEVELS, defs.ts WORD_GROWTH: the likelier the deeper)
+      const p = (champion ? TUNE.guardianCarry : TUNE.eliteCarry) * wordGrowth(P);
       // (the more words are burned into the dungeon, the likelier: that is what burning them buys)
       if (lot.chance(Math.min(1, p * (1 + 0.3 * this.dungeonWords.length)))) carries = [lot.pick(words)];
     }
@@ -2391,7 +2394,7 @@ export class Game {
     if (MELD.on) this.addDrop('dust', at.x, at.y, Math.round((BELLS_TUNE.dust + Math.floor(n / 2)) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
     for (let i = 0; i < n; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i < 2 ? 4 : 2), null);
     this.addDrop('gold', at.x, at.y, this.rng.int(BELLS_TUNE.gold, BELLS_TUNE.gold * 2) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
-    if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word)) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(WORD_IDS));
+    if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word * wordGrowth(this.power))) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(WORD_IDS));
     this.emit({ t: 'bells', what: 'won', x: B.plan.muffled.x, y: B.plan.muffled.y, n });
     this.sfx('rare');
     this.msg('Every bell peals at once. The Hush shatters!', MSG.good);
@@ -2506,6 +2509,7 @@ export class Game {
     if (!st || st.open) return 'The door is open';
     if (!(this.hero.words[word] > 0)) return 'No spare word';
     if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks only';
+    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks only';
     if (st.words.length >= HOLD_TUNE.most) return `At most ${HOLD_TUNE.most} words`;
     if (st.words.includes(word)) return 'Already on the altar';
     if (WORDS[word].element && st.words.some((w) => WORDS[w].element)) return 'One element per stronghold';
@@ -5144,7 +5148,8 @@ export class Game {
     const s = m.lastSkill >= 0 ? h.skills[m.lastSkill] : null;
     if (s) {
       const words = [...s.front, ...s.behind].filter((w): w is WordId => w !== null);
-      if (words.length) lists.push({ w: W.word, lines: QUIPS.word[q.pick(words)] });
+      // (RANK II: a ranked word speaks its word's lines)
+      if (words.length) lists.push({ w: W.word, lines: QUIPS.word[rankBase(q.pick(words))] });
       lists.push({ w: W.skill, lines: QUIPS.skill[s.id] });
     }
     const weapon = h.gear.mainhand ? h.gear.mainhand.weapon : null;
@@ -5407,7 +5412,7 @@ export class Game {
       (words[w] ?? 0) + sockets.reduce((n, so) => n + [...so.front, ...so.behind].filter((x) => x === w).length, 0);
     const nowSockets = h.skills.map((sk) => ({ front: sk.front, behind: sk.behind }));
     let words = 0;
-    for (const w of ALL_WORD_IDS) words += Math.max(0, count(h.words, nowSockets, w) - count(e.words, e.sockets, w));
+    for (const w of wordIds()) words += Math.max(0, count(h.words, nowSockets, w) - count(e.words, e.sockets, w));
     return { items, words, gold: Math.max(0, h.gold - e.gold), share: this.goldShare() };
   }
 
@@ -6982,7 +6987,7 @@ export class Game {
     if (rng.chance((LOOT2.on ? LOOT2.item : TUNE.dropItem) * bonus)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
     if (rng.chance(TUNE.dropOrb)) this.addDrop('orb', m.x, m.y, 0, null, null);
     // (THE FIRST LEVELS: no word falls before the ring is lit, nor in the first dungeon)
-    if (rng.chance(TUNE.dropWord * bonus) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
+    if (rng.chance(TUNE.dropWord * bonus * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
   }
 
   private gainXp(n: number): void {
@@ -7145,7 +7150,7 @@ export class Game {
         const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0);
         for (let i = 0; i < n; i++) this.addDrop('item', p.x, p.y + 0.6, 0, this.rollGear(room && i === 0 ? 2 : 1), null);
         this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.power) * (room ? 2 : 1), null, null);
-        if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
+        if (this.rng.chance((firstInVault ? TUNE.vaultWord : TUNE.chestWord) * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
       }
     }
     // (THE MIX) a lever: walk up, and it is pulled
@@ -7313,8 +7318,9 @@ export class Game {
   /** Why a word cannot be laid on the gate, or null if it can. */
   planProblem(word: WordId): string | null {
     if (!(this.hero.words[word] > 0)) return 'No spare word';
-    // (WORDMELDING: a melded word is for attacks only, for now, his words)
+    // (WORDMELDING: a melded word is for attacks only, for now, his words; RANK II likewise, as read)
     if (WORDS[word].kind === 'meld') return 'A melded word goes on attacks only';
+    if (WORDS[word].kind === 'rank') return 'A ranked word goes on attacks only';
     // (THE FIRST LEVELS: no words on the first dungeon's monsters, his note of 21:05: a word laid
     // on its gate would be burned for nothing. A later hero may carry one from the Lexicon.)
     if (FIRST_LEVELS.on && !this.practice && this.depth <= 1) return FIRST_GATE;
@@ -7493,6 +7499,8 @@ export class Game {
     const why = meldProblem(a, b);
     if (why || !a || !b) return why ?? 'Two words go in';
     if (h.words[a] <= 0 || h.words[b] <= 0) return 'No spare word';
+    // (RANK II: two of the same word take two of it)
+    if (a === b && h.words[a] < 2) return 'Two of the word go in';
     if (!this.practice && h.dust < MELD_TUNE.cost) return `Needs ${MELD_TUNE.cost} runedust`;
     return null;
   }
@@ -7645,6 +7653,7 @@ export class Game {
     if (!(h.words[word] > 0)) return 'No spare word';
     // (WORDMELDING: the Lexicon keeps the words as they are found; a melded word is not kept there, for now)
     if (WORDS[word].kind === 'meld') return 'The Lexicon keeps no melded word';
+    if (WORDS[word].kind === 'rank') return 'The Lexicon keeps no ranked word';
     const cost = this.keepCost();
     if (h.gold < cost) return `Needs ${cost} gold`;
     h.gold -= cost;

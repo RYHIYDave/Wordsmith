@@ -24,8 +24,12 @@ import { MELD_IDS, MELD_OF } from '../game/types';
 import type { MeldId, WordId } from '../game/types';
 import type { Cam, Fx } from './fx';
 
-/** The switch. Off: nothing here is drawn or called, and the game is as it was. */
-export const MELD3 = { on: false };
+/**
+ * The switch. Off: nothing here is drawn or called, and the game is as it was. ON (Version 23.7): his yes to the looks, to the
+ * planning chat by 16:29 Eastern, 16 Oct 2026, “Yes, send to main (Recommended)”, and to turning them on, to the main chat,
+ * 21 Oct 2026, “Yes, turn them on (Recommended)” (main.ts puts their colours and runes in place of the placeholders).
+ */
+export const MELD3 = { on: true };
 
 /**
  * Each melded word's colours, darkest to brightest (the last is its white-hot). Index 3 is the

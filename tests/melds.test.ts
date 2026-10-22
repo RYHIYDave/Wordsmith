@@ -17,7 +17,7 @@ import { SKILLS, WORDS } from '../src/game/defs';
 import { HAND_IN } from '../src/game/defs';
 import { Game, newMeta } from '../src/game/game';
 import type { ItemRef } from '../src/game/game';
-import { MELD, MELD_HAND_IN, MELD_TUNE, isDamageWord, meldOf, meldProblem, partsOf, savedMeta, withParts } from '../src/game/melds';
+import { MELD, MELD_HAND_IN, MELD_TUNE, RANK2, isDamageWord, meldOf, meldProblem, partsOf, savedMeta, withParts } from '../src/game/melds';
 import { emptyControls } from '../src/game/state';
 import type { GameEvent, Monster, Resolved } from '../src/game/state';
 import { ALL_WORD_IDS, MELD_IDS, MELD_OF, WORD_IDS } from '../src/game/types';
@@ -159,15 +159,22 @@ test('the ten melded words: every two of the five damage words make one, both wa
     seen.add([a, b].sort().join('+'));
   }
   assert.equal(seen.size, 10, 'each pair once');
-  for (const a of WORD_IDS) {
-    for (const b of WORD_IDS) {
-      const both = DAMAGE.includes(a) && DAMAGE.includes(b) && a !== b;
-      assert.equal(meldOf(a, b) !== null, both, `${a} + ${b}`);
-      assert.equal(meldProblem(a, b) === null, both, `${a} + ${b}`);
+  // (VERSION 23.7: with RANK2 on, two of one damage word make its rank II, tests/rank2.test.ts; this holds the ten, with it off)
+  const rank = RANK2.on;
+  RANK2.on = false;
+  try {
+    for (const a of WORD_IDS) {
+      for (const b of WORD_IDS) {
+        const both = DAMAGE.includes(a) && DAMAGE.includes(b) && a !== b;
+        assert.equal(meldOf(a, b) !== null, both, `${a} + ${b}`);
+        assert.equal(meldProblem(a, b) === null, both, `${a} + ${b}`);
+      }
     }
+    assert.equal(meldProblem('fire', 'fire'), 'Two different words');
+  } finally {
+    RANK2.on = rank;
   }
   assert.equal(meldProblem(null, 'fire'), 'Two words go in');
-  assert.equal(meldProblem('fire', 'fire'), 'Two different words');
   assert.equal(meldProblem('eruption', 'frost'), 'A melded word melds no further');
   assert.equal(meldProblem('swift', 'fire'), 'Only damage words meld');
   assert.equal(meldProblem('volatile', 'fire'), 'Only damage words meld', 'Volatile does not meld (his pick)');
