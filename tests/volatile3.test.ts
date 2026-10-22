@@ -166,6 +166,8 @@ test('2. with the switch off, nothing here draws, moves or lights anything, what
 test('3. six tones each, darkest to white-hot; each word told apart from every other word, the ten melds, the friend and the enemy', () => {
   const others: Record<string, string> = { ...(WORD_COLOR as Record<string, string>), cyan: '#28dcf0', runedust: '#5ce8f8', pink: '#ff4f8a', gold: '#ffd27a' };
   for (const [w, ramp] of Object.entries(MELD_RAMP)) others[w] = ramp[3];
+  // (the main chat's tables carry the five themselves, melds3's from here and icons' placeholders: not "others")
+  for (const w of VMELD_IDS) delete others[w];
   let nearest = 99;
   for (const w of VMELD_IDS) {
     const ramp = VMELD_RAMP[w];
@@ -195,7 +197,9 @@ test("4. nothing glows in the friend's cyan or the enemy's pink", () => {
 });
 
 test('5. the runes: 7 by 7, cut as the others are, each its own', () => {
-  const all = [...Object.values(GLYPH), ...Object.values(MELD_GLYPH)].map((g) => g.join('/'));
+  // (the main chat's tables carry the five themselves, melds3's from here: not "the others")
+  const notFive = <T,>(t: Record<string, T>): T[] => Object.entries(t).filter(([k]) => !(VMELD_IDS as readonly string[]).includes(k)).map(([, v]) => v);
+  const all = [...notFive(GLYPH as Record<string, readonly string[]>), ...notFive(MELD_GLYPH as Record<string, readonly string[]>)].map((g) => g.join('/'));
   const seen = new Set<string>();
   for (const w of VMELD_IDS) {
     const g = VMELD_GLYPH[w];

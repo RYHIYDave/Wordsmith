@@ -63,7 +63,7 @@ import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
 import { ACT2 } from './game/act1';
-import { MELD, RANK2, STONE_RISE, savedMeta } from './game/melds';
+import { MELD, RANK2, STONE_RISE, VOLT_MELDS, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
 import type { Hall } from './game/level';
@@ -73,7 +73,7 @@ import { flowDir, flowField, lineOfSight } from './game/nav';
 import type { AimMode, Controls, GameEvent, Level, Meta, Monster, PropInst, Station, TownVoice } from './game/state';
 import { rollItem } from './game/items';
 import { RNG } from './engine/rng';
-import { CLASS_IDS, MELD_IDS, WORD_IDS } from './game/types';
+import { CLASS_IDS, MELD_IDS, VOLT_MELD_IDS, WORD_IDS } from './game/types';
 import type { ClassId, Item, Rarity, Slot, WordId } from './game/types';
 import { Fx, WORD_HUE, wx, wy } from './render/fx';
 import { NAME_LIFT, Renderer, STATION_NAME } from './render/render';
@@ -237,6 +237,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   if (MELD3.on) {
     useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH);
     for (const w of MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
+  }
+  // VOLATILE'S FIVE MELDS' LOOKS (render/volatile3.ts, behind VOLATILE3, off until his yes in the main chat): their own colours and
+  // runes, the art chat's, in place of the placeholders (melds3's tables carry them)
+  if (VOLATILE3.on) {
+    useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH, VOLT_MELD_IDS);
+    for (const w of VOLT_MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
   }
   // RUNEDUST AND THE MELDSTONE DRAWN (art/meld_drops.ts, behind MELD_DROPS): switched on, the rules hold the
   // Fleshmancer's runedust and Meldstone under the floor while he is dragged down (game/melds.ts STONE_RISE),
@@ -2028,6 +2034,15 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     /** (RANK II, a mock-up behind RANK2, game/melds.ts) Its switch, for the playtests and pictures. */
     rank2: (on: boolean) => {
       RANK2.on = on;
+    },
+    /** (VOLATILE'S FIVE MELDS, behind VOLT_MELDS, game/melds.ts, and their looks behind VOLATILE3, render/volatile3.ts; both off) Their switches, for the playtests and pictures: this page only. */
+    voltMelds: (on: boolean) => {
+      VOLT_MELDS.on = on;
+      VOLATILE3.on = on;
+      if (on) {
+        useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH, VOLT_MELD_IDS);
+        for (const w of VOLT_MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
+      }
     },
     /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
     doorWalls: (on: boolean, near = false) => {
