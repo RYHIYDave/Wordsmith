@@ -124,8 +124,11 @@ export default async function (page, snap) {
       m.carries = ['fire'];
       m.a1.next = 99;
     });
+    // (one struck down over the drop in the flock's fight, fallen away into it, is that shown already: then the drop's own
+    // round is not waited on past its while)
+    const already = over === 'drop' && (await page.evaluate(() => window.__air.deaths.some((d) => d.away)));
     let done = false;
-    for (let k = 0; k < 14 * FPS && !done; k++) {
+    for (let k = 0; k < 20 * FPS && !done; k++) {
       await frame();
       done = await page.evaluate((o) => {
         const g = window.__dbg.game();
@@ -145,7 +148,8 @@ export default async function (page, snap) {
         return true;
       }, over);
     }
-    if (!done) log('!!', `no vulture came over the ${over} to be struck down`);
+    if (!done && already) log('drop', 'none came over the drop in its while; one struck down over it in the flock\'s fight fell away into it');
+    else if (!done) log('!!', `no vulture came over the ${over} to be struck down`);
     else log('struck', `over the ${over} at frame ${i - 1}`);
     await hold(1.6);
     const where = await page.evaluate(() => {
