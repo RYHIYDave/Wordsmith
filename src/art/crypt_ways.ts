@@ -91,9 +91,26 @@ function roughAt(run: number, depth: number, face: readonly string[], rock: read
  * floor, before anything that stands.
  */
 export function makeStairwell(theme: Theme, way: 'x' | 'y'): Sprite {
-  const LONG = STAIR_LONG;
-  const WIDE = STAIR_WIDE;
-  const K = STAIR_KERB;
+  return makeStairwellOf(theme, way, { long: STAIR_LONG, wide: STAIR_WIDE, kerb: STAIR_KERB, kerbH: KERB_H });
+}
+/** A stairwell's measures: its opening's length and width and its kerb's width (tiles), and its kerb's height (picture pixels). */
+export interface StairMeasures {
+  long: number;
+  wide: number;
+  kerb: number;
+  kerbH: number;
+}
+/**
+ * A STAIRWELL OF ANY MEASURES, as makeStairwell paints the floors' own (the same pixel for pixel at their measures):
+ * (THE ART CHAT'S WAYS, art/town_ways.ts, a mock-up behind its switch, off) the town's, wider, its kerb a low parapet.
+ */
+export function makeStairwellOf(theme: Theme, way: 'x' | 'y', m: StairMeasures): Sprite {
+  const LONG = m.long;
+  const WIDE = m.wide;
+  const K = m.kerb;
+  const KERB_H = m.kerbH;
+  /** How far the eye looks down into it (tiles): the floors' own 2.6, further into a longer one. */
+  const REACH = Math.max(2.6, LONG + 0.2);
   // (the box it all lies in, in tiles: along the way down from 0 to LONG + K, across from -K to WIDE + K)
   const x0 = way === 'x' ? 0 : -K;
   const y0 = way === 'x' ? -K : 0;
@@ -131,7 +148,7 @@ export function makeStairwell(theme: Theme, way: 'x' | 'y'): Sprite {
       let prevAc = 0;
       let before = 0;
       // LOOKING DOWN ALONG IT: back (toward -x, -y) and down, a 128th of a tile at a time
-      for (let d = 0; d < 2.6; d += 1 / 128) {
+      for (let d = 0; d < REACH; d += 1 / 128) {
         const x = fx - d;
         const y = fy - d;
         const z = KERB_H - 32 * d;

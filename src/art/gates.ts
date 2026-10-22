@@ -72,7 +72,7 @@ function mix(a: string, b: string, t: number): string {
  * On the screen a plane along +x runs down to the right and one along +y down to the left, and a
  * row of the thing drops a pixel in every two as the walls' faces do (art/ground.ts, `bottomRow`).
  */
-class Flat {
+export class Flat {
   private readonly col: (string | undefined)[];
   private readonly alpha: Uint8Array;
   readonly wide: number;
@@ -331,8 +331,8 @@ export function makeSealLeaf(ex: number, ey: number, word: WordId, lit: boolean,
 /** How wide each of a pillar's two faces is, in picture pixels (three eighths of a tile). */
 export const PILLAR = 12;
 /** A gate with its pillars: u = 0 at the outer edge of the pillar it begins at; the way through is the three tiles between the pillars. */
-const SPAN = 96;
-const ARCH_WIDE = SPAN + PILLAR * 2;
+export const SPAN = 96;
+export const ARCH_WIDE = SPAN + PILLAR * 2;
 
 /** The shape of an arch: where it springs from (the pillars' height), how far its underside rises to its middle, how thick its ring of stones is, how many stones. */
 export interface ArchShape {
@@ -347,13 +347,13 @@ export const GATE_UP = 60;
 export const ARCH: Readonly<ArchShape> = { spring: 40, rise: 42, ring: 10, stones: 13 };
 export const ARCH_BOSS: Readonly<ArchShape> = { spring: 44, rise: 48, ring: 14, stones: 13 };
 
-interface Curve {
+export interface Curve {
   /** The middle of the arch along the plane, and the centre its ring is struck from. */
   mid: number;
   vc: number;
   rho: number;
 }
-function curveOf(a: ArchShape): Curve {
+export function curveOf(a: ArchShape): Curve {
   const r = SPAN / 2;
   const rho = (r * r + a.rise * a.rise) / (2 * a.rise);
   return { mid: ARCH_WIDE / 2, vc: a.spring + a.rise - rho, rho };
@@ -363,13 +363,13 @@ function reach(c: Curve, u: number, v: number): number {
   return Math.hypot(u + 0.5 - c.mid, v + 0.5 - c.vc);
 }
 /** Is a point of the plane in the arch's ring of stones? */
-function inRing(a: ArchShape, c: Curve, u: number, v: number): boolean {
+export function inRing(a: ArchShape, c: Curve, u: number, v: number): boolean {
   if (u < 0 || u >= ARCH_WIDE || v < a.spring) return false;
   const d = reach(c, u, v);
   return d >= c.rho && d < c.rho + a.ring;
 }
 /** Is a point in the way through: between the pillars, under the arch? */
-function inWay(a: ArchShape, c: Curve, u: number, v: number): boolean {
+export function inWay(a: ArchShape, c: Curve, u: number, v: number): boolean {
   if (u < PILLAR || u >= PILLAR + SPAN || v < 0) return false;
   return v < a.spring || reach(c, u, v) < c.rho;
 }
