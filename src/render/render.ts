@@ -566,8 +566,19 @@ export class Renderer {
     const st = W.stair;
     // (THE FIRST FIVE FLOORS: while its opening is played from its film, the film is the stairwell: render/dress.ts)
     if (st && st.open && L.explored[st.y * L.floor.w + st.x] && !this.dress.stairPlaying(game)) {
-      const sp = art.stair[st.way];
+      // (EXITS: the town's stairs down, the art chat's, three tiles by two, once made)
+      const sp = (L.town ? this.dress.townWays(game)?.stairs : null) ?? art.stair[st.way];
       g.drawImage(sp.img, Math.round(wx(cam, st.x, st.y)) - sp.ax, Math.round(wy(cam, st.x, st.y)) - sp.ay, sp.w, sp.h);
+    }
+    // (EXITS: floor 1's stairs up to the town, seen through its gate's arch, with the floor: anchored as the arch's strips are)
+    for (const d of L.doors) {
+      const s = d.spot;
+      const sp = s.kind === 'waygate' ? this.dress.stairsUp(game, s) : null;
+      if (!sp || !doorTiles(L.floor, s).some((i) => L.explored[i] === 1)) continue;
+      const face = doorFace(s);
+      const wide = PILLAR / 32;
+      const [x, y] = s.alongX ? [s.a - wide, face] : [face, s.a - wide];
+      g.drawImage(sp.img, Math.round(wx(cam, x, y)) - sp.ax, Math.round(wy(cam, x, y)) - sp.ay, sp.w, sp.h);
     }
     // (ACT 1: and the way on, once it has woken: a waypoint's own picture, awake: nothing is there before)
     for (const w of [W.way, W.onward && W.onward.awake ? W.onward : null]) {
@@ -641,7 +652,7 @@ export class Renderer {
    * (The stone on either side of a door is wall, and the walls' own rules draw it or leave it out:
    * render/walls.ts.)
    */
-  private standDoors(L: Game['level'], cam: Cam): void {
+  private standDoors(L: Game['level'], cam: Cam, game: Game): void {
     if (L.doors.length === 0) return;
     const A = this.art.gates;
     const f = L.floor;
@@ -673,8 +684,22 @@ export class Renderer {
         const wide = PILLAR / 32;
         const pillar = A.pillar(boss);
         for (const [x, y] of [at(0), at(3 + wide)]) put(x + y - wide, pillar, x, y);
-        strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide);
+        // (EXITS: floor 1's gate is the stairs up to the town, the art chat's, drawn with the floor: its portcullis is gone)
+        if (!this.dress.stairsUp(game, s)) strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide);
         strips(A.arch(s.alongX, boss, boss && d.want === 0), -wide, 0);
+        // (EXITS, the town's gate: barred until the Fleshmancer is beaten, its bars struck off the first time he comes in
+        // sight of it after, and what is left of them lying at its foot from then on: the art chat's, art/town_ways.ts)
+        const tw = L.town && L.ways && L.doors[L.ways.gate] === d ? this.dress.townWays(game) : null;
+        if (tw && L.ways) {
+          const u = L.ways.unbar;
+          let bars = tw.left;
+          if (u !== undefined && u !== null && u >= 0) {
+            const f = Math.min(tw.unbar.length - 1, Math.floor(u * 30));
+            this.dress.unbarAt(tw, f);
+            bars = tw.unbar[f];
+          } else if (L.ways.barred) bars = tw.bars;
+          strips(bars, -wide, wide - 0.03);
+        }
         continue;
       }
       const wide = POST / 32;
@@ -2421,7 +2446,7 @@ export class Renderer {
     if (L.town && SMITH3.on && art.town.ring3) this.standRing3(game, cam, t);
     if (!L.town && QUEST3.on) this.standQuestStone(game, cam, t);
     this.standHazards(game, cam);
-    this.standDoors(L, cam);
+    this.standDoors(L, cam, game);
     if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
     if (L.ways) this.standWays(L, t, game.time);
     if (L.ways) this.dress.standing(game, this.stage);

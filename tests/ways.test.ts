@@ -54,9 +54,11 @@ const how = (s: Sprite, f: (r: number, g: number, b: number) => boolean): number
 const lightsOf = (s: Sprite, f: (r: number, g: number, b: number) => boolean): number =>
   (s.lights ?? []).filter((l) => f(parseInt(l.color.slice(1, 3), 16), parseInt(l.color.slice(3, 5), 16), parseInt(l.color.slice(5, 7), 16))).length;
 
-test('1. both switches off, and nothing of the game imports either file', () => {
-  assert.equal(CAVE4.on, false, 'CAVE4 is off');
-  assert.equal(TOWN_WAYS.on, false, 'TOWN_WAYS is off');
+// (TOLD, the main chat, 22 Oct 2026: both switches on, his yes to each in the art chat; the game draws them only behind EXITS,
+// game/ways.ts. The game's files that use them: the films' list, the floor's dress, the renderer.)
+test('1. both switches on (his yes); only the films, the dress and the renderer use them, behind EXITS', () => {
+  assert.equal(CAVE4.on, true, 'CAVE4 is on');
+  assert.equal(TOWN_WAYS.on, true, 'TOWN_WAYS is on');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: unknown) => String(x).replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/(cave4|town_ways)\.ts$/.test(f)) continue;
@@ -70,7 +72,7 @@ test('1. both switches off, and nothing of the game imports either file', () => 
       if (/^art\/(cave4|town_ways)$/.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal(users.join(' '), '', 'game files that import them');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/films.ts render/dress.ts', 'game files that import them');
 });
 
 test('2. THE CAVE: the film both ways round, every frame painted, its jolts in it, its last frame the cave as it stands; nothing cyan', () => {

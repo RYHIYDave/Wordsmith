@@ -12,6 +12,13 @@
 //   stair:<floor>:<way>:<x>:<y>  the stairwell's opening on that floor, its steps going down toward +x
 //                              or +y, its anchor on tile (x, y)
 //   shaft:down, shaft:up       the cage coming down as the Fleshmancer dies; the ride up to town
+//   cave:<x|y>                 EXITS: floor 4's wall giving way to the cave, in a face along x or y (art/cave4.ts); with
+//                              the wall standing before it and the cave after, in its two layers
+//   mouth:<x|y>                EXITS: floor 5's mouth, the cave's other end (art/cave4.ts), in its two layers
+//   town:ways:<x|y>            EXITS: the town's stairs down, the shaft's head with its cage, the gate's bars, their
+//                              unbarring and what is left of them, the gate in a plane along x or y (art/town_ways.ts)
+//   town:arrive                EXITS: the cage coming up into the town with him in it (art/town_ways.ts)
+//   up:1:<x|y>                 EXITS: floor 1's stairs up to the town, in its gate's arch (art/town_ways.ts)
 //   things:unfinished          ACT 1: what floor 6's boss throws and leaves (its hurled block tumbling and lying, its
 //                              rockslide's boulders rolling, the terrace cracked under its stomp), painted ahead so
 //                              that none of it is painted in its fight (17 Oct: his "serious slowdown" in the rock throw)
@@ -35,6 +42,9 @@ import { LAIR } from './lair';
 import { cageDown, cageUp } from './shaft';
 import { stairwellKicks, stairwellOpens } from './stairwell_open';
 import { boulderRolling, hurledBlock, stompCracks } from './unfinished';
+import { caveFilm, lairMouth } from './cave4';
+import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
+import type { Strip } from './gates';
 
 /** One of a floor's moments, as the game plays it. */
 export interface MomentFilm {
@@ -55,6 +65,30 @@ export interface StairFilm {
   jolts: number[];
   kicks: number[];
   frames: Sprite[];
+}
+/** EXITS, FLOOR 4: the wall giving way to the cave (the art chat's, art/cave4.ts), anchored at the foot of the wall's face under the middle of the doorway: its frames, the screen's kick at each jolt; the wall standing before; the cave after, under what stands and at the face. */
+export interface CaveWayFilm {
+  fps: number;
+  jolts: number[];
+  kicks: number[];
+  frames: Sprite[];
+  before: Sprite;
+  under: Sprite;
+  over: Sprite;
+}
+/** EXITS, FLOOR 5: the cave's other end, its two layers. */
+export interface MouthWay {
+  under: Sprite;
+  over: Sprite;
+}
+/** EXITS, THE TOWN (art/town_ways.ts): its stairs down; the shaft's head, the cage standing in it, in two layers; the gate's bars, their unbarring frame by frame (30 a second, the screen kicked at each jolt) and what is left. */
+export interface TownWaysArt {
+  stairs: Sprite;
+  head: { back: Sprite; front: Sprite };
+  bars: Strip[];
+  unbar: Strip[][];
+  unbarJolts: number[];
+  left: Strip[];
 }
 /** What an Act 1 boss throws and leaves, painted ahead (`things:<kind>`): each of its things' frames, by name. */
 export interface ThingsFilm {
@@ -108,6 +142,12 @@ export function filmRoom(key: string): number {
   if (kind === 'moment' && Number(a) >= 11) return [47, 26, 48, 4, 14][Number(a) - 11] ?? 50;
   if (kind === 'moment') return a === '4' ? [147, 154, 63][Number(b)] ?? 150 : [88, 48, 52][Number(b)] ?? 90;
   if (kind === 'stair') return 26;
+  // (EXITS: the art chat's ways, measured 22 Oct 2026 in node as the others are, every picture whole: the cave 61.4, the mouth 1.0,
+  // the town's 7.4, the cage coming up 31.0, the stairs up 0.1)
+  if (kind === 'cave') return CAVE_ROOM;
+  if (kind === 'mouth') return 2;
+  if (kind === 'town') return a === 'arrive' ? TOWN_ARRIVE_ROOM : 8;
+  if (kind === 'up') return 1;
   if (kind === 'things') return 12;
   return 57;
 }
@@ -117,8 +157,12 @@ export function stairKey(floor: number, s: { x: number; y: number; way: 'x' | 'y
   return `stair:${floor}:${s.way}:${s.x}:${s.y}`;
 }
 
+/** (EXITS) The cave's film's room and the cage's coming up's, in megabytes: see filmRoom. */
+const CAVE_ROOM = 62;
+const TOWN_ARRIVE_ROOM = 32;
+
 /** Make the film of that name. Throws for a name that is none. (Seconds of work: not where the game is being played.) */
-export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm {
+export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm | CaveWayFilm | MouthWay | TownWaysArt | Sprite {
   const [kind, a, b, c, d] = key.split(':');
   if (kind === 'moments') {
     const list = momentsOf(Number(a));
@@ -141,6 +185,26 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     const m = stairwellOpens(theme, b === 'y' ? 'y' : 'x', [Number(c) || 0, Number(d) || 0]);
     return { fps: m.fps, jolts: [...m.jolts], kicks: [...stairwellKicks(m)], frames: m.frames };
   }
+  // (EXITS: the art chat's ways between the floors)
+  if (kind === 'cave') {
+    const f = caveFilm(a !== 'y');
+    return { fps: 30, jolts: [...f.jolts], kicks: f.jolts.map((_, i) => (i === 0 ? 6 : 4)), frames: f.frames, before: f.before, under: f.under, over: f.over } satisfies CaveWayFilm;
+  }
+  if (kind === 'mouth') {
+    const m = lairMouth(a !== 'y');
+    return { under: m.under, over: m.over } satisfies MouthWay;
+  }
+  if (kind === 'town' && a === 'ways') {
+    const alongX = b !== 'y';
+    const head = townShaft();
+    const u = unbarFilm(alongX);
+    return { stairs: townStairs('x'), head: { back: head.back, front: head.front }, bars: gateBars(alongX), unbar: u.frames, unbarJolts: [...u.jolts], left: gateLeft(alongX) } satisfies TownWaysArt;
+  }
+  if (kind === 'town' && a === 'arrive') {
+    const f = townArrives();
+    return { fps: f.fps, jolts: [...f.jolts], back: f.back, front: f.front, lift: [...f.lift] } satisfies ShaftFilm;
+  }
+  if (kind === 'up') return floorStairsUp(CRYPT_FLOORS[0], b !== 'y');
   if (kind === 'things' && a === 'unfinished') {
     // (its block's four tumbling frames and the one lying; its boulder's eight; its stomp's four cracks: as render/act1_fx/unfinished.ts asks for them)
     return { blocks: [0, 1, 2, 3, 4].map(hurledBlock), boulders: [0, 1, 2, 3, 4, 5, 6, 7].map(boulderRolling), cracks: [0, 1, 2, 3].map(stompCracks) };

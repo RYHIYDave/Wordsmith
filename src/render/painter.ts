@@ -261,17 +261,19 @@ export class Painter {
 
   /**
    * Have a film made (art/films.ts: its key). `soon`: before the floor's other films (the stairwell's
-   * opening and the cage, which a boss's death needs, before the floor's moments). False: it will not be
+   * opening and the cage, which a boss's death needs, before the floor's moments); `now`, before the monsters' pictures
+   * too. False: it will not be
    * (there is no painter, or the device has not the room for it).
    */
-  film(key: string, soon = false): boolean {
+  film(key: string, soon = false, now = false): boolean {
     if (this.state !== 'on') return false;
     if (this.asked.has(key)) return true;
     if (this.small && filmRoom(key) > SMALL_ROOM) return false;
     const lane = this.lane(this.many - 1);
     if (!lane) return false;
     this.asked.add(key);
-    this.ask(lane, { t: 'film', key, pri: soon ? 2 : 3 });
+    // (`now`: before even the monsters' pictures: a small film the place shows as it is come into, EXITS' ways)
+    this.ask(lane, { t: 'film', key, pri: now ? 0.5 : soon ? 2 : 3 });
     return true;
   }
 

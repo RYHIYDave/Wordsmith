@@ -200,7 +200,9 @@ export function makeTown(seed: number): Level {
   ];
   // (EXITS: the shaft's head stands in the hall's near corner, its three tiles by three its own: the fire there goes)
   const shaftOwn = (x: number, y: number): boolean => Math.abs(x - TOWN_SHAFT.x) <= 1 && Math.abs(y - TOWN_SHAFT.y) <= 1;
-  if (EXITS.on && WAYS.on) for (let i = props.length - 1; i >= 0; i--) if (shaftOwn(props[i].x, props[i].y)) props.splice(i, 1);
+  // (and the stairs down theirs, a tile round them clear)
+  const stairOwn = (x: number, y: number): boolean => x >= TOWN_STAIR.x - 1 && x <= TOWN_STAIR.x + TOWN_STAIR.long && y >= TOWN_STAIR.y - 1 && y <= TOWN_STAIR.y + TOWN_STAIR.wide;
+  if (EXITS.on && WAYS.on) for (let i = props.length - 1; i >= 0; i--) if (shaftOwn(props[i].x, props[i].y) || stairOwn(props[i].x, props[i].y)) props.splice(i, 1);
   const floor: Floor = {
     depth: 0,
     seed,
@@ -232,7 +234,7 @@ export function makeTown(seed: number): Level {
     if (EXITS.on) {
       // (EXITS: the stairs down to floor 1, open from the first, its steps walked on by nobody; and the shaft's head, the cage
       // standing in it, its timbers stood on by nobody. The gate is barred or not by the hero's own way: Game.enterTown.)
-      const st = { x: TOWN_STAIR.x, y: TOWN_STAIR.y, way: TOWN_STAIR.way, open: true };
+      const st = { x: TOWN_STAIR.x, y: TOWN_STAIR.y, way: TOWN_STAIR.way, open: true, long: TOWN_STAIR.long, wide: TOWN_STAIR.wide };
       for (const i of stairTiles(floor, st)) level.walk[i] = 0;
       level.ways.stair = st;
       level.ways.stairs = [st];

@@ -59,8 +59,11 @@ import { EMBER } from './props';
 import { CABLE, DARK_FROM, DARK_GONE, DIM_IRON, IRONS, SHAFT, SHAFT_H, SHAFT_W, SMALL_IRON, intoTheDark, paintShaft } from './shaft';
 import { TIMBER } from './crypt';
 
-/** THE SWITCH: off, nothing of the game uses any of this. */
-export const TOWN_WAYS = { on: false };
+/**
+ * THE SWITCH: off, nothing of the game uses any of this. ON (the main chat, 22 Oct 2026): his yes in the art chat by 14:01,
+ * “Yes, on to floors 6–15 (Recommended)”; the game draws it only where its rules have the town's ways, behind EXITS (game/ways.ts).
+ */
+export const TOWN_WAYS = { on: true };
 
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const mul = (a: V3, k: number): V3 => [a[0] * k, a[1] * k, a[2] * k];

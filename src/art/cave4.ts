@@ -56,8 +56,11 @@ import type { Ramp } from './kit';
 import { LAIR, LAIR_ROCK } from './lair';
 import { wallFacePixels } from './ground';
 
-/** THE SWITCH: off, nothing of the game uses any of this. */
-export const CAVE4 = { on: false };
+/**
+ * THE SWITCH: off, nothing of the game uses any of this. ON (the main chat, 22 Oct 2026): his yes in the art chat by 12:51,
+ * “Yes, on to the town (Recommended)”; the game draws it only where its rules have a cave, behind EXITS (game/ways.ts).
+ */
+export const CAVE4 = { on: true };
 
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];

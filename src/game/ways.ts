@@ -64,12 +64,19 @@ export const WAYS = { on: true };
  *     takes him down to floor 5, where he comes out of the cave's other end (`Ways.mouth`).
  */
 export const EXITS = { on: false };
-/** The town's stairs down: the corner of the stairwell's opening and the way its steps go (art/crypt_ways.ts makeStairwell), on the hall's floor (level.ts TOWN). */
-export const TOWN_STAIR = { x: 14, y: 17, way: 'x' as const };
+/**
+ * The town's stairs down: the corner of the opening and the way its steps go, on the hall's floor (level.ts TOWN), and how
+ * big it is: the art chat's (art/town_ways.ts TOWN_STAIRS, 3 tiles long by 2 wide; his yes there by 14:01, 22 Oct 2026, “Yes, on
+ * to floors 6–15 (Recommended)”, to “The stairs down (3 tiles by 2, by the stash)”).
+ */
+export const TOWN_STAIR = { x: 14, y: 17, way: 'x' as const, long: 3, wide: 2 };
 /** The shaft's head in the town: the tile its middle stands on, in the hall's near corner (the bottom of the screen); its three tiles by three are its own. */
 export const TOWN_SHAFT = { x: 20, y: 18 };
-/** Floor 4's wall, crumbling to the cave's mouth: how long from the boss's death until the mouth is open to walk into, in seconds (the stairwell's opening's, until the art chat's film says). */
-export const CAVE_OPENING = 3.5;
+/** Floor 4's wall, crumbling to the cave's mouth: how long from the boss's death until the mouth is open to walk into, in seconds: the art chat's film of it (art/cave4.ts CAVE_OPEN_SECS, 126 frames at 30). */
+export const CAVE_OPENING = 126 / 30;
+/** THE TOWN'S GATE UNBARRED: how near its middle he must come, in tiles, for it to be in sight, the first time after the Fleshmancer is beaten (its film plays then: the art chat's ask); and how long the film is (art/town_ways.ts UNBAR, 78 frames at 30), the gate staying shut while it plays. */
+export const UNBAR_SEEN = 9;
+export const UNBAR_SECS = 78 / 30;
 
 /** The town's gate rises when the hero is this near the middle of its doorway, in tiles; at his pace he is at its bars a little over a second after, as it is 95% up (the art chat's film: tools/scenarios/crypt_gate.mjs). */
 export const GATE_RISE_AT = 6;
@@ -99,6 +106,9 @@ export interface StairWay {
   open: boolean;
   /** THE FIRST FIVE FLOORS: how long since it began to break open, in seconds (none: long since). Its top step takes nobody down until STAIR_OPENING. */
   t?: number;
+  /** (EXITS: the town's stairs) How long and how wide its opening is, in tiles; none: a floor's stairwell, STAIR_LONG by STAIR_WIDE. */
+  long?: number;
+  wide?: number;
 }
 /** How long the stairwell takes to break open, in seconds: the art chat's film of it is 3 to 3.5 s (art/stairwell_open.ts; tests/first5_floors.test.ts). */
 export const STAIR_OPENING = 3.5;
@@ -198,6 +208,8 @@ export interface Ways {
   mouth?: DoorSpot | null;
   /** EXITS, IN TOWN: the gate barred (the Fleshmancer not yet beaten): it does not rise. */
   barred?: boolean;
+  /** (EXITS, the town's gate) Its unbarring: -1, waiting for him to come in sight of it (UNBAR_SEEN); 0 and on, how long since it began (the gate barred until UNBAR_SECS); none: nothing to play. */
+  unbar?: number | null;
 }
 
 /** Plain floor that a thing may be laid on: floor, not cut, no stair, at the floor's own height. */
@@ -264,24 +276,32 @@ export const STAIR_CLEAR = 2;
 
 /** The tiles of an open stairwell that nobody walks on: its opening past the top step (the steps going down into the dark). */
 export function stairTiles(f: Floor, s: StairWay): number[] {
-  return s.way === 'x' ? [s.y * f.w + s.x + 1, s.y * f.w + s.x + 2] : [(s.y + 1) * f.w + s.x, (s.y + 2) * f.w + s.x];
+  // (a floor's stairwell: the two tiles past its top step; the town's stairs, as long and as wide as they are)
+  const along = s.long ? Math.ceil(s.long) - 1 : 2;
+  const across = s.wide ? Math.ceil(s.wide) : 1;
+  const out: number[] = [];
+  for (let j = 0; j < across; j++) for (let k = 1; k <= along; k++) out.push(s.way === 'x' ? (s.y + j) * f.w + s.x + k : (s.y + k) * f.w + s.x + j);
+  return out;
 }
 
 /** Is a body at (x, y) on the stairwell's top step (where its opening meets the floor: the first tile of it)? */
 export function onTopStep(s: StairWay, x: number, y: number): boolean {
   const along = s.way === 'x' ? x - s.x : y - s.y;
   const across = s.way === 'x' ? y - s.y : x - s.x;
-  return along >= -0.1 && along < 0.95 && across >= 0.05 && across < STAIR_WIDE - 0.05;
+  return along >= -0.1 && along < 0.95 && across >= 0.05 && across < (s.wide ?? STAIR_WIDE) - 0.05;
 }
 
 /** The middle of the stairwell's top step: where whoever stood on its opening as it opened is put, and where a touch on it sends the hero. */
 export function topStep(s: StairWay): { x: number; y: number } {
-  return s.way === 'x' ? { x: s.x + 0.5, y: s.y + STAIR_WIDE / 2 } : { x: s.x + STAIR_WIDE / 2, y: s.y + 0.5 };
+  const wide = s.wide ?? STAIR_WIDE;
+  return s.way === 'x' ? { x: s.x + 0.5, y: s.y + wide / 2 } : { x: s.x + wide / 2, y: s.y + 0.5 };
 }
 
 /** The middle of the stairwell's opening. */
 export function stairMiddle(s: StairWay): { x: number; y: number } {
-  return s.way === 'x' ? { x: s.x + STAIR_LONG / 2, y: s.y + STAIR_WIDE / 2 } : { x: s.x + STAIR_WIDE / 2, y: s.y + STAIR_LONG / 2 };
+  const long = s.long ?? STAIR_LONG;
+  const wide = s.wide ?? STAIR_WIDE;
+  return s.way === 'x' ? { x: s.x + long / 2, y: s.y + wide / 2 } : { x: s.x + wide / 2, y: s.y + long / 2 };
 }
 
 /**

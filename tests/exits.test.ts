@@ -28,13 +28,13 @@
 import { test } from 'node:test';
 // @ts-ignore
 import assert from 'node:assert/strict';
-import { doorTiles } from '../src/game/doors';
+import { doorMiddle, doorTiles } from '../src/game/doors';
 import { Game, newGuide } from '../src/game/game';
 import { makeDungeon, makeTown } from '../src/game/level';
 import { emptyControls } from '../src/game/state';
 import type { Controls, GameEvent, Level, Monster } from '../src/game/state';
 import type { Element } from '../src/game/types';
-import { CAVE_OPENING, CURTAIN_SECS, EXITS, GATE_RISE_AT, SHAFT, TOWN_ARRIVE, TOWN_SHAFT, TOWN_STAIR, topStep } from '../src/game/ways';
+import { CAVE_OPENING, CURTAIN_SECS, EXITS, GATE_RISE_AT, SHAFT, TOWN_ARRIVE, TOWN_SHAFT, TOWN_STAIR, UNBAR_SECS, UNBAR_SEEN, topStep } from '../src/game/ways';
 
 const DT = 1 / 60;
 
@@ -138,7 +138,7 @@ test('on, the town\'s stairs: on plain floor, their top step takes him down to f
     g.hero.invuln = 1e9;
     const st = g.level.ways!.stair!;
     assert.ok(st && st.open, 'the stairs are open');
-    assert.deepEqual({ x: st.x, y: st.y, way: st.way }, TOWN_STAIR);
+    assert.deepEqual({ x: st.x, y: st.y, way: st.way, long: st.long, wide: st.wide }, TOWN_STAIR);
     const top = topStep(st);
     g.hero.x = top.x - 1.2;
     g.hero.y = top.y;
@@ -252,8 +252,10 @@ test('on, the cage\'s ride up from floor 5 ends in the town\'s corner: he does n
     ev.push(...g.events);
     assert.equal(g.level.town, true);
     assert.equal(g.wayDepth, 6);
-    assert.ok(ev.some((e) => e.t === 'gateUnbarred'), 'the gate unbarred');
-    assert.equal(g.level.ways!.barred, false);
+    // (its bars still on it: they are struck off the first time he comes in sight of it, the art chat's film)
+    assert.ok(!ev.some((e) => e.t === 'gateUnbarred'), 'not yet: the gate is out of sight');
+    assert.equal(g.level.ways!.barred, true);
+    assert.equal(g.level.ways!.unbar, -1);
     const T = g.level.ways!.shaft!;
     assert.deepEqual({ x: T.x, y: T.y }, TOWN_SHAFT);
     assert.equal(T.state, 'arriving');
@@ -265,6 +267,25 @@ test('on, the cage\'s ride up from floor 5 ends in the town\'s corner: he does n
     assert.equal(T.state, 'still');
     steps(g, 30, walking(-1, -1));
     assert.ok(g.hero.x < x0, 'then he walks out');
+    // (in sight of the gate: its bars are struck off, and it stays shut while they come down; then it rises as he comes)
+    const W = g.level.ways!;
+    const gate = doorMiddle(g.level.doors[W.gate].spot);
+    g.hero.x = gate.x + 0.5;
+    g.hero.y = gate.y + UNBAR_SEEN - 1;
+    const seen: GameEvent[] = [];
+    seen.push(...steps(g, 2, emptyControls()));
+    until(g, 1, () => {
+      seen.push(...g.events);
+      return W.unbar !== -1;
+    });
+    seen.push(...g.events);
+    assert.ok(seen.some((e) => e.t === 'gateUnbarred'), 'the gate unbarred, in sight');
+    assert.equal(W.barred, true, 'shut while its bars come down');
+    g.hero.x = gate.x;
+    g.hero.y = gate.y + 2;
+    until(g, UNBAR_SECS + 0.5, () => W.barred === false);
+    assert.equal(W.barred, false);
+    assert.ok(until(g, 2, () => g.level.doors[W.gate].want === 1) >= 0, 'then it rises as he comes');
     void newGuide;
     void CURTAIN_SECS;
   }));

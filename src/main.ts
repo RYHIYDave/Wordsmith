@@ -1796,9 +1796,21 @@ function start(carried: unknown, hot: HotHook | undefined): void {
         // (the films this place will want: the fifth floor's cage coming down and going up; on the four
         // above it, its stairwell breaking open where it most likely will, and where next, room allowing)
         const W = g.level.ways;
-        if (W?.shaft) {
+        if (W?.shaft && !g.level.town) {
           painter.film('shaft:down', true);
           painter.film('shaft:up', true);
+        }
+        // (EXITS, the art chat's ways: floor 4's wall and cave, floor 5's mouth; the town's stairs, shaft's head and gate's
+        // bars, and the cage coming up into it; floor 1's stairs up: render/dress.ts)
+        if (EXITS.on && W) {
+          if (W.cave) painter.film(`cave:${W.cave.spot.alongX ? 'x' : 'y'}`, true);
+          if (W.mouth) painter.film(`mouth:${W.mouth.alongX ? 'x' : 'y'}`, true, true);
+          const gate = W.gate >= 0 ? g.level.doors[W.gate] : null;
+          if (g.level.town && gate) {
+            if (W.shaft?.state === 'arriving') painter.film('town:arrive', true, true);
+            painter.film(`town:ways:${gate.spot.alongX ? 'x' : 'y'}`, true, true);
+          }
+          if (!g.level.town && g.level.floor.depth === 1 && gate) painter.film(`up:1:${gate.spot.alongX ? 'x' : 'y'}`, true, true);
         }
         const look = g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
         if (W && look >= 1 && look <= 4 && W.stairs.length > 0) {

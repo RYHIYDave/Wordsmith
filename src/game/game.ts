@@ -35,7 +35,7 @@ import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_T
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
-import { CAVE_OPENING, CURTAIN_SECS, EXITS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles, topStep } from './ways';
+import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
@@ -1828,6 +1828,21 @@ export class Game {
       const d = L.doors[W.gate];
       const at = doorMiddle(d.spot);
       const far = Math.hypot(at.x - h.x, at.y - h.y);
+      // (EXITS: the first time after the Fleshmancer is beaten, its bars are struck off as he comes in sight of it (the
+      // art chat's film, art/town_ways.ts unbarFilm), the gate staying shut until they are down)
+      if (L.town && W.unbar !== undefined && W.unbar !== null) {
+        if (W.unbar < 0 && far < UNBAR_SEEN) {
+          W.unbar = 0;
+          this.emit({ t: 'gateUnbarred' });
+          this.msg('The gate is unbarred. Beyond it, the mountain road.', MSG.good);
+        } else if (W.unbar >= 0) {
+          W.unbar += dt;
+          if (W.unbar >= UNBAR_SECS) {
+            W.unbar = null;
+            W.barred = false;
+          }
+        }
+      }
       // (EXITS: barred, it does not rise; once, as he comes near, a line says so)
       if (L.town && W.barred) {
         if (!this.toldBarred && far < GATE_RISE_AT - 2) {
@@ -1983,9 +1998,12 @@ export class Game {
       // (EXITS: up into the hall's corner, in the cage; the gate in the back wall unbarred, the way out to the Quarry)
       this.enterTown(EXITS.on ? 'cage' : null);
       this.cameT = 0;
-      if (EXITS.on && wasBarred && this.wayDepth >= 6) {
-        this.emit({ t: 'gateUnbarred' });
-        this.msg('The gate is unbarred. Beyond it, the mountain road.', MSG.good);
+      // (its bars struck off the first time he comes in sight of it: updateWays)
+      const W = this.level.ways;
+      if (EXITS.on && wasBarred && this.wayDepth >= 6 && W) {
+        W.barred = true;
+        W.unbar = -1;
+        this.toldBarred = true;
       }
       this.msg(FLOOR_NAMES.on ? `${floorTitle(from).level} cleared` : `Dungeon ${from} cleared`, MSG.good);
       return;
