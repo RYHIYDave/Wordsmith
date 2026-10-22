@@ -141,6 +141,11 @@ export function guideBanner(game: Game, touch: boolean): Banner | null {
       const w = guideWord(game);
       return mk('WORDSMITHING', `A power word: ${up(WORDS[w].name)}`, 'Walk over it to take it.');
     }
+    // (EXITS, game/ways.ts: a new game begins in town: the wordsmith's quest, then the stairs down)
+    case 'quest':
+      return mk('WORDSMITHING', 'Talk to the WORDSMITH', PAD_USE.live ? 'He stands in the ring of stones. Go up to him and press B.' : touch ? 'He stands in the ring of stones. Tap him.' : 'He stands in the ring of stones. Go up to him and press E.');
+    case 'stairs':
+      return mk('WORDSMITHING', 'Take the STAIRS down', 'Find the fallen wordsmith, and bring back the stone.');
     // (THE FIRST LEVELS: the fallen wordsmith's quest item, to the wordsmith in town)
     case 'carry':
       return mk('WORDSMITHING', `You carry ${QUEST_ITEM.the}`, 'Take it to the wordsmith in town.');

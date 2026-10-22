@@ -136,7 +136,8 @@ export class FloorDress {
       } else put(shaftStill().down, d - 0.002);
       return;
     }
-    put(sh.state === 'down' ? shaftStill().down : shaftStill().empty);
+    // (EXITS, IN TOWN: the cage standing in the shaft's head, or coming up into it: the floor's own picture of it down, until the art chat's)
+    put(sh.state === 'down' || sh.state === 'still' || sh.state === 'arriving' ? shaftStill().down : shaftStill().empty);
   }
 
   /**

@@ -35,7 +35,7 @@ import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_T
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
-import { CURTAIN_SECS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles } from './ways';
+import { CAVE_OPENING, CURTAIN_SECS, EXITS, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
 import { ALL_WORD_IDS, ATTRS, CLASS_IDS, EQUIP_SLOTS, MELD_IDS, RANK_IDS, RARITY_NAMES, VOLT_MELD_IDS, T_FLOOR, T_PIT, VOICE_IDS, WEAPONS, WORD_IDS } from './types';
@@ -58,7 +58,7 @@ const VOLATILE_ONLY: readonly WordId[] = ['volatile'];
 const RISEN_PACK = -7;
 
 /** THE WAYS (ways.ts): where a way out of a level goes: down the stairwell; through the gate into the first floor, or out of it to town; by a waypoint to town, or back from town. */
-type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut';
+type WayTo = 'down' | 'gateIn' | 'gateOut' | 'warpTown' | 'warpBack' | 'up' | 'on' | 'holdIn' | 'holdOut' | 'stairsIn' | 'quarry';
 
 /**
  * What survives closing the game in the middle of a run: the character and how far they have got.
@@ -87,6 +87,8 @@ export interface RunSave {
   plan?: WordId[];
   /** The fallen wordsmith of the first dungeon has been searched. */
   body?: boolean;
+  /** EXITS: the wordsmith has given the quest for the master rune-stone (game/ways.ts). */
+  asked?: boolean;
   /** The voice chosen for this character. */
   voice?: VoiceId;
   /** How far the first dungeon's prompts have got (absent once they are over). */
@@ -282,6 +284,10 @@ export class Game {
   guide: Guide | null = null;
   /** The fallen wordsmith of this character's first dungeon has been searched. */
   bodySearched = false;
+  /** EXITS (game/ways.ts): the wordsmith has given this hero the quest for the master rune-stone. */
+  questGiven = false;
+  /** EXITS: the barred gate has been spoken of on this visit to town. */
+  private toldBarred = false;
   /** THE WAYS (ways.ts, behind WAYS): the deepest floor whose waypoint the hero has reached, the town's waypoint warping him back to its start (0: none yet). */
   wayDepth = 0;
   /**
@@ -402,7 +408,8 @@ export class Game {
   static forFirstRun(cls: ClassId, seed: number, meta?: Meta): Game {
     const g = new Game(cls, seed, meta);
     g.guide = newGuide();
-    g.enterDungeon();
+    // (EXITS: a new game begins in town, a new player's too: the wordsmith gives the quest, and the stairs lead down)
+    if (!(EXITS.on && WAYS.on)) g.enterDungeon();
     return g;
   }
 
@@ -599,6 +606,8 @@ export class Game {
     // (THE FIRST LEVELS: the quest item, to be taken to town and to the wordsmith)
     // (for a few seconds on finding it and on reaching town with it, then not: QUEST_ITEM.promptSecs)
     if (FIRST_LEVELS.on && h.quest) return this.questPromptT > 0 ? (L.town ? 'ring' : 'carry') : null;
+    // (EXITS: a new game begins in town: first walking, then the wordsmith's quest, then the stairs down)
+    if (EXITS.on && L.town && FIRST_LEVELS.on && !h.ring) return G.walked < GUIDE.steps ? 'move' : this.questGiven ? 'stairs' : 'quest';
     const b = L.body;
     if (b && b.state === 0 && Math.hypot(b.x - h.x, b.y - h.y) < GUIDE.sight && L.visible[b.ty * L.floor.w + b.tx] === 1) return 'body';
     if (G.walked < GUIDE.steps) return 'move';
@@ -720,6 +729,8 @@ export class Game {
       gold: h.gold, potionKills: h.potionKills, depth: this.depth, cleared: this.cleared, kills: this.kills, runTime: this.runTime, maxUid,
       plan: [...this.plan],
       body: this.bodySearched,
+      // (EXITS: nor whether the wordsmith has given his quest, while theirs is off)
+      ...(EXITS.on && this.questGiven ? { asked: true } : {}),
       voice: this.voice,
       guide: this.guide ? { ...this.guide, set: this.guide.set ? { ...this.guide.set } : null } : null,
       wordsBought: this.wordStock.flatMap((w, i) => (w === null ? [i] : [])),
@@ -784,6 +795,7 @@ export class Game {
       for (const w of s.plan) if (WORD_IDS.includes(w) && g.plan.length < TUNE.planMax && !g.plan.includes(w)) g.plan.push(w);
     }
     g.bodySearched = s.body === true;
+    g.questGiven = EXITS.on && s.asked === true;
     // (THE FIRST LEVELS: a save from before them, or made with them off, has the ring lit)
     h.ring = !FIRST_LEVELS.on || s.ring !== false;
     h.quest = s.quest === 'heart' ? 'heart' : null;
@@ -1107,7 +1119,7 @@ export class Game {
   }
 
   /** `by` (THE WAYS): come back through the gate from the first floor (standing just inside it), or by the waypoint (standing on the town's). */
-  enterTown(by: 'gate' | 'way' | null = null): void {
+  enterTown(by: 'gate' | 'way' | 'stairs' | 'cage' | null = null): void {
     this.clearLevel();
     this.level = makeTown(this.seed);
     this.inDungeon = false;
@@ -1122,7 +1134,25 @@ export class Game {
     h.fy = -0.7071;
     const W = this.level.ways;
     if (W && W.way) W.way.awake = this.wayDepth >= 2;
-    if (W && by === 'gate') {
+    // (EXITS: the gate in the back wall barred until the Fleshmancer is beaten: the Prison cleared, his way is on to floor 6)
+    this.toldBarred = false;
+    if (W && EXITS.on) W.barred = this.wayDepth < 6;
+    if (W && EXITS.on && by === 'stairs' && W.stair) {
+      // (up the stairs from floor 1: he comes up out of them, standing before their top step, looking into the hall)
+      const top = topStep(W.stair);
+      h.x = W.stair.way === 'x' ? top.x - 1.1 : top.x;
+      h.y = W.stair.way === 'x' ? top.y : top.y - 1.1;
+      h.fx = W.stair.way === 'x' ? -1 : 0;
+      h.fy = W.stair.way === 'x' ? 0 : -1;
+    } else if (W && EXITS.on && by === 'cage' && W.shaft) {
+      // (up the shaft from floor 5: the cage comes up into the hall's corner with him in it, and opens: `updateWays`)
+      h.x = W.shaft.x + 0.5;
+      h.y = W.shaft.y + 0.5;
+      h.fx = -0.7071;
+      h.fy = -0.7071;
+      W.shaft.state = 'arriving';
+      W.shaft.t = 0;
+    } else if (W && by === 'gate') {
       // (just inside the gate, which is up behind him as he comes through it, and falls once he has walked off: `updateWays`)
       h.x = TOWN_GATE.a + 1.5;
       h.y = TOWN_GATE.line + 2.2;
@@ -1639,7 +1669,7 @@ export class Game {
     const px = this.hero.x;
     const py = this.hero.y;
     // (THE WAYS: on his way out of the level he does nothing more in it)
-    if (this.leaving) c = emptyControls();
+    if (this.leaving || this.arriving()) c = emptyControls();
     this.cameT += dt;
     this.updateHero(dt, c);
     if (this.over) return;
@@ -1709,7 +1739,13 @@ export class Game {
       const d = L.doors[W.gate];
       const at = doorMiddle(d.spot);
       const far = Math.hypot(at.x - h.x, at.y - h.y);
-      if (L.town && d.want === 0 && far < GATE_RISE_AT) this.raiseGate(d);
+      // (EXITS: barred, it does not rise; once, as he comes near, a line says so)
+      if (L.town && W.barred) {
+        if (!this.toldBarred && far < GATE_RISE_AT - 2) {
+          this.toldBarred = true;
+          this.msg('The gate is barred.', MSG.plain);
+        }
+      } else if (L.town && d.want === 0 && far < GATE_RISE_AT) this.raiseGate(d);
       else if (L.town && d.want === 1 && far > GATE_FALL_AT) {
         d.want = 0;
         for (const i of doorTiles(L.floor, d.spot)) {
@@ -1720,15 +1756,39 @@ export class Game {
       }
       const here = Math.floor(h.y) * L.floor.w + Math.floor(h.x);
       if (d.open > 0.85 && doorTiles(L.floor, d.spot).includes(here)) {
-        this.leave(L.town ? 'gateIn' : 'gateOut');
+        // (EXITS: in town the gate leads out to the Quarry; the first floor's gate is the stairs up)
+        this.leave(L.town ? (EXITS.on ? 'quarry' : 'gateIn') : 'gateOut');
         return false;
       }
     }
     // THE STAIRWELL, once open: stepping onto its top step takes him down (once it has broken open).
     if (W.stair && W.stair.open && W.stair.t !== undefined && W.stair.t < STAIR_OPENING) W.stair.t += dt;
     if (W.stair && W.stair.open && (W.stair.t ?? STAIR_OPENING) >= STAIR_OPENING && onTopStep(W.stair, h.x, h.y)) {
+      // (EXITS: in town, the stairs down to floor 1)
+      this.leave(L.town ? 'stairsIn' : 'down');
+      return false;
+    }
+    // EXITS, FLOOR 4: the wall over the cave's mouth crumbling, then gone: walking into the mouth takes him down.
+    const cv = W.cave;
+    if (cv && cv.state === 'falling') {
+      cv.t += dt;
+      if (cv.t >= CAVE_OPENING) {
+        cv.state = 'open';
+        for (const i of doorTiles(L.floor, cv.spot)) {
+          L.walk[i] = 1;
+          L.open[i] = 1;
+        }
+        this.msg('A cave behind the wall. The way down.', MSG.good);
+      }
+    }
+    if (cv && cv.state === 'open' && doorTiles(L.floor, cv.spot).includes(Math.floor(h.y) * L.floor.w + Math.floor(h.x))) {
       this.leave('down');
       return false;
+    }
+    // EXITS, IN TOWN: the cage coming up into the hall's corner with him, then opening: he walks out of it.
+    if (W.shaft && W.shaft.state === 'arriving') {
+      W.shaft.t += dt;
+      if (W.shaft.t >= TOWN_ARRIVE) W.shaft.state = 'still';
     }
     // THE MINE SHAFT, once its cage is down: walking into the cage takes him up to town. He stands in
     // the middle of it, looking out of its gate, and nothing touches him on the way up.
@@ -1829,9 +1889,15 @@ export class Game {
       this.cleared++;
       const from = this.depth;
       // (ACT 1, THE DESCENT: the Prison cleared, the town's waypoint takes him on to the first floor of the descent)
+      const wasBarred = this.wayDepth < 6;
       if (ACT1.on && from === 5) this.wayDepth = Math.max(this.wayDepth, 6);
-      this.enterTown();
+      // (EXITS: up into the hall's corner, in the cage; the gate in the back wall unbarred, the way out to the Quarry)
+      this.enterTown(EXITS.on ? 'cage' : null);
       this.cameT = 0;
+      if (EXITS.on && wasBarred && this.wayDepth >= 6) {
+        this.emit({ t: 'gateUnbarred' });
+        this.msg('The gate is unbarred. Beyond it, the mountain road.', MSG.good);
+      }
       this.msg(FLOOR_NAMES.on ? `${floorTitle(from).level} cleared` : `Dungeon ${from} cleared`, MSG.good);
       return;
     }
@@ -1875,8 +1941,21 @@ export class Game {
       this.inEndless = false;
       this.enterDungeon('gate');
       this.cameT = 0;
+    } else if (to === 'stairsIn') {
+      // (EXITS: down the town's stairs, to the first floor, in at its doorway, the stairs up)
+      this.depth = 1;
+      this.inEndless = false;
+      this.enterDungeon('gate');
+      this.cameT = 0;
+    } else if (to === 'quarry') {
+      // (EXITS: out of the town's gate, onto the mountain: the Quarry, the first floor of the descent)
+      this.depth = 6;
+      this.inEndless = false;
+      this.enterDungeon();
+      this.cameT = 0;
     } else if (to === 'gateOut') {
-      this.enterTown('gate');
+      // (EXITS: the first floor's doorway is the stairs up: he comes up out of the town's)
+      this.enterTown(EXITS.on ? 'stairs' : 'gate');
       this.cameT = 0;
       this.sfx('portal');
     } else if (to === 'warpTown') {
@@ -1943,10 +2022,15 @@ export class Game {
   /** THE WAYS: how dark the screen is, 0 to 1: darkening as he goes down a stairwell or through a gate, lightening as he comes into the next level. (A warp needs none: its column of light hides him.) */
   curtain(): number {
     const l = this.leaving;
-    if (l && (l.to === 'down' || l.to === 'on' || l.to === 'holdIn' || l.to === 'holdOut' || l.to === 'gateIn' || l.to === 'gateOut')) return Math.min(1, l.t / CURTAIN_SECS);
+    if (l && (l.to === 'down' || l.to === 'on' || l.to === 'holdIn' || l.to === 'holdOut' || l.to === 'gateIn' || l.to === 'gateOut' || l.to === 'stairsIn' || l.to === 'quarry')) return Math.min(1, l.t / CURTAIN_SECS);
     // (up the shaft: the cage goes up into the dark, and over the ride's last moments the screen darkens)
     if (l && l.to === 'up') return Math.max(0, Math.min(1, (l.t - (SHAFT.up - CURTAIN_SECS)) / CURTAIN_SECS));
     return Math.max(0, 1 - this.cameT / CURTAIN_SECS);
+  }
+
+  /** EXITS: he is coming up into town in the cage (he does nothing until it has opened). */
+  arriving(): boolean {
+    return this.level.town && this.level.ways?.shaft?.state === 'arriving';
   }
 
   /** THE WAYS: the waypoint he is standing on, awake, if any. */
@@ -5465,6 +5549,14 @@ export class Game {
         W.shaft.state = 'coming';
         W.shaft.t = 0;
         this.sfx('thunder', 0.35);
+      } else if (W && W.cave && W.cave.state === 'wall') {
+        // (EXITS, FLOOR 4: a wall of his hall crumbles, and behind it, a cave: the way down to the Fleshmancer's lair)
+        W.cave.state = 'falling';
+        W.cave.t = 0;
+        const m = doorMiddle(W.cave.spot);
+        this.emit({ t: 'caveOpens', x: m.x, y: m.y });
+        this.emit({ t: 'shake', amount: 5 });
+        this.sfx('thunder', 0.35);
       } else if (W && st) {
         W.stair = st;
         this.openStair(st);
@@ -7711,10 +7803,24 @@ export class Game {
    * HAND_IN (game/defs.ts): what the hero would give the one he stands beside in town, if anything:
    * the master rune-stone, to the wordsmith. Null with HAND_IN off (then it is given by walking up).
    */
-  handInNear(): 'stone' | 'meldstone' | null {
+  handInNear(): 'stone' | 'meldstone' | 'quest' | null {
     if (!HAND_IN.on || !this.level.town || this.stationNear() !== 'wordsmith') return null;
     // (WORDMELDING: the Meldstone, to the wordsmith too)
-    return this.hero.quest ? 'stone' : this.hero.meld === 'stone' ? 'meldstone' : null;
+    // (EXITS: and while his ring is dark, used, he gives the quest for the master rune-stone, once)
+    return this.hero.quest ? 'stone' : this.hero.meld === 'stone' ? 'meldstone' : this.questDue() ? 'quest' : null;
+  }
+
+  /** EXITS: the wordsmith has a quest to give this hero: his ring is dark, the stone not found, the quest not yet given. */
+  questDue(): boolean {
+    return EXITS.on && FIRST_LEVELS.on && !this.practice && !this.hero.ring && !this.hero.quest && !this.questGiven;
+  }
+
+  /** EXITS: the wordsmith, at (x, y), gives the quest for the master rune-stone. */
+  private giveQuest(x: number, y: number): void {
+    this.questGiven = true;
+    this.emit({ t: 'questGiven', x, y });
+    this.sfx('power', 0.6);
+    this.msg(QUEST_ITEM.ask, MSG.word);
   }
 
   /** HAND_IN: give what `handInNear` says, if anything. True if something was given. */
@@ -7723,6 +7829,7 @@ export class Game {
     const st = this.level.stations.find((s) => s.kind === 'wordsmith');
     if (!what || !st) return false;
     if (what === 'meldstone') this.takeMeldstone(st.x, st.y);
+    else if (what === 'quest') this.giveQuest(st.x, st.y);
     else this.lightRing(st.x, st.y);
     return true;
   }
@@ -7770,7 +7877,7 @@ export class Game {
       if (!st) return null;
       // (HAND_IN: beside the one a quest item is for, his prompt says it is given)
       const giving = this.handInNear();
-      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : HAND_IN.prompt;
+      if (giving) return giving === 'meldstone' ? MELD_HAND_IN : giving === 'quest' ? QUEST_ITEM.askPrompt : HAND_IN.prompt;
       return st === 'gate' ? `Gate: dungeon ${this.depth}` : st === 'wordsmith' ? 'Wordsmith' : st === 'armourer' ? 'Armourer' : st === 'mystic' ? 'Mystic' : st === 'lexicon' ? 'Lexicon' : st === 'stranger' ? 'Stranger' : 'Stash';
     }
     const p = this.level.portal;

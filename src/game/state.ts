@@ -831,7 +831,7 @@ export interface StationSpot {
  *   use     the word is on: use that attack (the dead rise for it)
  */
 /** (THE FIRST LEVELS add 'carry', the quest item to be taken to town, and 'ring', to the wordsmith with it.) */
-export type GuideStep = 'move' | 'fight' | 'body' | 'take' | 'carry' | 'ring' | 'smith' | 'use';
+export type GuideStep = 'move' | 'fight' | 'body' | 'take' | 'carry' | 'ring' | 'smith' | 'use' | 'quest' | 'stairs';
 
 /** One line of the fight prompt: a thing to do, and whether it has been done. */
 export interface GuideRow {
@@ -1173,6 +1173,12 @@ export type GameEvent =
   /** (FLOOR_NAMES) the hero has come into a floor: its name, and its level under it */
   /** THE FIRST FIVE FLOORS: the stairwell has begun to break open, its middle here (its film is the renderer's to play: render/dress.ts). */
   | { t: 'stairOpens'; x: number; y: number }
+  /** EXITS (game/ways.ts): floor 4's wall crumbling over the cave's mouth, its middle at (x, y); the mouth is open CAVE_OPENING later. */
+  | { t: 'caveOpens'; x: number; y: number }
+  /** EXITS: the town's gate unbarred, the Fleshmancer beaten (as the hero comes up into town in the cage). */
+  | { t: 'gateUnbarred' }
+  /** EXITS: the wordsmith, at (x, y), gives the quest for the master rune-stone. */
+  | { t: 'questGiven'; x: number; y: number }
   | { t: 'floorName'; name: string; level: string; warn?: string }
   /** One of the town's people has something to say as the hero walks up (see TAGS): who, what, and where they stand. */
   | { t: 'tag'; who: TownVoice; text: string; x: number; y: number }

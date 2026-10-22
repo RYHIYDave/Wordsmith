@@ -1360,7 +1360,15 @@ export const SLOT_OPENS_FIRST: { front: readonly number[]; behind: readonly numb
 // `promptSecs`: how long its line shows at the top, on finding it and on reaching town with it (9 Oct 2026, 22:12, "The
 // quest is too in your face"; asked, "A few seconds, then gone (Recommended)"). `ringSecs`: the ring's powering up before
 // the wordsmith gives the word (22:12, "The wordsmith should give you the word after the altar powers up"; art/quest3.ts POWER.done).
-export const QUEST_ITEM = { name: 'Master Rune-stone', the: 'the MASTER RUNE-STONE', promptSecs: 6, ringSecs: 4.7 };
+export const QUEST_ITEM = {
+  name: 'Master Rune-stone',
+  the: 'the MASTER RUNE-STONE',
+  promptSecs: 6,
+  ringSecs: 4.7,
+  // (EXITS, game/ways.ts: a new game begins in town, and the wordsmith, used, gives the quest; his line, and his prompt before it)
+  ask: 'The wordsmith: "My ring is dark. Another of my craft took the MASTER RUNE-STONE down into the crypt, and never came back. Find him. Bring me the stone."',
+  askPrompt: 'Talk to the wordsmith',
+};
 /**
  * QUEST ITEMS ARE GIVEN BY USING THE ONE THEY ARE FOR, NOT BY WALKING PAST HIM. His word, 13 Oct
  * 2026, 14:25 (to the planning chat): “I’d like the quest turn ins to be triggered by interacting

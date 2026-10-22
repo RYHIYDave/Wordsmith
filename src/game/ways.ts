@@ -40,6 +40,37 @@ export const FIRST5 = { on: true };
 /** THE SWITCH. ON SINCE VERSION 20.2: the owner, 10 Oct 2026, 11:15, of films of them in the game: "Good". */
 export const WAYS = { on: true };
 
+/**
+ * THE WAYS BETWEEN THE FLOORS, behind EXITS (off: the game is as Version 23.9 had it). The owner, 22 Oct 2026,
+ * 11:21 (Pacific): “I’d like to fix the level exits in 4-15.  Level four should end with a wall crumbling down
+ * after the boss is killed and a cave entrance is exposed.  Then you enter the fleshmancer’s lair.  Let’s put the
+ * empty elevator cage in the bottom corner of the prison town so you come up to town from beating the
+ * fleshmancer.  Then you head out the big gate at the top of the town to enter the quarry and head back down the
+ * mountain to the town.  So the gate needs to be blocked or barred up until that point.  You’ll start a new game in
+ * town and the wordsmith will give you a quest to find the key to turn on the altar or whatever it is I can’t
+ * remember.  I guess have some stairs in town also and you go down the stairs to enter level 1.  Then have exits
+ * that lead to the next zone in a natural way as opposed to just a waypoint being plopped down.” Their looks are the
+ * art chat's (his pick, “The art chat (Recommended)”); what they do is this file's and game.ts's:
+ *   A NEW GAME BEGINS IN TOWN, a new player's lessons too; the wordsmith, used, gives the quest for the master
+ *     rune-stone (game.ts, `giveQuest`).
+ *   THE TOWN'S STAIRS DOWN (`TOWN_STAIR`): a stairwell open in the hall's floor; its top step takes him to floor 1,
+ *     where he comes in at the first floor's doorway (the stairs up: walked into, back up to town, by the stairs).
+ *   THE TOWN'S GATE, in its back wall: barred until the Fleshmancer is beaten (`Game.wayDepth` < 6); then it
+ *     rises as he comes, as it always has, and leads out to the Quarry, floor 6.
+ *   THE SHAFT'S HEAD in the hall's near corner (`TOWN_SHAFT`), the cage standing in it: the ride up from floor 5
+ *     ends there.
+ *   FLOOR 4'S CAVE (`placeCave`): three tiles of a back wall of the boss's hall, cut through as a gate's doorway is,
+ *     the wall standing over it until the boss dies; then it crumbles (`CAVE_OPENING`) and walking into the mouth
+ *     takes him down to floor 5, where he comes out of the cave's other end (`Ways.mouth`).
+ */
+export const EXITS = { on: false };
+/** The town's stairs down: the corner of the stairwell's opening and the way its steps go (art/crypt_ways.ts makeStairwell), on the hall's floor (level.ts TOWN). */
+export const TOWN_STAIR = { x: 14, y: 17, way: 'x' as const };
+/** The shaft's head in the town: the tile its middle stands on, in the hall's near corner (the bottom of the screen); its three tiles by three are its own. */
+export const TOWN_SHAFT = { x: 20, y: 18 };
+/** Floor 4's wall, crumbling to the cave's mouth: how long from the boss's death until the mouth is open to walk into, in seconds (the stairwell's opening's, until the art chat's film says). */
+export const CAVE_OPENING = 3.5;
+
 /** The town's gate rises when the hero is this near the middle of its doorway, in tiles; at his pace he is at its bars a little over a second after, as it is 95% up (the art chat's film: tools/scenarios/crypt_gate.mjs). */
 export const GATE_RISE_AT = 6;
 /** ... and falls again once he is further than this. */
@@ -91,9 +122,11 @@ export interface WayPoint {
 export interface ShaftWay {
   x: number;
   y: number;
-  state: 'empty' | 'coming' | 'down' | 'going';
+  state: 'empty' | 'coming' | 'down' | 'going' | 'still' | 'arriving';
   t: number;
 }
+/** EXITS: THE SHAFT'S HEAD IN TOWN: the cage standing there ('still'), or coming up with him in it from floor 5 ('arriving', `t` seconds since: TOWN_ARRIVE long). Walking into it in town takes him nowhere. How long the cage takes to come up into town and open its gate, in seconds, until the art chat's film says (the ride up's own, art/shaft.ts cageUp). */
+export const TOWN_ARRIVE = 101 / 30;
 /**
  * The shaft's times, in seconds, each the art chat's film's own (art/shaft.ts: cageDown, 129 frames at
  * 30 a second, its cage striking the catches at frames 50 and 60; cageUp, 101 frames, its gate slamming
@@ -155,6 +188,16 @@ export interface Ways {
    * him on, down the mountain to the next floor (from the tenth, the Fen, to town: the siege broken).
    */
   onward?: WayPoint | null;
+  /**
+   * EXITS, FLOOR 4: the cave's mouth in a back wall of the boss's hall (its doorway, cut as a gate's is), and how its
+   * wall is: standing over it while the boss lives ('wall'); crumbling as he dies ('falling', `t` seconds since); gone
+   * ('open': walking into the mouth takes him down to floor 5).
+   */
+  cave?: { spot: DoorSpot; state: 'wall' | 'falling' | 'open'; t: number } | null;
+  /** EXITS, FLOOR 5: the cave's other end, in a back wall of the first room, where he comes in from floor 4 (nobody goes back into it). */
+  mouth?: DoorSpot | null;
+  /** EXITS, IN TOWN: the gate barred (the Fleshmancer not yet beaten): it does not rise. */
+  barred?: boolean;
 }
 
 /** Plain floor that a thing may be laid on: floor, not cut, no stair, at the floor's own height. */
@@ -274,7 +317,20 @@ export function placeWay(f: Floor, free: (i: number) => boolean): WayPoint | nul
  * before it is taken away: level.ts, `makeDungeon`, by `beforeGate`.)
  */
 export function placeFirstGate(f: Floor): DoorSpot | null {
-  const r = f.rooms[0];
+  return placeInBackWall(f, f.rooms[0]);
+}
+
+/**
+ * EXITS: WHERE FLOOR 4'S CAVE GOES: three tiles of a back wall of the boss's hall, chosen as the first floor's gate's
+ * are (`placeInBackWall`: the dark beyond, nothing standing before it, the middle of its wall). Null where the hall
+ * has none.
+ */
+export function placeCave(f: Floor): DoorSpot | null {
+  return placeInBackWall(f, f.rooms.find((r) => r.kind === 'boss'));
+}
+
+/** Three tiles of a back wall of room `r` for a doorway into the dark, as `placeFirstGate` says; null where none will do. */
+function placeInBackWall(f: Floor, r: Floor['rooms'][number] | undefined): DoorSpot | null {
   if (!r) return null;
   const tile = (x: number, y: number): number => (x < 0 || y < 0 || x >= f.w || y >= f.h ? -1 : f.tiles[y * f.w + x]);
   // (what stands on the floor: what may be taken away for the gate, a brazier, a barrel, an urn, a pillar, counts against a place; a chest or a lever rules it out)

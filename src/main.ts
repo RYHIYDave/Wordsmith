@@ -58,7 +58,7 @@ import { PINE_PATH } from './game/act1_layout';
 import { drawBossCard, drawFloorCard } from './ui/cards';
 import type { BossCard, FloorCard } from './ui/cards';
 import { DOORS, doorMiddle, doorTiles } from './game/doors';
-import { WAYS, stairMiddle, topStep } from './game/ways';
+import { EXITS, WAYS, stairMiddle, topStep } from './game/ways';
 import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
@@ -543,7 +543,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
   /** What a character is told on first setting foot in the town. */
   const welcome = (g: Game): void => {
     const banked = WORD_IDS.some((w) => meta.lexicon[w] > 0) || meta.stash.some((it) => it !== null);
-    g.msg(banked ? 'The Lexicon and the stash hold what earlier characters left.' : 'The gate leads to the first dungeon.', THEME.text);
+    // (EXITS, game/ways.ts: the way to the first floor is the stairs)
+    g.msg(banked ? 'The Lexicon and the stash hold what earlier characters left.' : EXITS.on ? 'The stairs lead down to the first floor.' : 'The gate leads to the first dungeon.', THEME.text);
   };
 
   /**
