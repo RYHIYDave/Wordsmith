@@ -10,7 +10,7 @@
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import { P } from './palette';
-import { ALL_WORD_IDS, MELD_IDS, MELD_OF } from '../game/types';
+import { ALL_WORD_IDS, MELD_IDS, MELD_OF, RANK_IDS, RANK_OF } from '../game/types';
 import type { AbilityId, Element, IconKey, MeldId, WordId } from '../game/types';
 import { makeAbilityIcons } from './ability_icons';
 
@@ -66,6 +66,12 @@ export const WORD_COLOR: Record<WordId, string> = {
   hailstorm: '#e8f0c0',
   frostbite: '#6898b0',
   contagion: '#90e0a0',
+  // (RANK II: a ranked word is in its word's colour)
+  power2: P.bl4,
+  fire2: P.fr4,
+  frost2: P.bu4,
+  lightning2: P.lt3,
+  poison2: P.vn4,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -957,7 +963,14 @@ export const GLYPH: Record<WordId, readonly string[]> = {
   frostbite: ['XXXXXX', 'X.XX.X', '..XX..', '..oo..', '..XX..', '...X..'],
   // what one passes to the next
   contagion: ['XX..XX', 'XX..XX', '..oo..', '..oo..', 'XX..XX', 'XX..XX'],
+  // (RANK II: a ranked word carves its word's rune; filled in below)
+  power2: [],
+  fire2: [],
+  frost2: [],
+  lightning2: [],
+  poison2: [],
 };
+for (const r of RANK_IDS) GLYPH[r] = GLYPH[RANK_OF[r].word];
 
 /** The lighter tone used for each glyph's glowing core. */
 export const WORD_GLOW: Record<WordId, string> = {
@@ -985,7 +998,14 @@ export const WORD_GLOW: Record<WordId, string> = {
   hailstorm: '#f4f8e0',
   frostbite: '#b4ccd8',
   contagion: '#c8f0d0',
+  // (RANK II: filled in below, its word's glow)
+  power2: '',
+  fire2: '',
+  frost2: '',
+  lightning2: '',
+  poison2: '',
 };
+for (const r of RANK_IDS) WORD_GLOW[r] = WORD_GLOW[RANK_OF[r].word];
 
 function runeSprite(word: WordId): Sprite {
   // the blank tablet: lit top and left edge (1), face (2), shadowed bottom and right edge (3)
@@ -1025,6 +1045,12 @@ function runeSprite(word: WordId): Sprite {
     for (const x of [2, 3, 4]) p.set(x, 10, WORD_COLOR[of[0]]);
     for (const x of [7, 8, 9]) p.set(x, 10, WORD_COLOR[of[1]]);
   }
+  // (RANK II: a ranked word's stone carries its rank along its foot, two bright marks for II)
+  const rk = (RANK_OF as Partial<Record<WordId, { word: WordId; rank: number }>>)[word];
+  if (rk) {
+    const at = rk.rank === 2 ? [[3, 4], [7, 8]] : [];
+    for (const xs of at) for (const x of xs) p.set(x, 10, WORD_GLOW[word]);
+  }
   return p.outline(P.ink).sprite(6, 10);
 }
 
@@ -1044,7 +1070,7 @@ export function useMeldArt(art: IconArt, ramp: Record<MeldId, readonly string[]>
 
 function makeWordRunes(): Record<WordId, Sprite> {
   const out = {} as Record<WordId, Sprite>;
-  for (const w of ALL_WORD_IDS) out[w] = runeSprite(w);
+  for (const w of [...ALL_WORD_IDS, ...RANK_IDS]) out[w] = runeSprite(w);
   return out;
 }
 

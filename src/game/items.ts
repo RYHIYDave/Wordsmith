@@ -21,7 +21,7 @@
 import type { RNG } from '../engine/rng';
 import { CLASSES } from './defs';
 import type { Affix, BaseWordId, ClassId, IconKey, Imbue, Item, Limit, OffhandKind, OldWeaponKind, Rarity, Slot, StatKey, StatMod, WeaponKind, WordId } from './types';
-import { MELD_OF, SLOTS } from './types';
+import { MELD_OF, RANK_OF, SLOTS } from './types';
 
 type Range = readonly [number, number];
 type Three<T> = readonly [T, T, T];
@@ -1034,7 +1034,7 @@ export function imbueRules(word: WordId): { slots: readonly Slot[]; stats: StatK
 /** The 1-2 modifiers this word can become on this slot at this item level. Never empty. */
 export function imbueOptions(word: WordId, slot: Slot, ilvl: number): ImbueOption[] {
   // (WORDMELDING: a melded word is for attacks only, for now, his words: nothing on gear)
-  if (word in MELD_OF) return [];
+  if (word in MELD_OF || word in RANK_OF) return [];
   const level = cleanLevel(ilvl);
   // The table covers every word and slot; the fallbacks only keep a bad save from breaking the game.
   const rules = IMBUE_TABLE[word as BaseWordId] ?? IMBUE_TABLE.power;
@@ -1081,6 +1081,7 @@ export function imbueOptionsFor(item: Item, word: WordId): ImbueOption[] {
 /** Why this word cannot be burned into this piece, or null if it can. */
 export function imbueProblem(item: Item, word: WordId): string | null {
   if (word in MELD_OF) return 'A melded word goes on attacks only';
+  if (word in RANK_OF) return 'A ranked word goes on attacks only';
   if (itemRoom(item) <= 0) return 'That piece is full';
   if (imbueOptionsFor(item, word).length === 0) return 'It already has what this word gives';
   return null;

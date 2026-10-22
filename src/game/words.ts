@@ -7,7 +7,8 @@ import { ATTR_GIVES, ATTR_NAME, ATTR_SPLIT, CLASSES, FRENZY, GUARD, HEAVY, MANA_
 import type { Limit, SkillDef } from './defs';
 import type { Derived, Resolved } from './state';
 import type { Attr, ClassId, Element, MeldId, WeaponKind, WordId } from './types';
-import { MELD_TUNE, isDamageWord, isMeld, partsOf } from './melds';
+import { RANK_OF } from './types';
+import { MELD_TUNE, RANK_TUNE, isDamageWord, isMeld, isRank, partsOf, rankOf } from './melds';
 
 const pct = (n: number): string => `${Math.round(n)}%`;
 
@@ -73,6 +74,14 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     const a = (m && partsOf(m).includes(w) ? wordAttr(m) : wordAttr(w)) ?? attr;
     return a === 'str' ? d.str : a === 'dex' ? d.dex : d.int;
   };
+  // RANK II (game/melds.ts, behind RANK2): a ranked word on this side is its word half as strong again. The word's own
+  // figure grows; what the attribute adds stays on top, as now (his table of 5 Oct 2026: "Your stats add on top").
+  const rankIn = (side: readonly (WordId | null)[], w: WordId): number => {
+    const x = side.find((y) => y !== null && isRank(y) && RANK_OF[y].word === w);
+    return x ? rankOf(x) : 1;
+  };
+  const rk = (side: readonly (WordId | null)[], w: WordId): number => 1 + RANK_TUNE.step * (rankIn(side, w) - 1);
+  const rn = (side: readonly (WordId | null)[], w: WordId): string => ['', '', ' II', ' III', ' IV', ' V'][rankIn(side, w)] ?? '';
   let dmgMult = def.dmg * (1 + (prim * ATTR_GIVES.primaryDmg) / 100);
   let size = d.area;
   let rate = d.aps;
@@ -96,15 +105,16 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   // ----- in front: the hit -----
   if (has(front, 'power')) {
     const a = growsBy(front, 'power');
-    const dmg = 25 + 0.6 * a;
-    const big = 20 + 0.3 * a;
+    const k = rk(front, 'power');
+    const dmg = 25 * k + 0.6 * a;
+    const big = 20 * k + 0.3 * a;
     dmgMult *= 1 + dmg / 100;
     size *= 1 + big / 100;
     if (single) {
       r.splash = Math.max(r.splash, 1.2);
       r.splashDmg = Math.max(r.splashDmg, 0.5);
     }
-    lines.push(`Power: +${pct(dmg)} damage, +${pct(big)} size${single ? ', splashes nearby enemies' : ''}.`);
+    lines.push(`Power${rn(front, 'power')}: +${pct(dmg)} damage, +${pct(big)} size${single ? ', splashes nearby enemies' : ''}.`);
   }
   if (has(front, 'swift')) {
     const a = growsBy(front, 'swift');
@@ -145,31 +155,31 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     );
   }
   if (has(front, 'fire')) {
-    const burn = 30 + 0.8 * growsBy(front, 'fire');
+    const burn = 30 * rk(front, 'fire') + 0.8 * growsBy(front, 'fire');
     r.ignite = burn / 100;
     if (single) {
       r.splash = Math.max(r.splash, 1.5);
       r.splashDmg = 1;
     }
-    lines.push(`Flame: fire damage${single ? ', explodes on contact' : ''}, burns for ${pct(burn)} more over 3 s.`);
+    lines.push(`Flame${rn(front, 'fire')}: fire damage${single ? ', explodes on contact' : ''}, burns for ${pct(burn)} more over 3 s.`);
   }
   if (has(front, 'frost')) {
-    const slow = Math.min(70, 30 + 0.3 * growsBy(front, 'frost'));
+    const slow = Math.min(70, 30 * rk(front, 'frost') + 0.3 * growsBy(front, 'frost'));
     r.chill = slow / 100;
     if (single) {
       r.splash = Math.max(r.splash, 1.5);
       r.splashDmg = 1;
     }
-    lines.push(`Frost: frost damage${single ? ', bursts on contact' : ''}, slows by ${pct(slow)}; a second hit freezes.`);
+    lines.push(`Frost${rn(front, 'frost')}: frost damage${single ? ', bursts on contact' : ''}, slows by ${pct(slow)}; a second hit freezes.`);
   }
   if (has(front, 'lightning')) {
     const a = growsBy(front, 'lightning');
-    const arc = 40 + 0.5 * a;
+    const arc = 40 * rk(front, 'lightning') + 0.5 * a;
     r.arcs = 2 + Math.floor((ATTR_SPLIT.on ? a : d.int) / 40);
     r.arcDmg = arc / 100;
     // (THUNDER: one big bolt instead of arcs: its twist, below)
     if (meld === 'thunder') lines.push('Lightning: lightning damage.');
-    else lines.push(`Lightning: lightning damage, arcs to ${r.arcs} more enemies for ${pct(arc)}.`);
+    else lines.push(`Lightning${rn(front, 'lightning')}: lightning damage, arcs to ${r.arcs} more enemies for ${pct(arc)}.`);
   }
   if (has(front, 'leech')) {
     r.leech = 1 + 0.08 * growsBy(front, 'leech');
@@ -177,11 +187,11 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   }
   if (has(front, 'poison')) {
     // a weaker hit, and the poison does the work: every hit adds a dose
-    const dose = 20 + 0.4 * growsBy(front, 'poison');
+    const dose = 20 * rk(front, 'poison') + 0.4 * growsBy(front, 'poison');
     r.poison = dose / 100;
     // (BLIGHT: the hit is not weakened)
     if (meld !== 'blight') dmgMult *= 0.8;
-    lines.push(`Poison: ${meld === 'blight' ? 'poisons' : 'hits 20% softer; poisons'} for ${pct(dose)} of the hit a second for ${TUNE.poisonTime} s. Up to ${TUNE.poisonStacks} doses add up.`);
+    lines.push(`Poison${rn(front, 'poison')}: ${meld === 'blight' ? 'poisons' : 'hits 20% softer; poisons'} for ${pct(dose)} of the hit a second for ${TUNE.poisonTime} s. Up to ${TUNE.poisonStacks} doses add up.`);
   }
   if (has(front, 'volatile')) {
     const boom = 12 + 0.2 * growsBy(front, 'volatile');
@@ -225,8 +235,8 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
   // ----- behind: the wake -----
   let softer = false;
   if (has(behind, 'power')) {
-    r.might = 6 + 0.1 * growsBy(behind, 'power');
-    lines.push(`of Power: each hit that lands adds +${pct(r.might)} damage for 5 s (up to 5 times).`);
+    r.might = 6 * rk(behind, 'power') + 0.1 * growsBy(behind, 'power');
+    lines.push(`of Power${rn(behind, 'power')}: each hit that lands adds +${pct(r.might)} damage for 5 s (up to 5 times).`);
   }
   if (has(behind, 'swift')) {
     r.haste = 15 + 0.2 * growsBy(behind, 'swift');
@@ -242,19 +252,21 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     const a = growsBy(behind, w);
     softer = true;
     r.pierce = true;
+    const k = rk(behind, w);
+    const tag = rn(behind, w);
     if (w === 'fire') {
-      const dps = 25 + 0.6 * a;
+      const dps = 25 * k + 0.6 * a;
       r.zone = { kind: 'burn', element: 'fire', dps: dps / 100, slow: 0, dur: 4 };
-      lines.push(`of Flame: passes through, leaves ground that burns for ${pct(dps)} a second.`);
+      lines.push(`of Flame${tag}: passes through, leaves ground that burns for ${pct(dps)} a second.`);
     } else if (w === 'frost') {
-      const slow = Math.min(75, 40 + 0.3 * a);
-      const dps = 10 + 0.2 * a;
+      const slow = Math.min(75, 40 * k + 0.3 * a);
+      const dps = 10 * k + 0.2 * a;
       r.zone = { kind: 'ice', element: 'frost', dps: dps / 100, slow: slow / 100, dur: 4 };
-      lines.push(`of Frost: passes through, leaves ice that slows by ${pct(slow)}.`);
+      lines.push(`of Frost${tag}: passes through, leaves ice that slows by ${pct(slow)}.`);
     } else {
-      const zap = 30 + 0.6 * a;
+      const zap = 30 * k + 0.6 * a;
       r.zone = { kind: 'storm', element: 'lightning', dps: zap / 100, slow: 0, dur: 4 };
-      lines.push(`of Lightning: passes through, leaves a storm that strikes for ${pct(zap)}.`);
+      lines.push(`of Lightning${tag}: passes through, leaves a storm that strikes for ${pct(zap)}.`);
     }
     break; // one element behind
   }
@@ -264,9 +276,9 @@ export function resolveSkill(def: SkillDef, front: readonly (WordId | null)[], b
     lines.push(`of Leeching: enemies it kills drop a life orb ${pct(chance)} of the time.`);
   }
   if (has(behind, 'poison')) {
-    const dose = 25 + 0.5 * growsBy(behind, 'poison');
+    const dose = 25 * rk(behind, 'poison') + 0.5 * growsBy(behind, 'poison');
     r.cloud = dose / 100;
-    lines.push(`of Venom: leaves a cloud that poisons for ${pct(dose)} of the hit a second.`);
+    lines.push(`of Venom${rn(behind, 'poison')}: leaves a cloud that poisons for ${pct(dose)} of the hit a second.`);
   }
   if (has(behind, 'volatile')) {
     const boom = 70 + growsBy(behind, 'volatile');

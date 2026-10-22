@@ -13,7 +13,7 @@ import { P } from '../art/palette';
 import { drawText, textWidth, wrapText } from '../engine/font';
 import { WORDS } from '../game/defs';
 import type { Game } from '../game/game';
-import { MELD, MELD_DUST_COLOR, MELD_TUNE, isMeld } from '../game/melds';
+import { MELD, MELD_DUST_COLOR, MELD_TUNE, RANK2, isMeld, isRank, rankUp } from '../game/melds';
 import type { Meta } from '../game/state';
 import type { WordId } from '../game/types';
 import type { Art } from '../render/render';
@@ -62,11 +62,18 @@ export function meldSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Panels, i
   const bw = r.w - 2 * SIDE_M;
   const bodyY = r.y + 2 + sideHead(ui) + 2;
   // (a word laid in that is no longer the hero's to give, sold or set in an attack since: it comes out)
+  // (RANK II: the same word laid in twice takes two of it)
   for (let i = 0; i < 2; i++) {
     const w = st.meldIn[i];
-    if (w && (h.words[w] ?? 0) <= 0) st.meldIn[i] = null;
+    if (w && (h.words[w] ?? 0) < st.meldIn.filter((x) => x === w).length) st.meldIn[i] = null;
   }
-  const intro = wrapText('Two damage words and runedust go in; one melded word comes out. Both words are used up. What comes out is found by trying.', bw, 'small');
+  const intro = wrapText(
+    RANK2.on
+      ? 'Two damage words and runedust go in; one word comes out. Two different words make a melded word, found by trying. Two of the same make that word a rank higher.'
+      : 'Two damage words and runedust go in; one melded word comes out. Both words are used up. What comes out is found by trying.',
+    bw,
+    'small',
+  );
   const dustY = bodyY + 1 + intro.length * 6 + 4;
   const rowY = dustY + 12;
   const gap = 16;
@@ -85,10 +92,12 @@ export function meldSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Panels, i
 
   /** Why word `w` cannot be laid in, or null if it can. */
   const problem = (w: WordId): string | null => {
-    if ((h.words[w] ?? 0) <= 0) return 'No spare word';
+    const laid = st.meldIn.filter((x) => x === w).length;
+    if ((h.words[w] ?? 0) <= laid) return laid ? 'No second one to give' : 'No spare word';
+    if (isRank(w)) return 'Rank II is the top, for now';
     if (isMeld(w)) return 'A melded word melds no further';
     if (WORDS[w].kind !== 'damage') return 'Only damage words meld';
-    if (st.meldIn.includes(w)) return 'Two different words';
+    if (st.meldIn.includes(w) && !RANK2.on) return 'Two different words';
     if (!next) return 'Both hollows are full';
     return null;
   };
@@ -133,7 +142,7 @@ export function meldSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Panels, i
     wordProblem: (w) => problem(w),
     wordDrop: (w) => lay(w),
     wordRead: (w) => [{ text: `Let go, and ${WORDS[w].name} is laid in to be melded.`, color: THEME.accent, small: true }],
-    wordHint: (w) => (WORDS[w].kind === 'damage' ? 'The wordsmith melds two damage words into one.' : null),
+    wordHint: (w) => (WORDS[w].kind === 'damage' ? (RANK2.on ? 'The wordsmith melds two damage words into one, or two of one word into its next rank.' : 'The wordsmith melds two damage words into one.') : null),
     wordButtons: (w) => [{ label: 'TO THE MELD', act: () => lay(w), lit: problem(w) === null, disabled: problem(w) !== null }],
 
     draw(over: SideOver): void {
@@ -168,8 +177,13 @@ export function meldSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Panels, i
       const mid = rowY + Math.floor(CELL / 2) - 4;
       drawText(g, '+', x0 + CELL + Math.floor(gap / 2), mid, THEME.dim, { align: 'center' });
       drawText(g, '=', x0 + 2 * CELL + gap + Math.floor(gap / 2), mid, THEME.dim, { align: 'center' });
+      // (RANK II: two of the same word: what it makes is plain, and is shown before it is made)
+      const up = !made && a && b && a === b && RANK2.on ? rankUp(a) : null;
       if (made) drawWordTile(ui, art, outR.x, outR.y, CELL, CELL, made.word, 'name', { stone: true, lit: true, edge: WORD_COLOR[made.word] });
-      else {
+      else if (up) {
+        ui.box(outR.x, outR.y, CELL, CELL, THEME.slot, THEME.edge);
+        drawWordTile(ui, art, outR.x, outR.y, CELL, CELL, up, 'name', { stone: true, lit: !why, alpha: why ? 0.45 : 0.85 });
+      } else {
         ui.box(outR.x, outR.y, CELL, CELL, THEME.slot, THEME.edge);
         drawText(g, '?', outR.x + Math.floor(CELL / 2), mid, a && b && !why ? MELD_DUST_COLOR : THEME.faint, { align: 'center' });
       }
@@ -177,9 +191,16 @@ export function meldSide(ui: Ui, game: Game, art: Art, meta: Meta, st: Panels, i
       let y = rowY + CELL + 7;
       const room = btn.y - 4;
       if (made && !(inv.sel || inv.word || inv.pending || inv.result)) {
-        drawText(g, made.first ? 'A NEW WORD, FOUND' : 'MELDED', x0, y, made.first ? MELD_DUST_COLOR : THEME.dim, { font: 'small' });
+        const title = isRank(made.word) ? `${WORDS[made.word].name.toUpperCase()}, MADE` : made.first ? 'A NEW WORD, FOUND' : 'MELDED';
+        drawText(g, title, x0, y, made.first ? MELD_DUST_COLOR : THEME.dim, { font: 'small' });
         y += 8;
         drawWordPage(g, meta, made.word, x0, y, bw, room - y, false, true);
+      } else if (up && !(inv.sel || inv.word || inv.pending || inv.result)) {
+        // (RANK II: what two of the same word make is no secret: it is said before it is made)
+        drawText(g, `MAKES ${WORDS[up].name.toUpperCase()}`, x0, y, WORD_COLOR[up], { font: 'small' });
+        y += 8;
+        if (y + 6 <= room) y = small(ui, WORDS[up].about, x0, y, bw, THEME.text);
+        if (y + 6 <= room) y = small(ui, `In front and behind, ${WORDS[up].frontText.charAt(0).toLowerCase()}${WORDS[up].frontText.slice(1)}`, x0, y, bw, THEME.dim);
       } else if (!(inv.sel || inv.word || inv.pending || inv.result)) {
         if (!a && !b && y + 12 <= room) small(ui, T ? 'Tap a damage word of yours, then a hollow. Or drag it here.' : 'Click a damage word of yours, then a hollow. Or drag it here.', x0, y, bw, THEME.faint);
       }

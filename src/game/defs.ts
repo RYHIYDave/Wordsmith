@@ -251,7 +251,7 @@ export const ATTR_GIVES = {
  * ONE DAMAGE WORD ON EACH SIDE (his answer, 8 Oct, 16:53: "Yes, one a side (Recommended)"): the doc
  * "Wordsmith: The New Words".
  */
-export type WordKind = 'damage' | 'shape' | 'meld';
+export type WordKind = 'damage' | 'shape' | 'meld' | 'rank';
 
 // THE NEW WORDS' NUMBERS (Version 19.3): the starting points of his doc "Wordsmith: The New Words"
 // (his yes, 8 Oct 2026, 16:53: "Yes, as it is (Recommended)"), to be tuned once he has played them.
@@ -343,6 +343,13 @@ export const WORDS: Record<WordId, WordDef> = {
   hailstorm: { id: 'hailstorm', kind: 'meld', of: MELD_OF.hailstorm, name: 'Hailstorm', front: 'Hailstorm', behind: 'of the Hailstorm', attr: 'int', element: 'frost', about: 'Frost and Lightning, melded.', frontText: 'Arcs chill everything they touch. Frozen enemies pass arcs on further.', behindText: 'A storm of ice that slows and strikes.', monsterText: '' },
   frostbite: { id: 'frostbite', kind: 'meld', of: MELD_OF.frostbite, name: 'Frostbite', front: 'Frostbite', behind: 'of Frostbite', attr: 'int', element: 'frost', about: 'Frost and Poison, melded.', frontText: 'Chilled enemies lose life over time, and frozen ones twice as fast.', behindText: 'The ice on the ground poisons what crosses it.', monsterText: '' },
   contagion: { id: 'contagion', kind: 'meld', of: MELD_OF.contagion, name: 'Contagion', front: 'Contagious', behind: 'of Contagion', attr: 'int', element: 'lightning', about: 'Lightning and Poison, melded.', frontText: 'Every enemy an arc touches is poisoned.', behindText: 'The poison cloud shocks whatever stands in it.', monsterText: '' },
+  // (RANK II, behind RANK2: each a damage word at its second rank, two of it melded at the wordsmith; it reads as
+  // its word in an attack's name, and its rune stone and its own name carry the rank)
+  power2: { id: 'power2', kind: 'rank', name: 'Power II', front: 'Power', behind: 'of Power', attr: 'str', element: null, about: 'Two Power, melded: Power at rank II.', frontText: 'As Power, half as strong again.', behindText: 'As of Power, half as strong again.', monsterText: '' },
+  fire2: { id: 'fire2', kind: 'rank', name: 'Flame II', front: 'Flame', behind: 'of Flame', attr: 'int', element: 'fire', about: 'Two Flame, melded: Flame at rank II.', frontText: 'As Flame, half as strong again.', behindText: 'As of Flame, half as strong again.', monsterText: '' },
+  frost2: { id: 'frost2', kind: 'rank', name: 'Frost II', front: 'Frost', behind: 'of Frost', attr: 'int', element: 'frost', about: 'Two Frost, melded: Frost at rank II.', frontText: 'As Frost, half as strong again.', behindText: 'As of Frost, half as strong again.', monsterText: '' },
+  lightning2: { id: 'lightning2', kind: 'rank', name: 'Lightning II', front: 'Lightning', behind: 'of Lightning', attr: 'int', element: 'lightning', about: 'Two Lightning, melded: Lightning at rank II.', frontText: 'As Lightning, half as strong again.', behindText: 'As of Lightning, half as strong again.', monsterText: '' },
+  poison2: { id: 'poison2', kind: 'rank', name: 'Poison II', front: 'Poison', behind: 'of Venom', attr: 'dex', element: null, about: 'Two Poison, melded: Poison at rank II.', frontText: 'As Poison, half as strong again.', behindText: 'As of Venom, half as strong again.', monsterText: '' },
 };
 
 /**
@@ -1796,6 +1803,12 @@ export const QUIPS: {
     hailstorm: ['Bad weather.', 'Hail.', 'Take cover.'],
     frostbite: ['Numb yet?', 'Bitter cold.', 'Bitten.'],
     contagion: ['Catching.', 'Pass it on.', 'Going around.'],
+    // (RANK II: a ranked word speaks its word's lines: game.ts, `rankBase`)
+    power2: [],
+    fire2: [],
+    frost2: [],
+    lightning2: [],
+    poison2: [],
   },
   /** By the attack that made the kill. */
   skill: {

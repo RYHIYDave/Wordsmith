@@ -62,7 +62,7 @@ import { MIX, RELIEF } from './game/dungeon';
 import { Game, cleanMeta } from './game/game';
 import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
 import { ACT2 } from './game/act1';
-import { MELD, STONE_RISE, savedMeta } from './game/melds';
+import { MELD, RANK2, STONE_RISE, savedMeta } from './game/melds';
 import type { RunSave } from './game/game';
 import { SHAPES } from './game/level';
 import type { Hall } from './game/level';
@@ -2015,6 +2015,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     },
     /** (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them: render/act2_walls.ts; on at his word) Its switch, for the pictures and playtests: set it before coming onto a floor. */
     act2Walls: ACT2_WALLS,
+    /** (RANK II, a mock-up behind RANK2, game/melds.ts) Its switch, for the playtests and pictures. */
+    rank2: (on: boolean) => {
+      RANK2.on = on;
+    },
     /** ACT 1 (and the bosses of floors 2 to 5): the acts one of them has (game/bosses.ts), for the playtests that have it make one over and over. */
     actsOf: (m: { kind: MonsterKind }) => actsOf(m),
     /** The hero who has been picked and is making ready on their card (see `entering`), or null: a playtest that picks a class waits for them to have gone. */
