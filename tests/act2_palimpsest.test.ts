@@ -542,7 +542,9 @@ test('11. killed in the middle of anything: its pages sink into pulp, its birds 
 test('12. a long fight on floor 13 with it, with fire words and without: no exceptions, every act made', () => {
   hush(() => {
     for (const fire of [false, true]) {
-      const g = seasoned(new Game('warrior', 13), 18);
+      // (seed 14 since Version 23.9: Binding among floor 13's words moved the dice, and seed 13's fight no longer came round to
+      // its Rewrite inside the two minutes)
+      const g = seasoned(new Game('warrior', 14), 18);
       g.depth = 13;
       g.cleared = 13;
       g.enterDungeon();

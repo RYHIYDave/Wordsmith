@@ -178,7 +178,8 @@ test('4. its rune: 7 by 7, cut as the others are, its own', () => {
   for (const row of BIND_GLYPH) assert.match(row, /^[.Xo]{7}$/);
   const flat = BIND_GLYPH.join('');
   assert.ok(flat.includes('X') && flat.includes('o'));
-  const all = [...Object.values(GLYPH), ...Object.values(MELD_GLYPH), ...Object.values(NEW_GLYPH)].map((g) => g.join('/'));
+  // (the game's own table holds Binding's since its rules went in: its own entry left out)
+  const all = [...Object.entries(GLYPH).filter(([w]) => w !== 'binding').map(([, g]) => g), ...Object.values(MELD_GLYPH), ...Object.values(NEW_GLYPH)].map((g) => g.join('/'));
   assert.ok(!all.includes(BIND_GLYPH.join('/')));
 });
 

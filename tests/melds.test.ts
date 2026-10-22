@@ -180,11 +180,11 @@ test('the ten melded words: every two of the five damage words make one, both wa
   assert.equal(meldProblem('volatile', 'fire'), 'Only damage words meld', 'Volatile does not meld (his pick)');
 });
 
-test('the words found in the dungeon are the thirteen they were and the city\'s four; the melded words are made, never found', () => {
-  // (THE CITY'S WORDS, Version 23.8: Pulling, Splitting, Hexing and Stilling, found from floor 11 down)
-  assert.equal(WORD_IDS.length, 17);
+test('the words found in the dungeon are the thirteen they were and the city\'s five; the melded words are made, never found', () => {
+  // (THE CITY'S WORDS, Version 23.8: Pulling, Splitting, Hexing and Stilling, found from floor 11 down; Binding with them since 23.9)
+  assert.equal(WORD_IDS.length, 18);
   for (const m of MELD_IDS) assert.ok(!WORD_IDS.includes(m), m);
-  assert.equal(ALL_WORD_IDS.length, 27);
+  assert.equal(ALL_WORD_IDS.length, 28);
   for (const w of ALL_WORD_IDS) assert.ok(WORDS[w], w);
   for (const m of MELD_IDS) {
     const d = WORDS[m];

@@ -28,7 +28,8 @@ function hero(str: number, dex: number, int: number): Derived {
 test('the split as he said yes to it: Power\'s melds Strength, Poison\'s other three Dexterity, the rest Intelligence; fire, frost and lightning by the weapon', () => {
   assert.equal(ATTR_SPLIT.on, true, 'on, his word');
   const of = (a: string | null): string[] => ALL_WORD_IDS.filter((w) => wordAttr(w) === a);
-  assert.deepEqual(of('str'), ['power', 'leech', 'heavy', 'frenzied', 'guarding', 'eruption', 'avalanche', 'thunder', 'blight'], 'Strength, nine');
+  // (BINDING, the city's fifth, his pick of 21 Oct: by Strength, the main chat's pick, shown him in its video)
+  assert.deepEqual(of('str'), ['power', 'leech', 'heavy', 'frenzied', 'guarding', 'binding', 'eruption', 'avalanche', 'thunder', 'blight'], 'Strength, ten');
   // (THE CITY'S WORDS, Version 23.8: Splitting by Dexterity, Pulling, Hexing and Stilling by Intelligence, as his doc has them)
   assert.deepEqual(of('dex'), ['swift', 'twin', 'poison', 'precise', 'splitting', 'fumes', 'frostbite', 'contagion'], 'Dexterity, eight');
   assert.deepEqual(of('int'), ['volatile', 'pulling', 'hexing', 'stilling', 'scald', 'wildfire', 'hailstorm'], 'Intelligence, seven of its own');

@@ -511,13 +511,13 @@ function checkActed(def: SkillDef, front: readonly WordId[], behind: readonly Wo
 
 // ---------------------------------------------------------------------------------------------
 
-/** How many loadouts each ability is put through (`loadouts`): 2,568 for the thirteen; with the city's four (Version 23.8), 5,120. */
-const LOADOUTS = 5120;
+/** How many loadouts each ability is put through (`loadouts`): 2,568 for the thirteen; with the city's four (Version 23.8), 5,120; with Binding (Version 23.9), 6,003. */
+const LOADOUTS = 6003;
 
 test('the rule of the sockets: any word or any two different words to a side, but never two damage words', () => {
   const all = sides();
-  // (the empty side, seventeen words alone, and every pair of them but the ten of two damage words: the city's four since Version 23.8)
-  assert.equal(all.length, 144);
+  // (the empty side, eighteen words alone, and every pair of them but the ten of two damage words: the city's four since Version 23.8, Binding since 23.9)
+  assert.equal(all.length, 162);
   assert.equal(all.length, 1 + WORD_IDS.length + (WORD_IDS.length * (WORD_IDS.length - 1)) / 2 - 10);
   // (the first nine's 36 x 36 = 1,296; the 46 sides with a newer word, each against the empty side
   // and the thirteen single words, in front and behind: 46 x 14 x 2 = 1,288, less the 16 met twice,
