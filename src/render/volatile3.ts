@@ -68,8 +68,9 @@ export const VMELD_OF: Record<VMeldId, readonly [string, string]> = {
  * other word (the city's four among them), the ten melds, Binding, the friend's cyan and the enemy's
  * pink and gold: the nearest any of the five comes to another colour, as the eye sees colour
  * (CIEDE2000), is 12.9 (Powderkeg and Power; Rupture and Volatile). Shatter and Chain Reaction were
- * given new colours on 21 Oct, once the city's words were in the game: Shatter's nearest is now 13.5
- * (Pulling), Chain Reaction's 15.4 (Thunder; the enemy's pink is 20.4 from it).
+ * given new colours on 21 Oct (Pacific), once the city's words were in the game, his yes by 00:14, 22 Oct:
+ * “Yes, send to main (Recommended)”. Shatter's nearest is now 13.5 (Pulling), Chain Reaction's 15.4
+ * (Thunder; the enemy's pink is 20.4 from it).
  */
 export const VMELD_RAMP: Record<VMeldId, readonly string[]> = {
   // rubble and blast dust, white-hot at its heart

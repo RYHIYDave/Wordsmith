@@ -19,6 +19,14 @@ Shown the sheet of their rune stones and colours and a film of each (in front, t
 “Yes, send to main (Recommended)”, offered as: the main chat puts them in with their rules, behind a
 switch, and tells him when they are live.
 
+Once the city's four words were in the game (23.8), Shatter's violet (`#7c7cf0`) was near the same colour as
+Pulling and Chain Reaction's lilac (`#e8b8ff`) as Splitting (the main chat's board post of 22 Oct, 01:43
+Eastern). Shown the two new colours (a sheet of each stone as it was and as it is now, beside the word it
+had come too near and the enemy's pink) and a film of each in them, and asked “Are Shatter (sapphire ice)
+and Chain Reaction (magenta lightning) right in their new colours?”, by 00:14 Pacific, 22 Oct: “Yes, send
+to main (Recommended)”, offered as: the main chat puts the two new colours in with the other three and
+tells him when they are live.
+
 ## What each looks like
 
 Every one is an explosion, and Volatile's violet crackle runs through all of them; it pops again a
