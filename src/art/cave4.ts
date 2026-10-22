@@ -27,6 +27,9 @@
 // THE CAVE'S OTHER END (`lairMouth`): the same mouth in the lair's packed earth and rock (art/lair.ts), its throat
 //   climbing away into the dark, a little earth fallen before it.
 //
+// Shown to him as a film and stills, asked “Is floor 4's end right: the skull wall shaking, bursting and falling back
+// into the cave, and floor 5's mouth?”, by 12:51: “Yes, on to the town (Recommended)”.
+//
 // HOW IT IS PAINTED: everything in the world, in floor 4's own painter in depth (art/floor4.ts, Scene), the dead its
 // own skulls and bones and the loose ones on its own falling (stepBodies). The cave behind is painted once, every
 // pixel the rock the eye meets along its line of sight through the mouth (its walls a little ragged, lit from the

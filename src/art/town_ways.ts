@@ -24,11 +24,19 @@
 //     out of the dark of the hole it rises, hauled up its guides, slowing; its feet come level with the floor and it
 //     strikes the catches (a jolt), lifts a hand's breadth and settles back on them (a second); dust puffs out round the
 //     collar; its gate rattles back, open. The hero rides in it, drawn between its two layers.
-//   THE GATE BARRED (`gateBars`): heavy chains wound across the gate's portcullis in a cross, through rings on its two
-//     pillars, and at their crossing a great padlock bearing the cult's seal, burning the enemy's pink: the Fleshmancer's
-//     own lock on the way out. THE GATE UNBARRED (`unbarFilm`): the seal flares and dies, the lock bursts and drops, the
-//     chains go slack and sag, their upper rings snap and they slither down into heaps at the pillars' feet, the lock
-//     among them; dust. What is left (`gateLeft`) lies at the pillars' feet, out of the gate's way.
+//   THE GATE BARRED (`gateBars`): two squared baulks nailed across the gate's portcullis in a cross, four chains in to
+//     them from rings on its two pillars, and where they cross a great padlock bearing the cult's seal, burning the
+//     enemy's pink: the Fleshmancer's own lock on the way out. THE GATE UNBARRED (`unbarFilm`): the beams tremble as the
+//     seal flares; the lock bursts (a jolt), its pieces flying; each beam let go drops until its foot strikes the floor
+//     (a jolt each), topples about it and lies flat; the upper rings snap (a jolt) and the chains slither down into heaps
+//     at the pillars' feet; dust. What is left (`gateLeft`): the beams and chains on the floor before the gate, the
+//     seal out. Then the portcullis rises as it always has.
+//   FLOOR 1'S STAIRS UP (`floorStairsUp`): in the first floor's gate's arch, its portcullis gone, a flight of the floor's
+//     own dressed stone going up away from the room into the dark between walls of it, under a vault; the higher the
+//     darker, and toward the top a little of the town's warm light.
+// Shown to him as stills and two films from the game, and asked “Is the town right? The stairs down (3 tiles by 2, by
+// the stash), the empty cage in the near corner, the barred gate and its unbarring, and floor 1's start with the stairs
+// up behind its arch.”, by 14:01: “Yes, on to floors 6–15 (Recommended)”.
 //
 // THE RULES THEY KEEP (his art rulebook): crisp pixels, two to a game pixel, light from the upper left; nothing the
 // player's glows but cyan, the cult's seal pink (the enemy's); an honest flame's orange for the candle.

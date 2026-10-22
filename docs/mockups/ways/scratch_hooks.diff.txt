@@ -1,0 +1,170 @@
+diff --git a/src/main.ts b/src/main.ts
+index 3253844..daa280c 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -59,6 +59,7 @@ import { drawBossCard, drawFloorCard } from './ui/cards';
+ import type { BossCard, FloorCard } from './ui/cards';
+ import { DOORS, doorMiddle, doorTiles } from './game/doors';
+ import { EXITS, WAYS, stairMiddle, topStep } from './game/ways';
++import { TOWN_WAYS } from './art/town_ways';
+ import { MIX, RELIEF } from './game/dungeon';
+ import { Game, cleanMeta } from './game/game';
+ import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
+@@ -2050,6 +2051,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
+     },
+     /** (THE WAYS BETWEEN THE FLOORS, behind EXITS, game/ways.ts; off) Its switch, for the playtests and pictures: set it before a new game or a level is made. */
+     exits: EXITS,
++    /** (SCRATCH) the art chat's town ways, for its pictures */
++    townWays: TOWN_WAYS,
+     /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
+     doorWalls: (on: boolean, near = false) => {
+       DOOR_WALLS.on = on;
+diff --git a/src/render/dress.ts b/src/render/dress.ts
+index c844f2a..0bae40c 100644
+--- a/src/render/dress.ts
++++ b/src/render/dress.ts
+@@ -11,6 +11,7 @@ import { stairKey } from '../art/films';
+ import type { ShaftFilm, StairFilm } from '../art/films';
+ import { floorLook } from '../art/floors';
+ import { riderDark, shaftStill } from '../art/shaft';
++import { TOWN_WAYS, riderUnder, townArrives, townShaft } from '../art/town_ways';
+ import { rgba } from '../engine/px';
+ import type { Sprite } from '../engine/px';
+ import type { Game } from '../game/game';
+@@ -136,6 +137,19 @@ export class FloorDress {
+       } else put(shaftStill().down, d - 0.002);
+       return;
+     }
++    // (SCRATCH, the art chat's pictures: the town's shaft head, art/town_ways.ts)
++    if (TOWN_WAYS.on && L.town && (sh.state === 'still' || sh.state === 'arriving')) {
++      if (sh.state === 'arriving') {
++        const f = townArrives();
++        const k = Math.min(f.back.length - 1, Math.floor(sh.t * FPS));
++        put(f.back[k], d - 0.002);
++        put(f.front[k], d + 0.002);
++      } else {
++        put(townShaft().back, d - 0.002);
++        put(townShaft().front, d + 0.002);
++      }
++      return;
++    }
+     // (EXITS, IN TOWN: the cage standing in the shaft's head, or coming up into it: the floor's own picture of it down, until the art chat's)
+     put(sh.state === 'down' || sh.state === 'still' || sh.state === 'arriving' ? shaftStill().down : shaftStill().empty);
+   }
+@@ -147,6 +161,13 @@ export class FloorDress {
+    */
+   rider(game: Game, sp: Sprite): { sp: Sprite; up: number; d: number } | null {
+     const sh = game.level.ways?.shaft;
++    // (SCRATCH, the art chat's pictures: coming up into the town in the cage, what of him is under the hall's floor not drawn)
++    if (TOWN_WAYS.on && game.level.town && sh && sh.state === 'arriving') {
++      const f = townArrives();
++      const k = Math.min(f.lift.length - 1, Math.floor(sh.t * FPS));
++      const lift = f.lift[k];
++      return { sp: undered(sp, lift), up: Math.round(lift / 2), d: sh.x + sh.y + 1 };
++    }
+     if (!sh || sh.state !== 'going' || game.leaving?.to !== 'up') return null;
+     const f = this.film('shaft:up');
+     if (!f || !f.lift) return null;
+@@ -197,3 +218,36 @@ function darkened(s: Sprite, lift: number): Sprite {
+   delete out.aura;
+   return out;
+ }
++
++/** (SCRATCH) A copy of a picture with what of it is under the hall's floor cut away (`lift`: the cage's floor over the hall's, picture pixels, below it less than 0). */
++function undered(s: Sprite, lift: number): Sprite {
++  if (lift >= 0) return s;
++  const src = s.img as unknown as CanvasImageSource & { width: number; height: number };
++  if (!src.width || !src.height || typeof document === 'undefined') return s;
++  const c = document.createElement('canvas');
++  c.width = src.width;
++  c.height = src.height;
++  const g = c.getContext('2d');
++  if (!g) return s;
++  g.drawImage(src, 0, 0);
++  const im = g.getImageData(0, 0, c.width, c.height);
++  const d = im.data;
++  const k = s.h / c.height;
++  let top = c.height;
++  for (let i = 3; i < d.length; i += 4) {
++    if (d[i] > 0) {
++      top = Math.floor((i >> 2) / c.width);
++      break;
++    }
++  }
++  const tall = Math.max(1, s.ay - top * k);
++  for (let y = 0; y < c.height; y++) {
++    if (!riderUnder(lift, (s.ay - y * k) / tall)) continue;
++    for (let x = 0; x < c.width; x++) d[(y * c.width + x) * 4 + 3] = 0;
++  }
++  g.putImageData(im, 0, 0);
++  const out: Sprite = { ...s, img: c };
++  delete out.lights;
++  delete out.aura;
++  return out;
++}
+diff --git a/src/render/render.ts b/src/render/render.ts
+index 1c5cb2f..4b43475 100644
+--- a/src/render/render.ts
++++ b/src/render/render.ts
+@@ -27,7 +27,7 @@ import type { MeldDropsArt } from '../art/meld_drops';
+ import { GIVEN, KEPT_SCALE, KEPT_Z, MeldDrops, givenOf, orbitAt, riseOf, takenOf } from './meld_drops';
+ import type { StoneAt } from './meld_drops';
+ import { SMITH3 } from '../art/smith3';
+-import { CRYPT, cryptFloor, cryptWays } from '../art/crypt';
++import { CRYPT, CRYPT_FLOORS, cryptFloor, cryptWays } from '../art/crypt';
+ import { WARP_FRAMES, WAY_FRAMES } from '../art/crypt_ways';
+ import { columnSprite, isTownFlat, isTownsperson, ringPower, swirlNow, townSprite, turnedTo } from '../art/townscene';
+ import type { Facing } from '../art/townsfolk';
+@@ -67,6 +67,9 @@ import type { Kick } from './dress';
+ import { FloorPieces } from './pieces';
+ import type { Stage } from './dress';
+ import { floorLook, lookWays } from '../art/floors';
++import { TOWN_WAYS, floorStairsUp, gateBars, gateLeft, townStairs, unbarFilm } from '../art/town_ways';
++/** (SCRATCH) When the town's gate was seen unbarred, in seconds of the page (-1: barred when last seen; 0: never barred). */
++let unbarFrom = 0;
+ import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
+ // (ACT 2: the walls toward the eye standing whole, seen through round whoever is behind them; behind ACT2_WALLS, on at his word)
+ import { HERO_WINDOW, WINDOW_FAINT, WallWindows, drawHoled, wallsThick } from './act2_walls';
+@@ -563,9 +566,20 @@ export class Renderer {
+     const st = W.stair;
+     // (THE FIRST FIVE FLOORS: while its opening is played from its film, the film is the stairwell: render/dress.ts)
+     if (st && st.open && L.explored[st.y * L.floor.w + st.x] && !this.dress.stairPlaying(game)) {
+-      const sp = art.stair[st.way];
++      const sp = TOWN_WAYS.on && L.town ? townStairs(st.way) : art.stair[st.way];
+       g.drawImage(sp.img, Math.round(wx(cam, st.x, st.y)) - sp.ax, Math.round(wy(cam, st.x, st.y)) - sp.ay, sp.w, sp.h);
+     }
++    // (SCRATCH, the art chat's pictures: floor 1's stairs up to the town, in the first floor's gate's arch)
++    if (TOWN_WAYS.on && !L.town && L.floor.depth === 1)
++      for (const d of L.doors) {
++        const s = d.spot;
++        if (s.kind !== 'waygate' || !doorTiles(L.floor, s).some((i) => L.explored[i] === 1)) continue;
++        const face = doorFace(s);
++        const wide = PILLAR / 32;
++        const [x, y] = s.alongX ? [s.a - wide, face] : [face, s.a - wide];
++        const sp = floorStairsUp(CRYPT_FLOORS[0], s.alongX);
++        g.drawImage(sp.img, Math.round(wx(cam, x, y)) - sp.ax, Math.round(wy(cam, x, y)) - sp.ay, sp.w, sp.h);
++      }
+     // (ACT 1: and the way on, once it has woken: a waypoint's own picture, awake: nothing is there before)
+     for (const w of [W.way, W.onward && W.onward.awake ? W.onward : null]) {
+       if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) continue;
+@@ -661,8 +675,19 @@ export class Renderer {
+         const wide = PILLAR / 32;
+         const pillar = A.pillar(boss);
+         for (const [x, y] of [at(0), at(3 + wide)]) put(x + y - wide, pillar, x, y);
+-        strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide);
++        if (!(TOWN_WAYS.on && !L.town && f.depth === 1 && s.kind === 'waygate')) strips(A.portcullis(s.alongX, boss, d.open * GATE_UP), -wide, wide);
+         strips(A.arch(s.alongX, boss, boss && d.want === 0), -wide, 0);
++        // (SCRATCH, the art chat's pictures: the town's gate barred, unbarred, and what is left: art/town_ways.ts)
++        if (TOWN_WAYS.on && L.town && L.ways) {
++          const W = L.ways as { barred?: boolean };
++          const now = performance.now() / 1000;
++          if (W.barred) unbarFrom = -1;
++          else if (unbarFrom === -1) unbarFrom = now;
++          const slow = (window as unknown as { __dbg?: { slowmo?: number } }).__dbg?.slowmo ?? 1;
++          const f = unbarFrom > 0 ? Math.floor((now - unbarFrom) * 30 * slow) : 9999;
++          const film = unbarFilm(s.alongX);
++          strips(W.barred ? gateBars(s.alongX) : f < film.frames.length ? film.frames[f] : gateLeft(s.alongX), -wide, wide - 0.03);
++        }
+         continue;
+       }
+       const wide = POST / 32;
