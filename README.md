@@ -225,7 +225,7 @@ home. Wordmelding is on; the rune-stone is given by using the wordsmith; runedus
 burst up out of the Fleshmancer's pit.
 Version 22.1: smoother on a phone, nothing looks different: the ground, the hero and the monsters painted ahead out of the
 way, the Pinewood's forest drawn in big pieces; and the game has its own web address with an offline copy.
-Version 23.0 (23.8 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
+Version 23.0 (23.9 live): Act 2, part one, The Hush. Home from the siege, the town's waypoint takes you on into the city: the Gate
 Ward (the Crier), the Undercity (the Rat King), the Millrace (the Scraper and the Quill), the House of Quiet (the Physician) and the
 Great Library (the Censor), twelve new kinds of enemy, and on each floor the Bells: strike the Muffled Bell and ring the
 others before the Hush runs out. The skill trees remade (every pick changes how you play), the new Headsman on floor 2,
@@ -247,6 +247,8 @@ stand again, seen through; and a new title screen, the Ring on the Hill.
 Version 23.8: four new words found from floor 11 down: Pulling drags in what it hits and leaves a vortex; Splitting
 breaks into copies that fly on and leaves shards; Hexing curses what it hits and leaves a circle that weakens enemies;
 Stilling slows what it hits in time and leaves a bubble where enemies crawl.
+Version 23.9: Binding, found from floor 11 down, holds what it hits in place and leaves a snare for the next enemy to cross;
+and Volatile melds with each damage word into a word of its own: Demolition, Powderkeg, Shatter, Chain Reaction, Rupture.
 Wordsmithing comes first: find power words and work them into your attacks, your gear and the
 dungeons themselves. A new game starts on a painted starting screen (a child in a library, who
 dreams it into a knight before a witch's cauldron) and goes straight into the first dungeon, which
