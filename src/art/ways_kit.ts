@@ -419,6 +419,8 @@ export interface WayArt {
   shut: { under: Sprite; over: Sprite };
   film: WayFilm;
   open: { under: Sprite; over: Sprite };
+  /** How far back from the way's point (tiles, toward the boss's ground) the picture is anchored: its mouth, where he goes in (0: at the point). */
+  back?: number;
 }
 /** Where a floor begins, as the game stands it: what he came out of, its two layers. */
 export interface StartArt {

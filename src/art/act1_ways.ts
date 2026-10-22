@@ -746,6 +746,8 @@ export function ledgeWay(d: WayDir): WayArt {
     shut: { under: whole(shutPx.under, null, LAX, LAY, LW, LH), over: whole(null, shutPx.over, LAX, LAY, LW, LH) },
     film,
     open: { under: whole(openPx.under, null, LAX, LAY, LW, LH), over: whole(null, openPx.over, LAX, LAY, LW, LH) },
+    // (the eyrie ends at its drop: the crack lies back from its edge, its head where he goes in)
+    back: (LEDGE_CHIMNEY.long + 6) / 40,
   };
   ledgeCache.set(d, art);
   return art;
@@ -958,8 +960,8 @@ const PW = 640;
 const PH = 560;
 const PAX = 320;
 const PAY = 420;
-const SICKBARK: Ramp = ['#24222a', '#363440', '#4a4854', '#5e5c68', '#74727c'];
-const SICKV: Ramp = ['#2a2034', '#3a2c48', '#4e3c5e', '#665078', '#7c6890'];
+const SICKBARK: Ramp = ['#34323a', '#4e4c56', '#6c6a74', '#8c8a94', '#aaa8b0'];
+const SICKV: Ramp = ['#3a2c48', '#4e3c5e', '#665078', '#7e6894', '#9a84ae'];
 const DEADROOT: Ramp = ['#2a2420', '#3e342c', '#544638', '#6a5a48', '#7e6c58'];
 const P_EARTH: Ramp = ['#44342a', '#5e4834', '#7a5e44', '#927656', '#ac926c'];
 const P_NEEDLE: Ramp = ['#2a2017', '#3e3022', '#56432f', '#70583e', '#8c704d'];
