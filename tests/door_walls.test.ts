@@ -16,8 +16,9 @@ import { DOOR_WALLS, doorWallsBack, wallFaces, wallsAway } from '../src/render/w
 const test = nodeTest as unknown as (name: string, fn: () => void) => void;
 const assert = nodeAssert as unknown as { ok(v: unknown, m?: string): void; equal(a: unknown, b: unknown, m?: string): void };
 
-test('the switch is off, so the game is as it was', () => {
-  assert.equal(DOOR_WALLS.on, false);
+// (VERSION 23.7: DOOR_WALLS on in the game, his “Yes, put it in (Recommended)” of 21 Oct 2026; `near` stays off)
+test('the switch is on in the game, `near` off', () => {
+  assert.equal(DOOR_WALLS.on, true);
   assert.equal(DOOR_WALLS.near, false);
 });
 

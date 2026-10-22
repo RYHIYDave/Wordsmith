@@ -65,7 +65,9 @@ export function wallsAway(f: Floor, look: WallLook): Uint8Array {
  * out how to fade them or whatever so it doesn’t hide the player, but I don’t like the gaps missing in the
  * walls"). On: the walls left out beside a door stand, and are seen through while someone is behind them.
  */
-export const DOOR_WALLS = { on: false, near: false };
+// (ON, Version 23.7: his yes to the planning chat, 18 Oct 2026, 08:46 Pacific, “Yes”, to the pictures; and to putting it in, to the
+// main chat, 21 Oct 2026, “Yes, put it in (Recommended)”. `near` stays off: that side has no wall by his 18.4 look)
+export const DOOR_WALLS = { on: true, near: false };
 
 /**
  * (THE WALL BESIDE A DOOR) Of the walls left out (`away`), those that stand again: beside every door

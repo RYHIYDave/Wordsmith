@@ -26,14 +26,21 @@ function ranking(fn: () => void): void {
 
 const BASES = ['power', 'fire', 'frost', 'lightning', 'poison'] as const;
 
-test('the switch is off, and with it off two of a word do not meld, and no ranked word is kept over', () => {
-  assert.equal(RANK2.on, false);
+// (VERSION 23.7: RANK2 on in the game, his “Yes, put it in (Recommended)” of 21 Oct 2026: the switch is seen on, and turned
+// off here to hold the game as it was without it)
+test('the switch is on in the game; with it off two of a word do not meld, and no ranked word is kept over', () => {
+  assert.equal(RANK2.on, true);
+  RANK2.on = false;
+  try {
   assert.equal(meldOf('poison', 'poison'), null);
   assert.equal(meldProblem('poison', 'poison'), 'Two different words');
   for (const r of RANK_IDS) assert.ok(!wordIds().includes(r), `${r} is not among the hero's words`);
   const rec = {} as Record<WordId, number>;
   for (const w of [...wordIds(), ...RANK_IDS]) rec[w] = 1;
   for (const r of RANK_IDS) assert.ok(!(r in savedWords(rec)), `${r} is not written to a save`);
+  } finally {
+    RANK2.on = true;
+  }
 });
 
 test('two of each damage word make its rank II, and nothing else does; a ranked word melds no further', () => ranking(() => {

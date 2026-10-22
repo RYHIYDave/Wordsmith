@@ -3,7 +3,7 @@
 
 import type { Sfx } from '../engine/audio';
 import { RNG } from '../engine/rng';
-import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
+import { AIM, BOSS_LIFE, HUSH_FOR, CHARGE, LUNGE, CLASSES, LOOT2, COMBO, FIRST_DUNGEON, FIRST_LEVELS, BOSS_INTRO, BOSS_LINES, FIRST_WORD, FLOOR_NAMES, FRENZY, GAMBLE_KINDS, LEECH, floorTitle, GATE_TWIN_PACKS, packGrowth, wordGrowth, GUARD, GUIDE, HAND_IN, HEAVY, LIMITS, MANA_MODE, MONSTERS, MONSTER_PACKS, MOVE_OPENS, MSG, NEW_MONSTERS, PACKS, PRACTICE, PRECISE, QUEST_ITEM, QUIPS, RALLY, SKILLS, SKULL, SMOKE, SPEAR, SUMMON, TAGS, TOWN_FOLK, TUNE, VENDORS, VENDOR_IDS, WORDS, firstWordSkill, leaderKind, movesOf, packKinds, packRarity, scaleDmg, scaleLife, skillsFor, socketCount, weaponAttr, wordShare, xpToNext } from './defs';
 import type { Limit, MonsterDef, MonsterMove } from './defs';
 import { canPair, imbueItem, imbueOptionsFor, imbueProblem, itemValue, kindName, migrateItem, modLines, plainValue, plainWeapon, reserveUids, rollItem, starterWeapon } from './items';
 import type { ImbueOption, RollOpts } from './items';
@@ -1520,7 +1520,8 @@ export class Game {
         }
       }
     } else if (lot && words.length && (!pack || pack.rarity === 'leader')) {
-      const p = champion ? TUNE.guardianCarry : TUNE.eliteCarry;
+      // (WORDS GROW WITH THE LEVELS, defs.ts WORD_GROWTH: the likelier the deeper)
+      const p = (champion ? TUNE.guardianCarry : TUNE.eliteCarry) * wordGrowth(P);
       // (the more words are burned into the dungeon, the likelier: that is what burning them buys)
       if (lot.chance(Math.min(1, p * (1 + 0.3 * this.dungeonWords.length)))) carries = [lot.pick(words)];
     }
@@ -2393,7 +2394,7 @@ export class Game {
     if (MELD.on) this.addDrop('dust', at.x, at.y, Math.round((BELLS_TUNE.dust + Math.floor(n / 2)) * (LOOT2.on ? LOOT2.dust : 1)), null, null);
     for (let i = 0; i < n; i++) this.addDrop('item', at.x, at.y, 0, this.rollGear(i < 2 ? 4 : 2), null);
     this.addDrop('gold', at.x, at.y, this.rng.int(BELLS_TUNE.gold, BELLS_TUNE.gold * 2) * Math.max(1, this.power) * n * (LOOT2.on ? LOOT2.gold : 1), null, null);
-    if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word)) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(WORD_IDS));
+    if (this.wordsFall() && this.rng.chance(BELLS_TUNE.word * wordGrowth(this.power))) this.addDrop('word', at.x, at.y, 0, null, this.rng.pick(WORD_IDS));
     this.emit({ t: 'bells', what: 'won', x: B.plan.muffled.x, y: B.plan.muffled.y, n });
     this.sfx('rare');
     this.msg('Every bell peals at once. The Hush shatters!', MSG.good);
@@ -6986,7 +6987,7 @@ export class Game {
     if (rng.chance((LOOT2.on ? LOOT2.item : TUNE.dropItem) * bonus)) this.addDrop('item', m.x, m.y, 0, this.rollGear(), null);
     if (rng.chance(TUNE.dropOrb)) this.addDrop('orb', m.x, m.y, 0, null, null);
     // (THE FIRST LEVELS: no word falls before the ring is lit, nor in the first dungeon)
-    if (rng.chance(TUNE.dropWord * bonus) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
+    if (rng.chance(TUNE.dropWord * bonus * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', m.x, m.y, 0, null, rng.pick(WORD_IDS));
   }
 
   private gainXp(n: number): void {
@@ -7149,7 +7150,7 @@ export class Game {
         const n = TUNE.chestItems + (room && this.rng.chance(0.5) ? 1 : 0);
         for (let i = 0; i < n; i++) this.addDrop('item', p.x, p.y + 0.6, 0, this.rollGear(room && i === 0 ? 2 : 1), null);
         this.addDrop('gold', p.x, p.y + 0.6, this.rng.int(10, 20) * Math.max(1, this.power) * (room ? 2 : 1), null, null);
-        if (this.rng.chance(firstInVault ? TUNE.vaultWord : TUNE.chestWord) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
+        if (this.rng.chance((firstInVault ? TUNE.vaultWord : TUNE.chestWord) * wordGrowth(this.power)) && this.wordsFall()) this.addDrop('word', p.x, p.y + 0.6, 0, null, this.rng.pick(WORD_IDS));
       }
     }
     // (THE MIX) a lever: walk up, and it is pulled

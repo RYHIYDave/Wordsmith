@@ -632,6 +632,23 @@ export function packGrowth(power: number): number {
   if (!PACK_GROWTH.on) return 1;
   return Math.min(PACK_GROWTH.most, 1 + PACK_GROWTH.each * (Math.max(1, power) - 1));
 }
+
+/**
+ * WORDS GROW WITH THE LEVELS (since Version 23.7). His words to the main chat, 21 Oct 2026, 18:24 Pacific: “I’d like the drops
+ * of words to increase with each level as well” and “I don’t think the player is getting enough words to experiment with
+ * the melding system”; asked as a pop-up how fast, “10% each level, up to triple”, and which, “All of them (Recommended)”
+ * (offered as: monsters carrying words, chests and vaults; the boss's chance of an extra word grows already). So every chance
+ * of a word, but the boss's, is 1 + `each` times as big for every level past the first: an elite's or a guardian's of
+ * carrying one, an ordinary monster's rare one, a chest's, a vault's first chest's, the Bells' explosion's; the level the
+ * floor's depth, or on an endless level its power (game/endless.ts); held at `most` times. With the packs growing too
+ * (PACK_GROWTH), floor 15 gives about 2.9 times as many words as floor 1 would.
+ */
+export const WORD_GROWTH = { on: true, each: 0.1, most: 3 };
+/** How many times as likely a word is at this level (its depth, or an endless level's power): 1 on the first. */
+export function wordGrowth(power: number): number {
+  if (!WORD_GROWTH.on) return 1;
+  return Math.min(WORD_GROWTH.most, 1 + WORD_GROWTH.each * (Math.max(1, power) - 1));
+}
 /** A monster's size: the guardian, a brute of the guardian's rank, is large. */
 export function sizeOf(kind: MonsterKind, champion = false): MonsterSize {
   return champion ? 'large' : MONSTERS[kind].size;

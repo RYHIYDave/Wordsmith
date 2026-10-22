@@ -34,7 +34,9 @@ export const MELD = { on: true };
  * a melded word, on attacks only (not gear, the gate or the Lexicon); a ranked word melds no further.
  * With it off nothing of this can be had, and the game is as it was.
  */
-export const RANK2 = { on: false };
+// (ON, Version 23.7: his yes to the planning chat, 18 Oct 2026, 09:32 Pacific, “Yes”, to Poison II as shown; and to putting it in,
+// to the main chat, 21 Oct 2026, “Yes, put it in (Recommended)”)
+export const RANK2 = { on: true };
 
 /** RANK II's numbers: how much each rank past the first adds of the word's own figure (half: II is one and a half times the word). */
 export const RANK_TUNE = { step: 0.5 };

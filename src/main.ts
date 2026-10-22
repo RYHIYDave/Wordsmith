@@ -231,6 +231,12 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     // (RUNEDUST AND THE MELDSTONE, art/meld_drops.ts: a mock-up behind MELD_DROPS, off; painted the first time they are shown)
     meldDrops: makeMeldDropsArt(),
   };
+  // WORDMELDING'S LOOKS (render/melds3.ts, MELD3: on at his word, 21 Oct 2026, “Yes, turn them on (Recommended)”): the melded
+  // words' own colours and runes, as drawn there, in place of the placeholders
+  if (MELD3.on) {
+    useMeldArt(art.icons, MELD_RAMP, MELD_GLYPH);
+    for (const w of MELD_IDS) WORD_HUE[w] = MELD_RAMP[w][3];
+  }
   // RUNEDUST AND THE MELDSTONE DRAWN (art/meld_drops.ts, behind MELD_DROPS): switched on, the rules hold the
   // Fleshmancer's runedust and Meldstone under the floor while he is dragged down (game/melds.ts STONE_RISE),
   // and the screens show the new runedust; off, the stand-ins, as before.
