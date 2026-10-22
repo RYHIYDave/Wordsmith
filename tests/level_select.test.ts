@@ -24,6 +24,7 @@ import { textWidth } from '../src/engine/font';
 import { lastFloor } from '../src/game/act1';
 import { CLASSES, LEVEL_SELECT, PRACTICE, wordsAt } from '../src/game/defs';
 import { Game, newMeta } from '../src/game/game';
+import { MODES } from '../src/game/modes';
 import { CLASS_IDS, EQUIP_SLOTS } from '../src/game/types';
 import { FLOOR_ROWS, SMITH_MOST, smithLayout } from '../src/ui/panels';
 // @ts-ignore - node typings are not part of this project
@@ -39,8 +40,8 @@ function switched<T>(on: boolean, run: () => T): T {
   }
 }
 
-test('off: the switch is off, and the options have no button of it', () => {
-  assert.equal(LEVEL_SELECT.on, false);
+test('the switch is on (since 24.0, his yes); off, the options have no button of it', () => {
+  assert.equal(LEVEL_SELECT.on, true);
   const src = readFileSync('src/ui/panels.ts', 'utf8') as string;
   // (its button comes only from floorsItem, which gives nothing while the switch is off)
   assert.ok(src.includes("return LEVEL_SELECT.on ? [{ id: 'floors', label: 'LEVEL SELECT'"), 'the button only behind the switch');
@@ -59,6 +60,7 @@ test('the test hero, on every floor and in every class: there, levelled, his poi
       const g = Game.forTrial(cls, 1000 + d, d);
       const h = g.hero;
       assert.equal(g.trial, true, what);
+      if (MODES.on) assert.equal(g.mode, 'normal', `${what}: Normal, he wakes in town if he falls`);
       assert.equal(g.practice, false, `${what}: a floor, not the practice room`);
       assert.equal(g.depth, d, what);
       assert.equal(g.inDungeon, true, what);

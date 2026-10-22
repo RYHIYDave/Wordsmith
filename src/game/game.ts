@@ -428,8 +428,8 @@ export class Game {
    * as if the floors before it were cleared. On floor 1, a new hero as any begins (nothing to make ready). From floor 2: the
    * level a hero comes there at (LEVEL_SELECT.level), the points of those levels spent (two of every three on his class's own
    * attribute), the wordsmith's ring lit, a full set of magic gear of the floor's item level, and in the pouch every word that
-   * can be found down to that floor, with the melds, as many of each as the practice room gives. Played as any hero is (he
-   * can fall, and wakes in town in Normal); never saved (main.ts). `meta`: the device's choices (limit, voice) are taken from it,
+   * can be found down to that floor, with the melds, as many of each as the practice room gives. Played as any hero is, a
+   * Normal one (he can fall, and wakes in town); never saved (main.ts). `meta`: the device's choices (limit, voice) are taken from it,
    * nothing else: the run has a Lexicon and stash of its own.
    */
   static forTrial(cls: ClassId, seed: number, floor: number, meta?: Meta): Game {
@@ -442,6 +442,8 @@ export class Game {
     }
     const g = new Game(cls, seed, own);
     g.trial = true;
+    // (Normal: he falls and wakes in town, as a hero does; so as he was told, 22 Oct 2026, with the pictures)
+    if (MODES.on) g.mode = 'normal';
     g.readyFor(floor);
     return g;
   }

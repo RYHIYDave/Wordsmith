@@ -1453,11 +1453,12 @@ export const PRACTICE = {
  * THE LEVEL SELECT. The owner, 22 Oct 2026, 14:27 (Pacific): “Can you put in a level selector in the options?”; asked which
  * kind, by 14:29: “Test hero, any floor (Recommended)”, offered as: pick floor 1 to 15 and a class; start there with a hero
  * levelled and geared for that floor; not saved; your real hero untouched. A button in the start screen's Options opens a page
- * of the floors (ui/panels.ts); the hero is made by Game.forTrial. Behind this switch (off) until he has seen it and said yes
- * (pictures first).
+ * of the floors (ui/panels.ts); the hero is made by Game.forTrial. ON SINCE VERSION 24.0: shown pictures of it from the game
+ * (the options, the page of floors, the class cards, a test hero on floor 6) and asked “Is the level select right as shown? Put it
+ * live?”, by 14:54: “Yes, put it live (Recommended)”.
  */
 export const LEVEL_SELECT = {
-  on: false,
+  on: true,
   /**
    * The level the hero comes into each floor at, 1 to 15: the level a hero has who killed every monster laid on the floors
    * before it (the experience of all of them, three floors' dice each, the middle one taken; scratch tool flscratch/xp.ts,

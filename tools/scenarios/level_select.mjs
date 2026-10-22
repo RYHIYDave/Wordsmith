@@ -12,7 +12,17 @@ export default async function (page, snap) {
   // (OFF=1: the switch left off, the options photographed as the game has them, for the before and after)
   if (!process.env.OFF) await page.evaluate(() => { window.__dbg.levelSelect.on = true; });
   await page.waitForTimeout(800);
-  const before = await page.evaluate(() => localStorage.getItem('arpg-save-v2') ?? localStorage.getItem(Object.keys(localStorage).find((k) => k.includes('save')) ?? ''));
+  const saveOf = () => page.evaluate(() => localStorage.getItem('arpg.save'));
+  if (!process.env.OFF) {
+    // (a real hero first, saved, so that there is a saved run for the test hero to leave alone)
+    await hands.press('button:NEW GAME');
+    await page.waitForTimeout(300);
+    await hands.press('class:ranger');
+    await page.waitForTimeout(3500);
+    await page.evaluate(() => { window.__dbg.save(); window.__dbg.toTitle(); });
+    await page.waitForTimeout(500);
+  }
+  const before = await saveOf();
   await hands.press('button:OPTIONS');
   await page.waitForTimeout(300);
   // (UPRIGHT=1: the game turned upright first, as the options' own switch does, where it is offered)
@@ -52,11 +62,26 @@ export default async function (page, snap) {
   await snap('floor');
   await page.waitForTimeout(2500);
   await snap('floor2');
+  // (he falls: the test hero wakes in town as a test hero still, and nothing is saved)
+  await page.evaluate(() => { const g = window.__dbg.game(); g.hero.invuln = 0; g.hurtHero(1e9, 'phys', [], null, 'a test'); });
+  await page.waitForTimeout(2500);
+  await snap('fell');
+  const fell = await page.evaluate(() => { const g = window.__dbg.game(); return { over: g.over, wakes: g.wakes }; });
+  log('fell', JSON.stringify(fell));
+  if (!(await hands.press('button:Back to town'))) await page.keyboard.press('Enter');
+  await page.waitForTimeout(2500);
+  const woke = await page.evaluate(() => { const g = window.__dbg.game(); return g ? { town: g.level.town, trial: g.trial, depth: g.depth, over: g.over } : null; });
+  log('woke', JSON.stringify(woke));
+  if (!woke || !woke.town || !woke.trial) console.log('  !! the test hero did not wake in town as a test hero');
+  await snap('woke');
   // (the saved run as it was before: the test hero is never saved, even as the page is left)
   await page.evaluate(() => { window.__dbg.save(); window.dispatchEvent(new Event('pagehide')); });
-  const after = await page.evaluate(() => localStorage.getItem('arpg-save-v2') ?? localStorage.getItem(Object.keys(localStorage).find((k) => k.includes('save')) ?? ''));
+  const after = await saveOf();
   const runOf = (s) => { try { return JSON.stringify(JSON.parse(s ?? 'null')?.run ?? null); } catch { return 'unreadable'; } };
   log('saved run before', runOf(before).slice(0, 80));
   log('saved run after ', runOf(after).slice(0, 80));
-  log('saved run unchanged', runOf(before) === runOf(after));
+  const same = runOf(before) === runOf(after);
+  log('saved run unchanged', same);
+  if (runOf(before) === 'null') console.log('  !! there was no saved run to leave alone');
+  if (!same) console.log('  !! the saved run was changed by the test hero');
 }
