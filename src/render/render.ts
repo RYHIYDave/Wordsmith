@@ -16,7 +16,7 @@ import type { GateArt, Strip } from '../art/gates';
 import { SPIKE_SPOTS, SPIKE_STEPS } from '../art/hazards';
 import type { HazardArt } from '../art/hazards';
 import { WALL_LOOK } from '../art/ground';
-import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from './walls';
+import { DOOR_WALLS, FACE_LEFT, FACE_RIGHT, doorWallsBack, wallFaces, wallsAway } from './walls';
 import type { GroundArt, WallPart } from '../art/ground';
 import type { DungeonProps } from '../art/props';
 import type { TownProps } from '../art/town';
@@ -474,12 +474,56 @@ export class Renderer {
    */
   private lowWalls(L: Game['level']): Uint8Array {
     if (!WALL_LOOK.away) return L.low;
-    const key = WALL_LOOK.tall * 1000 + WALL_LOOK.fade * 2 + (WALL_LOOK.faces ? 1 : 0);
+    const key = WALL_LOOK.tall * 1000 + WALL_LOOK.fade * 2 + (WALL_LOOK.faces ? 1 : 0) + (DOOR_WALLS.on ? 100000 : 0);
     if (this.awayGrid && this.awayFor === L && this.awayKey === key) return this.awayGrid;
     this.awayGrid = wallsAway(L.floor, WALL_LOOK);
+    // (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS: the walls beside a door in a back wall stand again)
+    this.doorBack = null;
+    if (DOOR_WALLS.on && WALL_LOOK.faces) {
+      const back = doorWallsBack(L.floor, this.awayGrid);
+      for (let i = 0; i < back.length; i++) if (back[i]) this.awayGrid[i] = 0;
+      this.doorBack = back;
+    }
     this.awayFor = L;
     this.awayKey = key;
     return this.awayGrid;
+  }
+
+  /** (THE WALL BESIDE A DOOR) The walls that stand again beside the doors of this level (render/walls.ts, `doorWallsBack`), or null. */
+  private doorBack: Uint8Array | null = null;
+  /** (THE WALL BESIDE A DOOR) How seen through each of them is now (1 solid, SEEN_THROUGH clear), and the time it was last drawn: it fades over a fifth of a second. */
+  private doorFade = new Map<number, { a: number; t: number }>();
+
+  /**
+   * (THE WALL BESIDE A DOOR) How solid a wall that stands again beside a door is drawn: SEEN THROUGH
+   * while the hero, or a monster in sight, is behind it (further up the screen, and under its faces:
+   * 32 pixels wide from its top to their foot), solid otherwise; it fades between the two over a
+   * fifth of a second rather than all at once.
+   */
+  private doorVeil(game: Game, idx: number, px: number, py: number, depth: number, t: number): number {
+    const tall = WALL_LOOK.tall;
+    const under = (fx: number, fy: number, d: number): boolean => d < depth - 0.5 && px + 16 > fx - 8 && px - 16 < fx + 8 && py - tall < fy - 2 && py + 16 > fy - 32;
+    let want = 1;
+    const at = this.wallHero;
+    if (at && under(at.x, at.y, at.d)) want = SEEN_THROUGH;
+    else {
+      for (const m of game.monsters) {
+        if (m.dead || !m.seen) continue;
+        if (under(wx(this.cam, m.x, m.y), wy(this.cam, m.x, m.y), m.x + m.y)) {
+          want = SEEN_THROUGH;
+          break;
+        }
+      }
+    }
+    const was = this.doorFade.get(idx);
+    let a = want;
+    if (was) {
+      const dt = Math.max(0, Math.min(0.1, t - was.t));
+      const rate = (1 - SEEN_THROUGH) / 0.2;
+      a = was.a < want ? Math.min(want, was.a + rate * dt) : Math.max(want, was.a - rate * dt);
+    }
+    this.doorFade.set(idx, { a, t });
+    return a;
   }
 
   /**
@@ -2213,17 +2257,20 @@ export class Renderer {
             // Which of a block's two faces have floor before them: render/walls.ts, `wallFaces`.)
             const which = wallFaces(f, idx);
             const n = art.ground.faceLeft.length;
+            // (THE WALL BESIDE A DOOR: one that stands again there is seen through while someone is behind it, and nothing is set in it)
+            const again = this.doorBack !== null && this.doorBack[idx] === 1;
+            const veil = again && which ? this.doorVeil(game, idx, px, py, s + 1, t) : 1;
             // (`hide` marks the stand just made: raised floor at a face's foot hides the foot of it)
             if (which & FACE_LEFT) {
-              this.stand(s + 1, art.ground.faceLeft[v % n], px, py);
+              this.stand(s + 1, art.ground.faceLeft[v % n], px, py, null, 0, 1, veil);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             if (which & FACE_RIGHT) {
-              this.stand(s + 1, art.ground.faceRight[v % n], px, py);
+              this.stand(s + 1, art.ground.faceRight[v % n], px, py, null, 0, 1, veil);
               if (relief) this.hide(tx + 0.5, ty + 0.5, 0);
             }
             // (THE FIRST FIVE FLOORS: what is set in its faces: render/pieces.ts)
-            if (which && this.dressed) this.pieces.wall(game, idx, which, s, px, py, t, this.stage);
+            if (which && this.dressed && !again) this.pieces.wall(game, idx, which, s, px, py, t, this.stage);
           } else if (!(lowGrid[idx] && WALL_LOOK.front === 'none')) {
             const sp = lowGrid[idx] ? art.ground.wallsLow[v % art.ground.wallsLow.length] : art.ground.wallsTall[v % art.ground.wallsTall.length];
             const thin = !lowGrid[idx] && this.overHero(px, py, s + 1, WALL_LOOK.tall) ? SEEN_THROUGH : 1;
