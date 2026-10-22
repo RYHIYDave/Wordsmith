@@ -1354,24 +1354,50 @@ function ramp(R: Rig, a0: number, a1: number, z1: number, half: number, top: (u:
   R.quad([[a1, -half, z1], [a1 + 20, -half, z1 + 12], [a1 + 20, half, z1 + 12], [a1, half, z1]], (u) => mix(side[3], HOLE_DARK, 0.3 + u * 0.4), id + 3);
 }
 
-/** FLOOR 6 BEGINS: THE ROAD DOWN FROM THE TOWN'S GATE, the cart road coming down a ramp of the quarry's spoil into the pit, its ruts, timber kerbs along it, a cairn of cut stone at its foot. */
+/** FLOOR 6 BEGINS: THE QUARRY'S GATE, where the road down from the town's gate comes into the pit: two great posts and a beam across, the cult's board nailed to it, a leaf of planks swung back open, the road's ruts through it and on up out of sight, a cairn of cut stone by it. */
 export function quarryStart(d: WayDir): StartArt {
   return cachedStart('q' + d, () => {
     const R = new Rig(SW, SH, SAX, SAY, d, 0);
-    const L0 = 12;
-    const L1 = 130;
-    const Z1 = 56;
-    const half = 26;
-    ramp(R, L0, L1, Z1, half, (u, v) => {
-      const rut = Math.abs(v - 0.32) < 0.04 || Math.abs(v - 0.68) < 0.04;
-      if (rut) return Q_DUST[1];
-      return hash(Math.floor(u * 50), Math.floor(v * 12), 1301) < 0.1 ? STONE[1] : Q_DUST[3];
-    }, STONE, 100);
-    // timber kerbs along its edges
-    for (const s of [-1, 1]) timber(R.S, R.P(L0 + 2, s * (half - 2), 2.5), R.P(L1, s * (half - 2), Z1 + 2.5), 2.2, 110 + (s > 0 ? 1 : 0));
-    // the cairn at its foot, cut stones piled, a chalked stone on top
+    const half = 30;
+    const A = 18;
+    // the road's ruts, through the gate and on, lost in the pit's floor
+    R.quad([[-16, -16, 0.3], [130, -14, 0.3], [130, 14, 0.3], [-16, 16, 0.3]], (u, v) => {
+      if (hash(Math.floor(u * 100), Math.floor(v * 24), 1300) < clamp01((0.22 - u) / 0.22) + clamp01((u - 0.75) / 0.25)) return null;
+      const rut = Math.abs(v - 0.3) < 0.05 || Math.abs(v - 0.7) < 0.05;
+      return rut ? Q_DUST[0] : null;
+    }, 90);
+    // the posts and the beam, and their braces
+    for (const s of [-1, 1]) {
+      timber(R.S, R.P(A, s * half, 0), R.P(A, s * half, 84), 3.6, 100 + (s > 0 ? 1 : 0), [0.1, 0.8]);
+      timber(R.S, R.P(A + 14, s * half, 0), R.P(A, s * half, 30), 2, 102 + (s > 0 ? 1 : 0));
+      for (let i = 0; i < 3; i++) R.egg([A + Math.cos(i * 2.1) * 6, s * half + Math.sin(i * 2.1) * 6, 2.5], XYZ, [4.5, 3.6, 3], facetOf(STONE, 0.05), 104 + i + (s > 0 ? 3 : 0));
+    }
+    timber(R.S, R.P(A, -(half + 8), 80), R.P(A, half + 8, 80), 3.4, 110, [0.15, 0.85]);
+    // the cult's board nailed to it, its mark burnt in (nothing glows)
+    R.box([A - 4, 0, 68], XYZ, [1.2, 14, 8], (f, u, v, n) => {
+      if (f === 1) {
+        const m = shriekAt((u - 0.5) * 3.2, (v - 0.5) * 2.2);
+        if (m) return m === 'bone' ? '#2a2026' : TIMBER[2];
+      }
+      return toneAt(n, TIMBER, 0.05);
+    }, 111);
+    ropeIn(R.S, R.P(A - 3, -10, 76), R.P(A - 3, -10, 80), 0, 112, 0.5);
+    ropeIn(R.S, R.P(A - 3, 10, 76), R.P(A - 3, 10, 80), 0, 112, 0.5);
+    // the gate's leaf, swung back open against its post: planks on a Z of timber
+    const hinge: V3 = [A, half - 3, 0];
+    const open = 1.35;
+    const ax: V3 = [-Math.cos(open) * 0, Math.sin(open) * 0, 0];
+    void ax;
+    const along: V3 = [-Math.sin(open), -Math.cos(open), 0];
+    const leafW = 26;
+    R.quad([[hinge[0], hinge[1], 4], [hinge[0] + along[0] * leafW, hinge[1] + along[1] * leafW, 4], [hinge[0] + along[0] * leafW, hinge[1] + along[1] * leafW, 56], [hinge[0], hinge[1], 56]], (u, v) => {
+      if (fr(u * 5) < 0.08) return TIMBER[0];
+      if (Math.abs(v - 0.15) < 0.05 || Math.abs(v - 0.85) < 0.05 || Math.abs(v - (0.15 + u * 0.7)) < 0.05) return TIMBER[1];
+      return u < 0.5 ? TIMBER[3] : TIMBER[2];
+    }, 113);
+    // the cairn
     const cairn: ReadonlyArray<readonly [number, number, number, number]> = [[0, 0, 6, 9], [4, -3, 16, 7], [-2, 2, 25, 6], [1, 0, 33, 5]];
-    cairn.forEach(([a, b, z, r], i) => R.box([L0 - 4 + a, half + 14 + b, z], XYZ, [r, r * 0.9, r * 0.7], (f, u, v, n) => (i === 3 && f === 1 && Math.abs(u - 0.5) < 0.1 ? CHALK : dressed(STONE, n, f, u, v, 1310 + i, false, 4)), 120 + i));
+    cairn.forEach(([a, b, z, r], i) => R.box([A - 20 + a, -(half + 20) + b, z], XYZ, [r, r * 0.9, r * 0.7], (f, u, v, n) => (i === 3 && f === 1 && Math.abs(u - 0.5) < 0.1 ? CHALK : dressed(STONE, n, f, u, v, 1310 + i, false, 4)), 120 + i));
     return startOf(R);
   });
 }
