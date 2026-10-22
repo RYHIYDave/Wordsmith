@@ -7,7 +7,7 @@
 // with a canvas (makeRingTitle), which its dev page films (src/dev/preview_title_ring.ts).
 //   run: tsx --test tests/title_ring.test.ts
 //   1. the switch is off, and nothing of the game uses the picture;
-//   2. the picture is whole: every pixel of it painted;
+//   2. the picture is whole: every pixel of it painted, and it sinks into the screen's dark at its foot and top;
 //   3. nothing warm or pink glows in it: what glows is his, cyan (the moon and the stars white; what
 //      his light falls on, the night's blue);
 //   4. it lives: the sky, the runes and the motes change from moment to moment; the hill under the ring
@@ -44,11 +44,19 @@ test('1. the switch is off, and nothing of the game uses the picture', () => {
   assert.deepEqual(users, []);
 });
 
-test('2. the picture is whole: every pixel of it painted', () => {
+test('2. the picture is whole, and sinks into the dark at its foot and top', () => {
   const p = paintRing(0);
   assert.equal(p.a.length, RING_W * RING_H);
   assert.ok(p.a.every((v) => v === 255));
   assert.ok(RING_LIP > 0 && RING_LIP < RING_H);
+  const night = (y: number): number => {
+    let n = 0;
+    for (let x = 0; x < RING_W; x++) if (p.d[y * RING_W + x] === 0x05040f) n++;
+    return n / RING_W;
+  };
+  assert.ok(night(RING_H - 1) > 0.9, 'its last row is all but the dark');
+  assert.ok(night(0) > 0.7, 'its first row too');
+  assert.ok(night(RING_H - 30) === 0 && night(20) < 0.01, 'and not far in');
 });
 
 test('3. nothing warm or pink glows in it: what glows is his, cyan', () => {

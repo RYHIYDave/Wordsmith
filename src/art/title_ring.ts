@@ -585,6 +585,17 @@ function paintMotes(p: Paint, t: number): void {
   }
 }
 
+/** The screen's own dark, round the picture where a tall screen shows past it (ui/panels.ts SMITH_NIGHT). */
+const NIGHT = h('#05040f');
+/** How far the picture has sunk into the screen's dark at row y: its foot and its top, dithered in. */
+const sunk = (y: number): number => (y >= H - 26 ? (y - (H - 26)) / 25 : y < 12 ? ((12 - y) / 12) * 0.85 : 0);
+function sinkEdges(p: Paint): void {
+  for (let y = 0; y < H; y++) {
+    const f = sunk(y);
+    if (f > 0) for (let x = 0; x < W; x++) if (bay(x, y) < f) p.set(x, y, NIGHT);
+  }
+}
+
 // THE PICTURE'S LIFE, as numbers of time: each stone's rune swells in turn, a wave going round the ring;
 // the stars twinkle; the aurora drifts and ripples; letters climb the column and drift up in the aurora;
 // motes of his light rise off the hill; and the surge (below).
@@ -617,6 +628,7 @@ export function paintRing(t = 0): Paint {
     lit(st);
   }
   paintMotes(p, t);
+  sinkEdges(p);
   return p;
 }
 
@@ -695,6 +707,9 @@ export function makeRingTitle(): RingTitle {
   const frontB = new Paint(true, lightB);
   for (const st of FRONT) paintStone(frontB, st);
   const frontBCv = frontB.canvas();
+  const edges = new Paint(true);
+  sinkEdges(edges);
+  const edgesCv = edges.canvas();
   const skyCv = sky.canvas();
   const lightACv = lightA.canvas();
   const frontACv = frontA.canvas();
@@ -854,6 +869,7 @@ export function makeRingTitle(): RingTitle {
       g.fillRect(x, y + 1, 1, 1);
     }
     g.globalCompositeOperation = 'source-over';
+    g.drawImage(edgesCv, 0, 0);
     return sheet;
   };
   const still = document.createElement('canvas');
