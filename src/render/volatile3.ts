@@ -65,19 +65,22 @@ export const VMELD_OF: Record<VMeldId, readonly [string, string]> = {
 /**
  * Each one's colours, darkest to brightest (the last its white-hot). Index 3 is the word's own colour,
  * index 4 its glow, as MELD_RAMP's are. Each looks like its two words, and is told apart from every
- * other word, the ten melds, the friend's cyan and the enemy's pink and gold: the nearest any of the
- * five comes to another colour, as the eye sees colour (CIEDE2000), is 12.1 (Shatter and Thunder);
- * the ten's nearest is 11.7, today's words' 10.5.
+ * other word (the city's four among them), the ten melds, Binding, the friend's cyan and the enemy's
+ * pink and gold: the nearest any of the five comes to another colour, as the eye sees colour
+ * (CIEDE2000), is 12.9 (Powderkeg and Power; Rupture and Volatile). Shatter and Chain Reaction were
+ * given new colours on 21 Oct, once the city's words were in the game: Shatter's nearest is now 13.5
+ * (Pulling), Chain Reaction's 15.4 (Thunder; the enemy's pink is 20.4 from it).
  */
 export const VMELD_RAMP: Record<VMeldId, readonly string[]> = {
   // rubble and blast dust, white-hot at its heart
   demolition: ['#120c16', '#2c2232', '#5a4a64', '#a08ab4', '#e2d6f0', '#ffffff'],
   // black powder, its ember, its flame
   powderkeg: ['#140806', '#3a1410', '#6e2418', '#a83c28', '#ff9a50', '#fff0b0'],
-  // ice gone violet
-  shatter: ['#0e1030', '#242a6a', '#4448b0', '#7c7cf0', '#c8ccff', '#ffffff'],
-  // a violet storm, its bolts lilac and white, their sparks lightning's yellow-white
-  chainreaction: ['#1c0e30', '#40206a', '#8050c8', '#e8b8ff', '#fffad8', '#ffffff'],
+  // sapphire ice, deep blue, splintering white (21 Oct: was ice gone violet, #7c7cf0, too near Pulling)
+  shatter: ['#060a2c', '#0e1c70', '#1838c0', '#2054fc', '#9cbcff', '#ffffff'],
+  // Volatile's violet charged white-hot: magenta bolts, violet-white sparks (21 Oct: was lilac,
+  // #e8b8ff, too near Splitting; its sparks no longer yellow, so that nothing of it burns pink to gold)
+  chainreaction: ['#200420', '#540a56', '#a808aa', '#fc00f8', '#f4d4ff', '#ffffff'],
   // a plum skin, the bile-green poison inside it
   rupture: ['#160818', '#3c1440', '#6c2a68', '#9c4890', '#d4ec7a', '#f6ffd0'],
 };

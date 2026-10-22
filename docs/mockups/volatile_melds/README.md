@@ -40,14 +40,15 @@ moment after, as Volatile does.
   top round to where it began, the keg's sigil glowing hotter as it comes round; then the fireball, a
   column of smoke and fire, and BURNING GROUND: scorched black, its cracks glowing, flames on it, and the
   powder in it popping, orange and violet.
-- **SHATTER** (Frost + Volatile), violet ice. *In front:* the frozen one bursts: a white flash, spears of
+- **SHATTER** (Frost + Volatile), sapphire ice (`#2054fc`; until 21 Oct violet ice, `#7c7cf0`, too near Pulling). *In front:* the frozen one bursts: a white flash, spears of
   ice racing out over the floor, shards flung every way, chunks of ice coming down, a star of frost left.
   *Shards hitting those around it:* a long shard flies straight at each and bursts on it. *Behind:* a
   six-pointed star of ice; it FREEZES WHAT IS NEAR: a sheet of ice sweeps out over the floor, crystals
   standing up out of it, what it reaches frozen (the game's own frozen look) and lit white; cracks run
   through it, it beats white; then ICE SPIKES burst up out of the floor all over it, stand a moment and
   break into shards, and the burst.
-- **CHAIN REACTION** (Lightning + Volatile), lilac, its sparks lightning's yellow-white. *In front:* an
+- **CHAIN REACTION** (Lightning + Volatile), magenta lightning, its sparks violet-white (`#fc00f8`; until 21 Oct
+  lilac, `#e8b8ff`, its sparks lightning's yellow-white, too near Splitting). *In front:* an
   explosion of lightning: a ball of bolts bursting out over the floor, crackling, cracking twice.
   *Arcs to the nearest:* thick forking bolts racing out to each, striking with a crack; what they strike
   crackles; those they kill go off in turn. *Behind:* a ring with a bolt across it; between runes in reach,
@@ -108,9 +109,9 @@ will (`carry`, `prime`, `rules`, `lay`): nothing of it runs unless a playtest ca
   picture each thirtieth of a second of the game's own clock; `tools/volatile_films.py` makes the MP4s.
   `src/dev/preview_volatile_runes.ts`: the sheet of stones and colours.
 - `tests/volatile3.test.ts` (8): the switch off and every hook behind it; nothing at all with it off; the
-  colours (six tones each; each word at least 12 from every other word, the ten melds, the friend's cyan,
-  runedust, the enemy's pink and gold, as the eye sees colour, CIEDE2000; the nearest is Shatter to Thunder,
-  12.1); nothing glows cyan or pink; the runes 7 by 7, each its own; every blast big, a rune's at least a
+  colours (six tones each; each word at least 12 from every other word, the city's four among them, the ten
+  melds, Binding, the friend's cyan, runedust, the enemy's pink and gold, as the eye sees colour, CIEDE2000;
+  the nearest 12.9, Powderkeg to Power and Rupture to Volatile); nothing glows cyan or pink; the runes 7 by 7, each its own; every blast big, a rune's at least a
   kill's, Demolition's the biggest, within the effects' limit; the twists landing on their targets; the
   runes and patches drawn here and forgotten on a new level.
 - Not run: the regression; a real phone; the five with real rules.
