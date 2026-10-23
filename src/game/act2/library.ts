@@ -35,6 +35,8 @@
 // apart as they will go; the Hush's circle round the closing bell, holding them all, clear of the doors and the Reading Room.
 
 import { RNG } from '../../engine/rng';
+// (the art chat's stacks a block high, behind its switch: nothing is hung on a low row)
+import { LOW_STACKS } from '../../art/low_stacks';
 import { act2Pack } from '../act2_mobs';
 import type { Act1Dress } from '../act1_dress';
 import type { AreaRole, Land, Laid, Lane } from '../act1_layout';
@@ -391,7 +393,9 @@ export function generate(depth: number, seed: number): Laid | null {
       zones[ty * W + tx] = LB.Hall;
     }
   }
-  for (const r of P.rooms) if (r.kind === 'stacks' || r.kind === 'sidestacks') shelve(rng, tiles, W, r.box, !!r.rowsX);
+  // (the stacks' rows, each tile of them marked: the art chat's low rows, art/low_stacks.ts, are painted on them)
+  const shelves = new Uint8Array(W * H);
+  for (const r of P.rooms) if (r.kind === 'stacks' || r.kind === 'sidestacks') shelve(rng, tiles, W, r.box, !!r.rowsX, shelves);
 
   // THE START, THE BOSS, THE WAY ON
   const E = P.rooms[0].box;
@@ -501,6 +505,7 @@ export function generate(depth: number, seed: number): Laid | null {
     arrive: { ...start },
     zones,
     bells,
+    shelves,
   };
   return { floor, land };
 }
@@ -511,7 +516,7 @@ export function generate(depth: number, seed: number): Laid | null {
  * the room's ends (a cross aisle three wide there), broken by a cross aisle two wide through the middle of a long room, and
  * now and then once more.
  */
-function shelve(rng: RNG, tiles: Uint8Array, W: number, b: Box, rowsX: boolean): void {
+function shelve(rng: RNG, tiles: Uint8Array, W: number, b: Box, rowsX: boolean, mask: Uint8Array): void {
   const across = rowsX ? b.h : b.w;
   const along = rowsX ? b.w : b.h;
   const a0 = rowsX ? b.x : b.y;
@@ -530,6 +535,7 @@ function shelve(rng: RNG, tiles: Uint8Array, W: number, b: Box, rowsX: boolean):
       const tx = rowsX ? a : c0 + k;
       const ty = rowsX ? c0 + k : a;
       tiles[ty * W + tx] = T_WALL;
+      mask[ty * W + tx] = 1;
     }
   }
 }
@@ -753,8 +759,11 @@ export function dress(L: Level, depth: number, seed: number): LibraryDress | nul
   /** The far walls' feet in a room's box: each a floor tile with a straight run of wall behind it. */
   const feet = (r: Room): { tx: number; ty: number; face: 0 | 1 }[] => {
     const out: { tx: number; ty: number; face: 0 | 1 }[] = [];
+    // (LOW_STACKS, art/low_stacks.ts: the stacks' rows a block high: nothing hung on a row, where it would hang in the air over a low case)
+    const shelf = (x: number, y: number): boolean => LOW_STACKS.on && !!land.shelves && x >= 0 && y >= 0 && x < W && y < f.h && land.shelves[y * W + x] === 1;
     for (let ty = r.y; ty < r.y + r.h; ty++) for (let tx = r.x; tx < r.x + r.w; tx++) {
       if (!floorAt(tx, ty) || f.tiles[ty * W + tx] !== T_FLOOR) continue;
+      if (shelf(tx, ty - 1) || shelf(tx - 1, ty)) continue;
       if (wallAt(tx, ty - 1) && wallAt(tx - 1, ty - 1) && wallAt(tx + 1, ty - 1) && floorAt(tx - 1, ty) && floorAt(tx + 1, ty)) out.push({ tx, ty, face: 0 });
       if (wallAt(tx - 1, ty) && wallAt(tx - 1, ty - 1) && wallAt(tx - 1, ty + 1) && floorAt(tx, ty - 1) && floorAt(tx, ty + 1)) out.push({ tx, ty, face: 1 });
     }

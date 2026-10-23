@@ -32,6 +32,10 @@ import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
 import { LB_DEEP, greatLibraryLook } from '../art/library';
 // (ACT 2: the walls toward the eye standing whole, behind ACT2_WALLS: art/standing.ts, render/act2_walls.ts)
 import { nearOf, paintWithStanding, standingBits } from '../art/standing';
+// (FLOOR 15'S STACKS A BLOCK HIGH, the art chat's, behind LOW_STACKS: art/low_stacks.ts)
+import { LOW_STACKS, lowStacksFloor, paintLowStacks, rowsOf, withLowStacks } from '../art/low_stacks';
+import type { Rows } from '../art/low_stacks';
+import type { StandingPiece } from '../art/standing';
 import { wallsThick } from './act2_walls';
 import type { WallBit } from './act2_walls';
 import { blobDist, laneDist, segDist } from '../game/act1_layout';
@@ -146,7 +150,24 @@ export function landTerrain(land: Land, floor: Floor, fresh = false): Terrain {
     const gl = gateWardLand(land, floor, fresh);
     return terrainOf(gateWardPaintFloor(gl, 'open'), gateWardLook(gl, 'open'));
   }
+  // (LOW_STACKS: the ground painted with the stacks' rows as floor, their boards; the low rows are stood over it, withLow)
+  const rows = lowRowsOf(land, floor);
+  if (rows) return terrainOf(lowStacksFloor(floor, rows), landLook(land, floor, fresh));
   return terrainOf(floor, landLook(land, floor, fresh));
+}
+
+/**
+ * FLOOR 15'S STACKS A BLOCK HIGH (the art chat's, art/low_stacks.ts, behind LOW_STACKS; his yes there by 13:06, 23 Oct 2026,
+ * “Yes, send to main (Recommended)”): the library's rows of shelves (game/act2/library.ts, Land.shelves), or null. The rows stay
+ * walls in the rules; only their picture changes: low bookcases stood with the walls standing whole, seen through round him as
+ * they are.
+ */
+export function lowRowsOf(land: Land, floor: Floor): Rows | null {
+  return LOW_STACKS.on && land.kind === 'library' && land.shelves ? rowsOf(land.shelves, floor.w, floor.h) : null;
+}
+/** The walls standing whole over a piece of the ground, with the low rows laid in (the nearer at each pixel). */
+export function withLow(rows: Rows | null, standing: StandingPiece, x0: number, y0: number, w: number, h: number): StandingPiece {
+  return rows ? withLowStacks(standing, paintLowStacks(rows, x0, y0, w, h)) : standing;
 }
 
 /** A floor's look. (`fresh`: ACT 2's look of 20 Oct, behind render/act2_walls.ts ACT2_WALLS: so far, floor 11's.) */
@@ -185,7 +206,7 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
     case 'housequiet':
       return houseOfQuietLook({ floor, zone: zoneOf(land, W, H) });
     case 'library':
-      return greatLibraryLook({ floor, zone: zoneOf(land, W, H) });
+      return greatLibraryLook({ floor, zone: zoneOf(land, W, H), rows: lowRowsOf(land, floor) ?? undefined });
     case 'quarry':
       return QUARRY_LOOK;
     case 'canyon':
@@ -305,6 +326,8 @@ export class OutdoorGround {
   private waiting = new Map<number, { since: number; frame: number }>();
   /** The floor being drawn (for the ground's worker). */
   private floor: Floor | null = null;
+  /** (LOW_STACKS) The library's rows of shelves, stood low with the walls; null elsewhere. */
+  private rows: Rows | null = null;
   /** Let go of a piece's picture, whoever painted it. */
   private drop(p: Piece): void {
     if ('close' in p.cvs) p.cvs.close();
@@ -328,6 +351,7 @@ export class OutdoorGround {
   begin(land: Land, floor: Floor): boolean {
     if (land === this.land) return false;
     this.land = land;
+    this.rows = lowRowsOf(land, floor);
     this.thick = wallsThick(land);
     this.T = landTerrain(land, floor, this.thick > 0);
     this.near = this.thick > 0 ? nearOf(this.T, this.thick) : null;
@@ -385,6 +409,7 @@ export class OutdoorGround {
     this.gid = 0;
     this.floor = null;
     this.land = null;
+    this.rows = null;
     this.T = null;
     this.thick = 0;
     this.stands = null;
@@ -413,7 +438,7 @@ export class OutdoorGround {
     const piece: Piece = { cvs, seen: this.frame };
     // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, in bits)
     if (both) {
-      const bits = standingBits(both.standing);
+      const bits = standingBits(withLow(this.rows, both.standing, i * PIECE, j * PIECE, PIECE, PIECE));
       if (bits.length) {
         piece.walls = bits.map((b) => {
           const bc = document.createElement('canvas');

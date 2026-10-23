@@ -39,7 +39,8 @@ import type { ClassId } from '../game/types';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
-import { PIECE, gateWardLand, landTerrain } from './outdoor';
+import { PIECE, gateWardLand, landTerrain, lowRowsOf, withLow } from './outdoor';
+import type { Rows } from '../art/low_stacks';
 // (ACT 2, THE GATE WARD: the shells of its houses walked into, painted here: render/act2_houses.ts)
 import { shellMaker } from './act2_houses';
 import { releaseSprite } from '../engine/px';
@@ -750,7 +751,7 @@ export function paintWorkerMain(): void {
   let seq = 0;
   let going = false;
   /** ACT 1: the floor whose ground this worker paints, and its terrain (and which floor it is: ACT 2, for the Gate Ward's shells). */
-  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null } | null = null;
+  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null; rows: Rows | null } | null = null;
   const keyOf = (land: Land, floor: Floor): string => `${land.kind}:${land.depth}:${land.seed}:${floor.w}x${floor.h}`;
 
   /** (ACT 2, THE GATE WARD) A floor's houses' shells, a house a step, each handed over as it is painted (render/act2_houses.ts). */
@@ -877,7 +878,8 @@ export function paintWorkerMain(): void {
           const bmp = cv.transferToImageBitmap();
           const walls: WallBitMsg[] = [];
           if (both) {
-            for (const b of standingBits(both.standing)) {
+            // (LOW_STACKS: the library's rows stood low with the walls, render/outdoor.ts withLow)
+            for (const b of standingBits(withLow(ground.rows, both.standing, a.i * PIECE, a.j * PIECE, PIECE, PIECE))) {
               const bc = new OffscreenCanvas(b.w, b.h);
               (bc.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(b.rgba, b.w, b.h), 0, 0);
               walls.push({ d: b.d, x0: b.x0, y0: b.y0, w: b.w, h: b.h, img: bc.transferToImageBitmap() });
@@ -920,7 +922,7 @@ export function paintWorkerMain(): void {
         const T = landTerrain(ask.land, ask.floor, ask.walls > 0);
         const near = ask.walls > 0 ? nearOf(T, ask.walls) : null;
         const stands = near ? (x: number, y: number): boolean => !T.ground(x, y) && !T.drop(x, y) && near(x, y) : null;
-        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near };
+        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near, rows: lowRowsOf(ask.land, ask.floor) };
       } catch (err) {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }

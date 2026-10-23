@@ -44,6 +44,8 @@ export interface Act2Land {
   yards?: [number, number, number, number][];
   /** THE BELLS, where they are on this floor. */
   bells?: BellsPlan;
+  /** THE GREAT LIBRARY: 1 for each tile of the stacks' rows of shelves (game/act2/library.ts shelve; art/low_stacks.ts paints them low). */
+  shelves?: Uint8Array;
   /** (THE CAMP, game/camp.ts: the Gate Ward's ground as the city's people keep it, art/gateward.ts GateWardLand.swept) */
   swept?: boolean;
 }

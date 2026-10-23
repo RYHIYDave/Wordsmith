@@ -1,4 +1,4 @@
-// EXITS, FLOORS 6 TO 10: A FILM FROM THE GAME of each floor's way on (game/ways.ts ONWARD; the art chat's pictures,
+// EXITS, FLOORS 6 TO 15: A FILM FROM THE GAME of each floor's way on (game/ways.ts ONWARD; the art chat's pictures,
 // art/act1_ways.ts): where the floor begins, the way on shut, the boss struck down and its film, the way open, and walked
 // into, on. Frames as it plays, slowed (<out>_<floor>_f0000.png ...), for a video put together after. Not a test.
 //   node tools/playtest.mjs --file dist/exits.html --touch --size 844x390 --dpr 1.5 --scenario tools/scenarios/onward_film.mjs --out shots/onward/film/x
@@ -98,7 +98,12 @@ export default async function (page, snap) {
       return a1;
     }, [depth, U]);
     log(`floor ${depth}`, JSON.stringify(st));
-    log('start film', await waitFilm(`start:${depth}:${st.startDir}`, 30));
+    // (the painter's keys: a way in a wall is known by where it stands too, game/ways.ts onwardKey)
+    const keys = await page.evaluate(() => (window.__dbg.wayKeys ? window.__dbg.wayKeys() : null));
+    const onKey = keys ? keys.onward : `onward:${depth}:${st.dir}`;
+    const startKey = keys ? keys.start : `start:${depth}:${st.startDir}`;
+    log('keys', JSON.stringify({ onKey, startKey }));
+    log('start film', startKey ? await waitFilm(startKey, 30) : 'none');
     // (the floor's name across the screen as he comes in: wait it out)
     await page.waitForTimeout(500);
     await quiet();
@@ -126,7 +131,7 @@ export default async function (page, snap) {
     }, U);
     // (the game held still while its film is painted: nobody fights)
     await slow(0);
-    log('way film', await waitFilm(`onward:${depth}:${st.dir}`, 240));
+    log('way film', await waitFilm(onKey, 240));
     await slow(1);
     await page.evaluate((U) => {
       const g = window.__dbg.game();

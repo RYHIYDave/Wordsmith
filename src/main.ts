@@ -87,6 +87,9 @@ import type { HudIn, HudOut } from './ui/hud';
 import { guideAttack, guideBanner } from './ui/guide';
 import { WORD_HALF, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import { EXIT_LABELS, exitLabels } from './game/exit_labels';
+import { LOW_STACKS } from './art/low_stacks';
+import { AISLES_CLEAR } from './game/act2/library';
+import { LEAP_WATER } from './game/water';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
 import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
@@ -2113,6 +2116,17 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     wordHalf: WORD_HALF,
     /** (THE EXITS' NAMES, behind EXIT_LABELS in game/exit_labels.ts) Its switch. */
     exitLabels: EXIT_LABELS,
+    /** (FLOOR 15'S STACKS A BLOCK HIGH, behind LOW_STACKS in art/low_stacks.ts) Its switch: set it before the floor is made. */
+    lowStacks: LOW_STACKS,
+    /** (THE STACKS' AISLES CLEAR, behind AISLES_CLEAR in game/act2/library.ts) Its switch: set it before the floor is made. */
+    aislesClear: AISLES_CLEAR,
+    /** (THE SWIPE OVER WATER, behind LEAP_WATER in game/water.ts) Its switch: set it before the floor is made. */
+    leapWater: LEAP_WATER,
+    /** (EXITS) The painter's keys of this floor's way on and of the piece where it begins (game/ways.ts onwardKey, startKey), or null. */
+    wayKeys: () => {
+      const a1 = game?.level.ways?.a1;
+      return a1 ? { onward: onwardKey(a1), start: startKey(a1) } : null;
+    },
     /** The names the level's open exits carry (game/exit_labels.ts). */
     exitNames: () => (game ? exitLabels(game.level).map((e) => e.text) : []),
     /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */

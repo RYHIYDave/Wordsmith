@@ -64,7 +64,10 @@ const PW = Math.ceil(rx - X0) + 2;
 const PH = Math.ceil(by - Y0) + 8;
 const LOW = paintLowStacks(rows, X0, Y0, PW, PH);
 
-test('1. the switch off, and nothing of the game imports the file', () => {
+// (TOLD BY THE MAIN CHAT, 23 Oct 2026: hooked in behind the switch, on his yes in the art chat by 13:06, “Yes, send to main
+// (Recommended)”: the library's rules mark the rows and hang nothing on them, the ground paints them low, and the page's handle
+// holds the switch for pictures. Still off until he says to put it live.)
+test('1. the switch off, and the game files that use it are the main chat\'s hooks', () => {
   assert.equal(LOW_STACKS.on, false, 'LOW_STACKS is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: unknown) => String(x).replace(/\\/g, '/'))) {
@@ -79,7 +82,7 @@ test('1. the switch off, and nothing of the game imports the file', () => {
       if (parts.join('/') === 'art/low_stacks') users.push(f);
     }
   }
-  assert.equal(users.join(' '), '', 'game files that import it');
+  assert.equal(users.sort().join(' '), 'game/act2/library.ts main.ts render/outdoor.ts render/painter.ts', 'game files that import it');
 });
 
 test('2. the floor the ground is painted from: the rows floor, nothing else; under them the stacks\' own floor', () => {
