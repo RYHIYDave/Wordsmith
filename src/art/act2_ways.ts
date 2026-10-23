@@ -860,8 +860,8 @@ function paintStitch(R: Rig, s: Stitch, k: number, strain: number): void {
   const p = (u: number, w: number): V3 => (s.head ? [a, s.b + w, s.z + u] : [a, s.b + u * Math.sign(s.b), s.z + w]);
   const pull = strain * Math.sin(s.seed * 3 + k * 0.9) * 0.5;
   if (k < 0) {
-    for (const sg of [-1, 1]) R.rod(p(-5 - pull, -4 * sg), p(5 + pull, 4 * sg), 0.9, 0.9, THREAD, 90 + (s.seed % 6));
-    R.egg(p(0, 0), XYZ, [1.9, 1.9, 1.9], (n) => toneAt(n, THREAD, 0.25), 90 + (s.seed % 6));
+    for (const sg of [-1, 1]) R.rod(p(-5 - pull, -4 * sg), p(5 + pull, 4 * sg), 1.3, 1.3, THREAD, 90 + (s.seed % 6));
+    R.egg(p(0, 0), XYZ, [2.4, 2.4, 2.4], (n) => toneAt(n, THREAD, 0.25), 90 + (s.seed % 6));
     // the holes it is drawn through, pricked in the case and the door
     for (const u of [-5, 5]) for (const sg of [-1, 1]) R.egg(p(u, 4 * sg), XYZ, [0.9, 0.9, 0.9], () => THREAD[0], 96);
     return;
@@ -951,7 +951,7 @@ const WALNUT: Ramp = ['#1f1610', '#2e2117', '#3d2c1f', '#4c3828', '#5e4632'];
 const GILT: Ramp = ['#4a3c22', '#6e5a32', '#8c733f', '#b39552', '#cdb070'];
 const DOOR_OAK: Ramp = ['#1a130e', '#34261a', '#402f21', '#4b3828', '#5d4632'];
 const MORNING: Ramp = ['#6e6c66', '#8a8780', '#a6a299', '#c0bbb0', '#d6d1c4'];
-const GLOSS = '#36303f';
+const GLOSS = '#4a4458';
 
 /** The doorcase round the arch: pilasters with gilt capitals, an archivolt with a gilt bead, a keystone carved with an open book. */
 function doorcase(b: number, z: number, D: Doorway): string | null {
@@ -1058,9 +1058,9 @@ export function libraryWay(d: WayDir, at: WallAt = AT0, zone: number = LB_ZONE.R
       U.quad([[0, -D.ow, 0.35], [-100 * open, -D.ow * 1.9, 0.35], [-100 * open, D.ow * 1.9, 0.35], [0, D.ow, 0.35]], (u, v) => {
         // solid by the doors, thinning away from them in an ordered dither, softer at its sides
         const edge = Math.min(v, 1 - v);
-        const keep = 1.15 - u * 1.25 - (edge < 0.15 ? (0.15 - edge) * 3 : 0);
+        const keep = 1.05 - u * 1.3 - (edge < 0.15 ? (0.15 - edge) * 3 : 0);
         if (bayer(Math.floor(u * 100), Math.floor(v * 60)) >= keep) return null;
-        return u < 0.35 ? MORNING[2] : MORNING[1];
+        return u < 0.3 ? MORNING[4] : MORNING[3];
       }, 6);
     }
     leaves(open > 0 ? U : R, f > F.frames ? 1 : open);
@@ -1071,7 +1071,8 @@ export function libraryWay(d: WayDir, at: WallAt = AT0, zone: number = LB_ZONE.R
         const z = v * (D.oh + 30);
         const k = inkAt(b, z, drain, f);
         if (!k) return null;
-        return k === 'bar' ? INK[0] : k === 'barEdge' || k === 'edge' ? INK[4] : k === 'gloss' ? GLOSS : z < 4 ? INK[1] : INK[2];
+        if (k === 'barEdge') return drain < 0.15 && hash(Math.floor(b / 2), Math.floor(z), 2112 + (f >> 2)) < 0.7 ? SEAL_PINK[2] : INK[4];
+        return k === 'bar' ? INK[0] : k === 'edge' ? INK[4] : k === 'gloss' ? GLOSS : z < 4 ? INK[1] : INK[2];
       }, 70);
     }
     // its pool at their foot, spreading as it drains, then sinking away into the floor
@@ -1184,10 +1185,10 @@ export function undercityStart(d: WayDir): StartArt {
     const U = new Rig(SW, SH, SAX, SAY, d, 0);
     const MOON: Ramp = ['#4c5058', '#62666e', '#7a7e86', '#92969c', '#aeb1b4'];
     // the moon's light on the floor round its foot, and its shaft coming down
-    U.quad([[-10, -34, 0.3], [70, -34, 0.3], [70, 34, 0.3], [-10, 34, 0.3]], (u, v) => {
+    U.quad([[-14, -44, 0.3], [74, -44, 0.3], [74, 44, 0.3], [-14, 44, 0.3]], (u, v) => {
       const r = Math.hypot((u - 0.5) * 2, (v - 0.5) * 2);
-      if (bayer(Math.floor(u * 80), Math.floor(v * 68)) >= 1.25 - r * 1.3) return null;
-      return r < 0.45 ? MOON[2] : MOON[1];
+      if (bayer(Math.floor(u * 88), Math.floor(v * 88)) >= 1.3 - r * 1.25) return null;
+      return r < 0.5 ? MOON[4] : MOON[3];
     }, 5);
     // a puddle by its foot
     U.egg([18, 14, 0.4], XYZ, [12, 8, 0.3], (_n, w) => (hash(Math.floor(w[0]), Math.floor(w[1]), 2211) < 0.1 ? MOON[3] : '#1a2a24'), 6);
