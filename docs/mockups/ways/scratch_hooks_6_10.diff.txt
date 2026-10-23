@@ -1,0 +1,105 @@
+diff --git a/src/main.ts b/src/main.ts
+index daa280c..7252688 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -60,6 +60,7 @@ import type { BossCard, FloorCard } from './ui/cards';
+ import { DOORS, doorMiddle, doorTiles } from './game/doors';
+ import { EXITS, WAYS, stairMiddle, topStep } from './game/ways';
+ import { TOWN_WAYS } from './art/town_ways';
++import { A1_WAYS } from './art/act1_ways';
+ import { MIX, RELIEF } from './game/dungeon';
+ import { Game, cleanMeta } from './game/game';
+ import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
+@@ -2053,6 +2054,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
+     exits: EXITS,
+     /** (SCRATCH) the art chat's town ways, for its pictures */
+     townWays: TOWN_WAYS,
++    a1Ways: A1_WAYS,
+     /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
+     doorWalls: (on: boolean, near = false) => {
+       DOOR_WALLS.on = on;
+diff --git a/src/render/render.ts b/src/render/render.ts
+index 4b43475..c9e9922 100644
+--- a/src/render/render.ts
++++ b/src/render/render.ts
+@@ -68,6 +68,50 @@ import { FloorPieces } from './pieces';
+ import type { Stage } from './dress';
+ import { floorLook, lookWays } from '../art/floors';
+ import { TOWN_WAYS, floorStairsUp, gateBars, gateLeft, townStairs, unbarFilm } from '../art/town_ways';
++import { A1_WAYS, canyonStart, canyonWay, fenStart, fenWay, ledgeStart, ledgeWay, pinewoodStart, pinewoodWay, quarryStart, quarryWay } from '../art/act1_ways';
++import { wayDirOf } from '../art/ways_kit';
++import type { StartArt, WayArt, WayDir } from '../art/ways_kit';
++import type { Sprite as WaySprite } from '../engine/px';
++/** (SCRATCH, the art chat's pictures) Floors 6 to 10's ways on and starts, by depth. */
++const A1W: Record<number, { way: (d: WayDir) => WayArt; start: (d: WayDir) => StartArt }> = {
++  6: { way: quarryWay, start: quarryStart },
++  7: { way: ledgeWay, start: ledgeStart },
++  8: { way: canyonWay, start: canyonStart },
++  9: { way: pinewoodWay, start: pinewoodStart },
++  10: { way: fenWay, start: fenStart },
++};
++/** The start piece of a floor: the one before's way's own kind (floor 7 begins at the foot of floor 6's stair...). */
++const A1S: Record<number, (d: WayDir) => StartArt> = { 6: quarryStart, 7: ledgeStart, 8: canyonStart, 9: pinewoodStart, 10: fenStart };
++/** The way on's pictures as they stand now on a level (shut, a film's frame, open), and the start's. */
++function a1Ways(L: { floor: { depth: number; start: { x: number; y: number }; boss: { x: number; y: number } }; town: boolean; ways?: { onward?: { x: number; y: number; awake: boolean; warpAt: number | null } | null } | null }, now: number): { way?: { under: WaySprite | null; over: WaySprite; x: number; y: number }; start?: { art: StartArt; x: number; y: number } } {
++  if (!A1_WAYS.on || L.town) return {};
++  const k = L.floor.depth;
++  const kind = A1W[k];
++  if (!kind) return {};
++  const out: ReturnType<typeof a1Ways> = {};
++  const st = L.floor.start;
++  const b = L.floor.boss;
++  const sd = wayDirOf(st.x - b.x, st.y - b.y);
++  const sa = A1S[k](sd);
++  const sb = sa.back ?? 0;
++  out.start = { art: sa, x: st.x + (sd === 'x+' ? sb : sd === 'x-' ? -sb : 0), y: st.y + (sd === 'y+' ? sb : sd === 'y-' ? -sb : 0) };
++  const o0 = L.ways?.onward;
++  if (o0) {
++    const dir = wayDirOf(o0.x - b.x, o0.y - b.y);
++    const art = kind.way(dir);
++    const bk = art.back ?? 0;
++    const ux = dir === 'x+' ? 1 : dir === 'x-' ? -1 : 0;
++    const uy = dir === 'y+' ? 1 : dir === 'y-' ? -1 : 0;
++    const o = { ...o0, x: o0.x - ux * bk, y: o0.y - uy * bk };
++    if (!o.awake || o.warpAt === null) out.way = { under: art.shut.under, over: art.shut.over, x: o.x, y: o.y };
++    else {
++      const f = Math.floor((now - o.warpAt) * art.film.fps);
++      if (f < art.film.frames.length) out.way = { under: null, over: art.film.frames[Math.max(0, f)], x: o.x, y: o.y };
++      else out.way = { under: art.open.under, over: art.open.over, x: o.x, y: o.y };
++    }
++  }
++  return out;
++}
+ /** (SCRATCH) When the town's gate was seen unbarred, in seconds of the page (-1: barred when last seen; 0: never barred). */
+ let unbarFrom = 0;
+ import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
+@@ -580,8 +624,14 @@ export class Renderer {
+         const sp = floorStairsUp(CRYPT_FLOORS[0], s.alongX);
+         g.drawImage(sp.img, Math.round(wx(cam, x, y)) - sp.ax, Math.round(wy(cam, x, y)) - sp.ay, sp.w, sp.h);
+       }
++    // (SCRATCH, the art chat's pictures: floors 6 to 10's ways on and starts, under what stands)
++    const a1 = a1Ways(L, game.time);
++    for (const it of [a1.start ? { s: a1.start.art.under, x: a1.start.x, y: a1.start.y } : null, a1.way && a1.way.under ? { s: a1.way.under, x: a1.way.x, y: a1.way.y } : null]) {
++      if (!it) continue;
++      g.drawImage(it.s.img, Math.round(wx(cam, it.x, it.y)) - it.s.ax, Math.round(wy(cam, it.x, it.y)) - it.s.ay, it.s.w, it.s.h);
++    }
+     // (ACT 1: and the way on, once it has woken: a waypoint's own picture, awake: nothing is there before)
+-    for (const w of [W.way, W.onward && W.onward.awake ? W.onward : null]) {
++    for (const w of [W.way, W.onward && W.onward.awake && !a1.way ? W.onward : null]) {
+       if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) continue;
+       const sp = w.awake ? art.way.awake[Math.floor(t * 10) % WAY_FRAMES] : art.way.asleep;
+       const x = Math.round(wx(cam, w.x, w.y));
+@@ -593,8 +643,12 @@ export class Renderer {
+ 
+   /** THE WAYS: what stands over the level's waypoint: the motes of light while it is awake; the column of a warp, by the level's own time (`now`). */
+   private standWays(L: Game['level'], t: number, now: number): void {
++    // (SCRATCH, the art chat's pictures: floors 6 to 10's ways on and starts, standing)
++    const a1 = a1Ways(L, now);
++    if (a1.start) this.stand(a1.start.x + a1.start.y + 0.6, a1.start.art.over, Math.round(wx(this.cam, a1.start.x, a1.start.y)), Math.round(wy(this.cam, a1.start.x, a1.start.y)));
++    if (a1.way) this.stand(a1.way.x + a1.way.y + 0.6, a1.way.over, Math.round(wx(this.cam, a1.way.x, a1.way.y)), Math.round(wy(this.cam, a1.way.x, a1.way.y)));
+     // (ACT 1: the way on too, once awake: its column flares as it wakes, as a warp's)
+-    for (const w of [L.ways?.way, L.ways?.onward && L.ways.onward.awake ? L.ways.onward : null]) {
++    for (const w of [L.ways?.way, L.ways?.onward && L.ways.onward.awake && !a1.way ? L.ways.onward : null]) {
+       if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) continue;
+       const art = lookWays(L.town ? 1 : Math.max(1, floorLook(L.floor.depth)));
+       const f = w.warpAt === null ? -1 : Math.floor((now - w.warpAt) * 20);
