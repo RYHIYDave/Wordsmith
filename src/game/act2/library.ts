@@ -48,6 +48,15 @@ import type { Floor, HazardSpot, PackSpot, PropSpot, Room, RoomKind } from '../t
 export const BUILT = true;
 
 /**
+ * THE STACKS' AISLES CLEAR (off until his yes to pictures of it, with the art chat's low shelves). The owner, 23 Oct 2026, 11:40
+ * (Pacific): “The library is really hard to navigate.  The rows of shelves room needs the rows to maybe only be one block high,
+ * and there shouldn’t be any little doodad in the isles”. On: no gate of the Order across an aisle's mouth (stacksOf); the
+ * steps, the catalogue and the heaps of books stay at the shelves' ends, on the rows' own lines. (The dice are thrown as before,
+ * so that nothing else of the floor moves.)
+ */
+export const AISLES_CLEAR = { on: false };
+
+/**
  * WHAT EACH WALKABLE TILE IS (Land.zones), as the art's look reads it (art/library.ts LB_ZONE: these are its numbers, held to
  * them by tests/act2_library.test.ts; the game's code does not import the art's ground).
  */
@@ -983,7 +992,7 @@ export function dress(L: Level, depth: number, seed: number): LibraryDress | nul
     for (const c of rng.shuffle(aisles).slice(0, rng.int(0, 2))) {
       const a = rng.chance(0.5) ? a0 + 3 : a0 + along - 4;
       const [tx, ty] = at(a, c);
-      if (taken[ty * W + tx] || !floorAt(tx, ty)) continue;
+      if (taken[ty * W + tx] || !floorAt(tx, ty) || AISLES_CLEAR.on) continue;
       put(LB_PIECES.gate, tx, ty, false, rowsX ? 3 : 1, rowsX ? { x: tx + 0.5, y: ty + 1 } : { x: tx + 1, y: ty + 0.5 });
     }
     dressWalls(r, 8, []);
