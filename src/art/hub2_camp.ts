@@ -81,7 +81,11 @@ export function bazaar(x: number, y: number): TownLaid[] {
  * the Lexicon on crates; the stash on a handcart; the stranger's barrel of dice.
  */
 const STONES: [number, number][] = [[-2, -1], [-1, -2], [1, -2], [-2, 1], [2, -1], [-1, 2]];
-export function campPlace(all: boolean): Place {
+/** THE WAY OUT TO FLOOR 11 (the art chat's ways between the floors, 22 Oct 2026; his yes to the ways for 6 to 15 by 14:16,
+ * “Yes, paint them (Recommended)”): the street off to the right with its cart barricade HAULED ASIDE, dragged over against
+ * the house fronts on the street's far side, the street open on out into the Gate Ward. Where it stands then. */
+export const CAMP_BARRICADE_ASIDE = { x: 38.6, y: 25.35 };
+export function campPlace(all: boolean, wayOut = false): Place {
   const R: [number, number] = [21, 28];
   return {
     name: 'Vellum',
@@ -120,7 +124,7 @@ export function campPlace(all: boolean): Place {
       { name: 'sacks of grain', frame: 0, x: 23.6, y: 15.8 },
       { name: 'hay bales', frame: 0, x: 34.9, y: 29.6 },
       { name: 'handcart', frame: 0, x: 33.0, y: 30.6 },
-      { name: 'the cart barricade', frame: 0, x: 36.4, y: 26.4 },
+      wayOut ? { name: 'the cart barricade', frame: 0, ...CAMP_BARRICADE_ASIDE } : { name: 'the cart barricade', frame: 0, x: 36.4, y: 26.4 },
       { name: 'crates', frame: 0, x: 35.2, y: 24.4 },
       { name: 'street lamp', frame: 0, x: 16.6, y: 20.6, anim: 3 },
       { name: 'street lamp', frame: 1, x: 18.6, y: 31.4, anim: 3 },

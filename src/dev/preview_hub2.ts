@@ -464,6 +464,12 @@ if (HASH === 'square' || HASH === 'square-phone') {
 } else if (HASH === 'camp' || HASH === 'camp-phone' || HASH === 'camp-all' || HASH === 'camp-all-phone') {
   drawPlace(campPlace(HASH.startsWith('camp-all')), PHONE);
   show();
+} else if (HASH === 'camp-out' || HASH === 'camp-out-phone' || HASH === 'camp-in-phone') {
+  // THE WAY OUT TO FLOOR 11: the barricade hauled aside (camp-in-phone: as it stood, the knight in the same place)
+  const pl = campPlace(false, HASH !== 'camp-in-phone');
+  const at: [number, number] = [36.6, 26.9];
+  drawScene(pl, { t: T0, cam: PHONE ? at : pl.whole, hero: at, heroSprite: spriteOf3(MOVES3.rear, 0.3, 'back') });
+  show();
 } else if (HASH === 'camp-film' || HASH.startsWith('camp-film@')) {
   void (async () => {
     folkMod = await import('../art/hub2_folk');
