@@ -4,3 +4,4 @@ dist/
 # the pictures sent to the owner: some 260 MB of them, kept out of the repository for now
 previews/
 node_modules/
+node_modules
