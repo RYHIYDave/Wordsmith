@@ -30,10 +30,18 @@
 //
 // FOR THE MAIN CHAT: `pinewoodLook(land)` makes the look for a level, from what only the level knows: where
 // its river runs, where its trails run, and how far the swamp's sickness has crept (each optional).
+//
+// THE RIVER FLOWING (art/flowing.ts, behind FLOW, off; the art chat, 23 Oct): with FLOW on, the river is painted in the mill
+// race's look in the Pinewood's own stone and water: banked with mossy river boulders, its slate water lively (foam streaks,
+// standing waves in chevrons, white at its banks), and running: `pinewoodFlow(land)` gives its water at each frame, for the
+// game to lay over the ground. `land.riverAlong` (how far along the river's line, tiles, the way it runs: flowing.ts lineAlong)
+// carries what moves, and `land.riverSide` (which side of it and how far: lineSide) lays its streaks along it round its bends.
 
 import type { RGB, TerrainLook } from './terrain';
 import { fbm, vnoise } from './terrain';
 import { hash } from './kit';
+import { FLOW, acrossOf, waterAt } from './flowing';
+import type { FlowLayer, WaterStyle } from './flowing';
 
 const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mixc = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -83,6 +91,9 @@ export interface PineLand {
   trail?: (x: number, y: number) => number;
   /** How sick the ground is with the swamp's violet: 0 none, 1 the most (toward the swamp, east). */
   sick?: (x: number, y: number) => number;
+  /** (art/flowing.ts, FLOW) How far along its river's line a place is (tiles, the way it runs: lineAlong), and how far to its left (+) or right (−) (tiles: lineSide). */
+  riverAlong?: (x: number, y: number) => number;
+  riverSide?: (x: number, y: number) => number;
 }
 /** The river's water reaches this far either side of its middle (tiles); its banks this much further. */
 export const RIVER_HALF = 0.55;
@@ -162,6 +173,71 @@ function water(land: PineLand, x: number, y: number, px: number, py: number, d: 
   if (hash(px >> 1, py, 1035) < 0.004) c = C_WATER[5];
   return c;
 }
+// ---------------------------------------------------------------------------------------------------
+// THE RIVER FLOWING (FLOW on): in the mill race's look, in the Pinewood's own stone and water
+
+/** The river's foam, slate going white (its hue clear of cyan). */
+export const C_FOAM = ['#8a94a2', '#b6bec8', '#dadee2'].map(hex);
+/** Its boulders' moss caps. */
+const BOULDERS = 0.24;
+/** THE RIVER, flowing: a mountain stream come down out of the canyon, quick and broken white. */
+export const C_RIVER_FLOW: WaterStyle = { water: C_WATER, foam: C_FOAM, half: RIVER_HALF, speed: 2, chevron: 1.5, foamy: 0.8, seed: 1600 };
+function flowingWater(land: PineLand, x: number, y: number, px: number, py: number, d: number, frame: number): RGB {
+  const [fx, fy] = flowOn(land, x, y);
+  const s = land.riverAlong ? land.riverAlong(x, y) : (fx * px + fy * py) / 32;
+  return waterAt(C_RIVER_FLOW, s, d, acrossOf(land.riverSide, x, y, fx, fy, px, py), x, y, px, py, frame);
+}
+/** ITS BANKS OF BOULDERS (FLOW on): rounded river stones packed along it, lit at their upper left, moss on their tops, dark wet gaps between. */
+function boulders(x: number, y: number, px: number, py: number, d: number): RGB {
+  const k = (d - RIVER_HALF) / BOULDERS;
+  // (each stone a cell round a point scattered over the world, a fifth of a tile apart)
+  const S = 0.19;
+  const gx = x / S;
+  const gy = y / S;
+  const ix = Math.floor(gx);
+  const iy = Math.floor(gy);
+  let d1 = 9;
+  let d2 = 9;
+  let cx = 0;
+  let cy = 0;
+  let id = 0;
+  for (let j = -1; j <= 1; j++) {
+    for (let i = -1; i <= 1; i++) {
+      const qx = ix + i + 0.15 + 0.7 * hash(ix + i, iy + j, 1061);
+      const qy = iy + j + 0.15 + 0.7 * hash(ix + i, iy + j, 1062);
+      const dd = Math.hypot(gx - qx, gy - qy);
+      if (dd < d1) {
+        d2 = d1;
+        d1 = dd;
+        cx = qx;
+        cy = qy;
+        id = (ix + i) * 7919 + (iy + j);
+      } else if (dd < d2) d2 = dd;
+    }
+  }
+  // the dark wet gaps between them, darker nearer the water
+  if (d2 - d1 < 0.16) return k < 0.35 ? C_MUD[0] : C_MUD[1];
+  // where on the stone, on the picture: lit at its upper left, shaded at its lower right
+  const wx = gx - cx;
+  const wy = gy - cy;
+  const ox = (wx - wy) * S * 32;
+  const oy = (wx + wy) * S * 16;
+  const lit = -ox * 0.5 - oy;
+  if (oy < -1.2 && hash(id, 0, 1063) < 0.5 && k > 0.3) return C_MOSS[over(fbm(x * 3, y * 3, 1064), 0.5, px, py) ? 2 : 1];
+  let c = lit > 1.4 ? C_STONE[2] : lit < -1.4 ? C_STONE[0] : C_STONE[1];
+  // (the stones nearest the water wet and dark)
+  if (k < 0.3) c = mixc(c, C_WATER[1], 0.4);
+  return c;
+}
+
+/** THE PINEWOOD'S RIVER, FLOWING (FLOW): its water at each frame, for the game to lay over the ground. */
+export function pinewoodFlow(land: PineLand): FlowLayer {
+  return {
+    at: (x, y) => !!land.river && land.river(x, y) < RIVER_HALF,
+    paint: (x, y, px, py, frame) => flowingWater(land, x, y, px, py, land.river!(x, y), frame),
+  };
+}
+
 /** ITS BANK: wet mud, river stones lit at their upper left, the water's line of light at its foot. */
 function bank(x: number, y: number, px: number, py: number): RGB {
   const t = fbm(x * 2, y * 2, 1041);
@@ -271,7 +347,8 @@ function meadowOf(land: PineLand) {
     // the river, under a footbridge, and its banks
     if (land.river) {
       const d = land.river(x, y);
-      if (d < RIVER_HALF) return water(land, x, y, px, py, d);
+      if (d < RIVER_HALF) return FLOW.on ? flowingWater(land, x, y, px, py, d, 0) : water(land, x, y, px, py, d);
+      if (FLOW.on && d < RIVER_HALF + BOULDERS) return sicken(boulders(x, y, px, py, d), x, y, px, py, sick);
       if (d < RIVER_HALF + BANK) return sicken(bank(x, y, px, py), x, y, px, py, sick);
       if (d < RIVER_HALF + BANK + 0.25) return sicken(riverside(x, y, px, py), x, y, px, py, sick);
     }
@@ -341,7 +418,8 @@ function forestFloorOf(land: PineLand) {
     const sick = land.sick ? cl(land.sick(x, y), 0, 1) : 0;
     if (land.river) {
       const d = land.river(x, y);
-      if (d < RIVER_HALF) return water(land, x, y, px, py, d);
+      if (d < RIVER_HALF) return FLOW.on ? flowingWater(land, x, y, px, py, d, 0) : water(land, x, y, px, py, d);
+      if (FLOW.on && d < RIVER_HALF + BOULDERS) return sicken(boulders(x, y, px, py, d), x, y, px, py, sick);
       if (d < RIVER_HALF + BANK) return sicken(bank(x, y, px, py), x, y, px, py, sick);
       if (d < RIVER_HALF + BANK + 0.6) return sicken(riverside(x, y, px, py), x, y, px, py, sick);
     }

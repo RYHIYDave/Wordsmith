@@ -26,6 +26,7 @@ import { FLAME } from './mkit';
 import { CANDLE, SWING, bell, bellGlow, metalOf } from './floor11';
 import { rope, timber } from './floor6';
 import { DEAL, IRON, OAK, PAPER, ROPE, SOFT_ID, STONE, checker, cylinder, done, facing, local, lying, scene, slab, turned } from './act2_kit';
+import { FLOW } from './flowing';
 
 const fr = (t: number): number => t - Math.floor(t);
 const add = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -86,6 +87,92 @@ function drips(S: Scene, x: number, y: number, z: number, n: number, seed: numbe
 
 // =================================================================================================
 // THE MILL AND ITS WORKS
+
+/**
+ * THE WATER WHEEL, LIVELIER (art/flowing.ts FLOW on; the owner, 23 Oct: “The water wheel and the river are pretty boring”):
+ * the same wheel, its frames an eighth of a paddle apart (WHEEL_STEPS to the next paddle, so it turns smooth), and alive with
+ * its race: water thrown up off each paddle as it rises out of the race and falling back off its tip in sheets and drops,
+ * spray flung out ahead of it, the race piled white against its upstream paddles and churned white under and after it. Every
+ * WHEEL_STEPS frames come round to the first (the next paddle where this one was). 200 x 220 at (100, 160), as the first.
+ * FOR THE GAME: its frames are four rounds of WHEEL_STEPS: looking along +y turning as the first wheel's frames played forward,
+ * then turning back (its race running the other way: its spray and white water with it); then the same two looking along +x.
+ * Play each forward, WHEEL_TURN frames a second (a paddle in a quarter second, a turn in four).
+ */
+export const WHEEL_STEPS = 8;
+export const WHEEL_TURN = 32;
+function waterWheel2(frame: number, k: number, back = false): Sprite {
+  const sg = back ? -1 : 1;
+  const S = turned(scene(200, 220, 100, 160), k);
+  const R = 40;
+  const C: V3 = [0, 0, R + 2];
+  const W2 = 11;
+  const ph = frame / WHEEL_STEPS;
+  const turn = sg * ph * ((Math.PI * 2) / 16);
+  const P = (a: number, r: number, y: number): V3 => [C[0] + Math.cos(a) * r, y, C[2] + Math.sin(a) * r];
+  for (const sy of [-1, 1]) {
+    const y = sy * (W2 + 7);
+    S.rod([-14, y, 0], [0, y, C[2] + 2], 2, 1.8, TIMBER, 1);
+    S.rod([14, y, 0], [0, y, C[2] + 2], 2, 1.8, TIMBER, 1);
+    S.rod([-8, y, C[2] - 12], [8, y, C[2] - 12], 1.4, 1.4, TIMBER, 1);
+    S.box([0, y, C[2] + 3], [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [5, 2.6, 2.4], (_f, _u, _v, n) => toneAt(n, IRON, 0), 2);
+  }
+  S.rod([0, -W2 - 10, C[2]], [0, W2 + 10, C[2]], 3, 3, TIMBER, 3);
+  for (const y of [-W2 - 4, W2 + 4]) S.rod([0, y - 1.5, C[2]], [0, y + 1.5, C[2]], 3.6, 3.6, IRON, 3);
+  for (const sy of [-1, 1]) {
+    for (let i = 0; i < 32; i++) {
+      const a0 = turn + (i / 32) * Math.PI * 2;
+      const a1 = turn + ((i + 1) / 32) * Math.PI * 2;
+      S.rod(P(a0, R, sy * W2), P(a1, R, sy * W2), 1.8, 1.8, i % 4 ? TIMBER : OAK, 4);
+    }
+    for (let i = 0; i < 8; i++) {
+      const a = turn + (i / 8) * Math.PI * 2;
+      S.rod(P(a, 3, sy * W2), P(a, R - 1, sy * W2), 1.3, 1.1, TIMBER, 5);
+    }
+  }
+  for (let i = 0; i < 16; i++) {
+    const a = turn + (i / 16) * Math.PI * 2 + 0.1;
+    const n: V3 = [-Math.sin(a), 0, Math.cos(a)];
+    const r0 = R - 7;
+    const r1 = R + 7;
+    const q: [V3, V3, V3, V3] = [P(a, r0, -W2 - 1), P(a, r0, W2 + 1), P(a, r1, W2 + 1), P(a, r1, -W2 - 1)];
+    if (q.some((p) => p[2] < 0.5)) {
+      for (const p of q) p[2] = Math.max(0.5, p[2]);
+    }
+    S.quad(q, (u, v) => (fr(u * 3) < 0.1 ? TIMBER[0] : v > 0.7 ? toneAt(facing(S, n), TIMBER, -0.3) : toneAt(facing(S, n), TIMBER, 0.15)), 6);
+    // WATER LIFTED OUT ON THE PADDLES as they rise out of the race (its bottom is driven toward +x with the race, so they rise
+    // on its +x side): it pours off their tips in sheets and drops
+    const sa = Math.sin(a);
+    const ca = Math.cos(a);
+    if (sa < 0.35 && sg * ca > 0.2) {
+      const tip = P(a, r1 + 1, 0);
+      const fall = Math.max(0, tip[2] - 1);
+      for (const yy of [-W2 + 2, -3, 3, W2 - 2]) {
+        const len = Math.min(fall, 6 + 10 * hash(i, yy, 6331));
+        if (len > 1) S.rod([tip[0], yy, tip[2]], [tip[0] + sg * 1.5, yy + (hash(i, yy, 6332) - 0.5), tip[2] - len], 0.7, 0.5, FOAM, SOFT_ID + 3);
+      }
+      drips(S, tip[0], 0, tip[2], 7, i * 3 + 1, frame / 2);
+    }
+  }
+  // SPRAY flung up and on with the race where the paddles come up out of it: drops on their arcs, a round of them every paddle
+  for (let j = 0; j < 22; j++) {
+    const t = fr(hash(j, 1, 6341) + ph);
+    const vx = sg * (10 + hash(j, 2, 6341) * 16);
+    const vz = 12 + hash(j, 3, 6341) * 16;
+    const x0 = sg * (R * 0.55 - hash(j, 4, 6341) * 8);
+    const z = 2 + vz * t - 26 * t * t;
+    if (z < 0.6) continue;
+    S.ball([x0 + vx * t, (hash(j, 5, 6341) - 0.5) * (2 * W2 + 6), z], 0.8 + 0.6 * hash(j, 6, 6341), FOAM, SOFT_ID + 4, undefined, 0.5);
+  }
+  // THE RACE PILED WHITE against its upstream paddles, and churned white under it and after it (a round of it every paddle)
+  for (let i = 0; i < 40; i++) {
+    const t = fr(hash(i, 7, 6321) + ph);
+    const x = sg * (-R * 0.9 + t * R * 2.3) + (hash(i, 8, 6321) - 0.5) * 6;
+    const y = (hash(i, 9, 6321) - 0.5) * (2 * W2 + 10);
+    const hump = Math.max(0, 1 - Math.abs(x + sg * R * 0.3) / (R * 0.6));
+    S.ball([x, y, 1 + hump * 4 + hash(i, 10, 6322) * 2], 1.6 + hash(i, 11, 6321) * 1.4 - t * 0.6, FOAM, SOFT_ID + 4, undefined, 0.4);
+  }
+  return done(S, 100, 160);
+}
 
 /**
  * THE PAPER MILL: a ground storey of field stone; over it the drying loft, timber-framed and limewashed, its sides
@@ -913,7 +1000,7 @@ export function millracePieces(): Piece[] {
   made = [
     { name: 'the paper mill', kind: 'obstacle', frames: [paperMill()], shadow: 2.0 },
     // (frames: four turning, looking along +y; the same along +x)
-    { name: 'the water wheel', kind: 'trap', frames: [0, 1].flatMap((k) => [0, 1, 2, 3].map((f) => waterWheel(f, k))), shadow: 1.0 },
+    { name: 'the water wheel', kind: 'trap', frames: FLOW.on ? [0, 1].flatMap((k) => [false, true].flatMap((back) => Array.from({ length: WHEEL_STEPS }, (_, f) => waterWheel2(f, k, back)))) : [0, 1].flatMap((k) => [0, 1, 2, 3].map((f) => waterWheel(f, k))), shadow: 1.0 },
     // (frames: shut and open along +y, shut and open along +x)
     { name: "the race's headgate", kind: 'gate', frames: [0, 1].flatMap((k) => [headgate(false, k), headgate(true, k)]), shadow: 0.9 },
     // (frames: whole; half there, while someone is behind it)
