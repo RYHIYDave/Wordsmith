@@ -617,3 +617,6 @@ export function houseOfQuietLook(land: HouseLand): TerrainLook {
     nearShadow: { reach: 1.0, dark: [0.3, 0.18] },
   });
 }
+
+// (the art chat's ways on, art/act2_ways.ts, paint a stretch of these walls round a way through them: exported for it, nothing changed)
+export { wallFace as houseWallFace, topAt as houseTopAt };

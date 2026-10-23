@@ -9,6 +9,7 @@
 
 import { canyonStart, canyonWay, fenStart, fenWay, ledgeStart, ledgeWay, pinewoodStart, pinewoodWay, quarryStart, quarryWay } from '../art/act1_ways';
 import type { StartArt } from '../art/ways_kit';
+import { gateWardStart, gateWardWay, houseOfQuietStart, houseOfQuietWay, libraryStart, libraryWay, millraceStart, millraceWay, undercityStart, undercityWay } from '../art/act2_ways';
 import { spriteOf3 } from '../art/heroes3';
 import { MOVES3 } from '../art/moves3';
 import { turnOf } from '../art/ways_kit';
@@ -50,6 +51,11 @@ const FLOORS: Record<string, { tones: [string, string]; way: (d: WayDir) => WayA
   c: { tones: ['#cc9a74', '#d4a47e'], way: canyonWay, start: canyonStart },
   p: { tones: ['#536638', '#5c6f3e'], way: pinewoodWay, start: pinewoodStart },
   f: { tones: ['#1c2a22', '#23332a'], way: fenWay, start: fenStart },
+  g: { tones: ['#554c55', '#5d5459'], way: gateWardWay, start: gateWardStart },
+  u: { tones: ['#3b3c46', '#45464f'], way: (d) => undercityWay(d), start: undercityStart },
+  m: { tones: ['#6a6458', '#726c60'], way: millraceWay, start: millraceStart },
+  h: { tones: ['#8a8e84', '#94988d'], way: (d) => houseOfQuietWay(d), start: (d) => houseOfQuietStart(d) },
+  b: { tones: ['#5a4634', '#634e3a'], way: (d) => libraryWay(d), start: (d) => libraryStart(d) },
 };
 
 /** The patch of ground round (cx, cy), its tiles in a check. */
@@ -140,7 +146,7 @@ if (mode === 'still') {
   show();
 } else if (mode === 'starts') {
   // where each floor begins (6 to 10's starts are floors q, l, c, p, f's own pieces), two ways round, the knight at the start
-  const fls = ['q', 'l', 'c', 'p', 'f'];
+  const fls = floorArg.length > 1 ? floorArg.split('') : ['q', 'l', 'c', 'p', 'f'];
   const dirs: WayDir[] = [(dirArg as WayDir) || 'y-', 'x+'];
   cv.width = W * fls.length * SC;
   cv.height = H * 2 * SC;
@@ -159,13 +165,16 @@ if (mode === 'still') {
       g.clip();
       ground(cx, cy, F.tones);
       const st = F.start!(d);
-      draw(st.under, cx, cy);
       const T = turnOf(d);
+      const bk = T((st.back ?? 0) * 40, 0, 0);
+      const sx = cx + ((bk[0] - bk[1]) / 40) * 16;
+      const sy = cy + ((bk[0] + bk[1]) / 40) * 8;
+      draw(st.under, sx, sy);
       const q = T(-1, 0, 0);
       const front = d === 'x+' || d === 'y+';
       const kn = (): void => draw(spriteOf3(MOVES3.rear, 0, q[0] + q[1] >= 0 ? 'front' : 'back'), cx, cy, q[0] - q[1] < 0);
       if (front) kn();
-      draw(st.over, cx, cy);
+      draw(st.over, sx, sy);
       if (!front) kn();
       g.restore();
     });

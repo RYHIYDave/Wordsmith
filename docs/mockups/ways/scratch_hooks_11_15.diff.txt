@@ -1,0 +1,177 @@
+diff --git a/src/main.ts b/src/main.ts
+index 7252688..d843efb 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -61,6 +61,7 @@ import { DOORS, doorMiddle, doorTiles } from './game/doors';
+ import { EXITS, WAYS, stairMiddle, topStep } from './game/ways';
+ import { TOWN_WAYS } from './art/town_ways';
+ import { A1_WAYS } from './art/act1_ways';
++import { a2Place } from './render/render';
+ import { MIX, RELIEF } from './game/dungeon';
+ import { Game, cleanMeta } from './game/game';
+ import { ENDLESS, ENDLESS_CARD_MORE, endlessFloorFor, endlessName } from './game/endless';
+@@ -2055,6 +2056,7 @@ function start(carried: unknown, hot: HotHook | undefined): void {
+     /** (SCRATCH) the art chat's town ways, for its pictures */
+     townWays: TOWN_WAYS,
+     a1Ways: A1_WAYS,
++    a2Place,
+     /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
+     doorWalls: (on: boolean, near = false) => {
+       DOOR_WALLS.on = on;
+diff --git a/src/render/render.ts b/src/render/render.ts
+index c9e9922..e8cd4ef 100644
+--- a/src/render/render.ts
++++ b/src/render/render.ts
+@@ -70,10 +70,16 @@ import { floorLook, lookWays } from '../art/floors';
+ import { TOWN_WAYS, floorStairsUp, gateBars, gateLeft, townStairs, unbarFilm } from '../art/town_ways';
+ import { A1_WAYS, canyonStart, canyonWay, fenStart, fenWay, ledgeStart, ledgeWay, pinewoodStart, pinewoodWay, quarryStart, quarryWay } from '../art/act1_ways';
+ import { wayDirOf } from '../art/ways_kit';
++import { gateWardStart, gateWardWay, houseOfQuietStart, houseOfQuietWay, libraryStart, libraryWay, millraceStart, millraceWay, undercityStart, undercityWay } from '../art/act2_ways';
+ import type { StartArt, WayArt, WayDir } from '../art/ways_kit';
+ import type { Sprite as WaySprite } from '../engine/px';
+ /** (SCRATCH, the art chat's pictures) Floors 6 to 10's ways on and starts, by depth. */
+-const A1W: Record<number, { way: (d: WayDir) => WayArt; start: (d: WayDir) => StartArt }> = {
++const A1W: Record<number, { way: (d: WayDir, at?: { x: number; y: number }) => WayArt; start?: (d: WayDir, at?: { x: number; y: number }) => StartArt; place?: 'square' | 'wall' }> = {
++  11: { way: gateWardWay, start: gateWardStart, place: 'square' },
++  12: { way: undercityWay, start: undercityStart, place: 'wall' },
++  13: { way: millraceWay, start: millraceStart },
++  14: { way: houseOfQuietWay, start: houseOfQuietStart, place: 'wall' },
++  15: { way: libraryWay, start: libraryStart, place: 'wall' },
+   6: { way: quarryWay, start: quarryStart },
+   7: { way: ledgeWay, start: ledgeStart },
+   8: { way: canyonWay, start: canyonStart },
+@@ -81,9 +87,50 @@ const A1W: Record<number, { way: (d: WayDir) => WayArt; start: (d: WayDir) => St
+   10: { way: fenWay, start: fenStart },
+ };
+ /** The start piece of a floor: the one before's way's own kind (floor 7 begins at the foot of floor 6's stair...). */
+-const A1S: Record<number, (d: WayDir) => StartArt> = { 6: quarryStart, 7: ledgeStart, 8: canyonStart, 9: pinewoodStart, 10: fenStart };
++const A1S: Record<number, (d: WayDir, at?: { x: number; y: number }) => StartArt> = { 6: quarryStart, 7: ledgeStart, 8: canyonStart, 9: pinewoodStart, 10: fenStart, 11: gateWardStart, 12: undercityStart, 13: millraceStart, 14: houseOfQuietStart, 15: libraryStart };
++type ScratchFloor = { depth: number; w: number; h: number; tiles: Uint8Array; start: { x: number; y: number }; boss: { x: number; y: number } };
++/** (SCRATCH) Where act 2's pieces were laid on this level, for the films: the way's, as the rules would lay them. */
++export const a2Place: { depth: number; seed: unknown; way?: { d: WayDir; x: number; y: number }; start?: { d: WayDir; x: number; y: number }; filmAt?: number } = { depth: 0, seed: null };
++function scratchFloorAt(F: ScratchFloor, x: number, y: number): boolean {
++  return x >= 0 && y >= 0 && x < F.w && y < F.h && F.tiles[y * F.w + x] === T_FLOOR;
++}
++/** (SCRATCH) The nearest back wall to (x0, y0): stepping toward -x or -y to the first tile not floor; its face's foot under the middle of that tile. */
++function backWallNear(F: ScratchFloor, x0: number, y0: number): { d: WayDir; x: number; y: number } | null {
++  let best: { k: number; d: WayDir; x: number; y: number } | null = null;
++  for (const [dx, dy, d] of [[-1, 0, 'x-'], [0, -1, 'y-']] as const) {
++    let x = Math.floor(x0);
++    let y = Math.floor(y0);
++    for (let k = 0; k < 12; k++) {
++      const nx = x + dx;
++      const ny = y + dy;
++      if (!scratchFloorAt(F, nx, ny)) {
++        // three tiles of wall, and floor before them
++        const ok = d === 'x-' ? [-1, 0, 1].every((j) => !scratchFloorAt(F, nx, y + j) && scratchFloorAt(F, x, y + j)) : [-1, 0, 1].every((j) => !scratchFloorAt(F, x + j, ny) && scratchFloorAt(F, x + j, y));
++        if (ok && (!best || k < best.k)) best = { k, d, x: d === 'x-' ? nx + 1 : x + 0.5, y: d === 'x-' ? y + 0.5 : ny + 1 };
++        break;
++      }
++      x = nx;
++      y = ny;
++    }
++  }
++  return best;
++}
++/** (SCRATCH) The middle of the most open ground near (x0, y0): every tile within 2 floor. */
++function squareNear(F: ScratchFloor, x0: number, y0: number): { x: number; y: number } {
++  for (let r = 0; r < 16; r++) {
++    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
++      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
++      const x = Math.floor(x0) + dx;
++      const y = Math.floor(y0) + dy;
++      let ok = true;
++      for (let j = -2; j <= 2 && ok; j++) for (let i = -2; i <= 2 && ok; i++) if (!scratchFloorAt(F, x + i, y + j)) ok = false;
++      if (ok) return { x: x + 0.5, y: y + 0.5 };
++    }
++  }
++  return { x: x0, y: y0 };
++}
+ /** The way on's pictures as they stand now on a level (shut, a film's frame, open), and the start's. */
+-function a1Ways(L: { floor: { depth: number; start: { x: number; y: number }; boss: { x: number; y: number } }; town: boolean; ways?: { onward?: { x: number; y: number; awake: boolean; warpAt: number | null } | null } | null }, now: number): { way?: { under: WaySprite | null; over: WaySprite; x: number; y: number }; start?: { art: StartArt; x: number; y: number } } {
++function a1Ways(L: { floor: ScratchFloor; town: boolean; land?: { squares?: { x: number; y: number; r: number }[] }; ways?: { onward?: { x: number; y: number; awake: boolean; warpAt: number | null } | null } | null }, now: number): { way?: { under: WaySprite | null; over: WaySprite; x: number; y: number; whole?: boolean }; start?: { art: StartArt; x: number; y: number; whole?: boolean } } {
+   if (!A1_WAYS.on || L.town) return {};
+   const k = L.floor.depth;
+   const kind = A1W[k];
+@@ -91,23 +138,54 @@ function a1Ways(L: { floor: { depth: number; start: { x: number; y: number }; bo
+   const out: ReturnType<typeof a1Ways> = {};
+   const st = L.floor.start;
+   const b = L.floor.boss;
++  if (a2Place.depth !== k || a2Place.seed !== L.floor.tiles) {
++    a2Place.depth = k;
++    a2Place.seed = L.floor.tiles;
++    a2Place.way = undefined;
++    a2Place.start = undefined;
++    const o0 = L.ways?.onward;
++    if (o0 && kind.place === 'wall') a2Place.way = backWallNear(L.floor, o0.x, o0.y) ?? undefined;
++    if (o0 && kind.place === 'square') {
++      // the Crier's Square: the middle of its ring of setts (the square nearest where he stood)
++      const sq = (L.land?.squares ?? []).slice().sort((p, q) => Math.hypot(p.x - b.x, p.y - b.y) - Math.hypot(q.x - b.x, q.y - b.y))[0];
++      a2Place.way = { d: wayDirOf(o0.x - b.x, o0.y - b.y), ...(sq ? { x: sq.x, y: sq.y } : squareNear(L.floor, o0.x, o0.y)) };
++    }
++    if (kind.place === 'wall') {
++      const w = backWallNear(L.floor, st.x, st.y);
++      if (w) a2Place.start = w;
++    }
++  }
+   const sd = wayDirOf(st.x - b.x, st.y - b.y);
+-  const sa = A1S[k](sd);
+-  const sb = sa.back ?? 0;
+-  out.start = { art: sa, x: st.x + (sd === 'x+' ? sb : sd === 'x-' ? -sb : 0), y: st.y + (sd === 'y+' ? sb : sd === 'y-' ? -sb : 0) };
++  if (A1S[k]) {
++    if (a2Place.start) {
++      const sa = A1S[k](a2Place.start.d, { x: a2Place.start.x, y: a2Place.start.y });
++      out.start = { art: sa, x: a2Place.start.x, y: a2Place.start.y, whole: true };
++    } else {
++      const sa = A1S[k](sd);
++      const sb = sa.back ?? 0;
++      out.start = { art: sa, x: st.x + (sd === 'x+' ? sb : sd === 'x-' ? -sb : 0), y: st.y + (sd === 'y+' ? sb : sd === 'y-' ? -sb : 0) };
++    }
++  }
+   const o0 = L.ways?.onward;
+   if (o0) {
+-    const dir = wayDirOf(o0.x - b.x, o0.y - b.y);
+-    const art = kind.way(dir);
++    const pl = a2Place.way;
++    const dir = pl ? pl.d : wayDirOf(o0.x - b.x, o0.y - b.y);
++    const art = pl && kind.place === 'wall' ? kind.way(dir, { x: pl.x, y: pl.y }) : kind.way(dir);
+     const bk = art.back ?? 0;
+     const ux = dir === 'x+' ? 1 : dir === 'x-' ? -1 : 0;
+     const uy = dir === 'y+' ? 1 : dir === 'y-' ? -1 : 0;
+-    const o = { ...o0, x: o0.x - ux * bk, y: o0.y - uy * bk };
+-    if (!o.awake || o.warpAt === null) out.way = { under: art.shut.under, over: art.shut.over, x: o.x, y: o.y };
++    const o = pl ? { ...o0, x: pl.x, y: pl.y } : { ...o0, x: o0.x - ux * bk, y: o0.y - uy * bk };
++    const whole = kind.place === 'wall';
++    // (the films' own clock, when a film scenario holds it: -1 shut, else when it began)
++    if (a2Place.filmAt !== undefined) {
++      o.awake = a2Place.filmAt >= 0;
++      o.warpAt = a2Place.filmAt >= 0 ? a2Place.filmAt : null;
++    }
++    if (!o.awake || o.warpAt === null) out.way = { under: art.shut.under, over: art.shut.over, x: o.x, y: o.y, whole };
+     else {
+       const f = Math.floor((now - o.warpAt) * art.film.fps);
+       if (f < art.film.frames.length) out.way = { under: null, over: art.film.frames[Math.max(0, f)], x: o.x, y: o.y };
+-      else out.way = { under: art.open.under, over: art.open.over, x: o.x, y: o.y };
++      else out.way = { under: art.open.under, over: art.open.over, x: o.x, y: o.y, whole };
+     }
+   }
+   return out;
+@@ -626,7 +704,7 @@ export class Renderer {
+       }
+     // (SCRATCH, the art chat's pictures: floors 6 to 10's ways on and starts, under what stands)
+     const a1 = a1Ways(L, game.time);
+-    for (const it of [a1.start ? { s: a1.start.art.under, x: a1.start.x, y: a1.start.y } : null, a1.way && a1.way.under ? { s: a1.way.under, x: a1.way.x, y: a1.way.y } : null]) {
++    for (const it of [a1.start && !a1.start.whole ? { s: a1.start.art.under, x: a1.start.x, y: a1.start.y } : null, a1.way && a1.way.under && !a1.way.whole ? { s: a1.way.under, x: a1.way.x, y: a1.way.y } : null]) {
+       if (!it) continue;
+       g.drawImage(it.s.img, Math.round(wx(cam, it.x, it.y)) - it.s.ax, Math.round(wy(cam, it.x, it.y)) - it.s.ay, it.s.w, it.s.h);
+     }
+@@ -645,6 +723,9 @@ export class Renderer {
+   private standWays(L: Game['level'], t: number, now: number): void {
+     // (SCRATCH, the art chat's pictures: floors 6 to 10's ways on and starts, standing)
+     const a1 = a1Ways(L, now);
++    // (a piece in a wall the rules have not cut: its opening stood with it, so the wall's own face does not cover it)
++    if (a1.start && a1.start.whole) this.stand(a1.start.x + a1.start.y + 0.599, a1.start.art.under, Math.round(wx(this.cam, a1.start.x, a1.start.y)), Math.round(wy(this.cam, a1.start.x, a1.start.y)));
++    if (a1.way && a1.way.whole && a1.way.under) this.stand(a1.way.x + a1.way.y + 0.599, a1.way.under, Math.round(wx(this.cam, a1.way.x, a1.way.y)), Math.round(wy(this.cam, a1.way.x, a1.way.y)));
+     if (a1.start) this.stand(a1.start.x + a1.start.y + 0.6, a1.start.art.over, Math.round(wx(this.cam, a1.start.x, a1.start.y)), Math.round(wy(this.cam, a1.start.x, a1.start.y)));
+     if (a1.way) this.stand(a1.way.x + a1.way.y + 0.6, a1.way.over, Math.round(wx(this.cam, a1.way.x, a1.way.y)), Math.round(wy(this.cam, a1.way.x, a1.way.y)));
+     // (ACT 1: the way on too, once awake: its column flares as it wakes, as a warp's)
