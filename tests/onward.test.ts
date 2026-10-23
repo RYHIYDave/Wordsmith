@@ -22,13 +22,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { CANYON_FILM, FEN_FILM, LEDGE_CHIMNEY, LEDGE_FILM, PINE_FILM, QUARRY_FILM, START_BACK } from '../src/art/act1_ways';
 import { WAY_DIRS, turnOf, wayDirOf } from '../src/art/ways_kit';
+import { A2_START_BACK, DOORS_FILM, GRATE_FILM, OUTFALL_FILM, POSTERN_FILM, STITCH_FILM } from '../src/art/act2_ways';
 import { isCamp } from '../src/game/camp';
 import { Game } from '../src/game/game';
 import { makeDungeon } from '../src/game/level';
 import { UNREACHABLE, flowField } from '../src/game/nav';
 import { emptyControls } from '../src/game/state';
 import type { Controls, Level } from '../src/game/state';
-import { EXITS, ONWARD, START, onDirOf, tilesAB, turnAB } from '../src/game/ways';
+import { EXITS, ONWARD, START, onDirOf, takesTiles, tilesAB, turnAB } from '../src/game/ways';
 
 const DT = 1 / 60;
 function exitsSet<T>(on: boolean, run: () => T): T {
@@ -59,6 +60,9 @@ test('the rules\' measures are the pictures\' own', () => {
   for (const k of [6, 8, 9, 10]) assert.equal(ONWARD[k].back, 0);
   const backs = [START_BACK.quarry, START_BACK.ledge, START_BACK.canyon, START_BACK.pinewood, START_BACK.fen];
   backs.forEach((b, i) => assert.equal(START[6 + i].back, b, `floor ${6 + i}: where it begins, stood back`));
+  // (and floors 11 to 15's)
+  [GRATE_FILM, OUTFALL_FILM, POSTERN_FILM, STITCH_FILM, DOORS_FILM].forEach((f, i) => assert.ok(Math.abs(ONWARD[11 + i].secs - f.frames / f.fps) < 1e-9, `floor ${11 + i}: its film's length`));
+  [A2_START_BACK.gateward, A2_START_BACK.undercity, A2_START_BACK.millrace, A2_START_BACK.house, A2_START_BACK.library].forEach((b, i) => assert.equal(START[11 + i].back, b, `floor ${11 + i}: where it begins, stood back`));
   for (const [dx, dy] of [[5, 1], [-5, 2], [1, 6], [-2, -8], [3, 3], [-3, 3], [0, -1]]) assert.equal(onDirOf(dx, dy), wayDirOf(dx, dy));
   for (const d of WAY_DIRS) {
     const T = turnOf(d);
@@ -91,6 +95,8 @@ test('every floor 6 to 10: the way on and the start laid; their pieces solid, no
       const oy = Math.floor(on.y);
       const sx = Math.floor(f.start.x);
       const sy = Math.floor(f.start.y);
+      assert.deepEqual(a1.way.ref, { x: ox, y: oy }, `${what}: the way stands at the way on`);
+      assert.deepEqual(a1.start.ref, { x: sx, y: sy }, `${what}: the start's piece behind the start`);
       const solid = new Set([...tilesAB(f, ox, oy, a1.dir, ONWARD[depth].solid), ...tilesAB(f, sx, sy, a1.startDir, START[depth].solid)]);
       const kept = new Set([...tilesAB(f, ox, oy, a1.dir, ONWARD[depth].takes), ...tilesAB(f, sx, sy, a1.startDir, [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1], [1, -1], [1, 0], [1, 1]])]);
       // (the floor's own pieces are laid after, clear of these: one may stand a little elsewhere, no more nor fewer of them)
@@ -112,6 +118,50 @@ test('every floor 6 to 10: the way on and the start laid; their pieces solid, no
     }
   }
   assert.equal(n, 5 * SEEDS.length);
+});
+
+test('floors 11 to 15: the grate in the middle of the Crier\'s Square; the doors in a back wall, cut through; the starts in a wall, he before them', () => {
+  let walls = 0;
+  for (let depth = 11; depth <= 15; depth++) {
+    for (const seed of SEEDS) {
+      const what = `floor ${depth}, seed ${seed}`;
+      const L = exitsSet(true, () => makeDungeon(depth, seed));
+      const a1 = L.ways!.a1!;
+      assert.ok(a1, `${what}: laid`);
+      const f = L.floor;
+      const on = L.ways!.onward!;
+      const shape = ONWARD[depth];
+      assert.deepEqual({ x: Math.floor(on.x), y: Math.floor(on.y) }, a1.way.ref, `${what}: the way on where the way stands`);
+      if (shape.place === 'square') {
+        const sq = (L.land!.squares ?? []).slice().sort((p, q) => q.r - p.r)[0];
+        assert.ok(Math.hypot(a1.way.at.x - sq.x, a1.way.at.y - sq.y) < 1, `${what}: in the middle of the Crier's Square`);
+        for (const i of takesTiles(f, a1)) assert.equal(L.walk[i], 1, `${what}: the grate walked over`);
+      }
+      const doorway = (p: { dir: Parameters<typeof turnAB>[0]; ref: { x: number; y: number } }): number[] => tilesAB(f, p.ref.x, p.ref.y, p.dir, [[0, -1], [0, 0], [0, 1]]);
+      if (shape.place === 'wall') {
+        walls++;
+        assert.ok(a1.dir === 'x-' || a1.dir === 'y-', `${what}: a back wall`);
+        for (const i of doorway(a1.way)) {
+          assert.equal(f.tiles[i], 1, `${what}: the doorway cut through`);
+          assert.equal(L.walk[i], 0, `${what}: shut`);
+        }
+        const [sx, sy] = turnAB(a1.dir, 1, 0);
+        assert.equal(L.walk[(a1.way.ref.y - sy) * f.w + a1.way.ref.x - sx], 1, `${what}: floor before it`);
+        assert.ok(a1.way.zone !== undefined, `${what}: its room's zone`);
+      }
+      if (START[depth].place === 'wall' && !a1.start.none) {
+        for (const i of doorway(a1.start)) assert.equal(L.walk[i], 0, `${what}: the start's doorway solid`);
+        const [sx, sy] = turnAB(a1.start.dir, 1, 0);
+        assert.ok(Math.abs(f.start.x - (a1.start.at.x - sx * START[depth].back)) < 1e-9 && Math.abs(f.start.y - (a1.start.at.y - sy * START[depth].back)) < 1e-9, `${what}: he comes in before it`);
+        assert.equal(L.walk[tile(L, f.start.x, f.start.y)], 1, `${what}: on floor`);
+      }
+      const flow = flowField(L.walk, f.w, f.h, Math.floor(f.start.x), Math.floor(f.start.y));
+      const [bx, by] = turnAB(a1.dir, 1, 0);
+      const before = shape.place === 'wall' ? (a1.way.ref.y - by) * f.w + a1.way.ref.x - bx : takesTiles(f, a1).find((i) => L.walk[i] === 1) ?? a1.way.ref.y * f.w + a1.way.ref.x - bx;
+      assert.notEqual(flow[before], UNREACHABLE, `${what}: the way reached on foot from the start`);
+    }
+  }
+  assert.ok(walls >= 3 * SEEDS.length, `${walls} doors in walls`);
 });
 
 /** A game on floor `depth`, the boss's company gone, the hero by the way on; the boss struck down (or, where his death is in stages, the way woken as it would be). */
@@ -144,7 +194,7 @@ function bossDown(depth: number, seed: number): Game {
 
 test('played: the boss falls, the film plays (nothing takes him, nothing said); then open, what it threw lying; its way in takes him on', () =>
   exitsSet(true, () => {
-    for (let depth = 6; depth <= 10; depth++) {
+    for (let depth = 6; depth <= 15; depth++) {
       for (const seed of [4, 9]) {
         const what = `floor ${depth}, seed ${seed}`;
         const g = bossDown(depth, seed);
@@ -153,8 +203,11 @@ test('played: the boss falls, the film plays (nothing takes him, nothing said); 
         const a1 = L.ways!.a1!;
         assert.equal(a1.open, false, `${what}: shut while the film plays`);
         // (he stands in its way in while it plays: it does not take him)
-        g.hero.x = Math.floor(on.x) + 0.5;
-        g.hero.y = Math.floor(on.y) + 0.5;
+        const way = takesTiles(L.floor, a1)[0];
+        const wx = (way % L.floor.w) + 0.5;
+        const wy = Math.floor(way / L.floor.w) + 0.5;
+        g.hero.x = wx;
+        g.hero.y = wy;
         const said: string[] = [];
         const shown = (): void => {
           for (const e of g.events) if (e.t === 'msg') said.push((e as { text: string }).text);
@@ -175,14 +228,15 @@ test('played: the boss falls, the film plays (nothing takes him, nothing said); 
         assert.ok(until(g, 0.5, () => a1.open) >= 0, `${what}: open at the film's end`);
         g.events.length = 0;
         g.update(DT, emptyControls());
-        const thrown = tilesAB(L.floor, Math.floor(on.x), Math.floor(on.y), a1.dir, ONWARD[depth].thrown);
+        const thrown = tilesAB(L.floor, a1.way.ref.x, a1.way.ref.y, a1.dir, ONWARD[depth].thrown);
         for (const i of thrown) if (i !== tile(L, g.hero.x, g.hero.y)) assert.equal(L.walk[i], 0, `${what}: what it threw out lies there`);
+        for (const i of takesTiles(L.floor, a1)) if (ONWARD[depth].shutTakes) assert.equal(L.walk[i], 1, `${what}: its door open to walk into`);
         const flow = flowField(L.walk, L.floor.w, L.floor.h, Math.floor(g.hero.x), Math.floor(g.hero.y));
-        assert.notEqual(flow[tile(L, on.x, on.y)], UNREACHABLE, `${what}: its way in still reached`);
-        g.hero.x = Math.floor(on.x) + 0.5;
-        g.hero.y = Math.floor(on.y) + 0.5;
+        assert.notEqual(flow[way], UNREACHABLE, `${what}: its way in reached`);
+        g.hero.x = wx;
+        g.hero.y = wy;
         assert.ok(until(g, 4, () => g.depth !== depth || g.level.town) > 0, `${what}: taken on`);
-        if (depth < 10) assert.equal(g.depth, depth + 1, `${what}: to the next floor`);
+        if (depth < 10 || (depth > 10 && depth < 15)) assert.equal(g.depth, depth + 1, `${what}: to the next floor`);
         else assert.ok(isCamp(g.level), `${what}: to the camp`);
       }
     }
@@ -195,7 +249,8 @@ test('the line comes as it opens, not as the boss falls; what it throws out neve
     const on = L.ways!.onward!;
     const a1 = L.ways!.a1!;
     // (stood on one of the tiles the quarry's blocks are thrown onto)
-    const i = tilesAB(L.floor, Math.floor(on.x), Math.floor(on.y), a1.dir, ONWARD[6].thrown).find((k) => L.walk[k] === 1)!;
+    const i = tilesAB(L.floor, a1.way.ref.x, a1.way.ref.y, a1.dir, ONWARD[6].thrown).find((k) => L.walk[k] === 1)!;
+    void on;
     assert.ok(i !== undefined);
     g.hero.x = (i % L.floor.w) + 0.5;
     g.hero.y = Math.floor(i / L.floor.w) + 0.5;

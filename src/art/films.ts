@@ -50,16 +50,24 @@ import { caveFilm, lairMouth } from './cave4';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
 import { canyonStart, canyonWay, fenStart, fenWay, ledgeStart, ledgeWay, pinewoodStart, pinewoodWay, quarryStart, quarryWay } from './act1_ways';
+import { gateWardStart, gateWardWay, houseOfQuietStart, houseOfQuietWay, libraryStart, libraryWay, millraceStart, millraceWay, undercityStart, undercityWay } from './act2_ways';
 import type { StartArt, WayArt, WayDir } from './ways_kit';
 export type { StartArt, WayArt };
 
-/** (EXITS) Floors 6 to 10's ways on and starts, by floor (the art chat's, art/act1_ways.ts). */
-const ONWARD_ART: Record<number, { way: (d: WayDir) => WayArt; start: (d: WayDir) => StartArt }> = {
-  6: { way: quarryWay, start: quarryStart },
-  7: { way: ledgeWay, start: ledgeStart },
-  8: { way: canyonWay, start: canyonStart },
-  9: { way: pinewoodWay, start: pinewoodStart },
-  10: { way: fenWay, start: fenStart },
+/** Where a piece in a wall stands (tiles), and the room's zone before it. */
+type At = { x: number; y: number } | undefined;
+/** (EXITS) Floors 6 to 15's ways on and starts, by floor (the art chat's, art/act1_ways.ts and art/act2_ways.ts). */
+const ONWARD_ART: Record<number, { way: (d: WayDir, at: At, zone: number | undefined) => WayArt; start: (d: WayDir, at: At, zone: number | undefined) => StartArt }> = {
+  6: { way: (d) => quarryWay(d), start: (d) => quarryStart(d) },
+  7: { way: (d) => ledgeWay(d), start: (d) => ledgeStart(d) },
+  8: { way: (d) => canyonWay(d), start: (d) => canyonStart(d) },
+  9: { way: (d) => pinewoodWay(d), start: (d) => pinewoodStart(d) },
+  10: { way: (d) => fenWay(d), start: (d) => fenStart(d) },
+  11: { way: (d) => gateWardWay(d), start: (d) => gateWardStart(d) },
+  12: { way: (d, at) => undercityWay(d, at), start: (d) => undercityStart(d) },
+  13: { way: (d) => millraceWay(d), start: (d) => millraceStart(d) },
+  14: { way: (d, at, zone) => houseOfQuietWay(d, at, zone), start: (d, at, zone) => houseOfQuietStart(d, at, zone) },
+  15: { way: (d, at, zone) => libraryWay(d, at, zone), start: (d, at, zone) => libraryStart(d, at, zone) },
 };
 const asDir = (d: string | undefined): WayDir => (d === 'x-' || d === 'y+' || d === 'y-' ? d : 'x+');
 
@@ -167,7 +175,8 @@ export function filmRoom(key: string): number {
   if (kind === 'up') return 1;
   // (EXITS, floors 6 to 10: the art chat's measures, every picture cut down to what is painted in it: the quarry 27.3, the ledge
   // 68.9 (the flock flies wide), the canyon 44.9, the pinewood 26.2, the fen 22.3; a start under 2)
-  if (kind === 'onward') return [28, 70, 46, 27, 23][Number(a) - 6] ?? 70;
+  // (and floors 11 to 15's: 8.3, 27.6, 18.4, 9.3, 14.8)
+  if (kind === 'onward') return [28, 70, 46, 27, 23, 9, 28, 19, 10, 15][Number(a) - 6] ?? 70;
   if (kind === 'start') return 2;
   if (kind === 'things') return 12;
   return 57;
@@ -226,8 +235,12 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     return { fps: f.fps, jolts: [...f.jolts], back: f.back, front: f.front, lift: [...f.lift] } satisfies ShaftFilm;
   }
   if (kind === 'up') return floorStairsUp(CRYPT_FLOORS[0], b !== 'y');
-  if (kind === 'onward' && ONWARD_ART[Number(a)]) return ONWARD_ART[Number(a)].way(asDir(b));
-  if (kind === 'start' && ONWARD_ART[Number(a)]) return ONWARD_ART[Number(a)].start(asDir(b));
+  // (a piece in a wall: where it stands and the room's zone, onward:<floor>:<dir>:<x>:<y>:<zone>)
+  const [, , , ax, ay, az] = key.split(':');
+  const at = ax !== undefined && ay !== undefined ? { x: Number(ax), y: Number(ay) } : undefined;
+  const zone = az !== undefined && az !== '' ? Number(az) : undefined;
+  if (kind === 'onward' && ONWARD_ART[Number(a)]) return ONWARD_ART[Number(a)].way(asDir(b), at, zone);
+  if (kind === 'start' && ONWARD_ART[Number(a)]) return ONWARD_ART[Number(a)].start(asDir(b), at, zone);
   if (kind === 'things' && a === 'unfinished') {
     // (its block's four tumbling frames and the one lying; its boulder's eight; its stomp's four cracks: as render/act1_fx/unfinished.ts asks for them)
     return { blocks: [0, 1, 2, 3, 4].map(hurledBlock), boulders: [0, 1, 2, 3, 4, 5, 6, 7].map(boulderRolling), cracks: [0, 1, 2, 3].map(stompCracks) };

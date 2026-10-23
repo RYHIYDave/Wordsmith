@@ -52,8 +52,10 @@ const how = (s: Sprite, f: (r: number, g: number, b: number) => boolean): number
   return n;
 };
 
-test('1. the switch off, and nothing of the game imports the file', () => {
-  assert.equal(A2_WAYS.on, false, 'A2_WAYS is off');
+// (TOLD, the main chat, 23 Oct 2026: A2_WAYS on at his yes, by 11:06, “Yes, send to main (Recommended)”; only the films and the dress
+// use it, behind EXITS: game/ways.ts ONWARD)
+test('1. the switch on (his yes); only the films and the dress use the file, behind EXITS', () => {
+  assert.equal(A2_WAYS.on, true, 'A2_WAYS is on');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: unknown) => String(x).replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || f === 'art/act2_ways.ts') continue;
@@ -67,7 +69,7 @@ test('1. the switch off, and nothing of the game imports the file', () => {
       if (parts.join('/') === 'art/act2_ways') users.push(f);
     }
   }
-  assert.equal(users.join(' '), '', 'game files that import it');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/films.ts render/dress.ts', 'game files that import it');
 });
 
 /** Each way: its name, its maker leading `d`, the way it is seen best (a back wall's: x- or y-), and whether the enemy's pink burns on it shut. */

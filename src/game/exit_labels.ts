@@ -5,20 +5,21 @@
 //   floors 1 to 3: the stairwell, STAIRS, once it has broken open;
 //   floor 4: the cave in the wall, CAVE, once the wall has fallen;
 //   floor 5: the cage come down the shaft, CAGE;
-//   floors 6 to 10 (the art chat's ways on, game/ways.ts ONWARD): STAIRS (the quarry's cut), CHIMNEY (the crack down the
-//     ledge), SLOT (the canyon's), TRAIL (the pinewood's), CAUSEWAY (the fen's), once each film is over;
+//   floors 6 to 15 (the art chat's ways on, game/ways.ts ONWARD): STAIRS (the quarry's cut), CHIMNEY (the crack down the
+//     ledge), SLOT (the canyon's), TRAIL (the pinewood's), CAUSEWAY (the fen's), GRATE (the Crier's), OUTFALL (the Rat King's),
+//     POSTERN (the Millrace's), DOOR (the Physician's), GREAT DOORS (the library's), once each film is over;
 //   elsewhere, a way on that is a column of light: WAY ON, once awake.
 // Where each stands (the rules know it) and how high over its foot the name is, in game pixels.
 
 import { doorMiddle } from './doors';
 import type { Level } from './state';
-import { EXITS, ONWARD, onwardAnchor, stairMiddle, STAIR_OPENING } from './ways';
+import { EXITS, ONWARD, stairMiddle, STAIR_OPENING } from './ways';
 
 /** THE SWITCH. */
 export const EXIT_LABELS = { on: false };
 
 /** Floors 6 to 10's ways on, what each is. */
-export const ONWARD_NAME: Readonly<Record<number, string>> = { 6: 'STAIRS', 7: 'CHIMNEY', 8: 'SLOT', 9: 'TRAIL', 10: 'CAUSEWAY' };
+export const ONWARD_NAME: Readonly<Record<number, string>> = { 6: 'STAIRS', 7: 'CHIMNEY', 8: 'SLOT', 9: 'TRAIL', 10: 'CAUSEWAY', 11: 'GRATE', 12: 'OUTFALL', 13: 'POSTERN', 14: 'DOOR', 15: 'GREAT DOORS' };
 
 /** An open exit's name: where its foot is (tiles), the name, and how high over its foot it stands (game pixels). */
 export interface ExitLabel {
@@ -47,10 +48,7 @@ export function exitLabels(L: Level): ExitLabel[] {
   if (on && on.awake) {
     const a1 = W.a1;
     if (a1) {
-      if (a1.open) {
-        const at = onwardAnchor(on, a1.dir, ONWARD[a1.floor]?.back ?? 0);
-        out.push({ x: at.x, y: at.y, text: ONWARD_NAME[a1.floor] ?? 'WAY ON', lift: 44 });
-      }
+      if (a1.open) out.push({ x: a1.way.at.x, y: a1.way.at.y, text: ONWARD_NAME[a1.floor] ?? 'WAY ON', lift: ONWARD[a1.floor]?.place === 'square' ? 16 : 44 });
     } else out.push({ x: on.x, y: on.y, text: 'WAY ON', lift: 50 });
   }
   return out;

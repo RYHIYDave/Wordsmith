@@ -26,7 +26,7 @@ export default async function (page, snap) {
       const g = window.__dbg.game();
       g.hero.ring = true; g.hero.pending = 0; g.guide = null;
       g.depth = k; g.cleared = k - 1; g.wayDepth = k; g.enterDungeon();
-      g.hero.invuln = 1e9; g.bossMet = true;
+      g.hero.invuln = 1e9;
       g.level.explored.fill(1);
       for (const m of g.monsters) if (!m.boss) m.life = 0;
       const W = g.level.ways;
@@ -41,7 +41,12 @@ export default async function (page, snap) {
     await page.evaluate(() => { window.__dbg.slowmo = 1; });
     await page.evaluate(() => {
       const g = window.__dbg.game();
-      for (let k = 0; k < 6 && g.boss; k++) { g.bossReady(); g.kill(g.boss); }
+      for (let k = 0; k < 6; k++) {
+        const b = g.boss ?? g.monsters.find((m) => m.boss && !m.dead);
+        if (!b) break;
+        g.bossReady();
+        g.kill(g.boss ?? b);
+      }
       const on = g.level.ways.onward;
       if (on && !on.awake) { on.awake = true; on.warpAt = g.time; }
     });

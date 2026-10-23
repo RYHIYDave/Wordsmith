@@ -28,8 +28,12 @@ import { HQ_DEEP, HQ_RISE, HQ_ZONE, houseTopAt, houseWallFace } from './housequi
 import { LB_DEEP, LB_RISE, LB_ZONE, libraryTopAt, libraryWallFace } from './library';
 import type { Chip, Cloud, StartArt, WayArt, WayDir, WayFilm } from './ways_kit';
 
-/** THE SWITCH: off, nothing of the game uses any of this. */
-export const A2_WAYS = { on: false };
+/**
+ * THE SWITCH: off, nothing of the game uses any of this. ON (the main chat, 23 Oct 2026): his yes in the art chat by 11:06,
+ * “Yes, send to main (Recommended)”, then “Go”; the game draws them only where its rules lay a way on and a start of floors 11
+ * to 15, behind EXITS (game/ways.ts ONWARD, placeOnward).
+ */
+export const A2_WAYS = { on: true };
 
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 const smooth = (t: number): number => {

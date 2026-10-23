@@ -35,7 +35,7 @@ import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_T
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
-import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, ONWARD, onTakes, onTopStep, stairFor, stairMiddle, stairTiles, thrownTiles, topStep } from './ways';
+import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, ONWARD, onTakes, onTopStep, stairFor, takesTiles, stairMiddle, stairTiles, thrownTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
@@ -1918,10 +1918,12 @@ export class Game {
         a1.open = true;
         const taken = new Set<number>([Math.floor(h.y) * L.floor.w + Math.floor(h.x)]);
         for (const m of this.monsters) if (!m.dead) taken.add(Math.floor(m.y) * L.floor.w + Math.floor(m.x));
-        for (const i of thrownTiles(L.floor, on, a1)) if (!taken.has(i)) L.walk[i] = 0;
+        for (const i of thrownTiles(L.floor, a1)) if (!taken.has(i)) L.walk[i] = 0;
+        // (a door, a grille: its way in walked into once it is open)
+        if (ONWARD[a1.floor]?.shutTakes) for (const i of takesTiles(L.floor, a1)) if (!L.props.some((p) => p.solid && p.ty * L.floor.w + p.tx === i)) L.walk[i] = 1;
         this.msg(this.depth >= 10 && !(ENDLESS.on && this.inEndless) ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
       }
-      if (a1.open && onTakes(L.floor, on, a1, h.x, h.y)) {
+      if (a1.open && onTakes(L.floor, a1, h.x, h.y)) {
         this.leave('on');
         return false;
       }

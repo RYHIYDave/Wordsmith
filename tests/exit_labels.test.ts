@@ -3,8 +3,7 @@
 // “What it is”.
 //
 // What is held here: on a floor of each kind, no name while the boss lives; once he has fallen and the way has opened, its
-// name (STAIRS, CAVE, CAGE, the ways on of floors 6 to 10 by what each is, WAY ON for a column of light), at the way; none
-// in town.
+// name (STAIRS, CAVE, CAGE, the ways on of floors 6 to 15 by what each is), at the way; none in town.
 //   run: tsx --test tests/exit_labels.test.ts
 
 // @ts-ignore - node typings are not part of this project
@@ -55,8 +54,7 @@ test('no name while the boss lives; once the way has opened, what it is', () => 
     { depth: 2, name: 'STAIRS', wait: STAIR_OPENING + 0.5 },
     { depth: 4, name: 'CAVE', wait: CAVE_OPENING + 0.5 },
     { depth: 5, name: 'CAGE', wait: SHAFT.down + 0.5 },
-    ...[6, 7, 8, 9, 10].map((d) => ({ depth: d, name: ONWARD_NAME[d], wait: ONWARD[d].secs + 0.5 })),
-    { depth: 12, name: 'WAY ON', wait: 0.5 },
+    ...[6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((d) => ({ depth: d, name: ONWARD_NAME[d], wait: ONWARD[d].secs + 0.5 })),
   ];
   for (const c of cases) {
     const g = on(c.depth);

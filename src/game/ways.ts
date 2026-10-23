@@ -252,8 +252,12 @@ export interface OnwardShape {
   solid: readonly AB[];
   /** Solid from the film's end (what it threw out and left lying). */
   thrown: readonly AB[];
+  /** Where it stands: at `Ways.onward` (none), in the middle of the floor's great square ('square': floor 11's grate), or in a back wall of the floor's own nearest the way on ('wall': three tiles of it, cut through as floor 4's cave is; a 0 the wall's row, b -1 to 1 its three tiles). */
+  place?: 'square' | 'wall';
+  /** Its way in solid while it is shut (a door, a grille: nobody walks into it until it opens). */
+  shutTakes?: boolean;
 }
-/** The ways on of floors 6 to 10 (the art chat's table, mockup/ways at 6226714). */
+/** The ways on of floors 6 to 15 (the art chat's tables, mockup/ways at 6226714 and b7c7470). */
 export const ONWARD: Readonly<Record<number, OnwardShape>> = {
   // THE QUARRY'S CUT: the stair's head; the kerbs and the hoist's posts; the bench of rock and its boulders; the cult's blocks thrown out
   6: { secs: 112 / 30, back: 0, takes: [[0, 0], [1, 0]], solid: [...span(0, 2, -1, -1), ...span(0, 2, 1, 1), ...span(2, 4, -2, 2)], thrown: [[-1, -2], [0, -4], [0, 3], [-1, 1], [1, 2]] },
@@ -265,23 +269,51 @@ export const ONWARD: Readonly<Record<number, OnwardShape>> = {
   9: { secs: 126 / 30, back: 0, takes: span(0, 3, 0, 0), solid: [...span(0, 3, -1, -1), ...span(0, 3, 1, 1)], thrown: [] },
   // THE FEN'S CAUSEWAY, risen: the causeway; the fen's water either side of it
   10: { secs: 130 / 30, back: 0, takes: span(0, 5, 0, 0), solid: [...span(0, 5, -1, -1), ...span(0, 5, 1, 1)], thrown: [] },
+  // THE CRIER'S GRATE, flat in the middle of his square: the hole and the four round it
+  11: { secs: 104 / 30, back: 0, place: 'square', takes: [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]], solid: [], thrown: [] },
+  // THE RAT KING'S OUTFALL, in a back wall: the doorway's middle; its two sides; the grille swung out before the left one
+  12: { secs: 116 / 30, back: 0, place: 'wall', shutTakes: true, takes: [[0, 0]], solid: [[0, -1], [0, 1]], thrown: [[-1, -1]] },
+  // THE POSTERN in a stretch of the old city wall standing alone in the fields: the door; the wall either side of it
+  13: { secs: 120 / 30, back: 0, shutTakes: true, takes: [[1, 0]], solid: [[1, -2], [1, -1], [1, 1], [1, 2]], thrown: [] },
+  // THE STITCHED DOOR, in a back wall of the Physician's rooms
+  14: { secs: 110 / 30, back: 0, place: 'wall', shutTakes: true, takes: [[0, 0]], solid: [[0, -1], [0, 1]], thrown: [] },
+  // THE GREAT DOORS, in a back wall of the Reading Room: home, to the camp
+  15: { secs: 130 / 30, back: 0, place: 'wall', shutTakes: true, takes: [[0, 0]], solid: [[0, -1], [0, 1]], thrown: [] },
 };
-/** Where floors 6 to 10 begin: how far on along the way back the piece he came out of stands, and the tiles it makes solid (from the start's tile). */
-export const START: Readonly<Record<number, { back: number; solid: readonly AB[] }>> = {
+/** Where floors 6 to 15 begin: how far on along the way back the piece he came out of stands, and the tiles it makes solid (from the start's tile); or (`wall`) in a back wall nearest the start, its doorway's three tiles solid, he coming in `back` tiles out from it. */
+export const START: Readonly<Record<number, { back: number; solid: readonly AB[]; place?: 'wall' }>> = {
   // the quarry's gate; the stair down the spur; the pillar and its plank stair; the granite boulders; the two sick trees
   6: { back: 1.8, solid: span(2, 3, -1, 1) },
   7: { back: 1.5, solid: span(2, 4, -1, 1) },
   8: { back: 1.5, solid: span(2, 4, -1, 1) },
   9: { back: 1.5, solid: span(2, 4, -1, 1) },
   10: { back: 1.5, solid: span(2, 3, -1, 1) },
+  // past the camp's barricade; the ladder's foot under the grate; the outfall's mouth in its bank
+  11: { back: 1.7, solid: [[2, 1], [3, 1], [2, -1]] },
+  12: { back: 1.5, solid: [[2, 0]] },
+  13: { back: 1.5, solid: span(2, 3, -2, 2) },
+  // the infirmary's back door; a side door of the library: in a back wall
+  14: { back: 1.7, place: 'wall', solid: span(0, 0, -1, 1) },
+  15: { back: 1.7, place: 'wall', solid: span(0, 0, -1, 1) },
 };
 
-/** A level's way on and start as laid: the floor (its shapes), the way each leads, and whether the way is open. */
+/** Where a way (or a start) stands: its tile (`ref`, whole tiles: the way's own frame counts from it), the way it leads (`dir`), where its picture is anchored (`at`, tiles), and (in a wall) the room's zone before it. */
+export interface PlacedWay {
+  dir: OnDir;
+  ref: { x: number; y: number };
+  at: { x: number; y: number };
+  zone?: number;
+  /** (a start in a wall with no wall near enough to stand it in) Nothing laid. */
+  none?: boolean;
+}
+/** A level's way on and start as laid: the floor (its shapes), where each stands, and whether the way is open. */
 export interface OnwardLaid {
   floor: number;
   dir: OnDir;
   startDir: OnDir;
   open: boolean;
+  way: PlacedWay;
+  start: PlacedWay;
 }
 
 /** The way a way on leads, from where the boss stood to where it is: the nearest of the four (art/ways_kit.ts wayDirOf). */
@@ -315,35 +347,152 @@ export function startAnchor(s: { x: number; y: number }, d: OnDir, back: number)
 }
 
 /**
- * LAY A FLOOR'S WAY ON AND ITS START (floors 6 to 10, EXITS): the way each leads (from the boss's ground), and the tiles
- * their pieces make solid taken out of what can be walked (`walk`), but never the start's tile, the way's own tile, nor
- * a tile he goes in by. Returns what was laid, or null for a floor that has none (or no way on).
+ * THE NEAREST BACK WALL to (x0, y0) (a wall whose face looks toward the eye: stepping toward -x or toward -y from there, the
+ * first tile that is not floor), with three tiles of it to cut a doorway through, nothing but wall behind them (no floor), and
+ * floor before them three deep (room for one to come in a tile and a half out from it): the doorway's middle tile (`ref`),
+ * the way into the wall (`dir`, x- or y-), and the foot of its face under the doorway's middle (`at`). Null if there is none
+ * within `far` tiles.
  */
-export function layOnward(f: Floor, onward: { x: number; y: number } | null, walk: Uint8Array): OnwardLaid | null {
+export function backWallNear(f: Floor, x0: number, y0: number, far = 12): PlacedWay | null {
+  const fl = (x: number, y: number): boolean => x >= 0 && y >= 0 && x < f.w && y < f.h && f.tiles[y * f.w + x] === T_FLOOR;
+  let best: { k: number; p: PlacedWay } | null = null;
+  for (const d of ['x-', 'y-'] as const) {
+    let x = Math.floor(x0);
+    let y = Math.floor(y0);
+    if (!fl(x, y)) continue;
+    for (let k = 0; k < far; k++) {
+      const [sx, sy] = turnAB(d, 1, 0);
+      const nx = x + sx;
+      const ny = y + sy;
+      if (fl(nx, ny)) {
+        x = nx;
+        y = ny;
+        continue;
+      }
+      // (the wall's row: three tiles across it, b -1 to 1; behind them none floor; before them floor three deep)
+      let ok = true;
+      for (const b of [-1, 0, 1]) {
+        const [bx, by] = turnAB(d, 0, b);
+        const [wx0, wy0] = [nx + bx, ny + by];
+        if (fl(wx0, wy0) || fl(wx0 + sx, wy0 + sy)) ok = false;
+        for (let a = 1; a <= 3; a++) if (!fl(wx0 - sx * a, wy0 - sy * a)) ok = false;
+      }
+      if (ok && (!best || k < best.k)) best = { k, p: { dir: d, ref: { x: nx, y: ny }, at: d === 'x-' ? { x: nx + 1, y: ny + 0.5 } : { x: nx + 0.5, y: ny + 1 } } };
+      break;
+    }
+  }
+  return best ? best.p : null;
+}
+
+/**
+ * PLACE A FLOOR'S WAY ON AND ITS START (floors 6 to 15, EXITS), before the level is made of the floor: where each stands. A
+ * way in a wall (12, 14, 15) is laid at the back wall nearest the way on (`land.exit`, moved to the doorway's middle), and a
+ * start in a wall (14, 15) at the back wall nearest the start, he coming in `back` tiles out from it (`f.start`, `land.arrive`
+ * moved there); each doorway's three tiles cut to floor (as the cave's is: the piece paints the opening, and the ground's
+ * own wall face does not stand over it). Floor 11's grate is laid in the middle of the Crier's Square (the land's greatest
+ * square), the way on moved there. Null for a floor that has none (or where a wall to cut is not to be found).
+ */
+export function placeOnward(f: Floor, land: { exit: { x: number; y: number }; arrive?: { x: number; y: number }; squares?: { x: number; y: number; r: number }[]; zones?: Uint8Array }): OnwardLaid | null {
   const shape = ONWARD[f.depth];
   const st = START[f.depth];
-  if (!shape || !st || !onward) return null;
-  const dir = onDirOf(onward.x - f.boss.x, onward.y - f.boss.y);
-  const startDir = onDirOf(f.start.x - f.boss.x, f.start.y - f.boss.y);
-  const ox = Math.floor(onward.x);
-  const oy = Math.floor(onward.y);
+  if (!shape || !st) return null;
+  const zoneAt = (x: number, y: number): number | undefined => (land.zones ? land.zones[y * f.w + x] : undefined);
+  const cut = (p: PlacedWay): void => {
+    for (const b of [-1, 0, 1]) {
+      const [bx, by] = turnAB(p.dir, 0, b);
+      f.tiles[(p.ref.y + by) * f.w + p.ref.x + bx] = T_FLOOR;
+    }
+  };
+  // the way
+  let way: PlacedWay | null = null;
+  if (shape.place === 'wall') {
+    way = backWallNear(f, land.exit.x, land.exit.y);
+    if (!way) return null;
+    const [sx, sy] = turnAB(way.dir, 1, 0);
+    way.zone = zoneAt(way.ref.x - sx, way.ref.y - sy);
+  } else if (shape.place === 'square') {
+    const sq = (land.squares ?? []).slice().sort((p, q) => q.r - p.r)[0];
+    const at = sq ? { x: Math.floor(sq.x) + 0.5, y: Math.floor(sq.y) + 0.5 } : { x: land.exit.x, y: land.exit.y };
+    way = { dir: onDirOf(land.exit.x - f.boss.x, land.exit.y - f.boss.y), ref: { x: Math.floor(at.x), y: Math.floor(at.y) }, at };
+  } else {
+    const dir = onDirOf(land.exit.x - f.boss.x, land.exit.y - f.boss.y);
+    way = { dir, ref: { x: Math.floor(land.exit.x), y: Math.floor(land.exit.y) }, at: onwardAnchor(land.exit, dir, shape.back) };
+  }
+  // the start
+  let start: PlacedWay | null = null;
+  if (st.place === 'wall') {
+    start = backWallNear(f, f.start.x, f.start.y, 8);
+    if (start) {
+      const [sx, sy] = turnAB(start.dir, 1, 0);
+      start.zone = zoneAt(start.ref.x - sx, start.ref.y - sy);
+    }
+  }
+  if (!start) {
+    const dir = onDirOf(f.start.x - f.boss.x, f.start.y - f.boss.y);
+    start = { dir, ref: { x: Math.floor(f.start.x), y: Math.floor(f.start.y) }, at: startAnchor(f.start, dir, st.place === 'wall' ? 0 : st.back) };
+    // (a start in a wall with no wall to stand it in: none drawn there, as it would have been)
+    if (st.place === 'wall') start.none = true;
+  }
+  // (the doorways cut, the way on and the start moved to where they now stand)
+  if (shape.place === 'wall') {
+    cut(way);
+    land.exit = { x: way.ref.x + 0.5, y: way.ref.y + 0.5 };
+  } else if (shape.place === 'square') land.exit = { x: way.ref.x + 0.5, y: way.ref.y + 0.5 };
+  if (st.place === 'wall' && !start.none) {
+    cut(start);
+    const [sx, sy] = turnAB(start.dir, 1, 0);
+    f.start = { x: start.at.x - sx * st.back, y: start.at.y - sy * st.back };
+    if (land.arrive) land.arrive = { ...f.start };
+  }
+  return { floor: f.depth, dir: way.dir, startDir: start.dir, open: false, way, start };
+}
+
+/**
+ * LAY A FLOOR'S WAY ON AND ITS START (floors 6 to 15, EXITS), once the level is made of the floor: the tiles their pieces make
+ * solid taken out of what can be walked (`walk`), but never the start's tile nor the ring round it, nor (while it is open to
+ * walk into) the way's own tile and its way in; a door's way in shut until it opens (`shutTakes`).
+ */
+export function layOnward(f: Floor, laid: OnwardLaid | null, walk: Uint8Array): OnwardLaid | null {
+  if (!laid) return null;
+  const shape = ONWARD[laid.floor];
+  const st = START[laid.floor];
+  if (!shape || !st) return null;
+  const w = laid.way;
+  const s = laid.start;
   const sx = Math.floor(f.start.x);
   const sy = Math.floor(f.start.y);
-  const keep = new Set([...tilesAB(f, ox, oy, dir, shape.takes), oy * f.w + ox, ...tilesAB(f, sx, sy, startDir, span(-1, 1, -1, 1))]);
-  for (const i of [...tilesAB(f, ox, oy, dir, shape.solid), ...tilesAB(f, sx, sy, startDir, st.solid)]) if (!keep.has(i)) walk[i] = 0;
-  return { floor: f.depth, dir, startDir, open: false };
+  const ring = new Set(tilesAB(f, sx, sy, s.dir, span(-1, 1, -1, 1)));
+  const takes = tilesAB(f, w.ref.x, w.ref.y, w.dir, shape.takes);
+  const keep = new Set([...ring, ...(shape.shutTakes ? [] : [...takes, w.ref.y * f.w + w.ref.x])]);
+  const solid = [...tilesAB(f, w.ref.x, w.ref.y, w.dir, shape.solid), ...(shape.shutTakes ? takes : [])];
+  if (!s.none) solid.push(...tilesAB(f, s.ref.x, s.ref.y, s.dir, st.solid));
+  for (const i of solid) if (!keep.has(i)) walk[i] = 0;
+  return laid;
+}
+/** The painter's key of a level's way on's pictures (art/films.ts): its floor and the way it leads; in a wall, where it stands and the room's zone too. */
+export function onwardKey(laid: OnwardLaid): string {
+  const w = laid.way;
+  return ONWARD[laid.floor]?.place === 'wall' ? `onward:${laid.floor}:${w.dir}:${w.at.x}:${w.at.y}:${w.zone ?? ''}` : `onward:${laid.floor}:${w.dir}`;
+}
+/** ... and of its start's (null: none to draw). */
+export function startKey(laid: OnwardLaid): string | null {
+  const s = laid.start;
+  if (s.none) return null;
+  return START[laid.floor]?.place === 'wall' ? `start:${laid.floor}:${s.dir}:${s.at.x}:${s.at.y}:${s.zone ?? ''}` : `start:${laid.floor}:${s.dir}`;
 }
 /** The tiles a way on throws out as it opens (solid from then, but never where someone stands: `taken`). */
-export function thrownTiles(f: { w: number; h: number }, onward: { x: number; y: number }, laid: OnwardLaid): number[] {
+export function thrownTiles(f: { w: number; h: number }, laid: OnwardLaid): number[] {
   const shape = ONWARD[laid.floor];
-  return shape ? tilesAB(f, Math.floor(onward.x), Math.floor(onward.y), laid.dir, shape.thrown) : [];
+  return shape ? tilesAB(f, laid.way.ref.x, laid.way.ref.y, laid.way.dir, shape.thrown) : [];
+}
+/** The tiles of the way on that take him on. */
+export function takesTiles(f: { w: number; h: number }, laid: OnwardLaid): number[] {
+  const shape = ONWARD[laid.floor];
+  return shape ? tilesAB(f, laid.way.ref.x, laid.way.ref.y, laid.way.dir, shape.takes) : [];
 }
 /** Is (x, y) on one of the tiles of the way on that take him on? */
-export function onTakes(f: { w: number }, onward: { x: number; y: number }, laid: OnwardLaid, x: number, y: number): boolean {
-  const shape = ONWARD[laid.floor];
-  if (!shape) return false;
-  const here = Math.floor(y) * f.w + Math.floor(x);
-  return tilesAB({ w: f.w, h: Number.MAX_SAFE_INTEGER }, Math.floor(onward.x), Math.floor(onward.y), laid.dir, shape.takes).includes(here);
+export function onTakes(f: { w: number; h: number }, laid: OnwardLaid, x: number, y: number): boolean {
+  return takesTiles(f, laid).includes(Math.floor(y) * f.w + Math.floor(x));
 }
 
 /** Plain floor that a thing may be laid on: floor, not cut, no stair, at the floor's own height. */

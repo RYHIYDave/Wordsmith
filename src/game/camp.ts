@@ -1,4 +1,4 @@
-// ACT 2'S TOWN: THE CAMP INSIDE VELLUM'S GATE, AS THE GAME HOLDS A LEVEL. The art chat's camp (art/hub2_camp.ts campPlace(false),
+// ACT 2'S TOWN: THE CAMP INSIDE VELLUM'S GATE, AS THE GAME HOLDS A LEVEL. The art chat's camp (art/hub2_camp.ts campPlace(false, true),
 // his yes to it there by 11:30 Pacific, 22 Oct 2026: “Yes, send to main (Recommended)”), laid tile by tile as it laid it: its open
 // yard and streets the floor, every other tile houses (painted as the Gate Ward's, art/gateward.ts, with `swept`); its pieces, the
 // Gate Ward's and the hub's own, where it stood them; the town's own things and its four keepers on their tiles; its three
@@ -11,6 +11,8 @@
 // is the barricaded street off to the right (the art chat's proposal, its look still to come: `CAMP.onward`).
 
 import { campPlace } from '../art/hub2_camp';
+// (the camp as laid with its way out to floor 11 open, `campPlace(false, true)`: its cart barricade hauled aside, the art chat's
+// mockup/act2-hub at ae89b00, with his yes in the art chat by 11:06, 23 Oct, “Yes, send to main (Recommended)”)
 import type { TownKind } from '../art/hub2_camp';
 import { RNG } from '../engine/rng';
 import type { Land } from './act1_layout';
@@ -26,9 +28,9 @@ export const CAMP_DRESS = 110;
 export const CAMP = { arrive: { x: 13.6, y: 22.5 }, onward: { x: 40.5, y: 26.5 } } as const;
 
 /** The camp's pieces that move, at the art's frames a second (`Laid.anim`). */
-export const CAMP_ANIM: ReadonlyMap<string, number> = new Map(campPlace(false).dress.filter((l) => l.anim && !l.on).map((l) => [l.name, l.anim as number]));
+export const CAMP_ANIM: ReadonlyMap<string, number> = new Map(campPlace(false, true).dress.filter((l) => l.anim && !l.on).map((l) => [l.name, l.anim as number]));
 /** The pieces on its roofs (drawn with the roofs: render/act1_pieces.ts). */
-export const CAMP_TOPS = campPlace(false).dress.filter((l) => l.on === 'top');
+export const CAMP_TOPS = campPlace(false, true).dress.filter((l) => l.on === 'top');
 
 /** The pieces that stand in the way, and how far round their anchor they do (tiles): the rest are walked past or over. */
 const SOLID: Readonly<Record<string, number>> = {
@@ -63,12 +65,12 @@ export function isCamp(L: Level): boolean {
 
 /** The camp's three people by the fire (art/hub2_folk.ts), where the art sat them. */
 export function campFolk(): NonNullable<ReturnType<typeof campPlace>['folk']> {
-  return campPlace(false).folk ?? [];
+  return campPlace(false, true).folk ?? [];
 }
 
 /** The camp, made: a Level as the town's is (`town` true), with its land as an Act 2 floor's. `tradesOpen`: the stranger's gamble a service. */
 export function makeCamp(seed: number, tradesOpen: boolean): Level {
-  const pl = campPlace(false);
+  const pl = campPlace(false, true);
   const W = pl.w;
   const H = pl.h;
   const tiles = new Uint8Array(W * H).fill(T_WALL);

@@ -16,6 +16,7 @@ import { GRAIN } from '../art/kit';
 import { Px } from '../engine/px';
 import { TOWN_WAYS, riderUnder } from '../art/town_ways';
 import { A1_WAYS } from '../art/act1_ways';
+import { A2_WAYS } from '../art/act2_ways';
 import { doorFace, doorTiles } from '../game/doors';
 import type { DoorSpot } from '../game/types';
 import { floorLook } from '../art/floors';
@@ -23,7 +24,7 @@ import { riderDark, shaftStill } from '../art/shaft';
 import { rgba } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import type { Game } from '../game/game';
-import { EXITS, ONWARD, START, SHAFT, onwardAnchor, stairMiddle, startAnchor } from '../game/ways';
+import { EXITS, SHAFT, onwardKey, stairMiddle, startKey } from '../game/ways';
 import type { StairWay } from '../game/ways';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
@@ -116,11 +117,12 @@ export class FloorDress {
   /** (EXITS, FLOORS 6 TO 10, the art chat's: art/act1_ways.ts) The way on's pictures, and the start's; null until made (the painter's). */
   onwardArt(game: Game): WayArt | null {
     const a1 = game.level.ways?.a1;
-    return EXITS.on && A1_WAYS.on && a1 ? this.film<WayArt>(`onward:${a1.floor}:${a1.dir}`) : null;
+    return EXITS.on && a1 && (a1.floor <= 10 ? A1_WAYS.on : A2_WAYS.on) ? this.film<WayArt>(onwardKey(a1)) : null;
   }
   startArt(game: Game): StartArt | null {
     const a1 = game.level.ways?.a1;
-    return EXITS.on && A1_WAYS.on && a1 ? this.film<StartArt>(`start:${a1.floor}:${a1.startDir}`) : null;
+    const key = a1 ? startKey(a1) : null;
+    return EXITS.on && a1 && key && (a1.floor <= 10 ? A1_WAYS.on : A2_WAYS.on) ? this.film<StartArt>(key) : null;
   }
   /** The way on's film's last frame played (its jolts kick the screen once each). */
   private onF = -1;
@@ -132,7 +134,7 @@ export class FloorDress {
     const a1 = W?.a1;
     const art = this.onwardArt(game);
     if (!on || !a1 || !art || !L.explored[Math.floor(on.y) * L.floor.w + Math.floor(on.x)]) return null;
-    const at = onwardAnchor(on, a1.dir, ONWARD[a1.floor]?.back ?? art.back ?? 0);
+    const at = a1.way.at;
     const d = at.x + at.y + 0.6;
     if (!on.awake) {
       this.onF = -1;
@@ -157,8 +159,8 @@ export class FloorDress {
   /** Where the floor's start's picture stands. */
   private startAt(game: Game): { x: number; y: number } | null {
     const a1 = game.level.ways?.a1;
-    if (!a1) return null;
-    return startAnchor(game.level.floor.start, a1.startDir, START[a1.floor]?.back ?? 0);
+    if (!a1 || a1.start.none) return null;
+    return a1.start.at;
   }
 
   /** The kicks of the jolts played since this was last asked (main.ts kicks the screen and sounds a blow for each). */

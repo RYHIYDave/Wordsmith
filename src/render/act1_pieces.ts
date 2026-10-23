@@ -683,8 +683,8 @@ function keepClearOf(L: Level): { x: number; y: number }[] {
     }
   };
   const way = ONWARD[a1.floor];
-  if (way) box([...way.takes, ...way.solid, ...way.thrown], Math.floor(W.onward.x), Math.floor(W.onward.y), a1.dir, way.back);
+  if (way) box([...way.takes, ...way.solid, ...way.thrown], a1.way.ref.x, a1.way.ref.y, a1.way.dir, way.back);
   const st = START[a1.floor];
-  if (st) box(st.solid, Math.floor(L.floor.start.x), Math.floor(L.floor.start.y), a1.startDir);
+  if (st && !a1.start.none) box(st.solid, a1.start.ref.x, a1.start.ref.y, a1.start.dir);
   return out;
 }
