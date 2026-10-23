@@ -777,3 +777,6 @@ export function greatLibraryLook(land: LibraryLand): TerrainLook {
     nearShadow: { reach: 1.0, dark: [0.32, 0.2] },
   });
 }
+
+// (FLOOR 15'S STACKS ONE BLOCK HIGH, art/low_stacks.ts, behind LOW_STACKS, off: the bookcases' own shelves, bays and light, for its low rows; nothing else here changed)
+export { shelves as libraryShelves, bayAt as libraryBayAt, rowOf as libraryRowOf };
