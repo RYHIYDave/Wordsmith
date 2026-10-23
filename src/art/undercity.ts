@@ -730,3 +730,6 @@ export function undercityLook(land: UndercityLand): TerrainLook {
     hang: { tall: 520, at: (v, px, py, shade) => underEdge(v, px, py, shade, alongOf, edge) },
   });
 }
+
+// (the art chat's ways on, art/act2_ways.ts, paint a stretch of these walls round a way through them: exported for it, nothing changed)
+export { wallFace as undercityWallFace, topAt as undercityTopAt };

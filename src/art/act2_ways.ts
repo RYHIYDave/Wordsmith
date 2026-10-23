@@ -18,6 +18,12 @@ import { GRAIN, compose, hash, mix } from './kit';
 import type { Ramp } from './kit';
 import { BLACK, BRICK, DEAL, IRON, OAK, PAPER, STONE } from './act2_kit';
 import { Rig, chip, cloud, paintChips, paintDust, rodIn, stepChips } from './ways_kit';
+import { trimmed } from './act1_ways';
+import { BRIGHT, quietRGB } from './act2_quiet';
+import type { RGB } from './terrain';
+import { UC_DEEP, UC_RISE, undercityTopAt, undercityWallFace } from './undercity';
+import { HQ_DEEP, HQ_RISE, HQ_ZONE, houseTopAt, houseWallFace } from './housequiet';
+import { LB_DEEP, LB_RISE, LB_ZONE, libraryTopAt, libraryWallFace } from './library';
 import type { Chip, Cloud, StartArt, WayArt, WayDir, WayFilm } from './ways_kit';
 
 /** THE SWITCH: off, nothing of the game uses any of this. */
@@ -34,10 +40,29 @@ const DARK = '#0c0a10';
 const INK: Ramp = ['#060509', '#0c0a10', '#14111a', '#1e1a26', '#2a2434'];
 const SEAL_PINK: Ramp = ['#3a0c2a', '#7a1058', '#c0206a', '#ff4f8a', '#ffc0d6'];
 
+/** A picture from its under and over (each seamed), quietened as every colour of Act 2's places is (act2_quiet.ts: no
+ * richer than the dullest word, what glows left bright), cut down to what is painted in it, its anchor kept. */
 function whole(under: Px | null, over: Px | null, ax: number, ay: number, w: number, h: number): Sprite {
   const layers = [under, over].filter((p): p is Px => !!p);
-  if (!layers.length) return new Px(w, h).sprite(ax, ay, GRAIN);
-  return compose(null, layers).sprite(ax, ay, GRAIN);
+  const p = layers.length ? compose(null, layers) : new Px(w, h);
+  quieten(p);
+  return trimmed(p, ax, ay);
+}
+const hex2 = (v: number): string => v.toString(16).padStart(2, '0');
+/** Every colour of a picture no richer than act2_quiet.ts's QUIET_MOST, but what glows. */
+function quieten(p: Px): void {
+  const d = p.d;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue;
+    const M = Math.max(d[i], d[i + 1], d[i + 2]);
+    const m = Math.min(d[i], d[i + 1], d[i + 2]);
+    if (M === 0 || (M - m) / M <= 0.46) continue;
+    if (BRIGHT.has('#' + hex2(d[i]) + hex2(d[i + 1]) + hex2(d[i + 2]))) continue;
+    const q = quietRGB([d[i], d[i + 1], d[i + 2]]);
+    d[i] = Math.round(q[0]);
+    d[i + 1] = Math.round(q[1]);
+    d[i + 2] = Math.round(q[2]);
+  }
 }
 
 // =================================================================================================
@@ -233,10 +258,12 @@ export function gateWardWay(d: WayDir): WayArt {
   }
   const film: WayFilm = { frames, fps: F.fps, jolts: kicks.map((k) => k.f), kicks: kicks.map((k) => k.k) };
   const openPx = paintFrame(F.frames + 300);
+  // (shut and open, all of it lies flat in the square: under whoever stands on it)
+  const none = new Px(GW, GH);
   const art: WayArt = {
-    shut: { under: whole(shutPx.under, null, GAX, GAY, GW, GH), over: whole(null, shutPx.over, GAX, GAY, GW, GH) },
+    shut: { under: whole(shutPx.under, shutPx.over, GAX, GAY, GW, GH), over: whole(null, none, GAX, GAY, GW, GH) },
     film,
-    open: { under: whole(openPx.under, null, GAX, GAY, GW, GH), over: whole(null, openPx.over, GAX, GAY, GW, GH) },
+    open: { under: whole(openPx.under, openPx.over, GAX, GAY, GW, GH), over: whole(null, none, GAX, GAY, GW, GH) },
   };
   grateCache.set(d, art);
   void smooth;
@@ -268,8 +295,8 @@ interface Stretch {
   flat?: boolean;
   /** A face's colour: where on it (b across, z up), which face (0 its face to the floor, 1 its back, 2 an end, 3 its top, 4 inside the opening), lit as `n`. */
   face: (b: number, z: number, which: number, n: V3) => string;
-  /** What is seen through the opening, far in: its colour at depth `k` 0..1 in and height z. */
-  beyond: (k: number, z: number, b: number) => string;
+  /** What is seen through the opening, far in: its colour at depth `k` 0..1 in and height z (none: what is behind it, seen through). */
+  beyond?: (k: number, z: number, b: number) => string;
 }
 /** Whether (b, z) is in a round-headed opening `ow` either side and `oh` to its crown. */
 const inArch = (b: number, z: number, ow: number, oh: number, flat = false): boolean => z >= 0 && Math.abs(b) < ow && (flat ? z < oh : z < oh - ow || Math.hypot(b, z - (oh - ow)) < ow);
@@ -332,10 +359,12 @@ function paintStretch(R: Rig, W: Stretch, id: number): void {
     R.quad([[a0, b0, z0], [a1, b0, z0], [a1, b1, z1], [a0, b1, z1]], (u) => W.face((b0 + b1) / 2, (z0 + z1) / 2, 4, mul(nn, -1) as V3) && mix(W.face((b0 + b1) / 2, (z0 + z1) / 2, 4, mul(nn, -1) as V3), DARK, 0.35 + u * 0.3), id + 4);
   }
   // beyond it: a floor going on into it, and a dark (or a light) far in
+  const by = W.beyond;
+  if (!by) return;
   const far = a1 + 12;
-  R.quad([[a0, -ow, 0.2], [far, -ow, 0.2], [far, ow, 0.2], [a0, ow, 0.2]], (u, v) => W.beyond(u, 0, -ow + v * 2 * ow), id + 5);
-  R.quad([[far, -ow - 2, 0], [far, ow + 2, 0], [far, ow + 2, oh + 2], [far, -ow - 2, oh + 2]], (u, v) => W.beyond(1, v * (oh + 2), -ow - 2 + u * (2 * ow + 4)), id + 6);
-  for (const s of [-1, 1]) R.quad([[a1, s * ow, 0], [far, s * ow, 0], [far, s * ow, oh], [a1, s * ow, oh]], (u, v) => W.beyond(0.4 + u * 0.6, v * oh, s * ow), id + 7);
+  R.quad([[a0, -ow, 0.2], [far, -ow, 0.2], [far, ow, 0.2], [a0, ow, 0.2]], (u, v) => by(u, 0, -ow + v * 2 * ow), id + 5);
+  R.quad([[far, -ow - 2, 0], [far, ow + 2, 0], [far, ow + 2, oh + 2], [far, -ow - 2, oh + 2]], (u, v) => by(1, v * (oh + 2), -ow - 2 + u * (2 * ow + 4)), id + 6);
+  for (const s of [-1, 1]) R.quad([[a1, s * ow, 0], [far, s * ow, 0], [far, s * ow, oh], [a1, s * ow, oh]], (u, v) => by(0.4 + u * 0.6, v * oh, s * ow), id + 7);
 }
 
 /** A DOOR'S LEAF of planks, hinged at (a, s*hw) turning `open` (0 shut across the opening, 1 swung in against the jamb), `hw` either side, `h` high; shaded `shade(u, v, n)`. */
@@ -350,43 +379,171 @@ function doorLeaf(R: Rig, a: number, hinge: number, w: number, h: number, open: 
 }
 
 // =================================================================================================
-// FLOOR 12, THE UNDERCITY: THE OUTFALL. In the brick at the far end of the King's cistern, the arch of the great outfall
-// where the sewer runs out to the river: the channel's green water running into it under an iron grille. SHUT: the
-// grille choked with the Rat King's nest, rags, straw, broken jars of the bottled voices, corks and bones heaped up
-// against it. AS THE RAT KING DIES: the nest seethes; his rats pour out of it in a flood across the floor and away into
-// the dark; the grille, rusted through at its hinge, is shoved and swings open with a clang; the water gushes out.
+// A WAY THROUGH ONE OF THE FLOOR'S OWN WALLS (floors 12, 14 and 15, whose rooms are walled round a tile thick): three
+// tiles of a BACK wall of the floor's (its face toward the eye, the way leading x- or y-), painted as the ground paints
+// the floor's own walls (the same face, the same top, its pattern running on from the walls either side of it, given
+// where it stands), an opening through its middle, and what is in the opening. Anchored as floor 4's cave is: at the
+// foot of the wall's face under the middle of the doorway's middle tile; the wall a tile thick behind that.
+//   over: the wall's face round the opening, its top, and whatever stands at the face (a door shut, a grille, a seal);
+//   under: in the opening, under whoever walks into it: its jambs and head, the threshold, the dark (or the light) beyond.
 
-export const OUTFALL = { a0: 26, thick: 22, half: 74, high: 112, ow: 30, oh: 64 };
+/** A floor's own wall as its ground paints it (art/terrain.ts TerrainLook.face and .top). */
+interface WallLook {
+  rise: number;
+  /** The dark beyond it. */
+  deep: string;
+  face(shade: number, v: number, px: number, x: number, y: number): RGB;
+  top(px: number, py: number, back: number, x: number, y: number): RGB;
+}
+/** Where a piece stands in the world (its anchor, in tiles): for the wall's pattern to run on into the floor's own. */
+export interface WallAt {
+  x: number;
+  y: number;
+}
+const AT0: WallAt = { x: 0, y: 0 };
+const hexOf = (c: RGB): string => '#' + c.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+const UNDERCITY_WALL: WallLook = {
+  rise: UC_RISE,
+  deep: hexOf(UC_DEEP),
+  face: (s, v, px, x, y) => undercityWallFace(s, v, px, x, y),
+  top: (px, py, back, x, y) => undercityTopAt(x, y, px, py, back),
+};
+const houseWall = (zone: number): WallLook => ({
+  rise: HQ_RISE,
+  deep: hexOf(HQ_DEEP),
+  face: (s, v, px) => houseWallFace(zone, s, v, px),
+  top: (px, py, back, x, y) => houseTopAt(x, y, px, py, back),
+});
+const libraryWall = (zone: number): WallLook => ({
+  rise: LB_RISE,
+  deep: hexOf(LB_DEEP),
+  face: (s, v, px) => libraryWallFace(zone, s, v, px),
+  top: (px, py, back) => libraryTopAt(px, py, back),
+});
+
+interface Doorway {
+  /** The stretch either side of the middle (60: three tiles), how thick (40: a tile). */
+  half: number;
+  thick: number;
+  /** The opening: `ow` either side, `oh` to its crown (round-headed, or flat). */
+  ow: number;
+  oh: number;
+  flat?: boolean;
+}
+/** Where a point of the way's frame is in the world, in tiles, and its column of the world's picture (as terrain.ts worldOf). */
+function worldPx(R: Rig, at: WallAt, a: number, b: number): { x: number; y: number; px: number } {
+  const t = R.T(a, b, 0);
+  const x = at.x + t[0] / 40;
+  const y = at.y + t[1] / 40;
+  return { x, y, px: Math.round((x - y) * 32 - 0.5) };
+}
+/** How a face turned `n` (world) looks to the light, as terrain.ts shadeAt: 1 to the lower left, -1 to the lower right. */
+const shadeOf = (n: V3): number => Math.max(-1, Math.min(1, n[1] - n[0]));
+/** The ground's foot shadow at a face's foot (as the floors' looks have it). */
+const footed = (c: RGB, v: number): RGB => (v < 3 ? [c[0] * 0.6, c[1] * 0.6, c[2] * 0.6] : v < 7 ? [c[0] * 0.78, c[1] * 0.78, c[2] * 0.78] : c);
+
+/**
+ * THE WALL ROUND THE OPENING into `over`, and the opening's jambs, head, threshold and beyond into `under`. `dress(b, z)`
+ * paints what is cut or set in the face (a door case, an arch's stones), else the floor's own face; `beyond(k, z, b)` what
+ * is seen far in (k 0 at the back of the wall to 1 far in).
+ */
+function paintBackWall(over: Rig, under: Rig, L: WallLook, at: WallAt, D: Doorway, id: number, dress: ((b: number, z: number) => string | null) | null, beyond: (k: number, z: number, b: number) => string): void {
+  const { half, thick, ow, oh } = D;
+  const H = L.rise;
+  const nF = over.V([-1, 0, 0]);
+  const sF = shadeOf(nF);
+  const inHole = (b: number, z: number): boolean => inArch(b, z, ow, oh, D.flat);
+  const faceAt = (s: number, a: number, b: number, z: number): string => {
+    const w = worldPx(over, at, a, b);
+    return hexOf(quietRGB(footed(L.face(s, z, w.px, w.x, w.y), z)));
+  };
+  // ITS FACE, round the opening
+  over.quad([[0, -half, 0], [0, half, 0], [0, half, H], [0, -half, H]], (u, v) => {
+    const b = -half + u * 2 * half;
+    const z = v * H;
+    if (inHole(b, z)) return null;
+    return (dress && dress(b, z)) || faceAt(sF, 0, b, z);
+  }, id);
+  // ITS TOP: the wall's thickness seen from above, its edge catching the light, the dark beyond
+  over.quad([[0, -half, H], [thick, -half, H], [thick, half, H], [0, half, H]], (u, v) => {
+    const a = u * thick;
+    const b = -half + v * 2 * half;
+    const w = worldPx(over, at, a, b);
+    return hexOf(quietRGB(L.top(w.px, Math.round((w.x + w.y) * 16 - H), a / 20, w.x, w.y)));
+  }, id + 1);
+  // its ends (hidden where the floor's own walls go on either side) and its back (seen only from behind)
+  for (const s of [-1, 1]) {
+    const n = over.V([0, s, 0]);
+    over.quad([[0, s * half, 0], [thick, s * half, 0], [thick, s * half, H], [0, s * half, H]], (u, v) => faceAt(shadeOf(n), u * thick, s * half, v * H), id + 2);
+  }
+  const nB = over.V([1, 0, 0]);
+  over.quad([[thick, -half, 0], [thick, half, 0], [thick, half, H], [thick, -half, H]], (u, v) => {
+    const b = -half + u * 2 * half;
+    const z = v * H;
+    if (inHole(b, z)) return null;
+    return faceAt(shadeOf(nB), thick, b, z);
+  }, id + 3);
+  // THE OPENING'S JAMBS AND HEAD, inside the wall's thickness, in the shade of it
+  const N = 18;
+  const rim: [number, number][] = [[-ow, 0]];
+  if (D.flat) rim.push([-ow, oh], [ow, oh]);
+  else for (let i = 0; i <= N; i++) {
+    const t = Math.PI - (i / N) * Math.PI;
+    rim.push([Math.cos(t) * ow, oh - ow + Math.sin(t) * ow]);
+  }
+  rim.push([ow, 0]);
+  for (let i = 0; i + 1 < rim.length; i++) {
+    const [b0, z0] = rim[i];
+    const [b1, z1] = rim[i + 1];
+    const nn = norm(under.V([0, z1 - z0, -(b1 - b0)]));
+    under.quad([[0, b0, z0], [thick, b0, z0], [thick, b1, z1], [0, b1, z1]], (u) => mix(faceAt(shadeOf(nn), u * thick, (b0 + b1) / 2, (z0 + z1) / 2), L.deep, 0.3 + u * 0.55), id + 4);
+  }
+  // the threshold, going in under the wall into the dark, and the dark (or the light) far in
+  const far = thick + 14;
+  under.quad([[0, -ow, 0.3], [far, -ow, 0.3], [far, ow, 0.3], [0, ow, 0.3]], (u, v) => beyond(u * 0.8, 0, -ow + v * 2 * ow), id + 5);
+  under.quad([[far, -ow - 2, 0], [far, ow + 2, 0], [far, ow + 2, oh + 2], [far, -ow - 2, oh + 2]], (u, v) => beyond(1, v * (oh + 2), -ow - 2 + u * (2 * ow + 4)), id + 6);
+  for (const s of [-1, 1]) under.quad([[thick, s * ow, 0], [far, s * ow, 0], [far, s * ow, oh], [thick, s * ow, oh]], (u, v) => beyond(0.6 + u * 0.4, v * oh, s * ow), id + 7);
+}
+
+// =================================================================================================
+// FLOOR 12, THE UNDERCITY: THE OUTFALL. In a back wall of the King's cistern, the arch of the great outfall where the
+// sewer runs out to the river, ringed in dressed stone: the channel's green water running out of it over the floor
+// under an iron grille. SHUT: the grille choked with the Rat King's nest, rags, straw, broken jars of the bottled voices,
+// corks and bones heaped up against it. AS THE RAT KING DIES: the nest seethes; his rats pour out of it in a flood across
+// the floor and away into the dark; the grille, rusted through at its hinge, is shoved and swings open with a clang.
+
+export const OUTFALL: Doorway = { half: 60, thick: 40, ow: 24, oh: 58 };
 export const OUTFALL_FILM = { frames: 116, seethe: 4, pour: 26, swing: 52, fps: 30 } as const;
 const OW = 680;
 const OH = 520;
 const OAX = 340;
-const OAY = 330;
-const UBRICK = [
-  ['#9c6550', '#83523f', '#704535', '#3a3040'],
-  ['#7a4f40', '#674336', '#57392f', '#2c2634'],
-  ['#4f3833', '#41302e', '#37282a', '#1c1a26'],
-];
+const OAY = 360;
 const UWATER: Ramp = ['#0d1513', '#14221c', '#1a2c22', '#25392b', '#55715a'];
 const FUR: Ramp = ['#141217', '#242026', '#37302f', '#4c433e', '#655a52'];
 const RTAIL: Ramp = ['#2e2226', '#4a3638', '#664c4c', '#806460', '#987a72'];
 const RGLASS: Ramp = ['#0e1712', '#1a281e', '#2a3e2e', '#3e563c', '#68845e'];
 const RAGS: Ramp = ['#2a2420', '#3c342c', '#524638', '#6a5c48', '#807058'];
 const NSTRAW: Ramp = ['#3e3220', '#5a4a2a', '#7a6636', '#9a8444', '#b8a058'];
+/** The arch's dressed stones, as the cistern's coping. */
+const VOUSSOIR: Ramp = ['#26262e', '#3a3a42', '#4c4c53', '#5e5d62', '#6e6d70'];
 
-/** The sewer's brick, by a face's light: its courses, its mortar. */
-function brickAt(b: number, z: number, which: number, n: V3): string {
-  const l = n[0] * -0.55 + n[1] * 0.45 + n[2] * 0.7;
-  const row = UBRICK[l > 0.25 ? 0 : l > -0.25 ? 1 : 2];
-  if (which === 3) return UBRICK[0][2];
-  const course = Math.floor(z / 6);
-  const bond = fr((b + (course % 2) * 6) / 12);
-  if (fr(z / 6) < 0.16 || bond < 0.08) return row[3];
-  const c = hash(Math.floor((b + (course % 2) * 6) / 12), course, 1701) < 0.3 ? row[0] : row[1];
-  // wet and slimed toward its foot
-  return z < 14 && hash(Math.floor(b / 2), Math.floor(z / 2), 1702) < (14 - z) / 20 ? '#2f3b24' : c;
+/** The arch's ring of dressed stones round the opening, a keystone at its crown: its colour at (b, z) on the face, if there. */
+function archStones(b: number, z: number, D: Doorway, ring: number): string | null {
+  if (!inArch(b, z, D.ow + ring, D.oh + ring, D.flat) || inArch(b, z, D.ow, D.oh, D.flat)) return null;
+  const spring = D.oh - D.ow;
+  if (z < spring) {
+    // the jambs' quoins, in courses
+    const k = Math.floor(z / 12);
+    if (fr(z / 12) < 0.1) return VOUSSOIR[0];
+    return (k % 2 ? Math.abs(b) > D.ow + ring * 0.55 : true) ? VOUSSOIR[k % 2 ? 2 : 3] : null;
+  }
+  // the voussoirs, their joints running out from the arch's middle
+  const ang = Math.atan2(z - spring, b);
+  const k = Math.floor((ang / Math.PI) * 11);
+  if (fr((ang / Math.PI) * 11) < 0.12) return VOUSSOIR[0];
+  if (k === 5) return VOUSSOIR[4];
+  return VOUSSOIR[k % 2 ? 2 : 3];
 }
-
 /** A RAT of his, running: its body along its way, its tail behind, its legs a blur. */
 function rat(R: Rig, p: V3, dir: number, f: number, id: number): void {
   const F: V3 = [Math.cos(dir), Math.sin(dir), 0];
@@ -398,106 +555,111 @@ function rat(R: Rig, p: V3, dir: number, f: number, id: number): void {
   const wig = Math.sin(f * 0.9 + id) * 3;
   R.rod(t0, [t0[0] - F[0] * 9 + side[0] * wig, t0[1] - F[1] * 9 + side[1] * wig, p[2] + 1], 0.9, 0.4, RTAIL, id + 1);
 }
-
-/** THE NEST against the grille: rags, straw, broken jars, corks and bones, heaped up; `k` 1 whole to 0 gone (scattered by the flood). */
+/** THE NEST against the grille: rags, straw, broken jars, corks and bones, heaped up to its middle; `k` 1 whole to 0 gone. */
 function ratNest(R: Rig, k: number, seethe: number, f: number): void {
   if (k <= 0) return;
   const O = OUTFALL;
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 90; i++) {
     if (hash(i, 9, 1703) > k) continue;
-    const b = (hash(i, 1, 1703) - 0.5) * 2 * (O.ow - 4);
-    const hmax = 46 * Math.sqrt(Math.max(0, 1 - (b / O.ow) ** 2));
-    const z = hash(i, 2, 1703) * hmax;
-    const a = O.a0 + 2 - hash(i, 3, 1703) * 14 + (z / hmax) * 6;
+    const b = (hash(i, 1, 1703) - 0.5) * 2 * (O.ow + 6);
+    const hmax = 50 * Math.sqrt(Math.max(0, 1 - (b / (O.ow + 8)) ** 2));
+    const z = Math.pow(hash(i, 2, 1703), 0.8) * hmax;
+    const a = 2 - hash(i, 3, 1703) * 16 * (1 - z / (hmax + 1)) - 2;
     const jog = seethe * (hash(f, i, 1704) - 0.5) * 2;
     const kind = i % 7;
-    if (kind === 0) R.egg([a, b + jog, z + 4], XYZ, [4, 3, 5.5], (n) => toneAt(n, RGLASS, 0.15), 200 + (i % 20));
-    else if (kind === 1) R.rod([a, b - 6 + jog, z], [a - 3, b + 6 + jog, z + 3], 1.2, 1, NSTRAW, 200 + (i % 20));
-    else if (kind === 2) R.egg([a, b + jog, z + 1.5], XYZ, [2.2, 2.2, 1.8], (n) => toneAt(n, ['#382a1c', '#523e28', '#6c5436', '#886c46', '#a4885c'], 0.1), 200 + (i % 20));
-    else R.egg([a, b + jog, z + 3], XYZ, [8, 6, 4], (n, w) => (hash(Math.floor(w[0] / 2), Math.floor(w[1] / 2), 1705 + i) < 0.2 ? RAGS[0] : toneAt(n, RAGS, 0.05)), 200 + (i % 20));
+    const id = 200 + (i % 20);
+    if (kind === 0) R.egg([a, b + jog, z + 4], XYZ, [4, 3, 5.5], (n) => toneAt(n, RGLASS, 0.15), id);
+    else if (kind === 1) R.rod([a, b - 6 + jog, z], [a - 3, b + 6 + jog, z + 3], 1.2, 1, NSTRAW, id);
+    else if (kind === 2) R.egg([a, b + jog, z + 1.5], XYZ, [2.2, 2.2, 1.8], (n) => toneAt(n, ['#382a1c', '#523e28', '#6c5436', '#886c46', '#a4885c'], 0.1), id);
+    else if (kind === 3) R.rod([a, b - 4 + jog, z + 1], [a - 2, b + 5 + jog, z + 2], 1.3, 1.1, ['#5e5850', '#7e7768', '#9a9282', '#b4ac9a', '#cac2ae'], id);
+    else R.egg([a, b + jog, z + 3], XYZ, [8, 6, 4.5], (n, w) => (hash(Math.floor(w[0] / 2), Math.floor(w[1] / 2), 1705 + i) < 0.2 ? RAGS[0] : toneAt(n, RAGS, 0.05)), id);
   }
+  // a rat or two of his sat up on it, watching
+  if (k > 0.9) for (let j = 0; j < 3; j++) rat(R, [-6 - j * 3, -14 + j * 13, 34 - j * 10 + seethe * 2], 0.5 + j, f, 280 + j * 2);
+}
+/** The iron grille, hinged at its left, its bars up and across; `open` 0 shut in the arch, 1 swung out flat to the wall. */
+function grille(R: Rig, open: number): void {
+  const O = OUTFALL;
+  const hw = O.ow - 1;
+  const ang = open * 1.62;
+  const dir: V3 = [-Math.sin(ang), Math.cos(ang), 0];
+  const hinge: V3 = [3 - open * 3, -hw, 0];
+  const at = (u: number, z: number): V3 => [hinge[0] + dir[0] * u, hinge[1] + dir[1] * u, z];
+  for (let k = 0; k <= 8; k++) {
+    const u = (k / 8) * 2 * hw;
+    const zt = O.oh - O.ow + Math.sqrt(Math.max(0, hw * hw - (u - hw) ** 2)) - 1;
+    R.rod(at(u, 0), at(u, zt), 1.4, 1.4, IRON, 60);
+  }
+  for (const z of [10, 26, 42]) R.rod(at(0, z), at(2 * hw, z), 1.2, 1.2, IRON, 61);
+  for (const z of [6, 34]) R.box([...at(-1, z)], XYZ, [2, 2, 3], () => IRON[1], 62);
 }
 
-const outfallCache = new Map<WayDir, WayArt>();
-/** FLOOR 12'S WAY ON, THE OUTFALL: shut, its film, open; leading `d`. */
-export function undercityWay(d: WayDir): WayArt {
-  const had = outfallCache.get(d);
+const outfallCache = new Map<string, WayArt>();
+/** FLOOR 12'S WAY ON, THE OUTFALL, in a back wall: shut, its film, open; leading `d` (x- or y-), standing at `at`. */
+export function undercityWay(d: WayDir, at: WallAt = AT0): WayArt {
+  const key = `${d}:${at.x}:${at.y}`;
+  const had = outfallCache.get(key);
   if (had) return had;
   const F = OUTFALL_FILM;
   const O = OUTFALL;
-  const base = new Rig(OW, OH, OAX, OAY, d, 0);
-  // the channel's water running from the floor into the arch
-  base.quad([[-10, -18, 0.4], [O.a0 + O.thick + 12, -18, 0.4], [O.a0 + O.thick + 12, 18, 0.4], [-10, 18, 0.4]], (u, v) => {
-    if (u < 0.15 && hash(Math.floor(u * 80), Math.floor(v * 12), 1706) < (0.15 - u) / 0.15) return null;
-    const rip = fr(u * 30 + Math.sin(v * 5) * 0.4) < 0.08 ? UWATER[4] : UWATER[2];
-    return mix(rip, DARK, clamp01((u - 0.45) / 0.55) * 0.9);
+  const wallO = new Rig(OW, OH, OAX, OAY, d, 0);
+  const wallU = new Rig(OW, OH, OAX, OAY, d, 0);
+  // the channel's water running out of the arch and away over the floor
+  wallU.quad([[-44, -16, 0.4], [O.thick + 14, -16, 0.4], [O.thick + 14, 16, 0.4], [-44, 16, 0.4]], (u, v) => {
+    const a = -44 + u * (O.thick + 58);
+    if (a < 0 && hash(Math.floor(a / 2), Math.floor(v * 12), 1706) < -a / 44) return null;
+    const rip = fr(a / 3.2 + Math.sin(v * 5) * 0.4) < 0.1 ? UWATER[4] : UWATER[2];
+    return mix(rip, DARK, clamp01((a - 4) / (O.thick + 10)) * 0.92);
   }, 5);
-  paintStretch(base, {
-    ...O,
-    face: brickAt,
-    beyond: (k, z) => mix(UWATER[1], DARK, Math.min(1, 0.5 + k * 0.5 + z * 0.004)),
-  }, 10);
-  const grille = (R: Rig, open: number): void => {
-    // the grille, hinged at its left, bars up and across
-    const hw = O.ow - 1;
-    const ang = open * 1.45;
-    const dir: V3 = [Math.sin(ang) * -1, Math.cos(ang), 0];
-    const hinge: V3 = [O.a0 + 3, -hw, 0];
-    const at = (u: number, z: number): V3 => [hinge[0] + dir[0] * u, hinge[1] + dir[1] * u, z];
-    for (let k = 0; k <= 8; k++) {
-      const u = (k / 8) * 2 * hw;
-      const zt = O.oh - O.ow + Math.sqrt(Math.max(0, hw * hw - (u - hw) ** 2)) - 1;
-      R.rod(at(u, 0), at(u, zt), 1.4, 1.4, IRON, 60);
-    }
-    for (const z of [10, 26, 42]) R.rod(at(0, z), at(2 * hw, z), 1.2, 1.2, IRON, 61);
-  };
+  paintBackWall(wallO, wallU, UNDERCITY_WALL, at, O, 10, (b, z) => archStones(b, z, O, 8), (k, z) => mix(UWATER[1], UNDERCITY_WALL.deep, Math.min(1, 0.45 + k * 0.55 + z * 0.004)));
   const flood: { p0: V3; dir: number; sp: number; f0: number }[] = [];
-  for (let i = 0; i < 34; i++) {
-    const dir = Math.PI + (hash(i, 1, 1707) - 0.5) * 2.2;
-    flood.push({ p0: [O.a0 - 6, (hash(i, 2, 1707) - 0.5) * 40, 0], dir, sp: 2.4 + hash(i, 3, 1707) * 1.8, f0: F.pour + Math.floor(hash(i, 4, 1707) * 22) });
+  for (let i = 0; i < 40; i++) {
+    const dir = Math.PI + (hash(i, 1, 1707) - 0.5) * 2.4;
+    flood.push({ p0: [-8, (hash(i, 2, 1707) - 0.5) * 40, 0], dir, sp: 2.6 + hash(i, 3, 1707) * 2.2, f0: F.pour + Math.floor(hash(i, 4, 1707) * 24) });
   }
   const splash: Chip[] = [];
   const dust: Cloud[] = [];
-  const paintFrame = (f: number): Px => {
-    const R = base.copy();
+  const paintFrame = (f: number): { under: Px; over: Px } => {
+    const R = wallO.copy();
+    const U = wallU.copy();
     const seethe = f >= F.seethe && f < F.pour ? 0.5 + ((f - F.seethe) / (F.pour - F.seethe)) * 2.5 : 0;
-    const left = f < 0 ? 1 : f < F.pour ? 1 : Math.max(0, 1 - (f - F.pour) / 30);
+    const left = f < F.pour ? 1 : Math.max(0, 1 - (f - F.pour) / 30);
     const open = f < F.swing ? 0 : Math.min(1, (f - F.swing) / 8) - (f >= F.swing + 8 ? Math.sin(Math.min(1, (f - F.swing - 8) / 14) * Math.PI) * 0.06 : 0);
     grille(R, f > F.frames ? 1 : open);
-    ratNest(R, left, seethe, f);
+    ratNest(R, f > F.frames ? 0 : left, seethe, f);
     flood.forEach((r, i) => {
       const k = f - r.f0;
       if (k < 0 || f > F.frames) return;
       const p: V3 = [r.p0[0] + Math.cos(r.dir) * r.sp * k, r.p0[1] + Math.sin(r.dir) * r.sp * k + Math.sin(k * 0.4 + i) * 3, 0];
-      if (Math.hypot(p[0], p[1]) > 200) return;
+      if (Math.hypot(p[0], p[1]) > 230) return;
       rat(R, p, r.dir + Math.sin(k * 0.4 + i) * 0.3, f, 300 + i * 2);
     });
     paintChips(R, splash, f, UWATER, 600);
+    U.S.seams();
     R.S.seams();
     paintDust(R, dust, f, ['#1a2a22', '#24382c', '#2e4636', '#3a5442', '#4a6450'], ['#1a2a22', '#24382c', '#2e4636', '#3a5442', '#4a6450'], (1 << 20) + 10);
-    return R.S.p;
+    return { under: U.S.p, over: R.S.p };
   };
   const shutPx = paintFrame(-1);
   const frames: Sprite[] = [];
   const kicks = [{ f: F.pour, k: 4 }, { f: F.swing + 8, k: 6 }];
   for (let f = 0; f < F.frames; f++) {
     if (f === F.swing + 8) {
-      for (let i = 0; i < 30; i++) splash.push(chip(f, [O.a0 + 2, (hash(i, 1, 1708) - 0.5) * 30, 4], [-2 - hash(i, 2, 1708) * 3, (hash(i, 3, 1708) - 0.5) * 3, 2 + hash(i, 4, 1708) * 3], 1 + hash(i, 5, 1708), 1800 + i));
-      for (let i = 0; i < 4; i++) dust.push(cloud(f, [O.a0 - 4, (hash(i, 6, 1708) - 0.5) * 30, 6], [-2, (hash(i, 7, 1708) - 0.5) * 2, 0.6], 12 + 4 * hash(i, 8, 1708), 1810 + i, 30, 6, 10));
+      for (let i = 0; i < 30; i++) splash.push(chip(f, [-2, (hash(i, 1, 1708) - 0.5) * 30, 4], [-2 - hash(i, 2, 1708) * 3, (hash(i, 3, 1708) - 0.5) * 3, 2 + hash(i, 4, 1708) * 3], 1 + hash(i, 5, 1708), 1800 + i));
+      for (let i = 0; i < 4; i++) dust.push(cloud(f, [-8, (hash(i, 6, 1708) - 0.5) * 30, 6], [-2, (hash(i, 7, 1708) - 0.5) * 2, 0.6], 12 + 4 * hash(i, 8, 1708), 1810 + i, 30, 6, 10));
     }
     stepChips(splash, f, () => 0);
-    frames.push(whole(null, paintFrame(f), OAX, OAY, OW, OH));
+    const p = paintFrame(f);
+    frames.push(whole(p.under, p.over, OAX, OAY, OW, OH));
   }
   const film: WayFilm = { frames, fps: F.fps, jolts: kicks.map((k) => k.f), kicks: kicks.map((k) => k.k) };
   const openPx = paintFrame(F.frames + 300);
-  const empty = new Px(OW, OH);
   const art: WayArt = {
-    shut: { under: whole(empty, null, OAX, OAY, OW, OH), over: whole(null, shutPx, OAX, OAY, OW, OH) },
+    shut: { under: whole(shutPx.under, null, OAX, OAY, OW, OH), over: whole(null, shutPx.over, OAX, OAY, OW, OH) },
     film,
-    open: { under: whole(empty, null, OAX, OAY, OW, OH), over: whole(null, openPx, OAX, OAY, OW, OH) },
+    open: { under: whole(openPx.under, null, OAX, OAY, OW, OH), over: whole(null, openPx.over, OAX, OAY, OW, OH) },
   };
-  outfallCache.set(d, art);
-  void smooth;
+  outfallCache.set(key, art);
   return art;
 }
 
@@ -541,10 +703,10 @@ interface Sheet {
   blow: boolean;
   seed: number;
 }
-function posternSheets(): Sheet[] {
+function posternSheets(side: number): Sheet[] {
   const P = POSTERN;
   const out: Sheet[] = [];
-  for (let i = 0; i < 46; i++) {
+  for (let i = side < 0 ? 0 : 100; i < (side < 0 ? 46 : 146); i++) {
     const b = (hash(i, 1, 1904) - 0.5) * 2 * (P.ow + 10);
     const z = 4 + hash(i, 2, 1904) * (P.oh + 8);
     const peel = POSTERN_FILM.peel + (1 - z / (P.oh + 12)) * 34 + hash(i, 3, 1904) * 8;
@@ -552,9 +714,11 @@ function posternSheets(): Sheet[] {
   }
   return out;
 }
-/** A sheet as it is `k` frames after it began to peel (before: pasted flat, sagging `sag`). */
-function paintSheet(R: Rig, s: Sheet, f: number, sag: number): void {
+/** A sheet as it is `k` frames after it began to peel (before: pasted flat, sagging `sag`); on the wall's face toward the floor (`side` -1) or its back (1), mirrored through the wall. */
+function paintSheet(R0: Rig, s: Sheet, f: number, sag: number, side: number): void {
   const P = POSTERN;
+  const M2 = 2 * P.a0 + P.thick;
+  const R = { quad: (q: number[][], sh: (u: number, v: number) => string | null, id: number): void => R0.quad(side < 0 ? q : q.map(([a, b, z]) => [M2 - a, b, z]), sh, id) };
   const k = f - s.t0;
   const ink = (u: number, v: number): string | null => {
     if (fr(v * 7 + s.seed * 0.3) < 0.14 && u > 0.12 && u < 0.88) return INK[2];
@@ -611,19 +775,20 @@ export function millraceWay(d: WayDir): WayArt {
   const F = POSTERN_FILM;
   const P = POSTERN;
   const base = new Rig(OW, OH, OAX, OAY, d, 0);
-  paintStretch(base, { ...P, top: posternTop, face: ashlarAt, beyond: (k) => mix('#1a1c22', DARK, 0.5 + k * 0.5) }, 10);
+  // (what is behind it seen through it: it stands alone in the fields)
+  paintStretch(base, { ...P, top: posternTop, face: ashlarAt }, 10);
   // the wall's fallen stones at its ends
   for (let i = 0; i < 8; i++) {
     const s = i % 2 ? 1 : -1;
     base.egg([P.a0 + hash(i, 1, 1906) * P.thick, s * (P.half + 4 + hash(i, 2, 1906) * 14), 5], XYZ, [8 + hash(i, 3, 1906) * 4, 7, 5], facetOf(MSTONE, 0.05), 30 + i);
   }
-  const sheets = posternSheets();
+  const sheets = [...posternSheets(-1).map((s) => ({ s, side: -1 })), ...posternSheets(1).map((s) => ({ s, side: 1 }))];
   const paintFrame = (f: number): Px => {
     const R = base.copy();
     const open = f < F.door ? 0 : Math.min(1, (f - F.door) / 16);
     posternDoor(R, f > F.frames ? 1 : open);
     const sag = f < F.sag ? 0 : Math.min(3, (f - F.sag) * 0.2);
-    sheets.forEach((s) => paintSheet(R, s, f < 0 ? -1e9 : f > F.frames ? 1e9 : f, f < 0 ? 0 : sag));
+    sheets.forEach(({ s, side }) => paintSheet(R, s, f < 0 ? -1e9 : f > F.frames ? 1e9 : f, f < 0 ? 0 : sag, side));
     R.S.seams();
     return R.S.p;
   };
@@ -643,220 +808,472 @@ export function millraceWay(d: WayDir): WayArt {
 }
 
 // =================================================================================================
-// FLOOR 14, THE HOUSE OF QUIET: THE STITCHED DOOR. In the far wall of the Physician's theatre, limewashed over the
-// infirmary's green dado, a plain ward door: the way on. SHUT: stitched shut, as he stitches what he has cut, great
-// stitches of black thread across its edges into the frame, knotted. AS THE PHYSICIAN DIES: the stitches strain and
+// FLOOR 14, THE HOUSE OF QUIET: THE STITCHED DOOR. In a back wall of the Physician's rooms, limewashed over the
+// infirmary's green dado as they all are, a plain ward door in a dark green door case: the way on. SHUT: stitched shut,
+// as he stitches what he has cut: great cross stitches of the Order's black thread across the gap between the door and
+// its case, up both sides and over the head, knotted. AS THE PHYSICIAN DIES: the door strains against them; the stitches
 // snap one after another from the top down, the cut thread whipping loose; the door falls open on the dark.
 
-export const STITCHED = { a0: 24, thick: 16, half: 70, high: 96, ow: 16, oh: 58 };
-export const STITCH_FILM = { frames: 108, strain: 4, snap0: 22, snapEvery: 4, door: 74, fps: 30 } as const;
-const WASH = [
-  ['#c2c6b4', '#b2b7a4', '#a7ac99', '#8f9583'],
-  ['#a2a795', '#949a88', '#898f7e', '#767c6c'],
-  ['#6c7266', '#62685d', '#585e55', '#474d46'],
-];
-const DADO = [
-  ['#7d8f6c', '#6b7d5c', '#5d6e50', '#30392a'],
-  ['#64755a', '#57674d', '#4b5a43', '#262e22'],
-  ['#45513c', '#3b4634', '#333d2d', '#1c231a'],
-];
-const THREAD: Ramp = ['#060508', '#0c0a10', '#17141d', '#26212e', '#332c3c'];
+export const STITCHED: Doorway = { half: 60, thick: 40, ow: 15, oh: 66, flat: true };
+export const STITCH_FILM = { frames: 110, strain: 4, snap0: 24, snapEvery: 3, door: 78, fps: 30 } as const;
+/** The door case's paint, the infirmary's dark green; the door's, its green. */
+const CASE: Ramp = ['#1c231a', '#2a3426', '#3b4634', '#4b5742', '#5d6a52'];
+const LEAF: Ramp = ['#2a3426', '#3b4a34', '#4b5e44', '#5c7052', '#6e8262'];
+const THREAD: Ramp = ['#050407', '#0a0810', '#141019', '#1e1924', '#2a2432'];
+const BRASS: Ramp = ['#3a2e18', '#5e4a26', '#82683a', '#a68a50', '#c4aa6c'];
 
-function limewashAt(b: number, z: number, which: number, n: V3): string {
-  const l = n[0] * -0.55 + n[1] * 0.45 + n[2] * 0.7;
-  const k = l > 0.25 ? 0 : l > -0.25 ? 1 : 2;
-  if (which === 3) return WASH[0][1];
-  if (z < 24) {
-    if (z > 22 || z < 3) return '#262a24';
-    return fr(b / 5) < 0.12 ? DADO[k][3] : DADO[k][hash(Math.floor(b / 5), 1, 2001) < 0.4 ? 1 : 2];
-  }
-  return WASH[k][hash(Math.floor(b / 7), Math.floor(z / 7), 2002) < 0.25 ? 3 : hash(Math.floor(b / 3), Math.floor(z / 4), 2003) < 0.5 ? 1 : 2];
+/** The door case round the opening: its colour at (b, z) on the face, if there. */
+function doorCase(b: number, z: number, D: Doorway, w: number): string | null {
+  const ab = Math.abs(b);
+  if (z >= D.oh + w || ab >= D.ow + w) return null;
+  if (z < D.oh && ab < D.ow) return null;
+  // its moulding: lit along its outer edge on the left and top, dark on the right
+  const edge = Math.min(D.ow + w - ab, D.oh + w - z);
+  if (edge < 1.2) return b < 0 || z >= D.oh ? CASE[4] : CASE[1];
+  if (z < 5) return CASE[0];
+  return edge < 2.6 ? CASE[2] : CASE[3];
 }
-/** The stitches: where each crosses the door's edge (b, z), and when it snaps. */
-function stitchesOf(): { b: number; z: number; t: number; seed: number }[] {
+/** The stitches: each where it crosses the gap (b, z on the face), which side it bridges, and when it snaps. */
+interface Stitch {
+  b: number;
+  z: number;
+  head: boolean;
+  t: number;
+  seed: number;
+}
+function stitchesOf(): Stitch[] {
   const S = STITCHED;
   const F = STITCH_FILM;
-  const out: { b: number; z: number; t: number; seed: number }[] = [];
+  const out: Stitch[] = [];
   let k = 0;
-  // down the latch side, and across the head
-  for (let z = S.oh - 8; z > 6; z -= 8) out.push({ b: S.ow, z, t: 0, seed: k++ });
-  for (let b = -S.ow + 6; b < S.ow - 4; b += 8) out.push({ b, z: S.oh, t: 0, seed: k++ });
-  for (let z = S.oh - 12; z > 10; z -= 12) out.push({ b: -S.ow, z, t: 0, seed: k++ });
-  out.sort((p, q) => q.z - p.z);
-  out.forEach((s, i) => (s.t = F.snap0 + i * F.snapEvery + Math.floor(hash(i, 1, 2004) * 2)));
+  // up both sides, and over the head
+  for (const s of [-1, 1]) for (let z = 8; z < S.oh - 4; z += 9) out.push({ b: s * S.ow, z, head: false, t: 0, seed: k++ });
+  for (let b = -S.ow + 5; b <= S.ow - 5; b += 10) out.push({ b, z: S.oh, head: true, t: 0, seed: k++ });
+  out.sort((p, q) => q.z - p.z || p.b - q.b);
+  out.forEach((s, i) => (s.t = F.snap0 + Math.floor(i * F.snapEvery * 0.7) + Math.floor(hash(i, 1, 2004) * 2)));
   return out;
 }
-/** A stitch across the door's edge: two crossed strokes of thread and a knot; snapped `k` frames ago, its ends whipping loose and hanging. */
-function paintStitch(R: Rig, s: { b: number; z: number; seed: number }, k: number, strain: number): void {
-  const S = STITCHED;
-  const a = S.a0 - 1.2;
-  const head = s.z >= S.oh - 0.5;
-  const across = (u: number): [number, number] => (head ? [s.b, s.z + u] : [s.b + u, s.z]);
-  const pull = strain * Math.sin(s.seed * 3 + k * 0.7) * 0.6;
+/** A stitch: a cross of thread over the gap, from the door case into the door, knotted at its middle; snapped `k` frames ago, its ends whipping and then hanging from where they were sewn. */
+function paintStitch(R: Rig, s: Stitch, k: number, strain: number): void {
+  const a = -0.8;
+  // (across the gap: along b at the sides, along z over the head)
+  const p = (u: number, w: number): V3 => (s.head ? [a, s.b + w, s.z + u] : [a, s.b + u * Math.sign(s.b), s.z + w]);
+  const pull = strain * Math.sin(s.seed * 3 + k * 0.9) * 0.5;
   if (k < 0) {
-    for (const sg of [-1, 1]) {
-      const [b0, z0] = across(-6);
-      const [b1, z1] = across(6);
-      R.rod([a - pull, b0 + (head ? sg * 3 : 0), z0 + (head ? 0 : sg * 3)], [a - pull, b1 - (head ? sg * 3 : 0), z1 - (head ? 0 : sg * 3)], 0.9, 0.9, THREAD, 90 + (s.seed % 6));
-    }
-    R.egg([a - 1 - pull, ...across(0)], XYZ, [1.6, 1.6, 1.6], (n) => toneAt(n, THREAD, 0.2), 90 + (s.seed % 6));
+    for (const sg of [-1, 1]) R.rod(p(-5 - pull, -4 * sg), p(5 + pull, 4 * sg), 0.9, 0.9, THREAD, 90 + (s.seed % 6));
+    R.egg(p(0, 0), XYZ, [1.9, 1.9, 1.9], (n) => toneAt(n, THREAD, 0.25), 90 + (s.seed % 6));
+    // the holes it is drawn through, pricked in the case and the door
+    for (const u of [-5, 5]) for (const sg of [-1, 1]) R.egg(p(u, 4 * sg), XYZ, [0.9, 0.9, 0.9], () => THREAD[0], 96);
     return;
   }
-  // snapped: each half whips back and hangs down from where it was sewn
-  const sw = Math.max(0, 1 - k / 10);
-  for (const sg of [-1, 1]) {
-    const [bo, zo] = across(sg * 6);
-    const whip = Math.sin(k * 0.9) * 4 * sw;
-    R.rod([a, bo, zo], [a - 2 - whip, bo - sg * 2 * sw, zo - 7 + whip], 0.8, 0.6, THREAD, 96 + (s.seed % 4));
+  // snapped: each half whips back about where it was sewn, then hangs
+  const sw = Math.max(0, 1 - k / 9);
+  for (const [u, sg] of [[-5, -1], [5, 1]] as const) {
+    const o = p(u, 4 * sg);
+    const whip = Math.sin(k * 1.1 + s.seed) * 5 * sw;
+    R.rod(o, [o[0] - 2 - Math.abs(whip) * 0.5, o[1] + whip * (s.head ? 1 : 0.4), o[2] - 6 + whip * (s.head ? 0.3 : 1)], 0.8, 0.6, THREAD, 97 + (s.seed % 3));
   }
 }
+/** The ward door: four sunk panels, a brass knob and plate; hinged on the left; `open` 0 shut in its case, 1 swung in. */
+function wardDoor(R: Rig, open: number, shake: number): void {
+  const S = STITCHED;
+  doorLeaf(R, 7 + shake, -S.ow, 2 * S.ow, S.oh - 1, open, true, (u, v, n) => {
+    const pu = u * 2;
+    const pv = v * 4;
+    const fu = fr(pu);
+    const fv = fr(pv);
+    // the stiles and rails, the panels sunk between them
+    if (u < 0.08 || u > 0.92 || v < 0.05 || v > 0.95 || Math.abs(u - 0.5) < 0.05 || Math.abs(v - 0.55) < 0.04) return toneAt(n, LEAF, 0.1);
+    if (fu < 0.14 || fv < 0.08) return LEAF[1];
+    if (fu > 0.9 || fv > 0.92) return LEAF[3];
+    // the knob and its plate
+    if (Math.abs(u - 0.86) < 0.05 && Math.abs(v - 0.48) < 0.06) return BRASS[3];
+    return toneAt(n, LEAF, 0.02);
+  }, 80);
+}
 
-const stitchCache = new Map<WayDir, WayArt>();
-/** FLOOR 14'S WAY ON, THE STITCHED DOOR: shut, its film, open; leading `d`. */
-export function houseOfQuietWay(d: WayDir): WayArt {
-  const had = stitchCache.get(d);
+const stitchCache = new Map<string, WayArt>();
+/** FLOOR 14'S WAY ON, THE STITCHED DOOR, in a back wall: shut, its film, open; leading `d` (x- or y-), at `at`, the wall's room `zone` (HQ_ZONE). */
+export function houseOfQuietWay(d: WayDir, at: WallAt = AT0, zone: number = HQ_ZONE.Ward): WayArt {
+  const key = `${d}:${at.x}:${at.y}:${zone}`;
+  const had = stitchCache.get(key);
   if (had) return had;
   const F = STITCH_FILM;
   const S = STITCHED;
-  const base = new Rig(OW, OH, OAX, OAY, d, 0);
-  paintStretch(base, { ...S, flat: true, face: limewashAt, beyond: (k) => mix('#14161c', DARK, 0.5 + k * 0.5) }, 10);
+  const W = 560;
+  const H = 440;
+  const AX = 280;
+  const AY = 330;
+  const wallO = new Rig(W, H, AX, AY, d, 0);
+  const wallU = new Rig(W, H, AX, AY, d, 0);
+  paintBackWall(wallO, wallU, houseWall(zone), at, S, 10, (b, z) => doorCase(b, z, S, 6), (k) => mix('#121419', hexOf(HQ_DEEP), 0.5 + k * 0.5));
   const stitches = stitchesOf();
-  const paintFrame = (f: number): Px => {
-    const R = base.copy();
-    const open = f < F.door ? 0 : Math.min(1, (f - F.door) / 12) - (f > F.door + 12 ? Math.sin(Math.min(1, (f - F.door - 12) / 10) * Math.PI) * 0.08 : 0);
-    doorLeaf(R, S.a0 + 4, -S.ow, 2 * S.ow, S.oh - 1, f > F.frames ? 1 : open, true, (u, v, n) => {
-      if (fr(u * 3) < 0.05) return DADO[1][3];
-      if (Math.abs(v - 0.5) < 0.02 || Math.abs(u - 0.5) < 0.02) return DADO[1][3];
-      return toneAt(n, ['#2e3a2a', '#3e4c38', '#4e5e46', '#5f7056', '#728468'], 0.05);
-    }, 80);
-    const strain = f >= F.strain && f < F.door ? 1 + (f - F.strain) * 0.05 : 0;
+  const paintFrame = (f: number): { under: Px; over: Px } => {
+    const R = wallO.copy();
+    const U = wallU.copy();
+    const strain = f >= F.strain && f < F.door ? 1 + (f - F.strain) * 0.06 : 0;
+    const shake = f >= F.strain && f < F.door ? Math.sin(f * 1.7) * Math.min(2, strain * 0.4) : 0;
+    const open = f < F.door ? 0 : Math.min(1, (f - F.door) / 10) - (f > F.door + 10 ? Math.sin(Math.min(1, (f - F.door - 10) / 10) * Math.PI) * 0.08 : 0);
+    // the door: in its case while shut, swung in on the dark once open (under whoever walks in)
+    wardDoor(f > F.frames || open > 0.02 ? U : R, f > F.frames ? 1 : open, shake);
     stitches.forEach((s) => paintStitch(R, s, f < 0 ? -1 : f > F.frames ? 999 : f - s.t, strain));
+    U.S.seams();
     R.S.seams();
-    return R.S.p;
+    return { under: U.S.p, over: R.S.p };
   };
   const shutPx = paintFrame(-1);
   const frames: Sprite[] = [];
-  for (let f = 0; f < F.frames; f++) frames.push(whole(null, paintFrame(f), OAX, OAY, OW, OH));
-  const film: WayFilm = { frames, fps: F.fps, jolts: [F.snap0, F.door + 12], kicks: [2, 4] };
+  for (let f = 0; f < F.frames; f++) {
+    const p = paintFrame(f);
+    frames.push(whole(p.under, p.over, AX, AY, W, H));
+  }
+  const film: WayFilm = { frames, fps: F.fps, jolts: [F.snap0, F.door + 10], kicks: [2, 5] };
   const openPx = paintFrame(F.frames + 300);
-  const empty = new Px(OW, OH);
   const art: WayArt = {
-    shut: { under: whole(empty, null, OAX, OAY, OW, OH), over: whole(null, shutPx, OAX, OAY, OW, OH) },
+    shut: { under: whole(shutPx.under, null, AX, AY, W, H), over: whole(null, shutPx.over, AX, AY, W, H) },
     film,
-    open: { under: whole(empty, null, OAX, OAY, OW, OH), over: whole(null, openPx, OAX, OAY, OW, OH) },
+    open: { under: whole(openPx.under, null, AX, AY, W, H), over: whole(null, openPx.over, AX, AY, W, H) },
   };
-  stitchCache.set(d, art);
+  stitchCache.set(key, art);
   return art;
 }
 
 // =================================================================================================
-// FLOOR 15, THE GREAT LIBRARY: THE GREAT DOORS. In the Reading Room's far wall of bookcases, the library's great doors,
-// carved oak in a tall round arch: the way out, home. SHUT: blacked out, the Censor's ink poured over them and the shelves
-// round them, glossy and dripping, bars of it struck across. AS THE CENSOR DIES: the ink runs, thins and drains down off
-// them into a pool at their foot that sinks into the floor; the doors swing open and the morning's grey light pours in
-// across the floor.
+// FLOOR 15, THE GREAT LIBRARY: THE GREAT DOORS. In a back wall of the Reading Room, among its bookcases, the library's
+// great doors, carved oak under a round arch in a walnut doorcase, gilt: the way out, home. SHUT: blacked out, the
+// Censor's ink poured over the doors and the shelves round them, glossy and wet, run in drips, his bars struck across.
+// AS THE CENSOR DIES: the ink runs and thins and drains down off them into a pool at their foot, which sinks into the
+// floor; the doors swing open, and the morning's grey light pours in across the floor.
 
-export const GREAT_DOORS = { a0: 22, thick: 20, half: 92, high: 150, ow: 28, oh: 92 };
-export const DOORS_FILM = { frames: 126, run: 6, door: 82, fps: 30 } as const;
-const SPINES: Ramp[] = [
-  ['#2e161c', '#4a2226', '#6a302e', '#86423a', '#a05a48'],
-  ['#1a2218', '#263422', '#364830', '#4a6040', '#607a50'],
-  ['#1d2133', '#262b40', '#30364e', '#3e4560', '#505874'],
-  ['#3a2a1c', '#523e28', '#6c5436', '#886c46', '#a4885c'],
-  ['#5e5850', '#827a6c', '#a69c88', '#c4b9a2', '#ddd2ba'],
-  ['#09080d', '#121019', '#1c1924', '#282331', '#352e40'],
-];
-const LWOOD: Ramp = ['#1a130e', '#34261a', '#402f21', '#4b3828', '#5d4632'];
-const DAWN: Ramp = ['#5a6070', '#7a8294', '#a2a8b6', '#c8ccd4', '#e2e4e8'];
+export const GREAT_DOORS: Doorway = { half: 60, thick: 40, ow: 30, oh: 100 };
+export const DOORS_FILM = { frames: 130, run: 6, door: 86, fps: 30 } as const;
+const WALNUT: Ramp = ['#1f1610', '#2e2117', '#3d2c1f', '#4c3828', '#5e4632'];
+const GILT: Ramp = ['#4a3c22', '#6e5a32', '#8c733f', '#b39552', '#cdb070'];
+const DOOR_OAK: Ramp = ['#1a130e', '#34261a', '#402f21', '#4b3828', '#5d4632'];
+const MORNING: Ramp = ['#6e6c66', '#8a8780', '#a6a299', '#c0bbb0', '#d6d1c4'];
+const GLOSS = '#36303f';
 
-function shelvesAt(b: number, z: number, which: number, n: V3): string {
-  if (which === 3) return LWOOD[3];
-  if (which === 4 || which === 2) return toneAt(n, LWOOD, 0);
-  // the shelves, every 22, and the books on them
-  const shelf = fr(z / 22);
-  if (shelf < 0.12) return shelf < 0.04 ? LWOOD[4] : LWOOD[2];
-  if (fr((b + 400) / 46) < 0.06) return LWOOD[2];
-  const k = Math.floor((b + 400) / 3.2);
-  const row = Math.floor(z / 22);
-  const tall = 0.62 + hash(k, row, 2101) * 0.38;
-  if (shelf > tall) return LWOOD[0];
-  const sp = SPINES[Math.floor(hash(k, row, 2102) * SPINES.length)];
-  if (Math.abs(shelf - 0.4) < 0.03 || Math.abs(shelf - (tall - 0.08)) < 0.03) return '#8c733f';
-  return sp[hash(k, row, 2103) < 0.3 ? 1 : 2];
+/** The doorcase round the arch: pilasters with gilt capitals, an archivolt with a gilt bead, a keystone carved with an open book. */
+function doorcase(b: number, z: number, D: Doorway): string | null {
+  const w = 9;
+  if (!inArch(b, z, D.ow + w, D.oh + w, D.flat) || inArch(b, z, D.ow, D.oh, D.flat)) {
+    // the plinths at the pilasters' feet, a step proud
+    if (z < 10 && Math.abs(b) >= D.ow && Math.abs(b) < D.ow + w + 2) return z > 8 ? WALNUT[4] : WALNUT[2];
+    return null;
+  }
+  const spring = D.oh - D.ow;
+  if (z < spring) {
+    const ab = Math.abs(b) - D.ow;
+    // the capital, gilt
+    if (z > spring - 7) return z > spring - 2 ? GILT[4] : GILT[2 + ((Math.floor(ab) % 2) as number)];
+    // its fluting
+    if (fr(ab / 3) < 0.3) return b < 0 ? WALNUT[2] : WALNUT[1];
+    return b < 0 ? WALNUT[4] : WALNUT[3];
+  }
+  const r = Math.hypot(b, z - spring) - D.ow;
+  const ang = Math.atan2(z - spring, b);
+  // the keystone with its open book
+  if (Math.abs(ang - Math.PI / 2) < 0.16) {
+    const u = (ang - Math.PI / 2) / 0.16;
+    if (r > 2 && r < 7 && Math.abs(u) < 0.8) return Math.abs(u) < 0.08 ? GILT[1] : GILT[3];
+    return WALNUT[4];
+  }
+  if (Math.abs(r - 4.5) < 0.9) return GILT[3];
+  return r < 4.5 ? WALNUT[3] : WALNUT[2];
 }
-/** The ink over the doors and shelves: how much of it there is still at (b, z) as it drains (`k` 0 just poured, 1 gone). */
-function inkAt(b: number, z: number, k: number, f: number): boolean {
+/** The ink over the doors and the shelves round them, at (b, z) as it drains (`drain` 0 just poured, 1 gone): the ink, a
+ * streak of its gloss running down, its lit edge, the Censor's bars struck across it; or none. */
+function inkAt(b: number, z: number, drain: number, f: number): 'ink' | 'gloss' | 'edge' | 'bar' | 'barEdge' | null {
   const D = GREAT_DOORS;
-  const wide = D.ow + 16 + hash(Math.floor(b / 5), 1, 2104) * 10;
-  if (Math.abs(b) > wide) return false;
-  // runs down: what is left is low, and in runnels
-  const runnel = hash(Math.floor((b + 400) / 3), 2, 2105);
-  const top = D.oh + 16 - k * (D.oh + 30) * (0.7 + runnel * 0.6) - (k > 0 ? (f % 7) * 0.2 : 0);
-  if (z > top) return false;
-  return k < 0.95 || z < 4;
+  if (drain >= 1) return null;
+  const col = Math.floor((b + 200) / 2);
+  const wide = D.ow + 18 + hash(Math.floor((b + 200) / 5), 1, 2104) * 8;
+  if (Math.abs(b) > wide) return null;
+  const runnel = hash(col, 2, 2105);
+  // its top: where it was poured over, ragged, lower over the shelves either side; it sinks as it drains, the runnels lagging
+  const top0 = D.oh + 14 + Math.sin(b * 0.21) * 4 + (Math.abs(b) > D.ow + 12 ? -20 + runnel * 12 : runnel * 7);
+  const top = top0 - drain * (top0 + 6) * (0.72 + runnel * 0.56);
+  if (z > top) return null;
+  if (z > top - 1.6) return 'edge';
+  const bar = drain < 0.3 && Math.abs(b) < D.ow + 13 && (Math.abs(z - 34) < 4.5 || Math.abs(z - 72) < 4.5);
+  if (bar) return Math.abs(z - 34) > 3.4 && Math.abs(z - 72) > 3.4 && (z - 34 > 0 || z - 72 > 0) ? 'barEdge' : 'bar';
+  // the gloss in streaks running down it, moving down as it drains
+  const streak = hash(col, 3, 2106) < 0.16 && fr((z + col * 7.3 + f * (0.4 + drain)) / 38) < 0.3;
+  return streak ? 'gloss' : 'ink';
 }
-const doorsCache = new Map<WayDir, WayArt>();
-/** FLOOR 15'S WAY ON, THE GREAT DOORS: shut, its film, open; leading `d`. */
-export function libraryWay(d: WayDir): WayArt {
-  const had = doorsCache.get(d);
+const mod = (v: number, m: number): number => ((v % m) + m) % m;
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+/** An ordered dither's threshold at a cell, 0 to 1. */
+const bayer = (i: number, j: number): number => (BAYER[mod(i, 4) * 4 + mod(j, 4)] + 0.5) / 16;
+
+const doorsCache = new Map<string, WayArt>();
+/** FLOOR 15'S WAY ON, THE GREAT DOORS, in a back wall: shut, its film, open; leading `d` (x- or y-), at `at`, the wall's room `zone` (LB_ZONE). */
+export function libraryWay(d: WayDir, at: WallAt = AT0, zone: number = LB_ZONE.Reading): WayArt {
+  const key = `${d}:${at.x}:${at.y}:${zone}`;
+  const had = doorsCache.get(key);
   if (had) return had;
   const F = DOORS_FILM;
   const D = GREAT_DOORS;
-  const W = 720;
-  const H = 560;
-  const AX = 360;
-  const AY = 360;
-  const paintFrame = (f: number): Px => {
-    const drain = f < 0 ? 0 : f > F.frames ? 1 : clamp01((f - F.run) / (F.door - F.run - 6));
-    const open = f < 0 ? 0 : f > F.frames ? 1 : clamp01((f - F.door) / 18);
-    const R = new Rig(W, H, AX, AY, d, 0);
-    const light = open;
-    paintStretch(R, { ...D, face: shelvesAt, beyond: (k, z) => (light > 0.05 ? mix(DAWN[3], DAWN[1], k * 0.4 + z * 0.002) : mix(LWOOD[0], DARK, 0.6 + k * 0.4)) }, 10);
+  const W = 640;
+  const H = 520;
+  const AX = 320;
+  const AY = 380;
+  const wallO = new Rig(W, H, AX, AY, d, 0);
+  const wallUdark = new Rig(W, H, AX, AY, d, 0);
+  const wallUlit = new Rig(W, H, AX, AY, d, 0);
+  const L = libraryWall(zone);
+  paintBackWall(wallO, wallUdark, L, at, D, 10, (b, z) => doorcase(b, z, D), (k) => mix(DOOR_OAK[0], L.deep, 0.6 + k * 0.4));
+  paintBackWall(new Rig(W, H, AX, AY, d, 0), wallUlit, L, at, D, 10, null, (k, z) => (k >= 1 ? (hash(Math.floor(z / 6), 1, 2110) < 0.5 ? MORNING[3] : MORNING[4]) : mix(MORNING[2], MORNING[4], k)));
+  const leaves = (R: Rig, open: number): void => {
+    // two leaves of carved oak, each a half of the arch, hinged at the jambs, swinging in
+    for (const s of [-1, 1]) {
+      const ang = open * Math.PI * 0.5 * 0.9;
+      const dir: V3 = [Math.sin(ang), -s * Math.cos(ang), 0];
+      const hinge: V3 = [6, s * D.ow, 0];
+      const n = norm(R.V(cross(dir, [0, 0, 1]) as V3));
+      R.quad([hinge, [hinge[0] + dir[0] * D.ow, hinge[1] + dir[1] * D.ow, 0], [hinge[0] + dir[0] * D.ow, hinge[1] + dir[1] * D.ow, D.oh], [hinge[0], hinge[1], D.oh]], (u, v) => {
+        // the arch's head cuts its top: across the opening, how high the arch is at this part of the leaf
+        const bShut = s * D.ow * (1 - u);
+        const z = v * D.oh;
+        if (!inArch(bShut, z, D.ow, D.oh)) return null;
+        const pu = fr(u * 2);
+        const pv = fr((z / D.oh) * 5);
+        if (u > 0.94) return DOOR_OAK[0];
+        if (pu < 0.12 || pv < 0.1) return toneAt(n, DOOR_OAK, -0.05);
+        if (Math.abs(pu - 0.56) < 0.05 && Math.abs(pv - 0.55) < 0.06) return GILT[3];
+        if (pu > 0.9 || pv > 0.9) return DOOR_OAK[4];
+        return toneAt(n, DOOR_OAK, 0.1);
+      }, 80 + (s > 0 ? 1 : 0));
+      // its iron ring
+      if (open < 0.05) R.rod([3, s * 4, 46], [3, s * 4, 40], 1.4, 1.4, IRON, 85);
+    }
+  };
+  const paintFrame = (f: number): { under: Px; over: Px } => {
+    const drain = f < 0 ? 0 : f > F.frames ? 1 : clamp01((f - F.run) / (F.door - F.run - 8));
+    const open = f < F.door ? 0 : f > F.frames ? 1 : clamp01((f - F.door) / 20);
+    const R = wallO.copy();
+    const U = (open > 0 ? wallUlit : wallUdark).copy();
     // the light poured in across the floor before them, as they open
-    if (light > 0) {
-      R.quad([[D.a0 - 0.5, -D.ow * light, 0.3], [D.a0 - 0.5, D.ow * light, 0.3], [D.a0 - 90 * light, D.ow * 1.6 * light, 0.3], [D.a0 - 90 * light, -D.ow * 1.6 * light, 0.3]], (u, v) => {
-        if (hash(Math.floor(u * 40), Math.floor(v * 20), 2106) < u * 0.8) return null;
-        return u < 0.3 ? DAWN[3] : DAWN[2];
+    if (open > 0) {
+      U.quad([[0, -D.ow, 0.35], [-100 * open, -D.ow * 1.9, 0.35], [-100 * open, D.ow * 1.9, 0.35], [0, D.ow, 0.35]], (u, v) => {
+        // solid by the doors, thinning away from them in an ordered dither, softer at its sides
+        const edge = Math.min(v, 1 - v);
+        const keep = 1.15 - u * 1.25 - (edge < 0.15 ? (0.15 - edge) * 3 : 0);
+        if (bayer(Math.floor(u * 100), Math.floor(v * 60)) >= keep) return null;
+        return u < 0.35 ? MORNING[2] : MORNING[1];
       }, 6);
     }
-    // the two leaves, carved in panels, hinged at either side, swinging in
-    for (const s of [-1, 1]) {
-      doorLeaf(R, D.a0 + D.thick * 0.5, s * D.ow, D.ow, D.oh - 2, open, true, (u, v, n) => {
-        const pu = fr(u * 2);
-        const pv = fr(v * 3);
-        if (pu < 0.08 || pv < 0.06) return LWOOD[1];
-        if (pu > 0.92 || pv > 0.94) return LWOOD[4];
-        return toneAt(n, LWOOD, 0.08);
-      }, 80 + (s > 0 ? 1 : 0));
-    }
-    // THE INK over all of it, glossy, its bars struck across
+    leaves(open > 0 ? U : R, f > F.frames ? 1 : open);
+    // THE INK over it all
     if (drain < 1) {
-      R.quad([[D.a0 - 1.2, -D.ow - 30, 0.4], [D.a0 - 1.2, D.ow + 30, 0.4], [D.a0 - 1.2, D.ow + 30, D.oh + 24], [D.a0 - 1.2, -D.ow - 30, D.oh + 24]], (u, v) => {
-        const b = -D.ow - 30 + u * (2 * D.ow + 60);
-        const z = v * (D.oh + 24);
-        if (!inkAt(b, z, drain, f)) return null;
-        const bar = Math.abs(fr((z + b * 0.1) / 26) - 0.5) < 0.12 && drain < 0.3;
-        const sheen = hash(Math.floor(b / 2), Math.floor(z / 3), 2107) < 0.06;
-        return bar ? INK[0] : sheen ? INK[4] : INK[2];
+      R.quad([[-1.2, -D.ow - 32, 0.4], [-1.2, D.ow + 32, 0.4], [-1.2, D.ow + 32, D.oh + 30], [-1.2, -D.ow - 32, D.oh + 30]], (u, v) => {
+        const b = -D.ow - 32 + u * (2 * D.ow + 64);
+        const z = v * (D.oh + 30);
+        const k = inkAt(b, z, drain, f);
+        if (!k) return null;
+        return k === 'bar' ? INK[0] : k === 'barEdge' || k === 'edge' ? INK[4] : k === 'gloss' ? GLOSS : z < 4 ? INK[1] : INK[2];
       }, 70);
     }
-    // its pool at their foot, sinking away
-    const pool = f < 0 ? 0.6 : f > F.frames ? 0 : drain < 1 ? 0.6 + drain * 0.6 : Math.max(0, 1.2 - (f - F.door) / 30);
-    if (pool > 0) R.egg([D.a0 - 8, 0, 0.4], XYZ, [12 * pool, (D.ow + 18) * pool, 0.5], (n, w) => (hash(Math.floor(w[0]), Math.floor(w[1]), 2108) < 0.06 ? INK[4] : INK[1]), 71);
+    // its pool at their foot, spreading as it drains, then sinking away into the floor
+    const pool = f < 0 ? 0.55 : f > F.frames ? 0 : f < F.door ? 0.55 + drain * 0.65 : Math.max(0, 1.2 - (f - F.door) / 28);
+    if (pool > 0) {
+      const P = f < F.door || f < 0 ? R : U;
+      P.egg([-10 * pool, 0, 0.45], XYZ, [14 * pool, (D.ow + 22) * pool, 0.4], (_n, w) => (hash(Math.floor(w[0]), Math.floor(w[1]), 2108) < 0.05 ? GLOSS : INK[1]), 71);
+    }
+    U.S.seams();
     R.S.seams();
-    return R.S.p;
+    return { under: U.S.p, over: R.S.p };
   };
   const shutPx = paintFrame(-1);
   const frames: Sprite[] = [];
-  for (let f = 0; f < F.frames; f++) frames.push(whole(null, paintFrame(f), AX, AY, W, H));
-  const film: WayFilm = { frames, fps: F.fps, jolts: [F.door + 18], kicks: [4] };
+  for (let f = 0; f < F.frames; f++) {
+    const p = paintFrame(f);
+    frames.push(whole(p.under, p.over, AX, AY, W, H));
+  }
+  const film: WayFilm = { frames, fps: F.fps, jolts: [F.door + 20], kicks: [4] };
   const openPx = paintFrame(F.frames + 300);
-  const empty = new Px(W, H);
   const art: WayArt = {
-    shut: { under: whole(empty, null, AX, AY, W, H), over: whole(null, shutPx, AX, AY, W, H) },
+    shut: { under: whole(shutPx.under, null, AX, AY, W, H), over: whole(null, shutPx.over, AX, AY, W, H) },
     film,
-    open: { under: whole(empty, null, AX, AY, W, H), over: whole(null, openPx, AX, AY, W, H) },
+    open: { under: whole(openPx.under, null, AX, AY, W, H), over: whole(null, openPx.over, AX, AY, W, H) },
   };
-  doorsCache.set(d, art);
+  doorsCache.set(key, art);
   return art;
+}
+
+// =================================================================================================
+// WHERE EACH OF FLOORS 11 TO 15 BEGINS: what he came out of, behind him where he stands (`d` the way from the boss toward
+// the start: it lies that way of him). Each stood `back` tiles on from the start that way, the tile he arrives on and
+// every tile round it clear; floors 14's and 15's in a back wall of the floor's own (as floor 5's mouth), he coming in
+// standing `back` tiles out from it.
+
+const SW = 560;
+const SH = 460;
+const SAX = 280;
+const SAY = 320;
+function startOf(over: Rig, under: Rig | null, back: number): StartArt {
+  over.S.seams();
+  if (under) under.S.seams();
+  return { under: whole(under ? under.S.p : new Px(SW, SH), null, SAX, SAY, SW, SH), over: whole(null, over.S.p, SAX, SAY, SW, SH), back };
+}
+const startCache = new Map<string, StartArt>();
+function cachedStart(key: string, make: () => StartArt): StartArt {
+  const had = startCache.get(key);
+  if (had) return had;
+  const s = make();
+  startCache.set(key, s);
+  return s;
+}
+/** How far back each stands. */
+export const A2_START_BACK = { gateward: 1.5, undercity: 1.5, millrace: 1.5, house: 1.7, library: 1.7 } as const;
+const CART_DEAL: Ramp = ['#2a2620', '#4a4236', '#6a604e', '#857a64', '#9c917a'];
+const SACK: Ramp = ['#3e3628', '#5c5240', '#7a6e58', '#968a70', '#b0a488'];
+
+/** FLOOR 11 BEGINS: OUT OF THE CAMP, past its barricade hauled aside: the market cart that blocked the street, on its side, dragged over to the house fronts, its wheels up; the crates and the door that were piled against it shoved over the other way; the scrapes it left on the setts. */
+export function gateWardStart(d: WayDir): StartArt {
+  return cachedStart('g' + d, () => {
+    const R = new Rig(SW, SH, SAX, SAY, d, 0);
+    const U = new Rig(SW, SH, SAX, SAY, d, 0);
+    // the scrapes on the setts where it was dragged, pale, along b
+    for (let k = 0; k < 5; k++) {
+      const a = 8 + k * 9 + hash(k, 1, 2201) * 4;
+      U.quad([[a, -6, 0.3], [a + 1.4, -6, 0.3], [a + 1.4, 40, 0.3], [a, 40, 0.3]], (_u, v) => (hash(k, Math.floor(v * 20), 2202) < 0.3 + v * 0.4 ? null : '#77706e'), 10 + k);
+    }
+    // THE CART, on its side, its bed's floor toward the street, its wheels sticking out sideways
+    R.box([30, 48, 16], XYZ, [34, 7, 16], (f, u, v, n) => {
+      if (f === 3) {
+        // its floor, planked along it, iron straps across
+        if (Math.abs(fr(u * 3) - 0.5) < 0.03) return IRON[1];
+        return toneAt(n, CART_DEAL, fr(v * 5) < 0.08 ? -0.6 : (hash(Math.floor(v * 5), 1, 2203) - 0.5) * 0.3);
+      }
+      return toneAt(n, CART_DEAL, fr((f < 2 ? v : u) * 4) < 0.08 ? -0.5 : 0);
+    }, 20);
+    for (const a of [8, 52]) {
+      const c: V3 = [a, 58, 16];
+      const N = 26;
+      for (let k = 0; k < N; k++) {
+        const t0 = (k / N) * Math.PI * 2;
+        const t1 = ((k + 1) / N) * Math.PI * 2;
+        const P = (t: number, r: number): number[] => [c[0] + Math.cos(t) * r, c[1], c[2] + Math.sin(t) * r];
+        R.quad([P(t0, 12), P(t1, 12), P(t1, 14.5), P(t0, 14.5)], () => IRON[2], 21);
+        R.quad([P(t0, 9.5), P(t1, 9.5), P(t1, 12), P(t0, 12)], () => OAK[2], 21);
+      }
+      for (let k = 0; k < 6; k++) {
+        const t = (k / 6) * Math.PI * 2 + 0.4;
+        R.rod([c[0], c[1], c[2]], [c[0] + Math.cos(t) * 10, c[1], c[2] + Math.sin(t) * 10], 1.1, 0.9, OAK, 22);
+      }
+      R.ball([c[0], c[1] + 1, c[2]], 2.4, IRON, 23);
+    }
+    // its shafts, sticking up
+    R.rod([64, 44, 26], [84, 40, 56], 1.5, 1.3, CART_DEAL, 24);
+    R.rod([64, 52, 26], [82, 50, 58], 1.5, 1.3, CART_DEAL, 24);
+    // the crates shoved over the other way, a door leant on them, a sack
+    R.box([22, -48, 9], XYZ, [12, 10, 9], (f, u, v, n) => toneAt(n, CART_DEAL, fr((f < 2 ? u : v) * 3) < 0.1 ? -0.6 : 0), 30);
+    R.box([26, -46, 24], XYZ, [9, 8, 6], (f, u, v, n) => toneAt(n, CART_DEAL, fr((f < 2 ? u : v) * 2) < 0.12 ? -0.6 : 0.05), 31);
+    R.box([44, -50, 7], XYZ, [8, 9, 7], (f, u, v, n) => toneAt(n, CART_DEAL, fr((f < 2 ? u : v) * 2) < 0.12 ? -0.6 : -0.05), 32);
+    R.box([8, -40, 20], [[0.2, 0.98, 0], [-0.4, 0.08, 0.91], [0.89, -0.18, 0.42]], [14, 20, 1.4], (_f, u, _v, n) => toneAt(n, OAK, fr(u * 4) < 0.06 ? -0.6 : 0.05), 33);
+    R.egg([4, -60, 6], XYZ, [8, 6, 6], (n, w) => (w[2] > 9 ? toneAt(n, SACK, -0.1) : toneAt(n, SACK, 0)), 34);
+    return startOf(R, U, A2_START_BACK.gateward);
+  });
+}
+
+/** FLOOR 12 BEGINS: AT THE FOOT OF THE LADDER down from the Crier's grate, an iron ladder going up out of sight into the shaft, the moon's light falling down it onto the wet floor round its foot. */
+export function undercityStart(d: WayDir): StartArt {
+  return cachedStart('u' + d, () => {
+    const R = new Rig(SW, SH, SAX, SAY, d, 0);
+    const U = new Rig(SW, SH, SAX, SAY, d, 0);
+    const MOON: Ramp = ['#4c5058', '#62666e', '#7a7e86', '#92969c', '#aeb1b4'];
+    // the moon's light on the floor round its foot, and its shaft coming down
+    U.quad([[-10, -34, 0.3], [70, -34, 0.3], [70, 34, 0.3], [-10, 34, 0.3]], (u, v) => {
+      const r = Math.hypot((u - 0.5) * 2, (v - 0.5) * 2);
+      if (bayer(Math.floor(u * 80), Math.floor(v * 68)) >= 1.25 - r * 1.3) return null;
+      return r < 0.45 ? MOON[2] : MOON[1];
+    }, 5);
+    // a puddle by its foot
+    U.egg([18, 14, 0.4], XYZ, [12, 8, 0.3], (_n, w) => (hash(Math.floor(w[0]), Math.floor(w[1]), 2211) < 0.1 ? MOON[3] : '#1a2a24'), 6);
+    R.quad([[30, -22, 0], [30, 22, 0], [30, 22, 190], [30, -22, 190]], (u, v) => {
+      if (bayer(Math.floor(u * 44), Math.floor(v * 190)) >= 0.42 - v * 0.2 - Math.abs(u - 0.5) * 0.5) return null;
+      return v < 0.5 ? MOON[3] : MOON[2];
+    }, 1 << 20);
+    // THE LADDER: two rails, rungs, its feet bolted to the floor, going up into the dark of the shaft
+    const up = (z: number): Ramp => {
+      const k = z < 90 ? 0 : Math.min(0.92, (z - 90) / 80);
+      return [mix(IRON[0], DARK, k), mix(IRON[1], DARK, k), mix(IRON[2], DARK, k), mix(IRON[3], DARK, k), mix(IRON[4], DARK, k)];
+    };
+    for (const b of [-10, 10]) for (let z = 0; z < 180; z += 15) R.rod([30, b, z], [30, b, z + 15.5], 1.6, 1.6, up(z), 20);
+    for (let z = 10; z < 180; z += 13) R.rod([30, -10, z], [30, 10, z], 1.1, 1.1, up(z), 21);
+    for (const b of [-10, 10]) R.box([30, b, 1], XYZ, [3, 3, 1], () => IRON[1], 22);
+    return startOf(R, U, A2_START_BACK.undercity);
+  });
+}
+
+/** FLOOR 13 BEGINS: AT THE OUTFALL'S MOUTH, a low brick arch in a bank of earth and grass at the fields' edge, the sewer's water trickling out of it through the reeds. */
+export function millraceStart(d: WayDir): StartArt {
+  return cachedStart('m' + d, () => {
+    const R = new Rig(SW, SH, SAX, SAY, d, 0);
+    const U = new Rig(SW, SH, SAX, SAY, d, 0);
+    const EARTH: Ramp = ['#2e2820', '#463c2e', '#5e523e', '#766a50', '#8c8064'];
+    const GRASS: Ramp = ['#2c3424', '#3c4830', '#4e5c3c', '#606e48', '#727f56'];
+    const BR: Ramp = ['#3a2a26', '#563c32', '#6e4c3e', '#86604c', '#9c745c'];
+    const A0 = 18;
+    // the trickle out of it, away over the ground
+    U.quad([[-30, -7, 0.3], [A0 + 4, -7, 0.3], [A0 + 4, 7, 0.3], [-30, 7, 0.3]], (u, v) => {
+      if (u < 0.4 && hash(Math.floor(u * 60), Math.floor(v * 8), 2221) < (0.4 - u) / 0.4) return null;
+      return fr(u * 20 + Math.sin(v * 4) * 0.3) < 0.1 ? '#5a6e5c' : '#1c2a24';
+    }, 5);
+    // THE BANK: a long low mound of earth, grassed on top
+    R.egg([A0 + 26, 0, -4], XYZ, [30, 76, 34], (n, w) => {
+      const g = hash(Math.floor(w[0] / 2), Math.floor(w[1] / 2), 2223);
+      if (n[2] > 0.55 || (n[2] > 0.3 && g < 0.5)) return toneAt(n, GRASS, (g - 0.5) * 0.4);
+      return toneAt(n, EARTH, g < 0.1 ? -0.3 : 0);
+    }, 20);
+    // the arch's face of brick set in it, its mouth dark
+    R.quad([[A0, -20, 0], [A0, 20, 0], [A0, 20, 30], [A0, -20, 30]], (u, v) => {
+      const b = -20 + u * 40;
+      const z = v * 30;
+      if (inArch(b, z, 12, 22)) return z < 2 ? '#1c2a24' : '#0c0d10';
+      if (inArch(b, z, 17, 27)) {
+        const ang = Math.atan2(z - 10, b);
+        return fr((ang / Math.PI) * 9) < 0.14 ? BR[0] : BR[2 + (Math.floor((ang / Math.PI) * 9) % 2)];
+      }
+      if (z > 26 + Math.sin(b * 0.3) * 2) return null;
+      return fr(z / 5) < 0.18 || fr((b + (Math.floor(z / 5) % 2) * 5) / 10) < 0.1 ? BR[0] : BR[1];
+    }, 30);
+    // reeds by its mouth
+    for (let i = 0; i < 14; i++) {
+      const b = (i % 2 ? 1 : -1) * (12 + hash(i, 1, 2224) * 14);
+      const a = A0 - 4 - hash(i, 2, 2224) * 16;
+      R.rod([a, b, 0], [a - 2 + hash(i, 3, 2224) * 4, b + (hash(i, 4, 2224) - 0.5) * 6, 16 + hash(i, 5, 2224) * 14], 0.9, 0.4, GRASS, 40 + (i % 4));
+    }
+    return startOf(R, U, A2_START_BACK.millrace);
+  });
+}
+
+/** FLOOR 14 BEGINS: AT THE INFIRMARY'S BACK DOOR, in a back wall of the floor's own: the door he came in by standing open into the dark of the yard. */
+export function houseOfQuietStart(d: WayDir, at: WallAt = AT0, zone: number = HQ_ZONE.Hall): StartArt {
+  return cachedStart(`h${d}:${at.x}:${at.y}:${zone}`, () => {
+    const R = new Rig(SW, SH, SAX, SAY, d, 0);
+    const U = new Rig(SW, SH, SAX, SAY, d, 0);
+    const D: Doorway = { half: 60, thick: 40, ow: 15, oh: 64, flat: true };
+    paintBackWall(R, U, houseWall(zone), at, D, 10, (b, z) => doorCase(b, z, D, 6), (k, z) => (k >= 1 && z < 30 ? '#161a20' : mix('#141820', hexOf(HQ_DEEP), 0.4 + k * 0.6)));
+    // the door, swung in against its jamb, open
+    doorLeaf(U, 7, D.ow, 2 * D.ow, D.oh - 1, 0.95, true, (u, v, n) => {
+      if (u < 0.08 || u > 0.92 || v < 0.05 || v > 0.95 || Math.abs(v - 0.55) < 0.04) return toneAt(n, LEAF, 0.05);
+      return toneAt(n, LEAF, -0.05);
+    }, 80);
+    return startOf(R, U, A2_START_BACK.house);
+  });
+}
+
+/** FLOOR 15 BEGINS: AT A SIDE DOOR OF THE LIBRARY, in a back wall of its bookcases: a narrow door in a walnut case, standing open on a dark passage. */
+export function libraryStart(d: WayDir, at: WallAt = AT0, zone: number = LB_ZONE.Hall): StartArt {
+  return cachedStart(`b${d}:${at.x}:${at.y}:${zone}`, () => {
+    const R = new Rig(SW, SH, SAX, SAY, d, 0);
+    const U = new Rig(SW, SH, SAX, SAY, d, 0);
+    const D: Doorway = { half: 60, thick: 40, ow: 15, oh: 70 };
+    const L = libraryWall(zone);
+    paintBackWall(R, U, L, at, D, 10, (b, z) => doorcase(b, z, D), (k) => mix(DOOR_OAK[0], L.deep, 0.5 + k * 0.5));
+    doorLeaf(U, 6, -D.ow, 2 * D.ow, D.oh - D.ow, 0.95, true, (_u, v, n) => (fr(v * 4) < 0.08 ? DOOR_OAK[1] : toneAt(n, DOOR_OAK, 0.05)), 80);
+    return startOf(R, U, A2_START_BACK.library);
+  });
 }

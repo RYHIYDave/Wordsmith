@@ -777,3 +777,6 @@ export function greatLibraryLook(land: LibraryLand): TerrainLook {
     nearShadow: { reach: 1.0, dark: [0.32, 0.2] },
   });
 }
+
+// (the art chat's ways on, art/act2_ways.ts, paint a stretch of these walls round a way through them: exported for it, nothing changed)
+export { wallFace as libraryWallFace, topAt as libraryTopAt };
