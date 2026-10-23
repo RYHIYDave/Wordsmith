@@ -93,14 +93,18 @@ The films and stills he saw were made in the art chat's workspace as `previews/w
 
 ## Floors 6 to 10: `src/art/act1_ways.ts` (`A1_WAYS`, off), with the kit `src/art/ways_kit.ts`
 
-NOT YET SHOWN TO HIM AS MADE (his yes by 14:16 was to what each would be). Each way on is painted in its floor's own
+HIS WORDS: shown films of each from the game (the way on shut, the boss dying, the film, open) and stills of where each
+floor begins, asked “Are floors 6 to 10's ways on, and where each floor begins, right as shown?”, by 17:41 Pacific,
+22 Oct: “Yes, on to 11–15 (Recommended)”. And to the main chat, 17:42: “6-10 are done as well”.
+
+Each way on is painted in its floor's own
 look, in the world, in a frame of its own: it leads one of four ways along the grid (`WayDir`, `wayDirOf(dx, dy)`: from
 where the boss stood toward `Ways.onward`, the nearest of the four), so that it always leads away from the floor behind
 him. `xxxWay(d)` gives `WayArt`: `shut` and `open`, each `under` (with the floor, under what stands) and `over` (stood at
 the way's point), and `film` (whole frames, 30 a second, its jolts and how hard each). `back` (tiles): where the picture
 is anchored, back from `Ways.onward` toward the boss's ground (0 but for floor 7): its mouth, where he goes in.
-`xxxStart(d)` gives `StartArt` (`under`, `over`), what he came out of at the floor's start, `d` the way from the boss
-toward the start (it lies that way of him).
+`xxxStart(d)` gives `StartArt` (`under`, `over`, `back`), what he came out of at the floor's start, `d` the way from the
+boss toward the start (it lies that way of him), stood `back` tiles on from the start that way.
 
 | Floor | Way on, shut | As the boss dies (film) | Next floor begins |
 |---|---|---|---|
@@ -113,13 +117,45 @@ toward the start (it lies that way of him).
 THE PINK: only the sick roots' veins on floor 9 (the swamp's, the enemy's), gone as they wither. Nothing cyan.
 
 FOR THE RULES (yours): start each film as the boss dies (`onward.awake`, `warpAt`), its frames stood at the way's
-point; take him on once the film is over (the longest 130 frames, 4.3 s), and on floor 7 at the crack's head (`back`).
-Stand the start's `over` at the start; on floors where the start piece is on the side toward the eye (the way back
-`x+` or `y+`), see through it while he is behind it, as the tall things are. Paint the films ahead with the floor (each
-takes some seconds to paint): they are big (up to 760 by 560 picture pixels, 112 to 130 frames).
+point; take him on once the film is over (the longest 130 frames, 4.3 s). Paint the films ahead with the floor (each
+takes some seconds to paint).
 
-Seen in the game on the scratch copy (render.ts `a1Ways`, the hooks in `scratch_hooks.diff.txt` when it is next written)
-and filmed with tools/scenarios/_a1_film.mjs there. Checks: `tests/ways_a1.test.ts`, 4.
+### Piece by piece, for the rules
+
+Every picture is cut down to what is painted in it, its anchor (`ax`, `ay`, game pixels) the point of the floor it
+stands on. Tiles are counted in the way's own frame: `a` along it (on, away from the boss's ground, `+`), `b` across it
+(`+` as `turnOf(d)` turns `(0, 1)`: `+y` for `x+`, `-y` for `x-`, `-x` for `y+`, `+x` for `y-`), in whole tiles from
+`Ways.onward`'s tile (the ways) or the floor's start's tile (the starts). LAYERS: `under` drawn with the floor, under
+everything that stands; `over` and every film frame stood among the figures at the anchor's depth (its x + y, plus
+0.6 as the scratch copy stood them); the film's frames are whole (draw them alone, no `under`, while it plays).
+
+| Way on | Anchor | Walking in takes him on | Solid | After the film | Wants behind it | Film |
+|---|---|---|---|---|---|---|
+| 6 `quarryWay` | at `Ways.onward` | the stair's head, (0, 0) and (1, 0) | the kerbs and the hoist's posts, (0 to 2, -1) and (0 to 2, 1); the bench of rock and its boulders, (2 to 4, -2 to 2) | the cult's blocks thrown out lie, knee high: (-1, -2), (0, -4), (0, 3), (-1, 1), (1, 2) solid from the film's end | the pit's far wall from a 2 on (else the bench stands as rock on the floor, solid as said) | 112 frames (3.73 s); jolts 24, 43, 47, 53, 57, 71, 94, 104; kicks 7, 6, 4, 6, 5, 4, 4, 4; 27.3 MB |
+| 7 `ledgeWay` | 2.35 tiles back from `Ways.onward` (`back`) | the crack, any of (-2, 0), (-1, 0), (0, 0) | the driftwood posts at its head, (-3, -1) and (-3, 1) (thin) | the nest's sticks and bones lie flat: walkable | the eyrie's drop past `Ways.onward`, as now | 120 frames (4.0 s); jolt 20, kick 6; 68.9 MB (the flock flies wide) |
+| 8 `canyonWay` | at `Ways.onward` | the slot, (0, 0) (and on in, (1, 0), (2, 0)) | the two fins, (0 to 2, -1) and (0 to 2, 1) | the plug's boulders lie low before it: walkable, as the cave's rubble | the canyon's end wall from a 3 on (the slot goes on into its shadow) | 124 frames (4.13 s); jolts 34, 47, 60, 65, 71, 78, 84, 97; kicks 8, 5, 5, 5, 5, 4, 5, 4; 44.9 MB |
+| 9 `pinewoodWay` | at `Ways.onward` | the trail, (0, 0) and on along it, (1 to 3, 0) | the two sick trees, (0, -1) and (0, 1); the wood under their crowns, (1 to 2, -1) and (1 to 2, 1); the two beyond, (3, -1) and (3, 1) | the torn earth: walkable | the wood from a 1 on, the trail running into it | 126 frames (4.2 s); jolts 34, 56; kicks 5, 3; 26.2 MB |
+| 10 `fenWay` | at `Ways.onward` | the causeway once risen, (0, 0) and on along it, (1 to 5, 0) | the fen's water either side of it, (0 to 5, -1) and (0 to 5, 1) | the causeway stands, wet: walkable | the fen's open water from a 1 on, five tiles of it: to the camp | 130 frames (4.33 s); jolts 22, 74; kicks 4, 6; 22.3 MB |
+
+| Start | `back` | Solid (from the start's tile) | What it is |
+|---|---|---|---|
+| 6 `quarryStart` | 1.8 | (2 to 3, -1 to 1) | the quarry's gate, its leaf open, the cairn; the road through it leads nowhere |
+| 7 `ledgeStart` | 1.5 | (2 to 4, -1 to 1) | the stair from the quarry, down the spur of rock |
+| 8 `canyonStart` | 1.5 | (2 to 4, -1 to 1) | the pillar and its plank stair |
+| 9 `pinewoodStart` | 1.5 | (2 to 4, -1 to 1) | the granite boulders and the cleft between |
+| 10 `fenStart` | 1.5 | (2 to 3, -1 to 1) | the two sick trees, the trail between them (its dead roots low: walkable) |
+
+Each start stands far enough back that the tile he arrives on and every tile round it are clear: nothing of it within a
+tile and a half of the start. Its `under` is empty; its `over` stood at its anchor's depth. Where the way back is `x+` or
+`y+` the piece stands between him and the eye: see through it while he is behind it, as the tall things are. The
+floor's waypoint anywhere in the ring round him (`placeWay`'s nearest open tile is right).
+
+ROOM: each picture cut down to what is painted in it; a floor holds one way's film, 22 to 69 MB (above), and its stills
+and start under 2 MB. The film is not wanted again once played: let it go then, if room matters.
+
+Seen in the game on the scratch copy (render.ts `a1Ways`; its lines, as a diff, `scratch_hooks_6_10.diff.txt` here, a guide
+only) and filmed with tools/scenarios/_a1_film.mjs there; the
+starts stood back seen there too. Checks: `tests/ways_a1.test.ts`, 4.
 
 ## How they were seen in the game
 

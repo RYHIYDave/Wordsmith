@@ -6,7 +6,8 @@
 //   3. EACH WAY ON: shut, its film and open painted; the film's frames all there, its jolts in it; it changes (the film's
 //      first frame and last differ, the last is the way open); nothing of the friend's cyan; the enemy's pink only in the
 //      sick roots' veins (floor 9);
-//   4. WHERE EACH FLOOR BEGINS: painted, all four ways round; nothing cyan or pink.
+//   4. WHERE EACH FLOOR BEGINS: painted, all four ways round; nothing cyan or pink; stood back from the start, so that
+//      the tile he arrives on and the ring round it are clear.
 //   run: tsx --test tests/ways_a1.test.ts
 
 // @ts-ignore
@@ -49,7 +50,7 @@ test('1. the switch off, and nothing of the game imports either file', () => {
   assert.equal(A1_WAYS.on, false, 'A1_WAYS is off');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: unknown) => String(x).replace(/\\/g, '/'))) {
-    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/(act1_ways|ways_kit)\.ts$/.test(f)) continue;
+    if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/(act1_ways|act2_ways|ways_kit)\.ts$/.test(f)) continue;
     const dir = f.split('/').slice(0, -1);
     for (const [, spec] of (fs.readFileSync(path.join('src', f), 'utf8') as string).matchAll(/from ['"](\.[^'"]*)['"]/g)) {
       const parts = [...dir];
@@ -114,12 +115,13 @@ const STARTS: [string, (d: WayDir) => StartArt][] = [
   ['floor 9, the cleft', pinewoodStart],
   ['floor 10, out of the twisted wood', fenStart],
 ];
-test('4. where each floor begins: painted, all four ways round; nothing cyan or pink', () => {
+test('4. where each floor begins: painted, all four ways round; nothing cyan or pink; stood back from the start', () => {
   for (const [name, make] of STARTS) {
     for (const d of WAY_DIRS) {
       const s = make(d);
       assert.ok(count(s.over) > 800, `${name} (${d}): painted`);
       assert.equal(how(s.over, cyan) + how(s.over, pink), 0, `${name} (${d}): nothing cyan or pink`);
+      assert.ok((s.back ?? 0) >= 1.5, `${name} (${d}): stood back at least a tile and a half`);
     }
   }
 });

@@ -49,11 +49,17 @@ function ropeIn(S: Scene, a: V3, b: V3, sag: number, id: number, r = 0.55): void
   }
 }
 
-/** Paint a picture from its under and over rigs (each seamed): the over on the under, the indigo seam round each. */
+/** Paint a picture from its under and over rigs (each seamed): the over on the under, the indigo seam round each; cut
+ * down to what is painted in it (whole game pixels), its anchor kept, so that a film holds no more room than it shows. */
 function whole(under: Px | null, over: Px | null, ax: number, ay: number, w: number, h: number): Sprite {
   const layers = [under, over].filter((p): p is Px => !!p);
-  if (!layers.length) return new Px(w, h).sprite(ax, ay, GRAIN);
-  return compose(null, layers).sprite(ax, ay, GRAIN);
+  return trimmed(layers.length ? compose(null, layers) : new Px(w, h), ax, ay);
+}
+/** A picture cut down to what is painted in it, anchored where it was (an empty one, a single clear game pixel). */
+export function trimmed(p: Px, ax: number, ay: number): Sprite {
+  const b = p.bounds(GRAIN);
+  if (!b) return new Px(GRAIN, GRAIN).sprite(0, 0, GRAIN);
+  return p.crop(b.x, b.y, b.w, b.h).sprite(ax - b.x, ay - b.y, GRAIN);
 }
 
 // =================================================================================================
@@ -1331,7 +1337,7 @@ const SAY = 300;
 /** A start piece as the game stands it, from one rig: nothing under, all of it standing. */
 function startOf(R: Rig, back: number): StartArt {
   R.S.seams();
-  return { under: new Px(R.w, R.h).sprite(R.ax, R.ay, GRAIN), over: compose(null, [R.S.p]).sprite(R.ax, R.ay, GRAIN), back };
+  return { under: trimmed(new Px(R.w, R.h), R.ax, R.ay), over: trimmed(compose(null, [R.S.p]), R.ax, R.ay), back };
 }
 /** How far back each start piece stands (StartArt.back): its nearest stone, post or root half a tile past the ring of tiles round him. */
 export const START_BACK = { quarry: 1.8, ledge: 1.5, canyon: 1.5, pinewood: 1.5, fen: 1.5 } as const;
