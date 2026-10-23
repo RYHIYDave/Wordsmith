@@ -137,6 +137,9 @@ export interface InvUi {
   result: { word: WordId; item: string; text: string; t: number } | null;
   /** Something is being carried over this page's name, and for how long: long enough, and the page turns. */
   tab: { page: InvPage; t: number } | null;
+  /** (WORD_ROOM) What the bottom shows, as he last chose it while the inventory is open (null: as the page has it); a piece of gear carried over the BAG tile, and for how long. */
+  bottom?: 'words' | 'bag' | null;
+  swap?: number | null;
   /** THE SKILL TREES' page (ui/talents.ts): the talent being read, its card, a flare. */
   talents: TalentUi;
   /**
@@ -236,7 +239,7 @@ export function wornFor(game: Game, it: Item): Item[] {
 }
 
 export function newInvUi(): InvUi {
-  return { page: 'gear', word: null, drag: null, carry: null, sel: null, compare: null, look: null, pending: null, note: '', noteT: 0, focus: 0, flash: null, result: null, tab: null, card: null, talents: newTalentUi() };
+  return { page: 'gear', word: null, drag: null, carry: null, sel: null, compare: null, look: null, pending: null, note: '', noteT: 0, focus: 0, flash: null, result: null, tab: null, bottom: null, swap: null, card: null, talents: newTalentUi() };
 }
 
 /**
@@ -257,6 +260,8 @@ export function resetInvUi(st: InvUi, word: WordId | null = null, focus = -1): v
   st.flash = null;
   st.result = null;
   st.tab = null;
+  st.bottom = null;
+  st.swap = null;
   st.card = null;
   if (focus >= 0) st.focus = focus;
   st.page = focus >= 0 || word ? 'attacks' : 'gear';
@@ -272,6 +277,41 @@ export function rangeText(o: ImbueOption, limit: Limit): string {
 
 // ---------------------------------------------------------------------------------------------
 // Where the inventory is
+
+/**
+ * ROOM FOR EVERY WORD (behind this switch, off until his yes to pictures of it). The owner, 23 Oct 2026, 11:06 (Pacific):
+ * “look at the current UI for words and find a way to manage them better in the inventory system.  Once you get more than
+ * a certain number of unique words, they become inaccessible.  I want them at the ready to quickly swap in and out on
+ * attacks, or craft on gear, but the tiny area they’re currently has run out of room now that we’ve added a bunch more
+ * words.” So the bottom of the panel, under the page, shows either the BAG (with the line of words over it, as before) or
+ * YOUR WORDS alone, every one of them, in the room the line and the bag take together; a tile at the end of the words'
+ * first line turns from one to the other (ALL, with how many he holds; BAG, with what is in it). The ATTACKS page opens
+ * on the words, the other pages on the bag; a service that buys or keeps gear on the bag, one that takes words on the
+ * words; a piece of gear carried onto the BAG tile turns to the bag. Nothing above the bottom moves.
+ */
+export const WORD_ROOM = { on: false };
+/** The tile that turns the bottom from the bag to every word and back: as wide as a bag's cell. */
+export const SWAP_W = 22;
+/**
+ * EVERY WORD ON THE OTHER HALF (behind this switch, off: the other way of it he asked to see). Asked whether the bottom
+ * showing the bag or every word (WORD_ROOM) was the way, by 11:37 on 23 Oct 2026 he picked “Words on the other half”,
+ * offered as: “Show me instead: every word in a big grid over the game's half while the inventory is open.” So while the
+ * inventory is open over the game (no service in the other half), YOUR WORDS are all there, in a panel of their own over
+ * the game's half, written out with their names where they go in, and the panel's own bottom is the bag alone (the page
+ * over it the taller). The panel is as tall as its words want, at the foot of that half: the game is still seen over it,
+ * and a press there still closes the inventory. At a service (whose half it is) the line of words is where it was, and
+ * WORD_ROOM's ALL tile shows every word there. Shown it with sixteen words written out and with thirty-eight as their
+ * rune stones, and asked which way, by 11:37: “I like the second picture with the runes”: so the words are their rune
+ * stones here, always.
+ */
+export const WORD_HALF = { on: false };
+/** (WORD_HALF) How far in from the game half's edges the words' panel's lines are, and the room its words have there: how wide, and how many lines. */
+export const HALF_M = 6;
+export function halfRoom(gameR: Rect): { w: number; lines: number } {
+  const CAP = 7;
+  const LINE = 22;
+  return { w: gameR.w - 2 * HALF_M, lines: Math.max(1, Math.floor((gameR.h - 2 * HALF_M - CAP - 4 + 2) / LINE)) };
+}
 
 /** The least room the panel is laid out for: a phone held sideways is 234 game pixels tall, and half of it 253 wide. */
 export const INV_MIN_W = 236;
@@ -370,7 +410,7 @@ const sameSel = (a: Sel | null, b: Sel): boolean => !!a && a.kind === b.kind && 
  * failing that, as narrower stones a pixel apart (`narrow`, since Version 19.3: thirteen words in
  * one line of a phone's half). Whatever still does not fit is left out, and `hidden` says how many.
  */
-export function layPouch(words: readonly WordId[], count: (w: WordId) => number, maxW: number, room: number, gap: number): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number; bare: boolean; stones: boolean; narrow: boolean; hidden: number } {
+export function layPouch(words: readonly WordId[], count: (w: WordId) => number, maxW: number, room: number, gap: number, runes = false): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number; bare: boolean; stones: boolean; narrow: boolean; hidden: number } {
   const lay = (how: 'full' | 'bare' | 'stones' | 'narrow'): { cells: { word: WordId; x: number; line: number; w: number }[]; lines: number } => {
     const cells: { word: WordId; x: number; line: number; w: number }[] = [];
     let x = 0;
@@ -386,15 +426,16 @@ export function layPouch(words: readonly WordId[], count: (w: WordId) => number,
     }
     return { cells, lines: cells.length ? cells[cells.length - 1].line + 1 : 1 };
   };
-  let out = lay('full');
+  // (`runes`: as their rune stones from the first, WORD_HALF's, his “I like the second picture with the runes”)
+  let out = lay(runes ? 'stones' : 'full');
   let bare = false;
-  let stones = false;
+  let stones = runes;
   let narrow = false;
-  if (out.lines > room) {
+  if (!runes && out.lines > room) {
     out = lay('bare');
     bare = true;
   }
-  if (out.lines > room) {
+  if (!runes && out.lines > room) {
     out = lay('stones');
     stones = true;
   }
@@ -488,15 +529,28 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const fixedH = 2 + headH + 2 + 3 + CAP + 3 + CAP + bagH + 2;
   const pouchRoom = Math.max(1, Math.min(3, Math.floor((R.h - fixedH - PAGE_ROOM + 2) / LINE)));
   const pouchX = X0;
-  const pouchW = bodyW;
-  const lay = layPouch(pouchWords, (w) => h.words[w], pouchW, pouchRoom, GAP);
-  const pouchH = pouchRoom * LINE - 2;
-  const stripH = CAP + pouchH + 3 + CAP + bagH + 2;
+  // (WORD_HALF: every word over the game's half, and the panel's bottom the bag alone)
+  const half = WORD_HALF.on && !side;
+  const stripH = (half ? 0 : CAP + (pouchRoom * LINE - 2) + 3) + CAP + bagH + 2;
   const stripY = R.y + R.h - stripH;
-  const pouchY = stripY + CAP;
+  // (WORD_ROOM: the bottom shows the bag, with the line of words over it, or every word in the room both take)
+  const sideWants: 'words' | 'bag' | null = side ? (side.pieceDrop || side.bagButton || side.bagQuick ? 'bag' : side.wordDrop ? 'words' : null) : null;
+  const allWords = !half && WORD_ROOM.on && (st.bottom ?? sideWants ?? (page === 'attacks' ? 'words' : 'bag')) === 'words';
+  const wordsRoom = allWords ? Math.max(pouchRoom, Math.floor((stripH - CAP - 2 + 2) / LINE)) : pouchRoom;
+  /** The tile that turns the bottom from the bag to every word and back, at the end of the words' first line. */
+  const swapR: Rect | null = WORD_ROOM.on && !half ? { x: X0 + bodyW - SWAP_W, y: stripY + CAP, w: SWAP_W, h: TH } : null;
+  // (WORD_HALF: the words' panel over the game's half, at its foot, as tall as its words want: its lines `HALF_M` in from the edges)
+  const { w: halfW, lines: halfLines } = halfRoom(gameR);
+  const pouchW = half ? halfW : bodyW - (swapR ? SWAP_W + GAP : 0);
+  const lay = layPouch(pouchWords, (w) => h.words[w], pouchW, half ? halfLines : wordsRoom, GAP, half);
+  const pouchH = (half ? lay.lines : wordsRoom) * LINE - 2;
+  /** (WORD_HALF) The words' own panel. */
+  const halfR: Rect | null = half ? { x: gameR.x + HALF_M - 4, y: gameR.y + gameR.h - HALF_M - pouchH - CAP - 8, w: halfW + 8, h: pouchH + CAP + 8 + 2 } : null;
+  const pouchY = halfR ? halfR.y + 4 + CAP : stripY + CAP;
+  const pouchLeft = halfR ? halfR.x + 4 : pouchX;
   const bagX = X0;
-  const bagY = pouchY + pouchH + 3 + CAP;
-  const pouch = lay.cells.map((c) => ({ r: { x: pouchX + c.x, y: pouchY + c.line * LINE, w: c.w, h: TH }, w: c.word }));
+  const bagY = half ? stripY + CAP : pouchY + (pouchRoom * LINE - 2) + 3 + CAP;
+  const pouch = lay.cells.map((c) => ({ r: { x: pouchLeft + c.x, y: pouchY + c.line * LINE, w: c.w, h: TH }, w: c.word }));
   const pageY = top + headH + 2;
   const pageH = stripY - 3 - pageY;
   // the names of the pages, and DONE
@@ -588,11 +642,14 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
       gear.push({ r: { x: dollX + dx, y: dollY + dy, w: CELL, h: CELL }, sel: { kind: 'gear', slot }, item: h.gear[slot] });
     }
   }
-  h.bag.forEach((it, i) => {
-    gear.push({ r: { x: bagX + (i % bagCols) * PITCH, y: bagY + Math.floor(i / bagCols) * PITCH, w: CELL, h: CELL }, sel: { kind: 'bag', i }, item: it });
-  });
+  // (WORD_ROOM: while every word is shown, the bag is not: none of its cells is there to be pressed or dropped on)
+  if (!allWords) {
+    h.bag.forEach((it, i) => {
+      gear.push({ r: { x: bagX + (i % bagCols) * PITCH, y: bagY + Math.floor(i / bagCols) * PITCH, w: CELL, h: CELL }, sel: { kind: 'bag', i }, item: it });
+    });
+  }
   const dollR: Rect = { x: dollX - 3, y: dollY - 2, w: DOLL_W + 6, h: dollH + 4 };
-  const bagR: Rect = { x: bagX - 3, y: bagY - 3, w: bagW + 6, h: bagH + 6 };
+  const bagR: Rect = allWords ? { x: -9999, y: -9999, w: 0, h: 0 } : { x: bagX - 3, y: bagY - 3, w: bagW + 6, h: bagH + 6 };
   /** Beside the hero: their numbers at a glance. */
   const glanceR: Rect = { x: dollX + DOLL_W + 8, y: pageY + 1, w: X0 + bodyW - (dollX + DOLL_W + 8), h: pageH - 1 };
 
@@ -610,6 +667,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   for (const c of pouch) ui.mark(`word:${c.w}`, c.r.x, c.r.y, c.r.w, c.r.h);
   for (const c of gear) ui.mark(c.sel.kind === 'bag' ? `bag:${c.sel.i}` : `gear:${c.sel.slot}`, c.r.x, c.r.y, c.r.w, c.r.h);
   for (const tb of tabs) ui.mark(`tab:${tb.page}`, tb.r.x, tb.r.y, tb.r.w, tb.r.h);
+  if (swapR) ui.mark(allWords ? 'button:BAG' : 'button:ALL WORDS', swapR.x, swapR.y, swapR.w, swapR.h);
   ui.mark(`page:${page}`, X0, pageY, bodyW, pageH);
 
   // ---- what may go where ------------------------------------------------------------------------
@@ -749,6 +807,11 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     st.pending = null;
     st.result = null;
   }
+  // (WORD_ROOM: the tile at the end of the words' first line turns the bottom from the bag to every word, and back)
+  if (swapR && ui.pressIn(swapR.x, swapR.y, swapR.w, swapR.h)) {
+    st.bottom = allWords ? 'bag' : 'words';
+    st.swap = null;
+  }
   for (const c of pouch) {
     if (!ui.pressIn(c.r.x, c.r.y, c.r.w, c.r.h)) continue;
     // a word is pressed: it is in hand (to be read), and may be dragged from here
@@ -835,7 +898,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   // and you're back in the game". (The whole screen is the interface's while this is open, so the
   // press that closes it is never also an attack or a step.) Not at a service: there is no game
   // in the other half to go back to.
-  if (!side && ui.press && !ui.used && ui.press.button === 0 && inside(gameR, ui.press.x, ui.press.y) && !(tipR && inside(tipR, ui.press.x, ui.press.y))) {
+  if (!side && ui.press && !ui.used && ui.press.button === 0 && inside(gameR, ui.press.x, ui.press.y) && !(tipR && inside(tipR, ui.press.x, ui.press.y)) && !(halfR && inside(halfR, ui.press.x, ui.press.y))) {
     close = true;
     ui.used = true;
   }
@@ -957,6 +1020,15 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   const carried = carryAt && st.carry ? itemOf(st.carry.sel) : null;
   /** Where the piece being carried would go if it were let go now. */
   const carryTo: Place | null = carryAt && carried ? placeAt(carryAt.x, carryAt.y) : null;
+
+  // ---- (WORD_ROOM) a piece of gear carried over the BAG tile, long enough: the bag is turned to ------
+  if (swapR && allWords && carryAt && inside({ x: swapR.x - 2, y: swapR.y - 2, w: swapR.w + 4, h: swapR.h + 4 }, carryAt.x, carryAt.y)) {
+    st.swap = (st.swap ?? 0) + dt;
+    if (st.swap > 0.3) {
+      st.bottom = 'bag';
+      st.swap = null;
+    }
+  } else st.swap = null;
 
   // ---- something carried over the name of a page, long enough: that page is turned to -------------
   {
@@ -1117,7 +1189,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
 
   // ---- draw: gear, worn and carried (the worn on the GEAR page only) -----------------------------------
-  cap('BAG', bagX, bagY - CAP);
+  if (!allWords) cap('BAG', bagX, bagY - CAP);
   // (while a piece is carried, the place it may go is lit: the hero for a piece from the bag, the bag for a piece worn)
   if (carried && st.carry) {
     const want = st.carry.sel.kind === 'bag' ? (page === 'gear' ? dollR : null) : bagR;
@@ -1168,7 +1240,7 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
 
   // beside the bag: what they have, and who they are
-  {
+  if (!allWords) {
     const ix = bagX + bagW + 8;
     const iw = X0 + bodyW - ix;
     if (iw >= 30) {
@@ -1191,10 +1263,15 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
   }
 
   // ---- draw: the pouch of spare words ---------------------------------------------------------------
-  cap('YOUR WORDS', pouchX, pouchY - CAP);
+  if (halfR) {
+    // (WORD_HALF: a panel of its own over the game's half)
+    ui.panel(halfR.x, halfR.y, halfR.w, halfR.h);
+    ui.mark('words', halfR.x, halfR.y, halfR.w, halfR.h);
+  }
+  cap(halfR ? `YOUR WORDS  ${pouchWords.length}` : 'YOUR WORDS', pouchLeft, pouchY - CAP);
   // (the owner, 5 Oct 2026, 22:36: "none to spare under words to empty"; THE FIRST LEVELS: before the ring is lit, what opens wordsmithing)
   const dark = !h.ring ? (h.quest ? `Slots open at the wordsmith: bring him ${QUEST_ITEM.the}.` : 'No word slots until his ring is lit.') : null;
-  if (!pouchWords.length) drawText(g, dark ?? 'empty', pouchX, pouchY + Math.floor((TH - 5) / 2), dark ? THEME.dim : THEME.faint, { font: 'small' });
+  if (!pouchWords.length) drawText(g, dark ?? 'empty', pouchLeft, pouchY + Math.floor((TH - 5) / 2), dark ? THEME.dim : THEME.faint, { font: 'small' });
   for (const c of pouch) {
     const sel = st.word === c.w || (!!st.pending && st.pending.word === c.w);
     const hot = ui.hover(c.r.x, c.r.y, c.r.w, c.r.h);
@@ -1203,7 +1280,17 @@ export function drawInventory(ui: Ui, game: Game, art: Art, st: InvUi, t: number
     // (the arrow at a new player's first word stands beside the tile: above it is the caption)
     if (first && coach && coach.word === c.w && !hand && !st.pending) arrow(g, c.r.x + c.r.w + 2, c.r.y + Math.floor(c.r.h / 2), t, THEME.accent, 'left');
   }
-  if (lay.hidden > 0) drawText(g, `+${lay.hidden} MORE`, pouchX + pouchW, pouchY - CAP, THEME.dim, { align: 'right', font: 'small' });
+  if (lay.hidden > 0) drawText(g, `+${lay.hidden} MORE`, pouchLeft + pouchW, pouchY - CAP, THEME.dim, { align: 'right', font: 'small' });
+  // (WORD_ROOM: the tile that turns the bottom: ALL, and how many words he holds; or BAG, and how full it is)
+  if (swapR) {
+    const hot = ui.hover(swapR.x, swapR.y, swapR.w, swapR.h) || (st.swap ?? 0) > 0;
+    const held = pouchWords.length;
+    const inBag = h.bag.filter((it) => !!it).length;
+    ui.box(swapR.x, swapR.y, swapR.w, swapR.h, hot ? THEME.bg2 : THEME.bg, hot ? THEME.edgeHi : lay.hidden > 0 && !allWords ? THEME.accentLo : THEME.edge);
+    const mid = swapR.x + Math.floor(swapR.w / 2);
+    drawText(g, allWords ? 'BAG' : 'ALL', mid, swapR.y + 3, allWords ? THEME.text : lay.hidden > 0 ? THEME.accent : THEME.text, { align: 'center', font: 'small' });
+    drawText(g, allWords ? `${inBag}/${h.bag.length}` : `${held}`, mid, swapR.y + 11, THEME.dim, { align: 'center', font: 'small' });
+  }
 
   // ---- draw: what is being read -----------------------------------------------------------------------
   // (a word that is being looked at in its socket and has been taken out since: nothing to look at)

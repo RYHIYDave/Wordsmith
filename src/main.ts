@@ -85,7 +85,7 @@ import type { Art } from './render/render';
 import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
 import { guideAttack, guideBanner } from './ui/guide';
-import { drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
+import { WORD_HALF, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
 import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
@@ -2105,6 +2105,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     },
     /** (THE WAYS BETWEEN THE FLOORS, behind EXITS, game/ways.ts; off) Its switch, for the playtests and pictures: set it before a new game or a level is made. */
     exits: EXITS,
+    /** (ROOM FOR EVERY WORD, behind WORD_ROOM in ui/inventory.ts) Its switch. */
+    wordRoom: WORD_ROOM,
+    /** (EVERY WORD ON THE OTHER HALF, behind WORD_HALF in ui/inventory.ts) Its switch. */
+    wordHalf: WORD_HALF,
     /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
     doorWalls: (on: boolean, near = false) => {
       DOOR_WALLS.on = on;
