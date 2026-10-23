@@ -1,0 +1,330 @@
+diff --git a/src/art/flowing.ts b/src/art/flowing.ts
+index 1b16cfc..6693e2c 100644
+--- a/src/art/flowing.ts
++++ b/src/art/flowing.ts
+@@ -23,7 +23,7 @@ import type { RGB } from './terrain';
+ import { fbm, worldOf } from './terrain';
+ 
+ /** THE SWITCH: off, the rivers are painted as before, still. */
+-export const FLOW = { on: false };
++export const FLOW = { on: true };
+ 
+ /** How many frames go round, and how many a second: a round of 1.5 s. */
+ export const FLOW_FRAMES = 18;
+@@ -66,6 +66,52 @@ export interface WaterStyle {
+   seed: number;
+ }
+ 
++/** Picture pixels across a tile of water (for `across`, from a place's side of its line: `acrossOf`). */
++export const ACROSS_PX = 30;
++
++/** How far along a line (tiles from its first point, the way it runs) the nearest point of it to (x, y) is: for the game to sample over a floor, as its Land's `riverAlong`. */
++export function lineAlong(pts: readonly (readonly [number, number])[]): (x: number, y: number) => number {
++  const lens: number[] = [0];
++  for (let i = 1; i < pts.length; i++) lens.push(lens[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
++  return (x, y) => nearest(pts, x, y, (i, t) => lens[i] + t * (lens[i + 1] - lens[i]));
++}
++/** How far to the left of a line (+, looking the way it runs) or its right (−) a place is (tiles): as its Land's `riverSide`. */
++export function lineSide(pts: readonly (readonly [number, number])[]): (x: number, y: number) => number {
++  return (x, y) =>
++    nearest(pts, x, y, (i, t, d) => {
++      const [ax, ay] = pts[i];
++      const [bx, by] = pts[i + 1];
++      return (bx - ax) * (y - ay) - (by - ay) * (x - ax) >= 0 ? d : -d;
++    });
++}
++function nearest(pts: readonly (readonly [number, number])[], x: number, y: number, then: (i: number, t: number, d: number) => number): number {
++  let best = Infinity;
++  let bi = 0;
++  let bt = 0;
++  for (let i = 0; i + 1 < pts.length; i++) {
++    const [ax, ay] = pts[i];
++    const [bx, by] = pts[i + 1];
++    const dx = bx - ax;
++    const dy = by - ay;
++    const l2 = dx * dx + dy * dy || 1;
++    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2));
++    const d = Math.hypot(x - ax - t * dx, y - ay - t * dy);
++    if (d < best) {
++      best = d;
++      bi = i;
++      bt = t;
++    }
++  }
++  return pts.length < 2 ? 0 : then(bi, bt, best);
++}
++/**
++ * Picture pixels across a water at a place: from its side of the line (`side`, tiles: lineSide) when the game gives it, so that
++ * what is drawn along the water follows it round its bends; else reckoned on the picture square to its flow there (fx, fy).
++ */
++export function acrossOf(side: ((x: number, y: number) => number) | undefined, x: number, y: number, fx: number, fy: number, px: number, py: number): number {
++  return side ? Math.round(side(x, y) * ACROSS_PX) : Math.round(-fy * px + fx * py);
++}
++
+ /** How far a water runs in a round (tiles): the length of everything carried along it. */
+ export function runOf(st: WaterStyle): number {
+   return (st.speed * FLOW_FRAMES) / FLOW_FPS;
+diff --git a/src/game/defs.ts b/src/game/defs.ts
+index c09da32..d1cf092 100644
+--- a/src/game/defs.ts
++++ b/src/game/defs.ts
+@@ -1107,7 +1107,7 @@ export const FLOOR_NAMES = {
+   names: ["The Warden's Tomb", "The Headsman's Yard", "The Chained One's Pit", 'The Ossuary', "The Fleshmancer's Lair"] as readonly string[],
+   beyond: 'The Deep Crypt',
+   /** how long the name stays, and how long it takes to come and to go, in seconds */
+-  secs: 3.4,
++  secs: 0.05,
+ };
+ 
+ /**
+diff --git a/src/main.ts b/src/main.ts
+index 1b48cb1..0d3a93f 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -1533,7 +1533,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
+ 
+   const frame = (now: number): void => {
+     // (playtests can slow time down to photograph effects that last a fraction of a second)
+-    const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)) * dbg.slowmo;
++    let dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000)) * dbg.slowmo;
++    // (SCRATCH, for films: one step of exactly this long, then still again)
++    if (dbg.stepOnce) { dt = dbg.stepOnce; dbg.stepOnce = 0; dbg.stepped++; }
+     last = now;
+     clock += dt;
+     input.beginFrame();
+@@ -2249,6 +2251,9 @@ function start(carried: unknown, hot: HotHook | undefined): void {
+     speed: 1,
+     /** Time runs this much slower than real (1 = normal). */
+     slowmo: 1,
++    /** (SCRATCH) one step of this long while slowmo is 0, and how many steps taken */
++    stepOnce: 0,
++    stepped: 0,
+     /** The world's painter (its `skip` set leaves parts of the picture out, for measuring). */
+     renderer,
+     /** How many frames of art have been painted so far, and how long that took in all (art/kit.ts). */
+diff --git a/src/render/act1_pieces.ts b/src/render/act1_pieces.ts
+index bf11686..0e00e51 100644
+--- a/src/render/act1_pieces.ts
++++ b/src/render/act1_pieces.ts
+@@ -117,6 +117,8 @@ export const SEE_TALL = 44;
+  * as fast, the paddles striking the strip beside it.)
+  */
+ const STANDING_TRAPS = new Set(['the water wheel', 'the stamping mill']);
++import { FLOW } from '../art/flowing';
++import { WHEEL_STEPS, WHEEL_TURN } from '../art/floor13';
+ const WHEEL_FPS = 8;
+ const WHEEL_RUSH = 3;
+ /** (ACT 2, THE HUSH) The pieces the art drew a picture of their own for being seen through, and which of their frames it is: the Millrace's drying lines, the sheets half there (art/floor13.ts). */
+@@ -298,6 +300,12 @@ export class Act1Pieces {
+       const into = Math.max(0, u - beats * SPIKE_BEAT - SPIKE.down);
+       turned += (WHEEL_RUSH - 1) * WHEEL_FPS * (beats * (SPIKE.warn + SPIKE.up) + into);
+     }
++    // (SCRATCH, the livelier wheel: WHEEL_STEPS frames to a paddle, four rounds of them: along +y forward and back, along +x the same)
++    if (FLOW.on) {
++      const st = Math.floor((turned * WHEEL_TURN) / WHEEL_FPS);
++      const kk = ((st % WHEEL_STEPS) + WHEEL_STEPS) % WHEEL_STEPS;
++      return fr[(p.variant & 4 ? 2 : 0) * WHEEL_STEPS + (p.variant & 8 ? WHEEL_STEPS : 0) + kk] ?? fr[0];
++    }
+     const k = ((Math.floor(turned) % 4) + 4) % 4;
+     return fr[(p.variant & 4) + (p.variant & 8 ? 3 - k : k)] ?? fr[0];
+   }
+diff --git a/src/render/outdoor.ts b/src/render/outdoor.ts
+index dc2b14d..16aeeca 100644
+--- a/src/render/outdoor.ts
++++ b/src/render/outdoor.ts
+@@ -32,6 +32,10 @@ import { HQ_DEEP, houseOfQuietLook } from '../art/housequiet';
+ import { LB_DEEP, greatLibraryLook } from '../art/library';
+ // (ACT 2: the walls toward the eye standing whole, behind ACT2_WALLS: art/standing.ts, render/act2_walls.ts)
+ import { nearOf, paintWithStanding, standingBits } from '../art/standing';
++import { FLOW, FLOW_FPS, FLOW_FRAMES, lineAlong, lineSide, paintFlow } from '../art/flowing';
++import type { FlowLayer } from '../art/flowing';
++import { millraceFlow } from '../art/millrace';
++import { pinewoodFlow } from '../art/pinewood';
+ import { wallsThick } from './act2_walls';
+ import type { WallBit } from './act2_walls';
+ import { blobDist, laneDist, segDist } from '../game/act1_layout';
+@@ -77,6 +81,12 @@ function gridField(w: number, h: number, k: number, fn: (x: number, y: number) =
+   };
+ }
+ 
++/** (SCRATCH) Each floor's flowing water, as its look was made. */
++const FLOWS = new WeakMap<Land, FlowLayer>();
++export function flowOfLand(land: Land): FlowLayer | null {
++  return FLOW.on ? FLOWS.get(land) ?? null : null;
++}
++
+ /** How far along the main way (0 at the start, 1 at the boss) the nearest point of it to world (x, y) is. */
+ function progressOf(way: readonly [number, number][]): (x: number, y: number) => number {
+   const lens: number[] = [0];
+@@ -174,13 +184,19 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
+       const race = land.race;
+       const tracks = land.tracks ?? [];
+       const yards = land.yards ?? [];
+-      return millraceLook({
++      const ml = {
+         river: river ? gridField(W, H, 4, (x, y) => laneDist({ pts: river, w: 0 }, x, y)) : undefined,
+         race: race ? gridField(W, H, 4, (x, y) => laneDist({ pts: race, w: 0 }, x, y)) : undefined,
+         raceFlow: race ? flowOf(race) : undefined,
+         track: tracks.length ? gridField(W, H, 4, (x, y) => tracks.reduce((d, t) => Math.min(d, laneDist({ pts: t, w: 0 }, x, y)), Infinity)) : undefined,
+-        yard: yards.length ? (x, y) => yards.some(([x0, y0, x1, y1]) => x >= x0 && y >= y0 && x < x1 && y < y1) : undefined,
+-      });
++        yard: yards.length ? (x: number, y: number) => yards.some(([x0, y0, x1, y1]) => x >= x0 && y >= y0 && x < x1 && y < y1) : undefined,
++        riverAlong: river && FLOW.on ? gridField(W, H, 4, lineAlong(river)) : undefined,
++        raceAlong: race && FLOW.on ? gridField(W, H, 4, lineAlong(race)) : undefined,
++        riverSide: river && FLOW.on ? gridField(W, H, 4, lineSide(river)) : undefined,
++        raceSide: race && FLOW.on ? gridField(W, H, 4, lineSide(race)) : undefined,
++      };
++      if (FLOW.on) FLOWS.set(land, millraceFlow(ml));
++      return millraceLook(ml);
+     }
+     case 'housequiet':
+       return houseOfQuietLook({ floor, zone: zoneOf(land, W, H) });
+@@ -212,7 +228,9 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
+       const prog = progressOf(land.way);
+       const from = land.sickFrom ?? 0.62;
+       const sick = gridField(W, H, 2, (x, y) => Math.max(0, Math.min(1, (prog(x, y) - from) / (1 - from))));
+-      return pinewoodLook({ river: riverD, trail: trailD, sick });
++      const pl = { river: riverD, trail: trailD, sick, riverAlong: river && FLOW.on ? gridField(W, H, 4, lineAlong(river)) : undefined, riverSide: river && FLOW.on ? gridField(W, H, 4, lineSide(river)) : undefined };
++      if (FLOW.on && riverD) FLOWS.set(land, pinewoodFlow(pl));
++      return pinewoodLook(pl);
+     }
+     case 'fen': {
+       const boards = new Uint8Array(W * H);
+@@ -271,6 +289,9 @@ export class OutdoorGround {
+   private stands: ((x: number, y: number) => boolean) | null = null;
+   private near: ((x: number, y: number) => boolean) | null = null;
+   private pieces = new Map<number, Piece>();
++  /** (SCRATCH, the rivers flowing) Each piece's water, frame by frame (null: none in it); the game's clock for it. */
++  private flows = new Map<number, { frames: HTMLCanvasElement[]; x: number; y: number; w: number; h: number } | null>();
++  flowT = 0;
+   private frame = 0;
+   private sky: HTMLCanvasElement | null = null;
+   private skyDone = 0;
+@@ -337,6 +358,7 @@ export class OutdoorGround {
+     SHOWN.terrain = this.T;
+     for (const p of this.pieces.values()) this.drop(p);
+     this.pieces.clear();
++    this.flows.clear();
+     this.asked.clear();
+     this.waiting.clear();
+     this.floor = floor;
+@@ -498,6 +520,28 @@ export class OutdoorGround {
+         if (p) {
+           p.seen = this.frame;
+           g.drawImage(p.cvs, sx, sy, PIECE / GRAIN, PIECE / GRAIN);
++          // (SCRATCH) the water flowing over it
++          const layer = this.land ? flowOfLand(this.land) : null;
++          if (layer) {
++            let fl = this.flows.get(key);
++            if (fl === undefined) {
++              const made: HTMLCanvasElement[] = [];
++              let box: { x: number; y: number; w: number; h: number } | null = null;
++              for (let f = 0; f < FLOW_FRAMES; f++) {
++                const fp = paintFlow(layer, i * PIECE, j * PIECE, PIECE, PIECE, f);
++                if (!fp.box) break;
++                box = fp.box;
++                const cv = document.createElement('canvas');
++                cv.width = PIECE;
++                cv.height = PIECE;
++                (cv.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(fp.rgba, PIECE, PIECE), 0, 0);
++                made.push(cv);
++              }
++              fl = box ? { frames: made, ...box } : null;
++              this.flows.set(key, fl);
++            }
++            if (fl) g.drawImage(fl.frames[Math.floor(this.flowT * FLOW_FPS) % FLOW_FRAMES], sx, sy, PIECE / GRAIN, PIECE / GRAIN);
++          }
+         } else if (!this.land.sky) {
+           g.fillStyle = this.deep;
+           g.fillRect(sx, sy, PIECE / GRAIN, PIECE / GRAIN);
+diff --git a/src/render/render.ts b/src/render/render.ts
+index 5968485..d8b4603 100644
+--- a/src/render/render.ts
++++ b/src/render/render.ts
+@@ -2225,6 +2225,7 @@ export class Renderer {
+     if (this.act1Dressed) this.act1.stepMoments(game, this.painter);
+     if (land && !hallNow) {
+       const fresh = this.outdoor.begin(land, f);
++      this.outdoor.flowT = game.time;
+       this.outdoor.draw(g, cam, W, H, fresh);
+       if (this.act1Dressed) this.act1.floorTiles(g, this.floorAt, W, H);
+     }
+diff --git a/tools/scenarios/_rivers_pics.mjs b/tools/scenarios/_rivers_pics.mjs
+new file mode 100644
+index 0000000..9feadd8
+--- /dev/null
++++ b/tools/scenarios/_rivers_pics.mjs
+@@ -0,0 +1,73 @@
++// (SCRATCH) THE RIVERS: floor 13 by its wheel and race, then out on its river; floor 9 on its river. Stills, or with FILM=1 a
++// film of each (the game slowed SLOW times, a frame each shot; shots/<out>_<n>_times.json their game times). SEED.
++import fs from 'node:fs';
++export default async function (page, snap) {
++  const seed = Number(process.env.SEED ?? 3);
++  const film = process.env.FILM === '1';
++  const slow = Number(process.env.SLOW ?? 0.2);
++  const N = Number(process.env.FRAMES ?? 60);
++  const go = async (depth, where) => {
++    const info = await page.evaluate(([seed, depth, where]) => {
++      const D = window.__dbg;
++      D.saving(false);
++      D.run('warrior', seed);
++      D.seasoned(20);
++      D.god = true;
++      D.act2(true, depth);
++      const g = D.game();
++      const L = g.level;
++      const land = L.land;
++      g.monsters.length = 0;
++      let at = null;
++      if (where === 'wheel') {
++        const w = (L.props ?? []).find((p) => p.name === 'the water wheel');
++        if (w) at = [w.x + 1.5, w.y + 2.5];
++      }
++      if (!at && land.river) {
++        // a walkable tile a tile and a half off the river's middle line, about a third along it
++        const pts = land.river.map((q) => (Array.isArray(q) ? q : [q.x, q.y]));
++        const f = L.floor;
++        const inside = [];
++        for (let i = 0; i + 1 < pts.length; i++) {
++          const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
++          const n = Math.ceil(Math.hypot(bx - ax, by - ay) * 2);
++          for (let j = 0; j < n; j++) {
++            const x = ax + ((bx - ax) * j) / n, y = ay + ((by - ay) * j) / n;
++            if (x > 8 && y > 8 && x < f.w - 8 && y < f.h - 8) inside.push([x, y]);
++          }
++        }
++        const [x, y] = inside[Math.floor(inside.length * (where === 'river2' ? 0.7 : 0.4))];
++        let best = null;
++        for (let dy = -10; dy <= 10; dy++) for (let dx = -10; dx <= 10; dx++) {
++          const tx = Math.floor(x + dx), ty = Math.floor(y + dy);
++          if (!L.walk[ty * f.w + tx]) continue;
++          const d = Math.hypot(dx, dy);
++          if (!best || d < best[2]) best = [tx + 0.5, ty + 0.5, d];
++        }
++        if (best) at = [best[0], best[1]];
++      }
++      if (at) { g.hero.x = at[0]; g.hero.y = at[1]; }
++      return { depth, kind: land.kind, at, wheel: (L.props ?? []).filter((p) => p.name === 'the water wheel').length, river: land.river ? land.river.length : -1, p0: land.river ? JSON.stringify(land.river[0]) : '' };
++    }, [seed, depth, where]);
++    console.log('  ', JSON.stringify(info));
++    await page.waitForTimeout(11000);
++    await page.evaluate(() => { window.__dbg.fx.messages.length = 0; });
++  };
++  for (const [depth, where] of [[13, 'wheel'], [13, 'river'], [9, 'river'], [9, 'river2']]) {
++    await go(depth, where);
++    const name = `f${depth}_${where}`;
++    if (!film) { await snap(name); continue; }
++    const step = Number(process.env.STEP ?? 1 / 32);
++    await page.evaluate(() => { window.__dbg.slowmo = 0; });
++    const times = [];
++    for (let n = 0; n < N; n++) {
++      const was = await page.evaluate(() => window.__dbg.stepped);
++      await page.evaluate((k) => { window.__dbg.stepOnce = k; }, step);
++      await page.waitForFunction((w) => window.__dbg.stepped > w, was);
++      times.push(await page.evaluate(() => window.__dbg.game().time));
++      await snap(`${name}_${String(n).padStart(3, '0')}`);
++    }
++    await page.evaluate(() => { window.__dbg.slowmo = 1; });
++    fs.writeFileSync(`${process.env.TIMES ?? '.'}/${name}_times.json`, JSON.stringify(times));
++  }
++}

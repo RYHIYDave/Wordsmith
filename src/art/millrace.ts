@@ -30,11 +30,20 @@
 //
 // FOR THE MAIN CHAT: `millraceLook(land)` makes the look for a level from what only the level knows: where its river,
 // its mill race and its cart tracks run, and where its mill yard is (each optional).
+//
+// THE RIVERS FLOWING (art/flowing.ts, behind FLOW, off; the art chat, 23 Oct): with FLOW on, the river is painted as the race
+// is, banked in the race's dressed stone, its water lively (foam streaks, standing waves in chevrons, white at its banks), and
+// both run: `millraceFlow(land)` gives their water at each frame, for the game to lay over the ground. `land.riverAlong` and
+// `land.raceAlong` (how far along each line, tiles, the way it runs: flowing.ts lineAlong) carry what moves along them, and
+// `land.riverSide`, `land.raceSide` (which side of it and how far: lineSide) lay its streaks along it round its bends; without
+// them it is reckoned on the picture (fine for a short straight water, broken up on a long one).
 
 import type { RGB, TerrainLook } from './terrain';
 import { fbm, vnoise } from './terrain';
 import { hash } from './kit';
-import { quietTerrain } from './act2_quiet';
+import { quietRGB, quietTerrain } from './act2_quiet';
+import { FLOW, acrossOf, waterAt } from './flowing';
+import type { FlowLayer, WaterStyle } from './flowing';
 
 const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const mixc = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
@@ -94,6 +103,12 @@ export interface MillLand {
   track?: (x: number, y: number) => number;
   /** Whether a place is in the mill yard (paved). */
   yard?: (x: number, y: number) => boolean;
+  /** (art/flowing.ts, FLOW) How far along its river's line a place is (tiles, the way it runs), and along its race's (lineAlong). */
+  riverAlong?: (x: number, y: number) => number;
+  raceAlong?: (x: number, y: number) => number;
+  /** (art/flowing.ts, FLOW) How far to the left (+) or right (−) of its river's line a place is (tiles), and of its race's (lineSide). */
+  riverSide?: (x: number, y: number) => number;
+  raceSide?: (x: number, y: number) => number;
 }
 /** The river's water reaches this far either side of its middle (tiles), its banks this much further; the race's water and its stone kerb. */
 export const MR_RIVER_HALF = 0.62;
@@ -161,6 +176,54 @@ function race(land: MillLand, x: number, y: number, px: number, py: number, d: n
   if (d > MR_RACE_HALF - 0.06) c = MR_FOAM[hash(px >> 1, py, 1345) < 0.5 ? 1 : 0];
   return c;
 }
+// ---------------------------------------------------------------------------------------------------
+// THE WATER FLOWING (FLOW on): the river in the race's look, both running
+
+/** The river's dressed stone kerb (FLOW on), in place of its mud bank: this wide. */
+const RIVER_KERB = 0.2;
+/** THE RIVER, flowing: slower than the race, less of it foam; THE RACE, fast and white. */
+export const MR_RIVER_FLOW: WaterStyle = { water: MR_WATER, foam: MR_FOAM, half: MR_RIVER_HALF, speed: 1.6, chevron: 2.4, foamy: 0.7, seed: 1500 };
+export const MR_RACE_FLOW: WaterStyle = { water: MR_WATER, foam: MR_FOAM, half: MR_RACE_HALF, speed: 4, chevron: 1.5, foamy: 1, seed: 1520 };
+/** How far along a line a place is: as the level says, or along the picture (32 picture pixels a tile). */
+function alongOf(said: ((x: number, y: number) => number) | undefined, x: number, y: number, fx: number, fy: number, px: number, py: number): number {
+  return said ? said(x, y) : (fx * px + fy * py) / 32;
+}
+function flowingRiver(land: MillLand, x: number, y: number, px: number, py: number, d: number, frame: number): RGB {
+  const [fx, fy] = flowOn(land.river!, x, y);
+  return waterAt(MR_RIVER_FLOW, alongOf(land.riverAlong, x, y, fx, fy, px, py), d, acrossOf(land.riverSide, x, y, fx, fy, px, py), x, y, px, py, frame);
+}
+function flowingRace(land: MillLand, x: number, y: number, px: number, py: number, d: number, frame: number): RGB {
+  const [fx, fy] = flowOn(land.race!, x, y, land.raceFlow);
+  return waterAt(MR_RACE_FLOW, alongOf(land.raceAlong, x, y, fx, fy, px, py), d, acrossOf(land.raceSide, x, y, fx, fy, px, py), x, y, px, py, frame);
+}
+/** THE RIVER'S KERB (FLOW on): the race's dressed stone, block by block along it, lit on top, its foot dark and wet. */
+function riverKerb(land: MillLand, x: number, y: number, px: number, py: number, d: number): RGB {
+  const k = (d - MR_RIVER_HALF) / RIVER_KERB;
+  const [fx, fy] = flowOn(land.river!, x, y);
+  const a = alongOf(land.riverAlong, x, y, fx, fy, px, py);
+  if (k < 0.18) return MR_STONE[0];
+  const blk = Math.floor(a * 2.6 + vnoise(x, y, 1351) * 0.3);
+  if (mod(a * 2.6, 1) < 0.07) return MR_STONE[0];
+  const t = hash(blk, Math.round(d * 4), 1356);
+  const lit = k > 0.62;
+  if (k > 0.94) return MR_STONE[1];
+  return MR_STONE[lit ? (t < 0.5 ? 3 : 2) : t < 0.5 ? 2 : 1];
+}
+
+/** THE MILLRACE'S WATER, FLOWING (FLOW): its race and its river, at each frame, for the game to lay over the ground. */
+export function millraceFlow(land: MillLand): FlowLayer {
+  return {
+    at: (x, y) => (!!land.race && land.race(x, y) < MR_RACE_HALF) || (!!land.river && land.river(x, y) < MR_RIVER_HALF),
+    paint: (x, y, px, py, frame) => {
+      if (land.race) {
+        const d = land.race(x, y);
+        if (d < MR_RACE_HALF) return quietRGB(flowingRace(land, x, y, px, py, d, frame));
+      }
+      return quietRGB(flowingRiver(land, x, y, px, py, land.river!(x, y), frame));
+    },
+  };
+}
+
 /** THE RACE'S KERB: dressed stone, block by block, lit on top. */
 function kerb(x: number, y: number, px: number, py: number, d: number): RGB {
   const blk = Math.floor((x + y) * 3.2 + vnoise(x, y, 1351) * 0.3);
@@ -267,12 +330,13 @@ function fieldsOf(land: MillLand) {
     // the water, under a footbridge, and its banks
     if (land.race) {
       const d = land.race(x, y);
-      if (d < MR_RACE_HALF) return race(land, x, y, px, py, d);
+      if (d < MR_RACE_HALF) return FLOW.on ? flowingRace(land, x, y, px, py, d, 0) : race(land, x, y, px, py, d);
       if (d < MR_RACE_HALF + KERB) return kerb(x, y, px, py, d);
     }
     if (land.river) {
       const d = land.river(x, y);
-      if (d < MR_RIVER_HALF) return river(land, x, y, px, py, d);
+      if (d < MR_RIVER_HALF) return FLOW.on ? flowingRiver(land, x, y, px, py, d, 0) : river(land, x, y, px, py, d);
+      if (FLOW.on && d < MR_RIVER_HALF + RIVER_KERB) return riverKerb(land, x, y, px, py, d);
       if (d < MR_RIVER_HALF + BANK) return bank(x, y, px, py);
       if (d < MR_RIVER_HALF + BANK + 0.25) return riverside(x, y, px, py);
     }
@@ -357,12 +421,13 @@ function roughOf(land: MillLand) {
   return (x: number, y: number, px: number, py: number, back: number): RGB => {
     if (land.race) {
       const d = land.race(x, y);
-      if (d < MR_RACE_HALF) return race(land, x, y, px, py, d);
+      if (d < MR_RACE_HALF) return FLOW.on ? flowingRace(land, x, y, px, py, d, 0) : race(land, x, y, px, py, d);
       if (d < MR_RACE_HALF + KERB) return kerb(x, y, px, py, d);
     }
     if (land.river) {
       const d = land.river(x, y);
-      if (d < MR_RIVER_HALF) return river(land, x, y, px, py, d);
+      if (d < MR_RIVER_HALF) return FLOW.on ? flowingRiver(land, x, y, px, py, d, 0) : river(land, x, y, px, py, d);
+      if (FLOW.on && d < MR_RIVER_HALF + RIVER_KERB) return riverKerb(land, x, y, px, py, d);
       if (d < MR_RIVER_HALF + BANK) return bank(x, y, px, py);
       if (d < MR_RIVER_HALF + BANK + 0.6) return riverside(x, y, px, py);
     }
