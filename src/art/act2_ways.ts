@@ -7,7 +7,9 @@
 // (Recommended)”.
 //
 // As floors 6 to 10's (art/act1_ways.ts, the kit art/ways_kit.ts): each at the far end of the boss's ground, leading on
-// the way from where the boss stood toward it, in its floor's own look, at night in the city.
+// the way from where the boss stood toward it, in its floor's own look, at night in the city. Shown him as films from the
+// game, with where each floor begins and the camp's street, asked “Are floors 11 to 15's ways on, where each floor begins,
+// and the camp's street right as shown?”, by 11:06 Pacific, 23 Oct 2026: “Yes, send to main (Recommended)”.
 
 import { Px } from '../engine/px';
 import type { Sprite } from '../engine/px';
@@ -1126,7 +1128,7 @@ function cachedStart(key: string, make: () => StartArt): StartArt {
   return s;
 }
 /** How far back each stands. */
-export const A2_START_BACK = { gateward: 1.5, undercity: 1.5, millrace: 1.5, house: 1.7, library: 1.7 } as const;
+export const A2_START_BACK = { gateward: 1.7, undercity: 1.5, millrace: 1.5, house: 1.7, library: 1.7 } as const;
 const CART_DEAL: Ramp = ['#2a2620', '#4a4236', '#6a604e', '#857a64', '#9c917a'];
 const SACK: Ramp = ['#3e3628', '#5c5240', '#7a6e58', '#968a70', '#b0a488'];
 

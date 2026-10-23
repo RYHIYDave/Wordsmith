@@ -157,6 +157,52 @@ Seen in the game on the scratch copy (render.ts `a1Ways`; its lines, as a diff, 
 only) and filmed with tools/scenarios/_a1_film.mjs there; the
 starts stood back seen there too. Checks: `tests/ways_a1.test.ts`, 4.
 
+## Floors 11 to 15: `src/art/act2_ways.ts` (`A2_WAYS`, off), with the kit `src/art/ways_kit.ts`
+
+HIS WORDS: shown films of each from the game (the way shut, the boss dying, the film, open), stills of where each floor
+begins, and the camp's street with its cart barricade as it was and hauled aside, asked “Are floors 11 to 15's ways on,
+where each floor begins, and the camp's street right as shown?”, by 11:06 Pacific, 23 Oct: “Yes, send to main
+(Recommended)”; then “Go”.
+
+As floors 6 to 10's: `xxxWay(d)` gives `WayArt` (`shut`, `film`, `open`), `xxxStart(d)` gives `StartArt` (`under`, `over`,
+`back`); every picture cut down to what is painted, anchored (ax, ay) on its floor point; every colour as quiet as Act 2's
+places (act2_quiet.ts), but what glows. THE WAYS IN A WALL (12, 14, 15) and THE STARTS IN A WALL (14, 15) are three tiles
+of a BACK wall of the floor's own (its face toward the eye; `d` is `x-` or `y-`), anchored as floor 4's cave: at the foot
+of the wall's face under the middle of the doorway's middle tile; give them `at`, that anchor's place in the world in
+tiles (and the room's `zone` on 14 and 15), so that the wall's face is painted as the ground paints the floor's own
+(undercity/housequiet/library's `wallFace` and `topAt`, exported for it, nothing else changed) and runs on into it.
+Their `under` is what is in the opening (its jambs, its head, the threshold, the dark or the light beyond): it wants the
+doorway's three tiles cut to floor (as the cave's, `openGate`), or the wall's own face would stand over it.
+
+| Way on | Stands | Shut, and as the boss dies | Takes him on (once open) | Solid | Film |
+|---|---|---|---|---|---|
+| 11 `gateWardWay(d)` | THE MIDDLE OF THE CRIER'S SQUARE, its ring of setts (the Gate Ward land's `squares`, the crier's): at Ways.onward it stands behind the houses and is not seen. All of it lies flat: `under` only | the great round grate in a ring of dressed stone, sealed in the Order's ink, a rune at its heart burning the enemy's pink; it flares, the ink cracks, the seal bursts (ink flung over the flags), the grate is thrown up and drops down the shaft | the hole, (0, 0) and the four round it | none | 104 frames (3.47 s); jolts 34, 54; kicks 7, 4; 8.3 MB |
+| 12 `undercityWay(d, at)` | a back wall of the King's Cistern (or a room by it) | the outfall's arch in the cistern's brick, ringed in dressed stone, its iron grille choked with the Rat King's nest; the nest seethes, his rats flood out across the floor, the grille is shoved and swings out with a clang | the doorway's middle tile | its two side tiles (the wall over them); from the film's end the grille swung out, the floor tile before the left one | 116 frames (3.87 s); jolts 26, 60; kicks 4, 6; 27.6 MB |
+| 13 `millraceWay(d)` | at Ways.onward, as now (floor 13 has no walls): a stretch of the old city wall standing alone in the fields, any of the four ways | a postern in it papered over with the mill's written sheets, both its faces; they sag, peel from the top down and slough off in wet heaps, a few blown away; the door swings in | the door, (1, 0) | the wall, (1, -2 to -1) and (1, 1 to 2); its fallen stones at its ends, low | 120 frames (4.0 s); jolts 44, 98; kicks 3, 4; 18.4 MB |
+| 14 `houseOfQuietWay(d, at, zone)` | a back wall of the Physician's rooms | a ward door in a dark green case in the infirmary's limewash, stitched shut with the Order's black thread; it strains, the stitches snap from the top down, the door falls open on the dark | the doorway's middle tile | its two side tiles | 110 frames (3.67 s); jolts 24, 88; kicks 2, 5; 9.3 MB |
+| 15 `libraryWay(d, at, zone)` | a back wall of the Reading Room | the great doors in a walnut doorcase among the bookcases, blacked with the Censor's ink, his bars struck across it burning pink at their edges; the ink runs and drains into a pool that sinks away, the doors swing open and grey morning light pours in across the floor: home, to the camp | the doorway's middle tile | its two side tiles | 130 frames (4.33 s); jolt 106; kick 4; 14.8 MB |
+
+Tiles as floors 6 to 10's: in the way's own frame from the anchor's tile, `a` on along the way, `b` across it; for the
+ways in a wall, `a 0` is the wall's row (the doorway), `b -1, 0, 1` its three tiles.
+
+| Start | Stands | What it is | Solid |
+|---|---|---|---|
+| 11 `gateWardStart(d)` | `back` 1.7 from the start | past the camp's barricade: the market cart that blocked the street, on its side, dragged over to the house fronts, its wheels up; crates and a door shoved the other way; scrapes on the setts | (2 to 3, 1), (2, -1) |
+| 12 `undercityStart(d)` | `back` 1.5 | the foot of the ladder down from the Crier's grate, going up into the dark of the shaft, the moon's light falling down it onto the wet floor | (2, 0) |
+| 13 `millraceStart(d)` | `back` 1.5 | the outfall's mouth: a low brick arch in a grassy bank at the fields' edge, the sewer's water trickling out through reeds | (2 to 3, -2 to 2) |
+| 14 `houseOfQuietStart(d, at, zone)` | in a back wall, as floor 5's mouth: he comes in 1.7 tiles out from it (`back`) | the infirmary's back door, standing open on the dark of the yard | the doorway's three tiles |
+| 15 `libraryStart(d, at, zone)` | in a back wall, as above | a side door of the library, in a walnut case among the bookcases, open on a dark passage | the doorway's three tiles |
+
+THE CAMP'S WAY OUT TO FLOOR 11 (on mockup/act2-hub at ae89b00, src/art/hub2_camp.ts): `campPlace(all, wayOut)`; with
+`wayOut` the cart barricade stands hauled aside, at `CAMP_BARRICADE_ASIDE` (38.6, 25.35), against the house fronts on the
+street's far side, in place of (36.4, 26.4): the street off to the right (x 36 to 50, y 25 to 28) open on into the Gate
+Ward. Solid: its own tiles there, (37 to 39, 25). Floor 15's way home comes to the camp too.
+
+THE PINK: the grate's seal on 11 and the Censor's bars on 15, shut and going; none once open. Nothing cyan.
+
+Seen in the game on the scratch copy (its lines, `scratch_hooks_11_15.diff.txt` here, a guide only), laid as above (the grate in the Crier's Square, the wall pieces in the nearest back
+wall), and filmed there (tools/scenarios/_a1_film.mjs). Checks: `tests/ways_a2.test.ts`, 4.
+
 ## How they were seen in the game
 
 On a scratch copy only (never pushed): your exits branch with this one merged, and a few lines in render/dress.ts,
@@ -175,4 +221,11 @@ lines, as a diff against exits at 0093225, are `scratch_hooks.diff.txt` here: a 
   nothing of the enemy's pink or the friend's cyan; the cage's frames, its floor rising from out of sight to the
   hall's and staying, the rider cut under the floor and whole once up; the gate's seal the enemy's pink, gone by the
   film's end and from what is left.
+- `tests/ways_a1.test.ts`, 4: floors 6 to 10 (the switch off and nothing importing the files; the ways round; each
+  way's shut, film and open, its jolts, it changes, nothing cyan, the pink only in floor 9's veins; every start painted
+  all four ways round, nothing cyan or pink, stood back a tile and a half).
+- `tests/ways_a2.test.ts`, 4: floors 11 to 15 (the switch off and nothing importing the file; each way's shut, film and
+  open, its jolts, it changes, nothing cyan, the pink only in the seals and gone open, every colour as quiet as Act 2's
+  places but what glows; a way in a wall painted as the floor's own wall, its pattern running on with where it stands;
+  every start painted all four ways round, nothing cyan or pink, stood back).
 - tsc clean. NOT RUN: the regression; a real phone; the pieces in the game with your rules.
