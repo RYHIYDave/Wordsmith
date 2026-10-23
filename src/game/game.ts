@@ -35,7 +35,7 @@ import { ALTAR_GOES, HOLD_GUARDS, HOLD_GUARD_ID, HOLD_PACK, HOLD_PACK_ID, HOLD_T
 import { act1Pack, act1Ready } from './act1_mobs';
 import { HOLD } from './act1_dress';
 import { AIM_MODES, emptyControls } from './state';
-import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, onTopStep, stairFor, stairMiddle, stairTiles, topStep } from './ways';
+import { CAVE_OPENING, CURTAIN_SECS, EXITS, UNBAR_SECS, UNBAR_SEEN, GATE_FALL_AT, GATE_RISE_AT, SHAFT, STAIR_LONG, STAIR_OPENING, STAIR_WIDE, TOWN_ARRIVE, TOWN_GATE, WARP_SECS, WAYS, WAY_USE, WAY_WAKE, ONWARD, onTakes, onTopStep, stairFor, stairMiddle, stairTiles, thrownTiles, topStep } from './ways';
 import type { StairWay } from './ways';
 import { CAMP, makeCamp } from './camp';
 import type { AimMode, Channel, Controls, Corpse, Drop, Familiar, GameEvent, Guide, GuideRow, GuideStep, HalfWords, Hero, Level, Meta, Monster, OrbInst, Peril, Projectile, PropInst, Resolved, Riser, SkillState, SlotRef, Spear, Station, TownVoice, Trap, VendorId, Volley, WordLore, Zone } from './state';
@@ -1910,7 +1910,22 @@ export class Game {
     }
     // ACT 1: THE WAY ON, once awake: walking into its light takes him on (game/ways.ts, Ways.onward).
     const on = W.onward;
-    if (on && on.awake && Math.hypot(on.x - h.x, on.y - h.y) < WAY_USE) {
+    // (EXITS, FLOORS 6 TO 10: the art chat's: its film plays from the boss's death; then it is open, what it threw out
+    // lying where it fell, and stepping onto its way in takes him on: game/ways.ts, ONWARD)
+    const a1 = W.a1;
+    if (on && on.awake && a1) {
+      if (!a1.open && (on.warpAt === null || this.time - on.warpAt >= (ONWARD[a1.floor]?.secs ?? 0))) {
+        a1.open = true;
+        const taken = new Set<number>([Math.floor(h.y) * L.floor.w + Math.floor(h.x)]);
+        for (const m of this.monsters) if (!m.dead) taken.add(Math.floor(m.y) * L.floor.w + Math.floor(m.x));
+        for (const i of thrownTiles(L.floor, on, a1)) if (!taken.has(i)) L.walk[i] = 0;
+        this.msg(this.depth >= 10 && !(ENDLESS.on && this.inEndless) ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
+      }
+      if (a1.open && onTakes(L.floor, on, a1, h.x, h.y)) {
+        this.leave('on');
+        return false;
+      }
+    } else if (on && on.awake && Math.hypot(on.x - h.x, on.y - h.y) < WAY_USE) {
       this.leave('on');
       return false;
     }
@@ -5663,8 +5678,11 @@ export class Game {
         // (ACT 1, THE DESCENT: the way on wakes at the far end of his ground: down the mountain, or from the Fen, home)
         W.onward.awake = true;
         W.onward.warpAt = this.time;
-        this.sfx('power', 0.8);
-        this.msg(this.depth >= 10 && !(ENDLESS.on && this.inEndless) ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
+        // (EXITS, floors 6 to 10: its film plays, and the line comes as it is open: updateWays)
+        if (!W.a1) {
+          this.sfx('power', 0.8);
+          this.msg(this.depth >= 10 && !(ENDLESS.on && this.inEndless) ? 'The siege magic falters. The way home is open.' : 'The way on is open.', MSG.good);
+        }
       } else if (W && W.shaft) {
         // (THE FIRST FIVE FLOORS: on the fifth floor the cage comes crashing down the mine shaft at the back of his hall)
         W.shaft.state = 'coming';

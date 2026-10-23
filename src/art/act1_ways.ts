@@ -25,8 +25,12 @@ import type { Ramp } from './kit';
 import { G, Rig, block, rodIn, chip, cloud, copyBlock, letBlockGo, paintBlock, paintChips, paintDust, stepBlocks, stepChips } from './ways_kit';
 import type { Block, Chip, Cloud, StartArt, WayArt, WayDir, WayFilm } from './ways_kit';
 
-/** THE SWITCH: off, nothing of the game uses any of this. */
-export const A1_WAYS = { on: false };
+/**
+ * THE SWITCH: off, nothing of the game uses any of this. ON (the main chat, 22 Oct 2026): his yes in the art chat by 17:41,
+ * “Yes, on to 11–15 (Recommended)”, and to the main chat at 17:42, “6-10 are done as well”; the game draws them only where its
+ * rules lay a way on and a start of floors 6 to 10, behind EXITS (game/ways.ts ONWARD).
+ */
+export const A1_WAYS = { on: true };
 
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 const smooth = (t: number): number => {

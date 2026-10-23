@@ -19,6 +19,10 @@
 //                              unbarring and what is left of them, the gate in a plane along x or y (art/town_ways.ts)
 //   town:arrive                EXITS: the cage coming up into the town with him in it (art/town_ways.ts)
 //   up:1:<x|y>                 EXITS: floor 1's stairs up to the town, in its gate's arch (art/town_ways.ts)
+//   onward:<floor>:<dir>       EXITS: floors 6 to 10's way on (art/act1_ways.ts), leading on toward x+, x-, y+ or y-:
+//                              shut, its film as the boss dies, open, each in its two layers (art/ways_kit.ts WayArt)
+//   start:<floor>:<dir>        EXITS: where floors 6 to 10 begin, the piece he came out of behind him, the way back
+//                              toward x+, x-, y+ or y- (art/ways_kit.ts StartArt)
 //   things:unfinished          ACT 1: what floor 6's boss throws and leaves (its hurled block tumbling and lying, its
 //                              rockslide's boulders rolling, the terrace cracked under its stomp), painted ahead so
 //                              that none of it is painted in its fight (17 Oct: his "serious slowdown" in the rock throw)
@@ -45,6 +49,19 @@ import { boulderRolling, hurledBlock, stompCracks } from './unfinished';
 import { caveFilm, lairMouth } from './cave4';
 import { floorStairsUp, gateBars, gateLeft, townArrives, townShaft, townStairs, unbarFilm } from './town_ways';
 import type { Strip } from './gates';
+import { canyonStart, canyonWay, fenStart, fenWay, ledgeStart, ledgeWay, pinewoodStart, pinewoodWay, quarryStart, quarryWay } from './act1_ways';
+import type { StartArt, WayArt, WayDir } from './ways_kit';
+export type { StartArt, WayArt };
+
+/** (EXITS) Floors 6 to 10's ways on and starts, by floor (the art chat's, art/act1_ways.ts). */
+const ONWARD_ART: Record<number, { way: (d: WayDir) => WayArt; start: (d: WayDir) => StartArt }> = {
+  6: { way: quarryWay, start: quarryStart },
+  7: { way: ledgeWay, start: ledgeStart },
+  8: { way: canyonWay, start: canyonStart },
+  9: { way: pinewoodWay, start: pinewoodStart },
+  10: { way: fenWay, start: fenStart },
+};
+const asDir = (d: string | undefined): WayDir => (d === 'x-' || d === 'y+' || d === 'y-' ? d : 'x+');
 
 /** One of a floor's moments, as the game plays it. */
 export interface MomentFilm {
@@ -148,6 +165,10 @@ export function filmRoom(key: string): number {
   if (kind === 'mouth') return 2;
   if (kind === 'town') return a === 'arrive' ? TOWN_ARRIVE_ROOM : 8;
   if (kind === 'up') return 1;
+  // (EXITS, floors 6 to 10: the art chat's measures, every picture cut down to what is painted in it: the quarry 27.3, the ledge
+  // 68.9 (the flock flies wide), the canyon 44.9, the pinewood 26.2, the fen 22.3; a start under 2)
+  if (kind === 'onward') return [28, 70, 46, 27, 23][Number(a) - 6] ?? 70;
+  if (kind === 'start') return 2;
   if (kind === 'things') return 12;
   return 57;
 }
@@ -162,7 +183,7 @@ const CAVE_ROOM = 62;
 const TOWN_ARRIVE_ROOM = 32;
 
 /** Make the film of that name. Throws for a name that is none. (Seconds of work: not where the game is being played.) */
-export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm | CaveWayFilm | MouthWay | TownWaysArt | Sprite {
+export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | ShaftFilm | ThingsFilm | CaveWayFilm | MouthWay | TownWaysArt | WayArt | StartArt | Sprite {
   const [kind, a, b, c, d] = key.split(':');
   if (kind === 'moments') {
     const list = momentsOf(Number(a));
@@ -205,6 +226,8 @@ export function makeFilm(key: string): MomentFilm[] | MomentFilm | StairFilm | S
     return { fps: f.fps, jolts: [...f.jolts], back: f.back, front: f.front, lift: [...f.lift] } satisfies ShaftFilm;
   }
   if (kind === 'up') return floorStairsUp(CRYPT_FLOORS[0], b !== 'y');
+  if (kind === 'onward' && ONWARD_ART[Number(a)]) return ONWARD_ART[Number(a)].way(asDir(b));
+  if (kind === 'start' && ONWARD_ART[Number(a)]) return ONWARD_ART[Number(a)].start(asDir(b));
   if (kind === 'things' && a === 'unfinished') {
     // (its block's four tumbling frames and the one lying; its boulder's eight; its stomp's four cracks: as render/act1_fx/unfinished.ts asks for them)
     return { blocks: [0, 1, 2, 3, 4].map(hurledBlock), boulders: [0, 1, 2, 3, 4, 5, 6, 7].map(boulderRolling), cracks: [0, 1, 2, 3].map(stompCracks) };

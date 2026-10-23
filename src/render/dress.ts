@@ -8,13 +8,14 @@
 
 import { BEYOND } from '../art/floorkit';
 import { stairKey } from '../art/films';
-import type { CaveWayFilm, MouthWay, ShaftFilm, StairFilm, TownWaysArt } from '../art/films';
+import type { CaveWayFilm, MouthWay, ShaftFilm, StairFilm, StartArt, TownWaysArt, WayArt } from '../art/films';
 import { CAVE4 } from '../art/cave4';
 import { CRYPT_FLOORS } from '../art/crypt';
 import { wallFacePixels } from '../art/ground';
 import { GRAIN } from '../art/kit';
 import { Px } from '../engine/px';
 import { TOWN_WAYS, riderUnder } from '../art/town_ways';
+import { A1_WAYS } from '../art/act1_ways';
 import { doorFace, doorTiles } from '../game/doors';
 import type { DoorSpot } from '../game/types';
 import { floorLook } from '../art/floors';
@@ -22,7 +23,7 @@ import { riderDark, shaftStill } from '../art/shaft';
 import { rgba } from '../engine/px';
 import type { Sprite } from '../engine/px';
 import type { Game } from '../game/game';
-import { EXITS, SHAFT, stairMiddle } from '../game/ways';
+import { EXITS, ONWARD, START, SHAFT, onwardAnchor, stairMiddle, startAnchor } from '../game/ways';
 import type { StairWay } from '../game/ways';
 import type { Cam } from './fx';
 import { wx, wy } from './fx';
@@ -31,7 +32,10 @@ import type { Painter } from './painter';
 /** What the renderer lends: standing a picture among everything else, its light added after the dark, a soft shadow on the floor. */
 export interface Stage {
   cam: Cam;
-  stand(d: number, s: Sprite, x: number, y: number): void;
+  /** (`alpha`: how solid, 1 whole) */
+  stand(d: number, s: Sprite, x: number, y: number, alpha?: number): void;
+  /** How solid a big thing standing at (x, y) at depth d is drawn: seen through while the hero (or a monster in sight) is behind it. */
+  veil(s: Sprite, x: number, y: number, d: number): number;
   lit(s: Sprite, x: number, y: number): void;
   shadow(g: CanvasRenderingContext2D, x: number, y: number, r: number): void;
 }
@@ -109,6 +113,54 @@ export class FloorDress {
     this.unbarF = f;
   }
 
+  /** (EXITS, FLOORS 6 TO 10, the art chat's: art/act1_ways.ts) The way on's pictures, and the start's; null until made (the painter's). */
+  onwardArt(game: Game): WayArt | null {
+    const a1 = game.level.ways?.a1;
+    return EXITS.on && A1_WAYS.on && a1 ? this.film<WayArt>(`onward:${a1.floor}:${a1.dir}`) : null;
+  }
+  startArt(game: Game): StartArt | null {
+    const a1 = game.level.ways?.a1;
+    return EXITS.on && A1_WAYS.on && a1 ? this.film<StartArt>(`start:${a1.floor}:${a1.startDir}`) : null;
+  }
+  /** The way on's film's last frame played (its jolts kick the screen once each). */
+  private onF = -1;
+  /** The way on as it stands now: shut, a frame of its film (whole: no `under`), or open; where its picture stands; null where there is none, or none made. */
+  private onwardNow(game: Game): { under: Sprite | null; over: Sprite; x: number; y: number; d: number } | null {
+    const L = game.level;
+    const W = L.ways;
+    const on = W?.onward;
+    const a1 = W?.a1;
+    const art = this.onwardArt(game);
+    if (!on || !a1 || !art || !L.explored[Math.floor(on.y) * L.floor.w + Math.floor(on.x)]) return null;
+    const at = onwardAnchor(on, a1.dir, ONWARD[a1.floor]?.back ?? art.back ?? 0);
+    const d = at.x + at.y + 0.6;
+    if (!on.awake) {
+      this.onF = -1;
+      return { under: art.shut.under, over: art.shut.over, ...at, d };
+    }
+    const f = on.warpAt === null ? Infinity : Math.floor((game.time - on.warpAt) * art.film.fps);
+    if (f < art.film.frames.length) {
+      const k = Math.max(0, f);
+      for (let j = this.onF + 1; j <= k; j++) {
+        const n = art.film.jolts.indexOf(j);
+        if (n >= 0) this.kicked.push({ amount: art.film.kicks[n] ?? 4, vol: Math.min(1, 0.4 + (art.film.kicks[n] ?? 4) * 0.06) });
+      }
+      this.onF = k;
+      return { under: null, over: art.film.frames[k], ...at, d };
+    }
+    return { under: art.open.under, over: art.open.over, ...at, d };
+  }
+  /** Is the way on drawn from the art chat's pictures (and not as a waypoint's column of light)? */
+  onwardDrawn(game: Game): boolean {
+    return !!game.level.ways?.a1 && !!this.onwardArt(game);
+  }
+  /** Where the floor's start's picture stands. */
+  private startAt(game: Game): { x: number; y: number } | null {
+    const a1 = game.level.ways?.a1;
+    if (!a1) return null;
+    return startAnchor(game.level.floor.start, a1.startDir, START[a1.floor]?.back ?? 0);
+  }
+
   /** The kicks of the jolts played since this was last asked (main.ts kicks the screen and sounds a blow for each). */
   kicks(): Kick[] {
     const out = this.kicked;
@@ -126,6 +178,14 @@ export class FloorDress {
       if (cv && film && seen(game, cv.spot)) drawAt(g, stage, film.under, cv.spot);
       const mouth = W.mouth ? this.film<MouthWay>(`mouth:${W.mouth.alongX ? 'x' : 'y'}`) : null;
       if (W.mouth && mouth && seen(game, W.mouth)) drawAt(g, stage, mouth.under, W.mouth);
+    }
+    // (EXITS, floors 6 to 10: what of the start and the way on lies with the floor)
+    if (EXITS.on && W?.a1) {
+      const st = this.startArt(game);
+      const sa = st ? this.startAt(game) : null;
+      if (st && sa) g.drawImage(st.under.img, Math.round(wx(stage.cam, sa.x, sa.y)) - st.under.ax, Math.round(wy(stage.cam, sa.x, sa.y)) - st.under.ay, st.under.w, st.under.h);
+      const on = this.onwardNow(game);
+      if (on && on.under) g.drawImage(on.under.img, Math.round(wx(stage.cam, on.x, on.y)) - on.under.ax, Math.round(wy(stage.cam, on.x, on.y)) - on.under.ay, on.under.w, on.under.h);
     }
     const sh = game.level.ways?.shaft;
     if (!sh || !game.level.explored[sh.y * game.level.floor.w + sh.x]) return;
@@ -178,6 +238,25 @@ export class FloorDress {
       const m = L.ways.mouth;
       const mouth = m ? this.film<MouthWay>(`mouth:${m.alongX ? 'x' : 'y'}`) : null;
       if (m && mouth && seen(game, m)) standAt(stage, mouth.over, m);
+    }
+    // (EXITS, floors 6 to 10: the piece he came out of behind the start, and the way on, shut, opening and open; each seen
+    // through while he is behind it)
+    if (EXITS.on && L.ways?.a1) {
+      const st = this.startArt(game);
+      const sa = st ? this.startAt(game) : null;
+      if (st && sa) {
+        const x = Math.round(wx(stage.cam, sa.x, sa.y));
+        const y = Math.round(wy(stage.cam, sa.x, sa.y));
+        const d = sa.x + sa.y + 0.6;
+        stage.stand(d, st.over, x, y, stage.veil(st.over, x, y, d));
+      }
+      const on = this.onwardNow(game);
+      if (on) {
+        const x = Math.round(wx(stage.cam, on.x, on.y));
+        const y = Math.round(wy(stage.cam, on.x, on.y));
+        stage.stand(on.d, on.over, x, y, stage.veil(on.over, x, y, on.d));
+        if (on.over.lights) stage.lit(on.over, x, y);
+      }
     }
     const sh = L.ways?.shaft;
     if (!sh || !L.explored[sh.y * L.floor.w + sh.x]) return;

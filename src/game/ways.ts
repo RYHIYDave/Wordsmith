@@ -213,6 +213,137 @@ export interface Ways {
   barred?: boolean;
   /** (EXITS, the town's gate) Its unbarring: -1, waiting for him to come in sight of it (UNBAR_SEEN); 0 and on, how long since it began (the gate barred until UNBAR_SECS); none: nothing to play. */
   unbar?: number | null;
+  /** EXITS, FLOORS 6 TO 10: the way on and the floor's start as the art chat painted them (`ONWARD`, `layOnward`); none elsewhere. */
+  a1?: OnwardLaid | null;
+}
+
+// =================================================================================================
+// EXITS, FLOORS 6 TO 10: THE WAYS ON AS THE ART CHAT PAINTED THEM (art/act1_ways.ts; his yes in the art chat, 22 Oct 2026,
+// shown films of each from the game and stills of where each floor begins, asked “Are floors 6 to 10's ways on, and where
+// each floor begins, right as shown?”, by 17:41: “Yes, on to 11–15 (Recommended)”; and to the main chat at 17:42, “6-10 are
+// done as well”). Each floor's way on stands at `Ways.onward` (the far end of the boss's ground), leading on the way from
+// where the boss stands toward it (`onwardDir`): shut while the boss lives (its tiles solid, nothing to walk into); as he
+// dies its film plays (`secs`: the quarry's blocks thrown down, the flock bursting from the nest, the slot's plug blasted
+// out, the roots withering, the causeway rising), and then it is open: walking onto its way in (`takes`) takes him on.
+// The floor's start has the piece he came out of standing behind him (`START`). Tiles are counted in the way's own frame
+// (the art chat's README, "Piece by piece, for the rules"): `a` along it (on, away from the boss's ground), `b` across it
+// (+ as `turnOf(d)` turns (0, 1): +y for x+, -y for x-, -x for y+, +x for y-), in whole tiles from the way's tile (or
+// the start's tile, `a` on along the way back).
+
+/** Which way a way on leads, along the grid. */
+export type OnDir = 'x+' | 'x-' | 'y+' | 'y-';
+/** A tile of a way's own frame: a along, b across. */
+export type AB = readonly [number, number];
+const span = (a0: number, a1: number, b0: number, b1: number): AB[] => {
+  const out: AB[] = [];
+  for (let a = a0; a <= a1; a++) for (let b = b0; b <= b1; b++) out.push([a, b]);
+  return out;
+};
+
+/** One floor's way on, for the rules. */
+export interface OnwardShape {
+  /** Its film's length (frames at 30 a second): the way opens at its end. */
+  secs: number;
+  /** How far back toward the boss's ground the picture stands from `Ways.onward` (tiles; its mouth, where he goes in). */
+  back: number;
+  /** Once open, stepping onto one of these takes him on. */
+  takes: readonly AB[];
+  /** Solid from the first (kerbs, posts, fins, trees, the water either side). */
+  solid: readonly AB[];
+  /** Solid from the film's end (what it threw out and left lying). */
+  thrown: readonly AB[];
+}
+/** The ways on of floors 6 to 10 (the art chat's table, mockup/ways at 6226714). */
+export const ONWARD: Readonly<Record<number, OnwardShape>> = {
+  // THE QUARRY'S CUT: the stair's head; the kerbs and the hoist's posts; the bench of rock and its boulders; the cult's blocks thrown out
+  6: { secs: 112 / 30, back: 0, takes: [[0, 0], [1, 0]], solid: [...span(0, 2, -1, -1), ...span(0, 2, 1, 1), ...span(2, 4, -2, 2)], thrown: [[-1, -2], [0, -4], [0, 3], [-1, 1], [1, 2]] },
+  // THE LEDGE'S CHIMNEY, back from the eyrie's drop: the crack; the two driftwood posts at its head
+  7: { secs: 120 / 30, back: 94 / 40, takes: [[-2, 0], [-1, 0], [0, 0]], solid: [[-3, -1], [-3, 1]], thrown: [] },
+  // THE CANYON'S SLOT: the slot; the two fins
+  8: { secs: 124 / 30, back: 0, takes: [[0, 0], [1, 0], [2, 0]], solid: [...span(0, 2, -1, -1), ...span(0, 2, 1, 1)], thrown: [] },
+  // THE PINEWOOD'S TRAIL: the trail; the two sick trees, the wood under their crowns, the two beyond
+  9: { secs: 126 / 30, back: 0, takes: span(0, 3, 0, 0), solid: [...span(0, 3, -1, -1), ...span(0, 3, 1, 1)], thrown: [] },
+  // THE FEN'S CAUSEWAY, risen: the causeway; the fen's water either side of it
+  10: { secs: 130 / 30, back: 0, takes: span(0, 5, 0, 0), solid: [...span(0, 5, -1, -1), ...span(0, 5, 1, 1)], thrown: [] },
+};
+/** Where floors 6 to 10 begin: how far on along the way back the piece he came out of stands, and the tiles it makes solid (from the start's tile). */
+export const START: Readonly<Record<number, { back: number; solid: readonly AB[] }>> = {
+  // the quarry's gate; the stair down the spur; the pillar and its plank stair; the granite boulders; the two sick trees
+  6: { back: 1.8, solid: span(2, 3, -1, 1) },
+  7: { back: 1.5, solid: span(2, 4, -1, 1) },
+  8: { back: 1.5, solid: span(2, 4, -1, 1) },
+  9: { back: 1.5, solid: span(2, 4, -1, 1) },
+  10: { back: 1.5, solid: span(2, 3, -1, 1) },
+};
+
+/** A level's way on and start as laid: the floor (its shapes), the way each leads, and whether the way is open. */
+export interface OnwardLaid {
+  floor: number;
+  dir: OnDir;
+  startDir: OnDir;
+  open: boolean;
+}
+
+/** The way a way on leads, from where the boss stood to where it is: the nearest of the four (art/ways_kit.ts wayDirOf). */
+export function onDirOf(dx: number, dy: number): OnDir {
+  return Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'x+' : 'x-') : dy >= 0 ? 'y+' : 'y-';
+}
+/** A way's own (a along, b across) in the world's x and y (art/ways_kit.ts turnOf). */
+export function turnAB(d: OnDir, a: number, b: number): [number, number] {
+  return d === 'x+' ? [a, b] : d === 'x-' ? [-a, -b] : d === 'y+' ? [-b, a] : [b, -a];
+}
+/** The world's tiles of a way's own, from tile (tx, ty), those on the floor. */
+export function tilesAB(f: { w: number; h: number }, tx: number, ty: number, d: OnDir, list: readonly AB[]): number[] {
+  const out: number[] = [];
+  for (const [a, b] of list) {
+    const [dx, dy] = turnAB(d, a, b);
+    const x = tx + dx;
+    const y = ty + dy;
+    if (x >= 0 && y >= 0 && x < f.w && y < f.h) out.push(y * f.w + x);
+  }
+  return out;
+}
+/** Where a way on's picture stands (its anchor): `back` tiles from `Ways.onward` toward the boss's ground. */
+export function onwardAnchor(o: { x: number; y: number }, d: OnDir, back: number): { x: number; y: number } {
+  const [ux, uy] = turnAB(d, 1, 0);
+  return { x: o.x - ux * back, y: o.y - uy * back };
+}
+/** Where a start's picture stands: `back` tiles on from the start along the way back. */
+export function startAnchor(s: { x: number; y: number }, d: OnDir, back: number): { x: number; y: number } {
+  const [ux, uy] = turnAB(d, 1, 0);
+  return { x: s.x + ux * back, y: s.y + uy * back };
+}
+
+/**
+ * LAY A FLOOR'S WAY ON AND ITS START (floors 6 to 10, EXITS): the way each leads (from the boss's ground), and the tiles
+ * their pieces make solid taken out of what can be walked (`walk`), but never the start's tile, the way's own tile, nor
+ * a tile he goes in by. Returns what was laid, or null for a floor that has none (or no way on).
+ */
+export function layOnward(f: Floor, onward: { x: number; y: number } | null, walk: Uint8Array): OnwardLaid | null {
+  const shape = ONWARD[f.depth];
+  const st = START[f.depth];
+  if (!shape || !st || !onward) return null;
+  const dir = onDirOf(onward.x - f.boss.x, onward.y - f.boss.y);
+  const startDir = onDirOf(f.start.x - f.boss.x, f.start.y - f.boss.y);
+  const ox = Math.floor(onward.x);
+  const oy = Math.floor(onward.y);
+  const sx = Math.floor(f.start.x);
+  const sy = Math.floor(f.start.y);
+  const keep = new Set([...tilesAB(f, ox, oy, dir, shape.takes), oy * f.w + ox, ...tilesAB(f, sx, sy, startDir, span(-1, 1, -1, 1))]);
+  for (const i of [...tilesAB(f, ox, oy, dir, shape.solid), ...tilesAB(f, sx, sy, startDir, st.solid)]) if (!keep.has(i)) walk[i] = 0;
+  return { floor: f.depth, dir, startDir, open: false };
+}
+/** The tiles a way on throws out as it opens (solid from then, but never where someone stands: `taken`). */
+export function thrownTiles(f: { w: number; h: number }, onward: { x: number; y: number }, laid: OnwardLaid): number[] {
+  const shape = ONWARD[laid.floor];
+  return shape ? tilesAB(f, Math.floor(onward.x), Math.floor(onward.y), laid.dir, shape.thrown) : [];
+}
+/** Is (x, y) on one of the tiles of the way on that take him on? */
+export function onTakes(f: { w: number }, onward: { x: number; y: number }, laid: OnwardLaid, x: number, y: number): boolean {
+  const shape = ONWARD[laid.floor];
+  if (!shape) return false;
+  const here = Math.floor(y) * f.w + Math.floor(x);
+  return tilesAB({ w: f.w, h: Number.MAX_SAFE_INTEGER }, Math.floor(onward.x), Math.floor(onward.y), laid.dir, shape.takes).includes(here);
 }
 
 /** Plain floor that a thing may be laid on: floor, not cut, no stair, at the floor's own height. */

@@ -46,8 +46,10 @@ const how = (s: Sprite, f: (r: number, g: number, b: number) => boolean): number
   return n;
 };
 
-test('1. the switch off, and nothing of the game imports either file', () => {
-  assert.equal(A1_WAYS.on, false, 'A1_WAYS is off');
+// (TOLD, the main chat, 22 Oct 2026: A1_WAYS on at his yes, by 17:41, “Yes, on to 11–15 (Recommended)”; only the films and the
+// dress use them, behind EXITS: game/ways.ts ONWARD)
+test('1. the switch on (his yes); only the films and the dress use them, behind EXITS', () => {
+  assert.equal(A1_WAYS.on, true, 'A1_WAYS is on');
   const users: string[] = [];
   for (const f of fs.readdirSync('src', { recursive: true }).map((x: unknown) => String(x).replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev/') || /^art\/(act1_ways|act2_ways|ways_kit)\.ts$/.test(f)) continue;
@@ -61,7 +63,7 @@ test('1. the switch off, and nothing of the game imports either file', () => {
       if (/^art\/(act1_ways|ways_kit)$/.test(parts.join('/'))) users.push(f);
     }
   }
-  assert.equal(users.join(' '), '', 'game files that import them');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/films.ts render/dress.ts', 'game files that import them');
 });
 
 test('2. the ways round: on toward the way from the boss, the nearest of the four; turned and back is itself', () => {

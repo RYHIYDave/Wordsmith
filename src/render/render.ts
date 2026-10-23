@@ -581,7 +581,9 @@ export class Renderer {
       g.drawImage(sp.img, Math.round(wx(cam, x, y)) - sp.ax, Math.round(wy(cam, x, y)) - sp.ay, sp.w, sp.h);
     }
     // (ACT 1: and the way on, once it has woken: a waypoint's own picture, awake: nothing is there before)
-    for (const w of [W.way, W.onward && W.onward.awake ? W.onward : null]) {
+    // (EXITS, floors 6 to 10: where the art chat's way on is drawn, not the column: render/dress.ts)
+    const drawn = this.dress.onwardDrawn(game);
+    for (const w of [W.way, W.onward && W.onward.awake && !drawn ? W.onward : null]) {
       if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) continue;
       const sp = w.awake ? art.way.awake[Math.floor(t * 10) % WAY_FRAMES] : art.way.asleep;
       const x = Math.round(wx(cam, w.x, w.y));
@@ -601,9 +603,10 @@ export class Renderer {
   private folkFrames = new Map<string, Sprite>();
 
   /** THE WAYS: what stands over the level's waypoint: the motes of light while it is awake; the column of a warp, by the level's own time (`now`). */
-  private standWays(L: Game['level'], t: number, now: number): void {
+  private standWays(L: Game['level'], t: number, now: number, game: Game): void {
     // (ACT 1: the way on too, once awake: its column flares as it wakes, as a warp's)
-    for (const w of [L.ways?.way, L.ways?.onward && L.ways.onward.awake ? L.ways.onward : null]) {
+    const drawn = this.dress.onwardDrawn(game);
+    for (const w of [L.ways?.way, L.ways?.onward && L.ways.onward.awake && !drawn ? L.ways.onward : null]) {
       if (!w || !L.explored[Math.floor(w.y) * L.floor.w + Math.floor(w.x)]) continue;
       const art = this.waysOf(L);
       const f = w.warpAt === null ? -1 : Math.floor((now - w.warpAt) * 20);
@@ -1036,7 +1039,8 @@ export class Renderer {
     this.pieces = new FloorPieces(() => this.painter);
     this.stage = {
       cam: this.cam,
-      stand: (d, sp, x, y) => this.stand(d, sp, x, y),
+      stand: (d, sp, x, y, alpha = 1) => this.stand(d, sp, x, y, null, 0, 1, alpha),
+      veil: (sp, x, y, d) => this.seeThrough(sp, x, y, d, this.heroFeet.x, this.heroFeet.y, this.heroD),
       lit: (sp, x, y) => this.propLit.push({ s: sp, x: Math.round(x), y: Math.round(y) }),
       shadow: (g, x, y, r) => this.shadow(g, x, y, r, SHADOW),
     };
@@ -2358,6 +2362,8 @@ export class Renderer {
     const heroY = wy(cam, h.x, h.y);
     // (ACT 1: who may be behind a tall thing this frame: the hero, and the monsters he sees)
     this.heroD = h.x + h.y;
+    this.heroFeet.x = heroX;
+    this.heroFeet.y = heroY;
     this.seenFoes.length = 0;
     if (this.openGround) for (const m of game.monsters) if (m.seen && !m.dead) this.seenFoes.push({ x: wx(cam, m.x, m.y), y: wy(cam, m.x, m.y), d: m.x + m.y });
     // (on a level with ledges: the thing just stood up is hidden by raised ground in front of it)
@@ -2448,7 +2454,7 @@ export class Renderer {
     this.standHazards(game, cam);
     this.standDoors(L, cam, game);
     if (CRYPT.on && CRYPT.marks.level === L) this.standCrypt(L, t);
-    if (L.ways) this.standWays(L, t, game.time);
+    if (L.ways) this.standWays(L, t, game.time, game);
     if (L.ways) this.dress.standing(game, this.stage);
     if (this.dressed) this.pieces.standMoments(game, this.stage);
     // (ACT 2, THE HUSH: its floor's moment around the hero, in depth at its anchor or over every figure, the surge shown over its
@@ -3531,6 +3537,8 @@ export class Renderer {
   }
   private outdoorFrame = 0;
   private heroD = 0;
+  /** (EXITS) Where the hero's feet are on the screen this frame (for what the floors' dressing stands: `stage.veil`). */
+  private heroFeet = { x: 0, y: 0 };
 
   /** (ACT 1) THE FOREST AS A FEW PICTURES (render/tops_cache.ts): its chunks; those drawn as pictures this frame; where the hero stood. */
   readonly topsCache = new TopsCache();

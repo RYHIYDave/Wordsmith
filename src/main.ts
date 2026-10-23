@@ -1811,6 +1811,11 @@ function start(carried: unknown, hot: HotHook | undefined): void {
             painter.film(`town:ways:${gate.spot.alongX ? 'x' : 'y'}`, true, true);
           }
           if (!g.level.town && g.level.floor.depth === 1 && gate) painter.film(`up:1:${gate.spot.alongX ? 'x' : 'y'}`, true, true);
+          // (floors 6 to 10: where it begins, seen as he comes in, before all; its way on, a big film, after the monsters' pictures)
+          if (W.a1) {
+            painter.film(`start:${W.a1.floor}:${W.a1.startDir}`, true, true);
+            painter.film(`onward:${W.a1.floor}:${W.a1.dir}`, true);
+          }
         }
         const look = g.inDungeon && !g.practice ? floorLook(g.depth) : 0;
         if (W && look >= 1 && look <= 4 && W.stairs.length > 0) {
