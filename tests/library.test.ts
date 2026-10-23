@@ -89,6 +89,7 @@ test('in the game only through its own (ACT 2, THE HUSH: render/outdoor.ts); not
     }
     return out.join('/');
   };
+  own.add('art/low_stacks.ts'); // the stacks' rows one block high (mockup/low-stacks): the bookcases' own shelves and light
   for (const f of fs.readdirSync('src', { recursive: true }).map((x) => x.replace(/\\/g, '/'))) {
     if (!f.endsWith('.ts') || f.startsWith('dev') || /^art\/(library)\.ts$/.test(f) || own.has(f)) continue;
     const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';

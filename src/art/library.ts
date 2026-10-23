@@ -140,6 +140,8 @@ export interface LibraryLand {
   floor: Floor;
   /** What a walkable tile is (LB_ZONE); a hall where not said. */
   zone?: (tx: number, ty: number) => number;
+  /** (art/low_stacks.ts, behind LOW_STACKS, off) The stacks' rows, painted low over the floor: under them the floor is their room's, as `zone` says. */
+  rows?: (tx: number, ty: number) => boolean;
 }
 
 /**
@@ -724,7 +726,7 @@ export function greatLibraryLook(land: LibraryLand): TerrainLook {
   const f = land.floor;
   const inMap = (tx: number, ty: number): boolean => tx >= 0 && ty >= 0 && tx < f.w && ty < f.h;
   const isFloor = (tx: number, ty: number): boolean => inMap(tx, ty) && f.tiles[ty * f.w + tx] === T_FLOOR;
-  const zoneAt = (tx: number, ty: number): number => (land.zone && isFloor(tx, ty) ? land.zone(tx, ty) : LB_ZONE.Hall);
+  const zoneAt = (tx: number, ty: number): number => (land.zone && (isFloor(tx, ty) || (!!land.rows && inMap(tx, ty) && land.rows(tx, ty))) ? land.zone(tx, ty) : LB_ZONE.Hall);
   // how far each place is from a wall
   const wall = distanceTo(f.w, f.h, (tx, ty) => !isFloor(tx, ty));
   // how far each place is from the edge of its own room (the Reading Room's carpet keeps to the room, off its doorways)
@@ -780,3 +782,5 @@ export function greatLibraryLook(land: LibraryLand): TerrainLook {
 
 // (the art chat's ways on, art/act2_ways.ts, paint a stretch of these walls round a way through them: exported for it, nothing changed)
 export { wallFace as libraryWallFace, topAt as libraryTopAt };
+// (FLOOR 15'S STACKS ONE BLOCK HIGH, art/low_stacks.ts, behind LOW_STACKS, off: the bookcases' own shelves, bays and light, for its low rows; nothing else here changed)
+export { shelves as libraryShelves, bayAt as libraryBayAt, rowOf as libraryRowOf };
