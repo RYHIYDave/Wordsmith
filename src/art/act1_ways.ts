@@ -1329,10 +1329,12 @@ const SH = 440;
 const SAX = 280;
 const SAY = 300;
 /** A start piece as the game stands it, from one rig: nothing under, all of it standing. */
-function startOf(R: Rig): StartArt {
+function startOf(R: Rig, back: number): StartArt {
   R.S.seams();
-  return { under: new Px(R.w, R.h).sprite(R.ax, R.ay, GRAIN), over: compose(null, [R.S.p]).sprite(R.ax, R.ay, GRAIN) };
+  return { under: new Px(R.w, R.h).sprite(R.ax, R.ay, GRAIN), over: compose(null, [R.S.p]).sprite(R.ax, R.ay, GRAIN), back };
 }
+/** How far back each start piece stands (StartArt.back): its nearest stone, post or root half a tile past the ring of tiles round him. */
+export const START_BACK = { quarry: 1.8, ledge: 1.5, canyon: 1.5, pinewood: 1.5, fen: 1.5 } as const;
 const startCache = new Map<string, StartArt>();
 function cachedStart(key: string, make: () => StartArt): StartArt {
   const had = startCache.get(key);
@@ -1386,7 +1388,7 @@ export function quarryStart(d: WayDir): StartArt {
     // the cairn
     const cairn: ReadonlyArray<readonly [number, number, number, number]> = [[0, 0, 6, 9], [4, -3, 16, 7], [-2, 2, 25, 6], [1, 0, 33, 5]];
     cairn.forEach(([a, b, z, r], i) => R.box([A - 20 + a, -(half + 20) + b, z], XYZ, [r, r * 0.9, r * 0.7], (f, u, v, n) => (i === 3 && f === 1 && Math.abs(u - 0.5) < 0.1 ? CHALK : dressed(STONE, n, f, u, v, 1310 + i, false, 4)), 120 + i));
-    return startOf(R);
+    return startOf(R, START_BACK.quarry);
   });
 }
 
@@ -1424,7 +1426,7 @@ export function ledgeStart(d: WayDir): StartArt {
     // a rope rail on iron stakes down its side
     for (let k = 0; k < 4; k++) R.rod([A0 + 4 + k * 24, -cut + 2, (k * 24 / 7.6 + 1) * (H / n)], [A0 + 4 + k * 24, -cut + 2, (k * 24 / 7.6 + 1) * (H / n) + 14], 0.9, 0.8, IRON, 130 + k);
     ropeIn(R.S, R.P(A0 + 4, -cut + 2, H / n + 14), R.P(A0 + 76, -cut + 2, (76 / 7.6 + 1) * (H / n) + 14), 3, 135, 0.6);
-    return startOf(R);
+    return startOf(R, START_BACK.ledge);
   });
 }
 
@@ -1454,7 +1456,7 @@ export function canyonStart(d: WayDir): StartArt {
     }
     // the last of them at the foot, on stones
     R.egg([A0 - 8, 0, 3], XYZ, [8, 7, 4], facetOf(RROCK, 0.05), 140);
-    return startOf(R);
+    return startOf(R, START_BACK.canyon);
   });
 }
 
@@ -1484,7 +1486,7 @@ export function pinewoodStart(d: WayDir): StartArt {
     }
     // the cleft's shadow between them
     R.quad([[50, -12, 0.6], [100, -10, 0.6], [100, 10, 0.6], [50, 12, 0.6]], (u) => mix(WATER[1], HOLE_DARK, 0.4 + u * 0.5), 91);
-    return startOf(R);
+    return startOf(R, START_BACK.pinewood);
   });
 }
 
@@ -1504,6 +1506,6 @@ export function fenStart(d: WayDir): StartArt {
       const b0 = (i % 2 ? 1 : -1) * (18 + hash(i, 2, 1342) * 14);
       R.rod([a0, b0, 1], [a0 + 18, b0 + (i % 2 ? 1 : -1) * 10, 3], 2.2, 1, DEADROOT, 130 + i);
     }
-    return startOf(R);
+    return startOf(R, START_BACK.fen);
   });
 }

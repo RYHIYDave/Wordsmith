@@ -426,4 +426,7 @@ export interface WayArt {
 export interface StartArt {
   under: Sprite;
   over: Sprite;
+  /** How far back from the floor's start (tiles, on along the way back, away from the floor) the picture stands, so that
+   * the tile he arrives on and every tile round it stay clear (0: at the start). */
+  back?: number;
 }
