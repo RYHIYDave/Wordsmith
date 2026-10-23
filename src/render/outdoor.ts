@@ -36,6 +36,11 @@ import { nearOf, paintWithStanding, standingBits } from '../art/standing';
 import { LOW_STACKS, lowStacksFloor, paintLowStacks, rowsOf, withLowStacks } from '../art/low_stacks';
 import type { Rows } from '../art/low_stacks';
 import type { StandingPiece } from '../art/standing';
+// (THE RIVERS FLOWING, the art chat's, behind FLOW: art/flowing.ts; floor 13's and floor 9's water laid over the ground, moving)
+import { FLOW, FLOW_FPS, FLOW_FRAMES, lineAlong, lineSide, paintFlow } from '../art/flowing';
+import type { FlowLayer } from '../art/flowing';
+import { millraceFlow } from '../art/millrace';
+import { pinewoodFlow } from '../art/pinewood';
 import { wallsThick } from './act2_walls';
 import type { WallBit } from './act2_walls';
 import { blobDist, laneDist, segDist } from '../game/act1_layout';
@@ -79,6 +84,38 @@ function gridField(w: number, h: number, k: number, fn: (x: number, y: number) =
     const d = v[(j + 1) * W + i + 1];
     return a + (b - a) * u + (c - a) * t + (a - b - c + d) * u * t;
   };
+}
+
+/**
+ * THE RIVERS FLOWING (the art chat's, art/flowing.ts, behind FLOW; his yes there by 15:23, 23 Oct 2026, “Yes, send to main
+ * (Recommended)”): each floor's moving water, as its look was made (landLook), here and in the painter's worker alike.
+ */
+const FLOWS = new WeakMap<Land, FlowLayer>();
+/** The floor's flowing water, or null (none, or FLOW off). */
+export function flowOfLand(land: Land): FlowLayer | null {
+  return FLOW.on ? FLOWS.get(land) ?? null : null;
+}
+/** A piece of the ground's water, frame by frame round its FLOW_FRAMES: each frame cut to `box` (the part of the piece with water: picture pixels from its corner); null where it has none. */
+export interface FlowBits<T> {
+  box: { x: number; y: number; w: number; h: number };
+  frames: T[];
+}
+/** Paint a piece's water, every frame of it, each cut to the part with water (`cut` makes a picture of a frame's rgba within the box). */
+export function paintFlows<T>(layer: FlowLayer, x0: number, y0: number, cut: (rgba: Uint8ClampedArray, box: { x: number; y: number; w: number; h: number }) => T): FlowBits<T> | null {
+  const frames: T[] = [];
+  let box: FlowBits<T>['box'] | null = null;
+  for (let f = 0; f < FLOW_FRAMES; f++) {
+    const fp = paintFlow(layer, x0, y0, PIECE, PIECE, f);
+    if (!fp.box) return null;
+    // (every frame cut to the first one's box, grown to hold each: the water lies in the same place, only its look moves)
+    if (!box) box = { ...fp.box };
+    frames.push(cut(fp.rgba, box));
+  }
+  return box ? { box, frames } : null;
+}
+/** Which of the water's frames shows at the game's time `t`. */
+export function flowFrame(t: number): number {
+  return ((Math.floor(t * FLOW_FPS) % FLOW_FRAMES) + FLOW_FRAMES) % FLOW_FRAMES;
 }
 
 /** How far along the main way (0 at the start, 1 at the boss) the nearest point of it to world (x, y) is. */
@@ -195,13 +232,20 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
       const race = land.race;
       const tracks = land.tracks ?? [];
       const yards = land.yards ?? [];
-      return millraceLook({
+      const ml = {
         river: river ? gridField(W, H, 4, (x, y) => laneDist({ pts: river, w: 0 }, x, y)) : undefined,
         race: race ? gridField(W, H, 4, (x, y) => laneDist({ pts: race, w: 0 }, x, y)) : undefined,
         raceFlow: race ? flowOf(race) : undefined,
         track: tracks.length ? gridField(W, H, 4, (x, y) => tracks.reduce((d, t) => Math.min(d, laneDist({ pts: t, w: 0 }, x, y)), Infinity)) : undefined,
-        yard: yards.length ? (x, y) => yards.some(([x0, y0, x1, y1]) => x >= x0 && y >= y0 && x < x1 && y < y1) : undefined,
-      });
+        yard: yards.length ? (x: number, y: number) => yards.some(([x0, y0, x1, y1]) => x >= x0 && y >= y0 && x < x1 && y < y1) : undefined,
+        // (FLOW: how far along the river and the race, and which side of them, for the water carried along them)
+        riverAlong: river && FLOW.on ? gridField(W, H, 4, lineAlong(river)) : undefined,
+        raceAlong: race && FLOW.on ? gridField(W, H, 4, lineAlong(race)) : undefined,
+        riverSide: river && FLOW.on ? gridField(W, H, 4, lineSide(river)) : undefined,
+        raceSide: race && FLOW.on ? gridField(W, H, 4, lineSide(race)) : undefined,
+      };
+      if (FLOW.on) FLOWS.set(land, millraceFlow(ml));
+      return millraceLook(ml);
     }
     case 'housequiet':
       return houseOfQuietLook({ floor, zone: zoneOf(land, W, H) });
@@ -233,7 +277,15 @@ export function landLook(land: Land, floor: Floor, fresh = false): TerrainLook {
       const prog = progressOf(land.way);
       const from = land.sickFrom ?? 0.62;
       const sick = gridField(W, H, 2, (x, y) => Math.max(0, Math.min(1, (prog(x, y) - from) / (1 - from))));
-      return pinewoodLook({ river: riverD, trail: trailD, sick });
+      const pl = {
+        river: riverD,
+        trail: trailD,
+        sick,
+        riverAlong: river && FLOW.on ? gridField(W, H, 4, lineAlong(river)) : undefined,
+        riverSide: river && FLOW.on ? gridField(W, H, 4, lineSide(river)) : undefined,
+      };
+      if (FLOW.on && riverD) FLOWS.set(land, pinewoodFlow(pl));
+      return pinewoodLook(pl);
     }
     case 'fen': {
       const boards = new Uint8Array(W * H);
@@ -273,6 +325,8 @@ interface Piece {
   cvs: HTMLCanvasElement | ImageBitmap;
   /** (ACT 2, behind ACT2_WALLS) What of the walls toward the eye stands whole over it, in bits (render/act2_walls.ts). */
   walls?: WallBit[];
+  /** (FLOW) Its water, moving: each frame round, cut to where the water is (null or missing: none). */
+  flow?: FlowBits<HTMLCanvasElement | ImageBitmap> | null;
   /** The frame it was last near the screen. */
   seen: number;
 }
@@ -328,10 +382,16 @@ export class OutdoorGround {
   private floor: Floor | null = null;
   /** (LOW_STACKS) The library's rows of shelves, stood low with the walls; null elsewhere. */
   private rows: Rows | null = null;
+  /** (FLOW) The game's time, for which of the water's frames shows (render.ts sets it each frame). */
+  flowT = 0;
   /** Let go of a piece's picture, whoever painted it. */
   private drop(p: Piece): void {
     if ('close' in p.cvs) p.cvs.close();
     else p.cvs.width = 0;
+    for (const f of p.flow?.frames ?? []) {
+      if ('close' in f) f.close();
+      else f.width = 0;
+    }
     for (const b of p.walls ?? []) {
       if ('close' in b.img) b.img.close();
       else b.img.width = 0;
@@ -383,19 +443,20 @@ export class OutdoorGround {
     const land = this.land;
     this.gid = w && floor && land ? w.groundBegin(floor, land, this.thick) : 0;
     if (w && this.gid) {
-      w.toGround = (id, i, j, bmp, ms, walls) => {
+      w.toGround = (id, i, j, bmp, ms, walls, flow) => {
         const key = this.key(i, j);
         this.asked.delete(key);
         this.waiting.delete(key);
         if (id !== this.gid || this.pieces.has(key)) {
           bmp.close();
           for (const b of walls ?? []) b.img.close();
+          for (const f of flow?.frames ?? []) f.close();
           return;
         }
         this.stats.pieces++;
         this.stats.ms += ms;
         this.stats.worker++;
-        this.pieces.set(key, { cvs: bmp, seen: this.frame, walls: walls?.length ? walls : undefined });
+        this.pieces.set(key, { cvs: bmp, seen: this.frame, walls: walls?.length ? walls : undefined, flow: flow ?? null });
       };
     }
   }
@@ -436,6 +497,17 @@ export class OutdoorGround {
     const c = cvs.getContext('2d') as CanvasRenderingContext2D;
     c.putImageData(new ImageData(p.rgba, PIECE, PIECE), 0, 0);
     const piece: Piece = { cvs, seen: this.frame };
+    // (FLOW: its water, moving, every frame of it, cut to where the water is)
+    const layer = this.land ? flowOfLand(this.land) : null;
+    if (layer) {
+      piece.flow = paintFlows(layer, i * PIECE, j * PIECE, (rgba, box) => {
+        const fc = document.createElement('canvas');
+        fc.width = box.w;
+        fc.height = box.h;
+        (fc.getContext('2d') as CanvasRenderingContext2D).putImageData(new ImageData(rgba, PIECE, PIECE), -box.x, -box.y, box.x, box.y, box.w, box.h);
+        return fc;
+      });
+    }
     // (ACT 2, behind ACT2_WALLS: the walls toward the eye standing whole over it, in bits)
     if (both) {
       const bits = standingBits(withLow(this.rows, both.standing, i * PIECE, j * PIECE, PIECE, PIECE));
@@ -523,6 +595,9 @@ export class OutdoorGround {
         if (p) {
           p.seen = this.frame;
           g.drawImage(p.cvs, sx, sy, PIECE / GRAIN, PIECE / GRAIN);
+          // (FLOW: its water, moving, over it and under all that stands on it)
+          const fl = p.flow;
+          if (fl) g.drawImage(fl.frames[flowFrame(this.flowT)], sx + fl.box.x / GRAIN, sy + fl.box.y / GRAIN, fl.box.w / GRAIN, fl.box.h / GRAIN);
         } else if (!this.land.sky) {
           g.fillStyle = this.deep;
           g.fillRect(sx, sy, PIECE / GRAIN, PIECE / GRAIN);

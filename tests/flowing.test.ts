@@ -61,6 +61,10 @@ const differ = (a: FlowPiece, b: FlowPiece): number => {
   return n;
 };
 
+// (TOLD BY THE MAIN CHAT, 23 Oct 2026: hooked in behind the switch, on his yes in the art chat by 15:23, “Yes, send to main
+// (Recommended)”: the ground's looks and the water laid over its pieces (render/outdoor.ts, on the page and in the painter's
+// worker), the wheel's frames (render/act1_pieces.ts), and the page's handle holds the switch for pictures. Still off until he
+// says to put it live.)
 test('1. the switch off; nothing of the game imports it but the art that paints the water and the wheel', () => {
   assert.equal(OFF, false, 'FLOW is off');
   const users: string[] = [];
@@ -76,7 +80,7 @@ test('1. the switch off; nothing of the game imports it but the art that paints 
       if (parts.join('/') === 'art/flowing') users.push(f);
     }
   }
-  assert.equal([...new Set(users)].sort().join(' '), 'art/floor13.ts art/millrace.ts art/pinewood.ts', 'the files that import it');
+  assert.equal([...new Set(users)].sort().join(' '), 'art/floor13.ts art/millrace.ts art/pinewood.ts main.ts render/act1_pieces.ts render/outdoor.ts render/painter.ts', 'the files that import it');
   for (const f of ['art/floor13.ts', 'art/millrace.ts', 'art/pinewood.ts']) {
     const src = fs.readFileSync(path.join('src', f), 'utf8') as string;
     assert.ok(/FLOW\.on \?/.test(src), `${f}: what it paints new, only on the switch`);

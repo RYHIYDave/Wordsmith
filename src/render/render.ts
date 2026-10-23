@@ -2226,6 +2226,8 @@ export class Renderer {
     if (this.act1Dressed) this.act1.stepMoments(game, this.painter);
     if (land && !hallNow) {
       const fresh = this.outdoor.begin(land, f);
+      // (FLOW: the rivers' water moves with the game's own time, paused and slowed with it)
+      this.outdoor.flowT = game.time;
       this.outdoor.draw(g, cam, W, H, fresh);
       if (this.act1Dressed) this.act1.floorTiles(g, this.floorAt, W, H);
     }

@@ -39,7 +39,9 @@ import type { ClassId } from '../game/types';
 import type { Terrain } from '../art/terrain';
 import type { Land } from '../game/act1_layout';
 import type { Floor } from '../game/types';
-import { PIECE, gateWardLand, landTerrain, lowRowsOf, withLow } from './outdoor';
+import { PIECE, flowOfLand, gateWardLand, landTerrain, lowRowsOf, paintFlows, withLow } from './outdoor';
+import type { FlowBits } from './outdoor';
+import type { FlowLayer } from '../art/flowing';
 import type { Rows } from '../art/low_stacks';
 // (ACT 2, THE GATE WARD: the shells of its houses walked into, painted here: render/act2_houses.ts)
 import { shellMaker } from './act2_houses';
@@ -104,7 +106,7 @@ type Tell =
   | { t: 'ready' }
   | { t: 'frames'; figure: MonsterFigure; list: Given[]; left: number }
   | { t: 'film'; key: string; film: unknown; ms: number }
-  | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number; walls?: WallBitMsg[] }
+  | { t: 'piece'; id: number; i: number; j: number; bmp: ImageBitmap; ms: number; walls?: WallBitMsg[]; flow?: FlowBits<ImageBitmap> | null }
   // (ACT 2, THE GATE WARD: one house's shell, or `n` -1: they could not be painted)
   | { t: 'shell'; id: number; n: number; x0: number; y0: number; w: number; h: number; bmp: ImageBitmap | null; ms: number; last: boolean }
   | { t: 'heroFrames'; cls: ClassId; place: 'town' | 'dungeon'; list: Given[]; left: number }
@@ -161,7 +163,7 @@ export class Painter {
   private groundLane: Lane | null = null;
   private ground = 0;
   private grounds = 0;
-  toGround: ((id: number, i: number, j: number, bmp: ImageBitmap, ms: number, walls?: WallBitMsg[]) => void) | null = null;
+  toGround: ((id: number, i: number, j: number, bmp: ImageBitmap, ms: number, walls?: WallBitMsg[], flow?: FlowBits<ImageBitmap> | null) => void) | null = null;
   /** (ACT 2, THE GATE WARD) Who is told of each house's shell as it comes (render/act2_houses.ts), for the floor of that number. */
   private toShells: { id: number; took: (n: number, sh: { x0: number; y0: number; w: number; h: number }, bmp: ImageBitmap | null) => void } | null = null;
   /**
@@ -402,10 +404,11 @@ export class Painter {
     }
     if (m.t === 'piece') {
       lane.open = Math.max(0, lane.open - 1);
-      if (this.groundLane === lane && m.id === this.ground && this.toGround) this.toGround(m.id, m.i, m.j, m.bmp, m.ms, m.walls);
+      if (this.groundLane === lane && m.id === this.ground && this.toGround) this.toGround(m.id, m.i, m.j, m.bmp, m.ms, m.walls, m.flow);
       else {
         m.bmp.close();
         for (const b of m.walls ?? []) b.img.close();
+        for (const f of m.flow?.frames ?? []) f.close();
       }
       return;
     }
@@ -542,6 +545,8 @@ export class Painter {
     // (a piece of ground, or a hero's frames, are the ground worker's: none comes to these lanes)
     if (m.t === 'piece') {
       m.bmp.close();
+      for (const b of m.walls ?? []) b.img.close();
+      for (const f of m.flow?.frames ?? []) f.close();
       return;
     }
     if (m.t === 'heroFrames') {
@@ -751,7 +756,7 @@ export function paintWorkerMain(): void {
   let seq = 0;
   let going = false;
   /** ACT 1: the floor whose ground this worker paints, and its terrain (and which floor it is: ACT 2, for the Gate Ward's shells). */
-  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null; rows: Rows | null } | null = null;
+  let ground: { id: number; T: Terrain; key: string; stands: ((x: number, y: number) => boolean) | null; near: ((x: number, y: number) => boolean) | null; rows: Rows | null; flow: FlowLayer | null } | null = null;
   const keyOf = (land: Land, floor: Floor): string => `${land.kind}:${land.depth}:${land.seed}:${floor.w}x${floor.h}`;
 
   /** (ACT 2, THE GATE WARD) A floor's houses' shells, a house a step, each handed over as it is painted (render/act2_houses.ts). */
@@ -885,7 +890,15 @@ export function paintWorkerMain(): void {
               walls.push({ d: b.d, x0: b.x0, y0: b.y0, w: b.w, h: b.h, img: bc.transferToImageBitmap() });
             }
           }
-          scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0, walls }, [bmp, ...walls.map((b) => b.img)]);
+          // (FLOW: its water, moving, every frame of it, cut to where the water is)
+          const flow = ground.flow
+            ? paintFlows(ground.flow, a.i * PIECE, a.j * PIECE, (rgba, box) => {
+                const fc = new OffscreenCanvas(box.w, box.h);
+                (fc.getContext('2d') as unknown as CanvasRenderingContext2D).putImageData(new ImageData(rgba, PIECE, PIECE), -box.x, -box.y, box.x, box.y, box.w, box.h);
+                return fc.transferToImageBitmap();
+              })
+            : null;
+          scope.postMessage({ t: 'piece', id: a.id, i: a.i, j: a.j, bmp, ms: performance.now() - t0, walls, flow }, [bmp, ...walls.map((b) => b.img), ...(flow ? flow.frames : [])]);
         }
       } else if (job.ask.t === 'hero') {
         job.run ??= hero(job.ask.cls, job.ask.place);
@@ -922,7 +935,7 @@ export function paintWorkerMain(): void {
         const T = landTerrain(ask.land, ask.floor, ask.walls > 0);
         const near = ask.walls > 0 ? nearOf(T, ask.walls) : null;
         const stands = near ? (x: number, y: number): boolean => !T.ground(x, y) && !T.drop(x, y) && near(x, y) : null;
-        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near, rows: lowRowsOf(ask.land, ask.floor) };
+        ground = { id: ask.id, T, key: keyOf(ask.land, ask.floor), stands, near, rows: lowRowsOf(ask.land, ask.floor), flow: flowOfLand(ask.land) };
       } catch (err) {
         scope.postMessage({ t: 'fail', what: 'ground', why: err instanceof Error ? err.message : String(err) });
       }

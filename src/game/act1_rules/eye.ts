@@ -188,15 +188,26 @@ export const PHASES = { at: [0.7, 0.35] as const };
  */
 export const EYE_BARS = { on: true };
 /** His bursts: how many at once in each phase, the first under the hero, the rest `near` to `far` tiles round him, `apart` seconds after each other; each harms within `reach` of its middle. */
-export const BURSTS = { n: [4, 4, 5] as const, near: 1.3, far: 2.6, apart: 0.12, reach: 0.95 };
+export const BURSTS = { n: [6, 7, 8] as const, near: 1.0, far: 2.8, apart: 0.1, reach: 0.95 };
 /** His call: `n` of the siege's bolts, the first `from` seconds in and `apart` after each other; the first on the hero, `nearHim` more round him (1.6 to 3 tiles), the rest anywhere on the ring. */
-export const CALL = { n: 6, from: 0.35, apart: 0.15, nearHim: 2 };
+export const CALL = { n: 9, from: 0.35, apart: 0.12, nearHim: 3 };
 /** His eyespawn: no more than `most` of them alive (and in their eggs) at once. */
 export const SPAWN = { most: 3 };
 /** He sees what is in sight of this far out from his middle, toward it (tiles: past his pool's rim and the cut stones round it). */
 export const SIGHT_FROM = 3.6;
 /** In phase 3 he is quicker to move again, by this much (his waits between moves, and his moves' cooldowns). */
-export const BLAZING = { hurry: 0.75 };
+export const BLAZING = { hurry: 0.65 };
+/**
+ * FASTER AND MORE. The owner, 23 Oct 2026, 15:21 (Pacific): “The level 10 boss needs some work.  He stutters in and out of view
+ * and his attacks aren’t really hard to dodge at all”; asked how his attacks should get harder to dodge, by 15:27: “Faster and
+ * more (Recommended)”, offered as: shorter warning before arms burst up, more arms at once, less rest between moves, some aimed
+ * where you're heading. So (each number above as it was, in the notes of the version that made it so): his arms' cracks glow
+ * `warn` seconds before they burst, not the art's 0.8 (their picture begins that much in: the art's own film, its first moments
+ * not shown); his basic blow where you are heading (under you if you stand), and sooner again; his bursts six, seven and eight, the second
+ * where you are heading; his rests and his moves' cooldowns shorter; his call nine bolts, one where you are heading; blazing,
+ * quicker still. Where you are heading: where you will be `lead` seconds on at the pace you are going (at most `most` tiles on).
+ */
+export const FASTER = { warn: 0.55, lead: 0.5, most: 2.2 };
 
 /**
  * HIS ACTS: his basic blow first and his biggest last; `forced` ones are his phases' changes. `clip`: the picture each
@@ -204,17 +215,17 @@ export const BLAZING = { hurry: 0.75 };
  */
 export const EYE_ACTS: readonly ActDef[] = [
   // (his basic blow: an arm bursting up where you stand, the cracks glowing first)
-  { id: 'eye:burst', clip: 'burst', long: 1.0, hit: EYE_BURST.burst, dmg: 0.75, cooldown: 0, first: 0, after: 1.0, near: 0, far: 12 },
+  { id: 'eye:burst', clip: 'burst', long: 1.0, hit: EYE_BURST.burst, dmg: 0.75, cooldown: 0, first: 0, after: 0.5, near: 0, far: 12 },
   // (several at once round you, the first under you)
-  { id: 'eye:bursts', clip: 'burst', long: 1.4, hit: EYE_BURST.burst, dmg: 0.85, cooldown: 7, first: 3, after: 0.7, near: 0, far: 12 },
+  { id: 'eye:bursts', clip: 'burst', long: 1.4, hit: EYE_BURST.burst, dmg: 0.85, cooldown: 4.5, first: 2.5, after: 0.4, near: 0, far: 12 },
   // (phase 1: an arm out of the pool, cocked back, whipped round 170 degrees low over the ring: step out of its reach, or leap or roll over it)
-  { id: 'eye:sweep', clip: 'sweepUnder', long: EYE_SWEEP.long, hit: EYE_SWEEP.sweep[0], dmg: 1.2, cooldown: 8, first: 4, after: 0.5, near: 0, far: EYE_SWEEP.reach + 0.6 },
+  { id: 'eye:sweep', clip: 'sweepUnder', long: EYE_SWEEP.long, hit: EYE_SWEEP.sweep[0], dmg: 1.2, cooldown: 5.5, first: 3, after: 0.3, near: 0, far: EYE_SWEEP.reach + 0.6 },
   // (phase 2: eggs spewed out over the ring, each hatching an eyespawn)
-  { id: 'eye:spew', clip: 'spew', long: EYE_SPEW.long, hit: EYE_SPEW.eggs[0], dmg: 0, cooldown: 15, first: 3, after: 0.5, near: 0, far: 13 },
+  { id: 'eye:spew', clip: 'spew', long: EYE_SPEW.long, hit: EYE_SPEW.eggs[0], dmg: 0, cooldown: 12, first: 3, after: 0.3, near: 0, far: 13 },
   // (phase 2: he heaves his bulk up and crashes down, a wave rolling out over the whole ring: leap or roll through it)
-  { id: 'eye:splash', clip: 'splash', long: EYE_SPLASH.long, hit: EYE_SPLASH.crash, dmg: 1.3, cooldown: 11, first: 7, after: 0.5, near: 0, far: 9.5 },
+  { id: 'eye:splash', clip: 'splash', long: EYE_SPLASH.long, hit: EYE_SPLASH.crash, dmg: 1.3, cooldown: 7.5, first: 5, after: 0.3, near: 0, far: 9.5 },
   // (phase 3: he calls the siege down: its bolts rain on the ring, one where you stand)
-  { id: 'eye:call', clip: 'call', long: EYE_CALL.long, hit: CALL.from + EYE_BOLT.strike, dmg: 1.0, cooldown: 8, first: 2, after: 0.5, near: 0, far: 14 },
+  { id: 'eye:call', clip: 'call', long: EYE_CALL.long, hit: CALL.from + EYE_BOLT.strike, dmg: 1.0, cooldown: 5.5, first: 2, after: 0.3, near: 0, far: 14 },
   // (his phases' changes)
   { id: 'eye:surface', clip: 'surface', long: EYE_SURFACE.long, hit: EYE_SURFACE.boil, dmg: 0.5, cooldown: 0, first: 0, after: 0.8, near: 0, far: 0, forced: true },
   { id: 'eye:empower', clip: 'empower', long: EYE_EMPOWER.long, hit: EYE_EMPOWER.burst, dmg: 0.6, cooldown: 0, first: 0, after: 0.8, near: 0, far: 0, forced: true },
@@ -239,6 +250,14 @@ interface EyeState {
   ws: number;
   hx: number;
   hy: number;
+  /** (FASTER) The hero where he was last step, and his pace since (tiles a second, smoothed). */
+  lx?: number;
+  ly?: number;
+  vx?: number;
+  vy?: number;
+  /** (FASTER) Where he was heading as his bursts began (the second of them goes there). */
+  ax?: number;
+  ay?: number;
 }
 function st(m: Monster): EyeState {
   if (!m.a1 || m.a1.hx === undefined) m.a1 = { ph: 0, base: 0, c0: 0, el: 0, pc: 0, ws: 0, hx: m.x, hy: m.y };
@@ -301,7 +320,25 @@ function spotOn(R: BossRules, m: Monster, near: { x: number; y: number } | null,
 
 /** An arm bursting up at (x, y), its cracks glowing from now (`k`: which of the act's, for its picture's turn). */
 function burstAt(R: BossRules, m: Monster, a: ActDef, x: number, y: number, k: number): void {
-  R.peril(m, 'act1', x, y, { a1: 'eye:burst', hit: EYE_BURST.burst, dur: EYE_BURST.long, dmg: R.g.rollMonsterDmg(m) * a.dmg, c: (m.act ? m.act.n * 7 + k : k) % 4 });
+  // (FASTER: begun `warn` before its burst, its picture that far into the art's film)
+  R.peril(m, 'act1', x, y, { a1: 'eye:burst', t: EYE_BURST.burst - FASTER.warn, hit: EYE_BURST.burst, dur: EYE_BURST.long, dmg: R.g.rollMonsterDmg(m) * a.dmg, c: (m.act ? m.act.n * 7 + k : k) % 4 });
+}
+
+/** (FASTER) Where the hero is heading: where he will be FASTER.lead seconds on at his pace, on the ring and out of the pool; null if he is standing still or it is nowhere he could stand. */
+function ahead(R: BossRules, m: Monster): { x: number; y: number } | null {
+  const g = R.g;
+  const h = g.hero;
+  const s = st(m);
+  const vx = s.vx ?? 0;
+  const vy = s.vy ?? 0;
+  const v = Math.hypot(vx, vy);
+  if (v < 0.8) return null;
+  const k = Math.min(FASTER.lead, FASTER.most / v);
+  const x = h.x + vx * k;
+  const y = h.y + vy * k;
+  if (!g.free(g.level.walk, x, y, 0.3)) return null;
+  if (Math.hypot((x - m.x) / EYE_ARENA.pool.rx, (y - m.y) / EYE_ARENA.pool.ry) < 1.08) return null;
+  return { x, y };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -381,6 +418,20 @@ export const RULES: Act1Rules = {
     // (held in the middle of his pool, facing the camera: nothing moves him)
     m.x = s.hx;
     m.y = s.hy;
+    // (FASTER: the hero's pace, for where he is heading)
+    {
+      const h = g.hero;
+      if (s.lx !== undefined && s.ly !== undefined && dt > 0) {
+        const ix = (h.x - s.lx) / dt;
+        const iy = (h.y - s.ly) / dt;
+        // (a leap or a warp is not a pace)
+        const ok = Math.hypot(ix, iy) < 12;
+        s.vx = (s.vx ?? 0) * 0.75 + (ok ? ix : 0) * 0.25;
+        s.vy = (s.vy ?? 0) * 0.75 + (ok ? iy : 0) * 0.25;
+      }
+      s.lx = h.x;
+      s.ly = h.y;
+    }
     if (m.state === 'act' && m.act) {
       // (an act: BossRules runs its clock; his arms' acts keep how far his stand has run under them)
       s.el = m.animT;
@@ -444,8 +495,16 @@ export const RULES: Act1Rules = {
       // where it lies is a point of the ring before the hero, his middle and the sweep's aim kept with it)
       const p = onAim(aimOf(h.x - m.x, h.y - m.y), Math.min(EYE_SWEEP.reach, Math.max(rimOn(act.a) + 0.8, Math.hypot(h.x - m.x, h.y - m.y))));
       R.peril(m, 'act1', m.x + p.x, m.y + p.y, { a1: 'eye:reach', hit: 1e9, dur: EYE_SWEEP.sweep[0] + 0.05, a: act.a, b: m.x, c: m.y });
-    } else if (a.id === 'eye:burst') burstAt(R, m, a, h.x, h.y, 0);
-    else if (a.id === 'eye:bursts') burstAt(R, m, a, h.x, h.y, 0);
+    } else if (a.id === 'eye:burst') {
+      // (FASTER: where he is heading, or under him if he stands)
+      const p = ahead(R, m) ?? { x: h.x, y: h.y };
+      burstAt(R, m, a, p.x, p.y, 0);
+    } else if (a.id === 'eye:bursts') {
+      burstAt(R, m, a, h.x, h.y, 0);
+      const p = ahead(R, m);
+      s.ax = p ? p.x : undefined;
+      s.ay = p ? p.y : undefined;
+    }
     else if (a.id === 'eye:surface') {
       g.sfx('bossRoar', 0.6);
       g.msg(`${m.name} rises from the pool`, MSG.foe);
@@ -473,7 +532,9 @@ export const RULES: Act1Rules = {
         const n = BURSTS.n[Math.min(2, s.ph)];
         for (let k = 1; k < n; k++) {
           if (!at(BURSTS.apart * k)) continue;
-          const p = spotOn(R, m, { x: act.x, y: act.y }, BURSTS.near, BURSTS.far) ?? spotOn(R, m, null, 0, 0);
+          // (FASTER: the second where he was heading as it began)
+          const led = k === 1 && s.ax !== undefined && s.ay !== undefined ? { x: s.ax, y: s.ay } : null;
+          const p = led ?? spotOn(R, m, { x: act.x, y: act.y }, BURSTS.near, BURSTS.far) ?? spotOn(R, m, null, 0, 0);
           if (p) burstAt(R, m, a, p.x, p.y, k);
         }
         break;
@@ -548,7 +609,8 @@ export const RULES: Act1Rules = {
         if (at(EYE_CALL.raise)) g.sfx('thunder', 0.5);
         for (let k = 0; k < CALL.n; k++) {
           if (!at(CALL.from + CALL.apart * k)) continue;
-          const p = k === 0 ? { x: h.x, y: h.y } : k <= CALL.nearHim ? spotOn(R, m, { x: h.x, y: h.y }, 1.6, 3.0) : spotOn(R, m, null, 0, 0);
+          // (FASTER: the second where he is heading)
+          const p = k === 0 ? { x: h.x, y: h.y } : k === 1 ? ahead(R, m) ?? spotOn(R, m, { x: h.x, y: h.y }, 1.6, 3.0) : k <= CALL.nearHim ? spotOn(R, m, { x: h.x, y: h.y }, 1.6, 3.0) : spotOn(R, m, null, 0, 0);
           if (!p) continue;
           R.peril(m, 'act1', p.x, p.y, { a1: 'eye:bolt', hit: EYE_BOLT.strike, dur: EYE_BOLT.long, dmg: g.rollMonsterDmg(m) * a.dmg, el: 'lightning', c: (act.n + k) % 3 });
         }

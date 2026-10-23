@@ -88,6 +88,7 @@ import { guideAttack, guideBanner } from './ui/guide';
 import { WORD_HALF, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
 import { EXIT_LABELS, exitLabels } from './game/exit_labels';
 import { LOW_STACKS } from './art/low_stacks';
+import { FLOW } from './art/flowing';
 import { AISLES_CLEAR } from './game/act2/library';
 import { LEAP_WATER } from './game/water';
 import type { Side } from './ui/inventory';
@@ -2118,6 +2119,8 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     exitLabels: EXIT_LABELS,
     /** (FLOOR 15'S STACKS A BLOCK HIGH, behind LOW_STACKS in art/low_stacks.ts) Its switch: set it before the floor is made. */
     lowStacks: LOW_STACKS,
+    /** (THE RIVERS FLOWING and the livelier wheel, behind FLOW in art/flowing.ts) Its switch: set it before the floor is made. */
+    flow: FLOW,
     /** (THE STACKS' AISLES CLEAR, behind AISLES_CLEAR in game/act2/library.ts) Its switch: set it before the floor is made. */
     aislesClear: AISLES_CLEAR,
     /** (THE SWIPE OVER WATER, behind LEAP_WATER in game/water.ts) Its switch: set it before the floor is made. */

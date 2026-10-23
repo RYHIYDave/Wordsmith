@@ -25,7 +25,7 @@ import { TILE3 } from '../src/art/new_mobs3';
 import { act1Rules } from '../src/game/act1_rules/index';
 import {
   BURSTS, CALL, EYE_ACTS, EYE_ARENA, EYE_BOLT, EYE_BURST, EYE_CALL, EYE_EGG, EYE_EMPOWER, EYE_MOVES, EYE_OBELISKS, EYE_SPEW, EYE_SPLASH, EYE_STAND,
-  EYE_BARS, EYE_SURFACE, EYE_SWEEP, EYE_TILE, PHASES, RULES, SPAWN, aimOf, eggLanding, eyeClip, eyeClock, eyePhase, figureAct, moveOf, obeliskAt, onAim, rimOn, ringOn, sweepAngle, waveAt,
+  EYE_BARS, EYE_SURFACE, EYE_SWEEP, EYE_TILE, FASTER, PHASES, RULES, SPAWN, aimOf, eggLanding, eyeClip, eyeClock, eyePhase, figureAct, moveOf, obeliskAt, onAim, rimOn, ringOn, sweepAngle, waveAt,
 } from '../src/game/act1_rules/eye';
 import { bossKind } from '../src/game/bosses';
 import { MONSTERS, PACK_BY_SIZE, TUNE, sizeOf } from '../src/game/defs';
@@ -350,7 +350,8 @@ test('6. his arms burst up where the hero stood, when their cracks have glowed, 
     keep(m, 'eye:burst');
     const s = watch(g, m, 2);
     assert.equal(s.hurts.length, 1, 'struck once');
-    near(since(s), EYE_BURST.burst, 2.5 / 60, 'as the arm bursts up');
+    // (FASTER, his pick of 23 Oct: the cracks glow FASTER.warn before the arm bursts)
+    near(since(s), FASTER.warn, 2.5 / 60, 'as the arm bursts up');
     const [lo, hi] = [m.dmgMin * 0.75 * 0.3, m.dmgMax * 0.75 * 1.01];
     assert.ok(s.hurts[0].n >= lo && s.hurts[0].n <= hi, `a blow of his (${s.hurts[0].n})`);
   }
@@ -370,7 +371,7 @@ test('6. his arms burst up where the hero stood, when their cracks have glowed, 
     const s = watch(g, m, 2.5);
     const bursts = g.perils.filter((p) => p.a1 === 'eye:burst');
     assert.ok(s.hurts.length >= 1, 'the one under him strikes him');
-    near(since(s), EYE_BURST.burst, 2.5 / 60, 'as it bursts');
+    near(since(s), FASTER.warn, 2.5 / 60, 'as it bursts');
     void bursts;
   }
   {

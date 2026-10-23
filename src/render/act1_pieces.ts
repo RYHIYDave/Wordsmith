@@ -30,7 +30,7 @@ import { redoubtPieces } from '../art/redoubt';
 import { hushSetPieces } from '../art/act2_set';
 import { gateWardPieces } from '../art/floor11';
 import { undercityPieces } from '../art/floor12';
-import { millracePieces } from '../art/floor13';
+import { WHEEL_STEPS, WHEEL_TURN, millracePieces } from '../art/floor13';
 import { houseOfQuietPieces } from '../art/floor14';
 import { greatLibraryPieces } from '../art/floor15';
 import { hubPieces } from '../art/hub2';
@@ -54,6 +54,8 @@ import type { Kick } from './dress';
 import { wx, wy } from './fx';
 import type { Cam } from './fx';
 import { PIECE } from './outdoor';
+// (THE RIVERS FLOWING and the livelier wheel, the art chat's, behind FLOW)
+import { FLOW } from '../art/flowing';
 import type { Painter } from './painter';
 
 const MAPS = new Map<number, Map<string, Piece>>();
@@ -297,6 +299,13 @@ export class Act1Pieces {
       const beats = Math.floor(u / SPIKE_BEAT);
       const into = Math.max(0, u - beats * SPIKE_BEAT - SPIKE.down);
       turned += (WHEEL_RUSH - 1) * WHEEL_FPS * (beats * (SPIKE.warn + SPIKE.up) + into);
+    }
+    // (FLOW, the art chat's livelier wheel, art/floor13.ts: WHEEL_STEPS frames to a paddle, four rounds of them: along +y forward
+    // and back, along +x the same; when its frames were made with FLOW on)
+    if (FLOW.on && fr.length >= 4 * WHEEL_STEPS) {
+      const st = Math.floor((turned * WHEEL_TURN) / WHEEL_FPS);
+      const kk = ((st % WHEEL_STEPS) + WHEEL_STEPS) % WHEEL_STEPS;
+      return fr[(p.variant & 4 ? 2 : 0) * WHEEL_STEPS + (p.variant & 8 ? WHEEL_STEPS : 0) + kk] ?? fr[0];
     }
     const k = ((Math.floor(turned) % 4) + 4) % 4;
     return fr[(p.variant & 4) + (p.variant & 8 ? 3 - k : k)] ?? fr[0];
