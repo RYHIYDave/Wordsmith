@@ -3,7 +3,7 @@
 // counts, no duplicated items.
 //   STEPS=600 SEED=1 node tools/playtest.mjs --scenario tools/scenarios/monkey.mjs --out shots/monkey [--touch ...]
 //   GUIDE=1 ...   the same, thrown at a new player's first dungeon (its prompts, the body, the first word)
-import { makeHands, giveStone } from './lib.mjs';
+import { makeHands, giveStone, downTheStairs } from './lib.mjs';
 
 export default async function (page, snap) {
   const steps = Number(process.env.STEPS || 500);
@@ -22,6 +22,9 @@ export default async function (page, snap) {
   const begin = (k, sd, g) => page.evaluate(([k, sd, g]) => { const d = window.__dbg; if (g) d.first(k, sd); else { d.run(k, sd); if (d.seasoned) d.seasoned(10); } }, [k, sd, g]);
   await begin(cls, 99, guided);
   await page.waitForTimeout(200);
+  // (THE WAYS BETWEEN THE FLOORS, Version 24.1: a new game begins in town; the monkey is thrown at the first dungeon's prompts,
+  // so it is taken down the town's stairs first, by script)
+  if (guided) await downTheStairs(page);
   const hands = await makeHands(page);
   const check = () => page.evaluate(() => {
     const d = window.__dbg; const g = d.game(); if (!g) return { ok: true, title: true };
@@ -47,7 +50,8 @@ export default async function (page, snap) {
     }
     // the first dungeon's prompts: the step is one the game knows, and a word that was set was set on an attack
     const step = g.guideStep();
-    if (![null, 'move', 'fight', 'body', 'take', 'smith', 'use', 'carry', 'ring'].includes(step)) bad.push(`an unknown prompt: ${step}`);
+    // (the ways between the floors, Version 24.1: in town, the wordsmith's quest and the stairs down)
+    if (![null, 'move', 'fight', 'body', 'take', 'smith', 'use', 'carry', 'ring', 'quest', 'stairs'].includes(step)) bad.push(`an unknown prompt: ${step}`);
     // (0 and 1 the two attacks, 2 the evasive move, which takes words since Version 12.2)
     if (g.guide && g.guide.set && ![0, 1, 2].includes(g.guide.set.skill)) bad.push(`the first word is on attack ${g.guide.set.skill}`);
     if (!g.guide && step) bad.push('a prompt with no prompts running');
@@ -66,7 +70,16 @@ export default async function (page, snap) {
   /** (first dungeon) Up to the body: it is searched, its word falls, and in a quiet moment the inventory opens by itself. */
   const toBody = () => page.evaluate(() => {
         const d = window.__dbg; const g = d.game();
-        if (!g || g.over || g.level.town || d.panels.open !== 'none') return '';
+        if (!g || g.over || d.panels.open !== 'none') return '';
+        // (THE WAYS BETWEEN THE FLOORS, Version 24.1: a new player's new game begins in town: down its stairs first, set on their
+        // top step, the walking learned and the wordsmith's quest given as a player would have)
+        const st = g.level.town && g.level.ways ? g.level.ways.stair : null;
+        if (st && st.open && g.guide && !g.hero.ring && !g.hero.quest) {
+          g.guide.walked = 99; g.questGiven = true;
+          g.hero.x = st.x + 0.5; g.hero.y = st.y + 0.5;
+          return 'walk:stairs';
+        }
+        if (g.level.town) return '';
         const b = g.level.body; const h = g.hero;
         if (!b || b.state !== 0) return '';
         for (const m of g.monsters) if (!m.dead && Math.hypot(m.x - b.x, m.y - b.y) < 12) m.dead = true;
@@ -163,7 +176,16 @@ export default async function (page, snap) {
     let did = '';
     for (const k of Object.keys(tours)) if (!did && !toured[k] && i >= due[k]) { did = await tours[k](); if (did) toured[k] = true; }
     // (a first dungeon is not left before its body has been visited once)
-    if (!did && guided && !bodyDone && i >= 10) { did = await toBody(); if (did) bodyDone = true; }
+    if (!did && guided && !bodyDone && i >= 10) {
+      // (a new player in town with a panel up (a word given him opens the inventory by itself): put away, as Escape would, so
+      // that he can be taken down the stairs)
+      if (await page.evaluate(() => { const d = window.__dbg; const g = d.game(); return !!g && !!g.level.town && d.panels.open !== 'none' && !!g.guide && !g.hero.ring; })) {
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(150);
+      }
+      did = await toBody();
+      if (did === 'walk:body') bodyDone = true;
+    }
     if (!did && guided && bodyDone && !ringDone && i >= 12) { did = await toSmith(); if (did) { ringDone = true; await giveStone(page, hands); } }
     if (did) {
       // (that was this step)
@@ -193,8 +215,9 @@ export default async function (page, snap) {
         d.open(w);
         return 'open:' + w;
       }, what);
-    } else if (r < 0.245) {
-      // the starting screen, with this character saved (CONTINUE is offered there)
+    } else if (r < 0.245 && !(guided && !bodyDone)) {
+      // the starting screen, with this character saved (CONTINUE is offered there). (Not before a new player's first dungeon has
+      // had its body visited: since Version 24.1 his game begins in town, and the starting screen's NEW GAME leaves it there)
       did = await page.evaluate(() => { const d = window.__dbg; const g = d.game(); if (!g || g.over || g.practice) return ''; d.saving(true); d.save(); d.toTitle(); return 'title:saved'; });
     } else if (r < 0.31 && !hands.touch) {
       const k = pick(['KeyE', 'Tab', 'KeyI', 'Escape', 'KeyL', 'Enter', 'Digit1', 'KeyQ', 'Space', 'KeyW', 'KeyD']);

@@ -4,7 +4,8 @@
 //     - Escape calls it off, and the cards are as they were;
 //     - a second press anywhere lets them go at once;
 //     - left alone, the run begins when they have made ready and gone, in the first dungeon,
-//       and the hero says a line of their own.
+//       and the hero says a line of their own;
+//     - with the ways between the floors (Version 24.1, game/ways.ts EXITS), in town, where there is nothing to say it about.
 //   With the first heroes (a page opened with #heroes=old), whose art has no picture of making
 //   ready: a card pressed begins the run at once, as it did up to Version 15.
 //   node tools/playtest.mjs --scenario tools/scenarios/enter.mjs --out shots/enter/new
@@ -20,6 +21,10 @@ export default async function (page, snap) {
   const inGame = () => page.evaluate(() => { const g = window.__dbg.game(); return g ? { cls: g.hero.cls, town: !!g.level.town, depth: g.depth } : null; });
   const said = () => page.evaluate(() => { const q = window.__dbg.fx.quip; return q ? q.text : null; });
   await page.evaluate(() => { window.__dbg.saving(false); });
+  // (the ways between the floors, Version 24.1: a new game begins in town, and in town the hero has no line to say)
+  const inTown = await page.evaluate(() => !!(window.__dbg.exits && window.__dbg.exits.on));
+  const begins = (g) => g !== null && (inTown ? g.town : !g.town && g.depth === 1);
+  const where = inTown ? 'in town' : 'in the first dungeon';
   await page.waitForTimeout(300);
   await hands.press('button:NEW GAME');
   await page.waitForTimeout(500);
@@ -49,10 +54,11 @@ export default async function (page, snap) {
     await hands.pressAt(20, 20);
     await page.waitForTimeout(120);
     let g = await inGame();
-    hold(g !== null && g.cls === 'mage' && !g.town && g.depth === 1, `a press anywhere: the run begins at once, in the first dungeon (${JSON.stringify(g)})`);
+    hold(begins(g) && g.cls === 'mage', `a press anywhere: the run begins at once, ${where} (${JSON.stringify(g)})`);
     await page.waitForTimeout(1100);
     const line = await said();
-    hold(typeof line === 'string' && line.length > 8, `and she says a line of her own ("${line}")`);
+    if (inTown) hold(line === null, `and in town she says nothing ("${line}")`);
+    else hold(typeof line === 'string' && line.length > 8, `and she says a line of her own ("${line}")`);
     await snap('skipped_in');
     // 3. left alone: it runs its course
     await page.keyboard.press('Escape');
@@ -70,9 +76,10 @@ export default async function (page, snap) {
       await page.waitForTimeout(40);
     }
     g = await inGame();
-    hold(began > 1200 && began < 2600 && g !== null && g.cls === 'warrior', `left alone, the knight makes ready and goes: the run began after ${began} ms (${JSON.stringify(g)})`);
+    hold(began > 1200 && began < 2600 && begins(g) && g.cls === 'warrior', `left alone, the knight makes ready and goes: the run began after ${began} ms, ${where} (${JSON.stringify(g)})`);
     await page.waitForTimeout(1200);
-    hold(typeof (await said()) === 'string', `and he says his line ("${await said()}")`);
+    if (inTown) hold((await said()) === null, `and in town he says nothing ("${await said()}")`);
+    else hold(typeof (await said()) === 'string', `and he says his line ("${await said()}")`);
     await snap('arrived');
   }
   log(await page.evaluate(() => { const g = window.__dbg.game(); return g ? `${g.hero.cls} in ${g.level.town ? 'town' : 'dungeon ' + g.depth}` : 'title'; }), {});

@@ -38,8 +38,13 @@ export default async function (page, snap) {
     const way = (g.level.town ? g.level.stations.find((q) => q.kind === 'gate') : g.level.portal) ?? { x: h.x, y: h.y };
     // (THE WAYS, game/ways.ts, on since Version 20.2: the gate's doorway, walked into)
     const W = g.level.ways; const ds = W && W.gate >= 0 ? g.level.doors[W.gate].spot : null;
-    const door = ds ? (ds.alongX ? scr(ds.a + 1.5, ds.plane - 0.5) : scr(ds.plane - 0.5, ds.a + 1.5)) : null;
-    return { ...base, town: g.level.town, door, x: h.x, y: h.y, life: h.life, maxLife: h.d.maxLife, words: h.words, sockets: h.skills.map((k) => ({ front: k.front, behind: k.behind })), kills: g.kills, proj: g.projectiles.length,
+    // (THE WAYS BETWEEN THE FLOORS, Version 24.1, game/ways.ts EXITS: in town the way to the first floor is the stairs in the hall,
+    // the gate barred until the Fleshmancer is beaten: in the lane of their top step he was set in, `__lane`)
+    const stair = g.level.town && d.exits && d.exits.on && W ? W.stair : null;
+    const lane = window.__lane ?? 0;
+    // (a point down in them, past the top step, so that he is steered on the one way until he is below)
+    const door = stair ? (stair.way === 'x' ? scr(stair.x + 2, stair.y + 0.5 + lane) : scr(stair.x + 0.5 + lane, stair.y + 2)) : ds ? (ds.alongX ? scr(ds.a + 1.5, ds.plane - 0.5) : scr(ds.plane - 0.5, ds.a + 1.5)) : null;
+    return { ...base, town: g.level.town, door, stairs: !!stair, x: h.x, y: h.y, life: h.life, maxLife: h.d.maxLife, words: h.words, sockets: h.skills.map((k) => ({ front: k.front, behind: k.behind })), kills: g.kills, proj: g.projectiles.length,
       skills: h.skills.map((k) => k.r.name), panel: d.panels.open, portal: scr(way.x, way.y), hero: scr(h.x, h.y),
       near: near ? { ...scr(near.x, near.y), dist: Math.hypot(near.x - h.x, near.y - h.y), state: near.state } : null, charges: h.skills.map((k) => k.charges),
       potions: h.potions, pending: h.pending, hint: g.interactHint(), stick: d.input.stick.active, held: d.input.aim.held, fx: h.fx, fy: h.fy, uses: h.skills.map((k) => k.uses) };
@@ -99,6 +104,26 @@ export default async function (page, snap) {
   // 3. steer to the gate with the stick, then tap the prompt that appears (THE WAYS, on since Version
   // 20.2: steer into it; it rises as he comes, and takes him through: there is no prompt)
   if (s.door) {
+    // (the stairs: he is set a tile or so before their top step, in a lane of it that is clear (the stash stands by it), by script;
+    // the steering in is real)
+    const toStairs = s.stairs;
+    if (toStairs) {
+      // (the thumb back to the stick's middle first: still pushed right, it walked him off the stairs' lane while he was set)
+      await move(1, sx, sy);
+      await page.waitForTimeout(150);
+      const set = await page.evaluate(() => {
+        const g = window.__dbg.game(); const st = g.level.ways.stair; const f = (x, y) => g.free(g.level.walk, x, y, 0.45);
+        // (a tile or two before it: the nearest place clear for him in either lane)
+        for (const back of [1.1, 1.6, 2.1]) for (let k = 0; k < st.wide; k++) {
+          const a = st.way === 'x' ? [st.x - back, st.y + 0.5 + k] : [st.x + 0.5 + k, st.y - back];
+          if (f(a[0], a[1])) { g.hero.x = a[0]; g.hero.y = a[1]; window.__lane = k; return { lane: k, x: a[0], y: a[1] }; }
+        }
+        return null;
+      });
+      log('set before the stairs', JSON.stringify(set));
+      await page.waitForTimeout(300);
+      s = await st();
+    }
     for (let i = 0; i < 150 && s.town; i++) {
       s = await st();
       if (!s.town) break;
@@ -110,9 +135,9 @@ export default async function (page, snap) {
     await up(1);
     await page.waitForTimeout(600);
     s = await st();
-    log('steered into the gate: in dungeon', String(!s.town));
+    log(toStairs ? 'steered onto the stairs: in dungeon' : 'steered into the gate: in dungeon', String(!s.town));
     await snap('gate');
-    if (s.town) { bad('the gate did not lead into the dungeon'); return; }
+    if (s.town) { bad(toStairs ? 'the town\'s stairs did not lead into the dungeon' : 'the gate did not lead into the dungeon'); return; }
   } else {
   for (let i = 0; i < 90; i++) {
     s = await st();

@@ -425,6 +425,25 @@ export function onTopStep(s: StairWay, x: number, y: number): boolean {
   return along >= -0.1 && along < 0.95 && across >= 0.05 && across < (s.wide ?? STAIR_WIDE) - 0.05;
 }
 
+/**
+ * The floor as an errand walks it (a touch on a service, the waypoint, a body: main.ts): an open stairwell's top step is no
+ * way to anything but the stairs themselves (an errand to (tx, ty) on it). (EXITS: the town's stairs open toward the stash beside
+ * them, and a touch on the stash from beyond them sent him over their top step and down to floor 1.) Its tiles, as many across
+ * as the step is wide.
+ */
+export function errandWalk(L: { walk: Uint8Array; floor: Floor; ways: Ways | null }, tx: number, ty: number): Uint8Array {
+  const st = L.ways?.stair;
+  if (!st || !st.open || onTopStep(st, tx, ty)) return L.walk;
+  const out = L.walk.slice();
+  const across = Math.ceil(st.wide ?? STAIR_WIDE);
+  for (let j = 0; j < across; j++) {
+    const x = st.way === 'x' ? st.x : st.x + j;
+    const y = st.way === 'x' ? st.y + j : st.y;
+    if (x >= 0 && y >= 0 && x < L.floor.w && y < L.floor.h) out[y * L.floor.w + x] = 0;
+  }
+  return out;
+}
+
 /** The middle of the stairwell's top step: where whoever stood on its opening as it opened is put, and where a touch on it sends the hero. */
 export function topStep(s: StairWay): { x: number; y: number } {
   const wide = s.wide ?? STAIR_WIDE;

@@ -1,6 +1,8 @@
 // A new player's first dungeon, played from the starting screen with real input, the way a person
 // would: a mouse and keyboard on a PC, fingers on a phone (run with --touch, sideways or upright).
 // NEW GAME, a class card, and straight into dungeon 1, which teaches by prompts (the guide).
+// (THE WAYS BETWEEN THE FLOORS, Version 24.1: a new game begins in town; walking is learned there, then the wordsmith's
+// quest, then the stairs down to dungeon 1, where the rest goes on as before.)
 //
 // THE FIRST LEVELS (game/defs.ts, FIRST_LEVELS; the game's own since Version 19.5, on the owner's
 // yes of 8 Oct 2026, 23:06): the hero starts with the quick attack alone; the first pack is a
@@ -297,6 +299,73 @@ export default async function (page, snap) {
   await press(`class:${cls}`);
   await page.waitForTimeout(700);
   s = await st();
+  // ---- THE WAYS BETWEEN THE FLOORS (Version 24.1, game/ways.ts EXITS): a new game begins in town: walking there, then the
+  // wordsmith's quest, then the stairs down to the first dungeon. Set down beside the wordsmith and before the stairs by script;
+  // the walk, the press on him and the walk onto the stairs are real ------------------------------------------------------
+  const townFirst = !s.title && s.town && (await page.evaluate(() => !!(window.__dbg.exits && window.__dbg.exits.on)));
+  if (townFirst) {
+    log('0 a new game, in town (the ways between the floors, 24.1)', `the prompt ${s.step}`);
+    if (!s.guide) await fail('a new player in town should have the prompts');
+    if (s.step !== 'move') await fail(`the first prompt in town should be "move": it is ${s.step}`);
+    await snap('01b_town');
+    for (let i = 0; i < 6 && s.step === 'move'; i++) {
+      await page.evaluate((i) => {
+        const g = window.__dbg.game(); const h = g.hero; const walk = g.level.walk;
+        const clear = (x, y) => { for (let t = 0; t <= 1; t += 0.08) if (!g.free(walk, h.x + (x - h.x) * t, h.y + (y - h.y) * t, 0.45)) return false; return true; };
+        const found = [];
+        for (const r of [5, 4, 3.2]) for (let k = 0; k < 16; k++) {
+          const a = (k / 16) * Math.PI * 2; const x = h.x + Math.cos(a) * r; const y = h.y + Math.sin(a) * r;
+          if (clear(x, y)) found.push({ x, y });
+        }
+        window.__goal = found.length ? found[(i * 5) % found.length] : { x: h.x + 3, y: h.y };
+      }, i);
+      s = await walk((q) => q.goal, (q) => q.step !== 'move', 3500);
+    }
+    log('  walked in town', `${s.guide ? s.guide.walked : '?'} tiles (prompt now: ${s.step})`);
+    if (s.step !== 'quest') await fail(`having walked in town, the prompt should be "quest" (the wordsmith): it is ${s.step}`);
+    await snap('01c_quest');
+    // (beside the wordsmith, by script; a press on him, or E, is real)
+    await page.evaluate(() => {
+      const g = window.__dbg.game(); const L = g.level; const h = g.hero;
+      const q = L.stations.find((k) => k.kind === 'wordsmith');
+      for (const r of [1, 1.3, 1.6]) for (let k = 0; k < 16; k++) {
+        const a = Math.PI / 2 + (k / 16) * Math.PI * 2; const x = q.x + Math.cos(a) * r; const y = q.y + Math.sin(a) * r;
+        if (g.free(L.walk, x, y, 0.45)) { h.x = x; h.y = y; return; }
+      }
+    });
+    await page.waitForTimeout(500);
+    s = await st();
+    if (touch) { if (s.smith) await hands.pressAt(s.smith.x, s.smith.y - 8); } else await page.keyboard.press('KeyE');
+    s = (await wait((q) => q.step === 'stairs', 5000)) ?? (await st());
+    log('  the wordsmith pressed: the quest', `the prompt ${s.step}`);
+    if (s.step !== 'stairs') await fail(`the wordsmith pressed, the prompt should be "stairs": it is ${s.step}`);
+    await page.waitForTimeout(600);
+    await snap('01d_stairs');
+    // (a tile and a half before the stairs' top step, by script; the walk onto it is real)
+    const top = await page.evaluate(() => {
+      const g = window.__dbg.game(); const st = g.level.ways && g.level.ways.stair; const h = g.hero;
+      if (!st) return null;
+      // (the top step is its first row of tiles; he is set a tile before it, in whichever of its lanes is clear: the stash
+      // stands by the stairs)
+      for (let k = 0; k < (st.wide || 2); k++) {
+        // (the goal past the top step, down in the stairs, so that he is steered on the one way until he is below: a goal on
+        // the step itself, overshot, turned the keys about as he went down, and held on the first floor they took him back up)
+        const t = st.way === 'x' ? { x: st.x - 1.1, y: st.y + 0.5 + k, gx: st.x + 2, gy: st.y + 0.5 + k } : { x: st.x + 0.5 + k, y: st.y - 1.1, gx: st.x + 0.5 + k, gy: st.y + 2 };
+        if (!g.free(g.level.walk, t.x, t.y, 0.45)) continue;
+        h.x = t.x; h.y = t.y;
+        window.__goal = { x: t.gx, y: t.gy };
+        return t;
+      }
+      return null;
+    });
+    if (!top) { await fail('the town has no stairs'); return; }
+    await page.waitForTimeout(300);
+    s = await walk((q) => q.goal, (q) => !q.town, 6000);
+    s = (await wait((q) => !q.town && q.depth === 1, 6000)) ?? (await st());
+    log('  down the stairs', `town ${s.town}, depth ${s.depth}; the prompt ${s.step}`);
+    await page.waitForTimeout(800);
+    s = await st();
+  }
   if (s.title || s.town || s.depth !== 1 || !s.guide) { await fail(`NEW GAME did not start in the first dungeon with its prompts: ${JSON.stringify({ title: s.title, town: s.town, depth: s.depth, guide: !!s.guide })}`); return; }
   const fl = await page.evaluate(() => !!(window.__dbg.firstLevelsOn && window.__dbg.firstLevelsOn()));
   log('THE FIRST LEVELS (Version 19.5)', fl ? 'on, as the game has them' : 'OFF: the lesson as it was before');
@@ -326,7 +395,8 @@ export default async function (page, snap) {
   const t0 = Date.now();
   log('  the dungeon\'s seed', String(await page.evaluate(() => window.__dbg.game().seed)));
   log('1 in the first dungeon, the first prompt', s.step);
-  if (s.step !== 'move') await fail(`the first prompt should be "move": it is ${s.step}`);
+  // (begun in town, he has walked there: nothing to say here until the first pack)
+  if (s.step !== (townFirst ? null : 'move')) await fail(`the first prompt should be ${townFirst ? 'none (he walked in town)' : '"move"'}: it is ${s.step}`);
   if (s.held || s.front.some((f) => f.length)) await fail('a new character should start with no word');
   if (fl) {
     // tap alone at level 1; the others not shown until they open (his answers, 22:21); the ring dark
@@ -869,7 +939,7 @@ export default async function (page, snap) {
   // no "take" step either if a monster gave the word up in the thick of the fight and it was
   // picked up there: the fight's prompt was up, and the word's never came. Version 15.0's
   // regression met that: a mage, seed 738615569, on the narrow layout.)
-  const order = fl ? ORDER_FL : early ? ORDER.filter((x) => x !== 'body' && (x !== 'take' || steps.includes('take'))) : ORDER;
+  const order = fl && townFirst ? ['move', 'quest', 'stairs', ...ORDER_FL.slice(1)] : fl ? ORDER_FL : early ? ORDER.filter((x) => x !== 'body' && (x !== 'take' || steps.includes('take'))) : ORDER;
   let k = 0;
   for (const x of steps) if (x === order[k]) k++;
   if (k < order.length) await fail(`the steps should run ${order.join(' > ')}: they were ${s.log}`);

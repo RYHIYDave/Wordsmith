@@ -7,7 +7,7 @@
 // the game as it was (the prompt over the name), for pictures.
 //   node tools/build_to.mjs dist/card.html
 //   node tools/playtest.mjs --file dist/card.html --touch --size 844x390 --dpr 3 --scenario tools/scenarios/floorcard_first.mjs --out shots/card/after
-import { log } from './lib.mjs';
+import { log, downTheStairs } from './lib.mjs';
 
 export default async function (page, snap) {
   const fail = async (msg) => { console.log('  !! ' + msg); await page.evaluate((m) => console.error(m), 'floorcard: ' + msg); };
@@ -21,6 +21,24 @@ export default async function (page, snap) {
     d.first(c, 5);
     d.god = true;
   }, [on, cls]);
+  // (THE WAYS BETWEEN THE FLOORS, Version 24.1, game/ways.ts EXITS: a new game begins in town, where no floor's name is shown:
+  // there the walking prompt comes at once. With FIGHT, down the town's stairs (by script) to the first floor, its name, and the
+  // fight prompt waiting through it, timed from his coming in)
+  const inTown = await page.evaluate(() => window.__dbg.game().level.town);
+  if (inTown && !fight) {
+    await page.waitForTimeout(700);
+    const s = await page.evaluate(() => ({ step: window.__dbg.game().guideStep(), banner: window.__dbg.ui.marks.has('banner') }));
+    log('in town at 0.7 s', `prompt due: ${s.step}; shown: ${s.banner}`);
+    await snap('town_t0700');
+    if (s.step !== 'move' || !s.banner) await fail('a new game in town: the walking prompt should be shown at once (there is no floor\'s name there)');
+    return;
+  }
+  let since = 0;
+  if (inTown) {
+    if (!(await downTheStairs(page))) { await fail('the town\'s stairs did not take him down to the first floor'); return; }
+    // (downTheStairs comes back 0.7 s after he came in)
+    since = 750;
+  }
   if (fight) {
     await page.evaluate(() => {
       const g = window.__dbg.game();
@@ -45,7 +63,7 @@ export default async function (page, snap) {
       g.updateVision(1);
     });
   }
-  const t0 = Date.now();
+  const t0 = Date.now() - since;
   for (const at of [700, 1700, 2700, 3900, 5200]) {
     const wait = at - (Date.now() - t0);
     if (wait > 0) await page.waitForTimeout(wait);

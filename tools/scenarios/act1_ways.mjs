@@ -36,6 +36,9 @@ export default async function (page, snap) {
     });
     await page.waitForTimeout(5500);
     await until(() => window.__dbg.game().level.town, 40000);
+    // (EXITS, Version 24.1: the cage comes up into the town's corner with him in it, and he does nothing until it has opened, in
+    // the game's own time, which runs slow while the page paints: waited for)
+    await until(() => { const W = window.__dbg.game().level.ways; return !W || !W.shaft || W.shaft.state === 'still'; }, 30000);
     await page.waitForTimeout(1000);
     const town = await page.evaluate(() => { const g = window.__dbg.game(); const w = g.level.ways.way; g.hero.x = w.x; g.hero.y = w.y; return { town: g.level.town, wayDepth: g.wayDepth, hint: null }; });
     await page.waitForTimeout(400);
@@ -69,7 +72,16 @@ export default async function (page, snap) {
   log('met', JSON.stringify(met));
   if (!met.met) log('!! he was not met coming into his ground');
   await snap('a_intro');
-  await page.evaluate(() => { const g = window.__dbg.game(); g.bossReady(); g.kill(g.boss); });
+  // (every boss of the floor: floor 13's are two since Version 23.6, the Scraper and the Quill, and its way wakes with the last)
+  await page.evaluate(() => {
+    const g = window.__dbg.game();
+    for (let k = 0; k < 6; k++) {
+      const b = g.boss ?? g.monsters.find((m) => m.boss && !m.dead);
+      if (!b) break;
+      g.bossReady();
+      g.kill(g.boss ?? b);
+    }
+  });
   await page.waitForTimeout(1200);
   const on = await page.evaluate(() => window.__dbg.game().level.ways.onward);
   log('onward', JSON.stringify(on));
@@ -81,7 +93,9 @@ export default async function (page, snap) {
   await page.waitForTimeout(1600);
   // (through the curtain: the next floor, or from the tenth, home)
   let after = null;
-  for (let i = 0; i < 12; i++) {
+  // (EXITS, Version 24.1: the way opens at its film's end, in the game's own time, which runs slow while the page paints that
+  // film: given time)
+  for (let i = 0; i < 80; i++) {
     after = await page.evaluate(() => { const g = window.__dbg.game(); return { depth: g.depth, town: g.level.town, cleared: g.cleared, wayDepth: g.wayDepth }; });
     if (home ? after.town : after.depth === depth + 1) break;
     await page.waitForTimeout(500);
