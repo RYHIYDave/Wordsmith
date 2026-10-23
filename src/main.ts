@@ -86,6 +86,7 @@ import { drawHud, drawMap } from './ui/hud';
 import type { HudIn, HudOut } from './ui/hud';
 import { guideAttack, guideBanner } from './ui/guide';
 import { WORD_HALF, WORD_ROOM, drawInventory, gameRect, newInvUi, resetInvUi } from './ui/inventory';
+import { EXIT_LABELS, exitLabels } from './game/exit_labels';
 import type { Side } from './ui/inventory';
 import { drawLexicon, lexiconSide, newLexUi } from './ui/lexicon';
 import { ENTER_OUT, drawDeath, drawLevelUp, drawPause, drawTitle, enterLength, newPanels, newTitleUi, wakeLine } from './ui/panels';
@@ -2109,6 +2110,10 @@ function start(carried: unknown, hot: HotHook | undefined): void {
     wordRoom: WORD_ROOM,
     /** (EVERY WORD ON THE OTHER HALF, behind WORD_HALF in ui/inventory.ts) Its switch. */
     wordHalf: WORD_HALF,
+    /** (THE EXITS' NAMES, behind EXIT_LABELS in game/exit_labels.ts) Its switch. */
+    exitLabels: EXIT_LABELS,
+    /** The names the level's open exits carry (game/exit_labels.ts). */
+    exitNames: () => (game ? exitLabels(game.level).map((e) => e.text) : []),
     /** (THE WALL BESIDE A DOOR, a mock-up behind DOOR_WALLS, render/walls.ts) Its switch. */
     doorWalls: (on: boolean, near = false) => {
       DOOR_WALLS.on = on;

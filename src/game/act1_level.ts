@@ -11,12 +11,15 @@ import { dressAct1 } from './act1_dress';
 import { finish } from './level';
 import type { Level } from './state';
 import { EXITS, layOnward, placeWay } from './ways';
+import { LEAP_WATER, markWater } from './water';
 
 export function makeAct1Level(depth: number, seed: number): Level {
   // (ACT 2, THE HUSH: floors 11 to 15 by map-makers of their own, game/act2/)
   const { floor, land } = act2Floor(depth) ? generateAct2(depth, seed) : generateAct1(depth, seed);
   const level = finish(floor, false, null);
   level.land = land;
+  // (LEAP_WATER: the rivers and the mill race flat water, seen across and leapt over: game/water.ts)
+  if (LEAP_WATER.on) markWater(level, land);
   const solidAt = new Uint8Array(floor.w * floor.h);
   for (const p of level.props) if (p.solid) solidAt[p.ty * floor.w + p.tx] = 1;
   // (EXITS, floors 6 to 10: the way on and the start as the art chat painted them, their pieces' tiles solid, before the

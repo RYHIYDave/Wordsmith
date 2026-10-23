@@ -68,6 +68,7 @@ import { BossFx } from './bossfx';
 import { FloorDress } from './dress';
 import type { Kick } from './dress';
 import { FloorPieces } from './pieces';
+import { EXIT_LABELS, exitLabels } from '../game/exit_labels';
 import type { Stage } from './dress';
 import { floorLook, lookWays } from '../art/floors';
 import { OutdoorGround, PIECE as GROUND_PIECE, gateWardLand } from './outdoor';
@@ -2477,6 +2478,14 @@ export class Renderer {
       const goal = this.goal === st.kind;
       const hop = goal ? Math.round(Math.abs(Math.sin(t * 9)) * 2) : 0;
       this.labels.push({ x: wx(cam, st.x, st.y), y: wy(cam, st.x, st.y) - lift - hop, text: STATION_NAME[st.kind], color: goal ? P.gd4 : near ? P.white : P.tl5 });
+    }
+    // (EXIT_LABELS: a floor's way out, once its boss has fallen and it has opened, carries its name as they do: game/exit_labels.ts)
+    if (EXIT_LABELS.on) {
+      for (const e of exitLabels(L)) {
+        if (!L.explored[Math.floor(e.y) * f.w + Math.floor(e.x)]) continue;
+        const near = Math.hypot(e.x - h.x, e.y - h.y) < 3;
+        this.labels.push({ x: wx(cam, e.x, e.y), y: wy(cam, e.x, e.y) - e.lift, text: e.text, color: near ? P.white : P.tl5 });
+      }
     }
 
     for (const dr of game.drops) {

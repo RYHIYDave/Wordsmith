@@ -970,6 +970,8 @@ export interface Level {
    * rules of height. null on a level that is all of one height and has no pit: nothing is asked.
    */
   step: Uint8Array | null;
+  /** (LEAP_WATER, game/water.ts) 1 where a river's or a race's water is: seen across, and leapt over by the swipe moves; none where a floor has none. */
+  water?: Uint8Array;
   /** 1 where a wall tile is drawn cut down low because floor lies behind it. */
   low: Uint8Array;
   explored: Uint8Array;

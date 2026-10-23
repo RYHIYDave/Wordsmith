@@ -4212,7 +4212,8 @@ export class Game {
     // ledge or a pit would stop short goes OVER it, a dive, to the farthest place in its range where
     // the hero can stand. (A wall still stops it, and so does a pillar or a barrel.)
     let over = false;
-    if (this.level.step) {
+    // (LEAP_WATER: and over a river's water, game/water.ts)
+    if (this.level.step || this.level.water) {
       const far = this.overPoint(dx, dy, rollRange);
       if (far && Math.hypot(far.x - h.x, far.y - h.y) > Math.hypot(end.x - h.x, end.y - h.y) + 0.3) {
         end.x = far.x;
