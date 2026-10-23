@@ -76,7 +76,16 @@ export default async function (page, snap) {
       g.hero.x = on.x - u[0] * 3.5; g.hero.y = on.y - u[1] * 3.5;
       g.hero.fx = u[0]; g.hero.fy = u[1];
     });
+    await page.evaluate(() => { window.__dbg.slowmo = 0; });
     log('way film', await waitFilm(`onward:${depth}:${st.dir}`, 240));
+    await page.evaluate(() => { window.__dbg.slowmo = 1; });
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const W = g.level.ways;
+      const on = W.onward;
+      const u = { 'x+': [1, 0], 'x-': [-1, 0], 'y+': [0, 1], 'y-': [0, -1] }[W.a1.dir];
+      g.hero.x = on.x - u[0] * 3.5; g.hero.y = on.y - u[1] * 3.5;
+    });
     await page.waitForTimeout(500);
     await quiet();
     await snap(`f${depth}_shut`);
@@ -89,7 +98,8 @@ export default async function (page, snap) {
       for (let k = 0; k < 6 && boss && !W.onward.awake; k++) {
         boss.x = g.hero.x - u[0] * 2.5; boss.y = g.hero.y - u[1] * 2.5;
         g.bossReady();
-        g.damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
+        if (g.boss) g.kill(g.boss);
+        else if (!boss.dead) g.damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
       }
     });
     // (a boss whose death comes in stages: struck again as each comes)
@@ -99,7 +109,7 @@ export default async function (page, snap) {
         const g = window.__dbg.game();
         const W = g.level.ways;
         const boss = g.monsters.find((m) => m.boss && !m.dead);
-        if (boss && !W.onward.awake) { g.bossReady(); g.damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1); }
+        if (boss && !W.onward.awake) { g.bossReady(); if (g.boss) g.kill(g.boss); else g.damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1); }
       });
     }
     log('awake', JSON.stringify(await state()));
@@ -115,7 +125,9 @@ export default async function (page, snap) {
       await snap(`f${depth}_opening`);
     }
     await page.waitForTimeout(4500);
-    log('open', JSON.stringify(await state()));
+    const opened = await state();
+    log('open', JSON.stringify(opened));
+    if (!opened.a1 || !opened.a1.open) log(`!! floor ${depth}: the way on not open after its film`);
     await quiet();
     await snap(`f${depth}_open`);
     // ---- WALKED INTO: ON ----
@@ -129,6 +141,8 @@ export default async function (page, snap) {
       if (s.depth !== depth || s.town) break;
       await page.waitForTimeout(250);
     }
-    log('on', JSON.stringify(await state()));
+    const after = await state();
+    log('on', JSON.stringify(after));
+    if (after.depth === depth && !after.town) log(`!! floor ${depth}: its way in did not take him on`);
   }
 }

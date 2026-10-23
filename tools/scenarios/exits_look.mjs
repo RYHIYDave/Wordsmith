@@ -48,7 +48,9 @@ export default async function (page, snap) {
     g.hero.x = st.x + 0.5; g.hero.y = st.y + (st.wide ?? 1.25) / 2;
   });
   await page.waitForTimeout(2500);
-  log('floor 1', JSON.stringify(await state()));
+  const one = await state();
+  log('floor 1', JSON.stringify(one));
+  if (one.town || one.depth !== 1) log('!! the town\'s stairs did not take him down to floor 1');
   await settle(2500);
   await snap('floor1_start');
   // ---- FLOOR 4: the wall standing; the boss dead, it gives way; the cave open ----
@@ -98,7 +100,9 @@ export default async function (page, snap) {
     await snap('floor4_giving');
   }
   await page.waitForTimeout(4500);
-  log('cave after', JSON.stringify(await state()));
+  const cv = await state();
+  log('cave after', JSON.stringify(cv));
+  if (cv.cave !== 'open') log('!! floor 4\'s wall did not give way to the cave');
   await settle(300);
   await snap('floor4_open');
   // ---- FLOOR 5: in at the cave's other end ----
@@ -109,7 +113,9 @@ export default async function (page, snap) {
     g.hero.x = m.x; g.hero.y = m.y;
   });
   await page.waitForTimeout(3000);
-  log('floor 5', JSON.stringify(await state()));
+  const five = await state();
+  log('floor 5', JSON.stringify(five));
+  if (five.depth !== 5 || five.town) log('!! the cave did not take him down to floor 5');
   await settle(4000);
   await snap('floor5_mouth');
   // ---- THE RIDE UP: the boss dead, the cage down, into it, up into the town's corner ----
@@ -131,7 +137,9 @@ export default async function (page, snap) {
     if (st.town) break;
     await page.waitForTimeout(250);
   }
-  log('in town', JSON.stringify(await state()));
+  const up = await state();
+  log('in town', JSON.stringify(up));
+  if (!up.town) log('!! the cage did not bring him up into the town');
   if (film) {
     for (let k = 0; k < 40; k++) {
       await page.waitForTimeout(100);
@@ -155,7 +163,9 @@ export default async function (page, snap) {
     await snap('town_gate_unbarring');
   }
   await page.waitForTimeout(3000);
-  log('unbarred', JSON.stringify(await state()));
+  const gate = await state();
+  log('unbarred', JSON.stringify(gate));
+  if (gate.barred) log('!! the town\'s gate still barred after he came in sight of it');
   await hero(14.5, 9.5, -0.7071, -0.7071);
   await settle(1200);
   await snap('town_gate_after');

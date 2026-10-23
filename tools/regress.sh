@@ -505,6 +505,14 @@ wait
 FLOOR=6 run level_select_phone $P --scenario $S/level_select.mjs &
 UPRIGHT=1 FLOOR=15 CLS=mage run level_select_upright $U --scenario $S/level_select.mjs &
 wait
+# THE WAYS BETWEEN THE FLOORS (24.1): the town's stairs, floor 4's wall giving way, floor 5's mouth, the cage up, the gate
+# unbarred; floors 6 and 9's ways on (shut, the boss struck down, the film, open, walked into)
+run exits_phone $P --scenario $S/exits_look.mjs &
+FLOORS=6 run onward6_phone $P --scenario $S/onward_look.mjs &
+wait
+FLOORS=9 run onward9 --scenario $S/onward_look.mjs &
+FLOORS=10 run onward10_upright $U --scenario $S/onward_look.mjs &
+wait
 # a long bot run; random input in town and dungeon, and (GUIDE=1) in a new player's first dungeon
 run soak         --hash "bot=ranger&seed=3" --scenario $S/soak.mjs &
 STEPS=${STEPS:-400} SEED=1 run monkey_1 --scenario $S/monkey.mjs &

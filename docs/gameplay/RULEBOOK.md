@@ -7,7 +7,7 @@ levels of Version 19.5, the master rune-stone of Version 19.6, the monster packs
 the monsters' attacks of Version 19.8, the new monsters, leaders and rings of Version 19.9, the
 fixes and word slots of Version 20.0, the skill trees and the controller of Version 20.1, and his
 new shape for the game of 10 Oct, sets of five floors with the Crypt first, written in), and both
-change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. Since 21 Oct (the same): words growing with the levels; Rank II. The two pictures in the doc are written out here in words. How it was
+change only with his yes. Since rev 79 (13 Oct): a quest item handed in by using the one it is for. Since rev 80 (17 Oct): the skill trees remade, every talent something new. Since 20 Oct (in this copy, by the main chat, with his yes): endless mode, past the last floor built; packs growing with the levels, and nothing out of reach up in the air. Since 21 Oct (the same): words growing with the levels; Rank II. Since 23 Oct (the same): the ways between the floors. The two pictures in the doc are written out here in words. How it was
 found: `docs/gameplay/interview.md`.
 
 Wordsmith is a dungeon delver for phone and PC where words are the power: tense at the start,
@@ -50,19 +50,28 @@ next.
 
 (The doc's picture, "Down floor by floor, with town a waypoint away", in words:)
 
-- Town (wordsmith, forge, talents; trade and take quests) → the gate → a floor (10 to 15 minutes;
-  a boss at its end) → boss beaten → the stairwell (down to the next floor; a waypoint at the
-  bottom) → the next floor.
+- Town (wordsmith, forge, talents; trade and take quests) → the stairs down in town (floor 1), or
+  from the Quarry on, the town's gate → a floor (10 to 15 minutes; a boss at its end) → boss
+  beaten → its way on opens → the next floor.
 - From a floor, a waypoint (from floor 2): to town and back.
 - On a floor the hero dies → which mode?
   - Normal: wakes in town; loses the floor’s finds and some gold → town.
   - Hardcore: the hero is gone; the Lexicon and the stash stay; a new hero starts in town.
 
-A floor takes ten to fifteen minutes and ends in its boss, then a stairwell down to the next. The
-hero starts in town by the wordsmith and the altar, and goes in through the gate in town, which
-opens by itself as he comes; from floor 1 he can walk back out through it, and every floor after it
-has a waypoint at its start, to town and back (your outline of 9 Oct, 22:47). A death in Normal
-sends the hero to town; in Hardcore the next hero starts in town, at floor 1.
+A floor takes ten to fifteen minutes and ends in its boss, and then its way on opens. A new game
+starts in town: the wordsmith gives the quest for the master rune-stone, and stairs in the hall lead
+down to floor 1 (its stairs up lead back). Each floor's way on is part of the place, shut until its
+boss dies: a stairwell down on floors 1 to 3; on floor 4 a wall crumbling to a cave, the way into the
+Fleshmancer's lair; on floor 5 the cage up the old shaft, to the town's corner; then the town's big
+gate, barred until the Fleshmancer is beaten, out to the Quarry and down the mountain; on floors 6 to
+10 a way of each floor's own, opening with a bang tied to its boss (the quarry's stair, the ledge's
+chimney, the canyon's slot, the pinewood's trail, the fen's causeway), each next floor beginning
+where it comes out. Floor 10's causeway leads to the camp inside Vellum's gate, the town from then
+on. Every floor from the second has a waypoint at its start, to town and back (your outline of 9 Oct,
+22:47). Your words, 22 Oct 2026, 11:21: “Then have exits that lead to the next zone in a natural way
+as opposed to just a waypoint being plopped down.” Written in with your yes, 23 Oct, by 11:13: “Yes,
+add it (Recommended)”. A death in Normal sends the hero to town; in Hardcore the next hero starts in
+town, at floor 1.
 
 ## The climb
 
@@ -485,7 +494,7 @@ it goes in.
 | A boss of its own on every floor; a lair boss on every fifth | The Warden ends every dungeon; a Greater Warden, with twice the life, every fifth | The Crypt’s: the Headsman, the Chained One and the amalgamation (the art chat’s, with your yes), and the fleshmancer, not yet drawn |
 | Monster sizes, blue and yellow packs | Since Version 19.7; the new leaders and the rings since Version 19.9 | Done |
 | Monsters’ attacks by size | Since Version 19.8; the new monsters’ and the leaders’ since Version 19.9 | Done |
-| The gate in town, stairwells and waypoints | The gate in town, one dungeon deeper each time | The gate to floor 1, opening as you come; a stairwell down at the end of every floor; a waypoint at the start of every floor from the second (the art chat’s pictures have your yes) |
+| The ways between the floors | Since Version 24.1: a new game in town, stairs down to floor 1; stairwells on floors 1 to 3, floor 4's cave, the cage up from floor 5, the town's gate out to the Quarry; floors 6 to 10's own ways on, to the camp from 10; a waypoint at the start of every floor from the second | Floors 11 to 15's own ways, with the art chat |
 | The Crypt’s floors | One look for every dungeon | Less finished the deeper (the art chat’s pictures have your yes); the cells and the opening up, pictures to you first |
 | A small talent tree | A tree for each class, ten points with levels, undoing in town for gold, since Version 20.1 | A passive for each class (your idea of 9 Oct, 22:59) |
 | Controller support | Since Version 20.1: two sticks, the right one aiming; the buttons named on the screen | Done |
