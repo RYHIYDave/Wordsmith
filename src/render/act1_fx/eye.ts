@@ -16,10 +16,16 @@ import type { Sprite } from '../../engine/px';
 import { actDef } from '../../game/bosses';
 import { EYE_STAND, EYE_SWEEP, eyeClip, eyeClock, eyePhase, figureAct, moveOf, onAim, sweepAngle } from '../../game/act1_rules/eye';
 import type { Monster, Peril } from '../../game/state';
-import { clipFrame } from '../figure';
+import { clipIndex, paintedNear } from '../figure';
 import type { Act1Fx, Act1FxCtx } from './types';
 
-/** His figure this frame: his round, or the move he makes. */
+/**
+ * His figure this frame: his round, or the move he makes. NEVER PAINTED HERE: a frame of his takes a third of a second and more
+ * to paint, and the painter paints them beside the game (render/painter.ts); one read here before it had come was painted on
+ * the spot, the game held still meanwhile, frame after frame: he stuttered (the owner, 23 Oct 2026, 15:21: “He stutters in and
+ * out of view”). So the frame wanted if it is here, else the nearest of the same that is, else his round's; and if none of
+ * his round is here yet, its first, painted on the spot once.
+ */
 function figureNow(m: Monster, set: AnimSet): Sprite | null {
   const moves = set.clips?.moves ?? {};
   const ph = eyePhase(m);
@@ -27,11 +33,15 @@ function figureNow(m: Monster, set: AnimSet): Sprite | null {
     const a = actDef(m);
     const mv = a && figureAct(a) ? moveOf(a) : null;
     const c = mv ? moves[eyeClip(mv, m.act.a)] : undefined;
-    if (c && c.frames.length) return clipFrame(c, m.act.t);
+    if (c && c.frames.length) {
+      const s = paintedNear(c.frames, clipIndex(c, m.act.t));
+      if (s) return s;
+    }
   }
   const loop = ph === 0 ? moves.lurk?.frames : ph >= 2 ? moves.stand3?.frames : set.idle;
   if (!loop || !loop.length) return null;
-  return loop[Math.floor(eyeClock(m) * EYE_STAND.fps + 1e-6) % loop.length];
+  // (none of it here yet: its first frame painted on the spot, once, and the nearest to it shown from then on)
+  return paintedNear(loop, Math.floor(eyeClock(m) * EYE_STAND.fps + 1e-6) % loop.length, true) ?? loop[0];
 }
 
 /** One of the pictures of their own he lays on the floor, `t` seconds in (null before it begins or once it is over). */
@@ -39,7 +49,9 @@ function pieceOf(c: Act1FxCtx, name: 'burst' | 'bolt' | 'egg', t: number, turn: 
   const art: ActorArt = c.bestiary.of('eye');
   const clip = art.front.clips?.moves?.[name];
   if (!clip || t < 0 || t >= clip.frames.length / clip.fps) return null;
-  const s = clipFrame(clip, t);
+  // (as figureNow: the nearest painted; none yet, this one painted on the spot: an arm that strikes is seen)
+  const i = clipIndex(clip, t);
+  const s = paintedNear(clip.frames, i) ?? clip.frames[i];
   return turn ? flipSprite(s) : s;
 }
 

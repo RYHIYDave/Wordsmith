@@ -278,13 +278,37 @@ export function gaitFrame(set: AnimSet, m: { state: string; animT: number; froze
 
 /** A frame of a clip `t` seconds in; one that is held (its `loop`: the red troll's run) goes round from its loop. */
 export function clipFrame(c: Clip, t: number): Sprite {
+  return c.frames[clipIndex(c, t)];
+}
+/** Which of a clip's frames shows `t` seconds into it (clipFrame's). */
+export function clipIndex(c: Clip, t: number): number {
   const n = c.frames.length;
   let i = Math.floor(Math.max(0, t) * c.fps + 1e-6);
   if (c.loop !== undefined && i >= n) {
     const from = Math.round(c.loop * c.fps);
     i = from + ((i - from) % Math.max(1, n - from));
   }
-  return c.frames[Math.max(0, Math.min(n - 1, i))];
+  return Math.max(0, Math.min(n - 1, i));
+}
+/**
+ * A frame of `frames` that is painted already, without painting one here (art/kit.ts lazyFrames paints a frame the first time
+ * it is read): the `i`th if it is, else the nearest that is, the earlier first (round the end, `round`); null if none is yet.
+ */
+export function paintedNear(frames: readonly Sprite[], i: number, round = false): Sprite | null {
+  const n = frames.length;
+  const got = (k: number): Sprite | null => {
+    if (k < 0 || k >= n) return null;
+    const d = Object.getOwnPropertyDescriptor(frames, k);
+    return d && 'value' in d && d.value ? (d.value as Sprite) : null;
+  };
+  for (let d = 0; d < n; d++) {
+    const a = got(round ? (((i - d) % n) + n) % n : i - d);
+    if (a) return a;
+    if (d === 0) continue;
+    const b = got(round ? (i + d) % n : i + d);
+    if (b) return b;
+  }
+  return null;
 }
 /** The least of a wind-up that is still to come while the blow has not landed, as a share of it. */
 const NOT_YET = 1e-4;
