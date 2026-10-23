@@ -48,6 +48,8 @@ import type { Level, PropInst } from '../game/state';
 import { SPIKE, SPIKE_BEAT, spikeAt } from '../game/traps';
 import type { HazardSpot } from '../game/types';
 import { PINE_PATH, laneDist } from '../game/act1_layout';
+import { EXITS, ONWARD, START, turnAB } from '../game/ways';
+import type { AB } from '../game/ways';
 import type { Kick } from './dress';
 import { wx, wy } from './fx';
 import type { Cam } from './fx';
@@ -169,6 +171,8 @@ export class Act1Pieces {
   private tiles = new Map<number, Act1Tile>();
   private tops = new Map<number, Top[]>();
   private land: Land | null = null;
+  /** (EXITS, floors 6 to 10) Where the way on's and the start's pieces stand (game/ways.ts ONWARD, START; the art chat's pictures): tile middles that nothing of the tops stands on, or over on the screen in front of. */
+  private keepClear: { x: number; y: number }[] = [];
   /** (ACT 2) A standing trap's own trap (its hazard), found the first time it is drawn. */
   private beatOf = new Map<PropInst, HazardSpot | null>();
   /** (ACT 2, THE HUSH) The floor's moment, and the screen's kicks its jolts have asked for since they were last taken. */
@@ -181,6 +185,7 @@ export class Act1Pieces {
     this.level = L;
     this.dress = L.act1 ?? null;
     this.land = L.land ?? null;
+    this.keepClear = keepClearOf(L);
     this.tiles.clear();
     this.tops.clear();
     this.beatOf.clear();
@@ -512,6 +517,7 @@ export class Act1Pieces {
           if (!pick) continue;
           const sp = P(pick.name, pick.frame);
           if (!sp || !clearOfFloor(T, px, py, pick.hw, sp.h * GRAIN)) continue;
+          if (this.overWays(wx, wy, sp, rise / GRAIN)) continue;
           out.push({ x: wx, y: wy, sp, lift: rise / GRAIN, shadow: sh(pick.name), tall: !!pick.tall });
         } else {
           // THE FOREST'S AND THE WATER'S: anywhere off the floor (and off the river), the tall ones seen through
@@ -555,6 +561,7 @@ export class Act1Pieces {
           if (!pick) continue;
           const sp = P(pick.name, pick.frame);
           if (!sp) continue;
+          if (this.overWays(wx, wy, sp, 0)) continue;
           out.push({ x: wx, y: wy, sp, lift: 0, shadow: sh(pick.name), tall: !!pick.tall && sp.h >= SEE_TALL });
         }
       }
@@ -583,6 +590,27 @@ export class Act1Pieces {
   }
 
   /** Is world (x, y) near a stronghold's gate (its towers stand there: nothing on the tops round it)? */
+  /**
+   * (EXITS, floors 6 to 10) Would a thing of the tops at (x, y), `lift` up, stand on the way on's or the start's pieces, or
+   * over them on the screen in front of them? (Their pictures stand up to WAY_TALL game pixels; the forest's trees are
+   * taller than a man and many deep: in front of the way, they would hide it.)
+   */
+  private overWays(x: number, y: number, sp: Sprite, lift: number): boolean {
+    if (!this.keepClear.length) return false;
+    const sx = (x - y) * 16;
+    const sy = (x + y) * 8 - lift;
+    const left = sx - sp.ax;
+    const top = sy - sp.ay;
+    for (const p of this.keepClear) {
+      if (Math.abs(p.x - x) < 1.2 && Math.abs(p.y - y) < 1.2) return true;
+      if (x + y <= p.x + p.y - 0.5) continue;
+      const px = (p.x - p.y) * 16;
+      const py = (p.x + p.y) * 8;
+      if (px + 10 > left && px - 10 < left + sp.w && py > top && py - WAY_TALL < top + sp.h) return true;
+    }
+    return false;
+  }
+
   private nearHold(x: number, y: number): boolean {
     return !!this.land && this.land.holds.some((q) => Math.abs(x - q.gx) < 5 && y < q.gy + 4 && y > q.gy - 6);
   }
@@ -633,4 +661,30 @@ function hashOf(x: number, y: number, k: number): number {
   let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263) + Math.imul(k | 0, 2147483647)) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/** (EXITS) How high the art chat's ways' and starts' pictures stand over their tiles, at most, in game pixels (the hoist, the fins, the sick trees). */
+const WAY_TALL = 56;
+/** (EXITS, floors 6 to 10) The middles of the tiles the way on's and the start's pieces stand on (their whole shape, in their own frame: game/ways.ts). */
+function keepClearOf(L: Level): { x: number; y: number }[] {
+  const W = L.ways;
+  const a1 = W?.a1;
+  if (!EXITS.on || !a1 || !W?.onward) return [];
+  const out: { x: number; y: number }[] = [];
+  const box = (list: readonly AB[], tx: number, ty: number, d: Parameters<typeof turnAB>[0], back = 0): void => {
+    if (!list.length) return;
+    const aFrom = Math.min(...list.map((t) => t[0])) - Math.ceil(back);
+    const aTo = Math.max(...list.map((t) => t[0]));
+    const bFrom = Math.min(...list.map((t) => t[1]));
+    const bTo = Math.max(...list.map((t) => t[1]));
+    for (let a = aFrom; a <= aTo; a++) for (let b = bFrom; b <= bTo; b++) {
+      const [dx, dy] = turnAB(d, a, b);
+      out.push({ x: tx + dx + 0.5, y: ty + dy + 0.5 });
+    }
+  };
+  const way = ONWARD[a1.floor];
+  if (way) box([...way.takes, ...way.solid, ...way.thrown], Math.floor(W.onward.x), Math.floor(W.onward.y), a1.dir, way.back);
+  const st = START[a1.floor];
+  if (st) box(st.solid, Math.floor(L.floor.start.x), Math.floor(L.floor.start.y), a1.startDir);
+  return out;
 }

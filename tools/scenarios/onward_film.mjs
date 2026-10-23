@@ -3,12 +3,46 @@
 // into, on. Frames as it plays, slowed (<out>_<floor>_f0000.png ...), for a video put together after. Not a test.
 //   node tools/playtest.mjs --file dist/exits.html --touch --size 844x390 --dpr 1.5 --scenario tools/scenarios/onward_film.mjs --out shots/onward/film/x
 // SEED: the run's dice (5). FLOORS: which (6,7,8,9,10). SLOW: how slowed (0.35).
-import { log } from './lib.mjs';
+import { log, makeHands } from './lib.mjs';
 
 export default async function (page, snap) {
   const seed = Number(process.env.SEED) || 5;
   const SLOW = Number(process.env.SLOW) || 0.35;
   const floors = (process.env.FLOORS || '6,7,8,9,10').split(',').map(Number);
+  const hands = await makeHands(page);
+  // (walked as he would on a phone: a tap on the ground there)
+  const tapAt = async (x, y) => {
+    const p = await page.evaluate(([x, y]) => window.__dbg.at(x, y), [x, y]);
+    await hands.pressAt(p.x, p.y);
+  };
+  // (walked as with the keys, steered toward a point: the keys held for the screen's way to it, eight ways round)
+  const held = new Set();
+  const hold = async (want) => {
+    for (const k of [...held]) if (!want.includes(k)) { await page.keyboard.up(k); held.delete(k); }
+    for (const k of want) if (!held.has(k)) { await page.keyboard.down(k); held.add(k); }
+  };
+  const walkTo = async (x, y, ms, until = null) => {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      await frame();
+      if (until && (await page.evaluate(until))) break;
+      const h = await page.evaluate(() => { const h = window.__dbg.game().hero; return { x: h.x, y: h.y }; });
+      const dx = x - h.x;
+      const dy = y - h.y;
+      if (Math.hypot(dx, dy) < 0.3) { await hold([]); continue; }
+      // (+x is down and to the right on the screen, +y down and to the left: two pixels across to one down)
+      const sx = (dx - dy) * 2;
+      const sy = dx + dy;
+      const m = Math.hypot(sx, sy);
+      const want = [];
+      if (sx > 0.38 * m) want.push('KeyD');
+      if (sx < -0.38 * m) want.push('KeyA');
+      if (sy > 0.38 * m) want.push('KeyS');
+      if (sy < -0.38 * m) want.push('KeyW');
+      await hold(want);
+    }
+    await hold([]);
+  };
   let part = 6;
   let n = 0;
   const frame = async () => snap(`${part}_f${String(n++).padStart(4, '0')}`);
@@ -34,6 +68,7 @@ export default async function (page, snap) {
     d.exits.on = true;
     d.saving(false);
     d.run('warrior', s);
+    d.seasoned(20);
     d.autoLevel = false;
     d.autoWords = false;
     d.god = true;
@@ -52,6 +87,9 @@ export default async function (page, snap) {
       g.guide = null;
       g.depth = k; g.cleared = k - 1; g.wayDepth = k; g.enterDungeon();
       g.hero.invuln = 1e9;
+      // (his ground already come into: the boss's name card is not what this film is of)
+      g.bossMet = true;
+      window.__filmDepth = k;
       for (const m of g.monsters) if (!m.boss) m.life = 0;
       // (the boss kept off while the film is painted: far back in his ground)
       const a1 = g.level.ways.a1;
@@ -66,20 +104,14 @@ export default async function (page, snap) {
     await quiet();
     await slow(SLOW);
     // ---- WHERE IT BEGINS: he walks a few steps in from it ----
-    const into = await page.evaluate((U) => { const g = window.__dbg.game(); const s = eval(U)[g.level.ways.a1.startDir]; return s; }, U);
-    const keyOf = (dx, dy) => {
-      // (+x is down and to the right on the screen: S and D; -x up and left: W and A; +y down and left: S and A; -y up and right: W and D)
-      if (dx > 0) return ['KeyS', 'KeyD'];
-      if (dx < 0) return ['KeyW', 'KeyA'];
-      if (dy > 0) return ['KeyS', 'KeyA'];
-      return ['KeyW', 'KeyD'];
-    };
-    const inKeys = keyOf(-into[0], -into[1]);
     await rec(1200);
-    for (const k of inKeys) await page.keyboard.down(k);
-    await rec(2600);
-    for (const k of inKeys) await page.keyboard.up(k);
-    await rec(600);
+    const into = await page.evaluate((U) => {
+      const g = window.__dbg.game();
+      const s = eval(U)[g.level.ways.a1.startDir];
+      return { x: g.level.floor.start.x - s[0] * 3, y: g.level.floor.start.y - s[1] * 3 };
+    }, U);
+    await walkTo(into.x, into.y, 3500);
+    await rec(500);
     // ---- THE WAY ON, SHUT ----
     await slow(1);
     await page.evaluate((U) => {
@@ -115,7 +147,8 @@ export default async function (page, snap) {
       for (let k = 0; k < 6 && boss && !W.onward.awake; k++) {
         boss.x = g.hero.x - u[0] * 2.5; boss.y = g.hero.y - u[1] * 2.5;
         g.bossReady();
-        g.damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
+        if (g.boss) g.kill(g.boss);
+        else if (!boss.dead) g.damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1);
       }
     }, U);
     for (let k = 0; k < 30 && !(await page.evaluate(() => window.__dbg.game().level.ways.onward.awake)); k++) {
@@ -124,17 +157,23 @@ export default async function (page, snap) {
         const g = window.__dbg.game();
         const W = g.level.ways;
         const boss = g.monsters.find((m) => m.boss && !m.dead);
-        if (boss && !W.onward.awake) { g.bossReady(); g.damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1); }
+        if (boss && !W.onward.awake) { g.bossReady(); if (g.boss) g.kill(g.boss); else g.damageMonster(boss, boss.life + boss.shield + 1, 'phys', false, -1); }
       });
     }
     log('awake', await page.evaluate(() => window.__dbg.game().level.ways.onward.awake));
+    // (a boss not struck down so: the way woken as his death wakes it)
+    await page.evaluate(() => {
+      const g = window.__dbg.game();
+      const on = g.level.ways.onward;
+      if (!on.awake) { on.awake = true; on.warpAt = g.time; }
+    });
+    await page.evaluate(() => { const g = window.__dbg.game(); g.hero.pending = 0; });
     await rec(20000, () => window.__dbg.game().level.ways.a1.open);
     await rec(1800);
     // ---- WALKED INTO IT: ON ----
-    const onKeys = keyOf(...(await page.evaluate((U) => eval(U)[window.__dbg.game().level.ways.a1.dir], U)));
-    for (const k of onKeys) await page.keyboard.down(k);
-    await rec(9000, () => { const g = window.__dbg.game(); return !!g.leaving; });
-    for (const k of onKeys) await page.keyboard.up(k);
+    await page.evaluate(() => { const g = window.__dbg.game(); g.hero.pending = 0; });
+    const way = await page.evaluate(() => { const on = window.__dbg.game().level.ways.onward; return { x: Math.floor(on.x) + 0.5, y: Math.floor(on.y) + 0.5 }; });
+    await walkTo(way.x, way.y, 12000, () => { const g = window.__dbg.game(); return !!g.leaving; });
     if (!(await page.evaluate(() => !!window.__dbg.game().leaving))) {
       log('walked in', 'no: put into it');
       await page.evaluate(() => {
@@ -143,7 +182,7 @@ export default async function (page, snap) {
         g.hero.x = Math.floor(on.x) + 0.5; g.hero.y = Math.floor(on.y) + 0.5;
       });
     }
-    await rec(4000, () => { const g = window.__dbg.game(); return g.depth !== depth || g.level.town; });
+    await rec(4000, () => { const g = window.__dbg.game(); return g.depth !== window.__filmDepth || g.level.town; });
     log('on', await page.evaluate(() => ({ depth: window.__dbg.game().depth, town: window.__dbg.game().level.town })));
   }
 }
