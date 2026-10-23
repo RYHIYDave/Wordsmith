@@ -26,13 +26,13 @@ interface Pane {
 }
 const panes: Pane[] = [];
 const cl = CLASSES[what];
-let heading = `${cl.title}: ten looks to choose from · sketches · not in the game`;
+let heading = what.endsWith('2') ? `${cl.title} · sketches · not in the game` : `${cl.title}: ten looks to choose from · sketches · not in the game`;
 let HALF = 30;
 let UP = 80;
 let DOWN = 8;
 let CLOSE = 0;
 panes.push({ n: '', name: 'The knight, for size', f: paintMove3(MOVES3.ktown, 0, 'front'), flies: WARRIOR_TAILS });
-cl.looks.forEach((l, k) => panes.push({ n: String(k + 1), name: l.name, f: paintClassLook(what, k) }));
+cl.looks.forEach((l, k) => panes.push({ n: l.n ?? String(k + 1), name: l.name, f: paintClassLook(what, k) }));
 if (lookArg === 'close') {
   heading = heading.replace(' · sketches', ', close up · sketches');
   HALF = 24;

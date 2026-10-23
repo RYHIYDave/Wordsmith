@@ -68,7 +68,7 @@ export const APOTHECARY_BODY: Build = buildOf(56, HEAD_B, { shoulders: 0.96, che
 export const APOTHECARY_F_BODY: Build = buildOf(54.5, HEAD_B, { shoulders: 0.9, chest: 0.94, waist: 0.84, hips: 1.08, limbs: 0.86, skirt: [2.4, 2.2] });
 
 /** (the guard's hands: left forward, left, up, its elbow; the right the same) */
-export const GUARD = [10, -2, 1, 15, 8, 4, 3, 15];
+export const GUARD = [9, 1.5, 0, 40, 7, -1.5, -1, 40];
 /** THE BRAWLER'S GUARD: feet apart, knees given, turned a little; both fists up before his chin, the left out in front. */
 export function guardOf(B: Build): Bones {
   const t = B.tall / 57;
@@ -456,6 +456,8 @@ function wingCape(c: C, ramp: Ramp, drop: number): void {
 // THE LOOKS
 
 export interface ClassLook {
+  /** Its label on the sheet, if not its place in the list. */
+  n?: string;
   name: string;
   /** Which body (a man's or a woman's of the class) */
   f?: boolean;
@@ -1058,6 +1060,423 @@ export const APOTHECARIES: ClassLook[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------------------------
+// THE SECOND ROUND (his picks of the first, 23 Oct, by 16:50 Pacific: "Can I get a few more like 3" (the brawler); "A few
+// more like 1 and 2" (the warlock); "Few more like 2, 3, and 7" (the apothecary)). Each sheet begins with the ones he named.
+
+/** A singlet: its body from the chest down, and one strap (over the left shoulder) or two. */
+function singlet(c: C, ramp: Ramp, two = false, stripes: Ramp | null = null): void {
+  const sg = c.st.part(c.st.near(c.s.ribs) + 0.2);
+  const balls = trunkBalls(c.trunk, 0.75);
+  const striped = (u: V3, t: number): string => (stripes && Math.floor((u[2] + 1) * 4) % 2 === 0 ? stripes[t] : ramp[t]);
+  ball(sg, c.st, balls[1].c, balls[1].axes, striped);
+  ball(sg, c.st, balls[0].c, balls[0].axes, (u, t) => (u[2] < -0.1 || u[1] > 0.45 || (two && u[1] < -0.45) ? striped(u, t) : null));
+}
+/** A band round the head, across the brow. */
+function headband(c: C, hd: Sheet, ramp: Ramp, up = 0.42): void {
+  band(hd, c.st, { c: add(c.s.head, mul(c.hu, c.R[2] * up)), u: mul(c.hf, c.R[0] * 1.02), v: mul(c.hl, c.R[1] * 1.02) }, ramp, 2, 0.3);
+}
+/** Pads over the knees. */
+function kneePads(c: C, ramp: Ramp): void {
+  const { st, s, B } = c;
+  for (const knee of [s.kneeL, s.kneeR]) ball(st.part(st.near(knee) + 0.4), st, add(knee, mul(s.hips[0], 0.6)), [[B.legR[1] + 1.1, 0, 0], [0, B.legR[1] + 1.1, 0], [0, 0, B.legR[1] + 1.3]], c.mine(ramp, knee));
+}
+/** A great belt, a plate on its front (a champion's). */
+function plateBelt(c: C, ramp: Ramp, plate: Ramp = BRASS): void {
+  const { st, s, B, trunk } = c;
+  band(st.part(s.waist), st, girdle(trunk[1], -0.15, 1.3), ramp, 4);
+  if (c.fromBehind) return;
+  const at = off(s.waist, s.hips, B.waistDeep + 1.4, 0, -0.6);
+  ball(st.part(st.near(at) + 0.5), st, at, [mul(s.hips[0], 0.9), mul(s.hips[1], 3.0), mul(s.hips[2], 2.2)], (u, t) => (Math.abs(u[1]) < 0.3 && Math.abs(u[2]) < 0.3 ? CYAN[3] : plate[t]));
+}
+/** A beard in two forks, each tied. */
+function forkedBeard(c: C, ramp: Ramp, len = 4.5): void {
+  const { st, s, hf, hl, hu, R } = c;
+  beard(c, ramp, 1.8, 1.0);
+  for (const side of [1, -1]) {
+    const a = add(s.head, add(add(mul(hf, R[0] * 0.65), mul(hl, side * R[1] * 0.3)), mul(hu, -R[2] * 0.85)));
+    const b = add(a, add(mul(hu, -len), add(mul(hf, 0.6), mul(hl, side * 0.6))));
+    const p = st.part(st.near(a) + 0.5);
+    rod(p, st, a, b, 1.7, 1.0, ramp);
+    ball(p, st, lerp3(a, b, 0.75), [[1.2, 0, 0], [0, 1.2, 0], [0, 0, 0.8]], CYAN);
+  }
+}
+/** THE DEMON'S ARM (the left: the one with the fire in it): its hide to the shoulder, clawed, cracked with light; `chains` wound round it. */
+function demonArm(c: C, hide: Ramp, o: { chains?: boolean; spike?: boolean; to?: number } = {}): void {
+  const { st, s, B } = c;
+  const [aS, aE, aW] = B.armR;
+  const up = st.part(mid(s.shoulderL, s.elbowL));
+  rod(up, st, s.shoulderL, s.elbowL, aS + 1.3, aE + 1.1, hide);
+  const fo = st.part(mid(s.elbowL, s.handL, 0.6));
+  rod(fo, st, s.elbowL, s.handL, aE + 1.2, aW + 1.0, hide);
+  ball(st.part(st.near(s.handL) + 0.2), st, s.handL, [[aW + 1.4, 0, 0], [0, aW + 1.4, 0], [0, 0, aW + 1.3]], hide);
+  claws(c, s.handL, s.elbowL);
+  cracks(c, fo, s.elbowL, s.handL, 2, 3);
+  cracks(c, up, s.shoulderL, s.elbowL, 2, 5);
+  // (spines down the back of the forearm)
+  for (let i = 1; i <= 3; i++) {
+    const at = lerp3(s.elbowL, s.handL, i * 0.22);
+    rod(fo, st, at, add(at, [0, 0, 2.2]), 0.7, 0.15, IVORY);
+  }
+  if (o.chains) for (let i = 0; i < 4; i++) chain(c, st.part(st.near(s.elbowL) + 0.6), lerp3(s.shoulderL, s.handL, 0.2 + i * 0.18), add(lerp3(s.shoulderL, s.handL, 0.28 + i * 0.18), [0, 0, -2]));
+  if (o.spike) pauldron(c, COAL, 1, true);
+}
+/** The other arm (the right) in its sleeve, a hand at its end. */
+function sleeveArm(c: C, ramp: Ramp, hand: Ramp, bell = 1.0): void {
+  const { st, s, B, mine } = c;
+  const [aS, aE, aW] = B.armR;
+  rod(st.part(mid(s.shoulderR, s.elbowR)), st, s.shoulderR, s.elbowR, aS + 0.7, aE + 0.6, mine(ramp, s.elbowR));
+  rod(st.part(mid(s.elbowR, s.handR, 0.6)), st, s.elbowR, lerp3(s.elbowR, s.handR, 0.86), aE + 0.6, aW + 0.4 + bell, mine(ramp, s.handR));
+  ball(st.part(st.near(s.handR) + 0.2), st, s.handR, [[aW + 0.7, 0, 0], [0, aW + 0.7, 0], [0, 0, aW + 0.7]], hand);
+}
+/** A long coat: its skirts to the ankle, open at the front. */
+function longCoat(c: C, ramp: Ramp, hem: Ramp | null = RUST, drop = 0.75): void {
+  const { B } = c;
+  skirt(c, ramp, { drop: B.thigh + B.shank * drop, wide: 4.0, deep: 3.6, hem: hem ?? undefined, folds: [0, 180, 90, -90], arc: [26, 334] });
+}
+/** Straps round both thighs, a vial on each. */
+function thighStraps(c: C, colours: Ramp[]): void {
+  for (const side of ['L', 'R'] as const) {
+    const hip = side === 'L' ? c.s.hipL : c.s.hipR;
+    const knee = side === 'L' ? c.s.kneeL : c.s.kneeR;
+    const at = lerp3(hip, knee, 0.55);
+    band(c.st.part(c.st.near(at) + 0.3), c.st, { c: at, u: mul(c.s.hips[0], c.B.legR[0] + 0.9), v: mul(c.s.hips[1], c.B.legR[0] + 0.9) }, LEATHER, 2, 0.3);
+    vial(c, add(at, mul(c.s.hips[0], c.B.legR[0] + 1.2)), colours[side === 'L' ? 0 : 1 % colours.length]);
+  }
+}
+/** A cloth over the mouth and nose, on a face. */
+const masked = (ramp: Ramp) => (f: number, l: number, up: number, t: number): string | undefined => (up < -0.1 && f > -0.5 ? ramp[Math.max(1, t)] : undefined);
+
+export const BRAWLERS2: ClassLook[] = [
+  { ...BRAWLERS[2], n: '3' },
+  {
+    n: 'A',
+    name: 'Bald, forked beard, two straps',
+    paint: (c) => {
+      trousers(c, TEAL, LEATHER, { to: 0.15, shin: DEEP });
+      const body = torso(c, DEEP, TEAL);
+      pecs(c, body, DEEP);
+      singlet(c, TEAL, true);
+      belt(c, LEATHER, CYAN, 3);
+      fighterArms(c, { skin: DEEP, cuff: LEATHER, thick: 1.0 });
+      face(c, { skin: SKIN_DEEP, hairAt: () => false });
+      forkedBeard(c, BLONDE, 6);
+    },
+  },
+  {
+    n: 'B',
+    name: 'Mane, beard, a fur',
+    paint: (c) => {
+      trousers(c, LEATHER, BROWN, { to: 0.2, shin: SK, wrap: null });
+      const body = torso(c, SK, LEATHER);
+      pecs(c, body, SK);
+      singlet(c, RUST);
+      belt(c, BROWN, CYAN, 3);
+      curtain(c, BROWN, 12, c.B.shoulderHalf + 1.6);
+      fighterArms(c, { skin: SK, cuff: BROWN, thick: 1.0 });
+      mantle(c, GREY, { drop: 4.4, ragged: true, out: 1.0, folds: [20, -20, 150, -150, 90, -90] });
+      face(c, { hairAt: hairline, hair: BROWN });
+      beard(c, BROWN, 5.0, 1.2);
+    },
+  },
+  {
+    n: 'C',
+    name: 'Crest and side whiskers',
+    paint: (c) => {
+      trousers(c, NIGHT, LEATHER, { to: 0.2, shin: SK });
+      const body = torso(c, SK, NIGHT);
+      pecs(c, body, SK);
+      singlet(c, RUST, false);
+      belt(c, LEATHER, BRASS, 3);
+      fighterArms(c, { skin: SK, cuff: LEATHER, thick: 1.0 });
+      // (a crest of hair, the sides shaved; thick whiskers down his cheeks to the jaw)
+      face(c, { hairAt: (f, l, up) => (Math.abs(l) < 0.28 && up > 0.3) || (Math.abs(l) > 0.55 && up < 0.3 && up > -0.6 && f > -0.35), hair: RUST });
+      const { st, s, hf, hu, R } = c;
+      const a0 = add(s.head, add(mul(hf, R[0] * 0.5), mul(hu, R[2] * 0.95)));
+      const b0 = add(s.head, add(mul(hf, -R[0] * 1.1), mul(hu, R[2] * 0.7)));
+      rod(st.part(st.near(s.head) + 0.5), st, a0, b0, 1.8, 1.1, RUST);
+    },
+  },
+  {
+    n: 'D',
+    name: 'Champion: plate belt, headband',
+    paint: (c) => {
+      trousers(c, RUST, LEATHER, { to: 0.15, shin: DEEP });
+      kneePads(c, LEATHER);
+      const body = torso(c, DEEP, RUST);
+      pecs(c, body, DEEP);
+      singlet(c, RUST);
+      plateBelt(c, LEATHER);
+      fighterArms(c, { skin: DEEP, cuff: CYAN, thick: 1.0 });
+      const hd = face(c, { skin: SKIN_DEEP, hairAt: (f, l, up) => f < -0.1 || up > 0.5, hair: RAVEN });
+      headband(c, hd, CYAN);
+      beard(c, RAVEN, 2.2, 1.0);
+    },
+  },
+  {
+    n: 'E',
+    name: 'Old bear: grey beard, knee pads',
+    paint: (c) => {
+      trousers(c, MAIL, LEATHER, { to: 0.15, shin: SK });
+      kneePads(c, BROWN);
+      const body = torso(c, SK, MAIL);
+      pecs(c, body, SK);
+      singlet(c, MAIL);
+      belt(c, LEATHER, CYAN, 3);
+      fighterArms(c, { skin: SK, wrap: LINEN, wrapUp: 0.35, thick: 1.0 });
+      face(c, { hairAt: (f, l, up) => f < -0.25 && up < 0.3, hair: GREY });
+      beard(c, GREY, 6.0, 1.25);
+    },
+  },
+  {
+    n: 'F',
+    name: 'She-wrestler: two straps, braids',
+    f: true,
+    paint: (c) => {
+      trousers(c, PLUM, LEATHER, { to: 0.15, shin: SK });
+      kneePads(c, PLUM);
+      bodice(c, PLUM, 0.6, PLUM);
+      belt(c, LEATHER, CYAN, 3);
+      fighterArms(c, { skin: SK, cuff: LEATHER, thick: 0.6 });
+      face(c, { hairAt: hairline, hair: BLONDE, blush: true, mouth: PINK[1] });
+      braid(c, BLONDE, 1, 10);
+      braid(c, BLONDE, -1, 10);
+    },
+  },
+];
+
+export const WARLOCKS2: ClassLook[] = [
+  { ...WARLOCKS[0], n: '1' },
+  { ...WARLOCKS[1], n: '2' },
+  {
+    n: 'A',
+    name: 'Horned hood, the demon\'s arm',
+    paint: (c) => {
+      legs(c, COAL, LEATHER, true);
+      longCoat(c, COAL, RUST);
+      const body = torso(c, COAL, COAL);
+      seam(c, body, RUST[3]);
+      belt(c, LEATHER, CYAN, 2);
+      grimoire(c);
+      sleeveArm(c, COAL, SK, 0.6);
+      demonArm(c, RUST);
+      face(c, { hairAt: () => true, hair: RAVEN, shade: 0.2, blind: true });
+      for (const turn of EYES) dotOn(c, c.st.part(c.st.near(c.s.head) + 0.9), turn, 0.14, GLINT);
+      hood(c, COAL, 0.8);
+      horns(c, 'swept', { long: 8, up: 0.8 });
+      handFire(c, c.s.handL);
+    },
+  },
+  {
+    n: 'B',
+    name: 'High collar, the arm in chains',
+    paint: (c) => {
+      collar(c, COAL, 8.5, c.B.shoulderHalf + 2.6);
+      legs(c, NIGHT, LEATHER, true);
+      longCoat(c, NIGHT, CYAN);
+      const body = torso(c, NIGHT, NIGHT);
+      seam(c, body, CYAN[2]);
+      sash(c, RUST, 9);
+      sleeveArm(c, NIGHT, SK, 0.8);
+      demonArm(c, RUST, { chains: true });
+      face(c, { hairAt: (f, l, up) => f < -0.1 || up > 0.6, hair: GREY });
+      horns(c, 'swept', { long: 9, thick: 1.6 });
+      handFire(c, c.s.handL);
+    },
+  },
+  {
+    n: 'C',
+    name: 'Ram horns, spiked shoulder',
+    paint: (c) => {
+      legs(c, COAL, COAL, true);
+      longCoat(c, PLUM, COAL);
+      const body = torso(c, PLUM, PLUM);
+      seam(c, body, CYAN[2]);
+      belt(c, COAL, CYAN, 2);
+      grimoire(c, COAL);
+      sleeveArm(c, PLUM, SK, 0.6);
+      demonArm(c, RUST, { spike: true });
+      face(c, { hairAt: () => true, hair: RAVEN, shade: 0.2, blind: true });
+      for (const turn of EYES) dotOn(c, c.st.part(c.st.near(c.s.head) + 0.9), turn, 0.14, GLINT);
+      hood(c, PLUM, 0.8);
+      horns(c, 'ram', { long: 7, thick: 1.8 });
+      handFire(c, c.s.handL);
+    },
+  },
+  {
+    n: 'D',
+    name: 'Red hood, coal-black arm',
+    paint: (c) => {
+      legs(c, COAL, LEATHER, true);
+      longCoat(c, RUST, COAL);
+      const body = torso(c, RUST, RUST);
+      seam(c, body, COAL[3]);
+      belt(c, COAL, CYAN, 2);
+      sleeveArm(c, RUST, SK, 0.8);
+      demonArm(c, COAL);
+      face(c, { hairAt: () => true, hair: RAVEN, shade: 0.2, blind: true });
+      for (const turn of EYES) dotOn(c, c.st.part(c.st.near(c.s.head) + 0.9), turn, 0.14, GLINT);
+      hood(c, RUST, 0.9);
+      horns(c, 'up', { long: 7, thick: 1.6 });
+      handFire(c, c.s.handL, 1.2);
+    },
+  },
+  {
+    n: 'E',
+    name: 'One horn broken, a clawed hand',
+    paint: (c) => {
+      legs(c, MAIL, LEATHER, true);
+      longCoat(c, INDIGO, RUST);
+      const body = torso(c, INDIGO, INDIGO);
+      seam(c, body, CYAN[2]);
+      strap(c, body, LEATHER, false);
+      belt(c, LEATHER, CYAN, 2);
+      grimoire(c, RUST);
+      arms(c, { upper: INDIGO, fore: INDIGO, hand: RUST, bell: 0.4 });
+      claws(c, c.s.handL, c.s.elbowL);
+      cracks(c, c.st.part(c.st.near(c.s.handL) + 0.5), c.s.elbowL, c.s.handL, 1, 2);
+      face(c, { hairAt: hairline, hair: RAVEN });
+      beard(c, RAVEN, 2.0, 0.9);
+      hood(c, INDIGO, 0.5);
+      // (one horn whole, swept back; the other snapped off short)
+      const { st, s, hf, hl, hu, R } = c;
+      horns(c, 'swept', { long: 8 });
+      const stub = add(s.head, add(add(mul(hf, R[0] * 0.2), mul(hl, -R[1] * 0.66)), mul(hu, R[2] * 0.58)));
+      rod(st.part(st.near(stub) + 0.6), st, stub, add(stub, add(mul(hl, -2.2), mul(hu, 1.6))), 2.0, 1.6, IVORY);
+      handFire(c, s.handL);
+    },
+  },
+  {
+    n: 'F',
+    name: 'She-warlock: the demon\'s arm',
+    f: true,
+    paint: (c) => {
+      legs(c, NIGHT, COAL, true);
+      longCoat(c, COAL, RUST, 0.8);
+      const body = bodice(c, COAL);
+      seam(c, body, RUST[3]);
+      belt(c, RUST, CYAN, 2);
+      sleeveArm(c, COAL, SK, 1.1);
+      demonArm(c, RUST);
+      face(c, { hairAt: hairline, hair: WINE, blind: true });
+      for (const turn of EYES) dotOn(c, c.st.part(c.st.near(c.s.head) + 0.9), turn, 0.14, GLINT);
+      locks(c, WINE, 6);
+      hood(c, COAL, 0.6);
+      horns(c, 'swept', { long: 8, thick: 1.5 });
+      handFire(c, c.s.handL);
+    },
+  },
+];
+
+export const APOTHECARIES2: ClassLook[] = [
+  { ...APOTHECARIES[1], n: '2' },
+  { ...APOTHECARIES[2], n: '3' },
+  { ...APOTHECARIES[6], n: '7' },
+  {
+    n: 'A',
+    name: 'Herbalist with goggles',
+    paint: (c) => {
+      trousers(c, MOSS, LEATHER, { wide: 0.6 });
+      const body = torso(c, LINEN, MOSS);
+      apron(c, LEATHER, 1.0, body);
+      strap(c, body, LEATHER, false, (at, i) => vial(c, at, [LEAF, SPARK][i % 2]), 4);
+      belt(c, LEATHER, BRASS, 2);
+      fighterArms(c, { skin: SK, sleeve: LINEN, to: 0.9, wrap: null, thick: 0.1, fist: SK });
+      const hd = face(c, { hairAt: (f, l, up) => up > 0.25 || f < 0, hair: MOSS, paint: (f, l, up, t) => (up > 0.25 || f < 0 ? MOSS[t] : undefined) });
+      goggles(c, hd, true);
+      beard(c, BROWN, 1.8, 0.9);
+      flask(c, c.s.handR, LEAF, 2.0);
+    },
+  },
+  {
+    n: 'B',
+    name: 'Goggled bomber, bandolier',
+    paint: (c) => {
+      trousers(c, NIGHT, LEATHER, { wide: 0.5 });
+      thighStraps(c, [SPARK, ROBE]);
+      const body = torso(c, LEATHER, NIGHT);
+      strap(c, body, BROWN, false, (at, i) => vial(c, at, [SPARK, LEAF, ROBE][i % 3]), 5);
+      belt(c, BROWN, CYAN, 2);
+      fighterArms(c, { skin: SK, sleeve: LEATHER, to: 1.6, wrap: null, thick: 0.1, fist: LEATHER });
+      const hd = face(c, { hairAt: hairline, hair: RUST, paint: masked(TEAL), mouth: null });
+      goggles(c, hd, false);
+      flask(c, c.s.handR, SPARK, 2.3);
+    },
+  },
+  {
+    n: 'C',
+    name: 'Hooded herbalist, masked',
+    f: true,
+    paint: (c) => {
+      const { B } = c;
+      legs(c, MAIL, LEATHER, false);
+      skirt(c, MOSS, { drop: B.thigh + B.shank * 0.45, wide: 3.8, deep: 3.4, hem: LEAF, folds: [0, 180, 90, -90] });
+      const body = bodice(c, MOSS);
+      apron(c, LINEN, 1.0, body);
+      satchel(c, body);
+      bottleBelt(c, LEATHER, [LEAF, SPARK], 3, null);
+      arms(c, { upper: MOSS, fore: LINEN, hand: SK, bell: 0 });
+      mantle(c, MOSS, { drop: 5.2, ragged: true });
+      face(c, { hairAt: hairline, hair: BROWN, paint: masked(LINEN), mouth: null });
+      hood(c, MOSS, 0.7);
+      flask(c, c.s.handR, LEAF, 2.1);
+    },
+  },
+  {
+    n: 'D',
+    name: 'Tinkerer: goggles down, thigh straps',
+    f: true,
+    paint: (c) => {
+      trousers(c, LEATHER, COAL, { wide: 0.5 });
+      thighStraps(c, [SPARK, LEAF]);
+      const body = bodice(c, LINEN, 0.6, LEATHER);
+      apron(c, LEATHER, 0.8, body);
+      belt(c, LEATHER, BRASS, 2);
+      fighterArms(c, { skin: SK, sleeve: LINEN, to: 0.9, wrap: null, thick: 0.05, fist: LEATHER });
+      const hd = face(c, { hairAt: drawnBack, hair: WINE, blush: true, mouth: PINK[1] });
+      goggles(c, hd, false);
+      pony(c, WINE, 10);
+      flask(c, c.s.handR, SPARK, 2.1);
+    },
+  },
+  {
+    n: 'E',
+    name: 'Long apron, vials all over',
+    paint: (c) => {
+      legs(c, NIGHT, LEATHER, true);
+      longCoat(c, LEATHER, BROWN, 0.6);
+      const body = torso(c, RUST, LEATHER);
+      strap(c, body, BROWN, false, (at, i) => vial(c, at, [SPARK, ROBE, LEAF][i % 3]), 5);
+      strap(c, body, BROWN, true, (at, i) => vial(c, at, [LEAF, SPARK][i % 2]), 4);
+      bottleBelt(c, BROWN, [SPARK, ROBE, LEAF], 4, CYAN);
+      arms(c, { upper: RUST, fore: LEATHER, hand: LEATHER, bell: 0.2 });
+      const hd = face(c, { hairAt: (f, l, up) => f < 0 || up > 0.45, hair: RAVEN, paint: masked(RUST), mouth: null });
+      goggles(c, hd, true);
+      flask(c, c.s.handR, ROBE, 2.3);
+    },
+  },
+  {
+    n: 'F',
+    name: 'Herbalist: bandana, beard',
+    paint: (c) => {
+      trousers(c, BROWN, LEATHER, { wide: 0.7 });
+      const body = torso(c, MOSS, BROWN);
+      apron(c, LINEN, 1.0, body);
+      satchel(c, body);
+      sash(c, LEAF, 7);
+      const { st, s, B } = c;
+      for (const k of [1, -1]) {
+        const at = off(s.waist, s.hips, B.waistDeep + 1.0, k * B.waistHalf * 1.05, -3.6);
+        ball(st.part(st.near(at) + 1.0), st, at, [[1.6, 0, 0], [0, 1.6, 0], [0, 0, 2.0]], BRASS);
+      }
+      arms(c, { upper: MOSS, fore: SK, hand: SK, bell: 0 });
+      face(c, { hairAt: (f, l, up) => up > 0.38 || f < -0.15, hair: LEAF, paint: (f, l, up, t) => (up > 0.38 || f < -0.15 ? LEAF[t] : undefined) });
+      beard(c, BROWN, 3.6, 1.05);
+      flask(c, c.s.handR, LEAF, 2.0);
+    },
+  },
+];
+
 void [CYAN, curtain, fringe, rope, streak, tresses, satchel, MOSS, GREY, collar, hidden, thread, braid, PINK, BRASS, brimHat];
 
 /** The class sheets: which body, which stance, which looks. */
@@ -1065,6 +1484,9 @@ export const CLASSES = {
   brawler: { title: 'The brawler', body: BRAWLER_BODY, bodyF: BRAWLER_F_BODY, pose: guardOf, looks: BRAWLERS },
   warlock: { title: 'The warlock', body: WARLOCK_BODY, bodyF: WARLOCK_F_BODY, pose: castOf, looks: WARLOCKS },
   apothecary: { title: 'The apothecary', body: APOTHECARY_BODY, bodyF: APOTHECARY_F_BODY, pose: throwOf, looks: APOTHECARIES },
+  brawler2: { title: 'The brawler: more like 3', body: BRAWLER_BODY, bodyF: BRAWLER_F_BODY, pose: guardOf, looks: BRAWLERS2 },
+  warlock2: { title: 'The warlock: more like 1 and 2', body: WARLOCK_BODY, bodyF: WARLOCK_F_BODY, pose: castOf, looks: WARLOCKS2 },
+  apothecary2: { title: 'The apothecary: more like 2, 3 and 7', body: APOTHECARY_BODY, bodyF: APOTHECARY_F_BODY, pose: throwOf, looks: APOTHECARIES2 },
 } as const;
 export type ClassId = keyof typeof CLASSES;
 
