@@ -88,8 +88,9 @@ function killBoss(g: Game): Monster {
   return boss;
 }
 
-test('the switch is off in the game; off, the town has no stairs nor shaft, a new player wakes on floor 1, floor 4 its stairwell and floor 5 no mouth', () => {
-  assert.equal(EXITS.on, false);
+test('the switch is on in the game (Version 24.1, his “Yes, this part now (Recommended)”); off, the town has no stairs nor shaft, a new player wakes on floor 1, floor 4 its stairwell and floor 5 no mouth', () => {
+  assert.equal(EXITS.on, true);
+  exitsSet(false, () => {
   const T = makeTown(7);
   assert.equal(T.ways!.stair, null);
   assert.ok(!T.ways!.shaft);
@@ -102,6 +103,7 @@ test('the switch is off in the game; off, the town has no stairs nor shaft, a ne
     assert.ok(L4.ways!.stairs.length > 0, 'its stairwell');
     assert.ok(!makeDungeon(5, seed).ways!.mouth, 'no mouth on floor 5');
   }
+  });
 });
 
 test('on, a new game begins in town, a new player too: walking, then the wordsmith\'s quest, then the stairs', () =>

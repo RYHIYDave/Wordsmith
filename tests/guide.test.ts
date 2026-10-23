@@ -19,7 +19,7 @@ import type { ClassId, WeaponKind, WordId } from '../src/game/types';
 import { resolveSkill } from '../src/game/words';
 import { guideAttack, guideBanner, guideCoach, guideSlot } from '../src/ui/guide';
 import { PAD_USE } from '../src/engine/gamepad';
-import { land } from './helpers';
+import { land, toFirstFloor, withoutExits } from './helpers';
 
 // THE FIRST LEVELS (game/defs.ts, on since Version 19.5) changed the lesson: the abilities open by
 // level, the fallen wordsmith's satchel holds the master rune-stone, the first word is given in town and the
@@ -126,12 +126,15 @@ function use(g: Game, skill: number, dx: number, dy: number, seconds: number): G
 // =============================================================================================
 // The guide
 
-test('a fresh game starts in the first dungeon, with no word, and with one prompt: how to move', () => {
+// (TOLD, Version 24.1: THE WAYS BETWEEN THE FLOORS, game/ways.ts EXITS, his “Yes, this part now (Recommended)”: a new game,
+// a new player's too, begins in town; the lesson in walking is learned there, and then the wordsmith's quest (tests/exits.test.ts).
+// Until then it began in the first dungeon.)
+test('a fresh game starts in town, with no word, and with one prompt: how to move', () => {
   for (const cls of CLASS_IDS) {
     const meta = newMeta();
     const g = Game.forFirstRun(cls, 11, meta);
     const h = g.hero;
-    assert.ok(g.inDungeon && !g.level.town && g.depth === 1 && g.cleared === 0, 'no town yet: the first dungeon');
+    assert.ok(g.level.town && g.cleared === 0, 'in town: nothing below cleared');
     assert.ok(g.guide, 'the prompts are running');
     assert.equal(owned(g), 0, 'a new character has no word');
     assert.equal(g.offer, null, 'and nothing is pressed on them');
@@ -157,8 +160,10 @@ test('a fresh game starts in the first dungeon, with no word, and with one promp
       for (const e of g.events) if (e.t === 'guide') seen.push(e.step);
       g.events.length = 0;
     }
-    assert.deepEqual(seen, ['move'], 'the prompt is announced once');
+    assert.deepEqual(seen.slice(0, 1), ['move'], 'the prompt is announced once');
+    assert.equal(seen.filter((s) => s === 'move').length, 1);
     assert.notEqual(g.guideStep(), 'move', 'having walked, the prompt is gone');
+    // (with the first levels, the next is to talk to the wordsmith: tests/exits.test.ts; these run without them)
     assert.ok(g.guide!.walked >= GUIDE.steps && Math.hypot(h.x - x0, h.y - y0) > 0 === true);
     assert.equal(meta.taught, false, 'the prompts are not over yet');
   }
@@ -198,7 +203,7 @@ function meet(g: Game): Monster {
 
 test('on meeting the first monsters: "tap to ..., tap + hold to ...", each line ticked off by doing it', () => {
   for (const cls of CLASS_IDS) {
-    const g = Game.forFirstRun(cls, 12);
+    const g = toFirstFloor(Game.forFirstRun(cls, 12));
     const h = g.hero;
     const c = emptyControls();
     g.guide!.walked = 99;
@@ -371,7 +376,7 @@ test('before the body there is no word, so what stands before it hits softer; it
 
 test('the word found, the prompt is to put it on an attack: the one the first dungeon suggests for that class', () => {
   for (const cls of CLASS_IDS) {
-    const g = Game.forFirstRun(cls, 13);
+    const g = toFirstFloor(Game.forFirstRun(cls, 13));
     const h = g.hero;
     const c = emptyControls();
     const first = FIRST_WORD[cls];
@@ -427,7 +432,7 @@ test('the word found, the prompt is to put it on an attack: the one the first du
     assert.deepEqual(guideSlot(g, first.word === 'frost' ? 'swift' : 'frost'), { skill: 0, side: 'front', idx: 0 });
   }
   // the ranger's, in the owner's words: "have it prompt to put poison on TRAP"
-  const r = Game.forFirstRun('ranger', 5);
+  const r = toFirstFloor(Game.forFirstRun('ranger', 5));
   r.hero.words.poison = 1;
   r.guide!.walked = 99;
   r.monsters.length = 0;
@@ -438,7 +443,7 @@ test('the word found, the prompt is to put it on an attack: the one the first du
 test('setting the first word makes the dead rise for it, soft enough to feel the word; then the prompts are over', () => {
   for (const cls of CLASS_IDS) {
     const meta = newMeta();
-    const g = Game.forFirstRun(cls, 14, meta);
+    const g = toFirstFloor(Game.forFirstRun(cls, 14, meta));
     const h = g.hero;
     const first = FIRST_WORD[cls];
     g.guide!.walked = 99;
@@ -545,7 +550,7 @@ test('the first word set in town (or anywhere there is nothing to fight) ends th
 
 test('nobody loses their first character while the prompts are running; after them, death is death', () => {
   for (const cls of CLASS_IDS) {
-    const g = Game.forFirstRun(cls, 15);
+    const g = toFirstFloor(Game.forFirstRun(cls, 15));
     const h = g.hero;
     g.events.length = 0;
     g.hurtHero(1e9, 'phys', [], null, 'a test');
@@ -672,7 +677,7 @@ for (const cls of CLASS_IDS) {
 
 test('the prompts are saved with the character, and carry on from where they were', () => {
   const meta = newMeta();
-  const g = Game.forFirstRun('ranger', 21, meta);
+  const g = toFirstFloor(Game.forFirstRun('ranger', 21, meta));
   const G = g.guide!;
   G.walked = 40;
   G.met = true;
@@ -1504,7 +1509,9 @@ test('the voice chosen on the class cards belongs to the character, and is kept 
 // =============================================================================================
 // The first dungeon never begins with a fight (Version 12.1)
 
-test('a new player\'s first dungeon does not begin with a fight: nothing wakes by itself until the lesson in walking is done', () => {
+// (TOLD, Version 24.1: with THE WAYS BETWEEN THE FLOORS on, game/ways.ts EXITS, the lesson in walking is learned in town and the
+// first dungeon is come to by the stairs: this is the rule as it stands for a first dungeon come into before it, the exits off.)
+test('a new player\'s first dungeon does not begin with a fight: nothing wakes by itself until the lesson in walking is done', () => withoutExits(() => {
   // About three first dungeons in four hundred put a pack in sight of where the hero arrives.
   // Until Version 12.1 the first prompt in those was the fight, with monsters already coming.
   // (These seeds are such dungeons, found by search: 13 + k x 7919. THE LIST IS MADE AGAIN
@@ -1553,4 +1560,4 @@ test('a new player\'s first dungeon does not begin with a fight: nothing wakes b
   plain.enterDungeon();
   for (let k = 0; k < 10; k++) plain.update(DT, emptyControls());
   assert.equal(plain.guide, null);
-});
+}));

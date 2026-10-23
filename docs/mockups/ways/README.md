@@ -103,7 +103,7 @@ lines, as a diff against exits at 0093225, are `scratch_hooks.diff.txt` here: a 
 
 ## Checks
 
-- `tests/ways.test.ts`, 6: both switches off and nothing of the game importing either file; the cave's film both
+- `tests/ways_art.test.ts` (so named in the game: tests/ways.test.ts is the game's own), 6: both switches off and nothing of the game importing either file; the cave's film both
   ways round, every frame painted, its jolts in it, its first and last frames the wall and the cave as they stand,
   nothing cyan; floor 5's mouth; the town's stairs, the shaft's head and floor 1's stairs up painted both ways with
   nothing of the enemy's pink or the friend's cyan; the cage's frames, its floor rising from out of sight to the

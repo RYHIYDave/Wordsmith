@@ -15,7 +15,7 @@ import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
 import type { MonsterKind, WordId } from '../src/game/types';
-import { seasoned } from './helpers';
+import { seasoned, toFirstFloor } from './helpers';
 
 type Pack = { rarity: 'blue' | 'leader' | 'minion'; words: readonly WordId[] };
 type Inner = {
@@ -115,7 +115,7 @@ test('blue packs are about 1 in 4 of the others from dungeon 2, yellow ones abou
   // the first dungeon of a new character, as the game is (THE FIRST LEVELS): no blue pack, no word on anyone
   assert.ok(FIRST_LEVELS.on);
   for (let seed = 1; seed <= 8; seed++) {
-    const g = Game.forFirstRun('ranger', seed * 13);
+    const g = toFirstFloor(Game.forFirstRun('ranger', seed * 13));
     const packs = g.level.floor.packs;
     for (const m of g.monsters) {
       assert.equal(m.words.length, 0, `seed ${seed}: ${m.name} has a word in the first dungeon`);

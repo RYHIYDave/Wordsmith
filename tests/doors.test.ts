@@ -61,7 +61,7 @@ import type { GameEvent, Monster } from '../src/game/state';
 import { T_FLOOR, T_WALL } from '../src/game/types';
 import type { DoorSpot, Element, Floor } from '../src/game/types';
 import { FACE_LEFT, FACE_RIGHT, wallFaces, wallsAway } from '../src/render/walls';
-import { seasoned, withoutCrypt } from './helpers';
+import { seasoned, toFirstFloor, withoutCrypt } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -795,7 +795,7 @@ test('the dead that rise for a new player\'s first word rise where they can come
   for (const seed of [6, 9, 13]) {
     for (const out of [-6.3, -5.9, -5.5]) {
       for (const mended of [true, false]) {
-        const g = doorsSet(true, () => Game.forFirstRun('warrior', seed), 1);
+        const g = doorsSet(true, () => toFirstFloor(Game.forFirstRun('warrior', seed)), 1);
         const L = g.level;
         const h = g.hero;
         g.monsters.length = 0;

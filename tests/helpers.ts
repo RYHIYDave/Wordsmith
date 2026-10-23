@@ -15,7 +15,8 @@ import type { Sprite } from '../src/engine/px';
 import { CRYPT_LAYOUT, CRYPT_LITTER } from '../src/game/dungeon';
 import type { Game } from '../src/game/game';
 import type { Controls } from '../src/game/state';
-import { WAYS } from '../src/game/ways';
+import { EXITS, WAYS } from '../src/game/ways';
+import { GUIDE } from '../src/game/defs';
 
 /** No attack takes this long to land: the slowest wind-up in the game is about a quarter of a second. */
 export const LAND_LIMIT = 1;
@@ -123,5 +124,30 @@ export function withoutCrypt<T>(run: () => T): T {
     return run();
   } finally {
     [CRYPT_LAYOUT.on, CRYPT_LITTER.on, WAYS.on] = was;
+  }
+}
+
+/**
+ * THE WAYS BETWEEN THE FLOORS (game/ways.ts EXITS, on since Version 24.1): a new game begins in town. A new player's game
+ * taken to its first floor as he would go there: the lesson in walking and the wordsmith's quest done in town, and down
+ * the town's stairs (the rules' own way, `takeWay`). A game already in a dungeon (EXITS off) is left where it is.
+ */
+export function toFirstFloor(g: Game): Game {
+  if (!g.level.town) return g;
+  if (g.guide) g.guide.walked = Math.max(g.guide.walked, GUIDE.steps);
+  g.questGiven = true;
+  (g as unknown as { takeWay(to: string): void }).takeWay('stairsIn');
+  g.events.length = 0;
+  return g;
+}
+
+/** THE WAYS BETWEEN THE FLOORS off for the length of `run` and put back: the game's ways as Version 24.0 had them (the town's gate to floor 1, its waypoint's column of light at every way on), for a test of what is still theirs to do with them off. */
+export function withoutExits<T>(run: () => T): T {
+  const was = EXITS.on;
+  EXITS.on = false;
+  try {
+    return run();
+  } finally {
+    EXITS.on = was;
   }
 }

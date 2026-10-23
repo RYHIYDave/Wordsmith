@@ -19,7 +19,7 @@ import { plainWeapon } from '../src/game/items';
 import { MODES, MODE_BEFORE, NORMAL } from '../src/game/modes';
 import type { HeroMode } from '../src/game/modes';
 import { WORD_IDS } from '../src/game/types';
-import { seasoned } from './helpers';
+import { seasoned, toFirstFloor } from './helpers';
 
 interface Assert {
   ok(value: unknown, message?: string): void;
@@ -170,7 +170,7 @@ test('a Hardcore death is the end of the hero, as it always was', () => {
 
 test('the first dungeon: its fallen wordsmith is there to be searched again', () => {
   modes(true, () => {
-    const g = Game.forFirstRun('ranger', 8);
+    const g = toFirstFloor(Game.forFirstRun('ranger', 8));
     g.mode = 'normal';
     g.endGuide();
     // (the body searched: its word found)
@@ -191,7 +191,7 @@ test('nobody wakes in the practice room, or in the first dungeon while its promp
     killed(p);
     assert.equal(p.over, false);
     assert.equal(p.wakes, false);
-    const f = Game.forFirstRun('warrior', 9);
+    const f = toFirstFloor(Game.forFirstRun('warrior', 9));
     f.mode = 'normal';
     killed(f);
     assert.equal(f.over, false, 'UP AGAIN, as ever');

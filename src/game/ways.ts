@@ -62,8 +62,11 @@ export const WAYS = { on: true };
  *   FLOOR 4'S CAVE (`placeCave`): three tiles of a back wall of the boss's hall, cut through as a gate's doorway is,
  *     the wall standing over it until the boss dies; then it crumbles (`CAVE_OPENING`) and walking into the mouth
  *     takes him down to floor 5, where he comes out of the cave's other end (`Ways.mouth`).
+ * ON (VERSION 24.1): shown a video of them in the game (art/cave4.ts and art/town_ways.ts, the art chat's, his yes to each
+ * there), asked “The art chat's pieces for town and floors 1–5 are now in the game (video: ways_between_floors). Floors 6–15
+ * are still being painted. Put this part live now?”, by 17:41: “Yes, this part now (Recommended)”.
  */
-export const EXITS = { on: false };
+export const EXITS = { on: true };
 /**
  * The town's stairs down: the corner of the opening and the way its steps go, on the hall's floor (level.ts TOWN), and how
  * big it is: the art chat's (art/town_ways.ts TOWN_STAIRS, 3 tiles long by 2 wide; his yes there by 14:01, 22 Oct 2026, “Yes, on

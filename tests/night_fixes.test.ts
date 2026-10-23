@@ -20,6 +20,7 @@ import type { RunSave } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
 import type { Monster, Zone } from '../src/game/state';
 import type { Element, MonsterKind, WordId } from '../src/game/types';
+import { toFirstFloor } from './helpers';
 
 const DT = 1 / 30;
 
@@ -109,7 +110,7 @@ test('burning and fire on the ground do not flash a monster; a blow does', () =>
 
 /** A new player's first run, the stone found, in town beside the wordsmith. */
 function atTheRing(): Game {
-  const g = Game.forFirstRun('mage', 21, newMeta());
+  const g = toFirstFloor(Game.forFirstRun('mage', 21, newMeta()));
   const b = g.level.body!;
   g.hero.x = b.x + 0.4;
   g.hero.y = b.y;

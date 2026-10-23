@@ -35,7 +35,7 @@ import { emptyControls } from '../src/game/state';
 import type { Monster } from '../src/game/state';
 import { SOLID_PROPS, T_FLOOR, T_PIT } from '../src/game/types';
 import type { ClassId, Floor, Room } from '../src/game/types';
-import { withoutCrypt } from './helpers';
+import { toFirstFloor, withoutCrypt } from './helpers';
 
 const DEPTHS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 const SEEDS = 14;
@@ -283,7 +283,7 @@ test('the fallen wordsmith of a first dungeon lies on no stair and on the room\'
   let seen = 0;
   let onHigh = 0;
   for (let seed = 1; seed <= 60; seed++) {
-    const g = Game.forFirstRun('warrior', seed * 7919);
+    const g = toFirstFloor(Game.forFirstRun('warrior', seed * 7919));
     const b = g.level.body;
     if (!b) continue;
     const f = g.level.floor;

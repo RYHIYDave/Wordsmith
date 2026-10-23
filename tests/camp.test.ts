@@ -52,12 +52,14 @@ function reaches(L: Level, ax: number, ay: number, bx: number, by: number): bool
   return false;
 }
 
-test('off, the town is the prison town whatever he has reached', () => {
-  assert.equal(EXITS.on, false);
-  const g = new Game('warrior', 7);
-  g.wayDepth = 13;
-  g.enterTown();
-  assert.equal(isCamp(g.level), false);
+test('off, the town is the prison town whatever he has reached (the switch on since Version 24.1)', () => {
+  assert.equal(EXITS.on, true);
+  exitsSet(false, () => {
+    const g = new Game('warrior', 7);
+    g.wayDepth = 13;
+    g.enterTown();
+    assert.equal(isCamp(g.level), false);
+  });
 });
 
 test('on, his town is the camp once he has come down into the city, and the prison town before', () =>

@@ -17,6 +17,7 @@ import type { GameEvent } from '../src/game/state';
 import { CLASS_IDS } from '../src/game/types';
 import type { ClassId } from '../src/game/types';
 import { guideBanner, guideSlot } from '../src/ui/guide';
+import { toFirstFloor } from './helpers';
 
 const DT = 1 / 30;
 type Inner = { gainXp: (n: number) => void };
@@ -52,9 +53,13 @@ function upTo(g: Game, level: number): GameEvent[] {
   return seen;
 }
 
-/** A new player's first character, on a device that has seen nothing (the ring has never been lit). */
+/**
+ * A new player's first character, on a device that has seen nothing (the ring has never been lit), on the first floor. (TOLD,
+ * Version 24.1: with THE WAYS BETWEEN THE FLOORS, game/ways.ts EXITS, a new game begins in town: taken down its stairs as he
+ * would go, tests/helpers.ts toFirstFloor.)
+ */
 function fresh(cls: ClassId, seed = 21): Game {
-  return Game.forFirstRun(cls, seed, newMeta());
+  return toFirstFloor(Game.forFirstRun(cls, seed, newMeta()));
 }
 
 /** The hero walks up to the fallen wordsmith of the first dungeon. */
@@ -167,6 +172,9 @@ test('on: no wordsmithing until the ring is lit; the satchel holds the quest ite
       assert.ok(!g.drops.some((d) => d.kind === 'word'), `${cls}: no word from the satchel`);
       assert.equal(h.potions, TUNE.potionMax, 'and full flasks, as before');
       assert.equal(g.guideStep(), 'carry');
+      // (nothing to fight near him while it shows: the line's time is what is held. With THE WAYS BETWEEN THE FLOORS, Version 24.1,
+      // he comes to the first floor having learned to walk in town, so what is near the body is awake, as for any hero)
+      for (const m of g.monsters) m.dead = true;
       // (its line shows a few seconds, then goes: 9 Oct 2026, 22:12, "The quest is too in your face")
       for (let t = 0; t < QUEST_ITEM.promptSecs + 0.1; t += DT) g.update(DT, emptyControls());
       assert.equal(g.guideStep(), null, `${cls}: after ${QUEST_ITEM.promptSecs} s the line is gone`);

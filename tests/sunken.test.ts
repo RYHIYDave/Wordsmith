@@ -35,7 +35,7 @@ import { emptyControls } from '../src/game/state';
 import type { Controls, Monster } from '../src/game/state';
 import { SOLID_PROPS, T_FLOOR, T_PIT, T_WALL } from '../src/game/types';
 import type { ClassId, Floor, Room } from '../src/game/types';
-import { withoutCrypt } from './helpers';
+import { toFirstFloor, withoutCrypt } from './helpers';
 
 const DT = 1 / 60;
 const R = TUNE.heroRadius;
@@ -485,7 +485,7 @@ test('with sunken floor in the dungeons, the fallen wordsmith of a first dungeon
   let roomsWithSunk = 0;
   withSunken(() => {
     for (let seed = 1; seed <= 60; seed++) {
-      const g = Game.forFirstRun('warrior', seed * 7919);
+      const g = toFirstFloor(Game.forFirstRun('warrior', seed * 7919));
       const b = g.level.body;
       if (!b) continue;
       const f = g.level.floor;

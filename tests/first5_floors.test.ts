@@ -24,7 +24,7 @@ import { wallFaces, wallsAway } from '../src/render/walls';
 import { doorTiles } from '../src/game/doors';
 import { Game } from '../src/game/game';
 import { emptyControls } from '../src/game/state';
-import { FIRST5, SHAFT, STAIR_OPENING, beforeGate, shaftTiles } from '../src/game/ways';
+import { EXITS, FIRST5, SHAFT, STAIR_OPENING, beforeGate, shaftTiles } from '../src/game/ways';
 import { flowField } from '../src/game/nav';
 import { paintWithoutCanvas, seasoned } from './helpers';
 
@@ -157,8 +157,10 @@ test('4. the dead the Fleshmancer raised fall with him, worth nothing; those of 
   assert.ok(g.hero.xp - xp <= boss.xp * 3, 'no more than his worth');
 });
 
+// (TOLD, Version 24.1: with THE WAYS BETWEEN THE FLOORS on, game/ways.ts EXITS, floor 4's way down is the cave behind its crumbling
+// wall, not a stairwell: tests/exits.test.ts. Floors 1 to 3 keep theirs.)
 test('5. the stairwell breaks open for as long as its film (3 to 3.5 s: art/stairwell_open.ts): it says so to the renderer, and takes nobody down until it has', () => {
-  for (const depth of [1, 2, 3, 4]) {
+  for (const depth of EXITS.on ? [1, 2, 3] : [1, 2, 3, 4]) {
     const g = floor(depth, 900 + depth);
     const L = g.level;
     const boss = g.monsters.find((m) => m.boss)!;
