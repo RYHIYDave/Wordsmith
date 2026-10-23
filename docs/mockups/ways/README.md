@@ -228,4 +228,7 @@ lines, as a diff against exits at 0093225, are `scratch_hooks.diff.txt` here: a 
   open, its jolts, it changes, nothing cyan, the pink only in the seals and gone open, every colour as quiet as Act 2's
   places but what glows; a way in a wall painted as the floor's own wall, its pattern running on with where it stands;
   every start painted all four ways round, nothing cyan or pink, stood back).
+- Told of `src/art/act2_ways.ts` (one line each, it may import them): the import checks in `tests/floor11.test.ts` (Act 2's
+  kit and quiet colours), `tests/undercity.test.ts`, `tests/housequiet.test.ts` and `tests/library.test.ts` (their wall
+  faces, for the ways in a wall).
 - tsc clean. NOT RUN: the regression; a real phone; the pieces in the game with your rules.
