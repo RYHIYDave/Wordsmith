@@ -53,6 +53,7 @@ const CYANS = new Set([...CYAN, '#28dcf0', '#22d0e0'].map((c) => c.toLowerCase()
 test('in the game only through its own (ACT 2, THE HUSH: render/act1_pieces.ts); nothing else of the game imports floor 11\'s pieces, the Hush\'s set or their kit', () => {
   // (an import of the art's own file, wherever from: the game's own map-maker of the same name, game/act2/<ground>.ts, is not it)
   const own = new Set(['render/act1_pieces.ts']);
+  own.add('art/act2_ways.ts'); // the ways between the floors (mockup/ways): Act 2's kit and quiet colours, as floors 11 to 15's own
   const art = new Set(['art/floor11', 'art/act2_set', 'art/act2_kit', 'art/act2_quiet']);
   const at = (dir: string, spec: string): string => {
     const out = dir ? dir.split('/') : [];

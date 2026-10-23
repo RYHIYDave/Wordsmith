@@ -75,6 +75,7 @@ const WHOLE = paintTerrain(T, X0, Y0, WW, HH);
 test('in the game only through its own (ACT 2, THE HUSH: render/outdoor.ts); nothing else of the game imports the House of Quiet\'s ground', () => {
   // (an import of the art's own file, wherever from: the game's own map-maker of the same name, game/act2/<ground>.ts, is not it)
   const own = new Set(['render/outdoor.ts']);
+  own.add('art/act2_ways.ts'); // the ways between the floors (mockup/ways): floor 14's way and start in a wall of this ground's own face
   const art = new Set(['art/housequiet']);
   const at = (dir: string, spec: string): string => {
     const out = dir ? dir.split('/') : [];
