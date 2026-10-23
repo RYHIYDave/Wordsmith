@@ -2801,7 +2801,10 @@ export class Game {
       if (k >= 0) {
         const p = L.props[k];
         L.props.splice(k, 1);
-        if (!L.props.some((o) => o.solid && o.tx === p.tx && o.ty === p.ty)) L.walk[p.ty * L.floor.w + p.tx] = 1;
+        // (it stands over the corner of two tiles, both its own (game/act1_dress.ts): both are floor again. The owner, 23 Oct
+        // 2026, 11:38 (Pacific): “The altars are still on the way of the entrance to the strongholds after you unlock the
+        // door”: the second was left solid, unseen, before the door)
+        for (const tx of [p.tx, p.tx - 1]) if (!L.props.some((o) => o.solid && o.tx === tx && o.ty === p.ty)) L.walk[p.ty * L.floor.w + tx] = 1;
         this.emit({ t: 'burst', x: q.altar.x, y: q.altar.y, r: 1.2, el: 'fire', style: 'shock' });
       }
     }
