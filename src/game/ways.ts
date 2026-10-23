@@ -75,7 +75,7 @@ export const TOWN_SHAFT = { x: 20, y: 18 };
 /** Floor 4's wall, crumbling to the cave's mouth: how long from the boss's death until the mouth is open to walk into, in seconds: the art chat's film of it (art/cave4.ts CAVE_OPEN_SECS, 126 frames at 30). */
 export const CAVE_OPENING = 126 / 30;
 /** THE TOWN'S GATE UNBARRED: how near its middle he must come, in tiles, for it to be in sight, the first time after the Fleshmancer is beaten (its film plays then: the art chat's ask); and how long the film is (art/town_ways.ts UNBAR, 78 frames at 30), the gate staying shut while it plays. */
-export const UNBAR_SEEN = 9;
+export const UNBAR_SEEN = 6;
 export const UNBAR_SECS = 78 / 30;
 
 /** The town's gate rises when the hero is this near the middle of its doorway, in tiles; at his pace he is at its bars a little over a second after, as it is 95% up (the art chat's film: tools/scenarios/crypt_gate.mjs). */
